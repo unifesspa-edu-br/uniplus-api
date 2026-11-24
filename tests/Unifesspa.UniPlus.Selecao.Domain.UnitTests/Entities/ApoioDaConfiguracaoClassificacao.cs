@@ -2,6 +2,7 @@ namespace Unifesspa.UniPlus.Selecao.Domain.UnitTests.Entities;
 
 using AwesomeAssertions;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
@@ -11,16 +12,16 @@ using Unifesspa.UniPlus.Testes.Compartilhado;
 internal static class ApoioDaConfiguracaoClassificacao
 {
     internal static ReferenciaRegra RegraCalculoMediaPonderada() =>
-        ReferenciaRegra.De(RegraCalculoCodigo.FormulaMediaPonderada, "v1", new string('a', 64));
+        ReferenciaRegra.De(RegraDeCalculoDaNota.MediaPonderada.Codigo(), "v1", new string('a', 64));
 
     internal static ReferenciaRegra RegraCalculoImportada() =>
-        ReferenciaRegra.De(RegraCalculoCodigo.ClassificacaoImportada, "v1", new string('b', 64));
+        ReferenciaRegra.De(RegraDeCalculoDaNota.ClassificacaoImportada.Codigo(), "v1", new string('b', 64));
 
     internal static ReferenciaRegra RegraArredondamento() =>
-        ReferenciaRegra.De(RegraArredondamentoCodigo.PrecisaoTruncar, "v1", new string('c', 64));
+        ReferenciaRegra.De(RegraDeArredondamentoDaNota.Truncar.Codigo(), "v1", new string('c', 64));
 
     internal static ReferenciaRegra RegraOrdemAlocacao() =>
-        ReferenciaRegra.De(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, "v1", new string('d', 64));
+        ReferenciaRegra.De(RegraDeOrdemDeAlocacao.PrimeiraOpcaoPrioritaria.Codigo(), "v1", new string('d', 64));
 
     internal static DeclaracaoDaClassificacao DeclaracaoMediaPonderada() =>
         new()
@@ -52,23 +53,23 @@ internal static class ApoioDaConfiguracaoClassificacao
 
     internal static ParametrosRegraEliminacao ParametrosDaRegra(string codigoRegra) => codigoRegra switch
     {
-        RegraEliminacaoCodigo.ElimCorteEmArea => new ParametrosElimCorteEmArea("REDACAO", 400m),
-        RegraEliminacaoCodigo.ElimZeroEmArea => new ParametrosElimZeroEmArea(),
-        RegraEliminacaoCodigo.ElimFaltaEmDiaDeProvaEnem => new ParametrosElimFaltaEmDiaDeProvaEnem(),
+        var valor when valor == RegraDeEliminacaoPorCalculo.CorteEmAreaDoEnem.Codigo() => new ParametrosEliminacaoPorCorteEmAreaDoEnem("REDACAO", 400m),
+        var valor when valor == RegraDeEliminacaoPorCalculo.ZeroEmAreaDoEnem.Codigo() => new ParametrosEliminacaoPorZeroEmAreaDoEnem(),
+        var valor when valor == RegraDeEliminacaoPorCalculo.FaltaEmDiaDeProvaDoEnem.Codigo() => new ParametrosEliminacaoPorFaltaEmDiaDeProvaDoEnem(),
         _ => throw new ArgumentOutOfRangeException(nameof(codigoRegra), codigoRegra, "Código de regra ENEM desconhecido no teste."),
     };
 
     internal static RegraEliminacao AusenciaNaEtapa(Guid etapaId) =>
         RegraEliminacao.Criar(
-            ReferenciaRegra.De(RegraEliminacaoCodigo.ElimAusenciaNaEtapa, "v1", new string('a', 64)),
-            new ParametrosElimAusenciaNaEtapa(etapaId)).Value!;
+            ReferenciaRegra.De(RegraDeEliminacaoPorCalculo.AusenciaNaEtapa.Codigo(), "v1", new string('a', 64)),
+            new ParametrosEliminacaoPorAusenciaNaEtapa(etapaId)).Value!;
 
     // ── Corte em área: no máximo um por área, e a área no quadro de pesos por área ──
 
     internal static RegraEliminacao CorteEm(string area, decimal minimo = 400m) =>
         RegraEliminacao.Criar(
-            ReferenciaRegra.De(RegraEliminacaoCodigo.ElimCorteEmArea, "v1", new string('a', 64)),
-            new ParametrosElimCorteEmArea(area, minimo)).Value!;
+            ReferenciaRegra.De(RegraDeEliminacaoPorCalculo.CorteEmAreaDoEnem.Codigo(), "v1", new string('a', 64)),
+            new ParametrosEliminacaoPorCorteEmAreaDoEnem(area, minimo)).Value!;
 
     internal static Result<ConfiguracaoClassificacao> CriarEnemLocal(params RegraEliminacao[] eliminacoes) =>
         ConfiguracaoClassificacao.Criar(DeclaracaoEnemLocal() with { RegrasEliminacao = eliminacoes });

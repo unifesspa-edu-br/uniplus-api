@@ -109,7 +109,7 @@ internal static class LeituraDosDocumentosExigidos
     private static IdentificacaoDaRegra LerIdentificacaoDaRegra(LeitorEnvelope leitor, JsonObject item, string path) => new(
         leitor.Identificador(item, "regraId", path),
         leitor.TextoNaoVazio(item, "regraCodigo", path),
-        leitor.Enumeracao<CategoriaObrigatoriedade>(item, "categoria", path),
+        leitor.CodigoDeContrato<CategoriaObrigatoriedade>(item, "categoria", path),
         leitor.TextoNaoVazio(item, "tipoProcessoCodigoAvaliado", path),
         LerPredicadoDaRegra(leitor, item, path));
 

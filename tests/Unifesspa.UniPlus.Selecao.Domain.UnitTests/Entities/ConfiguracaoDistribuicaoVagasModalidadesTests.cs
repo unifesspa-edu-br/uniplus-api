@@ -2,6 +2,7 @@ namespace Unifesspa.UniPlus.Selecao.Domain.UnitTests.Entities;
 
 using AwesomeAssertions;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
@@ -30,7 +31,7 @@ public sealed class ConfiguracaoDistribuicaoVagasModalidadesTests
         resultado.Errors.Should().Contain(e =>
             e.Error.Code == "ConfiguracaoDistribuicaoVagas.ModalidadeNaoAdmitidaPelaRegra"
             && e.Error.Message.Contains("AC", StringComparison.Ordinal)
-            && e.Error.Message.Contains(RegraDistribuicaoVagasCodigo.Psiq, StringComparison.Ordinal));
+            && e.Error.Message.Contains(RegraDeDistribuicaoDeVagas.PorAcrescimoIndigenaEQuilombola.Codigo(), StringComparison.Ordinal));
     }
 
     [Fact(DisplayName = "Rol fechado com modalidade faltando é recusado, não só o excedente")]
@@ -151,13 +152,7 @@ public sealed class ConfiguracaoDistribuicaoVagasModalidadesTests
         string? acaoQuandoIndeferido,
         int quantidadeDeclarada,
         string? composicaoOrigemCodigo = null) =>
-        ModalidadeSelecionada.Criar(
-            Guid.CreateVersion7(), codigo, null,
-            NaturezaLegalModalidade.AcaoAfirmativa,
-            composicaoOrigemCodigo is null ? ComposicaoVagasModalidade.SuplementarAoTotal : ComposicaoVagasModalidade.RetiradaDeOutraModalidade,
-            composicaoOrigemCodigo,
-            RegraRemanejamentoModalidade.Nenhuma,
-            null, null, null, RegrasDeAplicabilidadeDeTeste.DaNatureza(NaturezaLegalModalidade.AcaoAfirmativa), acaoQuandoIndeferido, "base legal", quantidadeDeclarada).Value!;
+        ModalidadeSelecionada.Criar(ModalidadesNoCadastroDeTeste.Da(codigo, NaturezaLegalModalidade.AcaoAfirmativa, composicaoOrigemCodigo is null ? ComposicaoVagasModalidade.SuplementarAoTotal : ComposicaoVagasModalidade.RetiradaDeOutraModalidade) with { ComposicaoOrigemCodigo = composicaoOrigemCodigo, AcaoQuandoIndeferido = acaoQuandoIndeferido, BaseLegal = "base legal" }, quantidadeDeclarada).Value!;
 
     [Fact(DisplayName = "Par cruzado recíproco é aceito")]
     public void Criar_ParCruzadoReciproco_Sucesso()
@@ -219,14 +214,7 @@ public sealed class ConfiguracaoDistribuicaoVagasModalidadesTests
     }
 
     private static ModalidadeSelecionada ModalidadeCruzada(string codigo, string par) =>
-        ModalidadeSelecionada.Criar(
-            Guid.CreateVersion7(), codigo, null,
-            NaturezaLegalModalidade.AcaoAfirmativa, ComposicaoVagasModalidade.SuplementarAoTotal,
-            composicaoOrigemCodigo: null,
-            RegraRemanejamentoModalidade.Cruzado,
-            remanejamentoDestino: null, remanejamentoPar: par, remanejamentoFallback: null,
-            regraDeAplicabilidade: RegrasDeAplicabilidadeDeTeste.DaNatureza(NaturezaLegalModalidade.AcaoAfirmativa), acaoQuandoIndeferido: null, baseLegal: "base legal",
-            quantidadeDeclarada: 2).Value!;
+        ModalidadeSelecionada.Criar(ModalidadesNoCadastroDeTeste.Da(codigo, NaturezaLegalModalidade.AcaoAfirmativa, ComposicaoVagasModalidade.SuplementarAoTotal) with { RegraRemanejamento = RegraRemanejamentoModalidade.Cruzado, RemanejamentoPar = par, BaseLegal = "base legal" }, 2).Value!;
 
     [Theory(DisplayName = "Criar com vagas ofertadas base não positivo falha")]
     [InlineData(0)]

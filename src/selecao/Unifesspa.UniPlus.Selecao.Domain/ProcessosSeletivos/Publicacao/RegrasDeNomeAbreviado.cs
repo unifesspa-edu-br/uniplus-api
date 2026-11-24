@@ -8,7 +8,7 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// <summary>
 /// Algoritmos de abreviação de nome para a divulgação pública (ADR-0082), por
 /// <b>identificador congelado</b> — nunca a regra vigente resolvida por fora. Um edital
-/// publicado com <c>nome_abreviado</c> guarda o identificador da regra que abreviou o nome
+/// publicado com <c>NOME_ABREVIADO</c> guarda o identificador da regra que abreviou o nome
 /// naquele instante; mudar o algoritmo depois não pode reinterpretar um certame já publicado.
 /// </summary>
 /// <remarks>

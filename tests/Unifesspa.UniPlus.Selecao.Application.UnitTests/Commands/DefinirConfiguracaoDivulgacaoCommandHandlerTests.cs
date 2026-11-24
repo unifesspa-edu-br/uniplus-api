@@ -48,7 +48,7 @@ public sealed class DefinirConfiguracaoDivulgacaoCommandHandlerTests
     {
         ProcessoSeletivo processo = NovoProcesso();
         processo.DefinirConfiguracaoDivulgacao(
-            ConfiguracaoDivulgacao.Criar(["numero_inscricao", "nome_abreviado"], null).Value!).IsSuccess.Should().BeTrue();
+            ConfiguracaoDivulgacao.Criar(["NUMERO_INSCRICAO", "NOME_ABREVIADO"], null).Value!).IsSuccess.Should().BeTrue();
 
         Mocks mocks = NovosMocks(processo, processo.Id);
         DefinirConfiguracaoDivulgacaoCommand command = new(processo.Id, null, null);
@@ -67,14 +67,14 @@ public sealed class DefinirConfiguracaoDivulgacaoCommandHandlerTests
         ProcessoSeletivo processo = NovoProcesso();
         Mocks mocks = NovosMocks(processo, processo.Id);
         DefinirConfiguracaoDivulgacaoCommand command = new(
-            processo.Id, ["numero_inscricao", "nome"], "Ampliação para dar transparência ao resultado.");
+            processo.Id, ["NUMERO_INSCRICAO", "NOME"], "Ampliação para dar transparência ao resultado.");
 
         Result result = await DefinirConfiguracaoDivulgacaoCommandHandler.Handle(
             command, mocks.Repository, mocks.UnitOfWork, CancellationToken.None);
 
         result.IsSuccess.Should().BeTrue();
         processo.ConfiguracaoDivulgacao.Should().NotBeNull();
-        processo.ConfiguracaoDivulgacao!.CamposPublicos.Should().Equal("nome", "numero_inscricao");
+        processo.ConfiguracaoDivulgacao!.CamposPublicos.Should().Equal("NOME", "NUMERO_INSCRICAO");
         processo.ConfiguracaoDivulgacao.Justificativa.Should().Be("Ampliação para dar transparência ao resultado.");
         await mocks.UnitOfWork.Received(1).SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
     }
@@ -84,7 +84,7 @@ public sealed class DefinirConfiguracaoDivulgacaoCommandHandlerTests
     {
         ProcessoSeletivo processo = NovoProcesso();
         Mocks mocks = NovosMocks(processo, processo.Id);
-        DefinirConfiguracaoDivulgacaoCommand command = new(processo.Id, ["numero_inscricao", "cpf"], null);
+        DefinirConfiguracaoDivulgacaoCommand command = new(processo.Id, ["NUMERO_INSCRICAO", "cpf"], null);
 
         Result result = await DefinirConfiguracaoDivulgacaoCommandHandler.Handle(
             command, mocks.Repository, mocks.UnitOfWork, CancellationToken.None);
@@ -100,16 +100,16 @@ public sealed class DefinirConfiguracaoDivulgacaoCommandHandlerTests
     {
         ProcessoSeletivo processo = NovoProcesso();
         processo.DefinirConfiguracaoDivulgacao(
-            ConfiguracaoDivulgacao.Criar(["numero_inscricao", "nome_abreviado"], null).Value!).IsSuccess.Should().BeTrue();
+            ConfiguracaoDivulgacao.Criar(["NUMERO_INSCRICAO", "NOME_ABREVIADO"], null).Value!).IsSuccess.Should().BeTrue();
 
         Mocks mocks = NovosMocks(processo, processo.Id);
-        DefinirConfiguracaoDivulgacaoCommand command = new(processo.Id, ["numero_inscricao"], null);
+        DefinirConfiguracaoDivulgacaoCommand command = new(processo.Id, ["NUMERO_INSCRICAO"], null);
 
         Result result = await DefinirConfiguracaoDivulgacaoCommandHandler.Handle(
             command, mocks.Repository, mocks.UnitOfWork, CancellationToken.None);
 
         result.IsSuccess.Should().BeTrue();
-        processo.ConfiguracaoDivulgacao!.CamposPublicos.Should().Equal("numero_inscricao");
+        processo.ConfiguracaoDivulgacao!.CamposPublicos.Should().Equal("NUMERO_INSCRICAO");
     }
 
     [Fact(DisplayName = "Handle com processo já publicado propaga MutacaoPosPublicacaoBloqueada e NÃO persiste (CA-06)")]
@@ -118,7 +118,7 @@ public sealed class DefinirConfiguracaoDivulgacaoCommandHandlerTests
         ProcessoSeletivo processo = ApoioDaCascataDeRemanejamento.NovoProcessoPublicado();
         Mocks mocks = NovosMocks(processo, processo.Id);
         DefinirConfiguracaoDivulgacaoCommand command = new(
-            processo.Id, ["numero_inscricao", "nome_abreviado"], null);
+            processo.Id, ["NUMERO_INSCRICAO", "NOME_ABREVIADO"], null);
 
         Result result = await DefinirConfiguracaoDivulgacaoCommandHandler.Handle(
             command, mocks.Repository, mocks.UnitOfWork, CancellationToken.None);

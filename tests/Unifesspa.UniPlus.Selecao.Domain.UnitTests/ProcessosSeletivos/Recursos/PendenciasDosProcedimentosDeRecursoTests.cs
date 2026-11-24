@@ -23,7 +23,7 @@ using static Unifesspa.UniPlus.Selecao.Domain.UnitTests.ProcessosSeletivos.Recur
 /// <summary>A janela de recurso da etapa que declara um tipo de decisão só passa para o congelamento com procedimento para ele.</summary>
 public sealed class PendenciasDosProcedimentosDeRecursoTests
 {
-    private static readonly ReferenciaRegra RegraDoPrazo = ReferenciaRegra.De(RegraPrazoRecursoCodigo.AncoradoEmAto, "v1", new string('c', 64));
+    private static readonly ReferenciaRegra RegraDoPrazo = ReferenciaRegra.De(RegraDePrazoDoRecurso.ContadoDaPublicacaoDoAto.Codigo(), "v1", new string('c', 64));
 
     private static EtapaProcesso EtapaObjetiva() => EtapaProcesso.Criar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("etapa").Value!,
         new IdentificacaoDaEtapa(
@@ -39,13 +39,13 @@ public sealed class PendenciasDosProcedimentosDeRecursoTests
         EtapaProcesso etapa = EtapaObjetiva();
         etapa.DefinirProdutos(
         [
-            ProdutoDaEtapa.Criar("RESULTADO_PROVA", PapelProdutoFase.Preliminar),
-            ProdutoDaEtapa.Criar("RESULTADO_PROVA", PapelProdutoFase.Definitivo),
+            ProdutoDaEtapa.Criar("RESULTADO_PROVA", PapelDaPublicacaoPrevista.Preliminar),
+            ProdutoDaEtapa.Criar("RESULTADO_PROVA", PapelDaPublicacaoPrevista.Definitivo),
         ]).IsSuccess.Should().BeTrue();
         etapa.DefinirTiposDeDecisao(tiposDeDecisao).IsSuccess.Should().BeTrue();
-        Guid preliminar = etapa.Produtos.Single(p => p.Papel == PapelProdutoFase.Preliminar).Id;
+        Guid preliminar = etapa.Produtos.Single(p => p.Papel == PapelDaPublicacaoPrevista.Preliminar).Id;
         etapa.DefinirRecursos([RecursoDaEtapa.Criar(
-            AncoraDoRecurso.AtoPublicado, RegraDoPrazo, ParametrosDoRecursoDeTeste.Declarados(2m, UnidadePrazo.DiasUteis),
+            EventoInicialDoPrazo.PublicacaoDoAto, RegraDoPrazo, ParametrosDoRecursoDeTeste.Declarados(2m, UnidadePrazo.DiasUteis),
             preliminar, procedimentos).Value!]).IsSuccess.Should().BeTrue();
         return etapa;
     }

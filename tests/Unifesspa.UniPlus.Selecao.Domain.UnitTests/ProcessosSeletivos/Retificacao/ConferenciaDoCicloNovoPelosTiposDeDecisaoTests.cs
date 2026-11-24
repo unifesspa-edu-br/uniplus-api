@@ -108,11 +108,11 @@ public sealed class ConferenciaDoCicloNovoPelosTiposDeDecisaoTests
             [fase], publicadas, [fase], novas, new HashSet<IdentidadeDoItemDoEdital>(), Fatos(Iniciadas(), publicados));
 
     private static IdentidadeDoItemDoEdital ItemPreliminarDaEtapa(EtapaProcesso etapa) =>
-        IdentidadeDoItemDoEdital.DaEtapa(etapa, etapa.Produtos.Single(static p => p.Papel == PapelProdutoFase.Preliminar));
+        IdentidadeDoItemDoEdital.DaEtapa(etapa, etapa.Produtos.Single(static p => p.Papel == PapelDaPublicacaoPrevista.Preliminar));
 
     private static EtapaProcesso EtapaDaProva(Guid id, string ato, params string[] tipos)
     {
-        EtapaProcesso etapa = EtapaComPeso(id, "Prova objetiva", 1m, "PROVA", ProdutoDaEtapa.Criar(ato, PapelProdutoFase.Preliminar));
+        EtapaProcesso etapa = EtapaComPeso(id, "Prova objetiva", 1m, "PROVA", ProdutoDaEtapa.Criar(ato, PapelDaPublicacaoPrevista.Preliminar));
         etapa.DefinirTiposDeDecisao(tipos).IsSuccess.Should().BeTrue();
 
         return etapa;

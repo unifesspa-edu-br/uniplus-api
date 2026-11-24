@@ -8,6 +8,7 @@ using Microsoft.AspNetCore.Mvc;
 using NSubstitute;
 
 using Unifesspa.UniPlus.Application.Abstractions.Messaging;
+using Unifesspa.UniPlus.Application.Abstractions.Respostas;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.API.Http;
 using Unifesspa.UniPlus.Selecao.Application.DTOs;
@@ -58,7 +59,7 @@ public sealed class EnriquecimentoDaPublicacaoTests
     private static IQueryBus QueryBusComUmaRegraReprovada()
     {
         RegraAvaliadaDto reprovada = new(
-            Guid.CreateVersion7(), "REGRA-REPROVADA", CategoriaObrigatoriedade.Outros, "UNIVERSAL", new EtapaObrigatoria("ETAPA_NAO_OFERTADA"),
+            Guid.CreateVersion7(), "REGRA-REPROVADA", CodigoComRotulo<CategoriaObrigatoriedade>.De(CategoriaObrigatoriedade.Outros), "UNIVERSAL", new EtapaObrigatoria("ETAPA_NAO_OFERTADA"),
             Aprovada: false, Motivo: "A etapa não é ofertada.", BaseLegal: "Lei de teste", AtoNormativoUrl: null, PortariaInterna: null,
             DescricaoHumana: "Oferta da etapa", VigenciaInicio: new DateOnly(2020, 1, 1), VigenciaFim: null, Hash: "hash");
         IQueryBus queryBus = Substitute.For<IQueryBus>();

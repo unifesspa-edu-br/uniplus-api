@@ -55,11 +55,9 @@ public sealed class RetencaoDocumentoEditalTests : IClassFixture<ProcessoSeletiv
     {
         Guid documentoId = await SemearDocumentoAsync(confirmado: true);
 
-        await using NpgsqlConnection conexao = new(_fixture.ConnectionString);
-        await conexao.OpenAsync();
+        await using NpgsqlConnection conexao = await AbrirConexaoAsync();
 
-        Func<Task> apagar = async () => await ExecutarAsync(
-            conexao, $"DELETE FROM selecao.documentos_a_publicar WHERE id = '{documentoId}'");
+        Func<Task> apagar = () => ExecutarAsync(conexao, $"DELETE FROM selecao.documentos_a_publicar WHERE id = '{documentoId}'");
 
         // O DELETE não passa pelo agregado: é o banco que o recusa. Sem esta trava, a
         // eliminação da tabela `editais` teria levado junto a retenção que a sua chave
@@ -68,9 +66,7 @@ public sealed class RetencaoDocumentoEditalTests : IClassFixture<ProcessoSeletiv
         (await apagar.Should().ThrowAsync<PostgresException>())
             .Which.ConstraintName.Should().Be("ck_documentos_a_publicar_confirmado_retido");
 
-        await using UniPlusDbContext contexto = _fixture.CreateDbContext();
-        (await contexto.DocumentosAPublicar.FindAsync(documentoId)).Should().NotBeNull(
-            "o documento continua lá — a recusa não é cosmética");
+        await ConferirDocumentoExistenteAsync(documentoId);
     }
 
     [Fact(DisplayName = "Rebaixar o status de um documento confirmado é recusado — senão bastaria desconfirmar e então apagar")]
@@ -78,21 +74,17 @@ public sealed class RetencaoDocumentoEditalTests : IClassFixture<ProcessoSeletiv
     {
         Guid documentoId = await SemearDocumentoAsync(confirmado: true);
 
-        await using NpgsqlConnection conexao = new(_fixture.ConnectionString);
-        await conexao.OpenAsync();
+        await using NpgsqlConnection conexao = await AbrirConexaoAsync();
 
-        // Reter só o DELETE deixaria o desvio aberto: `UPDATE status = 0` seguido de DELETE
+        // Reter só o DELETE deixaria o desvio aberto: `UPDATE status = 'PENDENTE'` seguido de DELETE
         // levaria a evidência do mesmo jeito. Confirmado não tem caminho de volta — é o que o
         // ciclo de vida já declarava, e agora o banco o impõe.
-        Func<Task> desconfirmar = async () => await ExecutarAsync(
-            conexao, $"UPDATE selecao.documentos_a_publicar SET status = 0 WHERE id = '{documentoId}'");
+        Func<Task> desconfirmar = () => ExecutarAsync(conexao, $"UPDATE selecao.documentos_a_publicar SET status = 'PENDENTE' WHERE id = '{documentoId}'");
 
         (await desconfirmar.Should().ThrowAsync<PostgresException>())
             .Which.ConstraintName.Should().Be("ck_documentos_a_publicar_confirmado_retido");
 
-        await using UniPlusDbContext contexto = _fixture.CreateDbContext();
-        DocumentoAPublicar? documento = await contexto.DocumentosAPublicar.FindAsync(documentoId);
-        documento!.Status.Should().Be(Domain.Enums.StatusArquivoEnviado.Confirmado);
+        await ConferirDocumentoConfirmadoAsync(documentoId);
     }
 
     [Fact(DisplayName = "TRUNCATE da tabela de documentos é recusado — não dispara trigger de linha, e levaria os confirmados junto")]
@@ -100,8 +92,7 @@ public sealed class RetencaoDocumentoEditalTests : IClassFixture<ProcessoSeletiv
     {
         await SemearDocumentoAsync(confirmado: true);
 
-        await using NpgsqlConnection conexao = new(_fixture.ConnectionString);
-        await conexao.OpenAsync();
+        await using NpgsqlConnection conexao = await AbrirConexaoAsync();
 
         // TRUNCATE não dispara trigger de linha: sem uma trava de statement, um único comando
         // apagaria a tabela inteira, confirmados inclusive.
@@ -117,8 +108,7 @@ public sealed class RetencaoDocumentoEditalTests : IClassFixture<ProcessoSeletiv
     {
         Guid documentoId = await SemearDocumentoAsync(confirmado: false);
 
-        await using NpgsqlConnection conexao = new(_fixture.ConnectionString);
-        await conexao.OpenAsync();
+        await using NpgsqlConnection conexao = await AbrirConexaoAsync();
 
         // A retenção é do CONFIRMADO, não de toda linha da tabela: a limpeza dos pendentes
         // expirados tem de continuar possível.
@@ -133,26 +123,19 @@ public sealed class RetencaoDocumentoEditalTests : IClassFixture<ProcessoSeletiv
     {
         Guid documentoId = await SemearDocumentoAsync(confirmado: false);
 
-        await using NpgsqlConnection conexao = new(_fixture.ConnectionString);
-        await conexao.OpenAsync();
+        await using NpgsqlConnection conexao = await AbrirConexaoAsync();
 
         // O trigger de UPDATE dispara só quando o status SAI de Confirmado. A transição
         // normal do ciclo de vida (Pendente → Confirmado) não pode ser afetada — se fosse, o
         // próprio upload deixaria de funcionar.
-        await ExecutarAsync(conexao, $"UPDATE selecao.documentos_a_publicar SET status = 1 WHERE id = '{documentoId}'");
+        await ExecutarAsync(conexao, $"UPDATE selecao.documentos_a_publicar SET status = 'CONFIRMADO' WHERE id = '{documentoId}'");
 
-        await using UniPlusDbContext contexto = _fixture.CreateDbContext();
-        DocumentoAPublicar? documento = await contexto.DocumentosAPublicar.FindAsync(documentoId);
-        documento!.Status.Should().Be(Domain.Enums.StatusArquivoEnviado.Confirmado);
+        await ConferirDocumentoConfirmadoAsync(documentoId);
     }
 
     private async Task<Guid> SemearDocumentoAsync(bool confirmado)
     {
-        ProcessoSeletivo processo = ProcessoSeletivo.Criar(
-            $"Retenção {Guid.CreateVersion7()}", TiposDeProcessoDeTeste.SiSU, Domain.Enums.OrigemCandidatos.InscricaoPropria,
-            Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot
-                .Criar("CEPS", "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
-
+        ProcessoSeletivo processo = CriarProcesso();
         DocumentoAPublicar documento = DocumentoAPublicar.IniciarPendente(
             processo.Id, FinalidadeDoDocumento.DocumentoDoEdital, "edital.pdf", TiposDeMidiaDeDocumento.Pdf, TimeProvider.System, TimeSpan.FromMinutes(15)).Value!;
         if (confirmado)
@@ -166,6 +149,31 @@ public sealed class RetencaoDocumentoEditalTests : IClassFixture<ProcessoSeletiv
         await contexto.SaveChangesAsync(CancellationToken.None);
 
         return documento.Id;
+    }
+
+    private static ProcessoSeletivo CriarProcesso() => ProcessoSeletivo.Criar(
+        $"Retenção {Guid.CreateVersion7()}", TiposDeProcessoDeTeste.SiSU, Domain.Enums.OrigemCandidatos.InscricaoPropria,
+        Guid.NewGuid(), UnidadeAdministradoraSnapshot.Criar("CEPS", "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!,
+        LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
+
+    private async Task ConferirDocumentoExistenteAsync(Guid documentoId)
+    {
+        await using UniPlusDbContext contexto = _fixture.CreateDbContext();
+        (await contexto.DocumentosAPublicar.FindAsync(documentoId)).Should().NotBeNull();
+    }
+
+    private async Task ConferirDocumentoConfirmadoAsync(Guid documentoId)
+    {
+        await using UniPlusDbContext contexto = _fixture.CreateDbContext();
+        DocumentoAPublicar? documento = await contexto.DocumentosAPublicar.FindAsync(documentoId);
+        documento!.Status.Should().Be(StatusArquivoEnviado.Confirmado);
+    }
+
+    private async Task<NpgsqlConnection> AbrirConexaoAsync()
+    {
+        NpgsqlConnection conexao = new(_fixture.ConnectionString);
+        await conexao.OpenAsync();
+        return conexao;
     }
 
     private static async Task ExecutarAsync(NpgsqlConnection conexao, string sql)

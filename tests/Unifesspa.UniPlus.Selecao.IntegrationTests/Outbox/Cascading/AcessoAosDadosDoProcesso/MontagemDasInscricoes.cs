@@ -144,7 +144,7 @@ internal sealed class MontagemDasInscricoes(CascadingFixture fixture)
     {
         Dictionary<string, DefinicaoDaResposta> definicoes = DefinicoesDoCpf();
         definicoes[ConjuntoBasicoDaInscricao.Nome] = new(TipoDoValorDeResposta.Texto, Multivalorado: false, Identificador: false);
-        definicoes[ConjuntoBasicoDaInscricao.DesejaNomeSocial] = new(TipoDoValorDeResposta.Booleano, Multivalorado: false, Identificador: false);
+        definicoes[ConjuntoBasicoDaInscricao.DesejaNomeSocial] = new(TipoDoValorDeResposta.SimOuNao, Multivalorado: false, Identificador: false);
         definicoes[ConjuntoBasicoDaInscricao.NomeSocial] = new(TipoDoValorDeResposta.Texto, Multivalorado: false, Identificador: false);
         return definicoes;
     }

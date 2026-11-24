@@ -5,7 +5,9 @@ using System.Diagnostics.CodeAnalysis;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
+
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Protecao;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
@@ -34,7 +36,7 @@ internal sealed class LancamentoDeNotaConfiguration : IEntityTypeConfiguration<L
         {
             t.HasComment("Uma nota de uma inscrição em uma área do ENEM, com sua situação. Os registros não são alterados ou excluídos; a correção exige importar outro lote.");
             t.HasCheckConstraint("ck_lancamentos_de_nota_nota", "nota BETWEEN 0 AND 1000");
-            t.HasCheckConstraint("ck_lancamentos_de_nota_situacao", $"situacao IN ({(int)SituacaoDaProvaNoEnem.Presente}, {(int)SituacaoDaProvaNoEnem.Ausente})");
+            t.HasCheckConstraint("ck_lancamentos_de_nota_situacao", $"situacao IN ('{SituacaoDaProvaNoEnem.Presente.Codigo()}', '{SituacaoDaProvaNoEnem.Ausente.Codigo()}')");
         });
 
         builder.HasKey(l => l.Id);
@@ -57,9 +59,9 @@ internal sealed class LancamentoDeNotaConfiguration : IEntityTypeConfiguration<L
             .HasComment("Nota da área do ENEM, de zero a mil, com até três casas decimais.");
 
         builder.Property(l => l.Situacao)
-            .HasConversion<short>()
+            .HasMaxLength(8)
             .IsRequired()
-            .HasComment("1 = presente, 2 = ausente. Quem faltou tem nota zero, que não vale como nota obtida.");
+            .HasComment($"Códigos: {Codigos<SituacaoDaProvaNoEnem>()}.");
 
         builder.HasOne<InscritoDoLoteDeNotas>()
             .WithMany()
@@ -75,4 +77,7 @@ internal sealed class LancamentoDeNotaConfiguration : IEntityTypeConfiguration<L
         builder.HasIndex(l => new { l.InscricaoId, l.EtapaProcessoId })
             .HasDatabaseName("ix_lancamentos_de_nota_inscricao_etapa");
     }
+
+    private static string Codigos<TEnum>() where TEnum : struct, Enum =>
+        string.Join(", ", CatalogoDe<TEnum>.Todos().Select(c => c.Codigo));
 }

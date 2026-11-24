@@ -3,6 +3,7 @@ namespace Unifesspa.UniPlus.Selecao.Application.UnitTests.Commands;
 using AwesomeAssertions;
 
 using Unifesspa.UniPlus.Configuracao.Contracts;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
@@ -24,7 +25,7 @@ public sealed class EtapaConferidaTests
             FormaDeAvaliacao: FormaDeAvaliacao.Objetiva, RegraConsolidacao: null, EscalaDeAtendimento: null)).Value!;
 
     private static EtapaProcessoInput Declarada(EtapaProcesso existente, CaraterEtapa carater) => new(
-        existente.Nome, carater, TipoOrigemId, 1m, null, 1, Id: existente.Id, Produtos: [], Bancas: [], Recursos: []);
+        existente.Nome, carater.Codigo(), TipoOrigemId, 1m, null, 1, Id: existente.Id, Produtos: [], Bancas: [], Recursos: []);
 
     private static TipoEtapaView TipoLido(bool exigeCorrecaoIndependente) =>
         TipoEtapaViewDeTeste.Com(TipoOrigemId, "PROVA").Chamado("Prova").ComCorrecaoIndependente(exigeCorrecaoIndependente).Construir();

@@ -2,6 +2,7 @@ namespace Unifesspa.UniPlus.Selecao.Application.UnitTests.TestSupport;
 
 using System.Text.Json;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
@@ -29,7 +30,7 @@ internal static class OfertasDeTeste
 
     public static ConfiguracaoDistribuicaoVagas DistribuicaoDoCurso(Guid ofertaCursoId, string cursoNome, params string[] codigos) =>
         ConfiguracaoDistribuicaoVagas.Criar(ofertaCursoId,
-            new DistribuicaoDeVagasDeclarada { VagasOfertadasBase = 10 * codigos.Length, PercentualDaReservaLegal = 1m, RegraDeDistribuicao = ReferenciaRegra.De(RegraDistribuicaoVagasCodigo.Institucional, "v1", new string('a', 64)), Modalidades = [.. codigos.Select(Modalidade)] },
+            new DistribuicaoDeVagasDeclarada { VagasOfertadasBase = 10 * codigos.Length, PercentualDaReservaLegal = 1m, RegraDeDistribuicao = ReferenciaRegra.De(RegraDeDistribuicaoDeVagas.Institucional.Codigo(), "v1", new string('a', 64)), Modalidades = [.. codigos.Select(Modalidade)] },
             new FatosDaOfertaNoCadastro { OfertaCurso = OfertaCursoSnapshot.Criar($"OFERTA_{ofertaCursoId.ToString("N")[..12].ToUpperInvariant()}", cursoNome, "Bacharelado", "Campus Universitário de Marabá", ["MATUTINO"]).Value! }).Value!;
 
     /// <summary>A mesma configuração, com a distribuição de vagas dada no lugar da que ela tinha.</summary>
@@ -46,14 +47,13 @@ internal static class OfertasDeTeste
             configuracao.Vagas.AplicaBonusRegional, configuracao.Vagas.BonusRegional, configuracao.Vagas.Cascata, configuracao.Vagas.AtendimentoEspecializado));
 
     private static ModalidadeSelecionada Modalidade(string codigo) =>
-        ModalidadeSelecionada.Criar(
-            Guid.CreateVersion7(), codigo, null,
-            codigo == ModalidadeDaAmpla ? NaturezaLegalModalidade.Ampla : NaturezaLegalModalidade.AcaoAfirmativa,
-            ComposicaoVagasModalidade.SuplementarAoTotal, null, RegraRemanejamentoModalidade.Nenhuma,
-            null, null, null,
-            codigo == ModalidadeDaAmpla
+        ModalidadeSelecionada.Criar(ModalidadesNoCadastroDeTeste.Da(codigo, codigo == ModalidadeDaAmpla ? NaturezaLegalModalidade.Ampla : NaturezaLegalModalidade.AcaoAfirmativa, ComposicaoVagasModalidade.SuplementarAoTotal) with
+        {
+            RegraRemanejamento = null,
+            RegraDeAplicabilidade = codigo == ModalidadeDaAmpla
                 ? PredicadoDnf.SemClausula
                 : PredicadoDnf.CriarDeCondicoesAgrupadas([(0, CondicaoDnf.Criar(
                     FatoDaAcaoAfirmativa, Operador.Igual, JsonSerializer.SerializeToElement(ValorDaAcaoAfirmativa)).Value!)]).Value!,
-            null, "base legal", quantidadeDeclarada: 10).Value!;
+            BaseLegal = "base legal"
+        }, 10).Value!;
 }

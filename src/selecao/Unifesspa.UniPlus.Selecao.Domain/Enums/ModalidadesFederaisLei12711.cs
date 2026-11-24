@@ -6,7 +6,7 @@ using Unifesspa.UniPlus.Regras.Services;
 /// Os 8 códigos de modalidade federal da Lei 12.711/2012 (red. Lei 14.723/2023,
 /// art. 3º) + a ampla concorrência — fato legal fixo, não configurável.
 /// Consumido pela invariante de cobertura da distribuição de vagas: quando ela aplica
-/// <see cref="RegraDistribuicaoVagasCodigo.Lei12711"/>, as 8 modalidades
+/// <see cref="RegraDeDistribuicaoDeVagas.Lei12711"/>, as 8 modalidades
 /// federais e a AC são obrigatoriamente selecionadas.
 /// </summary>
 public static class ModalidadesFederaisLei12711

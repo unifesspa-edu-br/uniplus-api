@@ -15,7 +15,7 @@ public sealed class CodigosCitadosNoDocumentoTests
     private static readonly IdentificacaoNoDocumento Identificacao =
         new("Processo de Teste", "SiSU", "CEPS", OrigemCandidatos.ImportacaoExterna, "1504208", null, new("CONTAGEM", "v1"));
 
-    private static readonly ParametrosDeclaradosDoRecurso Prazo = new(new PrazoDeclarado(1m, "horas"), false, PrazoDeclarado.Ausente, "semEfeitoSuspensivo", null);
+    private static readonly ParametrosDeclaradosDoRecurso Prazo = new(new PrazoDeclarado(1m, "HORAS"), false, PrazoDeclarado.Ausente, "SEM_EFEITO_SUSPENSIVO", null);
 
     private static FaseNoDocumento Fase(int posicao, string faseCanonica, string? unidade = null) =>
         new(posicao, $"fase_{posicao}", new(faseCanonica, unidade), new(null, null), new([], false, null, null), [], null);
@@ -54,7 +54,7 @@ public sealed class CodigosCitadosNoDocumentoTests
     [Fact(DisplayName = "A identificação vazia e o documento sem fase não citam código algum")]
     public void IdentificacaoVaziaESemFases_NaoCitamCodigo()
     {
-        CodigosCitadosPorCadastro codigos = Codigos(new(null, null, null, OrigemCandidatos.Nenhuma, null, null, null));
+        CodigosCitadosPorCadastro codigos = Codigos(new(null, null, null, null, null, null, null));
 
         new[] { codigos.Unidades, codigos.FasesCanonicas, codigos.TiposDeBanca, codigos.CategoriasDeDocumento, codigos.TiposDeAto }
             .Should().AllSatisfy(static lista => lista.Should().BeEmpty());

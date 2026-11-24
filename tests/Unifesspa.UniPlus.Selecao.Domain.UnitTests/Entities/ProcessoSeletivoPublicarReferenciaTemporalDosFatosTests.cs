@@ -201,7 +201,7 @@ public sealed class ProcessoSeletivoPublicarReferenciaTemporalDosFatosTests
         FaseCronograma semExtremo = FaseCronograma.Criar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("fase").Value!,
             OrigensCanonicasDeTeste.ComNome(new OrigemCanonicaDaFase(OrigemId: Guid.CreateVersion7(), Codigo: "HOMOLOGACAO_INSCRICOES", OrigemData: OrigemDataFase.NaExecucao, AgrupaEtapas: false, PermiteComplementacao: false, ColetaInscricao: false, ColetaSolicitacaoIsencao: false)),
             new DecisoesDeCronogramaDaFase(Ordem: 2, Inicio: null, Fim: null, UnidadeResponsavel: UnidadesDeTeste.Ceps),
-            new PublicacoesDaFase(Produtos: [ProdutoDaFase.Criar("RESULTADO_HOMOLOGACAO", PapelProdutoFase.Definitivo)], EmiteParecerIndividual: false, RegraRecurso: null),
+            new PublicacoesDaFase(Produtos: [ProdutoDaFase.Criar("RESULTADO_HOMOLOGACAO", PapelDaPublicacaoPrevista.Definitivo)], EmiteParecerIndividual: false, RegraRecurso: null),
             bancasRequeridas: []).Value!;
         FormularioDeTeste.TrocarCronograma(processo, [FaseConforme(), semExtremo]).IsSuccess.Should().BeTrue();
         return semExtremo.Id;

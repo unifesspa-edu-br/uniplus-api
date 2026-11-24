@@ -8,6 +8,7 @@ using AwesomeAssertions;
 using NSubstitute;
 
 using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
@@ -28,22 +29,22 @@ internal static class ApoioDaCascataDeRemanejamento
     }
 
     internal static RegraCatalogo RegraCascataValida() => RegraCatalogo.Criar(
-        RegraRemanejamentoCodigo.Cascata, "v1", TipoRegra.CriterioRemanejamento,
+        CriterioDeRemanejamento.OrdemDaLei12711.Codigo(), "v1", TipoRegra.CriterioRemanejamento,
         Json("""{"destinoFinalCodigo":"AC","ordens":[{"origem":"LB_PPI","destinos":["LB_Q","LB_PCD"]}]}"""),
         Json("[]"), "ADR-0120");
 
     internal static RegraCatalogo RegraComDuasOrigens() => RegraCatalogo.Criar(
-        RegraRemanejamentoCodigo.Cascata, "v1", TipoRegra.CriterioRemanejamento,
+        CriterioDeRemanejamento.OrdemDaLei12711.Codigo(), "v1", TipoRegra.CriterioRemanejamento,
         Json("""{"destinoFinalCodigo":"AC","ordens":[{"origem":"LB_PPI","destinos":["LB_Q"]},{"origem":"LB_Q","destinos":["LB_PPI"]}]}"""),
         Json("[]"), "ADR-0120");
 
     internal static RegraCatalogo RegraComOrigemRepetida() => RegraCatalogo.Criar(
-        RegraRemanejamentoCodigo.Cascata, "v1", TipoRegra.CriterioRemanejamento,
+        CriterioDeRemanejamento.OrdemDaLei12711.Codigo(), "v1", TipoRegra.CriterioRemanejamento,
         Json("""{"destinoFinalCodigo":"AC","ordens":[{"origem":"LB_PPI","destinos":["LB_Q"]},{"origem":"LB_PPI","destinos":["LB_Q"]}]}"""),
         Json("[]"), "ADR-0120");
 
     internal static void ConfigurarRegra(Mocks mocks, RegraCatalogo regra) =>
-        mocks.RegraCatalogoReader.ObterAsync(RegraRemanejamentoCodigo.Cascata, "v1", Arg.Any<CancellationToken>()).Returns(regra);
+        mocks.RegraCatalogoReader.ObterAsync(CriterioDeRemanejamento.OrdemDaLei12711.Codigo(), "v1", Arg.Any<CancellationToken>()).Returns(regra);
 
     internal sealed record Mocks(
         IProcessoSeletivoRepository Repository, IRegraCatalogoReader RegraCatalogoReader, IUnitOfWork UnitOfWork);
@@ -74,24 +75,24 @@ internal static class ApoioDaCascataDeRemanejamento
     {
         ProcessoSeletivo processo = NovoProcesso();
         ConfiguracaoCascataRemanejamento cascata = ConfiguracaoCascataRemanejamento.Criar(
-            ReferenciaRegra.De(RegraRemanejamentoCodigo.Cascata, "v1", HashFixo),
+            ReferenciaRegra.De(CriterioDeRemanejamento.OrdemDaLei12711.Codigo(), "v1", HashFixo),
             "AC", [DestinoRemanejamento.Criar("LB_PPI", 1, "LB_Q").Value!]).Value!;
         processo.DefinirCascataRemanejamento(cascata).IsSuccess.Should().BeTrue();
         return processo;
     }
 
     internal static DefinirCascataRemanejamentoCommand Comando(Guid processoId, int ordem = 1) => new(
-        processoId, RegraRemanejamentoCodigo.Cascata, "v1", "AC", [new DestinoRemanejamentoInput("LB_PPI", ordem, "LB_Q")]);
+        processoId, CriterioDeRemanejamento.OrdemDaLei12711.Codigo(), "v1", "AC", [new DestinoRemanejamentoInput("LB_PPI", ordem, "LB_Q")]);
 
     public static TheoryData<string?, string?, string?, IReadOnlyList<DestinoRemanejamentoInput>?> CombinacoesParciais() =>
         new()
         {
-            { RegraRemanejamentoCodigo.Cascata, null, null, null },
+            { CriterioDeRemanejamento.OrdemDaLei12711.Codigo(), null, null, null },
             { null, "v1", null, null },
             { null, null, "AC", null },
             { null, null, null, [new DestinoRemanejamentoInput("LB_PPI", 1, "LB_Q")] },
-            { RegraRemanejamentoCodigo.Cascata, "v1", null, null },
-            { RegraRemanejamentoCodigo.Cascata, "v1", "AC", null },
+            { CriterioDeRemanejamento.OrdemDaLei12711.Codigo(), "v1", null, null },
+            { CriterioDeRemanejamento.OrdemDaLei12711.Codigo(), "v1", "AC", null },
         };
 
     internal static FaseCronograma FaseDeResultadoFinal() => FaseCronograma.Criar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("fase").Value!,
@@ -123,10 +124,8 @@ internal static class ApoioDaCascataDeRemanejamento
 
     private static void DefinirAsVagasDeAmpla(ProcessoSeletivo processo)
     {
-        ReferenciaRegra regraDistribuicao = ReferenciaRegra.De(RegraDistribuicaoVagasCodigo.Institucional, "v1", HashFixo);
-        ModalidadeSelecionada modalidade = ModalidadeSelecionada.Criar(
-            Guid.CreateVersion7(), "AC", null, NaturezaLegalModalidade.Ampla, ComposicaoVagasModalidade.RestanteDasVagasOfertadas,
-            null, RegraRemanejamentoModalidade.Nenhuma, null, null, null, RegrasDeAplicabilidadeDeTeste.DaNatureza(NaturezaLegalModalidade.Ampla), null, "Res. Unifesspa 532/2021", quantidadeDeclarada: 40).Value!;
+        ReferenciaRegra regraDistribuicao = ReferenciaRegra.De(RegraDeDistribuicaoDeVagas.Institucional.Codigo(), "v1", HashFixo);
+        ModalidadeSelecionada modalidade = ModalidadeSelecionada.Criar(ModalidadesNoCadastroDeTeste.Da("AC", NaturezaLegalModalidade.Ampla, ComposicaoVagasModalidade.RestanteDasVagasOfertadas) with { RegraRemanejamento = null, BaseLegal = "Res. Unifesspa 532/2021" }, 40).Value!;
         ConfiguracaoDistribuicaoVagas distribuicao = ConfiguracaoDistribuicaoVagas.Criar(Guid.CreateVersion7(),
             new DistribuicaoDeVagasDeclarada { VagasOfertadasBase = 40, PercentualDaReservaLegal = 1m, RegraDeDistribuicao = regraDistribuicao, Modalidades = [modalidade] },
             new FatosDaOfertaNoCadastro { OfertaCurso = OfertaCursoDeTeste.Medicina }).Value!;
@@ -137,8 +136,8 @@ internal static class ApoioDaCascataDeRemanejamento
     {
         ConfiguracaoClassificacao classificacao = ConfiguracaoClassificacao.Criar(new DeclaracaoDaClassificacao
         {
-            RegraCalculo = ReferenciaRegra.De(RegraCalculoCodigo.ClassificacaoImportada, "v1", HashFixo),
-            RegraOrdemAlocacao = ReferenciaRegra.De(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, "v1", HashFixo),
+            RegraCalculo = ReferenciaRegra.De(RegraDeCalculoDaNota.ClassificacaoImportada.Codigo(), "v1", HashFixo),
+            RegraOrdemAlocacao = ReferenciaRegra.De(RegraDeOrdemDeAlocacao.PrimeiraOpcaoPrioritaria.Codigo(), "v1", HashFixo),
         }).Value!;
         processo.DefinirClassificacao(classificacao).IsSuccess.Should().BeTrue();
     }

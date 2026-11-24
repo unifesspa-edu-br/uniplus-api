@@ -124,9 +124,7 @@ public sealed class ConfiguracaoDistribuicaoVagasTests
     [Fact(DisplayName = "Criar com RETIRADA_DE_OUTRA_MODALIDADE apontando para código fora do conjunto selecionado falha")]
     public void Criar_ComposicaoOrigemForaDoConjunto_Falha()
     {
-        ModalidadeSelecionada retiradaDeOutraModalidadeSemOrigemSelecionada = ModalidadeSelecionada.Criar(
-            Guid.CreateVersion7(), "V", null, NaturezaLegalModalidade.AcaoAfirmativa, ComposicaoVagasModalidade.RetiradaDeOutraModalidade,
-            composicaoOrigemCodigo: "AC", RegraRemanejamentoModalidade.Nenhuma, null, null, null, RegrasDeAplicabilidadeDeTeste.DaNatureza(NaturezaLegalModalidade.AcaoAfirmativa), null, "base legal").Value!;
+        ModalidadeSelecionada retiradaDeOutraModalidadeSemOrigemSelecionada = ModalidadeSelecionada.Criar(ModalidadesNoCadastroDeTeste.Da("V", NaturezaLegalModalidade.AcaoAfirmativa, ComposicaoVagasModalidade.RetiradaDeOutraModalidade) with { ComposicaoOrigemCodigo = "AC", BaseLegal = "base legal" }).Value!;
 
         // "AC" não está selecionado nesta oferta — a origem do RETIRADA_DE_OUTRA_MODALIDADE
         // aponta para uma modalidade ausente do conjunto.
@@ -141,10 +139,7 @@ public sealed class ConfiguracaoDistribuicaoVagasTests
     [Fact(DisplayName = "Criar com remanejamento CRUZADO apontando para par fora do conjunto falha")]
     public void Criar_RemanejamentoParForaDoConjunto_Falha()
     {
-        ModalidadeSelecionada indSemParSelecionado = ModalidadeSelecionada.Criar(
-            Guid.CreateVersion7(), "IND", null, NaturezaLegalModalidade.AcaoAfirmativa, ComposicaoVagasModalidade.SuplementarAoTotal,
-            null, RegraRemanejamentoModalidade.Cruzado, null, remanejamentoPar: "QUIL", remanejamentoFallback: "AC",
-            regraDeAplicabilidade: RegrasDeAplicabilidadeDeTeste.DaNatureza(NaturezaLegalModalidade.AcaoAfirmativa), acaoQuandoIndeferido: null, baseLegal: "base legal").Value!;
+        ModalidadeSelecionada indSemParSelecionado = ModalidadeSelecionada.Criar(ModalidadesNoCadastroDeTeste.Da("IND", NaturezaLegalModalidade.AcaoAfirmativa, ComposicaoVagasModalidade.SuplementarAoTotal) with { RegraRemanejamento = RegraRemanejamentoModalidade.Cruzado, RemanejamentoPar = "QUIL", RemanejamentoFallback = "AC", BaseLegal = "base legal" }).Value!;
 
         ModalidadeSelecionada ac = Modalidade(ModalidadesFederaisLei12711.Ac, NaturezaLegalModalidade.Ampla, ComposicaoVagasModalidade.RestanteDasVagasOfertadas);
 
@@ -184,10 +179,7 @@ public sealed class ConfiguracaoDistribuicaoVagasTests
     [Fact(DisplayName = "Criar Lei 12.711 com retirada de origem diferente de AC falha")]
     public void Criar_Lei12711RetiradaForaDeAc_Falha()
     {
-        ModalidadeSelecionada retiradaDeSubReserva = ModalidadeSelecionada.Criar(
-            Guid.CreateVersion7(), "V", null, NaturezaLegalModalidade.AcaoAfirmativa, ComposicaoVagasModalidade.RetiradaDeOutraModalidade,
-            composicaoOrigemCodigo: ModalidadesFederaisLei12711.LbPpi, RegraRemanejamentoModalidade.Nenhuma,
-            null, null, null, RegrasDeAplicabilidadeDeTeste.DaNatureza(NaturezaLegalModalidade.AcaoAfirmativa), null, "base legal", quantidadeDeclarada: 1).Value!;
+        ModalidadeSelecionada retiradaDeSubReserva = ModalidadeSelecionada.Criar(ModalidadesNoCadastroDeTeste.Da("V", NaturezaLegalModalidade.AcaoAfirmativa, ComposicaoVagasModalidade.RetiradaDeOutraModalidade) with { ComposicaoOrigemCodigo = ModalidadesFederaisLei12711.LbPpi, BaseLegal = "base legal" }, 1).Value!;
 
         List<ModalidadeSelecionada> modalidades = [.. AsOitoFederaisMaisAc(), retiradaDeSubReserva];
 

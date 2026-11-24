@@ -25,17 +25,17 @@ public sealed class CodigosDeModalidadeIguaisEntreModulosTests
 
     [Fact(DisplayName = "A composição de vagas tem os mesmos códigos na Configuração e na Seleção")]
     public void Composicao_MesmosCodigos() =>
-        CodigosDaSelecao<ComposicaoVagasModalidade>(static valor => valor.ToCodigo())
+        CodigosDaSelecao<ComposicaoVagasModalidade>(static valor => valor.Codigo())
             .Should().BeEquivalentTo(CodigosDoCatalogo<ComposicaoVagas>());
 
     [Fact(DisplayName = "A natureza legal tem os mesmos códigos na Configuração e na Seleção")]
     public void Natureza_MesmosCodigos() =>
-        CodigosDaSelecao<NaturezaLegalModalidade>(static valor => valor.ToCodigo())
+        CodigosDaSelecao<NaturezaLegalModalidade>(static valor => valor.Codigo())
             .Should().BeEquivalentTo(CodigosDoCatalogo<NaturezaLegal>());
 
     [Fact(DisplayName = "A regra de remanejamento tem os mesmos códigos na Configuração e na Seleção")]
     public void Remanejamento_MesmosCodigos() =>
-        CodigosDaSelecao<RegraRemanejamentoModalidade>(static valor => valor.ToCodigo())
+        CodigosDaSelecao<RegraRemanejamentoModalidade>(static valor => valor.Codigo())
             .Should().BeEquivalentTo(CodigosDoCatalogo<RegraRemanejamento>());
 
     [Fact(DisplayName = "Os códigos de composição são os da lista fechada, sem abreviação")]

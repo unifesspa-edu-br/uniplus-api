@@ -4,6 +4,7 @@ using System.Collections.Frozen;
 
 using Enums;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Domain.Entities;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Recursos;
@@ -32,7 +33,7 @@ public sealed class RecursoDaEtapa : EntityBase
     public Guid EtapaProcessoId { get; private set; }
 
     /// <summary>De que instante o prazo de interposição corre.</summary>
-    public AncoraDoRecurso Ancora { get; private set; }
+    public EventoInicialDoPrazo Ancora { get; private set; }
 
     /// <summary>Referência simbólica à regra de prazo no catálogo institucional.</summary>
     public ReferenciaRegra Regra { get; private set; } = null!;
@@ -57,7 +58,7 @@ public sealed class RecursoDaEtapa : EntityBase
     /// relativo ao recurso.
     /// </summary>
     public static Result<RecursoDaEtapa> Criar(
-        AncoraDoRecurso ancora,
+        EventoInicialDoPrazo? ancora,
         ReferenciaRegra regra,
         ParametrosDeclaradosDoRecurso declarados,
         Guid produtoAncoraId,
@@ -68,12 +69,12 @@ public sealed class RecursoDaEtapa : EntityBase
 
         (ParametrosRegraPrazoRecurso? conferidos, IReadOnlyList<RecusaDosParametrosDoRecurso> recusas) = declarados.Conferir();
         List<FieldError> erros = Validar(ancora, regra, recusas);
-        return conferidos is null || erros.Count > 0
+        return conferidos is null || ancora is not { } eventoInicial || erros.Count > 0
             ? Result<RecursoDaEtapa>.ValidationFailure(erros)
-            : Result<RecursoDaEtapa>.Success(Novo(ancora, regra, conferidos, produtoAncoraId, procedimentos));
+            : Result<RecursoDaEtapa>.Success(Novo(eventoInicial, regra, conferidos, produtoAncoraId, procedimentos));
     }
 
-    private static RecursoDaEtapa Novo(AncoraDoRecurso ancora, ReferenciaRegra regra,
+    private static RecursoDaEtapa Novo(EventoInicialDoPrazo ancora, ReferenciaRegra regra,
         ParametrosRegraPrazoRecurso parametros, Guid produtoAncoraId, ProcedimentosDeRecurso? procedimentos) => new()
         {
             Ancora = ancora,
@@ -84,7 +85,7 @@ public sealed class RecursoDaEtapa : EntityBase
         };
 
     private static List<FieldError> Validar(
-        AncoraDoRecurso ancora, ReferenciaRegra regra, IReadOnlyList<RecusaDosParametrosDoRecurso> recusas)
+        EventoInicialDoPrazo? ancora, ReferenciaRegra regra, IReadOnlyList<RecusaDosParametrosDoRecurso> recusas)
     {
         List<FieldError> erros = [];
         AdicionarRecusa(erros, "ancora", ValidarAncora(ancora));
@@ -101,13 +102,13 @@ public sealed class RecursoDaEtapa : EntityBase
         }
     }
 
-    private static DomainError? ValidarAncora(AncoraDoRecurso ancora) =>
-        Enum.IsDefined(ancora) && ancora != AncoraDoRecurso.Nenhuma ? null : new DomainError(
+    private static DomainError? ValidarAncora(EventoInicialDoPrazo? ancora) =>
+        ancora is { } eventoInicial && Enum.IsDefined(eventoInicial) ? null : new DomainError(
             "RecursoDaEtapa.AncoraObrigatoria",
             "Declare de que instante o prazo corre: da publicação do ato ou da ciência do candidato.");
 
     private static DomainError? ValidarRegra(ReferenciaRegra regra) =>
-        regra.Codigo == RegraPrazoRecursoCodigo.AncoradoEmAto ? null : new DomainError(
+        regra.Codigo == RegraDePrazoDoRecurso.ContadoDaPublicacaoDoAto.Codigo() ? null : new DomainError(
             "RecursoDaEtapa.RegraCatalogoInvalida",
             "A regra indicada não permite contar o prazo de recurso a partir de uma publicação.");
 
@@ -152,7 +153,7 @@ public sealed class RecursoDaEtapa : EntityBase
     /// </remarks>
     public static Result<RecursoDaEtapa> Reidratar(
         Guid id,
-        AncoraDoRecurso ancora,
+        EventoInicialDoPrazo ancora,
         ReferenciaRegra regra,
         ParametrosDeclaradosDoRecurso declarados,
         Guid produtoAncoraId,

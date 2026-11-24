@@ -2,6 +2,7 @@ namespace Unifesspa.UniPlus.Selecao.Domain.UnitTests.Entities;
 
 using AwesomeAssertions;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
@@ -39,13 +40,13 @@ public sealed class ProcessoSeletivoEliminacaoPorAusenciaTests
     private static ConfiguracaoClassificacao ClassificacaoComAusenciaEm(Guid etapaId, bool baseadoEmEnem = false) =>
         ConfiguracaoClassificacao.Criar(new DeclaracaoDaClassificacao
         {
-            RegraCalculo = ReferenciaRegra.De(RegraCalculoCodigo.FormulaMediaPonderada, "v1", new string('a', 64)),
-            RegraArredondamento = ReferenciaRegra.De(RegraArredondamentoCodigo.PrecisaoTruncar, "v1", new string('b', 64)),
+            RegraCalculo = ReferenciaRegra.De(RegraDeCalculoDaNota.MediaPonderada.Codigo(), "v1", new string('a', 64)),
+            RegraArredondamento = ReferenciaRegra.De(RegraDeArredondamentoDaNota.Truncar.Codigo(), "v1", new string('b', 64)),
             CasasArredondamento = 2,
-            RegraOrdemAlocacao = ReferenciaRegra.De(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, "v1", new string('c', 64)),
+            RegraOrdemAlocacao = ReferenciaRegra.De(RegraDeOrdemDeAlocacao.PrimeiraOpcaoPrioritaria.Codigo(), "v1", new string('c', 64)),
             RegrasEliminacao = [RegraEliminacao.Criar(
-                ReferenciaRegra.De(RegraEliminacaoCodigo.ElimAusenciaNaEtapa, "v1", new string('d', 64)),
-                new ParametrosElimAusenciaNaEtapa(etapaId)).Value!],
+                ReferenciaRegra.De(RegraDeEliminacaoPorCalculo.AusenciaNaEtapa.Codigo(), "v1", new string('d', 64)),
+                new ParametrosEliminacaoPorAusenciaNaEtapa(etapaId)).Value!],
             BaseadoEmEnem = baseadoEmEnem,
             ResolucaoPesoAreaEnem = baseadoEmEnem ? QuadroPesoAreaEnemDeTeste.Resolucao : null,
             QuadroPesoAreaEnem = baseadoEmEnem ? QuadroPesoAreaEnemDeTeste.Completo() : [],

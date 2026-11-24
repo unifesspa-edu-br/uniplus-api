@@ -12,6 +12,8 @@ using Kernel.Results;
 using Microsoft.Extensions.DependencyInjection;
 
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
+using Unifesspa.UniPlus.Selecao.Application.DTOs;
 using Unifesspa.UniPlus.Selecao.Domain.Errors;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
@@ -69,8 +71,8 @@ public sealed class CaraterAdmitidoPeloTipoDeEtapaTests
 
         Result resultado = await DefinirEtapasAsync(
             processoId,
-            new EtapaProcessoInput("Prova", CaraterEtapa.Classificatoria, ProvaObjetiva, 1m, null, 1, Produtos: [], Bancas: [], Recursos: []),
-            new EtapaProcessoInput("Documentos", CaraterEtapa.Eliminatoria, AnaliseDocumental, null, 5m, 2, Produtos: [], Bancas: [], Recursos: []));
+            new EtapaProcessoInput("Prova", CaraterEtapa.Classificatoria.Codigo(), ProvaObjetiva, 1m, null, 1, Produtos: [], Bancas: [], Recursos: []),
+            new EtapaProcessoInput("Documentos", CaraterEtapa.Eliminatoria.Codigo(), AnaliseDocumental, null, 5m, 2, Produtos: [], Bancas: [], Recursos: []));
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
     }
@@ -103,7 +105,7 @@ public sealed class CaraterAdmitidoPeloTipoDeEtapaTests
         decimal? notaMinima = null) =>
         DefinirEtapasAsync(
             processoId,
-            new EtapaProcessoInput("Etapa", carater, tipoEtapaOrigemId, peso, notaMinima, 1, Produtos: [], Bancas: [], Recursos: []));
+            new EtapaProcessoInput("Etapa", carater.Codigo(), tipoEtapaOrigemId, peso, notaMinima, 1, Produtos: [], Bancas: [], Recursos: []));
 
     private async Task<Result> DefinirEtapasAsync(
         Guid processoId,

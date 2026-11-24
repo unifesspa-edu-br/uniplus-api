@@ -50,12 +50,7 @@ public sealed class ArquivosVerificadosNoMesmoInstanteTests
     }
 
     private static DocumentoExigido Exigencia() =>
-        new Unifesspa.UniPlus.Selecao.Domain.UnitTests.Cenarios.DocumentoExigidoBuilder()
-            .ComTipo(new CopiaDoTipoDeDocumento(Guid.CreateVersion7(), "LAUDO", "Laudo", "CAT", ProtecaoDoDocumentoDeTeste.Pessoal))
-            .ComMomento(new MomentoDaExigencia(Guid.CreateVersion7(), null, null))
-            .ComAplicabilidade(new AplicabilidadeDaExigencia(Aplicabilidade.Geral, []))
-            .ComIndeferimento(new IndeferimentoDoDocumento(true, null, []))
-            .ComRequisitos(new RequisitosDoDocumento(FormatosPermitidos.Criar(true, null).Value!, null, null, null, null))
-            .ComFatos(null)
+        DocumentoExigidoDeTeste.Novo()
+            .ComTipo("LAUDO", "Laudo", "CAT")
             .Criar().Value!;
 }

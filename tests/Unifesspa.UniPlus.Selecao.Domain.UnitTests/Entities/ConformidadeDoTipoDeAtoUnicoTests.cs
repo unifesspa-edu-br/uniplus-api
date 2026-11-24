@@ -2,6 +2,7 @@ namespace Unifesspa.UniPlus.Selecao.Domain.UnitTests.Entities;
 
 using AwesomeAssertions;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
@@ -57,8 +58,8 @@ public sealed class ConformidadeDoTipoDeAtoUnicoTests
         processo.DefinirDistribuicaoVagas([Distribuicao(40)], FatosDeModalidadeDeTeste.DoCatalogo);
         processo.DefinirClassificacao(ConfiguracaoClassificacao.Criar(new DeclaracaoDaClassificacao
         {
-            RegraCalculo = Regra(RegraCalculoCodigo.ClassificacaoImportada, 'b'),
-            RegraOrdemAlocacao = Regra(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, 'c'),
+            RegraCalculo = Regra(RegraDeCalculoDaNota.ClassificacaoImportada.Codigo(), 'b'),
+            RegraOrdemAlocacao = Regra(RegraDeOrdemDeAlocacao.PrimeiraOpcaoPrioritaria.Codigo(), 'c'),
         }).Value!);
         processo.DefinirCronogramaFases([.. fases, HomologacaoDasInscricoesDeTeste.FaseQueHomologaComRecurso(ordem: 99)], []).IsSuccess.Should().BeTrue();
         DeclararNaoCobra(processo);
@@ -70,8 +71,8 @@ public sealed class ConformidadeDoTipoDeAtoUnicoTests
     public void TipoUnico_EmDuasFases_ReprovaNomeandoOTipoEAsFases()
     {
         ProcessoSeletivo processo = ProcessoPublicavelComCronograma(
-            FaseQuePublica(1, "CLASSIFICACAO", ProdutoDaFase.Criar("RESULTADO_CLASSIFICACAO", PapelProdutoFase.Definitivo)),
-            FaseQuePublica(2, "HABILITACAO", ProdutoDaFase.Criar("RESULTADO_CLASSIFICACAO", PapelProdutoFase.Definitivo)));
+            FaseQuePublica(1, "CLASSIFICACAO", ProdutoDaFase.Criar("RESULTADO_CLASSIFICACAO", PapelDaPublicacaoPrevista.Definitivo)),
+            FaseQuePublica(2, "HABILITACAO", ProdutoDaFase.Criar("RESULTADO_CLASSIFICACAO", PapelDaPublicacaoPrevista.Definitivo)));
 
         Result<VersaoConfiguracao> resultado = PublicarComUnicos(processo, Unicos("RESULTADO_CLASSIFICACAO", "Resultado da classificação"));
 
@@ -86,8 +87,8 @@ public sealed class ConformidadeDoTipoDeAtoUnicoTests
     {
         ProcessoSeletivo processo = ProcessoPublicavelComCronograma(
             FaseQuePublica(1, "HOMOLOGACAO_INSCRICOES",
-                ProdutoDaFase.Criar("HOMOLOGACAO_INSCRICOES", PapelProdutoFase.Preliminar),
-                ProdutoDaFase.Criar("HOMOLOGACAO_INSCRICOES", PapelProdutoFase.Definitivo)));
+                ProdutoDaFase.Criar("HOMOLOGACAO_INSCRICOES", PapelDaPublicacaoPrevista.Preliminar),
+                ProdutoDaFase.Criar("HOMOLOGACAO_INSCRICOES", PapelDaPublicacaoPrevista.Definitivo)));
 
         DomainError? pendencia = PendenciaDoTipoDeAtoUnico(processo.Declaracao(),
             Unicos("HOMOLOGACAO_INSCRICOES", "Homologação das inscrições"));
@@ -101,7 +102,7 @@ public sealed class ConformidadeDoTipoDeAtoUnicoTests
     {
         ProcessoSeletivo processo = ProcessoPublicavelComCronograma(
             FaseQuePublica(1, "HOMOLOGACAO_INSCRICOES", ProdutoDaFase.Criar("HOMOLOGACAO_INSCRICOES", null)),
-            FaseQuePublica(2, "RESULTADO", ProdutoDaFase.Criar("HOMOLOGACAO_INSCRICOES", PapelProdutoFase.Definitivo)));
+            FaseQuePublica(2, "RESULTADO", ProdutoDaFase.Criar("HOMOLOGACAO_INSCRICOES", PapelDaPublicacaoPrevista.Definitivo)));
 
         DomainError? pendencia = PendenciaDoTipoDeAtoUnico(processo.Declaracao(),
             Unicos("HOMOLOGACAO_INSCRICOES", "Homologação das inscrições"));
@@ -115,8 +116,8 @@ public sealed class ConformidadeDoTipoDeAtoUnicoTests
     {
         ProcessoSeletivo processo = ProcessoPublicavelComCronograma(
             FaseQuePublica(1, "HOMOLOGACAO_INSCRICOES",
-                ProdutoDaFase.Criar("RESULTADO_CLASSIFICACAO", PapelProdutoFase.Preliminar),
-                ProdutoDaFase.Criar("RESULTADO_CLASSIFICACAO", PapelProdutoFase.Definitivo)));
+                ProdutoDaFase.Criar("RESULTADO_CLASSIFICACAO", PapelDaPublicacaoPrevista.Preliminar),
+                ProdutoDaFase.Criar("RESULTADO_CLASSIFICACAO", PapelDaPublicacaoPrevista.Definitivo)));
 
         PendenciaDoTipoDeAtoUnico(processo.Declaracao(), Unicos("HOMOLOGACAO_INSCRICOES", "Homologação das inscrições")).Should().BeNull();
     }
@@ -125,11 +126,11 @@ public sealed class ConformidadeDoTipoDeAtoUnicoTests
     public void TipoUnico_NaFaseENaEtapa_Reprova()
     {
         ProcessoSeletivo processo = ProcessoPublicavelComCronograma(
-            FaseQuePublica(1, "CLASSIFICACAO", ProdutoDaFase.Criar("RESULTADO_CLASSIFICACAO", PapelProdutoFase.Definitivo)));
+            FaseQuePublica(1, "CLASSIFICACAO", ProdutoDaFase.Criar("RESULTADO_CLASSIFICACAO", PapelDaPublicacaoPrevista.Definitivo)));
         EtapaProcesso etapa = EtapaProcesso.Criar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("etapa").Value!,
             new IdentificacaoDaEtapa(Nome: "Prova Objetiva", Carater: CaraterEtapa.Classificatoria, TipoEtapa: TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!, Ordem: 1, FaseCodigo: null),
             new DeclaracaoDaAvaliacaoDaEtapa(Peso: 3m, NotaMinima: null, NotaMaxima: 10m, PassoDoLancamento: null, FormaDeAvaliacao: FormaDeAvaliacao.Objetiva, RegraConsolidacao: null, EscalaDeAtendimento: null)).Value!;
-        etapa.DefinirProdutos([ProdutoDaEtapa.Criar("RESULTADO_CLASSIFICACAO", PapelProdutoFase.Definitivo)]).IsSuccess.Should().BeTrue();
+        etapa.DefinirProdutos([ProdutoDaEtapa.Criar("RESULTADO_CLASSIFICACAO", PapelDaPublicacaoPrevista.Definitivo)]).IsSuccess.Should().BeTrue();
         processo.DefinirEtapas([etapa]).IsSuccess.Should().BeTrue();
 
         DomainError? pendencia = PendenciaDoTipoDeAtoUnico(processo.Declaracao(),
@@ -144,8 +145,8 @@ public sealed class ConformidadeDoTipoDeAtoUnicoTests
     {
         ProcessoSeletivo processo = ProcessoPublicavelComCronograma(
             FaseQuePublica(1, "HOMOLOGACAO_INSCRICOES",
-                ProdutoDaFase.Criar("RESULTADO_HOMOLOGACAO", PapelProdutoFase.Preliminar),
-                ProdutoDaFase.Criar("RESULTADO_HOMOLOGACAO", PapelProdutoFase.Definitivo)));
+                ProdutoDaFase.Criar("RESULTADO_HOMOLOGACAO", PapelDaPublicacaoPrevista.Preliminar),
+                ProdutoDaFase.Criar("RESULTADO_HOMOLOGACAO", PapelDaPublicacaoPrevista.Definitivo)));
 
         Result<VersaoConfiguracao> resultado = PublicarComUnicos(processo, Unicos("RESULTADO_CLASSIFICACAO", "Resultado da classificação"));
 
@@ -156,10 +157,10 @@ public sealed class ConformidadeDoTipoDeAtoUnicoTests
     public void Checklist_ProjetaOItemDoTipoUnico()
     {
         ProcessoSeletivo duplicado = ProcessoPublicavelComCronograma(
-            FaseQuePublica(1, "CLASSIFICACAO", ProdutoDaFase.Criar("RESULTADO_CLASSIFICACAO", PapelProdutoFase.Definitivo)),
-            FaseQuePublica(2, "HABILITACAO", ProdutoDaFase.Criar("RESULTADO_CLASSIFICACAO", PapelProdutoFase.Definitivo)));
+            FaseQuePublica(1, "CLASSIFICACAO", ProdutoDaFase.Criar("RESULTADO_CLASSIFICACAO", PapelDaPublicacaoPrevista.Definitivo)),
+            FaseQuePublica(2, "HABILITACAO", ProdutoDaFase.Criar("RESULTADO_CLASSIFICACAO", PapelDaPublicacaoPrevista.Definitivo)));
         ProcessoSeletivo unico = ProcessoPublicavelComCronograma(
-            FaseQuePublica(1, "CLASSIFICACAO", ProdutoDaFase.Criar("RESULTADO_CLASSIFICACAO", PapelProdutoFase.Definitivo)));
+            FaseQuePublica(1, "CLASSIFICACAO", ProdutoDaFase.Criar("RESULTADO_CLASSIFICACAO", PapelDaPublicacaoPrevista.Definitivo)));
         TiposDeAtoUnicosPorObjeto unicos = Unicos("RESULTADO_CLASSIFICACAO", "Resultado da classificação");
 
         ChecklistDeConformidade.AvaliarConformidade(duplicado.Declaracao(), CadastrosDeTeste.Com(tiposDeAtoUnicos: unicos, motivosEscolhidos: MotivosDeDecisaoDoProcessoDeTeste.Cobrindo(duplicado)))
@@ -172,7 +173,7 @@ public sealed class ConformidadeDoTipoDeAtoUnicoTests
     public void TipoUnico_NoAtoDaPublicacaoENoCronograma_Reprova()
     {
         ProcessoSeletivo processo = ProcessoPublicavelComCronograma(
-            FaseQuePublica(1, "ABERTURA", ProdutoDaFase.Criar("EDITAL_ABERTURA", PapelProdutoFase.Definitivo)));
+            FaseQuePublica(1, "ABERTURA", ProdutoDaFase.Criar("EDITAL_ABERTURA", PapelDaPublicacaoPrevista.Definitivo)));
 
         Result<VersaoConfiguracao> resultado = PublicarComUnicos(
             processo, Unicos("EDITAL_ABERTURA", "Edital de abertura", atoDaOperacao: "EDITAL_ABERTURA"));
@@ -187,7 +188,7 @@ public sealed class ConformidadeDoTipoDeAtoUnicoTests
         EtapaProcesso etapa = EtapaProcesso.Criar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("etapa").Value!,
             new IdentificacaoDaEtapa(Nome: "Prova", Carater: CaraterEtapa.Classificatoria, TipoEtapa: TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!, Ordem: ordem, FaseCodigo: null),
             new DeclaracaoDaAvaliacaoDaEtapa(Peso: 3m, NotaMinima: null, NotaMaxima: 10m, PassoDoLancamento: null, FormaDeAvaliacao: FormaDeAvaliacao.Objetiva, RegraConsolidacao: null, EscalaDeAtendimento: null)).Value!;
-        etapa.DefinirProdutos([ProdutoDaEtapa.Criar("RESULTADO_CLASSIFICACAO", PapelProdutoFase.Definitivo)]).IsSuccess.Should().BeTrue();
+        etapa.DefinirProdutos([ProdutoDaEtapa.Criar("RESULTADO_CLASSIFICACAO", PapelDaPublicacaoPrevista.Definitivo)]).IsSuccess.Should().BeTrue();
         return etapa;
     }
 
@@ -208,7 +209,7 @@ public sealed class ConformidadeDoTipoDeAtoUnicoTests
     public void TipoUnico_JaOcupadoPorAtoRegistrado_ReprovaProdutoDoCronograma()
     {
         ProcessoSeletivo processo = ProcessoPublicavelComCronograma(
-            FaseQuePublica(1, "ABERTURA", ProdutoDaFase.Criar("EDITAL_ABERTURA", PapelProdutoFase.Definitivo)));
+            FaseQuePublica(1, "ABERTURA", ProdutoDaFase.Criar("EDITAL_ABERTURA", PapelDaPublicacaoPrevista.Definitivo)));
 
         DomainError? pendencia = PendenciaDoTipoDeAtoUnico(processo.Declaracao(),
             Unicos("EDITAL_ABERTURA", "Edital de abertura", atoDaOperacao: "RETIFICACAO_EDITAL", vagaOcupada: true));
@@ -221,7 +222,7 @@ public sealed class ConformidadeDoTipoDeAtoUnicoTests
     public void TipoUnico_AtoDaOperacaoEAtoRegistradoDoMesmoTipo_ContamUmaVaga()
     {
         ProcessoSeletivo processo = ProcessoPublicavelComCronograma(
-            FaseQuePublica(1, "CLASSIFICACAO", ProdutoDaFase.Criar("RESULTADO_CLASSIFICACAO", PapelProdutoFase.Definitivo)));
+            FaseQuePublica(1, "CLASSIFICACAO", ProdutoDaFase.Criar("RESULTADO_CLASSIFICACAO", PapelDaPublicacaoPrevista.Definitivo)));
 
         PendenciaDoTipoDeAtoUnico(processo.Declaracao(),
             Unicos("EDITAL_ABERTURA", "Edital de abertura", atoDaOperacao: "EDITAL_ABERTURA", vagaOcupada: true))
@@ -232,7 +233,7 @@ public sealed class ConformidadeDoTipoDeAtoUnicoTests
     public void TipoOcupadoQueOCatalogoNaoDeclaraUnico_NaoReprova()
     {
         ProcessoSeletivo processo = ProcessoPublicavelComCronograma(
-            FaseQuePublica(1, "ABERTURA", ProdutoDaFase.Criar("EDITAL_ABERTURA", PapelProdutoFase.Definitivo)));
+            FaseQuePublica(1, "ABERTURA", ProdutoDaFase.Criar("EDITAL_ABERTURA", PapelDaPublicacaoPrevista.Definitivo)));
         TiposDeAtoUnicosPorObjeto ocupadoMasNaoUnico = TiposDeAtoUnicosPorObjeto.ParaOperacao(
             new Dictionary<string, string>(), ["EDITAL_ABERTURA"], "RETIFICACAO_EDITAL");
 
@@ -243,8 +244,8 @@ public sealed class ConformidadeDoTipoDeAtoUnicoTests
     public void Aviso_MesmoDefinitivoEmDuasFases_GeraAviso()
     {
         ProcessoSeletivo processo = ProcessoPublicavelComCronograma(
-            FaseQuePublica(1, "CLASSIFICACAO", ProdutoDaFase.Criar("RESULTADO_CLASSIFICACAO", PapelProdutoFase.Definitivo)),
-            FaseQuePublica(2, "HABILITACAO", ProdutoDaFase.Criar("RESULTADO_CLASSIFICACAO", PapelProdutoFase.Definitivo)));
+            FaseQuePublica(1, "CLASSIFICACAO", ProdutoDaFase.Criar("RESULTADO_CLASSIFICACAO", PapelDaPublicacaoPrevista.Definitivo)),
+            FaseQuePublica(2, "HABILITACAO", ProdutoDaFase.Criar("RESULTADO_CLASSIFICACAO", PapelDaPublicacaoPrevista.Definitivo)));
 
         AvisoConformidade aviso = ChecklistDeConformidade.AvaliarAvisos(processo.Declaracao()).Should().ContainSingle().Subject;
 
@@ -257,11 +258,11 @@ public sealed class ConformidadeDoTipoDeAtoUnicoTests
     public void Aviso_MesmoDefinitivoNaFaseENaEtapa_GeraAviso()
     {
         ProcessoSeletivo processo = ProcessoPublicavelComCronograma(
-            FaseQuePublica(1, "CLASSIFICACAO", ProdutoDaFase.Criar("RESULTADO_CLASSIFICACAO", PapelProdutoFase.Definitivo)));
+            FaseQuePublica(1, "CLASSIFICACAO", ProdutoDaFase.Criar("RESULTADO_CLASSIFICACAO", PapelDaPublicacaoPrevista.Definitivo)));
         EtapaProcesso etapa = EtapaProcesso.Criar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("etapa").Value!,
             new IdentificacaoDaEtapa(Nome: "Prova Objetiva", Carater: CaraterEtapa.Classificatoria, TipoEtapa: TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!, Ordem: 1, FaseCodigo: null),
             new DeclaracaoDaAvaliacaoDaEtapa(Peso: 3m, NotaMinima: null, NotaMaxima: 10m, PassoDoLancamento: null, FormaDeAvaliacao: FormaDeAvaliacao.Objetiva, RegraConsolidacao: null, EscalaDeAtendimento: null)).Value!;
-        etapa.DefinirProdutos([ProdutoDaEtapa.Criar("RESULTADO_CLASSIFICACAO", PapelProdutoFase.Definitivo)]).IsSuccess.Should().BeTrue();
+        etapa.DefinirProdutos([ProdutoDaEtapa.Criar("RESULTADO_CLASSIFICACAO", PapelDaPublicacaoPrevista.Definitivo)]).IsSuccess.Should().BeTrue();
         processo.DefinirEtapas([etapa]).IsSuccess.Should().BeTrue();
 
         ChecklistDeConformidade.AvaliarAvisos(processo.Declaracao()).Should().ContainSingle().Which.Mensagem
@@ -273,8 +274,8 @@ public sealed class ConformidadeDoTipoDeAtoUnicoTests
     {
         ProcessoSeletivo processo = ProcessoPublicavelComCronograma(
             FaseQuePublica(1, "HOMOLOGACAO_INSCRICOES",
-                ProdutoDaFase.Criar("RESULTADO_HOMOLOGACAO", PapelProdutoFase.Preliminar),
-                ProdutoDaFase.Criar("RESULTADO_HOMOLOGACAO", PapelProdutoFase.Definitivo)));
+                ProdutoDaFase.Criar("RESULTADO_HOMOLOGACAO", PapelDaPublicacaoPrevista.Preliminar),
+                ProdutoDaFase.Criar("RESULTADO_HOMOLOGACAO", PapelDaPublicacaoPrevista.Definitivo)));
 
         ChecklistDeConformidade.AvaliarAvisos(processo.Declaracao()).Should().BeEmpty();
     }
@@ -283,8 +284,8 @@ public sealed class ConformidadeDoTipoDeAtoUnicoTests
     public void Aviso_NaoImpedeAPublicacao()
     {
         ProcessoSeletivo processo = ProcessoPublicavelComCronograma(
-            FaseQuePublica(1, "CLASSIFICACAO", ProdutoDaFase.Criar("RESULTADO_CLASSIFICACAO", PapelProdutoFase.Definitivo)),
-            FaseQuePublica(2, "HABILITACAO", ProdutoDaFase.Criar("RESULTADO_CLASSIFICACAO", PapelProdutoFase.Definitivo)));
+            FaseQuePublica(1, "CLASSIFICACAO", ProdutoDaFase.Criar("RESULTADO_CLASSIFICACAO", PapelDaPublicacaoPrevista.Definitivo)),
+            FaseQuePublica(2, "HABILITACAO", ProdutoDaFase.Criar("RESULTADO_CLASSIFICACAO", PapelDaPublicacaoPrevista.Definitivo)));
 
         ChecklistDeConformidade.AvaliarAvisos(processo.Declaracao()).Should().NotBeEmpty();
         ChecklistDeConformidade.AvaliarConformidade(processo.Declaracao(), CadastrosDeTeste.Para(processo))

@@ -9,6 +9,8 @@ using System.Text.Json.Nodes;
 using AwesomeAssertions;
 
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Authentication;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
+using Unifesspa.UniPlus.Selecao.Domain.Enums;
 
 using static Unifesspa.UniPlus.Selecao.IntegrationTests.Outbox.Cascading.ApoioDoCronogramaDeFasesPeloEndpoint;
 
@@ -175,7 +177,7 @@ public sealed class GravacaoDasEtapasEndpointTests(CascadingFixture ambienteDeTe
         JsonArray etapas = EtapasComBanca(tipoBancaId);
         etapas[0]!["produtos"] = JsonSerializer.SerializeToNode(PayloadsDoEnvelopeFechado.ProdutosDoResultado());
         JsonObject regra = PayloadsDoEnvelopeFechado.RegraDeRecursoAncoradaNoResultado();
-        regra["ancora"] = 1;
+        regra["ancora"] = EventoInicialDoPrazo.PublicacaoDoAto.Codigo();
         etapas[0]!["recursos"] = new JsonArray(regra);
         return etapas;
     }

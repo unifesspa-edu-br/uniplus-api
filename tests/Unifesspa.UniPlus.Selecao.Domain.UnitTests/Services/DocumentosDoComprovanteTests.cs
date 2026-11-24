@@ -2,6 +2,7 @@ namespace Unifesspa.UniPlus.Selecao.Domain.UnitTests.Services;
 
 using AwesomeAssertions;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
@@ -35,19 +36,19 @@ public sealed class DocumentosDoComprovanteTests
     [Fact(DisplayName = "Cada exigência da inscrição sai com obrigatoriedade, situação e consequência escrita")]
     public void Compor_Exigencia_TrazObrigatoriedadeSituacaoEConsequencia()
     {
-        DocumentoExigido laudo = Documento("Laudo médico", ConsequenciaIndeferimentoCodigo.RemoveVantagem);
+        DocumentoExigido laudo = Documento("Laudo médico", "REMOVE_VANTAGEM");
 
         DocumentoDoComprovante item = DocumentosDoComprovante.Compor(Avaliacao((laudo, SituacaoDoDocumento.Pendente, null)), []).Single();
 
         item.Obrigatorio.Should().BeTrue();
-        item.Situacao.Should().Be(SituacaoDoDocumentoCodigo.Pendente);
+        item.Situacao.Should().Be(SituacaoDoDocumento.Pendente.Codigo());
         item.Consequencia.Should().Be("Sem o documento Laudo médico, a vantagem que você pleiteia não será concedida.");
     }
 
     [Theory(DisplayName = "Cada consequência declarada tem texto próprio; sem consequência declarada, não há texto")]
-    [InlineData(ConsequenciaIndeferimentoCodigo.Elimina, "eliminado")]
-    [InlineData(ConsequenciaIndeferimentoCodigo.ReclassificaAc, "ampla concorrência")]
-    [InlineData(ConsequenciaIndeferimentoCodigo.PendenciaReenvio, "reenviá-lo")]
+    [InlineData("ELIMINA", "eliminado")]
+    [InlineData("RECLASSIFICA_AC", "ampla concorrência")]
+    [InlineData("ABRE_PRAZO_PARA_REENVIO", "reenviá-lo")]
     [InlineData(null, null)]
     public void ConsequenciaPorEscrito_PorCodigo(string? codigo, string? trecho)
     {
@@ -106,14 +107,14 @@ public sealed class DocumentosDoComprovanteTests
     [Fact(DisplayName = "A alternativa não enviada de um grupo que exige um item e já foi cumprido sai dispensada e sem consequência")]
     public void Compor_OuAtendido_DispensaAAlternativaNaoEnviada()
     {
-        DocumentoExigido rg = Documento("RG", ConsequenciaIndeferimentoCodigo.Elimina);
-        DocumentoExigido cnh = Documento("CNH", ConsequenciaIndeferimentoCodigo.Elimina);
+        DocumentoExigido rg = Documento("RG", "ELIMINA");
+        DocumentoExigido cnh = Documento("CNH", "ELIMINA");
         GrupoDeComprovacao grupo = new(Guid.CreateVersion7(), FormaDeComprovacao.QuantidadeMinimaDeItens, 1, null);
 
         IReadOnlyList<DocumentoDoComprovante> itens = DocumentosDoComprovante.Compor(
             ComGrupo(grupo, true, (rg, SituacaoDoDocumento.Satisfeita), (cnh, SituacaoDoDocumento.Pendente)), []);
 
-        itens[0].Situacao.Should().Be(SituacaoDoDocumentoCodigo.Satisfeita);
+        itens[0].Situacao.Should().Be(SituacaoDoDocumento.Satisfeita.Codigo());
         itens[1].Situacao.Should().Be(DocumentosDoComprovante.SituacaoDispensada);
         itens[1].Consequencia.Should().BeNull("o grupo está atendido: a CNH não precisava ser enviada");
     }
@@ -123,21 +124,21 @@ public sealed class DocumentosDoComprovanteTests
     {
         DocumentoExigido rg = Documento("RG");
         DocumentoExigido cnh = Documento("CNH");
-        GrupoDeComprovacao grupo = new(Guid.CreateVersion7(), FormaDeComprovacao.QuantidadeMinimaDeItens, 1, null, ConsequenciaIndeferimentoCodigo.ReclassificaAc);
+        GrupoDeComprovacao grupo = new(Guid.CreateVersion7(), FormaDeComprovacao.QuantidadeMinimaDeItens, 1, null, "RECLASSIFICA_AC");
 
         IReadOnlyList<DocumentoDoComprovante> itens = DocumentosDoComprovante.Compor(
             ComGrupo(grupo, false, (rg, SituacaoDoDocumento.Pendente), (cnh, SituacaoDoDocumento.Pendente)), []);
 
-        itens.Should().OnlyContain(static d => d.Situacao == SituacaoDoDocumentoCodigo.Pendente);
+        itens.Should().OnlyContain(static d => d.Situacao == SituacaoDoDocumento.Pendente.Codigo());
         itens.Should().OnlyContain(static d => d.Consequencia!.Contains("RG, CNH") && d.Consequencia.Contains("ampla concorrência"));
     }
 
     [Fact(DisplayName = "No grupo que exige um item com consequência própria, a alternativa mostra a do grupo, e não a própria")]
     public void Compor_OuComConsequencia_PrevaleceSobreADaAlternativa()
     {
-        DocumentoExigido rg = Documento("RG", ConsequenciaIndeferimentoCodigo.PendenciaReenvio);
+        DocumentoExigido rg = Documento("RG", "ABRE_PRAZO_PARA_REENVIO");
         DocumentoExigido cnh = Documento("CNH");
-        GrupoDeComprovacao grupo = new(Guid.CreateVersion7(), FormaDeComprovacao.QuantidadeMinimaDeItens, 1, null, ConsequenciaIndeferimentoCodigo.ReclassificaAc);
+        GrupoDeComprovacao grupo = new(Guid.CreateVersion7(), FormaDeComprovacao.QuantidadeMinimaDeItens, 1, null, "RECLASSIFICA_AC");
 
         IReadOnlyList<DocumentoDoComprovante> itens = DocumentosDoComprovante.Compor(
             ComGrupo(grupo, false, (rg, SituacaoDoDocumento.Pendente), (cnh, SituacaoDoDocumento.Pendente)), []);
@@ -148,7 +149,7 @@ public sealed class DocumentosDoComprovanteTests
     [Fact(DisplayName = "No grupo que exige um item sem consequência própria, a alternativa não traz texto, mesmo declarando a própria")]
     public void Compor_OuSemConsequencia_AlternativaSemTexto()
     {
-        DocumentoExigido rg = Documento("RG", ConsequenciaIndeferimentoCodigo.Elimina);
+        DocumentoExigido rg = Documento("RG", "ELIMINA");
         DocumentoExigido cnh = Documento("CNH");
         GrupoDeComprovacao grupo = new(Guid.CreateVersion7(), FormaDeComprovacao.QuantidadeMinimaDeItens, 1, null);
 

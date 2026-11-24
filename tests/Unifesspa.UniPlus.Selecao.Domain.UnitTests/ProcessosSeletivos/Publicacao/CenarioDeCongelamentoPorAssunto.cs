@@ -121,7 +121,7 @@ internal sealed class CenarioDeCongelamentoPorAssunto
     }
 
     private CadastrosDaConfiguracao Cadastros() =>
-        CadastrosDeTeste.Com(contagemDePrazos: _contagem, tiposDeAtoUnicos: _tipos, corretores: _corretores ?? CorretoresDeTeste.DoProcesso(_processo), motivosEscolhidos: _motivos ?? MotivosDeDecisaoDoProcessoDeTeste.Cobrindo(_processo)).ComRegrasDo(_processo, _regraAusente ? RegraCalculoCodigo.ClassificacaoImportada : null);
+        CadastrosDeTeste.Com(contagemDePrazos: _contagem, tiposDeAtoUnicos: _tipos, corretores: _corretores ?? CorretoresDeTeste.DoProcesso(_processo), motivosEscolhidos: _motivos ?? MotivosDeDecisaoDoProcessoDeTeste.Cobrindo(_processo)).ComRegrasDo(_processo, _regraAusente ? RegraDeCalculoDaNota.ClassificacaoImportada.Codigo() : null);
 
     private sealed record Defeito(Action<CenarioDeCongelamentoPorAssunto> Aplicar);
 
@@ -150,12 +150,11 @@ internal sealed class CenarioDeCongelamentoPorAssunto
         [NomeDoAssunto.ProvaPresencial] = new(static c => Definir(c._processo, nameof(ProcessoSeletivo.ProvaPresencial), null)),
     };
 
-    // Sem natureza legal declarada, o remanejamento que segue a cascata não destoa dela: só a cobertura da cascata recusa.
     private void ComModalidadeQueSegueACascataSemCascata()
     {
         ModalidadeSelecionada modalidade = _processo.DistribuicaoVagas.SelectMany(static o => o.Modalidades).First();
-        Definir(modalidade, nameof(ModalidadeSelecionada.NaturezaLegal), NaturezaLegalModalidade.Nenhuma);
-        Definir(modalidade, "RegraRemanejamentoCodigo", RegraRemanejamentoModalidade.SegueCascata.ToCodigo());
+        Definir(modalidade, nameof(ModalidadeSelecionada.NaturezaLegal), NaturezaLegalModalidade.CotaReservada);
+        Definir(modalidade, nameof(ModalidadeSelecionada.RegraRemanejamento), RegraRemanejamentoModalidade.SegueOrdemDeRemanejamento);
     }
 
     private void ComEtapaDeUmSoCorretor()
@@ -168,7 +167,7 @@ internal sealed class CenarioDeCongelamentoPorAssunto
     // O motivo entra na versão que nasce, que a retificação numera depois da publicada, e foi desativado no cadastro.
     private void ComMotivoDesativadoNaInscricao()
     {
-        MotivoDeDecisao origem = ProcessoParaMotivos.DaIsencao(FundamentoIsencaoCodigo.CadastroUnico, SentidoDoMotivo.Favoravel);
+        MotivoDeDecisao origem = ProcessoParaMotivos.DaIsencao("CADASTRO_UNICO", SentidoDoMotivo.Favoravel);
         LugarDaDecisao lugar = ProcessoParaMotivos.LugarDaFase(_processo, "INSCRICAO");
         MotivoDeDecisaoDoProcesso escolhido = ProcessoParaMotivos.Escolha(_processo, lugar, origem, _versaoQueNasce);
         origem.Desativar();
@@ -222,7 +221,7 @@ internal sealed class CenarioDeCongelamentoPorAssunto
                 Ordem: 50, FaseCodigo: "RESULTADO_FINAL"),
             new DeclaracaoDaAvaliacaoDaEtapa(
                 Peso: 1m, NotaMinima: null, NotaMaxima: 10m, PassoDoLancamento: 0.5m, FormaDeAvaliacao: FormaDeAvaliacao.Humana,
-                RegraConsolidacao: Regra(RegraConsolidacaoCodigo.CorrecaoIndependente, 'c'), EscalaDeAtendimento: null)).Value!;
+                RegraConsolidacao: Regra(RegraDeApuracaoDaAvaliacao.CorrecaoIndependente.Codigo(), 'c'), EscalaDeAtendimento: null)).Value!;
         etapa.DefinirBancas([BancasDeTeste.DeRecursosDaEtapa()]);
 
         return etapa;
@@ -252,12 +251,12 @@ internal sealed class CenarioDeCongelamentoPorAssunto
         new PublicacoesDaFase(
             Produtos:
             [
-                ProdutoDaFase.Reidratar(ProdutoPreliminar, ResultadoClassificacao, PapelProdutoFase.Preliminar),
-                ProdutoDaFase.Criar(ResultadoClassificacao, PapelProdutoFase.Definitivo),
+                ProdutoDaFase.Reidratar(ProdutoPreliminar, ResultadoClassificacao, PapelDaPublicacaoPrevista.Preliminar),
+                ProdutoDaFase.Criar(ResultadoClassificacao, PapelDaPublicacaoPrevista.Definitivo),
             ],
             EmiteParecerIndividual: false,
             RegraRecurso: RegraRecursoFase.Criar(
-                Regra(RegraPrazoRecursoCodigo.AncoradoEmAto, 'd'),
+                Regra(RegraDePrazoDoRecurso.ContadoDaPublicacaoDoAto.Codigo(), 'd'),
                 ParametrosDoRecursoDeTeste.Declarados(2m, UnidadePrazo.DiasUteis),
                 ProdutoPreliminar).Value!),
         bancasRequeridas: [BancasDeTeste.DeRecursosDaFase()]).Value!;
@@ -268,7 +267,7 @@ internal sealed class CenarioDeCongelamentoPorAssunto
         new DecisoesDeCronogramaDaFase(3, Inicio: null, Fim: null, UnidadeResponsavel: UnidadesDeTeste.Ceps),
         new PublicacoesDaFase(
             Produtos: [
-                ProdutoDaFase.Criar(ResultadoClassificacao, PapelProdutoFase.Definitivo),
+                ProdutoDaFase.Criar(ResultadoClassificacao, PapelDaPublicacaoPrevista.Definitivo),
                 ProdutoDaFase.Criar(AtoSemPapel, null),
             ],
             EmiteParecerIndividual: false,
@@ -288,9 +287,11 @@ internal sealed class CenarioDeCongelamentoPorAssunto
 
     private static ProcessoSeletivo ProcessoBase()
     {
-        ProcessoSeletivo processo = ProcessoConformeFactory.Criar();
+        ProcessoSeletivo processo = ProcessoConformeFactory.Criar(
+            regraDeAplicabilidade: RegrasDeAplicabilidadeDeTeste.DaNatureza(NaturezaLegalModalidade.CotaReservada));
+        RegrasDeAplicabilidadeDeTeste.DerivarOQueAOpcaoPelasCotasCita(processo);
         FormularioDeTeste.TrocarCronograma(processo, Cronograma()).IsSuccess.Should().BeTrue();
-        processo.DefinirAlgoritmoContagemPrazo(Regra(AlgoritmoContagemPrazoCodigo.AvancaDataUtil, 'e'))
+        processo.DefinirAlgoritmoContagemPrazo(Regra(ConvencaoDeContagemDoPrazo.AvancaDataUtil.Codigo(), 'e'))
             .IsSuccess.Should().BeTrue();
         Guid faseDoFormulario = processo.CronogramaFases.First().Id;
         processo.DefinirDocumentosExigidos([RegraDeComprovacao.CriarRegraDeDocumento(ExigenciaGeral(faseDoFormulario), 0).Value!])
@@ -304,7 +305,7 @@ internal sealed class CenarioDeCongelamentoPorAssunto
         VersaoConfiguracao versao = Publicada(processo);
 
         return new(processo, (contagem, tipos, corretores, motivos, regraAusente) => processo.Retificar(
-            new CenarioDeCongelamento { Dados = DadosDoEdital, Documento = new DocumentoCongelado(Bytes, "1.1", Algoritmo, Hash), Relogio = new RelogioFixo(Agora), Contagem = contagem, TiposDeAtoUnicos = tipos, Corretores = corretores, MotivosEscolhidos = motivos, RegraAusenteDoCatalogo = regraAusente ? RegraCalculoCodigo.ClassificacaoImportada : null }, versao, "Correção do prazo"), versaoQueNasce: 2);
+            new CenarioDeCongelamento { Dados = DadosDoEdital, Documento = new DocumentoCongelado(Bytes, "1.1", Algoritmo, Hash), Relogio = new RelogioFixo(Agora), Contagem = contagem, TiposDeAtoUnicos = tipos, Corretores = corretores, MotivosEscolhidos = motivos, RegraAusenteDoCatalogo = regraAusente ? RegraDeCalculoDaNota.ClassificacaoImportada.Codigo() : null }, versao, "Correção do prazo"), versaoQueNasce: 2);
     }
 
     private static VersaoConfiguracao Publicada(ProcessoSeletivo processo)
@@ -317,5 +318,5 @@ internal sealed class CenarioDeCongelamentoPorAssunto
 
     private static Result<VersaoConfiguracao> PublicarProcesso(
         ProcessoSeletivo processo, ContextoDeContagemDePrazos contagem, TiposDeAtoUnicosPorObjeto tipos, CorretoresDasEtapas? corretores, MotivosEscolhidos? motivos = null, bool regraAusente = false) => processo.Publicar(
-            new CenarioDeCongelamento { Dados = DadosDoEdital, Documento = new DocumentoCongelado(Bytes, "1.1", Algoritmo, Hash), Relogio = new RelogioFixo(Agora), Contagem = contagem, TiposDeAtoUnicos = tipos, Corretores = corretores, MotivosEscolhidos = motivos, RegraAusenteDoCatalogo = regraAusente ? RegraCalculoCodigo.ClassificacaoImportada : null });
+            new CenarioDeCongelamento { Dados = DadosDoEdital, Documento = new DocumentoCongelado(Bytes, "1.1", Algoritmo, Hash), Relogio = new RelogioFixo(Agora), Contagem = contagem, TiposDeAtoUnicos = tipos, Corretores = corretores, MotivosEscolhidos = motivos, RegraAusenteDoCatalogo = regraAusente ? RegraDeCalculoDaNota.ClassificacaoImportada.Codigo() : null });
 }

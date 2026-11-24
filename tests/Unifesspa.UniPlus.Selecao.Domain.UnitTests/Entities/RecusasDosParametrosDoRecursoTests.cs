@@ -2,6 +2,7 @@ namespace Unifesspa.UniPlus.Selecao.Domain.UnitTests.Entities;
 
 using AwesomeAssertions;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
@@ -16,12 +17,12 @@ using Xunit;
 /// </summary>
 public sealed class RecusasDosParametrosDoRecursoTests
 {
-    private static readonly ReferenciaRegra Regra = ReferenciaRegra.De(RegraPrazoRecursoCodigo.AncoradoEmAto, "v1", new string('a', 64));
+    private static readonly ReferenciaRegra Regra = ReferenciaRegra.De(RegraDePrazoDoRecurso.ContadoDaPublicacaoDoAto.Codigo(), "v1", new string('a', 64));
 
     private static readonly ParametrosDeclaradosDoRecurso TodasAsCausas = new(
-        new PrazoDeclarado(0m, "dias"),
+        new PrazoDeclarado(0m, "DIAS"),
         AdmiteInstanciaSuperior: false,
-        new PrazoDeclarado(1m, "diasUteis"),
+        new PrazoDeclarado(1m, "DIAS_UTEIS"),
         EfeitoSuspensivo: null,
         GuardaDaVaga: "talvez");
 
@@ -31,16 +32,16 @@ public sealed class RecusasDosParametrosDoRecursoTests
 
     private static readonly Dictionary<MotivoDaRecusaDosParametros, ParametrosDeclaradosDoRecurso> UmaCausaPorMotivo = new()
     {
-        [MotivoDaRecusaDosParametros.PrazoPrecisaoInvalida] = Valido with { PrazoDeInterposicao = new PrazoDeclarado(1.12345m, "horas") },
-        [MotivoDaRecusaDosParametros.PrazoNaoPositivo] = Valido with { PrazoDeInterposicao = new PrazoDeclarado(0m, "horas") },
-        [MotivoDaRecusaDosParametros.PrazoEmDiasCorridos] = Valido with { PrazoDeInterposicao = new PrazoDeclarado(1m, "dias") },
+        [MotivoDaRecusaDosParametros.PrazoPrecisaoInvalida] = Valido with { PrazoDeInterposicao = new PrazoDeclarado(1.12345m, "HORAS") },
+        [MotivoDaRecusaDosParametros.PrazoNaoPositivo] = Valido with { PrazoDeInterposicao = new PrazoDeclarado(0m, "HORAS") },
+        [MotivoDaRecusaDosParametros.PrazoEmDiasCorridos] = Valido with { PrazoDeInterposicao = new PrazoDeclarado(1m, "DIAS") },
         [MotivoDaRecusaDosParametros.PrazoSemUnidadeDeclaravel] = Valido with { PrazoDeInterposicao = new PrazoDeclarado(1m, null) },
-        [MotivoDaRecusaDosParametros.PrazoEmFracaoDeDiaUtil] = Valido with { PrazoDeInterposicao = new PrazoDeclarado(1.5m, "diasUteis") },
+        [MotivoDaRecusaDosParametros.PrazoEmFracaoDeDiaUtil] = Valido with { PrazoDeInterposicao = new PrazoDeclarado(1.5m, "DIAS_UTEIS") },
         [MotivoDaRecusaDosParametros.EfeitoSuspensivoNaoDeclarado] = Valido with { EfeitoSuspensivo = null },
         [MotivoDaRecusaDosParametros.GuardaDaVagaNaoDeclaravel] = Valido with { GuardaDaVaga = "talvez" },
         [MotivoDaRecusaDosParametros.PrazoSegundaInstanciaNaoDeclarado] = ComInstanciaSuperior with { PrazoDaSegundaInstancia = PrazoDeclarado.Ausente },
-        [MotivoDaRecusaDosParametros.PrazoSegundaInstanciaSemInstanciaSuperior] = Valido with { PrazoDaSegundaInstancia = new PrazoDeclarado(1m, "horas") },
-        [MotivoDaRecusaDosParametros.NaoGuardaComInstanciaSuperior] = ComInstanciaSuperior with { GuardaDaVaga = "naoGuarda" },
+        [MotivoDaRecusaDosParametros.PrazoSegundaInstanciaSemInstanciaSuperior] = Valido with { PrazoDaSegundaInstancia = new PrazoDeclarado(1m, "HORAS") },
+        [MotivoDaRecusaDosParametros.NaoGuardaComInstanciaSuperior] = ComInstanciaSuperior with { GuardaDaVaga = "NAO_GUARDA" },
     };
 
     [Fact(DisplayName = "Causas independentes são acumuladas na ordem nas duas entidades, cada uma com o código do dono")]
@@ -50,7 +51,7 @@ public sealed class RecusasDosParametrosDoRecursoTests
 
         RegraRecursoFase.Criar(Regra, TodasAsCausas, Guid.Empty).Errors.Select(static erro => erro.Error.Code)
             .Should().Equal(sufixos.Select(static sufixo => $"RegraRecursoFase.{sufixo}"));
-        RecursoDaEtapa.Criar(AncoraDoRecurso.AtoPublicado, Regra, TodasAsCausas, Guid.Empty).Errors.Select(static erro => erro.Error.Code)
+        RecursoDaEtapa.Criar(EventoInicialDoPrazo.PublicacaoDoAto, Regra, TodasAsCausas, Guid.Empty).Errors.Select(static erro => erro.Error.Code)
             .Should().Equal(sufixos.Select(static sufixo => $"RecursoDaEtapa.{sufixo}"));
     }
 
@@ -60,7 +61,7 @@ public sealed class RecusasDosParametrosDoRecursoTests
         string[] campos = ["prazoValor", "efeitoSuspensivo", "guardaDaVaga", "prazoSegundaInstanciaValor"];
 
         RegraRecursoFase.Criar(Regra, TodasAsCausas, Guid.Empty).Errors.Select(static erro => erro.Field).Should().Equal(campos);
-        RecursoDaEtapa.Criar(AncoraDoRecurso.AtoPublicado, Regra, TodasAsCausas, Guid.Empty).Errors.Select(static erro => erro.Field).Should().Equal(campos);
+        RecursoDaEtapa.Criar(EventoInicialDoPrazo.PublicacaoDoAto, Regra, TodasAsCausas, Guid.Empty).Errors.Select(static erro => erro.Field).Should().Equal(campos);
     }
 
     [Fact(DisplayName = "Há uma declaração para cada motivo de recusa")]
@@ -75,7 +76,7 @@ public sealed class RecusasDosParametrosDoRecursoTests
             ParametrosDeclaradosDoRecurso declarados = UmaCausaPorMotivo[motivo];
 
             string doFase = RegraRecursoFase.Criar(Regra, declarados, Guid.Empty).Errors.Single().Error.Code;
-            string daEtapa = RecursoDaEtapa.Criar(AncoraDoRecurso.AtoPublicado, Regra, declarados, Guid.Empty).Errors.Single().Error.Code;
+            string daEtapa = RecursoDaEtapa.Criar(EventoInicialDoPrazo.PublicacaoDoAto, Regra, declarados, Guid.Empty).Errors.Single().Error.Code;
 
             doFase.Should().Be(motivo == MotivoDaRecusaDosParametros.PrazoPrecisaoInvalida ? "uniplus.validacao.formato" : $"RegraRecursoFase.{motivo}");
             daEtapa.Should().Be(motivo == MotivoDaRecusaDosParametros.PrazoPrecisaoInvalida ? "uniplus.validacao.formato" : $"RecursoDaEtapa.{motivo}");
@@ -85,7 +86,7 @@ public sealed class RecusasDosParametrosDoRecursoTests
     [Fact(DisplayName = "A referência de regra inválida da fase é recusada na raiz da regra, junto das recusas dos parâmetros")]
     public void RegraInvalida_NaRaizDaRegra()
     {
-        ReferenciaRegra outra = ReferenciaRegra.De("BONUS-MULTIPLICATIVO", "v1", new string('b', 64));
+        ReferenciaRegra outra = ReferenciaRegra.De("FADA_MULTIPLICATIVO", "v1", new string('b', 64));
 
         IReadOnlyList<FieldError> erros = RegraRecursoFase.Criar(outra, TodasAsCausas, Guid.Empty).Errors;
 

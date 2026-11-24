@@ -69,7 +69,7 @@ a substituição é proibida.
 No caso concreto que motivou esta ADR, `RECURSO-MULTI-INSTANCIA` tinha zero
 referências congeladas (nenhuma `VersaoConfiguracao`, nenhum consumidor de
 `TipoRegra.RegraPrazoRecurso`, sem produção), e por isso foi substituída por
-`RECURSO-PRAZO-ANCORADO-EM-ATO` — que preserva a período de suspensividade, agora
+`RECURSO_PRAZO_CONTADO_DA_PUBLICACAO_DO_ATO` — que preserva a período de suspensividade, agora
 por instância, e inicia a contagem do prazo na publicação de um ato.
 
 ## Consequências
@@ -133,18 +133,18 @@ por instância, e inicia a contagem do prazo na publicação de um ato.
 
 A fronteira original tratava a correção como **substituição de conteúdo sob a mesma
 identidade** `(codigo, versao)` — o exemplo concreto (`RECURSO-MULTI-INSTANCIA` →
-`RECURSO-PRAZO-ANCORADO-EM-ATO`) preserva `codigo` e `versao`, só troca o `Id` técnico e o
-conteúdo. A reescrita das cinco regras de `regra_distribuicao_vagas` para uma única versão
+`RECURSO_PRAZO_CONTADO_DA_PUBLICACAO_DO_ATO`) preserva `codigo` e `versao`, só troca o `Id` técnico e o
+conteúdo. A reescrita das cinco regras de `REGRA_DISTRIBUICAO_VAGAS` para uma única versão
 `v1` é uma correção mais ampla: além de reescrever conteúdo (o rol de modalidades admitidas
 de cada regra), ela **muda a identidade `(codigo, versao)`** de duas delas —
-`DISTRIBUICAO-LEI-12711` e `DISTRIBUICAO-INSTITUCIONAL` saem de `v2` para `v1`.
+`DISTRIBUICAO_LEI_12711` e `DISTRIBUICAO_INSTITUCIONAL` saem de `v2` para `v1`.
 
 A fronteira já cobria isso em espírito — "enquanto nenhuma configuração congelada referenciar
 uma linha do catálogo por `(codigo, versao)`, essa linha pode ser corrigida por substituição"
 não distingue substituir o conteúdo de substituir a versão — mas o texto original só
 exemplificava o caso mais estreito. Esta emenda o torna explícito: **a fronteira do
 append-only é sobre referência congelada, não sobre qual campo da linha muda**. Sem
-produção, `(DISTRIBUICAO-INSTITUCIONAL, v1)` pode passar a designar conteúdo diferente do
+produção, `(DISTRIBUICAO_INSTITUCIONAL, v1)` pode passar a designar conteúdo diferente do
 que `v1` designava antes de ter sido apagada por uma migration anterior — o par não estava
 congelado em nenhuma `VersaoConfiguracao`, então reusar a identidade não viola RN08. A
 verificação mecânica continua a mesma: cruzar `VersaoConfiguracao` (e o rascunho vivo em
@@ -165,4 +165,4 @@ Com a migration única e os scripts, a guarda de que nenhum gatilho incide sobre
 
 ## Emenda 3 (2026-11-20) — a regra de prazo deixa de registrar efeito suspensivo por instância
 
-A [ADR-0177](0177-efeito-suspensivo-por-periodo-segunda-instancia-e-guarda-da-vaga.md) tira da regra `RECURSO-PRAZO-ANCORADO-EM-ATO` o prazo de efeito suspensivo por instância, que o sistema não usava para calcular quanto dura o bloqueio e só comparava ao conferir a retificação; ao sair o campo, essa parte da comparação deixa de existir, e a forma de comparar, na retificação, as novas declarações da configuração do recurso fica para o detalhamento da issue que as cria. Em seu lugar, a configuração do recurso declara a escolha do efeito suspensivo e a guarda da vaga, e o prazo de interposição da 2ª instância. A decisão desta ADR sobre o caso concreto permanece como registro. A correção da regra segue a fronteira desta ADR e foi conferida: nenhuma versão publicada da configuração a referencia. A migration inicial só semeia a linha da regra no catálogo, nenhuma versão de configuração é semeada, e testes e exemplos citam o código sem serem versão publicada. A regra é, portanto, corrigida por substituição, com o mesmo código e a mesma versão. A partir da primeira versão publicada que a referenciar, vale o append-only estrito.
+A [ADR-0177](0177-efeito-suspensivo-por-periodo-segunda-instancia-e-guarda-da-vaga.md) tira da regra `RECURSO_PRAZO_CONTADO_DA_PUBLICACAO_DO_ATO` o prazo de efeito suspensivo por instância, que o sistema não usava para calcular quanto dura o bloqueio e só comparava ao conferir a retificação; ao sair o campo, essa parte da comparação deixa de existir, e a forma de comparar, na retificação, as novas declarações da configuração do recurso fica para o detalhamento da issue que as cria. Em seu lugar, a configuração do recurso declara a escolha do efeito suspensivo e a guarda da vaga, e o prazo de interposição da 2ª instância. A decisão desta ADR sobre o caso concreto permanece como registro. A correção da regra segue a fronteira desta ADR e foi conferida: nenhuma versão publicada da configuração a referencia. A migration inicial só semeia a linha da regra no catálogo, nenhuma versão de configuração é semeada, e testes e exemplos citam o código sem serem versão publicada. A regra é, portanto, corrigida por substituição, com o mesmo código e a mesma versão. A partir da primeira versão publicada que a referenciar, vale o append-only estrito.

@@ -36,9 +36,11 @@ using Npgsql;
 public sealed class SemLiteralDeTipoDeAtoTests : IClassFixture<ProcessoSeletivoDbFixture>
 {
     /// <summary>
-    /// Detector TEXTUAL: predicados de índices parciais e de CHECKs que comparam com um
-    /// literal em UPPER_SNAKE. É assim que um tipo de ato apareceria hoje —
-    /// <c>TipoAtoPublicado.Codigo</c> é UPPER_SNAKE por invariante do próprio cadastro.
+    /// Detector TEXTUAL: predicados de índices parciais e de CHECKs que comparam a coluna do
+    /// código do tipo de ato (<c>tipo_codigo</c> ou <c>ato_codigo</c>) com um literal em
+    /// UPPER_SNAKE. É assim que um tipo de ato apareceria hoje — <c>TipoAtoPublicado.Codigo</c> é
+    /// UPPER_SNAKE por invariante do próprio cadastro. O vocabulário fechado de um enum de contrato,
+    /// também em UPPER_SNAKE, vive em outras colunas e não é tipo de ato.
     /// </summary>
     private const string ListaPredicadosComLiteralDeTipo = """
         SELECT ix.relname AS objeto, pg_get_expr(i.indpred, i.indrelid) AS predicado
@@ -48,7 +50,7 @@ public sealed class SemLiteralDeTipoDeAtoTests : IClassFixture<ProcessoSeletivoD
         JOIN pg_namespace ns ON ns.oid = t.relnamespace
         WHERE ns.nspname = 'selecao'
           AND i.indpred IS NOT NULL
-          AND pg_get_expr(i.indpred, i.indrelid) ~ '''[A-Z]+(_[A-Z]+)*'''
+          AND pg_get_expr(i.indpred, i.indrelid) ~ '(ato_codigo|tipo_codigo)[^'']*''[A-Z]+(_[A-Z]+)*'''
         UNION ALL
         SELECT con.conname AS objeto, pg_get_constraintdef(con.oid) AS predicado
         FROM pg_constraint con
@@ -56,8 +58,7 @@ public sealed class SemLiteralDeTipoDeAtoTests : IClassFixture<ProcessoSeletivoD
         JOIN pg_namespace ns ON ns.oid = t.relnamespace
         WHERE ns.nspname = 'selecao'
           AND con.contype = 'c'
-          AND con.conname <> 'ck_regras_comprovacao_forma_coerente'
-          AND pg_get_constraintdef(con.oid) ~ '''[A-Z]+(_[A-Z]+)*'''
+          AND pg_get_constraintdef(con.oid) ~ '(ato_codigo|tipo_codigo)[^'']*''[A-Z]+(_[A-Z]+)*'''
         """;
 
     /// <summary>

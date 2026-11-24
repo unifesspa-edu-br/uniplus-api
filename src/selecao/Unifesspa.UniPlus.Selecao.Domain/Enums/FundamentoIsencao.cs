@@ -1,22 +1,14 @@
 namespace Unifesspa.UniPlus.Selecao.Domain.Enums;
 
-/// <summary>
-/// Fundamento de isenção de taxa de inscrição (issue #1112). Vocabulário fechado.
-/// Referenciar um fundamento na configuração não decide origem do fato, forma de
-/// comprovação, deferimento automático nem análise humana — isso pertence à
-/// frente de inscrição.
-/// </summary>
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
+
+/// <summary>Valores de FundamentoIsencao.</summary>
 public enum FundamentoIsencao
 {
-    Nenhum = 0,
+    [CodigoDeContrato("CADASTRO_UNICO", "Cadastro Único", Descricao = "Candidato de família de baixa renda inscrita no Cadastro Único do Governo Federal.")]
     CadastroUnico = 1,
+    [CodigoDeContrato("DOACAO_MEDULA_OSSEA", "Doação de medula óssea", Descricao = "Candidato doador de medula óssea.")]
     DoacaoMedulaOssea = 2,
-
-    /// <summary>
-    /// Carência socioeconômica na acepção da Lei nº 12.799/2013, que é a norma
-    /// que rege isenção em processo seletivo de ingresso em IFES. Os dois
-    /// fundamentos acima vêm da prática institucional e se apoiam em normas de
-    /// concurso público, que não alcançam vestibular (issue #1296).
-    /// </summary>
+    [CodigoDeContrato("CARENCIA_SOCIOECONOMICA", "Carência socioeconômica", Descricao = "Candidato com renda familiar per capita de até um salário mínimo e meio que tenha cursado o ensino médio completo em escola pública ou como bolsista integral da rede privada — os dois requisitos são cumulativos (Lei nº 12.799/2013).")]
     CarenciaSocioeconomica = 3,
 }

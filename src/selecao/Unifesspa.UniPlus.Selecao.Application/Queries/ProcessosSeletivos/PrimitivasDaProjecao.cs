@@ -12,6 +12,7 @@ using Domain.ValueObjects;
 
 using DTOs;
 
+using Unifesspa.UniPlus.Application.Abstractions.Respostas;
 using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
 
@@ -79,6 +80,23 @@ internal static class PrimitivasDaProjecao
         }
 
         valor = encontrado;
+        return true;
+    }
+
+    /// <summary>
+    /// O código de um enum de contrato guardado no envelope, com o rótulo que o enum declara. Código que o enum não conhece é
+    /// forma inesperada, como qualquer outro valor fora do vocabulário.
+    /// </summary>
+    internal static bool TentarCodigoComRotulo<TEnum>(JsonObject? objeto, string chave, [NotNullWhen(true)] out CodigoComRotulo<TEnum>? valor)
+        where TEnum : struct, Enum
+    {
+        valor = null;
+        if (!TentarTexto(objeto, chave, out string codigo) || !CatalogoDe<TEnum>.TentarObter(codigo, out TEnum lido))
+        {
+            return false;
+        }
+
+        valor = CodigoComRotulo<TEnum>.De(lido);
         return true;
     }
 

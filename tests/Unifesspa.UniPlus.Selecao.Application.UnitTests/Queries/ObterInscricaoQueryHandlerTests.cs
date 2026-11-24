@@ -95,7 +95,7 @@ public sealed class ObterInscricaoQueryHandlerTests
         resultado.Value!.ETag.Should().Be(existente.ETag);
         ModalidadesDaInscricaoDto modalidades = resultado.Value!.Avaliacao.Modalidades;
         modalidades.Derivada.Should().BeTrue("a modalidade sai das modalidades que a versão oferta");
-        modalidades.Situacao.Should().Be("CONCORRE");
+        modalidades.Situacao!.Codigo.Should().Be("CONCORRE");
         modalidades.Itens.Select(static m => m.Codigo).Should().Equal(["AC"], "a única ofertada é a ampla, incondicional");
     }
     private static Task<Result<InscricaoDto>> LerAsync(IInscricaoRepository inscricoes, IUserContext usuario) =>

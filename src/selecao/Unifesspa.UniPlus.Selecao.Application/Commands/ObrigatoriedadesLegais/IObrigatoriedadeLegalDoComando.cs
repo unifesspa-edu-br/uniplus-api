@@ -12,7 +12,7 @@ public interface IObrigatoriedadeLegalDoComando
 {
     string? TipoProcessoCodigo { get; }
 
-    CategoriaObrigatoriedade Categoria { get; }
+    string? Categoria { get; }
 
     string? RegraCodigo { get; }
 

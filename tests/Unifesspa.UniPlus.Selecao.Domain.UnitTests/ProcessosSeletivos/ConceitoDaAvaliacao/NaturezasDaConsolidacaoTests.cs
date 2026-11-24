@@ -4,6 +4,7 @@ using System.Text.Json;
 
 using AwesomeAssertions;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
@@ -23,7 +24,7 @@ public sealed class NaturezasDaConsolidacaoTests
     {
         using JsonDocument esquema = JsonDocument.Parse(declaracaoDaRegra);
         using JsonDocument invariantes = JsonDocument.Parse("[]");
-        return RegraCatalogo.Criar(codigo, versao, TipoRegra.RegraConsolidacao, esquema.RootElement, invariantes.RootElement, "Edital do processo seletivo");
+        return RegraCatalogo.Criar(codigo, versao, TipoRegra.RegraApuracaoAvaliacao, esquema.RootElement, invariantes.RootElement, "Edital do processo seletivo");
     }
 
     private static RegraCatalogo ComNaturezas(string codigo, string versao, params string[] naturezas) =>
@@ -38,13 +39,13 @@ public sealed class NaturezasDaConsolidacaoTests
             [new ValorCategoricoInformado("APTO", "Apto", true), new ValorCategoricoInformado("INAPTO", "Inapto", false)]).Value!;
 
     private static ReferenciaRegra ReferenciaDaRegra() =>
-        ReferenciaRegra.De(RegraConsolidacaoCodigo.AvaliacaoUnica, "v1", HashQualquer);
+        ReferenciaRegra.De(RegraDeApuracaoDaAvaliacao.AvaliacaoUnica.Codigo(), "v1", HashQualquer);
 
     private static IReadOnlyList<NaturezaConceito> AvaliacaoUnica() =>
-        NaturezasDaConsolidacao.De(ComNaturezas(RegraConsolidacaoCodigo.AvaliacaoUnica, "v1", "NUMERICO", "CATEGORICO"));
+        NaturezasDaConsolidacao.De(ComNaturezas(RegraDeApuracaoDaAvaliacao.AvaliacaoUnica.Codigo(), "v1", "NUMERICO", "CATEGORICO"));
 
     private static IReadOnlyList<NaturezaConceito> CorrecaoIndependente() =>
-        NaturezasDaConsolidacao.De(ComNaturezas(RegraConsolidacaoCodigo.CorrecaoIndependente, "v1", "NUMERICO"));
+        NaturezasDaConsolidacao.De(ComNaturezas(RegraDeApuracaoDaAvaliacao.CorrecaoIndependente.Codigo(), "v1", "NUMERICO"));
 
     [Fact(DisplayName = "As naturezas saem do esquema da versão, na ordem declarada")]
     public void De_LeAsNaturezasDaVersao()
@@ -63,7 +64,7 @@ public sealed class NaturezasDaConsolidacaoTests
     [Fact(DisplayName = "O esquema sem a chave das naturezas é defeito de semente")]
     public void De_SemAChave_Lanca()
     {
-        RegraCatalogo regra = Regra("CONSOLIDACAO-CORRECAO-INDEPENDENTE", "v1", """{"corretores_distintos":3}""");
+        RegraCatalogo regra = Regra("APURACAO_CORRECAO_INDEPENDENTE", "v1", """{"corretores_distintos":3}""");
 
         Action ler = () => NaturezasDaConsolidacao.De(regra);
 
@@ -80,7 +81,7 @@ public sealed class NaturezasDaConsolidacaoTests
     [InlineData("""{"naturezas_do_conceito":[1]}""")]
     public void De_EsquemaInvalido_Lanca(string esquema)
     {
-        RegraCatalogo regra = Regra("CONSOLIDACAO-CORRECAO-INDEPENDENTE", "v1", esquema);
+        RegraCatalogo regra = Regra("APURACAO_CORRECAO_INDEPENDENTE", "v1", esquema);
 
         Action ler = () => NaturezasDaConsolidacao.De(regra);
 

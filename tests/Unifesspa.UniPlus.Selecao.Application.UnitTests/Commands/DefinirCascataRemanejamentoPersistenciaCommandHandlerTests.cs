@@ -8,6 +8,7 @@ using AwesomeAssertions;
 using NSubstitute;
 
 using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
@@ -93,5 +94,5 @@ public sealed class DefinirCascataRemanejamentoPersistenciaCommandHandlerTests
 
     private static DefinirCascataRemanejamentoCommand ComandoComDestinos(
         ProcessoSeletivo processo, string fallback, IReadOnlyList<DestinoRemanejamentoInput> destinos) =>
-        new(processo.Id, RegraRemanejamentoCodigo.Cascata, "v1", fallback, destinos);
+        new(processo.Id, CriterioDeRemanejamento.OrdemDaLei12711.Codigo(), "v1", fallback, destinos);
 }

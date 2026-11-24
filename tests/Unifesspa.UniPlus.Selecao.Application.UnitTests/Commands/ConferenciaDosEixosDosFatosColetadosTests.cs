@@ -2,6 +2,7 @@ namespace Unifesspa.UniPlus.Selecao.Application.UnitTests.Commands;
 
 using AwesomeAssertions;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
@@ -51,13 +52,13 @@ public sealed class ConferenciaDosEixosDosFatosColetadosTests
         erros.Should().ContainSingle().Which.Error.Message.Should().StartWith("O resumo de grupo 'RENDA_FAMILIAR'").And.Contain("'EXISTE' para 'VALORES_PRESENTES'").And.NotContain("O fato");
     }
 
-    [Fact(DisplayName = "A origem dos valores congelada no item é o token canônico da fonte, não o nome do enum")]
+    [Fact(DisplayName = "A origem dos valores congelada no item é o código do enum, não o nome do membro")]
     public void OrigemDosValores_GravaOTokenCanonico()
     {
         EixosDoItemCongelado.De(Item("SEXO")).OrigemValores.Should().Be("CATALOGO");
-        Domain.Enums.OrigemValoresColeta.OpcoesDoProcesso.ToCodigo().Should().Be("PROCESSO");
-        Domain.Enums.OrigemValoresColeta.MunicipiosDoBonus.ToCodigo().Should().Be("MUNICIPIOS_BONUS");
-        Domain.Enums.OrigemValoresColeta.UnidadesFederativas.ToCodigo().Should().Be("GEO_UF");
+        Domain.Enums.OrigemValoresColeta.OpcoesDoProcesso.Codigo().Should().Be("OPCOES_DO_PROCESSO");
+        Domain.Enums.OrigemValoresColeta.MunicipiosDoBonus.Codigo().Should().Be("MUNICIPIOS_DO_BONUS");
+        Domain.Enums.OrigemValoresColeta.UnidadesFederativas.Codigo().Should().Be("UNIDADES_FEDERATIVAS");
     }
 
     private static Dictionary<string, MetadadoFatoCongelado> Metadado(string dominio, string descricao) =>

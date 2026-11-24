@@ -15,7 +15,7 @@ public sealed class VocabulariosDoRecursoTests
     {
         IReadOnlyList<CodigoComRotulo<UnidadePrazo>> unidades = ListarUnidadesDoPrazoDeRecursoQueryHandler.Handle(new ListarUnidadesDoPrazoDeRecursoQuery());
 
-        unidades.Select(static u => u.Codigo).Should().Equal("horas", "diasUteis");
+        unidades.Select(static u => u.Codigo).Should().Equal("HORAS", "DIAS_UTEIS");
         unidades.Should().OnlyContain(static u => !string.IsNullOrWhiteSpace(u.Rotulo));
         PrazoDoRecurso.UnidadesDeclaraveis.Should().Equal(UnidadePrazo.Horas, UnidadePrazo.DiasUteis);
     }
@@ -25,7 +25,7 @@ public sealed class VocabulariosDoRecursoTests
     {
         IReadOnlyList<CodigoComDescricao<EfeitoSuspensivo>> efeitos = ListarEfeitosSuspensivosQueryHandler.Handle(new ListarEfeitosSuspensivosQuery());
 
-        efeitos.Select(static e => e.Codigo).Should().Equal("semEfeitoSuspensivo");
+        efeitos.Select(static e => e.Codigo).Should().Equal("SEM_EFEITO_SUSPENSIVO");
         efeitos.Should().OnlyContain(static e => !string.IsNullOrWhiteSpace(e.Rotulo) && !string.IsNullOrWhiteSpace(e.Descricao));
     }
 
@@ -34,7 +34,7 @@ public sealed class VocabulariosDoRecursoTests
     {
         IReadOnlyList<CodigoComDescricao<GuardaDaVaga>> guardas = ListarGuardasDaVagaQueryHandler.Handle(new ListarGuardasDaVagaQuery());
 
-        guardas.Select(static g => g.Codigo).Should().Equal("ateOResultadoDefinitivo", "naoGuarda");
+        guardas.Select(static g => g.Codigo).Should().Equal("ATE_O_RESULTADO_DEFINITIVO", "NAO_GUARDA");
         guardas.Should().OnlyContain(static g => !string.IsNullOrWhiteSpace(g.Rotulo) && !string.IsNullOrWhiteSpace(g.Descricao));
     }
 

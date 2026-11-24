@@ -25,12 +25,14 @@ using Xunit;
 /// </remarks>
 public sealed class HashDeEntidadeImutavelTests
 {
-    [Fact(DisplayName = "HashDeObrigatoriedadeLegal_PermaneceEstavelComAChaveTipoProcessoCodigo")]
-    public void HashDeObrigatoriedadeLegal_PermaneceEstavelComAChaveTipoProcessoCodigo()
+    [Theory]
+    [InlineData(CategoriaObrigatoriedade.Etapa, "b991812ae8348a03aea342d1c6f6ec821856fb9c45bda674d2e575c19e74eda4")]
+    [InlineData(CategoriaObrigatoriedade.Bonus, "20aaca31ebbb2469750b13afedea44ffb17dcc2133e49275583885580e54c529")]
+    public void HashDeObrigatoriedadeLegal_CategoriaConhecida_PreservaHash(CategoriaObrigatoriedade categoria, string esperado)
     {
         Result<ObrigatoriedadeLegal> regra = ObrigatoriedadeLegal.Criar(
             ObrigatoriedadeLegal.TipoProcessoUniversal,
-            CategoriaObrigatoriedade.Etapa,
+            categoria,
             "ETAPA_OBRIGATORIA",
             new EtapaObrigatoria("ProvaObjetiva"),
             new TextoNormativo("Edital deve incluir etapa de Prova Objetiva.", "Lei 12.711/2012 art.1º", null, null),
@@ -39,7 +41,7 @@ public sealed class HashDeEntidadeImutavelTests
 
         regra.IsSuccess.Should().BeTrue();
         regra.Value!.Hash.Should().Be(
-            "5ca48e8d4d74dd61cd2ff1b0e76799b08a68836d63d8595d4fef21e8d4c11c23",
+            esperado,
             "a chave tipoProcessoCodigo integra o payload canônico; qualquer mudança posterior exige nova decisão explícita.");
     }
 }

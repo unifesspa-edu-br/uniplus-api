@@ -5,6 +5,7 @@ using System.Text.Json.Nodes;
 
 using AwesomeAssertions;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
@@ -21,7 +22,7 @@ public sealed class EnvelopeCodecTiposRegrasEColunasTests
 {
     /// <summary>
     /// O rol que o decodificador aceita para <c>regraDistribuicao.codigo</c>
-    /// deriva de <see cref="RegraDistribuicaoVagasCodigo.Todos"/> — todo código do catálogo, não
+    /// deriva de <see cref="RegraDeDistribuicaoDeVagas"/> — todo código do catálogo, não
     /// só os dois que <c>ProcessoRico</c> exercita. Um rol fechado em literais deixaria
     /// irreidratável o envelope publicado sob PSIQ ou sob COM-AC-PCD.
     /// </summary>
@@ -32,8 +33,8 @@ public sealed class EnvelopeCodecTiposRegrasEColunasTests
     /// código recusado por não pertencer ao rol conhecido.
     /// </remarks>
     [Theory(DisplayName = "PSIQ e COM-AC-PCD no bloco distribuicao não são recusados como RegraDesconhecida")]
-    [InlineData(RegraDistribuicaoVagasCodigo.Psiq)]
-    [InlineData(RegraDistribuicaoVagasCodigo.ComAcPcd)]
+    [InlineData("DISTRIBUICAO_POR_ACRESCIMO_INDIGENA_E_QUILOMBOLA")]
+    [InlineData("DISTRIBUICAO_COM_AMPLA_CONCORRENCIA_E_PESSOA_COM_DEFICIENCIA")]
     public void CodigoDeQuadroFixoDoSeed_NaoFicaMaisForaDoRolAceitoPeloDecoder(string codigo)
     {
         Result<EnvelopeReidratado> resultado = Reidratar(envelope =>
@@ -43,7 +44,7 @@ public sealed class EnvelopeCodecTiposRegrasEColunasTests
             "o payload continua descrevendo a Lei 12.711 — incompatível com o rol restrito de PSIQ/COM-AC-PCD");
         resultado.Error!.Code.Should().NotBe(
             ErrosCodecEnvelope.RegraDesconhecida,
-            $"'{codigo}' pertence a RegraDistribuicaoVagasCodigo.Todos — o decoder não pode mais recusá-lo como fora do rol conhecido");
+            $"'{codigo}' pertence a o catálogo de regras de distribuição — o decoder não pode mais recusá-lo como fora do rol conhecido");
     }
 
     /// <summary>
@@ -57,13 +58,13 @@ public sealed class EnvelopeCodecTiposRegrasEColunasTests
     public void CodigoLei12711ComAcPcd_NaoFicaMaisForaDoRolAceitoPeloDecoder()
     {
         Result<EnvelopeReidratado> resultado = Reidratar(envelope =>
-            envelope["distribuicao"]!.AsArray()[0]!["regraDistribuicao"]!["codigo"] = RegraDistribuicaoVagasCodigo.Lei12711ComAcPcd);
+            envelope["distribuicao"]!.AsArray()[0]!["regraDistribuicao"]!["codigo"] = RegraDeDistribuicaoDeVagas.Lei12711ComAmplaConcorrenciaEPessoaComDeficiencia.Codigo());
 
         resultado.IsFailure.Should().BeTrue(
             "o payload de ProcessoRico não declara AC_PCD — a variação -COM-AC-PCD exige as dez modalidades do seu próprio rol");
         resultado.Error!.Code.Should().NotBe(
             ErrosCodecEnvelope.RegraDesconhecida,
-            "LEI-12711-COM-AC-PCD pertence a RegraDistribuicaoVagasCodigo.Todos — o decoder não pode mais recusá-la como fora do rol conhecido");
+            "LEI-12711-COM-AC-PCD pertence a o catálogo de regras de distribuição — o decoder não pode mais recusá-la como fora do rol conhecido");
     }
 
     /// <summary>

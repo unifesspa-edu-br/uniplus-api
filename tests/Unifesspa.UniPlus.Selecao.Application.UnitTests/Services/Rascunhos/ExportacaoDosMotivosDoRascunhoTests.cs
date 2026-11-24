@@ -6,6 +6,7 @@ using AwesomeAssertions;
 
 using NSubstitute;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Selecao.Application.UnitTests.Services.DocumentoDaConfiguracao;
 using Unifesspa.UniPlus.Selecao.Application.UnitTests.TestSupport;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
@@ -19,13 +20,13 @@ public sealed class ExportacaoDosMotivosDoRascunhoTests
     [Fact]
     public async Task Exportar_MotivosDeTiposDistintos_ConsultaParesEDescreve()
     {
-        MotivoDeDecisao primeiro = Motivo("ISENCAO_DA_TAXA", FundamentoIsencaoCodigo.CadastroUnico);
+        MotivoDeDecisao primeiro = Motivo("ISENCAO_DA_TAXA", FundamentoIsencao.CadastroUnico.Codigo());
         MotivoDeDecisao segundo = Motivo("CLASSIFICACAO", null);
         _cenario.Motivos.ListarVivosPorCodigosAsync(Arg.Any<IReadOnlyCollection<(string, string?)>>(), Arg.Any<CancellationToken>())
             .Returns(new[] { primeiro, segundo });
         JsonObject documento = await Exportar("""{"motivosDeDecisao":[{"tipoDeDecisaoCodigo":"ISENCAO_DA_TAXA","codigo":"EXEMPLO"},{"tipoDeDecisaoCodigo":"CLASSIFICACAO","codigo":"EXEMPLO"},{"tipoDeDecisaoCodigo":"ISENCAO_DA_TAXA","codigo":"EXEMPLO"}]}""");
         JsonArray motivos = documento["motivosDeDecisao"]!.AsArray();
-        Conferir(motivos[0]!.AsObject(), FundamentoIsencaoCodigo.CadastroUnico);
+        Conferir(motivos[0]!.AsObject(), FundamentoIsencao.CadastroUnico.Codigo());
         Conferir(motivos[1]!.AsObject(), null);
         await _cenario.Motivos.Received(1).ListarVivosPorCodigosAsync(
             Arg.Is<IReadOnlyCollection<(string, string?)>>(pares => pares.Count == 2 && pares.Contains(new ValueTuple<string, string?>("EXEMPLO", "ISENCAO_DA_TAXA")) && pares.Contains(new ValueTuple<string, string?>("EXEMPLO", "CLASSIFICACAO"))),

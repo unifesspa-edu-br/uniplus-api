@@ -96,14 +96,14 @@ public sealed class RecusasDaPublicacaoTests
         }
     }
 
-    private static DocumentoExigido ExigenciaPorFaixaEtaria(Guid faseId) => new Unifesspa.UniPlus.Selecao.Domain.UnitTests.Cenarios.DocumentoExigidoBuilder()
-            .ComTipo(new CopiaDoTipoDeDocumento(CadastrosVivos.IdentidadeDe("LAUDO_MEDICO"), "DECLARACAO_MAIORIDADE", "Declaração de maioridade", "PESSOAL", ProtecaoDoDocumentoDeTeste.Pessoal))
-            .ComMomento(new MomentoDaExigencia(faseId, null, FinalidadeFormulario.Inscricao))
-            .ComAplicabilidade(new AplicabilidadeDaExigencia(Aplicabilidade.Condicional, [CondicaoDeMaioridade()]))
-            .ComIndeferimento(new IndeferimentoDoDocumento(true, null, [BaseLegalDaLeiDeCotas()]))
-            .ComRequisitos(new RequisitosDoDocumento(FormatosPermitidos.Criar(true, null).Value!, null, null, new PrazoDeEmissaoBuilder().SemPrazo().Construir(), new ValidadeDoDocumentoBuilder().NaoExige().Construir()))
-            .ComFatos(null)
-            .Criar().Value!;
+    private static DocumentoExigido ExigenciaPorFaixaEtaria(Guid faseId) => DocumentoExigidoDeTeste.Novo()
+        .NaFase(faseId)
+        .ComTipoDeOrigem(CadastrosVivos.IdentidadeDe("LAUDO_MEDICO"))
+        .ComTipo("DECLARACAO_MAIORIDADE", "Declaração de maioridade", "PESSOAL")
+        .Condicional([CondicaoDeMaioridade()])
+        .ComBasesLegais([BaseLegalDaLeiDeCotas()])
+        .NaFinalidade(FinalidadeFormulario.Inscricao)
+        .Criar().Value!;
 
     private static CondicaoGatilho CondicaoDeMaioridade() => CondicaoGatilho.Criar(
         0, "FAIXA_ETARIA", Operador.MaiorIgual, JsonSerializer.SerializeToElement(18)).Value!;
@@ -168,7 +168,7 @@ public sealed class RecusasDaPublicacaoTests
         // Processo em rascunho, SEM nenhuma dimensão configurada — não conforme.
         ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS Vazio", TiposDeProcessoDeTeste.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
         processo.DefinirTaxaInscricao(
-            ConfiguracaoTaxaInscricao.Criar(true, 100m, [FundamentoIsencaoCodigo.CadastroUnico]).Value!);
+            ConfiguracaoTaxaInscricao.Criar(true, 100m, ["CADASTRO_UNICO"]).Value!);
 
         return processo;
     }

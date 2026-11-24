@@ -10,7 +10,7 @@
 #
 # O que a minuta não define fica sem valor inventado:
 #   - os pesos por área da Resolução 805/2024 não constam dela, então a nota do
-#     ENEM entra importada (CLASSIFICACAO-IMPORTADA) até o cadastro dos pesos;
+#     ENEM entra importada (CLASSIFICACAO_IMPORTADA) até o cadastro dos pesos;
 #   - o percentual quilombola da reserva demográfica;
 #   - a lista completa das regiões de influência do bônus (item 1.5): entram os
 #     oito municípios-polo que a minuta nomeia;
@@ -458,7 +458,7 @@ criar_processo() {
     resp=$(api POST "/api/selecao/processos-seletivos" "{
         \"nome\": \"$NOME_PROCESSO\",
         \"tipoProcessoOrigemId\": \"$TIPO_PROCESSO_ID\",
-        \"origemCandidatos\": \"inscricaoPropria\",
+        \"origemCandidatos\": \"INSCRICAO_PROPRIA\",
         \"unidadeAdministradoraOrigemId\": \"$UNIDADE_ID\",
         \"localidadeCodigoIbge\": \"1504208\", \"localidadeNome\": \"Marabá\", \"localidadeUf\": \"PA\",
         \"identificadorLegivel\": \"$IDENTIFICADOR_PROCESSO\"
@@ -469,9 +469,9 @@ criar_processo() {
 }
 
 definir_algoritmo_contagem_prazo() {
-    log "Definir Algoritmo de Contagem de Prazo (CONTAGEM-PRAZO-EXCLUI-DIA-INICIAL)"
+    log "Definir Algoritmo de Contagem de Prazo (CONTAGEM_PRAZO_EXCLUI_DIA_INICIAL)"
     api PUT "/api/selecao/processos-seletivos/$PROCESSO_ID/algoritmo-contagem-prazo" '{
-        "codigo": "CONTAGEM-PRAZO-EXCLUI-DIA-INICIAL", "versao": "v1"
+        "codigo": "CONTAGEM_PRAZO_EXCLUI_DIA_INICIAL", "versao": "v1"
     }' >/dev/null
     ok "algoritmo de contagem de prazo definido"
 }
@@ -514,8 +514,8 @@ definir_distribuicao_vagas() {
         --arg reserva "$RESERVA_DEMOGRAFICA_ID" --argjson modalidades "$modalidades" '
         [$ofertas[] | {
             ofertaCursoId: ., vagasOfertadasBase: 30, percentualDaReservaLegal: 0.5,
-            regraDistribuicaoCodigo: "DISTRIBUICAO-LEI-12711-COM-AMPLA-CONCORRENCIA-E-PESSOA-COM-DEFICIENCIA", regraDistribuicaoVersao: "v1",
-            regraAjusteCodigo: "RECONCILIACAO-VAGAS-ARTIGO-11-PARAGRAFO-UNICO", regraAjusteVersao: "v1",
+            regraDistribuicaoCodigo: "DISTRIBUICAO_LEI_12711_COM_AMPLA_CONCORRENCIA_E_PESSOA_COM_DEFICIENCIA", regraDistribuicaoVersao: "v1",
+            regraAjusteCodigo: "AJUSTE_VAGAS_ARTIGO_11_PARAGRAFO_UNICO", regraAjusteVersao: "v1",
             referenciaReservaDemograficaId: $reserva,
             modalidadeIds: $modalidades,
             quadro: [{modalidadeId: "70da1000-0000-7000-8000-000000000010", quantidade: 2}]
@@ -533,9 +533,9 @@ definir_opcoes_de_curso() {
 }
 
 definir_cascata_remanejamento() {
-    log "Definir Cascata de Remanejamento (REMANEJ-CASCATA-LEI-12711)"
+    log "Definir Cascata de Remanejamento (REMANEJAMENTO_ORDEM_LEI_12711)"
     # A matriz tem de coincidir com a declaração da regra congelada
-    # REMANEJ-CASCATA-LEI-12711/v1 (Portaria MEC 704/2025, art. 2º e Anexo) —
+    # REMANEJAMENTO_ORDEM_LEI_12711/v1 (Portaria MEC 704/2025, art. 2º e Anexo) —
     # ver RegraCatalogoSeed.cs, SeedId(19), e é a do Quadro 3 da minuta. Oito
     # origens, sete destinos cada, ordem fixa, terminal sempre AC (fallback,
     # não listado nos destinos).
@@ -559,21 +559,21 @@ definir_cascata_remanejamento() {
     ')
 
     api PUT "/api/selecao/processos-seletivos/$PROCESSO_ID/cascata-remanejamento" "{
-        \"regraCodigo\": \"REMANEJ-CASCATA-LEI-12711\", \"regraVersao\": \"v1\",
+        \"regraCodigo\": \"REMANEJAMENTO_ORDEM_LEI_12711\", \"regraVersao\": \"v1\",
         \"fallbackCodigo\": \"AC\", \"destinos\": $destinos
     }" >/dev/null
     ok "cascata de remanejamento definida (Quadro 3)"
 }
 
 definir_bonus_regional() {
-    log "Definir o Fator de Atenuação das Desigualdades de Acesso (BONUS-MULTIPLICATIVO)"
+    log "Definir o Fator de Atenuação das Desigualdades de Acesso (FADA_MULTIPLICATIVO)"
     # O modelo da Medicina pede a quem pede o Fator o município do ensino
     # médio ou, a quem concluiu por certificação e escolhe esse caminho, o da
     # residência no período, com as opções da base legal do acréscimo. Recebe
     # o acréscimo quem o pede no formulário (item 1.6): a configuração cita o
     # pedido.
     api PUT "/api/selecao/processos-seletivos/$PROCESSO_ID/bonus-regional" "{
-        \"aplica\": true, \"regra\": {\"codigo\": \"BONUS-MULTIPLICATIVO\", \"versao\": \"v1\"},
+        \"aplica\": true, \"regra\": {\"codigo\": \"FADA_MULTIPLICATIVO\", \"versao\": \"v1\"},
         \"fator\": 1.2, \"teto\": null, \"fatoElegibilidadeCodigo\": \"SOLICITA_FATOR_ATENUACAO\",
         \"baseLegal\": {\"id\": \"$BASE_LEGAL_BONUS_ID\"}
     }" >/dev/null
@@ -588,7 +588,7 @@ definir_criterios_desempate() {
     # Resolução 805/2024, que a minuta não traz: fica a maior idade.
     api PUT "/api/selecao/processos-seletivos/$PROCESSO_ID/criterios-desempate" '[
         {
-            "ordem": 1, "regra": {"codigo": "DESEMPATE-MAIOR-IDADE", "versao": "v1"},
+            "ordem": 1, "regra": {"codigo": "DESEMPATE_MAIOR_IDADE", "versao": "v1"},
             "parametros": {
                 "etapaRef": null, "idadeMinima": null, "fato": null, "operador": null, "valor": null,
                 "areas": null
@@ -605,10 +605,10 @@ definir_classificacao() {
     # 805/2024 não constam dela, e sem eles não há cálculo local: a nota entra
     # importada, e truncamento e eliminação só se aplicam ao cálculo local.
     api PUT "/api/selecao/processos-seletivos/$PROCESSO_ID/classificacao" '{
-        "regraCalculoCodigo": "CLASSIFICACAO-IMPORTADA", "regraCalculoVersao": "v1",
+        "regraCalculoCodigo": "CLASSIFICACAO_IMPORTADA", "regraCalculoVersao": "v1",
         "regraArredondamentoCodigo": null, "regraArredondamentoVersao": null,
         "casasArredondamento": null,
-        "regraOrdemAlocacaoCodigo": "ALOCACAO-PRIMEIRA-OPCAO-PRIORITARIA", "regraOrdemAlocacaoVersao": "v1",
+        "regraOrdemAlocacaoCodigo": "ALOCACAO_PRIMEIRA_OPCAO_PRIORITARIA", "regraOrdemAlocacaoVersao": "v1",
         "regrasEliminacao": [], "baseadoEmEnem": true
     }' >/dev/null
     ok "classificação definida"
@@ -643,8 +643,8 @@ banca_requerida() {
         | jq -r --arg c "$codigo" '.[] | select((.codigo | if type == "object" then .codigo else . end) == $c) | .id')
     exigir_id "tipo de banca $codigo" "$tipo_id"
     jq -nc --arg t "$tipo_id" '{tipoBancaId: $t, categoriasDocumentoIds: [], regraDeDeliberacao: {
-        modo: "colegiadaComVotacao", integrantes: 3, suplentes: 0, quorum: 2, criterio: "maioriaSimples",
-        desempate: "votoDaPresidencia", encerramento: "presidenciaNoQuorum", semUnanimidade: null}}'
+        modo: "COLEGIADA_COM_VOTACAO", integrantes: 3, suplentes: 0, quorum: 2, criterio: "MAIORIA_SIMPLES",
+        desempate: "VOTO_DA_PRESIDENCIA", encerramento: "PRESIDENCIA_NO_QUORUM", semUnanimidade: null}}'
 }
 
 definir_cronograma_fases() {
@@ -848,7 +848,7 @@ definir_documentos_exigidos() {
         def pedido($clausula): {clausula: $clausula, fato: "SOLICITA_FATOR_ATENUACAO", operador: "IGUAL", valor: "true"};
         $doModelo + [
             regra_de_documento($historico; [
-                pedido(0), {clausula: 0, fato: "FORMA_CONCLUSAO_EM", operador: "EM", valor: "[\"REGULAR\",\"EJA\"]"},
+                pedido(0), {clausula: 0, fato: "FORMA_CONCLUSAO_EM", operador: "ALGUM_DE", valor: "[\"REGULAR\",\"EJA\"]"},
                 pedido(1), {clausula: 1, fato: "CAMINHO_FATOR_ATENUACAO", operador: "IGUAL", valor: "\"ENSINO_MEDIO\""}
             ]),
             regra_de_documento($residencia; [
@@ -861,7 +861,7 @@ definir_documentos_exigidos() {
 documento_do_edital() {
     log "Documento do Edital — iniciar upload"
     local resp url_upload content_type
-    resp=$(api POST "/api/selecao/processos-seletivos/$PROCESSO_ID/documentos-a-publicar" '{"finalidade":"documentoDoEdital","nomeArquivo":"edital.pdf","tipoDeMidia":"application/pdf"}')
+    resp=$(api POST "/api/selecao/processos-seletivos/$PROCESSO_ID/documentos-a-publicar" '{"finalidade":"DOCUMENTO_DO_EDITAL","nomeArquivo":"edital.pdf","tipoDeMidia":"application/pdf"}')
     DOCUMENTO_EDITAL_ID=$(jq -r '.documentoAPublicarId' <<< "$resp")
     url_upload=$(jq -r '.urlUpload' <<< "$resp")
     content_type=$(jq -r '.contentTypeExigido' <<< "$resp")
@@ -910,7 +910,7 @@ publicar() {
 divulgar() {
     log "Divulgação pública do processo"
     api PUT "/api/selecao/processos-seletivos/$PROCESSO_ID/divulgacao" \
-        '{"camposPublicos": ["numero_inscricao", "nome"],
+        '{"camposPublicos": ["NUMERO_INSCRICAO", "NOME"],
           "justificativa": "Item 1.9 do edital: a inscrição autoriza divulgar nome, número de inscrição, pontuação, colocação e resultado."}' >/dev/null
     ok "processo divulgado"
 }

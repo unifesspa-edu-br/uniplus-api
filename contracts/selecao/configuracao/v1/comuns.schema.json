@@ -99,11 +99,11 @@
         },
         "prazoUnidade": {
           "title": "Unidade do prazo",
-          "description": "Unidade do prazo de interposição: horas, dias úteis (diasUteis) ou dias corridos (dias). Só horas e dias úteis são aceitos pelo domínio; dias corridos chegam a ele para receber a recusa própria.",
+          "description": "Unidade do prazo de interposição: horas, dias úteis (DIAS_UTEIS) ou dias corridos (DIAS). Só horas e dias úteis são aceitos pelo domínio; dias corridos chegam a ele para receber a recusa própria.",
           "enum": [
-            "horas",
-            "dias",
-            "diasUteis"
+            "HORAS",
+            "DIAS",
+            "DIAS_UTEIS"
           ]
         },
         "publicacaoDeReferenciaAtoCodigo": {
@@ -127,26 +127,26 @@
         },
         "prazoSegundaInstanciaUnidade": {
           "title": "Unidade do prazo da 2ª instância",
-          "description": "Unidade do prazo da 2ª instância: horas, dias úteis (diasUteis) ou dias corridos (dias). Como no prazo de interposição, só horas e dias úteis são aceitos pelo domínio.",
+          "description": "Unidade do prazo da 2ª instância: horas, dias úteis (DIAS_UTEIS) ou dias corridos (DIAS). Como no prazo de interposição, só horas e dias úteis são aceitos pelo domínio.",
           "enum": [
-            "horas",
-            "dias",
-            "diasUteis"
+            "HORAS",
+            "DIAS",
+            "DIAS_UTEIS"
           ]
         },
         "efeitoSuspensivo": {
           "title": "Efeito suspensivo na 1ª instância",
-          "description": "Efeito suspensivo do recurso na 1ª instância, escolhido pelo edital. A única opção aceita é sem efeito suspensivo (semEfeitoSuspensivo). A 2ª instância sempre tem efeito suspensivo, sem escolha.",
+          "description": "Efeito suspensivo do recurso na 1ª instância, escolhido pelo edital. A única opção aceita é sem efeito suspensivo (SEM_EFEITO_SUSPENSIVO). A 2ª instância sempre tem efeito suspensivo, sem escolha.",
           "enum": [
-            "semEfeitoSuspensivo"
+            "SEM_EFEITO_SUSPENSIVO"
           ]
         },
         "guardaDaVaga": {
           "title": "Guarda da vaga",
-          "description": "Se a vaga em disputa fica guardada enquanto o recurso corre: até o resultado definitivo (ateOResultadoDefinitivo) ou não guarda (naoGuarda). Quando ausente, vale guardar até o resultado definitivo. Com instância superior, a vaga fica guardada até o resultado definitivo.",
+          "description": "Se a vaga em disputa fica guardada enquanto o recurso corre: até o resultado definitivo (ATE_O_RESULTADO_DEFINITIVO) ou não guarda (NAO_GUARDA). Quando ausente, vale guardar até o resultado definitivo. Com instância superior, a vaga fica guardada até o resultado definitivo.",
           "enum": [
-            "ateOResultadoDefinitivo",
-            "naoGuarda"
+            "ATE_O_RESULTADO_DEFINITIVO",
+            "NAO_GUARDA"
           ]
         },
         "procedimentosDeRecurso": {
@@ -185,10 +185,10 @@
               "title": "Código da regra do procedimento",
               "description": "Código de um procedimento de recurso do catálogo: nova correção, conferência, correção de erro de registro ou recálculo.",
               "enum": [
-                "PROCEDIMENTO-RECURSO-RECORRECAO",
-                "PROCEDIMENTO-RECURSO-CONFERENCIA",
-                "PROCEDIMENTO-RECURSO-CORRECAO-MATERIAL",
-                "PROCEDIMENTO-RECURSO-RECALCULO"
+                "PROCEDIMENTO_RECURSO_RECORRECAO",
+                "PROCEDIMENTO_RECURSO_CONFERENCIA",
+                "PROCEDIMENTO_RECURSO_CORRECAO_MATERIAL",
+                "PROCEDIMENTO_RECURSO_RECALCULO"
               ]
             }
           }

@@ -4,6 +4,7 @@ using System.Text.Json;
 
 using AwesomeAssertions;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Regras.Services;
@@ -209,7 +210,7 @@ public sealed class AvaliacaoDaInscricaoTests
     private const string GrupoDeMunicipios = "GRUPO_MUNICIPIOS";
 
     private static ConfiguracaoBonusRegional Bonus(string? fatoElegibilidade) =>
-        ConfiguracaoBonusRegional.Criar(ReferenciaRegra.De(RegraBonusCodigo.Multiplicativo, "v1", new string('e', 64)), 1.20m, null, fatoElegibilidade, new BaseLegalCongelada(Guid.CreateVersion7(), "PORTARIA_UNIFESSPA_NO_2514_2023", "PORTARIA", "Portaria de teste", "Inclusão regional", [("1504208", "Marabá", "PA")])).Value!;
+        ConfiguracaoBonusRegional.Criar(ReferenciaRegra.De(RegraDeBonus.Multiplicativo.Codigo(), "v1", new string('e', 64)), 1.20m, null, fatoElegibilidade, new BaseLegalCongelada(Guid.CreateVersion7(), "PORTARIA_UNIFESSPA_NO_2514_2023", "PORTARIA", "Portaria de teste", "Inclusão regional", [("1504208", "Marabá", "PA")])).Value!;
 
     private static ConfiguracaoAvaliavel Configuracao(bool derivaModalidade, bool rendaSoParaBaixaRenda = false, bool municipioDoBonus = false, bool municipioNoGrupo = false)
     {
@@ -306,11 +307,11 @@ public sealed class AvaliacaoDaInscricaoTests
     }
 
     private static ModalidadeSelecionada Modalidade(string codigo, NaturezaLegalModalidade natureza, params (string Fato, bool Valor)[] atomos) =>
-        ModalidadeSelecionada.Criar(
-            Guid.CreateVersion7(), codigo, $"Nome de {codigo}", natureza, ComposicaoVagasModalidade.RestanteDasVagasOfertadas,
-            null, natureza == NaturezaLegalModalidade.CotaReservada ? RegraRemanejamentoModalidade.SegueCascata : RegraRemanejamentoModalidade.Nenhuma,
-            null, null, null,
-            PredicadoDnf.CriarDeCondicoesAgrupadas([.. atomos.Select(static a => (0, CondicaoDnf.Criar(
-                a.Fato, Operador.Igual, JsonSerializer.SerializeToElement(a.Valor)).Value!))]).Value!,
-            null, "Lei 12.711/2012").Value!;
+        ModalidadeSelecionada.Criar(ModalidadesNoCadastroDeTeste.Da(codigo, natureza, ComposicaoVagasModalidade.RestanteDasVagasOfertadas) with
+        {
+            Descricao = $"Nome de {codigo}",
+            RegraRemanejamento = natureza == NaturezaLegalModalidade.CotaReservada ? RegraRemanejamentoModalidade.SegueOrdemDeRemanejamento : null,
+            RegraDeAplicabilidade = PredicadoDnf.CriarDeCondicoesAgrupadas([.. atomos.Select(static a => (0, CondicaoDnf.Criar(
+                a.Fato, Operador.Igual, JsonSerializer.SerializeToElement(a.Valor)).Value!))]).Value!
+        }).Value!;
 }

@@ -101,7 +101,7 @@ public sealed class ProcessoSeletivoRegraDeComprovacaoConferenciasTests
         processo.DefinirCronogramaFases([fase], []).IsSuccess.Should().BeTrue();
 
         RegraDeComprovacao regraDeDocumento = RegraDeComprovacao.CriarRegraDeDocumento(DocumentoQualquer(fase.Id), 0).Value!;
-        RegraDeComprovacao grupo = RegraDeComprovacao.CriarGrupo(FormaDeComprovacao.QuantidadeMinimaDeItens, 0, 1, "PENDENCIA_REENVIO", [], [regraDeDocumento]).Value!;
+        RegraDeComprovacao grupo = RegraDeComprovacao.CriarGrupo(FormaDeComprovacao.QuantidadeMinimaDeItens, 0, 1, "ABRE_PRAZO_PARA_REENVIO", [], [regraDeDocumento]).Value!;
 
         Result resultado = processo.DefinirDocumentosExigidos([grupo]);
 
@@ -118,7 +118,7 @@ public sealed class ProcessoSeletivoRegraDeComprovacaoConferenciasTests
         processo.DefinirCronogramaFases([faseComComplementacao], []).IsSuccess.Should().BeTrue();
 
         RegraDeComprovacao regraDeDocumento = RegraDeComprovacao.CriarRegraDeDocumento(DocumentoQualquer(faseComComplementacao.Id), 0).Value!;
-        RegraDeComprovacao grupo = RegraDeComprovacao.CriarGrupo(FormaDeComprovacao.QuantidadeMinimaDeItens, 0, 1, "PENDENCIA_REENVIO", [], [regraDeDocumento]).Value!;
+        RegraDeComprovacao grupo = RegraDeComprovacao.CriarGrupo(FormaDeComprovacao.QuantidadeMinimaDeItens, 0, 1, "ABRE_PRAZO_PARA_REENVIO", [], [regraDeDocumento]).Value!;
         processo.DefinirDocumentosExigidos([grupo]).IsSuccess.Should().BeTrue();
 
         FaseCronograma faseSemComplementacao = NovaFase(faseCanonicaOrigemId, permiteComplementacao: false);
@@ -180,7 +180,7 @@ public sealed class ProcessoSeletivoRegraDeComprovacaoConferenciasTests
             Guid.CreateVersion7(), "INSCRICAO", OrigemDataFase.NoEdital, AgrupaEtapas: false, PermiteComplementacao: true, ColetaInscricao: true, ColetaSolicitacaoIsencao: false)),
         new DecisoesDeCronogramaDaFase(
             1, Inicio: new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero), Fim: new DateTimeOffset(2026, 1, 2, 0, 0, 0, TimeSpan.Zero), UnidadeResponsavel: UnidadesDeTeste.Ceps),
-        new PublicacoesDaFase(Produtos: [ProdutoDaFase.Criar("INSCRICAO", PapelProdutoFase.Definitivo)], EmiteParecerIndividual: false, RegraRecurso: null),
+        new PublicacoesDaFase(Produtos: [ProdutoDaFase.Criar("INSCRICAO", PapelDaPublicacaoPrevista.Definitivo)], EmiteParecerIndividual: false, RegraRecurso: null),
         bancasRequeridas: []).Value!;
 
     private static void DefinirComposicaoFamiliarNaInscricao(ProcessoSeletivo processo, FaseCronograma fase)

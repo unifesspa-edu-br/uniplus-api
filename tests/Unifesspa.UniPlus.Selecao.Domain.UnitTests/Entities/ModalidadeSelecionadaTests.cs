@@ -10,22 +10,12 @@ using Unifesspa.UniPlus.Testes.Compartilhado;
 
 public sealed class ModalidadeSelecionadaTests
 {
-    private static Result<ModalidadeSelecionada> CriarAmpla() => ModalidadeSelecionada.Criar(
-        Guid.CreateVersion7(), "AC", "Ampla concorrência",
-        NaturezaLegalModalidade.Ampla, ComposicaoVagasModalidade.RestanteDasVagasOfertadas,
-        composicaoOrigemCodigo: null, RegraRemanejamentoModalidade.Nenhuma,
-        remanejamentoDestino: null, remanejamentoPar: null, remanejamentoFallback: null,
-        regraDeAplicabilidade: RegrasDeAplicabilidadeDeTeste.DaNatureza(NaturezaLegalModalidade.Ampla), acaoQuandoIndeferido: null, baseLegal: "Lei 12.711/2012");
+    private static Result<ModalidadeSelecionada> CriarAmpla() => ModalidadeSelecionada.Criar(ModalidadesNoCadastroDeTeste.Da("AC", NaturezaLegalModalidade.Ampla, ComposicaoVagasModalidade.RestanteDasVagasOfertadas) with { Descricao = "Ampla concorrência" });
 
     [Fact(DisplayName = "Criar sem a identidade da modalidade de origem recusa")]
     public void Criar_SemIdentidadeDeOrigem_Recusa()
     {
-        Result<ModalidadeSelecionada> resultado = ModalidadeSelecionada.Criar(
-            Guid.Empty, "AC", "Ampla concorrência",
-            NaturezaLegalModalidade.Ampla, ComposicaoVagasModalidade.RestanteDasVagasOfertadas,
-            composicaoOrigemCodigo: null, RegraRemanejamentoModalidade.Nenhuma,
-            remanejamentoDestino: null, remanejamentoPar: null, remanejamentoFallback: null,
-            regraDeAplicabilidade: RegrasDeAplicabilidadeDeTeste.DaNatureza(NaturezaLegalModalidade.Ampla), acaoQuandoIndeferido: null, baseLegal: "Lei 12.711/2012");
+        Result<ModalidadeSelecionada> resultado = ModalidadeSelecionada.Criar(ModalidadesNoCadastroDeTeste.Da("AC", NaturezaLegalModalidade.Ampla, ComposicaoVagasModalidade.RestanteDasVagasOfertadas) with { Id = Guid.Empty, Descricao = "Ampla concorrência" });
 
         resultado.IsFailure.Should().BeTrue(
             "a identidade da origem é o que decide se esta oferta é a modalidade que uma regra legal exige");
@@ -39,19 +29,13 @@ public sealed class ModalidadeSelecionadaTests
 
         resultado.IsSuccess.Should().BeTrue();
         resultado.Value!.NaturezaLegal.Should().Be(NaturezaLegalModalidade.Ampla);
-        resultado.Value.RegraRemanejamento.Should().Be(RegraRemanejamentoModalidade.Nenhuma);
+        resultado.Value.RegraRemanejamento.Should().Be(null);
     }
 
-    [Fact(DisplayName = "Criar modalidade de cota reservada com SEGUE_CASCATA tem sucesso")]
+    [Fact(DisplayName = "Criar modalidade de cota reservada com SEGUE_ORDEM_DE_REMANEJAMENTO tem sucesso")]
     public void Criar_CotaReservadaComCascata_Sucesso()
     {
-        Result<ModalidadeSelecionada> resultado = ModalidadeSelecionada.Criar(
-            Guid.CreateVersion7(), "LB_PPI", "Baixa renda PPI",
-            NaturezaLegalModalidade.CotaReservada, ComposicaoVagasModalidade.DentroDaReservaLegal,
-            composicaoOrigemCodigo: null, RegraRemanejamentoModalidade.SegueCascata,
-            remanejamentoDestino: null, remanejamentoPar: null, remanejamentoFallback: null,
-            regraDeAplicabilidade: RegrasDeAplicabilidadeDeTeste.DaNatureza(NaturezaLegalModalidade.CotaReservada), acaoQuandoIndeferido: "RECLASSIFICA_AC",
-            baseLegal: "Lei 12.711/2012 art. 3º");
+        Result<ModalidadeSelecionada> resultado = ModalidadeSelecionada.Criar(ModalidadesNoCadastroDeTeste.Da("LB_PPI", NaturezaLegalModalidade.CotaReservada, ComposicaoVagasModalidade.DentroDaReservaLegal) with { Descricao = "Baixa renda PPI", AcaoQuandoIndeferido = "RECLASSIFICA_AC", BaseLegal = "Lei 12.711/2012 art. 3º" });
 
         resultado.IsSuccess.Should().BeTrue();
     }
@@ -59,12 +43,7 @@ public sealed class ModalidadeSelecionadaTests
     [Fact(DisplayName = "Criar modalidade RETIRADA_DE_OUTRA_MODALIDADE com origem tem sucesso")]
     public void Criar_RetiradaDeOutraModalidadeComOrigem_Sucesso()
     {
-        Result<ModalidadeSelecionada> resultado = ModalidadeSelecionada.Criar(
-            Guid.CreateVersion7(), "V", "PcD retirada da AC",
-            NaturezaLegalModalidade.AcaoAfirmativa, ComposicaoVagasModalidade.RetiradaDeOutraModalidade,
-            composicaoOrigemCodigo: "AC", RegraRemanejamentoModalidade.Nenhuma,
-            remanejamentoDestino: null, remanejamentoPar: null, remanejamentoFallback: null,
-            regraDeAplicabilidade: RegrasDeAplicabilidadeDeTeste.DaNatureza(NaturezaLegalModalidade.AcaoAfirmativa), acaoQuandoIndeferido: null, baseLegal: "Edital SiSU 4.1.2");
+        Result<ModalidadeSelecionada> resultado = ModalidadeSelecionada.Criar(ModalidadesNoCadastroDeTeste.Da("V", NaturezaLegalModalidade.AcaoAfirmativa, ComposicaoVagasModalidade.RetiradaDeOutraModalidade) with { Descricao = "PcD retirada da AC", ComposicaoOrigemCodigo = "AC", BaseLegal = "Edital SiSU 4.1.2" });
 
         resultado.IsSuccess.Should().BeTrue();
         resultado.Value!.ComposicaoOrigemCodigo.Should().Be("AC");
@@ -73,12 +52,7 @@ public sealed class ModalidadeSelecionadaTests
     [Fact(DisplayName = "Criar modalidade com remanejamento CRUZADO completo tem sucesso")]
     public void Criar_Cruzado_Sucesso()
     {
-        Result<ModalidadeSelecionada> resultado = ModalidadeSelecionada.Criar(
-            Guid.CreateVersion7(), "IND", "Indígena (PSIQ)",
-            NaturezaLegalModalidade.AcaoAfirmativa, ComposicaoVagasModalidade.SuplementarAoTotal,
-            composicaoOrigemCodigo: null, RegraRemanejamentoModalidade.Cruzado,
-            remanejamentoDestino: null, remanejamentoPar: "QUIL", remanejamentoFallback: "AC",
-            regraDeAplicabilidade: RegrasDeAplicabilidadeDeTeste.DaNatureza(NaturezaLegalModalidade.AcaoAfirmativa), acaoQuandoIndeferido: null, baseLegal: "Res. 532/2021");
+        Result<ModalidadeSelecionada> resultado = ModalidadeSelecionada.Criar(ModalidadesNoCadastroDeTeste.Da("IND", NaturezaLegalModalidade.AcaoAfirmativa, ComposicaoVagasModalidade.SuplementarAoTotal) with { Descricao = "Indígena (PSIQ)", RegraRemanejamento = RegraRemanejamentoModalidade.Cruzado, RemanejamentoPar = "QUIL", RemanejamentoFallback = "AC", BaseLegal = "Res. 532/2021" });
 
         resultado.IsSuccess.Should().BeTrue();
     }
@@ -86,10 +60,7 @@ public sealed class ModalidadeSelecionadaTests
     [Fact(DisplayName = "Criar com código vazio falha")]
     public void Criar_CodigoVazio_Falha()
     {
-        Result<ModalidadeSelecionada> resultado = ModalidadeSelecionada.Criar(
-            Guid.CreateVersion7(), "", null,
-            NaturezaLegalModalidade.Ampla, ComposicaoVagasModalidade.RestanteDasVagasOfertadas,
-            null, RegraRemanejamentoModalidade.Nenhuma, null, null, null, RegrasDeAplicabilidadeDeTeste.DaNatureza(NaturezaLegalModalidade.Ampla), null, "base");
+        Result<ModalidadeSelecionada> resultado = ModalidadeSelecionada.Criar(ModalidadesNoCadastroDeTeste.Da("", NaturezaLegalModalidade.Ampla, ComposicaoVagasModalidade.RestanteDasVagasOfertadas) with { BaseLegal = "base" });
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("ModalidadeSelecionada.CodigoObrigatorio");
@@ -98,10 +69,7 @@ public sealed class ModalidadeSelecionadaTests
     [Fact(DisplayName = "Criar com natureza legal Nenhuma falha")]
     public void Criar_NaturezaLegalNenhuma_Falha()
     {
-        Result<ModalidadeSelecionada> resultado = ModalidadeSelecionada.Criar(
-            Guid.CreateVersion7(), "AC", null,
-            NaturezaLegalModalidade.Nenhuma, ComposicaoVagasModalidade.RestanteDasVagasOfertadas,
-            null, RegraRemanejamentoModalidade.Nenhuma, null, null, null, RegrasDeAplicabilidadeDeTeste.DaNatureza(NaturezaLegalModalidade.Nenhuma), null, "base");
+        Result<ModalidadeSelecionada> resultado = ModalidadeSelecionada.Criar(ModalidadesNoCadastroDeTeste.Da("AC", NaturezaLegalModalidade.Ampla, ComposicaoVagasModalidade.RestanteDasVagasOfertadas) with { NaturezaLegal = null, BaseLegal = "base" });
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("ModalidadeSelecionada.NaturezaLegalObrigatoria");
@@ -110,10 +78,7 @@ public sealed class ModalidadeSelecionadaTests
     [Fact(DisplayName = "Criar com composição de vagas Nenhuma falha")]
     public void Criar_ComposicaoVagasNenhuma_Falha()
     {
-        Result<ModalidadeSelecionada> resultado = ModalidadeSelecionada.Criar(
-            Guid.CreateVersion7(), "AC", null,
-            NaturezaLegalModalidade.Ampla, ComposicaoVagasModalidade.Nenhuma,
-            null, RegraRemanejamentoModalidade.Nenhuma, null, null, null, RegrasDeAplicabilidadeDeTeste.DaNatureza(NaturezaLegalModalidade.Ampla), null, "base");
+        Result<ModalidadeSelecionada> resultado = ModalidadeSelecionada.Criar(ModalidadesNoCadastroDeTeste.Da("AC", NaturezaLegalModalidade.Ampla, ComposicaoVagasModalidade.RestanteDasVagasOfertadas) with { ComposicaoVagas = null, BaseLegal = "base" });
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("ModalidadeSelecionada.ComposicaoVagasObrigatoria");
@@ -122,10 +87,7 @@ public sealed class ModalidadeSelecionadaTests
     [Fact(DisplayName = "Criar com base legal vazia falha")]
     public void Criar_BaseLegalVazia_Falha()
     {
-        Result<ModalidadeSelecionada> resultado = ModalidadeSelecionada.Criar(
-            Guid.CreateVersion7(), "AC", null,
-            NaturezaLegalModalidade.Ampla, ComposicaoVagasModalidade.RestanteDasVagasOfertadas,
-            null, RegraRemanejamentoModalidade.Nenhuma, null, null, null, RegrasDeAplicabilidadeDeTeste.DaNatureza(NaturezaLegalModalidade.Ampla), null, "");
+        Result<ModalidadeSelecionada> resultado = ModalidadeSelecionada.Criar(ModalidadesNoCadastroDeTeste.Da("AC", NaturezaLegalModalidade.Ampla, ComposicaoVagasModalidade.RestanteDasVagasOfertadas) with { BaseLegal = "" });
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("ModalidadeSelecionada.BaseLegalObrigatoria");
@@ -134,10 +96,7 @@ public sealed class ModalidadeSelecionadaTests
     [Fact(DisplayName = "Criar RETIRADA_DE_OUTRA_MODALIDADE sem código de origem falha")]
     public void Criar_RetiradaDeOutraModalidadeSemOrigem_Falha()
     {
-        Result<ModalidadeSelecionada> resultado = ModalidadeSelecionada.Criar(
-            Guid.CreateVersion7(), "V", null,
-            NaturezaLegalModalidade.AcaoAfirmativa, ComposicaoVagasModalidade.RetiradaDeOutraModalidade,
-            composicaoOrigemCodigo: null, RegraRemanejamentoModalidade.Nenhuma, null, null, null, RegrasDeAplicabilidadeDeTeste.DaNatureza(NaturezaLegalModalidade.AcaoAfirmativa), null, "base");
+        Result<ModalidadeSelecionada> resultado = ModalidadeSelecionada.Criar(ModalidadesNoCadastroDeTeste.Da("V", NaturezaLegalModalidade.AcaoAfirmativa, ComposicaoVagasModalidade.RetiradaDeOutraModalidade) with { BaseLegal = "base" });
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("ModalidadeSelecionada.ComposicaoOrigemObrigatoria");
@@ -146,22 +105,16 @@ public sealed class ModalidadeSelecionadaTests
     [Fact(DisplayName = "Criar com origem informada fora de RETIRADA_DE_OUTRA_MODALIDADE falha")]
     public void Criar_ComposicaoOrigemIndevida_Falha()
     {
-        Result<ModalidadeSelecionada> resultado = ModalidadeSelecionada.Criar(
-            Guid.CreateVersion7(), "AC", null,
-            NaturezaLegalModalidade.Ampla, ComposicaoVagasModalidade.RestanteDasVagasOfertadas,
-            composicaoOrigemCodigo: "X", RegraRemanejamentoModalidade.Nenhuma, null, null, null, RegrasDeAplicabilidadeDeTeste.DaNatureza(NaturezaLegalModalidade.Ampla), null, "base");
+        Result<ModalidadeSelecionada> resultado = ModalidadeSelecionada.Criar(ModalidadesNoCadastroDeTeste.Da("AC", NaturezaLegalModalidade.Ampla, ComposicaoVagasModalidade.RestanteDasVagasOfertadas) with { ComposicaoOrigemCodigo = "X", BaseLegal = "base" });
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("ModalidadeSelecionada.ComposicaoOrigemIndevida");
     }
 
-    [Fact(DisplayName = "Criar cota reservada sem SEGUE_CASCATA falha")]
+    [Fact(DisplayName = "Criar cota reservada sem SEGUE_ORDEM_DE_REMANEJAMENTO falha")]
     public void Criar_CotaReservadaSemCascata_Falha()
     {
-        Result<ModalidadeSelecionada> resultado = ModalidadeSelecionada.Criar(
-            Guid.CreateVersion7(), "LB_PPI", null,
-            NaturezaLegalModalidade.CotaReservada, ComposicaoVagasModalidade.DentroDaReservaLegal,
-            null, RegraRemanejamentoModalidade.DestinoUnico, "AC", null, null, RegrasDeAplicabilidadeDeTeste.DaNatureza(NaturezaLegalModalidade.CotaReservada), null, "base");
+        Result<ModalidadeSelecionada> resultado = ModalidadeSelecionada.Criar(ModalidadesNoCadastroDeTeste.Da("LB_PPI", NaturezaLegalModalidade.CotaReservada, ComposicaoVagasModalidade.DentroDaReservaLegal) with { RegraRemanejamento = RegraRemanejamentoModalidade.DestinoUnico, RemanejamentoDestino = "AC", BaseLegal = "base" });
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("ModalidadeSelecionada.CotaReservadaExigeCascata");
@@ -170,10 +123,7 @@ public sealed class ModalidadeSelecionadaTests
     [Fact(DisplayName = "Criar DESTINO_UNICO sem destino falha")]
     public void Criar_DestinoUnicoSemDestino_Falha()
     {
-        Result<ModalidadeSelecionada> resultado = ModalidadeSelecionada.Criar(
-            Guid.CreateVersion7(), "X", null,
-            NaturezaLegalModalidade.AcaoAfirmativa, ComposicaoVagasModalidade.SuplementarAoTotal,
-            null, RegraRemanejamentoModalidade.DestinoUnico, remanejamentoDestino: null, null, null, RegrasDeAplicabilidadeDeTeste.DaNatureza(NaturezaLegalModalidade.AcaoAfirmativa), null, "base");
+        Result<ModalidadeSelecionada> resultado = ModalidadeSelecionada.Criar(ModalidadesNoCadastroDeTeste.Da("X", NaturezaLegalModalidade.AcaoAfirmativa, ComposicaoVagasModalidade.SuplementarAoTotal) with { RegraRemanejamento = RegraRemanejamentoModalidade.DestinoUnico, BaseLegal = "base" });
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("ModalidadeSelecionada.RemanejamentoDestinoObrigatorio");
@@ -182,11 +132,7 @@ public sealed class ModalidadeSelecionadaTests
     [Fact(DisplayName = "Criar CRUZADO sem par falha — o par é o que define o cruzamento")]
     public void Criar_CruzadoSemPar_Falha()
     {
-        Result<ModalidadeSelecionada> resultado = ModalidadeSelecionada.Criar(
-            Guid.CreateVersion7(), "IND", null,
-            NaturezaLegalModalidade.AcaoAfirmativa, ComposicaoVagasModalidade.SuplementarAoTotal,
-            null, RegraRemanejamentoModalidade.Cruzado, null, remanejamentoPar: null, remanejamentoFallback: "AC",
-            regraDeAplicabilidade: RegrasDeAplicabilidadeDeTeste.DaNatureza(NaturezaLegalModalidade.AcaoAfirmativa), acaoQuandoIndeferido: null, baseLegal: "base");
+        Result<ModalidadeSelecionada> resultado = ModalidadeSelecionada.Criar(ModalidadesNoCadastroDeTeste.Da("IND", NaturezaLegalModalidade.AcaoAfirmativa, ComposicaoVagasModalidade.SuplementarAoTotal) with { RegraRemanejamento = RegraRemanejamentoModalidade.Cruzado, RemanejamentoFallback = "AC", BaseLegal = "base" });
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("ModalidadeSelecionada.RemanejamentoCruzadoIncompleto");
@@ -195,12 +141,7 @@ public sealed class ModalidadeSelecionadaTests
     [Fact(DisplayName = "Criar CRUZADO com par e sem fallback tem sucesso — certame isolado não tem destino final")]
     public void Criar_CruzadoSemFallback_Sucesso()
     {
-        Result<ModalidadeSelecionada> resultado = ModalidadeSelecionada.Criar(
-            Guid.CreateVersion7(), "AC_I", "Vaga por acréscimo — candidato indígena (PSIQ)",
-            NaturezaLegalModalidade.AcaoAfirmativa, ComposicaoVagasModalidade.SuplementarAoTotal,
-            composicaoOrigemCodigo: null, RegraRemanejamentoModalidade.Cruzado,
-            remanejamentoDestino: null, remanejamentoPar: "AC_Q", remanejamentoFallback: null,
-            regraDeAplicabilidade: RegrasDeAplicabilidadeDeTeste.DaNatureza(NaturezaLegalModalidade.AcaoAfirmativa), acaoQuandoIndeferido: null, baseLegal: "Res. 532/2021");
+        Result<ModalidadeSelecionada> resultado = ModalidadeSelecionada.Criar(ModalidadesNoCadastroDeTeste.Da("AC_I", NaturezaLegalModalidade.AcaoAfirmativa, ComposicaoVagasModalidade.SuplementarAoTotal) with { Descricao = "Vaga por acréscimo — candidato indígena (PSIQ)", RegraRemanejamento = RegraRemanejamentoModalidade.Cruzado, RemanejamentoPar = "AC_Q", BaseLegal = "Res. 532/2021" });
 
         resultado.IsSuccess.Should().BeTrue(
             "o PSIQ não oferta ampla concorrência, então a vaga que nem AC_I nem AC_Q preencherem "
@@ -211,10 +152,7 @@ public sealed class ModalidadeSelecionadaTests
     [Fact(DisplayName = "Criar com destino informado fora de DESTINO_UNICO falha")]
     public void Criar_RemanejamentoDestinoIndevido_Falha()
     {
-        Result<ModalidadeSelecionada> resultado = ModalidadeSelecionada.Criar(
-            Guid.CreateVersion7(), "AC", null,
-            NaturezaLegalModalidade.Ampla, ComposicaoVagasModalidade.RestanteDasVagasOfertadas,
-            null, RegraRemanejamentoModalidade.Nenhuma, remanejamentoDestino: "X", null, null, RegrasDeAplicabilidadeDeTeste.DaNatureza(NaturezaLegalModalidade.Ampla), null, "base");
+        Result<ModalidadeSelecionada> resultado = ModalidadeSelecionada.Criar(ModalidadesNoCadastroDeTeste.Da("AC", NaturezaLegalModalidade.Ampla, ComposicaoVagasModalidade.RestanteDasVagasOfertadas) with { RemanejamentoDestino = "X", BaseLegal = "base" });
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("ModalidadeSelecionada.RemanejamentoDestinoIndevido");
@@ -223,13 +161,54 @@ public sealed class ModalidadeSelecionadaTests
     [Fact(DisplayName = "Criar com par/fallback informados fora de CRUZADO falha")]
     public void Criar_RemanejamentoCruzadoIndevido_Falha()
     {
-        Result<ModalidadeSelecionada> resultado = ModalidadeSelecionada.Criar(
-            Guid.CreateVersion7(), "AC", null,
-            NaturezaLegalModalidade.Ampla, ComposicaoVagasModalidade.RestanteDasVagasOfertadas,
-            null, RegraRemanejamentoModalidade.Nenhuma, null, remanejamentoPar: "X", remanejamentoFallback: "Y",
-            regraDeAplicabilidade: RegrasDeAplicabilidadeDeTeste.DaNatureza(NaturezaLegalModalidade.Ampla), acaoQuandoIndeferido: null, baseLegal: "base");
+        Result<ModalidadeSelecionada> resultado = ModalidadeSelecionada.Criar(ModalidadesNoCadastroDeTeste.Da("AC", NaturezaLegalModalidade.Ampla, ComposicaoVagasModalidade.RestanteDasVagasOfertadas) with { RemanejamentoPar = "X", RemanejamentoFallback = "Y", BaseLegal = "base" });
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("ModalidadeSelecionada.RemanejamentoCruzadoIndevido");
     }
+    [Fact(DisplayName = "Criar com IdentidadeECodigoVazios respeita a ordem das recusas")]
+    public void Criar_IdentidadeECodigoVazios_RecusaNaOrdem()
+    {
+        ModalidadeNoCadastro cadastro = ModalidadesNoCadastroDeTeste.Da("AC", NaturezaLegalModalidade.Ampla,
+            ComposicaoVagasModalidade.RestanteDasVagasOfertadas) with
+        { Id = Guid.Empty, Codigo = "" };
+        ModalidadeSelecionada.Criar(cadastro).Error!.Code.Should().Be("ModalidadeSelecionada.ModalidadeOrigemIdObrigatorio");
+    }
+
+    [Fact(DisplayName = "Criar com CotaComDestinoUnicoSemDestino respeita a ordem das recusas")]
+    public void Criar_CotaComDestinoUnicoSemDestino_RecusaNaOrdem()
+    {
+        ModalidadeNoCadastro cadastro = ModalidadesNoCadastroDeTeste.Da("AC", NaturezaLegalModalidade.CotaReservada,
+            ComposicaoVagasModalidade.DentroDaReservaLegal) with
+        { RegraRemanejamento = RegraRemanejamentoModalidade.DestinoUnico };
+        ModalidadeSelecionada.Criar(cadastro).Error!.Code.Should().Be("ModalidadeSelecionada.CotaReservadaExigeCascata");
+    }
+
+    [Fact(DisplayName = "Criar com DestinoUnicoSemDestinoEComPar respeita a ordem das recusas")]
+    public void Criar_DestinoUnicoSemDestinoEComPar_RecusaNaOrdem()
+    {
+        ModalidadeNoCadastro cadastro = ModalidadesNoCadastroDeTeste.Da("AC", NaturezaLegalModalidade.AcaoAfirmativa,
+            ComposicaoVagasModalidade.SuplementarAoTotal) with
+        { RegraRemanejamento = RegraRemanejamentoModalidade.DestinoUnico, RemanejamentoPar = "P" };
+        ModalidadeSelecionada.Criar(cadastro).Error!.Code.Should().Be("ModalidadeSelecionada.RemanejamentoDestinoObrigatorio");
+    }
+
+    [Fact(DisplayName = "Criar com CruzadoSemParEComDestino respeita a ordem das recusas")]
+    public void Criar_CruzadoSemParEComDestino_RecusaNaOrdem()
+    {
+        ModalidadeNoCadastro cadastro = ModalidadesNoCadastroDeTeste.Da("AC", NaturezaLegalModalidade.AcaoAfirmativa,
+            ComposicaoVagasModalidade.SuplementarAoTotal) with
+        { RegraRemanejamento = RegraRemanejamentoModalidade.Cruzado, RemanejamentoDestino = "D" };
+        ModalidadeSelecionada.Criar(cadastro).Error!.Code.Should().Be("ModalidadeSelecionada.RemanejamentoCruzadoIncompleto");
+    }
+
+    [Fact(DisplayName = "Criar com SemRegraComDestinoEPar respeita a ordem das recusas")]
+    public void Criar_SemRegraComDestinoEPar_RecusaNaOrdem()
+    {
+        ModalidadeNoCadastro cadastro = ModalidadesNoCadastroDeTeste.Da("AC", NaturezaLegalModalidade.Ampla,
+            ComposicaoVagasModalidade.RestanteDasVagasOfertadas) with
+        { RemanejamentoDestino = "D", RemanejamentoPar = "P" };
+        ModalidadeSelecionada.Criar(cadastro).Error!.Code.Should().Be("ModalidadeSelecionada.RemanejamentoDestinoIndevido");
+    }
+
 }

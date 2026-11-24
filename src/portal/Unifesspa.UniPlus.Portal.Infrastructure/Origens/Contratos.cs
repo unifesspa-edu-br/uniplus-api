@@ -12,8 +12,24 @@ internal sealed record CertamePublicadoPayload(
     string? Nome,
     PeriodoDoCertamePayload? Periodo,
     DocumentoEditalDoCertamePayload? DocumentoEdital,
-    SituacaoDaInscricao? Situacao,
+    SituacaoDoCertamePayload? Situacao,
     IReadOnlyList<EditalPublicadoDoCertamePayload?>? EditaisPublicados = null);
+
+/// <summary>
+/// A situação como Seleção a devolve, com o código e o rótulo. A Portal lê só o código, e um código que ela
+/// não conhece não vira situação: o certame fica indisponível, e não com uma situação inventada.
+/// </summary>
+internal sealed record SituacaoDoCertamePayload(string? Codigo)
+{
+    public SituacaoDaInscricao? Valor => Codigo switch
+    {
+        "EM_BREVE" => SituacaoDaInscricao.EmBreve,
+        "INSCRICOES_ABERTAS" => SituacaoDaInscricao.InscricoesAbertas,
+        "ULTIMOS_DIAS" => SituacaoDaInscricao.UltimosDias,
+        "ENCERRADAS" => SituacaoDaInscricao.Encerradas,
+        _ => null,
+    };
+}
 
 /// <summary>A parte do período de inscrição que a Portal usa: o número do edital.</summary>
 internal sealed record PeriodoDoCertamePayload(string? Numero);

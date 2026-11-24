@@ -16,7 +16,7 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 /// <para>
 /// O quadro é derivado e se materializa na mesma operação que a declaração: as conferências e a montagem
 /// são as do domínio de vagas (<see cref="ConferenciaDaDistribuicaoDeVagas"/> e
-/// <see cref="MontagemDoQuadroDeVagas"/>), e a entidade guarda o resultado na forma do ramo. A reserva
+/// <see cref="ProcessosSeletivos.Vagas.MontagemDoQuadroDeVagas"/>), e a entidade guarda o resultado na forma do ramo. A reserva
 /// legal só existe na Lei de Cotas; as vagas retiradas no ajuste só existem no quadro fixado no edital.
 /// </para>
 /// <para>

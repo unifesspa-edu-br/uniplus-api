@@ -11,9 +11,9 @@ public sealed class ReferenciaRegraTests
     [Fact(DisplayName = "De guarda a identidade da regra, sem os espaços das pontas do código e da versão")]
     public void De_IdentidadeValida_GuardaOsTresCampos()
     {
-        ReferenciaRegra referencia = ReferenciaRegra.De(" BONUS-MULTIPLICATIVO ", " v1 ", HashValido);
+        ReferenciaRegra referencia = ReferenciaRegra.De(" FADA_MULTIPLICATIVO ", " v1 ", HashValido);
 
-        referencia.Codigo.Should().Be("BONUS-MULTIPLICATIVO");
+        referencia.Codigo.Should().Be("FADA_MULTIPLICATIVO");
         referencia.Versao.Should().Be("v1");
         referencia.Hash.Should().Be(HashValido);
     }

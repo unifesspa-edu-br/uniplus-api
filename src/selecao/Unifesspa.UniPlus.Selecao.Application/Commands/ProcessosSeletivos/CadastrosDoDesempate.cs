@@ -9,10 +9,11 @@ using Domain.ValueObjects;
 using Kernel.Results;
 
 using Unifesspa.UniPlus.Configuracao.Contracts;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 
 /// <summary>
 /// O que a definição dos critérios de desempate consulta fora do processo: o catálogo das regras de desempate, lido
-/// uma vez para cada critério se resolver em memória, e, quando algum critério cita <c>DESEMPATE-PREDICADO-FATO</c>, os
+/// uma vez para cada critério se resolver em memória, e, quando algum critério cita <c>DESEMPATE_CONDICAO_SOBRE_DADO</c>, os
 /// fatos do candidato. A leitura acontece antes de o processo ser travado para a mutação.
 /// </summary>
 internal sealed class CadastrosDoDesempate
@@ -48,7 +49,7 @@ internal sealed class CadastrosDoDesempate
             return new([], null, regraCatalogoReader);
         }
 
-        FatosDoDesempate? fatos = criterios.Any(static c => c.Regra?.Codigo == CriterioDesempateCodigo.PredicadoFato)
+        FatosDoDesempate? fatos = criterios.Any(static c => c.Regra?.Codigo == RegraDeDesempate.CondicaoSobreDado.Codigo())
             ? await FatosDoDesempate.LerAsync(fatoCandidatoReader, cancellationToken).ConfigureAwait(false)
             : null;
         IReadOnlyList<RegraCatalogo> regras = await regraCatalogoReader

@@ -2,6 +2,7 @@ namespace Unifesspa.UniPlus.Selecao.Application.UnitTests.Queries;
 
 using AwesomeAssertions;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Selecao.Application.DTOs;
 using Unifesspa.UniPlus.Selecao.Application.Queries.ProcessosSeletivos;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
@@ -18,17 +19,17 @@ public sealed class ProjecaoDasVagasTests
     public void ProjetarDistribuicao_QuadroFixado_RamoDoCodigoCongelado(string versaoCongelada, char caractereDoHash)
     {
         ConfiguracaoDistribuicaoVagas configuracao = DistribuicaoFixadaNoEdital(
-            ReferenciaRegra.De(RegraDistribuicaoVagasCodigo.Institucional, versaoCongelada, new string(caractereDoHash, 64)));
+            ReferenciaRegra.De(RegraDeDistribuicaoDeVagas.Institucional.Codigo(), versaoCongelada, new string(caractereDoHash, 64)));
 
         ConfiguracaoDistribuicaoVagasDto dto = ProjecaoDasVagas.ProjetarDistribuicao(configuracao);
 
-        dto.RamoDaDistribuicao.Should().Be(RamoDaDistribuicaoDeVagasCodigo.QuadroFixadoNoEdital);
+        dto.RamoDaDistribuicao.Should().Be(ModoDeMontagemDoQuadroDeVagas.QuadroFixadoNoEdital.Codigo());
         dto.RegraDistribuicao.Versao.Should().Be(versaoCongelada);
     }
 
     [Theory(DisplayName = "O ramo da Lei de Cotas sai do código da regra congelada, qualquer que seja a versão que o catálogo tenha hoje")]
-    [InlineData(RegraDistribuicaoVagasCodigo.Lei12711, "v1")]
-    [InlineData(RegraDistribuicaoVagasCodigo.Lei12711ComAcPcd, "v3")]
+    [InlineData("DISTRIBUICAO_LEI_12711", "v1")]
+    [InlineData("DISTRIBUICAO_LEI_12711_COM_AMPLA_CONCORRENCIA_E_PESSOA_COM_DEFICIENCIA", "v3")]
     public void ProjetarDistribuicao_LeiDeCotas_RamoDoCodigoCongelado(string codigoCongelado, string versaoCongelada)
     {
         ConfiguracaoDistribuicaoVagas configuracao = DistribuicaoDaLeiDeCotas(
@@ -36,7 +37,7 @@ public sealed class ProjecaoDasVagasTests
 
         ConfiguracaoDistribuicaoVagasDto dto = ProjecaoDasVagas.ProjetarDistribuicao(configuracao);
 
-        dto.RamoDaDistribuicao.Should().Be(RamoDaDistribuicaoDeVagasCodigo.LeiDeCotas);
+        dto.RamoDaDistribuicao.Should().Be(ModoDeMontagemDoQuadroDeVagas.LeiDeCotas.Codigo());
         dto.RegraDistribuicao.Codigo.Should().Be(codigoCongelado);
     }
 
@@ -58,7 +59,7 @@ public sealed class ProjecaoDasVagasTests
                 VagasOfertadasBase = 40,
                 PercentualDaReservaLegal = 0.5m,
                 RegraDeDistribuicao = regraDistribuicao,
-                RegraDeAjuste = ReferenciaRegra.De(RegraAjusteDistribuicaoVagasCodigo.ReconciliacaoArt11ParagrafoUnico, "v1", new string('d', 64)),
+                RegraDeAjuste = ReferenciaRegra.De(RegraDeAjusteDaDistribuicaoDeVagas.AjusteDoTotalPeloArtigo11.Codigo(), "v1", new string('d', 64)),
                 ReferenciaDemografica = ReferenciaReservaDemograficaSnapshot.Criar(Guid.CreateVersion7(), "2022", 50m, 10m, 10m, "Censo 2022").Value!,
                 Modalidades = ModalidadesDaLeiDeCotas(),
             },
@@ -67,7 +68,7 @@ public sealed class ProjecaoDasVagasTests
     private static List<ModalidadeSelecionada> ModalidadesDaLeiDeCotas() =>
     [
         .. ModalidadesFederaisLei12711.Codigos.Select(codigo => NovaModalidade(
-            codigo, NaturezaLegalModalidade.CotaReservada, ComposicaoVagasModalidade.DentroDaReservaLegal, quantidade: null, RegraRemanejamentoModalidade.SegueCascata)),
+            codigo, NaturezaLegalModalidade.CotaReservada, ComposicaoVagasModalidade.DentroDaReservaLegal, quantidade: null, RegraRemanejamentoModalidade.SegueOrdemDeRemanejamento)),
         NovaModalidade(ModalidadesFederaisLei12711.Ac, NaturezaLegalModalidade.Ampla, ComposicaoVagasModalidade.RestanteDasVagasOfertadas, quantidade: null),
     ];
 
@@ -76,8 +77,6 @@ public sealed class ProjecaoDasVagasTests
         NaturezaLegalModalidade natureza,
         ComposicaoVagasModalidade composicao,
         int? quantidade,
-        RegraRemanejamentoModalidade remanejamento = RegraRemanejamentoModalidade.Nenhuma) =>
-        ModalidadeSelecionada.Criar(
-            Guid.CreateVersion7(), codigo, null, natureza, composicao, null, remanejamento, null, null, null,
-            RegrasDeAplicabilidadeDeTeste.DaNatureza(natureza), null, "base legal", quantidade).Value!;
+        RegraRemanejamentoModalidade? remanejamento = null) =>
+        ModalidadeSelecionada.Criar(ModalidadesNoCadastroDeTeste.Da(codigo, natureza, composicao) with { RegraRemanejamento = remanejamento, BaseLegal = "base legal" }, quantidade).Value!;
 }

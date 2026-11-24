@@ -4,6 +4,7 @@ using System.Globalization;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Kernel.Extensions;
 using Unifesspa.UniPlus.Kernel.Results;
@@ -73,14 +74,14 @@ internal static class SerializacaoDasVagas
         ["modalidadeOrigemId"] = modalidade.ModalidadeOrigemId,
         ["codigo"] = HashCanonicalComputer.NormalizeNfc(modalidade.Codigo),
         ["descricao"] = modalidade.Descricao is { } descricao ? HashCanonicalComputer.NormalizeNfc(descricao) : null,
-        ["naturezaLegal"] = modalidade.NaturezaLegal.ToCodigo(),
-        ["composicaoVagas"] = modalidade.ComposicaoVagas.ToCodigo(),
+        ["naturezaLegal"] = modalidade.NaturezaLegal.Codigo(),
+        ["composicaoVagas"] = modalidade.ComposicaoVagas.Codigo(),
         ["composicaoOrigemCodigo"] = modalidade.ComposicaoOrigemCodigo,
     };
 
     private static JsonObject AcrescentarRemanejamento(JsonObject objeto, ModalidadeSelecionada modalidade)
     {
-        objeto["regraRemanejamento"] = modalidade.RegraRemanejamento.ToCodigo();
+        objeto["regraRemanejamento"] = modalidade.RegraRemanejamento is { } regra ? regra.Codigo() : null;
         objeto["remanejamentoDestino"] = modalidade.RemanejamentoDestino;
         objeto["remanejamentoPar"] = modalidade.RemanejamentoPar;
         objeto["remanejamentoDestinoFinal"] = modalidade.RemanejamentoFallback;

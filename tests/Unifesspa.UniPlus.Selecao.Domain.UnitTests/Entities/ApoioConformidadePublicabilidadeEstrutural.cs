@@ -2,6 +2,7 @@ namespace Unifesspa.UniPlus.Selecao.Domain.UnitTests.Entities;
 
 using AwesomeAssertions;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.Formularios;
@@ -66,21 +67,30 @@ internal static class ApoioConformidadePublicabilidadeEstrutural
 
     internal static ConfiguracaoClassificacao ClassificacaoImportada() => ConfiguracaoClassificacao.Criar(new DeclaracaoDaClassificacao
     {
-        RegraCalculo = Regra(RegraCalculoCodigo.ClassificacaoImportada, 'b'),
-        RegraOrdemAlocacao = Regra(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, 'c'),
+        RegraCalculo = Regra(RegraDeCalculoDaNota.ClassificacaoImportada.Codigo(), 'b'),
+        RegraOrdemAlocacao = Regra(RegraDeOrdemDeAlocacao.PrimeiraOpcaoPrioritaria.Codigo(), 'c'),
     }).Value!;
 
     internal static ModalidadeSelecionada Modalidade(
         string codigo,
         NaturezaLegalModalidade natureza,
-        RegraRemanejamentoModalidade remanejamento,
+        RegraRemanejamentoModalidade? remanejamento,
         int? quantidadeDeclarada,
         string? acaoQuandoIndeferido = null,
         PredicadoDnf? regra = null) =>
         ModalidadeSelecionada.Criar(
-            Guid.CreateVersion7(), codigo, null, natureza,
-            natureza == NaturezaLegalModalidade.Ampla ? ComposicaoVagasModalidade.RestanteDasVagasOfertadas : ComposicaoVagasModalidade.DentroDaReservaLegal,
-            null, remanejamento, null, null, null, regra ?? RegrasDeAplicabilidadeDeTeste.DaNatureza(natureza), acaoQuandoIndeferido, "base legal", quantidadeDeclarada).Value!;
+            new ModalidadeNoCadastro
+            {
+                Id = Guid.CreateVersion7(),
+                Codigo = codigo,
+                NaturezaLegal = natureza,
+                ComposicaoVagas = natureza == NaturezaLegalModalidade.Ampla ? ComposicaoVagasModalidade.RestanteDasVagasOfertadas : ComposicaoVagasModalidade.DentroDaReservaLegal,
+                RegraRemanejamento = remanejamento,
+                RegraDeAplicabilidade = regra ?? RegrasDeAplicabilidadeDeTeste.DaNatureza(natureza),
+                AcaoQuandoIndeferido = acaoQuandoIndeferido,
+                BaseLegal = "base legal",
+            },
+            quantidadeDeclarada).Value!;
 
     internal static readonly (string? Codigo, string? Rotulo) GrupoTecnologica = ("TECNOLOGICA", "Tecnológica");
 
@@ -90,7 +100,7 @@ internal static class ApoioConformidadePublicabilidadeEstrutural
     internal static ConfiguracaoDistribuicaoVagas OfertaAmpla(
         int vagasOfertadasBase, (string? Codigo, string? Rotulo)? grupoAreaEnem, string? acaoQuandoIndeferido = null) =>
         ConfiguracaoDistribuicaoVagas.Criar(Guid.CreateVersion7(),
-            new DistribuicaoDeVagasDeclarada { VagasOfertadasBase = vagasOfertadasBase, PercentualDaReservaLegal = 1m, RegraDeDistribuicao = Regra(RegraDistribuicaoVagasCodigo.Institucional, 'a'), Modalidades = [Modalidade("AC", NaturezaLegalModalidade.Ampla, RegraRemanejamentoModalidade.Nenhuma, vagasOfertadasBase, acaoQuandoIndeferido)] },
+            new DistribuicaoDeVagasDeclarada { VagasOfertadasBase = vagasOfertadasBase, PercentualDaReservaLegal = 1m, RegraDeDistribuicao = Regra(RegraDeDistribuicaoDeVagas.Institucional.Codigo(), 'a'), Modalidades = [Modalidade("AC", NaturezaLegalModalidade.Ampla, null, vagasOfertadasBase, acaoQuandoIndeferido)] },
             new FatosDaOfertaNoCadastro { GrupoAreaEnem = grupoAreaEnem, OfertaCurso = OfertaCursoDeTeste.Medicina }).Value!;
 
     /// <summary>

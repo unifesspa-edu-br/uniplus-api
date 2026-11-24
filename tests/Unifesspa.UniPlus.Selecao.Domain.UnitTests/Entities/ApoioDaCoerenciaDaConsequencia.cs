@@ -6,6 +6,7 @@ using System.Text.Json.Nodes;
 
 using AwesomeAssertions;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Kernel.Tempo;
 using Unifesspa.UniPlus.Regras.Enums;
@@ -33,15 +34,10 @@ internal static class ApoioDaCoerenciaDaConsequencia
     /// </summary>
     internal static ModalidadeSelecionada NovaModalidadeComAcao(
         string codigo, NaturezaLegalModalidade naturezaLegal, ComposicaoVagasModalidade composicaoVagas, string? acaoQuandoIndeferido) =>
-        ModalidadeSelecionada.Criar(
-            modalidadeOrigemId: Guid.CreateVersion7(), codigo: codigo, descricao: null, naturezaLegal: naturezaLegal,
-            composicaoVagas: composicaoVagas, composicaoOrigemCodigo: null, regraRemanejamento: RemanejamentoDaNatureza(naturezaLegal),
-            remanejamentoDestino: null, remanejamentoPar: null, remanejamentoFallback: null,
-            regraDeAplicabilidade: RegrasDeAplicabilidadeDeTeste.DaNatureza(naturezaLegal), acaoQuandoIndeferido: acaoQuandoIndeferido,
-            baseLegal: "Lei 12.711/2012", quantidadeDeclarada: naturezaLegal == NaturezaLegalModalidade.AcaoAfirmativa ? 10 : null).Value!;
+        ModalidadeSelecionada.Criar(ModalidadesNoCadastroDeTeste.Da(codigo, naturezaLegal, composicaoVagas) with { RegraRemanejamento = RemanejamentoDaNatureza(naturezaLegal), AcaoQuandoIndeferido = acaoQuandoIndeferido }, naturezaLegal == NaturezaLegalModalidade.AcaoAfirmativa ? 10 : null).Value!;
 
-    private static RegraRemanejamentoModalidade RemanejamentoDaNatureza(NaturezaLegalModalidade naturezaLegal) =>
-        naturezaLegal == NaturezaLegalModalidade.CotaReservada ? RegraRemanejamentoModalidade.SegueCascata : RegraRemanejamentoModalidade.Nenhuma;
+    private static RegraRemanejamentoModalidade? RemanejamentoDaNatureza(NaturezaLegalModalidade naturezaLegal) =>
+        naturezaLegal == NaturezaLegalModalidade.CotaReservada ? RegraRemanejamentoModalidade.SegueOrdemDeRemanejamento : null;
 
     /// <summary>
     /// A matriz legal 8×7 completa, fallback AC (Story #575) — usada por
@@ -62,7 +58,7 @@ internal static class ApoioDaCoerenciaDaConsequencia
             }
         }
 
-        ReferenciaRegra regraCascata = ReferenciaRegra.De(RegraRemanejamentoCodigo.Cascata, "v1", HashFixo);
+        ReferenciaRegra regraCascata = ReferenciaRegra.De(CriterioDeRemanejamento.OrdemDaLei12711.Codigo(), "v1", HashFixo);
         return ConfiguracaoCascataRemanejamento.Criar(regraCascata, ModalidadesFederaisLei12711.Ac, destinos).Value!;
     }
 
@@ -91,7 +87,7 @@ internal static class ApoioDaCoerenciaDaConsequencia
             {
                 VagasOfertadasBase = modalidade.QuantidadeDeclarada ?? 40,
                 PercentualDaReservaLegal = 1m,
-                RegraDeDistribuicao = ReferenciaRegra.De(RegraDistribuicaoVagasCodigo.Institucional, "v1", HashFixo),
+                RegraDeDistribuicao = ReferenciaRegra.De(RegraDeDistribuicaoDeVagas.Institucional.Codigo(), "v1", HashFixo),
                 Modalidades = [modalidade],
             });
             return;
@@ -113,8 +109,8 @@ internal static class ApoioDaCoerenciaDaConsequencia
     {
         VagasOfertadasBase = 40,
         PercentualDaReservaLegal = 0.5m,
-        RegraDeDistribuicao = ReferenciaRegra.De(RegraDistribuicaoVagasCodigo.Lei12711, "v1", HashFixo),
-        RegraDeAjuste = ReferenciaRegra.De("RECONCILIACAO-VAGAS-ARTIGO-11-PARAGRAFO-UNICO", "v1", HashFixo),
+        RegraDeDistribuicao = ReferenciaRegra.De(RegraDeDistribuicaoDeVagas.Lei12711.Codigo(), "v1", HashFixo),
+        RegraDeAjuste = ReferenciaRegra.De("AJUSTE_VAGAS_ARTIGO_11_PARAGRAFO_UNICO", "v1", HashFixo),
         ReferenciaDemografica = ReferenciaReservaDemograficaSnapshot.Criar(Guid.CreateVersion7(), "2022", 79m, 1.5m, 8.5m, "Censo 2022").Value!,
         Modalidades = ModalidadesFederaisEAmpla(modalidade),
     };
@@ -124,21 +120,17 @@ internal static class ApoioDaCoerenciaDaConsequencia
     [
         .. ModalidadesFederaisLei12711.Codigos.Where(codigo => codigo != modalidade.Codigo).Select(CotaFederalPadrao),
         modalidade,
-        ModalidadeSelecionada.Criar(
-            Guid.CreateVersion7(), ModalidadesFederaisLei12711.Ac, null, NaturezaLegalModalidade.Ampla, ComposicaoVagasModalidade.RestanteDasVagasOfertadas,
-            null, RegraRemanejamentoModalidade.Nenhuma, null, null, null, RegrasDeAplicabilidadeDeTeste.DaNatureza(NaturezaLegalModalidade.Ampla), null, "base legal", quantidadeDeclarada: null).Value!,
+        ModalidadeSelecionada.Criar(ModalidadesNoCadastroDeTeste.Da(ModalidadesFederaisLei12711.Ac, NaturezaLegalModalidade.Ampla, ComposicaoVagasModalidade.RestanteDasVagasOfertadas) with { BaseLegal = "base legal" }).Value!,
     ];
 
-    private static ModalidadeSelecionada CotaFederalPadrao(string codigo) => ModalidadeSelecionada.Criar(
-        Guid.CreateVersion7(), codigo, null, NaturezaLegalModalidade.CotaReservada, ComposicaoVagasModalidade.DentroDaReservaLegal,
-        null, RegraRemanejamentoModalidade.SegueCascata, null, null, null, RegrasDeAplicabilidadeDeTeste.DaNatureza(NaturezaLegalModalidade.CotaReservada), null, "Lei 12.711/2012", quantidadeDeclarada: null).Value!;
+    private static ModalidadeSelecionada CotaFederalPadrao(string codigo) => ModalidadeSelecionada.Criar(ModalidadesNoCadastroDeTeste.Da(codigo, NaturezaLegalModalidade.CotaReservada, ComposicaoVagasModalidade.DentroDaReservaLegal)).Value!;
 
     private static void DefinirOQueFaltaParaPublicar(ProcessoSeletivo processo)
     {
         ConfiguracaoClassificacao classificacao = ConfiguracaoClassificacao.Criar(new DeclaracaoDaClassificacao
         {
-            RegraCalculo = ReferenciaRegra.De(RegraCalculoCodigo.ClassificacaoImportada, "v1", HashFixo),
-            RegraOrdemAlocacao = ReferenciaRegra.De(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, "v1", HashFixo),
+            RegraCalculo = ReferenciaRegra.De(RegraDeCalculoDaNota.ClassificacaoImportada.Codigo(), "v1", HashFixo),
+            RegraOrdemAlocacao = ReferenciaRegra.De(RegraDeOrdemDeAlocacao.PrimeiraOpcaoPrioritaria.Codigo(), "v1", HashFixo),
         }).Value!;
         processo.DefinirClassificacao(classificacao).IsSuccess.Should().BeTrue();
 

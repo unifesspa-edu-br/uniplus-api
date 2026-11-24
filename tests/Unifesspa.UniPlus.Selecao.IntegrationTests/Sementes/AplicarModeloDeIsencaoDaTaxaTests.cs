@@ -77,7 +77,7 @@ public sealed class AplicarModeloDeIsencaoDaTaxaTests
     private static void CobrarTaxaEColetarAOrigemEscolar(ProcessoSeletivo processo)
     {
         ConfiguracaoTaxaInscricao taxa = ConfiguracaoTaxaInscricao.Criar(
-            cobra: true, valor: 100m, fundamentosCodigos: [FundamentoIsencaoCodigo.CarenciaSocioeconomica]).Value!;
+            cobra: true, valor: 100m, fundamentosCodigos: ["CARENCIA_SOCIOECONOMICA"]).Value!;
         Result taxaDefinida = processo.DefinirTaxaInscricao(taxa);
         taxaDefinida.IsSuccess.Should().BeTrue(taxaDefinida.Error?.Message);
 

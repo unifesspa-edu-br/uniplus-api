@@ -10,6 +10,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
@@ -209,8 +210,8 @@ public sealed partial class IdentificadoresDasBancasNasRecusasDaPublicacaoTests
     // A fase única do processo admite recurso, e nem ela nem as etapas têm banca que o julgue.
     private static OpcoesDoProcessoSeletivoPublicavel FaseDeResultadoComRecursoSemBanca(ReferenciaRegra regraDoCatalogo)
     {
-        ProdutoDaFase preliminar = ProdutoDaFase.Criar(HomologacaoDasInscricoesDeTeste.ResultadoDaFase, PapelProdutoFase.Preliminar);
-        ProdutoDaFase definitivo = ProdutoDaFase.Criar(HomologacaoDasInscricoesDeTeste.ResultadoDaFase, PapelProdutoFase.Definitivo);
+        ProdutoDaFase preliminar = ProdutoDaFase.Criar(HomologacaoDasInscricoesDeTeste.ResultadoDaFase, PapelDaPublicacaoPrevista.Preliminar);
+        ProdutoDaFase definitivo = ProdutoDaFase.Criar(HomologacaoDasInscricoesDeTeste.ResultadoDaFase, PapelDaPublicacaoPrevista.Definitivo);
         RegraRecursoFase regra = RegraRecursoFase.Criar(regraDoCatalogo, ParametrosDoRecursoDeTeste.Declarados(48m, UnidadePrazo.Horas), preliminar.Id).Value!;
 
         return new() { Nome = string.Empty, ProdutosDaFase = [preliminar, definitivo], RegraDeRecursoDaFase = regra };
@@ -236,7 +237,7 @@ public sealed partial class IdentificadoresDasBancasNasRecusasDaPublicacaoTests
         UniPlusDbContext db = escopo.ServiceProvider.GetRequiredService<UniPlusDbContext>();
 
         return (await db.RolDeRegras.AsNoTracking().SingleAsync(regra =>
-            regra.Codigo == RegraPrazoRecursoCodigo.AncoradoEmAto && regra.Versao == "v1")).Referencia();
+            regra.Codigo == RegraDePrazoDoRecurso.ContadoDaPublicacaoDoAto.Codigo() && regra.Versao == "v1")).Referencia();
     }
 
     private async Task<(ProcessoSeletivo Processo, DocumentoAPublicar Documento)> SemearAsync(string cenario, OpcoesDoProcessoSeletivoPublicavel opcoes)

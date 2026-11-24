@@ -12,6 +12,8 @@ using Domain.ValueObjects;
 
 using DTOs;
 
+using Unifesspa.UniPlus.Application.Abstractions.Respostas;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
 
 /// <summary>
@@ -51,12 +53,8 @@ internal static class LeituraDoCertameEdital
 
         edital = null;
         if (!PrimitivasDaProjecao.TentarTexto(envelope, ProjecaoDoCertamePublicado.BlocoPublico("identificadorLegivel"), out string identificadorLegivel)
-            || !PrimitivasDaProjecao.TentarObjeto(envelope, ProjecaoDoCertamePublicado.BlocoPublico("identidadesUnidade"), out JsonObject? unidades)
-            || !PrimitivasDaProjecao.TentarObjeto(unidades, "administradora", out JsonObject? administradora)
-            || !PrimitivasDaProjecao.TentarTexto(administradora, "slug", out string unidade)
-            || !PrimitivasDaProjecao.TentarObjeto(envelope, ProjecaoDoCertamePublicado.BlocoPublico("hashesEdital"), out JsonObject? hashes)
-            || !PrimitivasDaProjecao.TentarIdentificador(hashes, "documentoEditalId", out Guid documentoEditalId)
-            || !PrimitivasDaProjecao.TentarTexto(hashes, "hashSha256", out string hashSha256)
+            || !TentarSlugDaUnidade(envelope, out string unidade)
+            || !TentarDocumentoDoEdital(envelope, out Guid documentoEditalId, out string hashSha256)
             || string.IsNullOrWhiteSpace(unidade)
             || string.IsNullOrWhiteSpace(hashSha256)
             || string.IsNullOrWhiteSpace(ato.TipoCodigo))
@@ -68,6 +66,23 @@ internal static class LeituraDoCertameEdital
         string nomeDeApresentacao = $"{identificadorLegivel}-{ChaveNoAcervoPublico.SegmentoDoTipo(ato.TipoCodigo)}.pdf";
         edital = new EditalNoAcervo(documentoEditalId, hashSha256, chave, nomeDeApresentacao);
         return true;
+    }
+
+    private static bool TentarSlugDaUnidade(JsonObject envelope, out string unidade)
+    {
+        unidade = string.Empty;
+        return PrimitivasDaProjecao.TentarObjeto(envelope, ProjecaoDoCertamePublicado.BlocoPublico("identidadesUnidade"), out JsonObject? unidades)
+            && PrimitivasDaProjecao.TentarObjeto(unidades, "administradora", out JsonObject? administradora)
+            && PrimitivasDaProjecao.TentarTexto(administradora, "slug", out unidade);
+    }
+
+    private static bool TentarDocumentoDoEdital(JsonObject envelope, out Guid documentoEditalId, out string hashSha256)
+    {
+        documentoEditalId = default;
+        hashSha256 = string.Empty;
+        return PrimitivasDaProjecao.TentarObjeto(envelope, ProjecaoDoCertamePublicado.BlocoPublico("hashesEdital"), out JsonObject? hashes)
+            && PrimitivasDaProjecao.TentarIdentificador(hashes, "documentoEditalId", out documentoEditalId)
+            && PrimitivasDaProjecao.TentarTexto(hashes, "hashSha256", out hashSha256);
     }
 
     /// <summary>
@@ -85,25 +100,43 @@ internal static class LeituraDoCertameEdital
             return false;
         }
 
+        return TentarListaDeAnexos(array, out anexos);
+    }
+
+    private static bool TentarListaDeAnexos(JsonArray array, [NotNullWhen(true)] out List<AnexoDoEdital>? anexos)
+    {
+        anexos = null;
         List<AnexoDoEdital> lidos = [];
         foreach (JsonNode? item in array)
         {
-            if (item is not JsonObject anexo
-                || !PrimitivasDaProjecao.TentarIdentificador(anexo, "anexoId", out Guid anexoId)
-                || !PrimitivasDaProjecao.TentarIdentificador(anexo, "documentoId", out Guid documentoId)
-                || !PrimitivasDaProjecao.TentarTexto(anexo, "nomeArquivo", out string nomeArquivo)
-                || !PrimitivasDaProjecao.TentarTexto(anexo, "tipoDeMidia", out string tipoDeMidia)
-                || !PrimitivasDaProjecao.TentarInteiro(anexo, "tamanhoBytes", out int tamanhoBytes)
-                || !PrimitivasDaProjecao.TentarTexto(anexo, "hashSha256", out string hashSha256)
-                || FormatosDeDocumento.DoTipoDeMidia(tipoDeMidia) is not { } formato)
+            if (!TentarAnexo(item, out AnexoDoEdital? anexo))
             {
                 return false;
             }
 
-            lidos.Add(new AnexoDoEdital(anexoId, documentoId, nomeArquivo, formato, tamanhoBytes, hashSha256));
+            lidos.Add(anexo);
         }
 
         anexos = lidos;
+        return true;
+    }
+
+    private static bool TentarAnexo(JsonNode? item, [NotNullWhen(true)] out AnexoDoEdital? resultado)
+    {
+        resultado = null;
+        if (item is not JsonObject anexo
+            || !PrimitivasDaProjecao.TentarIdentificador(anexo, "anexoId", out Guid anexoId)
+            || !PrimitivasDaProjecao.TentarIdentificador(anexo, "documentoId", out Guid documentoId)
+            || !PrimitivasDaProjecao.TentarTexto(anexo, "nomeArquivo", out string nomeArquivo)
+            || !PrimitivasDaProjecao.TentarTexto(anexo, "tipoDeMidia", out string tipoDeMidia)
+            || !PrimitivasDaProjecao.TentarInteiro(anexo, "tamanhoBytes", out int tamanhoBytes)
+            || !PrimitivasDaProjecao.TentarTexto(anexo, "hashSha256", out string hashSha256)
+            || FormatosDeDocumento.DoTipoDeMidia(tipoDeMidia) is not { } formato)
+        {
+            return false;
+        }
+
+        resultado = new AnexoDoEdital(anexoId, documentoId, nomeArquivo, formato, tamanhoBytes, hashSha256);
         return true;
     }
 
@@ -149,8 +182,18 @@ internal static class LeituraDoCertameEdital
     {
         unidade = null;
         if (!PrimitivasDaProjecao.TentarObjeto(envelope, ProjecaoDoCertamePublicado.BlocoPublico("identidadesUnidade"), out JsonObject? bloco)
-            || !PrimitivasDaProjecao.TentarObjeto(bloco, "administradora", out JsonObject? administradora)
-            || !PrimitivasDaProjecao.TentarTexto(administradora, "sigla", out string sigla)
+            || !PrimitivasDaProjecao.TentarObjeto(bloco, "administradora", out JsonObject? administradora))
+        {
+            return false;
+        }
+
+        return TentarDadosDaUnidadeAdministradora(administradora, out unidade);
+    }
+
+    private static bool TentarDadosDaUnidadeAdministradora(JsonObject administradora, [NotNullWhen(true)] out UnidadeAdministradoraCertameDto? unidade)
+    {
+        unidade = null;
+        if (!PrimitivasDaProjecao.TentarTexto(administradora, "sigla", out string sigla)
             || !PrimitivasDaProjecao.TentarTexto(administradora, "nome", out string nome)
             || !PrimitivasDaProjecao.TentarTexto(administradora, "tipo", out string tipo)
             || !PrimitivasDaProjecao.TentarTextoOpcional(administradora, "cidadeNome", out string? cidadeNome)
@@ -184,14 +227,40 @@ internal static class LeituraDoCertameEdital
             return true;
         }
 
+        return TentarTaxaPresente(bloco, out taxa);
+    }
+
+    private static bool TentarTaxaPresente(JsonObject bloco, out TaxaInscricaoCertameDto? taxa)
+    {
+        taxa = null;
         if (!PrimitivasDaProjecao.TentarBooleano(bloco, "cobra", out bool cobra)
             || !PrimitivasDaProjecao.TentarTextoOpcional(bloco, "valor", out string? valor)
-            || !PrimitivasDaProjecao.TentarTextos(bloco, "fundamentos", out List<string>? fundamentos))
+            || !PrimitivasDaProjecao.TentarTextos(bloco, "fundamentos", out List<string>? fundamentos)
+            || !TentarFundamentos(fundamentos, out List<CodigoComRotulo<FundamentoIsencao>>? codigos))
         {
             return false;
         }
 
-        taxa = new TaxaInscricaoCertameDto(cobra, valor, fundamentos);
+        taxa = new TaxaInscricaoCertameDto(cobra, valor, codigos);
+        return true;
+    }
+
+    private static bool TentarFundamentos(
+        IReadOnlyList<string> fundamentos,
+        [NotNullWhen(true)] out List<CodigoComRotulo<FundamentoIsencao>>? codigos)
+    {
+        codigos = [];
+        foreach (string codigo in fundamentos)
+        {
+            if (!CatalogoDe<FundamentoIsencao>.TentarObter(codigo, out FundamentoIsencao fundamento))
+            {
+                codigos = null;
+                return false;
+            }
+
+            codigos.Add(CodigoComRotulo<FundamentoIsencao>.De(fundamento));
+        }
+
         return true;
     }
 
@@ -207,6 +276,12 @@ internal static class LeituraDoCertameEdital
             return true;
         }
 
+        return TentarDadosDaRetificacao(node, out retificacao);
+    }
+
+    private static bool TentarDadosDaRetificacao(JsonNode node, out RetificacaoCertameDto? retificacao)
+    {
+        retificacao = null;
         if (node is not JsonObject bloco
             || !PrimitivasDaProjecao.TentarIdentificador(bloco, "editalRetificadoId", out Guid atoRetificadoId)
             || !PrimitivasDaProjecao.TentarTexto(bloco, "motivo", out string motivo))

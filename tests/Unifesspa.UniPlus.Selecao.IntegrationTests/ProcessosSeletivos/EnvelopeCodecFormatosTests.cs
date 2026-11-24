@@ -72,7 +72,7 @@ public sealed class EnvelopeCodecFormatosTests
     }
 
     [Theory(DisplayName = "Enum fora do conjunto (ou com case trocado) é recusado")]
-    [InlineData("carater", "classificatoria")]
+    [InlineData("carater", "CLASSIFICATORIA")]
     [InlineData("carater", "Inexistente")]
     [InlineData("carater", "Nenhum")]
     public void EnumInvalido_Recusa(string chave, string valor)

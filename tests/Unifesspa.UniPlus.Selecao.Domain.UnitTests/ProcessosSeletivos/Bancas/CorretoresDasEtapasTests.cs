@@ -2,6 +2,7 @@ namespace Unifesspa.UniPlus.Selecao.Domain.UnitTests.ProcessosSeletivos.Bancas;
 
 using AwesomeAssertions;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Bancas;
@@ -19,7 +20,7 @@ using Xunit;
 public sealed class CorretoresDasEtapasTests
 {
     private static readonly ReferenciaRegra CorrecaoIndependente =
-        ReferenciaRegra.De(RegraConsolidacaoCodigo.CorrecaoIndependente, "v1", new string('d', 64));
+        ReferenciaRegra.De(RegraDeApuracaoDaAvaliacao.CorrecaoIndependente.Codigo(), "v1", new string('d', 64));
 
     private static EtapaProcesso Etapa(string nome, int ordem, ReferenciaRegra? consolidacao) => EtapaProcesso.Criar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("etapa").Value!,
         new IdentificacaoDaEtapa(
@@ -52,7 +53,7 @@ public sealed class CorretoresDasEtapasTests
     public void De_MesmaReferencia_DaOMesmoNumero()
     {
         EtapaProcesso redacao = Etapa("Redação", 1, CorrecaoIndependente);
-        EtapaProcesso projeto = Etapa("Projeto", 2, ReferenciaRegra.De(RegraConsolidacaoCodigo.CorrecaoIndependente, "v1", new string('d', 64)));
+        EtapaProcesso projeto = Etapa("Projeto", 2, ReferenciaRegra.De(RegraDeApuracaoDaAvaliacao.CorrecaoIndependente.Codigo(), "v1", new string('d', 64)));
         CorretoresDasEtapas corretores = new(new Dictionary<ReferenciaRegra, CorretoresDaRegra> { [CorrecaoIndependente] = CorretoresDaRegra.SemNovoCorretor(3) });
 
         corretores.EmCampo(projeto).Should().Be(corretores.EmCampo(redacao)).And.Be(3);
@@ -62,13 +63,13 @@ public sealed class CorretoresDasEtapasTests
     public void De_EtapaComConsolidacaoForaDoConjunto_Lanca()
     {
         EtapaProcesso redacao = Etapa("Redação", 1, CorrecaoIndependente);
-        ReferenciaRegra outraVersao = ReferenciaRegra.De(RegraConsolidacaoCodigo.CorrecaoIndependente, "v2", new string('f', 64));
+        ReferenciaRegra outraVersao = ReferenciaRegra.De(RegraDeApuracaoDaAvaliacao.CorrecaoIndependente.Codigo(), "v2", new string('f', 64));
         CorretoresDasEtapas deOutraVersao = new(new Dictionary<ReferenciaRegra, CorretoresDaRegra> { [outraVersao] = CorretoresDaRegra.SemNovoCorretor(3) });
 
         Func<int> ler = () => deOutraVersao.EmCampo(redacao);
         Func<int> lerSemConjunto = () => CorretoresDeTeste.SemConsolidacao.EmCampo(redacao);
 
-        ler.Should().Throw<InvalidOperationException>().WithMessage($"*{RegraConsolidacaoCodigo.CorrecaoIndependente}*v1*");
+        ler.Should().Throw<InvalidOperationException>().WithMessage($"*{RegraDeApuracaoDaAvaliacao.CorrecaoIndependente.Codigo()}*v1*");
         lerSemConjunto.Should().Throw<InvalidOperationException>();
         deOutraVersao.Resolvida(redacao).Should().BeFalse();
         CorretoresDeTeste.SemConsolidacao.Resolvida(redacao).Should().BeFalse();

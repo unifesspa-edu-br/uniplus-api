@@ -70,7 +70,7 @@ public sealed class ConferenciaDoCicloRecursalAbertoTests
 
     private static AtoDoProcesso AtoDeOutroItem(Guid processoId)
     {
-        ProdutoDaFase preliminar = ProdutoDaFase.Criar(Materia, PapelProdutoFase.Preliminar);
+        ProdutoDaFase preliminar = ProdutoDaFase.Criar(Materia, PapelDaPublicacaoPrevista.Preliminar);
         FaseCronograma fase = FaseCronograma.Criar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("fase").Value!,
             OrigensCanonicasDeTeste.ComNome(new OrigemCanonicaDaFase(Guid.CreateVersion7(), "ANALISE", OrigemDataFase.NoEdital, AgrupaEtapas: false, PermiteComplementacao: false, ColetaInscricao: false, ColetaSolicitacaoIsencao: false)),
             new DecisoesDeCronogramaDaFase(1, Inicio: Instante, Fim: Instante.AddDays(10), UnidadeResponsavel: UnidadesDeTeste.Ceps),

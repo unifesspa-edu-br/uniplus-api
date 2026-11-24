@@ -9,6 +9,7 @@ using NSubstitute;
 
 using Unifesspa.UniPlus.Application.Abstractions.Authentication;
 using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
+using Unifesspa.UniPlus.Application.Abstractions.Respostas;
 using Unifesspa.UniPlus.Kernel.Domain.ValueObjects;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
@@ -140,7 +141,7 @@ public sealed class MinhasInscricoesQueryHandlerTests
 
         resultado.Value!.Select(static i => i.InscricaoId).Should().BeEquivalentTo([cancelada.Id, nova.Id]);
         MinhaInscricaoDto daCancelada = resultado.Value!.Single(i => i.InscricaoId == cancelada.Id);
-        daCancelada.Situacao.Should().Be(SituacaoInscricao.Cancelada);
+        daCancelada.Situacao.Should().Be(CodigoComRotulo<SituacaoInscricao>.De(SituacaoInscricao.Cancelada));
         daCancelada.MotivoDoCancelamento.Should().Be("a pedido do candidato");
         daCancelada.CanceladaEm.Should().NotBeNull();
         daCancelada.NumeroDoUltimoComprovante.Should().BeNull("a cancelada tem comprovante emitido, mas a rota o recusa");

@@ -2,6 +2,7 @@ namespace Unifesspa.UniPlus.Selecao.Domain.UnitTests.ProcessosSeletivos.Etapas;
 
 using AwesomeAssertions;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
@@ -33,7 +34,7 @@ public sealed class EtapaDeclaradaTests
     private static EtapaDeclarada EtapaComRecusaEmTodoDado() =>
         new ModeloDeEtapa(" ")
         {
-            Carater = CaraterEtapa.Nenhum,
+            Carater = (CaraterEtapa)99,
             Peso = -1m,
             NotaMinima = -1m,
             NotaMaxima = -1m,
@@ -45,7 +46,7 @@ public sealed class EtapaDeclaradaTests
 
     private static EtapaDeclarada EtapaDoEnemComRecusaEmTodoDado()
     {
-        ReferenciaRegra regra = ReferenciaRegra.De(RegraConsolidacaoCodigo.AvaliacaoUnica, "v1", new string('a', 64));
+        ReferenciaRegra regra = ReferenciaRegra.De(RegraDeApuracaoDaAvaliacao.AvaliacaoUnica.Codigo(), "v1", new string('a', 64));
 
         return (new ModeloDeEtapa("Prova").DoEnem() with
         {

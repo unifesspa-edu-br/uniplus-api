@@ -3,6 +3,7 @@ namespace Unifesspa.UniPlus.Selecao.API.Errors;
 using Microsoft.AspNetCore.Http;
 
 using Unifesspa.UniPlus.Infrastructure.Core.Errors;
+using Unifesspa.UniPlus.Selecao.Application.Queries.ObrigatoriedadesLegais;
 
 /// <summary>
 /// Recusas da obrigatoriedade legal (ADR-0058): campo, forma do predicado, referências a cadastros e unicidade.
@@ -86,5 +87,6 @@ internal static class ErrosDaObrigatoriedadeLegal
         new("ObrigatoriedadeLegal.RegraCodigoDuplicada", new DomainErrorMapping(StatusCodes.Status409Conflict, "uniplus.selecao.obrigatoriedade_legal.regra_codigo_duplicada", "Já existe regra ativa com este RegraCodigo")),
         new("ObrigatoriedadeLegal.HashColisao", new DomainErrorMapping(StatusCodes.Status409Conflict, "uniplus.selecao.obrigatoriedade_legal.hash_colisao", "Colisão de hash de regra ativa")),
         new("ObrigatoriedadeLegal.NaoEncontrada", new DomainErrorMapping(StatusCodes.Status404NotFound, "uniplus.selecao.obrigatoriedade_legal.nao_encontrada", "ObrigatoriedadeLegal não encontrada")),
+        new(FiltroDeCategoriaDasObrigatoriedadesLegais.CodigoDeErro, new DomainErrorMapping(StatusCodes.Status400BadRequest, "uniplus.selecao.obrigatoriedade_legal.filtro_de_categoria_invalido", "Categoria do filtro de obrigatoriedades legais inválida")),
     ];
 }

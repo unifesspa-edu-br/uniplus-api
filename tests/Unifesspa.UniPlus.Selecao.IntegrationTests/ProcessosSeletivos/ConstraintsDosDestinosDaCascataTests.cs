@@ -4,6 +4,7 @@ using AwesomeAssertions;
 
 using Npgsql;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
@@ -21,6 +22,13 @@ public sealed class ConstraintsDosDestinosDaCascataTests
 {
     private const string UniqueViolation = "23505";
     private const string CheckViolation = "23514";
+
+    private const string ComandoDeInsercao = """
+        INSERT INTO selecao.destinos_remanejamento (
+            id, configuracao_cascata_remanejamento_id, modalidade_origem_codigo, ordem, modalidade_destino_codigo,
+            created_at)
+        VALUES (@id, @cascataId, @origem, @ordem, @destino, now())
+        """;
 
     private readonly CenarioDeCascataPersistida _cenario;
 
@@ -90,7 +98,7 @@ public sealed class ConstraintsDosDestinosDaCascataTests
     {
         ProcessoSeletivo processo = CenarioDeRetificacaoPersistida.NovoProcessoConforme(nome);
         ConfiguracaoCascataRemanejamento cascata = ConfiguracaoCascataRemanejamento.Criar(
-            CenarioDeCascataPersistida.Regra(RegraRemanejamentoCodigo.Cascata, "5"),
+            CenarioDeCascataPersistida.Regra(CriterioDeRemanejamento.OrdemDaLei12711.Codigo(), "5"),
             "AC",
             [DestinoRemanejamento.Criar("LI_EP", 1, "AC").Value!]).Value!;
         processo.DefinirCascataRemanejamento(cascata).IsSuccess.Should().BeTrue();
@@ -106,21 +114,20 @@ public sealed class ConstraintsDosDestinosDaCascataTests
         await using NpgsqlConnection conexao = new(_cenario.ConnectionString);
         await conexao.OpenAsync();
 
-        await using NpgsqlCommand comando = new(
-            """
-            INSERT INTO selecao.destinos_remanejamento (
-                id, configuracao_cascata_remanejamento_id, modalidade_origem_codigo, ordem, modalidade_destino_codigo,
-                created_at)
-            VALUES (@id, @cascataId, @origem, @ordem, @destino, now())
-            """,
-            conexao);
+        await using NpgsqlCommand comando = CriarComando(conexao, cascataId, origem, ordem, destino);
+        await comando.ExecuteNonQueryAsync();
+    }
+
+    private static NpgsqlCommand CriarComando(NpgsqlConnection conexao, Guid cascataId, string origem, int ordem, string destino)
+    {
+        NpgsqlCommand comando = new(ComandoDeInsercao, conexao);
         comando.Parameters.AddWithValue("id", Guid.CreateVersion7());
         comando.Parameters.AddWithValue("cascataId", cascataId);
         comando.Parameters.AddWithValue("origem", origem);
         comando.Parameters.AddWithValue("ordem", ordem);
         comando.Parameters.AddWithValue("destino", destino);
 
-        await comando.ExecuteNonQueryAsync();
+        return comando;
     }
 
     private static async Task<PostgresException> CapturarErroAsync(Func<Task> acao) =>

@@ -29,13 +29,13 @@ public sealed class ModalidadeCriacaoTests
         m.IsDeleted.Should().BeFalse();
     }
 
-    [Fact(DisplayName = "Cota reservada com SEGUE_CASCATA é válida")]
+    [Fact(DisplayName = "Cota reservada com SEGUE_ORDEM_DE_REMANEJAMENTO é válida")]
     public void Criar_CotaComCascata_Valida()
     {
         Modalidade m = Criar("LB_PPI", d => d.ComoCotaReservada()).Value!;
 
         m.NaturezaLegal.Should().Be(NaturezaLegal.CotaReservada);
-        m.RegraRemanejamento.Should().Be(RegraRemanejamento.SegueCascata);
+        m.RegraRemanejamento.Should().Be(RegraRemanejamento.SegueOrdemDeRemanejamento);
     }
 
     [Fact(DisplayName = "Natureza e composição ausentes assumem defaults AMPLA / RESTANTE_DAS_VAGAS_OFERTADAS")]

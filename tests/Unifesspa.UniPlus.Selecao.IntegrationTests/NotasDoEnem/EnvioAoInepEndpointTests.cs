@@ -73,7 +73,7 @@ public sealed class EnvioAoInepEndpointTests
             scope.ServiceProvider.GetRequiredService<UniPlusDbContext>(),
             scope.ServiceProvider.GetRequiredService<IUniPlusEncryptionService>(),
             scope.ServiceProvider.GetRequiredService<IUniPlusBlindIndexService>(),
-            p.ProcessoId, pessoa, situacao, edicao);
+            new(p.ProcessoId, pessoa, situacao, edicao));
     }
 
     [Fact(DisplayName = "sem token é 401 e o administrador da plataforma sem concessão é 404")]
@@ -105,13 +105,22 @@ public sealed class EnvioAoInepEndpointTests
         using HttpRequestMessage gerar = Requisicao(HttpMethod.Post, Base(p), corpo: new { leiauteCodigo = "INEP_ENEM_ENVIO", leiauteVersao = "v1" });
         HttpResponseMessage resposta = await client.SendAsync(gerar);
 
+        await ConferirArquivoAsync(resposta, pessoas);
+        await ConferirHistoricoAsync(client, p, pessoas);
+    }
+
+    private static async Task ConferirArquivoAsync(HttpResponseMessage resposta, IReadOnlyList<PersonasDeTeste.PessoaFicticia> pessoas)
+    {
         resposta.StatusCode.Should().Be(HttpStatusCode.OK, await resposta.Content.ReadAsStringAsync());
         resposta.Content.Headers.ContentType!.MediaType.Should().Be("text/plain");
         resposta.Content.Headers.ContentDisposition!.FileName.Should().Be("envio-inep-enem-2025.txt");
         resposta.Headers.CacheControl!.NoStore.Should().BeTrue();
         string[] linhas = (await resposta.Content.ReadAsStringAsync()).Split('\n', StringSplitOptions.RemoveEmptyEntries);
         linhas.Should().Equal(new[] { pessoas[0].Cpf, pessoas[1].Cpf }.Order(StringComparer.Ordinal));
+    }
 
+    private static async Task ConferirHistoricoAsync(HttpClient client, Publicado p, IReadOnlyList<PersonasDeTeste.PessoaFicticia> pessoas)
+    {
         using HttpRequestMessage historico = Requisicao(HttpMethod.Get, Base(p));
         HttpResponseMessage lista = await client.SendAsync(historico);
         lista.StatusCode.Should().Be(HttpStatusCode.OK);
@@ -153,15 +162,16 @@ public sealed class EnvioAoInepEndpointTests
         using HttpRequestMessage etapa = Requisicao(
             HttpMethod.Post, $"/api/selecao/processos-seletivos/{p.ProcessoId}/etapas/{Guid.CreateVersion7()}/edicoes-do-enem/{Edicao}/envios-ao-inep", corpo: corpo);
 
-        HttpResponseMessage naoAdmitida = await client.SendAsync(edicao);
-        naoAdmitida.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
-        (await CodigoAsync(naoAdmitida)).Should().Be("uniplus.selecao.notas_do_enem.edicao_nao_admitida");
-        HttpResponseMessage leiauteErrado = await client.SendAsync(leiaute);
-        leiauteErrado.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
-        (await CodigoAsync(leiauteErrado)).Should().Be("uniplus.selecao.notas_do_enem.leiaute_indisponivel");
-        HttpResponseMessage semEtapa = await client.SendAsync(etapa);
-        semEtapa.StatusCode.Should().Be(HttpStatusCode.NotFound);
-        (await CodigoAsync(semEtapa)).Should().Be("uniplus.selecao.notas_do_enem.etapa_nao_encontrada");
+        await ConferirRecusaAsync(client, edicao, HttpStatusCode.UnprocessableEntity, "uniplus.selecao.notas_do_enem.edicao_nao_admitida");
+        await ConferirRecusaAsync(client, leiaute, HttpStatusCode.UnprocessableEntity, "uniplus.selecao.notas_do_enem.leiaute_indisponivel");
+        await ConferirRecusaAsync(client, etapa, HttpStatusCode.NotFound, "uniplus.selecao.notas_do_enem.etapa_nao_encontrada");
+    }
+
+    private static async Task ConferirRecusaAsync(HttpClient client, HttpRequestMessage requisicao, HttpStatusCode status, string codigo)
+    {
+        HttpResponseMessage resposta = await client.SendAsync(requisicao);
+        resposta.StatusCode.Should().Be(status);
+        (await CodigoAsync(resposta)).Should().Be(codigo);
     }
 
     private static async Task<string?> CodigoAsync(HttpResponseMessage resposta)

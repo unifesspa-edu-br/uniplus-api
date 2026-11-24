@@ -5,6 +5,7 @@ using AwesomeAssertions;
 using NSubstitute;
 
 using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Publicacoes.Contracts;
 using Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
@@ -110,11 +111,11 @@ public sealed class DefinirEtapasProdutosDaEtapaTests
     private static ProdutoDaEtapaInput[] PreliminarEDefinitivo => [new(Resultado, "PRELIMINAR"), new(Resultado, "DEFINITIVO")];
 
     private static EtapaProcessoInput EtapaDeProvaObjetiva(params ProdutoDaEtapaInput[] produtos) => new(
-        "Prova Objetiva", CaraterEtapa.Classificatoria, TipoProvaObjetivaOrigemId, 1m, null, 1,
+        "Prova Objetiva", CaraterEtapa.Classificatoria.Codigo(), TipoProvaObjetivaOrigemId, 1m, null, 1,
         Produtos: produtos, Bancas: [], Recursos: []);
 
     private static EtapaProcessoInput EtapaDeRedacao(params ProdutoDaEtapaInput[] produtos) => new(
-        "Redação", CaraterEtapa.Classificatoria, TipoRedacaoOrigemId, 1m, null, 2,
+        "Redação", CaraterEtapa.Classificatoria.Codigo(), TipoRedacaoOrigemId, 1m, null, 2,
         Produtos: produtos, Bancas: [], Recursos: []);
 
     private static ITipoAtoPublicadoReader CatalogoSemAto()

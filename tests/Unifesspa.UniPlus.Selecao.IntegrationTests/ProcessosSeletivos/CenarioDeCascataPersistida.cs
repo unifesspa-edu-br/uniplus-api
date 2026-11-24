@@ -1,6 +1,7 @@
 namespace Unifesspa.UniPlus.Selecao.IntegrationTests.ProcessosSeletivos;
 
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
@@ -29,7 +30,7 @@ internal sealed class CenarioDeCascataPersistida
 
     public static ConfiguracaoCascataRemanejamento CascataDeDuasOrigens(string semente) =>
         ConfiguracaoCascataRemanejamento.Criar(
-            Regra(RegraRemanejamentoCodigo.Cascata, semente),
+            Regra(CriterioDeRemanejamento.OrdemDaLei12711.Codigo(), semente),
             "AC",
             [
                 DestinoRemanejamento.Criar("LB_PPI", 1, "LB_Q").Value!,

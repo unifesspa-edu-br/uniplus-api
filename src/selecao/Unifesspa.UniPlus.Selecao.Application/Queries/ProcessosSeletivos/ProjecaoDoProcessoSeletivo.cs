@@ -17,7 +17,7 @@ using Unifesspa.UniPlus.Application.Abstractions.Respostas;
 internal static class ProjecaoDoProcessoSeletivo
 {
     internal static ProcessoSeletivoDto Projetar(ProcessoSeletivo processo) => new(
-        processo.Id, processo.Nome, processo.IdentificadorLegivel?.Valor, ProjetarTipoDoProcesso(processo), processo.Status, processo.OrigemCandidatos,
+        processo.Id, processo.Nome, processo.IdentificadorLegivel?.Valor, ProjetarTipoDoProcesso(processo), CodigoComRotulo<StatusProcesso>.De(processo.Status), CodigoComRotulo<OrigemCandidatos>.De(processo.OrigemCandidatos),
         ProjetarUnidadeAdministradora(processo), ProjetarLocalidade(processo),
         ProjecaoDaEtapaDoProcesso.ProjetarEtapas(processo),
         ProjecaoDasVagas.ProjetarAtendimento(processo.AtendimentoEspecializado), ProjecaoDasVagas.ProjetarDistribuicoes(processo),
@@ -68,7 +68,7 @@ internal static class ProjecaoDoProcessoSeletivo
             : new ConfiguracaoTaxaInscricaoDto(
                 configuracao.Cobra,
                 configuracao.Valor,
-                [.. configuracao.Fundamentos.Select(static f => f.ToCodigo())]);
+                [.. configuracao.Fundamentos.Select(static f => CodigoComRotulo<FundamentoIsencao>.De(f))]);
 
     private static TipoProcessoSnapshotDto ProjetarTipoDoProcesso(ProcessoSeletivo processo) =>
         new(processo.TipoProcessoOrigemId, processo.TipoProcesso.Codigo, processo.TipoProcesso.Nome);

@@ -138,9 +138,9 @@ internal static class LeituraDasRegrasDeComprovacao
             return true;
         }
 
-        criterio = CriterioDeDistincaoDasApresentacoesCodigo.FromCodigo(codigo);
-        if (criterio != Domain.Enums.CriterioDeDistincaoDasApresentacoes.Nenhuma)
+        if (CatalogoDe<CriterioDeDistincaoDasApresentacoes>.TentarObter(codigo, out CriterioDeDistincaoDasApresentacoes valor))
         {
+            criterio = valor;
             return true;
         }
 

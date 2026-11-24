@@ -1,5 +1,6 @@
 namespace Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
@@ -44,8 +45,8 @@ public sealed record CombinacaoDoGrupo(FormaDeComprovacao Forma, int? Quantidade
         {
             return new("RegraDeComprovacao.ConsequenciaProibidaQuandoExigeTodos", "Este grupo exige todos os itens, mas informa uma consequência própria. Retire a consequência do grupo.");
         }
-        return forma == FormaDeComprovacao.QuantidadeMinimaDeItens && normalizada is not null && !ConsequenciaIndeferimentoCodigo.Validas.Contains(normalizada, StringComparer.Ordinal)
-            ? new("RegraDeComprovacao.ConsequenciaInvalida", "A consequência deste grupo não é reconhecida. Escolha \"ELIMINA\" para retirar a pessoa do processo, \"RECLASSIFICA_AC\" para a ampla concorrência, \"REMOVE_VANTAGEM\" para retirar a vantagem ou \"PENDENCIA_REENVIO\" para permitir reenvio.") : null;
+        return forma == FormaDeComprovacao.QuantidadeMinimaDeItens && normalizada is not null && !CatalogoDe<ConsequenciaDoIndeferimento>.TentarObter(normalizada, out _)
+            ? new("RegraDeComprovacao.ConsequenciaInvalida", "A consequência deste grupo não é reconhecida. Escolha \"ELIMINA\" para retirar a pessoa do processo, \"RECLASSIFICA_AC\" para a ampla concorrência, \"REMOVE_VANTAGEM\" para retirar a vantagem ou \"ABRE_PRAZO_PARA_REENVIO\" para permitir reenvio.") : null;
     }
 
     internal static DomainError? RecusaDaBaseLegal(FormaDeComprovacao forma, string? consequencia, bool temBaseLegal) => forma switch

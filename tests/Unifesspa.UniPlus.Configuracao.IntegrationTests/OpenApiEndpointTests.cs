@@ -179,7 +179,7 @@ public sealed class OpenApiEndpointTests : IClassFixture<ConfiguracaoApiFactory>
 
     [Fact(DisplayName = "O código da regra de remanejamento é componente de texto com enum, sem o valor nenhum")]
     public Task RegraRemanejamentoCodigo_EComponenteDeTextoComEnum() =>
-        ConferirComponenteDeCodigosAsync("RegraRemanejamentoCodigo", ["SEGUE_CASCATA", "DESTINO_UNICO", "CRUZADO"]);
+        ConferirComponenteDeCodigosAsync("RegraRemanejamentoCodigo", ["SEGUE_ORDEM_DE_REMANEJAMENTO", "DESTINO_UNICO", "CRUZADO"]);
 
     [Theory(DisplayName = "O código da resposta de natureza legal e de composição de vagas da modalidade referencia o componente dele")]
     [InlineData("NaturezaLegal", "naturezaLegal", "NaturezaLegalCodigo")]

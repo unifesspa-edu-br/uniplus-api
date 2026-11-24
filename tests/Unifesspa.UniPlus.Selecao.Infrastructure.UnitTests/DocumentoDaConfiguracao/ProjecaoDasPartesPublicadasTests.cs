@@ -19,7 +19,7 @@ public sealed class ProjecaoDasPartesPublicadasTests
     [InlineData("atendimento", """{"atendimento":{"condicoes":[],"recursos":[],"tiposDeficiencia":[]}}""", """{"condicoes":[],"recursos":[],"tiposDeficiencia":[]}""")]
     [InlineData("fada", """{"fada":{"presente":false}}""", """{"aplica":false}""")]
     [InlineData("taxaDeInscricao", """{"taxaInscricao":{"presente":true,"cobra":false,"valor":null,"fundamentos":[]}}""", """{"cobra":false,"fundamentos":[]}""")]
-    [InlineData("divulgacao", """{"divulgacao":{"camposPublicos":["numero_inscricao"],"regraNomeAbreviado":null,"justificativa":null}}""", """{"camposPublicos":["numero_inscricao"]}""")]
+    [InlineData("divulgacao", """{"divulgacao":{"camposPublicos":["NUMERO_INSCRICAO"],"regraNomeAbreviado":null,"justificativa":null}}""", """{"camposPublicos":["NUMERO_INSCRICAO"]}""")]
     [InlineData("provaPresencial", """{"provaPresencial":{"temProvaPresencial":false,"municipios":[]}}""", """{"temProvaPresencial":false,"municipios":[]}""")]
     [InlineData("tiposDeAtoCongelados", """{"tiposDeAto":[{"codigo":"INSCRICAO","unicoPorObjeto":false,"ehResultado":true,"congelaConfiguracao":false}]}""", """[{"codigo":"INSCRICAO","unicoPorObjeto":false,"ehResultado":true,"congelaConfiguracao":false}]""")]
     [InlineData("coleta", """{"calculosDosDados":[{"codigoDoDado":"REGIME","regras":[{"ordem":0,"contribui":"AC","quando":null}]}]}""", """{"calculosDosDados":[{"codigoDoDado":"REGIME","regras":[{"ordem":0,"contribui":"AC","quando":null}]}]}""")]

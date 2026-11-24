@@ -3,6 +3,7 @@ namespace Unifesspa.UniPlus.Selecao.Application.UnitTests.Commands;
 using AwesomeAssertions;
 
 using Unifesspa.UniPlus.Configuracao.Contracts;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.Errors;
@@ -123,7 +124,7 @@ public sealed class ResolvedorValoresSelecionaveisCongeladosTests
     public void Resolver_FatoDosMunicipiosDoBonus_CongelaOsMunicipiosDaArea()
     {
         ProcessoSeletivo processo = NovoProcesso();
-        processo.DefinirBonusRegional(aplica: true, bonus: ConfiguracaoBonusRegional.Criar(ReferenciaRegra.De(RegraBonusCodigo.Multiplicativo, "v1", new string('a', 64)), 1.20m, null, null, new BaseLegalCongelada(Guid.NewGuid(), "PORTARIA_UNIFESSPA_NO_2514_2023", "PORTARIA", "Portaria Unifesspa nº 2514/2023", "Institui inclusão regional", [("1505536", "Parauapebas", "PA"), ("1504208", "Marabá", "PA"), ("1500131", "Água Azul do Norte", "PA")])).Value!).IsSuccess.Should().BeTrue();
+        processo.DefinirBonusRegional(aplica: true, bonus: ConfiguracaoBonusRegional.Criar(ReferenciaRegra.De(RegraDeBonus.Multiplicativo.Codigo(), "v1", new string('a', 64)), 1.20m, null, null, new BaseLegalCongelada(Guid.NewGuid(), "PORTARIA_UNIFESSPA_NO_2514_2023", "PORTARIA", "Portaria Unifesspa nº 2514/2023", "Institui inclusão regional", [("1505536", "Parauapebas", "PA"), ("1504208", "Marabá", "PA"), ("1500131", "Água Azul do Norte", "PA")])).Value!).IsSuccess.Should().BeTrue();
         ColetarNaHabilitacao(processo, FatoColetadoDeTeste.Coletando("MUNICIPIO_EM_AREA_BONUS", 0)
             .ComRotulo("Município")
             .DoTipo(TipoRenderizacao.SelecaoUnica)

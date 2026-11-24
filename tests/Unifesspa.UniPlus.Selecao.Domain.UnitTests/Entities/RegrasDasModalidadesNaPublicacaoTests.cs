@@ -4,6 +4,7 @@ using System.Text.Json;
 
 using AwesomeAssertions;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.Formularios;
@@ -184,15 +185,12 @@ public sealed class RegrasDasModalidadesNaPublicacaoTests
 
     [Theory(DisplayName = "O remanejamento copiado é o que a natureza pede: a ampla não remaneja, e a ação afirmativa remaneja para um destino ou para o par")]
     [InlineData(NaturezaLegalModalidade.AcaoAfirmativa, RegraRemanejamentoModalidade.DestinoUnico, true)]
-    [InlineData(NaturezaLegalModalidade.AcaoAfirmativa, RegraRemanejamentoModalidade.Nenhuma, false)]
+    [InlineData(NaturezaLegalModalidade.AcaoAfirmativa, null, false)]
     [InlineData(NaturezaLegalModalidade.Ampla, RegraRemanejamentoModalidade.DestinoUnico, false)]
-    public void Remanejamento_DecidePelaNatureza(NaturezaLegalModalidade natureza, RegraRemanejamentoModalidade remanejamento, bool esperadoOk)
+    public void Remanejamento_DecidePelaNatureza(NaturezaLegalModalidade natureza, RegraRemanejamentoModalidade? remanejamento, bool esperadoOk)
     {
         ProcessoSeletivo processo = ProcessoConformeFactory.Criar();
-        ModalidadeSelecionada copia = ModalidadeSelecionada.Criar(
-            Guid.CreateVersion7(), "X", null, natureza, ComposicaoVagasModalidade.SuplementarAoTotal, null, remanejamento,
-            remanejamento == RegraRemanejamentoModalidade.DestinoUnico ? "AC" : null, null, null,
-            RegrasDeAplicabilidadeDeTeste.DaNatureza(natureza), null, "base legal", quantidadeDeclarada: 10).Value!;
+        ModalidadeSelecionada copia = ModalidadeSelecionada.Criar(ModalidadesNoCadastroDeTeste.Da("X", natureza, ComposicaoVagasModalidade.SuplementarAoTotal) with { RegraRemanejamento = remanejamento, RemanejamentoDestino = remanejamento == RegraRemanejamentoModalidade.DestinoUnico ? "AC" : null, BaseLegal = "base legal" }, 10).Value!;
         Ofertar(processo, Modalidade("AC", NaturezaLegalModalidade.Ampla, PredicadoDnf.SemClausula), copia);
 
         Item(processo, ItemRemanejamento).Ok.Should().Be(esperadoOk);
@@ -202,10 +200,7 @@ public sealed class RegrasDasModalidadesNaPublicacaoTests
     public void AcaoAfirmativaSemRemanejamento_RecusaAPublicacao()
     {
         ProcessoSeletivo processo = ProcessoConformeFactory.Criar();
-        ModalidadeSelecionada semRemanejamento = ModalidadeSelecionada.Criar(
-            Guid.CreateVersion7(), "X", null, NaturezaLegalModalidade.AcaoAfirmativa,
-            ComposicaoVagasModalidade.SuplementarAoTotal, null, RegraRemanejamentoModalidade.Nenhuma, null, null, null,
-            RegrasDeAplicabilidadeDeTeste.DaNatureza(NaturezaLegalModalidade.AcaoAfirmativa), null, "base legal", quantidadeDeclarada: 10).Value!;
+        ModalidadeSelecionada semRemanejamento = ModalidadeSelecionada.Criar(ModalidadesNoCadastroDeTeste.Da("X", NaturezaLegalModalidade.AcaoAfirmativa, ComposicaoVagasModalidade.SuplementarAoTotal) with { BaseLegal = "base legal" }, 10).Value!;
         Ofertar(processo, Modalidade("AC", NaturezaLegalModalidade.Ampla, PredicadoDnf.SemClausula), semRemanejamento);
 
         CondicoesDaCanonicalizacaoDeTeste.PrimeiraCausa(processo)!.Code
@@ -245,21 +240,23 @@ public sealed class RegrasDasModalidadesNaPublicacaoTests
     private static void Ofertar(ProcessoSeletivo processo, params ModalidadeSelecionada[] modalidades) =>
         processo.DefinirDistribuicaoVagas(
             [ConfiguracaoDistribuicaoVagas.Criar(Guid.CreateVersion7(),
-                new DistribuicaoDeVagasDeclarada { VagasOfertadasBase = 10 * modalidades.Length, PercentualDaReservaLegal = 1m, RegraDeDistribuicao = ReferenciaRegra.De(RegraDistribuicaoVagasCodigo.Institucional, "v1", new string('a', 64)), Modalidades = modalidades },
+                new DistribuicaoDeVagasDeclarada { VagasOfertadasBase = 10 * modalidades.Length, PercentualDaReservaLegal = 1m, RegraDeDistribuicao = ReferenciaRegra.De(RegraDeDistribuicaoDeVagas.Institucional.Codigo(), "v1", new string('a', 64)), Modalidades = modalidades },
                 new FatosDaOfertaNoCadastro { OfertaCurso = OfertaCursoDeTeste.Medicina }).Value!],
             FatosDeModalidadeDeTeste.DoCatalogo).IsSuccess.Should().BeTrue();
 
     private static ModalidadeSelecionada Modalidade(string codigo, NaturezaLegalModalidade natureza, PredicadoDnf regra) =>
-        ModalidadeSelecionada.Criar(
-            Guid.CreateVersion7(), codigo, null, natureza,
-            natureza == NaturezaLegalModalidade.Ampla ? ComposicaoVagasModalidade.RestanteDasVagasOfertadas : ComposicaoVagasModalidade.SuplementarAoTotal, null,
-            natureza switch
+        ModalidadeSelecionada.Criar(ModalidadesNoCadastroDeTeste.Da(codigo, natureza, natureza == NaturezaLegalModalidade.Ampla ? ComposicaoVagasModalidade.RestanteDasVagasOfertadas : ComposicaoVagasModalidade.SuplementarAoTotal) with
+        {
+            RegraRemanejamento = natureza switch
             {
-                NaturezaLegalModalidade.CotaReservada => RegraRemanejamentoModalidade.SegueCascata,
+                NaturezaLegalModalidade.CotaReservada => RegraRemanejamentoModalidade.SegueOrdemDeRemanejamento,
                 NaturezaLegalModalidade.AcaoAfirmativa => RegraRemanejamentoModalidade.DestinoUnico,
-                _ => RegraRemanejamentoModalidade.Nenhuma,
+                _ => null,
             },
-            natureza == NaturezaLegalModalidade.AcaoAfirmativa ? "AC" : null, null, null, regra, null, "base legal", quantidadeDeclarada: 10).Value!;
+            RemanejamentoDestino = natureza == NaturezaLegalModalidade.AcaoAfirmativa ? "AC" : null,
+            RegraDeAplicabilidade = regra,
+            BaseLegal = "base legal"
+        }, 10).Value!;
 
     private static FatoColetado Booleano(string fato, int ordem) =>
         FatoColetadoDeTeste.Coletando(fato, ordem).ComObrigatoriedade(Obrigatoriedade.Sempre).ComClassificacao("SENSIVEL").Construir();

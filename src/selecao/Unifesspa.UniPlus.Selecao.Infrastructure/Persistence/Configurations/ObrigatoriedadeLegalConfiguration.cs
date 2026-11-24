@@ -8,9 +8,11 @@ using Microsoft.EntityFrameworkCore.ChangeTracking;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence.CodigosDeContrato;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Protecao;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
+using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 /// <summary>
@@ -49,7 +51,7 @@ internal sealed class ObrigatoriedadeLegalConfiguration
         builder.ClassificaPorPadrao(ClassificacaoDeProtecao.Interno);
 
         builder.Property(o => o.TipoProcessoCodigo).HasComment("Código do tipo de processo ao qual a regra se aplica.");
-        builder.Property(o => o.Categoria).HasComment("Categoria da regra: Etapa, Modalidade, Desempate, Documento, Bonus (Fator de Atenuação das Desigualdades de Acesso (FADA)), Atendimento ou Outros.");
+        builder.Property(o => o.Categoria).HasComment("Categoria da regra: etapa, modalidade, desempate, documento, bonus (Fator de Atenuação das Desigualdades de Acesso (FADA)), atendimento ou outros.");
         builder.Property(o => o.RegraCodigo).HasComment("Código que identifica a regra legal.");
         builder.Property(o => o.Predicado).HasComment("Condições de aplicação da regra legal, em JSON.");
         builder.Property(o => o.DescricaoHumana).HasComment("Descrição da regra para leitura por pessoas.");
@@ -60,7 +62,11 @@ internal sealed class ObrigatoriedadeLegalConfiguration
         builder.Property(o => o.VigenciaFim).HasComment("Data final de vigência da regra, quando houver.");
         builder.Property(o => o.Hash).HasComment("Resumo usado para identificar o conteúdo da regra.");
 
-        builder.ToTable("obrigatoriedades_legais", t => t.HasComment("Regras legais aplicáveis à configuração de processos seletivos."));
+        builder.ToTable("obrigatoriedades_legais", t =>
+        {
+            t.HasComment("Regras legais aplicáveis à configuração de processos seletivos.");
+            t.HasCheckConstraint("ck_obrigatoriedades_legais_categoria", $"categoria IN ({SqlDosCodigosDeContrato.Lista<CategoriaObrigatoriedade>()})");
+        });
         builder.HasKey(o => o.Id);
 
         builder.Property(o => o.TipoProcessoCodigo)
@@ -68,7 +74,6 @@ internal sealed class ObrigatoriedadeLegalConfiguration
             .IsRequired();
 
         builder.Property(o => o.Categoria)
-            .HasConversion<string>()
             .HasMaxLength(CategoriaMaxLength)
             .IsRequired();
 

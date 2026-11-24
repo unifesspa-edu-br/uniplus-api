@@ -7,6 +7,7 @@ using AwesomeAssertions;
 using Microsoft.EntityFrameworkCore;
 
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.ValueObjects;
@@ -42,13 +43,10 @@ public sealed class DistribuicaoVagasPersistenciaTests : IClassFixture<ProcessoS
     private static ModalidadeSelecionada NovaModalidade(
         string codigo, NaturezaLegalModalidade natureza, ComposicaoVagasModalidade composicao,
         string? composicaoOrigemCodigo = null,
-        RegraRemanejamentoModalidade regraRemanejamento = RegraRemanejamentoModalidade.Nenhuma,
+        RegraRemanejamentoModalidade? regraRemanejamento = null,
         int? quantidadeDeclarada = null,
         PredicadoDnf? regraDeAplicabilidade = null) =>
-        ModalidadeSelecionada.Criar(
-            Guid.CreateVersion7(), codigo, $"Modalidade {codigo}", natureza, composicao,
-            composicaoOrigemCodigo, regraRemanejamento, null, null, null,
-            regraDeAplicabilidade ?? PredicadoDnf.SemClausula, "RECLASSIFICA_AC", "Lei 12.711/2012", quantidadeDeclarada).Value!;
+        ModalidadeSelecionada.Criar(ModalidadesNoCadastroDeTeste.Da(codigo, natureza, composicao) with { Descricao = $"Modalidade {codigo}", ComposicaoOrigemCodigo = composicaoOrigemCodigo, RegraRemanejamento = regraRemanejamento, RegraDeAplicabilidade = regraDeAplicabilidade ?? PredicadoDnf.SemClausula, AcaoQuandoIndeferido = "RECLASSIFICA_AC" }, quantidadeDeclarada).Value!;
 
     private static readonly PredicadoDnf RegraDaReservaPcd = PredicadoDnf.CriarDeCondicoesAgrupadas(
     [
@@ -81,7 +79,7 @@ public sealed class DistribuicaoVagasPersistenciaTests : IClassFixture<ProcessoS
 
         ConfiguracaoDistribuicaoVagas distribuicao = (await RecarregarComDistribuicaoAsync(processo.Id)).DistribuicaoVagas.Single();
 
-        distribuicao.RegraDistribuicao.Codigo.Should().Be(RegraDistribuicaoVagasCodigo.Institucional);
+        distribuicao.RegraDistribuicao.Codigo.Should().Be(RegraDeDistribuicaoDeVagas.Institucional.Codigo());
         distribuicao.ReferenciaDemografica.Should().BeNull();
         distribuicao.GrupoAreaEnem.Should().BeNull("curso sem grupo declarado é aceito no rascunho e persiste sem grupo");
     }
@@ -152,7 +150,7 @@ public sealed class DistribuicaoVagasPersistenciaTests : IClassFixture<ProcessoS
         {
             VagasOfertadasBase = vagasBase,
             PercentualDaReservaLegal = 1m,
-            RegraDeDistribuicao = ReferenciaRegra.De(RegraDistribuicaoVagasCodigo.Institucional, "v1", new string(hashDaRegra, 64)),
+            RegraDeDistribuicao = ReferenciaRegra.De(RegraDeDistribuicaoDeVagas.Institucional.Codigo(), "v1", new string(hashDaRegra, 64)),
             Modalidades = modalidades,
         };
         Result<ConfiguracaoDistribuicaoVagas> oferta = ConfiguracaoDistribuicaoVagas.Criar(
@@ -168,8 +166,8 @@ public sealed class DistribuicaoVagasPersistenciaTests : IClassFixture<ProcessoS
         {
             VagasOfertadasBase = 50,
             PercentualDaReservaLegal = 0.5m,
-            RegraDeDistribuicao = ReferenciaRegra.De(RegraDistribuicaoVagasCodigo.Lei12711, "v1", new string('a', 64)),
-            RegraDeAjuste = ReferenciaRegra.De(RegraAjusteDistribuicaoVagasCodigo.ReconciliacaoArt11ParagrafoUnico, "v1", new string('d', 64)),
+            RegraDeDistribuicao = ReferenciaRegra.De(RegraDeDistribuicaoDeVagas.Lei12711.Codigo(), "v1", new string('a', 64)),
+            RegraDeAjuste = ReferenciaRegra.De(RegraDeAjusteDaDistribuicaoDeVagas.AjusteDoTotalPeloArtigo11.Codigo(), "v1", new string('d', 64)),
             ReferenciaDemografica = ReferenciaReservaDemograficaSnapshot.Criar(Guid.CreateVersion7(), "2022", 79m, 1.5m, 8.5m, "Censo 2022 (IBGE)").Value!,
             Modalidades = ModalidadesDaLei12711(),
         };
@@ -184,7 +182,7 @@ public sealed class DistribuicaoVagasPersistenciaTests : IClassFixture<ProcessoS
     private static List<ModalidadeSelecionada> ModalidadesDaLei12711() =>
     [
         .. ModalidadesFederaisLei12711.Codigos.Select(codigo =>
-            NovaModalidade(codigo, NaturezaLegalModalidade.CotaReservada, ComposicaoVagasModalidade.DentroDaReservaLegal, regraRemanejamento: RegraRemanejamentoModalidade.SegueCascata)),
+            NovaModalidade(codigo, NaturezaLegalModalidade.CotaReservada, ComposicaoVagasModalidade.DentroDaReservaLegal, regraRemanejamento: RegraRemanejamentoModalidade.SegueOrdemDeRemanejamento)),
         NovaModalidade(ModalidadesFederaisLei12711.Ac, NaturezaLegalModalidade.Ampla, ComposicaoVagasModalidade.RestanteDasVagasOfertadas),
         NovaModalidade(
             "V", NaturezaLegalModalidade.AcaoAfirmativa, ComposicaoVagasModalidade.RetiradaDeOutraModalidade,
@@ -235,10 +233,10 @@ public sealed class DistribuicaoVagasPersistenciaTests : IClassFixture<ProcessoS
         distribuicao.GrupoAreaEnem.Rotulo.Should().Be("Humanística I");
         distribuicao.VagasOfertadasBase.Should().Be(50);
         distribuicao.PercentualDaReservaLegal.Should().Be(0.5m);
-        distribuicao.RegraDistribuicao.Codigo.Should().Be(RegraDistribuicaoVagasCodigo.Lei12711);
+        distribuicao.RegraDistribuicao.Codigo.Should().Be(RegraDeDistribuicaoDeVagas.Lei12711.Codigo());
         distribuicao.RegraDistribuicao.Hash.Should().Be(new string('a', 64));
         distribuicao.RegraAjuste.Should().NotBeNull();
-        distribuicao.RegraAjuste!.Codigo.Should().Be(RegraAjusteDistribuicaoVagasCodigo.ReconciliacaoArt11ParagrafoUnico);
+        distribuicao.RegraAjuste!.Codigo.Should().Be(RegraDeAjusteDaDistribuicaoDeVagas.AjusteDoTotalPeloArtigo11.Codigo());
     }
 
     private static void ConferirAReferenciaDemografica(ConfiguracaoDistribuicaoVagas distribuicao)
@@ -259,7 +257,7 @@ public sealed class DistribuicaoVagasPersistenciaTests : IClassFixture<ProcessoS
         retiradaDeOutraModalidade.QuantidadeDeclarada.Should().Be(2);
 
         ModalidadeSelecionada cotaReservada = distribuicao.Modalidades.Single(m => m.Codigo == "LB_PPI");
-        cotaReservada.RegraRemanejamento.Should().Be(RegraRemanejamentoModalidade.SegueCascata);
+        cotaReservada.RegraRemanejamento.Should().Be(RegraRemanejamentoModalidade.SegueOrdemDeRemanejamento);
         cotaReservada.QuantidadeDeclarada.Should().BeNull("sub-reserva federal é calculada, não fixada pelo edital");
 
         distribuicao.VagasOfertadas.Should().HaveCount(10);

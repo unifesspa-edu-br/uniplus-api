@@ -4,6 +4,7 @@ using AwesomeAssertions;
 
 using FluentValidation.Results;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
 using Unifesspa.UniPlus.Selecao.Application.Validators.ProcessosSeletivos;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
@@ -17,15 +18,15 @@ public sealed class DefinirCronogramaFasesCommandValidatorTests
     private static RegraRecursoFaseInput RegraRecurso(
         decimal? prazoValor = 48m,
         decimal? prazoSegundaInstanciaValor = null) => new(
-            RegraCodigo: RegraPrazoRecursoCodigo.AncoradoEmAto,
+            RegraCodigo: RegraDePrazoDoRecurso.ContadoDaPublicacaoDoAto.Codigo(),
             RegraVersao: "v1",
             PrazoValor: prazoValor,
-            PrazoUnidade: "horas",
+            PrazoUnidade: "HORAS",
             AtoAncoraCodigo: "RESULTADO_CLASSIFICACAO",
             AdmiteInstanciaSuperior: prazoSegundaInstanciaValor is not null,
             PrazoSegundaInstanciaValor: prazoSegundaInstanciaValor,
-            PrazoSegundaInstanciaUnidade: prazoSegundaInstanciaValor is null ? null : "horas",
-            EfeitoSuspensivo: "semEfeitoSuspensivo",
+            PrazoSegundaInstanciaUnidade: prazoSegundaInstanciaValor is null ? null : "HORAS",
+            EfeitoSuspensivo: "SEM_EFEITO_SUSPENSIVO",
             GuardaDaVaga: null);
 
     private static FaseCronogramaInput FaseValida(RegraRecursoFaseInput? regraRecurso = null) => new(
@@ -33,7 +34,7 @@ public sealed class DefinirCronogramaFasesCommandValidatorTests
         FaseCanonicaId: Guid.CreateVersion7(),
         Inicio: null,
         Fim: null,
-        Produtos: [new ProdutoDaFaseInput("RESULTADO_CLASSIFICACAO", PapelProdutoFaseCodigo.Preliminar)],
+        Produtos: [new ProdutoDaFaseInput("RESULTADO_CLASSIFICACAO", "PRELIMINAR")],
         EmiteParecerIndividual: false,
         BancasRequeridas: [],
         RegraRecurso: regraRecurso);

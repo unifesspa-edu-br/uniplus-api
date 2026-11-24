@@ -126,18 +126,18 @@ internal static class SerializacaoDaClassificacao
 
     private static JsonObject SerializarParametrosRegraEliminacao(ParametrosRegraEliminacao parametros) => parametros switch
     {
-        ParametrosElimAusenciaNaEtapa ausencia => new JsonObject { ["etapaId"] = ausencia.EtapaRef },
-        ParametrosElimNotaMinimaEtapa notaMinima => new JsonObject
+        ParametrosEliminacaoPorAusenciaNaEtapa ausencia => new JsonObject { ["etapaId"] = ausencia.EtapaRef },
+        ParametrosEliminacaoPorNotaMinimaNaEtapa notaMinima => new JsonObject
         {
             ["etapaId"] = notaMinima.EtapaRef,
             ["notaMinima"] = HashCanonicalComputer.SerializeDecimalCanonical(notaMinima.NotaMinima, EscritaCanonica.EscalaPadrao),
         },
-        ParametrosElimCorteEmArea corteEmArea => new JsonObject
+        ParametrosEliminacaoPorCorteEmAreaDoEnem corteEmArea => new JsonObject
         {
             ["areaCodigo"] = HashCanonicalComputer.NormalizeNfc(corteEmArea.AreaCodigo),
             ["minimo"] = HashCanonicalComputer.SerializeDecimalCanonical(corteEmArea.Minimo, EscritaCanonica.EscalaPadrao),
         },
-        ParametrosElimZeroEmArea or ParametrosElimFaltaEmDiaDeProvaEnem => [],
+        ParametrosEliminacaoPorZeroEmAreaDoEnem or ParametrosEliminacaoPorFaltaEmDiaDeProvaDoEnem => [],
         _ => throw new InvalidOperationException($"Variante de {nameof(ParametrosRegraEliminacao)} não reconhecida: {parametros.GetType()}."),
     };
 }

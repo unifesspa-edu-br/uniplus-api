@@ -1,5 +1,6 @@
 namespace Unifesspa.UniPlus.Selecao.Application.DTOs;
 
+using Unifesspa.UniPlus.Application.Abstractions.Respostas;
 using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
 
 /// <summary>
@@ -48,5 +49,5 @@ public sealed record CertameNaVitrineDto(
     IReadOnlyList<string> ModalidadesOfertadas,
     DateTimeOffset InscricoesDe,
     DateTimeOffset InscricoesAte,
-    SituacaoDoCertame Situacao,
+    CodigoComRotulo<SituacaoDoCertame> Situacao,
     int TotalDeVagas);

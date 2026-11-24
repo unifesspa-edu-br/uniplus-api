@@ -8,14 +8,14 @@
   "properties": {
     "camposPublicos": {
       "title": "Campos públicos",
-      "description": "Dados do candidato divulgados nas listas públicas: numero_inscricao, nome_abreviado ou nome. Não se repetem.",
+      "description": "Dados do candidato divulgados nas listas públicas: NUMERO_INSCRICAO, NOME_ABREVIADO ou NOME. Não se repetem.",
       "type": "array",
       "uniqueItems": true,
       "items": {
         "enum": [
-          "numero_inscricao",
-          "nome_abreviado",
-          "nome"
+          "NUMERO_INSCRICAO",
+          "NOME_ABREVIADO",
+          "NOME"
         ]
       }
     },
@@ -27,7 +27,7 @@
     },
     "regraNomeAbreviado": {
       "title": "Regra do nome abreviado",
-      "description": "Identificador da regra vigente que abrevia o nome do candidato, presente quando nome_abreviado é divulgado. Definido pelo servidor na publicação. Campo só de leitura: a exportação o traz para quem lê o arquivo, e ele é ignorado na importação; a referência é camposPublicos.",
+      "description": "Identificador da regra vigente que abrevia o nome do candidato, presente quando NOME_ABREVIADO é divulgado. Definido pelo servidor na publicação. Campo só de leitura: a exportação o traz para quem lê o arquivo, e ele é ignorado na importação; a referência é camposPublicos.",
       "type": "string",
       "maxLength": 100,
       "readOnly": true

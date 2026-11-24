@@ -5,6 +5,7 @@ using AwesomeAssertions;
 using NSubstitute;
 
 using Unifesspa.UniPlus.Configuracao.Contracts;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
 using Unifesspa.UniPlus.Selecao.Application.DTOs;
@@ -22,7 +23,7 @@ using static Unifesspa.UniPlus.Selecao.Application.UnitTests.Commands.ApoioDaDis
 /// </summary>
 public sealed class DefinirDistribuicaoVagasAcumulacaoTests
 {
-    private const string Institucional = RegraDistribuicaoVagasCodigo.Institucional;
+    private const string Institucional = "DISTRIBUICAO_INSTITUCIONAL";
 
     private static ProcessoSeletivo NovoProcesso() => ProcessoSeletivo.Criar(
         "PSIQ 2026", TiposDeProcessoDeTeste.PSIQ, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(),
@@ -75,7 +76,7 @@ public sealed class DefinirDistribuicaoVagasAcumulacaoTests
     {
         ProcessoSeletivo processo = NovoProcesso();
         ConfiguracaoDistribuicaoVagasInput pedido = new(
-            Guid.CreateVersion7(), 50, 0.5m, RegraDistribuicaoVagasCodigo.Lei12711, "v1", "AJUSTE", "v1", Guid.CreateVersion7(),
+            Guid.CreateVersion7(), 50, 0.5m, RegraDeDistribuicaoDeVagas.Lei12711.Codigo(), "v1", "AJUSTE", "v1", Guid.CreateVersion7(),
             [Guid.CreateVersion7(), Guid.CreateVersion7()], []);
 
         DeveRecusarNaOrdem(
@@ -114,7 +115,7 @@ public sealed class DefinirDistribuicaoVagasAcumulacaoTests
         mocks.ModalidadeReader.ObterPorIdAsync(modalidade, Arg.Any<CancellationToken>()).Returns(NovaModalidadeAmpla(modalidade));
 
         Result<IReadOnlyList<ConfiguracaoDistribuicaoVagasDto>> resultado = await DefinirAsync(
-            mocks, processo, Pedido(oferta, RegraDistribuicaoVagasCodigo.Lei12711, [modalidade]));
+            mocks, processo, Pedido(oferta, RegraDeDistribuicaoDeVagas.Lei12711.Codigo(), [modalidade]));
 
         DeveRecusarNaOrdem(resultado, Recusa(0, "regraDistribuicaoCodigo", "RegraDistribuicaoNaoEncontrada"));
     }

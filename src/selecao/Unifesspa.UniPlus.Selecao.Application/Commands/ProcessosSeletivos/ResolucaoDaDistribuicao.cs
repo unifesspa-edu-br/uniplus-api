@@ -11,6 +11,7 @@ using Kernel.Results;
 using Services;
 
 using Unifesspa.UniPlus.Configuracao.Contracts;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 
 /// <summary>
 /// A resolução de uma distribuição de vagas pedida (ids e códigos crus do payload) contra os cadastros vivos
@@ -177,13 +178,28 @@ internal sealed class ResolucaoDaDistribuicao(
         ModalidadeView? view = await modalidadeReader.ObterPorIdAsync(modalidadeId, cancellationToken).ConfigureAwait(false);
         return view is null
             ? Result<ModalidadeSelecionada>.Failure(RecusasDaResolucaoDeVagas.ModalidadeNaoEncontrada(modalidadeId))
-            : ModalidadeSelecionada.Criar(
-                view.Id, view.Codigo, view.Descricao,
-                NaturezaLegalModalidadeCodigo.FromCodigo(view.NaturezaLegal), ComposicaoVagasModalidadeCodigo.FromCodigo(view.ComposicaoVagas), view.ComposicaoOrigem,
-                RegraRemanejamentoModalidadeCodigo.FromCodigo(view.RegraRemanejamento), view.RemanejamentoDestino, view.RemanejamentoPar, view.RemanejamentoFallback,
-                view.RegraDeAplicabilidade, view.AcaoQuandoIndeferido, view.BaseLegal ?? string.Empty,
-                pedido.Quadro.FirstOrDefault(linha => linha.ModalidadeId == modalidadeId)?.Quantidade);
+            : ModalidadeSelecionada.Criar(NoCadastro(view), pedido.Quadro.FirstOrDefault(linha => linha.ModalidadeId == modalidadeId)?.Quantidade);
     }
+
+    private static ModalidadeNoCadastro NoCadastro(ModalidadeView view) => new()
+    {
+        Id = view.Id,
+        Codigo = view.Codigo,
+        Descricao = view.Descricao,
+        NaturezaLegal = CodigoReconhecido<NaturezaLegalModalidade>(view.NaturezaLegal),
+        ComposicaoVagas = CodigoReconhecido<ComposicaoVagasModalidade>(view.ComposicaoVagas),
+        ComposicaoOrigemCodigo = view.ComposicaoOrigem,
+        RegraRemanejamento = view.RegraRemanejamento is { } regra ? CatalogoDe<RegraRemanejamentoModalidade>.Obter(regra) : null,
+        RemanejamentoDestino = view.RemanejamentoDestino,
+        RemanejamentoPar = view.RemanejamentoPar,
+        RemanejamentoFallback = view.RemanejamentoFallback,
+        RegraDeAplicabilidade = view.RegraDeAplicabilidade,
+        AcaoQuandoIndeferido = view.AcaoQuandoIndeferido,
+        BaseLegal = view.BaseLegal ?? string.Empty,
+    };
+
+    private static TEnum? CodigoReconhecido<TEnum>(string codigo) where TEnum : struct, Enum =>
+        CatalogoDe<TEnum>.TentarObter(codigo, out TEnum valor) ? valor : null;
 
     // A forma do pedido é do domínio; o quadro que traz uma modalidade fora das selecionadas é reconciliação
     // de ids crus, e é da aplicação.

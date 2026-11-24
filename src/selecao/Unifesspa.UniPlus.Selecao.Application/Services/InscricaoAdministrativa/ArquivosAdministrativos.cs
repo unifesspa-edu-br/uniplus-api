@@ -1,9 +1,11 @@
 namespace Unifesspa.UniPlus.Selecao.Application.Services.InscricaoAdministrativa;
 
+using Unifesspa.UniPlus.Application.Abstractions.Respostas;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Application.DTOs.Administrativos;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
+using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 /// <summary>
@@ -43,7 +45,7 @@ public static class ArquivosAdministrativos
             OcorrenciaId = apresentacao.OcorrenciaId,
             NomeDoDocumento = apresentacao.NomeDoDocumento,
             TipoDeMidia = arquivo.TipoDeMidia,
-            Situacao = arquivo.Situacao,
+            Situacao = CodigoComRotulo<SituacaoDoArquivoDoCandidato>.De(arquivo.Situacao),
             TamanhoBytes = arquivo.TamanhoBytes,
             HashSha256 = arquivo.HashSha256,
             ConfirmadoEm = arquivo.ConfirmadoEm!.Value,

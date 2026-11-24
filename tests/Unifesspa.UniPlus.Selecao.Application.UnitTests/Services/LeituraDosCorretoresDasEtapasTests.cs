@@ -4,6 +4,7 @@ using AwesomeAssertions;
 
 using NSubstitute;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Selecao.Application.Services;
 using Unifesspa.UniPlus.Selecao.Application.UnitTests.Commands;
 using Unifesspa.UniPlus.Selecao.Application.UnitTests.TestSupport;
@@ -32,7 +33,7 @@ public sealed class LeituraDasRegrasCitadasNaConfiguracaoTests
         CorretoresDasEtapas corretores = await Ler(catalogo, processo);
 
         corretores.EmCampo(processo.Etapas.Single()).Should().Be(0);
-        await catalogo.DidNotReceive().ObterAsync(RegraConsolidacaoCodigo.CorrecaoIndependente, Arg.Any<string>(), Arg.Any<CancellationToken>());
+        await catalogo.DidNotReceive().ObterAsync(RegraDeApuracaoDaAvaliacao.CorrecaoIndependente.Codigo(), Arg.Any<string>(), Arg.Any<CancellationToken>());
     }
 
     [Fact(DisplayName = "Cada etapa recebe o número da regra de consolidação que referencia")]
@@ -48,13 +49,13 @@ public sealed class LeituraDasRegrasCitadasNaConfiguracaoTests
     }
 
     [Theory(DisplayName = "A regra que declara o novo corretor põe em campo os distintos e mais um; a que declara a decisão da banca, só os distintos")]
-    [InlineData("novo_corretor", 4)]
-    [InlineData("decisao_da_banca", 3)]
+    [InlineData("NOVO_CORRETOR", 4)]
+    [InlineData("DECISAO_DA_BANCA", 3)]
     public async Task TratamentoDeclarado_DefineOAdicional(string tratamento, int esperado)
     {
         RegraCatalogo regra = RegrasDeConsolidacaoDeTeste.Regra(
-            RegraConsolidacaoCodigo.ConceitoMaioriaSimples,
-            $$"""{"corretores_distintos":3,"criterio":"maioria_simples","naturezas_do_conceito":["CATEGORICO"],"quando_nao_consolida":"{{tratamento}}"}""");
+            RegraDeApuracaoDaAvaliacao.ConceitoMaioriaSimples.Codigo(),
+            $$"""{"corretores_distintos":3,"criterio":"MAIORIA_SIMPLES","naturezas_do_conceito":["CATEGORICO"],"quando_nao_consolida":"{{tratamento}}"}""");
         ProcessoSeletivo processo = ProcessoComCorrecaoIndependente.ComRegras(regra.Referencia());
 
         CorretoresDasEtapas corretores = await Ler(RegrasDeConsolidacaoDeTeste.Catalogo(regra), processo);
@@ -85,8 +86,8 @@ public sealed class LeituraDasRegrasCitadasNaConfiguracaoTests
         CorretoresDasEtapas corretores = await Ler(catalogo, processo);
 
         corretores.EmCampo(processo.Etapas.Single(etapa => etapa.Ordem == 3)).Should().Be(3);
-        await catalogo.Received(1).ObterAsync(RegraConsolidacaoCodigo.CorrecaoIndependente, "v1", Arg.Any<CancellationToken>());
-        await catalogo.Received(1).ObterAsync(RegraConsolidacaoCodigo.AvaliacaoUnica, "v1", Arg.Any<CancellationToken>());
+        await catalogo.Received(1).ObterAsync(RegraDeApuracaoDaAvaliacao.CorrecaoIndependente.Codigo(), "v1", Arg.Any<CancellationToken>());
+        await catalogo.Received(1).ObterAsync(RegraDeApuracaoDaAvaliacao.AvaliacaoUnica.Codigo(), "v1", Arg.Any<CancellationToken>());
     }
 
     [Fact(DisplayName = "A regra ausente do catálogo volta como não resolvida, sem lançar nem presumir um número")]
@@ -109,7 +110,7 @@ public sealed class LeituraDasRegrasCitadasNaConfiguracaoTests
     {
         ProcessoSeletivo processo = ProcessoComCorrecaoIndependente.ComRegras(ProcessoComCorrecaoIndependente.CorrecaoIndependente);
         RegraCatalogo outraDefinicao = RegrasDeConsolidacaoDeTeste.Regra(
-            RegraConsolidacaoCodigo.CorrecaoIndependente, """{"corretores_distintos":4,"naturezas_do_conceito":["NUMERICO"]}""");
+            RegraDeApuracaoDaAvaliacao.CorrecaoIndependente.Codigo(), """{"corretores_distintos":4,"naturezas_do_conceito":["NUMERICO"]}""");
 
         CorretoresDasEtapas corretores = await Ler(RegrasDeConsolidacaoDeTeste.Catalogo(outraDefinicao), processo);
 
@@ -187,7 +188,7 @@ public sealed class LeituraDasRegrasCitadasNaConfiguracaoTests
     [InlineData("""{"corretores_distintos":3,"quando_nao_consolida":1}""")]
     public async Task EsquemaInvalido_VoltaNaoResolvida(string declaracaoDaRegra)
     {
-        RegraCatalogo invalida = RegrasDeConsolidacaoDeTeste.Regra(RegraConsolidacaoCodigo.CorrecaoIndependente, declaracaoDaRegra);
+        RegraCatalogo invalida = RegrasDeConsolidacaoDeTeste.Regra(RegraDeApuracaoDaAvaliacao.CorrecaoIndependente.Codigo(), declaracaoDaRegra);
         ProcessoSeletivo processo = ProcessoComCorrecaoIndependente.ComRegras(invalida.Referencia());
 
         CorretoresDasEtapas corretores = await Ler(RegrasDeConsolidacaoDeTeste.Catalogo(invalida), processo);

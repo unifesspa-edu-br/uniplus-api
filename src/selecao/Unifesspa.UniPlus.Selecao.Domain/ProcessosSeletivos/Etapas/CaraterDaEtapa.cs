@@ -27,7 +27,7 @@ public static class CaraterDaEtapa
     /// caráter em si, o peso e a nota mínima. A recusa de peso e de nota mínima por caráter só vale para
     /// o caráter definido: quem não declarou caráter recebe só a recusa do caráter.
     /// </summary>
-    public static List<FieldError> ValidarDeclarado(CaraterEtapa carater, decimal? peso, decimal? notaMinima)
+    public static List<FieldError> ValidarDeclarado(CaraterEtapa? carater, decimal? peso, decimal? notaMinima)
     {
         FieldError?[] recusas =
         [
@@ -74,8 +74,8 @@ public static class CaraterDaEtapa
     private static FieldError NaoAdmitido(string mensagem) =>
         new("carater", new DomainError(EtapaProcessoErrorCodes.CaraterNaoAdmitidoPeloTipo, mensagem));
 
-    private static FieldError? RecusaDoCarater(CaraterEtapa carater) =>
-        carater == CaraterEtapa.Nenhum || !Enum.IsDefined(carater)
+    private static FieldError? RecusaDoCarater(CaraterEtapa? carater) =>
+        carater is not { } declarado || !Enum.IsDefined(declarado)
             ? new("carater", new DomainError(
                 "EtapaProcesso.CaraterObrigatorio",
                 "Caráter da etapa é obrigatório (classificatória, eliminatória ou ambas)."))
@@ -83,7 +83,7 @@ public static class CaraterDaEtapa
 
     // Peso em etapa que não pontua é dado morto: o divisor da média soma apenas as etapas cujo caráter
     // compõe a nota, então o valor fica gravado sem nunca pesar em nada, e quem configurou acredita que pesa.
-    private static FieldError? RecusaDoPeso(CaraterEtapa carater, decimal? peso)
+    private static FieldError? RecusaDoPeso(CaraterEtapa? carater, decimal? peso)
     {
         if (peso is <= 0)
         {
@@ -98,7 +98,7 @@ public static class CaraterDaEtapa
             : null;
     }
 
-    private static FieldError? RecusaDaNotaMinima(CaraterEtapa carater, decimal? notaMinima)
+    private static FieldError? RecusaDaNotaMinima(CaraterEtapa? carater, decimal? notaMinima)
     {
         if (notaMinima is < 0)
         {

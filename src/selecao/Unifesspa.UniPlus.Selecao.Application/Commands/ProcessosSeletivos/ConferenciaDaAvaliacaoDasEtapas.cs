@@ -6,7 +6,10 @@ using Domain.Errors;
 using Domain.ProcessosSeletivos.Etapas;
 using Domain.ValueObjects;
 
+using Kernel.Domain.CodigosDeContrato;
 using Kernel.Results;
+
+using Services;
 
 /// <summary>
 /// Resolve a forma de avaliação e a regra de consolidação de cada etapa, antes de qualquer mutação. A forma
@@ -24,6 +27,17 @@ internal sealed class ConferenciaDaAvaliacaoDasEtapas(LeituraMemoizada<(string C
     public async Task<Result<List<EtapaConferida>>> ConferirAsync(
         IReadOnlyList<EtapaConferida> etapas, CancellationToken cancellationToken)
     {
+        (List<DeclaracaoDaAvaliacao> declaracoes, List<FieldError> erros) = DeclararEtapas(etapas);
+        if (erros.Count > 0)
+        {
+            return Result<List<EtapaConferida>>.ValidationFailure(erros);
+        }
+
+        return await ConferirConsolidacoesAsync(etapas, declaracoes, cancellationToken).ConfigureAwait(false);
+    }
+
+    private static (List<DeclaracaoDaAvaliacao>, List<FieldError>) DeclararEtapas(IReadOnlyList<EtapaConferida> etapas)
+    {
         List<FieldError> erros = [];
         List<DeclaracaoDaAvaliacao> declaracoes = [];
         for (int indice = 0; indice < etapas.Count; indice++)
@@ -33,11 +47,13 @@ internal sealed class ConferenciaDaAvaliacaoDasEtapas(LeituraMemoizada<(string C
             erros.AddRange(recusas);
         }
 
-        if (erros.Count > 0)
-        {
-            return Result<List<EtapaConferida>>.ValidationFailure(erros);
-        }
+        return (declaracoes, erros);
+    }
 
+    private async Task<Result<List<EtapaConferida>>> ConferirConsolidacoesAsync(
+        IReadOnlyList<EtapaConferida> etapas, List<DeclaracaoDaAvaliacao> declaracoes, CancellationToken cancellationToken)
+    {
+        List<FieldError> erros = [];
         List<EtapaConferida> conferidas = [];
         for (int indice = 0; indice < etapas.Count; indice++)
         {
@@ -56,13 +72,30 @@ internal sealed class ConferenciaDaAvaliacaoDasEtapas(LeituraMemoizada<(string C
     {
         EtapaProcessoInput declarada = etapa.Declarada;
         List<FieldError> erros = [];
-        bool formaEntendida = FormaDeAvaliacaoCodigo.TentarConverter(declarada.FormaDeAvaliacao, out FormaDeAvaliacao? forma);
+        bool formaEntendida = CodigoLidoDoPedido.TentarLerOpcional(declarada.FormaDeAvaliacao, out FormaDeAvaliacao? forma);
+        RegistrarFormaDesconhecida(declarada, formaEntendida, erros);
+        (string? codigo, string? versao) = ConferirPar(declarada, erros);
+        if (formaEntendida)
+        {
+            erros.AddRange(ValidarAvaliacao(etapa, forma, codigo));
+        }
+
+        (string, string)? regra = erros.Count == 0 && codigo is not null ? (codigo, versao!) : null;
+        return (new DeclaracaoDaAvaliacao(forma, regra), EscritaDasEtapasDoProcesso.ComIndice(erros, indice));
+    }
+
+    private static void RegistrarFormaDesconhecida(EtapaProcessoInput declarada, bool formaEntendida, List<FieldError> erros)
+    {
         if (!formaEntendida)
         {
             erros.Add(RecusaDaFormaDesconhecida(declarada));
         }
+    }
 
-        (string? codigo, string? versao) = (declarada.RegraConsolidacaoCodigo?.Trim(), declarada.RegraConsolidacaoVersao?.Trim());
+    private static (string? Codigo, string? Versao) ConferirPar(EtapaProcessoInput declarada, List<FieldError> erros)
+    {
+        string? codigo = declarada.RegraConsolidacaoCodigo?.Trim();
+        string? versao = declarada.RegraConsolidacaoVersao?.Trim();
         bool temCodigo = !string.IsNullOrEmpty(codigo);
         bool temVersao = !string.IsNullOrEmpty(versao);
         if (temCodigo != temVersao)
@@ -70,14 +103,7 @@ internal sealed class ConferenciaDaAvaliacaoDasEtapas(LeituraMemoizada<(string C
             erros.Add(RecusaDoParIncompleto(declarada, temCodigo));
         }
 
-        // Só com a forma já entendida: forma desconhecida não vira também "regra fora da forma humana".
-        if (formaEntendida)
-        {
-            erros.AddRange(ValidarAvaliacao(etapa, forma, temCodigo && temVersao ? codigo : null));
-        }
-
-        (string, string)? regra = erros.Count == 0 && temCodigo && temVersao ? (codigo!, versao!) : null;
-        return (new DeclaracaoDaAvaliacao(forma, regra), EscritaDasEtapasDoProcesso.ComIndice(erros, indice));
+        return temCodigo && temVersao ? (codigo, versao) : (null, null);
     }
 
     private static List<FieldError> ValidarAvaliacao(EtapaConferida etapa, FormaDeAvaliacao? forma, string? regraConsolidacaoCodigo) =>
@@ -110,7 +136,7 @@ internal sealed class ConferenciaDaAvaliacaoDasEtapas(LeituraMemoizada<(string C
     private static Result<ReferenciaRegra> ReferenciaDeConsolidacao(
         EtapaProcessoInput etapa, string codigo, string versao, RegraCatalogo? regra)
     {
-        if (regra is null || regra.Tipo != TipoRegra.RegraConsolidacao)
+        if (regra is null || regra.Tipo != TipoRegra.RegraApuracaoAvaliacao)
         {
             return Result<ReferenciaRegra>.ValidationFailure([new("regraConsolidacao", new DomainError(
                 EtapaProcessoErrorCodes.RegraDeConsolidacaoInvalida,
@@ -123,7 +149,7 @@ internal sealed class ConferenciaDaAvaliacaoDasEtapas(LeituraMemoizada<(string C
     private static FieldError RecusaDaFormaDesconhecida(EtapaProcessoInput etapa) =>
         new("formaDeAvaliacao", new DomainError(
             EtapaProcessoErrorCodes.FormaDeAvaliacaoDesconhecida,
-            $"A forma de avaliação '{etapa.FormaDeAvaliacao}', declarada pela etapa '{etapa.Nome}', não existe — use '{FormaDeAvaliacaoCodigo.Objetiva}' ou '{FormaDeAvaliacaoCodigo.Humana}'."));
+            $"A forma de avaliação declarada pela etapa '{etapa.Nome}' não existe — use {string.Join(" ou ", CatalogoDe<FormaDeAvaliacao>.Todos().Select(static declarado => $"'{declarado.Codigo}'"))}."));
 
     private static FieldError RecusaDoParIncompleto(EtapaProcessoInput etapa, bool temCodigo) =>
         new("regraConsolidacao", new DomainError(

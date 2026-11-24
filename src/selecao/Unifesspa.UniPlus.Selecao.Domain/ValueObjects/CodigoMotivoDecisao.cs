@@ -18,8 +18,8 @@ using Unifesspa.UniPlus.Selecao.Domain.Errors;
 /// O código é <b>estável</b> porque a decisão proferida preserva o código e a
 /// descrição vigentes no momento do julgamento (UNI-REQ-0120): quem lê a
 /// decisão antiga lê o rótulo daquela época, não o de hoje. A grafia maiúscula
-/// segue a mesma convenção de <see cref="FundamentoIsencaoCodigo"/> e
-/// <see cref="SentidoDoMotivoCodigo"/> — token de domínio em UPPER_SNAKE,
+/// segue a mesma convenção de <see cref="FundamentoIsencao"/> e
+/// <see cref="SentidoDoMotivo"/> — token de domínio em UPPER_SNAKE,
 /// sem acento.
 /// </remarks>
 public sealed partial record CodigoMotivoDecisao
@@ -47,17 +47,17 @@ public sealed partial record CodigoMotivoDecisao
 
         string normalizado = valor.Trim();
 
-        if (!FormatoValido().IsMatch(normalizado))
-        {
-            return Result<CodigoMotivoDecisao>.Failure(new DomainError(
-                MotivoDeDecisaoErrorCodes.CodigoFormatoInvalido,
-                "Código do motivo deve iniciar com letra maiúscula e conter apenas letras maiúsculas, "
-                + $"dígitos e sublinhado, com {TamanhoMinimo} a {TamanhoMaximo} caracteres "
-                + "(ex.: RENDA_ACIMA_DO_LIMITE)."));
-        }
-
-        return Result<CodigoMotivoDecisao>.Success(new CodigoMotivoDecisao(normalizado));
+        return FormatoValido().IsMatch(normalizado)
+            ? Result<CodigoMotivoDecisao>.Success(new CodigoMotivoDecisao(normalizado))
+            : RecusarFormato();
     }
+
+    private static Result<CodigoMotivoDecisao> RecusarFormato() =>
+        Result<CodigoMotivoDecisao>.Failure(new DomainError(
+            MotivoDeDecisaoErrorCodes.CodigoFormatoInvalido,
+            "Código do motivo deve iniciar com letra maiúscula e conter apenas letras maiúsculas, "
+            + $"dígitos e sublinhado, com {TamanhoMinimo} a {TamanhoMaximo} caracteres "
+            + "(ex.: RENDA_ACIMA_DO_LIMITE)."));
 
     /// <summary>
     /// Reidrata o código vindo do banco. Falha rápido: uma linha fora do formato

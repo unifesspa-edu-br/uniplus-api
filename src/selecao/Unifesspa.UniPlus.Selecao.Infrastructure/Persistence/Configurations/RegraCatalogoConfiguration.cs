@@ -7,6 +7,7 @@ using Microsoft.EntityFrameworkCore.ChangeTracking;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence.CodigosDeContrato;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Protecao;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
@@ -51,7 +52,8 @@ internal sealed class RegraCatalogoConfiguration : IEntityTypeConfiguration<Regr
 
         builder.ClassificaPorPadrao(ClassificacaoDeProtecao.Interno);
 
-        builder.ToTable("regras_do_catalogo");
+        builder.ToTable("regras_do_catalogo", tabela =>
+            tabela.HasCheckConstraint("ck_regras_do_catalogo_tipo", $"tipo IN ({SqlDosCodigosDeContrato.Lista<TipoRegra>()})"));
         builder.HasKey(r => r.Id);
 
         // Chave Guid v7 gerada no domínio (EntityBase): ValueGeneratedNever
@@ -63,8 +65,8 @@ internal sealed class RegraCatalogoConfiguration : IEntityTypeConfiguration<Regr
         builder.Property(r => r.Versao).HasMaxLength(VersaoMaxLength).IsRequired();
 
         builder.Property(r => r.Tipo)
-            .HasConversion(TipoConverter)
             .HasMaxLength(TipoMaxLength)
+            .HasComment("Tipo da regra no catálogo.")
             .IsRequired();
 
         builder.Property(r => r.DeclaracaoDaRegra)
@@ -123,10 +125,6 @@ internal sealed class RegraCatalogoConfiguration : IEntityTypeConfiguration<Regr
             CreatedAt = seedCriadoEm,
         }));
     }
-
-    /// <summary>Mapeia <see cref="TipoRegra"/> ↔ o código canônico snake_case (fonte única em <see cref="TipoRegraCodigo"/>).</summary>
-    private static readonly ValueConverter<TipoRegra, string> TipoConverter =
-        new(tipo => tipo.ToCodigo(), codigo => TipoRegraCodigo.FromCodigo(codigo));
 
     /// <summary>
     /// Serializa o payload jsonb (<c>declaracao_da_regra</c>/<c>invariantes</c>) pelo

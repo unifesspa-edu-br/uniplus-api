@@ -72,7 +72,7 @@ public sealed class ConformidadePublicabilidadeEstruturalPreCanonicalizacaoTests
         OrigensCanonicasDeTeste.ComNome(new OrigemCanonicaDaFase(
             Guid.CreateVersion7(), "HOMOLOGACAO_INSCRICOES", OrigemDataFase.NaExecucao, AgrupaEtapas: false, PermiteComplementacao: false, ColetaInscricao: false, ColetaSolicitacaoIsencao: false)),
         new DecisoesDeCronogramaDaFase(2, Inicio: null, Fim: null, UnidadeResponsavel: UnidadesDeTeste.Ceps),
-        new PublicacoesDaFase(Produtos: [ProdutoDaFase.Criar("RESULTADO_HOMOLOGACAO", PapelProdutoFase.Definitivo)], EmiteParecerIndividual: false, RegraRecurso: null),
+        new PublicacoesDaFase(Produtos: [ProdutoDaFase.Criar("RESULTADO_HOMOLOGACAO", PapelDaPublicacaoPrevista.Definitivo)], EmiteParecerIndividual: false, RegraRecurso: null),
         bancasRequeridas: []).Value!;
 
     [Fact(DisplayName = "Pré-canonicalização: referência temporal aponta para fase sem o extremo definido — item vermelho e Publicar recusa com ReferenciaTemporalFatosExtremoAusente")]

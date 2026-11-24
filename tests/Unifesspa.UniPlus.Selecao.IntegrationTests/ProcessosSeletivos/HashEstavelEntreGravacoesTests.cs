@@ -4,6 +4,7 @@ using System.Text.Json;
 
 using AwesomeAssertions;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Tempo;
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.ValueObjects;
@@ -98,9 +99,9 @@ public sealed class HashEstavelEntreGravacoesTests
 
     private static ProdutoDaEtapa[] ProdutosDaEtapaCompleta() =>
     [
-        ProdutoDaEtapa.Criar("RESULTADO_CLASSIFICACAO", PapelProdutoFase.Preliminar),
-        ProdutoDaEtapa.Criar("RESULTADO_CLASSIFICACAO", PapelProdutoFase.Definitivo),
-        ProdutoDaEtapa.Criar("GABARITO", PapelProdutoFase.Preliminar),
+        ProdutoDaEtapa.Criar("RESULTADO_CLASSIFICACAO", PapelDaPublicacaoPrevista.Preliminar),
+        ProdutoDaEtapa.Criar("RESULTADO_CLASSIFICACAO", PapelDaPublicacaoPrevista.Definitivo),
+        ProdutoDaEtapa.Criar("GABARITO", PapelDaPublicacaoPrevista.Preliminar),
     ];
 
     // Duas janelas, declaradas na ordem INVERSA à que o documento emite: a posição de cada
@@ -120,10 +121,10 @@ public sealed class HashEstavelEntreGravacoesTests
     /// </summary>
     private static RecursoDaEtapa JanelaAncoradaEm(EtapaProcesso etapa, string atoCodigo) =>
         RecursoDaEtapa.Criar(
-            AncoraDoRecurso.AtoPublicado,
-            ReferenciaRegra.De(RegraPrazoRecursoCodigo.AncoradoEmAto, "v1", HashFixo),
+            EventoInicialDoPrazo.PublicacaoDoAto,
+            ReferenciaRegra.De(RegraDePrazoDoRecurso.ContadoDaPublicacaoDoAto.Codigo(), "v1", HashFixo),
             ParametrosDoRecursoDeTeste.Declarados(48m, UnidadePrazo.Horas),
-            etapa.Produtos.Single(p => p.Papel == PapelProdutoFase.Preliminar
+            etapa.Produtos.Single(p => p.Papel == PapelDaPublicacaoPrevista.Preliminar
                 && string.Equals(p.AtoCodigo, atoCodigo, StringComparison.Ordinal)).Id).Value!;
 
     private static ProcessoSeletivo ProcessoBase()
@@ -175,12 +176,9 @@ public sealed class HashEstavelEntreGravacoesTests
 
     private static void DefinirOfertaDeAmplaConcorrencia(ProcessoSeletivo processo)
     {
-        ModalidadeSelecionada modalidade = ModalidadeSelecionada.Criar(
-            ModalidadeOrigem, "AC", null, NaturezaLegalModalidade.Ampla,
-            ComposicaoVagasModalidade.RestanteDasVagasOfertadas, null, RegraRemanejamentoModalidade.Nenhuma,
-            null, null, null, RegrasDeAplicabilidadeDeTeste.DaNatureza(NaturezaLegalModalidade.Ampla), null, "Res. Unifesspa 532/2021", quantidadeDeclarada: 40).Value!;
+        ModalidadeSelecionada modalidade = ModalidadeSelecionada.Criar(ModalidadesNoCadastroDeTeste.Da("AC", NaturezaLegalModalidade.Ampla, ComposicaoVagasModalidade.RestanteDasVagasOfertadas) with { Id = ModalidadeOrigem, RegraRemanejamento = null, BaseLegal = "Res. Unifesspa 532/2021" }, 40).Value!;
         processo.DefinirDistribuicaoVagas([ConfiguracaoDistribuicaoVagas.Criar(DistribuicaoOrigem,
-            new DistribuicaoDeVagasDeclarada { VagasOfertadasBase = 40, PercentualDaReservaLegal = 1m, RegraDeDistribuicao = ReferenciaRegra.De(RegraDistribuicaoVagasCodigo.Institucional, "v1", HashFixo), Modalidades = [modalidade] },
+            new DistribuicaoDeVagasDeclarada { VagasOfertadasBase = 40, PercentualDaReservaLegal = 1m, RegraDeDistribuicao = ReferenciaRegra.De(RegraDeDistribuicaoDeVagas.Institucional.Codigo(), "v1", HashFixo), Modalidades = [modalidade] },
             new FatosDaOfertaNoCadastro { OfertaCurso = OfertaCursoDeTeste.Medicina }).Value!], FatosDeModalidadeDeTeste.DoCatalogo).IsSuccess.Should().BeTrue();
     }
 
@@ -189,8 +187,8 @@ public sealed class HashEstavelEntreGravacoesTests
     {
         processo.DefinirClassificacao(ConfiguracaoClassificacao.Criar(new DeclaracaoDaClassificacao
         {
-            RegraCalculo = ReferenciaRegra.De(RegraCalculoCodigo.ClassificacaoImportada, "v1", HashFixo),
-            RegraOrdemAlocacao = ReferenciaRegra.De(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, "v1", HashFixo),
+            RegraCalculo = ReferenciaRegra.De(RegraDeCalculoDaNota.ClassificacaoImportada.Codigo(), "v1", HashFixo),
+            RegraOrdemAlocacao = ReferenciaRegra.De(RegraDeOrdemDeAlocacao.PrimeiraOpcaoPrioritaria.Codigo(), "v1", HashFixo),
         }).Value!).IsSuccess.Should().BeTrue();
     }
 

@@ -4,6 +4,7 @@ using System.Reflection;
 
 using AwesomeAssertions;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
@@ -19,10 +20,10 @@ internal static class ApoioDoEnemComCalculoLocal
     internal static ConfiguracaoClassificacao ClassificacaoEnemLocal(IReadOnlyList<GrupoPesoAreaEnemCongelado> quadro) =>
         ConfiguracaoClassificacao.Criar(new DeclaracaoDaClassificacao
         {
-            RegraCalculo = Regra(RegraCalculoCodigo.FormulaMediaPonderada, 'a'),
-            RegraArredondamento = Regra(RegraArredondamentoCodigo.PrecisaoTruncar, 'b'),
+            RegraCalculo = Regra(RegraDeCalculoDaNota.MediaPonderada.Codigo(), 'a'),
+            RegraArredondamento = Regra(RegraDeArredondamentoDaNota.Truncar.Codigo(), 'b'),
             CasasArredondamento = 2,
-            RegraOrdemAlocacao = Regra(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, 'c'),
+            RegraOrdemAlocacao = Regra(RegraDeOrdemDeAlocacao.PrimeiraOpcaoPrioritaria.Codigo(), 'c'),
             BaseadoEmEnem = true,
             ResolucaoPesoAreaEnem = QuadroPesoAreaEnemDeTeste.Resolucao,
             QuadroPesoAreaEnem = quadro,

@@ -2,6 +2,7 @@ namespace Unifesspa.UniPlus.Selecao.Domain.UnitTests.Entities;
 
 using AwesomeAssertions;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
@@ -13,7 +14,7 @@ public sealed class ConfiguracaoBonusRegionalTests
     private static readonly (string CodigoIbge, string Nome, string Uf)[] MunicipioValido = [("1504208", "Marabá", "PA")];
 
     private static ReferenciaRegra RegraMultiplicativo() =>
-        ReferenciaRegra.De(RegraBonusCodigo.Multiplicativo, "v1", new string('a', 64));
+        ReferenciaRegra.De(RegraDeBonus.Multiplicativo.Codigo(), "v1", new string('a', 64));
 
     private static Result<ConfiguracaoBonusRegional> Criar(
         decimal fator = 1.20m,
@@ -66,10 +67,10 @@ public sealed class ConfiguracaoBonusRegionalTests
         bonus.Municipios.Should().ContainSingle(m => m.CodigoIbge == "1504208" && m.Nome == "Marabá" && m.Uf == "PA");
     }
 
-    [Fact(DisplayName = "Criar com regra de código diferente de BONUS-MULTIPLICATIVO falha")]
+    [Fact(DisplayName = "Criar com regra de código diferente de FADA_MULTIPLICATIVO falha")]
     public void Criar_RegraInvalida_Falha()
     {
-        ReferenciaRegra regraErrada = ReferenciaRegra.De("FORMULA-MEDIA-PONDERADA", "v1", new string('b', 64));
+        ReferenciaRegra regraErrada = ReferenciaRegra.De("FORMULA_MEDIA_PONDERADA", "v1", new string('b', 64));
 
         Result<ConfiguracaoBonusRegional> resultado = Criar(regra: regraErrada);
 
@@ -109,7 +110,7 @@ public sealed class ConfiguracaoBonusRegionalTests
     [Fact(DisplayName = "ADR-0125: violações independentes acumulam num único lote")]
     public void Criar_RegraEFatorETetoInvalidos_AcumulaAsTresViolacoes()
     {
-        ReferenciaRegra regraErrada = ReferenciaRegra.De("FORMULA-MEDIA-PONDERADA", "v1", new string('b', 64));
+        ReferenciaRegra regraErrada = ReferenciaRegra.De("FORMULA_MEDIA_PONDERADA", "v1", new string('b', 64));
 
         Result<ConfiguracaoBonusRegional> resultado = Criar(fator: 0m, teto: 0m, regra: regraErrada);
 

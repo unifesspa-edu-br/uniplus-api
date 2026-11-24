@@ -2,6 +2,7 @@ namespace Unifesspa.UniPlus.Selecao.Domain.UnitTests.ProcessosSeletivos.Recursos
 
 using AwesomeAssertions;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.Services;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
@@ -22,29 +23,29 @@ public sealed class SugestaoDoProcedimentoDeRecursoTests
     [Fact(DisplayName = "Item de etapa avaliada por pessoas sugere recorreção")]
     public void ItemDeEtapaHumana_SugereRecorrecao() =>
         Sugerir(TipoMotivoDeDecisao.AnaliseDocumental, Item, new(FormaDeAvaliacao.Humana, false))
-            .Should().Be(RegraProcedimentoRecursoCodigo.Recorrecao);
+            .Should().Be(RegraDeProcedimentoDoRecurso.Recorrecao.Codigo());
 
     [Fact(DisplayName = "Item de etapa objetiva sugere recálculo")]
     public void ItemDeEtapaObjetiva_SugereRecalculo() =>
         Sugerir(TipoMotivoDeDecisao.AnaliseDocumental, Item, new(FormaDeAvaliacao.Objetiva, false))
-            .Should().Be(RegraProcedimentoRecursoCodigo.Recalculo);
+            .Should().Be(RegraDeProcedimentoDoRecurso.Recalculo.Codigo());
 
     [Fact(DisplayName = "Etapa de nota do ENEM sugere recálculo, qualquer que seja a forma declarada")]
     public void EtapaDeNotaDoEnem_SugereRecalculo() =>
         Sugerir(TipoMotivoDeDecisao.AnaliseDocumental, Item, new(FormaDeAvaliacao.Humana, true))
-            .Should().Be(RegraProcedimentoRecursoCodigo.Recalculo);
+            .Should().Be(RegraDeProcedimentoDoRecurso.Recalculo.Codigo());
 
     [Theory(DisplayName = "Alvo de área do ENEM sugere recálculo, com ou sem etapa")]
     [InlineData(false)]
     [InlineData(true)]
     public void AlvoDeArea_SugereRecalculo(bool daEtapa) =>
         Sugerir(TipoMotivoDeDecisao.AnaliseDocumental, Area, daEtapa ? new(FormaDeAvaliacao.Humana, true) : OrigemDaNotaDaJanela.DaFase)
-            .Should().Be(RegraProcedimentoRecursoCodigo.Recalculo);
+            .Should().Be(RegraDeProcedimentoDoRecurso.Recalculo.Codigo());
 
     [Fact(DisplayName = "Classificação sugere recálculo, porque a ordem é calculada")]
     public void Classificacao_SugereRecalculo() =>
         Sugerir(TipoMotivoDeDecisao.Classificacao, null, OrigemDaNotaDaJanela.DaFase)
-            .Should().Be(RegraProcedimentoRecursoCodigo.Recalculo);
+            .Should().Be(RegraDeProcedimentoDoRecurso.Recalculo.Codigo());
 
     [Fact(DisplayName = "Janela de fase sem alvo de área não tem base para sugerir")]
     public void FaseSemAlvoDeArea_NaoSugere() =>

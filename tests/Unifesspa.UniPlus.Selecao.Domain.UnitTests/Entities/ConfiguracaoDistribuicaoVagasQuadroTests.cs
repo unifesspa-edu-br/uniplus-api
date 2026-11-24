@@ -113,7 +113,7 @@ public sealed class ConfiguracaoDistribuicaoVagasQuadroTests
             new FatosDaOfertaNoCadastro { ModalidadesAdmitidas = RolLei12711ComAcPcd, OfertaCurso = OfertaCursoDeTeste.Medicina });
 
         resultado.IsSuccess.Should().BeTrue(
-            "sem EhRamoFederal cobrindo a variação, ela cairia no ramo que materializa quadro vazio sem erro");
+            "sem EhRegraFederal cobrindo a variação, ela cairia no ramo que materializa quadro vazio sem erro");
         resultado.Value!.VagasOfertadas.Should().Contain(v => v.ModalidadeCodigo == "AC_PCD" && v.Quantidade == 2);
     }
 

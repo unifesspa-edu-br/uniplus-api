@@ -32,9 +32,9 @@ public sealed class DeclaracaoDosProcedimentosDeRecursoTests
 
     private static readonly RegraCatalogo[] Catalogo =
     [
-        Regra(RegraProcedimentoRecursoCodigo.Recalculo),
-        Regra(RegraProcedimentoRecursoCodigo.Recorrecao),
-        Regra(RegraConsolidacaoCodigo.AvaliacaoUnica, TipoRegra.RegraConsolidacao),
+        Regra(RegraDeProcedimentoDoRecurso.Recalculo.Codigo()),
+        Regra(RegraDeProcedimentoDoRecurso.Recorrecao.Codigo()),
+        Regra(RegraDeApuracaoDaAvaliacao.AvaliacaoUnica.Codigo(), TipoRegra.RegraApuracaoAvaliacao),
     ];
 
     private static DeclaracaoDosProcedimentosDeRecurso Declaracao() => new(
@@ -49,7 +49,7 @@ public sealed class DeclaracaoDosProcedimentosDeRecursoTests
     private static ProcedimentoDeRecursoInput Entrada(
         string? tipo = "CLASSIFICACAO",
         AlvoDoProcedimentoDeRecursoInput? alvo = null,
-        string? regra = RegraProcedimentoRecursoCodigo.Recalculo,
+        string? regra = "PROCEDIMENTO_RECURSO_RECALCULO",
         string? versao = "v1") => new(tipo, alvo, regra, versao);
 
     private static Task<Result<ProcedimentosDeRecurso>> Declarar(ContextoDosProcedimentosDeRecurso contexto, params ProcedimentoDeRecursoInput[] entradas) =>
@@ -68,7 +68,7 @@ public sealed class DeclaracaoDosProcedimentosDeRecursoTests
     public async Task Declaracao_Valida_UsaOCatalogo()
     {
         Result<ProcedimentosDeRecurso> resultado = await Declarar(Contexto(),
-            Entrada(alvo: new(Item, null), regra: RegraProcedimentoRecursoCodigo.Recorrecao));
+            Entrada(alvo: new(Item, null), regra: RegraDeProcedimentoDoRecurso.Recorrecao.Codigo()));
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
         ProcedimentoDeRecursoDeclarado procedimento = resultado.Value!.Itens.Should().ContainSingle().Subject;
@@ -88,10 +88,10 @@ public sealed class DeclaracaoDosProcedimentosDeRecursoTests
 
     [Theory(DisplayName = "Regra que o catálogo não tem, de outro tipo ou sem código ou versão é recusada como procedimento desconhecido")]
     [InlineData("PROCEDIMENTO-RECURSO-INEXISTENTE", "v1")]
-    [InlineData(RegraConsolidacaoCodigo.AvaliacaoUnica, "v1")]
-    [InlineData(RegraProcedimentoRecursoCodigo.Recalculo, "v9")]
+    [InlineData("APURACAO_AVALIACAO_UNICA", "v1")]
+    [InlineData("PROCEDIMENTO_RECURSO_RECALCULO", "v9")]
     [InlineData(null, "v1")]
-    [InlineData(RegraProcedimentoRecursoCodigo.Recalculo, " ")]
+    [InlineData("PROCEDIMENTO_RECURSO_RECALCULO", " ")]
     public async Task Regra_NaoEhProcedimentoDoCatalogo_Recusa(string? codigo, string? versao)
     {
         Result<ProcedimentosDeRecurso> resultado = await Declarar(Contexto(), Entrada(regra: codigo, versao: versao));
@@ -113,7 +113,7 @@ public sealed class DeclaracaoDosProcedimentosDeRecursoTests
         resultado.Errors[0].Field.Should().Be("recursos[0].procedimentos[0].regra");
         resultado.Errors[0].Error.Code.Should().Be(Codigos.Desconhecido);
         resultado.Errors[0].Error.Message.Should()
-            .Be($"O procedimento de recurso informado, ou a versão dele, não consta do catálogo. Procedimentos aceitos: {string.Join(", ", RegraProcedimentoRecursoCodigo.Rol)}.")
+            .Be($"O procedimento de recurso informado, ou a versão dele, não consta do catálogo. Procedimentos aceitos: {string.Join(", ", CatalogoDe<RegraDeProcedimentoDoRecurso>.Todos().Select(static item => item.Codigo))}.")
             .And.NotContain(CodigoDigitado)
             .And.NotContain(VersaoDigitada);
     }

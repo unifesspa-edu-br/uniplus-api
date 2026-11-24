@@ -15,12 +15,12 @@ using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 /// </remarks>
 public enum UnidadePrazo
 {
-    [CodigoDeContrato("horas", "Horas")]
+    [CodigoDeContrato("HORAS", "Horas")]
     Horas = 1,
 
-    [CodigoDeContrato("dias", "Dias corridos")]
+    [CodigoDeContrato("DIAS", "Dias corridos")]
     Dias = 2,
 
-    [CodigoDeContrato("diasUteis", "Dias úteis")]
+    [CodigoDeContrato("DIAS_UTEIS", "Dias úteis")]
     DiasUteis = 3,
 }

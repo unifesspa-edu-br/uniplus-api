@@ -5,6 +5,7 @@ using System.Net.Http.Json;
 
 using AwesomeAssertions;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 
 using static Unifesspa.UniPlus.Selecao.IntegrationTests.Outbox.Cascading.ApoioDoCronogramaDeFasesPeloEndpoint;
@@ -57,7 +58,7 @@ public sealed class DefinirEtapasRecusasDosProdutosEndpointTests(CascadingFixtur
     {
         id = (Guid?)null,
         nome = "Prova Objetiva",
-        carater = (int)CaraterEtapa.Classificatoria,
+        carater = CaraterEtapa.Classificatoria.Codigo(),
         tipoEtapaOrigemId = TipoProvaObjetiva,
         peso = 1m,
         notaMinima = (decimal?)null,
@@ -73,7 +74,7 @@ public sealed class DefinirEtapasRecusasDosProdutosEndpointTests(CascadingFixtur
     private static object[] ProdutosComPapelDesconhecidoEAtoForaDoCatalogo() =>
     [
         new { atoCodigo = CodigoDoResultado, papel = (string?)PapelForaDoVocabulario },
-        new { atoCodigo = CodigoDoResultado, papel = (string?)PapelProdutoFaseCodigo.Preliminar },
+        new { atoCodigo = CodigoDoResultado, papel = (string?)"PRELIMINAR" },
         new { atoCodigo = CodigoForaDoCatalogo, papel = (string?)null },
     ];
 }

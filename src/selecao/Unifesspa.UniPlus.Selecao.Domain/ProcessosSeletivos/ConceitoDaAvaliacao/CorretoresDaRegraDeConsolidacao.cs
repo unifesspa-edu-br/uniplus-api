@@ -32,7 +32,7 @@ public static class CorretoresDaRegraDeConsolidacao
 
         corretores = 0;
 
-        return regra.Tipo == TipoRegra.RegraConsolidacao
+        return regra.Tipo == TipoRegra.RegraApuracaoAvaliacao
             && regra.DeclaracaoDaRegra.ValueKind == JsonValueKind.Object
             && regra.DeclaracaoDaRegra.TryGetProperty(ChaveDosCorretores, out JsonElement declarados)
             && declarados.ValueKind == JsonValueKind.Number
@@ -49,12 +49,12 @@ public static class CorretoresDaRegraDeConsolidacao
     public static bool TentarEmCampo(RegraCatalogo regra, out int corretoresEmCampo)
     {
         corretoresEmCampo = 0;
-        if (!Tentar(regra, out int distintos) || !TratamentoDaRegraDeConsolidacao.Tentar(regra, out TratamentoDaFaltaDeConsolidacao? tratamento))
+        if (!Tentar(regra, out int distintos) || !TratamentoDaRegraDeConsolidacao.Tentar(regra, out TratamentoDaFaltaDeApuracao? tratamento))
         {
             return false;
         }
 
-        corretoresEmCampo = distintos + (tratamento == TratamentoDaFaltaDeConsolidacao.NovoCorretor ? 1 : 0);
+        corretoresEmCampo = distintos + (tratamento == TratamentoDaFaltaDeApuracao.NovoCorretor ? 1 : 0);
         return true;
     }
 

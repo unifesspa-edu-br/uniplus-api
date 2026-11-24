@@ -2,6 +2,7 @@ namespace Unifesspa.UniPlus.Selecao.Domain.UnitTests.Entities;
 
 using AwesomeAssertions;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Kernel.Tempo;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
@@ -41,12 +42,12 @@ public sealed class GateDoAlgoritmoDeContagemTests
         ProcessoConformeFactory.Criar(fase: ProcessoConformeFactory.FaseConforme(regraRecurso));
 
     private static ReferenciaRegra Algoritmo() => ReferenciaRegra.De(
-        AlgoritmoContagemPrazoCodigo.ExcluiDiaInicial, "v1", new string('b', 64));
+        ConvencaoDeContagemDoPrazo.ExcluiDiaInicial.Codigo(), "v1", new string('b', 64));
 
     private static RegraRecursoFase RegraDeRecurso(
         UnidadePrazo prazoUnidade = UnidadePrazo.DiasUteis,
         decimal prazoValor = 2m) => RegraRecursoFase.Criar(
-            ReferenciaRegra.De(RegraPrazoRecursoCodigo.AncoradoEmAto, "v1", new string('c', 64)),
+            ReferenciaRegra.De(RegraDePrazoDoRecurso.ContadoDaPublicacaoDoAto.Codigo(), "v1", new string('c', 64)),
             ParametrosDoRecursoDeTeste.Declarados(prazoValor, prazoUnidade),
             ProcessoConformeFactory.ProdutoPreliminarId,
             HomologacaoDasInscricoesDeTeste.ProcedimentosDaHomologacao()).Value!;

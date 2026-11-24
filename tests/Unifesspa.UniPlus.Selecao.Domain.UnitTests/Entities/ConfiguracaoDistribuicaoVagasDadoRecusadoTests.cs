@@ -89,8 +89,5 @@ public sealed class ConfiguracaoDistribuicaoVagasDadoRecusadoTests
     }
 
     private static ModalidadeSelecionada ModalidadeQueCitaUmDestino(string codigo, string destino) =>
-        ModalidadeSelecionada.Criar(
-            Guid.CreateVersion7(), codigo, null, NaturezaLegalModalidade.AcaoAfirmativa, ComposicaoVagasModalidade.SuplementarAoTotal, null,
-            RegraRemanejamentoModalidade.DestinoUnico, destino, null, null,
-            RegrasDeAplicabilidadeDeTeste.DaNatureza(NaturezaLegalModalidade.AcaoAfirmativa), null, "base legal", 50).Value!;
+        ModalidadeSelecionada.Criar(ModalidadesNoCadastroDeTeste.Da(codigo, NaturezaLegalModalidade.AcaoAfirmativa, ComposicaoVagasModalidade.SuplementarAoTotal) with { RegraRemanejamento = RegraRemanejamentoModalidade.DestinoUnico, RemanejamentoDestino = destino, BaseLegal = "base legal" }, 50).Value!;
 }

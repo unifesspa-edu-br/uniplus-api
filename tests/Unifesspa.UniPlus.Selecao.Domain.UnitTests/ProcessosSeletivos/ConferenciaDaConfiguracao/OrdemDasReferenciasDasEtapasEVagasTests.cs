@@ -2,6 +2,7 @@ namespace Unifesspa.UniPlus.Selecao.Domain.UnitTests.ProcessosSeletivos.Conferen
 
 using AwesomeAssertions;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
@@ -236,10 +237,10 @@ public sealed class OrdemDasReferenciasDasEtapasEVagasTests
         ConfiguracaoDeclarada original = ProcessoConformeFactory.Criar().Declaracao();
         ConfiguracaoDistribuicaoVagas oferta = ApoioDasCotasFederaisNaConformidade.OfertaFederalCompleta();
         ConfiguracaoCascataRemanejamento cascata = ConfiguracaoCascataRemanejamento.Criar(
-            ProcessoConformeFactory.Regra(RegraRemanejamentoCodigo.Cascata, "a"), "AC",
+            ProcessoConformeFactory.Regra(CriterioDeRemanejamento.OrdemDaLei12711.Codigo(), "a"), "AC",
             [DestinoRemanejamento.Criar("LB_PPI", 1, "LB_Q").Value!]).Value!;
         ConfiguracaoBonusRegional bonus = ConfiguracaoBonusRegional.Criar(
-            ProcessoConformeFactory.Regra(RegraBonusCodigo.Multiplicativo, "b"), 1.2m, null, null,
+            ProcessoConformeFactory.Regra(RegraDeBonus.Multiplicativo.Codigo(), "b"), 1.2m, null, null,
             new BaseLegalCongelada(Guid.CreateVersion7(), "PORTARIA", "PORTARIA", "Portaria", "Inclusão regional", [("1504208", "Marabá", "PA")])).Value!;
         VagasDeclaradas vagas = new([oferta], null, true, bonus, cascata, null);
         return new ConfiguracaoDeclarada(original.Identidade, original.Cronograma, original.Avaliacao, vagas,
@@ -298,8 +299,8 @@ public sealed class OrdemDasReferenciasDasEtapasEVagasTests
             new IdentificacaoDaEtapa("Prova", CaraterEtapa.Classificatoria,
                 TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA", "Prova", true, true, false).Value!, 1, null),
             new DeclaracaoDaAvaliacaoDaEtapa(1m, null, 10m, null, FormaDeAvaliacao.Humana,
-                ProcessoConformeFactory.Regra(RegraConsolidacaoCodigo.AvaliacaoUnica, "a"), null)).Value!;
-        etapa.DefinirProdutos([ProdutoDaEtapa.Criar("RESULTADO_PROVA", PapelProdutoFase.Preliminar)]).IsSuccess.Should().BeTrue();
+                ProcessoConformeFactory.Regra(RegraDeApuracaoDaAvaliacao.AvaliacaoUnica.Codigo(), "a"), null)).Value!;
+        etapa.DefinirProdutos([ProdutoDaEtapa.Criar("RESULTADO_PROVA", PapelDaPublicacaoPrevista.Preliminar)]).IsSuccess.Should().BeTrue();
         etapa.DefinirRecursos([Recurso(etapa.Produtos.Single().Id)]).IsSuccess.Should().BeTrue();
         return etapa;
     }
@@ -311,6 +312,6 @@ public sealed class OrdemDasReferenciasDasEtapasEVagasTests
             ProcedimentoDeRecursoDeclarado.De(TipoMotivoDeDecisao.Classificacao, null, ProcessoConformeFactory.Regra("PRIMEIRA", "a")),
             ProcedimentoDeRecursoDeclarado.De(TipoMotivoDeDecisao.IsencaoDaTaxa, null, ProcessoConformeFactory.Regra("SEGUNDA", "b")),
         ]);
-        return RecursoDaEtapa.Criar(AncoraDoRecurso.AtoPublicado, prazo.Regra, ParametrosDoRecursoDeTeste.DeclaradosDe(prazo.Parametros), produtoId, procedimentos).Value!;
+        return RecursoDaEtapa.Criar(EventoInicialDoPrazo.PublicacaoDoAto, prazo.Regra, ParametrosDoRecursoDeTeste.DeclaradosDe(prazo.Parametros), produtoId, procedimentos).Value!;
     }
 }

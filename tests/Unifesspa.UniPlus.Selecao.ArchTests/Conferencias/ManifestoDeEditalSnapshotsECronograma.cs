@@ -80,11 +80,11 @@ internal static class ManifestoDeEditalSnapshotsECronograma
         // reusado literalmente pela variante acima — mesmo cuidado de propriedade
         // esquecida se aplica aqui.
         [typeof(CondicaoDnf)] = (["Fato", "Operador", "Valor"], []),
-        [typeof(ParametrosElimNotaMinimaEtapa)] = (["EtapaRef", "NotaMinima"], []),
-        [typeof(ParametrosElimCorteEmArea)] = (["AreaCodigo", "Minimo"], []),
-        [typeof(ParametrosElimZeroEmArea)] = ([], []),
-        [typeof(ParametrosElimFaltaEmDiaDeProvaEnem)] = ([], []),
-        [typeof(ParametrosElimAusenciaNaEtapa)] = (["EtapaRef"], []),
+        [typeof(ParametrosEliminacaoPorNotaMinimaNaEtapa)] = (["EtapaRef", "NotaMinima"], []),
+        [typeof(ParametrosEliminacaoPorCorteEmAreaDoEnem)] = (["AreaCodigo", "Minimo"], []),
+        [typeof(ParametrosEliminacaoPorZeroEmAreaDoEnem)] = ([], []),
+        [typeof(ParametrosEliminacaoPorFaltaEmDiaDeProvaDoEnem)] = ([], []),
+        [typeof(ParametrosEliminacaoPorAusenciaNaEtapa)] = (["EtapaRef"], []),
 
         // Cronograma de fases (Story #851) — o eixo temporal do certame.
         [typeof(ChaveLocal)] = (["Valor"], []),
@@ -153,7 +153,7 @@ internal static class ManifestoDeEditalSnapshotsECronograma
             [("BancaRequeridaId", "FK interna.")]),
 
         // RegraRecursoFase.Parametros NÃO é polimórfico (única variante — CA-02 recusa
-        // qualquer regra que não seja RECURSO-PRAZO-ANCORADO-EM-ATO), por isso não
+        // qualquer regra que não seja RECURSO_PRAZO_CONTADO_DA_PUBLICACAO_DO_ATO), por isso não
         // entra em UnioesDiscriminadas: é alcançado diretamente como ParametrosRegraPrazoRecurso.
         [typeof(RegraRecursoFase)] = (
             ["Regra", "ProdutoAncoraId", "Parametros", "Procedimentos"],

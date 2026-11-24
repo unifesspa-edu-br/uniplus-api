@@ -271,7 +271,7 @@ internal static class LeituraDasEtapas
         Guid id = leitor.Identificador(item, "id", caminho);
         ChaveLocal chave = ChavesNoEnvelope.Ler(leitor, item, caminho);
         string nome = leitor.TextoNaoVazio(item, "nome", caminho, LimitesDoEnvelope.EtapaNome);
-        CaraterEtapa carater = leitor.Enumeracao<CaraterEtapa>(item, "carater", caminho);
+        CaraterEtapa carater = leitor.CodigoDeContrato<CaraterEtapa>(item, "carater", caminho);
         TipoEtapaSnapshot? tipoEtapa = LeituraDoTipoDaEtapa.Ler(leitor, item, caminho);
         (DeclaracaoDaAvaliacaoDaEtapa avaliacao, List<ItemDeAvaliacao> itens) = LerAvaliacaoDaEtapa(leitor, item, caminho);
         (int ordem, string? faseCodigo) = (
@@ -289,8 +289,8 @@ internal static class LeituraDasEtapas
         decimal? notaMinima = LerDecimalDaEtapa(leitor, item, "notaMinima", caminho);
         decimal? notaMaxima = LerDecimalDaEtapa(leitor, item, "notaMaxima", caminho);
         decimal? passoDoLancamento = LerDecimalDaEtapa(leitor, item, "passoDoLancamento", caminho);
-        FormaDeAvaliacao? formaDeAvaliacao = leitor.EnumeracaoOpcional<FormaDeAvaliacao>(item, "formaDeAvaliacao", caminho);
-        ReferenciaRegra? regraConsolidacao = leitor.RegraOpcional(item, "regraDeApuracaoDaAvaliacao", caminho, [.. RegraConsolidacaoCodigo.Rol]);
+        FormaDeAvaliacao? formaDeAvaliacao = leitor.CodigoDeContratoOpcional<FormaDeAvaliacao>(item, "formaDeAvaliacao", caminho);
+        ReferenciaRegra? regraConsolidacao = leitor.RegraOpcional<RegraDeApuracaoDaAvaliacao>(item, "regraDeApuracaoDaAvaliacao", caminho);
         List<ItemDeAvaliacao> itens = LerItensDeAvaliacao(leitor, item, caminho);
         List<NivelDeAtendimento>? escalaDeAtendimento = LerEscalaDeAtendimento(leitor, item, caminho);
 
@@ -312,8 +312,7 @@ internal static class LeituraDasEtapas
             : EtapaProcesso.Reidratar(identidade.Chave, identidade.Id, identificacao, avaliacao, itens);
 
     private static bool ForaDosLimites(IdentificacaoDaEtapa identificacao, DeclaracaoDaAvaliacaoDaEtapa avaliacao) =>
-        identificacao.Carater == CaraterEtapa.Nenhum
-        || avaliacao.Peso is <= 0
+        avaliacao.Peso is <= 0
         || avaliacao.NotaMinima is < 0
         || avaliacao.NotaMaxima is <= 0
         || avaliacao.PassoDoLancamento is <= 0
@@ -351,7 +350,7 @@ internal static class LeituraDasEtapas
         leitor.ExigirChaves(itemProduto, caminhoProduto, "id", "atoCodigo", "papel");
         Guid id = leitor.Identificador(itemProduto, "id", caminhoProduto);
         string ato = leitor.TextoNaoVazio(itemProduto, "atoCodigo", caminhoProduto, LimitesDoEnvelope.TipoAtoCodigo);
-        PapelProdutoFase? papel = leitor.EnumeracaoOpcional<PapelProdutoFase>(itemProduto, "papel", caminhoProduto);
+        PapelDaPublicacaoPrevista? papel = leitor.CodigoDeContratoOpcional<PapelDaPublicacaoPrevista>(itemProduto, "papel", caminhoProduto);
 
         return leitor.Falhou ? null : ProdutoDaEtapa.Reidratar(id, ato, papel);
     }

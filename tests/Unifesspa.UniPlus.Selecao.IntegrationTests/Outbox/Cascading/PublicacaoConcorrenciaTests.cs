@@ -15,6 +15,8 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
+using Unifesspa.UniPlus.Selecao.Application.DTOs;
 using Unifesspa.UniPlus.Selecao.Domain.Services;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
@@ -61,7 +63,7 @@ public sealed class PublicacaoConcorrenciaTests
         await TiposDeAtoSeeder.SemearAsync(api.Services);
         using HttpClient cliente = api.CreateClient();
         (Guid processoId, Guid documentoId) = await SemearProcessoFederalAsync();
-        DefinirCascataRemanejamentoCommand cascata = new(processoId, "REMANEJ-CASCATA-LEI-12711", "v1", "AC", MatrizLegalCompletaComoInput());
+        DefinirCascataRemanejamentoCommand cascata = new(processoId, "REMANEJAMENTO_ORDEM_LEI_12711", "v1", "AC", MatrizLegalCompletaComoInput());
 
         (Result definicao, Result publicacao) = await DefinirEPublicarAsync(cascata, Publicacao(processoId, documentoId));
 
@@ -71,7 +73,7 @@ public sealed class PublicacaoConcorrenciaTests
     private static DefinirEtapasCommand EtapasRevisadas(Guid processoId) => new(
         processoId,
         [new EtapaProcessoInput(
-            "Prova Discursiva (revisada)", CaraterEtapa.Classificatoria,
+            "Prova Discursiva (revisada)", CaraterEtapa.Classificatoria.Codigo(),
             TipoEtapaOrigemId: new Guid("019fee1e-7000-7000-8000-000000000001"),
             Peso: 1m, NotaMinima: null, Ordem: 1, Produtos: [], Bancas: [], Recursos: [],
             NotaMaxima: 10m, FormaDeAvaliacao: "OBJETIVA", FaseCodigo: "RESULTADO_FINAL")]);
@@ -194,7 +196,7 @@ public sealed class PublicacaoConcorrenciaTests
 
     /// <summary>
     /// A matriz legal completa (8×7), fallback AC, como <c>DestinoRemanejamentoInput</c> —
-    /// mesma forma exigida pela declaração da regra de <c>REMANEJ-CASCATA-LEI-12711
+    /// mesma forma exigida pela declaração da regra de <c>REMANEJAMENTO_ORDEM_LEI_12711
     /// v1</c> (cascata de remanejamento de cotas, UNI-REQ-0056, validada pelo handler): cada origem lista as outras 7 federais,
     /// na ordem de <see cref="ModalidadesFederaisLei12711.Codigos"/>.
     /// </summary>

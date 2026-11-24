@@ -6,6 +6,7 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Protecao;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
+using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.MotivosDeDecisao;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Retificacao;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
@@ -77,7 +78,7 @@ internal sealed class MotivoDeDecisaoDoProcessoConfiguration : IEntityTypeConfig
             .IsRequired();
         builder.Property(m => m.Descricao).HasMaxLength(ValidacaoDoMotivo.DescricaoMaxLength).IsRequired().HasComment("Descrição do motivo copiada do cadastro na escolha.");
         builder.Property(m => m.Subclassificacao).HasMaxLength(MotivoDeDecisaoConfiguration.SubclassificacaoMaxLength).HasComment("Subclassificação do motivo copiada do cadastro, quando houver.");
-        builder.Property(m => m.Sentido).HasConversion<string>().HasMaxLength(MotivoDeDecisaoConfiguration.EnumMaxLength).IsRequired().HasComment("Sentido da decisão associado ao motivo: Favoravel ou Desfavoravel.");
+        builder.Property(m => m.Sentido).HasMaxLength(12).IsRequired().HasComment("Sentido da decisão associado ao motivo: FAVORAVEL ou DESFAVORAVEL.");
     }
 
     private static void MapearEscolha(EntityTypeBuilder<MotivoDeDecisaoDoProcesso> builder)

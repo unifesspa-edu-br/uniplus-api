@@ -102,7 +102,7 @@ internal static class CausasQueImpedemCongelar
 
     // Os candidatos atendidos são recusa da declaração da banca e já saem junto das declarações.
     private static IEnumerable<FieldError> Bancas(
-        OrigemCandidatos origem, CronogramaDoProcesso cronograma, EtapasDoProcesso etapas, CorretoresDasEtapas corretores) =>
+        OrigemCandidatos? origem, CronogramaDoProcesso cronograma, EtapasDoProcesso etapas, CorretoresDasEtapas corretores) =>
     [
         .. QuemJulgaORecurso.SemBanca(cronograma, etapas),
         .. QuemJulgaORecurso.InstanciaSuperiorNaoAdmitida(cronograma, etapas),

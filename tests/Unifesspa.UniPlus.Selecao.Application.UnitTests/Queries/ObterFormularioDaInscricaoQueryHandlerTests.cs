@@ -109,7 +109,7 @@ public sealed class ObterFormularioDaInscricaoQueryHandlerTests
 
     private static string ExigenciaCondicionalDeComprovante() =>
         $$"""
-        {"tipoDocumentoNome": "Comprovante de residência", "aplicabilidade": "Condicional", "obrigatorio": true, "exigidoNaFaseId": "{{FaseDoBloco}}",
+        {"tipoDocumentoNome": "Comprovante de residência", "aplicabilidade": "CONDICIONAL", "obrigatorio": true, "exigidoNaFaseId": "{{FaseDoBloco}}",
          "finalidade": "INSCRICAO", "formatosPermitidos": {"lista": null, "qualquer": true}, "modelo": null}
         """;
 

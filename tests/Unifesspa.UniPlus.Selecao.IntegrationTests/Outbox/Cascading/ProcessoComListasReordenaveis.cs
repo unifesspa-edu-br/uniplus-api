@@ -5,6 +5,7 @@ using AwesomeAssertions;
 using Microsoft.Extensions.DependencyInjection;
 
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
@@ -89,7 +90,7 @@ internal sealed class ProcessoComListasReordenaveis
         ProcessoId = processo.Id;
         DocumentoId = documento.Id;
         EtapaId = etapa.Id;
-        RecursoDaCienciaId = etapa.Recursos.Single(r => r.Ancora == AncoraDoRecurso.CienciaIndividual).Id;
+        RecursoDaCienciaId = etapa.Recursos.Single(r => r.Ancora == EventoInicialDoPrazo.CienciaIndividual).Id;
     }
 
     // As duas fases trocam de posição por uma cadeia aberta (a de resultado vai para uma ordem livre e a outra ocupa a que ficou
@@ -124,10 +125,10 @@ internal sealed class ProcessoComListasReordenaveis
     // Preliminar e definitivo do mesmo ato, e o prazo de recurso ancorado no preliminar, com a regra citada com conteúdo diferente do catálogo.
     private FaseCronograma FaseComRecursoDivergente(int ordem)
     {
-        ProdutoDaFase preliminar = ProdutoDaFase.Criar(DadosDoAtoDeTeste.TipoResultado, PapelProdutoFase.Preliminar);
-        ProdutoDaFase definitivo = ProdutoDaFase.Criar(DadosDoAtoDeTeste.TipoResultado, PapelProdutoFase.Definitivo);
+        ProdutoDaFase preliminar = ProdutoDaFase.Criar(DadosDoAtoDeTeste.TipoResultado, PapelDaPublicacaoPrevista.Preliminar);
+        ProdutoDaFase definitivo = ProdutoDaFase.Criar(DadosDoAtoDeTeste.TipoResultado, PapelDaPublicacaoPrevista.Definitivo);
         RegraRecursoFase recurso = RegraRecursoFase.Criar(
-            ReferenciaRegra.De(RegraPrazoRecursoCodigo.AncoradoEmAto, "v1", HashDiferenteDoCatalogo),
+            ReferenciaRegra.De(RegraDePrazoDoRecurso.ContadoDaPublicacaoDoAto.Codigo(), "v1", HashDiferenteDoCatalogo),
             ParametrosDoRecursoDeTeste.Declarados(48m, UnidadePrazo.Horas),
             preliminar.Id).Value!;
 
@@ -147,7 +148,7 @@ internal sealed class ProcessoComListasReordenaveis
                 Ordem: 2, CodigoDaFaseDeResultado),
             new DeclaracaoDaAvaliacaoDaEtapa(Peso: 1m, NotaMinima: null, NotaMaxima: 10m, PassoDoLancamento: null, FormaDeAvaliacao: FormaDeAvaliacao.Objetiva, RegraConsolidacao: null, EscalaDeAtendimento: null)).Value!;
         etapa.DefinirJanelaEParecer(null, null, emiteParecerIndividual: true).IsSuccess.Should().BeTrue();
-        etapa.DefinirProdutos([ProdutoDaEtapa.Criar("GABARITO", PapelProdutoFase.Preliminar)]).IsSuccess.Should().BeTrue();
+        etapa.DefinirProdutos([ProdutoDaEtapa.Criar("GABARITO", PapelDaPublicacaoPrevista.Preliminar)]).IsSuccess.Should().BeTrue();
         etapa.DefinirRecursos(RecursosDivergentesDaEtapa(etapa)).IsSuccess.Should().BeTrue();
 
         return etapa;
@@ -157,10 +158,10 @@ internal sealed class ProcessoComListasReordenaveis
     // conteúdo diferente do catálogo, e a posição dela na lista da etapa difere da posição em que foi declarada.
     private List<RecursoDaEtapa> RecursosDivergentesDaEtapa(EtapaProcesso etapa) =>
     [
-        RecursoDaEtapaDe(AncoraDoRecurso.CienciaIndividual, ReferenciaRegra.De(_regraDoCatalogo.Codigo, _regraDoCatalogo.Versao, HashDiferenteDoCatalogo), Guid.Empty),
-        RecursoDaEtapaDe(AncoraDoRecurso.AtoPublicado, _regraDoCatalogo, etapa.Produtos.Single().Id),
+        RecursoDaEtapaDe(EventoInicialDoPrazo.CienciaIndividual, ReferenciaRegra.De(_regraDoCatalogo.Codigo, _regraDoCatalogo.Versao, HashDiferenteDoCatalogo), Guid.Empty),
+        RecursoDaEtapaDe(EventoInicialDoPrazo.PublicacaoDoAto, _regraDoCatalogo, etapa.Produtos.Single().Id),
     ];
 
-    private static RecursoDaEtapa RecursoDaEtapaDe(AncoraDoRecurso ancora, ReferenciaRegra regra, Guid produtoAncoraId) =>
+    private static RecursoDaEtapa RecursoDaEtapaDe(EventoInicialDoPrazo ancora, ReferenciaRegra regra, Guid produtoAncoraId) =>
         RecursoDaEtapa.Criar(ancora, regra, ParametrosDoRecursoDeTeste.Declarados(48m, UnidadePrazo.Horas), produtoAncoraId).Value!;
 }

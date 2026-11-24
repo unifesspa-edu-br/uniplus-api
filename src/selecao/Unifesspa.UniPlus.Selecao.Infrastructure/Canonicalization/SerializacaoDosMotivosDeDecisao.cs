@@ -23,7 +23,7 @@ internal static class SerializacaoDosMotivosDeDecisao
         ["lugar"] = SerializarLugar(motivo.Lugar),
         ["descricao"] = HashCanonicalComputer.NormalizeNfc(motivo.Descricao),
         ["subclassificacao"] = Normalizar(motivo.Subclassificacao),
-        ["sentido"] = motivo.Sentido.ToCodigo(),
+        ["sentido"] = motivo.Sentido.Codigo(),
         ["versaoDoEditalDeEntrada"] = motivo.VersaoDeEntrada,
         ["justificativaDaInclusao"] = Normalizar(motivo.JustificativaDaInclusao),
     };

@@ -19,7 +19,7 @@ using Unifesspa.UniPlus.Testes.Compartilhado;
 public sealed class DocumentoExigidoTests
 {
     private static Result<DocumentoExigido> Exigencia(
-        Aplicabilidade aplicabilidade = Aplicabilidade.Geral,
+        Aplicabilidade? aplicabilidade = Aplicabilidade.Geral,
         bool obrigatorio = false,
         string? consequenciaIndeferimento = null,
         IReadOnlyList<CondicaoGatilho>? condicoes = null,
@@ -58,10 +58,10 @@ public sealed class DocumentoExigidoTests
         documento.ConsequenciaIndeferimento.Should().Be(consequencia);
     }
 
-    [Fact(DisplayName = "CA-01: aplicabilidade Nenhuma é recusada")]
-    public void Criar_AplicabilidadeNenhuma_Recusa()
+    [Fact(DisplayName = "CA-01: aplicabilidade ausente é recusada")]
+    public void Criar_AplicabilidadeAusente_Recusa()
     {
-        Result<DocumentoExigido> resultado = Exigencia(Aplicabilidade.Nenhuma);
+        Result<DocumentoExigido> resultado = Exigencia(null);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("DocumentoExigido.AplicabilidadeObrigatoria");
@@ -95,7 +95,7 @@ public sealed class DocumentoExigidoTests
     [InlineData("ELIMINA")]
     [InlineData("RECLASSIFICA_AC")]
     [InlineData("REMOVE_VANTAGEM")]
-    [InlineData("PENDENCIA_REENVIO")]
+    [InlineData("ABRE_PRAZO_PARA_REENVIO")]
     public void Criar_ConsequenciaValida_Aceita(string consequencia) =>
         Exigencia(consequenciaIndeferimento: consequencia).IsSuccess.Should().BeTrue();
 
@@ -175,11 +175,11 @@ public sealed class DocumentoExigidoTests
         resultado.Error!.Code.Should().Be("DocumentoExigido.TamanhoMaximoBytesInvalido");
     }
 
-    [Fact(DisplayName = "ADR-0125: aplicabilidade Nenhuma, consequência inválida e tamanho inválido acumulam no mesmo lote")]
+    [Fact(DisplayName = "ADR-0125: aplicabilidade ausente, consequência inválida e tamanho inválido acumulam no mesmo lote")]
     public void Criar_TresViolacoesIndependentes_AcumulaAsTresViolacoes()
     {
         Result<DocumentoExigido> resultado = Exigencia(
-            Aplicabilidade.Nenhuma, consequenciaIndeferimento: "REPROVA_TUDO", tamanhoMaximoBytes: -1);
+            null, consequenciaIndeferimento: "REPROVA_TUDO", tamanhoMaximoBytes: -1);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Errors.Select(e => e.Error.Code).Should().BeEquivalentTo(

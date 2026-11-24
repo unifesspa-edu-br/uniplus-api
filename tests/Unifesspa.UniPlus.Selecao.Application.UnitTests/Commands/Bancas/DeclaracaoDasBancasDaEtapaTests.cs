@@ -3,6 +3,7 @@ namespace Unifesspa.UniPlus.Selecao.Application.UnitTests.Commands.Bancas;
 using AwesomeAssertions;
 
 using Unifesspa.UniPlus.Configuracao.Contracts;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
@@ -286,7 +287,7 @@ public sealed class DeclaracaoDasBancasDaEtapaTests
     private static BancaDaEtapaInput Banca(TipoBancaView tipo, RegraDeDeliberacaoInput? regra, Guid? id = null) => new(tipo.Id, regra, id);
 
     private static EtapaProcessoInput Entrada(params BancaDaEtapaInput[] bancas) => new(
-        "Prova oral", CaraterEtapa.Classificatoria, TipoDaProva, 1m, null, 1, Produtos: [], Bancas: bancas, Recursos: []);
+        "Prova oral", CaraterEtapa.Classificatoria.Codigo(), TipoDaProva, 1m, null, 1, Produtos: [], Bancas: bancas, Recursos: []);
 
     private static EtapaProcesso NovaEtapa() => EtapaProcesso.Criar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("etapa").Value!,
         new IdentificacaoDaEtapa(Nome: "Prova oral", Carater: CaraterEtapa.Classificatoria, TipoEtapa: TipoEtapaSnapshot.Criar(TipoDaProva, "PROVA_ORAL", "Prova oral", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!, Ordem: 1, FaseCodigo: null),

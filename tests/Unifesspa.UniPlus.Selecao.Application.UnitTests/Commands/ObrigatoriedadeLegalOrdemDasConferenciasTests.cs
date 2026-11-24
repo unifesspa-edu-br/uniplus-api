@@ -60,7 +60,7 @@ public sealed class ObrigatoriedadeLegalOrdemDasConferenciasTests
     [Fact(DisplayName = "Atualizar com campos inválidos recusa antes de buscar a regra")]
     public async Task Atualizar_CamposInvalidos_RecusaAntesDeBuscarARegra()
     {
-        Result resultado = await _cenario.AtualizarAsync(ComandoDeAtualizar(Guid.Empty) with { Categoria = CategoriaObrigatoriedade.Nenhuma });
+        Result resultado = await _cenario.AtualizarAsync(ComandoDeAtualizar(Guid.Empty) with { Categoria = null });
 
         resultado.Errors.Should().ContainSingle().Which.Field.Should().Be("categoria");
         await _cenario.Repositorio.DidNotReceiveWithAnyArgs().ObterPorIdAsync(default, default);

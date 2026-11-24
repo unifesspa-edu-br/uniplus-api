@@ -32,7 +32,7 @@ public sealed class RegraCatalogoLeituraPaginadaTests : IClassFixture<RegraCatal
     private static RegraCatalogoReader Reader(UniPlusDbContext context) => new(context);
 
     private static (string Tipo, string Codigo, string Versao) Chave(RegraCatalogo r) =>
-        (r.Tipo.ToCodigo(), r.Codigo, r.Versao);
+        (Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato.CodigoDeContratoExtensions.Codigo(r.Tipo), r.Codigo, r.Versao);
 
     [Fact(DisplayName = "A ordem é tipo, código e versão — e não a ordem em que o seed inseriu as linhas")]
     public async Task Listar_OrdenaPorTipoCodigoVersao()
@@ -67,16 +67,20 @@ public sealed class RegraCatalogoLeituraPaginadaTests : IClassFixture<RegraCatal
         (IReadOnlyList<RegraCatalogo> tudo, Guid? _, Guid? _) = await reader
             .ListarPaginadoAsync(tipo: null, afterId: null, limit: 500, PaginationDirection.Next, CancellationToken.None);
 
+        List<RegraCatalogo> percorrido = await PercorrerPaginasAsync(reader, tudo.Count);
+
+        percorrido.Select(Chave).Should().Equal(tudo.Select(Chave),
+            "páginas de 3 em 3 têm de reconstruir exatamente a leitura inteira — pular ou repetir na fronteira "
+            + "é o modo de falha clássico de cursor cuja comparação discorda do ORDER BY");
+    }
+
+    private static async Task<List<RegraCatalogo>> PercorrerPaginasAsync(RegraCatalogoReader reader, int quantidade)
+    {
         List<RegraCatalogo> percorrido = [];
         Guid? cursor = null;
-        // Limite de segurança proporcional ao catálogo: se o cursor não avançasse, o laço
-        // pararia aqui em vez de rodar para sempre, e a asserção de igualdade acusaria.
-        for (int pagina = 0; pagina <= tudo.Count + 1; pagina++)
+        for (int pagina = 0; pagina <= quantidade + 1; pagina++)
         {
-            (IReadOnlyList<RegraCatalogo> itens, Guid? _, Guid? proximo) = await reader
-                .ListarPaginadoAsync(tipo: null, cursor, limit: 3, PaginationDirection.Next, CancellationToken.None);
-
-            percorrido.AddRange(itens);
+            Guid? proximo = await AcrescentarPaginaAsync(reader, cursor, percorrido);
             if (proximo is null)
             {
                 break;
@@ -85,10 +89,20 @@ public sealed class RegraCatalogoLeituraPaginadaTests : IClassFixture<RegraCatal
             cursor = proximo;
         }
 
-        percorrido.Select(Chave).Should().Equal(tudo.Select(Chave),
-            "páginas de 3 em 3 têm de reconstruir exatamente a leitura inteira — pular ou repetir na fronteira "
-            + "é o modo de falha clássico de cursor cuja comparação discorda do ORDER BY");
+        return percorrido;
     }
+
+    private static async Task<Guid?> AcrescentarPaginaAsync(
+        RegraCatalogoReader reader, Guid? cursor, List<RegraCatalogo> percorrido)
+    {
+        (IReadOnlyList<RegraCatalogo> itens, Guid? _, Guid? proximo) = await PaginaAsync(reader, cursor, PaginationDirection.Next);
+        percorrido.AddRange(itens);
+        return proximo;
+    }
+
+    private static Task<(IReadOnlyList<RegraCatalogo>, Guid?, Guid?)> PaginaAsync(
+        RegraCatalogoReader reader, Guid? cursor, PaginationDirection direction) =>
+        reader.ListarPaginadoAsync(null, cursor, 3, direction, CancellationToken.None);
 
     [Fact(DisplayName = "Navegar para trás a partir da segunda página devolve a primeira, na ordem ascendente")]
     public async Task Listar_ParaTras_VoltaAPaginaAnterior()
@@ -96,16 +110,13 @@ public sealed class RegraCatalogoLeituraPaginadaTests : IClassFixture<RegraCatal
         await using UniPlusDbContext context = _fixture.CreateDbContext();
         RegraCatalogoReader reader = Reader(context);
 
-        (IReadOnlyList<RegraCatalogo> primeira, Guid? _, Guid? proximo) = await reader
-            .ListarPaginadoAsync(tipo: null, afterId: null, limit: 3, PaginationDirection.Next, CancellationToken.None);
+        (IReadOnlyList<RegraCatalogo> primeira, Guid? _, Guid? proximo) = await PaginaAsync(reader, null, PaginationDirection.Next);
         proximo.Should().NotBeNull("o catálogo tem mais de 3 regras");
 
-        (IReadOnlyList<RegraCatalogo> segunda, Guid? anterior, Guid? _) = await reader
-            .ListarPaginadoAsync(tipo: null, proximo, limit: 3, PaginationDirection.Next, CancellationToken.None);
+        (IReadOnlyList<RegraCatalogo> segunda, Guid? anterior, Guid? _) = await PaginaAsync(reader, proximo, PaginationDirection.Next);
         anterior.Should().NotBeNull("estando na segunda página, existe uma anterior");
 
-        (IReadOnlyList<RegraCatalogo> voltando, Guid? _, Guid? _) = await reader
-            .ListarPaginadoAsync(tipo: null, anterior, limit: 3, PaginationDirection.Prev, CancellationToken.None);
+        (IReadOnlyList<RegraCatalogo> voltando, Guid? _, Guid? _) = await PaginaAsync(reader, anterior, PaginationDirection.Prev);
 
         voltando.Select(Chave).Should().Equal(primeira.Select(Chave));
         segunda.Select(Chave).Should().NotIntersectWith(primeira.Select(Chave));

@@ -67,5 +67,5 @@ public sealed class VersoesDoProcessoNaListagemTests
     [InlineData(ClassificacaoDeProtecao.Sensivel, " ", false)]
     [InlineData(ClassificacaoDeProtecao.Identificador, "CONSENTIMENTO", false)]
     public void EntraNosPares(ClassificacaoDeProtecao classificacao, string? baseLegal, bool entra) =>
-        VersoesDoProcessoNaListagem.EntraNosPares(classificacao, baseLegal).Should().Be(entra);
+        new LeituraDasVersoes(classificacao, baseLegal, new Dictionary<Guid, IReadOnlyDictionary<Guid, string>>()).NomeEntraNosPares.Should().Be(entra);
 }

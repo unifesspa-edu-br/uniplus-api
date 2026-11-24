@@ -11,6 +11,7 @@ using DTOs;
 
 using Mappings;
 
+using Unifesspa.UniPlus.Application.Abstractions.Respostas;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.Formularios;
@@ -33,7 +34,7 @@ internal static class ProjecaoDasVagas
     internal static ConfiguracaoDistribuicaoVagasDto ProjetarDistribuicao(ConfiguracaoDistribuicaoVagas configuracao) => new(
         configuracao.Id, configuracao.OfertaCursoOrigemId, configuracao.VagasOfertadasBase, configuracao.PercentualDaReservaLegal,
         ProjecaoDoProcessoSeletivo.Referencia(configuracao.RegraDistribuicao),
-        RegraDistribuicaoVagasCodigo.RamoDe(configuracao.RegraDistribuicao.Codigo),
+        PoliticaDaDistribuicaoDeVagas.ModoDeMontagemDe(configuracao.RegraDistribuicao.Codigo),
         configuracao.RegraAjuste is { } regraAjuste ? ProjecaoDoProcessoSeletivo.Referencia(regraAjuste) : null,
         configuracao.AjusteDoQuadro,
         configuracao.ReferenciaDemografica is { } demografica ? ProjetarReferenciaDemografica(demografica) : null,
@@ -67,8 +68,8 @@ internal static class ProjecaoDasVagas
         demografica.BaseLegal);
 
     private static ModalidadeSelecionadaDto ProjetarModalidade(ModalidadeSelecionada m) => new(
-        m.Id, m.ModalidadeOrigemId, m.Codigo, m.Descricao, m.NaturezaLegal.ToCodigo(), m.ComposicaoVagas.ToCodigo(),
-        m.ComposicaoOrigemCodigo, m.RegraRemanejamento.ToCodigo(), m.RemanejamentoDestino, m.RemanejamentoPar, m.RemanejamentoFallback,
+        m.Id, m.ModalidadeOrigemId, m.Codigo, m.Descricao, CodigoComRotulo<NaturezaLegalModalidade>.De(m.NaturezaLegal), CodigoComRotulo<ComposicaoVagasModalidade>.De(m.ComposicaoVagas),
+        m.ComposicaoOrigemCodigo, m.RegraRemanejamento is { } regra ? CodigoComRotulo<RegraRemanejamentoModalidade>.De(regra) : null, m.RemanejamentoDestino, m.RemanejamentoPar, m.RemanejamentoFallback,
         m.RegraDeAplicabilidade.ToDto(), m.AcaoQuandoIndeferido, m.BaseLegal, m.QuantidadeDeclarada);
 
     internal static AtendimentoEspecializadoDto? ProjetarAtendimento(AtendimentoEspecializado? atendimento) =>

@@ -8,6 +8,7 @@ using NSubstitute;
 
 using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 using Unifesspa.UniPlus.Configuracao.Contracts;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Entradas;
@@ -144,11 +145,7 @@ internal sealed class CenarioDaAplicacaoDoModeloDeFormulario
         PredicadoDnf.CriarDeCondicoesAgrupadas([(0, CondicaoDnf.Criar(fato, Operador.Igual, JsonSerializer.SerializeToElement(valor)).Value!)]).Value!;
 
     public static ModalidadeSelecionada Ofertada(string codigo, NaturezaLegalModalidade natureza, PredicadoDnf regra) =>
-        ModalidadeSelecionada.Criar(
-            Guid.CreateVersion7(), codigo, null, natureza,
-            natureza == NaturezaLegalModalidade.Ampla ? ComposicaoVagasModalidade.RestanteDasVagasOfertadas : ComposicaoVagasModalidade.SuplementarAoTotal, null,
-            natureza == NaturezaLegalModalidade.CotaReservada ? RegraRemanejamentoModalidade.SegueCascata : RegraRemanejamentoModalidade.Nenhuma,
-            null, null, null, regra, null, "base legal", quantidadeDeclarada: 10).Value!;
+        ModalidadeSelecionada.Criar(ModalidadesNoCadastroDeTeste.Da(codigo, natureza, natureza == NaturezaLegalModalidade.Ampla ? ComposicaoVagasModalidade.RestanteDasVagasOfertadas : ComposicaoVagasModalidade.SuplementarAoTotal) with { RegraRemanejamento = natureza == NaturezaLegalModalidade.CotaReservada ? RegraRemanejamentoModalidade.SegueOrdemDeRemanejamento : null, RegraDeAplicabilidade = regra, BaseLegal = "base legal" }, 10).Value!;
 
     /// <summary>O cronograma do processo com as fases dos códigos; só a de inscrição coleta inscrição. Devolve a primeira.</summary>
     public FaseCronograma FaseDoCronograma(params string[] codigos) => FasesDoCronograma(static codigo => codigo == "INSCRICAO", codigos);
@@ -206,7 +203,7 @@ internal sealed class CenarioDaAplicacaoDoModeloDeFormulario
 
     private static ConfiguracaoDistribuicaoVagas DistribuicaoDeVagasCom(ModalidadeSelecionada[] modalidades) =>
         ConfiguracaoDistribuicaoVagas.Criar(Guid.CreateVersion7(),
-            new DistribuicaoDeVagasDeclarada { VagasOfertadasBase = 10 * modalidades.Length, PercentualDaReservaLegal = 1m, RegraDeDistribuicao = ReferenciaRegra.De(RegraDistribuicaoVagasCodigo.Institucional, "v1", new string('a', 64)), Modalidades = modalidades },
+            new DistribuicaoDeVagasDeclarada { VagasOfertadasBase = 10 * modalidades.Length, PercentualDaReservaLegal = 1m, RegraDeDistribuicao = ReferenciaRegra.De(RegraDeDistribuicaoDeVagas.Institucional.Codigo(), "v1", new string('a', 64)), Modalidades = modalidades },
             new FatosDaOfertaNoCadastro { OfertaCurso = OfertaCursoDeTeste.Medicina }).Value!;
 
     private void DeclararFatosDaOpcaoPelasCotas()

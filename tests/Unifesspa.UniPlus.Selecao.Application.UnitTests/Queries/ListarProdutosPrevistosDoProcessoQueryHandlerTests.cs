@@ -138,7 +138,7 @@ public sealed class ListarProdutosPrevistosDoProcessoQueryHandlerTests
     }
 
     private static (ProdutoDaFase Preliminar, ProdutoDaFase Definitivo) Par(string materia = Materia) =>
-        (ProdutoDaFase.Criar(materia, PapelProdutoFase.Preliminar), ProdutoDaFase.Criar(materia, PapelProdutoFase.Definitivo));
+        (ProdutoDaFase.Criar(materia, PapelDaPublicacaoPrevista.Preliminar), ProdutoDaFase.Criar(materia, PapelDaPublicacaoPrevista.Definitivo));
 
     [Fact(DisplayName = "A consulta mostra a política de divulgação que a versão congelou, e o piso quando ela não declarou")]
     public async Task Consultar_ExibeAPoliticaDeDivulgacaoDaVersao()
@@ -165,12 +165,12 @@ public sealed class ListarProdutosPrevistosDoProcessoQueryHandlerTests
         Result<ProdutosPrevistosDoProcessoDto> resultado = await Consultar();
 
         ProdutoPrevistoDto[] produtos = [.. resultado.Value!.Fases.Single().Produtos];
-        produtos.Select(p => p.Situacao).Should().AllBeEquivalentTo(SituacaoDoProdutoPrevisto.Aberto);
+        produtos.Select(p => p.Situacao.Codigo).Should().AllBeEquivalentTo("ABERTO");
         produtos.Single(p => p.Id == preliminar.Id).PodePublicar.Should().BeTrue();
-        produtos.Select(p => p.Papel).Should().BeEquivalentTo("PRELIMINAR", "DEFINITIVO");
+        produtos.Select(p => p.Papel!.Codigo).Should().BeEquivalentTo("PRELIMINAR", "DEFINITIVO");
         ProdutoPrevistoDto doDefinitivo = produtos.Single(p => p.Id == definitivo.Id);
         doDefinitivo.PodePublicar.Should().BeFalse();
-        doDefinitivo.Impedimento!.Motivo.Should().Be(ImpedimentoDoProduto.PreliminarNaoPublicado);
+        doDefinitivo.Impedimento!.Motivo.Codigo.Should().Be("PRELIMINAR_NAO_PUBLICADO");
         doDefinitivo.Impedimento.Mensagem.Should().NotBeNullOrWhiteSpace();
     }
 
@@ -187,9 +187,9 @@ public sealed class ListarProdutosPrevistosDoProcessoQueryHandlerTests
         ProdutoPrevistoDto doPreliminar = await ItemDaFase(preliminarRecriado.Id);
         ProdutoPrevistoDto doDefinitivo = await ItemDaFase(definitivoRecriado.Id);
 
-        doPreliminar.Situacao.Should().Be(SituacaoDoProdutoPrevisto.Publicado);
+        doPreliminar.Situacao.Codigo.Should().Be("PUBLICADO");
         doPreliminar.Ato!.Id.Should().Be(ato.Id);
-        doPreliminar.Impedimento!.Motivo.Should().Be(ImpedimentoDoProduto.JaPublicado);
+        doPreliminar.Impedimento!.Motivo.Codigo.Should().Be("JA_PUBLICADO");
         doDefinitivo.PodePublicar.Should().BeTrue("o preliminar da matéria já saiu, ainda que o produto dele tenha Id novo");
     }
 
@@ -201,12 +201,12 @@ public sealed class ListarProdutosPrevistosDoProcessoQueryHandlerTests
         AtoDoProcesso ato = Publicar(Materia, preliminar.Id);
         ProdutoPrevistoDto doPreliminar = await ItemDaFase(preliminar.Id);
         ProdutoPrevistoDto doDefinitivo = await ItemDaFase(definitivo.Id);
-        doPreliminar.Situacao.Should().Be(SituacaoDoProdutoPrevisto.Publicado);
+        doPreliminar.Situacao.Codigo.Should().Be("PUBLICADO");
         doPreliminar.Ato!.Id.Should().Be(ato.Id);
         doPreliminar.Ato.Numero.Should().Be("5/2027");
         doPreliminar.Ato.DocumentoPrincipal.NomeArquivo.Should().Be("lista.pdf");
         doPreliminar.PodePublicar.Should().BeFalse();
-        doPreliminar.Impedimento!.Motivo.Should().Be(ImpedimentoDoProduto.JaPublicado);
+        doPreliminar.Impedimento!.Motivo.Codigo.Should().Be("JA_PUBLICADO");
     }
 
     [Fact(DisplayName = "O preliminar de outra matéria não libera o definitivo")]
@@ -217,7 +217,7 @@ public sealed class ListarProdutosPrevistosDoProcessoQueryHandlerTests
         Cronograma([Fase("INSCRICAO", 1, preliminar, definitivo, outroPreliminar, outroDefinitivo)]);
         Publicar(OutraMateria, outroPreliminar.Id);
 
-        (await ItemDaFase(definitivo.Id)).Impedimento!.Motivo.Should().Be(ImpedimentoDoProduto.PreliminarNaoPublicado);
+        (await ItemDaFase(definitivo.Id)).Impedimento!.Motivo.Codigo.Should().Be("PRELIMINAR_NAO_PUBLICADO");
         (await ItemDaFase(outroDefinitivo.Id)).PodePublicar.Should().BeTrue();
     }
 
@@ -225,7 +225,7 @@ public sealed class ListarProdutosPrevistosDoProcessoQueryHandlerTests
     public async Task Handle_PreliminarDeOutraFase_NaoEhEsperado()
     {
         (ProdutoDaFase preliminar, ProdutoDaFase definitivo) = Par();
-        ProdutoDaFase definitivoDaOutraFase = ProdutoDaFase.Criar(Materia, PapelProdutoFase.Definitivo);
+        ProdutoDaFase definitivoDaOutraFase = ProdutoDaFase.Criar(Materia, PapelDaPublicacaoPrevista.Definitivo);
         Cronograma([Fase("INSCRICAO", 1, preliminar, definitivo), Fase("ISENCAO", 2, definitivoDaOutraFase)]);
         Publicar(Materia, preliminar.Id);
 
@@ -237,16 +237,16 @@ public sealed class ListarProdutosPrevistosDoProcessoQueryHandlerTests
     [Fact(DisplayName = "O definitivo da fase espera o preliminar do mesmo tipo de ato da própria fase, e não o de outro tipo")]
     public async Task Handle_CicloNaPropriaFase_DefinitivoEsperaOPreliminarDoMesmoTipo()
     {
-        ProdutoDaFase preliminar = ProdutoDaFase.Criar(Materia, PapelProdutoFase.Preliminar);
-        ProdutoDaFase preliminarOutroTipo = ProdutoDaFase.Criar(OutraMateria, PapelProdutoFase.Preliminar);
-        ProdutoDaFase definitivo = ProdutoDaFase.Criar(Materia, PapelProdutoFase.Definitivo);
+        ProdutoDaFase preliminar = ProdutoDaFase.Criar(Materia, PapelDaPublicacaoPrevista.Preliminar);
+        ProdutoDaFase preliminarOutroTipo = ProdutoDaFase.Criar(OutraMateria, PapelDaPublicacaoPrevista.Preliminar);
+        ProdutoDaFase definitivo = ProdutoDaFase.Criar(Materia, PapelDaPublicacaoPrevista.Definitivo);
         Cronograma([Fase("AVALIACAO", 1, preliminar, preliminarOutroTipo, definitivo)]);
 
-        (await ItemDaFase(definitivo.Id)).Impedimento!.Motivo.Should().Be(ImpedimentoDoProduto.PreliminarNaoPublicado);
+        (await ItemDaFase(definitivo.Id)).Impedimento!.Motivo.Codigo.Should().Be("PRELIMINAR_NAO_PUBLICADO");
 
         Publicar(OutraMateria, preliminarOutroTipo.Id);
-        (await ItemDaFase(definitivo.Id)).Impedimento!.Motivo.Should().Be(
-            ImpedimentoDoProduto.PreliminarNaoPublicado, "o preliminar de outro tipo de ato não libera o definitivo");
+        (await ItemDaFase(definitivo.Id)).Impedimento!.Motivo.Codigo.Should().Be(
+            "PRELIMINAR_NAO_PUBLICADO", "o preliminar de outro tipo de ato não libera o definitivo");
 
         Publicar(Materia, preliminar.Id);
         (await ItemDaFase(definitivo.Id)).PodePublicar.Should().BeTrue();
@@ -255,8 +255,8 @@ public sealed class ListarProdutosPrevistosDoProcessoQueryHandlerTests
     [Fact(DisplayName = "O preliminar de uma fase não é esperado pelo definitivo do mesmo tipo de outra fase")]
     public async Task Handle_PreliminarDeOutraFaseDoMesmoTipo_NaoEhEsperado()
     {
-        ProdutoDaFase preliminar = ProdutoDaFase.Criar(Materia, PapelProdutoFase.Preliminar);
-        ProdutoDaFase definitivo = ProdutoDaFase.Criar(Materia, PapelProdutoFase.Definitivo);
+        ProdutoDaFase preliminar = ProdutoDaFase.Criar(Materia, PapelDaPublicacaoPrevista.Preliminar);
+        ProdutoDaFase definitivo = ProdutoDaFase.Criar(Materia, PapelDaPublicacaoPrevista.Definitivo);
         Cronograma([Fase("PROVA", 1, preliminar), Fase("RESULTADO", 2, definitivo)]);
 
         (await ItemDaFase(definitivo.Id)).PodePublicar.Should().BeTrue();
@@ -274,14 +274,14 @@ public sealed class ListarProdutosPrevistosDoProcessoQueryHandlerTests
         ProdutoPrevistoDto doPreliminar = await ItemDaFase(preliminar.Id);
 
         doPreliminar.Ato!.Id.Should().Be(primeira.Id);
-        doPreliminar.Situacao.Should().Be(SituacaoDoProdutoPrevisto.Publicado);
+        doPreliminar.Situacao.Codigo.Should().Be("PUBLICADO");
         doPreliminar.Correcoes.Select(c => c.Id).Should().Equal(errata.Id, retificacao.Id);
     }
 
     [Fact(DisplayName = "Os itens de etapa vêm sob a fase da etapa, e a etapa sem fase vem à parte")]
     public async Task Handle_ProdutosDeEtapa_AgrupadosSobAFase()
     {
-        ProdutoDaEtapa gabarito = ProdutoDaEtapa.Criar(Materia, PapelProdutoFase.Preliminar);
+        ProdutoDaEtapa gabarito = ProdutoDaEtapa.Criar(Materia, PapelDaPublicacaoPrevista.Preliminar);
         ProdutoDaEtapa semFase = ProdutoDaEtapa.Criar(OutraMateria, null);
         ProdutoDaFase daFase = ProdutoDaFase.Criar(OutraMateria, null);
         Cronograma(
@@ -313,7 +313,7 @@ public sealed class ListarProdutosPrevistosDoProcessoQueryHandlerTests
         ProdutoPrevistoDto doPreliminar = await ItemDaFase(preliminar.Id);
 
         doPreliminar.PodePublicar.Should().BeFalse();
-        doPreliminar.Impedimento!.Motivo.Should().Be(ImpedimentoDoProduto.TipoDeAtoNaoVigente);
+        doPreliminar.Impedimento!.Motivo.Codigo.Should().Be("TIPO_DE_ATO_NAO_VIGENTE");
         doPreliminar.TipoNome.Should().BeNull();
     }
 

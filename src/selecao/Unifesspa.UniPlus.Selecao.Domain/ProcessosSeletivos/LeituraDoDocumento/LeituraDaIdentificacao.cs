@@ -56,7 +56,7 @@ internal static class LeituraDaIdentificacao
         }
 
         RegraDoCatalogoCitada? regra = cadastros.Regra(citada.Codigo, citada.Versao);
-        if (regra is { Tipo: TipoRegra.AlgoritmoContagemPrazo })
+        if (regra is { Tipo: TipoRegra.ConvencaoContagemPrazo })
         {
             return regra.Referencia;
         }

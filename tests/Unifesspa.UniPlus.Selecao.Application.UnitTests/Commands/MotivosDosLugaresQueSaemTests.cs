@@ -5,6 +5,7 @@ using AwesomeAssertions;
 using NSubstitute;
 
 using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
 using Unifesspa.UniPlus.Selecao.Application.DTOs;
@@ -27,7 +28,7 @@ public sealed class MotivosDosLugaresQueSaemTests
     private readonly IUnitOfWork _unitOfWork = Substitute.For<IUnitOfWork>();
 
     private static EtapaProcessoInput EtapaNova(string nome) => new(
-        nome, CaraterEtapa.Classificatoria, TipoProvaObjetivaOrigemId, 1m, null, 1, null, Produtos: [], Bancas: [], Recursos: []);
+        nome, CaraterEtapa.Classificatoria.Codigo(), TipoProvaObjetivaOrigemId, 1m, null, 1, null, Produtos: [], Bancas: [], Recursos: []);
 
     [Fact(DisplayName = "A etapa substituída sem id sai do rascunho com os motivos escolhidos nela")]
     public async Task Etapas_EtapaQueSai_LevaOsMotivosPendentes()

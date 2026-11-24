@@ -33,7 +33,7 @@ public sealed class ObterProcessoSeletivoQueryHandlerDocumentosExigidosTests
         DocumentoExigidoDto projetado = await ProjetarAUnicaExigenciaAsync(
             new ExigenciaParaProjetar { TipoDocumentoOrigemId = tipoDocumentoOrigemId, Aplicabilidade = aplicabilidade });
 
-        projetado.Aplicabilidade.Tipo.Should().Be(tokenEsperado);
+        projetado.Aplicabilidade.Tipo.Codigo.Should().Be(tokenEsperado);
         projetado.TipoDocumento.Id.Should().Be(tipoDocumentoOrigemId);
     }
 
@@ -63,7 +63,7 @@ public sealed class ObterProcessoSeletivoQueryHandlerDocumentosExigidosTests
         ProcessoSeletivoDto dto = await ProjetarAsync(processo);
 
         dto.ReferenciaTemporalFatos.Should().NotBeNull();
-        dto.ReferenciaTemporalFatos!.Tipo.Should().Be("FIM_FASE");
+        dto.ReferenciaTemporalFatos!.Tipo.Codigo.Should().Be("FIM_FASE");
         dto.ReferenciaTemporalFatos.FaseId.Should().Be(fase.Id);
         dto.ReferenciaTemporalFatos.Data.Should().BeNull();
     }
@@ -83,13 +83,13 @@ public sealed class ObterProcessoSeletivoQueryHandlerDocumentosExigidosTests
 
         projetado.Indeferimento.BasesLegais.Should().HaveCount(2);
 
-        BaseLegalDto resolvidaDto = projetado.Indeferimento.BasesLegais.Should().ContainSingle(b => b.Situacao == "RESOLVIDO").Which;
+        BaseLegalDto resolvidaDto = projetado.Indeferimento.BasesLegais.Should().ContainSingle(b => b.Situacao.Codigo == "RESOLVIDO").Which;
         resolvidaDto.Referencia.Should().Be("Lei 12.711/2012, art. 3º");
-        resolvidaDto.Abrangencia.Should().Be("FEDERAL");
+        resolvidaDto.Abrangencia.Codigo.Should().Be("FEDERAL");
         resolvidaDto.Observacao.Should().Be("Observação");
 
-        BaseLegalDto pendenteDto = projetado.Indeferimento.BasesLegais.Should().ContainSingle(b => b.Situacao == "PENDENTE").Which;
-        pendenteDto.Abrangencia.Should().Be("INTERNA_EDITAL");
+        BaseLegalDto pendenteDto = projetado.Indeferimento.BasesLegais.Should().ContainSingle(b => b.Situacao.Codigo == "PENDENTE").Which;
+        pendenteDto.Abrangencia.Codigo.Should().Be("INTERNA_EDITAL");
         pendenteDto.Observacao.Should().BeNull();
     }
 

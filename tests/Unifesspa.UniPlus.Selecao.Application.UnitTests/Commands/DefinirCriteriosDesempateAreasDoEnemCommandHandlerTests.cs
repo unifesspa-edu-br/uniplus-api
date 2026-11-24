@@ -4,6 +4,7 @@ using AwesomeAssertions;
 
 using NSubstitute;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
@@ -25,18 +26,18 @@ public sealed class DefinirCriteriosDesempateAreasDoEnemCommandHandlerTests
         ProcessoSeletivo processo = NovoProcesso("PS ENEM 2027", TiposDeProcessoDeTeste.PSIQ);
         processo.DefinirClassificacao(ConfiguracaoClassificacao.Criar(new DeclaracaoDaClassificacao
         {
-            RegraCalculo = ReferenciaRegra.De(RegraCalculoCodigo.ClassificacaoImportada, "v1", new string('a', 64)),
-            RegraOrdemAlocacao = ReferenciaRegra.De(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, "v1", new string('c', 64)),
+            RegraCalculo = ReferenciaRegra.De(RegraDeCalculoDaNota.ClassificacaoImportada.Codigo(), "v1", new string('a', 64)),
+            RegraOrdemAlocacao = ReferenciaRegra.De(RegraDeOrdemDeAlocacao.PrimeiraOpcaoPrioritaria.Codigo(), "v1", new string('c', 64)),
             BaseadoEmEnem = true,
         }).Value!).IsSuccess.Should().BeTrue();
         return processo;
     }
 
-    [Fact(DisplayName = "Handle com DESEMPATE-MAIOR-NOTA-AREA-ENEM guarda os códigos aparados, na ordem declarada")]
+    [Fact(DisplayName = "Handle com DESEMPATE_MAIOR_NOTA_AREA_ENEM guarda os códigos aparados, na ordem declarada")]
     public async Task Handle_MaiorNotaAreaEnem_Persiste()
     {
         ProcessoSeletivo processo = NovoProcesso("PS ENEM 2027", TiposDeProcessoDeTeste.PSIQ);
-        CenarioDosCriteriosDeDesempate cenario = Com(processo).ComRegra(CriterioDesempateCodigo.MaiorNotaAreaEnem);
+        CenarioDosCriteriosDeDesempate cenario = Com(processo).ComRegra(RegraDeDesempate.MaiorNotaPorAreaDoEnem.Codigo());
 
         Result result = await cenario.DefinirAsync(Comando(processo.Id, CriterioDeAreas(1, " REDACAO ", "MATEMATICA")));
 
@@ -45,13 +46,13 @@ public sealed class DefinirCriteriosDesempateAreasDoEnemCommandHandlerTests
         await cenario.UnitOfWork.Received(1).SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
     }
 
-    [Fact(DisplayName = "Handle com DESEMPATE-MAIOR-NOTA-AREA-ENEM sem áreas recusa no campo do critério")]
+    [Fact(DisplayName = "Handle com DESEMPATE_MAIOR_NOTA_AREA_ENEM sem áreas recusa no campo do critério")]
     public async Task Handle_MaiorNotaAreaEnemSemAreas_RecusaNoCampo()
     {
         ProcessoSeletivo processo = NovoProcesso("PS ENEM 2027", TiposDeProcessoDeTeste.PSIQ);
-        CenarioDosCriteriosDeDesempate cenario = Com(processo).ComRegra(CriterioDesempateCodigo.MaiorNotaAreaEnem);
+        CenarioDosCriteriosDeDesempate cenario = Com(processo).ComRegra(RegraDeDesempate.MaiorNotaPorAreaDoEnem.Codigo());
 
-        Result result = await cenario.DefinirAsync(Comando(processo.Id, CriterioSimples(1, CriterioDesempateCodigo.MaiorNotaAreaEnem)));
+        Result result = await cenario.DefinirAsync(Comando(processo.Id, CriterioSimples(1, RegraDeDesempate.MaiorNotaPorAreaDoEnem.Codigo())));
 
         result.IsFailure.Should().BeTrue();
         FieldError erro = result.Errors.Should().ContainSingle().Subject;
@@ -64,7 +65,7 @@ public sealed class DefinirCriteriosDesempateAreasDoEnemCommandHandlerTests
     public async Task Handle_MaiorNotaAreaEnemComItemNulo_RecusaNoCampoDoItem()
     {
         ProcessoSeletivo processo = NovoProcesso("PS ENEM 2027", TiposDeProcessoDeTeste.PSIQ);
-        CenarioDosCriteriosDeDesempate cenario = Com(processo).ComRegra(CriterioDesempateCodigo.MaiorNotaAreaEnem);
+        CenarioDosCriteriosDeDesempate cenario = Com(processo).ComRegra(RegraDeDesempate.MaiorNotaPorAreaDoEnem.Codigo());
 
         Result result = await cenario.DefinirAsync(Comando(processo.Id, CriterioDeAreas(1, "REDACAO", null!)));
 
@@ -78,7 +79,7 @@ public sealed class DefinirCriteriosDesempateAreasDoEnemCommandHandlerTests
     public async Task Handle_AreasForaDoQuadroEmDoisCriterios_DevolveTodasNosCampos()
     {
         ProcessoSeletivo processo = ProcessoComClassificacaoEnem();
-        CenarioDosCriteriosDeDesempate cenario = Com(processo).ComRegra(CriterioDesempateCodigo.MaiorNotaAreaEnem);
+        CenarioDosCriteriosDeDesempate cenario = Com(processo).ComRegra(RegraDeDesempate.MaiorNotaPorAreaDoEnem.Codigo());
 
         Result result = await cenario.DefinirAsync(
             Comando(processo.Id, CriterioDeAreas(1, "FISICA", "REDACAO"), CriterioDeAreas(2, "MATEMATICA", "QUIMICA")));
@@ -94,7 +95,7 @@ public sealed class DefinirCriteriosDesempateAreasDoEnemCommandHandlerTests
     public async Task Handle_AreaRepetidaEAreaForaDoQuadroEmCriteriosDiferentes_DevolveAsDuas()
     {
         ProcessoSeletivo processo = ProcessoComClassificacaoEnem();
-        CenarioDosCriteriosDeDesempate cenario = Com(processo).ComRegra(CriterioDesempateCodigo.MaiorNotaAreaEnem);
+        CenarioDosCriteriosDeDesempate cenario = Com(processo).ComRegra(RegraDeDesempate.MaiorNotaPorAreaDoEnem.Codigo());
 
         Result result = await cenario.DefinirAsync(
             Comando(processo.Id, CriterioDeAreas(1, "REDACAO", "REDACAO"), CriterioDeAreas(2, "FISICA")));
@@ -114,7 +115,7 @@ public sealed class DefinirCriteriosDesempateAreasDoEnemCommandHandlerTests
     {
         area ??= new string('A', 200_000);
         ProcessoSeletivo processo = ProcessoComClassificacaoEnem();
-        CenarioDosCriteriosDeDesempate cenario = Com(processo).ComRegra(CriterioDesempateCodigo.MaiorNotaAreaEnem);
+        CenarioDosCriteriosDeDesempate cenario = Com(processo).ComRegra(RegraDeDesempate.MaiorNotaPorAreaDoEnem.Codigo());
 
         Result result = await cenario.DefinirAsync(Comando(processo.Id, CriterioDeAreas(1, area)));
 
@@ -129,7 +130,7 @@ public sealed class DefinirCriteriosDesempateAreasDoEnemCommandHandlerTests
     public async Task Handle_AreaForaDaFormaSemQuadro_SemLista()
     {
         ProcessoSeletivo processo = ProcessoComClassificacaoImportadaSemQuadro();
-        CenarioDosCriteriosDeDesempate cenario = Com(processo).ComRegra(CriterioDesempateCodigo.MaiorNotaAreaEnem);
+        CenarioDosCriteriosDeDesempate cenario = Com(processo).ComRegra(RegraDeDesempate.MaiorNotaPorAreaDoEnem.Codigo());
 
         Result result = await cenario.DefinirAsync(Comando(processo.Id, CriterioDeAreas(1, "Redação")));
 
@@ -141,7 +142,7 @@ public sealed class DefinirCriteriosDesempateAreasDoEnemCommandHandlerTests
     public async Task Handle_VariasRecusasDeArea_ListaUmaVez()
     {
         ProcessoSeletivo processo = ProcessoComClassificacaoEnem();
-        CenarioDosCriteriosDeDesempate cenario = Com(processo).ComRegra(CriterioDesempateCodigo.MaiorNotaAreaEnem);
+        CenarioDosCriteriosDeDesempate cenario = Com(processo).ComRegra(RegraDeDesempate.MaiorNotaPorAreaDoEnem.Codigo());
 
         Result result = await cenario.DefinirAsync(
             Comando(processo.Id, CriterioDeAreas(1, "Redação", "FISICA"), CriterioDeAreas(2, "QUIMICA")));
@@ -154,8 +155,8 @@ public sealed class DefinirCriteriosDesempateAreasDoEnemCommandHandlerTests
     public async Task Handle_AreaRepetidaEListaAcimaDoTeto_SemRecusaDuplicada()
     {
         ProcessoSeletivo processo = ProcessoComClassificacaoEnem();
-        CenarioDosCriteriosDeDesempate cenario = Com(processo).ComRegra(CriterioDesempateCodigo.MaiorNotaAreaEnem);
-        string[] areasDemais = [.. Enumerable.Range(0, CriterioDesempate.AreasMaximo + 1).Select(static i => $"AREA_{i}")];
+        CenarioDosCriteriosDeDesempate cenario = Com(processo).ComRegra(RegraDeDesempate.MaiorNotaPorAreaDoEnem.Codigo());
+        string[] areasDemais = [.. Enumerable.Range(0, ParametrosDesempateMaiorNotaAreaEnem.AreasMaximo + 1).Select(static i => $"AREA_{i}")];
 
         Result result = await cenario.DefinirAsync(
             Comando(processo.Id, CriterioDeAreas(1, "FISICA", "FISICA"), CriterioDeAreas(2, areasDemais)));

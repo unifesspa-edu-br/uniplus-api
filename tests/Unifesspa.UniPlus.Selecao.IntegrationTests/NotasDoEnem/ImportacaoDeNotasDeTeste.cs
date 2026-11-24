@@ -60,11 +60,13 @@ internal static class ImportacaoDeNotasDeTeste
             db,
             servicos.GetRequiredService<IUniPlusEncryptionService>(),
             servicos.GetRequiredService<IUniPlusBlindIndexService>(),
-            publicado.ProcessoId, PersonasDeTeste.Candidatas[pessoa], SituacaoInscricao.Submetida, Edicao,
-            ofertaCursoId: publicado.OfertaTecnologicaId,
-            ofertaCursoSegundaOpcaoId: semSegundaOpcao ? null : publicado.OfertaHumanisticaId,
-            versaoFormularioId: versaoId,
-            nome: PersonasDeTeste.Candidatas[pessoa].Nome);
+            new(publicado.ProcessoId, PersonasDeTeste.Candidatas[pessoa], SituacaoInscricao.Submetida, Edicao)
+            {
+                OfertaCursoId = publicado.OfertaTecnologicaId,
+                OfertaCursoSegundaOpcaoId = semSegundaOpcao ? null : publicado.OfertaHumanisticaId,
+                VersaoFormularioId = versaoId,
+                Nome = PersonasDeTeste.Candidatas[pessoa].Nome,
+            });
 
     private static MultipartFormDataContent Formulario(byte[] arquivo)
     {

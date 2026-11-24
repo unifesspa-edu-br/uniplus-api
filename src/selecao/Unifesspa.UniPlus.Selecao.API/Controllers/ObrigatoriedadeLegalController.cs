@@ -12,6 +12,7 @@ using Unifesspa.UniPlus.Infrastructure.Core.Formatting;
 using Unifesspa.UniPlus.Infrastructure.Core.Hateoas;
 using Unifesspa.UniPlus.Infrastructure.Core.Idempotency;
 using Unifesspa.UniPlus.Infrastructure.Core.Pagination;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Application.Commands.ObrigatoriedadesLegais;
 using Unifesspa.UniPlus.Selecao.Application.DTOs;
@@ -70,13 +71,26 @@ public sealed class ObrigatoriedadeLegalController : ControllerBase
     public async Task<IActionResult> Listar(
         [FromCursor(ResourceTag)] PageRequest page,
         [FromQuery] string? tipoProcesso,
-        [FromQuery] CategoriaObrigatoriedade? categoria,
+        [FromQuery, AceitaCodigosDe<CategoriaObrigatoriedade>] string? categoria,
         [FromQuery] bool vigentes = true,
         CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(page);
 
-        ListarObrigatoriedadesLegaisQuery consulta = new(page.AfterId, page.Limit, page.Direction, tipoProcesso, categoria, vigentes);
+        Result<CategoriaObrigatoriedade?> filtroDeCategoria = FiltroDeCategoriaDasObrigatoriedadesLegais.Ler(categoria);
+        if (filtroDeCategoria.IsFailure)
+        {
+            return filtroDeCategoria.ToActionResult(_mapper);
+        }
+
+        ListarObrigatoriedadesLegaisQuery consulta = new(page.AfterId, page.Limit, page.Direction, tipoProcesso, filtroDeCategoria.Value, vigentes);
+
+        return await ListarPaginadoAsync(consulta, page, cancellationToken).ConfigureAwait(false);
+    }
+
+    private async Task<IActionResult> ListarPaginadoAsync(
+        ListarObrigatoriedadesLegaisQuery consulta, PageRequest page, CancellationToken cancellationToken)
+    {
         ListarObrigatoriedadesLegaisResult resultado = await _queryBus.Send(consulta, cancellationToken).ConfigureAwait(false);
 
         return await this.OkPaginatedAsync(

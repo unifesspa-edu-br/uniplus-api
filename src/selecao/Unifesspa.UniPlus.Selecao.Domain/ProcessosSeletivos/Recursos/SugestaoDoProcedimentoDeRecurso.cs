@@ -1,5 +1,6 @@
 namespace Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Recursos;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
@@ -24,17 +25,17 @@ public static class SugestaoDoProcedimentoDeRecurso
         (tipoDeDecisao, alvo?.Tipo) switch
         {
             (TipoMotivoDeDecisao.GabaritoDaProva or TipoMotivoDeDecisao.NotaDaEtapa, _) => null,
-            (_, TipoDeAlvoDoProcedimentoDeRecurso.AreaDoEnem) => RegraProcedimentoRecursoCodigo.Recalculo,
-            (TipoMotivoDeDecisao.Classificacao, _) => RegraProcedimentoRecursoCodigo.Recalculo,
+            (_, TipoDeAlvoDoProcedimentoDeRecurso.AreaDoEnem) => RegraDeProcedimentoDoRecurso.Recalculo.Codigo(),
+            (TipoMotivoDeDecisao.Classificacao, _) => RegraDeProcedimentoDoRecurso.Recalculo.Codigo(),
             (_, TipoDeAlvoDoProcedimentoDeRecurso.ItemDeAvaliacao) => DaForma(origem),
             _ => null,
         };
 
     private static string? DaForma(OrigemDaNotaDaJanela origem) => origem switch
     {
-        { NotaDoEnem: true } => RegraProcedimentoRecursoCodigo.Recalculo,
-        { FormaDeAvaliacao: FormaDeAvaliacao.Humana } => RegraProcedimentoRecursoCodigo.Recorrecao,
-        { FormaDeAvaliacao: FormaDeAvaliacao.Objetiva } => RegraProcedimentoRecursoCodigo.Recalculo,
+        { NotaDoEnem: true } => RegraDeProcedimentoDoRecurso.Recalculo.Codigo(),
+        { FormaDeAvaliacao: FormaDeAvaliacao.Humana } => RegraDeProcedimentoDoRecurso.Recorrecao.Codigo(),
+        { FormaDeAvaliacao: FormaDeAvaliacao.Objetiva } => RegraDeProcedimentoDoRecurso.Recalculo.Codigo(),
         _ => null,
     };
 }

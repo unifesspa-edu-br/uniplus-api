@@ -1,5 +1,6 @@
 namespace Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.HomologacaoDasInscricoes;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Serializacao;
 using Unifesspa.UniPlus.Regras.ValueObjects;
@@ -58,7 +59,7 @@ public sealed record CondicaoDeHomologacao
     public static Result<CondicaoDeHomologacao> Declarar(
         string? tipoCodigo, int? edicaoDoExame, string? motivoDesfavoravelCodigo, PredicadoDnf? enquadramento)
     {
-        Result<TipoDeCondicaoDeHomologacao> tipo = TiposDeCondicaoDeHomologacao.DoCodigo(tipoCodigo);
+        Result<TipoDeCondicaoDeHomologacao> tipo = LerTipo(tipoCodigo);
         Result<CodigoMotivoDecisao>? motivo = string.IsNullOrWhiteSpace(motivoDesfavoravelCodigo)
             ? null
             : CodigoMotivoDecisao.Criar(motivoDesfavoravelCodigo);
@@ -68,6 +69,15 @@ public sealed record CondicaoDeHomologacao
             ? Result<CondicaoDeHomologacao>.ValidationFailure(recusas)
             : Result<CondicaoDeHomologacao>.Success(new CondicaoDeHomologacao(tipo.Value, edicaoDoExame!.Value, motivo?.Value!.Valor, enquadramento));
     }
+
+    private static Result<TipoDeCondicaoDeHomologacao> LerTipo(string? codigo) =>
+        CatalogoDe<TipoDeCondicaoDeHomologacao>.TentarObter(codigo, out TipoDeCondicaoDeHomologacao tipo)
+            ? Result<TipoDeCondicaoDeHomologacao>.Success(tipo)
+            : Result<TipoDeCondicaoDeHomologacao>.Failure(new DomainError(
+                HomologacaoDasInscricoesErrorCodes.CondicaoNaoDisponivel,
+                string.IsNullOrWhiteSpace(codigo)
+                    ? "O tipo da condição precisa ser informado."
+                    : "A condição indicada ainda não é apurada pelo sistema."));
 
     private static IEnumerable<FieldError> RecusaDoTipo(Result<TipoDeCondicaoDeHomologacao> tipo)
     {

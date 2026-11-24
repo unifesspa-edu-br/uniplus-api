@@ -2,6 +2,7 @@ namespace Unifesspa.UniPlus.Selecao.Application.Services;
 
 using Unifesspa.UniPlus.Authorization.Abstractions;
 using Unifesspa.UniPlus.Authorization.Contracts;
+using Unifesspa.UniPlus.Authorization.ValueObjects;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Application.Permissoes;
@@ -280,11 +281,29 @@ public static class AcessoAoProcesso
 
     /// <summary>Se quem lê configura o processo na unidade dona: o que separa o administrativo do que é público.</summary>
     public static async Task<bool> ConfiguraAsync(
-        IVerificadorDeAcesso verificador, Guid unidadeId, Guid processoId, CancellationToken cancellationToken) =>
+        IVerificadorDeAcesso verificador, Guid unidadeId, Guid? processoId, CancellationToken cancellationToken) =>
         await PodeNaUnidadeAsync(
                 verificador, unidadeId, PermissaoSelecao.ProcessosConfigurar, unidade => ResourceDoProcesso(unidade, processoId),
                 cancellationToken)
             .ConfigureAwait(false) == ResultadoDoAcesso.Permitido;
+
+    /// <summary>As unidades concedidas em que a pessoa pode configurar processos, sem registrar acesso.</summary>
+    public static async Task<Guid[]> UnidadesOndeConfiguraAsync(
+        IVerificadorDeAcesso verificador, IEnumerable<ConcessaoAtiva> concessoes, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(verificador);
+        ArgumentNullException.ThrowIfNull(concessoes);
+        List<Guid> permitidas = [];
+        foreach (Guid unidade in concessoes.Where(static c => c.UnidadeId is not null).Select(static c => c.UnidadeId!.Value).Distinct())
+        {
+            if (await ConfiguraAsync(verificador, unidade, processoId: null, cancellationToken).ConfigureAwait(false))
+            {
+                permitidas.Add(unidade);
+            }
+        }
+
+        return [.. permitidas];
+    }
 
     /// <summary>
     /// A recusa do processo que não existe e a de quem não o alcança: a mesma, para o acesso negado não revelar que o

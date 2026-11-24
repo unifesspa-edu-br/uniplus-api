@@ -1,5 +1,7 @@
 namespace Unifesspa.UniPlus.Testes.Compartilhado;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
+
 using Unifesspa.UniPlus.Kernel.Tempo;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
@@ -25,7 +27,7 @@ internal static class ContagemDePrazosDeTeste
         ArgumentNullException.ThrowIfNull(processo);
 
         Unifesspa.UniPlus.Kernel.Results.Result resultado = processo.DefinirAlgoritmoContagemPrazo(
-            ReferenciaRegra.De(AlgoritmoContagemPrazoCodigo.AvancaDataUtil, "v1", new string('e', 64)));
+            ReferenciaRegra.De(ConvencaoDeContagemDoPrazo.AvancaDataUtil.Codigo(), "v1", new string('e', 64)));
         if (resultado.IsFailure)
         {
             throw new InvalidOperationException($"Fixture inválida: {resultado.Error?.Message}");

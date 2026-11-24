@@ -44,7 +44,7 @@ public sealed class HashCanonicalComputerTests
     private static JsonObject Definicao() => new()
     {
         ["baseLegal"] = "Lei 12.711/2012 art.1º",
-        ["categoria"] = "Etapa",
+        ["categoria"] = "ETAPA",
         ["portariaInternaCodigo"] = "Portaria 2026/14",
         ["predicado"] = JsonSerializer.SerializeToNode<PredicadoObrigatoriedade>(
             new EtapaObrigatoria("ProvaObjetiva"), HashCanonicalComputer.CanonicalOptions),

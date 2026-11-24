@@ -33,13 +33,9 @@ public sealed class VerificacaoDosArquivosDoCandidatoHandlersTests
 
     private static ArquivoDaApresentacao EmVerificacao(DateTimeOffset? confirmadoEm = null)
     {
-        DocumentoExigido laudo = new Unifesspa.UniPlus.Selecao.Domain.UnitTests.Cenarios.DocumentoExigidoBuilder()
-            .ComTipo(new CopiaDoTipoDeDocumento(Guid.CreateVersion7(), "LAUDO", "Laudo médico", "SAUDE", ProtecaoDoDocumentoDeTeste.Pessoal))
-            .ComMomento(new MomentoDaExigencia(Guid.CreateVersion7(), null, null))
-            .ComAplicabilidade(new AplicabilidadeDaExigencia(Aplicabilidade.Geral, []))
-            .ComIndeferimento(new IndeferimentoDoDocumento(false, null, []))
-            .ComRequisitos(new RequisitosDoDocumento(FormatosPermitidos.Criar(true, null).Value!, null, null, null, null))
-            .ComFatos(null)
+        DocumentoExigido laudo = DocumentoExigidoDeTeste.Novo()
+            .ComTipo("LAUDO", "Laudo médico", "SAUDE")
+            .Facultativa()
             .Criar().Value!;
         ArquivoDaApresentacao arquivo = ArquivoDaApresentacao.IniciarPendente(
             Guid.CreateVersion7(), Guid.CreateVersion7(), laudo, "application/pdf", 1024, TimeProvider.System, TimeSpan.FromMinutes(15)).Value!;
@@ -133,7 +129,7 @@ public sealed class VerificacaoDosArquivosDoCandidatoHandlersTests
     [Fact(DisplayName = "Verificado que difere do declarado (formato, tamanho ou SHA-256) é recusado por falha fechada e o promovido é removido")]
     public async Task Resultado_VerificadoQueNaoConfere_ERecusado()
     {
-        foreach (Func<Guid, ResultadoDaVerificacaoDeArquivo> divergente in ResultadosDivergentes())
+        foreach (Func<Guid, ResultadoDaVerificacaoDeArquivo> divergente in VerificadosQueDivergemDoDeclarado())
         {
             ArquivoDaApresentacao arquivo = EmVerificacao();
             _documentos.ObterArquivoAsync(arquivo.Id, Arg.Any<CancellationToken>()).Returns(arquivo);
@@ -146,7 +142,7 @@ public sealed class VerificacaoDosArquivosDoCandidatoHandlersTests
         }
     }
 
-    private static Func<Guid, ResultadoDaVerificacaoDeArquivo>[] ResultadosDivergentes() =>
+    private static Func<Guid, ResultadoDaVerificacaoDeArquivo>[] VerificadosQueDivergemDoDeclarado() =>
     [
         id => Verificado(id) with { Formato = FormatoDoArquivo.Png },
         id => Verificado(id) with { TamanhoBytes = 20 * 1024 * 1024 + 1 },

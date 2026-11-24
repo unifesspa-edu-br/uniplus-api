@@ -5,6 +5,7 @@ using System.Text.Json;
 using AwesomeAssertions;
 
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Readers;
@@ -20,6 +21,7 @@ using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Seed;
 /// </summary>
 public sealed class AlgoritmoContagemPrazoSeedTests : IClassFixture<RegraCatalogoDbFixture>
 {
+    private static string BaseLegalDeclaradaPeloEdital => Item(ConvencaoDeContagemDoPrazo.ExcluiDiaInicial.Codigo()).BaseLegal;
     private readonly RegraCatalogoDbFixture _fixture;
 
     public AlgoritmoContagemPrazoSeedTests(RegraCatalogoDbFixture fixture)
@@ -32,13 +34,13 @@ public sealed class AlgoritmoContagemPrazoSeedTests : IClassFixture<RegraCatalog
     /// editar o texto de uma entrada sem regenerar a migration quebra este teste.
     /// </summary>
     private const string HashExcluiDiaInicial =
-        "64e9c6c59b5d9a4e25a6c2fee46689fcc1c2c439aa9d33bd148dd8c74371a562";
+        "ef76c08eb8a4ec56d291843df97b09935820a4f459821a05623fe39301597ceb";
 
-    private const string HashHorasUteisDesdeAncora =
-        "1319f925c7af96f337a34e8b705c6a40bd6d124dcc9e7bf9f5f1fd2d43d18cc6";
+    private const string HashHorasUteisDesdeOEventoInicial =
+        "5122aafbcdca1d3388aecddec0fc21f9ea3d1773dbdcb98a0137a4bf8cc33ead";
 
     private const string HashAvancaDataUtil =
-        "47fb025bcfef2680377b57369e6f7e6657677c707f4e8293b979f883401eb094";
+        "e777ac14d840e8f3168d4d7acb922495636f1aeaef729b8b93ecdd9347e5f114";
 
     private static RegraCatalogoSeedItem Item(string codigo) =>
         RegraCatalogoSeed.Itens.Single(i => i.Codigo == codigo);
@@ -60,13 +62,13 @@ public sealed class AlgoritmoContagemPrazoSeedTests : IClassFixture<RegraCatalog
     /// Apontando para o rol, o mesmo vermelho só apaga quando o código é declarado onde os dois
     /// lados o leem.
     /// </remarks>
-    private static readonly IReadOnlyList<string> CodigosDeContagem = AlgoritmoContagemPrazoCodigo.Todos;
+    private static readonly IReadOnlyList<string> CodigosDeContagem = CatalogoDe<ConvencaoDeContagemDoPrazo>.Valores().Select(static valor => valor.Codigo()).ToArray();
 
     private static readonly Dictionary<string, string> HashesDourados = new(StringComparer.Ordinal)
     {
-        [AlgoritmoContagemPrazoCodigo.ExcluiDiaInicial] = HashExcluiDiaInicial,
-        [AlgoritmoContagemPrazoCodigo.HorasUteisDesdeAncora] = HashHorasUteisDesdeAncora,
-        [AlgoritmoContagemPrazoCodigo.AvancaDataUtil] = HashAvancaDataUtil,
+        [ConvencaoDeContagemDoPrazo.ExcluiDiaInicial.Codigo()] = HashExcluiDiaInicial,
+        [ConvencaoDeContagemDoPrazo.HorasUteisDesdeOEventoInicial.Codigo()] = HashHorasUteisDesdeOEventoInicial,
+        [ConvencaoDeContagemDoPrazo.AvancaDataUtil.Codigo()] = HashAvancaDataUtil,
     };
 
     /// <summary>
@@ -90,7 +92,7 @@ public sealed class AlgoritmoContagemPrazoSeedTests : IClassFixture<RegraCatalog
         RegraCatalogoReader reader = new(context);
 
         IReadOnlyList<RegraCatalogo> algoritmos = await reader.ListarPorTipoAsync(
-            TipoRegra.AlgoritmoContagemPrazo, CancellationToken.None);
+            TipoRegra.ConvencaoContagemPrazo, CancellationToken.None);
 
         algoritmos.Should().HaveCount(3);
         algoritmos.Select(a => a.Codigo).Should().BeEquivalentTo(CodigosDeContagem);
@@ -119,7 +121,7 @@ public sealed class AlgoritmoContagemPrazoSeedTests : IClassFixture<RegraCatalog
     [Fact]
     public void Seed_ExcluiDiaInicial_ExplicaQuandoTerminaOPrazo()
     {
-        Invariantes(AlgoritmoContagemPrazoCodigo.ExcluiDiaInicial)
+        Invariantes(ConvencaoDeContagemDoPrazo.ExcluiDiaInicial.Codigo())
             .Should().Contain(i => i.Contains("à meia-noite que inicia o dia seguinte", StringComparison.Ordinal)
                 && i.Contains("esse instante não está incluído no prazo", StringComparison.Ordinal));
     }
@@ -127,7 +129,7 @@ public sealed class AlgoritmoContagemPrazoSeedTests : IClassFixture<RegraCatalog
     [Fact(DisplayName = "A coincidência declarada entre convenções nomeia uma entrada que existe no catálogo")]
     public void Seed_CoincidenciaDeclarada_NomeiaEntradaExistente()
     {
-        string invarianteHoras = Invariantes(AlgoritmoContagemPrazoCodigo.AvancaDataUtil)
+        string invarianteHoras = Invariantes(ConvencaoDeContagemDoPrazo.AvancaDataUtil.Codigo())
             .Single(i => i.StartsWith("em horas:", StringComparison.Ordinal));
 
         invarianteHoras.Should().Contain(
@@ -135,8 +137,8 @@ public sealed class AlgoritmoContagemPrazoSeedTests : IClassFixture<RegraCatalog
             "a coincidência em horas é declarada em linguagem clara");
 
         RegraCatalogoSeed.Itens.Should().Contain(
-            i => i.Codigo == AlgoritmoContagemPrazoCodigo.HorasUteisDesdeAncora
-                && i.Tipo == TipoRegra.AlgoritmoContagemPrazo,
+            i => i.Codigo == ConvencaoDeContagemDoPrazo.HorasUteisDesdeOEventoInicial.Codigo()
+                && i.Tipo == TipoRegra.ConvencaoContagemPrazo,
             "a convenção citada tem de existir no catálogo, sob o mesmo tipo");
     }
 
@@ -147,7 +149,7 @@ public sealed class AlgoritmoContagemPrazoSeedTests : IClassFixture<RegraCatalog
     public void Seed_DeclaraAsQuatroResolucoes_ComExemplosDeInicioDoPrazo(string codigo)
     {
         RegraCatalogoSeedItem item = Item(codigo);
-        item.Tipo.Should().Be(TipoRegra.AlgoritmoContagemPrazo);
+        item.Tipo.Should().Be(TipoRegra.ConvencaoContagemPrazo);
         item.Versao.Should().Be(RegraCatalogoSeed.VersaoV1);
         string[] invariantes = Invariantes(codigo);
         invariantes.Should().HaveCount(4);
@@ -160,9 +162,9 @@ public sealed class AlgoritmoContagemPrazoSeedTests : IClassFixture<RegraCatalog
     }
 
     [Theory(DisplayName = "As convenções descrevem o início do prazo em linguagem clara")]
-    [InlineData(AlgoritmoContagemPrazoCodigo.ExcluiDiaInicial)]
-    [InlineData(AlgoritmoContagemPrazoCodigo.HorasUteisDesdeAncora)]
-    [InlineData(AlgoritmoContagemPrazoCodigo.AvancaDataUtil)]
+    [InlineData("CONTAGEM_PRAZO_EXCLUI_DIA_INICIAL")]
+    [InlineData("CONTAGEM_PRAZO_HORAS_UTEIS_DESDE_O_EVENTO_INICIAL")]
+    [InlineData("CONTAGEM_PRAZO_AVANCA_DATA_UTIL")]
     public void Seed_Invariantes_UsamLinguagemClara(string codigo)
     {
         string texto = string.Join(' ', Invariantes(codigo));
@@ -189,7 +191,7 @@ public sealed class AlgoritmoContagemPrazoSeedTests : IClassFixture<RegraCatalog
         foreach (string codigo in CodigosDeContagem)
         {
             Item(codigo).BaseLegal.Should().Be(
-                AlgoritmoContagemPrazoCodigo.BaseLegalDeclaradaPeloEdital,
+                BaseLegalDeclaradaPeloEdital,
                 $"a base legal da entrada {codigo} é a constante compartilhada do fundamento aprovado (UNI-REQ-0095)");
         }
     }
@@ -197,7 +199,7 @@ public sealed class AlgoritmoContagemPrazoSeedTests : IClassFixture<RegraCatalog
     [Fact(DisplayName = "O fundamento declara os limites da decisão")]
     public void BaseLegal_NaoExcedeADecisao()
     {
-        string fundamento = AlgoritmoContagemPrazoCodigo.BaseLegalDeclaradaPeloEdital;
+        string fundamento = BaseLegalDeclaradaPeloEdital;
         fundamento.Should().Contain("edital").And.Contain("UNI-REQ-0095").And.Contain("juridicamente orientada");
         fundamento.Should().Contain("não é parecer formal nem jurisprudência consolidada");
     }
@@ -214,14 +216,14 @@ public sealed class AlgoritmoContagemPrazoSeedTests : IClassFixture<RegraCatalog
     [InlineData("Lei nº")]
     [InlineData("Decreto")]
     public void BaseLegal_ReivindicacaoNaoSustentada_NaoConsta(string texto) =>
-        AlgoritmoContagemPrazoCodigo.BaseLegalDeclaradaPeloEdital.Should().NotContain(texto);
+        BaseLegalDeclaradaPeloEdital.Should().NotContain(texto);
 
     [Fact(DisplayName = "O fundamento nega dispor sobre efeito suspensivo, em vez de silenciar")]
     public void BaseLegal_NegaDisporSobreEfeitoSuspensivo()
     {
         // Silêncio deixaria o leitor supor que a decisão do prazo alcança a suspensividade.
         // A negativa é explícita porque a dependência daquela garantia continua aberta.
-        string fundamento = AlgoritmoContagemPrazoCodigo.BaseLegalDeclaradaPeloEdital;
+        string fundamento = BaseLegalDeclaradaPeloEdital;
 
         fundamento.Should().Contain("dispõe sobre efeito suspensivo",
             "a negativa é explícita — silêncio deixaria supor que a decisão do prazo a alcança");

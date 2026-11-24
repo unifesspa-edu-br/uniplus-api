@@ -40,7 +40,7 @@ public sealed class ProcessoSeletivoTests
     [Fact(DisplayName = "Criar sem origem dos candidatos lanca ArgumentException (Story #851 §3.4)")]
     public void Criar_SemOrigemCandidatos_Lanca()
     {
-        Action act = () => NovoProcesso("PS 2026", TiposDeProcessoDeTeste.SiSU, OrigemCandidatos.Nenhuma);
+        Action act = () => NovoProcesso("PS 2026", TiposDeProcessoDeTeste.SiSU, (OrigemCandidatos)99);
 
         act.Should().Throw<ArgumentException>().WithParameterName("origemCandidatos");
     }

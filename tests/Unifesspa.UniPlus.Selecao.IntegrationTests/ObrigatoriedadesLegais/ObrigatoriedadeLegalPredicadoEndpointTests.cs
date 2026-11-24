@@ -108,7 +108,7 @@ public sealed class ObrigatoriedadeLegalPredicadoEndpointTests : Obrigatoriedade
     private static object PayloadCom(object predicado) => new
     {
         tipoProcessoCodigo = "*",
-        categoria = "outros",
+        categoria = "OUTROS",
         regraCodigo = UniqueRegraCodigo(),
         predicado,
         descricaoHumana = "Predicado sob teste de leitura do corpo",

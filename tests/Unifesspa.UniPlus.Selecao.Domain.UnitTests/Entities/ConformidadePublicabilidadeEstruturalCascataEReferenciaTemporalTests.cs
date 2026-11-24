@@ -5,6 +5,7 @@ using System.Text.Json;
 
 using AwesomeAssertions;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.Errors;
@@ -75,7 +76,7 @@ public sealed class ConformidadePublicabilidadeEstruturalCascataEReferenciaTempo
     public void Cascata_OrigemNaoSegueCascata()
     {
         ConfiguracaoDistribuicaoVagas oferta = ConfiguracaoDistribuicaoVagas.Criar(Guid.CreateVersion7(),
-            new DistribuicaoDeVagasDeclarada { VagasOfertadasBase = 10, PercentualDaReservaLegal = 1m, RegraDeDistribuicao = Regra(RegraDistribuicaoVagasCodigo.Institucional, 'a'), Modalidades = [Modalidade("AC", NaturezaLegalModalidade.Ampla, RegraRemanejamentoModalidade.Nenhuma, 10)] },
+            new DistribuicaoDeVagasDeclarada { VagasOfertadasBase = 10, PercentualDaReservaLegal = 1m, RegraDeDistribuicao = Regra(RegraDeDistribuicaoDeVagas.Institucional.Codigo(), 'a'), Modalidades = [Modalidade("AC", NaturezaLegalModalidade.Ampla, null, 10)] },
             new FatosDaOfertaNoCadastro { OfertaCurso = OfertaCursoDeTeste.Medicina }).Value!;
         ProcessoSeletivo processo = ProcessoConforme([oferta]);
         // Nenhuma modalidade desta oferta é SegueCascata — o loop por oferta não recusa nada; só
@@ -200,10 +201,10 @@ public sealed class ConformidadePublicabilidadeEstruturalCascataEReferenciaTempo
             {
                 VagasOfertadasBase = 10,
                 PercentualDaReservaLegal = 1m,
-                RegraDeDistribuicao = Regra(RegraDistribuicaoVagasCodigo.Institucional, 'a'),
+                RegraDeDistribuicao = Regra(RegraDeDistribuicaoDeVagas.Institucional.Codigo(), 'a'),
                 Modalidades = [
-                Modalidade("AC", NaturezaLegalModalidade.Ampla, RegraRemanejamentoModalidade.Nenhuma, 8),
-                Modalidade("LB_PPI", NaturezaLegalModalidade.CotaReservada, RegraRemanejamentoModalidade.SegueCascata, 2),
+                Modalidade("AC", NaturezaLegalModalidade.Ampla, null, 8),
+                Modalidade("LB_PPI", NaturezaLegalModalidade.CotaReservada, RegraRemanejamentoModalidade.SegueOrdemDeRemanejamento, 2),
             ]
             },
             new FatosDaOfertaNoCadastro { OfertaCurso = OfertaCursoDeTeste.Medicina }).Value!;

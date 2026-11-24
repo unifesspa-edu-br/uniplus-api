@@ -5,6 +5,7 @@ using System.Text.Json.Nodes;
 using System.Text.RegularExpressions;
 
 using Unifesspa.UniPlus.Kernel.Domain.Cidades;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.ValueObjects;
@@ -19,15 +20,6 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 /// </summary>
 internal static class LeituraDoDesempate
 {
-    private static readonly string[] CodigosDeCriterioAceitos =
-    [
-        CriterioDesempateCodigo.MaiorNotaEtapa,
-        CriterioDesempateCodigo.MaiorIdade,
-        CriterioDesempateCodigo.Idoso,
-        CriterioDesempateCodigo.PredicadoFato,
-        CriterioDesempateCodigo.MaiorNotaAreaEnem,
-    ];
-
     internal static IReadOnlyList<CriterioDesempate> LerCriteriosDesempate(LeitorEnvelope leitor, JsonObject payload)
     {
         JsonArray array = leitor.Array(payload, "criteriosDesempate", "$");
@@ -56,7 +48,7 @@ internal static class LeituraDoDesempate
     {
         leitor.ExigirChaves(item, path, "ordem", "regra", "parametros");
         int ordem = leitor.Inteiro(item, "ordem", path);
-        ReferenciaRegra regra = leitor.Regra(item, "regra", path, CodigosDeCriterioAceitos);
+        ReferenciaRegra regra = leitor.Regra<RegraDeDesempate>(item, "regra", path);
         JsonObject parametros = leitor.Objeto(item, "parametros", path);
 
         return leitor.Falhou ? null : CriarCriterio(leitor, ordem, regra, parametros, $"{path}.parametros");
@@ -65,7 +57,7 @@ internal static class LeituraDoDesempate
     private static CriterioDesempate? CriarCriterio(
         LeitorEnvelope leitor, int ordem, ReferenciaRegra regra, JsonObject parametros, string path)
     {
-        ParametrosCriterioDesempate? parametrosTipados = LerParametrosDesempate(leitor, regra.Codigo, parametros, path);
+        ParametrosCriterioDesempate? parametrosTipados = LerParametrosDesempate(leitor, CatalogoDe<RegraDeDesempate>.Obter(regra.Codigo), parametros, path);
         if (leitor.Falhou)
         {
             return null;
@@ -83,18 +75,16 @@ internal static class LeituraDoDesempate
     /// </summary>
     internal static ParametrosCriterioDesempate? LerParametrosDesempate(
         LeitorEnvelope leitor,
-        string codigo,
+        RegraDeDesempate regra,
         JsonObject parametros,
-        string path) => codigo switch
+        string path) => regra switch
         {
-            CriterioDesempateCodigo.MaiorNotaEtapa => LerMaiorNotaEtapa(leitor, parametros, path),
-            CriterioDesempateCodigo.MaiorIdade => LerMaiorIdade(leitor, parametros, path),
-            CriterioDesempateCodigo.Idoso => LerIdoso(leitor, parametros, path),
-            CriterioDesempateCodigo.PredicadoFato => LerPredicadoFato(leitor, parametros, path),
-            CriterioDesempateCodigo.MaiorNotaAreaEnem => LerMaiorNotaAreaEnem(leitor, parametros, path),
-            _ => leitor.Propagar<ParametrosCriterioDesempate>(new DomainError(
-                ErrosCodecEnvelope.RegraDesconhecida,
-                $"Não há variante de parâmetros conhecida para o critério de desempate '{codigo}' em '{path}'.")),
+            RegraDeDesempate.MaiorNotaNaEtapa => LerMaiorNotaEtapa(leitor, parametros, path),
+            RegraDeDesempate.MaiorIdade => LerMaiorIdade(leitor, parametros, path),
+            RegraDeDesempate.Idoso => LerIdoso(leitor, parametros, path),
+            RegraDeDesempate.CondicaoSobreDado => LerPredicadoFato(leitor, parametros, path),
+            RegraDeDesempate.MaiorNotaPorAreaDoEnem => LerMaiorNotaAreaEnem(leitor, parametros, path),
+            _ => throw new ArgumentOutOfRangeException(nameof(regra)),
         };
 
     private static ParametrosDesempateMaiorNotaEtapa? LerMaiorNotaEtapa(LeitorEnvelope leitor, JsonObject parametros, string path)

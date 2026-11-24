@@ -30,11 +30,11 @@
     },
     "carater": {
       "title": "Caráter da etapa",
-      "description": "Se a etapa classifica (classificatoria), elimina (eliminatoria) ou faz as duas coisas (ambas).",
+      "description": "Se a etapa classifica (CLASSIFICATORIA), elimina (ELIMINATORIA) ou faz as duas coisas (AMBAS).",
       "enum": [
-        "classificatoria",
-        "eliminatoria",
-        "ambas"
+        "CLASSIFICATORIA",
+        "ELIMINATORIA",
+        "AMBAS"
       ]
     },
     "tipoEtapaCodigo": {
@@ -164,7 +164,7 @@
   "$defs": {
     "recursoDaEtapa": {
       "title": "Recurso da etapa",
-      "description": "Recurso que a etapa admite: o evento que inicia o prazo e as mesmas propriedades de prazos, efeito suspensivo e guarda da vaga do recurso da fase. Quando o evento que inicia o prazo é atoPublicado, o ato de referência é um ato preliminar da própria etapa.",
+      "description": "Recurso que a etapa admite: o evento que inicia o prazo e as mesmas propriedades de prazos, efeito suspensivo e guarda da vaga do recurso da fase. Quando o evento que inicia o prazo é PUBLICACAO_DO_ATO, o ato de referência é um ato preliminar da própria etapa.",
       "type": "object",
       "allOf": [
         {
@@ -173,11 +173,11 @@
       ],
       "properties": {
         "eventoInicialDoPrazo": {
-          "title": "Âncora do prazo",
-          "description": "De onde o prazo corre: do ato publicado (atoPublicado) ou da ciência individual do candidato (cienciaIndividual).",
+          "title": "Evento que inicia o prazo",
+          "description": "De onde o prazo corre: da publicação do ato (PUBLICACAO_DO_ATO) ou da ciência individual do candidato (CIENCIA_INDIVIDUAL).",
           "enum": [
-            "atoPublicado",
-            "cienciaIndividual"
+            "PUBLICACAO_DO_ATO",
+            "CIENCIA_INDIVIDUAL"
           ]
         }
       },

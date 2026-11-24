@@ -19,7 +19,7 @@ public sealed class ObrigatoriedadeLegalValidacaoTests
 
     private static Result Validar(
         string? tipo = "*",
-        CategoriaObrigatoriedade categoria = CategoriaObrigatoriedade.Etapa,
+        CategoriaObrigatoriedade? categoria = CategoriaObrigatoriedade.Etapa,
         string? regra = "ETAPA_OBRIGATORIA",
         PredicadoObrigatoriedade? predicado = null,
         TextoNormativo? texto = null,
@@ -60,7 +60,7 @@ public sealed class ObrigatoriedadeLegalValidacaoTests
         { () => Validar(tipo: null), "ObrigatoriedadeLegal.TipoProcessoCodigoObrigatorio", "tipoProcessoCodigo" },
         { () => Validar(tipo: "  "), "ObrigatoriedadeLegal.TipoProcessoCodigoObrigatorio", "tipoProcessoCodigo" },
         { () => Validar(tipo: new string('a', 65)), "ObrigatoriedadeLegal.TipoProcessoCodigoInvalido", "tipoProcessoCodigo" },
-        { () => Validar(categoria: CategoriaObrigatoriedade.Nenhuma), "ObrigatoriedadeLegal.CategoriaInvalida", "categoria" },
+        { () => Validar(categoria: null), "ObrigatoriedadeLegal.CategoriaInvalida", "categoria" },
         { () => Validar(categoria: (CategoriaObrigatoriedade)999), "ObrigatoriedadeLegal.CategoriaInvalida", "categoria" },
         { () => Validar(fim: Inicio), "ObrigatoriedadeLegal.VigenciaInvalida", "vigenciaFim" },
         { () => Validar(fim: Inicio.AddDays(-1)), "ObrigatoriedadeLegal.VigenciaInvalida", "vigenciaFim" },
@@ -83,7 +83,7 @@ public sealed class ObrigatoriedadeLegalValidacaoTests
     public void ValidarCampos_VariosErros_Acumula()
     {
         Result resultado = ObrigatoriedadeLegal.ValidarCampos(
-            null, CategoriaObrigatoriedade.Nenhuma, "", null, new TextoNormativo(null, "", null, null), null, null);
+            null, null, "", null, new TextoNormativo(null, "", null, null), null, null);
 
         resultado.Errors.Select(e => e.Field).Should().Equal(CamposNaOrdem);
     }
@@ -100,7 +100,7 @@ public sealed class ObrigatoriedadeLegalValidacaoTests
     public void Criar_Invalido_FalhaDeValidacaoAcumulada()
     {
         Result<ObrigatoriedadeLegal> resultado = ObrigatoriedadeLegal.Criar(
-            "*", CategoriaObrigatoriedade.Nenhuma, "", Predicado, TextoValido, Inicio, null);
+            "*", null, "", Predicado, TextoValido, Inicio, null);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Errors.Select(e => e.Field).Should().Equal("categoria", "regraCodigo");

@@ -262,8 +262,8 @@ public sealed class ProcessoSeletivoGruposColetadosTests
 
         GrafoDependenciaConjunta grafo = CitacoesDosFormularios.ConstruirGrafoDependencia(processo.Declaracao()).Value!;
 
-        grafo.Arestas.Should().Contain(new ArestaGrafoDependencia(
-            TipoArestaGrafo.Precondicao, new NoGrafoDependencia(ClasseNoGrafo.Fato, "CONCORRER_RENDA"), new NoGrafoDependencia(ClasseNoGrafo.Campo, "PARENTESCO")));
+        grafo.Dependencias.Should().Contain(new DependenciaEntrePartes(
+            MotivoDaDependencia.CondicionaExibicao, new ParteDaConfiguracao(TipoDeParteDaConfiguracao.Dado, "CONCORRER_RENDA"), new ParteDaConfiguracao(TipoDeParteDaConfiguracao.Campo, "PARENTESCO")));
     }
 
     private static ProcessoSeletivo NovoProcesso() => ProcessoSeletivo.Criar(

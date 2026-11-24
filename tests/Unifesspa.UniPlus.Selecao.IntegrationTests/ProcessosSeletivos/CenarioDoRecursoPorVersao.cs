@@ -60,7 +60,7 @@ internal sealed class CenarioDoRecursoPorVersao
         DeclararORecursoDaEtapa(processo);
         // Prazo em horas conta em dia útil: o processo declara a convenção de contagem que usa.
         processo.DefinirAlgoritmoContagemPrazo(
-            ReferenciaRegra.De(AlgoritmoContagemPrazoCodigo.ExcluiDiaInicial, "v1", new string('d', 64))).IsSuccess.Should().BeTrue();
+            ReferenciaRegra.De(ConvencaoDeContagemDoPrazo.ExcluiDiaInicial.Codigo(), "v1", new string('d', 64))).IsSuccess.Should().BeTrue();
         await _persistencia.PublicarEPersistirAsync(processo, new RelogioManualDaVigencia(VigenciaDaPrimeira));
         await GravarSegundaVersaoComOsParametrosTrocadosAsync(processo.Id);
 
@@ -146,8 +146,8 @@ internal sealed class CenarioDoRecursoPorVersao
         EtapaProcesso etapa = processo.Etapas.Single();
         etapa.DefinirJanelaEParecer(null, null, emiteParecerIndividual: true).IsSuccess.Should().BeTrue();
         Result<RecursoDaEtapa> criado = RecursoDaEtapa.Criar(
-            AncoraDoRecurso.CienciaIndividual,
-            ReferenciaRegra.De(RegraPrazoRecursoCodigo.AncoradoEmAto, "v1", new string('d', 64)),
+            EventoInicialDoPrazo.CienciaIndividual,
+            ReferenciaRegra.De(RegraDePrazoDoRecurso.ContadoDaPublicacaoDoAto.Codigo(), "v1", new string('d', 64)),
             ParametrosDoRecursoDeTeste.DeclaradosDe(CongeladosDaEtapaNaPrimeira),
             Guid.Empty);
         criado.IsSuccess.Should().BeTrue(string.Join("; ", criado.Errors.Select(static e => $"{e.Field}: {e.Error.Code}")));
@@ -173,13 +173,13 @@ internal sealed class CenarioDoRecursoPorVersao
 
     private static ProdutoDaFase[] ProdutosDoResultado(Guid preliminarId) =>
     [
-        ProdutoDaFase.Reidratar(preliminarId, HomologacaoDasInscricoesDeTeste.ResultadoDaFase, PapelProdutoFase.Preliminar),
-        ProdutoDaFase.Criar(HomologacaoDasInscricoesDeTeste.ResultadoDaFase, PapelProdutoFase.Definitivo),
+        ProdutoDaFase.Reidratar(preliminarId, HomologacaoDasInscricoesDeTeste.ResultadoDaFase, PapelDaPublicacaoPrevista.Preliminar),
+        ProdutoDaFase.Criar(HomologacaoDasInscricoesDeTeste.ResultadoDaFase, PapelDaPublicacaoPrevista.Definitivo),
     ];
 
     // O prazo da 2ª instância declarado é o congelado na primeira versão; o prazo ancora no resultado preliminar da própria fase.
     private static RegraRecursoFase RecursoEmDuasInstancias(Guid preliminarId) => RegraRecursoFase.Criar(
-        ReferenciaRegra.De(RegraPrazoRecursoCodigo.AncoradoEmAto, "v1", new string('d', 64)),
+        ReferenciaRegra.De(RegraDePrazoDoRecurso.ContadoDaPublicacaoDoAto.Codigo(), "v1", new string('d', 64)),
         ParametrosDoRecursoDeTeste.Declarados(
             48m, UnidadePrazo.Horas, admiteInstanciaSuperior: true, segundaInstancia: CongeladosNaPrimeira.PrazoDaSegundaInstancia),
         preliminarId,

@@ -1,5 +1,7 @@
 namespace Unifesspa.UniPlus.Selecao.Domain.UnitTests.Entities;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
+
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
@@ -12,19 +14,19 @@ using Unifesspa.UniPlus.Testes.Compartilhado;
 internal static class ApoioDaConfiguracaoDeVagas
 {
     internal static ReferenciaRegra RegraLei12711() =>
-        ReferenciaRegra.De(RegraDistribuicaoVagasCodigo.Lei12711, "v1", new string('a', 64));
+        ReferenciaRegra.De(RegraDeDistribuicaoDeVagas.Lei12711.Codigo(), "v1", new string('a', 64));
 
     internal static ReferenciaRegra RegraInstitucional() =>
-        ReferenciaRegra.De(RegraDistribuicaoVagasCodigo.Institucional, "v1", new string('b', 64));
+        ReferenciaRegra.De(RegraDeDistribuicaoDeVagas.Institucional.Codigo(), "v1", new string('b', 64));
 
     internal static ReferenciaRegra RegraPsiq() =>
-        ReferenciaRegra.De(RegraDistribuicaoVagasCodigo.Psiq, "v1", new string('d', 64));
+        ReferenciaRegra.De(RegraDeDistribuicaoDeVagas.PorAcrescimoIndigenaEQuilombola.Codigo(), "v1", new string('d', 64));
 
     internal static ReferenciaRegra RegraComAcPcd() =>
-        ReferenciaRegra.De(RegraDistribuicaoVagasCodigo.ComAcPcd, "v1", new string('e', 64));
+        ReferenciaRegra.De(RegraDeDistribuicaoDeVagas.ComAmplaConcorrenciaEPessoaComDeficiencia.Codigo(), "v1", new string('e', 64));
 
     internal static ReferenciaRegra RegraLei12711ComAcPcd() =>
-        ReferenciaRegra.De(RegraDistribuicaoVagasCodigo.Lei12711ComAcPcd, "v1", new string('f', 64));
+        ReferenciaRegra.De(RegraDeDistribuicaoDeVagas.Lei12711ComAmplaConcorrenciaEPessoaComDeficiencia.Codigo(), "v1", new string('f', 64));
 
     internal static readonly string[] RolLei12711 =
         ["AC", "LB_PPI", "LB_Q", "LB_PCD", "LB_EP", "LI_PPI", "LI_Q", "LI_PCD", "LI_EP"];
@@ -32,7 +34,7 @@ internal static class ApoioDaConfiguracaoDeVagas
     internal static readonly string[] RolLei12711ComAcPcd = [.. RolLei12711, "AC_PCD"];
 
     internal static ReferenciaRegra RegraAjuste() =>
-        ReferenciaRegra.De("RECONCILIACAO-VAGAS-ARTIGO-11-PARAGRAFO-UNICO", "v1", new string('c', 64));
+        ReferenciaRegra.De("AJUSTE_VAGAS_ARTIGO_11_PARAGRAFO_UNICO", "v1", new string('c', 64));
 
     internal static ReferenciaReservaDemograficaSnapshot Demografica() =>
         ReferenciaReservaDemograficaSnapshot.Criar(Guid.CreateVersion7(), "2022", 79m, 1.5m, 8.5m, "Censo 2022").Value!;
@@ -43,11 +45,7 @@ internal static class ApoioDaConfiguracaoDeVagas
         ComposicaoVagasModalidade composicao,
         int? quantidadeDeclarada = null,
         string? composicaoOrigemCodigo = null) =>
-        ModalidadeSelecionada.Criar(
-            Guid.CreateVersion7(), codigo, null, natureza, composicao,
-            composicaoOrigemCodigo,
-            natureza == NaturezaLegalModalidade.CotaReservada ? RegraRemanejamentoModalidade.SegueCascata : RegraRemanejamentoModalidade.Nenhuma,
-            null, null, null, RegrasDeAplicabilidadeDeTeste.DaNatureza(natureza), null, "base legal", quantidadeDeclarada).Value!;
+        ModalidadeSelecionada.Criar(ModalidadesNoCadastroDeTeste.Da(codigo, natureza, composicao) with { ComposicaoOrigemCodigo = composicaoOrigemCodigo, RegraRemanejamento = natureza == NaturezaLegalModalidade.CotaReservada ? RegraRemanejamentoModalidade.SegueOrdemDeRemanejamento : null, BaseLegal = "base legal" }, quantidadeDeclarada).Value!;
 
     internal static List<ModalidadeSelecionada> AsOitoFederaisMaisAc() =>
     [

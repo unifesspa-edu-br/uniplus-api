@@ -20,7 +20,7 @@ public sealed record ClassificacaoDoTipoDeAto(bool EhResultado, bool CongelaConf
     /// O tipo é resultado e o produto não declara papel. O resultado sem preliminar é declarado
     /// definitivo: só o ato que não é resultado fica sem papel.
     /// </summary>
-    public DomainError? ViolacaoDoResultadoSemPapel(string atoCodigo, PapelProdutoFase? papel, string lugar) =>
+    public DomainError? ViolacaoDoResultadoSemPapel(string atoCodigo, PapelDaPublicacaoPrevista? papel, string lugar) =>
         papel is null && EhResultado
             ? new DomainError(
                 ProcessoSeletivoErrorCodes.ResultadoDeclaradoSemPapel,
@@ -31,7 +31,7 @@ public sealed record ClassificacaoDoTipoDeAto(bool EhResultado, bool CongelaConf
     /// O tipo congela a configuração e o produto o declara como item de resultado. A correção de
     /// um resultado não cria versão nova, então um tipo que congela não teria correção possível.
     /// </summary>
-    public DomainError? ViolacaoDoTipoQueCongelaComPapel(string atoCodigo, PapelProdutoFase? papel, string lugar) =>
+    public DomainError? ViolacaoDoTipoQueCongelaComPapel(string atoCodigo, PapelDaPublicacaoPrevista? papel, string lugar) =>
         papel is not null && CongelaConfiguracao
             ? new DomainError(
                 ProcessoSeletivoErrorCodes.TipoQueCongelaDeclaradoComoResultado,
@@ -39,6 +39,6 @@ public sealed record ClassificacaoDoTipoDeAto(bool EhResultado, bool CongelaConf
             : null;
 
     /// <summary>A primeira das duas violações, ou nulo quando o produto é coerente com o catálogo.</summary>
-    public DomainError? ViolacaoDoProduto(string atoCodigo, PapelProdutoFase? papel, string lugar) =>
+    public DomainError? ViolacaoDoProduto(string atoCodigo, PapelDaPublicacaoPrevista? papel, string lugar) =>
         ViolacaoDoResultadoSemPapel(atoCodigo, papel, lugar) ?? ViolacaoDoTipoQueCongelaComPapel(atoCodigo, papel, lugar);
 }

@@ -18,6 +18,7 @@ using Unifesspa.UniPlus.Infrastructure.Core.Authorization;
 using Unifesspa.UniPlus.Infrastructure.Core.Errors;
 using Unifesspa.UniPlus.Infrastructure.Core.Formatting;
 using Unifesspa.UniPlus.Infrastructure.Core.OpenApi;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.API.Authorization;
 using Unifesspa.UniPlus.Selecao.API.Http;
@@ -70,11 +71,17 @@ public sealed class NotasDoEnemController : ControllerBase
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status406NotAcceptable)]
     public async Task<IActionResult> ListarLeiautes(
-        [FromQuery(Name = "tipo")] TipoDeLeiauteDoInep? tipo,
+        [FromQuery(Name = "tipo")] string? tipo,
         CancellationToken cancellationToken)
     {
+        if (tipo is not null && !CatalogoDe<TipoDeLeiauteDoInep>.TentarObter(tipo, out _))
+        {
+            return BadRequest("O tipo de leiaute informado é inválido.");
+        }
+
+        TipoDeLeiauteDoInep? tipoLido = tipo is null ? null : CatalogoDe<TipoDeLeiauteDoInep>.Obter(tipo);
         IReadOnlyList<LeiauteDoInepDto> leiautes = await _queryBus
-            .Send(new ListarLeiautesDoInepQuery(tipo), cancellationToken)
+            .Send(new ListarLeiautesDoInepQuery(tipoLido), cancellationToken)
             .ConfigureAwait(false);
 
         return Ok(leiautes);
@@ -171,34 +178,60 @@ public sealed class NotasDoEnemController : ControllerBase
     public async Task<IActionResult> ImportarNotas(
         Guid processoSeletivoId, Guid etapaId, string edicao, CancellationToken cancellationToken)
     {
+        (IFormCollection? formulario, IActionResult? recusa) = await LerFormularioDoRetornoAsync(cancellationToken).ConfigureAwait(false);
+        if (recusa is not null)
+        {
+            return recusa;
+        }
+        IFormFile? arquivo = formulario!.Files.GetFile(CampoDoArquivo);
+        recusa = ValidarArquivoDoRetorno(arquivo);
+        if (recusa is not null)
+        {
+            return recusa;
+        }
+
+        byte[] conteudo = await LerArquivoDoRetornoAsync(arquivo!, cancellationToken).ConfigureAwait(false);
+        return await ImportarRetornoAsync(processoSeletivoId, etapaId, edicao, formulario, conteudo, cancellationToken).ConfigureAwait(false);
+    }
+
+    private async Task<(IFormCollection? Formulario, IActionResult? Recusa)> LerFormularioDoRetornoAsync(CancellationToken cancellationToken)
+    {
         if (Request.ContentLength > LimitesDoArquivoDoInep.TamanhoMaximoDaRequisicaoEmBytes)
         {
-            return Recusa(RecusasDoArquivoDoInep.GrandeDemais);
+            return (null, Recusa(RecusasDoArquivoDoInep.GrandeDemais));
         }
 
         if (!Request.HasFormContentType)
         {
-            return Recusa(RecusasDoArquivoDoInep.NaoEhFormulario);
+            return (null, Recusa(RecusasDoArquivoDoInep.NaoEhFormulario));
         }
 
-        IFormCollection formulario;
+        return await LerFormularioAsync(cancellationToken).ConfigureAwait(false);
+    }
+
+    private async Task<(IFormCollection? Formulario, IActionResult? Recusa)> LerFormularioAsync(CancellationToken cancellationToken)
+    {
         try
         {
-            formulario = await Request.ReadFormAsync(cancellationToken).ConfigureAwait(false);
+            return (await Request.ReadFormAsync(cancellationToken).ConfigureAwait(false), null);
         }
         catch (BadHttpRequestException ex) when (ex.StatusCode == StatusCodes.Status413PayloadTooLarge)
         {
-            return Recusa(RecusasDoArquivoDoInep.GrandeDemais);
+            return (null, Recusa(RecusasDoArquivoDoInep.GrandeDemais));
         }
         catch (InvalidDataException ex)
         {
-            // O limite de tamanho do multipart também chega como InvalidDataException; o restante é formulário malformado.
-            return ex.Message.Contains("limit", StringComparison.OrdinalIgnoreCase)
-                ? Recusa(RecusasDoArquivoDoInep.GrandeDemais)
-                : BadRequest(new ProblemDetails { Title = "Formulário malformado", Status = StatusCodes.Status400BadRequest });
+            return (null, RecusaDoFormulario(ex));
         }
+    }
 
-        IFormFile? arquivo = formulario.Files.GetFile(CampoDoArquivo);
+    private IActionResult RecusaDoFormulario(InvalidDataException excecao) =>
+        excecao.Message.Contains("limit", StringComparison.OrdinalIgnoreCase)
+            ? Recusa(RecusasDoArquivoDoInep.GrandeDemais)
+            : BadRequest(new ProblemDetails { Title = "Formulário malformado", Status = StatusCodes.Status400BadRequest });
+
+    private IActionResult? ValidarArquivoDoRetorno(IFormFile? arquivo)
+    {
         if (arquivo is null || arquivo.Length == 0)
         {
             return Recusa(RecusasDoArquivoDoInep.Vazio);
@@ -209,37 +242,33 @@ public sealed class NotasDoEnemController : ControllerBase
             return Recusa(RecusasDoArquivoDoInep.GrandeDemais);
         }
 
-        if (!TipoDeConteudoAceito(arquivo.ContentType))
-        {
-            return Recusa(RecusasDoArquivoDoInep.NaoEhTexto);
-        }
-
-        byte[] conteudo = new byte[arquivo.Length];
-        await using (Stream leitura = arquivo.OpenReadStream())
-        {
-            await leitura.ReadExactlyAsync(conteudo, cancellationToken).ConfigureAwait(false);
-        }
-
-        Result<ImportacaoDeNotasDto> resultado = await _commandBus
-            .Send(
-                new ImportarNotasDoEnemCommand(
-                    processoSeletivoId, etapaId, edicao,
-                    formulario[CampoDoLeiauteCodigo].ToString(), formulario[CampoDoLeiauteVersao].ToString(), conteudo),
-                cancellationToken)
-            .ConfigureAwait(false);
-        if (resultado.IsFailure)
-        {
-            return resultado.ToActionResult(_mapper);
-        }
-
-        ImportacaoDeNotasDto importacao = resultado.Value!;
-        return importacao.Criado
-            ? CreatedAtAction(
-                nameof(ObterLote),
-                new { processoSeletivoId, etapaId, edicao, loteId = importacao.Lote.Id },
-                importacao.Lote)
-            : Ok(importacao.Lote);
+        return TipoDeConteudoAceito(arquivo.ContentType) ? null : Recusa(RecusasDoArquivoDoInep.NaoEhTexto);
     }
+
+    private static async Task<byte[]> LerArquivoDoRetornoAsync(IFormFile arquivo, CancellationToken cancellationToken)
+    {
+        byte[] conteudo = new byte[arquivo.Length];
+        await using Stream leitura = arquivo.OpenReadStream();
+        await leitura.ReadExactlyAsync(conteudo, cancellationToken).ConfigureAwait(false);
+        return conteudo;
+    }
+
+    private async Task<IActionResult> ImportarRetornoAsync(
+        Guid processoSeletivoId, Guid etapaId, string edicao, IFormCollection formulario, byte[] conteudo, CancellationToken cancellationToken)
+    {
+        Result<ImportacaoDeNotasDto> resultado = await _commandBus.Send(
+            new ImportarNotasDoEnemCommand(processoSeletivoId, etapaId, edicao,
+                formulario[CampoDoLeiauteCodigo].ToString(), formulario[CampoDoLeiauteVersao].ToString(), conteudo),
+            cancellationToken).ConfigureAwait(false);
+        return resultado.IsFailure
+            ? resultado.ToActionResult(_mapper)
+            : RespostaDaImportacao(processoSeletivoId, etapaId, edicao, resultado.Value!);
+    }
+
+    private IActionResult RespostaDaImportacao(Guid processoSeletivoId, Guid etapaId, string edicao, ImportacaoDeNotasDto importacao) =>
+        importacao.Criado
+            ? CreatedAtAction(nameof(ObterLote), new { processoSeletivoId, etapaId, edicao, loteId = importacao.Lote.Id }, importacao.Lote)
+            : Ok(importacao.Lote);
 
     /// <summary>Lista os lotes de notas da edição, do mais recente para o mais antigo, marcando o vigente. Sem as ocorrências.</summary>
     [HttpGet(BaseDaEdicao + "/lotes-de-notas")]

@@ -45,7 +45,7 @@ public sealed class EntradaDoPreliminarDaFaseTests
         [nameof(UnidadeResponsavelSnapshot.Codigo)] = () => Fase(decisoes: d => d with { UnidadeResponsavel = new(UnidadesDeTeste.Ceps.OrigemId, "CODIGO_NOVO", UnidadesDeTeste.Ceps.Sigla, UnidadesDeTeste.Ceps.Nome) }),
         [nameof(UnidadeResponsavelSnapshot.Sigla)] = () => Fase(decisoes: d => d with { UnidadeResponsavel = new(UnidadesDeTeste.Ceps.OrigemId, UnidadesDeTeste.Ceps.Codigo, "CEPS-X", UnidadesDeTeste.Ceps.Nome) }),
         [nameof(UnidadeResponsavelSnapshot.Nome)] = () => Fase(decisoes: d => d with { UnidadeResponsavel = new(UnidadesDeTeste.Ceps.OrigemId, UnidadesDeTeste.Ceps.Codigo, UnidadesDeTeste.Ceps.Sigla, "Outro nome") }),
-        [nameof(FaseCronograma.Produtos)] = () => Fase(publicacoes: p => p with { Produtos = [.. p.Produtos, ProdutoDaFase.Criar(Materia, PapelProdutoFase.Definitivo)] }),
+        [nameof(FaseCronograma.Produtos)] = () => Fase(publicacoes: p => p with { Produtos = [.. p.Produtos, ProdutoDaFase.Criar(Materia, PapelDaPublicacaoPrevista.Definitivo)] }),
     };
 
     public static TheoryData<string> PropriedadesQueEntram => new(QueEntram.Keys);
@@ -62,7 +62,7 @@ public sealed class EntradaDoPreliminarDaFaseTests
     {
         ParametrosDeclaradosDoRecurso comInstanciaSuperior = ParametrosDoRecursoDeTeste.ComInstanciaSuperior();
 
-        ComParametrosDoRecurso(comInstanciaSuperior with { PrazoDaSegundaInstancia = new PrazoDeclarado(5m, "diasUteis") }).EntradaDoPreliminar()
+        ComParametrosDoRecurso(comInstanciaSuperior with { PrazoDaSegundaInstancia = new PrazoDeclarado(5m, "DIAS_UTEIS") }).EntradaDoPreliminar()
             .Should().Be(ComParametrosDoRecurso(comInstanciaSuperior).EntradaDoPreliminar());
     }
 
@@ -71,7 +71,7 @@ public sealed class EntradaDoPreliminarDaFaseTests
     {
         EntradaDoPreliminar baseDaEntrada = ComParametrosDoRecurso(ParametrosDoRecursoDeTeste.Declarados()).EntradaDoPreliminar();
 
-        ComParametrosDoRecurso(ParametrosDoRecursoDeTeste.Declarados(guardaDaVaga: "naoGuarda")).EntradaDoPreliminar().Should().NotBe(baseDaEntrada);
+        ComParametrosDoRecurso(ParametrosDoRecursoDeTeste.Declarados(guardaDaVaga: "NAO_GUARDA")).EntradaDoPreliminar().Should().NotBe(baseDaEntrada);
         ComParametrosDoRecurso(ParametrosDoRecursoDeTeste.Declarados(3m)).EntradaDoPreliminar().Should().NotBe(baseDaEntrada);
         ComParametrosDoRecurso(ParametrosDoRecursoDeTeste.Declarados(2m, UnidadePrazo.Horas)).EntradaDoPreliminar().Should().NotBe(baseDaEntrada);
         ComParametrosDoRecurso(ParametrosDoRecursoDeTeste.ComInstanciaSuperior()).EntradaDoPreliminar().Should().NotBe(baseDaEntrada);
@@ -104,8 +104,8 @@ public sealed class EntradaDoPreliminarDaFaseTests
     [Fact(DisplayName = "O procedimento declarado na regra de recurso entra na entrada, pela regra")]
     public void ProcedimentoDaRegraDeRecurso_MudaAEntrada()
     {
-        FaseCronograma recalculo = ComRecursoEProcedimentos(2m, 0, Procedimentos(RegraProcedimentoRecursoCodigo.Recalculo), Materia);
-        FaseCronograma recorrecao = ComRecursoEProcedimentos(2m, 0, Procedimentos(RegraProcedimentoRecursoCodigo.Recorrecao), Materia);
+        FaseCronograma recalculo = ComRecursoEProcedimentos(2m, 0, Procedimentos(RegraDeProcedimentoDoRecurso.Recalculo.Codigo()), Materia);
+        FaseCronograma recorrecao = ComRecursoEProcedimentos(2m, 0, Procedimentos(RegraDeProcedimentoDoRecurso.Recorrecao.Codigo()), Materia);
 
         recorrecao.EntradaDoPreliminar().Should().NotBe(recalculo.EntradaDoPreliminar());
         recalculo.EntradaDoPreliminar().Should().NotBe(ComRecurso(prazo: 2m, ancora: 0, Materia).EntradaDoPreliminar());
@@ -189,7 +189,7 @@ public sealed class EntradaDoPreliminarDaFaseTests
         FaseCronograma.Criar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("fase").Value!,
             Alterar(origem, OrigensCanonicasDeTeste.ComNome(new OrigemCanonicaDaFase(OrigemDaFase, "PROVA", OrigemDataFase.NoEdital, false, false, false, false))),
             Alterar(decisoes, new DecisoesDeCronogramaDaFase(1, Inicio, Inicio.AddDays(5), UnidadesDeTeste.Ceps)),
-            Alterar(publicacoes, new PublicacoesDaFase([ProdutoDaFase.Criar(Materia, PapelProdutoFase.Preliminar)], false, null)),
+            Alterar(publicacoes, new PublicacoesDaFase([ProdutoDaFase.Criar(Materia, PapelDaPublicacaoPrevista.Preliminar)], false, null)),
             bancas ?? []).Value!;
 
     private static FaseCronograma ComBanca(
@@ -213,18 +213,18 @@ public sealed class EntradaDoPreliminarDaFaseTests
 
     private static FaseCronograma ComParametrosDoRecurso(ParametrosDeclaradosDoRecurso parametros)
     {
-        ProdutoDaFase preliminar = ProdutoDaFase.Criar(Materia, PapelProdutoFase.Preliminar);
+        ProdutoDaFase preliminar = ProdutoDaFase.Criar(Materia, PapelDaPublicacaoPrevista.Preliminar);
         RegraRecursoFase regra = RegraRecursoFase.Criar(
-            ReferenciaRegra.De(RegraPrazoRecursoCodigo.AncoradoEmAto, "v1", new string('c', 64)), parametros, preliminar.Id).Value!;
+            ReferenciaRegra.De(RegraDePrazoDoRecurso.ContadoDaPublicacaoDoAto.Codigo(), "v1", new string('c', 64)), parametros, preliminar.Id).Value!;
 
         return Fase(publicacoes: _ => new PublicacoesDaFase([preliminar], false, regra));
     }
 
     private static FaseCronograma ComRecursoEProcedimentos(decimal prazo, int ancora, ProcedimentosDeRecurso procedimentos, params string[] atos)
     {
-        List<ProdutoDaFase> produtos = [.. atos.Select(static ato => ProdutoDaFase.Criar(ato, PapelProdutoFase.Preliminar))];
+        List<ProdutoDaFase> produtos = [.. atos.Select(static ato => ProdutoDaFase.Criar(ato, PapelDaPublicacaoPrevista.Preliminar))];
         RegraRecursoFase regra = RegraRecursoFase.Criar(
-            ReferenciaRegra.De(RegraPrazoRecursoCodigo.AncoradoEmAto, "v1", new string('c', 64)),
+            ReferenciaRegra.De(RegraDePrazoDoRecurso.ContadoDaPublicacaoDoAto.Codigo(), "v1", new string('c', 64)),
             ParametrosDoRecursoDeTeste.Declarados(prazo, UnidadePrazo.DiasUteis),
             produtos[ancora].Id,
             procedimentos).Value!;

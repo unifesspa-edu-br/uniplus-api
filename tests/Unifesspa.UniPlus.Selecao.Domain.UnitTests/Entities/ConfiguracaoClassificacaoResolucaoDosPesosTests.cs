@@ -2,6 +2,7 @@ namespace Unifesspa.UniPlus.Selecao.Domain.UnitTests.Entities;
 
 using AwesomeAssertions;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
@@ -144,13 +145,13 @@ public sealed class ConfiguracaoClassificacaoResolucaoDosPesosTests
     }
 
     [Theory(DisplayName = "O quadro de pesos por área é exigido só na classificação baseada em ENEM pela média ponderada")]
-    [InlineData(RegraCalculoCodigo.FormulaMediaPonderada, true, true)]
-    [InlineData(RegraCalculoCodigo.FormulaMediaPonderada, false, false)]
-    [InlineData(RegraCalculoCodigo.ClassificacaoImportada, true, false)]
-    [InlineData(RegraCalculoCodigo.ClassificacaoImportada, false, false)]
-    public void ExigeQuadroPesoAreaEnem_SoNaMediaPonderadaDoEnem(string regraCalculo, bool baseadoEmEnem, bool esperado)
+    [InlineData(RegraDeCalculoDaNota.MediaPonderada, true, true)]
+    [InlineData(RegraDeCalculoDaNota.MediaPonderada, false, false)]
+    [InlineData(RegraDeCalculoDaNota.ClassificacaoImportada, true, false)]
+    [InlineData(RegraDeCalculoDaNota.ClassificacaoImportada, false, false)]
+    public void ExigeQuadroPesoAreaEnem_SoNaMediaPonderadaDoEnem(RegraDeCalculoDaNota regraCalculo, bool baseadoEmEnem, bool esperado)
     {
-        ReferenciaRegra regra = ReferenciaRegra.De(regraCalculo, "v1", new string('f', 64));
+        ReferenciaRegra regra = ReferenciaRegra.De(regraCalculo.Codigo(), "v1", new string('f', 64));
 
         ConfiguracaoClassificacao.ExigeQuadroPesoAreaEnem(regra, baseadoEmEnem).Should().Be(esperado);
     }

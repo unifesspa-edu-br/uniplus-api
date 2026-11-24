@@ -4,6 +4,8 @@ using System.Text.Json.Serialization;
 
 using Domain.Enums;
 
+using Unifesspa.UniPlus.Application.Abstractions.Respostas;
+
 /// <summary>
 /// Projeção de leitura do agregado <c>ProcessoSeletivo</c> (Story #758,
 /// UNI-REQ-0014/0015). Cresce à medida que novas dimensões de configuração
@@ -16,11 +18,8 @@ public sealed record ProcessoSeletivoDto(
     // declarado, o que bloqueia a publicação.
     string? IdentificadorLegivel,
     TipoProcessoSnapshotDto TipoProcesso,
-    // Status e OrigemCandidatos são tipados pelo enum, não projetados por `.ToString()`:
-    // é o que faz o wire sair no mesmo vocabulário que a criação aceita e o que leva o
-    // OpenAPI a publicar os valores admissíveis, em vez de `string` livre (issue #1294).
-    StatusProcesso Status,
-    OrigemCandidatos OrigemCandidatos,
+    CodigoComRotulo<StatusProcesso> Status,
+    CodigoComRotulo<OrigemCandidatos> OrigemCandidatos,
     UnidadeAdministradoraSnapshotDto UnidadeAdministradora,
     // Localidade que rege a contagem dos prazos (UNI-REQ-0111): read-back administrativo,
     // sem o qual a tela de edição não consegue reler o que foi declarado na criação e
@@ -85,7 +84,7 @@ public sealed record ProcessoSeletivoDto(
 /// <c>DefinirReferenciaTemporalFatosRequest</c> — round-trip GET→PUT direto.
 /// <see langword="null"/> é o estado válido "nenhuma política configurada".
 /// </summary>
-public sealed record ReferenciaTemporalFatosDto(string Tipo, DateOnly? Data, Guid? FaseId);
+public sealed record ReferenciaTemporalFatosDto(CodigoComRotulo<ReferenciaTipo> Tipo, DateOnly? Data, Guid? FaseId);
 
 /// <summary>
 /// DTO de leitura do número de opções de curso do processo (1 ou 2). Mesmo formato do corpo de
@@ -126,4 +125,4 @@ public sealed record ConfiguracaoDivulgacaoDto(IReadOnlyList<string> CamposPubli
 /// <see cref="ConfiguracaoDivulgacaoDto"/>, aqui ausência não é estado publicável.
 /// </summary>
 public sealed record ConfiguracaoTaxaInscricaoDto(
-    bool Cobra, decimal? Valor, IReadOnlyList<string> Fundamentos);
+    bool Cobra, decimal? Valor, IReadOnlyList<CodigoComRotulo<FundamentoIsencao>> Fundamentos);

@@ -122,7 +122,7 @@ gate consulta fica no cadastro vivo. **A lista concreta é do record**
 gates — enumerá-la aqui só criaria uma segunda versão para envelhecer.
 
 A substituição da regra `RECURSO-MULTI-INSTANCIA` por
-`RECURSO-PRAZO-ANCORADO-EM-ATO` no catálogo `regras_do_catalogo` é decisão e escopo da
+`RECURSO_PRAZO_CONTADO_DA_PUBLICACAO_DO_ATO` no catálogo `regras_do_catalogo` é decisão e escopo da
 ADR-0112/#854, não desta ADR — aqui apenas se registra que `FaseCronograma`
 referencia a regra corrigida por símbolo (`RegraPrazoRecursoCodigo.AncoradoEmAto`),
 nunca por literal solto.

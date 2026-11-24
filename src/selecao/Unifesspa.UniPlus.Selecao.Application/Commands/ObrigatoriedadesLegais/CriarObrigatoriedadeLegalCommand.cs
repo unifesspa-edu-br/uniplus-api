@@ -3,6 +3,7 @@ namespace Unifesspa.UniPlus.Selecao.Application.Commands.ObrigatoriedadesLegais;
 using System.Diagnostics.CodeAnalysis;
 
 using Unifesspa.UniPlus.Application.Abstractions.Messaging;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
@@ -25,7 +26,7 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
     Justification = "Construtor do record propaga o tipo string do payload — ver justificativa acima.")]
 public sealed record CriarObrigatoriedadeLegalCommand(
     string? TipoProcessoCodigo,
-    CategoriaObrigatoriedade Categoria,
+    [property: AceitaCodigosDe<CategoriaObrigatoriedade>] string? Categoria,
     string? RegraCodigo,
     PredicadoObrigatoriedade? Predicado,
     string? DescricaoHumana,

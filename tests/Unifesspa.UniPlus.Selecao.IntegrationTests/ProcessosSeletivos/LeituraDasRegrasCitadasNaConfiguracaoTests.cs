@@ -5,6 +5,7 @@ using AwesomeAssertions;
 using Microsoft.EntityFrameworkCore;
 
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Application.Services;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
@@ -25,7 +26,7 @@ public sealed class LeituraDasRegrasCitadasNaConfiguracaoTests(ProcessoSeletivoD
     {
         await using UniPlusDbContext db = fixture.CreateDbContext();
         RegraCatalogoReader leitor = new(db);
-        RegraCatalogo regra = (await leitor.ObterAsync(AlgoritmoContagemPrazoCodigo.ExcluiDiaInicial, "v1"))!;
+        RegraCatalogo regra = (await leitor.ObterAsync(ConvencaoDeContagemDoPrazo.ExcluiDiaInicial.Codigo(), "v1"))!;
         ReferenciaRegra referencia = Referencia(regra, "hash diferente");
         ProcessoSeletivo salvo = await GravarERecarregarAsync(db, referencia);
         salvo.Status.Should().Be(StatusProcesso.Rascunho);
@@ -53,7 +54,7 @@ public sealed class LeituraDasRegrasCitadasNaConfiguracaoTests(ProcessoSeletivoD
     {
         await using UniPlusDbContext db = fixture.CreateDbContext();
         RegraCatalogoReader leitor = new(db);
-        RegraCatalogo regra = (await leitor.ObterAsync(AlgoritmoContagemPrazoCodigo.ExcluiDiaInicial, "v1"))!;
+        RegraCatalogo regra = (await leitor.ObterAsync(ConvencaoDeContagemDoPrazo.ExcluiDiaInicial.Codigo(), "v1"))!;
         ReferenciaRegra referencia = Referencia(regra, situacao);
         ProcessoSeletivo processo = CriarProcesso(referencia);
         RegrasCitadasNaConfiguracao lidas = await new LeituraDasRegrasCitadasNaConfiguracao(leitor).LerAsync(processo, CancellationToken.None);

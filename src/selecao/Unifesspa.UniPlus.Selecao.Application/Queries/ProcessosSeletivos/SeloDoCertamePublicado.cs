@@ -25,7 +25,7 @@ public static class SeloDoCertamePublicado
     {
         ArgumentNullException.ThrowIfNull(certame);
 
-        return $"\"{certame.VersaoProjecao}:{certame.HashConfiguracao}:{certame.Situacao}:{ResumoDosEditais(certame)}\"";
+        return $"\"{certame.VersaoProjecao}:{certame.HashConfiguracao}:{certame.Situacao?.Codigo}:{ResumoDosEditais(certame)}\"";
     }
 
     /// <summary>

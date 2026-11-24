@@ -74,7 +74,7 @@ public sealed class VocabulariosDaModalidadeEndpointTests
             client, "regras-remanejamento", "codigo-regra-remanejamento");
 
         itens.Should().Equal(
-            new ItemDoVocabulario("SEGUE_CASCATA", "Segue a cascata"),
+            new ItemDoVocabulario("SEGUE_ORDEM_DE_REMANEJAMENTO", "Segue a ordem de remanejamento"),
             new ItemDoVocabulario("DESTINO_UNICO", "Destino único"),
             new ItemDoVocabulario("CRUZADO", "Cruzado"));
     }

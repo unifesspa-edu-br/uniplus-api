@@ -3,7 +3,11 @@ namespace Unifesspa.UniPlus.Selecao.Application.DTOs;
 using System.ComponentModel;
 using System.Text.Json.Serialization;
 
+using Domain.Enums;
 using Domain.Interfaces;
+
+using Unifesspa.UniPlus.Application.Abstractions.Respostas;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 
 /// <summary>
 /// Par código/nome de um item de catálogo congelado na publicação — serve tanto ao tipo do
@@ -28,7 +32,7 @@ public sealed record LocalidadeCertameDto(string CodigoIbge, string Nome, string
 /// Taxa de inscrição. <see langword="null"/> no lugar deste bloco quando a publicação não
 /// configurou taxa — a ausência é estado válido, não erro.
 /// </summary>
-public sealed record TaxaInscricaoCertameDto(bool Cobra, string? Valor, IReadOnlyList<string> Fundamentos);
+public sealed record TaxaInscricaoCertameDto(bool Cobra, string? Valor, IReadOnlyList<CodigoComRotulo<FundamentoIsencao>> Fundamentos);
 
 /// <summary>
 /// O documento do edital: o identificador do documento, o seu resumo criptográfico e o endereço de
@@ -105,7 +109,7 @@ public sealed record UnidadeAdministradoraCertameDto(
 /// </remarks>
 public sealed record EtapaCertameDto(
     string Nome,
-    string Carater,
+    CodigoComRotulo<CaraterEtapa> Carater,
     TipoCatalogadoCertameDto TipoEtapa,
     string? Peso,
     string? NotaMinima,
@@ -182,7 +186,7 @@ public sealed record FormatosAceitosCertameDto(bool Qualquer, IReadOnlyList<stri
 /// </remarks>
 public sealed record ExigenciaDocumentalCertameDto(
     string Rotulo,
-    string Aplicabilidade,
+    CodigoComRotulo<Aplicabilidade> Aplicabilidade,
     bool Obrigatorio,
     FormatosAceitosCertameDto Formatos,
     PrazoDeEmissaoCertameDto? PrazoDeEmissao,
@@ -199,7 +203,13 @@ public sealed record ExigenciaDocumentalCertameDto(
 /// pré-assinado. É do ato que publicou o modelo, e continua servindo o mesmo arquivo depois de uma
 /// retificação. Nulo enquanto a cópia ao acervo desse ato não terminou.
 /// </param>
-public sealed record ModeloDocumentalCertameDto(string NomeArquivo, string Formato, string HashSha256, Uri? UrlDownload);
+public sealed record ModeloDocumentalCertameDto(string NomeArquivo, CodigoComRotulo<FormatoDeDocumento> Formato, string HashSha256, Uri? UrlDownload)
+{
+    internal ModeloDocumentalCertameDto(string nomeArquivo, string formato, string hashSha256, Uri? urlDownload)
+        : this(nomeArquivo, CodigoComRotulo<FormatoDeDocumento>.De(CatalogoDe<FormatoDeDocumento>.Obter(formato)), hashSha256, urlDownload)
+    {
+    }
+}
 
 /// <summary>Uma condição de atendimento especializado ofertada no certame.</summary>
 public sealed record CondicaoAtendimentoCertameDto(string Codigo, string Nome);
@@ -267,7 +277,7 @@ public sealed record CertamePublicadoDto(
     IReadOnlyList<string> ModalidadesOfertadas,
     IReadOnlyList<QuadroDeVagasCertameDto> Vagas,
     IReadOnlyList<EtapaCertameDto> Etapas,
-    string OrigemCandidatos,
+    CodigoComRotulo<OrigemCandidatos> OrigemCandidatos,
     IReadOnlyList<FaseCronogramaCertameDto> CronogramaFases,
     IReadOnlyList<ExigenciaDocumentalCertameDto> DocumentosExigidos,
     AtendimentoCertameDto Atendimento,
@@ -285,7 +295,7 @@ public sealed record CertamePublicadoDto(
     /// leitura a acrescenta. Na resposta da consulta ela está sempre presente.
     /// </remarks>
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
-    public SituacaoDoCertame? Situacao { get; init; }
+    public CodigoComRotulo<SituacaoDoCertame>? Situacao { get; init; }
 
     /// <summary>
     /// Os documentos de cada ato divulgado do processo: o edital de cada versão, da mais antiga à mais

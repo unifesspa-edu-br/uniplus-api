@@ -142,7 +142,7 @@ public sealed class CenarioDaPublicacaoDoProdutoDoEdital
             bancasRequeridas: []).Value!;
 
     public static (ProdutoDaFase Preliminar, ProdutoDaFase Definitivo) Par() =>
-        (ProdutoDaFase.Criar(Materia, PapelProdutoFase.Preliminar), ProdutoDaFase.Criar(Materia, PapelProdutoFase.Definitivo));
+        (ProdutoDaFase.Criar(Materia, PapelDaPublicacaoPrevista.Preliminar), ProdutoDaFase.Criar(Materia, PapelDaPublicacaoPrevista.Definitivo));
 
     public (ProdutoDaFase Preliminar, ProdutoDaFase Definitivo) ParNaMesmaFase()
     {

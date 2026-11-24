@@ -12,6 +12,7 @@ using Microsoft.EntityFrameworkCore.Diagnostics;
 
 using Unifesspa.UniPlus.Application.Abstractions.Authentication;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
@@ -175,7 +176,7 @@ public sealed class ObrigatoriedadeLegalHistoricoInterceptor : SaveChangesInterc
         {
             ["id"] = regra.Id,
             ["tipoProcessoCodigo"] = regra.TipoProcessoCodigo,
-            ["categoria"] = regra.Categoria.ToString(),
+            ["categoria"] = regra.Categoria.Codigo(),
             ["regraCodigo"] = regra.RegraCodigo,
             ["predicado"] = predicadoNode,
             ["descricaoHumana"] = regra.DescricaoHumana,

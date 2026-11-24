@@ -1,7 +1,6 @@
 namespace Unifesspa.UniPlus.Selecao.IntegrationTests.ModelosDeDocumento.AcervoPublico;
 
 using System.Net;
-using System.Net.Http.Headers;
 using System.Net.Http.Json;
 
 using AwesomeAssertions;
@@ -9,7 +8,7 @@ using AwesomeAssertions;
 using Microsoft.Extensions.DependencyInjection;
 
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
-using Unifesspa.UniPlus.IntegrationTests.Fixtures.Authentication;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Services;
@@ -26,32 +25,37 @@ public sealed class EnvioDoDocumentoDoAdministradorE2ETests(AcervoPublicoE2EFixt
     [Fact(DisplayName = "Iniciar o envio do documento a publicar usa a credencial geral, não a do candidato")]
     public async Task IniciarEnvio_NaoUsaACredencialDoCandidato()
     {
-        AcervoPublicoApiFactory api = fixture.Factory;
-        Guid processoId;
-        await using (AsyncServiceScope scope = api.Services.CreateAsyncScope())
-        {
-            UniPlusDbContext db = scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
-            (ProcessoSeletivo processo, _) = await ProcessoSeletivoPublicavelSeeder.SemearAsync(db, new OpcoesDoProcessoSeletivoPublicavel { Nome = $"PS envio do administrador {Guid.CreateVersion7()}" });
-            processoId = processo.Id;
-        }
+        Guid processoId = await SemearProcessoAsync(fixture.Factory);
+        using HttpClient client = fixture.Factory.CreateClient();
 
-        using HttpClient client = api.CreateClient();
-        using HttpRequestMessage request = new(
-            HttpMethod.Post, new Uri($"/api/selecao/processos-seletivos/{processoId}/documentos-a-publicar", UriKind.Relative))
-        {
-            Content = JsonContent.Create(new
-            {
-                finalidade = FinalidadeDoDocumento.DocumentoDoEdital,
-                nomeArquivo = "edital.pdf",
-                tipoDeMidia = TiposDeMidiaDeDocumento.Pdf,
-            }),
-        };
-        request.Headers.Authorization = new AuthenticationHeaderValue(TestAuthHandler.AuthorizationScheme, TestAuthHandler.TokenValue);
-        request.Headers.TryAddWithoutValidation(TestAuthHandler.RolesHeader, "plataforma-admin");
-        request.Headers.TryAddWithoutValidation("Idempotency-Key", Guid.CreateVersion7().ToString("N"));
+        using HttpRequestMessage pedido = PedidoDeInicioDoEnvio(processoId);
 
-        using HttpResponseMessage resposta = await client.SendAsync(request);
+        using HttpResponseMessage resposta = await client.SendAsync(pedido);
 
         resposta.StatusCode.Should().Be(HttpStatusCode.Created, await resposta.Content.ReadAsStringAsync());
+    }
+
+    private static async Task<Guid> SemearProcessoAsync(AcervoPublicoApiFactory api)
+    {
+        await using AsyncServiceScope scope = api.Services.CreateAsyncScope();
+        UniPlusDbContext db = scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
+        (ProcessoSeletivo processo, _) = await ProcessoSeletivoPublicavelSeeder.SemearAsync(db, new OpcoesDoProcessoSeletivoPublicavel { Nome = $"PS envio do administrador {Guid.CreateVersion7()}" });
+
+        return processo.Id;
+    }
+
+    private static HttpRequestMessage PedidoDeInicioDoEnvio(Guid processoId)
+    {
+        HttpRequestMessage request = PublicarAtoAvulsoEndpointTests.Autenticado(
+            HttpMethod.Post, $"/api/selecao/processos-seletivos/{processoId}/documentos-a-publicar");
+        request.Content = JsonContent.Create(new
+        {
+            finalidade = FinalidadeDoDocumento.DocumentoDoEdital.Codigo(),
+            nomeArquivo = "edital.pdf",
+            tipoDeMidia = TiposDeMidiaDeDocumento.Pdf,
+        });
+        request.Headers.TryAddWithoutValidation("Idempotency-Key", Guid.CreateVersion7().ToString("N"));
+
+        return request;
     }
 }

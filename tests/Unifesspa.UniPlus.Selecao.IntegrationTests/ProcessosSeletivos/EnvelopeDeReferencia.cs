@@ -6,6 +6,7 @@ using System.Text.Json.Nodes;
 
 using AwesomeAssertions;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Tempo;
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.Formularios;
@@ -127,7 +128,7 @@ internal static class EnvelopeDeReferencia
         return processo;
     }
 
-    /// <summary>A matriz legal completa (8×7), fallback AC — mesma forma semeada em REMANEJ-CASCATA-LEI-12711 v1.</summary>
+    /// <summary>A matriz legal completa (8×7), fallback AC — mesma forma semeada em REMANEJAMENTO_ORDEM_LEI_12711 v1.</summary>
     private static ConfiguracaoCascataRemanejamento CascataDeReferencia()
     {
         IReadOnlyList<string> origens = ModalidadesFederaisLei12711.Codigos;
@@ -142,7 +143,7 @@ internal static class EnvelopeDeReferencia
         }
 
         return ConfiguracaoCascataRemanejamento.Criar(
-            Regra(RegraRemanejamentoCodigo.Cascata, "1"), ModalidadesFederaisLei12711.Ac, destinos).Value!;
+            Regra(CriterioDeRemanejamento.OrdemDaLei12711.Codigo(), "1"), ModalidadesFederaisLei12711.Ac, destinos).Value!;
     }
 
     private static void DefinirVagasEClassificacao(ProcessoSeletivo processo)
@@ -154,8 +155,8 @@ internal static class EnvelopeDeReferencia
 
         processo.DefinirClassificacao(ConfiguracaoClassificacao.Criar(new DeclaracaoDaClassificacao
         {
-            RegraCalculo = Regra(RegraCalculoCodigo.ClassificacaoImportada, "b"),
-            RegraOrdemAlocacao = Regra(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, "c"),
+            RegraCalculo = Regra(RegraDeCalculoDaNota.ClassificacaoImportada.Codigo(), "b"),
+            RegraOrdemAlocacao = Regra(RegraDeOrdemDeAlocacao.PrimeiraOpcaoPrioritaria.Codigo(), "c"),
         }).Value!).IsSuccess.Should().BeTrue();
     }
 
@@ -279,25 +280,11 @@ internal static class EnvelopeDeReferencia
 
     internal static ConfiguracaoDistribuicaoVagas DistribuicaoDeReferencia() =>
         ConfiguracaoDistribuicaoVagas.Criar(OfertaCursoFixa,
-            new DistribuicaoDeVagasDeclarada { VagasOfertadasBase = 40, PercentualDaReservaLegal = 1m, RegraDeDistribuicao = Regra(RegraDistribuicaoVagasCodigo.Institucional, "a"), Modalidades = [ModalidadeAmplaDeReferencia()] },
+            new DistribuicaoDeVagasDeclarada { VagasOfertadasBase = 40, PercentualDaReservaLegal = 1m, RegraDeDistribuicao = Regra(RegraDeDistribuicaoDeVagas.Institucional.Codigo(), "a"), Modalidades = [ModalidadeAmplaDeReferencia()] },
             new FatosDaOfertaNoCadastro { OfertaCurso = OfertaCursoDeTeste.Medicina }).Value!;
 
     private static ModalidadeSelecionada ModalidadeAmplaDeReferencia() =>
-        ModalidadeSelecionada.Criar(
-            modalidadeOrigemId: ModalidadeFixa,
-            codigo: "AC",
-            descricao: null,
-            naturezaLegal: NaturezaLegalModalidade.Ampla,
-            composicaoVagas: ComposicaoVagasModalidade.RestanteDasVagasOfertadas,
-            composicaoOrigemCodigo: null,
-            regraRemanejamento: RegraRemanejamentoModalidade.Nenhuma,
-            remanejamentoDestino: null,
-            remanejamentoPar: null,
-            remanejamentoFallback: null,
-            regraDeAplicabilidade: RegrasDeAplicabilidadeDeTeste.DaNatureza(NaturezaLegalModalidade.Ampla),
-            acaoQuandoIndeferido: null,
-            baseLegal: "Res. Unifesspa 532/2021",
-            quantidadeDeclarada: 40).Value!;
+        ModalidadeSelecionada.Criar(ModalidadesNoCadastroDeTeste.Da("AC", NaturezaLegalModalidade.Ampla, ComposicaoVagasModalidade.RestanteDasVagasOfertadas) with { Id = ModalidadeFixa, RegraRemanejamento = null, BaseLegal = "Res. Unifesspa 532/2021" }, 40).Value!;
 
     private static MetadadoFatoCongelado MetadadoDaModalidade() => new(
         Codigo: "MODALIDADE",

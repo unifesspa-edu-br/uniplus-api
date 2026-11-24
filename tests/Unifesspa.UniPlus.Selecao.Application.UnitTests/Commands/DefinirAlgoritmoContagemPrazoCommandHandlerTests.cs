@@ -7,6 +7,7 @@ using AwesomeAssertions;
 using NSubstitute;
 
 using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
@@ -21,8 +22,6 @@ using Unifesspa.UniPlus.Testes.Compartilhado;
 /// </summary>
 public sealed class DefinirAlgoritmoContagemPrazoCommandHandlerTests
 {
-    private const string HashDoCatalogo = "1e2d3c4b5a69788796a5b4c3d2e1f00112233445566778899aabbccddeeff001";
-
     private sealed record Mocks(
         IProcessoSeletivoRepository Repository,
         IRegraCatalogoReader Catalogo,
@@ -36,15 +35,10 @@ public sealed class DefinirAlgoritmoContagemPrazoCommandHandlerTests
         LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
 
     private static RegraCatalogo RegraDoCatalogo(
-        string codigo = AlgoritmoContagemPrazoCodigo.ExcluiDiaInicial,
-        TipoRegra tipo = TipoRegra.AlgoritmoContagemPrazo)
+        string codigo = "CONTAGEM_PRAZO_EXCLUI_DIA_INICIAL",
+        TipoRegra tipo = TipoRegra.ConvencaoContagemPrazo)
     {
-        RegraCatalogo regra = RegraCatalogo.Criar(codigo, "v1", tipo, Json("{}"), Json("[]"), "base legal");
-
-        // O hash da entrada real é derivado da definição; aqui só precisa ser um valor
-        // distinto e reconhecível, para que o teste consiga afirmar de ONDE ele veio.
-        typeof(RegraCatalogo).GetProperty(nameof(RegraCatalogo.Hash))!.SetValue(regra, HashDoCatalogo);
-        return regra;
+        return RegraCatalogo.Criar(codigo, "v1", tipo, Json("{}"), Json("[]"), "base legal");
     }
 
     private static Mocks NovosMocks(ProcessoSeletivo? processo, Guid processoId, RegraCatalogo? regra)
@@ -62,20 +56,26 @@ public sealed class DefinirAlgoritmoContagemPrazoCommandHandlerTests
     public async Task Handle_ResolveIdentidadeCompleta()
     {
         ProcessoSeletivo processo = NovoProcesso();
-        Mocks mocks = NovosMocks(processo, processo.Id, RegraDoCatalogo());
+        RegraCatalogo regra = RegraDoCatalogo();
+        Mocks mocks = NovosMocks(processo, processo.Id, regra);
         DefinirAlgoritmoContagemPrazoCommand command = new(
-            processo.Id, AlgoritmoContagemPrazoCodigo.ExcluiDiaInicial, "v1");
+            processo.Id, ConvencaoDeContagemDoPrazo.ExcluiDiaInicial.Codigo(), "v1");
 
         Result result = await DefinirAlgoritmoContagemPrazoCommandHandler.Handle(
             command, mocks.Repository, mocks.Catalogo, mocks.UnitOfWork, CancellationToken.None);
 
         result.IsSuccess.Should().BeTrue(result.Error?.Message);
-        processo.AlgoritmoContagemPrazo.Should().NotBeNull();
-        processo.AlgoritmoContagemPrazo!.Codigo.Should().Be(AlgoritmoContagemPrazoCodigo.ExcluiDiaInicial);
-        processo.AlgoritmoContagemPrazo.Versao.Should().Be("v1");
-        processo.AlgoritmoContagemPrazo.Hash.Should().Be(HashDoCatalogo,
-            "o hash vem do catálogo resolvido, e é ele que prova qual definição foi aplicada");
+        ConferirIdentidade(processo, regra);
         await mocks.UnitOfWork.Received(1).SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
+    }
+
+    private static void ConferirIdentidade(ProcessoSeletivo processo, RegraCatalogo regra)
+    {
+        processo.AlgoritmoContagemPrazo.Should().NotBeNull();
+        processo.AlgoritmoContagemPrazo!.Codigo.Should().Be(ConvencaoDeContagemDoPrazo.ExcluiDiaInicial.Codigo());
+        processo.AlgoritmoContagemPrazo.Versao.Should().Be("v1");
+        processo.AlgoritmoContagemPrazo.Hash.Should().Be(regra.Hash,
+            "o hash vem do catálogo resolvido, e é ele que prova qual definição foi aplicada");
     }
 
     [Fact(DisplayName = "Par que não existe no rol de regras é recusado com causa própria, distinta de não declarar")]
@@ -100,9 +100,9 @@ public sealed class DefinirAlgoritmoContagemPrazoCommandHandlerTests
     {
         ProcessoSeletivo processo = NovoProcesso();
         Mocks mocks = NovosMocks(
-            processo, processo.Id, RegraDoCatalogo(codigo: "BONUS-MULTIPLICATIVO", tipo: TipoRegra.RegraBonus));
+            processo, processo.Id, RegraDoCatalogo(codigo: "FADA_MULTIPLICATIVO", tipo: TipoRegra.RegraBonus));
         DefinirAlgoritmoContagemPrazoCommand command = new(
-            processo.Id, "BONUS-MULTIPLICATIVO", "v1");
+            processo.Id, "FADA_MULTIPLICATIVO", "v1");
 
         Result result = await DefinirAlgoritmoContagemPrazoCommandHandler.Handle(
             command, mocks.Repository, mocks.Catalogo, mocks.UnitOfWork, CancellationToken.None);
@@ -113,9 +113,9 @@ public sealed class DefinirAlgoritmoContagemPrazoCommandHandlerTests
 
     [Theory(DisplayName = "Par ausente ou pela metade recusa antes de consultar o catálogo — meio par não aponta entrada nenhuma")]
     [InlineData(null, null)]
-    [InlineData(AlgoritmoContagemPrazoCodigo.ExcluiDiaInicial, null)]
+    [InlineData("CONTAGEM_PRAZO_EXCLUI_DIA_INICIAL", null)]
     [InlineData(null, "v1")]
-    [InlineData(AlgoritmoContagemPrazoCodigo.ExcluiDiaInicial, "   ")]
+    [InlineData("CONTAGEM_PRAZO_EXCLUI_DIA_INICIAL", "   ")]
     public async Task Handle_ParAusenteOuIncompleto_RecusaSemConsultarCatalogo(string? codigo, string? versao)
     {
         ProcessoSeletivo processo = NovoProcesso();
@@ -137,7 +137,7 @@ public sealed class DefinirAlgoritmoContagemPrazoCommandHandlerTests
     {
         Mocks mocks = NovosMocks(null, Guid.CreateVersion7(), RegraDoCatalogo());
         DefinirAlgoritmoContagemPrazoCommand command = new(
-            Guid.CreateVersion7(), AlgoritmoContagemPrazoCodigo.ExcluiDiaInicial, "v1");
+            Guid.CreateVersion7(), ConvencaoDeContagemDoPrazo.ExcluiDiaInicial.Codigo(), "v1");
 
         Result result = await DefinirAlgoritmoContagemPrazoCommandHandler.Handle(
             command, mocks.Repository, mocks.Catalogo, mocks.UnitOfWork, CancellationToken.None);

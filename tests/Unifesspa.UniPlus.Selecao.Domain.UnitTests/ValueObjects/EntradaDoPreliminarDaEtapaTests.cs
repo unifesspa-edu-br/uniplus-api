@@ -30,7 +30,7 @@ public sealed class EntradaDoPreliminarDaEtapaTests
         [nameof(EtapaProcesso.NotaMaxima)] = () => Etapa(avaliacao: a => a with { NotaMaxima = 20m }),
         [nameof(EtapaProcesso.PassoDoLancamento)] = () => Etapa(avaliacao: a => a with { PassoDoLancamento = 0.5m }),
         [nameof(EtapaProcesso.FormaDeAvaliacao)] = () => Etapa(avaliacao: a => a with { FormaDeAvaliacao = FormaDeAvaliacao.Objetiva }),
-        [nameof(EtapaProcesso.RegraConsolidacao)] = () => Etapa(avaliacao: a => a with { RegraConsolidacao = ReferenciaRegra.De(RegraConsolidacaoCodigo.AvaliacaoUnica, "v1", new string('a', 64)) }),
+        [nameof(EtapaProcesso.RegraConsolidacao)] = () => Etapa(avaliacao: a => a with { RegraConsolidacao = ReferenciaRegra.De(RegraDeApuracaoDaAvaliacao.AvaliacaoUnica.Codigo(), "v1", new string('a', 64)) }),
         [nameof(EtapaProcesso.EscalaDeAtendimento)] = () => Etapa(avaliacao: a => a with { EscalaDeAtendimento = [new("Atende", 1m), new("Atende em parte", 0.5m)] }),
         [nameof(EtapaProcesso.Inicio)] = () => Etapa(janela: (Inicio, null, false)),
         [nameof(EtapaProcesso.Fim)] = () => Etapa(janela: (null, Inicio.AddDays(3), false)),
@@ -46,7 +46,7 @@ public sealed class EntradaDoPreliminarDaEtapaTests
         [nameof(EtapaProcesso.Nome)] = () => Etapa(identificacao: i => i with { Nome = "Outro nome" }),
         [nameof(EtapaProcesso.Ordem)] = () => Etapa(identificacao: i => i with { Ordem = 5 }),
         [nameof(EtapaProcesso.TipoEtapa)] = () => Etapa(identificacao: i => i with { TipoEtapa = Tipo(OrigemDoTipo, "OUTRO_CODIGO", "Outro tipo") }),
-        [nameof(EtapaProcesso.Produtos)] = () => Etapa(completar: e => e.DefinirProdutos([ProdutoDaEtapa.Criar(Materia, PapelProdutoFase.Preliminar)])),
+        [nameof(EtapaProcesso.Produtos)] = () => Etapa(completar: e => e.DefinirProdutos([ProdutoDaEtapa.Criar(Materia, PapelDaPublicacaoPrevista.Preliminar)])),
     };
 
     public static TheoryData<string> PropriedadesQueEntram => new(QueEntram.Keys);
@@ -105,7 +105,7 @@ public sealed class EntradaDoPreliminarDaEtapaTests
     {
         EntradaDoPreliminar baseDaEntrada = ComParametrosDoRecurso(ParametrosDoRecursoDeTeste.Declarados()).EntradaDoPreliminar();
 
-        ComParametrosDoRecurso(ParametrosDoRecursoDeTeste.Declarados(guardaDaVaga: "naoGuarda")).EntradaDoPreliminar().Should().NotBe(baseDaEntrada);
+        ComParametrosDoRecurso(ParametrosDoRecursoDeTeste.Declarados(guardaDaVaga: "NAO_GUARDA")).EntradaDoPreliminar().Should().NotBe(baseDaEntrada);
         ComParametrosDoRecurso(ParametrosDoRecursoDeTeste.Declarados(2m, UnidadePrazo.Horas)).EntradaDoPreliminar().Should().NotBe(baseDaEntrada);
         ComParametrosDoRecurso(ParametrosDoRecursoDeTeste.ComInstanciaSuperior()).EntradaDoPreliminar().Should().NotBe(baseDaEntrada);
     }
@@ -115,15 +115,15 @@ public sealed class EntradaDoPreliminarDaEtapaTests
     {
         ParametrosDeclaradosDoRecurso comInstanciaSuperior = ParametrosDoRecursoDeTeste.ComInstanciaSuperior();
 
-        ComParametrosDoRecurso(comInstanciaSuperior with { PrazoDaSegundaInstancia = new PrazoDeclarado(5m, "diasUteis") }).EntradaDoPreliminar()
+        ComParametrosDoRecurso(comInstanciaSuperior with { PrazoDaSegundaInstancia = new PrazoDeclarado(5m, "DIAS_UTEIS") }).EntradaDoPreliminar()
             .Should().Be(ComParametrosDoRecurso(comInstanciaSuperior).EntradaDoPreliminar());
     }
 
     [Fact(DisplayName = "O procedimento declarado na janela recursal entra na entrada, pela regra, e a ordem de declaração não importa")]
     public void ProcedimentosDaJanela_EntramNaEntrada()
     {
-        EntradaDoPreliminar recorrecao = ComProcedimentos(RegraProcedimentoRecursoCodigo.Recorrecao, TipoMotivoDeDecisao.Classificacao);
-        EntradaDoPreliminar recalculo = ComProcedimentos(RegraProcedimentoRecursoCodigo.Recalculo, TipoMotivoDeDecisao.Classificacao);
+        EntradaDoPreliminar recorrecao = ComProcedimentos(RegraDeProcedimentoDoRecurso.Recorrecao.Codigo(), TipoMotivoDeDecisao.Classificacao);
+        EntradaDoPreliminar recalculo = ComProcedimentos(RegraDeProcedimentoDoRecurso.Recalculo.Codigo(), TipoMotivoDeDecisao.Classificacao);
 
         recorrecao.Should().NotBe(recalculo);
         recorrecao.Should().NotBe(Etapa(completar: e => AbrirRecurso(e, prazo: 2m, ancora: 0, Materia)).EntradaDoPreliminar());
@@ -190,7 +190,7 @@ public sealed class EntradaDoPreliminarDaEtapaTests
 
     private static EntradaDoPreliminar ProcedimentosEmOrdem(params TipoMotivoDeDecisao[] tipos) =>
         Etapa(completar: e => AbrirRecursoComProcedimentos(
-            e, 2m, 0, ProcedimentosDeRecurso.De([.. tipos.Select(tipo => Procedimento(tipo, RegraProcedimentoRecursoCodigo.Recalculo))]), Materia)).EntradaDoPreliminar();
+            e, 2m, 0, ProcedimentosDeRecurso.De([.. tipos.Select(tipo => Procedimento(tipo, RegraDeProcedimentoDoRecurso.Recalculo.Codigo()))]), Materia)).EntradaDoPreliminar();
 
     private static ProcedimentoDeRecursoDeclarado Procedimento(TipoMotivoDeDecisao tipo, string regra) =>
         ProcedimentoDeRecursoDeclarado.De(tipo, null, ReferenciaRegra.De(regra, "v1", new string('a', 64)));
@@ -240,10 +240,10 @@ public sealed class EntradaDoPreliminarDaEtapaTests
     private static void AbrirRecursoComParametros(
         EtapaProcesso etapa, ParametrosDeclaradosDoRecurso parametros, ProcedimentosDeRecurso procedimentos, int ancora, params string[] atos)
     {
-        List<ProdutoDaEtapa> produtos = [.. atos.Select(static ato => ProdutoDaEtapa.Criar(ato, PapelProdutoFase.Preliminar))];
+        List<ProdutoDaEtapa> produtos = [.. atos.Select(static ato => ProdutoDaEtapa.Criar(ato, PapelDaPublicacaoPrevista.Preliminar))];
         RecursoDaEtapa recurso = RecursoDaEtapa.Criar(
-            AncoraDoRecurso.AtoPublicado,
-            ReferenciaRegra.De(RegraPrazoRecursoCodigo.AncoradoEmAto, "v1", new string('c', 64)),
+            EventoInicialDoPrazo.PublicacaoDoAto,
+            ReferenciaRegra.De(RegraDePrazoDoRecurso.ContadoDaPublicacaoDoAto.Codigo(), "v1", new string('c', 64)),
             parametros,
             produtos[ancora].Id,
             procedimentos).Value!;

@@ -25,7 +25,7 @@ public sealed class BaseLegalDaComprovacao : EntityBase
     /// Acumula (ADR-0125) as três checagens — mesmo shape/validação de
     /// <see cref="DocumentoExigidoBaseLegal.ValidarFormaBasica"/>, ver ali.
     /// </summary>
-    public static List<FieldError> ValidarFormaBasica(string? referencia, TipoAbrangencia abrangencia, StatusBaseLegal situacao)
+    public static List<FieldError> ValidarFormaBasica(string? referencia, TipoAbrangencia? abrangencia, StatusBaseLegal? situacao)
     {
         List<FieldError> erros = [];
 
@@ -37,23 +37,23 @@ public sealed class BaseLegalDaComprovacao : EntityBase
         return erros;
     }
 
-    private static void ValidarAbrangenciaESituacao(List<FieldError> erros, TipoAbrangencia abrangencia, StatusBaseLegal situacao)
+    private static void ValidarAbrangenciaESituacao(List<FieldError> erros, TipoAbrangencia? abrangencia, StatusBaseLegal? situacao)
     {
-        if (abrangencia == TipoAbrangencia.Nenhuma)
+        if (abrangencia is null)
         {
             erros.Add(new("abrangencia", new DomainError("BaseLegalDaComprovacao.AbrangenciaObrigatoria", "A abrangência da base legal é obrigatória.")));
         }
-        if (situacao == StatusBaseLegal.Nenhuma)
+        if (situacao is null)
         {
             erros.Add(new("situacao", new DomainError("BaseLegalDaComprovacao.SituacaoObrigatoria", "A situação da base legal é obrigatória.")));
         }
     }
 
     public static Result<BaseLegalDaComprovacao> Criar(
-        string referencia, TipoAbrangencia abrangencia, StatusBaseLegal situacao, string? observacao)
+        string referencia, TipoAbrangencia? abrangencia, StatusBaseLegal? situacao, string? observacao)
     {
         List<FieldError> erros = ValidarFormaBasica(referencia, abrangencia, situacao);
-        if (erros.Count > 0)
+        if (erros.Count > 0 || abrangencia is null || situacao is null)
         {
             return Result<BaseLegalDaComprovacao>.ValidationFailure(erros);
         }
@@ -61,8 +61,8 @@ public sealed class BaseLegalDaComprovacao : EntityBase
         return Result<BaseLegalDaComprovacao>.Success(new BaseLegalDaComprovacao
         {
             Referencia = referencia.Trim(),
-            Abrangencia = abrangencia,
-            Situacao = situacao,
+            Abrangencia = abrangencia.Value,
+            Situacao = situacao.Value,
             Observacao = string.IsNullOrWhiteSpace(observacao) ? null : observacao.Trim(),
         });
     }

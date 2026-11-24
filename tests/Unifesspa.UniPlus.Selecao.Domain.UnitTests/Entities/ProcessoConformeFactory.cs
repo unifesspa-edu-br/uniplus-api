@@ -2,6 +2,7 @@ namespace Unifesspa.UniPlus.Selecao.Domain.UnitTests.Entities;
 
 using AwesomeAssertions;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Regras.ValueObjects;
@@ -30,15 +31,15 @@ internal static class ProcessoConformeFactory
     /// Uma oferta de curso da distribuição: ampla concorrência única, com as vagas todas nela.
     /// Duas chamadas com ids distintos dão ao processo os dois cursos que a segunda opção exige.
     /// </summary>
-    internal static ConfiguracaoDistribuicaoVagas Oferta(Guid? ofertaCursoOrigemId = null) =>
+    internal static ConfiguracaoDistribuicaoVagas Oferta(Guid? ofertaCursoOrigemId = null, PredicadoDnf? regraDeAplicabilidade = null) =>
         ConfiguracaoDistribuicaoVagas.Criar(ofertaCursoOrigemId ?? Guid.CreateVersion7(),
             new DistribuicaoDeVagasDeclarada
             {
                 VagasOfertadasBase = 40,
                 PercentualDaReservaLegal = 1m,
-                RegraDeDistribuicao = Regra(RegraDistribuicaoVagasCodigo.Institucional, "a"),
+                RegraDeDistribuicao = Regra(RegraDeDistribuicaoDeVagas.Institucional.Codigo(), "a"),
                 Modalidades = [
-                AmplaConcorrencia(),
+                AmplaConcorrencia(regraDeAplicabilidade),
             ]
             },
             new FatosDaOfertaNoCadastro { OfertaCurso = OfertaCursoDeTeste.Medicina }).Value!;
@@ -57,14 +58,14 @@ internal static class ProcessoConformeFactory
     /// <param name="fase">Fase do cronograma; a omissão usa a mínima e conforme, sem recurso.</param>
     internal static ProcessoSeletivo Criar(
         bool declararTaxa = true, FaseCronograma? fase = null, bool declararBonus = true, bool comDesempate = true,
-        bool declararOpcoesDeCurso = true)
+        bool declararOpcoesDeCurso = true, PredicadoDnf? regraDeAplicabilidade = null)
     {
         ProcessoSeletivo processo = ProcessoSeletivo.Criar(
             "PS Gate", TiposDeProcessoDeTeste.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(),
             UnidadeAdministradoraSnapshot.Criar("CEPS", "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!,
             LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, identificadorLegivel: IdentificadoresDeTeste.Novo());
         DefinirFaseEtapaEAtendimento(processo, fase);
-        processo.DefinirDistribuicaoVagas([Oferta()], FatosDeModalidadeDeTeste.DoCatalogo).IsSuccess.Should().BeTrue();
+        processo.DefinirDistribuicaoVagas([Oferta(regraDeAplicabilidade: regraDeAplicabilidade)], FatosDeModalidadeDeTeste.DoCatalogo).IsSuccess.Should().BeTrue();
         DefinirClassificacaoImportada(processo);
         DefinirTaxa(processo, declararTaxa);
         DeclaracoesObrigatoriasDeTeste.Declarar(processo, bonus: declararBonus, desempate: comDesempate, opcoesDeCurso: declararOpcoesDeCurso);
@@ -114,10 +115,10 @@ internal static class ProcessoConformeFactory
         comRecurso
             ?
             [
-                ProdutoDaFase.Reidratar(ProdutoPreliminarId, "RESULTADO_CLASSIFICACAO", PapelProdutoFase.Preliminar),
-                ProdutoDaFase.Criar("RESULTADO_CLASSIFICACAO", PapelProdutoFase.Definitivo),
+                ProdutoDaFase.Reidratar(ProdutoPreliminarId, "RESULTADO_CLASSIFICACAO", PapelDaPublicacaoPrevista.Preliminar),
+                ProdutoDaFase.Criar("RESULTADO_CLASSIFICACAO", PapelDaPublicacaoPrevista.Definitivo),
             ]
-            : [ProdutoDaFase.Criar("RESULTADO_CLASSIFICACAO", PapelProdutoFase.Definitivo)];
+            : [ProdutoDaFase.Criar("RESULTADO_CLASSIFICACAO", PapelDaPublicacaoPrevista.Definitivo)];
 
     internal static DadosEdital Dados() => DadosEdital.Criar(
         numero: "001/2026",
@@ -125,27 +126,15 @@ internal static class ProcessoConformeFactory
         periodoInscricaoFim: new DateTimeOffset(2026, 1, 31, 23, 59, 59, TimeSpan.FromHours(-3)),
         documentoEditalId: Guid.CreateVersion7()).Value!;
 
-    private static ModalidadeSelecionada AmplaConcorrencia() => ModalidadeSelecionada.Criar(
-        modalidadeOrigemId: Guid.CreateVersion7(),
-        codigo: "AC",
-        descricao: null,
-        naturezaLegal: NaturezaLegalModalidade.Ampla,
-        composicaoVagas: ComposicaoVagasModalidade.RestanteDasVagasOfertadas,
-        composicaoOrigemCodigo: null,
-        regraRemanejamento: RegraRemanejamentoModalidade.Nenhuma,
-        remanejamentoDestino: null, remanejamentoPar: null, remanejamentoFallback: null,
-        regraDeAplicabilidade: RegrasDeAplicabilidadeDeTeste.DaNatureza(NaturezaLegalModalidade.Ampla),
-        acaoQuandoIndeferido: null,
-        baseLegal: "Res. Unifesspa 532/2021",
-        quantidadeDeclarada: 40).Value!;
+    private static ModalidadeSelecionada AmplaConcorrencia(PredicadoDnf? regraDeAplicabilidade) => ModalidadeSelecionada.Criar(ModalidadesNoCadastroDeTeste.Da("AC", NaturezaLegalModalidade.Ampla, ComposicaoVagasModalidade.RestanteDasVagasOfertadas) with { BaseLegal = "Res. Unifesspa 532/2021", RegraDeAplicabilidade = regraDeAplicabilidade ?? PredicadoDnf.SemClausula }, 40).Value!;
 
 
     private static void DefinirClassificacaoImportada(ProcessoSeletivo processo)
     {
         processo.DefinirClassificacao(ConfiguracaoClassificacao.Criar(new DeclaracaoDaClassificacao
         {
-            RegraCalculo = Regra(RegraCalculoCodigo.ClassificacaoImportada, "b"),
-            RegraOrdemAlocacao = Regra(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, "c"),
+            RegraCalculo = Regra(RegraDeCalculoDaNota.ClassificacaoImportada.Codigo(), "b"),
+            RegraOrdemAlocacao = Regra(RegraDeOrdemDeAlocacao.PrimeiraOpcaoPrioritaria.Codigo(), "c"),
         }).Value!).IsSuccess.Should().BeTrue();
     }
 

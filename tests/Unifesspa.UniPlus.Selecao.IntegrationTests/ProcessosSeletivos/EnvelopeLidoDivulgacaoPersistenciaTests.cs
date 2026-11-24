@@ -28,7 +28,7 @@ public sealed class EnvelopeLidoDivulgacaoPersistenciaTests(ProcessoSeletivoDbFi
 
     private async Task<Guid> PersistirPadraoExplicitoAsync(ProcessoSeletivo processo)
     {
-        processo.DefinirConfiguracaoDivulgacao(ConfiguracaoDivulgacao.Criar(["numero_inscricao"], null).Value!).IsSuccess.Should().BeTrue();
+        processo.DefinirConfiguracaoDivulgacao(ConfiguracaoDivulgacao.Criar(["NUMERO_INSCRICAO"], null).Value!).IsSuccess.Should().BeTrue();
         await using UniPlusDbContext db = fixture.CreateDbContext();
         db.Add(processo);
         await db.SaveChangesAsync();

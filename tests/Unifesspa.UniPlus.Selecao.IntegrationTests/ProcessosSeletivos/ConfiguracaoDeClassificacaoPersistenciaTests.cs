@@ -5,6 +5,7 @@ using AwesomeAssertions;
 using Microsoft.EntityFrameworkCore;
 
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
@@ -39,7 +40,7 @@ public sealed class ConfiguracaoDeClassificacaoPersistenciaTests
             """).SingleAsync();
 
         comentario.Should().Contain("regras de eliminação do ENEM").And.NotContain(
-            "ELIM-", "um comentário que lista os códigos exigiria alterar a coluna a cada regra nova do ENEM");
+            "ELIMINACAO-", "um comentário que lista os códigos exigiria alterar a coluna a cada regra nova do ENEM");
     }
 
     [Fact(DisplayName = "Persiste e recarrega classificação com as 5 variantes de eliminação (prova a coluna json polimórfica)")]
@@ -55,18 +56,18 @@ public sealed class ConfiguracaoDeClassificacaoPersistenciaTests
         ProcessoSeletivo recarregado = await RecarregarAsync(contexto, processo.Id);
         AfirmarRegrasDaClassificacao(recarregado.Classificacao!);
         AfirmarParametrosDeEliminacao(recarregado.Classificacao!, etapaId);
-        Guid regraId = configuracao.RegrasEliminacao.Single(r => r.Regra.Codigo == RegraEliminacaoCodigo.ElimFaltaEmDiaDeProvaEnem).Id;
+        Guid regraId = configuracao.RegrasEliminacao.Single(r => r.Regra.Codigo == RegraDeEliminacaoPorCalculo.FaltaEmDiaDeProvaDoEnem.Codigo()).Id;
         await AfirmarDiscriminadorGravadoAsync(contexto, regraId);
     }
 
-    [Fact(DisplayName = "Persiste e recarrega classificação CLASSIFICACAO-IMPORTADA sem arredondamento")]
+    [Fact(DisplayName = "Persiste e recarrega classificação CLASSIFICACAO_IMPORTADA sem arredondamento")]
     public async Task PersisteERecarrega_Importada_SemArredondamento()
     {
         ProcessoSeletivo processo = ProcessoComEtapa("PS 2026 — Transferência", TiposDeProcessoDeTeste.TransferenciaExterna);
         ConfiguracaoClassificacao classificacao = CriarClassificacao(new DeclaracaoDaClassificacao
         {
-            RegraCalculo = Regra(RegraCalculoCodigo.ClassificacaoImportada, "1"),
-            RegraOrdemAlocacao = Regra(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, "2"),
+            RegraCalculo = Regra(RegraDeCalculoDaNota.ClassificacaoImportada.Codigo(), "1"),
+            RegraOrdemAlocacao = Regra(RegraDeOrdemDeAlocacao.PrimeiraOpcaoPrioritaria.Codigo(), "2"),
         });
         processo.DefinirClassificacao(classificacao).IsSuccess.Should().BeTrue();
         await _cenario.PersistirAsync(processo);
@@ -104,7 +105,7 @@ public sealed class ConfiguracaoDeClassificacaoPersistenciaTests
         EtapaProcesso etapa = recarregado.Etapas.Single();
         etapa.Id.Should().Be(etapaId);
         etapa.Nome.Should().Be("Prova Objetiva (revisada)");
-        recarregado.Classificacao!.RegrasEliminacao.Single().Parametros.Should().Be(new ParametrosElimNotaMinimaEtapa(etapaId, 3m));
+        recarregado.Classificacao!.RegrasEliminacao.Single().Parametros.Should().Be(new ParametrosEliminacaoPorNotaMinimaNaEtapa(etapaId, 3m));
     }
 
     [Theory(DisplayName = "O valor de BaseadoEmEnem persiste e volta do banco independentemente do tipo de processo")]
@@ -138,10 +139,10 @@ public sealed class ConfiguracaoDeClassificacaoPersistenciaTests
 
     private static DeclaracaoDaClassificacao ClassificacaoPonderada(bool baseadoEmEnem = false) => new()
     {
-        RegraCalculo = Regra(RegraCalculoCodigo.FormulaMediaPonderada, "a"),
-        RegraArredondamento = Regra(RegraArredondamentoCodigo.PrecisaoTruncar, "b"),
+        RegraCalculo = Regra(RegraDeCalculoDaNota.MediaPonderada.Codigo(), "a"),
+        RegraArredondamento = Regra(RegraDeArredondamentoDaNota.Truncar.Codigo(), "b"),
         CasasArredondamento = 2,
-        RegraOrdemAlocacao = Regra(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, "c"),
+        RegraOrdemAlocacao = Regra(RegraDeOrdemDeAlocacao.PrimeiraOpcaoPrioritaria.Codigo(), "c"),
         BaseadoEmEnem = baseadoEmEnem,
         ResolucaoPesoAreaEnem = baseadoEmEnem ? QuadroPesoAreaEnemDeTeste.Resolucao : null,
         QuadroPesoAreaEnem = baseadoEmEnem ? QuadroPesoAreaEnemDeTeste.Completo() : [],
@@ -160,18 +161,18 @@ public sealed class ConfiguracaoDeClassificacaoPersistenciaTests
         {
             RegrasEliminacao =
             [
-                RegraEliminacao.Criar(Regra(RegraEliminacaoCodigo.ElimNotaMinimaEtapa, "a"), new ParametrosElimNotaMinimaEtapa(etapaId, 3m)).Value!,
-                RegraEliminacao.Criar(Regra(RegraEliminacaoCodigo.ElimCorteEmArea, "b"), new ParametrosElimCorteEmArea("REDACAO", 400m)).Value!,
-                RegraEliminacao.Criar(Regra(RegraEliminacaoCodigo.ElimZeroEmArea, "c"), new ParametrosElimZeroEmArea()).Value!,
-                RegraEliminacao.Criar(Regra(RegraEliminacaoCodigo.ElimFaltaEmDiaDeProvaEnem, "0"), new ParametrosElimFaltaEmDiaDeProvaEnem()).Value!,
-                RegraEliminacao.Criar(Regra(RegraEliminacaoCodigo.ElimAusenciaNaEtapa, "7"), new ParametrosElimAusenciaNaEtapa(etapaId)).Value!,
+                RegraEliminacao.Criar(Regra(RegraDeEliminacaoPorCalculo.NotaMinimaNaEtapa.Codigo(), "a"), new ParametrosEliminacaoPorNotaMinimaNaEtapa(etapaId, 3m)).Value!,
+                RegraEliminacao.Criar(Regra(RegraDeEliminacaoPorCalculo.CorteEmAreaDoEnem.Codigo(), "b"), new ParametrosEliminacaoPorCorteEmAreaDoEnem("REDACAO", 400m)).Value!,
+                RegraEliminacao.Criar(Regra(RegraDeEliminacaoPorCalculo.ZeroEmAreaDoEnem.Codigo(), "c"), new ParametrosEliminacaoPorZeroEmAreaDoEnem()).Value!,
+                RegraEliminacao.Criar(Regra(RegraDeEliminacaoPorCalculo.FaltaEmDiaDeProvaDoEnem.Codigo(), "0"), new ParametrosEliminacaoPorFaltaEmDiaDeProvaDoEnem()).Value!,
+                RegraEliminacao.Criar(Regra(RegraDeEliminacaoPorCalculo.AusenciaNaEtapa.Codigo(), "7"), new ParametrosEliminacaoPorAusenciaNaEtapa(etapaId)).Value!,
             ],
         });
 
     private static ConfiguracaoClassificacao ClassificacaoComNotaMinima(Guid etapaId) =>
         CriarClassificacao(ClassificacaoPonderada() with
         {
-            RegrasEliminacao = [RegraEliminacao.Criar(Regra(RegraEliminacaoCodigo.ElimNotaMinimaEtapa, "a"), new ParametrosElimNotaMinimaEtapa(etapaId, 3m)).Value!],
+            RegrasEliminacao = [RegraEliminacao.Criar(Regra(RegraDeEliminacaoPorCalculo.NotaMinimaNaEtapa.Codigo(), "a"), new ParametrosEliminacaoPorNotaMinimaNaEtapa(etapaId, 3m)).Value!],
         });
 
     private async Task ReconfigurarClassificacaoAsync(Guid processoId)
@@ -181,9 +182,9 @@ public sealed class ConfiguracaoDeClassificacaoPersistenciaTests
         ProcessoSeletivo processo = (await repositorio.ObterComConfiguracaoAsync(processoId, CancellationToken.None))!;
         ConfiguracaoClassificacao nova = CriarClassificacao(ClassificacaoPonderada(baseadoEmEnem: true) with
         {
-            RegraArredondamento = Regra(RegraArredondamentoCodigo.PrecisaoArredondarCima, "e"),
+            RegraArredondamento = Regra(RegraDeArredondamentoDaNota.ArredondarAPartirDeCinco.Codigo(), "e"),
             CasasArredondamento = 4,
-            RegrasEliminacao = [RegraEliminacao.Criar(Regra(RegraEliminacaoCodigo.ElimCorteEmArea, "d"), new ParametrosElimCorteEmArea("REDACAO", 350m)).Value!],
+            RegrasEliminacao = [RegraEliminacao.Criar(Regra(RegraDeEliminacaoPorCalculo.CorteEmAreaDoEnem.Codigo(), "d"), new ParametrosEliminacaoPorCorteEmAreaDoEnem("REDACAO", 350m)).Value!],
         });
         processo.DefinirClassificacao(nova).IsSuccess.Should().BeTrue();
         await contexto.SaveChangesAsync(CancellationToken.None);
@@ -207,28 +208,28 @@ public sealed class ConfiguracaoDeClassificacaoPersistenciaTests
 
     private static void AfirmarRegrasDaClassificacao(ConfiguracaoClassificacao classificacao)
     {
-        classificacao.RegraCalculo.Codigo.Should().Be(RegraCalculoCodigo.FormulaMediaPonderada);
-        classificacao.RegraArredondamento!.Codigo.Should().Be(RegraArredondamentoCodigo.PrecisaoTruncar);
+        classificacao.RegraCalculo.Codigo.Should().Be(RegraDeCalculoDaNota.MediaPonderada.Codigo());
+        classificacao.RegraArredondamento!.Codigo.Should().Be(RegraDeArredondamentoDaNota.Truncar.Codigo());
         classificacao.CasasArredondamento.Should().Be(2);
-        classificacao.RegraOrdemAlocacao.Codigo.Should().Be(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria);
+        classificacao.RegraOrdemAlocacao.Codigo.Should().Be(RegraDeOrdemDeAlocacao.PrimeiraOpcaoPrioritaria.Codigo());
         classificacao.RegrasEliminacao.Should().HaveCount(5);
     }
 
     private static void AfirmarParametrosDeEliminacao(ConfiguracaoClassificacao classificacao, Guid etapaId)
     {
-        ParametrosElimNotaMinimaEtapa nota = (ParametrosElimNotaMinimaEtapa)classificacao.RegrasEliminacao.Single(r => r.Regra.Codigo == RegraEliminacaoCodigo.ElimNotaMinimaEtapa).Parametros;
+        ParametrosEliminacaoPorNotaMinimaNaEtapa nota = (ParametrosEliminacaoPorNotaMinimaNaEtapa)classificacao.RegrasEliminacao.Single(r => r.Regra.Codigo == RegraDeEliminacaoPorCalculo.NotaMinimaNaEtapa.Codigo()).Parametros;
         nota.EtapaRef.Should().Be(etapaId);
         nota.NotaMinima.Should().Be(3m);
-        ParametrosElimCorteEmArea redacao = (ParametrosElimCorteEmArea)classificacao.RegrasEliminacao.Single(r => r.Regra.Codigo == RegraEliminacaoCodigo.ElimCorteEmArea).Parametros;
+        ParametrosEliminacaoPorCorteEmAreaDoEnem redacao = (ParametrosEliminacaoPorCorteEmAreaDoEnem)classificacao.RegrasEliminacao.Single(r => r.Regra.Codigo == RegraDeEliminacaoPorCalculo.CorteEmAreaDoEnem.Codigo()).Parametros;
         redacao.Minimo.Should().Be(400m);
-        classificacao.RegrasEliminacao.Single(r => r.Regra.Codigo == RegraEliminacaoCodigo.ElimZeroEmArea).Parametros.Should().BeOfType<ParametrosElimZeroEmArea>();
-        classificacao.RegrasEliminacao.Single(r => r.Regra.Codigo == RegraEliminacaoCodigo.ElimFaltaEmDiaDeProvaEnem).Parametros.Should().BeOfType<ParametrosElimFaltaEmDiaDeProvaEnem>();
-        classificacao.RegrasEliminacao.Single(r => r.Regra.Codigo == RegraEliminacaoCodigo.ElimAusenciaNaEtapa).Parametros.Should().Be(new ParametrosElimAusenciaNaEtapa(etapaId));
+        classificacao.RegrasEliminacao.Single(r => r.Regra.Codigo == RegraDeEliminacaoPorCalculo.ZeroEmAreaDoEnem.Codigo()).Parametros.Should().BeOfType<ParametrosEliminacaoPorZeroEmAreaDoEnem>();
+        classificacao.RegrasEliminacao.Single(r => r.Regra.Codigo == RegraDeEliminacaoPorCalculo.FaltaEmDiaDeProvaDoEnem.Codigo()).Parametros.Should().BeOfType<ParametrosEliminacaoPorFaltaEmDiaDeProvaDoEnem>();
+        classificacao.RegrasEliminacao.Single(r => r.Regra.Codigo == RegraDeEliminacaoPorCalculo.AusenciaNaEtapa.Codigo()).Parametros.Should().Be(new ParametrosEliminacaoPorAusenciaNaEtapa(etapaId));
     }
 
     private static void AfirmarClassificacaoImportada(ConfiguracaoClassificacao classificacao)
     {
-        classificacao.RegraCalculo.Codigo.Should().Be(RegraCalculoCodigo.ClassificacaoImportada);
+        classificacao.RegraCalculo.Codigo.Should().Be(RegraDeCalculoDaNota.ClassificacaoImportada.Codigo());
         classificacao.RegraArredondamento.Should().BeNull();
         classificacao.CasasArredondamento.Should().BeNull();
         classificacao.RegrasEliminacao.Should().BeEmpty();

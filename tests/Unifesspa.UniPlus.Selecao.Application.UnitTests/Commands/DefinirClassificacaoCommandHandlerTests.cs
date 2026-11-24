@@ -4,6 +4,7 @@ using AwesomeAssertions;
 
 using NSubstitute;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
@@ -28,7 +29,7 @@ public sealed class DefinirClassificacaoCommandHandlerTests
         result.Error!.Code.Should().Be("ProcessoSeletivo.NaoEncontrado");
     }
 
-    [Fact(DisplayName = "Handle com FORMULA-MEDIA-PONDERADA + arredondamento resolve e persiste")]
+    [Fact(DisplayName = "Handle com FORMULA_MEDIA_PONDERADA + arredondamento resolve e persiste")]
     public async Task Handle_MediaPonderadaComArredondamento_Persiste()
     {
         ProcessoSeletivo processo = NovoProcesso("PSIQ 2026", TiposDeProcessoDeTeste.PSIQ);
@@ -73,16 +74,16 @@ public sealed class DefinirClassificacaoCommandHandlerTests
             "o rótulo TipoProcesso (PSIQ, não-ENEM) não pode sobrepor o dado declarado no command");
     }
 
-    [Fact(DisplayName = "Handle com CLASSIFICACAO-IMPORTADA sem arredondamento resolve e persiste")]
+    [Fact(DisplayName = "Handle com CLASSIFICACAO_IMPORTADA sem arredondamento resolve e persiste")]
     public async Task Handle_Importada_SemArredondamento_Persiste()
     {
         ProcessoSeletivo processo = NovoProcesso("SiSU 2026", TiposDeProcessoDeTeste.SiSU);
         CenarioDaClassificacao cenario = Com(processo)
-            .ComRegra(RegraCalculoCodigo.ClassificacaoImportada, TipoRegra.RegraCalculo)
-            .ComRegra(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, TipoRegra.RegraOrdemAlocacao);
+            .ComRegra(RegraDeCalculoDaNota.ClassificacaoImportada.Codigo(), TipoRegra.RegraCalculo)
+            .ComRegra(RegraDeOrdemDeAlocacao.PrimeiraOpcaoPrioritaria.Codigo(), TipoRegra.RegraOrdemAlocacao);
 
         Result result = await cenario.DefinirAsync(
-            ComandoEnemLocal(processo.Id, null, baseadoEmEnem: false, RegraCalculoCodigo.ClassificacaoImportada));
+            ComandoEnemLocal(processo.Id, null, baseadoEmEnem: false, RegraDeCalculoDaNota.ClassificacaoImportada.Codigo()));
 
         result.IsSuccess.Should().BeTrue();
         processo.Classificacao!.RegraArredondamento.Should().BeNull();
@@ -94,7 +95,7 @@ public sealed class DefinirClassificacaoCommandHandlerTests
         ProcessoSeletivo processo = NovoProcesso("PSIQ 2026", TiposDeProcessoDeTeste.PSIQ);
         CenarioDaClassificacao cenario = Com(processo).SemNenhumaRegraNoCatalogo();
         DefinirClassificacaoCommand command = new(
-            processo.Id, "INEXISTENTE", "v1", null, null, null, RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, "v1", [], false, null, null);
+            processo.Id, "INEXISTENTE", "v1", null, null, null, RegraDeOrdemDeAlocacao.PrimeiraOpcaoPrioritaria.Codigo(), "v1", [], false, null, null);
 
         Result result = await cenario.DefinirAsync(command);
 
@@ -106,10 +107,10 @@ public sealed class DefinirClassificacaoCommandHandlerTests
     public async Task Handle_RegraCalculoTipoInvalido_Recusa()
     {
         ProcessoSeletivo processo = NovoProcesso("PSIQ 2026", TiposDeProcessoDeTeste.PSIQ);
-        CenarioDaClassificacao cenario = Com(processo).ComRegra(RegraCalculoCodigo.FormulaMediaPonderada, TipoRegra.RegraArredondamento);
+        CenarioDaClassificacao cenario = Com(processo).ComRegra(RegraDeCalculoDaNota.MediaPonderada.Codigo(), TipoRegra.RegraArredondamento);
         DefinirClassificacaoCommand command = new(
-            processo.Id, RegraCalculoCodigo.FormulaMediaPonderada, "v1", null, null, null,
-            RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, "v1", [], false, null, null);
+            processo.Id, RegraDeCalculoDaNota.MediaPonderada.Codigo(), "v1", null, null, null,
+            RegraDeOrdemDeAlocacao.PrimeiraOpcaoPrioritaria.Codigo(), "v1", [], false, null, null);
 
         Result result = await cenario.DefinirAsync(command);
 

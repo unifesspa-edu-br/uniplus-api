@@ -1,5 +1,7 @@
 namespace Unifesspa.UniPlus.Selecao.Domain.UnitTests.ProcessosSeletivos.Etapas;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
+
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
@@ -61,7 +63,7 @@ internal sealed record ModeloDeEtapa(string Nome)
     internal ModeloDeEtapa Humana() => this with
     {
         Forma = FormaDeAvaliacao.Humana,
-        RegraConsolidacao = ReferenciaRegra.De(RegraConsolidacaoCodigo.AvaliacaoUnica, "v1", new string('a', 64)),
+        RegraConsolidacao = ReferenciaRegra.De(RegraDeApuracaoDaAvaliacao.AvaliacaoUnica.Codigo(), "v1", new string('a', 64)),
         Passo = 0.5m,
         Bancas = [BancaDaEtapa.Criar(ChaveLocal.Criar("banca").Value, TiposDeBancaCopiadosDeTeste.De(TipoDeBanca.CorrecaoDeRedacoes, Guid.CreateVersion7()), BancasDeTeste.Regra())],
     };
@@ -117,9 +119,9 @@ internal sealed record ModeloDeEtapa(string Nome)
     internal static ConceitoDaEtapa NotaDeZeroADez() =>
         ConceitoDaEtapa.Criar("NOTA", "Nota", NaturezaConceito.Numerico, new EscalaInformada(0m, 10m, 2), null).Value!;
 
-    internal static ProdutoDaEtapa Preliminar(string ato) => ProdutoDaEtapa.Criar(ato, PapelProdutoFase.Preliminar);
+    internal static ProdutoDaEtapa Preliminar(string ato) => ProdutoDaEtapa.Criar(ato, PapelDaPublicacaoPrevista.Preliminar);
 
-    internal static ProdutoDaEtapa Definitivo(string ato) => ProdutoDaEtapa.Criar(ato, PapelProdutoFase.Definitivo);
+    internal static ProdutoDaEtapa Definitivo(string ato) => ProdutoDaEtapa.Criar(ato, PapelDaPublicacaoPrevista.Definitivo);
 
     private static void Aceitar(Result resultado)
     {

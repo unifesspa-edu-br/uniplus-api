@@ -18,6 +18,7 @@ using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Authentication;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 
 /// <summary>
@@ -47,12 +48,12 @@ public sealed class DefinirClassificacaoEndpointTests
 
         const string corpoSemCampo = """
             {
-              "regraCalculoCodigo": "CLASSIFICACAO-IMPORTADA",
+              "regraCalculoCodigo": "CLASSIFICACAO_IMPORTADA",
               "regraCalculoVersao": "v1",
               "regraArredondamentoCodigo": null,
               "regraArredondamentoVersao": null,
               "casasArredondamento": null,
-              "regraOrdemAlocacaoCodigo": "ALOCACAO-PRIMEIRA-OPCAO-PRIORITARIA",
+              "regraOrdemAlocacaoCodigo": "ALOCACAO_PRIMEIRA_OPCAO_PRIORITARIA",
               "regraOrdemAlocacaoVersao": "v1",
               "regrasEliminacao": []
             }
@@ -271,12 +272,12 @@ public sealed class DefinirClassificacaoEndpointTests
 
     private static object CorpoEnemLocal(string resolucao) => new
     {
-        regraCalculoCodigo = RegraCalculoCodigo.FormulaMediaPonderada,
+        regraCalculoCodigo = RegraDeCalculoDaNota.MediaPonderada.Codigo(),
         regraCalculoVersao = "v1",
-        regraArredondamentoCodigo = RegraArredondamentoCodigo.PrecisaoTruncar,
+        regraArredondamentoCodigo = RegraDeArredondamentoDaNota.Truncar.Codigo(),
         regraArredondamentoVersao = "v1",
         casasArredondamento = 2,
-        regraOrdemAlocacaoCodigo = RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria,
+        regraOrdemAlocacaoCodigo = RegraDeOrdemDeAlocacao.PrimeiraOpcaoPrioritaria.Codigo(),
         regraOrdemAlocacaoVersao = "v1",
         regrasEliminacao = Array.Empty<object>(),
         baseadoEmEnem = true,
@@ -285,12 +286,12 @@ public sealed class DefinirClassificacaoEndpointTests
 
     private static object CorpoMediaPonderada(decimal? escalaNotaFinal) => new
     {
-        regraCalculoCodigo = RegraCalculoCodigo.FormulaMediaPonderada,
+        regraCalculoCodigo = RegraDeCalculoDaNota.MediaPonderada.Codigo(),
         regraCalculoVersao = "v1",
-        regraArredondamentoCodigo = RegraArredondamentoCodigo.PrecisaoTruncar,
+        regraArredondamentoCodigo = RegraDeArredondamentoDaNota.Truncar.Codigo(),
         regraArredondamentoVersao = "v1",
         casasArredondamento = 2,
-        regraOrdemAlocacaoCodigo = RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria,
+        regraOrdemAlocacaoCodigo = RegraDeOrdemDeAlocacao.PrimeiraOpcaoPrioritaria.Codigo(),
         regraOrdemAlocacaoVersao = "v1",
         regrasEliminacao = Array.Empty<object>(),
         baseadoEmEnem = false,
@@ -308,12 +309,12 @@ public sealed class DefinirClassificacaoEndpointTests
 
     private static object CorpoImportadaSemEliminacao(bool baseadoEmEnem) => new
     {
-        regraCalculoCodigo = "CLASSIFICACAO-IMPORTADA",
+        regraCalculoCodigo = "CLASSIFICACAO_IMPORTADA",
         regraCalculoVersao = "v1",
         regraArredondamentoCodigo = (string?)null,
         regraArredondamentoVersao = (string?)null,
         casasArredondamento = (int?)null,
-        regraOrdemAlocacaoCodigo = "ALOCACAO-PRIMEIRA-OPCAO-PRIORITARIA",
+        regraOrdemAlocacaoCodigo = "ALOCACAO_PRIMEIRA_OPCAO_PRIORITARIA",
         regraOrdemAlocacaoVersao = "v1",
         regrasEliminacao = Array.Empty<object>(),
         baseadoEmEnem,

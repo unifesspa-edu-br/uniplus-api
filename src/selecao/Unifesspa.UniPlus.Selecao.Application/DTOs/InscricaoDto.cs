@@ -6,6 +6,7 @@ using Domain.Entities;
 using Domain.Enums;
 using Domain.ValueObjects;
 
+using Unifesspa.UniPlus.Application.Abstractions.Respostas;
 using Unifesspa.UniPlus.Kernel.Domain.ValueObjects;
 
 /// <summary>
@@ -53,7 +54,7 @@ public sealed record InscricaoDto
 {
     public required Guid Id { get; init; }
     public required Guid ProcessoSeletivoId { get; init; }
-    public required SituacaoInscricao Situacao { get; init; }
+    public required CodigoComRotulo<SituacaoInscricao> Situacao { get; init; }
     public required string? NumeroInscricao { get; init; }
     public required FormularioDaInscricaoDto Formulario { get; init; }
     public required EscolhasDeCursoDaInscricaoDto EscolhasDeCurso { get; init; }
@@ -71,7 +72,7 @@ public sealed record InscricaoDto
         {
             Id = inscricao.Id,
             ProcessoSeletivoId = inscricao.ProcessoSeletivoId,
-            Situacao = inscricao.Estado.Situacao,
+            Situacao = CodigoComRotulo<SituacaoInscricao>.De(inscricao.Estado.Situacao),
             NumeroInscricao = inscricao.Estado.NumeroInscricao,
             Formulario = FormularioDe(inscricao),
             EscolhasDeCurso = EscolhasDe(inscricao, numeroDeOpcoesDeCurso, ofertas),
@@ -123,7 +124,7 @@ public sealed record MinhaInscricaoDto
     public required Guid ProcessoSeletivoId { get; init; }
     public required string? NomeDoProcesso { get; init; }
     public required string? NumeroInscricao { get; init; }
-    public required SituacaoInscricao Situacao { get; init; }
+    public required CodigoComRotulo<SituacaoInscricao> Situacao { get; init; }
     public required IReadOnlyList<OpcaoDeCursoDaInscricaoDto> OpcoesDeCurso { get; init; }
     public required DateTimeOffset? CanceladaEm { get; init; }
     public required string? MotivoDoCancelamento { get; init; }
@@ -150,7 +151,7 @@ public sealed record MinhaInscricaoDto
             ProcessoSeletivoId = inscricao.ProcessoSeletivoId,
             NomeDoProcesso = nomeDoProcesso,
             NumeroInscricao = inscricao.Estado.NumeroInscricao,
-            Situacao = inscricao.Estado.Situacao,
+            Situacao = CodigoComRotulo<SituacaoInscricao>.De(inscricao.Estado.Situacao),
             OpcoesDeCurso = OpcoesDe(inscricao, ofertasDaVersao),
             CanceladaEm = inscricao.Estado.Cancelamento?.CanceladaEm,
             MotivoDoCancelamento = inscricao.Estado.Cancelamento?.MotivoDoCancelamento,

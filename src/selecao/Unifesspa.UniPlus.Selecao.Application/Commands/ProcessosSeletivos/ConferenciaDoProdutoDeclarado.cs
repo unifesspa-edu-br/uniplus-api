@@ -4,6 +4,8 @@ using Domain.Enums;
 
 using Kernel.Results;
 
+using Services;
+
 /// <summary>
 /// Confere um produto declarado, por etapa ou por fase, contra o catálogo de tipos de ato. A conferência é a
 /// mesma para os dois donos; muda o rótulo da recusa e o que cada dono faz com ela.
@@ -24,11 +26,11 @@ internal sealed class ConferenciaDoProdutoDeclarado(AtosConsultadosNaEdicao atos
         string? papelDeclarado,
         int posicao,
         RotuloDoDonoDoProduto dono,
-        IReadOnlyCollection<(string AtoCodigo, PapelProdutoFase? Papel)> jaDeclarados,
+        IReadOnlyCollection<(string AtoCodigo, PapelDaPublicacaoPrevista? Papel)> jaDeclarados,
         CancellationToken cancellationToken)
     {
         string campo = $"produtos[{posicao}]";
-        if (!PapelProdutoFaseCodigo.TentarConverter(papelDeclarado, out PapelProdutoFase? papel))
+        if (!CodigoLidoDoPedido.TentarLerOpcional(papelDeclarado, out PapelDaPublicacaoPrevista? papel))
         {
             return Recusa($"{campo}.papel", ConferenciaDoProdutoDoAto.PapelDesconhecido(dono));
         }
@@ -46,8 +48,8 @@ internal sealed class ConferenciaDoProdutoDeclarado(AtosConsultadosNaEdicao atos
     public async Task<Result<ProdutosConferidos<TProduto>>> ConferirTodosAsync<TProduto>(
         IReadOnlyList<(string AtoCodigo, string? Papel)> declarados,
         RotuloDoDonoDoProduto dono,
-        IReadOnlyCollection<(string AtoCodigo, PapelProdutoFase? Papel)> jaDeclarados,
-        Func<string, PapelProdutoFase?, TProduto> criar,
+        IReadOnlyCollection<(string AtoCodigo, PapelDaPublicacaoPrevista? Papel)> jaDeclarados,
+        Func<string, PapelDaPublicacaoPrevista?, TProduto> criar,
         CancellationToken cancellationToken)
     {
         ProdutosConferidos<TProduto> conferidos = new([], []);
@@ -70,12 +72,12 @@ internal sealed class ConferenciaDoProdutoDeclarado(AtosConsultadosNaEdicao atos
         (string AtoCodigo, string? Papel) declarado,
         int posicao,
         RotuloDoDonoDoProduto dono,
-        IReadOnlyCollection<(string AtoCodigo, PapelProdutoFase? Papel)> jaDeclarados,
+        IReadOnlyCollection<(string AtoCodigo, PapelDaPublicacaoPrevista? Papel)> jaDeclarados,
         CancellationToken cancellationToken) =>
         ConferirAsync(declarado.AtoCodigo, declarado.Papel, posicao, dono, jaDeclarados, cancellationToken);
 
     private static void Acumular<TProduto>(
-        ProdutoConferido conferido, ProdutosConferidos<TProduto> conferidos, Func<string, PapelProdutoFase?, TProduto> criar)
+        ProdutoConferido conferido, ProdutosConferidos<TProduto> conferidos, Func<string, PapelDaPublicacaoPrevista?, TProduto> criar)
     {
         switch (conferido)
         {
@@ -89,7 +91,7 @@ internal sealed class ConferenciaDoProdutoDeclarado(AtosConsultadosNaEdicao atos
     }
 
     private async Task<Result<ProdutoConferido>> ConferirNoCatalogoAsync(
-        string atoCodigo, PapelProdutoFase? papel, string campo, RotuloDoDonoDoProduto dono, CancellationToken cancellationToken)
+        string atoCodigo, PapelDaPublicacaoPrevista? papel, string campo, RotuloDoDonoDoProduto dono, CancellationToken cancellationToken)
     {
         Result<ClassificacaoDoAtoConsultado> classificada = await atos
             .ClassificacaoAsync(atoCodigo, cancellationToken).ConfigureAwait(false);
@@ -102,7 +104,7 @@ internal sealed class ConferenciaDoProdutoDeclarado(AtosConsultadosNaEdicao atos
     }
 
     private static Result<ProdutoConferido> Desfecho(
-        string atoCodigo, PapelProdutoFase? papel, string campo, RotuloDoDonoDoProduto dono, ClassificacaoDoAtoConsultado classificada)
+        string atoCodigo, PapelDaPublicacaoPrevista? papel, string campo, RotuloDoDonoDoProduto dono, ClassificacaoDoAtoConsultado classificada)
     {
         if (classificada is not ClassificacaoDoAtoConsultado.Conhecida conhecida)
         {

@@ -2,6 +2,7 @@ namespace Unifesspa.UniPlus.Selecao.Domain.Entities;
 
 using System.Text.Json;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
@@ -106,7 +107,7 @@ public sealed class RegraCatalogo : EntityBase
         ArgumentException.ThrowIfNullOrWhiteSpace(codigo);
         ArgumentException.ThrowIfNullOrWhiteSpace(versao);
         ArgumentException.ThrowIfNullOrWhiteSpace(baseLegal);
-        ArgumentOutOfRangeException.ThrowIfEqual(tipo, TipoRegra.Nenhuma);
+        _ = tipo.Codigo();
         ExigirForma(declaracaoDaRegra, JsonValueKind.Object, nameof(declaracaoDaRegra));
         ExigirForma(invariantes, JsonValueKind.Array, nameof(invariantes));
 

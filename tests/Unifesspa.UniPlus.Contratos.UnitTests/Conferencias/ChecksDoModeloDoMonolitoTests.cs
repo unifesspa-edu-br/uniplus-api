@@ -23,7 +23,7 @@ public sealed class ChecksDoModeloDoMonolitoTests
         new("modalidades", "ck_modalidades_acao_quando_indeferido", "acao_quando_indeferido IS NULL OR acao_quando_indeferido IN ('RECLASSIFICAR_AC', 'RECLASSIFICAR_REGRA_EDITAL')"),
         new("modalidades", "ck_modalidades_composicao_vagas", "composicao_vagas IN ('RESTANTE_DAS_VAGAS_OFERTADAS', 'DENTRO_DA_RESERVA_LEGAL', 'RETIRADA_DE_OUTRA_MODALIDADE', 'SUPLEMENTAR_AO_TOTAL')"),
         new("modalidades", "ck_modalidades_natureza_legal", "natureza_legal IN ('COTA_RESERVADA', 'AMPLA', 'ACAO_AFIRMATIVA')"),
-        new("modalidades", "ck_modalidades_regra_remanejamento", "regra_remanejamento IS NULL OR regra_remanejamento IN ('SEGUE_CASCATA', 'DESTINO_UNICO', 'CRUZADO')"),
+        new("modalidades", "ck_modalidades_regra_remanejamento", "regra_remanejamento IS NULL OR regra_remanejamento IN ('SEGUE_ORDEM_DE_REMANEJAMENTO', 'DESTINO_UNICO', 'CRUZADO')"),
         new("modalidades", "ck_modalidades_retirada_de_outra_modalidade_origem", "(composicao_vagas = 'RETIRADA_DE_OUTRA_MODALIDADE') = (composicao_origem IS NOT NULL)"),
         new("termos_de_consentimento", "ck_termos_de_consentimento_forma_aceite_rascunho", "forma_aceite_rascunho IN ('A_DEFINIR', 'REGISTRO_DIGITAL_SEM_LOG_IP', 'REGISTRO_DIGITAL_COM_LOG_IP')"),
         new("dias_nao_uteis", "ck_dias_nao_uteis_municipio_coerente", "(abrangencia = 'MUNICIPAL') = (municipio_ibge IS NOT NULL) AND (abrangencia = 'MUNICIPAL') = (municipio_nome IS NOT NULL) AND (abrangencia = 'MUNICIPAL') = (municipio_uf IS NOT NULL)"),

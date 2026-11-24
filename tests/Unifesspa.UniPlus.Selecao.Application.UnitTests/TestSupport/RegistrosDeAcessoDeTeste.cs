@@ -4,6 +4,7 @@ using NSubstitute;
 
 using Unifesspa.UniPlus.Authorization.Abstractions;
 using Unifesspa.UniPlus.Authorization.Contracts;
+using Unifesspa.UniPlus.Selecao.Application.Permissoes;
 
 /// <summary>O que o verificador da persona recebeu: as decisões registradas e as permissões exigidas, para o teste afirmar o que foi ou não gravado.</summary>
 internal static class RegistrosDeAcessoDeTeste
@@ -63,4 +64,12 @@ internal static class RegistrosDeAcessoDeTeste
     public static IReadOnlyCollection<DecisaoDeAcesso> DecisoesRegistradas(this DecisoesDeAcessoDeTeste persona) =>
         (IReadOnlyCollection<DecisaoDeAcesso>)persona.Verificador.ReceivedCalls()
             .Single(static c => c.GetMethodInfo().Name == nameof(IVerificadorDeAcesso.RegistrarDesfechoAsync)).GetArguments()[0]!;
+    public static Task RegistrouCadaInscricaoComAsync(this DecisoesDeAcessoDeTeste persona, string permissao, IReadOnlyCollection<Guid>? inscricoes = null) =>
+        persona.Verificador.Received(1).RegistrarParaCadaAsync(
+            Arg.Is<DecisaoPermitida>(d => d.Registro.Permissao == permissao), ResourceTiposSelecao.Inscricao,
+            Arg.Is<IReadOnlyCollection<Guid>>(ids => inscricoes == null || ids.SequenceEqual(inscricoes)), true, Arg.Any<CancellationToken>());
+
+    public static Task AvaliouAsync(this DecisoesDeAcessoDeTeste persona, string permissao) =>
+        persona.Verificador.Received(1).AvaliarAsync(
+            Arg.Is<PermissionRequirement>(r => r.Permissao == permissao), Arg.Any<ResourceContext?>(), Arg.Any<CancellationToken>());
 }

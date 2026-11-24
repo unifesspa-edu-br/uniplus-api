@@ -4,6 +4,7 @@ using System.Collections.Frozen;
 
 using Enums;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Domain.Entities;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Recursos;
@@ -100,7 +101,7 @@ public sealed class RegraRecursoFase : EntityBase
     }
 
     private static IEnumerable<FieldError> RecusaDaRegra(ReferenciaRegra regra) =>
-        regra.Codigo == RegraPrazoRecursoCodigo.AncoradoEmAto
+        regra.Codigo == RegraDePrazoDoRecurso.ContadoDaPublicacaoDoAto.Codigo()
             ? []
             : [new FieldError(string.Empty, new DomainError(
                 "RegraRecursoFase.RegraCatalogoInvalida",

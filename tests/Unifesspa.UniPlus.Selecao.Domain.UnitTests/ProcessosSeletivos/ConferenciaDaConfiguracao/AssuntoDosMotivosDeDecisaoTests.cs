@@ -26,11 +26,11 @@ public sealed class AssuntoDosMotivosDeDecisaoTests
     [Fact(DisplayName = "O assunto confere na ordem o motivo desativado, o de tipo não declarado e a cobertura, e o recusado não conta para a cobertura")]
     public void Assunto_ConfereNaOrdemERecusadoNaoContaParaACobertura()
     {
-        ProcessoSeletivo processo = ProcessoParaMotivos.Rascunho(FundamentoIsencaoCodigo.CadastroUnico);
-        MotivoDeDecisao desativada = ProcessoParaMotivos.DaIsencao(FundamentoIsencaoCodigo.CadastroUnico, SentidoDoMotivo.Favoravel, "FAVORAVEL_DESATIVADO");
+        ProcessoSeletivo processo = ProcessoParaMotivos.Rascunho("CADASTRO_UNICO");
+        MotivoDeDecisao desativada = ProcessoParaMotivos.DaIsencao("CADASTRO_UNICO", SentidoDoMotivo.Favoravel, "FAVORAVEL_DESATIVADO");
         MotivoDeDecisaoDoProcesso desativado = Escolha(processo, "INSCRICAO", desativada);
         desativada.Desativar();
-        MotivoDeDecisao semDeclarar = ProcessoParaMotivos.DaIsencao(FundamentoIsencaoCodigo.CadastroUnico, SentidoDoMotivo.Desfavoravel, "DESFAVORAVEL_NA_ETAPA");
+        MotivoDeDecisao semDeclarar = ProcessoParaMotivos.DaIsencao("CADASTRO_UNICO", SentidoDoMotivo.Desfavoravel, "DESFAVORAVEL_NA_ETAPA");
         MotivoDeDecisaoDoProcesso naEtapa = Escolha(processo, ProcessoParaMotivos.LugarDaEtapa(processo, "Prova objetiva"), semDeclarar);
 
         FieldError[] causas = Assunto(processo, new MotivoEscolhidoComOrigem(desativado, desativada), new MotivoEscolhidoComOrigem(naEtapa, semDeclarar));
@@ -45,9 +45,9 @@ public sealed class AssuntoDosMotivosDeDecisaoTests
     [Fact(DisplayName = "O assunto não tem causa quando os motivos escolhidos são ativos, de tipo declarado e cobrem o fundamento")]
     public void Assunto_SemCausa_QuandoOsMotivosCobrem()
     {
-        ProcessoSeletivo processo = ProcessoParaMotivos.Rascunho(FundamentoIsencaoCodigo.CadastroUnico);
-        MotivoDeDecisao favoravel = ProcessoParaMotivos.DaIsencao(FundamentoIsencaoCodigo.CadastroUnico, SentidoDoMotivo.Favoravel, "NIS_LOCALIZADO");
-        MotivoDeDecisao desfavoravel = ProcessoParaMotivos.DaIsencao(FundamentoIsencaoCodigo.CadastroUnico, SentidoDoMotivo.Desfavoravel, "NIS_NAO_LOCALIZADO");
+        ProcessoSeletivo processo = ProcessoParaMotivos.Rascunho("CADASTRO_UNICO");
+        MotivoDeDecisao favoravel = ProcessoParaMotivos.DaIsencao("CADASTRO_UNICO", SentidoDoMotivo.Favoravel, "NIS_LOCALIZADO");
+        MotivoDeDecisao desfavoravel = ProcessoParaMotivos.DaIsencao("CADASTRO_UNICO", SentidoDoMotivo.Desfavoravel, "NIS_NAO_LOCALIZADO");
 
         FieldError[] causas = Assunto(
             processo,
@@ -60,9 +60,9 @@ public sealed class AssuntoDosMotivosDeDecisaoTests
     [Fact(DisplayName = "O motivo já publicado desativado depois continua contando para a cobertura da versão que nasce")]
     public void Assunto_PublicadoDesativadoDepois_ContaParaACobertura()
     {
-        ProcessoSeletivo processo = ProcessoParaMotivos.Rascunho(FundamentoIsencaoCodigo.CadastroUnico);
-        MotivoDeDecisao favoravel = ProcessoParaMotivos.DaIsencao(FundamentoIsencaoCodigo.CadastroUnico, SentidoDoMotivo.Favoravel, "NIS_LOCALIZADO");
-        MotivoDeDecisao desfavoravel = ProcessoParaMotivos.DaIsencao(FundamentoIsencaoCodigo.CadastroUnico, SentidoDoMotivo.Desfavoravel, "NIS_NAO_LOCALIZADO");
+        ProcessoSeletivo processo = ProcessoParaMotivos.Rascunho("CADASTRO_UNICO");
+        MotivoDeDecisao favoravel = ProcessoParaMotivos.DaIsencao("CADASTRO_UNICO", SentidoDoMotivo.Favoravel, "NIS_LOCALIZADO");
+        MotivoDeDecisao desfavoravel = ProcessoParaMotivos.DaIsencao("CADASTRO_UNICO", SentidoDoMotivo.Desfavoravel, "NIS_NAO_LOCALIZADO");
         MotivoEscolhidoComOrigem[] publicados =
         [
             new(ProcessoParaMotivos.Escolha(processo, ProcessoParaMotivos.LugarDaFase(processo, "INSCRICAO"), favoravel, versaoDeEntrada: 1), favoravel),
@@ -83,7 +83,7 @@ public sealed class AssuntoDosMotivosDeDecisaoTests
     public void Assunto_MotivoDesativadoEmLugarForaDaConfiguracao_TemCausaEPendeOPainel()
     {
         ProcessoSeletivo processo = ProcessoParaMotivos.Rascunho();
-        MotivoDeDecisao origem = ProcessoParaMotivos.DaIsencao(FundamentoIsencaoCodigo.CadastroUnico, SentidoDoMotivo.Favoravel);
+        MotivoDeDecisao origem = ProcessoParaMotivos.DaIsencao("CADASTRO_UNICO", SentidoDoMotivo.Favoravel);
         MotivoEscolhidoComOrigem escolhido = new(Escolha(processo, "INSCRICAO", origem), origem);
         origem.Desativar();
         ProcessoParaMotivos.SemAFase(processo, "INSCRICAO");
@@ -97,7 +97,7 @@ public sealed class AssuntoDosMotivosDeDecisaoTests
     public void Assunto_MotivoDesativadoEmLugarAceito_TemUmaCausa()
     {
         ProcessoSeletivo processo = ProcessoParaMotivos.Rascunho();
-        MotivoDeDecisao origem = ProcessoParaMotivos.DaIsencao(FundamentoIsencaoCodigo.CadastroUnico, SentidoDoMotivo.Favoravel);
+        MotivoDeDecisao origem = ProcessoParaMotivos.DaIsencao("CADASTRO_UNICO", SentidoDoMotivo.Favoravel);
         MotivoEscolhidoComOrigem escolhido = new(Escolha(processo, "INSCRICAO", origem), origem);
         origem.Desativar();
 
@@ -109,8 +109,8 @@ public sealed class AssuntoDosMotivosDeDecisaoTests
     [Fact(DisplayName = "Cada item do painel pende exatamente quando a regra dele tem causa no assunto")]
     public void Painel_UmItemPorRegra_PendeComACausaDoAssunto()
     {
-        ProcessoSeletivo processo = ProcessoParaMotivos.Rascunho(FundamentoIsencaoCodigo.CadastroUnico);
-        MotivoDeDecisao semDeclarar = ProcessoParaMotivos.DaIsencao(FundamentoIsencaoCodigo.CadastroUnico, SentidoDoMotivo.Favoravel);
+        ProcessoSeletivo processo = ProcessoParaMotivos.Rascunho("CADASTRO_UNICO");
+        MotivoDeDecisao semDeclarar = ProcessoParaMotivos.DaIsencao("CADASTRO_UNICO", SentidoDoMotivo.Favoravel);
         MotivosEscolhidos motivos = new(
             [new MotivoEscolhidoComOrigem(Escolha(processo, ProcessoParaMotivos.LugarDaEtapa(processo, "Prova objetiva"), semDeclarar), semDeclarar)], VersaoQueNasce);
 

@@ -13,7 +13,7 @@ using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Seed;
 /// <summary>
 /// Cobertura da substituição da regra de prazo de recurso (#854): a antiga
 /// <c>RECURSO-MULTI-INSTANCIA</c> — que atribuía ao Uni+ a gestão de uma segunda
-/// instância inexistente — dá lugar a <c>RECURSO-PRAZO-ANCORADO-EM-ATO</c>, que
+/// instância inexistente — dá lugar a <c>RECURSO_PRAZO_CONTADO_DA_PUBLICACAO_DO_ATO</c>, que
 /// declara o efeito suspensivo, a guarda da vaga e o prazo da 2ª instância e inicia o prazo em um ato
 /// publicado. Asserções sobre a fonte única do seed (<see cref="RegraCatalogoSeed.Itens"/>),
 /// sem tocar o banco — a materialização é coberta por <see cref="RegraCatalogoSeedTests"/>.
@@ -21,11 +21,11 @@ using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Seed;
 public sealed class RegraCatalogoSubstituicaoRecursoTests
 {
     private const string CodigoAntigo = "RECURSO-MULTI-INSTANCIA";
-    private const string CodigoNovo = "RECURSO-PRAZO-ANCORADO-EM-ATO";
+    private const string CodigoNovo = "RECURSO_PRAZO_CONTADO_DA_PUBLICACAO_DO_ATO";
 
     /// <summary>Hash da regra vigente: amarra a definição do seed ao hash gravado.</summary>
     private const string HashRegraNova =
-        "7bf7efd0ce76abe370879d800b980b7894eadf27d2a96f22eba6066d6aa24206";
+        "598d0eb23de0529bcc88dc66a29d39daf0330a54990414bda2cd3baf81a290c2";
 
     private static RegraCatalogoSeedItem RegraNova() =>
         RegraCatalogoSeed.Itens.Single(i => i.Codigo == CodigoNovo);
@@ -58,7 +58,7 @@ public sealed class RegraCatalogoSubstituicaoRecursoTests
     {
         RegraCatalogoSeedItem nova = RegraNova();
         nova.InvariantesJson.Should().Contain("começa no instante da publicação do ato");
-        nova.InvariantesJson.Should().Contain("publicação de um produto preliminar da própria fase");
+        nova.InvariantesJson.Should().Contain("publicação de uma publicação prevista preliminar da própria fase");
     }
 
     [Theory(DisplayName = "Nenhum campo da regra reintroduz a gestão da segunda instância")]

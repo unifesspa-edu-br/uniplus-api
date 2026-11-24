@@ -8,6 +8,8 @@ using Domain.ValueObjects;
 
 using Kernel.Results;
 
+using Services;
+
 /// <summary>
 /// A escrita das etapas do processo que só olha o payload, sem cadastro nem agregado: o <c>Id</c> repetido
 /// e a forma de TODAS as etapas, acumulada (ADR-0125). Roda antes de qualquer leitura externa — a validação
@@ -51,6 +53,6 @@ internal static class EscritaDasEtapasDoProcesso
 
     private static List<FieldError> FormaDaEtapa(EtapaProcessoInput etapa) =>
         ConferenciaDaDeclaracaoDaEtapa.ValidarFormaBasica(
-            etapa.Nome, etapa.Carater, etapa.Ordem,
+            etapa.Nome, CodigoLidoDoPedido.Ler<CaraterEtapa>(etapa.Carater), etapa.Ordem,
             DeclaracaoDaAvaliacao(etapa, forma: null, regraConsolidacao: null), ItensDeclarados(etapa));
 }

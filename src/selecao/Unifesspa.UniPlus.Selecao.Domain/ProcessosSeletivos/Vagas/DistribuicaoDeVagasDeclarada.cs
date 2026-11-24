@@ -41,9 +41,9 @@ public sealed record DistribuicaoDeVagasDeclarada
     /// <summary>Se a regra de distribuição foi aceita; só então a declaração tem ramo.</summary>
     public bool RamoDeterminado => CodigoDaRegra is not null;
 
-    public bool NoRamoFederal => CodigoDaRegra is { } codigo && RegraDistribuicaoVagasCodigo.EhRamoFederal(codigo);
+    public bool NoRamoFederal => CodigoDaRegra is { } codigo && PoliticaDaDistribuicaoDeVagas.EhRegraFederal(codigo);
 
-    public bool NoQuadroFixo => CodigoDaRegra is { } codigo && RegraDistribuicaoVagasCodigo.EhQuadroFixo(codigo);
+    public bool NoQuadroFixo => CodigoDaRegra is { } codigo && PoliticaDaDistribuicaoDeVagas.EhQuadroFixo(codigo);
 
     public bool Recusado(DadoDaDistribuicaoDeVagas dado) => Recusados.Contains(dado);
 

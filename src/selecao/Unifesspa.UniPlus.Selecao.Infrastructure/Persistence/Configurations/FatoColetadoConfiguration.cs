@@ -5,9 +5,11 @@ using Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence.CodigosDeContrato;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Protecao;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Regras.Formularios;
+using Unifesspa.UniPlus.Selecao.Domain.Enums;
 
 /// <summary>
 /// Configuração EF Core de <see cref="FatoColetado"/> (Story #926; apresentação —
@@ -36,7 +38,7 @@ public sealed class FatoColetadoConfiguration : IEntityTypeConfiguration<FatoCol
         builder.Property(f => f.PedirConfirmacao).HasComment("Indica se a resposta deve ser confirmada pela pessoa candidata.");
         builder.Property(f => f.Restricoes).HasComment("Restrições aplicadas à resposta, em JSON.");
         builder.Property(f => f.Impedimento).HasComment("Regra de impedimento associada à resposta, em JSON, quando houver.");
-        builder.Property(f => f.OrigemValores).HasComment("Origem das opções: 0 catálogo, 1 processo, 2 municípios do Fator de Atenuação das Desigualdades de Acesso (FADA) 3 unidades federativas ou 4 municípios da prova presencial.");
+        builder.Property(f => f.OrigemValores).HasComment("Origem das opções: CATALOGO, OPCOES_DO_PROCESSO, MUNICIPIOS_DO_BONUS, UNIDADES_FEDERATIVAS ou MUNICIPIOS_DA_PROVA_PRESENCIAL.");
         builder.Property(f => f.Formato).HasComment("Formato esperado da resposta, quando especificado.");
         builder.Property(f => f.ClassificacaoProtecao).HasComment("Classificação de proteção do dado coletado.");
         builder.Property(f => f.HipoteseLegal).HasComment("Hipótese legal que fundamenta o tratamento do dado.");
@@ -46,7 +48,11 @@ public sealed class FatoColetadoConfiguration : IEntityTypeConfiguration<FatoCol
         builder.Property(f => f.Finalidade).HasComment("Finalidade do formulário: 1 inscrição, 2 isenção de taxa ou 3 habilitação.");
         builder.Property(f => f.EtapaCodigo).HasComment("Código da etapa do formulário, quando houver.");
 
-        builder.ToTable("dados_dos_formularios", t => t.HasComment("Dados solicitados nos formulários de um processo seletivo."));
+        builder.ToTable("dados_dos_formularios", t =>
+        {
+            t.HasComment("Dados solicitados nos formulários de um processo seletivo.");
+            t.HasCheckConstraint("ck_dados_dos_formularios_origem_valores", $"origem_valores IN ({SqlDosCodigosDeContrato.Lista<OrigemValoresColeta>()})");
+        });
         builder.HasKey(f => f.Id);
         builder.Property(f => f.Id).ValueGeneratedNever();
 
@@ -67,7 +73,7 @@ public sealed class FatoColetadoConfiguration : IEntityTypeConfiguration<FatoCol
         builder.Property(f => f.Impedimento)
             .HasConversion(ConversoresDeRegras.Impedimento, ConversoresDeRegras.ComparadorDeImpedimento)
             .HasColumnType("jsonb");
-        builder.Property(f => f.OrigemValores).HasConversion<int>().IsRequired();
+        builder.Property(f => f.OrigemValores).HasMaxLength(TamanhoDoCodigoDeContrato.Maximo).IsRequired();
         builder.Property(f => f.Formato).HasMaxLength(FormaDoItem.FormatoMaxLength);
         builder.Property(f => f.ClassificacaoProtecao).HasMaxLength(FormaDoItem.ClassificacaoProtecaoMaxLength).IsRequired();
         builder.Property(f => f.HipoteseLegal).HasMaxLength(FormaDoItem.HipoteseLegalMaxLength).IsRequired();

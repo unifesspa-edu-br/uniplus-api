@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Http;
 
 using Unifesspa.UniPlus.Infrastructure.Core.Errors;
 using Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
+using Unifesspa.UniPlus.Selecao.Application.Queries.ProcessosSeletivos;
 using Unifesspa.UniPlus.Selecao.Domain.Errors;
 
 /// <summary>
@@ -36,6 +37,7 @@ internal static class ErrosDoProcessoSeletivo
         // O token não traz o que identifica o solicitante: não houve decisão de acesso a tomar, e a borda responde 401.
         new(ProcessoSeletivoErrorCodes.IdentidadeIncompleta, new DomainErrorMapping(StatusCodes.Status401Unauthorized, "uniplus.selecao.processo_seletivo.identidade_incompleta", "Identidade do solicitante incompleta")),
         new("ProcessoSeletivo.VersaoNaoEncontrada", new DomainErrorMapping(StatusCodes.Status404NotFound, "uniplus.selecao.processo_seletivo.versao_nao_encontrada", "Versão do processo seletivo não encontrada")),
+        new(FiltroDeSituacaoDosCertamesPublicados.CodigoDeErro, new DomainErrorMapping(StatusCodes.Status400BadRequest, "uniplus.selecao.certame.filtro_de_situacao_invalido", "Situação do filtro de certames inválida")),
         new("ProcessoSeletivo.NaoEncontrado", new DomainErrorMapping(StatusCodes.Status404NotFound, "uniplus.selecao.processo_seletivo.nao_encontrado", "Processo Seletivo não encontrado")),
         new("ProcessoSeletivo.OcorrenciaSimuladaInvalida", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.ocorrencia_simulada_invalida", "Ocorrência simulada sem identidade própria no grupo")),
     ];

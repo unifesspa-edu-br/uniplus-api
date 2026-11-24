@@ -54,7 +54,7 @@ internal static class ConferenciasDasEliminacoes
     private static List<FieldError> ConferirFaltaEmDiaDeProvaRepetida(IReadOnlyList<RegraEliminacao> regras) =>
         regras
             .Select(static (regra, indice) => (regra, indice))
-            .Where(static item => item.regra.Parametros is ParametrosElimFaltaEmDiaDeProvaEnem)
+            .Where(static item => item.regra.Parametros is ParametrosEliminacaoPorFaltaEmDiaDeProvaDoEnem)
             .Skip(1)
             .Select(static item => new FieldError($"regrasEliminacao[{item.indice}]", new DomainError(
                 "ConfiguracaoClassificacao.FaltaEmDiaDeProvaEnemRepetida",
@@ -69,7 +69,7 @@ internal static class ConferenciasDasEliminacoes
         HashSet<Guid> etapasComAusenciaDeclarada = [];
         for (int indice = 0; indice < regras.Count; indice++)
         {
-            if (regras[indice].Parametros is ParametrosElimAusenciaNaEtapa ausencia
+            if (regras[indice].Parametros is ParametrosEliminacaoPorAusenciaNaEtapa ausencia
                 && !etapasComAusenciaDeclarada.Add(ausencia.EtapaRef))
             {
                 erros.Add(new($"regrasEliminacao[{indice}]", new DomainError(
@@ -96,7 +96,7 @@ internal static class ConferenciasDasEliminacoes
         HashSet<string> comCorte = new(StringComparer.Ordinal);
         for (int indice = 0; indice < regras.Count; indice++)
         {
-            if (regras[indice].Parametros is ParametrosElimCorteEmArea corte
+            if (regras[indice].Parametros is ParametrosEliminacaoPorCorteEmAreaDoEnem corte
                 && RecusaDoCorte(indice, corte, comCorte, quadro, aceitas) is { } recusa)
             {
                 erros.Add(recusa);
@@ -108,7 +108,7 @@ internal static class ConferenciasDasEliminacoes
 
     private static FieldError? RecusaDoCorte(
         int indice,
-        ParametrosElimCorteEmArea corte,
+        ParametrosEliminacaoPorCorteEmAreaDoEnem corte,
         HashSet<string> comCorte,
         IReadOnlyList<GrupoPesoAreaEnemCongelado>? quadro,
         HashSet<string>? aceitas) =>
@@ -120,7 +120,7 @@ internal static class ConferenciasDasEliminacoes
 
     private static FieldError? RecusaDaAreaForaDoQuadro(
         int indice,
-        ParametrosElimCorteEmArea corte,
+        ParametrosEliminacaoPorCorteEmAreaDoEnem corte,
         IReadOnlyList<GrupoPesoAreaEnemCongelado>? quadro,
         HashSet<string>? aceitas) =>
         aceitas is null || aceitas.Contains(corte.AreaCodigo)

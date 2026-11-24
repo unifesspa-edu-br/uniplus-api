@@ -4,6 +4,7 @@ using System.Text.Json;
 
 using AwesomeAssertions;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.ValueObjects;
@@ -113,23 +114,15 @@ public sealed class ProcessoSeletivoDistribuicaoDeVagasTests
 
     private static ConfiguracaoDistribuicaoVagas Oferta(Guid ofertaCursoId, int vagasOfertadasBase, IReadOnlyList<ModalidadeSelecionada> modalidades) =>
         ConfiguracaoDistribuicaoVagas.Criar(ofertaCursoId,
-            new DistribuicaoDeVagasDeclarada { VagasOfertadasBase = vagasOfertadasBase, PercentualDaReservaLegal = 1m, RegraDeDistribuicao = ReferenciaRegra.De(RegraDistribuicaoVagasCodigo.Institucional, "v1", new string('a', 64)), Modalidades = modalidades },
+            new DistribuicaoDeVagasDeclarada { VagasOfertadasBase = vagasOfertadasBase, PercentualDaReservaLegal = 1m, RegraDeDistribuicao = ReferenciaRegra.De(RegraDeDistribuicaoDeVagas.Institucional.Codigo(), "v1", new string('a', 64)), Modalidades = modalidades },
             new FatosDaOfertaNoCadastro { OfertaCurso = OfertaCursoDeTeste.Medicina }).Value!;
 
-    private static ModalidadeSelecionada Ac(int quantidade) => ModalidadeSelecionada.Criar(
-        Guid.CreateVersion7(), "AC", null, NaturezaLegalModalidade.Ampla, ComposicaoVagasModalidade.RestanteDasVagasOfertadas,
-        null, RegraRemanejamentoModalidade.Nenhuma, null, null, null, RegrasDeAplicabilidadeDeTeste.DaNatureza(NaturezaLegalModalidade.Ampla), null, "base legal", quantidadeDeclarada: quantidade).Value!;
+    private static ModalidadeSelecionada Ac(int quantidade) => ModalidadeSelecionada.Criar(ModalidadesNoCadastroDeTeste.Da("AC", NaturezaLegalModalidade.Ampla, ComposicaoVagasModalidade.RestanteDasVagasOfertadas) with { BaseLegal = "base legal" }, quantidade).Value!;
 
     private static ModalidadeSelecionada ModalidadeV(string? acaoQuandoIndeferido, int quantidade, PredicadoDnf? regraDeAplicabilidade = null) =>
-        ModalidadeSelecionada.Criar(
-            Guid.CreateVersion7(), "V", null, NaturezaLegalModalidade.AcaoAfirmativa, ComposicaoVagasModalidade.SuplementarAoTotal,
-            null, RegraRemanejamentoModalidade.DestinoUnico, "AC", null, null,
-            regraDeAplicabilidade ?? RegrasDeAplicabilidadeDeTeste.DaNatureza(NaturezaLegalModalidade.AcaoAfirmativa),
-            acaoQuandoIndeferido, "base legal", quantidadeDeclarada: quantidade).Value!;
+        ModalidadeSelecionada.Criar(ModalidadesNoCadastroDeTeste.Da("V", NaturezaLegalModalidade.AcaoAfirmativa, ComposicaoVagasModalidade.SuplementarAoTotal) with { RegraRemanejamento = RegraRemanejamentoModalidade.DestinoUnico, RemanejamentoDestino = "AC", RegraDeAplicabilidade = regraDeAplicabilidade ?? RegrasDeAplicabilidadeDeTeste.DaNatureza(NaturezaLegalModalidade.AcaoAfirmativa), AcaoQuandoIndeferido = acaoQuandoIndeferido, BaseLegal = "base legal" }, quantidade).Value!;
 
-    private static ModalidadeSelecionada CotaReservadaPpi(int quantidade) => ModalidadeSelecionada.Criar(
-        Guid.CreateVersion7(), "LB_PPI", null, NaturezaLegalModalidade.CotaReservada, ComposicaoVagasModalidade.DentroDaReservaLegal,
-        null, RegraRemanejamentoModalidade.SegueCascata, null, null, null, RegrasDeAplicabilidadeDeTeste.DaNatureza(NaturezaLegalModalidade.CotaReservada), null, "Lei 12.711/2012 art. 3º", quantidadeDeclarada: quantidade).Value!;
+    private static ModalidadeSelecionada CotaReservadaPpi(int quantidade) => ModalidadeSelecionada.Criar(ModalidadesNoCadastroDeTeste.Da("LB_PPI", NaturezaLegalModalidade.CotaReservada, ComposicaoVagasModalidade.DentroDaReservaLegal) with { BaseLegal = "Lei 12.711/2012 art. 3º" }, quantidade).Value!;
 
     private static PredicadoDnf Exige(string fato) => PredicadoDnf.CriarDeCondicoesAgrupadas(
         [(0, CondicaoDnf.Criar(fato, Operador.Igual, JsonSerializer.SerializeToElement(true)).Value!)]).Value!;

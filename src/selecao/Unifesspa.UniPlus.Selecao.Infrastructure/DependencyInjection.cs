@@ -32,6 +32,7 @@ using Unifesspa.UniPlus.Selecao.Application.Services;
 using Unifesspa.UniPlus.Selecao.Application.Services.Comprovantes;
 using Unifesspa.UniPlus.Selecao.Application.Services.InscricaoAdministrativa;
 using Unifesspa.UniPlus.Selecao.Application.Services.Inscricoes;
+using Unifesspa.UniPlus.Selecao.Application.Services.ListagemDeInscricoes;
 using Unifesspa.UniPlus.Selecao.Application.Services.NotasDoEnem;
 
 public static class SelecaoInfrastructureRegistration
@@ -80,6 +81,7 @@ public static class SelecaoInfrastructureRegistration
         services.AddScoped<CancelamentoDoComprovante>();
         services.AddScoped<MontadorDoComprovante>();
         services.AddScoped<ProjetorDaInscricaoAdministrativa>();
+        services.AddScoped<ProjetorDaListagemDeInscricoes>();
         services.AddScoped<LeituraDaInscricaoAdministrativa>();
         services.AddScoped<ProcessosDasInscricoes>();
         services.AddScoped<IGeradorDeNumeroInscricao, GeradorDeNumeroInscricao>();

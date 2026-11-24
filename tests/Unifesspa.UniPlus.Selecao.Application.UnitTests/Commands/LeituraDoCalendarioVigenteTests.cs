@@ -5,6 +5,7 @@ using AwesomeAssertions;
 using Unifesspa.UniPlus.Configuracao.Contracts;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
+using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 /// <summary>
@@ -45,11 +46,16 @@ public sealed class LeituraDoCalendarioVigenteTests
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
         IReadOnlyList<DiaNaoUtilCongelado> dias = resultado.Value!.DiasNaoUteis;
 
-        dias.Should().ContainSingle(static d => d.Abrangencia == "MUNICIPAL")
+        dias.Should().ContainSingle(static d => d.Abrangencia == AbrangenciaDoDiaNaoUtil.Municipal)
             .Which.Should().Match<DiaNaoUtilCongelado>(d => d.Uf == "PA" && d.MunicipioIbge == "1504208",
                 "no dia municipal a UF vem de MunicipioUf");
 
-        dias.Should().ContainSingle(static d => d.Abrangencia == "ESTADUAL")
+        ConferirDiaEstadual(dias);
+    }
+
+    private static void ConferirDiaEstadual(IReadOnlyList<DiaNaoUtilCongelado> dias)
+    {
+        dias.Should().ContainSingle(static d => d.Abrangencia == AbrangenciaDoDiaNaoUtil.Estadual)
             .Which.Should().Match<DiaNaoUtilCongelado>(d => d.Uf == "PA" && d.MunicipioIbge == null,
                 "no dia estadual a UF vem de Uf, e não há município");
     }

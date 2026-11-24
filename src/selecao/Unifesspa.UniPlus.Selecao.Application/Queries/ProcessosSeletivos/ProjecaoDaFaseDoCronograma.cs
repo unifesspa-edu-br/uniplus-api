@@ -35,7 +35,7 @@ internal static class ProjecaoDaFaseDoCronograma
 
     private static FaseCanonicaCongeladaDto ProjetarFaseCanonica(FaseCronograma fase) => new(
         OrigemId: fase.FaseCanonicaOrigemId,
-        OrigemData: fase.OrigemData.ToCodigo(),
+        OrigemData: CodigoComRotulo<OrigemDataFase>.De(fase.OrigemData),
         AgrupaEtapas: fase.AgrupaEtapas,
         PermiteComplementacao: fase.PermiteComplementacao,
         ColetaInscricao: fase.ColetaInscricao,
@@ -61,7 +61,7 @@ internal static class ProjecaoDaFaseDoCronograma
 
     private static ProdutoDaFaseDto[] ProjetarProdutosDaFase(FaseCronograma fase) =>
         [.. OrdemCanonicaDaConfiguracao.ProdutosDaFase(fase.Produtos)
-            .Select(static p => new ProdutoDaFaseDto(p.Id, p.AtoCodigo, p.Papel.ToCodigo()))];
+            .Select(static p => new ProdutoDaFaseDto(p.Id, p.AtoCodigo, ProjecaoDoPapelDaPublicacao.De(p.Papel)))];
 
     private static BancaRequeridaDto[] ProjetarBancasRequeridas(FaseCronograma fase) =>
         [.. fase.BancasRequeridas.Select(ProjetarBancaRequerida)];

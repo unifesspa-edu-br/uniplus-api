@@ -3,6 +3,7 @@ namespace Unifesspa.UniPlus.Selecao.Application.DTOs.Administrativos;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
+using Unifesspa.UniPlus.Application.Abstractions.Respostas;
 using Unifesspa.UniPlus.Authorization.Contracts;
 using Unifesspa.UniPlus.Authorization.Projecao;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
@@ -32,7 +33,7 @@ public sealed record InscricaoAdministrativaDto(
     ProcessoDaInscricaoDto Processo,
     [property: ProtegidoComo(ClassificacaoDeProtecao.Publico, Fonte = "selecao.inscricoes.situacao")]
     [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
-    SituacaoInscricao? Situacao,
+    CodigoComRotulo<SituacaoInscricao>? Situacao,
     [property: ProtegidoComo(ClassificacaoDeProtecao.Publico, Fonte = "selecao.inscricoes.oferta_curso_id")]
     [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     IReadOnlyList<OfertaEscolhidaDto>? Ofertas,
@@ -154,7 +155,7 @@ public sealed record ArquivoAdministrativoDto : ItemClassificado
     public string ClassificacaoProtecao => ClassificacoesDeProtecao.ParaTokenCanonico(ClassificacoesDeProtecao.Resolvida(Classificacao));
 
     /// <summary>A situação da verificação do arquivo.</summary>
-    public required SituacaoDoArquivoDoCandidato Situacao { get; init; }
+    public required CodigoComRotulo<SituacaoDoArquivoDoCandidato> Situacao { get; init; }
 
     /// <summary>O tamanho em bytes; só existe no arquivo verificado.</summary>
     public long? TamanhoBytes { get; init; }

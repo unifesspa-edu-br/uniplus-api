@@ -2,6 +2,7 @@ namespace Unifesspa.UniPlus.Selecao.Domain.UnitTests.Entities;
 
 using AwesomeAssertions;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
@@ -25,30 +26,26 @@ public sealed class ProcessoSeletivoCascataTests
     private static readonly string HashFixo = string.Concat(Enumerable.Repeat("ab01234567", 7))[..64];
 
     private static ReferenciaRegra RegraLei12711() =>
-        ReferenciaRegra.De(RegraDistribuicaoVagasCodigo.Lei12711, "v1", HashFixo);
+        ReferenciaRegra.De(RegraDeDistribuicaoDeVagas.Lei12711.Codigo(), "v1", HashFixo);
 
     private static ReferenciaRegra RegraInstitucional() =>
-        ReferenciaRegra.De(RegraDistribuicaoVagasCodigo.Institucional, "v1", HashFixo);
+        ReferenciaRegra.De(RegraDeDistribuicaoDeVagas.Institucional.Codigo(), "v1", HashFixo);
 
     private static ReferenciaRegra RegraLei12711ComAcPcd() =>
-        ReferenciaRegra.De(RegraDistribuicaoVagasCodigo.Lei12711ComAcPcd, "v1", HashFixo);
+        ReferenciaRegra.De(RegraDeDistribuicaoDeVagas.Lei12711ComAmplaConcorrenciaEPessoaComDeficiencia.Codigo(), "v1", HashFixo);
 
     private static ReferenciaRegra RegraAjuste() =>
-        ReferenciaRegra.De("RECONCILIACAO-VAGAS-ARTIGO-11-PARAGRAFO-UNICO", "v1", HashFixo);
+        ReferenciaRegra.De("AJUSTE_VAGAS_ARTIGO_11_PARAGRAFO_UNICO", "v1", HashFixo);
 
     private static ReferenciaReservaDemograficaSnapshot Demografica() =>
         ReferenciaReservaDemograficaSnapshot.Criar(Guid.CreateVersion7(), "2022", 79m, 1.5m, 8.5m, "Censo 2022").Value!;
 
     private static ReferenciaRegra RegraCascata() =>
-        ReferenciaRegra.De(RegraRemanejamentoCodigo.Cascata, "v1", HashFixo);
+        ReferenciaRegra.De(CriterioDeRemanejamento.OrdemDaLei12711.Codigo(), "v1", HashFixo);
 
     private static ModalidadeSelecionada Modalidade(
         string codigo, NaturezaLegalModalidade natureza, ComposicaoVagasModalidade composicao, int? quantidadeDeclarada = null) =>
-        ModalidadeSelecionada.Criar(
-            Guid.CreateVersion7(), codigo, null, natureza, composicao,
-            composicaoOrigemCodigo: null,
-            natureza == NaturezaLegalModalidade.CotaReservada ? RegraRemanejamentoModalidade.SegueCascata : RegraRemanejamentoModalidade.Nenhuma,
-            null, null, null, RegrasDeAplicabilidadeDeTeste.DaNatureza(natureza), null, "base legal", quantidadeDeclarada).Value!;
+        ModalidadeSelecionada.Criar(ModalidadesNoCadastroDeTeste.Da(codigo, natureza, composicao) with { RegraRemanejamento = natureza == NaturezaLegalModalidade.CotaReservada ? RegraRemanejamentoModalidade.SegueOrdemDeRemanejamento : null, BaseLegal = "base legal" }, quantidadeDeclarada).Value!;
 
     private static List<ModalidadeSelecionada> AsOitoFederaisMaisAc() =>
     [
@@ -71,7 +68,7 @@ public sealed class ProcessoSeletivoCascataTests
     private static DestinoRemanejamento Destino(string origem, int ordem, string destino) =>
         DestinoRemanejamento.Criar(origem, ordem, destino).Value!;
 
-    /// <summary>A matriz legal completa (8×7), fallback AC — a mesma semeada em REMANEJ-CASCATA-LEI-12711 v1.</summary>
+    /// <summary>A matriz legal completa (8×7), fallback AC — a mesma semeada em REMANEJAMENTO_ORDEM_LEI_12711 v1.</summary>
     private static ConfiguracaoCascataRemanejamento CascataCompleta() => ConfiguracaoCascataRemanejamento.Criar(
         RegraCascata(), ModalidadesFederaisLei12711.Ac, [.. OrigensDaCascataFederal.SelectMany(FilaLegalDaOrigem)]).Value!;
 
@@ -129,10 +126,7 @@ public sealed class ProcessoSeletivoCascataTests
     [Fact(DisplayName = "CausasDaCascata com oferta sob a variação -COM-AC-PCD e cascata legal completa é null (Ok)")]
     public void CausasDaCascata_OfertaFederalComAcPcdComCascataCompleta_Ok()
     {
-        ModalidadeSelecionada acPcd = ModalidadeSelecionada.Criar(
-            Guid.CreateVersion7(), "AC_PCD", null, NaturezaLegalModalidade.AcaoAfirmativa, ComposicaoVagasModalidade.RetiradaDeOutraModalidade,
-            composicaoOrigemCodigo: ModalidadesFederaisLei12711.Ac, RegraRemanejamentoModalidade.Nenhuma,
-            null, null, null, RegrasDeAplicabilidadeDeTeste.DaNatureza(NaturezaLegalModalidade.AcaoAfirmativa), null, "base legal", quantidadeDeclarada: 2).Value!;
+        ModalidadeSelecionada acPcd = ModalidadeSelecionada.Criar(ModalidadesNoCadastroDeTeste.Da("AC_PCD", NaturezaLegalModalidade.AcaoAfirmativa, ComposicaoVagasModalidade.RetiradaDeOutraModalidade) with { ComposicaoOrigemCodigo = ModalidadesFederaisLei12711.Ac, BaseLegal = "base legal" }, 2).Value!;
         ConfiguracaoDistribuicaoVagas oferta = ConfiguracaoDistribuicaoVagas.Criar(Guid.CreateVersion7(),
             new DistribuicaoDeVagasDeclarada { VagasOfertadasBase = 50, PercentualDaReservaLegal = 0.5m, RegraDeDistribuicao = RegraLei12711ComAcPcd(), RegraDeAjuste = RegraAjuste(), ReferenciaDemografica = Demografica(), Modalidades = [.. AsOitoFederaisMaisAc(), acPcd] },
             new FatosDaOfertaNoCadastro { OfertaCurso = OfertaCursoDeTeste.Medicina }).Value!;
@@ -140,7 +134,7 @@ public sealed class ProcessoSeletivoCascataTests
         processo.DefinirCascataRemanejamento(CascataCompleta()).IsSuccess.Should().BeTrue();
 
         CoberturaDaCascata.CausasDaCascata(processo.Declaracao()).Should().BeEmpty(
-            "sem EhRamoFederal cobrindo a variação, OfertaForaDoRegimeFederal recusaria com CascataForaDoRegimeFederal");
+            "sem EhRegraFederal cobrindo a variação, OfertaForaDoRegimeFederal recusaria com CascataForaDoRegimeFederal");
     }
 
     [Fact(DisplayName = "CausasDaCascata com oferta federal e SEM cascata configurada recusa com CascataOrigemAusente, nomeando oferta e modalidade")]
@@ -314,7 +308,7 @@ public sealed class ProcessoSeletivoCascataTests
             ColetaSolicitacaoIsencao: false)),
         new DecisoesDeCronogramaDaFase(
             Ordem: 1, Inicio: new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero), Fim: new DateTimeOffset(2026, 1, 31, 0, 0, 0, TimeSpan.Zero), UnidadeResponsavel: UnidadesDeTeste.Ceps),
-        new PublicacoesDaFase(Produtos: [ProdutoDaFase.Criar("RESULTADO_FINAL", PapelProdutoFase.Definitivo)], EmiteParecerIndividual: false, RegraRecurso: null),
+        new PublicacoesDaFase(Produtos: [ProdutoDaFase.Criar("RESULTADO_FINAL", PapelDaPublicacaoPrevista.Definitivo)], EmiteParecerIndividual: false, RegraRecurso: null),
         bancasRequeridas: []).Value!;
 
     private static void DefinirEtapaAtendimentoEDistribuicaoFederal(ProcessoSeletivo processo)
@@ -333,8 +327,8 @@ public sealed class ProcessoSeletivoCascataTests
         processo.DefinirClassificacao(
             ConfiguracaoClassificacao.Criar(new DeclaracaoDaClassificacao
             {
-                RegraCalculo = ReferenciaRegra.De(RegraCalculoCodigo.ClassificacaoImportada, "v1", HashFixo),
-                RegraOrdemAlocacao = ReferenciaRegra.De(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, "v1", HashFixo),
+                RegraCalculo = ReferenciaRegra.De(RegraDeCalculoDaNota.ClassificacaoImportada.Codigo(), "v1", HashFixo),
+                RegraOrdemAlocacao = ReferenciaRegra.De(RegraDeOrdemDeAlocacao.PrimeiraOpcaoPrioritaria.Codigo(), "v1", HashFixo),
             }).Value!).IsSuccess.Should().BeTrue();
         // Issue #1112: item estrutural novo — declarado para manter os demais itens Ok, já que
         // este teste isola a ausência de cascata como a ÚNICA pendência.

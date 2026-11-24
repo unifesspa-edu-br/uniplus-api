@@ -4,6 +4,7 @@ using System.Text.Json;
 
 using AwesomeAssertions;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
@@ -73,30 +74,16 @@ internal static class CenarioDeConformidadeLegal
     /// referenciam a mesma linha do cadastro — e é a identidade que a avaliação compara.
     /// </remarks>
     internal static ModalidadeSelecionada NovaModalidade(string codigo, NaturezaLegalModalidade natureza, Guid? origemId = null) =>
-        ModalidadeSelecionada.Criar(
-            modalidadeOrigemId: origemId ?? Guid.CreateVersion7(),
-            codigo: codigo,
-            descricao: null,
-            naturezaLegal: natureza,
-            composicaoVagas: ComposicaoVagasModalidade.RestanteDasVagasOfertadas,
-            composicaoOrigemCodigo: null,
-            regraRemanejamento: RemanejamentoDa(natureza),
-            remanejamentoDestino: null,
-            remanejamentoPar: null,
-            remanejamentoFallback: null,
-            regraDeAplicabilidade: RegrasDeAplicabilidadeDeTeste.DaNatureza(natureza),
-            acaoQuandoIndeferido: null,
-            baseLegal: "Lei 12.711/2012",
-            quantidadeDeclarada: VagasPorModalidade).Value!;
+        ModalidadeSelecionada.Criar(ModalidadesNoCadastroDeTeste.Da(codigo, natureza, ComposicaoVagasModalidade.RestanteDasVagasOfertadas) with { Id = origemId ?? Guid.CreateVersion7(), RegraRemanejamento = RemanejamentoDa(natureza) }, VagasPorModalidade).Value!;
 
-    private static RegraRemanejamentoModalidade RemanejamentoDa(NaturezaLegalModalidade natureza) =>
-        natureza == NaturezaLegalModalidade.CotaReservada ? RegraRemanejamentoModalidade.SegueCascata : RegraRemanejamentoModalidade.Nenhuma;
+    private static RegraRemanejamentoModalidade? RemanejamentoDa(NaturezaLegalModalidade natureza) =>
+        natureza == NaturezaLegalModalidade.CotaReservada ? RegraRemanejamentoModalidade.SegueOrdemDeRemanejamento : null;
 
     private const int VagasPorModalidade = 10;
 
     internal static ConfiguracaoDistribuicaoVagas NovaOferta(params ModalidadeSelecionada[] modalidades) =>
         ConfiguracaoDistribuicaoVagas.Criar(Guid.CreateVersion7(),
-            new DistribuicaoDeVagasDeclarada { VagasOfertadasBase = VagasPorModalidade * modalidades.Length, RegraDeDistribuicao = ReferenciaRegra.De(RegraDistribuicaoVagasCodigo.Institucional, "v1", new string('a', 64)), Modalidades = modalidades },
+            new DistribuicaoDeVagasDeclarada { VagasOfertadasBase = VagasPorModalidade * modalidades.Length, RegraDeDistribuicao = ReferenciaRegra.De(RegraDeDistribuicaoDeVagas.Institucional.Codigo(), "v1", new string('a', 64)), Modalidades = modalidades },
             new FatosDaOfertaNoCadastro { OfertaCurso = OfertaCursoDeTeste.Medicina }).Value!;
 
     internal static void DefinirOfertas(ProcessoSeletivo processo, params ConfiguracaoDistribuicaoVagas[] ofertas) =>
@@ -135,7 +122,14 @@ internal static class CenarioDeConformidadeLegal
 
     internal static DocumentoExigido ExigenciaCondicionalPorModalidade(
         Guid exigidoNaFaseId, string tipoDocumentoCodigo, string modalidadeCodigo, string? fatoExtra = null,
-        Guid? tipoDocumentoOrigemId = null, string fatoDeModalidade = "MODALIDADE")
+        Guid? tipoDocumentoOrigemId = null, string fatoDeModalidade = "MODALIDADE") =>
+        new DocumentoExigidoBuilder()
+            .ComTipo(new CopiaDoTipoDeDocumento(tipoDocumentoOrigemId ?? Guid.CreateVersion7(), tipoDocumentoCodigo, "Documento de teste", "CATEGORIA", ProtecaoDoDocumentoDeTeste.Pessoal))
+            .NaFase(exigidoNaFaseId)
+            .ComAplicabilidade(new AplicabilidadeDaExigencia(Aplicabilidade.Condicional, CondicoesPorModalidade(modalidadeCodigo, fatoExtra, fatoDeModalidade)))
+            .Construir();
+
+    private static List<CondicaoGatilho> CondicoesPorModalidade(string modalidadeCodigo, string? fatoExtra, string fatoDeModalidade)
     {
         List<CondicaoGatilho> condicoes =
         [
@@ -146,11 +140,7 @@ internal static class CenarioDeConformidadeLegal
             condicoes.Add(CondicaoGatilho.Criar(0, fatoExtra, Operador.Igual, JsonSerializer.SerializeToElement("QUALQUER")).Value!);
         }
 
-        return new DocumentoExigidoBuilder()
-            .ComTipo(new CopiaDoTipoDeDocumento(tipoDocumentoOrigemId ?? Guid.CreateVersion7(), tipoDocumentoCodigo, "Documento de teste", "CATEGORIA", ProtecaoDoDocumentoDeTeste.Pessoal))
-            .NaFase(exigidoNaFaseId)
-            .ComAplicabilidade(new AplicabilidadeDaExigencia(Aplicabilidade.Condicional, condicoes))
-            .Construir();
+        return condicoes;
     }
 
     /// <summary>

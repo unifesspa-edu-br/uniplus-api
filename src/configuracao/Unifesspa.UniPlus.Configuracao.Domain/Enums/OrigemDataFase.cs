@@ -16,10 +16,16 @@ using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 public enum OrigemDataFase
 {
     /// <summary>A data é fixada no edital — período obrigatório.</summary>
-    [CodigoDeContrato("NO_EDITAL", "No edital")]
+    [CodigoDeContrato(
+        "NO_EDITAL",
+        "No edital",
+        Descricao = "A data é fixada no edital: o período é obrigatório.")]
     NoEdital = 1,
 
     /// <summary>A data não é fixada no edital: a unidade responsável pela fase a define na execução — período opcional.</summary>
-    [CodigoDeContrato("NA_EXECUCAO", "Na execução do processo")]
+    [CodigoDeContrato(
+        "NA_EXECUCAO",
+        "Na execução do processo",
+        Descricao = "A data não é fixada no edital: a unidade responsável pela fase a define na execução, e o período é opcional.")]
     NaExecucao = 2,
 }

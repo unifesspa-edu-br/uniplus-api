@@ -7,7 +7,9 @@ using AwesomeAssertions;
 using Microsoft.EntityFrameworkCore;
 
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.ConceitoDaAvaliacao;
@@ -48,17 +50,17 @@ public sealed class RegraCatalogoSeedTests : IClassFixture<RegraCatalogoDbFixtur
     private static void ConferirRegrasSemDuplicacao(List<RegraCatalogo> regras)
     {
         regras.Select(r => (r.Codigo, r.Versao)).Should().OnlyHaveUniqueItems();
-        regras.Should().Contain(r => r.Codigo == "DISTRIBUICAO-LEI-12711" && r.Tipo == TipoRegra.RegraDistribuicaoVagas);
-        regras.Should().Contain(r => r.Codigo == "DISTRIBUICAO-LEI-12711-COM-AMPLA-CONCORRENCIA-E-PESSOA-COM-DEFICIENCIA" && r.Tipo == TipoRegra.RegraDistribuicaoVagas);
-        regras.Should().Contain(r => r.Codigo == "DISTRIBUICAO-POR-ACRESCIMO-INDIGENA-E-QUILOMBOLA" && r.Tipo == TipoRegra.RegraDistribuicaoVagas);
-        regras.Should().Contain(r => r.Codigo == "DISTRIBUICAO-COM-AMPLA-CONCORRENCIA-E-PESSOA-COM-DEFICIENCIA" && r.Tipo == TipoRegra.RegraDistribuicaoVagas);
+        regras.Should().Contain(r => r.Codigo == "DISTRIBUICAO_LEI_12711" && r.Tipo == TipoRegra.RegraDistribuicaoVagas);
+        regras.Should().Contain(r => r.Codigo == "DISTRIBUICAO_LEI_12711_COM_AMPLA_CONCORRENCIA_E_PESSOA_COM_DEFICIENCIA" && r.Tipo == TipoRegra.RegraDistribuicaoVagas);
+        regras.Should().Contain(r => r.Codigo == "DISTRIBUICAO_POR_ACRESCIMO_INDIGENA_E_QUILOMBOLA" && r.Tipo == TipoRegra.RegraDistribuicaoVagas);
+        regras.Should().Contain(r => r.Codigo == "DISTRIBUICAO_COM_AMPLA_CONCORRENCIA_E_PESSOA_COM_DEFICIENCIA" && r.Tipo == TipoRegra.RegraDistribuicaoVagas);
         regras.Should().NotContain(r => r.Codigo == "DISTRIB-VAGAS-COM-PCD-PURO",
             "a reserva de pessoa com deficiência sem as cotas da lei passou a ser AC_PCD");
-        regras.Should().Contain(r => r.Codigo == "FORMULA-MEDIA-PONDERADA" && r.Tipo == TipoRegra.RegraCalculo);
-        regras.Should().Contain(r => r.Codigo == "REMANEJ-CASCATA-LEI-12711" && r.Tipo == TipoRegra.CriterioRemanejamento);
-        regras.Should().Contain(r => r.Codigo == AlgoritmoContagemPrazoCodigo.ExcluiDiaInicial && r.Tipo == TipoRegra.AlgoritmoContagemPrazo);
-        regras.Should().Contain(r => r.Codigo == AlgoritmoContagemPrazoCodigo.HorasUteisDesdeAncora && r.Tipo == TipoRegra.AlgoritmoContagemPrazo);
-        regras.Should().Contain(r => r.Codigo == AlgoritmoContagemPrazoCodigo.AvancaDataUtil && r.Tipo == TipoRegra.AlgoritmoContagemPrazo);
+        regras.Should().Contain(r => r.Codigo == "FORMULA_MEDIA_PONDERADA" && r.Tipo == TipoRegra.RegraCalculo);
+        regras.Should().Contain(r => r.Codigo == "REMANEJAMENTO_ORDEM_LEI_12711" && r.Tipo == TipoRegra.CriterioRemanejamento);
+        regras.Should().Contain(r => r.Codigo == ConvencaoDeContagemDoPrazo.ExcluiDiaInicial.Codigo() && r.Tipo == TipoRegra.ConvencaoContagemPrazo);
+        regras.Should().Contain(r => r.Codigo == ConvencaoDeContagemDoPrazo.HorasUteisDesdeOEventoInicial.Codigo() && r.Tipo == TipoRegra.ConvencaoContagemPrazo);
+        regras.Should().Contain(r => r.Codigo == ConvencaoDeContagemDoPrazo.AvancaDataUtil.Codigo() && r.Tipo == TipoRegra.ConvencaoContagemPrazo);
     }
 
     [Fact(DisplayName = "Hash gravado é content-addressable: recomputar após round-trip jsonb bate")]
@@ -94,7 +96,7 @@ public sealed class RegraCatalogoSeedTests : IClassFixture<RegraCatalogoDbFixtur
 
         RegraCatalogo bonus = await context.RolDeRegras
             .AsNoTracking()
-            .SingleAsync(r => r.Codigo == "BONUS-MULTIPLICATIVO", CancellationToken.None);
+            .SingleAsync(r => r.Codigo == "FADA_MULTIPLICATIVO", CancellationToken.None);
 
         bonus.DeclaracaoDaRegra.ValueKind.Should().Be(JsonValueKind.Object);
         bonus.DeclaracaoDaRegra.EnumerateObject().Should().BeEmpty();
@@ -108,7 +110,7 @@ public sealed class RegraCatalogoSeedTests : IClassFixture<RegraCatalogoDbFixtur
         using JsonDocument declaracao = JsonDocument.Parse("""{"fonte_pesos":["etapa"]}""");
         using JsonDocument invariantes = JsonDocument.Parse("""["divisor = Σ(peso)"]""");
         RegraCatalogo v2 = RegraCatalogo.Criar(
-            "FORMULA-MEDIA-PONDERADA", "v2", TipoRegra.RegraCalculo,
+            "FORMULA_MEDIA_PONDERADA", "v2", TipoRegra.RegraCalculo,
             declaracao.RootElement, invariantes.RootElement, "Revisão da fórmula (nova versão)");
         try
         {
@@ -132,7 +134,7 @@ public sealed class RegraCatalogoSeedTests : IClassFixture<RegraCatalogoDbFixtur
     {
         await using UniPlusDbContext context = _fixture.CreateDbContext();
         List<RegraCatalogo> versoes = await context.RolDeRegras.AsNoTracking()
-            .Where(r => r.Codigo == "FORMULA-MEDIA-PONDERADA")
+            .Where(r => r.Codigo == "FORMULA_MEDIA_PONDERADA")
             .OrderBy(r => r.Versao).ToListAsync(CancellationToken.None);
         versoes.Select(r => r.Versao).Should().Equal("v1", "v2");
     }
@@ -149,17 +151,17 @@ public sealed class RegraCatalogoSeedTests : IClassFixture<RegraCatalogoDbFixtur
         await using UniPlusDbContext context = _fixture.CreateDbContext();
         RegraCatalogoReader reader = new(context);
 
-        RegraCatalogo? formula = await reader.ObterAsync("FORMULA-MEDIA-PONDERADA", "v1", CancellationToken.None);
+        RegraCatalogo? formula = await reader.ObterAsync("FORMULA_MEDIA_PONDERADA", "v1", CancellationToken.None);
         formula.Should().NotBeNull();
         formula!.Tipo.Should().Be(TipoRegra.RegraCalculo);
 
-        RegraCatalogo? inexistente = await reader.ObterAsync("FORMULA-MEDIA-PONDERADA", "v99", CancellationToken.None);
+        RegraCatalogo? inexistente = await reader.ObterAsync("FORMULA_MEDIA_PONDERADA", "v99", CancellationToken.None);
         inexistente.Should().BeNull();
 
         IReadOnlyList<RegraCatalogo> desempates = await reader.ListarPorTipoAsync(TipoRegra.CriterioDesempate, CancellationToken.None);
         desempates.Should().HaveCount(5);
         desempates.Should().OnlyContain(r => r.Tipo == TipoRegra.CriterioDesempate);
-        desempates.Should().Contain(r => r.Codigo == CriterioDesempateCodigo.MaiorNotaAreaEnem && r.Versao == "v1");
+        desempates.Should().Contain(r => r.Codigo == RegraDeDesempate.MaiorNotaPorAreaDoEnem.Codigo() && r.Versao == "v1");
     }
 
     [Fact(DisplayName = "A eliminação por falta em dia de prova do ENEM é semeada sem parâmetros, com as duas invariantes")]
@@ -168,7 +170,7 @@ public sealed class RegraCatalogoSeedTests : IClassFixture<RegraCatalogoDbFixtur
         await using UniPlusDbContext context = _fixture.CreateDbContext();
         RegraCatalogoReader reader = new(context);
 
-        RegraCatalogo? regra = await reader.ObterAsync(RegraEliminacaoCodigo.ElimFaltaEmDiaDeProvaEnem, "v1", CancellationToken.None);
+        RegraCatalogo? regra = await reader.ObterAsync(RegraDeEliminacaoPorCalculo.FaltaEmDiaDeProvaDoEnem.Codigo(), "v1", CancellationToken.None);
 
         regra.Should().NotBeNull();
         regra!.Tipo.Should().Be(TipoRegra.RegraEliminacao);
@@ -184,8 +186,8 @@ public sealed class RegraCatalogoSeedTests : IClassFixture<RegraCatalogoDbFixtur
         await using UniPlusDbContext context = _fixture.CreateDbContext();
         RegraCatalogoReader reader = new(context);
 
-        RegraCatalogo? regra = await reader.ObterAsync(RegraEliminacaoCodigo.ElimCorteEmArea, "v1", CancellationToken.None);
-        RegraCatalogo? antiga = await reader.ObterAsync("ELIM-CORTE-REDACAO", "v1", CancellationToken.None);
+        RegraCatalogo? regra = await reader.ObterAsync(RegraDeEliminacaoPorCalculo.CorteEmAreaDoEnem.Codigo(), "v1", CancellationToken.None);
+        RegraCatalogo? antiga = await reader.ObterAsync("ELIMINACAO-CORTE-REDACAO", "v1", CancellationToken.None);
 
         regra.Should().NotBeNull();
         regra!.Tipo.Should().Be(TipoRegra.RegraEliminacao);
@@ -202,7 +204,7 @@ public sealed class RegraCatalogoSeedTests : IClassFixture<RegraCatalogoDbFixtur
         await using UniPlusDbContext context = _fixture.CreateDbContext();
         RegraCatalogoReader reader = new(context);
 
-        RegraCatalogo? regra = await reader.ObterAsync(RegraEliminacaoCodigo.ElimAusenciaNaEtapa, "v1", CancellationToken.None);
+        RegraCatalogo? regra = await reader.ObterAsync(RegraDeEliminacaoPorCalculo.AusenciaNaEtapa.Codigo(), "v1", CancellationToken.None);
 
         regra.Should().NotBeNull();
         regra!.Tipo.Should().Be(TipoRegra.RegraEliminacao);
@@ -214,8 +216,8 @@ public sealed class RegraCatalogoSeedTests : IClassFixture<RegraCatalogoDbFixtur
     }
 
     [Theory(DisplayName = "Código ou versão com o caractere nulo não é encontrado, sem erro do banco")]
-    [InlineData("FORMULA-MEDIA-PONDERADA\0", "v1")]
-    [InlineData("FORMULA-MEDIA-PONDERADA", "v\01")]
+    [InlineData("FORMULA_MEDIA_PONDERADA\0", "v1")]
+    [InlineData("FORMULA_MEDIA_PONDERADA", "v\01")]
     public async Task Reader_ObterAsync_CaractereNulo_NaoEncontrado(string codigo, string versao)
     {
         await using UniPlusDbContext context = _fixture.CreateDbContext();
@@ -232,7 +234,7 @@ public sealed class RegraCatalogoSeedTests : IClassFixture<RegraCatalogoDbFixtur
         await using UniPlusDbContext context = _fixture.CreateDbContext();
         RegraCatalogoReader reader = new(context);
 
-        RegraCatalogo? regra = await reader.ObterAsync("FORMULA-MEDIA-PONDERADA", null!, CancellationToken.None);
+        RegraCatalogo? regra = await reader.ObterAsync("FORMULA_MEDIA_PONDERADA", null!, CancellationToken.None);
 
         regra.Should().BeNull();
     }
@@ -243,7 +245,7 @@ public sealed class RegraCatalogoSeedTests : IClassFixture<RegraCatalogoDbFixtur
         await using UniPlusDbContext context = _fixture.CreateDbContext();
         RegraCatalogoReader reader = new(context);
 
-        RegraCatalogo? nova = await reader.ObterAsync("RECURSO-PRAZO-ANCORADO-EM-ATO", "v1", CancellationToken.None);
+        RegraCatalogo? nova = await reader.ObterAsync("RECURSO_PRAZO_CONTADO_DA_PUBLICACAO_DO_ATO", "v1", CancellationToken.None);
         nova.Should().NotBeNull();
         nova!.Tipo.Should().Be(TipoRegra.RegraPrazoRecurso);
 
@@ -261,15 +263,15 @@ public sealed class RegraCatalogoSeedTests : IClassFixture<RegraCatalogoDbFixtur
             TipoRegra.RegraPrazoRecurso, CancellationToken.None);
 
         regras.Should().ContainSingle()
-            .Which.Codigo.Should().Be("RECURSO-PRAZO-ANCORADO-EM-ATO");
+            .Which.Codigo.Should().Be("RECURSO_PRAZO_CONTADO_DA_PUBLICACAO_DO_ATO");
     }
 
     [Theory(DisplayName = "O leitor resolve cada regra de distribuição apenas em v1")]
-    [InlineData("DISTRIBUICAO-LEI-12711")]
-    [InlineData("DISTRIBUICAO-LEI-12711-COM-AMPLA-CONCORRENCIA-E-PESSOA-COM-DEFICIENCIA")]
-    [InlineData("DISTRIBUICAO-INSTITUCIONAL")]
-    [InlineData("DISTRIBUICAO-POR-ACRESCIMO-INDIGENA-E-QUILOMBOLA")]
-    [InlineData("DISTRIBUICAO-COM-AMPLA-CONCORRENCIA-E-PESSOA-COM-DEFICIENCIA")]
+    [InlineData("DISTRIBUICAO_LEI_12711")]
+    [InlineData("DISTRIBUICAO_LEI_12711_COM_AMPLA_CONCORRENCIA_E_PESSOA_COM_DEFICIENCIA")]
+    [InlineData("DISTRIBUICAO_INSTITUCIONAL")]
+    [InlineData("DISTRIBUICAO_POR_ACRESCIMO_INDIGENA_E_QUILOMBOLA")]
+    [InlineData("DISTRIBUICAO_COM_AMPLA_CONCORRENCIA_E_PESSOA_COM_DEFICIENCIA")]
     public async Task Reader_ObterAsync_DistribuicaoVagas_SoResolveV1(string codigo)
     {
         await using UniPlusDbContext context = _fixture.CreateDbContext();
@@ -281,8 +283,8 @@ public sealed class RegraCatalogoSeedTests : IClassFixture<RegraCatalogoDbFixtur
     }
 
     [Theory(DisplayName = "A base legal das regras de ação afirmativa é a Res. 532/2021, sem resolução revogada")]
-    [InlineData(RegraDistribuicaoVagasCodigo.ComAcPcd, "532/2021-CONSEPE, art. 1º")]
-    [InlineData(RegraDistribuicaoVagasCodigo.Psiq, "532/2021-CONSEPE, art. 2º")]
+    [InlineData("DISTRIBUICAO_COM_AMPLA_CONCORRENCIA_E_PESSOA_COM_DEFICIENCIA", "532/2021-CONSEPE, art. 1º")]
+    [InlineData("DISTRIBUICAO_POR_ACRESCIMO_INDIGENA_E_QUILOMBOLA", "532/2021-CONSEPE, art. 2º")]
     public async Task RegraDeAcaoAfirmativa_FundamentadaNaResolucao532(string codigo, string normaEsperada)
     {
         await using UniPlusDbContext context = _fixture.CreateDbContext();
@@ -303,10 +305,10 @@ public sealed class RegraCatalogoSeedTests : IClassFixture<RegraCatalogoDbFixtur
         await using UniPlusDbContext context = _fixture.CreateDbContext();
 
         List<RegraCatalogo> consolidacoes = await context.RolDeRegras.AsNoTracking()
-            .Where(r => r.Tipo == TipoRegra.RegraConsolidacao)
+            .Where(r => r.Tipo == TipoRegra.RegraApuracaoAvaliacao)
             .ToListAsync(CancellationToken.None);
 
-        consolidacoes.Select(r => r.Codigo).Should().BeEquivalentTo(RegraConsolidacaoCodigo.Rol);
+        consolidacoes.Select(r => r.Codigo).Should().BeEquivalentTo(CatalogoDe<RegraDeApuracaoDaAvaliacao>.Valores().Select(static valor => valor.Codigo()));
         foreach (RegraCatalogo regra in consolidacoes)
         {
             CorretoresDaRegraDeConsolidacao.De(regra).Should().BePositive(regra.Codigo);
@@ -323,7 +325,7 @@ public sealed class RegraCatalogoSeedTests : IClassFixture<RegraCatalogoDbFixtur
             .Where(r => r.Tipo == TipoRegra.RegraProcedimentoRecurso)
             .ToListAsync(CancellationToken.None);
 
-        procedimentos.Select(r => r.Codigo).Should().BeEquivalentTo(RegraProcedimentoRecursoCodigo.Rol);
+        procedimentos.Select(r => r.Codigo).Should().BeEquivalentTo(CatalogoDe<RegraDeProcedimentoDoRecurso>.Todos().Select(static item => item.Codigo));
         procedimentos.Should().OnlyContain(r => r.Versao == RegraCatalogoSeed.VersaoV1);
         foreach (RegraCatalogo regra in procedimentos)
         {
@@ -337,8 +339,8 @@ public sealed class RegraCatalogoSeedTests : IClassFixture<RegraCatalogoDbFixtur
         await using UniPlusDbContext context = _fixture.CreateDbContext();
         RegraCatalogoReader reader = new(context);
 
-        RegraCatalogo unica = (await reader.ObterAsync(RegraConsolidacaoCodigo.AvaliacaoUnica, RegraCatalogoSeed.VersaoV1, CancellationToken.None))!;
-        RegraCatalogo independente = (await reader.ObterAsync(RegraConsolidacaoCodigo.CorrecaoIndependente, RegraCatalogoSeed.VersaoV1, CancellationToken.None))!;
+        RegraCatalogo unica = (await reader.ObterAsync(RegraDeApuracaoDaAvaliacao.AvaliacaoUnica.Codigo(), RegraCatalogoSeed.VersaoV1, CancellationToken.None))!;
+        RegraCatalogo independente = (await reader.ObterAsync(RegraDeApuracaoDaAvaliacao.CorrecaoIndependente.Codigo(), RegraCatalogoSeed.VersaoV1, CancellationToken.None))!;
 
         CorretoresDaRegraDeConsolidacao.De(unica).Should().Be(1);
         NaturezasDaConsolidacao.De(unica).Should().BeEquivalentTo([NaturezaConceito.Numerico, NaturezaConceito.Categorico]);
@@ -347,11 +349,11 @@ public sealed class RegraCatalogoSeedTests : IClassFixture<RegraCatalogoDbFixtur
     }
 
     [Theory(DisplayName = "A regra categórica declara critério, corretores, tratamento e natureza")]
-    [InlineData(RegraConsolidacaoCodigo.ConceitoUnanimidade, CriterioDeConsolidacaoDoConceito.Unanimidade, 2, TratamentoDaFaltaDeConsolidacao.DecisaoDaBanca)]
-    [InlineData(RegraConsolidacaoCodigo.ConceitoMaioriaSimples, CriterioDeConsolidacaoDoConceito.MaioriaSimples, 3, TratamentoDaFaltaDeConsolidacao.NovoCorretor)]
-    [InlineData(RegraConsolidacaoCodigo.ConceitoMaioriaAbsoluta, CriterioDeConsolidacaoDoConceito.MaioriaAbsoluta, 3, TratamentoDaFaltaDeConsolidacao.NovoCorretor)]
+    [InlineData("APURACAO_CONCEITO_UNANIMIDADE", CriterioDeApuracaoDoConceito.Unanimidade, 2, TratamentoDaFaltaDeApuracao.DecisaoDaBanca)]
+    [InlineData("APURACAO_CONCEITO_MAIORIA_SIMPLES", CriterioDeApuracaoDoConceito.MaioriaSimples, 3, TratamentoDaFaltaDeApuracao.NovoCorretor)]
+    [InlineData("APURACAO_CONCEITO_MAIORIA_ABSOLUTA", CriterioDeApuracaoDoConceito.MaioriaAbsoluta, 3, TratamentoDaFaltaDeApuracao.NovoCorretor)]
     public async Task RegraDeConceitoCategorico_DeclaraCriterioCorretoresETratamento(
-        string codigo, CriterioDeConsolidacaoDoConceito criterio, int corretores, TratamentoDaFaltaDeConsolidacao tratamento)
+        string codigo, CriterioDeApuracaoDoConceito criterio, int corretores, TratamentoDaFaltaDeApuracao tratamento)
     {
         await using UniPlusDbContext context = _fixture.CreateDbContext();
         RegraCatalogoReader reader = new(context);
@@ -366,7 +368,7 @@ public sealed class RegraCatalogoSeedTests : IClassFixture<RegraCatalogoDbFixtur
         await using UniPlusDbContext context = _fixture.CreateDbContext();
         RegraCatalogoReader reader = new(context);
 
-        foreach (string codigo in new[] { RegraConsolidacaoCodigo.AvaliacaoUnica, RegraConsolidacaoCodigo.CorrecaoIndependente })
+        foreach (string codigo in new[] { RegraDeApuracaoDaAvaliacao.AvaliacaoUnica.Codigo(), RegraDeApuracaoDaAvaliacao.CorrecaoIndependente.Codigo() })
         {
             RegraCatalogo regra = (await reader.ObterAsync(codigo, RegraCatalogoSeed.VersaoV1, CancellationToken.None))!;
 
@@ -378,9 +380,9 @@ public sealed class RegraCatalogoSeedTests : IClassFixture<RegraCatalogoDbFixtur
     public void RegraDeConsolidacao_CodigoUnicoEHashDistinto()
     {
         List<RegraCatalogoSeedItem> consolidacoes =
-            [.. RegraCatalogoSeed.Itens.Where(item => item.Tipo == TipoRegra.RegraConsolidacao)];
+            [.. RegraCatalogoSeed.Itens.Where(item => item.Tipo == TipoRegra.RegraApuracaoAvaliacao)];
 
-        consolidacoes.Select(item => item.Codigo).Should().BeEquivalentTo(RegraConsolidacaoCodigo.Rol).And.OnlyHaveUniqueItems();
+        consolidacoes.Select(item => item.Codigo).Should().BeEquivalentTo(CatalogoDe<RegraDeApuracaoDaAvaliacao>.Valores().Select(static valor => valor.Codigo())).And.OnlyHaveUniqueItems();
         consolidacoes.Select(item => item.ComputarHash()).Should().OnlyHaveUniqueItems();
     }
 }

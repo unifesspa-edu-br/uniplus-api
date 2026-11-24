@@ -19,6 +19,7 @@ using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Seed;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Authentication;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.Formularios;
@@ -247,7 +248,7 @@ public sealed class AplicarModelosPsrMedicina2027Tests
             {
                 VagasOfertadasBase = 40,
                 PercentualDaReservaLegal = 1m,
-                RegraDeDistribuicao = ReferenciaRegra.De(RegraDistribuicaoVagasCodigo.Institucional, "v1", new string('a', 64)),
+                RegraDeDistribuicao = ReferenciaRegra.De(RegraDeDistribuicaoDeVagas.Institucional.Codigo(), "v1", new string('a', 64)),
                 Modalidades = [ModalidadeAmpla(), ModalidadeDeCotaDaLei()],
             },
             new FatosDaOfertaNoCadastro { OfertaCurso = Testes.Compartilhado.OfertaCursoDeTeste.Medicina }).Value!;
@@ -263,7 +264,7 @@ public sealed class AplicarModelosPsrMedicina2027Tests
 
     private static void DefinirBonusRegionalEmMaraba(ProcessoSeletivo processo)
     {
-        ConfiguracaoBonusRegional bonus = ConfiguracaoBonusRegional.Criar(ReferenciaRegra.De(RegraBonusCodigo.Multiplicativo, "v1", new string('e', 64)), 1.20m, null, null, new BaseLegalCongelada(Guid.CreateVersion7(), "PORTARIA_UNIFESSPA_NO_2514_2023", "PORTARIA", "Portaria Unifesspa nº 2514/2023", "Institui inclusão regional", [("1504208", "Marabá", "PA")])).Value!;
+        ConfiguracaoBonusRegional bonus = ConfiguracaoBonusRegional.Criar(ReferenciaRegra.De(RegraDeBonus.Multiplicativo.Codigo(), "v1", new string('e', 64)), 1.20m, null, null, new BaseLegalCongelada(Guid.CreateVersion7(), "PORTARIA_UNIFESSPA_NO_2514_2023", "PORTARIA", "Portaria Unifesspa nº 2514/2023", "Institui inclusão regional", [("1504208", "Marabá", "PA")])).Value!;
         Result definido = processo.DefinirBonusRegional(aplica: true, bonus: bonus);
         definido.IsSuccess.Should().BeTrue(definido.Error?.Message);
     }
@@ -282,10 +283,10 @@ public sealed class AplicarModelosPsrMedicina2027Tests
     private static ConfiguracaoClassificacao ClassificacaoPelasNotasDoEnem() =>
         ConfiguracaoClassificacao.Criar(new DeclaracaoDaClassificacao
         {
-            RegraCalculo = ReferenciaRegra.De(RegraCalculoCodigo.FormulaMediaPonderada, "v1", new string('c', 64)),
-            RegraArredondamento = ReferenciaRegra.De(RegraArredondamentoCodigo.PrecisaoTruncar, "v1", new string('d', 64)),
+            RegraCalculo = ReferenciaRegra.De(RegraDeCalculoDaNota.MediaPonderada.Codigo(), "v1", new string('c', 64)),
+            RegraArredondamento = ReferenciaRegra.De(RegraDeArredondamentoDaNota.Truncar.Codigo(), "v1", new string('d', 64)),
             CasasArredondamento = 2,
-            RegraOrdemAlocacao = ReferenciaRegra.De(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, "v1", new string('f', 64)),
+            RegraOrdemAlocacao = ReferenciaRegra.De(RegraDeOrdemDeAlocacao.PrimeiraOpcaoPrioritaria.Codigo(), "v1", new string('f', 64)),
             BaseadoEmEnem = true,
             ResolucaoPesoAreaEnem = Testes.Compartilhado.QuadroPesoAreaEnemDeTeste.Resolucao,
             QuadroPesoAreaEnem = Testes.Compartilhado.QuadroPesoAreaEnemDeTeste.Completo(),
@@ -320,11 +321,7 @@ public sealed class AplicarModelosPsrMedicina2027Tests
         documento.Condicoes.Single(static c => c.Fato == "CONDICAO_ATENDIMENTO").Valor.GetString()!;
 
     private static ModalidadeSelecionada Modalidade(string codigo, NaturezaLegalModalidade natureza, PredicadoDnf regra, int vagas) =>
-        ModalidadeSelecionada.Criar(
-            Guid.CreateVersion7(), codigo, null, natureza,
-            natureza == NaturezaLegalModalidade.Ampla ? ComposicaoVagasModalidade.RestanteDasVagasOfertadas : ComposicaoVagasModalidade.SuplementarAoTotal, null,
-            natureza == NaturezaLegalModalidade.CotaReservada ? RegraRemanejamentoModalidade.SegueCascata : RegraRemanejamentoModalidade.Nenhuma,
-            null, null, null, regra, null, "Lei 12.711/2012", quantidadeDeclarada: vagas).Value!;
+        ModalidadeSelecionada.Criar(ModalidadesNoCadastroDeTeste.Da(codigo, natureza, natureza == NaturezaLegalModalidade.Ampla ? ComposicaoVagasModalidade.RestanteDasVagasOfertadas : ComposicaoVagasModalidade.SuplementarAoTotal) with { RegraRemanejamento = natureza == NaturezaLegalModalidade.CotaReservada ? RegraRemanejamentoModalidade.SegueOrdemDeRemanejamento : null, RegraDeAplicabilidade = regra }, vagas).Value!;
 
     private async Task<Guid> ModeloAsync(string codigo)
     {

@@ -8,6 +8,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Services;
@@ -37,7 +38,7 @@ public sealed class ExpiracaoDoEnvioComResiduoEndpointTests
         JsonElement corpo = await EnviarComORelogioNoResiduoAsync(
             HttpMethod.Post,
             $"/api/selecao/processos-seletivos/{processoId}/documentos-a-publicar",
-            new { finalidade = FinalidadeDoDocumento.DocumentoDoEdital, nomeArquivo = "edital.pdf", tipoDeMidia = TiposDeMidiaDeDocumento.Pdf });
+            new { finalidade = FinalidadeDoDocumento.DocumentoDoEdital.Codigo(), nomeArquivo = "edital.pdf", tipoDeMidia = TiposDeMidiaDeDocumento.Pdf });
 
         DateTimeOffset esperado = InstantesDeTeste.EmMicrossegundos + PrazoDoEnvio;
         corpo.GetProperty("expiraEm").GetDateTimeOffset().Should().Be(esperado);

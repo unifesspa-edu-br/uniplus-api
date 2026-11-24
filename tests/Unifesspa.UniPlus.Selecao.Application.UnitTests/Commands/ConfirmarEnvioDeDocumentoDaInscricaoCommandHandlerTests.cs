@@ -4,6 +4,7 @@ using AwesomeAssertions;
 
 using NSubstitute;
 
+using Unifesspa.UniPlus.Application.Abstractions.Respostas;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Application.DTOs;
 using Unifesspa.UniPlus.Selecao.Application.Services;
@@ -126,7 +127,7 @@ public sealed class ConfirmarEnvioDeDocumentoDaInscricaoCommandHandlerTests
 
     private static void ConferirRespostaDaConfirmacao(ArquivoDaApresentacaoDto resposta)
     {
-        resposta.Situacao.Should().Be(SituacaoDoArquivoDoCandidato.EmVerificacao);
+        resposta.Situacao.Should().Be(CodigoComRotulo<SituacaoDoArquivoDoCandidato>.De(SituacaoDoArquivoDoCandidato.EmVerificacao));
         resposta.Mensagem.Should().Be("Arquivo em verificação. Isso costuma levar poucos segundos.");
         resposta.Rotulo.Should().Be("Arquivo 1");
         resposta.NomeParaDownload.Should().BeNull("o hash só existe depois da verificação");

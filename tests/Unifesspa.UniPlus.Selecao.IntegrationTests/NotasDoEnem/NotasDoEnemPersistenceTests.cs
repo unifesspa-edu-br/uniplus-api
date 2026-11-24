@@ -77,13 +77,13 @@ public sealed class NotasDoEnemPersistenceTests : IClassFixture<InscricaoDbFixtu
         Guid etapa = cenario.Escopo.EtapaId;
         Guid outraOferta = Guid.CreateVersion7();
 
-        await Recusa(InsereAvaliacao(cenario, etapa, outraOferta, 2, "500"), PostgresErrorCodes.CheckViolation);
-        await Recusa(InsereAvaliacao(cenario, etapa, outraOferta, 1, "NULL"), PostgresErrorCodes.CheckViolation);
-        await Recusa(InsereAvaliacao(cenario, etapa, outraOferta, 1, "1000.001"), PostgresErrorCodes.CheckViolation);
-        await Recusa(InsereAvaliacao(cenario, etapa, outraOferta, 9, "NULL"), PostgresErrorCodes.CheckViolation);
-        await Recusa(InsereAvaliacao(cenario, etapa, cenario.Oferta, 2, "NULL"), PostgresErrorCodes.UniqueViolation);
-        await Recusa(InsereAvaliacao(cenario, Guid.CreateVersion7(), outraOferta, 2, "NULL"), PostgresErrorCodes.ForeignKeyViolation);
-        await ExecutarAsync(InsereAvaliacao(cenario, etapa, outraOferta, 1, "1000"));
+        await Recusa(InsereAvaliacao(cenario, etapa, outraOferta, "INSCRITO_SEM_LINHA", "500"), PostgresErrorCodes.CheckViolation);
+        await Recusa(InsereAvaliacao(cenario, etapa, outraOferta, "APURADA", "NULL"), PostgresErrorCodes.CheckViolation);
+        await Recusa(InsereAvaliacao(cenario, etapa, outraOferta, "APURADA", "1000.001"), PostgresErrorCodes.CheckViolation);
+        await Recusa(InsereAvaliacao(cenario, etapa, outraOferta, "invalida", "NULL"), PostgresErrorCodes.CheckViolation);
+        await Recusa(InsereAvaliacao(cenario, etapa, cenario.Oferta, "INSCRITO_SEM_LINHA", "NULL"), PostgresErrorCodes.UniqueViolation);
+        await Recusa(InsereAvaliacao(cenario, Guid.CreateVersion7(), outraOferta, "INSCRITO_SEM_LINHA", "NULL"), PostgresErrorCodes.ForeignKeyViolation);
+        await ExecutarAsync(InsereAvaliacao(cenario, etapa, outraOferta, "APURADA", "1000"));
     }
 
     [Fact(DisplayName = "o banco recusa o lote de uma versão da configuração inexistente")]
@@ -105,13 +105,13 @@ public sealed class NotasDoEnemPersistenceTests : IClassFixture<InscricaoDbFixtu
         LoteDeNotasDoEnem lote = NovoLote(escopo, ComNota(), Hash, DateTimeOffset.UtcNow);
         await SalvarAsync(_fixture, lote);
 
-        await Recusa(InsereOcorrencia(lote.Id, 2, "NULL", "NULL"), PostgresErrorCodes.CheckViolation);
-        await Recusa(InsereOcorrencia(lote.Id, 3, inscricao, "NULL"), PostgresErrorCodes.CheckViolation);
-        await Recusa(InsereOcorrencia(lote.Id, 3, inscricao, "ARRAY[3]"), PostgresErrorCodes.CheckViolation);
-        await Recusa(InsereOcorrencia(lote.Id, 1, inscricao, "ARRAY[3]"), PostgresErrorCodes.CheckViolation);
-        await Recusa(InsereOcorrencia(lote.Id, 2, inscricao, "ARRAY[3]"), PostgresErrorCodes.CheckViolation);
-        await ExecutarAsync(InsereOcorrencia(lote.Id, 2, "NULL", "ARRAY[7]"));
-        await ExecutarAsync(InsereOcorrencia(lote.Id, 3, inscricao, "ARRAY[3,4]"));
+        await Recusa(InsereOcorrencia(lote.Id, "LINHA_SEM_INSCRITO", "NULL", "NULL"), PostgresErrorCodes.CheckViolation);
+        await Recusa(InsereOcorrencia(lote.Id, "CONFLITO", inscricao, "NULL"), PostgresErrorCodes.CheckViolation);
+        await Recusa(InsereOcorrencia(lote.Id, "CONFLITO", inscricao, "ARRAY[3]"), PostgresErrorCodes.CheckViolation);
+        await Recusa(InsereOcorrencia(lote.Id, "INSCRITO_SEM_LINHA", inscricao, "ARRAY[3]"), PostgresErrorCodes.CheckViolation);
+        await Recusa(InsereOcorrencia(lote.Id, "LINHA_SEM_INSCRITO", inscricao, "ARRAY[3]"), PostgresErrorCodes.CheckViolation);
+        await ExecutarAsync(InsereOcorrencia(lote.Id, "LINHA_SEM_INSCRITO", "NULL", "ARRAY[7]"));
+        await ExecutarAsync(InsereOcorrencia(lote.Id, "CONFLITO", inscricao, "ARRAY[3,4]"));
     }
 
     [Fact(DisplayName = "só entram as inscrições enviadas que escolheram a edição; rascunho, cancelada e outra edição ficam de fora")]
@@ -205,13 +205,13 @@ public sealed class NotasDoEnemPersistenceTests : IClassFixture<InscricaoDbFixtu
         $"INSERT INTO selecao.inscritos_da_importacao (id, importacao_id, inscricao_id, numero_de_inscricao_no_enem) VALUES ('{Guid.CreateVersion7()}', '{loteId}', '{inscricao}', '240000000003')";
 
     private static string InsereLancamento(Guid loteId, Guid inscricao, Guid etapa, string nota) =>
-        $"INSERT INTO selecao.lancamentos_de_nota (id, importacao_id, inscricao_id, etapa_processo_id, item_codigo, nota, situacao) VALUES ('{Guid.CreateVersion7()}', '{loteId}', '{inscricao}', '{etapa}', 'MATEMATICA', {nota}, 1)";
+        $"INSERT INTO selecao.lancamentos_de_nota (id, importacao_id, inscricao_id, etapa_processo_id, item_codigo, nota, situacao) VALUES ('{Guid.CreateVersion7()}', '{loteId}', '{inscricao}', '{etapa}', 'MATEMATICA', {nota}, 'PRESENTE')";
 
-    private static string InsereAvaliacao(LoteComAvaliacoes cenario, Guid etapa, Guid oferta, int situacao, string nota) =>
-        $"INSERT INTO selecao.avaliacoes_da_etapa (id, importacao_id, etapa_processo_id, inscricao_id, oferta_curso_id, grupo_area_enem_codigo, situacao, nota) VALUES ('{Guid.CreateVersion7()}', '{cenario.Lote.Id}', '{etapa}', '{cenario.Kevin}', '{oferta}', 'TECNOLOGICA', {situacao}, {nota})";
+    private static string InsereAvaliacao(LoteComAvaliacoes cenario, Guid etapa, Guid oferta, string situacao, string nota) =>
+        $"INSERT INTO selecao.avaliacoes_da_etapa (id, importacao_id, etapa_processo_id, inscricao_id, oferta_curso_id, grupo_area_enem_codigo, situacao, nota) VALUES ('{Guid.CreateVersion7()}', '{cenario.Lote.Id}', '{etapa}', '{cenario.Kevin}', '{oferta}', 'TECNOLOGICA', '{situacao}', {nota})";
 
-    private static string InsereOcorrencia(Guid loteId, int tipo, string inscricaoId, string linhas) =>
-        $"INSERT INTO selecao.ocorrencias_da_importacao (id, importacao_id, tipo, inscricao_id, numeros_das_linhas) VALUES ('{Guid.CreateVersion7()}', '{loteId}', {tipo}, {inscricaoId}, {linhas})";
+    private static string InsereOcorrencia(Guid loteId, string tipo, string inscricaoId, string linhas) =>
+        $"INSERT INTO selecao.ocorrencias_da_importacao (id, importacao_id, tipo, inscricao_id, numeros_das_linhas) VALUES ('{Guid.CreateVersion7()}', '{loteId}', '{tipo}', {inscricaoId}, {linhas})";
 
     private async Task ExecutarAsync(string sql)
     {

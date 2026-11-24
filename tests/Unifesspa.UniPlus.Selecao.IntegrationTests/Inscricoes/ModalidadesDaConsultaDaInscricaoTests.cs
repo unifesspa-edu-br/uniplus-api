@@ -7,12 +7,14 @@ using AwesomeAssertions;
 using NSubstitute;
 
 using Unifesspa.UniPlus.Application.Abstractions.Authentication;
+using Unifesspa.UniPlus.Application.Abstractions.Respostas;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Services;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Application.DTOs;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
+using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Errors;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
@@ -39,7 +41,7 @@ public sealed class ModalidadesDaConsultaDaInscricaoTests
         Result<InscricaoDto> iniciar = await _cenario.IniciarRascunhoAsync(db, processoId, fernanda);
         iniciar.IsSuccess.Should().BeTrue(iniciar.Error?.Message);
         iniciar.Value!.Avaliacao.Modalidades.Should().BeEquivalentTo(new ModalidadesDaInscricaoDto(
-            true, "FALTA_RESPONDER", [],
+            true, CodigoComRotulo<SituacaoDasModalidades>.De(SituacaoDasModalidades.FaltaResponder), [],
             [new PendenciaDaAvaliacaoDto("CONCORRER_PCD", "Você quer concorrer às vagas para pessoa com deficiência?", FormularioDeTeste.Secao)]));
 
         await ConferirModalidadesAsync(db, processoId, fernanda);
@@ -68,9 +70,9 @@ public sealed class ModalidadesDaConsultaDaInscricaoTests
         });
 
         concorre.IsSuccess.Should().BeTrue(concorre.Error?.Message);
-        concorre.Value!.Modalidades.Situacao.Should().Be("CONCORRE");
+        concorre.Value!.Modalidades.Situacao!.Codigo.Should().Be("CONCORRE");
         concorre.Value!.Modalidades.Itens.Should().Equal(new ModalidadeDaInscricaoDto("AC", "AC", 0));
-        naoConcorre.Value!.Modalidades.Situacao.Should().Be("NAO_CONCORRE");
+        naoConcorre.Value!.Modalidades.Situacao!.Codigo.Should().Be("NAO_CONCORRE");
         naoConcorre.Value!.Modalidades.Itens.Should().BeEmpty();
     }
 
@@ -85,7 +87,7 @@ public sealed class ModalidadesDaConsultaDaInscricaoTests
         Result<AvaliacaoDaInscricaoDto> avaliacao = await _cenario.AvaliarAsync(db, processoId, fernanda, null);
 
         avaliacao.Value!.Modalidades.Derivada.Should().BeTrue("a modalidade sai das modalidades ofertadas");
-        avaliacao.Value.Modalidades.Situacao.Should().Be("CONCORRE");
+        avaliacao.Value.Modalidades.Situacao!.Codigo.Should().Be("CONCORRE");
         avaliacao.Value.Modalidades.Itens.Select(static m => m.Codigo).Should().Equal(["AC"]);
     }
 
@@ -127,11 +129,11 @@ public sealed class ModalidadesDaConsultaDaInscricaoTests
         ModalidadesDaInscricaoDto semOrigem = (await _cenario.AvaliarAsync(db, processoId, usuario,
             RespostasDaOrigemEDasCotas(ondeCursou: null, ep: true, ppi: false, renda: false))).Value!.Modalidades;
 
-        comCotas.Situacao.Should().Be("CONCORRE");
+        comCotas.Situacao!.Codigo.Should().Be("CONCORRE");
         comCotas.Itens.Select(static m => m.Codigo).Should().Equal("AC", "LB_EP", "LB_PPI", "LI_EP", "LI_PPI");
         comCotas.Itens.Single(static m => m.Codigo == "AC").Nome.Should().Be("Ampla concorrência");
         semCotas.Itens.Select(static m => m.Codigo).Should().Equal("AC");
-        semOrigem.Situacao.Should().Be("FALTA_RESPONDER");
+        semOrigem.Situacao!.Codigo.Should().Be("FALTA_RESPONDER");
         semOrigem.Pendencias.Select(static p => p.FatoCodigo).Should().Equal(OrigemEscolar.FatoFormaDeConclusao, OrigemEscolar.FatoOndeCursou);
     }
 
@@ -164,7 +166,7 @@ public sealed class ModalidadesDaConsultaDaInscricaoTests
         Result<InscricaoDto> ler = await _cenario.ObterAsync(db, processoId, fernanda);
 
         salvar.IsSuccess.Should().BeTrue(salvar.Error?.Message);
-        ModalidadesDaInscricaoDto concorre = new(true, "CONCORRE", [new ModalidadeDaInscricaoDto("AC", "AC", 0)], []);
+        ModalidadesDaInscricaoDto concorre = new(true, CodigoComRotulo<SituacaoDasModalidades>.De(SituacaoDasModalidades.Concorre), [new ModalidadeDaInscricaoDto("AC", "AC", 0)], []);
         salvar.Value!.Avaliacao.Modalidades.Should().BeEquivalentTo(concorre);
         ler.Value!.Avaliacao.Modalidades.Should().BeEquivalentTo(concorre);
     }

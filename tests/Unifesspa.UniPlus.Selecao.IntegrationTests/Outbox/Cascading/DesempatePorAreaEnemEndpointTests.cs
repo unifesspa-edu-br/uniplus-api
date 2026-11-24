@@ -14,6 +14,7 @@ using Microsoft.Extensions.DependencyInjection;
 
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Authentication;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 
 /// <summary>
@@ -53,7 +54,7 @@ public sealed class DesempatePorAreaEnemEndpointTests
         using JsonDocument doc = await GravarOrdemDeAreasEObterAsync(ctx, "REDACAO", "MATEMATICA");
 
         doc.RootElement.GetProperty("criteriosDesempate")[0].GetProperty("regra").GetProperty("codigo").GetString()
-            .Should().Be(CriterioDesempateCodigo.MaiorNotaAreaEnem);
+            .Should().Be(RegraDeDesempate.MaiorNotaPorAreaDoEnem.Codigo());
         AreasDoPrimeiroCriterio(doc).Should().Equal("REDACAO", "MATEMATICA");
     }
 
@@ -171,19 +172,19 @@ public sealed class DesempatePorAreaEnemEndpointTests
         new
         {
             ordem = 1,
-            regra = new { codigo = CriterioDesempateCodigo.MaiorNotaAreaEnem, versao = "v1" },
+            regra = new { codigo = RegraDeDesempate.MaiorNotaPorAreaDoEnem.Codigo(), versao = "v1" },
             parametros = new { areas },
         },
     ];
 
     private static object CorpoEnemLocal(string resolucao) => new
     {
-        regraCalculoCodigo = RegraCalculoCodigo.FormulaMediaPonderada,
+        regraCalculoCodigo = RegraDeCalculoDaNota.MediaPonderada.Codigo(),
         regraCalculoVersao = "v1",
-        regraArredondamentoCodigo = RegraArredondamentoCodigo.PrecisaoTruncar,
+        regraArredondamentoCodigo = RegraDeArredondamentoDaNota.Truncar.Codigo(),
         regraArredondamentoVersao = "v1",
         casasArredondamento = 2,
-        regraOrdemAlocacaoCodigo = RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria,
+        regraOrdemAlocacaoCodigo = RegraDeOrdemDeAlocacao.PrimeiraOpcaoPrioritaria.Codigo(),
         regraOrdemAlocacaoVersao = "v1",
         regrasEliminacao = Array.Empty<object>(),
         baseadoEmEnem = true,
@@ -192,12 +193,12 @@ public sealed class DesempatePorAreaEnemEndpointTests
 
     private static object CorpoImportadaSemEnem() => new
     {
-        regraCalculoCodigo = RegraCalculoCodigo.ClassificacaoImportada,
+        regraCalculoCodigo = RegraDeCalculoDaNota.ClassificacaoImportada.Codigo(),
         regraCalculoVersao = "v1",
         regraArredondamentoCodigo = (string?)null,
         regraArredondamentoVersao = (string?)null,
         casasArredondamento = (int?)null,
-        regraOrdemAlocacaoCodigo = RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria,
+        regraOrdemAlocacaoCodigo = RegraDeOrdemDeAlocacao.PrimeiraOpcaoPrioritaria.Codigo(),
         regraOrdemAlocacaoVersao = "v1",
         regrasEliminacao = Array.Empty<object>(),
         baseadoEmEnem = false,

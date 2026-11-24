@@ -52,7 +52,7 @@ public sealed class LeituraDaRegraDeRecursoDaFaseTests
         ("/cronograma/fases/0/regraRecurso/prazoSegundaInstanciaValor", "RegraRecursoFase.PrazoSegundaInstanciaSemInstanciaSuperior"),
     ];
 
-    private static ReferenciaDeRegraNoDocumento Ancorada => new(RegraPrazoRecursoCodigo.AncoradoEmAto, "v1");
+    private static ReferenciaDeRegraNoDocumento Ancorada => new(RegraDePrazoDoRecurso.ContadoDaPublicacaoDoAto.Codigo(), "v1");
 
     [Fact(DisplayName = "A regra de prazo ancorado em ato entra na fase com o produto preliminar do ato citado como âncora")]
     public void Regra_Ancorada_EntraComAAncoraDoPreliminar()
@@ -77,7 +77,7 @@ public sealed class LeituraDaRegraDeRecursoDaFaseTests
     [Fact(DisplayName = "A regra que o catálogo não tem não esconde o prazo que o domínio recusa")]
     public void RegraInexistente_PrazoInvalido_AcumulaRecusas()
     {
-        IdentificacaoECronogramaLidos lidos = Ler(Documento(ComRegra(new("REGRA-DIGITADA", "v1"), PrazoEmDiasUteis with { PrazoDeInterposicao = new PrazoDeclarado(0m, "diasUteis") })));
+        IdentificacaoECronogramaLidos lidos = Ler(Documento(ComRegra(new("REGRA-DIGITADA", "v1"), PrazoEmDiasUteis with { PrazoDeInterposicao = new PrazoDeclarado(0m, "DIAS_UTEIS") })));
 
         lidos.Cronograma.CronogramaFases.Single().RegraRecurso.Should().BeNull();
         PartesRecusadas(lidos).Should().Equal(
@@ -192,7 +192,7 @@ public sealed class LeituraDaRegraDeRecursoDaFaseTests
     [Fact(DisplayName = "O prazo que o domínio recusa deixa a fase sem regra de recurso e aponta o campo da regra de recurso")]
     public void Prazo_Recusado_ApontaARegraDeRecurso()
     {
-        IdentificacaoECronogramaLidos lidos = Ler(Documento(ComRegra(Ancorada, PrazoEmDiasUteis with { PrazoDeInterposicao = new PrazoDeclarado(0m, "diasUteis") })));
+        IdentificacaoECronogramaLidos lidos = Ler(Documento(ComRegra(Ancorada, PrazoEmDiasUteis with { PrazoDeInterposicao = new PrazoDeclarado(0m, "DIAS_UTEIS") })));
 
         lidos.Cronograma.CronogramaFases.Single().RegraRecurso.Should().BeNull();
         PartesRecusadas(lidos).Should().Equal(("/cronograma/fases/0/regraRecurso/prazoValor", "RegraRecursoFase.PrazoNaoPositivo"));
@@ -205,10 +205,10 @@ public sealed class LeituraDaRegraDeRecursoDaFaseTests
     {
         ParametrosDeclaradosDoRecurso parametros = PrazoEmDiasUteis with
         {
-            PrazoDeInterposicao = new PrazoDeclarado(0m, "horas"),
+            PrazoDeInterposicao = new PrazoDeclarado(0m, "HORAS"),
             EfeitoSuspensivo = null,
             GuardaDaVaga = "talvez",
-            PrazoDaSegundaInstancia = new PrazoDeclarado(1m, "horas"),
+            PrazoDaSegundaInstancia = new PrazoDeclarado(1m, "HORAS"),
         };
         ReferenciaDeRegraNoDocumento regra = regraExiste ? Ancorada : new("INEXISTENTE", "v1");
         IdentificacaoECronogramaLidos lidos = Ler(Documento(ComRegra(regra, parametros)));

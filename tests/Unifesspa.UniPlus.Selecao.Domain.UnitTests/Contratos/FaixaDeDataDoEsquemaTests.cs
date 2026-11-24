@@ -84,8 +84,8 @@ public sealed class FaixaDeDataDoEsquemaTests
         processo.DefinirAtendimentoEspecializado(AtendimentoEspecializado.Criar([], [], []).Value!).IsSuccess.Should().BeTrue();
         processo.DefinirClassificacao(ConfiguracaoClassificacao.Criar(new DeclaracaoDaClassificacao
         {
-            RegraCalculo = ReferenciaRegra.De(RegraCalculoCodigo.ClassificacaoImportada, "v1", new string('a', 64)),
-            RegraOrdemAlocacao = ReferenciaRegra.De(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, "v1", new string('b', 64)),
+            RegraCalculo = ReferenciaRegra.De(RegraDeCalculoDaNota.ClassificacaoImportada.Codigo(), "v1", new string('a', 64)),
+            RegraOrdemAlocacao = ReferenciaRegra.De(RegraDeOrdemDeAlocacao.PrimeiraOpcaoPrioritaria.Codigo(), "v1", new string('b', 64)),
         }).Value!).IsSuccess.Should().BeTrue();
         processo.DefinirOpcoesDeCurso(1).IsSuccess.Should().BeTrue();
         processo.DefinirFormulario(FinalidadeFormulario.Inscricao, null, null, FormularioDeTeste.Etapas(), FormularioDeTeste.DadosBasicos())

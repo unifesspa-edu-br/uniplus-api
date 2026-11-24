@@ -1,5 +1,6 @@
 namespace Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 
@@ -43,72 +44,54 @@ public sealed record ReferenciaTemporalFatos
     /// congelado); o caminho de wire usa a sobrecarga que recebe o token cru, que distingue
     /// "ausente" de "presente mas não reconhecido" antes de chegar aqui.
     /// </summary>
-    public static Result<ReferenciaTemporalFatos> Criar(ReferenciaTipo tipo, DateOnly? data, Guid? faseId)
+    public static Result<ReferenciaTemporalFatos> Criar(ReferenciaTipo? tipo, DateOnly? data, Guid? faseId)
     {
-        List<FieldError> erros = [];
-
-        if (tipo == ReferenciaTipo.Nenhuma)
+        if (tipo is null || !Enum.IsDefined(tipo.Value))
         {
-            erros.Add(new("tipo", new DomainError(
-                "ReferenciaTemporalFatos.TipoObrigatorio",
-                "O tipo de referência temporal é obrigatório (FIM_INSCRICAO, INICIO_FASE, FIM_FASE ou DATA_ESPECIFICA).")));
-        }
-        else
-        {
-            // Coerência de Data/FaseId só faz sentido com o tipo já reconhecido — senão a
-            // causa raiz (tipo obrigatório ausente) ficaria mascarada por uma coerência
-            // calculada sobre um tipo que não existe.
-            bool exigeData = tipo == ReferenciaTipo.DataEspecifica;
-            if (exigeData != data.HasValue)
-            {
-                erros.Add(new("data", new DomainError(
-                    "ReferenciaTemporalFatos.DataIncoerenteComTipo",
-                    exigeData
-                        ? "DATA_ESPECIFICA exige a data."
-                        : "A data só é aceita quando o tipo é DATA_ESPECIFICA.")));
-            }
-
-            bool exigeFase = tipo is ReferenciaTipo.InicioFase or ReferenciaTipo.FimFase;
-            if (exigeFase != faseId.HasValue)
-            {
-                erros.Add(new("faseId", new DomainError(
-                    "ReferenciaTemporalFatos.FaseIncoerenteComTipo",
-                    exigeFase
-                        ? "INICIO_FASE/FIM_FASE exigem a fase âncora."
-                        : "A fase âncora só é aceita quando o tipo é INICIO_FASE ou FIM_FASE.")));
-            }
+            return tipo is null
+                ? Result<ReferenciaTemporalFatos>.ValidationFailure(
+                    [new("tipo", new DomainError("ReferenciaTemporalFatos.TipoObrigatorio", "O tipo de referência temporal é obrigatório."))])
+                : TipoDesconhecido();
         }
 
-        if (erros.Count > 0)
-        {
-            return Result<ReferenciaTemporalFatos>.ValidationFailure(erros);
-        }
-
-        return Result<ReferenciaTemporalFatos>.Success(new ReferenciaTemporalFatos(tipo, data, faseId));
+        List<FieldError> erros = [.. new[] { RecusaDaData(tipo.Value, data), RecusaDaFase(tipo.Value, faseId) }.OfType<FieldError>()];
+        return erros.Count > 0
+            ? Result<ReferenciaTemporalFatos>.ValidationFailure(erros)
+            : Result<ReferenciaTemporalFatos>.Success(new ReferenciaTemporalFatos(tipo.Value, data, faseId));
     }
 
-    /// <summary>
-    /// Sobrecarga do caminho de wire (handler do <c>Definir*</c>): recebe o token cru, não o
-    /// enum já convertido. Antes, <c>ReferenciaTipoCodigo.FromCodigo</c> rodava no handler e
-    /// colapsava qualquer token desconhecido no mesmo sentinela <see cref="ReferenciaTipo.Nenhuma"/>
-    /// usado para "ausente" — um tipo genuinamente enviado mas não reconhecido virava
-    /// <c>TipoObrigatorio</c> ("é obrigatório"), quando o problema real era outro
-    /// (<c>TipoDesconhecido</c>). A distinção só é possível aqui, antes da conversão para
-    /// enum — por isso não dá para resolvê-la dentro da sobrecarga acima.
-    /// </summary>
+    private static FieldError? RecusaDaData(ReferenciaTipo tipo, DateOnly? data)
+    {
+        bool exigeData = tipo == ReferenciaTipo.DataEspecifica;
+        return exigeData == data.HasValue ? null : new("data", new DomainError(
+            "ReferenciaTemporalFatos.DataIncoerenteComTipo",
+            exigeData ? "DATA_ESPECIFICA exige a data." : "A data só é aceita quando o tipo é DATA_ESPECIFICA."));
+    }
+
+    private static FieldError? RecusaDaFase(ReferenciaTipo tipo, Guid? faseId)
+    {
+        bool exigeFase = tipo is ReferenciaTipo.InicioFase or ReferenciaTipo.FimFase;
+        return exigeFase == faseId.HasValue ? null : new("faseId", new DomainError(
+            "ReferenciaTemporalFatos.FaseIncoerenteComTipo",
+            exigeFase ? "INICIO_FASE/FIM_FASE exigem a fase de referência." : "A fase só é aceita quando o tipo é INICIO_FASE ou FIM_FASE."));
+    }
+
     public static Result<ReferenciaTemporalFatos> Criar(string? tipoCodigo, DateOnly? data, Guid? faseId)
     {
-        ReferenciaTipo tipo = ReferenciaTipoCodigo.FromCodigo(tipoCodigo);
-        if (tipo == ReferenciaTipo.Nenhuma && !string.IsNullOrWhiteSpace(tipoCodigo))
+        bool conhecido = CatalogoDe<ReferenciaTipo>.TentarObter(tipoCodigo, out ReferenciaTipo tipo);
+        if (!conhecido && !string.IsNullOrWhiteSpace(tipoCodigo))
         {
-            return Result<ReferenciaTemporalFatos>.ValidationFailure(
-            [
-                new("tipo", new DomainError(
-                    "ReferenciaTemporalFatos.TipoDesconhecido",
-                    "Tipo de referência temporal fora do catálogo fechado (FIM_INSCRICAO, INICIO_FASE, FIM_FASE, DATA_ESPECIFICA).")),
-            ]);
+            return TipoDesconhecido();
         }
 
-        return Criar(tipo, data, faseId);
+        return Criar(conhecido ? tipo : null, data, faseId);
     }
+
+    private static Result<ReferenciaTemporalFatos> TipoDesconhecido() =>
+        Result<ReferenciaTemporalFatos>.ValidationFailure(
+        [
+            new("tipo", new DomainError(
+                "ReferenciaTemporalFatos.TipoDesconhecido",
+                "Tipo de referência temporal fora do catálogo fechado (FIM_INSCRICAO, INICIO_FASE, FIM_FASE, DATA_ESPECIFICA).")),
+        ]);
 }

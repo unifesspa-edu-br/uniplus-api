@@ -131,14 +131,14 @@ public sealed class EtapasDoProcessoTests
     [Fact(DisplayName = "ENEM com caráter recusado não é acusado de não compor: o dado recusado corta a regra")]
     public void Conferir_EnemComCaraterRecusado_CortaANaoCompoe()
     {
-        Conferir((DoEnem() with { Carater = CaraterEtapa.Nenhum }).Declarar(), (new ModeloDeEtapa("Prova") with { Ordem = 2 }).Declarar()).Should().BeEmpty();
+        Conferir((DoEnem() with { Carater = (CaraterEtapa)99 }).Declarar(), (new ModeloDeEtapa("Prova") with { Ordem = 2 }).Declarar()).Should().BeEmpty();
     }
 
     [Fact(DisplayName = "Nenhuma etapa compondo a nota é recusado no conjunto, e etapa com dado cortado suspende a regra")]
     public void Conferir_NenhumaComponeNota_RecusaNoConjunto()
     {
         EtapaDeclarada eliminatoria = new ModeloDeEtapa("Triagem").SemNota().Declarar();
-        EtapaDeclarada comCaraterRecusado = (new ModeloDeEtapa("Prova") with { Carater = CaraterEtapa.Nenhum, Ordem = 2 }).Declarar();
+        EtapaDeclarada comCaraterRecusado = (new ModeloDeEtapa("Prova") with { Carater = (CaraterEtapa)99, Ordem = 2 }).Declarar();
 
         Conferir(eliminatoria).Should().Equal(("etapas", "ProcessoSeletivo.NenhumaEtapaComponeNota"));
         Conferir(eliminatoria, comCaraterRecusado).Should().BeEmpty();

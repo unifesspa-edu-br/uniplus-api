@@ -2,6 +2,7 @@ namespace Unifesspa.UniPlus.Selecao.Domain.UnitTests.ProcessosSeletivos.Etapas;
 
 using AwesomeAssertions;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
@@ -19,7 +20,7 @@ using Xunit;
 /// <summary>O tipo que exige correção independente só é congelado com a regra congelada que põe ao menos dois corretores em campo.</summary>
 public sealed class PendenciasDaCorrecaoIndependenteTests
 {
-    private static readonly ReferenciaRegra Regra = ReferenciaRegra.De(RegraConsolidacaoCodigo.CorrecaoIndependente, "v1", new string('a', 64));
+    private static readonly ReferenciaRegra Regra = ReferenciaRegra.De(RegraDeApuracaoDaAvaliacao.CorrecaoIndependente.Codigo(), "v1", new string('a', 64));
 
     private static EtapaProcesso Etapa(bool tipoExige, string nome = "Redação", ReferenciaRegra? regra = null, int ordem = 1)
     {
@@ -59,7 +60,7 @@ public sealed class PendenciasDaCorrecaoIndependenteTests
     [Fact(DisplayName = "Duas etapas recusadas dão duas causas, na ordem das etapas, e a regra não lida não esconde a de um só corretor")]
     public void DuasEtapasRecusadas_DuasCausas()
     {
-        ReferenciaRegra outraRegra = ReferenciaRegra.De(RegraConsolidacaoCodigo.CorrecaoIndependente, "v2", new string('b', 64));
+        ReferenciaRegra outraRegra = ReferenciaRegra.De(RegraDeApuracaoDaAvaliacao.CorrecaoIndependente.Codigo(), "v2", new string('b', 64));
 
         IReadOnlyList<FieldError> causas = Causas(
             Com(CorretoresDaRegra.SemNovoCorretor(1)),

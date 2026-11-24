@@ -28,13 +28,7 @@ public sealed class ModalidadeSelecionada : EntityBase
     public NaturezaLegalModalidade NaturezaLegal { get; private set; }
     public ComposicaoVagasModalidade ComposicaoVagas { get; private set; }
     public string? ComposicaoOrigemCodigo { get; private set; }
-    public RegraRemanejamentoModalidade RegraRemanejamento => RegraRemanejamentoModalidadeCodigo.DoTokenGravado(RegraRemanejamentoCodigo);
-
-    /// <summary>
-    /// O token canônico da regra de remanejamento, o mesmo do cadastro de modalidades; nulo quando a
-    /// modalidade não remaneja. Guardado como token para que a coluna aceite o nulo sem um valor inventado.
-    /// </summary>
-    private string? RegraRemanejamentoCodigo { get; init; }
+    public RegraRemanejamentoModalidade? RegraRemanejamento { get; private set; }
 
     public string? RemanejamentoDestino { get; private set; }
     public string? RemanejamentoPar { get; private set; }
@@ -80,157 +74,80 @@ public sealed class ModalidadeSelecionada : EntityBase
     /// </remarks>
     public bool RemanejamentoCoerenteComANatureza() => NaturezaLegal switch
     {
-        NaturezaLegalModalidade.Ampla => RegraRemanejamento == RegraRemanejamentoModalidade.Nenhuma,
+        NaturezaLegalModalidade.Ampla => RegraRemanejamento == null,
         NaturezaLegalModalidade.AcaoAfirmativa => RegraRemanejamento is RegraRemanejamentoModalidade.DestinoUnico or RegraRemanejamentoModalidade.Cruzado,
         _ => true,
     };
 
     private ModalidadeSelecionada() { }
 
-    /// <summary>
-    /// Cria a modalidade selecionada a partir do snapshot lido de
-    /// <c>ModalidadeView</c>, validando as invariantes que dependem só dos
-    /// próprios campos (natureza, composição e base legal completas, cascata legal da cota
-    /// reservada e a coerência interna de composição e remanejamento).
-    /// </summary>
-    public static Result<ModalidadeSelecionada> Criar(
-        Guid modalidadeOrigemId,
-        string codigo,
-        string? descricao,
-        NaturezaLegalModalidade naturezaLegal,
-        ComposicaoVagasModalidade composicaoVagas,
-        string? composicaoOrigemCodigo,
-        RegraRemanejamentoModalidade regraRemanejamento,
-        string? remanejamentoDestino,
-        string? remanejamentoPar,
-        string? remanejamentoFallback,
-        PredicadoDnf regraDeAplicabilidade,
-        string? acaoQuandoIndeferido,
-        string baseLegal,
-        int? quantidadeDeclarada = null)
+    public static Result<ModalidadeSelecionada> Criar(ModalidadeNoCadastro modalidade, int? quantidadeDeclarada = null)
     {
-        ArgumentNullException.ThrowIfNull(regraDeAplicabilidade);
-
-        // A identidade da origem decide se esta oferta é a mesma modalidade que uma
-        // obrigatoriedade legal exige (ADR-0129). Identidade vazia não identifica nada:
-        // gravaria uma oferta que jamais casa, e a cláusula legal seria dada por não
-        // ofertada sem que nada sinalizasse.
-        if (modalidadeOrigemId == Guid.Empty)
-        {
-            return Result<ModalidadeSelecionada>.Failure(new DomainError(
-                "ModalidadeSelecionada.ModalidadeOrigemIdObrigatorio",
-                "Identidade da modalidade de origem é obrigatória."));
-        }
-
-        if (string.IsNullOrWhiteSpace(codigo))
-        {
-            return Result<ModalidadeSelecionada>.Failure(new DomainError(
-                "ModalidadeSelecionada.CodigoObrigatorio", "Código da modalidade é obrigatório."));
-        }
-
-        // Natureza legal, composição de vagas e base legal completas.
-        if (naturezaLegal == NaturezaLegalModalidade.Nenhuma)
-        {
-            return Result<ModalidadeSelecionada>.Failure(new DomainError(
-                "ModalidadeSelecionada.NaturezaLegalObrigatoria",
-                $"Natureza legal da modalidade {codigo} é obrigatória."));
-        }
-
-        if (composicaoVagas == ComposicaoVagasModalidade.Nenhuma)
-        {
-            return Result<ModalidadeSelecionada>.Failure(new DomainError(
-                "ModalidadeSelecionada.ComposicaoVagasObrigatoria",
-                $"Composição de vagas da modalidade {codigo} é obrigatória."));
-        }
-
-        if (string.IsNullOrWhiteSpace(baseLegal))
-        {
-            return Result<ModalidadeSelecionada>.Failure(new DomainError(
-                "ModalidadeSelecionada.BaseLegalObrigatoria",
-                $"Base legal da modalidade {codigo} é obrigatória."));
-        }
-
-        // Coerência RETIRADA_DE_OUTRA_MODALIDADE: exige origem; as demais composições não a têm.
-        bool retiradaDeOutraModalidade = composicaoVagas == ComposicaoVagasModalidade.RetiradaDeOutraModalidade;
-        if (retiradaDeOutraModalidade && string.IsNullOrWhiteSpace(composicaoOrigemCodigo))
-        {
-            return Result<ModalidadeSelecionada>.Failure(new DomainError(
-                "ModalidadeSelecionada.ComposicaoOrigemObrigatoria",
-                $"Modalidade {codigo} com composição RETIRADA_DE_OUTRA_MODALIDADE exige o código de origem."));
-        }
-
-        if (!retiradaDeOutraModalidade && composicaoOrigemCodigo is not null)
-        {
-            return Result<ModalidadeSelecionada>.Failure(new DomainError(
-                "ModalidadeSelecionada.ComposicaoOrigemIndevida",
-                $"Modalidade {codigo} só declara código de origem quando a composição é RETIRADA_DE_OUTRA_MODALIDADE."));
-        }
-
-        // Cota reservada da Lei 12.711 obriga a cascata legal — o admin
-        // não pode trocar por destino único ou remanejamento cruzado.
-        if (naturezaLegal == NaturezaLegalModalidade.CotaReservada
-            && regraRemanejamento != RegraRemanejamentoModalidade.SegueCascata)
-        {
-            return Result<ModalidadeSelecionada>.Failure(new DomainError(
-                "ModalidadeSelecionada.CotaReservadaExigeCascata",
-                $"Modalidade {codigo} é cota reservada da Lei 12.711 e deve seguir a cascata legal."));
-        }
-
-        // Coerência do remanejamento: cada regra exige seus próprios campos e
-        // não aceita os das demais.
-        bool destinoUnico = regraRemanejamento == RegraRemanejamentoModalidade.DestinoUnico;
-        bool cruzado = regraRemanejamento == RegraRemanejamentoModalidade.Cruzado;
-
-        if (destinoUnico && string.IsNullOrWhiteSpace(remanejamentoDestino))
-        {
-            return Result<ModalidadeSelecionada>.Failure(new DomainError(
-                "ModalidadeSelecionada.RemanejamentoDestinoObrigatorio",
-                $"Modalidade {codigo} com remanejamento DESTINO_UNICO exige o destino."));
-        }
-
-        // O fallback é opcional no CRUZADO, e a ausência dele é declaração, não omissão: o par
-        // não tem destino final, e a vaga que nenhuma das duas modalidades preencher permanece
-        // ociosa — o caso do certame isolado, sem ampla concorrência para receber a sobra
-        // (UNI-REQ-0096). O par, esse sim, é o que define o cruzamento e segue obrigatório.
-        if (cruzado && string.IsNullOrWhiteSpace(remanejamentoPar))
-        {
-            return Result<ModalidadeSelecionada>.Failure(new DomainError(
-                "ModalidadeSelecionada.RemanejamentoCruzadoIncompleto",
-                $"Modalidade {codigo} com remanejamento CRUZADO exige o par."));
-        }
-
-        if (!destinoUnico && remanejamentoDestino is not null)
-        {
-            return Result<ModalidadeSelecionada>.Failure(new DomainError(
-                "ModalidadeSelecionada.RemanejamentoDestinoIndevido",
-                $"Modalidade {codigo} só declara destino de remanejamento quando a regra é DESTINO_UNICO."));
-        }
-
-        if (!cruzado && (remanejamentoPar is not null || remanejamentoFallback is not null))
-        {
-            return Result<ModalidadeSelecionada>.Failure(new DomainError(
-                "ModalidadeSelecionada.RemanejamentoCruzadoIndevido",
-                $"Modalidade {codigo} só declara par/fallback de remanejamento quando a regra é CRUZADO."));
-        }
-
-        return Result<ModalidadeSelecionada>.Success(new ModalidadeSelecionada
-        {
-            ModalidadeOrigemId = modalidadeOrigemId,
-            Codigo = codigo.Trim(),
-            Descricao = descricao,
-            NaturezaLegal = naturezaLegal,
-            ComposicaoVagas = composicaoVagas,
-            ComposicaoOrigemCodigo = composicaoOrigemCodigo,
-            RegraRemanejamentoCodigo = regraRemanejamento.ToCodigo(),
-            RemanejamentoDestino = remanejamentoDestino,
-            RemanejamentoPar = remanejamentoPar,
-            RemanejamentoFallback = remanejamentoFallback,
-            RegraDeAplicabilidade = regraDeAplicabilidade,
-            AcaoQuandoIndeferido = acaoQuandoIndeferido,
-            BaseLegal = baseLegal.Trim(),
-            QuantidadeDeclarada = quantidadeDeclarada,
-        });
+        ArgumentNullException.ThrowIfNull(modalidade);
+        ArgumentNullException.ThrowIfNull(modalidade.RegraDeAplicabilidade, nameof(modalidade));
+        DomainError? recusa = RecusaDaIdentidade(modalidade) ?? RecusaDoCadastroIncompleto(modalidade)
+            ?? RecusaDaComposicao(modalidade) ?? RecusaDaCotaReservadaForaDaOrdemLegal(modalidade)
+            ?? RecusaDosParametrosDoRemanejamento(modalidade);
+        return recusa is null ? Result<ModalidadeSelecionada>.Success(new ModalidadeSelecionada(modalidade, quantidadeDeclarada))
+            : Result<ModalidadeSelecionada>.Failure(recusa);
     }
+
+    private ModalidadeSelecionada(ModalidadeNoCadastro modalidade, int? quantidadeDeclarada)
+    {
+        ModalidadeOrigemId = modalidade.Id;
+        Codigo = modalidade.Codigo.Trim();
+        Descricao = modalidade.Descricao;
+        NaturezaLegal = modalidade.NaturezaLegal!.Value;
+        ComposicaoVagas = modalidade.ComposicaoVagas!.Value;
+        ComposicaoOrigemCodigo = modalidade.ComposicaoOrigemCodigo;
+        RegraRemanejamento = modalidade.RegraRemanejamento;
+        RemanejamentoDestino = modalidade.RemanejamentoDestino;
+        RemanejamentoPar = modalidade.RemanejamentoPar;
+        RemanejamentoFallback = modalidade.RemanejamentoFallback;
+        RegraDeAplicabilidade = modalidade.RegraDeAplicabilidade;
+        AcaoQuandoIndeferido = modalidade.AcaoQuandoIndeferido;
+        BaseLegal = modalidade.BaseLegal.Trim();
+        QuantidadeDeclarada = quantidadeDeclarada;
+    }
+
+    // A identidade permite reconhecer a modalidade exigida legalmente (ADR-0129).
+    private static DomainError? RecusaDaIdentidade(ModalidadeNoCadastro m) =>
+        m.Id == Guid.Empty ? RecusasDaModalidadeSelecionada.OrigemObrigatoria()
+        : string.IsNullOrWhiteSpace(m.Codigo) ? RecusasDaModalidadeSelecionada.CodigoObrigatorio() : null;
+
+    private static DomainError? RecusaDoCadastroIncompleto(ModalidadeNoCadastro m) =>
+        m.NaturezaLegal is null || !Enum.IsDefined(m.NaturezaLegal.Value) ? RecusasDaModalidadeSelecionada.NaturezaLegalObrigatoria(m.Codigo)
+        : m.ComposicaoVagas is null || !Enum.IsDefined(m.ComposicaoVagas.Value) ? RecusasDaModalidadeSelecionada.ComposicaoVagasObrigatoria(m.Codigo)
+        : string.IsNullOrWhiteSpace(m.BaseLegal) ? RecusasDaModalidadeSelecionada.BaseLegalObrigatoria(m.Codigo) : null;
+
+    private static DomainError? RecusaDaComposicao(ModalidadeNoCadastro m) =>
+        m.ComposicaoVagas == ComposicaoVagasModalidade.RetiradaDeOutraModalidade
+            ? string.IsNullOrWhiteSpace(m.ComposicaoOrigemCodigo) ? RecusasDaModalidadeSelecionada.ComposicaoOrigemObrigatoria(m.Codigo) : null
+            : m.ComposicaoOrigemCodigo is not null ? RecusasDaModalidadeSelecionada.ComposicaoOrigemIndevida(m.Codigo) : null;
+
+    private static DomainError? RecusaDaCotaReservadaForaDaOrdemLegal(ModalidadeNoCadastro m) =>
+        m.NaturezaLegal == NaturezaLegalModalidade.CotaReservada && m.RegraRemanejamento != RegraRemanejamentoModalidade.SegueOrdemDeRemanejamento
+            ? RecusasDaModalidadeSelecionada.CotaReservadaExigeCascata(m.Codigo) : null;
+
+    private static DomainError? RecusaDosParametrosDoRemanejamento(ModalidadeNoCadastro m) => m.RegraRemanejamento switch
+    {
+        RegraRemanejamentoModalidade.DestinoUnico => RecusaDoDestinoUnico(m),
+        RegraRemanejamentoModalidade.Cruzado => RecusaDoCruzado(m),
+        _ => RecusaDeParametroNaoAdmitido(m),
+    };
+
+    private static DomainError? RecusaDoDestinoUnico(ModalidadeNoCadastro m) =>
+        string.IsNullOrWhiteSpace(m.RemanejamentoDestino) ? RecusasDaModalidadeSelecionada.RemanejamentoDestinoObrigatorio(m.Codigo)
+        : m.RemanejamentoPar is not null || m.RemanejamentoFallback is not null ? RecusasDaModalidadeSelecionada.RemanejamentoCruzadoIndevido(m.Codigo) : null;
+
+    // O destino final é opcional no cruzamento; o par é obrigatório (UNI-REQ-0096).
+    private static DomainError? RecusaDoCruzado(ModalidadeNoCadastro m) =>
+        string.IsNullOrWhiteSpace(m.RemanejamentoPar) ? RecusasDaModalidadeSelecionada.RemanejamentoCruzadoIncompleto(m.Codigo)
+        : m.RemanejamentoDestino is not null ? RecusasDaModalidadeSelecionada.RemanejamentoDestinoIndevido(m.Codigo) : null;
+
+    private static DomainError? RecusaDeParametroNaoAdmitido(ModalidadeNoCadastro m) =>
+        m.RemanejamentoDestino is not null ? RecusasDaModalidadeSelecionada.RemanejamentoDestinoIndevido(m.Codigo)
+        : m.RemanejamentoPar is not null || m.RemanejamentoFallback is not null ? RecusasDaModalidadeSelecionada.RemanejamentoCruzadoIndevido(m.Codigo) : null;
 
     internal void VincularConfiguracao(Guid configuracaoDistribuicaoVagasId) =>
         ConfiguracaoDistribuicaoVagasId = configuracaoDistribuicaoVagasId;

@@ -54,13 +54,9 @@ public sealed class AplicarModeloFormularioDocumentosExigidosTests
     {
         FaseCronograma fase = _cenario.FaseDoCronograma("INSCRICAO", "RESULTADO_FINAL");
         _cenario.DeclararAtendimentoEspecializado();
-        DocumentoExigido daHabilitacao = new Unifesspa.UniPlus.Selecao.Domain.UnitTests.Cenarios.DocumentoExigidoBuilder()
-            .ComTipo(new CopiaDoTipoDeDocumento(Guid.CreateVersion7(), "HISTORICO_ENSINO_MEDIO", "Histórico", "ESCOLARIDADE", ProtecaoDoDocumentoDeTeste.Pessoal))
-            .ComMomento(new MomentoDaExigencia(_cenario.Processo.CronogramaFases.Single(static f => f.Codigo == "RESULTADO_FINAL").Id, null, null))
-            .ComAplicabilidade(new AplicabilidadeDaExigencia(Aplicabilidade.Geral, []))
-            .ComIndeferimento(new IndeferimentoDoDocumento(true, null, []))
-            .ComRequisitos(new RequisitosDoDocumento(FormatosPermitidos.Criar(true, null).Value!, null, null, null, null))
-            .ComFatos(null)
+        DocumentoExigido daHabilitacao = DocumentoExigidoDeTeste.Novo()
+            .NaFase(_cenario.Processo.CronogramaFases.Single(static f => f.Codigo == "RESULTADO_FINAL").Id)
+            .ComTipo("HISTORICO_ENSINO_MEDIO", "Histórico", "ESCOLARIDADE")
             .Criar().Value!;
         _cenario.Processo.DefinirDocumentosExigidos([RegraDeComprovacao.CriarRegraDeDocumento(daHabilitacao, 0).Value!]).IsSuccess.Should().BeTrue();
         return fase;

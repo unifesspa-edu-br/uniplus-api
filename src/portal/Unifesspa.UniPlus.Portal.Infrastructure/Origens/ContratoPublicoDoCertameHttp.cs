@@ -91,7 +91,7 @@ internal sealed partial class ContratoPublicoDoCertameHttp : IContratoPublicoDoC
     }
 
     private static CertameDaOrigem? CertameDaOrigemDe(CertamePublicadoPayload? certame) =>
-        certame is { Nome: { } nome, Situacao: { } situacao }
+        certame is { Nome: { } nome, Situacao: { Valor: { } situacao } }
         && certame.ProcessoSeletivoId != Guid.Empty
         && certame.AtoCriadorId != Guid.Empty
         && !string.IsNullOrWhiteSpace(nome)

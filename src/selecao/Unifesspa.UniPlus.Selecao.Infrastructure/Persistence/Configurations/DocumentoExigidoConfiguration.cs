@@ -11,19 +11,21 @@ using Microsoft.EntityFrameworkCore.ChangeTracking;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence.CodigosDeContrato;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Converters;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Protecao;
 using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
+using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Canonicalization;
 
 /// <summary>
 /// Configuração EF Core de <see cref="DocumentoExigido"/> (Story #554, PR #895) — entidade
 /// filha do agregado <see cref="ProcessoSeletivo"/>, <c>EntityBase</c> puro (sem
-/// soft-delete). Sem CHECK de banco para <c>aplicabilidade</c>/<c>consequencia_indeferimento</c>
-/// — o módulo Seleção só usa esse mecanismo em <c>versoes_configuracao</c> (guard rails
-/// forenses da ADR-0102); a integridade é C# (enum tipado + guard de domínio +
-/// FluentValidation), mesmo padrão de <see cref="FaseCronograma"/>/<see cref="ModalidadeSelecionada"/>.
+/// soft-delete). As colunas que gravam o código de um enum (aplicabilidade, escolhas, unidade, efeitos e tipo
+/// da data de referência) têm CHECK com os códigos declarados no enum (ADR-0176); a consequência do
+/// indeferimento fica sem CHECK. O resto da integridade é C# (guard de domínio + FluentValidation), mesmo
+/// padrão de <see cref="FaseCronograma"/>/<see cref="ModalidadeSelecionada"/>.
 /// <see cref="FormatosPermitidos"/> (Story #918) é a exceção: o CHECK
 /// <c>ck_documentos_exigidos_formatos_permitidos_coerente</c> é defesa em profundidade contra a
 /// corrida check-then-act do domínio, mesmo padrão de <c>FatoCandidatoConfiguration</c> (módulo
@@ -59,6 +61,7 @@ public sealed class DocumentoExigidoConfiguration : IEntityTypeConfiguration<Doc
                 "(formatos_permitidos_qualquer = true AND formatos_permitidos_lista IS NULL) OR " +
                 "(formatos_permitidos_qualquer = false AND formatos_permitidos_lista IS NOT NULL " +
                 "AND jsonb_array_length(formatos_permitidos_lista) > 0)");
+            RestringirCodigosDosEnums(t);
         });
         builder.HasKey(d => d.Id);
         // Chave Guid v7 do domínio (EntityBase) — ValueGeneratedNever, mesmo padrão de
@@ -93,10 +96,11 @@ public sealed class DocumentoExigidoConfiguration : IEntityTypeConfiguration<Doc
         builder.Property(d => d.FinalidadeTratamento).HasMaxLength(FinalidadeTratamentoMaxLength).IsRequired().HasComment("Finalidade do tratamento dos dados do documento, copiada do tipo de documento.");
         builder.Property(d => d.HipoteseLegal).HasMaxLength(HipoteseLegalMaxLength).IsRequired().HasComment("Hipótese legal do tratamento dos dados do documento, copiada do tipo de documento.");
         builder.Property(d => d.FatosComprovados).IsRequired().HasComment("Códigos dos fatos do processo que o documento comprova; vazio quando a exigência não comprova fato.");
-        builder.Property(d => d.Aplicabilidade).HasConversion<int>().IsRequired().HasComment("A quem a exigência se aplica: 1 para todos os candidatos, 2 só para quem atende às condições da exigência.");
+        builder.Property(d => d.Aplicabilidade).HasMaxLength(TamanhoDoCodigoDeContrato.Maximo).IsRequired()
+            .HasComment("A quem a exigência se aplica: GERAL para todos os candidatos, CONDICIONAL só para quem atende às condições da exigência.");
         builder.Property(d => d.Obrigatorio).IsRequired().HasComment("Indica se a falta do documento impede a inscrição de seguir.");
         builder.Property(d => d.ConsequenciaIndeferimento).HasMaxLength(ConsequenciaIndeferimentoMaxLength)
-            .HasComment("O que acontece com o candidato quando o documento é indeferido: ELIMINA, RECLASSIFICA_AC, REMOVE_VANTAGEM ou PENDENCIA_REENVIO; vazio quando a exigência não determina resultado.");
+            .HasComment("O que acontece com o candidato quando o documento é indeferido: ELIMINA, RECLASSIFICA_AC, REMOVE_VANTAGEM ou ABRE_PRAZO_PARA_REENVIO; vazio quando a exigência não determina resultado.");
         // A etapa que coleta o documento, quando a fase se subdivide — opcional.
         builder.Property(d => d.ExigidoNaEtapaId).HasComment("Etapa da fase que coleta o documento; vazio quando o documento é da fase inteira.");
         // O formulário a que o documento pertence — nulo fora de fase de formulário. O
@@ -156,6 +160,23 @@ public sealed class DocumentoExigidoConfiguration : IEntityTypeConfiguration<Doc
             .UsePropertyAccessMode(PropertyAccessMode.Field);
     }
 
+    // Os códigos gravados nas colunas dos enums; as colunas do prazo de emissão e da validade são anuláveis.
+    private static void RestringirCodigosDosEnums(TableBuilder<DocumentoExigido> tabela)
+    {
+        tabela.HasCheckConstraint("ck_documentos_exigidos_aplicabilidade", $"aplicabilidade IN ({SqlDosCodigosDeContrato.Lista<Aplicabilidade>()})");
+        RestringirCodigoOpcional<EscolhaDoPrazoDeEmissao>(tabela, "prazo_emissao_escolha");
+        RestringirCodigoOpcional<UnidadeDoPrazoDeEmissao>(tabela, "prazo_emissao_unidade");
+        RestringirCodigoOpcional<EfeitoNaAnaliseDoDocumento>(tabela, "prazo_emissao_efeito");
+        RestringirCodigoOpcional<TipoDaDataDeReferencia>(tabela, "prazo_emissao_referencia_tipo");
+        RestringirCodigoOpcional<EscolhaDaValidade>(tabela, "validade_escolha");
+        RestringirCodigoOpcional<EfeitoNaAnaliseDoDocumento>(tabela, "validade_efeito");
+        RestringirCodigoOpcional<TipoDaDataDeReferencia>(tabela, "validade_referencia_tipo");
+    }
+
+    private static void RestringirCodigoOpcional<TEnum>(TableBuilder<DocumentoExigido> tabela, string coluna)
+        where TEnum : struct, Enum =>
+        tabela.HasCheckConstraint($"ck_documentos_exigidos_{coluna}", $"{coluna} IS NULL OR {coluna} IN ({SqlDosCodigosDeContrato.Lista<TEnum>()})");
+
     private static void ConfigurarRequisitos(EntityTypeBuilder<DocumentoExigido> builder)
     {
         builder.OwnsOne(d => d.Requisitos, requisitos =>
@@ -199,8 +220,8 @@ public sealed class DocumentoExigidoConfiguration : IEntityTypeConfiguration<Doc
             modelo.Property(m => m.ModeloId).HasColumnName("modelo_id").HasComment("Modelo de documento que a exigência oferece ao candidato; vazio quando não há modelo.");
             modelo.Property(m => m.NomeArquivo).HasColumnName("modelo_nome_arquivo").HasMaxLength(ModeloDeDocumento.NomeArquivoMaxLength)
                 .HasComment("Nome do arquivo do modelo de documento, copiado ao gravar a exigência.");
-            modelo.Property(m => m.Formato).HasColumnName("modelo_formato").HasConversion<int>()
-                .HasComment("Formato do arquivo do modelo, copiado ao gravar a exigência: 1 DOCX, 2 ODT.");
+            modelo.Property(m => m.Formato).HasColumnName("modelo_formato").HasMaxLength(4)
+                .HasComment($"Formato do arquivo do modelo, copiado ao gravar a exigência. Códigos: {string.Join(", ", CatalogoDe<FormatoDeDocumento>.Todos().Select(static c => c.Codigo))}.");
             modelo.Property(m => m.HashSha256).HasColumnName("modelo_hash_sha256").HasMaxLength(64)
                 .HasComment("Resumo SHA-256 do arquivo do modelo, copiado ao gravar a exigência.");
         });
@@ -260,7 +281,7 @@ public sealed class DocumentoExigidoConfiguration : IEntityTypeConfiguration<Doc
         lista is null
             ? null
             : JsonSerializer.Serialize(
-                lista.Select(static e => new FormatoPermitidoEntryJson(e.Formato.ToCodigo(), e.TamanhoMaximoBytesMax)),
+                lista.Select(static e => new FormatoPermitidoEntryJson(e.Formato.Codigo(), e.TamanhoMaximoBytesMax)),
                 JsonOptions);
 
     /// <summary>
@@ -276,21 +297,11 @@ public sealed class DocumentoExigidoConfiguration : IEntityTypeConfiguration<Doc
         }
 
         List<FormatoPermitidoEntryJson>? itens = JsonSerializer.Deserialize<List<FormatoPermitidoEntryJson>>(json, JsonOptions);
-        if (itens is null)
-        {
-            return null;
-        }
-
-        List<FormatoPermitidoEntry> lista = [];
-        foreach (FormatoPermitidoEntryJson item in itens)
-        {
-            FormatoPermitido formato = FormatoPermitidoCodigo.FromCodigo(item.Formato)
-                ?? throw new InvalidOperationException($"Formato '{item.Formato}' persistido em formatos_permitidos_lista é desconhecido.");
-            lista.Add(FormatoPermitidoEntry.Criar(formato, item.TamanhoMaximoBytesMax).Value!);
-        }
-
-        return lista;
+        return itens is null ? null : [.. itens.Select(static item => EntradaDoFormato(item))];
     }
+
+    private static FormatoPermitidoEntry EntradaDoFormato(FormatoPermitidoEntryJson item) =>
+        FormatoPermitidoEntry.Criar(CatalogoDe<FormatoPermitido>.Obter(item.Formato), item.TamanhoMaximoBytesMax).Value!;
 
     private sealed record FormatoPermitidoEntryJson(string Formato, int? TamanhoMaximoBytesMax);
 }

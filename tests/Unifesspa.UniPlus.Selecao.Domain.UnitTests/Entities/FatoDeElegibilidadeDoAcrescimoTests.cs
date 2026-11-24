@@ -4,6 +4,7 @@ using System.Text.Json;
 
 using AwesomeAssertions;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.Formularios;
@@ -31,7 +32,7 @@ public sealed class FatoDeElegibilidadeDoAcrescimoTests
                 Guid.CreateVersion7(), codigo, OrigemDataFase.NoEdital, AgrupaEtapas: false, PermiteComplementacao: false, ColetaInscricao: coletaInscricao, ColetaSolicitacaoIsencao: coletaIsencao)),
             new DecisoesDeCronogramaDaFase(
                 ordem, Inicio: new DateTimeOffset(2026, 1, ordem, 0, 0, 0, TimeSpan.Zero), Fim: new DateTimeOffset(2026, 1, ordem + 1, 0, 0, 0, TimeSpan.Zero), UnidadeResponsavel: UnidadesDeTeste.Ceps),
-            new PublicacoesDaFase(Produtos: [ProdutoDaFase.Criar(codigo, PapelProdutoFase.Definitivo)], EmiteParecerIndividual: false, RegraRecurso: null),
+            new PublicacoesDaFase(Produtos: [ProdutoDaFase.Criar(codigo, PapelDaPublicacaoPrevista.Definitivo)], EmiteParecerIndividual: false, RegraRecurso: null),
             bancasRequeridas: []).Value!;
 
     private static FatoColetado Item(string codigo) =>
@@ -87,7 +88,7 @@ public sealed class FatoDeElegibilidadeDoAcrescimoTests
     private static void Aplicar(ProcessoSeletivo processo, string? fatoElegibilidade) =>
         processo.DefinirBonusRegional(
             aplica: true,
-            ConfiguracaoBonusRegional.Criar(ReferenciaRegra.De(RegraBonusCodigo.Multiplicativo, "v1", new string('a', 64)), 1.20m, null, fatoElegibilidade, new BaseLegalCongelada(Guid.NewGuid(), "PORTARIA_UNIFESSPA_NO_2514_2023", "EDITAL", "Edital nº 1/2026", "Fator de Atenuação das Desigualdades de Acesso", [("1504208", "Marabá", "PA")])).Value!).IsSuccess.Should().BeTrue();
+            ConfiguracaoBonusRegional.Criar(ReferenciaRegra.De(RegraDeBonus.Multiplicativo.Codigo(), "v1", new string('a', 64)), 1.20m, null, fatoElegibilidade, new BaseLegalCongelada(Guid.NewGuid(), "PORTARIA_UNIFESSPA_NO_2514_2023", "EDITAL", "Edital nº 1/2026", "Fator de Atenuação das Desigualdades de Acesso", [("1504208", "Marabá", "PA")])).Value!).IsSuccess.Should().BeTrue();
 
     /// <summary>Derivado booleano: verdadeiro quando a dependência é verdadeira.</summary>
     private static void Derivar(ProcessoSeletivo processo, string derivado, string dependencia, string? contribui = null) =>

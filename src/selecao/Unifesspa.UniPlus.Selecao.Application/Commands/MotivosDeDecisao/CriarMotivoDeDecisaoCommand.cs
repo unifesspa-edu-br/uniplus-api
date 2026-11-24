@@ -1,7 +1,9 @@
 namespace Unifesspa.UniPlus.Selecao.Application.Commands.MotivosDeDecisao;
 
 using Unifesspa.UniPlus.Application.Abstractions.Messaging;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Selecao.Domain.Enums;
 
 /// <summary>
 /// Payload do <c>POST /api/selecao/admin/motivos-de-decisao</c> (UNI-REQ-0283). Tipo e sentido
@@ -14,4 +16,4 @@ public sealed record CriarMotivoDeDecisaoCommand(
     string? Codigo,
     string? Descricao,
     string? Subclassificacao,
-    string? Sentido) : ICommand<Result<Guid>>;
+    [property: AceitaCodigosDe<SentidoDoMotivo>] string? Sentido) : ICommand<Result<Guid>>;

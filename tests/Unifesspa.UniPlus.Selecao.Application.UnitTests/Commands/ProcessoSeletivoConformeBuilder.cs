@@ -2,6 +2,7 @@ namespace Unifesspa.UniPlus.Selecao.Application.UnitTests.Commands;
 
 using AwesomeAssertions;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Regras.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Application.UnitTests.TestSupport;
@@ -71,8 +72,8 @@ internal static class ProcessoSeletivoConformeBuilder
         processo.DefinirClassificacao(
             ConfiguracaoClassificacao.Criar(new DeclaracaoDaClassificacao
             {
-                RegraCalculo = ReferenciaRegra.De(RegraCalculoCodigo.ClassificacaoImportada, "v1", HashFixo),
-                RegraOrdemAlocacao = ReferenciaRegra.De(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, "v1", HashFixo),
+                RegraCalculo = ReferenciaRegra.De(RegraDeCalculoDaNota.ClassificacaoImportada.Codigo(), "v1", HashFixo),
+                RegraOrdemAlocacao = ReferenciaRegra.De(RegraDeOrdemDeAlocacao.PrimeiraOpcaoPrioritaria.Codigo(), "v1", HashFixo),
             }).Value!).IsSuccess.Should().BeTrue();
     }
 
@@ -104,23 +105,13 @@ internal static class ProcessoSeletivoConformeBuilder
         ModalidadeSelecionada modalidade = ModalidadeDeAmplaConcorrencia(regraDeAplicabilidade);
 
         return ConfiguracaoDistribuicaoVagas.Criar(ofertaCursoOrigemId ?? Guid.CreateVersion7(),
-            new DistribuicaoDeVagasDeclarada { VagasOfertadasBase = 40, PercentualDaReservaLegal = 1m, RegraDeDistribuicao = ReferenciaRegra.De(RegraDistribuicaoVagasCodigo.Institucional, "v1", HashFixo), Modalidades = [modalidade] },
+            new DistribuicaoDeVagasDeclarada { VagasOfertadasBase = 40, PercentualDaReservaLegal = 1m, RegraDeDistribuicao = ReferenciaRegra.De(RegraDeDistribuicaoDeVagas.Institucional.Codigo(), "v1", HashFixo), Modalidades = [modalidade] },
             new FatosDaOfertaNoCadastro { GrupoAreaEnem = grupoAreaEnem, OfertaCurso = OfertaCursoDeTeste.Medicina }).Value!;
     }
 
     private static ModalidadeSelecionada ModalidadeDeAmplaConcorrencia(PredicadoDnf? regraDeAplicabilidade)
     {
-        ModalidadeSelecionada modalidade = ModalidadeSelecionada.Criar(
-            modalidadeOrigemId: Guid.CreateVersion7(),
-            codigo: "AC",
-            descricao: null, naturezaLegal: NaturezaLegalModalidade.Ampla,
-            composicaoVagas: ComposicaoVagasModalidade.RestanteDasVagasOfertadas,
-            composicaoOrigemCodigo: null, regraRemanejamento: RegraRemanejamentoModalidade.Nenhuma,
-            remanejamentoDestino: null, remanejamentoPar: null, remanejamentoFallback: null,
-            regraDeAplicabilidade: regraDeAplicabilidade ?? PredicadoDnf.SemClausula,
-            acaoQuandoIndeferido: null,
-            baseLegal: "Res. Unifesspa 532/2021",
-            quantidadeDeclarada: 40).Value!;
+        ModalidadeSelecionada modalidade = ModalidadeSelecionada.Criar(ModalidadesNoCadastroDeTeste.Da("AC", NaturezaLegalModalidade.Ampla, ComposicaoVagasModalidade.RestanteDasVagasOfertadas) with { RegraRemanejamento = null, RegraDeAplicabilidade = regraDeAplicabilidade ?? PredicadoDnf.SemClausula, BaseLegal = "Res. Unifesspa 532/2021" }, 40).Value!;
         return modalidade;
     }
 

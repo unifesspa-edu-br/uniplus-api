@@ -3,6 +3,7 @@ namespace Unifesspa.UniPlus.Selecao.Application.UnitTests.TestSupport;
 using NSubstitute;
 
 using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Application.Commands.DocumentosAPublicar;
@@ -85,7 +86,7 @@ internal sealed class CenarioDoDocumentoAPublicar
 
     public Task<Result<IniciarEnvioDoDocumentoAPublicarDto>> IniciarAsync(string tipoDeMidia = TiposDeMidiaDeDocumento.Pdf) =>
         IniciarEnvioDoDocumentoAPublicarCommandHandler.Handle(
-            new IniciarEnvioDoDocumentoAPublicarCommand(ProcessoId, FinalidadeDoDocumento.AnexoDoEdital, "Anexo I", tipoDeMidia),
+            new IniciarEnvioDoDocumentoAPublicarCommand(ProcessoId, FinalidadeDoDocumento.AnexoDoEdital.Codigo(), "Anexo I", tipoDeMidia),
             Donos, Documentos, Storage, UnitOfWork, TimeProvider.System, CancellationToken.None);
 
     private static Task<Stream> Abrir(byte[] conteudo) => Task.FromResult<Stream>(new MemoryStream(conteudo));

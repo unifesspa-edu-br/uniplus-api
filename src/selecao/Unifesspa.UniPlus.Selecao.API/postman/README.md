@@ -174,17 +174,17 @@ pelos guards de fase da PR-d).
 
 ### Finalidade e anexos do documento a publicar
 
-`POST {id}/documentos-a-publicar` exige `finalidade` no corpo: `documentoDoEdital` (só PDF),
-`anexoDoEdital` (PDF, DOCX ou ODT) ou `documentoDeAto`. A coleção envia sempre o PDF do edital com
-`documentoDoEdital`. O `GET` da mesma rota aceita `?finalidade=documentoDoEdital` para listar só os
+`POST {id}/documentos-a-publicar` exige `finalidade` no corpo: `DOCUMENTO_DO_EDITAL` (só PDF),
+`ANEXO_DO_EDITAL` (PDF, DOCX ou ODT) ou `DOCUMENTO_DE_ATO`. A coleção envia sempre o PDF do edital com
+`DOCUMENTO_DO_EDITAL`. O `GET` da mesma rota aceita `?finalidade=DOCUMENTO_DO_EDITAL` para listar só os
 candidatos a edital oficial.
 
 `POST {id}/publicacao` e `POST {id}/retificacoes` aceitam
 `anexos: [{ "documentoId": "...", "nome": "Quadro de vagas" }]`, na ordem em que o edital os
-apresenta. Cada `documentoId` é de um documento enviado com `finalidade: anexoDoEdital` e já
+apresenta. Cada `documentoId` é de um documento enviado com `finalidade: ANEXO_DO_EDITAL` e já
 confirmado. A coleção manda `anexos: []` (publicação sem anexo). Na retificação, omitir `anexos`
 mantém os da versão vigente, uma lista substitui o conjunto e `[]` retira todos. Para exercitar um
-anexo no smoke, repita o ciclo iniciar-envio → PUT → confirmação com `finalidade: anexoDoEdital` e
+anexo no smoke, repita o ciclo iniciar-envio → PUT → confirmação com `finalidade: ANEXO_DO_EDITAL` e
 use o id devolvido em `anexos`.
 
 ### Bug real corrigido — DI keyed/não-keyed do mesmo tipo (issue #904)

@@ -1,12 +1,18 @@
 namespace Unifesspa.UniPlus.Selecao.Application.DTOs;
 
+using Unifesspa.UniPlus.Application.Abstractions.Respostas;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
+using Unifesspa.UniPlus.Selecao.Domain.Enums;
+
 /// <summary>Onde um item que o edital declara publicar está no registro dos atos do processo.</summary>
 public enum SituacaoDoProdutoPrevisto
 {
     /// <summary>Nenhum ato do processo cumpre o item.</summary>
+    [CodigoDeContrato("ABERTO", "Aberta", Descricao = "A publicação prevista ainda não foi realizada.")]
     Aberto,
 
     /// <summary>Um ato do processo cumpre o item.</summary>
+    [CodigoDeContrato("PUBLICADO", "Publicada", Descricao = "A publicação prevista foi realizada.")]
     Publicado,
 }
 
@@ -14,19 +20,28 @@ public enum SituacaoDoProdutoPrevisto
 public enum ImpedimentoDoProduto
 {
     /// <summary>O item já foi publicado: corrigi-lo é uma errata ou retificação do ato.</summary>
+    [CodigoDeContrato("JA_PUBLICADO", "Já publicada", Descricao = "A publicação prevista já foi realizada.")]
     JaPublicado,
 
     /// <summary>O definitivo de uma matéria só sai depois do preliminar dela, que ainda não foi publicado.</summary>
+    [CodigoDeContrato("PRELIMINAR_NAO_PUBLICADO", "Preliminar não publicado", Descricao = "O resultado preliminar ainda não foi publicado.")]
     PreliminarNaoPublicado,
 
     /// <summary>O catálogo de Publicações não tem versão vigente do tipo do ato.</summary>
+    [CodigoDeContrato("TIPO_DE_ATO_NAO_VIGENTE", "Tipo de ato não vigente", Descricao = "O tipo de ato não tem versão vigente.")]
     TipoDeAtoNaoVigente,
 }
 
 /// <summary>O motivo pelo qual o item não pode ser publicado agora.</summary>
 /// <param name="Motivo">O motivo, em vocabulário fechado.</param>
 /// <param name="Mensagem">O motivo, em texto para quem opera.</param>
-public sealed record ImpedimentoDoProdutoDto(ImpedimentoDoProduto Motivo, string Mensagem);
+public sealed record ImpedimentoDoProdutoDto(CodigoComRotulo<ImpedimentoDoProduto> Motivo, string Mensagem)
+{
+    public ImpedimentoDoProdutoDto(ImpedimentoDoProduto motivo, string mensagem)
+        : this(CodigoComRotulo<ImpedimentoDoProduto>.De(motivo), mensagem)
+    {
+    }
+}
 
 /// <summary>
 /// Um item que o edital declara publicar, congelado com um <c>Id</c> próprio, e a situação dele no
@@ -45,8 +60,8 @@ public sealed record ProdutoPrevistoDto(
     Guid Id,
     string TipoCodigo,
     string? TipoNome,
-    string? Papel,
-    SituacaoDoProdutoPrevisto Situacao,
+    CodigoComRotulo<PapelDaPublicacaoPrevista>? Papel,
+    CodigoComRotulo<SituacaoDoProdutoPrevisto> Situacao,
     AtoDoProcessoDto? Ato,
     IReadOnlyList<AtoDoProcessoDto> Correcoes,
     bool PodePublicar,

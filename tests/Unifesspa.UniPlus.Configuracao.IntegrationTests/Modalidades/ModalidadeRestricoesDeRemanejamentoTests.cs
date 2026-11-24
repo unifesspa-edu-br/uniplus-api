@@ -19,7 +19,7 @@ public sealed class ModalidadeRestricoesDeRemanejamentoTests(ConfiguracaoDbFixtu
     [InlineData("DESTINO_UNICO", "DESTINO", "PAR", null, "ck_modalidades_remanejamento_destino_unico")]
     [InlineData("CRUZADO", "DESTINO", "PAR", null, "ck_modalidades_remanejamento_cruzado")]
     [InlineData(null, "DESTINO", null, null, "ck_modalidades_remanejamento_sem_parametros")]
-    [InlineData("SEGUE_CASCATA", null, null, "DESTINO", "ck_modalidades_remanejamento_sem_parametros")]
+    [InlineData("SEGUE_ORDEM_DE_REMANEJAMENTO", null, null, "DESTINO", "ck_modalidades_remanejamento_sem_parametros")]
     public async Task AlterarParametros_ComCombinacaoInvalida_BancoRecusa(
         string? regra, string? destino, string? par, string? destinoFinal, string restricao)
     {

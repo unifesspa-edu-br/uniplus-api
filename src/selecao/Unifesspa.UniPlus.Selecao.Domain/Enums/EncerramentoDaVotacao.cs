@@ -6,10 +6,10 @@ using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 public enum EncerramentoDaVotacao
 {
     /// <summary>Só depois do voto de todos os titulares.</summary>
-    [CodigoDeContrato("todosOsTitulares", "Todos os titulares votam")]
+    [CodigoDeContrato("TODOS_OS_TITULARES", "Todos os titulares votam")]
     TodosOsTitulares = 1,
 
     /// <summary>A presidência encerra ao atingir o quórum.</summary>
-    [CodigoDeContrato("presidenciaNoQuorum", "A presidência encerra ao atingir o quórum")]
+    [CodigoDeContrato("PRESIDENCIA_NO_QUORUM", "A presidência encerra ao atingir o quórum")]
     PresidenciaNoQuorum = 2,
 }

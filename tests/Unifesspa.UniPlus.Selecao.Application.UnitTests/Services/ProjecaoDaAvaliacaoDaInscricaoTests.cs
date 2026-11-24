@@ -4,6 +4,7 @@ using AwesomeAssertions;
 
 using NSubstitute;
 
+using Unifesspa.UniPlus.Application.Abstractions.Respostas;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
@@ -36,10 +37,10 @@ public sealed class ProjecaoDaAvaliacaoDaInscricaoTests
         AvaliacaoDaInscricaoDto avaliacao = Projetar(documentos.ComAsSituacoesDaAvaliacao(), faseId: null).Value!;
 
         avaliacao.Documentos.Fases.Select(static f => f.Codigo).Should().Equal("INSCRICAO", "HABILITACAO");
-        avaliacao.Documentos.Fases[0].Documentos.Select(static d => (d.ExigenciaId, d.Finalidade, d.Situacao)).Should().Equal(
+        avaliacao.Documentos.Fases[0].Documentos.Select(static d => (d.ExigenciaId, d.Finalidade, d.Situacao.Codigo)).Should().Equal(
             [(documentos.DaInscricao.Id, "INSCRICAO", "PENDENTE"), (documentos.DaIsencao.Id, "ISENCAO_TAXA", "PODE_SER_EXIGIDO")],
             "a isenção na mesma fase aparece como da isenção, e não como exigência da inscrição");
-        avaliacao.Documentos.Fases[1].Documentos.Select(static d => d.Situacao).Should().Equal("DEPENDE_DE_FASE_POSTERIOR");
+        avaliacao.Documentos.Fases[1].Documentos.Select(static d => d.Situacao.Codigo).Should().Equal("DEPENDE_DE_FASE_POSTERIOR");
     }
 
     [Fact(DisplayName = "Com a fase pedida, vêm só os documentos dela; fase fora do cronograma da versão é não encontrada")]
@@ -94,7 +95,7 @@ public sealed class ProjecaoDaAvaliacaoDaInscricaoTests
         IReadOnlyList<DocumentoDaInscricaoDto> documentos = cenario.DocumentosDaFaseDaInscricao();
 
         DocumentoDaInscricaoDto projetado = documentos.Single(d => d.ExigenciaId == cenario.Laudo.Id);
-        projetado.Situacao.Should().Be("SATISFEITA");
+        projetado.Situacao.Codigo.Should().Be("SATISFEITA");
         projetado.FormatosAceitos.Should().Equal("PDF", "JPEG");
         projetado.TamanhoMaximoBytes.Should().Be(1_000_000, "o menor limite efetivo entre os formatos aceitos");
         projetado.QuantidadeMinima.Should().Be(1);
@@ -150,13 +151,11 @@ public sealed class ProjecaoDaAvaliacaoDaInscricaoTests
             new Dictionary<string, TermoAdmitido>(StringComparer.Ordinal));
 
     private static DocumentoExigido Documento(FaseCronograma fase, FinalidadeFormulario finalidade, ModeloDaExigencia? modelo = null) =>
-        new Unifesspa.UniPlus.Selecao.Domain.UnitTests.Cenarios.DocumentoExigidoBuilder()
-            .ComTipo(new CopiaDoTipoDeDocumento(Guid.CreateVersion7(), "COMPROVANTE", "Comprovante", "CAT", ProtecaoDoDocumentoDeTeste.Pessoal))
-            .ComMomento(new MomentoDaExigencia(fase.Id, null, finalidade))
-            .ComAplicabilidade(new AplicabilidadeDaExigencia(Aplicabilidade.Geral, []))
-            .ComIndeferimento(new IndeferimentoDoDocumento(true, null, []))
-            .ComRequisitos(new RequisitosDoDocumento(FormatosPermitidos.Criar(true, null).Value!, null, modelo, null, null))
-            .ComFatos(null)
+        DocumentoExigidoDeTeste.Novo()
+            .NaFase(fase.Id)
+            .ComTipo("COMPROVANTE", "Comprovante", "CAT")
+            .ComModelo(modelo)
+            .NaFinalidade(finalidade)
             .Criar().Value!;
 
     private static FaseCronograma Fase(int ordem, string codigo) =>
@@ -192,15 +191,14 @@ public sealed class ProjecaoDaAvaliacaoDaInscricaoTests
     {
         internal static ExigenciasComArquivoEnviado Novas()
         {
-            DocumentoExigido laudo = new Unifesspa.UniPlus.Selecao.Domain.UnitTests.Cenarios.DocumentoExigidoBuilder()
-            .ComTipo(new CopiaDoTipoDeDocumento(Guid.CreateVersion7(), "LAUDO", "Laudo", "CAT", ProtecaoDoDocumentoDeTeste.Pessoal))
-            .ComMomento(new MomentoDaExigencia(FaseDaInscricao.Id, null, FinalidadeFormulario.Inscricao))
-            .ComAplicabilidade(new AplicabilidadeDaExigencia(Aplicabilidade.Geral, []))
-            .ComIndeferimento(new IndeferimentoDoDocumento(true, null, []))
-            .ComRequisitos(new RequisitosDoDocumento(FormatosPermitidos.Criar(false, [("PDF", 1_000_000), ("JPEG", 3_000_000)]).Value!, 2_000_000, null, null, null))
-            .ComFatos(null)
-            .Criar().Value!;
-            ArquivoDaApresentacaoDto arquivo = new(Guid.CreateVersion7(), Guid.CreateVersion7(), laudo.Id, null, "application/pdf", 10, new string('a', 64), DateTimeOffset.UnixEpoch, SituacaoDoArquivoDoCandidato.Verificado, null, "Arquivo 1", null);
+            DocumentoExigido laudo = DocumentoExigidoDeTeste.Novo()
+                .NaFase(FaseDaInscricao.Id)
+                .ComTipo("LAUDO", "Laudo", "CAT")
+                .ComFormatos(FormatosPermitidos.Criar(false, [("PDF", 1_000_000), ("JPEG", 3_000_000)]).Value!)
+                .ComTamanhoMaximo(2_000_000)
+                .NaFinalidade(FinalidadeFormulario.Inscricao)
+                .Criar().Value!;
+            ArquivoDaApresentacaoDto arquivo = new(Guid.CreateVersion7(), Guid.CreateVersion7(), laudo.Id, null, "application/pdf", 10, new string('a', 64), DateTimeOffset.UnixEpoch, CodigoComRotulo<SituacaoDoArquivoDoCandidato>.De(SituacaoDoArquivoDoCandidato.Verificado), null, "Arquivo 1", null);
 
             return new ExigenciasComArquivoEnviado(laudo, Documento(FaseDaInscricao, FinalidadeFormulario.Inscricao), arquivo);
         }

@@ -66,8 +66,7 @@ public sealed record EtapaObrigatoria(string TipoEtapaCodigo) : PredicadoObrigat
 
 /// <summary>
 /// Regra: o edital DEVE oferecer todas as modalidades de concorrência
-/// listadas em <paramref name="Codigos"/>. Códigos seguem o naming do
-/// enum <c>ModalidadeConcorrencia</c> (AC, LbPpi, LbQ, …).
+/// listadas em <paramref name="Codigos"/>, identificadas pelos códigos do cadastro.
 /// </summary>
 public sealed record ModalidadesMinimas(IReadOnlyList<string> Codigos) : PredicadoObrigatoriedade;
 

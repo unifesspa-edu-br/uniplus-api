@@ -54,10 +54,10 @@ public sealed class RecusaDeParametroDaVitrineTests
     }
 
     [Theory(DisplayName = "Situação do vocabulário é aceita")]
-    [InlineData("emBreve")]
-    [InlineData("inscricoesAbertas")]
-    [InlineData("ultimosDias")]
-    [InlineData("encerradas")]
+    [InlineData("EM_BREVE")]
+    [InlineData("INSCRICOES_ABERTAS")]
+    [InlineData("ULTIMOS_DIAS")]
+    [InlineData("ENCERRADAS")]
     public async Task Situacao_DoVocabulario_EAceita(string valor)
     {
         // O outro lado da recusa: uma guarda severa demais tornaria o filtro inútil, e o teste

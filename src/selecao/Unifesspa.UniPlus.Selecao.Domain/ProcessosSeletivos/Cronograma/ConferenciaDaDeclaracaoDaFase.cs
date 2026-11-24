@@ -43,7 +43,7 @@ internal static class ConferenciaDaDeclaracaoDaFase
             throw new ArgumentException("O id de origem da fase canônica é obrigatório.", nameof(faseCanonicaOrigemId));
         }
 
-        if (origemData == OrigemDataFase.Nenhuma)
+        if (!Enum.IsDefined(origemData))
         {
             throw new ArgumentException("A origem da data da fase é obrigatória.", nameof(origemData));
         }

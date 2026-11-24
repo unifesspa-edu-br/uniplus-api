@@ -5,6 +5,7 @@ using System.Text.Json.Nodes;
 
 using AwesomeAssertions;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Tempo;
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.Formularios;
@@ -120,7 +121,7 @@ public sealed class PoliticaDeOrdenacaoTests
             ColetaSolicitacaoIsencao: false)),
         new DecisoesDeCronogramaDaFase(
             Ordem: 1, Inicio: new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero), Fim: new DateTimeOffset(2026, 1, 31, 0, 0, 0, TimeSpan.Zero), UnidadeResponsavel: UnidadesDeTeste.Ceps),
-        new PublicacoesDaFase(Produtos: [ProdutoDaFase.Criar("INSCRICAO", PapelProdutoFase.Definitivo)], EmiteParecerIndividual: false, RegraRecurso: null),
+        new PublicacoesDaFase(Produtos: [ProdutoDaFase.Criar("INSCRICAO", PapelDaPublicacaoPrevista.Definitivo)], EmiteParecerIndividual: false, RegraRecurso: null),
         bancasRequeridas: []).Value!;
 
     /// <summary>
@@ -141,26 +142,26 @@ public sealed class PoliticaDeOrdenacaoTests
         JsonArray etapasJson = ArrayCanonicalizado(Montar(etapas: [], cronogramaFases: [faseSemAgruparEtapas]), "etapas");
 
         etapasJson.Should().BeEmpty(
-            "um processo classificado por nota importada (RegraCalculoCodigo.ClassificacaoImportada, usado pelo processo mínimo " +
+            "um processo classificado por nota importada (RegraDeCalculoDaNota.ClassificacaoImportada.Codigo(), usado pelo processo mínimo " +
             "desta suíte) não tem etapa pontuada — a canonicalização emite o array vazio em vez de recusar ou lançar");
     }
 
     [Fact(DisplayName = "criteriosDesempate: Ordem governa sobre o conteúdo da regra — oráculo de sequência exata")]
     public void CriteriosDesempate_OrdemGovernaSobreConteudo()
     {
-        CriterioDesempate criterioIdoso = CriterioDesempate.Criar(2, Regra(CriterioDesempateCodigo.Idoso, 'd'), new ParametrosDesempateIdoso(60)).Value!;
-        CriterioDesempate criterioMaiorIdade = CriterioDesempate.Criar(1, Regra(CriterioDesempateCodigo.MaiorIdade, 'a'), new ParametrosDesempateMaiorIdade()).Value!;
+        CriterioDesempate criterioIdoso = CriterioDesempate.Criar(2, Regra(RegraDeDesempate.Idoso.Codigo(), 'd'), new ParametrosDesempateIdoso(60)).Value!;
+        CriterioDesempate criterioMaiorIdade = CriterioDesempate.Criar(1, Regra(RegraDeDesempate.MaiorIdade.Codigo(), 'a'), new ParametrosDesempateMaiorIdade()).Value!;
 
         new[] { criterioIdoso, criterioMaiorIdade }.OrderBy(static c => c.Regra.Codigo, StringComparer.Ordinal).Select(static c => c.Regra.Codigo)
             .Should().Equal(
-                [CriterioDesempateCodigo.Idoso, CriterioDesempateCodigo.MaiorIdade],
+                [RegraDeDesempate.Idoso.Codigo(), RegraDeDesempate.MaiorIdade.Codigo()],
                 "pré-condição: ordenar pelo código da regra (proxy de conteúdo) dá o oposto do oráculo de Ordem abaixo");
 
         JsonArray criteriosJson = ArrayCanonicalizado(Montar(criteriosDesempate: [criterioIdoso, criterioMaiorIdade]), "criteriosDesempate");
 
         criteriosJson.Should().HaveCount(2, "pré-condição: o caminho existe e tem os dois itens sob teste");
         criteriosJson.Select(static c => c!["regra"]!["codigo"]!.GetValue<string>()).Should().Equal(
-            [CriterioDesempateCodigo.MaiorIdade, CriterioDesempateCodigo.Idoso],
+            [RegraDeDesempate.MaiorIdade.Codigo(), RegraDeDesempate.Idoso.Codigo()],
             "Ordem (1 para MaiorIdade, 2 para Idoso) governa a posição — o código da regra, em ordem alfabética, apontaria para o oposto");
     }
 

@@ -25,13 +25,13 @@ public sealed class MontagemDaRegraDeDeliberacaoTests
         Result<RegraDeDeliberacao?> resultado = MontagemDaRegraDeDeliberacao.Montar(RegrasDeDeliberacaoDeTeste.Valida(), "bancas[0]");
 
         resultado.IsSuccess.Should().BeTrue();
-        resultado.Value!.Modo.Codigo().Should().Be("colegiadaComVotacao");
+        resultado.Value!.Modo.Codigo().Should().Be("COLEGIADA_COM_VOTACAO");
         resultado.Value.Integrantes.Should().Be(3);
         resultado.Value.Suplentes.Should().Be(1);
         resultado.Value.Quorum.Should().Be(2);
-        (resultado.Value.Criterio?.Codigo()).Should().Be("maioriaSimples");
-        (resultado.Value.Desempate?.Codigo()).Should().Be("votoDaPresidencia");
-        (resultado.Value.Encerramento?.Codigo()).Should().Be("presidenciaNoQuorum");
+        (resultado.Value.Criterio?.Codigo()).Should().Be("MAIORIA_SIMPLES");
+        (resultado.Value.Desempate?.Codigo()).Should().Be("VOTO_DA_PRESIDENCIA");
+        (resultado.Value.Encerramento?.Codigo()).Should().Be("PRESIDENCIA_NO_QUORUM");
         resultado.Value.SemUnanimidade.Should().BeNull();
     }
 

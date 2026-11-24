@@ -35,17 +35,17 @@ public sealed class ModalidadeCoerenciaDosCamposTests
         Result<Modalidade> r = Criar(ajuste: d => d with
         {
             CodigoDaNaturezaLegal = "AMPLA",
-            CodigoDaRegraDeRemanejamento = "SEGUE_CASCATA",
+            CodigoDaRegraDeRemanejamento = "SEGUE_ORDEM_DE_REMANEJAMENTO",
         });
 
         r.IsFailure.Should().BeTrue();
         r.Error!.Code.Should().Be(ModalidadeErrorCodes.NaturezaRemanejamentoIncoerente);
     }
 
-    [Fact(DisplayName = "Ação afirmativa com SEGUE_CASCATA é incoerente (exige destino único ou cruzado)")]
+    [Fact(DisplayName = "Ação afirmativa com SEGUE_ORDEM_DE_REMANEJAMENTO é incoerente (exige destino único ou cruzado)")]
     public void Criar_AcaoAfirmativaComCascata_Incoerente()
     {
-        Result<Modalidade> r = Criar(ajuste: d => d.ComoAcaoAfirmativa("SEGUE_CASCATA"));
+        Result<Modalidade> r = Criar(ajuste: d => d.ComoAcaoAfirmativa("SEGUE_ORDEM_DE_REMANEJAMENTO"));
 
         r.IsFailure.Should().BeTrue();
         r.Error!.Code.Should().Be(ModalidadeErrorCodes.NaturezaRemanejamentoIncoerente);
@@ -190,7 +190,7 @@ public sealed class ModalidadeCoerenciaDosCamposTests
         m.RemanejamentoParametros.Destino.Should().BeNull();
     }
 
-    [Fact(DisplayName = "SEGUE_CASCATA com parâmetros preenchidos é rejeitado (nenhum arg admitido)")]
+    [Fact(DisplayName = "SEGUE_ORDEM_DE_REMANEJAMENTO com parâmetros preenchidos é rejeitado (nenhum arg admitido)")]
     public void Criar_CascataComParametros_Falha()
     {
         Result<Modalidade> r = Criar(ajuste: d => d.ComoCotaReservada() with { RemanejamentoDestino = "AC" });

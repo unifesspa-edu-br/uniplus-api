@@ -2,6 +2,7 @@ namespace Unifesspa.UniPlus.Selecao.Domain.UnitTests.Entities;
 
 using AwesomeAssertions;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.ValueObjects;
@@ -41,23 +42,23 @@ public sealed class ConformidadeEscalaDasEtapasTests
     private static ConfiguracaoClassificacao ClassificacaoComEliminacao(Guid etapaRef, decimal notaMinima) =>
         ConfiguracaoClassificacao.Criar(new DeclaracaoDaClassificacao
         {
-            RegraCalculo = ProcessoConformeFactory.Regra(RegraCalculoCodigo.FormulaMediaPonderada, "b"),
-            RegraArredondamento = ProcessoConformeFactory.Regra(RegraArredondamentoCodigo.PrecisaoTruncar, "c"),
+            RegraCalculo = ProcessoConformeFactory.Regra(RegraDeCalculoDaNota.MediaPonderada.Codigo(), "b"),
+            RegraArredondamento = ProcessoConformeFactory.Regra(RegraDeArredondamentoDaNota.Truncar.Codigo(), "c"),
             CasasArredondamento = 2,
-            RegraOrdemAlocacao = ProcessoConformeFactory.Regra(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, "d"),
+            RegraOrdemAlocacao = ProcessoConformeFactory.Regra(RegraDeOrdemDeAlocacao.PrimeiraOpcaoPrioritaria.Codigo(), "d"),
             RegrasEliminacao = [RegraEliminacao.Criar(
-                ProcessoConformeFactory.Regra(RegraEliminacaoCodigo.ElimNotaMinimaEtapa, "e"),
-                new ParametrosElimNotaMinimaEtapa(etapaRef, notaMinima)).Value!],
+                ProcessoConformeFactory.Regra(RegraDeEliminacaoPorCalculo.NotaMinimaNaEtapa.Codigo(), "e"),
+                new ParametrosEliminacaoPorNotaMinimaNaEtapa(etapaRef, notaMinima)).Value!],
             EscalaNotaFinal = 100m,
         }).Value!;
 
     private static ConfiguracaoClassificacao ClassificacaoSemEliminacao() =>
         ConfiguracaoClassificacao.Criar(new DeclaracaoDaClassificacao
         {
-            RegraCalculo = ProcessoConformeFactory.Regra(RegraCalculoCodigo.FormulaMediaPonderada, "b"),
-            RegraArredondamento = ProcessoConformeFactory.Regra(RegraArredondamentoCodigo.PrecisaoTruncar, "c"),
+            RegraCalculo = ProcessoConformeFactory.Regra(RegraDeCalculoDaNota.MediaPonderada.Codigo(), "b"),
+            RegraArredondamento = ProcessoConformeFactory.Regra(RegraDeArredondamentoDaNota.Truncar.Codigo(), "c"),
             CasasArredondamento = 2,
-            RegraOrdemAlocacao = ProcessoConformeFactory.Regra(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, "d"),
+            RegraOrdemAlocacao = ProcessoConformeFactory.Regra(RegraDeOrdemDeAlocacao.PrimeiraOpcaoPrioritaria.Codigo(), "d"),
             EscalaNotaFinal = 100m,
         }).Value!;
 
@@ -83,7 +84,7 @@ public sealed class ConformidadeEscalaDasEtapasTests
         processo.DefinirCriteriosDesempate(
             [CriterioDesempate.Criar(
                 1,
-                ProcessoConformeFactory.Regra(CriterioDesempateCodigo.MaiorNotaEtapa, "f"),
+                ProcessoConformeFactory.Regra(RegraDeDesempate.MaiorNotaNaEtapa.Codigo(), "f"),
                 new ParametrosDesempateMaiorNotaEtapa(etapaId)).Value!]).IsSuccess.Should().BeTrue();
     }
 
@@ -264,10 +265,10 @@ public sealed class ConformidadeEscalaDasEtapasTests
     private static ConfiguracaoClassificacao ClassificacaoDoEnem() =>
         ConfiguracaoClassificacao.Criar(new DeclaracaoDaClassificacao
         {
-            RegraCalculo = ProcessoConformeFactory.Regra(RegraCalculoCodigo.FormulaMediaPonderada, "b"),
-            RegraArredondamento = ProcessoConformeFactory.Regra(RegraArredondamentoCodigo.PrecisaoTruncar, "c"),
+            RegraCalculo = ProcessoConformeFactory.Regra(RegraDeCalculoDaNota.MediaPonderada.Codigo(), "b"),
+            RegraArredondamento = ProcessoConformeFactory.Regra(RegraDeArredondamentoDaNota.Truncar.Codigo(), "c"),
             CasasArredondamento = 2,
-            RegraOrdemAlocacao = ProcessoConformeFactory.Regra(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, "d"),
+            RegraOrdemAlocacao = ProcessoConformeFactory.Regra(RegraDeOrdemDeAlocacao.PrimeiraOpcaoPrioritaria.Codigo(), "d"),
             BaseadoEmEnem = true,
             ResolucaoPesoAreaEnem = QuadroPesoAreaEnemDeTeste.Resolucao,
             QuadroPesoAreaEnem = QuadroPesoAreaEnemDeTeste.Completo(),

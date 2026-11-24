@@ -5,6 +5,7 @@ using System.Text.Json;
 using AwesomeAssertions;
 
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
@@ -69,7 +70,7 @@ public sealed class ComprovanteGravadoDaInscricaoTests
         ComprovanteInscricao relido = (await _cenario.ComprovantesGravadosAsync(original.Id)).Should().ContainSingle().Subject;
 
         DocumentoDoComprovante documento = relido.Documentos.Should().ContainSingle().Subject;
-        documento.Situacao.Should().Be(SituacaoDoDocumentoCodigo.Satisfeita);
+        documento.Situacao.Should().Be(SituacaoDoDocumento.Satisfeita.Codigo());
         documento.Arquivos.Should().Equal(new ArquivoDoComprovante(new string('d', 64), 4096, "PDF"));
         relido.IntegridadeConfere().Should().BeTrue("o hash cobre a lista de documentos gravada");
     }
@@ -91,7 +92,7 @@ public sealed class ComprovanteGravadoDaInscricaoTests
         gravados.Should().ContainSingle().Which.IntegridadeConfere().Should().BeTrue();
     }
 
-    [Fact(DisplayName = "A modalidade do envio é gravada derivada, uma linha por código na ordem das ofertadas, e o comprovante relido do banco a traz e confere")]
+    [Fact(DisplayName = "A modalidade do envio é gravada calculada, uma linha por código na ordem das ofertadas, e o comprovante relido do banco a traz e confere")]
     public async Task Submeter_GravaAModalidadeEOComprovanteRelidoConfere()
     {
         Inscricao original = NovaInscricao(PersonasDeTeste.FernandaDrumond, Guid.CreateVersion7());
@@ -143,7 +144,7 @@ public sealed class ComprovanteGravadoDaInscricaoTests
         };
 
     private static ModalidadesDeConcorrencia ModalidadesConcorrendo(ModalidadeDeConcorrencia[] modalidades) =>
-        new(true, SituacaoDasModalidades.Concorre, modalidades, [], new DependenciasDaAvaliacao([], []));
+        new(SituacaoDasModalidades.Concorre, modalidades, [], new DependenciasDaAvaliacao([], []));
 
     private static ConteudoDoEnvio EnvioComOLaudoSatisfeito()
     {
@@ -163,7 +164,7 @@ public sealed class ComprovanteGravadoDaInscricaoTests
             new DocumentoExigidoDeclarado(new CopiaDoTipoDeDocumento(Guid.CreateVersion7(), "LAUDO_MEDICO", "Laudo médico", "CAT", ProtecaoDoDocumentoDeTeste.Pessoal),
                 new MomentoDaExigencia(Guid.CreateVersion7(), null, Unifesspa.UniPlus.Regras.Formularios.FinalidadeFormulario.Inscricao),
                 new AplicabilidadeDaExigencia(Aplicabilidade.Geral, []),
-                new IndeferimentoDoDocumento(true, ConsequenciaIndeferimentoCodigo.RemoveVantagem, []),
+                new IndeferimentoDoDocumento(true, "REMOVE_VANTAGEM", []),
                 RequisitosDoDocumentoDeTeste.Com(FormatosPermitidos.Criar(true, null).Value!),
                 null)).Value!;
 
@@ -199,12 +200,12 @@ public sealed class ComprovanteGravadoDaInscricaoTests
 
     private async Task ConferirALinhasDaModalidadeAsync(Guid inscricaoId)
     {
-        List<(int Posicao, int Origem, int Tipo, string Codigo)> linhas = await _cenario.ConsultarAsync(
-            LinhasDaModalidade, inscricaoId, static l => (l.GetInt32(0), l.GetInt32(1), l.GetInt32(2), l.GetString(3)));
+        List<(int Posicao, string Origem, string Tipo, string Codigo)> linhas = await _cenario.ConsultarAsync(
+            LinhasDaModalidade, inscricaoId, static l => (l.GetInt32(0), l.GetString(1), l.GetString(2), l.GetString(3)));
 
         linhas.Should().Equal(
-            (0, (int)OrigemDaResposta.Derivada, (int)TipoDoValorDeResposta.Codigo, "AC"),
-            (1, (int)OrigemDaResposta.Derivada, (int)TipoDoValorDeResposta.Codigo, "LI_EP"));
+            (0, "CALCULADA", "OPCAO", "AC"),
+            (1, "CALCULADA", "OPCAO", "LI_EP"));
     }
 
     private async Task ConferirComprovanteDaSegundaOpcaoAsync(Guid inscricaoId, Guid segundaOferta, ModalidadeDeConcorrencia[] daSegunda)

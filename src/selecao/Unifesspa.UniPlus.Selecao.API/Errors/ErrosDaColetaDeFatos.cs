@@ -56,10 +56,10 @@ internal static class ErrosDaColetaDeFatos
         new("CondicaoRegraDerivacao.ClausulaInvalida", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.condicao_regra_derivacao.clausula_invalida", "O ordinal da cláusula da regra não pode ser negativo")),
     ];
 
-    /// <summary>Ciclo do grafo de dependência conjunto, pelas quatro classes de aresta juntas, e os documentos do processo.</summary>
+    /// <summary>Ciclo das dependências pelos quatro motivos de dependência e os documentos do processo.</summary>
     private static IEnumerable<KeyValuePair<string, DomainErrorMapping>> DoGrafoConjuntoEDosDocumentos() =>
     [
-        new("GrafoDependenciaConjunta.GrafoConjuntoComCiclo", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.grafo_dependencia_conjunta.grafo_conjunto_com_ciclo", "O grafo de dependência conjunto (produção, pré-condição, derivação e gatilho) forma um ciclo")),
+        new("GrafoDependenciaConjunta.GrafoConjuntoComCiclo", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.grafo_dependencia_conjunta.grafo_conjunto_com_ciclo", "As dependências entre campos, dados, exigências, seções e termos da configuração formam um ciclo")),
         new("ProcessoSeletivo.DocumentoNaoEncontrado", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.documento_nao_encontrado", "Documento do Edital não encontrado ou não pertence a este processo")),
         new("ProcessoSeletivo.DocumentoNaoEnviadoComoEdital", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.documento_nao_enviado_como_edital", "Somente um documento enviado como edital pode ser o documento do edital")),
         new("ProcessoSeletivo.DocumentoNaoConfirmado", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.documento_nao_confirmado", "Somente um documento confirmado pode ser referenciado na publicação")),

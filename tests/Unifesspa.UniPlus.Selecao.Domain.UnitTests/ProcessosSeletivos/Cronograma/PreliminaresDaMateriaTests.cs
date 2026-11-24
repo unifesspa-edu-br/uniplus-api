@@ -2,6 +2,7 @@ namespace Unifesspa.UniPlus.Selecao.Domain.UnitTests.ProcessosSeletivos.Cronogra
 
 using AwesomeAssertions;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Cronograma;
@@ -20,9 +21,9 @@ public sealed class PreliminaresDaMateriaTests
     private const string OutraMateria = "GABARITO";
     private static readonly DateTimeOffset Inicio = new(2027, 1, 20, 12, 0, 0, TimeSpan.Zero);
 
-    private static ProdutoDaFase Preliminar(string ato = Materia) => ProdutoDaFase.Criar(ato, PapelProdutoFase.Preliminar);
+    private static ProdutoDaFase Preliminar(string ato = Materia) => ProdutoDaFase.Criar(ato, PapelDaPublicacaoPrevista.Preliminar);
 
-    private static ProdutoDaFase Definitivo(string ato = Materia) => ProdutoDaFase.Criar(ato, PapelProdutoFase.Definitivo);
+    private static ProdutoDaFase Definitivo(string ato = Materia) => ProdutoDaFase.Criar(ato, PapelDaPublicacaoPrevista.Definitivo);
 
     private static FaseCronograma Fase(string codigo, params ProdutoDaFase[] produtos) =>
         FaseCronograma.Criar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("fase").Value!,
@@ -56,8 +57,8 @@ public sealed class PreliminaresDaMateriaTests
 
     private static ConfiguracaoClassificacao Classificacao() => ConfiguracaoClassificacao.Criar(new DeclaracaoDaClassificacao
     {
-        RegraCalculo = ReferenciaRegra.De(RegraCalculoCodigo.ClassificacaoImportada, "v1", new string('b', 64)),
-        RegraOrdemAlocacao = ReferenciaRegra.De(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, "v1", new string('d', 64)),
+        RegraCalculo = ReferenciaRegra.De(RegraDeCalculoDaNota.ClassificacaoImportada.Codigo(), "v1", new string('b', 64)),
+        RegraOrdemAlocacao = ReferenciaRegra.De(RegraDeOrdemDeAlocacao.PrimeiraOpcaoPrioritaria.Codigo(), "v1", new string('d', 64)),
     }).Value!;
 
     [Fact(DisplayName = "Definitivo da fase espera os preliminares do mesmo tipo de ato na própria fase")]
@@ -73,9 +74,9 @@ public sealed class PreliminaresDaMateriaTests
     [Fact(DisplayName = "Definitivo da etapa espera os preliminares do mesmo tipo de ato na própria etapa")]
     public void Esperados_DefinitivoDaEtapa_EsperaOsPreliminaresDoMesmoTipo()
     {
-        ProdutoDaEtapa preliminar = ProdutoDaEtapa.Criar(Materia, PapelProdutoFase.Preliminar);
-        ProdutoDaEtapa definitivo = ProdutoDaEtapa.Criar(Materia, PapelProdutoFase.Definitivo);
-        EtapaProcesso etapa = Etapa(preliminar, ProdutoDaEtapa.Criar(OutraMateria, PapelProdutoFase.Preliminar), definitivo);
+        ProdutoDaEtapa preliminar = ProdutoDaEtapa.Criar(Materia, PapelDaPublicacaoPrevista.Preliminar);
+        ProdutoDaEtapa definitivo = ProdutoDaEtapa.Criar(Materia, PapelDaPublicacaoPrevista.Definitivo);
+        EtapaProcesso etapa = Etapa(preliminar, ProdutoDaEtapa.Criar(OutraMateria, PapelDaPublicacaoPrevista.Preliminar), definitivo);
 
         PreliminaresDaMateria.Esperados([], [etapa], definitivo.Id).Should().Equal(preliminar.Id);
     }
@@ -125,8 +126,8 @@ public sealed class PreliminaresDaMateriaTests
     [Fact(DisplayName = "O preliminar da etapa é fechado pelo definitivo da etapa")]
     public void DefinitivosQueFecham_PreliminarDaEtapa_ApontaODefinitivoDaEtapa()
     {
-        ProdutoDaEtapa preliminar = ProdutoDaEtapa.Criar(Materia, PapelProdutoFase.Preliminar);
-        ProdutoDaEtapa definitivo = ProdutoDaEtapa.Criar(Materia, PapelProdutoFase.Definitivo);
+        ProdutoDaEtapa preliminar = ProdutoDaEtapa.Criar(Materia, PapelDaPublicacaoPrevista.Preliminar);
+        ProdutoDaEtapa definitivo = ProdutoDaEtapa.Criar(Materia, PapelDaPublicacaoPrevista.Definitivo);
 
         PreliminaresDaMateria.DefinitivosQueFecham([], [Etapa(preliminar, definitivo)], preliminar.Id).Should().Equal(definitivo.Id);
     }

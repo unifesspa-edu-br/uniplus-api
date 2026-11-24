@@ -10,7 +10,7 @@ using System.Text.Json.Serialization;
 /// </summary>
 /// <remarks>
 /// <para>
-/// As variantes espelham os motores que <c>RECONCILIACAO-VAGAS-ARTIGO-11-PARAGRAFO-UNICO</c> declara em
+/// As variantes espelham os motores que <c>AJUSTE_VAGAS_ARTIGO_11_PARAGRAFO_UNICO</c> declara em
 /// <c>declaracao_da_regra.motores_nao_art10</c>, e a vedação que ela também declara vale aqui: são
 /// motores de distribuição institucional, nunca da Lei 12.711 — lá a reconciliação está
 /// embutida na calculadora, com teto nas vagas ofertadas base e prioridade da reserva de baixa renda.

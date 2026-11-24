@@ -8,7 +8,7 @@ using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 public sealed class RegraRemanejamentoTests
 {
     [Theory(DisplayName = "Cada regra de remanejamento tem o código e o rótulo do contrato")]
-    [InlineData(RegraRemanejamento.SegueCascata, "SEGUE_CASCATA", "Segue a cascata")]
+    [InlineData(RegraRemanejamento.SegueOrdemDeRemanejamento, "SEGUE_ORDEM_DE_REMANEJAMENTO", "Segue a ordem de remanejamento")]
     [InlineData(RegraRemanejamento.DestinoUnico, "DESTINO_UNICO", "Destino único")]
     [InlineData(RegraRemanejamento.Cruzado, "CRUZADO", "Cruzado")]
     public void Valor_Declarado_TemCodigoERotulo(RegraRemanejamento valor, string codigo, string rotulo)
@@ -22,7 +22,7 @@ public sealed class RegraRemanejamentoTests
     [Fact(DisplayName = "O enum tem exatamente as três regras, na ordem de exibição")]
     public void Valores_Catalogo_NaOrdemDeDeclaracao() =>
         CatalogoDe<RegraRemanejamento>.Valores().Should().Equal(
-            RegraRemanejamento.SegueCascata,
+            RegraRemanejamento.SegueOrdemDeRemanejamento,
             RegraRemanejamento.DestinoUnico,
             RegraRemanejamento.Cruzado);
 

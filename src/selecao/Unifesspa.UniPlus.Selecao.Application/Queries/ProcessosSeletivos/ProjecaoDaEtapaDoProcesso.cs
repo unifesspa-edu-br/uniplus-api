@@ -34,7 +34,7 @@ internal static class ProjecaoDaEtapaDoProcesso
 
     private static IdentificacaoDaEtapaDto ProjetarIdentificacao(EtapaProcesso etapa) => new(
         etapa.Nome,
-        etapa.Carater,
+        CodigoComRotulo<CaraterEtapa>.De(etapa.Carater),
         ProjetarTipoDeEtapa(etapa.TipoEtapa),
         etapa.Ordem,
         etapa.FaseCodigo);
@@ -49,13 +49,13 @@ internal static class ProjecaoDaEtapaDoProcesso
         PassoDoLancamento: etapa.PassoDoLancamento);
 
     private static AvaliacaoDaEtapaDto ProjetarAvaliacao(EtapaProcesso etapa) => new(
-        etapa.FormaDeAvaliacao.ToCodigo(),
+        etapa.FormaDeAvaliacao is { } forma ? CodigoComRotulo<FormaDeAvaliacao>.De(forma) : null,
         etapa.RegraConsolidacao is { } consolidacao ? ProjecaoDoProcessoSeletivo.Referencia(consolidacao) : null,
         [.. etapa.ItensDeAvaliacao.Select(i => new ItemDeAvaliacaoDto(i.Id, i.Rotulo, i.PontuacaoMaxima, i.Ordem, i.Chave.Valor))],
         ProjetarEscala(etapa));
 
     private static PublicacoesDaEtapaDto ProjetarPublicacoes(EtapaProcesso etapa) => new(
-        [.. OrdemCanonicaDaConfiguracao.ProdutosDaEtapa(etapa.Produtos).Select(pr => new ProdutoDaEtapaDto(pr.Id, pr.AtoCodigo, pr.Papel.ToCodigo()))],
+        [.. OrdemCanonicaDaConfiguracao.ProdutosDaEtapa(etapa.Produtos).Select(pr => new ProdutoDaEtapaDto(pr.Id, pr.AtoCodigo, ProjecaoDoPapelDaPublicacao.De(pr.Papel)))],
         etapa.EmiteParecerIndividual,
         [.. etapa.Recursos.Select(r => ProjetarRecursoDaEtapa(etapa, r))],
         [.. etapa.TiposDeDecisao.Select(CodigoComRotulo<TipoMotivoDeDecisao>.De)]);
@@ -82,7 +82,7 @@ internal static class ProjecaoDaEtapaDoProcesso
     // mão para reexibir contra o que o recurso corre.
     private static RecursoDaEtapaDto ProjetarRecursoDaEtapa(EtapaProcesso etapa, RecursoDaEtapa recurso) => new(
         recurso.Id,
-        recurso.Ancora,
+        CodigoComRotulo<EventoInicialDoPrazo>.De(recurso.Ancora),
         ProjecaoDoProcessoSeletivo.Referencia(recurso.Regra),
         ProjecaoDoProcessoSeletivo.ProjetarParametrosDoPrazo(recurso.Parametros),
         recurso.ProdutoAncoraId,

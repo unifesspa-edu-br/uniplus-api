@@ -145,6 +145,6 @@ public sealed class ConfirmacaoDoDocumentoDoRascunhoConcorrenciaIntegrationTests
             "SELECT status FROM selecao.documentos_a_publicar WHERE id = @id FOR UPDATE NOWAIT", conexao, transacao);
         comando.Parameters.AddWithValue("id", documentoId);
 
-        ((int)(await comando.ExecuteScalarAsync())!).Should().Be((int)StatusArquivoEnviado.Pendente);
+        ((string)(await comando.ExecuteScalarAsync())!).Should().Be("PENDENTE");
     }
 }

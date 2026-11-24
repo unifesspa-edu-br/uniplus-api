@@ -54,9 +54,9 @@ public static class PreliminaresDaMateria
             ? PreliminaresDoLugar(etapa.Produtos.Select(static p => (p.Id, p.AtoCodigo, p.Papel)), definitivoId)
             : [];
 
-    private static IReadOnlyList<Guid> PreliminaresDoLugar(IEnumerable<(Guid Id, string AtoCodigo, PapelProdutoFase? Papel)> produtos, Guid definitivoId)
+    private static IReadOnlyList<Guid> PreliminaresDoLugar(IEnumerable<(Guid Id, string AtoCodigo, PapelDaPublicacaoPrevista? Papel)> produtos, Guid definitivoId)
     {
-        (Guid Id, string AtoCodigo, PapelProdutoFase? Papel)[] doLugar = [.. produtos];
+        (Guid Id, string AtoCodigo, PapelDaPublicacaoPrevista? Papel)[] doLugar = [.. produtos];
 
         return CicloRecursal.PreliminaresDoTipo(doLugar, doLugar.First(p => p.Id == definitivoId).AtoCodigo);
     }
@@ -89,7 +89,7 @@ public static class PreliminaresDaMateria
         [
             .. fases.SelectMany(static f => f.Produtos.Select(static p => (p.Id, p.Papel)))
                 .Concat(etapas.SelectMany(static e => e.Produtos.Select(static p => (p.Id, p.Papel))))
-                .Where(static p => p.Papel == PapelProdutoFase.Definitivo)
+                .Where(static p => p.Papel == PapelDaPublicacaoPrevista.Definitivo)
                 .Select(static p => p.Id)
                 .Where(definitivoId => Esperados(fases, etapas, definitivoId).Contains(preliminarId))
                 .Distinct(),

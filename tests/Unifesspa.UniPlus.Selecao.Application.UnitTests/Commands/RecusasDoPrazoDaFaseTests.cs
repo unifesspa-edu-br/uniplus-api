@@ -19,7 +19,7 @@ public sealed class RecusasDoPrazoDaFaseTests
         EfeitoSuspensivo = null,
         GuardaDaVaga = "talvez",
         PrazoSegundaInstanciaValor = 1m,
-        PrazoSegundaInstanciaUnidade = "horas",
+        PrazoSegundaInstanciaUnidade = "HORAS",
     };
 
     [Fact]
@@ -52,7 +52,7 @@ public sealed class RecusasDoPrazoDaFaseTests
             .ComTipoDeAto(TipoAtoDaClassificacao()).ComRegraNoCatalogo(RegraDePrazoDeRecurso());
         FaseCronogramaInput fase = cenario.CadastrarFase(FaseCanonicaRecorrivel()) with
         {
-            Produtos = [ProdutoDaClassificacao(PapelProdutoFaseCodigo.Preliminar)],
+            Produtos = [ProdutoDaClassificacao("PRELIMINAR")],
             RegraRecurso = RecursoDoPedido(pedido),
         };
 

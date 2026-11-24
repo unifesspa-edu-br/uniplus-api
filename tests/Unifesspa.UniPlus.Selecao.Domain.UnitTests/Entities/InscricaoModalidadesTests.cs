@@ -61,7 +61,7 @@ public sealed class InscricaoModalidadesTests
 
         inscricao.Formulario.Derivados["MODALIDADE"].EnumerateArray().Select(static v => v.GetString()).Should().Equal("AC", "LI_EP");
         inscricao.Formulario.DefinicoesDasRespostas["MODALIDADE"].Should().Be(
-            new DefinicaoDaResposta(TipoDoValorDeResposta.Codigo, Multivalorado: true, Identificador: false));
+            new DefinicaoDaResposta(TipoDoValorDeResposta.Opcao, Multivalorado: true, Identificador: false));
         comprovante.Modalidades.Should().Equal(
             new ModalidadeDeConcorrencia("AC", "Ampla concorrência", 0), new ModalidadeDeConcorrencia("LI_EP", "Escola pública", 3));
         comprovante.Derivados.Should().NotContainKey("MODALIDADE", "a seção das modalidades já a registra, com o nome");

@@ -88,7 +88,7 @@ public sealed class ConfirmarEnvioDoDocumentoAPublicarCommandHandlerTests
         Result<DocumentoAPublicarDto> resultado = await _cenario.ConfirmarAsync(documento.Id);
 
         resultado.Value!.HashSha256.Should().Be(Convert.ToHexStringLower(SHA256.HashData(ConteudoPdf)));
-        resultado.Value.Status.Should().Be("Confirmado");
+        resultado.Value.Status.Codigo.Should().Be("CONFIRMADO");
         _cenario.Documentos.Received(1).Atualizar(documento);
         await _cenario.UnitOfWork.Received(1).SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
         await _cenario.Storage.Received(1).SalvarConteudoSeladoAsync(

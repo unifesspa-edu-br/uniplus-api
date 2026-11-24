@@ -39,7 +39,7 @@ internal static class ExigenciaDasBancasDaHomologacao
     private sealed record FaseNaPosicao(FaseDeclarada Fase, int Posicao);
 
     /// <summary>As causas das três exigências, na ordem em que o autor as corrige: homologação, importação das notas e importação de candidatos.</summary>
-    internal static IReadOnlyList<FieldError> Causas(OrigemCandidatos origem, CronogramaDoProcesso cronograma, EtapasDoProcesso etapas) =>
+    internal static IReadOnlyList<FieldError> Causas(OrigemCandidatos? origem, CronogramaDoProcesso cronograma, EtapasDoProcesso etapas) =>
     [
         .. BancaDeHomologacaoDasInscricoes(origem, cronograma, etapas).Causas,
         .. BancaDeImportacaoDasNotasDoInep(origem, cronograma, etapas).Causas,
@@ -50,11 +50,11 @@ internal static class ExigenciaDasBancasDaHomologacao
     /// Cada fase que homologa tem a banca de homologação das inscrições, nela ou nas etapas dela. Sem fase que homologa, ou com
     /// a origem por declarar, a exigência não se julga.
     /// </summary>
-    internal static Veredicto BancaDeHomologacaoDasInscricoes(OrigemCandidatos origem, CronogramaDoProcesso cronograma, EtapasDoProcesso etapas)
+    internal static Veredicto BancaDeHomologacaoDasInscricoes(OrigemCandidatos? origem, CronogramaDoProcesso cronograma, EtapasDoProcesso etapas)
     {
         FaseNaPosicao[] homologam = [.. cronograma.Fases.Select(static (fase, posicao) => new FaseNaPosicao(fase, posicao)).Where(static par => ExigenciaDaHomologacaoPorOrigem.HomologaAsInscricoes(par.Fase))];
 
-        if (origem == OrigemCandidatos.Nenhuma || homologam.Length == 0 || FasesSemJulgar(cronograma))
+        if (origem is null || homologam.Length == 0 || FasesSemJulgar(cronograma))
         {
             return Veredicto.SemJulgar;
         }
@@ -67,17 +67,17 @@ internal static class ExigenciaDasBancasDaHomologacao
     }
 
     /// <summary>O processo que usa a nota do ENEM com inscrição própria tem a banca de importação das notas do INEP em alguma fase ou etapa.</summary>
-    internal static Veredicto BancaDeImportacaoDasNotasDoInep(OrigemCandidatos origem, CronogramaDoProcesso cronograma, EtapasDoProcesso etapas) => origem switch
+    internal static Veredicto BancaDeImportacaoDasNotasDoInep(OrigemCandidatos? origem, CronogramaDoProcesso cronograma, EtapasDoProcesso etapas) => origem switch
     {
-        OrigemCandidatos.Nenhuma => Veredicto.SemJulgar,
+        null => Veredicto.SemJulgar,
         OrigemCandidatos.InscricaoPropria => NotaDoEnemComInscricaoPropria(cronograma, etapas),
         _ => Veredicto.Atendido,
     };
 
     /// <summary>O processo que importa candidatos de fora tem a banca de importação de candidatos em alguma fase ou etapa.</summary>
-    internal static Veredicto BancaDeImportacaoDeCandidatos(OrigemCandidatos origem, CronogramaDoProcesso cronograma, EtapasDoProcesso etapas) => origem switch
+    internal static Veredicto BancaDeImportacaoDeCandidatos(OrigemCandidatos? origem, CronogramaDoProcesso cronograma, EtapasDoProcesso etapas) => origem switch
     {
-        OrigemCandidatos.Nenhuma => Veredicto.SemJulgar,
+        null => Veredicto.SemJulgar,
         OrigemCandidatos.ImportacaoExterna => ComBancaDeImportacao(PapelDaBanca.ImportaCandidatos, ImportacaoExternaSemBanca, cronograma, etapas),
         _ => Veredicto.Atendido,
     };

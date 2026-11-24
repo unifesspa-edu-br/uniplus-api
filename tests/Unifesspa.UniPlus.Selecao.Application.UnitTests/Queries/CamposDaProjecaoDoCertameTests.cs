@@ -76,7 +76,7 @@ public sealed class CamposDaProjecaoDoCertameTests
         CertamePublicadoDto certame = ProjecaoDoCertameDeTeste.Projetado();
 
         certame.Etapas.Should().ContainSingle().Which.Nome.Should().Be("Prova Objetiva");
-        certame.OrigemCandidatos.Should().Be("InscricaoPropria");
+        certame.OrigemCandidatos.Codigo.Should().Be("INSCRICAO_PROPRIA");
         certame.CronogramaFases.Should().ContainSingle().Which.Codigo.Should().Be("INSCRICAO");
         certame.DocumentosExigidos.Should().ContainSingle().Which.Rotulo.Should().Be("Comprovante de residência");
         certame.Atendimento.Should().BeEquivalentTo(new AtendimentoCertameDto([], [], []));
@@ -86,11 +86,11 @@ public sealed class CamposDaProjecaoDoCertameTests
     public void Projetar_TaxaPresente_TrazATaxaDoEnvelope()
     {
         JsonObject envelope = ProjecaoDoCertameDeTeste.Envelope();
-        envelope["taxaInscricao"] = JsonNode.Parse("""{"cobra":true,"fundamentos":["Lei de teste"],"presente":true,"valor":"85.00"}""");
+        envelope["taxaInscricao"] = JsonNode.Parse("""{"cobra":true,"fundamentos":["CADASTRO_UNICO"],"presente":true,"valor":"85.00"}""");
 
         CertamePublicadoDto certame = ProjecaoDoCertameDeTeste.Projetado(envelope);
 
-        certame.TaxaInscricao.Should().BeEquivalentTo(new TaxaInscricaoCertameDto(true, "85.00", ["Lei de teste"]));
+        certame.TaxaInscricao.Should().BeEquivalentTo(new TaxaInscricaoCertameDto(true, "85.00", [Unifesspa.UniPlus.Application.Abstractions.Respostas.CodigoComRotulo<Unifesspa.UniPlus.Selecao.Domain.Enums.FundamentoIsencao>.De(Unifesspa.UniPlus.Selecao.Domain.Enums.FundamentoIsencao.CadastroUnico)]));
     }
 
     [Fact(DisplayName = "A taxa de inscrição com presença falsa vira ausência da taxa, e não um bloco de campos nulos")]

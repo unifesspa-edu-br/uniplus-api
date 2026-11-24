@@ -279,7 +279,7 @@ public sealed class ModalidadeEndpointTests
         Descricao: "Cota PPI de baixa renda",
         NaturezaLegal: "COTA_RESERVADA",
         ComposicaoVagas: "DENTRO_DA_RESERVA_LEGAL",
-        Remanejamento: new { regra = "SEGUE_CASCATA" },
+        Remanejamento: new { regra = "SEGUE_ORDEM_DE_REMANEJAMENTO" },
         RegraDeAplicabilidade: OptouPelasCotas(),
         BaseLegal: "Lei 12.711/2012");
 
@@ -287,7 +287,7 @@ public sealed class ModalidadeEndpointTests
     {
         modalidade.GetProperty("naturezaLegal").GetProperty("codigo").GetString().Should().Be("COTA_RESERVADA");
         modalidade.GetProperty("composicaoVagas").GetProperty("codigo").GetString().Should().Be("DENTRO_DA_RESERVA_LEGAL");
-        modalidade.GetProperty("remanejamento").GetProperty("regra").GetProperty("codigo").GetString().Should().Be("SEGUE_CASCATA");
+        modalidade.GetProperty("remanejamento").GetProperty("regra").GetProperty("codigo").GetString().Should().Be("SEGUE_ORDEM_DE_REMANEJAMENTO");
     }
 
     private static async Task<JsonElement> LerModalidade(HttpClient client, Guid id)

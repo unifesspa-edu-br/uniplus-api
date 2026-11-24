@@ -36,7 +36,7 @@
         "ELIMINA",
         "RECLASSIFICA_AC",
         "REMOVE_VANTAGEM",
-        "PENDENCIA_REENVIO"
+        "ABRE_PRAZO_PARA_REENVIO"
       ]
     },
     "basesLegais": {

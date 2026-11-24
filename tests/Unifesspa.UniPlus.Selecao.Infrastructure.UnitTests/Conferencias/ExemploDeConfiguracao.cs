@@ -1,5 +1,7 @@
 namespace Unifesspa.UniPlus.Selecao.Infrastructure.UnitTests.Conferencias;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
+
 using Unifesspa.UniPlus.Kernel.Tempo;
 using Unifesspa.UniPlus.Regras.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
@@ -56,7 +58,7 @@ internal static class ExemploDeConfiguracao
                     ColetaInscricao: false, ColetaSolicitacaoIsencao: false) { Nome = "Resultado final" }),
                 new DecisoesDeCronogramaDaFase(
                     Ordem: 1, Inicio: new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero), Fim: new DateTimeOffset(2026, 1, 31, 0, 0, 0, TimeSpan.Zero), UnidadeResponsavel: UnidadesDeTeste.Ceps),
-                new PublicacoesDaFase(Produtos: [ProdutoDaFase.Criar("RESULTADO_CLASSIFICACAO", PapelProdutoFase.Definitivo)], EmiteParecerIndividual: false, RegraRecurso: null),
+                new PublicacoesDaFase(Produtos: [ProdutoDaFase.Criar("RESULTADO_CLASSIFICACAO", PapelDaPublicacaoPrevista.Definitivo)], EmiteParecerIndividual: false, RegraRecurso: null),
                 bancasRequeridas: []).Value!,
         ], []);
     }
@@ -65,12 +67,8 @@ internal static class ExemploDeConfiguracao
     {
         processo.DefinirDistribuicaoVagas([
             ConfiguracaoDistribuicaoVagas.Criar(new Guid("11111111-1111-1111-1111-111111111111"),
-                new DistribuicaoDeVagasDeclarada { VagasOfertadasBase = 40, PercentualDaReservaLegal = 1m, RegraDeDistribuicao = Regra(RegraDistribuicaoVagasCodigo.Institucional, 'a'), Modalidades = [
-                    ModalidadeSelecionada.Criar(
-                        new Guid("22222222-2222-2222-2222-222222222222"), "AC", null,
-                        NaturezaLegalModalidade.Ampla, ComposicaoVagasModalidade.RestanteDasVagasOfertadas, null,
-                        RegraRemanejamentoModalidade.Nenhuma, null, null, null,
-                        RegrasDeAplicabilidadeDeTeste.DaNatureza(NaturezaLegalModalidade.Ampla), null, "Res. Unifesspa 532/2021", quantidadeDeclarada: 40).Value!,
+                new DistribuicaoDeVagasDeclarada { VagasOfertadasBase = 40, PercentualDaReservaLegal = 1m, RegraDeDistribuicao = Regra(RegraDeDistribuicaoDeVagas.Institucional.Codigo(), 'a'), Modalidades = [
+                    ModalidadeSelecionada.Criar(ModalidadesNoCadastroDeTeste.Da("AC", NaturezaLegalModalidade.Ampla, ComposicaoVagasModalidade.RestanteDasVagasOfertadas) with { Id = new Guid("22222222-2222-2222-2222-222222222222"), RegraRemanejamento = null, BaseLegal = "Res. Unifesspa 532/2021" }, 40).Value!,
                 ] },
                 new FatosDaOfertaNoCadastro { OfertaCurso = OfertaCursoDeTeste.Medicina }).Value!,
         ], FatosDeModalidadeDeTeste.DoCatalogo);
@@ -80,8 +78,8 @@ internal static class ExemploDeConfiguracao
     {
         processo.DefinirClassificacao(ConfiguracaoClassificacao.Criar(new DeclaracaoDaClassificacao
         {
-            RegraCalculo = Regra(RegraCalculoCodigo.ClassificacaoImportada, 'b'),
-            RegraOrdemAlocacao = Regra(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, 'c'),
+            RegraCalculo = Regra(RegraDeCalculoDaNota.ClassificacaoImportada.Codigo(), 'b'),
+            RegraOrdemAlocacao = Regra(RegraDeOrdemDeAlocacao.PrimeiraOpcaoPrioritaria.Codigo(), 'c'),
         }).Value!);
         processo.DefinirOpcoesDeCurso(1);
     }

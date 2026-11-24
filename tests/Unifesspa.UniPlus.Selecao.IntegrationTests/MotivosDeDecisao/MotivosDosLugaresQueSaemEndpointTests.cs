@@ -6,7 +6,9 @@ using AwesomeAssertions;
 
 using Outbox.Cascading;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
+using Unifesspa.UniPlus.Selecao.Domain.Enums;
 
 
 /// <summary>
@@ -95,7 +97,7 @@ public sealed class MotivosDosLugaresQueSaemEndpointTests : IAsyncLifetime
             {
                 new
                 {
-                    id, nome = "Prova Objetiva", carater = 1, tipoEtapaOrigemId = TipoProvaObjetiva, peso = 1m, notaMinima = (decimal?)null, notaMaxima = 100m,
+                    id, nome = "Prova Objetiva", carater = CaraterEtapa.Classificatoria.Codigo(), tipoEtapaOrigemId = TipoProvaObjetiva, peso = 1m, notaMinima = (decimal?)null, notaMaxima = 100m,
                     formaDeAvaliacao = "OBJETIVA", ordem = 1, faseCodigo = "RESULTADO_FINAL",
                     produtos = Array.Empty<object>(), bancas = Array.Empty<object>(), recursos = Array.Empty<object>(),
                 },

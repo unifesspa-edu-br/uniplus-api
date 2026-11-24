@@ -1,26 +1,16 @@
 namespace Unifesspa.UniPlus.Selecao.Domain.Enums;
 
-/// <summary>
-/// Natureza jurídica da modalidade selecionada para a distribuição de vagas de
-/// uma oferta (snapshot-copy do <c>NaturezaLegal</c> de <c>Modalidade</c>,
-/// ADR-0061). Determina se a concorrência dupla (Lei 14.723/2023) se aplica —
-/// obrigatória quando ao menos uma modalidade selecionada é
-/// <see cref="CotaReservada"/>.
-/// </summary>
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
+
+/// <summary>Valores de NaturezaLegalModalidade.</summary>
 public enum NaturezaLegalModalidade
 {
-    Nenhuma = 0,
-
-    /// <summary>Cota da Lei 12.711/2012 (reservada) — dispara concorrência dupla.</summary>
+    [CodigoDeContrato("COTA_RESERVADA", "Cota reservada", Descricao = "Vagas reservadas pela Lei de Cotas.")]
     CotaReservada = 1,
 
-    /// <summary>Ampla concorrência (o residual das vagas ofertadas base após as reservas).</summary>
+    [CodigoDeContrato("AMPLA", "Ampla concorrência", Descricao = "Vagas destinadas à ampla concorrência.")]
     Ampla = 2,
 
-    /// <summary>
-    /// Ação afirmativa institucional, fora da Lei 12.711 — a PcD "V" retirada da AC e as
-    /// vagas por acréscimo do PSIQ. Não convive com cota da lei na mesma inscrição, salvo a PcD
-    /// "V" (UNI-REQ-0142 e UNI-REQ-0266).
-    /// </summary>
+    [CodigoDeContrato("ACAO_AFIRMATIVA", "Ação afirmativa", Descricao = "Vagas de ação afirmativa institucional.")]
     AcaoAfirmativa = 3,
 }

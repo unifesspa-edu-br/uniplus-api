@@ -20,10 +20,19 @@ public sealed class ReferenciaTemporalFatosTests
     [Fact(DisplayName = "Tipo Nenhuma é sempre recusado")]
     public void Criar_TipoNenhuma_Recusa()
     {
-        Result<ReferenciaTemporalFatos> resultado = ReferenciaTemporalFatos.Criar(ReferenciaTipo.Nenhuma, null, null);
+        Result<ReferenciaTemporalFatos> resultado = ReferenciaTemporalFatos.Criar((ReferenciaTipo?)null, null, null);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("ReferenciaTemporalFatos.TipoObrigatorio");
+    }
+
+    [Fact]
+    public void Criar_TipoNaoDeclarado_RecusaComoDesconhecido()
+    {
+        Result<ReferenciaTemporalFatos> resultado = ReferenciaTemporalFatos.Criar((ReferenciaTipo)0, null, null);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be("ReferenciaTemporalFatos.TipoDesconhecido");
     }
 
     [Fact(DisplayName = "FIM_INSCRICAO sem data nem fase é aceito (contraprova)")]

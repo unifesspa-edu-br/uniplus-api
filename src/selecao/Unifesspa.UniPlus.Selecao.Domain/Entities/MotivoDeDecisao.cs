@@ -49,7 +49,7 @@ public sealed class MotivoDeDecisao : EntityBase, IAuditableEntity
     /// <summary>Subclassificação que o tipo define (o fundamento, na isenção); nula nos demais tipos.</summary>
     public string? Subclassificacao { get; private set; }
 
-    /// <summary>Se o motivo é favorável ou desfavorável à pessoa. Nunca <see cref="SentidoDoMotivo.Nenhum"/>.</summary>
+    /// <summary>Se o motivo é favorável ou desfavorável à pessoa.</summary>
     public SentidoDoMotivo Sentido { get; private set; }
 
     /// <summary>Motivo ativo entra em novas publicações; desativado, não. Nasce ativo.</summary>

@@ -4,6 +4,7 @@ using System.Text.Json;
 
 using AwesomeAssertions;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.ConceitoDaAvaliacao;
@@ -16,9 +17,9 @@ using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.ConceitoDaAvaliacao;
 public sealed class DeclaracaoDaConsolidacaoDoConceitoTests
 {
     private const string EsquemaDaUnanimidade =
-        """{"corretores_distintos":2,"criterio":"unanimidade","naturezas_do_conceito":["CATEGORICO"],"quando_nao_consolida":"novo_corretor"}""";
+        """{"corretores_distintos":2,"criterio":"UNANIMIDADE","naturezas_do_conceito":["CATEGORICO"],"quando_nao_consolida":"NOVO_CORRETOR"}""";
 
-    private static RegraCatalogo Regra(string codigo, string declaracaoDaRegra, TipoRegra tipo = TipoRegra.RegraConsolidacao)
+    private static RegraCatalogo Regra(string codigo, string declaracaoDaRegra, TipoRegra tipo = TipoRegra.RegraApuracaoAvaliacao)
     {
         using JsonDocument esquema = JsonDocument.Parse(declaracaoDaRegra);
         using JsonDocument invariantes = JsonDocument.Parse("[]");
@@ -26,7 +27,7 @@ public sealed class DeclaracaoDaConsolidacaoDoConceitoTests
     }
 
     private static RegraCatalogo DeConsolidacao(string declaracaoDaRegra) =>
-        Regra(RegraConsolidacaoCodigo.ConceitoUnanimidade, declaracaoDaRegra);
+        Regra(RegraDeApuracaoDaAvaliacao.ConceitoUnanimidade.Codigo(), declaracaoDaRegra);
 
     [Fact(DisplayName = "A unanimidade declara dois corretores e o novo corretor quando os valores divergem")]
     public void De_Unanimidade_DevolveACriterioCorretoresETratamento()
@@ -34,28 +35,28 @@ public sealed class DeclaracaoDaConsolidacaoDoConceitoTests
         DeclaracaoDaConsolidacaoDoConceito declaracao = DeclaracaoDaConsolidacaoDoConceito.De(DeConsolidacao(EsquemaDaUnanimidade));
 
         declaracao.Should().Be(new DeclaracaoDaConsolidacaoDoConceito(
-            CriterioDeConsolidacaoDoConceito.Unanimidade, 2, TratamentoDaFaltaDeConsolidacao.NovoCorretor));
+            CriterioDeApuracaoDoConceito.Unanimidade, 2, TratamentoDaFaltaDeApuracao.NovoCorretor));
     }
 
     [Theory(DisplayName = "A maioria declara três corretores e o critério da versão")]
-    [InlineData(RegraConsolidacaoCodigo.ConceitoMaioriaSimples, "maioria_simples", CriterioDeConsolidacaoDoConceito.MaioriaSimples)]
-    [InlineData(RegraConsolidacaoCodigo.ConceitoMaioriaAbsoluta, "maioria_absoluta", CriterioDeConsolidacaoDoConceito.MaioriaAbsoluta)]
-    public void De_Maioria_DevolveACriterioCorretoresETratamento(string codigo, string criterio, CriterioDeConsolidacaoDoConceito esperado)
+    [InlineData("APURACAO_CONCEITO_MAIORIA_SIMPLES", "MAIORIA_SIMPLES", CriterioDeApuracaoDoConceito.MaioriaSimples)]
+    [InlineData("APURACAO_CONCEITO_MAIORIA_ABSOLUTA", "MAIORIA_ABSOLUTA", CriterioDeApuracaoDoConceito.MaioriaAbsoluta)]
+    public void De_Maioria_DevolveACriterioCorretoresETratamento(string codigo, string criterio, CriterioDeApuracaoDoConceito esperado)
     {
         RegraCatalogo regra = Regra(
             codigo,
-            $$"""{"corretores_distintos":3,"criterio":"{{criterio}}","naturezas_do_conceito":["CATEGORICO"],"quando_nao_consolida":"novo_corretor"}""");
+            $$"""{"corretores_distintos":3,"criterio":"{{criterio}}","naturezas_do_conceito":["CATEGORICO"],"quando_nao_consolida":"NOVO_CORRETOR"}""");
 
         DeclaracaoDaConsolidacaoDoConceito.De(regra).Should().Be(
-            new DeclaracaoDaConsolidacaoDoConceito(esperado, 3, TratamentoDaFaltaDeConsolidacao.NovoCorretor));
+            new DeclaracaoDaConsolidacaoDoConceito(esperado, 3, TratamentoDaFaltaDeApuracao.NovoCorretor));
     }
 
     [Fact(DisplayName = "O tratamento declarado pela versão é o que a leitura devolve, sem valor fixo")]
     public void De_TratamentoDaBanca_DevolveDecisaoDaBanca()
     {
-        RegraCatalogo regra = DeConsolidacao(EsquemaDaUnanimidade.Replace("novo_corretor", "decisao_da_banca", StringComparison.Ordinal));
+        RegraCatalogo regra = DeConsolidacao(EsquemaDaUnanimidade.Replace("NOVO_CORRETOR", "DECISAO_DA_BANCA", StringComparison.Ordinal));
 
-        DeclaracaoDaConsolidacaoDoConceito.De(regra).Tratamento.Should().Be(TratamentoDaFaltaDeConsolidacao.DecisaoDaBanca);
+        DeclaracaoDaConsolidacaoDoConceito.De(regra).Tratamento.Should().Be(TratamentoDaFaltaDeApuracao.DecisaoDaBanca);
     }
 
     [Theory(DisplayName = "A versão numérica, sem critério ou tratamento, não tem declaração")]
@@ -70,21 +71,21 @@ public sealed class DeclaracaoDaConsolidacaoDoConceitoTests
     }
 
     [Theory(DisplayName = "A versão sem uma das quatro chaves, ou com chave de tipo errado ou token desconhecido, não tem declaração")]
-    [InlineData("""{"criterio":"unanimidade","naturezas_do_conceito":["CATEGORICO"],"quando_nao_consolida":"novo_corretor"}""")]
-    [InlineData("""{"corretores_distintos":2,"naturezas_do_conceito":["CATEGORICO"],"quando_nao_consolida":"novo_corretor"}""")]
-    [InlineData("""{"corretores_distintos":2,"criterio":"unanimidade","naturezas_do_conceito":["CATEGORICO"]}""")]
-    [InlineData("""{"corretores_distintos":2,"criterio":"unanimidade","quando_nao_consolida":"novo_corretor"}""")]
-    [InlineData("""{"corretores_distintos":2,"criterio":"unanimidade","naturezas_do_conceito":[],"quando_nao_consolida":"novo_corretor"}""")]
-    [InlineData("""{"corretores_distintos":2,"criterio":"unanimidade","naturezas_do_conceito":"CATEGORICO","quando_nao_consolida":"novo_corretor"}""")]
-    [InlineData("""{"corretores_distintos":2,"criterio":"unanimidade","naturezas_do_conceito":["CATEGORICO","ordinal"],"quando_nao_consolida":"novo_corretor"}""")]
-    [InlineData("""{"corretores_distintos":2,"criterio":"consenso","naturezas_do_conceito":["CATEGORICO"],"quando_nao_consolida":"novo_corretor"}""")]
-    [InlineData("""{"corretores_distintos":2,"criterio":"Unanimidade","naturezas_do_conceito":["CATEGORICO"],"quando_nao_consolida":"novo_corretor"}""")]
-    [InlineData("""{"corretores_distintos":2,"criterio":1,"naturezas_do_conceito":["CATEGORICO"],"quando_nao_consolida":"novo_corretor"}""")]
-    [InlineData("""{"corretores_distintos":2,"criterio":null,"naturezas_do_conceito":["CATEGORICO"],"quando_nao_consolida":"novo_corretor"}""")]
-    [InlineData("""{"corretores_distintos":2,"criterio":"unanimidade","naturezas_do_conceito":["CATEGORICO"],"quando_nao_consolida":"sorteio"}""")]
-    [InlineData("""{"corretores_distintos":2,"criterio":"unanimidade","naturezas_do_conceito":["CATEGORICO"],"quando_nao_consolida":["novo_corretor"]}""")]
-    [InlineData("""{"corretores_distintos":0,"criterio":"unanimidade","naturezas_do_conceito":["CATEGORICO"],"quando_nao_consolida":"novo_corretor"}""")]
-    [InlineData("""{"corretores_distintos":"2","criterio":"unanimidade","naturezas_do_conceito":["CATEGORICO"],"quando_nao_consolida":"novo_corretor"}""")]
+    [InlineData("""{"criterio":"UNANIMIDADE","naturezas_do_conceito":["CATEGORICO"],"quando_nao_consolida":"NOVO_CORRETOR"}""")]
+    [InlineData("""{"corretores_distintos":2,"naturezas_do_conceito":["CATEGORICO"],"quando_nao_consolida":"NOVO_CORRETOR"}""")]
+    [InlineData("""{"corretores_distintos":2,"criterio":"UNANIMIDADE","naturezas_do_conceito":["CATEGORICO"]}""")]
+    [InlineData("""{"corretores_distintos":2,"criterio":"UNANIMIDADE","quando_nao_consolida":"NOVO_CORRETOR"}""")]
+    [InlineData("""{"corretores_distintos":2,"criterio":"UNANIMIDADE","naturezas_do_conceito":[],"quando_nao_consolida":"NOVO_CORRETOR"}""")]
+    [InlineData("""{"corretores_distintos":2,"criterio":"UNANIMIDADE","naturezas_do_conceito":"CATEGORICO","quando_nao_consolida":"NOVO_CORRETOR"}""")]
+    [InlineData("""{"corretores_distintos":2,"criterio":"UNANIMIDADE","naturezas_do_conceito":["CATEGORICO","ordinal"],"quando_nao_consolida":"NOVO_CORRETOR"}""")]
+    [InlineData("""{"corretores_distintos":2,"criterio":"consenso","naturezas_do_conceito":["CATEGORICO"],"quando_nao_consolida":"NOVO_CORRETOR"}""")]
+    [InlineData("""{"corretores_distintos":2,"criterio":"Unanimidade","naturezas_do_conceito":["CATEGORICO"],"quando_nao_consolida":"NOVO_CORRETOR"}""")]
+    [InlineData("""{"corretores_distintos":2,"criterio":1,"naturezas_do_conceito":["CATEGORICO"],"quando_nao_consolida":"NOVO_CORRETOR"}""")]
+    [InlineData("""{"corretores_distintos":2,"criterio":null,"naturezas_do_conceito":["CATEGORICO"],"quando_nao_consolida":"NOVO_CORRETOR"}""")]
+    [InlineData("""{"corretores_distintos":2,"criterio":"UNANIMIDADE","naturezas_do_conceito":["CATEGORICO"],"quando_nao_consolida":"sorteio"}""")]
+    [InlineData("""{"corretores_distintos":2,"criterio":"UNANIMIDADE","naturezas_do_conceito":["CATEGORICO"],"quando_nao_consolida":["NOVO_CORRETOR"]}""")]
+    [InlineData("""{"corretores_distintos":0,"criterio":"UNANIMIDADE","naturezas_do_conceito":["CATEGORICO"],"quando_nao_consolida":"NOVO_CORRETOR"}""")]
+    [InlineData("""{"corretores_distintos":"2","criterio":"UNANIMIDADE","naturezas_do_conceito":["CATEGORICO"],"quando_nao_consolida":"NOVO_CORRETOR"}""")]
     public void Tentar_DeclaracaoInvalida_FalhaELancaEmDe(string declaracaoDaRegra)
     {
         RegraCatalogo regra = DeConsolidacao(declaracaoDaRegra);

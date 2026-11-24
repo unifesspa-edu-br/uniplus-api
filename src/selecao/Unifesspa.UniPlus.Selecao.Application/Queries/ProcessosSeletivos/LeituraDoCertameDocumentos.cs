@@ -4,10 +4,13 @@ using System.Diagnostics.CodeAnalysis;
 using System.Text.Json.Nodes;
 
 using Domain.Entities;
+using Domain.Enums;
 using Domain.Services;
 using Domain.ValueObjects;
 
 using DTOs;
+
+using Unifesspa.UniPlus.Application.Abstractions.Respostas;
 
 /// <summary>
 /// Leitura, no envelope congelado, das exigências de documentos: rótulo, aplicabilidade, obrigatoriedade, formatos, prazo
@@ -113,7 +116,7 @@ internal static class LeituraDoCertameDocumentos
     {
         exigencia = null;
         if (!PrimitivasDaProjecao.TentarTexto(objeto, "tipoDocumentoNome", out string rotulo)
-            || !PrimitivasDaProjecao.TentarTexto(objeto, "aplicabilidade", out string aplicabilidade)
+            || !PrimitivasDaProjecao.TentarCodigoComRotulo(objeto, "aplicabilidade", out CodigoComRotulo<Aplicabilidade>? aplicabilidade)
             || !PrimitivasDaProjecao.TentarBooleano(objeto, "obrigatorio", out bool obrigatorio)
             || !TentarFormatos(objeto, out FormatosAceitosCertameDto? formatos)
             || !LeituraDoCertamePrazoEValidade.TentarPrazoEValidade(objeto, cronograma, out PrazoDeEmissaoCertameDto? prazo, out ValidadeDoDocumentoCertameDto? validade)

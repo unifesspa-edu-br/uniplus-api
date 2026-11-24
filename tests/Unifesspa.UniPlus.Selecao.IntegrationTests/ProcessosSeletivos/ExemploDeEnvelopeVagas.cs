@@ -4,6 +4,7 @@ using System.Text.Json;
 
 using AwesomeAssertions;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Regras.Services;
@@ -30,7 +31,7 @@ internal static class ExemploDeEnvelopeVagas
 
     /// <summary>
     /// A matriz legal completa (8×7), fallback AC — mesma forma semeada em
-    /// REMANEJ-CASCATA-LEI-12711 v1. <paramref name="permutar"/> inverte a ordem de ENTRADA dos
+    /// REMANEJAMENTO_ORDEM_LEI_12711 v1. <paramref name="permutar"/> inverte a ordem de ENTRADA dos
     /// destinos DENTRO de cada origem — nunca a ordem das origens em si: cada origem aparece uma
     /// única vez na cascata, então permutar a sequência de origens não exercitaria a ordenação de
     /// <c>cascataRemanejamento…destinos</c> — só a dos destinos de uma MESMA origem prova isso.
@@ -41,7 +42,7 @@ internal static class ExemploDeEnvelopeVagas
         List<DestinoRemanejamento> destinos = [.. origens.SelectMany(origem => Ordem(DestinosDaOrigem(origem, origens), permutar))];
 
         return ConfiguracaoCascataRemanejamento.Criar(
-            Regra(RegraRemanejamentoCodigo.Cascata, '1'), ModalidadesFederaisLei12711.Ac, destinos).Value!;
+            Regra(CriterioDeRemanejamento.OrdemDaLei12711.Codigo(), '1'), ModalidadesFederaisLei12711.Ac, destinos).Value!;
     }
 
     private static List<DestinoRemanejamento> DestinosDaOrigem(string origem, IReadOnlyList<string> origens) =>
@@ -76,8 +77,8 @@ internal static class ExemploDeEnvelopeVagas
             {
                 VagasOfertadasBase = vagasOfertadasBase,
                 PercentualDaReservaLegal = 0.7500m,
-                RegraDeDistribuicao = Regra(RegraDistribuicaoVagasCodigo.Lei12711, '7'),
-                RegraDeAjuste = Regra(RegraAjusteDistribuicaoVagasCodigo.ReconciliacaoArt11ParagrafoUnico, '0'),
+                RegraDeDistribuicao = Regra(RegraDeDistribuicaoDeVagas.Lei12711.Codigo(), '7'),
+                RegraDeAjuste = Regra(RegraDeAjusteDaDistribuicaoDeVagas.AjusteDoTotalPeloArtigo11.Codigo(), '0'),
                 ReferenciaDemografica = ReferenciaDemograficaDaLei(),
                 Modalidades = [ModalidadeAmplaDaLei(), .. ModalidadesFederais()],
             },
@@ -93,14 +94,9 @@ internal static class ExemploDeEnvelopeVagas
             baseLegal: "Lei 12.711/2012 art. 3º").Value!;
 
     internal static ModalidadeSelecionada ModalidadeAmplaDaLei() =>
-        ModalidadeSelecionada.Criar(
-            new Guid("2222bbbb-0000-4000-8000-000000000001"), "AC", "Ampla concorrência",
-            NaturezaLegalModalidade.Ampla, ComposicaoVagasModalidade.RestanteDasVagasOfertadas, null,
-            RegraRemanejamentoModalidade.Nenhuma, null, null, null,
-            regraDeAplicabilidade: RegrasDeAplicabilidadeDeTeste.DaNatureza(NaturezaLegalModalidade.Ampla), acaoQuandoIndeferido: null,
-            baseLegal: "Lei 12.711/2012 art. 1º").Value!;
+        ModalidadeSelecionada.Criar(ModalidadesNoCadastroDeTeste.Da("AC", NaturezaLegalModalidade.Ampla, ComposicaoVagasModalidade.RestanteDasVagasOfertadas) with { Id = new Guid("2222bbbb-0000-4000-8000-000000000001"), Descricao = "Ampla concorrência", RegraRemanejamento = null, BaseLegal = "Lei 12.711/2012 art. 1º" }).Value!;
 
-    // As 8 federais. Toda cota reservada obriga SEGUE_CASCATA.
+    // As 8 federais. Toda cota reservada obriga SEGUE_ORDEM_DE_REMANEJAMENTO.
     internal static IEnumerable<ModalidadeSelecionada> ModalidadesFederais() =>
         new[] { "LB_PPI", "LB_Q", "LB_PCD", "LB_EP", "LI_PPI", "LI_Q", "LI_PCD", "LI_EP" }
             .Select(static (codigo, indice) => ModalidadeFederal(codigo, indice + 2));
@@ -111,12 +107,7 @@ internal static class ExemploDeEnvelopeVagas
     /// a ordem de ENTRADA em vez de ler a canônica já gravada produziria bytes distintos dos congelados.
     /// </summary>
     internal static ModalidadeSelecionada ModalidadeFederal(string codigo, int sufixo) =>
-        ModalidadeSelecionada.Criar(
-            new Guid($"2222bbbb-0000-4000-8000-00000000000{sufixo:x}"), codigo, $"Reserva {codigo}",
-            NaturezaLegalModalidade.CotaReservada, ComposicaoVagasModalidade.DentroDaReservaLegal,
-            null, RegraRemanejamentoModalidade.SegueCascata, null, null, null,
-            codigo.StartsWith("LB", StringComparison.Ordinal) ? RegraDaCotaDeRenda : RegraDaCotaIndependenteDeRenda,
-            acaoQuandoIndeferido: "RECLASSIFICAR_AC", baseLegal: "Lei 12.711/2012, alterada pela Lei 14.723/2023").Value!;
+        ModalidadeSelecionada.Criar(ModalidadesNoCadastroDeTeste.Da(codigo, NaturezaLegalModalidade.CotaReservada, ComposicaoVagasModalidade.DentroDaReservaLegal) with { Id = new Guid($"2222bbbb-0000-4000-8000-00000000000{sufixo:x}"), Descricao = $"Reserva {codigo}", RegraRemanejamento = RegraRemanejamentoModalidade.SegueOrdemDeRemanejamento, RegraDeAplicabilidade = codigo.StartsWith("LB", StringComparison.Ordinal) ? RegraDaCotaDeRenda : RegraDaCotaIndependenteDeRenda, AcaoQuandoIndeferido = "RECLASSIFICAR_AC", BaseLegal = "Lei 12.711/2012, alterada pela Lei 14.723/2023" }).Value!;
 
     /// <summary>
     /// Oferta institucional: quadro fixo, <b>sem</b> referência demográfica — e com as
@@ -134,7 +125,7 @@ internal static class ExemploDeEnvelopeVagas
             {
                 VagasOfertadasBase = 40,
                 PercentualDaReservaLegal = 0.5000m,
-                RegraDeDistribuicao = Regra(RegraDistribuicaoVagasCodigo.Institucional, '8'),
+                RegraDeDistribuicao = Regra(RegraDeDistribuicaoDeVagas.Institucional.Codigo(), '8'),
                 Modalidades = ModalidadesDaOfertaInstitucional(),
             },
             new FatosDaOfertaNoCadastro { GrupoAreaEnem = grupoAreaEnem, OfertaCurso = OfertaCursoDeTeste.Medicina }).Value!;
@@ -142,27 +133,15 @@ internal static class ExemploDeEnvelopeVagas
     private static ModalidadeSelecionada[] ModalidadesDaOfertaInstitucional() =>
     [
         AmplaDaOfertaInstitucional(),
-        ModalidadeSelecionada.Criar(
-            new Guid("3333cccc-0000-4000-8000-000000000002"), "V", "PcD em ampla concorrência",
-            NaturezaLegalModalidade.AcaoAfirmativa, ComposicaoVagasModalidade.SuplementarAoTotal, null,
-            RegraRemanejamentoModalidade.DestinoUnico, "AC", null, null,
-            RegrasDeAplicabilidadeDeTeste.DaNatureza(NaturezaLegalModalidade.AcaoAfirmativa), "RECLASSIFICAR_AC", "Lei 13.146/2015", quantidadeDeclarada: 5).Value!,
+        ModalidadeSelecionada.Criar(ModalidadesNoCadastroDeTeste.Da("V", NaturezaLegalModalidade.AcaoAfirmativa, ComposicaoVagasModalidade.SuplementarAoTotal) with { Id = new Guid("3333cccc-0000-4000-8000-000000000002"), Descricao = "PcD em ampla concorrência", RegraRemanejamento = RegraRemanejamentoModalidade.DestinoUnico, RemanejamentoDestino = "AC", AcaoQuandoIndeferido = "RECLASSIFICAR_AC", BaseLegal = "Lei 13.146/2015" }, 5).Value!,
         RetiradaCruzadaDaAmpla(3, "IND", "Indígena", "QUI"),
         RetiradaCruzadaDaAmpla(4, "QUI", "Quilombola", "IND"),
     ];
 
     private static ModalidadeSelecionada AmplaDaOfertaInstitucional() =>
-        ModalidadeSelecionada.Criar(
-            new Guid("3333cccc-0000-4000-8000-000000000001"), "AC", null,
-            NaturezaLegalModalidade.Ampla, ComposicaoVagasModalidade.RestanteDasVagasOfertadas, null,
-            RegraRemanejamentoModalidade.Nenhuma, null, null, null,
-            RegrasDeAplicabilidadeDeTeste.DaNatureza(NaturezaLegalModalidade.Ampla), null, "Res. Unifesspa 532/2021", quantidadeDeclarada: 15).Value!;
+        ModalidadeSelecionada.Criar(ModalidadesNoCadastroDeTeste.Da("AC", NaturezaLegalModalidade.Ampla, ComposicaoVagasModalidade.RestanteDasVagasOfertadas) with { Id = new Guid("3333cccc-0000-4000-8000-000000000001"), RegraRemanejamento = null, BaseLegal = "Res. Unifesspa 532/2021" }, 15).Value!;
 
     /// <summary>Ação afirmativa que tira as vagas da ampla concorrência e remaneja em cruz com o par.</summary>
     private static ModalidadeSelecionada RetiradaCruzadaDaAmpla(int sufixo, string codigo, string nome, string par) =>
-        ModalidadeSelecionada.Criar(
-            new Guid($"3333cccc-0000-4000-8000-00000000000{sufixo}"), codigo, nome,
-            NaturezaLegalModalidade.AcaoAfirmativa, ComposicaoVagasModalidade.RetiradaDeOutraModalidade, "AC",
-            RegraRemanejamentoModalidade.Cruzado, null, par, "AC",
-            RegrasDeAplicabilidadeDeTeste.DaNatureza(NaturezaLegalModalidade.AcaoAfirmativa), "RECLASSIFICAR_REGRA_EDITAL", "Res. Unifesspa 326/2019", quantidadeDeclarada: 10).Value!;
+        ModalidadeSelecionada.Criar(ModalidadesNoCadastroDeTeste.Da(codigo, NaturezaLegalModalidade.AcaoAfirmativa, ComposicaoVagasModalidade.RetiradaDeOutraModalidade) with { Id = new Guid($"3333cccc-0000-4000-8000-00000000000{sufixo}"), Descricao = nome, ComposicaoOrigemCodigo = "AC", RegraRemanejamento = RegraRemanejamentoModalidade.Cruzado, RemanejamentoPar = par, RemanejamentoFallback = "AC", AcaoQuandoIndeferido = "RECLASSIFICAR_REGRA_EDITAL", BaseLegal = "Res. Unifesspa 326/2019" }, 10).Value!;
 }

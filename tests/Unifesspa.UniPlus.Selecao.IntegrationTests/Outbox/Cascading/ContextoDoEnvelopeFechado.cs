@@ -21,6 +21,7 @@ using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Seed;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Authentication;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Hosting;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.Entities;
@@ -55,7 +56,7 @@ internal sealed record ContextoDoEnvelopeFechado(CascadingApiFactory Api, HttpCl
         {
             nome,
             tipoProcessoOrigemId = Catalogos.TipoProcessoId,
-            origemCandidatos = 1, // OrigemCandidatos.InscricaoPropria
+            origemCandidatos = OrigemCandidatos.InscricaoPropria.Codigo(),
             unidadeAdministradoraOrigemId = Catalogos.UnidadeId,
             localidadeCodigoIbge = "1504208",
             localidadeNome = "Marabá",
@@ -93,7 +94,7 @@ internal sealed record ContextoDoEnvelopeFechado(CascadingApiFactory Api, HttpCl
         new
         {
             aplica = true,
-            regra = new { codigo = RegraBonusCodigo.Multiplicativo, versao = "v1" },
+            regra = new { codigo = RegraDeBonus.Multiplicativo.Codigo(), versao = "v1" },
             fator = 1.2000m,
             teto = 95.5000m,
             fatoElegibilidadeCodigo = FormularioDeTeste.FatoBooleanoDaInscricao,
@@ -117,9 +118,9 @@ internal sealed record ContextoDoEnvelopeFechado(CascadingApiFactory Api, HttpCl
     {
         object[] criterios =
         [
-            new { ordem = 1, regra = new { codigo = CriterioDesempateCodigo.Idoso, versao = "v1" }, parametros = new { idadeMinima = 60 } },
-            new { ordem = 2, regra = new { codigo = CriterioDesempateCodigo.MaiorNotaEtapa, versao = "v1" }, parametros = new { etapaRef = objetivaId } },
-            new { ordem = 3, regra = new { codigo = CriterioDesempateCodigo.MaiorIdade, versao = "v1" } },
+            new { ordem = 1, regra = new { codigo = RegraDeDesempate.Idoso.Codigo(), versao = "v1" }, parametros = new { idadeMinima = 60 } },
+            new { ordem = 2, regra = new { codigo = RegraDeDesempate.MaiorNotaNaEtapa.Codigo(), versao = "v1" }, parametros = new { etapaRef = objetivaId } },
+            new { ordem = 3, regra = new { codigo = RegraDeDesempate.MaiorIdade.Codigo(), versao = "v1" } },
         ];
 
         return EnviarAsync(HttpMethod.Put, $"{Rota}/{ProcessoId}/criterios-desempate", criterios);
@@ -155,9 +156,9 @@ Classificacao(objetivaId, resolucaoPesoAreaEnem));
             ofertaCursoId = Catalogos.OfertaCursoId,
             vagasOfertadasBase = 60,
             percentualDaReservaLegal = 0.7500m,
-            regraDistribuicaoCodigo = RegraDistribuicaoVagasCodigo.Lei12711,
+            regraDistribuicaoCodigo = RegraDeDistribuicaoDeVagas.Lei12711.Codigo(),
             regraDistribuicaoVersao = "v1",
-            regraAjusteCodigo = RegraAjusteDistribuicaoVagasCodigo.ReconciliacaoArt11ParagrafoUnico,
+            regraAjusteCodigo = RegraDeAjusteDaDistribuicaoDeVagas.AjusteDoTotalPeloArtigo11.Codigo(),
             regraAjusteVersao = "v1",
             referenciaReservaDemograficaId = Catalogos.ReferenciaReservaDemograficaId,
             modalidadeIds = Catalogos.ModalidadeIdPorCodigo.Values.ToArray(),
@@ -169,9 +170,9 @@ Classificacao(objetivaId, resolucaoPesoAreaEnem));
     {
         object[] regrasEliminacao =
         [
-            new { regraCodigo = RegraEliminacaoCodigo.ElimNotaMinimaEtapa, regraVersao = "v1", etapaRef = (Guid?)objetivaId, notaMinima = (decimal?)45.0000m, minimo = (decimal?)null },
-            new { regraCodigo = RegraEliminacaoCodigo.ElimCorteEmArea, regraVersao = "v1", etapaRef = (Guid?)null, notaMinima = (decimal?)null, minimo = (decimal?)400.0000m, areaCodigo = "REDACAO" },
-            new { regraCodigo = RegraEliminacaoCodigo.ElimZeroEmArea, regraVersao = "v1", etapaRef = (Guid?)null, notaMinima = (decimal?)null, minimo = (decimal?)null },
+            new { regraCodigo = RegraDeEliminacaoPorCalculo.NotaMinimaNaEtapa.Codigo(), regraVersao = "v1", etapaRef = (Guid?)objetivaId, notaMinima = (decimal?)45.0000m, minimo = (decimal?)null },
+            new { regraCodigo = RegraDeEliminacaoPorCalculo.CorteEmAreaDoEnem.Codigo(), regraVersao = "v1", etapaRef = (Guid?)null, notaMinima = (decimal?)null, minimo = (decimal?)400.0000m, areaCodigo = "REDACAO" },
+            new { regraCodigo = RegraDeEliminacaoPorCalculo.ZeroEmAreaDoEnem.Codigo(), regraVersao = "v1", etapaRef = (Guid?)null, notaMinima = (decimal?)null, minimo = (decimal?)null },
         ];
 
         return regrasEliminacao;
@@ -181,12 +182,12 @@ Classificacao(objetivaId, resolucaoPesoAreaEnem));
     private static object Classificacao(Guid objetivaId, string resolucaoPesoAreaEnem) =>
         new
         {
-            regraCalculoCodigo = RegraCalculoCodigo.FormulaMediaPonderada,
+            regraCalculoCodigo = RegraDeCalculoDaNota.MediaPonderada.Codigo(),
             regraCalculoVersao = "v1",
-            regraArredondamentoCodigo = RegraArredondamentoCodigo.PrecisaoArredondarCima,
+            regraArredondamentoCodigo = RegraDeArredondamentoDaNota.ArredondarAPartirDeCinco.Codigo(),
             regraArredondamentoVersao = "v1",
             casasArredondamento = 3,
-            regraOrdemAlocacaoCodigo = RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria,
+            regraOrdemAlocacaoCodigo = RegraDeOrdemDeAlocacao.PrimeiraOpcaoPrioritaria.Codigo(),
             regraOrdemAlocacaoVersao = "v1",
             regrasEliminacao = RegrasDeEliminacao(objetivaId),
             baseadoEmEnem = true,

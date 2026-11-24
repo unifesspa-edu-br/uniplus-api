@@ -58,7 +58,7 @@ public sealed class ProdutosDaFaseReconciliacaoPersistenciaTests : IClassFixture
 
         // Começa só com a definitiva porque a fase que publica preliminar precisa de quem
         // conclua o ciclo: o estado intermediário de um par pela metade o agregado recusa.
-        ProcessoSeletivo gravado = await GravarProcessoComCronogramaAsync($"PS matéria {Guid.CreateVersion7()}", faseCanonicaOrigemId, [ProdutoDaFase.Criar("RESULTADO_HOMOLOGACAO", PapelProdutoFase.Definitivo)]);
+        ProcessoSeletivo gravado = await GravarProcessoComCronogramaAsync($"PS matéria {Guid.CreateVersion7()}", faseCanonicaOrigemId, [ProdutoDaFase.Criar("RESULTADO_HOMOLOGACAO", PapelDaPublicacaoPrevista.Definitivo)]);
         Guid definitivaIdAntes = gravado.CronogramaFases.Single().Produtos.Single().Id;
 
         await RedefinirCronogramaAsync(gravado.Id, faseCanonicaOrigemId, PreliminarEDefinitivaDaHomologacao());
@@ -74,17 +74,17 @@ public sealed class ProdutosDaFaseReconciliacaoPersistenciaTests : IClassFixture
             $"PS produtos removidos {Guid.CreateVersion7()}", faseCanonicaOrigemId, PreliminarEDefinitivaDaHomologacao());
 
         await RedefinirCronogramaAsync(
-            gravado.Id, faseCanonicaOrigemId, [ProdutoDaFase.Criar("RESULTADO_HOMOLOGACAO", PapelProdutoFase.Definitivo)]);
+            gravado.Id, faseCanonicaOrigemId, [ProdutoDaFase.Criar("RESULTADO_HOMOLOGACAO", PapelDaPublicacaoPrevista.Definitivo)]);
 
         (await ObterProdutosDaFaseAsync(gravado.Id)).Should().ContainSingle()
-            .Which.Papel.Should().Be(PapelProdutoFase.Definitivo);
+            .Which.Papel.Should().Be(PapelDaPublicacaoPrevista.Definitivo);
     }
 
     private static void AfirmarQuePreliminarReusouALinhaRastreada(
         IReadOnlyCollection<ProdutoDaFase> produtos, Guid produtoIdAntes)
     {
         produtos.Should().HaveCount(2);
-        produtos.Should().ContainSingle(p => p.Papel == PapelProdutoFase.Preliminar)
+        produtos.Should().ContainSingle(p => p.Papel == PapelDaPublicacaoPrevista.Preliminar)
             .Which.Should().Match<ProdutoDaFase>(p =>
                 p.Id == produtoIdAntes && p.AtoCodigo == "RESULTADO_HOMOLOGACAO",
                 "o produto que permanece é retargetado na linha rastreada, não recriado — é o Id dele que o ato publicado usa para achar a configuração de recurso");
@@ -94,17 +94,17 @@ public sealed class ProdutosDaFaseReconciliacaoPersistenciaTests : IClassFixture
         IReadOnlyCollection<ProdutoDaFase> produtos, Guid definitivaIdAntes)
     {
         produtos.Should().HaveCount(2);
-        produtos.Should().ContainSingle(p => p.Papel == PapelProdutoFase.Definitivo)
+        produtos.Should().ContainSingle(p => p.Papel == PapelDaPublicacaoPrevista.Definitivo)
             .Which.Id.Should().Be(definitivaIdAntes,
                 "a publicação que já existia é a mesma linha — a que chegou é a outra, e a reconciliação não pode trocar uma pela outra");
-        produtos.Should().ContainSingle(p => p.Papel == PapelProdutoFase.Preliminar);
+        produtos.Should().ContainSingle(p => p.Papel == PapelDaPublicacaoPrevista.Preliminar);
         produtos.Select(p => p.AtoCodigo).Distinct().Should().ContainSingle();
     }
 
     private static List<ProdutoDaFase> PreliminarEDefinitivaDaHomologacao() =>
     [
-        ProdutoDaFase.Criar("RESULTADO_HOMOLOGACAO", PapelProdutoFase.Preliminar),
-        ProdutoDaFase.Criar("RESULTADO_HOMOLOGACAO", PapelProdutoFase.Definitivo),
+        ProdutoDaFase.Criar("RESULTADO_HOMOLOGACAO", PapelDaPublicacaoPrevista.Preliminar),
+        ProdutoDaFase.Criar("RESULTADO_HOMOLOGACAO", PapelDaPublicacaoPrevista.Definitivo),
     ];
 
     private async Task<ProcessoSeletivo> GravarProcessoComCronogramaAsync(

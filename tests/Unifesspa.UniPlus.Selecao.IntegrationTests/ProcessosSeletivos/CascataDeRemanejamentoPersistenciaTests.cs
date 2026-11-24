@@ -5,6 +5,7 @@ using AwesomeAssertions;
 using Microsoft.EntityFrameworkCore;
 
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
@@ -28,121 +29,71 @@ public sealed class CascataDeRemanejamentoPersistenciaTests
         _cenario = new CenarioDeCascataPersistida(fixture);
     }
 
-    [Fact(DisplayName = "Cascata_SobreviveASaveChangesEReload — a cascata e os destinos persistem via Include e sobrevivem a um reload")]
+    [Fact(DisplayName = "A cascata e os destinos sobrevivem à gravação e à leitura")]
     public async Task Cascata_SobreviveASaveChangesEReload()
     {
-        ProcessoSeletivo processo = CenarioDeRetificacaoPersistida.NovoProcessoConforme(nameof(Cascata_SobreviveASaveChangesEReload));
-        processo.DefinirCascataRemanejamento(CenarioDeCascataPersistida.CascataDeDuasOrigens("1"))
-            .IsSuccess.Should().BeTrue();
-
-        await _cenario.PersistirAsync(processo);
-
-        await using UniPlusDbContext readContext = _cenario.CriarDbContext();
-        ProcessoSeletivoRepository leitura = ProcessoSeletivoRepositoryDeTeste.Criar(readContext);
-        ProcessoSeletivo relido = (await leitura.ObterComConfiguracaoAsync(processo.Id, CancellationToken.None))!;
-
-        relido.Cascata.Should().NotBeNull(
-            "a cascata sobrevive ao SaveChanges e ao reload — sem o Include em ComConfiguracao ela nasceria " +
-            "null em todo carregamento novo do agregado");
+        ProcessoSeletivo processo = await PersistirComCascataAsync(nameof(Cascata_SobreviveASaveChangesEReload), "1");
+        await using UniPlusDbContext contexto = _cenario.CriarDbContext();
+        ProcessoSeletivo relido = await LerAsync(contexto, processo.Id);
+        relido.Cascata.Should().NotBeNull();
         relido.Cascata!.ProcessoSeletivoId.Should().Be(processo.Id);
         relido.Cascata.FallbackCodigo.Should().Be("AC");
         relido.Cascata.Destinos.Should().HaveCount(3);
-        relido.Cascata.Destinos.Should().OnlyContain(d => d.ConfiguracaoCascataRemanejamentoId == relido.Cascata.Id,
-            "as FKs dos destinos apontam para a cascata recém-persistida, não para uma cascata de outro processo");
+        relido.Cascata.Destinos.Should().OnlyContain(d => d.ConfiguracaoCascataRemanejamentoId == relido.Cascata.Id);
     }
 
-    [Fact(DisplayName = "Cascata_SubstituidaDuasVezes_SoASegundaVersaoSobrevive — DefinirCascataRemanejamento duas vezes não acumula destinos órfãos")]
+    [Fact(DisplayName = "A substituição da cascata remove os destinos anteriores")]
     public async Task Cascata_SubstituidaDuasVezes_SoASegundaVersaoSobrevive()
     {
-        ProcessoSeletivo processo = CenarioDeRetificacaoPersistida.NovoProcessoConforme(nameof(Cascata_SubstituidaDuasVezes_SoASegundaVersaoSobrevive));
-        ConfiguracaoCascataRemanejamento primeiraVersao = CenarioDeCascataPersistida.CascataDeDuasOrigens("2");
-        processo.DefinirCascataRemanejamento(primeiraVersao)
-            .IsSuccess.Should().BeTrue();
-        Guid idPrimeiraVersao = primeiraVersao.Id;
-
-        Guid processoId = processo.Id;
-        await _cenario.PersistirAsync(processo);
-
-        // Segunda gravação: substitui a cascata inteira por OUTRA — conteúdo
-        // diferente, origens diferentes, contagem de destinos diferente.
-        ConfiguracaoCascataRemanejamento segundaVersao = ConfiguracaoCascataRemanejamento.Criar(
-            CenarioDeCascataPersistida.Regra(RegraRemanejamentoCodigo.Cascata, "3"),
-            "AC",
-            [DestinoRemanejamento.Criar("LI_PPI", 1, "AC").Value!]).Value!;
-        Guid idSegundaVersao = segundaVersao.Id;
-        await using (UniPlusDbContext sessao = _cenario.CriarDbContext())
-        {
-            ProcessoSeletivoRepository repository = ProcessoSeletivoRepositoryDeTeste.Criar(sessao);
-            ProcessoSeletivo tracked = (await repository.ObterComConfiguracaoAsync(processoId, CancellationToken.None))!;
-            tracked.DefinirCascataRemanejamento(segundaVersao).IsSuccess.Should().BeTrue();
-            await sessao.SaveChangesAsync(CancellationToken.None);
-        }
-
-        await using UniPlusDbContext readContext = _cenario.CriarDbContext();
-        ProcessoSeletivoRepository leitura = ProcessoSeletivoRepositoryDeTeste.Criar(readContext);
-        ProcessoSeletivo relido = (await leitura.ObterComConfiguracaoAsync(processoId, CancellationToken.None))!;
-
+        ProcessoSeletivo processo = await PersistirComCascataAsync(nameof(Cascata_SubstituidaDuasVezes_SoASegundaVersaoSobrevive), "2");
+        Guid primeira = processo.Cascata!.Id;
+        ConfiguracaoCascataRemanejamento segunda = ConfiguracaoCascataRemanejamento.Criar(
+            CenarioDeCascataPersistida.Regra(CriterioDeRemanejamento.OrdemDaLei12711.Codigo(), "3"),
+            "AC", [DestinoRemanejamento.Criar("LI_PPI", 1, "AC").Value!]).Value!;
+        await SubstituirAsync(processo.Id, segunda);
+        await using UniPlusDbContext contexto = _cenario.CriarDbContext();
+        ProcessoSeletivo relido = await LerAsync(contexto, processo.Id);
         relido.Cascata.Should().NotBeNull();
-        relido.Cascata!.Id.Should().Be(idSegundaVersao, "a cascata VIVA é a SEGUNDA versão — a primeira não sobrevive");
-        relido.Cascata.Destinos.Should().ContainSingle(
-            "só a SEGUNDA versão da cascata sobrevive — a primeira (3 destinos, origens LB_PPI/LB_Q) " +
-            "não pode deixar resíduo")
-            .Which.ModalidadeOrigemCodigo.Should().Be("LI_PPI");
-
-        // A prova de "sem órfãos": zero destinos ainda apontando para a PRIMEIRA cascata (que
-        // não existe mais) — filtrado pelo id conhecido, não uma contagem cega da tabela
-        // inteira, que este teste COMPARTILHA com as demais classes da coleção
-        // (mesmo Postgres, mesma tabela, entre métodos de teste).
-        int destinosOrfaosDaPrimeiraVersao = await readContext.Set<DestinoRemanejamento>()
-            .CountAsync(d => d.ConfiguracaoCascataRemanejamentoId == idPrimeiraVersao, CancellationToken.None);
-        destinosOrfaosDaPrimeiraVersao.Should().Be(0,
-            "substituir a cascata inteira via DefinirCascataRemanejamento não pode deixar os 3 destinos da " +
-            "primeira versão órfãos em destinos_remanejamento");
-
-        int destinosDaSegundaVersao = await readContext.Set<DestinoRemanejamento>()
-            .CountAsync(d => d.ConfiguracaoCascataRemanejamentoId == idSegundaVersao, CancellationToken.None);
-        destinosDaSegundaVersao.Should().Be(1, "só o destino da segunda versão sobrevive");
+        relido.Cascata!.Id.Should().Be(segunda.Id);
+        relido.Cascata.Destinos.Should().ContainSingle().Which.ModalidadeOrigemCodigo.Should().Be("LI_PPI");
+        await ConferirQuantidadeDeDestinosAsync(contexto, primeira, 0);
+        await ConferirQuantidadeDeDestinosAsync(contexto, segunda.Id, 1);
     }
 
-    [Fact(DisplayName = "Cascata_Removida_SomeComATabelaDeDestinos — DefinirCascataRemanejamento(null) remove a cascata e os destinos, sem lixo órfão")]
+    [Fact(DisplayName = "A remoção da cascata remove também seus destinos")]
     public async Task Cascata_Removida_SomeComATabelaDeDestinos()
     {
-        ProcessoSeletivo processo = CenarioDeRetificacaoPersistida.NovoProcessoConforme(nameof(Cascata_Removida_SomeComATabelaDeDestinos));
-        ConfiguracaoCascataRemanejamento cascata = CenarioDeCascataPersistida.CascataDeDuasOrigens("4");
-        processo.DefinirCascataRemanejamento(cascata)
-            .IsSuccess.Should().BeTrue();
-        Guid idCascata = cascata.Id;
-
-        Guid processoId = processo.Id;
-        await _cenario.PersistirAsync(processo);
-
-        await using (UniPlusDbContext sessao = _cenario.CriarDbContext())
-        {
-            ProcessoSeletivoRepository repository = ProcessoSeletivoRepositoryDeTeste.Criar(sessao);
-            ProcessoSeletivo tracked = (await repository.ObterComConfiguracaoAsync(processoId, CancellationToken.None))!;
-            tracked.Cascata.Should().NotBeNull("pré-condição: a cascata persistiu na sessão anterior");
-            tracked.DefinirCascataRemanejamento(null).IsSuccess.Should().BeTrue();
-            await sessao.SaveChangesAsync(CancellationToken.None);
-        }
-
-        await using UniPlusDbContext readContext = _cenario.CriarDbContext();
-        ProcessoSeletivoRepository leitura = ProcessoSeletivoRepositoryDeTeste.Criar(readContext);
-        ProcessoSeletivo relido = (await leitura.ObterComConfiguracaoAsync(processoId, CancellationToken.None))!;
-
-        relido.Cascata.Should().BeNull("DefinirCascataRemanejamento(null) remove a cascata — o toggle 'sem cascata' é a própria ausência da entidade");
-
-        // O cascade delete (ON DELETE CASCADE de destinos_remanejamento para
-        // configuracoes_de_remanejamento) tem de ter levado os destinos junto — a FK
-        // cuida disso, mas é exatamente o que se está provando aqui, não presumindo. Filtrado
-        // pelo id conhecido: a coleção compartilha o mesmo Postgres entre TODOS os métodos de
-        // teste, então uma contagem cega da tabela inteira pegaria linhas de outros testes.
-        int destinosOrfaos = await readContext.Set<DestinoRemanejamento>()
-            .CountAsync(d => d.ConfiguracaoCascataRemanejamentoId == idCascata, CancellationToken.None);
-        destinosOrfaos.Should().Be(0,
-            "remover a cascata tem de levar os destinos junto — nenhuma linha pode sobrar em destinos_remanejamento");
-
-        bool cascataAindaExiste = await readContext.Set<ConfiguracaoCascataRemanejamento>()
-            .AnyAsync(c => c.Id == idCascata, CancellationToken.None);
-        cascataAindaExiste.Should().BeFalse("a linha da cascata também não pode sobrar em configuracoes_de_remanejamento");
+        ProcessoSeletivo processo = await PersistirComCascataAsync(nameof(Cascata_Removida_SomeComATabelaDeDestinos), "4");
+        Guid cascataId = processo.Cascata!.Id;
+        await SubstituirAsync(processo.Id, null);
+        await using UniPlusDbContext contexto = _cenario.CriarDbContext();
+        ProcessoSeletivo relido = await LerAsync(contexto, processo.Id);
+        relido.Cascata.Should().BeNull();
+        await ConferirQuantidadeDeDestinosAsync(contexto, cascataId, 0);
+        (await contexto.Set<ConfiguracaoCascataRemanejamento>().AnyAsync(c => c.Id == cascataId, CancellationToken.None)).Should().BeFalse();
     }
+
+    private async Task<ProcessoSeletivo> PersistirComCascataAsync(string nome, string hash)
+    {
+        ProcessoSeletivo processo = CenarioDeRetificacaoPersistida.NovoProcessoConforme(nome);
+        processo.DefinirCascataRemanejamento(CenarioDeCascataPersistida.CascataDeDuasOrigens(hash)).IsSuccess.Should().BeTrue();
+        await _cenario.PersistirAsync(processo);
+        return processo;
+    }
+
+    private async Task SubstituirAsync(Guid processoId, ConfiguracaoCascataRemanejamento? cascata)
+    {
+        await using UniPlusDbContext contexto = _cenario.CriarDbContext();
+        ProcessoSeletivo processo = await LerAsync(contexto, processoId);
+        processo.Cascata.Should().NotBeNull();
+        processo.DefinirCascataRemanejamento(cascata).IsSuccess.Should().BeTrue();
+        await contexto.SaveChangesAsync(CancellationToken.None);
+    }
+
+    private static async Task<ProcessoSeletivo> LerAsync(UniPlusDbContext contexto, Guid processoId) =>
+        (await ProcessoSeletivoRepositoryDeTeste.Criar(contexto).ObterComConfiguracaoAsync(processoId, CancellationToken.None))!;
+
+    private static async Task ConferirQuantidadeDeDestinosAsync(UniPlusDbContext contexto, Guid cascataId, int quantidade) =>
+        (await contexto.Set<DestinoRemanejamento>().CountAsync(d => d.ConfiguracaoCascataRemanejamentoId == cascataId, CancellationToken.None))
+            .Should().Be(quantidade);
 }

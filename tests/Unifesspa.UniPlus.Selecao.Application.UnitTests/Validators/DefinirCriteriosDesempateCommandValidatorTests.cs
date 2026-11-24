@@ -38,7 +38,7 @@ public sealed class DefinirCriteriosDesempateCommandValidatorTests
         ValidationResult result = new DefinirCriteriosDesempateCommandValidator().Validate(
             new DefinirCriteriosDesempateCommand(
                 Guid.CreateVersion7(),
-                [CriterioDesempateDeTeste.DaRegra("DESEMPATE-MAIOR-IDADE").NaOrdem(0).Construir()]));
+                [CriterioDesempateDeTeste.DaRegra("DESEMPATE_MAIOR_IDADE").NaOrdem(0).Construir()]));
 
         result.IsValid.Should().BeTrue();
     }
@@ -73,7 +73,7 @@ public sealed class DefinirCriteriosDesempateCommandValidatorTests
     {
         ValidationResult result = new DefinirCriteriosDesempateCommandValidator().Validate(
             new DefinirCriteriosDesempateCommand(
-                Guid.CreateVersion7(), [CriterioDesempateDeTeste.DaRegra("DESEMPATE-MAIOR-IDADE").SemRegra().Construir()]));
+                Guid.CreateVersion7(), [CriterioDesempateDeTeste.DaRegra("DESEMPATE_MAIOR_IDADE").SemRegra().Construir()]));
 
         result.Errors.Should().ContainSingle().Which.PropertyName.Should().Be("Criterios[0].Regra");
     }

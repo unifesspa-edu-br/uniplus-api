@@ -12,7 +12,9 @@ using Microsoft.Extensions.DependencyInjection;
 
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Authentication;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
+using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
 
 using static Unifesspa.UniPlus.Selecao.IntegrationTests.Outbox.Cascading.PublicacaoPeloEndpointDeTeste;
@@ -109,7 +111,7 @@ public sealed class DefinirEtapasContratoEndpointTests(CascadingFixture ambiente
     private static JsonObject Etapa() => new()
     {
         ["nome"] = "Prova Objetiva",
-        ["carater"] = 3,
+        ["carater"] = CaraterEtapa.Ambas.Codigo(),
         ["tipoEtapaOrigemId"] = PayloadsDoEnvelopeFechado.TipoEtapaProvaObjetivaOrigemId,
         ["peso"] = 1,
         ["notaMinima"] = 10,

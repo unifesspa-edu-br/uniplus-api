@@ -133,8 +133,8 @@ public sealed class LinhasDaInscricaoGravadaTests
         linhas["DATA_NASCIMENTO"].Single()[6].Should().Be(new DateOnly(2001, 3, 9));
         linhas["MODALIDADES"].Select(static l => ((int)l[1]!, (string)l[5]!)).Should().BeEquivalentTo([(0, "LB_PPI"), (1, "AC")]);
         linhas["FAIXA_ETARIA"].Single()[4].Should().Be(25m);
-        linhas["UF_RESIDENCIA"].Single()[2].Should().Be((int)OrigemDaResposta.Derivada);
-        linhas["DATA_NASCIMENTO"].Single()[2].Should().Be((int)OrigemDaResposta.Informada);
+        linhas["UF_RESIDENCIA"].Single()[2].Should().Be("CALCULADA");
+        linhas["DATA_NASCIMENTO"].Single()[2].Should().Be("INFORMADA");
     }
 
     private async Task ConferirAInscricaoRelidaAsync(Guid inscricaoId)

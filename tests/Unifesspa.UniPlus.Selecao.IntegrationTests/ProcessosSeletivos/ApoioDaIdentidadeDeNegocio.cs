@@ -5,6 +5,7 @@ using System.Text.Json.Nodes;
 
 using AwesomeAssertions;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Regras.ValueObjects;
@@ -161,7 +162,7 @@ internal static class ApoioDaIdentidadeDeNegocio
             "não a ordem alfabética, que poria CAMPO/A_FATO primeiro");
 
     /// <summary>
-    /// As origens das duas arestas de PRODUCAO ("CAMPO/" + o código do fato), em ordem alfabética,
+    /// As origens das duas arestas de RESPOSTA_DO_CAMPO ("CAMPO/" + o código do fato), em ordem alfabética,
     /// começariam por A_FATO — o oposto da ordem canônica, que segue a ordem de coleta efetiva do nó de
     /// origem (B_FATO, Ordem 0, primeiro).
     /// </summary>
@@ -175,13 +176,13 @@ internal static class ApoioDaIdentidadeDeNegocio
                     ("RESPOSTA_DO_CAMPO", "CAMPO/A_FATO", "DADO/A_FATO"),
                     ("EXIBICAO", "DADO/B_FATO", "CAMPO/A_FATO"),
                 ],
-                "as arestas saem ordenadas por (Tipo, Origem, Destino) canônicos — as duas de PRODUCAO desempatam pela ordem de coleta " +
+                "as arestas saem ordenadas por (Tipo, Origem, Destino) canônicos — as duas de RESPOSTA_DO_CAMPO desempatam pela ordem de coleta " +
                 "efetiva da origem (B_FATO antes de A_FATO), o oposto da ordem alfabética da pré-condição");
 
     /// <summary>Inserido fisicamente na ordem ERRADA (Zebu antes de Abaco): um canonicalizador que preservasse a ordem de entrada reproduziria a sequência errada.</summary>
     internal static ConfiguracaoBonusRegional BonusComMunicipiosDeMesmoCodigoIbgeForaDeOrdem() =>
         ConfiguracaoBonusRegional.Criar(
-            Regra(RegraBonusCodigo.Multiplicativo, 'd'), 1.20m, null, null,
+            Regra(RegraDeBonus.Multiplicativo.Codigo(), 'd'), 1.20m, null, null,
             new BaseLegalCongelada(
                 Guid.CreateVersion7(), "PORTARIA_UNIFESSPA_NO_2514_2023", "PORTARIA", "Portaria Teste 1/2026", "Descrição de teste",
                 [("1504208", "Zebu", "PA"), ("1504208", "Abaco", "PA")])).Value!;

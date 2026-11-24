@@ -64,10 +64,10 @@
       "properties": {
         "modo": {
           "title": "Modo de deliberação",
-          "description": "Votação do colegiado (colegiadaComVotacao) ou ato individual (atoIndividual).",
+          "description": "Votação do colegiado (COLEGIADA_COM_VOTACAO) ou ato individual (ATO_INDIVIDUAL).",
           "enum": [
-            "colegiadaComVotacao",
-            "atoIndividual"
+            "COLEGIADA_COM_VOTACAO",
+            "ATO_INDIVIDUAL"
           ]
         },
         "integrantes": {
@@ -92,34 +92,34 @@
           "title": "Critério de votação",
           "description": "Maioria simples, maioria absoluta ou unanimidade. Só quando há votação: no colegiado ou no ato individual que julga o recurso.",
           "enum": [
-            "maioriaSimples",
-            "maioriaAbsoluta",
-            "unanimidade"
+            "MAIORIA_SIMPLES",
+            "MAIORIA_ABSOLUTA",
+            "UNANIMIDADE"
           ]
         },
         "desempate": {
           "title": "Desempate",
           "description": "Como se desempata nos critérios de maioria: voto da presidência ou nova votação.",
           "enum": [
-            "votoDaPresidencia",
-            "novaVotacao"
+            "VOTO_DA_PRESIDENCIA",
+            "NOVA_VOTACAO"
           ]
         },
         "encerramento": {
           "title": "Encerramento da votação",
           "description": "Quando a votação termina: com o voto de todos os titulares ou quando a presidência vê o quórum atingido.",
           "enum": [
-            "todosOsTitulares",
-            "presidenciaNoQuorum"
+            "TODOS_OS_TITULARES",
+            "PRESIDENCIA_NO_QUORUM"
           ]
         },
         "semUnanimidade": {
           "title": "Resultado sem unanimidade",
           "description": "O que vale quando a unanimidade é o critério e ela não ocorre: favorável, desfavorável ou nova votação.",
           "enum": [
-            "favoravel",
-            "desfavoravel",
-            "novaVotacao"
+            "FAVORAVEL",
+            "DESFAVORAVEL",
+            "NOVA_VOTACAO"
           ]
         }
       }

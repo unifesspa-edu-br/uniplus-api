@@ -4467,6 +4467,11 @@
       "titulo": "O calendário vigente traz dia com recorte territorial incoerente com a abrangência"
     },
     {
+      "codigo": "uniplus.selecao.certame.filtro_de_situacao_invalido",
+      "status": 400,
+      "titulo": "Situação do filtro de certames inválida"
+    },
+    {
       "codigo": "uniplus.selecao.certame_publicado.envelope_inesperado",
       "status": 422,
       "titulo": "A configuração congelada não tem a forma que a projeção pública espera"
@@ -4534,7 +4539,7 @@
     {
       "codigo": "uniplus.selecao.configuracao_bonus_regional.regra_invalida",
       "status": 422,
-      "titulo": "A regra referenciada não é do código BONUS-MULTIPLICATIVO"
+      "titulo": "A regra referenciada não é do código FADA_MULTIPLICATIVO"
     },
     {
       "codigo": "uniplus.selecao.configuracao_bonus_regional.regra_nao_encontrada",
@@ -4544,7 +4549,7 @@
     {
       "codigo": "uniplus.selecao.configuracao_bonus_regional.regra_tipo_invalido",
       "status": 422,
-      "titulo": "A regra referenciada não é do tipo regra_bonus"
+      "titulo": "A regra referenciada não é do tipo regra_fada"
     },
     {
       "codigo": "uniplus.selecao.configuracao_bonus_regional.sem_municipios",
@@ -4964,7 +4969,7 @@
     {
       "codigo": "uniplus.selecao.configuracao_divulgacao.formas_de_identificacao_excludentes",
       "status": 422,
-      "titulo": "nome_abreviado e nome não podem ser publicados ao mesmo tempo"
+      "titulo": "NOME_ABREVIADO e NOME não podem ser publicados ao mesmo tempo"
     },
     {
       "codigo": "uniplus.selecao.configuracao_divulgacao.justificativa_caractere_invalido",
@@ -5124,7 +5129,7 @@
     {
       "codigo": "uniplus.selecao.criterio_desempate.etapa_ref_obrigatorio",
       "status": 422,
-      "titulo": "EtapaRef é obrigatório para a regra DESEMPATE-MAIOR-NOTA-ETAPA"
+      "titulo": "EtapaRef é obrigatório para a regra DESEMPATE_MAIOR_NOTA_ETAPA"
     },
     {
       "codigo": "uniplus.selecao.criterio_desempate.idade_minima_invalida",
@@ -5134,7 +5139,7 @@
     {
       "codigo": "uniplus.selecao.criterio_desempate.idade_minima_obrigatoria",
       "status": 422,
-      "titulo": "IdadeMinima é obrigatória para a regra DESEMPATE-IDOSO"
+      "titulo": "IdadeMinima é obrigatória para a regra DESEMPATE_IDOSO"
     },
     {
       "codigo": "uniplus.selecao.criterio_desempate.ordem_invalida",
@@ -5149,7 +5154,7 @@
     {
       "codigo": "uniplus.selecao.criterio_desempate.predicado_fato_incompleto",
       "status": 422,
-      "titulo": "Fato, Operador e Valor são obrigatórios para a regra DESEMPATE-PREDICADO-FATO"
+      "titulo": "Fato, Operador e Valor são obrigatórios para a regra DESEMPATE_CONDICAO_SOBRE_DADO"
     },
     {
       "codigo": "uniplus.selecao.criterio_desempate.regra_nao_encontrada",
@@ -5255,6 +5260,11 @@
       "codigo": "uniplus.selecao.documento_a_publicar.conteudo_diverge_do_formato",
       "status": 422,
       "titulo": "O conteúdo do arquivo não corresponde ao tipo de mídia declarado"
+    },
+    {
+      "codigo": "uniplus.selecao.documento_a_publicar.filtro_de_finalidade_invalido",
+      "status": 400,
+      "titulo": "Finalidade do filtro de documentos a publicar inválida"
     },
     {
       "codigo": "uniplus.selecao.documento_a_publicar.finalidade_invalida",
@@ -5489,7 +5499,7 @@
     {
       "codigo": "uniplus.selecao.documento_exigido.pendencia_reenvio_exige_complementacao",
       "status": 422,
-      "titulo": "A fase não permite complementação — consequência PENDENCIA_REENVIO exige PermiteComplementacao"
+      "titulo": "A fase não permite complementação — consequência ABRE_PRAZO_PARA_REENVIO exige PermiteComplementacao"
     },
     {
       "codigo": "uniplus.selecao.documento_exigido.ponto_resolucao_fora_do_cronograma",
@@ -5774,7 +5784,7 @@
     {
       "codigo": "uniplus.selecao.fase_cronograma.pendencia_reenvio_exige_complementacao",
       "status": 422,
-      "titulo": "A fase não pode perder PermiteComplementacao — é referenciada por documento exigido com consequência PENDENCIA_REENVIO"
+      "titulo": "A fase não pode perder PermiteComplementacao — é referenciada por documento exigido com consequência ABRE_PRAZO_PARA_REENVIO"
     },
     {
       "codigo": "uniplus.selecao.fase_cronograma.permutacao_de_ordem_nao_suportada",
@@ -5879,7 +5889,7 @@
     {
       "codigo": "uniplus.selecao.grafo_dependencia_conjunta.grafo_conjunto_com_ciclo",
       "status": 422,
-      "titulo": "O grafo de dependência conjunto (produção, pré-condição, derivação e gatilho) forma um ciclo"
+      "titulo": "As dependências entre campos, dados, exigências, seções e termos da configuração formam um ciclo"
     },
     {
       "codigo": "uniplus.selecao.grupo_area_enem_snapshot.caractere_invalido",
@@ -6675,6 +6685,11 @@
       "codigo": "uniplus.selecao.obrigatoriedade_legal.descricao_humana_obrigatoria",
       "status": 422,
       "titulo": "DescricaoHumana obrigatória"
+    },
+    {
+      "codigo": "uniplus.selecao.obrigatoriedade_legal.filtro_de_categoria_invalido",
+      "status": 400,
+      "titulo": "Categoria do filtro de obrigatoriedades legais inválida"
     },
     {
       "codigo": "uniplus.selecao.obrigatoriedade_legal.hash_colisao",
@@ -7904,7 +7919,7 @@
     {
       "codigo": "uniplus.selecao.regra_eliminacao.area_e_minimo_obrigatorios",
       "status": 422,
-      "titulo": "AreaCodigo e Minimo são obrigatórios para a regra ELIM-CORTE-EM-AREA"
+      "titulo": "AreaCodigo e Minimo são obrigatórios para a regra ELIMINACAO_CORTE_EM_AREA"
     },
     {
       "codigo": "uniplus.selecao.regra_eliminacao.area_invalida",
@@ -7914,12 +7929,12 @@
     {
       "codigo": "uniplus.selecao.regra_eliminacao.etapa_ref_e_nota_minima_obrigatorios",
       "status": 422,
-      "titulo": "EtapaRef e NotaMinima são obrigatórios para a regra ELIM-NOTA-MINIMA-ETAPA"
+      "titulo": "EtapaRef e NotaMinima são obrigatórios para a regra ELIMINACAO_NOTA_MINIMA_ETAPA"
     },
     {
       "codigo": "uniplus.selecao.regra_eliminacao.etapa_ref_obrigatorio",
       "status": 422,
-      "titulo": "EtapaRef é obrigatório para a regra ELIM-AUSENCIA-NA-ETAPA"
+      "titulo": "EtapaRef é obrigatório para a regra ELIMINACAO_AUSENCIA_NA_ETAPA"
     },
     {
       "codigo": "uniplus.selecao.regra_eliminacao.minimo_invalido",

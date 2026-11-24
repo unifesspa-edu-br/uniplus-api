@@ -64,5 +64,5 @@ internal sealed class RespostasLidasDaInscricao
                 StringComparer.Ordinal);
 
     private Dictionary<string, JsonElement> Destino(Guid? ocorrenciaId, OrigemDaResposta origem) =>
-        ocorrenciaId is { } id ? _porOcorrencia[id] : origem == OrigemDaResposta.Derivada ? _derivadas : _informadas;
+        ocorrenciaId is { } id ? _porOcorrencia[id] : origem == OrigemDaResposta.Calculada ? _derivadas : _informadas;
 }

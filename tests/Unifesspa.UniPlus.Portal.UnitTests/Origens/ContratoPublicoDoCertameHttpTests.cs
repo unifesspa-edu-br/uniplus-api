@@ -25,7 +25,7 @@ public sealed class ContratoPublicoDoCertameHttpTests
           "hashConfiguracao": "abc",
           "periodo": { "numero": "012/2026", "inicio": "2026-12-10T00:00:00-03:00", "fim": "2026-12-20T23:59:59-03:00" },
           "localidade": { "codigoIbge": "1505536", "nome": "Marabá", "uf": "PA", "fusoHorario": "America/Belem" },
-          "situacao": "inscricoesAbertas",
+          "situacao": { "codigo": "INSCRICOES_ABERTAS", "rotulo": "Inscrições abertas" },
           "documentoEdital": { "documentoEditalId": "0192a000-0000-7000-8000-0000000000d1", "hashSha256": "abc", "urlDownload": "https://acervo.example/editais/abc.pdf" }
         }
         """;
@@ -171,6 +171,17 @@ public sealed class ContratoPublicoDoCertameHttpTests
         RedeSimulada rede = new((_, _) => RedeSimulada.Json(
             $$"""{ "processoSeletivoId": "{{ProcessoId}}", "atoCriadorId": "{{Criador}}" }""",
             MediaType));
+
+        ConsultaDoCertame consulta = await Consultar(rede, contrato => contrato.ObterPorIdentificadorAsync("medicina-2027", CancellationToken.None));
+
+        consulta.Should().BeOfType<ConsultaDoCertame.Indisponivel>();
+    }
+
+    [Fact]
+    public async Task Situacao_com_codigo_desconhecido_vira_indisponivel()
+    {
+        string corpo = CorpoDoCertame.Replace("\"codigo\": \"INSCRICOES_ABERTAS\"", "\"codigo\": \"inscricoesAbertas\"", StringComparison.Ordinal);
+        RedeSimulada rede = new((_, _) => RedeSimulada.Json(corpo, MediaType));
 
         ConsultaDoCertame consulta = await Consultar(rede, contrato => contrato.ObterPorIdentificadorAsync("medicina-2027", CancellationToken.None));
 

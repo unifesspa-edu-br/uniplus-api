@@ -5,6 +5,7 @@ using AwesomeAssertions;
 using NSubstitute;
 
 using Unifesspa.UniPlus.Configuracao.Contracts;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Publicacoes.Contracts;
 using Unifesspa.UniPlus.Regras.Formularios;
@@ -165,7 +166,7 @@ public sealed class ObterConformidadeProcessoSeletivoQueryHandlerTests
     {
         (ProcessoSeletivo processo, IProcessoSeletivoRepository repository, IRegistroCodecsEnvelope codecs) =
             ProcessoPublicadoCom(
-                [ProdutoDaFase.Criar("ATO_X", PapelProdutoFase.Preliminar), ProdutoDaFase.Criar("ATO_X", PapelProdutoFase.Definitivo)],
+                [ProdutoDaFase.Criar("ATO_X", PapelDaPublicacaoPrevista.Preliminar), ProdutoDaFase.Criar("ATO_X", PapelDaPublicacaoPrevista.Definitivo)],
                 new TipoDeAtoCongelado("ATO_X", Nome: "Nome do ato", UnicoPorObjeto: true, EhResultado: true, CongelaConfiguracao: false));
 
         ConformidadeProcessoSeletivoDto result = await ChecklistAsync(
@@ -179,7 +180,7 @@ public sealed class ObterConformidadeProcessoSeletivoQueryHandlerTests
     {
         (ProcessoSeletivo processo, IProcessoSeletivoRepository repository, IRegistroCodecsEnvelope codecs) =
             ProcessoPublicadoCom(
-                [ProdutoDaFase.Criar("ATO_X", PapelProdutoFase.Definitivo)],
+                [ProdutoDaFase.Criar("ATO_X", PapelDaPublicacaoPrevista.Definitivo)],
                 new TipoDeAtoCongelado("ATO_X", Nome: "Nome do ato", UnicoPorObjeto: false, EhResultado: true, CongelaConfiguracao: false));
 
         ConformidadeProcessoSeletivoDto result = await ChecklistAsync(
@@ -193,7 +194,7 @@ public sealed class ObterConformidadeProcessoSeletivoQueryHandlerTests
     {
         (ProcessoSeletivo processo, IProcessoSeletivoRepository repository, IRegistroCodecsEnvelope codecs) =
             ProcessoPublicadoCom(
-                [ProdutoDaFase.Criar("ATO_X", PapelProdutoFase.Definitivo)],
+                [ProdutoDaFase.Criar("ATO_X", PapelDaPublicacaoPrevista.Definitivo)],
                 new TipoDeAtoCongelado("ATO_X", Nome: "Nome do ato", UnicoPorObjeto: false, EhResultado: true, CongelaConfiguracao: false));
         codecs.Reidratar(Arg.Any<VersaoConfiguracao>()).Returns(
             Result<EnvelopeReidratado>.Failure(new DomainError("Envelope.SchemaNaoSuportado", "A versão do envelope não é suportada.")));
@@ -338,7 +339,7 @@ public sealed class ObterConformidadeProcessoSeletivoQueryHandlerTests
     private static ConfiguracaoClassificacao ClassificacaoImportada() =>
         ConfiguracaoClassificacao.Criar(new DeclaracaoDaClassificacao
         {
-            RegraCalculo = ReferenciaRegra.De(RegraCalculoCodigo.ClassificacaoImportada, "v1", new string('b', 64)),
-            RegraOrdemAlocacao = ReferenciaRegra.De(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, "v1", new string('d', 64)),
+            RegraCalculo = ReferenciaRegra.De(RegraDeCalculoDaNota.ClassificacaoImportada.Codigo(), "v1", new string('b', 64)),
+            RegraOrdemAlocacao = ReferenciaRegra.De(RegraDeOrdemDeAlocacao.PrimeiraOpcaoPrioritaria.Codigo(), "v1", new string('d', 64)),
         }).Value!;
 }

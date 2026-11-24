@@ -1,5 +1,7 @@
 namespace Unifesspa.UniPlus.Selecao.Domain.UnitTests.ProcessosSeletivos.Cronograma;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
+
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Cronograma;
@@ -71,12 +73,12 @@ internal sealed record ModeloDeFase(string Codigo, int Ordem)
 
     internal PublicacoesDaFase Publicacoes() => new(Produtos, EmiteParecerIndividual, RegraRecurso, TiposDeDecisao, RegraDeHomologacao);
 
-    internal static ProdutoDaFase Preliminar(string ato) => ProdutoDaFase.Criar(ato, PapelProdutoFase.Preliminar);
+    internal static ProdutoDaFase Preliminar(string ato) => ProdutoDaFase.Criar(ato, PapelDaPublicacaoPrevista.Preliminar);
 
-    internal static ProdutoDaFase Definitivo(string ato) => ProdutoDaFase.Criar(ato, PapelProdutoFase.Definitivo);
+    internal static ProdutoDaFase Definitivo(string ato) => ProdutoDaFase.Criar(ato, PapelDaPublicacaoPrevista.Definitivo);
 
     internal static RegraRecursoFase RecursoAncoradoEm(Guid produtoAncoraId) => RegraRecursoFase.Criar(
-        ReferenciaRegra.De(RegraPrazoRecursoCodigo.AncoradoEmAto, "v1", new string('a', 64)),
+        ReferenciaRegra.De(RegraDePrazoDoRecurso.ContadoDaPublicacaoDoAto.Codigo(), "v1", new string('a', 64)),
         ParametrosDoRecursoDeTeste.Declarados(48m, UnidadePrazo.Horas),
         produtoAncoraId).Value!;
 

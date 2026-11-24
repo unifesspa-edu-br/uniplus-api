@@ -15,6 +15,7 @@ using Unifesspa.UniPlus.Infrastructure.Core.Errors;
 using Unifesspa.UniPlus.Infrastructure.Core.Formatting;
 using Unifesspa.UniPlus.Infrastructure.Core.OpenApi;
 using Unifesspa.UniPlus.Infrastructure.Core.Pagination;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Pagination;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
@@ -131,7 +132,7 @@ public sealed class CertamePublicadoController : ControllerBase
         // RequireSortKey: a âncora é o par (SortKey, Id). Sem a exigência, cursor sem a chave
         // degrada em silêncio para primeira página em vez de ser recusado.
         [FromCursor(ResourceDaVitrine, RequireSortKey = true)] PageRequest page,
-        [FromQuery(Name = "situacao")] SituacaoDoCertame? situacao,
+        [FromQuery(Name = "situacao"), AceitaCodigosDe<SituacaoDoCertame>] string? situacao,
         [FromQuery(Name = "modalidade")]
         [Description("Código da modalidade que o certame precisa ofertar. Sem o parâmetro, não recorta.")]
         string? modalidade,
@@ -143,38 +144,41 @@ public sealed class CertamePublicadoController : ControllerBase
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(page);
-
+        Result<SituacaoDoCertame?> filtro = FiltroDeSituacaoDosCertamesPublicados.Ler(situacao);
+        if (filtro.IsFailure)
+        {
+            return filtro.ToActionResult(_mapper);
+        }
         if (!SortExpressionParser.TentarLer(sort, out IReadOnlyList<SortField> ordenacao, out SortExpressionError erro))
         {
             return erro.ParaResposta(_mapper);
         }
+        var consulta = new ListarCertamesPublicadosQuery(
+            _relogio.GetUtcNow(), new RecorteDaVitrine(filtro.Value, modalidade, q), ordenacao,
+            page.AfterSortKey, page.AfterId, page.Limit, page.Direction, incluirContadores);
+        return await ServirVitrineAsync(consulta, page, cancellationToken).ConfigureAwait(false);
+    }
 
-        Result<ListarCertamesPublicadosResult> saida = await _queryBus
-            .Send(
-                new ListarCertamesPublicadosQuery(
-                    _relogio.GetUtcNow(), new RecorteDaVitrine(situacao, modalidade, q), ordenacao,
-                    page.AfterSortKey, page.AfterId, page.Limit, page.Direction, incluirContadores),
-                cancellationToken)
-            .ConfigureAwait(false);
-
+    private async Task<IActionResult> ServirVitrineAsync(
+        ListarCertamesPublicadosQuery consulta, PageRequest page, CancellationToken cancellationToken)
+    {
+        Result<ListarCertamesPublicadosResult> saida = await _queryBus.Send(consulta, cancellationToken).ConfigureAwait(false);
         if (saida.IsFailure)
         {
             return saida.ToActionResult(_mapper);
         }
 
         ListarCertamesPublicadosResult resultado = saida.Value!;
+        AplicarCabecalhosDaVitrine(resultado);
+        return await this.OkPaginatedOrdenadoAsync(
+            resultado.Items, resultado.Anterior, resultado.Proximo, page, ResourceDaVitrine,
+            cancellationToken: cancellationToken).ConfigureAwait(false);
+    }
 
-        // Revalidação obrigatória: o endereço da página não muda quando um certame entra na
-        // vitrine ou se reposiciona nela.
+    private void AplicarCabecalhosDaVitrine(ListarCertamesPublicadosResult resultado)
+    {
         Response.Headers.CacheControl = "no-cache";
-
-        // Sempre presente, ao contrário dos contadores: é o que permite a quem compõe a vitrine
-        // perceber que a coleção avançou entre duas páginas (ADR-0131).
         Response.Headers["X-Certames-Revisao"] = resultado.Revisao;
-
-        // Metadado de coleção em header, nunca no corpo (ADR-0025). Opt-in: o link de continuação
-        // preserva o parâmetro, então quem pede uma vez paga a contagem em toda página — pedir só
-        // na primeira requisição é o uso pretendido.
         if (resultado.Contadores is { } contadores)
         {
             Response.Headers["X-Certames-Em-Breve"] = Numero(contadores.EmBreve);
@@ -182,10 +186,6 @@ public sealed class CertamePublicadoController : ControllerBase
             Response.Headers["X-Certames-Ultimos-Dias"] = Numero(contadores.UltimosDias);
             Response.Headers["X-Certames-Encerrados"] = Numero(contadores.Encerrados);
         }
-
-        return await this.OkPaginatedOrdenadoAsync(
-            resultado.Items, resultado.Anterior, resultado.Proximo, page, ResourceDaVitrine,
-            cancellationToken: cancellationToken).ConfigureAwait(false);
     }
 
     private static string Numero(int valor) => valor.ToString(CultureInfo.InvariantCulture);
@@ -240,21 +240,14 @@ public sealed class CertamePublicadoController : ControllerBase
             .Send(consulta, cancellationToken)
             .ConfigureAwait(false);
 
-        // Revalidação obrigatória, não cache proibido: o endereço não muda quando o certame é
-        // retificado. Escrita ANTES de ramificar porque a recusa também precisa dela — sem
-        // diretiva, um cache compartilhado atribui frescor heurístico ao 404 (RFC 9111 §4.2.2).
         Response.Headers.CacheControl = "no-cache";
+        return resultado.IsFailure ? resultado.ToActionResult(_mapper) : RespostaDoCertame(resultado.Value!, ifNoneMatch);
+    }
 
-        if (resultado.IsFailure)
-        {
-            return resultado.ToActionResult(_mapper);
-        }
-
-        CertamePublicadoDto certame = resultado.Value!;
+    private IActionResult RespostaDoCertame(CertamePublicadoDto certame, string? ifNoneMatch)
+    {
         string etag = SeloDoCertamePublicado.De(certame);
-
         Response.Headers.ETag = etag;
-
         return SeloDeEntidade.IfNoneMatchCoincide(ifNoneMatch, etag)
             ? StatusCode(StatusCodes.Status304NotModified)
             : Ok(certame);

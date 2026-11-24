@@ -6,6 +6,7 @@ using NSubstitute;
 
 using Unifesspa.UniPlus.Application.Abstractions.Authentication;
 using Unifesspa.UniPlus.Configuracao.Contracts;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Publicacoes.Contracts;
 using Unifesspa.UniPlus.Regras.Enums;
@@ -119,7 +120,7 @@ public sealed class FatoDeElegibilidadeGateTests
     {
         processo.DefinirBonusRegional(
             aplica: true,
-            ConfiguracaoBonusRegional.Criar(ReferenciaRegra.De(RegraBonusCodigo.Multiplicativo, "v1", HashFixo), 1.20m, null, Fato, new BaseLegalCongelada(Guid.CreateVersion7(), "PORTARIA_UNIFESSPA_NO_2514_2023", "EDITAL", "Edital nº 1/2026", "Fator de Atenuação das Desigualdades de Acesso", [("1504208", "Marabá", "PA")])).Value!).IsSuccess.Should().BeTrue();
+            ConfiguracaoBonusRegional.Criar(ReferenciaRegra.De(RegraDeBonus.Multiplicativo.Codigo(), "v1", HashFixo), 1.20m, null, Fato, new BaseLegalCongelada(Guid.CreateVersion7(), "PORTARIA_UNIFESSPA_NO_2514_2023", "EDITAL", "Edital nº 1/2026", "Fator de Atenuação das Desigualdades de Acesso", [("1504208", "Marabá", "PA")])).Value!).IsSuccess.Should().BeTrue();
     }
 
     private static (ProcessoSeletivo Processo, VersaoConfiguracao VersaoAtual) ProcessoPublicado()

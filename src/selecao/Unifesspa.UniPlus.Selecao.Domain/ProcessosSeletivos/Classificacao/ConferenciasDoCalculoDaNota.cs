@@ -1,5 +1,7 @@
 namespace Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Classificacao;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
+
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
@@ -15,7 +17,7 @@ internal static class ConferenciasDoCalculoDaNota
     private const string ErroEscalaNotaFinalIndevida = "ConfiguracaoClassificacao.EscalaNotaFinalIndevida";
 
     internal static bool EhImportada(ReferenciaRegra regraCalculo) =>
-        regraCalculo.Codigo == RegraCalculoCodigo.ClassificacaoImportada;
+        regraCalculo.Codigo == RegraDeCalculoDaNota.ClassificacaoImportada.Codigo();
 
     internal static List<FieldError> Conferir(
         ReferenciaRegra regraCalculo,

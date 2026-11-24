@@ -4,6 +4,7 @@ using System.Globalization;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Extensions;
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
@@ -43,7 +44,7 @@ internal static class SerializacaoDaDivulgacaoEDaTaxa
             ["presente"] = true,
             ["cobra"] = taxa.Cobra,
             ["valor"] = taxa.Valor is { } valor ? HashCanonicalComputer.SerializeDecimalCanonical(valor, ConfiguracaoTaxaInscricao.ValorEscala) : null,
-            ["fundamentos"] = new JsonArray([.. taxa.Fundamentos.Select(static f => (JsonNode)f.ToCodigo())]),
+            ["fundamentos"] = new JsonArray([.. taxa.Fundamentos.Select(static f => (JsonNode)f.Codigo())]),
         };
     }
 }

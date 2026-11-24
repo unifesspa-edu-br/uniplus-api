@@ -2,7 +2,9 @@ namespace Unifesspa.UniPlus.Selecao.Application.DTOs;
 
 using Domain.ValueObjects;
 
+using Unifesspa.UniPlus.Application.Abstractions.Respostas;
 using Unifesspa.UniPlus.Regras.Leituras;
+using Unifesspa.UniPlus.Selecao.Domain.Enums;
 
 /// <summary>Projeção de leitura de uma modalidade selecionada.</summary>
 public sealed record ModalidadeSelecionadaDto(
@@ -10,14 +12,10 @@ public sealed record ModalidadeSelecionadaDto(
     Guid ModalidadeOrigemId,
     string Codigo,
     string? Descricao,
-    // Os três tokens abaixo saem em UPPER_SNAKE, o vocabulário que
-    // `GET /api/configuracao/modalidades` publica para a modalidade de origem: é a mesma
-    // modalidade descrita por duas rotas, e o cliente cruza as duas.
-    string NaturezaLegal,
-    string ComposicaoVagas,
+    CodigoComRotulo<NaturezaLegalModalidade> NaturezaLegal,
+    CodigoComRotulo<ComposicaoVagasModalidade> ComposicaoVagas,
     string? ComposicaoOrigemCodigo,
-    // Opcional como na origem: ausência é a modalidade que não remaneja.
-    string? RegraRemanejamento,
+    CodigoComRotulo<RegraRemanejamentoModalidade>? RegraRemanejamento,
     string? RemanejamentoDestino,
     string? RemanejamentoPar,
     string? RemanejamentoFallback,

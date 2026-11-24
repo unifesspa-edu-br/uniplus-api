@@ -1,5 +1,7 @@
 namespace Unifesspa.UniPlus.Selecao.Domain.UnitTests.ProcessosSeletivos.Edicao;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
+
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
@@ -81,7 +83,7 @@ internal sealed record OperacaoDeEdicao(
             p => p.DefinirLocalidade(p.Localidade)),
         new(nameof(ProcessoSeletivo.DefinirAlgoritmoContagemPrazo),
             p => p.DefinirAlgoritmoContagemPrazo(
-                ProcessoConformeFactory.Regra(AlgoritmoContagemPrazoCodigo.AvancaDataUtil, "d"))),
+                ProcessoConformeFactory.Regra(ConvencaoDeContagemDoPrazo.AvancaDataUtil.Codigo(), "d"))),
     ];
 
     internal static OperacaoDeEdicao Por(string nome) => Todas.Single(o => o.Nome == nome);

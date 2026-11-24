@@ -43,7 +43,7 @@ public sealed class EnvelopeCodecRecusaTaxaDeInscricaoTests
             envelope["taxaInscricao"]!["fundamentos"] = new JsonArray(JsonValue.Create("FUNDAMENTO_INEXISTENTE")));
 
         resultado.IsFailure.Should().BeTrue(
-            "'FUNDAMENTO_INEXISTENTE' não pertence ao vocabulário de FundamentoIsencaoCodigo — a factory recusa, " +
+            "'FUNDAMENTO_INEXISTENTE' não pertence ao vocabulário de FundamentoIsencao — a factory recusa, " +
             "nunca ignora em silêncio");
         resultado.Error!.Code.Should().Be("ConfiguracaoTaxaInscricao.FundamentoDesconhecido");
     }
@@ -53,7 +53,7 @@ public sealed class EnvelopeCodecRecusaTaxaDeInscricaoTests
     {
         Result<EnvelopeReidratado> resultado = ReidratarComEnvelopeAdulterado(envelope =>
             envelope["taxaInscricao"]!["fundamentos"] = new JsonArray(
-                JsonValue.Create(FundamentoIsencaoCodigo.CadastroUnico), JsonValue.Create(FundamentoIsencaoCodigo.CadastroUnico)));
+                JsonValue.Create("CADASTRO_UNICO"), JsonValue.Create("CADASTRO_UNICO")));
 
         resultado.IsFailure.Should().BeTrue(
             "ConfiguracaoTaxaInscricao.Criar deduplica antes de guardar — o encoder nunca emite token repetido; " +
@@ -67,7 +67,7 @@ public sealed class EnvelopeCodecRecusaTaxaDeInscricaoTests
     {
         Result<EnvelopeReidratado> resultado = ReidratarComEnvelopeAdulterado(envelope =>
             envelope["taxaInscricao"]!["fundamentos"] = new JsonArray(
-                JsonValue.Create(FundamentoIsencaoCodigo.DoacaoMedulaOssea), JsonValue.Create(FundamentoIsencaoCodigo.CadastroUnico)));
+                JsonValue.Create("DOACAO_MEDULA_OSSEA"), JsonValue.Create("CADASTRO_UNICO")));
 
         resultado.IsFailure.Should().BeTrue(
             "'fundamentos' sai do encoder na ordem canônica (código ordinal) porque a entidade já os guarda " +

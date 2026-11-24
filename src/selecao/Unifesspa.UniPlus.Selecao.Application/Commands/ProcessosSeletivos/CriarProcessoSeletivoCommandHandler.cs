@@ -1,10 +1,12 @@
 namespace Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
 
 using Domain.Entities;
+using Domain.Enums;
 using Domain.Errors;
 using Domain.Interfaces;
 using Domain.ValueObjects;
 
+using Kernel.Domain.CodigosDeContrato;
 using Kernel.Results;
 
 using Permissoes;
@@ -107,7 +109,7 @@ public static class CriarProcessoSeletivoCommandHandler
         return emUso
             ? Result<ProcessoSeletivo>.Failure(IdentificadorLegivelEmUso(identificador))
             : Result<ProcessoSeletivo>.Success(ProcessoSeletivo.Criar(
-                command.Nome, referencias.Tipo, command.OrigemCandidatos, referencias.UnidadeId, referencias.Unidade,
+                command.Nome, referencias.Tipo, CatalogoDe<OrigemCandidatos>.Obter(command.OrigemCandidatos!), referencias.UnidadeId, referencias.Unidade,
                 referencias.Localidade, identificador));
     }
 

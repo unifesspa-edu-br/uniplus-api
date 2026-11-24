@@ -2,6 +2,7 @@ namespace Unifesspa.UniPlus.Selecao.Application.UnitTests.Commands;
 
 using AwesomeAssertions;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
@@ -19,7 +20,7 @@ public sealed class DefinirCascataRemanejamentoDeclaracaoDaRegraCommandHandlerTe
         ConfigurarRegra(mocks, RegraCascataValida());
 
         DefinirCascataRemanejamentoCommand command = new(
-            processo.Id, RegraRemanejamentoCodigo.Cascata, "v1", "AMPLA",
+            processo.Id, CriterioDeRemanejamento.OrdemDaLei12711.Codigo(), "v1", "AMPLA",
             [new DestinoRemanejamentoInput("LB_PPI", 1, "LB_Q"), new DestinoRemanejamentoInput("LB_PPI", 2, "LB_PCD")]);
 
         Result result = await DefinirCascataRemanejamentoCommandHandler.Handle(
@@ -38,7 +39,7 @@ public sealed class DefinirCascataRemanejamentoDeclaracaoDaRegraCommandHandlerTe
         ConfigurarRegra(mocks, RegraCascataValida());
 
         DefinirCascataRemanejamentoCommand command = new(
-            processo.Id, RegraRemanejamentoCodigo.Cascata, "v1", "AC",
+            processo.Id, CriterioDeRemanejamento.OrdemDaLei12711.Codigo(), "v1", "AC",
             [new DestinoRemanejamentoInput("LB_PPI", 1, "LB_Q"), new DestinoRemanejamentoInput("LB_PPI", 2, "LB_EP")]);
 
         Result result = await DefinirCascataRemanejamentoCommandHandler.Handle(
@@ -56,7 +57,7 @@ public sealed class DefinirCascataRemanejamentoDeclaracaoDaRegraCommandHandlerTe
         ConfigurarRegra(mocks, RegraComDuasOrigens());
 
         DefinirCascataRemanejamentoCommand command = new(
-            processo.Id, RegraRemanejamentoCodigo.Cascata, "v1", "AC",
+            processo.Id, CriterioDeRemanejamento.OrdemDaLei12711.Codigo(), "v1", "AC",
             [new DestinoRemanejamentoInput("LB_PPI", 1, "LB_Q")]);
 
         Result result = await DefinirCascataRemanejamentoCommandHandler.Handle(
@@ -74,7 +75,7 @@ public sealed class DefinirCascataRemanejamentoDeclaracaoDaRegraCommandHandlerTe
         ConfigurarRegra(mocks, RegraComOrigemRepetida());
 
         DefinirCascataRemanejamentoCommand command = new(
-            processo.Id, RegraRemanejamentoCodigo.Cascata, "v1", "AC",
+            processo.Id, CriterioDeRemanejamento.OrdemDaLei12711.Codigo(), "v1", "AC",
             [new DestinoRemanejamentoInput("LB_PPI", 1, "LB_Q"), new DestinoRemanejamentoInput("LB_Q", 1, "DESTINO_NUNCA_CONFERIDO")]);
 
         Result result = await DefinirCascataRemanejamentoCommandHandler.Handle(
@@ -92,7 +93,7 @@ public sealed class DefinirCascataRemanejamentoDeclaracaoDaRegraCommandHandlerTe
         ConfigurarRegra(mocks, RegraCascataValida());
 
         DefinirCascataRemanejamentoCommand command = new(
-            processo.Id, RegraRemanejamentoCodigo.Cascata, "v1", "AC",
+            processo.Id, CriterioDeRemanejamento.OrdemDaLei12711.Codigo(), "v1", "AC",
             [null!]);
 
         Result result = await DefinirCascataRemanejamentoCommandHandler.Handle(

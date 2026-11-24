@@ -8,9 +8,9 @@ using Unifesspa.UniPlus.Selecao.Domain.Entities;
 public sealed class ConfiguracaoDivulgacaoTests
 {
     [Theory(DisplayName = "Criar aceita os três tokens do vocabulário fechado")]
-    [InlineData(new[] { "numero_inscricao" }, null)]
-    [InlineData(new[] { "numero_inscricao", "nome_abreviado" }, null)]
-    [InlineData(new[] { "numero_inscricao", "nome" }, "Ampliação para dar transparência ao resultado.")]
+    [InlineData(new[] { "NUMERO_INSCRICAO" }, null)]
+    [InlineData(new[] { "NUMERO_INSCRICAO", "NOME_ABREVIADO" }, null)]
+    [InlineData(new[] { "NUMERO_INSCRICAO", "NOME" }, "Ampliação para dar transparência ao resultado.")]
     public void Criar_TresTokensDoVocabulario_Sucesso(string[] camposPublicos, string? justificativa)
     {
         Result<ConfiguracaoDivulgacao> resultado = ConfiguracaoDivulgacao.Criar(camposPublicos, justificativa);
@@ -30,26 +30,26 @@ public sealed class ConfiguracaoDivulgacaoTests
     [Fact(DisplayName = "Criar com campo fora do vocabulário falha — CampoNaoPermitido")]
     public void Criar_CampoNaoPermitido_Falha()
     {
-        Result<ConfiguracaoDivulgacao> resultado = ConfiguracaoDivulgacao.Criar(["numero_inscricao", "cpf"], null);
+        Result<ConfiguracaoDivulgacao> resultado = ConfiguracaoDivulgacao.Criar(["NUMERO_INSCRICAO", "cpf"], null);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("ConfiguracaoDivulgacao.CampoNaoPermitido");
     }
 
-    [Fact(DisplayName = "Criar sem numero_inscricao falha — NumeroInscricaoObrigatorio")]
+    [Fact(DisplayName = "Criar sem NUMERO_INSCRICAO falha — NumeroInscricaoObrigatorio")]
     public void Criar_SemNumeroInscricao_Falha()
     {
-        Result<ConfiguracaoDivulgacao> resultado = ConfiguracaoDivulgacao.Criar(["nome_abreviado"], null);
+        Result<ConfiguracaoDivulgacao> resultado = ConfiguracaoDivulgacao.Criar(["NOME_ABREVIADO"], null);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("ConfiguracaoDivulgacao.NumeroInscricaoObrigatorio");
     }
 
-    [Fact(DisplayName = "Criar com nome_abreviado e nome juntos falha — FormasDeIdentificacaoExcludentes")]
+    [Fact(DisplayName = "Criar com NOME_ABREVIADO e NOME juntos falha — FormasDeIdentificacaoExcludentes")]
     public void Criar_NomeENomeAbreviadoJuntos_Falha()
     {
         Result<ConfiguracaoDivulgacao> resultado = ConfiguracaoDivulgacao.Criar(
-            ["numero_inscricao", "nome_abreviado", "nome"], "Justificativa qualquer.");
+            ["NUMERO_INSCRICAO", "NOME_ABREVIADO", "NOME"], "Justificativa qualquer.");
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("ConfiguracaoDivulgacao.FormasDeIdentificacaoExcludentes");
@@ -58,7 +58,7 @@ public sealed class ConfiguracaoDivulgacaoTests
     [Fact(DisplayName = "Criar com nome sem justificativa falha — JustificativaObrigatoria")]
     public void Criar_NomeSemJustificativa_Falha()
     {
-        Result<ConfiguracaoDivulgacao> resultado = ConfiguracaoDivulgacao.Criar(["numero_inscricao", "nome"], null);
+        Result<ConfiguracaoDivulgacao> resultado = ConfiguracaoDivulgacao.Criar(["NUMERO_INSCRICAO", "NOME"], null);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("ConfiguracaoDivulgacao.JustificativaObrigatoria");
@@ -67,7 +67,7 @@ public sealed class ConfiguracaoDivulgacaoTests
     [Fact(DisplayName = "Criar com justificativa só de espaços é tratado como ausente — JustificativaObrigatoria")]
     public void Criar_NomeComJustificativaEmBranco_Falha()
     {
-        Result<ConfiguracaoDivulgacao> resultado = ConfiguracaoDivulgacao.Criar(["numero_inscricao", "nome"], "   ");
+        Result<ConfiguracaoDivulgacao> resultado = ConfiguracaoDivulgacao.Criar(["NUMERO_INSCRICAO", "NOME"], "   ");
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("ConfiguracaoDivulgacao.JustificativaObrigatoria");
@@ -78,7 +78,7 @@ public sealed class ConfiguracaoDivulgacaoTests
     {
         string justificativaMuitoLonga = new('a', ConfiguracaoDivulgacao.JustificativaMaxLength + 1);
 
-        Result<ConfiguracaoDivulgacao> resultado = ConfiguracaoDivulgacao.Criar(["numero_inscricao", "nome"], justificativaMuitoLonga);
+        Result<ConfiguracaoDivulgacao> resultado = ConfiguracaoDivulgacao.Criar(["NUMERO_INSCRICAO", "NOME"], justificativaMuitoLonga);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("ConfiguracaoDivulgacao.JustificativaMuitoLonga");
@@ -93,7 +93,7 @@ public sealed class ConfiguracaoDivulgacaoTests
         string justificativaComCaractereNulo = $"Justificativa com {(char)0} no meio.";
 
         Result<ConfiguracaoDivulgacao> resultado = ConfiguracaoDivulgacao.Criar(
-            ["numero_inscricao", "nome"], justificativaComCaractereNulo);
+            ["NUMERO_INSCRICAO", "NOME"], justificativaComCaractereNulo);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("ConfiguracaoDivulgacao.JustificativaCaractereInvalido");
@@ -103,7 +103,7 @@ public sealed class ConfiguracaoDivulgacaoTests
     public void Criar_JustificativaComQuebraDeLinhaETabulacao_Sucesso()
     {
         Result<ConfiguracaoDivulgacao> resultado = ConfiguracaoDivulgacao.Criar(
-            ["numero_inscricao", "nome"], "Primeira linha.\r\n\tSegunda linha.\nTerceira.");
+            ["NUMERO_INSCRICAO", "NOME"], "Primeira linha.\r\n\tSegunda linha.\nTerceira.");
 
         resultado.IsSuccess.Should().BeTrue();
     }
@@ -113,7 +113,7 @@ public sealed class ConfiguracaoDivulgacaoTests
     [InlineData("Justificativa com \u202E inversão.")]
     public void Criar_JustificativaComControleOuFormatacao_Falha(string justificativa)
     {
-        Result<ConfiguracaoDivulgacao> resultado = ConfiguracaoDivulgacao.Criar(["numero_inscricao", "nome"], justificativa);
+        Result<ConfiguracaoDivulgacao> resultado = ConfiguracaoDivulgacao.Criar(["NUMERO_INSCRICAO", "NOME"], justificativa);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("ConfiguracaoDivulgacao.JustificativaCaractereInvalido");
@@ -122,7 +122,7 @@ public sealed class ConfiguracaoDivulgacaoTests
     [Fact(DisplayName = "Violar vocabulário e piso ao mesmo tempo acumula os dois erros no mesmo lote")]
     public void Criar_VocabularioEPisoViolados_AcumulaOsDois()
     {
-        // "cpf" não pertence ao vocabulário E a lista não contém numero_inscricao — as duas
+        // "cpf" não pertence ao vocabulário E a lista não contém NUMERO_INSCRICAO — as duas
         // invariantes estão violadas ao mesmo tempo (ADR-0125: ambas entram no mesmo lote).
         Result<ConfiguracaoDivulgacao> resultado = ConfiguracaoDivulgacao.Criar(["cpf"], null);
 
@@ -135,7 +135,7 @@ public sealed class ConfiguracaoDivulgacaoTests
     [Fact(DisplayName = "Item nulo na lista não pertence ao vocabulário — não sobrevive silenciosamente à lista canônica")]
     public void Criar_ComItemNuloNaLista_RetornaCampoNaoPermitido()
     {
-        Result<ConfiguracaoDivulgacao> resultado = ConfiguracaoDivulgacao.Criar(["numero_inscricao", null!], null);
+        Result<ConfiguracaoDivulgacao> resultado = ConfiguracaoDivulgacao.Criar(["NUMERO_INSCRICAO", null!], null);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Errors.Should().ContainSingle(e => e.Field == "camposPublicos" && e.Error.Code == "ConfiguracaoDivulgacao.CampoNaoPermitido");
@@ -146,7 +146,7 @@ public sealed class ConfiguracaoDivulgacaoTests
     {
         string justificativa = $"{(char)0}{new string('a', ConfiguracaoDivulgacao.JustificativaMaxLength + 1)}";
 
-        Result<ConfiguracaoDivulgacao> resultado = ConfiguracaoDivulgacao.Criar(["numero_inscricao", "nome"], justificativa);
+        Result<ConfiguracaoDivulgacao> resultado = ConfiguracaoDivulgacao.Criar(["NUMERO_INSCRICAO", "NOME"], justificativa);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Errors.Should().HaveCount(2);
@@ -154,11 +154,11 @@ public sealed class ConfiguracaoDivulgacaoTests
         resultado.Errors.Should().Contain(e => e.Field == "justificativa" && e.Error.Code == "ConfiguracaoDivulgacao.JustificativaMuitoLonga");
     }
 
-    [Fact(DisplayName = "Nome sem justificativa e nome_abreviado junto de nome acumulam os dois erros")]
+    [Fact(DisplayName = "Nome sem justificativa e NOME_ABREVIADO junto de nome acumulam os dois erros")]
     public void Criar_ComDoisErrosIndependentes_AcumulaOsDois()
     {
         Result<ConfiguracaoDivulgacao> resultado = ConfiguracaoDivulgacao.Criar(
-            ["numero_inscricao", "nome_abreviado", "nome"], null);
+            ["NUMERO_INSCRICAO", "NOME_ABREVIADO", "NOME"], null);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Errors.Should().HaveCount(2);
@@ -169,8 +169,8 @@ public sealed class ConfiguracaoDivulgacaoTests
     [Fact(DisplayName = "O conjunto é deduplicado e guardado na ordem canônica, não na ordem de entrada")]
     public void Criar_DeduplicaEOrdenaCanonicamente()
     {
-        Result<ConfiguracaoDivulgacao> ordemA = ConfiguracaoDivulgacao.Criar(["nome_abreviado", "numero_inscricao"], null);
-        Result<ConfiguracaoDivulgacao> ordemB = ConfiguracaoDivulgacao.Criar(["numero_inscricao", "nome_abreviado", "numero_inscricao"], null);
+        Result<ConfiguracaoDivulgacao> ordemA = ConfiguracaoDivulgacao.Criar(["NOME_ABREVIADO", "NUMERO_INSCRICAO"], null);
+        Result<ConfiguracaoDivulgacao> ordemB = ConfiguracaoDivulgacao.Criar(["NUMERO_INSCRICAO", "NOME_ABREVIADO", "NUMERO_INSCRICAO"], null);
 
         ordemA.IsSuccess.Should().BeTrue();
         ordemB.IsSuccess.Should().BeTrue();
@@ -179,8 +179,8 @@ public sealed class ConfiguracaoDivulgacaoTests
         // requisição) produzem a MESMA coleção persistida — é o que evita um UPDATE espúrio do
         // ValueComparer sequencial do jsonb a cada requisição equivalente.
         ordemA.Value!.CamposPublicos.Should().Equal(ordemB.Value!.CamposPublicos);
-        // Ordem ordinal (ASCII): "nome_abreviado" < "numero_inscricao" ('o' < 'u' na segunda posição).
-        ordemA.Value!.CamposPublicos.Should().Equal("nome_abreviado", "numero_inscricao");
+        // Ordem ordinal (ASCII): "NOME_ABREVIADO" < "NUMERO_INSCRICAO" ('o' < 'u' na segunda posição).
+        ordemA.Value!.CamposPublicos.Should().Equal("NOME_ABREVIADO", "NUMERO_INSCRICAO");
     }
 
     [Fact(DisplayName = "Justificativa é normalizada (Trim + NFC) na criação")]
@@ -191,16 +191,16 @@ public sealed class ConfiguracaoDivulgacaoTests
         // valor persistido divergiria do que a publicação congela.
         string decombinada = "  Justificativa com é acentuado nas bordas  ";
 
-        Result<ConfiguracaoDivulgacao> resultado = ConfiguracaoDivulgacao.Criar(["numero_inscricao", "nome"], decombinada);
+        Result<ConfiguracaoDivulgacao> resultado = ConfiguracaoDivulgacao.Criar(["NUMERO_INSCRICAO", "NOME"], decombinada);
 
         resultado.IsSuccess.Should().BeTrue();
         resultado.Value!.Justificativa.Should().Be("Justificativa com é acentuado nas bordas");
     }
 
     [Theory(DisplayName = "EhDefaultMinimizado só reconhece a forma exata do default")]
-    [InlineData(new[] { "numero_inscricao" }, null, true)]
-    [InlineData(new[] { "numero_inscricao" }, "algo", false)]
-    [InlineData(new[] { "numero_inscricao", "nome_abreviado" }, null, false)]
+    [InlineData(new[] { "NUMERO_INSCRICAO" }, null, true)]
+    [InlineData(new[] { "NUMERO_INSCRICAO" }, "algo", false)]
+    [InlineData(new[] { "NUMERO_INSCRICAO", "NOME_ABREVIADO" }, null, false)]
     public void EhDefaultMinimizado_ReconheceApenasAFormaExata(string[] camposPublicos, string? justificativa, bool esperado)
     {
         ConfiguracaoDivulgacao.EhDefaultMinimizado(camposPublicos, justificativa).Should().Be(esperado);

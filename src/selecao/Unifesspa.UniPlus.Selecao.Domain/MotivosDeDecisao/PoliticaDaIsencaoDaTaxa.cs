@@ -1,5 +1,6 @@
 namespace Unifesspa.UniPlus.Selecao.Domain.MotivosDeDecisao;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
@@ -21,14 +22,14 @@ public sealed class PoliticaDaIsencaoDaTaxa : IPoliticaDoTipoDeMotivo
             return Result<string?>.Failure(new DomainError(
                 MotivoDeDecisaoErrorCodes.SubclassificacaoObrigatoria,
                 "O motivo da isenção da taxa exige o fundamento de isenção na subclassificação: "
-                + $"{FundamentoIsencaoCodigo.CodigosEmTexto}."));
+                + $"{string.Join(", ", CatalogoDe<FundamentoIsencao>.Todos().Select(static item => item.Codigo))}."));
         }
 
         string normalizada = subclassificacao.Trim();
-        return FundamentoIsencaoCodigo.FromCodigo(normalizada) == FundamentoIsencao.Nenhum
+        return !CatalogoDe<FundamentoIsencao>.TentarObter(normalizada, out _)
             ? Result<string?>.Failure(new DomainError(
                 MotivoDeDecisaoErrorCodes.SubclassificacaoInvalida,
-                $"Fundamento de isenção desconhecido. Use um dos códigos: {FundamentoIsencaoCodigo.CodigosEmTexto}."))
+                $"Fundamento de isenção desconhecido. Use um dos códigos: {string.Join(", ", CatalogoDe<FundamentoIsencao>.Todos().Select(static item => item.Codigo))}."))
             : Result<string?>.Success(normalizada);
     }
 

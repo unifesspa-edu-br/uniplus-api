@@ -117,12 +117,12 @@ public sealed class FaseCronograma : EntityBase, IParteDoProcesso, IPeriodoDaFas
     public bool ProduzResultado => CicloRecursal.ProduzResultado(ParesDeAto());
 
     /// <summary>Abre ciclo recursal: publica ao menos um resultado preliminar.</summary>
-    internal bool PublicaResultadoPreliminar => CicloRecursal.PublicaComPapel(ParesDeAto(), PapelProdutoFase.Preliminar);
+    internal bool PublicaResultadoPreliminar => CicloRecursal.PublicaComPapel(ParesDeAto(), PapelDaPublicacaoPrevista.Preliminar);
 
     /// <summary>Encerra ciclo recursal: publica ao menos um resultado definitivo.</summary>
-    internal bool PublicaResultadoDefinitivo => CicloRecursal.PublicaComPapel(ParesDeAto(), PapelProdutoFase.Definitivo);
+    internal bool PublicaResultadoDefinitivo => CicloRecursal.PublicaComPapel(ParesDeAto(), PapelDaPublicacaoPrevista.Definitivo);
 
-    private IEnumerable<(string AtoCodigo, PapelProdutoFase? Papel)> ParesDeAto() =>
+    private IEnumerable<(string AtoCodigo, PapelDaPublicacaoPrevista? Papel)> ParesDeAto() =>
         _produtos.Select(static p => (p.AtoCodigo, p.Papel));
 
     /// <summary>Presença = a fase admite recurso (0..1).</summary>

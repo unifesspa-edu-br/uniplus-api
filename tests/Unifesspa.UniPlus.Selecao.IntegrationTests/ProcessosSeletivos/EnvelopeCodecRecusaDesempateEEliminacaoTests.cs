@@ -4,6 +4,7 @@ using System.Text.Json.Nodes;
 
 using AwesomeAssertions;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
@@ -27,7 +28,7 @@ public sealed class EnvelopeCodecRecusaDesempateEEliminacaoTests
     {
         JsonObject criterio = envelope["criteriosDesempate"]!.AsArray()[5]!.AsObject();
         criterio["regra"]!["codigo"]!.GetValue<string>().Should().Be(
-            CriterioDesempateCodigo.MaiorNotaAreaEnem, "pré-condição: o índice 5 é o desempate por área do ENEM");
+            RegraDeDesempate.MaiorNotaPorAreaDoEnem.Codigo(), "pré-condição: o índice 5 é o desempate por área do ENEM");
         return criterio["parametros"]!.AsObject();
     }
 
@@ -93,7 +94,7 @@ public sealed class EnvelopeCodecRecusaDesempateEEliminacaoTests
         {
             JsonObject falta = Navegar(envelope, "classificacao.regrasEliminacao.4");
             falta["regra"]!["codigo"]!.GetValue<string>().Should().Be(
-                RegraEliminacaoCodigo.ElimFaltaEmDiaDeProvaEnem, "pré-condição: o índice 4 é a eliminação por falta em dia de prova");
+                RegraDeEliminacaoPorCalculo.FaltaEmDiaDeProvaDoEnem.Codigo(), "pré-condição: o índice 4 é a eliminação por falta em dia de prova");
             falta["parametros"]!.AsObject()["chaveIntrusa"] = "x";
         });
 
@@ -110,7 +111,7 @@ public sealed class EnvelopeCodecRecusaDesempateEEliminacaoTests
             JsonArray regras = Navegar(envelope, "classificacao")["regrasEliminacao"]!.AsArray();
             JsonNode falta = regras[4]!;
             falta["regra"]!["codigo"]!.GetValue<string>().Should().Be(
-                RegraEliminacaoCodigo.ElimFaltaEmDiaDeProvaEnem, "pré-condição: o índice 4 é a eliminação por falta em dia de prova");
+                RegraDeEliminacaoPorCalculo.FaltaEmDiaDeProvaDoEnem.Codigo(), "pré-condição: o índice 4 é a eliminação por falta em dia de prova");
             regras.Insert(4, falta.DeepClone());
         });
 
@@ -120,7 +121,7 @@ public sealed class EnvelopeCodecRecusaDesempateEEliminacaoTests
 
     private static JsonNode AusenciaNaEtapaDoEnvelope(JsonObject envelope) =>
         Navegar(envelope, "classificacao")["regrasEliminacao"]!.AsArray()
-            .Single(regra => regra!["regra"]!["codigo"]!.GetValue<string>() == RegraEliminacaoCodigo.ElimAusenciaNaEtapa)!;
+            .Single(regra => regra!["regra"]!["codigo"]!.GetValue<string>() == RegraDeEliminacaoPorCalculo.AusenciaNaEtapa.Codigo())!;
 
     [Fact(DisplayName = "classificacao.regrasEliminacao[].parametros da ausência na etapa com chave intrusa é recusado")]
     public void EliminacaoPorAusenciaNaEtapa_ChaveIntrusaNosParametros_Recusa()
@@ -153,7 +154,7 @@ public sealed class EnvelopeCodecRecusaDesempateEEliminacaoTests
         {
             JsonObject corte = Navegar(envelope, "classificacao.regrasEliminacao.0");
             corte["regra"]!["codigo"]!.GetValue<string>().Should().Be(
-                RegraEliminacaoCodigo.ElimCorteEmArea, "pré-condição: o índice 0 é o corte em área");
+                RegraDeEliminacaoPorCalculo.CorteEmAreaDoEnem.Codigo(), "pré-condição: o índice 0 é o corte em área");
             corte["parametros"]!["areaCodigo"] = "FISICA";
         });
 
@@ -169,7 +170,7 @@ public sealed class EnvelopeCodecRecusaDesempateEEliminacaoTests
             JsonArray regras = Navegar(envelope, "classificacao")["regrasEliminacao"]!.AsArray();
             JsonNode corte = regras[0]!;
             corte["regra"]!["codigo"]!.GetValue<string>().Should().Be(
-                RegraEliminacaoCodigo.ElimCorteEmArea, "pré-condição: o índice 0 é o corte em área");
+                RegraDeEliminacaoPorCalculo.CorteEmAreaDoEnem.Codigo(), "pré-condição: o índice 0 é o corte em área");
             JsonNode outro = corte.DeepClone();
             outro["parametros"]!["minimo"] = "500.0000";
             regras.Insert(1, outro);
@@ -186,7 +187,7 @@ public sealed class EnvelopeCodecRecusaDesempateEEliminacaoTests
         {
             JsonObject corte = Navegar(envelope, "classificacao.regrasEliminacao.0");
             corte["regra"]!["codigo"]!.GetValue<string>().Should().Be(
-                RegraEliminacaoCodigo.ElimCorteEmArea, "pré-condição: o índice 0 é o corte em área");
+                RegraDeEliminacaoPorCalculo.CorteEmAreaDoEnem.Codigo(), "pré-condição: o índice 0 é o corte em área");
             corte["parametros"]!.AsObject().Remove("areaCodigo");
         });
 

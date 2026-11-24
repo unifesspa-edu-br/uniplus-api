@@ -2,6 +2,7 @@ namespace Unifesspa.UniPlus.Selecao.Domain.UnitTests.Entities;
 
 using AwesomeAssertions;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
@@ -12,7 +13,7 @@ public sealed class ConfiguracaoTaxaInscricaoTests
     public void Criar_CobraComValorPositivo_Sucesso()
     {
         Result<ConfiguracaoTaxaInscricao> resultado = ConfiguracaoTaxaInscricao.Criar(
-            cobra: true, valor: 150.00m, fundamentosCodigos: [FundamentoIsencaoCodigo.CadastroUnico]);
+            cobra: true, valor: 150.00m, fundamentosCodigos: ["CADASTRO_UNICO"]);
 
         resultado.IsSuccess.Should().BeTrue();
         resultado.Value!.Cobra.Should().BeTrue();
@@ -27,7 +28,7 @@ public sealed class ConfiguracaoTaxaInscricaoTests
     public void Criar_CobraComValorInvalido_Falha(double? valor)
     {
         Result<ConfiguracaoTaxaInscricao> resultado = ConfiguracaoTaxaInscricao.Criar(
-            cobra: true, valor: (decimal?)valor, fundamentosCodigos: [FundamentoIsencaoCodigo.CadastroUnico]);
+            cobra: true, valor: (decimal?)valor, fundamentosCodigos: ["CADASTRO_UNICO"]);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("ConfiguracaoTaxaInscricao.ValorObrigatorioQuandoCobra");
@@ -59,7 +60,7 @@ public sealed class ConfiguracaoTaxaInscricaoTests
     public void Criar_NaoCobraComFundamento_Falha()
     {
         Result<ConfiguracaoTaxaInscricao> resultado = ConfiguracaoTaxaInscricao.Criar(
-            cobra: false, valor: null, fundamentosCodigos: [FundamentoIsencaoCodigo.CadastroUnico]);
+            cobra: false, valor: null, fundamentosCodigos: ["CADASTRO_UNICO"]);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("ConfiguracaoTaxaInscricao.FundamentoExigeCobranca");
@@ -130,7 +131,7 @@ public sealed class ConfiguracaoTaxaInscricaoTests
     {
         Result<ConfiguracaoTaxaInscricao> resultado = ConfiguracaoTaxaInscricao.Criar(
             cobra: true, valor: 100m,
-            fundamentosCodigos: [FundamentoIsencaoCodigo.CadastroUnico, FundamentoIsencaoCodigo.DoacaoMedulaOssea]);
+            fundamentosCodigos: ["CADASTRO_UNICO", "DOACAO_MEDULA_OSSEA"]);
 
         resultado.IsSuccess.Should().BeTrue(
             "com fundamento obrigatório, declarar quais fundamentos é a própria decisão — não há " +
@@ -144,21 +145,21 @@ public sealed class ConfiguracaoTaxaInscricaoTests
         Result<ConfiguracaoTaxaInscricao> resultado = ConfiguracaoTaxaInscricao.Criar(
             cobra: true, valor: 100m,
             fundamentosCodigos: [
-                FundamentoIsencaoCodigo.DoacaoMedulaOssea,
-                FundamentoIsencaoCodigo.CadastroUnico,
-                FundamentoIsencaoCodigo.DoacaoMedulaOssea,
+                "DOACAO_MEDULA_OSSEA",
+                "CADASTRO_UNICO",
+                "DOACAO_MEDULA_OSSEA",
             ]);
 
         resultado.IsSuccess.Should().BeTrue();
-        resultado.Value!.Fundamentos.Select(static f => f.ToCodigo()).Should().Equal(
-            FundamentoIsencaoCodigo.CadastroUnico, FundamentoIsencaoCodigo.DoacaoMedulaOssea);
+        resultado.Value!.Fundamentos.Select(static f => f.Codigo()).Should().Equal(
+            "CADASTRO_UNICO", "DOACAO_MEDULA_OSSEA");
     }
 
     [Fact(DisplayName = "Criar com cobra=false, valor informado e fundamento configurado acumula as duas violações")]
     public void Criar_NaoCobraComValorEFundamento_AcumulaAsDuasViolacoes()
     {
         Result<ConfiguracaoTaxaInscricao> resultado = ConfiguracaoTaxaInscricao.Criar(
-            cobra: false, valor: 10m, fundamentosCodigos: [FundamentoIsencaoCodigo.CadastroUnico]);
+            cobra: false, valor: 10m, fundamentosCodigos: ["CADASTRO_UNICO"]);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Errors.Should().HaveCount(2);
@@ -184,7 +185,7 @@ public sealed class ConfiguracaoTaxaInscricaoTests
         Result<ConfiguracaoTaxaInscricao> resultado = ConfiguracaoTaxaInscricao.Criar(
             cobra: true,
             valor: 150.00m,
-            fundamentosCodigos: [FundamentoIsencaoCodigo.CarenciaSocioeconomica]);
+            fundamentosCodigos: ["CARENCIA_SOCIOECONOMICA"]);
 
         resultado.IsSuccess.Should().BeTrue();
         resultado.Value!.Fundamentos.Should().Equal(FundamentoIsencao.CarenciaSocioeconomica);
@@ -196,7 +197,7 @@ public sealed class ConfiguracaoTaxaInscricaoTests
         Result<ConfiguracaoTaxaInscricao> resultado = ConfiguracaoTaxaInscricao.Criar(
             cobra: true,
             valor: 150.00m,
-            fundamentosCodigos: [.. FundamentoIsencaoCodigo.Codigos]);
+            fundamentosCodigos: [.. CatalogoDe<FundamentoIsencao>.Todos().Select(static v => v.Codigo)]);
 
         resultado.IsSuccess.Should().BeTrue();
         resultado.Value!.Fundamentos.Should().HaveCount(3);

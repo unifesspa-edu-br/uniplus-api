@@ -4,6 +4,7 @@ using System.Linq;
 
 using Enums;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Domain.Entities;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Kernel.Results;
@@ -93,7 +94,7 @@ public sealed class DocumentoExigido : EntityBase, IParteDoProcesso
     public bool Obrigatorio { get; private set; }
 
     /// <summary>
-    /// ∈ {ELIMINA, RECLASSIFICA_AC, REMOVE_VANTAGEM, PENDENCIA_REENVIO} quando presente
+    /// ∈ {ELIMINA, RECLASSIFICA_AC, REMOVE_VANTAGEM, ABRE_PRAZO_PARA_REENVIO} quando presente
     /// (ADR-0074). Campo de transporte — a coerência com <c>ModalidadeSelecionada.AcaoQuandoIndeferido</c>
     /// é validada na PR #903 (CA-05), sem duplicar campo.
     /// </summary>
@@ -119,7 +120,7 @@ public sealed class DocumentoExigido : EntityBase, IParteDoProcesso
     private DocumentoExigido() { }
 
     public static List<FieldError> ValidarFormaBasica(
-        Aplicabilidade aplicabilidade, string? consequenciaIndeferimento, int quantidadeCondicoes,
+        Aplicabilidade? aplicabilidade, string? consequenciaIndeferimento, int quantidadeCondicoes,
         FinalidadeFormulario? finalidade = null, IReadOnlyList<string>? fatosComprovados = null)
     {
         List<FieldError> erros = finalidade is { } declarada ? FormaDoCabecalho.ValidarFinalidade(declarada) : [];
@@ -129,9 +130,9 @@ public sealed class DocumentoExigido : EntityBase, IParteDoProcesso
         return erros;
     }
 
-    private static void ValidarAplicabilidade(Aplicabilidade aplicabilidade, int quantidadeCondicoes, List<FieldError> erros)
+    private static void ValidarAplicabilidade(Aplicabilidade? aplicabilidade, int quantidadeCondicoes, List<FieldError> erros)
     {
-        if (aplicabilidade == Aplicabilidade.Nenhuma)
+        if (aplicabilidade is null)
         {
             erros.Add(new("aplicabilidade", new DomainError("DocumentoExigido.AplicabilidadeObrigatoria",
                 "A aplicabilidade da exigência documental é obrigatória e deve ser GERAL ou CONDICIONAL.")));
@@ -147,10 +148,10 @@ public sealed class DocumentoExigido : EntityBase, IParteDoProcesso
     private static void ValidarConsequencia(string? consequencia, List<FieldError> erros)
     {
         string? normalizada = NormalizarConsequencia(consequencia);
-        if (normalizada is not null && !ConsequenciaIndeferimentoCodigo.Validas.Contains(normalizada, StringComparer.Ordinal))
+        if (normalizada is not null && !CatalogoDe<ConsequenciaDoIndeferimento>.TentarObter(normalizada, out _))
         {
             erros.Add(new("consequenciaIndeferimento", new DomainError("DocumentoExigido.ConsequenciaIndeferimentoInvalida",
-                $"Consequência de indeferimento inválida — esperado um de: {string.Join(", ", ConsequenciaIndeferimentoCodigo.Validas)}.")));
+                $"Consequência de indeferimento inválida — esperado um de: {string.Join(", ", CatalogoDe<ConsequenciaDoIndeferimento>.Valores().Select(static valor => valor.Codigo()))}.")));
         }
     }
 
@@ -212,7 +213,8 @@ public sealed class DocumentoExigido : EntityBase, IParteDoProcesso
         Finalidade = declarado.Momento.Finalidade;
         CopiarTipo(declarado.Tipo);
         FatosComprovados = [.. declarado.FatosComprovados?.Select(static f => f.Trim()) ?? []];
-        Aplicabilidade = declarado.Aplicabilidade.Tipo;
+        Aplicabilidade = declarado.Aplicabilidade.Tipo
+            ?? throw new ArgumentException("A exigência deve declarar a aplicabilidade.", nameof(declarado));
         Obrigatorio = declarado.Indeferimento.Obrigatorio;
         ConsequenciaIndeferimento = NormalizarConsequencia(declarado.Indeferimento.Consequencia);
         Requisitos = declarado.Requisitos;

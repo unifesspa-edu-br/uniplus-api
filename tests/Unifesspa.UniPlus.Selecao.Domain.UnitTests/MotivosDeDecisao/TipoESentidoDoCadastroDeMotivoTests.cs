@@ -78,7 +78,7 @@ public sealed class TipoESentidoDoCadastroDeMotivoTests
     public void Validar_CamposInvalidos_NaoRepeteOsValoresRecebidos()
     {
         Result<CamposValidados> resultado = ValidacaoDoMotivo.Validar(new CamposDoMotivo(
-            TipoMotivoDeDecisao.IsencaoDaTaxa.Codigo(), CodigoRecusado, DescricaoRecusada, SubclassificacaoRecusada, SentidoDoMotivo.Nenhum));
+            TipoMotivoDeDecisao.IsencaoDaTaxa.Codigo(), CodigoRecusado, DescricaoRecusada, SubclassificacaoRecusada, null));
 
         resultado.Errors.Select(erro => erro.Error.Code).Should().BeEquivalentTo(
         [

@@ -3,6 +3,7 @@ namespace Unifesspa.UniPlus.Selecao.Application.UnitTests.Commands;
 using AwesomeAssertions;
 
 using Unifesspa.UniPlus.Configuracao.Contracts;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Enums;
@@ -24,11 +25,10 @@ public sealed class MunicipiosDaProvaPresencialTests
     private const string Codigo = "CIDADE_DE_PROVA";
 
     [Fact]
-    public void Origem_FonteDaProva_MapeiaCodigoEValorPersistido()
+    public void Origem_FonteDaProva_MapeiaParaOCodigoDeContrato()
     {
         VocabularioDeFatos.OrigemValores(Fato()).Should().Be(OrigemValoresColeta.MunicipiosDaProvaPresencial);
-        OrigemValoresColeta.MunicipiosDaProvaPresencial.ToCodigo().Should().Be(Fonte);
-        ((int)OrigemValoresColeta.MunicipiosDaProvaPresencial).Should().Be(4);
+        OrigemValoresColeta.MunicipiosDaProvaPresencial.Codigo().Should().Be("MUNICIPIOS_DA_PROVA_PRESENCIAL");
         VocabularioDeFatos.Classificar(Fato()).Should().Be(TipoDominioFato.CategoricoDinamico);
     }
 

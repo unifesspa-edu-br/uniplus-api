@@ -3,6 +3,7 @@ namespace Unifesspa.UniPlus.Selecao.IntegrationTests.ProcessosSeletivos;
 using AwesomeAssertions;
 
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Kernel.Tempo;
 using Unifesspa.UniPlus.Regras.ValueObjects;
@@ -77,24 +78,10 @@ internal static class ProcessoSeletivoPublicacaoSeeder
         processo.DefinirAtendimentoEspecializado(
             AtendimentoEspecializado.Criar([], [], []).Value!).IsSuccess.Should().BeTrue();
 
-    private static ModalidadeSelecionada ModalidadeAmplaDeTeste() => ModalidadeSelecionada.Criar(
-        modalidadeOrigemId: Guid.CreateVersion7(),
-        codigo: "AC",
-        descricao: null,
-        naturezaLegal: NaturezaLegalModalidade.Ampla,
-        composicaoVagas: ComposicaoVagasModalidade.RestanteDasVagasOfertadas,
-        composicaoOrigemCodigo: null,
-        regraRemanejamento: RegraRemanejamentoModalidade.Nenhuma,
-        remanejamentoDestino: null,
-        remanejamentoPar: null,
-        remanejamentoFallback: null,
-        regraDeAplicabilidade: RegrasDeAplicabilidadeDeTeste.DaNatureza(NaturezaLegalModalidade.Ampla),
-        acaoQuandoIndeferido: null,
-        baseLegal: "Res. Unifesspa 532/2021",
-        quantidadeDeclarada: 40).Value!;
+    private static ModalidadeSelecionada ModalidadeAmplaDeTeste() => ModalidadeSelecionada.Criar(ModalidadesNoCadastroDeTeste.Da("AC", NaturezaLegalModalidade.Ampla, ComposicaoVagasModalidade.RestanteDasVagasOfertadas) with { RegraRemanejamento = null, BaseLegal = "Res. Unifesspa 532/2021" }, 40).Value!;
 
     private static ConfiguracaoDistribuicaoVagas DistribuicaoDaModalidadeAmpla() => ConfiguracaoDistribuicaoVagas.Criar(Guid.CreateVersion7(),
-        new DistribuicaoDeVagasDeclarada { VagasOfertadasBase = 40, PercentualDaReservaLegal = 1m, RegraDeDistribuicao = Regra(RegraDistribuicaoVagasCodigo.Institucional), Modalidades = [ModalidadeAmplaDeTeste()] },
+        new DistribuicaoDeVagasDeclarada { VagasOfertadasBase = 40, PercentualDaReservaLegal = 1m, RegraDeDistribuicao = Regra(RegraDeDistribuicaoDeVagas.Institucional.Codigo()), Modalidades = [ModalidadeAmplaDeTeste()] },
         new FatosDaOfertaNoCadastro { OfertaCurso = OfertaCursoDeTeste.Medicina }).Value!;
 
     private static void DefinirClassificacaoImportadaEFaseDeResultadoFinal(ProcessoSeletivo processo, DateTimeOffset? inicioDaFase = null, FaseCronograma? fase = null)
@@ -107,8 +94,8 @@ internal static class ProcessoSeletivoPublicacaoSeeder
     {
         ConfiguracaoClassificacao classificacao = ConfiguracaoClassificacao.Criar(new DeclaracaoDaClassificacao
         {
-            RegraCalculo = Regra(RegraCalculoCodigo.ClassificacaoImportada),
-            RegraOrdemAlocacao = Regra(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria),
+            RegraCalculo = Regra(RegraDeCalculoDaNota.ClassificacaoImportada.Codigo()),
+            RegraOrdemAlocacao = Regra(RegraDeOrdemDeAlocacao.PrimeiraOpcaoPrioritaria.Codigo()),
         }).Value!;
         processo.DefinirClassificacao(classificacao).IsSuccess.Should().BeTrue();
     }
@@ -144,7 +131,7 @@ internal static class ProcessoSeletivoPublicacaoSeeder
         taxaResult.IsSuccess.Should().BeTrue(taxaResult.Error?.Message);
         processo.DefinirTaxaInscricao(taxaResult.Value!).IsSuccess.Should().BeTrue();
         DeclaracoesObrigatoriasDeTeste.Declarar(processo);
-        CriterioDesempate criterio = CriterioDesempate.Criar(1, Regra(CriterioDesempateCodigo.MaiorIdade), new ParametrosDesempateMaiorIdade()).Value!;
+        CriterioDesempate criterio = CriterioDesempate.Criar(1, Regra(RegraDeDesempate.MaiorIdade.Codigo()), new ParametrosDesempateMaiorIdade()).Value!;
         processo.DefinirCriteriosDesempate([criterio]).IsSuccess.Should().BeTrue();
     }
 
@@ -152,7 +139,7 @@ internal static class ProcessoSeletivoPublicacaoSeeder
     /// Processo com a oferta federal completa (Lei 12.711: as 8 modalidades federais +
     /// AC, referência demográfica, regra de ajuste) e, por padrão, a cascata de
     /// remanejamento que a cobre — a matriz legal completa (8×7, fallback AC), a mesma
-    /// forma semeada em <c>REMANEJ-CASCATA-LEI-12711 v1</c>. É o processo mínimo que
+    /// forma semeada em <c>REMANEJAMENTO_ORDEM_LEI_12711 v1</c>. É o processo mínimo que
     /// <c>PendenciaDaCascata</c> considera conforme quando a oferta usa o regime federal
     /// (Story #575) — as demais quatro dimensões estruturais (etapas, atendimento,
     /// classificação, cronograma) são as mesmas de <see cref="NovoProcessoConforme"/>.
@@ -192,8 +179,8 @@ internal static class ProcessoSeletivoPublicacaoSeeder
             {
                 VagasOfertadasBase = 50,
                 PercentualDaReservaLegal = 0.5m,
-                RegraDeDistribuicao = Regra(RegraDistribuicaoVagasCodigo.Lei12711),
-                RegraDeAjuste = Regra(RegraAjusteDistribuicaoVagasCodigo.ReconciliacaoArt11ParagrafoUnico),
+                RegraDeDistribuicao = Regra(RegraDeDistribuicaoDeVagas.Lei12711.Codigo()),
+                RegraDeAjuste = Regra(RegraDeAjusteDaDistribuicaoDeVagas.AjusteDoTotalPeloArtigo11.Codigo()),
                 ReferenciaDemografica = ReferenciaReservaDemograficaSnapshot.Criar(
                 Guid.CreateVersion7(), "Censo IBGE 2022", 78.55m, 1.20m, 8.40m, "Lei 12.711/2012 art. 3º").Value!,
                 Modalidades = modalidades
@@ -208,21 +195,11 @@ internal static class ProcessoSeletivoPublicacaoSeeder
         return modalidades;
     }
 
-    private static ModalidadeSelecionada ModalidadeAmplaFederal() => ModalidadeSelecionada.Criar(
-        Guid.CreateVersion7(), "AC", "Ampla concorrência",
-        NaturezaLegalModalidade.Ampla, ComposicaoVagasModalidade.RestanteDasVagasOfertadas, null,
-        RegraRemanejamentoModalidade.Nenhuma, null, null, null,
-        regraDeAplicabilidade: RegrasDeAplicabilidadeDeTeste.DaNatureza(NaturezaLegalModalidade.Ampla), acaoQuandoIndeferido: null,
-        baseLegal: "Lei 12.711/2012 art. 1º").Value!;
+    private static ModalidadeSelecionada ModalidadeAmplaFederal() => ModalidadeSelecionada.Criar(ModalidadesNoCadastroDeTeste.Da("AC", NaturezaLegalModalidade.Ampla, ComposicaoVagasModalidade.RestanteDasVagasOfertadas) with { Descricao = "Ampla concorrência", RegraRemanejamento = null, BaseLegal = "Lei 12.711/2012 art. 1º" }).Value!;
 
-    private static ModalidadeSelecionada ModalidadeFederal(string codigo) => ModalidadeSelecionada.Criar(
-        Guid.CreateVersion7(), codigo, $"Reserva {codigo}",
-        NaturezaLegalModalidade.CotaReservada, ComposicaoVagasModalidade.DentroDaReservaLegal, null,
-        RegraRemanejamentoModalidade.SegueCascata, null, null, null,
-        regraDeAplicabilidade: RegrasDeAplicabilidadeDeTeste.DaNatureza(NaturezaLegalModalidade.CotaReservada), acaoQuandoIndeferido: "RECLASSIFICAR_AC",
-        baseLegal: "Lei 12.711/2012, alterada pela Lei 14.723/2023").Value!;
+    private static ModalidadeSelecionada ModalidadeFederal(string codigo) => ModalidadeSelecionada.Criar(ModalidadesNoCadastroDeTeste.Da(codigo, NaturezaLegalModalidade.CotaReservada, ComposicaoVagasModalidade.DentroDaReservaLegal) with { Descricao = $"Reserva {codigo}", RegraRemanejamento = RegraRemanejamentoModalidade.SegueOrdemDeRemanejamento, AcaoQuandoIndeferido = "RECLASSIFICAR_AC", BaseLegal = "Lei 12.711/2012, alterada pela Lei 14.723/2023" }).Value!;
 
-    /// <summary>A matriz legal completa (8×7), fallback AC — mesma forma semeada em REMANEJ-CASCATA-LEI-12711 v1.</summary>
+    /// <summary>A matriz legal completa (8×7), fallback AC — mesma forma semeada em REMANEJAMENTO_ORDEM_LEI_12711 v1.</summary>
     internal static ConfiguracaoCascataRemanejamento CascataLegalCompleta(char semente = 'f')
     {
         IReadOnlyList<string> origens = ModalidadesFederaisLei12711.Codigos;
@@ -237,7 +214,7 @@ internal static class ProcessoSeletivoPublicacaoSeeder
         }
 
         return ConfiguracaoCascataRemanejamento.Criar(
-            ReferenciaRegra.De(RegraRemanejamentoCodigo.Cascata, "v1", new string(semente, 64)), ModalidadesFederaisLei12711.Ac, destinos).Value!;
+            ReferenciaRegra.De(CriterioDeRemanejamento.OrdemDaLei12711.Codigo(), "v1", new string(semente, 64)), ModalidadesFederaisLei12711.Ac, destinos).Value!;
     }
 
     /// <summary>
@@ -298,20 +275,10 @@ internal static class ProcessoSeletivoPublicacaoSeeder
         await context.SaveChangesAsync(CancellationToken.None);
     }
 
-    private static ModalidadeSelecionada AmplaDaOfertaFederal() => ModalidadeSelecionada.Criar(
-                Guid.CreateVersion7(), "AC", "Ampla concorrência",
-                NaturezaLegalModalidade.Ampla, ComposicaoVagasModalidade.RestanteDasVagasOfertadas, null,
-                RegraRemanejamentoModalidade.Nenhuma, null, null, null,
-                regraDeAplicabilidade: RegrasDeAplicabilidadeDeTeste.DaNatureza(NaturezaLegalModalidade.Ampla), acaoQuandoIndeferido: null,
-                baseLegal: "Lei 12.711/2012 art. 1º").Value!;
+    private static ModalidadeSelecionada AmplaDaOfertaFederal() => ModalidadeSelecionada.Criar(ModalidadesNoCadastroDeTeste.Da("AC", NaturezaLegalModalidade.Ampla, ComposicaoVagasModalidade.RestanteDasVagasOfertadas) with { Descricao = "Ampla concorrência", RegraRemanejamento = null, BaseLegal = "Lei 12.711/2012 art. 1º" }).Value!;
 
 
-    private static ModalidadeSelecionada CotaDaOfertaFederal(string codigo) => ModalidadeSelecionada.Criar(
-                Guid.CreateVersion7(), codigo, $"Reserva {codigo}",
-                NaturezaLegalModalidade.CotaReservada, ComposicaoVagasModalidade.DentroDaReservaLegal, null,
-                RegraRemanejamentoModalidade.SegueCascata, null, null, null,
-                regraDeAplicabilidade: RegrasDeAplicabilidadeDeTeste.DaNatureza(NaturezaLegalModalidade.CotaReservada), acaoQuandoIndeferido: "RECLASSIFICAR_AC",
-                baseLegal: "Lei 12.711/2012, alterada pela Lei 14.723/2023").Value!;
+    private static ModalidadeSelecionada CotaDaOfertaFederal(string codigo) => ModalidadeSelecionada.Criar(ModalidadesNoCadastroDeTeste.Da(codigo, NaturezaLegalModalidade.CotaReservada, ComposicaoVagasModalidade.DentroDaReservaLegal) with { Descricao = $"Reserva {codigo}", RegraRemanejamento = RegraRemanejamentoModalidade.SegueOrdemDeRemanejamento, AcaoQuandoIndeferido = "RECLASSIFICAR_AC", BaseLegal = "Lei 12.711/2012, alterada pela Lei 14.723/2023" }).Value!;
 
 
     private static IReadOnlyList<ModalidadeSelecionada> ModalidadesDaOfertaFederal() =>

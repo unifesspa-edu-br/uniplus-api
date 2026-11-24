@@ -91,3 +91,19 @@ O campo de texto de um contrato que carrega o código de um desses enums é marc
 ## Emenda (2026-11-22) — projeto de testes
 
 A conferência das declarações dos enums alcançados ocorre na subida de cada executável. Não há teste que exija o alcance de todo enum: um tipo não referenciado por um executável não integra seu contrato. A conferência da montagem dos modelos é executada em `Unifesspa.UniPlus.Contratos.UnitTests`.
+
+### Emenda: código da regra no catálogo
+
+Em `RegraCatalogoDto`, `codigo` continua sendo texto, pois identifica a regra. Quando há enum de contrato para a regra, `rotulo` acompanha esse código. O campo `tipo` contém o código e o rótulo do tipo da regra.
+
+## Emenda 3 (2026-11-23) — todo enum gravado declara o código; o rótulo vai ao lado, só para leitura, nos documentos
+
+Decisões do líder técnico (23/11/2026).
+
+1. **Todo enum que é gravado declara o código.** Todo enum do processo seletivo, dos documentos e da inscrição que é gravado no banco, no documento congelado ou no documento da configuração declara código e rótulo pelo atributo (item 1). A coluna do banco grava o código pelo conversor da convenção (`ConversaoDosEnumsDeContrato`); nenhuma coluna grava o número do membro. O item 5 vale sem exceção: um código só por valor, igual no banco, na resposta, no documento congelado e nos documentos. Onde hoje há duas grafias, vale a da resposta: `Aplicabilidade` usa `GERAL` e `CONDICIONAL`, e `CategoriaObrigatoriedade` usa `ETAPA` (com a emenda da ADR-0058, porque o resumo da obrigatoriedade legal passa a usar o código).
+2. **O código decide; o rótulo vai ao lado, só para leitura.** O item 9 fica assim para o documento congelado e para o documento da configuração: o valor é gravado pelo código declarado, e o rótulo vai ao lado, só para leitura, como foto do momento em que o documento foi escrito (no documento congelado, o momento da publicação).
+   - No documento congelado, todo objeto que grava valor de enum pelo código leva o subobjeto `contexto`, com o rótulo de cada um desses valores.
+   - No documento da configuração (`v1`), o rótulo é a propriedade solta `{campo}Rotulo`, com `readOnly`, ao lado do campo.
+   - Quem lê decide só pelo código e ignora o rótulo; a importação ignora o rótulo; a retificação não conta a diferença de rótulo como mudança. As colunas JSON e as mensagens entre módulos e para fora continuam só com o código.
+3. **Comentário da coluna.** O comentário de cada coluna de enum (ADR-0124) lista os códigos aceitos, sem os rótulos, e é escrito pela convenção `ConversaoDosEnumsDeContrato`, a partir do atributo do enum.
+4. **Rota do tipo de fase.** O item 1 da emenda 2 ("rota publicada não muda de nome") vale a partir da primeira publicação em produção. Antes dela, as rotas de `fases-canonicas` passam a `tipos-de-fase`, o nome da tabela (uniplus-api#2761): `/api/configuracao/tipos-de-fase`, `/api/configuracao/admin/tipos-de-fase` e `/api/configuracao/vocabularios/tipos-de-fase`, sem manter a rota antiga.

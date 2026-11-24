@@ -5,7 +5,7 @@
     "nome": "Resultado Importado de Exemplo 2027",
     "tipoProcessoCodigo": "PSR",
     "unidadeAdministradoraCodigo": "CEPS",
-    "origemCandidatos": "importacaoExterna",
+    "origemCandidatos": "IMPORTACAO_EXTERNA",
     "localidadeCodigoIbge": "1504208",
     "identificadorLegivel": "resultado-importado-2027"
   },

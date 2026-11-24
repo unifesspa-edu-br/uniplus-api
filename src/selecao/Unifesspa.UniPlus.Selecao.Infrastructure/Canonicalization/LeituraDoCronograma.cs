@@ -37,7 +37,7 @@ internal static class LeituraDoCronograma
         JsonObject bloco = leitor.Objeto(payload, "cronogramaFases", "$");
         leitor.ExigirChaves(bloco, "cronogramaFases", "origemCandidatos", "fases");
 
-        leitor.Enumeracao<OrigemCandidatos>(bloco, "origemCandidatos", "cronogramaFases");
+        leitor.CodigoDeContrato<OrigemCandidatos>(bloco, "origemCandidatos", "cronogramaFases");
 
         JsonArray array = leitor.Array(bloco, "fases", "cronogramaFases");
         return leitor.Falhou ? [] : LerFases(leitor, array);
@@ -80,7 +80,7 @@ internal static class LeituraDoCronograma
     private static OrigemCanonicaDaFase LerOrigemCanonica(LeitorEnvelope leitor, JsonObject item, string path) => new(
         leitor.Identificador(item, "tipoFaseOrigemId", path),
         leitor.TextoNaoVazio(item, "codigo", path, LimitesDoEnvelope.FaseCodigo),
-        leitor.Enumeracao<OrigemDataFase>(item, "origemData", path),
+        leitor.CodigoDeContrato<OrigemDataFase>(item, "origemData", path),
         leitor.Booleano(item, "agrupaEtapas", path),
         leitor.Booleano(item, "permiteComplementacao", path),
         leitor.Booleano(item, "coletaInscricao", path),
@@ -212,7 +212,7 @@ internal static class LeituraDoCronograma
         leitor.ExigirChaves(item, path, "id", "atoCodigo", "papel");
         Guid? id = leitor.Identificador(item, "id", path);
         string atoCodigo = leitor.TextoNaoVazio(item, "atoCodigo", path, LimitesDoEnvelope.TipoAtoCodigo);
-        PapelProdutoFase? papel = leitor.EnumeracaoOpcional<PapelProdutoFase>(item, "papel", path);
+        PapelDaPublicacaoPrevista? papel = leitor.CodigoDeContratoOpcional<PapelDaPublicacaoPrevista>(item, "papel", path);
 
         return leitor.Falhou ? null : ProdutoDaFase.Reidratar(id!.Value, atoCodigo, papel);
     }

@@ -1,7 +1,9 @@
 namespace Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 using Unifesspa.UniPlus.Kernel.Domain.Cidades;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Errors;
 
 /// <summary>
@@ -28,7 +30,7 @@ public sealed record DiaNaoUtilCongelado
 {
     private DiaNaoUtilCongelado(
         DateOnly data,
-        string abrangencia,
+        AbrangenciaDoDiaNaoUtil abrangencia,
         string? municipioIbge,
         string? municipioNome,
         string? uf)
@@ -43,8 +45,8 @@ public sealed record DiaNaoUtilCongelado
     /// <summary>A data não útil.</summary>
     public DateOnly Data { get; }
 
-    /// <summary>Token canônico da abrangência — um valor de <see cref="AbrangenciaDiaNaoUtil"/>.</summary>
-    public string Abrangencia { get; }
+    /// <summary>Token canônico da abrangência — um valor de <see cref="AbrangenciaDoDiaNaoUtil"/>.</summary>
+    public AbrangenciaDoDiaNaoUtil Abrangencia { get; }
 
     /// <summary>Código IBGE de sete dígitos, presente apenas quando a abrangência é municipal.</summary>
     public string? MunicipioIbge { get; }
@@ -71,11 +73,6 @@ public sealed record DiaNaoUtilCongelado
         string? municipioNome,
         string? uf)
     {
-        // O decoder do envelope recusa o default de DateOnly — é assim que uma data omitida se
-        // materializa, e reidratar "0001-01-01" como data legítima seria aceitar um dia que
-        // ninguém declarou. Recusar aqui é o que impede o caminho oposto, mais grave: congelar
-        // o default numa versão publicada a tornaria impossível de reidratar para sempre, e com
-        // ela morreriam a reidratação e a retificação daquele certame.
         if (data == default)
         {
             return Falha(
@@ -83,23 +80,26 @@ public sealed record DiaNaoUtilCongelado
                 "A data do dia não útil não pode ser o valor default (0001-01-01) — é assim que uma data omitida se materializa.");
         }
 
-        string? token = abrangencia?.Trim();
-        if (!AbrangenciaDiaNaoUtil.EhValida(token))
+        if (!CatalogoDe<AbrangenciaDoDiaNaoUtil>.TentarObter(abrangencia?.Trim(), out AbrangenciaDoDiaNaoUtil valor))
         {
-            return Falha(
-                DiaNaoUtilCongeladoErrorCodes.AbrangenciaInvalida,
-                $"Abrangência '{abrangencia}' não pertence ao vocabulário do calendário de dias úteis.");
+            return Falha(DiaNaoUtilCongeladoErrorCodes.AbrangenciaInvalida, "A abrangência não pertence ao calendário de dias úteis.");
         }
 
-        string? ibge = Vazio(municipioIbge) ? null : municipioIbge!.Trim();
-        string? nome = Vazio(municipioNome) ? null : municipioNome!.Trim();
-        string? siglaUf = Vazio(uf) ? null : uf!.Trim();
+        return CriarComAbrangencia(data, valor, municipioIbge, municipioNome, uf);
+    }
 
-        return token switch
+    private static Result<DiaNaoUtilCongelado> CriarComAbrangencia(
+        DateOnly data, AbrangenciaDoDiaNaoUtil valor, string? municipioIbge, string? municipioNome, string? uf)
+    {
+        string? ibge = Vazio(municipioIbge) ? null : municipioIbge?.Trim();
+        string? nome = Vazio(municipioNome) ? null : municipioNome?.Trim();
+        string? siglaUf = Vazio(uf) ? null : uf?.Trim();
+
+        return valor switch
         {
-            AbrangenciaDiaNaoUtil.Municipal => CriarMunicipal(data, ibge, nome, siglaUf),
-            AbrangenciaDiaNaoUtil.Estadual => CriarEstadual(data, ibge, nome, siglaUf),
-            _ => CriarSemTerritorio(data, token!, ibge, nome, siglaUf),
+            AbrangenciaDoDiaNaoUtil.Municipal => CriarMunicipal(data, ibge, nome, siglaUf),
+            AbrangenciaDoDiaNaoUtil.Estadual => CriarEstadual(data, ibge, nome, siglaUf),
+            _ => CriarSemTerritorio(data, valor, ibge, nome, siglaUf),
         };
     }
 
@@ -116,7 +116,7 @@ public sealed record DiaNaoUtilCongelado
         }
 
         return Result<DiaNaoUtilCongelado>.Success(
-            new DiaNaoUtilCongelado(data, AbrangenciaDiaNaoUtil.Municipal, ibge, nome, uf!.ToUpperInvariant()));
+            new DiaNaoUtilCongelado(data, AbrangenciaDoDiaNaoUtil.Municipal, ibge, nome, uf!.ToUpperInvariant()));
     }
 
     private static Result<DiaNaoUtilCongelado> CriarEstadual(
@@ -134,6 +134,11 @@ public sealed record DiaNaoUtilCongelado
             return Falha(DiaNaoUtilCongeladoErrorCodes.UfAusenteEmDiaEstadual, "Dia de abrangência estadual exige a UF.");
         }
 
+        return CriarComUfEstadual(data, uf);
+    }
+
+    private static Result<DiaNaoUtilCongelado> CriarComUfEstadual(DateOnly data, string uf)
+    {
         string normalizada = uf.ToUpperInvariant();
         if (!ReferenciaCidadeGeo.EhUfValida(normalizada))
         {
@@ -141,17 +146,17 @@ public sealed record DiaNaoUtilCongelado
         }
 
         return Result<DiaNaoUtilCongelado>.Success(
-            new DiaNaoUtilCongelado(data, AbrangenciaDiaNaoUtil.Estadual, null, null, normalizada));
+            new DiaNaoUtilCongelado(data, AbrangenciaDoDiaNaoUtil.Estadual, null, null, normalizada));
     }
 
     private static Result<DiaNaoUtilCongelado> CriarSemTerritorio(
-        DateOnly data, string abrangencia, string? ibge, string? nome, string? uf)
+        DateOnly data, AbrangenciaDoDiaNaoUtil abrangencia, string? ibge, string? nome, string? uf)
     {
         if (ibge is not null || nome is not null || uf is not null)
         {
             return Falha(
                 DiaNaoUtilCongeladoErrorCodes.TerritorioEmDiaSemRecorte,
-                $"Dia de abrangência {abrangencia} incide em todo lugar e não carrega município nem UF.");
+                $"Dia de abrangência {abrangencia.Rotulo()} incide em todo lugar e não carrega município nem UF.");
         }
 
         return Result<DiaNaoUtilCongelado>.Success(

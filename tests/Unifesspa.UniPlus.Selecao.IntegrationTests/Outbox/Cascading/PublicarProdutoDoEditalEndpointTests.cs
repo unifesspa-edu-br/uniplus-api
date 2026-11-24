@@ -36,35 +36,46 @@ public sealed class PublicarProdutoDoEditalEndpointTests
     {
         (CascadingApiFactory api, HttpClient client, Guid processoId, ItensDoTeste itens) = await Preparar();
         Guid documento = await PublicarAtoAvulsoEndpointTests.SemearDocumentoAsync(api, processoId, TiposDeMidiaDeDocumento.Pdf, "lista.pdf");
-        string chave = Guid.CreateVersion7().ToString("N");
 
+        await AfirmarCampoPublicoPadraoAsync(client, processoId);
+        Guid atoId = await PublicarERepetirComAMesmaChaveAsync(client, processoId, itens.Preliminar, documento);
+
+        await AtoNoRegistroCentral.LerAsync(api, atoId);
+        await AfirmarItemPublicadoUmaVezAsync(api, client, processoId, itens.Preliminar);
+        JsonElement publico = await PublicarAtoAvulsoEndpointTests.AguardarNaPaginaPublicaAsync(client, processoId, atoId);
+        publico.GetProperty("documentos").EnumerateArray().Should().ContainSingle()
+            .Which.GetProperty("papel").GetString().Should().Be("principal");
+    }
+
+    private static async Task AfirmarCampoPublicoPadraoAsync(HttpClient client, Guid processoId)
+    {
         JsonElement antes = await ConsultarItensAsync(client, processoId);
         antes.GetProperty("politicaDeDivulgacao").GetProperty("camposPublicos").EnumerateArray()
-            .Select(static c => c.GetString()).Should().Equal("numero_inscricao");
+            .Select(static c => c.GetString()).Should().Equal("NUMERO_INSCRICAO");
+    }
 
+    private static async Task<Guid> PublicarERepetirComAMesmaChaveAsync(HttpClient client, Guid processoId, Guid produtoId, Guid documento)
+    {
+        string chave = Guid.CreateVersion7().ToString("N");
         Guid atoId;
-        using (HttpResponseMessage resposta = await PublicarAsync(client, processoId, itens.Preliminar, documento, chave))
+        using (HttpResponseMessage resposta = await PublicarAsync(client, processoId, produtoId, documento, new OpcoesDaPublicacao(Chave: chave)))
         {
             resposta.StatusCode.Should().Be(HttpStatusCode.Created, await resposta.Content.ReadAsStringAsync());
             atoId = (await resposta.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("atoId").GetGuid();
         }
 
-        using (HttpResponseMessage repeticao = await PublicarAsync(client, processoId, itens.Preliminar, documento, chave))
-        {
-            repeticao.StatusCode.Should().Be(HttpStatusCode.Created);
-            (await repeticao.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("atoId").GetGuid().Should().Be(atoId);
-        }
+        using HttpResponseMessage repeticao = await PublicarAsync(client, processoId, produtoId, documento, new OpcoesDaPublicacao(Chave: chave));
+        repeticao.StatusCode.Should().Be(HttpStatusCode.Created);
+        (await repeticao.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("atoId").GetGuid().Should().Be(atoId);
+        return atoId;
+    }
 
-        await AtoNoRegistroCentral.LerAsync(api, atoId);
-
-        JsonElement preliminar = await ItemAsync(client, processoId, itens.Preliminar);
-        preliminar.GetProperty("situacao").GetString().Should().Be("publicado");
-        preliminar.GetProperty("ato").GetProperty("politicaDeDivulgacaoConfirmada").GetBoolean().Should().BeTrue();
-        (await ContarAtosDoItemAsync(api, processoId, itens.Preliminar)).Should().Be(1, "a repetição devolve a resposta guardada e não registra outro ato");
-
-        JsonElement publico = await PublicarAtoAvulsoEndpointTests.AguardarNaPaginaPublicaAsync(client, processoId, atoId);
-        publico.GetProperty("documentos").EnumerateArray().Should().ContainSingle()
-            .Which.GetProperty("papel").GetString().Should().Be("principal");
+    private static async Task AfirmarItemPublicadoUmaVezAsync(CascadingApiFactory api, HttpClient client, Guid processoId, Guid produtoId)
+    {
+        JsonElement item = await ItemAsync(client, processoId, produtoId);
+        item.GetProperty("situacao").GetProperty("codigo").GetString().Should().Be("PUBLICADO");
+        item.GetProperty("ato").GetProperty("politicaDeDivulgacaoConfirmada").GetBoolean().Should().BeTrue();
+        (await ContarAtosDoItemAsync(api, processoId, produtoId)).Should().Be(1, "a repetição devolve a resposta guardada e não registra outro ato");
     }
 
     [Fact(DisplayName = "As recusas têm erro nomeado: definitivo antes do preliminar, item de outra versão, resultado sem a confirmação e segundo envio do mesmo item, além da correção sem motivo")]
@@ -72,33 +83,23 @@ public sealed class PublicarProdutoDoEditalEndpointTests
     {
         (CascadingApiFactory api, HttpClient client, Guid processoId, ItensDoTeste itens) = await Preparar();
 
-        using (HttpResponseMessage definitivo = await PublicarAsync(client, processoId, itens.Definitivo, await DocumentoAsync(api, processoId)))
-        {
-            await PublicarAtoAvulsoEndpointTests.ExigirProblemaAsync(definitivo, "uniplus.selecao.ato_do_processo.preliminar_nao_publicado");
-        }
-
-        using (HttpResponseMessage deOutraVersao = await PublicarAsync(client, processoId, Guid.CreateVersion7(), await DocumentoAsync(api, processoId)))
-        {
-            await PublicarAtoAvulsoEndpointTests.ExigirProblemaAsync(deOutraVersao, "uniplus.selecao.ato_do_processo.produto_nao_declarado");
-        }
-
-        using (HttpResponseMessage semConfirmacao = await PublicarAsync(client, processoId, itens.Preliminar, await DocumentoAsync(api, processoId), confirma: false))
-        {
-            await PublicarAtoAvulsoEndpointTests.ExigirProblemaAsync(semConfirmacao, "uniplus.selecao.ato_do_processo.politica_de_divulgacao_nao_confirmada");
-        }
-
-        using (HttpResponseMessage semMotivo = await PublicarAsync(
-            client, processoId, itens.Preliminar, await DocumentoAsync(api, processoId), atoCorrigidoId: Guid.CreateVersion7()))
-        {
-            await PublicarAtoAvulsoEndpointTests.ExigirProblemaAsync(semMotivo, "uniplus.selecao.ato_do_processo.motivo_da_correcao_obrigatorio");
-        }
-
+        await ExigirRecusaAsync(PublicarAsync(client, processoId, itens.Definitivo, await DocumentoAsync(api, processoId)), "preliminar_nao_publicado");
+        await ExigirRecusaAsync(PublicarAsync(client, processoId, Guid.CreateVersion7(), await DocumentoAsync(api, processoId)), "produto_nao_declarado");
+        await ExigirRecusaAsync(
+            PublicarAsync(client, processoId, itens.Preliminar, await DocumentoAsync(api, processoId), new OpcoesDaPublicacao(Confirma: false)),
+            "politica_de_divulgacao_nao_confirmada");
+        await ExigirRecusaAsync(
+            PublicarAsync(client, processoId, itens.Preliminar, await DocumentoAsync(api, processoId), new OpcoesDaPublicacao(AtoCorrigidoId: Guid.CreateVersion7())),
+            "motivo_da_correcao_obrigatorio");
         await PublicarEObterOAtoAsync(api, client, processoId, itens.Preliminar);
 
-        using (HttpResponseMessage segunda = await PublicarAsync(client, processoId, itens.Preliminar, await DocumentoAsync(api, processoId)))
-        {
-            await PublicarAtoAvulsoEndpointTests.ExigirProblemaAsync(segunda, "uniplus.selecao.ato_do_processo.produto_ja_publicado");
-        }
+        await ExigirRecusaAsync(PublicarAsync(client, processoId, itens.Preliminar, await DocumentoAsync(api, processoId)), "produto_ja_publicado");
+    }
+
+    private static async Task ExigirRecusaAsync(Task<HttpResponseMessage> envio, string codigoDoErro)
+    {
+        using HttpResponseMessage resposta = await envio;
+        await PublicarAtoAvulsoEndpointTests.ExigirProblemaAsync(resposta, $"uniplus.selecao.ato_do_processo.{codigoDoErro}");
     }
 
     [Fact(DisplayName = "A errata do preliminar não esbarra na unicidade e vira a cabeça da cadeia; depois do definitivo o preliminar não se corrige, e o definitivo sim")]
@@ -106,43 +107,40 @@ public sealed class PublicarProdutoDoEditalEndpointTests
     {
         (CascadingApiFactory api, HttpClient client, Guid processoId, ItensDoTeste itens) = await Preparar();
         Guid preliminar = await PublicarEObterOAtoAsync(api, client, processoId, itens.Preliminar);
+        Guid errata = await PublicarErrataDoPreliminarAsync(api, client, processoId, itens.Preliminar, preliminar);
 
-        Guid errata;
-        using (HttpResponseMessage resposta = await PublicarAsync(
-            client, processoId, itens.Preliminar, await DocumentoAsync(api, processoId), atoCorrigidoId: preliminar, motivo: "Nome trocado"))
-        {
-            resposta.StatusCode.Should().Be(HttpStatusCode.Created, await resposta.Content.ReadAsStringAsync());
-            errata = (await resposta.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("atoId").GetGuid();
-        }
-
-        using (HttpResponseMessage semConfirmacao = await PublicarAsync(
-            client, processoId, itens.Preliminar, await DocumentoAsync(api, processoId), confirma: false, atoCorrigidoId: errata, motivo: "Outra"))
-        {
-            await PublicarAtoAvulsoEndpointTests.ExigirProblemaAsync(semConfirmacao, "uniplus.selecao.ato_do_processo.politica_de_divulgacao_nao_confirmada");
-        }
-
-        await AtoNoRegistroCentral.LerAsync(api, errata);
-        JsonElement item = await ItemAsync(client, processoId, itens.Preliminar);
-        item.GetProperty("ato").GetProperty("id").GetGuid().Should().Be(preliminar, "a primeira publicação continua sendo a original");
-        item.GetProperty("correcoes").EnumerateArray().Last().GetProperty("id").GetGuid().Should().Be(errata, "a cabeça da cadeia é a errata");
-
-        using (HttpResponseMessage porAviso = await PublicarAtoAvulsoEndpointTests.PublicarAvisoAsync(
-            client, processoId, await DocumentoAsync(api, processoId), atoCorrigidoId: errata, motivo: "Contorno"))
-        {
-            await PublicarAtoAvulsoEndpointTests.ExigirProblemaAsync(porAviso, "uniplus.selecao.ato_do_processo.ato_corrigido_eh_item_do_edital");
-        }
-
+        await AfirmarCabecaDaCadeiaAsync(api, client, processoId, itens.Preliminar, (preliminar, errata));
         Guid definitivo = await PublicarEObterOAtoAsync(api, client, processoId, itens.Definitivo);
 
-        using (HttpResponseMessage corrigePreliminar = await PublicarAsync(
-            client, processoId, itens.Preliminar, await DocumentoAsync(api, processoId), atoCorrigidoId: errata, motivo: "Tarde demais"))
-        {
-            await PublicarAtoAvulsoEndpointTests.ExigirProblemaAsync(corrigePreliminar, "uniplus.selecao.ato_do_processo.preliminar_fechado_pelo_definitivo");
-        }
-
+        await ExigirRecusaAsync(
+            PublicarAsync(client, processoId, itens.Preliminar, await DocumentoAsync(api, processoId), new OpcoesDaPublicacao(AtoCorrigidoId: errata, Motivo: "Tarde demais")),
+            "preliminar_fechado_pelo_definitivo");
         using HttpResponseMessage corrigeDefinitivo = await PublicarAsync(
-            client, processoId, itens.Definitivo, await DocumentoAsync(api, processoId), atoCorrigidoId: definitivo, motivo: "Ajuste no definitivo");
+            client, processoId, itens.Definitivo, await DocumentoAsync(api, processoId), new OpcoesDaPublicacao(AtoCorrigidoId: definitivo, Motivo: "Ajuste no definitivo"));
         corrigeDefinitivo.StatusCode.Should().Be(HttpStatusCode.Created, await corrigeDefinitivo.Content.ReadAsStringAsync());
+    }
+
+    private static async Task<Guid> PublicarErrataDoPreliminarAsync(CascadingApiFactory api, HttpClient client, Guid processoId, Guid produtoId, Guid preliminar)
+    {
+        using HttpResponseMessage resposta = await PublicarAsync(
+            client, processoId, produtoId, await DocumentoAsync(api, processoId), new OpcoesDaPublicacao(AtoCorrigidoId: preliminar, Motivo: "Nome trocado"));
+        resposta.StatusCode.Should().Be(HttpStatusCode.Created, await resposta.Content.ReadAsStringAsync());
+        return (await resposta.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("atoId").GetGuid();
+    }
+
+    private static async Task AfirmarCabecaDaCadeiaAsync(
+        CascadingApiFactory api, HttpClient client, Guid processoId, Guid produtoId, (Guid Preliminar, Guid Errata) atos)
+    {
+        await ExigirRecusaAsync(
+            PublicarAsync(client, processoId, produtoId, await DocumentoAsync(api, processoId), new OpcoesDaPublicacao(Confirma: false, AtoCorrigidoId: atos.Errata, Motivo: "Outra")),
+            "politica_de_divulgacao_nao_confirmada");
+        await AtoNoRegistroCentral.LerAsync(api, atos.Errata);
+        JsonElement item = await ItemAsync(client, processoId, produtoId);
+        item.GetProperty("ato").GetProperty("id").GetGuid().Should().Be(atos.Preliminar, "a primeira publicação continua sendo a original");
+        item.GetProperty("correcoes").EnumerateArray().Last().GetProperty("id").GetGuid().Should().Be(atos.Errata, "a cabeça da cadeia é a errata");
+        using HttpResponseMessage porAviso = await PublicarAtoAvulsoEndpointTests.PublicarAvisoAsync(
+            client, processoId, await DocumentoAsync(api, processoId), atoCorrigidoId: atos.Errata, motivo: "Contorno");
+        await PublicarAtoAvulsoEndpointTests.ExigirProblemaAsync(porAviso, "uniplus.selecao.ato_do_processo.ato_corrigido_eh_item_do_edital");
     }
 
     [Fact(DisplayName = "Quatro publicações simultâneas do mesmo item resultam em um só ato")]
@@ -153,6 +151,12 @@ public sealed class PublicarProdutoDoEditalEndpointTests
 
         HttpResponseMessage[] respostas = await Task.WhenAll(documentos.Select(d => PublicarAsync(client, processoId, itens.Preliminar, d)));
 
+        await AfirmarUmaVenceEAsOutrasRecusadasAsync(respostas);
+        (await ContarAtosDoItemAsync(api, processoId, itens.Preliminar)).Should().Be(1);
+    }
+
+    private static async Task AfirmarUmaVenceEAsOutrasRecusadasAsync(HttpResponseMessage[] respostas)
+    {
         respostas.Count(static r => r.StatusCode == HttpStatusCode.Created).Should().Be(1);
         foreach (HttpResponseMessage perdedora in respostas.Where(static r => r.StatusCode != HttpStatusCode.Created))
         {
@@ -161,7 +165,6 @@ public sealed class PublicarProdutoDoEditalEndpointTests
                 .Should().Be("uniplus.selecao.ato_do_processo.produto_ja_publicado");
         }
 
-        (await ContarAtosDoItemAsync(api, processoId, itens.Preliminar)).Should().Be(1);
         foreach (HttpResponseMessage resposta in respostas)
         {
             resposta.Dispose();
@@ -175,7 +178,7 @@ public sealed class PublicarProdutoDoEditalEndpointTests
         await TiposDeAtoSeeder.SemearAsync(api.Services);
         HttpClient client = api.CreateClient();
         (Guid processoId, _) = await PublicarAtoAvulsoEndpointTests.PublicarEditalAsync(
-            api, client, [ProdutoDaFase.Criar(DadosDoAtoDeTeste.TipoResultado, PapelProdutoFase.Definitivo), ProdutoDaFase.Criar(DadosDoAtoDeTeste.TipoResultadoDoRecurso, PapelProdutoFase.Definitivo)]);
+            api, client, [ProdutoDaFase.Criar(DadosDoAtoDeTeste.TipoResultado, PapelDaPublicacaoPrevista.Definitivo), ProdutoDaFase.Criar(DadosDoAtoDeTeste.TipoResultadoDoRecurso, PapelDaPublicacaoPrevista.Definitivo)]);
         Guid[] itens = [.. (await ConsultarItensAsync(client, processoId)).GetProperty("fases").EnumerateArray()
             .SelectMany(static f => f.GetProperty("produtos").EnumerateArray()).Select(static p => p.GetProperty("id").GetGuid())];
         Guid documento = await DocumentoAsync(api, processoId);
@@ -195,15 +198,15 @@ public sealed class PublicarProdutoDoEditalEndpointTests
         JsonElement itens = await ConsultarItensAsync(client, processoId);
         JsonElement[] produtos = [.. itens.GetProperty("fases").EnumerateArray().SelectMany(static f => f.GetProperty("produtos").EnumerateArray())];
         return (api, client, processoId, new ItensDoTeste(
-            produtos.Single(static p => p.GetProperty("papel").GetString() == "PRELIMINAR").GetProperty("id").GetGuid(),
-            produtos.Single(static p => p.GetProperty("papel").GetString() == "DEFINITIVO").GetProperty("id").GetGuid()));
+            produtos.Single(static p => p.GetProperty("papel").GetProperty("codigo").GetString() == "PRELIMINAR").GetProperty("id").GetGuid(),
+            produtos.Single(static p => p.GetProperty("papel").GetProperty("codigo").GetString() == "DEFINITIVO").GetProperty("id").GetGuid()));
     }
 
     /// <summary>O que a fase do formulário declara publicar: o preliminar e o definitivo da homologação, cada um com o seu <c>Id</c>.</summary>
     internal static ProdutoDaFase[] ProdutosDaHomologacao() =>
     [
-        ProdutoDaFase.Criar(DadosDoAtoDeTeste.TipoResultado, PapelProdutoFase.Preliminar),
-        ProdutoDaFase.Criar(DadosDoAtoDeTeste.TipoResultado, PapelProdutoFase.Definitivo),
+        ProdutoDaFase.Criar(DadosDoAtoDeTeste.TipoResultado, PapelDaPublicacaoPrevista.Preliminar),
+        ProdutoDaFase.Criar(DadosDoAtoDeTeste.TipoResultado, PapelDaPublicacaoPrevista.Definitivo),
     ];
 
     private static Task<Guid> DocumentoAsync(CascadingApiFactory api, Guid processoId) =>
@@ -223,24 +226,13 @@ public sealed class PublicarProdutoDoEditalEndpointTests
         Guid processoId,
         Guid produtoId,
         Guid documentoPrincipal,
-        string? chave = null,
-        bool confirma = true,
-        Guid? atoCorrigidoId = null,
-        string? motivo = null)
+        OpcoesDaPublicacao? opcoes = null)
     {
+        OpcoesDaPublicacao efetivas = opcoes ?? new OpcoesDaPublicacao();
         HttpRequestMessage pedido = PublicarAtoAvulsoEndpointTests.Autenticado(
             HttpMethod.Post, $"/api/selecao/processos-seletivos/{processoId}/produtos-previstos/{produtoId}/publicacoes");
-        pedido.Content = JsonContent.Create(new
-        {
-            numero = "7/2026",
-            dataDoAto = PublicarAtoAvulsoEndpointTests.HojeEmTexto(),
-            assinante = "Diretor do CEPS",
-            documentoPrincipalId = documentoPrincipal,
-            politicaDeDivulgacaoConfirmada = confirma,
-            atoCorrigidoId,
-            motivoDaCorrecao = motivo,
-        });
-        pedido.Headers.TryAddWithoutValidation("Idempotency-Key", chave ?? Guid.CreateVersion7().ToString("N"));
+        pedido.Content = efetivas.Corpo(documentoPrincipal);
+        pedido.Headers.TryAddWithoutValidation("Idempotency-Key", efetivas.Chave ?? Guid.CreateVersion7().ToString("N"));
         return client.SendAsync(pedido);
     }
 
@@ -268,4 +260,19 @@ public sealed class PublicarProdutoDoEditalEndpointTests
     }
 
     private sealed record ItensDoTeste(Guid Preliminar, Guid Definitivo);
+
+    /// <summary>O que varia na publicação do item: a chave de idempotência, a confirmação da política e a correção de um ato anterior.</summary>
+    internal sealed record OpcoesDaPublicacao(string? Chave = null, bool Confirma = true, Guid? AtoCorrigidoId = null, string? Motivo = null)
+    {
+        internal JsonContent Corpo(Guid documentoPrincipal) => JsonContent.Create(new
+        {
+            numero = "7/2026",
+            dataDoAto = PublicarAtoAvulsoEndpointTests.HojeEmTexto(),
+            assinante = "Diretor do CEPS",
+            documentoPrincipalId = documentoPrincipal,
+            politicaDeDivulgacaoConfirmada = Confirma,
+            atoCorrigidoId = AtoCorrigidoId,
+            motivoDaCorrecao = Motivo,
+        });
+    }
 }

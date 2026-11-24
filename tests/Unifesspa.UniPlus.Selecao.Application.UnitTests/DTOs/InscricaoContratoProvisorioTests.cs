@@ -41,12 +41,13 @@ public sealed class InscricaoContratoProvisorioTests
         request.Aceites.Should().ContainSingle(a => a.Codigo == "TERMO_VERACIDADE");
     }
 
-    [Fact(DisplayName = "InscricaoDto: o exemplo da inscrição submetida serializa em camelCase, com a situação como texto")]
+    [Fact(DisplayName = "InscricaoDto: o exemplo da inscrição submetida serializa em camelCase, com código e rótulo da situação")]
     public void InscricaoDto_ExemploSubmetida_SerializaEmCamelCase()
     {
         JsonNode json = JsonSerializer.SerializeToNode(ExemplosDoContratoDeInscricao.Inscricao, Opcoes)!;
 
-        json["situacao"]!.GetValue<string>().Should().Be("submetida", "enums serializam em camelCase, como o host configura");
+        json["situacao"]!["codigo"]!.GetValue<string>().Should().Be("SUBMETIDA");
+        json["situacao"]!["rotulo"]!.GetValue<string>().Should().Be("Submetida");
         json["numeroInscricao"]!.GetValue<string>().Should().Be("000123");
         json["formulario"]!["respostas"]!["RG_NUMERO"]!.GetValue<string>().Should().Be("1234567",
             "o RG volta dentro de respostas, decifrado — não existe campo próprio de documento no contrato");

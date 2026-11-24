@@ -110,7 +110,7 @@ public static class ConferenciaDasBancas
     }
 
     public static IReadOnlyList<ItemConformidade> Itens(
-        OrigemCandidatos origem, CronogramaDoProcesso cronograma, EtapasDoProcesso etapas, CorretoresDasEtapas corretores) =>
+        OrigemCandidatos? origem, CronogramaDoProcesso cronograma, EtapasDoProcesso etapas, CorretoresDasEtapas corretores) =>
         [.. ItensDaBanca.Select(item => new ItemConformidade(
             item.Codigo, DimensaoConformidade.Cronograma, item.Mensagem, item.Causas(origem, cronograma, etapas, corretores).Count == 0 && !item.SemJulgar(origem, cronograma, etapas)))];
 
@@ -266,8 +266,8 @@ public static class ConferenciaDasBancas
     private sealed record ItemDaBanca(
         string Codigo,
         string Mensagem,
-        Func<OrigemCandidatos, CronogramaDoProcesso, EtapasDoProcesso, CorretoresDasEtapas, IReadOnlyList<FieldError>> Causas,
-        Func<OrigemCandidatos, CronogramaDoProcesso, EtapasDoProcesso, bool> SemJulgar);
+        Func<OrigemCandidatos?, CronogramaDoProcesso, EtapasDoProcesso, CorretoresDasEtapas, IReadOnlyList<FieldError>> Causas,
+        Func<OrigemCandidatos?, CronogramaDoProcesso, EtapasDoProcesso, bool> SemJulgar);
 
     /// <summary>Uma banca declarada com regra de deliberação, a citação dela, onde ela está e as etapas que julga.</summary>
     private sealed record BancaJulgadora(

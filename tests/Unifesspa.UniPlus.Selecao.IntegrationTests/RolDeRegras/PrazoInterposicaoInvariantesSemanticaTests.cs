@@ -9,7 +9,7 @@ using Unifesspa.UniPlus.Selecao.Infrastructure.DocumentoDaConfiguracao;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Seed;
 
 /// <summary>
-/// Prova <b>positivamente</b> o que as invariantes de <c>RECURSO-PRAZO-ANCORADO-EM-ATO</c>
+/// Prova <b>positivamente</b> o que as invariantes de <c>RECURSO_PRAZO_CONTADO_DA_PUBLICACAO_DO_ATO</c>
 /// declaram sobre a contagem do prazo de recurso (UNI-REQ-0113/UNI-REQ-0112/UNI-REQ-0116).
 /// </summary>
 /// <remarks>
@@ -26,7 +26,7 @@ using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Seed;
 /// </remarks>
 public sealed class PrazoInterposicaoInvariantesSemanticaTests
 {
-    private const string CodigoDaRegra = "RECURSO-PRAZO-ANCORADO-EM-ATO";
+    private const string CodigoDaRegra = "RECURSO_PRAZO_CONTADO_DA_PUBLICACAO_DO_ATO";
 
     private static IReadOnlyList<string> Invariantes()
     {
@@ -59,7 +59,7 @@ public sealed class PrazoInterposicaoInvariantesSemanticaTests
         invariante.Should().Contain("dias úteis",
             "a unidade principal precisa estar declarada por extenso");
         invariante.Should().Contain("inteiro", "dias úteis só é declarável em valor inteiro");
-        invariante.Should().Contain("horas", "horas é a segunda unidade declarável, para prazo menor que um dia");
+        invariante.Should().Contain("HORAS", "horas é a segunda unidade declarável, para prazo menor que um dia");
     }
 
     [Fact(DisplayName = "As invariantes declaram a recusa de dia corrido e a de fração como causas distintas")]
@@ -123,7 +123,7 @@ public sealed class PrazoInterposicaoInvariantesSemanticaTests
     {
         string texto = string.Join(' ', Invariantes());
         texto.Should().NotContain("âncora").And.NotContain("janela").And.NotContain("append-only");
-        texto.Should().Contain("publicação de um produto preliminar da própria fase");
+        texto.Should().Contain("publicação de uma publicação prevista preliminar da própria fase");
         texto.Should().Contain("julgamento e retificação são novos fatos");
     }
 
@@ -136,7 +136,7 @@ public sealed class PrazoInterposicaoInvariantesSemanticaTests
         foreach (string campo in new[] { "prazoUnidade", "prazoSegundaInstanciaUnidade" })
         {
             propriedades[campo]!["enum"]!.AsArray().Select(item => item!.GetValue<string>())
-                .Should().BeEquivalentTo("horas", "dias", "diasUteis");
+                .Should().BeEquivalentTo("HORAS", "DIAS", "DIAS_UTEIS");
         }
     }
 

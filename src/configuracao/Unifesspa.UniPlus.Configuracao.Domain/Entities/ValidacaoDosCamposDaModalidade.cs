@@ -43,7 +43,7 @@ public static class ValidacaoDosCamposDaModalidade
     /// e as três invariantes cruzadas (RetiradaDeOutraModalidade⟺origem, natureza↔regra, parâmetros por
     /// regra), cada uma só avaliada quando os códigos de que ela depende já foram
     /// reconhecidos (senão o erro reportado seria derivado de um código inválido,
-    /// não uma incoerência independente — ex.: reportar "SEGUE_CASCATA exigido"
+    /// não uma incoerência independente — ex.: reportar "SEGUE_ORDEM_DE_REMANEJAMENTO exigido"
     /// sobre uma <c>NaturezaLegal</c> que nem chegou a resolver para um valor de
     /// domínio). Sem I/O — existe também para o handler de atualização falhar
     /// rápido antes de buscar a modalidade por Id.

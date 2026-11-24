@@ -144,5 +144,5 @@ public static class OrdemCanonicaDaConfiguracao
 
     private static string ChaveDoAto(string atoCodigo) => HashCanonicalComputer.NormalizeNfc(atoCodigo);
 
-    private static string ChaveDoPapel(PapelProdutoFase? papel) => papel?.ToString() ?? string.Empty;
+    private static string ChaveDoPapel(PapelDaPublicacaoPrevista? papel) => papel?.ToString() ?? string.Empty;
 }

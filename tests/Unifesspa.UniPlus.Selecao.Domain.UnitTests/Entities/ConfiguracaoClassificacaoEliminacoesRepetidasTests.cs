@@ -2,6 +2,7 @@ namespace Unifesspa.UniPlus.Selecao.Domain.UnitTests.Entities;
 
 using AwesomeAssertions;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
@@ -17,7 +18,7 @@ public sealed class ConfiguracaoClassificacaoEliminacoesRepetidasTests
     {
         Result<ConfiguracaoClassificacao> resultado = ConfiguracaoClassificacao.Criar(DeclaracaoEnemLocal() with
         {
-            RegrasEliminacao = Eliminacoes(RegraEliminacaoCodigo.ElimFaltaEmDiaDeProvaEnem, RegraEliminacaoCodigo.ElimZeroEmArea, RegraEliminacaoCodigo.ElimFaltaEmDiaDeProvaEnem, RegraEliminacaoCodigo.ElimFaltaEmDiaDeProvaEnem),
+            RegrasEliminacao = Eliminacoes(RegraDeEliminacaoPorCalculo.FaltaEmDiaDeProvaDoEnem.Codigo(), RegraDeEliminacaoPorCalculo.ZeroEmAreaDoEnem.Codigo(), RegraDeEliminacaoPorCalculo.FaltaEmDiaDeProvaDoEnem.Codigo(), RegraDeEliminacaoPorCalculo.FaltaEmDiaDeProvaDoEnem.Codigo()),
         });
 
         resultado.IsFailure.Should().BeTrue();
@@ -32,7 +33,7 @@ public sealed class ConfiguracaoClassificacaoEliminacoesRepetidasTests
     {
         Result<ConfiguracaoClassificacao> resultado = ConfiguracaoClassificacao.Criar(DeclaracaoImportada() with
         {
-            RegrasEliminacao = Eliminacoes(RegraEliminacaoCodigo.ElimFaltaEmDiaDeProvaEnem, RegraEliminacaoCodigo.ElimFaltaEmDiaDeProvaEnem),
+            RegrasEliminacao = Eliminacoes(RegraDeEliminacaoPorCalculo.FaltaEmDiaDeProvaDoEnem.Codigo(), RegraDeEliminacaoPorCalculo.FaltaEmDiaDeProvaDoEnem.Codigo()),
             BaseadoEmEnem = true,
         });
 
@@ -47,7 +48,7 @@ public sealed class ConfiguracaoClassificacaoEliminacoesRepetidasTests
     {
         Result<ConfiguracaoClassificacao> resultado = ConfiguracaoClassificacao.Criar(DeclaracaoMediaPonderada() with
         {
-            RegrasEliminacao = Eliminacoes(RegraEliminacaoCodigo.ElimFaltaEmDiaDeProvaEnem, RegraEliminacaoCodigo.ElimFaltaEmDiaDeProvaEnem),
+            RegrasEliminacao = Eliminacoes(RegraDeEliminacaoPorCalculo.FaltaEmDiaDeProvaDoEnem.Codigo(), RegraDeEliminacaoPorCalculo.FaltaEmDiaDeProvaDoEnem.Codigo()),
         });
 
         resultado.IsFailure.Should().BeTrue();
@@ -64,7 +65,7 @@ public sealed class ConfiguracaoClassificacaoEliminacoesRepetidasTests
     {
         Result<ConfiguracaoClassificacao> resultado = ConfiguracaoClassificacao.Criar(DeclaracaoEnemLocal() with
         {
-            RegrasEliminacao = Eliminacoes(RegraEliminacaoCodigo.ElimFaltaEmDiaDeProvaEnem, RegraEliminacaoCodigo.ElimZeroEmArea),
+            RegrasEliminacao = Eliminacoes(RegraDeEliminacaoPorCalculo.FaltaEmDiaDeProvaDoEnem.Codigo(), RegraDeEliminacaoPorCalculo.ZeroEmAreaDoEnem.Codigo()),
         });
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);

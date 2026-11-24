@@ -1,5 +1,7 @@
 namespace Unifesspa.UniPlus.Selecao.Application.DTOs;
 
+using Unifesspa.UniPlus.Application.Abstractions.Respostas;
+using Unifesspa.UniPlus.Selecao.Domain.Enums;
 /// <summary>
 /// Resposta do início do envio do modelo de documento: o id do modelo, a URL de PUT direto ao
 /// storage, o <c>Content-Type</c> que o PUT envia e o fim da validade da URL.
@@ -16,7 +18,7 @@ public sealed record IniciarEnvioDoModeloDeDocumentoDto(
 /// objeto do pendente.
 /// </summary>
 /// <param name="Formato"><c>DOCX</c> ou <c>ODT</c>.</param>
-/// <param name="Status"><c>Pendente</c> ou <c>Confirmado</c>.</param>
+/// <param name="Status"><c>PENDENTE</c> ou <c>CONFIRMADO</c>.</param>
 /// <param name="TamanhoBytes">Nulo enquanto pendente.</param>
 /// <param name="HashSha256">Nulo enquanto pendente — calculado no servidor na confirmação.</param>
 /// <param name="ConfirmadoEm">Nulo enquanto pendente.</param>
@@ -24,8 +26,8 @@ public sealed record ModeloDeDocumentoDto(
     Guid Id,
     Guid ProcessoSeletivoId,
     string NomeArquivo,
-    string Formato,
-    string Status,
+    CodigoComRotulo<FormatoDeDocumento> Formato,
+    CodigoComRotulo<StatusArquivoEnviado> Status,
     DateTimeOffset CriadoEm,
     DateTimeOffset ExpiraEm,
     long? TamanhoBytes,

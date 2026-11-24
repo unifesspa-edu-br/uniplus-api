@@ -20,7 +20,7 @@ internal static class ValidacaoDaObrigatoriedadeLegal
 
     internal static Result Validar(
         string? tipoProcessoCodigo,
-        CategoriaObrigatoriedade categoria,
+        CategoriaObrigatoriedade? categoria,
         string? regraCodigo,
         PredicadoObrigatoriedade? predicado,
         TextoNormativo texto,
@@ -63,9 +63,9 @@ internal static class ValidacaoDaObrigatoriedadeLegal
             "RegraCodigo é obrigatório.",
             "ObrigatoriedadeLegal.RegraCodigoInvalido");
 
-    private static IEnumerable<FieldError> Categoria(CategoriaObrigatoriedade categoria)
+    private static IEnumerable<FieldError> Categoria(CategoriaObrigatoriedade? categoria)
     {
-        if (Enum.IsDefined(categoria) && categoria != CategoriaObrigatoriedade.Nenhuma)
+        if (categoria is { } informada && Enum.IsDefined(informada))
         {
             yield break;
         }
@@ -73,7 +73,7 @@ internal static class ValidacaoDaObrigatoriedadeLegal
         yield return Erro(
             "categoria",
             "ObrigatoriedadeLegal.CategoriaInvalida",
-            "Categoria inválida — use um valor definido em CategoriaObrigatoriedade, diferente de Nenhuma.");
+            "Categoria inválida — informe uma das categorias aceitas.");
     }
 
     private static IEnumerable<FieldError> Predicado(PredicadoObrigatoriedade? predicado)

@@ -2,6 +2,7 @@ namespace Unifesspa.UniPlus.Selecao.Domain.UnitTests.Entities;
 
 using AwesomeAssertions;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
@@ -12,7 +13,7 @@ using static Unifesspa.UniPlus.Selecao.Domain.UnitTests.Entities.ApoioDaConfigur
 
 public sealed class ConfiguracaoClassificacaoTests
 {
-    [Fact(DisplayName = "Criar com FORMULA-MEDIA-PONDERADA e arredondamento tem sucesso")]
+    [Fact(DisplayName = "Criar com FORMULA_MEDIA_PONDERADA e arredondamento tem sucesso")]
     public void Criar_MediaPonderadaComArredondamento_Sucesso()
     {
         Result<ConfiguracaoClassificacao> resultado = ConfiguracaoClassificacao.Criar(DeclaracaoMediaPonderada());
@@ -21,7 +22,7 @@ public sealed class ConfiguracaoClassificacaoTests
         resultado.Value!.RegraArredondamento.Should().NotBeNull();
     }
 
-    [Fact(DisplayName = "Criar com FORMULA-MEDIA-PONDERADA sem a escala da nota final tem sucesso: o rascunho a tolera ausente")]
+    [Fact(DisplayName = "Criar com FORMULA_MEDIA_PONDERADA sem a escala da nota final tem sucesso: o rascunho a tolera ausente")]
     public void Criar_MediaPonderada_SemEscalaDaNotaFinal_Sucesso()
     {
         Result<ConfiguracaoClassificacao> resultado = ConfiguracaoClassificacao.Criar(DeclaracaoMediaPonderada());
@@ -78,7 +79,7 @@ public sealed class ConfiguracaoClassificacaoTests
         resultado.Value!.EscalaNotaFinal.Should().Be(1000m);
     }
 
-    [Fact(DisplayName = "Criar com CLASSIFICACAO-IMPORTADA e a escala da nota final informada falha")]
+    [Fact(DisplayName = "Criar com CLASSIFICACAO_IMPORTADA e a escala da nota final informada falha")]
     public void Criar_Importada_ComEscalaDaNotaFinal_Falha()
     {
         Result<ConfiguracaoClassificacao> resultado = ConfiguracaoClassificacao.Criar(DeclaracaoImportada() with
@@ -92,7 +93,7 @@ public sealed class ConfiguracaoClassificacaoTests
         resultado.Errors[0].Error.Code.Should().Be("ConfiguracaoClassificacao.EscalaNotaFinalIndevida");
     }
 
-    [Fact(DisplayName = "Criar com CLASSIFICACAO-IMPORTADA e sem arredondamento tem sucesso")]
+    [Fact(DisplayName = "Criar com CLASSIFICACAO_IMPORTADA e sem arredondamento tem sucesso")]
     public void Criar_Importada_SemArredondamento_Sucesso()
     {
         Result<ConfiguracaoClassificacao> resultado = ConfiguracaoClassificacao.Criar(DeclaracaoImportada());
@@ -101,7 +102,7 @@ public sealed class ConfiguracaoClassificacaoTests
         resultado.Value!.RegraArredondamento.Should().BeNull();
     }
 
-    [Fact(DisplayName = "Criar com CLASSIFICACAO-IMPORTADA e arredondamento informado falha")]
+    [Fact(DisplayName = "Criar com CLASSIFICACAO_IMPORTADA e arredondamento informado falha")]
     public void Criar_Importada_ComArredondamento_Falha()
     {
         Result<ConfiguracaoClassificacao> resultado = ConfiguracaoClassificacao.Criar(new DeclaracaoDaClassificacao
@@ -116,7 +117,7 @@ public sealed class ConfiguracaoClassificacaoTests
         resultado.Error!.Code.Should().Be("ConfiguracaoClassificacao.ArredondamentoIndevido");
     }
 
-    [Fact(DisplayName = "Criar com FORMULA-MEDIA-PONDERADA sem arredondamento falha — acumula os dois campos")]
+    [Fact(DisplayName = "Criar com FORMULA_MEDIA_PONDERADA sem arredondamento falha — acumula os dois campos")]
     public void Criar_MediaPonderada_SemArredondamento_Falha()
     {
         Result<ConfiguracaoClassificacao> resultado = ConfiguracaoClassificacao.Criar(new DeclaracaoDaClassificacao
@@ -150,10 +151,10 @@ public sealed class ConfiguracaoClassificacaoTests
         resultado.Errors[0].Error.Code.Should().Be("ConfiguracaoClassificacao.CasasArredondamentoObrigatorio");
     }
 
-    [Fact(DisplayName = "Criar com CLASSIFICACAO-IMPORTADA e regra de eliminação informada falha")]
+    [Fact(DisplayName = "Criar com CLASSIFICACAO_IMPORTADA e regra de eliminação informada falha")]
     public void Criar_Importada_ComEliminacao_Falha()
     {
-        RegraEliminacao eliminacao = Eliminacao(RegraEliminacaoCodigo.ElimZeroEmArea);
+        RegraEliminacao eliminacao = Eliminacao(RegraDeEliminacaoPorCalculo.ZeroEmAreaDoEnem.Codigo());
 
         Result<ConfiguracaoClassificacao> resultado = ConfiguracaoClassificacao.Criar(DeclaracaoImportada() with
         {
@@ -164,13 +165,13 @@ public sealed class ConfiguracaoClassificacaoTests
         resultado.Error!.Code.Should().Be("ConfiguracaoClassificacao.EliminacaoIndevida");
     }
 
-    [Fact(DisplayName = "Criar com CLASSIFICACAO-IMPORTADA, regra ENEM e BaseadoEmEnem=true ainda falha por EliminacaoIndevida (precedência)")]
+    [Fact(DisplayName = "Criar com CLASSIFICACAO_IMPORTADA, regra ENEM e BaseadoEmEnem=true ainda falha por EliminacaoIndevida (precedência)")]
     public void Criar_Importada_ComEliminacaoEnemEBaseadoEmEnem_FalhaPorEliminacaoIndevida()
     {
         // EliminacaoIndevida (importada não aceita NENHUMA eliminação) precede o
         // gate ENEM novo — mesmo com BaseadoEmEnem=true, uma classificação importada com
-        // ELIM-CORTE-REDACAO é recusada pelo motivo da eliminação indevida, não pelo motivo ENEM.
-        RegraEliminacao eliminacao = Eliminacao(RegraEliminacaoCodigo.ElimCorteEmArea);
+        // ELIMINACAO-CORTE-REDACAO é recusada pelo motivo da eliminação indevida, não pelo motivo ENEM.
+        RegraEliminacao eliminacao = Eliminacao(RegraDeEliminacaoPorCalculo.CorteEmAreaDoEnem.Codigo());
 
         Result<ConfiguracaoClassificacao> resultado = ConfiguracaoClassificacao.Criar(DeclaracaoImportada() with
         {
@@ -185,7 +186,7 @@ public sealed class ConfiguracaoClassificacaoTests
     [Fact(DisplayName = "Criar com lista de eliminação vincula os filhos à configuração")]
     public void Criar_ComEliminacao_Vincula()
     {
-        RegraEliminacao eliminacao = Eliminacao(RegraEliminacaoCodigo.ElimZeroEmArea);
+        RegraEliminacao eliminacao = Eliminacao(RegraDeEliminacaoPorCalculo.ZeroEmAreaDoEnem.Codigo());
 
         Result<ConfiguracaoClassificacao> resultado = ConfiguracaoClassificacao.Criar(DeclaracaoEnemLocal() with
         {
@@ -209,12 +210,12 @@ public sealed class ConfiguracaoClassificacaoTests
     }
 
     [Theory(DisplayName = "Criar com eliminação que depende do ENEM e BaseadoEmEnem=false é recusado — independente de TipoProcesso")]
-    [InlineData(RegraEliminacaoCodigo.ElimCorteEmArea)]
-    [InlineData(RegraEliminacaoCodigo.ElimZeroEmArea)]
-    [InlineData(RegraEliminacaoCodigo.ElimFaltaEmDiaDeProvaEnem)]
-    public void Criar_EliminacaoEnemForaDeProcessoEnem_Recusa(string codigoRegra)
+    [InlineData(RegraDeEliminacaoPorCalculo.CorteEmAreaDoEnem)]
+    [InlineData(RegraDeEliminacaoPorCalculo.ZeroEmAreaDoEnem)]
+    [InlineData(RegraDeEliminacaoPorCalculo.FaltaEmDiaDeProvaDoEnem)]
+    public void Criar_EliminacaoEnemForaDeProcessoEnem_Recusa(RegraDeEliminacaoPorCalculo codigoRegra)
     {
-        RegraEliminacao eliminacao = Eliminacao(codigoRegra);
+        RegraEliminacao eliminacao = Eliminacao(codigoRegra.Codigo());
 
         Result<ConfiguracaoClassificacao> resultado = ConfiguracaoClassificacao.Criar(DeclaracaoMediaPonderada() with
         {
@@ -226,12 +227,12 @@ public sealed class ConfiguracaoClassificacaoTests
     }
 
     [Theory(DisplayName = "Criar com eliminação que depende do ENEM e BaseadoEmEnem=true tem sucesso — independente de TipoProcesso")]
-    [InlineData(RegraEliminacaoCodigo.ElimCorteEmArea)]
-    [InlineData(RegraEliminacaoCodigo.ElimZeroEmArea)]
-    [InlineData(RegraEliminacaoCodigo.ElimFaltaEmDiaDeProvaEnem)]
-    public void Criar_EliminacaoEnemEmProcessoEnem_Sucesso(string codigoRegra)
+    [InlineData(RegraDeEliminacaoPorCalculo.CorteEmAreaDoEnem)]
+    [InlineData(RegraDeEliminacaoPorCalculo.ZeroEmAreaDoEnem)]
+    [InlineData(RegraDeEliminacaoPorCalculo.FaltaEmDiaDeProvaDoEnem)]
+    public void Criar_EliminacaoEnemEmProcessoEnem_Sucesso(RegraDeEliminacaoPorCalculo codigoRegra)
     {
-        RegraEliminacao eliminacao = Eliminacao(codigoRegra);
+        RegraEliminacao eliminacao = Eliminacao(codigoRegra.Codigo());
 
         Result<ConfiguracaoClassificacao> resultado = ConfiguracaoClassificacao.Criar(DeclaracaoEnemLocal() with
         {
@@ -265,7 +266,7 @@ public sealed class ConfiguracaoClassificacaoTests
         {
             RegraArredondamento = RegraArredondamento(),
             CasasArredondamento = 2,
-            RegrasEliminacao = [Eliminacao(RegraEliminacaoCodigo.ElimZeroEmArea)],
+            RegrasEliminacao = [Eliminacao(RegraDeEliminacaoPorCalculo.ZeroEmAreaDoEnem.Codigo())],
         });
 
         resultado.Errors.Select(e => e.Error.Code).Should().BeEquivalentTo(

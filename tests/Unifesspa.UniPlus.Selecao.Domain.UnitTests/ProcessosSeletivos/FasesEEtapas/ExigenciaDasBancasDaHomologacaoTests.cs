@@ -66,13 +66,13 @@ public sealed class ExigenciaDasBancasDaHomologacaoTests
         veredicto.Indeterminado.Should().BeTrue();
     }
 
-    private static ExigenciaDasBancasDaHomologacao.Veredicto Homologacao(OrigemCandidatos origem, CronogramaDoProcesso cronograma, EtapasDoProcesso etapas) =>
+    private static ExigenciaDasBancasDaHomologacao.Veredicto Homologacao(OrigemCandidatos? origem, CronogramaDoProcesso cronograma, EtapasDoProcesso etapas) =>
         ExigenciaDasBancasDaHomologacao.BancaDeHomologacaoDasInscricoes(origem, cronograma, etapas);
 
-    private static ExigenciaDasBancasDaHomologacao.Veredicto Notas(OrigemCandidatos origem, CronogramaDoProcesso cronograma, EtapasDoProcesso etapas) =>
+    private static ExigenciaDasBancasDaHomologacao.Veredicto Notas(OrigemCandidatos? origem, CronogramaDoProcesso cronograma, EtapasDoProcesso etapas) =>
         ExigenciaDasBancasDaHomologacao.BancaDeImportacaoDasNotasDoInep(origem, cronograma, etapas);
 
-    private static ExigenciaDasBancasDaHomologacao.Veredicto Candidatos(OrigemCandidatos origem, CronogramaDoProcesso cronograma, EtapasDoProcesso etapas) =>
+    private static ExigenciaDasBancasDaHomologacao.Veredicto Candidatos(OrigemCandidatos? origem, CronogramaDoProcesso cronograma, EtapasDoProcesso etapas) =>
         ExigenciaDasBancasDaHomologacao.BancaDeImportacaoDeCandidatos(origem, cronograma, etapas);
 
     [Theory(DisplayName = "A fase que homologa sem banca de homologação é recusada em qualquer origem, no campo das bancas da fase e com o detalhe da fase")]
@@ -149,7 +149,7 @@ public sealed class ExigenciaDasBancasDaHomologacaoTests
     public void BancaDeHomologacao_SemFaseQueHomologaOuSemOrigem_NaoJulga()
     {
         ExigenciaDasBancasDaHomologacao.Veredicto semFase = Homologacao(OrigemCandidatos.InscricaoPropria, Fases(new ModeloDeFase("AVALIACAO", 1)), SemEtapas);
-        ExigenciaDasBancasDaHomologacao.Veredicto semOrigem = Homologacao(OrigemCandidatos.Nenhuma, Fases(Homologa()), SemEtapas);
+        ExigenciaDasBancasDaHomologacao.Veredicto semOrigem = Homologacao(null, Fases(Homologa()), SemEtapas);
         DeveFicarSemJulgar(semFase);
         DeveFicarSemJulgar(semOrigem);
     }
@@ -235,12 +235,12 @@ public sealed class ExigenciaDasBancasDaHomologacaoTests
     }
 
     [Theory(DisplayName = "A banca de importação das notas não se julga com a origem por declarar, com a etapa recusada ou com bancas recusadas")]
-    [InlineData(OrigemCandidatos.Nenhuma, null, null)]
+    [InlineData(null, null, null)]
     [InlineData(OrigemCandidatos.InscricaoPropria, "fases", null)]
     [InlineData(OrigemCandidatos.InscricaoPropria, "fases[0].bancasRequeridas", null)]
     [InlineData(OrigemCandidatos.InscricaoPropria, null, "etapas")]
     [InlineData(OrigemCandidatos.InscricaoPropria, null, "etapas[0].bancas")]
-    public void NotaDoEnem_Indeterminada_NaoJulga(OrigemCandidatos origem, string? daFase, string? daEtapa)
+    public void NotaDoEnem_Indeterminada_NaoJulga(OrigemCandidatos? origem, string? daFase, string? daEtapa)
     {
         CronogramaDoProcesso cronograma = CronogramaDoProcesso.Do([Homologa(DeHomologacao()).Adotada()], daFase is null ? OrigemNoDocumento.Identidade : ComPartesRecusadas(daFase));
         EtapasDoProcesso etapas = EtapasDoProcesso.Das([NotaDoEnem().Adotada()], daEtapa is null ? OrigemNoDocumento.Identidade : ComPartesRecusadas(daEtapa));
@@ -274,12 +274,12 @@ public sealed class ExigenciaDasBancasDaHomologacaoTests
     }
 
     [Theory(DisplayName = "A banca de importação de candidatos não se julga com a origem por declarar, com a lista de fases recusada ou com bancas recusadas")]
-    [InlineData(OrigemCandidatos.Nenhuma, null, null)]
+    [InlineData(null, null, null)]
     [InlineData(OrigemCandidatos.ImportacaoExterna, "fases", null)]
     [InlineData(OrigemCandidatos.ImportacaoExterna, "fases[0].bancasRequeridas", null)]
     [InlineData(OrigemCandidatos.ImportacaoExterna, null, "etapas")]
     [InlineData(OrigemCandidatos.ImportacaoExterna, null, "etapas[0].bancas")]
-    public void ImportacaoExterna_Indeterminada_NaoJulga(OrigemCandidatos origem, string? daFase, string? daEtapa)
+    public void ImportacaoExterna_Indeterminada_NaoJulga(OrigemCandidatos? origem, string? daFase, string? daEtapa)
     {
         CronogramaDoProcesso cronograma = CronogramaDoProcesso.Do([Homologa(DeHomologacao()).Adotada()], daFase is null ? OrigemNoDocumento.Identidade : ComPartesRecusadas(daFase));
         EtapasDoProcesso etapas = EtapasDoProcesso.Das([EtapaNaFase(Fase).Adotada()], daEtapa is null ? OrigemNoDocumento.Identidade : ComPartesRecusadas(daEtapa));
@@ -295,7 +295,7 @@ public sealed class ExigenciaDasBancasDaHomologacaoTests
             .Should().Equal(("fases[0].bancasRequeridas", CodigoDaHomologacao), ("fases", CodigoDasNotas));
         CenarioDeProcesso.Causas(ExigenciaDasBancasDaHomologacao.Causas(OrigemCandidatos.ImportacaoExterna, cronograma, ComNotaDoEnem))
             .Should().Equal(("fases[0].bancasRequeridas", CodigoDaHomologacao), ("fases", CodigoDosCandidatos));
-        ExigenciaDasBancasDaHomologacao.Causas(OrigemCandidatos.Nenhuma, cronograma, ComNotaDoEnem).Should().BeEmpty();
+        ExigenciaDasBancasDaHomologacao.Causas(null, cronograma, ComNotaDoEnem).Should().BeEmpty();
     }
 
 }

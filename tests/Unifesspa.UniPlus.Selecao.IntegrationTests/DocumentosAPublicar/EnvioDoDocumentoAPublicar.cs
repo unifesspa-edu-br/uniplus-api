@@ -8,6 +8,7 @@ using Microsoft.EntityFrameworkCore.Storage;
 using Microsoft.Extensions.Options;
 
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Application.Commands.DocumentosAPublicar;
@@ -107,7 +108,7 @@ internal sealed class EnvioDoDocumentoAPublicar : IAsyncDisposable
         string nomeArquivo = "edital.pdf",
         string tipoDeMidia = TiposDeMidiaDeDocumento.Pdf) =>
         IniciarEnvioDoDocumentoAPublicarCommandHandler.Handle(
-            new IniciarEnvioDoDocumentoAPublicarCommand(ProcessoId, finalidade, nomeArquivo, tipoDeMidia),
+            new IniciarEnvioDoDocumentoAPublicarCommand(ProcessoId, finalidade.Codigo(), nomeArquivo, tipoDeMidia),
             new UnidadeDonaDoProcesso(Context), Documentos, _storage, Context, TimeProvider.System, CancellationToken.None);
 
     public async Task<IniciarEnvioDoDocumentoAPublicarDto> IniciarAsync(

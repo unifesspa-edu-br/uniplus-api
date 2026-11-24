@@ -2,6 +2,7 @@ namespace Unifesspa.UniPlus.Selecao.Domain.Entities;
 
 using Enums;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Domain.Entities;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Formularios;
@@ -9,7 +10,7 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 /// <summary>
 /// Bônus regional do <see cref="ProcessoSeletivo"/> (Fator de Atenuação das Desigualdades de Acesso, UNI-REQ-0015, Story #774):
-/// referencia a regra tipada <c>BONUS-MULTIPLICATIVO</c>
+/// referencia a regra tipada <c>FADA_MULTIPLICATIVO</c>
 /// do <c>regras_do_catalogo</c> e seus parâmetros (<see cref="Fator"/>, <see cref="Teto"/>).
 /// </summary>
 /// <remarks>
@@ -101,11 +102,11 @@ public sealed class ConfiguracaoBonusRegional : EntityBase, IParteDoProcesso
     ];
 
     private static FieldError? RecusaDaRegra(ReferenciaRegra regra) =>
-        regra.Codigo == RegraBonusCodigo.Multiplicativo
+        regra.Codigo == RegraDeBonus.Multiplicativo.Codigo()
             ? null
             : new("regra.codigo", new DomainError(
                 "ConfiguracaoBonusRegional.RegraInvalida",
-                $"A regra do bônus precisa ser do código {RegraBonusCodigo.Multiplicativo}."));
+                $"A regra do bônus precisa ser do código {RegraDeBonus.Multiplicativo.Codigo()}."));
 
     private static FieldError? RecusaDoFator(decimal fator) =>
         fator > 0

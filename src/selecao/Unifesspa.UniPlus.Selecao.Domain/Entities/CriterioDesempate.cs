@@ -2,6 +2,7 @@ namespace Unifesspa.UniPlus.Selecao.Domain.Entities;
 
 using Enums;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Domain.Entities;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Errors;
@@ -53,11 +54,6 @@ public sealed class CriterioDesempate : EntityBase, IParteDoProcesso
     /// documentação lá. Só tem efeito quando <paramref name="vocabularioFatos"/>
     /// é informado.
     /// </param>
-    /// <summary>
-    /// Acumula toda violação independente em vez de retornar na primeira (ADR-0125) — ordem,
-    /// compatibilidade de parâmetros, idade mínima e a forma da ordem de áreas do ENEM não dependem
-    /// umas das outras.
-    /// </summary>
     public static Result<CriterioDesempate> Criar(
         int ordem,
         ReferenciaRegra regra,
@@ -68,65 +64,20 @@ public sealed class CriterioDesempate : EntityBase, IParteDoProcesso
         ArgumentNullException.ThrowIfNull(regra);
         ArgumentNullException.ThrowIfNull(parametros);
 
-        List<FieldError> erros = ValidarOrdem(ordem);
-
-        bool parametrosCompativeis = regra.Codigo switch
-        {
-            CriterioDesempateCodigo.MaiorNotaEtapa => parametros is ParametrosDesempateMaiorNotaEtapa,
-            CriterioDesempateCodigo.MaiorIdade => parametros is ParametrosDesempateMaiorIdade,
-            CriterioDesempateCodigo.Idoso => parametros is ParametrosDesempateIdoso,
-            CriterioDesempateCodigo.PredicadoFato => parametros is ParametrosDesempatePredicadoFato,
-            CriterioDesempateCodigo.MaiorNotaAreaEnem => parametros is ParametrosDesempateMaiorNotaAreaEnem,
-            _ => false,
-        };
-
-        if (!parametrosCompativeis)
-        {
-            erros.Add(new("regraCodigo", new DomainError(
-                "CriterioDesempate.ParametrosIncompativeisComRegra",
-                "Os parâmetros informados não correspondem à regra referenciada.")));
-        }
-
-        if (parametros is ParametrosDesempateIdoso { IdadeMinima: <= 0 })
-        {
-            erros.Add(new("idadeMinima", new DomainError(
-                "CriterioDesempate.IdadeMinimaInvalida", "A idade mínima do critério IDOSO deve ser maior que zero.")));
-        }
-
-        if (parametros is ParametrosDesempateMaiorNotaAreaEnem areaEnem)
-        {
-            erros.AddRange(ConferirAreas(areaEnem.Areas).Erros);
-        }
-
-        if (parametros is ParametrosDesempatePredicadoFato predicadoFato && vocabularioFatos is not null)
-        {
-            Result<PredicadoDnf> predicadoResult = PredicadoDnf.CriarDeCondicoesAgrupadas([(0, predicadoFato.Condicao)]);
-            if (predicadoResult.IsFailure)
-            {
-                erros.Add(new(CampoDaRecusaDoPredicado(predicadoResult.Error!), predicadoResult.Error!));
-            }
-            else
-            {
-                Result validacaoResult = PredicadoDnfValidador.Validar(predicadoResult.Value!, vocabularioFatos, fatosColetadosPeloProcesso);
-                if (validacaoResult.IsFailure)
-                {
-                    erros.Add(new(CampoDaRecusaDoPredicado(validacaoResult.Error!), validacaoResult.Error!));
-                }
-            }
-        }
-
-        if (erros.Count > 0)
-        {
-            return Result<CriterioDesempate>.ValidationFailure(erros);
-        }
-
-        return Result<CriterioDesempate>.Success(new CriterioDesempate
-        {
-            Ordem = ordem,
-            Regra = regra,
-            Parametros = parametros,
-        });
+        List<FieldError> erros = [.. ValidarOrdem(ordem), .. RecusaDaCorrespondencia(regra, parametros),
+            .. parametros.RecusasDosValores(), .. RecusasDoPredicadoNaGravacao(parametros, vocabularioFatos, fatosColetadosPeloProcesso)];
+        return erros.Count > 0 ? Result<CriterioDesempate>.ValidationFailure(erros)
+            : Result<CriterioDesempate>.Success(new CriterioDesempate { Ordem = ordem, Regra = regra, Parametros = parametros });
     }
+
+    private static IEnumerable<FieldError> RecusaDaCorrespondencia(ReferenciaRegra regra, ParametrosCriterioDesempate parametros) =>
+        regra.Codigo == parametros.RegraCorrespondente().Codigo() ? [] :
+        [new("regraCodigo", new DomainError("CriterioDesempate.ParametrosIncompativeisComRegra", "Os parâmetros informados não correspondem à regra referenciada."))];
+
+    private static IEnumerable<FieldError> RecusasDoPredicadoNaGravacao(ParametrosCriterioDesempate parametros,
+        IReadOnlyDictionary<string, DescritorFatoCandidato>? vocabulario, IReadOnlySet<string>? coletados) =>
+        parametros is ParametrosDesempatePredicadoFato predicado && vocabulario is not null
+            ? predicado.ConferirContraOVocabulario(vocabulario, coletados) : [];
 
     /// <summary>
     /// A ordem não depende do catálogo de regras nem do vocabulário de fatos — ao contrário das
@@ -147,85 +98,6 @@ public sealed class CriterioDesempate : EntityBase, IParteDoProcesso
 
         return erros;
     }
-
-    /// <summary>
-    /// Quantas áreas a ordem de desempate por área do ENEM admite. O quadro de pesos por área
-    /// tem cinco áreas; o teto só impede uma lista sem limite enquanto a classificação, contra
-    /// a qual as áreas são conferidas, ainda não foi definida.
-    /// </summary>
-    public const int AreasMaximo = 20;
-
-    /// <summary>
-    /// O que a ordem de áreas consegue provar sozinha: há ao menos uma área, cada código tem
-    /// forma de código (letras maiúsculas sem acento, algarismos e sublinhado, até o tamanho da
-    /// coluna) e nenhum se repete. A forma é regra do critério, e não do cadastro: lá as áreas
-    /// são uma lista fechada de cinco códigos, todos nessa forma. Ela recusa texto livre
-    /// enquanto a classificação não existe e não há quadro contra o qual conferir; se o código
-    /// existe no quadro congelado é conferido pela raiz, que conhece a classificação.
-    /// </summary>
-    /// <returns>
-    /// As recusas e as áreas bem formadas, com a posição de cada uma: só estas a raiz confere
-    /// contra os outros critérios e contra o quadro, para o mesmo campo não receber duas recusas.
-    /// </returns>
-    internal static (List<FieldError> Erros, List<(int Indice, string Codigo)> BemFormadas) ConferirAreas(IReadOnlyList<string>? areas)
-    {
-        List<FieldError> erros = [];
-        List<(int Indice, string Codigo)> bemFormadas = [];
-
-        if (areas is null || areas.Count == 0)
-        {
-            erros.Add(new("areas", new DomainError(
-                DesempatePorAreaEnemErrorCodes.AreasObrigatorias,
-                "O critério de desempate por área do ENEM exige ao menos uma área na ordem.")));
-            return (erros, bemFormadas);
-        }
-
-        if (areas.Count > AreasMaximo)
-        {
-            erros.Add(new("areas", new DomainError(
-                DesempatePorAreaEnemErrorCodes.AreasEmExcesso,
-                $"A ordem de desempate por área do ENEM admite no máximo {AreasMaximo} áreas.")));
-            return (erros, bemFormadas);
-        }
-
-        HashSet<string> vistas = new(StringComparer.Ordinal);
-        for (int indice = 0; indice < areas.Count; indice++)
-        {
-            string? codigo = areas[indice];
-            if (!CodigoDeAreaValido(codigo))
-            {
-                erros.Add(new($"areas[{indice}]", new DomainError(
-                    DesempatePorAreaEnemErrorCodes.AreaInvalida,
-                    $"Cada área da ordem de desempate é um código de até {GrupoPesoAreaEnemCongelado.AreaCodigoMaxLength} caracteres, com letras maiúsculas sem acento, algarismos e sublinhado.")));
-                continue;
-            }
-
-            if (!vistas.Add(codigo!))
-            {
-                erros.Add(new($"areas[{indice}]", new DomainError(
-                    DesempatePorAreaEnemErrorCodes.AreaRepetida,
-                    $"A área {codigo} aparece mais de uma vez na ordem de desempate.")));
-                continue;
-            }
-
-            bemFormadas.Add((indice, codigo!));
-        }
-
-        return (erros, bemFormadas);
-    }
-
-    /// <summary>A recusa do predicado aponta o campo do critério que a corrige.</summary>
-    private static string CampoDaRecusaDoPredicado(DomainError erro) => erro.Code switch
-    {
-        PredicadoDnfErrorCodes.OperadorIncompativelComDominio => "operador",
-        PredicadoDnfErrorCodes.ValorIncompativelComTipo or PredicadoDnfErrorCodes.ValorForaDoDominio => "valor",
-        _ => "fato",
-    };
-
-    internal static bool CodigoDeAreaValido(string? codigo) =>
-        !string.IsNullOrEmpty(codigo)
-        && codigo.Length <= GrupoPesoAreaEnemCongelado.AreaCodigoMaxLength
-        && codigo.All(static c => c is (>= 'A' and <= 'Z') or (>= '0' and <= '9') or '_');
 
     void IParteDoProcesso.VincularProcesso(Guid processoSeletivoId) =>
         ProcessoSeletivoId = processoSeletivoId;

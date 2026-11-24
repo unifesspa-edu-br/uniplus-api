@@ -6,6 +6,8 @@ using Domain.Enums;
 
 using FluentValidation;
 
+using Kernel.Domain.CodigosDeContrato;
+
 public sealed class CriarProcessoSeletivoCommandValidator : AbstractValidator<CriarProcessoSeletivoCommand>
 {
     public CriarProcessoSeletivoCommandValidator()
@@ -23,9 +25,9 @@ public sealed class CriarProcessoSeletivoCommandValidator : AbstractValidator<Cr
         // Story #851 §3.4: OrigemCandidatos é NOT NULL e exigido na criação — o piso
         // mínimo do cronograma deriva dela, nunca do Tipo.
         RuleFor(x => x.OrigemCandidatos)
-            .NotEqual(OrigemCandidatos.Nenhuma)
+            .NotEmpty()
             .WithMessage("Origem dos candidatos é obrigatória.")
-            .IsInEnum()
+            .Must(static codigo => CatalogoDe<OrigemCandidatos>.TentarObter(codigo, out _))
             .WithMessage("Origem dos candidatos inválida.");
 
         // Issue #849, CA-01: quem administra o certame (CA-04 da Feature #40) — NOT NULL,

@@ -5,6 +5,7 @@ using System.Text.Json.Nodes;
 
 using AwesomeAssertions;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Recursos;
@@ -25,7 +26,7 @@ public sealed class ColunaDosProcedimentosDeRecursoTests
 
         using JsonDocument json = JsonDocument.Parse(documento);
         json.RootElement.EnumerateArray().Select(static p => p.GetProperty("alvoTipo").GetString())
-            .Should().BeEquivalentTo("item_avaliacao", "area_enem");
+            .Should().BeEquivalentTo("ITEM_AVALIACAO", "AREA_ENEM");
         lido.MesmoConteudo(original).Should().BeTrue();
     }
 
@@ -60,5 +61,5 @@ public sealed class ColunaDosProcedimentosDeRecursoTests
 
     private static ProcedimentoDeRecursoDeclarado Procedimento(AlvoDoProcedimentoDeRecurso alvo) =>
         ProcedimentoDeRecursoDeclarado.De(TipoMotivoDeDecisao.Classificacao, alvo,
-            ReferenciaRegra.De(RegraProcedimentoRecursoCodigo.Recalculo, "v1", new string('a', 64)));
+            ReferenciaRegra.De(RegraDeProcedimentoDoRecurso.Recalculo.Codigo(), "v1", new string('a', 64)));
 }

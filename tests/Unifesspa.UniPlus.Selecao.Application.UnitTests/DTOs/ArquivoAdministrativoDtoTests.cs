@@ -4,6 +4,7 @@ using System.Text.Json;
 
 using AwesomeAssertions;
 
+using Unifesspa.UniPlus.Application.Abstractions.Respostas;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Application.DTOs;
 using Unifesspa.UniPlus.Selecao.Application.DTOs.Administrativos;
@@ -29,7 +30,7 @@ public sealed class ArquivoAdministrativoDtoTests
             ExigenciaId = Guid.CreateVersion7(),
             NomeDoDocumento = "Laudo",
             TipoDeMidia = "application/pdf",
-            Situacao = SituacaoDoArquivoDoCandidato.Verificado,
+            Situacao = CodigoComRotulo<SituacaoDoArquivoDoCandidato>.De(SituacaoDoArquivoDoCandidato.Verificado),
             ConfirmadoEm = DateTimeOffset.UtcNow,
         };
 

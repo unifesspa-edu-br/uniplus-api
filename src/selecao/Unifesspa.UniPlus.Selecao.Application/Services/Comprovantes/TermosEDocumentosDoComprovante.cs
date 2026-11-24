@@ -1,5 +1,6 @@
 namespace Unifesspa.UniPlus.Selecao.Application.Services.Comprovantes;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Selecao.Application.DTOs.Comprovantes;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
@@ -13,17 +14,6 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 /// </summary>
 internal static class TermosEDocumentosDoComprovante
 {
-    private const string SituacaoDesconhecida = "A confirmar";
-
-    private static readonly Dictionary<string, string> RotuloDaSituacao = new(StringComparer.Ordinal)
-    {
-        [SituacaoDoDocumentoCodigo.Satisfeita] = "Atendido",
-        [SituacaoDoDocumentoCodigo.Pendente] = "Pendente",
-        [DocumentosDoComprovante.SituacaoDispensada] = "Dispensado",
-        [SituacaoDoDocumentoCodigo.PodeSerExigido] = "Pode ser exigido, conforme as respostas",
-        [SituacaoDoDocumentoCodigo.DependeDeFasePosterior] = "Pode ser exigido, conforme uma fase posterior do processo",
-    };
-
     public static IReadOnlyList<TermoAceitoDoComprovanteDto> Termos(InsumosDoComprovante insumos)
     {
         Dictionary<string, string> nomes = [];
@@ -47,7 +37,17 @@ internal static class TermosEDocumentosDoComprovante
             documento.Nome,
             documento.OcorrenciaId is { } ocorrencia ? integrantes.GetValueOrDefault(ocorrencia) : null,
             documento.Obrigatorio,
-            RotuloDaSituacao.GetValueOrDefault(documento.Situacao, SituacaoDesconhecida),
+            RotuloDaSituacao(documento.Situacao),
             documento.Consequencia,
             [.. documento.Arquivos.Select(static a => new ArquivoDoComprovanteDto(a.HashSha256, a.TamanhoBytes, a.Formato))]);
+    private static string RotuloDaSituacao(string codigo) => codigo == DocumentosDoComprovante.SituacaoDispensada
+        ? "Dispensado"
+        : CatalogoDe<SituacaoDoDocumento>.TentarObter(codigo, out SituacaoDoDocumento situacao) ? situacao switch
+        {
+            SituacaoDoDocumento.Satisfeita => "Atendido",
+            SituacaoDoDocumento.Pendente => "Pendente",
+            SituacaoDoDocumento.PodeSerExigido => "Pode ser exigido, conforme as respostas",
+            SituacaoDoDocumento.DependeDeFasePosterior => "Pode ser exigido, conforme uma fase posterior do processo",
+            _ => throw new InvalidOperationException("Situação do documento inválida no comprovante."),
+        } : "A confirmar";
 }

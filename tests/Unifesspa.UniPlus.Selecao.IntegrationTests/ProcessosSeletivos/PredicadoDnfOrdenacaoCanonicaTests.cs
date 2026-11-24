@@ -5,6 +5,7 @@ using System.Text.Json.Nodes;
 
 using AwesomeAssertions;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Kernel.Tempo;
 using Unifesspa.UniPlus.Regras.Enums;
@@ -71,7 +72,7 @@ public sealed class PredicadoDnfOrdenacaoCanonicaTests
             ColetaSolicitacaoIsencao: false)),
         new DecisoesDeCronogramaDaFase(
             Ordem: 1, Inicio: new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero), Fim: new DateTimeOffset(2026, 1, 31, 0, 0, 0, TimeSpan.Zero), UnidadeResponsavel: UnidadesDeTeste.Ceps),
-        new PublicacoesDaFase(Produtos: [ProdutoDaFase.Criar("INSCRICAO", PapelProdutoFase.Definitivo)], EmiteParecerIndividual: false, RegraRecurso: null),
+        new PublicacoesDaFase(Produtos: [ProdutoDaFase.Criar("INSCRICAO", PapelDaPublicacaoPrevista.Definitivo)], EmiteParecerIndividual: false, RegraRecurso: null),
         bancasRequeridas: []).Value!;
 
     /// <summary>
@@ -111,33 +112,19 @@ public sealed class PredicadoDnfOrdenacaoCanonicaTests
     {
         ModalidadeSelecionada modalidade = ModalidadeAmpla();
         ConfiguracaoDistribuicaoVagas distribuicao = ConfiguracaoDistribuicaoVagas.Criar(Guid.CreateVersion7(),
-            new DistribuicaoDeVagasDeclarada { VagasOfertadasBase = 40, PercentualDaReservaLegal = 1m, RegraDeDistribuicao = Regra(RegraDistribuicaoVagasCodigo.Institucional, 'a'), Modalidades = [modalidade] },
+            new DistribuicaoDeVagasDeclarada { VagasOfertadasBase = 40, PercentualDaReservaLegal = 1m, RegraDeDistribuicao = Regra(RegraDeDistribuicaoDeVagas.Institucional.Codigo(), 'a'), Modalidades = [modalidade] },
             new FatosDaOfertaNoCadastro { OfertaCurso = OfertaCursoDeTeste.Medicina }).Value!;
         processo.DefinirDistribuicaoVagas([distribuicao], FatosDeModalidadeDeTeste.DoCatalogo).IsSuccess.Should().BeTrue();
     }
 
     private static ModalidadeSelecionada ModalidadeAmpla() =>
-        ModalidadeSelecionada.Criar(
-            modalidadeOrigemId: Guid.CreateVersion7(),
-            codigo: "AC",
-            descricao: null,
-            naturezaLegal: NaturezaLegalModalidade.Ampla,
-            composicaoVagas: ComposicaoVagasModalidade.RestanteDasVagasOfertadas,
-            composicaoOrigemCodigo: null,
-            regraRemanejamento: RegraRemanejamentoModalidade.Nenhuma,
-            remanejamentoDestino: null,
-            remanejamentoPar: null,
-            remanejamentoFallback: null,
-            regraDeAplicabilidade: RegrasDeAplicabilidadeDeTeste.DaNatureza(NaturezaLegalModalidade.Ampla),
-            acaoQuandoIndeferido: null,
-            baseLegal: "Res. Unifesspa 532/2021",
-            quantidadeDeclarada: 40).Value!;
+        ModalidadeSelecionada.Criar(ModalidadesNoCadastroDeTeste.Da("AC", NaturezaLegalModalidade.Ampla, ComposicaoVagasModalidade.RestanteDasVagasOfertadas) with { RegraRemanejamento = null, BaseLegal = "Res. Unifesspa 532/2021" }, 40).Value!;
 
     private static ConfiguracaoClassificacao ClassificacaoImportada() =>
         ConfiguracaoClassificacao.Criar(new DeclaracaoDaClassificacao
         {
-            RegraCalculo = Regra(RegraCalculoCodigo.ClassificacaoImportada, 'b'),
-            RegraOrdemAlocacao = Regra(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, 'c'),
+            RegraCalculo = Regra(RegraDeCalculoDaNota.ClassificacaoImportada.Codigo(), 'b'),
+            RegraOrdemAlocacao = Regra(RegraDeOrdemDeAlocacao.PrimeiraOpcaoPrioritaria.Codigo(), 'c'),
         }).Value!;
 
     private static FaseCronograma DefinirCronogramaEEtapas(ProcessoSeletivo processo)
@@ -153,6 +140,10 @@ public sealed class PredicadoDnfOrdenacaoCanonicaTests
         return fase;
     }
 
+    // obrigatorio: false, consequenciaIndeferimento: null — DeterminaResultado() fica falso,
+    // então nem PendenciaDasExigenciasDocumentais (CA-01) nem a checagem de base legal de
+    // AvaliadorConformidadeLegal exigem nada além do gatilho em si (mesmo raciocínio já
+    // usado nos testes de leitura do envelope).
     private static void DefinirExigenciaCondicional(ProcessoSeletivo processo, FaseCronograma fase, IReadOnlyList<CondicaoGatilho> condicoes)
     {
         DocumentoExigido documento = new DocumentoExigidoBuilder()
@@ -345,7 +336,7 @@ public sealed class PredicadoDnfOrdenacaoCanonicaTests
         ProcessoSeletivo processo = MontarProcessoComGatilho([]);
         ParametrosDesempatePredicadoFato args = new(CondicaoDnf.Criar("COR_RACA", operador, valor).Value!);
         processo.DefinirCriteriosDesempate(
-            [CriterioDesempate.Criar(1, Regra(CriterioDesempateCodigo.PredicadoFato, 'e'), args).Value!]).IsSuccess.Should().BeTrue();
+            [CriterioDesempate.Criar(1, Regra(RegraDeDesempate.CondicaoSobreDado.Codigo(), 'e'), args).Value!]).IsSuccess.Should().BeTrue();
         return processo;
     }
 

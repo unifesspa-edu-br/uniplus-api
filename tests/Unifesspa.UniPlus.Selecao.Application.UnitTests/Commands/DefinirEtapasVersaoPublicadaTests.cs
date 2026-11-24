@@ -5,6 +5,7 @@ using AwesomeAssertions;
 using NSubstitute;
 
 using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Publicacoes.Contracts;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
@@ -96,7 +97,7 @@ public sealed class DefinirEtapasVersaoPublicadaTests
             processo.Id,
             [
                 new EtapaProcessoInput(
-                    "Prova Objetiva", CaraterEtapa.Classificatoria, TipoProvaObjetivaOrigemId, 1m, null, 1,
+                    "Prova Objetiva", CaraterEtapa.Classificatoria.Codigo(), TipoProvaObjetivaOrigemId, 1m, null, 1,
                     Produtos: [new ProdutoDaEtapaInput(Resultado, "DEFINITIVO")],
                     Bancas: [], Recursos: []),
             ]);

@@ -34,7 +34,7 @@ public sealed class ConfiguracaoDerivacaoFato : EntityBase, IParteDoProcesso
     /// <summary>
     /// Códigos dos fatos citados nos predicados <c>quando</c> de todas as regras, sem repetição — a
     /// lista de dependências da derivação. Recomputada dos citados, nunca persistida (§927), e usada
-    /// como aresta de <see cref="Enums.TipoArestaGrafo.Derivacao"/> no grafo conjunto (§928, §6).
+    /// como aresta de <see cref="Enums.MotivoDaDependencia.CalculaDado"/> no grafo conjunto (§928, §6).
     /// </summary>
     public IReadOnlyCollection<string> FatosCitados =>
         [.. _regras
@@ -70,14 +70,18 @@ public sealed class ConfiguracaoDerivacaoFato : EntityBase, IParteDoProcesso
             return Result<ConfiguracaoDerivacaoFato>.ValidationFailure(erros);
         }
 
-        ConfiguracaoDerivacaoFato config = new() { CodigoFato = codigoFato.Trim() };
-        foreach (RegraDerivacaoConfigurada regra in lista)
-        {
-            regra.VincularConfiguracao(config.Id);
-            config._regras.Add(regra);
-        }
-
+        ConfiguracaoDerivacaoFato config = new() { CodigoFato = (codigoFato ?? string.Empty).Trim() };
+        config.AdicionarRegras(lista);
         return Result<ConfiguracaoDerivacaoFato>.Success(config);
+    }
+
+    private void AdicionarRegras(IEnumerable<RegraDerivacaoConfigurada> regras)
+    {
+        foreach (RegraDerivacaoConfigurada regra in regras)
+        {
+            regra.VincularConfiguracao(Id);
+            _regras.Add(regra);
+        }
     }
 
     /// <summary>
@@ -95,6 +99,14 @@ public sealed class ConfiguracaoDerivacaoFato : EntityBase, IParteDoProcesso
 
         List<FieldError> erros = [];
 
+        ValidarPresenca(codigoFato, regrasBrutas, erros);
+        ValidarCoerenciaDasRegras(regrasBrutas, erros);
+
+        return erros;
+    }
+
+    private static void ValidarPresenca(string? codigoFato, IReadOnlyCollection<(int Ordem, string? Contribui)> regrasBrutas, List<FieldError> erros)
+    {
         if (string.IsNullOrWhiteSpace(codigoFato))
         {
             erros.Add(new("codigoFato", new DomainError(
@@ -109,6 +121,10 @@ public sealed class ConfiguracaoDerivacaoFato : EntityBase, IParteDoProcesso
                 "A derivação de um fato precisa de ao menos uma regra.")));
         }
 
+    }
+
+    private static void ValidarCoerenciaDasRegras(IReadOnlyCollection<(int Ordem, string? Contribui)> regrasBrutas, List<FieldError> erros)
+    {
         if (regrasBrutas.Select(static r => r.Ordem).Distinct().Count() != regrasBrutas.Count)
         {
             erros.Add(new("regras", new DomainError(
@@ -122,8 +138,6 @@ public sealed class ConfiguracaoDerivacaoFato : EntityBase, IParteDoProcesso
                 ConfiguracaoDerivacaoFatoErrorCodes.RegrasComESemCodigo,
                 "As regras de uma derivação contribuem código todas, no derivado categórico, ou nenhuma, no derivado booleano.")));
         }
-
-        return erros;
     }
 
     void IParteDoProcesso.VincularProcesso(Guid processoSeletivoId) =>
@@ -141,26 +155,34 @@ public sealed class ConfiguracaoDerivacaoFato : EntityBase, IParteDoProcesso
     {
         ArgumentNullException.ThrowIfNull(dominioContribui);
 
-        List<RegraDerivacao> regras = [];
-        foreach (RegraDerivacaoConfigurada regra in _regras.OrderBy(static r => r.Ordem))
+        Result<IReadOnlyList<RegraDerivacao>> resultado = ConverterRegras();
+        if (resultado.IsFailure)
         {
-            Result<RegraDerivacao> regraResult = regra.ParaRegraDerivacao();
-            if (regraResult.IsFailure)
-            {
-                return Result<DerivacaoDoFato>.Failure(regraResult.Error!);
-            }
-
-            regras.Add(regraResult.Value!);
+            return Result<DerivacaoDoFato>.Failure(resultado.Error!);
         }
 
-        // As dependências são recomputadas da união dos fatos citados — nunca persistidas, para não
-        // divergir das regras. A factory do VO valida a coerência que sobra.
-        IReadOnlyCollection<string> dependencias =
-            [.. regras.SelectMany(static r => r.FatosCitados).Distinct(StringComparer.Ordinal)];
-
+        IReadOnlyList<RegraDerivacao> regras = resultado.Value!;
+        IReadOnlyCollection<string> dependencias = [.. regras.SelectMany(static r => r.FatosCitados).Distinct(StringComparer.Ordinal)];
         return Booleano
             ? DerivacaoDoFato.CriarBooleana(CodigoFato, regras, dependencias)
             : DerivacaoDoFato.Criar(CodigoFato, regras, dependencias, dominioContribui);
+    }
+
+    private Result<IReadOnlyList<RegraDerivacao>> ConverterRegras()
+    {
+        List<RegraDerivacao> regras = [];
+        foreach (RegraDerivacaoConfigurada regra in _regras.OrderBy(static r => r.Ordem))
+        {
+            Result<RegraDerivacao> resultado = regra.ParaRegraDerivacao();
+            if (resultado.IsFailure)
+            {
+                return Result<IReadOnlyList<RegraDerivacao>>.Failure(resultado.Error!);
+            }
+
+            regras.Add(resultado.Value!);
+        }
+
+        return Result<IReadOnlyList<RegraDerivacao>>.Success(regras);
     }
 }
 

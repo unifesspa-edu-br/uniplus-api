@@ -2,8 +2,7 @@ namespace Unifesspa.UniPlus.Selecao.Domain.UnitTests.ProcessosSeletivos.Homologa
 
 using AwesomeAssertions;
 
-using Unifesspa.UniPlus.Kernel.Results;
-using Unifesspa.UniPlus.Selecao.Domain.Errors;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.HomologacaoDasInscricoes;
 
 using Xunit;
@@ -17,7 +16,7 @@ public sealed class TipoDeCondicaoDeHomologacaoTests
         string codigo = TipoDeCondicaoDeHomologacao.ResultadoNoRetornoDoInep.Codigo();
 
         codigo.Should().Be("RESULTADO_NO_RETORNO_DO_INEP");
-        TiposDeCondicaoDeHomologacao.DoCodigo(codigo).Value.Should().Be(TipoDeCondicaoDeHomologacao.ResultadoNoRetornoDoInep);
+        CatalogoDe<TipoDeCondicaoDeHomologacao>.Obter(codigo).Should().Be(TipoDeCondicaoDeHomologacao.ResultadoNoRetornoDoInep);
     }
 
     [Theory(DisplayName = "Condição que o sistema ainda não apura é recusada como não disponível, sem tentar adivinhar o tipo")]
@@ -28,13 +27,6 @@ public sealed class TipoDeCondicaoDeHomologacaoTests
     [InlineData(null)]
     public void DoCodigo_CondicaoNaoApurada_ENaoDisponivel(string? codigo)
     {
-        Result<TipoDeCondicaoDeHomologacao> resultado = TiposDeCondicaoDeHomologacao.DoCodigo(codigo);
-
-        resultado.IsFailure.Should().BeTrue();
-        resultado.Error!.Code.Should().Be(HomologacaoDasInscricoesErrorCodes.CondicaoNaoDisponivel);
-        if (!string.IsNullOrWhiteSpace(codigo))
-        {
-            resultado.Error.Message.Should().NotContain(codigo);
-        }
+        CatalogoDe<TipoDeCondicaoDeHomologacao>.TentarObter(codigo, out _).Should().BeFalse();
     }
 }

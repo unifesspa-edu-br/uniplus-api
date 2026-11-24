@@ -120,6 +120,6 @@ internal static class ProcessoParaMotivos
                 Guid.CreateVersion7(), codigo, OrigemDataFase.NoEdital, AgrupaEtapas: false, PermiteComplementacao: false, ColetaInscricao: ordem == 1, ColetaSolicitacaoIsencao: coletaIsencao)),
             new DecisoesDeCronogramaDaFase(ordem, Inicio: inicio, Fim: inicio.AddDays(20), UnidadeResponsavel: UnidadesDeTeste.Ceps),
             new PublicacoesDaFase(
-                Produtos: [ProdutoDaFase.Criar(codigo, PapelProdutoFase.Definitivo)], EmiteParecerIndividual: false, RegraRecurso: null, TiposDeDecisao: [tipoDeDecisao.Codigo()]),
+                Produtos: [ProdutoDaFase.Criar(codigo, PapelDaPublicacaoPrevista.Definitivo)], EmiteParecerIndividual: false, RegraRecurso: null, TiposDeDecisao: [tipoDeDecisao.Codigo()]),
             bancasRequeridas: []).Value!;
 }

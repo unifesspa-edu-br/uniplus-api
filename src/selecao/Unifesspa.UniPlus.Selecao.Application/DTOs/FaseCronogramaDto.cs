@@ -6,8 +6,8 @@ using Unifesspa.UniPlus.Application.Abstractions.Respostas;
 using Unifesspa.UniPlus.Regras.Enums;
 
 /// <summary>Projeção de leitura de <c>ProdutoDaFase</c> — o que a fase publica e o papel de cada publicação.</summary>
-/// <param name="Papel">Token canônico UPPER_SNAKE (<c>PRELIMINAR</c>/<c>DEFINITIVO</c>), ou nulo quando o ato não é resultado.</param>
-public sealed record ProdutoDaFaseDto(Guid Id, string AtoCodigo, string? Papel);
+/// <param name="Papel">Código (<c>PRELIMINAR</c>/<c>DEFINITIVO</c>) e rótulo do papel, ou nulo quando o ato não é resultado.</param>
+public sealed record ProdutoDaFaseDto(Guid Id, string AtoCodigo, CodigoComRotulo<PapelDaPublicacaoPrevista>? Papel);
 
 /// <summary>Projeção de leitura de <c>CategoriaJulgada</c> — uma categoria de documento dos candidatos atendidos pela banca.</summary>
 public sealed record CategoriaJulgadaDto(Guid Id, Guid CategoriaDocumentoOrigemId, string Codigo);
@@ -90,7 +90,7 @@ public sealed record FaseCronogramaDto(
 /// <summary>Os traços que a fase herda da fase canônica, congelados na definição do cronograma (ADR-0061).</summary>
 /// <param name="OrigemId">O id da fase canônica de que a fase foi copiada.</param>
 /// <param name="OrigemData">
-/// Token canônico UPPER_SNAKE (<c>NO_EDITAL</c>/<c>NA_EXECUCAO</c>), o mesmo que o catálogo de fases
+/// Código (<c>NO_EDITAL</c>/<c>NA_EXECUCAO</c>) e rótulo, o mesmo que o catálogo de fases
 /// canônicas publica — a origem deste campo é aquele cadastro, não a escrita daqui.
 /// </param>
 /// <param name="AgrupaEtapas">Se a fase agrupa etapas de avaliação.</param>
@@ -99,7 +99,7 @@ public sealed record FaseCronogramaDto(
 /// <param name="ColetaSolicitacaoIsencao">Se a fase coleta a solicitação de isenção da taxa.</param>
 public sealed record FaseCanonicaCongeladaDto(
     Guid OrigemId,
-    string OrigemData,
+    CodigoComRotulo<OrigemDataFase> OrigemData,
     bool AgrupaEtapas,
     bool PermiteComplementacao,
     bool ColetaInscricao,

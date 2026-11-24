@@ -55,20 +55,20 @@ internal static class PayloadsDoEnvelopeFechado
 
     internal static object[] EtapasIniciais(Guid tipoBancaId) =>
     [
-        new { nome = "Prova Objetiva", carater = (int)CaraterEtapa.Ambas, tipoEtapaOrigemId = TipoEtapaProvaObjetivaOrigemId, peso = 3.5000m, notaMinima = 40.0000m, notaMaxima = 100m, formaDeAvaliacao = "OBJETIVA", ordem = 1, faseCodigo = "AVALIACAO", produtos = Array.Empty<object>(), bancas = Array.Empty<object>(), recursos = Array.Empty<object>() },
-        new { nome = "Redação", carater = (int)CaraterEtapa.Classificatoria, tipoEtapaOrigemId = TipoEtapaRedacaoOrigemId, peso = 2.2500m, notaMinima = (decimal?)null, notaMaxima = 100m, formaDeAvaliacao = "HUMANA", passoDoLancamento = 0.5000m, regraConsolidacaoCodigo = RegraConsolidacaoCodigo.CorrecaoIndependente, regraConsolidacaoVersao = "v1", ordem = 2, faseCodigo = "AVALIACAO", produtos = Array.Empty<object>(), bancas = new object[] { BancaDoTipo(tipoBancaId) }, recursos = Array.Empty<object>() },
-        new { nome = "Entrevista", carater = (int)CaraterEtapa.Eliminatoria, tipoEtapaOrigemId = TipoEtapaEntrevistaOrigemId, peso = (decimal?)null, notaMinima = 60.0000m, notaMaxima = 100m, formaDeAvaliacao = "OBJETIVA", ordem = 3, faseCodigo = "AVALIACAO", produtos = Array.Empty<object>(), bancas = Array.Empty<object>(), recursos = Array.Empty<object>() },
+        new { nome = "Prova Objetiva", carater = CaraterEtapa.Ambas.Codigo(), tipoEtapaOrigemId = TipoEtapaProvaObjetivaOrigemId, peso = 3.5000m, notaMinima = 40.0000m, notaMaxima = 100m, formaDeAvaliacao = "OBJETIVA", ordem = 1, faseCodigo = "AVALIACAO", produtos = Array.Empty<object>(), bancas = Array.Empty<object>(), recursos = Array.Empty<object>() },
+        new { nome = "Redação", carater = CaraterEtapa.Classificatoria.Codigo(), tipoEtapaOrigemId = TipoEtapaRedacaoOrigemId, peso = 2.2500m, notaMinima = (decimal?)null, notaMaxima = 100m, formaDeAvaliacao = "HUMANA", passoDoLancamento = 0.5000m, regraConsolidacaoCodigo = RegraDeApuracaoDaAvaliacao.CorrecaoIndependente.Codigo(), regraConsolidacaoVersao = "v1", ordem = 2, faseCodigo = "AVALIACAO", produtos = Array.Empty<object>(), bancas = new object[] { BancaDoTipo(tipoBancaId) }, recursos = Array.Empty<object>() },
+        new { nome = "Entrevista", carater = CaraterEtapa.Eliminatoria.Codigo(), tipoEtapaOrigemId = TipoEtapaEntrevistaOrigemId, peso = (decimal?)null, notaMinima = 60.0000m, notaMaxima = 100m, formaDeAvaliacao = "OBJETIVA", ordem = 3, faseCodigo = "AVALIACAO", produtos = Array.Empty<object>(), bancas = Array.Empty<object>(), recursos = Array.Empty<object>() },
     ];
 
     internal static object RegraDeDeliberacaoDaBanca() => new
     {
-        modo = "colegiadaComVotacao",
+        modo = "COLEGIADA_COM_VOTACAO",
         integrantes = 3,
         suplentes = 0,
         quorum = 2,
-        criterio = "maioriaSimples",
-        desempate = "votoDaPresidencia",
-        encerramento = "presidenciaNoQuorum",
+        criterio = "MAIORIA_SIMPLES",
+        desempate = "VOTO_DA_PRESIDENCIA",
+        encerramento = "PRESIDENCIA_NO_QUORUM",
     };
 
     internal static object[] CronogramaDeFases(CatalogosSemeados catalogos) =>
@@ -127,21 +127,21 @@ internal static class PayloadsDoEnvelopeFechado
 
     internal static object[] ProdutosDoResultado() =>
     [
-        new { atoCodigo = CodigoAtoResultado, papel = PapelProdutoFaseCodigo.Preliminar },
-        new { atoCodigo = CodigoAtoResultado, papel = PapelProdutoFaseCodigo.Definitivo },
+        new { atoCodigo = CodigoAtoResultado, papel = "PRELIMINAR" },
+        new { atoCodigo = CodigoAtoResultado, papel = "DEFINITIVO" },
     ];
 
     internal static JsonObject RegraDeRecursoAncoradaNoResultado() => new()
     {
-        ["regraCodigo"] = RegraPrazoRecursoCodigo.AncoradoEmAto,
+        ["regraCodigo"] = RegraDePrazoDoRecurso.ContadoDaPublicacaoDoAto.Codigo(),
         ["regraVersao"] = "v1",
         ["prazoValor"] = 1.1m,
-        ["prazoUnidade"] = "horas",
+        ["prazoUnidade"] = "HORAS",
         ["atoAncoraCodigo"] = CodigoAtoResultado,
         ["admiteInstanciaSuperior"] = true,
         ["prazoSegundaInstanciaValor"] = 2.1234m,
-        ["prazoSegundaInstanciaUnidade"] = "horas",
-        ["efeitoSuspensivo"] = "semEfeitoSuspensivo",
+        ["prazoSegundaInstanciaUnidade"] = "HORAS",
+        ["efeitoSuspensivo"] = "SEM_EFEITO_SUSPENSIVO",
     };
 
     internal static object BancaDoTipo(Guid tipoBancaId) => new
@@ -194,7 +194,7 @@ internal static class PayloadsDoEnvelopeFechado
 
     internal static object Cascata() => new
     {
-        regraCodigo = RegraRemanejamentoCodigo.Cascata,
+        regraCodigo = CriterioDeRemanejamento.OrdemDaLei12711.Codigo(),
         regraVersao = "v1",
         fallbackCodigo = ModalidadesFederaisLei12711.Ac,
         destinos = DestinosDaCascata(),

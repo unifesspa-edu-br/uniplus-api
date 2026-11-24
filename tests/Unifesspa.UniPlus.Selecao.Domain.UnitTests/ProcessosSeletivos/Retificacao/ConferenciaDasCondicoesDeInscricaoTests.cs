@@ -21,10 +21,7 @@ public sealed class ConferenciaDasCondicoesDeInscricaoTests
     private static readonly Guid Ampla = Guid.Parse("00000000-0000-7000-8000-0000000000a1");
     private static readonly Guid Cota = Guid.Parse("00000000-0000-7000-8000-0000000000a2");
 
-    private static ModalidadeSelecionada Modalidade(Guid origem) => ModalidadeSelecionada.Criar(
-        origem, "AC", null, NaturezaLegalModalidade.Ampla, ComposicaoVagasModalidade.RestanteDasVagasOfertadas,
-        null, RegraRemanejamentoModalidade.Nenhuma, null, null, null, RegrasDeAplicabilidadeDeTeste.DaNatureza(NaturezaLegalModalidade.Ampla), null, "Res. Unifesspa 532/2021",
-        quantidadeDeclarada: 40).Value!;
+    private static ModalidadeSelecionada Modalidade(Guid origem) => ModalidadeSelecionada.Criar(ModalidadesNoCadastroDeTeste.Da("AC", NaturezaLegalModalidade.Ampla, ComposicaoVagasModalidade.RestanteDasVagasOfertadas) with { Id = origem, BaseLegal = "Res. Unifesspa 532/2021" }, 40).Value!;
 
     private static DistribuicaoDeVagasDaOferta Distribuicao(Guid oferta, params Guid[] modalidades) =>
         new(oferta, [.. modalidades.Select(Modalidade)]);
@@ -104,7 +101,7 @@ public sealed class ConferenciaDasCondicoesDeInscricaoTests
     [Fact(DisplayName = "Sem inscrição enviada, oferta, modalidade e taxa mudam livremente")]
     public void SemInscricao_MudaLivremente()
     {
-        ConferenciaDasCondicoesDeInscricao.Conferir([], Taxa(true, 100m, FundamentoIsencaoCodigo.CadastroUnico), Taxa(false, null), Fatos()).Should().BeEmpty();
+        ConferenciaDasCondicoesDeInscricao.Conferir([], Taxa(true, 100m, "CADASTRO_UNICO"), Taxa(false, null), Fatos()).Should().BeEmpty();
     }
 
     [Theory(DisplayName = "Com inscrição enviada, mudar o valor da taxa ou o cobrar é recusado, para mais ou para menos")]
@@ -114,8 +111,8 @@ public sealed class ConferenciaDasCondicoesDeInscricaoTests
     [InlineData(false, null, true, 100)]
     public void Taxa_ComInscricao_Muda_Recusa(bool cobraAntes, int? valorAntes, bool cobraDepois, int? valorDepois)
     {
-        ConfiguracaoTaxaInscricao antes = Taxa(cobraAntes, valorAntes, cobraAntes ? [FundamentoIsencaoCodigo.CadastroUnico] : []);
-        ConfiguracaoTaxaInscricao depois = Taxa(cobraDepois, valorDepois, cobraDepois ? [FundamentoIsencaoCodigo.CadastroUnico] : []);
+        ConfiguracaoTaxaInscricao antes = Taxa(cobraAntes, valorAntes, cobraAntes ? ["CADASTRO_UNICO"] : []);
+        ConfiguracaoTaxaInscricao depois = Taxa(cobraDepois, valorDepois, cobraDepois ? ["CADASTRO_UNICO"] : []);
 
         Recusas(ConferenciaDasCondicoesDeInscricao.Conferir([], antes, depois, Fatos(inscricao: true))).Should().Equal(
             ("taxaDeInscricao", RetificacaoErrorCodes.TaxaComInscricaoNaoMuda));
@@ -124,22 +121,22 @@ public sealed class ConferenciaDasCondicoesDeInscricaoTests
     [Fact(DisplayName = "Com inscrição enviada, a taxa igual passa, e os critérios de isenção mudam sem pedido de isenção")]
     public void Taxa_ComInscricao_Igual_Passa()
     {
-        ConferenciaDasCondicoesDeInscricao.Conferir([], Taxa(true, 100m, FundamentoIsencaoCodigo.CadastroUnico), Taxa(true, 100m, FundamentoIsencaoCodigo.CadastroUnico), Fatos(inscricao: true)).Should().BeEmpty();
-        ConferenciaDasCondicoesDeInscricao.Conferir([], Taxa(true, 100m, FundamentoIsencaoCodigo.CadastroUnico), Taxa(true, 100m, FundamentoIsencaoCodigo.DoacaoMedulaOssea), Fatos(inscricao: true)).Should().BeEmpty();
+        ConferenciaDasCondicoesDeInscricao.Conferir([], Taxa(true, 100m, "CADASTRO_UNICO"), Taxa(true, 100m, "CADASTRO_UNICO"), Fatos(inscricao: true)).Should().BeEmpty();
+        ConferenciaDasCondicoesDeInscricao.Conferir([], Taxa(true, 100m, "CADASTRO_UNICO"), Taxa(true, 100m, "DOACAO_MEDULA_OSSEA"), Fatos(inscricao: true)).Should().BeEmpty();
     }
 
     [Fact(DisplayName = "Com pedido de isenção feito, mudar os critérios de isenção é recusado, e a mesma lista em outra ordem passa")]
     public void CriteriosDeIsencao_ComPedido()
     {
-        Recusas(ConferenciaDasCondicoesDeInscricao.Conferir([], Taxa(true, 100m, FundamentoIsencaoCodigo.CadastroUnico), Taxa(true, 100m, FundamentoIsencaoCodigo.DoacaoMedulaOssea), Fatos(inscricao: true, pedidoDeIsencao: true))).Should().Equal(
+        Recusas(ConferenciaDasCondicoesDeInscricao.Conferir([], Taxa(true, 100m, "CADASTRO_UNICO"), Taxa(true, 100m, "DOACAO_MEDULA_OSSEA"), Fatos(inscricao: true, pedidoDeIsencao: true))).Should().Equal(
             ("taxaDeInscricao.fundamentos", RetificacaoErrorCodes.CriteriosDeIsencaoComPedidoNaoMudam));
-        ConferenciaDasCondicoesDeInscricao.Conferir([], Taxa(true, 100m, FundamentoIsencaoCodigo.CadastroUnico, FundamentoIsencaoCodigo.DoacaoMedulaOssea), Taxa(true, 100m, FundamentoIsencaoCodigo.DoacaoMedulaOssea, FundamentoIsencaoCodigo.CadastroUnico), Fatos(inscricao: true, pedidoDeIsencao: true)).Should().BeEmpty();
+        ConferenciaDasCondicoesDeInscricao.Conferir([], Taxa(true, 100m, "CADASTRO_UNICO", "DOACAO_MEDULA_OSSEA"), Taxa(true, 100m, "DOACAO_MEDULA_OSSEA", "CADASTRO_UNICO"), Fatos(inscricao: true, pedidoDeIsencao: true)).Should().BeEmpty();
     }
 
     [Fact(DisplayName = "As recusas de oferta, taxa e critérios acumulam na ordem fixada")]
     public void Recusas_Acumulam()
     {
-        Recusas(ConferenciaDasCondicoesDeInscricao.Conferir([], Taxa(true, 100m, FundamentoIsencaoCodigo.CadastroUnico), Taxa(true, 90m, FundamentoIsencaoCodigo.DoacaoMedulaOssea), Fatos(Concorridas(Oferta, Ampla), inscricao: true, pedidoDeIsencao: true))).Should().Equal(
+        Recusas(ConferenciaDasCondicoesDeInscricao.Conferir([], Taxa(true, 100m, "CADASTRO_UNICO"), Taxa(true, 90m, "DOACAO_MEDULA_OSSEA"), Fatos(Concorridas(Oferta, Ampla), inscricao: true, pedidoDeIsencao: true))).Should().Equal(
             ("distribuicaoVagas", RetificacaoErrorCodes.OfertaComInscricaoNaoSai),
             ("taxaDeInscricao", RetificacaoErrorCodes.TaxaComInscricaoNaoMuda),
             ("taxaDeInscricao.fundamentos", RetificacaoErrorCodes.CriteriosDeIsencaoComPedidoNaoMudam));

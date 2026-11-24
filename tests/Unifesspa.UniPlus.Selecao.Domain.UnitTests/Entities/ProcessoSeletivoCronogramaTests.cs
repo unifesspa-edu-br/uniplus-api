@@ -134,7 +134,7 @@ public sealed class ProcessoSeletivoCronogramaTests
     {
         ProcessoSeletivo processo = NovoProcesso();
         // Cronograma mínimo: importação → classificação → habilitação, SEM homologação e SEM avaliação.
-        FaseCronograma classificacao = new ModeloDeFase("CLASSIFICACAO", 1) { Produtos = [ProdutoDaFase.Criar("CLASSIFICACAO", PapelProdutoFase.Definitivo)] }.Criar();
+        FaseCronograma classificacao = new ModeloDeFase("CLASSIFICACAO", 1) { Produtos = [ProdutoDaFase.Criar("CLASSIFICACAO", PapelDaPublicacaoPrevista.Definitivo)] }.Criar();
         FaseCronograma habilitacao = new ModeloDeFase("HABILITACAO", 2).Criar();
 
         Result resultado = processo.DefinirCronogramaFases([classificacao, habilitacao], ArestasEstruturaisDoCiclo());
@@ -221,8 +221,8 @@ public sealed class ProcessoSeletivoCronogramaTests
         FaseCronograma fase = new ModeloDeFase("HOMOLOGACAO_INSCRICOES", 1)
         {
             Produtos = [
-                ProdutoDaFase.Criar("RESULTADO_HOMOLOGACAO", PapelProdutoFase.Preliminar),
-                ProdutoDaFase.Criar("RESULTADO_HOMOLOGACAO", PapelProdutoFase.Definitivo),
+                ProdutoDaFase.Criar("RESULTADO_HOMOLOGACAO", PapelDaPublicacaoPrevista.Preliminar),
+                ProdutoDaFase.Criar("RESULTADO_HOMOLOGACAO", PapelDaPublicacaoPrevista.Definitivo),
             ]
         }.Criar();
 

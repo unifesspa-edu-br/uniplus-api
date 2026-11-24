@@ -5,6 +5,7 @@ using System.Text.Json.Serialization;
 
 using Unifesspa.UniPlus.Application.Abstractions.Respostas;
 using Unifesspa.UniPlus.Regras.Enums;
+using Unifesspa.UniPlus.Selecao.Domain.Enums;
 
 /// <summary>
 /// DTO de leitura de um motivo do cadastro único de motivos de decisão (UNI-REQ-0283). O tipo sai
@@ -17,7 +18,7 @@ public sealed record MotivoDeDecisaoDto(
     string Codigo,
     string Descricao,
     string? Subclassificacao,
-    string Sentido,
+    CodigoComRotulo<SentidoDoMotivo> Sentido,
     bool Ativo)
 {
     /// <summary>

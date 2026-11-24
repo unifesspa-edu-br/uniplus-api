@@ -25,11 +25,11 @@ public sealed record CriterioDesempateInput(
 /// Os parâmetros aplicados por um critério de desempate, na forma do esquema de desempate do documento da configuração:
 /// só o(s) relevante(s) para o código da regra referenciada vem(êm) preenchido(s).
 /// <list type="bullet">
-///   <item><description><c>DESEMPATE-MAIOR-NOTA-ETAPA</c>: <see cref="EtapaRef"/> (deve existir no processo).</description></item>
-///   <item><description><c>DESEMPATE-IDOSO</c>: <see cref="IdadeMinima"/>.</description></item>
-///   <item><description><c>DESEMPATE-PREDICADO-FATO</c>: <see cref="Fato"/>/<see cref="Operador"/>/<see cref="Valor"/>.</description></item>
-///   <item><description><c>DESEMPATE-MAIOR-NOTA-AREA-ENEM</c>: <see cref="Areas"/>, os códigos das áreas do ENEM na ordem de desempate (devem existir no quadro de pesos por área congelado na classificação).</description></item>
-///   <item><description><c>DESEMPATE-MAIOR-IDADE</c>: nenhum.</description></item>
+///   <item><description><c>DESEMPATE_MAIOR_NOTA_ETAPA</c>: <see cref="EtapaRef"/> (deve existir no processo).</description></item>
+///   <item><description><c>DESEMPATE_IDOSO</c>: <see cref="IdadeMinima"/>.</description></item>
+///   <item><description><c>DESEMPATE_CONDICAO_SOBRE_DADO</c>: <see cref="Fato"/>/<see cref="Operador"/>/<see cref="Valor"/>.</description></item>
+///   <item><description><c>DESEMPATE_MAIOR_NOTA_AREA_ENEM</c>: <see cref="Areas"/>, os códigos das áreas do ENEM na ordem de desempate (devem existir no quadro de pesos por área congelado na classificação).</description></item>
+///   <item><description><c>DESEMPATE_MAIOR_IDADE</c>: nenhum.</description></item>
 /// </list>
 /// </summary>
 /// <param name="EtapaRef">Etapa do processo cuja nota desempata.</param>

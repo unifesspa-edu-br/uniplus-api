@@ -70,10 +70,7 @@ internal static class ProcessosDeInscricaoDeTeste
             .NaSecao(FormularioDeTeste.Secao)
             .DaFinalidade(FinalidadeFormulario.Inscricao)
             .Construir();
-        ModalidadeSelecionada ampla = ModalidadeSelecionada.Criar(
-            Guid.CreateVersion7(), "AC", null, NaturezaLegalModalidade.Ampla, ComposicaoVagasModalidade.RestanteDasVagasOfertadas,
-            null, RegraRemanejamentoModalidade.Nenhuma, null, null, null, Clausulas([("CONCORRER_PCD", true)]), null, "Res. Unifesspa 532/2021",
-            quantidadeDeclarada: 40).Value!;
+        ModalidadeSelecionada ampla = ModalidadeSelecionada.Criar(ModalidadesNoCadastroDeTeste.Da("AC", NaturezaLegalModalidade.Ampla, ComposicaoVagasModalidade.RestanteDasVagasOfertadas) with { RegraRemanejamento = null, RegraDeAplicabilidade = Clausulas([("CONCORRER_PCD", true)]), BaseLegal = "Res. Unifesspa 532/2021" }, 40).Value!;
         return NovoProcessoDeInscricao(nome, camposAdicionais: [concorrerPcd], modalidades: [ampla]);
     }
 
@@ -125,20 +122,14 @@ internal static class ProcessosDeInscricaoDeTeste
         .DaFinalidade(FinalidadeFormulario.Inscricao)
         .Construir();
 
-    private static ModalidadeSelecionada AmplaAplicavelSoQuemConcorrePcd() => ModalidadeSelecionada.Criar(
-        Guid.CreateVersion7(), "AC", null, NaturezaLegalModalidade.Ampla, ComposicaoVagasModalidade.RestanteDasVagasOfertadas,
-        null, RegraRemanejamentoModalidade.Nenhuma, null, null, null, Clausulas([("CONCORRER_PCD", true)]), null, "Res. Unifesspa 532/2021",
-        quantidadeDeclarada: 40).Value!;
+    private static ModalidadeSelecionada AmplaAplicavelSoQuemConcorrePcd() => ModalidadeSelecionada.Criar(ModalidadesNoCadastroDeTeste.Da("AC", NaturezaLegalModalidade.Ampla, ComposicaoVagasModalidade.RestanteDasVagasOfertadas) with { RegraRemanejamento = null, RegraDeAplicabilidade = Clausulas([("CONCORRER_PCD", true)]), BaseLegal = "Res. Unifesspa 532/2021" }, 40).Value!;
 
     private static void DefinirOferta(ProcessoSeletivo processo, IReadOnlyList<ModalidadeSelecionada>? modalidades)
     {
-        ModalidadeSelecionada modalidade = ModalidadeSelecionada.Criar(
-            Guid.CreateVersion7(), "AC", null, NaturezaLegalModalidade.Ampla, ComposicaoVagasModalidade.RestanteDasVagasOfertadas,
-            null, RegraRemanejamentoModalidade.Nenhuma, null, null, null, RegrasDeAplicabilidadeDeTeste.DaNatureza(NaturezaLegalModalidade.Ampla), null, "Res. Unifesspa 532/2021",
-            quantidadeDeclarada: 40).Value!;
+        ModalidadeSelecionada modalidade = ModalidadeSelecionada.Criar(ModalidadesNoCadastroDeTeste.Da("AC", NaturezaLegalModalidade.Ampla, ComposicaoVagasModalidade.RestanteDasVagasOfertadas) with { RegraRemanejamento = null, BaseLegal = "Res. Unifesspa 532/2021" }, 40).Value!;
         processo.DefinirDistribuicaoVagas(
             [ConfiguracaoDistribuicaoVagas.Criar(Guid.CreateVersion7(),
-                new DistribuicaoDeVagasDeclarada { VagasOfertadasBase = 40, PercentualDaReservaLegal = 1m, RegraDeDistribuicao = ReferenciaRegra.De(RegraDistribuicaoVagasCodigo.Institucional, "v1", new string('a', 64)), Modalidades = modalidades ?? [modalidade] },
+                new DistribuicaoDeVagasDeclarada { VagasOfertadasBase = 40, PercentualDaReservaLegal = 1m, RegraDeDistribuicao = ReferenciaRegra.De(RegraDeDistribuicaoDeVagas.Institucional.Codigo(), "v1", new string('a', 64)), Modalidades = modalidades ?? [modalidade] },
                 new FatosDaOfertaNoCadastro { OfertaCurso = OfertaCursoDeTeste.Medicina }).Value!],
             FatosDeModalidadeDeTeste.DoCatalogo).IsSuccess.Should().BeTrue();
     }
@@ -148,8 +139,8 @@ internal static class ProcessosDeInscricaoDeTeste
     {
         processo.DefinirClassificacao(ConfiguracaoClassificacao.Criar(new DeclaracaoDaClassificacao
         {
-            RegraCalculo = ReferenciaRegra.De(RegraCalculoCodigo.ClassificacaoImportada, "v1", new string('b', 64)),
-            RegraOrdemAlocacao = ReferenciaRegra.De(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, "v1", new string('c', 64)),
+            RegraCalculo = ReferenciaRegra.De(RegraDeCalculoDaNota.ClassificacaoImportada.Codigo(), "v1", new string('b', 64)),
+            RegraOrdemAlocacao = ReferenciaRegra.De(RegraDeOrdemDeAlocacao.PrimeiraOpcaoPrioritaria.Codigo(), "v1", new string('c', 64)),
         }).Value!).IsSuccess.Should().BeTrue();
     }
 
@@ -177,12 +168,12 @@ internal static class ProcessosDeInscricaoDeTeste
     {
         processo.DefinirTaxaInscricao(
             (comIsencao
-                ? ConfiguracaoTaxaInscricao.Criar(cobra: true, valor: 100m, fundamentosCodigos: [FundamentoIsencaoCodigo.CarenciaSocioeconomica])
+                ? ConfiguracaoTaxaInscricao.Criar(cobra: true, valor: 100m, fundamentosCodigos: ["CARENCIA_SOCIOECONOMICA"])
                 : ConfiguracaoTaxaInscricao.Criar(cobra: false, valor: null, fundamentosCodigos: null)).Value!).IsSuccess.Should().BeTrue();
         DeclaracoesObrigatoriasDeTeste.Declarar(processo);
         if (fatoDoFator is not null)
         {
-            ConfiguracaoBonusRegional bonus = ConfiguracaoBonusRegional.Criar(ReferenciaRegra.De(RegraBonusCodigo.Multiplicativo, "v1", new string('d', 64)), 1.20m, null, fatoDoFator, new BaseLegalCongelada(Guid.CreateVersion7(), "PORTARIA_UNIFESSPA_NO_2514_2023", "PORTARIA", "Portaria de teste", "Inclusão regional", [("1504208", "Marabá", "PA")])).Value!;
+            ConfiguracaoBonusRegional bonus = ConfiguracaoBonusRegional.Criar(ReferenciaRegra.De(RegraDeBonus.Multiplicativo.Codigo(), "v1", new string('d', 64)), 1.20m, null, fatoDoFator, new BaseLegalCongelada(Guid.CreateVersion7(), "PORTARIA_UNIFESSPA_NO_2514_2023", "PORTARIA", "Portaria de teste", "Inclusão regional", [("1504208", "Marabá", "PA")])).Value!;
             processo.DefinirBonusRegional(aplica: true, bonus).IsSuccess.Should().BeTrue();
         }
     }

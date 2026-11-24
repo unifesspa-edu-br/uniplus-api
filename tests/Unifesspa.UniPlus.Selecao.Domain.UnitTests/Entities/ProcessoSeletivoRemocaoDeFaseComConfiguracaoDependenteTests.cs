@@ -2,6 +2,7 @@ namespace Unifesspa.UniPlus.Selecao.Domain.UnitTests.Entities;
 
 using AwesomeAssertions;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Regras.ValueObjects;
@@ -20,7 +21,7 @@ public sealed class ProcessoSeletivoRemocaoDeFaseComConfiguracaoDependenteTests
     private static CriterioDesempate CriterioDesempateComEtapa(Guid etapaId) =>
         CriterioDesempate.Criar(
             1,
-            ReferenciaRegra.De(CriterioDesempateCodigo.MaiorNotaEtapa, "v1", new string('a', 64)),
+            ReferenciaRegra.De(RegraDeDesempate.MaiorNotaNaEtapa.Codigo(), "v1", new string('a', 64)),
             new ParametrosDesempateMaiorNotaEtapa(etapaId)).Value!;
 
     private static RegraDeComprovacao GrupoDaFaseComItens(FaseCronograma fase)

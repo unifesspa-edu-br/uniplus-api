@@ -4,6 +4,7 @@ using System.Text.Json.Nodes;
 
 using AwesomeAssertions;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
@@ -81,7 +82,7 @@ public sealed class EnvelopeCodecRecusaRegraDeRecursoTests
         {
             JsonObject parametros = ParametrosDaRegraDeRecurso(envelope);
             parametros["prazoSegundaInstanciaValor"] = "3.0000";
-            parametros["prazoSegundaInstanciaUnidade"] = "diasUteis";
+            parametros["prazoSegundaInstanciaUnidade"] = "DIAS_UTEIS";
         });
 
         resultado.IsFailure.Should().BeTrue();
@@ -159,22 +160,18 @@ public sealed class EnvelopeCodecRecusaRegraDeRecursoTests
     }
 
     /// <summary>
-    /// Adultera a janela que corre da CIÊNCIA, e não a que corre do ato, porque é ela que escapa por inteiro:
-    /// DefinirRecursos classifica tudo que não é ato publicado como "ciencia" ao procurar janelas duplicadas,
-    /// então trocar a de ciência por 'Nenhuma' mantém o balde ocupado uma vez só e não colide com nada. A
-    /// guarda de ciência — "exige que a etapa prometa parecer individual" — também deixa de valer, porque só
-    /// olha CienciaIndividual. Nenhuma outra checagem sobra.
+    /// Adultera o prazo que corre da CIÊNCIA, e não o que corre do ato, porque é ele que escapa por inteiro:
+    /// a guarda de ciência — "exige que a etapa prometa parecer individual" — só olha o evento de ciência
+    /// individual, e nenhuma outra checagem sobra quando o código deixa de ser conhecido.
     /// </summary>
-    [Fact(DisplayName = "etapas[].recursos[].ancora com o sentinela 'Nenhuma' é recusada")]
-    public void Etapa_RecursoSemAncora_Recusa()
+    [Fact(DisplayName = "etapas[].recursos[].ancora com um código que o vocabulário não conhece é recusada")]
+    public void Etapa_RecursoComEventoInicialDesconhecido_Recusa()
     {
-        Result<EnvelopeReidratado> resultado = ReidratarComEnvelopeAdulterado(TrocarAAncoraDeCienciaPorNenhuma);
+        Result<EnvelopeReidratado> resultado = ReidratarComEnvelopeAdulterado(TrocarAAncoraDeCienciaPorUmCodigoDesconhecido);
 
         resultado.IsFailure.Should().BeTrue(
-            "'Nenhuma' é a ausência declarada que RecursoDaEtapa.Criar recusa e que Reidratar não reconfere; " +
-            "sem a guarda do decodificador o valor atravessa DefinirRecursos, persiste como ancora = 0, e a " +
-            "reemissão dá os mesmos bytes — o certame volta com uma janela recursal cujo prazo não corre de " +
-            "instante nenhum, e o round-trip aprova porque os bytes conferem");
+            "sem a guarda do decodificador o código desconhecido atravessaria a reidratação, e o certame voltaria com um " +
+            "recurso cujo prazo não corre de evento nenhum");
         resultado.Error!.Code.Should().Be(ErrosCodecEnvelope.EnvelopeMalformado);
         resultado.Error.Message.Should().Contain("eventoInicialDoPrazo");
     }
@@ -234,15 +231,15 @@ public sealed class EnvelopeCodecRecusaRegraDeRecursoTests
     /// </para>
     /// </remarks>
     [Theory(DisplayName = "Toda convenção de contagem do rol atravessa a reidratação")]
-    [InlineData(AlgoritmoContagemPrazoCodigo.HorasUteisDesdeAncora)]
-    [InlineData(AlgoritmoContagemPrazoCodigo.AvancaDataUtil)]
+    [InlineData("CONTAGEM_PRAZO_HORAS_UTEIS_DESDE_O_EVENTO_INICIAL")]
+    [InlineData("CONTAGEM_PRAZO_AVANCA_DATA_UTIL")]
     public void AlgoritmoContagemPrazoDoRol_Reidrata(string codigo)
     {
         Result<EnvelopeReidratado> resultado = ReidratarComEnvelopeAdulterado(envelope =>
             envelope["algoritmoContagemPrazo"]!.AsObject()["codigo"] = codigo);
 
         resultado.IsSuccess.Should().BeTrue(
-            $"'{codigo}' pertence a AlgoritmoContagemPrazoCodigo.Todos — recusá-lo tornaria irreidratável um " +
+            $"'{codigo}' pertence a CatalogoDe<ConvencaoDeContagemDoPrazo>.Valores().Select(static valor => valor.Codigo()).ToArray() — recusá-lo tornaria irreidratável um " +
             $"certame publicado sob ele. Recusado com: {resultado.Error?.Code} / {resultado.Error?.Message}");
     }
 
@@ -278,7 +275,7 @@ public sealed class EnvelopeCodecRecusaRegraDeRecursoTests
         envelope["etapas"]!.AsArray()
             .Select(e => e!.AsObject())
             .SelectMany(e => e["recursos"]!.AsArray().Select(r => r!.AsObject()))
-            .First(r => r["eventoInicialDoPrazo"]!.GetValue<string>() == "AtoPublicado")["parametros"]!
+            .First(r => r["eventoInicialDoPrazo"]!.GetValue<string>() == EventoInicialDoPrazo.PublicacaoDoAto.Codigo())["parametros"]!
             .AsObject();
 
     /// <summary>
@@ -306,9 +303,9 @@ public sealed class EnvelopeCodecRecusaRegraDeRecursoTests
             outra["publicacoesPrevistas"]!.AsArray()[0]!["id"]!.GetValue<string>();
     }
 
-    private static void TrocarAAncoraDeCienciaPorNenhuma(JsonObject envelope) =>
+    private static void TrocarAAncoraDeCienciaPorUmCodigoDesconhecido(JsonObject envelope) =>
         envelope["etapas"]!.AsArray()
             .SelectMany(etapa => etapa!["recursos"]!.AsArray())
-            .First(recurso => recurso!["eventoInicialDoPrazo"]!.GetValue<string>() == nameof(AncoraDoRecurso.CienciaIndividual))!
-            ["eventoInicialDoPrazo"] = nameof(AncoraDoRecurso.Nenhuma);
+            .First(recurso => recurso!["eventoInicialDoPrazo"]!.GetValue<string>() == EventoInicialDoPrazo.CienciaIndividual.Codigo())!
+            ["eventoInicialDoPrazo"] = "eventoQueNaoExiste";
 }

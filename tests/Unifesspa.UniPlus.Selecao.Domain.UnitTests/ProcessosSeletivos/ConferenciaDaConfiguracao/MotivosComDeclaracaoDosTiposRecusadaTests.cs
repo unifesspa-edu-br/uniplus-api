@@ -58,7 +58,7 @@ public sealed class MotivosComDeclaracaoDosTiposRecusadaTests
     [Fact(DisplayName = "O lugar que aceitou o tipo na lista parcialmente recusada continua exigindo a cobertura")]
     public void LugarQueAceitouOTipo_ComListaDosTiposRecusada_ContinuaExigindoCobertura()
     {
-        ProcessoSeletivo processo = ProcessoParaMotivos.Rascunho(FundamentoIsencaoCodigo.CadastroUnico);
+        ProcessoSeletivo processo = ProcessoParaMotivos.Rascunho("CADASTRO_UNICO");
 
         Causas(processo, DeclaracoesAdotadasDeTeste.ComPartesRecusadas("fases[0].tiposDeDecisao"))
             .Select(c => c.Error.Code).Should().Equal(MotivoDeDecisaoErrorCodes.CoberturaInsuficiente, MotivoDeDecisaoErrorCodes.CoberturaInsuficiente);
@@ -106,7 +106,7 @@ public sealed class MotivosComDeclaracaoDosTiposRecusadaTests
 
     private static ProcessoSeletivo ProcessoSemLugarQueDeclareAIsencao()
     {
-        ProcessoSeletivo processo = ProcessoParaMotivos.Rascunho(FundamentoIsencaoCodigo.CadastroUnico);
+        ProcessoSeletivo processo = ProcessoParaMotivos.Rascunho("CADASTRO_UNICO");
         ProcessoParaMotivos.DeclararNaFase(processo, "INSCRICAO");
 
         return processo;

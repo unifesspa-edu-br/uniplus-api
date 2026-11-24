@@ -29,7 +29,7 @@ public sealed class SerializacaoDosProcedimentosDeRecursoTests
             ["tipoDeDecisao"] = p.TipoDeDecisao.Codigo(),
             ["alvo"] = new JsonObject
             {
-                ["tipo"] = p.Alvo!.Tipo == TipoDeAlvoDoProcedimentoDeRecurso.ItemDeAvaliacao ? "item_avaliacao" : "area_enem",
+                ["tipo"] = p.Alvo!.Tipo == TipoDeAlvoDoProcedimentoDeRecurso.ItemDeAvaliacao ? "ITEM_AVALIACAO" : "AREA_ENEM",
                 ["valor"] = p.Alvo.Valor,
             },
             ["regra"] = EscritaCanonica.SerializarReferenciaRegra(p.Regra),

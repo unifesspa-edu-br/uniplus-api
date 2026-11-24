@@ -42,11 +42,14 @@ public sealed class CriarProcessoSeletivoCommandValidatorTests
         result.Errors.Should().Contain(e => e.PropertyName == "TipoProcessoOrigemId");
     }
 
-    [Fact(DisplayName = "Validator falha quando origem dos candidatos é Nenhuma (Story #851 §3.4)")]
-    public void Rejeita_OrigemCandidatosNenhuma()
+    [Theory(DisplayName = "Validator falha quando a origem dos candidatos falta ou não é um código conhecido (Story #851 §3.4)")]
+    [InlineData(null)]
+    [InlineData("")]
+    [InlineData("origemQueNaoExiste")]
+    public void Rejeita_OrigemCandidatosAusenteOuDesconhecida(string? origem)
     {
         ValidationResult result = new CriarProcessoSeletivoCommandValidator()
-            .Validate(new CriarProcessoSeletivoCommand("PS 2026", TiposDeProcessoDeTeste.SiSU, OrigemCandidatos.Nenhuma, UnidadeId, "1504208", "Marabá", "PA", "psiq-2026"));
+            .Validate(new CriarProcessoSeletivoCommand("PS 2026", TiposDeProcessoDeTeste.SiSU.OrigemId, origem, UnidadeId, "1504208", "Marabá", "PA", "psiq-2026"));
 
         result.IsValid.Should().BeFalse();
         result.Errors.Should().Contain(e => e.PropertyName == "OrigemCandidatos");

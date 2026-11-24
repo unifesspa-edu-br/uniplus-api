@@ -20,7 +20,7 @@ public sealed class LugarGravadoNaChaveTests
     public void ChaveDaFase_DevolveAFaseDeOrigem()
     {
         FaseCronograma fase = FaseDeTeste.Criar(1, "FASE");
-        string chave = IdentidadeDoItemDoEdital.DaFase(fase, ProdutoDaFase.Criar("RESULTADO_FINAL", PapelProdutoFase.Definitivo)).Chave;
+        string chave = IdentidadeDoItemDoEdital.DaFase(fase, ProdutoDaFase.Criar("RESULTADO_FINAL", PapelDaPublicacaoPrevista.Definitivo)).Chave;
 
         (Guid? daFase, Guid? daEtapa) = IdentidadeDoItemDoEdital.LugarGravadoNaChave(chave)!.Value;
 
@@ -32,7 +32,7 @@ public sealed class LugarGravadoNaChaveTests
     public void ChaveDaEtapa_DevolveAEtapa()
     {
         EtapaProcesso etapa = ApoioDosDocumentosExigidosDoProcessoSeletivo.Etapa("Prova", "FASE", 1);
-        string chave = IdentidadeDoItemDoEdital.DaEtapa(etapa, ProdutoDaEtapa.Criar("RESULTADO_CLASSIFICACAO", PapelProdutoFase.Definitivo)).Chave;
+        string chave = IdentidadeDoItemDoEdital.DaEtapa(etapa, ProdutoDaEtapa.Criar("RESULTADO_CLASSIFICACAO", PapelDaPublicacaoPrevista.Definitivo)).Chave;
 
         (Guid? daFase, Guid? daEtapa) = IdentidadeDoItemDoEdital.LugarGravadoNaChave(chave)!.Value;
 

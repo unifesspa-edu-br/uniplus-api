@@ -2,6 +2,7 @@ namespace Unifesspa.UniPlus.Selecao.Domain.UnitTests.ProcessosSeletivos.Etapas;
 
 using AwesomeAssertions;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.OrdemCanonica;
@@ -24,16 +25,16 @@ public sealed class OrdemCanonicaDosRecursosDaEtapaTests
             new DeclaracaoDaAvaliacaoDaEtapa(
                 Peso: 1m, NotaMinima: null, NotaMaxima: null, PassoDoLancamento: null, FormaDeAvaliacao: null,
                 RegraConsolidacao: null, EscalaDeAtendimento: null)).Value!;
-        gabarito = ProdutoDaEtapa.Criar("GABARITO", PapelProdutoFase.Preliminar);
-        resultado = ProdutoDaEtapa.Criar("RESULTADO_DA_PROVA", PapelProdutoFase.Preliminar);
+        gabarito = ProdutoDaEtapa.Criar("GABARITO", PapelDaPublicacaoPrevista.Preliminar);
+        resultado = ProdutoDaEtapa.Criar("RESULTADO_DA_PROVA", PapelDaPublicacaoPrevista.Preliminar);
         etapa.DefinirProdutos([resultado, gabarito]).IsSuccess.Should().BeTrue();
 
         return etapa;
     }
 
     private static RecursoDaEtapa AoAto(Guid produtoId, decimal horas) => RecursoDaEtapa.Criar(
-        AncoraDoRecurso.AtoPublicado,
-        ReferenciaRegra.De(RegraPrazoRecursoCodigo.AncoradoEmAto, "v1", new string('a', 64)),
+        EventoInicialDoPrazo.PublicacaoDoAto,
+        ReferenciaRegra.De(RegraDePrazoDoRecurso.ContadoDaPublicacaoDoAto.Codigo(), "v1", new string('a', 64)),
         ParametrosDoRecursoDeTeste.Declarados(horas, UnidadePrazo.Horas),
         produtoId).Value!;
 
@@ -58,8 +59,8 @@ public sealed class OrdemCanonicaDosRecursosDaEtapaTests
     {
         ProcessoSeletivo processo = ProcessoConformeFactory.Criar();
         EtapaProcesso etapa = processo.Etapas.Single();
-        ProdutoDaEtapa resultado = ProdutoDaEtapa.Criar("RESULTADO_DA_PROVA", PapelProdutoFase.Preliminar);
-        ProdutoDaEtapa gabarito = ProdutoDaEtapa.Criar("GABARITO", PapelProdutoFase.Preliminar);
+        ProdutoDaEtapa resultado = ProdutoDaEtapa.Criar("RESULTADO_DA_PROVA", PapelDaPublicacaoPrevista.Preliminar);
+        ProdutoDaEtapa gabarito = ProdutoDaEtapa.Criar("GABARITO", PapelDaPublicacaoPrevista.Preliminar);
         etapa.DefinirProdutos([resultado, gabarito]).IsSuccess.Should().BeTrue();
         etapa.DefinirRecursos([AoAto(resultado.Id, 48m), AoAto(gabarito.Id, 24m)]).IsSuccess.Should().BeTrue();
 
@@ -72,8 +73,8 @@ public sealed class OrdemCanonicaDosRecursosDaEtapaTests
         EtapaProcesso etapa = EtapaComDoisPreliminares(out ProdutoDaEtapa gabarito, out _);
         RecursoDaEtapa aoAto = AoAto(gabarito.Id, 24m);
         RecursoDaEtapa naCiencia = RecursoDaEtapa.Criar(
-            AncoraDoRecurso.CienciaIndividual,
-            ReferenciaRegra.De(RegraPrazoRecursoCodigo.AncoradoEmAto, "v1", new string('a', 64)),
+            EventoInicialDoPrazo.CienciaIndividual,
+            ReferenciaRegra.De(RegraDePrazoDoRecurso.ContadoDaPublicacaoDoAto.Codigo(), "v1", new string('a', 64)),
             ParametrosDoRecursoDeTeste.Declarados(48m, UnidadePrazo.Horas),
             Guid.Empty).Value!;
 

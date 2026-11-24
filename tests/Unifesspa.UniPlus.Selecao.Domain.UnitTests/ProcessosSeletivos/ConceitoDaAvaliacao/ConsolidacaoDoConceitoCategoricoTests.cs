@@ -11,9 +11,9 @@ using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.ConceitoDaAvaliacao;
 /// </summary>
 public sealed class ConsolidacaoDoConceitoCategoricoTests
 {
-    private const CriterioDeConsolidacaoDoConceito Unanimidade = CriterioDeConsolidacaoDoConceito.Unanimidade;
-    private const CriterioDeConsolidacaoDoConceito Simples = CriterioDeConsolidacaoDoConceito.MaioriaSimples;
-    private const CriterioDeConsolidacaoDoConceito Absoluta = CriterioDeConsolidacaoDoConceito.MaioriaAbsoluta;
+    private const CriterioDeApuracaoDoConceito Unanimidade = CriterioDeApuracaoDoConceito.Unanimidade;
+    private const CriterioDeApuracaoDoConceito Simples = CriterioDeApuracaoDoConceito.MaioriaSimples;
+    private const CriterioDeApuracaoDoConceito Absoluta = CriterioDeApuracaoDoConceito.MaioriaAbsoluta;
 
     private static ConceitoDaEtapa Conceito(params string[] codigos) =>
         ConceitoDaEtapa.Criar(
@@ -28,7 +28,7 @@ public sealed class ConsolidacaoDoConceitoCategoricoTests
         ConceitoDaEtapa.Criar("NOTA", "Nota", NaturezaConceito.Numerico, new EscalaInformada(0m, 10m, 2), null).Value!;
 
     private static ResultadoDaConsolidacaoDoConceito Consolidar(
-        CriterioDeConsolidacaoDoConceito criterio, int corretores, params string[] atribuicoes) =>
+        CriterioDeApuracaoDoConceito criterio, int corretores, params string[] atribuicoes) =>
         ConsolidacaoDoConceitoCategorico.Consolidar(AptoInaptoEPendente(), criterio, corretores, atribuicoes);
 
     [Fact(DisplayName = "Dois corretores que atribuem Apto consolidam Apto por unanimidade")]
@@ -102,10 +102,10 @@ public sealed class ConsolidacaoDoConceitoCategoricoTests
     }
 
     [Theory(DisplayName = "Com menos atribuições que os corretores exigidos, a consolidação aguarda a correção, qualquer que seja o critério")]
-    [InlineData(CriterioDeConsolidacaoDoConceito.Unanimidade)]
-    [InlineData(CriterioDeConsolidacaoDoConceito.MaioriaSimples)]
-    [InlineData(CriterioDeConsolidacaoDoConceito.MaioriaAbsoluta)]
-    public void MenosAtribuicoesQueOExigido_AguardaACorrecao(CriterioDeConsolidacaoDoConceito criterio)
+    [InlineData(CriterioDeApuracaoDoConceito.Unanimidade)]
+    [InlineData(CriterioDeApuracaoDoConceito.MaioriaSimples)]
+    [InlineData(CriterioDeApuracaoDoConceito.MaioriaAbsoluta)]
+    public void MenosAtribuicoesQueOExigido_AguardaACorrecao(CriterioDeApuracaoDoConceito criterio)
     {
         Consolidar(criterio, 3, "APTO", "APTO").Should().Be(ResultadoDaConsolidacaoDoConceito.AguardandoCorrecao);
         Consolidar(criterio, 2).Should().Be(ResultadoDaConsolidacaoDoConceito.AguardandoCorrecao);
@@ -158,7 +158,7 @@ public sealed class ConsolidacaoDoConceitoCategoricoTests
     [Fact(DisplayName = "O critério desconhecido é defeito de quem chama")]
     public void CriterioDesconhecido_Lanca()
     {
-        Action consolidar = () => Consolidar((CriterioDeConsolidacaoDoConceito)99, 1, "APTO");
+        Action consolidar = () => Consolidar((CriterioDeApuracaoDoConceito)99, 1, "APTO");
 
         consolidar.Should().Throw<ArgumentOutOfRangeException>();
     }
@@ -166,7 +166,7 @@ public sealed class ConsolidacaoDoConceitoCategoricoTests
     [Fact(DisplayName = "O critério desconhecido é defeito de quem chama, ainda que faltem atribuições")]
     public void CriterioDesconhecido_ComAtribuicoesAMenos_Lanca()
     {
-        Action consolidar = () => Consolidar((CriterioDeConsolidacaoDoConceito)99, 3, "APTO");
+        Action consolidar = () => Consolidar((CriterioDeApuracaoDoConceito)99, 3, "APTO");
 
         consolidar.Should().Throw<ArgumentOutOfRangeException>();
     }
@@ -174,7 +174,7 @@ public sealed class ConsolidacaoDoConceitoCategoricoTests
     [Fact(DisplayName = "Menos de um corretor exigido é defeito de quem chama, ainda que o critério seja desconhecido")]
     public void CorretoresExigidosInvalidosECriterioDesconhecido_Lanca()
     {
-        Action consolidar = () => Consolidar((CriterioDeConsolidacaoDoConceito)99, 0);
+        Action consolidar = () => Consolidar((CriterioDeApuracaoDoConceito)99, 0);
 
         consolidar.Should().Throw<ArgumentOutOfRangeException>();
     }

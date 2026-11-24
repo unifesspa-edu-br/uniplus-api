@@ -99,7 +99,7 @@ public sealed class ReferenciasLocaisDoEsquemaDaConfiguracaoTests
     {
         JsonNode documento = Carregar(Path.Join("exemplos", "inscricao-pelo-sistema.json"));
         JsonNode recurso = documento["etapas"]![0]!["recursos"]![0]!;
-        recurso["eventoInicialDoPrazo"] = "cienciaIndividual";
+        recurso["eventoInicialDoPrazo"] = "CIENCIA_INDIVIDUAL";
         CaminhosComErro(documento).Should().BeEmpty();
 
         recurso["eventoInicialDoPrazo"] = "nenhuma";

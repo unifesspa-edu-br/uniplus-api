@@ -99,7 +99,7 @@ public sealed class AdocaoDaVersaoDivulgadaPeloRascunhoTests
         formulario.IsSuccess.Should().BeTrue(formulario.Error?.Message);
         formulario.Value!.Formulario.Coleta.Itens.Select(static c => c.FatoCodigo).Should().Contain("NOVA").And.NotContain("ANTIGA");
         Result<AvaliacaoDaInscricaoDto> avaliacao = await _cenario.AvaliarAsync(db, processoId, UsuarioComCpf(PersonasDeTeste.FernandaDrumond), null);
-        avaliacao.Value!.Modalidades.Situacao.Should().Be("FALTA_RESPONDER", "só a versão nova deriva a modalidade da resposta a CONCORRER_PCD");
+        avaliacao.Value!.Modalidades.Situacao!.Codigo.Should().Be("FALTA_RESPONDER", "só a versão nova deriva a modalidade da resposta a CONCORRER_PCD");
     }
 
     private async Task ConferirRecusaAsync(Guid processoId, ProcessoSeletivo processo, string etag)

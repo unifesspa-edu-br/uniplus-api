@@ -20,7 +20,7 @@ public sealed class LeituraDosProdutosDaFaseTests
         IdentificacaoECronogramaLidos lidos = Ler(Documento(Fase(0, "resultado", "RESULTADO").Publicando(Preliminar(0, AtoDoResultado), Definitivo(1, AtoDoDefinitivo))));
 
         lidos.Cronograma.CronogramaFases.Single().Produtos.Select(static produto => (produto.AtoCodigo, produto.Papel))
-            .Should().Equal((AtoDoResultado, PapelProdutoFase.Preliminar), (AtoDoDefinitivo, PapelProdutoFase.Definitivo));
+            .Should().Equal((AtoDoResultado, PapelDaPublicacaoPrevista.Preliminar), (AtoDoDefinitivo, PapelDaPublicacaoPrevista.Definitivo));
     }
 
     [Fact(DisplayName = "O ato sem versão vigente fica de fora, aponta o campo do ato pela posição no documento e não repete o texto digitado")]

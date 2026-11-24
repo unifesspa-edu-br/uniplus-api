@@ -1,11 +1,9 @@
 namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Configurations;
 
 using Domain.Entities;
-using Domain.Enums;
 
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
-using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Protecao;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
@@ -42,25 +40,15 @@ public sealed class DocumentoExigidoBaseLegalConfiguration : IEntityTypeConfigur
 
         builder.Property(b => b.Referencia).HasMaxLength(ReferenciaMaxLength).IsRequired().HasComment("Referência da base legal da exigência.");
 
-        // Mesmo mapeamento canônico de ReferenciaTipoCodigo usado no wire —
-        // nunca enum.ToString() cru: a coluna carrega o mesmo token FEDERAL/ESTADUAL/.../
-        // PENDENTE/RESOLVIDO que o PUT aceita e o GET devolve.
         builder.Property(b => b.Abrangencia)
-            .HasConversion(AbrangenciaConverter)
             .HasMaxLength(AbrangenciaCodigoMaxLength)
             .IsRequired().HasComment("Abrangência da base legal.");
 
         builder.Property(b => b.Situacao)
-            .HasConversion(StatusConverter)
             .HasMaxLength(StatusCodigoMaxLength)
             .IsRequired().HasComment("Situação da base legal.");
 
         builder.Property(b => b.Observacao).HasMaxLength(ObservacaoMaxLength).HasComment("Observação sobre a base legal, quando informada.");
     }
 
-    private static readonly ValueConverter<TipoAbrangencia, string> AbrangenciaConverter =
-        new(abrangencia => abrangencia.ToCodigo(), codigo => TipoAbrangenciaCodigo.FromCodigo(codigo));
-
-    private static readonly ValueConverter<StatusBaseLegal, string> StatusConverter =
-        new(status => status.ToCodigo(), codigo => StatusBaseLegalCodigo.FromCodigo(codigo));
 }

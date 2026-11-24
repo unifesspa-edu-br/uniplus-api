@@ -51,7 +51,7 @@ public sealed class DefinirTaxaInscricaoCommandHandlerTests
         ProcessoSeletivo processo = NovoProcesso();
         processo.DefinirTaxaInscricao(
             ConfiguracaoTaxaInscricao.Criar(
-                cobra: true, valor: 100m, fundamentosCodigos: [FundamentoIsencaoCodigo.CadastroUnico]).Value!);
+                cobra: true, valor: 100m, fundamentosCodigos: ["CADASTRO_UNICO"]).Value!);
 
         Mocks mocks = NovosMocks(processo, processo.Id);
         DefinirTaxaInscricaoCommand command = new(processo.Id, null, null, null);
@@ -70,7 +70,7 @@ public sealed class DefinirTaxaInscricaoCommandHandlerTests
         ProcessoSeletivo processo = NovoProcesso();
         Mocks mocks = NovosMocks(processo, processo.Id);
         DefinirTaxaInscricaoCommand command = new(
-            processo.Id, true, 150.00m, [FundamentoIsencaoCodigo.CadastroUnico]);
+            processo.Id, true, 150.00m, ["CADASTRO_UNICO"]);
 
         Result result = await DefinirTaxaInscricaoCommandHandler.Handle(
             command, mocks.Repository, mocks.UnitOfWork, CancellationToken.None);
@@ -89,7 +89,7 @@ public sealed class DefinirTaxaInscricaoCommandHandlerTests
         ProcessoSeletivo processo = NovoProcesso();
         Mocks mocks = NovosMocks(processo, processo.Id);
         DefinirTaxaInscricaoCommand command = new(
-            processo.Id, true, null, [FundamentoIsencaoCodigo.CadastroUnico]);
+            processo.Id, true, null, ["CADASTRO_UNICO"]);
 
         Result result = await DefinirTaxaInscricaoCommandHandler.Handle(
             command, mocks.Repository, mocks.UnitOfWork, CancellationToken.None);

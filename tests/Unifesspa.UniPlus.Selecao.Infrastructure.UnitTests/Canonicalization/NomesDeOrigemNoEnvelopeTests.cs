@@ -4,6 +4,7 @@ using System.Text.Json.Nodes;
 
 using AwesomeAssertions;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
@@ -151,7 +152,7 @@ public sealed class NomesDeOrigemNoEnvelopeTests
 
     private static JsonObject DocumentoDaFase(JsonObject fase) => new()
     {
-        ["cronogramaFases"] = new JsonObject { ["origemCandidatos"] = OrigemCandidatos.ImportacaoExterna.ToString(), ["fases"] = new JsonArray(fase) },
+        ["cronogramaFases"] = new JsonObject { ["origemCandidatos"] = OrigemCandidatos.ImportacaoExterna.Codigo(), ["fases"] = new JsonArray(fase) },
     };
 
     private static CopiaDeModeloDeFormulario CopiaDoModelo(string nome) => new(

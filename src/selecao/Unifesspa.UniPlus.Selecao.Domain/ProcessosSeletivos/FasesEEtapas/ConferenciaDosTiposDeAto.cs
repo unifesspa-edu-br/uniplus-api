@@ -127,7 +127,7 @@ public static class ConferenciaDosTiposDeAto
 
     private sealed record OcorrenciaDoTipo(string AtoCodigo, string Lugar, string? Campo);
 
-    private sealed record ProdutoDeclarado(string AtoCodigo, PapelProdutoFase? Papel, string Lugar, string Produto)
+    private sealed record ProdutoDeclarado(string AtoCodigo, PapelDaPublicacaoPrevista? Papel, string Lugar, string Produto)
     {
         /// <summary>O campo do papel do produto, onde a recusa do papel do ato mora.</summary>
         internal string Campo => $"{Produto}.papel";

@@ -54,7 +54,7 @@ public sealed class ObrigatoriedadeLegalAdminEndpointTests : ObrigatoriedadeLega
         object payload = new
         {
             tipoProcessoCodigo = "*",
-            categoria = "etapa",
+            categoria = "ETAPA",
             regraCodigo,
             predicado = PredicadoEtapaProvaObjetiva,
             descricaoHumana = "Edital deve incluir Prova Objetiva",
@@ -87,7 +87,7 @@ public sealed class ObrigatoriedadeLegalAdminEndpointTests : ObrigatoriedadeLega
         object payload = new
         {
             tipoProcessoCodigo = "*",
-            categoria = "outros",
+            categoria = "OUTROS",
             regraCodigo = UniqueRegraCodigo(),
             predicado = PredicadoConcorrenciaDupla,
             descricaoHumana = "x",
@@ -114,7 +114,7 @@ public sealed class ObrigatoriedadeLegalAdminEndpointTests : ObrigatoriedadeLega
         object payload = new
         {
             tipoProcessoCodigo = "SISU_ANTIGO",
-            categoria = "outros",
+            categoria = "OUTROS",
             regraCodigo = UniqueRegraCodigo(),
             predicado = PredicadoConcorrenciaDupla,
             descricaoHumana = "Tipo inválido",
@@ -140,7 +140,7 @@ public sealed class ObrigatoriedadeLegalAdminEndpointTests : ObrigatoriedadeLega
         object payload = new
         {
             tipoProcessoCodigo = "*",
-            categoria = "outros",
+            categoria = "OUTROS",
             regraCodigo,
             predicado = PredicadoConcorrenciaDupla,
             descricaoHumana = "Regra idempotente",
@@ -174,7 +174,7 @@ public sealed class ObrigatoriedadeLegalAdminEndpointTests : ObrigatoriedadeLega
         object payload = new
         {
             tipoProcessoCodigo = "*",
-            categoria = "outros",
+            categoria = "OUTROS",
             regraCodigo,
             predicado = PredicadoConcorrenciaDupla,
             descricaoHumana = "Regra original",
@@ -192,7 +192,7 @@ public sealed class ObrigatoriedadeLegalAdminEndpointTests : ObrigatoriedadeLega
         object duplicado = new
         {
             tipoProcessoCodigo = "*",
-            categoria = "outros",
+            categoria = "OUTROS",
             regraCodigo,
             predicado = PredicadoConcorrenciaDupla,
             descricaoHumana = "Regra duplicada com outro conteúdo",
@@ -221,7 +221,7 @@ public sealed class ObrigatoriedadeLegalAdminEndpointTests : ObrigatoriedadeLega
         {
             id,
             tipoProcessoCodigo = "*",
-            categoria = "outros",
+            categoria = "OUTROS",
             regraCodigo,
             predicado = PredicadoConcorrenciaDupla,
             descricaoHumana = "Regra atualizada",
@@ -262,7 +262,7 @@ public sealed class ObrigatoriedadeLegalAdminEndpointTests : ObrigatoriedadeLega
         {
             id = idDivergente,
             tipoProcessoCodigo = "*",
-            categoria = "outros",
+            categoria = "OUTROS",
             regraCodigo,
             predicado = PredicadoConcorrenciaDupla,
             descricaoHumana = "x",
@@ -318,11 +318,11 @@ public sealed class ObrigatoriedadeLegalAdminEndpointTests : ObrigatoriedadeLega
         string regraCodigoEtapa = UniqueRegraCodigo();
         string regraCodigoModalidade = UniqueRegraCodigo();
 
-        await SeedRegraAsync(client, regraCodigoEtapa, categoria: "Etapa");
-        await SeedRegraAsync(client, regraCodigoModalidade, categoria: "Modalidade");
+        await SeedRegraAsync(client, regraCodigoEtapa, categoria: "ETAPA");
+        await SeedRegraAsync(client, regraCodigoModalidade, categoria: "MODALIDADE");
 
         HttpResponseMessage response = await client.GetAsync(
-            new Uri("/api/selecao/obrigatoriedades-legais?categoria=Etapa&limit=50", UriKind.Relative));
+            new Uri("/api/selecao/obrigatoriedades-legais?categoria=etapa&limit=50", UriKind.Relative));
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         using JsonDocument doc = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
@@ -330,7 +330,7 @@ public sealed class ObrigatoriedadeLegalAdminEndpointTests : ObrigatoriedadeLega
             .Select(e => e.GetProperty("regraCodigo").GetString()!)];
 
         regraCodigos.Should().Contain(regraCodigoEtapa);
-        regraCodigos.Should().NotContain(regraCodigoModalidade, "filtro categoria=Etapa exclui Modalidade");
+        regraCodigos.Should().NotContain(regraCodigoModalidade, "filtro categoria=etapa exclui modalidade");
     }
 
     [Fact(DisplayName = "GET filtra por tipoProcesso e ignora o parâmetro legado")]
@@ -362,7 +362,7 @@ public sealed class ObrigatoriedadeLegalAdminEndpointTests : ObrigatoriedadeLega
     private static async Task<Guid> SeedRegraAsync(
         HttpClient client,
         string regraCodigo,
-        string categoria = "outros",
+        string categoria = "OUTROS",
         string baseLegal = "Lei seed",
         string tipoProcessoCodigo = "*")
     {

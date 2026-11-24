@@ -16,7 +16,7 @@ using Unifesspa.UniPlus.Selecao.Domain.Enums;
 /// </para>
 /// <para>
 /// Não é uma união discriminada: <see cref="Entities.RegraRecursoFase"/> só admite a regra
-/// <c>RECURSO-PRAZO-ANCORADO-EM-ATO</c>, então este tipo é a única variante, sem discriminador e sem <c>switch</c>.
+/// <c>RECURSO_PRAZO_CONTADO_DA_PUBLICACAO_DO_ATO</c>, então este tipo é a única variante, sem discriminador e sem <c>switch</c>.
 /// </para>
 /// </remarks>
 /// <param name="PrazoDeInterposicao">Prazo para apresentar o recurso na 1ª instância.</param>

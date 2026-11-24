@@ -9,9 +9,8 @@ using Unifesspa.UniPlus.Selecao.Domain.Enums;
 
 /// <summary>
 /// DTO de leitura de <see cref="Domain.Entities.DocumentoExigido"/>. Compõe <c>ProcessoSeletivoDto</c> — não há
-/// rota aninhada própria de leitura. Tem a mesma forma do pedido (<c>ItemDocumentoExigidoInput</c>), de modo que
-/// o PUT aceita de volta o que o GET devolve; o que o pedido não lê (nome, categoria e proteção do tipo, e a
-/// identidade da exigência) é cópia congelada do tipo de documento e é ignorado na escrita.
+/// rota aninhada própria de leitura. As consequências incluem código e rótulo; o pedido recebe o código.
+/// Nome, categoria e proteção do tipo são cópias congeladas e não são lidos na escrita.
 /// </summary>
 /// <param name="Id">Identidade da exigência.</param>
 /// <param name="TipoDocumento">O tipo de documento, com os atributos congelados na exigência.</param>
@@ -50,11 +49,11 @@ public sealed record ProtecaoDeDadosDto(string Classificacao, string Finalidade,
 /// <param name="Finalidade">O formulário a que o documento pertence (<c>INSCRICAO</c>, <c>ISENCAO_TAXA</c> ou <c>HABILITACAO</c>); nula quando a fase não responde formulário nenhum.</param>
 public sealed record MomentoDaExigenciaDto(Guid FaseId, Guid? EtapaId, string? Finalidade);
 
-/// <param name="Tipo"><c>GERAL</c> ou <c>CONDICIONAL</c>.</param>
+/// <param name="Tipo">Código (<c>GERAL</c> ou <c>CONDICIONAL</c>) e rótulo da aplicabilidade.</param>
 /// <param name="Condicoes">As condições do gatilho.</param>
-public sealed record AplicabilidadeDaExigenciaDto(string Tipo, IReadOnlyList<CondicaoGatilhoDto> Condicoes);
+public sealed record AplicabilidadeDaExigenciaDto(CodigoComRotulo<Aplicabilidade> Tipo, IReadOnlyList<CondicaoGatilhoDto> Condicoes);
 
-public sealed record IndeferimentoDoDocumentoDto(bool Obrigatorio, string? Consequencia, IReadOnlyList<BaseLegalDto> BasesLegais);
+public sealed record IndeferimentoDoDocumentoDto(bool Obrigatorio, CodigoComRotulo<ConsequenciaDoIndeferimento>? Consequencia, IReadOnlyList<BaseLegalDto> BasesLegais);
 
 /// <summary>
 /// O que restringe o arquivo enviado. <see cref="FormatosPermitidos"/> é o mesmo valor JSON polimórfico do
@@ -73,7 +72,7 @@ public sealed record RequisitosDoDocumentoDto(
 /// PUT, que substitui as exigências inteiras: omiti-lo retira o modelo da exigência.
 /// </summary>
 /// <param name="Formato"><c>DOCX</c> ou <c>ODT</c>.</param>
-public sealed record ModeloDaExigenciaDto(Guid ModeloId, string NomeArquivo, string Formato, string HashSha256);
+public sealed record ModeloDaExigenciaDto(Guid ModeloId, string NomeArquivo, CodigoComRotulo<FormatoDeDocumento> Formato, string HashSha256);
 
 /// <summary>
 /// DTO de leitura de <see cref="Domain.Entities.CondicaoGatilho"/> (Story #554, PR #896,
@@ -91,7 +90,7 @@ public sealed record CondicaoGatilhoDto(Guid Id, int Clausula, string Fato, [pro
 /// RESOLVIDO" é interna ao domínio — <c>DocumentoExigido.BasesLegaisResolvidas</c> — e da
 /// materialização do envelope na PR #903, não deste DTO de edição).
 /// </summary>
-public sealed record BaseLegalDto(Guid Id, string Referencia, string Abrangencia, string Situacao, string? Observacao);
+public sealed record BaseLegalDto(Guid Id, string Referencia, CodigoComRotulo<TipoAbrangencia> Abrangencia, CodigoComRotulo<StatusBaseLegal> Situacao, string? Observacao);
 
 /// <summary>Regra de comprovação com os documentos e itens que a compõem.</summary>
 public sealed record RegraDeComprovacaoDto(
@@ -107,7 +106,7 @@ public sealed record RegraDeComprovacaoDto(
 public sealed record CardinalidadeQualificadaDto(int? QuantidadeMinima, DistincaoDasApresentacoesDto? Distincao);
 
 /// <summary>Como as apresentações se distinguem: a chave, a data de referência e as ocorrências esperadas.</summary>
-public sealed record DistincaoDasApresentacoesDto(string? CriterioDeDistincao, DateOnly? DataReferencia, IReadOnlyList<string>? OcorrenciasEsperadas);
+public sealed record DistincaoDasApresentacoesDto(CodigoComRotulo<CriterioDeDistincaoDasApresentacoes>? CriterioDeDistincao, DateOnly? DataReferencia, IReadOnlyList<string>? OcorrenciasEsperadas);
 
 /// <summary>A consequência do indeferimento do grupo e as bases legais dela.</summary>
-public sealed record IndeferimentoDoGrupoDto(string? Consequencia, IReadOnlyList<BaseLegalDto> BasesLegais);
+public sealed record IndeferimentoDoGrupoDto(CodigoComRotulo<ConsequenciaDoIndeferimento>? Consequencia, IReadOnlyList<BaseLegalDto> BasesLegais);

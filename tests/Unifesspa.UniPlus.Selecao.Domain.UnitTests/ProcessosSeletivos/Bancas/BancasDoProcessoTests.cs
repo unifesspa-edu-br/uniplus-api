@@ -2,6 +2,7 @@ namespace Unifesspa.UniPlus.Selecao.Domain.UnitTests.ProcessosSeletivos.Bancas;
 
 using AwesomeAssertions;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
@@ -168,7 +169,7 @@ public sealed class BancasDoProcessoTests
     [Fact(DisplayName = "A banca abaixo do mínimo vem antes da regra não resolvida de outra banca que a precede")]
     public void BancaAbaixoDoMinimo_VemAntesDaRegraNaoResolvidaDeBancaAnterior()
     {
-        ReferenciaRegra lida = ReferenciaRegra.De(RegraConsolidacaoCodigo.CorrecaoIndependente, "v2", new string('f', 64));
+        ReferenciaRegra lida = ReferenciaRegra.De(RegraDeApuracaoDaAvaliacao.CorrecaoIndependente.Codigo(), "v2", new string('f', 64));
         EtapaProcesso redacao = ComRecurso(NovaEtapa("Redação", 1, CorrecaoIndependente));
         EtapaProcesso entrevista = ComRecurso(NovaEtapa("Entrevista", 2, lida));
         ProcessoSeletivo processo = ProcessoComEtapas([DeRecursosDaFase(integrantes: 3, quorum: 2)], redacao, entrevista);

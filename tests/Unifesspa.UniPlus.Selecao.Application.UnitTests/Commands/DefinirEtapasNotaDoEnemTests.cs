@@ -8,6 +8,7 @@ using NSubstitute;
 
 using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 using Unifesspa.UniPlus.Configuracao.Contracts;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
@@ -69,15 +70,15 @@ public sealed class DefinirEtapasNotaDoEnemTests
     }
 
     private static RecursoDaEtapaInput RecursoEmAtoPublicado() => new(
-        AncoraDoRecurso.AtoPublicado, "RECURSO-PRAZO-ANCORADO-EM-ATO", "v1",
-        2m, "diasUteis", "RESULTADO_CLASSIFICACAO", false, null, null, "semEfeitoSuspensivo", null);
+        EventoInicialDoPrazo.PublicacaoDoAto.Codigo(), "RECURSO_PRAZO_CONTADO_DA_PUBLICACAO_DO_ATO", "v1",
+        2m, "DIAS_UTEIS", "RESULTADO_CLASSIFICACAO", false, null, null, "SEM_EFEITO_SUSPENSIVO", null);
 
     private static IRegraCatalogoReader CatalogoComARegraDeRecursoEmAto()
     {
         IRegraCatalogoReader regraCatalogoReader = Substitute.For<IRegraCatalogoReader>();
         regraCatalogoReader.ObterAsync(Arg.Any<string>(), Arg.Any<string>(), Arg.Any<CancellationToken>())
             .Returns(RegraCatalogo.Criar(
-                "RECURSO-PRAZO-ANCORADO-EM-ATO", "v1", TipoRegra.RegraPrazoRecurso,
+                "RECURSO_PRAZO_CONTADO_DA_PUBLICACAO_DO_ATO", "v1", TipoRegra.RegraPrazoRecurso,
                 JsonDocument.Parse("{}").RootElement, JsonDocument.Parse("[]").RootElement, "Lei 9.784/1999, art. 59"));
         return regraCatalogoReader;
     }

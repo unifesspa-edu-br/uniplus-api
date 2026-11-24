@@ -80,7 +80,7 @@ public sealed class DiaDaConsultaDosTiposDeAtoTests
                 ColetaInscricao: false, ColetaSolicitacaoIsencao: false)),
             new DecisoesDeCronogramaDaFase(1, Inicio: null, Fim: null, UnidadeResponsavel: UnidadesDeTeste.Ceps),
             new PublicacoesDaFase(
-                Produtos: [ProdutoDaFase.Criar("RESULTADO_X", PapelProdutoFase.Definitivo)], EmiteParecerIndividual: false,
+                Produtos: [ProdutoDaFase.Criar("RESULTADO_X", PapelDaPublicacaoPrevista.Definitivo)], EmiteParecerIndividual: false,
                 RegraRecurso: null),
             bancasRequeridas: []).Value!;
 

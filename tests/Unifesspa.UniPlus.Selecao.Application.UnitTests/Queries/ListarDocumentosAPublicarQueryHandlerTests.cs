@@ -49,7 +49,7 @@ public sealed class ListarDocumentosAPublicarQueryHandlerTests
 
     private static void ConferirProjecaoDoPendente(DocumentoAPublicarDto item, DocumentoAPublicar pendente)
     {
-        item.Status.Should().Be("Pendente");
+        item.Status.Codigo.Should().Be("PENDENTE");
         item.ProcessoSeletivoId.Should().Be(pendente.ProcessoSeletivoId);
         item.ExpiraEm.Should().Be(pendente.ExpiraEm);
         item.TamanhoBytes.Should().BeNull();
@@ -59,7 +59,7 @@ public sealed class ListarDocumentosAPublicarQueryHandlerTests
 
     private static void ConferirProjecaoDoConfirmado(DocumentoAPublicarDto item, DocumentoAPublicar confirmado)
     {
-        item.Status.Should().Be("Confirmado");
+        item.Status.Codigo.Should().Be("CONFIRMADO");
         item.TamanhoBytes.Should().Be(4096);
         item.HashSha256.Should().Be(HashFixo);
         item.ConfirmadoEm.Should().Be(confirmado.ConfirmadoEm);

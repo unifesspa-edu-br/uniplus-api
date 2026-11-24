@@ -28,7 +28,7 @@ public sealed record EtapaProcessoDto(
 
 /// <summary>Quem a etapa é no processo.</summary>
 /// <param name="Nome">O nome editorial da etapa.</param>
-/// <param name="Carater">O caráter declarado da etapa.</param>
+/// <param name="Carater">O caráter declarado da etapa, com código e rótulo.</param>
 /// <param name="TipoEtapa">
 /// Snapshot congelado do tipo (issue #1071) — fecha o round-trip GET→PUT: um cliente que
 /// reler a etapa precisa de <c>OrigemId</c> para reenviar o mesmo vínculo em
@@ -41,7 +41,7 @@ public sealed record EtapaProcessoDto(
 /// </param>
 public sealed record IdentificacaoDaEtapaDto(
     string Nome,
-    CaraterEtapa Carater,
+    CodigoComRotulo<CaraterEtapa> Carater,
     TipoEtapaSnapshotDto TipoEtapa,
     int Ordem,
     string? FaseCodigo);
@@ -59,7 +59,7 @@ public sealed record NotaDaEtapaDto(
 
 /// <summary>Como a banca chega à nota da etapa.</summary>
 /// <param name="FormaDeAvaliacao">
-/// Token canônico UPPER_SNAKE (<c>OBJETIVA</c>/<c>HUMANA</c>); nulo enquanto a etapa não declara.
+/// Código (<c>OBJETIVA</c>/<c>HUMANA</c>) e rótulo da forma de avaliação; nulo enquanto a etapa não declara.
 /// </param>
 /// <param name="RegraConsolidacao">
 /// A regra do catálogo que combina as notas dos avaliadores; só existe na forma humana.
@@ -73,7 +73,7 @@ public sealed record NotaDaEtapaDto(
 /// quando a etapa lança nota digitada.
 /// </param>
 public sealed record AvaliacaoDaEtapaDto(
-    string? FormaDeAvaliacao,
+    CodigoComRotulo<FormaDeAvaliacao>? FormaDeAvaliacao,
     ReferenciaRegraDto? RegraConsolidacao,
     IReadOnlyList<ItemDeAvaliacaoDto> ItensDeAvaliacao,
     IReadOnlyList<NivelDeAtendimentoDto>? EscalaDeAtendimento);
@@ -127,7 +127,7 @@ public sealed record BancaDaEtapaDto(
 /// <summary>Projeção de leitura de <c>RecursoDaEtapa</c>.</summary>
 public sealed record RecursoDaEtapaDto(
     Guid Id,
-    AncoraDoRecurso Ancora,
+    CodigoComRotulo<EventoInicialDoPrazo> Ancora,
     ReferenciaRegraDto Regra,
     ParametrosRegraPrazoRecursoDto Parametros,
     Guid ProdutoAncoraId,
@@ -136,11 +136,10 @@ public sealed record RecursoDaEtapaDto(
 
 /// <summary>Projeção de leitura de <c>ProdutoDaEtapa</c>.</summary>
 /// <param name="Papel">
-/// Token canônico UPPER_SNAKE (<c>PRELIMINAR</c>/<c>DEFINITIVO</c>), o mesmo vocabulário
-/// que o produto da fase publica — o enum cru vazaria um segundo vocabulário no wire para
-/// o mesmo conceito.
+/// Código (<c>PRELIMINAR</c>/<c>DEFINITIVO</c>) e rótulo do papel da publicação, o mesmo que a fase publica;
+/// nulo quando o ato não é resultado.
 /// </param>
-public sealed record ProdutoDaEtapaDto(Guid Id, string AtoCodigo, string? Papel);
+public sealed record ProdutoDaEtapaDto(Guid Id, string AtoCodigo, CodigoComRotulo<PapelDaPublicacaoPrevista>? Papel);
 
 /// <summary>Cópia por valor do tipo de etapa, projetada para leitura (ADR-0061).</summary>
 /// <param name="NotaDeOrigemNoEnem">

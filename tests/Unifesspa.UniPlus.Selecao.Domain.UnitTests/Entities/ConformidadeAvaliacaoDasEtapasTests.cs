@@ -2,6 +2,7 @@ namespace Unifesspa.UniPlus.Selecao.Domain.UnitTests.Entities;
 
 using AwesomeAssertions;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
@@ -90,7 +91,7 @@ public sealed class ConformidadeAvaliacaoDasEtapasTests
     public void EtapaHumanaCompleta_Publica()
     {
         ProcessoSeletivo processo = ProcessoCom(
-            new ModeloDeEtapa("Redação") { Ordem = 1, FaseCodigo = "RESULTADO_FINAL", Forma = FormaDeAvaliacao.Humana, RegraConsolidacao = ProcessoConformeFactory.Regra(RegraConsolidacaoCodigo.AvaliacaoUnica, "b"), Bancas = [BancaDaEtapa.Criar(ChaveLocal.Criar("banca").Value, TiposDeBancaCopiadosDeTeste.De(TipoDeBanca.CorrecaoDeRedacoes, Guid.CreateVersion7()), BancasDeTeste.Regra())], Passo = 0.5m }.Criar());
+            new ModeloDeEtapa("Redação") { Ordem = 1, FaseCodigo = "RESULTADO_FINAL", Forma = FormaDeAvaliacao.Humana, RegraConsolidacao = ProcessoConformeFactory.Regra(RegraDeApuracaoDaAvaliacao.AvaliacaoUnica.Codigo(), "b"), Bancas = [BancaDaEtapa.Criar(ChaveLocal.Criar("banca").Value, TiposDeBancaCopiadosDeTeste.De(TipoDeBanca.CorrecaoDeRedacoes, Guid.CreateVersion7()), BancasDeTeste.Regra())], Passo = 0.5m }.Criar());
 
         Vermelhos(processo).Should().BeEmpty();
         Publicar(processo).IsSuccess.Should().BeTrue();
@@ -126,12 +127,12 @@ public sealed class ConformidadeAvaliacaoDasEtapasTests
     [Fact(DisplayName = "Com escala de atendimento a etapa humana publica sem passo do lançamento; sem escala o passo continua exigido")]
     public void EtapaHumanaComEscala_DispensaOPasso()
     {
-        ProcessoSeletivo comEscala = ProcessoCom(new ModeloDeEtapa("Entrevista") { Ordem = 1, FaseCodigo = "RESULTADO_FINAL", Forma = FormaDeAvaliacao.Humana, RegraConsolidacao = ProcessoConformeFactory.Regra(RegraConsolidacaoCodigo.AvaliacaoUnica, "b"), Bancas = [BancaDaEtapa.Criar(ChaveLocal.Criar("banca").Value, TiposDeBancaCopiadosDeTeste.De(TipoDeBanca.CorrecaoDeRedacoes, Guid.CreateVersion7()), BancasDeTeste.Regra())], Itens = [new(null, "Postura", 5m), new(null, "Domínio", 5m)], Escala = Escala }.Criar());
+        ProcessoSeletivo comEscala = ProcessoCom(new ModeloDeEtapa("Entrevista") { Ordem = 1, FaseCodigo = "RESULTADO_FINAL", Forma = FormaDeAvaliacao.Humana, RegraConsolidacao = ProcessoConformeFactory.Regra(RegraDeApuracaoDaAvaliacao.AvaliacaoUnica.Codigo(), "b"), Bancas = [BancaDaEtapa.Criar(ChaveLocal.Criar("banca").Value, TiposDeBancaCopiadosDeTeste.De(TipoDeBanca.CorrecaoDeRedacoes, Guid.CreateVersion7()), BancasDeTeste.Regra())], Itens = [new(null, "Postura", 5m), new(null, "Domínio", 5m)], Escala = Escala }.Criar());
 
         Vermelhos(comEscala).Should().BeEmpty();
         Publicar(comEscala).IsSuccess.Should().BeTrue();
 
-        ProcessoSeletivo semEscala = ProcessoCom(new ModeloDeEtapa("Entrevista") { Ordem = 1, FaseCodigo = "RESULTADO_FINAL", Forma = FormaDeAvaliacao.Humana, RegraConsolidacao = ProcessoConformeFactory.Regra(RegraConsolidacaoCodigo.AvaliacaoUnica, "b"), Bancas = [BancaDaEtapa.Criar(ChaveLocal.Criar("banca").Value, TiposDeBancaCopiadosDeTeste.De(TipoDeBanca.CorrecaoDeRedacoes, Guid.CreateVersion7()), BancasDeTeste.Regra())], Itens = [new(null, "Postura", 5m), new(null, "Domínio", 5m)] }.Criar());
+        ProcessoSeletivo semEscala = ProcessoCom(new ModeloDeEtapa("Entrevista") { Ordem = 1, FaseCodigo = "RESULTADO_FINAL", Forma = FormaDeAvaliacao.Humana, RegraConsolidacao = ProcessoConformeFactory.Regra(RegraDeApuracaoDaAvaliacao.AvaliacaoUnica.Codigo(), "b"), Bancas = [BancaDaEtapa.Criar(ChaveLocal.Criar("banca").Value, TiposDeBancaCopiadosDeTeste.De(TipoDeBanca.CorrecaoDeRedacoes, Guid.CreateVersion7()), BancasDeTeste.Regra())], Itens = [new(null, "Postura", 5m), new(null, "Domínio", 5m)] }.Criar());
 
         Vermelhos(semEscala).Should().ContainSingle().Which.Codigo.Should().Be("etapa_humana_sem_passo_do_lancamento");
     }

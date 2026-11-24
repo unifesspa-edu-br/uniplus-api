@@ -12,8 +12,8 @@ using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 public enum RegraRemanejamento
 {
     /// <summary>Segue a cascata de remanejamento legalmente estabelecida (cotas reservadas).</summary>
-    [CodigoDeContrato("SEGUE_CASCATA", "Segue a cascata")]
-    SegueCascata = 1,
+    [CodigoDeContrato("SEGUE_ORDEM_DE_REMANEJAMENTO", "Segue a ordem de remanejamento")]
+    SegueOrdemDeRemanejamento = 1,
 
     /// <summary>Remaneja para um destino único informado em <c>RemanejamentoParametros.Destino</c>.</summary>
     [CodigoDeContrato("DESTINO_UNICO", "Destino único")]

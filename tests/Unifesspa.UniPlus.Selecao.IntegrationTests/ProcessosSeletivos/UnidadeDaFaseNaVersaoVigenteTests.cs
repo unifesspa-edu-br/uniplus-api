@@ -97,7 +97,7 @@ public sealed class UnidadeDaFaseNaVersaoVigenteTests : IClassFixture<ProcessoSe
     public async Task Iniciadas_ContaPeloAtoDaEtapaDaFase()
     {
         (Guid processoId, FaseCronograma fase, EtapaProcesso etapa) = await _cenario.PublicadoAsync("PS ato da etapa", Abertura);
-        await _cenario.SemearAtoAsync(processoId, IdentidadeDoItemDoEdital.DaEtapa(etapa, ProdutoDaEtapa.Criar("RESULTADO_CLASSIFICACAO", PapelProdutoFase.Definitivo)));
+        await _cenario.SemearAtoAsync(processoId, IdentidadeDoItemDoEdital.DaEtapa(etapa, ProdutoDaEtapa.Criar("RESULTADO_CLASSIFICACAO", PapelDaPublicacaoPrevista.Definitivo)));
 
         FasesIniciadas iniciadas = await _cenario.IniciadasAsync(processoId, DateTimeOffset.UtcNow);
 

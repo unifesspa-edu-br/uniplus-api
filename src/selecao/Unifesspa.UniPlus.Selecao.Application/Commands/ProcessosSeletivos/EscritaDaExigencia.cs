@@ -4,6 +4,8 @@ using Domain.Enums;
 
 using Kernel.Results;
 
+using Services;
+
 using Unifesspa.UniPlus.Regras.Formularios;
 
 /// <summary>Conversão dos tokens de uma exigência do payload para o vocabulário do domínio.</summary>
@@ -25,12 +27,8 @@ internal static class EscritaDaExigencia
             ? recusa with { Field = caminho }
             : recusa;
 
-    public static Aplicabilidade AplicabilidadeDoToken(string? token) => token switch
-    {
-        "GERAL" => Aplicabilidade.Geral,
-        "CONDICIONAL" => Aplicabilidade.Condicional,
-        _ => Aplicabilidade.Nenhuma,
-    };
+    /// <summary>A aplicabilidade do código, nula quando ausente ou desconhecida: a forma da exigência a recusa.</summary>
+    public static Aplicabilidade? AplicabilidadeDoToken(string? token) => CodigoLidoDoPedido.Ler<Aplicabilidade>(token);
 
     /// <summary>
     /// A finalidade do token, nula quando o cliente não a declarou. O token desconhecido vira o sentinela,

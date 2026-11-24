@@ -2,6 +2,7 @@ namespace Unifesspa.UniPlus.Selecao.Application.DTOs;
 
 using Unifesspa.UniPlus.Application.Abstractions.Respostas;
 using Unifesspa.UniPlus.Regras.Enums;
+using Unifesspa.UniPlus.Selecao.Domain.Enums;
 
 /// <summary>
 /// Um motivo que o processo escolheu do cadastro (UNI-REQ-0285), com os valores copiados, na fase ou etapa em que foi
@@ -19,7 +20,7 @@ public sealed record MotivoDeDecisaoDoProcessoDto(
     string Codigo,
     string Descricao,
     string? Subclassificacao,
-    string Sentido,
+    CodigoComRotulo<SentidoDoMotivo> Sentido,
     VigenciaDoMotivoDto Vigencia,
     string? JustificativaDaInclusao);
 

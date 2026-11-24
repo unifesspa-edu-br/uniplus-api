@@ -37,7 +37,7 @@ public sealed class ProjecaoDaEtapaDoProcessoTests
         NotaMaxima: 100m,
         PassoDoLancamento: 0.5m,
         FormaDeAvaliacao: FormaDeAvaliacao.Humana,
-        RegraConsolidacao: ReferenciaRegra.De(RegraConsolidacaoCodigo.CorrecaoIndependente, "v1", HashDaRegra),
+        RegraConsolidacao: ReferenciaRegra.De(RegraDeApuracaoDaAvaliacao.CorrecaoIndependente.Codigo(), "v1", HashDaRegra),
         EscalaDeAtendimento: [NivelDeAtendimento.Criar(ChaveLocal.Criar("nivel_atende").Value, "Atende", 1m), NivelDeAtendimento.Criar(ChaveLocal.Criar("nivel_parcial").Value, "Atende em parte", 0.5m)]);
 
     private static ItemDeAvaliacao[] Itens() =>
@@ -51,9 +51,9 @@ public sealed class ProjecaoDaEtapaDoProcessoTests
         EtapaProcesso etapa = EtapaProcesso.Reidratar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("etapa").Value!, EtapaId, Identificacao("AVALIACAO"), AvaliacaoHumana(), Itens());
         etapa.DefinirJanelaEParecer(Inicio, Fim, emiteParecerIndividual: true).IsSuccess.Should().BeTrue();
         etapa.DefinirTiposDeDecisao([TipoMotivoDeDecisao.IsencaoDaTaxa.Codigo(), TipoMotivoDeDecisao.Classificacao.Codigo()]).IsSuccess.Should().BeTrue();
-        etapa.DefinirProdutos([ProdutoDaEtapa.Reidratar(ProdutoDoResultadoId, "RESULTADO_PRELIMINAR", PapelProdutoFase.Preliminar)]).IsSuccess.Should().BeTrue();
+        etapa.DefinirProdutos([ProdutoDaEtapa.Reidratar(ProdutoDoResultadoId, "RESULTADO_PRELIMINAR", PapelDaPublicacaoPrevista.Preliminar)]).IsSuccess.Should().BeTrue();
         etapa.DefinirBancas([BancaDaEtapa.Criar(ChaveLocal.Criar("banca").Value, TiposDeBancaCopiadosDeTeste.Nomeada(TiposDeBancaCopiadosDeTeste.De(TipoDeBanca.CorrecaoDeRedacoes, TipoBancaId), "Banca geral"))]);
-        etapa.DefinirRecursos([RecursoDaEtapa.Criar(AncoraDoRecurso.AtoPublicado, RegraDoPrazo(), ParametrosDoPrazo(), ProdutoDoResultadoId).Value!])
+        etapa.DefinirRecursos([RecursoDaEtapa.Criar(EventoInicialDoPrazo.PublicacaoDoAto, RegraDoPrazo(), ParametrosDoPrazo(), ProdutoDoResultadoId).Value!])
             .IsSuccess.Should().BeTrue();
         return etapa;
     }
@@ -72,7 +72,7 @@ public sealed class ProjecaoDaEtapaDoProcessoTests
         return EtapaProcesso.Reidratar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("etapa").Value!, EtapaId, Identificacao(faseCodigo: null), semAvaliacao, itens: null);
     }
 
-    private static ReferenciaRegra RegraDoPrazo() => ReferenciaRegra.De(RegraPrazoRecursoCodigo.AncoradoEmAto, "1", HashDaRegra);
+    private static ReferenciaRegra RegraDoPrazo() => ReferenciaRegra.De(RegraDePrazoDoRecurso.ContadoDaPublicacaoDoAto.Codigo(), "1", HashDaRegra);
 
     private static ParametrosDeclaradosDoRecurso ParametrosDoPrazo() => ParametrosDoRecursoDeTeste.ComInstanciaSuperior(2m, UnidadePrazo.DiasUteis);
 
@@ -107,7 +107,7 @@ public sealed class ProjecaoDaEtapaDoProcessoTests
 
         grupo.Should().BeEquivalentTo(new IdentificacaoDaEtapaDto(
             Nome: "Prova discursiva",
-            Carater: CaraterEtapa.Eliminatoria,
+            Carater: CodigoComRotulo<CaraterEtapa>.De(CaraterEtapa.Eliminatoria),
             TipoEtapa: new TipoEtapaSnapshotDto(TipoEtapaId, "PROVA_DISCURSIVA", "Prova discursiva", NotaDeOrigemNoEnem: true, ExigeCorrecaoIndependente: false),
             Ordem: 4,
             FaseCodigo: "AVALIACAO"));
@@ -127,8 +127,8 @@ public sealed class ProjecaoDaEtapaDoProcessoTests
         AvaliacaoDaEtapaDto grupo = ProjecaoDaEtapaDoProcesso.ProjetarEtapa(EtapaCompleta()).Avaliacao;
 
         grupo.Should().BeEquivalentTo(new AvaliacaoDaEtapaDto(
-            FormaDeAvaliacao: "HUMANA",
-            RegraConsolidacao: new ReferenciaRegraDto(RegraConsolidacaoCodigo.CorrecaoIndependente, "v1", HashDaRegra),
+            FormaDeAvaliacao: CodigoComRotulo<FormaDeAvaliacao>.De(FormaDeAvaliacao.Humana),
+            RegraConsolidacao: new ReferenciaRegraDto(RegraDeApuracaoDaAvaliacao.CorrecaoIndependente.Codigo(), "v1", HashDaRegra),
             ItensDeAvaliacao:
             [
                 new ItemDeAvaliacaoDto(ItemDeRedacaoId, "Redação", 60m, 1, "item_redacao"),
@@ -181,14 +181,14 @@ public sealed class ProjecaoDaEtapaDoProcessoTests
     }
 
     private static PublicacoesDaEtapaDto PublicacoesEsperadas(RecursoDaEtapa recurso) => new(
-        Produtos: [new ProdutoDaEtapaDto(ProdutoDoResultadoId, "RESULTADO_PRELIMINAR", "PRELIMINAR")],
+        Produtos: [new ProdutoDaEtapaDto(ProdutoDoResultadoId, "RESULTADO_PRELIMINAR", CodigoComRotulo<PapelDaPublicacaoPrevista>.De(PapelDaPublicacaoPrevista.Preliminar))],
         EmiteParecerIndividual: true,
         Recursos:
         [
             new RecursoDaEtapaDto(
                 recurso.Id,
-                AncoraDoRecurso.AtoPublicado,
-                new ReferenciaRegraDto(RegraPrazoRecursoCodigo.AncoradoEmAto, "1", HashDaRegra),
+                CodigoComRotulo<EventoInicialDoPrazo>.De(EventoInicialDoPrazo.PublicacaoDoAto),
+                new ReferenciaRegraDto(RegraDePrazoDoRecurso.ContadoDaPublicacaoDoAto.Codigo(), "1", HashDaRegra),
                 ParametrosEsperados(),
                 ProdutoDoResultadoId,
                 "RESULTADO_PRELIMINAR",

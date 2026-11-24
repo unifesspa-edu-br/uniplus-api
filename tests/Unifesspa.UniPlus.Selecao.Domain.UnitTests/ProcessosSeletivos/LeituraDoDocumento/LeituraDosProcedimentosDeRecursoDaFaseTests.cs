@@ -2,6 +2,7 @@ namespace Unifesspa.UniPlus.Selecao.Domain.UnitTests.ProcessosSeletivos.LeituraD
 
 using AwesomeAssertions;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.MotivosDeDecisao;
@@ -15,7 +16,7 @@ using static Unifesspa.UniPlus.Selecao.Domain.UnitTests.ProcessosSeletivos.Leitu
 
 public sealed class LeituraDosProcedimentosDeRecursoDaFaseTests
 {
-    private static readonly ReferenciaDeRegraNoDocumento Ancorada = new(RegraPrazoRecursoCodigo.AncoradoEmAto, "v1");
+    private static readonly ReferenciaDeRegraNoDocumento Ancorada = new(RegraDePrazoDoRecurso.ContadoDaPublicacaoDoAto.Codigo(), "v1");
 
     private static FaseNoDocumento ComRegra(ReferenciaDeRegraNoDocumento regra, params ProcedimentoNoDocumento[] procedimentos) =>
         Fase(0, "resultado", "RESULTADO").Publicando(Preliminar(0, AtoDoResultado)) with
@@ -55,7 +56,7 @@ public sealed class LeituraDosProcedimentosDeRecursoDaFaseTests
         PartesRecusadas(lidos).Should().Equal(
             ("/cronograma/fases/0/regraRecurso/procedimentosDeRecurso/0/regra/codigo", "RegraRecursoFase.ProcedimentoDeRecursoDesconhecido"));
         Mensagens(lidos).Should().ContainSingle().Which.Should()
-            .Be($"O procedimento de recurso informado, ou a versão dele, não consta do catálogo. Procedimentos aceitos: {string.Join(", ", RegraProcedimentoRecursoCodigo.Rol)}.")
+            .Be($"O procedimento de recurso informado, ou a versão dele, não consta do catálogo. Procedimentos aceitos: {string.Join(", ", CatalogoDe<RegraDeProcedimentoDoRecurso>.Todos().Select(static item => item.Codigo))}.")
             .And.NotContain("REGRA-DIGITADA")
             .And.NotContain("versao-digitada");
     }

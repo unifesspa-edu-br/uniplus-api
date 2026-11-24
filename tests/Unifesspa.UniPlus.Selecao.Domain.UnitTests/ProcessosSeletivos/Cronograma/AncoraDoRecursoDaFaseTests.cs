@@ -2,6 +2,7 @@ namespace Unifesspa.UniPlus.Selecao.Domain.UnitTests.ProcessosSeletivos.Cronogra
 
 using AwesomeAssertions;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
@@ -21,13 +22,13 @@ public sealed class AncoraDoRecursoDaFaseTests
     private const string Resultado = "RESULTADO_CLASSIFICACAO";
 
     private static RegraRecursoFase Recurso(Guid produtoAncoraId) => RegraRecursoFase.Criar(
-        ReferenciaRegra.De(RegraPrazoRecursoCodigo.AncoradoEmAto, "v1", new string('a', 64)),
+        ReferenciaRegra.De(RegraDePrazoDoRecurso.ContadoDaPublicacaoDoAto.Codigo(), "v1", new string('a', 64)),
         ParametrosDoRecursoDeTeste.Declarados(48m, UnidadePrazo.Horas),
         produtoAncoraId).Value!;
 
-    private static ProdutoDaFase Preliminar(string ato) => ProdutoDaFase.Criar(ato, PapelProdutoFase.Preliminar);
+    private static ProdutoDaFase Preliminar(string ato) => ProdutoDaFase.Criar(ato, PapelDaPublicacaoPrevista.Preliminar);
 
-    private static ProdutoDaFase Definitivo(string ato) => ProdutoDaFase.Criar(ato, PapelProdutoFase.Definitivo);
+    private static ProdutoDaFase Definitivo(string ato) => ProdutoDaFase.Criar(ato, PapelDaPublicacaoPrevista.Definitivo);
 
     [Fact(DisplayName = "Fase sem regra de recurso não tem âncora a conferir")]
     public void Violacao_SemRegraDeRecurso_NaoViola()
@@ -136,9 +137,9 @@ public sealed class AncoraDoRecursoDaFaseTests
         RegraRecursoFase regra = Recurso(preliminarCongelado.Id);
 
         AncoraDoRecursoDaFase.Reancorar(regra, congelados, recriados);
-        regra.ProdutoAncoraId.Should().Be(recriados.Single(static p => p.Papel == PapelProdutoFase.Preliminar).Id);
+        regra.ProdutoAncoraId.Should().Be(recriados.Single(static p => p.Papel == PapelDaPublicacaoPrevista.Preliminar).Id);
 
         AncoraDoRecursoDaFase.Reancorar(regra, recriados, rastreados);
-        regra.ProdutoAncoraId.Should().Be(rastreados.Single(static p => p.Papel == PapelProdutoFase.Preliminar).Id);
+        regra.ProdutoAncoraId.Should().Be(rastreados.Single(static p => p.Papel == PapelDaPublicacaoPrevista.Preliminar).Id);
     }
 }

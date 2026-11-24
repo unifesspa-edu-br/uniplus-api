@@ -10,6 +10,7 @@ using Kernel.Results;
 
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Seed;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Vagas;
 using Unifesspa.UniPlus.Testes.Compartilhado;
@@ -130,7 +131,7 @@ internal static class ProcessoSeletivoPendenciasSeeder
         ModalidadeSelecionada ampla = AmplaDaOfertaNaoFederal();
         ModalidadeSelecionada cotaSegueCascataForaDoFederal = CotaComCascataForaDoRegimeFederal();
         Result<ConfiguracaoDistribuicaoVagas> distribuicaoResult = ConfiguracaoDistribuicaoVagas.Criar(Guid.CreateVersion7(),
-            new DistribuicaoDeVagasDeclarada { VagasOfertadasBase = 10, PercentualDaReservaLegal = 1m, RegraDeDistribuicao = RegraDoCatalogo(db, RegraDistribuicaoVagasCodigo.Institucional), Modalidades = [ampla, cotaSegueCascataForaDoFederal] },
+            new DistribuicaoDeVagasDeclarada { VagasOfertadasBase = 10, PercentualDaReservaLegal = 1m, RegraDeDistribuicao = RegraDoCatalogo(db, RegraDeDistribuicaoDeVagas.Institucional.Codigo()), Modalidades = [ampla, cotaSegueCascataForaDoFederal] },
             new FatosDaOfertaNoCadastro { OfertaCurso = OfertaCursoDeTeste.Medicina });
         distribuicaoResult.IsSuccess.Should().BeTrue(distribuicaoResult.Error?.Message);
         return distribuicaoResult.Value!;
@@ -138,25 +139,13 @@ internal static class ProcessoSeletivoPendenciasSeeder
 
     private static ModalidadeSelecionada AmplaDaOfertaNaoFederal()
     {
-        ModalidadeSelecionada ampla = ModalidadeSelecionada.Criar(
-            modalidadeOrigemId: Guid.CreateVersion7(), codigo: "AC", descricao: "Ampla concorrência",
-            naturezaLegal: NaturezaLegalModalidade.Ampla, composicaoVagas: ComposicaoVagasModalidade.RestanteDasVagasOfertadas,
-            composicaoOrigemCodigo: null, regraRemanejamento: RegraRemanejamentoModalidade.Nenhuma,
-            remanejamentoDestino: null, remanejamentoPar: null, remanejamentoFallback: null,
-            regraDeAplicabilidade: RegrasDeAplicabilidadeDeTeste.DaNatureza(NaturezaLegalModalidade.Ampla), acaoQuandoIndeferido: null, baseLegal: "Res. Unifesspa 532/2021",
-            quantidadeDeclarada: 8).Value!;
+        ModalidadeSelecionada ampla = ModalidadeSelecionada.Criar(ModalidadesNoCadastroDeTeste.Da("AC", NaturezaLegalModalidade.Ampla, ComposicaoVagasModalidade.RestanteDasVagasOfertadas) with { Descricao = "Ampla concorrência", RegraRemanejamento = null, BaseLegal = "Res. Unifesspa 532/2021" }, 8).Value!;
         return ampla;
     }
 
     private static ModalidadeSelecionada CotaComCascataForaDoRegimeFederal()
     {
-        ModalidadeSelecionada cotaSegueCascataForaDoFederal = ModalidadeSelecionada.Criar(
-            modalidadeOrigemId: Guid.CreateVersion7(), codigo: "LB_PPI", descricao: "Baixa renda PPI",
-            naturezaLegal: NaturezaLegalModalidade.CotaReservada, composicaoVagas: ComposicaoVagasModalidade.DentroDaReservaLegal,
-            composicaoOrigemCodigo: null, regraRemanejamento: RegraRemanejamentoModalidade.SegueCascata,
-            remanejamentoDestino: null, remanejamentoPar: null, remanejamentoFallback: null,
-            regraDeAplicabilidade: RegrasDeAplicabilidadeDeTeste.DaNatureza(NaturezaLegalModalidade.CotaReservada), acaoQuandoIndeferido: null, baseLegal: "Res. Unifesspa 532/2021",
-            quantidadeDeclarada: 2).Value!;
+        ModalidadeSelecionada cotaSegueCascataForaDoFederal = ModalidadeSelecionada.Criar(ModalidadesNoCadastroDeTeste.Da("LB_PPI", NaturezaLegalModalidade.CotaReservada, ComposicaoVagasModalidade.DentroDaReservaLegal) with { Descricao = "Baixa renda PPI", RegraRemanejamento = RegraRemanejamentoModalidade.SegueOrdemDeRemanejamento, BaseLegal = "Res. Unifesspa 532/2021" }, 2).Value!;
         return cotaSegueCascataForaDoFederal;
     }
 

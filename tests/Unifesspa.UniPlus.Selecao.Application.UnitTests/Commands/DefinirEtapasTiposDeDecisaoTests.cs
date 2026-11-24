@@ -6,6 +6,7 @@ using NSubstitute;
 
 using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 using Unifesspa.UniPlus.Configuracao.Contracts;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Publicacoes.Contracts;
 using Unifesspa.UniPlus.Regras.Enums;
@@ -40,7 +41,7 @@ public sealed class DefinirEtapasTiposDeDecisaoTests
     private static readonly Guid TipoBancaId = Guid.CreateVersion7();
 
     private static EtapaProcessoInput Etapa(int ordem, string nome = "Prova Objetiva", Guid? id = null, params string?[] tipos) => new(
-        nome, CaraterEtapa.Classificatoria, TipoProvaObjetivaOrigemId, 1m, null, ordem, id,
+        nome, CaraterEtapa.Classificatoria.Codigo(), TipoProvaObjetivaOrigemId, 1m, null, ordem, id,
         Produtos: [], Bancas: [], Recursos: [], TiposDeDecisao: tipos);
 
     private static DefinirEtapasCommand Comando(ProcessoSeletivo processo, params EtapaProcessoInput[] etapas) =>
@@ -56,21 +57,21 @@ public sealed class DefinirEtapasTiposDeDecisaoTests
     private static (string? Campo, string Codigo)[] Recusas(Result resultado) =>
         [.. resultado.Errors.Select(static e => (e.Field, e.Error.Code))];
 
-    private static ProdutoDaEtapaInput Definitivo() => new(AtoDaClassificacao, PapelProdutoFaseCodigo.Definitivo);
+    private static ProdutoDaEtapaInput Definitivo() => new(AtoDaClassificacao, "DEFINITIVO");
 
     private static EtapaProcessoInput ComProdutosDoRecurso(EtapaProcessoInput etapa, params ProcedimentoDeRecursoInput[] procedimentos) =>
         etapa with
         {
-            Produtos = [new ProdutoDaEtapaInput(AtoDaClassificacao, PapelProdutoFaseCodigo.Preliminar), Definitivo()],
+            Produtos = [new ProdutoDaEtapaInput(AtoDaClassificacao, "PRELIMINAR"), Definitivo()],
             Recursos =
             [
                 new RecursoDaEtapaInput(
-                    AncoraDoRecurso.AtoPublicado, RegraPrazoRecursoCodigo.AncoradoEmAto, "v1", 2m, "diasUteis",
-                    AtoDaClassificacao, false, null, null, "semEfeitoSuspensivo", null, procedimentos),
+                    EventoInicialDoPrazo.PublicacaoDoAto.Codigo(), RegraDePrazoDoRecurso.ContadoDaPublicacaoDoAto.Codigo(), "v1", 2m, "DIAS_UTEIS",
+                    AtoDaClassificacao, false, null, null, "SEM_EFEITO_SUSPENSIVO", null, procedimentos),
             ],
         };
 
-    private static ProcedimentoDeRecursoInput ProcedimentoDaClassificacao(string regra = RegraProcedimentoRecursoCodigo.Recalculo) =>
+    private static ProcedimentoDeRecursoInput ProcedimentoDaClassificacao(string regra = "PROCEDIMENTO_RECURSO_RECALCULO") =>
         new(Classificacao, null, regra, "v1");
 
     private static EtapaProcessoInput EtapaComJanelaInvertidaETipoInvalido() =>

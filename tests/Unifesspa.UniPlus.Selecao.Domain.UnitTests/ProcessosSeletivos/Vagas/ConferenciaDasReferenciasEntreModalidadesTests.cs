@@ -19,20 +19,17 @@ public sealed class ConferenciaDasReferenciasEntreModalidadesTests
         string codigo,
         ComposicaoVagasModalidade composicao,
         string? origem,
-        RegraRemanejamentoModalidade remanejamento,
+        RegraRemanejamentoModalidade? remanejamento,
         (string? Destino, string? Par, string? Fallback) alvo,
         string? acaoQuandoIndeferido) =>
-        ModalidadeSelecionada.Criar(
-            Guid.CreateVersion7(), codigo, null, NaturezaLegalModalidade.AcaoAfirmativa, composicao, origem, remanejamento,
-            alvo.Destino, alvo.Par, alvo.Fallback, RegrasDeAplicabilidadeDeTeste.DaNatureza(NaturezaLegalModalidade.AcaoAfirmativa),
-            acaoQuandoIndeferido, "base legal", quantidadeDeclarada: 1).Value!;
+        ModalidadeSelecionada.Criar(ModalidadesNoCadastroDeTeste.Da(codigo, NaturezaLegalModalidade.AcaoAfirmativa, composicao) with { ComposicaoOrigemCodigo = origem, RegraRemanejamento = remanejamento, RemanejamentoDestino = alvo.Destino, RemanejamentoPar = alvo.Par, RemanejamentoFallback = alvo.Fallback, AcaoQuandoIndeferido = acaoQuandoIndeferido, BaseLegal = "base legal" }, 1).Value!;
 
     private static ModalidadeSelecionada Modalidade(
         string codigo,
         ComposicaoVagasModalidade composicao = ComposicaoVagasModalidade.SuplementarAoTotal,
         string? origem = null,
         string? acaoQuandoIndeferido = null) =>
-        Montar(codigo, composicao, origem, RegraRemanejamentoModalidade.Nenhuma, (null, null, null), acaoQuandoIndeferido);
+        Montar(codigo, composicao, origem, null, (null, null, null), acaoQuandoIndeferido);
 
     private static ModalidadeSelecionada ComDestino(string codigo, string destino) =>
         Montar(codigo, ComposicaoVagasModalidade.SuplementarAoTotal, null, RegraRemanejamentoModalidade.DestinoUnico, (destino, null, null), null);

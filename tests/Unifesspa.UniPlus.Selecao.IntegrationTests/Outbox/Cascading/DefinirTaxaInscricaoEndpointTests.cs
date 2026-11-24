@@ -158,7 +158,7 @@ public sealed class DefinirTaxaInscricaoEndpointTests
     {
         cobra,
         valor,
-        fundamentos = cobra ? [FundamentoIsencaoCodigo.CadastroUnico] : (string[]?)null,
+        fundamentos = cobra ? ["CADASTRO_UNICO"] : (string[]?)null,
     };
 
     private sealed record Contexto(CascadingApiFactory Api, HttpClient Client, Guid ProcessoId)

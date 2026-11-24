@@ -4,6 +4,7 @@ using System.Text.Json.Nodes;
 
 using AwesomeAssertions;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
@@ -130,7 +131,7 @@ public sealed class CronogramaComRegraDeHomologacaoTests
         new DecisoesDeCronogramaDaFase(
             Ordem: 1, Inicio: null, Fim: null, UnidadeResponsavel: new UnidadeResponsavelSnapshot(new Guid("5555eeee-0000-4000-8000-000000000001"), "CEPS", "CEPS", "Centro de Processos Seletivos")),
         new PublicacoesDaFase(
-            Produtos: [ProdutoDaFase.Reidratar(new Guid("7777bbbb-0000-4000-8000-000000000001"), "RESULTADO_PRELIMINAR_HOMOLOGACAO", PapelProdutoFase.Preliminar)],
+            Produtos: [ProdutoDaFase.Reidratar(new Guid("7777bbbb-0000-4000-8000-000000000001"), "RESULTADO_PRELIMINAR_HOMOLOGACAO", PapelDaPublicacaoPrevista.Preliminar)],
             EmiteParecerIndividual: false,
             RegraRecurso: null,
             RegraDeHomologacao: regra),
@@ -161,7 +162,7 @@ public sealed class CronogramaComRegraDeHomologacaoTests
     {
         ["cronogramaFases"] = new JsonObject
         {
-            ["origemCandidatos"] = OrigemCandidatos.InscricaoPropria.ToString(),
+            ["origemCandidatos"] = OrigemCandidatos.InscricaoPropria.Codigo(),
             ["fases"] = new JsonArray(item),
         },
     };

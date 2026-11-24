@@ -40,8 +40,8 @@ public sealed class ObterFormularioRenderizavelComprovacaoDocumentalTests
 
     private static void ConferirComprovacaoDaHabilitacao(FormularioRenderizavelDto habilitacao, Guid processoId)
     {
-        habilitacao.ComprovacaoDocumental!.Select(static e => (e.Rotulo, e.Aplicabilidade)).Should().Equal(
-            [("Documento de identidade", "Geral"), ("Autodeclaração étnico-racial", "Condicional")],
+        habilitacao.ComprovacaoDocumental!.Select(static e => (e.Rotulo, e.Aplicabilidade.Codigo)).Should().Equal(
+            [("Documento de identidade", "GERAL"), ("Autodeclaração étnico-racial", "CONDICIONAL")],
             "só as exigências da fase da habilitação, na ordem congelada");
         habilitacao.ComprovacaoDocumental!.Select(static e => e.Modelo).Should().BeEquivalentTo(
             [
@@ -58,9 +58,9 @@ public sealed class ObterFormularioRenderizavelComprovacaoDocumentalTests
 
     private static string ExigenciasDasFases(Guid faseHabilitacao, Guid faseInscricao) => $$"""
             {"documentosExigidos": {"dataDeReferenciaDosDados": null, "exigencias": [
-              {{Exigencia("Documento de identidade", "Geral", faseHabilitacao, "HABILITACAO")}},
-              {{Exigencia("Comprovante de inscrição", "Geral", faseInscricao, "INSCRICAO")}},
-              {{Exigencia("Autodeclaração étnico-racial", "Condicional", faseHabilitacao, "HABILITACAO", Modelo)}}
+              {{Exigencia("Documento de identidade", "GERAL", faseHabilitacao, "HABILITACAO")}},
+              {{Exigencia("Comprovante de inscrição", "GERAL", faseInscricao, "INSCRICAO")}},
+              {{Exigencia("Autodeclaração étnico-racial", "CONDICIONAL", faseHabilitacao, "HABILITACAO", Modelo)}}
             ] } }
             """;
 
@@ -81,7 +81,7 @@ public sealed class ObterFormularioRenderizavelComprovacaoDocumentalTests
 
     private static string ExigenciaComModeloNaFase(Guid fase) => $$"""
         {"documentosExigidos": {"dataDeReferenciaDosDados": null, "exigencias": [
-          {{Exigencia("Autodeclaração étnico-racial", "Condicional", fase, "HABILITACAO", Modelo)}}
+          {{Exigencia("Autodeclaração étnico-racial", "CONDICIONAL", fase, "HABILITACAO", Modelo)}}
         ] } }
         """;
 
@@ -109,9 +109,9 @@ public sealed class ObterFormularioRenderizavelComprovacaoDocumentalTests
 
     private static string ExigenciasDaFaseCompartilhada(Guid fase) => $$"""
             {"documentosExigidos": {"dataDeReferenciaDosDados": null, "exigencias": [
-              {{Exigencia("Documento de identidade", "Geral", fase, "INSCRICAO")}},
-              {{Exigencia("Comprovante de renda", "Geral", fase, "ISENCAO_TAXA")}},
-              {{Exigencia("Laudo da banca", "Geral", fase, null)}}
+              {{Exigencia("Documento de identidade", "GERAL", fase, "INSCRICAO")}},
+              {{Exigencia("Comprovante de renda", "GERAL", fase, "ISENCAO_TAXA")}},
+              {{Exigencia("Laudo da banca", "GERAL", fase, null)}}
             ] } }
             """;
 
@@ -125,7 +125,7 @@ public sealed class ObterFormularioRenderizavelComprovacaoDocumentalTests
     {
         string envelope = $$"""
             {"documentosExigidos": {"dataDeReferenciaDosDados": null, "exigencias": [
-              {"tipoDocumentoNome": "Documento de identidade", "aplicabilidade": "Geral", "obrigatorio": true, "exigidoNaFaseId": {{faseDaExigencia}},
+              {"tipoDocumentoNome": "Documento de identidade", "aplicabilidade": "GERAL", "obrigatorio": true, "exigidoNaFaseId": {{faseDaExigencia}},
                {{finalidadeDaExigencia}} "formatosPermitidos": {"lista": null, "qualquer": true}, "prazoDeEmissao": null, "validade": null, "modelo": null }
             ] } }
             """;
@@ -158,7 +158,7 @@ public sealed class ObterFormularioRenderizavelComprovacaoDocumentalTests
     }
 
     private static string ExigenciaComPrazo(Guid fase, Guid faseDeReferencia) => $$"""
-        {"tipoDocumentoNome": "Comprovante de residência", "aplicabilidade": "Geral", "obrigatorio": true, "exigidoNaFaseId": "{{fase}}",
+        {"tipoDocumentoNome": "Comprovante de residência", "aplicabilidade": "GERAL", "obrigatorio": true, "exigidoNaFaseId": "{{fase}}",
          "finalidade": "HABILITACAO", "formatosPermitidos": {"lista": null, "qualquer": true}, "modelo": null, "validade": null,
          "prazoDeEmissao": {"escolha": "COM_PRAZO", "valor": 3, "unidade": "MESES", "efeitoForaDoPrazo": "ACEITAR_COM_AVISO",
            "referencia": {"tipo": "INICIO_DA_FASE", "data": null, "faseId": "{{faseDeReferencia}}" } } }

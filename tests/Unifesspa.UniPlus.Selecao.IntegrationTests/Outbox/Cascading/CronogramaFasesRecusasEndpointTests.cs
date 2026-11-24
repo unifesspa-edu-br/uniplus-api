@@ -136,8 +136,8 @@ public sealed class CronogramaFasesRecusasEndpointTests
     // violações da MESMA travessia, e o domínio as acumula.
     private static object[] FasesComPapelEmAtoQueNaoEhResultado(CenarioDoCronograma cenario) =>
     [
-        FaseDoCronograma(1, cenario.FasePreliminarId, PeriodoDeJaneiro, ProdutoDoAto(CodigoAtoQueNaoEhResultado, PapelProdutoFaseCodigo.Preliminar)),
-        FaseDoCronograma(2, cenario.FaseDefinitivaId, PeriodoDeFevereiro, ProdutoDoAto(CodigoAtoQueNaoEhResultado, PapelProdutoFaseCodigo.Definitivo)),
+        FaseDoCronograma(1, cenario.FasePreliminarId, PeriodoDeJaneiro, ProdutoDoAto(CodigoAtoQueNaoEhResultado, "PRELIMINAR")),
+        FaseDoCronograma(2, cenario.FaseDefinitivaId, PeriodoDeFevereiro, ProdutoDoAto(CodigoAtoQueNaoEhResultado, "DEFINITIVO")),
     ];
 
     // A 1ª fase dá papel a um ato que o catálogo não classifica como resultado — recusa
@@ -147,8 +147,8 @@ public sealed class CronogramaFasesRecusasEndpointTests
     // é montado sobre todos.
     private static object[] FasesComRecusaAcumuladaEInterrupcao(CenarioDoCronograma cenario) =>
     [
-        FaseDoCronograma(1, cenario.FasePreliminarId, PeriodoDeJaneiro, ProdutoDoAto(CodigoAtoQueNaoEhResultado, PapelProdutoFaseCodigo.Preliminar)),
-        FaseDoCronograma(2, cenario.FaseDefinitivaId, PeriodoDeFevereiro, ProdutoDoAto(CodigoAtoDefinitivo, PapelProdutoFaseCodigo.Definitivo), BancaDeTipoInexistente()),
+        FaseDoCronograma(1, cenario.FasePreliminarId, PeriodoDeJaneiro, ProdutoDoAto(CodigoAtoQueNaoEhResultado, "PRELIMINAR")),
+        FaseDoCronograma(2, cenario.FaseDefinitivaId, PeriodoDeFevereiro, ProdutoDoAto(CodigoAtoDefinitivo, "DEFINITIVO"), BancaDeTipoInexistente()),
     ];
 
     private static void AfirmarCampoECodigoDeCadaErro(

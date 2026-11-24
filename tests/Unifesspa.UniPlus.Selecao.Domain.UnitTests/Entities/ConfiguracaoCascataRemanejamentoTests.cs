@@ -2,6 +2,7 @@ namespace Unifesspa.UniPlus.Selecao.Domain.UnitTests.Entities;
 
 using AwesomeAssertions;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
@@ -21,7 +22,7 @@ public sealed class ConfiguracaoCascataRemanejamentoTests
     private static readonly string HashFixo = string.Concat(Enumerable.Repeat("ab01234567", 7))[..64];
 
     private static ReferenciaRegra RegraCascata() =>
-        ReferenciaRegra.De(RegraRemanejamentoCodigo.Cascata, "v1", HashFixo);
+        ReferenciaRegra.De(CriterioDeRemanejamento.OrdemDaLei12711.Codigo(), "v1", HashFixo);
 
     private static DestinoRemanejamento Destino(string origem, int ordem, string destino) =>
         DestinoRemanejamento.Criar(origem, ordem, destino).Value!;

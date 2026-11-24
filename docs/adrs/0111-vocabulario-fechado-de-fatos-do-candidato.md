@@ -23,7 +23,7 @@ podem ser citados**, **de que domínio** cada um é (categórico, booleano,
 numérico) e **quais valores** cada um aceita.
 
 O sintoma já está no código, não é hipotético. A regra de desempate
-`DESEMPATE-PREDICADO-FATO` (semeada em `regras_do_catalogo`) tipa seus parâmetros em
+`DESEMPATE_CONDICAO_SOBRE_DADO` (semeada em `regras_do_catalogo`) tipa seus parâmetros em
 `ParametrosDesempatePredicadoFato(string Fato, string Operador, string Valor)`, e o
 próprio XML-doc dessa classe registra que o campo `Fato` é tipado como `string`
 mas **não é validado contra vocabulário nenhum**, porque o catálogo ainda não
@@ -141,7 +141,7 @@ fato pode preservar uma razão exata quando a divisão natural não é inteira, 
 em `RENDA_PER_CAPITA`.
 
 **O operador `EM` e o consumidor de desempate.** O consumidor
-`DESEMPATE-PREDICADO-FATO` guarda hoje o valor do predicado como string única
+`DESEMPATE_CONDICAO_SOBRE_DADO` guarda hoje o valor do predicado como string única
 (`ParametrosDesempatePredicadoFato.Valor`), que o envelope canônico serializa como
 escalar — forma incapaz de representar a lista de `EM`. Tornar `EM` utilizável
 nesse consumidor **depende da migração desse valor para tipo/lista**, escopo da
@@ -188,7 +188,7 @@ escopo-processo, `ValoresDominio` nulo).
 | `CONDICAO_ATENDIMENTO` | Categórico | Multivalorado | fonte: `CondicaoAtendimentoEspecializado.Codigo` | Inclui o código reservado `PCD` (ADR-0067) |
 | `RENDA_PER_CAPITA` | Numérico | Escalar | limiar inteiro em **centavos de real**; valor do candidato preserva a razão `renda_familiar_centavos / numero_integrantes` | Lei 12.711/2012 art. 1º, § único (red. Lei 14.723/2023) — comparação exata em moeda (ver nota abaixo) |
 | `EGRESSO_ESCOLA_PUBLICA` | Booleano | Escalar | sim/não | Lei 12.711/2012 art. 1º |
-| `FAIXA_ETARIA` | Numérico | Escalar | inteiro; anos completos calculados contra `dataReferenciaFatos` congelada | Consumido pela regra `DESEMPATE-IDOSO` (Lei 10.741/2003 art. 27); nunca é calculado contra o relógio da execução |
+| `FAIXA_ETARIA` | Numérico | Escalar | inteiro; anos completos calculados contra `dataReferenciaFatos` congelada | Consumido pela regra `DESEMPATE_IDOSO` (Lei 10.741/2003 art. 27); nunca é calculado contra o relógio da execução |
 | `SEXO` | Categórico | Escalar | `FEMININO`, `MASCULINO`, `INTERSEXO` | Fato ativo: habilita gatilhos condicionados ao sexo — ex.: exigir o documento de reservista apenas quando `SEXO = MASCULINO` (Lei 4.375/1964, Serviço Militar). Dado sensível — ver nota LGPD |
 
 ### Fato categórico de escopo-processo: validação no cadastro é de configuração; o predicado publicado congela o código
@@ -229,7 +229,7 @@ atendimento, estendida ao predicado que os cita.
 Idade é um fato temporal, não uma leitura do relógio. Cada consumidor que incluir
 `FAIXA_ETARIA` em uma versão publicada deve registrar no próprio snapshot a
 `dataReferenciaFatos` (`date`) que justifica aquele cálculo; a idade são os anos
-completos entre a data de nascimento e essa data. Para `DESEMPATE-IDOSO`, a story
+completos entre a data de nascimento e essa data. Para `DESEMPATE_IDOSO`, a story
 do resolvedor congela a data de referência da etapa de classificação juntamente
 com a regra. Uma reclassificação posterior avalia a mesma data congelada, sem
 substituí-la por "hoje". A ausência de `dataReferenciaFatos` torna o predicado
@@ -323,7 +323,7 @@ os protege.
 ### Positivas
 
 - Predicados sobre o candidato passam a ter um domínio decidível — a matriz
-  operador × valor torna-se verificável, e `DESEMPATE-PREDICADO-FATO` deixa de ser
+  operador × valor torna-se verificável, e `DESEMPATE_CONDICAO_SOBRE_DADO` deixa de ser
   invalidável por construção.
 - Um único vocabulário serve todos os consumidores, sem duplicação nem divergência.
 - Predicados congelados ficam protegidos: a identidade imutável e o crescimento

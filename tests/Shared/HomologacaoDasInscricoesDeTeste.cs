@@ -31,7 +31,7 @@ internal static class HomologacaoDasInscricoesDeTeste
     /// </summary>
     internal static PublicacoesDaFase PublicacoesDaFaseQueHomologa(
         IReadOnlyList<ProdutoDaFase>? produtos = null, RegraRecursoFase? regraRecurso = null, string resultado = ResultadoDaFase) => new(
-            produtos ?? [ProdutoDaFase.Criar(resultado, PapelProdutoFase.Definitivo)],
+            produtos ?? [ProdutoDaFase.Criar(resultado, PapelDaPublicacaoPrevista.Definitivo)],
             EmiteParecerIndividual: false,
             regraRecurso,
             TiposDeDecisao,
@@ -47,8 +47,8 @@ internal static class HomologacaoDasInscricoesDeTeste
 
         return PublicacoesDaFaseQueHomologa(
             [
-                ProdutoDaFase.Reidratar(preliminarId, resultado, PapelProdutoFase.Preliminar),
-                ProdutoDaFase.Criar(resultado, PapelProdutoFase.Definitivo),
+                ProdutoDaFase.Reidratar(preliminarId, resultado, PapelDaPublicacaoPrevista.Preliminar),
+                ProdutoDaFase.Criar(resultado, PapelDaPublicacaoPrevista.Definitivo),
             ],
             RegraDeRecurso(preliminarId),
             resultado);
@@ -71,7 +71,7 @@ internal static class HomologacaoDasInscricoesDeTeste
 
     /// <summary>A janela de recurso ancorada no produto dado, com o procedimento da decisão de homologação.</summary>
     internal static RegraRecursoFase RegraDeRecurso(Guid produtoAncoraId) => RegraRecursoFase.Criar(
-        ReferenciaRegra.De(RegraPrazoRecursoCodigo.AncoradoEmAto, "v1", new string('d', 64)),
+        ReferenciaRegra.De(RegraDePrazoDoRecurso.ContadoDaPublicacaoDoAto.Codigo(), "v1", new string('d', 64)),
         ParametrosDoRecursoDeTeste.Declarados(2m, UnidadePrazo.DiasUteis),
         produtoAncoraId,
         ProcedimentosDaHomologacao()).Value!;
@@ -80,7 +80,7 @@ internal static class HomologacaoDasInscricoesDeTeste
         [ProcedimentoDeRecursoDeclarado.De(
             TipoMotivoDeDecisao.HomologacaoDasInscricoes,
             alvo: null,
-            ReferenciaRegra.De(RegraProcedimentoRecursoCodigo.Recorrecao, "v1", new string('a', 64)))]);
+            ReferenciaRegra.De(RegraDeProcedimentoDoRecurso.Recorrecao.Codigo(), "v1", new string('a', 64)))]);
 
     internal static CondicaoDeHomologacao ConfirmacaoDoInep(string motivo = MotivoSemResultadoNoInep) =>
         CondicaoDeHomologacao.Declarar(CodigoDaConfirmacaoDoInep, edicaoDoExame: 2026, motivo, enquadramento: null).Value!;

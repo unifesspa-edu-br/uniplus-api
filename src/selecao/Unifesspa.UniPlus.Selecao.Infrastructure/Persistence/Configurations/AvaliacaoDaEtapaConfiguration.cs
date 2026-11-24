@@ -5,7 +5,9 @@ using System.Diagnostics.CodeAnalysis;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
+
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Protecao;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
@@ -33,10 +35,10 @@ internal sealed class AvaliacaoDaEtapaConfiguration : IEntityTypeConfiguration<A
             t.HasComment("A nota da etapa de uma inscrição numa oferta de curso concorrida (1ª ou 2ª opção), apurada pelos pesos do grupo de área do curso quando o lote foi importado. Os registros não são alterados ou excluídos; a avaliação vale com o lote. A nota por área está nos lançamentos do mesmo lote.");
             t.HasCheckConstraint(
                 "ck_avaliacoes_da_etapa_situacao",
-                $"situacao IN ({(int)SituacaoDaAvaliacao.Apurada}, {(int)SituacaoDaAvaliacao.InscritoSemLinha}, {(int)SituacaoDaAvaliacao.EmConflito})");
+                $"situacao IN ('{SituacaoDaAvaliacao.Apurada.Codigo()}', '{SituacaoDaAvaliacao.InscritoSemLinha.Codigo()}', '{SituacaoDaAvaliacao.EmConflito.Codigo()}')");
             t.HasCheckConstraint(
                 "ck_avaliacoes_da_etapa_nota",
-                $"(situacao = {(int)SituacaoDaAvaliacao.Apurada}) = (nota IS NOT NULL) AND (nota IS NULL OR nota BETWEEN 0 AND 1000)");
+                $"(situacao = '{SituacaoDaAvaliacao.Apurada.Codigo()}') = (nota IS NOT NULL) AND (nota IS NULL OR nota BETWEEN 0 AND 1000)");
         });
 
         builder.HasKey(a => a.Id);
@@ -62,9 +64,9 @@ internal sealed class AvaliacaoDaEtapaConfiguration : IEntityTypeConfiguration<A
             .HasComment("O código do grupo de área do ENEM cujos pesos apuraram a nota.");
 
         builder.Property(a => a.Situacao)
-            .HasConversion<short>()
+            .HasMaxLength(18)
             .IsRequired()
-            .HasComment("1 = apurada, 2 = inscrição sem linha no arquivo, 3 = inscrição com linhas em conflito. Só a apurada tem nota; a falta de nota nunca vira zero.");
+            .HasComment($"Códigos: {Codigos<SituacaoDaAvaliacao>()}.");
 
         builder.Property(a => a.Nota)
             .HasColumnType("numeric")
@@ -77,4 +79,7 @@ internal sealed class AvaliacaoDaEtapaConfiguration : IEntityTypeConfiguration<A
         builder.HasIndex(a => new { a.InscricaoId, a.EtapaProcessoId })
             .HasDatabaseName("ix_avaliacoes_da_etapa_inscricao_etapa");
     }
+
+    private static string Codigos<TEnum>() where TEnum : struct, Enum =>
+        string.Join(", ", CatalogoDe<TEnum>.Todos().Select(c => c.Codigo));
 }

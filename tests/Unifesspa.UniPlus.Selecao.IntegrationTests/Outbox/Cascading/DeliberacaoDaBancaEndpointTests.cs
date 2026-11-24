@@ -24,7 +24,7 @@ public sealed class DeliberacaoDaBancaEndpointTests(CascadingFixture ambienteDeT
         regra["modo"] = "colegiado";
         using HttpResponseMessage invalida = await EnviarAsync(client, processoId, etapas);
         await ConferirRecusaAsync(invalida);
-        regra["modo"] = "colegiadaComVotacao";
+        regra["modo"] = "COLEGIADA_COM_VOTACAO";
         using HttpResponseMessage valida = await EnviarAsync(client, processoId, etapas);
         valida.StatusCode.Should().Be(HttpStatusCode.NoContent, await valida.Content.ReadAsStringAsync());
     }

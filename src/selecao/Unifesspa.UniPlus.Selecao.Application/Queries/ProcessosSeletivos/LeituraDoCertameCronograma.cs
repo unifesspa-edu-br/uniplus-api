@@ -12,6 +12,7 @@ using Domain.ValueObjects;
 
 using DTOs;
 
+using Unifesspa.UniPlus.Application.Abstractions.Respostas;
 using Unifesspa.UniPlus.Kernel.Results;
 
 /// <summary>
@@ -31,7 +32,7 @@ internal static class LeituraDoCertameCronograma
         etapaLida = null;
         if (item is not JsonObject etapa
             || !PrimitivasDaProjecao.TentarTexto(etapa, "nome", out string nome)
-            || !PrimitivasDaProjecao.TentarTexto(etapa, "carater", out string carater)
+            || !PrimitivasDaProjecao.TentarCodigoComRotulo(etapa, "carater", out CodigoComRotulo<CaraterEtapa>? carater)
             || !PrimitivasDaProjecao.TentarObjeto(etapa, "tipoEtapa", out JsonObject? tipoEtapaNode)
             || !LeituraDoCertameEdital.TentarTipoNomeado(tipoEtapaNode, out TipoCatalogadoCertameDto? tipoEtapa)
             || !PrimitivasDaProjecao.TentarTextoOpcional(etapa, "peso", out string? peso)
@@ -51,14 +52,14 @@ internal static class LeituraDoCertameCronograma
 
     internal static bool TentarCronograma(
         JsonObject envelope,
-        [NotNullWhen(true)] out string? origemCandidatos,
+        [NotNullWhen(true)] out CodigoComRotulo<OrigemCandidatos>? origemCandidatos,
         [NotNullWhen(true)] out List<FaseCronogramaCertameDto>? fases)
     {
         origemCandidatos = null;
         fases = null;
 
         if (!PrimitivasDaProjecao.TentarObjeto(envelope, ProjecaoDoCertamePublicado.BlocoPublico("cronogramaFases"), out JsonObject? bloco)
-            || !PrimitivasDaProjecao.TentarTexto(bloco, "origemCandidatos", out string origem)
+            || !PrimitivasDaProjecao.TentarCodigoComRotulo(bloco, "origemCandidatos", out CodigoComRotulo<OrigemCandidatos>? origem)
             || !PrimitivasDaProjecao.TentarArray(bloco, "fases", out JsonArray? array)
             || !PrimitivasDaProjecao.TentarItens<FaseCronogramaCertameDto>(array, TentarFase, out List<FaseCronogramaCertameDto>? lidas))
         {

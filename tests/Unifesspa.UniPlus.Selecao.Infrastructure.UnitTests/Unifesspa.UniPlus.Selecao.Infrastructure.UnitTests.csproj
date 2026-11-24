@@ -27,6 +27,7 @@
     <Compile Include="../Shared/Cenarios/DataDeReferenciaBuilder.cs" Link="Cenarios/DataDeReferenciaBuilder.cs" />
     <Compile Include="../Shared/Cenarios/PrazoDeEmissaoBuilder.cs" Link="Cenarios/PrazoDeEmissaoBuilder.cs" />
     <Compile Include="../Shared/Cenarios/ValidadeDoDocumentoBuilder.cs" Link="Cenarios/ValidadeDoDocumentoBuilder.cs" />
+    <Compile Include="../Shared/ModalidadesNoCadastroDeTeste.cs" Link="ModalidadesNoCadastroDeTeste.cs" />
     <Using Include="Xunit" />
   </ItemGroup>
 

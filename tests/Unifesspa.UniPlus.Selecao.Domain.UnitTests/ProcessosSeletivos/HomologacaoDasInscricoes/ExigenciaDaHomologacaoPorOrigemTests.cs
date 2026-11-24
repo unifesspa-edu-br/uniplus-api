@@ -63,10 +63,10 @@ public sealed class ExigenciaDaHomologacaoPorOrigemTests
 
     private static EtapasDoProcesso ComNotaDoEnem { get; } = new([new ModeloDeEtapa("Nota do ENEM").DoEnem().Declarar()]);
 
-    private static (string? Campo, string Codigo)[] Causas(OrigemCandidatos origem, CronogramaDoProcesso cronograma, EtapasDoProcesso etapas) =>
+    private static (string? Campo, string Codigo)[] Causas(OrigemCandidatos? origem, CronogramaDoProcesso cronograma, EtapasDoProcesso etapas) =>
         CenarioDeProcesso.Causas(ExigenciaDaHomologacaoPorOrigem.Causas(origem, cronograma, etapas));
 
-    private static bool[] Itens(OrigemCandidatos origem, CronogramaDoProcesso cronograma, EtapasDoProcesso etapas) =>
+    private static bool[] Itens(OrigemCandidatos? origem, CronogramaDoProcesso cronograma, EtapasDoProcesso etapas) =>
         [.. ExigenciaDaHomologacaoPorOrigem.Itens(origem, cronograma, etapas).Select(static item => item.Ok)];
 
     [Fact(DisplayName = "A origem ausente na leitura suspende as exigências que dependem dela e mantém os itens pendentes")]
@@ -74,8 +74,8 @@ public sealed class ExigenciaDaHomologacaoPorOrigemTests
     {
         CronogramaDoProcesso cronograma = Cronograma(Coleta(1));
 
-        Causas(OrigemCandidatos.Nenhuma, cronograma, SemEtapas).Should().BeEmpty();
-        Itens(OrigemCandidatos.Nenhuma, cronograma, SemEtapas).Should().Equal(false, false, true);
+        Causas(null, cronograma, SemEtapas).Should().BeEmpty();
+        Itens(null, cronograma, SemEtapas).Should().Equal(false, false, true);
     }
 
     [Fact(DisplayName = "Inscrição própria sem fase que tem a regra é recusada em fases, mesmo com a fase de coleta")]

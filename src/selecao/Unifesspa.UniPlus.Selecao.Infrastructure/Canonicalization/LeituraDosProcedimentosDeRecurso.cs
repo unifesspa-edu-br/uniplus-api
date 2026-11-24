@@ -19,8 +19,6 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 /// </summary>
 internal static class LeituraDosProcedimentosDeRecurso
 {
-    private static readonly string[] RolDeProcedimentos = [.. RegraProcedimentoRecursoCodigo.Rol];
-
     internal static ProcedimentosDeRecurso? Ler(LeitorEnvelope leitor, JsonObject pai, string path, CodigosDoProcedimentoDeRecurso codigos)
     {
         JsonArray array = leitor.Array(pai, "procedimentos", path);
@@ -53,7 +51,7 @@ internal static class LeituraDosProcedimentosDeRecurso
         leitor.ExigirChaves(item, path, "tipoDeDecisao", "alvo", "regra");
         string codigoDoTipo = leitor.TextoNaoVazio(item, "tipoDeDecisao", path);
         AlvoDoProcedimentoDeRecurso? alvo = LerAlvo(leitor, item, path);
-        ReferenciaRegra regra = leitor.Regra(item, "regra", path, RolDeProcedimentos);
+        ReferenciaRegra regra = leitor.Regra<RegraDeProcedimentoDoRecurso>(item, "regra", path);
         if (leitor.Falhou)
         {
             return null;

@@ -59,15 +59,19 @@ public sealed class EnvioDoModeloDeDocumentoHandlersTests
 
         Result<ModeloDeDocumentoDto> resultado = await ConfirmarAsync();
 
-        resultado.Value!.Should().BeEquivalentTo(new
-        {
-            Status = "Confirmado",
-            Formato = "DOCX",
-            NomeArquivo = "Autodeclaração.docx",
-            HashSha256 = Convert.ToHexStringLower(SHA256.HashData(conteudo)),
-        });
+        ConferirModeloConfirmado(resultado.Value!, conteudo);
         await _storage.Received(1).SalvarConteudoSeladoAsync(
             _modelo.ObjectKeyConfirmado!, Arg.Is<byte[]>(b => b.SequenceEqual(conteudo)), ArquivosDeModeloDeTeste.ContentTypeDocx, Arg.Any<CancellationToken>());
+    }
+
+    private static void ConferirModeloConfirmado(ModeloDeDocumentoDto modelo, byte[] conteudo)
+    {
+        modelo.Status.Codigo.Should().Be("CONFIRMADO");
+        modelo.Status.Rotulo.Should().Be("Confirmado");
+        modelo.Formato.Codigo.Should().Be("DOCX");
+        modelo.Formato.Rotulo.Should().Be("DOCX");
+        modelo.NomeArquivo.Should().Be("Autodeclaração.docx");
+        modelo.HashSha256.Should().Be(Convert.ToHexStringLower(SHA256.HashData(conteudo)));
     }
 
     [Fact(DisplayName = "O conteúdo fora do formato é recusado sem reivindicar a confirmação nem selar")]

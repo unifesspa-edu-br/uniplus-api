@@ -5,6 +5,7 @@ using System.Text.Json.Nodes;
 using System.Text.RegularExpressions;
 
 using Unifesspa.UniPlus.Kernel.Domain.Cidades;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.Formularios;
@@ -93,7 +94,7 @@ internal static class LeituraDoCalendario
         List<DiaNaoUtilCongelado> congelados = [];
         for (int i = 0; i < dias.Count; i++)
         {
-            DiaNaoUtilCongelado? dia = LerItemDeDiaNaoUtil(leitor, dias, i);
+            DiaNaoUtilCongelado? dia = LerDiaDoCalendario(leitor, dias, i);
             if (dia is null)
             {
                 return null;
@@ -105,7 +106,7 @@ internal static class LeituraDoCalendario
         return congelados;
     }
 
-    private static DiaNaoUtilCongelado? LerItemDeDiaNaoUtil(LeitorEnvelope leitor, JsonArray dias, int indice)
+    private static DiaNaoUtilCongelado? LerDiaDoCalendario(LeitorEnvelope leitor, JsonArray dias, int indice)
     {
         string path = $"calendarioDiasUteis.diasNaoUteis[{indice}]";
         JsonObject item = leitor.ItemObjeto(dias, indice, path);
@@ -157,10 +158,10 @@ internal static class LeituraDoCalendario
                 "'calendarioDiasUteis.diasNaoUteis' não está na ordem canônica (data, abrangência, município, UF).");
         }
 
-        return ReidratarCalendario(leitor, origemId, versaoDataset, congelados);
+        return CriarCalendarioOrdenado(leitor, origemId, versaoDataset, congelados);
     }
 
-    private static CalendarioDiasUteisCongelado? ReidratarCalendario(
+    private static CalendarioDiasUteisCongelado? CriarCalendarioOrdenado(
         LeitorEnvelope leitor, Guid origemId, string versaoDataset, List<DiaNaoUtilCongelado> congelados)
     {
         Result<CalendarioDiasUteisCongelado> calendario = CalendarioDiasUteisCongelado.Criar(origemId, versaoDataset, congelados);
@@ -169,16 +170,10 @@ internal static class LeituraDoCalendario
             return leitor.Recusar<CalendarioDiasUteisCongelado?>($"'calendarioDiasUteis' congelado é inválido: {calendario.Error!.Message}");
         }
 
-        return ConferirVersaoDoCalendario(leitor, calendario.Value!, versaoDataset);
-    }
-
-    private static CalendarioDiasUteisCongelado? ConferirVersaoDoCalendario(
-        LeitorEnvelope leitor, CalendarioDiasUteisCongelado calendario, string versaoDataset)
-    {
         // Mesma razão da conferência por dia: a factory apara espaço da versão.
-        return string.Equals(calendario.VersaoDataset, versaoDataset, StringComparison.Ordinal)
+        return string.Equals(calendario.Value!.VersaoDataset, versaoDataset, StringComparison.Ordinal)
             && string.Equals(HashCanonicalComputer.NormalizeNfc(versaoDataset), versaoDataset, StringComparison.Ordinal)
-            ? calendario
+            ? calendario.Value
             : leitor.Recusar<CalendarioDiasUteisCongelado?>(
                 "'calendarioDiasUteis.versaoDataset' não está na forma canônica — espaço em volta do valor "
                 + "ou texto fora da normalização Unicode que o encoder aplica.");
@@ -195,7 +190,7 @@ internal static class LeituraDoCalendario
         string? municipioIbge,
         string? municipioNome,
         string? uf) =>
-        string.Equals(dia.Abrangencia, abrangencia, StringComparison.Ordinal)
+        string.Equals(dia.Abrangencia.Codigo(), abrangencia, StringComparison.Ordinal)
         && string.Equals(dia.MunicipioIbge, municipioIbge, StringComparison.Ordinal)
         && string.Equals(dia.MunicipioNome, municipioNome, StringComparison.Ordinal)
         && string.Equals(dia.Uf, uf, StringComparison.Ordinal)
@@ -230,28 +225,24 @@ internal static class LeituraDoCalendario
             return null;
         }
 
-        bool presente = leitor.Booleano(bloco, "presente", "algoritmoContagemPrazo");
-        if (leitor.Falhou)
-        {
-            return null;
-        }
-
-        return LerAlgoritmoDeclarado(leitor, bloco, presente);
+        return LerConvencaoDeContagem(leitor, bloco);
     }
 
-    private static ReferenciaRegra? LerAlgoritmoDeclarado(LeitorEnvelope leitor, JsonObject bloco, bool presente)
+    private static ReferenciaRegra? LerConvencaoDeContagem(LeitorEnvelope leitor, JsonObject bloco)
     {
-        if (!presente)
+        bool presente = leitor.Booleano(bloco, "presente", "algoritmoContagemPrazo");
+        if (leitor.Falhou || !presente)
         {
-            leitor.ExigirChaves(bloco, "algoritmoContagemPrazo", "presente");
+            if (!leitor.Falhou)
+            {
+                leitor.ExigirChaves(bloco, "algoritmoContagemPrazo", "presente");
+            }
+
             return null;
         }
 
-        // Esta forma tem uma chave a mais que a tripla, a de presença. Declará-la mantém o fechamento da
-        // gramática e a conferência do rol no leitor compartilhado.
-        ReferenciaRegra referencia = leitor.RegraDoObjeto(
-            bloco, "algoritmoContagemPrazo", [.. AlgoritmoContagemPrazoCodigo.Todos], "presente");
-
+        ReferenciaRegra referencia = leitor.RegraDoObjeto<ConvencaoDeContagemDoPrazo>(
+            bloco, "algoritmoContagemPrazo", "presente");
         return leitor.Falhou ? null : referencia;
     }
 
@@ -274,10 +265,10 @@ internal static class LeituraDoCalendario
             return (null, null);
         }
 
-        return LerBlocoDaLocalidade(leitor, bloco);
+        return LerLocalidadeDoBloco(leitor, bloco);
     }
 
-    private static (LocalidadeRegente? Localidade, string? FusoHorario) LerBlocoDaLocalidade(LeitorEnvelope leitor, JsonObject bloco)
+    private static (LocalidadeRegente? Localidade, string? FusoHorario) LerLocalidadeDoBloco(LeitorEnvelope leitor, JsonObject bloco)
     {
         leitor.ExigirChaves(bloco, "localidade", "codigoIbge", "nome", "uf", "fusoHorario");
 
@@ -290,10 +281,10 @@ internal static class LeituraDoCalendario
             return (null, null);
         }
 
-        return ReidratarLocalidade(leitor, codigoIbge, nome, uf, fusoHorario);
+        return CriarLocalidade(leitor, codigoIbge, nome, uf, fusoHorario);
     }
 
-    private static (LocalidadeRegente? Localidade, string? FusoHorario) ReidratarLocalidade(
+    private static (LocalidadeRegente? Localidade, string? FusoHorario) CriarLocalidade(
         LeitorEnvelope leitor, string codigoIbge, string nome, string uf, string fusoHorario)
     {
         Result<LocalidadeRegente> localidade = LocalidadeRegente.Criar(codigoIbge, nome, uf);

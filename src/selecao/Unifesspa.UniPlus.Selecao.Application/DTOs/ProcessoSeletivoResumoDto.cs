@@ -2,6 +2,8 @@ namespace Unifesspa.UniPlus.Selecao.Application.DTOs;
 
 using Domain.Enums;
 
+using Unifesspa.UniPlus.Application.Abstractions.Respostas;
+
 /// <summary>
 /// Projeção de resumo do <c>ProcessoSeletivo</c> para a listagem paginada
 /// (Story #758). Omite as coleções de configuração do agregado (etapas, oferta
@@ -14,5 +16,5 @@ public sealed record ProcessoSeletivoResumoDto(
     Guid Id,
     string Nome,
     TipoProcessoSnapshotDto TipoProcesso,
-    StatusProcesso Status,
+    CodigoComRotulo<StatusProcesso> Status,
     DateTimeOffset CriadoEm);

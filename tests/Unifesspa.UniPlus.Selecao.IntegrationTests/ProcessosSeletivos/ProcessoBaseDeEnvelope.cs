@@ -2,6 +2,7 @@ namespace Unifesspa.UniPlus.Selecao.IntegrationTests.ProcessosSeletivos;
 
 using AwesomeAssertions;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
@@ -40,35 +41,21 @@ internal static class ProcessoBaseDeEnvelope
     private static void DefinirDistribuicaoDaModalidadeAmpla(ProcessoSeletivo processo)
     {
         ConfiguracaoDistribuicaoVagas distribuicao = ConfiguracaoDistribuicaoVagas.Criar(Guid.CreateVersion7(),
-            new DistribuicaoDeVagasDeclarada { VagasOfertadasBase = 40, PercentualDaReservaLegal = 1m, RegraDeDistribuicao = ExemploDeEnvelope.Regra(RegraDistribuicaoVagasCodigo.Institucional, 'a'), Modalidades = [ModalidadeAmpla()] },
+            new DistribuicaoDeVagasDeclarada { VagasOfertadasBase = 40, PercentualDaReservaLegal = 1m, RegraDeDistribuicao = ExemploDeEnvelope.Regra(RegraDeDistribuicaoDeVagas.Institucional.Codigo(), 'a'), Modalidades = [ModalidadeAmpla()] },
             new FatosDaOfertaNoCadastro { OfertaCurso = OfertaCursoDeTeste.Medicina }).Value!;
         processo.DefinirDistribuicaoVagas([distribuicao], FatosDeModalidadeDeTeste.DoCatalogo)
             .IsSuccess.Should().BeTrue();
     }
 
     private static ModalidadeSelecionada ModalidadeAmpla() =>
-        ModalidadeSelecionada.Criar(
-            modalidadeOrigemId: Guid.CreateVersion7(),
-            codigo: "AC",
-            descricao: null,
-            naturezaLegal: NaturezaLegalModalidade.Ampla,
-            composicaoVagas: ComposicaoVagasModalidade.RestanteDasVagasOfertadas,
-            composicaoOrigemCodigo: null,
-            regraRemanejamento: RegraRemanejamentoModalidade.Nenhuma,
-            remanejamentoDestino: null,
-            remanejamentoPar: null,
-            remanejamentoFallback: null,
-            regraDeAplicabilidade: RegrasDeAplicabilidadeDeTeste.DaNatureza(NaturezaLegalModalidade.Ampla),
-            acaoQuandoIndeferido: null,
-            baseLegal: "Res. Unifesspa 532/2021",
-            quantidadeDeclarada: 40).Value!;
+        ModalidadeSelecionada.Criar(ModalidadesNoCadastroDeTeste.Da("AC", NaturezaLegalModalidade.Ampla, ComposicaoVagasModalidade.RestanteDasVagasOfertadas) with { RegraRemanejamento = null, BaseLegal = "Res. Unifesspa 532/2021" }, 40).Value!;
 
     private static void DefinirClassificacaoImportada(ProcessoSeletivo processo) =>
         processo.DefinirClassificacao(
             ConfiguracaoClassificacao.Criar(new DeclaracaoDaClassificacao
             {
-                RegraCalculo = ExemploDeEnvelope.Regra(RegraCalculoCodigo.ClassificacaoImportada, 'b'),
-                RegraOrdemAlocacao = ExemploDeEnvelope.Regra(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, 'c'),
+                RegraCalculo = ExemploDeEnvelope.Regra(RegraDeCalculoDaNota.ClassificacaoImportada.Codigo(), 'b'),
+                RegraOrdemAlocacao = ExemploDeEnvelope.Regra(RegraDeOrdemDeAlocacao.PrimeiraOpcaoPrioritaria.Codigo(), 'c'),
             }).Value!).IsSuccess.Should().BeTrue();
 
     /// <summary>A fase única do processo mínimo: sem bancas e sem recurso, com um produto definitivo.</summary>

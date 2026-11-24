@@ -136,7 +136,7 @@ public sealed class ObrigatoriedadeLegalCamposEndpointTests : ObrigatoriedadeLeg
     private static Dictionary<string, object?> CamposDoTexto() => new(StringComparer.Ordinal)
     {
         ["tipoProcessoCodigo"] = "*",
-        ["categoria"] = "outros",
+        ["categoria"] = "OUTROS",
         ["regraCodigo"] = UniqueRegraCodigo(),
         ["predicado"] = PredicadoConcorrenciaDupla,
         ["descricaoHumana"] = "Descrição da regra",

@@ -1,5 +1,7 @@
 namespace Unifesspa.UniPlus.Selecao.Domain.UnitTests.Entities;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
+
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.Formularios;
@@ -49,7 +51,7 @@ internal static class FaseDeTesteDaAtualizacao
         viva.AtualizarDe(nova, [.. nova.Produtos]);
 
     internal static RegraRecursoFase Recurso(Guid produtoAncoraId) => RegraRecursoFase.Criar(
-        ReferenciaRegra.De(RegraPrazoRecursoCodigo.AncoradoEmAto, "v1", new string('a', 64)),
+        ReferenciaRegra.De(RegraDePrazoDoRecurso.ContadoDaPublicacaoDoAto.Codigo(), "v1", new string('a', 64)),
         ParametrosDoRecursoDeTeste.Declarados(48m, UnidadePrazo.Horas),
         produtoAncoraId).Value!;
 
@@ -67,9 +69,9 @@ internal static class FaseDeTesteDaAtualizacao
             [.. categorias.Select(static c => CategoriaJulgada.Criar(Guid.CreateVersion7(), c, c))],
             idDaBancaQueSubstitui: idDaViva);
 
-    internal static ProdutoDaFase Preliminar(string ato) => ProdutoDaFase.Criar(ato, PapelProdutoFase.Preliminar);
+    internal static ProdutoDaFase Preliminar(string ato) => ProdutoDaFase.Criar(ato, PapelDaPublicacaoPrevista.Preliminar);
 
-    internal static ProdutoDaFase Definitivo(string ato) => ProdutoDaFase.Criar(ato, PapelProdutoFase.Definitivo);
+    internal static ProdutoDaFase Definitivo(string ato) => ProdutoDaFase.Criar(ato, PapelDaPublicacaoPrevista.Definitivo);
 
     internal static (string? Campo, string Codigo)[] Recusas(Result<FaseCronograma> resultado) =>
         [.. resultado.Errors.Select(static e => (e.Field, e.Error.Code))];

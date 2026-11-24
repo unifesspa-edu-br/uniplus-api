@@ -8,6 +8,7 @@ using NSubstitute;
 
 using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 using Unifesspa.UniPlus.Configuracao.Contracts;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Entradas;
 using Unifesspa.UniPlus.Regras.Enums;
@@ -100,7 +101,7 @@ internal static class ApoioDaDefinicaoDasRegrasDeDerivacao
 
     private static ConfiguracaoDistribuicaoVagas DistribuicaoComModalidades(params ModalidadeSelecionada[] modalidades)
     {
-        ReferenciaRegra regraDistribuicao = ReferenciaRegra.De(RegraDistribuicaoVagasCodigo.Institucional, "v1", HashFixo);
+        ReferenciaRegra regraDistribuicao = ReferenciaRegra.De(RegraDeDistribuicaoDeVagas.Institucional.Codigo(), "v1", HashFixo);
 
         return ConfiguracaoDistribuicaoVagas.Criar(
             Guid.CreateVersion7(),
@@ -108,21 +109,7 @@ internal static class ApoioDaDefinicaoDasRegrasDeDerivacao
             new FatosDaOfertaNoCadastro { OfertaCurso = OfertaCursoDeTeste.Medicina }).Value!;
     }
 
-    private static ModalidadeSelecionada ModalidadeAmplaDoPsr() => ModalidadeSelecionada.Criar(
-        modalidadeOrigemId: Guid.CreateVersion7(),
-        codigo: "AC",
-        descricao: "Ampla concorrência",
-        naturezaLegal: NaturezaLegalModalidade.Ampla,
-        composicaoVagas: ComposicaoVagasModalidade.RestanteDasVagasOfertadas,
-        composicaoOrigemCodigo: null,
-        regraRemanejamento: RegraRemanejamentoModalidade.Nenhuma,
-        remanejamentoDestino: null,
-        remanejamentoPar: null,
-        remanejamentoFallback: null,
-        regraDeAplicabilidade: RegrasDeAplicabilidadeDeTeste.DaNatureza(NaturezaLegalModalidade.Ampla),
-        acaoQuandoIndeferido: null,
-        baseLegal: "Res. Unifesspa 532/2021",
-        quantidadeDeclarada: 40).Value!;
+    private static ModalidadeSelecionada ModalidadeAmplaDoPsr() => ModalidadeSelecionada.Criar(ModalidadesNoCadastroDeTeste.Da("AC", NaturezaLegalModalidade.Ampla, ComposicaoVagasModalidade.RestanteDasVagasOfertadas) with { Descricao = "Ampla concorrência", RegraRemanejamento = null, BaseLegal = "Res. Unifesspa 532/2021" }, 40).Value!;
 
     /// <summary>Fato derivado por regra, ativo, de escopo de inscrição, com a proteção de dados padrão dos testes.</summary>
     internal static FatoCandidatoView FatoDerivadoDoCatalogo(
@@ -138,11 +125,7 @@ internal static class ApoioDaDefinicaoDasRegrasDeDerivacao
         HipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, FinalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, ProtecaoAprovada: true);
 
     internal static ModalidadeSelecionada ModalidadeDe(string codigo, NaturezaLegalModalidade natureza) =>
-        ModalidadeSelecionada.Criar(
-            Guid.CreateVersion7(), codigo, null, natureza,
-            natureza == NaturezaLegalModalidade.Ampla ? ComposicaoVagasModalidade.RestanteDasVagasOfertadas : ComposicaoVagasModalidade.SuplementarAoTotal, null,
-            natureza == NaturezaLegalModalidade.CotaReservada ? RegraRemanejamentoModalidade.SegueCascata : RegraRemanejamentoModalidade.Nenhuma,
-            null, null, null, RegrasDeAplicabilidadeDeTeste.DaNatureza(natureza), null, "base legal", quantidadeDeclarada: 20).Value!;
+        ModalidadeSelecionada.Criar(ModalidadesNoCadastroDeTeste.Da(codigo, natureza, natureza == NaturezaLegalModalidade.Ampla ? ComposicaoVagasModalidade.RestanteDasVagasOfertadas : ComposicaoVagasModalidade.SuplementarAoTotal) with { RegraRemanejamento = natureza == NaturezaLegalModalidade.CotaReservada ? RegraRemanejamentoModalidade.SegueOrdemDeRemanejamento : null, BaseLegal = "base legal" }, 20).Value!;
 
     internal static CondicaoPrecondicaoInput Condicao(string fato, string operador, object valor) =>
         new(fato, operador, JsonSerializer.SerializeToElement(valor));

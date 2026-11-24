@@ -29,15 +29,15 @@ internal sealed class CenarioDaInscricaoGravada
     {
         ["CPF"] = new(TipoDoValorDeResposta.Texto, Multivalorado: false, Identificador: true),
         ["NOME_SOCIAL"] = new(TipoDoValorDeResposta.Texto, Multivalorado: false, Identificador: false),
-        ["DESEJA_NOME_SOCIAL"] = new(TipoDoValorDeResposta.Booleano, Multivalorado: false, Identificador: false),
+        ["DESEJA_NOME_SOCIAL"] = new(TipoDoValorDeResposta.SimOuNao, Multivalorado: false, Identificador: false),
         ["DATA_NASCIMENTO"] = new(TipoDoValorDeResposta.Data, Multivalorado: false, Identificador: false),
-        ["MODALIDADES"] = new(TipoDoValorDeResposta.Codigo, Multivalorado: true, Identificador: false),
+        ["MODALIDADES"] = new(TipoDoValorDeResposta.Opcao, Multivalorado: true, Identificador: false),
         ["ENDERECO_RESIDENCIAL"] = new(TipoDoValorDeResposta.Endereco, Multivalorado: false, Identificador: false),
         ["RG_NUMERO"] = new(TipoDoValorDeResposta.Texto, Multivalorado: false, Identificador: true),
-        ["PARENTESCO"] = new(TipoDoValorDeResposta.Codigo, Multivalorado: false, Identificador: false),
-        ["SEXO_CIVIL"] = new(TipoDoValorDeResposta.Codigo, Multivalorado: false, Identificador: false),
-        ["IDENTIDADE_GENERO"] = new(TipoDoValorDeResposta.Codigo, Multivalorado: false, Identificador: false, CifraIndividual: true),
-        ["ORIENTACAO_SEXUAL"] = new(TipoDoValorDeResposta.Codigo, Multivalorado: false, Identificador: false, CifraIndividual: true),
+        ["PARENTESCO"] = new(TipoDoValorDeResposta.Opcao, Multivalorado: false, Identificador: false),
+        ["SEXO_CIVIL"] = new(TipoDoValorDeResposta.Opcao, Multivalorado: false, Identificador: false),
+        ["IDENTIDADE_GENERO"] = new(TipoDoValorDeResposta.Opcao, Multivalorado: false, Identificador: false, CifraIndividual: true),
+        ["ORIENTACAO_SEXUAL"] = new(TipoDoValorDeResposta.Opcao, Multivalorado: false, Identificador: false, CifraIndividual: true),
     };
 
     internal static readonly RespostasAdmitidas Admitidas = new(
@@ -53,7 +53,7 @@ internal sealed class CenarioDaInscricaoGravada
     internal static readonly Dictionary<string, DefinicaoDaResposta> DefinicoesDosDerivados = new(StringComparer.Ordinal)
     {
         ["FAIXA_ETARIA"] = new(TipoDoValorDeResposta.Numero, Multivalorado: false, Identificador: false),
-        ["UF_RESIDENCIA"] = new(TipoDoValorDeResposta.Codigo, Multivalorado: false, Identificador: false),
+        ["UF_RESIDENCIA"] = new(TipoDoValorDeResposta.Opcao, Multivalorado: false, Identificador: false),
     };
 
     private static readonly Guid VersaoFormulario = Guid.CreateVersion7();

@@ -4,6 +4,7 @@ using System.Globalization;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Kernel.Extensions;
 using Unifesspa.UniPlus.Kernel.Results;
@@ -57,7 +58,7 @@ internal static class SerializacaoDasEtapas
     {
         item["chave"] = etapa.Chave.Valor;
         item["nome"] = HashCanonicalComputer.NormalizeNfc(etapa.Nome);
-        item["carater"] = etapa.Carater.ToString();
+        item["carater"] = etapa.Carater.Codigo();
         item["tipoEtapa"] = SerializarTipoEtapa(etapa);
         item["ordem"] = etapa.Ordem;
         item["faseCodigo"] = etapa.FaseCodigo;
@@ -69,7 +70,7 @@ internal static class SerializacaoDasEtapas
         item["notaMinima"] = SerializarDecimalOpcional(etapa.NotaMinima);
         item["notaMaxima"] = SerializarDecimalOpcional(etapa.NotaMaxima);
         item["passoDoLancamento"] = SerializarDecimalOpcional(etapa.PassoDoLancamento);
-        item["formaDeAvaliacao"] = etapa.FormaDeAvaliacao?.ToString();
+        item["formaDeAvaliacao"] = etapa.FormaDeAvaliacao?.Codigo();
         item["regraDeApuracaoDaAvaliacao"] = etapa.RegraConsolidacao is { } consolidacao ? EscritaCanonica.SerializarReferenciaRegra(consolidacao) : null;
         item["itensDeAvaliacao"] = SerializarItensDeAvaliacao(etapa);
         item["escalaDeAtendimento"] = SerializarEscalaDeAtendimento(etapa);
@@ -134,7 +135,7 @@ internal static class SerializacaoDasEtapas
         new([.. etapa.Recursos
             .Select(static r => (JsonNode)new JsonObject
             {
-                ["eventoInicialDoPrazo"] = r.Ancora.ToString(),
+                ["eventoInicialDoPrazo"] = r.Ancora.Codigo(),
                 ["regra"] = EscritaCanonica.SerializarReferenciaRegra(r.Regra),
                 ["parametros"] = SerializacaoDoCronograma.SerializarParametrosRegraPrazoRecurso(r.Parametros),
                 ["publicacaoDeReferenciaId"] = r.ProdutoAncoraId == Guid.Empty ? null : JsonValue.Create(r.ProdutoAncoraId),
@@ -147,7 +148,7 @@ internal static class SerializacaoDasEtapas
             {
                 ["id"] = JsonValue.Create(p.Id),
                 ["atoCodigo"] = HashCanonicalComputer.NormalizeNfc(p.AtoCodigo),
-                ["papel"] = p.Papel?.ToString(),
+                ["papel"] = p.Papel?.Codigo(),
             })]);
 
     private static JsonObject SerializarTipoEtapa(EtapaProcesso etapa) => new()

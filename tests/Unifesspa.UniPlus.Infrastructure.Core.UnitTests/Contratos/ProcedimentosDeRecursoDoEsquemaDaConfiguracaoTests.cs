@@ -17,7 +17,7 @@ public sealed class ProcedimentosDeRecursoDoEsquemaDaConfiguracaoTests
 
     private const string Item = """
         { "tipoDeDecisao": "CLASSIFICACAO", "alvo": { "areaDoEnem": "REDACAO" },
-          "regra": { "codigo": "PROCEDIMENTO-RECURSO-RECALCULO", "versao": "v1" } }
+          "regra": { "codigo": "PROCEDIMENTO_RECURSO_RECALCULO", "versao": "v1" } }
         """;
 
     private static JsonNode Procedimento(string json = Item) => Documento(json);

@@ -18,6 +18,19 @@ using static Unifesspa.UniPlus.Selecao.IntegrationTests.ProcessosSeletivos.Adult
 /// </summary>
 public sealed class EnvelopeCodecRecusaVocabularioEBlocosDerivadosTests
 {
+    [Fact(DisplayName = "Código inválido é recusado antes da ação inválida")]
+    public void Modalidade_CodigoEAcaoInvalidos_RecusaCodigoPrimeiro()
+    {
+        Result<EnvelopeReidratado> resultado = ReidratarComEnvelopeAdulterado(envelope =>
+        {
+            JsonObject modalidade = envelope["modalidades"]!.AsArray()[0]!.AsObject();
+            modalidade["codigo"] = "codigo-invalido";
+            modalidade["acaoQuandoIndeferido"] = "INVALIDA";
+        });
+        resultado.Error!.Code.Should().Be(ErrosCodecEnvelope.EnvelopeMalformado);
+        resultado.Error.Message.Should().Contain("código 'codigo-invalido'");
+    }
+
     // ── Vocabulário fechado: as factories do domínio NÃO o fecham ──
 
     /// <summary>
@@ -36,7 +49,7 @@ public sealed class EnvelopeCodecRecusaVocabularioEBlocosDerivadosTests
     [InlineData("classificacao.regraOrdemAlocacao", "ALOCACAO-OPCOES-RN04")]
     [InlineData("fada.regra", "BONUS-XPTO")]
     [InlineData("criteriosDesempate.0.regra", "DESEMPATE-XPTO")]
-    [InlineData("classificacao.regrasEliminacao.0.regra", "ELIM-XPTO")]
+    [InlineData("classificacao.regrasEliminacao.0.regra", "ELIMINACAO-XPTO")]
     [InlineData("cascataRemanejamento.regra", "REMANEJ-XPTO")]
     public void CodigoDeRegraForaDoRol_Recusa(string caminho, string codigo)
     {
@@ -85,14 +98,14 @@ public sealed class EnvelopeCodecRecusaVocabularioEBlocosDerivadosTests
     [Theory(DisplayName = "Natureza legal incoerente com a regra de remanejamento é RECUSADA na reidratação")]
     // Uma ampla concorrência que remaneja as próprias vagas ociosas — para onde?
     [InlineData("AMPLA", "DESTINO_UNICO")]
-    [InlineData("AMPLA", "SEGUE_CASCATA")]
+    [InlineData("AMPLA", "SEGUE_ORDEM_DE_REMANEJAMENTO")]
     [InlineData("AMPLA", "CRUZADO")]
     // Uma cota reservada da Lei 12.711 que foge da cascata legal.
     [InlineData("COTA_RESERVADA", null)]
     [InlineData("COTA_RESERVADA", "DESTINO_UNICO")]
     // Uma ação afirmativa que não remaneja para lugar nenhum, ou que segue a cascata da lei.
     [InlineData("ACAO_AFIRMATIVA", null)]
-    [InlineData("ACAO_AFIRMATIVA", "SEGUE_CASCATA")]
+    [InlineData("ACAO_AFIRMATIVA", "SEGUE_ORDEM_DE_REMANEJAMENTO")]
     public void NaturezaIncoerenteComRemanejamento_Recusa(string natureza, string? remanejamento)
     {
         Result<EnvelopeReidratado> resultado = ReidratarComEnvelopeAdulterado(envelope =>

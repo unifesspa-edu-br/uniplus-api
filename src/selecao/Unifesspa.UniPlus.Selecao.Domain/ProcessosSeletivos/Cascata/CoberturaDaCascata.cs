@@ -41,7 +41,7 @@ public static class CoberturaDaCascata
     private static IEnumerable<DomainError> DaOferta(ConfiguracaoDeclarada configuracao, ConfiguracaoDistribuicaoVagas oferta)
     {
         IReadOnlyList<ModalidadeSelecionada> modalidadesSegueCascata = [.. oferta.Modalidades
-            .Where(static m => m.RegraRemanejamento == RegraRemanejamentoModalidade.SegueCascata)
+            .Where(static m => m.RegraRemanejamento == RegraRemanejamentoModalidade.SegueOrdemDeRemanejamento)
             .OrderBy(static m => m.Codigo, StringComparer.Ordinal)];
 
         if (modalidadesSegueCascata.Count == 0)
@@ -102,7 +102,7 @@ public static class CoberturaDaCascata
     }
 
     private static HashSet<string> OrigensQueSeguemACascata(IEnumerable<ModalidadeSelecionada> ofertadas) => new(
-        ofertadas.Where(static m => m.RegraRemanejamento == RegraRemanejamentoModalidade.SegueCascata).Select(static m => m.Codigo),
+        ofertadas.Where(static m => m.RegraRemanejamento == RegraRemanejamentoModalidade.SegueOrdemDeRemanejamento).Select(static m => m.Codigo),
         StringComparer.Ordinal);
 
     private static IEnumerable<DomainError> DoDestino(
@@ -125,11 +125,11 @@ public static class CoberturaDaCascata
 
     /// <summary>A oferta exige a cascata única do processo: tem ≥1 modalidade SegueCascata (cascata de remanejamento de cotas, UNI-REQ-0056).</summary>
     internal static bool OfertaExigeCascata(ConfiguracaoDistribuicaoVagas oferta) =>
-        oferta.Modalidades.Any(static m => m.RegraRemanejamento == RegraRemanejamentoModalidade.SegueCascata);
+        oferta.Modalidades.Any(static m => m.RegraRemanejamento == RegraRemanejamentoModalidade.SegueOrdemDeRemanejamento);
 
     /// <summary>A oferta não usa o regime federal (Lei 12.711/2012, em qualquer variação) — condição de <c>CascataForaDoRegimeFederal</c>.</summary>
     internal static bool OfertaForaDoRegimeFederal(ConfiguracaoDistribuicaoVagas oferta) =>
-        !RegraDistribuicaoVagasCodigo.EhRamoFederal(oferta.RegraDistribuicao.Codigo);
+        !PoliticaDaDistribuicaoDeVagas.EhRegraFederal(oferta.RegraDistribuicao.Codigo);
 
     /// <summary>O fallback da cascata não é modalidade selecionada na oferta — condição de <c>CascataFallbackNaoSelecionadoNaOferta</c> (nível oferta).</summary>
     internal static bool FallbackNaoSelecionadoNaOferta(ConfiguracaoDistribuicaoVagas oferta, string fallbackCodigo) =>
@@ -164,56 +164,26 @@ public static class CoberturaDaCascata
         configuracao.Vagas.DistribuicaoVagas.Any(o => OfertaExigeCascata(o) && OfertaForaDoRegimeFederal(o));
 
     /// <summary>Existe alguma origem SegueCascata (cascata ausente, ou destino não declarado) alcançável por uma oferta federal.</summary>
-    internal static bool ExisteCascataOrigemAusente(ConfiguracaoDeclarada configuracao)
-    {
-        foreach (ConfiguracaoDistribuicaoVagas oferta in configuracao.Vagas.DistribuicaoVagas)
-        {
-            if (!OfertaExigeCascata(oferta) || OfertaForaDoRegimeFederal(oferta))
-            {
-                continue;
-            }
+    internal static bool ExisteCascataOrigemAusente(ConfiguracaoDeclarada configuracao) =>
+        configuracao.Vagas.DistribuicaoVagas.Any(oferta => OfertaExigeCascata(oferta)
+            && !OfertaForaDoRegimeFederal(oferta)
+            && (configuracao.Vagas.Cascata is null || OrigemAusente(configuracao, oferta)));
 
-            if (configuracao.Vagas.Cascata is null)
-            {
-                return true;
-            }
-
-            if (oferta.Modalidades
-                .Where(static m => m.RegraRemanejamento == RegraRemanejamentoModalidade.SegueCascata)
-                .Any(m => OrigemNaoDeclaradaNaCascata(configuracao, m.Codigo)))
-            {
-                return true;
-            }
-        }
-
-        return false;
-    }
+    private static bool OrigemAusente(ConfiguracaoDeclarada configuracao, ConfiguracaoDistribuicaoVagas oferta) =>
+        oferta.Modalidades.Where(static m => m.RegraRemanejamento == RegraRemanejamentoModalidade.SegueOrdemDeRemanejamento)
+            .Any(m => OrigemNaoDeclaradaNaCascata(configuracao, m.Codigo));
 
     /// <summary>Existe fallback ou destino não resolvível numa oferta federal que exige cascata.</summary>
-    internal static bool ExisteCascataFallbackNaoSelecionadoNaOferta(ConfiguracaoDeclarada configuracao)
-    {
-        foreach (ConfiguracaoDistribuicaoVagas oferta in configuracao.Vagas.DistribuicaoVagas)
-        {
-            if (!OfertaExigeCascata(oferta) || OfertaForaDoRegimeFederal(oferta) || configuracao.Vagas.Cascata is null)
-            {
-                continue;
-            }
+    internal static bool ExisteCascataFallbackNaoSelecionadoNaOferta(ConfiguracaoDeclarada configuracao) =>
+        configuracao.Vagas.Cascata is not null && configuracao.Vagas.DistribuicaoVagas.Any(oferta =>
+            OfertaExigeCascata(oferta) && !OfertaForaDoRegimeFederal(oferta)
+            && (FallbackNaoSelecionadoNaOferta(oferta, configuracao.Vagas.Cascata.FallbackCodigo)
+                || DestinoNaoResolvivel(configuracao, oferta)));
 
-            if (FallbackNaoSelecionadoNaOferta(oferta, configuracao.Vagas.Cascata.FallbackCodigo))
-            {
-                return true;
-            }
-
-            if (oferta.Modalidades
-                .Where(static m => m.RegraRemanejamento == RegraRemanejamentoModalidade.SegueCascata)
-                .Any(m => !OrigemNaoDeclaradaNaCascata(configuracao, m.Codigo) && DestinoDaOrigemNaoResolvivelNaOferta(configuracao, oferta, m.Codigo)))
-            {
-                return true;
-            }
-        }
-
-        return false;
-    }
+    private static bool DestinoNaoResolvivel(ConfiguracaoDeclarada configuracao, ConfiguracaoDistribuicaoVagas oferta) =>
+        oferta.Modalidades.Where(static m => m.RegraRemanejamento == RegraRemanejamentoModalidade.SegueOrdemDeRemanejamento)
+            .Any(m => !OrigemNaoDeclaradaNaCascata(configuracao, m.Codigo)
+                && DestinoDaOrigemNaoResolvivelNaOferta(configuracao, oferta, m.Codigo));
 
     /// <summary>Existe origem declarada na cascata que nenhuma oferta do processo marca como SegueCascata.</summary>
     internal static bool ExisteCascataOrigemNaoSegueCascata(ConfiguracaoDeclarada configuracao)
@@ -223,17 +193,15 @@ public static class CoberturaDaCascata
             return false;
         }
 
-        HashSet<string> todasAsOrigensSegueCascata = new(
-            configuracao.Vagas.DistribuicaoVagas.SelectMany(static o => o.Modalidades)
-                .Where(static m => m.RegraRemanejamento == RegraRemanejamentoModalidade.SegueCascata)
-                .Select(static m => m.Codigo),
-            StringComparer.Ordinal);
-
-        return configuracao.Vagas.Cascata.Destinos
-            .Select(static d => d.ModalidadeOrigemCodigo)
-            .Distinct(StringComparer.Ordinal)
-            .Any(origem => !todasAsOrigensSegueCascata.Contains(origem));
+        HashSet<string> origens = OrigensQueSeguemCascata(configuracao);
+        return configuracao.Vagas.Cascata.Destinos.Select(static d => d.ModalidadeOrigemCodigo)
+            .Distinct(StringComparer.Ordinal).Any(origem => !origens.Contains(origem));
     }
+
+    private static HashSet<string> OrigensQueSeguemCascata(ConfiguracaoDeclarada configuracao) => new(
+        configuracao.Vagas.DistribuicaoVagas.SelectMany(static o => o.Modalidades)
+            .Where(static m => m.RegraRemanejamento == RegraRemanejamentoModalidade.SegueOrdemDeRemanejamento)
+            .Select(static m => m.Codigo), StringComparer.Ordinal);
 
     /// <summary>Existe destino declarado na cascata que não é modalidade selecionada em nenhuma oferta do processo.</summary>
     internal static bool ExisteCascataDestinoDesconhecido(ConfiguracaoDeclarada configuracao)

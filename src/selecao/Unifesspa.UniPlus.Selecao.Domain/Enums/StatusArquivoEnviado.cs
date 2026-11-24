@@ -1,5 +1,7 @@
 namespace Unifesspa.UniPlus.Selecao.Domain.Enums;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
+
 /// <summary>
 /// Ciclo de vida de um arquivo enviado pelo administrador ao armazenamento de objetos — o
 /// documento a publicar e o modelo de documento de uma exigência: nasce <see cref="Pendente"/> ao
@@ -9,6 +11,8 @@ namespace Unifesspa.UniPlus.Selecao.Domain.Enums;
 /// </summary>
 public enum StatusArquivoEnviado
 {
+    [CodigoDeContrato("PENDENTE", "Pendente", Descricao = "O envio ainda não foi confirmado.")]
     Pendente = 0,
+    [CodigoDeContrato("CONFIRMADO", "Confirmado", Descricao = "O conteúdo do envio foi confirmado.")]
     Confirmado = 1
 }

@@ -32,7 +32,7 @@ public sealed class ProdutoDaEtapa : EntityBase, IProdutoPublicado
     /// O papel da publicação no ciclo recursal da etapa, ou <see langword="null"/> quando o
     /// ato não é resultado — a etapa publica um aviso sem por isso produzir resultado.
     /// </summary>
-    public PapelProdutoFase? Papel { get; private set; }
+    public PapelDaPublicacaoPrevista? Papel { get; private set; }
 
     private ProdutoDaEtapa() { }
 
@@ -40,7 +40,7 @@ public sealed class ProdutoDaEtapa : EntityBase, IProdutoPublicado
     /// Cria o produto. Que o tipo de ato exista, esteja vigente e seja resultado no catálogo
     /// é I/O — resolvido em Application (ADR-0042).
     /// </summary>
-    public static ProdutoDaEtapa Criar(string atoCodigo, PapelProdutoFase? papel)
+    public static ProdutoDaEtapa Criar(string atoCodigo, PapelDaPublicacaoPrevista? papel)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(atoCodigo);
 
@@ -52,7 +52,7 @@ public sealed class ProdutoDaEtapa : EntityBase, IProdutoPublicado
     }
 
     /// <summary>Reidrata o produto preservando o <see cref="EntityBase.Id"/> congelado.</summary>
-    public static ProdutoDaEtapa Reidratar(Guid id, string atoCodigo, PapelProdutoFase? papel)
+    public static ProdutoDaEtapa Reidratar(Guid id, string atoCodigo, PapelDaPublicacaoPrevista? papel)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(atoCodigo);
         if (id == Guid.Empty)
@@ -73,7 +73,7 @@ public sealed class ProdutoDaEtapa : EntityBase, IProdutoPublicado
     /// pelo ato quando o papel foi o que mudou; recriá-lo faria a mesma matéria sair e voltar,
     /// com DELETE e INSERT disputando o mesmo slot do índice único na mesma transação.
     /// </summary>
-    void IProdutoPublicado.AtualizarPapel(PapelProdutoFase? papel) => Papel = papel;
+    void IProdutoPublicado.AtualizarPapel(PapelDaPublicacaoPrevista? papel) => Papel = papel;
 
     internal void VincularEtapa(Guid etapaProcessoId) => EtapaProcessoId = etapaProcessoId;
 }

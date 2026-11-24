@@ -6,6 +6,7 @@ using NSubstitute;
 
 using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 using Unifesspa.UniPlus.Configuracao.Contracts;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Publicacoes.Contracts;
 using Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
@@ -44,9 +45,9 @@ public sealed class DefinirEtapasVinculoComTipoDeEtapaTests
         processo.Id,
         [
             // Vínculo e caráter inalterados: só o peso muda, e a etapa é a instância tracked.
-            new EtapaProcessoInput("Prova Objetiva (revisada)", CaraterEtapa.Classificatoria, TipoProvaObjetivaOrigemId, 9m, null, 1, etapaOriginal.Id, Produtos: [], Bancas: [], Recursos: []),
+            new EtapaProcessoInput("Prova Objetiva (revisada)", CaraterEtapa.Classificatoria.Codigo(), TipoProvaObjetivaOrigemId, 9m, null, 1, etapaOriginal.Id, Produtos: [], Bancas: [], Recursos: []),
             // Etapa nova com tipo inativo — é ela que derruba o PUT inteiro.
-            new EtapaProcessoInput("Entrevista", CaraterEtapa.Classificatoria, Guid.CreateVersion7(), 1m, null, 2, Produtos: [], Bancas: [], Recursos: []),
+            new EtapaProcessoInput("Entrevista", CaraterEtapa.Classificatoria.Codigo(), Guid.CreateVersion7(), 1m, null, 2, Produtos: [], Bancas: [], Recursos: []),
         ]);
 
     [Fact(DisplayName = "Handle com vínculo inalterado reaproveita o snapshot já congelado, mesmo com o tipo desde então desativado")]
@@ -125,7 +126,7 @@ public sealed class DefinirEtapasVinculoComTipoDeEtapaTests
         IUnitOfWork unitOfWork = Substitute.For<IUnitOfWork>();
         DefinirEtapasCommand command = new(
             processo.Id,
-            [new EtapaProcessoInput("Prova Objetiva", CaraterEtapa.Classificatoria, Guid.CreateVersion7(), 3m, null, 1, Produtos: [], Bancas: [], Recursos: [])]);
+            [new EtapaProcessoInput("Prova Objetiva", CaraterEtapa.Classificatoria.Codigo(), Guid.CreateVersion7(), 3m, null, 1, Produtos: [], Bancas: [], Recursos: [])]);
 
         Result result = await Executar(command, RepositorioCom(processo), unitOfWork, ReaderSemTipoAtivo());
 

@@ -94,8 +94,10 @@ public sealed class DescartarRascunhoDaInscricaoCommandHandlerTests
     public async Task Handle_RascunhoComArquivos_ApagaOsObjetos()
     {
         IDocumentoDaInscricaoRepository documentos = Substitute.For<IDocumentoDaInscricaoRepository>();
-        DocumentoExigido laudo = new DocumentoExigidoBuilder().ComTipo(new CopiaDoTipoDeDocumento(Guid.CreateVersion7(), "LAUDO", "Laudo", "SAUDE", ProtecaoDoDocumentoDeTeste.Pessoal))
-            .ComIndeferimento(new IndeferimentoDoDocumento(false, null, [])).Construir();
+        DocumentoExigido laudo = DocumentoExigidoDeTeste.Novo()
+            .ComTipo("LAUDO", "Laudo", "SAUDE")
+            .Facultativa()
+            .Criar().Value!;
         ArquivoDaApresentacao arquivo = ArquivoDaApresentacao.IniciarPendente(
             Guid.CreateVersion7(), Guid.CreateVersion7(), laudo, "application/pdf", 10, TimeProvider.System, TimeSpan.FromMinutes(15)).Value!;
         documentos.ListarArquivosDaInscricaoAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>()).Returns([arquivo]);

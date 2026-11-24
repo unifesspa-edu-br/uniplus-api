@@ -14,10 +14,10 @@ public sealed class DefinicaoDaRespostaTests
     [InlineData(TipoDoValorDeResposta.Data, false, "\"09/03/2001\"", false)]
     [InlineData(TipoDoValorDeResposta.Numero, false, "18", true)]
     [InlineData(TipoDoValorDeResposta.Numero, false, "\"18\"", false)]
-    [InlineData(TipoDoValorDeResposta.Codigo, true, "[\"LB_PPI\",\"AC\"]", true)]
-    [InlineData(TipoDoValorDeResposta.Codigo, true, "\"LB_PPI\"", false)]
-    [InlineData(TipoDoValorDeResposta.Codigo, false, "[\"LB_PPI\"]", false)]
-    [InlineData(TipoDoValorDeResposta.Codigo, false, "\"\"", false)]
+    [InlineData(TipoDoValorDeResposta.Opcao, true, "[\"LB_PPI\",\"AC\"]", true)]
+    [InlineData(TipoDoValorDeResposta.Opcao, true, "\"LB_PPI\"", false)]
+    [InlineData(TipoDoValorDeResposta.Opcao, false, "[\"LB_PPI\"]", false)]
+    [InlineData(TipoDoValorDeResposta.Opcao, false, "\"\"", false)]
     [InlineData(TipoDoValorDeResposta.Municipio, false, "\"2927408\"", true)]
     [InlineData(TipoDoValorDeResposta.Municipio, false, "{\"codigo\":\"2927408\",\"rotulo\":\"Salvador\"}", false)]
     [InlineData(TipoDoValorDeResposta.Endereco, false, "{\"cep\":\"68500000\",\"cidade\":{\"codigoIbge\":\"1504208\",\"nome\":\"Marabá\",\"uf\":\"PA\"}}", true)]
@@ -48,7 +48,7 @@ public sealed class DefinicaoDaRespostaTests
     {
         JsonElement longo = JsonSerializer.SerializeToElement(new string('A', 61));
 
-        new DefinicaoDaResposta(TipoDoValorDeResposta.Codigo, Multivalorado: false, Identificador: false).Aceita(longo).Should().BeFalse();
+        new DefinicaoDaResposta(TipoDoValorDeResposta.Opcao, Multivalorado: false, Identificador: false).Aceita(longo).Should().BeFalse();
         new DefinicaoDaResposta(TipoDoValorDeResposta.Texto, Multivalorado: false, Identificador: false).Aceita(longo).Should().BeTrue();
     }
 

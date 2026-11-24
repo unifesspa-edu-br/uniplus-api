@@ -4,6 +4,7 @@ using System.Text.Json;
 
 using AwesomeAssertions;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Regras.Services;
@@ -35,8 +36,8 @@ internal static class ExemploDeEnvelopeProcessoRico
     /// </summary>
     /// <remarks>
     /// A multiplicidade é deliberada: um decoder que indexasse as regras <b>por código</b>
-    /// — em vez de acumulá-las numa lista — perderia a segunda <c>ELIM-NOTA-MINIMA-ETAPA</c>
-    /// e o segundo <c>DESEMPATE-MAIOR-NOTA-ETAPA</c> em silêncio. Um exemplo com “uma de
+    /// — em vez de acumulá-las numa lista — perderia a segunda <c>ELIMINACAO_NOTA_MINIMA_ETAPA</c>
+    /// e o segundo <c>DESEMPATE_MAIOR_NOTA_ETAPA</c> em silêncio. Um exemplo com “uma de
     /// cada variante” não pegaria isso.
     /// </remarks>
     /// <param name="variante">Ver <see cref="EtapaId"/> — só distingue processos no mesmo Postgres entre testes de persistência.</param>
@@ -66,7 +67,7 @@ internal static class ExemploDeEnvelopeProcessoRico
         return processo;
     }
 
-    // SiSU é baseado em ENEM — é o que admite ELIM-CORTE-REDACAO e ELIM-ZERO-EM-AREA.
+    // SiSU é baseado em ENEM — é o que admite ELIMINACAO-CORTE-REDACAO e ELIMINACAO_ZERO_EM_AREA.
     // O identificador é determinístico, como os ids das etapas: ele entra no envelope e a golden
     // congela os bytes. A variante o mantém único entre os testes que persistem o exemplo.
     internal static ProcessoSeletivo NovoProcessoRico(int variante)
@@ -139,7 +140,7 @@ internal static class ExemploDeEnvelopeProcessoRico
 
     internal static void DefinirBonusRegional(ProcessoSeletivo processo) =>
         processo.DefinirBonusRegional(aplica: true, bonus: ConfiguracaoBonusRegional.Criar(
-            Regra(RegraBonusCodigo.Multiplicativo, 'b'),
+            Regra(RegraDeBonus.Multiplicativo.Codigo(), 'b'),
             fator: 1.2000m,
             teto: 95.5000m,
             fatoElegibilidadeCodigo: FormularioDeTeste.FatoBooleanoDaInscricao,
@@ -160,22 +161,22 @@ internal static class ExemploDeEnvelopeProcessoRico
     // canonicalização que as reordenasse mudasse o envelope.
     internal static void DefinirCriteriosDeDesempate(ProcessoSeletivo processo, int variante, bool permutar) =>
         processo.DefinirCriteriosDesempate(Ordem([
-            CriterioDesempate.Criar(1, Regra(CriterioDesempateCodigo.Idoso, 'c'), new ParametrosDesempateIdoso(60)).Value!,
-            CriterioDesempate.Criar(2, Regra(CriterioDesempateCodigo.MaiorNotaEtapa, 'd'), new ParametrosDesempateMaiorNotaEtapa(EtapaId(1, variante))).Value!,
-            CriterioDesempate.Criar(3, Regra(CriterioDesempateCodigo.MaiorNotaEtapa, 'd'), new ParametrosDesempateMaiorNotaEtapa(EtapaId(2, variante))).Value!,
-            CriterioDesempate.Criar(4, Regra(CriterioDesempateCodigo.PredicadoFato, 'e'), new ParametrosDesempatePredicadoFato(
+            CriterioDesempate.Criar(1, Regra(RegraDeDesempate.Idoso.Codigo(), 'c'), new ParametrosDesempateIdoso(60)).Value!,
+            CriterioDesempate.Criar(2, Regra(RegraDeDesempate.MaiorNotaNaEtapa.Codigo(), 'd'), new ParametrosDesempateMaiorNotaEtapa(EtapaId(1, variante))).Value!,
+            CriterioDesempate.Criar(3, Regra(RegraDeDesempate.MaiorNotaNaEtapa.Codigo(), 'd'), new ParametrosDesempateMaiorNotaEtapa(EtapaId(2, variante))).Value!,
+            CriterioDesempate.Criar(4, Regra(RegraDeDesempate.CondicaoSobreDado.Codigo(), 'e'), new ParametrosDesempatePredicadoFato(
                 CondicaoDnf.Criar("escola_publica", Operador.Igual, JsonSerializer.SerializeToElement(true)).Value!)).Value!,
-            CriterioDesempate.Criar(5, Regra(CriterioDesempateCodigo.MaiorIdade, 'f'), new ParametrosDesempateMaiorIdade()).Value!,
-            CriterioDesempate.Criar(6, Regra(CriterioDesempateCodigo.MaiorNotaAreaEnem, '8'), new ParametrosDesempateMaiorNotaAreaEnem(["REDACAO", "MATEMATICA", "LINGUAGENS"])).Value!,
+            CriterioDesempate.Criar(5, Regra(RegraDeDesempate.MaiorIdade.Codigo(), 'f'), new ParametrosDesempateMaiorIdade()).Value!,
+            CriterioDesempate.Criar(6, Regra(RegraDeDesempate.MaiorNotaPorAreaDoEnem.Codigo(), '8'), new ParametrosDesempateMaiorNotaAreaEnem(["REDACAO", "MATEMATICA", "LINGUAGENS"])).Value!,
         ], permutar)).IsSuccess.Should().BeTrue();
 
     internal static void DefinirClassificacao(ProcessoSeletivo processo, int variante, bool permutar) =>
         processo.DefinirClassificacao(ConfiguracaoClassificacao.Criar(new DeclaracaoDaClassificacao
         {
-            RegraCalculo = Regra(RegraCalculoCodigo.FormulaMediaPonderada, 'a'),
-            RegraArredondamento = Regra(RegraArredondamentoCodigo.PrecisaoArredondarCima, '2'),
+            RegraCalculo = Regra(RegraDeCalculoDaNota.MediaPonderada.Codigo(), 'a'),
+            RegraArredondamento = Regra(RegraDeArredondamentoDaNota.ArredondarAPartirDeCinco.Codigo(), '2'),
             CasasArredondamento = 3,
-            RegraOrdemAlocacao = Regra(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, '3'),
+            RegraOrdemAlocacao = Regra(RegraDeOrdemDeAlocacao.PrimeiraOpcaoPrioritaria.Codigo(), '3'),
             RegrasEliminacao = RegrasDeEliminacao(variante),
             BaseadoEmEnem = true,
             ResolucaoPesoAreaEnem = QuadroPesoAreaEnemDeTeste.Resolucao,
@@ -186,12 +187,12 @@ internal static class ExemploDeEnvelopeProcessoRico
     internal static List<RegraEliminacao> RegrasDeEliminacao(int variante) =>
     [
         // DUAS do mesmo código, parâmetros distintos — o PS Convênios exige exatamente isso.
-        RegraEliminacao.Criar(Regra(RegraEliminacaoCodigo.ElimNotaMinimaEtapa, '4'), new ParametrosElimNotaMinimaEtapa(EtapaId(1, variante), 45.0000m)).Value!,
-        RegraEliminacao.Criar(Regra(RegraEliminacaoCodigo.ElimNotaMinimaEtapa, '4'), new ParametrosElimNotaMinimaEtapa(EtapaId(2, variante), 30.5000m)).Value!,
-        RegraEliminacao.Criar(Regra(RegraEliminacaoCodigo.ElimCorteEmArea, '5'), new ParametrosElimCorteEmArea("REDACAO", 400.0000m)).Value!,
-        RegraEliminacao.Criar(Regra(RegraEliminacaoCodigo.ElimZeroEmArea, '6'), new ParametrosElimZeroEmArea()).Value!,
-        RegraEliminacao.Criar(Regra(RegraEliminacaoCodigo.ElimFaltaEmDiaDeProvaEnem, '0'), new ParametrosElimFaltaEmDiaDeProvaEnem()).Value!,
-        RegraEliminacao.Criar(Regra(RegraEliminacaoCodigo.ElimAusenciaNaEtapa, '7'), new ParametrosElimAusenciaNaEtapa(EtapaId(3, variante))).Value!,
+        RegraEliminacao.Criar(Regra(RegraDeEliminacaoPorCalculo.NotaMinimaNaEtapa.Codigo(), '4'), new ParametrosEliminacaoPorNotaMinimaNaEtapa(EtapaId(1, variante), 45.0000m)).Value!,
+        RegraEliminacao.Criar(Regra(RegraDeEliminacaoPorCalculo.NotaMinimaNaEtapa.Codigo(), '4'), new ParametrosEliminacaoPorNotaMinimaNaEtapa(EtapaId(2, variante), 30.5000m)).Value!,
+        RegraEliminacao.Criar(Regra(RegraDeEliminacaoPorCalculo.CorteEmAreaDoEnem.Codigo(), '5'), new ParametrosEliminacaoPorCorteEmAreaDoEnem("REDACAO", 400.0000m)).Value!,
+        RegraEliminacao.Criar(Regra(RegraDeEliminacaoPorCalculo.ZeroEmAreaDoEnem.Codigo(), '6'), new ParametrosEliminacaoPorZeroEmAreaDoEnem()).Value!,
+        RegraEliminacao.Criar(Regra(RegraDeEliminacaoPorCalculo.FaltaEmDiaDeProvaDoEnem.Codigo(), '0'), new ParametrosEliminacaoPorFaltaEmDiaDeProvaDoEnem()).Value!,
+        RegraEliminacao.Criar(Regra(RegraDeEliminacaoPorCalculo.AusenciaNaEtapa.Codigo(), '7'), new ParametrosEliminacaoPorAusenciaNaEtapa(EtapaId(3, variante))).Value!,
     ];
 
     internal static void DefinirFormularioDeInscricao(ProcessoSeletivo processo, bool permutar)
@@ -340,7 +341,7 @@ internal static class ExemploDeEnvelopeProcessoRico
             ConfiguracaoTaxaInscricao.Criar(
                 cobra: true,
                 valor: 150.00m,
-                fundamentosCodigos: Ordem([FundamentoIsencaoCodigo.CadastroUnico, FundamentoIsencaoCodigo.DoacaoMedulaOssea], permutar)).Value!).IsSuccess.Should().BeTrue();
+                fundamentosCodigos: Ordem(["CADASTRO_UNICO", "DOACAO_MEDULA_OSSEA"], permutar)).Value!).IsSuccess.Should().BeTrue();
         // O exemplo rico oferta dois cursos e admite a segunda opção.
         processo.DefinirOpcoesDeCurso(2).IsSuccess.Should().BeTrue();
         DeclaracoesObrigatoriasDeTeste.Declarar(processo);

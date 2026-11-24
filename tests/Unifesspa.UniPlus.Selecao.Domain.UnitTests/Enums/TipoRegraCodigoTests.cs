@@ -2,52 +2,31 @@ namespace Unifesspa.UniPlus.Selecao.Domain.UnitTests.Enums;
 
 using AwesomeAssertions;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 
-/// <summary>
-/// Paridade do codec de wire de <see cref="TipoRegra"/>: o <c>switch</c> de
-/// <see cref="TipoRegraCodigo.ToCodigo"/> tem braço final para valores fora do
-/// enum, então o compilador não acusa uma variante nova sem código canônico —
-/// quem acusa é esta ida e volta sobre todos os valores não sentinela.
-/// </summary>
 public sealed class TipoRegraCodigoTests
 {
-    [Fact(DisplayName = "Todo tipo não sentinela sobrevive à ida e volta ToCodigo → FromCodigo")]
-    public void ToCodigo_FromCodigo_RoundTrip_TodosOsTipos()
-    {
-        foreach (TipoRegra tipo in Enum.GetValues<TipoRegra>().Where(t => t != TipoRegra.Nenhuma))
-        {
-            string codigo = tipo.ToCodigo();
+    [Fact]
+    public void TipoRegra_Valores_CodigosERotulosDeclarados() =>
+        Enum.GetValues<TipoRegra>().Select(static valor => (valor, valor.Codigo(), valor.Rotulo()))
+            .Should().Equal(Pares);
 
-            codigo.Should().MatchRegex("^[a-z_]+$", $"o código de {tipo} é snake_case minúsculo");
-            TipoRegraCodigo.FromCodigo(codigo).Should().Be(
-                tipo, $"o código '{codigo}' deve materializar de volta como {tipo}");
-        }
-    }
-
-    [Fact(DisplayName = "Os códigos canônicos são únicos entre os tipos")]
-    public void ToCodigo_SemColisaoEntreTipos()
-    {
-        IEnumerable<string> codigos = Enum.GetValues<TipoRegra>()
-            .Where(t => t != TipoRegra.Nenhuma)
-            .Select(t => t.ToCodigo());
-
-        codigos.Should().OnlyHaveUniqueItems("dois tipos com o mesmo código quebrariam a materialização EF");
-    }
-
-    [Fact(DisplayName = "O sentinela Nenhuma não tem código canônico")]
-    public void ToCodigo_Nenhuma_Lanca()
-    {
-        Action acao = () => TipoRegra.Nenhuma.ToCodigo();
-
-        acao.Should().Throw<ArgumentOutOfRangeException>();
-    }
-
-    [Fact(DisplayName = "Código desconhecido é rejeitado na materialização")]
-    public void FromCodigo_Desconhecido_Lanca()
-    {
-        Action acao = () => TipoRegraCodigo.FromCodigo("tipo_inexistente");
-
-        acao.Should().Throw<ArgumentOutOfRangeException>();
-    }
+    private static readonly (TipoRegra Valor, string Codigo, string Rotulo)[] Pares =
+    [
+                (TipoRegra.RegraCalculo, "REGRA_CALCULO", "Cálculo da nota"),
+                (TipoRegra.RegraArredondamento, "REGRA_ARREDONDAMENTO", "Arredondamento da nota"),
+                (TipoRegra.RegraEliminacao, "REGRA_ELIMINACAO", "Eliminação"),
+                (TipoRegra.RegraBonus, "REGRA_FADA", "Fator de Atenuação das Desigualdades de Acesso (FADA)"),
+                (TipoRegra.CriterioDesempate, "CRITERIO_DESEMPATE", "Critério de desempate"),
+                (TipoRegra.CriterioRemanejamento, "CRITERIO_REMANEJAMENTO", "Critério de remanejamento"),
+                (TipoRegra.RegraOrdemAlocacao, "REGRA_ORDEM_ALOCACAO", "Ordem de alocação"),
+                (TipoRegra.RegraElegibilidade, "REGRA_ELEGIBILIDADE", "Elegibilidade"),
+                (TipoRegra.RegraDistribuicaoVagas, "REGRA_DISTRIBUICAO_VAGAS", "Distribuição de vagas"),
+                (TipoRegra.RegraAjusteDistribuicaoVagas, "REGRA_AJUSTE_DISTRIBUICAO_VAGAS", "Ajuste da distribuição de vagas"),
+                (TipoRegra.RegraPrazoRecurso, "REGRA_PRAZO_RECURSO", "Prazo de recurso"),
+                (TipoRegra.ConvencaoContagemPrazo, "CONVENCAO_CONTAGEM_PRAZO", "Convenção de contagem do prazo"),
+                (TipoRegra.RegraApuracaoAvaliacao, "REGRA_APURACAO_AVALIACAO", "Apuração da avaliação"),
+                (TipoRegra.RegraProcedimentoRecurso, "REGRA_PROCEDIMENTO_RECURSO", "Procedimento de recurso"),
+    ];
 }

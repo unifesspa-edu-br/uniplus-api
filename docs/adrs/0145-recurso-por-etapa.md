@@ -34,7 +34,7 @@ O código já dá produtos e janelas de recurso à etapa, desde as migrations de
 **Escolhida:** "B". A regra de recurso não é exclusiva da fase. A etapa declara:
 
 - **Produtos.** Os atos que a etapa publica, cada um com o papel de preliminar ou definitivo, ou sem papel quando o ato não é resultado. O produto declara intenção; o ato publicado é fato de Publicações.
-- **Janelas de recurso.** Zero ou mais por etapa, cada uma com prazo e suspensividade, nos mesmos termos da regra de recurso da fase. O domínio usa a mesma regra do catálogo (`RECURSO-PRAZO-ANCORADO-EM-ATO`) e os mesmos parâmetros de prazo e suspensividade nas duas âncoras.
+- **Janelas de recurso.** Zero ou mais por etapa, cada uma com prazo e suspensividade, nos mesmos termos da regra de recurso da fase. O domínio usa a mesma regra do catálogo (`RECURSO_PRAZO_CONTADO_DA_PUBLICACAO_DO_ATO`) e os mesmos parâmetros de prazo e suspensividade nas duas âncoras.
 - **Duas âncoras.** O prazo corre do **resultado preliminar publicado pela própria etapa**, no instante de publicação declarado pelo ato, absoluto e com deslocamento em relação a UTC (UNI-REQ-0115), ou da **ciência individual** do candidato, caso em que o instante inicial é a ciência de cada candidato. A âncora em ciência exige que a etapa prometa parecer individual, porque é dele que o candidato toma ciência.
 - **Uma janela por fato recorrível.** Cada resultado preliminar e a ciência individual abrem uma janela só; dois prazos para o mesmo fato seriam ambíguos.
 - **Etapa com nota do ENEM.** Ninguém publica nem atribui a nota na etapa: o resultado é publicado pela fase, e o recurso coletivo sobre a lista geral é o da regra de recurso da fase. Na etapa cabe só o recurso individual, ancorado na ciência do candidato.

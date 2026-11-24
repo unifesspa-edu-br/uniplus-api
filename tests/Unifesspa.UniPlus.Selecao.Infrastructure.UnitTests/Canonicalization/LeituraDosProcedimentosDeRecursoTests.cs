@@ -72,7 +72,7 @@ public sealed class LeituraDosProcedimentosDeRecursoTests
                 ["alvo"] = null,
                 ["regra"] = new JsonObject
                 {
-                    ["codigo"] = RegraProcedimentoRecursoCodigo.Recalculo,
+                    ["codigo"] = RegraDeProcedimentoDoRecurso.Recalculo.Codigo(),
                     ["versao"] = "v1",
                     ["hash"] = new string('a', 64),
                 },

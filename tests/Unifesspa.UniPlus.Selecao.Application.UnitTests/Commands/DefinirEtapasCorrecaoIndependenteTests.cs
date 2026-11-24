@@ -6,6 +6,7 @@ using NSubstitute;
 
 using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 using Unifesspa.UniPlus.Configuracao.Contracts;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
@@ -25,7 +26,7 @@ public sealed class DefinirEtapasCorrecaoIndependenteTests
         ReaderDoTipo(TipoNoCadastro(TipoProvaObjetivaOrigemId, "PROVA_OBJETIVA", "Prova Objetiva", exigeCorrecaoIndependente: exigeCorrecaoIndependente));
 
     private static EtapaProcessoInput EtapaObjetiva(Guid? id = null, CaraterEtapa carater = CaraterEtapa.Classificatoria) =>
-        new("Prova Objetiva", carater, TipoProvaObjetivaOrigemId, 1m, null, 1, id, FormaDeAvaliacao: FormaDeAvaliacaoCodigo.Objetiva, Produtos: [], Bancas: [], Recursos: []);
+        new("Prova Objetiva", carater.Codigo(), TipoProvaObjetivaOrigemId, 1m, null, 1, id, FormaDeAvaliacao: "OBJETIVA", Produtos: [], Bancas: [], Recursos: []);
 
     [Fact(DisplayName = "Etapa nova de tipo que exige correção independente, em avaliação objetiva, é recusada no campo da forma")]
     public async Task EtapaNova_FormaObjetivaNoTipoQueExige_Recusa()
@@ -59,7 +60,7 @@ public sealed class DefinirEtapasCorrecaoIndependenteTests
         TipoEtapaSnapshot semExigir = TipoCongelado(TipoProvaObjetivaOrigemId, "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true);
         EtapaProcesso existente = EtapaDoProcesso("Prova Objetiva", CaraterEtapa.Classificatoria, 1, semExigir, 1m);
         ProcessoSeletivo processo = ProcessoComAsEtapas(existente);
-        EtapaProcessoInput humana = EtapaObjetiva(existente.Id, CaraterEtapa.Ambas) with { FormaDeAvaliacao = FormaDeAvaliacaoCodigo.Humana };
+        EtapaProcessoInput humana = EtapaObjetiva(existente.Id, CaraterEtapa.Ambas) with { FormaDeAvaliacao = "HUMANA" };
 
         Result result = await ExecutarSobre(processo, ReaderDoTipoQueExige(exigeCorrecaoIndependente: true), humana);
 

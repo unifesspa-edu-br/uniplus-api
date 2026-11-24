@@ -23,12 +23,12 @@ public sealed class CoberturaDosMotivosTests
     [Fact(DisplayName = "Cada fundamento habilitado exige um motivo favorável e um desfavorável, citando a fase e o que falta")]
     public void FundamentoSemCobertura_Recusa()
     {
-        ProcessoSeletivo processo = ProcessoParaMotivos.Rascunho(FundamentoIsencaoCodigo.CadastroUnico, FundamentoIsencaoCodigo.DoacaoMedulaOssea);
+        ProcessoSeletivo processo = ProcessoParaMotivos.Rascunho("CADASTRO_UNICO", "DOACAO_MEDULA_OSSEA");
         MotivoDeDecisaoDoProcesso[] escolhidos =
         [
-            Escolher(processo, ProcessoParaMotivos.DaIsencao(FundamentoIsencaoCodigo.CadastroUnico, SentidoDoMotivo.Favoravel, "NIS_LOCALIZADO")),
-            Escolher(processo, ProcessoParaMotivos.DaIsencao(FundamentoIsencaoCodigo.CadastroUnico, SentidoDoMotivo.Desfavoravel, "NIS_NAO_LOCALIZADO")),
-            Escolher(processo, ProcessoParaMotivos.DaIsencao(FundamentoIsencaoCodigo.DoacaoMedulaOssea, SentidoDoMotivo.Favoravel, "DOACAO_CONFIRMADA")),
+            Escolher(processo, ProcessoParaMotivos.DaIsencao("CADASTRO_UNICO", SentidoDoMotivo.Favoravel, "NIS_LOCALIZADO")),
+            Escolher(processo, ProcessoParaMotivos.DaIsencao("CADASTRO_UNICO", SentidoDoMotivo.Desfavoravel, "NIS_NAO_LOCALIZADO")),
+            Escolher(processo, ProcessoParaMotivos.DaIsencao("DOACAO_MEDULA_OSSEA", SentidoDoMotivo.Favoravel, "DOACAO_CONFIRMADA")),
         ];
 
         FieldError falta = Faltas(processo, escolhidos).Should().ContainSingle().Subject;
@@ -36,17 +36,17 @@ public sealed class CoberturaDosMotivosTests
         falta.Error.Code.Should().Be(MotivoDeDecisaoErrorCodes.CoberturaInsuficiente);
         falta.Field.Should().Be("motivosDeDecisao");
         falta.Error.Message.Should().Be(
-            $"A fase 'INSCRICAO' precisa de ao menos um motivo desfavorável para o fundamento de isenção {FundamentoIsencaoCodigo.DoacaoMedulaOssea}.");
+            $"A fase 'INSCRICAO' precisa de ao menos um motivo desfavorável para o fundamento de isenção {"DOACAO_MEDULA_OSSEA"}.");
     }
 
     [Fact(DisplayName = "Motivo de outro tipo ou de outro fundamento não cobre o fundamento")]
     public void MotivoDeOutroTipo_NaoCobre()
     {
-        ProcessoSeletivo processo = ProcessoParaMotivos.Rascunho(FundamentoIsencaoCodigo.CadastroUnico);
+        ProcessoSeletivo processo = ProcessoParaMotivos.Rascunho("CADASTRO_UNICO");
         MotivoDeDecisaoDoProcesso[] escolhidos =
         [
             Escolher(processo, ProcessoParaMotivos.Motivo(TipoMotivoDeDecisao.HomologacaoDasInscricoes, "DOCUMENTO_ILEGIVEL", SentidoDoMotivo.Favoravel)),
-            Escolher(processo, ProcessoParaMotivos.DaIsencao(FundamentoIsencaoCodigo.CarenciaSocioeconomica, SentidoDoMotivo.Desfavoravel)),
+            Escolher(processo, ProcessoParaMotivos.DaIsencao("CARENCIA_SOCIOECONOMICA", SentidoDoMotivo.Desfavoravel)),
         ];
 
         Faltas(processo, escolhidos).Should().HaveCount(2);
@@ -55,11 +55,11 @@ public sealed class CoberturaDosMotivosTests
     [Fact(DisplayName = "Com os dois sentidos em cada fundamento no lugar que declara o tipo, a cobertura passa")]
     public void CoberturaCompleta_Aceita()
     {
-        ProcessoSeletivo processo = ProcessoParaMotivos.Rascunho(FundamentoIsencaoCodigo.CadastroUnico);
+        ProcessoSeletivo processo = ProcessoParaMotivos.Rascunho("CADASTRO_UNICO");
         MotivoDeDecisaoDoProcesso[] escolhidos =
         [
-            Escolher(processo, ProcessoParaMotivos.DaIsencao(FundamentoIsencaoCodigo.CadastroUnico, SentidoDoMotivo.Favoravel, "NIS_LOCALIZADO")),
-            Escolher(processo, ProcessoParaMotivos.DaIsencao(FundamentoIsencaoCodigo.CadastroUnico, SentidoDoMotivo.Desfavoravel, "NIS_NAO_LOCALIZADO")),
+            Escolher(processo, ProcessoParaMotivos.DaIsencao("CADASTRO_UNICO", SentidoDoMotivo.Favoravel, "NIS_LOCALIZADO")),
+            Escolher(processo, ProcessoParaMotivos.DaIsencao("CADASTRO_UNICO", SentidoDoMotivo.Desfavoravel, "NIS_NAO_LOCALIZADO")),
         ];
 
         Faltas(processo, escolhidos).Should().BeEmpty();
@@ -68,25 +68,25 @@ public sealed class CoberturaDosMotivosTests
     [Fact(DisplayName = "A cobertura é de cada lugar que declara o tipo: o motivo escolhido em outra fase não cobre esta")]
     public void Cobertura_EPorLugar()
     {
-        ProcessoSeletivo processo = ProcessoParaMotivos.Rascunho(FundamentoIsencaoCodigo.CadastroUnico);
+        ProcessoSeletivo processo = ProcessoParaMotivos.Rascunho("CADASTRO_UNICO");
         ProcessoParaMotivos.DeclararNaFase(processo, "HOMOLOGACAO_INSCRICOES", TipoMotivoDeDecisao.IsencaoDaTaxa);
         MotivoDeDecisaoDoProcesso[] escolhidos =
         [
-            Escolher(processo, ProcessoParaMotivos.DaIsencao(FundamentoIsencaoCodigo.CadastroUnico, SentidoDoMotivo.Favoravel, "NIS_LOCALIZADO")),
-            Escolher(processo, ProcessoParaMotivos.DaIsencao(FundamentoIsencaoCodigo.CadastroUnico, SentidoDoMotivo.Desfavoravel, "NIS_NAO_LOCALIZADO")),
+            Escolher(processo, ProcessoParaMotivos.DaIsencao("CADASTRO_UNICO", SentidoDoMotivo.Favoravel, "NIS_LOCALIZADO")),
+            Escolher(processo, ProcessoParaMotivos.DaIsencao("CADASTRO_UNICO", SentidoDoMotivo.Desfavoravel, "NIS_NAO_LOCALIZADO")),
         ];
 
         FieldError[] faltas = Faltas(processo, escolhidos);
 
         faltas.Select(f => f.Error.Message).Should().Equal(
-            $"A fase 'HOMOLOGACAO_INSCRICOES' precisa de ao menos um motivo favorável para o fundamento de isenção {FundamentoIsencaoCodigo.CadastroUnico}.",
-            $"A fase 'HOMOLOGACAO_INSCRICOES' precisa de ao menos um motivo desfavorável para o fundamento de isenção {FundamentoIsencaoCodigo.CadastroUnico}.");
+            $"A fase 'HOMOLOGACAO_INSCRICOES' precisa de ao menos um motivo favorável para o fundamento de isenção {"CADASTRO_UNICO"}.",
+            $"A fase 'HOMOLOGACAO_INSCRICOES' precisa de ao menos um motivo desfavorável para o fundamento de isenção {"CADASTRO_UNICO"}.");
     }
 
     [Fact(DisplayName = "A etapa que declara o tipo de isenção também é lugar da cobertura, depois das fases")]
     public void Cobertura_IncluiAsEtapasQueDeclaramOTipo()
     {
-        ProcessoSeletivo processo = ProcessoParaMotivos.Rascunho(FundamentoIsencaoCodigo.CadastroUnico);
+        ProcessoSeletivo processo = ProcessoParaMotivos.Rascunho("CADASTRO_UNICO");
         ProcessoParaMotivos.DeclararNaEtapa(processo, "Prova discursiva", TipoMotivoDeDecisao.IsencaoDaTaxa);
 
         Faltas(processo).Select(f => f.Error.Message[..f.Error.Message.IndexOf(" precisa", StringComparison.Ordinal)]).Distinct().Should().Equal(
@@ -96,15 +96,15 @@ public sealed class CoberturaDosMotivosTests
     [Fact(DisplayName = "Fundamento habilitado sem fase nem etapa que declare o tipo de isenção recusa com tipo de decisão não declarado, um por fundamento")]
     public void FundamentoSemLugarQueDeclare_RecusaComTipoNaoDeclarado()
     {
-        ProcessoSeletivo processo = ProcessoParaMotivos.Rascunho(FundamentoIsencaoCodigo.CadastroUnico, FundamentoIsencaoCodigo.DoacaoMedulaOssea);
+        ProcessoSeletivo processo = ProcessoParaMotivos.Rascunho("CADASTRO_UNICO", "DOACAO_MEDULA_OSSEA");
         ProcessoParaMotivos.DeclararNaFase(processo, "INSCRICAO", TipoMotivoDeDecisao.HomologacaoDasInscricoes);
 
         FieldError[] faltas = Faltas(processo);
 
         faltas.Should().HaveCount(2).And.OnlyContain(f => f.Error.Code == MotivoDeDecisaoErrorCodes.TipoDeDecisaoNaoDeclarado);
         faltas.Select(f => f.Error.Message).Should().Equal(
-            $"O fundamento de isenção {FundamentoIsencaoCodigo.CadastroUnico} é habilitado, mas nenhuma fase nem etapa declara o tipo de decisão ISENCAO_DA_TAXA.",
-            $"O fundamento de isenção {FundamentoIsencaoCodigo.DoacaoMedulaOssea} é habilitado, mas nenhuma fase nem etapa declara o tipo de decisão ISENCAO_DA_TAXA.");
+            $"O fundamento de isenção {"CADASTRO_UNICO"} é habilitado, mas nenhuma fase nem etapa declara o tipo de decisão ISENCAO_DA_TAXA.",
+            $"O fundamento de isenção {"DOACAO_MEDULA_OSSEA"} é habilitado, mas nenhuma fase nem etapa declara o tipo de decisão ISENCAO_DA_TAXA.");
     }
 
     [Fact(DisplayName = "Processo que não cobra taxa não exige lugar que declare o tipo de isenção")]
@@ -119,13 +119,6 @@ public sealed class CoberturaDosMotivosTests
     [Fact(DisplayName = "Há uma política por tipo de decisão")]
     public void Politicas_UmaPorTipo() =>
         Enum.GetValues<TipoMotivoDeDecisao>().Should().OnlyContain(t => PoliticasDosTiposDeMotivo.Do(t).Tipo == t);
-
-    [Fact(DisplayName = "Os códigos de sentido vão e voltam do wire")]
-    public void Codigos_IdaEVolta()
-    {
-        SentidoDoMotivoCodigo.FromCodigo(SentidoDoMotivoCodigo.Favoravel).Should().Be(SentidoDoMotivo.Favoravel);
-        SentidoDoMotivoCodigo.FromCodigo(null).Should().Be(SentidoDoMotivo.Nenhum);
-    }
 
     private static FieldError[] Faltas(ProcessoSeletivo processo, params MotivoDeDecisaoDoProcesso[] escolhidos) =>
         [.. CoberturaDosMotivos.Faltas(processo.Declaracao(), ProcessoParaMotivos.Lugares(processo), escolhidos)];

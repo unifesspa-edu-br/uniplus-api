@@ -7,6 +7,7 @@ using Domain.ValueObjects;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence.CodigosDeContrato;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Protecao;
 using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
@@ -28,7 +29,10 @@ public sealed class EtapaProcessoConfiguration : IEntityTypeConfiguration<EtapaP
             t.HasCheckConstraint("ck_etapas_processo_periodo_em_ordem", "inicio IS NULL OR fim IS NULL OR inicio <= fim");
             t.HasCheckConstraint("ck_etapas_processo_nota_maxima_positiva", "nota_maxima IS NULL OR nota_maxima > 0");
             t.HasCheckConstraint("ck_etapas_processo_passo_positivo", "passo_do_lancamento IS NULL OR passo_do_lancamento > 0");
-            t.HasCheckConstraint("ck_etapas_processo_forma_de_avaliacao_valida", "forma_de_avaliacao IS NULL OR forma_de_avaliacao IN (1, 2)");
+            t.HasCheckConstraint(
+                "ck_etapas_processo_forma_de_avaliacao_valida",
+                $"forma_de_avaliacao IS NULL OR forma_de_avaliacao IN ({SqlDosCodigosDeContrato.Lista<FormaDeAvaliacao>()})");
+            t.HasCheckConstraint("ck_etapas_processo_carater_valido", $"carater IN ({SqlDosCodigosDeContrato.Lista<CaraterEtapa>()})");
         });
         builder.HasKey(e => e.Id);
         // Chave Guid v7 do domínio (EntityBase) — ValueGeneratedNever para o EF
@@ -45,8 +49,8 @@ public sealed class EtapaProcessoConfiguration : IEntityTypeConfiguration<EtapaP
         builder.Property(e => e.Ordem).IsRequired().HasComment("Posição da etapa no processo, a partir de um.");
 
         builder.Property(e => e.Nome).HasMaxLength(EtapaProcesso.NomeMaxLength).IsRequired().HasComment("Nome da etapa no processo seletivo.");
-        builder.Property(e => e.Carater).HasConversion<int>().IsRequired()
-            .HasComment($"Finalidade da etapa na avaliação. Códigos: {CodigosNumericos<CaraterEtapa>()}.");
+        builder.Property(e => e.Carater).HasMaxLength(TamanhoDoCodigoDeContrato.Maximo).IsRequired()
+            .HasComment("Finalidade da etapa na avaliação: classificatoria, eliminatoria ou ambas.");
 
         builder.Ignore(e => e.TipoEtapaOrigemId);
         // Sem produção em nenhum ambiente: o vínculo nasce obrigatório, sem coluna nullable
@@ -126,8 +130,8 @@ public sealed class EtapaProcessoConfiguration : IEntityTypeConfiguration<EtapaP
 
         builder.Property(e => e.FormaDeAvaliacao)
             .HasColumnName("forma_de_avaliacao")
-            .HasConversion<int>()
-            .HasComment($"Como a nota da etapa é obtida; ausente quando não definida. Códigos: {CodigosNumericos<FormaDeAvaliacao>()}.");
+            .HasMaxLength(TamanhoDoCodigoDeContrato.Maximo)
+            .HasComment("Como a nota da etapa é obtida: OBJETIVA ou HUMANA; ausente quando não definida.");
 
         // Só a forma humana tem regra de consolidação, mas a coerência é regra de gravação do
         // domínio, não de armazenamento: a coluna não a repete.
@@ -167,6 +171,4 @@ public sealed class EtapaProcessoConfiguration : IEntityTypeConfiguration<EtapaP
         // A unicidade da ordem é adiada pelo script de restrições para permitir trocas.
         builder.HasIndex(e => new { e.ProcessoSeletivoId, e.Ordem });
     }
-    private static string CodigosNumericos<TEnum>() where TEnum : struct, Enum =>
-        string.Join(", ", Enum.GetValues<TEnum>().Select(static valor => $"{Convert.ToInt32(valor, System.Globalization.CultureInfo.InvariantCulture)} ({valor})"));
 }

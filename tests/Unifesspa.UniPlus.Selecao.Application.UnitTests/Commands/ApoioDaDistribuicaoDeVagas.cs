@@ -8,6 +8,7 @@ using NSubstitute;
 
 using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 using Unifesspa.UniPlus.Configuracao.Contracts;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
@@ -58,8 +59,8 @@ internal static class ApoioDaDistribuicaoDeVagas
 
         internal Mocks ComRegraInstitucional()
         {
-            RegraCatalogoReader.ObterAsync(RegraDistribuicaoVagasCodigo.Institucional, "v1", Arg.Any<CancellationToken>())
-                .Returns(RegraDistribuicao(RegraDistribuicaoVagasCodigo.Institucional));
+            RegraCatalogoReader.ObterAsync(RegraDeDistribuicaoDeVagas.Institucional.Codigo(), "v1", Arg.Any<CancellationToken>())
+                .Returns(RegraDistribuicao(RegraDeDistribuicaoDeVagas.Institucional.Codigo()));
             return this;
         }
 
@@ -78,7 +79,7 @@ internal static class ApoioDaDistribuicaoDeVagas
 
     /// <summary>Distribuição institucional de uma oferta, com a ampla concorrência como única modalidade.</summary>
     internal static ConfiguracaoDistribuicaoVagasInput DistribuicaoInstitucional(Guid ofertaCursoId, Guid modalidadeId, int vagas) =>
-        new(ofertaCursoId, vagas, 1m, RegraDistribuicaoVagasCodigo.Institucional, "v1", null, null, null,
+        new(ofertaCursoId, vagas, 1m, RegraDeDistribuicaoDeVagas.Institucional.Codigo(), "v1", null, null, null,
             [modalidadeId], [new QuantidadeVagaInput(modalidadeId, vagas)]);
 
     /// <summary>Distribuição sem quadro de vagas, para os testes que recusam antes de conferi-lo.</summary>
@@ -113,5 +114,5 @@ internal static class ApoioDaDistribuicaoDeVagas
 
     internal static ModalidadeView NovaModalidadeCotaReservada(Guid id, string codigo) => new(
         id, codigo, null, "COTA_RESERVADA", "DENTRO_DA_RESERVA_LEGAL",
-        null, "SEGUE_CASCATA", null, null, null, PredicadoDnf.CriarDeCondicoesAgrupadas([]).Value!, null, "Lei 12.711/2012 art. 3º");
+        null, "SEGUE_ORDEM_DE_REMANEJAMENTO", null, null, null, PredicadoDnf.CriarDeCondicoesAgrupadas([]).Value!, null, "Lei 12.711/2012 art. 3º");
 }

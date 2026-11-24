@@ -1,99 +1,48 @@
 namespace Unifesspa.UniPlus.Selecao.Domain.Enums;
 
-/// <summary>
-/// Tipo de uma regra do <c>regras_do_catalogo</c> — a biblioteca de regras tipadas
-/// e versionadas que a configuração do Processo Seletivo referencia
-/// (<c>codigo</c>+<c>versao</c>+<c>hash</c>), congelando-a no snapshot de
-/// publicação (congelamento dos parâmetros na publicação, UNI-REQ-0019). "Configurável, não programável": o comportamento
-/// (fórmula, distribuição de vagas, bônus, desempate, …) é conteúdo de uma
-/// regra versionada, não constante do motor — lei muda → nova versão, não
-/// deploy.
-/// </summary>
-/// <remarks>
-/// <para>
-/// Onze dos treze tipos vêm da modelagem do CEPS para distribuição de vagas e
-/// para classificação (com desempate e bônus), validada contra Postgres real.
-/// O décimo segundo (<see cref="AlgoritmoContagemPrazo"/>) veio da revisão do
-/// UNI-REQ-0112, que deixou de eleger uma leitura universal para a contagem do
-/// prazo de recurso e passou a exigir que o edital declare qual convenção usa.
-/// O décimo terceiro (<see cref="RegraConsolidacao"/>) é a regra que a etapa de
-/// avaliação humana declara para transformar as notas dos avaliadores na nota da etapa.
-/// O décimo quarto (<see cref="RegraProcedimentoRecurso"/>) é o procedimento com que o edital declara
-/// revisar o recurso de cada matéria.
-/// O sentinela <see cref="Nenhuma"/> garante que <c>default(TipoRegra)</c>
-/// nunca colida com um tipo real — a factory o rejeita explicitamente.
-/// </para>
-/// <para>
-/// Cada valor mapeia para um código textual canônico snake_case
-/// (<c>ToCodigo</c>) — o valor persistido na coluna <c>tipo</c> e o token que
-/// entra no hash content-addressable da regra. Renumerar o enum não muda o
-/// hash de regras existentes (o hash usa o código textual, não o ordinal).
-/// </para>
-/// </remarks>
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
+
 public enum TipoRegra
 {
-    Nenhuma = 0,
-
-    /// <summary>Fórmula da nota final (ex.: <c>FORMULA-MEDIA-PONDERADA</c>, <c>CLASSIFICACAO-IMPORTADA</c>).</summary>
+    [CodigoDeContrato("REGRA_CALCULO", "Cálculo da nota", Descricao = "Cálculo da nota.")]
     RegraCalculo = 1,
 
-    /// <summary>Precisão da nota (ex.: <c>PRECISAO-TRUNCAR</c>, <c>PRECISAO-ARREDONDAR-CIMA</c>).</summary>
+    [CodigoDeContrato("REGRA_ARREDONDAMENTO", "Arredondamento da nota", Descricao = "Arredondamento da nota.")]
     RegraArredondamento = 2,
 
-    /// <summary>Eliminação do candidato, por nota, por área ou por ausência (ex.: <c>ELIM-NOTA-MINIMA-ETAPA</c>, <c>ELIM-CORTE-EM-AREA</c>, <c>ELIM-ZERO-EM-AREA</c>, <c>ELIM-FALTA-EM-DIA-DE-PROVA-ENEM</c>, <c>ELIM-AUSENCIA-NA-ETAPA</c>).</summary>
+    [CodigoDeContrato("REGRA_ELIMINACAO", "Eliminação", Descricao = "Eliminação.")]
     RegraEliminacao = 3,
 
-    /// <summary>Bônus sobre a nota final (ex.: <c>BONUS-MULTIPLICATIVO</c>).</summary>
+    [CodigoDeContrato("REGRA_FADA", "Fator de Atenuação das Desigualdades de Acesso (FADA)", Descricao = "Regra do Fator de Atenuação das Desigualdades de Acesso (FADA).")]
     RegraBonus = 4,
 
-    /// <summary>Critério de desempate (ex.: <c>DESEMPATE-IDOSO</c>, <c>DESEMPATE-MAIOR-NOTA-ETAPA</c>, <c>DESEMPATE-PREDICADO-FATO</c>).</summary>
+    [CodigoDeContrato("CRITERIO_DESEMPATE", "Critério de desempate", Descricao = "Critério de desempate.")]
     CriterioDesempate = 5,
 
-    /// <summary>Critério de remanejamento entre modalidades (cascata / cruzado PSIQ).</summary>
+    [CodigoDeContrato("CRITERIO_REMANEJAMENTO", "Critério de remanejamento", Descricao = "Critério de remanejamento.")]
     CriterioRemanejamento = 6,
 
-    /// <summary>
-    /// Ordem de alocação entre as opções de curso: 1ª opção, remanejamento dentro do curso, 2ª opção
-    /// só com a vaga remanescente, lista de espera (ex.: <c>ALOCACAO-PRIMEIRA-OPCAO-PRIORITARIA</c>).
-    /// </summary>
+    [CodigoDeContrato("REGRA_ORDEM_ALOCACAO", "Ordem de alocação", Descricao = "Ordem de alocação.")]
     RegraOrdemAlocacao = 7,
 
-    /// <summary>Enquadramento em cota (ex.: <c>RENDA-PER-CAPITA-LEI-12711</c>).</summary>
+    [CodigoDeContrato("REGRA_ELEGIBILIDADE", "Elegibilidade", Descricao = "Elegibilidade.")]
     RegraElegibilidade = 8,
 
-    /// <summary>Cálculo do quadro de vagas reservadas (ex.: <c>DISTRIBUICAO-LEI-12711</c>, <c>DISTRIBUICAO-INSTITUCIONAL</c>).</summary>
+    [CodigoDeContrato("REGRA_DISTRIBUICAO_VAGAS", "Distribuição de vagas", Descricao = "Distribuição de vagas.")]
     RegraDistribuicaoVagas = 9,
 
-    /// <summary>Reconciliação do estouro por arredondamento na distribuição (ex.: <c>RECONCILIACAO-VAGAS-ARTIGO-11-PARAGRAFO-UNICO</c>).</summary>
+    [CodigoDeContrato("REGRA_AJUSTE_DISTRIBUICAO_VAGAS", "Ajuste da distribuição de vagas", Descricao = "Ajuste da distribuição de vagas.")]
     RegraAjusteDistribuicaoVagas = 10,
 
-    /// <summary>Prazo/janela/instâncias do recurso (P-D cronograma).</summary>
+    [CodigoDeContrato("REGRA_PRAZO_RECURSO", "Prazo de recurso", Descricao = "Prazo de recurso.")]
     RegraPrazoRecurso = 11,
 
-    /// <summary>
-    /// Convenção nomeada de contagem do prazo de interposição (ex.:
-    /// <c>CONTAGEM-PRAZO-EXCLUI-DIA-INICIAL</c>). A entrada <b>descreve e
-    /// congela</b> a convenção — como resolve âncora fora da meia-noite e
-    /// âncora em dia não útil, em horas e em dias úteis; quem <b>executa</b> a
-    /// contagem é o motor, que consome a definição pelo par código e versão. O
-    /// algoritmo é escolhido pelo edital, não parametrizado
-    /// (<c>declaracao_da_regra</c> vazio).
-    /// </summary>
-    AlgoritmoContagemPrazo = 12,
+    [CodigoDeContrato("CONVENCAO_CONTAGEM_PRAZO", "Convenção de contagem do prazo", Descricao = "Convenção de contagem do prazo.")]
+    ConvencaoContagemPrazo = 12,
 
-    /// <summary>
-    /// Como as notas lançadas pelos avaliadores de uma etapa de avaliação humana viram a nota
-    /// da etapa (ex.: <c>CONSOLIDACAO-AVALIACAO-UNICA</c>,
-    /// <c>CONSOLIDACAO-CORRECAO-INDEPENDENTE</c>). A entrada descreve e congela a regra; quem
-    /// executa a consolidação é a apuração, que a consome pelo par código e versão.
-    /// </summary>
-    RegraConsolidacao = 13,
+    [CodigoDeContrato("REGRA_APURACAO_AVALIACAO", "Apuração da avaliação", Descricao = "Apuração da avaliação.")]
+    RegraApuracaoAvaliacao = 13,
 
-    /// <summary>
-    /// Como o recurso de uma matéria é revisado: a nova correção do material, a conferência de um fato
-    /// pela tabela, a correção de erro de registro ou o recálculo sobre insumos já conferidos. O rol é
-    /// fechado e o procedimento é dado congelado com a configuração, nunca fluxo programável; quem
-    /// executa o procedimento é a apuração do recurso, que o consome pelo par código e versão.
-    /// </summary>
+    [CodigoDeContrato("REGRA_PROCEDIMENTO_RECURSO", "Procedimento de recurso", Descricao = "Procedimento de recurso.")]
     RegraProcedimentoRecurso = 14,
 }

@@ -20,7 +20,7 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 /// <para>
 /// <b>O conjunto é guardado já deduplicado e na ordem canônica</b> (ASCII, <see cref="StringComparer.Ordinal"/>)
 /// — não na ordem em que o cliente enviou. Sem isso, duas requisições semanticamente iguais
-/// («numero_inscricao, nome_abreviado» e «nome_abreviado, numero_inscricao») persistiriam como
+/// («NUMERO_INSCRICAO, NOME_ABREVIADO» e «NOME_ABREVIADO, NUMERO_INSCRICAO») persistiriam como
 /// coleções distintas para o <c>ValueComparer</c> sequencial do jsonb, produzindo um <c>UPDATE</c>
 /// espúrio a cada requisição equivalente.
 /// </para>
@@ -28,13 +28,13 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 public sealed class ConfiguracaoDivulgacao : EntityBase, IParteDoProcesso
 {
     /// <summary>O piso da divulgação pública — sempre presente, é o único campo do default minimizado.</summary>
-    public const string NumeroInscricao = "numero_inscricao";
+    public const string NumeroInscricao = "NUMERO_INSCRICAO";
 
     /// <summary>Forma reduzida do nome do candidato (ADR-0082) — dispensa justificativa.</summary>
-    public const string NomeAbreviado = "nome_abreviado";
+    public const string NomeAbreviado = "NOME_ABREVIADO";
 
     /// <summary>Nome integral do candidato — exige justificativa (UNI-REQ-0050).</summary>
-    public const string Nome = "nome";
+    public const string Nome = "NOME";
 
     /// <summary>
     /// O vocabulário fechado da divulgação pública, na ordem canônica de apresentação — do
@@ -45,7 +45,7 @@ public sealed class ConfiguracaoDivulgacao : EntityBase, IParteDoProcesso
     /// <remarks>
     /// A ordem não é alfabética de propósito. Ela ordena por quanto cada campo identifica
     /// quem prestou o certame, que é a leitura que importa para quem decide o que publicar —
-    /// e a ordem alfabética colocaria <c>nome</c> antes de <c>nome_abreviado</c>, invertendo
+    /// e a ordem alfabética colocaria <c>NOME</c> antes de <c>NOME_ABREVIADO</c>, invertendo
     /// justamente esse sentido. A ordem em que os campos são <b>persistidos</b> continua
     /// sendo a canônica ASCII, decidida em <see cref="Criar"/>.
     /// </remarks>

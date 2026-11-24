@@ -48,7 +48,7 @@ public sealed class TaxaInscricaoSemFundamentoPersistenciaTests : IClassFixture<
     {
         Guid processoId = await SemearProcessoQueCobraComFundamentoAsync(
             $"PS 1310 {Guid.CreateVersion7()}");
-        await AdulterarFundamentosAsync(processoId, "[]");
+        await AdulterarFundamentosAsync(processoId, []);
         await using UniPlusDbContext db = _fixture.CreateDbContext();
         ProcessoSeletivo processo = await CarregarAsync(db, processoId);
 
@@ -80,7 +80,7 @@ public sealed class TaxaInscricaoSemFundamentoPersistenciaTests : IClassFixture<
         Guid processoId = await SemearProcessoQueCobraComFundamentoAsync(
             $"PS 1310 lixo {Guid.CreateVersion7()}");
 
-        await AdulterarFundamentosAsync(processoId, """["FUNDAMENTO_INEXISTENTE"]""");
+        await AdulterarFundamentosAsync(processoId, ["FUNDAMENTO_INEXISTENTE"]);
 
         await using UniPlusDbContext db = _fixture.CreateDbContext();
 
@@ -88,9 +88,9 @@ public sealed class TaxaInscricaoSemFundamentoPersistenciaTests : IClassFixture<
 
         // É o que fecha o buraco que o item de conformidade não precisa cobrir: uma lista com
         // token desconhecido nunca chega ao checklist como "lista não vazia" que passaria a
-        // contagem — o conversor da coluna recusa reserializar o sentinela e derruba a carga.
-        await carga.Should().ThrowAsync<ArgumentOutOfRangeException>(
-            "FundamentoIsencao.Nenhum não tem código canônico, e a persistência não inventa um");
+        // contagem — o conversor do código recusa o código desconhecido e derruba a carga.
+        await carga.Should().ThrowAsync<ArgumentException>(
+            "código desconhecido é recusado na leitura");
     }
 
     [Fact(DisplayName = "Contraprova: configuração hidratada com cobrança e fundamento reconhecido publica normalmente (issue #1310)")]
@@ -127,7 +127,7 @@ public sealed class TaxaInscricaoSemFundamentoPersistenciaTests : IClassFixture<
 
         Result<ConfiguracaoTaxaInscricao> taxa = ConfiguracaoTaxaInscricao.Criar(
             cobra: true, valor: 100m,
-            fundamentosCodigos: [FundamentoIsencaoCodigo.CadastroUnico]);
+            fundamentosCodigos: ["CADASTRO_UNICO"]);
         taxa.IsSuccess.Should().BeTrue(taxa.Error?.Message);
         processo.DefinirTaxaInscricao(taxa.Value!).IsSuccess.Should().BeTrue();
 
@@ -137,7 +137,7 @@ public sealed class TaxaInscricaoSemFundamentoPersistenciaTests : IClassFixture<
         return processo.Id;
     }
 
-    private async Task AdulterarFundamentosAsync(Guid processoId, string fundamentosJson)
+    private async Task AdulterarFundamentosAsync(Guid processoId, string[] fundamentos)
     {
         await using NpgsqlConnection conexao = new(_fixture.ConnectionString);
         await conexao.OpenAsync();
@@ -145,7 +145,7 @@ public sealed class TaxaInscricaoSemFundamentoPersistenciaTests : IClassFixture<
         await using NpgsqlCommand comando = new(
 AtualizacaoDosFundamentos,
             conexao);
-        comando.Parameters.AddWithValue("fundamentos", fundamentosJson);
+        comando.Parameters.AddWithValue("fundamentos", fundamentos);
         comando.Parameters.AddWithValue("processo", processoId);
 
         int afetadas = await comando.ExecuteNonQueryAsync();
@@ -177,7 +177,7 @@ AtualizacaoDosFundamentos,
         new DecisoesDeCronogramaDaFase(
             Ordem: 1, Inicio: new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero), Fim: new DateTimeOffset(2026, 1, 31, 0, 0, 0, TimeSpan.Zero), UnidadeResponsavel: UnidadesDeTeste.Ceps),
         new PublicacoesDaFase(
-            Produtos: [ProdutoDaFase.Criar(HomologacaoDasInscricoesDeTeste.ResultadoDaFase, PapelProdutoFase.Definitivo)],
+            Produtos: [ProdutoDaFase.Criar(HomologacaoDasInscricoesDeTeste.ResultadoDaFase, PapelDaPublicacaoPrevista.Definitivo)],
             EmiteParecerIndividual: false,
             RegraRecurso: null,
             TiposDeDecisao: [TipoMotivoDeDecisao.IsencaoDaTaxa.Codigo(), TipoMotivoDeDecisao.HomologacaoDasInscricoes.Codigo()],
@@ -187,7 +187,7 @@ AtualizacaoDosFundamentos,
     private const string AtualizacaoDosFundamentos =
             """
             UPDATE selecao.configuracoes_taxa_inscricao
-               SET fundamentos = @fundamentos::jsonb
+               SET fundamentos = @fundamentos::text[]
              WHERE processo_seletivo_id = @processo
             """;
 

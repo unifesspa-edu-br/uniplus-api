@@ -8,6 +8,7 @@ using NSubstitute;
 
 using Unifesspa.UniPlus.Application.Abstractions.Authentication;
 using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Domain.ValueObjects;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Enums;
@@ -74,7 +75,7 @@ public sealed class SubmeterInscricaoDocumentosTests
         fixado.ConstouDeEnvio.Should().BeTrue();
         DocumentoDoComprovante comprovante = Emitido(enviada).Documentos.Should().ContainSingle().Subject;
         comprovante.Nome.Should().Be("Laudo");
-        comprovante.Situacao.Should().Be(SituacaoDoDocumentoCodigo.Satisfeita);
+        comprovante.Situacao.Should().Be(SituacaoDoDocumento.Satisfeita.Codigo());
         comprovante.Arquivos.Should().Equal(new ArquivoDoComprovante(new string('a', 64), 1024, "PDF"));
         await documentos.Received(1).RemoverArquivoAsync(orfao, Arg.Any<CancellationToken>());
         await documentos.Received(1).AgendarLimpezaAsync(orfao.ChaveDefinitivaPrevista, Arg.Any<DateTimeOffset>(), Arg.Any<CancellationToken>());
@@ -90,13 +91,12 @@ public sealed class SubmeterInscricaoDocumentosTests
     }
 
     private static DocumentoExigido Documento(Guid fase, string nome, Aplicabilidade aplicabilidade, IReadOnlyList<CondicaoGatilho> condicoes) =>
-        new Unifesspa.UniPlus.Selecao.Domain.UnitTests.Cenarios.DocumentoExigidoBuilder()
-            .ComTipo(new CopiaDoTipoDeDocumento(Guid.CreateVersion7(), nome.ToUpperInvariant(), nome, "CAT", ProtecaoDoDocumentoDeTeste.Pessoal))
-            .ComMomento(new MomentoDaExigencia(fase, null, FinalidadeFormulario.Inscricao))
-            .ComAplicabilidade(new AplicabilidadeDaExigencia(aplicabilidade, condicoes))
-            .ComIndeferimento(new IndeferimentoDoDocumento(true, null, []))
-            .ComRequisitos(new RequisitosDoDocumento(FormatosPermitidos.Criar(true, null).Value!, null, null, null, null))
-            .ComFatos(null)
+        DocumentoExigidoDeTeste.Novo()
+            .NaFase(fase)
+            .ComTipo(nome.ToUpperInvariant(), nome, "CAT")
+            .ComAplicabilidade(aplicabilidade)
+            .ComCondicoes(condicoes)
+            .NaFinalidade(FinalidadeFormulario.Inscricao)
             .Criar().Value!;
 
     private async Task<(Result<ReciboDaInscricaoDto>, IDocumentoDaInscricaoRepository, ArquivoDaApresentacao, ArquivoDaApresentacao, Inscricao)> EnviarAsync(

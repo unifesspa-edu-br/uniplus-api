@@ -105,8 +105,8 @@ internal static class CoerenciaDosCamposDaModalidade
 
     private static FieldError? ValidarCoerenciaNaturezaRemanejamento(NaturezaLegal natureza, RegraRemanejamento? regra) => natureza switch
     {
-        NaturezaLegal.CotaReservada when regra != Enums.RegraRemanejamento.SegueCascata => RecusaDoRemanejamento(
-            ModalidadeErrorCodes.NaturezaRemanejamentoIncoerente, "Cota reservada exige regra de remanejamento SEGUE_CASCATA."),
+        NaturezaLegal.CotaReservada when regra != Enums.RegraRemanejamento.SegueOrdemDeRemanejamento => RecusaDoRemanejamento(
+            ModalidadeErrorCodes.NaturezaRemanejamentoIncoerente, "Cota reservada exige regra de remanejamento SEGUE_ORDEM_DE_REMANEJAMENTO."),
         NaturezaLegal.Ampla when regra is not null => RecusaDoRemanejamento(
             ModalidadeErrorCodes.NaturezaRemanejamentoIncoerente, "Ampla concorrência não admite regra de remanejamento."),
         NaturezaLegal.AcaoAfirmativa when regra is not (Enums.RegraRemanejamento.DestinoUnico or Enums.RegraRemanejamento.Cruzado) => RecusaDoRemanejamento(
@@ -118,7 +118,7 @@ internal static class CoerenciaDosCamposDaModalidade
     {
         Enums.RegraRemanejamento.DestinoUnico => ValidarParametrosDoDestinoUnico(parametros),
         Enums.RegraRemanejamento.Cruzado => ValidarParametrosDoCruzado(parametros),
-        // SegueCascata ou sem regra: nenhum parâmetro é permitido.
+        // SegueOrdemDeRemanejamento ou sem regra: nenhum parâmetro é permitido.
         _ => parametros.TemAlgum
             ? RecusaDoRemanejamento(ModalidadeErrorCodes.ParametrosRemanejamentoObrigatorio, "Nenhum parâmetro de remanejamento é admitido para esta regra.")
             : null,

@@ -65,7 +65,10 @@ public sealed class VigenciaDosLotesDoEnemEmEmpateTests : IClassFixture<Inscrica
         Escopo escopo = await NovoEscopoAsync(_fixture);
         Guid oferta = Guid.CreateVersion7();
         Guid inscricao = await InscricoesDoEnemDeTeste.NovaInscricaoAsync(
-            _fixture, escopo.ProcessoId, PersonasDeTeste.Candidatas[0], SituacaoInscricao.Submetida, Edicao, ofertaCursoId: oferta);
+            _fixture, new(escopo.ProcessoId, PersonasDeTeste.Candidatas[0], SituacaoInscricao.Submetida, Edicao)
+            {
+                OfertaCursoId = oferta,
+            });
 
         (LoteDeNotasDoEnem deIdMenor, LoteDeNotasDoEnem deIdMaior) = PorIdentificador(
             LoteCom(escopo, inscricao, oferta, 500m, new string('b', 64)),

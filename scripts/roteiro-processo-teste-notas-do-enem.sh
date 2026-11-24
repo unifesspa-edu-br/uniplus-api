@@ -123,13 +123,13 @@ cadastrar_pesos_por_area() {
 definir_classificacao() {
     log "Definir Classificação (média ponderada pelos pesos por área, truncada em 2 casas)"
     api PUT "/api/selecao/processos-seletivos/$PROCESSO_ID/classificacao" "$(jq -nc --arg r "$RESOLUCAO_PESOS" '{
-        regraCalculoCodigo: "FORMULA-MEDIA-PONDERADA", regraCalculoVersao: "v1",
-        regraArredondamentoCodigo: "PRECISAO-TRUNCAR", regraArredondamentoVersao: "v1",
+        regraCalculoCodigo: "FORMULA_MEDIA_PONDERADA", regraCalculoVersao: "v1",
+        regraArredondamentoCodigo: "PRECISAO_TRUNCAR", regraArredondamentoVersao: "v1",
         casasArredondamento: 2,
-        regraOrdemAlocacaoCodigo: "ALOCACAO-PRIMEIRA-OPCAO-PRIORITARIA", regraOrdemAlocacaoVersao: "v1",
+        regraOrdemAlocacaoCodigo: "ALOCACAO_PRIMEIRA_OPCAO_PRIORITARIA", regraOrdemAlocacaoVersao: "v1",
         regrasEliminacao: [
-            {regraCodigo: "ELIM-CORTE-EM-AREA", regraVersao: "v1", etapaRef: null, notaMinima: null, minimo: 400, areaCodigo: "REDACAO"},
-            {regraCodigo: "ELIM-ZERO-EM-AREA", regraVersao: "v1", etapaRef: null, notaMinima: null, minimo: null, areaCodigo: null}
+            {regraCodigo: "ELIMINACAO_CORTE_EM_AREA", regraVersao: "v1", etapaRef: null, notaMinima: null, minimo: 400, areaCodigo: "REDACAO"},
+            {regraCodigo: "ELIMINACAO_ZERO_EM_AREA", regraVersao: "v1", etapaRef: null, notaMinima: null, minimo: null, areaCodigo: null}
         ],
         baseadoEmEnem: true, resolucaoPesoAreaEnem: $r, escalaNotaFinal: 1000
     }')" >/dev/null
@@ -147,7 +147,7 @@ definir_etapa_nota_do_enem() {
     tipo_id=$(api_get "/api/configuracao/tipos-etapa?limit=100" | jq -r '.[] | select(.avaliacao.notaDeOrigemNoEnem==true and .ativo==true) | .id' | head -1)
     exigir_id "tipo de etapa com nota de origem no ENEM" "$tipo_id"
     api PUT "/api/selecao/processos-seletivos/$PROCESSO_ID/etapas" "$(jq -nc --arg t "$tipo_id" '[{
-        nome: "Nota do ENEM", carater: "ambas", tipoEtapaOrigemId: $t, peso: 1, notaMinima: null,
+        nome: "Nota do ENEM", carater: "AMBAS", tipoEtapaOrigemId: $t, peso: 1, notaMinima: null,
         ordem: 1, faseCodigo: "CLASSIFICACAO", produtos: [], inicio: null, fim: null,
         emiteParecerIndividual: false, bancas: [], recursos: []
     }]')" >/dev/null

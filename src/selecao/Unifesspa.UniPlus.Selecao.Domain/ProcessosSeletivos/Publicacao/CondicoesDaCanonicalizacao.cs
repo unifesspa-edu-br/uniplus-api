@@ -22,7 +22,7 @@ internal static class CondicoesDaCanonicalizacao
         new("documentosExigidos", static (configuracao, _) => PendenciasDasExigencias.PendenciaDaFinalidadeDasExigencias(configuracao)),
         new("documentosExigidos", static (configuracao, cadastros) => ProtecaoDasExigencias.PendenciaDoFatoComprovadoForaDoProcesso(configuracao, cadastros.Protecao)),
         new("documentosExigidos", static (configuracao, cadastros) => ProtecaoDasExigencias.PendenciaDaProtecaoDasExigencias(configuracao, cadastros.Protecao)),
-        new("documentosExigidos", static (configuracao, cadastros) => ConsequenciaDeIndeferimento.PendenciaDeCoerenciaDaConsequenciaDeIndeferimento(configuracao, cadastros.FatosDeModalidade)),
+        new("documentosExigidos", static (configuracao, cadastros) => CoerenciaDaConsequenciaDoIndeferimento.PendenciaDeCoerenciaDaConsequenciaDeIndeferimento(configuracao, cadastros.FatosDeModalidade)),
         new("coleta", static (configuracao, _) => ReferenciaTemporalDosFatos.PendenciaDaReferenciaTemporalFatos(configuracao)),
         new("distribuicaoVagas", static (configuracao, cadastros) => PendenciasDosFatos.PendenciaDasRegrasDasModalidades(configuracao, cadastros.FatosDeModalidade.MembroPorAgregado)),
         new("coleta", static (configuracao, _) => PendenciasDosFatos.PendenciaDeFatosCitados(configuracao)),
