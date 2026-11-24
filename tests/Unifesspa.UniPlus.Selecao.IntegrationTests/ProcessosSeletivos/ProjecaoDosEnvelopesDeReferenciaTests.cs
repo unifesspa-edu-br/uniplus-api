@@ -2,7 +2,6 @@ namespace Unifesspa.UniPlus.Selecao.IntegrationTests.ProcessosSeletivos;
 
 using System.Globalization;
 using System.Text.Json.Nodes;
-using System.Text.RegularExpressions;
 
 using AwesomeAssertions;
 
@@ -30,7 +29,16 @@ public sealed class ProjecaoDosEnvelopesDeReferenciaTests
         erros.Should().BeEmpty("as violações do esquema são: {0}", string.Join("; ", erros.Select(erro => $"{erro.Field}: {erro.Error.Message}")));
     }
 
-    private static string ComIdentificadoresReais(string congelado) =>
-        Regex.Replace(congelado, "<<id-(\\d+)>>", ocorrencia =>
-            new Guid(int.Parse(ocorrencia.Groups[1].Value, CultureInfo.InvariantCulture), 0, 0, new byte[8]).ToString());
+    private static string ComIdentificadoresReais(string congelado)
+    {
+        string[] trechos = congelado.Split("<<id-");
+        return trechos[0] + string.Concat(trechos.Skip(1).Select(IdentificadorSeguidoDoRestoDoTrecho));
+    }
+
+    private static string IdentificadorSeguidoDoRestoDoTrecho(string trecho)
+    {
+        int fim = trecho.IndexOf(">>", StringComparison.Ordinal);
+        Guid identificador = new(int.Parse(trecho[..fim], CultureInfo.InvariantCulture), 0, 0, new byte[8]);
+        return identificador + trecho[(fim + 2)..];
+    }
 }
