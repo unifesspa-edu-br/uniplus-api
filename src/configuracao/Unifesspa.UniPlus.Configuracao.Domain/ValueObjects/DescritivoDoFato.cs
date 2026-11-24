@@ -15,4 +15,4 @@ public sealed record DescritivoDoFato(
     string Codigo,
     string Nome,
     string? Descricao,
-    ComponenteDeExibicao? ComponenteExibicao = null);
+    CodigoInformado<ComponenteDeExibicao> ComponenteExibicao = default);

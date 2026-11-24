@@ -16,6 +16,7 @@ using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Seed;
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Readers;
 using Unifesspa.UniPlus.Configuracao.IntegrationTests.Infrastructure;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Enums;
@@ -35,21 +36,15 @@ public sealed class FatoCandidatoSementeTests
         _fixture = fixture;
     }
 
+    // O seed materializa linhas direto pela migration, sem passar pela factory. Este teste fecha essa
+    // lacuna: cada item semeado satisfaz as invariantes de FatoCandidato.Criar (formato de código, tamanho
+    // de nome, coerência binding × origem, ponto de resolução canônico).
     [Fact(DisplayName = "Todo item do seed passa pela factory de domínio — a linha materializada é construível")]
     public void Seed_TodoItemEhAceitoPelaFactory()
     {
-        // O seed materializa linhas direto pela migration, sem passar pela factory.
-        // Este teste fecha essa lacuna: garante que cada item semeado satisfaz as
-        // invariantes de FatoCandidato.Criar (formato de código, tamanho de nome,
-        // coerência binding × origem, ponto de resolução canônico).
         foreach (FatoCandidatoSeedItem item in FatoCandidatoSeed.Itens)
         {
-            Result<FatoCandidato> resultado = CriacaoDoFato.Criar(
-                new DescritivoDoFato(item.Codigo, item.Nome, item.Descricao),
-                item.Origem,
-                item.Binding,
-                new DefinicaoDoFato(item.Dominio, item.Cardinalidade, item.FonteValores, item.Formato, item.PontoResolucao, item.Escopo, item.ClassificacaoProtecao, item.FinalidadeTratamento, FatoCandidatoSeed.HipoteseLegal),
-                sistema: true);
+            Result<FatoCandidato> resultado = CriarPelaFactory(item);
 
             resultado.IsSuccess.Should().BeTrue(
                 $"o item semeado {item.Codigo} deve satisfazer as invariantes de domínio; erro: {resultado.Error?.Code}");
@@ -65,69 +60,49 @@ public sealed class FatoCandidatoSementeTests
         FatoCandidatoSeed.Itens.Single(i => i.Codigo == codigo).ClassificacaoProtecao
             .Should().Be(ClassificacaoDeProtecao.Identificador);
 
+    // Os quatro blocos do formulário de cotas. A elegibilidade de PPI é COR_RACA (categórico); as demais
+    // são booleanas. O opt-in é sempre booleano.
     [Fact(DisplayName = "Cada cota tem par elegibilidade + opt-in como fatos independentes (UNI-REQ-0078)")]
     public async Task Seed_CadaCotaTemParElegibilidadeEOptIn()
     {
-        await using UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null);
+        List<FatoCandidato> fatos = await FatosDeSistemaAsync();
 
-        List<FatoCandidato> fatos = await ctx.FatosCandidato.AsNoTracking().Where(static f => f.SemeadoPeloSistema).ToListAsync();
-
-        // Os quatro blocos do formulário de cotas. A elegibilidade de PPI é COR_RACA
-        // (categórico); as demais são booleanas. O opt-in é sempre booleano.
-        (string Elegibilidade, string OptIn)[] pares =
-        [
-            ("PCD", "CONCORRER_PCD"),
-            ("EGRESSO_ESCOLA_PUBLICA", "CONCORRER_EP"),
-            ("COR_RACA", "CONCORRER_PPI"),
-            ("QUILOMBOLA", "CONCORRER_Q"),
-            ("BAIXA_RENDA", "CONCORRER_RENDA"),
-        ];
-
-        foreach ((string elegibilidade, string optIn) in pares)
+        foreach ((string elegibilidade, string optIn) in ParesDeCota)
         {
-            FatoCandidato fatoElegibilidade = fatos.Single(f => f.Codigo == elegibilidade);
-            FatoCandidato fatoOptIn = fatos.Single(f => f.Codigo == optIn);
-
-            fatoElegibilidade.Id.Should().NotBe(fatoOptIn.Id,
-                $"{elegibilidade} e {optIn} são fatos independentes — a elegibilidade sozinha não coloca na cota");
-            fatoOptIn.Dominio.Should().Be(TipoDoDado.SimOuNao);
-            fatoOptIn.Origem.Should().Be(OrigemFato.Declarado,
-                "o opt-in é seleção direta do candidato, ainda que expresse vontade e não elegibilidade");
-            fatoOptIn.Cardinalidade.Should().Be(QuantidadeDeValores.ValorUnico);
+            ConferirParDeCota(fatos, elegibilidade, optIn);
         }
     }
 
+    // Quatro fatos já existiam antes desta leva e são REUTILIZADOS, não recadastrados: renomeá-los violaria
+    // a imutabilidade de código da ADR-0111.
     [Fact(DisplayName = "Fatos reutilizados mantêm a identidade semeada — o vocabulário não duplica código")]
     public async Task Seed_FatosPreexistentesSaoReutilizadosSemDuplicar()
     {
-        await using UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null);
+        List<FatoCandidato> fatos = await FatosDeSistemaAsync();
 
-        List<FatoCandidato> fatos = await ctx.FatosCandidato.AsNoTracking().Where(static f => f.SemeadoPeloSistema).ToListAsync();
-
-        // Quatro fatos já existem no catálogo e são REUTILIZADOS, não recadastrados:
-        // renomeá-los violaria a imutabilidade de código da ADR-0111.
-        (string Codigo, string IdSufixo)[] reutilizados =
-        [
-            ("COR_RACA", "001"),
-            ("QUILOMBOLA", "002"),
-            ("PCD", "003"),
-            ("EGRESSO_ESCOLA_PUBLICA", "004"),
-        ];
-
-        foreach ((string codigo, string idSufixo) in reutilizados)
+        foreach ((string codigo, string idSufixo) in Reutilizados)
         {
-            FatoCandidato fato = fatos.Single(f => f.Codigo == codigo);
-            fato.Id.Should().Be(Guid.Parse($"fa700000-0000-7000-8000-{idSufixo.PadLeft(12, '0')}"),
+            fatos.Single(f => f.Codigo == codigo).Id.Should().Be(Guid.Parse($"fa700000-0000-7000-8000-{idSufixo.PadLeft(12, '0')}"),
                 $"{codigo} preserva o Guid determinístico da semeadura original");
         }
 
         fatos.Select(f => f.Codigo).Should().OnlyHaveUniqueItems("o catálogo nunca tem dois fatos com o mesmo código");
         fatos.Select(f => f.Id).Should().OnlyHaveUniqueItems();
+    }
 
-        // Nenhum código adjacente foi criado como sinônimo dos reutilizados.
+    [Fact(DisplayName = "Nenhum código adjacente foi criado como sinônimo dos fatos reutilizados")]
+    public async Task Seed_FatosReutilizados_NaoTemSinonimo()
+    {
+        List<FatoCandidato> fatos = await FatosDeSistemaAsync();
+
         fatos.Select(f => f.Codigo).Should().NotContain(["PCD_AUTODECLARADO", "ESCOLA_PUBLICA"]);
+    }
 
-        // BAIXA_RENDA não substitui RENDA_PER_CAPITA: coexistem com naturezas distintas.
+    [Fact(DisplayName = "BAIXA_RENDA não substitui RENDA_PER_CAPITA: coexistem com naturezas distintas")]
+    public async Task Seed_BaixaRendaERendaPerCapita_CoexistemComNaturezasDistintas()
+    {
+        List<FatoCandidato> fatos = await FatosDeSistemaAsync();
+
         fatos.Single(f => f.Codigo == "BAIXA_RENDA").Origem.Should().Be(OrigemFato.Declarado);
         fatos.Single(f => f.Codigo == "RENDA_PER_CAPITA").Origem.Should().Be(OrigemFato.Calculado);
     }
@@ -135,12 +110,7 @@ public sealed class FatoCandidatoSementeTests
     [Fact(DisplayName = "Fato booleano não recebe FatoValorDominio (ADR-0111/ADR-0116)")]
     public async Task Seed_BooleanoNaoRecebeValorDominio()
     {
-        await using UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null);
-
-        List<FatoCandidato> booleanos = await ctx.FatosCandidato.AsNoTracking()
-            .Where(f => f.Dominio == TipoDoDado.SimOuNao)
-            .Include(f => f.ValoresDominioDeclarados)
-            .ToListAsync();
+        List<FatoCandidato> booleanos = await BooleanosComValoresAsync();
 
         // Prende a leva nova: sem os seis fatos desta story o conjunto não os contém.
         booleanos.Select(f => f.Codigo).Should().Contain(
@@ -155,29 +125,14 @@ public sealed class FatoCandidatoSementeTests
     [Fact(DisplayName = "Seed materializa exatamente os fatos de sistema, batendo com a fonte única")]
     public async Task Seed_MaterializaTodosOsFatosDaFonteUnica()
     {
-        await using UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null);
-
-        List<FatoCandidato> fatos = await ctx.FatosCandidato.AsNoTracking().Where(static f => f.SemeadoPeloSistema).ToListAsync();
+        List<FatoCandidato> fatos = await FatosDeSistemaAsync();
 
         fatos.Should().HaveCount(FatoCandidatoSeed.Itens.Count).And.HaveCount(59);
         fatos.Select(f => f.Codigo).Should().OnlyHaveUniqueItems();
 
         foreach (FatoCandidatoSeedItem item in FatoCandidatoSeed.Itens)
         {
-            FatoCandidato persistido = fatos.Single(f => f.Codigo == item.Codigo);
-            persistido.Nome.Should().Be(item.Nome);
-            persistido.Dominio.Should().Be(item.Dominio);
-            persistido.Origem.Should().Be(item.Origem);
-            persistido.Cardinalidade.Should().Be(item.Cardinalidade);
-            persistido.PontoResolucao.Should().Be(item.PontoResolucao);
-            persistido.Binding.Should().Be(item.Binding);
-            persistido.Formato.Should().Be(item.Formato);
-
-            persistido.ClassificacaoProtecao.Should().Be(item.ClassificacaoProtecao);
-            persistido.Escopo.Should().Be(item.Escopo);
-            persistido.FinalidadeTratamento.Should().Be(item.FinalidadeTratamento);
-            persistido.SemeadoPeloSistema.Should().BeTrue($"{item.Codigo} é semeado pelo sistema");
-            persistido.Ativo.Should().BeTrue();
+            ConferirItemPersistido(item, fatos.Single(f => f.Codigo == item.Codigo));
         }
     }
 
@@ -185,31 +140,36 @@ public sealed class FatoCandidatoSementeTests
     public async Task Seed_SexoCivilIdentidadeDeGeneroEOrientacaoSexual_TemAsOpcoesFixas()
     {
         await using UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null);
-        FatoCandidatoReader reader = new(ctx);
 
-        Dictionary<string, string[]> esperado = new(StringComparer.Ordinal)
-        {
-            ["SEXO_CIVIL"] = ["FEMININO", "MASCULINO"],
-            ["IDENTIDADE_GENERO"] = ["PESSOA_CIS", "PESSOA_TRANSGENERO", "TRAVESTI", "TRANSEXUAL", "PESSOA_NAO_BINARIA", "PREFIRO_NAO_INFORMAR"],
-            ["ORIENTACAO_SEXUAL"] = ["HETEROSSEXUAL", "HOMOSSEXUAL", "BISSEXUAL", "ASSEXUAL", "PANSEXUAL", "PREFIRO_NAO_INFORMAR"],
-        };
-
-        foreach ((string codigo, string[] opcoes) in esperado)
+        foreach ((string codigo, string[] opcoes) in OpcoesFixas)
         {
             FatoCandidato fato = await ctx.FatosCandidato.AsNoTracking().Include(f => f.ValoresDominioDeclarados).SingleAsync(f => f.Codigo == codigo);
             fato.SemeadoPeloSistema.Should().BeTrue($"{codigo} é fato de sistema: o administrador não acrescenta nem desativa opção");
             fato.ValoresDominioDeclarados.OrderBy(v => v.Ordem).Select(v => v.Codigo).Should().Equal(opcoes);
             fato.ValoresDominioDeclarados.Should().OnlyContain(v => v.Ativo);
-
-            Result acrescimo = fato.AdicionarValorDominio("OUTRA", "Outra opção", 9, true);
-            acrescimo.IsFailure.Should().BeTrue($"o vocabulário de {codigo} é normativo");
+            fato.AdicionarValorDominio("OUTRA", "Outra opção", 9, true).IsFailure.Should().BeTrue($"o vocabulário de {codigo} é normativo");
         }
+    }
+
+    [Fact(DisplayName = "A identidade de gênero tem a descrição das opções que a issue fixa")]
+    public async Task Seed_IdentidadeDeGenero_TemADescricaoDasOpcoes()
+    {
+        await using UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null);
+        FatoCandidatoReader reader = new(ctx);
 
         FatoCandidatoView genero = (await reader.ObterPorCodigoAsync("IDENTIDADE_GENERO"))!;
+
         genero.ValoresDominioDeclarados!.Single(v => v.Codigo == "PESSOA_NAO_BINARIA").Descricao.Should().Be("Pessoa não binária");
         genero.ValoresDominioDeclarados!.Single(v => v.Codigo == "PREFIRO_NAO_INFORMAR").Descricao.Should().Be("Prefiro não informar");
+    }
+
+    [Fact(DisplayName = "O sexo passa a biológico")]
+    public async Task Seed_Sexo_EhBiologico()
+    {
+        await using UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null);
 
         FatoCandidato sexo = await ctx.FatosCandidato.AsNoTracking().SingleAsync(f => f.Codigo == "SEXO");
+
         sexo.Nome.Should().Be("Sexo biológico");
     }
 
@@ -239,7 +199,7 @@ public sealed class FatoCandidatoSementeTests
         FatoCandidato nome = await ctx.FatosCandidato.AsNoTracking().SingleAsync(f => f.Codigo == "NOME");
 
         nome.Formato.Should().Be(FormatoTexto.Livre);
-        string token = FormatosTexto.ParaTokenCanonico(nome.Formato!.Value);
+        string token = nome.Formato!.Value.Codigo();
         foreach (string civil in new[] { "Maria S. Silva", "Madonna", "Helena Souza Barros 2º" })
         {
             new FormatoDeTexto(token).FormaCanonica(civil).Should().Be(civil);
@@ -258,26 +218,42 @@ public sealed class FatoCandidatoSementeTests
         formatos.Values.Should().OnlyContain(f => f == FormatoTexto.NomePessoa).And.HaveCount(3);
     }
 
-    [Fact(DisplayName = "Cor ou raça, deficiência, tipo de deficiência e atendimento são sensíveis; a modalidade e as opções de concorrer, internas; CPF, RG e documento do estrangeiro são identificador; os demais, pessoais")]
-    public async Task Seed_ClassificacaoDeProtecao()
+    [Fact(DisplayName = "Cor ou raça, deficiência, tipo de deficiência e atendimento são sensíveis")]
+    public async Task Seed_ClassificacaoSensivel()
     {
-        await using UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null);
+        List<FatoCandidato> fatos = await FatosDeSistemaAsync();
 
-        List<FatoCandidato> fatos = await ctx.FatosCandidato.AsNoTracking().Where(static f => f.SemeadoPeloSistema).ToListAsync();
+        CodigosComClassificacao(fatos, ClassificacaoDeProtecao.Sensivel).Should().Equal(
+            "CONDICAO_ATENDIMENTO", "COR_RACA", "IDENTIDADE_GENERO", "INDIGENA", "ORIENTACAO_SEXUAL", "PCD", "QUILOMBOLA",
+            "RECURSO_ACESSIBILIDADE", "TIPO_DEFICIENCIA");
+    }
 
-        fatos.Where(f => f.ClassificacaoProtecao == ClassificacaoDeProtecao.Sensivel)
-            .Select(f => f.Codigo).Order(StringComparer.Ordinal).Should().Equal(
-                "CONDICAO_ATENDIMENTO", "COR_RACA", "IDENTIDADE_GENERO", "INDIGENA", "ORIENTACAO_SEXUAL", "PCD", "QUILOMBOLA",
-                "RECURSO_ACESSIBILIDADE", "TIPO_DEFICIENCIA");
-        fatos.Where(f => f.ClassificacaoProtecao == ClassificacaoDeProtecao.Interno)
-            .Select(f => f.Codigo).Order(StringComparer.Ordinal).Should().Equal(
-                "CONCORRER_EP", "CONCORRER_PCD", "CONCORRER_PPI", "CONCORRER_Q", "CONCORRER_RENDA", "CONCORRER_VAGA_POR_ACRESCIMO",
-                "MODALIDADE", "MODALIDADE_CONVOCACAO", "MODALIDADE_SEGUNDA_OPCAO");
+    [Fact(DisplayName = "A modalidade e as opções de concorrer são internas")]
+    public async Task Seed_ClassificacaoInterna()
+    {
+        List<FatoCandidato> fatos = await FatosDeSistemaAsync();
+
+        CodigosComClassificacao(fatos, ClassificacaoDeProtecao.Interno).Should().Equal(
+            "CONCORRER_EP", "CONCORRER_PCD", "CONCORRER_PPI", "CONCORRER_Q", "CONCORRER_RENDA", "CONCORRER_VAGA_POR_ACRESCIMO",
+            "MODALIDADE", "MODALIDADE_CONVOCACAO", "MODALIDADE_SEGUNDA_OPCAO");
+    }
+
+    [Fact(DisplayName = "CPF, RG e documento do estrangeiro são identificador")]
+    public async Task Seed_ClassificacaoIdentificador()
+    {
+        List<FatoCandidato> fatos = await FatosDeSistemaAsync();
+
+        CodigosComClassificacao(fatos, ClassificacaoDeProtecao.Identificador).Should().Equal(
+            "CPF", "PASSAPORTE_NUMERO", "RG_NUMERO", "RNM_NUMERO");
+    }
+
+    [Fact(DisplayName = "Nenhum fato de sistema é público; o nome social e os demais são pessoais")]
+    public async Task Seed_ClassificacaoPessoal()
+    {
+        List<FatoCandidato> fatos = await FatosDeSistemaAsync();
+
         fatos.Should().NotContain(f => f.ClassificacaoProtecao == ClassificacaoDeProtecao.Publico);
         fatos.Single(f => f.Codigo == "NOME_SOCIAL").ClassificacaoProtecao.Should().Be(ClassificacaoDeProtecao.Pessoal);
-        fatos.Where(f => f.ClassificacaoProtecao == ClassificacaoDeProtecao.Identificador)
-            .Select(f => f.Codigo).Order(StringComparer.Ordinal).Should().Equal(
-                "CPF", "PASSAPORTE_NUMERO", "RG_NUMERO", "RNM_NUMERO");
         fatos.Where(f => f.ClassificacaoProtecao is not (
                 ClassificacaoDeProtecao.Sensivel or ClassificacaoDeProtecao.Interno or ClassificacaoDeProtecao.Publico or ClassificacaoDeProtecao.Identificador))
             .Should().OnlyContain(f => f.ClassificacaoProtecao == ClassificacaoDeProtecao.Pessoal);
@@ -295,5 +271,87 @@ public sealed class FatoCandidatoSementeTests
         fato.Cardinalidade.Should().Be(QuantidadeDeValores.VariosValores);
         fato.FonteValores.Should().Be(FonteValoresFato.Modalidade);
         fato.ClassificacaoProtecao.Should().Be(ClassificacaoDeProtecao.Interno);
+    }
+
+    private static readonly (string Elegibilidade, string OptIn)[] ParesDeCota =
+    [
+        ("PCD", "CONCORRER_PCD"),
+        ("EGRESSO_ESCOLA_PUBLICA", "CONCORRER_EP"),
+        ("COR_RACA", "CONCORRER_PPI"),
+        ("QUILOMBOLA", "CONCORRER_Q"),
+        ("BAIXA_RENDA", "CONCORRER_RENDA"),
+    ];
+
+    private static readonly (string Codigo, string IdSufixo)[] Reutilizados =
+    [
+        ("COR_RACA", "001"),
+        ("QUILOMBOLA", "002"),
+        ("PCD", "003"),
+        ("EGRESSO_ESCOLA_PUBLICA", "004"),
+    ];
+
+    private static readonly Dictionary<string, string[]> OpcoesFixas = new(StringComparer.Ordinal)
+    {
+        ["SEXO_CIVIL"] = ["FEMININO", "MASCULINO"],
+        ["IDENTIDADE_GENERO"] = ["PESSOA_CIS", "PESSOA_TRANSGENERO", "TRAVESTI", "TRANSEXUAL", "PESSOA_NAO_BINARIA", "PREFIRO_NAO_INFORMAR"],
+        ["ORIENTACAO_SEXUAL"] = ["HETEROSSEXUAL", "HOMOSSEXUAL", "BISSEXUAL", "ASSEXUAL", "PANSEXUAL", "PREFIRO_NAO_INFORMAR"],
+    };
+
+    private static Result<FatoCandidato> CriarPelaFactory(FatoCandidatoSeedItem item) =>
+        CriacaoDoFato.Criar(
+            new DescritivoDoFato(item.Codigo, item.Nome, item.Descricao),
+            item.Origem,
+            item.Binding,
+            new DefinicaoDoFato(item.Dominio, item.Cardinalidade, item.FonteValores, item.Formato, item.PontoResolucao, item.Escopo, item.ClassificacaoProtecao, item.FinalidadeTratamento, FatoCandidatoSeed.HipoteseLegal),
+            sistema: true);
+
+    private static void ConferirParDeCota(List<FatoCandidato> fatos, string elegibilidade, string optIn)
+    {
+        FatoCandidato fatoElegibilidade = fatos.Single(f => f.Codigo == elegibilidade);
+        FatoCandidato fatoOptIn = fatos.Single(f => f.Codigo == optIn);
+
+        fatoElegibilidade.Id.Should().NotBe(fatoOptIn.Id,
+            $"{elegibilidade} e {optIn} são fatos independentes — a elegibilidade sozinha não coloca na cota");
+        fatoOptIn.Dominio.Should().Be(TipoDoDado.SimOuNao);
+        fatoOptIn.Origem.Should().Be(OrigemFato.Declarado,
+            "o opt-in é seleção direta do candidato, ainda que expresse vontade e não elegibilidade");
+        fatoOptIn.Cardinalidade.Should().Be(QuantidadeDeValores.ValorUnico);
+    }
+
+    private static void ConferirItemPersistido(FatoCandidatoSeedItem item, FatoCandidato persistido)
+    {
+        persistido.Nome.Should().Be(item.Nome);
+        persistido.Dominio.Should().Be(item.Dominio);
+        persistido.Origem.Should().Be(item.Origem);
+        persistido.Cardinalidade.Should().Be(item.Cardinalidade);
+        persistido.PontoResolucao.Should().Be(item.PontoResolucao);
+        persistido.Binding.Should().Be(item.Binding);
+        persistido.Formato.Should().Be(item.Formato);
+
+        persistido.ClassificacaoProtecao.Should().Be(item.ClassificacaoProtecao);
+        persistido.Escopo.Should().Be(item.Escopo);
+        persistido.FinalidadeTratamento.Should().Be(item.FinalidadeTratamento);
+        persistido.SemeadoPeloSistema.Should().BeTrue($"{item.Codigo} é semeado pelo sistema");
+        persistido.Ativo.Should().BeTrue();
+    }
+
+    private static string[] CodigosComClassificacao(List<FatoCandidato> fatos, ClassificacaoDeProtecao classificacao) =>
+        [.. fatos.Where(f => f.ClassificacaoProtecao == classificacao).Select(f => f.Codigo).Order(StringComparer.Ordinal)];
+
+    private async Task<List<FatoCandidato>> FatosDeSistemaAsync()
+    {
+        await using UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null);
+
+        return await ctx.FatosCandidato.AsNoTracking().Where(static f => f.SemeadoPeloSistema).ToListAsync();
+    }
+
+    private async Task<List<FatoCandidato>> BooleanosComValoresAsync()
+    {
+        await using UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null);
+
+        return await ctx.FatosCandidato.AsNoTracking()
+            .Where(f => f.Dominio == TipoDoDado.SimOuNao)
+            .Include(f => f.ValoresDominioDeclarados)
+            .ToListAsync();
     }
 }

@@ -38,10 +38,13 @@ public sealed class FatoCandidatoTests
             .Error!.Code.Should().Be(FatoCandidatoErrorCodes.FonteValoresForaDeCategorico);
 
     [Theory(DisplayName = "Escopo ausente ou fora do vocabulário é recusado")]
-    [InlineData(EscopoFato.Nenhum)]
-    [InlineData((EscopoFato)999)]
-    public void Criar_EscopoInvalido_Recusa(EscopoFato escopo) =>
-        Criar(definicao: Definicao with { Escopo = escopo }).Error!.Code.Should().Be(FatoCandidatoErrorCodes.EscopoObrigatorio);
+    [InlineData(null)]
+    [InlineData("  ")]
+    [InlineData("TODOS")]
+    [InlineData("candidato")]
+    public void Criar_EscopoInvalido_Recusa(string? codigo) =>
+        Criar(definicao: Definicao with { Escopo = CodigoInformado<EscopoFato>.Ler(codigo) })
+            .Error!.Code.Should().Be(FatoCandidatoErrorCodes.EscopoObrigatorio);
 
     [Theory(DisplayName = "Fato de texto declara formato, e só ele")]
     [InlineData(TipoDoDado.Texto, null, FatoCandidatoErrorCodes.FormatoObrigatorio)]
@@ -129,7 +132,7 @@ public sealed class FatoCandidatoTests
 
     [Fact(DisplayName = "Editar nome, descrição e componente acumula as três violações")]
     public void AlterarDescritivo_AcumulaViolacoes() =>
-        Criar().Value!.AlterarDescritivo(" ", new string('x', 1001), (ComponenteDeExibicao)(-1))
+        Criar().Value!.AlterarDescritivo(" ", new string('x', 1001), CodigoInformado<ComponenteDeExibicao>.Ler("INEXISTENTE"))
             .Errors.Select(static e => e.Field).Should().BeEquivalentTo(["nome", "descricao", "componenteExibicao"]);
 
     [Theory(DisplayName = "Descrição em branco é recusada no cadastro e na edição do fato")]
@@ -146,13 +149,13 @@ public sealed class FatoCandidatoTests
     }
 
     [Theory(DisplayName = "Componente de exibição fora do vocabulário é recusado no cadastro; o declarado é aceito")]
-    [InlineData(ComponenteDeExibicao.Nenhum, false)]
-    [InlineData((ComponenteDeExibicao)99, false)]
-    [InlineData(ComponenteDeExibicao.Moeda, true)]
-    public void ComponenteDeExibicao_SoDoVocabularioFechado(ComponenteDeExibicao componente, bool aceito)
+    [InlineData("INEXISTENTE", false)]
+    [InlineData("moeda", false)]
+    [InlineData("MOEDA", true)]
+    public void ComponenteDeExibicao_SoDoVocabularioFechado(string codigo, bool aceito)
     {
         Result<FatoCandidato> resultado = CriacaoDoFato.CriarDoAdministrador(
-            new DescritivoDoFato("RENDA_BRUTA_FAMILIAR", "Renda bruta familiar", Descricao, componente),
+            new DescritivoDoFato("RENDA_BRUTA_FAMILIAR", "Renda bruta familiar", Descricao, CodigoInformado<ComponenteDeExibicao>.Ler(codigo)),
             new DefinicaoDoFato(TipoDoDado.Numerico, QuantidadeDeValores.ValorUnico, null, null, PontoResolucaoInscricao, EscopoFato.Candidato, ClassificacaoDeProtecao.Pessoal, Finalidade, HipoteseLegalTratamento.CumprimentoObrigacaoLegal));
 
         resultado.IsSuccess.Should().Be(aceito);
@@ -257,10 +260,10 @@ public sealed class FatoCandidatoTests
         resultado.Error!.Code.Should().Be(FatoCandidatoErrorCodes.DominioObrigatorio);
     }
 
-    [Fact(DisplayName = "Domínio fora do roster (cast inválido) é rejeitado como inválido, não aceito")]
-    public void Criar_DominioForaDoRoster_Falha()
+    [Fact(DisplayName = "Domínio com código desconhecido é rejeitado como inválido, não aceito")]
+    public void Criar_DominioDesconhecido_Falha()
     {
-        Result<FatoCandidato> resultado = Criar(definicao: Definicao with { Dominio = (TipoDoDado)999, FonteValores = null });
+        Result<FatoCandidato> resultado = Criar(definicao: Definicao with { Dominio = CodigoInformado<TipoDoDado>.Ler("INEXISTENTE"), FonteValores = null });
 
         resultado.IsFailure.Should().BeTrue("a factory não pode delegar a rejeição ao converter (que lançaria 500)");
         resultado.Error!.Code.Should().Be(FatoCandidatoErrorCodes.DominioInvalido);
@@ -275,10 +278,10 @@ public sealed class FatoCandidatoTests
         resultado.Error!.Code.Should().Be(FatoCandidatoErrorCodes.OrigemInvalida);
     }
 
-    [Fact(DisplayName = "Cardinalidade fora do roster (cast inválido) é rejeitada como inválida")]
-    public void Criar_CardinalidadeForaDoRoster_Falha()
+    [Fact(DisplayName = "Cardinalidade com código desconhecido é rejeitada como inválida")]
+    public void Criar_CardinalidadeDesconhecida_Falha()
     {
-        Result<FatoCandidato> resultado = Criar(definicao: Definicao with { Cardinalidade = (QuantidadeDeValores)999 });
+        Result<FatoCandidato> resultado = Criar(definicao: Definicao with { Cardinalidade = CodigoInformado<QuantidadeDeValores>.Ler("INEXISTENTE") });
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be(FatoCandidatoErrorCodes.CardinalidadeInvalida);

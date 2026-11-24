@@ -83,15 +83,15 @@ public sealed record PedidoDeDecisao(ItemDaProtecao Item, DecisaoFundamentada De
     // (a mesma que a transição aplica); nas demais decisões, ela não cabe.
     private static ClassificacaoDeProtecao? LerRecomendacao(AtoDaProtecao? ato, string? token, List<FieldError> erros)
     {
-        ClassificacaoDeProtecao? lida = TokensDoFato.Classificacao(token);
+        CodigoInformado<ClassificacaoDeProtecao> lida = TokensDoFato.Classificacao(token);
         if (ato == AtoDaProtecao.AjusteRecomendado)
         {
             Result conferida = AprovacaoDaProtecao.ConferirClassificacaoRecomendada(lida);
             erros.AddRange(conferida.Errors);
-            return conferida.IsSuccess ? lida : null;
+            return conferida.IsSuccess ? lida.Valor : null;
         }
 
-        if (ato is AtoDaProtecao.Aprovacao or AtoDaProtecao.Reprovacao && lida is not null)
+        if (ato is AtoDaProtecao.Aprovacao or AtoDaProtecao.Reprovacao && lida.Informado)
         {
             erros.Add(RecomendacaoNaoCabe);
         }
@@ -101,15 +101,15 @@ public sealed record PedidoDeDecisao(ItemDaProtecao Item, DecisaoFundamentada De
 
     private static ProtecaoDeDados? LerProtecaoConferida(ProtecaoInformada informada, List<FieldError> erros)
     {
-        ClassificacaoDeProtecao? classificacao = TokensDoFato.Classificacao(informada.ClassificacaoProtecao);
-        HipoteseLegalTratamento? hipotese = TokensDoFato.HipoteseLegal(informada.HipoteseLegal);
+        CodigoInformado<ClassificacaoDeProtecao> classificacao = TokensDoFato.Classificacao(informada.ClassificacaoProtecao);
+        CodigoInformado<HipoteseLegalTratamento> hipotese = TokensDoFato.HipoteseLegal(informada.HipoteseLegal);
         string? finalidade = string.IsNullOrWhiteSpace(informada.FinalidadeTratamento) ? null : informada.FinalidadeTratamento.Trim();
         int antes = erros.Count;
-        ExigirConferida("classificacaoProtecao", classificacao is not null and not (ClassificacaoDeProtecao)TokensDoFato.ForaDoVocabulario, erros);
-        ExigirConferida("hipoteseLegal", hipotese is not null and not (HipoteseLegalTratamento)TokensDoFato.ForaDoVocabulario, erros);
+        ExigirConferida("classificacaoProtecao", classificacao.Valor is not null, erros);
+        ExigirConferida("hipoteseLegal", hipotese.Valor is not null, erros);
         ExigirConferida("finalidadeTratamento", finalidade is not null, erros);
 
-        return erros.Count == antes ? new ProtecaoDeDados(classificacao!.Value, finalidade!, hipotese!.Value) : null;
+        return erros.Count == antes ? new ProtecaoDeDados(classificacao.Valor!.Value, finalidade!, hipotese.Valor!.Value) : null;
     }
 
     private static void ExigirConferida(string campo, bool conferida, List<FieldError> erros)

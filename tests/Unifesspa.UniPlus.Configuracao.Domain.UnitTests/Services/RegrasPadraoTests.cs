@@ -51,11 +51,11 @@ public sealed class RegrasPadraoTests
 
     [Theory(DisplayName = "Domínio do derivado no cadastro: ausente é obrigatório, fora do vocabulário é inválido")]
     [InlineData(null, FatoCandidatoErrorCodes.DominioObrigatorio)]
-    [InlineData((TipoDoDado)(-1), FatoCandidatoErrorCodes.DominioInvalido)]
-    public void CriarDerivado_DominioAusenteOuInvalido_RecusaComOCodigoDoDominio(TipoDoDado? dominio, string codigo) =>
+    [InlineData("INEXISTENTE", FatoCandidatoErrorCodes.DominioInvalido)]
+    public void CriarDerivado_DominioAusenteOuInvalido_RecusaComOCodigoDoDominio(string? codigoDoDominio, string codigo) =>
         CriacaoDoFato.CriarDerivadoDoAdministrador(
             new DescritivoDoFato("DERIVADO", "Derivado", "Descrição do fato."),
-            new DefinicaoDoFato(dominio, null, null, null, "INSCRICAO", EscopoFato.Candidato, ClassificacaoDeProtecao.Pessoal, Finalidade, Hipotese))
+            new DefinicaoDoFato(CodigoInformado<TipoDoDado>.Ler(codigoDoDominio), null, null, null, "INSCRICAO", EscopoFato.Candidato, ClassificacaoDeProtecao.Pessoal, Finalidade, Hipotese))
             .Errors.Select(static e => (e.Field, e.Error.Code)).Should().Equal(("dominio", codigo));
 
     [Fact(DisplayName = "Fato declarado não tem regras padrão")]
@@ -81,34 +81,23 @@ public sealed class RegrasPadraoTests
         derivado.RegrasPadrao.Should().BeEmpty();
     }
 
-    [Theory(DisplayName = "O categórico contribui só os seus valores; o booleano não contribui código")]
-    [InlineData(TipoDoDado.Opcao, "EJA", true)]
-    [InlineData(TipoDoDado.Opcao, "XYZ", false)]
-    [InlineData(TipoDoDado.SimOuNao, "EJA", false)]
-    public void Definir_Contribuicao(TipoDoDado dominio, string contribui, bool aceita)
+    [Fact(DisplayName = "O categórico contribui um dos seus valores")]
+    public void Definir_ContribuiValorDoCategorico_Aceita()
     {
-        FatoCandidato renda = Declarado("TEM_RENDA");
-        FatoCandidato derivado = Derivado("PERFIS", dominio);
-        if (dominio == TipoDoDado.Opcao)
-        {
-            derivado.AdicionarValorDominio("EJA", "Educação de jovens e adultos", 0, ativo: true);
-        }
+        Result resultado = DefinirContribuicao(TipoDoDado.Opcao, "EJA");
 
-        Result resultado = derivado.DefinirRegrasPadrao([Regra(contribui, ("TEM_RENDA", true))], Catalogo(renda, derivado));
-
-        if (aceita)
-        {
-            resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
-        }
-        else
-        {
-            resultado.Errors.Should().ContainSingle().Which.Should().BeEquivalentTo(new
-            {
-                Field = "regras[0]",
-                Error = new { Code = DerivacaoDoFatoErrorCodes.ContribuiForaDoDominio },
-            }, "a recusa aponta a regra que contribui fora do domínio");
-        }
+        resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
     }
+
+    [Theory(DisplayName = "O categórico não contribui valor que não é seu; o booleano não contribui código")]
+    [InlineData(TipoDoDado.Opcao, "XYZ")]
+    [InlineData(TipoDoDado.SimOuNao, "EJA")]
+    public void Definir_ContribuiForaDoDominio_Recusa(TipoDoDado dominio, string contribui) =>
+        DefinirContribuicao(dominio, contribui).Errors.Should().ContainSingle().Which.Should().BeEquivalentTo(new
+        {
+            Field = "regras[0]",
+            Error = new { Code = DerivacaoDoFatoErrorCodes.ContribuiForaDoDominio },
+        }, "a recusa aponta a regra que contribui fora do domínio");
 
     [Fact(DisplayName = "Texto não entra em predicado de regra")]
     public void Definir_CitaTexto_Recusa()
@@ -140,30 +129,16 @@ public sealed class RegrasPadraoTests
             .Error!.Code.Should().Be(FatoCandidatoErrorCodes.ClassificacaoAbaixoDaDependencia);
     }
 
-    [Theory(DisplayName = "O derivado não resolve em fase anterior à de um fato que ele cita")]
-    [InlineData("INSCRICAO", false)]
-    [InlineData("HABILITACAO", true)]
-    public void Definir_PontoResolucao(string pontoDoDerivado, bool aceita)
+    [Fact(DisplayName = "O derivado não resolve em fase anterior à de um fato que ele cita")]
+    public void Definir_PontoResolucaoAnteriorAoFatoCitado_Recusa() =>
+        DefinirRegraQueCitaOCertificado("INSCRICAO").Error!.Code.Should().Be(FatoCandidatoErrorCodes.PontoResolucaoAnteriorADependencia);
+
+    [Fact(DisplayName = "O derivado resolve na mesma fase do fato que ele cita")]
+    public void Definir_PontoResolucaoDoFatoCitado_Aceita()
     {
-        FatoCandidato certificado = Declarado("CERTIFICADO_EMITIDO", ponto: "HABILITACAO");
-        FatoCandidato derivado = Derivado("PENDENTE_DE_CERTIFICADO", ponto: pontoDoDerivado);
-        PrecedenciaFase[] precedencias =
-        [
-            PrecedenciaFase.Criar("INSCRICAO", "RESULTADO_FINAL", permiteSobreposicao: false, []).Value!,
-            PrecedenciaFase.Criar("RESULTADO_FINAL", "HABILITACAO", permiteSobreposicao: false, []).Value!,
-        ];
+        Result resultado = DefinirRegraQueCitaOCertificado("HABILITACAO");
 
-        Result resultado = derivado.DefinirRegrasPadrao(
-            [Booleana(("CERTIFICADO_EMITIDO", false))], new CatalogoDeFatos([certificado, derivado], precedencias));
-
-        if (aceita)
-        {
-            resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
-        }
-        else
-        {
-            resultado.Error!.Code.Should().Be(FatoCandidatoErrorCodes.PontoResolucaoAnteriorADependencia);
-        }
+        resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
     }
 
     [Fact(DisplayName = "Regras que fecham ciclo entre derivados são recusadas")]
@@ -181,13 +156,7 @@ public sealed class RegrasPadraoTests
     [Fact(DisplayName = "Fato desativado recusa citação nova e mantém a que a regra já fazia")]
     public void Definir_FatoDesativado_SoRecusaCitacaoNova()
     {
-        FatoCandidato renda = Declarado("TEM_RENDA");
-        FatoCandidato bolsa = Declarado("TEM_BOLSA");
-        FatoCandidato derivado = Derivado("VULNERAVEL");
-        CatalogoDeFatos catalogo = Catalogo(renda, bolsa, derivado);
-        derivado.DefinirRegrasPadrao([Booleana(("TEM_RENDA", false))], catalogo).IsSuccess.Should().BeTrue();
-        renda.Desativar();
-        bolsa.Desativar();
+        (FatoCandidato derivado, CatalogoDeFatos catalogo) = DerivadoQueCitaRendaComRendaEBolsaDesativadas();
 
         derivado.DefinirRegrasPadrao([Booleana(("TEM_RENDA", false))], catalogo).IsSuccess.Should().BeTrue();
         derivado.DefinirRegrasPadrao([Booleana(("TEM_RENDA", false)), Booleana(("TEM_BOLSA", true))], catalogo)
@@ -225,6 +194,44 @@ public sealed class RegrasPadraoTests
             ("regras[0]", FatoCandidatoErrorCodes.ClassificacaoAbaixoDaDependencia),
             ("regras[1]", FatoCandidatoErrorCodes.RegraCitaFatoNaoCitavel),
         ]);
+    }
+
+    private static Result DefinirContribuicao(TipoDoDado dominio, string contribui)
+    {
+        FatoCandidato renda = Declarado("TEM_RENDA");
+        FatoCandidato derivado = Derivado("PERFIS", dominio);
+        if (dominio == TipoDoDado.Opcao)
+        {
+            derivado.AdicionarValorDominio("EJA", "Educação de jovens e adultos", 0, ativo: true);
+        }
+
+        return derivado.DefinirRegrasPadrao([Regra(contribui, ("TEM_RENDA", true))], Catalogo(renda, derivado));
+    }
+
+    private static Result DefinirRegraQueCitaOCertificado(string pontoDoDerivado)
+    {
+        FatoCandidato certificado = Declarado("CERTIFICADO_EMITIDO", ponto: "HABILITACAO");
+        FatoCandidato derivado = Derivado("PENDENTE_DE_CERTIFICADO", ponto: pontoDoDerivado);
+        PrecedenciaFase[] precedencias =
+        [
+            PrecedenciaFase.Criar("INSCRICAO", "RESULTADO_FINAL", permiteSobreposicao: false, []).Value!,
+            PrecedenciaFase.Criar("RESULTADO_FINAL", "HABILITACAO", permiteSobreposicao: false, []).Value!,
+        ];
+
+        return derivado.DefinirRegrasPadrao(
+            [Booleana(("CERTIFICADO_EMITIDO", false))], new CatalogoDeFatos([certificado, derivado], precedencias));
+    }
+
+    private static (FatoCandidato Derivado, CatalogoDeFatos Catalogo) DerivadoQueCitaRendaComRendaEBolsaDesativadas()
+    {
+        FatoCandidato renda = Declarado("TEM_RENDA");
+        FatoCandidato bolsa = Declarado("TEM_BOLSA");
+        FatoCandidato derivado = Derivado("VULNERAVEL");
+        CatalogoDeFatos catalogo = Catalogo(renda, bolsa, derivado);
+        derivado.DefinirRegrasPadrao([Booleana(("TEM_RENDA", false))], catalogo).IsSuccess.Should().BeTrue();
+        renda.Desativar();
+        bolsa.Desativar();
+        return (derivado, catalogo);
     }
 
     private static FatoCandidato Derivado(

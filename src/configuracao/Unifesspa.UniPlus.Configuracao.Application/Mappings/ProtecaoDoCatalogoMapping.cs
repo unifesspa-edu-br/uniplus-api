@@ -125,7 +125,7 @@ internal static class ProtecaoDoCatalogoMapping
             CodigoComRotulo<TipoDoDado>.De(fato.Dominio),
             CodigoComRotulo<QuantidadeDeValores>.De(fato.Cardinalidade),
             fato.SemeadoPeloSistema,
-            fato.ComponenteExibicao is { } componente ? ComponentesDeExibicao.ParaTokenCanonico(componente) : null,
+            fato.ComponenteExibicao?.Codigo(),
             [.. fato.ValoresDominioDeclarados
                 .Where(static v => v.Ativo)
                 .OrderBy(static v => v.Ordem)

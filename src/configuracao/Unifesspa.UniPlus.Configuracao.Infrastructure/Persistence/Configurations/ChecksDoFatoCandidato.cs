@@ -33,12 +33,12 @@ internal static class ChecksDoFatoCandidato
         AdicionarCheckDeCodigos(table, "tipo", SqlDosCodigosDeContrato.Lista<TipoDoDado>());
         AdicionarCheckDeCodigos(table, "origem", SqlDosCodigosDeContrato.Lista<OrigemFato>());
         AdicionarCheckDeCodigos(table, "quantidade_de_valores", SqlDosCodigosDeContrato.Lista<QuantidadeDeValores>());
-        AdicionarCheckDeCodigos(table, "escopo", CodigosSql(EscoposFato.TokensCanonicos));
+        AdicionarCheckDeCodigos(table, "escopo", SqlDosCodigosDeContrato.Lista<EscopoFato>());
         AdicionarCheckDeCodigos(table, "classificacao_protecao", CodigosSql(ClassificacoesDeProtecao.TokensCanonicos));
         AdicionarCheckDeCodigos(table, "hipotese_legal", CodigosSql(CatalogoDe<HipoteseLegalTratamento>.Valores().Select(static valor => valor.Codigo()).ToArray()));
         table.HasCheckConstraint(
             "ck_dados_do_candidato_componente_exibicao",
-            $"componente_exibicao IS NULL OR componente_exibicao IN ({CodigosSql(ComponentesDeExibicao.TokensCanonicos)})");
+            $"componente_exibicao IS NULL OR componente_exibicao IN ({SqlDosCodigosDeContrato.Lista<ComponenteDeExibicao>()})");
     }
 
     // O vínculo grava MECANISMO:REFERENCIA; só o prefixo é vocabulário fechado, a referência é livre.
@@ -58,7 +58,7 @@ internal static class ChecksDoFatoCandidato
 
         table.HasCheckConstraint(
             "ck_dados_do_candidato_formato_coerente",
-            $"(tipo = {Texto} AND formato IS NOT NULL AND formato IN ({CodigosSql(FormatosTexto.TokensCanonicos)})) "
+            $"(tipo = {Texto} AND formato IS NOT NULL AND formato IN ({SqlDosCodigosDeContrato.Lista<FormatoTexto>()})) "
             + $"OR (tipo <> {Texto} AND formato IS NULL)");
 
         ConfigurarCheckDaClassificacaoMinimaDoDominio(table);

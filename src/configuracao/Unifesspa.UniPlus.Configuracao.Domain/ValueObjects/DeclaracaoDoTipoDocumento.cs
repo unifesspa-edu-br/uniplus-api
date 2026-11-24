@@ -26,6 +26,6 @@ public sealed record DeclaracaoDoTipoDocumento(
     string? FormatosAceitos,
     int? TamanhoMaximoMb,
     string? TipoEquivalente,
-    ClassificacaoDeProtecao? ClassificacaoProtecao,
+    CodigoInformado<ClassificacaoDeProtecao> ClassificacaoProtecao,
     string? FinalidadeTratamento,
-    HipoteseLegalTratamento? HipoteseLegal);
+    CodigoInformado<HipoteseLegalTratamento> HipoteseLegal);

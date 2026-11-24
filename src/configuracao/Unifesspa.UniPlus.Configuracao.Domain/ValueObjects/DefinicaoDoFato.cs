@@ -6,17 +6,18 @@ using Unifesspa.UniPlus.Regras.Enums;
 
 /// <summary>
 /// Os eixos que o administrador informa ao alterar a definição de um fato que cadastrou (ADR-0136).
-/// O eixo que o tipo do fato não aceita vem <see langword="null"/>: o derivado por regra infere a
+/// O eixo que o tipo do fato não aceita vem ausente: o derivado por regra infere a
 /// cardinalidade e a fonte do domínio, e o agregado infere o domínio, a cardinalidade, a fonte e o
-/// escopo do fato de membro.
+/// escopo do fato de membro. O código que não é do vocabulário vem como desconhecido, e quem confere
+/// a definição recusa cada eixo com o código de erro do próprio campo.
 /// </summary>
 public sealed record DefinicaoDoFato(
-    TipoDoDado? Dominio,
-    QuantidadeDeValores? Cardinalidade,
-    FonteValoresFato? FonteValores,
-    FormatoTexto? Formato,
+    CodigoInformado<TipoDoDado> Dominio,
+    CodigoInformado<QuantidadeDeValores> Cardinalidade,
+    CodigoInformado<FonteValoresFato> FonteValores,
+    CodigoInformado<FormatoTexto> Formato,
     string PontoResolucao,
-    EscopoFato? Escopo,
-    ClassificacaoDeProtecao? ClassificacaoProtecao,
+    CodigoInformado<EscopoFato> Escopo,
+    CodigoInformado<ClassificacaoDeProtecao> ClassificacaoProtecao,
     string FinalidadeTratamento,
-    HipoteseLegalTratamento? HipoteseLegal);
+    CodigoInformado<HipoteseLegalTratamento> HipoteseLegal);

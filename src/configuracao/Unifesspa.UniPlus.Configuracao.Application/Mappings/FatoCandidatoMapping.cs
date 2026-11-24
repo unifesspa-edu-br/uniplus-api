@@ -3,7 +3,6 @@ namespace Unifesspa.UniPlus.Configuracao.Application.Mappings;
 using Unifesspa.UniPlus.Application.Abstractions.Respostas;
 using Unifesspa.UniPlus.Configuracao.Application.DTOs;
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
-using Unifesspa.UniPlus.Configuracao.Domain.Enums;
 using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Regras.Enums;
@@ -28,13 +27,13 @@ internal static class FatoCandidatoMapping
     private static DescritivoDoFatoDto DescritivoDe(FatoCandidato fato) => new(
         fato.Nome,
         fato.Descricao,
-        fato.ComponenteExibicao is { } componente ? ComponentesDeExibicao.ParaTokenCanonico(componente) : null);
+        fato.ComponenteExibicao?.Codigo());
 
     private static DefinicaoDoFatoDto DefinicaoDe(FatoCandidato fato) => new(
         CodigoComRotulo<TipoDoDado>.De(fato.Dominio),
         CodigoComRotulo<QuantidadeDeValores>.De(fato.Cardinalidade),
-        EscoposFato.ParaTokenCanonico(fato.Escopo),
-        fato.Formato is { } formato ? FormatosTexto.ParaTokenCanonico(formato) : null,
+        fato.Escopo.Codigo(),
+        fato.Formato?.Codigo(),
         ValoresDe(fato),
         new ResolucaoDoFatoDto(CodigoComRotulo<OrigemFato>.De(fato.Origem), fato.PontoResolucao, fato.Binding),
         ProtecaoDe(fato));

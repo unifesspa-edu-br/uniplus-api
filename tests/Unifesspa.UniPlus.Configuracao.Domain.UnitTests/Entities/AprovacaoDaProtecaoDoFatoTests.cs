@@ -19,37 +19,31 @@ using static Unifesspa.UniPlus.Configuracao.Domain.UnitTests.Entities.AprovacaoD
 /// </summary>
 public sealed class AprovacaoDaProtecaoDoFatoTests
 {
-    [Fact(DisplayName = "O ajuste do fato recusa a recomendação igual à atual e a que a hipótese legal não admite")]
-    public void Fato_RecomendarAjusteComRecomendacaoInvalida_Recusada()
+    [Fact(DisplayName = "O ajuste do fato recusa a recomendação igual à atual")]
+    public void Fato_RecomendarAjusteIgualAAtual_Recusado()
     {
-        FatoCandidato igual = NovoFato();
-        igual.SolicitarAprovacaoDaProtecao(Isabella, Segunda);
-        FatoCandidato incompativel = CriacaoDoFato.CriarDoAdministrador(
-            new DescritivoDoFato("TEM_CONTRATO", "Tem contrato", "Descrição do fato."),
-            new DefinicaoDoFato(TipoDoDado.SimOuNao, QuantidadeDeValores.ValorUnico, null, null, "INSCRICAO", EscopoFato.Candidato, ClassificacaoDeProtecao.Pessoal, Finalidade, HipoteseLegalTratamento.ExecucaoContrato)).Value!;
-        incompativel.SolicitarAprovacaoDaProtecao(Isabella, Segunda);
+        FatoCandidato fato = Solicitado(NovoFato());
 
-        igual.RecomendarAjusteDaProtecao(ClassificacaoDeProtecao.Pessoal, null, Caroline, Terca).Errors.Should().ContainSingle()
+        fato.RecomendarAjusteDaProtecao(ClassificacaoDeProtecao.Pessoal, null, Caroline, Terca).Errors.Should().ContainSingle()
             .Which.Error.Code.Should().Be(ProtecaoDoCatalogoErrorCodes.RecomendacaoIgualAAtual);
-        incompativel.RecomendarAjusteDaProtecao(ClassificacaoDeProtecao.Sensivel, null, Caroline, Terca).Errors.Should().ContainSingle()
+    }
+
+    [Fact(DisplayName = "O ajuste do fato recusa a recomendação que a hipótese legal não admite")]
+    public void Fato_RecomendarAjusteQueAHipoteseNaoAdmite_Recusado()
+    {
+        FatoCandidato fato = Solicitado(NovoFatoComHipotese(HipoteseLegalTratamento.ExecucaoContrato));
+
+        fato.RecomendarAjusteDaProtecao(ClassificacaoDeProtecao.Sensivel, null, Caroline, Terca).Errors.Should().ContainSingle()
             .Which.Error.Code.Should().Be(ProtecaoDoCatalogoErrorCodes.RecomendacaoIncompativelComAHipoteseLegal);
-        incompativel.Aprovacao.Situacao.Should().Be(SituacaoDaAprovacao.Solicitada);
+        fato.Aprovacao.Situacao.Should().Be(SituacaoDaAprovacao.Solicitada);
     }
 
     [Fact(DisplayName = "No fato de sistema o domínio, a cardinalidade, o escopo, a fonte ou o formato fora do vocabulário saem como erro de vocabulário no campo, e não como definição travada")]
     public void FatoDeSistema_TokenForaDoVocabulario_ErroDeVocabularioNoCampo()
     {
         FatoCandidato fato = FatoAprovado(NovoFatoDeSistema());
-        DefinicaoDoFato invalida = Definicao(fato) with
-        {
-            Dominio = (TipoDoDado)(-1),
-            Cardinalidade = (QuantidadeDeValores)(-1),
-            Escopo = (EscopoFato)(-1),
-            FonteValores = (FonteValoresFato)(-1),
-            Formato = (FormatoTexto)(-1),
-        };
 
-        Result resultado = fato.AlterarDefinicao(invalida, Catalogo(fato));
+        Result resultado = fato.AlterarDefinicao(DefinicaoComEixosDesconhecidos(fato), Catalogo(fato));
 
         resultado.Errors.Select(static e => e.Field).Should().BeEquivalentTo("dominio", "cardinalidade", "escopo", "fonteValores", "formato");
         resultado.Errors.Should().NotContain(e => e.Error.Code == FatoCandidatoErrorCodes.DefinicaoDoFatoDeSistemaTravada);
@@ -77,43 +71,61 @@ public sealed class AprovacaoDaProtecaoDoFatoTests
             .Should().Be(ProtecaoDoCatalogoErrorCodes.ItemForaDeSolicitacao);
     }
 
-    [Fact(DisplayName = "Salvar o fato com ajuste recomendado ou reprovado, pelo descritivo, pela definição ou pelos valores, o devolve a pendente")]
-    public void Fato_QualquerEdicaoDevolveAjusteEReprovadoAPendente()
+    [Fact(DisplayName = "Salvar o descritivo do fato reprovado o devolve a pendente")]
+    public void Fato_AlterarDescritivoDoReprovado_VoltaAPendente()
     {
-        static FatoCandidato Categorico()
-        {
-            FatoCandidato fato = CriacaoDoFato.CriarDoAdministrador(
-                new DescritivoDoFato("ESCOLARIDADE", "Escolaridade", "Escolaridade do candidato."),
-                new DefinicaoDoFato(TipoDoDado.Opcao, QuantidadeDeValores.ValorUnico, FonteValoresFato.Catalogo, null, "INSCRICAO", EscopoFato.Candidato, ClassificacaoDeProtecao.Pessoal, Finalidade, HipoteseLegalTratamento.CumprimentoObrigacaoLegal)).Value!;
-            fato.AdicionarValorDominio("MEDIO", "Ensino médio", 0, ativo: true);
-            fato.SolicitarAprovacaoDaProtecao(Isabella, Segunda);
-            return fato;
-        }
+        FatoCandidato fato = Categorico();
+        fato.ReprovarProtecao("Dado desnecessário.", Caroline, Terca);
 
-        FatoCandidato porDescritivo = Categorico();
-        porDescritivo.ReprovarProtecao("Dado desnecessário.", Caroline, Terca);
-        FatoCandidato porValor = Categorico();
-        porValor.RecomendarAjusteDaProtecao(ClassificacaoDeProtecao.Sensivel, null, Caroline, Terca);
-        FatoCandidato porDefinicao = Categorico();
-        porDefinicao.ReprovarProtecao("Dado desnecessário.", Caroline, Terca);
-        FatoCandidato porRegras = CriacaoDoFato.CriarDerivadoDoAdministrador(
+        fato.AlterarDescritivo("Outro nome", "Escolaridade do candidato.", null).IsSuccess.Should().BeTrue();
+
+        fato.Aprovacao.Situacao.Should().Be(SituacaoDaAprovacao.Pendente);
+    }
+
+    [Fact(DisplayName = "Salvar o valor do fato com ajuste recomendado o devolve a pendente")]
+    public void Fato_CorrigirValorDoAjusteRecomendado_VoltaAPendente()
+    {
+        FatoCandidato fato = Categorico();
+        fato.RecomendarAjusteDaProtecao(ClassificacaoDeProtecao.Sensivel, null, Caroline, Terca);
+
+        fato.CorrigirValor("MEDIO", "Ensino médio completo", null).IsSuccess.Should().BeTrue();
+
+        fato.Aprovacao.Situacao.Should().Be(SituacaoDaAprovacao.Pendente);
+    }
+
+    [Fact(DisplayName = "Salvar a definição do fato reprovado o devolve a pendente")]
+    public void Fato_AlterarDefinicaoDoReprovado_VoltaAPendente()
+    {
+        FatoCandidato fato = Categorico();
+        fato.ReprovarProtecao("Dado desnecessário.", Caroline, Terca);
+
+        fato.AlterarDefinicao(Definicao(fato), Catalogo(fato)).IsSuccess.Should().BeTrue();
+
+        fato.Aprovacao.Situacao.Should().Be(SituacaoDaAprovacao.Pendente);
+    }
+
+    [Fact(DisplayName = "Salvar as regras padrão do derivado reprovado o devolve a pendente")]
+    public void Fato_DefinirRegrasDoReprovado_VoltaAPendente()
+    {
+        FatoCandidato fato = CriacaoDoFato.CriarDerivadoDoAdministrador(
             new DescritivoDoFato("TEM_RENDA_DERIVADA", "Tem renda derivada", "Se o candidato tem renda."),
             new DefinicaoDoFato(TipoDoDado.SimOuNao, null, null, null, "INSCRICAO", EscopoFato.Candidato, ClassificacaoDeProtecao.Pessoal, Finalidade, HipoteseLegalTratamento.CumprimentoObrigacaoLegal)).Value!;
-        porRegras.SolicitarAprovacaoDaProtecao(Isabella, Segunda);
-        porRegras.ReprovarProtecao("Dado desnecessário.", Caroline, Terca);
-        FatoCandidato aprovado = FatoAprovado(NovoFato());
+        fato.SolicitarAprovacaoDaProtecao(Isabella, Segunda);
+        fato.ReprovarProtecao("Dado desnecessário.", Caroline, Terca);
 
-        porDescritivo.AlterarDescritivo("Outro nome", "Escolaridade do candidato.", null).IsSuccess.Should().BeTrue();
-        porValor.CorrigirValor("MEDIO", "Ensino médio completo", null).IsSuccess.Should().BeTrue();
-        porDefinicao.AlterarDefinicao(Definicao(porDefinicao), Catalogo(porDefinicao)).IsSuccess.Should().BeTrue();
-        porRegras.DefinirRegrasPadrao([], Catalogo(porRegras)).IsSuccess.Should().BeTrue();
-        aprovado.AlterarDescritivo("Outro nome", "Outra descrição do fato.", null).IsSuccess.Should().BeTrue();
+        fato.DefinirRegrasPadrao([], Catalogo(fato)).IsSuccess.Should().BeTrue();
 
-        porRegras.Aprovacao.Situacao.Should().Be(SituacaoDaAprovacao.Pendente);
-        porDescritivo.Aprovacao.Situacao.Should().Be(SituacaoDaAprovacao.Pendente);
-        porValor.Aprovacao.Situacao.Should().Be(SituacaoDaAprovacao.Pendente);
-        porDefinicao.Aprovacao.Situacao.Should().Be(SituacaoDaAprovacao.Pendente);
-        aprovado.Aprovacao.Situacao.Should().Be(SituacaoDaAprovacao.Aprovada);
+        fato.Aprovacao.Situacao.Should().Be(SituacaoDaAprovacao.Pendente);
+    }
+
+    [Fact(DisplayName = "Salvar o descritivo do fato aprovado o mantém aprovado")]
+    public void Fato_AlterarDescritivoDoAprovado_MantemAprovado()
+    {
+        FatoCandidato fato = FatoAprovado(NovoFato());
+
+        fato.AlterarDescritivo("Outro nome", "Outra descrição do fato.", null).IsSuccess.Should().BeTrue();
+
+        fato.Aprovacao.Situacao.Should().Be(SituacaoDaAprovacao.Aprovada);
     }
 
     [Fact(DisplayName = "O fato do administrador nasce pendente")]
@@ -181,13 +193,7 @@ public sealed class AprovacaoDaProtecaoDoFatoTests
         Result resultado = fato.AceitarRecomendacaoDaProtecao(Isabella, Quarta, Catalogo(fato));
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
-        fato.Should().BeEquivalentTo(new
-        {
-            ClassificacaoProtecao = ClassificacaoDeProtecao.Sensivel,
-            Codigo = "COR_RACA",
-            Dominio = TipoDoDado.Opcao,
-            SemeadoPeloSistema = true,
-        });
+        fato.Should().BeEquivalentTo(new { ClassificacaoProtecao = ClassificacaoDeProtecao.Sensivel, Codigo = "COR_RACA", Dominio = TipoDoDado.Opcao, SemeadoPeloSistema = true });
         fato.Aprovacao.Situacao.Should().Be(SituacaoDaAprovacao.Aprovada);
         fato.Aprovacao.AceitaPor.Should().Be(Isabella);
     }
@@ -217,6 +223,36 @@ public sealed class AprovacaoDaProtecaoDoFatoTests
             "CAMPO_FORMULARIO:COR_RACA",
             new DefinicaoDoFato(TipoDoDado.Opcao, QuantidadeDeValores.ValorUnico, FonteValoresFato.Catalogo, null, "INSCRICAO", EscopoFato.Candidato, ClassificacaoDeProtecao.Pessoal, Finalidade, HipoteseLegalTratamento.CumprimentoObrigacaoLegal),
             sistema: true).Value!;
+
+    private static FatoCandidato NovoFatoComHipotese(HipoteseLegalTratamento hipotese) =>
+        CriacaoDoFato.CriarDoAdministrador(
+            new DescritivoDoFato("TEM_CONTRATO", "Tem contrato", "Descrição do fato."),
+            new DefinicaoDoFato(TipoDoDado.SimOuNao, QuantidadeDeValores.ValorUnico, null, null, "INSCRICAO", EscopoFato.Candidato, ClassificacaoDeProtecao.Pessoal, Finalidade, hipotese)).Value!;
+
+    private static FatoCandidato Categorico()
+    {
+        FatoCandidato fato = CriacaoDoFato.CriarDoAdministrador(
+            new DescritivoDoFato("ESCOLARIDADE", "Escolaridade", "Escolaridade do candidato."),
+            new DefinicaoDoFato(TipoDoDado.Opcao, QuantidadeDeValores.ValorUnico, FonteValoresFato.Catalogo, null, "INSCRICAO", EscopoFato.Candidato, ClassificacaoDeProtecao.Pessoal, Finalidade, HipoteseLegalTratamento.CumprimentoObrigacaoLegal)).Value!;
+        fato.AdicionarValorDominio("MEDIO", "Ensino médio", 0, ativo: true);
+        return Solicitado(fato);
+    }
+
+    private static FatoCandidato Solicitado(FatoCandidato fato)
+    {
+        fato.SolicitarAprovacaoDaProtecao(Isabella, Segunda);
+        return fato;
+    }
+
+    private static DefinicaoDoFato DefinicaoComEixosDesconhecidos(FatoCandidato fato) =>
+        Definicao(fato) with
+        {
+            Dominio = CodigoInformado<TipoDoDado>.Ler("INEXISTENTE"),
+            Cardinalidade = CodigoInformado<QuantidadeDeValores>.Ler("INEXISTENTE"),
+            Escopo = CodigoInformado<EscopoFato>.Ler("INEXISTENTE"),
+            FonteValores = CodigoInformado<FonteValoresFato>.Ler("INEXISTENTE"),
+            Formato = CodigoInformado<FormatoTexto>.Ler("INEXISTENTE"),
+        };
 
     private static FatoCandidato FatoAprovado(FatoCandidato fato)
     {

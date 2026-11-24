@@ -237,8 +237,8 @@ public sealed class AprovacaoDaProtecao
     /// pertence à escala. É a mesma regra que <see cref="ConferirRecomendacao"/> aplica primeiro, e quem confere a forma
     /// da decisão antes de ler o item a chama sem mudar nada, acumulando a recusa no mesmo lote (ADR-0125).
     /// </summary>
-    public static Result ConferirClassificacaoRecomendada(ClassificacaoDeProtecao? recomendada) =>
-        recomendada is { } valor && Enum.IsDefined(valor)
+    public static Result ConferirClassificacaoRecomendada(CodigoInformado<ClassificacaoDeProtecao> recomendada) =>
+        recomendada.Valor is not null
             ? Result.Success()
             : Result.ValidationFailure([RecomendacaoAusente]);
 

@@ -22,7 +22,11 @@ internal static class TrocaDaProtecaoDoFato
     /// O fato não muda quando há recusa. Quem chama decide o que a troca faz com a aprovação.
     /// </summary>
     internal static Result Trocar(
-        FatoCandidato fato, ClassificacaoDeProtecao? classificacao, string finalidade, HipoteseLegalTratamento? hipotese, CatalogoDeFatos catalogo)
+        FatoCandidato fato,
+        CodigoInformado<ClassificacaoDeProtecao> classificacao,
+        string finalidade,
+        CodigoInformado<HipoteseLegalTratamento> hipotese,
+        CatalogoDeFatos catalogo)
     {
         Result<ProtecaoDeDados> protecao = ValidarProtecao(fato.Dominio, classificacao, finalidade, hipotese);
         if (protecao.IsFailure)

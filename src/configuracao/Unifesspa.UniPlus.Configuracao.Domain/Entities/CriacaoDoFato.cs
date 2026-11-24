@@ -81,7 +81,7 @@ public static class CriacaoDoFato
 
     private static DefinicaoDoFato ComEixosInferidosDoDerivado(DefinicaoDoFato definicao)
     {
-        (QuantidadeDeValores cardinalidade, FonteValoresFato? fonteValores) = EixosInferidosDoDerivado(definicao.Dominio);
+        (QuantidadeDeValores cardinalidade, FonteValoresFato? fonteValores) = EixosInferidosDoDerivado(definicao.Dominio.Valor);
         return definicao with { Cardinalidade = cardinalidade, FonteValores = fonteValores, Formato = null };
     }
 
@@ -195,7 +195,7 @@ public static class CriacaoDoFato
         List<FieldError> erros,
         FatoCandidato membro,
         string pontoResolucao,
-        ClassificacaoDeProtecao? classificacaoProtecao,
+        CodigoInformado<ClassificacaoDeProtecao> classificacaoProtecao,
         CatalogoDeFatos catalogo)
     {
         RegistrarRecusa(erros, "classificacaoProtecao", RecusaDaProtecaoAbaixoDoMembro(membro, classificacaoProtecao));
@@ -204,9 +204,8 @@ public static class CriacaoDoFato
     }
 
     private static (string Codigo, string Mensagem)? RecusaDaProtecaoAbaixoDoMembro(
-        FatoCandidato membro, ClassificacaoDeProtecao? classificacaoProtecao) =>
-        classificacaoProtecao is { } valor && Enum.IsDefined(valor)
-        && classificacaoProtecao < membro.ClassificacaoProtecao
+        FatoCandidato membro, CodigoInformado<ClassificacaoDeProtecao> classificacaoProtecao) =>
+        classificacaoProtecao.Valor is { } valor && valor < membro.ClassificacaoProtecao
             ? (FatoCandidatoErrorCodes.ClassificacaoAbaixoDaDependencia,
                 $"O agregado revela o que se sabe de '{membro.Codigo}' e não pode ter proteção de dados mais fraca que a dele.")
             : null;

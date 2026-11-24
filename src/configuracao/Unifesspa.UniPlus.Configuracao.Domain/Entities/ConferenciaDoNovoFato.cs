@@ -36,7 +36,7 @@ internal sealed class ConferenciaDoNovoFato(
         bool origemValida = ConferirOrigem();
         Result<string> ponto = ConferirPontoDeResolucao();
         string? vinculo = codigo.IsSuccess && origemValida ? ConferirVinculo(codigo.Value!.Valor) : null;
-        ConferirEscopo(_erros, definicao.Escopo ?? EscopoFato.Nenhum);
+        ConferirEscopo(_erros, definicao.Escopo);
         Result<ProtecaoDeDados> protecao = ConferirProtecao();
 
         return _erros.Count > 0
@@ -62,7 +62,7 @@ internal sealed class ConferenciaDoNovoFato(
     private Result<ProtecaoDeDados> ConferirProtecao()
     {
         Result<ProtecaoDeDados> protecao = ValidarProtecao(
-            definicao.Dominio, definicao.ClassificacaoProtecao, definicao.FinalidadeTratamento, definicao.HipoteseLegal);
+            definicao.Dominio.Valor, definicao.ClassificacaoProtecao, definicao.FinalidadeTratamento, definicao.HipoteseLegal);
         _erros.AddRange(protecao.Errors);
         return protecao;
     }
@@ -117,7 +117,7 @@ internal sealed class ConferenciaDoNovoFato(
             origem!.Value,
             vinculo,
             new EixosDaDefinicao(
-                definicao.Dominio!.Value, definicao.Cardinalidade!.Value, definicao.FonteValores, definicao.Formato, ponto, definicao.Escopo,
-                protecao.Classificacao, protecao.Finalidade, protecao.Hipotese),
+                definicao.Dominio.Valor!.Value, definicao.Cardinalidade.Valor!.Value, definicao.FonteValores.Valor, definicao.Formato.Valor, ponto,
+                definicao.Escopo.Valor, protecao.Classificacao, protecao.Finalidade, protecao.Hipotese),
             sistema);
 }
