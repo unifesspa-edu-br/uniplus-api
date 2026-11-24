@@ -158,7 +158,7 @@ public sealed class DesempateBonusPersistenciaTests : IClassFixture<ProcessoSele
         etapaAtualizada.Id.Should().Be(etapaId);
         etapaAtualizada.Nome.Should().Be("Redação (revisada)");
         etapaAtualizada.Peso.Should().Be(2m);
-        ((ParametrosDesempateMaiorNotaEtapa)recarregado.CriteriosDesempate.Single().Parametros).EtapaRef.Should().Be(etapaId);
+        ((ParametrosDesempateMaiorNotaEtapa)recarregado.CriteriosDesempate.Single().Parametros).EtapaId.Should().Be(etapaId);
     }
 
     private async Task ReconfigurarDesempateEBonusAsync(Guid processoId)
@@ -196,7 +196,7 @@ public sealed class DesempateBonusPersistenciaTests : IClassFixture<ProcessoSele
     {
         CriterioDesempate maiorNotaEtapa = recarregado.CriteriosDesempate.Single(c => c.Ordem == 1);
         maiorNotaEtapa.Regra.Codigo.Should().Be(RegraDeDesempate.MaiorNotaNaEtapa.Codigo());
-        ((ParametrosDesempateMaiorNotaEtapa)maiorNotaEtapa.Parametros).EtapaRef.Should().Be(etapaId);
+        ((ParametrosDesempateMaiorNotaEtapa)maiorNotaEtapa.Parametros).EtapaId.Should().Be(etapaId);
         ((ParametrosDesempateIdoso)recarregado.CriteriosDesempate.Single(c => c.Ordem == 2).Parametros).IdadeMinima.Should().Be(60);
         recarregado.CriteriosDesempate.Single(c => c.Ordem == 3).Parametros.Should().BeOfType<ParametrosDesempateMaiorIdade>();
 

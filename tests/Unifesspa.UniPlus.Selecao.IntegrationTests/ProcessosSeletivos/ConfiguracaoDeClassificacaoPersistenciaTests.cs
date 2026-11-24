@@ -218,7 +218,7 @@ public sealed class ConfiguracaoDeClassificacaoPersistenciaTests
     private static void AfirmarParametrosDeEliminacao(ConfiguracaoClassificacao classificacao, Guid etapaId)
     {
         ParametrosEliminacaoPorNotaMinimaNaEtapa nota = (ParametrosEliminacaoPorNotaMinimaNaEtapa)classificacao.RegrasEliminacao.Single(r => r.Regra.Codigo == RegraDeEliminacaoPorCalculo.NotaMinimaNaEtapa.Codigo()).Parametros;
-        nota.EtapaRef.Should().Be(etapaId);
+        nota.EtapaId.Should().Be(etapaId);
         nota.NotaMinima.Should().Be(3m);
         ParametrosEliminacaoPorCorteEmAreaDoEnem redacao = (ParametrosEliminacaoPorCorteEmAreaDoEnem)classificacao.RegrasEliminacao.Single(r => r.Regra.Codigo == RegraDeEliminacaoPorCalculo.CorteEmAreaDoEnem.Codigo()).Parametros;
         redacao.Minimo.Should().Be(400m);

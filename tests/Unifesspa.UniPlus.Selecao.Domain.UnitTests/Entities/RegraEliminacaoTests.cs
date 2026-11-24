@@ -23,7 +23,7 @@ public sealed class RegraEliminacaoTests
             Regra(RegraDeEliminacaoPorCalculo.NotaMinimaNaEtapa), new ParametrosEliminacaoPorNotaMinimaNaEtapa(etapaId, 4m));
 
         resultado.IsSuccess.Should().BeTrue();
-        ((ParametrosEliminacaoPorNotaMinimaNaEtapa)resultado.Value!.Parametros).EtapaRef.Should().Be(etapaId);
+        ((ParametrosEliminacaoPorNotaMinimaNaEtapa)resultado.Value!.Parametros).EtapaId.Should().Be(etapaId);
     }
 
     [Theory(DisplayName = "Criar ELIMINACAO_CORTE_EM_AREA com área e mínimo válidos tem sucesso, em qualquer área")]

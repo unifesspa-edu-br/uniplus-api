@@ -38,7 +38,7 @@ public sealed class CriterioDesempateTests
             1, Regra(RegraDeDesempate.MaiorNotaNaEtapa), new ParametrosDesempateMaiorNotaEtapa(etapaId));
 
         resultado.IsSuccess.Should().BeTrue();
-        ((ParametrosDesempateMaiorNotaEtapa)resultado.Value!.Parametros).EtapaRef.Should().Be(etapaId);
+        ((ParametrosDesempateMaiorNotaEtapa)resultado.Value!.Parametros).EtapaId.Should().Be(etapaId);
     }
 
     [Fact(DisplayName = "Criar DESEMPATE_MAIOR_IDADE (sem parâmetros) tem sucesso")]

@@ -53,7 +53,7 @@ public sealed class DefinirCriteriosDesempateCommandHandlerTests
 
         result.IsSuccess.Should().BeTrue();
         processo.CriteriosDesempate.Should().ContainSingle();
-        ((ParametrosDesempateMaiorNotaEtapa)processo.CriteriosDesempate.Single().Parametros).EtapaRef.Should().Be(etapa.Id);
+        ((ParametrosDesempateMaiorNotaEtapa)processo.CriteriosDesempate.Single().Parametros).EtapaId.Should().Be(etapa.Id);
         await cenario.UnitOfWork.Received(1).SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
     }
 

@@ -70,7 +70,7 @@ internal static class ConferenciasDasEliminacoes
         for (int indice = 0; indice < regras.Count; indice++)
         {
             if (regras[indice].Parametros is ParametrosEliminacaoPorAusenciaNaEtapa ausencia
-                && !etapasComAusenciaDeclarada.Add(ausencia.EtapaRef))
+                && !etapasComAusenciaDeclarada.Add(ausencia.EtapaId))
             {
                 erros.Add(new($"regrasEliminacao[{indice}]", new DomainError(
                     "ConfiguracaoClassificacao.AusenciaNaEtapaRepetida",

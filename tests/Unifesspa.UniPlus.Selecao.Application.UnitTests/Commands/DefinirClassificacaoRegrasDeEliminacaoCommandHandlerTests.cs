@@ -34,7 +34,7 @@ public sealed class DefinirClassificacaoRegrasDeEliminacaoCommandHandlerTests
 
         result.IsSuccess.Should().BeTrue();
         RegraEliminacao eliminacao = processo.Classificacao!.RegrasEliminacao.Single();
-        ((ParametrosEliminacaoPorNotaMinimaNaEtapa)eliminacao.Parametros).EtapaRef.Should().Be(etapa.Id);
+        ((ParametrosEliminacaoPorNotaMinimaNaEtapa)eliminacao.Parametros).EtapaId.Should().Be(etapa.Id);
     }
 
     [Fact(DisplayName = "Handle com ELIMINACAO_NOTA_MINIMA_ETAPA sem EtapaRef/NotaMinima recusa")]
