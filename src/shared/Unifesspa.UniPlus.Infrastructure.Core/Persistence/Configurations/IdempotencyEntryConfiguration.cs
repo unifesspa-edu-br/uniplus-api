@@ -4,18 +4,23 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 using Unifesspa.UniPlus.Infrastructure.Core.Idempotency;
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence.CodigosDeContrato;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Protecao;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
 
 internal sealed class IdempotencyEntryConfiguration : IEntityTypeConfiguration<IdempotencyEntry>
 {
+    private const int CodigoDeContratoMaxLength = 30;
+
     public void Configure(EntityTypeBuilder<IdempotencyEntry> builder)
     {
         ArgumentNullException.ThrowIfNull(builder);
 
         builder.ClassificaPorPadrao(ClassificacaoDeProtecao.Interno);
 
-        builder.ToTable("chaves_de_idempotencia");
+        builder.ToTable("chaves_de_idempotencia", static tabela => tabela.HasCheckConstraint(
+            "ck_chaves_de_idempotencia_status",
+            $"status IN ({SqlDosCodigosDeContrato.Lista<IdempotencyStatus>()})"));
 
         builder.HasKey(e => e.Id);
 
@@ -41,7 +46,8 @@ internal sealed class IdempotencyEntryConfiguration : IEntityTypeConfiguration<I
             .IsRequired();
 
         builder.Property(e => e.Status)
-            .HasConversion<short>()
+            .HasMaxLength(CodigoDeContratoMaxLength)
+            .HasComment("Situação da chave: EM_PROCESSAMENTO enquanto a operação executa; CONCLUIDA quando a resposta está guardada para repetição.")
             .IsRequired();
 
         // O corpo e os cabeçalhos cacheados são a resposta de qualquer endpoint idempotente e podem trazer dado de qualquer classe.

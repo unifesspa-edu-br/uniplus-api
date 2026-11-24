@@ -350,7 +350,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     endpoint = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: false),
                     idempotency_key = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: false),
                     body_hash = table.Column<string>(type: "character(64)", fixedLength: true, maxLength: 64, nullable: false),
-                    status = table.Column<short>(type: "smallint", nullable: false),
+                    status = table.Column<string>(type: "character varying(30)", maxLength: 30, nullable: false, comment: "Situação da chave: EM_PROCESSAMENTO enquanto a operação executa; CONCLUIDA quando a resposta está guardada para repetição."),
                     response_status = table.Column<int>(type: "integer", nullable: true),
                     response_headers_json = table.Column<string>(type: "jsonb", nullable: true),
                     encrypted_response_body = table.Column<byte[]>(type: "bytea", nullable: true),
@@ -360,6 +360,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 constraints: table =>
                 {
                     table.PrimaryKey("pk_chaves_de_idempotencia", x => x.id);
+                    table.CheckConstraint("ck_chaves_de_idempotencia_status", "status IN ('EM_PROCESSAMENTO', 'CONCLUIDA')");
                 });
 
             migrationBuilder.CreateTable(
