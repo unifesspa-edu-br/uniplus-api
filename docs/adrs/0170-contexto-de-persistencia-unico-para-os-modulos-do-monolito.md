@@ -12,7 +12,7 @@ informed:
 
 > **Substitui a [ADR-0108](0108-registro-do-ato-por-mensagem-duravel.md)** (registro do ato por mensagem durável).
 > **Substitui a [ADR-0105](0105-modulo-publicacoes-registro-central-dos-atos.md)** e a
-> **[ADR-0107](0107-vaga-de-linhagem-unica-por-objeto.md)** apenas nos pontos listados em "Trechos substituídos".
+> **[ADR-0107](0107-exclusividade-de-atos-unica-por-objeto.md)** apenas nos pontos listados em "Trechos substituídos".
 > O que elas decidem sobre o ato, a vaga e a trava "Publicações não conhece os domínios" continua valendo.
 
 ## Contexto e enunciado do problema
@@ -40,7 +40,7 @@ Ele impede, porém, a transação entre módulos: o Wolverine não admite dois `
 
 ### Escopo
 
-Os módulos internos do host compartilham um contexto. Ficam de fora o portal (`PortalDbContext`, implantação própria), a API GEO, o verificador de documentos e a trilha de auditoria forense ([ADR-0086](0086-trilha-de-auditoria-com-hmac-e-cofre.md)).
+Os módulos internos do host compartilham um contexto. Ficam de fora o portal (`PortalDbContext`, implantação própria), a API GEO, o verificador de documentos e a trilha de auditoria forense ([ADR-0086](0086-registro-de-auditoria-com-hmac-e-cofre.md)).
 
 ### Fronteira
 
@@ -84,7 +84,7 @@ O módulo continua, com as tabelas no esquema `publicacoes`, a rota `/api/public
 - A mensagem de registro do ato é trocada por uma porta de escrita em `Publicacoes.Contracts`, chamada na transação de quem publica. Saem a mensagem, o handler, o estado "registro pendente", a reentrega do registro e o dado pessoal na mensagem.
 - **A divulgação do certame é gravada na mesma transação** da versão e do ato, com o instante oficial definido pelo sistema ([ADR-0133](0133-divulgacao-do-certame-materializada-no-registro-do-ato.md), emenda 2; [ADR-0105](0105-modulo-publicacoes-registro-central-dos-atos.md), emenda 1).
 - **A cópia ao acervo continua posterior** ([ADR-0132](0132-armazenamento-publico-separado-para-documento-publicado.md)). A divulgação nasce sem o endereço do edital, e um efeito durável o registra quando a cópia termina, com reentrega.
-- O conflito de identificador legível e a vaga de linhagem ocupada viram **recusa síncrona e nomeada** (409), sem nada gravado.
+- O conflito de identificador legível e a exclusividade de atos ocupada viram **recusa síncrona e nomeada** (409), sem nada gravado.
 - O ato guarda por valor a versão do objeto de que trata, o par opaco `{id, hash}` (colunas `versao_do_objeto_id` e `versao_do_objeto_hash`), sem saber de que domínio ou configuração ela vem.
 
 ### Trechos substituídos
@@ -127,7 +127,7 @@ O módulo continua, com as tabelas no esquema `publicacoes`, a rota `/api/public
 
 Quando um comando chama uma porta de escrita, a gravação é uma só, no fim, e nenhuma escrita direta (`ExecuteUpdate`, `ExecuteDelete`, SQL cru) a antecede: o descarte das alterações não desfaz o que foi escrito por fora do rastreador. Toda recusa por unicidade aflora nessa gravação. Quem chama traduz a violação pela própria porta, que é dona dos nomes das suas restrições, descarta as alterações não salvas e devolve a recusa nomeada, sem nada gravado e sem evento.
 
-A recusa `AtoNormativo.AtoJaRetificado`, que a ADR-0107 cita como `RaizJaRetificada`, vale para qualquer ato da cadeia que já tenha retificador, e não só para a raiz: a cadeia é linear, e a nova retificação emenda a cabeça. Na ADR-0107, a tabela da vaga passa a se chamar `publicacoes.vagas_de_linhagem`.
+A recusa `AtoNormativo.AtoJaRetificado`, que a ADR-0107 cita como `RaizJaRetificada`, vale para qualquer ato da cadeia que já tenha retificador, e não só para a raiz: a cadeia é linear, e a nova retificação emenda a cabeça. Na ADR-0107, a tabela da exclusividade se chama `publicacoes.exclusividades_de_atos`.
 
 O efeito posterior que escreve na linha de um processo, como a cópia ao acervo, trava o processo antes de tocar a linha, na ordem desta ADR, e faz o trabalho externo fora da trava.
 

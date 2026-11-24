@@ -14,7 +14,7 @@ informed:
 
 A [ADR-0055](0055-organizacao-institucional-bounded-context.md) estabeleceu `OrganizacaoInstitucional` como bounded context dedicado, tendo `AreaOrganizacional` — um **roster fechado** de cinco áreas (CEPS, CRCA, PROEG, PROGEP, PLATAFORMA) — como agregado. Essa modelagem do eixo organizacional foi **descontinuada**: a estrutura administrativa real da Unifesspa não é um roster fechado de cinco áreas, e sim uma árvore aberta de aproximadamente 690 unidades em até seis níveis. O eixo organizacional passou a ser a entidade `Unidade`, um cadastro **aberto e hierárquico**.
 
-A `Unidade` entrega **identidade rica** — `Nome`, `Alias`, `Slug`, `Sigla`, `Codigo`, hierarquia por `UnidadeSuperiorId`, marcação acadêmica, vigência e origem — com `Slug`/`Sigla`/`Codigo` únicos entre unidades vivas, `Alias` não-único, e histórico de identificadores preservando a vigência de cada valor. Essa identidade é decisão vinculante e já está implementada e em uso (a busca textual da listagem de unidades pesquisa sobre esses identificadores).
+A `Unidade` entrega **identidade rica** — `Nome`, `Apelido`, `IdentificadorNoEnderecoWeb`, `Sigla`, `Codigo`, hierarquia por `UnidadeSuperiorId`, marcação acadêmica, vigência e origem — com `IdentificadorNoEnderecoWeb`/`Sigla`/`Codigo` únicos entre unidades vivas, `Apelido` não-único, e histórico de identificadores preservando a vigência de cada valor. Essa identidade é decisão vinculante e já está implementada e em uso (a busca textual da listagem de unidades pesquisa sobre esses identificadores).
 
 O cabeçalho da entrega, porém, ancora-se apenas na ADR-0055 — que descreve a `AreaOrganizacional`, não a identidade de `Unidade`. Falta o **registro formal** dessa decisão: para rastreabilidade, e porque a frente de Autorização (ADR-0078 em diante) referencia a identidade de `Unidade` como sujeito e como recurso.
 
@@ -23,17 +23,17 @@ O problema é **como identificar uma `Unidade` de forma estável e auditável**:
 ## Drivers da decisão
 
 - **Referência estável** para relacionamentos (FKs internas, snapshots cross-módulo, cursor keyset, sujeito/recurso de autorização) que não quebre quando rótulos mudam.
-- **Unicidade dos rótulos institucionais** (`Sigla`, `Codigo`, `Slug`) entre unidades vivas — evita ambiguidade em listas, URLs e integração.
-- **`Alias` é agrupamento popular**, naturalmente compartilhado entre divisões de uma mesma pró-reitoria/centro — não pode ser único.
+- **Unicidade dos rótulos institucionais** (`Sigla`, `Codigo`, `IdentificadorNoEnderecoWeb`) entre unidades vivas — evita ambiguidade em listas, URLs e integração.
+- **`Apelido` é agrupamento popular**, naturalmente compartilhado entre divisões de uma mesma pró-reitoria/centro — não pode ser único.
 - **Identificadores mudam por ato institucional** (portaria); a auditoria precisa responder "que sigla esta unidade tinha em 2024".
-- **`Slug` é forma normalizada** para URL e integração de identidade — distinto da sigla real (que tem hífen, caixa mista, ponto).
+- **`IdentificadorNoEnderecoWeb` é forma normalizada** para URL e integração de identidade — distinto da sigla real (que tem hífen, caixa mista, ponto).
 - **Estrutura real aberta e hierárquica** (~690 unidades, seis níveis) — não roster fechado.
 - **Base para a frente de Autorização**: o sujeito e o recurso referenciam `Unidade` por `Id` estável (ADR-0078, ADR-0079, ADR-0087).
 
 ## Opções consideradas
 
 - **A**: Identificar `Unidade` por um rótulo natural (sigla ou código) como chave de relacionamento.
-- **B**: `Id` (Guid v7) como referência universal imutável; `Slug`/`Sigla`/`Codigo` únicos entre vivos; `Alias` não-único; histórico de identificadores versionando os rótulos por vigência; cadastro aberto e hierárquico.
+- **B**: `Id` (Guid v7) como referência universal imutável; `IdentificadorNoEnderecoWeb`/`Sigla`/`Codigo` únicos entre vivos; `Apelido` não-único; histórico de identificadores versionando os rótulos por vigência; cadastro aberto e hierárquico.
 - **C**: Manter `AreaOrganizacional` (roster fechado da ADR-0055) como eixo organizacional.
 
 ## Resultado da decisão
@@ -44,7 +44,7 @@ O problema é **como identificar uma `Unidade` de forma estável e auditável**:
 
 O `Id` é imutável (via `EntityBase`, [ADR-0032](0032-guid-v7-para-identidade-de-entidades.md)) e gerado na criação. Toda referência — `UnidadeSuperiorId`, FKs cross-módulo por snapshot-copy, cursor keyset de paginação, sujeito e recurso de autorização — usa o `Id`, **nunca um rótulo**. Rótulos podem mudar por portaria; o `Id` não.
 
-### `Slug`, `Sigla` e `Codigo` são únicos entre unidades vivas
+### `IdentificadorNoEnderecoWeb`, `Sigla` e `Codigo` são únicos entre unidades vivas
 
 Os três identificadores são únicos entre unidades não excluídas, via **índice único parcial** com filtro `is_deleted = false` (naming snake_case da [ADR-0054](0054-naming-convention-e-strategy-migrations.md); soft-delete opt-in). Um valor liberado por soft-delete pode ser reusado por outra unidade. A checagem de colisão na aplicação espelha o filtro de "vivos".
 
@@ -52,17 +52,17 @@ Os três identificadores são únicos entre unidades não excluídas, via **índ
 
 O `Codigo` da unidade é citável pelo documento de configuração ([ADR-0172](0172-esquema-json-versionado-do-documento-de-configuracao.md)): letras sem acento, dígitos, `.`, `-` e `_`, começando por letra ou dígito, sem a forma de UUID. O formato é do agregado `Unidade`, que o confere na criação e na atualização.
 
-### `Alias` é não-único
+### `Apelido` é não-único
 
-`Alias` é rótulo de agrupamento popular — várias divisões compartilham o alias da pró-reitoria ou centro pai. É indexado para busca, **sem** restrição de unicidade.
+`Apelido` é rótulo de agrupamento popular — várias divisões compartilham o apelido da pró-reitoria ou centro pai. É indexado para busca, **sem** restrição de unicidade.
 
-### `Slug` é distinto de `Sigla`
+### `IdentificadorNoEnderecoWeb` é distinto de `Sigla`
 
-`Slug` é a forma normalizada (kebab-case) usada em caminhos de URL e integração de identidade; `Sigla` é o identificador institucional real, que pode conter hífen, caixa mista e ponto. São campos separados, com papéis distintos — `Slug` não é derivado automático de `Sigla`.
+`IdentificadorNoEnderecoWeb` é a forma normalizada (kebab-case) usada em caminhos de URL e integração de identidade; `Sigla` é o identificador institucional real, que pode conter hífen, caixa mista e ponto. São campos separados, com papéis distintos — `IdentificadorNoEnderecoWeb` não é derivado automático de `Sigla`.
 
 ### Histórico de identificadores preserva a vigência
 
-Quando `Slug`, `Sigla`, `Codigo` ou `Alias` mudam por ato, a entrada anterior tem sua vigência fechada e uma nova é aberta (`UnidadeIdentificadorHistorico`). A trilha responde qual valor vigorava em cada período. O `Id` permanece; apenas os rótulos versionam — o passado não é sobrescrito, registra-se um novo fato a partir da data da mudança.
+Quando `IdentificadorNoEnderecoWeb`, `Sigla`, `Codigo` ou `Apelido` mudam por ato, a entrada anterior tem sua vigência fechada e uma nova é aberta (`UnidadeIdentificadorHistorico`). O histórico de identificadores responde qual valor vigorava em cada período. O `Id` permanece; apenas os rótulos versionam — o passado não é sobrescrito, registra-se um novo fato a partir da data da mudança.
 
 ### Cadastro aberto e hierárquico
 
@@ -79,8 +79,8 @@ Quando `Slug`, `Sigla`, `Codigo` ou `Alias` mudam por ato, a entrada anterior te
 ### Positivas
 
 - Relacionamentos estáveis: mudar sigla ou código por portaria não quebra FKs, cursores nem concessões de autorização.
-- Auditoria temporal de identidade: a trilha responde qual rótulo vigorava em cada período.
-- `Slug` normalizado dá URLs e integração previsíveis, sem acoplar à sigla real.
+- Auditoria temporal de identidade: o histórico de identificadores responde qual rótulo vigorava em cada período.
+- `IdentificadorNoEnderecoWeb` normalizado dá URLs e integração previsíveis, sem acoplar à sigla real.
 - Base limpa para a frente de Autorização referenciar `Unidade` por `Id`.
 
 ### Negativas
@@ -95,8 +95,8 @@ Quando `Slug`, `Sigla`, `Codigo` ou `Alias` mudam por ato, a entrada anterior te
 ## Confirmação
 
 1. Entidade `Unidade` em `Unifesspa.UniPlus.OrganizacaoInstitucional.Domain` com os campos descritos e factory com validação.
-2. Índices únicos parciais `ix_unidades_slug_vivo`, `ix_unidades_sigla_vivo`, `ix_unidades_codigo_vivo` (filtro `is_deleted = false`) e índice não-único de `alias`.
-3. `UnidadeIdentificadorHistorico` registra `TipoIdentificador` (`Slug`/`Sigla`/`Codigo`/`Alias`), `Valor`, `VigenciaInicio`/`VigenciaFim` e `MotivoMudanca`.
+2. Índices únicos parciais `ux_unidades_identificador_no_endereco_web_ativos`, `ix_unidades_sigla_vivo`, `ix_unidades_codigo_vivo` (filtro `is_deleted = false`) e índice não-único `ix_unidades_apelido`.
+3. `UnidadeIdentificadorHistorico` registra `TipoIdentificador` (`IDENTIFICADOR_NO_ENDERECO_WEB`/`SIGLA`/`CODIGO`/`APELIDO`), `Valor`, `VigenciaInicio`/`VigenciaFim` e `MotivoMudanca`.
 4. `Id` Guid v7 via `EntityBase` (ADR-0032); hierarquia por `UnidadeSuperiorId` com FK `Restrict`.
 5. Testes de unidade e integração do módulo cobrem a unicidade entre vivos, o histórico na mudança de identificador e a busca acento/caixa-insensível sobre os identificadores.
 
@@ -109,7 +109,7 @@ Quando `Slug`, `Sigla`, `Codigo` ou `Alias` mudam por ato, a entrada anterior te
 
 ### B — `Id` imutável com rótulos únicos versionados (escolhida)
 
-- **Prós**: referência estável desacoplada dos rótulos; auditoria temporal de identidade; unicidade onde importa sem impedir alias compartilhado; base direta para autorização por `Id`.
+- **Prós**: referência estável desacoplada dos rótulos; auditoria temporal de identidade; unicidade onde importa sem impedir apelido compartilhado; base direta para autorização por `Id`.
 - **Contras**: exige histórico de identificadores e índices únicos parciais; um identificador técnico que não aparece nos rótulos institucionais.
 
 ### C — Manter `AreaOrganizacional` (roster fechado, ADR-0055)
@@ -125,3 +125,7 @@ Quando `Slug`, `Sigla`, `Codigo` ou `Alias` mudam por ato, a entrada anterior te
 - [ADR-0079](0079-hierarquia-institucional-sem-heranca-de-permissao.md) — hierarquia institucional sem herança de permissão; consome a identidade de `Unidade`.
 - [ADR-0078](0078-modelo-de-autorizacao-pbac-abac.md) e [ADR-0087](0087-banco-isolado-para-o-contexto-de-autorizacao.md) — frente de Autorização que referencia `Unidade` por `Id`.
 - Issue unifesspa-edu-br/uniplus-api#595.
+
+## Emenda (2026-11-24) — nomes do identificador no endereço web e do apelido
+
+Decisão do líder técnico (24/11/2026). O identificador usado em caminhos de endereço web chama-se **identificador no endereço web** (coluna `identificador_no_endereco_web`), e o agrupamento popular chama-se **apelido** (coluna `apelido`). O tipo do identificador no histórico é `IDENTIFICADOR_NO_ENDERECO_WEB`, `SIGLA`, `CODIGO` ou `APELIDO`.

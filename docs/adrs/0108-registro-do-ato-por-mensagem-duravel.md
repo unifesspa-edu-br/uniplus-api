@@ -29,7 +29,7 @@ Duas coisas mudaram — uma de fato, outra de conhecimento.
 
 ### 1. A vaga de linhagem tornou o órfão catastrófico
 
-A [ADR-0107](0107-vaga-de-linhagem-unica-por-objeto.md), posterior, introduziu a **vaga de linhagem única
+A [ADR-0107](0107-exclusividade-de-atos-unica-por-objeto.md), posterior, introduziu a **vaga de linhagem única
 por objeto**: um ato de tipo `unico_por_objeto` — e `EDITAL_ABERTURA` é um deles — reserva a vaga daquele
 objeto, e **a vaga é monotônica: ocupada, nunca se libera**. A própria ADR-0107 diz que um ato publicado
 sobre o objeto errado "ocupa a vaga daquele objeto **para sempre**", e que o mecanismo de liberação é
@@ -164,7 +164,7 @@ Medido no spike, contra o host real, e replicado na implementação:
 
 ## Emenda 1 (2026-10-17) — o produto publicado também tem registro na Seleção
 
-Para o ato de processo que não cria versão de configuração (aviso, errata e semelhantes), o fato "produto publicado" passa a ter também um registro na Seleção, gravado na mesma transação do outbox, e não só o ato em Publicações. Detalhes na emenda 1 da [ADR-0132](0132-armazenamento-publico-separado-para-documento-publicado.md). No ato que não cria versão, a idempotência do comando vem da `Idempotency-Key`; o `AtoId` decidido pela Seleção, gerado a cada requisição, fica nesse registro e é o que liga o `AtoNormativoRegistrado` a ele. Quando o tipo é único por objeto ([ADR-0107](0107-vaga-de-linhagem-unica-por-objeto.md)), a vaga continua sendo reservada pelo Publicações. Nenhum outro trecho desta ADR muda.
+Para o ato de processo que não cria versão de configuração (aviso, errata e semelhantes), o fato "produto publicado" passa a ter também um registro na Seleção, gravado na mesma transação do outbox, e não só o ato em Publicações. Detalhes na emenda 1 da [ADR-0132](0132-armazenamento-publico-separado-para-documento-publicado.md). No ato que não cria versão, a idempotência do comando vem da `Idempotency-Key`; o `AtoId` decidido pela Seleção, gerado a cada requisição, fica nesse registro e é o que liga o `AtoNormativoRegistrado` a ele. Quando o tipo é único por objeto ([ADR-0107](0107-exclusividade-de-atos-unica-por-objeto.md)), a vaga continua sendo reservada pelo Publicações. Nenhum outro trecho desta ADR muda.
 
 ## Emenda 2 (2026-11-12) — o registro é efeito posterior da divulgação, e a mensagem sem instante é recusada
 

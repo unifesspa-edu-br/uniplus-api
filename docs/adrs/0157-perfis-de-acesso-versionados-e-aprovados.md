@@ -28,8 +28,8 @@ O problema é ampliar e mudar perfis sem que ninguém ganhe permissão sem uma a
 - **Nenhuma ampliação sem aprovação da concessão.** Aprovar o perfil não basta: cada pessoa que ganha a permissão precisa ser avaliada.
 - **Segregação sem travamento.** Ninguém aprova a mudança que propôs nem a própria concessão, mas ter o perfil não pode impedir a operação.
 - **Uma só versão em uso.** O perfil não pode ficar com várias versões valendo sem prazo.
-- **Contenção imediata.** A retirada de acesso nunca espera aprovação nem tarefa agendada.
-- **Rastreabilidade por decisão** ([ADR-0086](0086-trilha-de-auditoria-com-hmac-e-cofre.md)).
+- **Bloqueio imediato.** A retirada de acesso nunca espera aprovação nem tarefa agendada.
+- **Rastreabilidade por decisão** ([ADR-0086](0086-registro-de-auditoria-com-hmac-e-cofre.md)).
 
 ## Opções consideradas
 
@@ -85,19 +85,19 @@ Quem cria a versão, quem a aprova pela gestão de acessos e quem a aprova pela 
 - As duas etapas de uma mesma concessão são de pessoas diferentes.
 - Ter concessão do perfil não impede ninguém de criar nem de aprovar versões dele.
 
-**Contenção.**
+**Bloqueio do perfil.**
 
 - **Suspender** o perfil bloqueia todas as concessões na hora. Retomar exige outra pessoa, que não seja quem suspendeu, e também a proteção de dados quando o perfil é protegido.
 - **Desativar** só impede pedidos e versões novas. Reativar exige outra pessoa da gestão de acessos.
 - **Reclassificar uma permissão para cima**, ou mudar o escopo dela, a suspende nas versões em uso. A suspensão é aplicada numa etapa de migration, antes de servir tráfego.
   - A liberação é perfil por perfil, lendo todas as permissões do perfil e o documento instituidor: a proteção de dados libera quando a classificação sobe, e a gestão de acessos, quando o escopo muda. Se os dois mudam, são duas decisões, de pessoas diferentes.
   - Dentro do perfil, a proteção de dados revisa as concessões individualmente ou em lote. Quem não for liberado continua sem a permissão reclassificada, e a concessão cujo escopo não comporta o novo alcance só volta por pedido novo.
-- Os perfis de governança ficam fora da suspensão por reclassificação, que neles só gera aviso. Também não se suspendem pela API, como já não se desativam: suspender a gestão de acessos travaria a própria retomada, e a contenção neles é a revogação individual, com o mínimo de duas pessoas. Também não têm versão, lote nem janela, e a composição deles só muda por PR com migration. Por isso só reúnem permissões do módulo de autorização, e toda permissão reservada à governança é desse módulo: uma permissão de outro módulo chegaria a todos os gestores e à proteção de dados sem a aprovação que os perfis comuns exigem.
+- Os perfis de governança ficam fora da suspensão por reclassificação, que neles só gera aviso. Também não se suspendem pela API, como já não se desativam: suspender a gestão de acessos travaria a própria retomada, e o bloqueio neles é a revogação individual, com o mínimo de duas pessoas. Também não têm versão, lote nem janela, e a composição deles só muda por PR com migration. Por isso só reúnem permissões do módulo de autorização, e toda permissão reservada à governança é desse módulo: uma permissão de outro módulo chegaria a todos os gestores e à proteção de dados sem a aprovação que os perfis comuns exigem.
 
-**Avisos e trilha.**
+**Avisos e histórico.**
 
 - Os avisos vão por e-mail, pelo outbox, sem texto livre nem dado pessoal.
-- Cada decisão grava, por concessão, um evento imutável na trilha. O evento registra quem decidiu, a etapa, a dispensa aplicada, a composição avaliada e se quem decide tem concessão do perfil.
+- Cada decisão grava, por concessão, um evento imutável no histórico da concessão. O evento registra quem decidiu, a etapa, a dispensa aplicada, a composição avaliada e se quem decide tem concessão do perfil.
 
 ## Emendas à ADR-0152
 
@@ -119,7 +119,7 @@ Quem cria a versão, quem a aprova pela gestão de acessos e quem a aprova pela 
 
 - Nenhuma pessoa ganha permissão sem uma aprovação daquela concessão naquela composição.
 - O perfil não trava quando todas as pessoas da gestão de acessos o têm.
-- A contenção é imediata.
+- O bloqueio é imediato.
 - A reclassificação falha fechada.
 - Toda função passa a ter origem documental.
 
@@ -128,7 +128,7 @@ Quem cria a versão, quem a aprova pela gestão de acessos e quem a aprova pela 
 - Ampliar um perfil obriga a revisar todas as concessões em 72 horas. Sem decisão no prazo, o acesso cai, e isso inclui a concessão retida, se ninguém mais da gestão de acessos agir. Os avisos de 48 e 24 horas reduzem o risco.
 - Durante a janela, o perfil não recebe pessoa nova.
 - Toda mudança de nome ou descrição passa por outra pessoa da gestão de acessos.
-- **Risco aceito:** duas pessoas da gestão de acessos com o mesmo perfil podem migrar uma a concessão da outra. A trilha registra quando quem decide tem o perfil.
+- **Risco aceito:** duas pessoas da gestão de acessos com o mesmo perfil podem migrar uma a concessão da outra. O histórico da concessão registra quando quem decide tem o perfil.
 
 ### Neutras
 
@@ -166,9 +166,13 @@ Quem cria a versão, quem a aprova pela gestão de acessos e quem a aprova pela 
 - Relacionadas:
   - [ADR-0078](0078-modelo-de-autorizacao-pbac-abac.md);
   - [ADR-0085](0085-cache-e-revogacao-diferenciados-por-sensibilidade.md): o cache futuro deve respeitar o prazo da janela e ser invalidado em toda mudança que reduz acesso;
-  - [ADR-0086](0086-trilha-de-auditoria-com-hmac-e-cofre.md);
+  - [ADR-0086](0086-registro-de-auditoria-com-hmac-e-cofre.md);
   - [ADR-0151](0151-catalogo-de-permissoes-em-codigo-por-modulo.md);
   - [ADR-0152](0152-governanca-das-concessoes-de-acesso.md);
   - [ADR-0153](0153-projecao-por-protecao.md).
 - Emendada pela [ADR-0162](0162-separacao-das-atribuicoes-de-governanca.md): o aprovador pela proteção de dados passa a ser o Representante do controlador; a dispensa `beneficiario_ja_tem_protecao_de_dados` deixa de valer, também na migração em lote; os perfis de governança passam a três e admitem permissões de outros módulos reservadas à governança.
 - Emendada pela [ADR-0158](0158-recurso-quem-recorre-ciclo-banca-e-decisoes.md): a designação da banca de análise de recursos é ato do processo, distinto da concessão de perfil.
+
+## Emenda (2026-11-24) — bloqueio do perfil e histórico da concessão
+
+Decisão do líder técnico (24/11/2026). O que esta ADR chamava de contenção passa a se chamar **bloqueio do perfil**, e o que chamava de trilha das decisões passa a se chamar **histórico da concessão**. Os eventos de bloqueio ficam na tabela `eventos_de_bloqueio_do_perfil`, com tipo `SUSPENSAO`, `RETOMADA`, `DESATIVACAO` ou `REATIVACAO`; ator `HUMANO` ou `SISTEMA`; e origem `DECISAO_DA_ETAPA`, `TROCA_DE_VIGENCIA` ou `RECLASSIFICACAO`. A ordem dos eventos de uma concessão é `ordem_no_historico`.

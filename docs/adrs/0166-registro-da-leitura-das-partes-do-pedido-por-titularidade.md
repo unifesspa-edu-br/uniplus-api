@@ -14,15 +14,15 @@ informed:
 
 A [ADR-0153](0153-projecao-por-protecao.md) manda registrar no tópico `autorizacao_registros_de_acesso`, antes da entrega, todo acesso permitido a dado a partir de `Pessoal`, e recusar a leitura com 503 quando o registro não é gravado. A mesma ADR deixa o titular fora desse escopo: ele acessa os próprios dados sem concessão ([ADR-0152](0152-governanca-das-concessoes-de-acesso.md)). A [ADR-0162](0162-separacao-das-atribuicoes-de-governanca.md) estendeu o registro por item às listagens de pedidos, concessões e revisões governadas por permissão (issue #2364) e deixou de fora a lista dos próprios pedidos (`fila=meus`), remetendo esse registro à issue #2389.
 
-A lacuna é maior que a lista. Pedido de concessão tem duas partes: o solicitante e o beneficiário, este identificado pelo identificador do token ou, antes do aceite, pelo e-mail verificado. O dado de terceiro corre nos dois sentidos: o solicitante vê o nome e o e-mail do beneficiário, e o beneficiário vê a justificativa, texto livre escrito pelo solicitante. Hoje a leitura feita por uma parte não grava nada na fila dos próprios pedidos, no detalhe, na trilha nem no anexo do pedido.
+A lacuna é maior que a lista. Pedido de concessão tem duas partes: o solicitante e o beneficiário, este identificado pelo identificador do token ou, antes do aceite, pelo e-mail verificado. O dado de terceiro corre nos dois sentidos: o solicitante vê o nome e o e-mail do beneficiário, e o beneficiário vê a justificativa, texto livre escrito pelo solicitante. Hoje a leitura feita por uma parte não grava nada na fila dos próprios pedidos, no detalhe, no histórico do pedido nem no anexo do pedido.
 
 A issue #2406 passou a registrar essas leituras quando a parte tem `autorizacao:pedidos:consultar`, como o Encarregado de dados (UNI-REQ-0372): a leitura é governada por essa permissão e registrada por ela. Quem não tem a permissão continua lendo sem registro, porque o ponto de decisão da [ADR-0078](0078-modelo-de-autorizacao-pbac-abac.md) só permite por concessão, e o acesso da parte não vem de concessão. Sem decisão permitida, não há de onde gerar o registro.
 
-Em 13/11/2026 o líder técnico decidiu que a leitura feita pelas partes de um pedido de concessão, na fila dos próprios pedidos, no detalhe, na trilha e no anexo, é registrada no tópico `autorizacao_registros_de_acesso`, sem consumo por ora (UNI-REQ-0379), com a origem "titularidade" presente só no registro e sem autorizar nada, no schema `v1`. Esta ADR decide como representar esse registro sem fazer da titularidade uma fonte de concessão, o que contrariaria a ADR-0152.
+Em 13/11/2026 o líder técnico decidiu que a leitura feita pelas partes de um pedido de concessão, na fila dos próprios pedidos, no detalhe, no histórico do pedido e no anexo, é registrada no tópico `autorizacao_registros_de_acesso`, sem consumo por ora (UNI-REQ-0379), com a origem "titularidade" presente só no registro e sem autorizar nada, no schema `v1`. Esta ADR decide como representar esse registro sem fazer da titularidade uma fonte de concessão, o que contrariaria a ADR-0152.
 
 ## Drivers da decisão
 
-- **Toda leitura de dado pessoal fica na trilha antes da entrega** (UNI-REQ-0203, UNI-REQ-0372), inclusive a feita por quem é parte, porque a parte vê dado da outra.
+- **Toda leitura de dado pessoal fica no registro de auditoria antes da entrega** (UNI-REQ-0203, UNI-REQ-0372), inclusive a feita por quem é parte, porque a parte vê dado da outra.
 - **O token identifica e não concede; toda permissão é satisfeita por concessão gravada** ([ADR-0152](0152-governanca-das-concessoes-de-acesso.md), UNI-REQ-0184). O acesso do titular não é concessão e não pode virar uma.
 - **O registro tem de distinguir o acesso do titular do acesso de terceiro** (UNI-REQ-0203), para que a futura consulta da proteção de dados (UNI-REQ-0379) separe os dois sem cruzar outra base.
 - **O ponto de decisão só decide; quem grava aplica a política** ([ADR-0153](0153-projecao-por-protecao.md)). Mudar a ordem da decisão afeta todas as permissões de todos os módulos.
@@ -40,7 +40,7 @@ Em 13/11/2026 o líder técnico decidiu que a leitura feita pelas partes de um p
 
 **Escolhida:** "C — titularidade como fonte só do registro", porque é a única que registra a leitura da parte pelo mesmo caminho, no mesmo lote atômico e com a mesma recusa das demais leituras registradas, dizendo no próprio registro que o acesso veio da titularidade, sem criar permissão satisfeita fora de concessão (ADR-0152) e sem mudar o schema `v1`.
 
-**Alcance.** São registradas as leituras feitas por uma parte do pedido de concessão, solicitante ou beneficiário (este também pelo e-mail verificado antes do aceite): cada pedido exibido na fila dos próprios pedidos, o detalhe, a trilha e cada leitura de anexo. Todo item exibido à parte é registrado, inclusive o pedido feito para si mesmo, sem filtrar só os que trazem dado de outra pessoa: o filtro exigiria decidir, item a item, se há terceiro, e o registro deixaria de ser previsível para quem consulta a trilha (UNI-REQ-0372). As leituras do titular nos outros módulos, como as próprias inscrições e os arquivos do candidato na Seleção, continuam fora do registro, como na ADR-0153.
+**Alcance.** São registradas as leituras feitas por uma parte do pedido de concessão, solicitante ou beneficiário (este também pelo e-mail verificado antes do aceite): cada pedido exibido na fila dos próprios pedidos, o detalhe, o histórico do pedido e cada leitura de anexo. Todo item exibido à parte é registrado, inclusive o pedido feito para si mesmo, sem filtrar só os que trazem dado de outra pessoa: o filtro exigiria decidir, item a item, se há terceiro, e o registro deixaria de ser previsível para quem consulta o histórico do pedido (UNI-REQ-0372). As leituras do titular nos outros módulos, como as próprias inscrições e os arquivos do candidato na Seleção, continuam fora do registro, como na ADR-0153.
 
 **Representação no registro.** O registro por titularidade usa os campos que a `v1` já tem:
 
@@ -59,7 +59,7 @@ Em 13/11/2026 o líder técnico decidiu que a leitura feita pelas partes de um p
 
 **Página vazia não grava nada.** A fila dos próprios pedidos sem item exibido não gera registro e não depende do tópico.
 
-**Disponibilidade: o registro é obrigatório também para as partes.** Decisão do líder técnico de 13/11/2026: o comportamento é o mesmo de todas as leituras registradas. Se o registro não for gravado, a leitura da parte responde 503 sem dado, na fila dos próprios pedidos, no detalhe, na trilha e no anexo. A página só sai depois de gravados todos os registros dos itens exibidos, num lote que não fica pela metade nem duplica em nova tentativa na mesma execução ([ADR-0153](0153-projecao-por-protecao.md)). A alternativa considerada, entregar a leitura sem registro com o tópico fora, foi descartada porque deixaria lacuna na trilha justamente quando o registro falha e criaria uma segunda política de registro para a mesma consulta, o que a ADR-0162 já recusou.
+**Disponibilidade: o registro é obrigatório também para as partes.** Decisão do líder técnico de 13/11/2026: o comportamento é o mesmo de todas as leituras registradas. Se o registro não for gravado, a leitura da parte responde 503 sem dado, na fila dos próprios pedidos, no detalhe, no histórico do pedido e no anexo. A página só sai depois de gravados todos os registros dos itens exibidos, num lote que não fica pela metade nem duplica em nova tentativa na mesma execução ([ADR-0153](0153-projecao-por-protecao.md)). A alternativa considerada, entregar a leitura sem registro com o tópico fora, foi descartada porque deixaria lacuna no histórico do pedido justamente quando o registro falha e criaria uma segunda política de registro para a mesma consulta, o que a ADR-0162 já recusou.
 
 **Contrato.** O schema continua na `v1`, e o cabeçalho `uniplus.versao-schema` continua `1`. Mudam só as descrições de `fonteGrant` (o valor `titularidade`, que só aparece no registro e não representa concessão) e de `permissao` (na leitura por titularidade, o código fixo da operação do titular). Nenhuma propriedade nova é serializada, e nenhum enum muda. O leitor da `v1` lê o registro novo sem alteração.
 
@@ -69,15 +69,15 @@ Em 13/11/2026 o líder técnico decidiu que a leitura feita pelas partes de um p
 
 ### Positivas
 
-- Toda leitura de pedido de concessão fica na trilha, por quem quer que leia, e a futura consulta da proteção de dados separa o acesso do titular do acesso de terceiro pelo valor de `fonteGrant`, sem cruzar a base da aplicação.
+- Toda leitura de pedido de concessão fica no registro de auditoria, por quem quer que leia, e a futura consulta da proteção de dados separa o acesso do titular do acesso de terceiro pelo valor de `fonteGrant`, sem cruzar a base da aplicação.
 - A concessão efetiva, o tipo do registro e o catálogo de permissões não mudam, e o ponto de decisão só ganha a recusa explícita da fonte `titularidade`; a mudança fica na porta e na implementação do verificador de acesso, no vocabulário canônico da fonte e no módulo de autorização. Os outros módulos não são tocados.
 - O schema continua na `v1`, sem campo novo e sem versão nova.
 - A leitura da parte segue a mesma regra de lote atômico, idempotência por chave e recusa por indisponibilidade das demais leituras registradas: uma política só.
 
 ### Negativas
 
-- **A lista dos próprios pedidos de qualquer pessoa passa a depender do tópico.** Com o tópico fora, toda pessoa autenticada que tenha ao menos um pedido, inclusive quem acompanha o primeiro pedido de acesso, recebe 503 na própria lista, no detalhe, na trilha e no anexo. Hoje essa leitura funciona com o broker fora. Só a lista vazia continua respondendo.
-- Cresce o volume do tópico: um registro por pedido exibido a cada página da fila dos próprios pedidos, mais o detalhe, a trilha e o anexo, inclusive no pedido feito para si mesmo, que não expõe dado de outra pessoa.
+- **A lista dos próprios pedidos de qualquer pessoa passa a depender do tópico.** Com o tópico fora, toda pessoa autenticada que tenha ao menos um pedido, inclusive quem acompanha o primeiro pedido de acesso, recebe 503 na própria lista, no detalhe, no histórico do pedido e no anexo. Hoje essa leitura funciona com o broker fora. Só a lista vazia continua respondendo.
+- Cresce o volume do tópico: um registro por pedido exibido a cada página da fila dos próprios pedidos, mais o detalhe, o histórico do pedido e o anexo, inclusive no pedido feito para si mesmo, que não expõe dado de outra pessoa.
 - Passa a existir no registro um registro permitido cuja permissão não está no catálogo de permissões. A futura consulta da proteção de dados precisa conhecer o código fixo da operação do titular e o valor `titularidade` para não tratá-los como permissão desconhecida.
 - O arquivo do vocabulário canônico, tocado para receber `titularidade`, tem de sair dentro dos limites da [ADR-0156](0156-limites-de-tamanho-e-complexidade-do-codigo.md); o mapeamento dos motivos de negativa que hoje passa deles é refatorado na mesma mudança.
 - O UNI-REQ-0203 diz hoje que o candidato, ao acessar os próprios dados, não gera registro de acesso de terceiro, e não prevê o registro da leitura das partes do pedido de concessão. A implementação depende da emenda dele no portal de desenvolvedores.
@@ -95,8 +95,8 @@ Em 13/11/2026 o líder técnico decidiu que a leitura feita pelas partes de um p
 - Teste do catálogo de permissões: `autorizacao:pedidos:ler-proprios` não está no catálogo de permissões e é recusado em perfil e em pedido.
 - Testes unitários da operação nova do verificador (registro permitido, fonte `titularidade`, campos da concessão nulos, sensibilidade `pessoal`) e do vocabulário canônico.
 - Teste do schema `v1`: o lote com registro por titularidade é válido e não serializa propriedade não declarada.
-- Testes da fila dos próprios pedidos, do detalhe, da trilha e do anexo: um registro por item exibido para a parte sem a consulta dos pedidos; nenhum registro de titularidade para a parte com a consulta (registro pela permissão, issue #2406); página vazia sem registro; 401 sem registro para identidade incompleta.
-- Testes do Host com o registro falhando, no padrão dos de falha ao registrar as listagens: 503 sem dado na fila dos próprios pedidos, no detalhe, na trilha e no anexo, e nenhum registro parcial.
+- Testes da fila dos próprios pedidos, do detalhe, do histórico do pedido e do anexo: um registro por item exibido para a parte sem a consulta dos pedidos; nenhum registro de titularidade para a parte com a consulta (registro pela permissão, issue #2406); página vazia sem registro; 401 sem registro para identidade incompleta.
+- Testes do Host com o registro falhando, no padrão dos de falha ao registrar as listagens: 503 sem dado na fila dos próprios pedidos, no detalhe, no histórico do pedido e no anexo, e nenhum registro parcial.
 
 ## Prós e contras das opções
 

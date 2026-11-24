@@ -25,7 +25,7 @@ O problema é definir quem pede, quem aprova e quem revoga uma concessão, de mo
 - **Proteção de dados:** acesso a dado pessoal ou sensível exige finalidade, base legal e minimização conferidas por quem responde por elas (LGPD, art. 41).
 - **Continuidade:** pedidos sem dado pessoal não podem depender da disponibilidade do Encarregado de dados.
 - **Retirada de acesso nunca espera fila.**
-- **Rastreabilidade:** todo pedido, aprovação, recusa e revogação fica na trilha de auditoria ([ADR-0086](0086-trilha-de-auditoria-com-hmac-e-cofre.md)).
+- **Rastreabilidade:** todo pedido, aprovação, recusa e revogação fica no registro de auditoria ([ADR-0086](0086-registro-de-auditoria-com-hmac-e-cofre.md)).
 
 ## Opções consideradas
 
@@ -47,7 +47,7 @@ O problema é definir quem pede, quem aprova e quem revoga uma concessão, de mo
 
 - O pedido pode ser feito para si ou para outra pessoa, como a coordenação de uma unidade que pede acesso para um servidor da equipe. Ninguém aprova pedido em que é solicitante ou beneficiário, e o gestor que aprova não é o Encarregado de dados que aprova.
 - A instituição mantém no mínimo dois gestores de acessos ativos. O sistema recusa remover ou desativar o penúltimo.
-- Pedido em que o Encarregado de dados é o beneficiário passa só pela aprovação do gestor de acessos, porque a finalidade é a própria função do Encarregado. Pedido que ele faz para outra pessoa e que inclui permissão pessoal ou sensível espera a substituição formal do Encarregado nessa aprovação, porque ele não aprova o pedido que fez. O acesso a dados de candidatos para atender um caso (direitos do titular, incidente) é concessão com escopo e validade. A revisão periódica dos acessos do Encarregado fica com os gestores, e a trilha marca essas concessões como aprovadas sem segunda aprovação por serem do Encarregado de dados.
+- Pedido em que o Encarregado de dados é o beneficiário passa só pela aprovação do gestor de acessos, porque a finalidade é a própria função do Encarregado. Pedido que ele faz para outra pessoa e que inclui permissão pessoal ou sensível espera a substituição formal do Encarregado nessa aprovação, porque ele não aprova o pedido que fez. O acesso a dados de candidatos para atender um caso (direitos do titular, incidente) é concessão com escopo e validade. A revisão periódica dos acessos do Encarregado fica com os gestores, e o histórico da concessão marca essas concessões como aprovadas sem segunda aprovação por serem do Encarregado de dados.
 - Revogar não exige aprovação: o gestor de acessos ou o Encarregado de dados retiram um acesso a qualquer momento, com efeito imediato na decisão de acesso: enquanto não houver o cache da [ADR-0085](0085-cache-e-revogacao-diferenciados-por-sensibilidade.md), a decisão lê as concessões gravadas a cada requisição; quando houver, a marca de revogação versionada daquela ADR o invalida a cada revogação. O mínimo de dois gestores é conferido também na revogação.
 - O dono de um recurso institucional, como o processo seletivo, é sempre uma unidade, nunca uma pessoa, porque a pessoa pode ser substituída. O escopo da concessão é a unidade, e quem atua sobre o recurso o faz por concessão naquela unidade, não por tê-lo criado.
 - O escopo de uma concessão é uma unidade ou, para o cadastro de alcance institucional (campi, motivos, catálogos), a própria instituição. A concessão numa unidade não se estende às unidades abaixo dela na hierarquia ([ADR-0079](0079-hierarquia-institucional-sem-heranca-de-permissao.md)). A concessão excepcional da [ADR-0084](0084-concessao-excepcional-e-atuacao-institucional-server-side.md) mantém os escopos mais restritos dela (processo, chamada ou tipo de recurso).
@@ -69,7 +69,7 @@ Durante a transição, os papéis que o token já carrega continuam valendo até
 - aceita a confirmação só da mesma pessoa que iniciou a instalação. A tentativa de outra pessoa é recusada e registrada, não consome as tentativas de quem iniciou e não revela se há instalação pendente;
 - envia o código só para o e-mail institucional verificado que vem do token, nunca para um e-mail informado na requisição;
 - prende o código à instalação iniciada, com os mesmos gestores e o mesmo documento, aceita poucas tentativas e vale uma única vez. Iniciar de novo cancela a pendência anterior da mesma pessoa, e esgotar as tentativas ou o prazo obriga a recomeçar;
-- registra na trilha quem executou, quando, o envio do código, as tentativas, a confirmação, os gestores instalados e o documento, sem gravar o código.
+- registra no histórico da instalação quem executou, quando, o envio do código, as tentativas, a confirmação, os gestores instalados e o documento, sem gravar o código.
 
 O papel de instalação é atribuído a poucas pessoas da equipe de infraestrutura. Todas as demais concessões, inclusive o papel do Encarregado de dados e os novos gestores de acessos, seguem o fluxo deste documento a partir da instalação. A concessão do papel de gestor de acessos exige o documento de designação anexado ao pedido; nas demais concessões, o anexo é opcional.
 
@@ -81,7 +81,7 @@ O papel de instalação é atribuído a poucas pessoas da equipe de infraestrutu
 
 - O acesso a dado pessoal passa a ter duas justificativas registradas, a funcional e a de proteção de dados.
 - O Encarregado de dados recebe só os pedidos que envolvem dado pessoal, já validados do ponto de vista funcional.
-- A trilha responde quem pediu, quem aprovou, quando e por quê, para toda concessão.
+- O histórico da concessão responde quem pediu, quem aprovou, quando e por quê, para toda concessão.
 
 ### Negativas
 
@@ -101,7 +101,7 @@ O papel de instalação é atribuído a poucas pessoas da equipe de infraestrutu
 - Teste do mínimo de gestores: desativar o penúltimo gestor ativo é recusado.
 - Teste da revogação: concessão revogada deixa de valer na próxima decisão de acesso.
 - Teste da fonte: no módulo já migrado para concessões gravadas, permissão é negada quando a única origem é um papel no token.
-- Teste da instalação: a operação é recusada com um gestor ativo, sem documento ou quando quem executa está entre os instalados; depois da confirmação, grava dois gestores e o documento com o resumo na trilha.
+- Teste da instalação: a operação é recusada com um gestor ativo, sem documento ou quando quem executa está entre os instalados; depois da confirmação, grava dois gestores e o documento com o resumo no histórico da instalação.
 - Teste da confirmação: a instalação só passa a valer com o código certo, informado pela mesma pessoa que a iniciou, dentro de duas horas; código de outra pessoa, expirado, já usado ou de uma instalação cancelada é recusado.
 
 ## Prós e contras das opções
@@ -128,7 +128,7 @@ O papel de instalação é atribuído a poucas pessoas da equipe de infraestrutu
 - [ADR-0078](0078-modelo-de-autorizacao-pbac-abac.md) — ponto de decisão único e concessões efetivas.
 - [ADR-0084](0084-concessao-excepcional-e-atuacao-institucional-server-side.md) — concessão excepcional com escopo e validade.
 - [ADR-0085](0085-cache-e-revogacao-diferenciados-por-sensibilidade.md) — revogação com efeito imediato.
-- [ADR-0086](0086-trilha-de-auditoria-com-hmac-e-cofre.md) — trilha de auditoria.
+- [ADR-0086](0086-registro-de-auditoria-com-hmac-e-cofre.md) — registro de auditoria.
 - Parecer do Encarregado de dados de 13/10/2026 sobre proteção dos dados da inscrição.
 - **Pendente:** confirmação do Encarregado de dados sobre o papel e definição da substituição formal nas ausências dele.
 - **Pendente:** prazo de guarda dos documentos de designação, conforme a tabela de temporalidade.
