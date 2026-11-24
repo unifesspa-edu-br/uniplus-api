@@ -84,6 +84,9 @@
     <Compile Include="../Shared/TiposDeAtoUnicosDeTeste.cs" Link="TiposDeAtoUnicosDeTeste.cs" />
     <Compile Include="../Shared/TiposDeAtoCongeladosDeTeste.cs" Link="TiposDeAtoCongeladosDeTeste.cs" />
     <Compile Include="../Shared/RegrasDeAplicabilidadeDeTeste.cs" Link="RegrasDeAplicabilidadeDeTeste.cs" />
+    <Compile Include="../Shared/QuadroDeConfrontoDosLimites.cs" Link="QuadroDeConfrontoDosLimites.cs" />
+    <Compile Include="../Shared/EntradaDeConfrontoDoLimite.cs" Link="EntradaDeConfrontoDoLimite.cs" />
+    <Compile Include="../Shared/ClasseDeConfrontoDoLimite.cs" Link="ClasseDeConfrontoDoLimite.cs" />
     <Compile Include="../Shared/InstanteEmBelem.cs" Link="InstanteEmBelem.cs" />
     <Compile Include="../Shared/RelogioFixo.cs" Link="RelogioFixo.cs" />
     <Compile Include="../Shared/RelogioControlado.cs" Link="RelogioControlado.cs" />
