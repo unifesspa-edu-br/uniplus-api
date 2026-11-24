@@ -81,7 +81,7 @@ public sealed class EnvelopeCodecRecusaValoresSelecionaveisTests
     }
 
     /// <summary>
-    /// Bicondicional D1-bis: um fato de <b>seleção</b> (SELECAO_UNICA/SELECAO_MULTIPLA) sem
+    /// Bicondicional D1-bis: um fato de <b>seleção</b> (ESCOLHA_UNICA/ESCOLHA_MULTIPLA) sem
     /// array de valores é um seletor <b>mudo</b> — o candidato veria o campo, mas nenhuma opção
     /// para escolher. É o mesmo modo de falha que <see cref="ObterFormularioRenderizavelQueryHandlerTests"/>
     /// exercita no handler de leitura pública; aqui a guarda é a do próprio DECODER.
@@ -93,7 +93,7 @@ public sealed class EnvelopeCodecRecusaValoresSelecionaveisTests
             FatoColetadoPorCodigo(envelope, "COR_RACA")["valoresSelecionaveis"] = null);
 
         resultado.IsFailure.Should().BeTrue(
-            "COR_RACA é SELECAO_UNICA — a bicondicional exige array. Restaurar null aqui publicaria um " +
+            "COR_RACA é ESCOLHA_UNICA — a bicondicional exige array. Restaurar null aqui publicaria um " +
             "campo de seleção sem as opções que o candidato precisa escolher");
         resultado.Error!.Code.Should().Be(ErrosCodecEnvelope.EnvelopeMalformado);
     }
@@ -106,7 +106,7 @@ public sealed class EnvelopeCodecRecusaValoresSelecionaveisTests
             FatoColetadoPorCodigo(envelope, "COR_RACA")["valoresSelecionaveis"] = new JsonArray());
 
         resultado.IsFailure.Should().BeTrue(
-            "COR_RACA é SELECAO_UNICA — array vazio é um seletor sem opção nenhuma, tão mudo quanto null. " +
+            "COR_RACA é ESCOLHA_UNICA — array vazio é um seletor sem opção nenhuma, tão mudo quanto null. " +
             "A publicação original nunca teria produzido isso: o gate de pré-canonicalização " +
             "(ProcessoSeletivo.PendenciaDeFatoColetadoSemValoresOfertados) recusa antes de canonicalizar, e " +
             "SerializarFatosColetados também lança — só um envelope adulterado chega aqui com [] persistido");
@@ -117,10 +117,10 @@ public sealed class EnvelopeCodecRecusaValoresSelecionaveisTests
     public void ValoresSelecionaveis_ArrayEmFatoNaoDeSelecao_Recusa()
     {
         Result<EnvelopeReidratado> resultado = ReidratarComEnvelopeAdulterado(envelope =>
-            FatoColetadoPorCodigo(envelope, "COR_RACA")["tipoDeCampo"] = "BOOLEANO");
+            FatoColetadoPorCodigo(envelope, "COR_RACA")["tipoDeCampo"] = "SIM_OU_NAO");
 
         resultado.IsFailure.Should().BeTrue(
-            "trocar o tipo de renderização para BOOLEANO sem esvaziar 'valoresSelecionaveis' deixa um " +
+            "trocar o tipo de renderização para SIM_OU_NAO sem esvaziar 'valoresSelecionaveis' deixa um " +
             "vocabulário de seleção pendurado num campo que a bicondicional proíbe de tê-lo");
         resultado.Error!.Code.Should().Be(ErrosCodecEnvelope.EnvelopeMalformado);
     }

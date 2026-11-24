@@ -77,7 +77,7 @@ public sealed class ModeloFormularioTextoNaoGravavelTests
         JsonElement objetoNulo = JsonSerializer.SerializeToElement(new[] { new Dictionary<string, string> { ["a\0"] = "b" } });
 
         Result<ModeloFormulario> modelo = Criar(
-            FinalidadeFormulario.Habilitacao, Conteudo([Item("CERTIFICADO", 0, exibicao: QuandoOValorE(Operador.Em, objetoNulo))], "CONCLUSAO_REGULAR"));
+            FinalidadeFormulario.Habilitacao, Conteudo([Item("CERTIFICADO", 0, exibicao: QuandoOValorE(Operador.AlgumDe, objetoNulo))], "CONCLUSAO_REGULAR"));
 
         DeveRecusarTextoNaoGravavelEm(modelo, "conteudo.itens[0].regras.exibicao");
     }

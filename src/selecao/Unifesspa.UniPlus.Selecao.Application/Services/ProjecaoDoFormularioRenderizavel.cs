@@ -56,7 +56,7 @@ public static class ProjecaoDoFormularioRenderizavel
         RecorteDaFinalidade recorte = RecorteDaFinalidade.De(avaliavel.Definicao, DefinicaoDoProcesso.CodigoDaEtapa(finalidade, null), avaliavel.Ofertas);
 
         return new FormularioRenderizavel(
-            EstruturaFormulario.ParaToken(finalidade),
+            finalidade.Codigo(),
             formulario.Titulo,
             [.. formulario.Etapas.OrderBy(static e => e.Ordem).Select(e => Secao(finalidade, e))],
             [.. termos.Where(t => t.Finalidade == finalidade).OrderBy(static t => t.Ordem).Select(t => Termo(finalidade, t))],
@@ -92,8 +92,8 @@ public static class ProjecaoDoFormularioRenderizavel
         etapa.Codigo,
         etapa.Tipo == TipoEtapaFormulario.Secao ? DefinicaoDoProcesso.CodigoDaEtapa(finalidade, etapa.Codigo) : null,
         etapa.Ordem,
-        EstruturaFormulario.ParaToken(etapa.Tipo),
-        EstruturaFormulario.ParaToken(etapa.Bloco),
+        etapa.Tipo.Codigo(),
+        etapa.Bloco?.Codigo(),
         new ApresentacaoDaEtapaDto(etapa.Titulo, etapa.Descricao, etapa.Aviso));
 
     private static TermoRenderizavel Termo(FinalidadeFormulario finalidade, TermoExigidoFormulario termo) => new(
@@ -122,7 +122,7 @@ public static class ProjecaoDoFormularioRenderizavel
         new ApresentacaoDoCampoDto(
             fato.Rotulo,
             fato.TipoRenderizacao.Codigo(),
-            ConjuntoBasicoDaInscricao.AjudaDoCampo(fato.Finalidade, fato.FatoCodigo, fato.Ajuda),
+            ConjuntoBasicoDaInscricao.AjudaDoCampo(fato.Finalidade!.Value, fato.FatoCodigo, fato.Ajuda),
             fato.PedirConfirmacao),
         ConjuntoBasicoDaInscricao.FormatoDaResposta(fato.FatoCodigo, fato.Formato),
         valores.GetValueOrDefault(fato.FatoCodigo) is { } doCampo

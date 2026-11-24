@@ -69,9 +69,9 @@ public static class OrigemEscolar
     [
         RegraDerivacao.CriarBooleana(Exigir(PredicadoDnf.CriarDeCondicoesAgrupadas(
         [
-            (1, Condicao(FatoOndeCursou, Operador.Em, RedePublica)),
+            (1, Condicao(FatoOndeCursou, Operador.AlgumDe, RedePublica)),
             (2, Condicao(FatoOndeCursou, Operador.Igual, ConcluiuPorCertificacao)),
-            (2, Condicao(FatoFormaDeConclusao, Operador.Em, Certificacoes)),
+            (2, Condicao(FatoFormaDeConclusao, Operador.AlgumDe, Certificacoes)),
         ]))),
     ];
 

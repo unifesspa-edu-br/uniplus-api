@@ -17,7 +17,7 @@ public sealed class DeliberacaoDaBancaEndpointTests(CascadingFixture ambienteDeT
     public async Task DefinirEtapas_ModoDeDeliberacao_ValidaCodigoSemRepetirValor()
     {
         (Guid processoId, _) = await PublicacaoPeloEndpointDeTeste.SemearProcessoAsync(ambienteDeTeste.Factory, nameof(DeliberacaoDaBancaEndpointTests));
-        CatalogosDoEnvelopeFechado.CatalogosSemeados catalogos = await CatalogosDoEnvelopeFechado.SemearCatalogosRicosAsync(ambienteDeTeste.Factory, Guid.CreateVersion7().ToString("N")[..8]);
+        CatalogosDoEnvelopeFechado.CatalogosSemeados catalogos = await CatalogosDoEnvelopeFechado.SemearCatalogosRicosAsync(ambienteDeTeste.Factory, Guid.CreateVersion7().ToString("N")[^8..]);
         using HttpClient client = ambienteDeTeste.Factory.CreateClient();
         JsonArray etapas = Etapas(catalogos.TipoBancaId);
         JsonNode regra = etapas[1]!["bancas"]![0]!["regraDeDeliberacao"]!;

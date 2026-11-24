@@ -18,11 +18,11 @@ public sealed class PredicadoDnfJsonTests
 {
     [Theory(DisplayName = "O documento escreve cada operador pelo código declarado")]
     [InlineData(Operador.Igual, "IGUAL", "true")]
-    [InlineData(Operador.Em, "EM", "[\"A\"]")]
+    [InlineData(Operador.AlgumDe, "ALGUM_DE", "[\"A\"]")]
     [InlineData(Operador.MaiorIgual, "MAIOR_IGUAL", "18")]
     [InlineData(Operador.MenorIgual, "MENOR_IGUAL", "60")]
     [InlineData(Operador.Diferente, "DIFERENTE", "true")]
-    [InlineData(Operador.NaoEm, "NAO_EM", "[\"A\"]")]
+    [InlineData(Operador.NenhumDe, "NENHUM_DE", "[\"A\"]")]
     public void ParaJson_Operador_EscrevePeloCodigo(Operador operador, string codigo, string valor)
     {
         using JsonDocument documento = JsonDocument.Parse(valor);

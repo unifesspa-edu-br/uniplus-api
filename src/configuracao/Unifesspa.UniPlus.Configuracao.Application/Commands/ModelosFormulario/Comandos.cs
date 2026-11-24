@@ -3,12 +3,14 @@ namespace Unifesspa.UniPlus.Configuracao.Application.Commands.ModelosFormulario;
 using Unifesspa.UniPlus.Application.Abstractions.Messaging;
 using Unifesspa.UniPlus.Configuracao.Contracts;
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Regras.Formularios;
 
 /// <summary>Cadastra um modelo de formulário, desativado até a ativação; o código e a finalidade não mudam depois.</summary>
 public sealed record CriarModeloFormularioCommand(
     string Codigo,
-    string Finalidade,
+    [property: AceitaCodigosDe<FinalidadeFormulario>] string Finalidade,
     DescritivoDoModeloInput? Descritivo,
     ConteudoDoModeloInput? Conteudo) : ICommand<Result<Guid>>;
 

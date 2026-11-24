@@ -312,7 +312,7 @@ public sealed class RegraCatalogoSeedTests : IClassFixture<RegraCatalogoDbFixtur
         foreach (RegraCatalogo regra in consolidacoes)
         {
             CorretoresDaRegraDeConsolidacao.De(regra).Should().BePositive(regra.Codigo);
-            NaturezasDaConsolidacao.De(regra).Should().NotBeEmpty(regra.Codigo);
+            FormasDaConsolidacao.De(regra).Should().NotBeEmpty(regra.Codigo);
         }
     }
 
@@ -343,9 +343,9 @@ public sealed class RegraCatalogoSeedTests : IClassFixture<RegraCatalogoDbFixtur
         RegraCatalogo independente = (await reader.ObterAsync(RegraDeApuracaoDaAvaliacao.CorrecaoIndependente.Codigo(), RegraCatalogoSeed.VersaoV1, CancellationToken.None))!;
 
         CorretoresDaRegraDeConsolidacao.De(unica).Should().Be(1);
-        NaturezasDaConsolidacao.De(unica).Should().BeEquivalentTo([NaturezaConceito.Numerico, NaturezaConceito.Categorico]);
+        FormasDaConsolidacao.De(unica).Should().BeEquivalentTo([FormaDoConceito.Numerico, FormaDoConceito.PorOpcoes]);
         CorretoresDaRegraDeConsolidacao.De(independente).Should().Be(3);
-        NaturezasDaConsolidacao.De(independente).Should().Equal(NaturezaConceito.Numerico);
+        FormasDaConsolidacao.De(independente).Should().Equal(FormaDoConceito.Numerico);
     }
 
     [Theory(DisplayName = "A regra categórica declara critério, corretores, tratamento e natureza")]
@@ -359,7 +359,7 @@ public sealed class RegraCatalogoSeedTests : IClassFixture<RegraCatalogoDbFixtur
         RegraCatalogoReader reader = new(context);
         RegraCatalogo regra = (await reader.ObterAsync(codigo, RegraCatalogoSeed.VersaoV1, CancellationToken.None))!;
         DeclaracaoDaConsolidacaoDoConceito.De(regra).Should().Be(new DeclaracaoDaConsolidacaoDoConceito(criterio, corretores, tratamento));
-        NaturezasDaConsolidacao.De(regra).Should().Equal([NaturezaConceito.Categorico]);
+        FormasDaConsolidacao.De(regra).Should().Equal([FormaDoConceito.PorOpcoes]);
     }
 
     [Fact(DisplayName = "As regras de consolidação numéricas não declaram critério de conceito")]

@@ -8,6 +8,7 @@ using Domain.ValueObjects;
 
 using Kernel.Results;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Regras.Formularios;
 
 /// <summary>
@@ -66,5 +67,5 @@ internal static class ConferenciaDosEixosDosFatosColetados
                 static par => par.Key,
                 static par => new EixosDoMetadadoCongelado(par.Value.Dominio, par.Value.Cardinalidade, par.Value.PontoResolucao),
                 StringComparer.Ordinal),
-            agregados.ToDictionary(static a => a.Codigo, static a => AgregadoDeGrupo.ParaToken(a.Operacao), StringComparer.Ordinal));
+            agregados.ToDictionary(static a => a.Codigo, static a => a.Operacao.Codigo(), StringComparer.Ordinal));
 }

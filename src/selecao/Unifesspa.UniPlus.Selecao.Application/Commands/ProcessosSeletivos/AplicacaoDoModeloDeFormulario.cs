@@ -7,6 +7,8 @@ using Kernel.Results;
 
 using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 using Unifesspa.UniPlus.Configuracao.Contracts;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
+using Unifesspa.UniPlus.Regras.Formularios;
 
 /// <summary>
 /// Aplica o modelo ao processo em memória: planeja a cópia (ver <see cref="PlanejamentoDaAplicacaoDoModelo"/>),
@@ -46,7 +48,7 @@ internal sealed class AplicacaoDoModeloDeFormulario(
         }
 
         await unitOfWork.SalvarAlteracoesAsync(cancellationToken).ConfigureAwait(false);
-        return Result<AplicacaoDeModeloDto>.Success(plano.Relatorio.ParaDto(modelo.Finalidade));
+        return Result<AplicacaoDeModeloDto>.Success(plano.Relatorio.ParaDto(CatalogoDe<FinalidadeFormulario>.Obter(modelo.Finalidade)));
     }
 
     // O formulário já mudou em memória, e o Wolverine grava o que estiver rastreado ao fim do handler,

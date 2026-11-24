@@ -47,8 +47,7 @@ public sealed class AtoDaProtecaoDoCatalogoConfiguration : IEntityTypeConfigurat
         builder.Property(a => a.Ato).HasConversion(AtoConverter).HasMaxLength(AtoMaxLength).IsRequired();
 
         builder.Property(a => a.ClassificacaoProtecao)
-            .HasConversion<ClassificacaoDeProtecaoValueConverter>()
-            .HasMaxLength(ClassificacaoDeProtecaoValueConverter.MaxLength)
+            .HasMaxLength(ColunaDaClassificacao.MaxLength)
             .IsRequired();
         builder.Property(a => a.HipoteseLegal)
             .HasConversion(ProtecaoDeDadosConversores.HipoteseLegal)
@@ -58,8 +57,7 @@ public sealed class AtoDaProtecaoDoCatalogoConfiguration : IEntityTypeConfigurat
         builder.Property(a => a.Ciclo).HasConversion(ManifestacaoDaProtecaoConversores.Ciclo).IsRequired();
 
         builder.Property(a => a.ClassificacaoRecomendada)
-            .HasConversion<ClassificacaoDeProtecaoValueConverter>()
-            .HasMaxLength(ClassificacaoDeProtecaoValueConverter.MaxLength);
+            .HasMaxLength(ColunaDaClassificacao.MaxLength);
         builder.Property(a => a.Justificativa).HasMaxLength(Fundamentacao.MaxLength);
         builder.Property(a => a.DianteDeManifestacaoDesfavoravel).IsRequired();
 

@@ -7,6 +7,7 @@ using Unifesspa.UniPlus.Configuracao.Domain.Enums;
 using Unifesspa.UniPlus.Configuracao.Domain.UnitTests.TestSupport;
 using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
+using Unifesspa.UniPlus.Regras.Enums;
 
 using static Unifesspa.UniPlus.Configuracao.Domain.UnitTests.TestSupport.ManifestacoesDeTeste;
 
@@ -141,8 +142,8 @@ public sealed class AprovacaoDaProtecaoCicloTests
     private static FatoCandidato FatoSolicitado()
     {
         FatoCandidato fato = CriacaoDoFato.CriarDoAdministrador(
-            "TEM_RENDA", "Tem renda", "Se o candidato tem renda.", DominioFato.Booleano, CardinalidadeFato.Escalar, null, null, "INSCRICAO",
-            EscopoFato.Candidato, ClassificacaoDeProtecao.Pessoal, TipoDocumentoNaAprovacaoBuilder.Finalidade, HipoteseLegalTratamento.CumprimentoObrigacaoLegal).Value!;
+            new DescritivoDoFato("TEM_RENDA", "Tem renda", "Se o candidato tem renda."),
+            new DefinicaoDoFato(TipoDoDado.SimOuNao, QuantidadeDeValores.ValorUnico, null, null, "INSCRICAO", EscopoFato.Candidato, ClassificacaoDeProtecao.Pessoal, TipoDocumentoNaAprovacaoBuilder.Finalidade, HipoteseLegalTratamento.CumprimentoObrigacaoLegal)).Value!;
         fato.SolicitarAprovacaoDaProtecao(TipoDocumentoNaAprovacaoBuilder.Isabella, TipoDocumentoNaAprovacaoBuilder.Segunda);
         return fato;
     }

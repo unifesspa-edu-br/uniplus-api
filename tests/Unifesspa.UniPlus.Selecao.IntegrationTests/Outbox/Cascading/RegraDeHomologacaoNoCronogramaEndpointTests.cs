@@ -120,7 +120,7 @@ public sealed class RegraDeHomologacaoNoCronogramaEndpointTests
     [InlineData("[[]]", "[0]", "uniplus.clausula_dnf.clausula_vazia")]
     [InlineData("[[null]]", "[0][0]", "uniplus.predicado_dnf.condicao_nula")]
     [InlineData("[[{\"fato\":\"\",\"operador\":\"IGUAL\",\"valor\":true}]]", "[0][0].fato", "uniplus.condicao_dnf.fato_obrigatorio")]
-    [InlineData("[[{\"fato\":\"SEXO\",\"operador\":\"EM\",\"valor\":true}]]", "[0][0].valor", "uniplus.condicao_dnf.forma_incoerente_com_operador")]
+    [InlineData("[[{\"fato\":\"SEXO\",\"operador\":\"ALGUM_DE\",\"valor\":true}]]", "[0][0].valor", "uniplus.condicao_dnf.forma_incoerente_com_operador")]
     [InlineData("[[{\"fato\":\"SEXO\",\"operador\":\"IGUAL\",\"valor\":\"FEMININO\"}],[{\"fato\":\"SEXO\",\"operador\":\"IGUAL\",\"valor\":\"FEMININO\"},{\"fato\":\"SEXO\",\"operador\":\"INVALIDO\",\"valor\":true}]]", "[1][1].operador", "uniplus.condicao_dnf.operador_invalido")]
     public async Task EnquadramentoInvalido_LocalizaARecusa(string json, string sufixo, string codigo)
     {
@@ -136,7 +136,7 @@ public sealed class RegraDeHomologacaoNoCronogramaEndpointTests
     [InlineData("DESEJA_NOME_SOCIAL", "IGUAL", "\"recusado\"", "Informe verdadeiro ou falso.")]
     [InlineData("FAIXA_ETARIA", "IGUAL", "18.5", "Informe um número inteiro.")]
     [InlineData("SEXO", "IGUAL", "867530912345678", "Informe um texto.")]
-    [InlineData("SEXO", "EM", "[867530912345678]", "Informe uma lista de textos.")]
+    [InlineData("SEXO", "ALGUM_DE", "[867530912345678]", "Informe uma lista de textos.")]
     public async Task ValorComTipoInvalido_InformaTipoSemExporValor(string fato, string operador, string valor, string mensagem)
     {
         ArgumentNullException.ThrowIfNull(valor);

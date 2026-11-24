@@ -2,6 +2,7 @@ namespace Unifesspa.UniPlus.Configuracao.Domain.Entities;
 
 using Unifesspa.UniPlus.Kernel.Domain.Entities;
 using Unifesspa.UniPlus.Kernel.Domain.Interfaces;
+using Unifesspa.UniPlus.Regras.Enums;
 
 /// <summary>
 /// Um valor do conjunto fechado de um <see cref="FatoCandidato"/> categórico
@@ -64,10 +65,7 @@ public sealed class FatoValorDominio : EntityBase, IFilhoDeAgregado
         Guid fatoCandidatoId, string codigo, string? descricao, int ordem, bool ativo, string? orientacao = null)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(codigo);
-        if (fatoCandidatoId == Guid.Empty)
-        {
-            throw new ArgumentException("FatoCandidatoId não pode ser Guid vazio.", nameof(fatoCandidatoId));
-        }
+        ArgumentOutOfRangeException.ThrowIfEqual(fatoCandidatoId, Guid.Empty);
 
         return new FatoValorDominio
         {

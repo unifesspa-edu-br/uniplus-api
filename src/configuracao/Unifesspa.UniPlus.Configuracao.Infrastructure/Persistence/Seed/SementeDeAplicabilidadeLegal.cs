@@ -38,7 +38,7 @@ internal static class SementeDeAplicabilidadeLegal
     private static readonly Atomo NaoOptouPelasCotas = (OpcaoPelasCotasDaLei.Fato, Operador.Igual, false);
     private static readonly Atomo Renda = ("BAIXA_RENDA", Operador.Igual, true);
     private static readonly Atomo ConcorrerRenda = ("CONCORRER_RENDA", Operador.Igual, true);
-    private static readonly Atomo PretaOuParda = ("COR_RACA", Operador.Em, new[] { "PRETA", "PARDA" });
+    private static readonly Atomo PretaOuParda = ("COR_RACA", Operador.AlgumDe, new[] { "PRETA", "PARDA" });
     private static readonly Atomo IndigenaPelaCor = ("COR_RACA", Operador.Igual, "INDIGENA");
     private static readonly Atomo ConcorrerPpi = ("CONCORRER_PPI", Operador.Igual, true);
     private static readonly Atomo Quilombola = ("QUILOMBOLA", Operador.Igual, true);

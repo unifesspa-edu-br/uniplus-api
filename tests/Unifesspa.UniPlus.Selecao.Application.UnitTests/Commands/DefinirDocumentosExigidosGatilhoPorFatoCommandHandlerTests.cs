@@ -7,6 +7,7 @@ using AwesomeAssertions;
 using NSubstitute;
 
 using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
+using Unifesspa.UniPlus.Application.Abstractions.Respostas;
 using Unifesspa.UniPlus.Configuracao.Contracts;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Kernel.Results;
@@ -31,7 +32,7 @@ public sealed class DefinirDocumentosExigidosGatilhoPorFatoCommandHandlerTests
     public async Task Handle_GatilhoValidoEscalar_PersisteCondicao()
     {
         CenarioDaExigencia cenario = ProcessoComUmaFase([FatoSexo()]);
-        ColetarFato(cenario.Processo, "SEXO", TipoRenderizacao.SelecaoUnica);
+        ColetarFato(cenario.Processo, "SEXO", TipoRenderizacao.EscolhaUnica);
 
         Result resultado = await cenario.DefinirAsync(cenario.ItemCondicional(new(0, "SEXO", "IGUAL", "\"MASCULINO\"")));
 
@@ -111,7 +112,7 @@ public sealed class DefinirDocumentosExigidosGatilhoPorFatoCommandHandlerTests
     public async Task Handle_GatilhoTipoDeficienciaDoCadastroSemOferta_PersisteCondicao()
     {
         CenarioDaExigencia cenario = ProcessoComUmaFase([FatoTipoDeficiencia()]);
-        ColetarFato(cenario.Processo, "TIPO_DEFICIENCIA", TipoRenderizacao.SelecaoUnica);
+        ColetarFato(cenario.Processo, "TIPO_DEFICIENCIA", TipoRenderizacao.EscolhaUnica);
 
         Result resultado = await cenario.DefinirAsync(cenario.ItemCondicional(new(0, "TIPO_DEFICIENCIA", "IGUAL", "\"TEA\"")));
 
@@ -128,7 +129,7 @@ public sealed class DefinirDocumentosExigidosGatilhoPorFatoCommandHandlerTests
     public async Task Handle_GatilhoTipoDeficiencia_UsaCodigoNaoNome()
     {
         CenarioDaExigencia cenario = ProcessoComUmaFase([FatoTipoDeficiencia()]);
-        ColetarFato(cenario.Processo, "TIPO_DEFICIENCIA", TipoRenderizacao.SelecaoUnica);
+        ColetarFato(cenario.Processo, "TIPO_DEFICIENCIA", TipoRenderizacao.EscolhaUnica);
 
         Result resultado = await cenario.DefinirAsync(cenario.ItemCondicional(new(0, "TIPO_DEFICIENCIA", "IGUAL", "\"DEFICIENCIA_VISUAL\"")));
 
@@ -151,7 +152,7 @@ public sealed class DefinirDocumentosExigidosGatilhoPorFatoCommandHandlerTests
     public async Task Handle_GatilhoTipoDeficienciaForaDoCadastro_RetornaErroNomeado()
     {
         CenarioDaExigencia cenario = ProcessoComUmaFase([FatoTipoDeficiencia()]);
-        ColetarFato(cenario.Processo, "TIPO_DEFICIENCIA", TipoRenderizacao.SelecaoUnica);
+        ColetarFato(cenario.Processo, "TIPO_DEFICIENCIA", TipoRenderizacao.EscolhaUnica);
 
         Result resultado = await cenario.DefinirAsync(cenario.ItemCondicional(new(0, "TIPO_DEFICIENCIA", "IGUAL", "\"NANISMO\"")));
 
@@ -169,16 +170,16 @@ public sealed class DefinirDocumentosExigidosGatilhoPorFatoCommandHandlerTests
             .IsSuccess.Should().BeTrue();
 
     private static FatoCandidatoView FatoSexo() => new(
-        Guid.CreateVersion7(), "SEXO", "Sexo", "Descrição do fato.", "CATEGORICO", "DECLARADO", "ESCALAR",
-        ["MASCULINO", "FEMININO", "INTERSEXO"], "INSCRICAO", "CAMPO_FORMULARIO:SEXO", null, "GLOBAL", Ativo: true, ClassificacaoProtecao: "PESSOAL", HipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, FinalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, ProtecaoAprovada: true);
+        Guid.CreateVersion7(), "SEXO", "Sexo", "Descrição do fato.", CodigoComRotulo<TipoDoDado>.De(TipoDoDado.Opcao), CodigoComRotulo<OrigemFato>.De(OrigemFato.Declarado), CodigoComRotulo<QuantidadeDeValores>.De(QuantidadeDeValores.ValorUnico),
+        ["MASCULINO", "FEMININO", "INTERSEXO"], "INSCRICAO", "CAMPO_FORMULARIO:SEXO", null, CodigoComRotulo<FonteValoresFato>.De(FonteValoresFato.Catalogo), Ativo: true, ClassificacaoProtecao: "PESSOAL", HipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, FinalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, ProtecaoAprovada: true);
 
     private static FatoCandidatoView FatoModalidade() => new(
-        Guid.CreateVersion7(), "MODALIDADE", "Modalidade de concorrência", "Descrição do fato.", "CATEGORICO", "DERIVADO", "MULTIVALORADO", null,
-        "INSCRICAO", "REGRA_DERIVACAO:MODALIDADE", null, "MODALIDADE", Ativo: true, ClassificacaoProtecao: "PESSOAL", HipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, FinalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, ProtecaoAprovada: true);
+        Guid.CreateVersion7(), "MODALIDADE", "Modalidade de concorrência", "Descrição do fato.", CodigoComRotulo<TipoDoDado>.De(TipoDoDado.Opcao), CodigoComRotulo<OrigemFato>.De(OrigemFato.Calculado), CodigoComRotulo<QuantidadeDeValores>.De(QuantidadeDeValores.VariosValores), null,
+        "INSCRICAO", "REGRA_DERIVACAO:MODALIDADE", null, CodigoComRotulo<FonteValoresFato>.De(FonteValoresFato.Modalidade), Ativo: true, ClassificacaoProtecao: "PESSOAL", HipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, FinalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, ProtecaoAprovada: true);
 
     /// <summary>A faixa etária como o catálogo a publica: derivada, por atributo do candidato.</summary>
     private static FatoCandidatoView FatoFaixaEtaria() => new(
-        Guid.CreateVersion7(), "FAIXA_ETARIA", "Faixa etária", "Descrição do fato.", "NUMERICO", "DERIVADO", "ESCALAR",
+        Guid.CreateVersion7(), "FAIXA_ETARIA", "Faixa etária", "Descrição do fato.", CodigoComRotulo<TipoDoDado>.De(TipoDoDado.Numerico), CodigoComRotulo<OrigemFato>.De(OrigemFato.Calculado), CodigoComRotulo<QuantidadeDeValores>.De(QuantidadeDeValores.ValorUnico),
         null, "INSCRICAO", "ATRIBUTO_CANDIDATO:FAIXA_ETARIA", null, null, Ativo: true, ClassificacaoProtecao: "PESSOAL", HipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, FinalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, ProtecaoAprovada: true);
 
     /// <summary>

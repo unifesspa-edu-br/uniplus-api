@@ -212,7 +212,7 @@ public sealed class ConteudoDoModeloTextosNaoGravaveisTests
         JsonElement lista = JsonSerializer.SerializeToElement(new[] { "A", ComNulo });
         JsonElement objeto = JsonSerializer.SerializeToElement(new[] { new Dictionary<string, string> { [ComNulo] = "b" } });
 
-        CamposRecusados(Vazio with { Itens = [Item("A", exibicao: Quando("FATO", Operador.Em, lista)), Item("B", 1, Quando("FATO", Operador.Em, objeto))] })
+        CamposRecusados(Vazio with { Itens = [Item("A", exibicao: Quando("FATO", Operador.AlgumDe, lista)), Item("B", 1, Quando("FATO", Operador.AlgumDe, objeto))] })
             .Should().Equal("itens[0].regras.exibicao", "itens[1].regras.exibicao");
     }
 

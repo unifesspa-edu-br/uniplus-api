@@ -7,6 +7,7 @@ using AwesomeAssertions;
 using NSubstitute;
 
 using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
+using Unifesspa.UniPlus.Application.Abstractions.Respostas;
 using Unifesspa.UniPlus.Configuracao.Contracts;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Entradas;
@@ -49,21 +50,21 @@ public sealed class DefinirTermosDoFormularioCommandHandlerTests
         mocks.TermoReader.ListarVersoesAsync(Arg.Any<IReadOnlyCollection<Guid>>(), Arg.Any<CancellationToken>()).Returns(
         [
             new VersaoTermoConsentimentoView(TermoId, VersaoId, "AUTORIZACAO_DE_CONSULTA", 1, "Autorização de consulta", "Autorizo a consulta.", "Lei 12.711/2012",
-                FormaAceite.RegistroDigitalComLogIp, new string('b', 64)),
+                FormaAceite.RegistroComEnderecoIp, new string('b', 64)),
         ]);
         return mocks;
     }
 
     private static FatoCandidatoView[] FatosDoCatalogo() =>
     [
-        new(Guid.CreateVersion7(), "COR_RACA", "Cor ou raça", "Descrição do fato.", "CATEGORICO", "DECLARADO", "ESCALAR",
-            ["BRANCA", "PRETA", "PARDA"], "INSCRICAO", "CAMPO_FORMULARIO:COR_RACA", null, "GLOBAL", Ativo: true, ClassificacaoProtecao: "PESSOAL", HipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, FinalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, ProtecaoAprovada: true),
-        new(Guid.CreateVersion7(), "BAIXA_RENDA", "Baixa renda", "Descrição do fato.", "BOOLEANO", "DECLARADO", "ESCALAR",
+        new(Guid.CreateVersion7(), "COR_RACA", "Cor ou raça", "Descrição do fato.", CodigoComRotulo<TipoDoDado>.De(TipoDoDado.Opcao), CodigoComRotulo<OrigemFato>.De(OrigemFato.Declarado), CodigoComRotulo<QuantidadeDeValores>.De(QuantidadeDeValores.ValorUnico),
+            ["BRANCA", "PRETA", "PARDA"], "INSCRICAO", "CAMPO_FORMULARIO:COR_RACA", null, CodigoComRotulo<FonteValoresFato>.De(FonteValoresFato.Catalogo), Ativo: true, ClassificacaoProtecao: "PESSOAL", HipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, FinalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, ProtecaoAprovada: true),
+        new(Guid.CreateVersion7(), "BAIXA_RENDA", "Baixa renda", "Descrição do fato.", CodigoComRotulo<TipoDoDado>.De(TipoDoDado.SimOuNao), CodigoComRotulo<OrigemFato>.De(OrigemFato.Declarado), CodigoComRotulo<QuantidadeDeValores>.De(QuantidadeDeValores.ValorUnico),
             null, "INSCRICAO", "CAMPO_FORMULARIO:BAIXA_RENDA", null, null, Ativo: true, ClassificacaoProtecao: "PESSOAL", HipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, FinalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, ProtecaoAprovada: true),
-        new(Guid.CreateVersion7(), "FAIXA_ETARIA", "Faixa etária", "Descrição do fato.", "NUMERICO", "DERIVADO", "ESCALAR",
+        new(Guid.CreateVersion7(), "FAIXA_ETARIA", "Faixa etária", "Descrição do fato.", CodigoComRotulo<TipoDoDado>.De(TipoDoDado.Numerico), CodigoComRotulo<OrigemFato>.De(OrigemFato.Calculado), CodigoComRotulo<QuantidadeDeValores>.De(QuantidadeDeValores.ValorUnico),
             null, "INSCRICAO", "ATRIBUTO_CANDIDATO:FAIXA_ETARIA", null, null, Ativo: true, ClassificacaoProtecao: "PESSOAL", HipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, FinalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, ProtecaoAprovada: true),
-        new(Guid.CreateVersion7(), "FAIXA_DE_RENDA", "Faixa de renda", "Descrição do fato.", "CATEGORICO", "DERIVADO", "ESCALAR",
-            ["MENOR_DE_18", "DE_18_A_59"], "INSCRICAO", "ATRIBUTO_CANDIDATO:FAIXA_DE_RENDA", null, "GLOBAL", Ativo: true, ClassificacaoProtecao: "PESSOAL", HipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, FinalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, ProtecaoAprovada: true),
+        new(Guid.CreateVersion7(), "FAIXA_DE_RENDA", "Faixa de renda", "Descrição do fato.", CodigoComRotulo<TipoDoDado>.De(TipoDoDado.Opcao), CodigoComRotulo<OrigemFato>.De(OrigemFato.Calculado), CodigoComRotulo<QuantidadeDeValores>.De(QuantidadeDeValores.ValorUnico),
+            ["MENOR_DE_18", "DE_18_A_59"], "INSCRICAO", "ATRIBUTO_CANDIDATO:FAIXA_DE_RENDA", null, CodigoComRotulo<FonteValoresFato>.De(FonteValoresFato.Catalogo), Ativo: true, ClassificacaoProtecao: "PESSOAL", HipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, FinalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, ProtecaoAprovada: true),
     ];
 
     private static Task<Result> HandleAsync(Mocks mocks, ProcessoSeletivo processo, params TermoExigidoInput[] termos) =>
@@ -86,7 +87,7 @@ public sealed class DefinirTermosDoFormularioCommandHandlerTests
     private static FatoColetado ItemCorRaca() =>
         FatoColetadoDeTeste.Coletando("COR_RACA", 0)
             .ComRotulo("Cor ou raça")
-            .DoTipo(TipoRenderizacao.SelecaoUnica)
+            .DoTipo(TipoRenderizacao.EscolhaUnica)
             .ComObrigatoriedade(Obrigatoriedade.Sempre)
             .Construir();
 
@@ -124,7 +125,7 @@ public sealed class DefinirTermosDoFormularioCommandHandlerTests
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
         TermoExigidoFormulario termo = processo.TermosExigidos.Should().ContainSingle().Which;
-        termo.Should().BeEquivalentTo(new { Texto = "Autorizo a consulta.", FormaAceite = FormaAceite.RegistroDigitalComLogIp, HashVersao = new string('b', 64) });
+        termo.Should().BeEquivalentTo(new { Texto = "Autorizo a consulta.", FormaAceite = FormaAceite.RegistroComEnderecoIp, HashVersao = new string('b', 64) });
         termo.Obrigatoriedade.Tipo.Should().Be(TipoObrigatoriedade.Quando);
         termo.Exibicao!.FatosCitados.Should().Equal("COR_RACA");
     }

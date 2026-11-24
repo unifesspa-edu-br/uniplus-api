@@ -64,7 +64,7 @@ public sealed class AplicarModeloFormularioCommandHandlerTests
         Guid termoId = Guid.NewGuid();
         Guid versaoId = Guid.NewGuid();
         _cenario.Termos.ListarVersoesAsync(Arg.Any<IReadOnlyCollection<Guid>>(), Arg.Any<CancellationToken>()).Returns(
-            [new VersaoTermoConsentimentoView(termoId, versaoId, "CONSULTA", 1, "Consulta", "Autorizo.", "Lei 12.711/2012", FormaAceite.RegistroDigitalComLogIp, new string('b', 64))]);
+            [new VersaoTermoConsentimentoView(termoId, versaoId, "CONSULTA", 1, "Consulta", "Autorizo.", "Lei 12.711/2012", FormaAceite.RegistroComEnderecoIp, new string('b', 64))]);
         TermoExigidoInput termo = EntradaDoTermoExigidoDeTeste.Exigindo("CONSULTA").DaVersao(termoId, versaoId)
             .ExibidoQuando([[new CondicaoPrecondicaoInput("FAIXA_ETARIA", "MAIOR_IGUAL", JsonSerializer.SerializeToElement(18))]]).Construir();
         FatoColetadoInput[] itens = coletaDataDeNascimento ? [Item("QUILOMBOLA", 0), Item("DATA_NASCIMENTO", 1, "DATA")] : [Item("QUILOMBOLA", 0)];
@@ -141,7 +141,7 @@ public sealed class AplicarModeloFormularioCommandHandlerTests
     [Fact(DisplayName = "O que o item descartado cita não pede derivação nem distribuição de vagas")]
     public async Task Handle_ItemDescartadoQueCitaDerivado_AplicaSemExigirDerivacao()
     {
-        FatoColetadoInput descartado = ItemQueCita(Item("BAIXA_RENDA", 1), "SEM_REGRA", "EM", new[] { "X" });
+        FatoColetadoInput descartado = ItemQueCita(Item("BAIXA_RENDA", 1), "SEM_REGRA", "ALGUM_DE", new[] { "X" });
 
         Result<AplicacaoDeModeloDto> resultado = await _cenario.AplicarAsync(Modelo(FinalidadeFormulario.Inscricao, [Item("QUILOMBOLA", 0), descartado]));
 
@@ -166,7 +166,7 @@ public sealed class AplicarModeloFormularioCommandHandlerTests
         Guid termoId = Guid.NewGuid();
         Guid versaoId = Guid.NewGuid();
         _cenario.Termos.ListarVersoesAsync(Arg.Any<IReadOnlyCollection<Guid>>(), Arg.Any<CancellationToken>())
-            .Returns([new VersaoTermoConsentimentoView(termoId, versaoId, "TERMO", 1, "Termo", "Texto", "Base", FormaAceite.RegistroDigitalSemLogIp, "hash")]);
+            .Returns([new VersaoTermoConsentimentoView(termoId, versaoId, "TERMO", 1, "Termo", "Texto", "Base", FormaAceite.RegistroSemEnderecoIp, "hash")]);
         TermoExigidoInput removido = EntradaDoTermoExigidoDeTeste.Exigindo("LGPD").DaVersao(Guid.NewGuid(), Guid.NewGuid()).Construir();
         TermoExigidoInput citaIsencao = EntradaDoTermoExigidoDeTeste.Exigindo("IMAGEM", 1).DaVersao(termoId, versaoId)
             .ExibidoQuando([[new CondicaoPrecondicaoInput("CERTIFICADO", "IGUAL", JsonSerializer.SerializeToElement(true))]]).Construir();

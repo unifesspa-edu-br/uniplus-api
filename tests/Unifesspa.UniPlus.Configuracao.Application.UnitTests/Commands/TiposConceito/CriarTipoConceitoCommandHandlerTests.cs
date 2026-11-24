@@ -15,6 +15,7 @@ using Unifesspa.UniPlus.Configuracao.Domain.Enums;
 using Unifesspa.UniPlus.Configuracao.Domain.Errors;
 using Unifesspa.UniPlus.Configuracao.Domain.Interfaces;
 using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Regras.Enums;
 
 public sealed class CriarTipoConceitoCommandHandlerTests
 {
@@ -31,7 +32,7 @@ public sealed class CriarTipoConceitoCommandHandlerTests
 
         resultado.IsSuccess.Should().BeTrue();
         await _repository.Received(1).AdicionarAsync(
-            Arg.Is<TipoConceito>(tipo => tipo.Id == resultado.Value && tipo.EscalaMaxima == 10m && tipo.Natureza == NaturezaConceito.Numerico),
+            Arg.Is<TipoConceito>(tipo => tipo.Id == resultado.Value && tipo.EscalaMaxima == 10m && tipo.Natureza == FormaDoConceito.Numerico),
             Arg.Any<CancellationToken>());
         await _unitOfWork.Received(1).SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
     }

@@ -60,7 +60,7 @@ public sealed class LeituraDaRegraDeHomologacaoDaFaseTests
     [Fact(DisplayName = "A condição do enquadramento que o domínio recusa é recusada no mesmo campo")]
     public void Enquadramento_ComCondicaoIncoerente_ApontaOCampo()
     {
-        IdentificacaoECronogramaLidos lidos = Ler(Documento(ComHomologacao(ComEnquadramento("[[{\"fato\":\"cota\",\"operador\":\"EM\",\"valor\":\"A\"}]]"))));
+        IdentificacaoECronogramaLidos lidos = Ler(Documento(ComHomologacao(ComEnquadramento("[[{\"fato\":\"cota\",\"operador\":\"ALGUM_DE\",\"valor\":\"A\"}]]"))));
 
         PartesRecusadas(lidos).Should().Equal(($"{CaminhoDaRegra}/alternativas/0/condicoes/0/enquadramento/0/0/valor", "CondicaoDnf.FormaIncoerenteComOperador"));
     }

@@ -21,7 +21,7 @@ internal sealed record FatoColetadoDeTeste
 
     private string? Rotulo { get; init; }
 
-    private TipoRenderizacao Tipo { get; init; } = TipoRenderizacao.Booleano;
+    private TipoRenderizacao Tipo { get; init; } = TipoRenderizacao.SimOuNao;
 
     private Obrigatoriedade Obrigatoriedade { get; init; } = Obrigatoriedade.Nunca;
 
@@ -33,7 +33,7 @@ internal sealed record FatoColetadoDeTeste
 
     private string? Secao { get; init; }
 
-    private FinalidadeFormulario Finalidade { get; init; }
+    private FinalidadeFormulario? Finalidade { get; init; } = FinalidadeFormulario.Inscricao;
 
     private string? Ajuda { get; init; }
 

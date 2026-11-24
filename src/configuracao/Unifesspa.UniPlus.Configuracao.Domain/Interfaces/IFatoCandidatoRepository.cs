@@ -3,6 +3,7 @@ namespace Unifesspa.UniPlus.Configuracao.Domain.Interfaces;
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Domain.Enums;
 using Unifesspa.UniPlus.Kernel.Pagination;
+using Unifesspa.UniPlus.Regras.Enums;
 
 /// <summary>Escrita e leitura de manutenção do catálogo de fatos do candidato (ADR-0136).</summary>
 public interface IFatoCandidatoRepository

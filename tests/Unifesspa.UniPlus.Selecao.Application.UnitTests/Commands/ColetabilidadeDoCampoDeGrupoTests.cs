@@ -2,6 +2,7 @@ namespace Unifesspa.UniPlus.Selecao.Application.UnitTests.Commands;
 
 using AwesomeAssertions;
 
+using Unifesspa.UniPlus.Application.Abstractions.Respostas;
 using Unifesspa.UniPlus.Configuracao.Contracts;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Enums;
@@ -41,7 +42,7 @@ public sealed class ColetabilidadeDoCampoDeGrupoTests
         new(StringComparer.Ordinal)
         {
             ["PARENTESCO"] = new(
-                Guid.CreateVersion7(), "PARENTESCO", "Parentesco", "Descrição do fato.", "BOOLEANO", "DECLARADO", "ESCALAR", null, "INSCRICAO",
+                Guid.CreateVersion7(), "PARENTESCO", "Parentesco", "Descrição do fato.", CodigoComRotulo<TipoDoDado>.De(TipoDoDado.SimOuNao), CodigoComRotulo<OrigemFato>.De(OrigemFato.Declarado), CodigoComRotulo<QuantidadeDeValores>.De(QuantidadeDeValores.ValorUnico), null, "INSCRICAO",
                 "CAMPO_FORMULARIO:PARENTESCO", null, FonteValores: null, Ativo: true, ClassificacaoProtecao: "PESSOAL", HipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, FinalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, Escopo: escopo, ProtecaoAprovada: true),
         };
 }

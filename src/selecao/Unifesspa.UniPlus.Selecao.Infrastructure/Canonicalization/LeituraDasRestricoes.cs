@@ -70,10 +70,10 @@ internal static class LeituraDasRestricoes
             return null;
         }
 
-        return LerRestricaoTipada(leitor, bloco, pathRestricao, RestricaoValorJson.TipoDoToken(tipo));
+        return LerRestricaoTipada(leitor, bloco, pathRestricao, RestricoesDeValor.TipoDeclarado(tipo));
     }
 
-    private static Result<RestricaoValor>? LerRestricaoTipada(LeitorEnvelope leitor, JsonObject bloco, string pathRestricao, TipoRestricaoValor tipo) => tipo switch
+    private static Result<RestricaoValor>? LerRestricaoTipada(LeitorEnvelope leitor, JsonObject bloco, string pathRestricao, TipoRestricaoValor? tipo) => tipo switch
     {
         TipoRestricaoValor.FaixaNumerica => LerFaixa(leitor, bloco, pathRestricao),
         TipoRestricaoValor.TamanhoTexto => LerTamanho(leitor, bloco, pathRestricao),

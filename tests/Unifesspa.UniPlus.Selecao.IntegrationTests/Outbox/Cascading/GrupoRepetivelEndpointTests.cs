@@ -16,10 +16,12 @@ using Microsoft.Extensions.DependencyInjection;
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Domain.Enums;
 using Unifesspa.UniPlus.Configuracao.Domain.Services;
+using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Authentication;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Regras.Entradas;
+using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Selecao.IntegrationTests.TestSupport;
 using Unifesspa.UniPlus.Testes.Compartilhado;
@@ -91,7 +93,7 @@ public sealed class GrupoRepetivelEndpointTests
 
     private static object CorpoComGrupoSemOcorrencias(string campo)
     {
-        object[] subitens = [FormularioDeInscricaoHttp.Item(campo, 0, "Trabalha no campo", "BOOLEANO")];
+        object[] subitens = [FormularioDeInscricaoHttp.Item(campo, 0, "Trabalha no campo", "SIM_OU_NAO")];
         JsonObject grupo = JsonSerializer.SerializeToNode(FormularioDeInscricaoHttp.Grupo("COMPOSICAO_FAMILIAR", 0, "", "DADOS", subitens))!.AsObject();
         grupo.Remove("ocorrencias");
         return new { itens = Array.Empty<object>(), grupos = new[] { grupo } };
@@ -108,7 +110,7 @@ public sealed class GrupoRepetivelEndpointTests
 
     private static JsonElement FormularioDeInscricao(JsonDocument processo) =>
         processo.RootElement.GetProperty("formularios").EnumerateArray()
-            .Single(static f => f.GetProperty("finalidade").GetString() == "INSCRICAO");
+            .Single(static f => f.GetProperty("finalidade").GetProperty("codigo").GetString() == "INSCRICAO");
 
     private static void ConferirGrupoDaComposicaoFamiliar(JsonElement grupo, string campo)
     {
@@ -128,9 +130,9 @@ public sealed class GrupoRepetivelEndpointTests
         object[] subitens =
         [
             .. comParentesco
-                ? new object[] { FormularioDeInscricaoHttp.Item(CandidatoComoMembro.FatoParentesco, 0, "Parentesco", "SELECAO_UNICA") }
+                ? new object[] { FormularioDeInscricaoHttp.Item(CandidatoComoMembro.FatoParentesco, 0, "Parentesco", "ESCOLHA_UNICA") }
                 : [],
-            FormularioDeInscricaoHttp.Item(campo, 1, rotuloDoCampo, "BOOLEANO"),
+            FormularioDeInscricaoHttp.Item(campo, 1, rotuloDoCampo, "SIM_OU_NAO"),
         ];
         return EnviarAsync(client, HttpMethod.Put, $"/api/selecao/admin/processos-seletivos/{processoId}/formularios/INSCRICAO/itens", new
         {
@@ -153,8 +155,8 @@ public sealed class GrupoRepetivelEndpointTests
 
         await DefinirOpcoesDeCategoriaDeRendaAsync(client, processo.Id, membro);
         await DefinirGrupoDeUmCampoAsync(
-            client, processo.Id, FormularioDeInscricaoHttp.Item(membro, 0, "Categoria de renda", "SELECAO_UNICA"), obrigatoriedadeDoGrupo);
-        await ExigirDocumentoAsync(client, processo, tipoDocumentoId, (agregado, "EM", "[\"RURAL\"]"));
+            client, processo.Id, FormularioDeInscricaoHttp.Item(membro, 0, "Categoria de renda", "ESCOLHA_UNICA"), obrigatoriedadeDoGrupo);
+        await ExigirDocumentoAsync(client, processo, tipoDocumentoId, (agregado, "ALGUM_DE", "[\"RURAL\"]"));
 
         HttpResponseMessage publicado = await PublicarAsync(client, processo.Id, documento.Id);
         publicado.StatusCode.Should().Be(esperado, await publicado.Content.ReadAsStringAsync());
@@ -170,7 +172,7 @@ public sealed class GrupoRepetivelEndpointTests
         (ProcessoSeletivo processo, DocumentoAPublicar documento) = await SemearProcessoPublicavelAsync();
         using HttpClient client = _fixture.Factory.CreateClient();
 
-        await DefinirGrupoDeUmCampoAsync(client, processo.Id, FormularioDeInscricaoHttp.Item(sobGuarda, 0, "Sob guarda", "BOOLEANO"), "SEMPRE");
+        await DefinirGrupoDeUmCampoAsync(client, processo.Id, FormularioDeInscricaoHttp.Item(sobGuarda, 0, "Sob guarda", "SIM_OU_NAO"), "SEMPRE");
         await ExigirDocumentoAsync(client, processo, tipoDocumentoId, (sobGuarda, "IGUAL", "true"), grupoDoFormularioParaRepeticao: "COMPOSICAO_FAMILIAR");
 
         HttpResponseMessage publicado = await PublicarAsync(client, processo.Id, documento.Id);
@@ -240,9 +242,9 @@ public sealed class GrupoRepetivelEndpointTests
     /// <summary>Grava os fatos e um tipo de documento no catálogo da Configuração; devolve o tipo de documento.</summary>
     private async Task<Guid> SemearNoCatalogoAsync(FatoCandidato fato, string codigoDoDocumento, string nomeDoDocumento, params FatoCandidato[] outros)
     {
-        TipoDocumento tipoDocumento = TipoDocumento.Criar(
-            codigoDoDocumento, nomeDoDocumento, descricao: null, categoria: "IDENTIFICACAO",
-            formatosAceitos: null, tamanhoMaximoMb: null, tipoEquivalente: null, classificacaoProtecao: ClassificacaoDeProtecao.Pessoal, finalidadeTratamento: "Comprovação documental do candidato.", hipoteseLegal: HipoteseLegalTratamento.CumprimentoObrigacaoLegal).Value!;
+        TipoDocumento tipoDocumento = TipoDocumento.Criar(new DeclaracaoDoTipoDocumento(
+            codigoDoDocumento, nomeDoDocumento, Descricao: null, Categoria: "IDENTIFICACAO",
+            FormatosAceitos: null, TamanhoMaximoMb: null, TipoEquivalente: null, ClassificacaoProtecao: ClassificacaoDeProtecao.Pessoal, FinalidadeTratamento: "Comprovação documental do candidato.", HipoteseLegal: HipoteseLegalTratamento.CumprimentoObrigacaoLegal)).Value!;
         await using AsyncServiceScope escopo = _fixture.Factory.Services.CreateAsyncScope();
         UniPlusDbContext db = escopo.ServiceProvider.GetRequiredService<UniPlusDbContext>();
         db.AddRange([fato, .. outros]);
@@ -255,12 +257,13 @@ public sealed class GrupoRepetivelEndpointTests
     private async Task<Guid> SemearCatalogoDoAgregadoAsync(string membro, string agregado, string sufixo)
     {
         FatoCandidato fatoDeMembro = CriacaoDoFato.CriarDoAdministrador(
-            membro, "Categoria de renda", "Descrição do fato.", DominioFato.Categorico, CardinalidadeFato.Escalar, FonteValoresFato.Processo, formato: null,
-            "RESULTADO_FINAL", EscopoFato.MembroGrupo, ClassificacaoDeProtecao.Pessoal, "Composição familiar",
-            HipoteseLegalTratamento.CumprimentoObrigacaoLegal).Value!;
+            new DescritivoDoFato(membro, "Categoria de renda", "Descrição do fato."),
+            new DefinicaoDoFato(TipoDoDado.Opcao, QuantidadeDeValores.ValorUnico, FonteValoresFato.OpcoesDoProcesso, null, "RESULTADO_FINAL", EscopoFato.MembroGrupo, ClassificacaoDeProtecao.Pessoal, "Composição familiar", HipoteseLegalTratamento.CumprimentoObrigacaoLegal)).Value!;
         FatoCandidato fatoAgregado = CriacaoDoFato.CriarAgregadoDoAdministrador(
-            agregado, "Categorias de renda da família", "Descrição do fato.", membro, new CatalogoDeFatos([fatoDeMembro], []),
-            "RESULTADO_FINAL", ClassificacaoDeProtecao.Pessoal, "Composição familiar", HipoteseLegalTratamento.CumprimentoObrigacaoLegal).Value!;
+            new DescritivoDoFato(agregado, "Categorias de renda da família", "Descrição do fato."),
+            membro,
+            new CatalogoDeFatos([fatoDeMembro], []),
+            new DefinicaoDoFato(null, null, null, null, "RESULTADO_FINAL", null, ClassificacaoDeProtecao.Pessoal, "Composição familiar", HipoteseLegalTratamento.CumprimentoObrigacaoLegal)).Value!;
         return await SemearNoCatalogoAsync(fatoDeMembro, $"DECL_RURAL_{sufixo}", "Declaração de trabalhador rural", fatoAgregado);
     }
 
@@ -288,9 +291,8 @@ public sealed class GrupoRepetivelEndpointTests
 
     private static FatoCandidato FatoBooleanoDeMembro(string codigo, string nome, string pontoResolucao) =>
         CriacaoDoFato.CriarDoAdministrador(
-            codigo, nome, "Descrição do fato.", DominioFato.Booleano, CardinalidadeFato.Escalar, fonteValores: null, formato: null,
-            pontoResolucao, EscopoFato.MembroGrupo, ClassificacaoDeProtecao.Pessoal, "Composição familiar",
-            HipoteseLegalTratamento.CumprimentoObrigacaoLegal).Value!;
+            new DescritivoDoFato(codigo, nome, "Descrição do fato."),
+            new DefinicaoDoFato(TipoDoDado.SimOuNao, QuantidadeDeValores.ValorUnico, null, null, pontoResolucao, EscopoFato.MembroGrupo, ClassificacaoDeProtecao.Pessoal, "Composição familiar", HipoteseLegalTratamento.CumprimentoObrigacaoLegal)).Value!;
 
     private async Task<string> SemearFatoDeMembroAsync()
     {

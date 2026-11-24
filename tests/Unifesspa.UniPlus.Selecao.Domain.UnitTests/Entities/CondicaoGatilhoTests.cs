@@ -49,10 +49,10 @@ public sealed class CondicaoGatilhoTests
         resultado.Error!.Code.Should().Be("CondicaoDnf.FatoObrigatorio");
     }
 
-    [Fact(DisplayName = "Story #916: Criar aceita EM com array vazio — a forma passou a admitir lista vazia (semântica de avaliação é de PredicadoDnf, não desta factory)")]
+    [Fact(DisplayName = "Story #916: Criar aceita ALGUM_DE com array vazio — a forma passou a admitir lista vazia (semântica de avaliação é de PredicadoDnf, não desta factory)")]
     public void Criar_OperadorEmComArrayVazio_Aceita()
     {
-        Result<CondicaoGatilho> resultado = CondicaoGatilho.Criar(0, "MODALIDADE", Operador.Em, Json("[]"));
+        Result<CondicaoGatilho> resultado = CondicaoGatilho.Criar(0, "MODALIDADE", Operador.AlgumDe, Json("[]"));
 
         resultado.IsSuccess.Should().BeTrue();
     }

@@ -17,6 +17,7 @@ using Unifesspa.UniPlus.Configuracao.IntegrationTests.Infrastructure;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.Formularios;
 
 /// <summary>
@@ -59,7 +60,7 @@ public sealed class FatoCandidatoSementeDosEixosTests
         List<FatoCandidato> fatos = await ctx.FatosCandidato.AsNoTracking().Where(static f => f.SemeadoPeloSistema).ToListAsync();
 
         string[] derivados = [.. fatos
-            .Where(f => f.Origem == OrigemFato.Derivado)
+            .Where(f => f.Origem == OrigemFato.Calculado)
             .Select(f => f.Codigo)
             .OrderBy(c => c, StringComparer.Ordinal)];
 
@@ -69,7 +70,7 @@ public sealed class FatoCandidatoSementeDosEixosTests
         derivados.Should().Equal(
             "EGRESSO_ESCOLA_PUBLICA", "FAIXA_ETARIA", "MODALIDADE", "MODALIDADE_CONVOCACAO", "MODALIDADE_SEGUNDA_OPCAO",
             "MUNICIPIO_RESIDENCIA", "OPTOU_PELAS_COTAS_DA_LEI", "RENDA_PER_CAPITA", "UF_RESIDENCIA");
-        fatos.Where(f => f.Origem != OrigemFato.Derivado)
+        fatos.Where(f => f.Origem != OrigemFato.Calculado)
             .Should().OnlyContain(f => f.Origem == OrigemFato.Declarado);
     }
 
@@ -93,13 +94,13 @@ public sealed class FatoCandidatoSementeDosEixosTests
         List<FatoCandidato> fatos = await ctx.FatosCandidato.AsNoTracking().Where(static f => f.SemeadoPeloSistema).ToListAsync();
 
         string[] multivalorados = [.. fatos
-            .Where(f => f.Cardinalidade == CardinalidadeFato.Multivalorado)
+            .Where(f => f.Cardinalidade == QuantidadeDeValores.VariosValores)
             .Select(f => f.Codigo)
             .OrderBy(c => c, StringComparer.Ordinal)];
 
         multivalorados.Should().Equal("CONDICAO_ATENDIMENTO", "MODALIDADE", "MODALIDADE_SEGUNDA_OPCAO", "RECURSO_ACESSIBILIDADE");
-        fatos.Where(f => f.Cardinalidade != CardinalidadeFato.Multivalorado)
-            .Should().OnlyContain(f => f.Cardinalidade == CardinalidadeFato.Escalar);
+        fatos.Where(f => f.Cardinalidade != QuantidadeDeValores.VariosValores)
+            .Should().OnlyContain(f => f.Cardinalidade == QuantidadeDeValores.ValorUnico);
     }
 
     [Fact(DisplayName = "Seed de FatoValorDominio: os categóricos estáticos de sistema têm os valores filhos esperados")]
@@ -178,66 +179,66 @@ public sealed class FatoCandidatoSementeDosEixosTests
         // Falha se a fonte do seed divergir da autoridade da ADR (código, id fixo,
         // domínio, origem, cardinalidade, ponto de resolução, binding ou valores),
         // não apenas se a migration divergir da fonte.
-        (string Codigo, string IdSufixo, DominioFato Dominio, OrigemFato Origem, CardinalidadeFato Cardinalidade, string Binding, string PontoResolucao)[] esperado =
+        (string Codigo, string IdSufixo, TipoDoDado Dominio, OrigemFato Origem, QuantidadeDeValores Cardinalidade, string Binding, string PontoResolucao)[] esperado =
         [
-            ("COR_RACA", "001", DominioFato.Categorico, OrigemFato.Declarado, CardinalidadeFato.Escalar, "CAMPO_FORMULARIO:COR_RACA", "INSCRICAO"),
-            ("QUILOMBOLA", "002", DominioFato.Booleano, OrigemFato.Declarado, CardinalidadeFato.Escalar, "CAMPO_FORMULARIO:QUILOMBOLA", "INSCRICAO"),
-            ("PCD", "003", DominioFato.Booleano, OrigemFato.Declarado, CardinalidadeFato.Escalar, "CAMPO_FORMULARIO:PCD", "INSCRICAO"),
-            ("EGRESSO_ESCOLA_PUBLICA", "004", DominioFato.Booleano, OrigemFato.Derivado, CardinalidadeFato.Escalar, "REGRA_DERIVACAO:EGRESSO_ESCOLA_PUBLICA", "INSCRICAO"),
-            ("RENDA_PER_CAPITA", "005", DominioFato.Numerico, OrigemFato.Derivado, CardinalidadeFato.Escalar, "ATRIBUTO_CANDIDATO:RENDA_PER_CAPITA", "INSCRICAO"),
-            ("FAIXA_ETARIA", "006", DominioFato.Numerico, OrigemFato.Derivado, CardinalidadeFato.Escalar, "ATRIBUTO_CANDIDATO:FAIXA_ETARIA", "INSCRICAO"),
-            ("SEXO", "007", DominioFato.Categorico, OrigemFato.Declarado, CardinalidadeFato.Escalar, "CAMPO_FORMULARIO:SEXO", "INSCRICAO"),
-            ("MODALIDADE", "008", DominioFato.Categorico, OrigemFato.Derivado, CardinalidadeFato.Multivalorado, "REGRA_DERIVACAO:MODALIDADE", "INSCRICAO"),
-            ("CONDICAO_ATENDIMENTO", "009", DominioFato.Categorico, OrigemFato.Declarado, CardinalidadeFato.Multivalorado, "CAMPO_FORMULARIO:CONDICAO_ATENDIMENTO", "INSCRICAO"),
-            ("NACIONALIDADE", "010", DominioFato.Categorico, OrigemFato.Declarado, CardinalidadeFato.Escalar, "CAMPO_FORMULARIO:NACIONALIDADE", "INSCRICAO"),
-            ("TIPO_DEFICIENCIA", "011", DominioFato.Categorico, OrigemFato.Declarado, CardinalidadeFato.Escalar, "CAMPO_FORMULARIO:TIPO_DEFICIENCIA", "INSCRICAO"),
-            ("BAIXA_RENDA", "012", DominioFato.Booleano, OrigemFato.Declarado, CardinalidadeFato.Escalar, "CAMPO_FORMULARIO:BAIXA_RENDA", "INSCRICAO"),
-            ("CONCORRER_PCD", "013", DominioFato.Booleano, OrigemFato.Declarado, CardinalidadeFato.Escalar, "CAMPO_FORMULARIO:CONCORRER_PCD", "INSCRICAO"),
-            ("CONCORRER_EP", "014", DominioFato.Booleano, OrigemFato.Declarado, CardinalidadeFato.Escalar, "CAMPO_FORMULARIO:CONCORRER_EP", "INSCRICAO"),
-            ("CONCORRER_PPI", "015", DominioFato.Booleano, OrigemFato.Declarado, CardinalidadeFato.Escalar, "CAMPO_FORMULARIO:CONCORRER_PPI", "INSCRICAO"),
-            ("CONCORRER_Q", "016", DominioFato.Booleano, OrigemFato.Declarado, CardinalidadeFato.Escalar, "CAMPO_FORMULARIO:CONCORRER_Q", "INSCRICAO"),
-            ("CONCORRER_RENDA", "017", DominioFato.Booleano, OrigemFato.Declarado, CardinalidadeFato.Escalar, "CAMPO_FORMULARIO:CONCORRER_RENDA", "INSCRICAO"),
-            ("ENDERECO_RESIDENCIAL", "018", DominioFato.Endereco, OrigemFato.Declarado, CardinalidadeFato.Escalar, "CAMPO_FORMULARIO:ENDERECO_RESIDENCIAL", "INSCRICAO"),
-            ("DATA_NASCIMENTO", "019", DominioFato.Data, OrigemFato.Declarado, CardinalidadeFato.Escalar, "CAMPO_FORMULARIO:DATA_NASCIMENTO", "INSCRICAO"),
-            ("UF_RESIDENCIA", "020", DominioFato.Categorico, OrigemFato.Derivado, CardinalidadeFato.Escalar, "ATRIBUTO_CANDIDATO:UF_RESIDENCIA", "INSCRICAO"),
-            ("MUNICIPIO_RESIDENCIA", "021", DominioFato.Categorico, OrigemFato.Derivado, CardinalidadeFato.Escalar, "ATRIBUTO_CANDIDATO:MUNICIPIO_RESIDENCIA", "INSCRICAO"),
-            ("MODALIDADE_CONVOCACAO", "022", DominioFato.Categorico, OrigemFato.Derivado, CardinalidadeFato.Escalar, "CLASSIFICACAO:MODALIDADE_CONVOCACAO", "RESULTADO_FINAL"),
-            ("MAIOR_IDADE", "023", DominioFato.Booleano, OrigemFato.Declarado, CardinalidadeFato.Escalar, "CAMPO_FORMULARIO:MAIOR_IDADE", "INSCRICAO"),
-            ("SEM_RENDA", "024", DominioFato.Booleano, OrigemFato.Declarado, CardinalidadeFato.Escalar, "CAMPO_FORMULARIO:SEM_RENDA", "INSCRICAO"),
-            ("SOB_GUARDA", "025", DominioFato.Booleano, OrigemFato.Declarado, CardinalidadeFato.Escalar, "CAMPO_FORMULARIO:SOB_GUARDA", "INSCRICAO"),
-            ("PARENTESCO", "026", DominioFato.Categorico, OrigemFato.Declarado, CardinalidadeFato.Escalar, "CAMPO_FORMULARIO:PARENTESCO", "INSCRICAO"),
-            ("NOME", "027", DominioFato.Texto, OrigemFato.Declarado, CardinalidadeFato.Escalar, "CAMPO_FORMULARIO:NOME", "INSCRICAO"),
-            ("DESEJA_NOME_SOCIAL", "028", DominioFato.Booleano, OrigemFato.Declarado, CardinalidadeFato.Escalar, "CAMPO_FORMULARIO:DESEJA_NOME_SOCIAL", "INSCRICAO"),
-            ("NOME_SOCIAL", "029", DominioFato.Texto, OrigemFato.Declarado, CardinalidadeFato.Escalar, "CAMPO_FORMULARIO:NOME_SOCIAL", "INSCRICAO"),
-            ("CPF", "030", DominioFato.Texto, OrigemFato.Declarado, CardinalidadeFato.Escalar, "CAMPO_FORMULARIO:CPF", "INSCRICAO"),
-            ("RG_NUMERO", "031", DominioFato.Texto, OrigemFato.Declarado, CardinalidadeFato.Escalar, "CAMPO_FORMULARIO:RG_NUMERO", "INSCRICAO"),
-            ("RG_ORGAO_EMISSOR", "032", DominioFato.Categorico, OrigemFato.Declarado, CardinalidadeFato.Escalar, "CAMPO_FORMULARIO:RG_ORGAO_EMISSOR", "INSCRICAO"),
-            ("RG_DATA_EMISSAO", "033", DominioFato.Data, OrigemFato.Declarado, CardinalidadeFato.Escalar, "CAMPO_FORMULARIO:RG_DATA_EMISSAO", "INSCRICAO"),
-            ("NOME_MAE", "036", DominioFato.Texto, OrigemFato.Declarado, CardinalidadeFato.Escalar, "CAMPO_FORMULARIO:NOME_MAE", "INSCRICAO"),
-            ("NOME_PAI", "037", DominioFato.Texto, OrigemFato.Declarado, CardinalidadeFato.Escalar, "CAMPO_FORMULARIO:NOME_PAI", "INSCRICAO"),
-            ("ESTADO_CIVIL", "038", DominioFato.Categorico, OrigemFato.Declarado, CardinalidadeFato.Escalar, "CAMPO_FORMULARIO:ESTADO_CIVIL", "INSCRICAO"),
-            ("EMAIL", "039", DominioFato.Texto, OrigemFato.Declarado, CardinalidadeFato.Escalar, "CAMPO_FORMULARIO:EMAIL", "INSCRICAO"),
-            ("TELEFONE", "040", DominioFato.Texto, OrigemFato.Declarado, CardinalidadeFato.Escalar, "CAMPO_FORMULARIO:TELEFONE", "INSCRICAO"),
-            ("RG_UF", "041", DominioFato.Categorico, OrigemFato.Declarado, CardinalidadeFato.Escalar, "CAMPO_FORMULARIO:RG_UF", "INSCRICAO"),
-            ("NATURALIDADE_UF", "042", DominioFato.Categorico, OrigemFato.Declarado, CardinalidadeFato.Escalar, "CAMPO_FORMULARIO:NATURALIDADE_UF", "INSCRICAO"),
-            ("NATURALIDADE_MUNICIPIO", "043", DominioFato.Categorico, OrigemFato.Declarado, CardinalidadeFato.Escalar, "CAMPO_FORMULARIO:NATURALIDADE_MUNICIPIO", "INSCRICAO"),
-            ("TIPO_ENDERECO", "044", DominioFato.Categorico, OrigemFato.Declarado, CardinalidadeFato.Escalar, "CAMPO_FORMULARIO:TIPO_ENDERECO", "INSCRICAO"),
-            ("NOME_COMUNIDADE", "045", DominioFato.Texto, OrigemFato.Declarado, CardinalidadeFato.Escalar, "CAMPO_FORMULARIO:NOME_COMUNIDADE", "INSCRICAO"),
-            ("FORMA_CONCLUSAO_EM", "046", DominioFato.Categorico, OrigemFato.Declarado, CardinalidadeFato.Escalar, "CAMPO_FORMULARIO:FORMA_CONCLUSAO_EM", "INSCRICAO"),
-            ("ONDE_CURSOU_EM", "047", DominioFato.Categorico, OrigemFato.Declarado, CardinalidadeFato.Escalar, "CAMPO_FORMULARIO:ONDE_CURSOU_EM", "INSCRICAO"),
-            ("RENDA_ATE_UM_SALARIO_MINIMO_E_MEIO", "048", DominioFato.Booleano, OrigemFato.Declarado, CardinalidadeFato.Escalar, "CAMPO_FORMULARIO:RENDA_ATE_UM_SALARIO_MINIMO_E_MEIO", "SOLICITACAO_ISENCAO"),
-            ("EDICAO_ENEM", "049", DominioFato.Categorico, OrigemFato.Declarado, CardinalidadeFato.Escalar, "CAMPO_FORMULARIO:EDICAO_ENEM", "INSCRICAO"),
-            ("INDIGENA", "050", DominioFato.Booleano, OrigemFato.Declarado, CardinalidadeFato.Escalar, "CAMPO_FORMULARIO:INDIGENA", "INSCRICAO"),
-            ("PASSAPORTE_NUMERO", "051", DominioFato.Texto, OrigemFato.Declarado, CardinalidadeFato.Escalar, "CAMPO_FORMULARIO:PASSAPORTE_NUMERO", "INSCRICAO"),
-            ("RNM_NUMERO", "052", DominioFato.Texto, OrigemFato.Declarado, CardinalidadeFato.Escalar, "CAMPO_FORMULARIO:RNM_NUMERO", "INSCRICAO"),
-            ("RECURSO_ACESSIBILIDADE", "053", DominioFato.Categorico, OrigemFato.Declarado, CardinalidadeFato.Multivalorado, "CAMPO_FORMULARIO:RECURSO_ACESSIBILIDADE", "INSCRICAO"),
-            ("OPTOU_PELAS_COTAS_DA_LEI", "054", DominioFato.Booleano, OrigemFato.Derivado, CardinalidadeFato.Escalar, "REGRA_DERIVACAO:OPTOU_PELAS_COTAS_DA_LEI", "INSCRICAO"),
-            ("CONCORRER_VAGA_POR_ACRESCIMO", "055", DominioFato.Booleano, OrigemFato.Declarado, CardinalidadeFato.Escalar, "CAMPO_FORMULARIO:CONCORRER_VAGA_POR_ACRESCIMO", "INSCRICAO"),
-            ("RG_ORGAO_EMISSOR_OUTRO", "056", DominioFato.Texto, OrigemFato.Declarado, CardinalidadeFato.Escalar, "CAMPO_FORMULARIO:RG_ORGAO_EMISSOR_OUTRO", "INSCRICAO"),
-            ("SEXO_CIVIL", "057", DominioFato.Categorico, OrigemFato.Declarado, CardinalidadeFato.Escalar, "CAMPO_FORMULARIO:SEXO_CIVIL", "INSCRICAO"),
-            ("IDENTIDADE_GENERO", "058", DominioFato.Categorico, OrigemFato.Declarado, CardinalidadeFato.Escalar, "CAMPO_FORMULARIO:IDENTIDADE_GENERO", "INSCRICAO"),
-            ("ORIENTACAO_SEXUAL", "059", DominioFato.Categorico, OrigemFato.Declarado, CardinalidadeFato.Escalar, "CAMPO_FORMULARIO:ORIENTACAO_SEXUAL", "INSCRICAO"),
-            ("MODALIDADE_SEGUNDA_OPCAO", "060", DominioFato.Categorico, OrigemFato.Derivado, CardinalidadeFato.Multivalorado, "ATRIBUTO_CANDIDATO:MODALIDADE_SEGUNDA_OPCAO", "INSCRICAO"),
+            ("COR_RACA", "001", TipoDoDado.Opcao, OrigemFato.Declarado, QuantidadeDeValores.ValorUnico, "CAMPO_FORMULARIO:COR_RACA", "INSCRICAO"),
+            ("QUILOMBOLA", "002", TipoDoDado.SimOuNao, OrigemFato.Declarado, QuantidadeDeValores.ValorUnico, "CAMPO_FORMULARIO:QUILOMBOLA", "INSCRICAO"),
+            ("PCD", "003", TipoDoDado.SimOuNao, OrigemFato.Declarado, QuantidadeDeValores.ValorUnico, "CAMPO_FORMULARIO:PCD", "INSCRICAO"),
+            ("EGRESSO_ESCOLA_PUBLICA", "004", TipoDoDado.SimOuNao, OrigemFato.Calculado, QuantidadeDeValores.ValorUnico, "REGRA_DERIVACAO:EGRESSO_ESCOLA_PUBLICA", "INSCRICAO"),
+            ("RENDA_PER_CAPITA", "005", TipoDoDado.Numerico, OrigemFato.Calculado, QuantidadeDeValores.ValorUnico, "ATRIBUTO_CANDIDATO:RENDA_PER_CAPITA", "INSCRICAO"),
+            ("FAIXA_ETARIA", "006", TipoDoDado.Numerico, OrigemFato.Calculado, QuantidadeDeValores.ValorUnico, "ATRIBUTO_CANDIDATO:FAIXA_ETARIA", "INSCRICAO"),
+            ("SEXO", "007", TipoDoDado.Opcao, OrigemFato.Declarado, QuantidadeDeValores.ValorUnico, "CAMPO_FORMULARIO:SEXO", "INSCRICAO"),
+            ("MODALIDADE", "008", TipoDoDado.Opcao, OrigemFato.Calculado, QuantidadeDeValores.VariosValores, "REGRA_DERIVACAO:MODALIDADE", "INSCRICAO"),
+            ("CONDICAO_ATENDIMENTO", "009", TipoDoDado.Opcao, OrigemFato.Declarado, QuantidadeDeValores.VariosValores, "CAMPO_FORMULARIO:CONDICAO_ATENDIMENTO", "INSCRICAO"),
+            ("NACIONALIDADE", "010", TipoDoDado.Opcao, OrigemFato.Declarado, QuantidadeDeValores.ValorUnico, "CAMPO_FORMULARIO:NACIONALIDADE", "INSCRICAO"),
+            ("TIPO_DEFICIENCIA", "011", TipoDoDado.Opcao, OrigemFato.Declarado, QuantidadeDeValores.ValorUnico, "CAMPO_FORMULARIO:TIPO_DEFICIENCIA", "INSCRICAO"),
+            ("BAIXA_RENDA", "012", TipoDoDado.SimOuNao, OrigemFato.Declarado, QuantidadeDeValores.ValorUnico, "CAMPO_FORMULARIO:BAIXA_RENDA", "INSCRICAO"),
+            ("CONCORRER_PCD", "013", TipoDoDado.SimOuNao, OrigemFato.Declarado, QuantidadeDeValores.ValorUnico, "CAMPO_FORMULARIO:CONCORRER_PCD", "INSCRICAO"),
+            ("CONCORRER_EP", "014", TipoDoDado.SimOuNao, OrigemFato.Declarado, QuantidadeDeValores.ValorUnico, "CAMPO_FORMULARIO:CONCORRER_EP", "INSCRICAO"),
+            ("CONCORRER_PPI", "015", TipoDoDado.SimOuNao, OrigemFato.Declarado, QuantidadeDeValores.ValorUnico, "CAMPO_FORMULARIO:CONCORRER_PPI", "INSCRICAO"),
+            ("CONCORRER_Q", "016", TipoDoDado.SimOuNao, OrigemFato.Declarado, QuantidadeDeValores.ValorUnico, "CAMPO_FORMULARIO:CONCORRER_Q", "INSCRICAO"),
+            ("CONCORRER_RENDA", "017", TipoDoDado.SimOuNao, OrigemFato.Declarado, QuantidadeDeValores.ValorUnico, "CAMPO_FORMULARIO:CONCORRER_RENDA", "INSCRICAO"),
+            ("ENDERECO_RESIDENCIAL", "018", TipoDoDado.Endereco, OrigemFato.Declarado, QuantidadeDeValores.ValorUnico, "CAMPO_FORMULARIO:ENDERECO_RESIDENCIAL", "INSCRICAO"),
+            ("DATA_NASCIMENTO", "019", TipoDoDado.Data, OrigemFato.Declarado, QuantidadeDeValores.ValorUnico, "CAMPO_FORMULARIO:DATA_NASCIMENTO", "INSCRICAO"),
+            ("UF_RESIDENCIA", "020", TipoDoDado.Opcao, OrigemFato.Calculado, QuantidadeDeValores.ValorUnico, "ATRIBUTO_CANDIDATO:UF_RESIDENCIA", "INSCRICAO"),
+            ("MUNICIPIO_RESIDENCIA", "021", TipoDoDado.Opcao, OrigemFato.Calculado, QuantidadeDeValores.ValorUnico, "ATRIBUTO_CANDIDATO:MUNICIPIO_RESIDENCIA", "INSCRICAO"),
+            ("MODALIDADE_CONVOCACAO", "022", TipoDoDado.Opcao, OrigemFato.Calculado, QuantidadeDeValores.ValorUnico, "CLASSIFICACAO:MODALIDADE_CONVOCACAO", "RESULTADO_FINAL"),
+            ("MAIOR_IDADE", "023", TipoDoDado.SimOuNao, OrigemFato.Declarado, QuantidadeDeValores.ValorUnico, "CAMPO_FORMULARIO:MAIOR_IDADE", "INSCRICAO"),
+            ("SEM_RENDA", "024", TipoDoDado.SimOuNao, OrigemFato.Declarado, QuantidadeDeValores.ValorUnico, "CAMPO_FORMULARIO:SEM_RENDA", "INSCRICAO"),
+            ("SOB_GUARDA", "025", TipoDoDado.SimOuNao, OrigemFato.Declarado, QuantidadeDeValores.ValorUnico, "CAMPO_FORMULARIO:SOB_GUARDA", "INSCRICAO"),
+            ("PARENTESCO", "026", TipoDoDado.Opcao, OrigemFato.Declarado, QuantidadeDeValores.ValorUnico, "CAMPO_FORMULARIO:PARENTESCO", "INSCRICAO"),
+            ("NOME", "027", TipoDoDado.Texto, OrigemFato.Declarado, QuantidadeDeValores.ValorUnico, "CAMPO_FORMULARIO:NOME", "INSCRICAO"),
+            ("DESEJA_NOME_SOCIAL", "028", TipoDoDado.SimOuNao, OrigemFato.Declarado, QuantidadeDeValores.ValorUnico, "CAMPO_FORMULARIO:DESEJA_NOME_SOCIAL", "INSCRICAO"),
+            ("NOME_SOCIAL", "029", TipoDoDado.Texto, OrigemFato.Declarado, QuantidadeDeValores.ValorUnico, "CAMPO_FORMULARIO:NOME_SOCIAL", "INSCRICAO"),
+            ("CPF", "030", TipoDoDado.Texto, OrigemFato.Declarado, QuantidadeDeValores.ValorUnico, "CAMPO_FORMULARIO:CPF", "INSCRICAO"),
+            ("RG_NUMERO", "031", TipoDoDado.Texto, OrigemFato.Declarado, QuantidadeDeValores.ValorUnico, "CAMPO_FORMULARIO:RG_NUMERO", "INSCRICAO"),
+            ("RG_ORGAO_EMISSOR", "032", TipoDoDado.Opcao, OrigemFato.Declarado, QuantidadeDeValores.ValorUnico, "CAMPO_FORMULARIO:RG_ORGAO_EMISSOR", "INSCRICAO"),
+            ("RG_DATA_EMISSAO", "033", TipoDoDado.Data, OrigemFato.Declarado, QuantidadeDeValores.ValorUnico, "CAMPO_FORMULARIO:RG_DATA_EMISSAO", "INSCRICAO"),
+            ("NOME_MAE", "036", TipoDoDado.Texto, OrigemFato.Declarado, QuantidadeDeValores.ValorUnico, "CAMPO_FORMULARIO:NOME_MAE", "INSCRICAO"),
+            ("NOME_PAI", "037", TipoDoDado.Texto, OrigemFato.Declarado, QuantidadeDeValores.ValorUnico, "CAMPO_FORMULARIO:NOME_PAI", "INSCRICAO"),
+            ("ESTADO_CIVIL", "038", TipoDoDado.Opcao, OrigemFato.Declarado, QuantidadeDeValores.ValorUnico, "CAMPO_FORMULARIO:ESTADO_CIVIL", "INSCRICAO"),
+            ("EMAIL", "039", TipoDoDado.Texto, OrigemFato.Declarado, QuantidadeDeValores.ValorUnico, "CAMPO_FORMULARIO:EMAIL", "INSCRICAO"),
+            ("TELEFONE", "040", TipoDoDado.Texto, OrigemFato.Declarado, QuantidadeDeValores.ValorUnico, "CAMPO_FORMULARIO:TELEFONE", "INSCRICAO"),
+            ("RG_UF", "041", TipoDoDado.Opcao, OrigemFato.Declarado, QuantidadeDeValores.ValorUnico, "CAMPO_FORMULARIO:RG_UF", "INSCRICAO"),
+            ("NATURALIDADE_UF", "042", TipoDoDado.Opcao, OrigemFato.Declarado, QuantidadeDeValores.ValorUnico, "CAMPO_FORMULARIO:NATURALIDADE_UF", "INSCRICAO"),
+            ("NATURALIDADE_MUNICIPIO", "043", TipoDoDado.Opcao, OrigemFato.Declarado, QuantidadeDeValores.ValorUnico, "CAMPO_FORMULARIO:NATURALIDADE_MUNICIPIO", "INSCRICAO"),
+            ("TIPO_ENDERECO", "044", TipoDoDado.Opcao, OrigemFato.Declarado, QuantidadeDeValores.ValorUnico, "CAMPO_FORMULARIO:TIPO_ENDERECO", "INSCRICAO"),
+            ("NOME_COMUNIDADE", "045", TipoDoDado.Texto, OrigemFato.Declarado, QuantidadeDeValores.ValorUnico, "CAMPO_FORMULARIO:NOME_COMUNIDADE", "INSCRICAO"),
+            ("FORMA_CONCLUSAO_EM", "046", TipoDoDado.Opcao, OrigemFato.Declarado, QuantidadeDeValores.ValorUnico, "CAMPO_FORMULARIO:FORMA_CONCLUSAO_EM", "INSCRICAO"),
+            ("ONDE_CURSOU_EM", "047", TipoDoDado.Opcao, OrigemFato.Declarado, QuantidadeDeValores.ValorUnico, "CAMPO_FORMULARIO:ONDE_CURSOU_EM", "INSCRICAO"),
+            ("RENDA_ATE_UM_SALARIO_MINIMO_E_MEIO", "048", TipoDoDado.SimOuNao, OrigemFato.Declarado, QuantidadeDeValores.ValorUnico, "CAMPO_FORMULARIO:RENDA_ATE_UM_SALARIO_MINIMO_E_MEIO", "SOLICITACAO_ISENCAO"),
+            ("EDICAO_ENEM", "049", TipoDoDado.Opcao, OrigemFato.Declarado, QuantidadeDeValores.ValorUnico, "CAMPO_FORMULARIO:EDICAO_ENEM", "INSCRICAO"),
+            ("INDIGENA", "050", TipoDoDado.SimOuNao, OrigemFato.Declarado, QuantidadeDeValores.ValorUnico, "CAMPO_FORMULARIO:INDIGENA", "INSCRICAO"),
+            ("PASSAPORTE_NUMERO", "051", TipoDoDado.Texto, OrigemFato.Declarado, QuantidadeDeValores.ValorUnico, "CAMPO_FORMULARIO:PASSAPORTE_NUMERO", "INSCRICAO"),
+            ("RNM_NUMERO", "052", TipoDoDado.Texto, OrigemFato.Declarado, QuantidadeDeValores.ValorUnico, "CAMPO_FORMULARIO:RNM_NUMERO", "INSCRICAO"),
+            ("RECURSO_ACESSIBILIDADE", "053", TipoDoDado.Opcao, OrigemFato.Declarado, QuantidadeDeValores.VariosValores, "CAMPO_FORMULARIO:RECURSO_ACESSIBILIDADE", "INSCRICAO"),
+            ("OPTOU_PELAS_COTAS_DA_LEI", "054", TipoDoDado.SimOuNao, OrigemFato.Calculado, QuantidadeDeValores.ValorUnico, "REGRA_DERIVACAO:OPTOU_PELAS_COTAS_DA_LEI", "INSCRICAO"),
+            ("CONCORRER_VAGA_POR_ACRESCIMO", "055", TipoDoDado.SimOuNao, OrigemFato.Declarado, QuantidadeDeValores.ValorUnico, "CAMPO_FORMULARIO:CONCORRER_VAGA_POR_ACRESCIMO", "INSCRICAO"),
+            ("RG_ORGAO_EMISSOR_OUTRO", "056", TipoDoDado.Texto, OrigemFato.Declarado, QuantidadeDeValores.ValorUnico, "CAMPO_FORMULARIO:RG_ORGAO_EMISSOR_OUTRO", "INSCRICAO"),
+            ("SEXO_CIVIL", "057", TipoDoDado.Opcao, OrigemFato.Declarado, QuantidadeDeValores.ValorUnico, "CAMPO_FORMULARIO:SEXO_CIVIL", "INSCRICAO"),
+            ("IDENTIDADE_GENERO", "058", TipoDoDado.Opcao, OrigemFato.Declarado, QuantidadeDeValores.ValorUnico, "CAMPO_FORMULARIO:IDENTIDADE_GENERO", "INSCRICAO"),
+            ("ORIENTACAO_SEXUAL", "059", TipoDoDado.Opcao, OrigemFato.Declarado, QuantidadeDeValores.ValorUnico, "CAMPO_FORMULARIO:ORIENTACAO_SEXUAL", "INSCRICAO"),
+            ("MODALIDADE_SEGUNDA_OPCAO", "060", TipoDoDado.Opcao, OrigemFato.Calculado, QuantidadeDeValores.VariosValores, "ATRIBUTO_CANDIDATO:MODALIDADE_SEGUNDA_OPCAO", "INSCRICAO"),
         ];
 
         await using UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null);
@@ -256,7 +257,7 @@ public sealed class FatoCandidatoSementeDosEixosTests
             ["MUNICIPIO_RESIDENCIA"] = ["ENDERECO_RESIDENCIAL"],
         };
 
-        foreach ((string codigo, string idSufixo, DominioFato dominio, OrigemFato origem, CardinalidadeFato cardinalidade, string binding, string pontoResolucao) in esperado)
+        foreach ((string codigo, string idSufixo, TipoDoDado dominio, OrigemFato origem, QuantidadeDeValores cardinalidade, string binding, string pontoResolucao) in esperado)
         {
             FatoCandidato fato = fatos.Single(f => f.Codigo == codigo);
             fato.Id.Should().Be(Guid.Parse($"fa700000-0000-7000-8000-{idSufixo.PadLeft(12, '0')}"));

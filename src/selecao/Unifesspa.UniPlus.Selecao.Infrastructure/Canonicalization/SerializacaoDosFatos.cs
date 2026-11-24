@@ -34,8 +34,8 @@ internal static class SerializacaoDosFatos
                 ["nome"] = HashCanonicalComputer.NormalizeNfc(f.Nome),
                 ["descricao"] = HashCanonicalComputer.NormalizeNfc(f.Descricao),
                 ["componenteExibicao"] = f.ComponenteExibicao,
-                ["tipo"] = f.Dominio,
-                ["quantidadeDeValores"] = f.Cardinalidade,
+                ["tipo"] = f.Dominio.Codigo(),
+                ["quantidadeDeValores"] = f.Cardinalidade.Codigo(),
                 ["classificacaoProtecao"] = f.ClassificacaoProtecao,
                 ["hipoteseLegal"] = f.HipoteseLegal,
                 ["finalidadeTratamento"] = HashCanonicalComputer.NormalizeNfc(f.FinalidadeTratamento),
@@ -56,9 +56,9 @@ internal static class SerializacaoDosFatos
     private static JsonObject SerializarMetadadoDoFato(MetadadoFatoCongelado metadado) => new()
     {
         ["codigoDoDado"] = HashCanonicalComputer.NormalizeNfc(metadado.Codigo),
-        ["tipo"] = HashCanonicalComputer.NormalizeNfc(metadado.Dominio),
-        ["origem"] = HashCanonicalComputer.NormalizeNfc(metadado.Origem),
-        ["quantidadeDeValores"] = HashCanonicalComputer.NormalizeNfc(metadado.Cardinalidade),
+        ["tipo"] = metadado.Dominio.Codigo(),
+        ["origem"] = metadado.Origem.Codigo(),
+        ["quantidadeDeValores"] = metadado.Cardinalidade.Codigo(),
         ["faseDeDisponibilidade"] = HashCanonicalComputer.NormalizeNfc(metadado.PontoResolucao),
         ["fonteDoValor"] = HashCanonicalComputer.NormalizeNfc(metadado.Binding),
         ["opcoes"] = metadado.ValoresDominio is { } valores
@@ -97,7 +97,7 @@ internal static class SerializacaoDosFatos
         FatoColetado fato,
         IReadOnlyDictionary<string, IReadOnlyList<ValorDominioDeclaradoCongelado>?>? valoresSelecionaveisCongelados)
     {
-        bool ehFatoDeSelecao = fato.TipoRenderizacao.EhSelecao();
+        bool ehFatoDeSelecao = fato.TipoRenderizacao.EhEscolha();
         IReadOnlyList<ValorDominioDeclaradoCongelado>? valoresDoFato = null;
         bool temEntrada = valoresSelecionaveisCongelados?.TryGetValue(fato.FatoCodigo, out valoresDoFato) ?? false;
 
@@ -133,7 +133,7 @@ internal static class SerializacaoDosFatos
         JsonObject objeto = new()
         {
             ["codigoDoDado"] = HashCanonicalComputer.NormalizeNfc(fato.FatoCodigo),
-            ["finalidade"] = EstruturaFormulario.ParaToken(fato.Finalidade),
+            ["finalidade"] = fato.Finalidade!.Value.Codigo(),
             ["paginaCodigo"] = fato.EtapaCodigo is { } etapa ? HashCanonicalComputer.NormalizeNfc(etapa) : null,
             ["ordem"] = fato.Ordem,
             ["rotulo"] = HashCanonicalComputer.NormalizeNfc(fato.Rotulo),
@@ -200,7 +200,7 @@ internal static class SerializacaoDosFatos
         JsonObject objeto = new()
         {
             ["codigo"] = HashCanonicalComputer.NormalizeNfc(g.Codigo),
-            ["finalidade"] = EstruturaFormulario.ParaToken(g.Finalidade),
+            ["finalidade"] = g.Finalidade!.Value.Codigo(),
             ["paginaCodigo"] = g.EtapaCodigo is { } etapa ? HashCanonicalComputer.NormalizeNfc(etapa) : null,
             ["ordem"] = g.Ordem,
             ["rotulo"] = HashCanonicalComputer.NormalizeNfc(g.Rotulo),
@@ -233,7 +233,7 @@ internal static class SerializacaoDosFatos
             {
                 ["codigo"] = HashCanonicalComputer.NormalizeNfc(a.Codigo),
                 ["codigoDoDadoDoMembro"] = HashCanonicalComputer.NormalizeNfc(a.FatoDeMembro),
-                ["operacao"] = AgregadoDeGrupo.ParaToken(a.Operacao),
+                ["operacao"] = a.Operacao.Codigo(),
             })]);
 
     internal static JsonArray SerializarRegrasDerivacao(IEnumerable<ConfiguracaoDerivacaoFato> regrasDerivacao) =>

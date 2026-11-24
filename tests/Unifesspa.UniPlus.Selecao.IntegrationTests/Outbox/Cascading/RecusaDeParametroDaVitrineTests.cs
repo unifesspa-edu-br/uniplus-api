@@ -103,7 +103,7 @@ public sealed class RecusaDeParametroDaVitrineTests
         using HttpClient client = _fixture.Factory.CreateClient();
 
         using HttpResponseMessage resposta = await client.GetAsync(
-            new Uri("/api/selecao/certames?situacao=encerradas", UriKind.Relative), CancellationToken.None);
+            new Uri("/api/selecao/certames?situacao=ENCERRADAS", UriKind.Relative), CancellationToken.None);
 
         resposta.StatusCode.Should().Be(HttpStatusCode.OK);
         resposta.Headers.TryGetValues("X-Certames-Revisao", out IEnumerable<string>? valores).Should().BeTrue();

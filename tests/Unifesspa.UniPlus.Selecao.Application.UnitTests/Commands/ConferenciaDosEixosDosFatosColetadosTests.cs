@@ -4,6 +4,7 @@ using AwesomeAssertions;
 
 using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
@@ -20,13 +21,13 @@ public sealed class ConferenciaDosEixosDosFatosColetadosTests
     private static readonly FatosDasVersoesPublicadas Publicadas = FatosDasVersoesPublicadas.De(
         [Testes.Compartilhado.VersoesPublicadasDeTeste.Versao([], [Item("SEXO")])],
         [new EixosDeVersaoPublicada(
-            new Dictionary<string, EixosDoMetadadoCongelado> { ["SEXO"] = new("CATEGORICO", "ESCALAR", "INSCRICAO") },
+            new Dictionary<string, EixosDoMetadadoCongelado> { ["SEXO"] = new(TipoDoDado.Opcao, QuantidadeDeValores.ValorUnico, "INSCRICAO") },
             new Dictionary<string, string>())]);
 
     [Fact(DisplayName = "Troca de domínio do fato citado por condição de documento recusa e nomeia o fato e o eixo")]
     public void TrocaDeDominio_Recusa()
     {
-        IReadOnlyList<FieldError> erros = ConferenciaDosEixosDosFatosColetados.Conferir(Publicadas, [], Metadado("BOOLEANO", "Sim"), []);
+        IReadOnlyList<FieldError> erros = ConferenciaDosEixosDosFatosColetados.Conferir(Publicadas, [], Metadado(TipoDoDado.SimOuNao, "Sim"), []);
 
         DomainError erro = erros.Should().ContainSingle().Subject.Error;
         erro.Code.Should().Be("Retificacao.EixoDoFatoJaColetadoAlterado");
@@ -36,7 +37,7 @@ public sealed class ConferenciaDosEixosDosFatosColetadosTests
     [Fact(DisplayName = "Troca da descrição de um valor de domínio passa: não é eixo")]
     public void TrocaDeDescricaoDeValor_Passa()
     {
-        ConferenciaDosEixosDosFatosColetados.Conferir(Publicadas, [], Metadado("CATEGORICO", "Descrição nova"), []).Should().BeEmpty();
+        ConferenciaDosEixosDosFatosColetados.Conferir(Publicadas, [], Metadado(TipoDoDado.Opcao, "Descrição nova"), []).Should().BeEmpty();
     }
 
     [Fact(DisplayName = "Troca da operação do agregado recusa falando do resumo de grupo, não de fato")]
@@ -57,12 +58,12 @@ public sealed class ConferenciaDosEixosDosFatosColetadosTests
     {
         EixosDoItemCongelado.De(Item("SEXO")).OrigemValores.Should().Be("CATALOGO");
         Domain.Enums.OrigemValoresColeta.OpcoesDoProcesso.Codigo().Should().Be("OPCOES_DO_PROCESSO");
-        Domain.Enums.OrigemValoresColeta.MunicipiosDoBonus.Codigo().Should().Be("MUNICIPIOS_DO_BONUS");
+        Domain.Enums.OrigemValoresColeta.MunicipiosDoFada.Codigo().Should().Be("MUNICIPIOS_DO_FADA");
         Domain.Enums.OrigemValoresColeta.UnidadesFederativas.Codigo().Should().Be("UNIDADES_FEDERATIVAS");
     }
 
-    private static Dictionary<string, MetadadoFatoCongelado> Metadado(string dominio, string descricao) =>
-        new() { ["SEXO"] = new("SEXO", dominio, "DECLARADO", "ESCALAR", "INSCRICAO", "NENHUM", ["F"], [new ValorDominioDeclaradoCongelado("F", descricao, 0)]) };
+    private static Dictionary<string, MetadadoFatoCongelado> Metadado(TipoDoDado dominio, string descricao) =>
+        new() { ["SEXO"] = new("SEXO", dominio, OrigemFato.Declarado, QuantidadeDeValores.ValorUnico, "INSCRICAO", "NENHUM", ["F"], [new ValorDominioDeclaradoCongelado("F", descricao, 0)]) };
 
     private static Domain.Entities.FatoColetado Item(string codigo) =>
         FatoColetadoDeTeste.Coletando(codigo, 0).ComObrigatoriedade(Obrigatoriedade.Sempre).Construir();

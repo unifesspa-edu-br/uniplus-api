@@ -2,8 +2,10 @@ namespace Unifesspa.UniPlus.Selecao.Application.UnitTests.Commands;
 
 using AwesomeAssertions;
 
+using Unifesspa.UniPlus.Application.Abstractions.Respostas;
 using Unifesspa.UniPlus.Configuracao.Contracts;
 using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
 using Unifesspa.UniPlus.Selecao.Application.UnitTests.TestSupport;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
@@ -31,7 +33,7 @@ public sealed class RecopiaAoCongelarTests
     private static CatalogoVivo CatalogoComRgUfPorMunicipio()
     {
         IReadOnlyList<FatoCandidatoView> fatos =
-            [.. CatalogoDoConjuntoBasico.Fatos.Select(static f => f.Codigo == "RG_UF" ? f with { FonteValores = "GEO_MUNICIPIO" } : f)];
+            [.. CatalogoDoConjuntoBasico.Fatos.Select(static f => f.Codigo == "RG_UF" ? f with { FonteValores = CodigoComRotulo<FonteValoresFato>.De(FonteValoresFato.Municipios) } : f)];
 
         return new CatalogoVivo(
             fatos, fatos.ToDictionary(static f => f.Codigo, StringComparer.Ordinal), FatosDeModalidadeDeTeste.DoCatalogo,

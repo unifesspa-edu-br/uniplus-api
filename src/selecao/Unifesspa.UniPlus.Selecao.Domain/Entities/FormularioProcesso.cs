@@ -54,7 +54,7 @@ public sealed class FormularioProcesso : EntityBase, IParteDoProcesso
     /// <param name="modeloOrigemCodigo">O código desse modelo.</param>
     /// <param name="modeloOrigemNome">O nome desse modelo.</param>
     public static Result<FormularioProcesso> Criar(
-        FinalidadeFormulario finalidade,
+        FinalidadeFormulario? finalidade,
         Guid? faseId,
         string? titulo,
         IReadOnlyList<EtapaFormulario> etapas,
@@ -69,7 +69,7 @@ public sealed class FormularioProcesso : EntityBase, IParteDoProcesso
             return Result<FormularioProcesso>.ValidationFailure(erros);
         }
 
-        FormularioProcesso formulario = Novo(finalidade, faseId, titulo, modeloOrigemId, modeloOrigemCodigo, modeloOrigemNome);
+        FormularioProcesso formulario = Novo(finalidade!.Value, faseId, titulo, modeloOrigemId, modeloOrigemCodigo, modeloOrigemNome);
         formulario.AdicionarEtapas(etapas);
         return Result<FormularioProcesso>.Success(formulario);
     }
@@ -85,12 +85,12 @@ public sealed class FormularioProcesso : EntityBase, IParteDoProcesso
             ModeloOrigemNome = modeloOrigemId is null ? null : modeloOrigemNome?.Trim(),
         };
 
-    private static List<FieldError> ValidarForma(FinalidadeFormulario finalidade, string? titulo, IReadOnlyList<EtapaFormulario> etapas)
+    private static List<FieldError> ValidarForma(FinalidadeFormulario? finalidade, string? titulo, IReadOnlyList<EtapaFormulario> etapas)
     {
         List<FieldError> erros = FormaDoCabecalho.Validar(finalidade, titulo);
-        if (finalidade != FinalidadeFormulario.Nenhuma)
+        if (finalidade is { } declarada)
         {
-            erros.AddRange(EstruturaFormulario.ValidarEtapas(finalidade, [.. etapas.Select(static e => e.Estrutura)]));
+            erros.AddRange(EstruturaFormulario.ValidarEtapas(declarada, [.. etapas.Select(static e => e.Estrutura)]));
         }
 
         return erros;
@@ -147,7 +147,8 @@ public sealed class EtapaFormulario : EntityBase
 
     public TipoEtapaFormulario Tipo { get; private set; }
 
-    public BlocoSistema Bloco { get; private set; }
+    /// <summary>O bloco que o sistema monta; nulo na seção.</summary>
+    public BlocoSistema? Bloco { get; private set; }
 
     public string Titulo { get; private set; } = string.Empty;
 

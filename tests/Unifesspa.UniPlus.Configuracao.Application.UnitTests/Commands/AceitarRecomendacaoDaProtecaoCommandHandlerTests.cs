@@ -10,13 +10,16 @@ using NSubstitute;
 
 using Unifesspa.UniPlus.Application.Abstractions.Email;
 using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
+using Unifesspa.UniPlus.Configuracao.Application.Commands.FatosCandidato;
 using Unifesspa.UniPlus.Configuracao.Application.Commands.ProtecaoDoCatalogo;
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Domain.Enums;
 using Unifesspa.UniPlus.Configuracao.Domain.Errors;
 using Unifesspa.UniPlus.Configuracao.Domain.Interfaces;
+using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Regras.Enums;
 
 using static Unifesspa.UniPlus.Configuracao.Application.UnitTests.TestSupport.CatalogoDeProtecaoDeTeste;
 
@@ -106,9 +109,11 @@ public sealed class AceitarRecomendacaoDaProtecaoCommandHandlerTests
     private static FatoCandidato CorRacaComAjusteRecomendado()
     {
         FatoCandidato corRaca = CriacaoDoFato.Criar(
-            "COR_RACA", "Cor ou raça", "Descrição do fato.", DominioFato.Categorico, OrigemFato.Declarado, CardinalidadeFato.Escalar, FonteValoresFato.Global,
-            null, "INSCRICAO", "CAMPO_FORMULARIO:COR_RACA", EscopoFato.Candidato, ClassificacaoDeProtecao.Pessoal, Finalidade,
-            HipoteseLegalTratamento.CumprimentoObrigacaoLegal, sistema: true).Value!;
+            new DescritivoDoFato("COR_RACA", "Cor ou raça", "Descrição do fato."),
+            OrigemFato.Declarado,
+            "CAMPO_FORMULARIO:COR_RACA",
+            new DefinicaoDoFato(TipoDoDado.Opcao, QuantidadeDeValores.ValorUnico, FonteValoresFato.Catalogo, null, "INSCRICAO", EscopoFato.Candidato, ClassificacaoDeProtecao.Pessoal, Finalidade, HipoteseLegalTratamento.CumprimentoObrigacaoLegal),
+            sistema: true).Value!;
         corRaca.SolicitarAprovacaoDaProtecao(Isabella, Agora);
         corRaca.RecomendarAjusteDaProtecao(ClassificacaoDeProtecao.Sensivel, null, Caroline, Agora);
 
@@ -124,10 +129,10 @@ public sealed class AceitarRecomendacaoDaProtecaoCommandHandlerTests
         modelos.ListarTodosAsync(Arg.Any<CancellationToken>()).Returns([]);
         IModalidadeRepository modalidades = Substitute.For<IModalidadeRepository>();
         modalidades.ListarVivasAsync(Arg.Any<CancellationToken>()).Returns([]);
+        var alteracoes = new AlteracaoConferidaDoFato(_fatos, precedencias, modelos, modalidades, _unitOfWork);
 
         return AceitarRecomendacaoDoFatoCandidatoCommandHandler.Handle(
-            new AceitarRecomendacaoDoFatoCandidatoCommand(fatoId, [Caroline]), _fatos, _atos, precedencias, modelos, modalidades,
-            _unitOfWork, UsuarioIsabella(), Relogio(), CancellationToken.None);
+            new AceitarRecomendacaoDoFatoCandidatoCommand(fatoId, [Caroline]), alteracoes, _atos, UsuarioIsabella(), Relogio(), CancellationToken.None);
     }
 
     [Fact(DisplayName = "O aceite do tipo registra o ato com a classificação aplicada e quem aceitou")]

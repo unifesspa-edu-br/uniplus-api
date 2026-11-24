@@ -2,6 +2,7 @@ namespace Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Coleta;
 
 using System.Text.Json;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Extensions;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Formularios;
@@ -200,7 +201,7 @@ public static class RegrasDaColeta
         HashSet<string> novos = new(fatosColetados.Concat(grupos.SelectMany(static g => g.Subitens)).Select(static f => f.FatoCodigo), StringComparer.Ordinal);
         if (configuracao.Coleta.Campos.FirstOrDefault(f => f.Finalidade != finalidade && novos.Contains(f.FatoCodigo)) is { } jaProduzido)
         {
-            string outro = EstruturaFormulario.ParaToken(jaProduzido.Finalidade);
+            string outro = jaProduzido.Finalidade!.Value.Codigo();
             return Result.Failure(new DomainError(
                 FatoColetadoErrorCodes.FatoDuplicado,
                 finalidade == FinalidadeFormulario.Inscricao && ConjuntoBasicoDaInscricao.Fatos.Contains(jaProduzido.FatoCodigo)

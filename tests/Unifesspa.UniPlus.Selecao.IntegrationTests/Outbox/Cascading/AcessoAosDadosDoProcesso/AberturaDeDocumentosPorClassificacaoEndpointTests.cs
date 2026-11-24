@@ -175,6 +175,6 @@ public sealed class AberturaDeDocumentosPorClassificacaoEndpointTests : IAsyncLi
         RegistroDecisaoAcesso sensivel = decisoesPosteriores.Should().ContainSingle().Subject;
         sensivel.Permissao.Should().Be(PermissaoSelecao.DocumentosSensiveisConsultar.Codigo);
         sensivel.Permitido.Should().BeTrue();
-        sensivel.Sensibilidade.Should().BeEquivalentTo("sensivel", "o laudo é registrado com a sensibilidade real, e não como pessoal");
+        sensivel.Sensibilidade.Should().BeEquivalentTo("SENSIVEL", "o laudo é registrado com a sensibilidade real, e não como pessoal");
     }
 }

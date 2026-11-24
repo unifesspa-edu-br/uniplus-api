@@ -31,7 +31,7 @@ public sealed class CondicaoGatilhoConfiguration : IEntityTypeConfiguration<Cond
         builder.Property(c => c.DocumentoExigidoId).HasComment("Identificador do documento exigido ao qual a condição pertence.");
         builder.Property(c => c.Clausula).HasComment("Número da alternativa que reúne condições atendidas em conjunto.");
         builder.Property(c => c.Fato).HasComment("Código do dado do candidato usado na condição. Exemplos: RENDA_PER_CAPITA, CONCORRER_RENDA.");
-        builder.Property(c => c.Operador).HasComment("Comparação aplicada ao valor: IGUAL, EM, MAIOR_IGUAL, MENOR_IGUAL, DIFERENTE ou NAO_EM.");
+        builder.Property(c => c.Operador).HasComment("Comparação aplicada ao valor: ALGUM_DE, DIFERENTE, IGUAL, MAIOR_IGUAL, MENOR_IGUAL ou NENHUM_DE.");
         builder.Property(c => c.Valor).HasComment("Valor de comparação da condição, em JSON.");
 
         builder.ToTable("condicoes_das_exigencias", t => t.HasComment("Condições que determinam a exigência de um documento."));
@@ -46,7 +46,7 @@ public sealed class CondicaoGatilhoConfiguration : IEntityTypeConfiguration<Cond
         builder.Property(c => c.Fato).HasColumnName("codigo_do_dado").HasMaxLength(FatoMaxLength).IsRequired();
 
         // A convenção do modelo grava o código declarado no enum (ADR-0176), o mesmo token
-        // IGUAL/EM/MAIOR_IGUAL/MENOR_IGUAL do wire; aqui só o tamanho da coluna.
+        // ALGUM_DE/DIFERENTE/IGUAL/MAIOR_IGUAL/MENOR_IGUAL/NENHUM_DE do wire; aqui só o tamanho da coluna.
         builder.Property(c => c.Operador)
             .HasMaxLength(OperadorCodigoMaxLength)
             .IsRequired();

@@ -29,7 +29,7 @@ public sealed class EditarRascunhoTermoConsentimentoCommandHandlerTests
         _repository.ObterPorIdAsync(termo.Id, Arg.Any<CancellationToken>()).Returns(termo);
 
         EditarRascunhoTermoConsentimentoCommand comando = new(
-            termo.Id, "Novo texto", "Nova base legal", "REGISTRO_DIGITAL_SEM_LOG_IP");
+            termo.Id, "Novo texto", "Nova base legal", "REGISTRO_SEM_ENDERECO_IP");
 
         Result resultado = await EditarRascunhoTermoConsentimentoCommandHandler.Handle(
             comando, _repository, _unitOfWork, CancellationToken.None);

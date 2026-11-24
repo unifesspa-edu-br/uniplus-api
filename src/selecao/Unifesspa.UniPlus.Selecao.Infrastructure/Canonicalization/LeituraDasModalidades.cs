@@ -40,7 +40,7 @@ internal static class LeituraDasModalidades
     /// esta lista.
     /// </remarks>
     internal static readonly string[] AcoesQuandoIndeferido =
-        ["RECLASSIFICAR_AC", "RECLASSIFICAR_REGRA_EDITAL"];
+        ["RECLASSIFICA_AC", "RECLASSIFICA_CONFORME_EDITAL"];
 
     /// <summary>
     /// O formato que o <c>CodigoModalidade</c> do cadastro impõe (<c>^[A-Z0-9_]+$</c>). Um

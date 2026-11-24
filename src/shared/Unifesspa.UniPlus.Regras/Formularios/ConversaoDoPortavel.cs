@@ -1,5 +1,6 @@
 namespace Unifesspa.UniPlus.Regras.Formularios;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Entradas;
 using Unifesspa.UniPlus.Regras.Errors;
@@ -80,9 +81,9 @@ internal static class ConversaoDoPortavel
 
     private static Result<DefinicaoAgregado> Agregado(AgregadoPortavel agregado)
     {
-        OperacaoAgregado operacao = AgregadoDeGrupo.DoToken(agregado.Operacao);
-        DomainError? erro = operacao == OperacaoAgregado.Nenhuma
-            ? Recusa(FormularioPortavelErrorCodes.OperacaoDeAgregadoInvalida, $"A operação do agregado '{agregado.Codigo}' é EXISTE ou VALORES_PRESENTES.")
+        bool conhecida = CatalogoDe<OperacaoAgregado>.TentarObter(agregado.Operacao, out OperacaoAgregado operacao);
+        DomainError? erro = !conhecida
+            ? Recusa(FormularioPortavelErrorCodes.OperacaoDeAgregadoInvalida, $"A operação do agregado '{agregado.Codigo}' é {string.Join(" ou ", CatalogoDe<OperacaoAgregado>.Todos().Select(static d => d.Codigo))}.")
             : Recusa(DefinicaoAgregado.Violacao(agregado.Codigo, agregado.GrupoCodigo, agregado.FatoDeMembro));
 
         return Montado(erro, () => new DefinicaoAgregado(agregado.Codigo, agregado.GrupoCodigo, agregado.FatoDeMembro, operacao));

@@ -24,7 +24,7 @@ public sealed class TermoExigidoFormulario : EntityBase, IParteDoProcesso
     public Guid ProcessoSeletivoId { get; private set; }
 
     /// <summary>A finalidade do formulário que exige o termo; atribuída pelo processo.</summary>
-    public FinalidadeFormulario Finalidade { get; private set; }
+    public FinalidadeFormulario? Finalidade { get; private set; }
 
     /// <summary>Identificador próprio da exigência no formulário, estável mesmo entre termos de nome igual.</summary>
     public string Codigo { get; private set; } = string.Empty;
@@ -66,7 +66,7 @@ public sealed class TermoExigidoFormulario : EntityBase, IParteDoProcesso
         VersaoTermoEscolhida versao,
         PredicadoDnf? exibicao,
         Obrigatoriedade obrigatoriedade,
-        FinalidadeFormulario finalidade)
+        FinalidadeFormulario? finalidade)
     {
         // O registro publicado guarda o código em NFC; normalizar aqui faz a unicidade do formulário e a
         // do registro publicado compararem a mesma forma.
@@ -113,7 +113,7 @@ public sealed class TermoExigidoFormulario : EntityBase, IParteDoProcesso
         VersaoTermoEscolhida versao,
         PredicadoDnf? exibicao,
         Obrigatoriedade obrigatoriedade,
-        FinalidadeFormulario finalidade = FinalidadeFormulario.Nenhuma)
+        FinalidadeFormulario? finalidade = null)
     {
         ArgumentNullException.ThrowIfNull(versao);
         ArgumentNullException.ThrowIfNull(obrigatoriedade);

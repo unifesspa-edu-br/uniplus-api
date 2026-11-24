@@ -178,7 +178,7 @@ public sealed class EfeitosDaTrocaDeVigenciaTests
     private static PedidoDeConcessao PedidoNaProtecaoDeDados(Perfil perfil)
     {
         PedidoDeConcessao pedido = Pedido(perfil, paraSiMesmo: true);
-        PerfilAvaliado sensivel = new([A, B], "sensivel", true, null);
+        PerfilAvaliado sensivel = new([A, B], "SENSIVEL", true, null);
         pedido.Aprovar(Diogo, sensivel, new ContextoDaAprovacao(false), DateTimeOffset.UtcNow).IsSuccess.Should().BeTrue();
         pedido.Andamento.Situacao.Should().Be(SituacaoDoPedido.AguardandoProtecaoDeDados);
 

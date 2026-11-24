@@ -20,48 +20,51 @@ public static class ConferenciaDoDtoClassificado
         ArgumentNullException.ThrowIfNull(tipos);
         ArgumentNullException.ThrowIfNull(classificacoes);
 
-        List<string> violacoes = [];
-        foreach (Type tipo in tipos)
+        return [.. tipos.SelectMany(tipo => tipo.GetProperties(BindingFlags.Public | BindingFlags.Instance)
+            .Select(propriedade => ViolacaoDaPropriedade(tipo, propriedade, classificacoes)))
+            .OfType<string>()];
+    }
+
+    private static string? ViolacaoDaPropriedade(
+        Type tipo, PropertyInfo propriedade, IReadOnlyDictionary<string, ClassificacaoDeProtecao> classificacoes)
+    {
+        if (propriedade.GetCustomAttribute<ProtegidoComoAttribute>() is not { } declaracao)
         {
-            foreach (PropertyInfo propriedade in tipo.GetProperties(BindingFlags.Public | BindingFlags.Instance))
-            {
-                if (propriedade.GetCustomAttribute<ProtegidoComoAttribute>() is not { } declaracao)
-                {
-                    continue;
-                }
-
-                string quem = $"{tipo.Name}.{propriedade.Name}";
-                if (!Enum.IsDefined(declaracao.Classificacao) || declaracao.Classificacao == ClassificacaoDeProtecao.Nenhuma)
-                {
-                    violacoes.Add($"{quem}: a classificação declarada não é uma classe de proteção.");
-                    continue;
-                }
-
-                if (declaracao.Fonte is null)
-                {
-                    if (declaracao.Transformacao is not null)
-                    {
-                        violacoes.Add($"{quem}: declara a transformação '{declaracao.Transformacao}' sem a fonte que ela transforma.");
-                    }
-
-                    continue;
-                }
-
-                if (!classificacoes.TryGetValue(declaracao.Fonte, out ClassificacaoDeProtecao daFonte))
-                {
-                    violacoes.Add($"{quem}: a fonte '{declaracao.Fonte}' não é coluna do modelo.");
-                    continue;
-                }
-
-                if (declaracao.Classificacao < daFonte && string.IsNullOrWhiteSpace(declaracao.Transformacao))
-                {
-                    violacoes.Add(
-                        $"{quem}: lida direto de '{declaracao.Fonte}' ({daFonte}), não pode ficar em {declaracao.Classificacao}; "
-                        + "classifique-a pela fonte ou declare a transformação que a deriva.");
-                }
-            }
+            return null;
         }
 
-        return violacoes;
+        string quem = $"{tipo.Name}.{propriedade.Name}";
+        return ViolacaoDaDeclaracao(quem, declaracao) ?? ViolacaoContraAFonte(quem, declaracao, classificacoes);
+    }
+
+    private static string? ViolacaoDaDeclaracao(string quem, ProtegidoComoAttribute declaracao)
+    {
+        if (!Enum.IsDefined(declaracao.Classificacao))
+        {
+            return $"{quem}: a classificação declarada não é uma classe de proteção.";
+        }
+
+        return declaracao.Fonte is null && declaracao.Transformacao is not null
+            ? $"{quem}: declara a transformação '{declaracao.Transformacao}' sem a fonte que ela transforma."
+            : null;
+    }
+
+    private static string? ViolacaoContraAFonte(
+        string quem, ProtegidoComoAttribute declaracao, IReadOnlyDictionary<string, ClassificacaoDeProtecao> classificacoes)
+    {
+        if (declaracao.Fonte is null)
+        {
+            return null;
+        }
+
+        if (!classificacoes.TryGetValue(declaracao.Fonte, out ClassificacaoDeProtecao daFonte))
+        {
+            return $"{quem}: a fonte '{declaracao.Fonte}' não é coluna do modelo.";
+        }
+
+        return declaracao.Classificacao < daFonte && string.IsNullOrWhiteSpace(declaracao.Transformacao)
+            ? $"{quem}: lida direto de '{declaracao.Fonte}' ({daFonte}), não pode ficar em {declaracao.Classificacao}; "
+                + "classifique-a pela fonte ou declare a transformação que a deriva."
+            : null;
     }
 }

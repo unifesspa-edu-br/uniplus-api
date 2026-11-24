@@ -1,7 +1,9 @@
 namespace Unifesspa.UniPlus.Configuracao.Application.Commands.FatosCandidato;
 
 using Unifesspa.UniPlus.Application.Abstractions.Messaging;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Regras.Enums;
 
 /// <summary>
 /// Cadastro de fato declarado pelo administrador (ADR-0136). Os eixos chegam como token canônico
@@ -11,9 +13,9 @@ public sealed record CriarFatoCandidatoCommand(
     string Codigo,
     string Nome,
     string? Descricao,
-    string Dominio,
-    string Cardinalidade,
-    string? FonteValores,
+    [property: AceitaCodigosDe<TipoDoDado>] string Dominio,
+    [property: AceitaCodigosDe<QuantidadeDeValores>] string Cardinalidade,
+    [property: AceitaCodigosDe<FonteValoresFato>] string? FonteValores,
     string? Formato,
     string PontoResolucao,
     string Escopo,

@@ -30,7 +30,7 @@ public sealed class CorretoresDaRegraDeConsolidacaoTests
     {
         RegraCatalogo regra = Regra(
             RegraDeApuracaoDaAvaliacao.AvaliacaoUnica.Codigo(),
-            """{"corretores_distintos":1,"naturezas_do_conceito":["CATEGORICO","NUMERICO"]}""");
+            """{"corretores_distintos":1,"formas_do_conceito":["POR_OPCOES","NUMERICO"]}""");
 
         CorretoresDaRegraDeConsolidacao.De(regra).Should().Be(1);
     }
@@ -40,14 +40,14 @@ public sealed class CorretoresDaRegraDeConsolidacaoTests
     {
         RegraCatalogo regra = Regra(
             RegraDeApuracaoDaAvaliacao.CorrecaoIndependente.Codigo(),
-            """{"corretores_distintos":3,"naturezas_do_conceito":["NUMERICO"]}""");
+            """{"corretores_distintos":3,"formas_do_conceito":["NUMERICO"]}""");
 
         CorretoresDaRegraDeConsolidacao.De(regra).Should().Be(3);
     }
 
     [Theory(DisplayName = "A versão sem o número, ou com número que não é inteiro maior ou igual a um, lança")]
     [InlineData("{}")]
-    [InlineData("""{"naturezas_do_conceito":["NUMERICO"]}""")]
+    [InlineData("""{"formas_do_conceito":["NUMERICO"]}""")]
     [InlineData("""{"corretores_distintos":0}""")]
     [InlineData("""{"corretores_distintos":-2}""")]
     [InlineData("""{"corretores_distintos":2.5}""")]
@@ -85,10 +85,10 @@ public sealed class CorretoresDaRegraDeConsolidacaoTests
     }
 
     [Theory(DisplayName = "Os corretores em campo são os distintos mais o adicional só quando o tratamento é o novo corretor")]
-    [InlineData("""{"corretores_distintos":3,"criterio":"MAIORIA_SIMPLES","naturezas_do_conceito":["CATEGORICO"],"quando_nao_consolida":"NOVO_CORRETOR"}""", 4)]
-    [InlineData("""{"corretores_distintos":2,"criterio":"UNANIMIDADE","naturezas_do_conceito":["CATEGORICO"],"quando_nao_consolida":"NOVO_CORRETOR"}""", 3)]
-    [InlineData("""{"corretores_distintos":2,"criterio":"UNANIMIDADE","naturezas_do_conceito":["CATEGORICO"],"quando_nao_consolida":"DECISAO_DA_BANCA"}""", 2)]
-    [InlineData("""{"corretores_distintos":3,"naturezas_do_conceito":["NUMERICO"]}""", 3)]
+    [InlineData("""{"corretores_distintos":3,"criterio":"MAIORIA_SIMPLES","formas_do_conceito":["POR_OPCOES"],"quando_nao_consolida":"NOVO_CORRETOR"}""", 4)]
+    [InlineData("""{"corretores_distintos":2,"criterio":"UNANIMIDADE","formas_do_conceito":["POR_OPCOES"],"quando_nao_consolida":"NOVO_CORRETOR"}""", 3)]
+    [InlineData("""{"corretores_distintos":2,"criterio":"UNANIMIDADE","formas_do_conceito":["POR_OPCOES"],"quando_nao_consolida":"DECISAO_DA_BANCA"}""", 2)]
+    [InlineData("""{"corretores_distintos":3,"formas_do_conceito":["NUMERICO"]}""", 3)]
     public void TentarEmCampo_DevolveOsDistintosEOAdicionalDoTratamento(string declaracaoDaRegra, int esperado)
     {
         bool lida = CorretoresDaRegraDeConsolidacao.TentarEmCampo(DeConsolidacao(declaracaoDaRegra), out int emCampo);
@@ -98,9 +98,9 @@ public sealed class CorretoresDaRegraDeConsolidacaoTests
     }
 
     [Theory(DisplayName = "Os corretores em campo não se leem quando os distintos ou o tratamento declarado são inválidos, ou quando há critério sem tratamento")]
-    [InlineData("""{"naturezas_do_conceito":["CATEGORICO"],"quando_nao_consolida":"NOVO_CORRETOR"}""")]
+    [InlineData("""{"formas_do_conceito":["POR_OPCOES"],"quando_nao_consolida":"NOVO_CORRETOR"}""")]
     [InlineData("""{"corretores_distintos":0,"quando_nao_consolida":"NOVO_CORRETOR"}""")]
-    [InlineData("""{"corretores_distintos":3,"criterio":"MAIORIA_SIMPLES","naturezas_do_conceito":["CATEGORICO"]}""")]
+    [InlineData("""{"corretores_distintos":3,"criterio":"MAIORIA_SIMPLES","formas_do_conceito":["POR_OPCOES"]}""")]
     [InlineData("""{"corretores_distintos":3,"quando_nao_consolida":"sorteio"}""")]
     [InlineData("""{"corretores_distintos":3,"quando_nao_consolida":"NovoCorretor"}""")]
     [InlineData("""{"corretores_distintos":3,"quando_nao_consolida":1}""")]

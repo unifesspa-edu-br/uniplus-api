@@ -510,3 +510,21 @@ persistência", fica substituído por esta emenda. A matriz do item 1.1 é a reg
 compartilhado de regras, usada pelo validador do predicado. O valor desconhecido não vira "nenhum operador": a
 escrita do pedido o recusa como `CondicaoDnf.OperadorInvalido` (422), acumulado com as demais recusas da condição, e a
 leitura do que já foi gravado falha.
+
+## Emenda 3 (2026-11-23) — tipo do dado e quantidade de valores
+
+Os eixos que esta ADR chama de domínio e de cardinalidade do fato passam a se chamar **tipo do dado** e **quantidade de valores**, e cada valor tem o código declarado no próprio enum (ADR-0176), igual no banco, na resposta e no conteúdo congelado. O tipo do dado é `SIM_OU_NAO` (antes booleano), `OPCAO` (antes categórico), `NUMERICO`, `TEXTO`, `DATA` e `ENDERECO`. A quantidade de valores é `VALOR_UNICO` (antes escalar) ou `VARIOS_VALORES` (antes multivalorado). Os dois enums não têm valor para "nenhum": a ausência é tipo anulável, e o código desconhecido é recusado no próprio campo (ADR-0125). A matriz de operadores do item 1.1 não muda; ela lê o tipo do dado e a quantidade de valores.
+
+## Emenda 4 (2026-11-23) — códigos dos operadores de lista
+
+Os operadores `EM` e `NAO_EM` passam a se chamar `ALGUM_DE` e `NENHUM_DE`, que dizem o que a condição pede: o valor do dado é algum dos valores da lista, ou nenhum deles. A matriz do item 1.1, a semântica da Emenda 1 e a forma do valor não mudam. A ordem canônica do item 1.4, que é a ordinal do código textual, passa a ser:
+
+```text
+ALGUM_DE < DIFERENTE < IGUAL < MAIOR_IGUAL < MENOR_IGUAL < NENHUM_DE
+```
+
+O código novo é o que o banco, o predicado de aplicabilidade, o conteúdo congelado e o esquema do predicado gravam e aceitam; a Emenda 2 vale com os novos códigos.
+
+## Emenda 5 (2026-11-23) — origem do dado
+
+A origem do dado passa a ser um enum único no projeto compartilhado de regras (ADR-0176), sem membro "nenhuma": a origem é obrigatória, e a ausência é recusada no cadastro. O código `DERIVADO` passa a `CALCULADO`, porque o valor do dado é calculado pelo sistema ou por uma regra, e `DECLARADO` e `INTEGRACAO` não mudam. A regra desta ADR de que o dado calculado não pode ser insumo de si mesmo nem de uma condição avaliada antes da etapa que o produz vale com o código novo. O código novo é o que o banco, o catálogo lido pela Seleção, o conteúdo congelado e a resposta do catálogo gravam e mostram.

@@ -11,6 +11,7 @@ using Domain.ValueObjects;
 using Kernel.Results;
 
 using Unifesspa.UniPlus.Configuracao.Contracts;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Regras.ValueObjects;
 
@@ -26,7 +27,7 @@ internal sealed class PlanejamentoDaAplicacaoDoModelo(
     CadastrosDaAplicacaoDoModelo cadastros)
 {
     private readonly RelatorioDaAplicacaoDoModelo _relatorio = new();
-    private readonly FinalidadeFormulario _finalidade = EstruturaFormulario.FinalidadeDoToken(modelo.Finalidade);
+    private readonly FinalidadeFormulario _finalidade = CatalogoDe<FinalidadeFormulario>.Obter(modelo.Finalidade);
 
     public async Task<Result<PlanoDaAplicacaoDoModelo>> PlanejarAsync(CancellationToken cancellationToken)
     {

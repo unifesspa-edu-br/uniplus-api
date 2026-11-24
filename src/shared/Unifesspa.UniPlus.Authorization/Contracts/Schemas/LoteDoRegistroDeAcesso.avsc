@@ -52,7 +52,7 @@
                   {
                     "name": "sensibilidade",
                     "type": "string",
-                    "doc": "Sensibilidade efetiva do dado alcançado: publico, interno, pessoal, identificador ou sensivel."
+                    "doc": "Sensibilidade efetiva do dado alcançado: PUBLICO, INTERNO, PESSOAL, IDENTIFICADOR ou SENSIVEL."
                   },
                   {
                     "name": "unidadeProprietariaId",

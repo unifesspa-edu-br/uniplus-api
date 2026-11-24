@@ -33,7 +33,7 @@ public sealed class CondicaoRegraDerivacaoConfiguration : IEntityTypeConfigurati
         builder.Property(c => c.RegraDerivacaoConfiguradaId).HasComment("Identificador da regra de cálculo à qual a condição pertence.");
         builder.Property(c => c.Clausula).HasComment("Número da alternativa que reúne condições atendidas em conjunto.");
         builder.Property(c => c.Fato).HasComment("Código do dado do candidato usado na condição. Exemplos: RENDA_PER_CAPITA, CONCORRER_RENDA.");
-        builder.Property(c => c.Operador).HasComment("Comparação aplicada ao valor: IGUAL, EM, MAIOR_IGUAL, MENOR_IGUAL, DIFERENTE ou NAO_EM.");
+        builder.Property(c => c.Operador).HasComment("Comparação aplicada ao valor: ALGUM_DE, DIFERENTE, IGUAL, MAIOR_IGUAL, MENOR_IGUAL ou NENHUM_DE.");
         builder.Property(c => c.Valor).HasComment("Valor de comparação da condição, em JSON.");
 
         builder.ToTable("condicoes_do_calculo_dos_dados", t => t.HasComment("Condições que determinam a aplicação de uma regra de cálculo."));

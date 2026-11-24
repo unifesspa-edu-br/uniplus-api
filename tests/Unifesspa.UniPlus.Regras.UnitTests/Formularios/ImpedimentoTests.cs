@@ -68,7 +68,7 @@ public class ImpedimentoTests : TestesDeAvaliacao
     public void Conferir_ImpedimentoSemClausula_Recusa()
     {
         List<FieldError> erros = ConferirCampo(
-            "VINCULO_PARFOR", TipoRenderizacao.Booleano, formato: null, new Impedimento(PredicadoDnf.CriarDeCondicoesAgrupadas([]).Value!, Mensagem));
+            "VINCULO_PARFOR", TipoRenderizacao.SimOuNao, formato: null, new Impedimento(PredicadoDnf.CriarDeCondicoesAgrupadas([]).Value!, Mensagem));
 
         erros.Should().ContainSingle().Which.Should().BeEquivalentTo(new
         {
@@ -83,7 +83,7 @@ public class ImpedimentoTests : TestesDeAvaliacao
     public void Conferir_TamanhoDaMensagem(int tamanho, bool aceita)
     {
         List<FieldError> erros = ConferirCampo(
-            "VINCULO_PARFOR", TipoRenderizacao.Booleano, formato: null, new Impedimento(Predicado(("VINCULO_PARFOR", true)), new string('a', tamanho)));
+            "VINCULO_PARFOR", TipoRenderizacao.SimOuNao, formato: null, new Impedimento(Predicado(("VINCULO_PARFOR", true)), new string('a', tamanho)));
 
         erros.Should().HaveCount(aceita ? 0 : 1);
     }

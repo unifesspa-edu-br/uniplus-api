@@ -6,6 +6,7 @@ using AwesomeAssertions;
 
 using NSubstitute;
 
+using Unifesspa.UniPlus.Application.Abstractions.Respostas;
 using Unifesspa.UniPlus.Configuracao.Contracts;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Enums;
@@ -46,7 +47,7 @@ public sealed class PreVisualizarProcessoSeletivoQueryHandlerTests
             ]));
 
         Exigidos(previa).Should().BeEquivalentTo(["PERTENCIMENTO_INDIGENA", "TRABALHADOR_RURAL", "RG", "CERTIDAO_GUARDA@IRMAO", "COMPROVANTE_DA_MODALIDADE"]);
-        previa.Documentos.Should().OnlyContain(static d => d.Finalidade == "INSCRICAO", "cada documento traz o formulário em que é apresentado");
+        previa.Documentos.Should().OnlyContain(static d => d.Finalidade!.Codigo == "INSCRICAO", "cada documento traz o formulário em que é apresentado");
     }
 
     [Fact(DisplayName = "Ampla concorrência: nenhum documento de cota; a identidade e o comprovante da modalidade derivada")]
@@ -74,10 +75,10 @@ public sealed class PreVisualizarProcessoSeletivoQueryHandlerTests
         previa.Documentos.Where(static d => d.TipoDocumentoCodigo == "CERTIDAO_GUARDA")
             .Should().ContainSingle("a composição familiar não aparece a quem se declarou branco").Which.Situacao.Should().Be("NAO_EXIGIDO");
         ConferirQueORgEOPassaporteSaoAlternativas(previa);
-        FormularioSimuladoDto inscricao = previa.Formularios.Single(static f => f.Finalidade == "INSCRICAO");
-        inscricao.Itens.Single(static i => i.FatoCodigo == "RG_NUMERO").Visivel.Should().Be("FALSO");
-        inscricao.Itens.Single(static i => i.FatoCodigo == "NATURALIDADE_UF").Visivel.Should().Be("FALSO");
-        inscricao.Itens.Single(static i => i.FatoCodigo == "CPF").Obrigatorio.Should().Be("VERDADEIRO");
+        FormularioSimuladoDto inscricao = previa.Formularios.Single(static f => f.Finalidade.Codigo == "INSCRICAO");
+        inscricao.Itens.Single(static i => i.FatoCodigo == "RG_NUMERO").Visivel.Codigo.Should().Be("FALSO");
+        inscricao.Itens.Single(static i => i.FatoCodigo == "NATURALIDADE_UF").Visivel.Codigo.Should().Be("FALSO");
+        inscricao.Itens.Single(static i => i.FatoCodigo == "CPF").Obrigatorio.Codigo.Should().Be("VERDADEIRO");
     }
 
     private static void ConferirQueORgEOPassaporteSaoAlternativas(PreVisualizacaoDoProcessoDto previa)
@@ -161,8 +162,8 @@ public sealed class PreVisualizarProcessoSeletivoQueryHandlerTests
         Result<PreVisualizacaoDoProcessoDto> resultado = await HandleAsync(
             new(new Dictionary<string, JsonElement>(StringComparer.Ordinal) { ["VINCULO_PARFOR"] = Json(vinculo) }, null, null, null), processo);
 
-        resultado.Value!.Formularios.Single(static f => f.Finalidade == "INSCRICAO").Itens.Single(static i => i.FatoCodigo == "VINCULO_PARFOR")
-            .Should().BeEquivalentTo(new { Impedido = impedido, MensagemDoImpedimento = Mensagem });
+        resultado.Value!.Formularios.Single(static f => f.Finalidade.Codigo == "INSCRICAO").Itens.Single(static i => i.FatoCodigo == "VINCULO_PARFOR")
+            .Should().BeEquivalentTo(new { Impedido = new { Codigo = impedido }, MensagemDoImpedimento = Mensagem });
     }
 
     private static FatoColetado VinculoParforComImpedimento(string mensagem) =>
@@ -179,9 +180,9 @@ public sealed class PreVisualizarProcessoSeletivoQueryHandlerTests
         PreVisualizacaoDoProcessoDto previa = await PreVisualizarAsync(Perfil(
             nacionalidade: "NATO", corRaca: "INDIGENA", convocacao: "AC", membros: [Membro("CANDIDATO", "URBANO", menorSobGuarda: false)]));
 
-        FormularioSimuladoDto inscricao = previa.Formularios.Single(static f => f.Finalidade == "INSCRICAO");
+        FormularioSimuladoDto inscricao = previa.Formularios.Single(static f => f.Finalidade.Codigo == "INSCRICAO");
         inscricao.Secoes.Should().NotBeEmpty();
-        inscricao.Secoes.Should().OnlyContain(static s => s.Visivel == "VERDADEIRO", "nenhuma seção do formulário de teste tem exibição condicional");
+        inscricao.Secoes.Should().OnlyContain(static s => s.Visivel.Codigo == "VERDADEIRO", "nenhuma seção do formulário de teste tem exibição condicional");
     }
 
     [Fact(DisplayName = "Processo inexistente é recusado como não encontrado")]
@@ -273,12 +274,12 @@ public sealed class PreVisualizarProcessoSeletivoQueryHandlerTests
 
     private static GrupoColetado ComposicaoFamiliar(int minimoDaComposicao) => GrupoColetadoDeTeste.Agrupando(Composicao, 0)
         .ComOcorrencias(minimoDaComposicao, null)
-        .ExibidoQuando(PredicadoDnf.CriarDeCondicoesAgrupadas([(0, CondicaoDnf.Criar("COR_RACA", Operador.Em, Json(new[] { "PRETA", "PARDA", "INDIGENA" })).Value!)]).Value!)
+        .ExibidoQuando(PredicadoDnf.CriarDeCondicoesAgrupadas([(0, CondicaoDnf.Criar("COR_RACA", Operador.AlgumDe, Json(new[] { "PRETA", "PARDA", "INDIGENA" })).Value!)]).Value!)
         .ComObrigatoriedade(Obrigatoriedade.Sempre)
         .ComCampos(
             FatoColetadoDeTeste.Coletando("CATEGORIA_RENDA", 0)
                 .ComRotulo("Categoria de renda")
-                .DoTipo(TipoRenderizacao.SelecaoUnica)
+                .DoTipo(TipoRenderizacao.EscolhaUnica)
                 .ComObrigatoriedade(Obrigatoriedade.Sempre)
                 .Construir(),
             FatoColetadoDeTeste.Coletando("MENOR_SOB_GUARDA", 1)
@@ -291,9 +292,9 @@ public sealed class PreVisualizarProcessoSeletivoQueryHandlerTests
     private static RegraDeComprovacao[] DocumentosDaHabilitacaoDeMedicina(Guid fase) =>
     [
         RegraDeComprovacao.CriarRegraDeDocumento(Documento(fase, "PERTENCIMENTO_INDIGENA",
-            Condicao(0, "MODALIDADE_CONVOCACAO", Operador.Em, new[] { "LB_PPI", "LI_PPI" }),
+            Condicao(0, "MODALIDADE_CONVOCACAO", Operador.AlgumDe, new[] { "LB_PPI", "LI_PPI" }),
             Condicao(0, "COR_RACA", Operador.Igual, "INDIGENA")), 0).Value!,
-        RegraDeComprovacao.CriarRegraDeDocumento(Documento(fase, "TRABALHADOR_RURAL", Condicao(0, "CATEGORIAS_RENDA_FAMILIA", Operador.Em, new[] { "RURAL" })), 1).Value!,
+        RegraDeComprovacao.CriarRegraDeDocumento(Documento(fase, "TRABALHADOR_RURAL", Condicao(0, "CATEGORIAS_RENDA_FAMILIA", Operador.AlgumDe, new[] { "RURAL" })), 1).Value!,
         RegraDeComprovacao.CriarRegraDeDocumento(Documento(fase, "CERTIDAO_GUARDA", Condicao(0, "MENOR_SOB_GUARDA", Operador.Igual, true)), 2, grupoDoFormularioParaRepeticao: Composicao).Value!,
         RegraDeComprovacao.CriarGrupo(FormaDeComprovacao.QuantidadeMinimaDeItens, 3, quantidadeMinima: 1, consequencia: null, basesLegais: [],
         [
@@ -301,7 +302,7 @@ public sealed class PreVisualizarProcessoSeletivoQueryHandlerTests
                 [RegraDeComprovacao.CriarRegraDeDocumento(Documento(fase, "RG", Condicao(0, "NACIONALIDADE", Operador.Diferente, "ESTRANGEIRO")), 0).Value!]).Value!,
             RegraDeComprovacao.CriarRegraDeDocumento(Documento(fase, "PASSAPORTE", Condicao(0, "NACIONALIDADE", Operador.Igual, "ESTRANGEIRO")), 1).Value!,
         ]).Value!,
-        RegraDeComprovacao.CriarRegraDeDocumento(Documento(fase, "COMPROVANTE_DA_MODALIDADE", Condicao(0, "MODALIDADE", Operador.Em, new[] { "AC" })), 5).Value!,
+        RegraDeComprovacao.CriarRegraDeDocumento(Documento(fase, "COMPROVANTE_DA_MODALIDADE", Condicao(0, "MODALIDADE", Operador.AlgumDe, new[] { "AC" })), 5).Value!,
     ];
 
     private static DocumentoExigido Documento(Guid fase, string codigo, params CondicaoGatilho[] condicoes) => DocumentoExigidoDeTeste.Novo()
@@ -322,18 +323,18 @@ public sealed class PreVisualizarProcessoSeletivoQueryHandlerTests
         leitor.ListarAsync(Arg.Any<CancellationToken>()).Returns(CatalogoDoConjuntoBasico.Com(
         [
             .. CadastrosVivos.FatosDeModalidade(),
-            Membro("CATEGORIA_RENDA", "CATEGORICO", ["URBANO", "RURAL"]),
-            Membro("MENOR_SOB_GUARDA", "BOOLEANO", null),
-            new(Guid.CreateVersion7(), "VINCULO_PARFOR", "Vínculo com o PARFOR", "Descrição do fato.", "BOOLEANO", "DECLARADO", "ESCALAR", null, "INSCRICAO",
+            Membro("CATEGORIA_RENDA", TipoDoDado.Opcao, ["URBANO", "RURAL"]),
+            Membro("MENOR_SOB_GUARDA", TipoDoDado.SimOuNao, null),
+            new(Guid.CreateVersion7(), "VINCULO_PARFOR", "Vínculo com o PARFOR", "Descrição do fato.", CodigoComRotulo<TipoDoDado>.De(TipoDoDado.SimOuNao), CodigoComRotulo<OrigemFato>.De(OrigemFato.Declarado), CodigoComRotulo<QuantidadeDeValores>.De(QuantidadeDeValores.ValorUnico), null, "INSCRICAO",
                 "CAMPO_FORMULARIO:VINCULO_PARFOR", null, null, Ativo: true, ClassificacaoProtecao: "PESSOAL", HipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, FinalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, ProtecaoAprovada: true),
-            new(Guid.CreateVersion7(), "CATEGORIAS_RENDA_FAMILIA", "Categorias de renda da família", "Descrição do fato.", "CATEGORICO", "DERIVADO", "MULTIVALORADO",
-                null, "HABILITACAO", "AGREGACAO_GRUPO:CATEGORIA_RENDA", null, "GLOBAL", Ativo: true, ClassificacaoProtecao: "PESSOAL", HipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, FinalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, ProtecaoAprovada: true),
+            new(Guid.CreateVersion7(), "CATEGORIAS_RENDA_FAMILIA", "Categorias de renda da família", "Descrição do fato.", CodigoComRotulo<TipoDoDado>.De(TipoDoDado.Opcao), CodigoComRotulo<OrigemFato>.De(OrigemFato.Calculado), CodigoComRotulo<QuantidadeDeValores>.De(QuantidadeDeValores.VariosValores),
+                null, "HABILITACAO", "RESUMO_DE_GRUPO:CATEGORIA_RENDA", null, CodigoComRotulo<FonteValoresFato>.De(FonteValoresFato.Catalogo), Ativo: true, ClassificacaoProtecao: "PESSOAL", HipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, FinalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, ProtecaoAprovada: true),
         ]));
         return leitor;
     }
 
-    private static FatoCandidatoView Membro(string codigo, string dominio, IReadOnlyList<string>? valores) => new(
-        Guid.CreateVersion7(), codigo, codigo, "Descrição do fato.", dominio, "DECLARADO", "ESCALAR", valores, "HABILITACAO", $"CAMPO_FORMULARIO:{codigo}",
-        valores?.Select(static (v, ordem) => new FatoValorDominioViewItem(v, v, ordem, true)).ToList(), valores is null ? null : "GLOBAL",
+    private static FatoCandidatoView Membro(string codigo, TipoDoDado dominio, IReadOnlyList<string>? valores) => new(
+        Guid.CreateVersion7(), codigo, codigo, "Descrição do fato.", CodigoComRotulo<TipoDoDado>.De(dominio), CodigoComRotulo<OrigemFato>.De(OrigemFato.Declarado), CodigoComRotulo<QuantidadeDeValores>.De(QuantidadeDeValores.ValorUnico), valores, "HABILITACAO", $"CAMPO_FORMULARIO:{codigo}",
+        valores?.Select(static (v, ordem) => new FatoValorDominioViewItem(v, v, ordem, true)).ToList(), valores is null ? null : CodigoComRotulo<FonteValoresFato>.De(FonteValoresFato.Catalogo),
         Ativo: true, ClassificacaoProtecao: "PESSOAL", HipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, FinalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, Escopo: "MEMBRO_GRUPO", ProtecaoAprovada: true);
 }

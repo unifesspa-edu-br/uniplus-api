@@ -48,15 +48,15 @@ public sealed record DefinicaoDaResposta(
         formato = fatoCodigo is null ? formato : ConjuntoBasicoDaInscricao.FormatoDaResposta(fatoCodigo, formato);
         bool identificador = string.Equals(classificacaoProtecao, ClassificacaoIdentificador, StringComparison.Ordinal);
         bool cifra = TemCifraIndividual(fatoCodigo, classificacaoProtecao);
-        return new DefinicaoDaResposta(TipoDe(renderizacao), renderizacao == TipoRenderizacao.SelecaoMultipla,
+        return new DefinicaoDaResposta(TipoDe(renderizacao), renderizacao == TipoRenderizacao.EscolhaMultipla,
             identificador, renderizacao == TipoRenderizacao.Texto ? formato : null, cifra);
     }
 
     private static TipoDoValorDeResposta TipoDe(TipoRenderizacao renderizacao) => renderizacao switch
     {
-        TipoRenderizacao.Booleano => TipoDoValorDeResposta.SimOuNao,
+        TipoRenderizacao.SimOuNao => TipoDoValorDeResposta.SimOuNao,
         TipoRenderizacao.Numero => TipoDoValorDeResposta.Numero,
-        TipoRenderizacao.SelecaoUnica or TipoRenderizacao.SelecaoMultipla => TipoDoValorDeResposta.Opcao,
+        TipoRenderizacao.EscolhaUnica or TipoRenderizacao.EscolhaMultipla => TipoDoValorDeResposta.Opcao,
         TipoRenderizacao.Municipio => TipoDoValorDeResposta.Municipio,
         TipoRenderizacao.Texto => TipoDoValorDeResposta.Texto,
         TipoRenderizacao.Data => TipoDoValorDeResposta.Data,

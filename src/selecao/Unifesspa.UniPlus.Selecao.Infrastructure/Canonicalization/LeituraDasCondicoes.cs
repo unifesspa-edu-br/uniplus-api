@@ -40,7 +40,7 @@ internal static class LeituraDasCondicoes
     private static Obrigatoriedade? LerObrigatoriedadeDoBloco(LeitorEnvelope leitor, JsonObject bloco, string path)
     {
         leitor.ExigirChaves(bloco, path, "tipo", "quando");
-        string tipo = leitor.TextoNaoVazio(bloco, "tipo", path);
+        TipoObrigatoriedade tipo = leitor.CodigoDeContrato<TipoObrigatoriedade>(bloco, "tipo", path);
         IReadOnlyList<LinhaDoPredicado> linhas = LerDnf(leitor, bloco, "quando", path);
         if (leitor.Falhou)
         {
@@ -54,14 +54,9 @@ internal static class LeituraDasCondicoes
             : ObrigatoriedadeDaForma(leitor, tipo, predicado.Value, path);
     }
 
-    private static Obrigatoriedade? ObrigatoriedadeDaForma(LeitorEnvelope leitor, string tipo, PredicadoDnf? predicado, string path) =>
-        (PredicadoDnfJson.TipoDoToken(tipo), predicado) switch
-        {
-            (TipoObrigatoriedade.Sempre, null) => Obrigatoriedade.Sempre,
-            (TipoObrigatoriedade.Nunca, null) => Obrigatoriedade.Nunca,
-            (TipoObrigatoriedade.Quando, { } quando) => Obrigatoriedade.Quando(quando),
-            _ => leitor.Recusar<Obrigatoriedade>($"'{path}' tem tipo SEMPRE ou NUNCA sem predicado, ou QUANDO com predicado."),
-        };
+    private static Obrigatoriedade? ObrigatoriedadeDaForma(LeitorEnvelope leitor, TipoObrigatoriedade tipo, PredicadoDnf? predicado, string path) =>
+        Obrigatoriedade.DaForma(tipo, predicado)
+            ?? leitor.Recusar<Obrigatoriedade>($"'{path}' tem tipo SEMPRE ou NUNCA sem predicado, ou QUANDO com predicado.");
 
     /// <summary>O predicado das linhas lidas; <see langword="null"/> quando não há condição.</summary>
     internal static Result<PredicadoDnf?> PredicadoOpcional(

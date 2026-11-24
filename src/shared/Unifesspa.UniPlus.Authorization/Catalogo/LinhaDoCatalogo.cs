@@ -16,8 +16,8 @@ using Unifesspa.UniPlus.Kernel.Domain.ValueObjects;
 /// <param name="Reservada">Só perfis de governança podem reunir a permissão.</param>
 public sealed record LinhaDoCatalogo(CodigoDePermissao Codigo, ClassificacaoDeProtecao Classificacao, bool DeUnidade, bool Reservada)
 {
-    /// <summary>A classificação como texto estável em minúsculas, o mesmo formato gravado nas versões dos perfis.</summary>
-    public string ClassificacaoEmTexto => Classificacao.ToString().ToLowerInvariant();
+    /// <summary>O código de contrato da classificação, o mesmo formato gravado nas versões dos perfis.</summary>
+    public string ClassificacaoEmTexto => ClassificacoesDeProtecao.ParaTokenCanonico(Classificacao);
 
     /// <summary>
     /// A impressão do catálogo: SHA-256 em hexadecimal das linhas <c>codigo|modulo|classificacao|de_unidade|reservada</c>,

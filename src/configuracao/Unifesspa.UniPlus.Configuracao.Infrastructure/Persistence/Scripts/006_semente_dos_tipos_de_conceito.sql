@@ -9,7 +9,7 @@ WITH tipos_novos AS (
         (id, codigo, nome, ativo, forma, escala_minima, escala_maxima, casas_decimais, created_at)
     VALUES
         ('019fee1f-7000-7000-8000-000000000001', 'NOTA', 'Nota', true, 'NUMERICO', 0, 1000, 2, TIMESTAMPTZ '2026-11-14 00:00:00+00'),
-        ('019fee1f-7000-7000-8000-000000000002', 'APTO_INAPTO', 'Apto ou inapto', true, 'CATEGORICO', NULL, NULL, NULL, TIMESTAMPTZ '2026-11-14 00:00:00+00')
+        ('019fee1f-7000-7000-8000-000000000002', 'APTO_INAPTO', 'Apto ou inapto', true, 'POR_OPCOES', NULL, NULL, NULL, TIMESTAMPTZ '2026-11-14 00:00:00+00')
     ON CONFLICT DO NOTHING
     RETURNING id, codigo
 ), valores_novos AS (

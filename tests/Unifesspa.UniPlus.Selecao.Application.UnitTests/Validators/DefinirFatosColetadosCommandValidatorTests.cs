@@ -23,7 +23,7 @@ public sealed class DefinirFatosColetadosCommandValidatorTests
     private static DefinirFatosColetadosCommand Comando(params FatoColetadoInput[] itens) =>
         new(Guid.CreateVersion7(), FinalidadeFormulario.Inscricao, itens);
 
-    private static EntradaDoFatoColetadoDeTeste Item(string fatoCodigo, string rotulo, string tipo = "BOOLEANO") =>
+    private static EntradaDoFatoColetadoDeTeste Item(string fatoCodigo, string rotulo, string tipo = "SIM_OU_NAO") =>
         EntradaDoFatoColetadoDeTeste.Coletando(fatoCodigo).ComRotulo(rotulo).DoTipo(tipo);
 
     [Fact(DisplayName = "Passa com lista de fatos vazia — zera a coleta")]
@@ -37,7 +37,7 @@ public sealed class DefinirFatosColetadosCommandValidatorTests
     [Fact(DisplayName = "Passa com fato sem exibição (null)")]
     public void Aceita_FatoSemExibicao()
     {
-        ValidationResult result = Validator.Validate(Comando(Item("COR_RACA", "Cor ou raça", "SELECAO_UNICA").ComObrigatoriedade("NUNCA").Construir()));
+        ValidationResult result = Validator.Validate(Comando(Item("COR_RACA", "Cor ou raça", "ESCOLHA_UNICA").ComObrigatoriedade("NUNCA").Construir()));
 
         result.IsValid.Should().BeTrue();
     }
@@ -53,15 +53,15 @@ public sealed class DefinirFatosColetadosCommandValidatorTests
 
     [Fact(DisplayName = "Passa com código do fato vazio no validator — a rejeição é do agregado (FatoColetado.Criar)")]
     public void Aceita_FatoCodigoVazioNoValidator() =>
-        Validator.Validate(Comando(Item(string.Empty, "Rótulo", "SELECAO_UNICA").Construir())).IsValid.Should().BeTrue();
+        Validator.Validate(Comando(Item(string.Empty, "Rótulo", "ESCOLHA_UNICA").Construir())).IsValid.Should().BeTrue();
 
     [Fact(DisplayName = "Passa com rótulo vazio no validator — a rejeição é do agregado (FatoColetado.Criar)")]
     public void Aceita_RotuloVazioNoValidator() =>
-        Validator.Validate(Comando(Item("COR_RACA", string.Empty, "SELECAO_UNICA").Construir())).IsValid.Should().BeTrue();
+        Validator.Validate(Comando(Item("COR_RACA", string.Empty, "ESCOLHA_UNICA").Construir())).IsValid.Should().BeTrue();
 
     [Fact(DisplayName = "Passa com rótulo acima de 300 caracteres no validator — o limite é conferido pelo agregado (FatoColetado.Criar)")]
     public void Aceita_RotuloExcedeLimiteNoValidator() =>
-        Validator.Validate(Comando(Item("COR_RACA", new string('a', 301), "SELECAO_UNICA").Construir())).IsValid.Should().BeTrue();
+        Validator.Validate(Comando(Item("COR_RACA", new string('a', 301), "ESCOLHA_UNICA").Construir())).IsValid.Should().BeTrue();
 
     [Fact(DisplayName = "Passa com ordem negativa no validator — a rejeição é do agregado (FatoColetado.Criar)")]
     public void Aceita_OrdemNegativaNoValidator() =>
@@ -140,7 +140,7 @@ public sealed class DefinirFatosColetadosCommandValidatorTests
 
     private static GrupoColetadoInput? GrupoAdulterado(string caso)
     {
-        FatoColetadoInput campo = Item("PARENTESCO", "Parentesco", "SELECAO_UNICA").Construir();
+        FatoColetadoInput campo = Item("PARENTESCO", "Parentesco", "ESCOLHA_UNICA").Construir();
         GrupoColetadoInput grupo = EntradaDoGrupoColetadoDeTeste.Compondo("COMPOSICAO", 1).ComRotulo("Composição").NaSecao("DADOS")
             .ComOcorrencias(0, 5).ComCampos(campo).Construir();
         return caso switch

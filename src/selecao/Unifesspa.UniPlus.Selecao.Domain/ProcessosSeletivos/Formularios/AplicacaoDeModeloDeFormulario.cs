@@ -1,5 +1,6 @@
 namespace Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Formularios;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Extensions;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Formularios;
@@ -76,7 +77,7 @@ internal static class AplicacaoDeModeloDeFormulario
                 .OrderBy(static f => f.FatoCodigo, StringComparer.Ordinal)
                 .Select(f => new FieldError("itens", new DomainError(
                     FatoColetadoErrorCodes.FatoDuplicado,
-                    $"O fato '{f.FatoCodigo}' já é coletado pelo formulário de {EstruturaFormulario.ParaToken(f.Finalidade)}."))));
+                    $"O fato '{f.FatoCodigo}' já é coletado pelo formulário de {f.Finalidade!.Value.Codigo()}."))));
         }
 
         erros.AddRange(CodigosDeOutrosFormularios(configuracao, copia));

@@ -57,7 +57,7 @@ public sealed class FatoColetado : EntityBase, IParteDoProcesso
 
     /// <summary>
     /// Como o campo é renderizado. A coerência contra o <c>Dominio</c> do fato no catálogo (ex.:
-    /// domínio <c>BOOLEANO</c> só aceita <see cref="TipoRenderizacao.Booleano"/>) é validada na
+    /// tipo do dado <c>SIM_OU_NAO</c> só aceita <see cref="TipoRenderizacao.SimOuNao"/>) é validada na
     /// Application, que tem acesso ao vocabulário cross-módulo — o Domain não alcança o catálogo.
     /// </summary>
     public TipoRenderizacao TipoRenderizacao { get; private set; }
@@ -134,7 +134,7 @@ public sealed class FatoColetado : EntityBase, IParteDoProcesso
     public Impedimento? Impedimento { get; private set; }
 
     /// <summary>A finalidade do formulário que produz o fato; atribuída pelo processo ao definir os itens.</summary>
-    public FinalidadeFormulario Finalidade { get; private set; }
+    public FinalidadeFormulario? Finalidade { get; private set; }
 
     /// <summary>A seção do formulário em que o item aparece.</summary>
     public string? EtapaCodigo { get; private set; }
@@ -148,7 +148,7 @@ public sealed class FatoColetado : EntityBase, IParteDoProcesso
         ApresentacaoDoCampo apresentacao,
         RegrasDoCampo regras,
         CopiaDoItemNoCatalogo copia,
-        FinalidadeFormulario finalidade)
+        FinalidadeFormulario? finalidade)
     {
         FatoCodigo = (fatoCodigo ?? string.Empty).Trim();
         Ordem = ordem;
@@ -174,7 +174,7 @@ public sealed class FatoColetado : EntityBase, IParteDoProcesso
         ApresentacaoDoCampo apresentacao,
         RegrasDoCampo regras,
         CopiaDoItemNoCatalogo copia,
-        FinalidadeFormulario finalidade = FinalidadeFormulario.Nenhuma)
+        FinalidadeFormulario? finalidade = null)
     {
         ArgumentNullException.ThrowIfNull(apresentacao);
         ArgumentNullException.ThrowIfNull(regras);
@@ -294,7 +294,7 @@ public sealed class FatoColetado : EntityBase, IParteDoProcesso
                 ? []
                 : opcoes.Entradas.SelectMany(static e => e.Quando?.Clausulas ?? []).SelectMany(static c => c.Condicoes)
                     .Append(CondicaoDnf.Criar(
-                        FatoCodigo, Operador.Em, JsonSerializer.SerializeToElement(opcoes.ValoresCitados.Order(StringComparer.Ordinal))).Value!);
+                        FatoCodigo, Operador.AlgumDe, JsonSerializer.SerializeToElement(opcoes.ValoresCitados.Order(StringComparer.Ordinal))).Value!);
             return _precondicoes.Select(static c => c.ParaCondicaoDnf())
                 .Concat((Obrigatoriedade.Predicado?.Clausulas ?? []).SelectMany(static c => c.Condicoes))
                 .Concat((Impedimento?.Quando.Clausulas ?? []).SelectMany(static c => c.Condicoes))

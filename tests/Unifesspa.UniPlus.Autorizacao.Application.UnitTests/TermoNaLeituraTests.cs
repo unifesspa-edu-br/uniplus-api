@@ -70,7 +70,7 @@ public sealed class TermoNaLeituraTests
     public void Trilha_MostraADevolucaoPorTermoExigido()
     {
         PedidoDeConcessao pedido = PedidoDeConcessaoBuilder.Pedido().AguardandoGestor();
-        pedido.Aprovar(new Identidade("https://idp.test/realms/unifesspa", "diogo.souza"), new(["a"], "sensivel", true, null), new(false), DateTimeOffset.UtcNow);
+        pedido.Aprovar(new Identidade("https://idp.test/realms/unifesspa", "diogo.souza"), new(["a"], "SENSIVEL", true, null), new(false), DateTimeOffset.UtcNow);
 
         EventosDoPedido.Montar(pedido, []).Select(e => e.Tipo).Should().Contain("termo_exigido");
     }

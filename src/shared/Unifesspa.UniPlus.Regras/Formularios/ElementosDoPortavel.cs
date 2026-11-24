@@ -1,5 +1,6 @@
 namespace Unifesspa.UniPlus.Regras.Formularios;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Regras.Leituras;
 
 /// <summary>Uma etapa: o código com que o avaliador a identifica, a exibição da etapa inteira, os itens e os grupos.</summary>
@@ -41,4 +42,4 @@ public sealed record DerivacaoPortavel(string FatoCodigo, bool Booleano, IReadOn
 public sealed record RegraDerivacaoPortavel(IReadOnlyList<IReadOnlyList<CondicaoPrecondicaoDto>> Quando, string? Contribui);
 
 /// <summary>Um fato agregado sobre um grupo: o fato de membro que ele agrega e a operação, <c>EXISTE</c> ou <c>VALORES_PRESENTES</c>.</summary>
-public sealed record AgregadoPortavel(string Codigo, string GrupoCodigo, string FatoDeMembro, string Operacao);
+public sealed record AgregadoPortavel(string Codigo, string GrupoCodigo, string FatoDeMembro, [property: AceitaCodigosDe<OperacaoAgregado>] string Operacao);

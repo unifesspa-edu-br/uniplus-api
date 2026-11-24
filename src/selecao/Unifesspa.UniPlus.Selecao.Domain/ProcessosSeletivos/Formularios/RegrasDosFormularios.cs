@@ -1,5 +1,6 @@
 namespace Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Formularios;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
@@ -59,7 +60,7 @@ public static class RegrasDosFormularios
     /// </summary>
     public static IReadOnlyList<FieldError> ConferirFormulario(
         ConfiguracaoDeclarada configuracao,
-        FinalidadeFormulario finalidade,
+        FinalidadeFormulario? finalidade,
         Guid? faseId,
         string? titulo,
         IReadOnlyList<EtapaFormulario> etapas,
@@ -70,14 +71,14 @@ public static class RegrasDosFormularios
         ArgumentNullException.ThrowIfNull(etapas);
 
         List<FieldError> recusas = FormaDoCabecalho.Validar(finalidade, titulo);
-        if (faseId is { } fase && fase != Guid.Empty && RecusaDaFaseDoFormulario(configuracao, finalidade, fase) is { } recusaDaFase)
+        if (finalidade is { } declarada && faseId is { } fase && fase != Guid.Empty && RecusaDaFaseDoFormulario(configuracao, declarada, fase) is { } recusaDaFase)
         {
             recusas.Add(new("faseId", recusaDaFase));
         }
 
-        if (etapasCompletas && finalidade != FinalidadeFormulario.Nenhuma)
+        if (etapasCompletas && finalidade is { } formulario)
         {
-            recusas.AddRange(RecusasDasEtapas(configuracao, finalidade, etapas, itensDaCriacao));
+            recusas.AddRange(RecusasDasEtapas(configuracao, formulario, etapas, itensDaCriacao));
         }
 
         return recusas;
@@ -138,7 +139,7 @@ public static class RegrasDosFormularios
             ? null
             : new DomainError(
                 FormularioProcessoErrorCodes.FaseIncoerenteComFinalidade,
-                $"A fase '{fase.Codigo}' não é a fase em que se responde o formulário de {EstruturaFormulario.ParaToken(finalidade)}.");
+                $"A fase '{fase.Codigo}' não é a fase em que se responde o formulário de {finalidade.Codigo()}.");
     }
 
     internal static IReadOnlyList<ItemEstrutura> ItensDaFinalidade(ConfiguracaoDeclarada configuracao, FinalidadeFormulario finalidade) =>
@@ -213,5 +214,5 @@ public static class RegrasDosFormularios
 
     public static DomainError FormularioInexistente(FinalidadeFormulario finalidade) => new(
         FormularioProcessoErrorCodes.FormularioInexistente,
-        $"O processo não tem formulário de {EstruturaFormulario.ParaToken(finalidade)}; defina o formulário antes dos itens e termos.");
+        $"O processo não tem formulário de {finalidade.Codigo()}; defina o formulário antes dos itens e termos.");
 }

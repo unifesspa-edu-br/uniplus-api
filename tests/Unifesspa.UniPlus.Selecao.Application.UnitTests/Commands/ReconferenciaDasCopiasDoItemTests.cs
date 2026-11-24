@@ -2,6 +2,7 @@ namespace Unifesspa.UniPlus.Selecao.Application.UnitTests.Commands;
 
 using AwesomeAssertions;
 
+using Unifesspa.UniPlus.Application.Abstractions.Respostas;
 using Unifesspa.UniPlus.Configuracao.Contracts;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Enums;
@@ -96,7 +97,7 @@ public sealed class ReconferenciaDasCopiasDoItemTests
     [Fact(DisplayName = "O fato já coletado cujo catálogo mudou de forma incompatível é recusado, orientando desfazer a correção")]
     public void Aplicar_FatoJaColetadoIncoerente_Recusa()
     {
-        IReadOnlyList<FatoCandidatoView> catalogo = CatalogoCom("DESEJA_NOME_SOCIAL", static f => f with { Dominio = "CATEGORICO" });
+        IReadOnlyList<FatoCandidatoView> catalogo = CatalogoCom("DESEJA_NOME_SOCIAL", static f => f with { Dominio = CodigoComRotulo<TipoDoDado>.De(TipoDoDado.Opcao) });
 
         Result resposta = ReconferenciaDeTeste.Aplicar(ProcessoConforme(), catalogo, Coletados("DESEJA_NOME_SOCIAL"));
 
@@ -108,12 +109,12 @@ public sealed class ReconferenciaDasCopiasDoItemTests
     [Fact(DisplayName = "A recusa de coerência traz a causa real do campo, inclusive a fonte de valores")]
     public void Aplicar_IncoerenciaPorFonte_NomeiaAFonte()
     {
-        IReadOnlyList<FatoCandidatoView> catalogo = CatalogoCom("RG_UF", static f => f with { FonteValores = "GEO_MUNICIPIO" });
+        IReadOnlyList<FatoCandidatoView> catalogo = CatalogoCom("RG_UF", static f => f with { FonteValores = CodigoComRotulo<FonteValoresFato>.De(FonteValoresFato.Municipios) });
 
         Result resposta = ReconferenciaDeTeste.Aplicar(ProcessoConforme(), catalogo, null);
 
         resposta.IsFailure.Should().BeTrue();
-        resposta.Error!.Message.Should().Contain("fonte de valores 'GEO_MUNICIPIO'").And.Contain("Regrave o item");
+        resposta.Error!.Message.Should().Contain("fonte de valores 'MUNICIPIOS'").And.Contain("Regrave o item");
     }
 
     [Fact(DisplayName = "A restrição de opções que cita valor que o fato deixou de ter é recusada")]
@@ -122,7 +123,7 @@ public sealed class ReconferenciaDasCopiasDoItemTests
         ProcessoSeletivo processo = ProcessoConforme();
         FatoColetado corRaca = FatoColetadoDeTeste.Coletando("COR_RACA", 0)
             .ComRotulo("Cor ou raça")
-            .DoTipo(TipoRenderizacao.SelecaoUnica)
+            .DoTipo(TipoRenderizacao.EscolhaUnica)
             .ComRestricoes(new OpcoesPermitidas([new OpcoesCondicionadas(null, ["BRANCA", "PRETA"])]))
             .Construir();
         processo.DefinirItens([corRaca]).IsSuccess.Should().BeTrue();
@@ -138,8 +139,8 @@ public sealed class ReconferenciaDasCopiasDoItemTests
     public void Aplicar_VariosItensIncoerentes_AcumulaTodasAsRecusas()
     {
         IReadOnlyList<FatoCandidatoView> catalogo = CatalogoComAlteracoes(
-            ("DESEJA_NOME_SOCIAL", static f => f with { Dominio = "CATEGORICO" }),
-            ("RG_UF", static f => f with { FonteValores = "GEO_MUNICIPIO" }));
+            ("DESEJA_NOME_SOCIAL", static f => f with { Dominio = CodigoComRotulo<TipoDoDado>.De(TipoDoDado.Opcao) }),
+            ("RG_UF", static f => f with { FonteValores = CodigoComRotulo<FonteValoresFato>.De(FonteValoresFato.Municipios) }));
 
         Result resposta = ReconferenciaDeTeste.Aplicar(ProcessoConforme(), catalogo, null);
 
@@ -147,7 +148,7 @@ public sealed class ReconferenciaDasCopiasDoItemTests
         resposta.Errors.Should().HaveCountGreaterThanOrEqualTo(2);
         resposta.Errors.Select(static e => e.Field).Should().OnlyContain(static campo => campo.StartsWith("formularios[0].itens[", StringComparison.Ordinal))
             .And.OnlyHaveUniqueItems();
-        resposta.Errors.Select(static e => e.Error.Message).Should().Contain(m => m.Contains("fonte de valores 'GEO_MUNICIPIO'"));
+        resposta.Errors.Select(static e => e.Error.Message).Should().Contain(m => m.Contains("fonte de valores 'MUNICIPIOS'"));
     }
 
     [Fact(DisplayName = "O predicado de obrigatoriedade que cita valor que o fato deixou de ter é recusado, como na gravação do item")]
@@ -220,7 +221,7 @@ public sealed class ReconferenciaDasCopiasDoItemTests
         DefinirItemNaHabilitacao(processo, FatoColetadoDeTeste.Coletando("SITUACAO_EXTRA", 0).ComRotulo("Situação extra").Construir());
         IReadOnlyList<FatoCandidatoView> catalogo = [
             .. CatalogoDoConjuntoBasico.Com([FatoDeFormularioNovo("SITUACAO_EXTRA", "Situação extra")])
-                .Select(static f => f.Codigo is "DESEJA_NOME_SOCIAL" or "SITUACAO_EXTRA" ? f with { Dominio = "CATEGORICO" } : f),
+                .Select(static f => f.Codigo is "DESEJA_NOME_SOCIAL" or "SITUACAO_EXTRA" ? f with { Dominio = CodigoComRotulo<TipoDoDado>.De(TipoDoDado.Opcao) } : f),
         ];
 
         Result resposta = ReconferenciaDeTeste.Aplicar(processo, catalogo, null);
@@ -238,7 +239,7 @@ public sealed class ReconferenciaDasCopiasDoItemTests
         string antes = ItemDe(processo, "CPF").ClassificacaoProtecao;
         IReadOnlyList<FatoCandidatoView> catalogo = CatalogoComAlteracoes(
             ("CPF", static f => f with { ClassificacaoProtecao = "PUBLICO" }),
-            ("RG_UF", static f => f with { FonteValores = "GEO_MUNICIPIO" }));
+            ("RG_UF", static f => f with { FonteValores = CodigoComRotulo<FonteValoresFato>.De(FonteValoresFato.Municipios) }));
         antes.Should().NotBe("PUBLICO", "pré-condição: há cópia a refazer");
 
         Result resposta = ReconferenciaDeTeste.Aplicar(processo, catalogo, null);

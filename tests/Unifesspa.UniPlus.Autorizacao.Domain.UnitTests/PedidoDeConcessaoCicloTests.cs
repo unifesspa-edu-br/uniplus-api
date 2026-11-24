@@ -135,7 +135,7 @@ public sealed class PedidoDeConcessaoCicloTests
 
         PedidoDeConcessao devolvido = Pedido().Protegido().AguardandoGestor();
         devolvido.Aprovar(Diogo.Identidade, Sensivel, Contexto, Agora);
-        devolvido.Aprovar(Marlene.Identidade, new PerfilAvaliado(["outra"], "sensivel", true, null), Contexto, Agora);
+        devolvido.Aprovar(Marlene.Identidade, new PerfilAvaliado(["outra"], "SENSIVEL", true, null), Contexto, Agora);
         devolvido.Andamento.Situacao.Should().Be(SituacaoDoPedido.AguardandoGestor);
         Codigos(devolvido.Cancelar(Agora)).Should().Equal(PedidoErrorCodes.SituacaoInvalida);
     }
@@ -240,7 +240,7 @@ public sealed class PedidoDeConcessaoCicloTests
         pedido.ConcessaoId.Should().Be(concessao);
     }
 
-    private static PerfilAvaliado Ampliado => new([.. Sensivel.Permissoes, "selecao:inscricoes:exportar"], "sensivel", true, null);
+    private static PerfilAvaliado Ampliado => new([.. Sensivel.Permissoes, "selecao:inscricoes:exportar"], "SENSIVEL", true, null);
 
     private static IEnumerable<string> ConfirmacaoRecusada(string? etag)
     {

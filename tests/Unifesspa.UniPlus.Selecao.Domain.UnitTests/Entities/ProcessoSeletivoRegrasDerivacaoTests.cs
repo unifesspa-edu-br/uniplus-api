@@ -232,10 +232,10 @@ public sealed class ProcessoSeletivoRegrasDerivacaoTests
                     1, c, Operador.Igual, JsonSerializer.SerializeToElement(true)).Value!)]).Value!,
         ]).Value!;
 
-    private static FatoColetado PcdDeclarado() => FatoColetadoDeTeste.Coletando("PCD", 0).DoTipo(TipoRenderizacao.SelecaoUnica).Construir();
+    private static FatoColetado PcdDeclarado() => FatoColetadoDeTeste.Coletando("PCD", 0).DoTipo(TipoRenderizacao.EscolhaUnica).Construir();
 
     private static FatoColetado ConcorrerPcdExibidoQuandoPcd() => FatoColetadoDeTeste.Coletando("CONCORRER_PCD", 1)
-        .DoTipo(TipoRenderizacao.SelecaoUnica)
+        .DoTipo(TipoRenderizacao.EscolhaUnica)
         .ExibidoQuando(ExibicaoDeTeste.Quando("PCD", Operador.Igual, true))
         .Construir();
 

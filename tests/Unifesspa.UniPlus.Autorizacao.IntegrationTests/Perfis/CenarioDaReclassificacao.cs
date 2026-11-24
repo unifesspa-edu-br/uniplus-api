@@ -14,6 +14,7 @@ using Unifesspa.UniPlus.Autorizacao.IntegrationTests.Infrastructure;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Authentication;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Hosting;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
 
 /// <summary>
@@ -68,14 +69,14 @@ internal sealed class CenarioDaReclassificacao(AutorizacaoEndpointFixture fixtur
         Guid perfil = await ConcessoesDeTeste.CriarPerfilAsync(fixture.Factory.Services, PermissaoReclassificada, OutraPermissaoDoPerfil);
         string pessoa = $"pessoa.{Guid.NewGuid():N}";
         await ConcessoesDeTeste.ConcederAsync(fixture.Factory.Services, pessoa, perfil);
-        await ExecutarAsync(PermissaoDaVersaoSql, anterior.ToString().ToLowerInvariant(), deUnidade, perfil, PermissaoReclassificada);
+        await ExecutarAsync(PermissaoDaVersaoSql, anterior.Codigo(), deUnidade, perfil, PermissaoReclassificada);
         await GravarCatalogoAnteriorAsync(PermissaoReclassificada, anterior, deUnidade, new string('a', 64));
 
         return (perfil, pessoa);
     }
 
     internal Task GravarCatalogoAnteriorAsync(string codigo, ClassificacaoDeProtecao classificacao, bool deUnidade, string impressao) =>
-        ExecutarAsync(CatalogoAnteriorSql, Guid.CreateVersion7(), impressao, codigo, classificacao.ToString().ToLowerInvariant(), deUnidade);
+        ExecutarAsync(CatalogoAnteriorSql, Guid.CreateVersion7(), impressao, codigo, classificacao.Codigo(), deUnidade);
 
     internal Task GravarCatalogoSemAPermissaoAsync(string codigo, string impressao) =>
         ExecutarAsync(CatalogoSemAPermissaoSql, Guid.CreateVersion7(), impressao, codigo);

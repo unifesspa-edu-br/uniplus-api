@@ -6,6 +6,7 @@ using Unifesspa.UniPlus.Application.Abstractions.Respostas;
 using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Regras.Entradas;
 using Unifesspa.UniPlus.Regras.Enums;
+using Unifesspa.UniPlus.Regras.Formularios;
 
 /// <summary>
 /// Uma condição de um predicado do formulário na forma de leitura. Tem a forma flat de
@@ -19,7 +20,7 @@ public sealed record CondicaoPrecondicaoDto(string Fato, [property: AceitaCodigo
 /// A obrigatoriedade na leitura: <c>SEMPRE</c>, <c>NUNCA</c> ou <c>QUANDO</c>, com o predicado só em
 /// <c>QUANDO</c>, na mesma forma flat da condição.
 /// </summary>
-public sealed record ObrigatoriedadeDto(string Tipo, IReadOnlyList<IReadOnlyList<CondicaoPrecondicaoDto>>? Predicado);
+public sealed record ObrigatoriedadeDto([property: AceitaCodigosDe<TipoObrigatoriedade>] string Tipo, IReadOnlyList<IReadOnlyList<CondicaoPrecondicaoDto>>? Predicado);
 
 /// <summary>
 /// Como o campo se apresenta ao candidato: o rótulo, o tipo de campo, a ajuda e o pedido de confirmação da
@@ -98,8 +99,8 @@ public sealed record ApresentacaoDaEtapaDto(string Titulo, string? Descricao, st
 public sealed record EtapaFormularioDto(
     string Codigo,
     int Ordem,
-    string Tipo,
-    string? Bloco,
+    [property: AceitaCodigosDe<TipoEtapaFormulario>] string Tipo,
+    [property: AceitaCodigosDe<BlocoSistema>] string? Bloco,
     ApresentacaoDaEtapaDto Apresentacao,
     IReadOnlyList<IReadOnlyList<CondicaoPrecondicaoDto>>? Exibicao);
 

@@ -55,7 +55,7 @@ public sealed class DefinirFatosColetadosEndpointTests
     private static object[] ItemQueCitaUmDadoBasicoComoAnterior() =>
     [
         FormularioDeInscricaoHttp.Item(
-            "BAIXA_RENDA", 0, "Baixa renda", "BOOLEANO", "NUNCA",
+            "BAIXA_RENDA", 0, "Baixa renda", "SIM_OU_NAO", "NUNCA",
             exibicao: new[] { new[] { new { fato = "COR_RACA", operador = "IGUAL", valor = "PRETA" } } }),
     ];
 
@@ -73,7 +73,7 @@ public sealed class DefinirFatosColetadosEndpointTests
         Contexto ctx = await SemearRascunhoAsync(nameof(Rascunho_FatoDesconhecido_422));
 
         HttpResponseMessage resposta = await ctx.PutFatosAsync(
-            [FormularioDeInscricaoHttp.Item("V", 0, "V", "SELECAO_UNICA", "NUNCA")]);
+            [FormularioDeInscricaoHttp.Item("V", 0, "V", "ESCOLHA_UNICA", "NUNCA")]);
 
         resposta.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
     }
@@ -84,7 +84,7 @@ public sealed class DefinirFatosColetadosEndpointTests
         Contexto ctx = await SemearRascunhoAsync(nameof(Rascunho_PrecondicaoVazia_FieldPeloCorpo));
 
         HttpResponseMessage resposta = await ctx.PutFatosAsync(
-            [FormularioDeInscricaoHttp.Item("COR_RACA", 0, "Cor ou raça", "SELECAO_UNICA", "NUNCA", exibicao: Array.Empty<object>())]);
+            [FormularioDeInscricaoHttp.Item("COR_RACA", 0, "Cor ou raça", "ESCOLHA_UNICA", "NUNCA", exibicao: Array.Empty<object>())]);
 
         using JsonDocument doc = JsonDocument.Parse(await resposta.Content.ReadAsStringAsync());
         doc.RootElement.GetProperty("errors").EnumerateArray().Select(static e => e.GetProperty("field").GetString())
@@ -97,7 +97,7 @@ public sealed class DefinirFatosColetadosEndpointTests
         Contexto ctx = await SemearRascunhoAsync(nameof(Rascunho_FatoDerivado_422));
 
         HttpResponseMessage resposta = await ctx.PutFatosAsync(
-            [FormularioDeInscricaoHttp.Item("MODALIDADE", 0, "Modalidade", "SELECAO_MULTIPLA", "NUNCA")]);
+            [FormularioDeInscricaoHttp.Item("MODALIDADE", 0, "Modalidade", "ESCOLHA_MULTIPLA", "NUNCA")]);
 
         resposta.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
     }
@@ -109,7 +109,7 @@ public sealed class DefinirFatosColetadosEndpointTests
         await ctx.PublicarAsync();
 
         HttpResponseMessage resposta = await ctx.PutFatosAsync(
-            [FormularioDeInscricaoHttp.Item("COR_RACA", 0, "Cor ou raça", "SELECAO_UNICA", "NUNCA")]);
+            [FormularioDeInscricaoHttp.Item("COR_RACA", 0, "Cor ou raça", "ESCOLHA_UNICA", "NUNCA")]);
 
         resposta.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
     }
@@ -118,7 +118,7 @@ public sealed class DefinirFatosColetadosEndpointTests
     public async Task Rascunho_ReplayIdempotente_204()
     {
         Contexto ctx = await SemearRascunhoAsync(nameof(Rascunho_ReplayIdempotente_204));
-        object[] corpo = [FormularioDeInscricaoHttp.Item("BAIXA_RENDA", 0, "Baixa renda", "BOOLEANO", "NUNCA")];
+        object[] corpo = [FormularioDeInscricaoHttp.Item("BAIXA_RENDA", 0, "Baixa renda", "SIM_OU_NAO", "NUNCA")];
         string chave = MakeIdempotencyKey();
 
         (await ctx.PutFatosAsync(corpo, idempotencyKey: chave)).StatusCode.Should().Be(HttpStatusCode.NoContent);
@@ -134,7 +134,7 @@ public sealed class DefinirFatosColetadosEndpointTests
         Contexto ctx = await SemearRascunhoAsync(nameof(SemAutenticacao_401));
 
         HttpResponseMessage resposta = await ctx.PutFatosAsync(
-            [FormularioDeInscricaoHttp.Item("COR_RACA", 0, "Cor ou raça", "SELECAO_UNICA", "NUNCA")], autenticar: Autenticacao.Nenhuma);
+            [FormularioDeInscricaoHttp.Item("COR_RACA", 0, "Cor ou raça", "ESCOLHA_UNICA", "NUNCA")], autenticar: Autenticacao.Nenhuma);
 
         resposta.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
     }

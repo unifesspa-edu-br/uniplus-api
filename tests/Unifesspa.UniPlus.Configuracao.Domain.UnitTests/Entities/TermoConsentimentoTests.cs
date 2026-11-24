@@ -12,7 +12,7 @@ public sealed class TermoConsentimentoTests
     private static readonly DateTimeOffset Agora = new(2027, 1, 1, 12, 0, 0, TimeSpan.Zero);
 
     private static TermoConsentimento CriarRevisavel(
-        string texto = "Texto do termo", string baseLegal = "Lei 13.709/2018", string? formaAceite = "REGISTRO_DIGITAL_SEM_LOG_IP")
+        string texto = "Texto do termo", string baseLegal = "Lei 13.709/2018", string? formaAceite = "REGISTRO_SEM_ENDERECO_IP")
     {
         Result<TermoConsentimento> resultado = TermoConsentimento.Criar("Termo LGPD", texto, baseLegal, formaAceite);
         resultado.IsSuccess.Should().BeTrue();
@@ -43,13 +43,13 @@ public sealed class TermoConsentimentoTests
     public void Criar_ComCamposIniciais_PreencheRascunho()
     {
         Result<TermoConsentimento> resultado = TermoConsentimento.Criar(
-            "Termo de consentimento LGPD", "Texto do termo", "Lei 13.709/2018", "REGISTRO_DIGITAL_SEM_LOG_IP");
+            "Termo de consentimento LGPD", "Texto do termo", "Lei 13.709/2018", "REGISTRO_SEM_ENDERECO_IP");
 
         resultado.IsSuccess.Should().BeTrue();
         TermoConsentimento termo = resultado.Value!;
         termo.TextoRascunho.Should().Be("Texto do termo");
         termo.BaseLegalRascunho.Should().Be("Lei 13.709/2018");
-        termo.FormaAceiteRascunho.Should().Be(FormaAceite.RegistroDigitalSemLogIp);
+        termo.FormaAceiteRascunho.Should().Be(FormaAceite.RegistroSemEnderecoIp);
         termo.Revisado.Should().BeFalse();
     }
 
@@ -132,7 +132,7 @@ public sealed class TermoConsentimentoTests
         Result<TermoConsentimento> resultado = TermoConsentimento.Criar("Termo", null, null, "FORMA_INEXISTENTE");
 
         resultado.Error!.Message.Should().Be(
-            "Forma de aceite deve ser uma de: A_DEFINIR, REGISTRO_DIGITAL_SEM_LOG_IP, REGISTRO_DIGITAL_COM_LOG_IP.");
+            "Forma de aceite deve ser uma de: A_DEFINIR, REGISTRO_SEM_ENDERECO_IP, REGISTRO_COM_ENDERECO_IP.");
     }
 
     // ── EditarRascunho ─────────────────────────────────────────────────
@@ -157,7 +157,7 @@ public sealed class TermoConsentimentoTests
         TermoConsentimento termo = CriarRevisavel();
         termo.MarcarRevisado("usuario.revisor", Agora).IsSuccess.Should().BeTrue();
 
-        Result resultado = termo.EditarRascunho("Texto ajustado", "Lei 13.709/2018", "REGISTRO_DIGITAL_SEM_LOG_IP");
+        Result resultado = termo.EditarRascunho("Texto ajustado", "Lei 13.709/2018", "REGISTRO_SEM_ENDERECO_IP");
 
         resultado.IsSuccess.Should().BeTrue();
         termo.Revisado.Should().BeFalse();
@@ -241,7 +241,7 @@ public sealed class TermoConsentimentoTests
         versao.TermoConsentimentoId.Should().Be(termo.Id);
         versao.Texto.Should().Be("Texto do termo");
         versao.BaseLegal.Should().Be("Lei 13.709/2018");
-        versao.FormaAceite.Should().Be(FormaAceite.RegistroDigitalSemLogIp);
+        versao.FormaAceite.Should().Be(FormaAceite.RegistroSemEnderecoIp);
         versao.PromovidaPor.Should().Be("usuario.revisor");
         versao.PromovidaEm.Should().Be(Agora);
         versao.Hash.Should().NotBeNullOrWhiteSpace();

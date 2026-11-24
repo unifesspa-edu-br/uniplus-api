@@ -61,8 +61,8 @@ public sealed record SecaoRenderizavel(
     string Codigo,
     string? CodigoNasRegras,
     int Ordem,
-    string Tipo,
-    string? Bloco,
+    [property: AceitaCodigosDe<TipoEtapaFormulario>] string Tipo,
+    [property: AceitaCodigosDe<BlocoSistema>] string? Bloco,
     ApresentacaoDaEtapaDto Apresentacao);
 
 /// <summary>

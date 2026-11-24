@@ -6,10 +6,12 @@ using AwesomeAssertions;
 
 using Microsoft.EntityFrameworkCore;
 
+using Unifesspa.UniPlus.Application.Abstractions.Respostas;
 using Unifesspa.UniPlus.Configuracao.Contracts;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Kernel.Tempo;
+using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Application.DTOs;
@@ -206,8 +208,8 @@ public sealed class ValoresDoFormularioCongeladosNaPublicacaoTests
     private static IReadOnlyList<FatoCandidatoView> CatalogoComCorRaca(params FatoValorDominioViewItem[] valores) => CatalogoDoConjuntoBasico.Com(
     [
         new FatoCandidatoView(
-            Guid.CreateVersion7(), "COR_RACA", "Cor ou raça", "Descrição do fato.", "CATEGORICO", "DECLARADO", "ESCALAR",
-            [.. valores.Select(static v => v.Codigo)], "INSCRICAO", "CAMPO_FORMULARIO:COR_RACA", [.. valores], "GLOBAL",
+            Guid.CreateVersion7(), "COR_RACA", "Cor ou raça", "Descrição do fato.", CodigoComRotulo<TipoDoDado>.De(TipoDoDado.Opcao), CodigoComRotulo<OrigemFato>.De(OrigemFato.Declarado), CodigoComRotulo<QuantidadeDeValores>.De(QuantidadeDeValores.ValorUnico),
+            [.. valores.Select(static v => v.Codigo)], "INSCRICAO", "CAMPO_FORMULARIO:COR_RACA", [.. valores], CodigoComRotulo<FonteValoresFato>.De(FonteValoresFato.Catalogo),
             Ativo: true, ClassificacaoProtecao: "PESSOAL", HipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, FinalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, ProtecaoAprovada: true),
     ]);
 

@@ -71,7 +71,7 @@ public static class ObterFormularioRenderizavelDoModeloQueryHandler
         DescricaoDosPressupostos descricao = new([], VocabularioDoCatalogo.ApresentacaoDos(simulacao.Fatos, recorte.Pressupostos), [.. simulacao.Agregados]);
 
         return new FormularioRenderizavel(
-            EstruturaFormulario.ParaToken(finalidade),
+            finalidade.Codigo(),
             conteudo.Titulo,
             [.. conteudo.Etapas.OrderBy(static e => e.Ordem).Select(Secao)],
             termos,
@@ -114,8 +114,8 @@ public static class ObterFormularioRenderizavelDoModeloQueryHandler
         etapa.Codigo,
         etapa.Tipo == TipoEtapaFormulario.Secao ? etapa.Codigo : null,
         etapa.Ordem,
-        EstruturaFormulario.ParaToken(etapa.Tipo),
-        EstruturaFormulario.ParaToken(etapa.Bloco),
+        etapa.Tipo.Codigo(),
+        etapa.Bloco?.Codigo(),
         new ApresentacaoDaEtapaDto(etapa.Titulo, etapa.Descricao, etapa.Aviso));
 
     private static GrupoRenderizavel Grupo(

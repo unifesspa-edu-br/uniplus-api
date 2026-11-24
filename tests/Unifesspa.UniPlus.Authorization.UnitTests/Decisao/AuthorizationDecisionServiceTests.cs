@@ -341,7 +341,7 @@ public sealed class AuthorizationDecisionServiceTests
             Resource(ClassificacaoDeProtecao.Interno));
 
         registro.Sensibilidade.Should().Be(
-            "sensivel",
+            "SENSIVEL",
             "registrar a classificação menor faria a operação sensível constar como interna, e "
             + "consultas de conformidade sobre o registro deixariam de encontrá-la");
     }

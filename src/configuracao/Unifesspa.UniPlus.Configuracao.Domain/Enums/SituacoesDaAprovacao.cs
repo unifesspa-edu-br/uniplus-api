@@ -2,8 +2,7 @@ namespace Unifesspa.UniPlus.Configuracao.Domain.Enums;
 
 /// <summary>
 /// Mapeamento entre <see cref="SituacaoDaAprovacao"/> (PascalCase) e o token textual de
-/// contrato/banco (UPPER_SNAKE), com parsing de domínio fechado por allowlist explícita (molde de
-/// <see cref="CardinalidadesFato"/>). Fonte do CHECK de domínio da situação e do value converter
+/// contrato/banco (UPPER_SNAKE), com parsing de domínio fechado por allowlist explícita. Fonte do CHECK de domínio da situação e do value converter
 /// de persistência.
 /// </summary>
 public static class SituacoesDaAprovacao

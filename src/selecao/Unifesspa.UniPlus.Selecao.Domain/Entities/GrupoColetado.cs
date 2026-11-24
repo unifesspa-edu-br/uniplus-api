@@ -25,7 +25,7 @@ public sealed class GrupoColetado : EntityBase, IParteDoProcesso
     public Guid ProcessoSeletivoId { get; private set; }
 
     /// <summary>A finalidade do formulário do grupo; atribuída pelo processo ao definir os itens.</summary>
-    public FinalidadeFormulario Finalidade { get; private set; }
+    public FinalidadeFormulario? Finalidade { get; private set; }
 
     /// <summary>Código do grupo no formulário, fora do espaço de códigos dos fatos.</summary>
     public string Codigo { get; private set; } = string.Empty;
@@ -124,7 +124,7 @@ public sealed class GrupoColetado : EntityBase, IParteDoProcesso
         }
     }
 
-    private static FinalidadeFormulario FinalidadeComumDos(IReadOnlyList<FatoColetado> campos) =>
+    private static FinalidadeFormulario? FinalidadeComumDos(IReadOnlyList<FatoColetado> campos) =>
         campos.Select(static c => c.Finalidade).Distinct().ToList() is [var comum]
             ? comum
             : throw new ArgumentException("Os campos do grupo são de finalidades diferentes: o grupo tem a finalidade dos seus campos.", nameof(campos));

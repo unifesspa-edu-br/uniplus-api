@@ -5,6 +5,7 @@ using Unifesspa.UniPlus.Configuracao.Domain.Errors;
 using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Regras.Enums;
 
 using static Unifesspa.UniPlus.Configuracao.Domain.Entities.ConferenciaDaDefinicaoDoFato;
 using static Unifesspa.UniPlus.Configuracao.Domain.Entities.CriacaoDoFato;
@@ -30,8 +31,8 @@ internal sealed class ConferenciaDaRedefinicaoDoFato
     private readonly DefinicaoDoFato _definicao;
     private readonly FatoCandidato _fato;
     private readonly List<FieldError> _erros = [];
-    private DominioFato _dominio;
-    private CardinalidadeFato _cardinalidade;
+    private TipoDoDado? _dominio;
+    private QuantidadeDeValores? _cardinalidade;
     private FonteValoresFato? _fonteValores;
     private FormatoTexto? _formato;
     private EscopoFato _escopo;
@@ -87,8 +88,8 @@ internal sealed class ConferenciaDaRedefinicaoDoFato
     {
         EixosDaDefinicao atuais = _fato.Eixos;
         EixosDaDefinicao propostos = new(
-            _eixosDeValorValidos ? _dominio : atuais.Dominio,
-            _eixosDeValorValidos ? _cardinalidade : atuais.Cardinalidade,
+            Conferido(_dominio, atuais.Dominio),
+            Conferido(_cardinalidade, atuais.Cardinalidade),
             _eixosDeValorValidos ? _fonteValores : atuais.FonteValores,
             _eixosDeValorValidos ? _formato : atuais.Formato,
             ponto.IsSuccess ? ponto.Value! : atuais.PontoResolucao,
@@ -98,6 +99,10 @@ internal sealed class ConferenciaDaRedefinicaoDoFato
             protecao.IsSuccess ? protecao.Value.Hipotese : atuais.Hipotese);
         return new PropostaDaRedefinicao(propostos, _erros, ponto.IsSuccess, protecao.IsSuccess);
     }
+
+    private T Conferido<T>(T? proposto, T atual)
+        where T : struct =>
+        _eixosDeValorValidos ? proposto ?? atual : atual;
 
     private void RecusarEixosDoAgregado()
     {
@@ -110,7 +115,7 @@ internal sealed class ConferenciaDaRedefinicaoDoFato
 
     private void ConferirEixos()
     {
-        _dominio = _definicao.Dominio ?? DominioFato.Nenhum;
+        _dominio = _definicao.Dominio;
         _escopo = _definicao.Escopo ?? EscopoFato.Nenhum;
         ConferirEscopo(_erros, _escopo);
         if (_fato.DerivadoPorRegra)
@@ -137,13 +142,13 @@ internal sealed class ConferenciaDaRedefinicaoDoFato
 
     private void ConferirEixosDeValorInformados()
     {
-        _cardinalidade = _definicao.Cardinalidade ?? CardinalidadeFato.Nenhuma;
+        _cardinalidade = _definicao.Cardinalidade;
         _fonteValores = _definicao.FonteValores;
         _formato = _definicao.Formato;
         int antes = _erros.Count;
         ConferirEixosDeValor(_erros, _dominio, _cardinalidade, _fonteValores, _formato);
         _eixosDeValorValidos = _erros.Count == antes;
-        _dominioAplicavel = _dominio != DominioFato.Nenhum && Enum.IsDefined(_dominio);
+        _dominioAplicavel = _dominio is { } tipo && Enum.IsDefined(tipo);
     }
 
     // Os valores do catálogo só existem no categórico de fonte global: o eixo novo que não os
@@ -154,11 +159,11 @@ internal sealed class ConferenciaDaRedefinicaoDoFato
         {
             return;
         }
-        if (_dominio != DominioFato.Categorico)
+        if (_dominio != TipoDoDado.Opcao)
         {
             RecusarEixoSemValores("dominio", FatoCandidatoErrorCodes.DominioNaoComportaOsValores, MensagemDeDominioSemValores);
         }
-        else if (_fonteValores != FonteValoresFato.Global)
+        else if (_fonteValores != FonteValoresFato.Catalogo)
         {
             RecusarEixoSemValores("fonteValores", FatoCandidatoErrorCodes.FonteNaoComportaOsValores, MensagemDeFonteSemValores);
         }

@@ -27,14 +27,14 @@ public sealed record DeclaracaoDaConsolidacaoDoConceito(
 
     /// <summary>A declaração da versão da regra.</summary>
     /// <exception cref="ArgumentException">
-    /// A regra não é de consolidação, ou a versão não declara critério, corretores, naturezas e tratamento válidos: o catálogo
+    /// A regra não é de consolidação, ou a versão não declara critério, corretores, formas e tratamento válidos: o catálogo
     /// é semeado por código, e declaração assim é defeito de quem semeia, e nada é presumido.
     /// </exception>
     public static DeclaracaoDaConsolidacaoDoConceito De(RegraCatalogo regra) =>
         Tentar(regra, out DeclaracaoDaConsolidacaoDoConceito? declaracao) ? declaracao : throw DeclaracaoInvalida(regra);
 
     /// <summary>
-    /// A declaração da versão, ou falso quando ela não declara as quatro chaves (critério, corretores, naturezas e tratamento) de forma válida. Quem lê o catálogo
+    /// A declaração da versão, ou falso quando ela não declara as quatro chaves (critério, corretores, formas e tratamento) de forma válida. Quem lê o catálogo
     /// para recusar a etapa em vez de lançar usa este, e não presume critério, número nem tratamento.
     /// </summary>
     public static bool Tentar(RegraCatalogo regra, [NotNullWhen(true)] out DeclaracaoDaConsolidacaoDoConceito? declaracao)
@@ -43,7 +43,7 @@ public sealed record DeclaracaoDaConsolidacaoDoConceito(
 
         declaracao = null;
         if (!CorretoresDaRegraDeConsolidacao.Tentar(regra, out int corretores)
-            || !NaturezasDaConsolidacao.Tentar(regra, out _)
+            || !FormasDaConsolidacao.Tentar(regra, out _)
             || !CatalogoDe<CriterioDeApuracaoDoConceito>.TentarObter(LerTexto(regra, ChaveDoCriterio), out CriterioDeApuracaoDoConceito criterio)
             || !TratamentoDaRegraDeConsolidacao.Tentar(regra, out TratamentoDaFaltaDeApuracao? tratamento)
             || tratamento is not { } declarado)
@@ -61,5 +61,5 @@ public sealed record DeclaracaoDaConsolidacaoDoConceito(
             : null;
 
     private static ArgumentException DeclaracaoInvalida(RegraCatalogo regra) =>
-        new("A regra de consolidação deve declarar critério, corretores, naturezas de conceito e tratamento válidos.", nameof(regra));
+        new("A regra de consolidação deve declarar critério, corretores, formas de conceito e tratamento válidos.", nameof(regra));
 }

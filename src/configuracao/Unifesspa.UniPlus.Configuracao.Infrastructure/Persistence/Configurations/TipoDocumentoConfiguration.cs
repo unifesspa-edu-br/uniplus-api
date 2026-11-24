@@ -95,8 +95,7 @@ public sealed class TipoDocumentoConfiguration
 
         // Proteção do documento (ADR-0081, ADR-0136): obrigatória em todo tipo, como no fato.
         builder.Property(t => t.ClassificacaoProtecao)
-            .HasConversion<ClassificacaoDeProtecaoValueConverter>()
-            .HasMaxLength(ClassificacaoDeProtecaoValueConverter.MaxLength)
+            .HasMaxLength(ColunaDaClassificacao.MaxLength)
             .IsRequired();
         builder.Property(t => t.FinalidadeTratamento).HasMaxLength(ProtecaoDeDados.FinalidadeMaxLength).IsRequired();
         builder.Property(t => t.HipoteseLegal)

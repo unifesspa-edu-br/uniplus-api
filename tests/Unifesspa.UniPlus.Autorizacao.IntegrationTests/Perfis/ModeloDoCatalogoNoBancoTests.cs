@@ -14,6 +14,7 @@ using Unifesspa.UniPlus.Autorizacao.Domain.Entities;
 using Unifesspa.UniPlus.Autorizacao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Autorizacao.IntegrationTests.Infrastructure;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Kernel.Domain.Interfaces;
 using Unifesspa.UniPlus.Kernel.Domain.ValueObjects;
@@ -40,11 +41,26 @@ public sealed class ModeloDoCatalogoNoBancoTests : PerfilEndpointTestBase
         foreach (ClassificacaoDeProtecao valor in Enum.GetValues<ClassificacaoDeProtecao>())
         {
             int ordem = await db.Database
-                .SqlQueryRaw<int>("""SELECT autorizacao.ordem_da_classificacao({0}) AS "Value" """, valor.ToString().ToLowerInvariant())
+                .SqlQueryRaw<int>("""SELECT autorizacao.ordem_da_classificacao({0}) AS "Value" """, valor.Codigo())
                 .SingleAsync();
 
             ordem.Should().Be((int)valor, valor.ToString());
         }
+    }
+
+    [Theory(DisplayName = "A ordem da classificação no banco não lê a grafia em minúsculas")]
+    [InlineData("interno")]
+    [InlineData("sensivel")]
+    public async Task OrdemDaClassificacao_GrafiaEmMinusculas_NaoTemOrdem(string grafiaAntiga)
+    {
+        await using AsyncServiceScope scope = Fixture.Factory.Services.CreateAsyncScope();
+        UniPlusDbContext db = scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
+
+        int?[] ordem = await db.Database
+            .SqlQueryRaw<int?>("""SELECT autorizacao.ordem_da_classificacao({0}) AS "Value" """, grafiaAntiga)
+            .ToArrayAsync();
+
+        ordem.Should().ContainSingle().Which.Should().BeNull();
     }
 
     [Fact(DisplayName = "A composição esperada da governança é a semente do modelo e a gravada no banco")]

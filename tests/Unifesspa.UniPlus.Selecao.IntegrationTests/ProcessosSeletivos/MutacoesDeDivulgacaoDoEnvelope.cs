@@ -94,7 +94,7 @@ public static class MutacoesDeDivulgacaoDoEnvelope
 
     // errors[].message nunca ecoa o valor rejeitado: a mensagem é genérica, não "'cpf'".
     private static void CamposComTokenEstranho(JsonObject envelope) =>
-        Bloco(envelope)["camposPublicos"] = Campos("cpf", "NUMERO_INSCRICAO");
+        Bloco(envelope)["camposPublicos"] = Campos("CPF", "NUMERO_INSCRICAO");
 
     private static void CamposComTokenRepetido(JsonObject envelope) =>
         Bloco(envelope)["camposPublicos"] = Campos("NUMERO_INSCRICAO", "NUMERO_INSCRICAO");

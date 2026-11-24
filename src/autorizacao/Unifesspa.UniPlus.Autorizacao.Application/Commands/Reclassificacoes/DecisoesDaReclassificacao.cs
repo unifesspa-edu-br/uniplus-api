@@ -203,7 +203,7 @@ public sealed class DecisoesDaReclassificacao
     // A concessão pedida que não reúne a permissão (revogada, de outro perfil ou inexistente) não está suspensa por esta
     // reclassificação, e a conferência do agregado a recusa.
     private static ConcessaoNaReclassificacao Ausente(Guid id) =>
-        new(id, new Identidade("ausente", "ausente"), false, new BaseDaConcessao(ClassificacaoDeProtecao.Nenhuma, false), TipoDeEscopo.Instituicao, [], true);
+        new(id, new Identidade("ausente", "ausente"), false, null, TipoDeEscopo.Instituicao, [], true);
 
     private static ConcessaoNaReclassificacao ParaOPedido(ConcessaoSuspensa suspensa, IReadOnlySet<Guid> versoesLidas)
     {

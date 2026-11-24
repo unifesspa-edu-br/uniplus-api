@@ -36,8 +36,8 @@ public static class DefinicaoDoProcesso
         FinalidadeFormulario[] finalidades =
         [
             .. formularios.Select(static f => f.Finalidade)
-                .Concat(itens.Select(static i => i.Finalidade))
-                .Concat(grupos.Select(static g => g.Finalidade))
+                .Concat(itens.Select(static i => i.Finalidade).OfType<FinalidadeFormulario>())
+                .Concat(grupos.Select(static g => g.Finalidade).OfType<FinalidadeFormulario>())
                 .Distinct()
                 .Order(),
         ];
@@ -49,7 +49,7 @@ public static class DefinicaoDoProcesso
                 [.. itens.Where(i => i.Finalidade == finalidade)],
                 [.. grupos.Where(g => g.Finalidade == finalidade)]))],
             [.. termos.OrderBy(static t => t.Finalidade).ThenBy(static t => t.Ordem)
-                .Select(static t => new DefinicaoTermo(CodigoDoTermo(t.Finalidade, t.Codigo), t.Exibicao, t.Obrigatoriedade))],
+                .Select(static t => new DefinicaoTermo(CodigoDoTermo(t.Finalidade!.Value, t.Codigo), t.Exibicao, t.Obrigatoriedade))],
             derivacoes,
             agregados);
     }

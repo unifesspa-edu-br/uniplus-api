@@ -9,6 +9,7 @@ using Kernel.Results;
 
 using Unifesspa.UniPlus.Configuracao.Contracts;
 using Unifesspa.UniPlus.Regras.Entradas;
+using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.Services;
 using Unifesspa.UniPlus.Regras.ValueObjects;
 
@@ -25,8 +26,6 @@ internal sealed class SelecaoDasDerivacoesDoModelo(
     IFatoCandidatoReader fatoCandidatoReader,
     RelatorioDaAplicacaoDoModelo relatorio)
 {
-    private const string FonteModalidade = "MODALIDADE";
-
     // Mantém o que o processo grava e o que a oferta deriva. A regra do sistema que as derivações efetivas
     // suprem enquanto o processo não grava outra é copiada como as demais: a cópia não pode depender de a
     // oferta continuar com cota da lei.
@@ -53,7 +52,7 @@ internal sealed class SelecaoDasDerivacoesDoModelo(
         IEnumerable<string> fechamento = citados.Concat(aCopiar
             .SelectMany(static d => d.Regras).SelectMany(static r => r.Quando ?? []).SelectMany(static c => c).Select(static c => c.Fato));
         return processo.DistribuicaoVagas.Count == 0
-            && fechamento.Any(c => contexto.Fatos.TryGetValue(c, out FatoCandidatoView? fato) && fato.FonteValores == FonteModalidade)
+            && fechamento.Any(c => contexto.Fatos.TryGetValue(c, out FatoCandidatoView? fato) && fato.FonteValoresValor == FonteValoresFato.Modalidade)
                 ? new FieldError("modelo", new DomainError(
                     AplicacaoDeModeloErrorCodes.SemDistribuicaoDeVagas,
                     "O modelo cita a modalidade de concorrência, que depende da distribuição de vagas do processo; defina a distribuição de vagas antes."))
@@ -87,7 +86,7 @@ internal sealed class SelecaoDasDerivacoesDoModelo(
     }
 
     private bool UsaRegraDeDerivacao(string codigo) =>
-        contexto.Fatos.TryGetValue(codigo, out FatoCandidatoView? fato) && VinculoDeFato.Usa(fato.Binding, VinculoDeFato.RegraDeDerivacao);
+        contexto.Fatos.TryGetValue(codigo, out FatoCandidatoView? fato) && VinculoDeFato.Usa(fato.Binding, MecanismoDoVinculo.RegraDeDerivacao);
 
     private Visita Visitar(string codigo, IReadOnlyDictionary<string, IReadOnlyList<RegraDerivacao>> regrasPadrao) =>
         _derivados.TryGetValue(codigo, out ConfiguracaoDerivacaoFato? derivado)

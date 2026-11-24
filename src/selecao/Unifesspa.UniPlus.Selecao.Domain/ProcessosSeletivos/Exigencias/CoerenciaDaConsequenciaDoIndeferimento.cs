@@ -3,6 +3,7 @@ namespace Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Exigencias;
 using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Extensions;
 using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Regras.Services;
 using Unifesspa.UniPlus.Regras.ValueObjects;
@@ -98,9 +99,8 @@ internal static class CoerenciaDaConsequenciaDoIndeferimento
     internal static ModalidadeSelecionada? ModalidadeIncoerenteComConsequencia(
         string consequencia, IEnumerable<ModalidadeSelecionada> modalidadesAlcancadas)
     {
-        string consequenciaComoAcaoDaVaga = NormalizarConsequenciaParaAcaoDaVaga(consequencia);
         return modalidadesAlcancadas.FirstOrDefault(modalidade => modalidade.AcaoQuandoIndeferido is { } acao
-            && !string.Equals(acao, consequenciaComoAcaoDaVaga, StringComparison.Ordinal));
+            && !string.Equals(acao, consequencia, StringComparison.Ordinal));
     }
 
     /// <summary>Existe <see cref="DocumentoExigido"/> com REMOVE_VANTAGEM sem vantagem viva.</summary>
@@ -120,19 +120,6 @@ internal static class CoerenciaDaConsequenciaDoIndeferimento
     internal static bool ExisteGrupoConsequenciaIncoerenteComAcaoDaVaga(ConfiguracaoDeclarada configuracao, FatosDeModalidade fatosDeModalidade) =>
         configuracao.Exigencias.RegrasDeComprovacao.Any(regra => regra.Forma == FormaDeComprovacao.QuantidadeMinimaDeItens && regra.Consequencia is { } consequencia
             && ModalidadeIncoerenteComConsequencia(consequencia, ModalidadesAlcancadasPor(configuracao, regra, fatosDeModalidade)) is not null);
-
-    /// <summary>
-    /// Ponte entre os dois vocabulários fechados de "ação de indeferimento":
-    /// <see cref="DocumentoExigido.ConsequenciaIndeferimento"/> usa <c>RECLASSIFICA_AC</c>, mas
-    /// <see cref="ModalidadeSelecionada.AcaoQuandoIndeferido"/> — snapshot-copy do cadastro
-    /// de <c>Modalidade</c> no módulo Configuração
-    /// (<c>ck_modalidades_acao_quando_indeferido</c>) — usa <c>RECLASSIFICAR_AC</c>. É o
-    /// MESMO conceito com grafias diferentes, nunca unificadas entre os dois módulos;
-    /// comparar os tokens crus reprovaria sempre o único caso de reclassificação
-    /// realmente coerente que existe.
-    /// </summary>
-    internal static string NormalizarConsequenciaParaAcaoDaVaga(string consequencia) =>
-        consequencia == ConsequenciaDoIndeferimento.ReclassificaAc.Codigo() ? "RECLASSIFICAR_AC" : consequencia;
 
     /// <summary>
     /// Modalidades ofertadas que o gatilho da exigência PODE alcançar — verificação

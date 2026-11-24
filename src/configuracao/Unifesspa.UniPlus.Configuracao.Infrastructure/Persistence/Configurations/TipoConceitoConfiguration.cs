@@ -10,6 +10,7 @@ using Unifesspa.UniPlus.Configuracao.Domain.Enums;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Protecao;
 using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
+using Unifesspa.UniPlus.Regras.Enums;
 
 internal sealed class TipoConceitoConfiguration : IEntityTypeConfiguration<TipoConceito>
 {
@@ -39,12 +40,12 @@ internal sealed class TipoConceitoConfiguration : IEntityTypeConfiguration<TipoC
     private static void ConfigurarTabela(TableBuilder<TipoConceito> tabela)
     {
         tabela.HasComment("Tipos de conceito com que uma etapa avalia: numéricos, medidos numa escala, ou categóricos, escolhidos entre valores ordenados.");
-        string codigos = string.Join(", ", CatalogoDe<NaturezaConceito>.Valores().Select(static natureza => EmSql(natureza)));
+        string codigos = string.Join(", ", CatalogoDe<FormaDoConceito>.Valores().Select(static natureza => EmSql(natureza)));
         tabela.HasCheckConstraint("ck_tipos_conceito_forma", $"forma IN ({codigos})");
 
         // O numérico traz a escala inteira e o categórico não traz nenhum dos três campos da escala.
-        string numerico = EmSql(NaturezaConceito.Numerico);
-        string categorico = EmSql(NaturezaConceito.Categorico);
+        string numerico = EmSql(FormaDoConceito.Numerico);
+        string categorico = EmSql(FormaDoConceito.PorOpcoes);
         tabela.HasCheckConstraint(
             "ck_tipos_conceito_parametros_da_forma",
             $"(forma = {numerico} AND escala_minima IS NOT NULL AND escala_maxima IS NOT NULL AND casas_decimais IS NOT NULL "
@@ -52,7 +53,7 @@ internal sealed class TipoConceitoConfiguration : IEntityTypeConfiguration<TipoC
             + $"OR (forma = {categorico} AND escala_minima IS NULL AND escala_maxima IS NULL AND casas_decimais IS NULL)");
     }
 
-    private static string EmSql(NaturezaConceito natureza) => $"'{natureza.Codigo()}'";
+    private static string EmSql(FormaDoConceito natureza) => $"'{natureza.Codigo()}'";
 
     private static void ConfigurarIdentificacao(EntityTypeBuilder<TipoConceito> builder)
     {
@@ -77,7 +78,7 @@ internal sealed class TipoConceitoConfiguration : IEntityTypeConfiguration<TipoC
         builder.Property(tipo => tipo.Natureza)
             .HasColumnName("forma")
             .HasMaxLength(NaturezaMaxLength).IsRequired()
-            .HasComment("Natureza do conceito: NUMERICO, medido na escala desta linha, ou CATEGORICO, escolhido entre os valores de opcoes_do_tipo_de_conceito.");
+            .HasComment("Forma do conceito: NUMERICO, medido na escala desta linha, ou POR_OPCOES, escolhido entre os valores de opcoes_do_tipo_de_conceito.");
         builder.Property(tipo => tipo.EscalaMinima).HasColumnType("numeric")
             .HasComment("Menor valor da escala. Só no tipo numérico.");
         builder.Property(tipo => tipo.EscalaMaxima).HasColumnType("numeric")

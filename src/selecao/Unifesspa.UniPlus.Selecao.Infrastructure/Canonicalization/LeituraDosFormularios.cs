@@ -74,7 +74,7 @@ internal static class LeituraDosFormularios
     private static FormularioProcesso? LerDeclaracaoDoFormulario(
         LeitorEnvelope leitor, JsonObject bloco, string path, FinalidadeFormulario? finalidadeAnterior, List<TermoExigidoFormulario> termos)
     {
-        FinalidadeFormulario finalidade = EstruturaFormulario.FinalidadeDoToken(leitor.TextoNaoVazio(bloco, "finalidade", path));
+        FinalidadeFormulario? finalidade = EstruturaFormulario.FinalidadeDoCodigo(leitor.TextoNaoVazio(bloco, "finalidade", path));
         Guid? faseId = leitor.IdentificadorOpcional(bloco, "faseId", path);
         string? titulo = leitor.TextoOpcional(bloco, "titulo", path, LimitesDoEnvelope.NomeDeCadastro);
         (Guid? modeloId, string? modeloCodigo, string? modeloNome) = LerModeloDeOrigem(leitor, bloco, path);
@@ -90,13 +90,13 @@ internal static class LeituraDosFormularios
     }
 
     private sealed record DeclaracaoFormulario(
-        FinalidadeFormulario Finalidade, Guid? FaseId, string? Titulo, Guid? ModeloId, string? ModeloCodigo, string? ModeloNome,
+        FinalidadeFormulario? Finalidade, Guid? FaseId, string? Titulo, Guid? ModeloId, string? ModeloCodigo, string? ModeloNome,
         IReadOnlyList<EtapaFormulario> Etapas, JsonArray Termos);
 
     private static FormularioProcesso? CriarFormulario(
         LeitorEnvelope leitor, string path, FinalidadeFormulario? finalidadeAnterior, List<TermoExigidoFormulario> termos, DeclaracaoFormulario d)
     {
-        if (d.Finalidade == FinalidadeFormulario.Nenhuma || d.Finalidade <= finalidadeAnterior)
+        if (d.Finalidade is not { } finalidade || finalidade <= finalidadeAnterior)
         {
             return leitor.Recusar<FormularioProcesso?>($"'{path}.finalidade' fora do vocabulário, repetida ou fora de ordem.");
         }
@@ -107,7 +107,7 @@ internal static class LeituraDosFormularios
             return leitor.Propagar<FormularioProcesso?>(formulario.Error!);
         }
 
-        return LerTermos(leitor, d.Termos, path, d.Finalidade, termos) ? formulario.Value : null;
+        return LerTermos(leitor, d.Termos, path, finalidade, termos) ? formulario.Value : null;
     }
 
     private static bool LerTermos(
@@ -233,14 +233,14 @@ internal static class LeituraDosFormularios
         return CriarEtapa(leitor, pathEtapa, ordemAnterior, d);
     }
 
-    private sealed record DeclaracaoEtapa(string Codigo, int Ordem, string Tipo, string? Bloco, string Titulo, string? Descricao,
+    private sealed record DeclaracaoEtapa(string Codigo, int Ordem, TipoEtapaFormulario Tipo, BlocoSistema? Bloco, string Titulo, string? Descricao,
         string? Aviso, IReadOnlyList<LinhaDoPredicado> Exibicao);
 
     private static DeclaracaoEtapa LerDeclaracaoDaEtapa(LeitorEnvelope leitor, JsonObject item, string path) => new(
         leitor.TextoNaoVazio(item, "codigo", path, LimitesDoEnvelope.CodigoEtapaFormulario),
         leitor.Inteiro(item, "ordem", path),
-        leitor.TextoNaoVazio(item, "tipo", path),
-        leitor.TextoOpcional(item, "bloco", path),
+        leitor.CodigoDeContrato<TipoEtapaFormulario>(item, "tipo", path),
+        leitor.CodigoDeContratoOpcional<BlocoSistema>(item, "bloco", path),
         leitor.TextoNaoVazio(item, "titulo", path, LimitesDoEnvelope.TituloEtapaFormulario),
         leitor.TextoOpcional(item, "descricao", path, LimitesDoEnvelope.TextoEtapaFormulario),
         leitor.TextoOpcional(item, "aviso", path, LimitesDoEnvelope.TextoEtapaFormulario),
@@ -268,7 +268,7 @@ internal static class LeituraDosFormularios
         }
 
         Result<EtapaFormulario> etapa = EtapaFormulario.Criar(
-            new EtapaEstrutura(d.Codigo, d.Ordem, EstruturaFormulario.TipoDoToken(d.Tipo), EstruturaFormulario.BlocoDoToken(d.Bloco)),
+            new EtapaEstrutura(d.Codigo, d.Ordem, d.Tipo, d.Bloco),
             d.Titulo, d.Descricao, d.Aviso, exibicao);
         return etapa.IsFailure ? leitor.Propagar<EtapaFormulario?>(etapa.Error!) : etapa.Value;
     }

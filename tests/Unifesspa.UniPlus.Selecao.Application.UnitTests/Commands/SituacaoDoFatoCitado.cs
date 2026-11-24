@@ -10,10 +10,10 @@ using Unifesspa.UniPlus.Selecao.Domain.Enums;
 internal sealed record SituacaoDoFatoCitado
 {
     /// <summary>O domínio que a versão publicada congelou para o fato.</summary>
-    public string DominioCongelado { get; init; } = "BOOLEANO";
+    public TipoDoDado DominioCongelado { get; init; } = TipoDoDado.SimOuNao;
 
     /// <summary>O domínio que o catálogo vivo declara hoje para o fato.</summary>
-    public string DominioNoCatalogo { get; init; } = "BOOLEANO";
+    public TipoDoDado DominioNoCatalogo { get; init; } = TipoDoDado.SimOuNao;
 
     /// <summary>A classificação de proteção que o catálogo vivo declara hoje para o fato.</summary>
     public string ClassificacaoNoCatalogo { get; init; } = "PESSOAL";
@@ -36,7 +36,7 @@ internal sealed record SituacaoDoFatoCitado
     /// <summary>O catálogo vivo reclassificou o próprio fato citado como derivado, e ele deixou de ser coletável.</summary>
     public bool FatoCitadoReclassificadoNoCatalogo { get; init; }
 
-    public TipoRenderizacao TipoDoItemPublicado => ItemPublicadoComoData ? TipoRenderizacao.Data : TipoRenderizacao.Booleano;
+    public TipoRenderizacao TipoDoItemPublicado => ItemPublicadoComoData ? TipoRenderizacao.Data : TipoRenderizacao.SimOuNao;
 
     public bool PublicadoDivergeDoProcesso => ItemPublicadoComoData || ComItemNovo;
 }

@@ -31,7 +31,7 @@ public class AvaliadorFormularioTests : TestesDeAvaliacao
 
     [Theory]
     [InlineData(Operador.Diferente, "\"X\"")]
-    [InlineData(Operador.NaoEm, "[\"X\"]")]
+    [InlineData(Operador.NenhumDe, "[\"X\"]")]
     public void OpcionalEmBranco_ComEtapaConcluida_TornaFalsaInclusiveANegacao(Operador operador, string valor)
     {
         DefinicaoFormulario formulario = Formulario(
@@ -99,7 +99,7 @@ public class AvaliadorFormularioTests : TestesDeAvaliacao
             new DefinicaoEtapa(
                 "LAUDO",
                 exibicao: null,
-                [Item("LAUDO_MEDICO", exibicao: Predicado(Condicao("MODALIDADE", Operador.Em, new[] { "AC_PCD" })))]),
+                [Item("LAUDO_MEDICO", exibicao: Predicado(Condicao("MODALIDADE", Operador.AlgumDe, new[] { "AC_PCD" })))]),
         ],
         termos: [],
         [Derivacao("MODALIDADE", Predicado(Condicao("PCD", Operador.Igual, true)), "AC_PCD")]);
@@ -166,8 +166,8 @@ public class AvaliadorFormularioTests : TestesDeAvaliacao
             [new DefinicaoEtapa(Etapa, exibicao: null, [])],
             termos: [],
             [
-                Derivacao("A", Predicado(Condicao("B", Operador.Em, new[] { "X" })), "X"),
-                Derivacao("B", Predicado(Condicao("A", Operador.Em, new[] { "X" })), "X"),
+                Derivacao("A", Predicado(Condicao("B", Operador.AlgumDe, new[] { "X" })), "X"),
+                Derivacao("B", Predicado(Condicao("A", Operador.AlgumDe, new[] { "X" })), "X"),
             ]);
 
         AvaliacaoFormulario avaliacao = AvaliarDefinicao(formulario, Entrada(etapaConcluida: true));

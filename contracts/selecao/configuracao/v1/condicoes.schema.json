@@ -6,7 +6,7 @@
   "$defs": {
     "condicao": {
       "title": "Condição de aplicação",
-      "description": "Uma condição: o dado, o operador e o valor de comparação. Os operadores EM e NAO_EM comparam com uma lista; os demais, com um valor escalar. A existência do dado no vocabulário é regra do domínio, não do esquema.",
+      "description": "Uma condição: o dado, o operador e o valor de comparação. Os operadores ALGUM_DE e NENHUM_DE comparam com uma lista; os demais, com um valor escalar. A existência do dado no vocabulário é regra do domínio, não do esquema.",
       "type": "object",
       "additionalProperties": false,
       "required": [
@@ -27,17 +27,17 @@
           "title": "Operador",
           "description": "Operador de comparação entre o fato e o valor.",
           "enum": [
-            "IGUAL",
+            "ALGUM_DE",
             "DIFERENTE",
+            "IGUAL",
             "MAIOR_IGUAL",
             "MENOR_IGUAL",
-            "EM",
-            "NAO_EM"
+            "NENHUM_DE"
           ]
         },
         "valor": {
           "title": "Valor",
-          "description": "Valor de comparação: uma lista para EM e NAO_EM, um texto, número ou booleano para os demais. Texto em branco, sozinho ou como item da lista, é recusado.",
+          "description": "Valor de comparação: uma lista para ALGUM_DE e NENHUM_DE, um texto, número ou booleano para os demais. Texto em branco, sozinho ou como item da lista, é recusado.",
           "if": {
             "type": "string"
           },
@@ -66,8 +66,8 @@
         "properties": {
           "operador": {
             "enum": [
-              "EM",
-              "NAO_EM"
+              "ALGUM_DE",
+              "NENHUM_DE"
             ]
           }
         }

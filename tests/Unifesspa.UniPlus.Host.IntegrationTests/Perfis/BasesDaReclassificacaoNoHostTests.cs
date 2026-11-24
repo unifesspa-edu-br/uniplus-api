@@ -69,7 +69,7 @@ public sealed class BasesDaReclassificacaoNoHostTests : ReclassificacaoNoHostTes
     public async Task ConcessaoNaVersaoAntiga_FicaSuspensa()
     {
         Cenario perfil = await CenarioAsync([Consultar, Sensivel], Leandro);
-        await RebaixarClassificacaoNaVersaoAsync(perfil.Perfil, 1, Sensivel, "interno");
+        await RebaixarClassificacaoNaVersaoAsync(perfil.Perfil, 1, Sensivel, "INTERNO");
 
         Guid nova = await ConcederDepoisAsync(perfil, Betina);
 
@@ -81,10 +81,10 @@ public sealed class BasesDaReclassificacaoNoHostTests : ReclassificacaoNoHostTes
     public async Task VersaoNova_NaoSuspendeEAMigracaoMantemABase()
     {
         Cenario perfil = await CenarioAsync([Consultar, Sensivel], Leandro);
-        await RebaixarClassificacaoNaVersaoAsync(perfil.Perfil, 1, Consultar, "publico");
+        await RebaixarClassificacaoNaVersaoAsync(perfil.Perfil, 1, Consultar, "PUBLICO");
 
         await TrocarComposicaoAsync(perfil.Perfil, Consultar);
-        await RebaixarClassificacaoNaVersaoAsync(perfil.Perfil, 2, Consultar, "interno");
+        await RebaixarClassificacaoNaVersaoAsync(perfil.Perfil, 2, Consultar, "INTERNO");
         await ConcederDepoisAsync(perfil, Betina);
 
         (await PermissoesAsync(Betina, perfil.Perfil)).Should().Equal(Consultar);
@@ -96,7 +96,7 @@ public sealed class BasesDaReclassificacaoNoHostTests : ReclassificacaoNoHostTes
     public async Task CodigoReintroduzido_UsaAVersaoNova()
     {
         Cenario perfil = await CenarioAsync([Consultar, Sensivel], Leandro);
-        await RebaixarClassificacaoNaVersaoAsync(perfil.Perfil, 1, Consultar, "publico");
+        await RebaixarClassificacaoNaVersaoAsync(perfil.Perfil, 1, Consultar, "PUBLICO");
 
         await TrocarComposicaoAsync(perfil.Perfil, Sensivel);
         await TrocarComposicaoAsync(perfil.Perfil, Sensivel, Consultar);

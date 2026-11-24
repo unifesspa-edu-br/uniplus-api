@@ -3,6 +3,7 @@ namespace Unifesspa.UniPlus.Regras.Serializacao;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.Errors;
@@ -19,41 +20,8 @@ using Unifesspa.UniPlus.Regras.ValueObjects;
 /// </summary>
 public static class RestricaoValorJson
 {
-    public const string FaixaNumerica = "FAIXA_NUMERICA";
-    public const string TamanhoTexto = "TAMANHO_TEXTO";
-    public const string OpcoesPermitidas = "OPCOES_PERMITIDAS";
-    public const string OpcoesDasRespostas = "OPCOES_DAS_RESPOSTAS";
-    public const string MunicipiosDaUf = "MUNICIPIOS_DA_UF";
-    public const string FormatoTexto = "FORMATO_TEXTO";
-    public const string FaixaDeData = "FAIXA_DE_DATA";
-
     public const string AncoraDataFixa = "DATA_FIXA";
     public const string AncoraEnvio = "ENVIO";
-
-    public static string ParaToken(TipoRestricaoValor tipo) => tipo switch
-    {
-        TipoRestricaoValor.FaixaNumerica => FaixaNumerica,
-        TipoRestricaoValor.TamanhoTexto => TamanhoTexto,
-        TipoRestricaoValor.OpcoesPermitidas => OpcoesPermitidas,
-        TipoRestricaoValor.OpcoesDasRespostas => OpcoesDasRespostas,
-        TipoRestricaoValor.MunicipiosDaUf => MunicipiosDaUf,
-        TipoRestricaoValor.FormatoTexto => FormatoTexto,
-        TipoRestricaoValor.FaixaDeData => FaixaDeData,
-        TipoRestricaoValor.Nenhuma => throw new ArgumentOutOfRangeException(nameof(tipo), tipo, "O sentinela não tem token."),
-        _ => throw new ArgumentOutOfRangeException(nameof(tipo), tipo, "Tipo de restrição sem token."),
-    };
-
-    /// <summary>O tipo do token; token desconhecido é o sentinela.</summary>
-    public static TipoRestricaoValor TipoDoToken(string? token) => token switch
-    {
-        FaixaNumerica => TipoRestricaoValor.FaixaNumerica,
-        TamanhoTexto => TipoRestricaoValor.TamanhoTexto,
-        OpcoesPermitidas => TipoRestricaoValor.OpcoesPermitidas,
-        OpcoesDasRespostas => TipoRestricaoValor.OpcoesDasRespostas,
-        MunicipiosDaUf => TipoRestricaoValor.MunicipiosDaUf,
-        FaixaDeData => TipoRestricaoValor.FaixaDeData,
-        _ => TipoRestricaoValor.Nenhuma,
-    };
 
     /// <summary>A âncora do token; nula quando o token não é uma âncora de limite de data.</summary>
     public static AncoraDoLimiteDeData? AncoraDoToken(string? token) => token switch
@@ -87,7 +55,7 @@ public static class RestricaoValorJson
     public static JsonObject ParaJson(RestricaoValor restricao)
     {
         ArgumentNullException.ThrowIfNull(restricao);
-        JsonObject json = new() { ["tipo"] = ParaToken(restricao.Tipo) };
+        JsonObject json = new() { ["tipo"] = restricao.Tipo.Codigo() };
         PreencherFormaJson(json, restricao);
 
         return json;
@@ -167,10 +135,10 @@ public static class RestricaoValorJson
             return Falha("Cada restrição de valor tem um tipo.");
         }
 
-        return LerRestricaoTipada(json, TipoDoToken(tipo.GetString()));
+        return LerRestricaoTipada(json, RestricoesDeValor.TipoDeclarado(tipo.GetString()));
     }
 
-    private static Result<RestricaoValor> LerRestricaoTipada(JsonElement json, TipoRestricaoValor tipo) => tipo switch
+    private static Result<RestricaoValor> LerRestricaoTipada(JsonElement json, TipoRestricaoValor? tipo) => tipo switch
     {
         TipoRestricaoValor.FaixaNumerica => LerFaixaNumerica(json),
         TipoRestricaoValor.TamanhoTexto => LerTamanhoTexto(json),

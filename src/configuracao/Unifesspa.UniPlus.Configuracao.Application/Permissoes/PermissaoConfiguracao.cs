@@ -15,11 +15,11 @@ using Unifesspa.UniPlus.Kernel.Domain.Enums;
 [ModuloDePermissoes("configuracao")]
 public enum PermissaoConfiguracao
 {
-    /// <summary>Manter cadastro da base legal do bônus regional.</summary>
+    /// <summary>Manter cadastro da base legal do Fator de Atenuação das Desigualdades de Acesso (FADA).</summary>
     [Permissao(
-        "configuracao:base-legal-bonus-regional:manter",
-        "Manter cadastro da base legal do bônus regional",
-        "Cria, altera e remove a base legal do bônus regional.",
+        "configuracao:base-legal-do-fada:manter",
+        "Manter cadastro da base legal do Fator de Atenuação das Desigualdades de Acesso (FADA)",
+        "Cria, altera e remove a base legal do Fator de Atenuação das Desigualdades de Acesso (FADA).",
         ClassificacaoDeProtecao.Interno)]
     BaseLegalBonusRegionalManter = 1,
 

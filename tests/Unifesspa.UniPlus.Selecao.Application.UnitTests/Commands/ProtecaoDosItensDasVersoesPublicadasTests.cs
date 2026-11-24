@@ -79,7 +79,7 @@ public sealed class ProtecaoDosItensDasVersoesPublicadasTests
     private static async Task DivergirProtecaoDaPrimeiraVersaoAsync(CenarioDeRetificacaoPublicada cenario, EnvelopeReidratado vigente)
     {
         IReadOnlyList<VersaoConfiguracao> versoes = await cenario.Servicos.Repositorio.ObterVersoesAsync(cenario.Processo.Id, CancellationToken.None);
-        ProcessoSeletivo antigo = ProcessoSoComOItemPublicado(Unifesspa.UniPlus.Regras.Enums.TipoRenderizacao.Booleano);
+        ProcessoSeletivo antigo = ProcessoSoComOItemPublicado(Unifesspa.UniPlus.Regras.Enums.TipoRenderizacao.SimOuNao);
         FatoColetado item = antigo.FatosColetados.Single(static f => f.FatoCodigo == Fato);
         typeof(FatoColetado).GetProperty(nameof(FatoColetado.HipoteseLegal))!.SetValue(item, HipoteseAtual);
         typeof(FatoColetado).GetProperty(nameof(FatoColetado.FinalidadeTratamento))!.SetValue(item, FinalidadeAtual);

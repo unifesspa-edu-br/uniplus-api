@@ -18,18 +18,18 @@ using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
 internal static class RegrasDeConsolidacaoDeTeste
 {
     public static RegraCatalogo AvaliacaoUnica { get; } = Regra(
-        RegraDeApuracaoDaAvaliacao.AvaliacaoUnica.Codigo(), """{"corretores_distintos":1,"naturezas_do_conceito":["CATEGORICO","NUMERICO"]}""");
+        RegraDeApuracaoDaAvaliacao.AvaliacaoUnica.Codigo(), """{"corretores_distintos":1,"formas_do_conceito":["POR_OPCOES","NUMERICO"]}""");
 
     public static RegraCatalogo CorrecaoIndependente { get; } = Regra(
-        RegraDeApuracaoDaAvaliacao.CorrecaoIndependente.Codigo(), """{"corretores_distintos":3,"naturezas_do_conceito":["NUMERICO"]}""");
+        RegraDeApuracaoDaAvaliacao.CorrecaoIndependente.Codigo(), """{"corretores_distintos":3,"formas_do_conceito":["NUMERICO"]}""");
 
     public static RegraCatalogo ConceitoMaioriaSimples { get; } = Regra(
         RegraDeApuracaoDaAvaliacao.ConceitoMaioriaSimples.Codigo(),
-        """{"corretores_distintos":3,"criterio":"MAIORIA_SIMPLES","naturezas_do_conceito":["CATEGORICO"],"quando_nao_consolida":"NOVO_CORRETOR"}""");
+        """{"corretores_distintos":3,"criterio":"MAIORIA_SIMPLES","formas_do_conceito":["POR_OPCOES"],"quando_nao_consolida":"NOVO_CORRETOR"}""");
 
     public static RegraCatalogo ConceitoUnanimidade { get; } = Regra(
         RegraDeApuracaoDaAvaliacao.ConceitoUnanimidade.Codigo(),
-        """{"corretores_distintos":2,"criterio":"UNANIMIDADE","naturezas_do_conceito":["CATEGORICO"],"quando_nao_consolida":"DECISAO_DA_BANCA"}""");
+        """{"corretores_distintos":2,"criterio":"UNANIMIDADE","formas_do_conceito":["POR_OPCOES"],"quando_nao_consolida":"DECISAO_DA_BANCA"}""");
 
     public static RegraCatalogo Regra(string codigo, string declaracaoDaRegra, string versao = "v1")
     {

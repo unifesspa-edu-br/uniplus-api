@@ -43,9 +43,9 @@ internal static class ExemploDeEnvelopeEntrada
         new Dictionary<string, ApresentacaoDoFato>(StringComparer.Ordinal)
         {
             ["MUNICIPIO_RESIDENCIA"] = ApresentacaoDoFato.DoCatalogo(
-                "MUNICIPIO_RESIDENCIA", "Município de residência", DominioDoCatalogo.Categorico, DominioDoCatalogo.Escalar, DominioDoCatalogo.FonteGeoMunicipio),
+                "MUNICIPIO_RESIDENCIA", "Município de residência", TipoDoDado.Opcao, QuantidadeDeValores.ValorUnico, FonteValoresFato.Municipios),
             ["FAIXA_ETARIA"] = ApresentacaoDoFato.DoCatalogo(
-                "FAIXA_ETARIA", "Faixa etária", DominioDoCatalogo.Numerico, DominioDoCatalogo.Escalar, null),
+                "FAIXA_ETARIA", "Faixa etária", TipoDoDado.Numerico, QuantidadeDeValores.ValorUnico, null),
         };
 
     /// <summary>
@@ -95,7 +95,7 @@ internal static class ExemploDeEnvelopeEntrada
 
     /// <summary>Um termo exigido com versão fixa, para envelope determinístico.</summary>
     internal static TermoExigidoFormulario Termo(
-        string codigo, int ordem, FormaAceite formaAceite = FormaAceite.RegistroDigitalSemLogIp, PredicadoDnf? exibicao = null, Obrigatoriedade? obrigatoriedade = null) =>
+        string codigo, int ordem, FormaAceite formaAceite = FormaAceite.RegistroSemEnderecoIp, PredicadoDnf? exibicao = null, Obrigatoriedade? obrigatoriedade = null) =>
         TermoExigidoFormulario.Criar(
             codigo,
             ordem,

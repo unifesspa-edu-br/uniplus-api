@@ -1,8 +1,10 @@
 namespace Unifesspa.UniPlus.Configuracao.Contracts;
 
+using Unifesspa.UniPlus.Regras.Enums;
+
 /// <summary>Vista ativa dos tipos de conceito para consumo cross-módulo (ADR-0056).</summary>
 /// <remarks>
-/// <paramref name="Natureza"/> é o código declarado de <c>NaturezaConceito</c> (ADR-0176).
+/// <paramref name="Natureza"/> é o código declarado de <c>FormaDoConceito</c> (ADR-0176).
 /// <paramref name="Numerico"/> só vem no tipo numérico, e <paramref name="Valores"/> só no categórico, na
 /// ordem do cadastro. Quem consome congela a própria cópia por valor.
 /// </remarks>

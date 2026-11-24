@@ -5,32 +5,46 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Domain.Enums;
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence.CodigosDeContrato;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Protecao;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
+using Unifesspa.UniPlus.Regras.Enums;
 
 internal static class ChecksDoFatoCandidato
 {
+    private static readonly string Opcao = SqlDosCodigosDeContrato.Literal(TipoDoDado.Opcao);
+    private static readonly string Texto = SqlDosCodigosDeContrato.Literal(TipoDoDado.Texto);
+    private static readonly string Data = SqlDosCodigosDeContrato.Literal(TipoDoDado.Data);
+    private static readonly string Endereco = SqlDosCodigosDeContrato.Literal(TipoDoDado.Endereco);
+
     internal static void Configurar(TableBuilder<FatoCandidato> table)
     {
         table.HasComment("Catálogo de dados solicitados ou calculados para candidatos e suas regras de uso.");
         ConfigurarChecksDosDominiosFechados(table);
         ConfigurarChecksDeCoerenciaDoDominio(table);
+        ConfigurarCheckDoMecanismoDoVinculo(table);
         AprovacaoDaProtecaoOwnedConfiguration.ConfigurarChecks(table, "dados_do_candidato");
     }
 
     // Domínios fechados dos enums (defesa em profundidade contra inserts crus).
     private static void ConfigurarChecksDosDominiosFechados(TableBuilder<FatoCandidato> table)
     {
-        AdicionarCheckDeCodigos(table, "tipo", DominiosFato.TokensCanonicos);
-        AdicionarCheckDeCodigos(table, "origem", OrigensFato.TokensCanonicos);
-        AdicionarCheckDeCodigos(table, "quantidade_de_valores", CardinalidadesFato.TokensCanonicos);
-        AdicionarCheckDeCodigos(table, "escopo", EscoposFato.TokensCanonicos);
-        AdicionarCheckDeCodigos(table, "classificacao_protecao", ClassificacoesDeProtecao.TokensCanonicos);
-        AdicionarCheckDeCodigos(table, "hipotese_legal", HipotesesLegaisTratamento.TokensCanonicos);
+        AdicionarCheckDeCodigos(table, "tipo", SqlDosCodigosDeContrato.Lista<TipoDoDado>());
+        AdicionarCheckDeCodigos(table, "origem", SqlDosCodigosDeContrato.Lista<OrigemFato>());
+        AdicionarCheckDeCodigos(table, "quantidade_de_valores", SqlDosCodigosDeContrato.Lista<QuantidadeDeValores>());
+        AdicionarCheckDeCodigos(table, "escopo", CodigosSql(EscoposFato.TokensCanonicos));
+        AdicionarCheckDeCodigos(table, "classificacao_protecao", CodigosSql(ClassificacoesDeProtecao.TokensCanonicos));
+        AdicionarCheckDeCodigos(table, "hipotese_legal", CodigosSql(HipotesesLegaisTratamento.TokensCanonicos));
         table.HasCheckConstraint(
             "ck_dados_do_candidato_componente_exibicao",
             $"componente_exibicao IS NULL OR componente_exibicao IN ({CodigosSql(ComponentesDeExibicao.TokensCanonicos)})");
     }
+
+    // O vínculo grava MECANISMO:REFERENCIA; só o prefixo é vocabulário fechado, a referência é livre.
+    private static void ConfigurarCheckDoMecanismoDoVinculo(TableBuilder<FatoCandidato> table) =>
+        table.HasCheckConstraint(
+            "ck_dados_do_candidato_mecanismo_do_vinculo",
+            $"split_part(fonte_do_valor, ':', 1) IN ({SqlDosCodigosDeContrato.Lista<MecanismoDoVinculo>()})");
 
     private static void ConfigurarChecksDeCoerenciaDoDominio(TableBuilder<FatoCandidato> table)
     {
@@ -38,13 +52,13 @@ internal static class ChecksDoFatoCandidato
         // categórico declara uma das fontes; os demais domínios não têm fonte.
         table.HasCheckConstraint(
             "ck_dados_do_candidato_fonte_das_opcoes_coerente",
-            $"(tipo = 'CATEGORICO' AND fonte_das_opcoes IS NOT NULL AND fonte_das_opcoes IN ({CodigosSql(FontesValoresFato.TokensCanonicos)})) "
-            + "OR (tipo <> 'CATEGORICO' AND fonte_das_opcoes IS NULL)");
+            $"(tipo = {Opcao} AND fonte_das_opcoes IS NOT NULL AND fonte_das_opcoes IN ({SqlDosCodigosDeContrato.Lista<FonteValoresFato>()})) "
+            + $"OR (tipo <> {Opcao} AND fonte_das_opcoes IS NULL)");
 
         table.HasCheckConstraint(
             "ck_dados_do_candidato_formato_coerente",
-            $"(tipo = 'TEXTO' AND formato IS NOT NULL AND formato IN ({CodigosSql(FormatosTexto.TokensCanonicos)})) "
-            + "OR (tipo <> 'TEXTO' AND formato IS NULL)");
+            $"(tipo = {Texto} AND formato IS NOT NULL AND formato IN ({CodigosSql(FormatosTexto.TokensCanonicos)})) "
+            + $"OR (tipo <> {Texto} AND formato IS NULL)");
 
         ConfigurarCheckDaClassificacaoMinimaDoDominio(table);
     }
@@ -57,15 +71,15 @@ internal static class ChecksDoFatoCandidato
     {
         table.HasCheckConstraint(
             "ck_dados_do_candidato_classificacao_minima_do_tipo",
-            "(tipo NOT IN ('TEXTO', 'DATA', 'ENDERECO') AND classificacao_protecao <> 'IDENTIFICADOR') "
-            + "OR (tipo = 'TEXTO' AND classificacao_protecao IN ('PESSOAL', 'IDENTIFICADOR', 'SENSIVEL')) "
-            + "OR (tipo IN ('DATA', 'ENDERECO') AND classificacao_protecao IN ('PESSOAL', 'SENSIVEL'))");
+            $"(tipo NOT IN ({Texto}, {Data}, {Endereco}) AND classificacao_protecao <> 'IDENTIFICADOR') "
+            + $"OR (tipo = {Texto} AND classificacao_protecao IN ('PESSOAL', 'IDENTIFICADOR', 'SENSIVEL')) "
+            + $"OR (tipo IN ({Data}, {Endereco}) AND classificacao_protecao IN ('PESSOAL', 'SENSIVEL'))");
     }
 
-    private static void AdicionarCheckDeCodigos(TableBuilder<FatoCandidato> table, string coluna, IReadOnlyList<string> codigos) =>
+    private static void AdicionarCheckDeCodigos(TableBuilder<FatoCandidato> table, string coluna, string codigosSql) =>
         table.HasCheckConstraint(
             $"ck_dados_do_candidato_{coluna}",
-            $"{coluna} IN ({CodigosSql(codigos)})");
+            $"{coluna} IN ({codigosSql})");
 
     private static string CodigosSql(IReadOnlyList<string> codigos) =>
         string.Join(", ", codigos.Select(codigo => $"'{codigo}'"));

@@ -27,8 +27,8 @@ using ValoresDoCampo = System.Collections.Generic.IReadOnlyList<Unifesspa.UniPlu
 /// <remarks>
 /// <para>
 /// Uma entrada por <see cref="FatoColetado"/>, sempre — não só pelos de seleção. Para
-/// <c>BOOLEANO</c>/<c>NUMERO</c> o valor é <see langword="null"/> (a mesma correspondência de
-/// <c>SerializarFatosColetados</c>); para <c>SELECAO_UNICA</c>/<c>SELECAO_MULTIPLA</c> é a lista
+/// <c>SIM_OU_NAO</c>/<c>NUMERO</c> o valor é <see langword="null"/> (a mesma correspondência de
+/// <c>SerializarFatosColetados</c>); para <c>ESCOLHA_UNICA</c>/<c>ESCOLHA_MULTIPLA</c> é a lista
 /// — possivelmente vazia, nunca ausente. É este dicionário completo, e não um parcial só com os
 /// fatos de seleção, que o decoder reproduz ao reidratar, então o encoder trata os dois
 /// caminhos (publicação nova e retificação) pela MESMA forma.
@@ -136,7 +136,7 @@ internal static class ResolvedorValoresSelecionaveisCongelados
 
         private Result<ValoresDoCampo?> ResolverCampo(FatoColetado fato)
         {
-            if (!fato.TipoRenderizacao.EhSelecao())
+            if (!fato.TipoRenderizacao.EhEscolha())
             {
                 return Result<ValoresDoCampo?>.Success(null);
             }
@@ -162,7 +162,7 @@ internal static class ResolvedorValoresSelecionaveisCongelados
             RegrasDasOpcoesDeclaradas.OrigemDasOpcoes(fato) switch
             {
                 OrigemValoresColeta.OpcoesDoProcesso => Result<ValoresDoCampo>.Success(OpcoesDoProcesso(fato)),
-                OrigemValoresColeta.MunicipiosDoBonus => Result<ValoresDoCampo>.Success(MunicipiosDoBonus()),
+                OrigemValoresColeta.MunicipiosDoFada => Result<ValoresDoCampo>.Success(MunicipiosDoBonus()),
                 OrigemValoresColeta.MunicipiosDaProvaPresencial => Result<ValoresDoCampo>.Success(MunicipiosDaProvaPresencial()),
                 OrigemValoresColeta.UnidadesFederativas => Result<ValoresDoCampo>.Success(UnidadesFederativas()),
                 _ => DoCatalogo(fato, fatoNoCatalogo),
@@ -207,7 +207,7 @@ internal static class ResolvedorValoresSelecionaveisCongelados
         /// quando o cadastro não tem tipo vivo: a recusa diz onde corrigir, e não cai na de fonte desconhecida.
         /// </summary>
         private static DomainError? SemTiposDeDeficiencia(FatoCandidatoView fatoNoCatalogo) =>
-            string.Equals(fatoNoCatalogo.FonteValores, DominioDoCatalogo.FonteTiposDeficiencia, StringComparison.Ordinal)
+            fatoNoCatalogo.FonteValoresValor == FonteValoresFato.TiposDeDeficiencia
                 ? new DomainError(
                     "ProcessoSeletivo.FatoColetadoSemValoresOfertados",
                     $"O fato coletado '{fatoNoCatalogo.Codigo}' oferece os tipos do cadastro de tipos de deficiência, e o cadastro não tem nenhum tipo ativo.")

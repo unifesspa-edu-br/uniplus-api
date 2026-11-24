@@ -100,9 +100,9 @@ internal static class ResolvedorMetadadosFatosCongelados
     private static MetadadoFatoCongelado Metadado(FatoCandidatoView fato, IReadOnlyList<FatoValorDominioViewItem> vigentes) =>
         new(
             fato.Codigo,
-            fato.Dominio,
-            fato.Origem,
-            fato.Cardinalidade,
+            fato.DominioValor,
+            fato.OrigemValor,
+            fato.CardinalidadeValor,
             fato.PontoResolucao,
             fato.Binding,
             vigentes.Count > 0 ? [.. vigentes.Select(static v => v.Codigo)] : fato.ValoresDominio,

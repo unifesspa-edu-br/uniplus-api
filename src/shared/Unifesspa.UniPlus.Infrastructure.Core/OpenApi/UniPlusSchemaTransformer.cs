@@ -35,48 +35,66 @@ public sealed class UniPlusSchemaTransformer : IOpenApiSchemaTransformer
         ArgumentNullException.ThrowIfNull(schema);
         ArgumentNullException.ThrowIfNull(context);
 
-        // Enum-as-string sem `type` explícito: o ASP.NET Core OpenAPI generator
-        // emite `enum: [...]` quando JsonStringEnumConverter está registrado,
-        // mas não popula `type: "string"`. Sem o type, geradores de cliente
-        // (openapi-typescript, openapi-generator, NSwag) podem tratar a schema
-        // como `any`, perdendo type safety. Inferimos string sempre que houver
-        // enum sem type — invariante OpenAPI 3.1.
+        AplicarInvariantes(schema, context);
+        return Task.CompletedTask;
+    }
+
+    private static void AplicarInvariantes(OpenApiSchema schema, OpenApiSchemaTransformerContext context)
+    {
+        InferirTipoDoEnum(schema);
+        AjustarRequiredPelaSerializacao(schema, context);
+        if (context.JsonPropertyInfo?.Name is { } propertyName)
+        {
+            AplicarVocabularioFechado(schema, context);
+            AplicarTokenDeClassificacao(schema, context);
+            AplicarInvariantesDaPropriedade(schema, propertyName);
+        }
+    }
+
+    // Enum-as-string sem `type` explícito: o ASP.NET Core OpenAPI generator
+    // emite `enum: [...]` quando JsonStringEnumConverter está registrado,
+    // mas não popula `type: "string"`. Sem o type, geradores de cliente
+    // (openapi-typescript, openapi-generator, NSwag) podem tratar a schema
+    // como `any`, perdendo type safety. Inferimos string sempre que houver
+    // enum sem type — invariante OpenAPI 3.1.
+    private static void InferirTipoDoEnum(OpenApiSchema schema)
+    {
         if (schema.Enum is { Count: > 0 } && !schema.Type.HasValue)
         {
             schema.Type = JsonSchemaType.String;
         }
+    }
 
-        AjustarRequiredPelaSerializacao(schema, context);
-
-        string? propertyName = context.JsonPropertyInfo?.Name;
-        if (propertyName is null)
-            return Task.CompletedTask;
-
-        AplicarVocabularioFechado(schema, context);
-        AplicarTokenDeClassificacao(schema, context);
-
-        // JsonSchemaType é [Flags] — propriedades nullable saem com o flag Null somado ao
-        // tipo base (ex.: Array | Null, String | Null), então comparação por igualdade exata
-        // pula schemas legítimos. HasFlag pega o tipo base com ou sem nulidade.
-        if (schema.Type is { } tipo && tipo.HasFlag(JsonSchemaType.Array)
-            && string.Equals(propertyName, "valoresSelecionaveis", StringComparison.Ordinal))
+    // JsonSchemaType é [Flags] — propriedades nullable saem com o flag Null somado ao
+    // tipo base (ex.: Array | Null, String | Null), então comparação por igualdade exata
+    // pula schemas legítimos. HasFlag pega o tipo base com ou sem nulidade.
+    private static void AplicarInvariantesDaPropriedade(OpenApiSchema schema, string propertyName)
+    {
+        if (schema.Type is { } tipo)
         {
-            // issue #1077: um seletor de SELECAO_UNICA/SELECAO_MULTIPLA publicado sem opção
-            // nenhuma não é respondível — o contrato exige pelo menos um valor selecionável
-            // quando o array está presente (null continua válido para BOOLEANO/NUMERO).
+            ExigirAoMenosUmValorSelecionavel(schema, tipo, propertyName);
+            DescreverCpf(schema, tipo, propertyName);
+        }
+    }
+
+    // issue #1077: um seletor de ESCOLHA_UNICA/ESCOLHA_MULTIPLA publicado sem opção
+    // nenhuma não é respondível — o contrato exige pelo menos um valor selecionável
+    // quando o array está presente (null continua válido para SIM_OU_NAO/NUMERO).
+    private static void ExigirAoMenosUmValorSelecionavel(OpenApiSchema schema, JsonSchemaType tipo, string propertyName)
+    {
+        if (tipo.HasFlag(JsonSchemaType.Array) && string.Equals(propertyName, "valoresSelecionaveis", StringComparison.Ordinal))
+        {
             schema.MinItems = 1;
         }
+    }
 
-        if (!schema.Type.HasValue || !schema.Type.Value.HasFlag(JsonSchemaType.String))
-            return Task.CompletedTask;
-
-        if (string.Equals(propertyName, "cpf", StringComparison.Ordinal))
+    private static void DescreverCpf(OpenApiSchema schema, JsonSchemaType tipo, string propertyName)
+    {
+        if (tipo.HasFlag(JsonSchemaType.String) && string.Equals(propertyName, "cpf", StringComparison.Ordinal))
         {
             schema.Pattern = @"^\d{11}$";
             schema.Description ??= "CPF (apenas dígitos, sem formatação). PII — sempre mascarar em logs ('***.999.999-**', ADR-0011).";
         }
-
-        return Task.CompletedTask;
     }
 
     /// <summary>
@@ -85,10 +103,10 @@ public sealed class UniPlusSchemaTransformer : IOpenApiSchemaTransformer
     /// <c>OmissaoDeCampoClassificado.PodeOmitir</c>, a mesma regra do modificador de serialização. A propriedade que sempre sai segue como
     /// o gerador a declarou; a que carrega <see cref="TokenDeClassificacaoAttribute"/> passa a obrigatória.
     /// </summary>
+    // O pipeline chama o transformer do objeto aninhado com o JsonPropertyInfo da propriedade que o alcança, e o
+    // JsonTypeInfo é sempre o do tipo do schema; por isso o ajuste não depende de como o schema foi alcançado.
     private static void AjustarRequiredPelaSerializacao(OpenApiSchema schema, OpenApiSchemaTransformerContext context)
     {
-        // O pipeline chama o transformer do objeto aninhado com o JsonPropertyInfo da propriedade que o alcança, e o
-        // JsonTypeInfo é sempre o do tipo do schema; por isso o ajuste não depende de como o schema foi alcançado.
         if (context.JsonTypeInfo.Kind != JsonTypeInfoKind.Object)
         {
             return;
@@ -96,19 +114,21 @@ public sealed class UniPlusSchemaTransformer : IOpenApiSchemaTransformer
 
         foreach (JsonPropertyInfo propriedade in context.JsonTypeInfo.Properties)
         {
-            if (TemTokenDeClassificacao(propriedade))
-            {
-                (schema.Required ??= new HashSet<string>(StringComparer.Ordinal)).Add(propriedade.Name);
-            }
-            else if (OmissaoDeCampoClassificado.PodeOmitir(propriedade))
-            {
-                schema.Required?.Remove(propriedade.Name);
-            }
+            AjustarRequiredDaPropriedade(schema, propriedade);
         }
 
-        if (schema.Required is { Count: 0 })
+        schema.Required = schema.Required is { Count: 0 } ? null : schema.Required;
+    }
+
+    private static void AjustarRequiredDaPropriedade(OpenApiSchema schema, JsonPropertyInfo propriedade)
+    {
+        if (TemTokenDeClassificacao(propriedade))
         {
-            schema.Required = null;
+            (schema.Required ??= new HashSet<string>(StringComparer.Ordinal)).Add(propriedade.Name);
+        }
+        else if (OmissaoDeCampoClassificado.PodeOmitir(propriedade))
+        {
+            schema.Required?.Remove(propriedade.Name);
         }
     }
 
@@ -135,25 +155,21 @@ public sealed class UniPlusSchemaTransformer : IOpenApiSchemaTransformer
     /// </summary>
     private static void AplicarVocabularioFechado(OpenApiSchema schema, OpenApiSchemaTransformerContext context)
     {
-        if (context.JsonPropertyInfo?.AttributeProvider
-                ?.GetCustomAttributes(typeof(VocabularioFechadoAttribute), inherit: true)
-                .FirstOrDefault() is not VocabularioFechadoAttribute vocabulario
-            || vocabulario.Valores.Count == 0)
+        if (VocabularioDaPropriedade(context) is { } vocabulario && AlvoDoVocabulario(schema) is { } destino)
         {
-            return;
+            destino.Type ??= JsonSchemaType.String;
+            destino.Enum = [.. vocabulario.Valores.Select(static v => (JsonNode)JsonValue.Create(v)!)];
         }
-
-        // JsonSchemaType é [Flags]: uma propriedade anulável sai com Null somado ao tipo
-        // base, então a comparação precisa ser por flag e não por igualdade.
-        bool ehArray = schema.Type is { } tipo && tipo.HasFlag(JsonSchemaType.Array);
-        IOpenApiSchema? alvo = ehArray ? schema.Items : schema;
-
-        if (alvo is not OpenApiSchema destino)
-        {
-            return;
-        }
-
-        destino.Type ??= JsonSchemaType.String;
-        destino.Enum = [.. vocabulario.Valores.Select(static v => (JsonNode)JsonValue.Create(v)!)];
     }
+
+    private static VocabularioFechadoAttribute? VocabularioDaPropriedade(OpenApiSchemaTransformerContext context) =>
+        context.JsonPropertyInfo?.AttributeProvider?.GetCustomAttributes(typeof(VocabularioFechadoAttribute), inherit: true).FirstOrDefault()
+            is VocabularioFechadoAttribute { Valores.Count: > 0 } vocabulario
+            ? vocabulario
+            : null;
+
+    // JsonSchemaType é [Flags]: uma propriedade anulável sai com Null somado ao tipo
+    // base, então a comparação precisa ser por flag e não por igualdade.
+    private static OpenApiSchema? AlvoDoVocabulario(OpenApiSchema schema) =>
+        (schema.Type is { } tipo && tipo.HasFlag(JsonSchemaType.Array) ? schema.Items : schema) as OpenApiSchema;
 }

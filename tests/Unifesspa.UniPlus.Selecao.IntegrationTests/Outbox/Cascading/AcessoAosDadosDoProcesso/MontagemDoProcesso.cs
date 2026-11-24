@@ -9,9 +9,11 @@ using Microsoft.Extensions.DependencyInjection;
 
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Domain.Enums;
+using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Selecao.IntegrationTests.TestSupport;
@@ -101,9 +103,8 @@ internal sealed class MontagemDoProcesso(CascadingFixture fixture, RequisicoesAu
     {
         string codigo = $"RG_RESPONSAVEL_{Guid.NewGuid():N}"[..30].ToUpperInvariant();
         Result<FatoCandidato> criado = CriacaoDoFato.CriarDoAdministrador(
-            codigo, "RG do responsável", "Descrição do fato.", DominioFato.Texto, CardinalidadeFato.Escalar, fonteValores: null, formato: FormatoTexto.Livre,
-            "INSCRICAO", EscopoFato.MembroGrupo, ClassificacaoDeProtecao.Identificador, "Identificação do responsável legal",
-            HipoteseLegalTratamento.CumprimentoObrigacaoLegal);
+            new DescritivoDoFato(codigo, "RG do responsável", "Descrição do fato."),
+            new DefinicaoDoFato(TipoDoDado.Texto, QuantidadeDeValores.ValorUnico, null, FormatoTexto.Livre, "INSCRICAO", EscopoFato.MembroGrupo, ClassificacaoDeProtecao.Identificador, "Identificação do responsável legal", HipoteseLegalTratamento.CumprimentoObrigacaoLegal));
         criado.IsSuccess.Should().BeTrue(string.Join("; ", criado.Errors.Select(e => e.Error.Message)));
         await GravarNoCatalogoAprovadoAsync(criado.Value!);
         return codigo;
@@ -111,9 +112,9 @@ internal sealed class MontagemDoProcesso(CascadingFixture fixture, RequisicoesAu
 
     private async Task<Guid> SemearTipoAsync(ClassificacaoDeProtecao classificacao, string prefixo)
     {
-        TipoDocumento tipo = TipoDocumento.Criar(
+        TipoDocumento tipo = TipoDocumento.Criar(new DeclaracaoDoTipoDocumento(
             $"{prefixo}_{Guid.NewGuid().ToString("N")[..8].ToUpperInvariant()}", prefixo, null, "SAUDE", null, null, null,
-            classificacao, "Comprovação documental do candidato.", HipoteseLegalTratamento.CumprimentoObrigacaoLegal).Value!;
+            classificacao, "Comprovação documental do candidato.", HipoteseLegalTratamento.CumprimentoObrigacaoLegal)).Value!;
         await GravarNoCatalogoAprovadoAsync(tipo);
         return tipo.Id;
     }

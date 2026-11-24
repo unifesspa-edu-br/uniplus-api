@@ -13,6 +13,15 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 /// </summary>
 public sealed class FormatosPermitidosTests
 {
+    [Fact]
+    public void Criar_FormatoNaoDeclarado_Recusa()
+    {
+        Result<FormatoPermitidoEntry> resultado = FormatoPermitidoEntry.Criar(default, null);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be("FormatosPermitidos.FormatoInvalido");
+    }
+
     [Fact(DisplayName = "Lista {PDF,JPEG,PNG} é aceita, sem teto por formato")]
     public void Criar_ListaDeTresFormatos_Aceita()
     {

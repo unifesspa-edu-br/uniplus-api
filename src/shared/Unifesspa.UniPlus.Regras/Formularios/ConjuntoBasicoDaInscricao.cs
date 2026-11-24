@@ -76,23 +76,23 @@ public static class ConjuntoBasicoDaInscricao
     /// <summary>Os tipos de localidade em que se pede o nome da aldeia, da comunidade ou do quilombo.</summary>
     private static readonly string[] LocalidadesComComunidade = ["ALDEIA", "COMUNIDADE", "QUILOMBO"];
 
-    private static readonly string CampoDeSelecao = TipoRenderizacao.SelecaoUnica.Codigo();
+    private static readonly string CampoDeSelecao = TipoRenderizacao.EscolhaUnica.Codigo();
     private static readonly string CampoDeTexto = TipoRenderizacao.Texto.Codigo();
     private static readonly string CampoDeData = TipoRenderizacao.Data.Codigo();
-    private static readonly string Sempre = PredicadoDnfJson.ObrigatoriedadeSempre;
+    private static readonly string Sempre = TipoObrigatoriedade.Sempre.Codigo();
     private static readonly IReadOnlyList<IReadOnlyList<CondicaoPrecondicaoInput>> QuandoNaoEstrangeiro = Quando(Nacionalidade, Operador.Diferente.Codigo(), Estrangeiro);
     private static readonly IReadOnlyList<IReadOnlyList<CondicaoPrecondicaoInput>> QuandoEstrangeiro = Quando(Nacionalidade, Operador.Igual.Codigo(), Estrangeiro);
 
     private static readonly IReadOnlyList<RestricaoValorInput> DataPlausivel =
     [
-        new(RestricaoValorJson.FaixaDeData,
+        new(TipoRestricaoValor.FaixaDeData.Codigo(),
             DataMinima: new LimiteDeDataInput(RestricaoValorJson.AncoraEnvio, Anos: -AnosDePlausibilidadeDaData),
             DataMaxima: new LimiteDeDataInput(RestricaoValorJson.AncoraEnvio)),
     ];
 
     /// <summary>A seção reservada, a primeira etapa do formulário de inscrição.</summary>
     public static EtapaFormularioInput Secao { get; } =
-        new(CodigoDaSecao, 0, EstruturaFormulario.TipoSecao, null, new ApresentacaoDaEtapaInput("Dados do candidato", null, null));
+        new(CodigoDaSecao, 0, TipoEtapaFormulario.Secao.Codigo(), null, new ApresentacaoDaEtapaInput("Dados do candidato", null, null));
 
     /// <summary>Os itens da seção, na ordem em que são coletados.</summary>
     public static IReadOnlyList<FatoColetadoInput> Itens { get; } = MontarItens();
@@ -284,7 +284,7 @@ public static class ConjuntoBasicoDaInscricao
     private static FatoColetadoInput[] Identificacao() =>
     [
         Item(Nome, "Nome completo", CampoDeTexto),
-        Item(DesejaNomeSocial, "Deseja usar nome social?", TipoRenderizacao.Booleano.Codigo()),
+        Item(DesejaNomeSocial, "Deseja usar nome social?", TipoRenderizacao.SimOuNao.Codigo()),
         Item(NomeSocial, "Nome social", CampoDeTexto, Quando(DesejaNomeSocial, Operador.Igual.Codigo(), true), ajuda: AjudaDoNomeSocial),
         Item(Nacionalidade, "Nacionalidade", CampoDeSelecao),
         Item(Cpf, "CPF", CampoDeTexto),
@@ -295,7 +295,7 @@ public static class ConjuntoBasicoDaInscricao
         Item("RG_NUMERO", "Número do RG", CampoDeTexto, QuandoNaoEstrangeiro),
         Item(OrgaoEmissor, "Órgão emissor do RG", CampoDeSelecao, QuandoNaoEstrangeiro),
         Item("RG_ORGAO_EMISSOR_OUTRO", "Nome do órgão emissor", CampoDeTexto, Quando(OrgaoEmissor, Operador.Igual.Codigo(), OutroOrgaoEmissor),
-            [new RestricaoValorInput(RestricaoValorJson.TamanhoTexto, Maximo: TamanhoMaximoDoNomeDoOrgaoEmissor)]),
+            [new RestricaoValorInput(TipoRestricaoValor.TamanhoTexto.Codigo(), Maximo: TamanhoMaximoDoNomeDoOrgaoEmissor)]),
         Item("RG_UF", "UF de emissão do RG", CampoDeSelecao, QuandoNaoEstrangeiro),
         Item("RG_DATA_EMISSAO", "Data de emissão do RG", CampoDeData, QuandoNaoEstrangeiro, DataPlausivel),
         Item("PASSAPORTE_NUMERO", "Número do passaporte", CampoDeTexto, QuandoEstrangeiro),
@@ -307,13 +307,13 @@ public static class ConjuntoBasicoDaInscricao
         Item("DATA_NASCIMENTO", "Data de nascimento", CampoDeData, restricoes: DataPlausivel),
         Item("NATURALIDADE_UF", "UF de nascimento", CampoDeSelecao, QuandoNaoEstrangeiro),
         Item("NATURALIDADE_MUNICIPIO", "Município de nascimento", TipoRenderizacao.Municipio.Codigo(), QuandoNaoEstrangeiro,
-            [new RestricaoValorInput(RestricaoValorJson.MunicipiosDaUf, Fatos: ["NATURALIDADE_UF"])]),
+            [new RestricaoValorInput(TipoRestricaoValor.MunicipiosDaUf.Codigo(), Fatos: ["NATURALIDADE_UF"])]),
     ];
 
     private static FatoColetadoInput[] Filiacao() =>
     [
         Item("NOME_MAE", "Nome da mãe", CampoDeTexto),
-        Item("NOME_PAI", "Nome do pai", CampoDeTexto, obrigatoriedade: PredicadoDnfJson.ObrigatoriedadeNunca),
+        Item("NOME_PAI", "Nome do pai", CampoDeTexto, obrigatoriedade: TipoObrigatoriedade.Nunca.Codigo()),
     ];
 
     private static FatoColetadoInput[] Caracterizacao() =>
@@ -331,7 +331,7 @@ public static class ConjuntoBasicoDaInscricao
         Item("EMAIL", "E-mail", CampoDeTexto),
         Item("TELEFONE", "Telefone", CampoDeTexto),
         Item(TipoDeLocalidade, "Tipo de localidade", CampoDeSelecao),
-        Item("NOME_COMUNIDADE", "Nome da aldeia, comunidade ou quilombo", CampoDeTexto, Quando(TipoDeLocalidade, Operador.Em.Codigo(), LocalidadesComComunidade)),
+        Item("NOME_COMUNIDADE", "Nome da aldeia, comunidade ou quilombo", CampoDeTexto, Quando(TipoDeLocalidade, Operador.AlgumDe.Codigo(), LocalidadesComComunidade)),
         Item("ENDERECO_RESIDENCIAL", "Endereço residencial", TipoRenderizacao.Endereco.Codigo()),
     ];
 

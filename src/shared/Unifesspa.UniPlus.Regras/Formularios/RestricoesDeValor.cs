@@ -1,5 +1,6 @@
 namespace Unifesspa.UniPlus.Regras.Formularios;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.Errors;
@@ -12,6 +13,15 @@ using Unifesspa.UniPlus.Regras.ValueObjects;
 /// </summary>
 public static class RestricoesDeValor
 {
+    /// <summary>
+    /// O tipo de restrição que o administrador declara pelo código; nulo quando o código é desconhecido e para o
+    /// formato de texto, que vem do fato no catálogo e não se declara no item.
+    /// </summary>
+    public static TipoRestricaoValor? TipoDeclarado(string? codigo) =>
+        CatalogoDe<TipoRestricaoValor>.TentarObter(codigo, out TipoRestricaoValor tipo) && tipo != TipoRestricaoValor.FormatoTexto
+            ? tipo
+            : null;
+
     public static Result<RestricaoValor> Faixa(decimal? minimo, decimal? maximo) =>
         FaixaNumerica.Violacao(minimo, maximo) is { } violacao
             ? Recusa(RestricaoValorErrorCodes.LimitesIncoerentes, violacao)
@@ -63,22 +73,22 @@ public static class RestricoesDeValor
     /// O limite da faixa de data pelo token da âncora: <c>DATA_FIXA</c> com a data e sem deslocamento,
     /// ou <c>ENVIO</c> sem data, deslocado em anos e dias — o deslocamento que falta é zero.
     /// </summary>
-    public static Result<LimiteDeData> Limite(string? ancora, DateOnly? data, int? anos, int? dias)
-    {
-        Result<LimiteDeData> recusa = Result<LimiteDeData>.Failure(new DomainError(
-            RestricaoValorErrorCodes.LimiteDeDataInvalido,
-            "O limite da faixa de data é DATA_FIXA, com a data, ou ENVIO, com o deslocamento em anos e dias."));
-        return RestricaoValorJson.AncoraDoToken(ancora) switch
+    public static Result<LimiteDeData> Limite(string? ancora, DateOnly? data, int? anos, int? dias) =>
+        RestricaoValorJson.AncoraDoToken(ancora) switch
         {
-            AncoraDoLimiteDeData.DataFixa when data is { } fixa && anos is null && dias is null => LimiteDeData.ViolacaoDaDataFixa(fixa) is { } violacao
-                ? Result<LimiteDeData>.Failure(new DomainError(RestricaoValorErrorCodes.LimiteDeDataInvalido, violacao))
-                : Result<LimiteDeData>.Success(LimiteDeData.Fixo(fixa)),
-            AncoraDoLimiteDeData.Envio when data is null => LimiteDeData.ViolacaoDoDeslocamento(anos ?? 0, dias ?? 0) is { } violacao
-                ? Result<LimiteDeData>.Failure(new DomainError(RestricaoValorErrorCodes.LimiteDeDataInvalido, violacao))
-                : Result<LimiteDeData>.Success(LimiteDeData.NoEnvio(anos ?? 0, dias ?? 0)),
-            _ => recusa,
+            AncoraDoLimiteDeData.DataFixa when data is { } fixa && anos is null && dias is null =>
+                LimiteOuRecusa(LimiteDeData.ViolacaoDaDataFixa(fixa), () => LimiteDeData.Fixo(fixa)),
+            AncoraDoLimiteDeData.Envio when data is null =>
+                LimiteOuRecusa(LimiteDeData.ViolacaoDoDeslocamento(anos ?? 0, dias ?? 0), () => LimiteDeData.NoEnvio(anos ?? 0, dias ?? 0)),
+            _ => Result<LimiteDeData>.Failure(new DomainError(
+                RestricaoValorErrorCodes.LimiteDeDataInvalido,
+                "O limite da faixa de data é DATA_FIXA, com a data, ou ENVIO, com o deslocamento em anos e dias.")),
         };
-    }
+
+    private static Result<LimiteDeData> LimiteOuRecusa(string? violacao, Func<LimiteDeData> limite) =>
+        violacao is not null
+            ? Result<LimiteDeData>.Failure(new DomainError(RestricaoValorErrorCodes.LimiteDeDataInvalido, violacao))
+            : Result<LimiteDeData>.Success(limite());
 
     /// <summary>A recusa quando o item declara mais de uma restrição do mesmo tipo.</summary>
     public static DomainError? TipoRepetido(IEnumerable<RestricaoValor> restricoes)

@@ -32,7 +32,7 @@ public sealed class GruposEInscricaoNaColetaDeFatosTests
         Result resultado = await DefinirNaHabilitacaoAsync(
             ProcessoEmRascunho(),
             [
-            EntradaDoFatoColetadoDeTeste.Coletando("COR_RACA").ComRotulo("Cor ou raça").DoTipo("SELECAO_UNICA").ComRestricoes([new RestricaoValorInput("OPCOES_PERMITIDAS",
+            EntradaDoFatoColetadoDeTeste.Coletando("COR_RACA").ComRotulo("Cor ou raça").DoTipo("ESCOLHA_UNICA").ComRestricoes([new RestricaoValorInput("OPCOES_PERMITIDAS",
                     Entradas: [new OpcoesCondicionadasInput([[Condicao("BAIXA_RENDA", "IGUAL", true)]], ["PRETA"])])]).Construir(),
             EntradaDoFatoColetadoDeTeste.Coletando("BAIXA_RENDA", 1).ComRotulo("Baixa renda").ComObrigatoriedade("NUNCA").Construir(),
         ]);
@@ -357,7 +357,7 @@ public sealed class GruposEInscricaoNaColetaDeFatosTests
         Result resultado = await DefinirNaHabilitacaoAsync(
             ProcessoEmRascunho(),
             [
-            EntradaDoFatoColetadoDeTeste.Coletando(fatoDaUf).ComRotulo("UF").DoTipo("SELECAO_UNICA").Construir(),
+            EntradaDoFatoColetadoDeTeste.Coletando(fatoDaUf).ComRotulo("UF").DoTipo("ESCOLHA_UNICA").Construir(),
             EntradaDoFatoColetadoDeTeste.Coletando("NATURALIDADE_MUNICIPIO", 1).ComRotulo("Município de nascimento").DoTipo("MUNICIPIO").ComRestricoes([new RestricaoValorInput("MUNICIPIOS_DA_UF", Fatos: [fatoDaUf])]).Construir(),
         ]);
 
@@ -372,7 +372,7 @@ public sealed class GruposEInscricaoNaColetaDeFatosTests
         FatoColetadoInput[] itens =
         [
             EntradaDoFatoColetadoDeTeste.Coletando("BAIXA_RENDA").ComRotulo("Baixa renda").NaSecao(FormularioDeTeste.Secao).Construir(),
-            EntradaDoFatoColetadoDeTeste.Coletando("OPCAO_CURSO_1", 2).ComRotulo("1ª opção").DoTipo("SELECAO_UNICA").NaSecao(FormularioDeTeste.Secao).Construir(),
+            EntradaDoFatoColetadoDeTeste.Coletando("OPCAO_CURSO_1", 2).ComRotulo("1ª opção").DoTipo("ESCOLHA_UNICA").NaSecao(FormularioDeTeste.Secao).Construir(),
         ];
         (await DefinirNaInscricaoAsync(mocks, processo, itens, [Composicao()])).IsSuccess.Should().BeTrue();
         int ordemGravada = processo.GruposColetados.Single().Ordem;

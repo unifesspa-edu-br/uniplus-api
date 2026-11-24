@@ -46,8 +46,8 @@ public static class ListarModelosFormularioQueryHandler
         ArgumentNullException.ThrowIfNull(query);
         ArgumentNullException.ThrowIfNull(repository);
 
-        FinalidadeFormulario? finalidade = FinalidadeDoFiltro(query.Finalidade);
-        return finalidade == FinalidadeFormulario.Nenhuma || TipoDeProcessoNaoGravavel(query.TipoProcessoCodigo)
+        FinalidadeFormulario? finalidade = EstruturaFormulario.FinalidadeDoCodigo(query.Finalidade);
+        return (query.Finalidade is not null && finalidade is null) || TipoDeProcessoNaoGravavel(query.TipoProcessoCodigo)
             ? PaginaVazia
             : await ListarPaginaAsync(query, finalidade, repository, cancellationToken).ConfigureAwait(false);
     }
@@ -63,11 +63,6 @@ public static class ListarModelosFormularioQueryHandler
             .ConfigureAwait(false);
         return new ListarModelosFormularioResult([.. itens.Select(static m => m.ToDto())], anterior, proximo);
     }
-
-    // Finalidade desconhecida não filtra por nada que exista: a página é vazia, em vez de ignorar
-    // o filtro e listar tudo.
-    private static FinalidadeFormulario? FinalidadeDoFiltro(string? token) =>
-        token is null ? null : EstruturaFormulario.FinalidadeDoToken(token);
 
     // Tipo de processo que o banco não grava não é de nenhum modelo: a página é vazia.
     private static bool TipoDeProcessoNaoGravavel(string? tipo) => tipo is not null && !TextoGravavel.EhGravavel(tipo);

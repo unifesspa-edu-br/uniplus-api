@@ -34,8 +34,8 @@ public static class IsencaoPorCarenciaSocioeconomica
     public static PredicadoDnf Condicao { get; } = Exigir(PredicadoDnf.CriarDeCondicoesAgrupadas(
     [
         (1, Exigir(CondicaoDnf.Criar(FatoRenda, Operador.Igual, JsonSerializer.SerializeToElement(true)))),
-        (1, Exigir(CondicaoDnf.Criar(OrigemEscolar.FatoFormaDeConclusao, Operador.Em, JsonSerializer.SerializeToElement(FormasDeConclusao)))),
-        (1, Exigir(CondicaoDnf.Criar(OrigemEscolar.FatoOndeCursou, Operador.Em, JsonSerializer.SerializeToElement(OndeCursou)))),
+        (1, Exigir(CondicaoDnf.Criar(OrigemEscolar.FatoFormaDeConclusao, Operador.AlgumDe, JsonSerializer.SerializeToElement(FormasDeConclusao)))),
+        (1, Exigir(CondicaoDnf.Criar(OrigemEscolar.FatoOndeCursou, Operador.AlgumDe, JsonSerializer.SerializeToElement(OndeCursou)))),
     ]));
 
     /// <summary>Os fatos da inscrição que a condição cita: o formulário de isenção os pressupõe, sem perguntá-los de novo.</summary>

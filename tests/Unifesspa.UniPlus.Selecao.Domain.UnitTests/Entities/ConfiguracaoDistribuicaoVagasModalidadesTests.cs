@@ -102,11 +102,11 @@ public sealed class ConfiguracaoDistribuicaoVagasModalidadesTests
     /// uma modalidade que o processo nunca ofertou.
     /// </remarks>
     [Fact(DisplayName = "Modalidade que reclassifica na ampla é recusada quando a ampla não é ofertada")]
-    public void Criar_ReclassificarAcSemAcOfertada_Falha()
+    public void Criar_ReclassificaAcSemAcOfertada_Falha()
     {
         List<ModalidadeSelecionada> modalidades =
         [
-            ModalidadeComAcao("AC_I", "RECLASSIFICAR_AC", quantidadeDeclarada: 2),
+            ModalidadeComAcao("AC_I", "RECLASSIFICA_AC", quantidadeDeclarada: 2),
             ModalidadeComAcao("AC_Q", acaoQuandoIndeferido: null, quantidadeDeclarada: 2),
         ];
 
@@ -119,12 +119,12 @@ public sealed class ConfiguracaoDistribuicaoVagasModalidadesTests
     }
 
     [Fact(DisplayName = "Reclassificar na ampla é aceito quando a ampla está entre as ofertadas")]
-    public void Criar_ReclassificarAcComAcOfertada_Sucesso()
+    public void Criar_ReclassificaAcComAcOfertada_Sucesso()
     {
         List<ModalidadeSelecionada> modalidades =
         [
             ModalidadeComAcao("AC", acaoQuandoIndeferido: null, quantidadeDeclarada: 38),
-            ModalidadeComAcao("AC_PCD", "RECLASSIFICAR_AC", quantidadeDeclarada: 2, composicaoOrigemCodigo: "AC"),
+            ModalidadeComAcao("AC_PCD", "RECLASSIFICA_AC", quantidadeDeclarada: 2, composicaoOrigemCodigo: "AC"),
         ];
 
         Result<ConfiguracaoDistribuicaoVagas> resultado = CriarConfiguracao(40, RegraComAcPcd(), modalidades);
@@ -132,12 +132,12 @@ public sealed class ConfiguracaoDistribuicaoVagasModalidadesTests
         resultado.IsSuccess.Should().BeTrue("a ampla está ofertada — o destino da reclassificação existe");
     }
 
-    [Fact(DisplayName = "RECLASSIFICAR_REGRA_EDITAL não exige a ampla ofertada — o destino vem da regra, não de um código")]
-    public void Criar_ReclassificarRegraEditalSemAc_Sucesso()
+    [Fact(DisplayName = "RECLASSIFICA_CONFORME_EDITAL não exige a ampla ofertada — o destino vem da regra, não de um código")]
+    public void Criar_ReclassificaConformeEditalSemAc_Sucesso()
     {
         List<ModalidadeSelecionada> modalidades =
         [
-            ModalidadeComAcao("AC_I", "RECLASSIFICAR_REGRA_EDITAL", quantidadeDeclarada: 2),
+            ModalidadeComAcao("AC_I", "RECLASSIFICA_CONFORME_EDITAL", quantidadeDeclarada: 2),
             ModalidadeComAcao("AC_Q", acaoQuandoIndeferido: null, quantidadeDeclarada: 2),
         ];
 

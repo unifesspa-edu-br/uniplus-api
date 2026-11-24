@@ -89,7 +89,8 @@ public sealed class DetalheDaProtecaoDoCatalogoEndpointTests : ProtecaoDoCatalog
 
         JsonElement fato = (await (await EnviarAsync(client, HttpMethod.Get, $"{Base}/fatos/{id}")).Content.ReadFromJsonAsync<JsonElement>()).GetProperty("fato");
 
-        (fato.GetProperty("dominio").GetString(), fato.GetProperty("cardinalidade").GetString(), fato.GetProperty("semeadoPeloSistema").GetBoolean()).Should().Be(("CATEGORICO", "ESCALAR", false));
+        (fato.GetProperty("dominio").GetProperty("codigo").GetString(), fato.GetProperty("cardinalidade").GetProperty("codigo").GetString(), fato.GetProperty("semeadoPeloSistema").GetBoolean())
+            .Should().Be(("OPCAO", "VALOR_UNICO", false));
         fato.GetProperty("valores").EnumerateArray().Select(v => v.GetProperty("codigo").GetString()).Should().Equal("MULHER", "OUTRA");
         fato.GetProperty("valores")[0].GetProperty("orientacao").GetString().Should().Be("Escolha conforme se identifica.");
     }
@@ -162,9 +163,9 @@ public sealed class DetalheDaProtecaoDoCatalogoEndpointTests : ProtecaoDoCatalog
         codigo = $"FATO_{Guid.NewGuid().ToString("N")[..12].ToUpperInvariant()}",
         nome = "Identidade de gênero",
         descricao = "Como a pessoa se identifica.",
-        dominio = "CATEGORICO",
-        cardinalidade = "ESCALAR",
-        fonteValores = "GLOBAL",
+        dominio = "OPCAO",
+        cardinalidade = "VALOR_UNICO",
+        fonteValores = "CATALOGO",
         pontoResolucao = "INSCRICAO",
         escopo = "CANDIDATO",
         classificacaoProtecao = "SENSIVEL",

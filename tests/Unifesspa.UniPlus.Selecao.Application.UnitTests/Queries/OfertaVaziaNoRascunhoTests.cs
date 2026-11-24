@@ -4,6 +4,7 @@ using AwesomeAssertions;
 
 using NSubstitute;
 
+using Unifesspa.UniPlus.Application.Abstractions.Respostas;
 using Unifesspa.UniPlus.Configuracao.Contracts;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Enums;
@@ -57,7 +58,7 @@ public sealed class OfertaVaziaNoRascunhoTests
     {
         ProcessoSeletivo processo = ProcessoSeletivoConformeBuilder.Criar("PS Oferta vazia");
         processo.DefinirItens(
-            [FatoColetadoDeTeste.Coletando(Fato, 0).ComRotulo("Condição de atendimento").DoTipo(TipoRenderizacao.SelecaoMultipla).Construir()], finalidade: FinalidadeFormulario.Habilitacao).IsSuccess.Should().BeTrue();
+            [FatoColetadoDeTeste.Coletando(Fato, 0).ComRotulo("Condição de atendimento").DoTipo(TipoRenderizacao.EscolhaMultipla).Construir()], finalidade: FinalidadeFormulario.Habilitacao).IsSuccess.Should().BeTrue();
 
         return processo;
     }
@@ -73,9 +74,9 @@ public sealed class OfertaVaziaNoRascunhoTests
     private static IFatoCandidatoReader CatalogoComOFato()
     {
         FatoCandidatoView fato = new(
-            Id: Guid.CreateVersion7(), Codigo: Fato, Nome: Fato, Descricao: "Descrição do fato.", Dominio: "CATEGORICO", Origem: "DECLARADO",
-            Cardinalidade: "MULTIVALORADO", ValoresDominio: null, PontoResolucao: "INSCRICAO", Binding: $"CAMPO_FORMULARIO:{Fato}",
-            ValoresDominioDeclarados: null, FonteValores: "PROCESSO", Ativo: true, ClassificacaoProtecao: "PESSOAL",
+            Id: Guid.CreateVersion7(), Codigo: Fato, Nome: Fato, Descricao: "Descrição do fato.", Dominio: CodigoComRotulo<TipoDoDado>.De(TipoDoDado.Opcao), Origem: CodigoComRotulo<OrigemFato>.De(OrigemFato.Declarado),
+            Cardinalidade: CodigoComRotulo<QuantidadeDeValores>.De(QuantidadeDeValores.VariosValores), ValoresDominio: null, PontoResolucao: "INSCRICAO", Binding: $"CAMPO_FORMULARIO:{Fato}",
+            ValoresDominioDeclarados: null, FonteValores: CodigoComRotulo<FonteValoresFato>.De(FonteValoresFato.OpcoesDoProcesso), Ativo: true, ClassificacaoProtecao: "PESSOAL",
             HipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, FinalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, ProtecaoAprovada: true);
         IFatoCandidatoReader catalogo = Substitute.For<IFatoCandidatoReader>();
         catalogo.ListarAsync(Arg.Any<CancellationToken>()).Returns(CatalogoDoConjuntoBasico.Com((IReadOnlyList<FatoCandidatoView>)[fato]));

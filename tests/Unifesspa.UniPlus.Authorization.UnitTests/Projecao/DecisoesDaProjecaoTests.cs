@@ -38,7 +38,7 @@ public sealed class DecisoesDaProjecaoTests
     [Fact(DisplayName = "A classificação não resolvida vale como sensível")]
     public void Permite_ClassificacaoNaoResolvida_ValeSensivel()
     {
-        Item naoResolvido = new(NaturezaDoItem.Dado, ClassificacaoDeProtecao.Nenhuma, "CONSENTIMENTO");
+        Item naoResolvido = new(NaturezaDoItem.Dado, default(ClassificacaoDeProtecao), "CONSENTIMENTO");
 
         Com((NaturezaDoItem.Dado, ClassificacaoDeProtecao.Pessoal)).ItemSai(naoResolvido).Should().BeFalse();
         Com((NaturezaDoItem.Dado, ClassificacaoDeProtecao.Sensivel)).ItemSai(naoResolvido).Should().BeTrue();

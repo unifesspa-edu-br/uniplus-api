@@ -149,7 +149,7 @@ public sealed class ConformidadePublicabilidadeEstruturalCascataEReferenciaTempo
     [Fact(DisplayName = "Pré-canonicalização: consequência da exigência deve ser coerente com a ação da vaga")]
     public void PreCanon_ExigenciaConsequenciaIncoerenteComAcaoDaVaga()
     {
-        ProcessoSeletivo processo = ProcessoConforme([DistribuicaoAmpla(10, acaoQuandoIndeferido: "RECLASSIFICAR_AC")]);
+        ProcessoSeletivo processo = ProcessoConforme([DistribuicaoAmpla(10, acaoQuandoIndeferido: "RECLASSIFICA_AC")]);
         ExigirDocumentos(processo, DocumentoGeral(FaseDoResultado(processo), obrigatorio: true, "ELIMINA", [BaseLegalResolvida()]));
 
         AfirmarPendenciaUnicaERecusa(processo, "exigencia_consequencia_incoerente_com_acao_da_vaga", "DocumentoExigido.ConsequenciaIncoerenteComAcaoDaVaga");
@@ -178,7 +178,7 @@ public sealed class ConformidadePublicabilidadeEstruturalCascataEReferenciaTempo
     [Fact(DisplayName = "Pré-canonicalização: consequência do grupo deve ser coerente com a ação da vaga")]
     public void PreCanon_GrupoConsequenciaIncoerenteComAcaoDaVaga()
     {
-        ProcessoSeletivo processo = ProcessoConforme([DistribuicaoAmpla(10, acaoQuandoIndeferido: "RECLASSIFICAR_AC")]);
+        ProcessoSeletivo processo = ProcessoConforme([DistribuicaoAmpla(10, acaoQuandoIndeferido: "RECLASSIFICA_AC")]);
         ExigirGrupoDeQuantidadeMinimaComDocumento(processo, "ELIMINA");
 
         AfirmarPendenciaUnicaERecusa(processo, "grupo_consequencia_incoerente_com_acao_da_vaga", "RegraDeComprovacao.ConsequenciaIncoerenteComAcaoDaVaga");

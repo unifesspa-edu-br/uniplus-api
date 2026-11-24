@@ -13,7 +13,7 @@ using Unifesspa.UniPlus.Regras.Formularios;
 /// predicado que <see cref="DefinirFatosColetadosCommandHandler"/> já aplica ao vincular o fato
 /// (PUT dos itens do formulário), reaplicado aqui porque o catálogo pode reclassificar a
 /// <c>Origem</c> de um fato depois que ele já virou <see cref="FatoColetado"/> — a migration que
-/// reclassificou MODALIDADE de DECLARADO para DERIVADO é o caminho real que o projeto usa para
+/// reclassificou MODALIDADE de DECLARADO para CALCULADO é o caminho real que o projeto usa para
 /// evoluir o catálogo. Sem esta reconferência, um vínculo morto seria congelado numa versão
 /// append-only e, pela doutrina do agregado, irreparável depois.
 /// </summary>

@@ -23,7 +23,7 @@ public sealed class TipoConceitoMappingTests
     {
         TipoConceitoDto dto = TiposConceitoDeTeste.Categorico().ToDto();
 
-        (dto.Definicao.Natureza.Codigo, dto.Definicao.Natureza.Rotulo).Should().Be(("CATEGORICO", "Categórico"));
+        (dto.Definicao.Natureza.Codigo, dto.Definicao.Natureza.Rotulo).Should().Be(("POR_OPCOES", "Por opções"));
         dto.Definicao.Numerico.Should().BeNull();
         dto.Definicao.Valores.Should().Equal(new ValorCategoricoDto("DEFERIDO", "Deferido", true), new ValorCategoricoDto("INDEFERIDO", "Indeferido", false));
     }

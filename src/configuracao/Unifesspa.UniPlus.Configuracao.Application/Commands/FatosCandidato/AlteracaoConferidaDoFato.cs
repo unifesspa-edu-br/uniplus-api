@@ -12,18 +12,20 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// aplicabilidade das modalidades. A recusa descarta o fato rastreado, que a validação do agregado e a das
 /// citações usam com a alteração já aplicada.
 /// </summary>
-internal static class AlteracaoConferidaDoFato
+public sealed class AlteracaoConferidaDoFato(
+    IFatoCandidatoRepository repository,
+    IPrecedenciaFaseRepository precedenciaRepository,
+    IModeloFormularioRepository modeloRepository,
+    IModalidadeRepository modalidadeRepository,
+    IUnitOfWork unitOfWork)
 {
-    public static async Task<Result> AplicarAsync(
+    public async Task<Result> AplicarAsync(
         Guid id,
         Func<FatoCandidato, CatalogoDeFatos, Result> alteracao,
-        IFatoCandidatoRepository repository,
-        IPrecedenciaFaseRepository precedenciaRepository,
-        IModeloFormularioRepository modeloRepository,
-        IModalidadeRepository modalidadeRepository,
-        IUnitOfWork unitOfWork,
         CancellationToken cancellationToken)
     {
+        ArgumentNullException.ThrowIfNull(alteracao);
+
         // A alteração é conferida contra as regras padrão do catálogo inteiro: as escritas dessas regras e
         // esta são serializadas.
         await repository.TravarRegrasPadraoParaEscritaAsync(cancellationToken).ConfigureAwait(false);
@@ -31,36 +33,36 @@ internal static class AlteracaoConferidaDoFato
         // O fato inexistente (404) é recusado antes de qualquer carga; os modelos e as modalidades,
         // que são a carga pesada, só são lidos depois de o próprio fato aceitar a alteração.
         return await MutacaoDoFato.AplicarAsync(
-            id,
-            async fato =>
-            {
-                IReadOnlyList<FatoCandidato> fatos = await repository.ListarTodosAsync(cancellationToken).ConfigureAwait(false);
-                IReadOnlyList<PrecedenciaFase> precedencias = await precedenciaRepository.ListarVivasAsync(cancellationToken).ConfigureAwait(false);
-                CatalogoDeFatos antes = new(fatos, precedencias);
+            id, fato => AlterarAsync(fato, alteracao, cancellationToken), repository, unitOfWork, cancellationToken)
+            .ConfigureAwait(false);
+    }
 
-                Result alterar = alteracao(fato, antes);
-                if (alterar.IsFailure)
-                {
-                    return alterar;
-                }
+    private async Task<Result> AlterarAsync(
+        FatoCandidato fato, Func<FatoCandidato, CatalogoDeFatos, Result> alteracao, CancellationToken cancellationToken)
+    {
+        IReadOnlyList<FatoCandidato> fatos = await repository.ListarTodosAsync(cancellationToken).ConfigureAwait(false);
+        IReadOnlyList<PrecedenciaFase> precedencias = await precedenciaRepository.ListarVivasAsync(cancellationToken).ConfigureAwait(false);
+        CatalogoDeFatos antes = new(fatos, precedencias);
 
-                IReadOnlyList<ModeloFormulario> modelos = await modeloRepository.ListarTodosAsync(cancellationToken).ConfigureAwait(false);
-                IReadOnlyList<Modalidade> modalidades = await modalidadeRepository.ListarVivasAsync(cancellationToken).ConfigureAwait(false);
+        Result alterar = alteracao(fato, antes);
 
-                CatalogoDeFatos depois = new(
-                    [.. fatos.Where(f => f.Id != fato.Id), fato], precedencias);
-                List<FieldError> citacoes = ConferenciaDasCitacoesDoFato.Conferir(fato.Codigo, antes, depois, modelos, modalidades);
-                if (citacoes.Count == 0)
-                {
-                    return Result.Success();
-                }
+        return alterar.IsFailure ? alterar : await ConferirCitacoesAsync(fato, antes, cancellationToken).ConfigureAwait(false);
+    }
 
-                // O agregado já recebeu a alteração; sem descartar, o save do Wolverine a gravaria.
-                unitOfWork.DescartarAlteracoesNaoSalvas();
-                return Result.ValidationFailure(citacoes);
-            },
-            repository,
-            unitOfWork,
-            cancellationToken).ConfigureAwait(false);
+    private async Task<Result> ConferirCitacoesAsync(FatoCandidato fato, CatalogoDeFatos antes, CancellationToken cancellationToken)
+    {
+        IReadOnlyList<ModeloFormulario> modelos = await modeloRepository.ListarTodosAsync(cancellationToken).ConfigureAwait(false);
+        IReadOnlyList<Modalidade> modalidades = await modalidadeRepository.ListarVivasAsync(cancellationToken).ConfigureAwait(false);
+
+        CatalogoDeFatos depois = new([.. antes.Fatos.Where(outro => outro.Id != fato.Id), fato], antes.Precedencias);
+        List<FieldError> citacoes = ConferenciaDasCitacoesDoFato.Conferir(fato.Codigo, antes, depois, modelos, modalidades);
+        if (citacoes.Count == 0)
+        {
+            return Result.Success();
+        }
+
+        // O agregado já recebeu a alteração; sem descartar, o save do Wolverine a gravaria.
+        unitOfWork.DescartarAlteracoesNaoSalvas();
+        return Result.ValidationFailure(citacoes);
     }
 }

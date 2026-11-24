@@ -2,6 +2,7 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Readers;
 
 using Microsoft.EntityFrameworkCore;
 
+using Unifesspa.UniPlus.Application.Abstractions.Respostas;
 using Unifesspa.UniPlus.Configuracao.Application.DTOs;
 using Unifesspa.UniPlus.Configuracao.Application.Mappings;
 using Unifesspa.UniPlus.Configuracao.Application.Queries.FatosCandidato;
@@ -13,6 +14,7 @@ using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
+using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.Services;
 using Unifesspa.UniPlus.Regras.ValueObjects;
 
@@ -66,7 +68,7 @@ internal sealed class FatoCandidatoReader : IFatoCandidatoReader, IFatoCandidato
             .ConfigureAwait(false);
 
         return fatos
-            .Where(static f => f.RegrasPadrao.Count > 0 && VinculoDeFato.Usa(f.Binding, VinculoDeFato.RegraDeDerivacao))
+            .Where(static f => f.RegrasPadrao.Count > 0 && VinculoDeFato.Usa(f.Binding, MecanismoDoVinculo.RegraDeDerivacao))
             .ToDictionary(static f => f.Codigo, static f => f.RegrasPadrao, StringComparer.Ordinal);
     }
 
@@ -114,7 +116,7 @@ internal sealed class FatoCandidatoReader : IFatoCandidatoReader, IFatoCandidato
         [.. lidos.Fatos.Select(f => new FatoDoCatalogoDto(ParaView(f, lidos), OperadoresAdmitidosDoFato.De(f)))];
 
     /// <summary>
-    /// Os valores do fato de fonte <see cref="FonteValoresFato.TiposDeficiencia"/>: os tipos do cadastro,
+    /// Os valores do fato de fonte <see cref="FonteValoresFato.TiposDeDeficiencia"/>: os tipos do cadastro,
     /// pelo código, com o nome como rótulo, em ordem de código. O tipo removido entra inativo, como o
     /// valor desativado de um fato de valores próprios, para que a condição que já o cita continue
     /// resolvendo; o código recriado vale pelo tipo vivo. <see langword="null"/> quando nenhum fato
@@ -123,7 +125,7 @@ internal sealed class FatoCandidatoReader : IFatoCandidatoReader, IFatoCandidato
     private async Task<IReadOnlyList<FatoValorDominioViewItem>?> TiposDeficienciaSeAlgumUsaAsync(
         IEnumerable<FatoCandidato> fatos, CancellationToken cancellationToken)
     {
-        if (!fatos.Any(static f => f.FonteValores == FonteValoresFato.TiposDeficiencia))
+        if (!fatos.Any(static f => f.FonteValores == FonteValoresFato.TiposDeDeficiencia))
         {
             return null;
         }
@@ -151,16 +153,16 @@ internal sealed class FatoCandidatoReader : IFatoCandidatoReader, IFatoCandidato
         IReadOnlyList<FatoValorDominioViewItem>? valores = ValoresDoFato(f, lidos);
         return new(
             f.Id, f.Codigo, f.Nome, f.Descricao,
-            DominiosFato.ParaTokenCanonico(f.Dominio), OrigensFato.ParaTokenCanonico(f.Origem), CardinalidadesFato.ParaTokenCanonico(f.Cardinalidade),
+            CodigoComRotulo<TipoDoDado>.De(f.Dominio), CodigoComRotulo<OrigemFato>.De(f.Origem), CodigoComRotulo<QuantidadeDeValores>.De(f.Cardinalidade),
             valores?.Select(static v => v.Codigo).ToList(),
-            f.PontoResolucao, f.Binding, valores, f.FonteValores is { } fonte ? FontesValoresFato.ParaTokenCanonico(fonte) : null,
+            f.PontoResolucao, f.Binding, valores, f.FonteValores is { } fonte ? CodigoComRotulo<FonteValoresFato>.De(fonte) : null,
             f.Ativo, ClassificacoesDeProtecao.ParaTokenCanonico(f.ClassificacaoProtecao), HipotesesLegaisTratamento.ParaTokenCanonico(f.HipoteseLegal), f.FinalidadeTratamento,
             f.Aprovacao.EstaAprovada, f.Formato is { } formato and not FormatoTexto.Nenhum ? FormatosTexto.ParaTokenCanonico(formato) : null,
             EscoposFato.ParaTokenCanonico(f.Escopo), f.ComponenteExibicao is { } componente ? ComponentesDeExibicao.ParaTokenCanonico(componente) : null);
     }
 
     private static IReadOnlyList<FatoValorDominioViewItem>? ValoresDoFato(FatoCandidato f, FatosLidos lidos) =>
-        f.FonteValores == FonteValoresFato.TiposDeficiencia
+        f.FonteValores == FonteValoresFato.TiposDeDeficiencia
             ? lidos.TiposDeficiencia
             : ParaValoresDominioDeclarados(VocabularioDoCatalogo.ValoresDe(f, lidos.PorCodigo));
 

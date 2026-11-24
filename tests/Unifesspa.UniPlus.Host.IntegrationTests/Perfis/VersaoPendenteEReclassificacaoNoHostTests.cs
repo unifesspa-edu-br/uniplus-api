@@ -32,7 +32,7 @@ public sealed class VersaoPendenteEReclassificacaoNoHostTests : ReclassificacaoN
         using HttpClient gestor = await GestorAsync();
         Envio vigente = await PerfilVigenteAsync(gestor, Consultar);
         Envio nova = await PendenteVerificadaAsync(gestor, vigente.PerfilId, Consultar, Sensivel);
-        await RebaixarClassificacaoNaVersaoAsync(vigente.PerfilId, 2, Sensivel, "interno");
+        await RebaixarClassificacaoNaVersaoAsync(vigente.PerfilId, 2, Sensivel, "INTERNO");
 
         await AprovarEPorEmVigorAsync(gestor, nova);
 
@@ -47,7 +47,7 @@ public sealed class VersaoPendenteEReclassificacaoNoHostTests : ReclassificacaoN
     public async Task VersaoDeRemocao_GravaAReclassificacao()
     {
         Cenario perfil = await CenarioAsync([Consultar, Sensivel], Leandro);
-        await RebaixarClassificacaoNaVersaoAsync(perfil.Perfil, 1, Sensivel, "interno");
+        await RebaixarClassificacaoNaVersaoAsync(perfil.Perfil, 1, Sensivel, "INTERNO");
         using HttpClient gestor = await GestorAsync();
 
         using HttpResponseMessage remocao = await RemoverBrutoAsync(gestor, perfil.Perfil, [Consultar]);

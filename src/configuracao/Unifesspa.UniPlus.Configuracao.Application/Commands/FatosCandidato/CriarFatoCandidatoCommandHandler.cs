@@ -4,6 +4,7 @@ using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Domain.Enums;
 using Unifesspa.UniPlus.Configuracao.Domain.Interfaces;
+using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Kernel.Results;
 
@@ -23,24 +24,24 @@ public static class CriarFatoCandidatoCommandHandler
         ArgumentNullException.ThrowIfNull(repository);
         ArgumentNullException.ThrowIfNull(unitOfWork);
 
-        // Ausente é "não informado" e token desconhecido é "fora do vocabulário": o agregado recusa cada um no campo.
-        Result<FatoCandidato> criar = CriacaoDoFato.CriarDoAdministrador(
-            command.Codigo, command.Nome, command.Descricao,
-            TokensDoFato.Dominio(command.Dominio) ?? DominioFato.Nenhum,
-            TokensDoFato.Cardinalidade(command.Cardinalidade) ?? CardinalidadeFato.Nenhuma,
-            TokensDoFato.Fonte(command.FonteValores),
-            TokensDoFato.Formato(command.Formato),
-            command.PontoResolucao,
-            TokensDoFato.Escopo(command.Escopo) ?? EscopoFato.Nenhum,
-            TokensDoFato.Classificacao(command.ClassificacaoProtecao) ?? ClassificacaoDeProtecao.Nenhuma,
-            command.FinalidadeTratamento,
-            TokensDoFato.HipoteseLegal(command.HipoteseLegal) ?? HipoteseLegalTratamento.Nenhuma,
-            TokensDoFato.Componente(command.ComponenteExibicao));
-        if (criar.IsFailure)
-        {
-            return Result<Guid>.ValidationFailure(criar.Errors);
-        }
-
-        return await NovoFato.GravarAsync(criar.Value!, repository, unitOfWork, cancellationToken).ConfigureAwait(false);
+        Result<FatoCandidato> criar = Montar(command);
+        return criar.IsFailure
+            ? Result<Guid>.ValidationFailure(criar.Errors)
+            : await NovoFato.GravarAsync(criar.Value!, repository, unitOfWork, cancellationToken).ConfigureAwait(false);
     }
+
+    // Ausente é "não informado" e token desconhecido é "fora do vocabulário": o agregado recusa cada um no campo.
+    private static Result<FatoCandidato> Montar(CriarFatoCandidatoCommand command) =>
+        CriacaoDoFato.CriarDoAdministrador(
+            new DescritivoDoFato(command.Codigo, command.Nome, command.Descricao, TokensDoFato.Componente(command.ComponenteExibicao)),
+            new DefinicaoDoFato(
+                TokensDoFato.Dominio(command.Dominio),
+                TokensDoFato.Cardinalidade(command.Cardinalidade),
+                TokensDoFato.Fonte(command.FonteValores),
+                TokensDoFato.Formato(command.Formato),
+                command.PontoResolucao,
+                TokensDoFato.Escopo(command.Escopo) ?? EscopoFato.Nenhum,
+                TokensDoFato.Classificacao(command.ClassificacaoProtecao),
+                command.FinalidadeTratamento,
+                TokensDoFato.HipoteseLegal(command.HipoteseLegal) ?? HipoteseLegalTratamento.Nenhuma));
 }

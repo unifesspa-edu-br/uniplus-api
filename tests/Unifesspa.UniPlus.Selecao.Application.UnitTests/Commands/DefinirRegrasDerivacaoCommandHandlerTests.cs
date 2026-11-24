@@ -93,17 +93,17 @@ public sealed class DefinirRegrasDerivacaoCommandHandlerTests
     }
 
     [Theory(DisplayName = "O domínio do fato no catálogo decide a forma das regras: o booleano não contribui código e o categórico, mesmo de fonte não enumerável, contribui")]
-    [InlineData("BOOLEANO", null, null)]
-    [InlineData("BOOLEANO", "INDIGENA", "ConfiguracaoDerivacaoFato.ContribuicaoIncoerenteComODominio")]
-    [InlineData("CATEGORICO", null, "ConfiguracaoDerivacaoFato.ContribuicaoIncoerenteComODominio")]
-    public async Task Handle_ContribuicaoConformeODominioDoDerivado_AceitaOuRecusa(string dominio, string? contribui, string? recusa)
+    [InlineData(TipoDoDado.SimOuNao, null, null)]
+    [InlineData(TipoDoDado.SimOuNao, "INDIGENA", "ConfiguracaoDerivacaoFato.ContribuicaoIncoerenteComODominio")]
+    [InlineData(TipoDoDado.Opcao, null, "ConfiguracaoDerivacaoFato.ContribuicaoIncoerenteComODominio")]
+    public async Task Handle_ContribuicaoConformeODominioDoDerivado_AceitaOuRecusa(TipoDoDado dominio, string? contribui, string? recusa)
     {
         ProcessoSeletivo processo = ProcessoComModalidadeAcEColeta();
         Mocks mocks = NovosMocks(processo, processo.Id);
         mocks.FatoCandidatoReader.ListarAsync(Arg.Any<CancellationToken>()).Returns(CatalogoDoConjuntoBasico.Com(
         [
             .. VocabularioSeed(),
-            FatoDerivadoDoCatalogo("INDIGENA_DECLARADO", "Indígena declarado", dominio, "ESCALAR", null, [], dominio == "BOOLEANO" ? null : "GEO_UF"),
+            FatoDerivadoDoCatalogo("INDIGENA_DECLARADO", "Indígena declarado", dominio, QuantidadeDeValores.ValorUnico, null, [], dominio == TipoDoDado.SimOuNao ? null : FonteValoresFato.UnidadesFederativas),
         ]));
         DefinirRegrasDerivacaoCommand command = new(processo.Id,
             [new ConfiguracaoDerivacaoInput("INDIGENA_DECLARADO",
@@ -126,8 +126,8 @@ public sealed class DefinirRegrasDerivacaoCommandHandlerTests
         [
             .. VocabularioSeed(),
             FatoDerivadoDoCatalogo(
-                "FORMA_CONCLUSAO", "Forma de conclusão", "CATEGORICO", "MULTIVALORADO", ["EJA", "PROFICIENCIA"],
-                [new FatoValorDominioViewItem("EJA", "EJA", 0, true), new FatoValorDominioViewItem("PROFICIENCIA", "Proficiência", 1, false)], "GLOBAL"),
+                "FORMA_CONCLUSAO", "Forma de conclusão", TipoDoDado.Opcao, QuantidadeDeValores.VariosValores, ["EJA", "PROFICIENCIA"],
+                [new FatoValorDominioViewItem("EJA", "EJA", 0, true), new FatoValorDominioViewItem("PROFICIENCIA", "Proficiência", 1, false)], FonteValoresFato.Catalogo),
         ]));
 
         Result resultado = await HandleAsync(mocks, new DefinirRegrasDerivacaoCommand(processo.Id,

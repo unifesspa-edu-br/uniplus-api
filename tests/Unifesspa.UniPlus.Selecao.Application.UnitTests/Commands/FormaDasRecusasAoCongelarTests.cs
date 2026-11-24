@@ -5,6 +5,7 @@ using AwesomeAssertions;
 using NSubstitute;
 using NSubstitute.ExceptionExtensions;
 
+using Unifesspa.UniPlus.Application.Abstractions.Respostas;
 using Unifesspa.UniPlus.Configuracao.Contracts;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Enums;
@@ -211,7 +212,7 @@ public sealed class FormaDasRecusasAoCongelarTests
     private static IFatoCandidatoReader CatalogoComORgUfPorMunicipio()
     {
         IReadOnlyList<FatoCandidatoView> fatos =
-            [.. CatalogoDoConjuntoBasico.Fatos.Select(static f => f.Codigo == "RG_UF" ? f with { FonteValores = "GEO_MUNICIPIO" } : f)];
+            [.. CatalogoDoConjuntoBasico.Fatos.Select(static f => f.Codigo == "RG_UF" ? f with { FonteValores = CodigoComRotulo<FonteValoresFato>.De(FonteValoresFato.Municipios) } : f)];
         IFatoCandidatoReader catalogo = Substitute.For<IFatoCandidatoReader>();
         catalogo.ListarAsync(Arg.Any<CancellationToken>()).Returns(fatos);
 

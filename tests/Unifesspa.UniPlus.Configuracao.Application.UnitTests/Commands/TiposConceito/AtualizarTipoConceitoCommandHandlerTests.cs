@@ -18,6 +18,7 @@ using Unifesspa.UniPlus.Configuracao.Domain.Enums;
 using Unifesspa.UniPlus.Configuracao.Domain.Errors;
 using Unifesspa.UniPlus.Configuracao.Domain.Interfaces;
 using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Regras.Enums;
 
 public sealed class AtualizarTipoConceitoCommandHandlerTests
 {
@@ -86,7 +87,7 @@ public sealed class AtualizarTipoConceitoCommandHandlerTests
 
         await Atualizar(TiposConceitoDeTeste.AtualizarCategorico(tipo.Id));
 
-        (tipo.Natureza, tipo.EscalaMaxima, tipo.Valores.Count).Should().Be((NaturezaConceito.Categorico, (decimal?)null, 3));
+        (tipo.Natureza, tipo.EscalaMaxima, tipo.Valores.Count).Should().Be((FormaDoConceito.PorOpcoes, (decimal?)null, 3));
     }
 
     [Fact(DisplayName = "DbUpdateConcurrencyException (xmin) ao substituir os valores descarta o rastreamento e devolve o conflito")]

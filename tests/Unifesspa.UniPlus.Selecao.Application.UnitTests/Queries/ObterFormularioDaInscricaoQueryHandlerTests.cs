@@ -7,6 +7,7 @@ using AwesomeAssertions;
 using NSubstitute;
 
 using Unifesspa.UniPlus.Application.Abstractions.Authentication;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Domain.ValueObjects;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Enums;
@@ -150,7 +151,7 @@ public sealed class ObterFormularioDaInscricaoQueryHandlerTests
         Result<FormularioRenderizavelDto> resultado = await Obter(portas, UsuarioComCpf(cpf));
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
-        resultado.Value!.Formulario.Finalidade.Should().Be(EstruturaFormulario.ParaToken(FinalidadeFormulario.Inscricao));
+        resultado.Value!.Formulario.Finalidade.Should().Be(FinalidadeFormulario.Inscricao.Codigo());
     }
 
     [Fact(DisplayName = "O formulário da inscrição do candidato não traz a lista de comprovação: os documentos dele vêm da avaliação")]

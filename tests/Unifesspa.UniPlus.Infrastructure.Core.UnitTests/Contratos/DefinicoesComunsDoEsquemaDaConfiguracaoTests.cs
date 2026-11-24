@@ -37,7 +37,7 @@ public sealed class DefinicoesComunsDoEsquemaDaConfiguracaoTests
         JsonNode semClausula = Documento("[]");
         JsonNode umaClausula = Documento("""
             [ [ { "codigoDoDado": "RENDA_PER_CAPITA", "operador": "MENOR_IGUAL", "valor": 1.5 },
-                { "codigoDoDado": "UF", "operador": "EM", "valor": ["PA", "TO"] } ] ]
+                { "codigoDoDado": "UF", "operador": "ALGUM_DE", "valor": ["PA", "TO"] } ] ]
             """);
 
         CaminhosComErro(semClausula, $"{Condicoes}#/$defs/condicoesAlternativas").Should().BeEmpty();
@@ -49,8 +49,8 @@ public sealed class DefinicoesComunsDoEsquemaDaConfiguracaoTests
         CaminhosComErro(Documento("[ [] ]"), $"{Condicoes}#/$defs/condicoesAlternativas").Should().Contain("/0");
 
     [Theory(DisplayName = "O valor incoerente com o operador é recusado")]
-    [InlineData("EM", "\"PA\"")]
-    [InlineData("NAO_EM", "1")]
+    [InlineData("ALGUM_DE", "\"PA\"")]
+    [InlineData("NENHUM_DE", "1")]
     [InlineData("IGUAL", "[\"PA\"]")]
     [InlineData("MAIOR_IGUAL", "{ \"a\": 1 }")]
     public void Condicao_ValorIncoerenteComOOperador_Recusa(string operador, string valor)
@@ -96,12 +96,12 @@ public sealed class DefinicoesComunsDoEsquemaDaConfiguracaoTests
         CaminhosComErro(condicao, $"{Condicoes}#/$defs/condicao").Should().Contain(caminho);
     }
 
-    [Fact(DisplayName = "O item de texto em branco na lista de EM é recusado e a lista vazia é aceita")]
+    [Fact(DisplayName = "O item de texto em branco na lista de ALGUM_DE é recusado e a lista vazia é aceita")]
     public void Condicao_ListaComItemEmBranco_Recusa()
     {
         string definicao = $"{Condicoes}#/$defs/condicao";
 
-        CaminhosComErro(Documento("""{ "codigoDoDado": "UF", "operador": "EM", "valor": ["PA", " "] }"""), definicao).Should().Contain("/valor/1");
-        CaminhosComErro(Documento("""{ "codigoDoDado": "UF", "operador": "EM", "valor": [] }"""), definicao).Should().BeEmpty();
+        CaminhosComErro(Documento("""{ "codigoDoDado": "UF", "operador": "ALGUM_DE", "valor": ["PA", " "] }"""), definicao).Should().Contain("/valor/1");
+        CaminhosComErro(Documento("""{ "codigoDoDado": "UF", "operador": "ALGUM_DE", "valor": [] }"""), definicao).Should().BeEmpty();
     }
 }

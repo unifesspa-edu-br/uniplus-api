@@ -35,8 +35,8 @@ public sealed class VocabulariosDaFormaAceiteEndpointTests
 
         itens.Should().Equal(
             new ItemDoVocabulario("A_DEFINIR", "A definir"),
-            new ItemDoVocabulario("REGISTRO_DIGITAL_SEM_LOG_IP", "Registro digital sem log do endereço IP"),
-            new ItemDoVocabulario("REGISTRO_DIGITAL_COM_LOG_IP", "Registro digital com log do endereço IP"));
+            new ItemDoVocabulario("REGISTRO_SEM_ENDERECO_IP", "Registro digital sem o endereço IP"),
+            new ItemDoVocabulario("REGISTRO_COM_ENDERECO_IP", "Registro digital com o endereço IP"));
     }
 
     [Fact(DisplayName = "Versão inexistente da vendor MIME do vocabulário da forma de aceite recusa com 406")]

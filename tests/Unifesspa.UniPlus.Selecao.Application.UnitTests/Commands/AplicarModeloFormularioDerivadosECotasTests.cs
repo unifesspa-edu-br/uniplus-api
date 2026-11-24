@@ -25,7 +25,7 @@ public sealed class AplicarModeloFormularioDerivadosECotasTests
     [Fact(DisplayName = "O derivado que a cópia cita recebe as regras padrão do catálogo; o já configurado fica como está")]
     public async Task Handle_DerivadoCitado_CopiaOuMantem()
     {
-        FatoColetadoInput exibido = ItemQueCita(Item("CERTIFICADO", 1), "PERFIL", "EM", new[] { "A" });
+        FatoColetadoInput exibido = ItemQueCita(Item("CERTIFICADO", 1), "PERFIL", "ALGUM_DE", new[] { "A" });
 
         Result<AplicacaoDeModeloDto> copia = await _cenario.AplicarAsync(Modelo(FinalidadeFormulario.Inscricao, [Item("QUILOMBOLA", 0), exibido]));
         Result<AplicacaoDeModeloDto> reaplicacao = await _cenario.AplicarAsync(Modelo(FinalidadeFormulario.Inscricao, [Item("QUILOMBOLA", 0), exibido]));
@@ -50,7 +50,7 @@ public sealed class AplicarModeloFormularioDerivadosECotasTests
     [Fact(DisplayName = "Derivado sem regra padrão nem configuração é recusado")]
     public async Task Handle_DerivadoSemRegra_Recusa()
     {
-        FatoColetadoInput porSemRegra = ItemQueCita(Item("CERTIFICADO", 1, "SELECAO_UNICA"), "SEM_REGRA", "EM", new[] { "X" });
+        FatoColetadoInput porSemRegra = ItemQueCita(Item("CERTIFICADO", 1, "ESCOLHA_UNICA"), "SEM_REGRA", "ALGUM_DE", new[] { "X" });
 
         Result<AplicacaoDeModeloDto> resultado = await _cenario.AplicarAsync(Modelo(FinalidadeFormulario.Inscricao, [Item("QUILOMBOLA", 0), porSemRegra]));
 
@@ -63,7 +63,7 @@ public sealed class AplicarModeloFormularioDerivadosECotasTests
         FatoColetadoInput porAmarela = ItemQueCita(Item("QUILOMBOLA", 1), "COR_RACA", "IGUAL", "AMARELA");
         FatoColetadoInput porIndigena = ItemQueCita(Item("CERTIFICADO", 2), "COR_RACA", "IGUAL", "INDIGENA");
 
-        Result<AplicacaoDeModeloDto> resultado = await _cenario.AplicarAsync(Modelo(FinalidadeFormulario.Habilitacao, [Item("COR_RACA", 0, "SELECAO_UNICA"), porAmarela, porIndigena]));
+        Result<AplicacaoDeModeloDto> resultado = await _cenario.AplicarAsync(Modelo(FinalidadeFormulario.Habilitacao, [Item("COR_RACA", 0, "ESCOLHA_UNICA"), porAmarela, porIndigena]));
 
         resultado.Errors.Select(static e => e.Error.Code).Should().Equal(VinculoCatalogoErrorCodes.ValorDesativado, VinculoCatalogoErrorCodes.ValorDesativado);
     }
@@ -71,7 +71,7 @@ public sealed class AplicarModeloFormularioDerivadosECotasTests
     [Fact(DisplayName = "A modalidade citada pela regra padrão de um derivado também pede a distribuição de vagas antes")]
     public async Task Handle_ModalidadePelaRegraPadrao_PedeADistribuicao()
     {
-        FatoColetadoInput porCotista = ItemQueCita(Item("QUILOMBOLA", 1), "COTISTA", "EM", new[] { "SIM" });
+        FatoColetadoInput porCotista = ItemQueCita(Item("QUILOMBOLA", 1), "COTISTA", "ALGUM_DE", new[] { "SIM" });
 
         Result<AplicacaoDeModeloDto> resultado = await _cenario.AplicarAsync(Modelo(FinalidadeFormulario.Inscricao, [Item("CERTIFICADO", 0), porCotista]));
 
@@ -81,7 +81,7 @@ public sealed class AplicarModeloFormularioDerivadosECotasTests
     [Fact(DisplayName = "Modelo que cita a modalidade num processo sem distribuição de vagas pede a distribuição antes")]
     public async Task Handle_ModalidadeSemDistribuicaoDeVagas_PedeADistribuicao()
     {
-        FatoColetadoInput porModalidade = ItemQueCita(Item("QUILOMBOLA", 1), "MODALIDADE", "EM", new[] { "AC" });
+        FatoColetadoInput porModalidade = ItemQueCita(Item("QUILOMBOLA", 1), "MODALIDADE", "ALGUM_DE", new[] { "AC" });
 
         Result<AplicacaoDeModeloDto> resultado = await _cenario.AplicarAsync(Modelo(FinalidadeFormulario.Inscricao, [Item("CERTIFICADO", 0), porModalidade]));
 

@@ -1,6 +1,8 @@
 namespace Unifesspa.UniPlus.Testes.Compartilhado;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Regras.Entradas;
+using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Regras.Serializacao;
 
 /// <summary>
@@ -29,7 +31,7 @@ internal sealed record EntradaDoGrupoColetadoDeTeste
 
     private IReadOnlyList<IReadOnlyList<CondicaoPrecondicaoInput>>? Exibicao { get; init; }
 
-    private string? TipoDaObrigatoriedade { get; init; } = PredicadoDnfJson.ObrigatoriedadeNunca;
+    private string? TipoDaObrigatoriedade { get; init; } = TipoObrigatoriedade.Nunca.Codigo();
 
     private IReadOnlyList<IReadOnlyList<CondicaoPrecondicaoInput>>? PredicadoDaObrigatoriedade { get; init; }
 

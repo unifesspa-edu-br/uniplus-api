@@ -146,7 +146,7 @@ internal static class LeituraDosFatos
             d.Finalidade);
 
     private static ComponentesDoFato? LerComponentes(
-        LeitorEnvelope leitor, JsonObject item, string path, TipoRenderizacao tipoRenderizacao, FinalidadeFormulario finalidade)
+        LeitorEnvelope leitor, JsonObject item, string path, TipoRenderizacao tipoRenderizacao, FinalidadeFormulario? finalidade)
     {
         PredicadoDnf? exibicao = LerPrecondicoes(leitor, item, path);
         IReadOnlyList<ValorDominioDeclaradoCongelado>? valoresDoFato = leitor.Falhou
@@ -158,7 +158,7 @@ internal static class LeituraDosFatos
     }
 
     private static RegrasDoCampo? LerRegrasDoItem(
-        LeitorEnvelope leitor, JsonObject item, string path, PredicadoDnf? exibicao, FinalidadeFormulario finalidade)
+        LeitorEnvelope leitor, JsonObject item, string path, PredicadoDnf? exibicao, FinalidadeFormulario? finalidade)
     {
         if (LeituraDasCondicoes.LerObrigatoriedade(leitor, item, path) is not { } obrigatoriedade
             || LeituraDasRestricoes.LerRestricoes(leitor, item, path) is not { } restricoes)
@@ -182,7 +182,7 @@ internal static class LeituraDosFatos
             ? $"'{path}.hipoteseLegal' fora do vocabulário de hipóteses legais."
         : d.Copia.ComponenteExibicao is { } componente && (string.IsNullOrWhiteSpace(componente) || componente != componente.Trim())
             ? $"'{path}.componenteExibicao' não está na forma canônica: sem espaço nas pontas e não vazio."
-        : d.Finalidade == FinalidadeFormulario.Nenhuma
+        : d.Finalidade is null
             ? $"'{path}.finalidade' fora do vocabulário de finalidades."
         : d.TipoRenderizacao is null
             ? $"'{path}.tipoRenderizacao' fora dos tipos de campo aceitos: {string.Join(", ", CatalogoDe<TipoRenderizacao>.Todos().Select(static c => c.Codigo))}."
@@ -203,7 +203,7 @@ internal static class LeituraDosFatos
     private static DeclaracaoDoFato LerDeclaracao(LeitorEnvelope leitor, JsonObject item, string path) => new()
     {
         FatoCodigo = leitor.TextoNaoVazio(item, "codigoDoDado", path, LimitesDoEnvelope.Fato),
-        Finalidade = EstruturaFormulario.FinalidadeDoToken(leitor.TextoNaoVazio(item, "finalidade", path)),
+        Finalidade = EstruturaFormulario.FinalidadeDoCodigo(leitor.TextoNaoVazio(item, "finalidade", path)),
         EtapaCodigo = leitor.TextoOpcional(item, "paginaCodigo", path, LimitesDoEnvelope.CodigoEtapaFormulario),
         Ordem = leitor.Inteiro(item, "ordem", path),
         Rotulo = leitor.TextoNaoVazio(item, "rotulo", path, LimitesDoEnvelope.NomeDeCadastro),
@@ -229,7 +229,7 @@ internal static class LeituraDosFatos
     {
         public string FatoCodigo { get; init; } = string.Empty;
 
-        public FinalidadeFormulario Finalidade { get; init; }
+        public FinalidadeFormulario? Finalidade { get; init; }
 
         public string? EtapaCodigo { get; init; }
 

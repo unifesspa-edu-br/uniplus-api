@@ -28,7 +28,7 @@ public sealed class AlteracaoDaDefinicaoDoFatoTests
         FatoCandidato fato = Declarado("TEM_RENDA");
 
         Result resultado = fato.AlterarDefinicao(
-            Definicao(DominioFato.Categorico, CardinalidadeFato.Multivalorado, FonteValoresFato.Global, ponto: "HABILITACAO",
+            Definicao(TipoDoDado.Opcao, QuantidadeDeValores.VariosValores, FonteValoresFato.Catalogo, ponto: "HABILITACAO",
                 escopo: EscopoFato.MembroGrupo, classificacao: ClassificacaoDeProtecao.Sensivel, finalidade: " Nova finalidade "),
             Catalogo(fato));
 
@@ -38,9 +38,9 @@ public sealed class AlteracaoDaDefinicaoDoFatoTests
             Codigo = "TEM_RENDA",
             Origem = OrigemFato.Declarado,
             Binding = "CAMPO_FORMULARIO:TEM_RENDA",
-            Dominio = DominioFato.Categorico,
-            Cardinalidade = CardinalidadeFato.Multivalorado,
-            FonteValores = FonteValoresFato.Global,
+            Dominio = TipoDoDado.Opcao,
+            Cardinalidade = QuantidadeDeValores.VariosValores,
+            FonteValores = FonteValoresFato.Catalogo,
             PontoResolucao = "HABILITACAO",
             Escopo = EscopoFato.MembroGrupo,
             ClassificacaoProtecao = ClassificacaoDeProtecao.Sensivel,
@@ -54,14 +54,14 @@ public sealed class AlteracaoDaDefinicaoDoFatoTests
         FatoCandidato fato = Derivado("PERFIL");
 
         Result resultado = fato.AlterarDefinicao(
-            Definicao(DominioFato.Categorico, ponto: "HABILITACAO", escopo: EscopoFato.Candidato), Catalogo(fato));
+            Definicao(TipoDoDado.Opcao, ponto: "HABILITACAO", escopo: EscopoFato.Candidato), Catalogo(fato));
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
         fato.Should().BeEquivalentTo(new
         {
-            Dominio = DominioFato.Categorico,
-            Cardinalidade = CardinalidadeFato.Multivalorado,
-            FonteValores = FonteValoresFato.Global,
+            Dominio = TipoDoDado.Opcao,
+            Cardinalidade = QuantidadeDeValores.VariosValores,
+            FonteValores = FonteValoresFato.Catalogo,
             PontoResolucao = "HABILITACAO",
             Binding = "REGRA_DERIVACAO:PERFIL",
         });
@@ -79,13 +79,13 @@ public sealed class AlteracaoDaDefinicaoDoFatoTests
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
         agregado.Should().BeEquivalentTo(new
         {
-            Dominio = DominioFato.Categorico,
-            Cardinalidade = CardinalidadeFato.Multivalorado,
-            FonteValores = FonteValoresFato.Global,
+            Dominio = TipoDoDado.Opcao,
+            Cardinalidade = QuantidadeDeValores.VariosValores,
+            FonteValores = FonteValoresFato.Catalogo,
             Escopo = EscopoFato.Candidato,
             PontoResolucao = "HABILITACAO",
             ClassificacaoProtecao = ClassificacaoDeProtecao.Sensivel,
-            Binding = "AGREGACAO_GRUPO:CATEGORIA_RENDA",
+            Binding = "RESUMO_DE_GRUPO:CATEGORIA_RENDA",
         });
     }
 
@@ -93,11 +93,13 @@ public sealed class AlteracaoDaDefinicaoDoFatoTests
     public void Sistema_Recusa()
     {
         FatoCandidato sistema = CriacaoDoFato.Criar(
-            "COR_RACA", "Cor ou raça", "Descrição do fato.", DominioFato.Categorico, OrigemFato.Declarado, CardinalidadeFato.Escalar, FonteValoresFato.Global,
-            null, "INSCRICAO", "CAMPO_FORMULARIO:COR_RACA", EscopoFato.Candidato, ClassificacaoDeProtecao.Sensivel, Finalidade, Hipotese,
+            new DescritivoDoFato("COR_RACA", "Cor ou raça", "Descrição do fato."),
+            OrigemFato.Declarado,
+            "CAMPO_FORMULARIO:COR_RACA",
+            new DefinicaoDoFato(TipoDoDado.Opcao, QuantidadeDeValores.ValorUnico, FonteValoresFato.Catalogo, null, "INSCRICAO", EscopoFato.Candidato, ClassificacaoDeProtecao.Sensivel, Finalidade, Hipotese),
             sistema: true).Value!;
 
-        sistema.AlterarDefinicao(Definicao(DominioFato.Booleano), Catalogo(sistema))
+        sistema.AlterarDefinicao(Definicao(TipoDoDado.SimOuNao), Catalogo(sistema))
             .Error!.Code.Should().Be(FatoCandidatoErrorCodes.DefinicaoDoFatoDeSistemaTravada);
     }
 
@@ -108,7 +110,7 @@ public sealed class AlteracaoDaDefinicaoDoFatoTests
 
         Result resultado = fato.AlterarDefinicao(
             new DefinicaoDoFato(
-                DominioFato.Texto, CardinalidadeFato.Escalar, FonteValoresFato.Global, FormatoTexto.Nenhum, "INSCRICAO", EscopoFato.Candidato,
+                TipoDoDado.Texto, QuantidadeDeValores.ValorUnico, FonteValoresFato.Catalogo, FormatoTexto.Nenhum, "INSCRICAO", EscopoFato.Candidato,
                 ClassificacaoDeProtecao.Publico, Finalidade, HipoteseLegalTratamento.Consentimento),
             Catalogo(fato));
 
@@ -118,7 +120,7 @@ public sealed class AlteracaoDaDefinicaoDoFatoTests
             ("formato", FatoCandidatoErrorCodes.FormatoObrigatorio),
             ("classificacaoProtecao", FatoCandidatoErrorCodes.ClassificacaoAbaixoDoMinimoDoDominio),
         ]);
-        fato.Should().BeEquivalentTo(new { Dominio = DominioFato.Booleano, FonteValores = (FonteValoresFato?)null, ClassificacaoProtecao = ClassificacaoDeProtecao.Pessoal });
+        fato.Should().BeEquivalentTo(new { Dominio = TipoDoDado.SimOuNao, FonteValores = (FonteValoresFato?)null, ClassificacaoProtecao = ClassificacaoDeProtecao.Pessoal });
     }
 
     [Fact(DisplayName = "Hipótese legal que não cabe na classificação e formato fora de texto são recusados")]
@@ -127,7 +129,7 @@ public sealed class AlteracaoDaDefinicaoDoFatoTests
         FatoCandidato fato = Declarado("TEM_RENDA");
 
         Result resultado = fato.AlterarDefinicao(
-            DeDeclarado(DominioFato.Booleano, FormatoTexto.Cpf, ClassificacaoDeProtecao.Sensivel, HipoteseLegalTratamento.ExecucaoContrato),
+            DeDeclarado(TipoDoDado.SimOuNao, FormatoTexto.Cpf, ClassificacaoDeProtecao.Sensivel, HipoteseLegalTratamento.ExecucaoContrato),
             Catalogo(fato));
 
         resultado.Errors.Select(static e => (e.Field, e.Error.Code)).Should().BeEquivalentTo(
@@ -142,7 +144,7 @@ public sealed class AlteracaoDaDefinicaoDoFatoTests
     {
         FatoCandidato fato = Derivado("PERFIL");
 
-        fato.AlterarDefinicao(Definicao(DominioFato.Texto, classificacao: ClassificacaoDeProtecao.Pessoal), Catalogo(fato))
+        fato.AlterarDefinicao(Definicao(TipoDoDado.Texto, classificacao: ClassificacaoDeProtecao.Pessoal), Catalogo(fato))
             .Errors.Should().ContainSingle().Which.Should().BeEquivalentTo(new
             {
                 Field = "dominio",
@@ -157,9 +159,9 @@ public sealed class AlteracaoDaDefinicaoDoFatoTests
         FatoCandidato membro = DeMembro("CATEGORIA_RENDA");
         FatoCandidato agregado = Agregado("CATEGORIAS_RENDA", membro);
 
-        derivado.AlterarDefinicao(Definicao(DominioFato.Booleano, cardinalidade: CardinalidadeFato.Multivalorado), Catalogo(derivado))
+        derivado.AlterarDefinicao(Definicao(TipoDoDado.SimOuNao, cardinalidade: QuantidadeDeValores.VariosValores), Catalogo(derivado))
             .Errors.Should().ContainSingle().Which.Field.Should().Be("cardinalidade");
-        agregado.AlterarDefinicao(Definicao(DominioFato.Categorico, escopo: EscopoFato.MembroGrupo), Catalogo(membro, agregado))
+        agregado.AlterarDefinicao(Definicao(TipoDoDado.Opcao, escopo: EscopoFato.MembroGrupo), Catalogo(membro, agregado))
             .Errors.Select(static e => (e.Field, e.Error.Code)).Should().BeEquivalentTo(
             [
                 ("dominio", FatoCandidatoErrorCodes.EixoNaoEditavelNoTipoDoFato),
@@ -170,17 +172,17 @@ public sealed class AlteracaoDaDefinicaoDoFatoTests
     [Fact(DisplayName = "Domínio ou fonte que não comporta os valores cadastrados é recusado no campo do eixo")]
     public void Declarado_ComValores_RecusaDominioEFonteQueNaoOsComportam()
     {
-        FatoCandidato fato = Declarado("TIPO_RENDA", DominioFato.Categorico, FonteValoresFato.Global);
+        FatoCandidato fato = Declarado("TIPO_RENDA", TipoDoDado.Opcao, FonteValoresFato.Catalogo);
         fato.AdicionarValorDominio("RURAL", "Rural", 0, ativo: true).IsSuccess.Should().BeTrue();
         fato.DesativarValor("RURAL").IsSuccess.Should().BeTrue();
 
-        fato.AlterarDefinicao(DeDeclarado(DominioFato.Booleano), Catalogo(fato))
+        fato.AlterarDefinicao(DeDeclarado(TipoDoDado.SimOuNao), Catalogo(fato))
             .Errors.Should().ContainSingle().Which.Should().BeEquivalentTo(new
             {
                 Field = "dominio",
                 Error = new { Code = FatoCandidatoErrorCodes.DominioNaoComportaOsValores },
             }, "o valor desativado continua no fato, porque o código nunca é removido");
-        fato.AlterarDefinicao(Definicao(DominioFato.Categorico, CardinalidadeFato.Escalar, FonteValoresFato.Processo), Catalogo(fato))
+        fato.AlterarDefinicao(Definicao(TipoDoDado.Opcao, QuantidadeDeValores.ValorUnico, FonteValoresFato.OpcoesDoProcesso), Catalogo(fato))
             .Errors.Should().ContainSingle().Which.Should().BeEquivalentTo(new
             {
                 Field = "fonteValores",
@@ -195,9 +197,9 @@ public sealed class AlteracaoDaDefinicaoDoFatoTests
         FatoCandidato derivado = Derivado("PERFIL");
         derivado.DefinirRegrasPadrao([Booleana(("TEM_RENDA", true))], Catalogo(renda, derivado)).IsSuccess.Should().BeTrue();
 
-        Result resultado = derivado.AlterarDefinicao(Definicao(DominioFato.Categorico), Catalogo(renda, derivado));
+        Result resultado = derivado.AlterarDefinicao(Definicao(TipoDoDado.Opcao), Catalogo(renda, derivado));
 
         resultado.Errors.Should().ContainSingle().Which.Field.Should().Be("dominio");
-        derivado.Dominio.Should().Be(DominioFato.Booleano);
+        derivado.Dominio.Should().Be(TipoDoDado.SimOuNao);
     }
 }

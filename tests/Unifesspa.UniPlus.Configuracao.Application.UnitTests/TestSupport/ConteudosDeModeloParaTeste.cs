@@ -24,7 +24,7 @@ internal static class ConteudosDeModeloParaTeste
     public const string Finalidade = "Verificação dos requisitos do processo seletivo.";
     public const HipoteseLegalTratamento Hipotese = HipoteseLegalTratamento.CumprimentoObrigacaoLegal;
 
-    public static readonly EtapaDoModelo Secao = new("DADOS", 0, TipoEtapaFormulario.Secao, BlocoSistema.Nenhum, "Dados", null, null, null);
+    public static readonly EtapaDoModelo Secao = new("DADOS", 0, TipoEtapaFormulario.Secao, null, "Dados", null, null, null);
     public static readonly EtapaDoModelo Revisao = new("REVISAO", 1, TipoEtapaFormulario.Bloco, BlocoSistema.RevisaoEAceite, "Revisão", null, null, null);
 
     public static void Aprovar(FatoCandidato fato)
@@ -35,10 +35,10 @@ internal static class ConteudosDeModeloParaTeste
     }
 
     public static FatoCandidato Declarado(
-        string codigo, DominioFato dominio = DominioFato.Booleano, FormatoTexto? formato = null, EscopoFato escopo = EscopoFato.Candidato) =>
+        string codigo, TipoDoDado dominio = TipoDoDado.SimOuNao, FormatoTexto? formato = null, EscopoFato escopo = EscopoFato.Candidato) =>
         CriacaoDoFato.CriarDoAdministrador(
-            codigo, codigo, "Descrição do fato.", dominio, CardinalidadeFato.Escalar, null, formato, "INSCRICAO", escopo,
-            ClassificacaoDeProtecao.Pessoal, Finalidade, Hipotese).Value!;
+            new DescritivoDoFato(codigo, codigo, "Descrição do fato."),
+            new DefinicaoDoFato(dominio, QuantidadeDeValores.ValorUnico, null, formato, "INSCRICAO", escopo, ClassificacaoDeProtecao.Pessoal, Finalidade, Hipotese)).Value!;
 
     public static ConteudoDoModeloInput Conteudo(params FatoColetadoInput[] itens) => new(
         "Habilitação",
@@ -50,7 +50,7 @@ internal static class ConteudosDeModeloParaTeste
         [],
         []);
 
-    public static FatoColetadoInput Item(string fato, int ordem, string tipo = "BOOLEANO") =>
+    public static FatoColetadoInput Item(string fato, int ordem, string tipo = "SIM_OU_NAO") =>
         EntradaDoFatoColetadoDeTeste.Coletando(fato, ordem).DoTipo(tipo).NaSecao("DADOS").Construir();
 
     public static IReadOnlyList<IReadOnlyList<CondicaoPrecondicaoInput>> Quando(string fato, object valor) =>
@@ -60,7 +60,7 @@ internal static class ConteudosDeModeloParaTeste
     public static ModeloFormulario Existente(string? tipo)
     {
         ItemDoModelo item = new(
-            "CERTIFICADO", 0, "DADOS", new ApresentacaoDoCampo("Certificado", TipoRenderizacao.Booleano), null, new RegrasDoCampo(null, Obrigatoriedade.Sempre, []));
+            "CERTIFICADO", 0, "DADOS", new ApresentacaoDoCampo("Certificado", TipoRenderizacao.SimOuNao), null, new RegrasDoCampo(null, Obrigatoriedade.Sempre, []));
         return ModeloFormulario.Criar(
             "HABILITACAO_MEDICINA", "Habilitação Medicina", null, FinalidadeFormulario.Habilitacao, tipo,
             new ConteudoDoModelo("Habilitação", [Secao, Revisao], [item], [], [], []),

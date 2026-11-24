@@ -2,6 +2,7 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Canonicalization;
 
 using System.Text.Json.Nodes;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.Formularios;
@@ -108,8 +109,8 @@ internal static class CoerenciaEntreBlocos
     {
         Dictionary<FinalidadeFormulario, FormularioProcesso> porFinalidade = formularios.ToDictionary(static f => f.Finalidade);
         IEnumerable<(FinalidadeFormulario Finalidade, ItemEstrutura Item)> itensEGrupos = fatos
-            .Select(static f => (f.Finalidade, new ItemEstrutura(f.FatoCodigo, f.Ordem, f.EtapaCodigo)))
-            .Concat(grupos.Select(static g => (g.Finalidade, g.ParaEstrutura())));
+            .Select(static f => (f.Finalidade!.Value, new ItemEstrutura(f.FatoCodigo, f.Ordem, f.EtapaCodigo)))
+            .Concat(grupos.Select(static g => (g.Finalidade!.Value, g.ParaEstrutura())));
         foreach (IGrouping<FinalidadeFormulario, ItemEstrutura> itens in itensEGrupos.GroupBy(static p => p.Finalidade, static p => p.Item))
         {
             if (ConferirItensDaFinalidade(porFinalidade, itens) is { } recusa)
@@ -126,7 +127,7 @@ internal static class CoerenciaEntreBlocos
         if (!porFinalidade.TryGetValue(itens.Key, out FormularioProcesso? formulario))
         {
             return new DomainError(ErrosCodecEnvelope.EnvelopeMalformado,
-                $"'dadosDosFormularios' tem itens de {EstruturaFormulario.ParaToken(itens.Key)}, que não tem formulário no envelope.");
+                $"'dadosDosFormularios' tem itens de {itens.Key.Codigo()}, que não tem formulário no envelope.");
         }
         return EstruturaFormulario.ValidarItens(formulario.Estrutura, [.. itens]) is [{ } primeiro, ..]
             ? new DomainError(ErrosCodecEnvelope.EnvelopeMalformado, $"'dadosDosFormularios': {primeiro.Error.Message}") : null;

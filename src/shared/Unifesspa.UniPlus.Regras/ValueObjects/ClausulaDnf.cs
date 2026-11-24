@@ -70,7 +70,7 @@ public sealed record ClausulaDnf
     /// Fato <see cref="EstadoFato.NaoAplicavel"/> dá átomo <see cref="EstadoAtomo.NaoAplicavel"/>,
     /// e fato ausente do dicionário ou <see cref="EstadoFato.Indeterminado"/> dá átomo
     /// <see cref="EstadoAtomo.Indeterminado"/> — em ambos os casos para todo operador, inclusive
-    /// <see cref="Operador.Diferente"/>/<see cref="Operador.NaoEm"/>. A negação inverte um
+    /// <see cref="Operador.Diferente"/>/<see cref="Operador.NenhumDe"/>. A negação inverte um
     /// <b>valor</b>; sobre a inaplicabilidade ou sobre a ausência de informação não há o que
     /// inverter, e inverter mesmo assim faria o predicado ser satisfeito justamente pelos
     /// candidatos sobre os quais nada se sabe.
@@ -100,20 +100,20 @@ public sealed record ClausulaDnf
         EstadoFato.NaoAplicavel => EstadoAtomo.NaoAplicavel,
 
         // Opcional em branco com a etapa concluída (UNI-REQ-0074): não há valor a comparar nem a
-        // negar, então a condição é falsa para todo operador, inclusive DIFERENTE e NAO_EM — quem
+        // negar, então a condição é falsa para todo operador, inclusive DIFERENTE e NENHUM_DE — quem
         // não respondeu não satisfaz "diferente de X" por omissão.
         EstadoFato.NaoInformado => EstadoAtomo.Falso,
         _ => EstadoAtomo.Indeterminado,
     };
 
-    // Diferente/NaoEm são avaliados como a negação de Igual/Em: o resultado base é
+    // Diferente/NenhumDe são avaliados como a negação de Igual/AlgumDe: o resultado base é
     // calculado sobre o operador positivo correspondente, e só invertido quando
     // efetivamente resolvido (Ternario.Verdadeiro/Falso) — Indeterminado nunca inverte.
     private static EstadoAtomo AvaliarValor(CondicaoDnf condicao, JsonElement valorCandidato)
     {
         Ternario resultadoBase = AvaliarOperadorBase(OperadorPositivo(condicao.Operador), valorCandidato, condicao.Valor);
 
-        return condicao.Operador is Operador.Diferente or Operador.NaoEm
+        return condicao.Operador is Operador.Diferente or Operador.NenhumDe
             ? NegacaoDoAtomo(resultadoBase)
             : TernarioParaAtomo(resultadoBase);
     }
@@ -121,8 +121,8 @@ public sealed record ClausulaDnf
     private static Operador OperadorPositivo(Operador operador) => operador switch
     {
         Operador.Diferente => Operador.Igual,
-        Operador.NaoEm => Operador.Em,
-        Operador.Igual or Operador.Em or Operador.MaiorIgual or Operador.MenorIgual => operador,
+        Operador.NenhumDe => Operador.AlgumDe,
+        Operador.Igual or Operador.AlgumDe or Operador.MaiorIgual or Operador.MenorIgual => operador,
         _ => throw new ArgumentOutOfRangeException(nameof(operador), operador, "Operador desconhecido."),
     };
 
@@ -147,10 +147,10 @@ public sealed record ClausulaDnf
     };
 
     /// <summary>
-    /// Avalia os operadores positivos (<see cref="Operador.Igual"/>/<see cref="Operador.Em"/>/
+    /// Avalia os operadores positivos (<see cref="Operador.Igual"/>/<see cref="Operador.AlgumDe"/>/
     /// <see cref="Operador.MaiorIgual"/>/<see cref="Operador.MenorIgual"/>) contra um valor
     /// candidato já sabido resolvido (não nulo/ausente). <see cref="Operador.Diferente"/>/
-    /// <see cref="Operador.NaoEm"/> nunca chegam aqui — <see cref="AvaliarCondicao"/> já os
+    /// <see cref="Operador.NenhumDe"/> nunca chegam aqui — <see cref="AvaliarCondicao"/> já os
     /// reduziu ao operador base correspondente.
     /// </summary>
     private static Ternario AvaliarOperadorBase(Operador operadorBase, JsonElement valorCandidato, JsonElement valorConfigurado) =>
@@ -161,14 +161,14 @@ public sealed record ClausulaDnf
     /// <summary>
     /// Fato multivalorado: o candidato resolve para um CONJUNTO (array JSON), não um escalar. A forma do valor
     /// resolvido decide a semântica, sem metadado extra: IGUAL passa a significar pertinência do valor
-    /// configurado no conjunto do candidato; EM, interseção não vazia entre o conjunto do candidato e a lista
+    /// configurado no conjunto do candidato; ALGUM_DE, interseção não vazia entre o conjunto do candidato e a lista
     /// configurada (ADR-0111).
     /// </summary>
     private static Ternario AvaliarSobreConjunto(Operador operadorBase, JsonElement conjuntoCandidato, JsonElement valorConfigurado) =>
         operadorBase switch
         {
             Operador.Igual => BoolParaTernario(conjuntoCandidato.EnumerateArray().Any(item => ValoresIguais(item, valorConfigurado))),
-            Operador.Em => BoolParaTernario(valorConfigurado.EnumerateArray()
+            Operador.AlgumDe => BoolParaTernario(valorConfigurado.EnumerateArray()
                 .Any(itemConfigurado => conjuntoCandidato.EnumerateArray().Any(item => ValoresIguais(item, itemConfigurado)))),
             _ => Ternario.Indeterminado,
         };
@@ -177,7 +177,7 @@ public sealed record ClausulaDnf
         operadorBase switch
         {
             Operador.Igual => CompararIgualdade(valorCandidato, valorConfigurado),
-            Operador.Em => valorCandidato.ValueKind == JsonValueKind.String
+            Operador.AlgumDe => valorCandidato.ValueKind == JsonValueKind.String
                 ? BoolParaTernario(valorConfigurado.EnumerateArray().Any(item => ValoresIguais(valorCandidato, item)))
                 : Ternario.Indeterminado,
             Operador.MaiorIgual => CompararNumerico(valorCandidato, valorConfigurado, static comparacao => comparacao >= 0),

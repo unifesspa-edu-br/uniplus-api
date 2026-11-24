@@ -23,7 +23,7 @@ public sealed class TipoEtapaMappingTests
 
         dto.Avaliacao.ConceitosAdmitidos.Select(static c => (c.Codigo, c.Nome, c.Natureza.Codigo, c.Natureza.Rotulo)).Should().Equal(
             ("NOTA_ENTREVISTA", "Nota da entrevista", "NUMERICO", "Numérico"),
-            ("PARECER_ANALISE", "Parecer da análise", "CATEGORICO", "Categórico"));
+            ("PARECER_ANALISE", "Parecer da análise", "POR_OPCOES", "Por opções"));
     }
 
     [Fact(DisplayName = "O DTO do tipo sem conceito admitido traz lista vazia, não nula")]

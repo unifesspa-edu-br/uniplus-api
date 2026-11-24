@@ -39,7 +39,7 @@ public static class ConjuntoBasicoDoModelo
     }
 
     internal static (ConteudoDoModeloInput? Entrada, List<FieldError> Erros) ComASecaoDosDadosBasicos(
-        ConteudoDoModeloInput? entrada, FinalidadeFormulario finalidade, ConteudoDoModeloInput? gravado)
+        ConteudoDoModeloInput? entrada, FinalidadeFormulario? finalidade, ConteudoDoModeloInput? gravado)
     {
         if (entrada is null || finalidade != FinalidadeFormulario.Inscricao)
         {

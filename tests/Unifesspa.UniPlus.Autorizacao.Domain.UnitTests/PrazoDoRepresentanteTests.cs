@@ -75,7 +75,7 @@ public sealed class PrazoDoRepresentanteTests
     [Fact(DisplayName = "O Encarregado de dados continua aceitando prazo, na concessão e na aprovação do gestor")]
     public void Encarregado_ComPrazo_Aceita()
     {
-        PerfilAvaliado deEncarregado = new(["autorizacao:concessoes:administrar"], "pessoal", true, TipoDeGovernanca.EncarregadoDeDados);
+        PerfilAvaliado deEncarregado = new(["autorizacao:concessoes:administrar"], "PESSOAL", true, TipoDeGovernanca.EncarregadoDeDados);
         PedidoDeConcessao pedido = Pedido().Protegido().AguardandoGestor();
 
         Conceder(PerfilDeGovernanca(TipoDeGovernanca.EncarregadoDeDados), Agora.AddDays(30)).Value!.ValidaAte.Should().Be(Agora.AddDays(30));

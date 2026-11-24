@@ -1,5 +1,7 @@
 namespace Unifesspa.UniPlus.Configuracao.Domain.Errors;
 
+using Unifesspa.UniPlus.Regras.Enums;
+
 /// <summary>
 /// Códigos de erro de domínio de <see cref="Entities.FatoValorDominio"/> — o valor
 /// individual de um categórico estático do catálogo de fatos (ADR-0116), prefixados

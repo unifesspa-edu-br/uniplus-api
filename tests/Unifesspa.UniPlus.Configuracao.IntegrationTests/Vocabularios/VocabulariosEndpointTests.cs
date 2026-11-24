@@ -134,10 +134,10 @@ public sealed class VocabulariosEndpointTests
     {
         using HttpClient client = _fixture.Factory.CreateClient();
 
-        CodigoComRotulo<NaturezaConceito>[] naturezas = await ApoioDosVocabularios.LerAsync<CodigoComRotulo<NaturezaConceito>>(
+        CodigoComRotulo<FormaDoConceito>[] naturezas = await ApoioDosVocabularios.LerAsync<CodigoComRotulo<FormaDoConceito>>(
             client, "naturezas-conceito", "codigo-natureza-conceito");
 
-        naturezas.Select(static n => (n.Codigo, n.Rotulo)).Should().Equal(("NUMERICO", "Numérico"), ("CATEGORICO", "Categórico"));
+        naturezas.Select(static n => (n.Codigo, n.Rotulo)).Should().Equal(("NUMERICO", "Numérico"), ("POR_OPCOES", "Por opções"));
     }
 
     [Fact(DisplayName = "GET /vocabularios/fases-canonicas devolve os quatorze códigos com nome, na ordem publicada, sem exigir autenticação")]

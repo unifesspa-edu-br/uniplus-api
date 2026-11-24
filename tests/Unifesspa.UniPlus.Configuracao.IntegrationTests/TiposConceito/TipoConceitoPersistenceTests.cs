@@ -146,7 +146,7 @@ public sealed class TipoConceitoPersistenceTests
         string gravada = await ctx.Database
             .SqlQuery<string>($"SELECT forma AS \"Value\" FROM configuracao.tipos_conceito WHERE id = {tipo.Id}")
             .SingleAsync();
-        gravada.Should().Be("CATEGORICO");
+        gravada.Should().Be("POR_OPCOES");
     }
 
     [Fact(DisplayName = "As restrições da natureza são montadas dos códigos declarados, com o mesmo texto de sempre")]
@@ -158,11 +158,11 @@ public sealed class TipoConceitoPersistenceTests
             .GetCheckConstraints()
             .ToDictionary(static c => c.Name!, static c => c.Sql);
 
-        restricoes["ck_tipos_conceito_forma"].Should().Be("forma IN ('NUMERICO', 'CATEGORICO')");
+        restricoes["ck_tipos_conceito_forma"].Should().Be("forma IN ('NUMERICO', 'POR_OPCOES')");
         restricoes["ck_tipos_conceito_parametros_da_forma"].Should().Be(
             "(forma = 'NUMERICO' AND escala_minima IS NOT NULL AND escala_maxima IS NOT NULL AND casas_decimais IS NOT NULL "
             + "AND escala_minima < escala_maxima AND casas_decimais BETWEEN 0 AND 4) "
-            + "OR (forma = 'CATEGORICO' AND escala_minima IS NULL AND escala_maxima IS NULL AND casas_decimais IS NULL)");
+            + "OR (forma = 'POR_OPCOES' AND escala_minima IS NULL AND escala_maxima IS NULL AND casas_decimais IS NULL)");
     }
 
     [Fact(DisplayName = "A leitura de uma natureza que o enum não declara falha em vez de virar natureza")]
@@ -189,7 +189,7 @@ public sealed class TipoConceitoPersistenceTests
         new("Nota da entrevista", null, "NUMERICO", new EscalaInformada(0m, 10m, 2), null);
 
     private static DefinicaoInformada Categorico(params string[] codigos) =>
-        new("Parecer da análise", null, "CATEGORICO", null,
+        new("Parecer da análise", null, "POR_OPCOES", null,
             [.. codigos.Select(codigo => new ValorInformado(codigo, $"Rótulo {codigo}", codigo == "APROVADO"))]);
 
     private static TipoConceito Novo(DefinicaoInformada definicao, string? codigo = null) =>

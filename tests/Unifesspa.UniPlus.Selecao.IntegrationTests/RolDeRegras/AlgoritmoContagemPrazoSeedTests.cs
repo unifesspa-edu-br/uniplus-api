@@ -34,13 +34,13 @@ public sealed class AlgoritmoContagemPrazoSeedTests : IClassFixture<RegraCatalog
     /// editar o texto de uma entrada sem regenerar a migration quebra este teste.
     /// </summary>
     private const string HashExcluiDiaInicial =
-        "ef76c08eb8a4ec56d291843df97b09935820a4f459821a05623fe39301597ceb";
+        "ae056fe1463054f24b56768b6fbe43741f7834e2befbf9cea03f523f689f2057";
 
     private const string HashHorasUteisDesdeOEventoInicial =
-        "5122aafbcdca1d3388aecddec0fc21f9ea3d1773dbdcb98a0137a4bf8cc33ead";
+        "c2d80dcb4e20f527568a740ce272c0cdab8b620ab21a8170a57160af5a001203";
 
     private const string HashAvancaDataUtil =
-        "e777ac14d840e8f3168d4d7acb922495636f1aeaef729b8b93ecdd9347e5f114";
+        "2d4aa7f3c0a0712b1f56271b88de6590d2f29e5b96b78fecf66ddf2db3fac71c";
 
     private static RegraCatalogoSeedItem Item(string codigo) =>
         RegraCatalogoSeed.Itens.Single(i => i.Codigo == codigo);

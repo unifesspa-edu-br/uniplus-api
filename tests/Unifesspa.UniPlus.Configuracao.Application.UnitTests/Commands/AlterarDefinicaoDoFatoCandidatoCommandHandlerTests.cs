@@ -38,9 +38,12 @@ public sealed class AlterarDefinicaoDoFatoCandidatoCommandHandlerTests
     private readonly IModeloFormularioRepository _modelos = Substitute.For<IModeloFormularioRepository>();
     private readonly IModalidadeRepository _modalidades = Substitute.For<IModalidadeRepository>();
     private readonly IUnitOfWork _unitOfWork = Substitute.For<IUnitOfWork>();
+    private readonly AlteracaoConferidaDoFato _alteracoes;
 
     public AlterarDefinicaoDoFatoCandidatoCommandHandlerTests()
     {
+        _alteracoes = new AlteracaoConferidaDoFato(_fatos, _precedencias, _modelos, _modalidades, _unitOfWork);
+
         // O repositório devolve, a cada leitura, instâncias novas com a mesma identidade: a lista
         // sem rastreamento e o fato rastreado para mutação são objetos distintos, como no banco.
         _fatos.ListarTodosAsync(Arg.Any<CancellationToken>()).Returns(_ => Catalogo());
@@ -56,7 +59,7 @@ public sealed class AlterarDefinicaoDoFatoCandidatoCommandHandlerTests
     [Fact(DisplayName = "Alteração que não deixa de valer nenhuma citação é gravada")]
     public async Task Handle_SemCitacaoQuebrada_Grava()
     {
-        Result resultado = await AlterarAsync("CERTIFICADO", Definicao("BOOLEANO", ponto: "HABILITACAO"));
+        Result resultado = await AlterarAsync("CERTIFICADO", Definicao("SIM_OU_NAO", ponto: "HABILITACAO"));
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
         await _unitOfWork.Received(1).SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
@@ -87,7 +90,7 @@ public sealed class AlterarDefinicaoDoFatoCandidatoCommandHandlerTests
     public async Task Handle_QuebraAgregado_Recusa()
     {
         Result resultado = await AlterarAsync(
-            "CATEGORIA_RENDA", Definicao("CATEGORICO", cardinalidade: "ESCALAR", fonte: "PROCESSO", escopo: "MEMBRO_GRUPO"));
+            "CATEGORIA_RENDA", Definicao("OPCAO", cardinalidade: "VALOR_UNICO", fonte: "OPCOES_DO_PROCESSO", escopo: "MEMBRO_GRUPO"));
 
         resultado.Errors.Should().ContainSingle().Which.Should().Match<FieldError>(static e =>
             e.Field == "citacoes.agregados.CATEGORIAS_RENDA" && e.Error.Code == FatoCandidatoErrorCodes.AlteracaoQuebraAgregadoDoFato);
@@ -118,7 +121,7 @@ public sealed class AlterarDefinicaoDoFatoCandidatoCommandHandlerTests
     [Fact(DisplayName = "Fato inexistente não carrega o catálogo, e definição recusada pelo próprio fato não carrega modelos nem modalidades")]
     public async Task Handle_RecusaDoProprioFato_NaoCarregaModelosNemModalidades()
     {
-        Result inexistente = await AlterarAsync(Guid.NewGuid(), Definicao("BOOLEANO"));
+        Result inexistente = await AlterarAsync(Guid.NewGuid(), Definicao("SIM_OU_NAO"));
         await _fatos.DidNotReceive().ListarTodosAsync(Arg.Any<CancellationToken>());
         Result invalida = await AlterarAsync(Ids["CERTIFICADO"], Definicao("FOO"));
 
@@ -137,7 +140,7 @@ public sealed class AlterarDefinicaoDoFatoCandidatoCommandHandlerTests
         _fatos.ObterPorIdAsync(Ids["CATEGORIA_RENDA"], Arg.Any<CancellationToken>()).Returns(_ => Catalogo("HABILITACAO").Single(f => f.Codigo == "CATEGORIA_RENDA"));
 
         Result resultado = await AlterarAsync(
-            "CATEGORIA_RENDA", Definicao("CATEGORICO", fonte: "GLOBAL", ponto: "HABILITACAO", escopo: "MEMBRO_GRUPO") with { FinalidadeTratamento = "Outra finalidade." });
+            "CATEGORIA_RENDA", Definicao("OPCAO", fonte: "CATALOGO", ponto: "HABILITACAO", escopo: "MEMBRO_GRUPO") with { FinalidadeTratamento = "Outra finalidade." });
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
     }
@@ -161,7 +164,7 @@ public sealed class AlterarDefinicaoDoFatoCandidatoCommandHandlerTests
     public async Task Handle_TokenInvalidoDeProtecao_RecusaForaDoVocabulario()
     {
         Result resultado = await AlterarAsync(
-            "CERTIFICADO", Definicao("BOOLEANO") with { ClassificacaoProtecao = "SENSIVELL", HipoteseLegal = "NAO_EXISTE" });
+            "CERTIFICADO", Definicao("SIM_OU_NAO") with { ClassificacaoProtecao = "SENSIVELL", HipoteseLegal = "NAO_EXISTE" });
 
         resultado.Errors.Should().HaveCount(2).And.OnlyContain(static e => e.Error.Message.Contains("fora do vocabulário", StringComparison.Ordinal));
         resultado.Errors.Select(static e => e.Field).Should().BeEquivalentTo("classificacaoProtecao", "hipoteseLegal");
@@ -183,11 +186,11 @@ public sealed class AlterarDefinicaoDoFatoCandidatoCommandHandlerTests
     {
         DefinicaoDoFatoInput definicao = campo switch
         {
-            "dominio" => Definicao("BOOLEANO") with { Dominio = token },
-            "cardinalidade" => Definicao("BOOLEANO") with { Cardinalidade = token },
-            "escopo" => Definicao("BOOLEANO") with { Escopo = token },
-            "classificacaoProtecao" => Definicao("BOOLEANO") with { ClassificacaoProtecao = token },
-            _ => Definicao("BOOLEANO") with { HipoteseLegal = token },
+            "dominio" => Definicao("SIM_OU_NAO") with { Dominio = token },
+            "cardinalidade" => Definicao("SIM_OU_NAO") with { Cardinalidade = token },
+            "escopo" => Definicao("SIM_OU_NAO") with { Escopo = token },
+            "classificacaoProtecao" => Definicao("SIM_OU_NAO") with { ClassificacaoProtecao = token },
+            _ => Definicao("SIM_OU_NAO") with { HipoteseLegal = token },
         };
 
         Result resultado = await AlterarAsync("CERTIFICADO", definicao);
@@ -198,7 +201,7 @@ public sealed class AlterarDefinicaoDoFatoCandidatoCommandHandlerTests
     [Fact(DisplayName = "Alteração: token com espaços nas pontas vale como o token aparado")]
     public async Task Handle_TokenComEspacos_Aceito()
     {
-        Result resultado = await AlterarAsync("CERTIFICADO", Definicao(" BOOLEANO ", cardinalidade: " ESCALAR ", ponto: "HABILITACAO", escopo: " CANDIDATO "));
+        Result resultado = await AlterarAsync("CERTIFICADO", Definicao(" SIM_OU_NAO ", cardinalidade: " VALOR_UNICO ", ponto: "HABILITACAO", escopo: " CANDIDATO "));
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
     }
@@ -216,7 +219,7 @@ public sealed class AlterarDefinicaoDoFatoCandidatoCommandHandlerTests
     [Fact(DisplayName = "Modelo que já recusa a precondição por causa de outro fato não esconde a recusa que a alteração causa")]
     public async Task Handle_ModeloJaRecusadoPorOutroFato_RecusaACausaDaAlteracao()
     {
-        _fatos.ListarTodosAsync(Arg.Any<CancellationToken>()).Returns(_ => [.. Catalogo(), Declarado("SEM_VALORES", DominioFato.Categorico, FonteValoresFato.Global)]);
+        _fatos.ListarTodosAsync(Arg.Any<CancellationToken>()).Returns(_ => [.. Catalogo(), Declarado("SEM_VALORES", TipoDoDado.Opcao, FonteValoresFato.Catalogo)]);
         _modelos.ListarTodosAsync(Arg.Any<CancellationToken>()).Returns([ModeloComPrecondicaoSobre("OPTOU", "SEM_VALORES")]);
         _modalidades.ListarVivasAsync(Arg.Any<CancellationToken>()).Returns([]);
 
@@ -232,19 +235,18 @@ public sealed class AlterarDefinicaoDoFatoCandidatoCommandHandlerTests
 
     private Task<Result> AlterarAsync(Guid id, DefinicaoDoFatoInput definicao) =>
         AlterarDefinicaoDoFatoCandidatoCommandHandler.Handle(
-            new AlterarDefinicaoDoFatoCandidatoCommand(id, definicao),
-            _fatos, _precedencias, _modelos, _modalidades, _unitOfWork, CancellationToken.None);
+            new AlterarDefinicaoDoFatoCandidatoCommand(id, definicao), _alteracoes, CancellationToken.None);
 
     private static DefinicaoDoFatoInput Definicao(
-        string dominio, string? cardinalidade = "ESCALAR", string? fonte = null, string ponto = "INSCRICAO", string escopo = "CANDIDATO") =>
+        string dominio, string? cardinalidade = "VALOR_UNICO", string? fonte = null, string ponto = "INSCRICAO", string escopo = "CANDIDATO") =>
         new(ponto, "PESSOAL", Finalidade, "CUMPRIMENTO_OBRIGACAO_LEGAL", dominio, cardinalidade, fonte, null, escopo);
 
-    private static DefinicaoDoFatoInput DefinicaoCategorica() => Definicao("CATEGORICO", fonte: "GLOBAL");
+    private static DefinicaoDoFatoInput DefinicaoCategorica() => Definicao("OPCAO", fonte: "CATALOGO");
 
     private static List<FatoCandidato> Catalogo(string pontoDoMembro = "INSCRICAO")
     {
         FatoCandidato renda = Declarado("RENDA");
-        FatoCandidato membro = Declarado("CATEGORIA_RENDA", DominioFato.Categorico, FonteValoresFato.Global, EscopoFato.MembroGrupo, pontoDoMembro);
+        FatoCandidato membro = Declarado("CATEGORIA_RENDA", TipoDoDado.Opcao, FonteValoresFato.Catalogo, EscopoFato.MembroGrupo, pontoDoMembro);
         List<FatoCandidato> fatos =
         [
             Declarado("CERTIFICADO"), renda, Declarado("OPTOU"), Declarado(OpcaoPelasCotasDaLei.Fato), membro,
@@ -258,16 +260,18 @@ public sealed class AlterarDefinicaoDoFatoCandidatoCommandHandlerTests
     private static FatoCandidato PerfilDerivadoDe(FatoCandidato renda)
     {
         FatoCandidato perfil = CriacaoDoFato.CriarDerivadoDoAdministrador(
-            "PERFIL", "PERFIL", "Descrição do fato.", DominioFato.Booleano, "INSCRICAO", EscopoFato.Candidato,
-            ClassificacaoDeProtecao.Pessoal, Finalidade, Hipotese).Value!;
+            new DescritivoDoFato("PERFIL", "PERFIL", "Descrição do fato."),
+            new DefinicaoDoFato(TipoDoDado.SimOuNao, null, null, null, "INSCRICAO", EscopoFato.Candidato, ClassificacaoDeProtecao.Pessoal, Finalidade, Hipotese)).Value!;
         perfil.DefinirRegrasPadrao([RegraBooleana("RENDA")], new CatalogoDeFatos([renda, perfil], [])).IsSuccess.Should().BeTrue();
         return perfil;
     }
 
     private static FatoCandidato AgregadoDeCategoriasDe(FatoCandidato membro) =>
         CriacaoDoFato.CriarAgregadoDoAdministrador(
-            "CATEGORIAS_RENDA", "CATEGORIAS_RENDA", "Descrição do fato.", "CATEGORIA_RENDA", new CatalogoDeFatos([membro], []), "INSCRICAO",
-            ClassificacaoDeProtecao.Pessoal, Finalidade, Hipotese).Value!;
+            new DescritivoDoFato("CATEGORIAS_RENDA", "CATEGORIAS_RENDA", "Descrição do fato."),
+            "CATEGORIA_RENDA",
+            new CatalogoDeFatos([membro], []),
+            new DefinicaoDoFato(null, null, null, null, "INSCRICAO", null, ClassificacaoDeProtecao.Pessoal, Finalidade, Hipotese)).Value!;
 
     private static void FixarIdentidade(FatoCandidato fato)
     {
@@ -277,13 +281,13 @@ public sealed class AlterarDefinicaoDoFatoCandidatoCommandHandlerTests
 
     private static FatoCandidato Declarado(
         string codigo,
-        DominioFato dominio = DominioFato.Booleano,
+        TipoDoDado dominio = TipoDoDado.SimOuNao,
         FonteValoresFato? fonte = null,
         EscopoFato escopo = EscopoFato.Candidato,
         string ponto = "INSCRICAO") =>
         CriacaoDoFato.CriarDoAdministrador(
-            codigo, codigo, "Descrição do fato.", dominio, CardinalidadeFato.Escalar, fonte, null, ponto, escopo,
-            ClassificacaoDeProtecao.Pessoal, Finalidade, Hipotese).Value!;
+            new DescritivoDoFato(codigo, codigo, "Descrição do fato."),
+            new DefinicaoDoFato(dominio, QuantidadeDeValores.ValorUnico, fonte, null, ponto, escopo, ClassificacaoDeProtecao.Pessoal, Finalidade, Hipotese)).Value!;
 
     private static RegraDerivacao RegraBooleana(string fato) =>
         RegraDerivacao.CriarBooleana(Quando(fato));
@@ -323,7 +327,7 @@ public sealed class AlterarDefinicaoDoFatoCandidatoCommandHandlerTests
 
     private static EtapaDoModelo[] EtapasDoModelo() =>
     [
-        new("DADOS", 0, TipoEtapaFormulario.Secao, BlocoSistema.Nenhum, "Dados", null, null, null),
+        new("DADOS", 0, TipoEtapaFormulario.Secao, null, "Dados", null, null, null),
         new("REVISAO", 1, TipoEtapaFormulario.Bloco, BlocoSistema.RevisaoEAceite, "Revisão", null, null, null),
     ];
 
@@ -332,7 +336,7 @@ public sealed class AlterarDefinicaoDoFatoCandidatoCommandHandlerTests
             fato,
             ordem,
             "DADOS",
-            new ApresentacaoDoCampo(rotulo ?? fato, TipoRenderizacao.Booleano),
+            new ApresentacaoDoCampo(rotulo ?? fato, TipoRenderizacao.SimOuNao),
             null,
             new RegrasDoCampo(precondicao, Obrigatoriedade.Sempre, []));
 

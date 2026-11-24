@@ -36,7 +36,7 @@ public sealed class FatoCandidatoRestricoesDoBancoTests
     }
 
     [Theory(DisplayName = "CHECK recusa categórico sem fonte e texto sem formato via SQL cru")]
-    [InlineData("CATEGORICO")]
+    [InlineData("OPCAO")]
     [InlineData("TEXTO")]
     public async Task Check_RecusaCategoricoSemFonteETextoSemFormato(string tipo)
     {
@@ -46,7 +46,7 @@ public sealed class FatoCandidatoRestricoesDoBancoTests
             $"""
             INSERT INTO configuracao.dados_do_candidato
                 (id, codigo, nome, tipo, origem, quantidade_de_valores, fase_de_disponibilidade, fonte_do_valor, escopo, classificacao_protecao, finalidade_tratamento, hipotese_legal, semeado_pelo_sistema, ativo, created_at, descricao, protecao_situacao, protecao_ciclo, protecao_manifestacao_desfavoravel, protecao_manifestacoes_no_ciclo)
-            VALUES ({Guid.CreateVersion7()}, {CodigoUnico()}, {"X"}, {tipo}, {"DECLARADO"}, {"ESCALAR"},
+            VALUES ({Guid.CreateVersion7()}, {CodigoUnico()}, {"X"}, {tipo}, {"DECLARADO"}, {"VALOR_UNICO"},
                 {"INSCRICAO"}, {"CAMPO_FORMULARIO:X"}, {"CANDIDATO"}, {"PESSOAL"}, {"Teste"}, {"CUMPRIMENTO_OBRIGACAO_LEGAL"}, false, true, {DateTimeOffset.UtcNow}, '', 'PENDENTE', 1, false, 0)
             """);
 
@@ -65,7 +65,7 @@ public sealed class FatoCandidatoRestricoesDoBancoTests
             $"""
             INSERT INTO configuracao.dados_do_candidato
                 (id, codigo, nome, tipo, origem, quantidade_de_valores, formato, fase_de_disponibilidade, fonte_do_valor, escopo, classificacao_protecao, finalidade_tratamento, hipotese_legal, semeado_pelo_sistema, ativo, created_at, descricao, protecao_situacao, protecao_ciclo, protecao_manifestacao_desfavoravel, protecao_manifestacoes_no_ciclo)
-            VALUES ({Guid.CreateVersion7()}, {CodigoUnico()}, {"X"}, {"TEXTO"}, {"DECLARADO"}, {"ESCALAR"}, {"LIVRE"},
+            VALUES ({Guid.CreateVersion7()}, {CodigoUnico()}, {"X"}, {"TEXTO"}, {"DECLARADO"}, {"VALOR_UNICO"}, {"LIVRE"},
                 {"INSCRICAO"}, {"CAMPO_FORMULARIO:X"}, {"CANDIDATO"}, {"PUBLICO"}, {"Teste"}, {"CUMPRIMENTO_OBRIGACAO_LEGAL"}, {sistema}, true, {DateTimeOffset.UtcNow}, '', 'PENDENTE', 1, false, 0)
             """);
 
@@ -82,7 +82,7 @@ public sealed class FatoCandidatoRestricoesDoBancoTests
             $"""
             INSERT INTO configuracao.dados_do_candidato
                 (id, codigo, nome, tipo, origem, quantidade_de_valores, fase_de_disponibilidade, fonte_do_valor, escopo, classificacao_protecao, finalidade_tratamento, hipotese_legal, semeado_pelo_sistema, ativo, created_at, descricao, protecao_situacao, protecao_ciclo, protecao_manifestacao_desfavoravel, protecao_manifestacoes_no_ciclo)
-            VALUES ({Guid.CreateVersion7()}, {CodigoUnico()}, {"X"}, {"BOOLEANO"}, {"DECLARADO"}, {"ESCALAR"},
+            VALUES ({Guid.CreateVersion7()}, {CodigoUnico()}, {"X"}, {"SIM_OU_NAO"}, {"DECLARADO"}, {"VALOR_UNICO"},
                 {"INSCRICAO"}, {"CAMPO_FORMULARIO:X"}, {"CANDIDATO"}, {"NAO_PESSOAL"}, {"Teste"}, {"CUMPRIMENTO_OBRIGACAO_LEGAL"}, false, true, {DateTimeOffset.UtcNow}, '', 'PENDENTE', 1, false, 0)
             """);
 
@@ -116,7 +116,7 @@ public sealed class FatoCandidatoRestricoesDoBancoTests
             $"""
             INSERT INTO configuracao.dados_do_candidato
                 (id, codigo, nome, tipo, origem, quantidade_de_valores, fase_de_disponibilidade, fonte_do_valor, escopo, classificacao_protecao, finalidade_tratamento, hipotese_legal, semeado_pelo_sistema, ativo, created_at, descricao, protecao_situacao, protecao_ciclo, protecao_manifestacao_desfavoravel, protecao_manifestacoes_no_ciclo)
-            VALUES ({Guid.CreateVersion7()}, {"COR_RACA"}, {"Duplicata"}, {"BOOLEANO"}, {"DECLARADO"}, {"ESCALAR"},
+            VALUES ({Guid.CreateVersion7()}, {"COR_RACA"}, {"Duplicata"}, {"SIM_OU_NAO"}, {"DECLARADO"}, {"VALOR_UNICO"},
                 {"INSCRICAO"}, {"CAMPO_FORMULARIO:DUPLICATA"}, {"CANDIDATO"}, {"PESSOAL"}, {"Teste"}, {"CUMPRIMENTO_OBRIGACAO_LEGAL"}, false, true, {DateTimeOffset.UtcNow}, '', 'PENDENTE', 1, false, 0)
             """);
 
@@ -134,7 +134,7 @@ public sealed class FatoCandidatoRestricoesDoBancoTests
             $"""
             INSERT INTO configuracao.dados_do_candidato
                 (id, codigo, nome, tipo, origem, quantidade_de_valores, fase_de_disponibilidade, fonte_do_valor, escopo, classificacao_protecao, finalidade_tratamento, hipotese_legal, semeado_pelo_sistema, ativo, created_at, descricao, protecao_situacao, protecao_ciclo, protecao_manifestacao_desfavoravel, protecao_manifestacoes_no_ciclo)
-            VALUES ({Guid.CreateVersion7()}, {CodigoUnico()}, {"X"}, {"OUTRO"}, {"DECLARADO"}, {"ESCALAR"},
+            VALUES ({Guid.CreateVersion7()}, {CodigoUnico()}, {"X"}, {"OUTRO"}, {"DECLARADO"}, {"VALOR_UNICO"},
                 {"INSCRICAO"}, {"CAMPO_FORMULARIO:X"}, {"CANDIDATO"}, {"PESSOAL"}, {"Teste"}, {"CUMPRIMENTO_OBRIGACAO_LEGAL"}, false, true, {DateTimeOffset.UtcNow}, '', 'PENDENTE', 1, false, 0)
             """);
 
@@ -150,11 +150,31 @@ public sealed class FatoCandidatoRestricoesDoBancoTests
             $"""
             INSERT INTO configuracao.dados_do_candidato
                 (id, codigo, nome, tipo, origem, quantidade_de_valores, fase_de_disponibilidade, fonte_do_valor, escopo, classificacao_protecao, finalidade_tratamento, hipotese_legal, semeado_pelo_sistema, ativo, created_at, descricao, protecao_situacao, protecao_ciclo, protecao_manifestacao_desfavoravel, protecao_manifestacoes_no_ciclo)
-            VALUES ({Guid.CreateVersion7()}, {CodigoUnico()}, {"X"}, {"BOOLEANO"}, {"BRUTO_INFORMADO"}, {"ESCALAR"},
+            VALUES ({Guid.CreateVersion7()}, {CodigoUnico()}, {"X"}, {"SIM_OU_NAO"}, {"BRUTO_INFORMADO"}, {"VALOR_UNICO"},
                 {"INSCRICAO"}, {"CAMPO_FORMULARIO:X"}, {"CANDIDATO"}, {"PESSOAL"}, {"Teste"}, {"CUMPRIMENTO_OBRIGACAO_LEGAL"}, false, true, {DateTimeOffset.UtcNow}, '', 'PENDENTE', 1, false, 0)
             """);
 
         await act.Should().ThrowAsync<Npgsql.PostgresException>(
             "o CHECK ck_dados_do_candidato_origem bloqueia o token legado 'BRUTO_INFORMADO' (ADR-0116 renomeou para DECLARADO)");
+    }
+
+    [Theory(DisplayName = "CHECK do vínculo recusa mecanismo fora do vocabulário via SQL cru")]
+    [InlineData("AGREGACAO_GRUPO:X")]
+    [InlineData("SISTEMA:X")]
+    [InlineData("campo_formulario:X")]
+    public async Task Check_RecusaVinculoComMecanismoForaDoVocabulario(string vinculo)
+    {
+        await using UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null);
+
+        Func<Task> act = async () => await ctx.Database.ExecuteSqlAsync(
+            $"""
+            INSERT INTO configuracao.dados_do_candidato
+                (id, codigo, nome, tipo, origem, quantidade_de_valores, fase_de_disponibilidade, fonte_do_valor, escopo, classificacao_protecao, finalidade_tratamento, hipotese_legal, semeado_pelo_sistema, ativo, created_at, descricao, protecao_situacao, protecao_ciclo, protecao_manifestacao_desfavoravel, protecao_manifestacoes_no_ciclo)
+            VALUES ({Guid.CreateVersion7()}, {CodigoUnico()}, {"X"}, {"SIM_OU_NAO"}, {"DECLARADO"}, {"VALOR_UNICO"},
+                {"INSCRICAO"}, {vinculo}, {"CANDIDATO"}, {"PESSOAL"}, {"Teste"}, {"CUMPRIMENTO_OBRIGACAO_LEGAL"}, false, true, {DateTimeOffset.UtcNow}, '', 'PENDENTE', 1, false, 0)
+            """);
+
+        await act.Should().ThrowAsync<Npgsql.PostgresException>(
+            "o CHECK ck_dados_do_candidato_mecanismo_do_vinculo exige que o prefixo do vínculo seja o código de um mecanismo");
     }
 }

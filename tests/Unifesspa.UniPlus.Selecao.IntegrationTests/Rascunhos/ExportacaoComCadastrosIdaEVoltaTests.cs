@@ -10,6 +10,7 @@ using Microsoft.Extensions.DependencyInjection;
 
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Domain.Enums;
+using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Hosting;
@@ -62,8 +63,8 @@ public sealed class ExportacaoComCadastrosIdaEVoltaTests(CascadingFixture fixtur
         string codigo = $"TESTE_{Guid.CreateVersion7():N}".ToUpperInvariant();
         await using AsyncServiceScope escopo = fixture.Factory.Services.CreateAsyncScope();
         UniPlusDbContext banco = escopo.ServiceProvider.GetRequiredService<UniPlusDbContext>();
-        TipoDocumento tipo = TipoDocumento.Criar(codigo, NomeDocumento, null, "IDENTIFICACAO", null, null, null,
-            ClassificacaoDeProtecao.Pessoal, Finalidade, HipoteseLegalTratamento.CumprimentoObrigacaoLegal).Value!;
+        TipoDocumento tipo = TipoDocumento.Criar(new DeclaracaoDoTipoDocumento(codigo, NomeDocumento, null, "IDENTIFICACAO", null, null, null,
+            ClassificacaoDeProtecao.Pessoal, Finalidade, HipoteseLegalTratamento.CumprimentoObrigacaoLegal)).Value!;
         MotivoDeDecisao motivo = MotivoDeDecisao.Criar(new CamposDoMotivo("ISENCAO_DA_TAXA", codigo, Descricao,
             FundamentoIsencao.CadastroUnico.Codigo(), SentidoDoMotivo.Desfavoravel)).Value!;
         banco.Add(tipo);

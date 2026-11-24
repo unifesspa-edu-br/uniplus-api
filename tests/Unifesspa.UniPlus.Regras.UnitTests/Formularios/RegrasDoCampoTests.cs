@@ -75,14 +75,14 @@ public sealed class RegrasDoCampoTests
 
     [Fact(DisplayName = "Regras que não citam o próprio campo e cabem no tipo não são recusadas")]
     public void ConferirNoCampo_RegrasCoerentes_SemRecusa() =>
-        new RegrasDoCampo(Predicado(("ANTERIOR", true)), Obrigatoriedade.Sempre, []).ConferirNoCampo("CAMPO", TipoRenderizacao.Booleano).Should().BeEmpty();
+        new RegrasDoCampo(Predicado(("ANTERIOR", true)), Obrigatoriedade.Sempre, []).ConferirNoCampo("CAMPO", TipoRenderizacao.SimOuNao).Should().BeEmpty();
 
     [Fact(DisplayName = "A exibição e a obrigatoriedade que citam o próprio campo são recusadas, nessa ordem")]
     public void ConferirNoCampo_ExibicaoEObrigatoriedadeAutorreferentes_RecusaAsDuas()
     {
         RegrasDoCampo regras = new(Predicado(("CAMPO", true)), Obrigatoriedade.Quando(Predicado(("CAMPO", true))), []);
 
-        regras.ConferirNoCampo("CAMPO", TipoRenderizacao.Booleano).Select(static e => (e.Field, e.Error.Code)).Should().Equal(
+        regras.ConferirNoCampo("CAMPO", TipoRenderizacao.SimOuNao).Select(static e => (e.Field, e.Error.Code)).Should().Equal(
             ("exibicao", ItemFormularioErrorCodes.RegraAutorreferente),
             ("obrigatoriedade.predicado", ItemFormularioErrorCodes.RegraAutorreferente));
     }
@@ -92,7 +92,7 @@ public sealed class RegrasDoCampoTests
     {
         RegrasDoCampo regras = new(null, Obrigatoriedade.Nunca, [new TamanhoTexto(1, 10)]);
 
-        FieldError erro = regras.ConferirNoCampo("CAMPO", TipoRenderizacao.Booleano).Should().ContainSingle().Subject;
+        FieldError erro = regras.ConferirNoCampo("CAMPO", TipoRenderizacao.SimOuNao).Should().ContainSingle().Subject;
 
         erro.Field.Should().Be("restricoes[0]");
         erro.Error.Code.Should().Be(ItemFormularioErrorCodes.RestricaoIncoerente);

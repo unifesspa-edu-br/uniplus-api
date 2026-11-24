@@ -12,9 +12,11 @@ using Microsoft.Extensions.DependencyInjection;
 
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Domain.Enums;
+using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Authentication;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
+using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.IntegrationTests.TestSupport;
 using Unifesspa.UniPlus.Testes.Compartilhado;
@@ -94,8 +96,8 @@ public sealed class ValoresSelecionaveisDeFatosSemOfertaNaPublicacaoEndpointTest
     private static FatoCandidato FatoCategorico(string codigo)
     {
         FatoCandidato fato = CriacaoDoFato.CriarDoAdministrador(
-            codigo, "Fato de seleção", "Descrição do fato.", DominioFato.Categorico, CardinalidadeFato.Escalar, FonteValoresFato.Global, formato: null,
-            "INSCRICAO", EscopoFato.Candidato, ClassificacaoDeProtecao.Pessoal, "Finalidade de teste", HipoteseLegalTratamento.CumprimentoObrigacaoLegal).Value!;
+            new DescritivoDoFato(codigo, "Fato de seleção", "Descrição do fato."),
+            new DefinicaoDoFato(TipoDoDado.Opcao, QuantidadeDeValores.ValorUnico, FonteValoresFato.Catalogo, null, "INSCRICAO", EscopoFato.Candidato, ClassificacaoDeProtecao.Pessoal, "Finalidade de teste", HipoteseLegalTratamento.CumprimentoObrigacaoLegal)).Value!;
         fato.AdicionarValorDominio($"V_{codigo}", "Opção única.", 0, ativo: true).IsSuccess.Should().BeTrue();
 
         return fato;
@@ -127,7 +129,7 @@ public sealed class ValoresSelecionaveisDeFatosSemOfertaNaPublicacaoEndpointTest
     };
 
     private static object Item(string fatoCodigo, int ordem) =>
-        FormularioDeInscricaoHttp.Item(fatoCodigo, ordem, "Item", "SELECAO_UNICA", "NUNCA", etapaCodigo: FormularioDeTeste.Secao);
+        FormularioDeInscricaoHttp.Item(fatoCodigo, ordem, "Item", "ESCOLHA_UNICA", "NUNCA", etapaCodigo: FormularioDeTeste.Secao);
 
     private async Task DesativarOsValoresAsync(string primeiro, string segundo)
     {

@@ -15,6 +15,7 @@ using Microsoft.Extensions.DependencyInjection;
 
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Domain.Enums;
+using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Authentication;
@@ -213,9 +214,9 @@ public sealed class ProtecaoDaExigenciaEndpointTests
 
     private async Task<Guid> SemearTipoAsync(ClassificacaoDeProtecao classificacao, string prefixo)
     {
-        TipoDocumento tipo = TipoDocumento.Criar(
+        TipoDocumento tipo = TipoDocumento.Criar(new DeclaracaoDoTipoDocumento(
             $"{prefixo}_{Guid.NewGuid().ToString("N")[..8].ToUpperInvariant()}", prefixo, null, "SAUDE", null, null, null,
-            classificacao, "Comprovação documental do candidato.", HipoteseLegalTratamento.CumprimentoObrigacaoLegal).Value!;
+            classificacao, "Comprovação documental do candidato.", HipoteseLegalTratamento.CumprimentoObrigacaoLegal)).Value!;
         await using AsyncServiceScope escopo = _fixture.Factory.Services.CreateAsyncScope();
         UniPlusDbContext db = escopo.ServiceProvider.GetRequiredService<UniPlusDbContext>();
         db.Add(tipo);
@@ -229,9 +230,9 @@ public sealed class ProtecaoDaExigenciaEndpointTests
         await using AsyncServiceScope escopo = _fixture.Factory.Services.CreateAsyncScope();
         UniPlusDbContext db = escopo.ServiceProvider.GetRequiredService<UniPlusDbContext>();
         TipoDocumento tipo = await db.TiposDocumento.SingleAsync(t => t.Id == tipoId);
-        tipo.Atualizar(
+        tipo.Atualizar(new DeclaracaoDoTipoDocumento(
             tipo.Codigo.Valor, tipo.Nome, tipo.Descricao, tipo.Categoria, tipo.FormatosAceitos, tipo.TamanhoMaximoMb, tipo.TipoEquivalente,
-            classificacao, tipo.FinalidadeTratamento, tipo.HipoteseLegal).IsSuccess.Should().BeTrue();
+            classificacao, tipo.FinalidadeTratamento, tipo.HipoteseLegal)).IsSuccess.Should().BeTrue();
         await db.SaveChangesAsync();
         await db.AprovarCatalogoAsync();
     }
@@ -283,7 +284,7 @@ public sealed class ProtecaoDaExigenciaEndpointTests
                 new { itens = new[] { ItemSensivel() } });
 
         private static object ItemSensivel() =>
-            FormularioDeInscricaoHttp.Item(FatoSensivel, PrimeiraOrdem, FatoSensivel, "BOOLEANO", "NUNCA", etapaCodigo: FormularioDeInscricaoHttp.Secao);
+            FormularioDeInscricaoHttp.Item(FatoSensivel, PrimeiraOrdem, FatoSensivel, "SIM_OU_NAO", "NUNCA", etapaCodigo: FormularioDeInscricaoHttp.Secao);
 
         public Task<HttpResponseMessage> PutExigenciaAsync(Guid tipoDocumentoId, string[]? comprova = null) =>
             EnviarAsync(

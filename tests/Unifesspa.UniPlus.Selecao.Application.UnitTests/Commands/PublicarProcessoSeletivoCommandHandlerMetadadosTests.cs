@@ -8,6 +8,7 @@ using NSubstitute;
 
 using Unifesspa.UniPlus.Application.Abstractions.Authentication;
 using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
+using Unifesspa.UniPlus.Application.Abstractions.Respostas;
 using Unifesspa.UniPlus.Configuracao.Contracts;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Publicacoes.Contracts;
@@ -60,7 +61,7 @@ public sealed partial class PublicarProcessoSeletivoCommandHandlerTests
     private static void CatalogoComCorRacaDoProcesso(Mocks mocks) =>
         mocks.FatoCandidatoReader.ListarAsync(Arg.Any<CancellationToken>()).Returns([
             .. CatalogoDoConjuntoBasico.Fatos.Where(static f => f.Codigo != "COR_RACA"),
-            CatalogoDoConjuntoBasico.Fatos.Single(static f => f.Codigo == "COR_RACA") with { FonteValores = "PROCESSO" },
+            CatalogoDoConjuntoBasico.Fatos.Single(static f => f.Codigo == "COR_RACA") with { FonteValores = CodigoComRotulo<FonteValoresFato>.De(FonteValoresFato.OpcoesDoProcesso) },
         ]);
 
     [Fact(DisplayName = "A cópia recopiada do catálogo é a que as verificações avaliam: fonte passada a PROCESSO recusa pela verificação de oferta")]
@@ -98,7 +99,7 @@ public sealed partial class PublicarProcessoSeletivoCommandHandlerTests
     {
         ProcessoSeletivo processo = NovoProcessoConforme(out _);
         FatoColetado item = processo.FatosColetados.Single(static f => f.FatoCodigo == "DESEJA_NOME_SOCIAL");
-        item.TipoRenderizacao.Should().Be(TipoRenderizacao.Booleano);
+        item.TipoRenderizacao.Should().Be(TipoRenderizacao.SimOuNao);
         (Mocks mocks, DocumentoAPublicar documento) = NovosMocks(processo);
         CatalogoComNomeSocialCategorico(mocks);
 
@@ -114,7 +115,7 @@ public sealed partial class PublicarProcessoSeletivoCommandHandlerTests
     {
         mocks.FatoCandidatoReader.ListarAsync(Arg.Any<CancellationToken>()).Returns([
             .. CatalogoDoConjuntoBasico.Fatos.Where(static f => f.Codigo != "DESEJA_NOME_SOCIAL"),
-            CatalogoDoConjuntoBasico.Fatos.Single(static f => f.Codigo == "DESEJA_NOME_SOCIAL") with { Dominio = "CATEGORICO" },
+            CatalogoDoConjuntoBasico.Fatos.Single(static f => f.Codigo == "DESEJA_NOME_SOCIAL") with { Dominio = CodigoComRotulo<TipoDoDado>.De(TipoDoDado.Opcao) },
         ]);
     }
 
@@ -165,9 +166,9 @@ public sealed partial class PublicarProcessoSeletivoCommandHandlerTests
 
     private static void ConferirMetadado(MetadadoFatoCongelado metadado)
     {
-        metadado.Dominio.Should().Be("CATEGORICO");
-        metadado.Origem.Should().Be("DERIVADO");
-        metadado.Cardinalidade.Should().Be("MULTIVALORADO");
+        metadado.Dominio.Should().Be(TipoDoDado.Opcao);
+        metadado.Origem.Should().Be(OrigemFato.Calculado);
+        metadado.Cardinalidade.Should().Be(QuantidadeDeValores.VariosValores);
         metadado.PontoResolucao.Should().Be("RESULTADO_FINAL");
         metadado.Binding.Should().Be("REGRA_DERIVACAO:MODALIDADE");
         metadado.ValoresDominioDeclarados.Should().BeNull("MODALIDADE é escopo-processo — os valores vêm da oferta do processo, não de FatoValorDominio");
@@ -245,9 +246,9 @@ public sealed partial class PublicarProcessoSeletivoCommandHandlerTests
         FatoCandidatoView temRenda = FatoModalidade() with
         {
             Codigo = "TEM_RENDA",
-            Dominio = "BOOLEANO",
-            Origem = "DECLARADO",
-            Cardinalidade = "ESCALAR",
+            Dominio = CodigoComRotulo<TipoDoDado>.De(TipoDoDado.SimOuNao),
+            Origem = CodigoComRotulo<OrigemFato>.De(OrigemFato.Declarado),
+            Cardinalidade = CodigoComRotulo<QuantidadeDeValores>.De(QuantidadeDeValores.ValorUnico),
             PontoResolucao = "HABILITACAO",
             Binding = "CAMPO_FORMULARIO:TEM_RENDA",
             FonteValores = null,

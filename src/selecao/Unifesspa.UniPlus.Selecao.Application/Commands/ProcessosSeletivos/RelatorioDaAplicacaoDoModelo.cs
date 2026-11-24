@@ -1,5 +1,8 @@
 namespace Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
 
+using Unifesspa.UniPlus.Application.Abstractions.Respostas;
+using Unifesspa.UniPlus.Regras.Formularios;
+
 /// <summary>
 /// O que a aplicação do modelo fez além de copiar: os fatos trazidos para a inscrição ou nela mantidos, as
 /// partes que o catálogo mudou depois da composição do modelo e saíram da cópia, e as derivações copiadas
@@ -17,6 +20,6 @@ internal sealed class RelatorioDaAplicacaoDoModelo
 
     public List<string> Mantidas { get; } = [];
 
-    public AplicacaoDeModeloDto ParaDto(string finalidade) =>
-        new(finalidade, Trazidos, Mantidos, Descartados, Copiadas, Mantidas);
+    public AplicacaoDeModeloDto ParaDto(FinalidadeFormulario finalidade) =>
+        new(CodigoComRotulo<FinalidadeFormulario>.De(finalidade), Trazidos, Mantidos, Descartados, Copiadas, Mantidas);
 }

@@ -3,6 +3,7 @@ namespace Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
 using Abstractions;
 
 using Unifesspa.UniPlus.Configuracao.Contracts;
+using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.Formularios;
 
 /// <summary>
@@ -23,28 +24,34 @@ internal static class CongelamentoDosFatosDerivados
     {
         ArgumentNullException.ThrowIfNull(catalogoDeFatos);
 
-        // O derivado que a versão vigente congelou continua no bloco ainda que o catálogo de hoje não o
-        // traga mais como derivado (desativado, por exemplo): uma exigência publicada pode comprová-lo.
-        Dictionary<string, FatoDerivadoCongelado> congelados = new(StringComparer.Ordinal);
-        Dictionary<string, FatoCandidatoView> vivos = catalogoDeFatos.ToDictionary(static f => f.Codigo, StringComparer.Ordinal);
-        foreach ((string codigo, FatoDerivadoCongelado daVersao) in daVersaoVigente ?? new Dictionary<string, FatoDerivadoCongelado>())
+        Dictionary<string, FatoDerivadoCongelado> congelados = MantidosDaVersaoVigente(catalogoDeFatos, daVersaoVigente);
+        foreach (FatoCandidatoView fato in catalogoDeFatos.Where(static f => f.ProtecaoAprovada && f.OrigemValor == OrigemFato.Calculado))
         {
-            congelados[codigo] = vivos.TryGetValue(codigo, out FatoCandidatoView? vivo)
-                ? daVersao with { Descricao = vivo.Descricao, ComponenteExibicao = vivo.ComponenteExibicao }
-                : daVersao;
-        }
-
-        // O derivado sem a proteção aprovada não entra: congelaria uma classificação que a proteção de dados nunca
-        // aprovou, e a versão seguinte, que passasse a usá-lo já aprovado, preservaria essa entrada em vez de congelar
-        // a proteção aprovada.
-        foreach (FatoCandidatoView fato in catalogoDeFatos.Where(static f =>
-            f.ProtecaoAprovada && string.Equals(f.Origem, DominioDoCatalogo.OrigemDerivada, StringComparison.Ordinal)))
-        {
-            congelados.TryAdd(fato.Codigo, new FatoDerivadoCongelado(
-                fato.Codigo, fato.Nome, fato.Descricao, fato.ComponenteExibicao, fato.Dominio, fato.Cardinalidade,
-                fato.ClassificacaoProtecao, fato.HipoteseLegal, fato.FinalidadeTratamento));
+            congelados.TryAdd(fato.Codigo, Congelar(fato));
         }
 
         return congelados;
     }
+
+    // O derivado que a versão vigente congelou continua no bloco ainda que o catálogo de hoje não o
+    // traga mais como derivado (desativado, por exemplo): uma exigência publicada pode comprová-lo.
+    private static Dictionary<string, FatoDerivadoCongelado> MantidosDaVersaoVigente(
+        IReadOnlyList<FatoCandidatoView> catalogoDeFatos, IReadOnlyDictionary<string, FatoDerivadoCongelado>? daVersaoVigente)
+    {
+        Dictionary<string, FatoCandidatoView> vivos = catalogoDeFatos.ToDictionary(static f => f.Codigo, StringComparer.Ordinal);
+        return (daVersaoVigente ?? new Dictionary<string, FatoDerivadoCongelado>()).ToDictionary(
+            static par => par.Key,
+            par => vivos.TryGetValue(par.Key, out FatoCandidatoView? vivo)
+                ? par.Value with { Descricao = vivo.Descricao, ComponenteExibicao = vivo.ComponenteExibicao }
+                : par.Value,
+            StringComparer.Ordinal);
+    }
+
+    // O derivado sem a proteção aprovada não entra: congelaria uma classificação que a proteção de dados nunca
+    // aprovou, e a versão seguinte, que passasse a usá-lo já aprovado, preservaria essa entrada em vez de congelar
+    // a proteção aprovada.
+    private static FatoDerivadoCongelado Congelar(FatoCandidatoView fato) =>
+        new(
+            fato.Codigo, fato.Nome, fato.Descricao, fato.ComponenteExibicao, fato.DominioValor, fato.CardinalidadeValor,
+            fato.ClassificacaoProtecao, fato.HipoteseLegal, fato.FinalidadeTratamento);
 }

@@ -4,6 +4,7 @@ using AwesomeAssertions;
 
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Domain.Enums;
+using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Seed;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
 
@@ -54,7 +55,7 @@ public sealed class CatalogoDeTiposDocumentoTests
         // Coleta os recusados em vez de asserir item a item: a falha nomeia quais
         // códigos a factory rejeitou, em vez de dizer só que "algum" item falhou.
         string[] recusados = [.. TipoDocumentoSeed.Itens
-            .Where(item => TipoDocumento.Criar(item.Codigo, item.Nome, null, item.Categoria, null, null, item.TipoEquivalente, item.ClassificacaoProtecao, TipoDocumentoSeed.FinalidadeTratamento, TipoDocumentoSeed.HipoteseLegal).IsFailure)
+            .Where(item => TipoDocumento.Criar(new DeclaracaoDoTipoDocumento(item.Codigo, item.Nome, null, item.Categoria, null, null, item.TipoEquivalente, item.ClassificacaoProtecao, TipoDocumentoSeed.FinalidadeTratamento, TipoDocumentoSeed.HipoteseLegal)).IsFailure)
             .Select(item => item.Codigo)];
 
         recusados.Should().BeEmpty(

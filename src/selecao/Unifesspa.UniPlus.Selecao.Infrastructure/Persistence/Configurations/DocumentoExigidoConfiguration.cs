@@ -17,6 +17,7 @@ using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Protecao;
 using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Regras.Enums;
+using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Canonicalization;
 
 /// <summary>
@@ -89,24 +90,22 @@ public sealed class DocumentoExigidoConfiguration : IEntityTypeConfiguration<Doc
         builder.Property(d => d.TipoDocumentoNome).HasMaxLength(TipoDocumentoNomeMaxLength).IsRequired().HasComment("Nome do tipo de documento, copiado do catálogo ao gravar a exigência.");
         builder.Property(d => d.TipoDocumentoCategoria).HasMaxLength(TipoDocumentoCategoriaMaxLength).IsRequired().HasComment("Categoria do tipo de documento, copiada do catálogo ao gravar a exigência.");
         builder.Property(d => d.ClassificacaoProtecao)
-            .HasConversion<ClassificacaoDeProtecaoValueConverter>()
-            .HasMaxLength(ClassificacaoDeProtecaoValueConverter.MaxLength)
+            .HasMaxLength(ColunaDaClassificacao.MaxLength)
             .IsRequired()
             .HasComment("Classificação de proteção de dados do documento, copiada do tipo de documento: PUBLICO, INTERNO, PESSOAL, IDENTIFICADOR ou SENSIVEL.");
         builder.Property(d => d.FinalidadeTratamento).HasMaxLength(FinalidadeTratamentoMaxLength).IsRequired().HasComment("Finalidade do tratamento dos dados do documento, copiada do tipo de documento.");
         builder.Property(d => d.HipoteseLegal).HasMaxLength(HipoteseLegalMaxLength).IsRequired().HasComment("Hipótese legal do tratamento dos dados do documento, copiada do tipo de documento.");
         builder.Property(d => d.FatosComprovados).IsRequired().HasComment("Códigos dos fatos do processo que o documento comprova; vazio quando a exigência não comprova fato.");
         builder.Property(d => d.Aplicabilidade).HasMaxLength(TamanhoDoCodigoDeContrato.Maximo).IsRequired()
-            .HasComment("A quem a exigência se aplica: GERAL para todos os candidatos, CONDICIONAL só para quem atende às condições da exigência.");
+            .HasComment($"A quem a exigência se aplica: todos os candidatos ou só quem atende às condições da exigência. {ComentarioDosCodigosDeContrato.Codigos<Aplicabilidade>()}");
         builder.Property(d => d.Obrigatorio).IsRequired().HasComment("Indica se a falta do documento impede a inscrição de seguir.");
         builder.Property(d => d.ConsequenciaIndeferimento).HasMaxLength(ConsequenciaIndeferimentoMaxLength)
-            .HasComment("O que acontece com o candidato quando o documento é indeferido: ELIMINA, RECLASSIFICA_AC, REMOVE_VANTAGEM ou ABRE_PRAZO_PARA_REENVIO; vazio quando a exigência não determina resultado.");
+            .HasComment($"O que acontece com o candidato quando o documento é indeferido; vazio quando a exigência não determina resultado. {ComentarioDosCodigosDeContrato.Codigos<ConsequenciaDoIndeferimento>()}");
         // A etapa que coleta o documento, quando a fase se subdivide — opcional.
         builder.Property(d => d.ExigidoNaEtapaId).HasComment("Etapa da fase que coleta o documento; vazio quando o documento é da fase inteira.");
-        // O formulário a que o documento pertence — nulo fora de fase de formulário. O
-        // vocabulário e a coerência com a fase são do domínio, sem CHECK no banco.
-        builder.Property(d => d.Finalidade).HasConversion<int?>()
-            .HasComment("Formulário a que o documento pertence: 1 inscrição, 2 isenção da taxa, 3 habilitação; vazio quando a fase não responde formulário.");
+        // O formulário a que o documento pertence — nulo fora de fase de formulário. A coerência com a fase é do domínio.
+        builder.Property(d => d.Finalidade).HasMaxLength(TamanhoDoCodigoDeContrato.Maximo)
+            .HasComment($"Formulário a que o documento pertence; vazio quando a fase não responde formulário. {ComentarioDosCodigosDeContrato.Codigos<FinalidadeFormulario>()}");
     }
 
     private static void ConfigurarRelacionamentos(EntityTypeBuilder<DocumentoExigido> builder)
@@ -164,6 +163,9 @@ public sealed class DocumentoExigidoConfiguration : IEntityTypeConfiguration<Doc
     private static void RestringirCodigosDosEnums(TableBuilder<DocumentoExigido> tabela)
     {
         tabela.HasCheckConstraint("ck_documentos_exigidos_aplicabilidade", $"aplicabilidade IN ({SqlDosCodigosDeContrato.Lista<Aplicabilidade>()})");
+        RestringirCodigoOpcional<FinalidadeFormulario>(tabela, "finalidade");
+        RestringirCodigoOpcional<ConsequenciaDoIndeferimento>(tabela, "consequencia_indeferimento");
+        RestringirCodigoOpcional<FormatoDeDocumento>(tabela, "modelo_formato");
         RestringirCodigoOpcional<EscolhaDoPrazoDeEmissao>(tabela, "prazo_emissao_escolha");
         RestringirCodigoOpcional<UnidadeDoPrazoDeEmissao>(tabela, "prazo_emissao_unidade");
         RestringirCodigoOpcional<EfeitoNaAnaliseDoDocumento>(tabela, "prazo_emissao_efeito");
@@ -221,7 +223,7 @@ public sealed class DocumentoExigidoConfiguration : IEntityTypeConfiguration<Doc
             modelo.Property(m => m.NomeArquivo).HasColumnName("modelo_nome_arquivo").HasMaxLength(ModeloDeDocumento.NomeArquivoMaxLength)
                 .HasComment("Nome do arquivo do modelo de documento, copiado ao gravar a exigência.");
             modelo.Property(m => m.Formato).HasColumnName("modelo_formato").HasMaxLength(4)
-                .HasComment($"Formato do arquivo do modelo, copiado ao gravar a exigência. Códigos: {string.Join(", ", CatalogoDe<FormatoDeDocumento>.Todos().Select(static c => c.Codigo))}.");
+                .HasComment($"Formato do arquivo do modelo, copiado ao gravar a exigência. {ComentarioDosCodigosDeContrato.Codigos<FormatoDeDocumento>()}");
             modelo.Property(m => m.HashSha256).HasColumnName("modelo_hash_sha256").HasMaxLength(64)
                 .HasComment("Resumo SHA-256 do arquivo do modelo, copiado ao gravar a exigência.");
         });

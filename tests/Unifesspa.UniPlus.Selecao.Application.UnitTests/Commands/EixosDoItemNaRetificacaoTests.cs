@@ -3,6 +3,7 @@ namespace Unifesspa.UniPlus.Selecao.Application.UnitTests.Commands;
 using AwesomeAssertions;
 
 using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Application.UnitTests.TestSupport;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
@@ -46,7 +47,7 @@ public sealed class EixosDoItemNaRetificacaoTests
     public async Task Retificar_ItemEMetadadoDivergentes_RecusaOsDoisNaOrdem()
     {
         CenarioDeRetificacaoPublicada cenario = CenarioDeRetificacaoPublicada.Publicado(
-            new SituacaoDoFatoCitado { ItemPublicadoComoData = true, DominioCongelado = "CATEGORICO" });
+            new SituacaoDoFatoCitado { ItemPublicadoComoData = true, DominioCongelado = TipoDoDado.Opcao });
 
         (Result resposta, IEnumerable<object> eventos) = await cenario.RetificarAsync();
 

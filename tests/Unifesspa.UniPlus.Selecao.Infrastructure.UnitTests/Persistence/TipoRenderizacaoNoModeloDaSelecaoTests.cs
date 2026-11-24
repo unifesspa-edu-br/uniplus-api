@@ -31,9 +31,9 @@ public sealed class TipoRenderizacaoNoModeloDaSelecaoTests
             .Should().Equal(new Dictionary<TipoRenderizacao, object?>
             {
                 [TipoRenderizacao.Numero] = "NUMERO",
-                [TipoRenderizacao.Booleano] = "BOOLEANO",
-                [TipoRenderizacao.SelecaoUnica] = "SELECAO_UNICA",
-                [TipoRenderizacao.SelecaoMultipla] = "SELECAO_MULTIPLA",
+                [TipoRenderizacao.SimOuNao] = "SIM_OU_NAO",
+                [TipoRenderizacao.EscolhaUnica] = "ESCOLHA_UNICA",
+                [TipoRenderizacao.EscolhaMultipla] = "ESCOLHA_MULTIPLA",
                 [TipoRenderizacao.Texto] = "TEXTO",
                 [TipoRenderizacao.Data] = "DATA",
                 [TipoRenderizacao.Endereco] = "ENDERECO",
@@ -42,7 +42,7 @@ public sealed class TipoRenderizacaoNoModeloDaSelecaoTests
 
     [Fact(DisplayName = "A leitura do código declarado devolve o tipo de campo")]
     public void Leitura_DoCodigoDeclarado_DevolveOTipo() =>
-        Conversor().ConvertFromProvider("SELECAO_MULTIPLA").Should().Be(TipoRenderizacao.SelecaoMultipla);
+        Conversor().ConvertFromProvider("ESCOLHA_MULTIPLA").Should().Be(TipoRenderizacao.EscolhaMultipla);
 
     [Theory(DisplayName = "O tipo de campo gravado que não é código declarado falha ao carregar, sem virar tipo nenhum")]
     [InlineData("NENHUMA")]

@@ -8,6 +8,7 @@ using Unifesspa.UniPlus.Configuracao.Domain.Interfaces;
 using Unifesspa.UniPlus.Infrastructure.Core.Pagination;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.Kernel.Pagination;
+using Unifesspa.UniPlus.Regras.Enums;
 
 public sealed class FatoCandidatoRepository : IFatoCandidatoRepository
 {
@@ -30,20 +31,16 @@ public sealed class FatoCandidatoRepository : IFatoCandidatoRepository
         Guid? afterId, int limit, PaginationDirection direction, OrigemFato? origem, bool? ativo, CancellationToken cancellationToken)
     {
         IQueryable<FatoCandidato> consulta = _dbContext.FatosCandidato.AsNoTracking().Include(f => f.ValoresDominioDeclarados);
-        if (origem is { } origemFiltro)
-        {
-            consulta = consulta.Where(f => f.Origem == origemFiltro);
-        }
-
-        if (ativo is { } ativoFiltro)
-        {
-            consulta = consulta.Where(f => f.Ativo == ativoFiltro);
-        }
-
         CursorKeysetPage<FatoCandidato> page = await CursorKeyset
-            .ApplyAsync(consulta, afterId, limit, direction, cancellationToken)
+            .ApplyAsync(Filtrar(consulta, origem, ativo), afterId, limit, direction, cancellationToken)
             .ConfigureAwait(false);
         return (page.Items, page.PrevAfterId, page.NextAfterId);
+    }
+
+    private static IQueryable<FatoCandidato> Filtrar(IQueryable<FatoCandidato> consulta, OrigemFato? origem, bool? ativo)
+    {
+        IQueryable<FatoCandidato> porOrigem = origem is { } origemFiltro ? consulta.Where(f => f.Origem == origemFiltro) : consulta;
+        return ativo is { } ativoFiltro ? porOrigem.Where(f => f.Ativo == ativoFiltro) : porOrigem;
     }
 
     public async Task AdicionarAsync(FatoCandidato fato, CancellationToken cancellationToken)

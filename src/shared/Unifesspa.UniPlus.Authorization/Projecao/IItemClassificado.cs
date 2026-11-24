@@ -12,7 +12,7 @@ public interface IItemClassificado
     /// <summary>Se o item é dado ou arquivo.</summary>
     NaturezaDoItem Natureza { get; }
 
-    /// <summary>A classificação do item; <see cref="ClassificacaoDeProtecao.Nenhuma"/> vale como sensível.</summary>
+    /// <summary>A classificação do item; um valor inválido vale como sensível.</summary>
     ClassificacaoDeProtecao Classificacao { get; }
 
     /// <summary>A base legal congelada do item; o item sensível sem ela não sai.</summary>

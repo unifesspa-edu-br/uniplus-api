@@ -9,6 +9,7 @@ using Unifesspa.UniPlus.Configuracao.Domain.Services;
 using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Regras.Enums;
 
 using static Unifesspa.UniPlus.Configuracao.Domain.UnitTests.Entities.AprovacaoDeTeste;
 
@@ -24,8 +25,8 @@ public sealed class AprovacaoDaProtecaoDoFatoTests
         FatoCandidato igual = NovoFato();
         igual.SolicitarAprovacaoDaProtecao(Isabella, Segunda);
         FatoCandidato incompativel = CriacaoDoFato.CriarDoAdministrador(
-            "TEM_CONTRATO", "Tem contrato", "Descrição do fato.", DominioFato.Booleano, CardinalidadeFato.Escalar, null, null, "INSCRICAO", EscopoFato.Candidato,
-            ClassificacaoDeProtecao.Pessoal, Finalidade, HipoteseLegalTratamento.ExecucaoContrato).Value!;
+            new DescritivoDoFato("TEM_CONTRATO", "Tem contrato", "Descrição do fato."),
+            new DefinicaoDoFato(TipoDoDado.SimOuNao, QuantidadeDeValores.ValorUnico, null, null, "INSCRICAO", EscopoFato.Candidato, ClassificacaoDeProtecao.Pessoal, Finalidade, HipoteseLegalTratamento.ExecucaoContrato)).Value!;
         incompativel.SolicitarAprovacaoDaProtecao(Isabella, Segunda);
 
         igual.RecomendarAjusteDaProtecao(ClassificacaoDeProtecao.Pessoal, null, Caroline, Terca).Errors.Should().ContainSingle()
@@ -41,8 +42,8 @@ public sealed class AprovacaoDaProtecaoDoFatoTests
         FatoCandidato fato = FatoAprovado(NovoFatoDeSistema());
         DefinicaoDoFato invalida = Definicao(fato) with
         {
-            Dominio = (DominioFato)(-1),
-            Cardinalidade = (CardinalidadeFato)(-1),
+            Dominio = (TipoDoDado)(-1),
+            Cardinalidade = (QuantidadeDeValores)(-1),
             Escopo = (EscopoFato)(-1),
             FonteValores = (FonteValoresFato)(-1),
             Formato = (FormatoTexto)(-1),
@@ -82,8 +83,8 @@ public sealed class AprovacaoDaProtecaoDoFatoTests
         static FatoCandidato Categorico()
         {
             FatoCandidato fato = CriacaoDoFato.CriarDoAdministrador(
-                "ESCOLARIDADE", "Escolaridade", "Escolaridade do candidato.", DominioFato.Categorico, CardinalidadeFato.Escalar, FonteValoresFato.Global, null,
-                "INSCRICAO", EscopoFato.Candidato, ClassificacaoDeProtecao.Pessoal, Finalidade, HipoteseLegalTratamento.CumprimentoObrigacaoLegal).Value!;
+                new DescritivoDoFato("ESCOLARIDADE", "Escolaridade", "Escolaridade do candidato."),
+                new DefinicaoDoFato(TipoDoDado.Opcao, QuantidadeDeValores.ValorUnico, FonteValoresFato.Catalogo, null, "INSCRICAO", EscopoFato.Candidato, ClassificacaoDeProtecao.Pessoal, Finalidade, HipoteseLegalTratamento.CumprimentoObrigacaoLegal)).Value!;
             fato.AdicionarValorDominio("MEDIO", "Ensino médio", 0, ativo: true);
             fato.SolicitarAprovacaoDaProtecao(Isabella, Segunda);
             return fato;
@@ -96,8 +97,8 @@ public sealed class AprovacaoDaProtecaoDoFatoTests
         FatoCandidato porDefinicao = Categorico();
         porDefinicao.ReprovarProtecao("Dado desnecessário.", Caroline, Terca);
         FatoCandidato porRegras = CriacaoDoFato.CriarDerivadoDoAdministrador(
-            "TEM_RENDA_DERIVADA", "Tem renda derivada", "Se o candidato tem renda.", DominioFato.Booleano, "INSCRICAO", EscopoFato.Candidato,
-            ClassificacaoDeProtecao.Pessoal, Finalidade, HipoteseLegalTratamento.CumprimentoObrigacaoLegal).Value!;
+            new DescritivoDoFato("TEM_RENDA_DERIVADA", "Tem renda derivada", "Se o candidato tem renda."),
+            new DefinicaoDoFato(TipoDoDado.SimOuNao, null, null, null, "INSCRICAO", EscopoFato.Candidato, ClassificacaoDeProtecao.Pessoal, Finalidade, HipoteseLegalTratamento.CumprimentoObrigacaoLegal)).Value!;
         porRegras.SolicitarAprovacaoDaProtecao(Isabella, Segunda);
         porRegras.ReprovarProtecao("Dado desnecessário.", Caroline, Terca);
         FatoCandidato aprovado = FatoAprovado(NovoFato());
@@ -161,11 +162,11 @@ public sealed class AprovacaoDaProtecaoDoFatoTests
         FatoCandidato fato = FatoAprovado(NovoFatoDeSistema());
 
         Result resultado = fato.AlterarDefinicao(
-            Definicao(fato, dominio: DominioFato.Booleano, classificacao: ClassificacaoDeProtecao.Sensivel, hipotese: HipoteseLegalTratamento.TutelaDaSaude), Catalogo(fato));
+            Definicao(fato, dominio: TipoDoDado.SimOuNao, classificacao: ClassificacaoDeProtecao.Sensivel, hipotese: HipoteseLegalTratamento.TutelaDaSaude), Catalogo(fato));
 
         resultado.Error!.Code.Should().Be(FatoCandidatoErrorCodes.DefinicaoDoFatoDeSistemaTravada);
         resultado.Error.Message.Should().Contain("domínio").And.Contain("travados");
-        fato.Dominio.Should().Be(DominioFato.Categorico);
+        fato.Dominio.Should().Be(TipoDoDado.Opcao);
         fato.ClassificacaoProtecao.Should().Be(ClassificacaoDeProtecao.Pessoal);
         fato.Aprovacao.Situacao.Should().Be(SituacaoDaAprovacao.Aprovada);
     }
@@ -184,7 +185,7 @@ public sealed class AprovacaoDaProtecaoDoFatoTests
         {
             ClassificacaoProtecao = ClassificacaoDeProtecao.Sensivel,
             Codigo = "COR_RACA",
-            Dominio = DominioFato.Categorico,
+            Dominio = TipoDoDado.Opcao,
             SemeadoPeloSistema = true,
         });
         fato.Aprovacao.Situacao.Should().Be(SituacaoDaAprovacao.Aprovada);
@@ -194,7 +195,7 @@ public sealed class AprovacaoDaProtecaoDoFatoTests
     [Fact(DisplayName = "O ajuste não recomenda classificação abaixo do mínimo do domínio do fato")]
     public void Fato_RecomendarAjusteAbaixoDoMinimoDoDominio_Recusado()
     {
-        FatoCandidato fato = NovoFato(DominioFato.Texto);
+        FatoCandidato fato = NovoFato(TipoDoDado.Texto);
         fato.SolicitarAprovacaoDaProtecao(Isabella, Segunda);
 
         Result resultado = fato.RecomendarAjusteDaProtecao(ClassificacaoDeProtecao.Publico, null, Caroline, Terca);
@@ -204,16 +205,18 @@ public sealed class AprovacaoDaProtecaoDoFatoTests
         fato.Aprovacao.Situacao.Should().Be(SituacaoDaAprovacao.Solicitada);
     }
 
-    private static FatoCandidato NovoFato(DominioFato dominio = DominioFato.Booleano) =>
+    private static FatoCandidato NovoFato(TipoDoDado dominio = TipoDoDado.SimOuNao) =>
         CriacaoDoFato.CriarDoAdministrador(
-            "TEM_RENDA", "Tem renda", "Se o candidato tem renda.", dominio, CardinalidadeFato.Escalar, null, dominio == DominioFato.Texto ? FormatoTexto.Livre : null,
-            "INSCRICAO", EscopoFato.Candidato, ClassificacaoDeProtecao.Pessoal, Finalidade, HipoteseLegalTratamento.CumprimentoObrigacaoLegal).Value!;
+            new DescritivoDoFato("TEM_RENDA", "Tem renda", "Se o candidato tem renda."),
+            new DefinicaoDoFato(dominio, QuantidadeDeValores.ValorUnico, null, dominio == TipoDoDado.Texto ? FormatoTexto.Livre : null, "INSCRICAO", EscopoFato.Candidato, ClassificacaoDeProtecao.Pessoal, Finalidade, HipoteseLegalTratamento.CumprimentoObrigacaoLegal)).Value!;
 
     private static FatoCandidato NovoFatoDeSistema() =>
         CriacaoDoFato.Criar(
-            "COR_RACA", "Cor ou raça", "Cor ou raça que o candidato declara.", DominioFato.Categorico, OrigemFato.Declarado, CardinalidadeFato.Escalar, FonteValoresFato.Global,
-            null, "INSCRICAO", "CAMPO_FORMULARIO:COR_RACA", EscopoFato.Candidato, ClassificacaoDeProtecao.Pessoal, Finalidade,
-            HipoteseLegalTratamento.CumprimentoObrigacaoLegal, sistema: true).Value!;
+            new DescritivoDoFato("COR_RACA", "Cor ou raça", "Cor ou raça que o candidato declara."),
+            OrigemFato.Declarado,
+            "CAMPO_FORMULARIO:COR_RACA",
+            new DefinicaoDoFato(TipoDoDado.Opcao, QuantidadeDeValores.ValorUnico, FonteValoresFato.Catalogo, null, "INSCRICAO", EscopoFato.Candidato, ClassificacaoDeProtecao.Pessoal, Finalidade, HipoteseLegalTratamento.CumprimentoObrigacaoLegal),
+            sistema: true).Value!;
 
     private static FatoCandidato FatoAprovado(FatoCandidato fato)
     {
@@ -224,7 +227,7 @@ public sealed class AprovacaoDaProtecaoDoFatoTests
 
     private static DefinicaoDoFato Definicao(
         FatoCandidato fato,
-        DominioFato? dominio = null,
+        TipoDoDado? dominio = null,
         ClassificacaoDeProtecao classificacao = ClassificacaoDeProtecao.Pessoal,
         HipoteseLegalTratamento hipotese = HipoteseLegalTratamento.CumprimentoObrigacaoLegal) =>
         new(

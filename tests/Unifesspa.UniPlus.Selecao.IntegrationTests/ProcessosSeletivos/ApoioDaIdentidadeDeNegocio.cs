@@ -57,7 +57,7 @@ internal static class ApoioDaIdentidadeDeNegocio
         new(StringComparer.Ordinal)
         {
             ["COR_RACA"] = new MetadadoFatoCongelado(
-                Codigo: "COR_RACA", Dominio: "CATEGORICO", Origem: "DECLARADO", Cardinalidade: "ESCALAR",
+                Codigo: "COR_RACA", Dominio: TipoDoDado.Opcao, Origem: OrigemFato.Declarado, Cardinalidade: QuantidadeDeValores.ValorUnico,
                 PontoResolucao: "INSCRICAO", Binding: "CAMPO_FORMULARIO:COR_RACA",
                 ValoresDominio: null, ValoresDominioDeclarados: [alfa, zeta]),
         };

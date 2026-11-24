@@ -2,10 +2,10 @@ namespace Unifesspa.UniPlus.Regras.Formularios;
 
 using System.Text.Json;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Entradas;
 using Unifesspa.UniPlus.Regras.Errors;
-using Unifesspa.UniPlus.Regras.Serializacao;
 
 internal static class RepeticaoDoItemBasico
 {
@@ -66,7 +66,7 @@ internal static class RepeticaoDoItemBasico
         regras?.Impedimento);
 
     private static ObrigatoriedadeInput ObrigatoriedadeCanonica(ObrigatoriedadeInput? obrigatoriedade) => new(
-        obrigatoriedade?.Tipo is { } tipo && !string.IsNullOrWhiteSpace(tipo) ? tipo.Trim() : PredicadoDnfJson.ObrigatoriedadeSempre,
+        obrigatoriedade?.Tipo is { } tipo && !string.IsNullOrWhiteSpace(tipo) ? tipo.Trim() : TipoObrigatoriedade.Sempre.Codigo(),
         obrigatoriedade?.Predicado is { Count: > 0 } predicado ? predicado : null);
 
     /// <summary>

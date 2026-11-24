@@ -1,24 +1,25 @@
 namespace Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.ConceitoDaAvaliacao;
 
 using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 
 /// <summary>
 /// A natureza do conceito com os parâmetros que ela exige: o numérico tem escala e nenhum valor, o categórico
 /// tem valores e nenhuma escala.
 /// </summary>
-internal sealed record ParametrosDoConceito(NaturezaConceito Natureza, EscalaNumerica? Escala, IReadOnlyList<ValorCategorico> Valores)
+internal sealed record ParametrosDoConceito(FormaDoConceito Natureza, EscalaNumerica? Escala, IReadOnlyList<ValorCategorico> Valores)
 {
     /// <summary>Os parâmetros copiados, ou <see langword="null"/> com as recusas acumuladas em <paramref name="erros"/>.</summary>
     /// <exception cref="ArgumentOutOfRangeException">A natureza não é membro do enum, como num cast de inteiro.</exception>
     internal static ParametrosDoConceito? Conferir(
-        NaturezaConceito natureza, EscalaInformada? escala, IReadOnlyList<ValorCategoricoInformado?>? valores, List<FieldError> erros)
+        FormaDoConceito natureza, EscalaInformada? escala, IReadOnlyList<ValorCategoricoInformado?>? valores, List<FieldError> erros)
     {
         int errosAntes = erros.Count;
         ParametrosDoConceito? parametros = natureza switch
         {
-            NaturezaConceito.Numerico => DoNumerico(escala, valores, erros),
-            NaturezaConceito.Categorico => DoCategorico(escala, valores, erros),
+            FormaDoConceito.Numerico => DoNumerico(escala, valores, erros),
+            FormaDoConceito.PorOpcoes => DoCategorico(escala, valores, erros),
             _ => throw new ArgumentOutOfRangeException(nameof(natureza), natureza, "A natureza do conceito não é membro do enum de naturezas."),
         };
         return erros.Count == errosAntes ? parametros : null;
@@ -39,7 +40,7 @@ internal sealed record ParametrosDoConceito(NaturezaConceito Natureza, EscalaNum
         }
 
         EscalaNumerica? copia = EscalaNumerica.Conferir(escala, erros);
-        return copia is null ? null : new(NaturezaConceito.Numerico, copia, []);
+        return copia is null ? null : new(FormaDoConceito.Numerico, copia, []);
     }
 
     private static ParametrosDoConceito DoCategorico(
@@ -50,7 +51,7 @@ internal sealed record ParametrosDoConceito(NaturezaConceito Natureza, EscalaNum
             erros.Add(Incoerente("escala", "O conceito categórico não admite escala numérica."));
         }
 
-        return new(NaturezaConceito.Categorico, null, ValoresDoConceito.Conferir(valores, erros));
+        return new(FormaDoConceito.PorOpcoes, null, ValoresDoConceito.Conferir(valores, erros));
     }
 
     private static FieldError Incoerente(string campo, string mensagem) =>

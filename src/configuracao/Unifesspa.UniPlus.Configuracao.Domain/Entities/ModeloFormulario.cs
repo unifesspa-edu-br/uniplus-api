@@ -56,7 +56,7 @@ public sealed class ModeloFormulario : EntityBase, IAuditableEntity
         string? codigo,
         string? nome,
         string? descricao,
-        FinalidadeFormulario finalidade,
+        FinalidadeFormulario? finalidade,
         string? tipoProcessoCodigo,
         ConteudoDoModelo conteudo,
         IReadOnlyDictionary<string, IReadOnlyCollection<string>> derivacoes)
@@ -72,7 +72,7 @@ public sealed class ModeloFormulario : EntityBase, IAuditableEntity
             return Result<ModeloFormulario>.ValidationFailure(erros);
         }
 
-        ModeloFormulario modelo = new() { Codigo = TextoGravavel.CodigoNaFormaGravada(codigo), Finalidade = finalidade, Ativo = false };
+        ModeloFormulario modelo = new() { Codigo = TextoGravavel.CodigoNaFormaGravada(codigo), Finalidade = finalidade!.Value, Ativo = false };
         modelo.Aplicar(nome ?? string.Empty, descricao, tipoProcessoCodigo, normalizado);
         return Result<ModeloFormulario>.Success(modelo);
     }
@@ -129,7 +129,7 @@ public sealed class ModeloFormulario : EntityBase, IAuditableEntity
     /// —, para que essas recusas saiam junto das do conteúdo mesmo quando ele não chega a ser lido.
     /// </summary>
     public static List<FieldError> ConferirCadastro(
-        string? codigo, string? nome, string? descricao, string? tipoProcessoCodigo, FinalidadeFormulario finalidade) =>
+        string? codigo, string? nome, string? descricao, string? tipoProcessoCodigo, FinalidadeFormulario? finalidade) =>
         [.. ValidarCodigo(codigo), .. ValidarDescritivo(nome, descricao, tipoProcessoCodigo), .. FormaDoCabecalho.ValidarFinalidade(finalidade)];
 
     /// <summary>O que a edição confere fora do conteúdo: o descritivo e o tipo de processo.</summary>

@@ -2,18 +2,26 @@ namespace Unifesspa.UniPlus.Regras.Formularios;
 
 using System.Text.Json;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.ValueObjects;
 
 /// <summary>O que um agregado faz com as ocorrências de um grupo repetível.</summary>
+[DescricaoDoContrato("O que o fato agregado calcula a partir das ocorrências de um grupo repetível.")]
 public enum OperacaoAgregado
 {
-    Nenhuma = 0,
-
     /// <summary>Verdadeiro quando alguma ocorrência respondeu verdadeiro: "existe membro que…".</summary>
+    [CodigoDeContrato(
+        "EXISTE",
+        "Existe alguma ocorrência",
+        Descricao = "Verdadeiro quando ao menos uma ocorrência do grupo respondeu sim.")]
     Existe = 1,
 
     /// <summary>A união dos valores respondidos nas ocorrências: "categorias presentes na família".</summary>
+    [CodigoDeContrato(
+        "VALORES_PRESENTES",
+        "Valores presentes nas ocorrências",
+        Descricao = "Os valores diferentes que as ocorrências do grupo responderam.")]
     ValoresPresentes = 2,
 }
 
@@ -26,32 +34,16 @@ public enum OperacaoAgregado
 /// </summary>
 public static class AgregadoDeGrupo
 {
-    /// <summary>A operação do agregado sobre um fato de membro do domínio dado; os demais domínios não agregam.</summary>
-    public static OperacaoAgregado OperacaoDoDominio(string? dominio) => dominio switch
+    /// <summary>
+    /// A operação do agregado sobre um fato de membro do domínio dado; nula quando o domínio não se resume, como nos
+    /// demais domínios.
+    /// </summary>
+    public static OperacaoAgregado? OperacaoDoDominio(TipoDoDado? tipo) => tipo switch
     {
-        DominioDoCatalogo.Booleano => OperacaoAgregado.Existe,
-        DominioDoCatalogo.Categorico => OperacaoAgregado.ValoresPresentes,
-        _ => OperacaoAgregado.Nenhuma,
+        TipoDoDado.SimOuNao => OperacaoAgregado.Existe,
+        TipoDoDado.Opcao => OperacaoAgregado.ValoresPresentes,
+        _ => null,
     };
-
-    /// <summary>O token da operação no fio e no envelope congelado: <c>EXISTE</c> ou <c>VALORES_PRESENTES</c>.</summary>
-    public static string ParaToken(OperacaoAgregado operacao) => operacao switch
-    {
-        OperacaoAgregado.Existe => TokenExiste,
-        OperacaoAgregado.ValoresPresentes => TokenValoresPresentes,
-        _ => throw new ArgumentOutOfRangeException(nameof(operacao), operacao, "O agregado é EXISTE ou VALORES_PRESENTES."),
-    };
-
-    /// <summary>A operação do token; <see cref="OperacaoAgregado.Nenhuma"/> quando o token não é de operação.</summary>
-    public static OperacaoAgregado DoToken(string? token) => token switch
-    {
-        TokenExiste => OperacaoAgregado.Existe,
-        TokenValoresPresentes => OperacaoAgregado.ValoresPresentes,
-        _ => OperacaoAgregado.Nenhuma,
-    };
-
-    private const string TokenExiste = "EXISTE";
-    private const string TokenValoresPresentes = "VALORES_PRESENTES";
 
     /// <summary>
     /// O agregado no estado do grupo, como o derivado por regra: grupo oculto ou não informado não
@@ -63,27 +55,28 @@ public static class AgregadoDeGrupo
     {
         ArgumentNullException.ThrowIfNull(grupo);
         ArgumentException.ThrowIfNullOrWhiteSpace(fatoDeMembro);
-        if (operacao == OperacaoAgregado.Nenhuma || !Enum.IsDefined(operacao))
+        if (!Enum.IsDefined(operacao))
         {
-            throw new ArgumentOutOfRangeException(nameof(operacao), operacao, "O agregado é EXISTE ou VALORES_PRESENTES.");
+            throw new ArgumentOutOfRangeException(nameof(operacao), operacao, "A operação do agregado não é conhecida.");
         }
 
-        if (grupo.Estado == EstadoFato.Indeterminado)
-        {
-            return FatoResolvido.Indeterminado();
-        }
+        return grupo.Estado == EstadoFato.Indeterminado
+            ? FatoResolvido.Indeterminado()
+            : FatoResolvido.Resolvido(Agregar(RespostasDoMembro(grupo, fatoDeMembro), operacao));
+    }
 
-        IEnumerable<JsonElement> respostas = grupo.Estado == EstadoFato.Resolvido
-            ? grupo.Ocorrencias
+    private static List<JsonElement> RespostasDoMembro(AvaliacaoGrupo grupo, string fatoDeMembro) =>
+        grupo.Estado == EstadoFato.Resolvido
+            ? [.. grupo.Ocorrencias
                 .Select(o => o.Fatos.TryGetValue(fatoDeMembro, out FatoResolvido? fato) ? fato.Valor : null)
-                .OfType<JsonElement>()
+                .OfType<JsonElement>()]
             : [];
 
-        return FatoResolvido.Resolvido(operacao == OperacaoAgregado.Existe
+    private static JsonElement Agregar(List<JsonElement> respostas, OperacaoAgregado operacao) =>
+        operacao == OperacaoAgregado.Existe
             ? JsonSerializer.SerializeToElement(respostas.Any(static r => r.ValueKind == JsonValueKind.True))
             : JsonSerializer.SerializeToElement(respostas
                 .SelectMany(static r => RespostaDeCampo.Codigos(r) ?? [])
                 .Distinct(StringComparer.Ordinal)
-                .Order(StringComparer.Ordinal)));
-    }
+                .Order(StringComparer.Ordinal));
 }

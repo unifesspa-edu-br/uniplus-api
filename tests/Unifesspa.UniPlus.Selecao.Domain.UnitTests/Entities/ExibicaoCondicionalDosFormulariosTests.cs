@@ -169,8 +169,8 @@ public sealed class ExibicaoCondicionalDosFormulariosTests
     private static IReadOnlyList<EtapaFormulario> EtapasComSecaoCondicionada() =>
         [
             FormularioDeTeste.Etapas()[0],
-            EtapaFormulario.Criar(new EtapaEstrutura("DADOS", 1, TipoEtapaFormulario.Secao, BlocoSistema.Nenhum), "Dados", null, null).Value!,
-            EtapaFormulario.Criar(new EtapaEstrutura("RENDA", 2, TipoEtapaFormulario.Secao, BlocoSistema.Nenhum), "Renda", null, null,
+            EtapaFormulario.Criar(new EtapaEstrutura("DADOS", 1, TipoEtapaFormulario.Secao, null), "Dados", null, null).Value!,
+            EtapaFormulario.Criar(new EtapaEstrutura("RENDA", 2, TipoEtapaFormulario.Secao, null), "Renda", null, null,
                 PredicadoDnf.CriarDeCondicoesAgrupadas([(0, CondicaoDnf.Criar("REGIME_DE_VAGA", Operador.Igual, JsonSerializer.SerializeToElement("AC")).Value!)]).Value!).Value!,
             EtapaFormulario.Criar(new EtapaEstrutura("REVISAO", 3, TipoEtapaFormulario.Bloco, BlocoSistema.RevisaoEAceite), "Revisão e aceite", null, null).Value!,
         ];

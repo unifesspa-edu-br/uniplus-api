@@ -18,7 +18,7 @@ public sealed class CidadeDeProvaNoModeloSemeadoTests
 
         secao.Exibicao.Should().BeNull();
         cidade.EtapaCodigo.Should().Be(secao.Codigo);
-        cidade.Apresentacao.TipoRenderizacao.Should().Be(TipoRenderizacao.SelecaoUnica);
+        cidade.Apresentacao.TipoRenderizacao.Should().Be(TipoRenderizacao.EscolhaUnica);
         cidade.Regras.Exibicao.Should().BeNull();
         cidade.Regras.Obrigatoriedade.Tipo.Should().Be(TipoObrigatoriedade.Sempre);
     }

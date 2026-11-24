@@ -31,7 +31,7 @@ public sealed class TermoConsentimentoReaderTests
     public async Task ListarVersoesAsync_DevolveConteudoEOmiteTermoRemovido()
     {
         (TermoConsentimento vivo, TermoConsentimentoVersao versaoViva) = Promovido($"Autorização de consulta {Guid.NewGuid():N}", "A_DEFINIR");
-        (TermoConsentimento removido, TermoConsentimentoVersao versaoRemovida) = Promovido($"Termo retirado {Guid.NewGuid():N}", "REGISTRO_DIGITAL_SEM_LOG_IP");
+        (TermoConsentimento removido, TermoConsentimentoVersao versaoRemovida) = Promovido($"Termo retirado {Guid.NewGuid():N}", "REGISTRO_SEM_ENDERECO_IP");
         await GravarUmVivoEUmRemovidoAsync(vivo, removido);
         await using UniPlusDbContext readCtx = _fixture.CreateDbContext(userId: null);
         TermoConsentimentoReader reader = new(readCtx);

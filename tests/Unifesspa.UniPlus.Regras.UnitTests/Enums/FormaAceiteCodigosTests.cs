@@ -9,8 +9,8 @@ public sealed class FormaAceiteCodigosTests
 {
     [Theory(DisplayName = "Cada forma de aceite tem o código e o rótulo do contrato")]
     [InlineData(FormaAceite.ADefinir, "A_DEFINIR", "A definir")]
-    [InlineData(FormaAceite.RegistroDigitalSemLogIp, "REGISTRO_DIGITAL_SEM_LOG_IP", "Registro digital sem log do endereço IP")]
-    [InlineData(FormaAceite.RegistroDigitalComLogIp, "REGISTRO_DIGITAL_COM_LOG_IP", "Registro digital com log do endereço IP")]
+    [InlineData(FormaAceite.RegistroSemEnderecoIp, "REGISTRO_SEM_ENDERECO_IP", "Registro digital sem o endereço IP")]
+    [InlineData(FormaAceite.RegistroComEnderecoIp, "REGISTRO_COM_ENDERECO_IP", "Registro digital com o endereço IP")]
     public void Valor_Declarado_TemCodigoERotulo(FormaAceite forma, string codigo, string rotulo)
     {
         forma.Codigo().Should().Be(codigo);
@@ -21,13 +21,13 @@ public sealed class FormaAceiteCodigosTests
 
     [Fact(DisplayName = "Os valores numéricos das formas de aceite são preservados")]
     public void ValoresNumericos_DasFormas_SaoPreservados() =>
-        new[] { (int)FormaAceite.ADefinir, (int)FormaAceite.RegistroDigitalSemLogIp, (int)FormaAceite.RegistroDigitalComLogIp }
+        new[] { (int)FormaAceite.ADefinir, (int)FormaAceite.RegistroSemEnderecoIp, (int)FormaAceite.RegistroComEnderecoIp }
             .Should().Equal(1, 2, 3);
 
     [Fact(DisplayName = "O enum tem exatamente as três formas de aceite, na ordem de exibição")]
     public void Valores_Catalogo_TresFormasNaOrdemDeDeclaracao() =>
         CatalogoDe<FormaAceite>.Valores().Should().Equal(
-            FormaAceite.ADefinir, FormaAceite.RegistroDigitalSemLogIp, FormaAceite.RegistroDigitalComLogIp);
+            FormaAceite.ADefinir, FormaAceite.RegistroSemEnderecoIp, FormaAceite.RegistroComEnderecoIp);
 
     [Theory(DisplayName = "Código fora do contrato não é forma de aceite, sem tolerância a espaço nem a caixa")]
     [InlineData("")]

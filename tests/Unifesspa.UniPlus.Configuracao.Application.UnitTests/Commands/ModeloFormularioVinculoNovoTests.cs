@@ -36,7 +36,7 @@ public sealed class ModeloFormularioVinculoNovoTests : ModeloFormularioHandlerTe
     private static ModeloFormulario ExistenteComOTermo(TermoDoModelo termo)
     {
         ItemDoModelo item = new(
-            "CERTIFICADO", 0, "DADOS", new ApresentacaoDoCampo("Certificado", TipoRenderizacao.Booleano), null, new RegrasDoCampo(null, Obrigatoriedade.Sempre, []));
+            "CERTIFICADO", 0, "DADOS", new ApresentacaoDoCampo("Certificado", TipoRenderizacao.SimOuNao), null, new RegrasDoCampo(null, Obrigatoriedade.Sempre, []));
         return ModeloFormulario.Criar(
             "HABILITACAO_MEDICINA", "Habilitação Medicina", null, FinalidadeFormulario.Habilitacao, null,
             new ConteudoDoModelo("Habilitação", [Secao, Revisao], [item], [termo], [], []),
@@ -113,7 +113,7 @@ public sealed class ModeloFormularioVinculoNovoTests : ModeloFormularioHandlerTe
         FatoCandidato opcao = OpcaoComUmValor();
         FatoCandidato perfil = PerfilDerivadoDesativado(opcao);
         Fatos.ListarTodosAsync(Arg.Any<CancellationToken>()).Returns([Certificado, opcao, perfil]);
-        FatoColetadoInput comOpcoes = Montar("OPCAO", 1, "SELECAO_UNICA").ComRestricoes(new RestricaoValorInput("OPCOES_DAS_RESPOSTAS", Fatos: ["PERFIL"])).Construir();
+        FatoColetadoInput comOpcoes = Montar("OPCAO", 1, "ESCOLHA_UNICA").ComRestricoes(new RestricaoValorInput("OPCOES_DAS_RESPOSTAS", Fatos: ["PERFIL"])).Construir();
 
         Result<Guid> resultado = await CriarAsync(Conteudo(Item("CERTIFICADO", 0), comOpcoes));
 
@@ -192,8 +192,8 @@ public sealed class ModeloFormularioVinculoNovoTests : ModeloFormularioHandlerTe
     private static FatoCandidato OpcaoComUmValor()
     {
         FatoCandidato opcao = CriacaoDoFato.CriarDoAdministrador(
-            "OPCAO", "Opção", "Descrição do fato.", DominioFato.Categorico, CardinalidadeFato.Escalar, FonteValoresFato.Global, null, "INSCRICAO",
-            EscopoFato.Candidato, ClassificacaoDeProtecao.Pessoal, Finalidade, Hipotese).Value!;
+            new DescritivoDoFato("OPCAO", "Opção", "Descrição do fato."),
+            new DefinicaoDoFato(TipoDoDado.Opcao, QuantidadeDeValores.ValorUnico, FonteValoresFato.Catalogo, null, "INSCRICAO", EscopoFato.Candidato, ClassificacaoDeProtecao.Pessoal, Finalidade, Hipotese)).Value!;
         Aprovar(opcao);
         opcao.AdicionarValorDominio("A", "A", 0, ativo: true).IsSuccess.Should().BeTrue();
         return opcao;
@@ -202,7 +202,8 @@ public sealed class ModeloFormularioVinculoNovoTests : ModeloFormularioHandlerTe
     private FatoCandidato PerfilDerivadoDesativado(FatoCandidato opcao)
     {
         FatoCandidato perfil = CriacaoDoFato.CriarDerivadoDoAdministrador(
-            "PERFIL", "Perfil", "Descrição do fato.", DominioFato.Categorico, "INSCRICAO", EscopoFato.Candidato, ClassificacaoDeProtecao.Pessoal, Finalidade, Hipotese).Value!;
+            new DescritivoDoFato("PERFIL", "Perfil", "Descrição do fato."),
+            new DefinicaoDoFato(TipoDoDado.Opcao, null, null, null, "INSCRICAO", EscopoFato.Candidato, ClassificacaoDeProtecao.Pessoal, Finalidade, Hipotese)).Value!;
         Aprovar(perfil);
         perfil.AdicionarValorDominio("A", "A", 0, ativo: true).IsSuccess.Should().BeTrue();
         RegraDerivacao regra = RegraDerivacao.Criar(

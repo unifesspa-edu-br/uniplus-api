@@ -30,8 +30,8 @@ public sealed class OperadorNoEnvelopeTests
             .Should().Be($$"""[[{"codigoDoDado":"FATO","operador":"{{codigo}}","valor":{{valor}}}]]""");
 
     [Theory(DisplayName = "O envelope escreve os operadores de lista pelo código declarado")]
-    [InlineData(Operador.Em, "EM")]
-    [InlineData(Operador.NaoEm, "NAO_EM")]
+    [InlineData(Operador.AlgumDe, "ALGUM_DE")]
+    [InlineData(Operador.NenhumDe, "NENHUM_DE")]
     public void SerializarDnf_OperadorDeLista_EscrevePeloCodigo(Operador operador, string codigo) =>
         SerializacaoDosPredicados.SerializarDnf([(0, "FATO", operador, Valor("[\"A\"]"))])!.ToJsonString()
             .Should().Be($$"""[[{"codigoDoDado":"FATO","operador":"{{codigo}}","valor":["A"]}]]""");

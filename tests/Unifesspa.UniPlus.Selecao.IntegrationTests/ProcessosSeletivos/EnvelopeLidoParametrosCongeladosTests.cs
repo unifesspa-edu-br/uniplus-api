@@ -20,7 +20,7 @@ public sealed class EnvelopeLidoParametrosCongeladosTests
     public void Reidratar_MetadadoCongelado_ConservaOBindingSemCatalogoVivo()
     {
         ProcessoSeletivo processo = ExemploDeEnvelopeProcessoRico.ProcessoRico();
-        MetadadoFatoCongelado metadado = new("COR_RACA", "CATEGORICO", "DECLARADO", "ESCALAR", "INSCRICAO",
+        MetadadoFatoCongelado metadado = new("COR_RACA", TipoDoDado.Opcao, OrigemFato.Declarado, QuantidadeDeValores.ValorUnico, "INSCRICAO",
             "CAMPO_FORMULARIO:COR_RACA", ["VALOR_CONGELADO"], null);
         EntradaCanonicalizacao entrada = EntradaComMetadado(processo, metadado);
         SnapshotCanonico congelado = ExemploDeEnvelope.Canonicalizador.Canonicalizar(entrada);
@@ -59,11 +59,11 @@ public sealed class EnvelopeLidoParametrosCongeladosTests
 
     private static void DefinirCondicaoDeAtendimento(ProcessoSeletivo processo) =>
         processo.DefinirItens([
-            Campo("COR_RACA", 0, TipoRenderizacao.SelecaoUnica),
-            Campo("RENDA", 1, TipoRenderizacao.SelecaoUnica),
-            Campo("CONDICAO_ATENDIMENTO", 2, TipoRenderizacao.SelecaoMultipla),
+            Campo("COR_RACA", 0, TipoRenderizacao.EscolhaUnica),
+            Campo("RENDA", 1, TipoRenderizacao.EscolhaUnica),
+            Campo("CONDICAO_ATENDIMENTO", 2, TipoRenderizacao.EscolhaMultipla),
             FormularioDeTeste.CampoDaEdicaoDoEnem(3),
-            Campo(OpcaoPelasCotasDaLei.FatoConcorrerEscolaPublica, 4, TipoRenderizacao.Booleano),
+            Campo(OpcaoPelasCotasDaLei.FatoConcorrerEscolaPublica, 4, TipoRenderizacao.SimOuNao),
         ], grupos: []).IsSuccess.Should().BeTrue();
 
     private static FatoColetado Campo(string codigo, int ordem, TipoRenderizacao tipo) =>

@@ -25,32 +25,29 @@ public sealed class PermissionRequirementTests
     [Fact]
     public void PermissionRequirement_SensibilidadeNaoInformada_Rejeita()
     {
-        Result<PermissionRequirement> resultado = PermissionRequirement.From("selecao:processos:consultar", ClassificacaoDeProtecao.Nenhuma);
+        Result<PermissionRequirement> resultado = PermissionRequirement.From("selecao:processos:consultar", default(ClassificacaoDeProtecao));
 
         resultado.Error!.Code.Should().Be(AuthorizationErrorCodes.PermissionRequirementSensibilidadeInvalida);
     }
 
     [Fact]
-    public void PermissionRequirement_ShapeCompleto_Constroi()
+    public void PermissionRequirement_PermissaoComEspacos_GuardaAparada()
     {
-        Result<PermissionRequirement> resultado = PermissionRequirement.From(
-            "  selecao.resultado.homologar  ",
-            ClassificacaoDeProtecao.Sensivel,
-            baseLegalPadrao: "LGPD art. 7º, II",
-            requerMfa: true,
-            requerDuplaAprovacao: true,
-            escopoContextoObrigatorio: ["processoId"],
-            verificacoesDeContexto: ["fase_aberta", "estado_resource_compativel"]);
+        PermissionRequirement requisito = RequisitoCompleto("  selecao.resultado.homologar  ");
 
-        resultado.IsSuccess.Should().BeTrue();
-        PermissionRequirement req = resultado.Value!;
-        req.Permissao.Should().Be("selecao.resultado.homologar", "a permissão é normalizada com Trim");
-        req.Sensibilidade.Should().Be(ClassificacaoDeProtecao.Sensivel);
-        req.BaseLegalPadrao.Should().Be("LGPD art. 7º, II");
-        req.RequerMfa.Should().BeTrue();
-        req.RequerDuplaAprovacao.Should().BeTrue();
-        req.EscopoContextoObrigatorio.Should().ContainSingle().Which.Should().Be("processoId");
-        req.VerificacoesDeContexto.Should().Equal("fase_aberta", "estado_resource_compativel");
+        requisito.Permissao.Should().Be("selecao.resultado.homologar", "a permissão é normalizada com Trim");
+    }
+
+    [Fact]
+    public void PermissionRequirement_ShapeCompleto_GuardaOsMetadados()
+    {
+        PermissionRequirement requisito = RequisitoCompleto("selecao.resultado.homologar");
+
+        requisito.Sensibilidade.Should().Be(ClassificacaoDeProtecao.Sensivel);
+        requisito.BaseLegalPadrao.Should().Be("LGPD art. 7º, II");
+        (requisito.RequerMfa, requisito.RequerDuplaAprovacao).Should().Be((true, true));
+        requisito.EscopoContextoObrigatorio.Should().ContainSingle().Which.Should().Be("processoId");
+        requisito.VerificacoesDeContexto.Should().Equal("fase_aberta", "estado_resource_compativel");
     }
 
     [Fact]
@@ -77,4 +74,14 @@ public sealed class PermissionRequirementTests
 
         resultado.Value!.EscopoContextoObrigatorio.Should().ContainSingle("a cópia é defensiva e imutável");
     }
+
+    private static PermissionRequirement RequisitoCompleto(string permissao) =>
+        PermissionRequirement.From(
+            permissao,
+            ClassificacaoDeProtecao.Sensivel,
+            baseLegalPadrao: "LGPD art. 7º, II",
+            requerMfa: true,
+            requerDuplaAprovacao: true,
+            escopoContextoObrigatorio: ["processoId"],
+            verificacoesDeContexto: ["fase_aberta", "estado_resource_compativel"]).Value!;
 }

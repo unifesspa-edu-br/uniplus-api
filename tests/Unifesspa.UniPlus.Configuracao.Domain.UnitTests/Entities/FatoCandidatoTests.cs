@@ -7,10 +7,12 @@ using AwesomeAssertions;
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Domain.Enums;
 using Unifesspa.UniPlus.Configuracao.Domain.Errors;
+using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Kernel.Domain.Entities;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Kernel.Domain.Interfaces;
 using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Regras.Enums;
 
 using static Unifesspa.UniPlus.Configuracao.Domain.UnitTests.Entities.FatoCandidatoDeTeste;
 
@@ -23,13 +25,15 @@ public sealed class FatoCandidatoTests
 {
     [Fact(DisplayName = "Criar categórico sem fonte dos valores é recusado")]
     public void Criar_CategoricoSemFonte_Recusa() =>
-        Criar(fonteValores: null).Error!.Code.Should().Be(FatoCandidatoErrorCodes.FonteValoresObrigatoria);
+        Criar(definicao: Definicao with { FonteValores = null }).Error!.Code.Should().Be(FatoCandidatoErrorCodes.FonteValoresObrigatoria);
 
     [Fact(DisplayName = "Criar booleano com fonte dos valores é recusado")]
     public void Criar_BooleanoComFonte_Recusa() =>
-        CriacaoDoFato.Criar("PCD", "Pessoa com deficiência", "Descrição do fato.", DominioFato.Booleano, OrigemFato.Declarado,
-            CardinalidadeFato.Escalar, FonteValoresFato.Processo, formato: null, PontoResolucaoInscricao, "CAMPO_FORMULARIO:PCD",
-            EscopoFato.Candidato, ClassificacaoDeProtecao.Sensivel, Finalidade, HipoteseLegalTratamento.CumprimentoObrigacaoLegal,
+        CriacaoDoFato.Criar(
+            new DescritivoDoFato("PCD", "Pessoa com deficiência", "Descrição do fato."),
+            OrigemFato.Declarado,
+            "CAMPO_FORMULARIO:PCD",
+            new DefinicaoDoFato(TipoDoDado.SimOuNao, QuantidadeDeValores.ValorUnico, FonteValoresFato.OpcoesDoProcesso, null, PontoResolucaoInscricao, EscopoFato.Candidato, ClassificacaoDeProtecao.Sensivel, Finalidade, HipoteseLegalTratamento.CumprimentoObrigacaoLegal),
             sistema: false)
             .Error!.Code.Should().Be(FatoCandidatoErrorCodes.FonteValoresForaDeCategorico);
 
@@ -37,49 +41,53 @@ public sealed class FatoCandidatoTests
     [InlineData(EscopoFato.Nenhum)]
     [InlineData((EscopoFato)999)]
     public void Criar_EscopoInvalido_Recusa(EscopoFato escopo) =>
-        Criar(escopo: escopo).Error!.Code.Should().Be(FatoCandidatoErrorCodes.EscopoObrigatorio);
+        Criar(definicao: Definicao with { Escopo = escopo }).Error!.Code.Should().Be(FatoCandidatoErrorCodes.EscopoObrigatorio);
 
     [Theory(DisplayName = "Fato de texto declara formato, e só ele")]
-    [InlineData(DominioFato.Texto, null, FatoCandidatoErrorCodes.FormatoObrigatorio)]
-    [InlineData(DominioFato.Booleano, FormatoTexto.Cpf, FatoCandidatoErrorCodes.FormatoForaDeTexto)]
-    public void Criar_FormatoIncoerenteComDominio_Recusa(DominioFato dominio, FormatoTexto? formato, string codigoEsperado) =>
-        Criar(codigo: "CPF", dominio: dominio, formato: formato, binding: "CAMPO_FORMULARIO:CPF")
+    [InlineData(TipoDoDado.Texto, null, FatoCandidatoErrorCodes.FormatoObrigatorio)]
+    [InlineData(TipoDoDado.SimOuNao, FormatoTexto.Cpf, FatoCandidatoErrorCodes.FormatoForaDeTexto)]
+    public void Criar_FormatoIncoerenteComDominio_Recusa(TipoDoDado dominio, FormatoTexto? formato, string codigoEsperado) =>
+        Criar(descritivo: Descritivo with { Codigo = "CPF" }, definicao: Definicao with { Dominio = dominio, Formato = formato, FonteValores = dominio == TipoDoDado.Opcao ? Definicao.FonteValores : null }, binding: "CAMPO_FORMULARIO:CPF")
             .Error!.Code.Should().Be(codigoEsperado);
 
     [Theory(DisplayName = "Texto, data e endereço não aceitam classificação abaixo de pessoal")]
-    [InlineData(DominioFato.Texto, ClassificacaoDeProtecao.Interno)]
-    [InlineData(DominioFato.Data, ClassificacaoDeProtecao.Publico)]
-    [InlineData(DominioFato.Endereco, ClassificacaoDeProtecao.Interno)]
-    public void Criar_ClassificacaoAbaixoDoMinimo_Recusa(DominioFato dominio, ClassificacaoDeProtecao classificacao) =>
+    [InlineData(TipoDoDado.Texto, ClassificacaoDeProtecao.Interno)]
+    [InlineData(TipoDoDado.Data, ClassificacaoDeProtecao.Publico)]
+    [InlineData(TipoDoDado.Endereco, ClassificacaoDeProtecao.Interno)]
+    public void Criar_ClassificacaoAbaixoDoMinimo_Recusa(TipoDoDado dominio, ClassificacaoDeProtecao classificacao) =>
         Criar(
-            codigo: "DADO", dominio: dominio, formato: dominio == DominioFato.Texto ? FormatoTexto.Livre : null,
-            binding: "CAMPO_FORMULARIO:DADO", classificacao: classificacao, hipotese: HipoteseLegalTratamento.ExecucaoPoliticasPublicas)
+            descritivo: Descritivo with { Codigo = "DADO" },
+            definicao: Definicao with { Dominio = dominio, Formato = dominio == TipoDoDado.Texto ? FormatoTexto.Livre : null, ClassificacaoProtecao = classificacao, HipoteseLegal = HipoteseLegalTratamento.ExecucaoPoliticasPublicas, FonteValores = dominio == TipoDoDado.Opcao ? Definicao.FonteValores : null },
+            binding: "CAMPO_FORMULARIO:DADO")
             .Error!.Code.Should().Be(FatoCandidatoErrorCodes.ClassificacaoAbaixoDoMinimoDoDominio);
 
     [Fact(DisplayName = "CA-01 — fato de texto aceita a classificação Identificador")]
     public void Criar_TextoComIdentificador_Aceita() =>
         Criar(
-            codigo: "CPF", dominio: DominioFato.Texto, formato: FormatoTexto.Cpf, binding: "CAMPO_FORMULARIO:CPF",
-            classificacao: ClassificacaoDeProtecao.Identificador, hipotese: HipoteseLegalTratamento.CumprimentoObrigacaoLegal)
+            descritivo: Descritivo with { Codigo = "CPF" },
+            definicao: Definicao with { Dominio = TipoDoDado.Texto, Formato = FormatoTexto.Cpf, ClassificacaoProtecao = ClassificacaoDeProtecao.Identificador, HipoteseLegal = HipoteseLegalTratamento.CumprimentoObrigacaoLegal, FonteValores = null },
+            binding: "CAMPO_FORMULARIO:CPF")
             .IsSuccess.Should().BeTrue();
 
     [Theory(DisplayName = "Identificador é classificação mínima só para texto — data e endereço continuam exigindo Pessoal ou Sensível")]
-    [InlineData(DominioFato.Data)]
-    [InlineData(DominioFato.Endereco)]
-    public void Criar_DataOuEnderecoComIdentificador_Recusa(DominioFato dominio) =>
+    [InlineData(TipoDoDado.Data)]
+    [InlineData(TipoDoDado.Endereco)]
+    public void Criar_DataOuEnderecoComIdentificador_Recusa(TipoDoDado dominio) =>
         Criar(
-            codigo: "DADO", dominio: dominio, binding: "CAMPO_FORMULARIO:DADO",
-            classificacao: ClassificacaoDeProtecao.Identificador, hipotese: HipoteseLegalTratamento.ExecucaoPoliticasPublicas)
+            descritivo: Descritivo with { Codigo = "DADO" },
+            definicao: Definicao with { Dominio = dominio, ClassificacaoProtecao = ClassificacaoDeProtecao.Identificador, HipoteseLegal = HipoteseLegalTratamento.ExecucaoPoliticasPublicas, FonteValores = dominio == TipoDoDado.Opcao ? Definicao.FonteValores : null },
+            binding: "CAMPO_FORMULARIO:DADO")
             .Error!.Code.Should().Be(FatoCandidatoErrorCodes.ClassificacaoAbaixoDoMinimoDoDominio);
 
     [Theory(DisplayName = "Identificador nunca é aceito fora do domínio texto — categórico, booleano e numérico também recusam")]
-    [InlineData(DominioFato.Categorico)]
-    [InlineData(DominioFato.Booleano)]
-    [InlineData(DominioFato.Numerico)]
-    public void Criar_DominioQueNaoEhTextoComIdentificador_Recusa(DominioFato dominio) =>
+    [InlineData(TipoDoDado.Opcao)]
+    [InlineData(TipoDoDado.SimOuNao)]
+    [InlineData(TipoDoDado.Numerico)]
+    public void Criar_DominioQueNaoEhTextoComIdentificador_Recusa(TipoDoDado dominio) =>
         Criar(
-            codigo: "DADO", dominio: dominio, binding: "CAMPO_FORMULARIO:DADO",
-            classificacao: ClassificacaoDeProtecao.Identificador, hipotese: HipoteseLegalTratamento.ExecucaoPoliticasPublicas)
+            descritivo: Descritivo with { Codigo = "DADO" },
+            definicao: Definicao with { Dominio = dominio, ClassificacaoProtecao = ClassificacaoDeProtecao.Identificador, HipoteseLegal = HipoteseLegalTratamento.ExecucaoPoliticasPublicas, FonteValores = dominio == TipoDoDado.Opcao ? Definicao.FonteValores : null },
+            binding: "CAMPO_FORMULARIO:DADO")
             .Error!.Code.Should().Be(FatoCandidatoErrorCodes.ClassificacaoAbaixoDoMinimoDoDominio);
 
     [Theory(DisplayName = "O nome social de sistema é pessoal como todo texto: a factory recusa público e interno para ele")]
@@ -90,15 +98,18 @@ public sealed class FatoCandidatoTests
     [InlineData("NOME", true, ClassificacaoDeProtecao.Publico, false)]
     public void Criar_TextoAbaixoDePessoal_Recusa(string codigo, bool sistema, ClassificacaoDeProtecao classificacao, bool aceito) =>
         Criar(
-            codigo: codigo, dominio: DominioFato.Texto, formato: FormatoTexto.NomePessoa, binding: $"CAMPO_FORMULARIO:{codigo}",
-            classificacao: classificacao, hipotese: HipoteseLegalTratamento.ExecucaoPoliticasPublicas, sistema: sistema)
+            descritivo: Descritivo with { Codigo = codigo },
+            definicao: Definicao with { Dominio = TipoDoDado.Texto, Formato = FormatoTexto.NomePessoa, ClassificacaoProtecao = classificacao, HipoteseLegal = HipoteseLegalTratamento.ExecucaoPoliticasPublicas, FonteValores = null },
+            binding: $"CAMPO_FORMULARIO:{codigo}",
+            sistema: sistema)
             .IsSuccess.Should().Be(aceito);
 
     [Fact(DisplayName = "Violações independentes saem juntas, cada uma no seu campo (ADR-0125)")]
     public void Criar_ViolacoesIndependentes_Acumula()
     {
         Result<FatoCandidato> resultado = Criar(
-            codigo: "codigo invalido", nome: " ", classificacao: ClassificacaoDeProtecao.Nenhuma, finalidade: " ");
+            descritivo: Descritivo with { Codigo = "codigo invalido", Nome = " " },
+            definicao: Definicao with { ClassificacaoProtecao = null, FinalidadeTratamento = " " });
 
         resultado.Errors.Select(static e => e.Field).Should().BeEquivalentTo(
             ["codigo", "nome", "classificacaoProtecao", "finalidadeTratamento"]);
@@ -108,9 +119,8 @@ public sealed class FatoCandidatoTests
     public void CriarDoAdministrador_DeclaradoComVinculoDoCodigo()
     {
         FatoCandidato fato = CriacaoDoFato.CriarDoAdministrador(
-            " ANO_CONCLUSAO ", "Ano de conclusão", "Descrição do fato.", DominioFato.Numerico, CardinalidadeFato.Escalar, null, null,
-            PontoResolucaoInscricao, EscopoFato.Candidato, ClassificacaoDeProtecao.Pessoal, Finalidade,
-            HipoteseLegalTratamento.CumprimentoObrigacaoLegal).Value!;
+            new DescritivoDoFato(" ANO_CONCLUSAO ", "Ano de conclusão", "Descrição do fato."),
+            new DefinicaoDoFato(TipoDoDado.Numerico, QuantidadeDeValores.ValorUnico, null, null, PontoResolucaoInscricao, EscopoFato.Candidato, ClassificacaoDeProtecao.Pessoal, Finalidade, HipoteseLegalTratamento.CumprimentoObrigacaoLegal)).Value!;
 
         fato.Origem.Should().Be(OrigemFato.Declarado);
         fato.Binding.Should().Be("CAMPO_FORMULARIO:ANO_CONCLUSAO");
@@ -128,7 +138,7 @@ public sealed class FatoCandidatoTests
     [InlineData("   ")]
     public void DescricaoEmBranco_Recusa(string? descricao)
     {
-        Criar(descricao: descricao).Errors.Should().ContainSingle()
+        Criar(descritivo: Descritivo with { Descricao = descricao }).Errors.Should().ContainSingle()
             .Which.Error.Code.Should().Be(FatoCandidatoErrorCodes.DescricaoObrigatoria);
 
         Criar().Value!.AlterarDescritivo("Cor ou raça", descricao, null).Error!.Code
@@ -142,9 +152,8 @@ public sealed class FatoCandidatoTests
     public void ComponenteDeExibicao_SoDoVocabularioFechado(ComponenteDeExibicao componente, bool aceito)
     {
         Result<FatoCandidato> resultado = CriacaoDoFato.CriarDoAdministrador(
-            "RENDA_BRUTA_FAMILIAR", "Renda bruta familiar", Descricao, DominioFato.Numerico, CardinalidadeFato.Escalar, null, null,
-            PontoResolucaoInscricao, EscopoFato.Candidato, ClassificacaoDeProtecao.Pessoal, Finalidade,
-            HipoteseLegalTratamento.CumprimentoObrigacaoLegal, componente);
+            new DescritivoDoFato("RENDA_BRUTA_FAMILIAR", "Renda bruta familiar", Descricao, componente),
+            new DefinicaoDoFato(TipoDoDado.Numerico, QuantidadeDeValores.ValorUnico, null, null, PontoResolucaoInscricao, EscopoFato.Candidato, ClassificacaoDeProtecao.Pessoal, Finalidade, HipoteseLegalTratamento.CumprimentoObrigacaoLegal));
 
         resultado.IsSuccess.Should().Be(aceito);
         if (aceito)
@@ -158,12 +167,12 @@ public sealed class FatoCandidatoTests
     }
 
     [Theory(DisplayName = "Proteção de dados incompleta é recusada")]
-    [InlineData(ClassificacaoDeProtecao.Nenhuma, Finalidade, HipoteseLegalTratamento.CumprimentoObrigacaoLegal, FatoCandidatoErrorCodes.ClassificacaoProtecaoObrigatoria)]
+    [InlineData(null, Finalidade, HipoteseLegalTratamento.CumprimentoObrigacaoLegal, FatoCandidatoErrorCodes.ClassificacaoProtecaoObrigatoria)]
     [InlineData(ClassificacaoDeProtecao.Pessoal, "  ", HipoteseLegalTratamento.CumprimentoObrigacaoLegal, FatoCandidatoErrorCodes.FinalidadeTratamentoObrigatoria)]
     [InlineData(ClassificacaoDeProtecao.Pessoal, Finalidade, HipoteseLegalTratamento.Nenhuma, FatoCandidatoErrorCodes.HipoteseLegalObrigatoria)]
     public void Criar_ProtecaoIncompleta_Recusa(
-        ClassificacaoDeProtecao classificacao, string finalidade, HipoteseLegalTratamento hipotese, string codigoEsperado) =>
-        Criar(classificacao: classificacao, finalidade: finalidade, hipotese: hipotese)
+        ClassificacaoDeProtecao? classificacao, string finalidade, HipoteseLegalTratamento hipotese, string codigoEsperado) =>
+        Criar(definicao: Definicao with { ClassificacaoProtecao = classificacao, FinalidadeTratamento = finalidade, HipoteseLegal = hipotese })
             .Error!.Code.Should().Be(codigoEsperado);
 
     [Theory(DisplayName = "Hipótese legal fora do artigo da classificação é recusada: art. 11 para sensível, art. 7º para os demais")]
@@ -171,7 +180,7 @@ public sealed class FatoCandidatoTests
     [InlineData(ClassificacaoDeProtecao.Sensivel, HipoteseLegalTratamento.ExecucaoContrato)]
     [InlineData(ClassificacaoDeProtecao.Pessoal, HipoteseLegalTratamento.PrevencaoAFraude)]
     public void Criar_HipoteseForaDoArtigo_Recusa(ClassificacaoDeProtecao classificacao, HipoteseLegalTratamento hipotese) =>
-        Criar(classificacao: classificacao, hipotese: hipotese)
+        Criar(definicao: Definicao with { ClassificacaoProtecao = classificacao, HipoteseLegal = hipotese })
             .Error!.Code.Should().Be(FatoCandidatoErrorCodes.HipoteseLegalIncompativelComClassificacao);
 
     [Fact(DisplayName = "Fato de sistema edita nome, descrição e componente, mas não é desativado nem recebe valor")]
@@ -202,15 +211,15 @@ public sealed class FatoCandidatoTests
     [Fact(DisplayName = "Criar categórico válido preenche os campos com Guid v7")]
     public void Criar_CategoricoValido_Preenche()
     {
-        FatoCandidato fato = Criar(descricao: "Cor ou raça autodeclarada").Value!;
+        FatoCandidato fato = Criar(descritivo: Descritivo with { Descricao = "Cor ou raça autodeclarada" }).Value!;
 
         fato.Id.Should().NotBe(Guid.Empty);
         fato.Codigo.Should().Be("COR_RACA");
         fato.Nome.Should().Be("Cor ou raça");
         fato.Descricao.Should().Be("Cor ou raça autodeclarada");
-        fato.Dominio.Should().Be(DominioFato.Categorico);
+        fato.Dominio.Should().Be(TipoDoDado.Opcao);
         fato.Origem.Should().Be(OrigemFato.Declarado);
-        fato.Cardinalidade.Should().Be(CardinalidadeFato.Escalar);
+        fato.Cardinalidade.Should().Be(QuantidadeDeValores.ValorUnico);
         fato.PontoResolucao.Should().Be("INSCRICAO");
         fato.Binding.Should().Be(BindingCorRaca);
     }
@@ -224,7 +233,7 @@ public sealed class FatoCandidatoTests
     [InlineData("A")]             // curto demais (< 2)
     public void Criar_CodigoInvalido_Falha(string codigo)
     {
-        Result<FatoCandidato> resultado = Criar(codigo: codigo);
+        Result<FatoCandidato> resultado = Criar(descritivo: Descritivo with { Codigo = codigo });
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().StartWith("FatoCandidato.Codigo");
@@ -233,16 +242,16 @@ public sealed class FatoCandidatoTests
     [Fact(DisplayName = "Nome ausente é rejeitado")]
     public void Criar_SemNome_Falha()
     {
-        Result<FatoCandidato> resultado = Criar(nome: "   ");
+        Result<FatoCandidato> resultado = Criar(descritivo: Descritivo with { Nome = "   " });
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be(FatoCandidatoErrorCodes.NomeObrigatorio);
     }
 
-    [Fact(DisplayName = "Domínio Nenhum (não decidível — ex.: 'texto') é rejeitado")]
-    public void Criar_DominioNenhum_Falha()
+    [Fact(DisplayName = "Domínio ausente é rejeitado")]
+    public void Criar_DominioAusente_Falha()
     {
-        Result<FatoCandidato> resultado = Criar(dominio: DominioFato.Nenhum);
+        Result<FatoCandidato> resultado = Criar(definicao: Definicao with { Dominio = null, FonteValores = null });
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be(FatoCandidatoErrorCodes.DominioObrigatorio);
@@ -251,7 +260,7 @@ public sealed class FatoCandidatoTests
     [Fact(DisplayName = "Domínio fora do roster (cast inválido) é rejeitado como inválido, não aceito")]
     public void Criar_DominioForaDoRoster_Falha()
     {
-        Result<FatoCandidato> resultado = Criar(dominio: (DominioFato)999);
+        Result<FatoCandidato> resultado = Criar(definicao: Definicao with { Dominio = (TipoDoDado)999, FonteValores = null });
 
         resultado.IsFailure.Should().BeTrue("a factory não pode delegar a rejeição ao converter (que lançaria 500)");
         resultado.Error!.Code.Should().Be(FatoCandidatoErrorCodes.DominioInvalido);
@@ -269,25 +278,25 @@ public sealed class FatoCandidatoTests
     [Fact(DisplayName = "Cardinalidade fora do roster (cast inválido) é rejeitada como inválida")]
     public void Criar_CardinalidadeForaDoRoster_Falha()
     {
-        Result<FatoCandidato> resultado = Criar(cardinalidade: (CardinalidadeFato)999);
+        Result<FatoCandidato> resultado = Criar(definicao: Definicao with { Cardinalidade = (QuantidadeDeValores)999 });
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be(FatoCandidatoErrorCodes.CardinalidadeInvalida);
     }
 
-    [Fact(DisplayName = "Origem Nenhuma é rejeitada")]
-    public void Criar_OrigemNenhuma_Falha()
+    [Fact(DisplayName = "Origem ausente é rejeitada")]
+    public void Criar_OrigemAusente_Falha()
     {
-        Result<FatoCandidato> resultado = Criar(origem: OrigemFato.Nenhuma);
+        Result<FatoCandidato> resultado = Criar(origem: null);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be(FatoCandidatoErrorCodes.OrigemObrigatoria);
     }
 
-    [Fact(DisplayName = "Cardinalidade Nenhuma é rejeitada")]
-    public void Criar_CardinalidadeNenhuma_Falha()
+    [Fact(DisplayName = "Cardinalidade ausente é rejeitada")]
+    public void Criar_CardinalidadeAusente_Falha()
     {
-        Result<FatoCandidato> resultado = Criar(cardinalidade: CardinalidadeFato.Nenhuma);
+        Result<FatoCandidato> resultado = Criar(definicao: Definicao with { Cardinalidade = null });
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be(FatoCandidatoErrorCodes.CardinalidadeObrigatoria);

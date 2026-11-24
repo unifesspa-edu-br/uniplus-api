@@ -41,7 +41,7 @@ internal static class FormularioDeTeste
         int deslocamento = finalidade == FinalidadeFormulario.Inscricao ? 1 : 0;
         EtapaFormulario[] doTeste =
         [
-            EtapaFormulario.Criar(new EtapaEstrutura(Secao, deslocamento, TipoEtapaFormulario.Secao, BlocoSistema.Nenhum), "Dados", null, null).Value!,
+            EtapaFormulario.Criar(new EtapaEstrutura(Secao, deslocamento, TipoEtapaFormulario.Secao, null), "Dados", null, null).Value!,
             EtapaFormulario.Criar(new EtapaEstrutura("REVISAO", deslocamento + 1, TipoEtapaFormulario.Bloco, BlocoSistema.RevisaoEAceite), "Revisão e aceite", null, null).Value!,
         ];
         if (deslocamento == 0)
@@ -50,7 +50,7 @@ internal static class FormularioDeTeste
         }
 
         EtapaFormularioInput secao = ConjuntoBasicoDaInscricao.Secao;
-        return [EtapaFormulario.Criar(new EtapaEstrutura(secao.Codigo, secao.Ordem, TipoEtapaFormulario.Secao, BlocoSistema.Nenhum), secao.Apresentacao!.Titulo!, secao.Apresentacao.Descricao, secao.Apresentacao.Aviso).Value!, .. doTeste];
+        return [EtapaFormulario.Criar(new EtapaEstrutura(secao.Codigo, secao.Ordem, TipoEtapaFormulario.Secao, null), secao.Apresentacao!.Titulo!, secao.Apresentacao.Descricao, secao.Apresentacao.Aviso).Value!, .. doTeste];
     }
 
     /// <summary>Os itens do conjunto básico, como a escrita os monta, sem os que o teste já declara.</summary>
@@ -203,7 +203,7 @@ internal static class FormularioDeTeste
     public static FatoColetado CampoDaEdicaoDoEnem(int ordem) =>
         FatoColetadoDeTeste.Coletando(EdicaoDoEnem.Fato, ordem)
             .ComRotulo("Qual edição do ENEM você vai usar?")
-            .DoTipo(TipoRenderizacao.SelecaoUnica)
+            .DoTipo(TipoRenderizacao.EscolhaUnica)
             .ComObrigatoriedade(Obrigatoriedade.Sempre)
             .ComOrigem(Unifesspa.UniPlus.Selecao.Domain.Enums.OrigemValoresColeta.OpcoesDoProcesso)
             .Construir();

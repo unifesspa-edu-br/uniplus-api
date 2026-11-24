@@ -2,8 +2,10 @@ namespace Unifesspa.UniPlus.Selecao.Application.DTOs;
 
 using System.Text.Json;
 
+using Unifesspa.UniPlus.Application.Abstractions.Respostas;
 using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Regras.Enums;
+using Unifesspa.UniPlus.Regras.Formularios;
 
 /// <summary>
 /// O perfil simulado de um candidato para a pré-visualização do processo: as respostas dos
@@ -22,7 +24,7 @@ public sealed record PreVisualizacaoDoProcessoInput(
 public sealed record OcorrenciaSimuladaInput(string? Id, IReadOnlyDictionary<string, JsonElement>? Respostas);
 
 /// <summary>Uma seção dada como concluída, no formulário da finalidade.</summary>
-public sealed record EtapaConcluidaInput(string Finalidade, string Etapa);
+public sealed record EtapaConcluidaInput([property: AceitaCodigosDe<FinalidadeFormulario>] string Finalidade, string Etapa);
 
 /// <summary>
 /// O processo avaliado contra o perfil simulado: o que cada formulário mostra e exige, e os
@@ -35,14 +37,14 @@ public sealed record PreVisualizacaoDoProcessoDto(
 
 /// <summary>Um formulário avaliado: as seções, os itens, os grupos e os termos dele.</summary>
 public sealed record FormularioSimuladoDto(
-    string Finalidade,
+    CodigoComRotulo<FinalidadeFormulario> Finalidade,
     IReadOnlyList<ItemSimuladoDto> Itens,
     IReadOnlyList<GrupoSimuladoDto> Grupos,
     IReadOnlyList<TermoSimuladoDto> Termos,
     IReadOnlyList<SecaoSimuladaDto> Secoes);
 
 /// <summary>Uma seção do formulário avaliada: se ela aparece.</summary>
-public sealed record SecaoSimuladaDto(string Codigo, [property: AceitaCodigosDe<Ternario>] string Visivel);
+public sealed record SecaoSimuladaDto(string Codigo, CodigoComRotulo<Ternario> Visivel);
 
 /// <summary>
 /// As opções que um campo de escolha deixa escolher diante das respostas: as que valem em definitivo e
@@ -57,10 +59,10 @@ public sealed record OpcoesSimuladasDto(IReadOnlyList<string> Codigos, bool Defi
 public sealed record ItemSimuladoDto(
     string FatoCodigo,
     string? EtapaCodigo,
-    [property: AceitaCodigosDe<Ternario>] string Visivel,
-    [property: AceitaCodigosDe<Ternario>] string Obrigatorio,
+    CodigoComRotulo<Ternario> Visivel,
+    CodigoComRotulo<Ternario> Obrigatorio,
     IReadOnlyList<string> RestricoesVioladas,
-    [property: AceitaCodigosDe<Ternario>] string Impedido,
+    CodigoComRotulo<Ternario> Impedido,
     string? MensagemDoImpedimento,
     OpcoesSimuladasDto? Opcoes);
 
@@ -71,8 +73,8 @@ public sealed record ItemSimuladoDto(
 public sealed record GrupoSimuladoDto(
     string Codigo,
     string? EtapaCodigo,
-    [property: AceitaCodigosDe<Ternario>] string Visivel,
-    [property: AceitaCodigosDe<Ternario>] string Obrigatorio,
+    CodigoComRotulo<Ternario> Visivel,
+    CodigoComRotulo<Ternario> Obrigatorio,
     bool ContagemValida,
     bool OcorrenciaDoCandidatoValida,
     IReadOnlyList<OcorrenciaSimuladaDto> Ocorrencias);
@@ -81,7 +83,7 @@ public sealed record GrupoSimuladoDto(
 public sealed record OcorrenciaSimuladaDto(string Id, IReadOnlyList<ItemSimuladoDto> Itens);
 
 /// <summary>Um termo avaliado: se aparece e se é obrigatório.</summary>
-public sealed record TermoSimuladoDto(string Codigo, [property: AceitaCodigosDe<Ternario>] string Visivel, [property: AceitaCodigosDe<Ternario>] string Obrigatorio);
+public sealed record TermoSimuladoDto(string Codigo, CodigoComRotulo<Ternario> Visivel, CodigoComRotulo<Ternario> Obrigatorio);
 
 /// <summary>
 /// Um documento exigido pelas regras de comprovação diante do perfil: <c>EXIGIDO</c>, <c>NAO_EXIGIDO</c> ou
@@ -100,7 +102,7 @@ public sealed record DocumentoSimuladoDto(
     string TipoDocumentoNome,
     bool Obrigatorio,
     Guid FaseId,
-    string? Finalidade,
+    CodigoComRotulo<FinalidadeFormulario>? Finalidade,
     Guid? EtapaId,
     string Situacao,
     string? OcorrenciaId,

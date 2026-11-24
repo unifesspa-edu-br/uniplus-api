@@ -8487,12 +8487,12 @@
       "codigo": "uniplus.configuracao.tipo_conceito.natureza_invalida",
       "requisitos": [],
       "oQueAconteceu": [
-        "O campo `natureza` enviado na criação (`POST /api/configuracao/admin/tipos-conceito`) ou na atualização (`PUT /api/configuracao/admin/tipos-conceito/{id}`) não é `NUMERICO` nem `CATEGORICO`. A comparação é exata: `Numerico` ou `numerico` são recusados. O campo ausente, nulo ou vazio também cai aqui, porque o corpo o declara como texto anulável de propósito, para que a ausência chegue à regra do domínio e responda 422 em vez de uma recusa genérica de 400.",
+        "O campo `natureza` enviado na criação (`POST /api/configuracao/admin/tipos-conceito`) ou na atualização (`PUT /api/configuracao/admin/tipos-conceito/{id}`) não é `NUMERICO` nem `POR_OPCOES`. A comparação é exata: `Numerico` ou `numerico` são recusados. O campo ausente, nulo ou vazio também cai aqui, porque o corpo o declara como texto anulável de propósito, para que a ausência chegue à regra do domínio e responda 422 em vez de uma recusa genérica de 400.",
         "A natureza decide quais parâmetros o tipo exige: o numérico, a escala em `numerico`; o categórico, a lista em `valores`. Com a natureza inválida, nenhum dos dois é conferido, e só as demais recusas do corpo (como o nome) saem junto.",
         "A recusa vem na lista `errors` da resposta, com `field` igual a `natureza`. Nada é gravado. Na atualização, com o corpo desserializável e o `id` do corpo igual ao da rota, a conferência do corpo vem antes da busca do tipo: com um `{id}` que não existe, a resposta é esta, e não a de [tipo de conceito não encontrado](/erros/uniplus.configuracao.tipo_conceito.nao_encontrado). O corpo que não desserializa e o `id` do corpo diferente do da rota são recusados antes, com 400 e sem o código desta página."
       ],
       "comoResolver": [
-        "Envie `natureza` como `NUMERICO` ou `CATEGORICO`, junto com os parâmetros da natureza escolhida, e repita o pedido."
+        "Envie `natureza` como `NUMERICO` ou `POR_OPCOES`, junto com os parâmetros da natureza escolhida, e repita o pedido."
       ],
       "ondeAparece": [
         "Criação de um tipo de conceito",

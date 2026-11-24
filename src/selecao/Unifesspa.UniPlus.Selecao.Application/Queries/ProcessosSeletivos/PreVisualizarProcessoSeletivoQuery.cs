@@ -19,6 +19,7 @@ using Kernel.Results;
 using Services;
 
 using Unifesspa.UniPlus.Application.Abstractions.Messaging;
+using Unifesspa.UniPlus.Application.Abstractions.Respostas;
 using Unifesspa.UniPlus.Configuracao.Contracts;
 using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Regras.Entradas;
@@ -88,7 +89,8 @@ public static class PreVisualizarProcessoSeletivoQueryHandler
         EntradaDaAvaliacaoDaInscricao.Montar(DefinicoesDasRespostas(processo), new EntradaDaAvaliacaoDaInscricao(
             simulacao.Respostas ?? new Dictionary<string, JsonElement>(), ocorrencias, RespostaDeCampo.ComoFatosConhecidos(simulacao.Pressupostos),
             new HashSet<string>((simulacao.EtapasConcluidas ?? []).Where(static e => e is not null)
-                .Select(static e => DefinicaoDoProcesso.CodigoDaEtapa(EstruturaFormulario.FinalidadeDoToken(e.Finalidade), e.Etapa)), StringComparer.Ordinal),
+                .Select(static e => EstruturaFormulario.FinalidadeDoCodigo(e.Finalidade) is { } finalidade ? DefinicaoDoProcesso.CodigoDaEtapa(finalidade, e.Etapa) : null)
+                .OfType<string>(), StringComparer.Ordinal),
             Envio: null, Apresentacoes: EntradaDaAvaliacaoDaInscricao.SemApresentacoes));
 
     /// <summary>A definição da resposta de cada fato e subitem que o processo coleta, em qualquer formulário, e a dos derivados do sistema.</summary>
@@ -108,32 +110,32 @@ public static class PreVisualizarProcessoSeletivoQueryHandler
         Dictionary<string, FatoColetado> itemPorFato = processo.FatosColetados.ToDictionary(static f => f.FatoCodigo, StringComparer.Ordinal);
         Dictionary<string, GrupoColetado> grupoPorCodigo = processo.GruposColetados.ToDictionary(static g => g.Codigo, StringComparer.Ordinal);
         Dictionary<string, TermoExigidoFormulario> termoPorCodigo = processo.TermosExigidos
-            .ToDictionary(static t => DefinicaoDoProcesso.CodigoDoTermo(t.Finalidade, t.Codigo), StringComparer.Ordinal);
+            .ToDictionary(static t => DefinicaoDoProcesso.CodigoDoTermo(t.Finalidade!.Value, t.Codigo), StringComparer.Ordinal);
 
         return [.. processo.Formularios.OrderBy(static f => f.Finalidade).Select(formulario => new FormularioSimuladoDto(
-            EstruturaFormulario.ParaToken(formulario.Finalidade),
+            CodigoComRotulo<FinalidadeFormulario>.De(formulario.Finalidade),
             [.. avaliacao.Itens.Where(i => itemPorFato[i.FatoCodigo].Finalidade == formulario.Finalidade).Select(i => Item(i, itemPorFato[i.FatoCodigo]))],
             [.. avaliacao.Grupos.Where(g => grupoPorCodigo[g.Codigo].Finalidade == formulario.Finalidade).Select(g => Grupo(g, grupoPorCodigo[g.Codigo]))],
             [.. avaliacao.Termos.Where(t => termoPorCodigo[t.Codigo].Finalidade == formulario.Finalidade)
-                .Select(t => new TermoSimuladoDto(termoPorCodigo[t.Codigo].Codigo, t.Visivel.Codigo(), t.Obrigatorio.Codigo()))],
+                .Select(t => new TermoSimuladoDto(termoPorCodigo[t.Codigo].Codigo, CodigoComRotulo<Ternario>.De(t.Visivel), CodigoComRotulo<Ternario>.De(t.Obrigatorio)))],
             Secoes(formulario, avaliacao)))];
     }
 
     private static GrupoSimuladoDto Grupo(AvaliacaoGrupo grupo, GrupoColetado coletado) => new(
-        grupo.Codigo, coletado.EtapaCodigo, grupo.Visivel.Codigo(), grupo.Obrigatorio.Codigo(), grupo.ContagemValida, grupo.OcorrenciaDoCandidatoValida,
+        grupo.Codigo, coletado.EtapaCodigo, CodigoComRotulo<Ternario>.De(grupo.Visivel), CodigoComRotulo<Ternario>.De(grupo.Obrigatorio), grupo.ContagemValida, grupo.OcorrenciaDoCandidatoValida,
         [.. grupo.Ocorrencias.Select(o => new OcorrenciaSimuladaDto(o.Id,
             [.. o.Itens.Select(i => Item(i, coletado.Subitens.Single(s => s.FatoCodigo == i.FatoCodigo), coletado.EtapaCodigo))]))]);
 
     private static List<SecaoSimuladaDto> Secoes(FormularioProcesso formulario, AvaliacaoFormulario avaliacao) =>
         [.. formulario.Etapas.Where(static e => e.Tipo == TipoEtapaFormulario.Secao).OrderBy(static e => e.Ordem)
             .Select(e => new SecaoSimuladaDto(e.Codigo,
-                avaliacao.Etapas.Single(a => a.Codigo == DefinicaoDoProcesso.CodigoDaEtapa(formulario.Finalidade, e.Codigo)).Visivel.Codigo()))];
+                CodigoComRotulo<Ternario>.De(avaliacao.Etapas.Single(a => a.Codigo == DefinicaoDoProcesso.CodigoDaEtapa(formulario.Finalidade, e.Codigo)).Visivel)))];
 
     /// <summary>O item avaliado; o campo de grupo segue a seção do grupo.</summary>
     private static ItemSimuladoDto Item(AvaliacaoItem item, FatoColetado campo, string? etapaDoGrupo = null) => new(
-        item.FatoCodigo, etapaDoGrupo ?? campo.EtapaCodigo, item.Visivel.Codigo(), item.Obrigatorio.Codigo(),
-        [.. item.RestricoesVioladas.Select(static r => RestricaoValorJson.ParaToken(r.Tipo))],
-        item.Impedido.Codigo(), campo.Impedimento?.Mensagem,
+        item.FatoCodigo, etapaDoGrupo ?? campo.EtapaCodigo, CodigoComRotulo<Ternario>.De(item.Visivel), CodigoComRotulo<Ternario>.De(item.Obrigatorio),
+        [.. item.RestricoesVioladas.Select(static r => r.Tipo.Codigo())],
+        CodigoComRotulo<Ternario>.De(item.Impedido), campo.Impedimento?.Mensagem,
         item.Opcoes is { } opcoes ? new OpcoesSimuladasDto(opcoes.Codigos, opcoes.Definitivas) : null);
 
     private static DocumentoSimuladoDto Documento(DocumentoAvaliado avaliado)
@@ -141,7 +143,7 @@ public static class PreVisualizarProcessoSeletivoQueryHandler
         DocumentoExigido documento = avaliado.Documento;
         return new(
             documento.Id, documento.TipoDocumentoCodigo, documento.TipoDocumentoNome, documento.Obrigatorio,
-            documento.ExigidoNaFaseId, documento.Finalidade is { } finalidade ? EstruturaFormulario.ParaToken(finalidade) : null,
+            documento.ExigidoNaFaseId, documento.Finalidade is { } finalidade ? CodigoComRotulo<FinalidadeFormulario>.De(finalidade) : null,
             documento.ExigidoNaEtapaId, Situacao(avaliado.Situacao), avaliado.OcorrenciaId,
             [.. avaliado.Grupos
                 .Where(static g => g.Forma == FormaDeComprovacao.QuantidadeMinimaDeItens)

@@ -13,7 +13,7 @@ public sealed class CamposObrigatoriosDaEntradaTests
     [Theory(DisplayName = "proteção do documento sem finalidade, hipótese legal ou classificação diz o que falta")]
     [InlineData(ClassificacaoDeProtecao.Publico, " ", "LGPD_ART7_II", "A proteção do tipo de documento precisa de finalidade do tratamento.")]
     [InlineData(ClassificacaoDeProtecao.Publico, "Habilitação", "", "A proteção do tipo de documento precisa de hipótese legal.")]
-    [InlineData(ClassificacaoDeProtecao.Nenhuma, "Habilitação", "LGPD_ART7_II", "A classificação de proteção do tipo de documento é obrigatória.")]
+    [InlineData(default(ClassificacaoDeProtecao), "Habilitação", "LGPD_ART7_II", "A classificação de proteção do tipo de documento é obrigatória.")]
     public void ProtecaoDoDocumento_Incompleta_NomeiaOQueFalta(
         ClassificacaoDeProtecao classificacao, string finalidade, string hipoteseLegal, string esperada)
     {

@@ -104,7 +104,7 @@ public sealed class PublicacaoDoRegistroDeAcessoTests
             ],
             default);
 
-        Cabecalho(_mensagens.Single(), CabecalhosDoRegistroDeAcesso.SensibilidadeMaxima).Should().Be("sensivel");
+        Cabecalho(_mensagens.Single(), CabecalhosDoRegistroDeAcesso.SensibilidadeMaxima).Should().Be("SENSIVEL");
     }
 
     [Theory(DisplayName = "O resultado do lote é o de todos os registros, ou misto quando divergem")]

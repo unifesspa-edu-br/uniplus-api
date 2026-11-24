@@ -6,6 +6,7 @@ using Domain.Enums;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence.CodigosDeContrato;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Protecao;
 using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
@@ -18,7 +19,12 @@ public sealed class DocumentoAPublicarConfiguration : IEntityTypeConfiguration<D
 
         builder.ClassificaPorPadrao(ClassificacaoDeProtecao.Interno);
 
-        builder.ToTable("documentos_a_publicar");
+        builder.ToTable("documentos_a_publicar", t =>
+        {
+            t.HasCheckConstraint("ck_documentos_a_publicar_finalidade", $"finalidade IN ({SqlDosCodigosDeContrato.Lista<FinalidadeDoDocumento>()})");
+            t.HasCheckConstraint("ck_documentos_a_publicar_formato", $"formato IN ({SqlDosCodigosDeContrato.Lista<FormatoDeDocumento>()})");
+            t.HasCheckConstraint("ck_documentos_a_publicar_status", $"status IN ({SqlDosCodigosDeContrato.Lista<StatusArquivoEnviado>()})");
+        });
         builder.HasKey(d => d.Id);
         // Guid v7 gerado no domínio (EntityBase) — mesma convenção de ProcessoSeletivoConfiguration.
         builder.Property(d => d.Id).ValueGeneratedNever();

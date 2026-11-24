@@ -54,7 +54,7 @@ internal static class BancoDaSementeParaTeste
             $"""
             INSERT INTO configuracao.termos_de_consentimento
                 (id, codigo, nome, forma_aceite_rascunho, revisado, is_deleted, deleted_at, deleted_by, created_at)
-            VALUES ({id}, {codigo}, {nome}, 'REGISTRO_DIGITAL_COM_LOG_IP', FALSE, {removido},
+            VALUES ({id}, {codigo}, {nome}, 'REGISTRO_COM_ENDERECO_IP', FALSE, {removido},
                     CASE WHEN {removido} THEN now() END, CASE WHEN {removido} THEN 'administracao-de-teste' END, now())
             """);
 
@@ -63,7 +63,7 @@ internal static class BancoDaSementeParaTeste
             $"""
             INSERT INTO configuracao.versoes_do_termo_consentimento
                 (id, termo_consentimento_id, numero, texto, base_legal, forma_aceite, hash, promovida_em, promovida_por)
-            VALUES ({id}, {termoId}, {numero}, 'Texto fictício.', 'Base legal fictícia.', 'REGISTRO_DIGITAL_COM_LOG_IP',
+            VALUES ({id}, {termoId}, {numero}, 'Texto fictício.', 'Base legal fictícia.', 'REGISTRO_COM_ENDERECO_IP',
                     repeat('a', 64), now(), 'administracao-de-teste')
             """);
 

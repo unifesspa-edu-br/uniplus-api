@@ -7,6 +7,7 @@ using AwesomeAssertions;
 using NSubstitute;
 
 using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
+using Unifesspa.UniPlus.Application.Abstractions.Respostas;
 using Unifesspa.UniPlus.Configuracao.Contracts;
 using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
@@ -55,16 +56,16 @@ internal static class ApoioDaDefinicaoDasRegrasDeDerivacao
 
     internal static IReadOnlyList<FatoCandidatoView> VocabularioSeed() =>
     [
-        new(Guid.CreateVersion7(), "COR_RACA", "Cor ou raça", "Descrição do fato.", "CATEGORICO", "DECLARADO", "ESCALAR",
-            ["BRANCA", "PRETA", "PARDA", "AMARELA", "INDIGENA", "NAO_INFORMADO"], "INSCRICAO", "CAMPO_FORMULARIO:COR_RACA", null, "GLOBAL", Ativo: true, ClassificacaoProtecao: "PESSOAL", HipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, FinalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, ProtecaoAprovada: true),
-        new(Guid.CreateVersion7(), "BAIXA_RENDA", "Baixa renda", "Descrição do fato.", "BOOLEANO", "DECLARADO", "ESCALAR",
+        new(Guid.CreateVersion7(), "COR_RACA", "Cor ou raça", "Descrição do fato.", CodigoComRotulo<TipoDoDado>.De(TipoDoDado.Opcao), CodigoComRotulo<OrigemFato>.De(OrigemFato.Declarado), CodigoComRotulo<QuantidadeDeValores>.De(QuantidadeDeValores.ValorUnico),
+            ["BRANCA", "PRETA", "PARDA", "AMARELA", "INDIGENA", "NAO_INFORMADO"], "INSCRICAO", "CAMPO_FORMULARIO:COR_RACA", null, CodigoComRotulo<FonteValoresFato>.De(FonteValoresFato.Catalogo), Ativo: true, ClassificacaoProtecao: "PESSOAL", HipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, FinalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, ProtecaoAprovada: true),
+        new(Guid.CreateVersion7(), "BAIXA_RENDA", "Baixa renda", "Descrição do fato.", CodigoComRotulo<TipoDoDado>.De(TipoDoDado.SimOuNao), CodigoComRotulo<OrigemFato>.De(OrigemFato.Declarado), CodigoComRotulo<QuantidadeDeValores>.De(QuantidadeDeValores.ValorUnico),
             null, "INSCRICAO", "CAMPO_FORMULARIO:BAIXA_RENDA", null, null, Ativo: true, ClassificacaoProtecao: "PESSOAL", HipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, FinalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, ProtecaoAprovada: true),
-        new(Guid.CreateVersion7(), OrigemEscolar.FatoEgresso, "Egresso de escola pública", "Descrição do fato.", "BOOLEANO", "DERIVADO", "ESCALAR",
+        new(Guid.CreateVersion7(), OrigemEscolar.FatoEgresso, "Egresso de escola pública", "Descrição do fato.", CodigoComRotulo<TipoDoDado>.De(TipoDoDado.SimOuNao), CodigoComRotulo<OrigemFato>.De(OrigemFato.Calculado), CodigoComRotulo<QuantidadeDeValores>.De(QuantidadeDeValores.ValorUnico),
             null, "INSCRICAO", $"REGRA_DERIVACAO:{OrigemEscolar.FatoEgresso}", null, null, Ativo: true, ClassificacaoProtecao: "PESSOAL", HipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, FinalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, ProtecaoAprovada: true),
-        new(Guid.CreateVersion7(), Derivado, "Regime de vaga", "Descrição do fato.", "CATEGORICO", "DERIVADO", "MULTIVALORADO",
+        new(Guid.CreateVersion7(), Derivado, "Regime de vaga", "Descrição do fato.", CodigoComRotulo<TipoDoDado>.De(TipoDoDado.Opcao), CodigoComRotulo<OrigemFato>.De(OrigemFato.Calculado), CodigoComRotulo<QuantidadeDeValores>.De(QuantidadeDeValores.VariosValores),
             ["AC", "AC_PCD"], "INSCRICAO", $"REGRA_DERIVACAO:{Derivado}",
             [new FatoValorDominioViewItem("AC", "Ampla", 0, true), new FatoValorDominioViewItem("AC_PCD", "Reserva", 1, true)],
-            "GLOBAL", Ativo: true, ClassificacaoProtecao: "PESSOAL", HipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, FinalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, ProtecaoAprovada: true),
+            CodigoComRotulo<FonteValoresFato>.De(FonteValoresFato.Catalogo), Ativo: true, ClassificacaoProtecao: "PESSOAL", HipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, FinalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, ProtecaoAprovada: true),
     ];
 
     internal static ProcessoSeletivo ProcessoBase() =>
@@ -93,7 +94,7 @@ internal static class ApoioDaDefinicaoDasRegrasDeDerivacao
     private static ProcessoSeletivo ProcessoComCorRacaColetada()
     {
         ProcessoSeletivo processo = ProcessoBase();
-        processo.DefinirItens([FatoColetadoDeTeste.Coletando("COR_RACA", 0).ComRotulo("Cor ou raça").DoTipo(TipoRenderizacao.SelecaoUnica).Construir()])
+        processo.DefinirItens([FatoColetadoDeTeste.Coletando("COR_RACA", 0).ComRotulo("Cor ou raça").DoTipo(TipoRenderizacao.EscolhaUnica).Construir()])
             .IsSuccess.Should().BeTrue();
 
         return processo;
@@ -115,13 +116,13 @@ internal static class ApoioDaDefinicaoDasRegrasDeDerivacao
     internal static FatoCandidatoView FatoDerivadoDoCatalogo(
         string codigo,
         string nome,
-        string dominio,
-        string cardinalidade,
+        TipoDoDado dominio,
+        QuantidadeDeValores cardinalidade,
         string[]? valoresDominio,
         IReadOnlyList<FatoValorDominioViewItem> valoresDeclarados,
-        string? fonteValores) => new(
-        Guid.CreateVersion7(), codigo, nome, "Descrição do fato.", dominio, "DERIVADO", cardinalidade, valoresDominio, "INSCRICAO",
-        $"REGRA_DERIVACAO:{codigo}", valoresDeclarados, fonteValores, Ativo: true, ClassificacaoProtecao: "PESSOAL",
+        FonteValoresFato? fonteValores) => new(
+        Guid.CreateVersion7(), codigo, nome, "Descrição do fato.", CodigoComRotulo<TipoDoDado>.De(dominio), CodigoComRotulo<OrigemFato>.De(OrigemFato.Calculado), CodigoComRotulo<QuantidadeDeValores>.De(cardinalidade), valoresDominio, "INSCRICAO",
+        $"REGRA_DERIVACAO:{codigo}", valoresDeclarados, (fonteValores is { } fonteValoresInformada ? CodigoComRotulo<FonteValoresFato>.De(fonteValoresInformada) : null), Ativo: true, ClassificacaoProtecao: "PESSOAL",
         HipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, FinalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, ProtecaoAprovada: true);
 
     internal static ModalidadeSelecionada ModalidadeDe(string codigo, NaturezaLegalModalidade natureza) =>

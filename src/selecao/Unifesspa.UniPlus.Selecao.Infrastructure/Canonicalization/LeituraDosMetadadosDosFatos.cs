@@ -100,13 +100,13 @@ internal static class LeituraDosMetadadosDosFatos
 
     private static DadosDoMetadado LerDadosDoMetadado(LeitorEnvelope leitor, JsonObject item, string path) => new(
         leitor.TextoNaoVazio(item, "codigoDoDado", path),
-        leitor.TextoNaoVazio(item, "tipo", path),
-        leitor.TextoNaoVazio(item, "origem", path),
-        leitor.TextoNaoVazio(item, "quantidadeDeValores", path),
+        leitor.CodigoDeContrato<TipoDoDado>(item, "tipo", path),
+        leitor.CodigoDeContrato<OrigemFato>(item, "origem", path),
+        leitor.CodigoDeContrato<QuantidadeDeValores>(item, "quantidadeDeValores", path),
         leitor.TextoNaoVazio(item, "faseDeDisponibilidade", path),
         leitor.TextoNaoVazio(item, "fonteDoValor", path));
 
-    private sealed record DadosDoMetadado(string Codigo, string Dominio, string Origem, string Cardinalidade, string PontoResolucao, string Binding)
+    private sealed record DadosDoMetadado(string Codigo, TipoDoDado Dominio, OrigemFato Origem, QuantidadeDeValores Cardinalidade, string PontoResolucao, string Binding)
     {
         internal MetadadoFatoCongelado Congelar(IReadOnlyList<string>? valores, IReadOnlyList<ValorDominioDeclaradoCongelado>? declarados) =>
             new(Codigo, Dominio, Origem, Cardinalidade, PontoResolucao, Binding, valores, declarados);

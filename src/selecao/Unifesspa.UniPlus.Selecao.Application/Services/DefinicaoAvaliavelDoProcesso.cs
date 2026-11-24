@@ -231,8 +231,8 @@ public static class DefinicaoAvaliavelDoProcesso
         return [.. VocabularioDeFatos.MembroPorAgregado(catalogo.Values)
             .Where(a => grupoDoCampo.ContainsKey(a.Value) && catalogo.ContainsKey(a.Value))
             .OrderBy(static a => a.Key, StringComparer.Ordinal)
-            .Select(a => (Agregado: a.Key, Membro: a.Value, Operacao: AgregadoDeGrupo.OperacaoDoDominio(catalogo[a.Value].Dominio)))
-            .Where(static a => a.Operacao != OperacaoAgregado.Nenhuma)
-            .Select(a => new DefinicaoAgregado(a.Agregado, grupoDoCampo[a.Membro], a.Membro, a.Operacao))];
+            .Select(a => (Agregado: a.Key, Membro: a.Value, Operacao: AgregadoDeGrupo.OperacaoDoDominio(catalogo[a.Value].DominioValor)))
+            .Where(static a => a.Operacao is not null)
+            .Select(a => new DefinicaoAgregado(a.Agregado, grupoDoCampo[a.Membro], a.Membro, a.Operacao!.Value))];
     }
 }

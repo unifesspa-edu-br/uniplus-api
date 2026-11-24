@@ -103,7 +103,7 @@ internal static class ApoioDaProjecaoDosDocumentosExigidos
             Condicoes =
             [
                 CondicaoGatilho.Criar(0, "SEXO", Operador.Igual, JsonSerializer.SerializeToElement("MASCULINO")).Value!,
-                CondicaoGatilho.Criar(1, "MODALIDADE", Operador.Em, JsonSerializer.SerializeToElement(new[] { "LB_PPI", "AC" })).Value!,
+                CondicaoGatilho.Criar(1, "MODALIDADE", Operador.AlgumDe, JsonSerializer.SerializeToElement(new[] { "LB_PPI", "AC" })).Value!,
             ],
         };
 

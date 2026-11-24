@@ -1,6 +1,9 @@
 namespace Unifesspa.UniPlus.Configuracao.Application.Commands.TiposDocumento;
 
 using Unifesspa.UniPlus.Application.Abstractions.Messaging;
+using Unifesspa.UniPlus.Configuracao.Application.Commands.FatosCandidato;
+using Unifesspa.UniPlus.Configuracao.Domain.Enums;
+using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Kernel.Results;
 
 /// <summary>
@@ -26,4 +29,12 @@ public sealed record AtualizarTipoDocumentoCommand(
     string? TipoEquivalente = null,
     string? ClassificacaoProtecao = null,
     string? FinalidadeTratamento = null,
-    string? HipoteseLegal = null) : ICommand<Result>;
+    string? HipoteseLegal = null) : ICommand<Result>
+{
+    public DeclaracaoDoTipoDocumento Declaracao() =>
+        new(
+            Codigo, Nome, Descricao, Categoria, FormatosAceitos, TamanhoMaximoMb, TipoEquivalente,
+            TokensDoFato.Classificacao(ClassificacaoProtecao),
+            FinalidadeTratamento,
+            TokensDoFato.HipoteseLegal(HipoteseLegal) ?? HipoteseLegalTratamento.Nenhuma);
+}

@@ -31,7 +31,7 @@ public sealed class PedidoDeConcessaoAprovacaoTests
         decisao.Etapa.Should().Be(EtapaDoPedido.Gestor);
         decisao.Resultado.Should().Be(ResultadoDaDecisao.Aprovado);
         decisao.PermissoesAvaliadas.Should().Equal("selecao:processos:consultar");
-        decisao.SensibilidadeAvaliada.Should().Be("interno");
+        decisao.SensibilidadeAvaliada.Should().Be("INTERNO");
         decisao.Dispensa.Should().BeNull();
     }
 
@@ -128,7 +128,7 @@ public sealed class PedidoDeConcessaoAprovacaoTests
     {
         PedidoDeConcessao pedido = Pedido().Protegido().AguardandoGestor();
         pedido.Aprovar(Diogo.Identidade, Sensivel, Contexto, Agora, Agora.AddMonths(3));
-        PerfilAvaliado ampliado = new(["selecao:atendimento:analisar"], "sensivel", true, null);
+        PerfilAvaliado ampliado = new(["selecao:atendimento:analisar"], "SENSIVEL", true, null);
 
         Codigos(pedido.Aprovar(Marlene.Identidade, ampliado, Contexto, Agora.AddHours(1))).Should().Equal(PedidoErrorCodes.PerfilAlterado);
 
@@ -189,7 +189,7 @@ public sealed class PedidoDeConcessaoAprovacaoTests
     {
         PedidoDeConcessao pedido = Pedido().Protegido().AguardandoGestor();
         pedido.Aprovar(Isabella.Identidade, Sensivel, Contexto, Agora);
-        PerfilAvaliado ampliado = new([.. Sensivel.Permissoes, "selecao:inscricoes:exportar"], "sensivel", true, null);
+        PerfilAvaliado ampliado = new([.. Sensivel.Permissoes, "selecao:inscricoes:exportar"], "SENSIVEL", true, null);
         Codigos(pedido.Aprovar(Marlene.Identidade, ampliado, Contexto, Agora)).Should().Equal(PedidoErrorCodes.PerfilAlterado);
         pedido.Aprovar(Diogo.Identidade, ampliado, Contexto, Agora.AddHours(2)).IsSuccess.Should().BeTrue();
 
@@ -203,7 +203,7 @@ public sealed class PedidoDeConcessaoAprovacaoTests
     {
         PedidoDeConcessao pedido = Pedido().Protegido().AguardandoGestor();
         pedido.Aprovar(Diogo.Identidade, Sensivel, Contexto, Agora);
-        PerfilAvaliado menosSensivel = new(Sensivel.Permissoes, "interno", false, null);
+        PerfilAvaliado menosSensivel = new(Sensivel.Permissoes, "INTERNO", false, null);
 
         Codigos(pedido.Aprovar(Marlene.Identidade, menosSensivel, Contexto, Agora)).Should().Equal(PedidoErrorCodes.PerfilAlterado);
         pedido.Andamento.Situacao.Should().Be(SituacaoDoPedido.AguardandoGestor);

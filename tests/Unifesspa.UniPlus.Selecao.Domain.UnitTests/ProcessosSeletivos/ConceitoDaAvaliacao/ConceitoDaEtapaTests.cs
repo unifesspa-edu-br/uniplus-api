@@ -3,6 +3,7 @@ namespace Unifesspa.UniPlus.Selecao.Domain.UnitTests.ProcessosSeletivos.Conceito
 using AwesomeAssertions;
 
 using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.ConceitoDaAvaliacao;
 
@@ -16,11 +17,11 @@ public sealed class ConceitoDaEtapaTests
         [new("APTO", "Apto", true), new("INAPTO", "Inapto", false)];
 
     private static Result<ConceitoDaEtapa> Numerico(EscalaInformada? escala, IReadOnlyList<ValorCategoricoInformado?>? valores = null) =>
-        ConceitoDaEtapa.Criar("NOTA", "Nota", NaturezaConceito.Numerico, escala, valores);
+        ConceitoDaEtapa.Criar("NOTA", "Nota", FormaDoConceito.Numerico, escala, valores);
 
     private static Result<ConceitoDaEtapa> Categorico(
         IReadOnlyList<ValorCategoricoInformado?>? valores, EscalaInformada? escala = null) =>
-        ConceitoDaEtapa.Criar("APTO_INAPTO", "Apto ou inapto", NaturezaConceito.Categorico, escala, valores);
+        ConceitoDaEtapa.Criar("APTO_INAPTO", "Apto ou inapto", FormaDoConceito.PorOpcoes, escala, valores);
 
     private static (string? Campo, string Codigo)[] Pares(Result<ConceitoDaEtapa> resultado) =>
         [.. resultado.Errors.Select(static erro => (erro.Field, erro.Error.Code))];
@@ -32,7 +33,7 @@ public sealed class ConceitoDaEtapaTests
 
         conceito.Codigo.Should().Be("NOTA");
         conceito.Nome.Should().Be("Nota");
-        conceito.Natureza.Should().Be(NaturezaConceito.Numerico);
+        conceito.Natureza.Should().Be(FormaDoConceito.Numerico);
         conceito.Escala.Should().Match<EscalaNumerica>(escala => escala.Minima == 0m && escala.Maxima == 10m && escala.CasasDecimais == 2);
         conceito.Valores.Should().BeEmpty();
     }
@@ -42,7 +43,7 @@ public sealed class ConceitoDaEtapaTests
     {
         ConceitoDaEtapa conceito = Categorico(AptoEInapto()).Value!;
 
-        conceito.Natureza.Should().Be(NaturezaConceito.Categorico);
+        conceito.Natureza.Should().Be(FormaDoConceito.PorOpcoes);
         conceito.Escala.Should().BeNull();
         conceito.Valores.Select(static valor => (valor.Codigo, valor.Rotulo, valor.ContaComoAprovacao))
             .Should().Equal(("APTO", "Apto", true), ("INAPTO", "Inapto", false));
@@ -71,7 +72,7 @@ public sealed class ConceitoDaEtapaTests
     [InlineData(99)]
     public void Criar_NaturezaForaDoEnum_Lanca(int natureza)
     {
-        Func<Result<ConceitoDaEtapa>> criar = () => ConceitoDaEtapa.Criar("NOTA", "Nota", (NaturezaConceito)natureza, null, null);
+        Func<Result<ConceitoDaEtapa>> criar = () => ConceitoDaEtapa.Criar("NOTA", "Nota", (FormaDoConceito)natureza, null, null);
 
         criar.Should().Throw<ArgumentOutOfRangeException>().WithParameterName(nameof(natureza));
     }
@@ -158,7 +159,7 @@ public sealed class ConceitoDaEtapaTests
     [InlineData("A\0B")]
     public void Criar_CodigoENomeInvalidos_Recusa(string? texto)
     {
-        Result<ConceitoDaEtapa> resultado = ConceitoDaEtapa.Criar(texto, texto, NaturezaConceito.Numerico, new EscalaInformada(0m, 10m, 2), null);
+        Result<ConceitoDaEtapa> resultado = ConceitoDaEtapa.Criar(texto, texto, FormaDoConceito.Numerico, new EscalaInformada(0m, 10m, 2), null);
 
         Pares(resultado).Should().Equal(
             ("codigo", ConceitoDaEtapaErrorCodes.CodigoInvalido), ("nome", ConceitoDaEtapaErrorCodes.NomeInvalido));
@@ -169,7 +170,7 @@ public sealed class ConceitoDaEtapaTests
     {
         string longo = new('X', 65);
 
-        Result<ConceitoDaEtapa> resultado = ConceitoDaEtapa.Criar(longo, "Nota", NaturezaConceito.Numerico, new EscalaInformada(0m, 10m, 2), null);
+        Result<ConceitoDaEtapa> resultado = ConceitoDaEtapa.Criar(longo, "Nota", FormaDoConceito.Numerico, new EscalaInformada(0m, 10m, 2), null);
 
         resultado.Error!.Code.Should().Be(ConceitoDaEtapaErrorCodes.CodigoInvalido);
         resultado.Error.Message.Should().NotContain(longo);
@@ -200,7 +201,7 @@ public sealed class ConceitoDaEtapaTests
         const string RotuloDecomposto = "Não apto";
 
         ConceitoDaEtapa conceito = ConceitoDaEtapa.Criar(
-            "AVALIACAO", NomeDecomposto, NaturezaConceito.Categorico, null, [new("APTO", "Apto", true), new("NAO_APTO", RotuloDecomposto, false)]).Value!;
+            "AVALIACAO", NomeDecomposto, FormaDoConceito.PorOpcoes, null, [new("APTO", "Apto", true), new("NAO_APTO", RotuloDecomposto, false)]).Value!;
 
         conceito.Nome.Should().Be("Avaliação");
         conceito.Valores[1].Rotulo.Should().Be("Não apto");
@@ -209,7 +210,7 @@ public sealed class ConceitoDaEtapaTests
     [Fact(DisplayName = "As recusas de código, nome e parâmetros se acumulam no mesmo resultado")]
     public void Criar_VariasRecusas_Acumula()
     {
-        Result<ConceitoDaEtapa> resultado = ConceitoDaEtapa.Criar(" ", null, NaturezaConceito.Numerico, new EscalaInformada(5m, 5m, 9), AptoEInapto());
+        Result<ConceitoDaEtapa> resultado = ConceitoDaEtapa.Criar(" ", null, FormaDoConceito.Numerico, new EscalaInformada(5m, 5m, 9), AptoEInapto());
 
         Pares(resultado).Should().Equal(
             ("codigo", ConceitoDaEtapaErrorCodes.CodigoInvalido),

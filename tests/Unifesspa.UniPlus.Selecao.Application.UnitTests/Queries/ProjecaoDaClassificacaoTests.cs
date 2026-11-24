@@ -236,9 +236,9 @@ public sealed class ProjecaoDaClassificacaoTests
     public void ProjetarCriteriosDeDesempate_OperadorEm_DevolveOValorComoListaJson()
     {
         CriterioDesempateDto dto = ProjetarUnicoCriterio(
-            CenariosDeDefinirEtapas.ProcessoSemEtapas(), CriterioDePredicado("MODALIDADE", Operador.Em, new[] { "LB_PPI", "AC" }));
+            CenariosDeDefinirEtapas.ProcessoSemEtapas(), CriterioDePredicado("MODALIDADE", Operador.AlgumDe, new[] { "LB_PPI", "AC" }));
 
-        dto.Parametros.Operador.Should().Be("EM");
+        dto.Parametros.Operador.Should().Be("ALGUM_DE");
         dto.Parametros.Valor.Should().Be("[\"LB_PPI\",\"AC\"]");
     }
 

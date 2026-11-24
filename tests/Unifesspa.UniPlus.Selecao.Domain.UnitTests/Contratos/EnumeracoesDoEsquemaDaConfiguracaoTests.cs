@@ -46,7 +46,7 @@ public sealed class EnumeracoesDoEsquemaDaConfiguracaoTests
         (Comuns, $"{Recurso}/efeitoSuspensivo", () => Codigos<EfeitoSuspensivo>(static v => v.Codigo())),
         (Comuns, $"{Recurso}/guardaDaVaga", () => Codigos<GuardaDaVaga>(static v => v.Codigo())),
         (Condicoes, "/$defs/condicao/properties/operador", () => Codigos<Operador>(static v => v.Codigo())),
-        (Condicoes, "/$defs/obrigatoriedade/properties/tipo", () => [PredicadoDnfJson.ObrigatoriedadeSempre, PredicadoDnfJson.ObrigatoriedadeNunca, PredicadoDnfJson.ObrigatoriedadeQuando]),
+        (Condicoes, "/$defs/obrigatoriedade/properties/tipo", () => Codigos<TipoObrigatoriedade>(static v => v.Codigo())),
         (Condicoes, "/$defs/baseLegal/properties/abrangencia", () => Codigos<TipoAbrangencia>(static v => v.Codigo())),
         (Condicoes, "/$defs/baseLegal/properties/situacao", () => Codigos<StatusBaseLegal>(static v => v.Codigo())),
         ("divulgacao.schema.json", "/properties/camposPublicos/items", () => ConfiguracaoDivulgacao.CamposPermitidos.Select(static c => c.Codigo)),
@@ -67,9 +67,9 @@ public sealed class EnumeracoesDoEsquemaDaConfiguracaoTests
         (Exigencias, "/$defs/formatosPermitidos/properties/lista/items/properties/formato", () => CatalogoDe<FormatoPermitido>.Todos().Select(static c => c.Codigo)),
         ("identificacao.schema.json", "/properties/origemCandidatos", () => Codigos<OrigemCandidatos>(static v => v.Codigo())),
         ("taxa-de-inscricao.schema.json", "/properties/fundamentos/items", () => CatalogoDe<FundamentoIsencao>.Todos().Select(static v => v.Codigo).ToArray()),
-        ("formulario.schema.json", "/properties/finalidade", () => [EstruturaFormulario.FinalidadeInscricao, EstruturaFormulario.FinalidadeIsencaoTaxa, EstruturaFormulario.FinalidadeHabilitacao]),
-        ("formulario.schema.json", "/$defs/pagina/properties/tipo", () => [EstruturaFormulario.TipoSecao, EstruturaFormulario.TipoBloco]),
-        ("formulario.schema.json", "/$defs/pagina/properties/bloco", () => [EstruturaFormulario.BlocoComprovacaoDocumental, EstruturaFormulario.BlocoModalidadesCalculadas, EstruturaFormulario.BlocoRevisaoEAceite]),
+        ("formulario.schema.json", "/properties/finalidade", () => CatalogoDe<FinalidadeFormulario>.Todos().Select(static c => c.Codigo)),
+        ("formulario.schema.json", "/$defs/pagina/properties/tipo", () => Codigos<TipoEtapaFormulario>(static v => v.Codigo())),
+        ("formulario.schema.json", "/$defs/pagina/properties/bloco", () => Codigos<BlocoSistema>(static v => v.Codigo())),
         (Comuns, "/$defs/alvoDoProcedimentoDeRecurso/properties/areaDoEnem", () => AreaDoEnem.Todas),
         (Comuns, "/$defs/procedimentoDeRecurso/properties/regra/properties/codigo", () => CatalogoDe<RegraDeProcedimentoDoRecurso>.Todos().Select(static item => item.Codigo)),
         ("restricao-de-valor.schema.json", "/$defs/limiteDeData/properties/referenciaDaData", () => [RestricaoValorJson.AncoraDataFixa, RestricaoValorJson.AncoraEnvio]),
@@ -92,9 +92,9 @@ public sealed class EnumeracoesDoEsquemaDaConfiguracaoTests
     [Fact(DisplayName = "O tipo de restrição do esquema são os tipos declaráveis do domínio")]
     public void TipoDeRestricao_SaoOsTiposDeclaraveis() =>
         ValoresDoEsquema("restricao-de-valor.schema.json", "/properties/tipo").Should().BeEquivalentTo(
-            Enum.GetValues<TipoRestricaoValor>()
-                .Where(static t => t is not (TipoRestricaoValor.Nenhuma or TipoRestricaoValor.FormatoTexto))
-                .Select(RestricaoValorJson.ParaToken));
+            CatalogoDe<TipoRestricaoValor>.Valores()
+                .Where(static t => RestricoesDeValor.TipoDeclarado(t.Codigo()) is not null)
+                .Select(static t => t.Codigo()));
 
     private static IEnumerable<string> Codigos<T>(Func<T, string> codigo)
         where T : struct, Enum =>

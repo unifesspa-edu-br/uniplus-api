@@ -19,6 +19,7 @@ using Unifesspa.UniPlus.Configuracao.IntegrationTests.Infrastructure;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.Formularios;
 
 /// <summary>
@@ -91,7 +92,7 @@ public sealed class FatoCandidatoLeituraTests
         IReadOnlyList<FatoCandidatoView> views = await reader.ListarAsync();
         doCatalogo.Select(static f => f.Fato).Should().BeEquivalentTo(views, options => options.WithStrictOrdering());
         FatoDoCatalogoDto corRaca = doCatalogo.Single(static f => f.Fato.Codigo == "COR_RACA");
-        corRaca.OperadoresAdmitidos.Select(static o => o.Codigo).Should().Equal("IGUAL", "DIFERENTE", "EM", "NAO_EM");
+        corRaca.OperadoresAdmitidos.Select(static o => o.Codigo).Should().Equal("IGUAL", "DIFERENTE", "ALGUM_DE", "NENHUM_DE");
     }
 
     [Fact(DisplayName = "A leitura do catálogo para a consulta pública resolve por código e devolve null para código inexistente")]
@@ -110,9 +111,9 @@ public sealed class FatoCandidatoLeituraTests
 
     private static void ConferirCorRaca(FatoCandidatoView corRaca)
     {
-        corRaca.Dominio.Should().Be("CATEGORICO");
-        corRaca.Origem.Should().Be("DECLARADO");
-        corRaca.Cardinalidade.Should().Be("ESCALAR");
+        corRaca.DominioValor.Should().Be(TipoDoDado.Opcao);
+        corRaca.OrigemValor.Should().Be(OrigemFato.Declarado);
+        corRaca.CardinalidadeValor.Should().Be(QuantidadeDeValores.ValorUnico);
         corRaca.PontoResolucao.Should().Be("INSCRICAO");
         corRaca.Binding.Should().Be("CAMPO_FORMULARIO:COR_RACA");
         // A view projeta os códigos dos valores declarados em ValoresDominio, que o consumidor
@@ -125,7 +126,7 @@ public sealed class FatoCandidatoLeituraTests
     private static void ConferirFaixaEtaria(FatoCandidatoView faixaEtaria)
     {
         faixaEtaria.Nome.Should().Be("Idade", "o comprovante mostra a idade em anos, com o rótulo do catálogo");
-        faixaEtaria.Origem.Should().Be("DERIVADO");
+        faixaEtaria.OrigemValor.Should().Be(OrigemFato.Calculado);
         faixaEtaria.Binding.Should().Be("ATRIBUTO_CANDIDATO:FAIXA_ETARIA");
         faixaEtaria.ValoresDominioDeclarados.Should().BeNull();
     }

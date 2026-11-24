@@ -4,6 +4,7 @@ using System.Text.Json;
 
 using AwesomeAssertions;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Entradas;
 using Unifesspa.UniPlus.Regras.Enums;
@@ -155,18 +156,18 @@ public sealed class FormularioPortavelTests
             "Um agregado do formulário não tem código."
         },
         {
-            Formulario(ItemComRestricao(new RestricaoValorDto(RestricaoValorJson.FaixaNumerica, 10, 1, null, null, null, null))),
+            Formulario(ItemComRestricao(new RestricaoValorDto(TipoRestricaoValor.FaixaNumerica.Codigo(), 10, 1, null, null, null, null))),
             RestricaoValorErrorCodes.LimitesIncoerentes,
             "O mínimo (10) é maior que o máximo (1)."
         },
         {
-            Formulario(ItemComRestricao(new RestricaoValorDto(RestricaoValorJson.OpcoesDasRespostas, null, null, null, [], null, null))),
+            Formulario(ItemComRestricao(new RestricaoValorDto(TipoRestricaoValor.OpcoesDasRespostas.Codigo(), null, null, null, [], null, null))),
             RestricaoValorErrorCodes.FatosVazios,
             "As opções formadas pelas respostas precisam citar ao menos um fato."
         },
         {
             Formulario(ItemComRestricao(new RestricaoValorDto(
-                RestricaoValorJson.OpcoesPermitidas, null, null, [new OpcoesCondicionadasDto(null, [])], null, null, null))),
+                TipoRestricaoValor.OpcoesPermitidas.Codigo(), null, null, [new OpcoesCondicionadasDto(null, [])], null, null, null))),
             RestricaoValorErrorCodes.OpcoesVazias,
             "Um grupo de opções precisa de valores não vazios."
         },
@@ -266,11 +267,11 @@ public sealed class FormularioPortavelTests
         { Formulario(ItemComRegras(new RegrasDoCampoDto(null, Quando([[null!]]), [], null))), "etapas[0].itens[0].regras.obrigatoriedade.predicado[0][0]" },
         { Formulario(ItemComRegras(new RegrasDoCampoDto(null, new ObrigatoriedadeDto("NUNCA", null), [], new ImpedimentoDto([null!], "Mensagem")))), "etapas[0].itens[0].regras.impedimento.quando[0]" },
         {
-            Formulario(ItemComRestricao(new RestricaoValorDto(RestricaoValorJson.OpcoesPermitidas, null, null, [null!], null, null, null))),
+            Formulario(ItemComRestricao(new RestricaoValorDto(TipoRestricaoValor.OpcoesPermitidas.Codigo(), null, null, [null!], null, null, null))),
             "etapas[0].itens[0].regras.restricoes[0].entradas[0]"
         },
         {
-            Formulario(ItemComRestricao(new RestricaoValorDto(RestricaoValorJson.OpcoesDasRespostas, null, null, null, [null!], null, null))),
+            Formulario(ItemComRestricao(new RestricaoValorDto(TipoRestricaoValor.OpcoesDasRespostas.Codigo(), null, null, null, [null!], null, null))),
             "etapas[0].itens[0].regras.restricoes[0].fatos[0]"
         },
         { Formulario(Item("RENDA")) with { Termos = [new TermoPortavel("TERMO", Nunca([null!]))] }, "termos[0].regras.exibicao[0]" },

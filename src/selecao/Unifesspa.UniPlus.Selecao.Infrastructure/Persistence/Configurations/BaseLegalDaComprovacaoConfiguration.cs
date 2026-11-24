@@ -1,10 +1,12 @@
 namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Configurations;
 
 using Domain.Entities;
+using Domain.Enums;
 
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence.CodigosDeContrato;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Protecao;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
 
@@ -22,7 +24,11 @@ public sealed class BaseLegalDaComprovacaoConfiguration : IEntityTypeConfigurati
 
         builder.ClassificaPorPadrao(ClassificacaoDeProtecao.Interno);
 
-        builder.ToTable("bases_legais_da_comprovacao");
+        builder.ToTable("bases_legais_da_comprovacao", t =>
+        {
+            t.HasCheckConstraint("ck_bases_legais_da_comprovacao_abrangencia", $"abrangencia IN ({SqlDosCodigosDeContrato.Lista<TipoAbrangencia>()})");
+            t.HasCheckConstraint("ck_bases_legais_da_comprovacao_situacao", $"situacao IN ({SqlDosCodigosDeContrato.Lista<StatusBaseLegal>()})");
+        });
         builder.HasKey(b => b.Id);
         builder.Property(b => b.Id).ValueGeneratedNever();
 

@@ -30,14 +30,16 @@ public static class AcessoAoProcesso
     /// sobre ele entra no registro de acessos. É a única definição de que a inscrição é pessoal.
     /// </summary>
     public static ResourceContext ResourceDaInscricao(Guid unidadeId, Guid processoId, Guid? inscricaoId) =>
-        DaInscricao(unidadeId, processoId, inscricaoId, fatoCodigo: null, ocorrencia: null);
+        ResourceContext.From(
+            ResourceTiposSelecao.Inscricao, ClassificacaoDeProtecao.Pessoal, unidadeId, processoId, resourceId: inscricaoId,
+            inscricaoId: inscricaoId).Value!;
 
     /// <summary>
     /// O resource de um campo da inscrição: o registro do acesso nomeia o fato e, no grupo que se repete, a ocorrência.
     /// </summary>
     public static ResourceContext ResourceDoCampo(
         Guid unidadeId, Guid processoId, Guid inscricaoId, string fatoCodigo, string? ocorrencia) =>
-        DaInscricao(unidadeId, processoId, inscricaoId, fatoCodigo, ocorrencia);
+        ResourceDaInscricao(unidadeId, processoId, inscricaoId).ComCampo(fatoCodigo, ocorrencia).Value!;
 
     /// <summary>
     /// O resource de um documento da inscrição, com a sensibilidade da classificação congelada da exigência a que o
@@ -48,12 +50,6 @@ public static class AcessoAoProcesso
         ResourceContext.From(
             ResourceTiposSelecao.DocumentoDaInscricao, classificacao, unidadeId, processoId, resourceId: arquivoId,
             inscricaoId: inscricaoId).Value!;
-
-    private static ResourceContext DaInscricao(
-        Guid unidadeId, Guid processoId, Guid? inscricaoId, string? fatoCodigo, string? ocorrencia) =>
-        ResourceContext.From(
-            ResourceTiposSelecao.Inscricao, ClassificacaoDeProtecao.Pessoal, unidadeId, processoId, resourceId: inscricaoId,
-            fatoCodigo: fatoCodigo, ocorrencia: ocorrencia, inscricaoId: inscricaoId).Value!;
 
     // Resources dos atos de quem atua por uma banca. A unidade é a que conduz a fase na versão vigente, e nunca a dona
     // do processo: quem recebe a banca numa fase conduzida por outra unidade atua nessa unidade. Cada tipo exige os

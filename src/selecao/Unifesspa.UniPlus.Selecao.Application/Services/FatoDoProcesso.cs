@@ -11,7 +11,7 @@ using Unifesspa.UniPlus.Kernel.Domain.Enums;
 /// <param name="Descricao">O que o dado significa, congelada na publicação.</param>
 /// <param name="Tipo">Como ler o valor (<see cref="TiposDeItem"/>).</param>
 /// <param name="Componente">Como exibir o valor (<see cref="ComponentesDeItem"/>).</param>
-/// <param name="Classificacao">A classificação congelada; <see cref="ClassificacaoDeProtecao.Nenhuma"/> quando não se resolve.</param>
+/// <param name="Classificacao">A classificação congelada; sensível quando não se resolve.</param>
 /// <param name="BaseLegal">A hipótese legal congelada, ou nula quando não há.</param>
 /// <param name="Secao">A seção do formulário em que o fato aparece, quando há.</param>
 /// <param name="Ordem">A posição na ordem de coleta.</param>

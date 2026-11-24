@@ -46,8 +46,8 @@ public sealed class VocabulariosDaModalidadeEndpointTests
             client, "acoes-quando-indeferido", "codigo-acao-quando-indeferido");
 
         itens.Should().Equal(
-            new ItemDoVocabulario("RECLASSIFICAR_AC", "Reclassificar na ampla concorrência"),
-            new ItemDoVocabulario("RECLASSIFICAR_REGRA_EDITAL", "Reclassificar conforme a regra do edital"));
+            new ItemDoVocabulario("RECLASSIFICA_AC", "Ampla concorrência"),
+            new ItemDoVocabulario("RECLASSIFICA_CONFORME_EDITAL", "Conforme o edital"));
     }
 
     [Fact(DisplayName = "GET /vocabularios/composicoes-vagas devolve as quatro composições, na ordem de declaração, sem exigir autenticação")]

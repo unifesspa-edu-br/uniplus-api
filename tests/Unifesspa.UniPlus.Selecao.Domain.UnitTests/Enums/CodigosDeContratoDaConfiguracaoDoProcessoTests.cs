@@ -87,7 +87,7 @@ public sealed class CodigosDeContratoDaConfiguracaoDoProcessoTests
         {
             [OrigemValoresColeta.Catalogo] = "CATALOGO",
             [OrigemValoresColeta.OpcoesDoProcesso] = "OPCOES_DO_PROCESSO",
-            [OrigemValoresColeta.MunicipiosDoBonus] = "MUNICIPIOS_DO_BONUS",
+            [OrigemValoresColeta.MunicipiosDoFada] = "MUNICIPIOS_DO_FADA",
             [OrigemValoresColeta.UnidadesFederativas] = "UNIDADES_FEDERATIVAS",
             [OrigemValoresColeta.MunicipiosDaProvaPresencial] = "MUNICIPIOS_DA_PROVA_PRESENCIAL",
         });

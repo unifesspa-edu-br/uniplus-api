@@ -4,6 +4,7 @@ using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Domain.Enums;
 using Unifesspa.UniPlus.Configuracao.Domain.Interfaces;
 using Unifesspa.UniPlus.Kernel.Extensions;
+using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.Formularios;
 
 /// <summary>
@@ -43,7 +44,7 @@ public sealed class OpcoesDoCadastroInstitucional(
     private async Task CompletarMunicipiosDoBonusAsync(
         Dictionary<string, IReadOnlyList<ValorSelecionavel>?> opcoes, IReadOnlyList<FatoCandidato> fatos, CancellationToken cancellationToken)
     {
-        string[] campos = CamposDaFonte(opcoes, fatos, FonteValoresFato.MunicipiosBonus);
+        string[] campos = CamposDaFonte(opcoes, fatos, FonteValoresFato.MunicipiosDoFada);
         if (campos.Length == 0)
         {
             return;
@@ -87,7 +88,7 @@ public sealed class OpcoesDoCadastroInstitucional(
     private async Task CompletarTiposDeDeficienciaAsync(
         Dictionary<string, IReadOnlyList<ValorSelecionavel>?> opcoes, IReadOnlyList<FatoCandidato> fatos, CancellationToken cancellationToken)
     {
-        string[] campos = CamposDaFonte(opcoes, fatos, FonteValoresFato.TiposDeficiencia);
+        string[] campos = CamposDaFonte(opcoes, fatos, FonteValoresFato.TiposDeDeficiencia);
         if (campos.Length == 0)
         {
             return;

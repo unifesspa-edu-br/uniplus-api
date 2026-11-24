@@ -1,5 +1,7 @@
 namespace Unifesspa.UniPlus.Configuracao.Application.DTOs;
 
+using Unifesspa.UniPlus.Application.Abstractions.Respostas;
+using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Regras.Leituras;
 
 /// <summary>
@@ -7,12 +9,12 @@ using Unifesspa.UniPlus.Regras.Leituras;
 /// <see cref="Descritivo"/> e o <see cref="Conteudo"/> voltam ao PUT trocando cada <c>{ codigo, rotulo }</c>
 /// pelo <c>codigo</c>. O identificador, o código, a finalidade e o estado ativo são do modelo e o PUT os ignora.
 /// </summary>
-/// <param name="Finalidade">Token canônico: INSCRICAO, ISENCAO_TAXA ou HABILITACAO.</param>
+/// <param name="Finalidade">Para que o formulário coleta respostas.</param>
 /// <param name="Ativo">O modelo desativado sai da escolha dos processos novos; o processo que já o copiou não muda.</param>
 public sealed record ModeloFormularioDto(
     Guid Id,
     string Codigo,
-    string Finalidade,
+    CodigoComRotulo<FinalidadeFormulario> Finalidade,
     bool Ativo,
     DescritivoDoModeloDto Descritivo,
     ConteudoDoModeloDto Conteudo);

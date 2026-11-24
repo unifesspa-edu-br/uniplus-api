@@ -172,8 +172,8 @@ public sealed class ObterInscricaoAdministrativaProjecaoDosDadosTests
     public async Task Sensivel_SemBaseLegal_NaoSai()
     {
         InscricaoAdministrativaDeTeste cenario = new InscricaoAdministrativaDeTeste(PersonasDeTeste.FernandaDrumond)
-            .Derivado("COM_BASE", "Com base", "TEXTO", "SENSIVEL", Texto("a"))
-            .Derivado("SEM_BASE", "Sem base", "TEXTO", "SENSIVEL", Texto("b"), hipoteseLegal: " ");
+            .Derivado("COM_BASE", "Com base", TipoDoDado.Texto, "SENSIVEL", Texto("a"))
+            .Derivado("SEM_BASE", "Sem base", TipoDoDado.Texto, "SENSIVEL", Texto("b"), hipoteseLegal: " ");
         DecisoesDeAcessoDeTeste diogo = new("diogo.souza", PermissaoSelecao.InscricoesConsultar, PermissaoSelecao.DadosSensiveisConsultar);
 
         InscricaoAdministrativaDto dto = await ConsultarDto(cenario, diogo);

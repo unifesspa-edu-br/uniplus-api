@@ -13,8 +13,8 @@ internal static class ModelosParaTeste
     internal static object Habilitacao(string codigo, string fatoDoPrimeiroItem = "QUILOMBOLA") =>
         Montar(codigo, "Habilitação Medicina 2027", "HABILITACAO", "Habilitação",
         [
-            Item(fatoDoPrimeiroItem, 0, "Quilombola", "BOOLEANO"),
-            Item("BAIXA_RENDA", 1, "Baixa renda", "BOOLEANO", Condicao("QUILOMBOLA", true)),
+            Item(fatoDoPrimeiroItem, 0, "Quilombola", "SIM_OU_NAO"),
+            Item("BAIXA_RENDA", 1, "Baixa renda", "SIM_OU_NAO", Condicao("QUILOMBOLA", true)),
         ]);
 
     /// <summary>
@@ -24,7 +24,7 @@ internal static class ModelosParaTeste
     internal static object Inscricao(string codigo) =>
         Montar(codigo, "Inscrição", "INSCRICAO", "Inscrição",
         [
-            Item("BAIXA_RENDA", 0, "Baixa renda", "BOOLEANO", Condicao("COR_RACA", "PRETA")),
+            Item("BAIXA_RENDA", 0, "Baixa renda", "SIM_OU_NAO", Condicao("COR_RACA", "PRETA")),
         ]);
 
     /// <summary>
@@ -34,15 +34,15 @@ internal static class ModelosParaTeste
     internal static object InscricaoComOpcoes(string codigo) =>
         Montar(codigo, "Inscrição com opções", "INSCRICAO", "Inscrição",
         [
-            Item("QUILOMBOLA", 0, "Quilombola", "BOOLEANO"),
-            ItemComRestricoes("FORMA_CONCLUSAO_EM", 1, "Forma de conclusão do ensino médio", "SELECAO_UNICA", OpcoesPorQuilombola()),
+            Item("QUILOMBOLA", 0, "Quilombola", "SIM_OU_NAO"),
+            ItemComRestricoes("FORMA_CONCLUSAO_EM", 1, "Forma de conclusão do ensino médio", "ESCOLHA_UNICA", OpcoesPorQuilombola()),
         ]);
 
     /// <summary>Um modelo de inscrição que pergunta de qual recurso de acessibilidade o candidato vai precisar.</summary>
     internal static object InscricaoComRecursoDeAcessibilidade(string codigo) =>
         Montar(codigo, "Inscrição com recurso de acessibilidade", "INSCRICAO", "Inscrição",
         [
-            Item("RECURSO_ACESSIBILIDADE", 0, "De qual recurso de acessibilidade você vai precisar?", "SELECAO_MULTIPLA", obrigatoriedade: "NUNCA"),
+            Item("RECURSO_ACESSIBILIDADE", 0, "De qual recurso de acessibilidade você vai precisar?", "ESCOLHA_MULTIPLA", obrigatoriedade: "NUNCA"),
         ]);
 
     internal static object Edicao(string nome, JsonNode? conteudo) =>

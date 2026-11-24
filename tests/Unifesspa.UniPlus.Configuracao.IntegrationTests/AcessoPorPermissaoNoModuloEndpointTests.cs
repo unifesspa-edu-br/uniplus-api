@@ -143,8 +143,14 @@ public sealed class AcessoPorPermissaoNoModuloEndpointTests : IAsyncLifetime
 
     // A manifestação tem a sub-rota própria; sem ela, o POST cairia na decisão, que confere a permissão de aprovar.
     private static Uri Rota(PermissaoConfiguracao permissao) => new(
-        permissao.Acao == "manifestar" ? $"/api/configuracao/admin/{permissao.Resource}/manifestacoes" : $"/api/configuracao/admin/{permissao.Resource}",
+        permissao.Acao == "manifestar" ? $"/api/configuracao/admin/{RotaDoRecurso(permissao.Resource)}/manifestacoes" : $"/api/configuracao/admin/{RotaDoRecurso(permissao.Resource)}",
         UriKind.Relative);
+
+    private static string RotaDoRecurso(string recurso) => recurso switch
+    {
+        "base-legal-do-fada" => "base-legal-bonus-regional",
+        _ => recurso,
+    };
 
     private static void Autenticar(HttpRequestMessage request, string contaId, string? papel)
     {

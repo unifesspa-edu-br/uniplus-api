@@ -132,7 +132,7 @@ public sealed class DocumentoExigido : EntityBase, IParteDoProcesso
 
     private static void ValidarAplicabilidade(Aplicabilidade? aplicabilidade, int quantidadeCondicoes, List<FieldError> erros)
     {
-        if (aplicabilidade is null)
+        if (aplicabilidade is null || !Enum.IsDefined(aplicabilidade.Value))
         {
             erros.Add(new("aplicabilidade", new DomainError("DocumentoExigido.AplicabilidadeObrigatoria",
                 "A aplicabilidade da exigência documental é obrigatória e deve ser GERAL ou CONDICIONAL.")));

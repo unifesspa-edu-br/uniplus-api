@@ -10,6 +10,7 @@ using Kernel.Results;
 
 using Unifesspa.UniPlus.Configuracao.Contracts;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
+using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.Formularios;
 
 /// <summary>
@@ -113,7 +114,7 @@ internal static class ProtecaoVigenteDasExigenciasDoProcesso
         IReadOnlyList<FatoCandidatoView> catalogoDeFatos, IReadOnlyDictionary<string, FatoDerivadoCongelado> derivados) =>
         new(
             catalogoDeFatos
-                .Where(f => !f.ProtecaoAprovada && string.Equals(f.Origem, DominioDoCatalogo.OrigemDerivada, StringComparison.Ordinal))
+                .Where(f => !f.ProtecaoAprovada && f.OrigemValor == OrigemFato.Calculado)
                 .Select(static f => f.Codigo)
                 .Where(codigo => !derivados.ContainsKey(codigo)),
             StringComparer.Ordinal);

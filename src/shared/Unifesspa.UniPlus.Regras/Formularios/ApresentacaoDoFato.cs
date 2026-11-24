@@ -10,7 +10,7 @@ using Unifesspa.UniPlus.Regras.Enums;
 /// </summary>
 public sealed record ApresentacaoDoFato(string FatoCodigo, string Rotulo, string? TipoRenderizacao)
 {
-    /// <summary>A apresentação a partir dos tokens do catálogo.</summary>
-    public static ApresentacaoDoFato DoCatalogo(string fatoCodigo, string nome, string dominio, string cardinalidade, string? fonteValores) =>
-        new(fatoCodigo, nome, CoerenciaDoCampo.TipoDoFato(dominio, cardinalidade, fonteValores)?.Codigo());
+    /// <summary>A apresentação a partir do tipo do dado, da quantidade de valores e da fonte do catálogo.</summary>
+    public static ApresentacaoDoFato DoCatalogo(string fatoCodigo, string nome, TipoDoDado tipo, QuantidadeDeValores quantidade, FonteValoresFato? fonteValores) =>
+        new(fatoCodigo, nome, CoerenciaDoCampo.TipoDoFato(tipo, quantidade, fonteValores)?.Codigo());
 }

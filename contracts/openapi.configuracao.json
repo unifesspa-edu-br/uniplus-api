@@ -6671,7 +6671,7 @@
             "name": "finalidade",
             "in": "query",
             "schema": {
-              "type": "string"
+              "$ref": "#/components/schemas/FinalidadeFormularioCodigo"
             }
           },
           {
@@ -15837,7 +15837,7 @@
                 "schema": {
                   "type": "array",
                   "items": {
-                    "$ref": "#/components/schemas/NaturezaConceito"
+                    "$ref": "#/components/schemas/FormaDoConceito"
                   }
                 }
               }
@@ -15901,11 +15901,11 @@
       },
       "AcaoQuandoIndeferidoCodigo": {
         "enum": [
-          "RECLASSIFICAR_AC",
-          "RECLASSIFICAR_REGRA_EDITAL"
+          "RECLASSIFICA_AC",
+          "RECLASSIFICA_CONFORME_EDITAL"
         ],
         "type": "string",
-        "description": "- \u0060RECLASSIFICAR_AC\u0060: Reclassificar na ampla concorr\u00EAncia\n- \u0060RECLASSIFICAR_REGRA_EDITAL\u0060: Reclassificar conforme a regra do edital"
+        "description": "- \u0060RECLASSIFICA_AC\u0060: Ampla concorr\u00EAncia \u2014 Passa a pessoa para a ampla concorr\u00EAncia.\n- \u0060RECLASSIFICA_CONFORME_EDITAL\u0060: Conforme o edital \u2014 Reclassifica a pessoa conforme as regras do edital."
       },
       "AgregadoPortavel": {
         "required": [
@@ -15926,7 +15926,7 @@
             "type": "string"
           },
           "operacao": {
-            "type": "string"
+            "$ref": "#/components/schemas/OperacaoAgregadoCodigo"
           }
         }
       },
@@ -17390,6 +17390,15 @@
           }
         }
       },
+      "BlocoSistemaCodigo": {
+        "enum": [
+          "COMPROVACAO_DOCUMENTAL",
+          "MODALIDADES_CALCULADAS",
+          "REVISAO_E_ACEITE"
+        ],
+        "type": "string",
+        "description": "Os blocos que o sistema monta no formul\u00E1rio a partir da configura\u00E7\u00E3o do processo seletivo.\n\n- \u0060COMPROVACAO_DOCUMENTAL\u0060: Comprova\u00E7\u00E3o documental \u2014 Os documentos que o candidato envia, conforme a exig\u00EAncia de cada situa\u00E7\u00E3o dele.\n- \u0060MODALIDADES_CALCULADAS\u0060: Modalidades calculadas \u2014 As modalidades de concorr\u00EAncia em que o candidato se enquadra, calculadas pelas respostas dele.\n- \u0060REVISAO_E_ACEITE\u0060: Revis\u00E3o e aceite \u2014 A confer\u00EAncia das respostas e o aceite dos termos, sempre a \u00FAltima etapa do formul\u00E1rio."
+      },
       "CalendarioDiasUteisDto": {
         "required": [
           "id",
@@ -17767,7 +17776,7 @@
             "type": "string"
           },
           "natureza": {
-            "$ref": "#/components/schemas/NaturezaConceito"
+            "$ref": "#/components/schemas/FormaDoConceito"
           }
         }
       },
@@ -17902,6 +17911,54 @@
           }
         }
       },
+      "ConjuntoDeDocumentosDoModeloDto": {
+        "required": [
+          "documentosExigidos",
+          "gruposDeDocumentos"
+        ],
+        "type": "object",
+        "properties": {
+          "documentosExigidos": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DocumentoExigidoDoModeloDto"
+            }
+          },
+          "gruposDeDocumentos": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GrupoDeDocumentosDoModeloDto"
+            }
+          }
+        }
+      },
+      "ConjuntoDeDocumentosDoModeloInput": {
+        "required": [
+          "documentosExigidos",
+          "gruposDeDocumentos"
+        ],
+        "type": "object",
+        "properties": {
+          "documentosExigidos": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/DocumentoExigidoDoModeloInput"
+            }
+          },
+          "gruposDeDocumentos": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/GrupoDeDocumentosDoModeloInput"
+            }
+          }
+        }
+      },
       "ConteudoDoModeloDto": {
         "required": [
           "titulo",
@@ -17910,7 +17967,7 @@
           "termos",
           "pressupostos",
           "grupos",
-          "documentosExigidos"
+          "conjuntoDeDocumentos"
         ],
         "type": "object",
         "properties": {
@@ -17950,11 +18007,8 @@
               "$ref": "#/components/schemas/GrupoDoModeloDto"
             }
           },
-          "documentosExigidos": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/DocumentoExigidoDoModeloDto"
-            }
+          "conjuntoDeDocumentos": {
+            "$ref": "#/components/schemas/ConjuntoDeDocumentosDoModeloDto"
           }
         }
       },
@@ -18019,14 +18073,15 @@
               "$ref": "#/components/schemas/GrupoColetadoInput"
             }
           },
-          "documentosExigidos": {
-            "type": [
-              "null",
-              "array"
-            ],
-            "items": {
-              "$ref": "#/components/schemas/DocumentoExigidoDoModeloInput"
-            }
+          "conjuntoDeDocumentos": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/ConjuntoDeDocumentosDoModeloInput"
+              }
+            ]
           }
         }
       },
@@ -18477,15 +18532,19 @@
             ]
           },
           "dominio": {
-            "type": "string"
+            "$ref": "#/components/schemas/TipoDoDadoCodigo"
           },
           "cardinalidade": {
-            "type": "string"
+            "$ref": "#/components/schemas/QuantidadeDeValoresCodigo"
           },
           "fonteValores": {
-            "type": [
-              "null",
-              "string"
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/FonteValoresFatoCodigo"
+              }
             ]
           },
           "formato": {
@@ -18544,7 +18603,7 @@
             ]
           },
           "dominio": {
-            "type": "string"
+            "$ref": "#/components/schemas/TipoDoDadoCodigo"
           },
           "pontoResolucao": {
             "type": "string"
@@ -18731,7 +18790,7 @@
             "type": "string"
           },
           "finalidade": {
-            "type": "string"
+            "$ref": "#/components/schemas/FinalidadeFormularioCodigo"
           },
           "descritivo": {
             "oneOf": [
@@ -19344,6 +19403,65 @@
           }
         }
       },
+      "DataDeReferenciaDoDocumentoDoModeloDto": {
+        "required": [
+          "tipo",
+          "faseCodigo",
+          "data"
+        ],
+        "type": "object",
+        "properties": {
+          "tipo": {
+            "$ref": "#/components/schemas/TipoDaDataDeReferencia"
+          },
+          "faseCodigo": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "data": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          }
+        }
+      },
+      "DataDeReferenciaDoDocumentoDoModeloInput": {
+        "required": [
+          "tipo",
+          "data",
+          "faseCodigo"
+        ],
+        "type": "object",
+        "properties": {
+          "tipo": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/TipoDaDataDeReferenciaCodigo"
+              }
+            ]
+          },
+          "data": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          },
+          "faseCodigo": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
       "DecidirProtecaoDoCatalogoRequest": {
         "required": [
           "cadastro",
@@ -19516,10 +19634,10 @@
         "type": "object",
         "properties": {
           "dominio": {
-            "type": "string"
+            "$ref": "#/components/schemas/TipoDoDado"
           },
           "cardinalidade": {
-            "type": "string"
+            "$ref": "#/components/schemas/QuantidadeDeValores"
           },
           "escopo": {
             "type": "string"
@@ -19563,21 +19681,33 @@
             "type": "string"
           },
           "dominio": {
-            "type": [
-              "null",
-              "string"
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/TipoDoDadoCodigo"
+              }
             ]
           },
           "cardinalidade": {
-            "type": [
-              "null",
-              "string"
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/QuantidadeDeValoresCodigo"
+              }
             ]
           },
           "fonteValores": {
-            "type": [
-              "null",
-              "string"
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/FonteValoresFatoCodigo"
+              }
             ]
           },
           "formato": {
@@ -19614,7 +19744,7 @@
             ]
           },
           "natureza": {
-            "$ref": "#/components/schemas/NaturezaConceito"
+            "$ref": "#/components/schemas/FormaDoConceito"
           },
           "numerico": {
             "oneOf": [
@@ -19665,7 +19795,7 @@
                 "type": "null"
               },
               {
-                "$ref": "#/components/schemas/NaturezaConceitoCodigo"
+                "$ref": "#/components/schemas/FormaDoConceitoCodigo"
               }
             ]
           },
@@ -19905,10 +20035,10 @@
         "type": "object",
         "properties": {
           "dominio": {
-            "type": "string"
+            "$ref": "#/components/schemas/TipoDoDado"
           },
           "cardinalidade": {
-            "type": "string"
+            "$ref": "#/components/schemas/QuantidadeDeValores"
           },
           "semeadoPeloSistema": {
             "type": "boolean"
@@ -20092,10 +20222,9 @@
         "required": [
           "faseCodigo",
           "tipoDocumentoCodigo",
-          "obrigatorio",
           "quando",
-          "consequenciaIndeferimento",
-          "basesLegais",
+          "indeferimento",
+          "requisitos",
           "porOpcao"
         ],
         "type": "object",
@@ -20105,9 +20234,6 @@
           },
           "tipoDocumentoCodigo": {
             "type": "string"
-          },
-          "obrigatorio": {
-            "type": "boolean"
           },
           "quando": {
             "type": [
@@ -20121,14 +20247,11 @@
               }
             }
           },
-          "consequenciaIndeferimento": {
-            "type": "string"
+          "indeferimento": {
+            "$ref": "#/components/schemas/IndeferimentoDoDocumentoDoModeloDto"
           },
-          "basesLegais": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/BaseLegalDoModeloDto"
-            }
+          "requisitos": {
+            "$ref": "#/components/schemas/RequisitosDoDocumentoDoModeloDto"
           },
           "porOpcao": {
             "oneOf": [
@@ -20146,10 +20269,8 @@
         "required": [
           "faseCodigo",
           "tipoDocumentoCodigo",
-          "obrigatorio",
           "quando",
-          "consequenciaIndeferimento",
-          "basesLegais"
+          "indeferimento"
         ],
         "type": "object",
         "properties": {
@@ -20158,9 +20279,6 @@
           },
           "tipoDocumentoCodigo": {
             "type": "string"
-          },
-          "obrigatorio": {
-            "type": "boolean"
           },
           "quando": {
             "type": [
@@ -20174,17 +20292,25 @@
               }
             }
           },
-          "consequenciaIndeferimento": {
-            "type": "string"
+          "indeferimento": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/IndeferimentoDoDocumentoDoModeloInput"
+              }
+            ]
           },
-          "basesLegais": {
-            "type": [
-              "null",
-              "array"
-            ],
-            "items": {
-              "$ref": "#/components/schemas/BaseLegalDoModeloInput"
-            }
+          "requisitos": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/RequisitosDoDocumentoDoModeloInput"
+              }
+            ]
           },
           "porOpcao": {
             "oneOf": [
@@ -20263,6 +20389,29 @@
             ]
           }
         }
+      },
+      "EfeitoNaAnaliseDoDocumento": {
+        "required": [
+          "codigo",
+          "rotulo"
+        ],
+        "type": "object",
+        "properties": {
+          "codigo": {
+            "$ref": "#/components/schemas/EfeitoNaAnaliseDoDocumentoCodigo"
+          },
+          "rotulo": {
+            "type": "string"
+          }
+        }
+      },
+      "EfeitoNaAnaliseDoDocumentoCodigo": {
+        "enum": [
+          "RECUSAR_DOCUMENTO",
+          "ACEITAR_COM_AVISO"
+        ],
+        "type": "string",
+        "description": "Efeito na an\u00E1lise de um documento fora do prazo ou vencido.\n\n- \u0060RECUSAR_DOCUMENTO\u0060: Recusar documento\n- \u0060ACEITAR_COM_AVISO\u0060: Aceitar com aviso"
       },
       "EnderecoGeoDto": {
         "required": [
@@ -20505,6 +20654,52 @@
           }
         }
       },
+      "EscolhaDaValidade": {
+        "required": [
+          "codigo",
+          "rotulo"
+        ],
+        "type": "object",
+        "properties": {
+          "codigo": {
+            "$ref": "#/components/schemas/EscolhaDaValidadeCodigo"
+          },
+          "rotulo": {
+            "type": "string"
+          }
+        }
+      },
+      "EscolhaDaValidadeCodigo": {
+        "enum": [
+          "NAO_EXIGE_DOCUMENTO_VALIDO",
+          "EXIGE_DOCUMENTO_VALIDO"
+        ],
+        "type": "string",
+        "description": "Escolha sobre a validade do documento.\n\n- \u0060NAO_EXIGE_DOCUMENTO_VALIDO\u0060: N\u00E3o exige documento v\u00E1lido\n- \u0060EXIGE_DOCUMENTO_VALIDO\u0060: Exige documento v\u00E1lido"
+      },
+      "EscolhaDoPrazoDeEmissao": {
+        "required": [
+          "codigo",
+          "rotulo"
+        ],
+        "type": "object",
+        "properties": {
+          "codigo": {
+            "$ref": "#/components/schemas/EscolhaDoPrazoDeEmissaoCodigo"
+          },
+          "rotulo": {
+            "type": "string"
+          }
+        }
+      },
+      "EscolhaDoPrazoDeEmissaoCodigo": {
+        "enum": [
+          "SEM_PRAZO",
+          "COM_PRAZO"
+        ],
+        "type": "string",
+        "description": "Escolha sobre o prazo de emiss\u00E3o do documento.\n\n- \u0060SEM_PRAZO\u0060: Sem prazo\n- \u0060COM_PRAZO\u0060: Com prazo"
+      },
       "EstadoFato": {
         "required": [
           "codigo",
@@ -20564,12 +20759,16 @@
             "format": "int32"
           },
           "tipo": {
-            "type": "string"
+            "$ref": "#/components/schemas/TipoEtapaFormularioCodigo"
           },
           "bloco": {
-            "type": [
-              "null",
-              "string"
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/BlocoSistemaCodigo"
+              }
             ]
           },
           "apresentacao": {
@@ -20607,12 +20806,16 @@
             "format": "int32"
           },
           "tipo": {
-            "type": "string"
+            "$ref": "#/components/schemas/TipoEtapaFormularioCodigo"
           },
           "bloco": {
-            "type": [
-              "null",
-              "string"
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/BlocoSistemaCodigo"
+              }
             ]
           },
           "apresentacao": {
@@ -20963,13 +21166,13 @@
             "type": "string"
           },
           "dominio": {
-            "type": "string"
+            "$ref": "#/components/schemas/TipoDoDado"
           },
           "origem": {
-            "type": "string"
+            "$ref": "#/components/schemas/OrigemFato"
           },
           "cardinalidade": {
-            "type": "string"
+            "$ref": "#/components/schemas/QuantidadeDeValores"
           },
           "valoresDominio": {
             "type": [
@@ -20996,9 +21199,13 @@
             }
           },
           "fonteValores": {
-            "type": [
-              "null",
-              "string"
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/FonteValoresFato"
+              }
             ]
           },
           "ativo": {
@@ -21181,6 +21388,59 @@
           }
         }
       },
+      "FinalidadeFormulario": {
+        "required": [
+          "codigo",
+          "rotulo"
+        ],
+        "type": "object",
+        "properties": {
+          "codigo": {
+            "$ref": "#/components/schemas/FinalidadeFormularioCodigo"
+          },
+          "rotulo": {
+            "type": "string"
+          }
+        }
+      },
+      "FinalidadeFormularioCodigo": {
+        "enum": [
+          "INSCRICAO",
+          "ISENCAO_TAXA",
+          "HABILITACAO"
+        ],
+        "type": "string",
+        "description": "Para que o formul\u00E1rio coleta respostas: cada processo tem no m\u00E1ximo um formul\u00E1rio por finalidade.\n\n- \u0060INSCRICAO\u0060: Inscri\u00E7\u00E3o \u2014 Formul\u00E1rio em que o candidato se inscreve no processo seletivo.\n- \u0060ISENCAO_TAXA\u0060: Isen\u00E7\u00E3o da taxa \u2014 Formul\u00E1rio em que o candidato pede a isen\u00E7\u00E3o da taxa de inscri\u00E7\u00E3o.\n- \u0060HABILITACAO\u0060: Habilita\u00E7\u00E3o \u2014 Formul\u00E1rio em que o candidato comprova os requisitos para ser habilitado."
+      },
+      "FonteValoresFato": {
+        "required": [
+          "codigo",
+          "rotulo"
+        ],
+        "type": "object",
+        "properties": {
+          "codigo": {
+            "$ref": "#/components/schemas/FonteValoresFatoCodigo"
+          },
+          "rotulo": {
+            "type": "string"
+          }
+        }
+      },
+      "FonteValoresFatoCodigo": {
+        "enum": [
+          "CATALOGO",
+          "OPCOES_DO_PROCESSO",
+          "MODALIDADE",
+          "MUNICIPIOS_DO_FADA",
+          "UNIDADES_FEDERATIVAS",
+          "MUNICIPIOS",
+          "TIPOS_DE_DEFICIENCIA",
+          "MUNICIPIOS_PROVA_PRESENCIAL"
+        ],
+        "type": "string",
+        "description": "De onde v\u00EAm os valores de um dado de op\u00E7\u00E3o do cat\u00E1logo.\n\n- \u0060CATALOGO\u0060: Cat\u00E1logo \u2014 Os valores vivem no pr\u00F3prio cat\u00E1logo, como a cor ou ra\u00E7a, o sexo e a nacionalidade.\n- \u0060OPCOES_DO_PROCESSO\u0060: Op\u00E7\u00F5es do processo \u2014 Os valores s\u00E3o as op\u00E7\u00F5es que cada processo declara, congeladas no edital.\n- \u0060MODALIDADE\u0060: Modalidades do processo \u2014 Os valores s\u00E3o as modalidades de concorr\u00EAncia ofertadas pelo processo.\n- \u0060MUNICIPIOS_DO_FADA\u0060: Munic\u00EDpios do Fator de Atenua\u00E7\u00E3o das Desigualdades de Acesso (FADA) \u2014 Os valores s\u00E3o os munic\u00EDpios da \u00E1rea do Fator de Atenua\u00E7\u00E3o das Desigualdades de Acesso (FADA) que o processo configurou, pelo c\u00F3digo do IBGE.\n- \u0060UNIDADES_FEDERATIVAS\u0060: Unidades federativas \u2014 Os valores s\u00E3o as 27 unidades federativas, pela sigla: as do dado calculado de resid\u00EAncia e as que o candidato declara.\n- \u0060MUNICIPIOS\u0060: Munic\u00EDpios \u2014 Os valores s\u00E3o os munic\u00EDpios do m\u00F3dulo de geografia, pelo c\u00F3digo do IBGE, entre os da unidade federativa respondida antes.\n- \u0060TIPOS_DE_DEFICIENCIA\u0060: Tipos de defici\u00EAncia \u2014 Os valores s\u00E3o os tipos do cadastro de tipos de defici\u00EAncia, todos os vivos, em qualquer processo.\n- \u0060MUNICIPIOS_PROVA_PRESENCIAL\u0060: Munic\u00EDpios da prova presencial \u2014 Os valores s\u00E3o os munic\u00EDpios declarados para a prova presencial, pelo c\u00F3digo do IBGE."
+      },
       "FormaAceite": {
         "required": [
           "codigo",
@@ -21199,11 +21459,34 @@
       "FormaAceiteCodigo": {
         "enum": [
           "A_DEFINIR",
-          "REGISTRO_DIGITAL_SEM_LOG_IP",
-          "REGISTRO_DIGITAL_COM_LOG_IP"
+          "REGISTRO_SEM_ENDERECO_IP",
+          "REGISTRO_COM_ENDERECO_IP"
         ],
         "type": "string",
-        "description": "- \u0060A_DEFINIR\u0060: A definir\n- \u0060REGISTRO_DIGITAL_SEM_LOG_IP\u0060: Registro digital sem log do endere\u00E7o IP\n- \u0060REGISTRO_DIGITAL_COM_LOG_IP\u0060: Registro digital com log do endere\u00E7o IP"
+        "description": "Como o candidato registra o aceite de um termo de consentimento ou declara\u00E7\u00E3o.\n\n- \u0060A_DEFINIR\u0060: A definir \u2014 Forma ainda n\u00E3o definida; a publica\u00E7\u00E3o de um processo recusa termo exigido nesta forma.\n- \u0060REGISTRO_SEM_ENDERECO_IP\u0060: Registro digital sem o endere\u00E7o IP \u2014 O aceite \u00E9 registrado no sistema sem guardar o endere\u00E7o IP do candidato.\n- \u0060REGISTRO_COM_ENDERECO_IP\u0060: Registro digital com o endere\u00E7o IP \u2014 O aceite \u00E9 registrado no sistema guardando o endere\u00E7o IP do candidato."
+      },
+      "FormaDoConceito": {
+        "required": [
+          "codigo",
+          "rotulo"
+        ],
+        "type": "object",
+        "properties": {
+          "codigo": {
+            "$ref": "#/components/schemas/FormaDoConceitoCodigo"
+          },
+          "rotulo": {
+            "type": "string"
+          }
+        }
+      },
+      "FormaDoConceitoCodigo": {
+        "enum": [
+          "NUMERICO",
+          "POR_OPCOES"
+        ],
+        "type": "string",
+        "description": "Como o conceito que avalia uma etapa se expressa: numa escala num\u00E9rica ou entre op\u00E7\u00F5es de uma lista.\n\n- \u0060NUMERICO\u0060: Num\u00E9rico \u2014 Conceito medido numa escala de m\u00EDnimo, m\u00E1ximo e casas decimais.\n- \u0060POR_OPCOES\u0060: Por op\u00E7\u00F5es \u2014 Conceito escolhido entre as op\u00E7\u00F5es ordenadas de uma lista, cada uma contando ou n\u00E3o como aprova\u00E7\u00E3o."
       },
       "FormatoPedagogico": {
         "required": [
@@ -21405,6 +21688,75 @@
           }
         }
       },
+      "GrupoDeDocumentosDoModeloDto": {
+        "required": [
+          "quantidadeMinima",
+          "indeferimento",
+          "documentos"
+        ],
+        "type": "object",
+        "properties": {
+          "quantidadeMinima": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "indeferimento": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/IndeferimentoDoGrupoDeDocumentosDoModeloDto"
+              }
+            ]
+          },
+          "documentos": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DocumentoExigidoDoModeloDto"
+            }
+          }
+        }
+      },
+      "GrupoDeDocumentosDoModeloInput": {
+        "required": [
+          "quantidadeMinima",
+          "indeferimento",
+          "documentos"
+        ],
+        "type": "object",
+        "properties": {
+          "quantidadeMinima": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "indeferimento": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/IndeferimentoDoGrupoDeDocumentosDoModeloInput"
+              }
+            ]
+          },
+          "documentos": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/DocumentoExigidoDoModeloInput"
+            }
+          }
+        }
+      },
       "GrupoDoModeloDto": {
         "required": [
           "codigo",
@@ -21594,6 +21946,92 @@
               "null",
               "string"
             ]
+          }
+        }
+      },
+      "IndeferimentoDoDocumentoDoModeloDto": {
+        "required": [
+          "obrigatorio",
+          "consequencia",
+          "basesLegais"
+        ],
+        "type": "object",
+        "properties": {
+          "obrigatorio": {
+            "type": "boolean"
+          },
+          "consequencia": {
+            "type": "string"
+          },
+          "basesLegais": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BaseLegalDoModeloDto"
+            }
+          }
+        }
+      },
+      "IndeferimentoDoDocumentoDoModeloInput": {
+        "required": [
+          "obrigatorio",
+          "consequencia",
+          "basesLegais"
+        ],
+        "type": "object",
+        "properties": {
+          "obrigatorio": {
+            "type": "boolean"
+          },
+          "consequencia": {
+            "type": "string"
+          },
+          "basesLegais": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/BaseLegalDoModeloInput"
+            }
+          }
+        }
+      },
+      "IndeferimentoDoGrupoDeDocumentosDoModeloDto": {
+        "required": [
+          "consequencia",
+          "basesLegais"
+        ],
+        "type": "object",
+        "properties": {
+          "consequencia": {
+            "type": "string"
+          },
+          "basesLegais": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BaseLegalDoModeloDto"
+            }
+          }
+        }
+      },
+      "IndeferimentoDoGrupoDeDocumentosDoModeloInput": {
+        "required": [
+          "consequencia",
+          "basesLegais"
+        ],
+        "type": "object",
+        "properties": {
+          "consequencia": {
+            "type": "string"
+          },
+          "basesLegais": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/BaseLegalDoModeloInput"
+            }
           }
         }
       },
@@ -22069,7 +22507,7 @@
             "type": "string"
           },
           "finalidade": {
-            "type": "string"
+            "$ref": "#/components/schemas/FinalidadeFormulario"
           },
           "ativo": {
             "type": "boolean"
@@ -22081,29 +22519,6 @@
             "$ref": "#/components/schemas/ConteudoDoModeloDto"
           }
         }
-      },
-      "NaturezaConceito": {
-        "required": [
-          "codigo",
-          "rotulo"
-        ],
-        "type": "object",
-        "properties": {
-          "codigo": {
-            "$ref": "#/components/schemas/NaturezaConceitoCodigo"
-          },
-          "rotulo": {
-            "type": "string"
-          }
-        }
-      },
-      "NaturezaConceitoCodigo": {
-        "enum": [
-          "NUMERICO",
-          "CATEGORICO"
-        ],
-        "type": "string",
-        "description": "Como o conceito que avalia uma etapa se expressa: numa escala num\u00E9rica ou entre valores categ\u00F3ricos.\n\n- \u0060NUMERICO\u0060: Num\u00E9rico \u2014 Conceito medido numa escala de m\u00EDnimo, m\u00E1ximo e casas decimais.\n- \u0060CATEGORICO\u0060: Categ\u00F3rico \u2014 Conceito escolhido entre valores categ\u00F3ricos ordenados."
       },
       "NaturezaLegal": {
         "required": [
@@ -22137,7 +22552,7 @@
         "type": "object",
         "properties": {
           "tipo": {
-            "type": "string"
+            "$ref": "#/components/schemas/TipoObrigatoriedadeCodigo"
           },
           "predicado": {
             "type": [
@@ -22160,9 +22575,13 @@
         "type": "object",
         "properties": {
           "tipo": {
-            "type": [
-              "null",
-              "string"
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/TipoObrigatoriedadeCodigo"
+              }
             ]
           },
           "predicado": {
@@ -22510,6 +22929,14 @@
           }
         }
       },
+      "OperacaoAgregadoCodigo": {
+        "enum": [
+          "EXISTE",
+          "VALORES_PRESENTES"
+        ],
+        "type": "string",
+        "description": "O que o fato agregado calcula a partir das ocorr\u00EAncias de um grupo repet\u00EDvel.\n\n- \u0060EXISTE\u0060: Existe alguma ocorr\u00EAncia \u2014 Verdadeiro quando ao menos uma ocorr\u00EAncia do grupo respondeu sim.\n- \u0060VALORES_PRESENTES\u0060: Valores presentes nas ocorr\u00EAncias \u2014 Os valores diferentes que as ocorr\u00EAncias do grupo responderam."
+      },
       "Operador": {
         "required": [
           "codigo",
@@ -22528,14 +22955,14 @@
       "OperadorCodigo": {
         "enum": [
           "IGUAL",
-          "EM",
+          "ALGUM_DE",
           "MAIOR_IGUAL",
           "MENOR_IGUAL",
           "DIFERENTE",
-          "NAO_EM"
+          "NENHUM_DE"
         ],
         "type": "string",
-        "description": "Operador que compara o fato do candidato com o valor da condi\u00E7\u00E3o. Sobre fato multivalorado, igual a significa pertencer ao conjunto do candidato (ADR-0111, Emenda 1.2).\n\n- \u0060IGUAL\u0060: \u00E9 igual a\n- \u0060EM\u0060: \u00E9 um de\n- \u0060MAIOR_IGUAL\u0060: maior ou igual a\n- \u0060MENOR_IGUAL\u0060: menor ou igual a\n- \u0060DIFERENTE\u0060: \u00E9 diferente de\n- \u0060NAO_EM\u0060: n\u00E3o \u00E9 nenhum de"
+        "description": "Operador que compara o dado do candidato com o valor da condi\u00E7\u00E3o. Sobre dado com v\u00E1rios valores, igual a significa pertencer ao conjunto do candidato (ADR-0111, Emenda 1.2).\n\n- \u0060IGUAL\u0060: \u00E9 igual a\n- \u0060ALGUM_DE\u0060: \u00E9 um de\n- \u0060MAIOR_IGUAL\u0060: maior ou igual a\n- \u0060MENOR_IGUAL\u0060: menor ou igual a\n- \u0060DIFERENTE\u0060: \u00E9 diferente de\n- \u0060NENHUM_DE\u0060: n\u00E3o \u00E9 nenhum de"
       },
       "OrdemDosValoresInput": {
         "required": [
@@ -22573,6 +23000,30 @@
         ],
         "type": "string",
         "description": "- \u0060NO_EDITAL\u0060: No edital \u2014 A data \u00E9 fixada no edital: o per\u00EDodo \u00E9 obrigat\u00F3rio.\n- \u0060NA_EXECUCAO\u0060: Na execu\u00E7\u00E3o do processo \u2014 A data n\u00E3o \u00E9 fixada no edital: a unidade respons\u00E1vel pela fase a define na execu\u00E7\u00E3o, e o per\u00EDodo \u00E9 opcional."
+      },
+      "OrigemFato": {
+        "required": [
+          "codigo",
+          "rotulo"
+        ],
+        "type": "object",
+        "properties": {
+          "codigo": {
+            "$ref": "#/components/schemas/OrigemFatoCodigo"
+          },
+          "rotulo": {
+            "type": "string"
+          }
+        }
+      },
+      "OrigemFatoCodigo": {
+        "enum": [
+          "CALCULADO",
+          "DECLARADO",
+          "INTEGRACAO"
+        ],
+        "type": "string",
+        "description": "Como o valor de um dado do cat\u00E1logo chega ao sistema: calculado, declarado pelo candidato ou recebido de integra\u00E7\u00E3o.\n\n- \u0060CALCULADO\u0060: Calculado \u2014 O valor \u00E9 calculado pelo sistema ou por uma regra; n\u00E3o \u00E9 coletado, \u00E9 resultado.\n- \u0060DECLARADO\u0060: Declarado \u2014 O valor \u00E9 a resposta ou a escolha direta do candidato no formul\u00E1rio.\n- \u0060INTEGRACAO\u0060: Integra\u00E7\u00E3o \u2014 O valor \u00E9 recebido de uma integra\u00E7\u00E3o com outro sistema."
       },
       "PapelDaBanca": {
         "required": [
@@ -22754,6 +23205,117 @@
             "additionalProperties": {
               "type": "string"
             }
+          }
+        }
+      },
+      "PrazoDeEmissaoDoModeloDto": {
+        "required": [
+          "escolha",
+          "valor",
+          "unidade",
+          "referencia",
+          "efeitoForaDoPrazo"
+        ],
+        "type": "object",
+        "properties": {
+          "escolha": {
+            "$ref": "#/components/schemas/EscolhaDoPrazoDeEmissao"
+          },
+          "valor": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "unidade": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/UnidadeDoPrazoDeEmissao"
+              }
+            ]
+          },
+          "referencia": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/DataDeReferenciaDoDocumentoDoModeloDto"
+              }
+            ]
+          },
+          "efeitoForaDoPrazo": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/EfeitoNaAnaliseDoDocumento"
+              }
+            ]
+          }
+        }
+      },
+      "PrazoDeEmissaoDoModeloInput": {
+        "required": [
+          "escolha",
+          "valor",
+          "unidade",
+          "referencia",
+          "efeitoForaDoPrazo"
+        ],
+        "type": "object",
+        "properties": {
+          "escolha": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/EscolhaDoPrazoDeEmissaoCodigo"
+              }
+            ]
+          },
+          "valor": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "unidade": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/UnidadeDoPrazoDeEmissaoCodigo"
+              }
+            ]
+          },
+          "referencia": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/DataDeReferenciaDoDocumentoDoModeloInput"
+              }
+            ]
+          },
+          "efeitoForaDoPrazo": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/EfeitoNaAnaliseDoDocumentoCodigo"
+              }
+            ]
           }
         }
       },
@@ -23095,6 +23657,29 @@
             "$ref": "#/components/schemas/AprovacaoDaProtecaoDto"
           }
         }
+      },
+      "QuantidadeDeValores": {
+        "required": [
+          "codigo",
+          "rotulo"
+        ],
+        "type": "object",
+        "properties": {
+          "codigo": {
+            "$ref": "#/components/schemas/QuantidadeDeValoresCodigo"
+          },
+          "rotulo": {
+            "type": "string"
+          }
+        }
+      },
+      "QuantidadeDeValoresCodigo": {
+        "enum": [
+          "VALOR_UNICO",
+          "VARIOS_VALORES"
+        ],
+        "type": "string",
+        "description": "Quantos valores um dado assume para um mesmo candidato: um s\u00F3 ou v\u00E1rios.\n\n- \u0060VALOR_UNICO\u0060: Um valor \u2014 O candidato tem um \u00FAnico valor para o dado.\n- \u0060VARIOS_VALORES\u0060: V\u00E1rios valores \u2014 O candidato pode ter mais de um valor para o dado."
       },
       "RecursoAcessibilidadeDto": {
         "required": [
@@ -23581,6 +24166,64 @@
           }
         }
       },
+      "RequisitosDoDocumentoDoModeloDto": {
+        "required": [
+          "prazoDeEmissao",
+          "validade"
+        ],
+        "type": "object",
+        "properties": {
+          "prazoDeEmissao": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/PrazoDeEmissaoDoModeloDto"
+              }
+            ]
+          },
+          "validade": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/ValidadeDoDocumentoDoModeloDto"
+              }
+            ]
+          }
+        }
+      },
+      "RequisitosDoDocumentoDoModeloInput": {
+        "required": [
+          "prazoDeEmissao",
+          "validade"
+        ],
+        "type": "object",
+        "properties": {
+          "prazoDeEmissao": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/PrazoDeEmissaoDoModeloInput"
+              }
+            ]
+          },
+          "validade": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/ValidadeDoDocumentoDoModeloInput"
+              }
+            ]
+          }
+        }
+      },
       "ResolucaoDoFatoDto": {
         "required": [
           "origem",
@@ -23590,7 +24233,7 @@
         "type": "object",
         "properties": {
           "origem": {
-            "type": "string"
+            "$ref": "#/components/schemas/OrigemFato"
           },
           "pontoResolucao": {
             "type": "string"
@@ -23772,12 +24415,16 @@
             "format": "int32"
           },
           "tipo": {
-            "type": "string"
+            "$ref": "#/components/schemas/TipoEtapaFormularioCodigo"
           },
           "bloco": {
-            "type": [
-              "null",
-              "string"
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/BlocoSistemaCodigo"
+              }
             ]
           },
           "apresentacao": {
@@ -24243,6 +24890,32 @@
           }
         }
       },
+      "TipoDaDataDeReferencia": {
+        "required": [
+          "codigo",
+          "rotulo"
+        ],
+        "type": "object",
+        "properties": {
+          "codigo": {
+            "$ref": "#/components/schemas/TipoDaDataDeReferenciaCodigo"
+          },
+          "rotulo": {
+            "type": "string"
+          }
+        }
+      },
+      "TipoDaDataDeReferenciaCodigo": {
+        "enum": [
+          "FIM_DAS_INSCRICOES",
+          "INICIO_DA_FASE",
+          "FIM_DA_FASE",
+          "DATA_ESPECIFICA",
+          "DATA_DA_APRESENTACAO"
+        ],
+        "type": "string",
+        "description": "Data usada como refer\u00EAncia para o documento.\n\n- \u0060FIM_DAS_INSCRICOES\u0060: Fim das inscri\u00E7\u00F5es\n- \u0060INICIO_DA_FASE\u0060: In\u00EDcio da fase\n- \u0060FIM_DA_FASE\u0060: Fim da fase\n- \u0060DATA_ESPECIFICA\u0060: Data espec\u00EDfica\n- \u0060DATA_DA_APRESENTACAO\u0060: Data da apresenta\u00E7\u00E3o"
+      },
       "TipoDeBanca": {
         "required": [
           "codigo",
@@ -24402,6 +25075,33 @@
           }
         }
       },
+      "TipoDoDado": {
+        "required": [
+          "codigo",
+          "rotulo"
+        ],
+        "type": "object",
+        "properties": {
+          "codigo": {
+            "$ref": "#/components/schemas/TipoDoDadoCodigo"
+          },
+          "rotulo": {
+            "type": "string"
+          }
+        }
+      },
+      "TipoDoDadoCodigo": {
+        "enum": [
+          "SIM_OU_NAO",
+          "OPCAO",
+          "NUMERICO",
+          "TEXTO",
+          "DATA",
+          "ENDERECO"
+        ],
+        "type": "string",
+        "description": "O tipo de um dado do candidato: decide o campo que a pessoa preenche, as compara\u00E7\u00F5es que uma regra pode fazer com ele e a forma do valor.\n\n- \u0060SIM_OU_NAO\u0060: Sim ou n\u00E3o \u2014 Resposta que s\u00F3 pode ser sim ou n\u00E3o.\n- \u0060OPCAO\u0060: Op\u00E7\u00E3o \u2014 Resposta escolhida entre as op\u00E7\u00F5es de uma lista fechada.\n- \u0060NUMERICO\u0060: N\u00FAmero \u2014 N\u00FAmero inteiro.\n- \u0060TEXTO\u0060: Texto \u2014 Texto livre ou num formato conhecido, como CPF, e-mail ou telefone.\n- \u0060DATA\u0060: Data \u2014 Data do calend\u00E1rio.\n- \u0060ENDERECO\u0060: Endere\u00E7o \u2014 Endere\u00E7o com CEP e cidade."
+      },
       "TipoEtapaDto": {
         "required": [
           "id",
@@ -24450,6 +25150,14 @@
             }
           }
         }
+      },
+      "TipoEtapaFormularioCodigo": {
+        "enum": [
+          "SECAO",
+          "BLOCO"
+        ],
+        "type": "string",
+        "description": "O que a etapa do formul\u00E1rio \u00E9: uma se\u00E7\u00E3o com itens de resposta ou um bloco que o sistema monta.\n\n- \u0060SECAO\u0060: Se\u00E7\u00E3o \u2014 Etapa com os itens que o candidato responde.\n- \u0060BLOCO\u0060: Bloco do sistema \u2014 Etapa que o sistema monta a partir da configura\u00E7\u00E3o do processo; o bloco diz qual."
       },
       "TipoInstrumentoNormativo": {
         "required": [
@@ -24554,6 +25262,15 @@
         "type": "string",
         "description": "A decis\u00E3o individual a que um motivo serve. O tipo separa as listas do cadastro de motivos, e o c\u00F3digo do motivo s\u00F3 \u00E9 \u00FAnico dentro dele. O recurso n\u00E3o \u00E9 tipo pr\u00F3prio: o motivo do recurso \u00E9 o da decis\u00E3o recorrida.\n\n- \u0060ISENCAO_DA_TAXA\u0060: Isen\u00E7\u00E3o da taxa\n- \u0060HOMOLOGACAO_DAS_INSCRICOES\u0060: Homologa\u00E7\u00E3o das inscri\u00E7\u00F5es\n- \u0060ANALISE_DOCUMENTAL\u0060: An\u00E1lise documental\n- \u0060HETEROIDENTIFICACAO\u0060: Heteroidentifica\u00E7\u00E3o\n- \u0060AVALIACAO_BIOPSICOSSOCIAL\u0060: Avalia\u00E7\u00E3o biopsicossocial\n- \u0060CLASSIFICACAO\u0060: Classifica\u00E7\u00E3o\n- \u0060GABARITO_DA_PROVA\u0060: Gabarito da prova\n- \u0060NOTA_DA_ETAPA\u0060: Nota da etapa"
       },
+      "TipoObrigatoriedadeCodigo": {
+        "enum": [
+          "SEMPRE",
+          "NUNCA",
+          "QUANDO"
+        ],
+        "type": "string",
+        "description": "Quando o item ou o termo do formul\u00E1rio \u00E9 de resposta obrigat\u00F3ria.\n\n- \u0060SEMPRE\u0060: Sempre obrigat\u00F3rio \u2014 O candidato sempre precisa responder. N\u00E3o tem condi\u00E7\u00E3o.\n- \u0060NUNCA\u0060: Nunca obrigat\u00F3rio \u2014 A resposta \u00E9 sempre opcional. N\u00E3o tem condi\u00E7\u00E3o.\n- \u0060QUANDO\u0060: Obrigat\u00F3rio quando a condi\u00E7\u00E3o \u00E9 verdadeira \u2014 O candidato precisa responder quando a condi\u00E7\u00E3o sobre as respostas anteriores \u00E9 verdadeira. Tem sempre uma condi\u00E7\u00E3o."
+      },
       "TipoProcessoDto": {
         "required": [
           "id",
@@ -24602,16 +25319,16 @@
       "TipoRenderizacaoCodigo": {
         "enum": [
           "NUMERO",
-          "BOOLEANO",
-          "SELECAO_UNICA",
-          "SELECAO_MULTIPLA",
+          "SIM_OU_NAO",
+          "ESCOLHA_UNICA",
+          "ESCOLHA_MULTIPLA",
           "TEXTO",
           "DATA",
           "ENDERECO",
           "MUNICIPIO"
         ],
         "type": "string",
-        "description": "Como o campo do formul\u00E1rio \u00E9 apresentado e respondido pelo candidato.\n\n- \u0060NUMERO\u0060: N\u00FAmero\n- \u0060BOOLEANO\u0060: Sim ou n\u00E3o\n- \u0060SELECAO_UNICA\u0060: Escolha de um valor\n- \u0060SELECAO_MULTIPLA\u0060: Escolha de v\u00E1rios valores\n- \u0060TEXTO\u0060: Texto\n- \u0060DATA\u0060: Data\n- \u0060ENDERECO\u0060: Endere\u00E7o\n- \u0060MUNICIPIO\u0060: Munic\u00EDpio"
+        "description": "Como o campo do formul\u00E1rio \u00E9 apresentado e respondido pelo candidato.\n\n- \u0060NUMERO\u0060: N\u00FAmero \u2014 Campo em que o candidato digita um n\u00FAmero inteiro.\n- \u0060SIM_OU_NAO\u0060: Sim ou n\u00E3o \u2014 Campo em que o candidato responde sim ou n\u00E3o.\n- \u0060ESCOLHA_UNICA\u0060: Escolha de um valor \u2014 Campo em que o candidato escolhe uma op\u00E7\u00E3o entre as oferecidas.\n- \u0060ESCOLHA_MULTIPLA\u0060: Escolha de v\u00E1rios valores \u2014 Campo em que o candidato escolhe uma ou mais op\u00E7\u00F5es entre as oferecidas.\n- \u0060TEXTO\u0060: Texto \u2014 Campo em que o candidato digita um texto, conferido pelo formato do dado.\n- \u0060DATA\u0060: Data \u2014 Campo em que o candidato informa uma data do calend\u00E1rio.\n- \u0060ENDERECO\u0060: Endere\u00E7o \u2014 Campo de endere\u00E7o completo, preenchido a partir da busca do CEP.\n- \u0060MUNICIPIO\u0060: Munic\u00EDpio \u2014 Campo em que o candidato escolhe o munic\u00EDpio entre os da unidade federativa j\u00E1 respondida."
       },
       "TurnoOferta": {
         "required": [
@@ -24636,6 +25353,30 @@
         ],
         "type": "string",
         "description": "- \u0060MATUTINO\u0060: Matutino\n- \u0060VESPERTINO\u0060: Vespertino\n- \u0060NOTURNO\u0060: Noturno"
+      },
+      "UnidadeDoPrazoDeEmissao": {
+        "required": [
+          "codigo",
+          "rotulo"
+        ],
+        "type": "object",
+        "properties": {
+          "codigo": {
+            "$ref": "#/components/schemas/UnidadeDoPrazoDeEmissaoCodigo"
+          },
+          "rotulo": {
+            "type": "string"
+          }
+        }
+      },
+      "UnidadeDoPrazoDeEmissaoCodigo": {
+        "enum": [
+          "DIAS",
+          "MESES",
+          "ANOS"
+        ],
+        "type": "string",
+        "description": "Unidade de contagem do prazo de emiss\u00E3o.\n\n- \u0060DIAS\u0060: Dias\n- \u0060MESES\u0060: Meses\n- \u0060ANOS\u0060: Anos"
       },
       "UnidadeOfertanteDto": {
         "required": [
@@ -24737,6 +25478,79 @@
           }
         }
       },
+      "ValidadeDoDocumentoDoModeloDto": {
+        "required": [
+          "escolha",
+          "referencia",
+          "efeitoDoVencimento"
+        ],
+        "type": "object",
+        "properties": {
+          "escolha": {
+            "$ref": "#/components/schemas/EscolhaDaValidade"
+          },
+          "referencia": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/DataDeReferenciaDoDocumentoDoModeloDto"
+              }
+            ]
+          },
+          "efeitoDoVencimento": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/EfeitoNaAnaliseDoDocumento"
+              }
+            ]
+          }
+        }
+      },
+      "ValidadeDoDocumentoDoModeloInput": {
+        "required": [
+          "escolha",
+          "referencia",
+          "efeitoDoVencimento"
+        ],
+        "type": "object",
+        "properties": {
+          "escolha": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/EscolhaDaValidadeCodigo"
+              }
+            ]
+          },
+          "referencia": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/DataDeReferenciaDoDocumentoDoModeloInput"
+              }
+            ]
+          },
+          "efeitoDoVencimento": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/EfeitoNaAnaliseDoDocumentoCodigo"
+              }
+            ]
+          }
+        }
+      },
       "ValorCategoricoCommand": {
         "required": [
           "codigo",
@@ -24821,9 +25635,13 @@
         "type": "object",
         "properties": {
           "fonte": {
-            "type": [
-              "null",
-              "string"
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/FonteValoresFato"
+              }
             ]
           },
           "declarados": {

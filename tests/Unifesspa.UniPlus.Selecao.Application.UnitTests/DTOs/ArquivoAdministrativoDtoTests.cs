@@ -20,7 +20,7 @@ public sealed class ArquivoAdministrativoDtoTests
     [InlineData(ClassificacaoDeProtecao.Publico, "PUBLICO")]
     [InlineData(ClassificacaoDeProtecao.Pessoal, "PESSOAL")]
     [InlineData(ClassificacaoDeProtecao.Identificador, "IDENTIFICADOR")]
-    [InlineData(ClassificacaoDeProtecao.Nenhuma, "SENSIVEL")]
+    [InlineData(default(ClassificacaoDeProtecao), "SENSIVEL")]
     [InlineData((ClassificacaoDeProtecao)99, "SENSIVEL")]
     public void ClassificacaoProtecao_SaiNoToken(ClassificacaoDeProtecao classificacao, string esperado)
     {

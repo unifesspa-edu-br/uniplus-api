@@ -4,14 +4,17 @@ using FluentValidation;
 
 using Microsoft.Extensions.DependencyInjection;
 
+using Unifesspa.UniPlus.Configuracao.Application.Commands.FatosCandidato;
 using Unifesspa.UniPlus.Configuracao.Application.Commands.OfertasCurso;
 using Unifesspa.UniPlus.Configuracao.Application.Commands.ProtecaoDoCatalogo;
+using Unifesspa.UniPlus.Configuracao.Application.Commands.TiposDocumento;
 using Unifesspa.UniPlus.Configuracao.Application.Queries.ModelosFormulario;
 
 /// <summary>
-/// Registra recursos da camada Application do módulo Configuracao: os validators FluentValidation do assembly e os
-/// serviços do circuito de aprovação da proteção do catálogo de tipos de documento e de fatos do candidato e das opções
-/// do cadastro institucional da simulação do modelo de formulário, que os handlers recebem prontos.
+/// Registra recursos da camada Application do módulo Configuracao: os validators FluentValidation do assembly, os
+/// serviços de gravação e de conferência que os handlers de escrita recebem prontos (tipos de documento, fatos do
+/// candidato, ofertas de curso e opções do cadastro institucional da simulação do modelo de formulário) e os do circuito
+/// de aprovação da proteção do catálogo de tipos de documento e de fatos do candidato.
 /// </summary>
 public static class ConfiguracaoApplicationServiceRegistration
 {
@@ -19,16 +22,24 @@ public static class ConfiguracaoApplicationServiceRegistration
     {
         ArgumentNullException.ThrowIfNull(services);
 
-        System.Reflection.Assembly assembly = typeof(ConfiguracaoApplicationServiceRegistration).Assembly;
-        services.AddValidatorsFromAssembly(assembly);
+        services.AddValidatorsFromAssembly(typeof(ConfiguracaoApplicationServiceRegistration).Assembly);
 
-        services.AddScoped<ConferenciaDasReferenciasDaOferta>();
-        services.AddScoped<OpcoesDoCadastroInstitucional>();
-        services.AddScoped<ItensSobAprovacao>();
-        services.AddScoped<SolicitacaoDaProtecaoDoCatalogo>();
-        services.AddScoped<DecisaoNaProtecaoDoCatalogo>();
-        services.AddScoped<ManifestacaoNaProtecaoDoCatalogo>();
-
-        return services;
+        return services
+            .AddServicosDeEscrita()
+            .AddServicosDoCircuitoDaProtecao();
     }
+
+    private static IServiceCollection AddServicosDeEscrita(this IServiceCollection services) =>
+        services
+            .AddScoped<AlteracaoConferidaDoFato>()
+            .AddScoped<ConferenciaDasReferenciasDaOferta>()
+            .AddScoped<GravacaoDoTipoDocumento>()
+            .AddScoped<OpcoesDoCadastroInstitucional>();
+
+    private static IServiceCollection AddServicosDoCircuitoDaProtecao(this IServiceCollection services) =>
+        services
+            .AddScoped<ItensSobAprovacao>()
+            .AddScoped<SolicitacaoDaProtecaoDoCatalogo>()
+            .AddScoped<DecisaoNaProtecaoDoCatalogo>()
+            .AddScoped<ManifestacaoNaProtecaoDoCatalogo>();
 }

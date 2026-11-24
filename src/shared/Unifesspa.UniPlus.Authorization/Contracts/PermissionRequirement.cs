@@ -77,28 +77,34 @@ public sealed record PermissionRequirement
         IEnumerable<string>? escopoContextoObrigatorio = null,
         IEnumerable<string>? verificacoesDeContexto = null)
     {
-        if (string.IsNullOrWhiteSpace(permissao))
+        DomainError? recusa = Recusa(permissao, sensibilidade);
+        if (recusa is not null)
         {
-            return Result<PermissionRequirement>.Failure(new DomainError(
-                AuthorizationErrorCodes.PermissionRequirementPermissaoObrigatoria,
-                "Código da permissão é obrigatório."));
-        }
-
-        if (sensibilidade == ClassificacaoDeProtecao.Nenhuma || !Enum.IsDefined(sensibilidade))
-        {
-            return Result<PermissionRequirement>.Failure(new DomainError(
-                AuthorizationErrorCodes.PermissionRequirementSensibilidadeInvalida,
-                "A sensibilidade da permissão é obrigatória: informe um nível da escala de proteção (publico a sensivel)."));
+            return Result<PermissionRequirement>.Failure(recusa);
         }
 
         return Result<PermissionRequirement>.Success(new PermissionRequirement(
-            permissao.Trim(),
+            permissao!.Trim(),
             sensibilidade,
             baseLegalPadrao ?? string.Empty,
             requerMfa,
             requerDuplaAprovacao,
             CopiasImutaveis.Lista(escopoContextoObrigatorio),
             CopiasImutaveis.Lista(verificacoesDeContexto)));
+    }
+
+    private static DomainError? Recusa(string? permissao, ClassificacaoDeProtecao sensibilidade)
+    {
+        if (string.IsNullOrWhiteSpace(permissao))
+        {
+            return new DomainError(AuthorizationErrorCodes.PermissionRequirementPermissaoObrigatoria,
+                "Código da permissão é obrigatório.");
+        }
+
+        return !Enum.IsDefined(sensibilidade)
+            ? new DomainError(AuthorizationErrorCodes.PermissionRequirementSensibilidadeInvalida,
+                "A sensibilidade da permissão é obrigatória: informe um nível da escala de proteção (PUBLICO a SENSIVEL).")
+            : null;
     }
 
     // Igualdade por valor (CA-01): o Equals sintetizado pelo record compararia as
@@ -117,22 +123,16 @@ public sealed record PermissionRequirement
         && VerificacoesDeContexto.SequenceEqual(other.VerificacoesDeContexto);
 
     /// <inheritdoc />
-    public override int GetHashCode()
+    public override int GetHashCode() => HashCode.Combine(
+        Permissao, Sensibilidade, BaseLegalPadrao, RequerMfa, RequerDuplaAprovacao,
+        HashEmOrdem(EscopoContextoObrigatorio), HashEmOrdem(VerificacoesDeContexto));
+
+    private static int HashEmOrdem(IReadOnlyList<string> valores)
     {
         HashCode hash = default;
-        hash.Add(Permissao);
-        hash.Add(Sensibilidade);
-        hash.Add(BaseLegalPadrao);
-        hash.Add(RequerMfa);
-        hash.Add(RequerDuplaAprovacao);
-        foreach (string escopo in EscopoContextoObrigatorio)
+        foreach (string valor in valores)
         {
-            hash.Add(escopo);
-        }
-
-        foreach (string verificacao in VerificacoesDeContexto)
-        {
-            hash.Add(verificacao);
+            hash.Add(valor);
         }
 
         return hash.ToHashCode();

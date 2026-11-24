@@ -67,7 +67,7 @@ public sealed class SementePsrMedicina2027Tests
         List<ItemDoModelo> itens = [.. modelos.SelectMany(static m => m.Conteudo.Itens.Concat(m.Conteudo.Grupos.SelectMany(static g => g.Subitens)))];
 
         modelos.Should().HaveCount(3);
-        itens.Where(static i => i.Apresentacao.TipoRenderizacao == TipoRenderizacao.Booleano)
+        itens.Where(static i => i.Apresentacao.TipoRenderizacao == TipoRenderizacao.SimOuNao)
             .Should().OnlyContain(static i => i.Apresentacao.Rotulo.EndsWith('?'), "o sim ou não responde a uma pergunta");
         ConferirAjudasSemRepeticao(itens);
     }
@@ -238,7 +238,7 @@ public sealed class SementePsrMedicina2027Tests
         IReadOnlyList<VersaoTermoConsentimentoView> versoes = await new TermoConsentimentoReader(ctx).ListarVersoesAsync(
             [.. SementePsrMedicina2027.Termos.Select(static t => t.VersaoId)], CancellationToken.None);
         versoes.Select(static v => v.TermoId).Should().BeEquivalentTo(SementePsrMedicina2027.Termos.Select(static t => t.TermoId));
-        versoes.Should().OnlyContain(static v => v.FormaAceite == FormaAceite.RegistroDigitalComLogIp && v.Hash.Length == 64);
+        versoes.Should().OnlyContain(static v => v.FormaAceite == FormaAceite.RegistroComEnderecoIp && v.Hash.Length == 64);
     }
 
     private static async Task ConferirFatosDoAdministradorAsync(UniPlusDbContext ctx)
@@ -250,7 +250,7 @@ public sealed class SementePsrMedicina2027Tests
         fatos.Select(static f => f.Codigo).Should().BeEquivalentTo(CodigosDosFatos);
         fatos.Should().OnlyContain(static f => !f.SemeadoPeloSistema && f.Ativo && !string.IsNullOrWhiteSpace(f.Descricao));
         fatos.Single(static f => f.Codigo == "CATEGORIA_RENDA").ValoresDominioDeclarados.Should().HaveCount(7);
-        fatos.Single(static f => f.Codigo == "CATEGORIAS_RENDA_FAMILIA").Binding.Should().Be("AGREGACAO_GRUPO:CATEGORIA_RENDA");
+        fatos.Single(static f => f.Codigo == "CATEGORIAS_RENDA_FAMILIA").Binding.Should().Be("RESUMO_DE_GRUPO:CATEGORIA_RENDA");
     }
 
     /// <summary>A condição de atendimento que dispara o documento: cada documento tem uma só cláusula.</summary>
@@ -272,9 +272,8 @@ public sealed class SementePsrMedicina2027Tests
         SementePsrMedicina2027.FatoDaSemente invalido = new(
             99,
             _ => CriacaoDoFato.CriarDoAdministrador(
-                "codigo fora do padrao", "Fato inválido", "Descrição", DominioFato.Booleano, CardinalidadeFato.Escalar,
-                null, null, "INSCRICAO", EscopoFato.Candidato, ClassificacaoDeProtecao.Pessoal, "Finalidade",
-                HipoteseLegalTratamento.CumprimentoObrigacaoLegal),
+                new DescritivoDoFato("codigo fora do padrao", "Fato inválido", "Descrição"),
+                new DefinicaoDoFato(TipoDoDado.SimOuNao, QuantidadeDeValores.ValorUnico, null, null, "INSCRICAO", EscopoFato.Candidato, ClassificacaoDeProtecao.Pessoal, "Finalidade", HipoteseLegalTratamento.CumprimentoObrigacaoLegal)),
             []);
 
         Action gerar = () => SementePsrMedicina2027.ComandosDosFatos([invalido]);

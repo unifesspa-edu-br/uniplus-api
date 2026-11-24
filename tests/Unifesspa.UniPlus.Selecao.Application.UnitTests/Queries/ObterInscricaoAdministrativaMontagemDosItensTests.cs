@@ -60,7 +60,7 @@ public sealed class ObterInscricaoAdministrativaMontagemDosItensTests
     public async Task Opcao_SaiComCodigoERotulo()
     {
         InscricaoAdministrativaDeTeste cenario = new InscricaoAdministrativaDeTeste(PersonasDeTeste.FernandaDrumond)
-            .Fato("COR_RACA", "PESSOAL", TipoRenderizacao.SelecaoUnica, Texto("PARDA"));
+            .Fato("COR_RACA", "PESSOAL", TipoRenderizacao.EscolhaUnica, Texto("PARDA"));
 
         InscricaoAdministrativaDto dto = await ConsultarDto(cenario, ComDadosPessoais());
 
@@ -75,7 +75,7 @@ public sealed class ObterInscricaoAdministrativaMontagemDosItensTests
     public async Task Uf_SaiPeloNome(string valor)
     {
         InscricaoAdministrativaDeTeste cenario = new InscricaoAdministrativaDeTeste(PersonasDeTeste.FernandaDrumond)
-            .Fato("NATURALIDADE_UF", "PESSOAL", TipoRenderizacao.SelecaoUnica, Texto(valor), new MetadadosDoFatoDeTeste
+            .Fato("NATURALIDADE_UF", "PESSOAL", TipoRenderizacao.EscolhaUnica, Texto(valor), new MetadadosDoFatoDeTeste
             {
                 OrigemValores = OrigemValoresColeta.UnidadesFederativas,
             });
@@ -104,7 +104,7 @@ public sealed class ObterInscricaoAdministrativaMontagemDosItensTests
     public async Task Derivado_SaiPeloQueAPublicacaoCongelou()
     {
         InscricaoAdministrativaDeTeste cenario = new InscricaoAdministrativaDeTeste(PersonasDeTeste.FernandaDrumond)
-            .Derivado("MODALIDADE", "Modalidade de concorrência", "CATEGORICO", "INTERNO", Texto("AC_PCD"));
+            .Derivado("MODALIDADE", "Modalidade de concorrência", TipoDoDado.Opcao, "INTERNO", Texto("AC_PCD"));
         DecisoesDeAcessoDeTeste diogo = new("diogo.souza", PermissaoSelecao.InscricoesConsultar, PermissaoSelecao.DadosInternosConsultar);
 
         InscricaoAdministrativaDto dto = await ConsultarDto(cenario, diogo);
@@ -139,7 +139,7 @@ public sealed class ObterInscricaoAdministrativaMontagemDosItensTests
                 Restricoes = [new MunicipiosDaUf("NATURALIDADE_UF")],
             })
             .Grupo(GrupoDeLocais(), new OcorrenciaDeGrupoInscricao("local-1", new Dictionary<string, JsonElement>(StringComparer.Ordinal) { ["LOCAL_MUNICIPIO"] = salvador }))
-            .Derivado("MUNICIPIO_RESIDENCIA", "Município de residência", "CATEGORICO", "PESSOAL", salvador);
+            .Derivado("MUNICIPIO_RESIDENCIA", "Município de residência", TipoDoDado.Opcao, "PESSOAL", salvador);
 
     private static GrupoColetado GrupoDeLocais() =>
         GrupoColetadoDeTeste.Agrupando("LOCAIS", 1)

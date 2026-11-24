@@ -45,11 +45,11 @@ public sealed class CondicaoDnfTests
 
     [Theory(DisplayName = "CondicaoDnf aceita as seis variantes válidas de operador com valor coerente")]
     [InlineData(Operador.Igual, "true")]
-    [InlineData(Operador.Em, "[\"BRANCA\"]")]
+    [InlineData(Operador.AlgumDe, "[\"BRANCA\"]")]
     [InlineData(Operador.MaiorIgual, "18")]
     [InlineData(Operador.MenorIgual, "60")]
     [InlineData(Operador.Diferente, "true")]
-    [InlineData(Operador.NaoEm, "[\"BRANCA\"]")]
+    [InlineData(Operador.NenhumDe, "[\"BRANCA\"]")]
     public void CondicaoDnf_Aceita_Operadores_Validos(Operador operador, string valorJson)
     {
         Result<CondicaoDnf> resultado = CondicaoDnf.Criar("FATO", operador, Json(valorJson));
@@ -60,15 +60,15 @@ public sealed class CondicaoDnfTests
     [Fact(DisplayName = "CondicaoDnf_Em_Rejeita_Valor_Nao_Lista")]
     public void CondicaoDnf_Em_Rejeita_Valor_Nao_Lista()
     {
-        Result<CondicaoDnf> resultado = CondicaoDnf.Criar("COR_RACA", Operador.Em, Json("\"BRANCA\""));
+        Result<CondicaoDnf> resultado = CondicaoDnf.Criar("COR_RACA", Operador.AlgumDe, Json("\"BRANCA\""));
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("CondicaoDnf.FormaIncoerenteComOperador");
     }
 
-    [Theory(DisplayName = "Story #916: EM/NAO_EM aceitam array vazio na FORMA — a semântica de avaliação é de PredicadoDnf, não desta factory")]
-    [InlineData(Operador.Em)]
-    [InlineData(Operador.NaoEm)]
+    [Theory(DisplayName = "Story #916: ALGUM_DE/NENHUM_DE aceitam array vazio na FORMA — a semântica de avaliação é de PredicadoDnf, não desta factory")]
+    [InlineData(Operador.AlgumDe)]
+    [InlineData(Operador.NenhumDe)]
     public void CondicaoDnf_EmOuNaoEm_Aceita_Lista_Vazia(Operador operador)
     {
         Result<CondicaoDnf> resultado = CondicaoDnf.Criar("COR_RACA", operador, Json("[]"));
@@ -93,10 +93,10 @@ public sealed class CondicaoDnfTests
         resultado.Error!.Code.Should().Be("CondicaoDnf.FormaIncoerenteComOperador");
     }
 
-    [Fact(DisplayName = "Story #916: NAO_EM rejeita valor não lista, mesma checagem de EM")]
+    [Fact(DisplayName = "Story #916: NENHUM_DE rejeita valor não lista, mesma checagem de ALGUM_DE")]
     public void CondicaoDnf_NaoEm_RejeitaValorNaoLista()
     {
-        Result<CondicaoDnf> resultado = CondicaoDnf.Criar("COR_RACA", Operador.NaoEm, Json("\"BRANCA\""));
+        Result<CondicaoDnf> resultado = CondicaoDnf.Criar("COR_RACA", Operador.NenhumDe, Json("\"BRANCA\""));
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("CondicaoDnf.FormaIncoerenteComOperador");

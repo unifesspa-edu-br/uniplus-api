@@ -9,6 +9,7 @@ using Npgsql;
 using Unifesspa.UniPlus.Configuracao.Contracts;
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Domain.Enums;
+using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Readers;
 using Unifesspa.UniPlus.Configuracao.IntegrationTests.Infrastructure;
@@ -107,8 +108,8 @@ public sealed class TipoDocumentoReaderPorCodigosTests(ConfiguracaoDbFixture fix
     }
 
     private static TipoDocumento Tipo(string codigo) =>
-        TipoDocumento.Criar(codigo, $"Documento {codigo}", null, "OUTROS", "pdf", 10, null,
-            classificacaoProtecao: ClassificacaoDeProtecao.Pessoal,
-            finalidadeTratamento: "Comprovação documental do candidato.",
-            hipoteseLegal: HipoteseLegalTratamento.CumprimentoObrigacaoLegal).Value!;
+        TipoDocumento.Criar(new DeclaracaoDoTipoDocumento(codigo, $"Documento {codigo}", null, "OUTROS", "pdf", 10, null,
+            ClassificacaoDeProtecao.Pessoal,
+            "Comprovação documental do candidato.",
+            HipoteseLegalTratamento.CumprimentoObrigacaoLegal)).Value!;
 }

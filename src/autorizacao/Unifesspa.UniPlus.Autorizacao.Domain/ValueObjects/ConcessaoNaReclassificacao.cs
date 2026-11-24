@@ -20,7 +20,7 @@ public sealed record ConcessaoNaReclassificacao(
     Guid Id,
     Identidade Beneficiario,
     bool DaPermissao,
-    BaseDaConcessao Base,
+    BaseDaConcessao? Base,
     TipoDeEscopo EscopoTipo,
     IReadOnlyList<DecisaoNaConcessao> Decisoes,
     bool DocumentoLido);

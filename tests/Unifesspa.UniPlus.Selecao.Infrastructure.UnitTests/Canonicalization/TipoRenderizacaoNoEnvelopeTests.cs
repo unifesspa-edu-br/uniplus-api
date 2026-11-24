@@ -15,9 +15,9 @@ public sealed class TipoRenderizacaoNoEnvelopeTests
 
     [Theory(DisplayName = "O envelope lê o código de cada tipo de campo da apresentação do fato")]
     [InlineData("NUMERO")]
-    [InlineData("BOOLEANO")]
-    [InlineData("SELECAO_UNICA")]
-    [InlineData("SELECAO_MULTIPLA")]
+    [InlineData("SIM_OU_NAO")]
+    [InlineData("ESCOLHA_UNICA")]
+    [InlineData("ESCOLHA_MULTIPLA")]
     [InlineData("TEXTO")]
     [InlineData("DATA")]
     [InlineData("ENDERECO")]
@@ -46,6 +46,6 @@ public sealed class TipoRenderizacaoNoEnvelopeTests
         leitor.Erro.Code.Should().Be(ErrosCodecEnvelope.EnvelopeMalformado);
         leitor.Erro.Message.Should().Be(
             "Envelope malformado em 'dadosCitadosSemPergunta[0].tipoDeCampo': o tipo de campo não é um dos códigos aceitos: "
-            + "NUMERO, BOOLEANO, SELECAO_UNICA, SELECAO_MULTIPLA, TEXTO, DATA, ENDERECO, MUNICIPIO.");
+            + "NUMERO, SIM_OU_NAO, ESCOLHA_UNICA, ESCOLHA_MULTIPLA, TEXTO, DATA, ENDERECO, MUNICIPIO.");
     }
 }

@@ -12,10 +12,12 @@ using Microsoft.Extensions.DependencyInjection;
 
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Domain.Enums;
+using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Authentication;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Regras.Entradas;
+using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.IntegrationTests.TestSupport;
 using Unifesspa.UniPlus.Testes.Compartilhado;
@@ -91,8 +93,8 @@ public sealed class FatoReclassificadoNaPublicacaoEndpointTests
     }
 
     private static FatoCandidato FatoDeclarado(string codigo, EscopoFato escopo) => CriacaoDoFato.CriarDoAdministrador(
-        codigo, "Fato do formulário", "Descrição do fato.", DominioFato.Booleano, CardinalidadeFato.Escalar, fonteValores: null, formato: null,
-        "INSCRICAO", escopo, ClassificacaoDeProtecao.Pessoal, "Composição familiar", HipoteseLegalTratamento.CumprimentoObrigacaoLegal).Value!;
+        new DescritivoDoFato(codigo, "Fato do formulário", "Descrição do fato."),
+        new DefinicaoDoFato(TipoDoDado.SimOuNao, QuantidadeDeValores.ValorUnico, null, null, "INSCRICAO", escopo, ClassificacaoDeProtecao.Pessoal, "Composição familiar", HipoteseLegalTratamento.CumprimentoObrigacaoLegal)).Value!;
 
     private static async Task GravarItemEGrupoAsync(HttpClient client, Guid processoId, string item, string campo)
     {
@@ -111,12 +113,12 @@ public sealed class FatoReclassificadoNaPublicacaoEndpointTests
 
     private static object ItemEGrupo(string item, string campo) => new
     {
-        itens = new[] { FormularioDeInscricaoHttp.Item(item, 0, "Item", "BOOLEANO", "NUNCA", etapaCodigo: FormularioDeTeste.Secao) },
+        itens = new[] { FormularioDeInscricaoHttp.Item(item, 0, "Item", "SIM_OU_NAO", "NUNCA", etapaCodigo: FormularioDeTeste.Secao) },
         grupos = new[]
         {
             FormularioDeInscricaoHttp.Grupo(
                 "COMPOSICAO_FAMILIAR", 1, "Composição familiar", FormularioDeTeste.Secao,
-                [FormularioDeInscricaoHttp.Item(campo, 0, "Campo", "BOOLEANO", "NUNCA")], new OcorrenciasDoGrupoInput(0, false, 10)),
+                [FormularioDeInscricaoHttp.Item(campo, 0, "Campo", "SIM_OU_NAO", "NUNCA")], new OcorrenciasDoGrupoInput(0, false, 10)),
         },
     };
 
@@ -124,7 +126,7 @@ public sealed class FatoReclassificadoNaPublicacaoEndpointTests
     {
         await using AsyncServiceScope escopo = _fixture.Factory.Services.CreateAsyncScope();
         UniPlusDbContext db = escopo.ServiceProvider.GetRequiredService<UniPlusDbContext>();
-        await db.Database.ExecuteSqlInterpolatedAsync($"UPDATE configuracao.dados_do_candidato SET origem = 'DERIVADO' WHERE codigo IN ({item}, {campo})");
+        await db.Database.ExecuteSqlInterpolatedAsync($"UPDATE configuracao.dados_do_candidato SET origem = 'CALCULADO' WHERE codigo IN ({item}, {campo})");
     }
 
     // O formulário de inscrição guarda outros itens além do gravado, e o caminho do documento é a posição por ordem entre eles.

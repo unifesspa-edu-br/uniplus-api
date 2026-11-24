@@ -160,10 +160,10 @@ internal static class CatalogosDoEnvelopeFechado
     /// </summary>
     private static TipoDocumento NovoTipoDocumentoDeTeste(string sufixo)
     {
-        Result<TipoDocumento> tipoDocumento = TipoDocumento.Criar(
-            $"DOC_LIMPEZA_{sufixo.ToUpperInvariant()}", "Documento — Limpeza 1421", descricao: null, categoria: "IDENTIFICACAO", formatosAceitos: null,
-            tamanhoMaximoMb: null, tipoEquivalente: null, classificacaoProtecao: ClassificacaoDeProtecao.Pessoal,
-            finalidadeTratamento: "Comprovação documental do candidato.", hipoteseLegal: HipoteseLegalTratamento.CumprimentoObrigacaoLegal);
+        Result<TipoDocumento> tipoDocumento = TipoDocumento.Criar(new DeclaracaoDoTipoDocumento(
+            $"DOC_LIMPEZA_{sufixo.ToUpperInvariant()}", "Documento — Limpeza 1421", Descricao: null, Categoria: "IDENTIFICACAO", FormatosAceitos: null,
+            TamanhoMaximoMb: null, TipoEquivalente: null, ClassificacaoProtecao: ClassificacaoDeProtecao.Pessoal,
+            FinalidadeTratamento: "Comprovação documental do candidato.", HipoteseLegal: HipoteseLegalTratamento.CumprimentoObrigacaoLegal));
         tipoDocumento.IsSuccess.Should().BeTrue(tipoDocumento.Error?.Message);
 
         return tipoDocumento.Value!;

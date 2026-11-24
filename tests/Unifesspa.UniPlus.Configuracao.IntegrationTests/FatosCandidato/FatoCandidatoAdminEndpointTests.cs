@@ -24,7 +24,7 @@ public sealed class FatoCandidatoAdminEndpointTests(ConfiguracaoEndpointFixture 
         Guid id = await CadastrarAsync(client, FatoBooleano(codigo));
 
         using JsonDocument fato = await ObterAsync(client, id);
-        Em(fato, "definicao", "resolucao", "origem").GetString().Should().Be("DECLARADO");
+        Em(fato, "definicao", "resolucao", "origem", "codigo").GetString().Should().Be("DECLARADO");
         Em(fato, "definicao", "resolucao", "binding").GetString().Should().Be($"CAMPO_FORMULARIO:{codigo}");
         Em(fato, "semeadoPeloSistema").GetBoolean().Should().BeFalse();
     }
@@ -107,7 +107,7 @@ public sealed class FatoCandidatoAdminEndpointTests(ConfiguracaoEndpointFixture 
         using JsonDocument envelope = JsonDocument.Parse(await resposta.Content.ReadAsStringAsync());
         envelope.RootElement.GetProperty("fato").GetProperty("codigo").GetString().Should().Be("COR_RACA");
         envelope.RootElement.GetProperty("operadoresAdmitidos").EnumerateArray()
-            .Select(static o => o.GetProperty("codigo").GetString()).Should().Equal("IGUAL", "DIFERENTE", "EM", "NAO_EM");
+            .Select(static o => o.GetProperty("codigo").GetString()).Should().Equal("IGUAL", "DIFERENTE", "ALGUM_DE", "NENHUM_DE");
     }
 
     [Fact(DisplayName = "Origem desconhecida no filtro da lista devolve página vazia, não erro")]
@@ -147,8 +147,8 @@ public sealed class FatoCandidatoAdminEndpointTests(ConfiguracaoEndpointFixture 
     {
         codigo = CodigoUnico(),
         nome = "Vínculo com outra instituição pública",
-        dominio = "BOOLEANO",
-        cardinalidade = "ESCALAR",
+        dominio = "SIM_OU_NAO",
+        cardinalidade = "VALOR_UNICO",
         pontoResolucao = "HABILITACAO",
         escopo = "CANDIDATO",
         classificacaoProtecao = "PESSOAL",
@@ -169,7 +169,7 @@ public sealed class FatoCandidatoAdminEndpointTests(ConfiguracaoEndpointFixture 
         fatos.Should().Contain(fato => fato.GetProperty("id").GetGuid() == id
             && fato.GetProperty("descritivo").GetProperty("nome").GetString() == "Nome editado");
         fatos.Should().OnlyContain(fato => !fato.GetProperty("ativo").GetBoolean()
-            && fato.GetProperty("definicao").GetProperty("resolucao").GetProperty("origem").GetString() == "DECLARADO");
+            && fato.GetProperty("definicao").GetProperty("resolucao").GetProperty("origem").GetProperty("codigo").GetString() == "DECLARADO");
         fatos.Should().NotContain(fato => fato.GetProperty("codigo").GetString() == "COR_RACA");
     }
 

@@ -1,7 +1,9 @@
 namespace Unifesspa.UniPlus.Configuracao.Application.Commands.FatosCandidato;
 
 using Unifesspa.UniPlus.Application.Abstractions.Messaging;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Regras.Enums;
 
 /// <summary>
 /// Cadastro de fato derivado por regra pelo administrador (ADR-0136): booleano ou categórico, com o
@@ -12,7 +14,7 @@ public sealed record CriarFatoDerivadoCommand(
     string Codigo,
     string Nome,
     string? Descricao,
-    string Dominio,
+    [property: AceitaCodigosDe<TipoDoDado>] string Dominio,
     string PontoResolucao,
     string Escopo,
     string ClassificacaoProtecao,

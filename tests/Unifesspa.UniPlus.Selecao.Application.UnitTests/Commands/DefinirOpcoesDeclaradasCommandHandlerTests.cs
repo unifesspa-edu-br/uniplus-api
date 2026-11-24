@@ -7,6 +7,7 @@ using AwesomeAssertions;
 using NSubstitute;
 
 using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
+using Unifesspa.UniPlus.Application.Abstractions.Respostas;
 using Unifesspa.UniPlus.Configuracao.Contracts;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Enums;
@@ -21,22 +22,18 @@ using Unifesspa.UniPlus.Testes.Compartilhado;
 public sealed class DefinirOpcoesDeclaradasCommandHandlerTests
 {
     [Theory(DisplayName = "Declarar opções para fato cuja fonte não é o processo, fora do catálogo ou agregado de grupo é recusado")]
-    [InlineData("GLOBAL", "CAMPO_FORMULARIO:COR_RACA")]
+    [InlineData(FonteValoresFato.Catalogo, "CAMPO_FORMULARIO:COR_RACA")]
     [InlineData(null, "CAMPO_FORMULARIO:COR_RACA")]
-    [InlineData("PROCESSO", "AGREGACAO_GRUPO:COR_RACA_MEMBRO")]
-    public async Task Handle_FonteQueNaoEhDoProcesso_Recusa(string? fonte, string binding)
+    [InlineData(FonteValoresFato.OpcoesDoProcesso, "RESUMO_DE_GRUPO:COR_RACA_MEMBRO")]
+    public async Task Handle_FonteQueNaoEhDoProcesso_Recusa(FonteValoresFato? fonte, string binding)
     {
-        ProcessoSeletivo processo = ProcessoSeletivo.Criar(
-            "PS Opções", TiposDeProcessoDeTeste.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(),
-            UnidadeAdministradoraSnapshot.Criar("CEPS", "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!,
-            LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
-        IProcessoSeletivoRepository repositorio = Substitute.For<IProcessoSeletivoRepository>();
-        repositorio.ObterParaMutacaoAsync(processo.Id, Arg.Any<CancellationToken>()).Returns(processo);
+        ProcessoSeletivo processo = CriarProcesso();
+        IProcessoSeletivoRepository repositorio = CriarRepositorio(processo);
         IFatoCandidatoReader reader = Substitute.For<IFatoCandidatoReader>();
         reader.ObterPorCodigoAsync("COR_RACA", Arg.Any<CancellationToken>()).Returns(fonte is null
             ? null
-            : new FatoCandidatoView(Guid.CreateVersion7(), "COR_RACA", "Cor ou raça", "Descrição do fato.", "CATEGORICO", "DECLARADO",
-                "ESCALAR", ["PRETA"], "INSCRICAO", binding, null, fonte, Ativo: true, ClassificacaoProtecao: "PESSOAL", HipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, FinalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, ProtecaoAprovada: true));
+            : new FatoCandidatoView(Guid.CreateVersion7(), "COR_RACA", "Cor ou raça", "Descrição do fato.", CodigoComRotulo<TipoDoDado>.De(TipoDoDado.Opcao), CodigoComRotulo<OrigemFato>.De(OrigemFato.Declarado),
+                CodigoComRotulo<QuantidadeDeValores>.De(QuantidadeDeValores.ValorUnico), ["PRETA"], "INSCRICAO", binding, null, (fonte is { } fonteInformada ? CodigoComRotulo<FonteValoresFato>.De(fonteInformada) : null), Ativo: true, ClassificacaoProtecao: "PESSOAL", HipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, FinalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, ProtecaoAprovada: true));
 
         Result resultado = await DefinirOpcoesDeclaradasCommandHandler.Handle(
             new DefinirOpcoesDeclaradasCommand(processo.Id, "COR_RACA", [new OpcaoDeclaradaInput("PRETA", "Preta")]),
@@ -49,10 +46,24 @@ public sealed class DefinirOpcoesDeclaradasCommandHandlerTests
     [Fact(DisplayName = "Retirar do fato de membro uma opção que a condição de um agregado cita é recusado")]
     public async Task Handle_OpcaoCitadaPeloAgregado_Recusa()
     {
-        ProcessoSeletivo processo = ProcessoSeletivo.Criar(
-            "PS Opções", TiposDeProcessoDeTeste.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(),
-            UnidadeAdministradoraSnapshot.Criar("CEPS", "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!,
-            LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
+        ProcessoSeletivo processo = CriarProcesso();
+        PrepararRegras(processo);
+        IProcessoSeletivoRepository repositorio = CriarRepositorio(processo);
+        IFatoCandidatoReader reader = CriarReader();
+
+        Result resultado = await DefinirOpcoesDeclaradasCommandHandler.Handle(
+            new DefinirOpcoesDeclaradasCommand(processo.Id, "CATEGORIA_RENDA", [new OpcaoDeclaradaInput("URBANA", "Urbana")]),
+            repositorio, reader, Substitute.For<IUnitOfWork>(), CancellationToken.None);
+
+        resultado.Error!.Code.Should().Be(OpcaoDeclaradaFatoErrorCodes.ReferenciadaPorExigenciaViva);
+    }
+    private static ProcessoSeletivo CriarProcesso() => ProcessoSeletivo.Criar(
+        "PS Opções", TiposDeProcessoDeTeste.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(),
+        UnidadeAdministradoraSnapshot.Criar("CEPS", "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!,
+        LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
+
+    private static void PrepararRegras(ProcessoSeletivo processo)
+    {
         processo.DefinirOpcoesDeclaradas(
             "CATEGORIA_RENDA", [OpcaoDeclaradaFato.Criar("CATEGORIA_RENDA", "RURAL", "Rural", 0).Value!])
             .IsSuccess.Should().BeTrue();
@@ -61,26 +72,30 @@ public sealed class DefinirOpcoesDeclaradasCommandHandlerTests
             ConfiguracaoDerivacaoFato.Criar("RENDA_RURAL",
             [
                 RegraDerivacaoConfigurada.Criar(0, "SIM",
-                    [CondicaoRegraDerivacao.Criar(0, "CATEGORIAS_RENDA_FAMILIA", Operador.Em, JsonSerializer.SerializeToElement(new[] { "RURAL" })).Value!]).Value!,
+                    [CondicaoRegraDerivacao.Criar(0, "CATEGORIAS_RENDA_FAMILIA", Operador.AlgumDe, JsonSerializer.SerializeToElement(new[] { "RURAL" })).Value!]).Value!,
             ]).Value!,
         ]).IsSuccess.Should().BeTrue();
-        IProcessoSeletivoRepository repositorio = Substitute.For<IProcessoSeletivoRepository>();
-        repositorio.ObterParaMutacaoAsync(processo.Id, Arg.Any<CancellationToken>()).Returns(processo);
-        FatoCandidatoView membro = new(Guid.CreateVersion7(), "CATEGORIA_RENDA", "Categoria de renda", "Descrição do fato.", "CATEGORICO", "DECLARADO",
-            "ESCALAR", null, "HABILITACAO", "CAMPO_FORMULARIO:CATEGORIA_RENDA", null, "PROCESSO", Ativo: true, ClassificacaoProtecao: "PESSOAL", HipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, FinalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, Escopo: "MEMBRO_GRUPO", ProtecaoAprovada: true);
+    }
+
+    private static IFatoCandidatoReader CriarReader()
+    {
+        FatoCandidatoView membro = new(Guid.CreateVersion7(), "CATEGORIA_RENDA", "Categoria de renda", "Descrição do fato.", CodigoComRotulo<TipoDoDado>.De(TipoDoDado.Opcao), CodigoComRotulo<OrigemFato>.De(OrigemFato.Declarado),
+            CodigoComRotulo<QuantidadeDeValores>.De(QuantidadeDeValores.ValorUnico), null, "HABILITACAO", "CAMPO_FORMULARIO:CATEGORIA_RENDA", null, CodigoComRotulo<FonteValoresFato>.De(FonteValoresFato.OpcoesDoProcesso), Ativo: true, ClassificacaoProtecao: "PESSOAL", HipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, FinalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, Escopo: "MEMBRO_GRUPO", ProtecaoAprovada: true);
         IFatoCandidatoReader reader = Substitute.For<IFatoCandidatoReader>();
         reader.ObterPorCodigoAsync("CATEGORIA_RENDA", Arg.Any<CancellationToken>()).Returns(membro);
         reader.ListarAsync(Arg.Any<CancellationToken>()).Returns(CatalogoDoConjuntoBasico.Com(
         [
             membro,
-            new FatoCandidatoView(Guid.CreateVersion7(), "CATEGORIAS_RENDA_FAMILIA", "Categorias de renda da família", "Descrição do fato.", "CATEGORICO",
-                "DERIVADO", "MULTIVALORADO", null, "HABILITACAO", "AGREGACAO_GRUPO:CATEGORIA_RENDA", null, "PROCESSO", Ativo: true, ClassificacaoProtecao: "PESSOAL", HipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, FinalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, ProtecaoAprovada: true),
+            new FatoCandidatoView(Guid.CreateVersion7(), "CATEGORIAS_RENDA_FAMILIA", "Categorias de renda da família", "Descrição do fato.", CodigoComRotulo<TipoDoDado>.De(TipoDoDado.Opcao),
+                CodigoComRotulo<OrigemFato>.De(OrigemFato.Calculado), CodigoComRotulo<QuantidadeDeValores>.De(QuantidadeDeValores.VariosValores), null, "HABILITACAO", "RESUMO_DE_GRUPO:CATEGORIA_RENDA", null, CodigoComRotulo<FonteValoresFato>.De(FonteValoresFato.OpcoesDoProcesso), Ativo: true, ClassificacaoProtecao: "PESSOAL", HipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, FinalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, ProtecaoAprovada: true),
         ]));
 
-        Result resultado = await DefinirOpcoesDeclaradasCommandHandler.Handle(
-            new DefinirOpcoesDeclaradasCommand(processo.Id, "CATEGORIA_RENDA", [new OpcaoDeclaradaInput("URBANA", "Urbana")]),
-            repositorio, reader, Substitute.For<IUnitOfWork>(), CancellationToken.None);
-
-        resultado.Error!.Code.Should().Be(OpcaoDeclaradaFatoErrorCodes.ReferenciadaPorExigenciaViva);
+        return reader;
+    }
+    private static IProcessoSeletivoRepository CriarRepositorio(ProcessoSeletivo processo)
+    {
+        IProcessoSeletivoRepository repositorio = Substitute.For<IProcessoSeletivoRepository>();
+        repositorio.ObterParaMutacaoAsync(processo.Id, Arg.Any<CancellationToken>()).Returns(processo);
+        return repositorio;
     }
 }

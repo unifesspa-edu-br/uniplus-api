@@ -76,11 +76,35 @@ internal sealed class LeituraDoConteudo(IReadOnlyDictionary<string, string> form
     {
         int recusasAntes = _recusas.Count;
         PredicadoDnf? exibicao = LerPredicado(entrada.Exibicao, $"{campo}.exibicao");
+        TipoEtapaFormulario? tipo = LerTipoDaEtapa(entrada.Tipo, $"{campo}.tipo");
+        BlocoSistema? bloco = LerBlocoDaEtapa(entrada.Bloco, $"{campo}.bloco");
         return RecusouDesde(recusasAntes)
             ? null
             : new EtapaDoModelo(
-                entrada.Codigo, entrada.Ordem, EstruturaFormulario.TipoDoToken(entrada.Tipo), EstruturaFormulario.BlocoDoToken(entrada.Bloco),
+                entrada.Codigo, entrada.Ordem, tipo!.Value, bloco,
                 entrada.Apresentacao?.Titulo ?? string.Empty, entrada.Apresentacao?.Descricao, entrada.Apresentacao?.Aviso, exibicao);
+    }
+
+    private TipoEtapaFormulario? LerTipoDaEtapa(string? codigo, string campo)
+    {
+        Result<TipoEtapaFormulario> tipo = TipoEBlocoDaEntrada.LerTipo(codigo);
+        if (tipo.IsFailure)
+        {
+            _recusas.Add(new(campo, tipo.Error!));
+        }
+
+        return tipo.IsSuccess ? tipo.Value : null;
+    }
+
+    private BlocoSistema? LerBlocoDaEtapa(string? codigo, string campo)
+    {
+        Result<BlocoSistema?> bloco = TipoEBlocoDaEntrada.LerBloco(codigo);
+        if (bloco.IsFailure)
+        {
+            _recusas.Add(new(campo, bloco.Error!));
+        }
+
+        return bloco.IsSuccess ? bloco.Value : null;
     }
 
     private ItemDoModelo? LerItem(FatoColetadoInput entrada, string campo)

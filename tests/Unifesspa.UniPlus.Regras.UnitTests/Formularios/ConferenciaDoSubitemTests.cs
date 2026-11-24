@@ -2,6 +2,7 @@ namespace Unifesspa.UniPlus.Regras.UnitTests.Formularios;
 
 using AwesomeAssertions;
 
+using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.Errors;
 using Unifesspa.UniPlus.Regras.Formularios;
 
@@ -12,10 +13,10 @@ using Unifesspa.UniPlus.Regras.Formularios;
 public sealed class ConferenciaDoSubitemTests
 {
     [Theory]
-    [InlineData("DECLARADO", "MEMBRO_GRUPO", "CAMPO_FORMULARIO:PARENTESCO", null)]
-    [InlineData("DECLARADO", "CANDIDATO", "CAMPO_FORMULARIO:PARENTESCO", ItemFormularioErrorCodes.FatoNaoColetavel)]
-    [InlineData("DERIVADO", "MEMBRO_GRUPO", "REGRA_DERIVACAO:PARENTESCO", ItemFormularioErrorCodes.FatoNaoColetavel)]
-    public void FatoDoSubitem_SoAceitaFatoDeclaradoDeMembro(string origem, string escopo, string binding, string? esperado)
+    [InlineData(OrigemFato.Declarado, "MEMBRO_GRUPO", "CAMPO_FORMULARIO:PARENTESCO", null)]
+    [InlineData(OrigemFato.Declarado, "CANDIDATO", "CAMPO_FORMULARIO:PARENTESCO", ItemFormularioErrorCodes.FatoNaoColetavel)]
+    [InlineData(OrigemFato.Calculado, "MEMBRO_GRUPO", "REGRA_DERIVACAO:PARENTESCO", ItemFormularioErrorCodes.FatoNaoColetavel)]
+    public void FatoDoSubitem_SoAceitaFatoDeclaradoDeMembro(OrigemFato origem, string escopo, string binding, string? esperado)
     {
         Dictionary<string, FatoDoCatalogo> catalogo = Catalogo(origem, escopo, binding);
 
@@ -26,13 +27,13 @@ public sealed class ConferenciaDoSubitemTests
     [Fact]
     public void FatoDoItem_FatoDeMembro_NaoEhColetavel()
     {
-        ConferenciaNoCatalogo.FatoDoItem("PARENTESCO", Catalogo("DECLARADO", "MEMBRO_GRUPO", "CAMPO_FORMULARIO:PARENTESCO"))!.Code
+        ConferenciaNoCatalogo.FatoDoItem("PARENTESCO", Catalogo(OrigemFato.Declarado, "MEMBRO_GRUPO", "CAMPO_FORMULARIO:PARENTESCO"))!.Code
             .Should().Be(ItemFormularioErrorCodes.FatoNaoColetavel);
     }
 
-    private static Dictionary<string, FatoDoCatalogo> Catalogo(string origem, string escopo, string binding) =>
+    private static Dictionary<string, FatoDoCatalogo> Catalogo(OrigemFato origem, string escopo, string binding) =>
         new(StringComparer.Ordinal)
         {
-            ["PARENTESCO"] = new("PARENTESCO", "CATEGORICO", "ESCALAR", origem, binding, "GLOBAL", escopo, Ativo: true, [], ProtecaoAprovada: true),
+            ["PARENTESCO"] = new("PARENTESCO", TipoDoDado.Opcao, QuantidadeDeValores.ValorUnico, origem, binding, FonteValoresFato.Catalogo, escopo, Ativo: true, [], ProtecaoAprovada: true),
         };
 }

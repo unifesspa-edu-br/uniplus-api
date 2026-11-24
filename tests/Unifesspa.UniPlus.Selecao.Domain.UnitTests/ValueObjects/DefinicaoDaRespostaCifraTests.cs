@@ -16,7 +16,7 @@ public sealed class DefinicaoDaRespostaCifraTests
     [InlineData("ORIENTACAO_SEXUAL")]
     public void De_FatoComCifraIndividual_Cifra(string fato)
     {
-        DefinicaoDaResposta definicao = DefinicaoDaResposta.De(TipoRenderizacao.SelecaoUnica, "SENSIVEL", fatoCodigo: fato);
+        DefinicaoDaResposta definicao = DefinicaoDaResposta.De(TipoRenderizacao.EscolhaUnica, "SENSIVEL", fatoCodigo: fato);
 
         definicao.CifraIndividual.Should().BeTrue();
         definicao.Cifrada.Should().BeTrue();
@@ -31,7 +31,7 @@ public sealed class DefinicaoDaRespostaCifraTests
     [InlineData("CONDICAO_ATENDIMENTO", "SENSIVEL")]
     public void De_DemaisFatos_NaoCifra(string fato, string classificacao)
     {
-        DefinicaoDaResposta definicao = DefinicaoDaResposta.De(TipoRenderizacao.SelecaoUnica, classificacao, fatoCodigo: fato);
+        DefinicaoDaResposta definicao = DefinicaoDaResposta.De(TipoRenderizacao.EscolhaUnica, classificacao, fatoCodigo: fato);
 
         definicao.CifraIndividual.Should().BeFalse();
         definicao.Cifrada.Should().BeFalse();

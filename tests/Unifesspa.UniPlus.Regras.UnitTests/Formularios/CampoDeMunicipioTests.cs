@@ -14,12 +14,12 @@ using Unifesspa.UniPlus.Regras.Formularios;
 public sealed class CampoDeMunicipioTests
 {
     [Theory]
-    [InlineData(DominioDoCatalogo.FonteGeoMunicipio, TipoRenderizacao.Municipio, true)]
-    [InlineData(DominioDoCatalogo.FonteGeoMunicipio, TipoRenderizacao.SelecaoUnica, false)]
-    [InlineData(DominioDoCatalogo.FonteGeoUf, TipoRenderizacao.Municipio, false)]
-    [InlineData(DominioDoCatalogo.FonteGeoUf, TipoRenderizacao.SelecaoUnica, true)]
-    public void Coerencia_MunicipioDoGeo_SoNoCampoDeMunicipio(string fonte, TipoRenderizacao tipo, bool coerente) =>
-        (CoerenciaDoCampo.Validar("CAMPO", tipo, DominioDoCatalogo.Categorico, DominioDoCatalogo.Escalar, fonte) is null).Should().Be(coerente);
+    [InlineData(FonteValoresFato.Municipios, TipoRenderizacao.Municipio, true)]
+    [InlineData(FonteValoresFato.Municipios, TipoRenderizacao.EscolhaUnica, false)]
+    [InlineData(FonteValoresFato.UnidadesFederativas, TipoRenderizacao.Municipio, false)]
+    [InlineData(FonteValoresFato.UnidadesFederativas, TipoRenderizacao.EscolhaUnica, true)]
+    public void Coerencia_MunicipioDoGeo_SoNoCampoDeMunicipio(FonteValoresFato fonte, TipoRenderizacao tipo, bool coerente) =>
+        (CoerenciaDoCampo.Validar("CAMPO", tipo, TipoDoDado.Opcao, QuantidadeDeValores.ValorUnico, fonte) is null).Should().Be(coerente);
 
     [Fact]
     public void Forma_CampoDeMunicipioSemAUf_Recusa() =>
@@ -27,7 +27,7 @@ public sealed class CampoDeMunicipioTests
 
     [Fact]
     public void Forma_MunicipiosDaUfEmCampoDeSelecao_Recusa() =>
-        Conferir(TipoRenderizacao.SelecaoUnica, [new MunicipiosDaUf("NATURALIDADE_UF")])
+        Conferir(TipoRenderizacao.EscolhaUnica, [new MunicipiosDaUf("NATURALIDADE_UF")])
             .Select(static e => e.Error.Code).Should().Equal(ItemFormularioErrorCodes.RestricaoIncoerente);
 
     [Fact]

@@ -21,18 +21,6 @@ using Unifesspa.UniPlus.Regras.ValueObjects;
 /// </summary>
 internal static class VocabularioDeFatos
 {
-    internal const string DominioBooleano = "BOOLEANO";
-    private const string DominioNumerico = "NUMERICO";
-    private const string DominioCategorico = "CATEGORICO";
-    private const string FonteGlobal = "GLOBAL";
-    private const string FonteProcesso = "PROCESSO";
-    private const string FonteModalidade = "MODALIDADE";
-    private const string FonteMunicipiosBonus = "MUNICIPIOS_BONUS";
-    private const string FonteMunicipiosProvaPresencial = "MUNICIPIOS_PROVA_PRESENCIAL";
-    private const string FonteGeoUf = DominioDoCatalogo.FonteGeoUf;
-    private const string FonteGeoMunicipio = DominioDoCatalogo.FonteGeoMunicipio;
-    private const string FonteTiposDeficiencia = DominioDoCatalogo.FonteTiposDeficiencia;
-
     /// <summary>
     /// O tipo de domínio do fato: estático quando os valores estão no catálogo, inclusive os tipos de
     /// deficiência, que o catálogo entrega como valores do fato; dinâmico quando vêm
@@ -46,17 +34,18 @@ internal static class VocabularioDeFatos
 
         return fato switch
         {
-            { Dominio: DominioBooleano } => TipoDominioFato.Booleano,
-            { Dominio: DominioNumerico } => TipoDominioFato.Numerico,
-            { Dominio: DominioCategorico } => ClassificarCategorico(fato.FonteValores),
+            { DominioValor: TipoDoDado.SimOuNao } => TipoDominioFato.Booleano,
+            { DominioValor: TipoDoDado.Numerico } => TipoDominioFato.Numerico,
+            { DominioValor: TipoDoDado.Opcao } => ClassificarCategorico(fato.FonteValoresValor),
             _ => null,
         };
     }
 
-    private static TipoDominioFato? ClassificarCategorico(string? fonteValores) => fonteValores switch
+    private static TipoDominioFato? ClassificarCategorico(FonteValoresFato? fonteValores) => fonteValores switch
     {
-        FonteGlobal or FonteTiposDeficiencia => TipoDominioFato.CategoricoEstatico,
-        FonteProcesso or FonteModalidade or FonteMunicipiosBonus or FonteMunicipiosProvaPresencial or FonteGeoUf or FonteGeoMunicipio => TipoDominioFato.CategoricoDinamico,
+        FonteValoresFato.Catalogo or FonteValoresFato.TiposDeDeficiencia => TipoDominioFato.CategoricoEstatico,
+        FonteValoresFato.OpcoesDoProcesso or FonteValoresFato.Modalidade or FonteValoresFato.MunicipiosDoFada
+            or FonteValoresFato.MunicipiosProvaPresencial or FonteValoresFato.UnidadesFederativas or FonteValoresFato.Municipios => TipoDominioFato.CategoricoDinamico,
         _ => null,
     };
 
@@ -83,7 +72,7 @@ internal static class VocabularioDeFatos
     {
         ArgumentNullException.ThrowIfNull(fato);
         return new FatoDoCatalogo(
-            fato.Codigo, fato.Dominio, fato.Cardinalidade, fato.Origem, fato.Binding, fato.FonteValores, fato.Escopo, fato.Ativo,
+            fato.Codigo, fato.DominioValor, fato.CardinalidadeValor, fato.OrigemValor, fato.Binding, fato.FonteValoresValor, fato.Escopo, fato.Ativo,
             fato.ValoresDominioDeclarados is { } declarados
                 ? [.. declarados.Select(static v => new ValorDoCatalogo(v.Codigo, v.Ativo))]
                 : [.. (fato.ValoresDominio ?? []).Select(static v => new ValorDoCatalogo(v, Ativo: true))],
@@ -94,7 +83,7 @@ internal static class VocabularioDeFatos
     public static ApresentacaoDoFato Apresentacao(FatoCandidatoView fato)
     {
         ArgumentNullException.ThrowIfNull(fato);
-        return ApresentacaoDoFato.DoCatalogo(fato.Codigo, fato.Nome, fato.Dominio, fato.Cardinalidade, fato.FonteValores);
+        return ApresentacaoDoFato.DoCatalogo(fato.Codigo, fato.Nome, fato.DominioValor, fato.CardinalidadeValor, fato.FonteValoresValor);
     }
 
     /// <summary>O catálogo como as regras do formulário o conferem, por código.</summary>
@@ -116,17 +105,17 @@ internal static class VocabularioDeFatos
     }
 
     /// <summary>Se o vínculo é de fato que o sistema calcula de atributos do candidato, como a faixa etária.</summary>
-    public static bool CalculadoDeAtributo(string binding) => VinculoDeFato.Usa(binding, VinculoDeFato.AtributoDoCandidato);
+    public static bool CalculadoDeAtributo(string binding) => VinculoDeFato.Usa(binding, MecanismoDoVinculo.AtributoCandidato);
 
     /// <summary>Se o vínculo é de fato que a classificação produz, como o grupo em que o candidato foi convocado.</summary>
-    public static bool ProduzidoPelaClassificacao(string binding) => VinculoDeFato.Usa(binding, VinculoDeFato.Classificacao);
+    public static bool ProduzidoPelaClassificacao(string binding) => VinculoDeFato.Usa(binding, MecanismoDoVinculo.Classificacao);
 
     /// <summary>O fato de membro de cada agregado sobre grupo repetível do catálogo, pelo código do agregado.</summary>
     public static Dictionary<string, string> MembroPorAgregado(IEnumerable<FatoCandidatoView> catalogo)
     {
         ArgumentNullException.ThrowIfNull(catalogo);
         return catalogo
-            .Select(static f => (f.Codigo, Membro: VinculoDeFato.Nomeado(f.Binding, VinculoDeFato.AgregacaoDeGrupo)))
+            .Select(static f => (f.Codigo, Membro: VinculoDeFato.Nomeado(f.Binding, MecanismoDoVinculo.ResumoDeGrupo)))
             .Where(static a => a.Membro is not null)
             .ToDictionary(static a => a.Codigo, static a => a.Membro!, StringComparer.Ordinal);
     }
@@ -196,7 +185,7 @@ internal static class VocabularioDeFatos
         ArgumentNullException.ThrowIfNull(catalogo);
         FatoCandidatoView[] fatos = [.. catalogo];
         return new FatosDeModalidade(
-            fatos.Where(static f => f.FonteValores == FonteModalidade).Select(static f => f.Codigo),
+            fatos.Where(static f => f.FonteValoresValor == FonteValoresFato.Modalidade).Select(static f => f.Codigo),
             MembroPorAgregado(fatos));
     }
 
@@ -213,10 +202,10 @@ internal static class VocabularioDeFatos
         ArgumentNullException.ThrowIfNull(fato);
         return fato switch
         {
-            { Dominio: DominioCategorico, FonteValores: FonteProcesso } => OrigemValoresColeta.OpcoesDoProcesso,
-            { Dominio: DominioCategorico, FonteValores: FonteMunicipiosBonus } => OrigemValoresColeta.MunicipiosDoBonus,
-            { Dominio: DominioCategorico, FonteValores: FonteMunicipiosProvaPresencial } => OrigemValoresColeta.MunicipiosDaProvaPresencial,
-            { Dominio: DominioCategorico, FonteValores: FonteGeoUf } => OrigemValoresColeta.UnidadesFederativas,
+            { DominioValor: TipoDoDado.Opcao, FonteValoresValor: FonteValoresFato.OpcoesDoProcesso } => OrigemValoresColeta.OpcoesDoProcesso,
+            { DominioValor: TipoDoDado.Opcao, FonteValoresValor: FonteValoresFato.MunicipiosDoFada } => OrigemValoresColeta.MunicipiosDoFada,
+            { DominioValor: TipoDoDado.Opcao, FonteValoresValor: FonteValoresFato.MunicipiosProvaPresencial } => OrigemValoresColeta.MunicipiosDaProvaPresencial,
+            { DominioValor: TipoDoDado.Opcao, FonteValoresValor: FonteValoresFato.UnidadesFederativas } => OrigemValoresColeta.UnidadesFederativas,
             _ => OrigemValoresColeta.Catalogo,
         };
     }
@@ -253,29 +242,29 @@ internal static class VocabularioDeFatos
     }
 
     private static DominioDeValores? DominioDinamico(ProcessoSeletivo processo, FatoCandidatoView fato) =>
-        fato.Dominio != DominioCategorico
+        fato.DominioValor != TipoDoDado.Opcao
             ? null
-            : fato.FonteValores switch
+            : fato.FonteValoresValor switch
             {
-                FonteProcesso => OpcoesDeclaradasPeloProcesso(processo, fato),
-                FonteModalidade => DominioDeValores.OfertadoPeloProcesso(processo.DistribuicaoVagas.SelectMany(static d => d.Modalidades).Select(static m => m.Codigo)),
-                FonteMunicipiosBonus or FonteMunicipiosProvaPresencial => DominioDosMunicipios(processo, fato.FonteValores),
-                FonteGeoUf => DominioDeValores.Enumerado(ReferenciaCidadeGeo.Ufs),
+                FonteValoresFato.OpcoesDoProcesso => OpcoesDeclaradasPeloProcesso(processo, fato),
+                FonteValoresFato.Modalidade => DominioDeValores.OfertadoPeloProcesso(processo.DistribuicaoVagas.SelectMany(static d => d.Modalidades).Select(static m => m.Codigo)),
+                FonteValoresFato.MunicipiosDoFada or FonteValoresFato.MunicipiosProvaPresencial => DominioDosMunicipios(processo, fato.FonteValoresValor),
+                FonteValoresFato.UnidadesFederativas => DominioDeValores.Enumerado(ReferenciaCidadeGeo.Ufs),
 
                 // Os municípios vêm do Geo, que o servidor não enumera: a condição cita um código
                 // IBGE conferido só pela forma, como toda referência de cidade (ADR-0090).
-                FonteGeoMunicipio => DominioDeValores.PorFormato(ReferenciaCidadeGeo.EhCodigoMunicipioValido),
+                FonteValoresFato.Municipios => DominioDeValores.PorFormato(ReferenciaCidadeGeo.EhCodigoMunicipioValido),
                 _ => null,
             };
 
-    private static DominioDeValores DominioDosMunicipios(ProcessoSeletivo processo, string fonte) =>
-        DominioDeValores.OfertadoPeloProcesso(fonte == FonteMunicipiosBonus
+    private static DominioDeValores DominioDosMunicipios(ProcessoSeletivo processo, FonteValoresFato? fonte) =>
+        DominioDeValores.OfertadoPeloProcesso(fonte == FonteValoresFato.MunicipiosDoFada
             ? MunicipiosDoBonus(processo).Select(static m => m.CodigoIbge)
             : (processo.ProvaPresencial?.Municipios ?? []).Select(static m => m.CodigoIbge));
 
     private static DominioDeValores OpcoesDeclaradasPeloProcesso(ProcessoSeletivo processo, FatoCandidatoView fato) =>
         DominioDeValores.OfertadoPeloProcesso(
-            processo.OpcoesDoProcesso(VinculoDeFato.Nomeado(fato.Binding, VinculoDeFato.AgregacaoDeGrupo) ?? fato.Codigo).Select(static o => o.Codigo));
+            processo.OpcoesDoProcesso(VinculoDeFato.Nomeado(fato.Binding, MecanismoDoVinculo.ResumoDeGrupo) ?? fato.Codigo).Select(static o => o.Codigo));
 
     /// <summary>
     /// Os municípios da área do bônus regional que o processo configurou, em ordem alfabética de
@@ -322,7 +311,7 @@ internal static class VocabularioDeFatos
             return dinamico.Valores;
         }
 
-        return fato.FonteValores is FonteGlobal or FonteTiposDeficiencia
+        return fato.FonteValoresValor is FonteValoresFato.Catalogo or FonteValoresFato.TiposDeDeficiencia
             ? [.. (fato.ValoresDominioDeclarados ?? []).Select(static v => v.Codigo)]
             : null;
     }

@@ -86,7 +86,7 @@ public sealed class AplicarModeloFormularioEndpointTests
     private static async Task<string?> FinalidadeDoRelatorioAsync(HttpResponseMessage resposta)
     {
         using JsonDocument relatorio = JsonDocument.Parse(await resposta.Content.ReadAsStringAsync());
-        return relatorio.RootElement.GetProperty("finalidade").GetString();
+        return relatorio.RootElement.GetProperty("finalidade").GetProperty("codigo").GetString();
     }
 
     private async Task EditarModeloAsync(Guid modeloId, ConteudoDoModelo conteudo)
@@ -126,11 +126,11 @@ public sealed class AplicarModeloFormularioEndpointTests
     private static ConteudoDoModelo Conteudo(params string[] fatos) => new(
         "Formulário",
         [
-            new("DADOS", 0, TipoEtapaFormulario.Secao, BlocoSistema.Nenhum, "Dados", null, null, null),
+            new("DADOS", 0, TipoEtapaFormulario.Secao, null, "Dados", null, null, null),
             new("REVISAO", 1, TipoEtapaFormulario.Bloco, BlocoSistema.RevisaoEAceite, "Revisão e aceite", null, null, null),
         ],
         [.. fatos.Select(static (fato, ordem) => new ItemDoModelo(
-            fato, ordem, "DADOS", new ApresentacaoDoCampo(fato, TipoRenderizacao.Booleano), null, new RegrasDoCampo(null, Obrigatoriedade.Sempre, [])))],
+            fato, ordem, "DADOS", new ApresentacaoDoCampo(fato, TipoRenderizacao.SimOuNao), null, new RegrasDoCampo(null, Obrigatoriedade.Sempre, [])))],
         [],
         [], []);
 
@@ -143,7 +143,7 @@ public sealed class AplicarModeloFormularioEndpointTests
                     "COMPOSICAO_FAMILIAR", 1, "DADOS", "Composição familiar", new OcorrenciasDoGrupo(1, 10, IncluiCandidato: false),
                     new ExibicaoEObrigatoriedade(null, Obrigatoriedade.Sempre),
                     [new ItemDoModelo(
-                        "MAIOR_IDADE", 0, null, new ApresentacaoDoCampo("Maior de idade", TipoRenderizacao.Booleano), null, new RegrasDoCampo(null, Obrigatoriedade.Sempre, []))]),
+                        "MAIOR_IDADE", 0, null, new ApresentacaoDoCampo("Maior de idade", TipoRenderizacao.SimOuNao), null, new RegrasDoCampo(null, Obrigatoriedade.Sempre, []))]),
             ],
         };
 

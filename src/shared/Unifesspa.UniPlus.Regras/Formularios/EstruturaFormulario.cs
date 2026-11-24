@@ -1,35 +1,50 @@
 namespace Unifesspa.UniPlus.Regras.Formularios;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
 
-/// <summary>Para que o formulário coleta respostas: cada processo tem no máximo um por finalidade (UNI-REQ-0144).</summary>
-public enum FinalidadeFormulario
-{
-    Nenhuma = 0,
-    Inscricao = 1,
-    IsencaoTaxa = 2,
-    Habilitacao = 3,
-}
-
 /// <summary>Uma etapa do formulário é uma seção de itens ou um bloco que o sistema monta.</summary>
+[DescricaoDoContrato("O que a etapa do formulário é: uma seção com itens de resposta ou um bloco que o sistema monta.")]
 public enum TipoEtapaFormulario
 {
-    Nenhum = 0,
+    [CodigoDeContrato(
+        "SECAO",
+        "Seção",
+        Descricao = "Etapa com os itens que o candidato responde.")]
     Secao = 1,
+
+    [CodigoDeContrato(
+        "BLOCO",
+        "Bloco do sistema",
+        Descricao = "Etapa que o sistema monta a partir da configuração do processo; o bloco diz qual.")]
     Bloco = 2,
 }
 
 /// <summary>Os blocos que o sistema monta a partir da configuração do processo.</summary>
+[DescricaoDoContrato("Os blocos que o sistema monta no formulário a partir da configuração do processo seletivo.")]
 public enum BlocoSistema
 {
-    Nenhum = 0,
+    [CodigoDeContrato(
+        "COMPROVACAO_DOCUMENTAL",
+        "Comprovação documental",
+        Descricao = "Os documentos que o candidato envia, conforme a exigência de cada situação dele.")]
     ComprovacaoDocumental = 1,
+
+    [CodigoDeContrato(
+        "MODALIDADES_CALCULADAS",
+        "Modalidades calculadas",
+        Descricao = "As modalidades de concorrência em que o candidato se enquadra, calculadas pelas respostas dele.")]
     ModalidadesCalculadas = 2,
+
+    [CodigoDeContrato(
+        "REVISAO_E_ACEITE",
+        "Revisão e aceite",
+        Descricao = "A conferência das respostas e o aceite dos termos, sempre a última etapa do formulário.")]
     RevisaoEAceite = 3,
 }
 
 /// <summary>Uma etapa, na forma que a estrutura do formulário confere.</summary>
-public sealed record EtapaEstrutura(string Codigo, int Ordem, TipoEtapaFormulario Tipo, BlocoSistema Bloco);
+public sealed record EtapaEstrutura(string Codigo, int Ordem, TipoEtapaFormulario Tipo, BlocoSistema? Bloco);
 
 /// <summary>Um item, na forma que a estrutura do formulário confere: o fato, a ordem e a seção.</summary>
 public sealed record ItemEstrutura(string FatoCodigo, int Ordem, string? EtapaCodigo);
@@ -37,21 +52,9 @@ public sealed record ItemEstrutura(string FatoCodigo, int Ordem, string? EtapaCo
 /// <summary>
 /// As regras de forma de um formulário, as mesmas no processo e no modelo (ADR-0137): quais blocos
 /// a finalidade admite e exige, a revisão e aceite por último, e os itens em seções, na ordem delas.
-/// Tokens canônicos UPPER_SNAKE para o wire e o envelope.
 /// </summary>
 public static class EstruturaFormulario
 {
-    public const string FinalidadeInscricao = "INSCRICAO";
-    public const string FinalidadeIsencaoTaxa = "ISENCAO_TAXA";
-    public const string FinalidadeHabilitacao = "HABILITACAO";
-
-    public const string TipoSecao = "SECAO";
-    public const string TipoBloco = "BLOCO";
-
-    public const string BlocoComprovacaoDocumental = "COMPROVACAO_DOCUMENTAL";
-    public const string BlocoModalidadesCalculadas = "MODALIDADES_CALCULADAS";
-    public const string BlocoRevisaoEAceite = "REVISAO_E_ACEITE";
-
     /// <summary>Os blocos que a finalidade admite: as modalidades calculadas só fazem sentido na inscrição.</summary>
     public static IReadOnlySet<BlocoSistema> BlocosAdmitidos(FinalidadeFormulario finalidade) => finalidade switch
     {
@@ -59,12 +62,12 @@ public static class EstruturaFormulario
             new HashSet<BlocoSistema> { BlocoSistema.ComprovacaoDocumental, BlocoSistema.ModalidadesCalculadas, BlocoSistema.RevisaoEAceite },
         FinalidadeFormulario.IsencaoTaxa or FinalidadeFormulario.Habilitacao =>
             new HashSet<BlocoSistema> { BlocoSistema.ComprovacaoDocumental, BlocoSistema.RevisaoEAceite },
-        _ => new HashSet<BlocoSistema>(),
+        _ => [],
     };
 
-    /// <summary>Os blocos que a finalidade exige: todo formulário termina na revisão e aceite.</summary>
-    public static IReadOnlySet<BlocoSistema> BlocosExigidos(FinalidadeFormulario finalidade) =>
-        finalidade == FinalidadeFormulario.Nenhuma ? new HashSet<BlocoSistema>() : new HashSet<BlocoSistema> { BlocoSistema.RevisaoEAceite };
+    /// <summary>Os blocos que todo formulário exige, de qualquer finalidade: ele termina na revisão e aceite.</summary>
+    public static IReadOnlySet<BlocoSistema> BlocosExigidos() =>
+        new HashSet<BlocoSistema> { BlocoSistema.RevisaoEAceite };
 
     /// <summary>
     /// Confere as etapas: código e ordem únicos, seção sem bloco, bloco admitido pela finalidade e
@@ -74,59 +77,61 @@ public static class EstruturaFormulario
     {
         ArgumentNullException.ThrowIfNull(etapas);
 
-        List<FieldError> erros = [];
-        void Recusar(string campo, string codigo, string mensagem) => erros.Add(new(campo, new DomainError(codigo, mensagem)));
-
-        HashSet<string> codigos = new(StringComparer.Ordinal);
-        HashSet<int> ordens = [];
-        HashSet<BlocoSistema> blocos = [];
         IReadOnlySet<BlocoSistema> admitidos = BlocosAdmitidos(finalidade);
-        for (int i = 0; i < etapas.Count; i++)
-        {
-            EtapaEstrutura etapa = etapas[i];
-            string campo = $"etapas[{i}]";
-            if (!codigos.Add(etapa.Codigo))
-            {
-                Recusar($"{campo}.codigo", EstruturaFormularioErrorCodes.EtapaCodigoDuplicado, $"O código de etapa '{etapa.Codigo}' se repete no formulário.");
-            }
-
-            if (!ordens.Add(etapa.Ordem))
-            {
-                Recusar($"{campo}.ordem", EstruturaFormularioErrorCodes.EtapaOrdemDuplicada, "Duas etapas do formulário têm a mesma ordem.");
-            }
-
-            switch (etapa.Tipo)
-            {
-                case TipoEtapaFormulario.Secao when etapa.Bloco != BlocoSistema.Nenhum:
-                    Recusar($"{campo}.bloco", EstruturaFormularioErrorCodes.SecaoComBloco, "Uma seção não declara bloco de sistema.");
-                    break;
-                case TipoEtapaFormulario.Bloco when !admitidos.Contains(etapa.Bloco):
-                    Recusar($"{campo}.bloco", EstruturaFormularioErrorCodes.BlocoNaoAdmitido, "O bloco não é admitido pela finalidade do formulário.");
-                    break;
-                case TipoEtapaFormulario.Bloco when !blocos.Add(etapa.Bloco):
-                    Recusar($"{campo}.bloco", EstruturaFormularioErrorCodes.BlocoRepetido, "O bloco aparece mais de uma vez no formulário.");
-                    break;
-                case not (TipoEtapaFormulario.Secao or TipoEtapaFormulario.Bloco):
-                    Recusar($"{campo}.tipo", EstruturaFormularioErrorCodes.TipoDeEtapaObrigatorio, "A etapa é uma seção ou um bloco de sistema.");
-                    break;
-                default:
-                    break;
-            }
-        }
-
-        foreach (BlocoSistema exigido in BlocosExigidos(finalidade).Where(b => !blocos.Contains(b)).Order())
-        {
-            Recusar("etapas", EstruturaFormularioErrorCodes.BlocoExigidoAusente, $"O formulário precisa do bloco {ParaToken(exigido)}.");
-        }
-
-        EtapaEstrutura? ultima = etapas.MaxBy(static e => e.Ordem);
-        if (blocos.Contains(BlocoSistema.RevisaoEAceite) && ultima?.Bloco != BlocoSistema.RevisaoEAceite)
-        {
-            Recusar("etapas", EstruturaFormularioErrorCodes.RevisaoEAceiteForaDoFim, "A revisão e aceite é sempre a última etapa do formulário.");
-        }
+        List<FieldError> erros = [.. etapas.SelectMany((_, i) => ConferirEtapa(etapas, i, admitidos))];
+        erros.AddRange(ConferirBlocosDoFormulario(etapas, admitidos));
 
         return erros;
     }
+
+    private static IEnumerable<FieldError> ConferirEtapa(IReadOnlyList<EtapaEstrutura> etapas, int posicao, IReadOnlySet<BlocoSistema> admitidos)
+    {
+        EtapaEstrutura etapa = etapas[posicao];
+        string campo = $"etapas[{posicao}]";
+        IEnumerable<EtapaEstrutura> anteriores = etapas.Take(posicao);
+        FieldError?[] recusas =
+        [
+            anteriores.Any(a => string.Equals(a.Codigo, etapa.Codigo, StringComparison.Ordinal))
+                ? Recusa($"{campo}.codigo", EstruturaFormularioErrorCodes.EtapaCodigoDuplicado, $"O código de etapa '{etapa.Codigo}' se repete no formulário.")
+                : null,
+            anteriores.Any(a => a.Ordem == etapa.Ordem)
+                ? Recusa($"{campo}.ordem", EstruturaFormularioErrorCodes.EtapaOrdemDuplicada, "Duas etapas do formulário têm a mesma ordem.")
+                : null,
+            RecusaDoBloco(etapa, $"{campo}.bloco", anteriores, admitidos),
+        ];
+        return recusas.OfType<FieldError>();
+    }
+
+    private static FieldError? RecusaDoBloco(
+        EtapaEstrutura etapa, string campo, IEnumerable<EtapaEstrutura> anteriores, IReadOnlySet<BlocoSistema> admitidos) =>
+        (etapa.Tipo, etapa.Bloco) switch
+        {
+            (TipoEtapaFormulario.Secao, not null) =>
+                Recusa(campo, EstruturaFormularioErrorCodes.SecaoComBloco, "Uma seção não declara bloco de sistema."),
+            (TipoEtapaFormulario.Bloco, { } bloco) when admitidos.Contains(bloco) =>
+                anteriores.Any(a => a.Tipo == TipoEtapaFormulario.Bloco && a.Bloco == bloco)
+                    ? Recusa(campo, EstruturaFormularioErrorCodes.BlocoRepetido, "O bloco aparece mais de uma vez no formulário.")
+                    : null,
+            (TipoEtapaFormulario.Bloco, _) =>
+                Recusa(campo, EstruturaFormularioErrorCodes.BlocoNaoAdmitido, "O bloco não é admitido pela finalidade do formulário."),
+            _ => null,
+        };
+
+    private static IEnumerable<FieldError> ConferirBlocosDoFormulario(IReadOnlyList<EtapaEstrutura> etapas, IReadOnlySet<BlocoSistema> admitidos)
+    {
+        HashSet<BlocoSistema> blocos = [.. etapas.Where(static e => e.Tipo == TipoEtapaFormulario.Bloco).Select(static e => e.Bloco).OfType<BlocoSistema>().Where(admitidos.Contains)];
+        foreach (BlocoSistema exigido in BlocosExigidos().Where(b => !blocos.Contains(b)).Order())
+        {
+            yield return Recusa("etapas", EstruturaFormularioErrorCodes.BlocoExigidoAusente, $"O formulário precisa do bloco {exigido.Codigo()}.");
+        }
+
+        if (blocos.Contains(BlocoSistema.RevisaoEAceite) && etapas.MaxBy(static e => e.Ordem)?.Bloco != BlocoSistema.RevisaoEAceite)
+        {
+            yield return Recusa("etapas", EstruturaFormularioErrorCodes.RevisaoEAceiteForaDoFim, "A revisão e aceite é sempre a última etapa do formulário.");
+        }
+    }
+
+    private static FieldError Recusa(string campo, string codigo, string mensagem) => new(campo, new DomainError(codigo, mensagem));
 
     /// <summary>
     /// Confere os itens contra as etapas: todo item está numa seção do formulário, e a ordem dos
@@ -145,86 +150,34 @@ public static class EstruturaFormulario
             .GroupBy(static e => e.Codigo, StringComparer.Ordinal)
             .ToDictionary(static g => g.Key, static g => g.First(), StringComparer.Ordinal);
 
-        List<FieldError> erros = [];
-        for (int i = 0; i < itens.Count; i++)
-        {
-            if (itens[i].EtapaCodigo is not { } etapa ? secaoObrigatoria : !secoes.ContainsKey(etapa))
-            {
-                erros.Add(new($"itens[{i}].etapaCodigo", new DomainError(
-                    EstruturaFormularioErrorCodes.ItemForaDeSecao, $"O item '{itens[i].FatoCodigo}' precisa estar numa seção do formulário.")));
-            }
-        }
-
-        if (erros.Count > 0)
-        {
-            return erros;
-        }
-
-        ItemEstrutura? anterior = null;
-        foreach (ItemEstrutura item in itens.Where(static i => i.EtapaCodigo is not null).OrderBy(static i => i.Ordem))
-        {
-            if (anterior is not null && secoes[item.EtapaCodigo!].Ordem < secoes[anterior.EtapaCodigo!].Ordem)
-            {
-                erros.Add(new("itens", new DomainError(
-                    EstruturaFormularioErrorCodes.ItemForaDaOrdemDasSecoes,
-                    $"O item '{item.FatoCodigo}' vem depois de '{anterior.FatoCodigo}', mas está numa seção anterior à dele.")));
-                break;
-            }
-
-            anterior = item;
-        }
-
-        return erros;
+        List<FieldError> foraDeSecao = [.. itens.Select((item, i) => RecusaDoItemForaDeSecao(item, i, secoes, secaoObrigatoria)).OfType<FieldError>()];
+        return foraDeSecao.Count > 0 ? foraDeSecao : RecusaDaOrdemDosItens(secoes, itens);
     }
 
-    public static string ParaToken(FinalidadeFormulario finalidade) => finalidade switch
-    {
-        FinalidadeFormulario.Inscricao => FinalidadeInscricao,
-        FinalidadeFormulario.IsencaoTaxa => FinalidadeIsencaoTaxa,
-        FinalidadeFormulario.Habilitacao => FinalidadeHabilitacao,
-        _ => throw new ArgumentOutOfRangeException(nameof(finalidade), finalidade, "Finalidade sem token."),
-    };
+    private static FieldError? RecusaDoItemForaDeSecao(
+        ItemEstrutura item, int posicao, Dictionary<string, EtapaEstrutura> secoes, bool secaoObrigatoria) =>
+        (item.EtapaCodigo is not { } etapa ? secaoObrigatoria : !secoes.ContainsKey(etapa))
+            ? Recusa($"itens[{posicao}].etapaCodigo", EstruturaFormularioErrorCodes.ItemForaDeSecao, $"O item '{item.FatoCodigo}' precisa estar numa seção do formulário.")
+            : null;
 
-    /// <summary>A finalidade do token; token desconhecido é o sentinela.</summary>
-    public static FinalidadeFormulario FinalidadeDoToken(string? token) => token switch
+    private static List<FieldError> RecusaDaOrdemDosItens(Dictionary<string, EtapaEstrutura> secoes, IReadOnlyList<ItemEstrutura> itens)
     {
-        FinalidadeInscricao => FinalidadeFormulario.Inscricao,
-        FinalidadeIsencaoTaxa => FinalidadeFormulario.IsencaoTaxa,
-        FinalidadeHabilitacao => FinalidadeFormulario.Habilitacao,
-        _ => FinalidadeFormulario.Nenhuma,
-    };
+        ItemEstrutura[] emOrdem = [.. itens.Where(static i => i.EtapaCodigo is not null).OrderBy(static i => i.Ordem)];
+        for (int i = 1; i < emOrdem.Length; i++)
+        {
+            if (secoes[emOrdem[i].EtapaCodigo!].Ordem < secoes[emOrdem[i - 1].EtapaCodigo!].Ordem)
+            {
+                return [Recusa("itens", EstruturaFormularioErrorCodes.ItemForaDaOrdemDasSecoes,
+                    $"O item '{emOrdem[i].FatoCodigo}' vem depois de '{emOrdem[i - 1].FatoCodigo}', mas está numa seção anterior à dele.")];
+            }
+        }
 
-    public static string ParaToken(TipoEtapaFormulario tipo) => tipo switch
-    {
-        TipoEtapaFormulario.Secao => TipoSecao,
-        TipoEtapaFormulario.Bloco => TipoBloco,
-        _ => throw new ArgumentOutOfRangeException(nameof(tipo), tipo, "Tipo de etapa sem token."),
-    };
+        return [];
+    }
 
-    public static TipoEtapaFormulario TipoDoToken(string? token) => token switch
-    {
-        TipoSecao => TipoEtapaFormulario.Secao,
-        TipoBloco => TipoEtapaFormulario.Bloco,
-        _ => TipoEtapaFormulario.Nenhum,
-    };
-
-    public static string? ParaToken(BlocoSistema bloco) => bloco switch
-    {
-        BlocoSistema.Nenhum => null,
-        BlocoSistema.ComprovacaoDocumental => BlocoComprovacaoDocumental,
-        BlocoSistema.ModalidadesCalculadas => BlocoModalidadesCalculadas,
-        BlocoSistema.RevisaoEAceite => BlocoRevisaoEAceite,
-        _ => throw new ArgumentOutOfRangeException(nameof(bloco), bloco, "Bloco desconhecido."),
-    };
-
-    /// <summary>O bloco do token; ausente é seção, e token desconhecido também é o sentinela.</summary>
-    public static BlocoSistema BlocoDoToken(string? token) => token switch
-    {
-        BlocoComprovacaoDocumental => BlocoSistema.ComprovacaoDocumental,
-        BlocoModalidadesCalculadas => BlocoSistema.ModalidadesCalculadas,
-        BlocoRevisaoEAceite => BlocoSistema.RevisaoEAceite,
-        _ => BlocoSistema.Nenhum,
-    };
+    /// <summary>A finalidade do código; código ausente ou desconhecido não é finalidade.</summary>
+    public static FinalidadeFormulario? FinalidadeDoCodigo(string? codigo) =>
+        CatalogoDe<FinalidadeFormulario>.TentarObter(codigo, out FinalidadeFormulario finalidade) ? finalidade : null;
 }
 
 /// <summary>Códigos de erro da estrutura do formulário.</summary>

@@ -50,7 +50,7 @@ internal static class SerializacaoDosPredicados
 
     internal static JsonNode? SerializarValorDeAtomo(Operador operador, JsonElement valor)
     {
-        if (operador is not (Operador.Em or Operador.NaoEm))
+        if (operador is not (Operador.AlgumDe or Operador.NenhumDe))
         {
             return JsonNode.Parse(valor.GetRawText());
         }

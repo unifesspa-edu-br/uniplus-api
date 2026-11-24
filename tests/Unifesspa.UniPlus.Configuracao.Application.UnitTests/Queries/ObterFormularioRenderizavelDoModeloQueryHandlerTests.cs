@@ -28,7 +28,7 @@ public sealed class ObterFormularioRenderizavelDoModeloQueryHandlerTests
 {
     private const string Finalidade = "Verificação dos requisitos do processo seletivo.";
 
-    private static readonly EtapaDoModelo Dados = new("DADOS", 0, TipoEtapaFormulario.Secao, BlocoSistema.Nenhum, "Dados", "Dados pessoais", "Atenção", null);
+    private static readonly EtapaDoModelo Dados = new("DADOS", 0, TipoEtapaFormulario.Secao, null, "Dados", "Dados pessoais", "Atenção", null);
     private static readonly EtapaDoModelo Revisao = new("REVISAO", 1, TipoEtapaFormulario.Bloco, BlocoSistema.RevisaoEAceite, "Revisão", null, null, null);
 
     private readonly IModeloFormularioRepository _repository = Substitute.For<IModeloFormularioRepository>();
@@ -73,10 +73,10 @@ public sealed class ObterFormularioRenderizavelDoModeloQueryHandlerTests
     [Fact(DisplayName = "O campo de seleção global oferta os valores ativos do catálogo, e o que o processo declara sai nulo")]
     public async Task Handle_CampoDeSelecao_OfertaOsValoresDoCatalogo()
     {
-        FatoCandidato cor = Fato("COR_RACA", FonteValoresFato.Global);
+        FatoCandidato cor = Fato("COR_RACA", FonteValoresFato.Catalogo);
         cor.AdicionarValorDominio("PRETA", "Preta", 0, ativo: true).IsSuccess.Should().BeTrue();
         cor.AdicionarValorDominio("AMARELA", "Amarela", 1, ativo: false).IsSuccess.Should().BeTrue();
-        _fatos.ListarTodosAsync(Arg.Any<CancellationToken>()).Returns(_ => [cor, Fato("MODALIDADE", FonteValoresFato.Processo)]);
+        _fatos.ListarTodosAsync(Arg.Any<CancellationToken>()).Returns(_ => [cor, Fato("MODALIDADE", FonteValoresFato.OpcoesDoProcesso)]);
 
         FormularioRenderizavel resultado = (await ObterAsync(Modelo(itens: [Item("COR_RACA", 0), Item("MODALIDADE", 1)])))!;
 
@@ -88,7 +88,7 @@ public sealed class ObterFormularioRenderizavelDoModeloQueryHandlerTests
     public async Task Handle_CampoDoCadastroInstitucional_OfertaOCadastroVivo()
     {
         _condicoes.ListarVivosParaLeituraAsync(Arg.Any<CancellationToken>()).Returns([CondicaoAtendimentoEspecializado.Criar("TEA", "Autismo", null).Value!]);
-        _fatos.ListarTodosAsync(Arg.Any<CancellationToken>()).Returns(_ => [Fato("CONDICAO_ATENDIMENTO", FonteValoresFato.Processo)]);
+        _fatos.ListarTodosAsync(Arg.Any<CancellationToken>()).Returns(_ => [Fato("CONDICAO_ATENDIMENTO", FonteValoresFato.OpcoesDoProcesso)]);
 
         FormularioRenderizavel resultado = (await ObterAsync(Modelo(itens: [Item("CONDICAO_ATENDIMENTO", 0)])))!;
 
@@ -110,16 +110,16 @@ public sealed class ObterFormularioRenderizavelDoModeloQueryHandlerTests
             3,
             termo.Id,
             versao.Id,
-            new ConteudoDoTermoDto(termo.Nome, versao.Texto, versao.BaseLegal, CodigoComRotulo<FormaAceite>.De(FormaAceite.RegistroDigitalSemLogIp), versao.Hash)));
+            new ConteudoDoTermoDto(termo.Nome, versao.Texto, versao.BaseLegal, CodigoComRotulo<FormaAceite>.De(FormaAceite.RegistroSemEnderecoIp), versao.Hash)));
     }
 
     [Fact(DisplayName = "O conteúdo do termo serializa a forma de aceite com código e rótulo")]
     public void ConteudoDoTermo_Serializado_ExibeCodigoERotulo()
     {
-        ConteudoDoTermoDto conteudo = new("Termo", "Texto", "Base", CodigoComRotulo<FormaAceite>.De(FormaAceite.RegistroDigitalSemLogIp), "hash");
+        ConteudoDoTermoDto conteudo = new("Termo", "Texto", "Base", CodigoComRotulo<FormaAceite>.De(FormaAceite.RegistroSemEnderecoIp), "hash");
         using JsonDocument json = JsonDocument.Parse(JsonSerializer.Serialize(conteudo, JsonSerializerOptions.Web));
         JsonElement forma = json.RootElement.GetProperty("formaAceite");
-        forma.GetProperty("codigo").GetString().Should().Be("REGISTRO_DIGITAL_SEM_LOG_IP");
+        forma.GetProperty("codigo").GetString().Should().Be("REGISTRO_SEM_ENDERECO_IP");
         forma.GetProperty("rotulo").GetString().Should().NotBeNullOrWhiteSpace();
     }
 
@@ -186,7 +186,7 @@ public sealed class ObterFormularioRenderizavelDoModeloQueryHandlerTests
     private static TermoConsentimento TermoPromovido(out TermoConsentimentoVersao versao)
     {
         DateTimeOffset agora = new(2027, 1, 1, 12, 0, 0, TimeSpan.Zero);
-        TermoConsentimento termo = TermoConsentimento.Criar("Termo LGPD", "Texto do termo", "Lei 13.709/2018", "REGISTRO_DIGITAL_SEM_LOG_IP").Value!;
+        TermoConsentimento termo = TermoConsentimento.Criar("Termo LGPD", "Texto do termo", "Lei 13.709/2018", "REGISTRO_SEM_ENDERECO_IP").Value!;
         termo.MarcarRevisado("usuario.revisor", agora).IsSuccess.Should().BeTrue();
         versao = termo.Promover("usuario.promotor", agora).Value!;
         return termo;
@@ -208,7 +208,7 @@ public sealed class ObterFormularioRenderizavelDoModeloQueryHandlerTests
     }
 
     private static ItemDoModelo Item(string fato, int ordem) =>
-        new(fato, ordem, "DADOS", new ApresentacaoDoCampo(fato, TipoRenderizacao.SelecaoUnica), null, new RegrasDoCampo(null, Obrigatoriedade.Sempre, []));
+        new(fato, ordem, "DADOS", new ApresentacaoDoCampo(fato, TipoRenderizacao.EscolhaUnica), null, new RegrasDoCampo(null, Obrigatoriedade.Sempre, []));
 
     private static ItemDoModelo Subitem(string fato, int ordem) => Item(fato, ordem) with { EtapaCodigo = null };
 
@@ -217,6 +217,6 @@ public sealed class ObterFormularioRenderizavelDoModeloQueryHandlerTests
 
     private static FatoCandidato Fato(string codigo, FonteValoresFato fonte) =>
         CriacaoDoFato.CriarDoAdministrador(
-            codigo, codigo, "Descrição do fato.", DominioFato.Categorico, CardinalidadeFato.Escalar, fonte, null, "INSCRICAO", EscopoFato.Candidato,
-            ClassificacaoDeProtecao.Pessoal, Finalidade, HipoteseLegalTratamento.CumprimentoObrigacaoLegal).Value!;
+            new DescritivoDoFato(codigo, codigo, "Descrição do fato."),
+            new DefinicaoDoFato(TipoDoDado.Opcao, QuantidadeDeValores.ValorUnico, fonte, null, "INSCRICAO", EscopoFato.Candidato, ClassificacaoDeProtecao.Pessoal, Finalidade, HipoteseLegalTratamento.CumprimentoObrigacaoLegal)).Value!;
 }

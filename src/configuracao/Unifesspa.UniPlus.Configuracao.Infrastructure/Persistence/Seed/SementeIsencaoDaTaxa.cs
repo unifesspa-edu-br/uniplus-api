@@ -96,7 +96,7 @@ public static class SementeIsencaoDaTaxa
 
     private static EtapaDoModelo[] Etapas() =>
     [
-        new(Renda, 1, TipoEtapaFormulario.Secao, BlocoSistema.Nenhum, "Renda familiar",
+        new(Renda, 1, TipoEtapaFormulario.Secao, null, "Renda familiar",
             "A isenção pela Lei nº 12.799/2013 é de quem tem renda familiar per capita de até um salário mínimo e meio e cursou o ensino médio completo em escola pública ou como bolsista integral em escola privada. A origem escolar é a que você informou na inscrição.",
             null, null),
         new("DOCUMENTOS", 2, TipoEtapaFormulario.Bloco, BlocoSistema.ComprovacaoDocumental, "Documentos", null, null, null),
@@ -107,7 +107,7 @@ public static class SementeIsencaoDaTaxa
         new(IsencaoPorCarenciaSocioeconomica.FatoRenda, 1, Renda,
             new ApresentacaoDoCampo(
                 "A renda da sua família é de até um salário mínimo e meio por pessoa?",
-                TipoRenderizacao.Booleano,
+                TipoRenderizacao.SimOuNao,
                 "Some a renda bruta mensal de todos da família e divida pelo número de pessoas. Exatamente um salário mínimo e meio também dá direito."),
             null,
             new RegrasDoCampo(null, Obrigatoriedade.Sempre, []));

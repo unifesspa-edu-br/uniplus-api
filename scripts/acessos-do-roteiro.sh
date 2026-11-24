@@ -47,7 +47,7 @@ PERMISSOES_INSTITUCIONAIS='[
     "configuracao:cursos:manter", "configuracao:ofertas-curso:manter",
     "configuracao:referencias-reserva-demografica:manter",
     "configuracao:condicoes-atendimento:manter", "configuracao:recursos-acessibilidade:manter",
-    "configuracao:tipos-deficiencia:manter", "configuracao:base-legal-bonus-regional:manter",
+    "configuracao:tipos-deficiencia:manter", "configuracao:base-legal-do-fada:manter",
     "configuracao:calendarios-dias-uteis:manter", "configuracao:pesos-area-enem:manter",
     "configuracao:fatos-candidato:manter", "configuracao:tipos-documento:manter"
 ]'

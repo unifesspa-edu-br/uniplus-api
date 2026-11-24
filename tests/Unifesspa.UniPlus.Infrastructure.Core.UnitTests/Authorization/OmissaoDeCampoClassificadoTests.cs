@@ -76,7 +76,7 @@ public sealed class OmissaoDeCampoClassificadoTests
             new Item("QUILOMBOLA", ClassificacaoDeProtecao.Sensivel, "LGPD art. 11"),
             new Item("SEM_BASE", ClassificacaoDeProtecao.Sensivel, null),
             new Item("COR_RACA", ClassificacaoDeProtecao.Interno, "LGPD art. 7º"),
-            new Item("NAO_RESOLVIDO", ClassificacaoDeProtecao.Nenhuma, "LGPD art. 7º"),
+            new Item("NAO_RESOLVIDO", default(ClassificacaoDeProtecao), "LGPD art. 7º"),
         ]);
 
         using JsonDocument json = JsonDocument.Parse(JsonSerializer.Serialize(pagina, _json));

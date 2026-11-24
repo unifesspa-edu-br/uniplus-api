@@ -2,6 +2,7 @@ namespace Unifesspa.UniPlus.Configuracao.Domain.UnitTests.TestSupport;
 
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Domain.Enums;
+using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
 
 /// <summary>
@@ -28,9 +29,9 @@ internal sealed class TipoDocumentoNaAprovacaoBuilder
 
     public TipoDocumento Build()
     {
-        TipoDocumento tipo = TipoDocumento.Criar(
+        TipoDocumento tipo = TipoDocumento.Criar(new DeclaracaoDoTipoDocumento(
             "LAUDO_MEDICO_COMPLEMENTAR", "Laudo médico complementar", null, "SAUDE", null, null, null,
-            ClassificacaoDeProtecao.Pessoal, Finalidade, HipoteseLegalTratamento.CumprimentoObrigacaoLegal).Value!;
+            ClassificacaoDeProtecao.Pessoal, Finalidade, HipoteseLegalTratamento.CumprimentoObrigacaoLegal)).Value!;
         if (_situacao != SituacaoDaAprovacao.Pendente)
         {
             tipo.SolicitarAprovacaoDaProtecao(Isabella, Segunda);
@@ -42,15 +43,15 @@ internal sealed class TipoDocumentoNaAprovacaoBuilder
 
     /// <summary>Edita o tipo mudando só o nome: não mexe na proteção.</summary>
     public static void EditarONome(TipoDocumento tipo) =>
-        tipo.Atualizar(
+        tipo.Atualizar(new DeclaracaoDoTipoDocumento(
             "LAUDO_MEDICO_COMPLEMENTAR", "Laudo médico", null, "SAUDE", null, null, null,
-            tipo.ClassificacaoProtecao, Finalidade, tipo.HipoteseLegal);
+            tipo.ClassificacaoProtecao, Finalidade, tipo.HipoteseLegal));
 
     /// <summary>Edita o tipo mudando a classificação para sensível, com a hipótese do art. 11.</summary>
     public static void EditarAProtecao(TipoDocumento tipo) =>
-        tipo.Atualizar(
+        tipo.Atualizar(new DeclaracaoDoTipoDocumento(
             "LAUDO_MEDICO_COMPLEMENTAR", "Laudo médico complementar", null, "SAUDE", null, null, null,
-            ClassificacaoDeProtecao.Sensivel, Finalidade, HipoteseLegalTratamento.TutelaDaSaude);
+            ClassificacaoDeProtecao.Sensivel, Finalidade, HipoteseLegalTratamento.TutelaDaSaude));
 
     private TipoDocumentoNaAprovacaoBuilder Em(SituacaoDaAprovacao situacao)
     {

@@ -291,32 +291,32 @@ public static class RegraCatalogoSeed
         // regra_consolidacao — como as notas lançadas pelos avaliadores de uma etapa de avaliação
         // humana viram a nota da etapa. A entrada descreve e congela a regra; quem a executa é a
         // apuração. Escolhida pelo edital, não parametrizada: a declaração da regra registra o que a versão declara de
-        // si, as naturezas de conceito a que se aplica e os corretores distintos que exige (ADR-0150).
+        // si, as formas de conceito a que se aplica e os corretores distintos que exige (ADR-0150).
         // A regra de conceito categórico declara também o critério de apuração (unanimidade,
         // maioria_simples ou maioria_absoluta) e o tratamento quando o critério não converge
         // (novo_corretor ou decisao_da_banca); mudar qualquer um deles é versão nova da regra.
         new(SeedId(30), RegraDeApuracaoDaAvaliacao.AvaliacaoUnica.Codigo(), VersaoV1, TipoRegra.RegraApuracaoAvaliacao,
-            """{"corretores_distintos":1,"naturezas_do_conceito":["CATEGORICO","NUMERICO"]}""",
+            """{"corretores_distintos":1,"formas_do_conceito":["POR_OPCOES","NUMERICO"]}""",
             """["um só avaliador lança a nota de cada candidato na etapa","a nota lançada é a nota da etapa, sem combinação com outra"]""",
             "Decisão institucional da Unifesspa"),
 
         new(SeedId(31), RegraDeApuracaoDaAvaliacao.CorrecaoIndependente.Codigo(), VersaoV1, TipoRegra.RegraApuracaoAvaliacao,
-            """{"corretores_distintos":3,"naturezas_do_conceito":["NUMERICO"]}""",
+            """{"corretores_distintos":3,"formas_do_conceito":["NUMERICO"]}""",
             """["mais de um avaliador corrige cada candidato na etapa, cada um sem conhecer a nota do outro","a nota da etapa é a combinação das correções independentes, na forma que o edital determina"]""",
             "UNI-REQ-0097 (dupla correção) e edital do processo seletivo"),
 
         new(SeedId(37), RegraDeApuracaoDaAvaliacao.ConceitoUnanimidade.Codigo(), VersaoV1, TipoRegra.RegraApuracaoAvaliacao,
-            """{"corretores_distintos":2,"criterio":"UNANIMIDADE","naturezas_do_conceito":["CATEGORICO"],"quando_nao_consolida":"DECISAO_DA_BANCA"}""",
+            """{"corretores_distintos":2,"criterio":"UNANIMIDADE","formas_do_conceito":["POR_OPCOES"],"quando_nao_consolida":"DECISAO_DA_BANCA"}""",
             """["cada corretor lança o conceito sem conhecer o dos demais","o conceito da etapa é o valor em que o critério converge: todos os corretores atribuem o mesmo valor","quando o critério não converge, o tratamento que a versão declara é aplicado"]""",
             "Decisão institucional da Unifesspa"),
 
         new(SeedId(38), RegraDeApuracaoDaAvaliacao.ConceitoMaioriaSimples.Codigo(), VersaoV1, TipoRegra.RegraApuracaoAvaliacao,
-            """{"corretores_distintos":3,"criterio":"MAIORIA_SIMPLES","naturezas_do_conceito":["CATEGORICO"],"quando_nao_consolida":"NOVO_CORRETOR"}""",
+            """{"corretores_distintos":3,"criterio":"MAIORIA_SIMPLES","formas_do_conceito":["POR_OPCOES"],"quando_nao_consolida":"NOVO_CORRETOR"}""",
             """["cada corretor lança o conceito sem conhecer o dos demais","o conceito da etapa é o valor em que o critério converge: um valor com mais atribuições que cada um dos outros","quando o critério não converge, o tratamento que a versão declara é aplicado"]""",
             "Decisão institucional da Unifesspa"),
 
         new(SeedId(39), RegraDeApuracaoDaAvaliacao.ConceitoMaioriaAbsoluta.Codigo(), VersaoV1, TipoRegra.RegraApuracaoAvaliacao,
-            """{"corretores_distintos":3,"criterio":"MAIORIA_ABSOLUTA","naturezas_do_conceito":["CATEGORICO"],"quando_nao_consolida":"NOVO_CORRETOR"}""",
+            """{"corretores_distintos":3,"criterio":"MAIORIA_ABSOLUTA","formas_do_conceito":["POR_OPCOES"],"quando_nao_consolida":"NOVO_CORRETOR"}""",
             """["cada corretor lança o conceito sem conhecer o dos demais","o conceito da etapa é o valor em que o critério converge: um valor com mais da metade das atribuições","quando o critério não converge, o tratamento que a versão declara é aplicado"]""",
             "Decisão institucional da Unifesspa"),
 

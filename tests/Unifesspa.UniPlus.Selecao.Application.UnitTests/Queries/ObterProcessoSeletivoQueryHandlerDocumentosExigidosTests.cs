@@ -49,7 +49,7 @@ public sealed class ObterProcessoSeletivoQueryHandlerDocumentosExigidosTests
         escalarDto.Valor.Should().Be("\"MASCULINO\"", "GetRawText preserva o JSON canônico — o mesmo PUT reinterpreta como JSON válido");
 
         CondicaoGatilhoDto emDto = projetado.Aplicabilidade.Condicoes.Should().ContainSingle(c => c.Fato == "MODALIDADE").Which;
-        emDto.Operador.Should().Be("EM");
+        emDto.Operador.Should().Be("ALGUM_DE");
         JsonDocument.Parse(emDto.Valor).RootElement.EnumerateArray().Select(e => e.GetString())
             .Should().BeEquivalentTo(["LB_PPI", "AC"]);
     }
@@ -100,7 +100,7 @@ public sealed class ObterProcessoSeletivoQueryHandlerDocumentosExigidosTests
 
         projetado.Requisitos.FormatosPermitidos.ValueKind.Should().Be(JsonValueKind.Array);
         projetado.Requisitos.FormatosPermitidos.EnumerateArray().Should().ContainSingle(
-            e => e.GetProperty("formato").GetString() == "PDF" && e.GetProperty("tamanhoMaximoBytesMax").ValueKind == JsonValueKind.Null);
+            e => e.GetProperty("formato").GetProperty("codigo").GetString() == "PDF" && e.GetProperty("tamanhoMaximoBytesMax").ValueKind == JsonValueKind.Null);
         projetado.Requisitos.TamanhoMaximoBytes.Should().Be(5_000_000);
     }
 

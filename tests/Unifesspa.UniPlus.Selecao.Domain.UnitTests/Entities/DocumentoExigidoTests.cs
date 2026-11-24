@@ -67,6 +67,15 @@ public sealed class DocumentoExigidoTests
         resultado.Error!.Code.Should().Be("DocumentoExigido.AplicabilidadeObrigatoria");
     }
 
+    [Fact]
+    public void Criar_AplicabilidadeNaoDeclarada_Recusa()
+    {
+        Result<DocumentoExigido> resultado = Exigencia(default(Aplicabilidade));
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be("DocumentoExigido.AplicabilidadeObrigatoria");
+    }
+
     [Fact(DisplayName = "GERAL/CONDICIONAL válidos são aceitos")]
     public void Criar_ValoresValidos_Aceita()
     {
@@ -278,7 +287,7 @@ public sealed class DocumentoExigidoTests
         exigencia.AplicavelPara(fatosDivergentes).Should().Be(Ternario.Falso);
     }
 
-    // ── Story #916 — PodeAlcancarModalidade com DIFERENTE/NAO_EM ──
+    // ── Story #916 — PodeAlcancarModalidade com DIFERENTE/NENHUM_DE ──
 
     [Fact(DisplayName = "PodeAlcancarModalidade: MODALIDADE DIFERENTE X alcança qualquer modalidade que não seja X")]
     public void PodeAlcancarModalidade_Diferente_AlcancaModalidadeDivergente()
@@ -290,12 +299,12 @@ public sealed class DocumentoExigidoTests
         exigencia.PodeAlcancarModalidade("LB_PPI", FatosDeModalidadeDeTeste.DoCatalogo).Should().BeFalse();
     }
 
-    [Fact(DisplayName = "PodeAlcancarModalidade: MODALIDADE NAO_EM [...] alcança qualquer modalidade fora da lista")]
+    [Fact(DisplayName = "PodeAlcancarModalidade: MODALIDADE NENHUM_DE [...] alcança qualquer modalidade fora da lista")]
     public void PodeAlcancarModalidade_NaoEm_AlcancaModalidadeForaDaLista()
     {
         DocumentoExigido exigencia = Exigencia(
             Aplicabilidade.Condicional,
-            condicoes: [CondicaoDe("MODALIDADE", Operador.NaoEm, "[\"LB_PPI\",\"LB_Q\"]")]).Value!;
+            condicoes: [CondicaoDe("MODALIDADE", Operador.NenhumDe, "[\"LB_PPI\",\"LB_Q\"]")]).Value!;
 
         exigencia.PodeAlcancarModalidade("AC", FatosDeModalidadeDeTeste.DoCatalogo).Should().BeTrue();
         exigencia.PodeAlcancarModalidade("LB_PPI", FatosDeModalidadeDeTeste.DoCatalogo).Should().BeFalse();
@@ -303,7 +312,7 @@ public sealed class DocumentoExigidoTests
     }
 
     // ── Story #918 §4 — não-expiração do laudo de deficiência permanente sai de GATILHO,
-    // sem campo especial: TIPO_DEFICIENCIA EM/NAO_EM {valores permanentes} já é inteiramente
+    // sem campo especial: TIPO_DEFICIENCIA ALGUM_DE/NENHUM_DE {valores permanentes} já é inteiramente
     // coberto pelos operadores/avaliação ternária da PR2 (Story #916) + o vocabulário da PR1
     // (Story #917) — os 3 cenários abaixo usam SÓ código pré-existente dessas duas PRs,
     // provando que nenhuma produção nova é necessária para a exceção de idade.
@@ -313,21 +322,21 @@ public sealed class DocumentoExigidoTests
     private static DocumentoExigido ExigenciaSemIdadeGatilhadaPorTipoDeficiencia(Operador operador, string valorJson) =>
         Exigencia(Aplicabilidade.Condicional, condicoes: [CondicaoDe("TIPO_DEFICIENCIA", operador, valorJson)]).Value!;
 
-    [Fact(DisplayName = "Story #918 §4: laudo PERMANENTE — exigência SEM idade (EM permanentes) é Verdadeiro, exigência COM idade (NAO_EM permanentes) é Falso")]
+    [Fact(DisplayName = "Story #918 §4: laudo PERMANENTE — exigência SEM idade (ALGUM_DE permanentes) é Verdadeiro, exigência COM idade (NENHUM_DE permanentes) é Falso")]
     public void AplicavelPara_TipoDeficienciaPermanente_ExcecaoDeIdadeResolveCorretamente()
     {
         string listaPermanentes = JsonSerializer.Serialize(ValoresPermanentes);
         DocumentoExigido semIdadeExigidaEmPermanentes =
-            ExigenciaSemIdadeGatilhadaPorTipoDeficiencia(Operador.Em, listaPermanentes);
+            ExigenciaSemIdadeGatilhadaPorTipoDeficiencia(Operador.AlgumDe, listaPermanentes);
         DocumentoExigido comIdadeExigidaNaoEmPermanentes =
-            ExigenciaSemIdadeGatilhadaPorTipoDeficiencia(Operador.NaoEm, listaPermanentes);
+            ExigenciaSemIdadeGatilhadaPorTipoDeficiencia(Operador.NenhumDe, listaPermanentes);
 
         Dictionary<string, FatoResolvido> fatos = new() { ["TIPO_DEFICIENCIA"] = FatoResolvido.Resolvido(JsonSerializer.SerializeToElement("TEA")) };
 
         semIdadeExigidaEmPermanentes.AplicavelPara(fatos).Should().Be(Ternario.Verdadeiro,
-            "TEA é permanente — a exigência SEM idade máxima (gatilhada por EM permanentes) se aplica");
+            "TEA é permanente — a exigência SEM idade máxima (gatilhada por ALGUM_DE permanentes) se aplica");
         comIdadeExigidaNaoEmPermanentes.AplicavelPara(fatos).Should().Be(Ternario.Falso,
-            "TEA é permanente — a exigência COM idade máxima (gatilhada por NAO_EM permanentes) NÃO se aplica");
+            "TEA é permanente — a exigência COM idade máxima (gatilhada por NENHUM_DE permanentes) NÃO se aplica");
     }
 
     [Fact(DisplayName = "Story #918 §4: laudo NÃO-PERMANENTE — o oposto: exigência SEM idade é Falso, exigência COM idade é Verdadeiro")]
@@ -335,16 +344,16 @@ public sealed class DocumentoExigidoTests
     {
         string listaPermanentes = JsonSerializer.Serialize(ValoresPermanentes);
         DocumentoExigido semIdadeExigidaEmPermanentes =
-            ExigenciaSemIdadeGatilhadaPorTipoDeficiencia(Operador.Em, listaPermanentes);
+            ExigenciaSemIdadeGatilhadaPorTipoDeficiencia(Operador.AlgumDe, listaPermanentes);
         DocumentoExigido comIdadeExigidaNaoEmPermanentes =
-            ExigenciaSemIdadeGatilhadaPorTipoDeficiencia(Operador.NaoEm, listaPermanentes);
+            ExigenciaSemIdadeGatilhadaPorTipoDeficiencia(Operador.NenhumDe, listaPermanentes);
 
         Dictionary<string, FatoResolvido> fatos = new() { ["TIPO_DEFICIENCIA"] = FatoResolvido.Resolvido(JsonSerializer.SerializeToElement("DEPRESSAO")) };
 
         semIdadeExigidaEmPermanentes.AplicavelPara(fatos).Should().Be(Ternario.Falso,
-            "DEPRESSAO não é permanente — a exigência SEM idade máxima (gatilhada por EM permanentes) NÃO se aplica");
+            "DEPRESSAO não é permanente — a exigência SEM idade máxima (gatilhada por ALGUM_DE permanentes) NÃO se aplica");
         comIdadeExigidaNaoEmPermanentes.AplicavelPara(fatos).Should().Be(Ternario.Verdadeiro,
-            "DEPRESSAO não é permanente — a exigência COM idade máxima (gatilhada por NAO_EM permanentes) se aplica");
+            "DEPRESSAO não é permanente — a exigência COM idade máxima (gatilhada por NENHUM_DE permanentes) se aplica");
     }
 
     [Fact(DisplayName = "Story #918 §4: TIPO_DEFICIENCIA ausente — AMBAS as exigências ficam Indeterminado (fail-closed, nunca 'nenhuma se aplica')")]
@@ -352,9 +361,9 @@ public sealed class DocumentoExigidoTests
     {
         string listaPermanentes = JsonSerializer.Serialize(ValoresPermanentes);
         DocumentoExigido semIdadeExigidaEmPermanentes =
-            ExigenciaSemIdadeGatilhadaPorTipoDeficiencia(Operador.Em, listaPermanentes);
+            ExigenciaSemIdadeGatilhadaPorTipoDeficiencia(Operador.AlgumDe, listaPermanentes);
         DocumentoExigido comIdadeExigidaNaoEmPermanentes =
-            ExigenciaSemIdadeGatilhadaPorTipoDeficiencia(Operador.NaoEm, listaPermanentes);
+            ExigenciaSemIdadeGatilhadaPorTipoDeficiencia(Operador.NenhumDe, listaPermanentes);
 
         Dictionary<string, FatoResolvido> semFatos = [];
 

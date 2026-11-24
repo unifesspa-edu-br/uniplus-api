@@ -13,6 +13,7 @@ using Microsoft.Extensions.DependencyInjection;
 
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Domain.Enums;
+using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Authentication;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
@@ -80,9 +81,9 @@ public sealed class RecusasDaRegraDeComprovacaoEndpointTests(CascadingFixture fi
     {
         await using AsyncServiceScope escopo = fixture.Factory.Services.CreateAsyncScope();
         UniPlusDbContext db = escopo.ServiceProvider.GetRequiredService<UniPlusDbContext>();
-        TipoDocumento tipo = TipoDocumento.Criar($"COMPROVANTE_{Guid.NewGuid().ToString("N")[..12].ToUpperInvariant()}", "Comprovante", null, "IDENTIFICACAO",
-            null, null, null, classificacaoProtecao: ClassificacaoDeProtecao.Pessoal, finalidadeTratamento: "Comprovação documental.",
-            hipoteseLegal: HipoteseLegalTratamento.CumprimentoObrigacaoLegal).Value!;
+        TipoDocumento tipo = TipoDocumento.Criar(new DeclaracaoDoTipoDocumento($"COMPROVANTE_{Guid.NewGuid().ToString("N")[..12].ToUpperInvariant()}", "Comprovante", null, "IDENTIFICACAO",
+            null, null, null, ClassificacaoProtecao: ClassificacaoDeProtecao.Pessoal, FinalidadeTratamento: "Comprovação documental.",
+            HipoteseLegal: HipoteseLegalTratamento.CumprimentoObrigacaoLegal)).Value!;
         db.Add(tipo);
         await db.SaveChangesAsync();
         await db.AprovarCatalogoAsync();

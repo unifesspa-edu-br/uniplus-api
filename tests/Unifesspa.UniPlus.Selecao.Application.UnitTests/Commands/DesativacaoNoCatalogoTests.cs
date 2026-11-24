@@ -4,6 +4,7 @@ using System.Text.Json;
 
 using AwesomeAssertions;
 
+using Unifesspa.UniPlus.Application.Abstractions.Respostas;
 using Unifesspa.UniPlus.Configuracao.Contracts;
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.Errors;
@@ -30,8 +31,8 @@ public sealed class DesativacaoNoCatalogoTests
     private static readonly FatoValorDominioViewItem Parda = new("PARDA", "Parda.", 2, true);
 
     private static FatoCandidatoView CorRaca(bool ativo = true) => new(
-        Guid.CreateVersion7(), "COR_RACA", "Cor ou raça", "Descrição do fato.", "CATEGORICO", "DECLARADO", "ESCALAR",
-        ["BRANCA", "PRETA", "PARDA"], "INSCRICAO", "CAMPO_FORMULARIO:COR_RACA", [Branca, PretaDesativada, Parda], "GLOBAL", ativo, "PESSOAL", ProtecaoDoFatoDeTeste.HipoteseLegal, ProtecaoDoFatoDeTeste.Finalidade, ProtecaoAprovada: true);
+        Guid.CreateVersion7(), "COR_RACA", "Cor ou raça", "Descrição do fato.", CodigoComRotulo<TipoDoDado>.De(TipoDoDado.Opcao), CodigoComRotulo<OrigemFato>.De(OrigemFato.Declarado), CodigoComRotulo<QuantidadeDeValores>.De(QuantidadeDeValores.ValorUnico),
+        ["BRANCA", "PRETA", "PARDA"], "INSCRICAO", "CAMPO_FORMULARIO:COR_RACA", [Branca, PretaDesativada, Parda], CodigoComRotulo<FonteValoresFato>.De(FonteValoresFato.Catalogo), ativo, "PESSOAL", ProtecaoDoFatoDeTeste.HipoteseLegal, ProtecaoDoFatoDeTeste.Finalidade, ProtecaoAprovada: true);
 
     private static Dictionary<string, FatoCandidatoView> Catalogo(FatoCandidatoView fato) =>
         new(StringComparer.Ordinal) { [fato.Codigo] = fato };
@@ -103,7 +104,7 @@ public sealed class DesativacaoNoCatalogoTests
 
     private static FatoColetado CorRacaColetada() => FatoColetadoDeTeste.Coletando("COR_RACA", 0)
         .ComRotulo("Cor ou raça")
-        .DoTipo(TipoRenderizacao.SelecaoUnica)
+        .DoTipo(TipoRenderizacao.EscolhaUnica)
         .ComObrigatoriedade(Obrigatoriedade.Sempre)
         .Construir();
 
@@ -113,7 +114,7 @@ public sealed class DesativacaoNoCatalogoTests
         .Construir();
 
     private static FatoCandidatoView BaixaRendaNoCatalogo() => new(
-        Guid.CreateVersion7(), "BAIXA_RENDA", "Baixa renda", "Descrição do fato.", "BOOLEANO", "DECLARADO", "ESCALAR",
+        Guid.CreateVersion7(), "BAIXA_RENDA", "Baixa renda", "Descrição do fato.", CodigoComRotulo<TipoDoDado>.De(TipoDoDado.SimOuNao), CodigoComRotulo<OrigemFato>.De(OrigemFato.Declarado), CodigoComRotulo<QuantidadeDeValores>.De(QuantidadeDeValores.ValorUnico),
         null, "INSCRICAO", "CAMPO_FORMULARIO:BAIXA_RENDA", null, null, true, "PESSOAL", ProtecaoDoFatoDeTeste.HipoteseLegal, ProtecaoDoFatoDeTeste.Finalidade, ProtecaoAprovada: true);
 
     private static DocumentoExigido ExigenciaCondicionadaACorOuRaca(Guid faseId) =>

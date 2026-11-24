@@ -3,6 +3,7 @@ namespace Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Domain.Enums;
 using Unifesspa.UniPlus.Configuracao.Domain.Errors;
 using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Regras.Enums;
 
 using static Unifesspa.UniPlus.Configuracao.Domain.Entities.ConferenciaDaDefinicaoDoFato;
 
@@ -18,11 +19,11 @@ internal static class ConferenciaDosValoresDoFato
     /// de fonte global e que não seja agregado tem valores próprios.
     /// </summary>
     internal static DomainError? RecusaDeEstado(
-        DomainError? recusaDoFatoDeSistema, DominioFato dominio, string? membroAgregado, FonteValoresFato? fonteValores) =>
+        DomainError? recusaDoFatoDeSistema, TipoDoDado dominio, string? membroAgregado, FonteValoresFato? fonteValores) =>
         recusaDoFatoDeSistema
-        ?? (dominio != DominioFato.Categorico ? RecusaForaDeCategorico : null)
+        ?? (dominio != TipoDoDado.Opcao ? RecusaForaDeCategorico : null)
         ?? (membroAgregado is { } membro ? RecusaDeAgregado(membro) : null)
-        ?? (fonteValores != FonteValoresFato.Global ? RecusaForaDeFonteGlobal : null);
+        ?? (fonteValores != FonteValoresFato.Catalogo ? RecusaForaDeFonteGlobal : null);
 
     internal static Result<NovoValorDoFato> ConferirNovo(
         string codigo, string? descricao, string? orientacao, int ordem, OrigemFato origem, IReadOnlyCollection<string> existentes)

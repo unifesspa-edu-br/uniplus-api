@@ -33,7 +33,7 @@ public sealed class TipoConceitoCommandJsonTests
         {
           "codigo": "PARECER",
           "definicao": {
-            "nome": "Parecer", "natureza": "CATEGORICO", "numerico": null,
+            "nome": "Parecer", "natureza": "POR_OPCOES", "numerico": null,
             "valores": [
               { "codigo": "B", "rotulo": "Beta", "contaComoAprovacao": false },
               { "codigo": "A", "rotulo": "Alfa", "contaComoAprovacao": true }

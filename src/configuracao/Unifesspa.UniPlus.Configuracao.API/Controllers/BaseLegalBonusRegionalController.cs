@@ -23,7 +23,7 @@ using Unifesspa.UniPlus.Kernel.Results;
 [SuppressMessage("Performance", "CA1515:Consider making public types internal", Justification = "ASP.NET Core ControllerFeatureProvider só descobre controllers public.")]
 public sealed class BaseLegalBonusRegionalController : ControllerBase
 {
-    private const string ResourceTag = "base-legal-bonus-regional";
+    private const string ResourceTag = "base-legal-do-fada";
 
     private readonly ICommandBus _commandBus;
     private readonly IQueryBus _queryBus;
@@ -109,10 +109,7 @@ public sealed class BaseLegalBonusRegionalController : ControllerBase
 
         if (resultado.IsSuccess)
         {
-            return CreatedAtAction(
-                nameof(ObterPorId),
-                new { id = resultado.Value },
-                resultado.Value);
+            return CreatedAtAction(nameof(ObterPorId), new { id = resultado.Value }, resultado.Value);
         }
 
         return resultado.ToActionResult(_mapper);
@@ -136,12 +133,7 @@ public sealed class BaseLegalBonusRegionalController : ControllerBase
 
         if (id != command.Id)
         {
-            return BadRequest(new ProblemDetails
-            {
-                Title = "Id divergente",
-                Detail = "O Id na URL não corresponde ao Id no corpo da requisição.",
-                Status = StatusCodes.Status400BadRequest,
-            });
+            return IdDivergente();
         }
 
         Result resultado = await _commandBus
@@ -165,4 +157,11 @@ public sealed class BaseLegalBonusRegionalController : ControllerBase
 
         return resultado.IsSuccess ? NoContent() : resultado.ToActionResult(_mapper);
     }
+
+    private BadRequestObjectResult IdDivergente() => BadRequest(new ProblemDetails
+    {
+        Title = "Id divergente",
+        Detail = "O Id na URL não corresponde ao Id no corpo da requisição.",
+        Status = StatusCodes.Status400BadRequest,
+    });
 }

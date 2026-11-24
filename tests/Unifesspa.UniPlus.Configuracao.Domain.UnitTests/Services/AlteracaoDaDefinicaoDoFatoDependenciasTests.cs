@@ -31,7 +31,7 @@ public sealed class AlteracaoDaDefinicaoDoFatoDependenciasTests
         FatoCandidato membro = DeMembro("CATEGORIA_RENDA", classificacao: ClassificacaoDeProtecao.Sensivel);
         FatoCandidato agregado = Agregado("CATEGORIAS_RENDA", membro, ClassificacaoDeProtecao.Sensivel);
 
-        derivado.AlterarDefinicao(Definicao(DominioFato.Booleano, classificacao: ClassificacaoDeProtecao.Publico), Catalogo(renda, derivado))
+        derivado.AlterarDefinicao(Definicao(TipoDoDado.SimOuNao, classificacao: ClassificacaoDeProtecao.Publico), Catalogo(renda, derivado))
             .Errors.Select(static e => (e.Field, e.Error.Code)).Should().Equal(("classificacaoProtecao", FatoCandidatoErrorCodes.ClassificacaoAbaixoDaDependencia));
         agregado.AlterarDefinicao(Definicao(dominio: null, escopo: null, classificacao: ClassificacaoDeProtecao.Pessoal), Catalogo(membro, agregado))
             .Errors.Select(static e => (e.Field, e.Error.Code)).Should().Equal(("classificacaoProtecao", FatoCandidatoErrorCodes.ClassificacaoAbaixoDaDependencia));
@@ -47,7 +47,7 @@ public sealed class AlteracaoDaDefinicaoDoFatoDependenciasTests
         FatoCandidato membro = DeMembro("CATEGORIA_RENDA", ponto: "HABILITACAO");
         FatoCandidato agregado = Agregado("CATEGORIAS_RENDA", membro, ponto: "HABILITACAO", precedencias: InscricaoAntesDeHabilitacao);
 
-        derivado.AlterarDefinicao(Definicao(DominioFato.Booleano, ponto: "INSCRICAO"), catalogoDoDerivado)
+        derivado.AlterarDefinicao(Definicao(TipoDoDado.SimOuNao, ponto: "INSCRICAO"), catalogoDoDerivado)
             .Errors.Select(static e => (e.Field, e.Error.Code)).Should().Equal(("pontoResolucao", FatoCandidatoErrorCodes.PontoResolucaoAnteriorADependencia));
         agregado.AlterarDefinicao(
                 Definicao(dominio: null, escopo: null, ponto: "INSCRICAO"), new CatalogoDeFatos([membro, agregado], InscricaoAntesDeHabilitacao))
@@ -59,9 +59,9 @@ public sealed class AlteracaoDaDefinicaoDoFatoDependenciasTests
     {
         FatoCandidato membro = DeMembro("CATEGORIA_RENDA");
         FatoCandidato agregado = Agregado("CATEGORIAS_RENDA", membro);
-        FatoCandidato comOutraFonte = DeMembro("CATEGORIA_RENDA", fonte: FonteValoresFato.Processo);
-        FatoCandidato booleano = DeMembro("CATEGORIA_RENDA", DominioFato.Booleano);
-        FatoCandidato foraDeGrupo = Declarado("CATEGORIA_RENDA", DominioFato.Categorico, FonteValoresFato.Global);
+        FatoCandidato comOutraFonte = DeMembro("CATEGORIA_RENDA", fonte: FonteValoresFato.OpcoesDoProcesso);
+        FatoCandidato booleano = DeMembro("CATEGORIA_RENDA", TipoDoDado.SimOuNao);
+        FatoCandidato foraDeGrupo = Declarado("CATEGORIA_RENDA", TipoDoDado.Opcao, FonteValoresFato.Catalogo);
         CatalogoDeFatos catalogo = Catalogo(membro, agregado);
 
         agregado.MotivosPelosQuaisDeixaDeAgregar(membro, catalogo).Should().BeEmpty();
@@ -74,8 +74,8 @@ public sealed class AlteracaoDaDefinicaoDoFatoDependenciasTests
     public void EixosInferidos_SeguemOCadastro()
     {
         FatoCandidato derivado = Derivado("PERFIL");
-        derivado.AlterarDefinicao(Definicao(DominioFato.Categorico), Catalogo(derivado)).IsSuccess.Should().BeTrue();
-        FatoCandidato cadastrado = Derivado("OUTRO", DominioFato.Categorico);
+        derivado.AlterarDefinicao(Definicao(TipoDoDado.Opcao), Catalogo(derivado)).IsSuccess.Should().BeTrue();
+        FatoCandidato cadastrado = Derivado("OUTRO", TipoDoDado.Opcao);
 
         derivado.Should().BeEquivalentTo(new { cadastrado.Cardinalidade, cadastrado.FonteValores });
 
@@ -89,13 +89,13 @@ public sealed class AlteracaoDaDefinicaoDoFatoDependenciasTests
     {
         FatoCandidato derivado = Derivado("PERFIL");
         FatoCandidato declarado = Declarado("TEM_RENDA");
-        const DominioFato foraDoVocabulario = (DominioFato)(-1);
+        const TipoDoDado foraDoVocabulario = (TipoDoDado)(-1);
 
         derivado.AlterarDefinicao(Definicao(foraDoVocabulario, classificacao: ClassificacaoDeProtecao.Publico), Catalogo(derivado))
             .Errors.Select(static e => (e.Field, e.Error.Code)).Should().Equal(("dominio", FatoCandidatoErrorCodes.DominioInvalido));
-        derivado.AlterarDefinicao(Definicao(DominioFato.Texto, classificacao: ClassificacaoDeProtecao.Publico), Catalogo(derivado))
+        derivado.AlterarDefinicao(Definicao(TipoDoDado.Texto, classificacao: ClassificacaoDeProtecao.Publico), Catalogo(derivado))
             .Errors.Select(static e => e.Field).Should().Equal("dominio");
-        declarado.AlterarDefinicao(Definicao(foraDoVocabulario, CardinalidadeFato.Escalar, classificacao: ClassificacaoDeProtecao.Publico), Catalogo(declarado))
+        declarado.AlterarDefinicao(Definicao(foraDoVocabulario, QuantidadeDeValores.ValorUnico, classificacao: ClassificacaoDeProtecao.Publico), Catalogo(declarado))
             .Errors.Select(static e => (e.Field, e.Error.Code)).Should().Equal(("dominio", FatoCandidatoErrorCodes.DominioInvalido));
     }
 
@@ -108,7 +108,7 @@ public sealed class AlteracaoDaDefinicaoDoFatoDependenciasTests
         derivado.DefinirRegrasPadrao([Booleana(("TEM_RENDA", true))], Catalogo(renda, derivado)).IsSuccess.Should().BeTrue();
         CatalogoDeFatos comPrecedencia = new([renda, derivado], InscricaoAntesDeHabilitacao);
 
-        derivado.AlterarDefinicao(Definicao(DominioFato.Booleano, ponto: "INSCRICAO", finalidade: "Outra finalidade."), comPrecedencia)
+        derivado.AlterarDefinicao(Definicao(TipoDoDado.SimOuNao, ponto: "INSCRICAO", finalidade: "Outra finalidade."), comPrecedencia)
             .IsSuccess.Should().BeTrue("a recusa de ponto já existia e a alteração não a causa");
 
         FatoCandidato membro = DeMembro("CATEGORIA_RENDA", ponto: "HABILITACAO");
@@ -131,10 +131,10 @@ public sealed class AlteracaoDaDefinicaoDoFatoDependenciasTests
 
         agregado.MotivosPelosQuaisDeixaDeAgregar(inativo, catalogo).Should().ContainSingle().Which.Error.Message.Should().Contain("desativado");
 
-        FatoCandidato booleanoEscalar = Agregado("TEM_ALGUM", DeMembro("FLAG", DominioFato.Booleano));
-        FatoCandidato membroBooleano = DeMembro("FLAG", DominioFato.Booleano);
+        FatoCandidato booleanoEscalar = Agregado("TEM_ALGUM", DeMembro("FLAG", TipoDoDado.SimOuNao));
+        FatoCandidato membroBooleano = DeMembro("FLAG", TipoDoDado.SimOuNao);
         booleanoEscalar.AlterarDefinicao(Definicao(dominio: null, escopo: null), Catalogo(membroBooleano, booleanoEscalar)).IsSuccess.Should().BeTrue();
-        typeof(FatoCandidato).GetProperty(nameof(FatoCandidato.Cardinalidade))!.SetValue(booleanoEscalar, CardinalidadeFato.Multivalorado);
+        typeof(FatoCandidato).GetProperty(nameof(FatoCandidato.Cardinalidade))!.SetValue(booleanoEscalar, QuantidadeDeValores.VariosValores);
         booleanoEscalar.MotivosPelosQuaisDeixaDeAgregar(membroBooleano, Catalogo(membroBooleano, booleanoEscalar))
             .Should().ContainSingle().Which.Error.Message.Should().Contain("cardinalidade");
     }
@@ -177,10 +177,10 @@ public sealed class AlteracaoDaDefinicaoDoFatoDependenciasTests
         FatoCandidato derivado = Derivado("PERFIL");
         derivado.DefinirRegrasPadrao([Booleana(("FATO_A", true), ("FATO_B", true))], Catalogo(a, b, derivado)).IsSuccess.Should().BeTrue();
         CatalogoDeFatos catalogo = Catalogo(a, b, derivado);
-        a.AlterarDefinicao(DeDeclarado(DominioFato.Booleano, classificacao: ClassificacaoDeProtecao.Sensivel), catalogo).IsSuccess.Should().BeTrue();
+        a.AlterarDefinicao(DeDeclarado(TipoDoDado.SimOuNao, classificacao: ClassificacaoDeProtecao.Sensivel), catalogo).IsSuccess.Should().BeTrue();
         List<FieldError> antes = [.. ValidadorRegrasPadrao.Validar(derivado, derivado.RegrasPadrao, catalogo).Errors];
 
-        b.AlterarDefinicao(DeDeclarado(DominioFato.Booleano, classificacao: ClassificacaoDeProtecao.Sensivel), catalogo).IsSuccess.Should().BeTrue();
+        b.AlterarDefinicao(DeDeclarado(TipoDoDado.SimOuNao, classificacao: ClassificacaoDeProtecao.Sensivel), catalogo).IsSuccess.Should().BeTrue();
         List<FieldError> depois = [.. ValidadorRegrasPadrao.Validar(derivado, derivado.RegrasPadrao, catalogo).Errors];
 
         DiferencaDeRecusas.Novas(depois, antes).Should().ContainSingle()
@@ -200,10 +200,10 @@ public sealed class AlteracaoDaDefinicaoDoFatoDependenciasTests
             PrecedenciaFase.Criar("INSCRICAO", "RESULTADO_FINAL", permiteSobreposicao: false, []).Value!,
         ];
         CatalogoDeFatos catalogo = new([a, derivado], precedencias);
-        a.AlterarDefinicao(DeDeclarado(DominioFato.Booleano, ponto: "HABILITACAO"), catalogo).IsSuccess.Should().BeTrue();
+        a.AlterarDefinicao(DeDeclarado(TipoDoDado.SimOuNao, ponto: "HABILITACAO"), catalogo).IsSuccess.Should().BeTrue();
         List<FieldError> antes = [.. ValidadorRegrasPadrao.Validar(derivado, derivado.RegrasPadrao, catalogo).Errors];
 
-        a.AlterarDefinicao(DeDeclarado(DominioFato.Booleano, ponto: "RESULTADO_FINAL"), catalogo).IsSuccess.Should().BeTrue();
+        a.AlterarDefinicao(DeDeclarado(TipoDoDado.SimOuNao, ponto: "RESULTADO_FINAL"), catalogo).IsSuccess.Should().BeTrue();
         List<FieldError> depois = [.. ValidadorRegrasPadrao.Validar(derivado, derivado.RegrasPadrao, catalogo).Errors];
 
         antes.Should().ContainSingle();
@@ -220,7 +220,7 @@ public sealed class AlteracaoDaDefinicaoDoFatoDependenciasTests
         PredicadoDnf regra = Quando(("FATO_A", true), ("FATO_B", true));
         List<FieldError> antes = [.. ConferenciaDaRegraDeAplicabilidade.Conferir(regra, regra, catalogo)];
 
-        b.AlterarDefinicao(DeDeclarado(DominioFato.Booleano, ponto: "HABILITACAO"), catalogo).IsSuccess.Should().BeTrue();
+        b.AlterarDefinicao(DeDeclarado(TipoDoDado.SimOuNao, ponto: "HABILITACAO"), catalogo).IsSuccess.Should().BeTrue();
         List<FieldError> depois = [.. ConferenciaDaRegraDeAplicabilidade.Conferir(regra, regra, catalogo)];
 
         antes.Should().ContainSingle();
@@ -236,7 +236,7 @@ public sealed class AlteracaoDaDefinicaoDoFatoDependenciasTests
         PredicadoDnf regra = Quando(("FATO_A", true));
         List<FieldError> antes = [.. ConferenciaDaRegraDeAplicabilidade.Conferir(regra, regra, catalogo)];
 
-        a.AlterarDefinicao(DeDeclarado(DominioFato.Booleano, ponto: "RESULTADO_FINAL"), catalogo).IsSuccess.Should().BeTrue();
+        a.AlterarDefinicao(DeDeclarado(TipoDoDado.SimOuNao, ponto: "RESULTADO_FINAL"), catalogo).IsSuccess.Should().BeTrue();
         List<FieldError> depois = [.. ConferenciaDaRegraDeAplicabilidade.Conferir(regra, regra, catalogo)];
 
         depois.Should().ContainSingle().Which.Error.Message.Should().NotBe(antes.Should().ContainSingle().Subject.Error.Message);
@@ -271,7 +271,7 @@ public sealed class AlteracaoDaDefinicaoDoFatoDependenciasTests
         FatoCandidato declarado = Declarado("TEM_RENDA");
 
         declarado.AlterarDefinicao(
-                DeDeclarado(DominioFato.Booleano, classificacao: (ClassificacaoDeProtecao)(-1), hipotese: (HipoteseLegalTratamento)(-1)),
+                DeDeclarado(TipoDoDado.SimOuNao, classificacao: (ClassificacaoDeProtecao)(-1), hipotese: (HipoteseLegalTratamento)(-1)),
                 Catalogo(declarado))
             .Errors.Select(static e => (e.Field, e.Error.Code)).Should().BeEquivalentTo(
             [

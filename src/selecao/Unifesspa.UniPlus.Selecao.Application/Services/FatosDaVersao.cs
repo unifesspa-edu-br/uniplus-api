@@ -132,7 +132,7 @@ internal sealed record FatosDaVersao(
             .. new[] { ConjuntoBasicoDaInscricao.Nome, ConjuntoBasicoDaInscricao.NomeSocial }
                 .Where(Coletados.ContainsKey)
                 .Select(codigo => Coletados[codigo].Classificacao)
-                .Select(ClassificacoesDeProtecao.Resolvida),
+                .Select(static classificacao => ClassificacoesDeProtecao.Resolvida(classificacao)),
         ];
 
         return congeladas.Length == 0 ? ClassificacaoDeProtecao.Sensivel : congeladas.Max();
@@ -239,5 +239,5 @@ internal sealed record FatosDaVersao(
         || string.Equals(formato, FormatoDeTexto.FormatoCpf, StringComparison.Ordinal);
 
     private static ClassificacaoDeProtecao Classificacao(string? token) =>
-        ClassificacoesDeProtecao.TryAnalisar(token, out ClassificacaoDeProtecao classificacao) ? classificacao : ClassificacaoDeProtecao.Nenhuma;
+        ClassificacoesDeProtecao.Resolvida(ClassificacoesDeProtecao.TryAnalisar(token, out ClassificacaoDeProtecao classificacao) ? classificacao : null);
 }

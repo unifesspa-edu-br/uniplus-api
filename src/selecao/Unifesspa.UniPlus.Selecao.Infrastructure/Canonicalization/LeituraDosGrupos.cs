@@ -73,7 +73,7 @@ internal static class LeituraDosGrupos
             item, path, "codigo", "finalidade", "paginaCodigo", "ordem", "rotulo", "minimo", "maximo", "incluiCandidato", "exibicao", "obrigatoriedade", "subitens", "agregados");
         DeclaracaoDoGrupo declaracao = LerCamposDaDeclaracaoDoGrupo(leitor, item, path);
         return leitor.Falhou ? null
-            : declaracao.Finalidade == FinalidadeFormulario.Nenhuma
+            : declaracao.Finalidade is null
                 ? leitor.Recusar<DeclaracaoDoGrupo?>($"'{path}.finalidade' fora do vocabulário de finalidades.")
                 : declaracao;
     }
@@ -130,7 +130,7 @@ internal static class LeituraDosGrupos
     private static DeclaracaoDoGrupo LerCamposDaDeclaracaoDoGrupo(LeitorEnvelope leitor, JsonObject item, string path) => new()
     {
         Codigo = leitor.TextoNaoVazio(item, "codigo", path, LimitesDoEnvelope.Fato),
-        Finalidade = EstruturaFormulario.FinalidadeDoToken(leitor.TextoNaoVazio(item, "finalidade", path)),
+        Finalidade = EstruturaFormulario.FinalidadeDoCodigo(leitor.TextoNaoVazio(item, "finalidade", path)),
         EtapaCodigo = leitor.TextoOpcional(item, "paginaCodigo", path, LimitesDoEnvelope.CodigoEtapaFormulario),
         Ordem = leitor.Inteiro(item, "ordem", path),
         Rotulo = leitor.TextoNaoVazio(item, "rotulo", path, LimitesDoEnvelope.NomeDeCadastro),
@@ -145,7 +145,7 @@ internal static class LeituraDosGrupos
     {
         public string Codigo { get; init; } = string.Empty;
 
-        public FinalidadeFormulario Finalidade { get; init; }
+        public FinalidadeFormulario? Finalidade { get; init; }
 
         public string? EtapaCodigo { get; init; }
 
@@ -187,20 +187,19 @@ internal static class LeituraDosGrupos
         leitor.ExigirChaves(agregado, caminho, "codigo", "codigoDoDadoDoMembro", "operacao");
         string codigo = leitor.TextoNaoVazio(agregado, "codigo", caminho, LimitesDoEnvelope.Fato);
         string fatoDeMembro = leitor.TextoNaoVazio(agregado, "codigoDoDadoDoMembro", caminho, LimitesDoEnvelope.Fato);
-        OperacaoAgregado operacao = AgregadoDeGrupo.DoToken(leitor.TextoNaoVazio(agregado, "operacao", caminho));
+        OperacaoAgregado operacao = leitor.CodigoDeContrato<OperacaoAgregado>(agregado, "operacao", caminho);
         if (leitor.Falhou)
         {
             return null;
         }
 
-        return DefeitoDoAgregado(operacao, fatoDeMembro, codigo, anterior, grupo) is { } defeito
+        return DefeitoDoAgregado(fatoDeMembro, codigo, anterior, grupo) is { } defeito
             ? leitor.Propagar<DefinicaoAgregado?>(new DomainError(ErrosCodecEnvelope.EnvelopeMalformado, $"'{caminho}': {defeito}."))
             : new DefinicaoAgregado(codigo, grupo.Codigo, fatoDeMembro, operacao);
     }
 
-    private static string? DefeitoDoAgregado(OperacaoAgregado operacao, string fatoDeMembro, string codigo, string? anterior, GrupoColetado grupo) =>
-        operacao == OperacaoAgregado.Nenhuma ? "a operação não é EXISTE nem VALORES_PRESENTES"
-            : !grupo.Subitens.Any(s => string.Equals(s.FatoCodigo, fatoDeMembro, StringComparison.Ordinal)) ? $"o fato de membro '{fatoDeMembro}' não é campo do grupo"
+    private static string? DefeitoDoAgregado(string fatoDeMembro, string codigo, string? anterior, GrupoColetado grupo) =>
+        !grupo.Subitens.Any(s => string.Equals(s.FatoCodigo, fatoDeMembro, StringComparison.Ordinal)) ? $"o fato de membro '{fatoDeMembro}' não é campo do grupo"
             : anterior is not null && string.CompareOrdinal(anterior, codigo) >= 0 ? "os agregados não estão na ordem do código"
             : null;
 }

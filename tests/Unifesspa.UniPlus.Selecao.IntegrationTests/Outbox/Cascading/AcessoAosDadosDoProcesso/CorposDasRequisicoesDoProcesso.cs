@@ -52,7 +52,7 @@ internal static class CorposDasRequisicoesDoProcesso
 
     private static object ItemDoFatoSensivel() =>
         FormularioDeInscricaoHttp.Item(
-            FatosDoCenario.Sensivel, PrimeiraOrdem, FatosDoCenario.Sensivel, "BOOLEANO", "NUNCA", etapaCodigo: FormularioDeInscricaoHttp.Secao);
+            FatosDoCenario.Sensivel, PrimeiraOrdem, FatosDoCenario.Sensivel, "SIM_OU_NAO", "NUNCA", etapaCodigo: FormularioDeInscricaoHttp.Secao);
 
     private static object GrupoDeResponsaveis(string fatoDoGrupo) =>
         FormularioDeInscricaoHttp.Grupo(

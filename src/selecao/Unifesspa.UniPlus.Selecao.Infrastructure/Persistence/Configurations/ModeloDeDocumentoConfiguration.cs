@@ -6,6 +6,7 @@ using Domain.Enums;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence.CodigosDeContrato;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Protecao;
 using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
@@ -18,7 +19,11 @@ public sealed class ModeloDeDocumentoConfiguration : IEntityTypeConfiguration<Mo
 
         builder.ClassificaPorPadrao(ClassificacaoDeProtecao.Interno);
 
-        builder.ToTable("modelos_de_documento");
+        builder.ToTable("modelos_de_documento", t =>
+        {
+            t.HasCheckConstraint("ck_modelos_de_documento_formato", $"formato IN ({SqlDosCodigosDeContrato.Lista<FormatoDeDocumento>()})");
+            t.HasCheckConstraint("ck_modelos_de_documento_status", $"status IN ({SqlDosCodigosDeContrato.Lista<StatusArquivoEnviado>()})");
+        });
         builder.HasKey(m => m.Id);
         builder.Property(m => m.Id).ValueGeneratedNever();
         builder.Property(m => m.NomeArquivo).HasMaxLength(ModeloDeDocumento.NomeArquivoMaxLength).IsRequired();

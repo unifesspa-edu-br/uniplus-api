@@ -104,7 +104,7 @@ public static class DefinirRegrasDerivacaoCommandHandler
 
 /// <summary>
 /// Política de derivabilidade de um fato. Só pode ter regras de derivação configuradas
-/// o fato de <c>Origem = DERIVADO</c> cujo binding é o da própria regra de derivação
+/// o fato de <c>Origem = CALCULADO</c> cujo binding é o da própria regra de derivação
 /// (<c>REGRA_DERIVACAO:{codigo}</c>). Um fato declarado, ou derivado por outro mecanismo (ex.:
 /// computado de atributo do candidato), não é alvo de configuração de regras.
 /// </summary>
@@ -114,8 +114,6 @@ internal static class DerivabilidadeDeFato
     public const string FatoNaoDerivavel = "ConfiguracaoDerivacaoFato.FatoNaoDerivavel";
     public const string ContribuicaoIncoerenteComODominio = "ConfiguracaoDerivacaoFato.ContribuicaoIncoerenteComODominio";
 
-    private const string DominioCategorico = "CATEGORICO";
-
     /// <summary>
     /// O derivado por regra é categórico, por união dos códigos contribuídos, ou booleano,
     /// verdadeiro quando alguma regra ativa (ADR-0136).
@@ -124,9 +122,8 @@ internal static class DerivabilidadeDeFato
     {
         ArgumentNullException.ThrowIfNull(fato);
 
-        return string.Equals(fato.Origem, DominioDoCatalogo.OrigemDerivada, StringComparison.Ordinal)
-            && (string.Equals(fato.Dominio, DominioCategorico, StringComparison.Ordinal)
-                || string.Equals(fato.Dominio, VocabularioDeFatos.DominioBooleano, StringComparison.Ordinal))
-            && string.Equals(fato.Binding, VinculoDeFato.De(VinculoDeFato.RegraDeDerivacao, fato.Codigo), StringComparison.Ordinal);
+        return fato.OrigemValor == OrigemFato.Calculado
+            && fato.DominioValor is TipoDoDado.Opcao or TipoDoDado.SimOuNao
+            && string.Equals(fato.Binding, VinculoDeFato.De(MecanismoDoVinculo.RegraDeDerivacao, fato.Codigo), StringComparison.Ordinal);
     }
 }

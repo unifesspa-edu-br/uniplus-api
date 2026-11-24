@@ -41,7 +41,7 @@ public sealed class ClassificacaoDaExigenciaDoArquivo
             ? null
             : await CongeladaAsync(apresentacao.ExigenciaId, inscricao, cancellationToken).ConfigureAwait(false);
 
-        return ClassificacoesDeProtecao.Resolvida(congelada ?? ClassificacaoDeProtecao.Nenhuma);
+        return ClassificacoesDeProtecao.Resolvida(congelada);
     }
 
     private async Task<ClassificacaoDeProtecao?> CongeladaAsync(Guid exigenciaId, VinculoDaInscricao inscricao, CancellationToken cancellationToken)

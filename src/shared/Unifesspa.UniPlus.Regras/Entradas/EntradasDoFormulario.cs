@@ -5,13 +5,14 @@ using System.Text.Json.Serialization;
 
 using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Regras.Enums;
+using Unifesspa.UniPlus.Regras.Formularios;
 
 /// <summary>
 /// Uma condição de um predicado do formulário — a exibição, a obrigatoriedade ou o impedimento de um item —, a tripla
 /// <c>{ Fato, Operador, Valor }</c> na forma flat do wire de comando. Idêntica em forma à
 /// condição de gatilho documental: o <see cref="Operador"/> é o código canônico UPPER_SNAKE
-/// (<c>IGUAL</c>, <c>EM</c>, …) e o <see cref="Valor"/> é o valor JSON já tipado (string,
-/// booleano, número ou array para <c>EM</c>/<c>NAO_EM</c>).
+/// (<c>IGUAL</c>, <c>ALGUM_DE</c>, …) e o <see cref="Valor"/> é o valor JSON já tipado (string,
+/// booleano, número ou array para <c>ALGUM_DE</c>/<c>NENHUM_DE</c>).
 /// </summary>
 public sealed record CondicaoPrecondicaoInput(string Fato, [AceitaCodigosDe<Operador>] string? Operador, JsonElement Valor);
 
@@ -58,7 +59,7 @@ public sealed record OpcoesCondicionadasInput(
 /// <see cref="Predicado"/>, e <c>QUANDO</c>, com ele. O predicado está na forma normal disjuntiva,
 /// como o da exibição.
 /// </summary>
-public sealed record ObrigatoriedadeInput(string? Tipo, IReadOnlyList<IReadOnlyList<CondicaoPrecondicaoInput>>? Predicado = null);
+public sealed record ObrigatoriedadeInput([AceitaCodigosDe<TipoObrigatoriedade>] string? Tipo, IReadOnlyList<IReadOnlyList<CondicaoPrecondicaoInput>>? Predicado = null);
 
 /// <summary>
 /// Como o campo se apresenta ao candidato: o rótulo, o tipo de campo, a ajuda e o pedido de
@@ -179,8 +180,8 @@ public sealed record ApresentacaoDaEtapaInput(string? Titulo, string? Descricao,
 public sealed record EtapaFormularioInput(
     string Codigo,
     int Ordem,
-    string Tipo,
-    string? Bloco,
+    [AceitaCodigosDe<TipoEtapaFormulario>] string Tipo,
+    [AceitaCodigosDe<BlocoSistema>] string? Bloco,
     ApresentacaoDaEtapaInput? Apresentacao,
     IReadOnlyList<IReadOnlyList<CondicaoPrecondicaoInput>>? Exibicao = null)
 {

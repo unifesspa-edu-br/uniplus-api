@@ -36,7 +36,7 @@ internal static class ConferenciaDoItemNoCatalogo
     public static DomainError? Coerencia(FatoCandidatoView fato, TipoRenderizacao tipoRenderizacao)
     {
         ArgumentNullException.ThrowIfNull(fato);
-        return CoerenciaDoCampo.Validar(fato.Codigo, tipoRenderizacao, fato.Dominio, fato.Cardinalidade, fato.FonteValores);
+        return CoerenciaDoCampo.Validar(fato.Codigo, tipoRenderizacao, fato.DominioValor, fato.CardinalidadeValor, fato.FonteValoresValor);
     }
 
     /// <summary>

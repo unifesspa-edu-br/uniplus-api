@@ -232,7 +232,7 @@ public sealed class DefinirBonusRegionalCommandHandlerTests
         result.Error!.Code.Should().Be("ConfiguracaoBonusRegional.RegraNaoEncontrada");
     }
 
-    [Fact(DisplayName = "Handle com regra de tipo diferente de regra_bonus recusa")]
+    [Fact(DisplayName = "Handle com regra de tipo diferente de regra_fada recusa")]
     public async Task Handle_RegraTipoInvalido_Recusa()
     {
         ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS 2026", TiposDeProcessoDeTeste.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, identificadorLegivel: IdentificadoresDeTeste.Novo());

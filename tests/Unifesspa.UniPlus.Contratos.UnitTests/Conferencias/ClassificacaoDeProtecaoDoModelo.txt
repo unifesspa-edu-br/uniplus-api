@@ -1296,6 +1296,7 @@ selecao.categorias_julgadas.categoria_documento_origem_id: Interno
 selecao.categorias_julgadas.codigo: Interno
 selecao.categorias_julgadas.created_at: Interno
 selecao.categorias_julgadas.id: Interno
+selecao.categorias_julgadas.nome: Interno
 selecao.categorias_julgadas.updated_at: Interno
 selecao.certames_divulgados.ato_criador_id: Interno
 selecao.certames_divulgados.atos_divulgados: Interno
@@ -1635,6 +1636,7 @@ selecao.fases_cronograma.regra_de_homologacao: Interno
 selecao.fases_cronograma.tipo_fase_nome: Interno
 selecao.fases_cronograma.tipo_fase_origem_id: Interno
 selecao.fases_cronograma.tipos_de_decisao: Interno
+selecao.fases_cronograma.unidade_responsavel_codigo: Interno
 selecao.fases_cronograma.unidade_responsavel_nome: Interno
 selecao.fases_cronograma.unidade_responsavel_origem_id: Interno
 selecao.fases_cronograma.unidade_responsavel_sigla: Interno

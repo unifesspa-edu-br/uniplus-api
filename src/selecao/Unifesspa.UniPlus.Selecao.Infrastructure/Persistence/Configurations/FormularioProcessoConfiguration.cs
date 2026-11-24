@@ -5,6 +5,7 @@ using Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence.CodigosDeContrato;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Protecao;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Regras.Formularios;
@@ -21,11 +22,12 @@ public sealed class FormularioProcessoConfiguration : IEntityTypeConfiguration<F
 
         builder.ClassificaPorPadrao(ClassificacaoDeProtecao.Interno);
 
-        builder.ToTable("formularios_processo");
+        builder.ToTable("formularios_processo", t =>
+            t.HasCheckConstraint("ck_formularios_processo_finalidade", $"finalidade IN ({SqlDosCodigosDeContrato.Lista<FinalidadeFormulario>()})"));
         builder.HasKey(f => f.Id);
         builder.Property(f => f.Id).ValueGeneratedNever();
 
-        builder.Property(f => f.Finalidade).HasConversion<int>().IsRequired();
+        builder.Property(f => f.Finalidade).HasMaxLength(TamanhoDoCodigoDeContrato.Maximo).IsRequired().HasComment($"Finalidade do formulário. {ComentarioDosCodigosDeContrato.Codigos<FinalidadeFormulario>()}");
         builder.Property(f => f.Titulo).HasMaxLength(FormaDoCabecalho.TituloMaxLength);
         builder.Property(f => f.ModeloOrigemCodigo).HasMaxLength(FormularioProcesso.ModeloOrigemCodigoMaxLength);
         builder.Property(f => f.ModeloOrigemNome).HasColumnName("modelo_origem_nome").HasMaxLength(FormularioProcesso.ModeloOrigemNomeMaxLength)
@@ -55,14 +57,20 @@ public sealed class EtapaFormularioConfiguration : IEntityTypeConfiguration<Etap
 
         builder.ClassificaPorPadrao(ClassificacaoDeProtecao.Interno);
 
-        builder.ToTable("etapas_formulario");
+        builder.ToTable("etapas_formulario", t =>
+        {
+            t.HasCheckConstraint("ck_etapas_formulario_tipo", $"tipo IN ({SqlDosCodigosDeContrato.Lista<TipoEtapaFormulario>()})");
+            t.HasCheckConstraint("ck_etapas_formulario_bloco", $"bloco IS NULL OR bloco IN ({SqlDosCodigosDeContrato.Lista<BlocoSistema>()})");
+        });
         builder.HasKey(e => e.Id);
         builder.Property(e => e.Id).ValueGeneratedNever();
 
         builder.Property(e => e.Codigo).HasMaxLength(FormaDaEtapa.CodigoMaxLength).IsRequired();
         builder.Property(e => e.Ordem).IsRequired();
-        builder.Property(e => e.Tipo).HasConversion<int>().IsRequired();
-        builder.Property(e => e.Bloco).HasConversion<int>().IsRequired();
+        builder.Property(e => e.Tipo).HasMaxLength(TamanhoDoCodigoDeContrato.Maximo).IsRequired()
+            .HasComment($"O que a etapa é. {ComentarioDosCodigosDeContrato.Codigos<TipoEtapaFormulario>()}");
+        builder.Property(e => e.Bloco).HasMaxLength(TamanhoDoCodigoDeContrato.Maximo)
+            .HasComment($"O bloco que o sistema monta; nulo na seção. {ComentarioDosCodigosDeContrato.Codigos<BlocoSistema>()}");
         builder.Property(e => e.Titulo).HasMaxLength(FormaDaEtapa.TituloMaxLength).IsRequired();
         builder.Property(e => e.Descricao).HasMaxLength(FormaDaEtapa.TextoMaxLength);
         builder.Property(e => e.Aviso).HasMaxLength(FormaDaEtapa.TextoMaxLength);

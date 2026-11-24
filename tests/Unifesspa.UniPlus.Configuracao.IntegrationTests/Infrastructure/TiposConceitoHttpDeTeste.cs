@@ -38,7 +38,7 @@ internal static class TiposConceitoHttpDeTeste
         ["definicao"] = new Dictionary<string, object?>
         {
             ["nome"] = "Parecer da análise",
-            ["natureza"] = "CATEGORICO",
+            ["natureza"] = "POR_OPCOES",
             ["valores"] = new object[]
             {
                 new { codigo = "INDEFERIDO", rotulo = "Indeferido", contaComoAprovacao = false },

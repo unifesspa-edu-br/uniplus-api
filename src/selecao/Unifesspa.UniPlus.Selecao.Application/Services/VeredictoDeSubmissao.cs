@@ -108,7 +108,7 @@ public static class VeredictoDeSubmissao
             // termosExigidos e aceites usam o código NU, que é o que o candidato conhece e envia; a
             // recusa é sobre o aceite, então sai nele.
             TermoExigidoFormulario? exigido = termosExigidos.FirstOrDefault(t =>
-                string.Equals(DefinicaoDoProcesso.CodigoDoTermo(t.Finalidade, t.Codigo), termo.Codigo, StringComparison.Ordinal));
+                string.Equals(DefinicaoDoProcesso.CodigoDoTermo(t.Finalidade!.Value, t.Codigo), termo.Codigo, StringComparison.Ordinal));
             AceiteDeTermo? aceite = exigido is null
                 ? null
                 : aceites.FirstOrDefault(a => string.Equals(a.Codigo, exigido.Codigo, StringComparison.Ordinal));

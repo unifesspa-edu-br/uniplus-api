@@ -94,7 +94,7 @@ internal static class FormularioDoEnvioDeTeste
     {
         VersaoTermoEscolhida versaoDoTermo = new(
             Guid.CreateVersion7(), Guid.CreateVersion7(), "TERMO_DE_TESTE", 1, "Termo de veracidade", "Declaro que as informações são verdadeiras.",
-            "Lei 9.784/1999", FormaAceite.RegistroDigitalSemLogIp, new string('b', 64));
+            "Lei 9.784/1999", FormaAceite.RegistroSemEnderecoIp, new string('b', 64));
         ProcessoSeletivo processoBase = ProcessoSeletivoConformeBuilder.Criar("PS 2026 — Submeter inscrição");
         Result itensDefinidos = processoBase.DefinirItens([ItemApelidoObrigatorio(), .. outrosItens ?? []], grupos: grupos);
         itensDefinidos.IsSuccess.Should().BeTrue(itensDefinidos.Error?.Message);

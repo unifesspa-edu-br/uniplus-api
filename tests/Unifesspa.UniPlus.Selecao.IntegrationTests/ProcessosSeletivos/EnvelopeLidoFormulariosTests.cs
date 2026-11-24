@@ -142,7 +142,7 @@ public sealed class EnvelopeLidoFormulariosTests
     private static FatoColetadoDeTeste SelecaoObrigatoria(string codigo, int ordem, string rotulo) =>
         FatoColetadoDeTeste.Coletando(codigo, ordem)
             .ComRotulo(rotulo)
-            .DoTipo(TipoRenderizacao.SelecaoUnica)
+            .DoTipo(TipoRenderizacao.EscolhaUnica)
             .ComObrigatoriedade(Obrigatoriedade.Sempre);
 
     private static FatoColetado ConcorrerEscolaPublica(int ordem) =>

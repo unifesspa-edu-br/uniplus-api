@@ -6,6 +6,7 @@ using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Domain.Enums;
 using Unifesspa.UniPlus.Configuracao.Domain.UnitTests.TestSupport;
 using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
+using Unifesspa.UniPlus.Regras.Enums;
 
 public sealed class TipoConceitoEdicaoTests
 {
@@ -45,7 +46,7 @@ public sealed class TipoConceitoEdicaoTests
 
         tipo.Atualizar(Validada(DefinicoesDeTipoConceito.Categorica()));
 
-        tipo.Natureza.Should().Be(NaturezaConceito.Categorico);
+        tipo.Natureza.Should().Be(FormaDoConceito.PorOpcoes);
         tipo.EscalaMinima.Should().BeNull();
         tipo.EscalaMaxima.Should().BeNull();
         tipo.CasasDecimais.Should().BeNull();

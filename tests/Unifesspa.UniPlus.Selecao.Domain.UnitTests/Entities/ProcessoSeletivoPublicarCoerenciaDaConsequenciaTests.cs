@@ -110,7 +110,7 @@ public sealed class ProcessoSeletivoPublicarCoerenciaDaConsequenciaTests
     private static ProcessoSeletivo ProcessoQueEliminaPorFaixaEtariaNaModalidadeQueReclassifica()
     {
         ModalidadeSelecionada ppi = NovaModalidadeComAcao(
-            "LB_PPI", NaturezaLegalModalidade.CotaReservada, ComposicaoVagasModalidade.DentroDaReservaLegal, "RECLASSIFICAR_AC");
+            "LB_PPI", NaturezaLegalModalidade.CotaReservada, ComposicaoVagasModalidade.DentroDaReservaLegal, "RECLASSIFICA_AC");
         ProcessoSeletivo processo = NovoProcessoComModalidade(ppi);
         Guid faseId = processo.CronogramaFases.Single().Id;
         processo.DefinirDocumentosExigidos(
@@ -127,7 +127,7 @@ public sealed class ProcessoSeletivoPublicarCoerenciaDaConsequenciaTests
     // com um dicionário de fatos só com MODALIDADE; a condição de FAIXA_ETARIA (fato
     // ausente) avaliava como falsa (PredicadoDnf.Avaliar), reprovando a cláusula
     // inteira e escondendo QUALQUER modalidade da conferência CA-05 — publicaria incoerente.
-    [Fact(DisplayName = "CA-05 (5/5 — gatilho não-modal): ELIMINA condicionado só a FAIXA_ETARIA (nenhuma condição de MODALIDADE) ainda é incoerente com RECLASSIFICAR_AC — achado de revisão da PR #903")]
+    [Fact(DisplayName = "CA-05 (5/5 — gatilho não-modal): ELIMINA condicionado só a FAIXA_ETARIA (nenhuma condição de MODALIDADE) ainda é incoerente com RECLASSIFICA_AC — achado de revisão da PR #903")]
     public void Publicar_GatilhoPorFaixaEtariaSemCondicaoDeModalidadeElimina_IncoerenteComAcaoDaModalidade()
     {
         ProcessoSeletivo processo = ProcessoQueEliminaPorFaixaEtariaNaModalidadeQueReclassifica();
@@ -143,7 +143,7 @@ public sealed class ProcessoSeletivoPublicarCoerenciaDaConsequenciaTests
     // A ausência de AcaoQuandoIndeferido é declaração, não omissão: a modalidade não
     // reclassifica, e quem responde pelo destino do candidato indeferido é a consequência
     // da exigência documental. Nenhuma das treze modalidades semeadas declara ação — se
-    // null passasse a ser lido como RECLASSIFICAR_AC, toda exigência ELIMINA do catálogo
+    // null passasse a ser lido como RECLASSIFICA_AC, toda exigência ELIMINA do catálogo
     // real deixaria de publicar. Este teste é o que segura essa leitura.
     [Fact(DisplayName = "CA-05: modalidade sem ação de indeferimento declarada não é confrontada — a consequência da exigência decide sozinha")]
     public void Publicar_ModalidadeSemAcaoDeclarada_NaoDisparaCa05()
@@ -162,16 +162,11 @@ public sealed class ProcessoSeletivoPublicarCoerenciaDaConsequenciaTests
             + "modalidade não declara nenhuma — não há o que confrontar");
     }
 
-    // DocumentoExigido.ConsequenciaIndeferimento aceita "RECLASSIFICA_AC" (rol fechado
-    // desde a PR #895), mas ModalidadeSelecionada.AcaoQuandoIndeferido — snapshot-copy do
-    // cadastro real de Modalidade — só aceita "RECLASSIFICAR_AC"/"RECLASSIFICAR_REGRA_EDITAL"
-    // (ck_modalidades_acao_quando_indeferido, módulo Configuração). Comparar os tokens
-    // crus sempre reprovaria o único caso de reclassificação coerente que existe.
-    [Fact(DisplayName = "CA-05: RECLASSIFICA_AC (vocabulário de DocumentoExigido) é coerente com RECLASSIFICAR_AC (vocabulário real de ModalidadeSelecionada.AcaoQuandoIndeferido) — achado de revisão da PR #903")]
-    public void Publicar_ReclassificaAcComAcaoRealReclassificarAc_Aceita()
+    [Fact(DisplayName = "A mesma ação de reclassificação na exigência e na modalidade é coerente")]
+    public void Publicar_ReclassificaAcComAcaoRealReclassificaAc_Aceita()
     {
         ModalidadeSelecionada ppi = NovaModalidadeComAcao(
-            "LB_PPI", NaturezaLegalModalidade.CotaReservada, ComposicaoVagasModalidade.DentroDaReservaLegal, "RECLASSIFICAR_AC");
+            "LB_PPI", NaturezaLegalModalidade.CotaReservada, ComposicaoVagasModalidade.DentroDaReservaLegal, "RECLASSIFICA_AC");
         ProcessoSeletivo processo = NovoProcessoComModalidade(ppi);
         Guid faseId = processo.CronogramaFases.Single().Id;
         processo.DefinirDocumentosExigidos(

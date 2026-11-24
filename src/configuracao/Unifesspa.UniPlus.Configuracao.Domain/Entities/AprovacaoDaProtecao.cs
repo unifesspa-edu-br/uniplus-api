@@ -118,7 +118,7 @@ public sealed class AprovacaoDaProtecao
         return Result.Success();
     }
 
-    internal Result RecomendarAjuste(ClassificacaoDeProtecao recomendada, string? justificativa, string ator, DateTimeOffset em)
+    internal Result RecomendarAjuste(ClassificacaoDeProtecao? recomendada, string? justificativa, string ator, DateTimeOffset em)
     {
         Result<Fundamentacao?> conferida = ConferirDecisao(
             justificativa, obrigatoria: false, "Só o item que está numa solicitação recebe a recomendação de ajuste.");
@@ -213,7 +213,7 @@ public sealed class AprovacaoDaProtecao
     /// aceite não ficar sem saída.
     /// </summary>
     internal static Result ConferirRecomendacao(
-        ClassificacaoDeProtecao recomendada, ClassificacaoDeProtecao atual, HipoteseLegalTratamento hipoteseLegal)
+        ClassificacaoDeProtecao? recomendada, ClassificacaoDeProtecao atual, HipoteseLegalTratamento hipoteseLegal)
     {
         Result informada = ConferirClassificacaoRecomendada(recomendada);
         if (informada.IsFailure)
@@ -226,7 +226,7 @@ public sealed class AprovacaoDaProtecao
             return Result.ValidationFailure([RecomendacaoIgualAAtual]);
         }
 
-        return HipotesesLegaisTratamento.AdmiteClassificacao(hipoteseLegal, recomendada)
+        return HipotesesLegaisTratamento.AdmiteClassificacao(hipoteseLegal, recomendada!.Value)
             ? Result.Success()
             : Result.ValidationFailure([RecomendacaoForaDaHipotese]);
     }
@@ -237,7 +237,7 @@ public sealed class AprovacaoDaProtecao
     /// da decisão antes de ler o item a chama sem mudar nada, acumulando a recusa no mesmo lote (ADR-0125).
     /// </summary>
     public static Result ConferirClassificacaoRecomendada(ClassificacaoDeProtecao? recomendada) =>
-        recomendada is { } valor && valor != ClassificacaoDeProtecao.Nenhuma && Enum.IsDefined(valor)
+        recomendada is { } valor && Enum.IsDefined(valor)
             ? Result.Success()
             : Result.ValidationFailure([RecomendacaoAusente]);
 

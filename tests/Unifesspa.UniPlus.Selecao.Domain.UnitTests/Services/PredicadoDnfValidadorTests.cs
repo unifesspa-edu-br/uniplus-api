@@ -40,7 +40,7 @@ public sealed class PredicadoDnfValidadorTests
     [InlineData("PCD", Operador.Igual, "\"texto\"", TipoDeValorEsperado.VerdadeiroOuFalso)]
     [InlineData("FAIXA_ETARIA", Operador.Igual, "18.5", TipoDeValorEsperado.NumeroInteiro)]
     [InlineData("COR_RACA", Operador.Igual, "12", TipoDeValorEsperado.Texto)]
-    [InlineData("COR_RACA", Operador.Em, "[12]", TipoDeValorEsperado.ListaDeTextos)]
+    [InlineData("COR_RACA", Operador.AlgumDe, "[12]", TipoDeValorEsperado.ListaDeTextos)]
     public void ValidarComCausa_ValorInvalido_InformaTipoEsperado(string fato, Operador operador, string valor, TipoDeValorEsperado esperado)
     {
         CondicaoDnf condicao = CondicaoDnf.Criar(fato, operador, Json(valor)).Value!;
@@ -81,7 +81,7 @@ public sealed class PredicadoDnfValidadorTests
     [Fact(DisplayName = "PredicadoDnfValidador_Rejeita_Booleano_Com_Em")]
     public void PredicadoDnfValidador_Rejeita_Booleano_Com_Em()
     {
-        CondicaoDnf condicao = CondicaoDnf.Criar("PCD", Operador.Em, Json("[true]")).Value!;
+        CondicaoDnf condicao = CondicaoDnf.Criar("PCD", Operador.AlgumDe, Json("[true]")).Value!;
 
         Result resultado = Validar(condicao);
 
@@ -92,7 +92,7 @@ public sealed class PredicadoDnfValidadorTests
     [Fact(DisplayName = "PredicadoDnfValidador_Rejeita_Numerico_Com_Em")]
     public void PredicadoDnfValidador_Rejeita_Numerico_Com_Em()
     {
-        CondicaoDnf condicao = CondicaoDnf.Criar("FAIXA_ETARIA", Operador.Em, Json("[18,19]")).Value!;
+        CondicaoDnf condicao = CondicaoDnf.Criar("FAIXA_ETARIA", Operador.AlgumDe, Json("[18,19]")).Value!;
 
         Result resultado = Validar(condicao);
 
@@ -179,10 +179,10 @@ public sealed class PredicadoDnfValidadorTests
         Validar(condicao).IsSuccess.Should().BeTrue();
     }
 
-    [Fact(DisplayName = "PredicadoDnfValidador aceita EM categórico com todos os valores no domínio")]
+    [Fact(DisplayName = "PredicadoDnfValidador aceita ALGUM_DE categórico com todos os valores no domínio")]
     public void PredicadoDnfValidador_Aceita_Em_Categorico_No_Dominio()
     {
-        CondicaoDnf condicao = CondicaoDnf.Criar("COR_RACA", Operador.Em, Json("[\"PRETA\",\"PARDA\"]")).Value!;
+        CondicaoDnf condicao = CondicaoDnf.Criar("COR_RACA", Operador.AlgumDe, Json("[\"PRETA\",\"PARDA\"]")).Value!;
 
         Validar(condicao).IsSuccess.Should().BeTrue();
     }
@@ -239,13 +239,13 @@ public sealed class PredicadoDnfValidadorTests
         CondicaoDnf condicao, IReadOnlyDictionary<string, DominioDeValores>? dominiosDinamicos) =>
         PredicadoDnfValidador.Validar(PredicadoDe(condicao), VocabularioComDinamico, null, dominiosDinamicos);
 
-    [Fact(DisplayName = "Aceita IGUAL/EM categórico dinâmico com domínio fornecido pelo chamador")]
+    [Fact(DisplayName = "Aceita IGUAL/ALGUM_DE categórico dinâmico com domínio fornecido pelo chamador")]
     public void Validar_CategoricoDinamico_DominioFornecido_Aceita()
     {
         Dictionary<string, DominioDeValores> dominios = new() { ["MODALIDADE"] = DominioDeValores.Enumerado(["LB_PPI", "AC"]) };
 
         CondicaoDnf igual = CondicaoDnf.Criar("MODALIDADE", Operador.Igual, Json("\"LB_PPI\"")).Value!;
-        CondicaoDnf em = CondicaoDnf.Criar("MODALIDADE", Operador.Em, Json("[\"LB_PPI\",\"AC\"]")).Value!;
+        CondicaoDnf em = CondicaoDnf.Criar("MODALIDADE", Operador.AlgumDe, Json("[\"LB_PPI\",\"AC\"]")).Value!;
 
         ValidarComDominioDinamico(igual, dominios).IsSuccess.Should().BeTrue();
         ValidarComDominioDinamico(em, dominios).IsSuccess.Should().BeTrue();
@@ -286,7 +286,7 @@ public sealed class PredicadoDnfValidadorTests
         resultado.Error!.Code.Should().Be("PredicadoDnf.OperadorIncompativelComDominio");
     }
 
-    // ── Story #916 — operadores de exclusão (DIFERENTE/NAO_EM) ──
+    // ── Story #916 — operadores de exclusão (DIFERENTE/NENHUM_DE) ──
 
     [Theory(DisplayName = "DIFERENTE é aceito em todo domínio onde IGUAL já vale (booleano, numérico, categórico)")]
     [InlineData("PCD", "false")]
@@ -299,20 +299,20 @@ public sealed class PredicadoDnfValidadorTests
         Validar(condicao).IsSuccess.Should().BeTrue();
     }
 
-    [Fact(DisplayName = "NAO_EM é aceito em categórico (onde EM já vale)")]
+    [Fact(DisplayName = "NENHUM_DE é aceito em categórico (onde ALGUM_DE já vale)")]
     public void PredicadoDnfValidador_Aceita_NaoEm_Categorico()
     {
-        CondicaoDnf condicao = CondicaoDnf.Criar("COR_RACA", Operador.NaoEm, Json("[\"PRETA\",\"PARDA\"]")).Value!;
+        CondicaoDnf condicao = CondicaoDnf.Criar("COR_RACA", Operador.NenhumDe, Json("[\"PRETA\",\"PARDA\"]")).Value!;
 
         Validar(condicao).IsSuccess.Should().BeTrue();
     }
 
-    [Theory(DisplayName = "NAO_EM é recusado em booleano/numérico — a matriz só admite NAO_EM onde EM vale")]
+    [Theory(DisplayName = "NENHUM_DE é recusado em booleano/numérico — a matriz só admite NENHUM_DE onde ALGUM_DE vale")]
     [InlineData("PCD", "[true]")]
     [InlineData("FAIXA_ETARIA", "[18,19]")]
     public void PredicadoDnfValidador_Rejeita_NaoEm_BooleanoOuNumerico(string fato, string valorJson)
     {
-        CondicaoDnf condicao = CondicaoDnf.Criar(fato, Operador.NaoEm, Json(valorJson)).Value!;
+        CondicaoDnf condicao = CondicaoDnf.Criar(fato, Operador.NenhumDe, Json(valorJson)).Value!;
 
         Result resultado = Validar(condicao);
 
@@ -320,11 +320,11 @@ public sealed class PredicadoDnfValidadorTests
         resultado.Error!.Code.Should().Be("PredicadoDnf.OperadorIncompativelComDominio");
     }
 
-    [Fact(DisplayName = "NAO_EM categórico dinâmico é aceito (mesma matriz do estático)")]
+    [Fact(DisplayName = "NENHUM_DE categórico dinâmico é aceito (mesma matriz do estático)")]
     public void Validar_CategoricoDinamico_NaoEm_Aceita()
     {
         Dictionary<string, DominioDeValores> dominios = new() { ["MODALIDADE"] = DominioDeValores.Enumerado(["LB_PPI", "AC"]) };
-        CondicaoDnf condicao = CondicaoDnf.Criar("MODALIDADE", Operador.NaoEm, Json("[\"LB_PPI\"]")).Value!;
+        CondicaoDnf condicao = CondicaoDnf.Criar("MODALIDADE", Operador.NenhumDe, Json("[\"LB_PPI\"]")).Value!;
 
         ValidarComDominioDinamico(condicao, dominios).IsSuccess.Should().BeTrue();
     }

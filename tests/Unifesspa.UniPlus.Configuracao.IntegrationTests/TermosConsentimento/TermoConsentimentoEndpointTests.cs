@@ -331,7 +331,7 @@ public sealed class TermoConsentimentoEndpointTests
         nome = $"Termo LGPD {Guid.NewGuid():N}",
         textoRascunho = "Texto do termo",
         baseLegalRascunho = "Lei 13.709/2018",
-        formaAceiteRascunho = "REGISTRO_DIGITAL_SEM_LOG_IP",
+        formaAceiteRascunho = "REGISTRO_SEM_ENDERECO_IP",
     };
 
     private static object CorpoVazio() => new

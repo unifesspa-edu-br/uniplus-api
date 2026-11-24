@@ -93,7 +93,7 @@ internal static class ParametrosDoDesempateDeclarados
 
     /// <summary>
     /// <see cref="ParametrosDoCriterioDesempateInput.Valor"/> permanece texto, mas quando o texto já É um JSON válido
-    /// (booleano, número, string entre aspas, ou array para o operador EM), ele é interpretado como tal, para que a
+    /// (booleano, número, string entre aspas, ou array para o operador ALGUM_DE), ele é interpretado como tal, para que a
     /// matriz operador × domínio (ADR-0111) tenha o tipo correto a validar. Texto que não é JSON válido (ex.: um
     /// código categórico sem aspas) é tratado como o escalar de string que representa.
     /// </summary>

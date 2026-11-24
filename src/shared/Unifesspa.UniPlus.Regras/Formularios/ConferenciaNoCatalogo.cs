@@ -19,11 +19,11 @@ public sealed record ValorDoCatalogo(string Codigo, bool Ativo);
 /// <param name="ProtecaoAprovada">Se a proteção de dados aprovou a proteção do fato; sem a aprovação, o fato não aceita vínculo novo.</param>
 public sealed record FatoDoCatalogo(
     string Codigo,
-    string Dominio,
-    string Cardinalidade,
-    string Origem,
+    TipoDoDado Dominio,
+    QuantidadeDeValores Cardinalidade,
+    OrigemFato Origem,
     string Binding,
-    string? FonteValores,
+    FonteValoresFato? FonteValores,
     string Escopo,
     bool Ativo,
     IReadOnlyList<ValorDoCatalogo> Valores,
@@ -36,7 +36,6 @@ public sealed record FatoDoCatalogo(
 /// </summary>
 public static class ConferenciaNoCatalogo
 {
-    private const string OrigemDeclarado = "DECLARADO";
     private const string EscopoCandidato = "CANDIDATO";
     private const string EscopoMembroGrupo = "MEMBRO_GRUPO";
 
@@ -72,9 +71,9 @@ public static class ConferenciaNoCatalogo
     private static bool EhRespondidoNoEscopo(FatoDoCatalogo fato, string escopo)
     {
         ArgumentNullException.ThrowIfNull(fato);
-        return string.Equals(fato.Origem, OrigemDeclarado, StringComparison.Ordinal)
+        return fato.Origem == OrigemFato.Declarado
             && string.Equals(fato.Escopo, escopo, StringComparison.Ordinal)
-            && VinculoDeFato.Usa(fato.Binding, VinculoDeFato.CampoDoFormulario);
+            && VinculoDeFato.Usa(fato.Binding, MecanismoDoVinculo.CampoFormulario);
     }
 
     private static DomainError FatoDesconhecido(string fatoCodigo) =>
@@ -116,14 +115,14 @@ public static class ConferenciaNoCatalogo
         ArgumentNullException.ThrowIfNull(citados);
         ArgumentNullException.ThrowIfNull(catalogo);
         return citados.FirstOrDefault(c => c is not null && catalogo.TryGetValue(c, out FatoDoCatalogo? fato)
-            && VinculoDeFato.Usa(fato.Binding, VinculoDeFato.AtributoDoCandidato)
+            && VinculoDeFato.Usa(fato.Binding, MecanismoDoVinculo.AtributoCandidato)
             && !DerivadosDoSistema.Dependencias.ContainsKey(c));
     }
 
     /// <summary>
     /// As restrições contra o catálogo: a condição de cada grupo de opções valida como qualquer
     /// predicado; os valores permitidos são do domínio do próprio fato, conferidos como a condição
-    /// <c>FATO EM [valores]</c>; e as respostas que formam as opções vêm de campos categóricos cujas
+    /// <c>FATO ALGUM_DE [valores]</c>; e as respostas que formam as opções vêm de campos categóricos cujas
     /// opções são todas opções do campo, para que toda resposta anterior seja uma opção válida.
     /// A restrição que não cabe no tipo do campo fica para a recusa de coerência do item.
     /// </summary>
@@ -223,8 +222,8 @@ public static class ConferenciaNoCatalogo
             OpcoesDasRespostas respostas when respostas.Fatos.Any(f => !catalogo.TryGetValue(f, out FatoDoCatalogo? fonte) || !OpcoesDaFonteCabemNoAlvo(alvo, fonte, dominiosDinamicos)) =>
                 RecusaDasRespostas(respostas, campo, alvo, catalogo, dominiosDinamicos),
             MunicipiosDaUf daUf when !catalogo.TryGetValue(daUf.FatoUf, out FatoDoCatalogo? uf)
-                || !string.Equals(uf.FonteValores, DominioDoCatalogo.FonteGeoUf, StringComparison.Ordinal)
-                || !string.Equals(uf.Cardinalidade, DominioDoCatalogo.Escalar, StringComparison.Ordinal) =>
+                || uf.FonteValores != FonteValoresFato.UnidadesFederativas
+                || uf.Cardinalidade != QuantidadeDeValores.ValorUnico =>
                 new($"{campo}.fatos", new DomainError(ItemFormularioErrorCodes.UfDoMunicipioInvalida,
                     "Os municípios da UF citam um campo de UF de resposta única, com as UFs do Geo."), daUf.FatoUf),
             _ => null,
@@ -260,7 +259,7 @@ public static class ConferenciaNoCatalogo
         IReadOnlyDictionary<string, DescritorFatoCandidato> vocabulario, IReadOnlyDictionary<string, DominioDeValores> dominios)
     {
         PredicadoDnf pertinencia = PredicadoDnf.CriarDeCondicoesAgrupadas([(0, CondicaoDnf.Criar(
-            alvo.Codigo, Operador.Em, JsonSerializer.SerializeToElement(grupo.Valores.Order(StringComparer.Ordinal))).Value!)]).Value!;
+            alvo.Codigo, Operador.AlgumDe, JsonSerializer.SerializeToElement(grupo.Valores.Order(StringComparer.Ordinal))).Value!)]).Value!;
         if (PredicadoDnfValidador.ValidarComCausa(pertinencia, vocabulario, null, dominios) is ({ IsFailure: true } valores, { } causaDosValores, _))
         {
             return new($"{campo}.entradas[{entrada}].valores", valores.Error!, causaDosValores);
@@ -274,10 +273,10 @@ public static class ConferenciaNoCatalogo
     /// </summary>
     private static bool OpcoesDaFonteCabemNoAlvo(
         FatoDoCatalogo alvo, FatoDoCatalogo fonte, IReadOnlyDictionary<string, DominioDeValores> dominiosDinamicos) =>
-        string.Equals(fonte.Dominio, alvo.Dominio, StringComparison.Ordinal)
+        fonte.Dominio == alvo.Dominio
         && (ValoresDoDominio(fonte, dominiosDinamicos), ValoresDoDominio(alvo, dominiosDinamicos)) switch
         {
-            (null, null) => string.Equals(fonte.FonteValores, alvo.FonteValores, StringComparison.Ordinal),
+            (null, null) => fonte.FonteValores == alvo.FonteValores,
             ({ } daFonte, { } doAlvo) => daFonte.IsSubsetOf(doAlvo),
             _ => false,
         };

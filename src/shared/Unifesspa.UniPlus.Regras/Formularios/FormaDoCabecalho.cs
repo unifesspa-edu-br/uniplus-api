@@ -10,12 +10,12 @@ public static class FormaDoCabecalho
     public const int TituloMaxLength = 300;
 
     /// <summary>A finalidade é uma das três do formulário, e o título, quando há, cabe no limite.</summary>
-    public static List<FieldError> Validar(FinalidadeFormulario finalidade, string? titulo) =>
+    public static List<FieldError> Validar(FinalidadeFormulario? finalidade, string? titulo) =>
         [.. ValidarFinalidade(finalidade), .. ValidarTitulo(titulo)];
 
     /// <summary>A finalidade é inscrição, isenção de taxa ou habilitação.</summary>
-    public static List<FieldError> ValidarFinalidade(FinalidadeFormulario finalidade) =>
-        finalidade == FinalidadeFormulario.Nenhuma || !Enum.IsDefined(finalidade)
+    public static List<FieldError> ValidarFinalidade(FinalidadeFormulario? finalidade) =>
+        finalidade is not { } valor || !Enum.IsDefined(valor)
             ? [new("finalidade", new DomainError(EstruturaFormularioErrorCodes.FinalidadeInvalida,
                 "A finalidade do formulário é inscrição, isenção de taxa ou habilitação."))]
             : [];

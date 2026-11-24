@@ -43,8 +43,8 @@ public sealed class ModalidadeSelecionada : EntityBase
 
     /// <summary>
     /// Snapshot-copy da ação de indeferimento do cadastro de <c>Modalidade</c>
-    /// (Configuração) — token UPPER_SNAKE, <c>RECLASSIFICAR_AC</c> ou
-    /// <c>RECLASSIFICAR_REGRA_EDITAL</c>. <see langword="null"/> declara que a modalidade não
+    /// (Configuração) — token UPPER_SNAKE, <c>RECLASSIFICA_AC</c> ou
+    /// <c>RECLASSIFICA_CONFORME_EDITAL</c>. <see langword="null"/> declara que a modalidade não
     /// reclassifica, e é assim que o gate de coerência da publicação a lê: só confronta a
     /// consequência da exigência documental com esta ação quando ela está declarada. Sem
     /// ação, quem responde pelo destino do candidato indeferido é a própria exigência.

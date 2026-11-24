@@ -158,7 +158,7 @@ public sealed class PerfilMappingTests
 
         PerfilDto dto = PerfilMapping.ToDto(perfil, Catalogo, PerfisDeTeste.Autor);
 
-        dto.Should().BeEquivalentTo(EsperadoDe(perfil, "interno", SituacaoDoAcessoDoPerfil.EmVigor, PerfisDeTeste.Autor));
+        dto.Should().BeEquivalentTo(EsperadoDe(perfil, "INTERNO", SituacaoDoAcessoDoPerfil.EmVigor, PerfisDeTeste.Autor));
     }
 
     [Fact(DisplayName = "O perfil sem vigente cuja única versão foi cancelada expõe a última versão encerrada sem vigor")]
@@ -170,7 +170,7 @@ public sealed class PerfilMappingTests
         PerfilDto dto = PerfilMapping.ToDto(perfil, Catalogo);
 
         dto.UltimaVersaoEncerradaSemVigor.Should().NotBeNull();
-        dto.Should().BeEquivalentTo(EsperadoDe(perfil, "publico", SituacaoDoAcessoDoPerfil.SemVersaoEmVigor, null));
+        dto.Should().BeEquivalentTo(EsperadoDe(perfil, "PUBLICO", SituacaoDoAcessoDoPerfil.SemVersaoEmVigor, null));
     }
 
     internal static Perfil PerfilComVigenteEPendente()

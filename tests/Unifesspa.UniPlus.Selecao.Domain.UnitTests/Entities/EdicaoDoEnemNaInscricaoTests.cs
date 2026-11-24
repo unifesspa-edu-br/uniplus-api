@@ -51,7 +51,7 @@ public sealed class EdicaoDoEnemNaInscricaoTests
         Obrigatoriedade? obrigatoriedade = null, PredicadoDnf? exibicao = null, string secao = FormularioDeTeste.Secao) =>
         FatoColetadoDeTeste.Coletando(EdicaoDoEnem.Fato, FormularioDeTeste.PrimeiraOrdemDeInscricao)
             .ComRotulo("Qual edição do ENEM você vai usar?")
-            .DoTipo(TipoRenderizacao.SelecaoUnica)
+            .DoTipo(TipoRenderizacao.EscolhaUnica)
             .ComObrigatoriedade(obrigatoriedade ?? Obrigatoriedade.Sempre)
             .ExibidoQuando(exibicao)
             .ComOrigem(OrigemValoresColeta.OpcoesDoProcesso)
@@ -109,7 +109,7 @@ public sealed class EdicaoDoEnemNaInscricaoTests
                 FinalidadeFormulario.Inscricao, inscricao.FaseId, inscricao.Titulo,
                 [
                     FormularioDeTeste.Etapas()[0],
-                    EtapaFormulario.Criar(new EtapaEstrutura(FormularioDeTeste.Secao, 1, TipoEtapaFormulario.Secao, BlocoSistema.Nenhum), "Dados", null, null, SeCasado()).Value!,
+                    EtapaFormulario.Criar(new EtapaEstrutura(FormularioDeTeste.Secao, 1, TipoEtapaFormulario.Secao, null), "Dados", null, null, SeCasado()).Value!,
                     EtapaFormulario.Criar(new EtapaEstrutura("REVISAO", 2, TipoEtapaFormulario.Bloco, BlocoSistema.RevisaoEAceite), "Revisão e aceite", null, null).Value!,
                 ])
             .IsSuccess.Should().BeTrue();

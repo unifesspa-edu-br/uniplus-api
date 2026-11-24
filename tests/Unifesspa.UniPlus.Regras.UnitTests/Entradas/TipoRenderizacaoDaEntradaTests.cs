@@ -11,9 +11,9 @@ public sealed class TipoRenderizacaoDaEntradaTests
 {
     [Theory(DisplayName = "O código de cada tipo de campo é lido como o tipo")]
     [InlineData("NUMERO", TipoRenderizacao.Numero)]
-    [InlineData("BOOLEANO", TipoRenderizacao.Booleano)]
-    [InlineData("SELECAO_UNICA", TipoRenderizacao.SelecaoUnica)]
-    [InlineData("SELECAO_MULTIPLA", TipoRenderizacao.SelecaoMultipla)]
+    [InlineData("SIM_OU_NAO", TipoRenderizacao.SimOuNao)]
+    [InlineData("ESCOLHA_UNICA", TipoRenderizacao.EscolhaUnica)]
+    [InlineData("ESCOLHA_MULTIPLA", TipoRenderizacao.EscolhaMultipla)]
     [InlineData("TEXTO", TipoRenderizacao.Texto)]
     [InlineData("DATA", TipoRenderizacao.Data)]
     [InlineData("ENDERECO", TipoRenderizacao.Endereco)]
@@ -50,6 +50,6 @@ public sealed class TipoRenderizacaoDaEntradaTests
         lido.IsFailure.Should().BeTrue();
         lido.Error!.Code.Should().Be(ItemFormularioErrorCodes.TipoRenderizacaoInvalido);
         lido.Error.Message.Should().Be(
-            "O tipo de campo do item não é reconhecido. Os tipos aceitos são NUMERO, BOOLEANO, SELECAO_UNICA, SELECAO_MULTIPLA, TEXTO, DATA, ENDERECO, MUNICIPIO.");
+            "O tipo de campo do item não é reconhecido. Os tipos aceitos são NUMERO, SIM_OU_NAO, ESCOLHA_UNICA, ESCOLHA_MULTIPLA, TEXTO, DATA, ENDERECO, MUNICIPIO.");
     }
 }

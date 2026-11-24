@@ -4,6 +4,8 @@ using Unifesspa.UniPlus.Configuracao.Application.Mappings;
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Domain.Enums;
 using Unifesspa.UniPlus.Configuracao.Domain.Interfaces;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
+using Unifesspa.UniPlus.Regras.Enums;
 
 public static class ListarFatosCandidatoParaManutencaoQueryHandler
 {
@@ -33,7 +35,7 @@ public static class ListarFatosCandidatoParaManutencaoQueryHandler
             return true;
         }
 
-        bool conhecida = OrigensFato.TryAnalisar(texto, out OrigemFato analisada);
+        bool conhecida = CatalogoDe<OrigemFato>.TentarObter(texto, out OrigemFato analisada);
         origem = conhecida ? analisada : null;
         return conhecida;
     }
