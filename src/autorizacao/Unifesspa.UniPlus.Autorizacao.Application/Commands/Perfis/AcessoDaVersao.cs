@@ -10,7 +10,7 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// <summary>
 /// O que o solicitante pode fazer na governança das versões de um perfil: decidir cada etapa da aprovação, manter perfis
 /// e ler o perfil, o documento, a revisão, a contenção, a reclassificação e as divergências, o que quem só consulta as
-/// versões, como o Encarregado de dados, também faz, sem decidir. Cada capacidade é avaliada pelo ponto de decisão único, sem registrar: quem usa o resultado grava
+/// versões, como o Gestor de proteção de dados, também faz, sem decidir. Cada capacidade é avaliada pelo ponto de decisão único, sem registrar: quem usa o resultado grava
 /// a decisão que governou o desfecho, para que a trilha traga a real e não uma negativa de uma permissão que a pessoa nem
 /// precisava ter.
 /// </summary>

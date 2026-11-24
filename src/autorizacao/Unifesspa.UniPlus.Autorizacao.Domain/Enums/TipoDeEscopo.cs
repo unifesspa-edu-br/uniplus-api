@@ -13,8 +13,8 @@ public enum TipoDeEscopo
 /// <summary>Código textual canônico de <see cref="TipoDeEscopo"/>, o valor gravado e exposto.</summary>
 public static class TipoDeEscopoCodigo
 {
-    public const string Unidade = "unidade";
-    public const string Instituicao = "instituicao";
+    public const string Unidade = "UNIDADE";
+    public const string Instituicao = "INSTITUICAO";
 
     public static string ToCodigo(this TipoDeEscopo tipo) => tipo switch
     {

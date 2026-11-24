@@ -44,7 +44,7 @@ public sealed class ConcorrenciaDaVersaoDoPerfilNoHostTests : VersoesDoPerfilNoH
         await concessao.ConfirmarAsync();
 
         (await aprovacao).StatusCode.Should().Be(HttpStatusCode.OK);
-        await ConferirConcessaoESituacaoAsync(original.PerfilId, ampliada.VersaoId, "pendente");
+        await ConferirConcessaoESituacaoAsync(original.PerfilId, ampliada.VersaoId, "PENDENTE");
         (await VigenciasAsync(original.PerfilId)).Should().ContainSingle(v => v.Aberta && v.VersaoId == original.VersaoId);
     }
 
@@ -63,7 +63,7 @@ public sealed class ConcorrenciaDaVersaoDoPerfilNoHostTests : VersoesDoPerfilNoH
 
         respostas[0].StatusCode.Should().Be(HttpStatusCode.OK, await respostas[0].Content.ReadAsStringAsync());
         (await concessao!).ComposicaoEmVigor.Should().BeEquivalentTo(Consultar, Sensivel);
-        await ConferirConcessaoESituacaoAsync(original.PerfilId, ampliada.VersaoId, "vigente");
+        await ConferirConcessaoESituacaoAsync(original.PerfilId, ampliada.VersaoId, "VIGENTE");
         DescartarTodas(respostas);
     }
 
@@ -99,7 +99,7 @@ public sealed class ConcorrenciaDaVersaoDoPerfilNoHostTests : VersoesDoPerfilNoH
 
         respostas[0].StatusCode.Should().Be(HttpStatusCode.OK, await respostas[0].Content.ReadAsStringAsync());
         await ConferirRecusaDoPerfilAsync(respostas[1], HttpStatusCode.Conflict, "etapa_ja_decidida");
-        (await SituacaoDaVersaoNoBancoAsync(ampliada.VersaoId)).Should().Be("recusada");
+        (await SituacaoDaVersaoNoBancoAsync(ampliada.VersaoId)).Should().Be("RECUSADA");
         (await DecisoesNoBancoAsync(ampliada.VersaoId)).Should().Be(1);
         DescartarTodas(respostas);
     }
@@ -118,7 +118,7 @@ public sealed class ConcorrenciaDaVersaoDoPerfilNoHostTests : VersoesDoPerfilNoH
 
         respostas[0].StatusCode.Should().Be(HttpStatusCode.OK, await respostas[0].Content.ReadAsStringAsync());
         await ConferirRecusaDoPerfilAsync(respostas[1], HttpStatusCode.UnprocessableEntity, "versao_nao_pendente");
-        (await SituacaoDaVersaoNoBancoAsync(ampliada.VersaoId)).Should().Be("cancelada");
+        (await SituacaoDaVersaoNoBancoAsync(ampliada.VersaoId)).Should().Be("CANCELADA");
         (await DecisoesNoBancoAsync(ampliada.VersaoId)).Should().Be(0);
         DescartarTodas(respostas);
     }
@@ -136,7 +136,7 @@ public sealed class ConcorrenciaDaVersaoDoPerfilNoHostTests : VersoesDoPerfilNoH
 
         await ConferirRecusaDoPerfilAsync(respostas[0], HttpStatusCode.UnprocessableEntity, "versao_expirada");
         await expiracao!;
-        (await SituacaoDaVersaoNoBancoAsync(ampliada.VersaoId)).Should().Be("expirada");
+        (await SituacaoDaVersaoNoBancoAsync(ampliada.VersaoId)).Should().Be("EXPIRADA");
         (await VigenciasAsync(original.PerfilId)).Should().ContainSingle(v => v.Aberta && v.VersaoId == original.VersaoId);
         DescartarTodas(respostas);
     }
@@ -150,7 +150,7 @@ public sealed class ConcorrenciaDaVersaoDoPerfilNoHostTests : VersoesDoPerfilNoH
         Envio ampliada = await CriarVersaoAsync(gestor, original.PerfilId, Nome(), Consultar, Sensivel);
         await ConfirmarEnvioAsync(gestor, ampliada);
         await InjetarResultadoAsync(ampliada.DocumentoId, VeredictoDaVerificacao.Verificado);
-        await AguardarAsync(async () => await SituacaoDoDocumentoAsync(gestor, original.PerfilId) == "verificado", "o documento não foi verificado");
+        await AguardarAsync(async () => await SituacaoDoDocumentoAsync(gestor, original.PerfilId) == "VERIFICADO", "o documento não foi verificado");
 
         return (original, ampliada);
     }

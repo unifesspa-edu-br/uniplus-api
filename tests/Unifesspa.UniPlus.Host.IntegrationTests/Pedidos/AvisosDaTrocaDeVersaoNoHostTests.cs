@@ -48,7 +48,7 @@ public sealed class AvisosDaTrocaDeVersaoNoHostTests : AprovacaoDaVersaoNoHostTe
         sessao.Sent.MessagesOf<EnviarEmail>().Should().ContainSingle(m => m.Finalidade == "perfil.versao_encerrada", "a versão anterior saiu sem concessão a migrar");
         await AguardarAvisoAsync(Betina, pedido, Devolvido);
         await AguardarAvisoAsync(Leandro, pedido, Devolvido);
-        await ConferirDesfechoAsync(gestor, pedido, "devolvido", "devolvido");
+        await ConferirDesfechoAsync(gestor, pedido, "DEVOLVIDO", "DEVOLVIDO");
     }
 
     [Fact(DisplayName = "A versão sem acréscimo devolve ao gestor o pedido que esperava a proteção de dados e avisa a fila do gestor pelo outbox")]
@@ -67,7 +67,7 @@ public sealed class AvisosDaTrocaDeVersaoNoHostTests : AprovacaoDaVersaoNoHostTe
         await AguardarAsync(
             async () => (await MensagensAsync(Diogo, pedido)).Count(EhDaFilaDoGestor) > avisosAntes,
             "a fila do gestor não foi avisada do retorno do pedido");
-        await ConferirDesfechoAsync(gestor, pedido, "aguardando_gestor", "voltou_ao_gestor");
+        await ConferirDesfechoAsync(gestor, pedido, "AGUARDANDO_GESTOR", "VOLTOU_AO_GESTOR");
     }
 
     [Fact(DisplayName = "Se a gravação da troca falha, nem a vigência, nem o pedido, nem os avisos ficam, e a reentrega aplica tudo junto")]
@@ -85,7 +85,7 @@ public sealed class AvisosDaTrocaDeVersaoNoHostTests : AprovacaoDaVersaoNoHostTe
         reentrega.StatusCode.Should().Be(HttpStatusCode.OK, await reentrega.Content.ReadAsStringAsync());
 
         (await TemVigenteComVersaoAsync(gestor, perfil, versao2.VersaoId)).Should().BeTrue();
-        (await SituacaoAsync(gestor, pedido)).Should().Be("devolvido");
+        (await SituacaoAsync(gestor, pedido)).Should().Be("DEVOLVIDO");
         await AguardarAvisoAsync(Betina, pedido, Devolvido);
     }
 
@@ -120,11 +120,11 @@ public sealed class AvisosDaTrocaDeVersaoNoHostTests : AprovacaoDaVersaoNoHostTe
 
     private async Task ConferirNadaGravadoAsync(HttpClient gestor, Guid perfil, Envio versao2, Guid pedido)
     {
-        (await SituacaoDoDocumentoAsync(gestor, perfil)).Should().Be("verificado");
+        (await SituacaoDoDocumentoAsync(gestor, perfil)).Should().Be("VERIFICADO");
         (await DecisoesAsync(versao2.VersaoId)).Should().NotContain(d => d.Etapa == "ProtecaoDeDados");
-        (await SituacaoDaVersaoNoBancoAsync(versao2.VersaoId)).Should().Be("pendente");
+        (await SituacaoDaVersaoNoBancoAsync(versao2.VersaoId)).Should().Be("PENDENTE");
         (await VigenciasAsync(perfil)).Should().ContainSingle(v => v.Aberta && v.VersaoId != versao2.VersaoId);
-        (await SituacaoAsync(gestor, pedido)).Should().Be("aguardando_beneficiario");
+        (await SituacaoAsync(gestor, pedido)).Should().Be("AGUARDANDO_BENEFICIARIO");
         (await LerAsync(gestor, $"{Rota}/{pedido}")).GetProperty("trocasDeVersao").GetArrayLength().Should().Be(0);
         (await MensagensAsync(Betina, pedido)).Select(m => m.GetProperty("Subject").GetString()).Should().NotContain(a => a!.Contains(Devolvido, StringComparison.Ordinal));
         (await EnvelopesDeEmailNoOutboxAsync()).Should().Be(0, "os avisos entram no outbox na transação da troca e ela foi desfeita");
@@ -164,7 +164,7 @@ public sealed class AvisosDaTrocaDeVersaoNoHostTests : AprovacaoDaVersaoNoHostTe
         Guid pedido = await CriarAsync(betina, perfil, unidade, Leandro);
         (await AceitarAsync(leandro, pedido)).StatusCode.Should().Be(HttpStatusCode.OK);
         (await EnviarAsync(gestor, HttpMethod.Post, $"{Rota}/{pedido}/aprovacoes")).StatusCode.Should().Be(HttpStatusCode.OK);
-        (await SituacaoAsync(gestor, pedido)).Should().Be("aguardando_protecao_de_dados");
+        (await SituacaoAsync(gestor, pedido)).Should().Be("AGUARDANDO_PROTECAO_DE_DADOS");
 
         return (perfil, pedido);
     }

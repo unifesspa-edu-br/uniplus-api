@@ -13,8 +13,8 @@ public enum TipoDeOrigem
 /// <summary>Código textual canônico de <see cref="TipoDeOrigem"/>, o valor gravado e exposto.</summary>
 public static class TipoDeOrigemCodigo
 {
-    public const string Pedido = "pedido";
-    public const string Instalacao = "instalacao";
+    public const string Pedido = "PEDIDO";
+    public const string Instalacao = "INSTALACAO";
 
     public static string ToCodigo(this TipoDeOrigem tipo) => tipo switch
     {

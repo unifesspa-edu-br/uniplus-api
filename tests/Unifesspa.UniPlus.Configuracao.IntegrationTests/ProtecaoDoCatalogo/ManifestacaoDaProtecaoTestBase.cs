@@ -13,7 +13,7 @@ using Unifesspa.UniPlus.IntegrationTests.Fixtures.Hosting;
 /// <summary>
 /// O apoio dos testes da manifestação técnica na proteção do catálogo de tipos de documento e de fatos do candidato
 /// (ADR-0163): além de Isabella, que mantém os cadastros, e de Betina e Caroline, Representantes do controlador, Kevin
-/// e Lúcia são Encarregados de dados.
+/// e Lúcia são Gestores de proteção de dados.
 /// </summary>
 public abstract class ManifestacaoDaProtecaoTestBase : HistoricoDaProtecaoTestBase
 {
@@ -34,11 +34,11 @@ public abstract class ManifestacaoDaProtecaoTestBase : HistoricoDaProtecaoTestBa
     private protected async Task PrepararTodosAsync()
     {
         await PrepararPersonasAsync();
-        foreach (Persona encarregado in new[] { Kevin, Lucia })
+        foreach (Persona gestorDeProtecaoDeDados in new[] { Kevin, Lucia })
         {
-            await ConcessoesDeTeste.RemoverDaPessoaAsync(Fixture.Factory.Services, encarregado.ContaId);
+            await ConcessoesDeTeste.RemoverDaPessoaAsync(Fixture.Factory.Services, gestorDeProtecaoDeDados.ContaId);
             await ConcessoesDeTeste.ConcederGovernancaAsync(
-                Fixture.Factory.Services, encarregado.ContaId, TipoDeGovernanca.EncarregadoDeDados, $"{encarregado.ContaId}@unifesspa.edu.br");
+                Fixture.Factory.Services, gestorDeProtecaoDeDados.ContaId, TipoDeGovernanca.GestorDeProtecaoDeDados, $"{gestorDeProtecaoDeDados.ContaId}@unifesspa.edu.br");
         }
     }
 

@@ -36,10 +36,10 @@ public sealed class PedidosDeConcessaoGovernancaTests : PedidosDeConcessaoTestBa
 
         avisos.Where(a => a.Finalidade != "perfil.versao_encerrada").Should().OnlyContain(a => a.Finalidade == "pedido.fila_do_gestor");
         JsonElement voltado = await LerAsync(Cliente(Betina), $"{Rota}/{id}");
-        (voltado.GetProperty("situacao").GetString(), voltado.GetProperty("versao").GetInt32()).Should().Be(("aguardando_gestor", 2));
+        (voltado.GetProperty("situacao").GetString(), voltado.GetProperty("versao").GetInt32()).Should().Be(("AGUARDANDO_GESTOR", 2));
         JsonElement troca = voltado.GetProperty("trocasDeVersao").EnumerateArray().Single();
         (troca.GetProperty("versaoAnterior").GetInt32(), troca.GetProperty("versaoNova").GetInt32(), troca.GetProperty("desfecho").GetString())
-            .Should().Be((1, 2, "voltou_ao_gestor"));
+            .Should().Be((1, 2, "VOLTOU_AO_GESTOR"));
     }
 
     [Fact(DisplayName = "Devolvido ao gestor pela troca sem acréscimo, o pedido é aprovado de novo e a concessão vale na versão nova")]
@@ -65,9 +65,9 @@ public sealed class PedidosDeConcessaoGovernancaTests : PedidosDeConcessaoTestBa
 
         avisos.Where(a => a.Finalidade == "perfil.pedido_devolvido_pela_revisao").Select(a => a.Destinatario).Should().BeEquivalentTo([Betina.Email, Leandro.Email]);
         JsonElement devolvido = await LerAsync(Cliente(Betina), $"{Rota}/{id}");
-        (devolvido.GetProperty("situacao").GetString(), devolvido.GetProperty("versao").GetInt32()).Should().Be(("devolvido", 1));
+        (devolvido.GetProperty("situacao").GetString(), devolvido.GetProperty("versao").GetInt32()).Should().Be(("DEVOLVIDO", 1));
         devolvido.GetProperty("encerradoEm").ValueKind.Should().NotBe(JsonValueKind.Null);
-        devolvido.GetProperty("trocasDeVersao").EnumerateArray().Single().GetProperty("desfecho").GetString().Should().Be("devolvido");
+        devolvido.GetProperty("trocasDeVersao").EnumerateArray().Single().GetProperty("desfecho").GetString().Should().Be("DEVOLVIDO");
     }
 
     [Fact(DisplayName = "O pedido devolvido pela troca com acréscimo não aceita a segunda etapa, e nada é concedido")]
@@ -92,7 +92,7 @@ public sealed class PedidosDeConcessaoGovernancaTests : PedidosDeConcessaoTestBa
         await ConferirRecusaAsync(await EnviarAsync(marlene, HttpMethod.Post, $"{Rota}/{id}/aprovacoes"), HttpStatusCode.Conflict, "prazo_vencido");
 
         JsonElement pedido = await LerAsync(Cliente(Betina), $"{Rota}/{id}");
-        pedido.GetProperty("situacao").GetString().Should().Be("aguardando_gestor");
+        pedido.GetProperty("situacao").GetString().Should().Be("AGUARDANDO_GESTOR");
         pedido.GetProperty("validaAte").ValueKind.Should().Be(JsonValueKind.Null);
         (await TiposDaTrilhaAsync(marlene, id)).Should().Contain("prazo_vencido_entre_etapas");
         (await ConcessoesAsync(Leandro, perfil)).Should().BeEmpty();
@@ -126,7 +126,7 @@ public sealed class PedidosDeConcessaoGovernancaTests : PedidosDeConcessaoTestBa
 
         await ConferirRecusaAsync(await EnviarAsync(diogo, HttpMethod.Post, $"{Rota}/{id}/aprovacoes"), HttpStatusCode.Conflict, "ja_tem_concessao");
 
-        (await SituacaoAsync(diogo, id)).Should().Be("aguardando_gestor");
+        (await SituacaoAsync(diogo, id)).Should().Be("AGUARDANDO_GESTOR");
         (await ConcessoesAsync(Leandro, perfil)).Where(c => c.UnidadeId == unidade).Should().ContainSingle().Which.RevogadaEm.Should().BeNull();
         (await LerAsync(diogo, $"{Rota}/{id}")).GetProperty("decisoes").GetArrayLength().Should().Be(0);
     }
@@ -140,7 +140,7 @@ public sealed class PedidosDeConcessaoGovernancaTests : PedidosDeConcessaoTestBa
 
         await ConferirRecusaAsync(await EnviarAsync(diogo, HttpMethod.Post, $"{Rota}/{id}/aprovacoes"), HttpStatusCode.Conflict, "ja_tem_concessao");
 
-        (await SituacaoAsync(diogo, id)).Should().Be("aguardando_gestor");
+        (await SituacaoAsync(diogo, id)).Should().Be("AGUARDANDO_GESTOR");
         (await ConcessoesAsync(Leandro, perfil)).Should().ContainSingle();
         (await LerAsync(diogo, $"{Rota}/{id}")).GetProperty("decisoes").GetArrayLength().Should().Be(0);
     }
@@ -155,7 +155,7 @@ public sealed class PedidosDeConcessaoGovernancaTests : PedidosDeConcessaoTestBa
 
         await ConferirRecusaAsync(await EnviarAsync(diogo, HttpMethod.Post, $"{Rota}/{id}/aprovacoes"), HttpStatusCode.UnprocessableEntity, "perfil_inativo");
 
-        (await SituacaoAsync(diogo, id)).Should().Be("aguardando_gestor");
+        (await SituacaoAsync(diogo, id)).Should().Be("AGUARDANDO_GESTOR");
         (await ConcessoesAsync(Leandro, perfil)).Should().ContainSingle().Which.RevogadaEm.Should().BeNull();
         (await LerAsync(diogo, $"{Rota}/{id}")).GetProperty("decisoes").GetArrayLength().Should().Be(0);
     }

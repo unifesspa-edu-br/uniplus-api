@@ -21,8 +21,8 @@ using static Unifesspa.UniPlus.Autorizacao.Application.UnitTests.DoublesDePerfis
 
 /// <summary>
 /// Quem a governança de perfis avisa, por papel: os gestores de acessos que mantêm perfis e os Representantes do
-/// controlador, menos quem praticou o ato; o Encarregado de dados, que só consulta as versões, não recebe aviso de
-/// decisão. Isabella e Diogo são gestores, Marlene é Representante, Leandro é o Encarregado e Betina pratica o ato;
+/// controlador, menos quem praticou o ato; o Gestor de proteção de dados, que só consulta as versões, não recebe aviso de
+/// decisão. Isabella e Diogo são gestores, Marlene é Representante, Leandro é o Gestor de proteção de dados e Betina pratica o ato;
 /// Diogo também criou a versão pendente. A vigência da concessão é conferida no banco, pelos testes do Host.
 /// </summary>
 public sealed class DestinatariosPorPapelTests
@@ -50,8 +50,8 @@ public sealed class DestinatariosPorPapelTests
         representantes.Select(static d => d.Email).Should().Equal(EmailMarlene);
     }
 
-    [Fact(DisplayName = "A suspensão avisa gestores e Representantes, e o Encarregado de dados não")]
-    public async Task Suspensao_AvisaGestoresERepresentantesMenosOEncarregado()
+    [Fact(DisplayName = "A suspensão avisa gestores e Representantes, e o Gestor de proteção de dados não")]
+    public async Task Suspensao_AvisaGestoresERepresentantesMenosOGestorDeProtecaoDeDados()
     {
         Perfil perfil = PerfisDeTeste.Vigente("Análise de atendimento", "Analisa os pedidos.", [Interna], new CatalogoDeTeste());
         perfil.Suspender(PerfisDeTeste.Gestor, EtapaDaVersao.GestaoDeAcessos, "Suspenso para o teste.", PerfisDeTeste.Instante, new CatalogoDeTeste())
@@ -62,7 +62,7 @@ public sealed class DestinatariosPorPapelTests
         Destinatarios(avisos).Should().Equal(Ordenados(TitularesPorPapel.EmailDoAutor, EmailIsabella, EmailMarlene));
     }
 
-    [Fact(DisplayName = "A remoção de permissão interna também avisa o Representante, e não quem removeu nem o Encarregado")]
+    [Fact(DisplayName = "A remoção de permissão interna também avisa o Representante, e não quem removeu nem o Gestor de proteção de dados")]
     public async Task RemocaoInterna_AvisaORepresentante()
     {
         Perfil perfil = PerfisDeTeste.Vigente("Análise de atendimento", "Analisa os pedidos.", [Interna, Removida], new CatalogoDeTeste());

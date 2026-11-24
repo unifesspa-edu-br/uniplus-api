@@ -32,7 +32,7 @@ public sealed class UltimoRepresentanteNosOutrosCaminhosNoHostTests : UltimoRepr
 
         await ConferirCodigoAsync(await AtenderAsync(g.Diogo, providencia, Marlene.Email), HttpStatusCode.UnprocessableEntity, UltimoRepresentante);
 
-        (await LinhaAsync(providencia)).Estado.Should().Be("aberta");
+        (await LinhaAsync(providencia)).Estado.Should().Be("ABERTA");
         (await VigentesAsync()).Should().Equal(Marlene.ContaId.ToString());
     }
 
@@ -47,7 +47,7 @@ public sealed class UltimoRepresentanteNosOutrosCaminhosNoHostTests : UltimoRepr
             HttpStatusCode.UnprocessableEntity,
             UltimoRepresentante);
 
-        ItemDe(await LerAsync(g.Marlene, $"{RotaDasRevisoes}/{revisaoId}"), itemId).GetProperty("situacao").GetString().Should().Be("pendente");
+        ItemDe(await LerAsync(g.Marlene, $"{RotaDasRevisoes}/{revisaoId}"), itemId).GetProperty("situacao").GetString().Should().Be("PENDENTE");
         (await VigentesAsync()).Should().Equal(Marlene.ContaId.ToString());
     }
 

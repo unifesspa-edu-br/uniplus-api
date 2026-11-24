@@ -13,8 +13,8 @@ public enum FormaDoCancelamento
 /// <summary>Código textual canônico de <see cref="FormaDoCancelamento"/>, o valor gravado e exposto.</summary>
 public static class FormaDoCancelamentoCodigo
 {
-    public const string Pessoa = "pessoa";
-    public const string Contencao = "contencao";
+    public const string Pessoa = "PESSOA";
+    public const string Contencao = "CONTENCAO";
 
     public static string ToCodigo(this FormaDoCancelamento forma) => forma switch
     {

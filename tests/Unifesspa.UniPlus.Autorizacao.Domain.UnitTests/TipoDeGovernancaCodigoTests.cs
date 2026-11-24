@@ -16,7 +16,7 @@ public sealed class TipoDeGovernancaCodigoTests
     [Theory(DisplayName = "Cada tipo de governança vai ao código e volta ao mesmo tipo")]
     [InlineData(TipoDeGovernanca.GestorDeAcessos, TipoDeGovernancaCodigo.GestorDeAcessos)]
     [InlineData(TipoDeGovernanca.RepresentanteDoControlador, TipoDeGovernancaCodigo.RepresentanteDoControlador)]
-    [InlineData(TipoDeGovernanca.EncarregadoDeDados, "encarregado-de-dados")]
+    [InlineData(TipoDeGovernanca.GestorDeProtecaoDeDados, "GESTOR_DE_PROTECAO_DE_DADOS")]
     public void Codigo_IdaEVolta(TipoDeGovernanca tipo, string codigo)
     {
         tipo.ToCodigo().Should().Be(codigo);
@@ -32,7 +32,7 @@ public sealed class TipoDeGovernancaCodigoTests
     public void Representante_MantemOValor() =>
         ((int)TipoDeGovernanca.RepresentanteDoControlador).Should().Be(ValorGravadoDoPerfil2);
 
-    [Fact(DisplayName = "O Encarregado de dados é o terceiro tipo de governança")]
-    public void Encarregado_ValorTres() =>
-        ((int)TipoDeGovernanca.EncarregadoDeDados).Should().Be(3);
+    [Fact(DisplayName = "O Gestor de proteção de dados é o terceiro tipo de governança")]
+    public void GestorDeProtecaoDeDados_ValorTres() =>
+        ((int)TipoDeGovernanca.GestorDeProtecaoDeDados).Should().Be(3);
 }

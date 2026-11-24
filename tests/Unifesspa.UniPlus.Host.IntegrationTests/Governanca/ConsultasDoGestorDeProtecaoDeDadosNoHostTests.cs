@@ -19,25 +19,25 @@ using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Hosting;
 
 /// <summary>
-/// O perfil de Encarregado de dados isolado, pelo host real: consulta pedidos, concessões, revisões, perfis, a proteção
+/// O perfil de Gestor de proteção de dados isolado, pelo host real: consulta pedidos, concessões, revisões, perfis, a proteção
 /// do catálogo de tipos de documento e de fatos do candidato e as providências sobre concessões, com cada leitura
 /// registrada pela permissão que a autorizou, e é recusado em toda fila de decisão e em toda operação que decide, revoga
 /// ou solicita a aprovação da proteção daquele catálogo, inclusive responder ou atender providência. Cecília Moura é a
-/// Encarregado de dados.
+/// Gestor de proteção de dados.
 /// </summary>
 [Collection(MonolitoDaInstalacaoCollection.Name)]
-public sealed class ConsultasDoEncarregadoNoHostTests : PedidosDeConcessaoTestBase
+public sealed class ConsultasDoGestorDeProtecaoDeDadosNoHostTests : PedidosDeConcessaoTestBase
 {
     private const int TamanhoDaPagina = 3;
 
     private static readonly Persona Cecilia = new("cecilia.moura", "Cecília Ester Aurora Moura", "cecilia_ester_moura@uniplus-test.local");
 
-    public ConsultasDoEncarregadoNoHostTests(MonolitoDaInstalacaoFixture fixture)
+    public ConsultasDoGestorDeProtecaoDeDadosNoHostTests(MonolitoDaInstalacaoFixture fixture)
         : base(fixture)
     {
     }
 
-    [Theory(DisplayName = "O Encarregado isolado consulta cada leitura da matriz, e a leitura grava a permissão que a autorizou")]
+    [Theory(DisplayName = "O Gestor de proteção de dados isolado consulta cada leitura da matriz, e a leitura grava a permissão que a autorizou")]
     [InlineData("/api/autorizacao/pedidos-de-concessao?fila=todos", "autorizacao:pedidos:consultar")]
     [InlineData("/api/autorizacao/concessoes", "autorizacao:concessoes:consultar")]
     [InlineData("/api/autorizacao/instalacoes/tentativas-sem-pendencia", "autorizacao:concessoes:consultar")]
@@ -47,9 +47,9 @@ public sealed class ConsultasDoEncarregadoNoHostTests : PedidosDeConcessaoTestBa
     [InlineData("/api/configuracao/admin/protecao-do-catalogo", "configuracao:protecao-do-catalogo:consultar")]
     [InlineData("/api/configuracao/admin/protecao-do-catalogo/decisoes", "configuracao:protecao-do-catalogo:consultar")]
     [InlineData("/api/autorizacao/providencias", "autorizacao:providencias:solicitar")]
-    public async Task Leitura_DoEncarregadoIsolado_PermitidaERegistrada(string rota, string permissao)
+    public async Task Leitura_DoGestorDeProtecaoDeDadosIsolado_PermitidaERegistrada(string rota, string permissao)
     {
-        using HttpClient cecilia = await EncarregadaAsync();
+        using HttpClient cecilia = await GestorDeProtecaoDeDadosAsync();
         int antes = Registro.Registrados.Count;
 
         using HttpResponseMessage resposta = await cecilia.GetAsync(new Uri(rota, UriKind.Relative));
@@ -58,33 +58,33 @@ public sealed class ConsultasDoEncarregadoNoHostTests : PedidosDeConcessaoTestBa
         DaCecilia(antes).Should().Contain(r => r.Permissao == permissao && r.Resultado == ResultadoDoAcesso.Permitido);
     }
 
-    [Theory(DisplayName = "O Encarregado isolado é recusado em toda fila de decisão e em toda operação que decide, revoga, solicita a aprovação da proteção ou responde e atende providência")]
+    [Theory(DisplayName = "O Gestor de proteção de dados isolado é recusado em toda fila de decisão e em toda operação que decide, revoga, solicita a aprovação da proteção ou responde e atende providência")]
     [InlineData("GET", "/api/autorizacao/pedidos-de-concessao?fila=gestor")]
     [InlineData("GET", "/api/autorizacao/pedidos-de-concessao?fila=protecao_de_dados")]
-    [InlineData("GET", "/api/autorizacao/versoes-de-perfil?fila=protecao_de_dados")]
-    [InlineData("GET", "/api/autorizacao/revisoes-de-concessoes?etapa=protecao_de_dados")]
-    [InlineData("GET", "/api/autorizacao/reclassificacoes?etapa=protecao_de_dados")]
+    [InlineData("GET", "/api/autorizacao/versoes-de-perfil?fila=PROTECAO_DE_DADOS")]
+    [InlineData("GET", "/api/autorizacao/revisoes-de-concessoes?etapa=PROTECAO_DE_DADOS")]
+    [InlineData("GET", "/api/autorizacao/reclassificacoes?etapa=PROTECAO_DE_DADOS")]
     [InlineData("POST", "/api/autorizacao/revisoes")]
     [InlineData("POST", "/api/configuracao/admin/protecao-do-catalogo")]
     [InlineData("POST", "/api/configuracao/admin/protecao-do-catalogo/solicitacoes")]
     [InlineData("POST", "/api/autorizacao/providencias/019a0000-0000-7000-8000-0000000000f1/resposta")]
     [InlineData("POST", "/api/autorizacao/providencias/019a0000-0000-7000-8000-0000000000f1/atendimento")]
-    public async Task Decisao_DoEncarregadoIsolado_Recusada(string metodo, string rota)
+    public async Task Decisao_DoGestorDeProtecaoDeDadosIsolado_Recusada(string metodo, string rota)
     {
-        using HttpClient cecilia = await EncarregadaAsync();
+        using HttpClient cecilia = await GestorDeProtecaoDeDadosAsync();
 
         using HttpResponseMessage resposta = await EnviarAsync(cecilia, new HttpMethod(metodo), rota, new { }, Guid.NewGuid().ToString());
 
         resposta.StatusCode.Should().Be(HttpStatusCode.Forbidden, await resposta.Content.ReadAsStringAsync());
     }
 
-    [Fact(DisplayName = "O Encarregado isolado não revoga concessão: 403 e a concessão continua ativa")]
-    public async Task Revogacao_DoEncarregadoIsolado_Recusada()
+    [Fact(DisplayName = "O Gestor de proteção de dados isolado não revoga concessão: 403 e a concessão continua ativa")]
+    public async Task Revogacao_DoGestorDeProtecaoDeDadosIsolado_Recusada()
     {
         await ResetarAsync();
         await SemearConcessaoAsync(Leandro, PerfisDeSistema.GestorDeAcessosId, EscopoDaConcessao.DaInstituicao());
         Guid concessao = (await ConcessoesAsync(Leandro, PerfisDeSistema.GestorDeAcessosId)).Single().Id;
-        using HttpClient cecilia = await EncarregadaAsync();
+        using HttpClient cecilia = await GestorDeProtecaoDeDadosAsync();
 
         using HttpResponseMessage resposta = await RevogarAsync(cecilia, concessao, "Teste.", Leandro.Email);
 
@@ -92,10 +92,10 @@ public sealed class ConsultasDoEncarregadoNoHostTests : PedidosDeConcessaoTestBa
         (await ConcessoesAsync(Leandro, PerfisDeSistema.GestorDeAcessosId)).Single().RevogadaEm.Should().BeNull();
     }
 
-    [Fact(DisplayName = "Com uma permissão comum compatível, o Encarregado continua exercendo-a")]
+    [Fact(DisplayName = "Com uma permissão comum compatível, o Gestor de proteção de dados continua exercendo-a")]
     public async Task PermissaoComumCompativel_ContinuaValendo()
     {
-        using HttpClient cecilia = await EncarregadaAsync();
+        using HttpClient cecilia = await GestorDeProtecaoDeDadosAsync();
         using HttpResponseMessage semAPermissao = await cecilia.GetAsync(new Uri("/api/configuracao/admin/tipos-processo", UriKind.Relative));
 
         await ConcessoesDeTeste.ConcederPermissoesAsync(Fixture.Factory.Services, Cecilia.ContaId.ToString(), "configuracao:tipos-processo:consultar");
@@ -104,14 +104,14 @@ public sealed class ConsultasDoEncarregadoNoHostTests : PedidosDeConcessaoTestBa
         (semAPermissao.StatusCode, comAPermissao.StatusCode).Should().Be((HttpStatusCode.Forbidden, HttpStatusCode.OK));
     }
 
-    [Fact(DisplayName = "Vencida a concessão de Encarregado, a consulta é recusada com 403 e a negativa é registrada")]
+    [Fact(DisplayName = "Vencida a concessão de Gestor de proteção de dados, a consulta é recusada com 403 e a negativa é registrada")]
     public async Task ConcessaoVencida_ConsultaRecusadaComNegativaRegistrada()
     {
-        using HttpClient cecilia = await EncarregadaAsync();
+        using HttpClient cecilia = await GestorDeProtecaoDeDadosAsync();
         await ExecutarSqlAsync(
             "UPDATE autorizacao.concessoes SET concedida_em = now() - interval '3 days', valida_ate = now() - interval '1 minute' WHERE beneficiario_conta_id = {0} AND perfil_id = {1}",
             Cecilia.ContaId.ToString(),
-            PerfisDeSistema.EncarregadoDeDadosId);
+            PerfisDeSistema.GestorDeProtecaoDeDadosId);
         int antes = Registro.Registrados.Count;
 
         using HttpResponseMessage resposta = await cecilia.GetAsync(new Uri("/api/autorizacao/concessoes", UriKind.Relative));
@@ -175,10 +175,10 @@ public sealed class ConsultasDoEncarregadoNoHostTests : PedidosDeConcessaoTestBa
         await scope.ServiceProvider.GetRequiredService<UniPlusDbContext>().SaveChangesAsync();
     }
 
-    // Os registros que uma só leitura do Encarregado mandou ao destino, conferida a página cheia.
+    // Os registros que uma só leitura do Gestor de proteção de dados mandou ao destino, conferida a página cheia.
     private async Task<IReadOnlyList<RegistroDecisaoAcesso>> RegistrosDaLeituraAsync(string rota)
     {
-        using HttpClient cecilia = await EncarregadaAsync();
+        using HttpClient cecilia = await GestorDeProtecaoDeDadosAsync();
         int antes = Registro.Registrados.Count;
 
         JsonElement pagina = await LerAsync(cecilia, rota);
@@ -192,11 +192,11 @@ public sealed class ConsultasDoEncarregadoNoHostTests : PedidosDeConcessaoTestBa
     private IEnumerable<RegistroDecisaoAcesso> DaCecilia(int antes) =>
         Registro.Registrados.Skip(antes).Where(static r => r.AtorContaId == Cecilia.ContaId.ToString());
 
-    // Cecília só com o perfil de Encarregado de dados, recém-concedido e vigente.
-    private async Task<HttpClient> EncarregadaAsync()
+    // Cecília só com o perfil de Gestor de proteção de dados, recém-concedido e vigente.
+    private async Task<HttpClient> GestorDeProtecaoDeDadosAsync()
     {
         await ConcessoesDeTeste.RemoverDaPessoaAsync(Fixture.Factory.Services, Cecilia.ContaId.ToString());
-        await ConcessoesDeTeste.ConcederGovernancaAsync(Fixture.Factory.Services, Cecilia.ContaId.ToString(), TipoDeGovernanca.EncarregadoDeDados, Cecilia.Email);
+        await ConcessoesDeTeste.ConcederGovernancaAsync(Fixture.Factory.Services, Cecilia.ContaId.ToString(), TipoDeGovernanca.GestorDeProtecaoDeDados, Cecilia.Email);
         return Cliente(Cecilia);
     }
 }

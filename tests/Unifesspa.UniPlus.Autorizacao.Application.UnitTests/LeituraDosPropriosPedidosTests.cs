@@ -22,7 +22,7 @@ using static Unifesspa.UniPlus.Autorizacao.Application.UnitTests.DoublesDaInstal
 /// <summary>
 /// Toda leitura que a parte faz dos próprios pedidos entra na trilha, um registro por pedido exibido na fila e um por
 /// leitura do pedido: pela consulta dos pedidos, quando a parte a tem (UNI-REQ-0372), ou por titularidade, quando não a
-/// tem (ADR-0166). Cecília Moura é o Encarregado de dados e pediu os dois pedidos para si mesma; Betina das Neves não tem
+/// tem (ADR-0166). Cecília Moura é o Gestor de proteção de dados e pediu os dois pedidos para si mesma; Betina das Neves não tem
 /// permissão alguma e pediu os dela.
 /// </summary>
 public sealed class LeituraDosPropriosPedidosTests

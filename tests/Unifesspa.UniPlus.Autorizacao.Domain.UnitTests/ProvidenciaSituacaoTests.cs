@@ -108,10 +108,10 @@ public sealed class ProvidenciaSituacaoTests
     }
 
     [Theory(DisplayName = "Os códigos dos estados, das situações, dos tipos e das causas são os do contrato")]
-    [InlineData(SituacaoDaProvidencia.Aberta, "aberta")]
-    [InlineData(SituacaoDaProvidencia.Respondida, "respondida")]
-    [InlineData(SituacaoDaProvidencia.Atendida, "atendida")]
-    [InlineData(SituacaoDaProvidencia.Prejudicada, "prejudicada")]
+    [InlineData(SituacaoDaProvidencia.Aberta, "ABERTA")]
+    [InlineData(SituacaoDaProvidencia.Respondida, "RESPONDIDA")]
+    [InlineData(SituacaoDaProvidencia.Atendida, "ATENDIDA")]
+    [InlineData(SituacaoDaProvidencia.Prejudicada, "PREJUDICADA")]
     public void Codigos_DaSituacao(SituacaoDaProvidencia situacao, string codigo)
     {
         ArgumentNullException.ThrowIfNull(codigo);
@@ -124,9 +124,9 @@ public sealed class ProvidenciaSituacaoTests
     {
         Enum.GetValues<EstadoDaProvidencia>().Should().OnlyContain(e => EstadoDaProvidenciaCodigo.FromCodigo(e.ToCodigo()) == e);
         Enum.GetValues<TipoDaProvidencia>().Should().OnlyContain(t => TipoDaProvidenciaCodigo.FromCodigo(t.ToCodigo()) == t);
-        (CausaDoEncerramento.Revogada.ToCodigo(), CausaDoEncerramento.Vencida.ToCodigo()).Should().Be(("revogada", "vencida"));
+        (CausaDoEncerramento.Revogada.ToCodigo(), CausaDoEncerramento.Vencida.ToCodigo()).Should().Be(("REVOGADA", "VENCIDA"));
         SituacaoDaProvidenciaCodigo.DoCodigo("todas").Should().BeNull();
-        FluentActions.Invoking(() => TipoDaProvidenciaCodigo.FromCodigo("suspensao")).Should().Throw<ArgumentOutOfRangeException>();
-        FluentActions.Invoking(() => EstadoDaProvidenciaCodigo.FromCodigo("prejudicada")).Should().Throw<ArgumentOutOfRangeException>();
+        FluentActions.Invoking(() => TipoDaProvidenciaCodigo.FromCodigo("SUSPENSAO")).Should().Throw<ArgumentOutOfRangeException>();
+        FluentActions.Invoking(() => EstadoDaProvidenciaCodigo.FromCodigo("PREJUDICADA")).Should().Throw<ArgumentOutOfRangeException>();
     }
 }

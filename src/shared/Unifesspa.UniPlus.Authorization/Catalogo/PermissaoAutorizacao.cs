@@ -103,7 +103,7 @@ public enum PermissaoAutorizacao
         ReservadaAGovernanca = true)]
     TermosPublicar = 10,
 
-    /// <summary>Consultar, como Encarregado de dados, os pedidos de concessão, sem decidir nenhuma etapa.</summary>
+    /// <summary>Consultar, como Gestor de proteção de dados, os pedidos de concessão, sem decidir nenhuma etapa.</summary>
     [Permissao(
         "autorizacao:pedidos:consultar",
         "Consultar os pedidos de concessão",
@@ -113,7 +113,7 @@ public enum PermissaoAutorizacao
         ReservadaAGovernanca = true)]
     PedidosConsultar = 11,
 
-    /// <summary>Consultar, como Encarregado de dados, as concessões de acesso, sem revogar.</summary>
+    /// <summary>Consultar, como Gestor de proteção de dados, as concessões de acesso, sem revogar.</summary>
     [Permissao(
         "autorizacao:concessoes:consultar",
         "Consultar as concessões de acesso",
@@ -123,7 +123,7 @@ public enum PermissaoAutorizacao
         ReservadaAGovernanca = true)]
     ConcessoesConsultar = 12,
 
-    /// <summary>Consultar, como Encarregado de dados, as revisões periódicas dos acessos, sem abrir revisão nem decidir item.</summary>
+    /// <summary>Consultar, como Gestor de proteção de dados, as revisões periódicas dos acessos, sem abrir revisão nem decidir item.</summary>
     [Permissao(
         "autorizacao:revisoes:consultar",
         "Consultar as revisões periódicas dos acessos",
@@ -133,7 +133,7 @@ public enum PermissaoAutorizacao
         ReservadaAGovernanca = true)]
     RevisoesConsultar = 13,
 
-    /// <summary>Consultar, como Encarregado de dados, os perfis e as versões de perfil, sem decidir.</summary>
+    /// <summary>Consultar, como Gestor de proteção de dados, os perfis e as versões de perfil, sem decidir.</summary>
     [Permissao(
         "autorizacao:perfis:consultar-versoes",
         "Consultar os perfis e as versões de perfil",
@@ -143,7 +143,7 @@ public enum PermissaoAutorizacao
         ReservadaAGovernanca = true)]
     PerfisConsultarVersoes = 14,
 
-    /// <summary>Solicitar, como Encarregado de dados, providência sobre uma concessão.</summary>
+    /// <summary>Solicitar, como Gestor de proteção de dados, providência sobre uma concessão.</summary>
     [Permissao(
         "autorizacao:providencias:solicitar",
         "Solicitar providência sobre uma concessão",

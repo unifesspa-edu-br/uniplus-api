@@ -28,7 +28,7 @@ public sealed class AceiteDoTermoNoHostTests : TermoNoHostTestBase
 
         JsonElement pedido = await CorpoAsync(await PedirAsync(betina, perfil, unidade, Vigente!.Id), HttpStatusCode.Created);
 
-        pedido.GetProperty("situacao").GetString().Should().Be("aguardando_gestor");
+        pedido.GetProperty("situacao").GetString().Should().Be("AGUARDANDO_GESTOR");
         JsonElement aceite = pedido.GetProperty("termo").GetProperty("aceite");
         aceite.GetProperty("versaoId").GetGuid().Should().Be(Vigente.Id);
         aceite.GetProperty("resumo").GetString().Should().Be(Vigente.Resumo);
@@ -47,10 +47,10 @@ public sealed class AceiteDoTermoNoHostTests : TermoNoHostTestBase
         await ConferirAsync(await AceitarAsync(betina, id), HttpStatusCode.UnprocessableEntity, "pedido.anexo_nao_verificado");
         await ConferirAsync(await EnviarAsync(diogo, HttpMethod.Post, $"{Rota}/{id}/aprovacoes"), HttpStatusCode.UnprocessableEntity, "pedido.");
         await AnexarVerificadoAsync(betina, id);
-        await AguardarAsync(async () => await SituacaoAsync(betina, id) == "aguardando_beneficiario", "o pedido próprio protegido não passou a aguardar o aceite");
+        await AguardarAsync(async () => await SituacaoAsync(betina, id) == "AGUARDANDO_BENEFICIARIO", "o pedido próprio protegido não passou a aguardar o aceite");
 
         (await AceitarAsync(betina, id)).StatusCode.Should().Be(HttpStatusCode.OK);
-        (await SituacaoAsync(betina, id)).Should().Be("aguardando_gestor");
+        (await SituacaoAsync(betina, id)).Should().Be("AGUARDANDO_GESTOR");
     }
 
     [Fact(DisplayName = "Pedido para outra pessoa: só o beneficiário aceita o termo, junto com o pedido")]
@@ -79,11 +79,11 @@ public sealed class AceiteDoTermoNoHostTests : TermoNoHostTestBase
         Guid recusado = await AnexarEmVerificacaoAsync(betina, id);
 
         await InjetarResultadoAsync(recusado, VeredictoDaVerificacao.Recusado);
-        await AguardarAsync(async () => await SituacaoDoAnexoAsync(betina, id, recusado) == "recusado", "o anexo não chegou a recusado");
+        await AguardarAsync(async () => await SituacaoDoAnexoAsync(betina, id, recusado) == "RECUSADO", "o anexo não chegou a recusado");
 
-        (await SituacaoAsync(betina, id)).Should().Be("aguardando_documento");
+        (await SituacaoAsync(betina, id)).Should().Be("AGUARDANDO_DOCUMENTO");
         await AnexarVerificadoAsync(betina, id);
-        await AguardarAsync(async () => await SituacaoAsync(betina, id) == "aguardando_beneficiario", "o novo anexo não liberou o aceite");
+        await AguardarAsync(async () => await SituacaoAsync(betina, id) == "AGUARDANDO_BENEFICIARIO", "o novo anexo não liberou o aceite");
     }
 
     [Fact(DisplayName = "O pedido protegido que não declarou documento não recebe anexo")]

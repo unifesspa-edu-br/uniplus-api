@@ -3,7 +3,7 @@ namespace Unifesspa.UniPlus.Autorizacao.Domain.Interfaces;
 using Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects;
 
 /// <summary>
-/// A trava transacional por pessoa e a conferência dos papéis incompatíveis (Representante do controlador e Encarregado
+/// A trava transacional por pessoa e a conferência dos papéis incompatíveis (Representante do controlador e Gestor de proteção de dados
 /// de dados), que todo caminho que concede ou revoga concessão de perfil de governança usa (ADR-0162).
 /// </summary>
 /// <remarks>

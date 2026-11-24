@@ -13,8 +13,8 @@ public enum CausaDoEncerramento
 /// <summary>Código textual canônico de <see cref="CausaDoEncerramento"/>, o valor exposto.</summary>
 public static class CausaDoEncerramentoCodigo
 {
-    public const string Revogada = "revogada";
-    public const string Vencida = "vencida";
+    public const string Revogada = "REVOGADA";
+    public const string Vencida = "VENCIDA";
 
     public static string ToCodigo(this CausaDoEncerramento causa) => causa switch
     {

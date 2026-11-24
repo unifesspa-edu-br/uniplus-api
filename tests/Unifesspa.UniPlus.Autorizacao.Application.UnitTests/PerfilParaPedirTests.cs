@@ -23,7 +23,7 @@ public sealed class PerfilParaPedirTests
     public PerfilParaPedirTests()
     {
         _concessoes.ObterParaConcederAsync(_perfil.Id, Arg.Any<CancellationToken>()).Returns(_ => Registrar<Perfil?>("perfil", _perfil));
-        _revisoes.TemRevisaoAbertaAsync(_perfil.Id, Arg.Any<DateTimeOffset>(), Arg.Any<CancellationToken>()).Returns(_ => Registrar("aberta", false));
+        _revisoes.TemRevisaoAbertaAsync(_perfil.Id, Arg.Any<DateTimeOffset>(), Arg.Any<CancellationToken>()).Returns(_ => Registrar("ABERTA", false));
         _revisoes.TemRevisaoPorEncerrarAsync(_perfil.Id, Arg.Any<DateTimeOffset>(), Arg.Any<CancellationToken>()).Returns(_ => Registrar("porMaterializar", false));
     }
 
@@ -33,7 +33,7 @@ public sealed class PerfilParaPedirTests
         Result<Perfil> resultado = await Obter();
 
         resultado.Value.Should().BeSameAs(_perfil);
-        _ordem.Should().Equal("perfil", "relogio", "aberta", "porMaterializar");
+        _ordem.Should().Equal("perfil", "relogio", "ABERTA", "porMaterializar");
     }
 
     [Fact(DisplayName = "O perfil inexistente é recusado sem consultar revisão nem relógio")]
@@ -50,12 +50,12 @@ public sealed class PerfilParaPedirTests
     [Fact(DisplayName = "O perfil com revisão aberta recusa o pedido sem consultar a revisão por materializar")]
     public async Task Obter_RevisaoAberta_RecusaOPedidoEmMigracao()
     {
-        _revisoes.TemRevisaoAbertaAsync(_perfil.Id, Arg.Any<DateTimeOffset>(), Arg.Any<CancellationToken>()).Returns(_ => Registrar("aberta", true));
+        _revisoes.TemRevisaoAbertaAsync(_perfil.Id, Arg.Any<DateTimeOffset>(), Arg.Any<CancellationToken>()).Returns(_ => Registrar("ABERTA", true));
 
         Result<Perfil> resultado = await Obter();
 
         resultado.Error!.Code.Should().Be(PedidoErrorCodes.PerfilEmRevisaoDasConcessoes);
-        _ordem.Should().Equal("perfil", "relogio", "aberta");
+        _ordem.Should().Equal("perfil", "relogio", "ABERTA");
     }
 
     [Fact(DisplayName = "O perfil com revisão vencida por materializar responde conflito de encerramento")]
@@ -66,7 +66,7 @@ public sealed class PerfilParaPedirTests
         Result<Perfil> resultado = await Obter();
 
         resultado.Error!.Code.Should().Be(RevisaoDasConcessoesErrorCodes.RevisaoEmEncerramento);
-        _ordem.Should().Equal("perfil", "relogio", "aberta", "porMaterializar");
+        _ordem.Should().Equal("perfil", "relogio", "ABERTA", "porMaterializar");
     }
 
     private Task<Result<Perfil>> Obter() =>

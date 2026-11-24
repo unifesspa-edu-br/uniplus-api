@@ -49,7 +49,7 @@ public sealed class DecisaoDaReclassificacaoEndpointTests : PerfilEndpointTestBa
         using HttpClient representante = Cliente(Diogo);
 
         using HttpResponseMessage primeira = await EnviarAsync(
-            representante, HttpMethod.Post, $"/api/autorizacao/reclassificacoes/{reclassificacao}/decisoes", new { etapa = "protecao_de_dados", resultado = "liberada", todas = true });
+            representante, HttpMethod.Post, $"/api/autorizacao/reclassificacoes/{reclassificacao}/decisoes", new { etapa = "PROTECAO_DE_DADOS", resultado = "LIBERADA", todas = true });
         using HttpResponseMessage segunda = await LiberarAConcessaoAsync(representante, reclassificacao, await _cenario.ConcessaoDoPerfilAsync(perfil));
 
         primeira.StatusCode.Should().Be(HttpStatusCode.OK, await primeira.Content.ReadAsStringAsync());
@@ -65,14 +65,14 @@ public sealed class DecisaoDaReclassificacaoEndpointTests : PerfilEndpointTestBa
         using HttpClient representante = Cliente(Diogo);
         using HttpClient semPermissao = Cliente($"pessoa.{Guid.NewGuid():N}");
 
-        using HttpResponseMessage fila = await representante.GetAsync(new Uri("/api/autorizacao/reclassificacoes?etapa=protecao_de_dados", UriKind.Relative));
+        using HttpResponseMessage fila = await representante.GetAsync(new Uri("/api/autorizacao/reclassificacoes?etapa=PROTECAO_DE_DADOS", UriKind.Relative));
         using HttpResponseMessage detalhe = await representante.GetAsync(new Uri($"/api/autorizacao/reclassificacoes/{reclassificacao}", UriKind.Relative));
-        using HttpResponseMessage negada = await semPermissao.GetAsync(new Uri("/api/autorizacao/reclassificacoes?etapa=protecao_de_dados", UriKind.Relative));
+        using HttpResponseMessage negada = await semPermissao.GetAsync(new Uri("/api/autorizacao/reclassificacoes?etapa=PROTECAO_DE_DADOS", UriKind.Relative));
 
         fila.StatusCode.Should().Be(HttpStatusCode.OK);
         (await fila.Content.ReadAsStringAsync()).Should().Contain(reclassificacao.ToString());
         detalhe.StatusCode.Should().Be(HttpStatusCode.OK, await detalhe.Content.ReadAsStringAsync());
-        (await detalhe.Content.ReadAsStringAsync()).Should().Contain("protecao_de_dados");
+        (await detalhe.Content.ReadAsStringAsync()).Should().Contain("PROTECAO_DE_DADOS");
         negada.StatusCode.Should().Be(HttpStatusCode.Forbidden);
     }
 
@@ -96,12 +96,12 @@ public sealed class DecisaoDaReclassificacaoEndpointTests : PerfilEndpointTestBa
         using HttpClient representante = Cliente(Diogo);
         string rota = $"/api/autorizacao/reclassificacoes/{reclassificacao}/decisoes";
 
-        using HttpResponseMessage etapa = await EnviarAsync(representante, HttpMethod.Post, rota, new { etapa = "x", resultado = "liberada", todas = true });
-        using HttpResponseMessage resultado = await EnviarAsync(representante, HttpMethod.Post, rota, new { etapa = "protecao_de_dados", resultado = "x", todas = true });
-        using HttpResponseMessage alvo = await EnviarAsync(representante, HttpMethod.Post, rota, new { etapa = "protecao_de_dados", resultado = "liberada", todas = false });
-        using HttpResponseMessage mantidaSemMotivo = await EnviarAsync(representante, HttpMethod.Post, rota, new { etapa = "protecao_de_dados", resultado = "mantida", todas = true });
+        using HttpResponseMessage etapa = await EnviarAsync(representante, HttpMethod.Post, rota, new { etapa = "x", resultado = "LIBERADA", todas = true });
+        using HttpResponseMessage resultado = await EnviarAsync(representante, HttpMethod.Post, rota, new { etapa = "PROTECAO_DE_DADOS", resultado = "x", todas = true });
+        using HttpResponseMessage alvo = await EnviarAsync(representante, HttpMethod.Post, rota, new { etapa = "PROTECAO_DE_DADOS", resultado = "LIBERADA", todas = false });
+        using HttpResponseMessage mantidaSemMotivo = await EnviarAsync(representante, HttpMethod.Post, rota, new { etapa = "PROTECAO_DE_DADOS", resultado = "MANTIDA", todas = true });
         using HttpResponseMessage inexistente = await EnviarAsync(
-            representante, HttpMethod.Post, $"/api/autorizacao/reclassificacoes/{Guid.NewGuid()}/decisoes", new { etapa = "protecao_de_dados", resultado = "liberada", todas = true });
+            representante, HttpMethod.Post, $"/api/autorizacao/reclassificacoes/{Guid.NewGuid()}/decisoes", new { etapa = "PROTECAO_DE_DADOS", resultado = "LIBERADA", todas = true });
 
         new[] { etapa, resultado, alvo, mantidaSemMotivo }.Select(static r => r.StatusCode).Should().OnlyContain(static c => c == HttpStatusCode.UnprocessableEntity);
         inexistente.StatusCode.Should().Be(HttpStatusCode.NotFound);
@@ -129,5 +129,5 @@ public sealed class DecisaoDaReclassificacaoEndpointTests : PerfilEndpointTestBa
     private static Task<HttpResponseMessage> LiberarAConcessaoAsync(HttpClient representante, Guid reclassificacao, Guid concessao) =>
         EnviarAsync(
             representante, HttpMethod.Post, $"/api/autorizacao/reclassificacoes/{reclassificacao}/decisoes",
-            new { etapa = "protecao_de_dados", resultado = "liberada", concessoes = new[] { concessao }, todas = false });
+            new { etapa = "PROTECAO_DE_DADOS", resultado = "LIBERADA", concessoes = new[] { concessao }, todas = false });
 }

@@ -23,11 +23,11 @@ public sealed record RevisaoDeAcessosDto(
 
 /// <summary>Item da revisão: uma concessão a confirmar ou revogar.</summary>
 /// <param name="Decide">
-/// Governança que decide o item: <c>representante-do-controlador</c> ou <c>gestor-de-acessos</c>. No item decidido, a
+/// Governança que decide o item: <c>REPRESENTANTE_DO_CONTROLADOR</c> ou <c>GESTOR_DE_ACESSOS</c>. No item decidido, a
 /// governança com que foi decidido; no pendente, a calculada na leitura pela condição atual do beneficiário, que pode mudar
 /// até a decisão.
 /// </param>
-/// <param name="Situacao"><c>pendente</c>, <c>confirmada</c>, <c>revogada</c> ou <c>concessao_encerrada</c> (sem decisão, porque a concessão terminou fora da revisão).</param>
+/// <param name="Situacao"><c>PENDENTE</c>, <c>CONFIRMADA</c>, <c>REVOGADA</c> ou <c>CONCESSAO_ENCERRADA</c> (sem decisão, porque a concessão terminou fora da revisão).</param>
 /// <param name="DecididoPor">Quem decidiu; nulo enquanto o item não foi decidido.</param>
 /// <param name="EhDoLeitor">A concessão do item é de quem lê, que não pode decidi-lo.</param>
 public sealed record ItemDaRevisaoDto(

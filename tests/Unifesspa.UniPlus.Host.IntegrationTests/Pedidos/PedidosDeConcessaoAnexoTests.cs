@@ -36,8 +36,8 @@ public sealed class PedidosDeConcessaoAnexoTests : PedidosDeConcessaoTestBase
         using HttpClient diogo = await ClienteComPermissoesAsync(Diogo, AprovarFuncional);
         Guid id = await CriarAsync(betina, PerfisDeSistema.GestorDeAcessosId, null, Leandro);
 
-        (await SituacaoAsync(betina, id)).Should().Be("aguardando_documento");
-        (await ListarFilaAsync(diogo, "gestor")).Should().NotContain(id);
+        (await SituacaoAsync(betina, id)).Should().Be("AGUARDANDO_DOCUMENTO");
+        (await ListarFilaAsync(diogo, "GESTOR")).Should().NotContain(id);
         await ConferirRecusaAsync(await AceitarAsync(Cliente(Leandro), id), HttpStatusCode.UnprocessableEntity, "anexo_nao_verificado");
         await ConferirRecusaAsync(await EnviarAsync(diogo, HttpMethod.Post, $"{Rota}/{id}/aprovacoes"), HttpStatusCode.UnprocessableEntity, "situacao_invalida");
     }
@@ -51,7 +51,7 @@ public sealed class PedidosDeConcessaoAnexoTests : PedidosDeConcessaoTestBase
 
         Guid anexo = await AnexarEmVerificacaoAsync(betina, id);
 
-        (await SituacaoAsync(betina, id)).Should().Be("aguardando_documento", "o anexo em verificação ainda não é o documento verificado");
+        (await SituacaoAsync(betina, id)).Should().Be("AGUARDANDO_DOCUMENTO", "o anexo em verificação ainda não é o documento verificado");
         using HttpResponseMessage naoVerificado = await betina.GetAsync(new Uri($"{Rota}/{id}/anexos/{anexo}", UriKind.Relative));
         await ConferirRecusaAsync(naoVerificado, HttpStatusCode.UnprocessableEntity, "anexo_nao_verificado");
     }
@@ -89,7 +89,7 @@ public sealed class PedidosDeConcessaoAnexoTests : PedidosDeConcessaoTestBase
 
         (await ConcessoesAsync(Leandro, PerfisDeSistema.GestorDeAcessosId)).Single().EscopoTipo.Should().Be(Autorizacao.Domain.Enums.TipoDeEscopo.Instituicao);
         (await TiposDaTrilhaAsync(diogo, id)).Should().Equal(
-            "pedido_criado", "anexo_enviado", "anexo_verificado", "beneficiario_aceitou", "termo_aceito", "anexo_lido", "anexo_lido", "aprovado", "aprovado");
+            "pedido_criado", "anexo_enviado", "anexo_verificado", "beneficiario_aceitou", "termo_aceito", "anexo_lido", "anexo_lido", "APROVADO", "APROVADO");
     }
 
     [Fact(DisplayName = "O veredicto de recusa do verificador encerra o anexo, e o pedido de governança continua sem documento")]
@@ -103,10 +103,10 @@ public sealed class PedidosDeConcessaoAnexoTests : PedidosDeConcessaoTestBase
         Guid anexo = await AnexarEmVerificacaoAsync(betina, id);
 
         await InjetarResultadoAsync(anexo, VeredictoDaVerificacao.Recusado);
-        await AguardarAsync(async () => await SituacaoDoAnexoAsync(betina, id, anexo) == "recusado", "o anexo não chegou a recusado");
+        await AguardarAsync(async () => await SituacaoDoAnexoAsync(betina, id, anexo) == "RECUSADO", "o anexo não chegou a recusado");
 
-        (await SituacaoAsync(betina, id)).Should().Be("aguardando_documento");
-        (await ListarFilaAsync(diogo, "gestor")).Should().NotContain(id);
+        (await SituacaoAsync(betina, id)).Should().Be("AGUARDANDO_DOCUMENTO");
+        (await ListarFilaAsync(diogo, "GESTOR")).Should().NotContain(id);
         (await TiposDaTrilhaAsync(betina, id)).Should().Contain("anexo_recusado").And.NotContain("anexo_verificado");
         (await EnviarAsync(betina, HttpMethod.Get, $"{Rota}/{id}/anexos/{anexo}")).StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
     }
@@ -184,9 +184,9 @@ public sealed class PedidosDeConcessaoAnexoTests : PedidosDeConcessaoTestBase
         Guid id = await CriarAsync(betina, PerfisDeSistema.GestorDeAcessosId, null, Leandro);
         Guid anexo = await AnexarEmVerificacaoAsync(betina, id);
         await InjetarResultadoAsync(anexo, VeredictoDaVerificacao.Verificado);
-        await AguardarAsync(async () => await SituacaoDoAnexoAsync(betina, id, anexo) == "verificado", "o anexo não chegou a verificado");
+        await AguardarAsync(async () => await SituacaoDoAnexoAsync(betina, id, anexo) == "VERIFICADO", "o anexo não chegou a verificado");
         await PromoverObjetoAsync(id, anexo);
-        (await SituacaoAsync(betina, id)).Should().Be("aguardando_beneficiario", "o documento verificado libera o pedido para o aceite");
+        (await SituacaoAsync(betina, id)).Should().Be("AGUARDANDO_BENEFICIARIO", "o documento verificado libera o pedido para o aceite");
         (await AceitarAsync(Cliente(Leandro), id)).StatusCode.Should().Be(HttpStatusCode.OK);
 
         return (id, anexo);
@@ -206,7 +206,7 @@ public sealed class PedidosDeConcessaoAnexoTests : PedidosDeConcessaoTestBase
     private static async Task AprovarNasDuasEtapasAsync(HttpClient gestor, HttpClient representante, Guid id)
     {
         (await EnviarAsync(gestor, HttpMethod.Post, $"{Rota}/{id}/aprovacoes")).StatusCode.Should().Be(HttpStatusCode.OK);
-        (await SituacaoAsync(gestor, id)).Should().Be("aguardando_protecao_de_dados");
+        (await SituacaoAsync(gestor, id)).Should().Be("AGUARDANDO_PROTECAO_DE_DADOS");
         (await EnviarAsync(representante, HttpMethod.Post, $"{Rota}/{id}/aprovacoes")).StatusCode.Should().Be(HttpStatusCode.OK);
     }
 

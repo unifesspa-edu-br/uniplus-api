@@ -100,7 +100,7 @@ public sealed class AcessoEIsolamentoDaInstalacaoTests : InstalacaoTestBase
         // O handler da Seleção processou o resultado (não achou o arquivo): é o sinal de que a mensagem foi consumida.
         await AguardarLogAsync($"Resultado da verificação do arquivo {id} descartado");
         LerLog().Should().NotContain($"documento {id} da Autorização");
-        (await LerAsync(paulo, $"{Rota}/{id}")).GetProperty("situacao").GetString().Should().Be("documento_em_verificacao");
+        (await LerAsync(paulo, $"{Rota}/{id}")).GetProperty("situacao").GetString().Should().Be("DOCUMENTO_EM_VERIFICACAO");
     }
 
     [Fact(DisplayName = "O resultado entregue à fila da Autorização não executa o handler da Seleção")]
@@ -140,7 +140,7 @@ public sealed class AcessoEIsolamentoDaInstalacaoTests : InstalacaoTestBase
         using IHost verificador = await IniciarVerificadorAsync();
         (await EnviarAsync(paulo, HttpMethod.Post, $"{Rota}/{id}/documento/confirmacao", new { etag })).StatusCode.Should().Be(HttpStatusCode.OK);
 
-        await AguardarSituacaoAsync(paulo, id, "documento_verificado");
+        await AguardarSituacaoAsync(paulo, id, "DOCUMENTO_VERIFICADO");
         await ConferirPdfPromovidoAsync(id, pdf);
     }
 

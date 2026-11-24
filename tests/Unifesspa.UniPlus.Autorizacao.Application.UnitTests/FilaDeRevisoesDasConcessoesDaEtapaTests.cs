@@ -18,8 +18,8 @@ using static Unifesspa.UniPlus.Autorizacao.Application.UnitTests.CenarioDaGovern
 
 public sealed class FilaDeRevisoesDasConcessoesDaEtapaTests
 {
-    private const string EtapaGestao = "gestao_de_acessos";
-    private const string EtapaProtecao = "protecao_de_dados";
+    private const string EtapaGestao = "GESTAO_DE_ACESSOS";
+    private const string EtapaProtecao = "PROTECAO_DE_DADOS";
 
     [Theory(DisplayName = "A fila recusa quem não tem a permissão da etapa sem consultar revisão, concessão nem perfil")]
     [InlineData(EtapaGestao, Protecao)]

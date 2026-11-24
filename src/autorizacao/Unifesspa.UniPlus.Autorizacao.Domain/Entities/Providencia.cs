@@ -7,7 +7,7 @@ using Unifesspa.UniPlus.Kernel.Domain.Entities;
 using Unifesspa.UniPlus.Kernel.Results;
 
 /// <summary>
-/// Providência sobre uma concessão: o Encarregado de dados pede, com fundamento, a retirada ou a revisão do acesso, e a
+/// Providência sobre uma concessão: o Gestor de proteção de dados pede, com fundamento, a retirada ou a revisão do acesso, e a
 /// gestão de acessos ou o Representante do controlador responde com motivo ou atende pela revogação vinculada
 /// (UNI-REQ-0375, UNI-REQ-0376, ADR-0164).
 /// </summary>

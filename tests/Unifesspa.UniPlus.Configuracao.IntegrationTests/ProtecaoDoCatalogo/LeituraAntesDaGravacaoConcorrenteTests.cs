@@ -14,7 +14,7 @@ using Unifesspa.UniPlus.IntegrationTests.Fixtures.Authentication;
 /// <summary>
 /// A leitura de quem age feita enquanto a gravação do outro está em curso, com duas transações reais sobrepostas no
 /// PostgreSQL pelo host real (UNI-REQ-0374): a manifestação confirmada depois da leitura do Representante do controlador
-/// recusa a decisão; a decisão confirmada depois da leitura do Encarregado de dados recusa a manifestação. As duas
+/// recusa a decisão; a decisão confirmada depois da leitura do Gestor de proteção de dados recusa a manifestação. As duas
 /// recusas vêm da linha do item, que a gravação muda: sem a conferência da contagem ou do ciclo e da situação, a
 /// decisão e a manifestação passariam, e os controles mostram que a escrita fora da linha do item não as recusa.
 /// </summary>

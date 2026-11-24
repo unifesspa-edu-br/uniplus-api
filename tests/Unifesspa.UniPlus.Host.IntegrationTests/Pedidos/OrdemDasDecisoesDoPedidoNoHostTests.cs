@@ -20,7 +20,7 @@ public sealed class OrdemDasDecisoesDoPedidoNoHostTests : PedidosDeConcessaoTest
     private const string Inserir = """
         INSERT INTO autorizacao.decisoes_do_pedido
             (id, pedido_id, etapa, resultado, decisor_emissor, decisor_conta_id, decisor_nome, instante, permissoes_avaliadas, sensibilidade_avaliada)
-        VALUES ({0}, {1}, 'gestor', 'aprovado', 'https://idp.test', {2}, {3}, {4}, ARRAY['selecao:processos:consultar'], 'INTERNO')
+        VALUES ({0}, {1}, 'GESTOR', 'APROVADO', 'https://idp.test', {2}, {3}, {4}, ARRAY['selecao:processos:consultar'], 'INTERNO')
         """;
 
     private static readonly DateTimeOffset MesmoInstante = new DateTimeOffset(2027, 3, 10, 12, 0, 0, TimeSpan.Zero).AddTicks(1_234_560);

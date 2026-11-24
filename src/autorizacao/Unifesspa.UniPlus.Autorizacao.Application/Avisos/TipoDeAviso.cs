@@ -86,36 +86,36 @@ public static class TipoDeAvisoCodigo
 {
     private static readonly FrozenDictionary<TipoDeAviso, string> Codigos = new Dictionary<TipoDeAviso, string>
     {
-        [TipoDeAviso.PermissoesRemovidas] = "permissoes_removidas",
-        [TipoDeAviso.VersaoCanceladaPelaRemocao] = "versao_cancelada_pela_remocao",
-        [TipoDeAviso.AprovacoesDescartadas] = "aprovacoes_descartadas",
-        [TipoDeAviso.RevisaoDasConcessoesAberta] = "revisao_das_concessoes_aberta",
-        [TipoDeAviso.RevisaoDasConcessoesFaltam48Horas] = "revisao_das_concessoes_faltam_48_horas",
-        [TipoDeAviso.RevisaoDasConcessoesFaltam24Horas] = "revisao_das_concessoes_faltam_24_horas",
-        [TipoDeAviso.ConcessaoRetidaNaMigracao] = "concessao_retida_na_migracao",
-        [TipoDeAviso.PerfilSuspenso] = "perfil_suspenso",
-        [TipoDeAviso.PermissaoReclassificada] = "permissao_reclassificada",
-        [TipoDeAviso.EscopoDaPermissaoAlterado] = "escopo_da_permissao_alterado",
-        [TipoDeAviso.DivergenciaDaGovernanca] = "divergencia_da_governanca",
-        [TipoDeAviso.VersaoPendenteApta] = "versao_pendente_apta",
-        [TipoDeAviso.MigracoesAguardandoProtecaoDeDados] = "migracoes_aguardando_protecao_de_dados",
-        [TipoDeAviso.DecisoesEnviadasComRecusas] = "decisoes_enviadas_com_recusas",
-        [TipoDeAviso.ConcessaoMigrada] = "concessao_migrada",
-        [TipoDeAviso.ConcessaoRevogada] = "concessao_revogada",
-        [TipoDeAviso.RevogacoesNaMigracao] = "revogacoes_na_migracao",
-        [TipoDeAviso.VersaoEncerrada] = "versao_encerrada",
-        [TipoDeAviso.AdvertenciaDeFimDaMigracao] = "advertencia_de_fim_da_migracao",
-        [TipoDeAviso.PedidoDevolvidoPelaRevisao] = "pedido_devolvido_pela_revisao",
-        [TipoDeAviso.PedidoDevolvidoPorTermoExigido] = "pedido_devolvido_por_termo_exigido",
-        [TipoDeAviso.ProvidenciaSolicitada] = "providencia_solicitada",
-        [TipoDeAviso.ProvidenciaRespondida] = "providencia_respondida",
-        [TipoDeAviso.ProvidenciaAtendida] = "providencia_atendida",
-        [TipoDeAviso.ConcessaoRevogadaNoAtendimento] = "concessao_revogada_no_atendimento",
+        [TipoDeAviso.PermissoesRemovidas] = "PERMISSOES_REMOVIDAS",
+        [TipoDeAviso.VersaoCanceladaPelaRemocao] = "VERSAO_CANCELADA_PELA_REMOCAO",
+        [TipoDeAviso.AprovacoesDescartadas] = "APROVACOES_DESCARTADAS",
+        [TipoDeAviso.RevisaoDasConcessoesAberta] = "REVISAO_DAS_CONCESSOES_ABERTA",
+        [TipoDeAviso.RevisaoDasConcessoesFaltam48Horas] = "REVISAO_DAS_CONCESSOES_FALTAM_48_HORAS",
+        [TipoDeAviso.RevisaoDasConcessoesFaltam24Horas] = "REVISAO_DAS_CONCESSOES_FALTAM_24_HORAS",
+        [TipoDeAviso.ConcessaoRetidaNaMigracao] = "CONCESSAO_RETIDA_NA_MIGRACAO",
+        [TipoDeAviso.PerfilSuspenso] = "PERFIL_SUSPENSO",
+        [TipoDeAviso.PermissaoReclassificada] = "PERMISSAO_RECLASSIFICADA",
+        [TipoDeAviso.EscopoDaPermissaoAlterado] = "ESCOPO_DA_PERMISSAO_ALTERADO",
+        [TipoDeAviso.DivergenciaDaGovernanca] = "DIVERGENCIA_DA_GOVERNANCA",
+        [TipoDeAviso.VersaoPendenteApta] = "VERSAO_PENDENTE_APTA",
+        [TipoDeAviso.MigracoesAguardandoProtecaoDeDados] = "MIGRACOES_AGUARDANDO_PROTECAO_DE_DADOS",
+        [TipoDeAviso.DecisoesEnviadasComRecusas] = "DECISOES_ENVIADAS_COM_RECUSAS",
+        [TipoDeAviso.ConcessaoMigrada] = "CONCESSAO_MIGRADA",
+        [TipoDeAviso.ConcessaoRevogada] = "CONCESSAO_REVOGADA",
+        [TipoDeAviso.RevogacoesNaMigracao] = "REVOGACOES_NA_MIGRACAO",
+        [TipoDeAviso.VersaoEncerrada] = "VERSAO_ENCERRADA",
+        [TipoDeAviso.AdvertenciaDeFimDaMigracao] = "ADVERTENCIA_DE_FIM_DA_MIGRACAO",
+        [TipoDeAviso.PedidoDevolvidoPelaRevisao] = "PEDIDO_DEVOLVIDO_PELA_REVISAO",
+        [TipoDeAviso.PedidoDevolvidoPorTermoExigido] = "PEDIDO_DEVOLVIDO_POR_TERMO_EXIGIDO",
+        [TipoDeAviso.ProvidenciaSolicitada] = "PROVIDENCIA_SOLICITADA",
+        [TipoDeAviso.ProvidenciaRespondida] = "PROVIDENCIA_RESPONDIDA",
+        [TipoDeAviso.ProvidenciaAtendida] = "PROVIDENCIA_ATENDIDA",
+        [TipoDeAviso.ConcessaoRevogadaNoAtendimento] = "CONCESSAO_REVOGADA_NO_ATENDIMENTO",
     }.ToFrozenDictionary();
 
     public static string ToCodigo(this TipoDeAviso tipo) =>
         Codigos.TryGetValue(tipo, out string? codigo) ? codigo : throw new ArgumentOutOfRangeException(nameof(tipo), tipo, null);
 
     /// <summary>A finalidade que <c>EnviarEmail</c> leva aos logs: <c>perfil.{tipo}</c>.</summary>
-    public static string Finalidade(this TipoDeAviso tipo) => $"perfil.{tipo.ToCodigo()}";
+    public static string Finalidade(this TipoDeAviso tipo) => $"perfil.{tipo.ToCodigo().ToLowerInvariant()}";
 }

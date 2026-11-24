@@ -26,7 +26,7 @@ using Unifesspa.UniPlus.IntegrationTests.Fixtures.Hosting;
 /// Toda leitura dos próprios pedidos só sai com o registro gravado: com o registro indisponível, a fila dos próprios
 /// pedidos, o detalhe, a trilha e o anexo respondem 503 sem o dado, para quem tem a consulta dos pedidos (UNI-REQ-0372) e
 /// para quem não a tem, que é registrado por titularidade (ADR-0166). A fila sem pedido não grava nada e responde mesmo
-/// com o registro indisponível. Cecília Moura é o Encarregado de dados; Paulo Nogueira não tem permissão alguma. Cada
+/// com o registro indisponível. Cecília Moura é o Gestor de proteção de dados; Paulo Nogueira não tem permissão alguma. Cada
 /// um pediu um perfil comum para si mesmo.
 /// </summary>
 [Collection(AutorizacaoEndpointCollection.Name)]
@@ -41,15 +41,15 @@ public sealed class FalhaAoRegistrarLeituraDosPropriosPedidosTests
 
     public FalhaAoRegistrarLeituraDosPropriosPedidosTests(AutorizacaoEndpointFixture fixture) => _fixture = fixture;
 
-    [Theory(DisplayName = "Com o registro indisponível, a leitura dos próprios pedidos pelo Encarregado de dados responde 503 sem o pedido")]
+    [Theory(DisplayName = "Com o registro indisponível, a leitura dos próprios pedidos pelo Gestor de proteção de dados responde 503 sem o pedido")]
     [InlineData(LeituraDoPedido.FilaDosProprios)]
     [InlineData(LeituraDoPedido.Detalhe)]
     [InlineData(LeituraDoPedido.Trilha)]
     [InlineData(LeituraDoPedido.Anexo)]
-    public async Task LeituraDoEncarregado_RegistroIndisponivel_503SemOPedido(LeituraDoPedido leitura)
+    public async Task LeituraDoGestorDeProtecaoDeDados_RegistroIndisponivel_503SemOPedido(LeituraDoPedido leitura)
     {
         await ConcessoesDeTeste.RemoverDaPessoaAsync(_fixture.Factory.Services, Cecilia);
-        await ConcessoesDeTeste.ConcederGovernancaAsync(_fixture.Factory.Services, Cecilia, TipoDeGovernanca.EncarregadoDeDados);
+        await ConcessoesDeTeste.ConcederGovernancaAsync(_fixture.Factory.Services, Cecilia, TipoDeGovernanca.GestorDeProtecaoDeDados);
 
         (HttpStatusCode status, string corpo, Guid pedido) = await LerOProprioPedidoAsync(Cecilia, leitura, new RegistroQueFalha());
 

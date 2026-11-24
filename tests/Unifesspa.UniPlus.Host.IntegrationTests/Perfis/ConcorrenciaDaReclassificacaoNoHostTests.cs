@@ -110,7 +110,7 @@ public sealed class ConcorrenciaDaReclassificacaoNoHostTests : ReclassificacaoNo
         decisao.Status.Should().Be(HttpStatusCode.UnprocessableEntity, decisao.Corpo);
         decisao.Corpo.Should().Contain("uniplus.autorizacao.reclassificacao.concessao_fora_da_reclassificacao");
         (await LiberacoesAsync(reclassificacao)).Should().Be(0);
-        (await BasesDaOrigemAsync(perfil.Perfil, "liberacao")).Should().Be(0);
+        (await BasesDaOrigemAsync(perfil.Perfil, "LIBERACAO")).Should().Be(0);
         (await PermissoesAsync(Leandro, perfil.Perfil)).Should().BeEmpty();
     }
 
@@ -124,7 +124,7 @@ public sealed class ConcorrenciaDaReclassificacaoNoHostTests : ReclassificacaoNo
         decisao.Status.Should().Be(HttpStatusCode.OK, decisao.Corpo);
         revogacao.Status.Should().Be(HttpStatusCode.NoContent, revogacao.Corpo);
         (await LiberacoesAsync(reclassificacao)).Should().Be(1);
-        (await OrigemDaBaseAsync(perfil.De(Leandro), Sensivel)).Should().Be("liberacao");
+        (await OrigemDaBaseAsync(perfil.De(Leandro), Sensivel)).Should().Be("LIBERACAO");
         (await PermissoesAsync(Leandro, perfil.Perfil)).Should().BeEmpty();
     }
 
@@ -175,5 +175,5 @@ public sealed class ConcorrenciaDaReclassificacaoNoHostTests : ReclassificacaoNo
             cliente,
             HttpMethod.Post,
             $"{RotaReclassificacoes}/{reclassificacao}/decisoes",
-            new { etapa = EtapaProtecao, resultado = "liberada", concessoes = new[] { concessao }, todas = false });
+            new { etapa = EtapaProtecao, resultado = "LIBERADA", concessoes = new[] { concessao }, todas = false });
 }

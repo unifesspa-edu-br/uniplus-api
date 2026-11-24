@@ -54,13 +54,13 @@ internal sealed class PedidoDeConcessaoConfiguration : IEntityTypeConfiguration<
                 "(beneficiario_emissor IS NULL) = (beneficiario_conta_id IS NULL)");
             tabela.HasCheckConstraint(
                 "ck_pedidos_decisao_com_beneficiario",
-                "situacao IN ('aguardando_documento', 'aguardando_beneficiario', 'cancelado', 'devolvido') OR beneficiario_conta_id IS NOT NULL");
+                "situacao IN ('AGUARDANDO_DOCUMENTO', 'AGUARDANDO_BENEFICIARIO', 'CANCELADO', 'DEVOLVIDO') OR beneficiario_conta_id IS NOT NULL");
             tabela.HasCheckConstraint(
                 "ck_pedidos_encerramento",
-                "(situacao IN ('aprovado', 'recusado', 'cancelado', 'devolvido')) = (encerrado_em IS NOT NULL)");
+                "(situacao IN ('APROVADO', 'RECUSADO', 'CANCELADO', 'DEVOLVIDO')) = (encerrado_em IS NOT NULL)");
             tabela.HasCheckConstraint(
                 "ck_pedidos_concessao_so_aprovado",
-                "concessao_id IS NULL OR situacao = 'aprovado'");
+                "concessao_id IS NULL OR situacao = 'APROVADO'");
             tabela.HasCheckConstraint(
                 "ck_pedidos_termo_completo",
                 "(termo_versao_id IS NULL) = (termo_numero IS NULL) AND (termo_versao_id IS NULL) = (termo_resumo IS NULL)");

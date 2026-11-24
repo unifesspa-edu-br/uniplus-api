@@ -26,7 +26,7 @@ using Unifesspa.UniPlus.IntegrationTests.Fixtures.Hosting;
 /// <summary>
 /// Cada listagem grava um registro por item exibido, e a página só sai depois de gravados: com o destino recusando só os
 /// registros dos itens, a decisão da listagem passa, mas a listagem responde 503 e nenhum item sai. Cecília Moura é
-/// Encarregada de dados e tem um pedido, uma concessão e uma revisão a listar.
+/// Gestor de proteção de dados e tem um pedido, uma concessão e uma revisão a listar.
 /// </summary>
 [Collection(AutorizacaoEndpointCollection.Name)]
 public sealed class FalhaAoRegistrarItensDaListagemTests
@@ -56,7 +56,7 @@ public sealed class FalhaAoRegistrarItensDaListagemTests
 
     private async Task ConferirListagemRecusadaAsync(string rota)
     {
-        Guid concessao = await EncarregadaComPedidoEConcessaoAsync();
+        Guid concessao = await GestorDeProtecaoDeDadosComPedidoEConcessaoAsync();
         await SemearRevisaoAsync(concessao);
         await using WebApplicationFactory<HostAssemblyMarker> comFalha = ComRegistroQueFalhaNosItens();
         using HttpClient cecilia = Cliente(comFalha);
@@ -68,7 +68,7 @@ public sealed class FalhaAoRegistrarItensDaListagemTests
         corpo.Should().Contain("uniplus.autorizacao.registro_de_acesso.falha_ao_gravar").And.NotContain(concessao.ToString());
     }
 
-    // A revisão e o pedido semeados prendem a concessão da Encarregada; saem antes e depois, para não sobrar aos outros testes.
+    // A revisão e o pedido semeados prendem a concessão da Gestor de proteção de dados; saem antes e depois, para não sobrar aos outros testes.
     private async Task DescartarOQueSemeouAsync()
     {
         await using AsyncServiceScope scope = _fixture.Factory.Services.CreateAsyncScope();
@@ -79,11 +79,11 @@ public sealed class FalhaAoRegistrarItensDaListagemTests
         await banco.ExecuteSqlRawAsync("DELETE FROM autorizacao.pedidos_de_concessao WHERE solicitante_conta_id = {0}", Cecilia);
     }
 
-    // A Encarregada só com o perfil dela, com uma concessão própria e um pedido para si mesma de um perfil comum.
-    private async Task<Guid> EncarregadaComPedidoEConcessaoAsync()
+    // A Gestor de proteção de dados só com o perfil dela, com uma concessão própria e um pedido para si mesma de um perfil comum.
+    private async Task<Guid> GestorDeProtecaoDeDadosComPedidoEConcessaoAsync()
     {
         await ConcessoesDeTeste.RemoverDaPessoaAsync(_fixture.Factory.Services, Cecilia);
-        Guid concessao = await ConcessoesDeTeste.ConcederGovernancaAsync(_fixture.Factory.Services, Cecilia, TipoDeGovernanca.EncarregadoDeDados);
+        Guid concessao = await ConcessoesDeTeste.ConcederGovernancaAsync(_fixture.Factory.Services, Cecilia, TipoDeGovernanca.GestorDeProtecaoDeDados);
         Guid perfil = await ConcessoesDeTeste.CriarPerfilAsync(_fixture.Factory.Services, "configuracao:tipos-processo:consultar");
         using HttpClient cecilia = Cliente(_fixture.Factory);
         using HttpRequestMessage pedido = new(HttpMethod.Post, new Uri("/api/autorizacao/pedidos-de-concessao", UriKind.Relative))

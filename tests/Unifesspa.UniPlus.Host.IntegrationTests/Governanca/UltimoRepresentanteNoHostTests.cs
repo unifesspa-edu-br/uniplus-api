@@ -66,7 +66,7 @@ public sealed class UltimoRepresentanteNoHostTests : UltimoRepresentanteNoHostTe
         Guid pedido = await DesignacaoAceitaAsync(Leandro);
 
         (await EnviarAsync(g.Diogo, HttpMethod.Post, $"{Rota}/{pedido}/aprovacoes")).StatusCode.Should().Be(HttpStatusCode.OK);
-        (await SituacaoAsync(g.Diogo, pedido)).Should().Be("aguardando_protecao_de_dados");
+        (await SituacaoAsync(g.Diogo, pedido)).Should().Be("AGUARDANDO_PROTECAO_DE_DADOS");
         (await EnviarAsync(g.Marlene, HttpMethod.Post, $"{Rota}/{pedido}/aprovacoes")).StatusCode.Should().Be(HttpStatusCode.OK);
 
         (await RevogarAsync(g.Diogo, await DesignacaoAsync(Marlene), Motivo, Marlene.Email)).StatusCode.Should().Be(HttpStatusCode.NoContent);
@@ -86,7 +86,7 @@ public sealed class UltimoRepresentanteNoHostTests : UltimoRepresentanteNoHostTe
 
         Guid pedido = await DesignacaoAceitaAsync(Isabella);
         (await EnviarAsync(g.Diogo, HttpMethod.Post, $"{Rota}/{pedido}/aprovacoes")).StatusCode.Should().Be(HttpStatusCode.OK);
-        (await SituacaoAsync(g.Diogo, pedido)).Should().Be("aprovado");
+        (await SituacaoAsync(g.Diogo, pedido)).Should().Be("APROVADO");
         (await VigentesAsync()).Should().Equal(Isabella.ContaId.ToString());
     }
 }

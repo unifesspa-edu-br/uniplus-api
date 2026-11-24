@@ -22,7 +22,7 @@ using Unifesspa.UniPlus.Kernel.Results;
 
 /// <summary>
 /// Providências sobre concessões sob <c>/api/autorizacao/providencias</c> (UNI-REQ-0375, UNI-REQ-0376, ADR-0164): o
-/// Encarregado de dados solicita, com fundamento, a retirada ou a revisão de uma concessão, e quem administra concessões,
+/// Gestor de proteção de dados solicita, com fundamento, a retirada ou a revisão de uma concessão, e quem administra concessões,
 /// os gestores de acessos e os Representantes do controlador, responde com motivo ou atende pela revogação vinculada.
 /// </summary>
 /// <remarks>

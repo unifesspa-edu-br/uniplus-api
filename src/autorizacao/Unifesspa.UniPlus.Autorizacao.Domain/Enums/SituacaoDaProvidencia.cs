@@ -18,10 +18,10 @@ public enum SituacaoDaProvidencia
 /// <summary>Código textual canônico de <see cref="SituacaoDaProvidencia"/>, o valor exposto e aceito no filtro.</summary>
 public static class SituacaoDaProvidenciaCodigo
 {
-    public const string Aberta = "aberta";
-    public const string Respondida = "respondida";
-    public const string Atendida = "atendida";
-    public const string Prejudicada = "prejudicada";
+    public const string Aberta = "ABERTA";
+    public const string Respondida = "RESPONDIDA";
+    public const string Atendida = "ATENDIDA";
+    public const string Prejudicada = "PREJUDICADA";
 
     public static string ToCodigo(this SituacaoDaProvidencia situacao) => situacao switch
     {
@@ -33,7 +33,7 @@ public static class SituacaoDaProvidenciaCodigo
     };
 
     /// <summary>A situação do código, sem distinguir maiúsculas nem espaços nas pontas; nula quando o código não existe.</summary>
-    public static SituacaoDaProvidencia? DoCodigo(string? codigo) => codigo?.Trim().ToLowerInvariant() switch
+    public static SituacaoDaProvidencia? DoCodigo(string? codigo) => codigo?.Trim().ToUpperInvariant() switch
     {
         Aberta => SituacaoDaProvidencia.Aberta,
         Respondida => SituacaoDaProvidencia.Respondida,

@@ -31,7 +31,7 @@ internal sealed class PerfilConfiguration : IEntityTypeConfiguration<Perfil>
     // Perfis de sistema, com identificador fixo, para que a conferência do catálogo e os testes os alcancem.
     private static readonly Guid GestorDeAcessosId = PerfisDeSistema.GestorDeAcessosId;
     private static readonly Guid RepresentanteDoControladorId = PerfisDeSistema.RepresentanteDoControladorId;
-    private static readonly Guid EncarregadoDeDadosId = PerfisDeSistema.EncarregadoDeDadosId;
+    private static readonly Guid GestorDeProtecaoDeDadosId = PerfisDeSistema.GestorDeProtecaoDeDadosId;
     private static readonly DateTimeOffset CargaInicial = new(2026, 10, 28, 0, 0, 0, TimeSpan.Zero);
 
     // A contenção é evidência: o perfil não se exclui, e nenhum registro dela some em cascata.
@@ -131,11 +131,11 @@ internal sealed class PerfilConfiguration : IEntityTypeConfiguration<Perfil>
             },
             new
             {
-                Id = EncarregadoDeDadosId,
-                Nome = "Encarregado de dados",
+                Id = GestorDeProtecaoDeDadosId,
+                Nome = "Gestor de proteção de dados",
                 Descricao = "Acompanha o tratamento de dados pessoais na gestão de acessos: consulta pedidos, concessões, revisões, versões de perfil, revisão das concessões e catálogo, registra manifestação técnica na proteção do catálogo e solicita providências sobre concessões, sem aprovar, recusar nem revogar.",
                 Ativo = true,
-                Governanca = (TipoDeGovernanca?)TipoDeGovernanca.EncarregadoDeDados,
+                Governanca = (TipoDeGovernanca?)TipoDeGovernanca.GestorDeProtecaoDeDados,
                 CreatedAt = CargaInicial,
             });
     }

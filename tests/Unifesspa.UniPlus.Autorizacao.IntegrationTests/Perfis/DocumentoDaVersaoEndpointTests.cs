@@ -25,7 +25,7 @@ public sealed class DocumentoDaVersaoEndpointTests : PerfilEndpointTestBase
         cenario.Reemitida.StatusCode.Should().Be(HttpStatusCode.Created);
         LerEnvio(await cenario.Reemitida.Content.ReadAsStringAsync()).DocumentoId.Should().Be(cenario.Envio.DocumentoId);
         cenario.Confirmada.StatusCode.Should().Be(HttpStatusCode.OK, await cenario.Confirmada.Content.ReadAsStringAsync());
-        (await cenario.Confirmada.Content.ReadAsStringAsync()).Should().Contain("em_verificacao");
+        (await cenario.Confirmada.Content.ReadAsStringAsync()).Should().Contain("EM_VERIFICACAO");
         cenario.ReemitidaDepois.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
         (await cenario.ReemitidaDepois.Content.ReadAsStringAsync()).Should().Contain("uniplus.autorizacao.perfil.documento_nao_aguarda_envio");
     }

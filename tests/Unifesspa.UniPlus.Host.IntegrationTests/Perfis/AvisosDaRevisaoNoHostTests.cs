@@ -39,10 +39,10 @@ public sealed class AvisosDaRevisaoNoHostTests : RevisaoDasConcessoesNoHostTestB
         using HttpClient protecao = await ProtecaoAsync();
 
         Caixa[] doEnvio = await AvisosDeAsync(() => EnviarDecisoesDaGestaoAsync(
-            gestao, cenario.PerfilId, [Decisao(cenario.Concessoes[Leandro], "migrar"), Decisao(cenario.Concessoes[Betina], "recusar")], confirmacaoDeExclusao: true));
+            gestao, cenario.PerfilId, [Decisao(cenario.Concessoes[Leandro], "MIGRAR"), Decisao(cenario.Concessoes[Betina], "RECUSAR")], confirmacaoDeExclusao: true));
         await EsvaziarCaixaAsync();
         Caixa[] daEtapa = await AvisosDeAsync(() => EnviarAsync(
-            protecao, HttpMethod.Post, RotaDaRevisao(cenario.PerfilId, "/protecao-de-dados"), new { decisoes = new[] { Decisao(cenario.Concessoes[Leandro], "migrar") } }));
+            protecao, HttpMethod.Post, RotaDaRevisao(cenario.PerfilId, "/protecao-de-dados"), new { decisoes = new[] { Decisao(cenario.Concessoes[Leandro], "MIGRAR") } }));
 
         Para(doEnvio, Revogada).Should().Equal(Betina.Email);
         Para(daEtapa, Migrada).Should().Equal(Leandro.Email);
@@ -79,7 +79,7 @@ public sealed class AvisosDaRevisaoNoHostTests : RevisaoDasConcessoesNoHostTestB
     {
         RevisaoAberta cenario = await AbrirEEntregarAsync(Isabella, Leandro);
         using HttpClient isabella = await GestaoAsync();
-        await EntregarComSucessoAsync(() => EnviarDecisoesDaGestaoAsync(isabella, cenario.PerfilId, [Decisao(cenario.Concessoes[Leandro], "migrar")]));
+        await EntregarComSucessoAsync(() => EnviarDecisoesDaGestaoAsync(isabella, cenario.PerfilId, [Decisao(cenario.Concessoes[Leandro], "MIGRAR")]));
         await EsvaziarCaixaAsync();
         Relogio.Avancar(TimeSpan.FromHours(49));
 
@@ -130,7 +130,7 @@ public sealed class AvisosDaRevisaoNoHostTests : RevisaoDasConcessoesNoHostTestB
     {
         RevisaoAberta cenario = await AbrirEEntregarAsync(Leandro, Betina);
         using HttpClient gestao = await GestaoAsync();
-        object[] decisoes = [Decisao(cenario.Concessoes[Leandro], "migrar"), Decisao(cenario.Concessoes[Betina], "recusar")];
+        object[] decisoes = [Decisao(cenario.Concessoes[Leandro], "MIGRAR"), Decisao(cenario.Concessoes[Betina], "RECUSAR")];
         string chave = Guid.NewGuid().ToString();
 
         Caixa[] aposAPrimeira = await AvisosDeAsync(() => EnviarDecisoesDaGestaoAsync(gestao, cenario.PerfilId, decisoes, confirmacaoDeExclusao: true, chave: chave));

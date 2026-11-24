@@ -9,7 +9,7 @@ using Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Autorizacao.IntegrationTests.Infrastructure;
 
 /// <summary>
-/// A tramitação da providência pelos endpoints reais (UNI-REQ-0375, UNI-REQ-0376): a solicitação pelo Encarregado de
+/// A tramitação da providência pelos endpoints reais (UNI-REQ-0375, UNI-REQ-0376): a solicitação pelo Gestor de proteção de dados de
 /// dados, a fila, a resposta e o atendimento por quem administra concessões, e as recusas do contrato.
 /// </summary>
 [Collection(AutorizacaoEndpointCollection.Name)]
@@ -20,17 +20,17 @@ public sealed class ProvidenciaEndpointTests : ProvidenciaEndpointTestBase
     {
     }
 
-    [Fact(DisplayName = "O Encarregado solicita com fundamento, e a providência aberta entra na fila de quem administra concessões")]
+    [Fact(DisplayName = "O Gestor de proteção de dados solicita com fundamento, e a providência aberta entra na fila de quem administra concessões")]
     public async Task Solicitar_EntraNaFila()
     {
         Guid concessao = await ConcederAsync(await CriarPerfilComumAsync(), Leandro, EscopoDaConcessao.DaUnidade(Guid.NewGuid()));
-        using HttpClient cecilia = await ClienteDoEncarregadoAsync();
+        using HttpClient cecilia = await ClienteDoGestorDeProtecaoDeDadosAsync();
 
         using HttpResponseMessage resposta = await SolicitarAsync(cecilia, concessao);
 
         JsonElement corpo = await CorpoAsync(resposta, HttpStatusCode.Created);
         resposta.Headers.Location!.ToString().Should().EndWith($"/providencias/{corpo.GetProperty("id").GetGuid()}");
-        (corpo.GetProperty("situacao").GetString(), corpo.GetProperty("fundamento").GetString()).Should().Be(("aberta", Fundamento));
+        (corpo.GetProperty("situacao").GetString(), corpo.GetProperty("fundamento").GetString()).Should().Be(("ABERTA", Fundamento));
         (await FilaAsync(await ClienteDoGestorAsync(Diogo), $"?concessao={concessao}")).Should().Equal(corpo.GetProperty("id").GetGuid());
     }
 
@@ -38,9 +38,9 @@ public sealed class ProvidenciaEndpointTests : ProvidenciaEndpointTestBase
     public async Task Solicitar_Invalida_ErrosAcumulados()
     {
         Guid concessao = await ConcederAsync(await CriarPerfilComumAsync(), Leandro, EscopoDaConcessao.DaUnidade(Guid.NewGuid()));
-        using HttpClient cecilia = await ClienteDoEncarregadoAsync();
+        using HttpClient cecilia = await ClienteDoGestorDeProtecaoDeDadosAsync();
 
-        JsonElement corpo = await CorpoAsync(await SolicitarAsync(cecilia, concessao, "suspensao", null), HttpStatusCode.UnprocessableEntity);
+        JsonElement corpo = await CorpoAsync(await SolicitarAsync(cecilia, concessao, "SUSPENSAO", null), HttpStatusCode.UnprocessableEntity);
 
         corpo.GetProperty("errors").EnumerateArray().Select(static e => e.GetProperty("field").GetString()).Should().Equal("tipo", "fundamento");
     }
@@ -49,20 +49,20 @@ public sealed class ProvidenciaEndpointTests : ProvidenciaEndpointTestBase
     public async Task Solicitar_InexistenteEJaAberta()
     {
         (Guid concessao, _) = await ProvidenciaAbertaAsync();
-        using HttpClient cecilia = await ClienteDoEncarregadoAsync();
+        using HttpClient cecilia = await ClienteDoGestorDeProtecaoDeDadosAsync();
 
         await ConferirRecusaAsync(await SolicitarAsync(cecilia, Guid.NewGuid()), HttpStatusCode.NotFound, "uniplus.autorizacao.concessao.nao_encontrada");
-        await ConferirRecusaAsync(await SolicitarAsync(cecilia, concessao, "revisao"), HttpStatusCode.Conflict, "uniplus.autorizacao.providencia.ja_ha_aberta");
+        await ConferirRecusaAsync(await SolicitarAsync(cecilia, concessao, "REVISAO"), HttpStatusCode.Conflict, "uniplus.autorizacao.providencia.ja_ha_aberta");
     }
 
-    [Fact(DisplayName = "Quem administra concessões e não tem a permissão de solicitar não solicita, e o Encarregado não responde nem atende")]
+    [Fact(DisplayName = "Quem administra concessões e não tem a permissão de solicitar não solicita, e o Gestor de proteção de dados não responde nem atende")]
     public async Task Permissoes_PorRota()
     {
         (Guid concessao, Guid providencia) = await ProvidenciaAbertaAsync();
         using HttpClient diogo = await ClienteDoGestorAsync(Diogo);
-        using HttpClient cecilia = await ClienteDoEncarregadoAsync();
+        using HttpClient cecilia = await ClienteDoGestorDeProtecaoDeDadosAsync();
 
-        (await SolicitarAsync(diogo, concessao, "revisao")).StatusCode.Should().Be(HttpStatusCode.Forbidden);
+        (await SolicitarAsync(diogo, concessao, "REVISAO")).StatusCode.Should().Be(HttpStatusCode.Forbidden);
         (await ResponderAsync(cecilia, providencia)).StatusCode.Should().Be(HttpStatusCode.Forbidden);
         (await AtenderAsync(cecilia, providencia)).StatusCode.Should().Be(HttpStatusCode.Forbidden);
         (await Cliente(Pessoa("caroline.jesus")).GetAsync(new Uri($"{RotaDasProvidencias}/{providencia}", UriKind.Relative))).StatusCode.Should().Be(HttpStatusCode.Forbidden);
@@ -74,7 +74,7 @@ public sealed class ProvidenciaEndpointTests : ProvidenciaEndpointTestBase
         (_, Guid providencia) = await ProvidenciaAbertaAsync();
         using HttpClient diogo = await ClienteDoGestorAsync(Diogo);
 
-        (await CorpoAsync(await ResponderAsync(diogo, providencia), HttpStatusCode.OK)).GetProperty("situacao").GetString().Should().Be("respondida");
+        (await CorpoAsync(await ResponderAsync(diogo, providencia), HttpStatusCode.OK)).GetProperty("situacao").GetString().Should().Be("RESPONDIDA");
 
         await ConferirRecusaAsync(await ResponderAsync(await ClienteDoGestorAsync(Isabella), providencia), HttpStatusCode.Conflict, "uniplus.autorizacao.providencia.ja_respondida");
     }
@@ -98,7 +98,7 @@ public sealed class ProvidenciaEndpointTests : ProvidenciaEndpointTestBase
 
         JsonElement corpo = await CorpoAsync(await AtenderAsync(diogo, providencia), HttpStatusCode.OK);
 
-        (corpo.GetProperty("situacao").GetString(), corpo.GetProperty("concessao").GetProperty("ativa").GetBoolean()).Should().Be(("atendida", false));
+        (corpo.GetProperty("situacao").GetString(), corpo.GetProperty("concessao").GetProperty("ativa").GetBoolean()).Should().Be(("ATENDIDA", false));
         using JsonDocument trilha = await LerAsync(diogo, $"{Rota}/{concessao}/trilha");
         trilha.RootElement.EnumerateArray().Select(static e => e.GetProperty("tipo").GetString()).Should()
             .Contain(["providencia_solicitada", "revogada", "providencia_atendida"]);
@@ -129,7 +129,7 @@ public sealed class ProvidenciaEndpointTests : ProvidenciaEndpointTestBase
 
         JsonElement lida = await CorpoAsync(await diogo.GetAsync(new Uri($"{RotaDasProvidencias}/{providencia}", UriKind.Relative)), HttpStatusCode.OK);
 
-        (lida.GetProperty("situacao").GetString(), lida.GetProperty("encerramentoDaConcessao").GetProperty("causa").GetString()).Should().Be(("prejudicada", "revogada"));
+        (lida.GetProperty("situacao").GetString(), lida.GetProperty("encerramentoDaConcessao").GetProperty("causa").GetString()).Should().Be(("PREJUDICADA", "REVOGADA"));
         (await FilaAsync(diogo, $"?concessao={concessao}")).Should().BeEmpty();
         (await FilaAsync(diogo, $"?concessao={concessao}&situacao=prejudicada")).Should().Equal(providencia);
         await ConferirRecusaAsync(await ResponderAsync(diogo, providencia), HttpStatusCode.Conflict, "uniplus.autorizacao.providencia.concessao_nao_ativa");

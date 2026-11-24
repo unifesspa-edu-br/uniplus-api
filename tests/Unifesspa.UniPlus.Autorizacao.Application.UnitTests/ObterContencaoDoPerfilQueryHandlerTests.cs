@@ -28,12 +28,12 @@ public sealed class ObterContencaoDoPerfilQueryHandlerTests
 
         Result<IReadOnlyList<RegistroDaContencaoDto>> resultado = await Obter(cenario, perfil.Id);
 
-        resultado.Value!.Select(r => r.Tipo).Should().BeEquivalentTo("suspensao", "retomada", ContencaoMapping.TipoDaDecisao);
+        resultado.Value!.Select(r => r.Tipo).Should().BeEquivalentTo("SUSPENSAO", "RETOMADA", ContencaoMapping.TipoDaDecisao);
         resultado.Value!.Single(r => r.Tipo == ContencaoMapping.TipoDaDecisao).Should().Match<RegistroDaContencaoDto>(d =>
-            d.Etapa == "gestao_de_acessos" && d.DecisorTemConcessao == true
+            d.Etapa == "GESTAO_DE_ACESSOS" && d.DecisorTemConcessao == true
             && d.Pessoa == new IdentidadeDto(PerfisDeTeste.ProtecaoDeDados.Emissor, PerfisDeTeste.ProtecaoDeDados.ContaId, PerfisDeTeste.ProtecaoDeDados.Nome));
-        resultado.Value!.Single(r => r.Tipo == "retomada").Should().Match<RegistroDaContencaoDto>(r =>
-            r.Ator == "sistema" && r.Origem == "decisao_da_etapa" && r.Pessoa == null);
+        resultado.Value!.Single(r => r.Tipo == "RETOMADA").Should().Match<RegistroDaContencaoDto>(r =>
+            r.Ator == "SISTEMA" && r.Origem == "DECISAO_DA_ETAPA" && r.Pessoa == null);
         cenario.Verificador.Gravados.Should().ContainSingle();
     }
 

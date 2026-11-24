@@ -161,14 +161,14 @@ public sealed class ReclassificacaoDoCatalogoTests : PerfilEndpointTestBase, IAs
         ContarAsync("""SELECT count(*) AS "Value" FROM autorizacao.reclassificacoes_da_permissao WHERE perfil_id = {0}""", perfil);
 
     private Task<long> ContarBasesConciliadasAsync(Guid perfil) =>
-        ContarAsync("""SELECT count(*) AS "Value" FROM autorizacao.bases_da_permissao_concedida WHERE perfil_id = {0} AND origem = 'conciliacao'""", perfil);
+        ContarAsync("""SELECT count(*) AS "Value" FROM autorizacao.bases_da_permissao_concedida WHERE perfil_id = {0} AND origem = 'CONCILIACAO'""", perfil);
 
     private Task<long> FatosSemAvisoDoPerfilAsync(Guid perfil) =>
         ContarAsync(
             """
             SELECT count(*) AS "Value" FROM autorizacao.reclassificacoes_da_permissao r
             WHERE r.perfil_id = {0} AND (autorizacao.ordem_da_classificacao(r.classificacao_nova) > autorizacao.ordem_da_classificacao(r.classificacao_anterior) OR r.de_unidade_novo <> r.de_unidade_anterior)
-              AND NOT EXISTS (SELECT 1 FROM autorizacao.avisos_da_reclassificacao a WHERE a.origem = 'reclassificacao' AND a.origem_id = r.id)
+              AND NOT EXISTS (SELECT 1 FROM autorizacao.avisos_da_reclassificacao a WHERE a.origem = 'RECLASSIFICACAO' AND a.origem_id = r.id)
             """,
             perfil);
 
@@ -176,7 +176,7 @@ public sealed class ReclassificacaoDoCatalogoTests : PerfilEndpointTestBase, IAs
         ContarAsync(
             """
             SELECT count(*) AS "Value" FROM autorizacao.avisos_da_reclassificacao a
-            JOIN autorizacao.reclassificacoes_da_permissao r ON a.origem = 'reclassificacao' AND a.origem_id = r.id
+            JOIN autorizacao.reclassificacoes_da_permissao r ON a.origem = 'RECLASSIFICACAO' AND a.origem_id = r.id
             WHERE r.perfil_id = {0}
             """,
             perfil);

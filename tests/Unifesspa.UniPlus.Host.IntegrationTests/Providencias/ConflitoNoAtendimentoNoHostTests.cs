@@ -35,7 +35,7 @@ public sealed class ConflitoNoAtendimentoNoHostTests : ProvidenciasNoHostTestBas
         await ConferirCodigoAsync(await AtenderAsync(g.Diogo, providencia, Leandro.Email, chave), HttpStatusCode.Conflict, "uniplus.concorrencia.conflito");
 
         (await LerAsync(g.Diogo, $"/api/autorizacao/concessoes/{concessao}")).GetProperty("ativa").GetBoolean().Should().BeTrue("a revogação é desfeita com o desfecho");
-        ((await LinhaAsync(providencia)).Estado, await AvisosEmitidosAsync(providencia, "concessao_revogada_no_atendimento")).Should().Be(("aberta", 0));
+        ((await LinhaAsync(providencia)).Estado, await AvisosEmitidosAsync(providencia, "CONCESSAO_REVOGADA_NO_ATENDIMENTO")).Should().Be(("ABERTA", 0));
         (await AtenderAsync(g.Diogo, providencia, Leandro.Email, chave)).StatusCode.Should().Be(HttpStatusCode.OK);
     }
 

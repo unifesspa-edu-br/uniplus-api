@@ -38,12 +38,12 @@ public sealed class VersaoVigenteUnicaNoBancoTests : AprovacaoDaVersaoNoHostTest
         (Envio vigente, Envio pendente) = await PerfilComVigenteEPendenteAsync();
 
         PostgresException erro = await Assert.ThrowsAsync<PostgresException>(
-            () => GravarNaTransacaoAsync((pendente.VersaoId, "vigente")));
+            () => GravarNaTransacaoAsync((pendente.VersaoId, "VIGENTE")));
 
         erro.SqlState.Should().Be(ViolacaoDeExclusao);
         erro.ConstraintName.Should().Be(RestricaoDaVersaoVigente);
-        (await SituacaoDaVersaoNoBancoAsync(vigente.VersaoId)).Should().Be("vigente");
-        (await SituacaoDaVersaoNoBancoAsync(pendente.VersaoId)).Should().Be("pendente");
+        (await SituacaoDaVersaoNoBancoAsync(vigente.VersaoId)).Should().Be("VIGENTE");
+        (await SituacaoDaVersaoNoBancoAsync(pendente.VersaoId)).Should().Be("PENDENTE");
     }
 
     [Fact(DisplayName = "O banco aceita a troca de versão em vigor gravada com a nova antes de a anterior ser encerrada")]
@@ -51,10 +51,10 @@ public sealed class VersaoVigenteUnicaNoBancoTests : AprovacaoDaVersaoNoHostTest
     {
         (Envio vigente, Envio pendente) = await PerfilComVigenteEPendenteAsync();
 
-        await GravarNaTransacaoAsync((pendente.VersaoId, "vigente"), (vigente.VersaoId, "encerrada"));
+        await GravarNaTransacaoAsync((pendente.VersaoId, "VIGENTE"), (vigente.VersaoId, "ENCERRADA"));
 
-        (await SituacaoDaVersaoNoBancoAsync(pendente.VersaoId)).Should().Be("vigente");
-        (await SituacaoDaVersaoNoBancoAsync(vigente.VersaoId)).Should().Be("encerrada");
+        (await SituacaoDaVersaoNoBancoAsync(pendente.VersaoId)).Should().Be("VIGENTE");
+        (await SituacaoDaVersaoNoBancoAsync(vigente.VersaoId)).Should().Be("ENCERRADA");
         (await QuantidadeDeVersoesVigentesAsync(vigente.PerfilId)).Should().Be(1);
     }
 

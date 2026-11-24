@@ -71,7 +71,7 @@ public sealed class ExigePermissaoAttribute<TPermissao> : Attribute, IAsyncAutho
 
     /// <summary>
     /// Permissão alternativa, do mesmo enum, avaliada sobre o mesmo resource quando a principal nega. Serve à consulta
-    /// de quem lê sem decidir, como o Encarregado de dados, na rota que a permissão de administrar também serve. O
+    /// de quem lê sem decidir, como o Gestor de proteção de dados, na rota que a permissão de administrar também serve. O
     /// registro grava a que autorizou ou, se nenhuma autorizou, as duas negativas. Não se combina com
     /// <see cref="OuEmAlgumaUnidade"/>.
     /// </summary>

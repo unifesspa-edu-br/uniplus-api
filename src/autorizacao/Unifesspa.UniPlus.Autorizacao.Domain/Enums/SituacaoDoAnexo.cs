@@ -19,10 +19,10 @@ public enum SituacaoDoAnexo
 /// <summary>Código textual canônico de <see cref="SituacaoDoAnexo"/>, o valor gravado e exposto.</summary>
 public static class SituacaoDoAnexoCodigo
 {
-    public const string AguardandoEnvio = "aguardando_envio";
-    public const string EmVerificacao = "em_verificacao";
-    public const string Verificado = "verificado";
-    public const string Recusado = "recusado";
+    public const string AguardandoEnvio = "AGUARDANDO_ENVIO";
+    public const string EmVerificacao = "EM_VERIFICACAO";
+    public const string Verificado = "VERIFICADO";
+    public const string Recusado = "RECUSADO";
 
     public static string ToCodigo(this SituacaoDoAnexo situacao) => situacao switch
     {

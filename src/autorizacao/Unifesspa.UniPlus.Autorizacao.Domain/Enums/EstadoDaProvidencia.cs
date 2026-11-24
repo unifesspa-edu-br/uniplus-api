@@ -19,9 +19,9 @@ public enum EstadoDaProvidencia
 /// <summary>Código textual canônico de <see cref="EstadoDaProvidencia"/>, o valor gravado.</summary>
 public static class EstadoDaProvidenciaCodigo
 {
-    public const string Aberta = "aberta";
-    public const string Respondida = "respondida";
-    public const string Atendida = "atendida";
+    public const string Aberta = "ABERTA";
+    public const string Respondida = "RESPONDIDA";
+    public const string Atendida = "ATENDIDA";
 
     public static string ToCodigo(this EstadoDaProvidencia estado) => estado switch
     {

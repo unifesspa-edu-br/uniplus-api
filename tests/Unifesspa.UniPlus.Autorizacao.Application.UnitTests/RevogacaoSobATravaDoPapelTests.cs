@@ -73,10 +73,10 @@ public sealed class RevogacaoSobATravaDoPapelTests
         await _repositorio.DidNotReceive().TravarGovernancaParaEscritaAsync(Arg.Any<CancellationToken>());
     }
 
-    [Fact(DisplayName = "A revogação do Encarregado de dados trava a pessoa do beneficiário antes da concessão, sem o papel de Representante")]
-    public async Task Revogar_Encarregado_TravaAPessoaSemOPapel()
+    [Fact(DisplayName = "A revogação do Gestor de proteção de dados trava a pessoa do beneficiário antes da concessão, sem o papel de Representante")]
+    public async Task Revogar_GestorDeProtecaoDeDados_TravaAPessoaSemOPapel()
     {
-        Concessao concessao = Preparar(PerfisDeSistema.EncarregadoDeDadosId);
+        Concessao concessao = Preparar(PerfisDeSistema.GestorDeProtecaoDeDadosId);
 
         (await RevogarAsync(concessao)).IsSuccess.Should().BeTrue();
 

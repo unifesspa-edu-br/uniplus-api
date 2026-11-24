@@ -10,7 +10,7 @@ using Unifesspa.UniPlus.Host.IntegrationTests.Instalacao;
 using Unifesspa.UniPlus.Host.IntegrationTests.Pedidos;
 
 /// <summary>
-/// O conflito entre Representante do controlador e Encarregado de dados nas duas ordens, pelo host real (ADR-0162): o papel
+/// O conflito entre Representante do controlador e Gestor de proteção de dados nas duas ordens, pelo host real (ADR-0162): o papel
 /// vigente recusa o outro na criação do pedido próprio e no aceite do pedido feito por terceiro; o papel vencido não conta
 /// como vigente, e o outro segue pelo fluxo comum.
 /// </summary>
@@ -24,8 +24,8 @@ public sealed class PapeisIncompativeisNasDuasOrdensNoHostTests : PedidosDeConce
 
     public static TheoryData<Guid, Guid> Ordens => new()
     {
-        { PerfisDeSistema.RepresentanteDoControladorId, PerfisDeSistema.EncarregadoDeDadosId },
-        { PerfisDeSistema.EncarregadoDeDadosId, PerfisDeSistema.RepresentanteDoControladorId },
+        { PerfisDeSistema.RepresentanteDoControladorId, PerfisDeSistema.GestorDeProtecaoDeDadosId },
+        { PerfisDeSistema.GestorDeProtecaoDeDadosId, PerfisDeSistema.RepresentanteDoControladorId },
     };
 
     [Theory(DisplayName = "Com um papel vigente, o pedido próprio do outro papel é recusado na criação com 409, nas duas ordens")]

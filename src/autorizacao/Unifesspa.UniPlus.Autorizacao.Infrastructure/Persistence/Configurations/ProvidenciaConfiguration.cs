@@ -61,16 +61,16 @@ public sealed class ProvidenciaConfiguration : IEntityTypeConfiguration<Providen
 
     private static void RestricoesDaTabela(TableBuilder<Providencia> tabela)
     {
-        tabela.HasCheckConstraint("ck_providencias_tipo", "tipo IN ('retirada', 'revisao')");
-        tabela.HasCheckConstraint("ck_providencias_estado", "estado IN ('aberta', 'respondida', 'atendida')");
+        tabela.HasCheckConstraint("ck_providencias_tipo", "tipo IN ('RETIRADA', 'REVISAO')");
+        tabela.HasCheckConstraint("ck_providencias_estado", "estado IN ('ABERTA', 'RESPONDIDA', 'ATENDIDA')");
         tabela.HasCheckConstraint(
             "ck_providencias_fundamento",
             $"char_length(fundamento) BETWEEN {SolicitacaoDaProvidencia.FundamentoMinLength} AND {SolicitacaoDaProvidencia.FundamentoMaxLength}");
         tabela.HasCheckConstraint(
             "ck_providencias_desfecho_completo",
-            "(estado = 'aberta' AND desfecho_em IS NULL AND desfecho_por_emissor IS NULL AND desfecho_por_conta_id IS NULL"
+            "(estado = 'ABERTA' AND desfecho_em IS NULL AND desfecho_por_emissor IS NULL AND desfecho_por_conta_id IS NULL"
             + " AND desfecho_por_nome IS NULL AND motivo_do_desfecho IS NULL)"
-            + " OR (estado <> 'aberta' AND desfecho_em IS NOT NULL AND desfecho_por_emissor IS NOT NULL"
+            + " OR (estado <> 'ABERTA' AND desfecho_em IS NOT NULL AND desfecho_por_emissor IS NOT NULL"
             + " AND desfecho_por_conta_id IS NOT NULL AND motivo_do_desfecho IS NOT NULL)");
     }
 
@@ -99,7 +99,7 @@ public sealed class ProvidenciaConfiguration : IEntityTypeConfiguration<Providen
         // No máximo uma providência aberta por concessão: a guarda final da abertura concorrente.
         builder.HasIndex(p => p.ConcessaoId, AbertaUnicaPorConcessao)
             .IsUnique()
-            .HasFilter("estado = 'aberta'")
+            .HasFilter("estado = 'ABERTA'")
             .HasDatabaseName(AbertaUnicaPorConcessao);
 
         // A trilha da concessão e o filtro por concessão.

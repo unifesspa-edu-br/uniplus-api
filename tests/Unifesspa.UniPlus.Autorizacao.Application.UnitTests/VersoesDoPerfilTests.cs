@@ -32,7 +32,7 @@ public sealed class VersoesDoPerfilTests
         perfil.VersaoPendente!.Documento!.Id.Should().Be(resultado.Value!.DocumentoId);
         resultado.Value.PerfilId.Should().Be(perfil.Id);
         resultado.Value.VersaoId.Should().Be(perfil.VersaoPendente.Id);
-        resultado.Value.Situacao.Should().Be("aguardando_envio");
+        resultado.Value.Situacao.Should().Be("AGUARDANDO_ENVIO");
         resultado.Value.TipoDeMidia.Should().Be("application/pdf");
         cenario.Armazenamento.ChavesDeEnvio.Should().Equal(perfil.VersaoPendente.Documento.ChaveDeEnvio);
         cenario.Unidade.Gravacoes.Should().Be(1);

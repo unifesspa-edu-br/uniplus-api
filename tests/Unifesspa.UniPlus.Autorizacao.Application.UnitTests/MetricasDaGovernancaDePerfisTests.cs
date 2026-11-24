@@ -44,11 +44,11 @@ public sealed class MetricasDaGovernancaDePerfisTests
         using MetricasDaGovernancaDePerfis metricas = new(_relogio);
         using ColetorDeMedidas coletor = new(metricas.Medidor);
 
-        metricas.AvisoSemDestinatario("versao_encerrada");
-        metricas.AvisoSemDestinatario("versao_encerrada");
-        metricas.AvisoSemDestinatario("decisoes_enviadas_com_recusas");
+        metricas.AvisoSemDestinatario("VERSAO_ENCERRADA");
+        metricas.AvisoSemDestinatario("VERSAO_ENCERRADA");
+        metricas.AvisoSemDestinatario("DECISOES_ENVIADAS_COM_RECUSAS");
 
-        coletor.Soma("uniplus.autorizacao.avisos_sem_destinatario", "tipo", "versao_encerrada").Should().Be(2);
+        coletor.Soma("uniplus.autorizacao.avisos_sem_destinatario", "tipo", "VERSAO_ENCERRADA").Should().Be(2);
     }
 
     private sealed class LeituraFixa(AmostraDaGovernanca amostra) : ILeituraDoMonitoramento

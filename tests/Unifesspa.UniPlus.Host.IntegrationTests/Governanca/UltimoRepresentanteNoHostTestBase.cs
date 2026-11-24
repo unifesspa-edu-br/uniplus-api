@@ -18,7 +18,7 @@ using Unifesspa.UniPlus.IntegrationTests.Fixtures.Hosting;
 /// <summary>
 /// Base das suítes da regra do último Representante do controlador pelo host real, com transações reais (UNI-REQ-0394,
 /// ADR-0162). Parte da governança reiniciada: Diogo, Isabella e Betina são gestores de acessos, Marlene é a única
-/// Representante e Cecília, o Encarregado de dados.
+/// Representante e Cecília, o Gestor de proteção de dados.
 /// </summary>
 public abstract class UltimoRepresentanteNoHostTestBase : ProvidenciasNoHostTestBase
 {

@@ -25,25 +25,25 @@ public sealed class TramitacaoDaProvidenciaNoHostTests : ProvidenciasNoHostTestB
     {
     }
 
-    [Fact(DisplayName = "Cada rota exige a sua permissão: o gestor não solicita, o Encarregado não responde nem atende, e quem não tem nenhuma não lê")]
+    [Fact(DisplayName = "Cada rota exige a sua permissão: o gestor não solicita, o Gestor de proteção de dados não responde nem atende, e quem não tem nenhuma não lê")]
     public async Task Permissoes_PorRota()
     {
         Governanca g = await GovernancaAsync();
         Guid concessao = await ConcessaoDeLeandroAsync();
         Guid providencia = await SolicitarAsync(g.Cecilia, concessao);
 
-        (await SolicitarBrutoAsync(g.Diogo, concessao, "revisao")).StatusCode.Should().Be(HttpStatusCode.Forbidden);
+        (await SolicitarBrutoAsync(g.Diogo, concessao, "REVISAO")).StatusCode.Should().Be(HttpStatusCode.Forbidden);
         (await ResponderAsync(g.Cecilia, providencia)).StatusCode.Should().Be(HttpStatusCode.Forbidden);
         (await AtenderAsync(g.Cecilia, providencia, Leandro.Email)).StatusCode.Should().Be(HttpStatusCode.Forbidden);
         (await Cliente(Leandro).GetAsync(new Uri($"{RotaDasProvidencias}/{providencia}", UriKind.Relative))).StatusCode.Should().Be(HttpStatusCode.Forbidden);
         (await ProvidenciaAsync(g.Cecilia, providencia)).GetProperty("impedidoDeResponder").GetBoolean().Should().BeTrue();
     }
 
-    [Fact(DisplayName = "O gestor que também é Encarregado não responde a providência que solicitou, e o beneficiário não responde sobre a própria concessão")]
+    [Fact(DisplayName = "O gestor que também é Gestor de proteção de dados não responde a providência que solicitou, e o beneficiário não responde sobre a própria concessão")]
     public async Task Impedimentos_DeQuemSolicitouEDoBeneficiario()
     {
         Governanca g = await GovernancaAsync();
-        await ConcessoesDeTeste.ConcederGovernancaAsync(Fixture.Factory.Services, Betina.ContaId.ToString(), TipoDeGovernanca.EncarregadoDeDados, Betina.Email);
+        await ConcessoesDeTeste.ConcederGovernancaAsync(Fixture.Factory.Services, Betina.ContaId.ToString(), TipoDeGovernanca.GestorDeProtecaoDeDados, Betina.Email);
         Guid providencia = await SolicitarAsync(g.Betina, await ConcessaoDeLeandroAsync());
         Guid concessaoDeDiogo = await ConcessoesDeTeste.ConcederAsync(
             Fixture.Factory.Services, Diogo.ContaId.ToString(), await SemearPerfilInternoAsync(), EscopoDaConcessao.DaUnidade(await SemearUnidadeAsync()), email: Diogo.Email);

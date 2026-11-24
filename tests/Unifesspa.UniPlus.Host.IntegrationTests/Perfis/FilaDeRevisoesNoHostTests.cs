@@ -55,7 +55,7 @@ public sealed class FilaDeRevisoesNoHostTests : RevisaoDasConcessoesNoHostTestBa
     {
         RevisaoAberta cenario = await AbrirRevisaoAsync(Diogo, Leandro);
         using HttpClient diogo = await GestorAsync();
-        using HttpResponseMessage envio = await EnviarDecisoesDaGestaoAsync(diogo, cenario.PerfilId, [Decisao(cenario.Concessoes[Leandro], "recusar")], confirmacaoDeExclusao: true);
+        using HttpResponseMessage envio = await EnviarDecisoesDaGestaoAsync(diogo, cenario.PerfilId, [Decisao(cenario.Concessoes[Leandro], "RECUSAR")], confirmacaoDeExclusao: true);
         await CorpoAsync(envio, HttpStatusCode.OK);
         using HttpClient betina = await ClienteComPermissoesAsync(Betina, AprovarFuncional);
 
@@ -75,7 +75,7 @@ public sealed class FilaDeRevisoesNoHostTests : RevisaoDasConcessoesNoHostTestBa
         using HttpClient gestao = await GestaoAsync();
         using HttpClient marlene = await ProtecaoAsync();
         PerfisDa(await FilaAsync(marlene, EtapaProtecao)).Should().NotContain(cenario.PerfilId);
-        using HttpResponseMessage envio = await EnviarDecisoesDaGestaoAsync(gestao, cenario.PerfilId, [Decisao(cenario.Concessoes[Leandro], "migrar")]);
+        using HttpResponseMessage envio = await EnviarDecisoesDaGestaoAsync(gestao, cenario.PerfilId, [Decisao(cenario.Concessoes[Leandro], "MIGRAR")]);
         await CorpoAsync(envio, HttpStatusCode.OK);
 
         JsonElement item = ItemDoPerfil(await FilaAsync(marlene, EtapaProtecao), cenario.PerfilId);
@@ -90,7 +90,7 @@ public sealed class FilaDeRevisoesNoHostTests : RevisaoDasConcessoesNoHostTestBa
     {
         RevisaoAberta cenario = await AbrirRevisaoAsync(Leandro);
         using HttpClient ambas = await GestorComAmbasAsync();
-        using HttpResponseMessage envio = await EnviarDecisoesDaGestaoAsync(ambas, cenario.PerfilId, [Decisao(cenario.Concessoes[Leandro], "migrar")]);
+        using HttpResponseMessage envio = await EnviarDecisoesDaGestaoAsync(ambas, cenario.PerfilId, [Decisao(cenario.Concessoes[Leandro], "MIGRAR")]);
         await CorpoAsync(envio, HttpStatusCode.OK);
         using HttpClient marlene = await ProtecaoAsync();
 
@@ -199,7 +199,7 @@ public sealed class FilaDeRevisoesNoHostTests : RevisaoDasConcessoesNoHostTestBa
         using HttpClient gestao = await GestaoAsync();
         foreach (RevisaoAberta revisao in revisoes)
         {
-            using HttpResponseMessage envio = await EnviarDecisoesDaGestaoAsync(gestao, revisao.PerfilId, [.. revisao.Concessoes.Values.Select(id => Decisao(id, "migrar"))]);
+            using HttpResponseMessage envio = await EnviarDecisoesDaGestaoAsync(gestao, revisao.PerfilId, [.. revisao.Concessoes.Values.Select(id => Decisao(id, "MIGRAR"))]);
             await CorpoAsync(envio, HttpStatusCode.OK);
         }
     }

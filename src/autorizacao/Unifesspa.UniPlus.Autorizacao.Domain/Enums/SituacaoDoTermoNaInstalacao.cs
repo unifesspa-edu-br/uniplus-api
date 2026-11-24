@@ -13,8 +13,8 @@ public enum SituacaoDoTermoNaInstalacao
 /// <summary>Código textual canônico de <see cref="SituacaoDoTermoNaInstalacao"/>, o valor gravado e exposto.</summary>
 public static class SituacaoDoTermoNaInstalacaoCodigo
 {
-    public const string SemTermoPublicado = "sem_termo_publicado";
-    public const string TermoVigenteSemAceite = "termo_vigente_sem_aceite";
+    public const string SemTermoPublicado = "SEM_TERMO_PUBLICADO";
+    public const string TermoVigenteSemAceite = "TERMO_VIGENTE_SEM_ACEITE";
 
     public static string ToCodigo(this SituacaoDoTermoNaInstalacao situacao) => situacao switch
     {

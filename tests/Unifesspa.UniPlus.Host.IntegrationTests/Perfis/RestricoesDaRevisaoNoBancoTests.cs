@@ -36,16 +36,16 @@ public sealed class RestricoesDaRevisaoNoBancoTests : RevisaoDasConcessoesNoHost
         { "envio sem etapa do envio", "protecao", "envio_etapa = NULL", "ck_decisoes_da_migracao_envio" },
         { "envio com etapa fora do catálogo", "protecao", "envio_etapa = 'outra'", "ck_decisoes_da_migracao_envio" },
         { "envio de origem sem etapa", "humana", "envio_de_origem_etapa = NULL", "ck_decisoes_da_migracao_envio_de_origem" },
-        { "envio de origem da proteção de dados", "humana", "envio_de_origem_etapa = 'protecao_de_dados'", "ck_decisoes_da_migracao_envio_de_origem" },
-        { "humana com resultado do sistema", "humana", "decisao = 'reter'", "ck_decisoes_da_migracao_ramo" },
+        { "envio de origem da proteção de dados", "humana", "envio_de_origem_etapa = 'PROTECAO_DE_DADOS'", "ck_decisoes_da_migracao_envio_de_origem" },
+        { "humana com resultado do sistema", "humana", "decisao = 'RETER'", "ck_decisoes_da_migracao_ramo" },
         { "humana sem decisor", "humana", "decisor_conta_id = NULL", "ck_decisoes_da_migracao_ramo" },
         { "humana sem envio de origem", "humana", "envio_de_origem_id = NULL, envio_de_origem_etapa = NULL", "ck_decisoes_da_migracao_ramo" },
         { "humana da proteção sem envio", "protecao", "envio_id = NULL, envio_etapa = NULL", "ck_decisoes_da_migracao_ramo" },
-        { "humana da gestão com envio diferente do original", "humana", "envio_id = gen_random_uuid(), envio_etapa = 'gestao_de_acessos'", "ck_decisoes_da_migracao_ramo" },
-        { "sistema com decisor", "sistema", "decisor_conta_id = 'alguem'", "ck_decisoes_da_migracao_ramo" },
-        { "sistema com resultado humano", "sistema", "decisao = 'migrar'", "ck_decisoes_da_migracao_ramo" },
-        { "sistema retendo sem envio de origem", "sistema", "envio_de_origem_id = NULL, envio_de_origem_etapa = NULL", "ck_decisoes_da_migracao_ramo" },
-        { "sistema com etapa do sistema e resultado de retenção", "sistema", "etapa = 'sistema'", "ck_decisoes_da_migracao_ramo" },
+        { "humana da gestão com envio diferente do original", "humana", "envio_id = gen_random_uuid(), envio_etapa = 'GESTAO_DE_ACESSOS'", "ck_decisoes_da_migracao_ramo" },
+        { "sistema com decisor", "SISTEMA", "decisor_conta_id = 'alguem'", "ck_decisoes_da_migracao_ramo" },
+        { "sistema com resultado humano", "SISTEMA", "decisao = 'MIGRAR'", "ck_decisoes_da_migracao_ramo" },
+        { "sistema retendo sem envio de origem", "SISTEMA", "envio_de_origem_id = NULL, envio_de_origem_etapa = NULL", "ck_decisoes_da_migracao_ramo" },
+        { "sistema com etapa do sistema e resultado de retenção", "SISTEMA", "etapa = 'SISTEMA'", "ck_decisoes_da_migracao_ramo" },
     };
 
     [Theory(DisplayName = "A trilha da migração recusa a gravação direta de cada ramo inválido")]
@@ -64,9 +64,9 @@ public sealed class RestricoesDaRevisaoNoBancoTests : RevisaoDasConcessoesNoHost
     [Theory(DisplayName = "A trilha da migração aceita a retenção, a decisão da retida e a decisão do sistema com e sem envio")]
     [InlineData("humana", "id = gen_random_uuid()")]
     [InlineData("protecao", "id = gen_random_uuid()")]
-    [InlineData("sistema", "id = gen_random_uuid()")]
-    [InlineData("sistema", "etapa = 'sistema', decisao = 'nao_migrada'")]
-    [InlineData("sistema", "etapa = 'sistema', decisao = 'fora_da_lista', envio_de_origem_id = NULL, envio_de_origem_etapa = NULL")]
+    [InlineData("SISTEMA", "id = gen_random_uuid()")]
+    [InlineData("SISTEMA", "etapa = 'SISTEMA', decisao = 'NAO_MIGRADA'")]
+    [InlineData("SISTEMA", "etapa = 'SISTEMA', decisao = 'FORA_DA_LISTA', envio_de_origem_id = NULL, envio_de_origem_etapa = NULL")]
     public async Task Trilha_AceitaGravacaoValida(string modelo, string alteracoes)
     {
         ArgumentNullException.ThrowIfNull(alteracoes);
@@ -171,13 +171,13 @@ public sealed class RestricoesDaRevisaoNoBancoTests : RevisaoDasConcessoesNoHost
 
         return new Cenario(
             await UnicoAsync("SELECT id AS \"Value\" FROM autorizacao.revisoes_das_concessoes"),
-            await UnicoAsync("SELECT id AS \"Value\" FROM autorizacao.envios_de_decisoes WHERE etapa = 'gestao_de_acessos'"),
+            await UnicoAsync("SELECT id AS \"Value\" FROM autorizacao.envios_de_decisoes WHERE etapa = 'GESTAO_DE_ACESSOS'"),
             await UnicoAsync($"SELECT id AS \"Value\" FROM autorizacao.migracoes_da_concessao WHERE concessao_id = '{revisao.Concessoes[Leandro]}'"),
             revisao.Concessoes[Leandro],
             revisao.Concessoes[Isabella],
-            await UnicoAsync($"SELECT id AS \"Value\" FROM autorizacao.decisoes_da_migracao WHERE concessao_id = '{revisao.Concessoes[Leandro]}' AND etapa = 'gestao_de_acessos'"),
-            await UnicoAsync($"SELECT id AS \"Value\" FROM autorizacao.decisoes_da_migracao WHERE concessao_id = '{revisao.Concessoes[Leandro]}' AND etapa = 'protecao_de_dados'"),
-            await UnicoAsync($"SELECT id AS \"Value\" FROM autorizacao.decisoes_da_migracao WHERE concessao_id = '{revisao.Concessoes[Isabella]}' AND ator = 'sistema'"));
+            await UnicoAsync($"SELECT id AS \"Value\" FROM autorizacao.decisoes_da_migracao WHERE concessao_id = '{revisao.Concessoes[Leandro]}' AND etapa = 'GESTAO_DE_ACESSOS'"),
+            await UnicoAsync($"SELECT id AS \"Value\" FROM autorizacao.decisoes_da_migracao WHERE concessao_id = '{revisao.Concessoes[Leandro]}' AND etapa = 'PROTECAO_DE_DADOS'"),
+            await UnicoAsync($"SELECT id AS \"Value\" FROM autorizacao.decisoes_da_migracao WHERE concessao_id = '{revisao.Concessoes[Isabella]}' AND ator = 'SISTEMA'"));
     }
 
     private async Task<Guid> UnicoAsync(string sql)
@@ -216,11 +216,11 @@ public sealed class RestricoesDaRevisaoNoBancoTests : RevisaoDasConcessoesNoHost
     private async Task MigrarNasDuasEtapasAsync(Guid perfilId, Guid concessao)
     {
         using HttpClient gestao = await GestaoAsync();
-        using HttpResponseMessage envio = await EnviarDecisoesDaGestaoAsync(gestao, perfilId, [Decisao(concessao, "migrar")]);
+        using HttpResponseMessage envio = await EnviarDecisoesDaGestaoAsync(gestao, perfilId, [Decisao(concessao, "MIGRAR")]);
         await CorpoAsync(envio, HttpStatusCode.OK);
         using HttpClient protecao = await ProtecaoAsync();
         using HttpResponseMessage etapa = await EnviarAsync(
-            protecao, HttpMethod.Post, RotaDaRevisao(perfilId, "/protecao-de-dados"), new { decisoes = new[] { Decisao(concessao, "migrar") } });
+            protecao, HttpMethod.Post, RotaDaRevisao(perfilId, "/protecao-de-dados"), new { decisoes = new[] { Decisao(concessao, "MIGRAR") } });
         await CorpoAsync(etapa, HttpStatusCode.OK);
     }
 }

@@ -164,8 +164,8 @@ public sealed class ConcessaoEndpointTests : ConcessaoEndpointTestBase
 
         JsonElement raiz = concessao.RootElement;
         (raiz.GetProperty("beneficiario").GetProperty("contaId").GetString(), raiz.GetProperty("perfil").GetProperty("id").GetGuid(), raiz.GetProperty("origem").GetProperty("tipo").GetString())
-            .Should().Be((Leandro.ContaId, perfil, "pedido"));
-        (raiz.GetProperty("escopo").GetProperty("tipo").GetString(), raiz.GetProperty("escopo").GetProperty("unidadeId").GetGuid()).Should().Be(("unidade", unidade));
+            .Should().Be((Leandro.ContaId, perfil, "PEDIDO"));
+        (raiz.GetProperty("escopo").GetProperty("tipo").GetString(), raiz.GetProperty("escopo").GetProperty("unidadeId").GetGuid()).Should().Be(("UNIDADE", unidade));
         raiz.GetProperty("ativa").GetBoolean().Should().BeTrue();
         raiz.GetProperty("revogadaEm").ValueKind.Should().Be(JsonValueKind.Null);
         raiz.EnumerateObject().Select(p => p.Name).Should().NotContain(["cpf", "nome"]);

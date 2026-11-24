@@ -13,8 +13,8 @@ public enum AtorDoEventoDaContencao
 /// <summary>Código textual canônico de <see cref="AtorDoEventoDaContencao"/>, o valor gravado e exposto.</summary>
 public static class AtorDoEventoDaContencaoCodigo
 {
-    public const string Humano = "humano";
-    public const string Sistema = "sistema";
+    public const string Humano = "HUMANO";
+    public const string Sistema = "SISTEMA";
 
     public static string ToCodigo(this AtorDoEventoDaContencao ator) => ator switch
     {

@@ -160,7 +160,7 @@ public sealed class PropostasDeVersaoTests
         CenarioDaGovernancaDaVersao cenario = new(perfil, PerfisDeTeste.Autor, []);
 
         GravacaoDaOperacao<ResultadoDaPropostaDto> gravacao = await cenario.Propostas.ProporAsync(
-            perfil.Id, Dados("Analista", [Consultar, Publicar], Motivo, "incidente"), CancellationToken.None);
+            perfil.Id, Dados("Analista", [Consultar, Publicar], Motivo, "INCIDENTE"), CancellationToken.None);
 
         gravacao.Resultado.IsSuccess.Should().BeTrue();
         gravacao.Resultado.Value!.Envio!.VersaoId.Should().Be(perfil.VersaoPendente!.Id);
@@ -182,7 +182,7 @@ public sealed class PropostasDeVersaoTests
         string motivo = string.Concat(Enumerable.Repeat(caractere, tamanho));
 
         GravacaoDaOperacao<ResultadoDaPropostaDto> gravacao = await cenario.Propostas.ProporAsync(
-            perfil.Id, Dados("Analista", [Consultar, Publicar], motivo, "incidente"), CancellationToken.None);
+            perfil.Id, Dados("Analista", [Consultar, Publicar], motivo, "INCIDENTE"), CancellationToken.None);
 
         gravacao.Resultado.IsSuccess.Should().Be(aceita);
     }

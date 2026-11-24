@@ -5,7 +5,7 @@ using Unifesspa.UniPlus.Autorizacao.Domain.Enums;
 
 /// <summary>Perfil de acesso como a API o expõe.</summary>
 /// <param name="Nome">O nome corrente: o da versão vigente ou, sem vigente, o da pendente.</param>
-/// <param name="Governanca">Papel de governança do perfil de sistema (<c>gestor-de-acessos</c>, <c>representante-do-controlador</c> ou <c>encarregado-de-dados</c>); nulo nos perfis comuns.</param>
+/// <param name="Governanca">Papel de governança do perfil de sistema (<c>GESTOR_DE_ACESSOS</c>, <c>REPRESENTANTE_DO_CONTROLADOR</c> ou <c>GESTOR_DE_PROTECAO_DE_DADOS</c>); nulo nos perfis comuns.</param>
 /// <param name="Sensibilidade">A mais alta entre as permissões da composição em vigor (sem vigente, da pendente), derivada do catálogo.</param>
 /// <param name="SituacaoDoAcesso">Situação do acesso do perfil, como o enum <see cref="SituacaoDoAcessoDoPerfil"/> a explica.</param>
 /// <param name="ComposicaoEmVigor">O que decide acesso hoje; nulo no perfil comum sem versão vigente.</param>

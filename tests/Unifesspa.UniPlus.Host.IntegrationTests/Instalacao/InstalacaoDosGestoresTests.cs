@@ -146,7 +146,7 @@ public sealed class InstalacaoDosGestoresTests : InstalacaoTestBase
         (await EnviarAsync(paulo, HttpMethod.Post, $"{Rota}/{id}/documento/confirmacao", new { etag })).StatusCode.Should().Be(HttpStatusCode.OK);
 
         await InjetarResultadoAsync(id, VeredictoDaVerificacao.Recusado, MotivoDaRecusa.PdfComSenha);
-        await AguardarSituacaoAsync(paulo, id, "documento_recusado");
+        await AguardarSituacaoAsync(paulo, id, "DOCUMENTO_RECUSADO");
         (await TiposDaTrilhaDaInstalacaoAsync(id)).Should().Equal("instalacao_iniciada", "documento_recusado");
 
         using HttpResponseMessage resposta = await EnviarAsync(paulo, HttpMethod.Post, $"{Rota}/{id}/codigo");

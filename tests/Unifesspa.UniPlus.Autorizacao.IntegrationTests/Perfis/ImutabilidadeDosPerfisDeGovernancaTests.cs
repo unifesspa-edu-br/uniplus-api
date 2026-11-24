@@ -9,7 +9,7 @@ using Unifesspa.UniPlus.Autorizacao.Domain.Entities;
 using Unifesspa.UniPlus.Autorizacao.IntegrationTests.Infrastructure;
 
 /// <summary>
-/// Os três perfis de governança, inclusive o de Encarregado de dados, são imutáveis pelo endpoint real: nova versão e
+/// Os três perfis de governança, inclusive o de Gestor de proteção de dados, são imutáveis pelo endpoint real: nova versão e
 /// desativação são recusadas com 422, e o perfil segue ativo. Diogo Souza opera o cadastro.
 /// </summary>
 [Collection(AutorizacaoEndpointCollection.Name)]
@@ -22,9 +22,9 @@ public sealed class ImutabilidadeDosPerfisDeGovernancaTests : PerfilEndpointTest
 
     public static TheoryData<Guid, string> PerfisDeGovernanca => new()
     {
-        { PerfisDeSistema.GestorDeAcessosId, "gestor-de-acessos" },
-        { PerfisDeSistema.RepresentanteDoControladorId, "representante-do-controlador" },
-        { PerfisDeSistema.EncarregadoDeDadosId, "encarregado-de-dados" },
+        { PerfisDeSistema.GestorDeAcessosId, "GESTOR_DE_ACESSOS" },
+        { PerfisDeSistema.RepresentanteDoControladorId, "REPRESENTANTE_DO_CONTROLADOR" },
+        { PerfisDeSistema.GestorDeProtecaoDeDadosId, "GESTOR_DE_PROTECAO_DE_DADOS" },
     };
 
     [Theory(DisplayName = "Todo perfil de governança recusa nova versão e desativação com 422 e segue ativo")]

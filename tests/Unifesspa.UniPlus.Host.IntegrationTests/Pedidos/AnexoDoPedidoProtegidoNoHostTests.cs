@@ -58,7 +58,7 @@ public sealed class AnexoDoPedidoProtegidoNoHostTests : TermoNoHostTestBase
     private async Task AceitarQuandoLiberadoAsync(Guid id)
     {
         using HttpClient leandro = Cliente(Leandro);
-        await AguardarAsync(async () => await SituacaoAsync(leandro, id) == "aguardando_beneficiario", "o documento verificado não liberou o aceite");
+        await AguardarAsync(async () => await SituacaoAsync(leandro, id) == "AGUARDANDO_BENEFICIARIO", "o documento verificado não liberou o aceite");
         (await AceitarAsync(leandro, id)).StatusCode.Should().Be(HttpStatusCode.OK);
     }
 }

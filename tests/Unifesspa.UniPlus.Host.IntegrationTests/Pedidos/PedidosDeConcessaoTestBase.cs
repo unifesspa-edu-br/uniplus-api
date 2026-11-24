@@ -48,7 +48,7 @@ public abstract class PedidosDeConcessaoTestBase
     internal static readonly byte[] Pdf = [.. "%PDF-1.7 documento de designacao de teste"u8];
 
     private static readonly Guid[] PerfisDeGovernanca =
-        [PerfisDeSistema.GestorDeAcessosId, PerfisDeSistema.RepresentanteDoControladorId, PerfisDeSistema.EncarregadoDeDadosId];
+        [PerfisDeSistema.GestorDeAcessosId, PerfisDeSistema.RepresentanteDoControladorId, PerfisDeSistema.GestorDeProtecaoDeDadosId];
 
     internal static readonly Persona Diogo = new("diogo.souza", "Diogo Bruno Filipe Souza", "diogo.bruno.souza@uniplus-test.local");
     internal static readonly Persona Isabella = new("isabella.figueiredo", "Isabella Priscila Figueiredo", "isabellapriscilafigueiredo@uniplus-test.local");
@@ -220,7 +220,7 @@ public abstract class PedidosDeConcessaoTestBase
         await TermoNoHostDeTeste.ReiniciarAsync(Fixture.Factory.Services);
         await ExecutarSqlAsync("DELETE FROM autorizacao.pedidos_de_concessao");
         await ApagarFatosDasConcessoesAsync();
-        await ExecutarSqlAsync("DELETE FROM autorizacao.concessoes WHERE origem_tipo = 'pedido' OR perfil_id = ANY({0})", PerfisDeGovernanca);
+        await ExecutarSqlAsync("DELETE FROM autorizacao.concessoes WHERE origem_tipo = 'PEDIDO' OR perfil_id = ANY({0})", PerfisDeGovernanca);
         await ExpirarVersoesVencidasDeTestesAnterioresAsync();
         Vigente = await TermoNoHostDeTeste.PublicarAsync(Fixture.Factory.Services, "versão do teste");
     }
@@ -414,13 +414,13 @@ public abstract class PedidosDeConcessaoTestBase
         throw new TimeoutException(falha);
     }
 
-    /// <summary>Anexa o PDF ao pedido e leva-o a "verificado" pelo caminho real: URL assinada, confirmação e fila.</summary>
+    /// <summary>Anexa o PDF ao pedido e leva-o a "VERIFICADO" pelo caminho real: URL assinada, confirmação e fila.</summary>
     private protected async Task<Guid> AnexarVerificadoAsync(HttpClient solicitante, Guid pedidoId)
     {
         Guid anexoId = await AnexarEmVerificacaoAsync(solicitante, pedidoId);
         await InjetarResultadoAsync(anexoId, VeredictoDaVerificacao.Verificado);
         await AguardarAsync(
-            async () => (await SituacaoDoAnexoAsync(solicitante, pedidoId, anexoId)) == "verificado",
+            async () => (await SituacaoDoAnexoAsync(solicitante, pedidoId, anexoId)) == "VERIFICADO",
             $"o anexo {anexoId} não chegou a verificado");
         return anexoId;
     }
@@ -435,7 +435,7 @@ public abstract class PedidosDeConcessaoTestBase
 
         using HttpResponseMessage confirmacao = await EnviarAsync(
             solicitante, HttpMethod.Post, $"{Rota}/{pedidoId}/anexos/{anexoId}/confirmacao", new { etag });
-        (await CorpoAsync(confirmacao, HttpStatusCode.OK)).GetProperty("situacao").GetString().Should().Be("em_verificacao");
+        (await CorpoAsync(confirmacao, HttpStatusCode.OK)).GetProperty("situacao").GetString().Should().Be("EM_VERIFICACAO");
         return anexoId;
     }
 

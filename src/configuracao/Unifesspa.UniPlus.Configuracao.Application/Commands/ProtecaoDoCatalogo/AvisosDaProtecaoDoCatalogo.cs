@@ -8,7 +8,7 @@ using Unifesspa.UniPlus.Kernel.Domain.ValueObjects;
 
 /// <summary>
 /// Monta os e-mails do circuito de aprovação da proteção de dados do catálogo de tipos de documento e de fatos do
-/// candidato para os Representantes do controlador, que têm a permissão de aprovar, e para os Encarregados de dados, que
+/// candidato para os Representantes do controlador, que têm a permissão de aprovar, e para os Gestores de proteção de dados, que
 /// têm a de se manifestar. Os textos nomeiam o papel, no masculino genérico (UNI-REQ-0360). Os handlers devolvem o resultado
 /// como mensagens de saída, que entram no outbox junto da gravação.
 /// </summary>
@@ -36,7 +36,7 @@ internal static class AvisosDaProtecaoDoCatalogo
     }
 
     /// <summary>
-    /// O aviso da solicitação aos Encarregados de dados, que têm a permissão de se manifestar (UNI-REQ-0373): a
+    /// O aviso da solicitação aos Gestores de proteção de dados, que têm a permissão de se manifestar (UNI-REQ-0373): a
     /// manifestação técnica é opcional e não decide.
     /// </summary>
     public static IReadOnlyList<EnviarEmail> DaSolicitacaoParaManifestacao(IReadOnlyList<string> destinatarios, int tiposDeDocumento, int fatos)
@@ -48,7 +48,7 @@ internal static class AvisosDaProtecaoDoCatalogo
 
         return Montar(
             destinatarios,
-            "Itens do catálogo de tipos de documento e de fatos do candidato abertos à manifestação do Encarregado de dados",
+            "Itens do catálogo de tipos de documento e de fatos do candidato abertos à manifestação do Gestor de proteção de dados",
             $"{abertura}\n\n{chamada}",
             $"<p>{WebUtility.HtmlEncode(abertura)}</p><p>{chamada}</p>",
             "catalogo.protecao.solicitacao.manifestacao");

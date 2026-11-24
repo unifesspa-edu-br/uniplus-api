@@ -38,8 +38,8 @@ public sealed class LeituraDoMonitoramentoTests : PerfilEndpointTestBase
             _vencendo = await testes.SemearPerfilVigenteAsync(OperarInscricoes);
             _distante = await testes.SemearPerfilVigenteAsync(AnalisarAtendimento);
             Antes = (await testes.LerAsync()).VersoesVencendo;
-            await testes.InserirVersaoAsync(_vencendo, 2, "pendente");
-            await testes.InserirVersaoAsync(_distante, 2, "pendente");
+            await testes.InserirVersaoAsync(_vencendo, 2, "PENDENTE");
+            await testes.InserirVersaoAsync(_distante, 2, "PENDENTE");
             await testes.ExecutarAsync("UPDATE autorizacao.versoes_do_perfil SET expira_em = now() + interval '24 hours' WHERE perfil_id = {0} AND numero = 2", _vencendo);
             Depois = (await testes.LerAsync()).VersoesVencendo;
         }
@@ -60,7 +60,7 @@ public sealed class LeituraDoMonitoramentoTests : PerfilEndpointTestBase
         await ExecutarAsync(
             """
             INSERT INTO autorizacao.divergencias_da_governanca (id, implantacao_id, perfil_id, codigo, tipo, instante, ordem_na_trilha)
-            SELECT {0}, c.id, {1}, 'teste:inscricoes:operar', 'composicao_faltante', now(), nextval('autorizacao.ordem_da_trilha_de_contencao')
+            SELECT {0}, c.id, {1}, 'teste:inscricoes:operar', 'COMPOSICAO_FALTANTE', now(), nextval('autorizacao.ordem_da_trilha_de_contencao')
             FROM autorizacao.implantacoes_das_permissoes c ORDER BY c.sequencia DESC LIMIT 1
             """,
             Guid.CreateVersion7(), perfil);

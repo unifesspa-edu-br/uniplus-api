@@ -14,7 +14,7 @@ using Unifesspa.UniPlus.Kernel.Results;
 using static Unifesspa.UniPlus.Autorizacao.Application.UnitTests.DoublesDaInstalacao;
 
 /// <summary>
-/// A consulta das revisões sem decidir, do Encarregado de dados: lê as revisões, mas não decide item, e a decisão do item
+/// A consulta das revisões sem decidir, do Gestor de proteção de dados: lê as revisões, mas não decide item, e a decisão do item
 /// recusa quem só consulta antes de travar a revisão, o papel, a pessoa ou a concessão. Cecília Moura só consulta.
 /// </summary>
 public sealed class AcessoDaRevisaoDaConsultaTests

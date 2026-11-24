@@ -6,7 +6,7 @@ using Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects;
 
 /// <summary>
 /// Monta, pela fábrica do domínio, a providência que o teste precisa como pré-condição. Sem ajuste, Cecília Moura,
-/// Encarregado de dados com e-mail verificado, pede a retirada do acesso de Leandro Viana, cuja concessão está ativa e sem
+/// Gestor de proteção de dados com e-mail verificado, pede a retirada do acesso de Leandro Viana, cuja concessão está ativa e sem
 /// prazo. Os testes da própria abertura chamam a fábrica direto.
 /// </summary>
 public sealed class ProvidenciaBuilder
@@ -24,7 +24,7 @@ public sealed class ProvidenciaBuilder
 
     private Concessao? _concessao;
     private PessoaNoToken _solicitante = Cecilia;
-    private SolicitacaoDaProvidencia _solicitacao = new("retirada", Fundamento);
+    private SolicitacaoDaProvidencia _solicitacao = new("RETIRADA", Fundamento);
 
     /// <summary>A concessão alvo; a padrão nasce na primeira leitura.</summary>
     public Concessao Concessao => _concessao ??= ConcessaoDeLeandro();

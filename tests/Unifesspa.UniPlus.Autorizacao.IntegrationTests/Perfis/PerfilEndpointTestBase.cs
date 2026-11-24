@@ -93,7 +93,7 @@ public abstract class PerfilEndpointTestBase
             """
             INSERT INTO autorizacao.versoes_do_perfil
                 (id, perfil_id, numero, nome, descricao, protocolo, situacao, origem, alcance, ciclo_de_aprovacao, criador_tem_concessao, exige_protecao_de_dados, expira_em, criada_por_emissor, criada_por_conta_id, criada_em, created_at)
-            VALUES ({0}, {1}, {2}, {3}, 'Descrição de teste.', 'P-1', {4}, 'proposta', '', 0, false, false, now() + interval '15 days', 'emissor', 'diogo.souza', now(), now())
+            VALUES ({0}, {1}, {2}, {3}, 'Descrição de teste.', 'P-1', {4}, 'PROPOSTA', '', 0, false, false, now() + interval '15 days', 'emissor', 'diogo.souza', now(), now())
             """,
             Guid.CreateVersion7(), perfilId, numero, Nome(), situacao);
 
@@ -101,9 +101,9 @@ public abstract class PerfilEndpointTestBase
     internal async Task LimparPendentesInseridasAsync(Guid perfilId)
     {
         await ExecutarAsync(
-            "DELETE FROM autorizacao.decisoes_da_versao WHERE versao_id IN (SELECT id FROM autorizacao.versoes_do_perfil WHERE perfil_id = {0} AND situacao = 'pendente')",
+            "DELETE FROM autorizacao.decisoes_da_versao WHERE versao_id IN (SELECT id FROM autorizacao.versoes_do_perfil WHERE perfil_id = {0} AND situacao = 'PENDENTE')",
             perfilId);
-        await ExecutarAsync("DELETE FROM autorizacao.versoes_do_perfil WHERE perfil_id = {0} AND situacao = 'pendente'", perfilId);
+        await ExecutarAsync("DELETE FROM autorizacao.versoes_do_perfil WHERE perfil_id = {0} AND situacao = 'PENDENTE'", perfilId);
     }
 
     internal Task InserirVigenciaAsync(Guid perfilId, Guid versaoId) =>

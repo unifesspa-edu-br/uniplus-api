@@ -59,7 +59,7 @@ public sealed class RemocaoDePermissoesNoHostTests : AprovacaoDaVersaoNoHostTest
         using HttpResponseMessage resposta = await RemoverBrutoAsync(diogo, vigente.PerfilId, [Sensivel]);
 
         resposta.StatusCode.Should().Be(HttpStatusCode.OK, await resposta.Content.ReadAsStringAsync());
-        (await SituacaoDaVersaoNoBancoAsync(pendente.VersaoId)).Should().Be("cancelada");
+        (await SituacaoDaVersaoNoBancoAsync(pendente.VersaoId)).Should().Be("CANCELADA");
         JsonElement aviso = await AguardarAvisoAsync(Betina, vigente.PerfilId, AssuntoDoCancelamento);
         await AguardarAvisoAsync(Marlene, vigente.PerfilId, AssuntoDoCancelamento);
         aviso.GetProperty("Text").GetString().Should().NotContain(Motivo).And.NotContain(Diogo.Nome).And.NotContain(Diogo.Email);
@@ -76,7 +76,7 @@ public sealed class RemocaoDePermissoesNoHostTests : AprovacaoDaVersaoNoHostTest
         using HttpResponseMessage resposta = await RemoverBrutoAsync(diogo, vigente.PerfilId, [Sensivel]);
 
         resposta.StatusCode.Should().Be(HttpStatusCode.OK, await resposta.Content.ReadAsStringAsync());
-        (await SituacaoDaVersaoNoBancoAsync(pendente.VersaoId)).Should().Be("expirada");
+        (await SituacaoDaVersaoNoBancoAsync(pendente.VersaoId)).Should().Be("EXPIRADA");
         await AguardarAvisoAsync(Isabella, vigente.PerfilId, AssuntoDaRemocao);
         await AguardarAvisoAsync(Betina, vigente.PerfilId, AssuntoDaRemocao);
         (await MensagensAsync(Betina, vigente.PerfilId)).Should().NotContain(m => m.GetProperty("Subject").GetString()!.Contains(AssuntoDoCancelamento, StringComparison.OrdinalIgnoreCase));

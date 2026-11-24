@@ -1,6 +1,6 @@
 namespace Unifesspa.UniPlus.Autorizacao.Domain.Enums;
 
-/// <summary>O que o Encarregado de dados pede sobre uma concessão (UNI-REQ-0375).</summary>
+/// <summary>O que o Gestor de proteção de dados pede sobre uma concessão (UNI-REQ-0375).</summary>
 public enum TipoDaProvidencia
 {
     /// <summary>A retirada do acesso.</summary>
@@ -13,8 +13,8 @@ public enum TipoDaProvidencia
 /// <summary>Código textual canônico de <see cref="TipoDaProvidencia"/>, o valor gravado, exposto e aceito no corpo.</summary>
 public static class TipoDaProvidenciaCodigo
 {
-    public const string Retirada = "retirada";
-    public const string Revisao = "revisao";
+    public const string Retirada = "RETIRADA";
+    public const string Revisao = "REVISAO";
 
     public static string ToCodigo(this TipoDaProvidencia tipo) => tipo switch
     {
@@ -28,7 +28,7 @@ public static class TipoDaProvidenciaCodigo
         DoCodigo(codigo) ?? throw new ArgumentOutOfRangeException(nameof(codigo), codigo, null);
 
     /// <summary>O tipo do código informado, sem distinguir maiúsculas nem espaços nas pontas; nulo quando não existe.</summary>
-    public static TipoDaProvidencia? DoCodigo(string? codigo) => codigo?.Trim().ToLowerInvariant() switch
+    public static TipoDaProvidencia? DoCodigo(string? codigo) => codigo?.Trim().ToUpperInvariant() switch
     {
         Retirada => TipoDaProvidencia.Retirada,
         Revisao => TipoDaProvidencia.Revisao,

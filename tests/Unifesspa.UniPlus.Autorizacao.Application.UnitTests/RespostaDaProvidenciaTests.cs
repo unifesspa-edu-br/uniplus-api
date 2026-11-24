@@ -27,7 +27,7 @@ public sealed class RespostaDaProvidenciaTests
 
         (Result<ProvidenciaDto> resposta, IEnumerable<object> mensagens) = await ResponderAsync(providencia.Id);
 
-        (resposta.Value!.Situacao, resposta.Value.Desfecho!.Motivo, mensagens.Count()).Should().Be(("respondida", ProvidenciaBuilder.Motivo, 1));
+        (resposta.Value!.Situacao, resposta.Value.Desfecho!.Motivo, mensagens.Count()).Should().Be(("RESPONDIDA", ProvidenciaBuilder.Motivo, 1));
         Received.InOrder(() =>
         {
             _ = _cenario.Providencias.ObterConcessaoIdAsync(providencia.Id, Arg.Any<CancellationToken>());

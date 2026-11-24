@@ -98,15 +98,15 @@ public sealed class PersistenciaDaContencaoTests : PerfilEndpointTestBase
         Guid perfil = await SemearPerfilVigenteAsync(ConsultarCatalogo);
         Func<Task> papelInvalido = () => InserirSuspensaoAsync(perfil, papel: "outro");
         Guid suspensao = await InserirSuspensaoAsync(perfil);
-        await InserirDecisaoAsync(suspensao, "gestao_de_acessos");
+        await InserirDecisaoAsync(suspensao, "GESTAO_DE_ACESSOS");
 
-        Func<Task> repetida = () => InserirDecisaoAsync(suspensao, "gestao_de_acessos");
+        Func<Task> repetida = () => InserirDecisaoAsync(suspensao, "GESTAO_DE_ACESSOS");
         Func<Task> etapaInvalida = () => InserirDecisaoAsync(suspensao, "outra");
 
         await papelInvalido.Should().ThrowAsync<Npgsql.PostgresException>();
         await repetida.Should().ThrowAsync<Npgsql.PostgresException>();
         await etapaInvalida.Should().ThrowAsync<Npgsql.PostgresException>();
-        await InserirDecisaoAsync(suspensao, "protecao_de_dados");
+        await InserirDecisaoAsync(suspensao, "PROTECAO_DE_DADOS");
     }
 
     [Theory(DisplayName = "O banco barra a reativação incoerente: campos de quem reativou sem data, ou data sem eles")]
@@ -124,11 +124,11 @@ public sealed class PersistenciaDaContencaoTests : PerfilEndpointTestBase
     }
 
     [Theory(DisplayName = "O banco barra o evento cujos campos contradizem o tipo")]
-    [InlineData("retomada", "humano", null, "decisao_da_etapa")]
-    [InlineData("retomada", "sistema", null, null)]
-    [InlineData("suspensao", "sistema", null, null)]
-    [InlineData("suspensao", "humano", "decisao_da_etapa", null)]
-    [InlineData("outro", "humano", null, null)]
+    [InlineData("RETOMADA", "HUMANO", null, "DECISAO_DA_ETAPA")]
+    [InlineData("RETOMADA", "SISTEMA", null, null)]
+    [InlineData("SUSPENSAO", "SISTEMA", null, null)]
+    [InlineData("SUSPENSAO", "HUMANO", "DECISAO_DA_ETAPA", null)]
+    [InlineData("outro", "HUMANO", null, null)]
     public async Task Banco_BarraEventoIncoerente(string tipo, string ator, string? origem, string? permissao)
     {
         Guid perfil = await SemearPerfilVigenteAsync(ConsultarCatalogo);
@@ -138,7 +138,7 @@ public sealed class PersistenciaDaContencaoTests : PerfilEndpointTestBase
             $$"""
             INSERT INTO autorizacao.eventos_da_contencao
                 (id, perfil_id, instante, tipo, suspensao_id, ator, origem, permissao_codigo, ator_emissor, ator_conta_id, papel, motivo, perfil_protegido, ordem_na_trilha)
-            VALUES ({0}, {1}, now(), {2}, {3}, {4}, {{Literal(origem)}}, {{Literal(permissao)}}, 'e', 's', 'gestao_de_acessos', 'm', false, nextval('autorizacao.ordem_da_trilha_de_contencao'))
+            VALUES ({0}, {1}, now(), {2}, {3}, {4}, {{Literal(origem)}}, {{Literal(permissao)}}, 'e', 's', 'GESTAO_DE_ACESSOS', 'm', false, nextval('autorizacao.ordem_da_trilha_de_contencao'))
             """,
             Guid.CreateVersion7(), perfil, tipo, suspensao, ator);
 
@@ -150,13 +150,13 @@ public sealed class PersistenciaDaContencaoTests : PerfilEndpointTestBase
     {
         Guid perfil = await SemearPerfilVigenteAsync(ConsultarCatalogo);
         Guid suspensao = await InserirSuspensaoAsync(perfil);
-        await InserirDecisaoAsync(suspensao, "gestao_de_acessos");
+        await InserirDecisaoAsync(suspensao, "GESTAO_DE_ACESSOS");
 
         Func<Task> acao = () => ExecutarAsync(
             """
             INSERT INTO autorizacao.eventos_da_contencao
                 (id, perfil_id, instante, tipo, suspensao_id, ator, decisao_id, perfil_protegido, ordem_na_trilha)
-            SELECT {0}, {1}, now(), 'retomada', {2}, 'sistema', d.id, false, nextval('autorizacao.ordem_da_trilha_de_contencao')
+            SELECT {0}, {1}, now(), 'RETOMADA', {2}, 'SISTEMA', d.id, false, nextval('autorizacao.ordem_da_trilha_de_contencao')
             FROM autorizacao.decisoes_da_retomada d WHERE d.suspensao_id = {2}
             """,
             Guid.CreateVersion7(), perfil, suspensao);
@@ -204,7 +204,7 @@ public sealed class PersistenciaDaContencaoTests : PerfilEndpointTestBase
         await cenario.ExecutarAsync();
         cenario.Registros.Select(r => r.Ordem).Should().BeInAscendingOrder().And.OnlyHaveUniqueItems();
         cenario.Registros.Select(r => r.Tipo).Should().Equal(
-            "suspensao", "decisao_da_retomada", "retomada", "desativacao", "reativacao");
+            "SUSPENSAO", "decisao_da_retomada", "RETOMADA", "DESATIVACAO", "REATIVACAO");
         cenario.Trilha.EnumerateArray().Select(r => r.GetProperty("tipo").GetString())
             .Should().Equal(cenario.Registros.Select(r => r.Tipo));
     }
@@ -221,7 +221,7 @@ public sealed class PersistenciaDaContencaoTests : PerfilEndpointTestBase
             Guid perfil = await testes.SemearPerfilVigenteAsync(ConsultarCatalogo);
             await ConferirAsync(await EnviarAsync(diogo, HttpMethod.Post, $"{Rota}/{perfil}/suspensao", new { motivo = Motivo }), HttpStatusCode.NoContent);
             await ConferirAsync(
-                await EnviarAsync(isabella, HttpMethod.Post, $"{Rota}/{perfil}/suspensao/retomada", new { etapa = "gestao_de_acessos", motivo = Motivo }),
+                await EnviarAsync(isabella, HttpMethod.Post, $"{Rota}/{perfil}/suspensao/retomada", new { etapa = "GESTAO_DE_ACESSOS", motivo = Motivo }),
                 HttpStatusCode.OK);
             await ConferirAsync(await EnviarAsync(diogo, HttpMethod.Post, $"{Rota}/{perfil}/desativacao", new { motivo = Motivo }), HttpStatusCode.NoContent);
             await ConferirAsync(await EnviarAsync(isabella, HttpMethod.Post, $"{Rota}/{perfil}/reativacao", new { motivo = Motivo }), HttpStatusCode.NoContent);
@@ -255,7 +255,7 @@ public sealed class PersistenciaDaContencaoTests : PerfilEndpointTestBase
         return [.. linhas.Select(static l => (l.Tipo, l.Ordem))];
     }
 
-    private async Task<Guid> InserirSuspensaoAsync(Guid perfilId, string papel = "gestao_de_acessos")
+    private async Task<Guid> InserirSuspensaoAsync(Guid perfilId, string papel = "GESTAO_DE_ACESSOS")
     {
         Guid id = Guid.CreateVersion7();
         await ExecutarAsync(

@@ -53,7 +53,7 @@ internal sealed class ConcessaoConfiguration : IEntityTypeConfiguration<Concessa
                 + " OR (revogada_em IS NOT NULL AND revogada_por_emissor IS NULL AND revogada_por_conta_id IS NULL AND motivo_revogacao IS NOT NULL AND revogada_pela_revisao_id IS NOT NULL)");
             tabela.HasCheckConstraint(
                 "ck_concessoes_escopo_unidade",
-                "(escopo_tipo = 'unidade') = (unidade_id IS NOT NULL)");
+                "(escopo_tipo = 'UNIDADE') = (unidade_id IS NOT NULL)");
             tabela.HasCheckConstraint(
                 "ck_concessoes_validade_posterior",
                 "valida_ate IS NULL OR valida_ate > concedida_em");

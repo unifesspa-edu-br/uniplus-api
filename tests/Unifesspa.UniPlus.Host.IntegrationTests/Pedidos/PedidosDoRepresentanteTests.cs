@@ -22,8 +22,8 @@ using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 [Collection(MonolitoDaInstalacaoCollection.Name)]
 public sealed class PedidosDoRepresentanteTests : PedidosDeConcessaoTestBase
 {
-    private const string SituacaoAprovado = "aprovado";
-    private const string SituacaoNaSegundaEtapa = "aguardando_protecao_de_dados";
+    private const string SituacaoAprovado = "APROVADO";
+    private const string SituacaoNaSegundaEtapa = "AGUARDANDO_PROTECAO_DE_DADOS";
     private const string TipoDaDispensaNaTrilha = "segunda_aprovacao_dispensada";
     private const string TravaDaGravacaoDeConcessoes = "LOCK TABLE autorizacao.concessoes IN SHARE ROW EXCLUSIVE MODE";
 
@@ -43,7 +43,7 @@ public sealed class PedidosDoRepresentanteTests : PedidosDeConcessaoTestBase
 
         JsonElement aprovado = await CorpoAsync(await EnviarAsync(diogo, HttpMethod.Post, $"{Rota}/{id}/aprovacoes"), HttpStatusCode.OK);
 
-        aprovado.GetProperty("situacao").GetString().Should().Be("aprovado");
+        aprovado.GetProperty("situacao").GetString().Should().Be("APROVADO");
         aprovado.GetProperty("admitePrazo").GetBoolean().Should().BeFalse("a designação de Representante não tem prazo");
         (await ConcessoesAsync(Marlene, Representante)).Should().ContainSingle();
         (await DetalheDaDispensaAsync(diogo, id)).Should().Contain("designacao_de_protecao_de_dados");
@@ -58,7 +58,7 @@ public sealed class PedidosDoRepresentanteTests : PedidosDeConcessaoTestBase
         Guid id = await DesignacaoAceitaAsync(Leandro);
 
         (await EnviarAsync(diogo, HttpMethod.Post, $"{Rota}/{id}/aprovacoes")).StatusCode.Should().Be(HttpStatusCode.OK);
-        (await SituacaoAsync(diogo, id)).Should().Be("aguardando_protecao_de_dados");
+        (await SituacaoAsync(diogo, id)).Should().Be("AGUARDANDO_PROTECAO_DE_DADOS");
         (await EnviarAsync(Cliente(Marlene), HttpMethod.Post, $"{Rota}/{id}/aprovacoes")).StatusCode.Should().Be(HttpStatusCode.OK);
 
         (await ConcessoesAsync(Leandro, Representante)).Should().ContainSingle();
@@ -78,7 +78,7 @@ public sealed class PedidosDoRepresentanteTests : PedidosDeConcessaoTestBase
 
         (await EnviarAsync(diogo, HttpMethod.Post, $"{Rota}/{id}/aprovacoes")).StatusCode.Should().Be(HttpStatusCode.OK);
 
-        (await SituacaoAsync(diogo, id)).Should().Be("aguardando_protecao_de_dados");
+        (await SituacaoAsync(diogo, id)).Should().Be("AGUARDANDO_PROTECAO_DE_DADOS");
         await ConferirRecusaAsync(await EnviarAsync(Cliente(Marlene), HttpMethod.Post, $"{Rota}/{id}/aprovacoes"), HttpStatusCode.UnprocessableEntity, "decisor_e_parte");
         (await EnviarAsync(Cliente(Isabella), HttpMethod.Post, $"{Rota}/{id}/aprovacoes")).StatusCode.Should().Be(HttpStatusCode.OK);
         (await ConcessoesAsync(Marlene, perfil)).Should().ContainSingle();
@@ -132,7 +132,7 @@ public sealed class PedidosDoRepresentanteTests : PedidosDeConcessaoTestBase
     {
         using HttpClient betina = Cliente(Betina);
         Guid id = await CriarAsync(betina, Representante, null, beneficiario);
-        (await SituacaoAsync(betina, id)).Should().Be("aguardando_documento");
+        (await SituacaoAsync(betina, id)).Should().Be("AGUARDANDO_DOCUMENTO");
         await AnexarVerificadoAsync(betina, id);
         await AceitarAsync(Cliente(beneficiario), id);
 

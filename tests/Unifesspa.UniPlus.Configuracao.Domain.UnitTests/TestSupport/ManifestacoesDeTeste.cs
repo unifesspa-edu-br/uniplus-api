@@ -6,7 +6,7 @@ using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Kernel.Results;
 
 /// <summary>
-/// Quem se manifesta nos cenários: Kevin e Lúcia, Encarregados de dados, e os conteúdos de manifestação que eles
+/// Quem se manifesta nos cenários: Kevin e Lúcia, Gestores de proteção de dados, e os conteúdos de manifestação que eles
 /// registram.
 /// </summary>
 internal static class ManifestacoesDeTeste

@@ -47,7 +47,7 @@ public sealed class PrazoDoRepresentanteNoHostTests : UltimoRepresentanteNoHostT
             HttpStatusCode.UnprocessableEntity,
             ValidadeDoPedido);
 
-        (await SituacaoAsync(g.Diogo, pedido)).Should().Be("aguardando_gestor");
+        (await SituacaoAsync(g.Diogo, pedido)).Should().Be("AGUARDANDO_GESTOR");
     }
 
     [Fact(DisplayName = "O pedido anterior à regra, com prazo do gestor, é recusado na aprovação da segunda etapa, antes de virar concessão, e a proteção de dados o recusa")]
@@ -59,10 +59,10 @@ public sealed class PrazoDoRepresentanteNoHostTests : UltimoRepresentanteNoHostT
         await ConferirCodigoAsync(
             await EnviarAsync(g.Marlene, HttpMethod.Post, $"{Rota}/{pedido}/aprovacoes"), HttpStatusCode.UnprocessableEntity, ValidadeDoPedido);
 
-        (await SituacaoAsync(g.Diogo, pedido)).Should().Be("aguardando_protecao_de_dados");
+        (await SituacaoAsync(g.Diogo, pedido)).Should().Be("AGUARDANDO_PROTECAO_DE_DADOS");
         (await VigentesAsync()).Should().Equal(Marlene.ContaId.ToString());
         (await EnviarAsync(g.Marlene, HttpMethod.Post, $"{Rota}/{pedido}/recusa", new { motivo = "O prazo não é admitido." })).StatusCode.Should().Be(HttpStatusCode.OK);
-        (await SituacaoAsync(g.Diogo, pedido)).Should().Be("recusado");
+        (await SituacaoAsync(g.Diogo, pedido)).Should().Be("RECUSADO");
     }
 
     // A designação de Leandro, aprovada pelo gestor sem prazo, à espera de Marlene; o prazo entra direto no banco, como

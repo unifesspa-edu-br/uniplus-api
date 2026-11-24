@@ -53,7 +53,7 @@ public sealed class RevisaoComSuspensaoNoHostTests : RevisaoDasConcessoesNoHostT
 
         JsonElement revisao = await MigrarTodasAsync(gestao, protecao, cenario);
 
-        cenario.Concessoes.Values.Should().OnlyContain(id => SituacaoDe(revisao, id) == "migrada");
+        cenario.Concessoes.Values.Should().OnlyContain(id => SituacaoDe(revisao, id) == "MIGRADA");
         revisao.GetProperty("situacao").GetString().Should().Be("encerrada");
         (await TemConcessaoAtivaAsync(Leandro, cenario.PerfilId)).Should().BeFalse();
         (await TemConcessaoAtivaAsync(Betina, cenario.PerfilId)).Should().BeFalse();
@@ -100,7 +100,7 @@ public sealed class RevisaoComSuspensaoNoHostTests : RevisaoDasConcessoesNoHostT
     {
         JsonElement vencida = await RevisaoAsync(gestao, cenario.PerfilId);
         vencida.GetProperty("situacao").GetString().Should().Be("encerrada");
-        cenario.Concessoes.Values.Should().OnlyContain(id => SituacaoDe(vencida, id) == "nao_migrada");
+        cenario.Concessoes.Values.Should().OnlyContain(id => SituacaoDe(vencida, id) == "NAO_MIGRADA");
     }
 
     private async Task ConferirRevisaoAbertaAsync(HttpClient gestao, Guid perfilId, DateTimeOffset prazo)
@@ -113,9 +113,9 @@ public sealed class RevisaoComSuspensaoNoHostTests : RevisaoDasConcessoesNoHostT
 
     private async Task ConferirRetomadaAsync(HttpClient gestao, HttpClient protecao, Guid perfilId)
     {
-        await RetomarComSucessoAsync(gestao, perfilId, "gestao_de_acessos");
+        await RetomarComSucessoAsync(gestao, perfilId, "GESTAO_DE_ACESSOS");
         (await TemConcessaoAtivaAsync(Leandro, perfilId)).Should().BeFalse();
-        await RetomarComSucessoAsync(protecao, perfilId, "protecao_de_dados");
+        await RetomarComSucessoAsync(protecao, perfilId, "PROTECAO_DE_DADOS");
         (await TemConcessaoAtivaAsync(Leandro, perfilId)).Should().BeTrue();
         (await TemConcessaoAtivaAsync(Betina, perfilId)).Should().BeTrue();
     }
@@ -139,7 +139,7 @@ public sealed class RevisaoComSuspensaoNoHostTests : RevisaoDasConcessoesNoHostT
     private static async Task<JsonElement> ItemAposOEnvioAsync(HttpClient gestao, RevisaoAberta cenario, Persona beneficiario)
     {
         Guid concessao = cenario.Concessoes[beneficiario];
-        using HttpResponseMessage envio = await EnviarDecisoesDaGestaoAsync(gestao, cenario.PerfilId, [Decisao(concessao, "migrar")]);
+        using HttpResponseMessage envio = await EnviarDecisoesDaGestaoAsync(gestao, cenario.PerfilId, [Decisao(concessao, "MIGRAR")]);
 
         return ItemDe(await CorpoAsync(envio, HttpStatusCode.OK), concessao).Clone();
     }
@@ -159,10 +159,10 @@ public sealed class RevisaoComSuspensaoNoHostTests : RevisaoDasConcessoesNoHostT
 
     private static async Task<JsonElement> MigrarTodasAsync(HttpClient gestao, HttpClient protecao, RevisaoAberta cenario)
     {
-        object[] decisoes = [.. cenario.Concessoes.Values.Select(id => Decisao(id, "migrar"))];
+        object[] decisoes = [.. cenario.Concessoes.Values.Select(id => Decisao(id, "MIGRAR"))];
         using HttpResponseMessage envio = await EnviarDecisoesDaGestaoAsync(gestao, cenario.PerfilId, decisoes);
         JsonElement aposOEnvio = await CorpoAsync(envio, HttpStatusCode.OK);
-        cenario.Concessoes.Values.Should().OnlyContain(id => SituacaoDe(aposOEnvio, id) == "aguardando_protecao_de_dados");
+        cenario.Concessoes.Values.Should().OnlyContain(id => SituacaoDe(aposOEnvio, id) == "AGUARDANDO_PROTECAO_DE_DADOS");
         using HttpResponseMessage etapa = await EnviarAsync(protecao, HttpMethod.Post, RotaDaRevisao(cenario.PerfilId, "/protecao-de-dados"), new { decisoes });
 
         return await CorpoAsync(etapa, HttpStatusCode.OK);

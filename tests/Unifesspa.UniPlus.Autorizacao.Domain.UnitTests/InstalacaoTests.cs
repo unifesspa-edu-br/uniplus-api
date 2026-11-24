@@ -246,9 +246,9 @@ public sealed class InstalacaoTests
     }
 
     [Theory(DisplayName = "O reenvio é recusado depois do fim da instalação")]
-    [InlineData("confirmada")]
-    [InlineData("cancelada")]
-    [InlineData("expirada")]
+    [InlineData("CONFIRMADA")]
+    [InlineData("CANCELADA")]
+    [InlineData("EXPIRADA")]
     public void EnviarCodigo_Reenvio_AposOFim_Recusa(string fim)
     {
         Instalacao instalacao = AguardandoCodigo();
@@ -262,10 +262,10 @@ public sealed class InstalacaoTests
     {
         switch (fim)
         {
-            case "confirmada":
+            case "CONFIRMADA":
                 instalacao.Confirmar(Agora.AddMinutes(5));
                 break;
-            case "cancelada":
+            case "CANCELADA":
                 instalacao.Cancelar(Agora.AddMinutes(5));
                 break;
             default:

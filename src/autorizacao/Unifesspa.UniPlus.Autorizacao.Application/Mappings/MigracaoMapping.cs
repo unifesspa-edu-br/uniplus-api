@@ -15,7 +15,7 @@ public static class MigracaoMapping
         IdentidadeDto? autor = humano ? new IdentidadeDto(decisao.DecisorEmissor!, decisao.DecisorContaId!, decisao.DecisorNome) : null;
 
         return new EventoDaTrilhaDto(
-            $"migracao_{decisao.Resultado.ToCodigo()}",
+            $"migracao_{decisao.Resultado.ToCodigo().ToLowerInvariant()}",
             decisao.Instante,
             autor,
             Detalhe(decisao),

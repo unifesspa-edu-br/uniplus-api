@@ -54,7 +54,7 @@ public sealed class CorridasDaTrocaDeVersaoNoHostTests : PedidosDeConcessaoTestB
 
         using HttpResponseMessage resposta = await aprovacao;
         JsonElement corpo = await CorpoAsync(resposta, HttpStatusCode.OK);
-        corpo.GetProperty("situacao").GetString().Should().Be("aguardando_protecao_de_dados");
+        corpo.GetProperty("situacao").GetString().Should().Be("AGUARDANDO_PROTECAO_DE_DADOS");
         corpo.GetProperty("versao").GetInt32().Should().Be(2);
     }
 
@@ -70,7 +70,7 @@ public sealed class CorridasDaTrocaDeVersaoNoHostTests : PedidosDeConcessaoTestB
         await troca.ConfirmarAsync();
 
         await ConferirRecusaAsync(await aprovacao, HttpStatusCode.UnprocessableEntity, "situacao_invalida");
-        (await SituacaoAsync(diogo, pedido)).Should().Be("devolvido");
+        (await SituacaoAsync(diogo, pedido)).Should().Be("DEVOLVIDO");
         (await ConcessoesAsync(Leandro, perfil)).Should().BeEmpty();
     }
 
@@ -88,7 +88,7 @@ public sealed class CorridasDaTrocaDeVersaoNoHostTests : PedidosDeConcessaoTestB
         await decisao.ConfirmarAsync();
         await troca;
 
-        (await SituacaoAsync(diogo, pedido)).Should().Be("aguardando_gestor");
+        (await SituacaoAsync(diogo, pedido)).Should().Be("AGUARDANDO_GESTOR");
         (await LerAsync(diogo, $"{Rota}/{pedido}")).GetProperty("versao").GetInt32().Should().Be(2);
     }
 

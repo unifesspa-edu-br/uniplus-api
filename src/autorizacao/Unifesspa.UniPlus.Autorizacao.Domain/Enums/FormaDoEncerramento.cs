@@ -16,9 +16,9 @@ public enum FormaDoEncerramento
 /// <summary>Código textual canônico de <see cref="FormaDoEncerramento"/>, o valor gravado e exposto.</summary>
 public static class FormaDoEncerramentoCodigo
 {
-    public const string Concluida = "concluida";
-    public const string Prazo = "prazo";
-    public const string Manual = "manual";
+    public const string Concluida = "CONCLUIDA";
+    public const string Prazo = "PRAZO";
+    public const string Manual = "MANUAL";
 
     public static string ToCodigo(this FormaDoEncerramento forma) => forma switch
     {

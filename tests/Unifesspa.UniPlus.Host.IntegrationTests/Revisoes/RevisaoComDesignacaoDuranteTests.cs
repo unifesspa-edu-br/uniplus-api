@@ -23,8 +23,8 @@ public sealed class RevisaoComDesignacaoDuranteTests : PedidosDeConcessaoTestBas
 {
     private const string RotaDasRevisoes = "/api/autorizacao/revisoes";
     private const string Motivo = "Leandro deixou a função de Representante.";
-    private const string Gestor = "gestor-de-acessos";
-    private const string Representante = "representante-do-controlador";
+    private const string Gestor = "GESTOR_DE_ACESSOS";
+    private const string Representante = "REPRESENTANTE_DO_CONTROLADOR";
 
     public RevisaoComDesignacaoDuranteTests(MonolitoDaInstalacaoFixture fixture)
         : base(fixture)

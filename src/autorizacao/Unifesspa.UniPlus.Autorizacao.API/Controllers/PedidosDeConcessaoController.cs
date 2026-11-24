@@ -26,7 +26,7 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// </summary>
 /// <remarks>
 /// Qualquer pessoa autenticada pede: pedir não dá acesso, o filtro é a aprovação. Quem consulta os pedidos, como o
-/// Encarregado de dados, lê sem decidir: as filas de cada etapa continuam de quem a decide. As rotas de decisão exigem só
+/// Gestor de proteção de dados, lê sem decidir: as filas de cada etapa continuam de quem a decide. As rotas de decisão exigem só
 /// autenticação, porque o handler descobre a etapa pela situação do pedido e confere a permissão dela pelo ponto de
 /// decisão único: sem a da etapa e com a da outra a recusa é de etapa, sem nenhuma das duas é <c>403</c>, e a
 /// identidade incompleta é <c>401</c>. O pedido que a pessoa não pode ver responde <c>404</c>.
@@ -320,7 +320,7 @@ public sealed class PedidosDeConcessaoController : ControllerBase
             return true;
         }
 
-        bool conhecida = Situacoes.TryGetValue(texto.Trim().ToLowerInvariant(), out SituacaoDoPedido lida);
+        bool conhecida = Situacoes.TryGetValue(texto.Trim().ToUpperInvariant(), out SituacaoDoPedido lida);
         situacao = conhecida ? lida : null;
 
         return conhecida;

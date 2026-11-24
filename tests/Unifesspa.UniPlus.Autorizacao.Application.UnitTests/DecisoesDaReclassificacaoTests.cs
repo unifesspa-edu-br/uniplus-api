@@ -107,7 +107,7 @@ public sealed class DecisoesDaReclassificacaoTests
     {
         Cenario cenario = new(PerfisDeTeste.ProtecaoDeDados, [Protecao]);
 
-        GravacaoDaOperacao<DecisaoDaReclassificacaoDto> gravacao = await cenario.DecidirAsync(Cenario.Pedido(resultado: "mantida"));
+        GravacaoDaOperacao<DecisaoDaReclassificacaoDto> gravacao = await cenario.DecidirAsync(Cenario.Pedido(resultado: "MANTIDA"));
 
         gravacao.Resultado.Error!.Code.Should().Be(ReclassificacaoErrorCodes.MotivoInvalido);
         cenario.Reclassificacoes.Liberacoes.Should().BeEmpty();
@@ -147,7 +147,7 @@ public sealed class DecisoesDaReclassificacaoTests
 
         public VerificadorDeTeste Verificador { get; }
 
-        public static DecidirReclassificacaoRequest Pedido(string? etapa = "protecao_de_dados", string? resultado = "liberada", bool todas = true, IReadOnlyList<Guid>? concessoes = null) =>
+        public static DecidirReclassificacaoRequest Pedido(string? etapa = "PROTECAO_DE_DADOS", string? resultado = "LIBERADA", bool todas = true, IReadOnlyList<Guid>? concessoes = null) =>
             new(etapa, resultado, concessoes, todas, null);
 
         public Task<GravacaoDaOperacao<DecisaoDaReclassificacaoDto>> DecidirAsync(DecidirReclassificacaoRequest pedido, Guid? reclassificacaoId = null) =>

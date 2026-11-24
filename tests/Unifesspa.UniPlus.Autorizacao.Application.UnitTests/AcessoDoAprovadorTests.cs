@@ -14,7 +14,7 @@ using Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects;
 /// <summary>
 /// O fluxo dos pedidos consulta o acesso sem registrar, e quem usa o resultado grava a decisão que governou o desfecho.
 /// Diogo Souza é gestor de acessos (só a etapa funcional); Paulo Nogueira não tem permissão alguma; Cecília Moura é
-/// Encarregada de dados (só a consulta dos pedidos).
+/// Gestor de proteção de dados (só a consulta dos pedidos).
 /// </summary>
 public sealed class AcessoDoAprovadorTests
 {

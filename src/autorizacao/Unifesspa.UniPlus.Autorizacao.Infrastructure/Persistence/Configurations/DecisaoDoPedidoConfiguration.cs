@@ -39,7 +39,7 @@ internal sealed class DecisaoDoPedidoConfiguration : IEntityTypeConfiguration<De
 
         builder.ToTable("decisoes_do_pedido", tabela => tabela.HasCheckConstraint(
             "ck_decisoes_do_pedido_motivo_na_recusa",
-            "resultado <> 'recusado' OR motivo IS NOT NULL"));
+            "resultado <> 'RECUSADO' OR motivo IS NOT NULL"));
         builder.HasKey(d => d.Id);
         builder.Property(d => d.Id).ValueGeneratedNever();
 

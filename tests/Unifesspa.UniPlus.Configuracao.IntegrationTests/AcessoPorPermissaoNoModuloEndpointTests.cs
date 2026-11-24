@@ -80,15 +80,15 @@ public sealed class AcessoPorPermissaoNoModuloEndpointTests : IAsyncLifetime
     }
 
     // A permissão reservada à governança só chega pelo perfil de governança que a reúne: a aprovação, pelo de Representante
-    // do controlador, e a consulta, pelo de Encarregado de dados. As demais, por perfil comum.
+    // do controlador, e a consulta, pelo de Gestor de proteção de dados. As demais, por perfil comum.
     private async Task<Guid> ConcederAsync(PermissaoConfiguracao permissao)
     {
         IServiceProvider servicos = _fixture.Factory.Services;
         if (CatalogoDePermissoes<PermissaoConfiguracao>.Obter(permissao).ReservadaAGovernanca)
         {
-            bool doEncarregado = ComposicaoDaGovernanca.CodigosDe(PerfisDeSistema.EncarregadoDeDadosId).Contains(CodigoDePermissao.De(permissao.Codigo));
-            await ConcessoesDeTeste.ConcederGovernancaAsync(servicos, Leandro, doEncarregado ? TipoDeGovernanca.EncarregadoDeDados : TipoDeGovernanca.RepresentanteDoControlador);
-            return doEncarregado ? PerfisDeSistema.EncarregadoDeDadosId : PerfisDeSistema.RepresentanteDoControladorId;
+            bool doGestorDeProtecaoDeDados = ComposicaoDaGovernanca.CodigosDe(PerfisDeSistema.GestorDeProtecaoDeDadosId).Contains(CodigoDePermissao.De(permissao.Codigo));
+            await ConcessoesDeTeste.ConcederGovernancaAsync(servicos, Leandro, doGestorDeProtecaoDeDados ? TipoDeGovernanca.GestorDeProtecaoDeDados : TipoDeGovernanca.RepresentanteDoControlador);
+            return doGestorDeProtecaoDeDados ? PerfisDeSistema.GestorDeProtecaoDeDadosId : PerfisDeSistema.RepresentanteDoControladorId;
         }
 
         Guid perfil = await ConcessoesDeTeste.CriarPerfilAsync(servicos, permissao.Codigo);

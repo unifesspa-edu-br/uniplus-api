@@ -13,8 +13,8 @@ public enum OrigemDoAviso
 /// <summary>Código textual canônico de <see cref="OrigemDoAviso"/>, o valor gravado e exposto.</summary>
 public static class OrigemDoAvisoCodigo
 {
-    public const string Reclassificacao = "reclassificacao";
-    public const string Divergencia = "divergencia";
+    public const string Reclassificacao = "RECLASSIFICACAO";
+    public const string Divergencia = "DIVERGENCIA";
 
     public static string ToCodigo(this OrigemDoAviso valor) => valor switch
     {
