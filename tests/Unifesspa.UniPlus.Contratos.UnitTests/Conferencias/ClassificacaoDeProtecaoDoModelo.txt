@@ -1879,9 +1879,9 @@ selecao.processos_seletivos.localidade_uf: Interno
 selecao.processos_seletivos.nome: Interno
 selecao.processos_seletivos.numero_de_opcoes_de_curso: Interno
 selecao.processos_seletivos.origem_candidatos: Interno
-selecao.processos_seletivos.referencia_temporal_fatos_data: Interno
-selecao.processos_seletivos.referencia_temporal_fatos_fase_id: Interno
-selecao.processos_seletivos.referencia_temporal_fatos_tipo: Interno
+selecao.processos_seletivos.referencia_temporal_dados_data: Interno
+selecao.processos_seletivos.referencia_temporal_dados_fase_id: Interno
+selecao.processos_seletivos.referencia_temporal_dados_tipo: Interno
 selecao.processos_seletivos.status: Interno
 selecao.processos_seletivos.tem_prova_presencial: Publico
 selecao.processos_seletivos.tipo_processo_codigo: Interno

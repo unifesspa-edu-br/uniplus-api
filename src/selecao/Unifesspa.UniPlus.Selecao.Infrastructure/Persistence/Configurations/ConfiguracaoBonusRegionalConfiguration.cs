@@ -42,7 +42,7 @@ internal sealed class ConfiguracaoBonusRegionalConfiguration : IEntityTypeConfig
             regra.ConfigurarReferenciaRegra("regra");
             regra.Property(r => r.Codigo).HasComment("Código da regra do Fator de Atenuação das Desigualdades de Acesso (FADA).");
             regra.Property(r => r.Versao).HasComment("Versão da regra do Fator de Atenuação das Desigualdades de Acesso (FADA).");
-            regra.Property(r => r.Hash).HasComment("Hash da regra do Fator de Atenuação das Desigualdades de Acesso (FADA).");
+            regra.Property(r => r.Hash).HasComment("Resumo que identifica o conteúdo da regra do Fator de Atenuação das Desigualdades de Acesso (FADA).");
         });
         builder.Navigation(b => b.Regra).IsRequired();
 

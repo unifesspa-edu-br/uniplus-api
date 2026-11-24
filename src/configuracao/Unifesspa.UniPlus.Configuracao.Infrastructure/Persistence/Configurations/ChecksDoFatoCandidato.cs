@@ -66,7 +66,7 @@ internal static class ChecksDoFatoCandidato
     // Texto, data e endereço nunca são menos que dado pessoal (invariante da factory), inclusive
     // o nome social (ADR-0082, ADR-0153). Só o domínio texto também
     // aceita `IDENTIFICADOR` — número de documento é sempre texto, nunca data, endereço nem os
-    // demais domínios (ADR-0136, emenda de #1857).
+    // demais domínios (ADR-0136).
     private static void ConfigurarCheckDaClassificacaoMinimaDoDominio(TableBuilder<FatoCandidato> table)
     {
         table.HasCheckConstraint(

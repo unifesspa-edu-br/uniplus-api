@@ -122,15 +122,13 @@ public sealed class ProcessoSeletivoConfiguration : IEntityTypeConfiguration<Pro
             u.Property(x => x.Tipo).HasColumnName("unidade_administradora_tipo").HasMaxLength(30).IsRequired()
                 .HasComment("Tipo da unidade administradora copiado na criação: Reitoria, ProReitoria, Centro, Instituto, Faculdade, Departamento, Coordenacao, Diretoria, Divisao, Nucleo ou Outro.");
 
-            // Cidade da Unidade administradora (issue #1114) — snapshot-copy opcional
-            // all-or-nothing: nula para processos criados antes desta Story (sem
-            // produção, não há backfill); não-nula para processos novos, que o
-            // gate de CriarProcessoSeletivoCommandHandler (CA-02) já exige.
+            // Cidade da Unidade administradora: cópia opcional, tudo ou nada. É obrigatória para
+            // processo novo, conforme CriarProcessoSeletivoCommandHandler.
             u.Property(x => x.CidadeCodigoIbge)
                 .HasColumnName("unidade_administradora_cidade_codigo_ibge")
                 .HasMaxLength(ReferenciaCidadeGeo.CodigoIbgeLength)
                 .IsFixedLength()
-                .HasComment("Cópia do código IBGE da cidade da Unidade administradora no momento da criação — pode estar ausente em processos antigos.");
+                .HasComment("Cópia do código IBGE da cidade da Unidade administradora no momento da criação, quando a unidade a informa.");
             u.Property(x => x.CidadeNome)
                 .HasColumnName("unidade_administradora_cidade_nome")
                 .HasMaxLength(ReferenciaCidadeGeo.NomeMaxLength)
@@ -336,11 +334,11 @@ public sealed class ProcessoSeletivoConfiguration : IEntityTypeConfiguration<Pro
         {
             referencia.ClassificaPorPadrao(ClassificacaoDeProtecao.Interno);
             referencia.Property(r => r.Tipo)
-                .HasColumnName("referencia_temporal_fatos_tipo")
+                .HasColumnName("referencia_temporal_dados_tipo")
                 .HasMaxLength(ReferenciaTemporalFatosTipoMaxLength)
                 .HasComment("Referência para apurar os fatos: FIM_INSCRICAO, INICIO_FASE, FIM_FASE ou DATA_ESPECIFICA. Ausente quando não declarada.");
-            referencia.Property(r => r.Data).HasColumnName("referencia_temporal_fatos_data").HasComment("Data escolhida quando a referência para apurar os fatos é uma data específica.");
-            referencia.Property(r => r.FaseId).HasColumnName("referencia_temporal_fatos_fase_id").HasComment("Identificador da fase escolhida quando a referência para apurar os fatos é o início ou o fim de uma fase.");
+            referencia.Property(r => r.Data).HasColumnName("referencia_temporal_dados_data").HasComment("Data escolhida quando a referência para apurar os fatos é uma data específica.");
+            referencia.Property(r => r.FaseId).HasColumnName("referencia_temporal_dados_fase_id").HasComment("Identificador da fase escolhida quando a referência para apurar os fatos é o início ou o fim de uma fase.");
         });
 
         builder.Navigation(p => p.Etapas)

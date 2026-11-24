@@ -47,7 +47,7 @@ public sealed class RestricaoValorJsonTests
     [InlineData("""{"tipo":"FAIXA_NUMERICA","minimo":null,"maximo":null}""", RestricaoValorErrorCodes.LimitesIncoerentes)]
     [InlineData("""{"tipo":"TAMANHO_TEXTO","minimo":1.5}""", RestricaoValorErrorCodes.FormaJsonInvalida)]
     [InlineData("""{"tipo":"OPCOES_PERMITIDAS","entradas":[]}""", RestricaoValorErrorCodes.OpcoesVazias)]
-    [InlineData("""{"tipo":"OPCOES_DAS_RESPOSTAS","fatos":[]}""", RestricaoValorErrorCodes.FatosVazios)]
+    [InlineData("""{"tipo":"OPCOES_DAS_RESPOSTAS","codigosDosDados":[]}""", RestricaoValorErrorCodes.FatosVazios)]
     [InlineData("""{"tipo":"REGEX"}""", RestricaoValorErrorCodes.FormaJsonInvalida)]
     [InlineData("""{"tipo":"faixa_numerica","minimo":1}""", RestricaoValorErrorCodes.FormaJsonInvalida)]
     [InlineData("""{"tipo":"FORMATO_TEXTO"}""", RestricaoValorErrorCodes.FormaJsonInvalida)]
