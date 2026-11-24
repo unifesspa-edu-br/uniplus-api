@@ -1,7 +1,9 @@
 namespace Unifesspa.UniPlus.OrganizacaoInstitucional.Application.Commands.Unidades;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.Entities;
+using Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.Enums;
 using Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.Interfaces;
 using Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.ValueObjects;
 
@@ -29,7 +31,7 @@ public sealed class ConferenciaDoCadastroDaUnidade
     internal async Task<Result<Unidade>> ConferirNovaAsync(CriarUnidadeCommand command, CancellationToken cancellationToken)
     {
         Result validacao = Unidade.ValidarCampos(
-            command.Nome, command.Identificadores(), command.Cidade(), command.Tipo, command.Vigencia());
+            command.Nome, command.Identificadores(), command.Cidade(), TipoDaUnidadeDaEntrada.Ler(command.Tipo), command.Vigencia());
         if (validacao.IsFailure)
         {
             return Result<Unidade>.ValidationFailure(validacao.Errors);
@@ -74,7 +76,7 @@ public sealed class ConferenciaDoCadastroDaUnidade
             command.Nome,
             command.Identificadores(),
             command.Cidade(),
-            command.Tipo,
+            TipoDaUnidadeDaEntrada.Ler(command.Tipo),
             new VigenciaDaUnidade(DateOnly.MinValue, null));
         Result motivo = UnidadeIdentificadorHistorico.ValidarMotivoMudanca(command.MotivoMudancaIdentificador);
 
@@ -90,7 +92,7 @@ public sealed class ConferenciaDoCadastroDaUnidade
             command.Cidade(),
             command.Vigencia(),
             command.UnidadeSuperiorId,
-            command.Tipo,
+            CatalogoDe<TipoUnidade>.Obter(command.Tipo!),
             command.UnidadeAcademica);
 
     private async Task<DomainError?> RecusaDosConflitosAsync(

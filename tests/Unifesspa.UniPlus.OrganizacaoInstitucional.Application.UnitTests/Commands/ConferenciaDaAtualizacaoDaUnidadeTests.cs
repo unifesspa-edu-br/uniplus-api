@@ -36,6 +36,16 @@ public sealed class ConferenciaDaAtualizacaoDaUnidadeTests
         _cadastro.Unidades.ReceivedCalls().Should().BeEmpty();
     }
 
+    [Fact(DisplayName = "Tipo desconhecido recusa TipoInvalido sem buscar a Unidade")]
+    public async Task TipoDesconhecido_RecusaSemBuscar()
+    {
+        Result<Unidade> resultado = await ConferirAsync(
+            CadastroDeUnidadeSimulado.AtualizacaoSemMudancaDeIdentificador(Guid.NewGuid()) with { Tipo = "NENHUM" });
+
+        resultado.Errors.Should().ContainSingle(e => e.Field == "tipo" && e.Error.Code == UnidadeErrorCodes.TipoInvalido);
+        _cadastro.Unidades.ReceivedCalls().Should().BeEmpty();
+    }
+
     [Fact(DisplayName = "Unidade inexistente recusa NaoEncontrada antes de conferir a unicidade")]
     public async Task UnidadeInexistente_RecusaAntesDaUnicidade()
     {

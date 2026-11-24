@@ -332,7 +332,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\"nome\":\"Centro de Smoke {{smoke_sufixo}}\",\"alias\":null,\"slug\":\"centro-smoke-{{smoke_sufixo}}\",\"sigla\":\"CSMK{{smoke_sufixo}}\",\"codigo\":\"SMK-{{smoke_sufixo}}\",\"unidadeSuperiorId\":null,\"tipo\":\"centro\",\"unidadeAcademica\":false,\"vigenciaInicio\":\"2026-01-01\",\"vigenciaFim\":null}"
+              "raw": "{\"nome\":\"Centro de Smoke {{smoke_sufixo}}\",\"alias\":null,\"slug\":\"centro-smoke-{{smoke_sufixo}}\",\"sigla\":\"CSMK{{smoke_sufixo}}\",\"codigo\":\"SMK-{{smoke_sufixo}}\",\"unidadeSuperiorId\":null,\"tipo\":\"CENTRO\",\"unidadeAcademica\":false,\"vigenciaInicio\":\"2026-01-01\",\"vigenciaFim\":null}"
             },
             "url": "{{base_url}}/api/organizacao/admin/unidades"
           }
@@ -376,7 +376,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\"nome\":\"Centro Legado {{smoke_sufixo}}\",\"alias\":null,\"slug\":\"centro-legado-{{smoke_sufixo}}\",\"sigla\":\"CLEG{{smoke_sufixo}}\",\"codigo\":\"LEG-{{smoke_sufixo}}\",\"unidadeSuperiorId\":null,\"tipo\":\"centro\",\"unidadeAcademica\":false,\"vigenciaInicio\":\"2026-01-01\",\"vigenciaFim\":null,\"origem\":\"criadoNoUniPlus\"}"
+              "raw": "{\"nome\":\"Centro Legado {{smoke_sufixo}}\",\"alias\":null,\"slug\":\"centro-legado-{{smoke_sufixo}}\",\"sigla\":\"CLEG{{smoke_sufixo}}\",\"codigo\":\"LEG-{{smoke_sufixo}}\",\"unidadeSuperiorId\":null,\"tipo\":\"CENTRO\",\"unidadeAcademica\":false,\"vigenciaInicio\":\"2026-01-01\",\"vigenciaFim\":null,\"origem\":\"criadoNoUniPlus\"}"
             },
             "url": "{{base_url}}/api/organizacao/admin/unidades"
           }
@@ -397,7 +397,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\"id\":\"{{unidade_id}}\",\"nome\":\"Centro de Smoke {{smoke_sufixo}} (renomeado)\",\"alias\":\"Smoke\",\"slug\":\"centro-smoke-{{smoke_sufixo}}\",\"sigla\":\"CSMK{{smoke_sufixo}}\",\"codigo\":\"SMK-{{smoke_sufixo}}\",\"unidadeSuperiorId\":null,\"tipo\":\"centro\",\"unidadeAcademica\":true,\"vigenciaFim\":null,\"motivoMudancaIdentificador\":null}"
+              "raw": "{\"id\":\"{{unidade_id}}\",\"nome\":\"Centro de Smoke {{smoke_sufixo}} (renomeado)\",\"alias\":\"Smoke\",\"slug\":\"centro-smoke-{{smoke_sufixo}}\",\"sigla\":\"CSMK{{smoke_sufixo}}\",\"codigo\":\"SMK-{{smoke_sufixo}}\",\"unidadeSuperiorId\":null,\"tipo\":\"CENTRO\",\"unidadeAcademica\":true,\"vigenciaFim\":null,\"motivoMudancaIdentificador\":null}"
             },
             "url": "{{base_url}}/api/organizacao/admin/unidades/{{unidade_id}}"
           }

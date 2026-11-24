@@ -1,6 +1,7 @@
 namespace Unifesspa.UniPlus.OrganizacaoInstitucional.Application.Commands.Unidades;
 
 using Unifesspa.UniPlus.Application.Abstractions.Messaging;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.Enums;
 
@@ -17,7 +18,7 @@ public sealed record CriarUnidadeCommand(
     string? Sigla,
     string? Codigo,
     Guid? UnidadeSuperiorId,
-    TipoUnidade Tipo,
+    [property: AceitaCodigosDe<TipoUnidade>] string? Tipo,
     bool UnidadeAcademica,
     DateOnly VigenciaInicio,
     DateOnly? VigenciaFim,

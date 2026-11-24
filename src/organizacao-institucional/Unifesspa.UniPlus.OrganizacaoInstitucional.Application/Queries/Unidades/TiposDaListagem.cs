@@ -10,14 +10,14 @@ using Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.Errors;
 internal static class TiposDaListagem
 {
     /// <summary>
-    /// Recusa o primeiro valor, na ordem pedida, que não é um tipo de Unidade filtrável; sem valores, a
+    /// Recusa o primeiro valor, na ordem pedida, que não é um tipo de Unidade; sem valores, a
     /// listagem não filtra por tipo. Só o número entra na mensagem: o cliente não manda texto que volte.
     /// </summary>
     internal static Result<IReadOnlyList<TipoUnidade>> Resolver(IReadOnlyList<int>? valores)
     {
         int[] pedidos = [.. (valores ?? []).Distinct()];
         int? invalido = pedidos
-            .Where(valor => !Filtravel((TipoUnidade)valor))
+            .Where(valor => !Enum.IsDefined((TipoUnidade)valor))
             .Select(valor => (int?)valor)
             .FirstOrDefault();
 
@@ -30,6 +30,4 @@ internal static class TiposDaListagem
 
         return Result<IReadOnlyList<TipoUnidade>>.Success([.. pedidos.Select(valor => (TipoUnidade)valor)]);
     }
-
-    private static bool Filtravel(TipoUnidade tipo) => Enum.IsDefined(tipo) && tipo != TipoUnidade.Nenhum;
 }

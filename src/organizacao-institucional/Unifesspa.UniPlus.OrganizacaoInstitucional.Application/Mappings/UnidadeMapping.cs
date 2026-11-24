@@ -1,6 +1,7 @@
 namespace Unifesspa.UniPlus.OrganizacaoInstitucional.Application.Mappings;
 
 using Unifesspa.UniPlus.Governance.Contracts;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.OrganizacaoInstitucional.Application.DTOs;
 using Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.Entities;
 
@@ -17,7 +18,7 @@ public static class UnidadeMapping
             unidade.Sigla,
             unidade.Codigo,
             unidade.UnidadeSuperiorId,
-            unidade.Tipo.ToString(),
+            unidade.Tipo.Codigo(),
             unidade.UnidadeAcademica,
             unidade.VigenciaInicio,
             unidade.VigenciaFim,
@@ -37,7 +38,7 @@ public static class UnidadeMapping
             unidade.Slug.Valor,
             unidade.Nome,
             unidade.Alias,
-            unidade.Tipo.ToString(),
+            unidade.Tipo.Codigo(),
             unidade.UnidadeAcademica,
             unidade.UnidadeSuperiorId,
             unidade.CidadeCodigoIbge,

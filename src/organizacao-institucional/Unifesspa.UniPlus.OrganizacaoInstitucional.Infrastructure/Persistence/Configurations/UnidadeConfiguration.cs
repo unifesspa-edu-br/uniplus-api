@@ -4,11 +4,13 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence.CodigosDeContrato;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Protecao;
 using Unifesspa.UniPlus.Kernel.Domain.Cidades;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.OrganizacaoInstitucional.Application.Persistence;
 using Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.Entities;
+using Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.Enums;
 using Unifesspa.UniPlus.OrganizacaoInstitucional.Infrastructure.Persistence.Converters;
 
 [System.Diagnostics.CodeAnalysis.SuppressMessage(
@@ -23,6 +25,8 @@ internal sealed class UnidadeConfiguration : IEntityTypeConfiguration<Unidade>
     internal const string SlugParaBusca = "SlugParaBusca";
     internal const string AliasParaBusca = "AliasParaBusca";
 
+    private const int TipoMaxLength = 30;
+
     public void Configure(EntityTypeBuilder<Unidade> builder)
     {
         ArgumentNullException.ThrowIfNull(builder);
@@ -32,10 +36,14 @@ internal sealed class UnidadeConfiguration : IEntityTypeConfiguration<Unidade>
         // Trio de cidade all-or-nothing (issue #1114): espelha no banco a invariante
         // de domínio já provada por Unidade.ValidarReferenciaCidade — mesmo padrão de
         // InstituicaoConfiguration.
-        builder.ToTable("unidades", t => t.HasCheckConstraint(
-            "ck_unidades_cidade_completa",
-            "(cidade_codigo_ibge IS NULL AND cidade_nome IS NULL AND cidade_uf IS NULL) "
-            + "OR (cidade_codigo_ibge IS NOT NULL AND cidade_nome IS NOT NULL AND cidade_uf IS NOT NULL)"));
+        builder.ToTable("unidades", t =>
+        {
+            t.HasCheckConstraint(
+                "ck_unidades_cidade_completa",
+                "(cidade_codigo_ibge IS NULL AND cidade_nome IS NULL AND cidade_uf IS NULL) "
+                + "OR (cidade_codigo_ibge IS NOT NULL AND cidade_nome IS NOT NULL AND cidade_uf IS NOT NULL)");
+            t.HasCheckConstraint("ck_unidades_tipo", $"tipo IN ({SqlDosCodigosDeContrato.Lista<TipoUnidade>()})");
+        });
         builder.HasKey(u => u.Id);
 
         builder.Property(u => u.Nome).HasMaxLength(250).IsRequired();
@@ -46,7 +54,10 @@ internal sealed class UnidadeConfiguration : IEntityTypeConfiguration<Unidade>
             .IsRequired();
         builder.Property(u => u.Sigla).HasMaxLength(50).IsRequired();
         builder.Property(u => u.Codigo).HasMaxLength(50).IsRequired();
-        builder.Property(u => u.Tipo).HasConversion<string>().HasMaxLength(30).IsRequired();
+        builder.Property(u => u.Tipo)
+            .HasMaxLength(TipoMaxLength)
+            .HasComment("Tipo da unidade na estrutura da universidade. Códigos: REITORIA, PRO_REITORIA, CENTRO, INSTITUTO, FACULDADE, DEPARTAMENTO, COORDENACAO, DIRETORIA, DIVISAO, NUCLEO, OUTRO.")
+            .IsRequired();
 
         builder.Property(u => u.UnidadeAcademica).IsRequired();
         builder.Property(u => u.VigenciaInicio).IsRequired();
