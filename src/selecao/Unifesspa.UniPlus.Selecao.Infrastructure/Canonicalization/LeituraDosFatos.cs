@@ -185,7 +185,7 @@ internal static class LeituraDosFatos
         : d.Finalidade is null
             ? $"'{path}.finalidade' fora do vocabulário de finalidades."
         : d.TipoRenderizacao is null
-            ? $"'{path}.tipoRenderizacao' fora dos tipos de campo aceitos: {string.Join(", ", CatalogoDe<TipoRenderizacao>.Todos().Select(static c => c.Codigo))}."
+            ? $"'{path}.tipoDeCampo' fora dos tipos de campo aceitos: {string.Join(", ", CatalogoDe<TipoRenderizacao>.Todos().Select(static c => c.Codigo))}."
             : null;
 
     private static PredicadoDnf? LerPrecondicoes(LeitorEnvelope leitor, JsonObject item, string path)
