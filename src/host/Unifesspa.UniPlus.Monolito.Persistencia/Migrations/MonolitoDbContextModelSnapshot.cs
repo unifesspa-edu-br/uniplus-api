@@ -9599,9 +9599,12 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasColumnType("character varying(255)")
                         .HasColumnName("scope");
 
-                    b.Property<short>("Status")
-                        .HasColumnType("smallint")
-                        .HasColumnName("status");
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)")
+                        .HasColumnName("status")
+                        .HasComment("Situação da chave: EM_PROCESSAMENTO enquanto a operação executa; CONCLUIDA quando a resposta está guardada para repetição.");
 
                     b.HasKey("Id")
                         .HasName("pk_chaves_de_idempotencia");
@@ -9613,7 +9616,10 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .IsUnique()
                         .HasDatabaseName("ux_chaves_de_idempotencia_scope_endpoint_key");
 
-                    b.ToTable("chaves_de_idempotencia", "plataforma");
+                    b.ToTable("chaves_de_idempotencia", "plataforma", t =>
+                        {
+                            t.HasCheckConstraint("ck_chaves_de_idempotencia_status", "status IN ('EM_PROCESSAMENTO', 'CONCLUIDA')");
+                        });
                 });
 
             modelBuilder.Entity("Unifesspa.UniPlus.Ingresso.Domain.Entities.Chamada", b =>
