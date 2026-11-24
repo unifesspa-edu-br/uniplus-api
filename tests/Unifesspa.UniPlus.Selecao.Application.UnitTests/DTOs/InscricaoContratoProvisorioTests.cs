@@ -12,9 +12,9 @@ using Unifesspa.UniPlus.Testes.Compartilhado;
 using Xunit;
 
 /// <summary>
-/// O contrato provisório da inscrição do candidato (issue #1858, primeiro commit): cada exemplo
-/// aqui é o que o web recebe para desenvolver com mocks antes dos endpoints reais existirem (a2 de
-/// #1859). Diferente de um arquivo JSON solto, o exemplo vive dentro do teste — se um DTO mudar de
+/// O contrato provisório da inscrição do candidato : cada exemplo
+/// aqui é o que o web recebe para desenvolver com mocks antes dos endpoints reais existirem.
+/// Diferente de um arquivo JSON solto, o exemplo vive dentro do teste — se um DTO mudar de
 /// forma sem atualizar o exemplo, o teste falha em vez de o contrato ficar desatualizado em
 /// silêncio. As opções de serialização reproduzem exatamente as do host (<c>Program.cs</c>):
 /// camelCase em propriedades e em enums.

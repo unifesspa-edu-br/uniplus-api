@@ -76,8 +76,8 @@ public sealed record RequisitosDoDocumentoDto(
 public sealed record ModeloDaExigenciaDto(Guid ModeloId, string NomeArquivo, CodigoComRotulo<FormatoDeDocumento> Formato, string HashSha256);
 
 /// <summary>
-/// DTO de leitura de <see cref="Domain.Entities.CondicaoGatilho"/> (Story #554, PR #896,
-/// issue #892). <see cref="Operador"/>/<see cref="Valor"/> seguem o mesmo formato flat de
+/// DTO de leitura de <see cref="Domain.Entities.CondicaoGatilho"/>.
+/// <see cref="Operador"/>/<see cref="Valor"/> seguem o mesmo formato flat de
 /// <c>CondicaoGatilhoInput</c> (comando de escrita) — <see cref="Valor"/> é o texto JSON
 /// canônico (<c>JsonElement.GetRawText()</c>), round-tripável direto de volta pelo mesmo
 /// PUT (<c>ConferenciaDasCondicoesDaExigencia</c> o reparseia como JSON).
@@ -85,11 +85,11 @@ public sealed record ModeloDaExigenciaDto(Guid ModeloId, string NomeArquivo, Cod
 public sealed record CondicaoGatilhoDto(Guid Id, int Clausula, string Fato, [property: AceitaCodigosDe<Operador>] string Operador, string Valor);
 
 /// <summary>
-/// DTO de leitura de <see cref="Domain.Entities.DocumentoExigidoBaseLegal"/> (Story #554,
-/// PR #898, issue #549). Mesmo formato flat de <c>BaseLegalInput</c> (comando de escrita) —
+/// DTO de leitura de <see cref="Domain.Entities.DocumentoExigidoBaseLegal"/>.
+/// Mesmo formato flat de <c>BaseLegalInput</c> (comando de escrita) —
 /// round-trip GET→PUT direto, incluindo bases <c>PENDENTE</c> (a projeção "somente
 /// RESOLVIDO" é interna ao domínio — <c>DocumentoExigido.BasesLegaisResolvidas</c> — e da
-/// materialização do envelope na PR #903, não deste DTO de edição).
+/// materialização do envelope congelado, não deste DTO de edição).
 /// </summary>
 public sealed record BaseLegalDto(Guid Id, string Referencia, CodigoComRotulo<TipoAbrangencia> Abrangencia, CodigoComRotulo<StatusBaseLegal> Situacao, string? Observacao);
 

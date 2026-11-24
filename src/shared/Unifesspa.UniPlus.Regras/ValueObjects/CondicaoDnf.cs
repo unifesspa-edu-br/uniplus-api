@@ -11,14 +11,14 @@ using Unifesspa.UniPlus.Regras.Enums;
 /// Átomo tipado <c>{ Fato, Operador, Valor }</c> de um predicado sobre o
 /// candidato — a unidade compartilhada por <see cref="ClausulaDnf"/>/
 /// <see cref="PredicadoDnf"/> e reusada literalmente por
-/// <c>ParametrosDesempatePredicadoFato</c> (ADR-0111, Story #847).
+/// <c>ParametrosDesempatePredicadoFato</c> (ADR-0111).
 /// </summary>
 /// <remarks>
 /// <para>
 /// Validação de <b>forma</b>, sem I/O: <see cref="Fato"/> não vazio,
 /// <see cref="Operador"/> um dos valores do domínio fechado, e a forma de
 /// <see cref="Valor"/> coerente com o operador — <see cref="Regras.Enums.Operador.AlgumDe"/> e
-/// <see cref="Regras.Enums.Operador.NenhumDe"/> (Story #916) exigem array JSON, sem itens de
+/// <see cref="Regras.Enums.Operador.NenhumDe"/> exigem array JSON, sem itens de
 /// texto em branco; array <b>vazio</b> é aceito na forma (a semântica de avaliar
 /// <c>ALGUM_DE []</c>/<c>NENHUM_DE []</c> é de <see cref="PredicadoDnf"/>, não desta factory). Os
 /// demais operadores (<see cref="Regras.Enums.Operador.Igual"/>, <see cref="Regras.Enums.Operador.Diferente"/>,

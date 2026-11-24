@@ -7,14 +7,13 @@ using Domain.Enums;
 using Unifesspa.UniPlus.Application.Abstractions.Respostas;
 
 /// <summary>
-/// Projeção de leitura do agregado <c>ProcessoSeletivo</c> (Story #758,
-/// UNI-REQ-0014/0015). Cresce à medida que novas dimensões de configuração
+/// Projeção de leitura do agregado <c>ProcessoSeletivo</c> (UNI-REQ-0014/0015). Cresce à medida que novas dimensões de configuração
 /// ganham commands nas fatias seguintes.
 /// </summary>
 public sealed record ProcessoSeletivoDto(
     Guid Id,
     string Nome,
-    // Identificador legível (issue #1479): read-back administrativo. null = ainda não
+    // Identificador legível: read-back administrativo. null = ainda não
     // declarado, o que bloqueia a publicação.
     string? IdentificadorLegivel,
     TipoProcessoSnapshotDto TipoProcesso,
@@ -50,15 +49,15 @@ public sealed record ProcessoSeletivoDto(
     // edição. Cada formulário traz os itens e os termos dele.
     IReadOnlyList<FormularioDto> Formularios,
     // Opções que o processo declara para os fatos cuja fonte de valores é ele, como as edições do
-    // ENEM admitidas (issue #1620): read-back administrativo. Declarar e coletar são passos
+    // ENEM admitidas: read-back administrativo. Declarar e coletar são passos
     // independentes, e o fato coletado só mostra as opções depois que um formulário o coleta.
     IReadOnlyList<OpcoesDeclaradasDoFatoDto> OpcoesDeclaradas,
-    // Divulgação pública (UNI-REQ-0050, issue #563): read-back administrativo pelo mesmo motivo
-    // do formulário acima — sem ele, a tela de edição (uniplus-web#504) não conseguiria reler a
+    // Divulgação pública (UNI-REQ-0050): read-back administrativo pelo mesmo motivo
+    // do formulário acima — sem ele, a tela de edição não conseguiria reler a
     // configuração salva e poderia sobrescrevê-la com o default ao reenviar. A regra de
     // abreviação não entra aqui: não é configuração viva, só existe congelada no envelope.
     ConfiguracaoDivulgacaoDto? ConfiguracaoDivulgacao,
-    // Taxa de inscrição e isenção (issue #1112): read-back administrativo. null distingue
+    // Taxa de inscrição e isenção: read-back administrativo. null distingue
     // "ainda não declarado" (bloqueia publicação) de uma declaração explícita — diferente de
     // ConfiguracaoDivulgacao, aqui null NÃO é um estado publicável.
     ConfiguracaoTaxaInscricaoDto? ConfiguracaoTaxaInscricao,
@@ -80,7 +79,7 @@ public sealed record ProcessoSeletivoDto(
 
 /// <summary>
 /// DTO de leitura de <see cref="Domain.ValueObjects.ReferenciaTemporalFatos"/>
-/// (Story #554, issue #892, PR #896). Mesmo formato flat aceito por
+/// Mesmo formato flat aceito por
 /// <c>DefinirReferenciaTemporalFatosRequest</c> — round-trip GET→PUT direto.
 /// <see langword="null"/> é o estado válido "nenhuma política configurada".
 /// </summary>
@@ -94,7 +93,7 @@ public sealed record OpcoesDeCursoDto(int Numero);
 
 /// <summary>
 /// DTO de leitura de <see cref="Domain.ValueObjects.UnidadeAdministradoraSnapshot"/>
-/// (issue #849, CA-04 da Feature #40). Sempre presente — a Unidade administradora
+/// (CA-04). Sempre presente — a Unidade administradora
 /// é NOT NULL desde a criação do processo.
 /// </summary>
 public sealed record UnidadeAdministradoraSnapshotDto(
@@ -112,7 +111,7 @@ public sealed record LocalidadeRegenteDto(string CodigoIbge, string Nome, string
 public sealed record TipoProcessoSnapshotDto(Guid OrigemId, string Codigo, string Nome);
 
 /// <summary>
-/// Projeção de leitura da divulgação pública (UNI-REQ-0050, issue #563). <see langword="null"/>
+/// Projeção de leitura da divulgação pública (UNI-REQ-0050). <see langword="null"/>
 /// é o estado válido "sem configuração explícita" (default minimizado — só o número de
 /// inscrição). Não carrega a regra de abreviação: ela não é configuração viva, e só existe
 /// congelada no envelope de publicação.
@@ -120,7 +119,7 @@ public sealed record TipoProcessoSnapshotDto(Guid OrigemId, string Codigo, strin
 public sealed record ConfiguracaoDivulgacaoDto(IReadOnlyList<string> CamposPublicos, string? Justificativa);
 
 /// <summary>
-/// Projeção de leitura da taxa de inscrição e isenção (issue #1112). <see langword="null"/> é
+/// Projeção de leitura da taxa de inscrição e isenção. <see langword="null"/> é
 /// "ainda não declarado" (bloqueia publicação, CA-01) — diferente de
 /// <see cref="ConfiguracaoDivulgacaoDto"/>, aqui ausência não é estado publicável.
 /// </summary>

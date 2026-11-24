@@ -37,7 +37,7 @@ public sealed class ObterProcessoSeletivoQueryHandlerDocumentosExigidosTests
         projetado.TipoDocumento.Id.Should().Be(tipoDocumentoOrigemId);
     }
 
-    [Fact(DisplayName = "Projeta Condicoes do gatilho DNF (issue #892) — round-trip GET→PUT sem perda")]
+    [Fact(DisplayName = "Projeta Condicoes do gatilho DNF — round-trip GET→PUT sem perda")]
     public async Task Handle_CondicaoGatilho_EmiteTokenDeWireERoundTripDoValor()
     {
         DocumentoExigidoDto projetado = await ProjetarAUnicaExigenciaAsync(ExigenciaCondicionalComCondicaoEscalarEMultivalorada());
@@ -54,7 +54,7 @@ public sealed class ObterProcessoSeletivoQueryHandlerDocumentosExigidosTests
             .Should().BeEquivalentTo(["LB_PPI", "AC"]);
     }
 
-    [Fact(DisplayName = "Projeta ReferenciaTemporalFatos no agregado GET (issue #892) — round-trip GET→PUT")]
+    [Fact(DisplayName = "Projeta ReferenciaTemporalFatos no agregado GET — round-trip GET→PUT")]
     public async Task Handle_ReferenciaTemporalFatos_EmiteTokenDeWire()
     {
         (ProcessoSeletivo processo, FaseCronograma fase) = ProcessoComUmaFase();
@@ -76,7 +76,7 @@ public sealed class ObterProcessoSeletivoQueryHandlerDocumentosExigidosTests
         dto.ReferenciaTemporalFatos.Should().BeNull();
     }
 
-    [Fact(DisplayName = "Story #554/issue #549 (PR #898): projeta BasesLegais — round-trip GET→PUT, inclusive PENDENTE (a projeção 'só RESOLVIDO' é da PR #903, não deste DTO de edição)")]
+    [Fact(DisplayName = "Projeta BasesLegais — round-trip GET→PUT, inclusive PENDENTE (a projeção 'só RESOLVIDO' fica em outra consulta, não neste DTO de edição)")]
     public async Task Handle_BasesLegais_EmiteTokenDeWireERoundTrip()
     {
         DocumentoExigidoDto projetado = await ProjetarAUnicaExigenciaAsync(ExigenciaComUmaBaseLegalResolvidaEUmaPendente());

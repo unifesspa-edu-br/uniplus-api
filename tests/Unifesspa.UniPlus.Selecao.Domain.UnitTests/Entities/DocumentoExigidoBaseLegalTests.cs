@@ -7,8 +7,8 @@ using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 
 /// <summary>
-/// Cobertura de <see cref="DocumentoExigidoBaseLegal"/> (Story #554, PR #898, issue #549,
-/// ADR-0074): fábrica — CA-01 (referência não vazia, abrangência/status no domínio).
+/// Cobertura de <see cref="DocumentoExigidoBaseLegal"/> (ADR-0074):
+/// fábrica — CA-01 (referência não vazia, abrangência/status no domínio).
 /// </summary>
 public sealed class DocumentoExigidoBaseLegalTests
 {

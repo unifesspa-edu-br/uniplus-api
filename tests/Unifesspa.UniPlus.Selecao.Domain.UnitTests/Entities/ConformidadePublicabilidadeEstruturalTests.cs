@@ -27,7 +27,7 @@ using Unifesspa.UniPlus.Testes.Compartilhado;
 using static Unifesspa.UniPlus.Selecao.Domain.UnitTests.Entities.ApoioConformidadePublicabilidadeEstrutural;
 
 /// <summary>
-/// A matriz da issue #1092: pareia cada um dos códigos de recusa alcançáveis nos quatra conferências
+/// A matriz que pareia cada um dos códigos de recusa alcançáveis nos quatra conferências
 /// estruturais (<c>PendenciaDeConformidade</c>, <c>PendenciaDoCronograma</c>,
 /// <c>PendenciaDaCascata</c>, <c>PendenciaPreCanonicalizacao</c>) com o item vermelho
 /// correspondente em <see cref="ProcessoSeletivo.AvaliarConformidade"/>, e confirma que
@@ -43,7 +43,7 @@ using static Unifesspa.UniPlus.Selecao.Domain.UnitTests.Entities.ApoioConformida
 public sealed class ConformidadePublicabilidadeEstruturalTests
 {
     // ══════════════════════════════════════════════════════════════════════════════════════
-    // PendenciaDoCronograma — quatro razões (§3.4/§3.5)
+    // PendenciaDoCronograma — quatro razões
     // ══════════════════════════════════════════════════════════════════════════════════════
 
     private static FaseCronograma FaseDeResultadoFinal() => FaseCronograma.Criar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("fase").Value!,
@@ -112,7 +112,7 @@ public sealed class ConformidadePublicabilidadeEstruturalTests
         return processo;
     }
 
-    [Fact(DisplayName = "Cronograma: InscricaoPropria sem fase de coleta — item vermelho e Publicar recusa com InscricaoPropriaSemFaseDeColeta (cenário da issue)")]
+    [Fact(DisplayName = "Cronograma: InscricaoPropria sem fase de coleta — item vermelho e Publicar recusa com InscricaoPropriaSemFaseDeColeta")]
     public void Cronograma_InscricaoPropriaSemFaseDeColeta()
     {
         ProcessoSeletivo processo = NovoProcessoDeInscricaoPropriaSemCronograma();
@@ -130,8 +130,8 @@ public sealed class ConformidadePublicabilidadeEstruturalTests
     {
         ProcessoSeletivo processo = NovoProcessoDeInscricaoPropriaSemCronograma();
 
-        // A fase coleta inscrição e é NA_EXECUCAO, então a janela é opcional para o cadastro (§3.2)
-        // — mas não para publicar: é dela que o Edital tira o prazo (issue #1350).
+        // A fase coleta inscrição e é NA_EXECUCAO, então a janela é opcional para o cadastro
+        // — mas não para publicar: é dela que o Edital tira o prazo.
         processo.DefinirCronogramaFases([FaseBase(coletaInscricao: true)], []).IsSuccess.Should().BeTrue();
         DeclararTaxaSemCobranca(processo);
 

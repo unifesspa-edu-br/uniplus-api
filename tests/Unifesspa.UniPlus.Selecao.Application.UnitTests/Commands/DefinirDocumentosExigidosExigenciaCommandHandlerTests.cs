@@ -149,7 +149,7 @@ public sealed class DefinirDocumentosExigidosExigenciaCommandHandlerTests
         await mocks.TipoDocumentoReader.Received().ObterPorIdAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>());
     }
 
-    [Fact(DisplayName = "CA-07 (Story #554, PR #898): mesma referência documental em exigências distintas preserva bases legais distintas, correlacionadas por identidade")]
+    [Fact(DisplayName = "CA-07: mesma referência documental em exigências distintas preserva bases legais distintas, correlacionadas por identidade")]
     public async Task Handle_MesmaReferenciaDocumental_BasesDistintasPorExigencia()
     {
         CenarioDaExigencia cenario = ProcessoComUmaFase();

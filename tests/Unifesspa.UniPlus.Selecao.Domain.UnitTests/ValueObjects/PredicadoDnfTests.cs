@@ -10,7 +10,7 @@ using Unifesspa.UniPlus.Regras.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
-/// <summary>Cobre CA-01, CA-03 e CA-11 da Story #847 (ADR-0111) e a avaliação ternária da Story #916.</summary>
+/// <summary>Cobre CA-01, CA-03 e CA-11 (ADR-0111) e a avaliação ternária.</summary>
 public sealed class PredicadoDnfTests
 {
     private static CondicaoDnf Booleana(string fato, bool valor) =>
@@ -70,7 +70,7 @@ public sealed class PredicadoDnfTests
         predicado.Avaliar(soEgresso).Should().Be(Ternario.Verdadeiro, "a segunda cláusula sozinha já satisfaz o OU");
     }
 
-    [Fact(DisplayName = "Story #916: fato não resolvível é Indeterminado (fail-closed) — nunca Falso, nunca lança")]
+    [Fact(DisplayName = "Fato não resolvível é Indeterminado (fail-closed) — nunca Falso, nunca lança")]
     public void PredicadoDnf_Avaliar_Fato_Nao_Resolvivel_E_Indeterminado()
     {
         Result<PredicadoDnf> resultado = PredicadoDnf.CriarDeCondicoesAgrupadas([(1, Booleana("SEXO_DESCONHECIDO", true))]);
@@ -82,7 +82,7 @@ public sealed class PredicadoDnfTests
         predicado.Avaliar(new Dictionary<string, FatoResolvido>()).Should().Be(Ternario.Indeterminado);
     }
 
-    // ── Story #554 (PR #896, issue #892) — extensão dinâmica/multivalorada ──
+    // ── Extensão dinâmica/multivalorada ──
 
     private static CondicaoDnf Categorica(string fato, Operador operador, JsonElement valor) =>
         CondicaoDnf.Criar(fato, operador, valor).Value!;
@@ -160,7 +160,7 @@ public sealed class PredicadoDnfTests
         predicado.Avaliar(fatos).Should().Be(Ternario.Verdadeiro, "fato escalar (não-array) segue o ramo original, sem mudança de comportamento");
     }
 
-    // ── Story #916 — operadores de exclusão (DIFERENTE/NENHUM_DE) e tabela-verdade ternária ──
+    // ── Operadores de exclusão (DIFERENTE/NENHUM_DE) e tabela-verdade ternária ──
 
     private static PredicadoDnf Predicado(params (int Clausula, CondicaoDnf Condicao)[] linhas) =>
         PredicadoDnf.CriarDeCondicoesAgrupadas(linhas).Value!;
@@ -343,7 +343,7 @@ public sealed class PredicadoDnfTests
         predicado.Avaliar(fatos).Should().Be(Ternario.Falso);
     }
 
-    // ── Story #926 — NAO_APLICAVEL é estado próprio do átomo, distinto de INDETERMINADO ──
+    // ── NAO_APLICAVEL é estado próprio do átomo, distinto de INDETERMINADO ──
 
     private static Dictionary<string, FatoResolvido> Estados(params (string Fato, FatoResolvido Estado)[] entradas) =>
         entradas.ToDictionary(static e => e.Fato, static e => e.Estado, StringComparer.Ordinal);

@@ -66,7 +66,7 @@ public sealed class ConfiguracaoTaxaInscricaoTests
         resultado.Error!.Code.Should().Be("ConfiguracaoTaxaInscricao.FundamentoExigeCobranca");
     }
 
-    [Theory(DisplayName = "Criar com cobra=true e zero fundamentos falha — quem cobra reconhece ao menos um fundamento (issue #1310)")]
+    [Theory(DisplayName = "Criar com cobra=true e zero fundamentos falha — quem cobra reconhece ao menos um fundamento")]
     [InlineData(true)]
     [InlineData(false)]
     public void Criar_CobraSemFundamentos_Falha(bool listaVazia)
@@ -94,7 +94,7 @@ public sealed class ConfiguracaoTaxaInscricaoTests
         resultado.Errors.Should().Contain(e => e.Field == "fundamentos" && e.Error.Code == "ConfiguracaoTaxaInscricao.FundamentoObrigatorioQuandoCobra");
     }
 
-    [Fact(DisplayName = "Criar com cobra=true e só token desconhecido reporta apenas FundamentoDesconhecido — a obrigatoriedade não duplica a recusa (issue #1310)")]
+    [Fact(DisplayName = "Criar com cobra=true e só token desconhecido reporta apenas FundamentoDesconhecido — a obrigatoriedade não duplica a recusa")]
     public void Criar_CobraComTokenDesconhecido_NaoAcumulaObrigatoriedade()
     {
         Result<ConfiguracaoTaxaInscricao> resultado = ConfiguracaoTaxaInscricao.Criar(
@@ -126,7 +126,7 @@ public sealed class ConfiguracaoTaxaInscricaoTests
         resultado.Error!.Code.Should().Be("ConfiguracaoTaxaInscricao.FundamentoDesconhecido");
     }
 
-    [Fact(DisplayName = "Criar com dois fundamentos tem sucesso, sem exigir confirmação nem depender do tipo de processo (issue #1319)")]
+    [Fact(DisplayName = "Criar com dois fundamentos tem sucesso, sem exigir confirmação nem depender do tipo de processo")]
     public void Criar_ComDoisFundamentos_Sucesso()
     {
         Result<ConfiguracaoTaxaInscricao> resultado = ConfiguracaoTaxaInscricao.Criar(
@@ -179,7 +179,7 @@ public sealed class ConfiguracaoTaxaInscricaoTests
         resultado.Errors.Should().Contain(e => e.Field == "fundamentos" && e.Error.Code == "ConfiguracaoTaxaInscricao.FundamentoDesconhecido");
     }
 
-    [Fact(DisplayName = "Criar aceita o fundamento de carência socioeconômica (issue #1296)")]
+    [Fact(DisplayName = "Criar aceita o fundamento de carência socioeconômica")]
     public void Criar_ComCarenciaSocioeconomica_Sucesso()
     {
         Result<ConfiguracaoTaxaInscricao> resultado = ConfiguracaoTaxaInscricao.Criar(
@@ -191,7 +191,7 @@ public sealed class ConfiguracaoTaxaInscricaoTests
         resultado.Value!.Fundamentos.Should().Equal(FundamentoIsencao.CarenciaSocioeconomica);
     }
 
-    [Fact(DisplayName = "Criar aceita os três fundamentos juntos (issue #1296)")]
+    [Fact(DisplayName = "Criar aceita os três fundamentos juntos")]
     public void Criar_ComOsTresFundamentos_Sucesso()
     {
         Result<ConfiguracaoTaxaInscricao> resultado = ConfiguracaoTaxaInscricao.Criar(

@@ -81,8 +81,7 @@ public sealed class EnvelopeCanonicoGoldenTests
     }
 
     /// <summary>
-    /// Story #575: o bloco <c>cascataRemanejamento</c> saiu de stub (<c>nao_construido</c>) para
-    /// bloco real com dois estados — <c>Envelope_BateGoldenFixture</c> acima já cobre a ausência
+    /// O bloco <c>cascataRemanejamento</c> tem dois estados — <c>Envelope_BateGoldenFixture</c> acima já cobre a ausência
     /// (<c>{"presente":false}</c>, a forma do processo de referência); esta fixture congela a
     /// presença (<c>{"presente":true,...}</c>, matriz legal completa) byte a byte.
     /// </summary>

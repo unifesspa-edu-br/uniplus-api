@@ -12,7 +12,7 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using static Unifesspa.UniPlus.Selecao.Domain.UnitTests.Entities.ApoioDoProcessoSeletivoEmRascunho;
 
 /// <summary>
-/// Bônus regional e critérios de desempate do <see cref="ProcessoSeletivo"/> (Story #774):
+/// Bônus regional e critérios de desempate do <see cref="ProcessoSeletivo"/>:
 /// o vínculo com a raiz, a ordem dos critérios e a integridade da referência às etapas.
 /// </summary>
 public sealed class ProcessoSeletivoBonusEDesempateTests

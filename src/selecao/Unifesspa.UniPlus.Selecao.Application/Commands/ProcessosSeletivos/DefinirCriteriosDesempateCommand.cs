@@ -51,8 +51,7 @@ public sealed record ParametrosDoCriterioDesempateInput(
 }
 
 /// <summary>
-/// Substitui integralmente os critérios de desempate do processo (Story
-/// #774). Lista vazia remove todos os critérios: o rascunho aceita, mas a publicação de processo
+/// Substitui integralmente os critérios de desempate do processo. Lista vazia remove todos os critérios: o rascunho aceita, mas a publicação de processo
 /// com inscrição própria exige ao menos um (resultado importado dispensa).
 /// </summary>
 public sealed record DefinirCriteriosDesempateCommand(

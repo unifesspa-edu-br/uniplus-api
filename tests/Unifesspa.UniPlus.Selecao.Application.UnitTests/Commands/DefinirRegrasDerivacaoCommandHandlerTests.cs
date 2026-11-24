@@ -26,7 +26,7 @@ using Unifesspa.UniPlus.Testes.Compartilhado;
 using static ApoioDaDefinicaoDasRegrasDeDerivacao;
 
 /// <summary>
-/// Cobertura do <see cref="DefinirRegrasDerivacaoCommandHandler"/> (Story #985): o alvo derivado
+/// Cobertura do <see cref="DefinirRegrasDerivacaoCommandHandler"/>: o alvo derivado
 /// com binding de regra, a semântica das condições <c>quando</c> contra o vocabulário e a oferta do
 /// processo, a recusa das derivações que a oferta define, e a delegação estrutural ao agregado.
 /// </summary>

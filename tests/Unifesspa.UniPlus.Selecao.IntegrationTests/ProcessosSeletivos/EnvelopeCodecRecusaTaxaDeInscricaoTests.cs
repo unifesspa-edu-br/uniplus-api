@@ -14,12 +14,12 @@ using Xunit;
 using static Unifesspa.UniPlus.Selecao.IntegrationTests.ProcessosSeletivos.AdulteracaoDeEnvelopeDeTeste;
 
 /// <summary>
-/// A taxa de inscrição e a isenção (issue #1112): o bloco <c>taxaInscricao</c> é de forma fechada e de
+/// A taxa de inscrição e a isenção: o bloco <c>taxaInscricao</c> é de forma fechada e de
 /// vocabulário fechado, como o de divulgação, e o decoder é tão estrito quanto a escrita.
 /// </summary>
 public sealed class EnvelopeCodecRecusaTaxaDeInscricaoTests
 {
-    [Fact(DisplayName = "issue #1112: taxaInscricao.presente=false é recusado — CA-01 garante que todo envelope publicado declarou taxa")]
+    [Fact(DisplayName = "taxaInscricao.presente=false é recusado — CA-01 garante que todo envelope publicado declarou taxa")]
     public void TaxaInscricao_PresenteFalso_Recusa()
     {
         Result<EnvelopeReidratado> resultado = ReidratarComEnvelopeAdulterado(envelope =>
@@ -36,7 +36,7 @@ public sealed class EnvelopeCodecRecusaTaxaDeInscricaoTests
         resultado.Error!.Message.Should().Contain("taxaInscricao.presente");
     }
 
-    [Fact(DisplayName = "issue #1112: fundamento de isenção com token fora do vocabulário conhecido é recusado")]
+    [Fact(DisplayName = "Fundamento de isenção com token fora do vocabulário conhecido é recusado")]
     public void TaxaInscricao_FundamentoDesconhecido_Recusa()
     {
         Result<EnvelopeReidratado> resultado = ReidratarComEnvelopeAdulterado(envelope =>
@@ -48,7 +48,7 @@ public sealed class EnvelopeCodecRecusaTaxaDeInscricaoTests
         resultado.Error!.Code.Should().Be("ConfiguracaoTaxaInscricao.FundamentoDesconhecido");
     }
 
-    [Fact(DisplayName = "issue #1112: fundamentos repetidos são recusados — o encoder nunca emite duplicata")]
+    [Fact(DisplayName = "Fundamentos repetidos são recusados — o encoder nunca emite duplicata")]
     public void TaxaInscricao_FundamentosDuplicados_Recusa()
     {
         Result<EnvelopeReidratado> resultado = ReidratarComEnvelopeAdulterado(envelope =>
@@ -62,7 +62,7 @@ public sealed class EnvelopeCodecRecusaTaxaDeInscricaoTests
         resultado.Error!.Message.Should().Contain("taxaInscricao.fundamentos");
     }
 
-    [Fact(DisplayName = "issue #1112: fundamentos fora da ordem canônica são recusados — o decoder não reordena")]
+    [Fact(DisplayName = "Fundamentos fora da ordem canônica são recusados — o decoder não reordena")]
     public void TaxaInscricao_FundamentosForaDeOrdem_Recusa()
     {
         Result<EnvelopeReidratado> resultado = ReidratarComEnvelopeAdulterado(envelope =>
@@ -76,7 +76,7 @@ public sealed class EnvelopeCodecRecusaTaxaDeInscricaoTests
         resultado.Error!.Message.Should().Contain("taxaInscricao.fundamentos");
     }
 
-    [Fact(DisplayName = "issue #1319: envelope que ainda traz confirmacaoFundamentos é recusado — o bloco é de forma fechada")]
+    [Fact(DisplayName = "Envelope que ainda traz confirmacaoFundamentos é recusado — o bloco é de forma fechada")]
     public void TaxaInscricao_ChaveConfirmacaoFundamentosRemovida_Recusa()
     {
         Result<EnvelopeReidratado> resultado = ReidratarComEnvelopeAdulterado(envelope =>
@@ -91,7 +91,7 @@ public sealed class EnvelopeCodecRecusaTaxaDeInscricaoTests
             "de forma no bloco, inclusive um alheio à remoção");
     }
 
-    [Fact(DisplayName = "issue #1310: envelope que cobra taxa sem nenhum fundamento é recusado — o decoder é tão estrito quanto a escrita")]
+    [Fact(DisplayName = "Envelope que cobra taxa sem nenhum fundamento é recusado — o decoder é tão estrito quanto a escrita")]
     public void TaxaInscricao_CobraSemFundamento_Recusa()
     {
         Result<EnvelopeReidratado> resultado = ReidratarComEnvelopeAdulterado(envelope =>

@@ -83,15 +83,14 @@ public sealed class ProcessoSeletivoPublicarReferenciaTemporalDosFatosTests
         processo.ReferenciaTemporalFatos.Should().BeNull();
     }
 
-    [Fact(DisplayName = "B-03: gatilho por FAIXA_ETARIA sem referência configurada é bloqueado — a guarda B-01 (issue #547) que antes mascarava esta checagem foi removida na PR #903 (issue #548)")]
+    [Fact(DisplayName = "B-03: gatilho por FAIXA_ETARIA sem referência configurada é bloqueado — a guarda B-01 não mascara mais esta checagem")]
     public void Publicar_GatilhoPorFaixaEtariaSemReferencia_BloqueadoPorB03()
     {
         ProcessoSeletivo processo = NovoProcessoConforme();
         Guid faseId = processo.CronogramaFases.Single().Id;
         processo.DefinirDocumentosExigidos([RegraDeComprovacao.CriarRegraDeDocumento(ExigenciaCondicionalComGatilhoPorFaixaEtaria(faseId), 0).Value!])
             .IsSuccess.Should().BeTrue();
-        // Nenhuma ReferenciaTemporalFatos configurada — com a guarda B-01 removida, a
-        // checagem B-03 (issue #892) agora é alcançada e recusa nomeadamente.
+        // Nenhuma ReferenciaTemporalFatos configurada: a checagem B-03 é alcançada e recusa nomeadamente.
 
         Result<VersaoConfiguracao> resultado = processo.Publicar(CenarioDoEdital());
 
@@ -132,7 +131,7 @@ public sealed class ProcessoSeletivoPublicarReferenciaTemporalDosFatosTests
     }
 
     /// <summary>
-    /// O único caminho que resta até o B-03 depois da issue #1350, e o motivo de ele continuar
+    /// O único caminho que resta até o B-03, e o motivo de ele continuar
     /// existindo.
     /// </summary>
     /// <remarks>
@@ -160,7 +159,7 @@ public sealed class ProcessoSeletivoPublicarReferenciaTemporalDosFatosTests
         resultado.Error!.Code.Should().Be("ProcessoSeletivo.ReferenciaTemporalFatosFimInscricaoIndisponivel");
     }
 
-    [Fact(DisplayName = "B-03: FIM_INSCRICAO com mais de uma fase de coleta resolve pela menor Ordem, não pela ordem de inserção — achado de revisão da PR #903")]
+    [Fact(DisplayName = "B-03: FIM_INSCRICAO com mais de uma fase de coleta resolve pela menor Ordem, não pela ordem de inserção")]
     public void ResolverDataReferenciaFatos_FimInscricaoComDuasFasesDeColeta_ResolvePelaMenorOrdem()
     {
         ProcessoSeletivo processo = ProcessoComDuasFasesDeColeta();
@@ -211,10 +210,9 @@ public sealed class ProcessoSeletivoPublicarReferenciaTemporalDosFatosTests
     /// Cronograma SEM nenhuma fase que colete inscrição, com o resultado numa fase NO_EDITAL.
     /// </summary>
     /// <remarks>
-    /// Era, antes da issue #1350, um cronograma com a coleta numa fase NA_EXECUCAO sem janela — "a
-    /// única forma de ter uma fase ColetaInscricao=true sem Fim". Aquele estado deixou de ser
-    /// publicável: a fase que coleta inscrição passou a exigir janela, e a recusa dela roda no
-    /// gate do cronograma, ANTES do B-03. O teste continuaria verde recusando pelo motivo errado.
+    /// Um cronograma com a coleta numa fase NA_EXECUCAO sem janela não serve de cenário: a fase
+    /// que coleta inscrição exige janela, e a recusa dela roda no gate do cronograma, ANTES do
+    /// B-03. O teste continuaria verde recusando pelo motivo errado.
     /// <para>
     /// O caminho que sobrou para alcançar o B-03 é este: nenhuma fase de coleta, com FIM_INSCRICAO
     /// declarado assim mesmo — <c>DefinirReferenciaTemporalFatos</c> não guarda contra isso, e é

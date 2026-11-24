@@ -9,7 +9,7 @@ using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Protecao;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
-/// <summary>Configuração EF Core de <see cref="BancaRequerida"/> (Story #851) — filha 0..* de <see cref="FaseCronograma"/>.</summary>
+/// <summary>Configuração EF Core de <see cref="BancaRequerida"/> — filha 0..* de <see cref="FaseCronograma"/>.</summary>
 public sealed class BancaRequeridaConfiguration : IEntityTypeConfiguration<BancaRequerida>
 {
     public void Configure(EntityTypeBuilder<BancaRequerida> builder)

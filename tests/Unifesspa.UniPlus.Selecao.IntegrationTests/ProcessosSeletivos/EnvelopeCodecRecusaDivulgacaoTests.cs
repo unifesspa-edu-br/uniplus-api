@@ -15,8 +15,8 @@ using static Unifesspa.UniPlus.Selecao.IntegrationTests.ProcessosSeletivos.Adult
 using static Unifesspa.UniPlus.Selecao.IntegrationTests.ProcessosSeletivos.VersoesDoEnvelopeDeTeste;
 
 /// <summary>
-/// O bloco <c>divulgacao</c>, promovido de stub a real, precisa de um decoder tão estrito quanto o encoder
-/// (issue #563). Round-trip verde prova que o que foi emitido sobrevive; não prova que o decoder recusa o
+/// O bloco <c>divulgacao</c> precisa de um decoder tão estrito quanto o encoder.
+/// Round-trip verde prova que o que foi emitido sobrevive; não prova que o decoder recusa o
 /// que não deveria aceitar.
 /// </summary>
 public sealed class EnvelopeCodecRecusaDivulgacaoTests
@@ -25,7 +25,7 @@ public sealed class EnvelopeCodecRecusaDivulgacaoTests
     /// Cada linha de <see cref="MutacoesDeDivulgacaoDoEnvelope"/> adultera um aspecto do bloco e assere o
     /// código E o caminho ofensivos (via trecho da mensagem).
     /// </summary>
-    [Theory(DisplayName = "issue #563 (CA-12): cada mutação do bloco divulgacao ataca UMA invariante e é recusada com o código e o caminho esperados")]
+    [Theory(DisplayName = "CA-12: cada mutação do bloco divulgacao ataca UMA invariante e é recusada com o código e o caminho esperados")]
     [MemberData(nameof(MutacoesDeDivulgacaoDoEnvelope.Todas), MemberType = typeof(MutacoesDeDivulgacaoDoEnvelope))]
     public void Divulgacao_CadaMutacaoAtacaUmaInvariante_Recusa(
         string descricao, Action<JsonObject> mutar, string codigoEsperado, string trechoEsperado)
@@ -65,7 +65,7 @@ public sealed class EnvelopeCodecRecusaDivulgacaoTests
     /// escritos.
     /// </para>
     /// </remarks>
-    [Fact(DisplayName = "issue #563 (CA-12): justificativa em NFD real é recusada pelo gate universal de forma canônica, antes de o decoder da versão rodar")]
+    [Fact(DisplayName = "CA-12: justificativa em NFD real é recusada pelo gate universal de forma canônica, antes de o decoder da versão rodar")]
     public void Divulgacao_JustificativaEmNfdReal_Recusa()
     {
         byte[] originais = BytesDoExemplo();

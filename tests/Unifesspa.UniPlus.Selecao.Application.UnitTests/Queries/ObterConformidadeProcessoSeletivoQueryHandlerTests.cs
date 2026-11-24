@@ -57,13 +57,13 @@ public sealed class ObterConformidadeProcessoSeletivoQueryHandlerTests
         result!.Itens.Should().Contain(i => i.Codigo == "cronograma_tipo_de_ato_unico_declarado_uma_vez" && !i.Ok);
     }
 
-    [Fact(DisplayName = "Handle com processo sem atendimento nem cronograma devolve os dois pendentes (Story #851 — Etapas não é mais item incondicional)")]
+    [Fact(DisplayName = "Handle com processo sem atendimento nem cronograma devolve os dois pendentes (Etapas não é item incondicional)")]
     public async Task Handle_EtapasSemAtendimento_ChecklistParcial()
     {
         ConformidadeProcessoSeletivoDto? result = await ConformidadeAsync(SoComAsEtapas());
 
         result.Should().NotBeNull();
-        // Etapa deixou de ser item do checklist (Story #851 §3.5): um processo sem prova
+        // Etapa não é item do checklist: um processo sem prova
         // publica sem etapa quando o cronograma é coerente. A asserção é por prefixo do
         // código, e não pela frase que o item tinha, para continuar pegando a reintrodução
         // sob qualquer redação nova. O que continua obrigatório e ainda não satisfeito aqui
@@ -74,7 +74,7 @@ public sealed class ObterConformidadeProcessoSeletivoQueryHandlerTests
         result.Itens.Should().Contain(i => i.Codigo == "cronograma_fases_ausente" && !i.Ok);
     }
 
-    [Fact(DisplayName = "Handle com InscricaoPropria sem fase de coleta NÃO declara o checklist inteiramente verde (issue #1092 — regressão do falso verde)")]
+    [Fact(DisplayName = "Handle com InscricaoPropria sem fase de coleta NÃO declara o checklist inteiramente verde (regressão do falso verde)")]
     public async Task Handle_InscricaoPropriaSemFaseDeColeta_NaoDeclaraChecklistTodoVerde()
     {
         ProcessoSeletivo processo = DeInscricaoPropriaSemFaseDeColeta();
@@ -134,7 +134,7 @@ public sealed class ObterConformidadeProcessoSeletivoQueryHandlerTests
         result.Itens.Select(static i => i.Codigo).Should().OnlyHaveUniqueItems();
     }
 
-    [Fact(DisplayName = "Handle com todos os itens obrigatórios configurados devolve checklist sem pendências, e a publicação aceita (bicondicional, issue #1092)")]
+    [Fact(DisplayName = "Handle com todos os itens obrigatórios configurados devolve checklist sem pendências, e a publicação aceita (bicondicional)")]
     public async Task Handle_TodosOsItens_SemPendencia()
     {
         ProcessoSeletivo processo = ComTodosOsItensObrigatorios();
@@ -143,7 +143,7 @@ public sealed class ObterConformidadeProcessoSeletivoQueryHandlerTests
 
         result.Should().NotBeNull();
         result!.Itens.Should().OnlyContain(i => i.Ok);
-        // issue #1092 — a bicondicional exige mais do que "todas as dimensões presentes": o
+        // A bicondicional exige mais do que "todas as dimensões presentes": o
         // checklist inteiramente verde TEM de significar que Publicar aceita. Fora do escopo
         // estrutural (não afetado aqui): conformidade legal, documento confirmado, tipo de ato.
         Result<VersaoConfiguracao> publicar = Publicar(processo);

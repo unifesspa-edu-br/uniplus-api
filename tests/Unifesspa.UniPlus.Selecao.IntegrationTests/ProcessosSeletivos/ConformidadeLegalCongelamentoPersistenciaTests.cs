@@ -24,7 +24,7 @@ using Unifesspa.UniPlus.Selecao.IntegrationTests.TestSupport;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
 /// <summary>
-/// Story #853 — CA-18 (paridade congelado × cadastro vivo) e CA-19 (o passado não muda,
+/// CA-18 (paridade congelado × cadastro vivo) e CA-19 (o passado não muda,
 /// congelamento dos parâmetros na publicação, UNI-REQ-0019), contra Postgres real (Testcontainers): a fonte é a MESMA usada pelo gate — repositório
 /// real de <see cref="ObrigatoriedadeLegal"/> + <see cref="AvaliadorConformidadeLegal.Avaliar"/>.
 /// </summary>
@@ -37,7 +37,7 @@ public sealed class ConformidadeLegalCongelamentoPersistenciaTests : IClassFixtu
     /// <summary>
     /// A janela da inscrição em horário de Belém — meia-noite local, não UTC. Fosse
     /// <c>TimeSpan.Zero</c>, o dia civil derivado cairia em 31/12/2025 e a conferência
-    /// responderia pela vigência do dia anterior (issue #1350).
+    /// responderia pela vigência do dia anterior.
     /// </summary>
     private static readonly DateTimeOffset InicioDaInscricao =
         InstanteEmBelem.Em(2026, 1, 1);
@@ -111,7 +111,7 @@ public sealed class ConformidadeLegalCongelamentoPersistenciaTests : IClassFixtu
 
     private static void PrepararPublicacao(ProcessoSeletivo processo)
     {
-        // Issue #1112: publicar sem declarar cobrança de taxa é recusado (CA-01).
+        // Publicar sem declarar cobrança de taxa é recusado (CA-01).
         processo.DefinirTaxaInscricao(
             ConfiguracaoTaxaInscricao.Criar(cobra: false, valor: null, fundamentosCodigos: null).Value!).IsSuccess.Should().BeTrue();
         DeclaracoesObrigatoriasDeTeste.Declarar(processo);

@@ -12,7 +12,7 @@ public sealed record ProdutoDaFaseDto(Guid Id, string AtoCodigo, CodigoComRotulo
 /// <summary>Projeção de leitura de <c>CategoriaJulgada</c> — uma categoria de documento dos candidatos atendidos pela banca.</summary>
 public sealed record CategoriaJulgadaDto(Guid Id, Guid CategoriaDocumentoOrigemId, string Codigo);
 
-/// <summary>Projeção de leitura de <c>BancaRequerida</c> (Story #851).</summary>
+/// <summary>Projeção de leitura de <c>BancaRequerida</c>.</summary>
 /// <param name="Id">Identidade permanente da banca: o cliente a devolve ao regravar a fase, para a banca continuar sendo a mesma.</param>
 /// <param name="Chave">Chave local permanente da banca no documento.</param>
 /// <param name="PosicaoNoTipo">Posição da banca entre as do mesmo tipo na fase, a partir de 1.</param>
@@ -41,7 +41,7 @@ public sealed record BancaRequeridaDto(
     RegraDeDeliberacaoDto? RegraDeDeliberacao,
     IReadOnlyList<CategoriaJulgadaDto> CandidatosAtendidos);
 
-/// <summary>Projeção de leitura de <c>ParametrosRegraPrazoRecurso</c> (Story #851).</summary>
+/// <summary>Projeção de leitura de <c>ParametrosRegraPrazoRecurso</c>.</summary>
 /// <param name="PrazoValor">Valor do prazo de interposição do recurso na 1ª instância.</param>
 /// <param name="PrazoUnidade">Unidade do prazo de interposição.</param>
 /// <param name="AdmiteInstanciaSuperior">Se o recurso admite instância superior.</param>
@@ -58,7 +58,7 @@ public sealed record ParametrosRegraPrazoRecursoDto(
     CodigoComRotulo<EfeitoSuspensivo> EfeitoSuspensivo,
     CodigoComRotulo<GuardaDaVaga> GuardaDaVaga);
 
-/// <summary>Projeção de leitura de <c>RegraRecursoFase</c> (0..1, Story #851) — presença = a fase admite recurso.</summary>
+/// <summary>Projeção de leitura de <c>RegraRecursoFase</c> (0..1) — presença = a fase admite recurso.</summary>
 /// <param name="ProdutoAncoraId">
 /// O <c>ProdutoDaFase</c> desta mesma fase de cujo instante de publicação o prazo de
 /// interposição conta. Derivado do produto preliminar, não escrito por quem configura.
@@ -73,7 +73,7 @@ public sealed record RegraRecursoFaseDto(
 /// <summary>Projeção de leitura da unidade que responde por uma fase — a cópia congelada ao definir o cronograma.</summary>
 public sealed record UnidadeResponsavelDto(Guid OrigemId, string Sigla, string Nome);
 
-/// <summary>Projeção de leitura de <c>FaseCronograma</c> (Story #851) — o eixo temporal do certame.</summary>
+/// <summary>Projeção de leitura de <c>FaseCronograma</c> — o eixo temporal do certame.</summary>
 /// <param name="Codigo">A identidade estável da fase no processo: a etapa aponta para a fase por este código, porque o id não sobrevive à reconciliação.</param>
 /// <param name="FaseCanonica">Os traços que a fase herda da fase canônica.</param>
 /// <param name="Cronograma">A posição da fase, a janela e a unidade que responde por ela.</param>

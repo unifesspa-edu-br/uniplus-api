@@ -11,7 +11,7 @@ using Unifesspa.UniPlus.Selecao.Domain.Enums;
 /// <c>regras_do_catalogo</c> (<c>tipo=regra_eliminacao</c>), tipados por variante
 /// conforme o esquema do documento da configuração.
 /// Conjunto fechado de variantes no molde de <c>PredicadoObrigatoriedade</c> (ADR-0058)
-/// e de <c>ParametrosCriterioDesempate</c> (Story #774).
+/// e de <c>ParametrosCriterioDesempate</c>.
 /// </summary>
 /// <remarks>
 /// Forma fechada por design: as variantes espelham as regras de eliminação semeadas em

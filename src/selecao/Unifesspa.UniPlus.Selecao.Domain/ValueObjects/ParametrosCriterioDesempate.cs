@@ -26,12 +26,12 @@ using Unifesspa.UniPlus.Selecao.Domain.Errors;
 /// </para>
 /// <para>
 /// <see cref="ParametrosDesempatePredicadoFato"/> reusa literalmente
-/// <see cref="CondicaoDnf"/> (ADR-0111, Story #847) em vez de carregar três
+/// <see cref="CondicaoDnf"/> (ADR-0111) em vez de carregar três
 /// strings soltas — fecha o gap que a modelagem da classificação documentava
 /// (<c>Fato</c> tipado mas não validado contra o vocabulário fechado de
 /// fatos do candidato): <c>CriterioDesempate.Criar</c> confere a
-/// condição contra o vocabulário resolvido do catálogo <c>dados_do_candidato</c>
-/// (#846), fechando a integridade da referência à etapa.
+/// condição contra o vocabulário resolvido do catálogo <c>dados_do_candidato</c>,
+/// fechando a integridade da referência à etapa.
 /// </para>
 /// </remarks>
 [JsonPolymorphic(TypeDiscriminatorPropertyName = "$tipo")]

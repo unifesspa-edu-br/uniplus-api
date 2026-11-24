@@ -17,7 +17,7 @@ using Unifesspa.UniPlus.Testes.Compartilhado;
 /// <summary>
 /// Cobertura de <c>CoberturaDaCascata.CausasDaCascata</c> e do item
 /// "Cascata de remanejamento" em <see cref="ProcessoSeletivo.AvaliarConformidade"/>
-/// (cascata de remanejamento de cotas, UNI-REQ-0056, Story #575) — a validação cross-dimensão que varre
+/// (cascata de remanejamento de cotas, UNI-REQ-0056) — a validação cross-dimensão que varre
 /// <c>DistribuicaoVagas</c> por oferta, fora do agregador genérico de
 /// conformidade (<see cref="ProcessoSeletivo.PendenciaDeConformidade"/>).
 /// </summary>
@@ -330,7 +330,7 @@ public sealed class ProcessoSeletivoCascataTests
                 RegraCalculo = ReferenciaRegra.De(RegraDeCalculoDaNota.ClassificacaoImportada.Codigo(), "v1", HashFixo),
                 RegraOrdemAlocacao = ReferenciaRegra.De(RegraDeOrdemDeAlocacao.PrimeiraOpcaoPrioritaria.Codigo(), "v1", HashFixo),
             }).Value!).IsSuccess.Should().BeTrue();
-        // Issue #1112: item estrutural novo — declarado para manter os demais itens Ok, já que
+        // Item estrutural — declarado para manter os demais itens Ok, já que
         // este teste isola a ausência de cascata como a ÚNICA pendência.
         processo.DefinirTaxaInscricao(
             ConfiguracaoTaxaInscricao.Criar(cobra: false, valor: null, fundamentosCodigos: null).Value!).IsSuccess.Should().BeTrue();

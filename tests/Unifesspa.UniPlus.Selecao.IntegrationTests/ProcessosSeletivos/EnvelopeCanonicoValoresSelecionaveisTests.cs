@@ -14,7 +14,7 @@ using Xunit;
 using static Unifesspa.UniPlus.Selecao.IntegrationTests.ProcessosSeletivos.EnvelopeDeReferencia;
 
 /// <summary>
-/// Valores selecionáveis dos fatos coletados no envelope canônico (issue #1059, UNI-REQ-0072):
+/// Valores selecionáveis dos fatos coletados no envelope canônico (UNI-REQ-0072):
 /// a totalidade exigida do encoder e a ordem canônica dos valores.
 /// </summary>
 public sealed class EnvelopeCanonicoValoresSelecionaveisTests
@@ -41,8 +41,8 @@ public sealed class EnvelopeCanonicoValoresSelecionaveisTests
     }
 
     // Diferente do teste acima (entrada AUSENTE): aqui a entrada existe, mas é []. O gate de
-    // pré-canonicalização (ProcessoSeletivo.PendenciaDeFatoColetadoSemValoresOfertados, issue
-    // #1077, §3, CA-12) deveria ter recusado a publicação antes deste ponto — chegar aqui com
+    // pré-canonicalização (ProcessoSeletivo.PendenciaDeFatoColetadoSemValoresOfertados,
+    // §3, CA-12) deveria ter recusado a publicação antes deste ponto — chegar aqui com
     // lista vazia é erro de programação do handler (esqueceu o gate ou o resolvedor), nunca um
     // seletor legítimo sem opção.
     [Fact(DisplayName = "SerializarFatosColetados lança quando o dicionário traz lista VAZIA para um fato de seleção")]

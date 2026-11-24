@@ -91,7 +91,7 @@ public sealed class ModeloFormularioCommandHandlerTests : ModeloFormularioHandle
             e.Field == "conteudo.grupos[0].subitens" && e.Error.Code == GrupoFormularioErrorCodes.CandidatoComoMembroIncompleto);
     }
 
-    [Fact(DisplayName = "Grupo que inclui o candidato sem o mínimo é recusado só no mínimo, e o modelo não é gravado (acúmulo das recusas de leitura e de domínio: #2706)")]
+    [Fact(DisplayName = "Grupo que inclui o candidato sem o mínimo é recusado só no mínimo, e o modelo não é gravado (acúmulo das recusas de leitura e de domínio)")]
     public async Task Criar_GrupoSemMinimoComInclusaoDoCandidato_RecusaSoOMinimo()
     {
         ConteudoDoModeloInput conteudo = ComComposicao(Campo("MAIOR_IDADE", 0));

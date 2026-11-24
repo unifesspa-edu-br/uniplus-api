@@ -18,7 +18,7 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
 /// <summary>
-/// Story #926 — invariantes do grafo de coleta de fatos. A norma não pede apenas um grafo acíclico:
+/// Invariantes do grafo de coleta de fatos. A norma não pede apenas um grafo acíclico:
 /// pede que a pré-condição de um fato cite somente fatos <b>anteriores</b> na ordem de coleta, o que
 /// é mais estrito e é o que impede um formulário em que a pergunta depende de resposta ainda não dada.
 /// Os casos usam o formulário de habilitação, que não tem a seção do conjunto básico.

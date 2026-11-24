@@ -6,7 +6,7 @@ using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 /// <summary>
-/// Configuração de divulgação pública do certame (UNI-REQ-0050, issue #563): quais campos do
+/// Configuração de divulgação pública do certame (UNI-REQ-0050): quais campos do
 /// candidato aparecem nas listas públicas de resultado. Ausência desta entidade já é o default
 /// minimizado — só o número de inscrição — e não uma escolha administrativa pendente.
 /// </summary>

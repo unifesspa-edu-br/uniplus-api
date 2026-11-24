@@ -26,7 +26,7 @@ using Unifesspa.UniPlus.Testes.Compartilhado;
 /// </summary>
 internal static class ApoioDosDocumentosExigidos
 {
-    /// <summary>FormatosPermitidos agora obrigatório (Story #918) — QUALQUER é o valor neutro dos testes que não são sobre formato.</summary>
+    /// <summary>FormatosPermitidos é obrigatório — QUALQUER é o valor neutro dos testes que não são sobre formato.</summary>
     internal static readonly JsonElement Qualquer = JsonSerializer.SerializeToElement("QUALQUER");
 
     internal sealed record Mocks(

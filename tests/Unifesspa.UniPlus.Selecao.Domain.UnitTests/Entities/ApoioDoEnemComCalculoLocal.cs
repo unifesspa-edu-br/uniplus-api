@@ -38,7 +38,7 @@ internal static class ApoioDoEnemComCalculoLocal
         processo.DefinirDistribuicaoVagas(ofertas, FatosDeModalidadeDeTeste.DoCatalogo).IsSuccess.Should().BeTrue();
         processo.DefinirClassificacao(ClassificacaoEnemLocal(quadro ?? QuadroPesoAreaEnemDeTeste.Completo()))
             .IsSuccess.Should().BeTrue();
-        // Classificação baseada em ENEM exige ao menos uma edição admitida (issue #1620) — sem
+        // Classificação baseada em ENEM exige ao menos uma edição admitida — sem
         // ela, o item "classificacao_edicao_enem_nao_declarada" ficaria vermelho e interferiria
         // nos testes desta classe, que focam nos itens do quadro de pesos por área.
         processo.DefinirOpcoesDeclaradas("EDICAO_ENEM", [OpcaoDeclaradaFato.Criar("EDICAO_ENEM", "2026", "2026", 0).Value!])

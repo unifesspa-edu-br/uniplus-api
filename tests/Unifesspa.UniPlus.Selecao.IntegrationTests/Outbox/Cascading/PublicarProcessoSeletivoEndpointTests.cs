@@ -22,7 +22,7 @@ using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
 
 using static Unifesspa.UniPlus.Selecao.IntegrationTests.Outbox.Cascading.ApoioDaPublicacaoDoProcessoSeletivo;
 
-// Cenário fim-a-fim do fluxo de referência ADR-0005 (Story #759, T4 #785):
+// Cenário fim-a-fim do fluxo de referência ADR-0005:
 // HTTP request → PublicarProcessoSeletivoCommand → handler convention-based
 // produtivo → ProcessoSeletivo.Publicar(, ExemploDeEnvelopeDadosDoEdital.ContextoRico()) emite ProcessoPublicadoEvent via
 // AddDomainEvent → handler retorna (Result, IEnumerable<object>) com o
@@ -121,13 +121,13 @@ public sealed class PublicarProcessoSeletivoEndpointTests
         using JsonDocument doc = JsonDocument.Parse(await segunda.Content.ReadAsStringAsync());
         doc.RootElement.GetProperty("code").GetString()
             .Should().Be("uniplus.selecao.processo_seletivo.transicao_invalida");
-        // issue #1096 CA-07: processo já publicado tem o checklist estrutural 100% verde —
+        // CA-07: processo já publicado tem o checklist estrutural 100% verde —
         // "pendencias" nunca aparece vazio, e aqui nem deveria aparecer.
         doc.RootElement.TryGetProperty("pendencias", out _).Should().BeFalse();
     }
 
     [Fact(DisplayName =
-        "POST /processos-seletivos/{id}/publicacao com cadastro próprio não conforme — 422 ConformidadeInsuficiente inclui pendencias (issue #1096 CA-04, regressão)")]
+        "POST /processos-seletivos/{id}/publicacao com cadastro próprio não conforme — 422 ConformidadeInsuficiente inclui pendencias (CA-04, regressão)")]
     public async Task Publicar_QuandoCadastroProprioNaoConforme_Retorna422ComPendencias() =>
         await _apoio.AssertGateEstruturalNaoConformeAsync(
             (db, nome) => ProcessoSeletivoPendenciasSeeder.SemearComCadastroProprioNaoConformeAsync(db, nome),
@@ -136,7 +136,7 @@ public sealed class PublicarProcessoSeletivoEndpointTests
             nameof(Publicar_QuandoCadastroProprioNaoConforme_Retorna422ComPendencias));
 
     [Fact(DisplayName =
-        "POST /processos-seletivos/{id}/publicacao com cronograma não conforme (InscricaoPropria sem fase de coleta) — 422 inclui pendencias (issue #1096 CA-01, cenário Gherkin da issue)")]
+        "POST /processos-seletivos/{id}/publicacao com cronograma não conforme (InscricaoPropria sem fase de coleta) — 422 inclui pendencias (CA-01)")]
     public async Task Publicar_QuandoCronogramaNaoConforme_Retorna422ComPendencias() =>
         await _apoio.AssertGateEstruturalNaoConformeAsync(
             ProcessoSeletivoPendenciasSeeder.SemearComCronogramaNaoConformeAsync,
@@ -154,7 +154,7 @@ public sealed class PublicarProcessoSeletivoEndpointTests
             nameof(Publicar_QuandoFaseSemUnidadeResponsavel_Retorna422ComPendencias));
 
     [Fact(DisplayName =
-        "POST /processos-seletivos/{id}/publicacao com cascata não conforme (fora do regime federal) — 422 inclui pendencias (issue #1096 CA-02)")]
+        "POST /processos-seletivos/{id}/publicacao com cascata não conforme (fora do regime federal) — 422 inclui pendencias (CA-02)")]
     public async Task Publicar_QuandoCascataNaoConforme_Retorna422ComPendencias() =>
         await _apoio.AssertGateEstruturalNaoConformeAsync(
             ProcessoSeletivoPendenciasSeeder.SemearComCascataNaoConformeAsync,
@@ -163,7 +163,7 @@ public sealed class PublicarProcessoSeletivoEndpointTests
             nameof(Publicar_QuandoCascataNaoConforme_Retorna422ComPendencias));
 
     [Fact(DisplayName =
-        "POST /processos-seletivos/{id}/publicacao com pré-canonicalização não conforme (CONDICIONAL vazia) — 422 inclui pendencias (issue #1096 CA-03)")]
+        "POST /processos-seletivos/{id}/publicacao com pré-canonicalização não conforme (CONDICIONAL vazia) — 422 inclui pendencias (CA-03)")]
     public async Task Publicar_QuandoPreCanonicalizacaoNaoConforme_Retorna422ComPendencias() =>
         await _apoio.AssertGateEstruturalNaoConformeAsync(
             ProcessoSeletivoPendenciasSeeder.SemearComPreCanonicalizacaoNaoConformeAsync,

@@ -34,7 +34,7 @@ public static class FatoCandidatoErrorCodes
 
     /// <summary>
     /// Texto exige pessoal, identificador ou sensível; data e endereço exigem pessoal ou
-    /// sensível; os demais domínios recusam identificador (ADR-0136, emenda de #1857).
+    /// sensível; os demais domínios recusam identificador (ADR-0136).
     /// </summary>
     public const string ClassificacaoAbaixoDoMinimoDoDominio = "FatoCandidato.ClassificacaoAbaixoDoMinimoDoDominio";
     public const string ClassificacaoProtecaoObrigatoria = "FatoCandidato.ClassificacaoProtecaoObrigatoria";

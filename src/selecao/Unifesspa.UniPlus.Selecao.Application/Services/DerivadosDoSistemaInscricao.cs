@@ -16,7 +16,7 @@ using Unifesspa.UniPlus.Regras.ValueObjects;
 /// Calcula no servidor os fatos que <c>Unifesspa.UniPlus.Regras.Services.DerivadosDoSistema</c>
 /// declara (ADR-0136, UNI-REQ-0075): <c>FAIXA_ETARIA</c>, da data de nascimento e da data de
 /// referência CONGELADA na publicação; <c>UF_RESIDENCIA</c>/<c>MUNICIPIO_RESIDENCIA</c>, do
-/// endereço residencial, só depois de conferido no Geo (issue #1865) — nenhum pressuposto de
+/// endereço residencial, só depois de conferido no Geo — nenhum pressuposto de
 /// elegibilidade enviado pelo candidato é aceito, mesmo que ele mande os três fatos na resposta.
 /// </summary>
 public static class DerivadosDoSistemaInscricao

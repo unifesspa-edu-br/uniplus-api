@@ -27,7 +27,7 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
 /// <summary>
-/// "Minhas inscrições" (issue #1860, <c>GET /api/selecao/minhas-inscricoes</c>): todas as do dono
+/// "Minhas inscrições" (<c>GET /api/selecao/minhas-inscricoes</c>): todas as do dono
 /// do token, em qualquer processo, com os cursos que escolheram na versão em que estão.
 /// </summary>
 public sealed class MinhasInscricoesQueryHandlerTests

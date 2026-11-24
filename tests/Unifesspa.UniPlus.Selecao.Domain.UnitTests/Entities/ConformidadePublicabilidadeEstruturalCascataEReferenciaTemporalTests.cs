@@ -38,7 +38,7 @@ public sealed class ConformidadePublicabilidadeEstruturalCascataEReferenciaTempo
         ProcessoSeletivo processo = ProcessoConforme([oferta]);
 
         // A cascata (item agregado, comportamento pré-existente) TAMBÉM vai a vermelho —
-        // ela já cobria este código antes da issue #1092; o item NOVO é o detalhamento.
+        // ela já cobria este código; o item NOVO é o detalhamento.
         SoEstesItensVermelhos(
             processo, "cascata_pendente", "cascata_modalidade_fora_do_regime_federal");
         ExigirPublicacaoRecusada(processo, "ProcessoSeletivo.CascataForaDoRegimeFederal");
@@ -110,7 +110,7 @@ public sealed class ConformidadePublicabilidadeEstruturalCascataEReferenciaTempo
     }
 
     // ══════════════════════════════════════════════════════════════════════════════════════
-    // PendenciaPreCanonicalizacao — doze razões (Story #554/#920/#927/#928)
+    // PendenciaPreCanonicalizacao — doze razões
     // ══════════════════════════════════════════════════════════════════════════════════════
 
     [Fact(DisplayName = "Pré-canonicalização: exigência CONDICIONAL vazia que determina resultado — item vermelho e Publicar recusa com CondicionalVaziaDeterminaResultado")]

@@ -16,7 +16,7 @@ using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Seed;
 
 /// <summary>
 /// Configuração EF Core da entidade <see cref="RegraCatalogo"/> — a biblioteca
-/// <c>regras_do_catalogo</c> (Story #772).
+/// <c>regras_do_catalogo</c>.
 /// </summary>
 /// <remarks>
 /// <para>

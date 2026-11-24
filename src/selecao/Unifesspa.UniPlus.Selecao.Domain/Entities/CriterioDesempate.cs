@@ -12,8 +12,8 @@ using Unifesspa.UniPlus.Selecao.Domain.Errors;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 /// <summary>
-/// Um critério de desempate ordenado do <see cref="ProcessoSeletivo"/> (Story
-/// #774): referencia uma regra tipada do
+/// Um critério de desempate ordenado do <see cref="ProcessoSeletivo"/>:
+/// referencia uma regra tipada do
 /// <c>regras_do_catalogo</c> (<c>tipo=criterio_desempate</c>) e seus parâmetros
 /// aplicados. A <see cref="Ordem"/> carrega a semântica de refinamento
 /// sequencial — cada critério desempata só o subgrupo ainda empatado; o
@@ -42,9 +42,9 @@ public sealed class CriterioDesempate : EntityBase, IParteDoProcesso
     /// de pesos por área, pela raiz, que tem acesso à classificação.
     /// </summary>
     /// <param name="vocabularioFatos">
-    /// O vocabulário fechado de fatos do candidato (ADR-0111, Story #847),
-    /// já resolvido por quem chama (Application, via o leitor cross-módulo
-    /// do #846). Só é consultado quando <paramref name="parametros"/> é
+    /// O vocabulário fechado de fatos do candidato (ADR-0111),
+    /// já resolvido por quem chama (Application, via o leitor cross-módulo).
+    /// Só é consultado quando <paramref name="parametros"/> é
     /// <see cref="ParametrosDesempatePredicadoFato"/>. Omitido (<see langword="null"/>)
     /// no caminho de <b>reidratação</b> do envelope congelado — o congelamento dos parâmetros na publicação (UNI-REQ-0019) proíbe
     /// revalidar um predicado já publicado contra o vocabulário vivo.

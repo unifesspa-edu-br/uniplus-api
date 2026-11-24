@@ -39,7 +39,7 @@ public sealed class ProcessoSeletivoPublicarExigenciasDocumentaisTests
         resultado.Error!.Code.Should().Be("DocumentoExigido.CondicionalVaziaDeterminaResultado");
     }
 
-    [Fact(DisplayName = "Story #554/PR #903: publicar com exigência GERAL configurada é aceito — a guarda B-01 foi removida (issue #548)")]
+    [Fact(DisplayName = "Publicar com exigência GERAL configurada é aceito — a guarda B-01 não existe mais")]
     public void Publicar_ExigenciaGeralConfigurada_Aceita()
     {
         ProcessoSeletivo processo = NovoProcessoConforme();

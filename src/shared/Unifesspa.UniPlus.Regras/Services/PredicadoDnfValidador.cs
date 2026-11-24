@@ -10,12 +10,12 @@ using Unifesspa.UniPlus.Regras.ValueObjects;
 
 /// <summary>
 /// Domain service estático que confere um <see cref="PredicadoDnf"/> contra o
-/// vocabulário fechado de fatos do candidato (ADR-0111, Story #847): aplica a
+/// vocabulário fechado de fatos do candidato (ADR-0111): aplica a
 /// matriz de compatibilidade operador × domínio e, quando o domínio é
 /// categórico estático, o pertencimento do valor ao domínio declarado. Puro —
 /// não faz I/O; <paramref name="vocabularioFechado"/> é fornecido já
 /// resolvido por quem chama (Application), a partir do leitor cross-módulo do
-/// catálogo de fatos (#846).
+/// catálogo de fatos.
 /// </summary>
 public static class PredicadoDnfValidador
 {
@@ -32,7 +32,7 @@ public static class PredicadoDnfValidador
     /// adicional não se aplica.
     /// </param>
     /// <param name="dominiosDinamicos">
-    /// Domínio dinâmico por fato (Story #554, PR #896) — obrigatório quando o predicado
+    /// Domínio dinâmico por fato — obrigatório quando o predicado
     /// cita um fato <see cref="TipoDominioFato.CategoricoDinamico"/> (ex.: <c>MODALIDADE</c>,
     /// <c>CONDICAO_ATENDIMENTO</c>). O chamador (Application) o deriva da oferta do próprio
     /// processo — este validador não sabe de onde vem, só que precisa ser fornecido.
@@ -171,7 +171,7 @@ public static class PredicadoDnfValidador
         (resultado, resultado.Error?.Code == PredicadoDnfErrorCodes.ValorIncompativelComTipo ? tipo : null);
 
     /// <summary>
-    /// CA-03 (integridade referencial, Story #554): o domínio válido de um fato
+    /// CA-03 (integridade referencial): o domínio válido de um fato
     /// categórico dinâmico vem do que o PRÓPRIO PROCESSO oferece (modalidades
     /// selecionadas, condições de atendimento ofertadas) — nunca de um catálogo global.
     /// Ausência do fato em <paramref name="dominiosDinamicos"/> é erro do CHAMADOR (nunca
@@ -218,7 +218,7 @@ public static class PredicadoDnfValidador
 
     private static Result ValidarValorCategorico(CondicaoDnf condicao, Func<string, bool> pertence, string foraDoDominio)
     {
-        // NENHUM_DE (Story #916) segue a mesma forma de lista de ALGUM_DE — negação, não muda a
+        // NENHUM_DE segue a mesma forma de lista de ALGUM_DE — negação, não muda a
         // validação de valor × domínio.
         if (condicao.Operador is Operador.AlgumDe or Operador.NenhumDe)
         {

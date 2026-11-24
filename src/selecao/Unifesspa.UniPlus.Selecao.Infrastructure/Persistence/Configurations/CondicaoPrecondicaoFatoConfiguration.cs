@@ -14,7 +14,7 @@ using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Protecao;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
 
 /// <summary>
-/// Configuração EF Core de <see cref="CondicaoPrecondicaoFato"/> (Story #926) — entidade filha de
+/// Configuração EF Core de <see cref="CondicaoPrecondicaoFato"/> — entidade filha de
 /// <see cref="FatoColetado"/>, <c>EntityBase</c> puro (sem soft-delete). Mesmo mapeamento de
 /// <see cref="CondicaoGatilhoConfiguration"/>: o operador vai para a coluna pelo código declarado no enum
 /// e o valor é <c>jsonb</c> serializado pelo texto bruto.

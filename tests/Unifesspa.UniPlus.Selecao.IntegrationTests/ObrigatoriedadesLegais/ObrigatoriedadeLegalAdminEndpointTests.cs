@@ -23,7 +23,7 @@ using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
 
 /// <summary>
 /// Integration tests do admin CRUD de <c>ObrigatoriedadeLegal</c>
-/// (Story #461) contra Postgres real via Testcontainers. Cobrem:
+/// contra Postgres real via Testcontainers. Cobrem:
 /// happy path POST/PUT/DELETE restrito à permissão de manutenção,
 /// validação 422, 404 quando inexistente, idempotência POST e
 /// conflito de RegraCodigo duplicado.
@@ -35,7 +35,7 @@ public sealed class ObrigatoriedadeLegalAdminEndpointTests : ObrigatoriedadeLega
     private static readonly Dictionary<string, object> PredicadoEtapaProvaObjetiva = new(StringComparer.Ordinal)
     {
         ["$tipo"] = "etapaObrigatoria",
-        // Código de um tipo de etapa ativo e semeado (CriaCadastroTiposEtapa, issue #1071) —
+        // Código de um tipo de etapa ativo e semeado (CriaCadastroTiposEtapa) —
         // este teste passa pelo endpoint real, então o handler valida contra o cadastro.
         ["tipoEtapaCodigo"] = "PROVA_OBJETIVA",
     };

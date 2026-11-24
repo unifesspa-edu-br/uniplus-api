@@ -23,8 +23,8 @@ using Xunit;
 using static Unifesspa.UniPlus.Selecao.IntegrationTests.ProcessosSeletivos.ApoioDaPoliticaDeOrdenacao;
 
 /// <summary>
-/// Issue #1069 — <b>Prova B</b> da política de ordenação: oráculo de <b>sequência exata</b>, com
-/// chaves em conflito, para cada camada da composição hierárquica (ADR-0109, emenda #1069).
+/// <b>Prova B</b> da política de ordenação: oráculo de <b>sequência exata</b>, com
+/// chaves em conflito, para cada camada da composição hierárquica (ADR-0109).
 /// </summary>
 /// <remarks>
 /// <para>
@@ -45,8 +45,8 @@ using static Unifesspa.UniPlus.Selecao.IntegrationTests.ProcessosSeletivos.Apoio
 /// alternativas descartadas faz o teste correspondente falhar.
 /// </para>
 /// <para>
-/// <b>Manifesto de caminhos cobertos</b> (achado 2.4 do parecer da issue): cada linha lista o
-/// caminho JSON, a camada da composição hierárquica que a rege (ADR-0109, emenda #1069), o oráculo
+/// <b>Manifesto de caminhos cobertos</b>: cada linha lista o
+/// caminho JSON, a camada da composição hierárquica que a rege (ADR-0109), o oráculo
 /// (chaves colocadas em conflito) e a precondição que a linha verifica antes de afirmar qualquer
 /// coisa — o caminho existe, há ao menos dois itens com chaves relevantes diferentes, a sequência
 /// que a política errada produziria de fato diverge da correta, e o oráculo não é trivial.
@@ -74,10 +74,10 @@ using static Unifesspa.UniPlus.Selecao.IntegrationTests.ProcessosSeletivos.Apoio
 /// <b>Fora do escopo desta suíte, por já terem oráculo de sequência exata próprio</b> (chave de
 /// conteúdo, ADR-0109 D9 — a camada que este arquivo não repete): <c>classificacao.regrasEliminacao</c>
 /// (<see cref="EnvelopeCanonicoGoldenTests.Envelope_IndependeDaOrdemDeCriacao"/>) e os seis conjuntos
-/// da issue #1067 — <c>ocorrenciasEsperadas</c>,
+/// <c>ocorrenciasEsperadas</c>,
 /// <c>formatosPermitidos.lista</c>, <c>obrigatoriedades</c>, os dois <c>predicado.parametros</c> e
 /// <c>valoresDominio</c> — todos em <c>OrdenacaoDeConjuntosCanonicosTests</c>. Repetir esses oráculos
-/// aqui duplicaria a fonte da política sem acrescentar cobertura (achado 7.2 do parecer da issue).
+/// aqui duplicaria a fonte da política sem acrescentar cobertura.
 /// </para>
 /// <para>
 /// A projeção é pura (ADR-0109 D6) — nenhum teste aqui precisa de banco. O <c>permutar</c> de
@@ -125,16 +125,16 @@ public sealed class PoliticaDeOrdenacaoTests
         bancasRequeridas: []).Value!;
 
     /// <summary>
-    /// Cenário de aceite da issue #1069: um processo cuja classificação vem de <b>nota importada</b>
+    /// Um processo cuja classificação vem de <b>nota importada</b>
     /// (SiSU) não precisa de etapa nenhuma — <see cref="Domain.Entities.ProcessoSeletivo.DefinirEtapas"/>
-    /// aceita lista vazia (§3.5, Story #851) porque a guarda "ao menos uma etapa compõe a nota" só vale
+    /// aceita lista vazia (§3.5) porque a guarda "ao menos uma etapa compõe a nota" só vale
     /// QUANDO há etapas. A canonicalização não pode recusar nem lançar: <c>etapas</c> sai como array
     /// vazio, forma fechada como qualquer outro bloco do envelope.
     /// </summary>
     [Fact(DisplayName = "etapas: processo sem etapa alguma (nota importada) canonicaliza com array vazio — nada é recusado")]
     public void Etapas_ProcessoSemEtapaAlguma_ArrayVazioNadaRecusado()
     {
-        // A fase precisa de agrupaEtapas: false — o bicondicional fase×etapa (CA-14, Story #851)
+        // A fase precisa de agrupaEtapas: false — o bicondicional fase×etapa (CA-14)
         // recusa uma fase que agrupa etapas quando o processo não tem etapa pontuada nenhuma; o
         // padrão de Montar() (FaseMinima, agrupaEtapas: true) pressupõe ao menos uma.
         FaseCronograma faseSemAgruparEtapas = FaseDeInscricao();

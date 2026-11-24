@@ -17,8 +17,8 @@ using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Selecao.IntegrationTests.TestSupport;
 
 /// <summary>
-/// A leitura tipada de fatos coletados e regras de derivação no <c>GET</c> do processo (Story
-/// #987), fim a fim: configura a coleta e a derivação pelos endpoints de escrita e confere que a
+/// A leitura tipada de fatos coletados e regras de derivação no <c>GET</c> do processo, fim
+/// a fim: configura a coleta e a derivação pelos endpoints de escrita e confere que a
 /// consulta as devolve tipadas, com <c>exibicao</c>/<c>quando</c> ausente como <c>null</c> (nunca
 /// <c>[]</c>) e o valor tipado — round-trip com a forma de escrita.
 /// </summary>

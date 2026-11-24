@@ -20,7 +20,7 @@ using static Unifesspa.UniPlus.Selecao.IntegrationTests.ProcessosSeletivos.Apoio
 
 public sealed class EnvelopeLidoConjuntosOrdenadosTests
 {
-    [Fact(DisplayName = "Round-trip com os seis conjuntos da issue #1067 povoados — bytes idênticos e a sequência imediatamente decodificada bate com o JSON")]
+    [Fact(DisplayName = "Round-trip com os seis conjuntos povoados — bytes idênticos e a sequência imediatamente decodificada bate com o JSON")]
     public void RoundTrip_SeisConjuntosDaIssue1067Povoados_PreservaSequenciaImediatamenteDecodificada()
     {
         (ProcessoSeletivo processo, FaseCronograma fase) = ProcessoDeInscricao("PS Seis Conjuntos");

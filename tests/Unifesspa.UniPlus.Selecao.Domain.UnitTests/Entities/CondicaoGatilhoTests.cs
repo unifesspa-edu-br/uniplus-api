@@ -12,7 +12,7 @@ using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 /// <summary>
-/// Cobertura de <see cref="CondicaoGatilho"/> (Story #554, issue #892, PR #896): fábrica —
+/// Cobertura de <see cref="CondicaoGatilho"/>: fábrica —
 /// validação de forma delegada a <see cref="CondicaoDnf"/> — e vinculação ao
 /// <see cref="DocumentoExigido"/> pai.
 /// </summary>
@@ -49,7 +49,7 @@ public sealed class CondicaoGatilhoTests
         resultado.Error!.Code.Should().Be("CondicaoDnf.FatoObrigatorio");
     }
 
-    [Fact(DisplayName = "Story #916: Criar aceita ALGUM_DE com array vazio — a forma passou a admitir lista vazia (semântica de avaliação é de PredicadoDnf, não desta factory)")]
+    [Fact(DisplayName = "Criar aceita ALGUM_DE com array vazio — a forma admite lista vazia (semântica de avaliação é de PredicadoDnf, não desta factory)")]
     public void Criar_OperadorEmComArrayVazio_Aceita()
     {
         Result<CondicaoGatilho> resultado = CondicaoGatilho.Criar(0, "MODALIDADE", Operador.AlgumDe, Json("[]"));

@@ -23,13 +23,13 @@ using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Fatos;
 /// chamadas do gate de congelamento —
 /// <see cref="IObrigatoriedadeLegalRepository.ObterVigentesParaTipoProcessoAsync"/> +
 /// <see cref="AvaliadorConformidadeLegal.Avaliar"/> — para que a leitura pública e a
-/// transição nunca divirjam (Story #853, CA-16).
+/// transição nunca divirjam (CA-16).
 /// </summary>
 /// <remarks>
 /// Distingue 404 (processo inexistente) de 422 (não há data de referência de onde partir) —
 /// mesmo contrato de erro de <see cref="ObterFormularioRenderizavelQueryHandler"/>. Traduzir a
 /// segunda condição em 404 diria que o processo não existe e esconderia a pendência que a
-/// consulta deveria justamente antecipar (issue #1456).
+/// consulta deveria justamente antecipar.
 /// <para>
 /// A conferência do que a regra tem de ter para ser avaliada — forma do predicado e
 /// existência das referências — entra aqui pelo mesmo motivo: a publicação recusa a
@@ -74,8 +74,8 @@ public static class ObterConformidadeLegalProcessoSeletivoQueryHandler
 
         string tipoProcessoCodigo = processo.TipoProcesso.Codigo;
 
-        // Sem data explícita, a consulta responde pelo mesmo dia que o gate de publicação usaria
-        // (issue #1350). Derivar aqui, e não deixar o chamador informar, é o que impede o
+        // Sem data explícita, a consulta responde pelo mesmo dia que o gate de publicação usaria.
+        // Derivar aqui, e não deixar o chamador informar, é o que impede o
         // preflight de dizer "conforme" numa data que o comando contradiz.
         Result<DateOnly> referencia = query.DataReferencia is { } informada
             ? Result<DateOnly>.Success(informada)
@@ -151,7 +151,7 @@ public static class ObterConformidadeLegalProcessoSeletivoQueryHandler
     /// então, para o certame de origem importada, <c>PeriodoInscricaoObrigatorioSemFaseDeColeta</c>,
     /// o que <see cref="Commands.ProcessosSeletivos.ResolucaoDoPeriodoDeInscricao"/> devolve. Quem
     /// consome isto é o preflight da tela de Revisão, que precisa dizer ao operador o que informar —
-    /// e a recusa que sai primeiro é a que o orienta (issue #1456).
+    /// e a recusa que sai primeiro é a que o orienta.
     /// </para>
     /// </remarks>
     private static Result<DateOnly> DiaDeReferenciaLegal(

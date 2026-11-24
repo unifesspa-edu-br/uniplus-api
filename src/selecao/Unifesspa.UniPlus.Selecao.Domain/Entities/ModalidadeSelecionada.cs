@@ -53,8 +53,8 @@ public sealed class ModalidadeSelecionada : EntityBase
     public string BaseLegal { get; private set; } = string.Empty;
 
     /// <summary>
-    /// Quantidade de vagas fixada pelo edital para esta modalidade (issue
-    /// #848/ADR-0115) — só um campo de transporte. A obrigatoriedade/vedação
+    /// Quantidade de vagas fixada pelo edital para esta modalidade
+    /// (ADR-0115) — só um campo de transporte. A obrigatoriedade/vedação
     /// (fixa no ramo institucional e nas composições RETIRADA_DE_OUTRA_MODALIDADE/SUPLEMENTAR_AO_TOTAL;
     /// proibida nas calculadas) é validada em
     /// <see cref="ConfiguracaoDistribuicaoVagas.Criar"/>, que é quem conhece o

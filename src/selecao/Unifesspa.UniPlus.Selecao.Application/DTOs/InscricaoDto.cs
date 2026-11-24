@@ -10,11 +10,7 @@ using Unifesspa.UniPlus.Application.Abstractions.Respostas;
 using Unifesspa.UniPlus.Kernel.Domain.ValueObjects;
 
 /// <summary>
-/// Contrato provisório da inscrição do candidato (issue #1858, primeiro commit): DTOs de entrada e
-/// saída dos endpoints do candidato, publicados antes dos endpoints existirem (a2 de #1859), para o
-/// web desenvolver contra mocks versionados. Depois que #1859 entregar os endpoints reais, este
-/// contrato é reconciliado com o OpenAPI gerado — a forma aqui é a melhor previsão de hoje, não um
-/// compromisso definitivo.
+/// Contrato da inscrição do candidato: DTOs de entrada e saída dos endpoints do candidato.
 /// </summary>
 /// <remarks>
 /// As respostas por fato seguem a mesma forma de <see cref="PreVisualizacaoDoProcessoInput"/>
@@ -105,7 +101,7 @@ public sealed record InscricaoDto
 }
 
 /// <summary>
-/// Um item de "Minhas inscrições" (issue #1860). O titular da conta é o único dono das inscrições que
+/// Um item de "Minhas inscrições". O titular da conta é o único dono das inscrições que
 /// lista, então a lista não repete o nome nem o CPF dele: o que distingue uma inscrição da outra é o
 /// processo e o curso escolhido.
 /// </summary>

@@ -21,7 +21,7 @@ using ValoresDoCampo = System.Collections.Generic.IReadOnlyList<Unifesspa.UniPlu
 /// <summary>
 /// Resolve, para cada <see cref="FatoColetado"/> do processo, os valores que o candidato pode
 /// escolher (UNI-REQ-0072) — a chave que falta hoje no envelope público: <c>fatosColetados[]</c>
-/// carrega rótulo/tipo de renderização/obrigatoriedade (Story #559), mas nada sobre QUAIS
+/// carrega rótulo/tipo de renderização/obrigatoriedade, mas nada sobre QUAIS
 /// valores o seletor oferece.
 /// </summary>
 /// <remarks>

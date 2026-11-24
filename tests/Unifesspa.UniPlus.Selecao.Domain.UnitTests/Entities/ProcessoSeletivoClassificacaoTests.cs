@@ -14,7 +14,7 @@ using Unifesspa.UniPlus.Testes.Compartilhado;
 using static Unifesspa.UniPlus.Selecao.Domain.UnitTests.Entities.ApoioDoProcessoSeletivoEmRascunho;
 
 /// <summary>
-/// Classificação do <see cref="ProcessoSeletivo"/> — 15º bloco canônico (Story #775): o vínculo
+/// Classificação do <see cref="ProcessoSeletivo"/> — 15º bloco canônico: o vínculo
 /// com a raiz, a integridade da referência das eliminações às etapas e a
 /// indistinguibilidade entre tipos de processo.
 /// </summary>
@@ -86,7 +86,7 @@ public sealed class ProcessoSeletivoClassificacaoTests
         result.Error!.Code.Should().Be("ProcessoSeletivo.EtapaRefEliminacaoInexistente");
     }
 
-    [Fact(DisplayName = "DefinirClassificacao produz o mesmo resultado em processos de Tipo diferente com a mesma configuração (indistinguibilidade, #850)")]
+    [Fact(DisplayName = "DefinirClassificacao produz o mesmo resultado em processos de Tipo diferente com a mesma configuração (indistinguibilidade)")]
     public void DefinirClassificacao_TiposDiferentesMesmaConfiguracao_ResultadoIdentico()
     {
         ProcessoSeletivo psiq = NovoProcesso("PSIQ 2026", TiposDeProcessoDeTeste.PSIQ);

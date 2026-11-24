@@ -22,7 +22,7 @@ public sealed class CriarProcessoSeletivoCommandValidator : AbstractValidator<Cr
             .NotEmpty()
             .WithMessage("Tipo do processo seletivo é obrigatório.");
 
-        // Story #851 §3.4: OrigemCandidatos é NOT NULL e exigido na criação — o piso
+        // OrigemCandidatos é NOT NULL e exigido na criação — o piso
         // mínimo do cronograma deriva dela, nunca do Tipo.
         RuleFor(x => x.OrigemCandidatos)
             .NotEmpty()
@@ -30,7 +30,7 @@ public sealed class CriarProcessoSeletivoCommandValidator : AbstractValidator<Cr
             .Must(static codigo => CatalogoDe<OrigemCandidatos>.TentarObter(codigo, out _))
             .WithMessage("Origem dos candidatos inválida.");
 
-        // Issue #849, CA-01: quem administra o certame (CA-04 da Feature #40) — NOT NULL,
+        // CA-01 e CA-04: quem administra o certame — NOT NULL,
         // exigido na criação, resolvido via IUnidadeReader no handler.
         RuleFor(x => x.UnidadeAdministradoraOrigemId)
             .NotEmpty()

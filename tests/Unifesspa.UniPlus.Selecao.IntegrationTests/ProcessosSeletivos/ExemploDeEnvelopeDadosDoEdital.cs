@@ -28,12 +28,12 @@ internal static class ExemploDeEnvelopeDadosDoEdital
 {
     /// <summary>
     /// O período espelha a janela da fase que coleta inscrição (<c>INSCRICAO</c>), porque é dela
-    /// que a publicação passou a projetá-lo (issue #1350).
+    /// que a publicação o projeta.
     /// </summary>
     /// <remarks>
-    /// Antes desta issue o exemplo declarava o fim em 15/04 enquanto a fase fechava em 20/03 — 26
-    /// dias de divergência, que era exatamente o estado que a issue tornou impossível. Manter a
-    /// fixture naquele formato congelaria a prova de um certame que o sistema não produz mais.
+    /// Declarar o fim em data diferente da do fim da fase (por exemplo, 15/04 contra 20/03) é um
+    /// estado que o sistema não produz. A fixture nesse formato congelaria a prova de um certame
+    /// impossível.
     /// </remarks>
     internal static DadosEdital DadosRicos() => DadosEdital.Criar(
         numero: "042/2026",

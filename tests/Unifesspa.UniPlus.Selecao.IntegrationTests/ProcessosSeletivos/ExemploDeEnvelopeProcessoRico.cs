@@ -117,7 +117,7 @@ internal static class ExemploDeEnvelopeProcessoRico
         DefinirBonusRegional(processo);
         DefinirCriteriosDeDesempate(processo, variante, permutar);
         DefinirClassificacao(processo, variante, permutar);
-        // Classificação baseada em ENEM exige ao menos uma edição admitida (issue #1620).
+        // Classificação baseada em ENEM exige ao menos uma edição admitida.
         processo.DefinirOpcoesDeclaradas(
             "EDICAO_ENEM", [OpcaoDeclaradaFato.Criar("EDICAO_ENEM", "2026", "2026", 0).Value!])
             .IsSuccess.Should().BeTrue();
@@ -205,7 +205,7 @@ internal static class ExemploDeEnvelopeProcessoRico
         DefinirRegrasDeDerivacao(processo, permutar);
     }
 
-    // Coleta de fatos + derivação (Story #928, §7.4): COR_RACA vem da seção do conjunto básico,
+    // Coleta de fatos + derivação (§7.4): COR_RACA vem da seção do conjunto básico,
     // sem pré-condição; RENDA depende de COR_RACA (pré-condição); a modalidade do candidato é
     // derivada das regras das modalidades ofertadas, e a das cotas de renda cita COR_RACA e
     // RENDA. Exercita, no mesmo snapshot, as arestas de produção, pré-condição e derivação,
@@ -253,7 +253,7 @@ internal static class ExemploDeEnvelopeProcessoRico
             .ComObrigatoriedade(Obrigatoriedade.Sempre)
             .Construir();
 
-    // Formulário de inscrição (Story #559, UNI-REQ-0086): título e um termo com exibição e
+    // Formulário de inscrição (UNI-REQ-0086): título e um termo com exibição e
     // obrigatoriedade condicionais, e um segundo termo com a outra forma publicável de aceite — o
     // decoder tem de remontar cada termo inteiro, com a forma de aceite de cada um.
     internal static void DefinirTituloETermos(ProcessoSeletivo processo, PredicadoDnf corPreta)
@@ -316,7 +316,7 @@ internal static class ExemploDeEnvelopeProcessoRico
             ]).Value!,
         ]).Value!;
 
-    // Cascata de remanejamento (Story #575): as 8 modalidades federais de
+    // Cascata de remanejamento: as 8 modalidades federais de
     // DistribuicaoLei12711 já são SegueCascata — sem uma cascata que as cubra,
     // Publicar() recusa com ProcessoSeletivo.CascataOrigemAusente (PendenciaDaCascata).
     // A matriz legal completa (8×7, fallback AC) é o que mantém este exemplo PUBLICÁVEL.
@@ -332,7 +332,7 @@ internal static class ExemploDeEnvelopeProcessoRico
         }
     }
 
-    // Taxa de inscrição e isenção (issue #1112): o exemplo RICO cobra taxa e referencia os
+    // Taxa de inscrição e isenção: o exemplo RICO cobra taxa e referencia os
     // dois fundamentos — a combinação "cobra-com-fundamentos" do CA-08, que o exemplo BASE
     // (sem cobrança) não cobre.
     internal static void DefinirTaxaEOpcoesDeCurso(ProcessoSeletivo processo, bool permutar)

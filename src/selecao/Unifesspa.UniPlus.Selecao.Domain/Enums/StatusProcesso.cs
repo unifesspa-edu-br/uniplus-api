@@ -4,9 +4,8 @@ using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 
 /// <summary>
 /// Ciclo de vida do <see cref="Entities.ProcessoSeletivo"/> (agregado-raiz).
-/// Em #758 todo processo nasce e permanece em <see cref="Rascunho"/> — as
-/// transições (publicação, encerramento, cancelamento) são orquestradas pela
-/// Story #759, que introduz o ato de publicar com snapshot de congelamento dos parâmetros na publicação (UNI-REQ-0019).
+/// Todo processo nasce em <see cref="Rascunho"/>. A publicação congela os parâmetros
+/// do processo (UNI-REQ-0019); encerramento e cancelamento são as demais transições.
 /// </summary>
 public enum StatusProcesso
 {

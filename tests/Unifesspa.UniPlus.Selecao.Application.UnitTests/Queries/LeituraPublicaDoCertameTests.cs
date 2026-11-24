@@ -32,8 +32,7 @@ public sealed class LeituraPublicaDoCertameTests
     public async Task Detalhe_SemDivulgacao_NaoEncontrado()
     {
         // Inexistente, rascunho, sem versão vigente e com ato não confirmado caem aqui pelo mesmo
-        // caminho: nenhum deles tem linha. Distinguir deixou de ser possível, em vez de ser
-        // possível e proibido.
+        // caminho: nenhum deles tem linha, então não há como distingui-los.
         ICertameDivulgadoRepository repository = Substitute.For<ICertameDivulgadoRepository>();
         repository.ObterParaLeituraAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>())
             .Returns((CertameDivulgado?)null);
@@ -166,7 +165,7 @@ public sealed class LeituraPublicaDoCertameTests
     [Fact(DisplayName = "Documento divulgado antes dos editais por versão continua legível e responde com a lista")]
     public async Task Detalhe_DocumentoSemOCampoNovo_ContinuaLegivel()
     {
-        // O documento guardado é o de antes desta coluna: não tem a propriedade, e a leitura não
+        // O documento guardado é antigo: não tem a propriedade, e a leitura não
         // pode tratá-la como obrigatória nem deixá-lo ilegível.
         Guid processoId = Guid.CreateVersion7();
         string documento = JsonSerializer.Serialize(Projecao(processoId), ProjecaoDoCertamePublicado.OpcoesDoDocumento);

@@ -22,7 +22,7 @@ using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
 
 using static Unifesspa.UniPlus.Selecao.IntegrationTests.Outbox.Cascading.ApoioDaPublicacaoDoProcessoSeletivo;
 
-// Cenário fim-a-fim do fluxo de referência ADR-0005 (Story #759, T4 #785):
+// Cenário fim-a-fim do fluxo de referência ADR-0005:
 // HTTP request → PublicarProcessoSeletivoCommand → handler convention-based
 // produtivo → ProcessoSeletivo.Publicar(, ExemploDeEnvelopeDadosDoEdital.ContextoRico()) emite ProcessoPublicadoEvent via
 // AddDomainEvent → handler retorna (Result, IEnumerable<object>) com o

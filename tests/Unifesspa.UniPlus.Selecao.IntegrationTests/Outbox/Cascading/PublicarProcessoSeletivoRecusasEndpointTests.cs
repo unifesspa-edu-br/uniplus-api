@@ -22,7 +22,7 @@ using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
 
 using static Unifesspa.UniPlus.Selecao.IntegrationTests.Outbox.Cascading.ApoioDaPublicacaoDoProcessoSeletivo;
 
-// Cenário fim-a-fim do fluxo de referência ADR-0005 (Story #759, T4 #785):
+// Cenário fim-a-fim do fluxo de referência ADR-0005:
 // HTTP request → PublicarProcessoSeletivoCommand → handler convention-based
 // produtivo → ProcessoSeletivo.Publicar(, ExemploDeEnvelopeDadosDoEdital.ContextoRico()) emite ProcessoPublicadoEvent via
 // AddDomainEvent → handler retorna (Result, IEnumerable<object>) com o
@@ -48,7 +48,7 @@ public sealed class PublicarProcessoSeletivoRecusasEndpointTests
     }
 
     [Fact(DisplayName =
-        "POST /processos-seletivos/{id}/publicacao recusado por obrigatoriedade legal com checklist estrutural verde — 422 com obrigatoriedadesReprovadas e SEM pendencias (issue #1096 CA-05/CA-07)")]
+        "POST /processos-seletivos/{id}/publicacao recusado por obrigatoriedade legal com checklist estrutural verde — 422 com obrigatoriedadesReprovadas e SEM pendencias (CA-05/CA-07)")]
     public async Task Publicar_QuandoSoObrigatoriedadeLegalReprovada_Retorna422SemPendencias()
     {
         using HttpClient client = _fixture.Factory.CreateClient();
@@ -67,7 +67,7 @@ public sealed class PublicarProcessoSeletivoRecusasEndpointTests
     }
 
     [Fact(DisplayName =
-        "POST /processos-seletivos/{id}/publicacao recusado por documento não confirmado, com checklist estrutural vermelho — 422 inclui pendencias mesmo sendo erro alheio à conformidade (issue #1096 CA-06)")]
+        "POST /processos-seletivos/{id}/publicacao recusado por documento não confirmado, com checklist estrutural vermelho — 422 inclui pendencias mesmo sendo erro alheio à conformidade (CA-06)")]
     public async Task Publicar_QuandoOutroErro422EChecklistAindaVermelho_IncluiPendencias()
     {
         CascadingApiFactory api = _fixture.Factory;
@@ -121,7 +121,7 @@ public sealed class PublicarProcessoSeletivoRecusasEndpointTests
     /// <summary>
     /// A recusa é por documento não confirmado — nada a ver com conformidade estrutural —, mas o
     /// checklist reconsultado no momento do enriquecimento ainda tem item vermelho, e o contrato
-    /// (issue #1096) diz que "pendencias" é o estado atual, não uma tradução exclusiva do código de
+    /// diz que "pendencias" é o estado atual, não uma tradução exclusiva do código de
     /// erro que efetivamente recusou.
     /// </summary>
     private static async Task ConferirPendenciasMesmoEmRecusaAlheiaAsync(HttpResponseMessage response)

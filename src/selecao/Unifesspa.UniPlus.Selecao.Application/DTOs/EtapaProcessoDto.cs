@@ -6,7 +6,7 @@ using Unifesspa.UniPlus.Application.Abstractions.Respostas;
 using Unifesspa.UniPlus.Regras.Enums;
 
 /// <summary>
-/// Projeção de leitura de <c>EtapaProcesso</c> (Story #758).
+/// Projeção de leitura de <c>EtapaProcesso</c>.
 /// </summary>
 /// <param name="Identificacao">Quem a etapa é no processo: o nome, o caráter, o tipo, a ordem e a fase onde acontece.</param>
 /// <param name="Nota">O peso da etapa na nota final e a escala em que a nota é lançada.</param>
@@ -30,7 +30,7 @@ public sealed record EtapaProcessoDto(
 /// <param name="Nome">O nome editorial da etapa.</param>
 /// <param name="Carater">O caráter declarado da etapa, com código e rótulo.</param>
 /// <param name="TipoEtapa">
-/// Snapshot congelado do tipo (issue #1071) — fecha o round-trip GET→PUT: um cliente que
+/// Snapshot congelado do tipo — fecha o round-trip GET→PUT: um cliente que
 /// reler a etapa precisa de <c>OrigemId</c> para reenviar o mesmo vínculo em
 /// <c>EtapaProcessoInput.TipoEtapaOrigemId</c>.
 /// </param>

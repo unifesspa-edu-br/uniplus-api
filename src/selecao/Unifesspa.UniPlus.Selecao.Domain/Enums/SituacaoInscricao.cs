@@ -3,7 +3,7 @@ namespace Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 
 /// <summary>
-/// Ciclo de vida da inscrição do candidato (issue #1858): nasce <see cref="Rascunho"/> ao iniciar e
+/// Ciclo de vida da inscrição do candidato: nasce <see cref="Rascunho"/> ao iniciar e
 /// passa a <see cref="Submetida"/> no envio. Uma correção dentro do período mantém a situação
 /// <see cref="Submetida"/> — não existe estado para "corrigida". A inscrição enviada que o candidato
 /// desfaz fica <see cref="Cancelada"/>, para sempre: ele se inscreve de novo, e a nova é outra inscrição.

@@ -125,7 +125,7 @@ public sealed class ConformidadePublicabilidadeEstruturalPreCanonicalizacaoTests
         ExigirPublicacaoRecusada(processo, FatoColetadoErrorCodes.PrecondicaoCitaFatoNaoColetado);
     }
 
-    [Fact(DisplayName = "Pré-canonicalização: fato coletável CONDICAO_ATENDIMENTO sem nenhuma condição ofertada — item vermelho e Publicar recusa com FatoColetadoSemValoresOfertados (cenário da issue)")]
+    [Fact(DisplayName = "Pré-canonicalização: fato coletável CONDICAO_ATENDIMENTO sem nenhuma condição ofertada — item vermelho e Publicar recusa com FatoColetadoSemValoresOfertados")]
     public void PreCanon_FatoColetadoCondicaoAtendimentoSemValoresOfertados()
     {
         ProcessoSeletivo processo = ProcessoConforme();

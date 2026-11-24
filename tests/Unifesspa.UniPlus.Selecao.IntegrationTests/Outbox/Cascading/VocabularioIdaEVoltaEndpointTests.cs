@@ -21,7 +21,7 @@ using Unifesspa.UniPlus.OrganizacaoInstitucional.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
 /// <summary>
-/// O token que a leitura devolve é o mesmo que a escrita aceita (issue #1294): grava,
+/// O token que a leitura devolve é o mesmo que a escrita aceita: grava,
 /// relê, e reenvia o valor lido numa nova criação — pelo HTTP real, ponta a ponta.
 /// </summary>
 /// <remarks>

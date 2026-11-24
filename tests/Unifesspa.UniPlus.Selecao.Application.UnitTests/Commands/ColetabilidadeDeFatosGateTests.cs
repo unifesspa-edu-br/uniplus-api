@@ -51,7 +51,7 @@ public sealed class ColetabilidadeDeFatosGateTests
         Binding: "REGRA_DERIVACAO:MODALIDADE",
         ValoresDominioDeclarados: null, FonteValores: CodigoComRotulo<FonteValoresFato>.De(FonteValoresFato.Modalidade), Ativo: true, ClassificacaoProtecao: "PESSOAL", HipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, FinalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, ProtecaoAprovada: true);
 
-    // Story #1059 (UNI-REQ-0072): categórico ESTÁTICO — os valores selecionáveis do fato
+    // UNI-REQ-0072: categórico ESTÁTICO — os valores selecionáveis do fato
     // coletado vêm de ValoresDominioDeclarados (FatoValorDominio no catálogo real), nunca do
     // array legado ValoresDominio; todos ativos, para não disparar o gate de valor inativo.
     private static readonly IReadOnlyList<FatoValorDominioViewItem> ValoresCorRaca =

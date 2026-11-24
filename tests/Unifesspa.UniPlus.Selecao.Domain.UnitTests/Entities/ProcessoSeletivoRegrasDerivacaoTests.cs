@@ -21,7 +21,7 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
 /// <summary>
-/// Story #927 — a regra de derivação persistida na configuração do processo, e a sua reconstrução no
+/// A regra de derivação persistida na configuração do processo, e a sua reconstrução no
 /// value object que o motor consome. A validação aqui é estrutural (unicidade, forma); a semântica
 /// (fato alvo derivado, domínio de contribuição) é da Application.
 /// </summary>
@@ -222,7 +222,7 @@ public sealed class ProcessoSeletivoRegrasDerivacaoTests
         comCondicao.Condicoes.Should().OnlyContain(c => c.RegraDerivacaoConfiguradaId == comCondicao.Id);
     }
 
-    // ── Grafo de dependência conjunto a partir da configuração do agregado (Story #928, §6) ────────
+    // ── Grafo de dependência conjunto a partir da configuração do agregado (§6) ────────
 
     private static ConfiguracaoDerivacaoFato DerivadoDe(string codigo, params string[] citados) =>
         ConfiguracaoDerivacaoFato.Criar(codigo,

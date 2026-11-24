@@ -61,7 +61,7 @@ internal static class ProcessoSeletivoPublicacaoSeeder
         return processo;
     }
 
-    // Issue #1112: publicar sem declarar cobrança de taxa é recusado (CA-01).
+    // Publicar sem declarar cobrança de taxa é recusado (CA-01).
     private static void DefinirTaxaEFormularioDeInscricao(ProcessoSeletivo processo)
     {
         DefinirTaxaInscricaoNaoCobra(processo);
@@ -122,7 +122,7 @@ internal static class ProcessoSeletivoPublicacaoSeeder
 
     /// <summary>
     /// Não cobra taxa — declaração padrão dos seeders desta classe, que representam processos
-    /// publicáveis e não testam a dimensão de taxa em si (issue #1112, CA-01).
+    /// publicáveis e não testam a dimensão de taxa em si (CA-01).
     /// </summary>
     private static void DefinirTaxaInscricaoNaoCobra(ProcessoSeletivo processo)
     {
@@ -140,8 +140,8 @@ internal static class ProcessoSeletivoPublicacaoSeeder
     /// AC, referência demográfica, regra de ajuste) e, por padrão, a cascata de
     /// remanejamento que a cobre — a matriz legal completa (8×7, fallback AC), a mesma
     /// forma semeada em <c>REMANEJAMENTO_ORDEM_LEI_12711 v1</c>. É o processo mínimo que
-    /// <c>PendenciaDaCascata</c> considera conforme quando a oferta usa o regime federal
-    /// (Story #575) — as demais quatro dimensões estruturais (etapas, atendimento,
+    /// <c>PendenciaDaCascata</c> considera conforme quando a oferta usa o regime federal —
+    /// as demais quatro dimensões estruturais (etapas, atendimento,
     /// classificação, cronograma) são as mesmas de <see cref="NovoProcessoConforme"/>.
     /// </summary>
     /// <param name="comCascata">

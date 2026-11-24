@@ -7,7 +7,7 @@ using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 /// <summary>
-/// Configuração de taxa de inscrição e fundamentos de isenção do processo (issue #1112).
+/// Configuração de taxa de inscrição e fundamentos de isenção do processo.
 /// Ausência desta entidade em <see cref="ProcessoSeletivo.ConfiguracaoTaxaInscricao"/> significa
 /// "ainda não declarado" — recusa a publicação (CA-01). Não confundir com <see cref="Cobra"/> ==
 /// <see langword="false"/>, que é a declaração explícita de que o processo não cobra.
@@ -27,7 +27,7 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 /// <see cref="ConfiguracaoDivulgacao.CamposPublicos"/>.
 /// </para>
 /// <para>
-/// <b>Cobrar implica poder pedir isenção</b> (issue #1310): o outro lado da mesma exclusividade
+/// <b>Cobrar implica poder pedir isenção</b>: o outro lado da mesma exclusividade
 /// é que <see cref="Cobra"/> == <see langword="true"/> exige ao menos um fundamento. Quem cobra
 /// tem de reconhecer por qual fundamento o candidato pode pedir isenção — a possibilidade de
 /// pedir se materializa nos fundamentos declarados pelo processo, e um processo que cobra sem
@@ -48,7 +48,7 @@ public sealed class ConfiguracaoTaxaInscricao : EntityBase, IParteDoProcesso
     /// <summary>Positivo quando <see cref="Cobra"/>; sempre nulo quando não cobra (CA-02/CA-03).</summary>
     public decimal? Valor { get; private set; }
 
-    /// <summary>Fundamentos de isenção referenciados, deduplicados e na ordem canônica. Nunca vazio quando <see cref="Cobra"/> (issue #1310).</summary>
+    /// <summary>Fundamentos de isenção referenciados, deduplicados e na ordem canônica. Nunca vazio quando <see cref="Cobra"/>.</summary>
     private List<FundamentoIsencao> _fundamentos = [];
 
     public IReadOnlyList<FundamentoIsencao> Fundamentos => _fundamentos;

@@ -37,7 +37,7 @@ public sealed class ProcessoSeletivoTests
         act.Should().Throw<ArgumentException>().WithParameterName("tipoProcesso");
     }
 
-    [Fact(DisplayName = "Criar sem origem dos candidatos lanca ArgumentException (Story #851 §3.4)")]
+    [Fact(DisplayName = "Criar sem origem dos candidatos lanca ArgumentException (§3.4)")]
     public void Criar_SemOrigemCandidatos_Lanca()
     {
         Action act = () => NovoProcesso("PS 2026", TiposDeProcessoDeTeste.SiSU, (OrigemCandidatos)99);
@@ -45,7 +45,7 @@ public sealed class ProcessoSeletivoTests
         act.Should().Throw<ArgumentException>().WithParameterName("origemCandidatos");
     }
 
-    [Fact(DisplayName = "Criar sem unidade administradora (Guid.Empty) lanca ArgumentException (issue #849, CA-04)")]
+    [Fact(DisplayName = "Criar sem unidade administradora (Guid.Empty) lanca ArgumentException (CA-04)")]
     public void Criar_SemUnidadeAdministradoraOrigemId_Lanca()
     {
         Action act = () => NovoProcesso("PS 2026", TiposDeProcessoDeTeste.SiSU, unidadeAdministradoraOrigemId: Guid.Empty);
@@ -53,7 +53,7 @@ public sealed class ProcessoSeletivoTests
         act.Should().Throw<ArgumentException>().WithParameterName("unidadeAdministradoraOrigemId");
     }
 
-    [Fact(DisplayName = "Criar congela a identidade da unidade administradora (issue #849, CA-03)")]
+    [Fact(DisplayName = "Criar congela a identidade da unidade administradora (CA-03)")]
     public void CriarProcesso_CongelaUnidadeAdministradora()
     {
         Guid unidadeId = Guid.NewGuid();

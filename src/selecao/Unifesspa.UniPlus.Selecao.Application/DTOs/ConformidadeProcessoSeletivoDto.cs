@@ -2,7 +2,7 @@ namespace Unifesspa.UniPlus.Selecao.Application.DTOs;
 
 /// <summary>
 /// Veredicto de um item do checklist de conformidade ESTRUTURAL do <c>ProcessoSeletivo</c>
-/// (Story #758, CA-07, issue #1092).
+/// (CA-07).
 /// </summary>
 /// <remarks>
 /// A identidade do item é o par <paramref name="Codigo"/>/<paramref name="Dimensao"/>, e não
@@ -30,7 +30,7 @@ public sealed record ItemConformidadeDto(string Codigo, string Dimensao, string 
 public sealed record AvisoConformidadeDto(string Codigo, string Dimensao, string Mensagem);
 
 /// <summary>
-/// Checklist de conformidade ESTRUTURAL do <c>ProcessoSeletivo</c> (CA-07, issue #1092):
+/// Checklist de conformidade ESTRUTURAL do <c>ProcessoSeletivo</c> (CA-07):
 /// bicondicional com os SEIS gates estruturais que <c>Publicar</c>/<c>Retificar</c> aplicam —
 /// localidade que rege a contagem dos prazos, convenção de contagem declarada, completude dos
 /// itens obrigatórios, coerência do cronograma, cobertura da cascata de remanejamento e as
@@ -46,8 +46,8 @@ public sealed record AvisoConformidadeDto(string Codigo, string Dimensao, string
 /// O bônus regional e os critérios de desempate entram neste checklist: o processo declara se
 /// aplica o bônus (a ausência da declaração é pendência; a da configuração só significa "sem
 /// bônus" quando a declaração é falsa), e o desempate é obrigatório quando a inscrição é feita no
-/// sistema (com resultado importado a lista já vem classificada). Etapa também deixou de ser
-/// item incondicional (Story #851 §3.5): um processo sem prova (SiSU, <c>CLASSIFICACAO_IMPORTADA</c>)
+/// sistema (com resultado importado a lista já vem classificada). Etapa não é
+/// item incondicional: um processo sem prova (SiSU, <c>CLASSIFICACAO_IMPORTADA</c>)
 /// publica sem etapa quando o cronograma é coerente.
 /// </para>
 /// <para>

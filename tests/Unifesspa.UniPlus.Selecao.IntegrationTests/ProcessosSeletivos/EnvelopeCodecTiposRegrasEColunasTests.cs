@@ -68,7 +68,7 @@ public sealed class EnvelopeCodecTiposRegrasEColunasTests
     }
 
     /// <summary>
-    /// <c>criteriosDesempate[].parametros.valor</c> (ADR-0111, Story #847) não passa por
+    /// <c>criteriosDesempate[].parametros.valor</c> (ADR-0111) não passa por
     /// <c>leitor.TextoNaoVazio</c> — <c>Valor</c> é polimórfico (escalar ou array, via
     /// <c>leitor.Valor</c>) — mas <c>CondicaoDnf.Criar</c> recusa uma string em branco como
     /// forma incoerente com o operador, com o código de domínio (não o genérico

@@ -109,15 +109,15 @@ internal static class ManifestoDeEtapasVagasEClassificacao
             ],
             [("ConfiguracaoDistribuicaoVagasId", "FK interna.")]),
 
-        // issue #848/ADR-0115 — o quadro de vagas: output derivado, materializado dentro da
+        // ADR-0115 — o quadro de vagas: output derivado, materializado dentro da
         // mesma factory que os insumos (não um comando separado).
         [typeof(VagaOfertada)] = (
             ["ModalidadeOrigemId", "ModalidadeCodigo", "Quantidade"],
             [("ConfiguracaoDistribuicaoVagasId", "FK interna.")]),
 
-        // Story #1466: o bônus regional passa a referenciar um cadastro tipado de Base Legal
-        // de Bônus Regional (Configuração, Story #1465) — o snapshot congelado no momento da
-        // gravação substitui os dois campos de texto livre.
+        // O bônus regional referencia um cadastro tipado de Base Legal
+        // de Bônus Regional (Configuração) — o snapshot congelado no momento da
+        // gravação dispensa campos de texto livre.
         [typeof(ConfiguracaoBonusRegional)] = (
             ["Regra", "Fator", "Teto", "FatoElegibilidadeCodigo", "BaseLegalBonusRegionalId", "BaseLegalBonusRegionalCodigo", "TipoInstrumento", "Identificacao", "Descricao", "Municipios"],
             [("ProcessoSeletivoId", "FK interna.")]),
@@ -126,16 +126,16 @@ internal static class ManifestoDeEtapasVagasEClassificacao
             ["CodigoIbge", "Nome", "Uf"],
             [("ConfiguracaoBonusRegionalId", "FK interna.")]),
 
-        // Divulgação pública (UNI-REQ-0050, issue #563) — a última dimensão provisória do
+        // Divulgação pública (UNI-REQ-0050) — a última dimensão provisória do
         // envelope. A regra de abreviação (regraNomeAbreviado) NÃO é propriedade desta
         // entidade — é derivada no congelamento a partir de RegrasDeNomeAbreviado.Vigente
-        // (ADR-0109 D6, decisão D3 do plano da issue), então não aparece aqui como campo
+        // (ADR-0109 D6), então não aparece aqui como campo
         // excluído: não existe para o manifesto excluir.
         [typeof(ConfiguracaoDivulgacao)] = (
             ["CamposPublicos", "Justificativa"],
             [("ProcessoSeletivoId", "FK interna.")]),
 
-        // Taxa de inscrição e isenção (issue #1112) — diferente de ConfiguracaoBonusRegional/
+        // Taxa de inscrição e isenção — diferente de ConfiguracaoBonusRegional/
         // ConfiguracaoDivulgacao, ausência aqui NÃO é estado publicável (CA-01).
         [typeof(ConfiguracaoTaxaInscricao)] = (
             ["Cobra", "Valor", "Fundamentos"],
@@ -150,7 +150,7 @@ internal static class ManifestoDeEtapasVagasEClassificacao
             ["CodigoIbge", "Nome", "Uf"],
             []),
 
-        // Story #575 — a cascata de remanejamento das cotas federais (cascata de remanejamento de cotas, UNI-REQ-0056).
+        // A cascata de remanejamento das cotas federais (cascata de remanejamento de cotas, UNI-REQ-0056).
         [typeof(ConfiguracaoCascataRemanejamento)] = (
             ["Regra", "FallbackCodigo", "Destinos"],
             [("ProcessoSeletivoId", "FK interna.")]),

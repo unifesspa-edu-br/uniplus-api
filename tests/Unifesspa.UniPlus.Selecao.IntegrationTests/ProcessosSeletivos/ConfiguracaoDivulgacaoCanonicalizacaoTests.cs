@@ -19,7 +19,7 @@ using Unifesspa.UniPlus.Testes.Compartilhado;
 using Xunit;
 
 /// <summary>
-/// Prova de fidelidade do bloco <c>divulgacao</c> (UNI-REQ-0050, issue #563, CA-07) —
+/// Prova de fidelidade do bloco <c>divulgacao</c> (UNI-REQ-0050, CA-07) —
 /// deliberadamente <b>NÃO-CIRCULAR</b>.
 /// </summary>
 /// <remarks>

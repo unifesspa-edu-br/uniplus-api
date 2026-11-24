@@ -15,7 +15,7 @@ using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Protecao;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
 
 /// <summary>
-/// Configuração EF Core de <see cref="FaseCronograma"/> (Story #851) — entidade filha
+/// Configuração EF Core de <see cref="FaseCronograma"/> — entidade filha
 /// do agregado <see cref="ProcessoSeletivo"/>. Os limites de comprimento espelham
 /// <c>LimitesDoEnvelope</c> (constantes duplicadas por convenção do repo, verificadas
 /// pelo fitness <c>LimitesDoEnvelopeBatemComOSchemaTests</c>).

@@ -24,7 +24,7 @@ using Unifesspa.UniPlus.Testes.Compartilhado;
 using static Unifesspa.UniPlus.Selecao.Application.UnitTests.Commands.ApoioDaColetaDeFatos;
 
 /// <summary>
-/// Cobertura do <see cref="DefinirFatosColetadosCommandHandler"/> (Story #984): a coletabilidade (só fato declarado com binding de campo
+/// Cobertura do <see cref="DefinirFatosColetadosCommandHandler"/>: a coletabilidade (só fato declarado com binding de campo
 /// de inscrição), a validação semântica das pré-condições contra o vocabulário fechado e a obrigatoriedade dos itens.
 /// Os casos usam o formulário de habilitação, livre da seção reservada do conjunto básico, que a inscrição monta e confere à parte.
 /// </summary>

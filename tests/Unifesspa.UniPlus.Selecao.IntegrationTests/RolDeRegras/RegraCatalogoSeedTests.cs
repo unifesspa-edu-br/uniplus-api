@@ -19,7 +19,7 @@ using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Seed;
 
 /// <summary>
 /// Cobertura de integração (Postgres real via Testcontainers) da biblioteca
-/// <c>regras_do_catalogo</c> (Story #772): o seed das regras <c>v1</c>, a
+/// <c>regras_do_catalogo</c>: o seed das regras <c>v1</c>, a
 /// content-addressability do hash sobrevivendo à normalização jsonb do
 /// Postgres, a coexistência de versões (<c>UNIQUE (codigo, versao)</c>) e o
 /// <see cref="RegraCatalogoReader"/>.

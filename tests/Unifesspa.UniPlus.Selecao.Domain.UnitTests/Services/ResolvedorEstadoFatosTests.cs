@@ -14,7 +14,7 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
 /// <summary>
-/// Story #926 — o grafo de pré-condições resolvendo o estado de cada fato a partir das respostas
+/// O grafo de pré-condições resolvendo o estado de cada fato a partir das respostas
 /// do candidato. A tabela de coleta usada aqui é a normativa da change (dez fatos, com o gate de
 /// escola pública em todos os opt-ins de subcota exceto a dimensão PcD).
 /// </summary>

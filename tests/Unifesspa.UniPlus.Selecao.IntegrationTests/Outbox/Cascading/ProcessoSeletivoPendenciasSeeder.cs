@@ -19,7 +19,7 @@ using static Unifesspa.UniPlus.Selecao.IntegrationTests.Outbox.Cascading.ApoioDo
 
 /// <summary>
 /// Variantes de <see cref="ProcessoSeletivoPublicavelSeeder"/> — cada método isola UM defeito
-/// estrutural específico (issue #1096), para provar via HTTP que
+/// estrutural específico, para provar via HTTP que
 /// <c>Extensions["pendencias"]</c> aparece em toda recusa 422 com checklist vermelho, não só
 /// quando o erro é <c>ProcessoSeletivo.ConformidadeInsuficiente</c>.
 /// </summary>
@@ -29,8 +29,7 @@ internal static class ProcessoSeletivoPendenciasSeeder
     /// Igual a <see cref="ProcessoSeletivoPublicavelSeeder.SemearAsync"/>, exceto que a única
     /// fase do cronograma NÃO coleta inscrição — com <c>OrigemCandidatos.InscricaoPropria</c>,
     /// isso deixa vermelho só "Cronograma: inscrição própria tem fase que coleta inscrição" e
-    /// <c>Publicar</c> recusa com <c>ProcessoSeletivo.InscricaoPropriaSemFaseDeColeta</c> — o
-    /// cenário Gherkin da issue #1096.
+    /// <c>Publicar</c> recusa com <c>ProcessoSeletivo.InscricaoPropriaSemFaseDeColeta</c>.
     /// </summary>
     public static async Task<(ProcessoSeletivo Processo, DocumentoAPublicar Documento)> SemearComCronogramaNaoConformeAsync(
         UniPlusDbContext db, string nome)
@@ -105,8 +104,7 @@ internal static class ProcessoSeletivoPendenciasSeeder
     /// <summary>
     /// Igual à base, exceto que <c>DefinirAtendimentoEspecializado</c> nunca é chamado — vermelho em
     /// "Atendimento especializado"; <c>Publicar</c> recusa com o gate agregador
-    /// <c>ProcessoSeletivo.ConformidadeInsuficiente</c> (já funcionava antes da issue #1096 —
-    /// serve de regressão).
+    /// <c>ProcessoSeletivo.ConformidadeInsuficiente</c> (serve de regressão).
     /// </summary>
     /// <param name="documentoConfirmado">
     /// Quando <see langword="false"/>, o documento fica pendente (nunca confirmado): a

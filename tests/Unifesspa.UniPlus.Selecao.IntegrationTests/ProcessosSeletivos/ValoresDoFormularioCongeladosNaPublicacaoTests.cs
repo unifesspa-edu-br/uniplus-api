@@ -27,7 +27,7 @@ using Unifesspa.UniPlus.Selecao.IntegrationTests.TestSupport;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
 /// <summary>
-/// Issue #1059 (UNI-REQ-0072) — imunidade do formulário público ao que acontece <b>depois</b>
+/// UNI-REQ-0072 — imunidade do formulário público ao que acontece <b>depois</b>
 /// da publicação, com Postgres real (Testcontainers): os valores selecionáveis congelados na
 /// publicação voltam idênticos em leituras repetidas e só mudam por retificação.
 /// </summary>
@@ -44,8 +44,7 @@ using Unifesspa.UniPlus.Testes.Compartilhado;
 /// Postgres real — são o que sustenta a garantia de imunidade ao catálogo vivo.
 /// </para>
 /// <para>
-/// <b>Decisão de escopo — o que esta suíte NÃO faz</b>: o desenho original desta prova (o
-/// plano da issue) previa inativar de fato um valor no catálogo do módulo Configuração e reler
+/// <b>Decisão de escopo — o que esta suíte NÃO faz</b>: ela não inativa de fato um valor no catálogo do módulo Configuração e reler
 /// o formulário. Reproduzir isso literalmente exigiria uma segunda infraestrutura de banco
 /// (<c>UniPlusDbContext</c>, que este projeto de testes não provisiona) e um leitor de
 /// catálogo real — escopo maior que esta suíte, e redundante com a garantia estrutural: se o

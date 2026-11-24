@@ -11,8 +11,7 @@ using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Canonicalization;
 
 /// <summary>
-/// Configuração EF Core de <see cref="ConfiguracaoClassificacao"/> (Story
-/// #775) — o 15º bloco canônico, 1:1 do agregado
+/// Configuração EF Core de <see cref="ConfiguracaoClassificacao"/> — o 15º bloco canônico, 1:1 do agregado
 /// <see cref="ProcessoSeletivo"/>.
 /// </summary>
 [SuppressMessage(
@@ -56,7 +55,7 @@ internal sealed class ConfiguracaoClassificacaoConfiguration : IEntityTypeConfig
             .IsRequired()
             .HasComment(
                 "A classificação usa a estrutura de pontuação por área do ENEM — sinal " +
-                "explícito (Story #850) do qual as regras de eliminação do ENEM dependem, " +
+                "explícito do qual as regras de eliminação do ENEM dependem, " +
                 "substituindo a ramificação por TipoProcesso.");
 
         // Coleção filha: entidade própria com FK para a raiz (nunca owned types).

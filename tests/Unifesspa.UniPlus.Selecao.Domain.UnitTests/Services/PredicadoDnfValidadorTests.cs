@@ -13,7 +13,7 @@ using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Services;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
-/// <summary>Cobre CA-06 a CA-09 e CA-12 da Story #847 (ADR-0111 — matriz operador × domínio).</summary>
+/// <summary>Cobre CA-06 a CA-09 e CA-12 (ADR-0111 — matriz operador × domínio).</summary>
 public sealed class PredicadoDnfValidadorTests
 {
     private static readonly Dictionary<string, DescritorFatoCandidato> Vocabulario = new()
@@ -228,7 +228,7 @@ public sealed class PredicadoDnfValidadorTests
         resultado.Error!.Code.Should().Be("PredicadoDnf.FatoDesconhecido");
     }
 
-    // ── Story #554 (PR #896, issue #892) — domínio categórico dinâmico ──
+    // ── Domínio categórico dinâmico ──
 
     private static readonly Dictionary<string, DescritorFatoCandidato> VocabularioComDinamico = new(Vocabulario)
     {
@@ -286,7 +286,7 @@ public sealed class PredicadoDnfValidadorTests
         resultado.Error!.Code.Should().Be("PredicadoDnf.OperadorIncompativelComDominio");
     }
 
-    // ── Story #916 — operadores de exclusão (DIFERENTE/NENHUM_DE) ──
+    // ── Operadores de exclusão (DIFERENTE/NENHUM_DE) ──
 
     [Theory(DisplayName = "DIFERENTE é aceito em todo domínio onde IGUAL já vale (booleano, numérico, categórico)")]
     [InlineData("PCD", "false")]

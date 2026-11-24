@@ -9,7 +9,7 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 /// <summary>
 /// Veredicto de conformidade legal de um <c>ProcessoSeletivo</c> contra o
 /// catálogo <c>ObrigatoriedadeLegal</c> vigente na data de corte informada
-/// (Story #853, CA-16) — recurso distinto de
+/// (CA-16) — recurso distinto de
 /// <see cref="ConformidadeProcessoSeletivoDto"/> (checklist estrutural).
 /// </summary>
 public sealed record ConformidadeLegalProcessoSeletivoDto(

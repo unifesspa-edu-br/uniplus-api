@@ -244,7 +244,7 @@ public sealed class ConformidadePublicabilidadeEstruturalEnemEOpcoesTests
     }
 
     // ══════════════════════════════════════════════════════════════════════════════════════
-    // Opções declaradas pelo processo (issue #1619)
+    // Opções declaradas pelo processo
     // ══════════════════════════════════════════════════════════════════════════════════════
 
     [Fact(DisplayName = "Fato coletado de fonte do processo sem opção declarada: item vermelho e publicação recusada; com opção, liberado")]

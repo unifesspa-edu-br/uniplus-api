@@ -5,7 +5,7 @@ using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Bancas;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 /// <summary>
-/// Uma banca requerida por uma <see cref="FaseCronograma"/> (0..*, Story #851 §4) —
+/// Uma banca requerida por uma <see cref="FaseCronograma"/> (0..*) —
 /// cópia (ADR-0061) do <c>TipoBanca</c> do módulo Configuração no momento em que foi vinculada
 /// (<see cref="Tipo"/>), mais os <b>candidatos atendidos</b>, que dizem do que ela responde.
 /// </summary>

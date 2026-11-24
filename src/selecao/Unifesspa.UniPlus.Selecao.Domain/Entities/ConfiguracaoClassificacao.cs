@@ -11,7 +11,7 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 /// <summary>
 /// Configuração de classificação do <see cref="ProcessoSeletivo"/> — o 15º
-/// bloco canônico do snapshot de publicação (Story #775):
+/// bloco canônico do snapshot de publicação:
 /// COMPÕE POR REFERÊNCIA as regras tipadas que amarram o cálculo do
 /// resultado — fórmula da nota, precisão, eliminação (lista) e ordem de
 /// alocação entre a 1ª e a 2ª opção de curso (UNI-REQ-0045).
@@ -26,7 +26,7 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 /// <para>
 /// <strong>Bônus e desempate não são campos deste bloco.</strong> Já são
 /// entidades do MESMO agregado (<c>ProcessoSeletivo.BonusRegional</c>,
-/// <c>ProcessoSeletivo.CriteriosDesempate</c>, Story #774) —
+/// <c>ProcessoSeletivo.CriteriosDesempate</c>) —
 /// referenciá-los aqui de novo duplicaria fonte de verdade. A composição por
 /// referência, no nível do agregado, já é a co-localização das duas
 /// dimensões sob o mesmo <c>ProcessoSeletivoId</c>.
@@ -95,9 +95,9 @@ public sealed class ConfiguracaoClassificacao : EntityBase, IParteDoProcesso
 
     /// <summary>
     /// A classificação usa a estrutura de pontuação por área do ENEM — o
-    /// sinal explícito (Story #850) do qual as eliminações do ENEM (<c>ELIMINACAO_CORTE_EM_AREA</c>,
-    /// <c>ELIMINACAO_ZERO_EM_AREA</c> e <c>ELIMINACAO_FALTA_EM_DIA_DE_PROVA_ENEM</c>) dependem. Deixou de
-    /// ser calculado a partir de <see cref="ProcessoSeletivo.TipoProcesso"/>: o rótulo do processo não decide
+    /// sinal explícito do qual as eliminações do ENEM (<c>ELIMINACAO_CORTE_EM_AREA</c>,
+    /// <c>ELIMINACAO_ZERO_EM_AREA</c> e <c>ELIMINACAO_FALTA_EM_DIA_DE_PROVA_ENEM</c>) dependem. Não é
+    /// calculado a partir de <see cref="ProcessoSeletivo.TipoProcesso"/>: o rótulo do processo não decide
     /// comportamento, só a configuração declarada decide.
     /// </summary>
     public bool BaseadoEmEnem { get; private set; }

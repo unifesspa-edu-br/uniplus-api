@@ -104,7 +104,7 @@ public sealed class FatoCandidatoSementeTests
 
         List<FatoCandidato> fatos = await ctx.FatosCandidato.AsNoTracking().Where(static f => f.SemeadoPeloSistema).ToListAsync();
 
-        // Quatro fatos já existiam antes desta leva e são REUTILIZADOS, não recadastrados:
+        // Quatro fatos já existem no catálogo e são REUTILIZADOS, não recadastrados:
         // renomeá-los violaria a imutabilidade de código da ADR-0111.
         (string Codigo, string IdSufixo)[] reutilizados =
         [
@@ -181,7 +181,7 @@ public sealed class FatoCandidatoSementeTests
         }
     }
 
-    [Fact(DisplayName = "Sexo civil, identidade de gênero e orientação sexual são fatos de sistema com as opções fixas da issue, e o sexo passa a biológico")]
+    [Fact(DisplayName = "Sexo civil, identidade de gênero e orientação sexual são fatos de sistema com as opções fixas, e o sexo é biológico")]
     public async Task Seed_SexoCivilIdentidadeDeGeneroEOrientacaoSexual_TemAsOpcoesFixas()
     {
         await using UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null);

@@ -17,7 +17,7 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
 /// <summary>
-/// Ler a inscrição (issue #1859, <c>GET .../inscricao</c>): devolve a do dono do token, pelo CPF do
+/// Ler a inscrição (<c>GET .../inscricao</c>): devolve a do dono do token, pelo CPF do
 /// claim, e confere o <c>contaId</c> gravado — nunca por id na rota.
 /// </summary>
 public sealed class ObterInscricaoQueryHandlerTests

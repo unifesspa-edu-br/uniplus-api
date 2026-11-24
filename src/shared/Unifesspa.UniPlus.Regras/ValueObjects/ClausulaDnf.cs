@@ -7,7 +7,7 @@ using Unifesspa.UniPlus.Regras.Enums;
 
 /// <summary>
 /// Conjunção (E) de <see cref="CondicaoDnf"/> — uma cláusula da forma normal
-/// disjuntiva de <see cref="PredicadoDnf"/> (ADR-0111, Story #847). Uma
+/// disjuntiva de <see cref="PredicadoDnf"/> (ADR-0111). Uma
 /// cláusula vazia nunca é um objeto construível: a factory rejeita a lista
 /// vazia ou nula.
 /// </summary>
@@ -32,14 +32,14 @@ public sealed record ClausulaDnf
     }
 
     /// <summary>
-    /// Avalia a cláusula (E lógico ternário, fail-closed — Story #916) contra os fatos já
+    /// Avalia a cláusula (E lógico ternário, fail-closed) contra os fatos já
     /// resolvidos de um candidato: <see cref="Ternario.Falso"/> se qualquer condição avaliar
     /// <see cref="Ternario.Falso"/> (vence sobre indeterminação); senão
     /// <see cref="Ternario.Indeterminado"/> se qualquer uma avaliar indeterminada; senão
     /// <see cref="Ternario.Verdadeiro"/>.
     /// </summary>
     /// <remarks>
-    /// O átomo tem quatro estados, mas a cláusula continua ternária (Story #926):
+    /// O átomo tem quatro estados, mas a cláusula continua ternária:
     /// <see cref="EstadoAtomo.NaoAplicavel"/> <b>colapsa como <see cref="Ternario.Falso"/>
     /// resolvido</b> aqui. É o colapso que dá a resposta correta ao consumidor: um gatilho
     /// que cita um fato inaplicável resolve falso — a exigência não se aplica, em definitivo —
@@ -187,7 +187,7 @@ public sealed record ClausulaDnf
 
     /// <summary>
     /// Igualdade escalar ternária: tipo (<see cref="JsonValueKind"/>) incoerente entre o valor
-    /// resolvido e o configurado é <see cref="Ternario.Indeterminado"/> (Story #916) — nunca
+    /// resolvido e o configurado é <see cref="Ternario.Indeterminado"/> — nunca
     /// <see cref="Ternario.Falso"/> silencioso, que confundiria "resolvido diferente" com
     /// "resolvido de tipo que este predicado não sabe comparar". <see cref="JsonValueKind.True"/>/
     /// <see cref="JsonValueKind.False"/> são tratados como o MESMO tipo lógico (booleano) — são
@@ -234,8 +234,8 @@ public sealed record ClausulaDnf
     /// <summary>
     /// Comparação numérica ternária: <see cref="Ternario.Indeterminado"/> (nunca lança) quando
     /// o valor resolvido — ou, defensivamente, o configurado — não é um número JSON
-    /// representável como <see cref="decimal"/> (Story #916; antes, <c>GetDecimal()</c> direto
-    /// lançava <see cref="InvalidOperationException"/> para um valor não numérico).
+    /// representável como <see cref="decimal"/> (um <c>GetDecimal()</c> direto
+    /// lançaria <see cref="InvalidOperationException"/> para um valor não numérico).
     /// </summary>
     private static Ternario CompararNumerico(JsonElement candidato, JsonElement configurado, Func<int, bool> satisfaz)
     {

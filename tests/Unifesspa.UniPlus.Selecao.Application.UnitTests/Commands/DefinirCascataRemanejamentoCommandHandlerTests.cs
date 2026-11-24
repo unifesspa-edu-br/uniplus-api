@@ -22,7 +22,7 @@ using static Unifesspa.UniPlus.Selecao.Application.UnitTests.Commands.ApoioDaCas
 
 /// <summary>
 /// Cobertura do <see cref="DefinirCascataRemanejamentoCommandHandler"/>
-/// (cascata de remanejamento de cotas, UNI-REQ-0056, Story #575): remoção por ausência total, recusa de
+/// (cascata de remanejamento de cotas, UNI-REQ-0056): remoção por ausência total, recusa de
 /// presença parcial, resolução da regra no catálogo, e a ordem
 /// forma-antes-de-conteúdo — a factory (cascata de remanejamento de cotas, UNI-REQ-0056) roda antes da
 /// comparação célula a célula contra o <c>declaracao_da_regra</c> (cascata de remanejamento de cotas, UNI-REQ-0056),

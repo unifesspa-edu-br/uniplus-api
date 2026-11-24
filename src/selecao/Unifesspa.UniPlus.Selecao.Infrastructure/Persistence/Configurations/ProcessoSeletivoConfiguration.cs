@@ -34,7 +34,7 @@ public sealed class ProcessoSeletivoConfiguration : IEntityTypeConfiguration<Pro
 
         builder.ClassificaPorPadrao(ClassificacaoDeProtecao.Interno);
 
-        // Trio de cidade da Unidade administradora, all-or-nothing (issue #1114):
+        // Trio de cidade da Unidade administradora, all-or-nothing:
         // espelha no banco a invariante já provada por
         // UnidadeAdministradoraSnapshot.ValidarReferenciaCidade — mesmo padrão de
         // InstituicaoConfiguration/UnidadeConfiguration.
@@ -62,7 +62,7 @@ public sealed class ProcessoSeletivoConfiguration : IEntityTypeConfiguration<Pro
 
         builder.Property(p => p.Nome).HasMaxLength(NomeMaxLength).IsRequired().HasComment("Nome do processo seletivo informado no cadastro.");
 
-        // Identificador legível (issue #1479): nulável até a publicação, que o exige. O índice
+        // Identificador legível: nulável até a publicação, que o exige. O índice
         // único não filtra os excluídos logicamente — o endereço público de um certame excluído
         // não pode ser herdado por outro —, só os ausentes.
         builder.Property(p => p.IdentificadorLegivel)
@@ -95,13 +95,13 @@ public sealed class ProcessoSeletivoConfiguration : IEntityTypeConfiguration<Pro
         });
         builder.Navigation(p => p.TipoProcesso).IsRequired();
         builder.Property(p => p.Status).HasMaxLength(9).IsRequired().HasComment("Situação do processo: rascunho, publicado, encerrado ou cancelado.");
-        // Story #851 §3.4: NOT NULL, exigido na criação.
+        // NOT NULL, exigido na criação.
         builder.Property(p => p.OrigemCandidatos)
             .HasMaxLength(TamanhoDoCodigoDeContrato.Maximo)
             .HasComment("Como os candidatos chegam ao processo: INSCRICAO_PROPRIA ou IMPORTACAO_EXTERNA.")
             .IsRequired();
 
-        // Issue #849 (CA-04 da Feature #40): quem responde pelo certame — NOT NULL, exigido
+        // Quem responde pelo certame — NOT NULL, exigido
         // na criação, imutável depois. Escalar de topo sem FK cross-schema (ADR-0061) + owned
         // type snapshot-copy, maxlengths espelhando UnidadeConfiguration.
         builder.Property(p => p.UnidadeAdministradoraOrigemId)
@@ -211,7 +211,7 @@ public sealed class ProcessoSeletivoConfiguration : IEntityTypeConfiguration<Pro
             .HasConstraintName("fk_configuracoes_do_fada_processo_seletivo_id")
             .OnDelete(DeleteBehavior.Cascade);
 
-        // Divulgação pública (UNI-REQ-0050, issue #563) — 1:1, mesmo padrão de BonusRegional
+        // Divulgação pública (UNI-REQ-0050) — 1:1, mesmo padrão de BonusRegional
         // acima. Ausência = default minimizado, não escolha administrativa pendente.
         builder.HasOne(p => p.ConfiguracaoDivulgacao)
             .WithOne()
@@ -219,7 +219,7 @@ public sealed class ProcessoSeletivoConfiguration : IEntityTypeConfiguration<Pro
             .HasConstraintName("fk_configuracoes_divulgacao_processo_seletivo")
             .OnDelete(DeleteBehavior.Cascade);
 
-        // Taxa de inscrição e isenção (issue #1112) — 1:1, mesmo padrão de BonusRegional/
+        // Taxa de inscrição e isenção — 1:1, mesmo padrão de BonusRegional/
         // Divulgacao acima. Diferente da divulgação, ausência aqui NÃO é estado publicável
         // (CA-01), como a ausência da declaração do bônus — é dimensão do agregado do mesmo jeito,
         // só o significado semântico da ausência muda.
@@ -240,13 +240,13 @@ public sealed class ProcessoSeletivoConfiguration : IEntityTypeConfiguration<Pro
             .HasConstraintName("fk_configuracoes_classificacao_processo_seletivo")
             .OnDelete(DeleteBehavior.Cascade);
 
-        // Cronograma de fases (Story #851) — 1..*, mesmo padrão de Etapas/DistribuicaoVagas.
+        // Cronograma de fases — 1..*, mesmo padrão de Etapas/DistribuicaoVagas.
         builder.HasMany(p => p.CronogramaFases)
             .WithOne()
             .HasForeignKey(f => f.ProcessoSeletivoId)
             .OnDelete(DeleteBehavior.Cascade);
 
-        // Documentos exigidos (Story #554) — 0..*, mesmo padrão de Etapas/CronogramaFases.
+        // Documentos exigidos — 0..*, mesmo padrão de Etapas/CronogramaFases.
         builder.HasMany(p => p.DocumentosExigidos)
             .WithOne()
             .HasForeignKey(d => d.ProcessoSeletivoId)
@@ -259,7 +259,7 @@ public sealed class ProcessoSeletivoConfiguration : IEntityTypeConfiguration<Pro
             .HasConstraintName("fk_regras_de_comprovacao_processo_seletivo")
             .OnDelete(DeleteBehavior.Cascade);
 
-        // Grafo de coleta de fatos (Story #926) — quais fatos o processo coleta, em que ordem e
+        // Grafo de coleta de fatos — quais fatos o processo coleta, em que ordem e
         // sob qual pré-condição. Cascade pelo mesmo motivo dos documentos exigidos: a FK é
         // obrigatória e o agregado substitui a coleção por inteiro.
         // Todo campo pertence ao processo — o item e o campo de grupo repetível —; os itens são a
@@ -305,7 +305,7 @@ public sealed class ProcessoSeletivoConfiguration : IEntityTypeConfiguration<Pro
         builder.Navigation(p => p.TermosExigidos)
             .UsePropertyAccessMode(PropertyAccessMode.Field);
 
-        // Opções declaradas pelo processo (issue #1619) — mesma disciplina de FatosColetados.
+        // Opções declaradas pelo processo — mesma disciplina de FatosColetados.
         builder.HasMany(p => p.OpcoesDeclaradas)
             .WithOne()
             .HasForeignKey(o => o.ProcessoSeletivoId)
@@ -315,7 +315,7 @@ public sealed class ProcessoSeletivoConfiguration : IEntityTypeConfiguration<Pro
         builder.Navigation(p => p.OpcoesDeclaradas)
             .UsePropertyAccessMode(PropertyAccessMode.Field);
 
-        // Regras de derivação (Story #927) — mesma disciplina de FatosColetados: FK obrigatória,
+        // Regras de derivação — mesma disciplina de FatosColetados: FK obrigatória,
         // cascade, substituição por inteiro pelo agregado.
         builder.HasMany(p => p.RegrasDerivacao)
             .WithOne()
@@ -326,7 +326,7 @@ public sealed class ProcessoSeletivoConfiguration : IEntityTypeConfiguration<Pro
         builder.Navigation(p => p.RegrasDerivacao)
             .UsePropertyAccessMode(PropertyAccessMode.Field);
 
-        // ReferenciaTemporalFatos (Story #554, PR #896) — VO 0..1 sem identidade própria,
+        // ReferenciaTemporalFatos — VO 0..1 sem identidade própria,
         // owned inline em processos_seletivos (nunca entidade filha própria — ela não tem
         // Id nem ciclo de vida próprio, diferente das coleções acima).
         builder.OwnsOne(p => p.ProvaPresencial, prova => prova.ConfigurarProvaPresencial());

@@ -14,7 +14,7 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
 /// <summary>
-/// Story #928, §6 — o grafo de dependência conjunto: campo e fato como nós distintos, as quatro
+/// §6 — o grafo de dependência conjunto: campo e fato como nós distintos, as quatro
 /// classes de aresta (produção, pré-condição, derivação, gatilho), a aciclicidade sobre as quatro
 /// juntas e a ordenação topológica determinística. A validação estrutural das componentes (forma
 /// das condições, unicidade) é das factories de cada entidade; aqui prova-se o grafo montado.

@@ -9,7 +9,7 @@ using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 
 /// <summary>
-/// Configuração EF Core de <see cref="ConfiguracaoTaxaInscricao"/> (issue #1112) — entidade 1:1
+/// Configuração EF Core de <see cref="ConfiguracaoTaxaInscricao"/> — entidade 1:1
 /// do agregado <see cref="ProcessoSeletivo"/>.
 /// </summary>
 internal sealed class ConfiguracaoTaxaInscricaoConfiguration : IEntityTypeConfiguration<ConfiguracaoTaxaInscricao>
@@ -22,7 +22,7 @@ internal sealed class ConfiguracaoTaxaInscricaoConfiguration : IEntityTypeConfig
 
         builder.ToTable("configuracoes_taxa_inscricao", t => t.HasComment(
             "Configuração de taxa de inscrição e fundamentos de isenção do processo seletivo " +
-            "(issue #1112) — entidade dependente 1:1 de processos_seletivos."));
+            "— entidade dependente 1:1 de processos_seletivos."));
         builder.HasKey(c => c.Id);
         builder.Property(c => c.Id)
             .ValueGeneratedNever()

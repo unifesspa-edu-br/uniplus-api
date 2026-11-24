@@ -16,8 +16,7 @@ using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 /// <summary>
-/// Configuração EF Core da entidade <see cref="ObrigatoriedadeLegal"/>
-/// (Story #460).
+/// Configuração EF Core da entidade <see cref="ObrigatoriedadeLegal"/>.
 /// </summary>
 /// <remarks>
 /// <para>
@@ -128,7 +127,7 @@ internal sealed class ObrigatoriedadeLegalConfiguration
             .HasFilter("is_deleted = false")
             .HasDatabaseName("ux_obrigatoriedades_legais_hash_ativos");
 
-        // UNIQUE parcial sobre RegraCodigo entre regras ativas (Story #461). O
+        // UNIQUE parcial sobre RegraCodigo entre regras ativas. O
         // ExisteRegraCodigoAtivoAsync no handler é check-then-act
         // não-atômico — duas escritas concorrentes com o mesmo RegraCodigo
         // poderiam ambas passar a checagem e commitar, criando o cenário
@@ -150,7 +149,7 @@ internal sealed class ObrigatoriedadeLegalConfiguration
     /// <see cref="HashCanonicalComputer.CanonicalOptions"/> — wire format
     /// idêntico ao do hash canônico e do snapshot do interceptor. Mantém
     /// round-trip estável entre persistência, hash, histórico e exposição
-    /// HTTP futura (#461).
+    /// HTTP futura.
     /// </summary>
     private static readonly ValueConverter<PredicadoObrigatoriedade, string> PredicadoConverter =
         new(

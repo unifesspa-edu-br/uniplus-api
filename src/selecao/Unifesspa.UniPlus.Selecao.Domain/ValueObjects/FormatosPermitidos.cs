@@ -6,7 +6,7 @@ using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 
 /// <summary>
-/// Um formato aceito dentro da <see cref="FormatosPermitidos.Lista"/> (Story #918) — sem
+/// Um formato aceito dentro da <see cref="FormatosPermitidos.Lista"/> — sem
 /// identidade própria (não deriva de <c>EntityBase</c>): é dado congelado junto do pai, a
 /// mesma razão pela qual o VO não recebe entidade filha própria na persistência (jsonb, não
 /// tabela 1:N).
@@ -43,12 +43,11 @@ public sealed record FormatoPermitidoEntry
 }
 
 /// <summary>
-/// Formatos aceitos para a apresentação de um <see cref="Entities.DocumentoExigido"/> (Story
-/// #918) — substitui o campo singular <c>FormatoPermitido?</c> (PR #900): agora uma LISTA de
+/// Formatos aceitos para a apresentação de um <see cref="Entities.DocumentoExigido"/>: uma LISTA de
 /// <see cref="FormatoPermitidoEntry"/> (cada um com teto por-formato opcional) OU o token
-/// <see cref="Qualquer"/>, mutuamente exclusivos. Campo agora OBRIGATÓRIO em
-/// <see cref="Entities.DocumentoExigido"/> — o <see langword="null"/> antigo ("sem
-/// restrição") é substituído pelo token explícito <c>QUALQUER</c>, eliminando a ambiguidade.
+/// <see cref="Qualquer"/>, mutuamente exclusivos. Campo OBRIGATÓRIO em
+/// <see cref="Entities.DocumentoExigido"/> — "sem restrição" é o token explícito
+/// <c>QUALQUER</c>, nunca <see langword="null"/>, para não haver ambiguidade.
 /// </summary>
 /// <remarks>
 /// Não há variante "ausente": <see cref="Criar"/> sempre devolve um VO completo (nunca nulo) — a
