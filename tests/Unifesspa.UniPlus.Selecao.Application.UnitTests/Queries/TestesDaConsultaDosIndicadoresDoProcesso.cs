@@ -41,7 +41,7 @@ public sealed class TestesDaConsultaDosIndicadoresDoProcesso
     {
         Cenario cenario = CriarCenario();
         cenario.Leitor.LerAsync(ProcessoId, Arg.Any<CancellationToken>())
-            .Returns(new ContagensDoProcesso(12, 12, 4));
+            .Returns(new ContagensDoProcesso(12, 9, 4));
 
         Result<IndicadoresDoProcessoDto> resultado = await ExecutarAsync(cenario);
 
@@ -92,6 +92,24 @@ public sealed class TestesDaConsultaDosIndicadoresDoProcesso
         resultado.Error!.Code.Should().Be(AcessoAoProcesso.NaoEncontrado(ProcessoId).Code);
         await cenario.Leitor.DidNotReceiveWithAnyArgs().LerAsync(default, default);
         await ConferirPermissaoAsync(cenario.Verificador, PermissaoSelecao.ProcessosConfigurar);
+    }
+
+    [Fact(DisplayName = "Processo publicado sem permissão de acompanhar é ocultado como inexistente")]
+    public async Task PublicadoSemPermissaoDeAcompanhar_RetornaErroDeProcessoInexistente()
+    {
+        Cenario cenario = CriarCenario(acesso: ResultadoDoAcesso.Negado);
+        Cenario inexistente = CriarCenario();
+        inexistente.Processos.ObterEstadoAsync(ProcessoId, Arg.Any<CancellationToken>())
+            .Returns((EstadoDoProcesso?)null);
+
+        Result<IndicadoresDoProcessoDto> resultado = await ExecutarAsync(cenario);
+        Result<IndicadoresDoProcessoDto> resultadoInexistente = await ExecutarAsync(inexistente);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error.Should().BeEquivalentTo(resultadoInexistente.Error);
+        await cenario.Verificador.Received(1).ExigirAsync(PermissaoSelecao.ProcessosAcompanhar.Requisito,
+            AcessoAoProcesso.ResourceDoProcesso(UnidadeId, ProcessoId), Arg.Any<CancellationToken>());
+        await ConferirAusenciaDeLeiturasAdicionaisAsync(cenario);
     }
 
     [Theory(DisplayName = "Descrição dos rascunhos acompanha os limites da janela divulgada")]
@@ -156,7 +174,7 @@ public sealed class TestesDaConsultaDosIndicadoresDoProcesso
         Result<IndicadoresDoProcessoDto> resultado = await ExecutarAsync(cenario);
 
         resultado.Error!.Code.Should().Be("ProcessoSeletivo.ImpedidoPorInscricaoNoProcesso");
-        await cenario.Leitor.DidNotReceiveWithAnyArgs().LerAsync(default, default);
+        await ConferirAusenciaDeLeiturasAdicionaisAsync(cenario);
     }
 
     [Fact(DisplayName = "Falha na leitura das contagens não vira zeros nem resposta parcial")]
@@ -180,6 +198,15 @@ public sealed class TestesDaConsultaDosIndicadoresDoProcesso
             cenario.Descricao,
             new RelogioFixo(Agora),
             CancellationToken.None);
+
+    private static async Task ConferirAusenciaDeLeiturasAdicionaisAsync(Cenario cenario)
+    {
+        await cenario.Processos.Received(1).ObterEstadoAsync(ProcessoId, Arg.Any<CancellationToken>());
+        cenario.Processos.ReceivedCalls().Should().ContainSingle();
+        await cenario.Leitor.DidNotReceiveWithAnyArgs().LerAsync(default, default);
+        await cenario.Divulgado.DidNotReceiveWithAnyArgs().ObterParaLeituraAsync(default, default);
+        await cenario.Processos.DidNotReceiveWithAnyArgs().ObterVersoesPorAtoCriadorAsync(default!, default);
+    }
 
     private static async Task ConferirPermissaoAsync(IVerificadorDeAcesso verificador, PermissaoSelecao permissao) =>
         await verificador.Received(1).ExigirAsync(
@@ -296,9 +323,9 @@ public sealed class TestesDaConsultaDosIndicadoresDoProcesso
         ProcessoId,
         Agora,
         [
-            new(CodigoIndicadorDoProcesso.Inscricoes.Codigo(), 12L, CodigoIndicadorDoProcesso.Inscricoes.Rotulo(), CodigoIndicadorDoProcesso.Inscricoes.Descricao()!),
-            new(CodigoIndicadorDoProcesso.Inscritos.Codigo(), 12L, CodigoIndicadorDoProcesso.Inscritos.Rotulo(), CodigoIndicadorDoProcesso.Inscritos.Descricao()!),
-            new(CodigoIndicadorDoProcesso.Rascunhos.Codigo(), 4L, CodigoIndicadorDoProcesso.Rascunhos.Rotulo(), "Inscrições ainda não enviadas")
+            new("INSCRICOES", 12L, "Inscrições", "Submetidas e não canceladas"),
+            new("INSCRITOS", 9L, "Inscritos", "Pessoas distintas com inscrição submetida e não cancelada"),
+            new("RASCUNHOS", 4L, "Rascunhos", "Inscrições ainda não enviadas")
         ],
         null!);
 
