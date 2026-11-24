@@ -4,6 +4,8 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 using Unifesspa.UniPlus.Discentes.Domain.Entities;
+using Unifesspa.UniPlus.Discentes.Domain.Enums;
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence.CodigosDeContrato;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Protecao;
 using Unifesspa.UniPlus.Kernel.Domain.Entities;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
@@ -14,14 +16,22 @@ using Unifesspa.UniPlus.Kernel.Domain.Enums;
     Justification = "Instanciada via EF Core ModelBuilder.ApplyConfigurationsFromAssembly por reflection.")]
 internal sealed class SyncRunConfiguration : IEntityTypeConfiguration<SyncRun>
 {
+    private const int CodigoDeContratoMaxLength = 30;
+
     public void Configure(EntityTypeBuilder<SyncRun> builder)
     {
         ArgumentNullException.ThrowIfNull(builder);
 
         builder.ClassificaPorPadrao(ClassificacaoDeProtecao.Interno);
 
-        builder.ToTable("sincronizacoes_com_o_sigaa", t => t.HasComment(
-            "Controle de execução das rotinas de sincronização de dados discentes com o SIGAA — uma linha por execução."));
+        builder.ToTable("sincronizacoes_com_o_sigaa", t =>
+        {
+            t.HasComment(
+                "Controle de execução das rotinas de sincronização de dados discentes com o SIGAA — uma linha por execução.");
+            t.HasCheckConstraint(
+                "ck_sincronizacoes_com_o_sigaa_status",
+                $"status IN ({SqlDosCodigosDeContrato.Lista<SyncRunStatus>()})");
+        });
 
         builder.HasKey(s => s.Id);
 
@@ -29,7 +39,8 @@ internal sealed class SyncRunConfiguration : IEntityTypeConfiguration<SyncRun>
             .HasComment("Identificador interno (UUIDv7) da execução.");
 
         builder.Property(s => s.Status)
-            .HasComment("Estado da execução (Running/Completed/Partial/Failed).");
+            .HasMaxLength(CodigoDeContratoMaxLength)
+            .HasComment("Situação da execução. Códigos: EM_ANDAMENTO, CONCLUIDA, PARCIAL, FALHOU.");
 
         builder.Property(s => s.DataDeReferencia)
             .HasComment(
@@ -52,7 +63,7 @@ internal sealed class SyncRunConfiguration : IEntityTypeConfiguration<SyncRun>
             .HasComment("Instante de início da execução.");
 
         builder.Property(s => s.FinishedAt)
-            .HasComment("Instante de conclusão da execução — nulo enquanto o status é Running.");
+            .HasComment("Instante de conclusão da execução — nulo enquanto o status é EM_ANDAMENTO.");
 
 
 

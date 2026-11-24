@@ -14,7 +14,7 @@ public sealed class SyncRun : EntityBase
 
     private SyncRun(DateOnly dataDeReferencia, DateTime iniciadaEm)
     {
-        Status = SyncRunStatus.Running;
+        Status = SyncRunStatus.EmAndamento;
         DataDeReferencia = dataDeReferencia;
         StartedAt = iniciadaEm;
     }
@@ -63,17 +63,8 @@ public sealed class SyncRun : EntityBase
         ArgumentNullException.ThrowIfNull(contagens);
         ArgumentNullException.ThrowIfNull(clock);
 
-        if (Status != SyncRunStatus.Running)
-        {
-            throw new InvalidOperationException(
-                $"Só uma execução em andamento pode ser concluída; esta está em '{Status}'.");
-        }
-
-        if (situacaoFinal is not (SyncRunStatus.Completed or SyncRunStatus.Partial or SyncRunStatus.Failed))
-        {
-            throw new ArgumentException(
-                $"'{situacaoFinal}' não encerra uma execução.", nameof(situacaoFinal));
-        }
+        GarantirEmAndamento();
+        GarantirSituacaoFinal(situacaoFinal);
 
         TotalItems = contagens.LidosNaOrigem;
         ProcessedItems = contagens.Processados;
@@ -81,6 +72,24 @@ public sealed class SyncRun : EntityBase
         ErrorCount = contagens.Recusados;
         Status = situacaoFinal;
         FinishedAt = clock.GetUtcNow().UtcDateTime;
+    }
+
+    private void GarantirEmAndamento()
+    {
+        if (Status != SyncRunStatus.EmAndamento)
+        {
+            throw new InvalidOperationException(
+                $"Só uma execução em andamento pode ser concluída; esta está em '{Status}'.");
+        }
+    }
+
+    private static void GarantirSituacaoFinal(SyncRunStatus situacaoFinal)
+    {
+        if (situacaoFinal is not (SyncRunStatus.Concluida or SyncRunStatus.Parcial or SyncRunStatus.Falhou))
+        {
+            throw new ArgumentException(
+                $"'{situacaoFinal}' não encerra uma execução.", nameof(situacaoFinal));
+        }
     }
 }
 
@@ -102,25 +111,30 @@ public sealed record ContagensDaExecucao
         ArgumentOutOfRangeException.ThrowIfNegative(Aproveitados);
         ArgumentOutOfRangeException.ThrowIfNegative(Recusados);
 
-        if (Processados > LidosNaOrigem)
-        {
-            throw new ArgumentOutOfRangeException(
-                nameof(Processados),
-                "Não se trata mais vínculos do que a origem entregou.");
-        }
-
-        if (Aproveitados + Recusados > Processados)
-        {
-            throw new ArgumentOutOfRangeException(
-                nameof(Aproveitados),
-                "Aproveitados e recusados são subconjuntos do que foi tratado; somados não "
-                + "podem exceder esse total.");
-        }
+        GarantirRelacoes(LidosNaOrigem, Processados, Aproveitados, Recusados);
 
         this.LidosNaOrigem = LidosNaOrigem;
         this.Processados = Processados;
         this.Aproveitados = Aproveitados;
         this.Recusados = Recusados;
+    }
+
+    private static void GarantirRelacoes(int lidosNaOrigem, int processados, int aproveitados, int recusados)
+    {
+        if (processados > lidosNaOrigem)
+        {
+            throw new ArgumentOutOfRangeException(
+                nameof(processados),
+                "Não se trata mais vínculos do que a origem entregou.");
+        }
+
+        if (aproveitados + recusados > processados)
+        {
+            throw new ArgumentOutOfRangeException(
+                nameof(aproveitados),
+                "Aproveitados e recusados são subconjuntos do que foi tratado; somados não "
+                + "podem exceder esse total.");
+        }
     }
 
     /// <summary>Vínculos que a origem entregou.</summary>

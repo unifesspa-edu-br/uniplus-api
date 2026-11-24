@@ -48,6 +48,8 @@ public sealed record ResumoDaSincronizacao(
     /// <summary>Vínculos efetivamente escritos.</summary>
     public int Escritos => Inseridos + Atualizados;
 
+    private bool NadaAproveitado => Escritos == 0 && Inalterados == 0;
+
     /// <summary>
     /// Vínculos que a execução chegou a tratar — escritos, já iguais, deixados de fora por
     /// decisão, ou perdidos num lote que falhou.
@@ -101,21 +103,19 @@ public sealed record ResumoDaSincronizacao(
     {
         get
         {
-            bool nadaAproveitado = Escritos == 0 && Inalterados == 0;
-
             if (FalhaQueInterrompeu is not null)
             {
-                return nadaAproveitado ? SyncRunStatus.Failed : SyncRunStatus.Partial;
+                return NadaAproveitado ? SyncRunStatus.Falhou : SyncRunStatus.Parcial;
             }
 
             if (NaoGravadosPorFalha > 0)
             {
-                return SyncRunStatus.Partial;
+                return SyncRunStatus.Parcial;
             }
 
-            return nadaAproveitado && DescartadosForaDoContrato > 0
-                ? SyncRunStatus.Failed
-                : SyncRunStatus.Completed;
+            return NadaAproveitado && DescartadosForaDoContrato > 0
+                ? SyncRunStatus.Falhou
+                : SyncRunStatus.Concluida;
         }
     }
 }

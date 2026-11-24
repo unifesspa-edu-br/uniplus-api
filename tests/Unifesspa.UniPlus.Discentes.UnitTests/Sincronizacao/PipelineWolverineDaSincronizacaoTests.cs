@@ -43,7 +43,7 @@ public sealed class PipelineWolverineDaSincronizacaoTests
                 .InvokeAsync(new SincronizarVinculosDiscentes(Dia));
 
             execucoes.Registradas.Should().ContainSingle();
-            execucoes.Registradas[0].Status.Should().Be(SyncRunStatus.Completed);
+            execucoes.Registradas[0].Status.Should().Be(SyncRunStatus.Concluida);
             execucoes.Registradas[0].DataDeReferencia.Should().Be(Dia);
         }
         finally
@@ -68,7 +68,7 @@ public sealed class PipelineWolverineDaSincronizacaoTests
             await sincronizar.Should().ThrowAsync<Exception>();
 
             execucoes.Registradas.Should().ContainSingle();
-            execucoes.Registradas[0].Status.Should().Be(SyncRunStatus.Failed);
+            execucoes.Registradas[0].Status.Should().Be(SyncRunStatus.Falhou);
             execucoes.Registradas[0].FinishedAt.Should().NotBeNull();
         }
         finally

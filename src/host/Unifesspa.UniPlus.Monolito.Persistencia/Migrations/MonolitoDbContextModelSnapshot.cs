@@ -9381,7 +9381,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     b.Property<DateTime?>("FinishedAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("finished_at")
-                        .HasComment("Instante de conclusão da execução — nulo enquanto o status é Running.");
+                        .HasComment("Instante de conclusão da execução — nulo enquanto o status é EM_ANDAMENTO.");
 
                     b.Property<int>("ProcessedItems")
                         .HasColumnType("integer")
@@ -9393,10 +9393,12 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasColumnName("started_at")
                         .HasComment("Instante de início da execução.");
 
-                    b.Property<int>("Status")
-                        .HasColumnType("integer")
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)")
                         .HasColumnName("status")
-                        .HasComment("Estado da execução (Running/Completed/Partial/Failed).");
+                        .HasComment("Situação da execução. Códigos: EM_ANDAMENTO, CONCLUIDA, PARCIAL, FALHOU.");
 
                     b.Property<int>("SuccessCount")
                         .HasColumnType("integer")
@@ -9425,6 +9427,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     b.ToTable("sincronizacoes_com_o_sigaa", "discentes", t =>
                         {
                             t.HasComment("Controle de execução das rotinas de sincronização de dados discentes com o SIGAA — uma linha por execução.");
+
+                            t.HasCheckConstraint("ck_sincronizacoes_com_o_sigaa_status", "status IN ('EM_ANDAMENTO', 'CONCLUIDA', 'PARCIAL', 'FALHOU')");
                         });
                 });
 

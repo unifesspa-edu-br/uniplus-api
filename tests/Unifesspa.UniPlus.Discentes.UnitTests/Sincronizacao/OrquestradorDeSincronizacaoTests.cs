@@ -77,7 +77,7 @@ public sealed class OrquestradorDeSincronizacaoTests
         gravador.TamanhosDosLotes.Should().HaveCount(2, "o segundo lote continuou sendo tentado");
         resumo.NaoGravadosPorFalha.Should().Be(3);
         resumo.Inseridos.Should().Be(3);
-        resumo.Situacao.Should().Be(SyncRunStatus.Partial);
+        resumo.Situacao.Should().Be(SyncRunStatus.Parcial);
 
         ContagensDaExecucao contagens = resumo.EmContagens();
         (contagens.Aproveitados + contagens.Recusados).Should().BeLessThanOrEqualTo(
@@ -99,7 +99,7 @@ public sealed class OrquestradorDeSincronizacaoTests
 
         resumo.Inseridos.Should().Be(2, "a primeira varredura chegou a gravar");
         resumo.FalhaQueInterrompeu.Should().NotBeNull();
-        resumo.Situacao.Should().Be(SyncRunStatus.Partial);
+        resumo.Situacao.Should().Be(SyncRunStatus.Parcial);
     }
 
     [Fact]
@@ -111,7 +111,7 @@ public sealed class OrquestradorDeSincronizacaoTests
 
         resumo.Escritos.Should().Be(0);
         resumo.FalhaQueInterrompeu.Should().NotBeNull();
-        resumo.Situacao.Should().Be(SyncRunStatus.Failed);
+        resumo.Situacao.Should().Be(SyncRunStatus.Falhou);
     }
 
     [Fact]
@@ -133,7 +133,7 @@ public sealed class OrquestradorDeSincronizacaoTests
 
         resumo.Inalterados.Should().Be(3, "já estavam corretos na réplica");
         resumo.NaoGravadosPorFalha.Should().Be(1, "só o que precisava de escrita se perdeu");
-        resumo.Situacao.Should().Be(SyncRunStatus.Partial);
+        resumo.Situacao.Should().Be(SyncRunStatus.Parcial);
     }
 
     [Fact]
@@ -148,7 +148,7 @@ public sealed class OrquestradorDeSincronizacaoTests
 
         resumo.Escritos.Should().Be(0);
         resumo.Inalterados.Should().Be(1);
-        resumo.Situacao.Should().Be(SyncRunStatus.Completed);
+        resumo.Situacao.Should().Be(SyncRunStatus.Concluida);
     }
 
     [Fact]
@@ -167,7 +167,7 @@ public sealed class OrquestradorDeSincronizacaoTests
 
         resumo.Escritos.Should().Be(0);
         resumo.DescartadosForaDoContrato.Should().Be(2);
-        resumo.Situacao.Should().Be(SyncRunStatus.Failed);
+        resumo.Situacao.Should().Be(SyncRunStatus.Falhou);
     }
 
     [Fact]
@@ -185,7 +185,7 @@ public sealed class OrquestradorDeSincronizacaoTests
         resumo.Inseridos.Should().Be(1);
         resumo.DescartadosPorRegistroIncompleto.Should().Be(1);
         resumo.DescartadosForaDoContrato.Should().Be(0);
-        resumo.Situacao.Should().Be(SyncRunStatus.Completed);
+        resumo.Situacao.Should().Be(SyncRunStatus.Concluida);
     }
 
     [Fact]
