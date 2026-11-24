@@ -80,11 +80,11 @@ internal sealed class EventoDaContencaoConfiguration : IEntityTypeConfiguration<
 
     private static void ConfigurarReferencias(EntityTypeBuilder<EventoDaContencao> builder)
     {
-        builder.HasOne<SuspensaoDoPerfil>().WithMany().HasForeignKey(e => e.SuspensaoId).HasConstraintName("fk_eventos_de_bloqueio_suspensao").OnDelete(DeleteBehavior.Restrict);
-        builder.HasOne<DesativacaoDoPerfil>().WithMany().HasForeignKey(e => e.DesativacaoId).HasConstraintName("fk_eventos_de_bloqueio_desativacao").OnDelete(DeleteBehavior.Restrict);
-        builder.HasOne<DecisaoDaRetomada>().WithMany().HasForeignKey(e => e.DecisaoId).HasConstraintName("fk_eventos_de_bloqueio_decisao_da_retomada").OnDelete(DeleteBehavior.Restrict);
-        builder.HasOne<VersaoDoPerfil>().WithMany().HasForeignKey(e => e.VersaoQueEntrouId).HasConstraintName("fk_eventos_de_bloqueio_versao_que_entrou").OnDelete(DeleteBehavior.Restrict);
-        builder.HasOne<VersaoDoPerfil>().WithMany().HasForeignKey(e => e.VersaoVigenteId).HasConstraintName("fk_eventos_de_bloqueio_versao_vigente").OnDelete(DeleteBehavior.Restrict);
+        builder.HasOne<SuspensaoDoPerfil>().WithMany().HasForeignKey(e => e.SuspensaoId).HasConstraintName("fk_eventos_de_bloqueio_do_perfil_suspensao").OnDelete(DeleteBehavior.Restrict);
+        builder.HasOne<DesativacaoDoPerfil>().WithMany().HasForeignKey(e => e.DesativacaoId).HasConstraintName("fk_eventos_de_bloqueio_do_perfil_desativacao").OnDelete(DeleteBehavior.Restrict);
+        builder.HasOne<DecisaoDaRetomada>().WithMany().HasForeignKey(e => e.DecisaoId).HasConstraintName("fk_eventos_de_bloqueio_do_perfil_decisao_da_retomada").OnDelete(DeleteBehavior.Restrict);
+        builder.HasOne<VersaoDoPerfil>().WithMany().HasForeignKey(e => e.VersaoQueEntrouId).HasConstraintName("fk_eventos_de_bloqueio_do_perfil_versao_que_entrou").OnDelete(DeleteBehavior.Restrict);
+        builder.HasOne<VersaoDoPerfil>().WithMany().HasForeignKey(e => e.VersaoVigenteId).HasConstraintName("fk_eventos_de_bloqueio_do_perfil_versao_vigente").OnDelete(DeleteBehavior.Restrict);
     }
 
     private static void ConfigurarRestricoes(TableBuilder<EventoDaContencao> tabela)

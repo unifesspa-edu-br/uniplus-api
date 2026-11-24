@@ -42,7 +42,7 @@ public sealed class DocumentoDaVersaoConfiguration : IEntityTypeConfiguration<Do
         builder.HasIndex(d => d.VersaoId)
             .IsUnique()
             .HasFilter($"situacao <> '{SituacaoDoAnexoCodigo.Recusado}'")
-            .HasDatabaseName("ux_documentos_da_versao_vivo");
+            .HasDatabaseName("ux_documentos_da_versao_ativos");
 
         // Concorrência otimista pela coluna de sistema xmin (ADR-0119): o resultado do verificador e a confirmação
         // do envio não se misturam.
