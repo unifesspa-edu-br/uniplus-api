@@ -31,16 +31,33 @@ public sealed record PrazoDeEmissao
             return Falha("escolha", PrazoDeEmissaoErrorCodes.EscolhaInvalida, "A escolha do prazo de emissão não é reconhecida.");
         if (escolha == EscolhaDoPrazoDeEmissao.SemPrazo)
             return SemPrazo(valor, unidade, referencia, efeitoForaDoPrazo);
+        return ValidarOsDetalhes(valor, unidade, referencia, efeitoForaDoPrazo)
+            ?? Result<PrazoDeEmissao>.Success(new(escolha, valor, unidade, referencia, efeitoForaDoPrazo));
+    }
+
+    private static Result<PrazoDeEmissao>? ValidarOsDetalhes(int? valor, UnidadeDoPrazoDeEmissao? unidade,
+        DataDeReferenciaDoDocumento? referencia, EfeitoNaAnaliseDoDocumento? efeitoForaDoPrazo)
+    {
         if (valor is null or <= 0)
             return Falha("valor", PrazoDeEmissaoErrorCodes.ValorInvalido, "Informe um prazo de emissão maior que zero.");
         if (unidade is null || !Enum.IsDefined(unidade.Value))
             return Falha("unidade", PrazoDeEmissaoErrorCodes.UnidadeInvalida, "Informe uma unidade válida para o prazo de emissão.");
+        if (valor > LimiteDoValor(unidade.Value))
+            return Falha("valor", PrazoDeEmissaoErrorCodes.ValorInvalido, $"O prazo de emissão não pode passar de {LimiteDoValor(unidade.Value)} na unidade escolhida.");
         if (referencia is null)
             return Falha("referencia", DataDeReferenciaDoDocumentoErrorCodes.Ausente, "Informe a data de referência do prazo de emissão.");
         if (efeitoForaDoPrazo is null || !Enum.IsDefined(efeitoForaDoPrazo.Value))
             return Falha("efeitoForaDoPrazo", EfeitoNaAnaliseDoDocumentoErrorCodes.Invalido, "Informe um efeito válido para o documento fora do prazo.");
-        return Result<PrazoDeEmissao>.Success(new(escolha, valor, unidade, referencia, efeitoForaDoPrazo));
+        return null;
     }
+
+    // Cem anos em cada unidade: o maior prazo que ainda cabe numa data de emissão válida.
+    private static int LimiteDoValor(UnidadeDoPrazoDeEmissao unidade) => unidade switch
+    {
+        UnidadeDoPrazoDeEmissao.Dias => 36500,
+        UnidadeDoPrazoDeEmissao.Meses => 1200,
+        _ => 100,
+    };
 
     public DateOnly? DataMinimaDeEmissao(DateOnly dataDeReferencia) => Unidade switch
     {
