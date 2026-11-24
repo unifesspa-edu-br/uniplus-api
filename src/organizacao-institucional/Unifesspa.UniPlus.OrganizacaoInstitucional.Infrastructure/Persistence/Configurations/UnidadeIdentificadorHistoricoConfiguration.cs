@@ -3,9 +3,11 @@ namespace Unifesspa.UniPlus.OrganizacaoInstitucional.Infrastructure.Persistence.
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence.CodigosDeContrato;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Protecao;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.Entities;
+using Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.Enums;
 
 [System.Diagnostics.CodeAnalysis.SuppressMessage(
     "Performance",
@@ -14,13 +16,19 @@ using Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.Entities;
 internal sealed class UnidadeIdentificadorHistoricoConfiguration
     : IEntityTypeConfiguration<UnidadeIdentificadorHistorico>
 {
+    private const int TipoMaxLength = 40;
+
     public void Configure(EntityTypeBuilder<UnidadeIdentificadorHistorico> builder)
     {
         ArgumentNullException.ThrowIfNull(builder);
 
         builder.ClassificaPorPadrao(ClassificacaoDeProtecao.Interno);
 
-        builder.ToTable("identificadores_da_unidade");
+        builder.ToTable(
+            "identificadores_da_unidade",
+            t => t.HasCheckConstraint(
+                "ck_identificadores_da_unidade_tipo",
+                $"tipo IN ({SqlDosCodigosDeContrato.Lista<TipoIdentificador>()})"));
         builder.HasKey(h => h.Id);
 
         // EntityBase gera UUIDv7 no cliente. Sem explicitar isso, o EF trata
@@ -29,7 +37,11 @@ internal sealed class UnidadeIdentificadorHistoricoConfiguration
         builder.Property(h => h.Id).ValueGeneratedNever();
 
         builder.Property(h => h.UnidadeId).IsRequired();
-        builder.Property(h => h.TipoIdentificador).HasConversion<string>().HasMaxLength(20).IsRequired();
+        builder.Property(h => h.TipoIdentificador)
+            .HasColumnName("tipo")
+            .HasMaxLength(TipoMaxLength)
+            .HasComment("Tipo do identificador cujo histórico a linha registra. Códigos: IDENTIFICADOR_NO_ENDERECO_WEB, SIGLA, CODIGO, APELIDO.")
+            .IsRequired();
         builder.Property(h => h.Valor).HasMaxLength(100).IsRequired();
         builder.Property(h => h.VigenciaInicio).IsRequired();
         builder.Property(h => h.VigenciaFim);

@@ -42,7 +42,7 @@ public sealed class GravacaoDaUnidadeCorridaTests : IClassFixture<UnidadeDbFixtu
     }
 
     [Theory(DisplayName = "Criar com a conferência obsoleta devolve a recusa do identificador em uso e nada além da primeira é gravado")]
-    [InlineData(TipoIdentificador.Slug, UnidadeErrorCodes.SlugJaExiste)]
+    [InlineData(TipoIdentificador.IdentificadorNoEnderecoWeb, UnidadeErrorCodes.SlugJaExiste)]
     [InlineData(TipoIdentificador.Sigla, UnidadeErrorCodes.SiglaJaExiste)]
     [InlineData(TipoIdentificador.Codigo, UnidadeErrorCodes.CodigoJaExiste)]
     public async Task Criar_ConferenciaObsoleta_DevolveARecusaDoIdentificador(TipoIdentificador emUso, string codigoEsperado)
@@ -82,7 +82,7 @@ public sealed class GravacaoDaUnidadeCorridaTests : IClassFixture<UnidadeDbFixtu
         await _fixture.GravarAsync(Usuario, primeira);
 
         await using UniPlusDbContext ctx = _fixture.CreateDbContext(Usuario);
-        (await CriarComConferenciaObsoletaAsync(ctx, ComandoComIdentificadorDe(primeira, TipoIdentificador.Slug, "Segunda")))
+        (await CriarComConferenciaObsoletaAsync(ctx, ComandoComIdentificadorDe(primeira, TipoIdentificador.IdentificadorNoEnderecoWeb, "Segunda")))
             .IsFailure.Should().BeTrue();
 
         Func<Task> segundoSave = async () => await ctx.SaveChangesAsync();
@@ -125,7 +125,7 @@ public sealed class GravacaoDaUnidadeCorridaTests : IClassFixture<UnidadeDbFixtu
         return new CriarUnidadeCommand(
             nome,
             null,
-            emUso == TipoIdentificador.Slug ? existente.Slug.Valor : $"u-{sufixo}",
+            emUso == TipoIdentificador.IdentificadorNoEnderecoWeb ? existente.Slug.Valor : $"u-{sufixo}",
             emUso == TipoIdentificador.Sigla ? existente.Sigla : sufixo,
             emUso == TipoIdentificador.Codigo ? existente.Codigo : sufixo,
             null,

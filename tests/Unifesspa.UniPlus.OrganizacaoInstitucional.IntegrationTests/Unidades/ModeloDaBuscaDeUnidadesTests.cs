@@ -24,8 +24,8 @@ public sealed class ModeloDaBuscaDeUnidadesTests
         ["nome", nameof(Unidade.Nome), "NomeParaBusca", false],
         ["sigla", nameof(Unidade.Sigla), "SiglaParaBusca", false],
         ["codigo", nameof(Unidade.Codigo), "CodigoParaBusca", false],
-        ["slug", nameof(Unidade.Slug), "SlugParaBusca", false],
-        ["alias", nameof(Unidade.Alias), "AliasParaBusca", true],
+        ["identificador_no_endereco_web", nameof(Unidade.Slug), "IdentificadorNoEnderecoWebParaBusca", false],
+        ["apelido", nameof(Unidade.Alias), "ApelidoParaBusca", true],
     ];
 
     public static IEnumerable<object[]> Propriedades => Colunas.Select(linha => new[] { linha[0], linha[2] });

@@ -210,12 +210,12 @@ public sealed class Unidade : SoftDeletableEntity, IAuditableEntity
 
     private void AbrirHistoricoInicial()
     {
-        AbrirEntrada(TipoIdentificador.Slug, Slug.Valor, VigenciaInicio);
+        AbrirEntrada(TipoIdentificador.IdentificadorNoEnderecoWeb, Slug.Valor, VigenciaInicio);
         AbrirEntrada(TipoIdentificador.Sigla, Sigla, VigenciaInicio);
         AbrirEntrada(TipoIdentificador.Codigo, Codigo, VigenciaInicio);
         if (Alias is not null)
         {
-            AbrirEntrada(TipoIdentificador.Alias, Alias, VigenciaInicio);
+            AbrirEntrada(TipoIdentificador.Apelido, Alias, VigenciaInicio);
         }
     }
 
@@ -224,10 +224,10 @@ public sealed class Unidade : SoftDeletableEntity, IAuditableEntity
 
     private void RenomearIdentificadores(IdentificadoresNormalizados novos, DateOnly data, string? motivo)
     {
-        RenomearIdentificadorSeNecessario(TipoIdentificador.Slug, Slug.Valor, novos.Slug.Valor, data, motivo);
+        RenomearIdentificadorSeNecessario(TipoIdentificador.IdentificadorNoEnderecoWeb, Slug.Valor, novos.Slug.Valor, data, motivo);
         RenomearIdentificadorSeNecessario(TipoIdentificador.Sigla, Sigla, novos.Sigla, data, motivo);
         RenomearIdentificadorSeNecessario(TipoIdentificador.Codigo, Codigo, novos.Codigo, data, motivo);
-        RenomearIdentificadorSeNecessario(TipoIdentificador.Alias, Alias, novos.Alias, data, motivo);
+        RenomearIdentificadorSeNecessario(TipoIdentificador.Apelido, Alias, novos.Alias, data, motivo);
     }
 
     private void FecharEntradaAberta(TipoIdentificador tipo, DateOnly data) =>

@@ -22,8 +22,8 @@ internal sealed class UnidadeConfiguration : IEntityTypeConfiguration<Unidade>
     internal const string NomeParaBusca = "NomeParaBusca";
     internal const string SiglaParaBusca = "SiglaParaBusca";
     internal const string CodigoParaBusca = "CodigoParaBusca";
-    internal const string SlugParaBusca = "SlugParaBusca";
-    internal const string AliasParaBusca = "AliasParaBusca";
+    internal const string IdentificadorNoEnderecoWebParaBusca = "IdentificadorNoEnderecoWebParaBusca";
+    internal const string ApelidoParaBusca = "ApelidoParaBusca";
 
     private const int TipoMaxLength = 30;
 
@@ -47,10 +47,15 @@ internal sealed class UnidadeConfiguration : IEntityTypeConfiguration<Unidade>
         builder.HasKey(u => u.Id);
 
         builder.Property(u => u.Nome).HasMaxLength(250).IsRequired();
-        builder.Property(u => u.Alias).HasMaxLength(100);
+        builder.Property(u => u.Alias)
+            .HasColumnName("apelido")
+            .HasMaxLength(100)
+            .HasComment("Nome pelo qual a unidade também é conhecida; opcional e pode se repetir entre unidades.");
         builder.Property(u => u.Slug)
+            .HasColumnName("identificador_no_endereco_web")
             .HasConversion(new SlugValueConverter())
             .HasMaxLength(64)
+            .HasComment("Texto que identifica a unidade no endereço de página da web; único entre as unidades ativas.")
             .IsRequired();
         builder.Property(u => u.Sigla).HasMaxLength(50).IsRequired();
         builder.Property(u => u.Codigo).HasMaxLength(50).IsRequired();
@@ -124,9 +129,9 @@ internal sealed class UnidadeConfiguration : IEntityTypeConfiguration<Unidade>
             .HasFilter("is_deleted = false")
             .HasDatabaseName(RestricoesDoBanco.UnidadeCodigoVivo);
 
-        // Alias: índice não-único (para agrupamento/busca)
+        // Apelido: índice não-único (para agrupamento/busca)
         builder.HasIndex(u => u.Alias)
-            .HasDatabaseName("ix_unidades_alias");
+            .HasDatabaseName("ix_unidades_apelido");
 
         // Hierarquia: índice para busca de subordinadas
         builder.HasIndex(u => u.UnidadeSuperiorId)
@@ -144,10 +149,10 @@ internal sealed class UnidadeConfiguration : IEntityTypeConfiguration<Unidade>
         ColunaParaBusca(builder, NomeParaBusca, "nome", 250).IsRequired();
         ColunaParaBusca(builder, SiglaParaBusca, "sigla", 50).IsRequired();
         ColunaParaBusca(builder, CodigoParaBusca, "codigo", 50).IsRequired();
-        ColunaParaBusca(builder, SlugParaBusca, "slug", 64).IsRequired();
+        ColunaParaBusca(builder, IdentificadorNoEnderecoWebParaBusca, "identificador_no_endereco_web", 64).IsRequired();
 
-        // Sem alias a coluna é nula: a função da plataforma devolve nulo para entrada nula.
-        ColunaParaBusca(builder, AliasParaBusca, "alias", 100);
+        // Sem apelido a coluna é nula: a função da plataforma devolve nulo para entrada nula.
+        ColunaParaBusca(builder, ApelidoParaBusca, "apelido", 100);
     }
 
     private static PropertyBuilder<string?> ColunaParaBusca(

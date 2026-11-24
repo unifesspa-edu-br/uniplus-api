@@ -27,10 +27,11 @@ internal static class UnidadesDoFiltro
 
     /// <summary>
     /// Busca sem acento e sem caixa: o termo, já normalizado e com os curingas do <c>LIKE</c> escapados, é
-    /// comparado como texto contido com as formas normalizadas que o banco gera para nome, sigla, código, slug e
-    /// alias. Os dois lados seguem a mesma normalização da plataforma, e cada coluna tem o seu índice trigrama.
+    /// comparado como texto contido com as formas normalizadas que o banco gera para nome, sigla, código,
+    /// identificador no endereço web e apelido. Os dois lados seguem a mesma normalização da plataforma, e cada
+    /// coluna tem o seu índice trigrama.
     /// </summary>
-    /// <remarks>Alias ausente deixa a coluna nula, e o <c>ILIKE</c> sobre nulo não casa.</remarks>
+    /// <remarks>Apelido ausente deixa a coluna nula, e o <c>ILIKE</c> sobre nulo não casa.</remarks>
     private static IQueryable<Unidade> ComBusca(this IQueryable<Unidade> unidades, string termoPreparado)
     {
         string padrao = "%" + termoPreparado + "%";
@@ -38,8 +39,8 @@ internal static class UnidadesDoFiltro
             EF.Functions.ILike(EF.Property<string>(u, UnidadeConfiguration.NomeParaBusca), padrao, EscapeDoLike)
             || EF.Functions.ILike(EF.Property<string>(u, UnidadeConfiguration.SiglaParaBusca), padrao, EscapeDoLike)
             || EF.Functions.ILike(EF.Property<string>(u, UnidadeConfiguration.CodigoParaBusca), padrao, EscapeDoLike)
-            || EF.Functions.ILike(EF.Property<string>(u, UnidadeConfiguration.SlugParaBusca), padrao, EscapeDoLike)
-            || EF.Functions.ILike(EF.Property<string>(u, UnidadeConfiguration.AliasParaBusca), padrao, EscapeDoLike));
+            || EF.Functions.ILike(EF.Property<string>(u, UnidadeConfiguration.IdentificadorNoEnderecoWebParaBusca), padrao, EscapeDoLike)
+            || EF.Functions.ILike(EF.Property<string>(u, UnidadeConfiguration.ApelidoParaBusca), padrao, EscapeDoLike));
     }
 
     /// <summary>

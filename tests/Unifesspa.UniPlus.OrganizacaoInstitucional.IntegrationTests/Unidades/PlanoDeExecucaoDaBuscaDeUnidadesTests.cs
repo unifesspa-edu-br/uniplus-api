@@ -32,7 +32,7 @@ public sealed class PlanoDeExecucaoDaBuscaDeUnidadesTests : IClassFixture<Unidad
     private const int Volume = 5000;
     private const string TermoRaro = "raridade";
 
-    private static readonly string[] CamposPesquisaveis = ["nome", "sigla", "codigo", "slug", "alias"];
+    private static readonly string[] CamposPesquisaveis = ["nome", "sigla", "codigo", "identificador_no_endereco_web", "apelido"];
 
     private readonly UnidadeDbFixture _fixture;
 

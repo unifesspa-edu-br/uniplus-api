@@ -43,7 +43,7 @@ public sealed class UnidadeHistoricoDeIdentificadoresTests
 
         unidade.Historico.Should().HaveCount(3);
         unidade.Historico.Should().Contain(h =>
-            h.TipoIdentificador == TipoIdentificador.Slug && h.Valor == "ceps" && h.VigenciaFim == null);
+            h.TipoIdentificador == TipoIdentificador.IdentificadorNoEnderecoWeb && h.Valor == "ceps" && h.VigenciaFim == null);
         unidade.Historico.Should().Contain(h =>
             h.TipoIdentificador == TipoIdentificador.Sigla && h.Valor == "CEPS" && h.VigenciaFim == null);
         unidade.Historico.Should().Contain(h =>
@@ -57,7 +57,7 @@ public sealed class UnidadeHistoricoDeIdentificadoresTests
 
         unidade.Historico.Should().HaveCount(4);
         unidade.Historico.Should().Contain(h =>
-            h.TipoIdentificador == TipoIdentificador.Alias && h.Valor == "Centro Seletivos" && h.VigenciaFim == null);
+            h.TipoIdentificador == TipoIdentificador.Apelido && h.Valor == "Centro Seletivos" && h.VigenciaFim == null);
     }
 
     [Fact(DisplayName = "Atualizar com dados válidos altera campos e não toca histórico sem mudança de identificadores")]
@@ -100,7 +100,7 @@ public sealed class UnidadeHistoricoDeIdentificadoresTests
             new MudancaDeIdentificadores(new IdentificadoresDaUnidade("ceps-unifesspa", "CEPS", "0001", null), DataDaTroca, new string('m', 500) + "   "));
 
         resultado.IsSuccess.Should().BeTrue();
-        unidade.Historico.Single(h => h.TipoIdentificador == TipoIdentificador.Slug && h.VigenciaFim is null)
+        unidade.Historico.Single(h => h.TipoIdentificador == TipoIdentificador.IdentificadorNoEnderecoWeb && h.VigenciaFim is null)
             .MotivoMudanca.Should().HaveLength(500);
     }
 
@@ -116,7 +116,7 @@ public sealed class UnidadeHistoricoDeIdentificadoresTests
 
         resultado.IsSuccess.Should().BeTrue();
         unidade.Slug.Should().Be(novoSlug);
-        ConferirVigenciaTrocada(unidade, TipoIdentificador.Slug, "ceps", "ceps-unifesspa", DataDaTroca);
+        ConferirVigenciaTrocada(unidade, TipoIdentificador.IdentificadorNoEnderecoWeb, "ceps", "ceps-unifesspa", DataDaTroca);
     }
 
     [Fact(DisplayName = "Atualizar troca de Codigo só na caixa (ABC→abc) registra histórico")]

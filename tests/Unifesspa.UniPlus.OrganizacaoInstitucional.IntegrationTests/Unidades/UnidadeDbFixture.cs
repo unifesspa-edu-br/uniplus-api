@@ -19,7 +19,7 @@ using Unifesspa.UniPlus.OrganizacaoInstitucional.IntegrationTests.Infrastructure
 /// <remarks>
 /// Valida ponta-a-ponta:
 /// <list type="bullet">
-///   <item>UNIQUE parcial sobre slug/sigla/codigo (WHERE is_deleted = false).</item>
+///   <item>UNIQUE parcial sobre o identificador no endereço web, a sigla e o código (WHERE is_deleted = false).</item>
 ///   <item>Soft-delete via SoftDeleteInterceptor liberta o slot único.</item>
 ///   <item>Histórico de identificadores criado no Insert via EF.</item>
 ///   <item>Audit trail (created_by / updated_by) preenchido pelo AuditableInterceptor.</item>

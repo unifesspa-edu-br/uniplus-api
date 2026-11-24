@@ -6,6 +6,7 @@ using Microsoft.EntityFrameworkCore;
 
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.OrganizacaoInstitucional.Application.Persistence;
 using Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.Entities;
 using Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.Enums;
 using Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.ValueObjects;
@@ -16,7 +17,7 @@ using Unifesspa.UniPlus.OrganizacaoInstitucional.IntegrationTests.Infrastructure
 /// <summary>
 /// Integração ponta-a-ponta contra Postgres real. Cobre os
 /// cenários de persistência da <see cref="Unidade"/>:
-/// UNIQUE parcial slug/sigla/codigo, soft-delete liberando slot único,
+/// UNIQUE parcial do identificador no endereço web, da sigla e do código, soft-delete liberando slot único,
 /// histórico de identificadores, audit trail e FK hierárquica.
 /// </summary>
 public sealed class UnidadePersistenceTests : IClassFixture<UnidadeDbFixture>
@@ -60,7 +61,7 @@ public sealed class UnidadePersistenceTests : IClassFixture<UnidadeDbFixture>
             .SingleAsync(u => u.Id == unidade.Id);
         persistida.Historico.Should().HaveCount(3);
         persistida.Historico.Should().Contain(h =>
-            h.TipoIdentificador == TipoIdentificador.Slug && h.Valor == "insert-basico" && h.VigenciaFim == null);
+            h.TipoIdentificador == TipoIdentificador.IdentificadorNoEnderecoWeb && h.Valor == "insert-basico" && h.VigenciaFim == null);
         persistida.Historico.Should().Contain(h =>
             h.TipoIdentificador == TipoIdentificador.Sigla && h.Valor == "CEPS-INS" && h.VigenciaFim == null);
         persistida.Historico.Should().Contain(h =>
@@ -117,7 +118,7 @@ public sealed class UnidadePersistenceTests : IClassFixture<UnidadeDbFixture>
         await _fixture.GravarAsync(AdminA, primeira);
 
         Unidade segunda = NovaUnidade(new IdentificadoresDaUnidade("slug-unico", "SU02", "SUC002", null));
-        await ConferirQueADuplicataEhRecusadaAsync(segunda, "ix_unidades_slug_vivo");
+        await ConferirQueADuplicataEhRecusadaAsync(segunda, RestricoesDoBanco.UnidadeSlugVivo);
     }
 
     [Fact(DisplayName = "UNIQUE parcial (sigla) rejeita segunda Unidade ativa com mesma sigla")]
@@ -320,7 +321,7 @@ public sealed class UnidadePersistenceTests : IClassFixture<UnidadeDbFixture>
     {
         await using UniPlusDbContext readCtx = _fixture.CreateDbContext(userId: null);
         return await readCtx.UnidadesIdentificadoresHistorico
-            .Where(h => h.UnidadeId == unidadeId && h.TipoIdentificador == TipoIdentificador.Alias)
+            .Where(h => h.UnidadeId == unidadeId && h.TipoIdentificador == TipoIdentificador.Apelido)
             .OrderBy(h => h.VigenciaInicio)
             .ToListAsync();
     }
