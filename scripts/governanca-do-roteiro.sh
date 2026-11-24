@@ -66,7 +66,7 @@ pedido_de_representante() {
     local token="$1" id termo
     id=$(como "a lista dos pedidos" "$token" GET "/api/autorizacao/pedidos-de-concessao?fila=meus" \
         | jq -r --arg p "$PERFIL_REPRESENTANTE_ID" \
-            'first(.[] | select(.perfil.id == $p and (.situacao | test("^aguardando_")))) | .id // empty')
+            'first(.[] | select(.perfil.id == $p and (.situacao | test("^AGUARDANDO_")))) | .id // empty')
     if [ -z "$id" ]; then
         termo=$(como "a leitura do termo vigente" "$token" GET "/api/autorizacao/termos-de-responsabilidade/vigente" | jq -r '.id')
         id=$(como "o pedido de Representante do controlador" "$token" POST "/api/autorizacao/pedidos-de-concessao" \
@@ -87,7 +87,7 @@ anexar_designacao() {
         "/api/autorizacao/pedidos-de-concessao/$pedido/anexos/$(jq -r '.id' <<< "$envio")/confirmacao" \
         "$(jq -nc --arg e "$etag" '{etag: $e}')" >/dev/null
     while [ "$SECONDS" -lt "$fim" ]; do
-        [ "$(situacao_do_pedido "$pedido" "$token")" != aguardando_documento ] && return 0
+        [ "$(situacao_do_pedido "$pedido" "$token")" != AGUARDANDO_DOCUMENTO ] && return 0
         sleep 3
     done
     fail "o documento de designação do pedido $pedido não foi verificado em ${ESPERA_VERIFICACAO}s. Confira o serviço 'verificador'."
@@ -116,11 +116,11 @@ avancar_pedido() {
     for _ in 1 2 3 4 5; do
         situacao=$(situacao_do_pedido "$pedido" "$token")
         case "$situacao" in
-            aprovado) return 0 ;;
-            aguardando_documento) anexar_designacao "$pedido" "$token" ;;
-            aguardando_beneficiario) aceitar_termo_do_pedido "$pedido" "$token" ;;
-            aguardando_gestor) decidir_pedido "$pedido" "${LISTA_DE_GESTORES[0]}" "$SENHA_GESTORES" ;;
-            aguardando_protecao_de_dados) decidir_pedido "$pedido" "$(representante_que_decide "$pessoa")" "$SENHA_REPRESENTANTES" ;;
+            APROVADO) return 0 ;;
+            AGUARDANDO_DOCUMENTO) anexar_designacao "$pedido" "$token" ;;
+            AGUARDANDO_BENEFICIARIO) aceitar_termo_do_pedido "$pedido" "$token" ;;
+            AGUARDANDO_GESTOR) decidir_pedido "$pedido" "${LISTA_DE_GESTORES[0]}" "$SENHA_GESTORES" ;;
+            AGUARDANDO_PROTECAO_DE_DADOS) decidir_pedido "$pedido" "$(representante_que_decide "$pessoa")" "$SENHA_REPRESENTANTES" ;;
             *) fail "o pedido de Representante de $pessoa ficou em '$situacao'." ;;
         esac
     done

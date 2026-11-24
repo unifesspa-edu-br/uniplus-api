@@ -101,7 +101,7 @@ aguardar_documento_do_perfil() {
     local perfil="$1" token="$2" situacao="" fim=$((SECONDS + ESPERA_VERIFICACAO))
     while [ "$SECONDS" -lt "$fim" ]; do
         situacao=$(como "a leitura do perfil" "$token" GET "/api/autorizacao/perfis/$perfil" | jq -r '.versaoPendente.situacaoDoDocumento // empty')
-        [ "$situacao" = "verificado" ] && return 0
+        [ "$situacao" = "VERIFICADO" ] && return 0
         sleep 3
     done
     fail "o documento do perfil $perfil não foi verificado em ${ESPERA_VERIFICACAO}s (situação: '${situacao:-desconhecida}'). Confira o serviço 'verificador'."
@@ -132,16 +132,16 @@ aprovar_versao_do_perfil() {
     local etapa
     aguardar_documento_do_perfil "$1" "$(token_de "${LISTA_DE_GESTORES[0]}" "$SENHA_GESTORES")"
     etapa=$(etapa_pendente_do_perfil "$1")
-    if [ "$etapa" = gestao_de_acessos ]; then
+    if [ "$etapa" = GESTAO_DE_ACESSOS ]; then
         como "a aprovação da versão do perfil '$3' por ${LISTA_DE_GESTORES[1]}" "$(token_de "${LISTA_DE_GESTORES[1]}" "$SENHA_GESTORES")" POST \
-            "/api/autorizacao/perfis/$1/versoes/$2/aprovacao" '{"etapa": "gestao_de_acessos"}' >/dev/null
+            "/api/autorizacao/perfis/$1/versoes/$2/aprovacao" '{"etapa": "GESTAO_DE_ACESSOS"}' >/dev/null
         etapa=$(etapa_pendente_do_perfil "$1")
     fi
-    if [ "$etapa" = protecao_de_dados ]; then
+    if [ "$etapa" = PROTECAO_DE_DADOS ]; then
         [ "${#LISTA_DE_REPRESENTANTES[@]}" -gt 0 ] || fail "a versão do perfil '$3' espera a proteção de dados, e não há Representante do controlador designado."
         como "a aprovação da proteção de dados da versão do perfil '$3' por ${LISTA_DE_REPRESENTANTES[0]}" \
             "$(token_de "${LISTA_DE_REPRESENTANTES[0]}" "$SENHA_REPRESENTANTES")" POST \
-            "/api/autorizacao/perfis/$1/versoes/$2/aprovacao" '{"etapa": "protecao_de_dados"}' >/dev/null
+            "/api/autorizacao/perfis/$1/versoes/$2/aprovacao" '{"etapa": "PROTECAO_DE_DADOS"}' >/dev/null
     fi
 }
 
@@ -162,7 +162,7 @@ retomar_versao_pendente() {
     local pendente
     pendente=$(jq -c '.versaoPendente // empty' <<< "$3")
     case "$(jq -r '.situacaoDoDocumento // empty' <<< "$pendente")" in
-        em_verificacao | verificado) aprovar_versao_do_perfil "$1" "$(jq -r '.versaoId' <<< "$pendente")" "$2" ;;
+        EM_VERIFICACAO | VERIFICADO) aprovar_versao_do_perfil "$1" "$(jq -r '.versaoId' <<< "$pendente")" "$2" ;;
         *) fail "o perfil '$2' existe sem versão em vigor e sem documento enviado. Cancele a versão pendente na tela de perfis ou recrie a base." ;;
     esac
 }
@@ -219,7 +219,7 @@ pedir_e_aprovar() {
     gestor=$(gestor_que_decide)
     situacao=$(como "a aprovação do pedido do perfil '$nome' por $gestor" "$(token_de "$gestor" "$SENHA_GESTORES")" POST \
         "/api/autorizacao/pedidos-de-concessao/$pedido/aprovacoes" "" | jq -r '.situacao')
-    [ "$situacao" = "aprovado" ] || fail "o pedido $pedido do perfil '$nome' ficou em '$situacao', não em 'aprovado'."
+    [ "$situacao" = "APROVADO" ] || fail "o pedido $pedido do perfil '$nome' ficou em '$situacao', não em 'aprovado'."
 }
 
 # $1=nome do perfil $2=permissões (JSON) $3=unidade (vazio: instituição)

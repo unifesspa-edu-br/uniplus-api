@@ -65,7 +65,7 @@ pessoa_tem_perfil() {
 # $1=token $2=id do perfil $3=unidade (vazio: instituição)
 pedido_aberto_da_pessoa() {
     como "a lista dos pedidos da pessoa" "$1" GET "/api/autorizacao/pedidos-de-concessao?fila=meus" \
-        | jq -r --arg p "$2" --arg u "$3" 'first(.[] | select(.perfil.id == $p and (.situacao | test("^aguardando_"))
+        | jq -r --arg p "$2" --arg u "$3" 'first(.[] | select(.perfil.id == $p and (.situacao | test("^AGUARDANDO_"))
             and (if $u == "" then .escopo.unidadeId == null else .escopo.unidadeId == $u end))) | .id // empty'
 }
 
@@ -85,18 +85,18 @@ pedir_perfil() {
 avancar_pedido_de_perfil() {
     local pessoa="$1" token="$2" pedido="$3" situacao="$4" termo="$5" gestor g
     case "$situacao" in
-        aguardando_documento) anexar_designacao "$pedido" "$token" ;;
-        aguardando_beneficiario)
+        AGUARDANDO_DOCUMENTO) anexar_designacao "$pedido" "$token" ;;
+        AGUARDANDO_BENEFICIARIO)
             como "o aceite do termo" "$token" POST "/api/autorizacao/pedidos-de-concessao/$pedido/aceite" \
                 "$(jq -nc --arg t "$termo" '{termoVersaoApresentadaId: $t}')" >/dev/null ;;
-        aguardando_gestor)
+        AGUARDANDO_GESTOR)
             gestor=""
             for g in "${LISTA_DE_GESTORES[@]}"; do
                 [ "$g" != "$pessoa" ] && { gestor="$g"; break; }
             done
             como "a aprovação do gestor" "$(token_de "$gestor" "$SENHA_GESTORES")" POST \
                 "/api/autorizacao/pedidos-de-concessao/$pedido/aprovacoes" "" >/dev/null ;;
-        aguardando_protecao_de_dados)
+        AGUARDANDO_PROTECAO_DE_DADOS)
             como "a decisão do Representante" "$(token_de "$(representante_que_decide "$pessoa")" "$SENHA_REPRESENTANTES")" POST \
                 "/api/autorizacao/pedidos-de-concessao/$pedido/aprovacoes" "" >/dev/null ;;
         *) fail "o pedido de $pessoa ficou em '$situacao'." ;;
@@ -116,7 +116,7 @@ conceder_perfil() {
     [ -n "$pedido" ] || pedido=$(pedir_perfil "$token" "${PERFIL_ID[$nome]}" "$unidade" "$termo")
     for _ in 1 2 3 4 5 6; do
         situacao=$(como "a leitura do pedido" "$token" GET "/api/autorizacao/pedidos-de-concessao/$pedido" | jq -r '.situacao')
-        if [ "$situacao" = aprovado ]; then
+        if [ "$situacao" = APROVADO ]; then
             ok "$pessoa: '$nome' concedido"
             return 0
         fi
@@ -131,9 +131,9 @@ conceder_perfis_da_instituicao() {
     conceder_perfil "$ADMIN_USER" "Administração dos cadastros" ""
     conceder_perfil "$ADMIN_USER" "Organização institucional" ""
     conceder_perfil "$ADMIN_USER" "Publicações" ""
-    PERFIL_ID["Encarregado de dados"]=$(perfil_da_migration "Encarregado de dados")
-    exigir_id "o perfil Encarregado de dados" "${PERFIL_ID[Encarregado de dados]}"
-    conceder_perfil marlene.martins "Encarregado de dados" ""
+    PERFIL_ID["Gestor de proteção de dados"]=$(perfil_da_migration "Gestor de proteção de dados")
+    exigir_id "o perfil Gestor de proteção de dados" "${PERFIL_ID[Gestor de proteção de dados]}"
+    conceder_perfil marlene.martins "Gestor de proteção de dados" ""
 }
 
 # As concessões nas unidades. $1=unidade CEPS $2=unidade CRCA
