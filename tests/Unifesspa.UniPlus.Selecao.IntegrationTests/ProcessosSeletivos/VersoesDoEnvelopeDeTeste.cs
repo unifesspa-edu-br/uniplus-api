@@ -12,23 +12,23 @@ using Unifesspa.UniPlus.Selecao.IntegrationTests.TestSupport;
 
 /// <summary>
 /// As versões de configuração que os testes de recusa do codec entregam à reidratação: o envelope do
-/// corpus, a linha forense que o acompanha e as formas de desfazer a coerência entre os dois.
+/// exemplo, a linha forense que o acompanha e as formas de desfazer a coerência entre os dois.
 /// </summary>
 internal static class VersoesDoEnvelopeDeTeste
 {
     public static ProcessoSeletivo ProcessoPublicado()
     {
-        ProcessoSeletivo processo = CorpusEnvelopeProcessoRico.ProcessoRico(comBancasExigidasNaPublicacao: true);
-        CorpusEnvelopeEntrada.Publicar(processo);
+        ProcessoSeletivo processo = ExemploDeEnvelopeProcessoRico.ProcessoRico(comBancasExigidasNaPublicacao: true);
+        ExemploDeEnvelopeEntrada.Publicar(processo);
         return processo;
     }
 
-    public static byte[] BytesDoCorpus() =>
-        CorpusEnvelope.Canonicalizador.Canonicalizar(CorpusEnvelopeEntrada.Entrada(CorpusEnvelopeProcessoRico.ProcessoRico())).Bytes;
+    public static byte[] BytesDoExemplo() =>
+        ExemploDeEnvelope.Canonicalizador.Canonicalizar(ExemploDeEnvelopeEntrada.Entrada(ExemploDeEnvelopeProcessoRico.ProcessoRico())).Bytes;
 
     public static byte[] BytesComRetificacaoDe(Guid atoRetificadoId, string motivo) =>
-        CorpusEnvelope.Canonicalizador.Canonicalizar(CorpusEnvelopeEntrada.Entrada(
-            CorpusEnvelopeProcessoRico.ProcessoRico(),
+        ExemploDeEnvelope.Canonicalizador.Canonicalizar(ExemploDeEnvelopeEntrada.Entrada(
+            ExemploDeEnvelopeProcessoRico.ProcessoRico(),
             new RetificacaoDoEdital(atoRetificadoId, motivo))).Bytes;
 
     public static JsonObject EnvelopeDosBytes(byte[] bytes) =>
@@ -36,26 +36,26 @@ internal static class VersoesDoEnvelopeDeTeste
 
     public static (VersaoConfiguracao Versao, byte[] Bytes) VersaoRica()
     {
-        byte[] bytes = BytesDoCorpus();
-        return (CorpusEnvelopeEntrada.VersaoDeAbertura(ProcessoPublicado(), bytes), bytes);
+        byte[] bytes = BytesDoExemplo();
+        return (ExemploDeEnvelopeEntrada.VersaoDeAbertura(ProcessoPublicado(), bytes), bytes);
     }
 
     public static VersaoConfiguracao VersaoComSchema(string schemaVersion) =>
-        AbrirVersaoDoCorpus(schemaVersion, PerfilCanonicoV1.Instancia.Algoritmo, CorpusEnvelope.HashDocumento);
+        AbrirVersaoDoExemplo(schemaVersion, PerfilCanonicoV1.Instancia.Algoritmo, ExemploDeEnvelope.HashDocumento);
 
     public static VersaoConfiguracao VersaoComAlgoritmoDeHash(string algoritmoHash) =>
-        AbrirVersaoDoCorpus(SnapshotPublicacaoCanonicalizer.SchemaVersionAtual, algoritmoHash, CorpusEnvelope.HashDocumento);
+        AbrirVersaoDoExemplo(SnapshotPublicacaoCanonicalizer.SchemaVersionAtual, algoritmoHash, ExemploDeEnvelope.HashDocumento);
 
     public static VersaoConfiguracao VersaoComHashDoAtoCriador(string atoCriadorHash) =>
-        AbrirVersaoDoCorpus(SnapshotPublicacaoCanonicalizer.SchemaVersionAtual, PerfilCanonicoV1.Instancia.Algoritmo, atoCriadorHash);
+        AbrirVersaoDoExemplo(SnapshotPublicacaoCanonicalizer.SchemaVersionAtual, PerfilCanonicoV1.Instancia.Algoritmo, atoCriadorHash);
 
     public static Result<EnvelopeReidratado> ReidratarComoAbertura(byte[] bytes) =>
-        CorpusEnvelope.Registro.Reidratar(CorpusEnvelopeEntrada.VersaoDeAbertura(ProcessoPublicado(), bytes));
+        ExemploDeEnvelope.Registro.Reidratar(ExemploDeEnvelopeEntrada.VersaoDeAbertura(ProcessoPublicado(), bytes));
 
     public static Result<EnvelopeReidratado> ReidratarComoSucessora(byte[] abertura, byte[] sucessora)
     {
-        VersaoConfiguracao v1 = CorpusEnvelopeEntrada.VersaoDeAbertura(ProcessoPublicado(), abertura);
-        return CorpusEnvelope.Registro.Reidratar(CorpusEnvelopeEntrada.VersaoDeRetificacao(v1, sucessora));
+        VersaoConfiguracao v1 = ExemploDeEnvelopeEntrada.VersaoDeAbertura(ProcessoPublicado(), abertura);
+        return ExemploDeEnvelope.Registro.Reidratar(ExemploDeEnvelopeEntrada.VersaoDeRetificacao(v1, sucessora));
     }
 
     /// <summary>
@@ -79,8 +79,8 @@ internal static class VersoesDoEnvelopeDeTeste
         return comprometida;
     }
 
-    private static VersaoConfiguracao AbrirVersaoDoCorpus(string schemaVersion, string algoritmoHash, string atoCriadorHash) =>
+    private static VersaoConfiguracao AbrirVersaoDoExemplo(string schemaVersion, string algoritmoHash, string atoCriadorHash) =>
         VersaoConfiguracao.Abrir(
-            ProcessoPublicado().Id, new DocumentoCongelado(BytesDoCorpus(), schemaVersion, algoritmoHash, atoCriadorHash),
-            atoCriadorId: CorpusEnvelope.AtoAbertura, atorUsuarioContaId: CorpusEnvelope.Ator, instante: DateTimeOffset.UnixEpoch);
+            ProcessoPublicado().Id, new DocumentoCongelado(BytesDoExemplo(), schemaVersion, algoritmoHash, atoCriadorHash),
+            atoCriadorId: ExemploDeEnvelope.AtoAbertura, atorUsuarioContaId: ExemploDeEnvelope.Ator, instante: DateTimeOffset.UnixEpoch);
 }

@@ -33,7 +33,7 @@ public sealed class EnvelopeCodecTiposDeDecisaoTests
     [Fact(DisplayName = "A fase escreve os tipos de decisão em ordem alfabética")]
     public void Fase_EscreveOsTiposEmOrdemAlfabetica()
     {
-        ProcessoSeletivo processo = CorpusEnvelopeProcessoRico.ProcessoRico(
+        ProcessoSeletivo processo = ExemploDeEnvelopeProcessoRico.ProcessoRico(
             tiposDeDecisaoDaFaseFinal: [IsencaoDaTaxa, Classificacao, AnaliseDocumental]);
 
         JsonObject envelope = Envelope(Codificar(processo));
@@ -44,7 +44,7 @@ public sealed class EnvelopeCodecTiposDeDecisaoTests
     [Fact(DisplayName = "A etapa escreve os tipos de decisão em ordem alfabética")]
     public void Etapa_EscreveOsTiposEmOrdemAlfabetica()
     {
-        ProcessoSeletivo processo = CorpusEnvelopeProcessoRico.ProcessoRico();
+        ProcessoSeletivo processo = ExemploDeEnvelopeProcessoRico.ProcessoRico();
         ProvaObjetivaDe(processo).DefinirTiposDeDecisao([IsencaoDaTaxa, Classificacao, AnaliseDocumental]).IsSuccess.Should().BeTrue();
 
         JsonObject envelope = Envelope(Codificar(processo));
@@ -57,7 +57,7 @@ public sealed class EnvelopeCodecTiposDeDecisaoTests
     [Fact(DisplayName = "Sem tipos declarados, a fase e a etapa escrevem a chave com a lista vazia")]
     public void SemTipos_EscreveAChaveVazia()
     {
-        JsonObject envelope = Envelope(Codificar(CorpusEnvelopeProcessoRico.ProcessoRico()));
+        JsonObject envelope = Envelope(Codificar(ExemploDeEnvelopeProcessoRico.ProcessoRico()));
 
         JsonNode fase = envelope["cronogramaFases"]!["fases"]!.AsArray().Single(static fase => fase!["codigo"]!.GetValue<string>() == "INSCRICAO")!;
         JsonNode etapa = envelope["etapas"]!.AsArray().Single(static etapa => etapa!["nome"]!.GetValue<string>() == "Prova Objetiva")!;
@@ -71,8 +71,8 @@ public sealed class EnvelopeCodecTiposDeDecisaoTests
     [Fact(DisplayName = "Declarar os mesmos tipos de decisão da fase em outra ordem produz os mesmos bytes e o mesmo hash")]
     public void Fase_MesmosTiposEmOutraOrdem_MesmosBytesEHash()
     {
-        SnapshotCanonico alfabetica = Codificar(CorpusEnvelopeProcessoRico.ProcessoRico(tiposDeDecisaoDaFaseFinal: [AnaliseDocumental, Classificacao]));
-        SnapshotCanonico invertida = Codificar(CorpusEnvelopeProcessoRico.ProcessoRico(tiposDeDecisaoDaFaseFinal: [Classificacao, AnaliseDocumental]));
+        SnapshotCanonico alfabetica = Codificar(ExemploDeEnvelopeProcessoRico.ProcessoRico(tiposDeDecisaoDaFaseFinal: [AnaliseDocumental, Classificacao]));
+        SnapshotCanonico invertida = Codificar(ExemploDeEnvelopeProcessoRico.ProcessoRico(tiposDeDecisaoDaFaseFinal: [Classificacao, AnaliseDocumental]));
 
         invertida.Bytes.Should().Equal(alfabetica.Bytes);
         HashCanonicalComputer.ComputeSha256Hex(invertida.Bytes).Should().Be(HashCanonicalComputer.ComputeSha256Hex(alfabetica.Bytes));
@@ -81,8 +81,8 @@ public sealed class EnvelopeCodecTiposDeDecisaoTests
     [Fact(DisplayName = "Declarar os mesmos tipos de decisão da etapa em outra ordem produz os mesmos bytes")]
     public void Etapa_MesmosTiposEmOutraOrdem_MesmosBytes()
     {
-        ProcessoSeletivo alfabetica = CorpusEnvelopeProcessoRico.ProcessoRico();
-        ProcessoSeletivo invertida = CorpusEnvelopeProcessoRico.ProcessoRico();
+        ProcessoSeletivo alfabetica = ExemploDeEnvelopeProcessoRico.ProcessoRico();
+        ProcessoSeletivo invertida = ExemploDeEnvelopeProcessoRico.ProcessoRico();
         ProvaObjetivaDe(alfabetica).DefinirTiposDeDecisao([AnaliseDocumental, Classificacao]).IsSuccess.Should().BeTrue();
         ProvaObjetivaDe(invertida).DefinirTiposDeDecisao([Classificacao, AnaliseDocumental]).IsSuccess.Should().BeTrue();
 
@@ -92,11 +92,11 @@ public sealed class EnvelopeCodecTiposDeDecisaoTests
     [Fact(DisplayName = "Ida e volta do envelope com tipos de decisão reproduz os bytes e o hash congelados")]
     public void IdaEVolta_ComTipos_ReproduzBytesEHash()
     {
-        ProcessoSeletivo processo = CorpusEnvelopeProcessoRico.ProcessoRico(tiposDeDecisaoDaFaseFinal: [Classificacao, IsencaoDaTaxa], comBancasExigidasNaPublicacao: true);
+        ProcessoSeletivo processo = ExemploDeEnvelopeProcessoRico.ProcessoRico(tiposDeDecisaoDaFaseFinal: [Classificacao, IsencaoDaTaxa], comBancasExigidasNaPublicacao: true);
         ProvaObjetivaDe(processo).DefinirTiposDeDecisao([Classificacao]).IsSuccess.Should().BeTrue();
         SnapshotCanonico congelado = Codificar(processo);
-        CorpusEnvelopeEntrada.Publicar(processo);
-        VersaoConfiguracao versao = CorpusEnvelopeEntrada.VersaoDeAbertura(processo, congelado.Bytes);
+        ExemploDeEnvelopeEntrada.Publicar(processo);
+        VersaoConfiguracao versao = ExemploDeEnvelopeEntrada.VersaoDeAbertura(processo, congelado.Bytes);
 
         AssertSerializacaoEReidratacao(processo, versao, congelado);
 
@@ -175,7 +175,7 @@ public sealed class EnvelopeCodecTiposDeDecisaoTests
     }
 
     private static SnapshotCanonico Codificar(ProcessoSeletivo processo) =>
-        CorpusEnvelope.Canonicalizador.Canonicalizar(CorpusEnvelopeEntrada.Entrada(processo));
+        ExemploDeEnvelope.Canonicalizador.Canonicalizar(ExemploDeEnvelopeEntrada.Entrada(processo));
 
     private static EtapaProcesso ProvaObjetivaDe(ProcessoSeletivo processo) =>
         processo.Etapas.Single(static etapa => etapa.Nome == "Prova Objetiva");

@@ -45,7 +45,7 @@ using static Unifesspa.UniPlus.Selecao.IntegrationTests.Outbox.Cascading.Payload
 internal static class ItensDoChecklistDoEnvelopeFechado
 {
     /// <summary>
-    /// O conjunto exato de itens que este corpus produz: remover um item do checklist, ou
+    /// O conjunto exato de itens que este exemplo produz: remover um item do checklist, ou
     /// acrescentar um item indevido marcado ok, muda este conjunto.
     /// </summary>
     internal static readonly string[] ItensEsperadosDoChecklist =

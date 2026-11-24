@@ -52,7 +52,7 @@ public sealed class CascatasDasVersoesPersistidasTests(ProcessoSeletivoDbFixture
 
     private async Task<(VersaoConfiguracao Abertura, VersaoConfiguracao Sucessora)> PersistirVersoesAsync(int variante)
     {
-        ProcessoSeletivo processo = CorpusEnvelopeProcessoRico.ProcessoRico(variante);
+        ProcessoSeletivo processo = ExemploDeEnvelopeProcessoRico.ProcessoRico(variante);
         VersaoConfiguracao abertura = VersaoConfiguracao.Abrir(processo.Id, Congelar(processo), Guid.CreateVersion7(), "teste", Inicio);
         processo.DefinirCascataRemanejamento(CascataCurta(processo.Cascata!)).IsSuccess.Should().BeTrue();
         VersaoConfiguracao sucessora = VersaoConfiguracao.Suceder(abertura,
@@ -66,8 +66,8 @@ public sealed class CascatasDasVersoesPersistidasTests(ProcessoSeletivoDbFixture
 
     private static DocumentoCongelado Congelar(ProcessoSeletivo processo, RetificacaoDoEdital? retificacao = null)
     {
-        Unifesspa.UniPlus.Selecao.Application.Abstractions.SnapshotCanonico snapshot = CorpusEnvelope.Canonicalizador.Canonicalizar(CorpusEnvelopeEntrada.Entrada(processo, retificacao));
-        return new DocumentoCongelado(snapshot.Bytes, snapshot.SchemaVersion, snapshot.AlgoritmoHash, CorpusEnvelope.HashDocumento);
+        Unifesspa.UniPlus.Selecao.Application.Abstractions.SnapshotCanonico snapshot = ExemploDeEnvelope.Canonicalizador.Canonicalizar(ExemploDeEnvelopeEntrada.Entrada(processo, retificacao));
+        return new DocumentoCongelado(snapshot.Bytes, snapshot.SchemaVersion, snapshot.AlgoritmoHash, ExemploDeEnvelope.HashDocumento);
     }
 
     private static ConfiguracaoCascataRemanejamento CascataCurta(ConfiguracaoCascataRemanejamento original) =>

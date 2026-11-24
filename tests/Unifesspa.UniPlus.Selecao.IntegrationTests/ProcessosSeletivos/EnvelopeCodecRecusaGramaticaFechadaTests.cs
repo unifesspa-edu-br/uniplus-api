@@ -124,11 +124,11 @@ public sealed class EnvelopeCodecRecusaGramaticaFechadaTests
     [Fact(DisplayName = "Chave desconhecida DENTRO do 18º bloco (retificacao) é recusada")]
     public void ChaveDesconhecidaNaRetificacao_Recusa()
     {
-        JsonObject envelope = EnvelopeDosBytes(BytesComRetificacaoDe(CorpusEnvelope.AtoAbertura, "motivo"));
+        JsonObject envelope = EnvelopeDosBytes(BytesComRetificacaoDe(ExemploDeEnvelope.AtoAbertura, "motivo"));
         envelope["retificacao"]!.AsObject()["chaveIntrusa"] = "x";
 
         byte[] retificada = PerfilCanonicoV1.Instancia.Serializar(envelope);
-        Result<EnvelopeReidratado> resultado = ReidratarComoSucessora(BytesDoCorpus(), retificada);
+        Result<EnvelopeReidratado> resultado = ReidratarComoSucessora(BytesDoExemplo(), retificada);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be(ErrosCodecEnvelope.EnvelopeMalformado);

@@ -19,13 +19,13 @@ public sealed class EnvelopeLidoOrdemEIdentidadeTests
     [Fact]
     public void Reidratar_OrdemDeConteudoOpostaAosIds_ConservaASequencia()
     {
-        ProcessoSeletivo processo = CorpusEnvelopeProcessoRico.ProcessoRico();
+        ProcessoSeletivo processo = ExemploDeEnvelopeProcessoRico.ProcessoRico();
         RegraAvaliada primeira = Regra("REGRA-A", "aaaaaaaa-0000-7000-8000-000000000099", "https://example.org/ato");
         RegraAvaliada segunda = Regra("REGRA-B", "aaaaaaaa-0000-7000-8000-000000000001", null);
         primeira.RegraId.CompareTo(segunda.RegraId).Should().BePositive();
         ResultadoConformidade conformidade = new([segunda, primeira], []);
-        SnapshotCanonico congelado = CorpusEnvelope.Canonicalizador.Canonicalizar(CorpusEnvelopeEntrada.Entrada(processo, conformidade: conformidade));
-        EnvelopeReidratado lido = FidelidadeDoEnvelopeDeTeste.Conferir(processo, CorpusEnvelopeEntrada.VersaoDeAbertura(processo, congelado.Bytes), congelado);
+        SnapshotCanonico congelado = ExemploDeEnvelope.Canonicalizador.Canonicalizar(ExemploDeEnvelopeEntrada.Entrada(processo, conformidade: conformidade));
+        EnvelopeReidratado lido = FidelidadeDoEnvelopeDeTeste.Conferir(processo, ExemploDeEnvelopeEntrada.VersaoDeAbertura(processo, congelado.Bytes), congelado);
         ApoioDoEnvelopeCodec.Envelope(congelado)["documentosExigidos"]!["obrigatoriedades"]!.AsArray()
             .Select(r => r!["regraCodigo"]!.GetValue<string>()).Should().Equal("REGRA-A", "REGRA-B");
         lido.Conformidade!.Regras.Select(r => r.RegraCodigo).Should().Equal("REGRA-A", "REGRA-B");
@@ -34,9 +34,9 @@ public sealed class EnvelopeLidoOrdemEIdentidadeTests
     [Fact]
     public void Reidratar_Etapas_ConservaOsIdsDoJson()
     {
-        ProcessoSeletivo processo = CorpusEnvelopeProcessoRico.ProcessoRico();
-        SnapshotCanonico congelado = CorpusEnvelope.Canonicalizador.Canonicalizar(CorpusEnvelopeEntrada.Entrada(processo));
-        EnvelopeReidratado lido = FidelidadeDoEnvelopeDeTeste.Conferir(processo, CorpusEnvelopeEntrada.VersaoDeAbertura(processo, congelado.Bytes), congelado);
+        ProcessoSeletivo processo = ExemploDeEnvelopeProcessoRico.ProcessoRico();
+        SnapshotCanonico congelado = ExemploDeEnvelope.Canonicalizador.Canonicalizar(ExemploDeEnvelopeEntrada.Entrada(processo));
+        EnvelopeReidratado lido = FidelidadeDoEnvelopeDeTeste.Conferir(processo, ExemploDeEnvelopeEntrada.VersaoDeAbertura(processo, congelado.Bytes), congelado);
         lido.Configuracao.Avaliacao.Etapas.Select(e => e.Id).Should().Equal(ApoioDoEnvelopeCodec.Envelope(congelado)["etapas"]!.AsArray()
             .Select(e => Guid.Parse(e!["id"]!.GetValue<string>(), CultureInfo.InvariantCulture)));
     }
@@ -44,7 +44,7 @@ public sealed class EnvelopeLidoOrdemEIdentidadeTests
     [Fact]
     public void Reidratar_IdsDasEtapasTrocados_RecusaAsReferenciasOrfas()
     {
-        ProcessoSeletivo processo = CorpusEnvelopeProcessoRico.ProcessoRico();
+        ProcessoSeletivo processo = ExemploDeEnvelopeProcessoRico.ProcessoRico();
         Result<EnvelopeReidratado> resultado = ReidratarComIdsNovos(processo);
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
         ProcessoSeletivo candidato = ProcessoSeletivo.Criar(processo.Nome, processo.TipoProcesso, processo.OrigemCandidatos,
@@ -67,7 +67,7 @@ public sealed class EnvelopeLidoOrdemEIdentidadeTests
 
     private static Result<EnvelopeReidratado> ReidratarComIdsNovos(ProcessoSeletivo processo)
     {
-        byte[] bytes = CorpusEnvelope.Canonicalizador.Canonicalizar(CorpusEnvelopeEntrada.Entrada(processo)).Bytes;
+        byte[] bytes = ExemploDeEnvelope.Canonicalizador.Canonicalizar(ExemploDeEnvelopeEntrada.Entrada(processo)).Bytes;
         JsonObject alterado = VersoesDoEnvelopeDeTeste.EnvelopeDosBytes(bytes);
         foreach (JsonNode? etapa in alterado["etapas"]!.AsArray())
         {

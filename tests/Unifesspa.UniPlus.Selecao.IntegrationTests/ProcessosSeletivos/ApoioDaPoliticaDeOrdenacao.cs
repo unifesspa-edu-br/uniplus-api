@@ -47,7 +47,7 @@ internal static class ApoioDaPoliticaDeOrdenacao
     /// <summary>
     /// Um Guid com só o último dígito hexadecimal variando por <paramref name="sufixo"/> — as
     /// demais posições fixas garantem que <see cref="Guid.CompareTo(Guid)"/> segue a ordem numérica
-    /// intuitiva do sufixo (mesmo padrão de <c>CorpusEnvelope.EtapaId</c>).
+    /// intuitiva do sufixo (mesmo padrão de <c>ExemploDeEnvelope.EtapaId</c>).
     /// </summary>
     internal static Guid IdFixo(int sufixo) => new($"a0000000-0000-4000-8000-00000000000{sufixo:x}");
 

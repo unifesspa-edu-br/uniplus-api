@@ -34,9 +34,9 @@ internal static class ApoioDoEnvelopeCodecTipos
 
     internal static Result<EnvelopeReidratado> Reidratar(Action<JsonObject> adulterar)
     {
-        ProcessoSeletivo processo = CorpusEnvelopeProcessoRico.ProcessoRico(comBancasExigidasNaPublicacao: true);
-        byte[] originais = CorpusEnvelope.Canonicalizador.Canonicalizar(CorpusEnvelopeEntrada.Entrada(processo)).Bytes;
-        CorpusEnvelopeEntrada.Publicar(processo);
+        ProcessoSeletivo processo = ExemploDeEnvelopeProcessoRico.ProcessoRico(comBancasExigidasNaPublicacao: true);
+        byte[] originais = ExemploDeEnvelope.Canonicalizador.Canonicalizar(ExemploDeEnvelopeEntrada.Entrada(processo)).Bytes;
+        ExemploDeEnvelopeEntrada.Publicar(processo);
 
         JsonObject envelope = JsonNode.Parse(Encoding.UTF8.GetString(originais))!.AsObject();
         adulterar(envelope);
@@ -44,7 +44,7 @@ internal static class ApoioDoEnvelopeCodecTipos
         byte[] adulterados = PerfilCanonicoV1.Instancia.Serializar(envelope);
         adulterados.Should().NotEqual(originais, "pré-condição: a adulteração tem de mudar os bytes");
 
-        VersaoConfiguracao versao = CorpusEnvelopeEntrada.VersaoDeAbertura(processo, adulterados);
-        return CorpusEnvelope.Registro.Reidratar(versao);
+        VersaoConfiguracao versao = ExemploDeEnvelopeEntrada.VersaoDeAbertura(processo, adulterados);
+        return ExemploDeEnvelope.Registro.Reidratar(versao);
     }
 }

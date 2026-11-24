@@ -26,7 +26,7 @@ public sealed class FormaAceiteNoEnvelopeTests
     {
         byte[] esperado = File.ReadAllBytes(Path.Join(
             Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location)!, "ProcessosSeletivos", "Fixtures", "envelope-rico.json"));
-        byte[] atual = CorpusEnvelope.Canonicalizador.Canonicalizar(CorpusEnvelopeEntrada.Entrada(CorpusEnvelopeProcessoRico.ProcessoRico())).Bytes;
+        byte[] atual = ExemploDeEnvelope.Canonicalizador.Canonicalizar(ExemploDeEnvelopeEntrada.Entrada(ExemploDeEnvelopeProcessoRico.ProcessoRico())).Bytes;
 
         atual.Should().Equal(esperado);
     }

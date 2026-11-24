@@ -18,17 +18,17 @@ public sealed class BancasCarregadasForaDeOrdemTests
 
     private static (ProcessoSeletivo NaOrdemDeChegada, ProcessoSeletivo ForaDeOrdem) DoisProcessos()
     {
-        ProcessoSeletivo naOrdemDeChegada = CorpusEnvelopeProcessoRico.ProcessoRico(permutar: false);
-        ProcessoSeletivo foraDeOrdem = CorpusEnvelopeProcessoRico.ProcessoRico(permutar: true);
+        ProcessoSeletivo naOrdemDeChegada = ExemploDeEnvelopeProcessoRico.ProcessoRico(permutar: false);
+        ProcessoSeletivo foraDeOrdem = ExemploDeEnvelopeProcessoRico.ProcessoRico(permutar: true);
 
-        CorpusEnvelopeCronograma.BancasRequeridasDaFaseDeRecurso(permutar: false).Select(static b => b.Id).Should().NotEqual(
-            CorpusEnvelopeCronograma.BancasRequeridasDaFaseDeRecurso(permutar: true).Select(static b => b.Id),
+        ExemploDeEnvelopeCronograma.BancasRequeridasDaFaseDeRecurso(permutar: false).Select(static b => b.Id).Should().NotEqual(
+            ExemploDeEnvelopeCronograma.BancasRequeridasDaFaseDeRecurso(permutar: true).Select(static b => b.Id),
             "pré-condição: o segundo processo recebe as bancas requeridas da fase em outra ordem");
         return (naOrdemDeChegada, foraDeOrdem);
     }
 
     private static byte[] Congelado(ProcessoSeletivo processo) =>
-        CorpusEnvelope.Canonicalizador.Canonicalizar(CorpusEnvelopeEntrada.Entrada(processo)).Bytes;
+        ExemploDeEnvelope.Canonicalizador.Canonicalizar(ExemploDeEnvelopeEntrada.Entrada(processo)).Bytes;
 
     [Fact(DisplayName = "A fase projeta as bancas requeridas na mesma ordem, qualquer que seja a ordem em que foram carregadas")]
     public void ProjetarFase_BancasRequeridasForaDeOrdem_ProjetaNaMesmaOrdem()

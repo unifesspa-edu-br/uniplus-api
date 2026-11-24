@@ -16,15 +16,15 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Canonicalization;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
-using static Unifesspa.UniPlus.Selecao.IntegrationTests.ProcessosSeletivos.CorpusEnvelope;
-using static Unifesspa.UniPlus.Selecao.IntegrationTests.ProcessosSeletivos.CorpusEnvelopeCronograma;
-using static Unifesspa.UniPlus.Selecao.IntegrationTests.ProcessosSeletivos.CorpusEnvelopeDadosDoEdital;
-using static Unifesspa.UniPlus.Selecao.IntegrationTests.ProcessosSeletivos.CorpusEnvelopeDocumentos;
-using static Unifesspa.UniPlus.Selecao.IntegrationTests.ProcessosSeletivos.CorpusEnvelopeEntrada;
-using static Unifesspa.UniPlus.Selecao.IntegrationTests.ProcessosSeletivos.CorpusEnvelopeEtapas;
-using static Unifesspa.UniPlus.Selecao.IntegrationTests.ProcessosSeletivos.CorpusEnvelopeVagas;
+using static Unifesspa.UniPlus.Selecao.IntegrationTests.ProcessosSeletivos.ExemploDeEnvelope;
+using static Unifesspa.UniPlus.Selecao.IntegrationTests.ProcessosSeletivos.ExemploDeEnvelopeCronograma;
+using static Unifesspa.UniPlus.Selecao.IntegrationTests.ProcessosSeletivos.ExemploDeEnvelopeDadosDoEdital;
+using static Unifesspa.UniPlus.Selecao.IntegrationTests.ProcessosSeletivos.ExemploDeEnvelopeDocumentos;
+using static Unifesspa.UniPlus.Selecao.IntegrationTests.ProcessosSeletivos.ExemploDeEnvelopeEntrada;
+using static Unifesspa.UniPlus.Selecao.IntegrationTests.ProcessosSeletivos.ExemploDeEnvelopeEtapas;
+using static Unifesspa.UniPlus.Selecao.IntegrationTests.ProcessosSeletivos.ExemploDeEnvelopeVagas;
 
-internal static class CorpusEnvelopeProcessoRico
+internal static class ExemploDeEnvelopeProcessoRico
 {
     /// <summary>
     /// O agregado mais rico que o modelo permite: três etapas (uma de cada caráter),
@@ -36,7 +36,7 @@ internal static class CorpusEnvelopeProcessoRico
     /// <remarks>
     /// A multiplicidade é deliberada: um decoder que indexasse as regras <b>por código</b>
     /// — em vez de acumulá-las numa lista — perderia a segunda <c>ELIM-NOTA-MINIMA-ETAPA</c>
-    /// e o segundo <c>DESEMPATE-MAIOR-NOTA-ETAPA</c> em silêncio. Um corpus com “uma de
+    /// e o segundo <c>DESEMPATE-MAIOR-NOTA-ETAPA</c> em silêncio. Um exemplo com “uma de
     /// cada variante” não pegaria isso.
     /// </remarks>
     /// <param name="variante">Ver <see cref="EtapaId"/> — só distingue processos no mesmo Postgres entre testes de persistência.</param>
@@ -44,17 +44,17 @@ internal static class CorpusEnvelopeProcessoRico
     /// <param name="comRegrasDeComprovacao">
     /// Acrescenta as regras de comprovação dos documentos exigidos. É opcional porque os arquivos de
     /// referência do envelope rico (<c>envelope-rico.json</c>) e os testes de ida e volta esperam o
-    /// corpus sem ela: incluí-la sempre alteraria o envelope de todos os testes que usam <see cref="ProcessoRico"/>.
+    /// exemplo sem ela: incluí-la sempre alteraria o envelope de todos os testes que usam <see cref="ProcessoRico"/>.
     /// </param>
     /// <param name="tiposDeDecisaoDaFaseFinal">Os tipos de decisão que a fase de resultado final declara; ausentes por padrão.</param>
-    /// <param name="regraDeHomologacao">A regra de homologação das inscrições da fase de resultado preliminar; a do corpus quando ausente.</param>
+    /// <param name="regraDeHomologacao">A regra de homologação das inscrições da fase de resultado preliminar; a do exemplo quando ausente.</param>
     /// <param name="comBancasExigidasNaPublicacao">
     /// Opt-in: acrescenta a banca de homologação das inscrições e a de 2ª instância, sem as quais a publicação recusa o processo. Fica fora por padrão
-    /// porque a golden fixture (<c>envelope-rico.json</c>) congela as bancas de hoje do corpus; só os testes que publicam o processo a pedem.
+    /// porque a golden fixture (<c>envelope-rico.json</c>) congela as bancas de hoje do exemplo; só os testes que publicam o processo a pedem.
     /// </param>
     internal static ProcessoSeletivo ProcessoRico(
         int variante = 0, bool permutar = false, bool comRegrasDeComprovacao = false, IReadOnlyList<string?>? tiposDeDecisaoDaFaseFinal = null,
-        int vagasOfertadasBaseDaLeiDeCotas = VagasOfertadasBaseDaLeiDeCotasDoCorpus, RegraDeHomologacaoDasInscricoes? regraDeHomologacao = null,
+        int vagasOfertadasBaseDaLeiDeCotas = VagasOfertadasBaseDaLeiDeCotasDoExemplo, RegraDeHomologacaoDasInscricoes? regraDeHomologacao = null,
         bool comBancasExigidasNaPublicacao = false)
     {
         ProcessoSeletivo processo = NovoProcessoRico(variante);
@@ -68,29 +68,29 @@ internal static class CorpusEnvelopeProcessoRico
 
     // SiSU é baseado em ENEM — é o que admite ELIM-CORTE-REDACAO e ELIM-ZERO-EM-AREA.
     // O identificador é determinístico, como os ids das etapas: ele entra no envelope e a golden
-    // congela os bytes. A variante o mantém único entre os testes que persistem o corpus.
+    // congela os bytes. A variante o mantém único entre os testes que persistem o exemplo.
     internal static ProcessoSeletivo NovoProcessoRico(int variante)
     {
         ProcessoSeletivo processo = ProcessoSeletivo.Criar(
             "PS Rico 2026", TiposDeProcessoDeTeste.SiSU, OrigemCandidatos.InscricaoPropria, UnidadeAdministradora,
-            UnidadeAdministradoraDoCorpus(),
+            UnidadeAdministradoraDoExemplo(),
             LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!,
             identificadorLegivel: IdentificadorLegivel.Criar($"ps-rico-2026-v{variante}").Value);
         DefinirAlgoritmoDeContagem(processo);
         return processo;
     }
 
-    internal static UnidadeAdministradoraSnapshot UnidadeAdministradoraDoCorpus() =>
+    internal static UnidadeAdministradoraSnapshot UnidadeAdministradoraDoExemplo() =>
         UnidadeAdministradoraSnapshot.Criar(
             "CEPS",
             "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA",
             new CidadeCopiadaDaUnidade("1504208", "Marabá", "PA")).Value!;
 
-    // O corpus tem fase com regra de recurso, e o prazo de interposição corre sobre dia
+    // O exemplo tem fase com regra de recurso, e o prazo de interposição corre sobre dia
     // útil — logo a convenção de contagem é exigida para publicar.
     internal static void DefinirAlgoritmoDeContagem(ProcessoSeletivo processo) =>
         processo.DefinirAlgoritmoContagemPrazo(
-            AlgoritmoDeContagemDoCorpus()).IsSuccess.Should().BeTrue();
+            AlgoritmoDeContagemDoExemplo()).IsSuccess.Should().BeTrue();
 
     internal static void DefinirCronogramaEEtapas(
         ProcessoSeletivo processo, int variante, bool permutar, IReadOnlyList<string?>? tiposDeDecisaoDaFaseFinal,
@@ -109,7 +109,7 @@ internal static class CorpusEnvelopeProcessoRico
 
     internal static void DefinirOfertaEClassificacao(ProcessoSeletivo processo, int variante, bool permutar, int vagasOfertadasBase)
     {
-        DefinirAtendimentoEspecializadoDoCorpus(processo, permutar);
+        DefinirAtendimentoEspecializadoDoExemplo(processo, permutar);
         processo.DefinirDistribuicaoVagas(
             Ordem([DistribuicaoLei12711(vagasOfertadasBase: vagasOfertadasBase), DistribuicaoLei12711(OfertaDireito, ("HUMANISTICA_I", "Humanística I"), vagasOfertadasBase)], permutar),
             FatosDeModalidadeDeTeste.DoCatalogo).IsSuccess.Should().BeTrue();
@@ -122,7 +122,7 @@ internal static class CorpusEnvelopeProcessoRico
             .IsSuccess.Should().BeTrue();
     }
 
-    internal static void DefinirAtendimentoEspecializadoDoCorpus(ProcessoSeletivo processo, bool permutar) =>
+    internal static void DefinirAtendimentoEspecializadoDoExemplo(ProcessoSeletivo processo, bool permutar) =>
         processo.DefinirAtendimentoEspecializado(AtendimentoEspecializado.Criar(
             condicoes: Ordem<CondicaoOfertada>([
                 CondicaoOfertada.Criar(new Guid("eeee0000-0000-4000-8000-000000000001"), AtendimentoEspecializado.CodigoCondicaoPcd, "Pessoa com deficiência"),
@@ -318,7 +318,7 @@ internal static class CorpusEnvelopeProcessoRico
     // Cascata de remanejamento (Story #575): as 8 modalidades federais de
     // DistribuicaoLei12711 já são SegueCascata — sem uma cascata que as cubra,
     // Publicar() recusa com ProcessoSeletivo.CascataOrigemAusente (PendenciaDaCascata).
-    // A matriz legal completa (8×7, fallback AC) é o que mantém este corpus PUBLICÁVEL.
+    // A matriz legal completa (8×7, fallback AC) é o que mantém este exemplo PUBLICÁVEL.
     internal static void DefinirCascataEDocumentos(ProcessoSeletivo processo, int variante, bool permutar, bool comRegrasDeComprovacao)
     {
         processo.DefinirCascataRemanejamento(CascataLegalCompleta(permutar)).IsSuccess.Should().BeTrue();
@@ -331,8 +331,8 @@ internal static class CorpusEnvelopeProcessoRico
         }
     }
 
-    // Taxa de inscrição e isenção (issue #1112): o corpus RICO cobra taxa e referencia os
-    // dois fundamentos — a combinação "cobra-com-fundamentos" do CA-08, que o corpus BASE
+    // Taxa de inscrição e isenção (issue #1112): o exemplo RICO cobra taxa e referencia os
+    // dois fundamentos — a combinação "cobra-com-fundamentos" do CA-08, que o exemplo BASE
     // (sem cobrança) não cobre.
     internal static void DefinirTaxaEOpcoesDeCurso(ProcessoSeletivo processo, bool permutar)
     {
@@ -341,7 +341,7 @@ internal static class CorpusEnvelopeProcessoRico
                 cobra: true,
                 valor: 150.00m,
                 fundamentosCodigos: Ordem([FundamentoIsencaoCodigo.CadastroUnico, FundamentoIsencaoCodigo.DoacaoMedulaOssea], permutar)).Value!).IsSuccess.Should().BeTrue();
-        // O corpus rico oferta dois cursos e admite a segunda opção.
+        // O exemplo rico oferta dois cursos e admite a segunda opção.
         processo.DefinirOpcoesDeCurso(2).IsSuccess.Should().BeTrue();
         DeclaracoesObrigatoriasDeTeste.Declarar(processo);
     }

@@ -21,9 +21,9 @@ public sealed class EnvelopeLidoPredicadosTests
             Condicao(7, "FATO_A", "valorA"), Condicao(7, "FATO_B", "valorB"),
             Condicao(4, "FATO_C", "valorC"), Condicao(9, "FATO_D", "valorD"),
         ]);
-        SnapshotCanonico congelado = CorpusEnvelope.Canonicalizador.Canonicalizar(CorpusEnvelopeEntrada.Entrada(processo));
+        SnapshotCanonico congelado = ExemploDeEnvelope.Canonicalizador.Canonicalizar(ExemploDeEnvelopeEntrada.Entrada(processo));
         EnvelopeReidratado lido = FidelidadeDoEnvelopeDeTeste.Conferir(processo,
-            CorpusEnvelopeEntrada.VersaoDeAbertura(processo, congelado.Bytes), congelado);
+            ExemploDeEnvelopeEntrada.VersaoDeAbertura(processo, congelado.Bytes), congelado);
         IReadOnlyCollection<CondicaoGatilho> condicoes = lido.Configuracao.Exigencias.DocumentosExigidos.Single().Condicoes;
         condicoes.Select(c => c.Clausula).Distinct().Should().BeEquivalentTo([0, 1, 2]);
         condicoes.GroupBy(c => c.Clausula).Should().ContainSingle(g => g.Count() == 2)
@@ -33,12 +33,12 @@ public sealed class EnvelopeLidoPredicadosTests
     [Fact]
     public void Reidratar_PredicadoCustomizadoDecimal_ConservaONumeroEReproduzOsBytes()
     {
-        ProcessoSeletivo processo = CorpusEnvelopeProcessoRico.ProcessoRico();
+        ProcessoSeletivo processo = ExemploDeEnvelopeProcessoRico.ProcessoRico();
         RegraAvaliada regra = RegraCustomizada();
-        SnapshotCanonico congelado = CorpusEnvelope.Canonicalizador.Canonicalizar(CorpusEnvelopeEntrada.Entrada(processo,
+        SnapshotCanonico congelado = ExemploDeEnvelope.Canonicalizador.Canonicalizar(ExemploDeEnvelopeEntrada.Entrada(processo,
             conformidade: new ResultadoConformidade([regra], [])));
         EnvelopeReidratado lido = FidelidadeDoEnvelopeDeTeste.Conferir(processo,
-            CorpusEnvelopeEntrada.VersaoDeAbertura(processo, congelado.Bytes), congelado);
+            ExemploDeEnvelopeEntrada.VersaoDeAbertura(processo, congelado.Bytes), congelado);
         Customizado predicado = lido.Conformidade!.Regras.Single().Predicado.Should().BeOfType<Customizado>().Subject;
         predicado.Parametros.GetProperty("limite").ValueKind.Should().Be(JsonValueKind.Number);
         predicado.Parametros.GetProperty("limite").GetDecimal().Should().Be(1.5m);
@@ -53,9 +53,9 @@ public sealed class EnvelopeLidoPredicadosTests
         processo.DefinirDocumentosExigidos([RegraDeComprovacao.CriarRegraDeDocumento(DeclaracaoDeMaioridade(fase), 0).Value!]).IsSuccess.Should().BeTrue();
         processo.DefinirReferenciaTemporalFatos(ReferenciaTemporalFatos.Criar(ReferenciaTipo.FimFase, null, fase.Id).Value!)
             .IsSuccess.Should().BeTrue();
-        SnapshotCanonico congelado = CorpusEnvelope.Canonicalizador.Canonicalizar(CorpusEnvelopeEntrada.Entrada(processo));
+        SnapshotCanonico congelado = ExemploDeEnvelope.Canonicalizador.Canonicalizar(ExemploDeEnvelopeEntrada.Entrada(processo));
         EnvelopeReidratado lido = FidelidadeDoEnvelopeDeTeste.Conferir(processo,
-            CorpusEnvelopeEntrada.VersaoDeAbertura(processo, congelado.Bytes), congelado);
+            ExemploDeEnvelopeEntrada.VersaoDeAbertura(processo, congelado.Bytes), congelado);
         lido.Configuracao.Cronograma.CronogramaFases.Single().Id.Should().Be(fase.Id);
         lido.Configuracao.Coleta.ReferenciaTemporalFatos!.Tipo.Should().Be(ReferenciaTipo.FimFase);
         lido.Configuracao.Coleta.ReferenciaTemporalFatos.FaseId.Should().Be(fase.Id);

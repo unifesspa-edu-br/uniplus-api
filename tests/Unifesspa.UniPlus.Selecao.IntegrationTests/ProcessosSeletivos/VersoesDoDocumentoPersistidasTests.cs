@@ -22,7 +22,7 @@ public sealed class VersoesDoDocumentoPersistidasTests(ProcessoSeletivoDbFixture
     [Fact]
     public async Task Persistir_RemocaoDoNomeAbreviado_ConservaAberturaEGravaRegraNula()
     {
-        ProcessoSeletivo processo = CorpusEnvelopeProcessoRico.ProcessoRico(1);
+        ProcessoSeletivo processo = ExemploDeEnvelopeProcessoRico.ProcessoRico(1);
         processo.DefinirConfiguracaoDivulgacao(ConfiguracaoDivulgacao.Criar(["numero_inscricao", "nome_abreviado"], null).Value!)
             .IsSuccess.Should().BeTrue();
         VersaoConfiguracao abertura = Abrir(processo);
@@ -41,7 +41,7 @@ public sealed class VersoesDoDocumentoPersistidasTests(ProcessoSeletivoDbFixture
     [Fact]
     public async Task Persistir_ExigenciaAlterada_ConservaHashEBytesDaVersaoAnterior()
     {
-        ProcessoSeletivo processo = CorpusEnvelopeProcessoRico.ProcessoRico(2, comRegrasDeComprovacao: true);
+        ProcessoSeletivo processo = ExemploDeEnvelopeProcessoRico.ProcessoRico(2, comRegrasDeComprovacao: true);
         VersaoConfiguracao abertura = Abrir(processo);
         await PersistirAsync(processo, abertura);
         await AlterarExigenciaAsync(processo.Id);
@@ -57,7 +57,7 @@ public sealed class VersoesDoDocumentoPersistidasTests(ProcessoSeletivoDbFixture
     [Fact]
     public async Task Persistir_IdentificadorDeclaradoNaSucessora_TrocaPosteriorRecusa()
     {
-        ProcessoSeletivo processo = CorpusEnvelopeProcessoRico.ProcessoRico(3);
+        ProcessoSeletivo processo = ExemploDeEnvelopeProcessoRico.ProcessoRico(3);
         IdentificadoresDeTeste.Retirar(processo);
         VersaoConfiguracao abertura = Abrir(processo);
         IdentificadorLegivel declarado = IdentificadoresDeTeste.Novo();
@@ -103,8 +103,8 @@ public sealed class VersoesDoDocumentoPersistidasTests(ProcessoSeletivoDbFixture
 
     private static DocumentoCongelado Congelar(ProcessoSeletivo processo, RetificacaoDoEdital? retificacao = null)
     {
-        SnapshotCanonico snapshot = CorpusEnvelope.Canonicalizador.Canonicalizar(CorpusEnvelopeEntrada.Entrada(processo, retificacao));
-        return new DocumentoCongelado(snapshot.Bytes, snapshot.SchemaVersion, snapshot.AlgoritmoHash, CorpusEnvelope.HashDocumento);
+        SnapshotCanonico snapshot = ExemploDeEnvelope.Canonicalizador.Canonicalizar(ExemploDeEnvelopeEntrada.Entrada(processo, retificacao));
+        return new DocumentoCongelado(snapshot.Bytes, snapshot.SchemaVersion, snapshot.AlgoritmoHash, ExemploDeEnvelope.HashDocumento);
     }
 
     private static VersaoConfiguracao Abrir(ProcessoSeletivo processo) => VersaoConfiguracao.Abrir(

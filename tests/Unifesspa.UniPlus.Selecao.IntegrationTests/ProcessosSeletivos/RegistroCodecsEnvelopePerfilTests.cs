@@ -32,7 +32,7 @@ public sealed class RegistroCodecsEnvelopePerfilTests
         // bytes na coluna sem poder recomputar o hash da linha forense.
         VersaoConfiguracao comprometida = ComBytes(versao, ComPeriodoAdulterado(bytes));
 
-        Result<EnvelopeReidratado> resultado = CorpusEnvelope.Registro.Reidratar(comprometida);
+        Result<EnvelopeReidratado> resultado = ExemploDeEnvelope.Registro.Reidratar(comprometida);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be(ErrosCodecEnvelope.IntegridadeViolada);
@@ -47,7 +47,7 @@ public sealed class RegistroCodecsEnvelopePerfilTests
     [Fact(DisplayName = "Bytes não-canônicos (chaves fora de ordem) são recusados, mesmo com o hash batendo")]
     public void BytesNaoCanonicos_Recusa()
     {
-        byte[] bytes = BytesDoCorpus();
+        byte[] bytes = BytesDoExemplo();
         byte[] naoCanonicos = ComChavesDoTopoEmOrdemInversa(bytes);
         naoCanonicos.Should().NotEqual(bytes, "pré-condição: a reordenação tem de produzir bytes distintos");
 
@@ -64,7 +64,7 @@ public sealed class RegistroCodecsEnvelopePerfilTests
     [Fact(DisplayName = "Chave JSON duplicada é recusada — não vale 'a última ganha'")]
     public void ChaveDuplicada_Recusa()
     {
-        string json = Encoding.UTF8.GetString(BytesDoCorpus());
+        string json = Encoding.UTF8.GetString(BytesDoExemplo());
         string duplicado = json.Replace("\"presente\":true", "\"presente\":true,\"presente\":false", StringComparison.Ordinal);
         duplicado.Should().NotBe(json, "pré-condição: a duplicação tem de ter sido aplicada");
 

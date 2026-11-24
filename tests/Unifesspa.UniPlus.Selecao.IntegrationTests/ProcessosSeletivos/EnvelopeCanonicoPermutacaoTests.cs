@@ -64,13 +64,13 @@ public sealed class EnvelopeCanonicoPermutacaoTests
     [Fact(DisplayName = "Permutar a ordem de entrada das coleções produz bytes canônicos e hash idênticos")]
     public void Permutacao_ProduzMesmosBytesEHash()
     {
-        ProcessoSeletivo direto = CorpusEnvelopeProcessoRico.ProcessoRico(comRegrasDeComprovacao: true);
-        ProcessoSeletivo permutado = CorpusEnvelopeProcessoRico.ProcessoRico(permutar: true, comRegrasDeComprovacao: true);
+        ProcessoSeletivo direto = ExemploDeEnvelopeProcessoRico.ProcessoRico(comRegrasDeComprovacao: true);
+        ProcessoSeletivo permutado = ExemploDeEnvelopeProcessoRico.ProcessoRico(permutar: true, comRegrasDeComprovacao: true);
 
         ConferirQueAPermutacaoInverteACadaColecao(direto, permutado);
 
-        SnapshotCanonico bytesDireto = CorpusEnvelope.Canonicalizador.Canonicalizar(CorpusEnvelopeEntrada.Entrada(direto));
-        SnapshotCanonico bytesPermutado = CorpusEnvelope.Canonicalizador.Canonicalizar(CorpusEnvelopeEntrada.Entrada(permutado));
+        SnapshotCanonico bytesDireto = ExemploDeEnvelope.Canonicalizador.Canonicalizar(ExemploDeEnvelopeEntrada.Entrada(direto));
+        SnapshotCanonico bytesPermutado = ExemploDeEnvelope.Canonicalizador.Canonicalizar(ExemploDeEnvelopeEntrada.Entrada(permutado));
 
         ConferirBytesEHashIdenticos(bytesDireto, bytesPermutado);
     }
@@ -84,12 +84,12 @@ public sealed class EnvelopeCanonicoPermutacaoTests
     [Fact(DisplayName = "Permutar a ordem de entrada de valoresSelecionaveis produz bytes canônicos idênticos")]
     public void PermutacaoDeValoresSelecionaveis_ProduzMesmosBytes()
     {
-        ProcessoSeletivo processo = CorpusEnvelopeProcessoRico.ProcessoRico();
+        ProcessoSeletivo processo = ExemploDeEnvelopeProcessoRico.ProcessoRico();
 
         ConferirQueAPermutacaoInverteAListaDeCorRaca();
 
-        SnapshotCanonico bytesDireto = CorpusEnvelope.Canonicalizador.Canonicalizar(CorpusEnvelopeEntrada.Entrada(processo, permutarValoresSelecionaveis: false));
-        SnapshotCanonico bytesPermutado = CorpusEnvelope.Canonicalizador.Canonicalizar(CorpusEnvelopeEntrada.Entrada(processo, permutarValoresSelecionaveis: true));
+        SnapshotCanonico bytesDireto = ExemploDeEnvelope.Canonicalizador.Canonicalizar(ExemploDeEnvelopeEntrada.Entrada(processo, permutarValoresSelecionaveis: false));
+        SnapshotCanonico bytesPermutado = ExemploDeEnvelope.Canonicalizador.Canonicalizar(ExemploDeEnvelopeEntrada.Entrada(processo, permutarValoresSelecionaveis: true));
 
         bytesPermutado.Bytes.Should().Equal(bytesDireto.Bytes,
             "valoresSelecionaveis[] é ordenado pelo encoder por Ordem/Codigo (D2) — a ordem de entrada da lista " +
@@ -99,10 +99,10 @@ public sealed class EnvelopeCanonicoPermutacaoTests
     [Fact(DisplayName = "Recanonicalizar a mesma configuração sem alteração reproduz o mesmo hash")]
     public void Recanonicalizacao_SemAlteracao_MesmoHash()
     {
-        ProcessoSeletivo processo = CorpusEnvelopeProcessoRico.ProcessoRico();
+        ProcessoSeletivo processo = ExemploDeEnvelopeProcessoRico.ProcessoRico();
 
-        byte[] primeira = CorpusEnvelope.Canonicalizador.Canonicalizar(CorpusEnvelopeEntrada.Entrada(processo)).Bytes;
-        byte[] segunda = CorpusEnvelope.Canonicalizador.Canonicalizar(CorpusEnvelopeEntrada.Entrada(processo)).Bytes;
+        byte[] primeira = ExemploDeEnvelope.Canonicalizador.Canonicalizar(ExemploDeEnvelopeEntrada.Entrada(processo)).Bytes;
+        byte[] segunda = ExemploDeEnvelope.Canonicalizador.Canonicalizar(ExemploDeEnvelopeEntrada.Entrada(processo)).Bytes;
 
         segunda.Should().Equal(primeira, "a projeção é pura — recanonicalizar sem alteração é estável byte a byte");
     }
@@ -166,15 +166,15 @@ public sealed class EnvelopeCanonicoPermutacaoTests
 
     /// <summary>
     /// As bancas requeridas não têm chave <c>Ordem</c>: o agregado as ordena na SAÍDA, no getter, e o encoder escreve essa ordem.
-    /// RESULTADO_PRELIMINAR é a única fase do corpus com mais de uma banca; a pré-condição confere que a ordem de CHEGADA
+    /// RESULTADO_PRELIMINAR é a única fase do exemplo com mais de uma banca; a pré-condição confere que a ordem de CHEGADA
     /// foi invertida pela permutação, sem o que a comparação de bytes ao final ficaria vazia para esta lista.
     /// </summary>
     private static void ConferirInversaoDoCronograma(ProcessoSeletivo direto, ProcessoSeletivo permutado)
     {
         ConferirInversao(direto, permutado, "das fases do cronograma",
             static p => p.CronogramaFases.Select(static f => f.Codigo));
-        CorpusEnvelopeCronograma.BancasRequeridasDaFaseDeRecurso(permutar: false).Select(static b => b.Id)
-            .Should().NotEqual(CorpusEnvelopeCronograma.BancasRequeridasDaFaseDeRecurso(permutar: true).Select(static b => b.Id),
+        ExemploDeEnvelopeCronograma.BancasRequeridasDaFaseDeRecurso(permutar: false).Select(static b => b.Id)
+            .Should().NotEqual(ExemploDeEnvelopeCronograma.BancasRequeridasDaFaseDeRecurso(permutar: true).Select(static b => b.Id),
                 "pré-condição: a permutação tem de inverter a ordem de entrada das bancas requeridas da fase RESULTADO_PRELIMINAR");
     }
 
@@ -231,9 +231,9 @@ public sealed class EnvelopeCanonicoPermutacaoTests
     private static void ConferirQueAPermutacaoInverteAListaDeCorRaca()
     {
         IReadOnlyDictionary<string, IReadOnlyList<ValorDominioDeclaradoCongelado>?> direto =
-            CorpusEnvelopeDadosDoEdital.ValoresSelecionaveisRicos(permutarValores: false);
+            ExemploDeEnvelopeDadosDoEdital.ValoresSelecionaveisRicos(permutarValores: false);
         IReadOnlyDictionary<string, IReadOnlyList<ValorDominioDeclaradoCongelado>?> permutado =
-            CorpusEnvelopeDadosDoEdital.ValoresSelecionaveisRicos(permutarValores: true);
+            ExemploDeEnvelopeDadosDoEdital.ValoresSelecionaveisRicos(permutarValores: true);
 
         direto["COR_RACA"]!.Select(static v => v.Codigo).Should().NotEqual(
             permutado["COR_RACA"]!.Select(static v => v.Codigo),

@@ -37,13 +37,13 @@ public sealed class RegrasEPressupostosDoFormularioPublicadoTests
     [Fact(DisplayName = "As regras do formulário público são as da configuração publicada, recortadas para a finalidade, sem derivado que o formulário não cita")]
     public async Task Handle_Regras_SaoAsDaConfiguracaoPublicadaRecortadas()
     {
-        // O corpus rico tem seção, termo e grupo exibidos por condição, impedimento, três derivações
+        // O exemplo rico tem seção, termo e grupo exibidos por condição, impedimento, três derivações
         // configuradas e as duas da oferta, que nenhuma regra da inscrição cita e dois agregados sobre a composição familiar, que o
         // envelope congela e nenhuma regra do formulário cita.
-        ProcessoSeletivo processo = CorpusEnvelopeProcessoRico.ProcessoRico(variante: 9, comBancasExigidasNaPublicacao: true);
-        EntradaCanonicalizacao entrada = CorpusEnvelopeEntrada.Entrada(processo);
+        ProcessoSeletivo processo = ExemploDeEnvelopeProcessoRico.ProcessoRico(variante: 9, comBancasExigidasNaPublicacao: true);
+        EntradaCanonicalizacao entrada = ExemploDeEnvelopeEntrada.Entrada(processo);
         SnapshotCanonico congelado = CenarioDeFormularioPublicado.Canonicalizar(entrada);
-        await _cenario.PublicarEPersistirAsync(processo, entrada.Dados, congelado, entrada.HashDocumento, CorpusEnvelope.Ator);
+        await _cenario.PublicarEPersistirAsync(processo, entrada.Dados, congelado, entrada.HashDocumento, ExemploDeEnvelope.Ator);
 
         FormularioRenderizavelDto lido = await _cenario.LerPublicadoAsync(processo.Id);
 
@@ -161,12 +161,12 @@ public sealed class RegrasEPressupostosDoFormularioPublicadoTests
         // A habilitação pede o certificado de quem se declarou preto na inscrição e a declaração de
         // quem é maior de idade, faixa que o sistema calcula da data de nascimento na data de
         // referência dos fatos.
-        ProcessoSeletivo processo = CorpusEnvelopeProcessoRico.ProcessoRico(variante: 10, comBancasExigidasNaPublicacao: true);
+        ProcessoSeletivo processo = ExemploDeEnvelopeProcessoRico.ProcessoRico(variante: 10, comBancasExigidasNaPublicacao: true);
         DefinirHabilitacao(processo);
 
-        EntradaCanonicalizacao entrada = CorpusEnvelopeEntrada.Entrada(processo);
+        EntradaCanonicalizacao entrada = ExemploDeEnvelopeEntrada.Entrada(processo);
         SnapshotCanonico congelado = CenarioDeFormularioPublicado.Canonicalizar(entrada);
-        await _cenario.PublicarEPersistirAsync(processo, entrada.Dados, congelado, entrada.HashDocumento, CorpusEnvelope.Ator);
+        await _cenario.PublicarEPersistirAsync(processo, entrada.Dados, congelado, entrada.HashDocumento, ExemploDeEnvelope.Ator);
 
         FormularioRenderizavelDto lido = await _cenario.LerPublicadoAsync(processo.Id, FinalidadeFormulario.Habilitacao);
 

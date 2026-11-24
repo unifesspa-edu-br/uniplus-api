@@ -228,7 +228,7 @@ public sealed class EnvelopeCodecRecusaRegraDeRecursoTests
     /// <para>
     /// A asserção é de <b>sucesso</b>, e não de "falhou por outro motivo": nada no decodificador
     /// nem no domínio consome o código desta convenção — a referência é opaca —, então trocá-lo
-    /// por outro do rol reidrata inteiro. O código que o corpus já usa fica fora da teoria
+    /// por outro do rol reidrata inteiro. O código que o exemplo já usa fica fora da teoria
     /// porque escrevê-lo de novo não mudaria byte nenhum, e o helper exige que a adulteração
     /// mude os bytes.
     /// </para>
@@ -282,8 +282,8 @@ public sealed class EnvelopeCodecRecusaRegraDeRecursoTests
             .AsObject();
 
     /// <summary>
-    /// Os <c>parametros</c> da regra de recurso da única fase do corpus que a declara. Localizada
-    /// pela presença do bloco, não por índice fixo: uma fase nova no corpus deslocaria o
+    /// Os <c>parametros</c> da regra de recurso da única fase do exemplo que a declara. Localizada
+    /// pela presença do bloco, não por índice fixo: uma fase nova no exemplo deslocaria o
     /// índice e faria os testes acima passarem a adulterar outra coisa.
     /// </summary>
     private static JsonObject ParametrosDaRegraDeRecurso(JsonObject envelope)

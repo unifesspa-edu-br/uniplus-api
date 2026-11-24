@@ -8,7 +8,7 @@ using Unifesspa.UniPlus.Selecao.Infrastructure.Canonicalization;
 
 /// <summary>
 /// As mutações do bloco <c>divulgacao</c> que o decoder tem de recusar. Cada uma adultera UM aspecto do
-/// bloco default (o corpus de teste não configura divulgação) e traz o código E o trecho da mensagem que
+/// bloco default (o exemplo de teste não configura divulgação) e traz o código E o trecho da mensagem que
 /// apontam o aspecto ofensivo — nunca apenas a falha, que passaria por qualquer outro motivo, nem apenas
 /// o código, que um mesmo <c>EnvelopeMalformado</c> genérico compartilha entre guardas diferentes.
 /// </summary>
