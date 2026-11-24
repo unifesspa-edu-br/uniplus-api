@@ -31,9 +31,14 @@ internal static class ProjecaoDeDocumentosExigidos
         {
             exigencia["etapaChave"] = chaves.Etapa(etapa.ToString());
         }
-        if (exigencia["idadeMaximaEmissao"] is JsonObject idade && idade["referenciaFaseId"] is { } referencia)
+        PrepararReferenciaDeFase(exigencia["prazoDeEmissao"], chaves);
+        PrepararReferenciaDeFase(exigencia["validade"], chaves);
+    }
+    private static void PrepararReferenciaDeFase(JsonNode? prazoOuValidade, ChavesDoDocumentoCongelado chaves)
+    {
+        if (prazoOuValidade?["referencia"] is JsonObject referencia && referencia["faseId"] is { } fase)
         {
-            idade["referenciaFaseChave"] = chaves.Fase(referencia.ToString());
+            referencia["faseChave"] = chaves.Fase(fase.ToString());
         }
     }
     private static void PrepararRegras(JsonArray? regras, ChavesDoDocumentoCongelado chaves)
