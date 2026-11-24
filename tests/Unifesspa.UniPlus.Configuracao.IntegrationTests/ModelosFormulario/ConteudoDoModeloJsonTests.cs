@@ -178,10 +178,13 @@ public sealed class ConteudoDoModeloJsonTests
         ler.Should().Throw<KeyNotFoundException>();
     }
 
-    [Fact(DisplayName = "A chave antiga das páginas é dado corrompido e lança")]
-    public void Desserializar_ChaveAntigaDePagina_Lanca()
+    [Theory(DisplayName = "As chaves antigas das páginas e do código da página são dados corrompidos e lançam")]
+    [InlineData("\"paginas\":", "\"etapas\":")]
+    [InlineData("\"paginaCodigo\":null", "\"etapaCodigo\":null")]
+    [InlineData("\"codigo\":\"FAMILIA\",\"ordem\":2,\"paginaCodigo\":\"DADOS\"", "\"codigo\":\"FAMILIA\",\"ordem\":2,\"etapaCodigo\":\"DADOS\"")]
+    public void Desserializar_ChaveAntigaDePagina_Lanca(string chave, string chaveAntiga)
     {
-        string json = ConteudoDoModeloJson.Serializar(ConteudoCompleto()).Replace("\"paginas\":", "\"etapas\":", StringComparison.Ordinal);
+        string json = ConteudoDoModeloJson.Serializar(ConteudoCompleto()).Replace(chave, chaveAntiga, StringComparison.Ordinal);
 
         Action ler = () => ConteudoDoModeloJson.Desserializar(json);
 
@@ -322,7 +325,7 @@ public sealed class ConteudoDoModeloJsonTests
         $$"""{"titulo":null,"paginas":[{{EtapaDadosMinimaJson}}],"itens":[{{ItemQuilombolaJson}}],"termos":[{{TermoUsoMinimoJson}}],"pressupostos":[],"grupos":[{{GrupoFamiliaMinimoJson}}],"documentosExigidos":[{{DocumentoMinimoJson}}],"gruposDeDocumentos":[]}""";
 
     private const string JsonLegado =
-        """{"titulo":"Legado","paginas":[{"codigo":"DADOS","ordem":0,"tipo":"SECAO","titulo":"Dados"}],"itens":[{"codigoDoDado":"QUILOMBOLA","ordem":0,"rotulo":"Pergunta","tipoDeCampo":"SIM_OU_NAO","obrigatoriedade":{"tipo":"SEMPRE"},"restricoes":[],"pedirConfirmacao":false}],"termos":[],"pressupostos":[],"grupos":[{"codigo":"FAMILIA","ordem":0,"rotulo":"Fam\u00EDlia","minimo":1,"maximo":null,"obrigatoriedade":{"tipo":"NUNCA"},"subitens":[],"incluiCandidato":false}]}""";
+        """{"titulo":"Legado","paginas":[{"codigo":"DADOS","ordem":0,"tipo":"SECAO","titulo":"Dados"}],"itens":[{"codigoDoDado":"QUILOMBOLA","ordem":0,"paginaCodigo":null,"rotulo":"Pergunta","tipoDeCampo":"SIM_OU_NAO","obrigatoriedade":{"tipo":"SEMPRE"},"restricoes":[],"pedirConfirmacao":false}],"termos":[],"pressupostos":[],"grupos":[{"codigo":"FAMILIA","ordem":0,"paginaCodigo":null,"rotulo":"Fam\u00EDlia","minimo":1,"maximo":null,"obrigatoriedade":{"tipo":"NUNCA"},"subitens":[],"incluiCandidato":false}]}""";
 
     private const string JsonLegadoRegravado =
         $$"""{"titulo":"Legado","paginas":[{"codigo":"DADOS","ordem":0,"tipo":"SECAO","bloco":null,"titulo":"Dados","descricao":null,"aviso":null,"exibicao":null}],"itens":[{{ItemQuilombolaJson}}],"termos":[],"pressupostos":[],"grupos":[{"codigo":"FAMILIA","ordem":0,"paginaCodigo":null,"rotulo":"Fam\u00EDlia","minimo":1,"maximo":null,"incluiCandidato":false,"exibicao":null,"obrigatoriedade":{"tipo":"NUNCA","predicado":null},"subitens":[]}],"documentosExigidos":[],"gruposDeDocumentos":[]}""";

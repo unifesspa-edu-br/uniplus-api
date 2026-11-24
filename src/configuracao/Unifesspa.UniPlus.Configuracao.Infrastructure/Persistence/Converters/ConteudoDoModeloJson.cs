@@ -189,7 +189,7 @@ internal static class ConteudoDoModeloJson
     private static ItemDoModelo CampoDeJson(JsonElement campo) => new(
         campo.GetProperty("codigoDoDado").GetString()!,
         campo.GetProperty("ordem").GetInt32(),
-        Texto(campo, "paginaCodigo"),
+        TextoOuNulo(campo.GetProperty("paginaCodigo")),
         ApresentacaoDeJson(campo),
         Texto(campo, "formato"),
         RegrasDeJson(campo));
@@ -217,7 +217,7 @@ internal static class ConteudoDoModeloJson
     private static GrupoDoModelo GrupoDeJson(JsonElement grupo) => new(
         grupo.GetProperty("codigo").GetString()!,
         grupo.GetProperty("ordem").GetInt32(),
-        Texto(grupo, "paginaCodigo"),
+        TextoOuNulo(grupo.GetProperty("paginaCodigo")),
         grupo.GetProperty("rotulo").GetString()!,
         new OcorrenciasDoGrupo(
             grupo.GetProperty("minimo").GetInt32(), InteiroOuNulo(grupo.GetProperty("maximo")), grupo.GetProperty("incluiCandidato").GetBoolean()),
@@ -304,6 +304,9 @@ internal static class ConteudoDoModeloJson
     /// <summary>Só o nulo explícito é ausência; qualquer outro valor que não seja inteiro falha, como o resto da leitura.</summary>
     private static int? InteiroOuNulo(JsonElement valor) =>
         valor.ValueKind == JsonValueKind.Null ? null : valor.GetInt32();
+
+    private static string? TextoOuNulo(JsonElement valor) =>
+        valor.ValueKind == JsonValueKind.Null ? null : valor.GetString();
 
     private static string? Texto(JsonElement objeto, string chave) =>
         objeto.TryGetProperty(chave, out JsonElement valor) && valor.ValueKind == JsonValueKind.String ? valor.GetString() : null;
