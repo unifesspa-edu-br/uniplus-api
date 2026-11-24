@@ -23,6 +23,8 @@
     <Compile Include="../Shared/UnidadesDeTeste.cs" Link="UnidadesDeTeste.cs" />
     <Compile Include="../Shared/OfertaCursoDeTeste.cs" Link="OfertaCursoDeTeste.cs" />
     <Compile Include="../Shared/FatosDeModalidadeDeTeste.cs" Link="FatosDeModalidadeDeTeste.cs" />
+    <Compile Include="../Shared/FatoColetadoDeTeste.cs" Link="FatoColetadoDeTeste.cs" />
+    <Compile Include="../Shared/ProtecaoDoFatoDeTeste.cs" Link="ProtecaoDoFatoDeTeste.cs" />
     <Compile Include="../Shared/RegrasDeAplicabilidadeDeTeste.cs" Link="RegrasDeAplicabilidadeDeTeste.cs" />
     <Compile Include="../Shared/Cenarios/DataDeReferenciaBuilder.cs" Link="Cenarios/DataDeReferenciaBuilder.cs" />
     <Compile Include="../Shared/Cenarios/PrazoDeEmissaoBuilder.cs" Link="Cenarios/PrazoDeEmissaoBuilder.cs" />

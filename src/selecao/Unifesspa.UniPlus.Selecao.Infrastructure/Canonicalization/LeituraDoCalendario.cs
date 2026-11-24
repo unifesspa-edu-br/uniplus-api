@@ -175,7 +175,7 @@ internal static class LeituraDoCalendario
             && string.Equals(HashCanonicalComputer.NormalizeNfc(versaoDataset), versaoDataset, StringComparison.Ordinal)
             ? calendario.Value
             : leitor.Recusar<CalendarioDiasUteisCongelado?>(
-                "'calendarioDiasUteis.versaoDataset' não está na forma canônica — espaço em volta do valor "
+                "'calendarioDiasUteis.versaoDoCalendario' não está na forma canônica — espaço em volta do valor "
                 + "ou texto fora da normalização Unicode que o encoder aplica.");
     }
 
