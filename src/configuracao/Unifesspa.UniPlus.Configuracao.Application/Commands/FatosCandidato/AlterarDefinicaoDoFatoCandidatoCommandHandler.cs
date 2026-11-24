@@ -33,5 +33,5 @@ public static class AlterarDefinicaoDoFatoCandidatoCommandHandler
             TokensDoFato.Escopo(entrada.Escopo),
             TokensDoFato.Classificacao(entrada.ClassificacaoProtecao),
             entrada.FinalidadeTratamento,
-            TokensDoFato.HipoteseLegal(entrada.HipoteseLegal) ?? HipoteseLegalTratamento.Nenhuma);
+            TokensDoFato.HipoteseLegal(entrada.HipoteseLegal));
 }

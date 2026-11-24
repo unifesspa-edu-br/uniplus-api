@@ -19,4 +19,4 @@ public sealed record DefinicaoDoFato(
     EscopoFato? Escopo,
     ClassificacaoDeProtecao? ClassificacaoProtecao,
     string FinalidadeTratamento,
-    HipoteseLegalTratamento HipoteseLegal);
+    HipoteseLegalTratamento? HipoteseLegal);

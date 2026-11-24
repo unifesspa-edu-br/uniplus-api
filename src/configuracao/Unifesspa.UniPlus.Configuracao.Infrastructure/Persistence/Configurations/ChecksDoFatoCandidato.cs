@@ -7,6 +7,7 @@ using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Domain.Enums;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence.CodigosDeContrato;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Protecao;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Regras.Enums;
 
@@ -34,7 +35,7 @@ internal static class ChecksDoFatoCandidato
         AdicionarCheckDeCodigos(table, "quantidade_de_valores", SqlDosCodigosDeContrato.Lista<QuantidadeDeValores>());
         AdicionarCheckDeCodigos(table, "escopo", CodigosSql(EscoposFato.TokensCanonicos));
         AdicionarCheckDeCodigos(table, "classificacao_protecao", CodigosSql(ClassificacoesDeProtecao.TokensCanonicos));
-        AdicionarCheckDeCodigos(table, "hipotese_legal", CodigosSql(HipotesesLegaisTratamento.TokensCanonicos));
+        AdicionarCheckDeCodigos(table, "hipotese_legal", CodigosSql(CatalogoDe<HipoteseLegalTratamento>.Valores().Select(static valor => valor.Codigo()).ToArray()));
         table.HasCheckConstraint(
             "ck_dados_do_candidato_componente_exibicao",
             $"componente_exibicao IS NULL OR componente_exibicao IN ({CodigosSql(ComponentesDeExibicao.TokensCanonicos)})");

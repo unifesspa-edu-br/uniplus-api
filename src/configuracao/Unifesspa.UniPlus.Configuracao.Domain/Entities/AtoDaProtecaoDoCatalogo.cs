@@ -4,6 +4,7 @@ using Unifesspa.UniPlus.Configuracao.Domain.Enums;
 using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Kernel.Domain.Interfaces;
+using Unifesspa.UniPlus.Regras.Enums;
 
 /// <summary>
 /// Um ato do circuito de aprovação da proteção de dados de um tipo de documento ou fato do candidato (ADR-0153): a

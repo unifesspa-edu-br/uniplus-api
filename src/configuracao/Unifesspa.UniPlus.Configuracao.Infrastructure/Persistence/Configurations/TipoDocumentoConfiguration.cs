@@ -99,8 +99,7 @@ public sealed class TipoDocumentoConfiguration
             .IsRequired();
         builder.Property(t => t.FinalidadeTratamento).HasMaxLength(ProtecaoDeDados.FinalidadeMaxLength).IsRequired();
         builder.Property(t => t.HipoteseLegal)
-            .HasConversion(ProtecaoDeDadosConversores.HipoteseLegal)
-            .HasMaxLength(ProtecaoDeDadosConversores.HipoteseLegalMaxLength)
+            .HasMaxLength(40)
             .IsRequired();
 
         // Aprovação da proteção de dados (ADR-0153): table splitting em colunas protecao_*. Todo tipo

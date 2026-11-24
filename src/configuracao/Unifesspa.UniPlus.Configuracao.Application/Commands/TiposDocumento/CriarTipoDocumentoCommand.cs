@@ -36,5 +36,5 @@ public sealed record CriarTipoDocumentoCommand(
             Codigo, Nome, Descricao, Categoria, FormatosAceitos, TamanhoMaximoMb, TipoEquivalente,
             TokensDoFato.Classificacao(ClassificacaoProtecao),
             FinalidadeTratamento,
-            TokensDoFato.HipoteseLegal(HipoteseLegal) ?? HipoteseLegalTratamento.Nenhuma);
+            TokensDoFato.HipoteseLegal(HipoteseLegal));
 }

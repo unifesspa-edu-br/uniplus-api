@@ -169,9 +169,9 @@ public sealed class FatoCandidatoTests
     [Theory(DisplayName = "Proteção de dados incompleta é recusada")]
     [InlineData(null, Finalidade, HipoteseLegalTratamento.CumprimentoObrigacaoLegal, FatoCandidatoErrorCodes.ClassificacaoProtecaoObrigatoria)]
     [InlineData(ClassificacaoDeProtecao.Pessoal, "  ", HipoteseLegalTratamento.CumprimentoObrigacaoLegal, FatoCandidatoErrorCodes.FinalidadeTratamentoObrigatoria)]
-    [InlineData(ClassificacaoDeProtecao.Pessoal, Finalidade, HipoteseLegalTratamento.Nenhuma, FatoCandidatoErrorCodes.HipoteseLegalObrigatoria)]
+    [InlineData(ClassificacaoDeProtecao.Pessoal, Finalidade, null, FatoCandidatoErrorCodes.HipoteseLegalObrigatoria)]
     public void Criar_ProtecaoIncompleta_Recusa(
-        ClassificacaoDeProtecao? classificacao, string finalidade, HipoteseLegalTratamento hipotese, string codigoEsperado) =>
+        ClassificacaoDeProtecao? classificacao, string finalidade, HipoteseLegalTratamento? hipotese, string codigoEsperado) =>
         Criar(definicao: Definicao with { ClassificacaoProtecao = classificacao, FinalidadeTratamento = finalidade, HipoteseLegal = hipotese })
             .Error!.Code.Should().Be(codigoEsperado);
 

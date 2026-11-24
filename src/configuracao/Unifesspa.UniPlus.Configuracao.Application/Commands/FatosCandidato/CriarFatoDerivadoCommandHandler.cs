@@ -39,5 +39,5 @@ public static class CriarFatoDerivadoCommandHandler
                 TokensDoFato.Escopo(command.Escopo) ?? EscopoFato.Nenhum,
                 TokensDoFato.Classificacao(command.ClassificacaoProtecao),
                 command.FinalidadeTratamento,
-                TokensDoFato.HipoteseLegal(command.HipoteseLegal) ?? HipoteseLegalTratamento.Nenhuma));
+                TokensDoFato.HipoteseLegal(command.HipoteseLegal)));
 }

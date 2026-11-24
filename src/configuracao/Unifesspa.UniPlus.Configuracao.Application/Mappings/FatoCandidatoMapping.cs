@@ -4,6 +4,7 @@ using Unifesspa.UniPlus.Application.Abstractions.Respostas;
 using Unifesspa.UniPlus.Configuracao.Application.DTOs;
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Domain.Enums;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Regras.Enums;
 
@@ -48,6 +49,6 @@ internal static class FatoCandidatoMapping
     private static ProtecaoDoFatoDto ProtecaoDe(FatoCandidato fato) => new(
         ClassificacoesDeProtecao.ParaTokenCanonico(fato.ClassificacaoProtecao),
         fato.FinalidadeTratamento,
-        HipotesesLegaisTratamento.ParaTokenCanonico(fato.HipoteseLegal),
+        fato.HipoteseLegal.Codigo(),
         fato.Aprovacao.ToDto());
 }

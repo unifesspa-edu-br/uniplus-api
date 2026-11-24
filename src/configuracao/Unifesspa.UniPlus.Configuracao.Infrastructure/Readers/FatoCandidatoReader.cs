@@ -13,6 +13,7 @@ using Unifesspa.UniPlus.Configuracao.Domain.Services;
 using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.Services;
@@ -156,7 +157,7 @@ internal sealed class FatoCandidatoReader : IFatoCandidatoReader, IFatoCandidato
             CodigoComRotulo<TipoDoDado>.De(f.Dominio), CodigoComRotulo<OrigemFato>.De(f.Origem), CodigoComRotulo<QuantidadeDeValores>.De(f.Cardinalidade),
             valores?.Select(static v => v.Codigo).ToList(),
             f.PontoResolucao, f.Binding, valores, f.FonteValores is { } fonte ? CodigoComRotulo<FonteValoresFato>.De(fonte) : null,
-            f.Ativo, ClassificacoesDeProtecao.ParaTokenCanonico(f.ClassificacaoProtecao), HipotesesLegaisTratamento.ParaTokenCanonico(f.HipoteseLegal), f.FinalidadeTratamento,
+            f.Ativo, ClassificacoesDeProtecao.ParaTokenCanonico(f.ClassificacaoProtecao), f.HipoteseLegal.Codigo(), f.FinalidadeTratamento,
             f.Aprovacao.EstaAprovada, f.Formato is { } formato and not FormatoTexto.Nenhum ? FormatosTexto.ParaTokenCanonico(formato) : null,
             EscoposFato.ParaTokenCanonico(f.Escopo), f.ComponenteExibicao is { } componente ? ComponentesDeExibicao.ParaTokenCanonico(componente) : null);
     }

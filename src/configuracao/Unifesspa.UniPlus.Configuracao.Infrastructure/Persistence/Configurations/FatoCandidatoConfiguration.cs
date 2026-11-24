@@ -12,6 +12,7 @@ using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Converters;
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Seed;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Converters;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Protecao;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.Services;
@@ -77,7 +78,7 @@ public sealed class FatoCandidatoConfiguration : IEntityTypeConfiguration<FatoCa
         builder.Property(f => f.Escopo).HasComment("Pessoa a que se refere: CANDIDATO ou MEMBRO_GRUPO.");
         builder.Property(f => f.ClassificacaoProtecao).HasComment("Classificação de proteção: PUBLICO, INTERNO, PESSOAL, IDENTIFICADOR ou SENSIVEL.");
         builder.Property(f => f.FinalidadeTratamento).HasComment("Finalidade informada para o tratamento do dado.");
-        builder.Property(f => f.HipoteseLegal).HasComment("Hipótese legal: CONSENTIMENTO, CUMPRIMENTO_OBRIGACAO_LEGAL, EXECUCAO_POLITICAS_PUBLICAS, ESTUDOS_POR_ORGAO_DE_PESQUISA, EXECUCAO_CONTRATO, EXERCICIO_REGULAR_DE_DIREITOS, PROTECAO_DA_VIDA, TUTELA_DA_SAUDE, INTERESSE_LEGITIMO, PROTECAO_DO_CREDITO ou PREVENCAO_A_FRAUDE.");
+        builder.Property(f => f.HipoteseLegal).HasComment($"Hipótese legal: {string.Join(", ", CatalogoDe<HipoteseLegalTratamento>.Todos().Select(static item => item.Codigo))}.");
         builder.Property(f => f.SemeadoPeloSistema).HasComment("Indica se o dado foi fornecido pelo sistema.");
         builder.Property(f => f.Ativo).HasComment("Indica se o dado está disponível para uso.");
         builder.Property(f => f.PontoResolucao).HasComment("Código da fase em que o valor fica disponível.");
@@ -148,8 +149,7 @@ public sealed class FatoCandidatoConfiguration : IEntityTypeConfiguration<FatoCa
             .IsRequired();
         builder.Property(f => f.FinalidadeTratamento).HasMaxLength(ProtecaoDeDados.FinalidadeMaxLength).IsRequired();
         builder.Property(f => f.HipoteseLegal)
-            .HasConversion(ProtecaoDeDadosConversores.HipoteseLegal)
-            .HasMaxLength(ProtecaoDeDadosConversores.HipoteseLegalMaxLength)
+            .HasMaxLength(40)
             .IsRequired();
     }
 

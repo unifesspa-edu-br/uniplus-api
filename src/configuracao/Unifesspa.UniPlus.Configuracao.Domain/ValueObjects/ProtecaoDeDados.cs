@@ -3,6 +3,7 @@ namespace Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Configuracao.Domain.Enums;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Regras.Enums;
 
 /// <summary>
 /// A proteção que o tratamento de um dado exige: classificação na escala única, finalidade e
@@ -24,7 +25,7 @@ public readonly record struct ProtecaoDeDados(
     public static Result<ProtecaoDeDados> Validar(
         ClassificacaoDeProtecao? classificacao,
         string? finalidade,
-        HipoteseLegalTratamento hipotese,
+        HipoteseLegalTratamento? hipotese,
         RecusasDaProtecao recusas,
         Func<ClassificacaoDeProtecao, DomainError?>? restricaoDaClassificacao = null)
     {
@@ -40,7 +41,7 @@ public readonly record struct ProtecaoDeDados(
         List<FieldError> erros = [.. conferencias.OfType<FieldError>()];
         return erros.Count > 0
             ? Result<ProtecaoDeDados>.ValidationFailure(erros)
-            : Result<ProtecaoDeDados>.Success(new ProtecaoDeDados(classificacao!.Value, finalidadeNormalizada, hipotese));
+            : Result<ProtecaoDeDados>.Success(new ProtecaoDeDados(classificacao!.Value, finalidadeNormalizada, hipotese!.Value));
     }
 
     private static FieldError? RecusaDaClassificacao(
@@ -66,13 +67,13 @@ public readonly record struct ProtecaoDeDados(
     }
 
     private static FieldError? RecusaDaHipotese(
-        HipoteseLegalTratamento hipotese, ClassificacaoDeProtecao? classificacao, RecusasDaProtecao recusas)
+        HipoteseLegalTratamento? hipotese, ClassificacaoDeProtecao? classificacao, RecusasDaProtecao recusas)
     {
-        DomainError? erro = hipotese == HipoteseLegalTratamento.Nenhuma
+        DomainError? erro = hipotese is null
             ? new(recusas.HipoteseObrigatoria, $"Hipótese legal de tratamento {recusas.Sujeito} é obrigatória.")
-            : !Enum.IsDefined(hipotese)
+            : !Enum.IsDefined(hipotese.Value)
                 ? new(recusas.HipoteseInvalida, $"Hipótese legal de tratamento {recusas.Sujeito} fora do vocabulário fechado.")
-                : NaEscala(classificacao) && !HipotesesLegaisTratamento.AdmiteClassificacao(hipotese, classificacao!.Value)
+                : NaEscala(classificacao) && !HipotesesLegaisTratamento.AdmiteClassificacao(hipotese.Value, classificacao!.Value)
                     ? new(recusas.HipoteseIncompativel, "A hipótese legal não cabe na classificação: dado sensível usa as hipóteses do art. 11 da LGPD, e os demais as do art. 7º.")
                     : null;
         return erro is null ? null : new FieldError("hipoteseLegal", erro);
