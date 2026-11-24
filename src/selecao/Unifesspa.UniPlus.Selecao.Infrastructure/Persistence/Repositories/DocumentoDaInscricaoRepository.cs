@@ -186,21 +186,21 @@ public sealed class DocumentoDaInscricaoRepository : IDocumentoDaInscricaoReposi
     }
 
     public async Task AgendarLimpezaAsync(string objectKey, DateTimeOffset limparApos, CancellationToken cancellationToken = default) =>
-        await _context.ChavesALimpar.AddAsync(ChaveALimpar.Agendar(objectKey, limparApos), cancellationToken).ConfigureAwait(false);
+        await _context.ArquivosAApagar.AddAsync(ArquivoAApagar.Agendar(objectKey, limparApos), cancellationToken).ConfigureAwait(false);
 
-    public async Task<IReadOnlyList<ChaveALimpar>> ListarChavesVencidasAsync(
+    public async Task<IReadOnlyList<ArquivoAApagar>> ListarChavesVencidasAsync(
         DateTimeOffset agora, int limite, CancellationToken cancellationToken = default) =>
-        await _context.ChavesALimpar
+        await _context.ArquivosAApagar
             .AsNoTracking()
-            .Where(c => c.LimparApos <= agora)
-            .OrderBy(c => c.LimparApos)
+            .Where(c => c.ApagarAPartirDe <= agora)
+            .OrderBy(c => c.ApagarAPartirDe)
             .ThenBy(c => c.Id)
             .Take(limite)
             .ToListAsync(cancellationToken)
             .ConfigureAwait(false);
 
     public async Task RemoverChaveAgendadaAsync(Guid id, CancellationToken cancellationToken = default) =>
-        await _context.ChavesALimpar.Where(c => c.Id == id).ExecuteDeleteAsync(cancellationToken).ConfigureAwait(false);
+        await _context.ArquivosAApagar.Where(c => c.Id == id).ExecuteDeleteAsync(cancellationToken).ConfigureAwait(false);
 
     private static Expression<Func<ArquivoDaApresentacao, bool>> PendenteVencido(DateTimeOffset agora) =>
         a => a.Situacao == SituacaoDoArquivoDoCandidato.Pendente && a.ExpiraEm <= agora;

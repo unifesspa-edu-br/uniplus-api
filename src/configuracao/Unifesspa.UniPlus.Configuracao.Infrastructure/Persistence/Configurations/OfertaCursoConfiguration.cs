@@ -83,22 +83,21 @@ internal sealed class OfertaCursoConfiguration : IEntityTypeConfiguration<Oferta
             .IsRequired();
     }
 
-    // Nome explícito: a convenção snake_case quebraria "EMecCodigo" de forma
-    // não óbvia — fixa e_mec_codigo como contrato de schema.
+    // Os nomes das colunas identificam os códigos nos respectivos sistemas.
     private static void ConfigurarCadastroNoMec(EntityTypeBuilder<OfertaCurso> builder)
     {
         builder.Property(o => o.EMecCodigo)
-            .HasColumnName("e_mec_codigo")
+            .HasColumnName("codigo_emec")
             .HasMaxLength(EMecCodigoMaxLength);
 
-        builder.Property(o => o.CodigoSga).HasMaxLength(CodigoSgaMaxLength);
+        builder.Property(o => o.CodigoSga).HasColumnName("codigo_no_sistema_academico").HasMaxLength(CodigoSgaMaxLength);
         builder.Property(o => o.VagasAnuaisAutorizadas);
         builder.Property(o => o.BaseLegal).HasMaxLength(BaseLegalMaxLength);
         builder.Property(o => o.AtoAutorizacaoMec).HasMaxLength(AtoAutorizacaoMecMaxLength);
     }
 
     // Cópia dos dados da unidade ofertante (ADR-0061): owned type obrigatório,
-    // table splitting em colunas unidade_oft_* — todas NOT NULL, SEM FK para
+    // table splitting em colunas unidade_ofertante_* — todas NOT NULL, SEM FK para
     // Organização (a proveniência é só o origem_id).
     private static void ConfigurarUnidadeOfertante(EntityTypeBuilder<OfertaCurso> builder)
     {
@@ -109,13 +108,13 @@ internal sealed class OfertaCursoConfiguration : IEntityTypeConfiguration<Oferta
     private static void ConfigurarColunasDaUnidadeOfertante(OwnedNavigationBuilder<OfertaCurso, UnidadeOfertante> unidade)
     {
         unidade.ClassificaPorPadrao(ClassificacaoDeProtecao.Interno);
-        unidade.Property(u => u.OrigemId).HasColumnName("unidade_oft_origem_id").IsRequired();
+        unidade.Property(u => u.OrigemId).HasColumnName("unidade_ofertante_origem_id").IsRequired();
         unidade.Property(u => u.Sigla)
-            .HasColumnName("unidade_oft_sigla").HasMaxLength(UnidadeOfertante.SiglaMaxLength).IsRequired();
+            .HasColumnName("unidade_ofertante_sigla").HasMaxLength(UnidadeOfertante.SiglaMaxLength).IsRequired();
         unidade.Property(u => u.Nome)
-            .HasColumnName("unidade_oft_nome").HasMaxLength(UnidadeOfertante.NomeMaxLength).IsRequired();
+            .HasColumnName("unidade_ofertante_nome").HasMaxLength(UnidadeOfertante.NomeMaxLength).IsRequired();
         unidade.Property(u => u.Tipo)
-            .HasColumnName("unidade_oft_tipo").HasMaxLength(UnidadeOfertante.TipoMaxLength).IsRequired();
+            .HasColumnName("unidade_ofertante_tipo").HasMaxLength(UnidadeOfertante.TipoMaxLength).IsRequired();
     }
 
     // Auditoria (IAuditableEntity)

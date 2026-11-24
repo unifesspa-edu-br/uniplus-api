@@ -14,7 +14,7 @@ using Unifesspa.UniPlus.Configuracao.IntegrationTests.Infrastructure;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 
 /// <summary>
-/// A junção <c>tipos_etapa_conceitos</c> contra Postgres real: os pares gravam e voltam pelo código, a edição
+/// A junção <c>conceitos_do_tipo_de_etapa</c> contra Postgres real: os pares gravam e voltam pelo código, a edição
 /// substitui o conjunto, apagar o tipo de etapa leva os pares e o tipo de conceito com par não pode ser apagado.
 /// </summary>
 [Collection(ConfiguracaoDbCollection.Name)]
@@ -163,6 +163,6 @@ public sealed class TipoEtapaConceitosAdmitidosPersistenceTests
 
     private static async Task<int> ContarParesAsync(UniPlusDbContext ctx, Guid tipoEtapaId) =>
         await ctx.Database.SqlQuery<int>(
-            $"""SELECT count(*)::int AS "Value" FROM configuracao.tipos_etapa_conceitos WHERE tipo_etapa_id = {tipoEtapaId}""")
+            $"""SELECT count(*)::int AS "Value" FROM configuracao.conceitos_do_tipo_de_etapa WHERE tipo_etapa_id = {tipoEtapaId}""")
             .SingleAsync();
 }

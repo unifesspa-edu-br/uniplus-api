@@ -66,7 +66,7 @@ public interface IDocumentoDaInscricaoRepository : IArquivoEnviadoRepository
     Task AgendarLimpezaAsync(string objectKey, DateTimeOffset limparApos, CancellationToken cancellationToken = default);
 
     /// <summary>Até <paramref name="limite"/> chaves agendadas cuja hora já passou em <paramref name="agora"/>, sem rastreamento.</summary>
-    Task<IReadOnlyList<ChaveALimpar>> ListarChavesVencidasAsync(DateTimeOffset agora, int limite, CancellationToken cancellationToken = default);
+    Task<IReadOnlyList<ArquivoAApagar>> ListarChavesVencidasAsync(DateTimeOffset agora, int limite, CancellationToken cancellationToken = default);
 
     /// <summary>Tira a chave da agenda depois de apagada do armazenamento.</summary>
     Task RemoverChaveAgendadaAsync(Guid id, CancellationToken cancellationToken = default);

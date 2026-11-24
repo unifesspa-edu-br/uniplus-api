@@ -64,7 +64,7 @@ public static class SelecaoDbSets
 
         public DbSet<ApresentacaoDeDocumento> ApresentacoesDeDocumento => contexto.Set<ApresentacaoDeDocumento>();
 
-        public DbSet<ChaveALimpar> ChavesALimpar => contexto.Set<ChaveALimpar>();
+        public DbSet<ArquivoAApagar> ArquivosAApagar => contexto.Set<ArquivoAApagar>();
 
         public DbSet<ArquivoDaApresentacao> ArquivosDaApresentacao => contexto.Set<ArquivoDaApresentacao>();
 
