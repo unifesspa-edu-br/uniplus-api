@@ -7,7 +7,7 @@ using Unifesspa.UniPlus.Regras.ValueObjects;
 /// <summary>
 /// A configuração da derivação de um fato num processo: o código do fato derivado e a
 /// lista de regras que o resolvem. É a forma persistida da regra que o binding
-/// <c>REGRA_DERIVACAO:{codigoDoFato}</c> referencia.
+/// <c>REGRA_DE_CALCULO:{codigoDoFato}</c> referencia.
 /// </summary>
 /// <remarks>
 /// <para>

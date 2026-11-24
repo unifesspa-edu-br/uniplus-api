@@ -58,9 +58,9 @@ public sealed class EnvelopeCodecRecusaGramaticaFechadaTests
     [InlineData("atendimento.tiposDeficiencia.0")]
     [InlineData("fada.regra")]
     [InlineData("vagas.0")]
-    [InlineData("cascataRemanejamento")]
-    [InlineData("cascataRemanejamento.regra")]
-    [InlineData("cascataRemanejamento.ordens.0")]
+    [InlineData("ordemDeRemanejamento")]
+    [InlineData("ordemDeRemanejamento.regra")]
+    [InlineData("ordemDeRemanejamento.ordens.0")]
     [InlineData("identidadesUnidade")]
     [InlineData("identidadesUnidade.administradora")]
     [InlineData("divulgacao")]
@@ -109,7 +109,7 @@ public sealed class EnvelopeCodecRecusaGramaticaFechadaTests
     {
         Result<EnvelopeReidratado> resultado = ReidratarComEnvelopeAdulterado(envelope =>
         {
-            JsonObject cascata = envelope["cascataRemanejamento"]!.AsObject();
+            JsonObject cascata = envelope["ordemDeRemanejamento"]!.AsObject();
             cascata["presente"] = false;
             // Sobra `regra`, `fallbackCodigo` e `ordens` — a forma "ausente" só admite `presente`.
         });
@@ -137,7 +137,7 @@ public sealed class EnvelopeCodecRecusaGramaticaFechadaTests
     [Theory(DisplayName = "Bloco real com chaves de um formato de stub extinto é forma intrusa — recusado, não tolerado")]
     [InlineData("vagas")]
     [InlineData("documentosExigidos")]
-    [InlineData("cascataRemanejamento")]
+    [InlineData("ordemDeRemanejamento")]
     public void BlocoRealComFormaDeStubExtinto_Recusa(string bloco)
     {
         Result<EnvelopeReidratado> resultado = ReidratarComEnvelopeAdulterado(envelope =>
@@ -151,6 +151,20 @@ public sealed class EnvelopeCodecRecusaGramaticaFechadaTests
     public void BlocoAusente_Recusa()
     {
         Result<EnvelopeReidratado> resultado = ReidratarComEnvelopeAdulterado(envelope => envelope.Remove("atendimento"));
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be(ErrosCodecEnvelope.EnvelopeMalformado);
+    }
+
+    [Fact]
+    public void ChaveAntigaDoRemanejamento_Recusa()
+    {
+        Result<EnvelopeReidratado> resultado = ReidratarComEnvelopeAdulterado(envelope =>
+        {
+            JsonNode? bloco = envelope["ordemDeRemanejamento"]!.DeepClone();
+            envelope.Remove("ordemDeRemanejamento");
+            envelope["cascata" + "Remanejamento"] = bloco;
+        });
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be(ErrosCodecEnvelope.EnvelopeMalformado);

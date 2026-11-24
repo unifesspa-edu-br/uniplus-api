@@ -349,7 +349,7 @@ public static class SementePsrMedicina2027
 
     private static string ComandoDoValor(Guid id, Guid fatoId, FatoValorDominio valor) =>
         Inserir("opcoes_dos_dados", "id",
-            ("id", Uuid(id)), ("fato_candidato_id", Uuid(fatoId)), ("codigo", Texto(valor.Codigo)),
+            ("id", Uuid(id)), ("dado_do_candidato_id", Uuid(fatoId)), ("codigo", Texto(valor.Codigo)),
             ("descricao", Texto(valor.Descricao)), ("ordem", valor.Ordem.ToString(CultureInfo.InvariantCulture)),
             ("ativo", Logico(valor.Ativo)), ("created_at", Momento(Declaracao.Instante)));
 }

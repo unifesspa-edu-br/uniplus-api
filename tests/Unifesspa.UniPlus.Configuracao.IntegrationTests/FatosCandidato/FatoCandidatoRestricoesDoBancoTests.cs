@@ -98,7 +98,7 @@ public sealed class FatoCandidatoRestricoesDoBancoTests
 
         Func<Task> act = async () => await ctx.Database.ExecuteSqlAsync(
             $"""
-            INSERT INTO configuracao.opcoes_dos_dados (id, fato_candidato_id, codigo, descricao, ordem, ativo, created_at)
+            INSERT INTO configuracao.opcoes_dos_dados (id, dado_do_candidato_id, codigo, descricao, ordem, ativo, created_at)
             VALUES ({Guid.CreateVersion7()}, {corRaca.Id}, {"PRETA"}, {"Duplicata"}, 99, true, {DateTimeOffset.UtcNow})
             """);
 

@@ -137,7 +137,7 @@ internal static class ApoioDaConcorrenciaDaPublicacao
     private static async Task ConferirCascataCongeladaAsync(UniPlusDbContext db, Guid id)
     {
         VersaoConfiguracao versao = await db.VersoesConfiguracao.AsNoTracking().SingleAsync(v => v.ProcessoSeletivoId == id);
-        JsonObject cascata = JsonNode.Parse(versao.ConfiguracaoCongelada)!["cascataRemanejamento"]!.AsObject();
+        JsonObject cascata = JsonNode.Parse(versao.ConfiguracaoCongelada)!["ordemDeRemanejamento"]!.AsObject();
         cascata["presente"]!.GetValue<bool>().Should().BeTrue();
         cascata["ordens"]!.AsArray().Should().HaveCount(8);
     }

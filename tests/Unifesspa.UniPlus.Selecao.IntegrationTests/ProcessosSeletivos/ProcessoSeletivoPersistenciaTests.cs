@@ -104,6 +104,33 @@ public sealed class ProcessoSeletivoPersistenciaTests : IClassFixture<ProcessoSe
             "o CHECK ck_processos_seletivos_unidade_administradora_cidade_completa exige o trio de cidade completo ou ausente");
     }
 
+    [Theory(DisplayName = "Situações válidas são gravadas e lidas do banco")]
+    [InlineData("RASCUNHO", StatusProcesso.Rascunho)]
+    [InlineData("PUBLICADO", StatusProcesso.Publicado)]
+    [InlineData("ENCERRADO", StatusProcesso.Encerrado)]
+    [InlineData("CANCELADO", StatusProcesso.Cancelado)]
+    public async Task Situacao_CodigoValido_GravaELeDoBanco(string codigo, StatusProcesso esperado)
+    {
+        ProcessoSeletivo processo = NovoProcesso("PS — Situação");
+        await _apoio.GravarAsync(processo);
+        await using UniPlusDbContext contexto = _fixture.CreateDbContext();
+        await contexto.Database.ExecuteSqlAsync($"UPDATE selecao.processos_seletivos SET situacao = {codigo} WHERE id = {processo.Id}");
+
+        ProcessoSeletivo recarregado = await contexto.ProcessosSeletivos.AsNoTracking().SingleAsync(p => p.Id == processo.Id);
+        recarregado.Status.Should().Be(esperado);
+    }
+
+    [Fact(DisplayName = "CHECK de situação rejeita código inválido")]
+    public async Task Situacao_CodigoInvalido_ViolaRestricao()
+    {
+        ProcessoSeletivo processo = NovoProcesso("PS — Situação inválida");
+        await _apoio.GravarAsync(processo);
+        await using UniPlusDbContext contexto = _fixture.CreateDbContext();
+        Func<Task> act = () => contexto.Database.ExecuteSqlAsync($"UPDATE selecao.processos_seletivos SET situacao = {"INVALIDO"} WHERE id = {processo.Id}");
+
+        (await act.Should().ThrowAsync<PostgresException>()).Which.ConstraintName.Should().Be("ck_processos_seletivos_situacao");
+    }
+
     [Theory(DisplayName = "CHECKs de positividade da etapa rejeitam UPDATE cru com nota máxima ou passo zerados")]
     [InlineData(true)]
     [InlineData(false)]
@@ -158,8 +185,8 @@ public sealed class ProcessoSeletivoPersistenciaTests : IClassFixture<ProcessoSe
         recarregado.Declaracao().Avaliacao.CalcularDivisorMedia().Should().Be(5m);
     }
 
-    [Fact(DisplayName = "Persiste e reidrata a regra de derivação nos três níveis")]
-    public async Task PersisteEReidrata_RegraDerivacao()
+    [Fact(DisplayName = "Persiste e lê do banco a regra de derivação nos três níveis")]
+    public async Task PersisteELeDoBanco_RegraDerivacao()
     {
         ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS 2026 — Derivação", TiposDeProcessoDeTeste.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
 
@@ -203,7 +230,7 @@ public sealed class ProcessoSeletivoPersistenciaTests : IClassFixture<ProcessoSe
             $"""
             INSERT INTO selecao.processos_seletivos (
                 id, nome, tipo_processo_origem_id, tipo_processo_codigo, tipo_processo_nome,
-                status, origem_candidatos, localidade_codigo_ibge, localidade_nome, localidade_uf,
+                situacao, origem_candidatos, localidade_codigo_ibge, localidade_nome, localidade_uf,
                 unidade_administradora_origem_id,
                 unidade_administradora_sigla, unidade_administradora_identificador_no_endereco_web, unidade_administradora_nome, unidade_administradora_tipo,
                 created_at, is_deleted)

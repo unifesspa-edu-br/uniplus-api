@@ -15,7 +15,7 @@ public sealed class ConferenciaDoSubitemTests
     [Theory]
     [InlineData(OrigemFato.Declarado, "MEMBRO_GRUPO", "CAMPO_FORMULARIO:PARENTESCO", null)]
     [InlineData(OrigemFato.Declarado, "CANDIDATO", "CAMPO_FORMULARIO:PARENTESCO", ItemFormularioErrorCodes.FatoNaoColetavel)]
-    [InlineData(OrigemFato.Calculado, "MEMBRO_GRUPO", "REGRA_DERIVACAO:PARENTESCO", ItemFormularioErrorCodes.FatoNaoColetavel)]
+    [InlineData(OrigemFato.Calculado, "MEMBRO_GRUPO", "REGRA_DE_CALCULO:PARENTESCO", ItemFormularioErrorCodes.FatoNaoColetavel)]
     public void FatoDoSubitem_SoAceitaFatoDeclaradoDeMembro(OrigemFato origem, string escopo, string binding, string? esperado)
     {
         Dictionary<string, FatoDoCatalogo> catalogo = Catalogo(origem, escopo, binding);

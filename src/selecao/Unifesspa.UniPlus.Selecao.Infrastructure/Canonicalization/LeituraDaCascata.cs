@@ -27,7 +27,7 @@ internal static class LeituraDaCascata
     /// </summary>
     internal static ConfiguracaoCascataRemanejamento? LerCascataRemanejamento(LeitorEnvelope leitor, JsonObject payload)
     {
-        if (leitor.ObjetoSePresente(payload, "cascataRemanejamento") is not { } bloco)
+        if (leitor.ObjetoSePresente(payload, "ordemDeRemanejamento") is not { } bloco)
         {
             return null;
         }
@@ -37,11 +37,11 @@ internal static class LeituraDaCascata
 
     private static ConfiguracaoCascataRemanejamento? LerCascataPresente(LeitorEnvelope leitor, JsonObject bloco)
     {
-        leitor.ExigirChaves(bloco, "cascataRemanejamento", "presente", "regra", "destinoFinalCodigo", "ordens");
+        leitor.ExigirChaves(bloco, "ordemDeRemanejamento", "presente", "regra", "destinoFinalCodigo", "ordens");
 
-        ReferenciaRegra regra = leitor.Regra<CriterioDeRemanejamento>(bloco, "regra", "cascataRemanejamento");
-        string fallbackCodigo = leitor.Texto(bloco, "destinoFinalCodigo", "cascataRemanejamento", LimitesDoEnvelope.ModalidadeCodigo);
-        JsonArray ordens = leitor.Array(bloco, "ordens", "cascataRemanejamento");
+        ReferenciaRegra regra = leitor.Regra<CriterioDeRemanejamento>(bloco, "regra", "ordemDeRemanejamento");
+        string fallbackCodigo = leitor.Texto(bloco, "destinoFinalCodigo", "ordemDeRemanejamento", LimitesDoEnvelope.ModalidadeCodigo);
+        JsonArray ordens = leitor.Array(bloco, "ordens", "ordemDeRemanejamento");
         if (leitor.Falhou)
         {
             return null;
@@ -79,8 +79,8 @@ internal static class LeituraDaCascata
 
     private static bool AdicionarDestinos(LeitorEnvelope leitor, JsonArray ordens, int indice, List<DestinoRemanejamento> destinos)
     {
-        string path = $"cascataRemanejamento.ordens[{indice}]";
-        JsonObject item = leitor.ItemObjeto(ordens, indice, "cascataRemanejamento.ordens");
+        string path = $"ordemDeRemanejamento.ordens[{indice}]";
+        JsonObject item = leitor.ItemObjeto(ordens, indice, "ordemDeRemanejamento.ordens");
         leitor.ExigirChaves(item, path, "origem", "destinos");
         string origem = leitor.Texto(item, "origem", path, LimitesDoEnvelope.ModalidadeCodigo);
         IReadOnlyList<string> codigos = leitor.Textos(item, "destinos", path);

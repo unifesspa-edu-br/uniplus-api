@@ -15,7 +15,7 @@ internal static class ItensDasReferenciasDeRegra
     private static string Dimensao(string campo) => campo switch
     {
         var c when c.StartsWith("distribuicaoVagas", StringComparison.Ordinal) => DimensaoConformidade.DistribuicaoVagas,
-        var c when c.StartsWith("cascataRemanejamento", StringComparison.Ordinal) => DimensaoConformidade.CascataRemanejamento,
+        var c when c.StartsWith("ordemDeRemanejamento", StringComparison.Ordinal) => DimensaoConformidade.CascataRemanejamento,
         var c when c.StartsWith("fases", StringComparison.Ordinal) => DimensaoConformidade.Cronograma,
         var c when c.StartsWith("etapas", StringComparison.Ordinal) => DimensaoConformidade.Etapas,
         var c when c.StartsWith("classificacao.criteriosDeDesempate", StringComparison.Ordinal) => DimensaoConformidade.Desempate,

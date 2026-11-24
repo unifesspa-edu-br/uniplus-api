@@ -2,6 +2,7 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Seed;
 
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Domain.Enums;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.Formularios;
@@ -115,7 +116,7 @@ public static class FatoCandidatoSeed
         // cotas da Lei nº 12.711/2012 (UNI-REQ-0148) como regra padrão, que o processo copia.
         new(SeedId(4), OrigemEscolar.FatoEgresso, "Egresso de escola pública", "Se o candidato cursou o ensino médio em escola pública. O sistema o calcula a partir das duas respostas sobre a origem escolar, pela regra da Lei nº 12.711/2012.",
             TipoDoDado.SimOuNao, OrigemFato.Calculado, QuantidadeDeValores.ValorUnico, null,
-            PontoResolucaoInscricao, $"REGRA_DERIVACAO:{OrigemEscolar.FatoEgresso}",
+            PontoResolucaoInscricao, $"{MecanismoDoVinculo.RegraDeDerivacao.Codigo()}:{OrigemEscolar.FatoEgresso}",
             ClassificacaoDeProtecao.Pessoal, FinalidadeReservaDeVagas, RegrasPadrao: OrigemEscolar.RegrasDoEgresso),
 
         new(SeedId(5), "RENDA_PER_CAPITA", "Renda familiar per capita", "Renda mensal da família do candidato dividida pelo número de integrantes da composição familiar, em reais. Define o enquadramento nas vagas reservadas por renda.",
@@ -139,7 +140,7 @@ public static class FatoCandidatoSeed
         // diz o conteúdo (ADR-0116, emenda de 2026-07-22).
         new(SeedId(8), ModalidadeDoCandidato.Fato, "Modalidade de concorrência", "Modalidades de concorrência em que o candidato concorre, resultantes das regras de reserva de vagas do processo aplicadas às respostas dele.",
             TipoDoDado.Opcao, OrigemFato.Calculado, QuantidadeDeValores.VariosValores, FonteValoresFato.Modalidade,
-            PontoResolucaoInscricao, $"REGRA_DERIVACAO:{ModalidadeDoCandidato.Fato}",
+            PontoResolucaoInscricao, $"{MecanismoDoVinculo.RegraDeDerivacao.Codigo()}:{ModalidadeDoCandidato.Fato}",
             ClassificacaoDeProtecao.Interno, FinalidadeReservaDeVagas),
 
         new(SeedId(9), "CONDICAO_ATENDIMENTO", "Condição de atendimento especializado", "Condições do candidato pelas quais ele pede atendimento especializado nas etapas do processo.",
@@ -286,7 +287,7 @@ public static class FatoCandidatoSeed
         new(SeedId(54), OpcaoPelasCotasDaLei.Fato, "Optou pelas cotas da Lei nº 12.711/2012",
             "Se o candidato é egresso de escola pública e optou por concorrer às vagas de escola pública.",
             TipoDoDado.SimOuNao, OrigemFato.Calculado, QuantidadeDeValores.ValorUnico, null,
-            PontoResolucaoInscricao, $"REGRA_DERIVACAO:{OpcaoPelasCotasDaLei.Fato}",
+            PontoResolucaoInscricao, $"{MecanismoDoVinculo.RegraDeDerivacao.Codigo()}:{OpcaoPelasCotasDaLei.Fato}",
             ClassificacaoDeProtecao.Pessoal, FinalidadeReservaDeVagas, RegrasPadrao: OpcaoPelasCotasDaLei.RegrasDaOpcao),
 
         // A opção pelas vagas por acréscimo do PSIQ, uma só para as duas: a autodeclaração indígena

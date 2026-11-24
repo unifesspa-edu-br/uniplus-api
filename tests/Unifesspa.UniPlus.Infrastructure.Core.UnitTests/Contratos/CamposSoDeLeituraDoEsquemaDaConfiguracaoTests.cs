@@ -18,7 +18,7 @@ public sealed class CamposSoDeLeituraDoEsquemaDaConfiguracaoTests
     [InlineData(ArquivoDoDocumento, "properties/id")]
     [InlineData(ArquivoDoDocumento, "properties/versao")]
     [InlineData(ArquivoDoDocumento, "properties/publicadoEm")]
-    [InlineData(ArquivoDoDocumento, "properties/tiposDeAtoCongelados")]
+    [InlineData(ArquivoDoDocumento, "properties/tiposDeAto")]
     [InlineData("identificacao.schema.json", "properties/localidadeNome")]
     [InlineData("identificacao.schema.json", "properties/localidadeUf")]
     [InlineData("identificacao.schema.json", "properties/tipoProcessoNome")]

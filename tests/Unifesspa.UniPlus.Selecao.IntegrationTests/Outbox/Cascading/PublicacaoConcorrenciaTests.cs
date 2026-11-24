@@ -164,7 +164,7 @@ public sealed class PublicacaoConcorrenciaTests
     {
         processo.Status.Should().Be(StatusProcesso.Publicado);
         JsonNode configuracao = await ConfiguracaoPublicadaAsync(db, processo.Id);
-        JsonObject cascata = configuracao["cascataRemanejamento"]!.AsObject();
+        JsonObject cascata = configuracao["ordemDeRemanejamento"]!.AsObject();
         cascata["presente"]!.GetValue<bool>().Should().BeTrue();
         cascata["ordens"]!.AsArray().Should().HaveCount(8);
     }

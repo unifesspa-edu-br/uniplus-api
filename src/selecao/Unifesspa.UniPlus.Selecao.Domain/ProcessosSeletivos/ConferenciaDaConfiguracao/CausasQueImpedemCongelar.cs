@@ -41,7 +41,7 @@ internal static class CausasQueImpedemCongelar
         new(NomeDoAssunto.Bancas, static c => Bancas(c.Configuracao.Identidade.OrigemCandidatos, c.Cronograma, c.Etapas, c.Cadastros.Corretores)),
         new(NomeDoAssunto.CorrecaoIndependente, static c => CorrecaoIndependente(c.Configuracao, c.Cadastros.Corretores)),
         new(NomeDoAssunto.TiposDeAto, static c => TiposDeAto(c.Cronograma, c.Etapas, c.Cadastros.TiposDeAtoUnicos)),
-        new(NomeDoAssunto.Cascata, static c => CausasDaRecusa.NoCampo(CoberturaDaCascata.CausasDaCascata(c.Configuracao), "cascataRemanejamento")),
+        new(NomeDoAssunto.Cascata, static c => CausasDaRecusa.NoCampo(CoberturaDaCascata.CausasDaCascata(c.Configuracao), "ordemDeRemanejamento")),
         new(NomeDoAssunto.CondicoesDaCanonicalizacao, static c => CondicoesDaCanonicalizacao.Causas(c.Configuracao, c.Cadastros)),
         new(NomeDoAssunto.MotivosDeDecisao, static c => MotivosDasDecisoes(c.Configuracao, c.Cadastros.MotivosEscolhidos)),
         new(NomeDoAssunto.ProvaPresencial, static c =>

@@ -22,7 +22,7 @@ public sealed class FormaLidaDoEsquemaTests
     [InlineData("id")]
     [InlineData("versao")]
     [InlineData("publicadoEm")]
-    [InlineData("tiposDeAtoCongelados")]
+    [InlineData("tiposDeAto")]
     [InlineData("identificacao/unidadeAdministradoraNome")]
     [InlineData("distribuicaoVagas/[]/quadro")]
     public void CampoSomenteLeitura_EMarcado(string caminho) => Em(caminho).SomenteLeitura.Should().BeTrue();

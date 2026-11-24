@@ -96,7 +96,7 @@ public sealed class VocabularioDeFatosTests
     {
         FatoCandidatoView global = new(
             Guid.CreateVersion7(), "FORMA_CONCLUSAO", "Forma de conclusão", "Descrição do fato.", CodigoComRotulo<TipoDoDado>.De(TipoDoDado.Opcao), CodigoComRotulo<OrigemFato>.De(OrigemFato.Calculado), CodigoComRotulo<QuantidadeDeValores>.De(QuantidadeDeValores.VariosValores),
-            ["REGULAR", "EJA"], "INSCRICAO", "REGRA_DERIVACAO:FORMA_CONCLUSAO",
+            ["REGULAR", "EJA"], "INSCRICAO", "REGRA_DE_CALCULO:FORMA_CONCLUSAO",
             [new FatoValorDominioViewItem("REGULAR", "Regular", 0, true), new FatoValorDominioViewItem("EJA", "EJA", 1, false)],
             CodigoComRotulo<FonteValoresFato>.De(FonteValoresFato.Catalogo), Ativo: true, ClassificacaoProtecao: "PESSOAL", HipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, FinalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, ProtecaoAprovada: true);
         Dictionary<string, DominioDeValores> dinamicos = new(StringComparer.Ordinal)

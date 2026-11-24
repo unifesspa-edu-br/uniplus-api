@@ -20,7 +20,7 @@ public enum MecanismoDoVinculo
     AtributoCandidato = 2,
 
     /// <summary>Calculado pela regra declarada no processo, como a modalidade de concorrência.</summary>
-    [CodigoDeContrato("REGRA_DERIVACAO", "Regra de derivação", Descricao = "O valor é calculado por uma regra declarada no processo, como a modalidade de concorrência.")]
+    [CodigoDeContrato("REGRA_DE_CALCULO", "Regra de cálculo", Descricao = "O valor é calculado por uma regra declarada no processo, como a modalidade de concorrência.")]
     RegraDeDerivacao = 3,
 
     /// <summary>Produzido pela classificação, como o grupo em que o candidato foi convocado.</summary>

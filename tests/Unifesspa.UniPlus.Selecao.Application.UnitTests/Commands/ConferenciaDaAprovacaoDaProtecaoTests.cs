@@ -127,7 +127,7 @@ public sealed class ConferenciaDaAprovacaoDaProtecaoTests
 
     private static FatoCandidatoView Fato(string codigo, OrigemFato origem, bool aprovada) => new(
         Guid.CreateVersion7(), codigo, codigo, "Descrição do fato.", CodigoComRotulo<TipoDoDado>.De(TipoDoDado.Opcao), CodigoComRotulo<OrigemFato>.De(origem), CodigoComRotulo<QuantidadeDeValores>.De(QuantidadeDeValores.ValorUnico), null, "INSCRICAO",
-        origem == OrigemFato.Calculado ? $"REGRA_DERIVACAO:{codigo}" : $"CAMPO_FORMULARIO:{codigo}", null, CodigoComRotulo<FonteValoresFato>.De(FonteValoresFato.Catalogo), Ativo: true,
+        origem == OrigemFato.Calculado ? $"REGRA_DE_CALCULO:{codigo}" : $"CAMPO_FORMULARIO:{codigo}", null, CodigoComRotulo<FonteValoresFato>.De(FonteValoresFato.Catalogo), Ativo: true,
         ClassificacaoProtecao: "PESSOAL", HipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, FinalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade,
         ProtecaoAprovada: aprovada);
 }

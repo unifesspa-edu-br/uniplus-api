@@ -294,9 +294,8 @@ internal static class ConferenciaDaDefinicaoDoFato
             $"O prefixo do binding deve ser {esperado} para a origem {origem.Codigo()} (recebido \"{prefixo}\").");
     }
 
-    // REGRA_DERIVACAO referencia a regra de derivação do PRÓPRIO fato (ADR-0116): a referência
-    // após o prefixo tem de ser o código do fato. Sem isso, um fato poderia apontar para a regra
-    // de outro — e o metadado congelado descreveria uma derivação que não é a sua.
+    // REGRA_DE_CALCULO deve apontar para o próprio dado, para que a cópia gravada
+    // não descreva o cálculo de outro dado.
     private static DomainError? RecusaDaReferenciaDaRegra(string normalizado, string codigo)
     {
         string prefixo = PrefixoDoBinding(normalizado);

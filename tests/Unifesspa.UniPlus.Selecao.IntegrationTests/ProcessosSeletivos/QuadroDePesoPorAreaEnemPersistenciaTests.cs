@@ -119,7 +119,7 @@ public sealed class QuadroDePesoPorAreaEnemPersistenciaTests
 
         await using UniPlusDbContext ctx = _cenario.CriarDbContext();
         Func<Task> inserir = () => ctx.Database.ExecuteSqlAsync(
-            $"INSERT INTO selecao.areas_do_quadro_de_pesos (id, grupo_peso_area_enem_congelado_id, codigo, rotulo, peso, corte, created_at) VALUES ({Guid.CreateVersion7()}, {grupo.Id}, {"AREA_EXTRA"}, {"Área extra"}, {(decimal)peso}, {(decimal?)corte}, {DateTimeOffset.UtcNow})");
+            $"INSERT INTO selecao.areas_do_quadro_de_pesos (id, grupo_do_quadro_de_pesos_id, codigo, rotulo, peso, corte, created_at) VALUES ({Guid.CreateVersion7()}, {grupo.Id}, {"AREA_EXTRA"}, {"Área extra"}, {(decimal)peso}, {(decimal?)corte}, {DateTimeOffset.UtcNow})");
 
         (await inserir.Should().ThrowAsync<PostgresException>()).Which.SqlState.Should().Be(PostgresErrorCodes.CheckViolation);
     }
@@ -157,7 +157,7 @@ public sealed class QuadroDePesoPorAreaEnemPersistenciaTests
         foreach (Guid grupoId in grupoIds)
         {
             total += await ctx.Database
-                .SqlQuery<int>($"SELECT count(*)::int AS \"Value\" FROM selecao.areas_do_quadro_de_pesos WHERE grupo_peso_area_enem_congelado_id = {grupoId}")
+                .SqlQuery<int>($"SELECT count(*)::int AS \"Value\" FROM selecao.areas_do_quadro_de_pesos WHERE grupo_do_quadro_de_pesos_id = {grupoId}")
                 .SingleAsync();
         }
 

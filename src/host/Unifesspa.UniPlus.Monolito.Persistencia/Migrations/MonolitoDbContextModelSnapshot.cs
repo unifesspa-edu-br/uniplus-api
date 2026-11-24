@@ -4026,7 +4026,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasMaxLength(200)
                         .HasColumnType("character varying(200)")
                         .HasColumnName("fonte_do_valor")
-                        .HasComment("Vínculo que produz o valor, no formato MECANISMO:REFERENCIA; o mecanismo é CAMPO_FORMULARIO, ATRIBUTO_CANDIDATO, REGRA_DERIVACAO, CLASSIFICACAO, INTEGRACAO ou RESUMO_DE_GRUPO.");
+                        .HasComment("Vínculo que produz o valor, no formato MECANISMO:REFERENCIA; o mecanismo é CAMPO_FORMULARIO, ATRIBUTO_CANDIDATO, REGRA_DE_CALCULO, CLASSIFICACAO, INTEGRACAO ou RESUMO_DE_GRUPO.");
 
                     b.Property<string>("Cardinalidade")
                         .IsRequired()
@@ -4198,7 +4198,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                             t.HasCheckConstraint("ck_dados_do_candidato_hipotese_legal", "hipotese_legal IN ('CONSENTIMENTO', 'CUMPRIMENTO_OBRIGACAO_LEGAL', 'EXECUCAO_POLITICAS_PUBLICAS', 'ESTUDOS_POR_ORGAO_DE_PESQUISA', 'EXECUCAO_CONTRATO', 'EXERCICIO_REGULAR_DE_DIREITOS', 'PROTECAO_DA_VIDA', 'TUTELA_DA_SAUDE', 'INTERESSE_LEGITIMO', 'PROTECAO_DO_CREDITO', 'PREVENCAO_A_FRAUDE')");
 
-                            t.HasCheckConstraint("ck_dados_do_candidato_mecanismo_do_vinculo", "split_part(fonte_do_valor, ':', 1) IN ('CAMPO_FORMULARIO', 'ATRIBUTO_CANDIDATO', 'REGRA_DERIVACAO', 'CLASSIFICACAO', 'INTEGRACAO', 'RESUMO_DE_GRUPO')");
+                            t.HasCheckConstraint("ck_dados_do_candidato_mecanismo_do_vinculo", "split_part(fonte_do_valor, ':', 1) IN ('CAMPO_FORMULARIO', 'ATRIBUTO_CANDIDATO', 'REGRA_DE_CALCULO', 'CLASSIFICACAO', 'INTEGRACAO', 'RESUMO_DE_GRUPO')");
 
                             t.HasCheckConstraint("ck_dados_do_candidato_origem", "origem IN ('CALCULADO', 'DECLARADO', 'INTEGRACAO')");
 
@@ -4288,7 +4288,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         {
                             Id = new Guid("fa700000-0000-7000-8000-000000000004"),
                             Ativo = true,
-                            Binding = "REGRA_DERIVACAO:EGRESSO_ESCOLA_PUBLICA",
+                            Binding = "REGRA_DE_CALCULO:EGRESSO_ESCOLA_PUBLICA",
                             Cardinalidade = "VALOR_UNICO",
                             ClassificacaoProtecao = "PESSOAL",
                             Codigo = "EGRESSO_ESCOLA_PUBLICA",
@@ -4374,7 +4374,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         {
                             Id = new Guid("fa700000-0000-7000-8000-000000000008"),
                             Ativo = true,
-                            Binding = "REGRA_DERIVACAO:MODALIDADE",
+                            Binding = "REGRA_DE_CALCULO:MODALIDADE",
                             Cardinalidade = "VARIOS_VALORES",
                             ClassificacaoProtecao = "INTERNO",
                             Codigo = "MODALIDADE",
@@ -5415,7 +5415,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         {
                             Id = new Guid("fa700000-0000-7000-8000-000000000054"),
                             Ativo = true,
-                            Binding = "REGRA_DERIVACAO:OPTOU_PELAS_COTAS_DA_LEI",
+                            Binding = "REGRA_DE_CALCULO:OPTOU_PELAS_COTAS_DA_LEI",
                             Cardinalidade = "VALOR_UNICO",
                             ClassificacaoProtecao = "PESSOAL",
                             Codigo = "OPTOU_PELAS_COTAS_DA_LEI",
@@ -5531,7 +5531,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.Property<Guid>("FatoCandidatoId")
                         .HasColumnType("uuid")
-                        .HasColumnName("fato_candidato_id")
+                        .HasColumnName("dado_do_candidato_id")
                         .HasComment("Identificador do dado ao qual a opção pertence.");
 
                     b.Property<int>("Ordem")
@@ -5555,7 +5555,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.HasIndex("FatoCandidatoId", "Codigo")
                         .IsUnique()
-                        .HasDatabaseName("ux_opcoes_dos_dados_fato_codigo");
+                        .HasDatabaseName("ux_opcoes_dos_dados_dado_codigo");
 
                     b.ToTable("opcoes_dos_dados", "configuracao", t =>
                         {
@@ -10883,7 +10883,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     b.Property<Guid>("Id")
                         .HasColumnType("uuid")
                         .HasColumnName("id")
-                        .HasComment("Identificador interno (UUIDv7) da área congelada.");
+                        .HasComment("Identificador interno (UUIDv7) da área do quadro de pesos.");
 
                     b.Property<string>("Codigo")
                         .IsRequired()
@@ -10905,8 +10905,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.Property<Guid>("GrupoPesoAreaEnemCongeladoId")
                         .HasColumnType("uuid")
-                        .HasColumnName("grupo_peso_area_enem_congelado_id")
-                        .HasComment("Id do grupo congelado dono da área (FK, cascade delete).");
+                        .HasColumnName("grupo_do_quadro_de_pesos_id")
+                        .HasComment("Identificador do grupo do quadro de pesos ao qual a área pertence.");
 
                     b.Property<decimal>("Peso")
                         .HasPrecision(6, 4)
@@ -10935,7 +10935,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.ToTable("areas_do_quadro_de_pesos", "selecao", t =>
                         {
-                            t.HasComment("Peso e corte de cada área do ENEM num grupo do quadro de pesos por área congelado na classificação, copiados por valor da resolução de Pesos por Área declarada.");
+                            t.HasComment("Peso e corte de cada área do ENEM num grupo do quadro de pesos por área, copiado da resolução quando a classificação é definida e substituído quando ela muda.");
 
                             t.HasCheckConstraint("ck_areas_do_quadro_de_pesos_corte", "corte IS NULL OR (corte >= 0 AND corte <= 1000)");
 
@@ -11891,7 +11891,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.Property<Guid>("FatoColetadoId")
                         .HasColumnType("uuid")
-                        .HasColumnName("fato_coletado_id")
+                        .HasColumnName("dado_do_formulario_id")
                         .HasComment("Identificador do dado do formulário ao qual a condição pertence.");
 
                     b.Property<string>("Operador")
@@ -11916,7 +11916,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasName("pk_condicoes_de_exibicao_do_dado");
 
                     b.HasIndex("FatoColetadoId")
-                        .HasDatabaseName("ix_condicoes_de_exibicao_do_dado_fato_coletado_id");
+                        .HasDatabaseName("ix_condicoes_de_exibicao_do_dado_dado_do_formulario_id");
 
                     b.ToTable("condicoes_de_exibicao_do_dado", "selecao", t =>
                         {
@@ -11956,7 +11956,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.Property<Guid>("RegraDerivacaoConfiguradaId")
                         .HasColumnType("uuid")
-                        .HasColumnName("regra_derivacao_configurada_id")
+                        .HasColumnName("regra_de_calculo_id")
                         .HasComment("Identificador da regra de cálculo à qual a condição pertence.");
 
                     b.Property<DateTimeOffset?>("UpdatedAt")
@@ -12016,8 +12016,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     b.Property<string>("FatoElegibilidadeCodigo")
                         .HasMaxLength(60)
                         .HasColumnType("character varying(60)")
-                        .HasColumnName("fato_elegibilidade_codigo")
-                        .HasComment("Código do dado que decide a elegibilidade ao Fator de Atenuação das Desigualdades de Acesso (FADA), quando definido.");
+                        .HasColumnName("codigo_do_dado_de_elegibilidade")
+                        .HasComment("Código do dado do candidato que decide a elegibilidade ao Fator de Atenuação das Desigualdades de Acesso (FADA), quando definido.");
 
                     b.Property<decimal>("Fator")
                         .HasPrecision(6, 4)
@@ -12199,7 +12199,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasMaxLength(40)
                         .HasColumnType("character varying(40)")
                         .HasColumnName("resolucao_peso_area_enem")
-                        .HasComment("Resolução de Pesos por Área declarada pela classificação baseada em ENEM com cálculo local; o vínculo com o cadastro é pelo valor, e o quadro fica congelado em grupos_do_quadro_de_pesos. Nulo nas demais classificações.");
+                        .HasComment("Resolução de Pesos por Área declarada pela classificação baseada em ENEM com cálculo local; o quadro é copiado na definição da classificação e substituído quando ela muda. Nulo nas demais classificações.");
 
                     b.Property<DateTimeOffset?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
@@ -12518,11 +12518,13 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 {
                     b.Property<Guid>("Id")
                         .HasColumnType("uuid")
-                        .HasColumnName("id");
+                        .HasColumnName("id")
+                        .HasComment("Identificador do destino de remanejamento.");
 
                     b.Property<Guid>("ConfiguracaoCascataRemanejamentoId")
                         .HasColumnType("uuid")
-                        .HasColumnName("configuracao_cascata_remanejamento_id");
+                        .HasColumnName("configuracao_de_remanejamento_id")
+                        .HasComment("Configuração de remanejamento à qual pertence o destino.");
 
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
@@ -12533,17 +12535,20 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .IsRequired()
                         .HasMaxLength(60)
                         .HasColumnType("character varying(60)")
-                        .HasColumnName("modalidade_destino_codigo");
+                        .HasColumnName("modalidade_destino_codigo")
+                        .HasComment("Código da modalidade que recebe as vagas.");
 
                     b.Property<string>("ModalidadeOrigemCodigo")
                         .IsRequired()
                         .HasMaxLength(60)
                         .HasColumnType("character varying(60)")
-                        .HasColumnName("modalidade_origem_codigo");
+                        .HasColumnName("modalidade_origem_codigo")
+                        .HasComment("Código da modalidade que cede as vagas.");
 
                     b.Property<int>("Ordem")
                         .HasColumnType("integer")
-                        .HasColumnName("ordem");
+                        .HasColumnName("ordem")
+                        .HasComment("Posição do destino na ordem de remanejamento da origem.");
 
                     b.Property<DateTimeOffset?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
@@ -12555,14 +12560,16 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.HasIndex("ConfiguracaoCascataRemanejamentoId", "ModalidadeOrigemCodigo", "ModalidadeDestinoCodigo")
                         .IsUnique()
-                        .HasDatabaseName("ux_destinos_remanejamento_cascata_origem_destino");
+                        .HasDatabaseName("ux_destinos_remanejamento_configuracao_origem_destino");
 
                     b.HasIndex("ConfiguracaoCascataRemanejamentoId", "ModalidadeOrigemCodigo", "Ordem")
                         .IsUnique()
-                        .HasDatabaseName("ux_destinos_remanejamento_cascata_origem_ordem");
+                        .HasDatabaseName("ux_destinos_remanejamento_configuracao_origem_ordem");
 
                     b.ToTable("destinos_remanejamento", "selecao", t =>
                         {
+                            t.HasComment("Destinos ordenados para o remanejamento de vagas entre modalidades.");
+
                             t.HasCheckConstraint("ck_destinos_remanejamento_ordem_positiva", "ordem >= 1");
 
                             t.HasCheckConstraint("ck_destinos_remanejamento_origem_diferente_destino", "modalidade_origem_codigo <> modalidade_destino_codigo");
@@ -12713,8 +12720,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     b.PrimitiveCollection<string[]>("FatosComprovados")
                         .IsRequired()
                         .HasColumnType("text[]")
-                        .HasColumnName("fatos_comprovados")
-                        .HasComment("Códigos dos fatos do processo que o documento comprova; vazio quando a exigência não comprova fato.");
+                        .HasColumnName("dados_comprovados")
+                        .HasComment("Códigos dos dados do candidato que o documento comprova; vazio quando a exigência não comprova dados.");
 
                     b.Property<string>("Finalidade")
                         .HasMaxLength(30)
@@ -13660,7 +13667,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     b.Property<Guid>("Id")
                         .HasColumnType("uuid")
                         .HasColumnName("id")
-                        .HasComment("Identificador interno (UUIDv7) do grupo congelado.");
+                        .HasComment("Identificador interno (UUIDv7) do grupo do quadro de pesos.");
 
                     b.Property<string>("BaseLegal")
                         .IsRequired()
@@ -13692,7 +13699,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.ToTable("grupos_do_quadro_de_pesos", "selecao", t =>
                         {
-                            t.HasComment("Quadro de pesos por área do ENEM congelado na classificação do processo seletivo: uma linha por grupo de área, copiada por valor da resolução de Pesos por Área declarada. Substituída por inteiro quando a classificação é redefinida.");
+                            t.HasComment("Quadro de pesos por área do ENEM copiado da resolução quando a classificação é definida e substituído quando ela muda; uma linha por grupo de área.");
                         });
                 });
 
@@ -14767,10 +14774,10 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.Property<string>("Status")
                         .IsRequired()
-                        .HasMaxLength(9)
-                        .HasColumnType("character varying(9)")
-                        .HasColumnName("status")
-                        .HasComment("Situação do processo: rascunho, publicado, encerrado ou cancelado.");
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)")
+                        .HasColumnName("situacao")
+                        .HasComment("Situação do processo seletivo. Códigos: RASCUNHO, PUBLICADO, ENCERRADO, CANCELADO.");
 
                     b.Property<Guid>("UnidadeAdministradoraOrigemId")
                         .HasColumnType("uuid")
@@ -14797,6 +14804,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                             t.HasCheckConstraint("ck_processos_seletivos_numero_de_opcoes_de_curso", "numero_de_opcoes_de_curso IS NULL OR numero_de_opcoes_de_curso IN (1, 2)");
 
                             t.HasCheckConstraint("ck_processos_seletivos_origem_candidatos", "origem_candidatos IN ('INSCRICAO_PROPRIA', 'IMPORTACAO_EXTERNA')");
+
+                            t.HasCheckConstraint("ck_processos_seletivos_situacao", "situacao IN ('RASCUNHO', 'PUBLICADO', 'ENCERRADO', 'CANCELADO')");
 
                             t.HasCheckConstraint("ck_processos_seletivos_unidade_administradora_cidade_completa", "(unidade_administradora_cidade_codigo_ibge IS NULL AND unidade_administradora_cidade_nome IS NULL AND unidade_administradora_cidade_uf IS NULL) OR (unidade_administradora_cidade_codigo_ibge IS NOT NULL AND unidade_administradora_cidade_nome IS NOT NULL AND unidade_administradora_cidade_uf IS NOT NULL)");
                         });
@@ -20488,14 +20497,14 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                                 .HasMaxLength(30)
                                 .HasColumnType("character varying(30)")
                                 .HasColumnName("grupo_area_enem_codigo")
-                                .HasComment("Código do grupo de área do ENEM do curso da oferta, sem abreviação e sem acento, congelado por valor do cadastro de cursos na definição da distribuição; casa a oferta com a linha de Pesos por Área. Nulo quando o curso não declara grupo.");
+                                .HasComment("Código do grupo de área do ENEM do curso da oferta, sem abreviação e sem acento, copiado do cadastro de cursos na definição da distribuição e na publicação; casa a oferta com a linha de Pesos por Área. Nulo quando o curso não declara grupo.");
 
                             b1.Property<string>("Rotulo")
                                 .IsRequired()
                                 .HasMaxLength(60)
                                 .HasColumnType("character varying(60)")
                                 .HasColumnName("grupo_area_enem_rotulo")
-                                .HasComment("Rótulo do grupo de área do ENEM do curso da oferta, congelado por valor junto do código na definição da distribuição. Nulo quando o curso não declara grupo.");
+                                .HasComment("Rótulo do grupo de área do ENEM do curso da oferta, copiado junto do código na definição da distribuição e na publicação. Nulo quando o curso não declara grupo.");
 
                             b1.HasKey("ConfiguracaoDistribuicaoVagasId");
 
@@ -20585,34 +20594,34 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                                 .HasMaxLength(50)
                                 .HasColumnType("character varying(50)")
                                 .HasColumnName("oferta_curso_codigo")
-                                .HasComment("Código da oferta de curso, congelado por valor do cadastro na definição da distribuição.");
+                                .HasComment("Código da oferta de curso, copiado do cadastro na definição da distribuição e na publicação.");
 
                             b1.Property<string>("CursoGrau")
                                 .IsRequired()
                                 .HasMaxLength(60)
                                 .HasColumnType("character varying(60)")
                                 .HasColumnName("oferta_curso_grau")
-                                .HasComment("Grau do curso da oferta, congelado por valor do cadastro na definição da distribuição.");
+                                .HasComment("Grau do curso da oferta, copiado do cadastro na definição da distribuição e na publicação.");
 
                             b1.Property<string>("CursoNome")
                                 .IsRequired()
                                 .HasMaxLength(200)
                                 .HasColumnType("character varying(200)")
                                 .HasColumnName("oferta_curso_nome")
-                                .HasComment("Nome do curso da oferta, congelado por valor do cadastro na definição da distribuição.");
+                                .HasComment("Nome do curso da oferta, copiado do cadastro na definição da distribuição e na publicação.");
 
                             b1.PrimitiveCollection<string[]>("Turnos")
                                 .IsRequired()
                                 .HasColumnType("text[]")
                                 .HasColumnName("oferta_turnos")
-                                .HasComment("Turnos que a oferta ocupa (tokens), congelados por valor do cadastro na definição da distribuição.");
+                                .HasComment("Turnos que a oferta ocupa (tokens), copiados do cadastro na definição da distribuição e na publicação.");
 
                             b1.Property<string>("UnidadeOfertanteNome")
                                 .IsRequired()
                                 .HasMaxLength(250)
                                 .HasColumnType("character varying(250)")
                                 .HasColumnName("oferta_unidade_ofertante_nome")
-                                .HasComment("Nome da unidade ofertante, congelado por valor do cadastro na definição da distribuição.");
+                                .HasComment("Nome da unidade ofertante, copiado do cadastro na definição da distribuição e na publicação.");
 
                             b1.HasKey("ConfiguracaoDistribuicaoVagasId");
 
@@ -21707,19 +21716,19 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                             b1.Property<DateOnly?>("Data")
                                 .HasColumnType("date")
                                 .HasColumnName("referencia_temporal_dados_data")
-                                .HasComment("Data escolhida quando a referência para apurar os fatos é uma data específica.");
+                                .HasComment("Data escolhida quando a referência para apurar os dados do candidato é uma data específica.");
 
                             b1.Property<Guid?>("FaseId")
                                 .HasColumnType("uuid")
                                 .HasColumnName("referencia_temporal_dados_fase_id")
-                                .HasComment("Identificador da fase escolhida quando a referência para apurar os fatos é o início ou o fim de uma fase.");
+                                .HasComment("Identificador da fase escolhida quando a referência para apurar os dados do candidato é o início ou o fim de uma fase.");
 
                             b1.Property<string>("Tipo")
                                 .IsRequired()
                                 .HasMaxLength(20)
                                 .HasColumnType("character varying(20)")
                                 .HasColumnName("referencia_temporal_dados_tipo")
-                                .HasComment("Referência para apurar os fatos: FIM_INSCRICAO, INICIO_FASE, FIM_FASE ou DATA_ESPECIFICA. Ausente quando não declarada.");
+                                .HasComment("Referência para apurar os dados do candidato: FIM_INSCRICAO, INICIO_FASE, FIM_FASE ou DATA_ESPECIFICA. Ausente quando não declarada.");
 
                             b1.HasKey("ProcessoSeletivoId");
 

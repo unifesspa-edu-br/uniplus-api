@@ -48,7 +48,7 @@ public sealed class ColetabilidadeDeFatosGateTests
         Cardinalidade: CodigoComRotulo<QuantidadeDeValores>.De(QuantidadeDeValores.VariosValores),
         ValoresDominio: null,
         PontoResolucao: "INSCRICAO",
-        Binding: "REGRA_DERIVACAO:MODALIDADE",
+        Binding: "REGRA_DE_CALCULO:MODALIDADE",
         ValoresDominioDeclarados: null, FonteValores: CodigoComRotulo<FonteValoresFato>.De(FonteValoresFato.Modalidade), Ativo: true, ClassificacaoProtecao: "PESSOAL", HipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, FinalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, ProtecaoAprovada: true);
 
     // UNI-REQ-0072: categórico ESTÁTICO — os valores selecionáveis do fato

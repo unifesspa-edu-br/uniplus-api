@@ -78,10 +78,10 @@
         "$ref": "distribuicao-de-vagas.schema.json"
       }
     },
-    "cascataRemanejamento": {
+    "ordemDeRemanejamento": {
       "title": "Cascata de remanejamento",
       "description": "A cascata de remanejamento entre modalidades. Ausente quando o processo não tem cascata.",
-      "$ref": "cascata-de-remanejamento.schema.json"
+      "$ref": "ordem-de-remanejamento.schema.json"
     },
     "cronograma": {
       "$ref": "cronograma.schema.json"
@@ -100,7 +100,7 @@
     "divulgacao": {
       "$ref": "divulgacao.schema.json"
     },
-    "tiposDeAtoCongelados": {
+    "tiposDeAto": {
       "title": "Tipos de ato congelados",
       "description": "Cópia, congelada na publicação, dos tipos de ato do catálogo de Publicações que o processo usa, com o que cada um significa. Existe só no processo publicado. Campo só de leitura: ignorado na importação; a referência é o código do tipo de ato em cada produto de fase e de etapa.",
       "type": "array",

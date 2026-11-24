@@ -740,8 +740,8 @@ configuracao.opcoes_do_tipo_de_conceito.tipo_conceito_id: Interno
 configuracao.opcoes_dos_dados.ativo: Interno
 configuracao.opcoes_dos_dados.codigo: Interno
 configuracao.opcoes_dos_dados.created_at: Interno
+configuracao.opcoes_dos_dados.dado_do_candidato_id: Interno
 configuracao.opcoes_dos_dados.descricao: Interno
-configuracao.opcoes_dos_dados.fato_candidato_id: Interno
 configuracao.opcoes_dos_dados.id: Interno
 configuracao.opcoes_dos_dados.ordem: Interno
 configuracao.opcoes_dos_dados.orientacao: Interno
@@ -1179,7 +1179,7 @@ selecao.apresentacoes_de_documento.updated_at: Pessoal
 selecao.areas_do_quadro_de_pesos.codigo: Interno
 selecao.areas_do_quadro_de_pesos.corte: Interno
 selecao.areas_do_quadro_de_pesos.created_at: Interno
-selecao.areas_do_quadro_de_pesos.grupo_peso_area_enem_congelado_id: Interno
+selecao.areas_do_quadro_de_pesos.grupo_do_quadro_de_pesos_id: Interno
 selecao.areas_do_quadro_de_pesos.id: Interno
 selecao.areas_do_quadro_de_pesos.peso: Interno
 selecao.areas_do_quadro_de_pesos.rotulo: Interno
@@ -1346,7 +1346,7 @@ selecao.condicoes_das_exigencias.valor: Interno
 selecao.condicoes_de_exibicao_do_dado.alternativa: Interno
 selecao.condicoes_de_exibicao_do_dado.codigo_do_dado: Interno
 selecao.condicoes_de_exibicao_do_dado.created_at: Interno
-selecao.condicoes_de_exibicao_do_dado.fato_coletado_id: Interno
+selecao.condicoes_de_exibicao_do_dado.dado_do_formulario_id: Interno
 selecao.condicoes_de_exibicao_do_dado.id: Interno
 selecao.condicoes_de_exibicao_do_dado.operador: Interno
 selecao.condicoes_de_exibicao_do_dado.updated_at: Interno
@@ -1356,7 +1356,7 @@ selecao.condicoes_do_calculo_dos_dados.codigo_do_dado: Interno
 selecao.condicoes_do_calculo_dos_dados.created_at: Interno
 selecao.condicoes_do_calculo_dos_dados.id: Interno
 selecao.condicoes_do_calculo_dos_dados.operador: Interno
-selecao.condicoes_do_calculo_dos_dados.regra_derivacao_configurada_id: Interno
+selecao.condicoes_do_calculo_dos_dados.regra_de_calculo_id: Interno
 selecao.condicoes_do_calculo_dos_dados.updated_at: Interno
 selecao.condicoes_do_calculo_dos_dados.valor: Interno
 selecao.condicoes_ofertadas.atendimento_especializado_id: Interno
@@ -1432,9 +1432,9 @@ selecao.configuracoes_divulgacao.processo_seletivo_id: Interno
 selecao.configuracoes_divulgacao.updated_at: Interno
 selecao.configuracoes_do_fada.base_legal_codigo: Interno
 selecao.configuracoes_do_fada.base_legal_id: Interno
+selecao.configuracoes_do_fada.codigo_do_dado_de_elegibilidade: Interno
 selecao.configuracoes_do_fada.created_at: Interno
 selecao.configuracoes_do_fada.descricao: Interno
-selecao.configuracoes_do_fada.fato_elegibilidade_codigo: Interno
 selecao.configuracoes_do_fada.fator: Interno
 selecao.configuracoes_do_fada.id: Interno
 selecao.configuracoes_do_fada.identificacao: Interno
@@ -1491,7 +1491,7 @@ selecao.deficiencias_atendidas.tipo_deficiencia_codigo: Interno
 selecao.deficiencias_atendidas.tipo_deficiencia_nome: Interno
 selecao.deficiencias_atendidas.tipo_deficiencia_origem_id: Interno
 selecao.deficiencias_atendidas.updated_at: Interno
-selecao.destinos_remanejamento.configuracao_cascata_remanejamento_id: Interno
+selecao.destinos_remanejamento.configuracao_de_remanejamento_id: Interno
 selecao.destinos_remanejamento.created_at: Interno
 selecao.destinos_remanejamento.id: Interno
 selecao.destinos_remanejamento.modalidade_destino_codigo: Interno
@@ -1517,9 +1517,9 @@ selecao.documentos_exigidos.chave_local: Interno
 selecao.documentos_exigidos.classificacao_protecao: Interno
 selecao.documentos_exigidos.consequencia_indeferimento: Interno
 selecao.documentos_exigidos.created_at: Interno
+selecao.documentos_exigidos.dados_comprovados: Interno
 selecao.documentos_exigidos.exigido_na_etapa_id: Interno
 selecao.documentos_exigidos.exigido_na_fase_id: Interno
-selecao.documentos_exigidos.fatos_comprovados: Interno
 selecao.documentos_exigidos.finalidade: Interno
 selecao.documentos_exigidos.finalidade_tratamento: Interno
 selecao.documentos_exigidos.formatos_permitidos_lista: Interno
@@ -1882,7 +1882,7 @@ selecao.processos_seletivos.origem_candidatos: Interno
 selecao.processos_seletivos.referencia_temporal_dados_data: Interno
 selecao.processos_seletivos.referencia_temporal_dados_fase_id: Interno
 selecao.processos_seletivos.referencia_temporal_dados_tipo: Interno
-selecao.processos_seletivos.status: Interno
+selecao.processos_seletivos.situacao: Interno
 selecao.processos_seletivos.tem_prova_presencial: Publico
 selecao.processos_seletivos.tipo_processo_codigo: Interno
 selecao.processos_seletivos.tipo_processo_nome: Interno

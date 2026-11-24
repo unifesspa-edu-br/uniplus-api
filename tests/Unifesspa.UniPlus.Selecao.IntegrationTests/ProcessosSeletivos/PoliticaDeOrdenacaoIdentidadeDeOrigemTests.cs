@@ -156,7 +156,7 @@ public sealed class PoliticaDeOrdenacaoIdentidadeDeOrigemTests
         regrasJson.Select(static r => r!["contribui"]!.GetValue<string>()).Should().Equal(["ZETA_VALOR", "ALFA_VALOR"]);
     }
 
-    [Fact(DisplayName = "cascataRemanejamento.ordens[].destinos: Ordem governa sobre o conteúdo, dentro da mesma origem — oráculo de sequência exata")]
+    [Fact(DisplayName = "ordemDeRemanejamento.ordens[].destinos: Ordem governa sobre o conteúdo, dentro da mesma origem — oráculo de sequência exata")]
     public void CascataRemanejamento_DestinosDaMesmaOrigem_OrdemGovernaSobreConteudo()
     {
         DestinoRemanejamento destinoZeta = DestinoRemanejamento.Criar("ORIGEM_TESTE", 1, "ZETA_DEST").Value!;
@@ -170,12 +170,12 @@ public sealed class PoliticaDeOrdenacaoIdentidadeDeOrigemTests
         ProcessoSeletivo processo = MontarComCascata(cascata);
 
         JsonArray destinosJson = ApoioDoEnvelopeCodec.Envelope(Canonicalizador.Canonicalizar(Entrada(processo)))
-            ["cascataRemanejamento"]!["ordens"]![0]!["destinos"]!.AsArray();
+            ["ordemDeRemanejamento"]!["ordens"]![0]!["destinos"]!.AsArray();
 
         destinosJson.Select(static d => d!.GetValue<string>()).Should().Equal(["ZETA_DEST", "ALFA_DEST"]);
     }
 
-    [Fact(DisplayName = "cascataRemanejamento.ordens: as origens ordenam pelo código, ordinal — não pela ordem física de entrada")]
+    [Fact(DisplayName = "ordemDeRemanejamento.ordens: as origens ordenam pelo código, ordinal — não pela ordem física de entrada")]
     public void CascataRemanejamento_Origens_OrdenaAlfabeticamentePorCodigo()
     {
         DestinoRemanejamento destinoDaZeta = DestinoRemanejamento.Criar("ZETA_ORIGEM", 1, "DESTINO_COMUM_A").Value!;
@@ -188,7 +188,7 @@ public sealed class PoliticaDeOrdenacaoIdentidadeDeOrigemTests
 
         ProcessoSeletivo processo = MontarComCascata(cascata);
 
-        JsonArray ordensJson = ApoioDoEnvelopeCodec.Envelope(Canonicalizador.Canonicalizar(Entrada(processo)))["cascataRemanejamento"]!["ordens"]!.AsArray();
+        JsonArray ordensJson = ApoioDoEnvelopeCodec.Envelope(Canonicalizador.Canonicalizar(Entrada(processo)))["ordemDeRemanejamento"]!["ordens"]!.AsArray();
 
         ordensJson.Should().HaveCount(2, "pré-condição: duas origens distintas sob teste");
         ordensJson.Select(static o => o!["origem"]!.GetValue<string>()).Should().Equal(["ALFA_ORIGEM", "ZETA_ORIGEM"]);

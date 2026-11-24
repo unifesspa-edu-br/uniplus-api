@@ -81,7 +81,7 @@ public sealed class FatoCandidatoConfiguration : IEntityTypeConfiguration<FatoCa
         builder.Property(f => f.SemeadoPeloSistema).HasComment("Indica se o dado foi fornecido pelo sistema.");
         builder.Property(f => f.Ativo).HasComment("Indica se o dado está disponível para uso.");
         builder.Property(f => f.PontoResolucao).HasComment("Código da fase em que o valor fica disponível.");
-        builder.Property(f => f.Binding).HasComment("Vínculo que produz o valor, no formato MECANISMO:REFERENCIA; o mecanismo é CAMPO_FORMULARIO, ATRIBUTO_CANDIDATO, REGRA_DERIVACAO, CLASSIFICACAO, INTEGRACAO ou RESUMO_DE_GRUPO.");
+        builder.Property(f => f.Binding).HasComment("Vínculo que produz o valor, no formato MECANISMO:REFERENCIA; o mecanismo é CAMPO_FORMULARIO, ATRIBUTO_CANDIDATO, REGRA_DE_CALCULO, CLASSIFICACAO, INTEGRACAO ou RESUMO_DE_GRUPO.");
         builder.Property(f => f.RegrasPadrao).HasComment("Regras de cálculo padrão do dado, em documento JSON.");
         builder.Property(f => f.Dependencias).HasComment("Códigos dos dados necessários ao cálculo pelo sistema.");
     }

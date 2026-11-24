@@ -202,7 +202,7 @@ public sealed class FatoCandidatoValoresTests
             descritivo: Descritivo with { Codigo = "FATO_DERIVADO" },
             definicao: Definicao with { Dominio = TipoDoDado.Opcao },
             origem: OrigemFato.Calculado,
-            binding: "REGRA_DERIVACAO:FATO_DERIVADO").Value!;
+            binding: "REGRA_DE_CALCULO:FATO_DERIVADO").Value!;
 
         Result resultado = fato.AdicionarValorDominio("X", null, 0, ativo: true);
 

@@ -95,7 +95,7 @@ public sealed class DocumentoExigidoConfiguration : IEntityTypeConfiguration<Doc
             .HasComment("Classificação de proteção de dados do documento, copiada do tipo de documento: PUBLICO, INTERNO, PESSOAL, IDENTIFICADOR ou SENSIVEL.");
         builder.Property(d => d.FinalidadeTratamento).HasMaxLength(FinalidadeTratamentoMaxLength).IsRequired().HasComment("Finalidade do tratamento dos dados do documento, copiada do tipo de documento.");
         builder.Property(d => d.HipoteseLegal).HasMaxLength(HipoteseLegalMaxLength).IsRequired().HasComment("Hipótese legal do tratamento dos dados do documento, copiada do tipo de documento.");
-        builder.Property(d => d.FatosComprovados).IsRequired().HasComment("Códigos dos fatos do processo que o documento comprova; vazio quando a exigência não comprova fato.");
+        builder.Property(d => d.FatosComprovados).HasColumnName("dados_comprovados").IsRequired().HasComment("Códigos dos dados do candidato que o documento comprova; vazio quando a exigência não comprova dados.");
         builder.Property(d => d.Aplicabilidade).HasMaxLength(TamanhoDoCodigoDeContrato.Maximo).IsRequired()
             .HasComment($"A quem a exigência se aplica: todos os candidatos ou só quem atende às condições da exigência. {ComentarioDosCodigosDeContrato.Codigos<Aplicabilidade>()}");
         builder.Property(d => d.Obrigatorio).IsRequired().HasComment("Indica se a falta do documento impede a inscrição de seguir.");

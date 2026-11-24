@@ -27,13 +27,11 @@ internal sealed class GrupoPesoAreaEnemCongeladoConfiguration : IEntityTypeConfi
         builder.ClassificaPorPadrao(ClassificacaoDeProtecao.Interno);
 
         builder.ToTable("grupos_do_quadro_de_pesos", t => t.HasComment(
-            "Quadro de pesos por área do ENEM congelado na classificação do processo seletivo: uma linha " +
-            "por grupo de área, copiada por valor da resolução de Pesos por Área declarada. Substituída " +
-            "por inteiro quando a classificação é redefinida."));
+            "Quadro de pesos por área do ENEM copiado da resolução quando a classificação é definida e substituído quando ela muda; uma linha por grupo de área."));
         builder.HasKey(g => g.Id);
         builder.Property(g => g.Id)
             .ValueGeneratedNever()
-            .HasComment("Identificador interno (UUIDv7) do grupo congelado.");
+            .HasComment("Identificador interno (UUIDv7) do grupo do quadro de pesos.");
 
         builder.Property(g => g.ConfiguracaoClassificacaoId)
             .HasComment("Id da configuração de classificação dona do quadro (FK, cascade delete).");

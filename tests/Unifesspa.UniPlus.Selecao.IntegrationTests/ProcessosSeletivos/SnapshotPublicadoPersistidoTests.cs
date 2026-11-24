@@ -34,7 +34,7 @@ public sealed class SnapshotPublicadoPersistidoTests
     [
         "tipoProcesso", "periodo", "etapas", "vagas", "distribuicao", "modalidades", "ofertas",
         "atendimento", "fada", "criteriosDesempate", "classificacao", "hashesEdital",
-        "documentosExigidos", "regrasDeComprovacao", "formularios", "cascataRemanejamento", "divulgacao",
+        "documentosExigidos", "regrasDeComprovacao", "formularios", "ordemDeRemanejamento", "divulgacao",
         "cronogramaFases", "identidadesUnidade",
         // Coleta de dados, cálculos, dependências entre itens, versão das regras de cálculo e
         // conjunto de modalidades ofertadas.
@@ -166,10 +166,10 @@ public sealed class SnapshotPublicadoPersistidoTests
         objeto["fada"]!["presente"]!.GetValue<bool>().Should().BeFalse();
         objeto["cronogramaFases"]!["fases"]!.AsArray().Should().NotBeEmpty();
 
-        // cascataRemanejamento: bloco real, ausência congela `{"presente":false}`,
+        // ordemDeRemanejamento: bloco real, ausência congela `{"presente":false}`,
         // NUNCA o stub `nao_construido` — este fixture não tem nenhuma modalidade SegueCascata
         // (é a mesma AC institucional de fada acima).
-        objeto["cascataRemanejamento"]!.AsObject().Should().NotContainKey("status");
-        objeto["cascataRemanejamento"]!["presente"]!.GetValue<bool>().Should().BeFalse();
+        objeto["ordemDeRemanejamento"]!.AsObject().Should().NotContainKey("status");
+        objeto["ordemDeRemanejamento"]!["presente"]!.GetValue<bool>().Should().BeFalse();
     }
 }

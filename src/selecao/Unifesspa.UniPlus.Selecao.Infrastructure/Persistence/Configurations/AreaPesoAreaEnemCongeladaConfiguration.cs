@@ -30,8 +30,7 @@ internal sealed class AreaPesoAreaEnemCongeladaConfiguration : IEntityTypeConfig
         builder.ToTable("areas_do_quadro_de_pesos", t =>
         {
             t.HasComment(
-                "Peso e corte de cada área do ENEM num grupo do quadro de pesos por área congelado na " +
-                "classificação, copiados por valor da resolução de Pesos por Área declarada.");
+                "Peso e corte de cada área do ENEM num grupo do quadro de pesos por área, copiado da resolução quando a classificação é definida e substituído quando ela muda.");
 
             // As mesmas faixas da tabela de origem, no cadastro de Pesos por Área: gravação que
             // não passe pelo agregado não deixa peso negativo nem corte fora da nota do ENEM.
@@ -43,10 +42,11 @@ internal sealed class AreaPesoAreaEnemCongeladaConfiguration : IEntityTypeConfig
         builder.HasKey(a => a.Id);
         builder.Property(a => a.Id)
             .ValueGeneratedNever()
-            .HasComment("Identificador interno (UUIDv7) da área congelada.");
+            .HasComment("Identificador interno (UUIDv7) da área do quadro de pesos.");
 
         builder.Property(a => a.GrupoPesoAreaEnemCongeladoId)
-            .HasComment("Id do grupo congelado dono da área (FK, cascade delete).");
+            .HasColumnName("grupo_do_quadro_de_pesos_id")
+            .HasComment("Identificador do grupo do quadro de pesos ao qual a área pertence.");
 
 
         builder.Property(a => a.Codigo)

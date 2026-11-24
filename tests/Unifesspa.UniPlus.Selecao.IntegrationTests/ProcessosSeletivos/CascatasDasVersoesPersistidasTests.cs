@@ -75,5 +75,5 @@ public sealed class CascatasDasVersoesPersistidasTests(ProcessoSeletivoDbFixture
             [.. original.Destinos.GroupBy(d => d.ModalidadeOrigemCodigo).Select(g => DestinoRemanejamento.Criar(g.Key, 1, "AC").Value!)]).Value!;
 
     private static int DestinosDaPrimeiraOrigem(VersaoConfiguracao versao) =>
-        JsonNode.Parse(versao.ConfiguracaoCongelada)!["cascataRemanejamento"]!["ordens"]![0]!["destinos"]!.AsArray().Count;
+        JsonNode.Parse(versao.ConfiguracaoCongelada)!["ordemDeRemanejamento"]!["ordens"]![0]!["destinos"]!.AsArray().Count;
 }
