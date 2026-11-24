@@ -107,3 +107,13 @@ Decisões do líder técnico (23/11/2026).
    - Quem lê decide só pelo código e ignora o rótulo; a importação ignora o rótulo; a retificação não conta a diferença de rótulo como mudança. As colunas JSON e as mensagens entre módulos e para fora continuam só com o código.
 3. **Comentário da coluna.** O comentário de cada coluna de enum (ADR-0124) lista os códigos aceitos, sem os rótulos, e é escrito pela convenção `ConversaoDosEnumsDeContrato`, a partir do atributo do enum.
 4. **Rota do tipo de fase.** O item 1 da emenda 2 ("rota publicada não muda de nome") vale a partir da primeira publicação em produção. Antes dela, as rotas de `fases-canonicas` passam a `tipos-de-fase`, o nome da tabela (uniplus-api#2761): `/api/configuracao/tipos-de-fase`, `/api/configuracao/admin/tipos-de-fase` e `/api/configuracao/vocabularios/tipos-de-fase`, sem manter a rota antiga.
+
+## Emenda 4 (2026-11-24) — formato único do código de enum
+
+Decisões do líder técnico (24/11/2026).
+
+1. **Um só formato.** Todo código de enum declarado, no banco, na API, no documento congelado, no documento da configuração (`v1`) e na web, segue o padrão `^[A-Z][A-Z0-9]*(_[A-Z0-9]+)*$`: letras maiúsculas e algarismos, palavras separadas por sublinhado, sem acento, até 80 caracteres. Sigla oficial e número entram como uma palavra (`AREA_ENEM`, `LEI_12711`). O código é escrito à mão e repete as palavras do membro (`EM_VERIFICACAO`). É o mesmo formato dos códigos de cadastro.
+2. **A subida recusa código fora do formato.** A conferência dos códigos (`ConferenciaDosCodigos`) confere o valor de cada código em execução e recusa o que não segue o item 1. Ela não lê código-fonte como texto.
+3. **Categoria da obrigatoriedade legal.** Os códigos de `CategoriaObrigatoriedade` seguem o formato do item 1: `ETAPA`, `MODALIDADE`, `DESEMPATE`, `DOCUMENTO`, `FADA`, `ATENDIMENTO` e `OUTROS`; a categoria antes chamada `Bonus` tem o código `FADA`.
+4. **Ficam fora do formato:** código de permissão (ADR-0151); código de erro (ADR-0023 e ADR-0102); o discriminador `$tipo` e os nomes de campo do JSON; valores de padrão externo, como INEP, UF e `utf-8`.
+5. **Nenhuma coluna grava número.** Isso vale também para as colunas que hoje gravam o número do membro (idempotência, chamadas, convocações, matrículas e sincronização com o SIGAA), que passam a gravar o código.
