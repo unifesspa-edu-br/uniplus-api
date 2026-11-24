@@ -13,6 +13,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="../../src/host/Unifesspa.UniPlus.Monolito.Persistencia/Unifesspa.UniPlus.Monolito.Persistencia.csproj" />
     <ProjectReference Include="../../src/selecao/Unifesspa.UniPlus.Selecao.Infrastructure/Unifesspa.UniPlus.Selecao.Infrastructure.csproj" />
   </ItemGroup>
 

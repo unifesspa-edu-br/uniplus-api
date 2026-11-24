@@ -49,7 +49,7 @@ public sealed class IdentificadorLegivelPersistenciaTests : IClassFixture<Proces
         PostgresException erro = (await duplicar.Should().ThrowAsync<DbUpdateException>())
             .WithInnerException<PostgresException>().Which;
         erro.SqlState.Should().Be(PostgresErrorCodes.UniqueViolation);
-        erro.ConstraintName.Should().Be("ix_processos_seletivos_identificador_legivel");
+        erro.ConstraintName.Should().Be("ux_processos_seletivos_identificador_legivel");
     }
 
     [Fact(DisplayName = "A consulta de unicidade enxerga processo excluído logicamente, como o índice")]

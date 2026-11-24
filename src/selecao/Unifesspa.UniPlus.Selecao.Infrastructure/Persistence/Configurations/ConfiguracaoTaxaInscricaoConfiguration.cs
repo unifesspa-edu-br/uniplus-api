@@ -30,6 +30,8 @@ internal sealed class ConfiguracaoTaxaInscricaoConfiguration : IEntityTypeConfig
 
         builder.Property(c => c.ProcessoSeletivoId)
             .HasComment("Id do processo seletivo dono desta configuração (FK 1:1, cascade delete).");
+        builder.HasIndex(c => c.ProcessoSeletivoId).IsUnique()
+            .HasDatabaseName("ux_configuracoes_taxa_inscricao_processo_seletivo_id");
 
 
         builder.Property(c => c.Cobra)

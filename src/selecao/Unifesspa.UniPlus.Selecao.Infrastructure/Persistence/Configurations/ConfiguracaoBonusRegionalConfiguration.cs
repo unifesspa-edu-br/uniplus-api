@@ -34,7 +34,7 @@ internal sealed class ConfiguracaoBonusRegionalConfiguration : IEntityTypeConfig
         builder.HasKey(b => b.Id).HasName("pk_configuracoes_do_fada");
         builder.Property(b => b.Id).ValueGeneratedNever().HasComment("Identificador da configuração do Fator de Atenuação das Desigualdades de Acesso (FADA).");
         builder.Property(b => b.ProcessoSeletivoId).HasComment("Identificador do processo seletivo que aplica o Fator de Atenuação das Desigualdades de Acesso (FADA).");
-        builder.HasIndex(b => b.ProcessoSeletivoId).IsUnique().HasDatabaseName("ix_configuracoes_do_fada_processo_seletivo_id");
+        builder.HasIndex(b => b.ProcessoSeletivoId).IsUnique().HasDatabaseName("ux_configuracoes_do_fada_processo_seletivo_id");
 
         builder.OwnsOne(b => b.Regra, regra =>
         {

@@ -30,7 +30,7 @@ public sealed class ItemDeAvaliacaoConfiguration : IEntityTypeConfiguration<Item
         builder.Property(i => i.Chave)
             .HasConversion(chave => chave.Valor, valor => ChaveLocal.Criar(valor).Value)
             .HasColumnName("chave_local").HasMaxLength(ChaveLocal.ComprimentoMaximo).IsRequired().HasComment("Identificador que a parte guarda dentro da configuração publicada; único na etapa.");
-        builder.HasIndex(i => new { i.EtapaProcessoId, i.Chave }).IsUnique().HasDatabaseName("ux_itens_avaliacao_etapa_chave_local");
+        builder.HasIndex(i => new { i.EtapaProcessoId, i.Chave }).IsUnique().HasDatabaseName("ux_itens_de_avaliacao_da_etapa_chave_local");
         builder.Property(i => i.EtapaProcessoId).HasComment("Etapa à qual o item pertence.");
         // A unicidade da ordem é adiada pelo script de restrições para permitir reordenação.
         builder.Property(i => i.Ordem).IsRequired().HasComment("Posição do item na etapa, a partir de um.");

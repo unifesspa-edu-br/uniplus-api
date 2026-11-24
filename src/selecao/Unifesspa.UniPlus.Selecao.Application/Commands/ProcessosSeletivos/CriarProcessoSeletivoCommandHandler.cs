@@ -138,7 +138,7 @@ public static class CriarProcessoSeletivoCommandHandler
         return Result<Guid>.Success(processo.Id);
     }
 
-    private const string IndiceDoIdentificadorLegivel = "ix_processos_seletivos_identificador_legivel";
+    private const string IndiceDoIdentificadorLegivel = "ux_processos_seletivos_identificador_legivel";
 
     internal static bool EhConflitoDeIdentificadorLegivel(Exception ex) => string.Equals(
         ConstraintVioladaNaGravacao.NomeDaConstraintViolada(ex), IndiceDoIdentificadorLegivel, StringComparison.Ordinal);
