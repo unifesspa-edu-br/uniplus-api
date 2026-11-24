@@ -14,7 +14,7 @@ using static Unifesspa.UniPlus.Configuracao.Domain.Entities.ConferenciaDaDefinic
 using static Unifesspa.UniPlus.Configuracao.Domain.Entities.CriacaoDoFato;
 
 /// <summary>
-/// O que o agregado deixa de ser quando o fato de membro passa a ser outro: o domínio, a cardinalidade
+/// O que o agregado deixa de ser quando o fato de membro passa a ser outro: o domínio
 /// e a fonte que ele gravou são os inferidos do membro, e ele não protege menos nem resolve antes dele.
 /// </summary>
 internal static class MotivosDoAgregado
@@ -47,14 +47,11 @@ internal static class MotivosDoAgregado
     // O primeiro eixo que deixou de acompanhar o inferido do membro basta para o motivo.
     private static IEnumerable<FieldError> MotivoDosEixos(FatoCandidato agregado, FatoCandidato membro, OperacaoAgregado operacao)
     {
-        (TipoDoDado dominioEsperado, QuantidadeDeValores cardinalidadeEsperada, FonteValoresFato? fonteEsperada) =
+        (TipoDoDado dominioEsperado, _, FonteValoresFato? fonteEsperada) =
             EixosInferidosDoAgregado(operacao, membro.FonteValores);
         return Presentes(
             agregado.Dominio != dominioEsperado
                 ? Motivo("dominio", $"o domínio de '{membro.Codigo}' mudou, e o agregado gravou o domínio {agregado.Dominio.Codigo()} inferido dele.")
-                : null,
-            agregado.Cardinalidade != cardinalidadeEsperada
-                ? Motivo("cardinalidade", $"a cardinalidade do agregado não acompanha a inferida de '{membro.Codigo}': o agregado gravou {agregado.Cardinalidade.Codigo()}.")
                 : null,
             agregado.FonteValores != fonteEsperada
                 ? Motivo("fonte", $"a fonte dos valores de '{membro.Codigo}' mudou, e o agregado gravou a fonte inferida dela.")
