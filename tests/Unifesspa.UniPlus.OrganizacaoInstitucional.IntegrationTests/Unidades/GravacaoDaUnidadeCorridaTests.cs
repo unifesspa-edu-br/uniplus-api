@@ -7,6 +7,7 @@ using Microsoft.EntityFrameworkCore;
 using NSubstitute;
 
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.OrganizacaoInstitucional.Application.Abstractions;
 using Unifesspa.UniPlus.OrganizacaoInstitucional.Application.Commands.Unidades;
@@ -128,7 +129,7 @@ public sealed class GravacaoDaUnidadeCorridaTests : IClassFixture<UnidadeDbFixtu
             emUso == TipoIdentificador.Sigla ? existente.Sigla : sufixo,
             emUso == TipoIdentificador.Codigo ? existente.Codigo : sufixo,
             null,
-            TipoUnidade.Centro,
+            TipoUnidade.Centro.Codigo(),
             false,
             Inicio,
             null);
@@ -143,7 +144,7 @@ public sealed class GravacaoDaUnidadeCorridaTests : IClassFixture<UnidadeDbFixtu
             unidade.Sigla,
             unidade.Codigo,
             null,
-            TipoUnidade.Centro,
+            TipoUnidade.Centro.Codigo(),
             false,
             null);
 

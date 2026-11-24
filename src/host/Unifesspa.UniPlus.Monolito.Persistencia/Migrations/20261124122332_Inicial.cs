@@ -1354,7 +1354,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     sigla = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false),
                     codigo = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false),
                     unidade_superior_id = table.Column<Guid>(type: "uuid", nullable: true),
-                    tipo = table.Column<string>(type: "character varying(30)", maxLength: 30, nullable: false),
+                    tipo = table.Column<string>(type: "character varying(30)", maxLength: 30, nullable: false, comment: "Tipo da unidade na estrutura da universidade. Códigos: REITORIA, PRO_REITORIA, CENTRO, INSTITUTO, FACULDADE, DEPARTAMENTO, COORDENACAO, DIRETORIA, DIVISAO, NUCLEO, OUTRO."),
                     unidade_academica = table.Column<bool>(type: "boolean", nullable: false),
                     vigencia_inicio = table.Column<DateOnly>(type: "date", nullable: false),
                     vigencia_fim = table.Column<DateOnly>(type: "date", nullable: true),
@@ -1378,6 +1378,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 {
                     table.PrimaryKey("pk_unidades", x => x.id);
                     table.CheckConstraint("ck_unidades_cidade_completa", "(cidade_codigo_ibge IS NULL AND cidade_nome IS NULL AND cidade_uf IS NULL) OR (cidade_codigo_ibge IS NOT NULL AND cidade_nome IS NOT NULL AND cidade_uf IS NOT NULL)");
+                    table.CheckConstraint("ck_unidades_tipo", "tipo IN ('REITORIA', 'PRO_REITORIA', 'CENTRO', 'INSTITUTO', 'FACULDADE', 'DEPARTAMENTO', 'COORDENACAO', 'DIRETORIA', 'DIVISAO', 'NUCLEO', 'OUTRO')");
                     table.ForeignKey(
                         name: "fk_unidades_unidades_unidade_superior_id",
                         column: x => x.unidade_superior_id,

@@ -7,6 +7,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Unifesspa.UniPlus.Application.Abstractions.Messaging;
 using Unifesspa.UniPlus.Host.IntegrationTests.Infrastructure;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Hosting;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Pagination;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.OrganizacaoInstitucional.Application.Commands.Instituicoes;
@@ -94,7 +95,7 @@ public sealed class OrganizacaoQueriesNoBusTests
             Sigla: identificador.ToUpperInvariant(),
             Codigo: identificador,
             UnidadeSuperiorId: null,
-            Tipo: TipoUnidade.Centro,
+            Tipo: TipoUnidade.Centro.Codigo(),
             UnidadeAcademica: false,
             VigenciaInicio: new DateOnly(2026, 1, 1),
             VigenciaFim: null);

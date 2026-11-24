@@ -30,10 +30,10 @@ public sealed class TiposDaListagemTests
         resultado.Value.Should().Equal(TipoUnidade.Instituto, TipoUnidade.Centro);
     }
 
-    [Fact(DisplayName = "Todo tipo definido, exceto o sentinela, é aceito")]
-    public void TodoTipoDefinidoExcetoOSentinela_EhAceito()
+    [Fact(DisplayName = "Todo tipo definido é aceito")]
+    public void TodoTipoDefinido_EhAceito()
     {
-        int[] definidos = [.. Enum.GetValues<TipoUnidade>().Where(tipo => tipo != TipoUnidade.Nenhum).Select(tipo => (int)tipo)];
+        int[] definidos = [.. Enum.GetValues<TipoUnidade>().Select(tipo => (int)tipo)];
 
         Result<IReadOnlyList<TipoUnidade>> resultado = TiposDaListagem.Resolver(definidos);
 
@@ -41,11 +41,11 @@ public sealed class TiposDaListagemTests
         resultado.Value.Should().HaveCount(definidos.Length);
     }
 
-    [Theory(DisplayName = "O sentinela e o número que não é tipo de Unidade são recusados")]
+    [Theory(DisplayName = "O número que não é tipo de Unidade é recusado")]
     [InlineData(0)]
     [InlineData(999)]
     [InlineData(-1)]
-    public void ValorQueNaoEhTipoFiltravel_EhRecusado(int valor)
+    public void ValorQueNaoEhTipo_EhRecusado(int valor)
     {
         Result<IReadOnlyList<TipoUnidade>> resultado = TiposDaListagem.Resolver([valor]);
 

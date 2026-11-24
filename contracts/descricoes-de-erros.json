@@ -12105,11 +12105,11 @@
         "UNI-REQ-0008"
       ],
       "oQueAconteceu": [
-        "O **tipo** da unidade não corresponde a um dos valores válidos, ou é o\nvalor sentinela `Nenhum` (usado internamente para detectar corrupção de\ndado, nunca um tipo aceitável na entrada).",
+        "O **tipo** da unidade não foi informado ou não corresponde a um dos códigos\nválidos: REITORIA, PRO_REITORIA, CENTRO, INSTITUTO, FACULDADE,\nDEPARTAMENTO, COORDENACAO, DIRETORIA, DIVISAO, NUCLEO ou OUTRO.",
         "O tipo classifica a unidade na hierarquia institucional — reitoria,\npró-reitoria, centro, instituto, faculdade, departamento, coordenação,\ndiretoria, divisão, núcleo ou outro. É um roster fechado: acrescentar um\ntipo novo exige deliberação, não é algo que a entrada da API decida."
       ],
       "comoResolver": [
-        "Informe um dos tipos de unidade válidos. Se o tipo que você precisa não\nexiste na lista atual, a solicitação de um tipo novo é decisão de\ngovernança institucional, não algo resolvível ajustando a requisição."
+        "Informe, no campo tipo, um dos códigos de tipo de unidade válidos. Se o tipo que você precisa não\nexiste na lista atual, a solicitação de um tipo novo é decisão de\ngovernança institucional, não algo resolvível ajustando a requisição."
       ],
       "ondeAparece": [
         "Criação de unidade",

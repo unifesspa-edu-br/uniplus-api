@@ -49,7 +49,7 @@ public sealed class UnidadeObterEndpointTests
         raiz.GetProperty("slug").GetString().Should().Be(unidade.Slug.Valor);
         raiz.GetProperty("sigla").GetString().Should().Be(unidade.Sigla);
         raiz.GetProperty("codigo").GetString().Should().Be(unidade.Codigo);
-        raiz.GetProperty("tipo").GetString().Should().Be(unidade.Tipo.ToString());
+        raiz.GetProperty("tipo").GetString().Should().Be("CENTRO");
     }
 
     [Fact(DisplayName = "GET /api/organizacao/unidades/{id} devolve em _links o self e a collection")]

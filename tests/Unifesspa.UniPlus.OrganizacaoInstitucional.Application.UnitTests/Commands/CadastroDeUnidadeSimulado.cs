@@ -3,6 +3,7 @@ namespace Unifesspa.UniPlus.OrganizacaoInstitucional.Application.UnitTests.Comma
 using NSubstitute;
 
 using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.OrganizacaoInstitucional.Application.Abstractions;
 using Unifesspa.UniPlus.OrganizacaoInstitucional.Application.Commands.Unidades;
 using Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.Entities;
@@ -42,7 +43,7 @@ internal sealed class CadastroDeUnidadeSimulado
         "CEPS",
         "0001",
         null,
-        TipoUnidade.Centro,
+        TipoUnidade.Centro.Codigo(),
         false,
         UnidadeDeTeste.InicioDaVigencia,
         null);
@@ -56,7 +57,7 @@ internal sealed class CadastroDeUnidadeSimulado
         "CEPS",
         "0001",
         null,
-        TipoUnidade.Centro,
+        TipoUnidade.Centro.Codigo(),
         false,
         null);
 

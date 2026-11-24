@@ -228,12 +228,12 @@ setup_organizacao() {
     }' >/dev/null
 
     # O CEPS conduz o processo (item 1.1); o IESB oferta o curso (Anexo II).
-    UNIDADE_ID=$(criar_unidade "CEPS" "Centro de Processos Seletivos" "centro" false)
-    UNIDADE_OFERTANTE_ID=$(criar_unidade "IESB" "Instituto de Estudos em Saúde e Biológicas" "instituto" true)
+    UNIDADE_ID=$(criar_unidade "CEPS" "Centro de Processos Seletivos" "CENTRO" false)
+    UNIDADE_OFERTANTE_ID=$(criar_unidade "IESB" "Instituto de Estudos em Saúde e Biológicas" "INSTITUTO" true)
     ok "unidade=$UNIDADE_ID unidade_ofertante=$UNIDADE_OFERTANTE_ID"
 }
 
-# $1=sigla $2=nome $3=tipo $4=unidadeAcademica — devolve o id, criado ou reaproveitado pelo código.
+# $1=sigla $2=nome $3=código do tipo (por exemplo CENTRO) $4=unidadeAcademica — devolve o id, criado ou reaproveitado pelo código.
 criar_unidade() {
     local sigla="$1" nome="$2" tipo="$3" academica="$4" id
     id=$(post_tolerante "/api/organizacao/admin/unidades" "{

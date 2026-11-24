@@ -2,10 +2,12 @@ namespace Unifesspa.UniPlus.OrganizacaoInstitucional.Application.Commands.Unidad
 
 using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 using Unifesspa.UniPlus.Application.Abstractions.Persistence;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.OrganizacaoInstitucional.Application.Abstractions;
 using Unifesspa.UniPlus.OrganizacaoInstitucional.Application.Persistence;
 using Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.Entities;
+using Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.Enums;
 using Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.Interfaces;
 using Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.ValueObjects;
 
@@ -114,6 +116,6 @@ public sealed class GravacaoDaUnidade
             command.Cidade(),
             command.VigenciaFim,
             command.UnidadeSuperiorId,
-            command.Tipo,
+            CatalogoDe<TipoUnidade>.Obter(command.Tipo!),
             command.UnidadeAcademica);
 }

@@ -1,5 +1,6 @@
 namespace Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.Entities;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Domain.Entities;
 using Unifesspa.UniPlus.Kernel.Domain.Interfaces;
 using Unifesspa.UniPlus.Kernel.Results;
@@ -137,7 +138,7 @@ public sealed class Unidade : SoftDeletableEntity, IAuditableEntity
         string? nome,
         IdentificadoresDaUnidade identificadores,
         CidadeDaUnidade cidade,
-        TipoUnidade tipo,
+        TipoUnidade? tipo,
         VigenciaDaUnidade vigencia)
     {
         List<FieldError> erros =
@@ -152,15 +153,18 @@ public sealed class Unidade : SoftDeletableEntity, IAuditableEntity
         return erros.Count == 0 ? Result.Success() : Result.ValidationFailure(erros);
     }
 
-    private static IEnumerable<FieldError> ValidarTipo(TipoUnidade tipo)
+    private static IEnumerable<FieldError> ValidarTipo(TipoUnidade? tipo)
     {
-        if (!Enum.IsDefined(tipo) || tipo == TipoUnidade.Nenhum)
+        if (tipo is not { } valor || !Enum.IsDefined(valor))
         {
             yield return new FieldError("tipo", new DomainError(
                 UnidadeErrorCodes.TipoInvalido,
-                "Tipo de Unidade inválido — use um valor definido em TipoUnidade, diferente de Nenhum."));
+                $"O tipo da Unidade é obrigatório e deve ser um destes códigos: {CodigosAceitosDoTipo()}."));
         }
     }
+
+    private static string CodigosAceitosDoTipo() =>
+        string.Join(", ", CatalogoDe<TipoUnidade>.Todos().Select(static declarado => declarado.Codigo));
 
     private static IEnumerable<FieldError> ValidarNome(string? nome)
     {

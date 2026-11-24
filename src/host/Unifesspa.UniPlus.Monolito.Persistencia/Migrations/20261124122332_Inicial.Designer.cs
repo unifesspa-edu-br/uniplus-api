@@ -12,7 +12,7 @@ using Unifesspa.UniPlus.Monolito.Persistencia;
 namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 {
     [DbContext(typeof(MonolitoDbContext))]
-    [Migration("20261124122254_Inicial")]
+    [Migration("20261124122332_Inicial")]
     partial class Inicial
     {
         /// <inheritdoc />
@@ -10244,7 +10244,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .IsRequired()
                         .HasMaxLength(30)
                         .HasColumnType("character varying(30)")
-                        .HasColumnName("tipo");
+                        .HasColumnName("tipo")
+                        .HasComment("Tipo da unidade na estrutura da universidade. Códigos: REITORIA, PRO_REITORIA, CENTRO, INSTITUTO, FACULDADE, DEPARTAMENTO, COORDENACAO, DIRETORIA, DIVISAO, NUCLEO, OUTRO.");
 
                     b.Property<bool>("UnidadeAcademica")
                         .HasColumnType("boolean")
@@ -10330,6 +10331,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     b.ToTable("unidades", "organizacao", t =>
                         {
                             t.HasCheckConstraint("ck_unidades_cidade_completa", "(cidade_codigo_ibge IS NULL AND cidade_nome IS NULL AND cidade_uf IS NULL) OR (cidade_codigo_ibge IS NOT NULL AND cidade_nome IS NOT NULL AND cidade_uf IS NOT NULL)");
+
+                            t.HasCheckConstraint("ck_unidades_tipo", "tipo IN ('REITORIA', 'PRO_REITORIA', 'CENTRO', 'INSTITUTO', 'FACULDADE', 'DEPARTAMENTO', 'COORDENACAO', 'DIRETORIA', 'DIVISAO', 'NUCLEO', 'OUTRO')");
                         });
                 });
 

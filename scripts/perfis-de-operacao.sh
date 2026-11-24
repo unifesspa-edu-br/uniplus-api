@@ -158,8 +158,8 @@ main_perfis() {
     criar_perfis_de_operacao
     conceder_perfis_da_instituicao
     renovar_token_do_executor
-    ceps=$(criar_unidade CEPS "Centro de Processos Seletivos" centro false)
-    crca=$(criar_unidade CRCA "Centro de Registro e Controle Acadêmico" centro false)
+    ceps=$(criar_unidade CEPS "Centro de Processos Seletivos" CENTRO false)
+    crca=$(criar_unidade CRCA "Centro de Registro e Controle Acadêmico" CENTRO false)
     conceder_perfis_das_unidades "$ceps" "$crca"
     ok "perfis de operação e concessões prontos"
 }

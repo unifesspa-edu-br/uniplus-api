@@ -1137,7 +1137,14 @@
             "format": "uuid"
           },
           "tipo": {
-            "$ref": "#/components/schemas/TipoUnidade"
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/TipoUnidadeCodigo"
+              }
+            ]
           },
           "unidadeAcademica": {
             "type": "boolean"
@@ -1433,7 +1440,14 @@
             "format": "uuid"
           },
           "tipo": {
-            "$ref": "#/components/schemas/TipoUnidade"
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/TipoUnidadeCodigo"
+              }
+            ]
           },
           "unidadeAcademica": {
             "type": "boolean"
@@ -1921,22 +1935,22 @@
           }
         }
       },
-      "TipoUnidade": {
+      "TipoUnidadeCodigo": {
         "enum": [
-          "nenhum",
-          "reitoria",
-          "proReitoria",
-          "centro",
-          "instituto",
-          "faculdade",
-          "departamento",
-          "coordenacao",
-          "diretoria",
-          "divisao",
-          "nucleo",
-          "outro"
+          "REITORIA",
+          "PRO_REITORIA",
+          "CENTRO",
+          "INSTITUTO",
+          "FACULDADE",
+          "DEPARTAMENTO",
+          "COORDENACAO",
+          "DIRETORIA",
+          "DIVISAO",
+          "NUCLEO",
+          "OUTRO"
         ],
-        "type": "string"
+        "type": "string",
+        "description": "O tipo de uma unidade da universidade, que a classifica na estrutura organizacional: da reitoria aos n\u00FAcleos.\n\n- \u0060REITORIA\u0060: Reitoria \u2014 A unidade m\u00E1xima de administra\u00E7\u00E3o da universidade.\n- \u0060PRO_REITORIA\u0060: Pr\u00F3-reitoria \u2014 Unidade de administra\u00E7\u00E3o superior ligada \u00E0 reitoria e respons\u00E1vel por uma \u00E1rea, como ensino ou pesquisa.\n- \u0060CENTRO\u0060: Centro \u2014 Unidade que re\u00FAne cursos e \u00E1reas de conhecimento afins.\n- \u0060INSTITUTO\u0060: Instituto \u2014 Unidade acad\u00EAmica que re\u00FAne cursos e pesquisa de uma \u00E1rea do conhecimento.\n- \u0060FACULDADE\u0060: Faculdade \u2014 Unidade acad\u00EAmica respons\u00E1vel por cursos de uma \u00E1rea espec\u00EDfica.\n- \u0060DEPARTAMENTO\u0060: Departamento \u2014 Subdivis\u00E3o de uma unidade acad\u00EAmica que re\u00FAne disciplinas afins.\n- \u0060COORDENACAO\u0060: Coordena\u00E7\u00E3o \u2014 Unidade que coordena um curso, um programa ou uma atividade.\n- \u0060DIRETORIA\u0060: Diretoria \u2014 Unidade de dire\u00E7\u00E3o de um conjunto de atividades administrativas ou acad\u00EAmicas.\n- \u0060DIVISAO\u0060: Divis\u00E3o \u2014 Subdivis\u00E3o de uma diretoria ou de outra unidade administrativa.\n- \u0060NUCLEO\u0060: N\u00FAcleo \u2014 Unidade que re\u00FAne pessoas em torno de um tema ou de uma atividade espec\u00EDfica.\n- \u0060OUTRO\u0060: Outro \u2014 Unidade que n\u00E3o se enquadra nos demais tipos."
       },
       "UnidadeDto": {
         "required": [

@@ -31,6 +31,33 @@ public sealed class ConferenciaDaNovaUnidadeTests
         _cadastro.Unidades.ReceivedCalls().Should().BeEmpty();
     }
 
+    [Theory(DisplayName = "Tipo ausente, desconhecido ou em outra grafia acumula TipoInvalido com o nome ausente sem consultar o repositório")]
+    [InlineData(null)]
+    [InlineData("")]
+    [InlineData("centro")]
+    [InlineData("Centro")]
+    [InlineData("3")]
+    public async Task TipoQueNaoEhCodigo_AcumulaTipoInvalidoSemConsultar(string? tipo)
+    {
+        Result<Unidade> resultado = await ConferirAsync(CadastroDeUnidadeSimulado.Criacao() with { Nome = "", Tipo = tipo });
+
+        resultado.Errors.Should().HaveCount(2);
+        resultado.Errors.Should().Contain(e => e.Field == "nome" && e.Error.Code == UnidadeErrorCodes.NomeObrigatorio);
+        resultado.Errors.Should().Contain(e => e.Field == "tipo" && e.Error.Code == UnidadeErrorCodes.TipoInvalido);
+        _cadastro.Unidades.ReceivedCalls().Should().BeEmpty();
+    }
+
+    [Theory(DisplayName = "Cada código de tipo cria a Unidade do tipo correspondente")]
+    [InlineData("REITORIA", TipoUnidade.Reitoria)]
+    [InlineData("PRO_REITORIA", TipoUnidade.ProReitoria)]
+    [InlineData("OUTRO", TipoUnidade.Outro)]
+    public async Task CodigoDeTipo_CriaAUnidadeDoTipo(string codigo, TipoUnidade esperado)
+    {
+        Result<Unidade> resultado = await ConferirAsync(CadastroDeUnidadeSimulado.Criacao() with { Tipo = codigo });
+
+        resultado.Value!.Tipo.Should().Be(esperado);
+    }
+
     [Fact(DisplayName = "Sem identificador em uso nem superior devolve a Unidade e consulta só os três identificadores")]
     public async Task SemConflito_DevolveAUnidadeEConsultaOsTresIdentificadores()
     {

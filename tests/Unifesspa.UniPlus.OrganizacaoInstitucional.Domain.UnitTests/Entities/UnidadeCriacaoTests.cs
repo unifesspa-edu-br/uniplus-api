@@ -61,8 +61,8 @@ public sealed class UnidadeCriacaoTests
         resultado.Error!.Code.Should().Be(UnidadeErrorCodes.NomeTamanho);
     }
 
-    [Theory(DisplayName = "Criar com TipoUnidade.Nenhum ou cast inválido retorna TipoInvalido")]
-    [InlineData(TipoUnidade.Nenhum)]
+    [Theory(DisplayName = "Criar com tipo que não é membro de TipoUnidade retorna TipoInvalido")]
+    [InlineData((TipoUnidade)0)]
     [InlineData((TipoUnidade)99)]
     public void Criar_ComTipoInvalido_DeveRetornarTipoInvalido(TipoUnidade tipoInvalido)
     {
@@ -106,7 +106,7 @@ public sealed class UnidadeCriacaoTests
             CidadeDaUnidade.Nenhuma,
             new VigenciaDaUnidade(UnidadeDeTeste.InicioDaVigencia, null),
             null,
-            TipoUnidade.Nenhum,
+            (TipoUnidade)99,
             false);
 
         resultado.IsFailure.Should().BeTrue();
@@ -129,5 +129,20 @@ public sealed class UnidadeCriacaoTests
         validacao.IsFailure.Should().BeTrue();
         validacao.Errors.Should().ContainSingle(e => e.Field == "nome" && e.Error.Code == UnidadeErrorCodes.NomeObrigatorio);
         validacao.Errors.Should().ContainSingle(e => e.Field == "slug" && e.Error.Code == UnidadeErrorCodes.SlugObrigatorio);
+    }
+
+    [Fact(DisplayName = "ValidarCampos sem tipo recusa com TipoInvalido e lista os códigos aceitos")]
+    public void ValidarCampos_SemTipo_RecusaListandoOsCodigosAceitos()
+    {
+        Result validacao = Unidade.ValidarCampos(
+            "Nome valido",
+            UnidadeDeTeste.IdentificadoresDoCeps(),
+            CidadeDaUnidade.Nenhuma,
+            null,
+            new VigenciaDaUnidade(UnidadeDeTeste.InicioDaVigencia, null));
+
+        FieldError erro = validacao.Errors.Should().ContainSingle(e => e.Field == "tipo").Subject;
+        erro.Error.Code.Should().Be(UnidadeErrorCodes.TipoInvalido);
+        erro.Error.Message.Should().Contain("REITORIA").And.Contain("PRO_REITORIA").And.Contain("OUTRO");
     }
 }

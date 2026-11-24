@@ -6,6 +6,7 @@ using AwesomeAssertions;
 
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Assertions;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Authentication;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.Entities;
 using Unifesspa.UniPlus.OrganizacaoInstitucional.IntegrationTests.Infrastructure;
 
@@ -80,7 +81,7 @@ public sealed class UnidadeAtualizarEndpointTests
             slug = unidade.Slug.Valor,
             sigla = unidade.Sigla,
             codigo = unidade.Codigo,
-            tipo = (int)unidade.Tipo,
+            tipo = unidade.Tipo.Codigo(),
             unidadeAcademica = unidade.UnidadeAcademica,
         };
 }

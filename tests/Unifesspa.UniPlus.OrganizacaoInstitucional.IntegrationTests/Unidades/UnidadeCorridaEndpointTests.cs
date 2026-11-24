@@ -14,6 +14,7 @@ using Microsoft.Extensions.DependencyInjection.Extensions;
 using Unifesspa.UniPlus.Host;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Authentication;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.Entities;
 using Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.Enums;
 using Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.Interfaces;
@@ -83,7 +84,7 @@ public sealed class UnidadeCorridaEndpointTests
             slug = existente.Slug.Valor,
             sigla = sufixo,
             codigo = sufixo,
-            tipo = (int)TipoUnidade.Centro,
+            tipo = TipoUnidade.Centro.Codigo(),
             unidadeAcademica = false,
             vigenciaInicio = "2026-01-01",
         };
@@ -97,7 +98,7 @@ public sealed class UnidadeCorridaEndpointTests
             slug,
             sigla = unidade.Sigla,
             codigo = unidade.Codigo,
-            tipo = (int)TipoUnidade.Centro,
+            tipo = TipoUnidade.Centro.Codigo(),
             unidadeAcademica = false,
         };
 
