@@ -6,10 +6,10 @@ public enum IdempotencyOutcome
     /// <summary>Sem entrada no cache para a chave de lookup. Handler deve rodar.</summary>
     Miss = 0,
 
-    /// <summary>Entrada existe + body_hash bate. Replay verbatim da response cacheada.</summary>
+    /// <summary>Entrada existe + resumo do corpo bate. Replay verbatim da response cacheada.</summary>
     HitMatch = 1,
 
-    /// <summary>Entrada existe + body_hash diverge. 422 body_mismatch.</summary>
+    /// <summary>Entrada existe + resumo do corpo diverge. 422 body_mismatch.</summary>
     HitMismatch = 2,
 
     /// <summary>Entrada existe mas ainda em status Processing. 409 processing_conflict.</summary>

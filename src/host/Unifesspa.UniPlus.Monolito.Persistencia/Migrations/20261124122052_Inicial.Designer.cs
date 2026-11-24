@@ -12,7 +12,7 @@ using Unifesspa.UniPlus.Monolito.Persistencia;
 namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 {
     [DbContext(typeof(MonolitoDbContext))]
-    [Migration("20261124122016_Inicial")]
+    [Migration("20261124122052_Inicial")]
     partial class Inicial
     {
         /// <inheritdoc />
@@ -9554,14 +9554,16 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid")
-                        .HasColumnName("id");
+                        .HasColumnName("id")
+                        .HasComment("Identificador da chave de idempotência.");
 
                     b.Property<string>("BodyHash")
                         .IsRequired()
                         .HasMaxLength(64)
                         .HasColumnType("character(64)")
-                        .HasColumnName("body_hash")
-                        .IsFixedLength();
+                        .HasColumnName("resumo_do_corpo")
+                        .IsFixedLength()
+                        .HasComment("Resumo SHA-256 do corpo do pedido, em hexadecimal; serve para detectar a mesma chave usada com outro corpo.");
 
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
@@ -9570,37 +9572,44 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.Property<byte[]>("EncryptedResponseBody")
                         .HasColumnType("bytea")
-                        .HasColumnName("encrypted_response_body");
+                        .HasColumnName("corpo_da_resposta_cifrado")
+                        .HasComment("Corpo da resposta guardado cifrado, devolvido igual quando o pedido se repete; vazio enquanto a operação executa.");
 
                     b.Property<string>("Endpoint")
                         .IsRequired()
                         .HasMaxLength(500)
                         .HasColumnType("character varying(500)")
-                        .HasColumnName("endpoint");
+                        .HasColumnName("rota")
+                        .HasComment("Operação pedida, no formato MÉTODO /modelo/da/rota (modelo da rota, não o endereço com os valores).");
 
                     b.Property<DateTimeOffset>("ExpiresAt")
                         .HasColumnType("timestamp with time zone")
-                        .HasColumnName("expires_at");
+                        .HasColumnName("expira_em")
+                        .HasComment("Instante a partir do qual a chave deixa de valer e pode ser descartada.");
 
                     b.Property<string>("IdempotencyKey")
                         .IsRequired()
                         .HasMaxLength(255)
                         .HasColumnType("character varying(255)")
-                        .HasColumnName("idempotency_key");
+                        .HasColumnName("chave")
+                        .HasComment("Chave de idempotência enviada pelo cliente no cabeçalho Idempotency-Key, sem alteração.");
 
                     b.Property<string>("ResponseHeadersJson")
                         .HasColumnType("jsonb")
-                        .HasColumnName("response_headers_json");
+                        .HasColumnName("cabecalhos_da_resposta")
+                        .HasComment("Cabeçalhos da resposta guardada (Content-Type e Location), em JSON; vazio enquanto a operação executa.");
 
                     b.Property<int?>("ResponseStatus")
                         .HasColumnType("integer")
-                        .HasColumnName("response_status");
+                        .HasColumnName("situacao_http_da_resposta")
+                        .HasComment("Código de situação HTTP da resposta guardada; vazio enquanto a operação ainda executa.");
 
                     b.Property<string>("Scope")
                         .IsRequired()
                         .HasMaxLength(255)
                         .HasColumnType("character varying(255)")
-                        .HasColumnName("scope");
+                        .HasColumnName("escopo")
+                        .HasComment("Quem agiu: a conta autenticada, no formato user:{conta}. A chave só vale dentro desse escopo.");
 
                     b.Property<string>("Status")
                         .IsRequired()
@@ -9613,11 +9622,11 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasName("pk_chaves_de_idempotencia");
 
                     b.HasIndex("ExpiresAt")
-                        .HasDatabaseName("ix_chaves_de_idempotencia_expires_at");
+                        .HasDatabaseName("ix_chaves_de_idempotencia_expira_em");
 
                     b.HasIndex("Scope", "Endpoint", "IdempotencyKey")
                         .IsUnique()
-                        .HasDatabaseName("ux_chaves_de_idempotencia_scope_endpoint_key");
+                        .HasDatabaseName("ux_chaves_de_idempotencia_escopo_rota_chave");
 
                     b.ToTable("chaves_de_idempotencia", "plataforma", t =>
                         {
