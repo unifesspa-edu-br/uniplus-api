@@ -106,7 +106,7 @@ Decisões do líder técnico (23/11/2026).
    - No documento da configuração (`v1`), o rótulo é a propriedade solta `{campo}Rotulo`, com `readOnly`, ao lado do campo.
    - Quem lê decide só pelo código e ignora o rótulo; a importação ignora o rótulo; a retificação não conta a diferença de rótulo como mudança. As colunas JSON e as mensagens entre módulos e para fora continuam só com o código.
 3. **Comentário da coluna.** O comentário de cada coluna de enum (ADR-0124) lista os códigos aceitos, sem os rótulos, e é escrito pela convenção `ConversaoDosEnumsDeContrato`, a partir do atributo do enum.
-4. **Rota do tipo de fase.** O item 1 da emenda 2 ("rota publicada não muda de nome") vale a partir da primeira publicação em produção. Antes dela, as rotas de `fases-canonicas` passam a `tipos-de-fase`, o nome da tabela (uniplus-api#2761): `/api/configuracao/tipos-de-fase`, `/api/configuracao/admin/tipos-de-fase` e `/api/configuracao/vocabularios/tipos-de-fase`, sem manter a rota antiga.
+4. **Rota do tipo de fase.** A tabela se chama `tipos_de_fase`. A rota `fases-canonicas` (`/api/configuracao/fases-canonicas`, `/api/configuracao/admin/fases-canonicas` e `/api/configuracao/vocabularios/fases-canonicas`) será renomeada para `tipos-de-fase` depois do fim de 25/11 (uniplus-api#2606), sem manter a rota antiga; o item 1 da emenda 2 vale a partir da primeira publicação em produção.
 
 ## Emenda 4 (2026-11-24) — formato único do código de enum
 
