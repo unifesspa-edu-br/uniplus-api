@@ -300,7 +300,7 @@ internal sealed class ServicosDoCongelamentoDeTeste
 
     public int LimiteDeMunicipios { get; set; } = 100;
 
-    public ConferenciaDosMunicipiosNoGeo MunicipiosNoGeo() => new(Geo, Microsoft.Extensions.Options.Options.Create(new ProvaPresencialOptions { LimiteDeMunicipios = LimiteDeMunicipios }));
+    public ConferenciaDosMunicipiosNoGeo MunicipiosNoGeo() => new(Geo);
 
     public MontagemDoCongelamento Montagem() => new(Canonicalizer, Usuario);
 

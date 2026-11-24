@@ -1,20 +1,18 @@
 namespace Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
 
-using Microsoft.Extensions.Options;
-
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.ProvaPresencial;
 
 /// <summary>
-/// Consulta o Geo uma vez por município declarado, na ordem da declaração, quando a lista respeita o limite vigente.
+/// Consulta o Geo uma vez por município declarado, na ordem da declaração, mesmo que a lista passe do limite vigente.
 /// Toda recusa deixa o município não conferido; a indisponibilidade interrompe a consulta.
 /// </summary>
-public sealed class ConferenciaDosMunicipiosNoGeo(IConferenciaEnderecoGeo geo, IOptions<ProvaPresencialOptions> options)
+public sealed class ConferenciaDosMunicipiosNoGeo(IConferenciaEnderecoGeo geo)
 {
     public Task<Result<MunicipiosConferidosNoGeo>> ConferirAsync(
         DeclaracaoDaProvaPresencial? declaracao, CancellationToken cancellationToken) =>
-        declaracao is { TemProvaPresencial: true } presencial && presencial.Municipios.Count <= options.Value.LimiteDeMunicipios
+        declaracao is { TemProvaPresencial: true } presencial
             ? ConferirDeclaradosAsync(presencial.Municipios, cancellationToken)
             : Task.FromResult(Result<MunicipiosConferidosNoGeo>.Success(MunicipiosConferidosNoGeo.Nenhum));
 
