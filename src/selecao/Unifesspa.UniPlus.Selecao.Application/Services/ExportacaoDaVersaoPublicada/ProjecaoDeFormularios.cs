@@ -2,8 +2,10 @@ namespace Unifesspa.UniPlus.Selecao.Application.Services.ExportacaoDaVersaoPubli
 
 using System.Text.Json.Nodes;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Selecao.Application.Services.DocumentoDaConfiguracao;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
+using Unifesspa.UniPlus.Selecao.Domain.Enums;
 
 internal static class ProjecaoDeFormularios
 {
@@ -51,7 +53,7 @@ internal static class ProjecaoDeFormularios
     private static void PrepararItem(JsonObject item)
     {
         string codigo = item["codigoDoDado"]?.ToString() ?? string.Empty;
-        if (item["origemValores"]?.ToString() != "OpcoesDoProcesso" || AtendimentoEspecializado.GereOpcoesDoFato(codigo))
+        if (item["origemValores"]?.ToString() != OrigemValoresColeta.OpcoesDoProcesso.Codigo() || AtendimentoEspecializado.GereOpcoesDoFato(codigo))
         {
             return;
         }
