@@ -40,7 +40,7 @@ public sealed class AtomicidadeDoEnvioDaInscricaoTests(InscricaoDbFixture fixtur
             original.ETag, "00000701", comprovantes, new DocumentoDaInscricaoRepository(db));
         await enviar.Should().ThrowAsync<InvalidOperationException>().WithMessage("Falha simulada na persistência do comprovante.");
         db.Entry(arquivo).State.Should().Be(EntityState.Deleted);
-        db.ChavesALimpar.Local.Should().ContainSingle(c => c.ObjectKey == arquivo.ChaveDefinitivaPrevista);
+        db.ArquivosAApagar.Local.Should().ContainSingle(c => c.ObjectKey == arquivo.ChaveDefinitivaPrevista);
         await ConferirAusenciaDeAlteracoesAsync(original, arquivo);
     }
 
@@ -100,7 +100,7 @@ public sealed class AtomicidadeDoEnvioDaInscricaoTests(InscricaoDbFixture fixtur
         inscricao.EhRascunho.Should().BeTrue();
         (await leitura.ArquivosDaApresentacao.AnyAsync(a => a.Id == arquivo.Id)).Should().BeTrue();
         (await leitura.ApresentacoesDeDocumento.AnyAsync(a => a.Id == arquivo.ApresentacaoId)).Should().BeTrue();
-        (await leitura.ChavesALimpar.AnyAsync(c => c.ObjectKey == arquivo.ChaveDefinitivaPrevista)).Should().BeFalse();
+        (await leitura.ArquivosAApagar.AnyAsync(c => c.ObjectKey == arquivo.ChaveDefinitivaPrevista)).Should().BeFalse();
         (await _cenario.NovoRepositorioDeComprovantes(leitura).ObterEmissoesAsync([original.Id])).Should().BeEmpty();
     }
 }

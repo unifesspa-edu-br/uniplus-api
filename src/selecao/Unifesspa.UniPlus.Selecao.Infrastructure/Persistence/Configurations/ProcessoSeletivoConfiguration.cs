@@ -309,7 +309,7 @@ public sealed class ProcessoSeletivoConfiguration : IEntityTypeConfiguration<Pro
         builder.HasMany(p => p.OpcoesDeclaradas)
             .WithOne()
             .HasForeignKey(o => o.ProcessoSeletivoId)
-            .HasConstraintName("fk_opcoes_declaradas_fato_processo_seletivo")
+            .HasConstraintName("fk_opcoes_declaradas_do_dado_processo_seletivo")
             .OnDelete(DeleteBehavior.Cascade);
 
         builder.Navigation(p => p.OpcoesDeclaradas)

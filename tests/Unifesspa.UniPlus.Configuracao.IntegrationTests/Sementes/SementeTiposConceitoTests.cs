@@ -67,7 +67,7 @@ public sealed class SementeTiposConceitoTests
 
     private static async Task AdministracaoEditaOAptoInaptoAsync(UniPlusDbContext ctx)
     {
-        await ctx.Database.ExecuteSqlRawAsync($"DELETE FROM configuracao.tipos_etapa_conceitos WHERE tipo_conceito_id = {TipoAptoInapto}");
+        await ctx.Database.ExecuteSqlRawAsync($"DELETE FROM configuracao.conceitos_do_tipo_de_etapa WHERE tipo_conceito_id = {TipoAptoInapto}");
         await ctx.Database.ExecuteSqlRawAsync(
             $"UPDATE configuracao.opcoes_do_tipo_de_conceito SET rotulo = 'Habilitado' WHERE codigo = 'APTO' AND tipo_conceito_id = {TipoAptoInapto}");
     }
@@ -77,7 +77,7 @@ public sealed class SementeTiposConceitoTests
 
     private static async Task<int> VinculosDoAptoInaptoAsync(UniPlusDbContext ctx) =>
         await ctx.Database.SqlQueryRaw<int>(
-            $"SELECT count(*)::int AS \"Value\" FROM configuracao.tipos_etapa_conceitos WHERE tipo_conceito_id = {TipoAptoInapto}").SingleAsync();
+            $"SELECT count(*)::int AS \"Value\" FROM configuracao.conceitos_do_tipo_de_etapa WHERE tipo_conceito_id = {TipoAptoInapto}").SingleAsync();
 
     private static async Task<List<string>> ValoresDoAptoInaptoAsync(UniPlusDbContext ctx) =>
         await ctx.Database.SqlQueryRaw<string>(

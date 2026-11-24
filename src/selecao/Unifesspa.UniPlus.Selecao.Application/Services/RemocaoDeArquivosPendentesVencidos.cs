@@ -11,7 +11,7 @@ using Microsoft.Extensions.Logging;
 /// Remove os registros de arquivo enviado que ficaram pendentes além do prazo — do documento do
 /// Edital, do modelo de documento e do documento da inscrição — junto dos objetos que as URLs de envio
 /// deles apontavam no armazenamento privado. O confirmado nunca é removido. Apaga também as chaves
-/// agendadas em <c>chaves_a_limpar</c> (envio e definitiva de arquivo do candidato removido ou descartado),
+/// agendadas em <c>arquivos_a_apagar</c> (envio e definitiva de arquivo do candidato removido ou descartado),
 /// depois do commit de quem as agendou.
 /// </summary>
 /// <remarks>
@@ -179,7 +179,7 @@ public sealed partial class RemocaoDeArquivosPendentesVencidos
         DateTimeOffset agora = _clock.GetUtcNow();
         while (true)
         {
-            IReadOnlyList<ChaveALimpar> lote = await _documentosDaInscricao
+            IReadOnlyList<ArquivoAApagar> lote = await _documentosDaInscricao
                 .ListarChavesVencidasAsync(agora, TamanhoDoLote, cancellationToken)
                 .ConfigureAwait(false);
             bool houveFalha = !await LimparLoteDeChavesAsync(lote, cancellationToken).ConfigureAwait(false);
@@ -191,10 +191,10 @@ public sealed partial class RemocaoDeArquivosPendentesVencidos
         }
     }
 
-    private async Task<bool> LimparLoteDeChavesAsync(IReadOnlyList<ChaveALimpar> lote, CancellationToken cancellationToken)
+    private async Task<bool> LimparLoteDeChavesAsync(IReadOnlyList<ArquivoAApagar> lote, CancellationToken cancellationToken)
     {
         bool semFalha = true;
-        foreach (ChaveALimpar chave in lote)
+        foreach (ArquivoAApagar chave in lote)
         {
             if (await RemoverChaveAgendadaAsync(chave, cancellationToken).ConfigureAwait(false))
             {
@@ -209,7 +209,7 @@ public sealed partial class RemocaoDeArquivosPendentesVencidos
         return semFalha;
     }
 
-    private async Task<bool> RemoverChaveAgendadaAsync(ChaveALimpar chave, CancellationToken cancellationToken)
+    private async Task<bool> RemoverChaveAgendadaAsync(ArquivoAApagar chave, CancellationToken cancellationToken)
     {
         try
         {

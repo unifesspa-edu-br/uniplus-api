@@ -24,7 +24,7 @@ internal sealed class CalendarioDiasUteisConfiguration : IEntityTypeConfiguratio
         builder.ToTable("calendarios_de_dias_uteis");
         builder.HasKey(c => c.Id);
 
-        builder.Property(c => c.VersaoDataset).HasMaxLength(VersaoDatasetMaxLength).IsRequired();
+        builder.Property(c => c.VersaoDataset).HasColumnName("versao_do_calendario").HasMaxLength(VersaoDatasetMaxLength).IsRequired();
         builder.Property(c => c.Vigente).IsRequired();
 
         // Token de concorrência otimista mapeado para a coluna de sistema `xmin` do
@@ -78,6 +78,6 @@ internal sealed class CalendarioDiasUteisConfiguration : IEntityTypeConfiguratio
 
         builder.HasIndex(c => c.VersaoDataset)
             .HasFilter("is_deleted = false")
-            .HasDatabaseName("ix_calendarios_de_dias_uteis_versao_dataset");
+            .HasDatabaseName("ix_calendarios_de_dias_uteis_versao_do_calendario");
     }
 }

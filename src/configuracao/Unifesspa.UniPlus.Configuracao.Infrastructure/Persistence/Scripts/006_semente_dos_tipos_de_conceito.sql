@@ -22,7 +22,7 @@ WITH tipos_novos AS (
     ) AS valor (tipo_codigo, codigo, rotulo, conta_como_aprovacao, posicao)
     JOIN tipos_novos tipo ON tipo.codigo = valor.tipo_codigo
 )
-INSERT INTO configuracao.tipos_etapa_conceitos (tipo_etapa_id, tipo_conceito_id)
+INSERT INTO configuracao.conceitos_do_tipo_de_etapa (tipo_etapa_id, tipo_conceito_id)
 SELECT etapa.id, tipo.id
 FROM tipos_novos tipo
 JOIN configuracao.tipos_etapa etapa

@@ -169,7 +169,7 @@ internal sealed class ApoioDaPersistenciaDeOfertaCurso
     private const string InsercaoDeOfertaCrua = """
         INSERT INTO configuracao.ofertas_de_curso
             (id, codigo, curso_id, local_oferta_id,
-             unidade_oft_origem_id, unidade_oft_sigla, unidade_oft_nome, unidade_oft_tipo,
+             unidade_ofertante_origem_id, unidade_ofertante_sigla, unidade_ofertante_nome, unidade_ofertante_tipo,
              programa_de_oferta, formato_pedagogico, regime_de_funcionamento,
              regime_de_turno, turnos,
              vagas_anuais_autorizadas, base_legal, created_at, is_deleted)
@@ -184,7 +184,7 @@ internal sealed class ApoioDaPersistenciaDeOfertaCurso
     private const string InsercaoSemRegimeDeFuncionamento = """
         INSERT INTO configuracao.ofertas_de_curso
             (id, codigo, curso_id, local_oferta_id,
-             unidade_oft_origem_id, unidade_oft_sigla, unidade_oft_nome, unidade_oft_tipo,
+             unidade_ofertante_origem_id, unidade_ofertante_sigla, unidade_ofertante_nome, unidade_ofertante_tipo,
              programa_de_oferta, formato_pedagogico, regime_de_turno, turnos,
              vagas_anuais_autorizadas, base_legal, created_at, is_deleted)
         VALUES

@@ -26,7 +26,7 @@ public sealed class OpcaoDeclaradaFatoConfiguration : IEntityTypeConfiguration<O
         builder.Property(o => o.Rotulo).HasComment("Texto apresentado à pessoa candidata.");
         builder.Property(o => o.Ordem).HasComment("Posição de apresentação ou avaliação no conjunto.");
 
-        builder.ToTable("opcoes_declaradas_fato", t => t.HasComment("Opções de resposta declaradas pelo processo para um dado."));
+        builder.ToTable("opcoes_declaradas_do_dado", t => t.HasComment("Opções de resposta declaradas pelo processo para um dado."));
         builder.HasKey(o => o.Id);
         builder.Property(o => o.Id).ValueGeneratedNever();
 
@@ -39,6 +39,6 @@ public sealed class OpcaoDeclaradaFatoConfiguration : IEntityTypeConfiguration<O
         // concorrente e caminho que não passe por ele.
         builder.HasIndex(o => new { o.ProcessoSeletivoId, o.FatoCodigo, o.Codigo })
             .IsUnique()
-            .HasDatabaseName("ux_opcoes_declaradas_fato_processo_dado_codigo");
+            .HasDatabaseName("ux_opcoes_declaradas_do_dado_processo_dado_codigo");
     }
 }

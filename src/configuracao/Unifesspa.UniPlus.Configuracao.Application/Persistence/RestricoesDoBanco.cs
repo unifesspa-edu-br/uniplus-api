@@ -51,7 +51,7 @@ public static class RestricoesDoBanco
 
     public const string TipoDeConceitoValorPosicaoUnica = "ix_opcoes_do_tipo_de_conceito_posicao";
 
-    public const string TipoDeEtapaConceitoAdmitidoChave = "pk_tipos_etapa_conceitos";
+    public const string TipoDeEtapaConceitoAdmitidoChave = "pk_conceitos_do_tipo_de_etapa";
 
     public const string TipoDeBancaCodigoVivo = "ix_tipos_de_banca_codigo_vivo";
 

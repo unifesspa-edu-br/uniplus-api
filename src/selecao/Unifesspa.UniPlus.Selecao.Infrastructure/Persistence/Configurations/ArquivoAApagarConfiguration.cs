@@ -12,24 +12,24 @@ using Unifesspa.UniPlus.Kernel.Domain.Enums;
     "Performance",
     "CA1812:Avoid uninstantiated internal classes",
     Justification = "Instanciada via EF Core ModelBuilder.ApplyConfigurationsFromAssembly por reflection.")]
-internal sealed class ChaveALimparConfiguration : IEntityTypeConfiguration<ChaveALimpar>
+internal sealed class ArquivoAApagarConfiguration : IEntityTypeConfiguration<ArquivoAApagar>
 {
-    public void Configure(EntityTypeBuilder<ChaveALimpar> builder)
+    public void Configure(EntityTypeBuilder<ArquivoAApagar> builder)
     {
         ArgumentNullException.ThrowIfNull(builder);
 
         builder.ClassificaPorPadrao(ClassificacaoDeProtecao.Interno);
 
-        builder.ToTable("chaves_a_limpar", t => t.HasComment(
-            "Chaves do armazenamento a apagar depois de uma hora: a URL de envio recria o objeto em claro até vencer."));
+        builder.ToTable("arquivos_a_apagar", t => t.HasComment(
+            "Arquivos do armazenamento a apagar depois de uma hora: a URL de envio recria o objeto em claro até vencer."));
 
         builder.HasKey(c => c.Id);
         builder.Property(c => c.Id).ValueGeneratedNever();
         builder.Property(c => c.ObjectKey).HasMaxLength(500).IsRequired()
             .HasComment("A chave do objeto; leva só o id do arquivo.");
-        builder.Property(c => c.LimparApos)
-            .HasComment("A partir de quando a chave pode ser apagada.");
+        builder.Property(c => c.ApagarAPartirDe)
+            .HasComment("A partir de quando o arquivo pode ser apagado.");
 
-        builder.HasIndex(c => c.LimparApos).HasDatabaseName("ix_chaves_a_limpar_limpar_apos");
+        builder.HasIndex(c => c.ApagarAPartirDe).HasDatabaseName("ix_arquivos_a_apagar_apagar_a_partir_de");
     }
 }

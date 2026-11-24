@@ -24,12 +24,7 @@ using Unifesspa.UniPlus.Kernel.Results;
 using static Unifesspa.UniPlus.Configuracao.IntegrationTests.OfertasCurso.ApoioDaPersistenciaDeOfertaCurso;
 
 /// <summary>
-/// Integração ponta-a-ponta da OfertaCurso contra Postgres real (story #588,
-/// issue #749): persistência com owned type <c>unidade_oft_*</c> (roundtrip do
-/// snapshot ADR-0061), FKs intra-schema reais (curso/locais_de_oferta, RESTRICT),
-/// CHECKs de domínio via SQL cru (programa/formato/regime/turnos/vagas/base legal
-/// condicional), soft-delete e o EXISTS real de
-/// <c>CursoRepository.ReferenciadoPorOfertaCursoVivaAsync</c>.
+/// Verifica a ida e volta da cópia gravada e as restrições que dependem do PostgreSQL.
 /// </summary>
 /// <remarks>
 /// O snapshot da unidade ofertante já chega congelado no VO — a persistência não
@@ -52,7 +47,7 @@ public sealed class OfertaCursoPersistenceTests
         _apoio = new ApoioDaPersistenciaDeOfertaCurso(fixture);
     }
 
-    [Fact(DisplayName = "Criar persiste os campos, o snapshot unidade_oft_* faz roundtrip e a auditoria é carimbada")]
+    [Fact(DisplayName = "Criar persiste os campos, a cópia da unidade ofertante faz ida e volta e a auditoria é carimbada")]
     public async Task Insert_Completa_PersisteComOwnedRoundtrip()
     {
         (Guid cursoId, Guid localId) = await _apoio.SemearCursoELocalAsync();

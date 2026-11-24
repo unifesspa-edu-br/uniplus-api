@@ -14,7 +14,7 @@ using Unifesspa.UniPlus.Kernel.Domain.Enums;
     Justification = "Instanciada pelo EF Core via reflection.")]
 internal sealed class TipoEtapaConfiguration : IEntityTypeConfiguration<TipoEtapa>
 {
-    private const string JuncaoDosConceitosAdmitidos = "tipos_etapa_conceitos";
+    private const string JuncaoDosConceitosAdmitidos = "conceitos_do_tipo_de_etapa";
 
     public void Configure(EntityTypeBuilder<TipoEtapa> builder)
     {
@@ -79,14 +79,15 @@ internal sealed class TipoEtapaConfiguration : IEntityTypeConfiguration<TipoEtap
     {
         builder.HasMany(tipo => tipo.ConceitosAdmitidos).WithMany().UsingEntity<Dictionary<string, object>>(
             JuncaoDosConceitosAdmitidos,
-            conceito => conceito.HasOne<TipoConceito>().WithMany().HasForeignKey("TipoConceitoId").OnDelete(DeleteBehavior.Restrict),
-            tipo => tipo.HasOne<TipoEtapa>().WithMany().HasForeignKey("TipoEtapaId").OnDelete(DeleteBehavior.Cascade),
+            conceito => conceito.HasOne<TipoConceito>().WithMany().HasForeignKey("TipoConceitoId").HasConstraintName("fk_conceitos_do_tipo_de_etapa_tipo_conceito").OnDelete(DeleteBehavior.Restrict),
+            tipo => tipo.HasOne<TipoEtapa>().WithMany().HasForeignKey("TipoEtapaId").HasConstraintName("fk_conceitos_do_tipo_de_etapa_tipo_etapa").OnDelete(DeleteBehavior.Cascade),
             juncao =>
             {
                 juncao.ClassificaPorPadrao(ClassificacaoDeProtecao.Interno);
                 juncao.ToTable(JuncaoDosConceitosAdmitidos, tabela => tabela.HasComment(
                     "Tipos de conceito com que as etapas de um tipo de etapa podem ser avaliadas."));
                 juncao.HasKey("TipoEtapaId", "TipoConceitoId").HasName(RestricoesDoBanco.TipoDeEtapaConceitoAdmitidoChave);
+                juncao.HasIndex("TipoConceitoId").HasDatabaseName("ix_conceitos_do_tipo_de_etapa_tipo_conceito_id");
                 juncao.IndexerProperty<Guid>("TipoEtapaId").HasComment("Tipo de etapa que admite o conceito.");
                 juncao.IndexerProperty<Guid>("TipoConceitoId").HasComment("Tipo de conceito admitido pelo tipo de etapa.");
             });

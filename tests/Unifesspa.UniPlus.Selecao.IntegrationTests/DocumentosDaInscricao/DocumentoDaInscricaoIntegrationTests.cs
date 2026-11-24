@@ -178,7 +178,7 @@ public sealed class DocumentoDaInscricaoIntegrationTests : IClassFixture<Inscric
         (await _bucketes.ObterMetadadosAsync(BucketDefinitivo, arquivo.ChaveDefinitivaPrevista)).Should().BeNull();
         (await _bucketes.ObterMetadadosAsync(BucketDeEnvio, arquivo.ObjectKey)).Should().NotBeNull("a API não remove nada do bucket de envio");
         await using UniPlusDbContext leitura = _db.CreateDbContext();
-        (await leitura.ChavesALimpar.AnyAsync(c => c.ObjectKey == arquivo.ChaveDefinitivaPrevista)).Should().BeFalse("a chave sai da agenda");
+        (await leitura.ArquivosAApagar.AnyAsync(c => c.ObjectKey == arquivo.ChaveDefinitivaPrevista)).Should().BeFalse("a chave sai da agenda");
     }
 
     [Fact(DisplayName = "Duas réplicas na reconciliação: só a que obtém a exclusividade da transação executa, e a outra executa depois que a primeira termina")]
