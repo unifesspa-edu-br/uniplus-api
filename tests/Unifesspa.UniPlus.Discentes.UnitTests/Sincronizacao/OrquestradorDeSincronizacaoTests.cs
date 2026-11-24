@@ -64,20 +64,36 @@ public sealed class OrquestradorDeSincronizacaoTests
     }
 
     [Fact]
-    public async Task Falha_de_um_lote_nao_impede_os_seguintes_e_marca_execucao_parcial()
+    public async Task Falha_de_um_lote_nao_impede_que_o_seguinte_seja_tentado()
     {
         // Interromper deixaria a réplica tão incompleta quanto, sem a vantagem de ter
         // aproveitado o que dava.
-        OrigemSimulada origem = new();
-        origem.ResponderPorIngresso([.. Enumerable.Range(1, 6).Select(i => Vinculo(i))]);
-
-        GravadorSimulado gravador = new() { FalharNoLoteDeIndice = 0 };
-        ResumoDaSincronizacao resumo = await Executar(origem, gravador, 3);
+        (GravadorSimulado gravador, _) = await ExecutarComFalhaNoPrimeiroLote();
 
         gravador.TamanhosDosLotes.Should().HaveCount(2, "o segundo lote continuou sendo tentado");
+    }
+
+    [Fact]
+    public async Task Falha_de_um_lote_conta_so_esse_lote_como_nao_gravado()
+    {
+        (_, ResumoDaSincronizacao resumo) = await ExecutarComFalhaNoPrimeiroLote();
+
         resumo.NaoGravadosPorFalha.Should().Be(3);
         resumo.Inseridos.Should().Be(3);
+    }
+
+    [Fact]
+    public async Task Falha_de_um_lote_marca_a_execucao_como_parcial()
+    {
+        (_, ResumoDaSincronizacao resumo) = await ExecutarComFalhaNoPrimeiroLote();
+
         resumo.Situacao.Should().Be(SyncRunStatus.Parcial);
+    }
+
+    [Fact]
+    public async Task Falha_de_um_lote_mantem_aproveitados_e_recusados_dentro_do_processado()
+    {
+        (_, ResumoDaSincronizacao resumo) = await ExecutarComFalhaNoPrimeiroLote();
 
         ContagensDaExecucao contagens = resumo.EmContagens();
         (contagens.Aproveitados + contagens.Recusados).Should().BeLessThanOrEqualTo(
@@ -120,19 +136,24 @@ public sealed class OrquestradorDeSincronizacaoTests
         // Num lote misto, os vínculos já idênticos continuam corretos na réplica mesmo
         // quando a gravação dos demais falha. Contá-los como não gravados faria o registro
         // da execução subestimar o que ela alcançou.
-        OrigemSimulada origem = new();
-        origem.ResponderPorIngresso([.. Enumerable.Range(1, 4).Select(i => Vinculo(i))]);
-
-        GravadorSimulado gravador = new()
-        {
-            FalharNoLoteDeIndice = 0,
-            InalteradosNoLoteQueFalha = 3,
-        };
-
-        ResumoDaSincronizacao resumo = await Executar(origem, gravador, 4);
+        ResumoDaSincronizacao resumo = await ExecutarLoteMistoQueFalha();
 
         resumo.Inalterados.Should().Be(3, "já estavam corretos na réplica");
+    }
+
+    [Fact]
+    public async Task Lote_que_falha_conta_como_nao_gravado_so_o_que_precisava_de_escrita()
+    {
+        ResumoDaSincronizacao resumo = await ExecutarLoteMistoQueFalha();
+
         resumo.NaoGravadosPorFalha.Should().Be(1, "só o que precisava de escrita se perdeu");
+    }
+
+    [Fact]
+    public async Task Lote_misto_que_falha_marca_a_execucao_como_parcial()
+    {
+        ResumoDaSincronizacao resumo = await ExecutarLoteMistoQueFalha();
+
         resumo.Situacao.Should().Be(SyncRunStatus.Parcial);
     }
 
@@ -189,23 +210,44 @@ public sealed class OrquestradorDeSincronizacaoTests
     }
 
     [Fact]
-    public async Task Pede_a_origem_os_recortes_que_a_configuracao_define()
+    public async Task Pede_a_origem_duas_varreduras()
     {
-        OrigemSimulada origem = new();
-        origem.ResponderPorIngresso(Vinculo(1));
+        IReadOnlyList<FiltroDeVinculos> filtros = await ObterFiltrosPedidos();
 
-        await Executar(origem, new GravadorSimulado());
+        filtros.Should().HaveCount(2);
+    }
 
-        origem.FiltrosPedidos.Should().HaveCount(2);
+    [Fact]
+    public async Task Varredura_por_idade_pede_a_graduacao_com_o_ano_minimo_de_ingresso()
+    {
+        FiltroDeVinculos porIngresso = (await ObterFiltrosPedidos())[0];
 
-        FiltroDeVinculos porIngresso = origem.FiltrosPedidos[0];
         porIngresso.Nivel.Should().Be("G");
         porIngresso.AnoIngressoMinimo.Should().Be(2026 - 10);
-        porIngresso.Situacoes.Should().BeNull("esta varredura recorta por idade do vínculo");
+    }
 
-        FiltroDeVinculos porSituacao = origem.FiltrosPedidos[1];
+    [Fact]
+    public async Task Varredura_por_idade_nao_recorta_por_situacao()
+    {
+        FiltroDeVinculos porIngresso = (await ObterFiltrosPedidos())[0];
+
+        porIngresso.Situacoes.Should().BeNull("esta varredura recorta por idade do vínculo");
+    }
+
+    [Fact]
+    public async Task Varredura_por_situacao_nao_limita_a_idade_do_vinculo()
+    {
+        FiltroDeVinculos porSituacao = (await ObterFiltrosPedidos())[1];
+
         porSituacao.AnoIngressoMinimo.Should().BeNull(
             "vínculo em andamento entra sem limite de idade");
+    }
+
+    [Fact]
+    public async Task Varredura_por_situacao_pede_as_situacoes_configuradas()
+    {
+        FiltroDeVinculos porSituacao = (await ObterFiltrosPedidos())[1];
+
         porSituacao.Situacoes.Should().BeEquivalentTo([1, 8, 9]);
     }
 
@@ -242,6 +284,41 @@ public sealed class OrquestradorDeSincronizacaoTests
 
     private static readonly DateOnly DataDeReferenciaPadrao = new(2026, 9, 2);
 
+    private static async Task<(GravadorSimulado Gravador, ResumoDaSincronizacao Resumo)> ExecutarComFalhaNoPrimeiroLote()
+    {
+        OrigemSimulada origem = new();
+        origem.ResponderPorIngresso([.. Enumerable.Range(1, 6).Select(i => Vinculo(i))]);
+
+        GravadorSimulado gravador = new() { FalharNoLoteDeIndice = 0 };
+        ResumoDaSincronizacao resumo = await Executar(origem, gravador, 3);
+
+        return (gravador, resumo);
+    }
+
+    private static async Task<ResumoDaSincronizacao> ExecutarLoteMistoQueFalha()
+    {
+        OrigemSimulada origem = new();
+        origem.ResponderPorIngresso([.. Enumerable.Range(1, 4).Select(i => Vinculo(i))]);
+
+        GravadorSimulado gravador = new()
+        {
+            FalharNoLoteDeIndice = 0,
+            InalteradosNoLoteQueFalha = 3,
+        };
+
+        return await Executar(origem, gravador, 4);
+    }
+
+    private static async Task<IReadOnlyList<FiltroDeVinculos>> ObterFiltrosPedidos()
+    {
+        OrigemSimulada origem = new();
+        origem.ResponderPorIngresso(Vinculo(1));
+
+        await Executar(origem, new GravadorSimulado());
+
+        return origem.FiltrosPedidos;
+    }
+
     private static async Task<ResumoDaSincronizacao> Executar(
         OrigemSimulada origem,
         GravadorSimulado gravador,
@@ -265,15 +342,17 @@ public sealed class OrquestradorDeSincronizacaoTests
         Cpf = cpf,
         Nome = $"DISCENTE {id}",
         Nivel = "G",
-        Curso = new CursoPayload
-        {
-            Id = 42,
-            Nome = "CIÊNCIA DA COMPUTAÇÃO",
-            CodigoEmec = "1269997",
-            Unidade = new UnidadePayload { Id = 12, Nome = "INSTITUTO DE CIENCIAS EXATAS" },
-        },
+        Curso = CursoPadrao(),
         Situacao = new SituacaoPayload { Id = 1, Descricao = "ATIVO" },
         AnoIngresso = 2020,
         PeriodoIngresso = 1,
+    };
+
+    private static CursoPayload CursoPadrao() => new()
+    {
+        Id = 42,
+        Nome = "CIÊNCIA DA COMPUTAÇÃO",
+        CodigoEmec = "1269997",
+        Unidade = new UnidadePayload { Id = 12, Nome = "INSTITUTO DE CIENCIAS EXATAS" },
     };
 }
