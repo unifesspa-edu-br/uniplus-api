@@ -32,7 +32,7 @@ public sealed class DecisoesDaProtecaoEndpointTests : HistoricoDaProtecaoTestBas
         (await NomesAsync(client, Betina, $"busca={marca}&ato=REPROVACAO")).Should().Equal(Nomes(marca, "Renda familiar bruta"));
         (await NomesAsync(client, Betina, $"busca={marca}&ato=REPROVACAO&ato=APROVACAO")).Should().Equal(Nomes(marca, "Renda familiar bruta", "Certidão de nascimento"));
         (await NomesAsync(client, Betina, $"busca={marca}&cadastro=TIPO_DOCUMENTO")).Should().Equal(Nomes(marca, "Laudo médico complementar", "Certidão de nascimento"));
-        (await NomesAsync(client, Betina, $"busca={marca}&cadastro=FATO")).Should().Equal(Nomes(marca, "Renda familiar bruta"));
+        (await NomesAsync(client, Betina, $"busca={marca}&cadastro=DADO_DO_CANDIDATO")).Should().Equal(Nomes(marca, "Renda familiar bruta"));
     }
 
     [Fact(DisplayName = "O filtro das próprias decisões compara quem consulta, e sem ele o Representante do controlador vê todas")]
@@ -107,7 +107,7 @@ public sealed class DecisoesDaProtecaoEndpointTests : HistoricoDaProtecaoTestBas
             .Single(p => p.StartsWith("cursor=", StringComparison.Ordinal));
 
         // O mesmo cursor, com o recorte trocado.
-        HttpResponseMessage resposta = await Enviar(client, HttpMethod.Get, $"{Base}/decisoes?busca={marca}&cadastro=FATO&{cursor}&direction=next", Betina);
+        HttpResponseMessage resposta = await Enviar(client, HttpMethod.Get, $"{Base}/decisoes?busca={marca}&cadastro=DADO_DO_CANDIDATO&{cursor}&direction=next", Betina);
 
         resposta.StatusCode.Should().Be(HttpStatusCode.BadRequest);
     }

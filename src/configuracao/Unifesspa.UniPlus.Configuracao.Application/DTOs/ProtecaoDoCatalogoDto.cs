@@ -33,7 +33,7 @@ public sealed record AprovacaoDaProtecaoDto(
     int ManifestacoesNoCiclo);
 
 /// <summary>Um tipo de documento ou fato do candidato com a proteção que aguarda aprovação.</summary>
-/// <param name="Tipo"><c>TIPO_DOCUMENTO</c> ou <c>FATO</c>.</param>
+/// <param name="Tipo"><c>TIPO_DOCUMENTO</c> ou <c>DADO_DO_CANDIDATO</c>.</param>
 public sealed record ItemDaProtecaoDoCatalogoDto(
     string Tipo,
     Guid Id,
@@ -47,7 +47,7 @@ public sealed record ItemDaProtecaoDoCatalogoDto(
 /// <summary>
 /// Um tipo de documento ou fato do candidato que o administrador do cadastro escolheu enviar à proteção de dados.
 /// </summary>
-/// <param name="Cadastro"><c>TIPO_DOCUMENTO</c> ou <c>FATO</c>; comparado sem os espaços das pontas.</param>
+/// <param name="Cadastro"><c>TIPO_DOCUMENTO</c> ou <c>DADO_DO_CANDIDATO</c>; comparado sem os espaços das pontas.</param>
 /// <param name="Id">Identificador do tipo de documento ou do fato.</param>
 public sealed record ItemParaSolicitarDto(string? Cadastro, Guid Id);
 
@@ -60,7 +60,7 @@ public sealed record SolicitacaoDaProtecaoDto(int TiposDeDocumento, int Fatos);
 /// name="Fato"/> e <paramref name="TipoDocumento"/> vem preenchido, conforme o <paramref name="Tipo"/>. Quem enviou ou
 /// decidiu fica registrado e não sai na resposta.
 /// </summary>
-/// <param name="Tipo"><c>TIPO_DOCUMENTO</c> ou <c>FATO</c>.</param>
+/// <param name="Tipo"><c>TIPO_DOCUMENTO</c> ou <c>DADO_DO_CANDIDATO</c>.</param>
 /// <param name="Fato">O que é o fato; nulo no tipo de documento.</param>
 /// <param name="TipoDocumento">O que o tipo de documento pede ao candidato; nulo no fato.</param>
 /// <param name="Atos">Todos os atos registrados do item, em ordem cronológica.</param>
@@ -130,7 +130,7 @@ public sealed record AtoDaProtecaoDto(
 /// Uma decisão do Representante do controlador (aprovação, ajuste recomendado ou reprovação) com o item a que se
 /// refere. O código e o nome são os do item no instante da decisão.
 /// </summary>
-/// <param name="Cadastro"><c>TIPO_DOCUMENTO</c> ou <c>FATO</c>.</param>
+/// <param name="Cadastro"><c>TIPO_DOCUMENTO</c> ou <c>DADO_DO_CANDIDATO</c>.</param>
 public sealed record DecisaoDaProtecaoDto(
     string Cadastro,
     Guid ItemId,

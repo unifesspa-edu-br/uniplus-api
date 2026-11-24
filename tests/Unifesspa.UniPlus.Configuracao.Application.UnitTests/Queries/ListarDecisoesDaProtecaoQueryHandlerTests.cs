@@ -39,7 +39,7 @@ public sealed class ListarDecisoesDaProtecaoQueryHandlerTests
     [Fact(DisplayName = "Os critérios chegam ao repositório já analisados")]
     public async Task Handle_RepassaOFiltroAnalisado()
     {
-        await ListarAsync(Consulta(["REPROVACAO", "AJUSTE_RECOMENDADO"], "FATO", new DateOnly(2026, 11, 1), new DateOnly(2026, 11, 2), "renda"));
+        await ListarAsync(Consulta(["REPROVACAO", "AJUSTE_RECOMENDADO"], "DADO_DO_CANDIDATO", new DateOnly(2026, 11, 1), new DateOnly(2026, 11, 2), "renda"));
 
         await _atos.Received(1).ListarDecisoesAsync(
             Arg.Is<FiltroDasDecisoesDaProtecao>(f =>

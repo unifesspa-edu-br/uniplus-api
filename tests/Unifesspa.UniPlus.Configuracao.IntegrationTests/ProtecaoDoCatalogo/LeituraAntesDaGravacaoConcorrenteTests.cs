@@ -30,9 +30,9 @@ public sealed class LeituraAntesDaGravacaoConcorrenteTests : ManifestacaoDaProte
 
     [Theory(DisplayName = "Lido o item com a manifestação ainda em curso, a decisão enviada depois dela é recusada por conflito, mesmo com justificativa")]
     [InlineData("TIPO_DOCUMENTO", "APROVAR", null)]
-    [InlineData("FATO", "APROVAR", null)]
+    [InlineData("DADO_DO_CANDIDATO", "APROVAR", null)]
     [InlineData("TIPO_DOCUMENTO", "RECOMENDAR_AJUSTE", "SENSIVEL")]
-    [InlineData("FATO", "RECOMENDAR_AJUSTE", "SENSIVEL")]
+    [InlineData("DADO_DO_CANDIDATO", "RECOMENDAR_AJUSTE", "SENSIVEL")]
     public async Task ManifestacaoEmCursoNaLeitura_RecusaADecisao(string cadastro, string decisao, string? recomendada)
     {
         using HttpClient client = Fixture.Factory.CreateClient();
@@ -48,7 +48,7 @@ public sealed class LeituraAntesDaGravacaoConcorrenteTests : ManifestacaoDaProte
 
     [Theory(DisplayName = "Lido o item com a decisão ainda em curso, a manifestação enviada depois dela é recusada por conflito")]
     [InlineData("TIPO_DOCUMENTO", "APROVAR", null)]
-    [InlineData("FATO", "RECOMENDAR_AJUSTE", "SENSIVEL")]
+    [InlineData("DADO_DO_CANDIDATO", "RECOMENDAR_AJUSTE", "SENSIVEL")]
     public async Task DecisaoEmCursoNaLeitura_RecusaAManifestacao(string cadastro, string decisao, string? recomendada)
     {
         using HttpClient client = Fixture.Factory.CreateClient();
@@ -64,7 +64,7 @@ public sealed class LeituraAntesDaGravacaoConcorrenteTests : ManifestacaoDaProte
 
     [Theory(DisplayName = "Controle: a manifestação gravada sem mudar a linha do item não recusaria a decisão lida antes dela")]
     [InlineData("TIPO_DOCUMENTO")]
-    [InlineData("FATO")]
+    [InlineData("DADO_DO_CANDIDATO")]
     public async Task ManifestacaoForaDaLinhaDoItem_NaoRecusariaADecisao(string cadastro)
     {
         using HttpClient client = Fixture.Factory.CreateClient();
@@ -80,7 +80,7 @@ public sealed class LeituraAntesDaGravacaoConcorrenteTests : ManifestacaoDaProte
 
     [Theory(DisplayName = "Controle: o ato de decisão gravado sem mudar a linha do item não recusaria a manifestação lida antes dele")]
     [InlineData("TIPO_DOCUMENTO")]
-    [InlineData("FATO")]
+    [InlineData("DADO_DO_CANDIDATO")]
     public async Task DecisaoForaDaLinhaDoItem_NaoRecusariaAManifestacao(string cadastro)
     {
         using HttpClient client = Fixture.Factory.CreateClient();

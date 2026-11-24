@@ -36,7 +36,7 @@ public sealed class ListarProtecaoDoCatalogoQueryHandlerTests
         resultado.Value!.Select(static i => (i.Tipo, i.Codigo, i.Aprovacao.Situacao)).Should().Equal(
             ("TIPO_DOCUMENTO", "LAUDO_MEDICO_COMPLEMENTAR", "SOLICITADA"),
             ("TIPO_DOCUMENTO", "COMPROVANTE_RESIDENCIA", "PENDENTE"),
-            ("FATO", "TEM_RENDA", "PENDENTE"));
+            ("DADO_DO_CANDIDATO", "TEM_RENDA", "PENDENTE"));
     }
 
     [Fact(DisplayName = "Quem só mantém os fatos não vê os tipos de documento")]
@@ -44,7 +44,7 @@ public sealed class ListarProtecaoDoCatalogoQueryHandlerTests
     {
         Result<IReadOnlyList<ItemDaProtecaoDoCatalogoDto>> resultado = await ListarAsync(null, PermissaoConfiguracao.FatosCandidatoManter);
 
-        resultado.Value!.Should().ContainSingle().Which.Tipo.Should().Be("FATO");
+        resultado.Value!.Should().ContainSingle().Which.Tipo.Should().Be("DADO_DO_CANDIDATO");
         await _tipos.DidNotReceive().ListarSemProtecaoAprovadaAsync(Arg.Any<CancellationToken>());
     }
 

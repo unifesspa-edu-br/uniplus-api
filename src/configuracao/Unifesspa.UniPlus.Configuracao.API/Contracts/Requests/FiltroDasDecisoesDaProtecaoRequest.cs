@@ -18,7 +18,7 @@ public sealed record FiltroDasDecisoesDaProtecaoRequest
     public string[]? Ato { get; init; }
 
     [FromQuery(Name = "cadastro")]
-    [Description("Cadastro do item: TIPO_DOCUMENTO ou FATO.")]
+    [Description("Cadastro do item: TIPO_DOCUMENTO ou DADO_DO_CANDIDATO.")]
     public string? Cadastro { get; init; }
 
     [FromQuery(Name = "de")]

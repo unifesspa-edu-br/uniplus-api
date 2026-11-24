@@ -7231,7 +7231,7 @@
         "A aprovação da proteção de dados vale para dois cadastros: tipo de documento e fato do candidato. O cadastro informado não é nenhum deles."
       ],
       "comoResolver": [
-        "Informe `TIPO_DOCUMENTO` ou `FATO`."
+        "Informe `TIPO_DOCUMENTO` ou `DADO_DO_CANDIDATO`."
       ],
       "ondeAparece": [
         "Decisão da proteção de dados (aprovação, ajuste recomendado ou reprovação)"

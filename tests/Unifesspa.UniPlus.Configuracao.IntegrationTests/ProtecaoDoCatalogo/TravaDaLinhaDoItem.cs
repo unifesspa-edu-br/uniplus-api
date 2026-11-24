@@ -44,7 +44,7 @@ internal sealed class TravaDaLinhaDoItem : IAsyncDisposable
         AsyncServiceScope escopo = api.Services.CreateAsyncScope();
         UniPlusDbContext contexto = escopo.ServiceProvider.GetRequiredService<UniPlusDbContext>();
         IDbContextTransaction transacao = await contexto.Database.BeginTransactionAsync();
-        FormattableString trava = cadastro == "FATO"
+        FormattableString trava = cadastro == "DADO_DO_CANDIDATO"
             ? (FormattableString)$"SELECT 1 FROM configuracao.dados_do_candidato WHERE id = {id} FOR UPDATE"
             : (FormattableString)$"SELECT 1 FROM configuracao.tipos_de_documento WHERE id = {id} FOR UPDATE";
         await contexto.Database.ExecuteSqlInterpolatedAsync(trava);

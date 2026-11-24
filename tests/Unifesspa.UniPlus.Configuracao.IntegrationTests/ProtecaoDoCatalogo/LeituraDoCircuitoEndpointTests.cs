@@ -25,7 +25,7 @@ public sealed class LeituraDoCircuitoEndpointTests : ManifestacaoDaProtecaoTestB
 
     [Theory(DisplayName = "A manifestação registrada depois da leitura recusa a decisão com 409 sem nova tentativa; relido o item, a decisão passa")]
     [InlineData("TIPO_DOCUMENTO")]
-    [InlineData("FATO")]
+    [InlineData("DADO_DO_CANDIDATO")]
     public async Task ManifestacaoDepoisDaLeitura_RecusaADecisao(string cadastro)
     {
         await PrepararTodosAsync();
@@ -43,7 +43,7 @@ public sealed class LeituraDoCircuitoEndpointTests : ManifestacaoDaProtecaoTestB
 
     [Theory(DisplayName = "A decisão tomada depois da leitura recusa a manifestação com 409 sem nova tentativa")]
     [InlineData("TIPO_DOCUMENTO")]
-    [InlineData("FATO")]
+    [InlineData("DADO_DO_CANDIDATO")]
     public async Task DecisaoDepoisDaLeitura_RecusaAManifestacao(string cadastro)
     {
         await PrepararTodosAsync();
@@ -95,15 +95,15 @@ public sealed class LeituraDoCircuitoEndpointTests : ManifestacaoDaProtecaoTestB
     {
         await PrepararTodosAsync();
         using HttpClient client = Fixture.Factory.CreateClient();
-        Guid id = await SolicitadoAsync(client, "FATO");
+        Guid id = await SolicitadoAsync(client, "DADO_DO_CANDIDATO");
         string noLimite = string.Concat(Enumerable.Repeat("\U0001F512", 2000));
 
-        HttpResponseMessage acima = await ManifestarAsync(client, Kevin, "FATO", id, "INADEQUADA", noLimite + "\U0001F512");
-        HttpResponseMessage noLimiteResposta = await ManifestarAsync(client, Kevin, "FATO", id, "INADEQUADA", noLimite);
+        HttpResponseMessage acima = await ManifestarAsync(client, Kevin, "DADO_DO_CANDIDATO", id, "INADEQUADA", noLimite + "\U0001F512");
+        HttpResponseMessage noLimiteResposta = await ManifestarAsync(client, Kevin, "DADO_DO_CANDIDATO", id, "INADEQUADA", noLimite);
 
         (await CodigoAsync(acima)).Should().Be("uniplus.configuracao.protecao_do_catalogo.texto_da_manifestacao_muito_longo");
         noLimiteResposta.StatusCode.Should().Be(HttpStatusCode.NoContent);
-        (await HistoricoAsync(client, Kevin, "FATO", id)).Single().GetProperty("texto").GetString().Should().Be(noLimite);
+        (await HistoricoAsync(client, Kevin, "DADO_DO_CANDIDATO", id)).Single().GetProperty("texto").GetString().Should().Be(noLimite);
     }
 
     [Fact(DisplayName = "A justificativa com 2.000 emojis é aceita e registrada no ato da aprovação")]

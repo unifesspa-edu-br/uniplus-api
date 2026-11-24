@@ -42,7 +42,7 @@ public abstract class HistoricoDaProtecaoTestBase
 
         (await DecidirAsync(client, Betina, new("TIPO_DOCUMENTO", aprovado, "APROVAR", "INTERNO"))).StatusCode.Should().Be(HttpStatusCode.NoContent);
         await Task.Delay(20);
-        (await DecidirAsync(client, Betina, new("FATO", reprovado, "REPROVAR", "PESSOAL", Justificativa: "Dado desnecessário."))).StatusCode.Should().Be(HttpStatusCode.NoContent);
+        (await DecidirAsync(client, Betina, new("DADO_DO_CANDIDATO", reprovado, "REPROVAR", "PESSOAL", Justificativa: "Dado desnecessário."))).StatusCode.Should().Be(HttpStatusCode.NoContent);
         await Task.Delay(20);
         (await DecidirAsync(client, Caroline, new("TIPO_DOCUMENTO", ajustado, "RECOMENDAR_AJUSTE", "INTERNO", "SENSIVEL"))).StatusCode.Should().Be(HttpStatusCode.NoContent);
         return (marca, aprovado, reprovado, ajustado);
@@ -99,7 +99,7 @@ public abstract class HistoricoDaProtecaoTestBase
     /// <summary>O ciclo e a contagem de manifestações do item, como o detalhe da proteção os mostra a <paramref name="quem"/>.</summary>
     private protected static async Task<LeituraDoCircuitoLida> LerOCircuitoAsync(HttpClient client, Persona quem, string cadastro, Guid id)
     {
-        HttpResponseMessage resposta = await Enviar(client, HttpMethod.Get, $"{Base}/{(cadastro == "FATO" ? "fatos" : "tipos-documento")}/{id}", quem);
+        HttpResponseMessage resposta = await Enviar(client, HttpMethod.Get, $"{Base}/{(cadastro == "DADO_DO_CANDIDATO" ? "fatos" : "tipos-documento")}/{id}", quem);
         JsonElement aprovacao = resposta.IsSuccessStatusCode
             ? (await resposta.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("aprovacao")
             : default;
@@ -164,7 +164,7 @@ public abstract class HistoricoDaProtecaoTestBase
         Guid aprovado = await CadastrarTipoAsync(client, $"{marca} Certidão de nascimento");
         Guid reprovado = await CadastrarFatoAsync(client, $"{marca} Renda familiar bruta");
         Guid ajustado = await CadastrarTipoAsync(client, $"{marca} Laudo médico complementar");
-        (await SolicitarAsync(client, Isabella, ("TIPO_DOCUMENTO", aprovado), ("FATO", reprovado), ("TIPO_DOCUMENTO", ajustado)))
+        (await SolicitarAsync(client, Isabella, ("TIPO_DOCUMENTO", aprovado), ("DADO_DO_CANDIDATO", reprovado), ("TIPO_DOCUMENTO", ajustado)))
             .StatusCode.Should().Be(HttpStatusCode.OK);
 
         return (marca, aprovado, reprovado, ajustado);

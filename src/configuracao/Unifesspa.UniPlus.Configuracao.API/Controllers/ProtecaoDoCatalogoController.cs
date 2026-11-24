@@ -161,7 +161,7 @@ public sealed class ProtecaoDoCatalogoController : ControllerBase
 
     /// <summary>
     /// Envia à proteção de dados, de uma vez, os tipos de documento e fatos pendentes que quem envia escolheu —
-    /// cada item com o cadastro (<c>TIPO_DOCUMENTO</c> ou <c>FATO</c>) e o identificador —, desde que mantenha o
+    /// cada item com o cadastro (<c>TIPO_DOCUMENTO</c> ou <c>DADO_DO_CANDIDATO</c>) e o identificador —, desde que mantenha o
     /// cadastro, e avisa por e-mail quem tem a permissão de aprovar. Idempotency-Key obrigatório (ADR-0027).
     /// </summary>
     [HttpPost("admin/protecao-do-catalogo/solicitacoes")]

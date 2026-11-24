@@ -56,7 +56,7 @@ public sealed class DecisaoNaProtecaoDoCatalogoTests
     {
         FatoCandidato fato = Fato(new ItemSobAprovacaoBuilder().Solicitado());
 
-        Result resultado = await DecidirAsync("FATO", fato.Id, "APROVAR", justificativa: Justificativa, classificacao: "PESSOAL");
+        Result resultado = await DecidirAsync("DADO_DO_CANDIDATO", fato.Id, "APROVAR", justificativa: Justificativa, classificacao: "PESSOAL");
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
         (fato.Aprovacao.Situacao, fato.Aprovacao.Justificativa).Should().Be((SituacaoDaAprovacao.Aprovada, (string?)null));
@@ -98,7 +98,7 @@ public sealed class DecisaoNaProtecaoDoCatalogoTests
     {
         FatoCandidato fato = Fato(new ItemSobAprovacaoBuilder().Solicitado().ComManifestacao("RECOMENDA_AJUSTE"));
 
-        Result resultado = await DecidirAsync("FATO", fato.Id, "APROVAR", justificativa: Justificativa, classificacao: "PESSOAL");
+        Result resultado = await DecidirAsync("DADO_DO_CANDIDATO", fato.Id, "APROVAR", justificativa: Justificativa, classificacao: "PESSOAL");
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
         AtoRegistrado().Should().Match<AtoDaProtecaoDoCatalogo>(a =>
@@ -118,7 +118,7 @@ public sealed class DecisaoNaProtecaoDoCatalogoTests
     {
         FatoCandidato fato = Fato(new ItemSobAprovacaoBuilder().Solicitado());
 
-        Result resultado = await DecidirAsync("FATO", fato.Id, "REPROVAR", justificativa: "  Dado desnecessário.  ", classificacao: "PESSOAL");
+        Result resultado = await DecidirAsync("DADO_DO_CANDIDATO", fato.Id, "REPROVAR", justificativa: "  Dado desnecessário.  ", classificacao: "PESSOAL");
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
         (fato.Aprovacao.Situacao, fato.Aprovacao.Justificativa).Should().Be((SituacaoDaAprovacao.Reprovada, "Dado desnecessário."));
@@ -150,10 +150,10 @@ public sealed class DecisaoNaProtecaoDoCatalogoTests
 
     [Theory(DisplayName = "A corrida perdida no tipo e no fato responde o mesmo conflito e descarta o que não foi salvo")]
     [InlineData("TIPO_DOCUMENTO", "INTERNO")]
-    [InlineData("FATO", "PESSOAL")]
+    [InlineData("DADO_DO_CANDIDATO", "PESSOAL")]
     public async Task Concorrencia_MesmoConflito(string cadastro, string classificacao)
     {
-        Guid id = cadastro == "FATO" ? Fato(new ItemSobAprovacaoBuilder().Solicitado()).Id : Tipo(new ItemSobAprovacaoBuilder().Solicitado()).Id;
+        Guid id = cadastro == "DADO_DO_CANDIDATO" ? Fato(new ItemSobAprovacaoBuilder().Solicitado()).Id : Tipo(new ItemSobAprovacaoBuilder().Solicitado()).Id;
         _unitOfWork.SalvarAlteracoesAsync(Arg.Any<CancellationToken>()).Returns(Task.FromException<int>(new DbUpdateConcurrencyException()));
 
         Result resultado = await DecidirAsync(cadastro, id, "APROVAR", classificacao: classificacao);
@@ -225,7 +225,7 @@ public sealed class DecisaoNaProtecaoDoCatalogoTests
     public async Task Inexistente_EFormaInvalida()
     {
         (await DecidirAsync("TIPO_DOCUMENTO", Guid.NewGuid(), "APROVAR")).Error!.Code.Should().Be(TipoDocumentoErrorCodes.NaoEncontrado);
-        (await DecidirAsync("FATO", Guid.NewGuid(), "APROVAR")).Error!.Code.Should().Be(FatoCandidatoErrorCodes.NaoEncontrado);
+        (await DecidirAsync("DADO_DO_CANDIDATO", Guid.NewGuid(), "APROVAR")).Error!.Code.Should().Be(FatoCandidatoErrorCodes.NaoEncontrado);
         (await DecidirAsync("MODALIDADE", Guid.NewGuid(), "APROVAR")).Error!.Code.Should().Be(ProtecaoDoCatalogoErrorCodes.CadastroInvalido);
         await _fatos.Received(1).ObterPorIdAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>());
     }

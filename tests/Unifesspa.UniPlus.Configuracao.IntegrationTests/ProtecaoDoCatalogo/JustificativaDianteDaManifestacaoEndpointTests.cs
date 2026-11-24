@@ -24,7 +24,7 @@ public sealed class JustificativaDianteDaManifestacaoEndpointTests : Manifestaca
 
     [Theory(DisplayName = "Aprovar diante de manifestação desfavorável exige a justificativa, que o ato registra com o indicador")]
     [InlineData("TIPO_DOCUMENTO")]
-    [InlineData("FATO")]
+    [InlineData("DADO_DO_CANDIDATO")]
     public async Task Aprovar_DianteDeDesfavoravel(string cadastro)
     {
         await PrepararTodosAsync();
@@ -44,7 +44,7 @@ public sealed class JustificativaDianteDaManifestacaoEndpointTests : Manifestaca
 
     [Theory(DisplayName = "O ajuste diante de manifestação desfavorável exige a justificativa, e o administrador do cadastro aceita sem nova justificativa")]
     [InlineData("TIPO_DOCUMENTO")]
-    [InlineData("FATO")]
+    [InlineData("DADO_DO_CANDIDATO")]
     public async Task Ajuste_DianteDeDesfavoravel_EAceite(string cadastro)
     {
         await PrepararTodosAsync();

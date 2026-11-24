@@ -20,7 +20,7 @@ public sealed class PedidoDeDecisaoTests
     {
         Guid id = Guid.CreateVersion7();
 
-        PedidoDeDecisao pedido = PedidoDeDecisao.Ler(Comando("RECOMENDAR_AJUSTE", id, " FATO ", "SENSIVEL", "  Traz dado de saúde.  ")).Value!;
+        PedidoDeDecisao pedido = PedidoDeDecisao.Ler(Comando("RECOMENDAR_AJUSTE", id, " DADO_DO_CANDIDATO ", "SENSIVEL", "  Traz dado de saúde.  ")).Value!;
 
         (pedido.Item.Cadastro, pedido.Item.ItemId).Should().Be((CadastroDoCatalogo.Fato, id));
         (pedido.Decisao.Ato, pedido.Decisao.ClassificacaoRecomendada, pedido.Decisao.Justificativa!.Valor)

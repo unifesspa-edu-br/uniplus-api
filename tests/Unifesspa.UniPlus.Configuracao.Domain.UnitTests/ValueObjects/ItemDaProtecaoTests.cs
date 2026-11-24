@@ -12,7 +12,7 @@ public sealed class ItemDaProtecaoTests
 {
     [Theory(DisplayName = "O cadastro do vocabulário é lido sem os espaços das pontas")]
     [InlineData("TIPO_DOCUMENTO", CadastroDoCatalogo.TipoDocumento)]
-    [InlineData(" FATO ", CadastroDoCatalogo.Fato)]
+    [InlineData(" DADO_DO_CANDIDATO ", CadastroDoCatalogo.Fato)]
     public void Ler_CadastroValido(string cadastro, CadastroDoCatalogo esperado)
     {
         Guid id = Guid.CreateVersion7();

@@ -16,7 +16,7 @@ public sealed class PedidoDeManifestacaoTests
     {
         Guid id = Guid.CreateVersion7();
 
-        PedidoDeManifestacao pedido = PedidoDeManifestacao.Ler(new(new ItemInformado("FATO", id), 2, new ConteudoInformado("INADEQUADA", " O dado é sensível. "))).Value!;
+        PedidoDeManifestacao pedido = PedidoDeManifestacao.Ler(new(new ItemInformado("DADO_DO_CANDIDATO", id), 2, new ConteudoInformado("INADEQUADA", " O dado é sensível. "))).Value!;
 
         pedido.Item.Should().Be(new ItemDaProtecao(CadastroDoCatalogo.Fato, id));
         pedido.Ciclo.Should().Be(new CicloDaAprovacao(2));

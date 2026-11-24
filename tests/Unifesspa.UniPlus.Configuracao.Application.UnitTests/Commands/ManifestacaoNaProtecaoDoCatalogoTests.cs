@@ -52,7 +52,7 @@ public sealed class ManifestacaoNaProtecaoDoCatalogoTests
         _manifestacoes.ListarDoCicloAsync(new ItemDaProtecao(CadastroDoCatalogo.Fato, fato.Id), CicloDaAprovacao.Primeiro, Arg.Any<CancellationToken>())
             .Returns(montagem.Eventos);
 
-        Result resultado = await ManifestarAsync("FATO", fato.Id, 1, "ADEQUADA", null);
+        Result resultado = await ManifestarAsync("DADO_DO_CANDIDATO", fato.Id, 1, "ADEQUADA", null);
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
         EventoGravado().SubstituiId.Should().Be(montagem.Eventos[0].Id);
@@ -89,7 +89,7 @@ public sealed class ManifestacaoNaProtecaoDoCatalogoTests
     [Fact(DisplayName = "A manifestação sobre item inexistente responde o não encontrado; a forma inválida não lê nada")]
     public async Task Inexistente_EFormaInvalida()
     {
-        (await ManifestarAsync("FATO", Guid.NewGuid(), 1, "ADEQUADA", null)).Error!.Code.Should().Be(FatoCandidatoErrorCodes.NaoEncontrado);
+        (await ManifestarAsync("DADO_DO_CANDIDATO", Guid.NewGuid(), 1, "ADEQUADA", null)).Error!.Code.Should().Be(FatoCandidatoErrorCodes.NaoEncontrado);
         (await ManifestarAsync("TIPO_DOCUMENTO", Guid.NewGuid(), 0, "ADEQUADA", null)).Errors.Should().ContainSingle(e => e.Field == "ciclo");
         await _tipos.DidNotReceiveWithAnyArgs().ObterPorIdAsync(default, default);
     }

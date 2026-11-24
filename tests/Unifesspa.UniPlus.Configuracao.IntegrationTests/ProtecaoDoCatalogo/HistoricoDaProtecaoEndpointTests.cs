@@ -117,8 +117,8 @@ public sealed class HistoricoDaProtecaoEndpointTests : HistoricoDaProtecaoTestBa
     {
         await PrepararPersonasAsync();
         Guid id = await CadastrarFatoAsync(client, $"{Marca()} Renda familiar bruta");
-        (await SolicitarAsync(client, Isabella, "FATO", id)).StatusCode.Should().Be(HttpStatusCode.OK);
-        (await DecidirAsync(client, Betina, new("FATO", id, "REPROVAR", "PESSOAL", Justificativa: "A renda bruta é desnecessária para a finalidade.")))
+        (await SolicitarAsync(client, Isabella, "DADO_DO_CANDIDATO", id)).StatusCode.Should().Be(HttpStatusCode.OK);
+        (await DecidirAsync(client, Betina, new("DADO_DO_CANDIDATO", id, "REPROVAR", "PESSOAL", Justificativa: "A renda bruta é desnecessária para a finalidade.")))
             .StatusCode.Should().Be(HttpStatusCode.NoContent);
 
         JsonElement fato = await ObterFatoAsync(client, id);

@@ -9343,7 +9343,7 @@
           {
             "name": "cadastro",
             "in": "query",
-            "description": "Cadastro do item: TIPO_DOCUMENTO ou FATO.",
+            "description": "Cadastro do item: TIPO_DOCUMENTO ou DADO_DO_CANDIDATO.",
             "schema": {
               "type": "string"
             }
@@ -19542,7 +19542,7 @@
           "cadastro": {
             "enum": [
               "TIPO_DOCUMENTO",
-              "FATO"
+              "DADO_DO_CANDIDATO"
             ],
             "type": [
               "null",
@@ -22180,7 +22180,7 @@
           "cadastro": {
             "enum": [
               "TIPO_DOCUMENTO",
-              "FATO"
+              "DADO_DO_CANDIDATO"
             ],
             "type": [
               "null",
@@ -23894,7 +23894,7 @@
           "cadastro": {
             "enum": [
               "TIPO_DOCUMENTO",
-              "FATO"
+              "DADO_DO_CANDIDATO"
             ],
             "type": [
               "null",

@@ -3028,7 +3028,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                             t.HasCheckConstraint("ck_atos_da_protecao_do_catalogo_ato", "ato IN ('SOLICITACAO', 'APROVACAO', 'AJUSTE_RECOMENDADO', 'REPROVACAO', 'ACEITE')");
 
-                            t.HasCheckConstraint("ck_atos_da_protecao_do_catalogo_cadastro", "cadastro IN ('TIPO_DOCUMENTO', 'FATO')");
+                            t.HasCheckConstraint("ck_atos_da_protecao_do_catalogo_cadastro", "cadastro IN ('TIPO_DOCUMENTO', 'DADO_DO_CANDIDATO')");
 
                             t.HasCheckConstraint("ck_atos_da_protecao_do_catalogo_ciclo_positivo", "ciclo >= 1");
 
@@ -3180,7 +3180,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .IsRequired()
                         .HasMaxLength(60)
                         .HasColumnType("character varying(60)")
-                        .HasColumnName("versao_dataset");
+                        .HasColumnName("versao_do_calendario");
 
                     b.Property<uint>("Version")
                         .IsConcurrencyToken()
@@ -3197,7 +3197,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasName("pk_calendarios_de_dias_uteis");
 
                     b.HasIndex("VersaoDataset")
-                        .HasDatabaseName("ix_calendarios_de_dias_uteis_versao_dataset")
+                        .HasDatabaseName("ix_calendarios_de_dias_uteis_versao_do_calendario")
                         .HasFilter("is_deleted = false");
 
                     b.ToTable("calendarios_de_dias_uteis", "configuracao");
@@ -6571,7 +6571,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.ToTable("manifestacoes_da_protecao", "configuracao", t =>
                         {
-                            t.HasCheckConstraint("ck_manifestacoes_da_protecao_cadastro", "cadastro IN ('TIPO_DOCUMENTO', 'FATO')");
+                            t.HasCheckConstraint("ck_manifestacoes_da_protecao_cadastro", "cadastro IN ('TIPO_DOCUMENTO', 'DADO_DO_CANDIDATO')");
 
                             t.HasCheckConstraint("ck_manifestacoes_da_protecao_ciclo_positivo", "ciclo >= 1");
 
@@ -6999,7 +6999,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     b.Property<string>("CodigoSga")
                         .HasMaxLength(30)
                         .HasColumnType("character varying(30)")
-                        .HasColumnName("codigo_sga");
+                        .HasColumnName("codigo_no_sistema_academico");
 
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
@@ -7029,7 +7029,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     b.Property<string>("EMecCodigo")
                         .HasMaxLength(20)
                         .HasColumnType("character varying(20)")
-                        .HasColumnName("e_mec_codigo");
+                        .HasColumnName("codigo_emec");
 
                     b.Property<string>("FormatoPedagogico")
                         .IsRequired()
@@ -10943,6 +10943,46 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         });
                 });
 
+            modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.ArquivoAApagar", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTimeOffset>("ApagarAPartirDe")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("apagar_a_partir_de")
+                        .HasComment("A partir de quando o arquivo pode ser apagado.");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at")
+                        .HasComment("Data e hora de criação do registro.");
+
+                    b.Property<string>("ObjectKey")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("object_key")
+                        .HasComment("A chave do objeto; leva só o id do arquivo.");
+
+                    b.Property<DateTimeOffset?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at")
+                        .HasComment("Data e hora da última alteração, quando houver.");
+
+                    b.HasKey("Id")
+                        .HasName("pk_arquivos_a_apagar");
+
+                    b.HasIndex("ApagarAPartirDe")
+                        .HasDatabaseName("ix_arquivos_a_apagar_apagar_a_partir_de");
+
+                    b.ToTable("arquivos_a_apagar", "selecao", t =>
+                        {
+                            t.HasComment("Arquivos do armazenamento a apagar depois de uma hora: a URL de envio recria o objeto em claro até vencer.");
+                        });
+                });
+
             modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.ArquivoDaApresentacao", b =>
                 {
                     b.Property<Guid>("Id")
@@ -11624,46 +11664,6 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasDatabaseName("ix_certames_divulgados_nome_ordenacao");
 
                     b.ToTable("certames_divulgados", "selecao");
-                });
-
-            modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.ChaveALimpar", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .HasColumnType("uuid")
-                        .HasColumnName("id");
-
-                    b.Property<DateTimeOffset>("CreatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at")
-                        .HasComment("Data e hora de criação do registro.");
-
-                    b.Property<DateTimeOffset>("LimparApos")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("limpar_apos")
-                        .HasComment("A partir de quando a chave pode ser apagada.");
-
-                    b.Property<string>("ObjectKey")
-                        .IsRequired()
-                        .HasMaxLength(500)
-                        .HasColumnType("character varying(500)")
-                        .HasColumnName("object_key")
-                        .HasComment("A chave do objeto; leva só o id do arquivo.");
-
-                    b.Property<DateTimeOffset?>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("updated_at")
-                        .HasComment("Data e hora da última alteração, quando houver.");
-
-                    b.HasKey("Id")
-                        .HasName("pk_chaves_a_limpar");
-
-                    b.HasIndex("LimparApos")
-                        .HasDatabaseName("ix_chaves_a_limpar_limpar_apos");
-
-                    b.ToTable("chaves_a_limpar", "selecao", t =>
-                        {
-                            t.HasComment("Chaves do armazenamento a apagar depois de uma hora: a URL de envio recria o objeto em claro até vencer.");
-                        });
                 });
 
             modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.ComprovanteInscricao", b =>
@@ -13393,7 +13393,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .IsRequired()
                         .HasMaxLength(30)
                         .HasColumnType("character varying(30)")
-                        .HasColumnName("tipo_renderizacao")
+                        .HasColumnName("tipo_de_campo")
                         .HasComment("Tipo de campo: NUMERO, SIM_OU_NAO, ESCOLHA_UNICA, ESCOLHA_MULTIPLA, TEXTO, DATA, ENDERECO ou MUNICIPIO.");
 
                     b.Property<DateTimeOffset?>("UpdatedAt")
@@ -14703,13 +14703,13 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasComment("Data e hora da última alteração, quando houver.");
 
                     b.HasKey("Id")
-                        .HasName("pk_opcoes_declaradas_fato");
+                        .HasName("pk_opcoes_declaradas_do_dado");
 
                     b.HasIndex("ProcessoSeletivoId", "FatoCodigo", "Codigo")
                         .IsUnique()
-                        .HasDatabaseName("ux_opcoes_declaradas_fato_processo_dado_codigo");
+                        .HasDatabaseName("ux_opcoes_declaradas_do_dado_processo_dado_codigo");
 
-                    b.ToTable("opcoes_declaradas_fato", "selecao", t =>
+                    b.ToTable("opcoes_declaradas_do_dado", "selecao", t =>
                         {
                             t.HasComment("Opções de resposta declaradas pelo processo para um dado.");
                         });
@@ -16490,7 +16490,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         });
                 });
 
-            modelBuilder.Entity("tipos_etapa_conceitos", b =>
+            modelBuilder.Entity("conceitos_do_tipo_de_etapa", b =>
                 {
                     b.Property<Guid>("TipoEtapaId")
                         .HasColumnType("uuid")
@@ -16503,12 +16503,12 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasComment("Tipo de conceito admitido pelo tipo de etapa.");
 
                     b.HasKey("TipoEtapaId", "TipoConceitoId")
-                        .HasName("pk_tipos_etapa_conceitos");
+                        .HasName("pk_conceitos_do_tipo_de_etapa");
 
                     b.HasIndex("TipoConceitoId")
-                        .HasDatabaseName("ix_tipos_etapa_conceitos_tipo_conceito_id");
+                        .HasDatabaseName("ix_conceitos_do_tipo_de_etapa_tipo_conceito_id");
 
-                    b.ToTable("tipos_etapa_conceitos", "configuracao", t =>
+                    b.ToTable("conceitos_do_tipo_de_etapa", "configuracao", t =>
                         {
                             t.HasComment("Tipos de conceito com que as etapas de um tipo de etapa podem ser avaliadas.");
                         });
@@ -18537,23 +18537,23 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                                 .IsRequired()
                                 .HasMaxLength(250)
                                 .HasColumnType("character varying(250)")
-                                .HasColumnName("unidade_oft_nome");
+                                .HasColumnName("unidade_ofertante_nome");
 
                             b1.Property<Guid>("OrigemId")
                                 .HasColumnType("uuid")
-                                .HasColumnName("unidade_oft_origem_id");
+                                .HasColumnName("unidade_ofertante_origem_id");
 
                             b1.Property<string>("Sigla")
                                 .IsRequired()
                                 .HasMaxLength(50)
                                 .HasColumnType("character varying(50)")
-                                .HasColumnName("unidade_oft_sigla");
+                                .HasColumnName("unidade_ofertante_sigla");
 
                             b1.Property<string>("Tipo")
                                 .IsRequired()
                                 .HasMaxLength(30)
                                 .HasColumnType("character varying(30)")
-                                .HasColumnName("unidade_oft_tipo");
+                                .HasColumnName("unidade_ofertante_tipo");
 
                             b1.HasKey("OfertaCursoId");
 
@@ -21538,7 +21538,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasForeignKey("ProcessoSeletivoId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
-                        .HasConstraintName("fk_opcoes_declaradas_fato_processo_seletivo");
+                        .HasConstraintName("fk_opcoes_declaradas_do_dado_processo_seletivo");
                 });
 
             modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.ProcessoSeletivo", b =>
@@ -22370,21 +22370,21 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasConstraintName("fk_respostas_da_inscricao_grupos_da_inscricao_ocorrencia_id");
                 });
 
-            modelBuilder.Entity("tipos_etapa_conceitos", b =>
+            modelBuilder.Entity("conceitos_do_tipo_de_etapa", b =>
                 {
                     b.HasOne("Unifesspa.UniPlus.Configuracao.Domain.Entities.TipoConceito", null)
                         .WithMany()
                         .HasForeignKey("TipoConceitoId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired()
-                        .HasConstraintName("fk_tipos_etapa_conceitos_tipos_conceito_tipo_conceito_id");
+                        .HasConstraintName("fk_conceitos_do_tipo_de_etapa_tipo_conceito");
 
                     b.HasOne("Unifesspa.UniPlus.Configuracao.Domain.Entities.TipoEtapa", null)
                         .WithMany()
                         .HasForeignKey("TipoEtapaId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
-                        .HasConstraintName("fk_tipos_etapa_conceitos_tipos_etapa_tipo_etapa_id");
+                        .HasConstraintName("fk_conceitos_do_tipo_de_etapa_tipo_etapa");
                 });
 
             modelBuilder.Entity("Unifesspa.UniPlus.Autorizacao.Domain.Entities.Concessao", b =>

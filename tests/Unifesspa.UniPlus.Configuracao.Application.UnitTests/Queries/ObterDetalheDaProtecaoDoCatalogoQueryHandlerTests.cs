@@ -34,7 +34,7 @@ public sealed class ObterDetalheDaProtecaoDoCatalogoQueryHandlerTests
 
         DetalheDaProtecaoDoCatalogoDto? detalhe = await ObterAsync(CadastroDaProtecaoDoCatalogo.Fato, fato.Id);
 
-        detalhe!.Tipo.Should().Be("FATO");
+        detalhe!.Tipo.Should().Be("DADO_DO_CANDIDATO");
         detalhe.Descricao.Should().Be("Descrição do fato.");
         detalhe.Fato.Should().NotBeNull();
         detalhe.Fato!.Dominio.Codigo.Should().Be("SIM_OU_NAO");
