@@ -4,6 +4,7 @@ using AwesomeAssertions;
 
 using Unifesspa.UniPlus.Configuracao.Domain.Enums;
 using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
+using Unifesspa.UniPlus.Regras.Enums;
 
 /// <summary>
 /// Os pares valor, código e rótulo dos enums do fato do candidato, escritos aqui de propósito: alterar um código é alterar

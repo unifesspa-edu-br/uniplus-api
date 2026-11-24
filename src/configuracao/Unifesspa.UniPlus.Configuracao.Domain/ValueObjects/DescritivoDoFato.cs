@@ -1,6 +1,7 @@
 namespace Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
 
 using Unifesspa.UniPlus.Configuracao.Domain.Enums;
+using Unifesspa.UniPlus.Regras.Enums;
 
 /// <summary>
 /// Como o fato novo se identifica e se apresenta: o código, o nome, a descrição e o componente de exibição
