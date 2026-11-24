@@ -101,8 +101,8 @@ public sealed class GravacaoDaUnidade
         ConstraintVioladaNaGravacao.NomeDaConstraintViolada(ex) switch
         {
             RestricoesDoBanco.UnidadeSlugVivo => UnidadeHandlerErros.SlugJaExiste(unidade.Slug),
-            RestricoesDoBanco.UnidadeSiglaVivo => UnidadeHandlerErros.SiglaJaExiste(unidade.Sigla),
-            RestricoesDoBanco.UnidadeCodigoVivo => UnidadeHandlerErros.CodigoJaExiste(unidade.Codigo),
+            RestricoesDoBanco.UnidadeSiglaAtivos => UnidadeHandlerErros.SiglaJaExiste(unidade.Sigla),
+            RestricoesDoBanco.UnidadeCodigoAtivos => UnidadeHandlerErros.CodigoJaExiste(unidade.Codigo),
             _ => null,
         };
 

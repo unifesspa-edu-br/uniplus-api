@@ -128,7 +128,7 @@ internal sealed class InstituicaoConfiguration : IEntityTypeConfiguration<Instit
         builder.HasIndex(i => i.RegistroVivoSentinela)
             .IsUnique()
             .HasFilter("is_deleted = false")
-            .HasDatabaseName(RestricoesDoBanco.InstituicaoUnicaViva);
+            .HasDatabaseName(RestricoesDoBanco.InstituicaoUnicaAtiva);
 
         // Índice de relatório/filtro pela cidade da sede (ADR-0090).
         builder.HasIndex(i => i.CidadeCodigoIbge)

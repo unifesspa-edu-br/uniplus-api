@@ -128,7 +128,7 @@ public sealed class UnidadePersistenceTests : IClassFixture<UnidadeDbFixture>
         await _fixture.GravarAsync(AdminA, primeira);
 
         Unidade segunda = NovaUnidade(new IdentificadoresDaUnidade("sigla-unica-b", "SIGDUP", "SGDUP002", null));
-        await ConferirQueADuplicataEhRecusadaAsync(segunda, "ix_unidades_sigla_vivo");
+        await ConferirQueADuplicataEhRecusadaAsync(segunda, "ux_unidades_sigla_ativos");
     }
 
     [Fact(DisplayName = "Soft-delete liberta o slot da UNIQUE parcial — novo slug é aceito após exclusão")]
