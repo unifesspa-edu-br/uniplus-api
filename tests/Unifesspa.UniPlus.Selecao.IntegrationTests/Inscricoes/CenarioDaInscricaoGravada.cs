@@ -64,8 +64,13 @@ internal sealed class CenarioDaInscricaoGravada
 
     public IUniPlusEncryptionService Encryption => _fixture.Encryption;
 
-    internal static Inscricao NovaInscricao(Cpf cpf, Guid processo) =>
-        Inscricao.Iniciar(processo, cpf, "conta-1", "https://issuer", VersaoFormulario).Value!;
+    internal static Inscricao NovaInscricao(
+        Cpf cpf, Guid processo, string conta = "conta-1", string emissor = "https://issuer", Guid? versaoFormulario = null)
+    {
+        Result<Inscricao> inicio = Inscricao.Iniciar(processo, cpf, conta, emissor, versaoFormulario ?? VersaoFormulario);
+        inicio.IsSuccess.Should().BeTrue();
+        return inicio.Value!;
+    }
 
     internal static PrecondicaoIfMatch PrecondicaoDe(Inscricao inscricao) => PrecondicaoIfMatch.DeTags([inscricao.ETag]);
 
