@@ -28,7 +28,7 @@ public sealed class ManifestacaoEDecisaoConcorrentesTests : ManifestacaoDaProtec
 
     [Theory(DisplayName = "A manifestação inadequada gravada antes vence a aprovação sem justificativa, que relida exige a justificativa")]
     [InlineData("TIPO_DOCUMENTO")]
-    [InlineData("FATO")]
+    [InlineData("DADO_DO_CANDIDATO")]
     public async Task ManifestacaoAntesDaAprovacao(string cadastro)
     {
         using HttpClient client = Fixture.Factory.CreateClient();
@@ -47,7 +47,7 @@ public sealed class ManifestacaoEDecisaoConcorrentesTests : ManifestacaoDaProtec
 
     [Theory(DisplayName = "A manifestação de ajuste gravada antes vence o ajuste sem justificativa; relido, o ajuste exige a justificativa e o administrador do cadastro aceita sem ela")]
     [InlineData("TIPO_DOCUMENTO")]
-    [InlineData("FATO")]
+    [InlineData("DADO_DO_CANDIDATO")]
     public async Task ManifestacaoAntesDoAjuste(string cadastro)
     {
         using HttpClient client = Fixture.Factory.CreateClient();
@@ -65,7 +65,7 @@ public sealed class ManifestacaoEDecisaoConcorrentesTests : ManifestacaoDaProtec
 
     [Theory(DisplayName = "O ajuste gravado antes vence a manifestação, que refeita encontra o item já decidido; o administrador do cadastro aceita sem justificativa")]
     [InlineData("TIPO_DOCUMENTO")]
-    [InlineData("FATO")]
+    [InlineData("DADO_DO_CANDIDATO")]
     public async Task AjusteAntesDaManifestacao(string cadastro)
     {
         using HttpClient client = Fixture.Factory.CreateClient();
@@ -84,7 +84,7 @@ public sealed class ManifestacaoEDecisaoConcorrentesTests : ManifestacaoDaProtec
 
     [Theory(DisplayName = "Duas manifestações de pessoas diferentes se serializam: a refeita coexiste com a outra")]
     [InlineData("TIPO_DOCUMENTO")]
-    [InlineData("FATO")]
+    [InlineData("DADO_DO_CANDIDATO")]
     public async Task DuasManifestacoes(string cadastro)
     {
         using HttpClient client = Fixture.Factory.CreateClient();
@@ -104,7 +104,7 @@ public sealed class ManifestacaoEDecisaoConcorrentesTests : ManifestacaoDaProtec
 
     [Theory(DisplayName = "Duas manifestações concorrentes no mesmo instante e com o mesmo indicador desfavorável se serializam: a segunda perde com 409")]
     [InlineData("TIPO_DOCUMENTO")]
-    [InlineData("FATO")]
+    [InlineData("DADO_DO_CANDIDATO")]
     public async Task ManifestacoesNoMesmoInstanteEComOMesmoIndicador(string cadastro)
     {
         using HttpClient client = Fixture.Factory.CreateClient();
@@ -123,9 +123,9 @@ public sealed class ManifestacaoEDecisaoConcorrentesTests : ManifestacaoDaProtec
 
     [Theory(DisplayName = "Controle: a manifestação gravada sem tocar a linha do item deixaria passar a aprovação ou o ajuste sem justificativa")]
     [InlineData("TIPO_DOCUMENTO", "APROVAR", null)]
-    [InlineData("FATO", "APROVAR", null)]
+    [InlineData("DADO_DO_CANDIDATO", "APROVAR", null)]
     [InlineData("TIPO_DOCUMENTO", "RECOMENDAR_AJUSTE", "SENSIVEL")]
-    [InlineData("FATO", "RECOMENDAR_AJUSTE", "SENSIVEL")]
+    [InlineData("DADO_DO_CANDIDATO", "RECOMENDAR_AJUSTE", "SENSIVEL")]
     public async Task SemEscritaNaLinhaDoItem_ACorridaPassaria(string cadastro, string decisao, string? recomendada)
     {
         using HttpClient client = Fixture.Factory.CreateClient();

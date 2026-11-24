@@ -448,7 +448,7 @@ api admin PUT "/api/configuracao/admin/fatos-candidato/$FATO_ID/definicao" "$(co
   dominio, cardinalidade, fonteValores: .valores.fonte, formato, escopo}')"
 espera 204 "" "6.5 admin muda a classificação do fato da semente"
 api admin POST /api/configuracao/admin/protecao-do-catalogo/solicitacoes \
-  "$(jq -nc --arg td "$TD_ID" --arg f "$FATO_ID" '{itens: [{cadastro: "TIPO_DOCUMENTO", id: $td}, {cadastro: "FATO", id: $f}]}')"
+  "$(jq -nc --arg td "$TD_ID" --arg f "$FATO_ID" '{itens: [{cadastro: "TIPO_DOCUMENTO", id: $td}, {cadastro: "DADO_DO_CANDIDATO", id: $f}]}')"
 espera 200 "" "6.5 solicitação à proteção de dados"
 
 decidir_item() {   # a decisão repete a proteção vigente, o ciclo e as manifestações lidas
@@ -458,7 +458,7 @@ decidir_item() {   # a decisão repete a proteção vigente, o ciclo e as manife
     manifestacoesNoCiclo: .aprovacao.manifestacoesNoCiclo, justificativa: "Classificação revista na validação local."}')"
 }
 decidir_item tipos-documento "$TD_ID" TIPO_DOCUMENTO; espera 204 "" "6.5 Representante aprova o tipo de documento"
-decidir_item fatos "$FATO_ID" FATO;                   espera 204 "" "6.5 Representante aprova o fato"
+decidir_item fatos "$FATO_ID" DADO_DO_CANDIDATO;                   espera 204 "" "6.5 Representante aprova o fato"
 
 retrato() {   # leitura pela API e, só para conferência, SELECT no banco
   api betina.neves GET "/api/configuracao/admin/protecao-do-catalogo/tipos-documento/$TD_ID"; corpo -S . > "$VAL_DIR/6.5-td-$1.json"

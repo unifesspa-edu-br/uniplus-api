@@ -13,7 +13,7 @@ using Unifesspa.UniPlus.Kernel.Results;
 public readonly record struct ItemDaProtecao(CadastroDoCatalogo Cadastro, Guid ItemId)
 {
     /// <summary>
-    /// O item que o pedido aponta. O cadastro ausente ou fora do vocabulário (<c>TIPO_DOCUMENTO</c> ou <c>FATO</c>,
+    /// O item que o pedido aponta. O cadastro ausente ou fora do vocabulário (<c>TIPO_DOCUMENTO</c> ou <c>DADO_DO_CANDIDATO</c>,
     /// comparado sem os espaços das pontas) é recusado no campo <c>cadastro</c>, junto das demais recusas do lote
     /// (ADR-0125), e devolve <see langword="null"/>.
     /// </summary>

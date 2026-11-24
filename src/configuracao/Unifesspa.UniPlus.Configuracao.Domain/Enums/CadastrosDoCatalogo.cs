@@ -6,10 +6,12 @@ namespace Unifesspa.UniPlus.Configuracao.Domain.Enums;
 /// </summary>
 public static class CadastrosDoCatalogo
 {
+    public const string DadoDoCandidato = "DADO_DO_CANDIDATO";
+
     private static readonly Dictionary<CadastroDoCatalogo, string> ParaToken = new()
     {
         [CadastroDoCatalogo.TipoDocumento] = "TIPO_DOCUMENTO",
-        [CadastroDoCatalogo.Fato] = "FATO",
+        [CadastroDoCatalogo.Fato] = DadoDoCandidato,
     };
 
     private static readonly Dictionary<string, CadastroDoCatalogo> DeToken =

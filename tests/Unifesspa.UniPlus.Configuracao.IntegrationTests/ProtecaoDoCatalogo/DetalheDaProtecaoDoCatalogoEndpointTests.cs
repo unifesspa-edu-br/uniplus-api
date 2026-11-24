@@ -53,9 +53,9 @@ public sealed class DetalheDaProtecaoDoCatalogoEndpointTests : ProtecaoDoCatalog
         using HttpClient client = Fixture.Factory.CreateClient();
         JsonElement original = await ObterFatoAsync(client, IdDeQuilombola);
         (await EnviarAsync(client, HttpMethod.Put, $"{Fatos}/{IdDeQuilombola}/definicao", DefinicaoDe(original))).StatusCode.Should().Be(HttpStatusCode.NoContent);
-        (await SolicitarAsync(client, "FATO", IdDeQuilombola)).StatusCode.Should().Be(HttpStatusCode.OK);
+        (await SolicitarAsync(client, "DADO_DO_CANDIDATO", IdDeQuilombola)).StatusCode.Should().Be(HttpStatusCode.OK);
 
-        (await DecidirAsync(client, "FATO", IdDeQuilombola, "RECOMENDAR_AJUSTE", "PESSOAL")).StatusCode.Should().Be(HttpStatusCode.NoContent);
+        (await DecidirAsync(client, "DADO_DO_CANDIDATO", IdDeQuilombola, "RECOMENDAR_AJUSTE", "PESSOAL")).StatusCode.Should().Be(HttpStatusCode.NoContent);
         (await EnviarAsync(client, HttpMethod.Post, $"{Fatos}/{IdDeQuilombola}/aceite-da-recomendacao")).StatusCode.Should().Be(HttpStatusCode.NoContent);
 
         JsonElement aceito = await ObterFatoAsync(client, IdDeQuilombola);
@@ -76,7 +76,7 @@ public sealed class DetalheDaProtecaoDoCatalogoEndpointTests : ProtecaoDoCatalog
         resposta.Content.Headers.ContentType!.MediaType.Should().Be("application/vnd.uniplus.protecao-do-catalogo-detalhe.v1+json");
         JsonElement detalhe = await resposta.Content.ReadFromJsonAsync<JsonElement>();
         (detalhe.GetProperty("tipo").GetString(), detalhe.GetProperty("nome").GetString(), detalhe.GetProperty("descricao").GetString())
-            .Should().Be(("FATO", "Identidade de gênero", "Como a pessoa se identifica."));
+            .Should().Be(("DADO_DO_CANDIDATO", "Identidade de gênero", "Como a pessoa se identifica."));
         (detalhe.GetProperty("classificacaoProtecao").GetString(), detalhe.GetProperty("aprovacao").GetProperty("situacao").GetString()).Should().Be(("SENSIVEL", "PENDENTE"));
         detalhe.GetProperty("tipoDocumento").ValueKind.Should().Be(JsonValueKind.Null);
     }

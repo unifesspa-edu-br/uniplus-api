@@ -8,6 +8,6 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// Envia à proteção de dados, de uma vez, os tipos de documento e fatos pendentes — novos e com a proteção
 /// alterada — que quem envia escolheu, e só dos cadastros que pode manter (ADR-0153).
 /// </summary>
-/// <param name="Itens">Os itens a enviar, cada um com o cadastro (<c>TIPO_DOCUMENTO</c> ou <c>FATO</c>) e o identificador.</param>
+/// <param name="Itens">Os itens a enviar, cada um com o cadastro (<c>TIPO_DOCUMENTO</c> ou <c>DADO_DO_CANDIDATO</c>) e o identificador.</param>
 public sealed record SolicitarAprovacaoDaProtecaoCommand(
     IReadOnlyList<ItemParaSolicitarDto?> Itens) : ICommand<Result<SolicitacaoDaProtecaoDto>>;

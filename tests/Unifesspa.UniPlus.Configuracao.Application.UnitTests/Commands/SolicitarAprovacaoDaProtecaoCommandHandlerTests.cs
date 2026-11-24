@@ -41,7 +41,7 @@ public sealed class SolicitarAprovacaoDaProtecaoCommandHandlerTests
 
     private static ItemParaSolicitarDto Tipo(TipoDocumento tipo) => new("TIPO_DOCUMENTO", tipo.Id);
 
-    private static ItemParaSolicitarDto Fato(FatoCandidato fato) => new("FATO", fato.Id);
+    private static ItemParaSolicitarDto Fato(FatoCandidato fato) => new("DADO_DO_CANDIDATO", fato.Id);
 
     [Fact(DisplayName = "A solicitação leva os tipos e fatos pendentes e avisa cada titular da permissão de aprovar")]
     public async Task Handle_ReuneOsPendentesEAvisa()

@@ -24,7 +24,7 @@ public sealed class ManifestacaoDaProtecaoEndpointTests : ManifestacaoDaProtecao
 
     [Theory(DisplayName = "O Gestor de proteção de dados se manifesta no item solicitado, o detalhe mostra a vigente e o item continua solicitado")]
     [InlineData("TIPO_DOCUMENTO")]
-    [InlineData("FATO")]
+    [InlineData("DADO_DO_CANDIDATO")]
     public async Task Manifestar_ItemSolicitado_204(string cadastro)
     {
         await PrepararTodosAsync();
@@ -76,7 +76,7 @@ public sealed class ManifestacaoDaProtecaoEndpointTests : ManifestacaoDaProtecao
         Guid pendente = await CadastrarTipoAsync(client, $"{Marca()} Certidão de nascimento");
 
         HttpResponseMessage foraDeSolicitacao = await ManifestarAsync(client, Kevin, "TIPO_DOCUMENTO", pendente, "ADEQUADA");
-        HttpResponseMessage inexistente = await ManifestarAsync(client, Kevin, "FATO", Guid.NewGuid(), "ADEQUADA");
+        HttpResponseMessage inexistente = await ManifestarAsync(client, Kevin, "DADO_DO_CANDIDATO", Guid.NewGuid(), "ADEQUADA");
 
         (await CodigoAsync(foraDeSolicitacao)).Should().Be("uniplus.configuracao.protecao_do_catalogo.item_fora_de_solicitacao");
         inexistente.StatusCode.Should().Be(HttpStatusCode.NotFound);
@@ -87,9 +87,9 @@ public sealed class ManifestacaoDaProtecaoEndpointTests : ManifestacaoDaProtecao
     {
         await PrepararTodosAsync();
         using HttpClient client = Fixture.Factory.CreateClient();
-        Guid solicitado = await SolicitadoAsync(client, "FATO");
+        Guid solicitado = await SolicitadoAsync(client, "DADO_DO_CANDIDATO");
 
-        HttpResponseMessage cicloErrado = await ManifestarAsync(client, Kevin, "FATO", solicitado, "ADEQUADA", ciclo: 2);
+        HttpResponseMessage cicloErrado = await ManifestarAsync(client, Kevin, "DADO_DO_CANDIDATO", solicitado, "ADEQUADA", ciclo: 2);
 
         cicloErrado.StatusCode.Should().Be(HttpStatusCode.Conflict);
         JsonElement problema = await cicloErrado.Content.ReadFromJsonAsync<JsonElement>();
@@ -104,7 +104,7 @@ public sealed class ManifestacaoDaProtecaoEndpointTests : ManifestacaoDaProtecao
         using HttpClient client = Fixture.Factory.CreateClient();
         using HttpRequestMessage request = new(HttpMethod.Post, new Uri($"{Base}/manifestacoes", UriKind.Relative))
         {
-            Content = JsonContent.Create(new { cadastro = "FATO", itemId = Guid.NewGuid(), ciclo = 1, parecer = "ADEQUADA" }),
+            Content = JsonContent.Create(new { cadastro = "DADO_DO_CANDIDATO", itemId = Guid.NewGuid(), ciclo = 1, parecer = "ADEQUADA" }),
         };
         request.Headers.Add("Authorization", $"{TestAuthHandler.AuthorizationScheme} {TestAuthHandler.TokenValue}");
         request.Headers.TryAddWithoutValidation(TestAuthHandler.UserIdHeader, Kevin.ContaId);
@@ -132,13 +132,13 @@ public sealed class ManifestacaoDaProtecaoEndpointTests : ManifestacaoDaProtecao
     {
         await PrepararTodosAsync();
         using HttpClient client = Fixture.Factory.CreateClient();
-        Guid id = await SolicitadoAsync(client, "FATO");
+        Guid id = await SolicitadoAsync(client, "DADO_DO_CANDIDATO");
 
-        (await ManifestarAsync(client, Kevin, "FATO", id, "INADEQUADA")).StatusCode.Should().Be(HttpStatusCode.NoContent);
-        (await ManifestarAsync(client, Kevin, "FATO", id, "ADEQUADA", texto: null)).StatusCode.Should().Be(HttpStatusCode.NoContent);
-        (await ManifestarAsync(client, Lucia, "FATO", id, "RECOMENDA_AJUSTE")).StatusCode.Should().Be(HttpStatusCode.NoContent);
+        (await ManifestarAsync(client, Kevin, "DADO_DO_CANDIDATO", id, "INADEQUADA")).StatusCode.Should().Be(HttpStatusCode.NoContent);
+        (await ManifestarAsync(client, Kevin, "DADO_DO_CANDIDATO", id, "ADEQUADA", texto: null)).StatusCode.Should().Be(HttpStatusCode.NoContent);
+        (await ManifestarAsync(client, Lucia, "DADO_DO_CANDIDATO", id, "RECOMENDA_AJUSTE")).StatusCode.Should().Be(HttpStatusCode.NoContent);
 
-        JsonElement detalhe = await DetalheAsync(client, "FATO", id);
+        JsonElement detalhe = await DetalheAsync(client, "DADO_DO_CANDIDATO", id);
         detalhe.GetProperty("manifestacoesVigentes").EnumerateArray().Select(m => (m.GetProperty("parecer").GetString(), m.GetProperty("autorNome").GetString()))
             .Should().Equal(("ADEQUADA", Kevin.Nome), ("RECOMENDA_AJUSTE", Lucia.Nome));
         detalhe.GetProperty("aprovacao").GetProperty("manifestacaoDesfavoravel").GetBoolean().Should().BeTrue();
@@ -149,12 +149,12 @@ public sealed class ManifestacaoDaProtecaoEndpointTests : ManifestacaoDaProtecao
     {
         await PrepararTodosAsync();
         using HttpClient client = Fixture.Factory.CreateClient();
-        Guid id = await SolicitadoAsync(client, "FATO");
-        (await ManifestarAsync(client, Kevin, "FATO", id, "INADEQUADA")).StatusCode.Should().Be(HttpStatusCode.NoContent);
+        Guid id = await SolicitadoAsync(client, "DADO_DO_CANDIDATO");
+        (await ManifestarAsync(client, Kevin, "DADO_DO_CANDIDATO", id, "INADEQUADA")).StatusCode.Should().Be(HttpStatusCode.NoContent);
 
         (await EditarFatoAsync(client, id)).StatusCode.Should().Be(HttpStatusCode.NoContent);
 
-        JsonElement detalhe = await DetalheAsync(client, "FATO", id);
+        JsonElement detalhe = await DetalheAsync(client, "DADO_DO_CANDIDATO", id);
         (detalhe.GetProperty("aprovacao").GetProperty("ciclo").GetInt32(), detalhe.GetProperty("manifestacoesVigentes").GetArrayLength()).Should().Be((1, 1));
     }
 
@@ -165,15 +165,15 @@ public sealed class ManifestacaoDaProtecaoEndpointTests : ManifestacaoDaProtecao
     {
         await PrepararTodosAsync();
         using HttpClient client = Fixture.Factory.CreateClient();
-        Guid id = await SolicitadoAsync(client, "FATO");
-        (await ManifestarAsync(client, Kevin, "FATO", id, "INADEQUADA")).StatusCode.Should().Be(HttpStatusCode.NoContent);
-        (await DecidirComoAsync(client, Betina, "FATO", id, decisao, "O dado é sensível.", recomendada)).StatusCode.Should().Be(HttpStatusCode.NoContent);
+        Guid id = await SolicitadoAsync(client, "DADO_DO_CANDIDATO");
+        (await ManifestarAsync(client, Kevin, "DADO_DO_CANDIDATO", id, "INADEQUADA")).StatusCode.Should().Be(HttpStatusCode.NoContent);
+        (await DecidirComoAsync(client, Betina, "DADO_DO_CANDIDATO", id, decisao, "O dado é sensível.", recomendada)).StatusCode.Should().Be(HttpStatusCode.NoContent);
 
         (await EditarFatoAsync(client, id)).StatusCode.Should().Be(HttpStatusCode.NoContent);
 
-        JsonElement detalhe = await DetalheAsync(client, "FATO", id);
+        JsonElement detalhe = await DetalheAsync(client, "DADO_DO_CANDIDATO", id);
         (detalhe.GetProperty("aprovacao").GetProperty("ciclo").GetInt32(), detalhe.GetProperty("manifestacoesVigentes").GetArrayLength()).Should().Be((2, 0));
-        (await HistoricoAsync(client, Kevin, "FATO", id)).Should().ContainSingle().Which.GetProperty("situacao").GetString().Should().Be("ENCERRADA");
+        (await HistoricoAsync(client, Kevin, "DADO_DO_CANDIDATO", id)).Should().ContainSingle().Which.GetProperty("situacao").GetString().Should().Be("ENCERRADA");
     }
 
     private static Task<HttpResponseMessage> EditarFatoAsync(HttpClient client, Guid id) =>

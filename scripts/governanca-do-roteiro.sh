@@ -167,7 +167,7 @@ itens_da_protecao() {
 decidir_item_da_protecao() {
     local item="$1" token="$2"
     como "a aprovação da proteção de $(jq -r '.codigo' <<< "$item")" "$token" POST "/api/configuracao/admin/protecao-do-catalogo" \
-        "$(jq -c '{cadastro: (if .tipo == "FATO" then "FATO" else "TIPO_DOCUMENTO" end), itemId: .id, decisao: "APROVAR",
+        "$(jq -c '{cadastro: (if .tipo == "DADO_DO_CANDIDATO" then "DADO_DO_CANDIDATO" else "TIPO_DOCUMENTO" end), itemId: .id, decisao: "APROVAR",
                    classificacaoProtecao, hipoteseLegal, finalidadeTratamento,
                    ciclo: .aprovacao.ciclo, manifestacoesNoCiclo: .aprovacao.manifestacoesNoCiclo}
                   + (if .aprovacao.manifestacaoDesfavoravel
@@ -182,7 +182,7 @@ garantir_protecao_do_catalogo() {
     if [ "$(jq 'length' <<< "$pendentes")" -gt 0 ]; then
         log "Enviando à proteção de dados $(jq 'length' <<< "$pendentes") itens do catálogo"
         como "o envio à proteção de dados" "$TOKEN" POST "/api/configuracao/admin/protecao-do-catalogo/solicitacoes" \
-            "$(jq -c '{itens: map({cadastro: (if .tipo == "FATO" then "FATO" else "TIPO_DOCUMENTO" end), id})}' <<< "$pendentes")" >/dev/null
+            "$(jq -c '{itens: map({cadastro: (if .tipo == "DADO_DO_CANDIDATO" then "DADO_DO_CANDIDATO" else "TIPO_DOCUMENTO" end), id})}' <<< "$pendentes")" >/dev/null
     fi
     representante=$(token_de "${LISTA_DE_REPRESENTANTES[0]}" "$SENHA_REPRESENTANTES")
     # A lista vem para uma variável antes do laço: falha dentro de <(...) não interromperia o roteiro.

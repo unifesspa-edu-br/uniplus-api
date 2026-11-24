@@ -108,8 +108,8 @@ public sealed class AtoDaProtecaoDoCatalogoTests
         AtosDaProtecao.TryAnalisar("REPROVACAO", out AtoDaProtecao reprovacao).Should().BeTrue();
         reprovacao.Should().Be(AtoDaProtecao.Reprovacao);
         AtosDaProtecao.TryAnalisar("reprovacao", out _).Should().BeFalse();
-        CadastrosDoCatalogo.TokensCanonicos.Should().Equal("TIPO_DOCUMENTO", "FATO");
-        CadastrosDoCatalogo.TryAnalisar(" FATO ", out CadastroDoCatalogo fato).Should().BeTrue();
+        CadastrosDoCatalogo.TokensCanonicos.Should().Equal("TIPO_DOCUMENTO", "DADO_DO_CANDIDATO");
+        CadastrosDoCatalogo.TryAnalisar(" DADO_DO_CANDIDATO ", out CadastroDoCatalogo fato).Should().BeTrue();
         fato.Should().Be(CadastroDoCatalogo.Fato);
     }
 

@@ -141,7 +141,7 @@ public sealed class ProtecaoDoCatalogoEndpointTests : ProtecaoDoCatalogoTestBase
         Guid id = await TipoSolicitadoAsync(client);
 
         HttpResponseMessage jaSolicitado = await SolicitarAsync(client, "TIPO_DOCUMENTO", id);
-        HttpResponseMessage inexistente = await SolicitarAsync(client, "FATO", Guid.NewGuid());
+        HttpResponseMessage inexistente = await SolicitarAsync(client, "DADO_DO_CANDIDATO", Guid.NewGuid());
         HttpResponseMessage nulo = await EnviarAsync(client, HttpMethod.Post, $"{Base}/solicitacoes", new { itens = new object?[] { null } });
 
         new[] { jaSolicitado, inexistente, nulo }.Should().OnlyContain(static r => r.StatusCode == HttpStatusCode.UnprocessableEntity);
@@ -161,7 +161,7 @@ public sealed class ProtecaoDoCatalogoEndpointTests : ProtecaoDoCatalogoTestBase
         await TornarPauloMantenedorAsync(PermissaoConfiguracao.TiposDocumentoManter.Codigo);
 
         HttpResponseMessage resposta = await EnviarComoPauloAsync(
-            client, HttpMethod.Post, $"{Base}/solicitacoes", new { itens = new[] { new { cadastro = "FATO", id = IdDeQuilombola } } });
+            client, HttpMethod.Post, $"{Base}/solicitacoes", new { itens = new[] { new { cadastro = "DADO_DO_CANDIDATO", id = IdDeQuilombola } } });
 
         resposta.StatusCode.Should().Be(HttpStatusCode.Forbidden);
         ProtecaoDoFato(await ObterFatoAsync(client, IdDeQuilombola)).GetProperty("aprovacao").GetProperty("situacao").GetString().Should().Be("PENDENTE");

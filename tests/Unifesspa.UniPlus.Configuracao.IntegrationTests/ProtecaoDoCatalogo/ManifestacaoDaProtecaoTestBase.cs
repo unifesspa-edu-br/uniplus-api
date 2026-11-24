@@ -26,10 +26,10 @@ public abstract class ManifestacaoDaProtecaoTestBase : HistoricoDaProtecaoTestBa
     }
 
     /// <summary>A rota do cadastro no detalhe e no histórico da proteção.</summary>
-    private protected static string Rota(string cadastro) => cadastro == "FATO" ? "fatos" : "tipos-documento";
+    private protected static string Rota(string cadastro) => cadastro == "DADO_DO_CANDIDATO" ? "fatos" : "tipos-documento";
 
     /// <summary>A classificação com que os itens destes testes nascem: o fato pessoal, o tipo interno.</summary>
-    private protected static string Classificacao(string cadastro) => cadastro == "FATO" ? "PESSOAL" : "INTERNO";
+    private protected static string Classificacao(string cadastro) => cadastro == "DADO_DO_CANDIDATO" ? "PESSOAL" : "INTERNO";
 
     private protected async Task PrepararTodosAsync()
     {
@@ -45,7 +45,7 @@ public abstract class ManifestacaoDaProtecaoTestBase : HistoricoDaProtecaoTestBa
     /// <summary>Um item novo do cadastro, já numa solicitação de Isabella.</summary>
     private protected static async Task<Guid> SolicitadoAsync(HttpClient client, string cadastro)
     {
-        Guid id = cadastro == "FATO"
+        Guid id = cadastro == "DADO_DO_CANDIDATO"
             ? await CadastrarFatoAsync(client, $"{Marca()} Renda familiar bruta")
             : await CadastrarTipoAsync(client, $"{Marca()} Laudo médico complementar");
         (await SolicitarAsync(client, Isabella, cadastro, id)).StatusCode.Should().Be(HttpStatusCode.OK);
@@ -65,7 +65,7 @@ public abstract class ManifestacaoDaProtecaoTestBase : HistoricoDaProtecaoTestBa
         DecidirAsync(client, Betina, decisao with { Lida = lida });
 
     private protected static Task<HttpResponseMessage> AceitarAsync(HttpClient client, string cadastro, Guid id) =>
-        Enviar(client, HttpMethod.Post, $"{(cadastro == "FATO" ? Fatos : Tipos)}/{id}/aceite-da-recomendacao", Isabella);
+        Enviar(client, HttpMethod.Post, $"{(cadastro == "DADO_DO_CANDIDATO" ? Fatos : Tipos)}/{id}/aceite-da-recomendacao", Isabella);
 
     private protected static async Task<JsonElement> DetalheAsync(HttpClient client, string cadastro, Guid id, Persona? quem = null)
     {

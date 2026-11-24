@@ -57,7 +57,7 @@ public static class ProtecaoDoCatalogoErrorCodes
     /// <summary>O filtro de situação da consulta fora do vocabulário.</summary>
     public const string SituacaoInvalida = "ProtecaoDoCatalogo.SituacaoInvalida";
 
-    /// <summary>O cadastro do item da decisão (<c>TIPO_DOCUMENTO</c> ou <c>FATO</c>) ausente ou fora do vocabulário.</summary>
+    /// <summary>O cadastro do item da decisão (<c>TIPO_DOCUMENTO</c> ou <c>DADO_DO_CANDIDATO</c>) ausente ou fora do vocabulário.</summary>
     public const string CadastroInvalido = "ProtecaoDoCatalogo.CadastroInvalido";
 
     /// <summary>A decisão (<c>APROVAR</c>, <c>RECOMENDAR_AJUSTE</c> ou <c>REPROVAR</c>) ausente ou fora do vocabulário.</summary>
