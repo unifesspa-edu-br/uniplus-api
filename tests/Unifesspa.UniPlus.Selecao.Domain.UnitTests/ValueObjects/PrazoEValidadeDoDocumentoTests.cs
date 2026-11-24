@@ -4,6 +4,7 @@ using AwesomeAssertions;
 
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.Errors;
+using Unifesspa.UniPlus.Selecao.Domain.UnitTests.Cenarios;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 public sealed class PrazoEValidadeDoDocumentoTests
@@ -59,6 +60,26 @@ public sealed class PrazoEValidadeDoDocumentoTests
             Referencia, EfeitoNaAnaliseDoDocumento.RecusarDocumento).Value!;
         prazo.DataMinimaDeEmissao(new DateOnly(2024, 3, 31)).Should().Be(new DateOnly(ano, mes, dia));
     }
+
+    [Theory]
+    [InlineData(UnidadeDoPrazoDeEmissao.Dias, 36500, "1926-12-19")]
+    [InlineData(UnidadeDoPrazoDeEmissao.Meses, 1200, "1926-11-24")]
+    [InlineData(UnidadeDoPrazoDeEmissao.Anos, 100, "1926-11-24")]
+    public void Criar_PrazoNoLimiteDaUnidade_AceitaECalculaADataMinima(UnidadeDoPrazoDeEmissao unidade, int limite, string esperada)
+    {
+        PrazoDeEmissao prazo = new PrazoDeEmissaoBuilder().De(limite, unidade).Referenciado(Referencia).Construir();
+
+        prazo.DataMinimaDeEmissao(new DateOnly(2026, 11, 24)).Should().Be(DateOnly.Parse(esperada, System.Globalization.CultureInfo.InvariantCulture));
+    }
+
+    [Theory]
+    [InlineData(UnidadeDoPrazoDeEmissao.Dias, 36501)]
+    [InlineData(UnidadeDoPrazoDeEmissao.Meses, 1201)]
+    [InlineData(UnidadeDoPrazoDeEmissao.Anos, 101)]
+    [InlineData(UnidadeDoPrazoDeEmissao.Anos, int.MaxValue)]
+    public void Criar_PrazoAcimaDoLimiteDaUnidade_Recusa(UnidadeDoPrazoDeEmissao unidade, int valor) =>
+        PrazoDeEmissao.Criar(EscolhaDoPrazoDeEmissao.ComPrazo, valor, unidade, Referencia, EfeitoNaAnaliseDoDocumento.RecusarDocumento)
+            .Error!.Code.Should().Be(PrazoDeEmissaoErrorCodes.ValorInvalido);
 
     [Fact]
     public void Criar_EscolhasInvalidas_Recusa()
