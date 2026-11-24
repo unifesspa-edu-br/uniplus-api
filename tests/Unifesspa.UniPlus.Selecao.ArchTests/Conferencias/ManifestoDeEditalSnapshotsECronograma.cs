@@ -137,7 +137,7 @@ internal static class ManifestoDeEditalSnapshotsECronograma
         // Os candidatos atendidos de cada banca. Sem Id no envelope: nada aponta para a linha de
         // fora da banca que a carrega.
         [typeof(CategoriaJulgada)] = (
-            ["CategoriaDocumentoOrigemId", "Codigo"],
+            ["CategoriaDocumentoOrigemId", "Codigo", "Nome"],
             [("BancaRequeridaId", "FK interna.")]),
 
         // RegraRecursoFase.Parametros NÃO é polimórfico (única variante — CA-02 recusa

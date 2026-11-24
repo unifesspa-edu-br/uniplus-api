@@ -73,7 +73,7 @@ public sealed class FaseDeclaradaTests
     {
         BancaRequerida comCandidatosAtendidos = BancaRequerida.Criar(ChaveLocal.Criar("banca").Value,
             TiposDeBancaCopiadosDeTeste.DeRecursos(Guid.CreateVersion7()),
-            [CategoriaJulgada.Criar(Guid.CreateVersion7(), "RENDA")]);
+            [CategoriaJulgada.Criar(Guid.CreateVersion7(), "RENDA", "RENDA")]);
         ModeloDeFase modelo = new("RECURSO", 1) { Bancas = [comCandidatosAtendidos] };
 
         FaseDeclarada fase = modelo.Declarar();
@@ -87,7 +87,7 @@ public sealed class FaseDeclaradaTests
     {
         BancaRequerida comCandidatosAtendidos = BancaRequerida.Criar(ChaveLocal.Criar("banca").Value,
             TiposDeBancaCopiadosDeTeste.DeSegundaInstancia(Guid.CreateVersion7()),
-            [CategoriaJulgada.Criar(Guid.CreateVersion7(), "RENDA")]);
+            [CategoriaJulgada.Criar(Guid.CreateVersion7(), "RENDA", "RENDA")]);
 
         FaseDeclarada fase = new ModeloDeFase("RECURSO", 1) { Bancas = [comCandidatosAtendidos] }.Declarar();
 

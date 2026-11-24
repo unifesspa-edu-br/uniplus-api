@@ -9,6 +9,7 @@ using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Canonicalization;
+using Unifesspa.UniPlus.Testes.Compartilhado;
 
 /// <summary>
 /// A marca "no mesmo momento da anterior" na fase do cronograma do envelope: a chave existe em toda fase, a marca é restaurada
@@ -20,9 +21,10 @@ public sealed class CronogramaComAMarcaDeMesmoMomentoTests
 
     private static FaseCronograma Fase(bool marcada, string codigo = "CEPS") => FaseCronograma.Reidratar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("fase").Value!,
         new Guid("6666aaaa-0000-4000-8000-000000000002"),
-        new OrigemCanonicaDaFase(
+        OrigensCanonicasDeTeste.ComNome(new OrigemCanonicaDaFase(
             OrigemId: new Guid("4444dddd-0000-4000-8000-000000000002"), Codigo: "INSCRICAO", OrigemData: OrigemDataFase.NoEdital,
-            AgrupaEtapas: false, PermiteComplementacao: false, ColetaInscricao: true, ColetaSolicitacaoIsencao: false),
+            AgrupaEtapas: false, PermiteComplementacao: false, ColetaInscricao: true, ColetaSolicitacaoIsencao: false)
+        { Nome = "Inscrição" }),
         new DecisoesDeCronogramaDaFase(
             Ordem: 2, Inicio: null, Fim: null, UnidadeResponsavel: new UnidadeResponsavelSnapshot(new Guid("5555eeee-0000-4000-8000-000000000002"), codigo, "CEPS", "Centro de Processos Seletivos"))
         { NoMesmoMomentoDaAnterior = marcada },

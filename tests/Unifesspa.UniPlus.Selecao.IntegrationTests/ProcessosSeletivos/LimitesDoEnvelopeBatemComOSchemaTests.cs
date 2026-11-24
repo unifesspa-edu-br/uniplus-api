@@ -64,10 +64,12 @@ public sealed class LimitesDoEnvelopeBatemComOSchemaTests
 
         // Story #851 — cronograma de fases.
         ("FaseCodigo", LimitesDoEnvelope.FaseCodigo, typeof(FaseCronograma), nameof(FaseCronograma.Codigo)),
+        ("TipoFaseNome", LimitesDoEnvelope.TipoFaseNome, typeof(FaseCronograma), nameof(FaseCronograma.TipoFaseNome)),
         ("TipoAtoCodigo", LimitesDoEnvelope.TipoAtoCodigo, typeof(ProdutoDaFase), nameof(ProdutoDaFase.AtoCodigo)),
         ("TipoBancaCodigo", LimitesDoEnvelope.TipoBancaCodigo, typeof(BancaRequerida), CaminhoDaCopiaDoTipo(nameof(TipoDeBancaCopiado.Codigo))),
         ("TipoBancaNome", LimitesDoEnvelope.TipoBancaNome, typeof(BancaRequerida), CaminhoDaCopiaDoTipo(nameof(TipoDeBancaCopiado.Nome))),
         ("CategoriaDocumentoCodigo", LimitesDoEnvelope.CategoriaDocumentoCodigo, typeof(CategoriaJulgada), nameof(CategoriaJulgada.Codigo)),
+        ("CategoriaDocumentoNome", LimitesDoEnvelope.CategoriaDocumentoNome, typeof(CategoriaJulgada), nameof(CategoriaJulgada.Nome)),
 
         // As mesmas grandezas, um nível abaixo: a etapa repete fase, ato e banca, e as colunas
         // dela têm a mesma largura. Sem estas linhas a tabela cobria só o lado da fase, e
@@ -116,6 +118,7 @@ public sealed class LimitesDoEnvelopeBatemComOSchemaTests
         ("TextoEtapaFormulario", LimitesDoEnvelope.TextoEtapaFormulario, typeof(EtapaFormulario), nameof(EtapaFormulario.Descricao)),
         ("TextoEtapaFormulario", LimitesDoEnvelope.TextoEtapaFormulario, typeof(EtapaFormulario), nameof(EtapaFormulario.Aviso)),
         ("CodigoModeloDeFormulario", LimitesDoEnvelope.CodigoModeloDeFormulario, typeof(FormularioProcesso), nameof(FormularioProcesso.ModeloOrigemCodigo)),
+        ("NomeModeloDeFormulario", LimitesDoEnvelope.NomeModeloDeFormulario, typeof(FormularioProcesso), nameof(FormularioProcesso.ModeloOrigemNome)),
         ("CodigoTermoExigido", LimitesDoEnvelope.CodigoTermoExigido, typeof(TermoExigidoFormulario), nameof(TermoExigidoFormulario.Codigo)),
         ("CodigoDoTermoNoCatalogo", LimitesDoEnvelope.CodigoDoTermoNoCatalogo, typeof(TermoExigidoFormulario), nameof(TermoExigidoFormulario.TermoCodigo)),
         ("NomeDoTermo", LimitesDoEnvelope.NomeDoTermo, typeof(TermoExigidoFormulario), nameof(TermoExigidoFormulario.Nome)),

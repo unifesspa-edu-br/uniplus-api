@@ -80,6 +80,6 @@ internal static class CongelamentoDosTiposDeAto
                 $"Não há versão vigente do tipo de ato '{codigo}', declarado no cronograma, e a publicação congela a classificação de cada tipo declarado."));
         }
         return Result<TipoDeAtoCongelado>.Success(new TipoDeAtoCongelado(
-            codigo, tipos.EhUnico(codigo), classificacao.EhResultado, classificacao.CongelaConfiguracao));
+            codigo, tipos.NomeDe(codigo), tipos.EhUnico(codigo), classificacao.EhResultado, classificacao.CongelaConfiguracao));
     }
 }

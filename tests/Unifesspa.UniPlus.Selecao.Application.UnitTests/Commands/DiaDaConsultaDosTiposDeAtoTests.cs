@@ -75,9 +75,9 @@ public sealed class DiaDaConsultaDosTiposDeAtoTests
         public Guid AtoDaLinhagem { get; } = Guid.CreateVersion7();
 
         private static FaseCronograma FaseDeClassificacaoComResultado() => FaseCronograma.Criar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("fase").Value!,
-            new OrigemCanonicaDaFase(
+            OrigensCanonicasDeTeste.ComNome(new OrigemCanonicaDaFase(
                 Guid.CreateVersion7(), "CLASSIFICACAO", OrigemDataFase.NaExecucao, AgrupaEtapas: false, PermiteComplementacao: false,
-                ColetaInscricao: false, ColetaSolicitacaoIsencao: false),
+                ColetaInscricao: false, ColetaSolicitacaoIsencao: false)),
             new DecisoesDeCronogramaDaFase(1, Inicio: null, Fim: null, UnidadeResponsavel: UnidadesDeTeste.Ceps),
             new PublicacoesDaFase(
                 Produtos: [ProdutoDaFase.Criar("RESULTADO_X", PapelProdutoFase.Definitivo)], EmiteParecerIndividual: false,

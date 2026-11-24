@@ -132,7 +132,7 @@ internal sealed class ProcessoComListasReordenaveis
             preliminar.Id).Value!;
 
         return FaseCronograma.Criar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("fase_classificacao").Value!,
-            new OrigemCanonicaDaFase(_origemDaFaseComRecurso, CodigoDaFaseComRecurso, OrigemDataFase.NoEdital, AgrupaEtapas: false, PermiteComplementacao: false, ColetaInscricao: false, ColetaSolicitacaoIsencao: false),
+            OrigensCanonicasDeTeste.ComNome(new OrigemCanonicaDaFase(_origemDaFaseComRecurso, CodigoDaFaseComRecurso, OrigemDataFase.NoEdital, AgrupaEtapas: false, PermiteComplementacao: false, ColetaInscricao: false, ColetaSolicitacaoIsencao: false)),
             new DecisoesDeCronogramaDaFase(ordem, new DateTimeOffset(2026, 2, 1, 0, 0, 0, TimeSpan.Zero), new DateTimeOffset(2026, 2, 10, 0, 0, 0, TimeSpan.Zero), UnidadeResponsavel: UnidadesDeTeste.Ceps),
             new PublicacoesDaFase([preliminar, definitivo], EmiteParecerIndividual: false, recurso),
             bancasRequeridas: []).Value!;

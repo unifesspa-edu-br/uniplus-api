@@ -16,7 +16,7 @@ public sealed class ReconciliacaoDasBancasTests
     private static BancaRequerida BancaDaFase(TipoDeBanca tipo, Guid? substitui = null, params string[] categorias) =>
         BancaRequerida.Criar(ChaveLocal.Criar("banca").Value,
             TiposDeBancaCopiadosDeTeste.De(tipo),
-            [.. categorias.Select(static c => CategoriaJulgada.Criar(Guid.CreateVersion7(), c))],
+            [.. categorias.Select(static c => CategoriaJulgada.Criar(Guid.CreateVersion7(), c, c))],
             idDaBancaQueSubstitui: substitui);
 
     private static List<BancaDaEtapa> Gravadas(params BancaDaEtapa[] bancas)
@@ -143,7 +143,7 @@ public sealed class ReconciliacaoDasBancasTests
     private static BancaRequerida DeclaradaComRendaEPpi(Guid idDaGravada, Guid origemDaRenda) =>
         BancaRequerida.Criar(ChaveLocal.Criar("banca").Value,
             TiposDeBancaCopiadosDeTeste.De(TipoDeBanca.AnaliseDocumental),
-            [CategoriaJulgada.Criar(origemDaRenda, "RENDA"), CategoriaJulgada.Criar(Guid.CreateVersion7(), "PPI")],
+            [CategoriaJulgada.Criar(origemDaRenda, "RENDA", "Renda atualizada"), CategoriaJulgada.Criar(Guid.CreateVersion7(), "PPI", "PPI")],
             idDaBancaQueSubstitui: idDaGravada);
 
     [Fact(DisplayName = "Na fase, a banca mantida continua com a linha da categoria de mesmo código e troca só o que mudou")]
@@ -161,6 +161,7 @@ public sealed class ReconciliacaoDasBancasTests
         gravada.CandidatosAtendidos.Select(static c => c.Codigo).Should().Equal("RENDA", "PPI");
         gravada.CandidatosAtendidos.First().Should().BeSameAs(renda);
         renda.CategoriaDocumentoOrigemId.Should().Be(novaOrigemDaRenda);
+        renda.Nome.Should().Be("Renda atualizada");
         gravada.CandidatosAtendidos.Should().OnlyContain(c => c.BancaRequeridaId == gravada.Id);
     }
 

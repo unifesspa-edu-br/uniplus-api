@@ -102,7 +102,7 @@ internal sealed class CenarioDeRetificacaoPublicada
     /// </summary>
     public void ComResultadoCongeladoComoComumEUnicoNoCatalogo()
     {
-        _tiposCongelados[FasesDoCronogramaDeTeste.AtoDaClassificacao] = new TipoDeAtoCongelado(FasesDoCronogramaDeTeste.AtoDaClassificacao, UnicoPorObjeto: false, EhResultado: true, CongelaConfiguracao: false);
+        _tiposCongelados[FasesDoCronogramaDeTeste.AtoDaClassificacao] = new TipoDeAtoCongelado(FasesDoCronogramaDeTeste.AtoDaClassificacao, Nome: "Nome do ato", UnicoPorObjeto: false, EhResultado: true, CongelaConfiguracao: false);
         _handlers.TiposDeAto.ListarVigentesAsync(Arg.Any<IReadOnlyCollection<string>>(), Arg.Any<DateOnly>(), Arg.Any<CancellationToken>())
             .Returns([new TipoAtoPublicadoView(FasesDoCronogramaDeTeste.AtoDaClassificacao, "Resultado", CongelaConfiguracao: true, UnicoPorObjeto: true, EfeitoIrreversivel: false, EhResultado: true)]);
     }
@@ -126,8 +126,8 @@ internal sealed class CenarioDeRetificacaoPublicada
 
     private static FaseCronograma FaseDaProvaComPreliminarEDefinitivo(ProdutoDaFase preliminar) =>
         FaseCronograma.Criar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("fase").Value!,
-            new OrigemCanonicaDaFase(
-                Guid.CreateVersion7(), "PROVA", OrigemDataFase.NoEdital, AgrupaEtapas: false, PermiteComplementacao: false, ColetaInscricao: false, ColetaSolicitacaoIsencao: false),
+            OrigensCanonicasDeTeste.ComNome(new OrigemCanonicaDaFase(
+                Guid.CreateVersion7(), "PROVA", OrigemDataFase.NoEdital, AgrupaEtapas: false, PermiteComplementacao: false, ColetaInscricao: false, ColetaSolicitacaoIsencao: false)),
             new DecisoesDeCronogramaDaFase(1, Inicio: Agora, Fim: Agora.AddDays(10), UnidadeResponsavel: UnidadesDeTeste.Ceps),
             new PublicacoesDaFase(Produtos: [preliminar, ProdutoDaFase.Criar("RESULTADO_PROVA", PapelProdutoFase.Definitivo)], EmiteParecerIndividual: false, RegraRecurso: null),
             bancasRequeridas: []).Value!;

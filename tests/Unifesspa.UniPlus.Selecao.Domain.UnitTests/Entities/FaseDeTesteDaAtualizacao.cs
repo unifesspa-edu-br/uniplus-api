@@ -31,7 +31,7 @@ internal static class FaseDeTesteDaAtualizacao
     }
 
     internal static Result<FaseCronograma> Criar(DadosDaFase dados) => FaseCronograma.Criar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("fase").Value!,
-        new OrigemCanonicaDaFase(Guid.CreateVersion7(), dados.Codigo, dados.OrigemData, AgrupaEtapas: false, PermiteComplementacao: false, dados.ColetaInscricao, dados.ColetaSolicitacaoIsencao),
+        OrigensCanonicasDeTeste.ComNome(new OrigemCanonicaDaFase(Guid.CreateVersion7(), dados.Codigo, dados.OrigemData, AgrupaEtapas: false, PermiteComplementacao: false, dados.ColetaInscricao, dados.ColetaSolicitacaoIsencao)),
         new DecisoesDeCronogramaDaFase(dados.Ordem, dados.Inicio, dados.Fim, dados.Unidade),
         new PublicacoesDaFase(dados.Produtos, dados.EmiteParecerIndividual, dados.RegraRecurso),
         dados.Bancas);
@@ -40,7 +40,7 @@ internal static class FaseDeTesteDaAtualizacao
 
     internal static FaseCronograma Reidratar(Guid id, DadosDaFase dados) => FaseCronograma.Reidratar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("fase").Value!,
         id,
-        new OrigemCanonicaDaFase(Guid.CreateVersion7(), dados.Codigo, dados.OrigemData, AgrupaEtapas: false, PermiteComplementacao: false, dados.ColetaInscricao, dados.ColetaSolicitacaoIsencao),
+        OrigensCanonicasDeTeste.ComNome(new OrigemCanonicaDaFase(Guid.CreateVersion7(), dados.Codigo, dados.OrigemData, AgrupaEtapas: false, PermiteComplementacao: false, dados.ColetaInscricao, dados.ColetaSolicitacaoIsencao)),
         new DecisoesDeCronogramaDaFase(dados.Ordem, dados.Inicio, dados.Fim, dados.Unidade),
         new PublicacoesDaFase(dados.Produtos, dados.EmiteParecerIndividual, dados.RegraRecurso),
         dados.Bancas);
@@ -56,7 +56,7 @@ internal static class FaseDeTesteDaAtualizacao
     internal static BancaRequerida Banca(TipoDeBanca tipo, params string[] categorias) =>
         BancaRequerida.Criar(ChaveLocal.Criar("banca").Value,
             TiposDeBancaCopiadosDeTeste.De(tipo),
-            [.. categorias.Select(static c => CategoriaJulgada.Criar(Guid.CreateVersion7(), c))]);
+            [.. categorias.Select(static c => CategoriaJulgada.Criar(Guid.CreateVersion7(), c, c))]);
 
     internal static BancaRequerida NoLugarDe(BancaRequerida viva) =>
         BancaQueSubstitui(viva.Id, Guid.CreateVersion7(), viva.Tipo.Codigo, [.. viva.CandidatosAtendidos.Select(static c => c.Codigo)]);
@@ -64,7 +64,7 @@ internal static class FaseDeTesteDaAtualizacao
     internal static BancaRequerida BancaQueSubstitui(Guid idDaViva, Guid origemDoTipo, TipoDeBanca tipo, params string[] categorias) =>
         BancaRequerida.Criar(ChaveLocal.Criar("banca").Value,
             TiposDeBancaCopiadosDeTeste.De(tipo, origemDoTipo),
-            [.. categorias.Select(static c => CategoriaJulgada.Criar(Guid.CreateVersion7(), c))],
+            [.. categorias.Select(static c => CategoriaJulgada.Criar(Guid.CreateVersion7(), c, c))],
             idDaBancaQueSubstitui: idDaViva);
 
     internal static ProdutoDaFase Preliminar(string ato) => ProdutoDaFase.Criar(ato, PapelProdutoFase.Preliminar);

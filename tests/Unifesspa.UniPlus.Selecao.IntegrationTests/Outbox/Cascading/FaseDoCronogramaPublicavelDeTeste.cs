@@ -15,9 +15,9 @@ internal static class FaseDoCronogramaPublicavelDeTeste
 {
     internal static FaseCronograma Criar(string codigo, int ordem, DateTimeOffset inicio, DateTimeOffset fim, bool noMesmoMomentoDaAnterior = false) =>
         FaseCronograma.Criar(FormacaoDeChaveLocal.Formar("fase", codigo, new ChavesEmUso()),
-            new OrigemCanonicaDaFase(
+            OrigensCanonicasDeTeste.ComNome(new OrigemCanonicaDaFase(
                 Guid.CreateVersion7(), codigo, OrigemDataFase.NoEdital, AgrupaEtapas: false, PermiteComplementacao: false, ColetaInscricao: false,
-                ColetaSolicitacaoIsencao: false),
+                ColetaSolicitacaoIsencao: false)),
             new DecisoesDeCronogramaDaFase(ordem, inicio, fim, UnidadeResponsavel: UnidadesDeTeste.Ceps) { NoMesmoMomentoDaAnterior = noMesmoMomentoDaAnterior },
             new PublicacoesDaFase(Produtos: [], EmiteParecerIndividual: false, RegraRecurso: null),
             bancasRequeridas: []).Value!;

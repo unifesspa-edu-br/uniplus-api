@@ -174,7 +174,7 @@ public sealed partial class IdentificadoresDasBancasNasRecusasDaPublicacaoTests
     private static FaseCronograma FaseComBancasSemRegra()
     {
         Result<FaseCronograma> fase = FaseCronograma.Criar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("fase").Value!,
-            new OrigemCanonicaDaFase(Guid.CreateVersion7(), CodigoDaFaseComBancas, OrigemDataFase.NoEdital, AgrupaEtapas: false, PermiteComplementacao: false, ColetaInscricao: false, ColetaSolicitacaoIsencao: false),
+            OrigensCanonicasDeTeste.ComNome(new OrigemCanonicaDaFase(Guid.CreateVersion7(), CodigoDaFaseComBancas, OrigemDataFase.NoEdital, AgrupaEtapas: false, PermiteComplementacao: false, ColetaInscricao: false, ColetaSolicitacaoIsencao: false)),
             new DecisoesDeCronogramaDaFase(2, new DateTimeOffset(2026, 2, 1, 0, 0, 0, TimeSpan.Zero), new DateTimeOffset(2026, 2, 10, 0, 0, 0, TimeSpan.Zero), UnidadeResponsavel: UnidadesDeTeste.Ceps),
             new PublicacoesDaFase(Produtos: [], EmiteParecerIndividual: false, RegraRecurso: null),
             bancasRequeridas: [BancaDaFase(Heteroidentificacao), BancaDaFase(AnaliseDocumental, "RENDA"), BancaDaFase(AnaliseDocumental, "PCD")]);
@@ -186,7 +186,7 @@ public sealed partial class IdentificadoresDasBancasNasRecusasDaPublicacaoTests
 
     private static BancaRequerida BancaDaFase(TipoDeBanca tipo, params string[] categorias) =>
         BancaRequerida.Criar(ChaveLocal.Criar(tipo == Heteroidentificacao ? "banca_heteroidentificacao" : categorias[0] == "RENDA" ? "banca_analise_documental" : "banca_analise_documental_2").Value,
-            TiposDeBancaCopiadosDeTeste.De(tipo), [.. categorias.Select(static codigo => CategoriaJulgada.Criar(Guid.CreateVersion7(), codigo))]);
+            TiposDeBancaCopiadosDeTeste.De(tipo), [.. categorias.Select(static codigo => CategoriaJulgada.Criar(Guid.CreateVersion7(), codigo, codigo))]);
 
     private static EtapaProcesso EtapaComBancasSemRegra()
     {

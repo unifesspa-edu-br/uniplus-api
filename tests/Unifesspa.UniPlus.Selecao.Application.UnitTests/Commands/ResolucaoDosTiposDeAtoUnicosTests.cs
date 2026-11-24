@@ -36,6 +36,7 @@ public sealed class ResolucaoDosTiposDeAtoUnicosTests
             .ParaOperacaoAsync(processo, tipoDaOperacao, [atoDaLinhagem], Hoje, SemCongelados(), CancellationToken.None);
 
         AfirmarAUnicidadeDoLote(resultado);
+        CongelamentoDosTiposDeAto.Resolver(processo, resultado).Value!["ATO_QUE_O_CATALOGO_NAO_DECLARA_UNICO"].Nome.Should().Be("Ato comum");
         await reader.Received(1).ListarVigentesAsync(Arg.Any<IReadOnlyCollection<string>>(), Hoje, Arg.Any<CancellationToken>());
         await reader.DidNotReceiveWithAnyArgs().ObterVigenteAsync(default!, default, default);
     }
@@ -65,7 +66,7 @@ public sealed class ResolucaoDosTiposDeAtoUnicosTests
 
         congelados.IsSuccess.Should().BeTrue();
         congelados.Value!.Should().HaveCount(2, "o tipo declarado duas vezes congela uma só entrada");
-        congelados.Value["RESULTADO_X"].Should().Be(new Application.Abstractions.TipoDeAtoCongelado("RESULTADO_X", UnicoPorObjeto: false, EhResultado: true, CongelaConfiguracao: false));
+        congelados.Value["RESULTADO_X"].Should().Be(new Application.Abstractions.TipoDeAtoCongelado("RESULTADO_X", Nome: "Nome do ato", UnicoPorObjeto: false, EhResultado: true, CongelaConfiguracao: false));
         congelados.Value["AVISO_UNICO"].UnicoPorObjeto.Should().BeTrue();
 
         Result<IReadOnlyDictionary<string, Application.Abstractions.TipoDeAtoCongelado>> semVersao = CongelamentoDosTiposDeAto.Resolver(
@@ -124,13 +125,14 @@ public sealed class ResolucaoDosTiposDeAtoUnicosTests
             ["AVISO_UNICO"] = new(EhResultado: false, CongelaConfiguracao: false),
         };
         return TiposDeAtoUnicosPorObjeto.ParaChecklist(
-            new Dictionary<string, string>(StringComparer.Ordinal) { ["AVISO_UNICO"] = "Aviso único" }, [], classificacoes);
+            new Dictionary<string, string>(StringComparer.Ordinal) { ["AVISO_UNICO"] = "Aviso único" }, [], classificacoes,
+            new Dictionary<string, string>(StringComparer.Ordinal) { ["RESULTADO_X"] = "Nome do ato", ["AVISO_UNICO"] = "Aviso único" });
     }
 
     private static FaseCronograma FaseDeClassificacaoQuePublica(params (string Tipo, PapelProdutoFase? Papel)[] produtos) => FaseCronograma.Criar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("fase").Value!,
-        new OrigemCanonicaDaFase(
+        OrigensCanonicasDeTeste.ComNome(new OrigemCanonicaDaFase(
             Guid.CreateVersion7(), "CLASSIFICACAO", OrigemDataFase.NaExecucao, AgrupaEtapas: false, PermiteComplementacao: false,
-            ColetaInscricao: false, ColetaSolicitacaoIsencao: false),
+            ColetaInscricao: false, ColetaSolicitacaoIsencao: false)),
         new DecisoesDeCronogramaDaFase(1, Inicio: null, Fim: null, UnidadeResponsavel: UnidadesDeTeste.Ceps),
         new PublicacoesDaFase(
             Produtos: [.. produtos.Select(static p => ProdutoDaFase.Criar(p.Tipo, p.Papel))], EmiteParecerIndividual: false,
@@ -150,7 +152,7 @@ public sealed class ResolucaoDosTiposDeAtoUnicosTests
     private static Dictionary<string, Application.Abstractions.TipoDeAtoCongelado> ResultadoXCongeladoComoComum() =>
         new(StringComparer.Ordinal)
         {
-            ["RESULTADO_X"] = new("RESULTADO_X", UnicoPorObjeto: false, EhResultado: true, CongelaConfiguracao: false),
+            ["RESULTADO_X"] = new("RESULTADO_X", Nome: "Nome do ato", UnicoPorObjeto: false, EhResultado: true, CongelaConfiguracao: false),
         };
 
     private static ITipoAtoPublicadoReader CatalogoDoLote()
@@ -212,6 +214,7 @@ public sealed class ResolucaoDosTiposDeAtoUnicosTests
         unicos.EhUnico("ATO_QUE_O_CATALOGO_DECLARA_UNICO").Should().BeTrue();
         unicos.NomeDe("ATO_QUE_O_CATALOGO_DECLARA_UNICO").Should().Be("Ato único");
         unicos.EhUnico("ATO_QUE_O_CATALOGO_NAO_DECLARA_UNICO").Should().BeFalse();
+        unicos.NomeDe("ATO_QUE_O_CATALOGO_NAO_DECLARA_UNICO").Should().Be("Ato comum");
         unicos.EhUnico("EDITAL_DA_OPERACAO").Should().BeTrue("a unicidade do ato da operação vem do tipo já conferido, sem reler o catálogo");
         unicos.VagaOcupada("EDITAL_JA_REGISTRADO").Should().BeTrue();
         unicos.EhUnico("EDITAL_JA_REGISTRADO").Should().BeTrue("o código ocupado entra na leitura em lote do catálogo, que decide a unicidade");
@@ -233,6 +236,7 @@ public sealed class ResolucaoDosTiposDeAtoUnicosTests
     {
         Result<IReadOnlyDictionary<string, Application.Abstractions.TipoDeAtoCongelado>> novos = CongelamentoDosTiposDeAto.Resolver(processo, tipos);
         novos.Value!["RESULTADO_X"].Should().Be(congelados["RESULTADO_X"], "a versão nova mantém a classificação da versão anterior");
+        novos.Value["TIPO_NOVO"].Nome.Should().Be("Tipo novo");
         novos.Value["TIPO_NOVO"].CongelaConfiguracao.Should().BeFalse("o tipo declarado pela primeira vez lê o catálogo");
     }
 }

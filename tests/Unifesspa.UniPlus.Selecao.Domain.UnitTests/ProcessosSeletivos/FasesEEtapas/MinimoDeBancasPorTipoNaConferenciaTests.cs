@@ -36,7 +36,7 @@ public sealed class MinimoDeBancasPorTipoNaConferenciaTests
     private static BancaRequerida DaFase(bool exige, TipoDeBanca tipo, params string[] categorias) =>
         BancaRequerida.Criar(ChaveLocal.Criar("banca").Value,
             TiposDeBancaCopiadosDeTeste.Com(tipo, PapelDaBanca.AvaliaOMerito, exigeDuasOuMaisBancas: exige),
-            [.. categorias.Select(static categoria => CategoriaJulgada.Criar(Guid.CreateVersion7(), categoria))],
+            [.. categorias.Select(static categoria => CategoriaJulgada.Criar(Guid.CreateVersion7(), categoria, categoria))],
             BancasDeTeste.Regra());
 
     private static BancaRequerida Heteroidentificacao(params string[] categorias) => DaFase(true, TipoDeBanca.Heteroidentificacao, categorias);

@@ -55,10 +55,11 @@ internal static class LeituraDosPrazosDeRecurso
     {
         string path = $"{pathPai}.candidatosAtendidos[{indice}]";
         JsonObject item = leitor.ItemObjeto(array, indice, $"{pathPai}.candidatosAtendidos");
-        leitor.ExigirChaves(item, path, "categoriaDocumentoOrigemId", "codigo");
+        leitor.ExigirChaves(item, path, "categoriaDocumentoOrigemId", "codigo", "nome");
         Guid id = leitor.Identificador(item, "categoriaDocumentoOrigemId", path);
         string codigo = leitor.TextoNaoVazio(item, "codigo", path, LimitesDoEnvelope.CategoriaDocumentoCodigo);
-        return leitor.Falhou ? null : CategoriaJulgada.Criar(id, codigo);
+        string nome = leitor.TextoNaoVazio(item, "nome", path, LimitesDoEnvelope.CategoriaDocumentoNome);
+        return leitor.Falhou ? null : CategoriaJulgada.Criar(id, codigo, nome);
     }
 
     /// <summary>

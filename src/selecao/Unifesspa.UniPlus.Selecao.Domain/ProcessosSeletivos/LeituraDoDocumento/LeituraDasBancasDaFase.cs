@@ -31,7 +31,7 @@ internal static class LeituraDasBancasDaFase
 
         return recusas.Length > 0
             ? new(null, recusas)
-            : new(BancaRequerida.Criar(ChaveLocal.Criar(banca.Chave).Value, tipo!, [.. categorias.Select(static categoria => CategoriaJulgada.Criar(categoria!.OrigemId, categoria.Codigo))], regra), []);
+            : new(BancaRequerida.Criar(ChaveLocal.Criar(banca.Chave).Value, tipo!, [.. categorias.Select(static categoria => CategoriaJulgada.Criar(categoria!.OrigemId, categoria.Codigo, categoria.Nome))], regra), []);
     }
 
     private static (RegraDeDeliberacao? Regra, IReadOnlyList<FieldError> Violacoes) Deliberacao(DeclaracaoDaDeliberacao? declarada)

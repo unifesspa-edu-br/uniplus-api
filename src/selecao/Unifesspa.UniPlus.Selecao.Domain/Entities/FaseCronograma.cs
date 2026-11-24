@@ -34,6 +34,8 @@ using ValueObjects;
 /// </remarks>
 public sealed class FaseCronograma : EntityBase, IParteDoProcesso, IPeriodoDaFase
 {
+    public const int TipoFaseNomeMaxLength = 200;
+
     public ChaveLocal Chave { get; private set; }
 
     public Guid ProcessoSeletivoId { get; private set; }

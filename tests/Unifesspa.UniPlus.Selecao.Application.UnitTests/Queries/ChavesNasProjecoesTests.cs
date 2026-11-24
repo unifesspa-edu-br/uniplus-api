@@ -6,6 +6,7 @@ using Unifesspa.UniPlus.Selecao.Application.Queries.ProcessosSeletivos;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
+using Unifesspa.UniPlus.Testes.Compartilhado;
 
 public sealed class ChavesNasProjecoesTests
 {
@@ -14,7 +15,7 @@ public sealed class ChavesNasProjecoesTests
     {
         FaseCronograma fase = FaseCronograma.Reidratar(
             ChaveLocal.Criar("fase_avaliacao_2").Value!, Guid.NewGuid(),
-            new OrigemCanonicaDaFase(Guid.NewGuid(), "AVALIACAO", OrigemDataFase.NoEdital, true, false, false, false),
+            OrigensCanonicasDeTeste.ComNome(new OrigemCanonicaDaFase(Guid.NewGuid(), "AVALIACAO", OrigemDataFase.NoEdital, true, false, false, false)),
             new DecisoesDeCronogramaDaFase(1, null, null, null),
             new PublicacoesDaFase([], false, null), []);
 

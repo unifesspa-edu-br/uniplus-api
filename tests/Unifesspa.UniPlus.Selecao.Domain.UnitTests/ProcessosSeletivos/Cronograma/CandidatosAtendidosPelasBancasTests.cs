@@ -26,7 +26,7 @@ public sealed class CandidatosAtendidosPelasBancasTests
     private static BancaRequerida Banca(TipoDeBanca tipo, params string[] categorias) =>
         BancaRequerida.Criar(ChaveLocal.Criar("banca").Value,
             TiposDeBancaCopiadosDeTeste.De(tipo),
-            [.. categorias.Select(static c => CategoriaJulgada.Criar(Guid.CreateVersion7(), c))]);
+            [.. categorias.Select(static c => CategoriaJulgada.Criar(Guid.CreateVersion7(), c, c))]);
 
     private static (string? Campo, string Codigo)[] Recusas(IReadOnlyList<BancaRequerida> bancas) =>
         [.. CandidatosAtendidosPelasBancas.Violacoes(bancas).Select(static v => (v.Field, v.Error.Code))];

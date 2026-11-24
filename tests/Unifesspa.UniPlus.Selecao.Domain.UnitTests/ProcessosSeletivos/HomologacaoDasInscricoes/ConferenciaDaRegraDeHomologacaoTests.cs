@@ -170,9 +170,9 @@ public sealed class ConferenciaDaRegraDeHomologacaoTests
     private static FaseDeclarada Declarar(RegraDeHomologacaoDasInscricoes regra, ProdutoDaFase[] produtos, IReadOnlySet<string> colecoesRecusadas) =>
         FaseDeclarada.Declarar(Guid.CreateVersion7(), Origem(), Decisoes(), Publicando(regra, produtos), [], colecoesRecusadas);
 
-    private static OrigemCanonicaDaFase Origem() => new(
+    private static OrigemCanonicaDaFase Origem() => OrigensCanonicasDeTeste.ComNome(new OrigemCanonicaDaFase(
         Guid.CreateVersion7(), FaseDaRegra, OrigemDataFase.NaExecucao,
-        AgrupaEtapas: false, PermiteComplementacao: false, ColetaInscricao: false, ColetaSolicitacaoIsencao: false);
+        AgrupaEtapas: false, PermiteComplementacao: false, ColetaInscricao: false, ColetaSolicitacaoIsencao: false));
 
     private static DecisoesDeCronogramaDaFase Decisoes() => new(1, null, null, UnidadesDeTeste.Ceps);
 }

@@ -24,9 +24,9 @@ public sealed class PoliticaDeOrdenacaoIdentidadeDeOrigemTests
 {
     private static FaseCronograma FaseDeAlfaFase() => FaseCronograma.Reidratar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("fase").Value!,
         id: IdFixo(1),
-        new OrigemCanonicaDaFase(
+        OrigensCanonicasDeTeste.ComNome(new OrigemCanonicaDaFase(
             OrigemId: Guid.CreateVersion7(), Codigo: "ALFA_FASE", OrigemData: OrigemDataFase.NoEdital, AgrupaEtapas: true, PermiteComplementacao: true, ColetaInscricao: true,
-            ColetaSolicitacaoIsencao: false),
+            ColetaSolicitacaoIsencao: false)),
         new DecisoesDeCronogramaDaFase(
             Ordem: 2, Inicio: new DateTimeOffset(2026, 2, 1, 0, 0, 0, TimeSpan.Zero), Fim: new DateTimeOffset(2026, 2, 28, 0, 0, 0, TimeSpan.Zero), UnidadeResponsavel: UnidadesDeTeste.Ceps),
         new PublicacoesDaFase(Produtos: [ProdutoDaFase.Criar("ALFA_FASE", PapelProdutoFase.Definitivo)], EmiteParecerIndividual: false, RegraRecurso: null),
@@ -34,9 +34,9 @@ public sealed class PoliticaDeOrdenacaoIdentidadeDeOrigemTests
 
     private static FaseCronograma FaseDeZetaFase() => FaseCronograma.Reidratar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("fase").Value!,
         id: IdFixo(2),
-        new OrigemCanonicaDaFase(
+        OrigensCanonicasDeTeste.ComNome(new OrigemCanonicaDaFase(
             OrigemId: Guid.CreateVersion7(), Codigo: "ZETA_FASE", OrigemData: OrigemDataFase.NoEdital, AgrupaEtapas: true, PermiteComplementacao: true, ColetaInscricao: true,
-            ColetaSolicitacaoIsencao: false),
+            ColetaSolicitacaoIsencao: false)),
         new DecisoesDeCronogramaDaFase(
             Ordem: 1, Inicio: new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero), Fim: new DateTimeOffset(2026, 1, 31, 0, 0, 0, TimeSpan.Zero), UnidadeResponsavel: UnidadesDeTeste.Ceps),
         new PublicacoesDaFase(Produtos: [ProdutoDaFase.Criar("ZETA_FASE", PapelProdutoFase.Definitivo)], EmiteParecerIndividual: false, RegraRecurso: null),
@@ -79,9 +79,9 @@ public sealed class PoliticaDeOrdenacaoIdentidadeDeOrigemTests
     {
         Guid tipoUnico = IdFixo(1);
         BancaRequerida bancaDaRenda = BancaRequerida.Criar(ChaveLocal.Criar("banca").Value,
-            TiposDeBancaCopiadosDeTeste.De(TipoDeBanca.AnaliseDocumental, tipoUnico), [CategoriaJulgada.Criar(IdFixo(9), "RENDA")]);
+            TiposDeBancaCopiadosDeTeste.De(TipoDeBanca.AnaliseDocumental, tipoUnico), [CategoriaJulgada.Criar(IdFixo(9), "RENDA", "RENDA")]);
         BancaRequerida bancaEtnicoRacial = BancaRequerida.Criar(ChaveLocal.Criar("banca").Value,
-            TiposDeBancaCopiadosDeTeste.De(TipoDeBanca.AnaliseDocumental, tipoUnico), [CategoriaJulgada.Criar(IdFixo(8), "ETNICO_RACIAL")]);
+            TiposDeBancaCopiadosDeTeste.De(TipoDeBanca.AnaliseDocumental, tipoUnico), [CategoriaJulgada.Criar(IdFixo(8), "ETNICO_RACIAL", "ETNICO_RACIAL")]);
 
         CandidatosAtendidosNaOrdemDasBancas(FaseComAsBancas("ANALISE", bancaDaRenda, bancaEtnicoRacial))
             .Should().Equal(["RENDA", "ETNICO_RACIAL"]);
@@ -100,8 +100,8 @@ public sealed class PoliticaDeOrdenacaoIdentidadeDeOrigemTests
         BancaRequerida banca = BancaRequerida.Criar(ChaveLocal.Criar("banca").Value,
             TiposDeBancaCopiadosDeTeste.De(TipoDeBanca.AnaliseDocumental, IdFixo(1)),
             [
-                CategoriaJulgada.Criar(IdFixo(1), "ZETA_CATEGORIA"),
-                CategoriaJulgada.Criar(IdFixo(2), "ALFA_CATEGORIA"),
+                CategoriaJulgada.Criar(IdFixo(1), "ZETA_CATEGORIA", "ZETA_CATEGORIA"),
+                CategoriaJulgada.Criar(IdFixo(2), "ALFA_CATEGORIA", "ALFA_CATEGORIA"),
             ]);
 
         JsonArray candidatosAtendidosJson = BancasRequeridasEnvelopadas(FaseComAsBancas("ANALISE", banca))[0]!["candidatosAtendidos"]!.AsArray();
@@ -110,9 +110,9 @@ public sealed class PoliticaDeOrdenacaoIdentidadeDeOrigemTests
     }
 
     private static FaseCronograma FaseComAsBancas(string codigo, params BancaRequerida[] bancas) => FaseCronograma.Criar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("fase").Value!,
-        new OrigemCanonicaDaFase(
+        OrigensCanonicasDeTeste.ComNome(new OrigemCanonicaDaFase(
             OrigemId: Guid.CreateVersion7(), Codigo: codigo, OrigemData: OrigemDataFase.NoEdital, AgrupaEtapas: true, PermiteComplementacao: true, ColetaInscricao: true,
-            ColetaSolicitacaoIsencao: false),
+            ColetaSolicitacaoIsencao: false)),
         new DecisoesDeCronogramaDaFase(
             Ordem: 1, Inicio: new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero), Fim: new DateTimeOffset(2026, 1, 31, 0, 0, 0, TimeSpan.Zero), UnidadeResponsavel: UnidadesDeTeste.Ceps),
         new PublicacoesDaFase(Produtos: [ProdutoDaFase.Criar("INSCRICAO", PapelProdutoFase.Definitivo)], EmiteParecerIndividual: false, RegraRecurso: null),

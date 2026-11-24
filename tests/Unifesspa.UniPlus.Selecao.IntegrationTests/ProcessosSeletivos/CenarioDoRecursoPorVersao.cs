@@ -161,9 +161,9 @@ internal sealed class CenarioDoRecursoPorVersao
         Guid preliminarId = Guid.CreateVersion7();
         PublicacoesDaFase publicacoes = HomologacaoDasInscricoesDeTeste.PublicacoesDaFaseQueHomologa(
             ProdutosDoResultado(preliminarId), RecursoEmDuasInstancias(preliminarId));
-        OrigemCanonicaDaFase origem = new(
+        OrigemCanonicaDaFase origem = OrigensCanonicasDeTeste.ComNome(new OrigemCanonicaDaFase(
             Guid.CreateVersion7(), "RESULTADO_FINAL", OrigemDataFase.NoEdital, AgrupaEtapas: true, PermiteComplementacao: false,
-            ColetaInscricao: true, ColetaSolicitacaoIsencao: false);
+            ColetaInscricao: true, ColetaSolicitacaoIsencao: false));
         DecisoesDeCronogramaDaFase periodo = new(
             Ordem: 1, Inicio: new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero), Fim: new DateTimeOffset(2026, 1, 31, 0, 0, 0, TimeSpan.Zero),
             UnidadeResponsavel: UnidadesDeTeste.Ceps);

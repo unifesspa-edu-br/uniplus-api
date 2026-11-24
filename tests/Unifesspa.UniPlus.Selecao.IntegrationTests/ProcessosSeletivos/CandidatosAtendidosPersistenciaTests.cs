@@ -85,7 +85,7 @@ public sealed class CandidatosAtendidosPersistenciaTests : IClassFixture<Process
         // sobre a mesma banca passariam as duas pela leitura. A constraint é a defesa que
         // não depende de ordem.
         Func<Task> inserirDuplicata = async () => await direto.Database.ExecuteSqlAsync(
-            $"INSERT INTO selecao.categorias_julgadas (id, banca_requerida_id, categoria_documento_origem_id, codigo, created_at) VALUES ({Guid.CreateVersion7()}, {bancaId}, {Guid.CreateVersion7()}, {"RENDA"}, {DateTimeOffset.UtcNow})");
+            $"INSERT INTO selecao.categorias_julgadas (id, banca_requerida_id, categoria_documento_origem_id, codigo, nome, created_at) VALUES ({Guid.CreateVersion7()}, {bancaId}, {Guid.CreateVersion7()}, {"RENDA"}, {"Renda"}, {DateTimeOffset.UtcNow})");
 
         Npgsql.PostgresException violacao = (await inserirDuplicata.Should().ThrowAsync<Npgsql.PostgresException>()).Which;
         violacao.SqlState.Should().Be("23505");
@@ -105,7 +105,7 @@ public sealed class CandidatosAtendidosPersistenciaTests : IClassFixture<Process
     private static BancaRequerida BancaComCandidatosAtendidos(Guid tipoBanca, string categoriaCodigo) =>
         BancaRequerida.Criar(FormacaoDeChaveLocal.Formar("banca", categoriaCodigo, new ChavesEmUso()),
             TiposDeBancaCopiadosDeTeste.De(TipoDeBanca.AnaliseDocumental, tipoBanca),
-            [CategoriaJulgada.Criar(Guid.CreateVersion7(), categoriaCodigo)]);
+            [CategoriaJulgada.Criar(Guid.CreateVersion7(), categoriaCodigo, categoriaCodigo)]);
 
     private async Task<Guid> GravarAsync(string nome, Guid faseCanonicaOrigemId, params BancaRequerida[] bancas)
     {
@@ -134,9 +134,9 @@ public sealed class CandidatosAtendidosPersistenciaTests : IClassFixture<Process
 
     private static FaseCronograma Fase(Guid faseCanonicaOrigemId, IReadOnlyList<BancaRequerida> bancas) =>
         FaseCronograma.Criar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("fase").Value!,
-            new OrigemCanonicaDaFase(
+            OrigensCanonicasDeTeste.ComNome(new OrigemCanonicaDaFase(
                 OrigemId: faseCanonicaOrigemId, Codigo: "ANALISE_DOCUMENTAL", OrigemData: OrigemDataFase.NaExecucao, AgrupaEtapas: false, PermiteComplementacao: false, ColetaInscricao: false,
-                ColetaSolicitacaoIsencao: false),
+                ColetaSolicitacaoIsencao: false)),
             new DecisoesDeCronogramaDaFase(Ordem: 1, Inicio: null, Fim: null, UnidadeResponsavel: UnidadesDeTeste.Ceps),
             new PublicacoesDaFase(Produtos: [], EmiteParecerIndividual: false, RegraRecurso: null),
             bancasRequeridas: bancas).Value!;

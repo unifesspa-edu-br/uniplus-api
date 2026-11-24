@@ -22,6 +22,7 @@ internal static class TiposDeAtoCongeladosDeTeste
                 static g => g.Key,
                 static g => new TipoDeAtoCongelado(
                     g.Key,
+                    Nome: $"Nome de {g.Key}",
                     UnicoPorObjeto: g.Count() == 1 && g.All(static d => d.Papel is null),
                     EhResultado: g.Any(static d => d.Papel is not null),
                     CongelaConfiguracao: false),

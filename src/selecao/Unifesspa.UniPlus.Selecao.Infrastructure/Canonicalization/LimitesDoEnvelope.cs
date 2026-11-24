@@ -97,12 +97,18 @@ public static class LimitesDoEnvelope
     /// </summary>
     public const int FaseCodigo = 60;
 
+    /// <summary><c>FaseCronograma.TipoFaseNome</c>.</summary>
+    public const int TipoFaseNome = FaseCronograma.TipoFaseNomeMaxLength;
+
     /// <summary>
     /// Código de tipo de ato de Publicações — <c>ProdutoDaFase.AtoCodigo</c> e, um nível
     /// abaixo, <c>ProdutoDaEtapa.AtoCodigo</c>: a etapa publica por conta própria, na mesma
     /// coluna de 60.
     /// </summary>
     public const int TipoAtoCodigo = 60;
+
+    /// <summary>Nome do tipo de ato no catálogo de Publicações.</summary>
+    public const int TipoAtoNome = 200;
 
     /// <summary>
     /// <c>BancaRequerida.Codigo</c> — cópia do código classificatório de
@@ -125,6 +131,9 @@ public static class LimitesDoEnvelope
 
     /// <summary><c>CategoriaJulgada.Codigo</c> — cópia do código classificatório de <c>CategoriaDocumento</c>.</summary>
     public const int CategoriaDocumentoCodigo = 50;
+
+    /// <summary>Nome da categoria de documento julgada.</summary>
+    public const int CategoriaDocumentoNome = 200;
 
     // Exigências.
     /// <summary><c>DocumentoExigido.TipoDocumentoCodigo</c> — cópia do código classificatório de <c>TipoDocumento</c>.</summary>
@@ -229,6 +238,9 @@ public static class LimitesDoEnvelope
 
     /// <summary><c>FormularioProcesso.ModeloOrigemCodigo</c>.</summary>
     public const int CodigoModeloDeFormulario = Domain.Entities.FormularioProcesso.ModeloOrigemCodigoMaxLength;
+
+    /// <summary><c>FormularioProcesso.ModeloOrigemNome</c>.</summary>
+    public const int NomeModeloDeFormulario = Domain.Entities.FormularioProcesso.ModeloOrigemNomeMaxLength;
 
     // UNI-REQ-0086 — termos exigidos pelo formulário, copiados da versão do catálogo.
     /// <summary><c>TermoExigidoFormulario.Codigo</c>.</summary>

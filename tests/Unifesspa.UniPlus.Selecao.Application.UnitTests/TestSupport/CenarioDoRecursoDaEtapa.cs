@@ -102,7 +102,7 @@ internal sealed class CenarioDoRecursoDaEtapa
     internal void Publicar(CenarioDoRecursoDaEtapa? origemDoGrafo = null) =>
         VersaoPublicadaDeTeste.Publicar(
             Processo, (origemDoGrafo ?? this).Processo, Repositorio, Codecs,
-            new TipoDeAtoCongelado(TipoDoAto, UnicoPorObjeto: false, EhResultado: true, CongelaConfiguracao: false));
+            new TipoDeAtoCongelado(TipoDoAto, Nome: "Nome do ato", UnicoPorObjeto: false, EhResultado: true, CongelaConfiguracao: false));
 
     /// <summary>Dá à única etapa do processo a identidade de outra, como a etapa viva que a gravação seguinte edita no lugar.</summary>
     internal void IdentificarEtapaComo(Guid id)

@@ -11,6 +11,7 @@ using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Selecao.Application.Services.DocumentoDaConfiguracao;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
+using Unifesspa.UniPlus.Testes.Compartilhado;
 
 /// <summary>Os cadastros de Configuração que o documento cita são lidos em lote, uma chamada por cadastro e cada código uma vez, e o código que o cadastro não tem fica fora.</summary>
 public sealed class LeituraDosCadastrosDaConfiguracaoCitadosTests
@@ -105,9 +106,9 @@ public sealed class LeituraDosCadastrosDaConfiguracaoCitadosTests
 
         Result<CadastrosDaConfiguracaoCitados> lidos = await _leitura.LerAsync(SemCodigos with { FasesCanonicas = ["EXECUCAO"] }, CancellationToken.None);
 
-        lidos.Value!.FasesCanonicas["EXECUCAO"].Should().Be(new Domain.ValueObjects.OrigemCanonicaDaFase(
+        lidos.Value!.FasesCanonicas["EXECUCAO"].Should().Be(OrigensCanonicasDeTeste.ComNome(new Domain.ValueObjects.OrigemCanonicaDaFase(
             fase.Id, "EXECUCAO", OrigemDataFase.NaExecucao, false, true, true, false)
-        { Nome = fase.Nome });
+        { Nome = fase.Nome }));
     }
 
     [Fact(DisplayName = "O tipo de processo ativo congela o id, o código e o nome")]

@@ -16,6 +16,7 @@ namespace Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 public sealed class TiposDeAtoUnicosPorObjeto
 {
     private readonly Dictionary<string, string> _nomePorCodigo;
+    private readonly Dictionary<string, string> _nomes;
     private readonly HashSet<string> _ocupados;
     private readonly Dictionary<string, ClassificacaoDoTipoDeAto> _classificacoes;
     private readonly string? _nomeDoAtoDaOperacao;
@@ -26,11 +27,13 @@ public sealed class TiposDeAtoUnicosPorObjeto
         string? atoDaOperacaoCodigo,
         IReadOnlyDictionary<string, ClassificacaoDoTipoDeAto>? classificacoes,
         bool atoDaOperacaoEhUnico = false,
-        string? nomeDoAtoDaOperacao = null)
+        string? nomeDoAtoDaOperacao = null,
+        IReadOnlyDictionary<string, string>? nomes = null)
     {
         ArgumentNullException.ThrowIfNull(nomePorCodigo);
         ArgumentNullException.ThrowIfNull(ocupados);
         _nomePorCodigo = new Dictionary<string, string>(nomePorCodigo, StringComparer.Ordinal);
+        _nomes = new Dictionary<string, string>(nomes ?? nomePorCodigo, StringComparer.Ordinal);
         _classificacoes = new Dictionary<string, ClassificacaoDoTipoDeAto>(
             classificacoes ?? new Dictionary<string, ClassificacaoDoTipoDeAto>(), StringComparer.Ordinal);
         _ocupados = new HashSet<string>(ocupados, StringComparer.Ordinal);
@@ -50,10 +53,11 @@ public sealed class TiposDeAtoUnicosPorObjeto
         string atoDaOperacaoCodigo,
         IReadOnlyDictionary<string, ClassificacaoDoTipoDeAto>? classificacoes = null,
         bool atoDaOperacaoEhUnico = false,
-        string? nomeDoAtoDaOperacao = null)
+        string? nomeDoAtoDaOperacao = null,
+        IReadOnlyDictionary<string, string>? nomes = null)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(atoDaOperacaoCodigo);
-        return new(nomePorCodigo, ocupados, atoDaOperacaoCodigo, classificacoes, atoDaOperacaoEhUnico, nomeDoAtoDaOperacao);
+        return new(nomePorCodigo, ocupados, atoDaOperacaoCodigo, classificacoes, atoDaOperacaoEhUnico, nomeDoAtoDaOperacao, nomes);
     }
 
     /// <summary>
@@ -64,8 +68,9 @@ public sealed class TiposDeAtoUnicosPorObjeto
     public static TiposDeAtoUnicosPorObjeto ParaChecklist(
         IReadOnlyDictionary<string, string> nomePorCodigo,
         IReadOnlyCollection<string> ocupados,
-        IReadOnlyDictionary<string, ClassificacaoDoTipoDeAto>? classificacoes = null) =>
-        new(nomePorCodigo, ocupados, null, classificacoes);
+        IReadOnlyDictionary<string, ClassificacaoDoTipoDeAto>? classificacoes = null,
+        IReadOnlyDictionary<string, string>? nomes = null) =>
+        new(nomePorCodigo, ocupados, null, classificacoes, nomes: nomes);
 
     /// <summary>O tipo do ato da publicação ou da retificação em curso, ou nulo no checklist.</summary>
     public string? AtoDaOperacaoCodigo { get; }
@@ -92,9 +97,9 @@ public sealed class TiposDeAtoUnicosPorObjeto
     public ClassificacaoDoTipoDeAto? ClassificacaoDe(string codigo) =>
         _classificacoes.GetValueOrDefault(codigo);
 
-    /// <summary>O nome do tipo único no catálogo, ou o próprio código quando o tipo não é único.</summary>
+    /// <summary>O nome do tipo no catálogo, ou o código quando não foi informado.</summary>
     public string NomeDe(string codigo) =>
-        _nomePorCodigo.GetValueOrDefault(
+        _nomes.GetValueOrDefault(
             codigo,
             string.Equals(codigo, AtoDaOperacaoCodigo, StringComparison.Ordinal) ? _nomeDoAtoDaOperacao ?? codigo : codigo);
 }

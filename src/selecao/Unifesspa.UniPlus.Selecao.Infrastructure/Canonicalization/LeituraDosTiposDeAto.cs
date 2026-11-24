@@ -29,24 +29,21 @@ internal static class LeituraDosTiposDeAto
             return tipos;
         }
 
-        JsonArray array = leitor.Array(payload, "tiposDeAto", "$");
-        for (int i = 0; !leitor.Falhou && i < array.Count; i++)
-        {
-            TipoDeAtoCongelado? tipo = LerTipoDeAto(leitor, leitor.ItemObjeto(array, i, "tiposDeAto"), $"tiposDeAto[{i}]");
-            if (tipo is null)
-            {
-                break;
-            }
-
-            if (!tipos.TryAdd(tipo.Codigo, tipo))
-            {
-                leitor.Recusar<object>($"Envelope malformado em 'tiposDeAto': o tipo '{tipo.Codigo}' aparece mais de uma vez.");
-                return tipos;
-            }
-        }
-
+        LerLista(leitor, leitor.Array(payload, "tiposDeAto", "$"), tipos);
         ConferirClassificacaoDosAtos(leitor, cronogramaFases, etapas, tipos);
         return tipos;
+    }
+
+    private static void LerLista(LeitorEnvelope leitor, JsonArray array, Dictionary<string, TipoDeAtoCongelado> tipos)
+    {
+        for (int indice = 0; !leitor.Falhou && indice < array.Count; indice++)
+        {
+            TipoDeAtoCongelado? tipo = LerTipoDeAto(leitor, leitor.ItemObjeto(array, indice, "tiposDeAto"), $"tiposDeAto[{indice}]");
+            if (tipo is not null && !tipos.TryAdd(tipo.Codigo, tipo))
+            {
+                leitor.Recusar<object>($"Envelope malformado em 'tiposDeAto': o tipo '{tipo.Codigo}' aparece mais de uma vez.");
+            }
+        }
     }
 
     private static void ConferirClassificacaoDosAtos(
@@ -64,12 +61,13 @@ internal static class LeituraDosTiposDeAto
 
     private static TipoDeAtoCongelado? LerTipoDeAto(LeitorEnvelope leitor, JsonObject item, string path)
     {
-        leitor.ExigirChaves(item, path, "codigo", "unicoPorObjeto", "ehResultado", "congelaConfiguracao");
+        leitor.ExigirChaves(item, path, "codigo", "nome", "unicoPorObjeto", "ehResultado", "congelaConfiguracao");
         string codigo = leitor.TextoNaoVazio(item, "codigo", path, LimitesDoEnvelope.TipoAtoCodigo);
+        string nome = leitor.TextoNaoVazio(item, "nome", path, LimitesDoEnvelope.TipoAtoNome);
         bool unicoPorObjeto = leitor.Booleano(item, "unicoPorObjeto", path);
         bool ehResultado = leitor.Booleano(item, "ehResultado", path);
         bool congelaConfiguracao = leitor.Booleano(item, "congelaConfiguracao", path);
-        return leitor.Falhou ? null : new TipoDeAtoCongelado(codigo, unicoPorObjeto, ehResultado, congelaConfiguracao);
+        return leitor.Falhou ? null : new TipoDeAtoCongelado(codigo, nome, unicoPorObjeto, ehResultado, congelaConfiguracao);
     }
 
     private static string? AtoDeclaradoSemClassificacao(

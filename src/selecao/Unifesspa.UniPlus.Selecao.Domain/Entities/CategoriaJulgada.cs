@@ -31,26 +31,28 @@ public sealed class CategoriaJulgada : EntityBase
     /// <summary>Código classificatório congelado (ex.: <c>"RENDA"</c>).</summary>
     public string Codigo { get; private set; } = string.Empty;
 
+    public string Nome { get; private set; } = string.Empty;
+
     private CategoriaJulgada() { }
 
     /// <summary>
     /// Cria a categoria julgada. Que a categoria exista e siga viva no cadastro é I/O —
     /// resolvido em Application (ADR-0042), onde a view do cadastro está em mãos.
     /// </summary>
-    public static CategoriaJulgada Criar(Guid categoriaDocumentoOrigemId, string codigo)
+    public static CategoriaJulgada Criar(Guid categoriaDocumentoOrigemId, string codigo, string nome)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(codigo);
+        ArgumentException.ThrowIfNullOrWhiteSpace(nome);
         if (categoriaDocumentoOrigemId == Guid.Empty)
         {
-            throw new ArgumentException(
-                "O id de origem da categoria de documento é obrigatório.",
-                nameof(categoriaDocumentoOrigemId));
+            throw new ArgumentException("O id de origem da categoria de documento é obrigatório.", nameof(categoriaDocumentoOrigemId));
         }
 
         return new CategoriaJulgada
         {
             CategoriaDocumentoOrigemId = categoriaDocumentoOrigemId,
             Codigo = codigo.Trim(),
+            Nome = nome.Trim(),
         };
     }
 
@@ -61,5 +63,6 @@ public sealed class CategoriaJulgada : EntityBase
         ArgumentNullException.ThrowIfNull(declarada);
 
         CategoriaDocumentoOrigemId = declarada.CategoriaDocumentoOrigemId;
+        Nome = declarada.Nome;
     }
 }

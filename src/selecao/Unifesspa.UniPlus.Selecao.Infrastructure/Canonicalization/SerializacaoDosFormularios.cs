@@ -45,6 +45,7 @@ internal static class SerializacaoDosFormularios
         {
             ["id"] = JsonValue.Create(modelo),
             ["codigo"] = formulario.ModeloOrigemCodigo is { } codigo ? HashCanonicalComputer.NormalizeNfc(codigo) : null,
+            ["nome"] = formulario.ModeloOrigemNome is { } nome ? HashCanonicalComputer.NormalizeNfc(nome) : null,
         } : null;
 
     private static JsonNode SerializarEtapa(EtapaFormulario etapa) => new JsonObject

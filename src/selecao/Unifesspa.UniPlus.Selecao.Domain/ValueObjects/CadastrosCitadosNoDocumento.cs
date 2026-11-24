@@ -112,7 +112,7 @@ public sealed record UnidadeCitada(Guid OrigemId, UnidadeAdministradoraSnapshot 
 }
 
 /// <summary>A categoria de documento que o documento cita nos candidatos atendidos por uma banca.</summary>
-public sealed record CategoriaDeDocumentoCitada(Guid OrigemId, string Codigo);
+public sealed record CategoriaDeDocumentoCitada(Guid OrigemId, string Codigo, string Nome);
 
 /// <summary>A regra do catálogo que o documento cita: o tipo dela e a referência que o processo congela.</summary>
 public sealed record RegraDoCatalogoCitada(TipoRegra Tipo, ReferenciaRegra Referencia);
