@@ -239,6 +239,7 @@ public sealed class FatoCandidatoSementeDosEixosTests
             ("IDENTIDADE_GENERO", "058", TipoDoDado.Opcao, OrigemFato.Declarado, QuantidadeDeValores.ValorUnico, "CAMPO_FORMULARIO:IDENTIDADE_GENERO", "INSCRICAO"),
             ("ORIENTACAO_SEXUAL", "059", TipoDoDado.Opcao, OrigemFato.Declarado, QuantidadeDeValores.ValorUnico, "CAMPO_FORMULARIO:ORIENTACAO_SEXUAL", "INSCRICAO"),
             ("MODALIDADE_SEGUNDA_OPCAO", "060", TipoDoDado.Opcao, OrigemFato.Calculado, QuantidadeDeValores.VariosValores, "ATRIBUTO_CANDIDATO:MODALIDADE_SEGUNDA_OPCAO", "INSCRICAO"),
+            ("CIDADE_DE_PROVA", "061", TipoDoDado.Opcao, OrigemFato.Declarado, QuantidadeDeValores.ValorUnico, "CAMPO_FORMULARIO:CIDADE_DE_PROVA", "INSCRICAO"),
         ];
 
         await using UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null);
