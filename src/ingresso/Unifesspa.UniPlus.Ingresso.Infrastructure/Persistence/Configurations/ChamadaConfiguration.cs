@@ -13,6 +13,7 @@ using Unifesspa.UniPlus.Kernel.Domain.Enums;
 public sealed class ChamadaConfiguration : IEntityTypeConfiguration<Chamada>
 {
     private const int CodigoDeContratoMaxLength = 30;
+    private const string IndiceEditalNumero = "ux_chamadas_edital_id_numero";
 
     public void Configure(EntityTypeBuilder<Chamada> builder)
     {
@@ -35,6 +36,6 @@ public sealed class ChamadaConfiguration : IEntityTypeConfiguration<Chamada>
 
         builder.HasMany(c => c.Convocacoes).WithOne().HasForeignKey(cv => cv.ChamadaId);
 
-        builder.HasIndex(c => new { c.EditalId, c.Numero }).IsUnique();
+        builder.HasIndex(c => new { c.EditalId, c.Numero }).IsUnique().HasDatabaseName(IndiceEditalNumero);
     }
 }

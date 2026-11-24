@@ -13,6 +13,7 @@ using Unifesspa.UniPlus.Kernel.Domain.Enums;
 public sealed class ConvocacaoConfiguration : IEntityTypeConfiguration<Convocacao>
 {
     private const int CodigoDeContratoMaxLength = 30;
+    private const string IndiceProtocolo = "ux_convocacoes_protocolo";
 
     public void Configure(EntityTypeBuilder<Convocacao> builder)
     {
@@ -29,7 +30,7 @@ public sealed class ConvocacaoConfiguration : IEntityTypeConfiguration<Convocaca
         {
             pb.ClassificaPorPadrao(ClassificacaoDeProtecao.Pessoal);
             pb.Property(p => p.Valor).HasColumnName("protocolo").HasMaxLength(50).IsRequired();
-            pb.HasIndex(p => p.Valor).IsUnique();
+            pb.HasIndex(p => p.Valor).IsUnique().HasDatabaseName(IndiceProtocolo);
         });
 
         builder.Property(c => c.Status)
