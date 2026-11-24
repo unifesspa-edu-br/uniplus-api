@@ -2,8 +2,6 @@ namespace Unifesspa.UniPlus.Selecao.Application.UnitTests.Commands;
 
 using AwesomeAssertions;
 
-using Microsoft.Extensions.Options;
-
 using NSubstitute;
 
 using Unifesspa.UniPlus.Kernel.Results;
@@ -70,16 +68,18 @@ public sealed class ConferenciaDosMunicipiosNoGeoTests
     }
 
     [Fact]
-    public async Task ConferirAsync_AcimaDoLimite_NaoConsultaGeo()
+    public async Task ConferirAsync_AcimaDoLimite_ConsultaGeoEAcumulaARecusaDoLimite()
     {
+        DomainError erro = new(ConferenciaEnderecoGeoErrorCodes.MunicipioNaoEncontrado, "Município não encontrado");
+        _geo.ConferirMunicipioAsync("1504208", "PA", Arg.Any<CancellationToken>()).Returns(Result<string>.Failure(erro));
+        _geo.ConferirMunicipioAsync("1508159", "PA", Arg.Any<CancellationToken>()).Returns(Result<string>.Success("Xinguara"));
         DeclaracaoDaProvaPresencial declaracao = Declaracao(true, "1504208", "1508159");
-        Result<MunicipiosConferidosNoGeo> resultado = await Criar(1).ConferirAsync(declaracao, CancellationToken.None);
-        ConferenciaDaProvaPresencial.Conferir(declaracao, resultado.Value!, 1).Should().ContainSingle()
-            .Which.Error.Code.Should().Be(ProvaPresencialErrorCodes.MunicipiosAcimaDoLimite);
-        await _geo.DidNotReceiveWithAnyArgs().ConferirMunicipioAsync(default!, default!, default);
+        Result<MunicipiosConferidosNoGeo> resultado = await Criar().ConferirAsync(declaracao, CancellationToken.None);
+        ConferenciaDaProvaPresencial.Conferir(declaracao, resultado.Value!, 1).Select(static recusa => recusa.Error.Code)
+            .Should().Equal(ProvaPresencialErrorCodes.MunicipioNaoConferidoNoGeo, ProvaPresencialErrorCodes.MunicipiosAcimaDoLimite);
     }
 
-    private ConferenciaDosMunicipiosNoGeo Criar(int limite = 100) => new(_geo, Options.Create(new ProvaPresencialOptions { LimiteDeMunicipios = limite }));
+    private ConferenciaDosMunicipiosNoGeo Criar() => new(_geo);
 
     private static DeclaracaoDaProvaPresencial Declaracao(bool temProva, params string[] codigos) =>
         DeclaracaoDaProvaPresencial.Declarar(temProva, [.. codigos.Select(codigo => new MunicipioDeProvaInformado(codigo, "PA"))], 100).Value!;

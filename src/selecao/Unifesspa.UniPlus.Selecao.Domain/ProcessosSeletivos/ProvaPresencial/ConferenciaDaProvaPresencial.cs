@@ -30,13 +30,14 @@ public static class ConferenciaDaProvaPresencial
     private static List<FieldError> ConferirMunicipios(
         IReadOnlyList<MunicipioDeProva> municipios, MunicipiosConferidosNoGeo conferidos, int limiteDeMunicipios)
     {
+        List<FieldError> recusas = RecusasDoGeo(municipios, conferidos);
         if (municipios.Count > limiteDeMunicipios)
         {
-            return [Recusa(CampoDosMunicipios, ProvaPresencialErrorCodes.MunicipiosAcimaDoLimite,
-                "O processo declara mais municípios de prova do que o limite admite.")];
+            recusas.Add(Recusa(CampoDosMunicipios, ProvaPresencialErrorCodes.MunicipiosAcimaDoLimite,
+                "O processo declara mais municípios de prova do que o limite admite."));
         }
 
-        return RecusasDoGeo(municipios, conferidos);
+        return recusas;
     }
 
     private static List<FieldError> RecusasDoGeo(IReadOnlyList<MunicipioDeProva> municipios, MunicipiosConferidosNoGeo conferidos)

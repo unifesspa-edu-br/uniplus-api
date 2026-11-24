@@ -76,19 +76,22 @@ public sealed class GeoNoCongelamentoEPainelTests
     }
 
     [Fact]
-    public async Task PainelEPublicacao_LimiteReduzido_RecusamSemConsultarGeo()
+    public async Task PainelEPublicacao_LimiteReduzidoComMunicipioNaoConferido_AcumulamAsRecusas()
     {
         ProcessoSeletivo processo = ProcessoComMunicipio();
         ServicosDoCongelamentoDeTeste servicos = ServicosDoCongelamentoDeTeste.Para(processo);
         processo.DefinirProvaPresencial(true, [new("1504208", "PA"), new("1508159", "PA")], 100).IsSuccess.Should().BeTrue();
         servicos.LimiteDeMunicipios = 1;
+        servicos.Geo.ConferirMunicipioAsync("1504208", "PA", Arg.Any<CancellationToken>())
+            .Returns(Result<string>.Failure(new DomainError(ConferenciaEnderecoGeoErrorCodes.MunicipioNaoEncontrado, "Município não encontrado")));
+        servicos.Geo.ConferirMunicipioAsync("1508159", "PA", Arg.Any<CancellationToken>()).Returns(Result<string>.Success("Xinguara"));
         servicos.Repositorio.ObterComConfiguracaoAsync(processo.Id, Arg.Any<CancellationToken>()).Returns(processo);
         ConformidadeProcessoSeletivoDto? painel = await servicos.ConformidadeAsync(new ObterConformidadeProcessoSeletivoQuery(processo.Id));
         (Result resposta, IEnumerable<object> eventos) = await servicos.PublicarAsync(processo.Id);
         painel!.Itens.Should().ContainSingle(item => item.Codigo == "prova_presencial").Which.Ok.Should().BeFalse();
-        resposta.Errors.Should().Contain(erro => erro.Error.Code == ProvaPresencialErrorCodes.MunicipiosAcimaDoLimite);
+        resposta.Errors.Select(erro => erro.Error.Code).Should().Contain(
+            [ProvaPresencialErrorCodes.MunicipioNaoConferidoNoGeo, ProvaPresencialErrorCodes.MunicipiosAcimaDoLimite]);
         eventos.Should().BeEmpty();
-        await servicos.Geo.DidNotReceiveWithAnyArgs().ConferirMunicipioAsync(default!, default!, default);
     }
 
     private static ProcessoSeletivo ProcessoComMunicipio()

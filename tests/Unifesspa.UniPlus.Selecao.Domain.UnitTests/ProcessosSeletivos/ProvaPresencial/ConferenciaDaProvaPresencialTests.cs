@@ -103,8 +103,22 @@ public sealed class ConferenciaDaProvaPresencialTests
         DeclaracaoDaProvaPresencial declaracao = ComProva(Marabá, Xinguara);
         MunicipiosConferidosNoGeo conferidos = Conjunto((Marabá, "Marabá"), (Xinguara, "Xinguara"));
         ConferenciaDaProvaPresencial.Conferir(declaracao, conferidos, 2).Should().BeEmpty();
-        ConferenciaDaProvaPresencial.Conferir(declaracao, MunicipiosConferidosNoGeo.Nenhum, 1)
+        ConferenciaDaProvaPresencial.Conferir(declaracao, conferidos, 1)
             .Should().ContainSingle().Which.Error.Code.Should().Be(ProvaPresencialErrorCodes.MunicipiosAcimaDoLimite);
+    }
+
+    [Fact]
+    public void Conferir_AcimaDoLimiteComMunicipioNaoConferido_AcumulaARecusaDoMunicipioEADoLimite()
+    {
+        DeclaracaoDaProvaPresencial declaracao = ComProva(Marabá, Xinguara);
+        MunicipiosConferidosNoGeo conferidos = MunicipiosConferidosNoGeo.De(new Dictionary<string, ResultadoDoMunicipioNoGeo>
+        {
+            [Marabá] = ResultadoDoMunicipioNoGeo.NaoConferido,
+            [Xinguara] = ResultadoDoMunicipioNoGeo.Conferido("Xinguara"),
+        });
+        ConferenciaDaProvaPresencial.Conferir(declaracao, conferidos, 1).Select(static recusa => (recusa.Field, recusa.Error.Code)).Should().Equal(
+            ("provaPresencial.municipios[0].codigoIbge", ProvaPresencialErrorCodes.MunicipioNaoConferidoNoGeo),
+            ("provaPresencial.municipios", ProvaPresencialErrorCodes.MunicipiosAcimaDoLimite));
     }
 
     [Fact(DisplayName = "O nome que o Geo devolveu fica disponível para o congelamento")]
