@@ -56,11 +56,11 @@ internal static class ConteudoDoModeloJson
 
     private static JsonObject CampoParaJson(ItemDoModelo campo) => new()
     {
-        ["fatoCodigo"] = campo.FatoCodigo,
+        ["codigoDoDado"] = campo.FatoCodigo,
         ["ordem"] = campo.Ordem,
         ["etapaCodigo"] = campo.EtapaCodigo,
         ["rotulo"] = campo.Apresentacao.Rotulo,
-        ["tipoRenderizacao"] = campo.Apresentacao.TipoRenderizacao.Codigo(),
+        ["tipoDeCampo"] = campo.Apresentacao.TipoRenderizacao.Codigo(),
         ["formato"] = campo.Formato,
         ["ajuda"] = campo.Apresentacao.Ajuda,
         ["obrigatoriedade"] = PredicadoDnfJson.ParaJson(campo.Regras.Obrigatoriedade),
@@ -151,7 +151,7 @@ internal static class ConteudoDoModeloJson
             ? null
             : new JsonObject
             {
-                ["fatoCodigo"] = porOpcao.FatoCodigo,
+                ["codigoDoDado"] = porOpcao.FatoCodigo,
                 ["exceto"] = new JsonArray([.. porOpcao.Exceto.Select(static valor => (JsonNode)JsonValue.Create(valor))]),
             };
 
@@ -187,7 +187,7 @@ internal static class ConteudoDoModeloJson
         Predicado(etapa, "exibicao"));
 
     private static ItemDoModelo CampoDeJson(JsonElement campo) => new(
-        campo.GetProperty("fatoCodigo").GetString()!,
+        campo.GetProperty("codigoDoDado").GetString()!,
         campo.GetProperty("ordem").GetInt32(),
         Texto(campo, "etapaCodigo"),
         ApresentacaoDeJson(campo),
@@ -196,7 +196,7 @@ internal static class ConteudoDoModeloJson
 
     private static ApresentacaoDoCampo ApresentacaoDeJson(JsonElement campo) => new(
         campo.GetProperty("rotulo").GetString()!,
-        CatalogoDe<TipoRenderizacao>.Obter(campo.GetProperty("tipoRenderizacao").GetString()!),
+        CatalogoDe<TipoRenderizacao>.Obter(campo.GetProperty("tipoDeCampo").GetString()!),
         Texto(campo, "ajuda"),
         campo.GetProperty("pedirConfirmacao").GetBoolean());
 
@@ -297,7 +297,7 @@ internal static class ConteudoDoModeloJson
     private static ExigenciaPorOpcao? PorOpcaoDeJson(JsonElement documento) =>
         documento.TryGetProperty("porOpcao", out JsonElement porOpcao) && porOpcao.ValueKind == JsonValueKind.Object
             ? new ExigenciaPorOpcao(
-                porOpcao.GetProperty("fatoCodigo").GetString()!,
+                porOpcao.GetProperty("codigoDoDado").GetString()!,
                 [.. porOpcao.GetProperty("exceto").EnumerateArray().Select(static valor => valor.GetString()!)])
             : null;
 
