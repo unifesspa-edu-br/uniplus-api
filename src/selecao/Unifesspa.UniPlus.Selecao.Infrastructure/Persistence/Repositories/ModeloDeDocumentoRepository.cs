@@ -41,8 +41,8 @@ public sealed class ModeloDeDocumentoRepository : IModeloDeDocumentoRepository
     public async Task<bool> TentarReivindicarConfirmacaoAsync(Guid id, CancellationToken cancellationToken = default)
     {
         int linhasAfetadas = await _context.ModelosDeDocumento
-            .Where(m => m.Id == id && m.Status == StatusArquivoEnviado.Pendente)
-            .ExecuteUpdateAsync(setters => setters.SetProperty(m => m.Status, StatusArquivoEnviado.Confirmado), cancellationToken)
+            .Where(m => m.Id == id && m.Situacao == StatusArquivoEnviado.Pendente)
+            .ExecuteUpdateAsync(setters => setters.SetProperty(m => m.Situacao, StatusArquivoEnviado.Confirmado), cancellationToken)
             .ConfigureAwait(false);
 
         return linhasAfetadas == 1;
@@ -94,5 +94,5 @@ public sealed class ModeloDeDocumentoRepository : IModeloDeDocumentoRepository
     }
 
     private static Expression<Func<ModeloDeDocumento, bool>> PendenteVencido(DateTimeOffset agora) =>
-        m => m.Status == StatusArquivoEnviado.Pendente && m.ExpiraEm <= agora;
+        m => m.Situacao == StatusArquivoEnviado.Pendente && m.ExpiraEm <= agora;
 }

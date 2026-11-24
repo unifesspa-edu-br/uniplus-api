@@ -1,4 +1,4 @@
--- O documento confirmado é a evidência do que foi publicado. Só o confirmado (status = 'CONFIRMADO') é retido: o pendente é um envio
+-- O documento confirmado é a evidência do que foi publicado. Só o confirmado (situacao = 'CONFIRMADO') é retido: o pendente é um envio
 -- que nunca se completou, e a limpeza dos vencidos continua possível. O RAISE declara CONSTRAINT/TABLE/SCHEMA para que
 -- PostgresException.ConstraintName chegue preenchida à aplicação (ADR-0102).
 --
@@ -41,14 +41,14 @@ DROP TRIGGER IF EXISTS trg_documentos_a_publicar_retencao_delete ON selecao.docu
 CREATE TRIGGER trg_documentos_a_publicar_retencao_delete
     BEFORE DELETE ON selecao.documentos_a_publicar
     FOR EACH ROW
-    WHEN (OLD.status = 'CONFIRMADO')
+    WHEN (OLD.situacao = 'CONFIRMADO')
     EXECUTE FUNCTION selecao.fn_documentos_a_publicar_retencao_delete();
 
 DROP TRIGGER IF EXISTS trg_documentos_a_publicar_retencao_update ON selecao.documentos_a_publicar;
 CREATE TRIGGER trg_documentos_a_publicar_retencao_update
     BEFORE UPDATE ON selecao.documentos_a_publicar
     FOR EACH ROW
-    WHEN (OLD.status = 'CONFIRMADO' AND NEW.status <> 'CONFIRMADO')
+    WHEN (OLD.situacao = 'CONFIRMADO' AND NEW.situacao <> 'CONFIRMADO')
     EXECUTE FUNCTION selecao.fn_documentos_a_publicar_retencao();
 
 -- TRUNCATE não dispara gatilho de linha.

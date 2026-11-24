@@ -22,7 +22,7 @@ public interface IArquivoEnviadoRepository
     /// <summary>
     /// Remove o registro só se ele ainda é pendente e vencido em <paramref name="agora"/> e, na mesma
     /// transação, executa <paramref name="removerObjetos"/>: abre a transação, apaga o registro —
-    /// <c>DELETE ... WHERE id = @id AND status = Pendente AND expira_em &lt;= @agora</c>, sem passar
+    /// <c>DELETE ... WHERE id = @id AND situacao = Pendente AND expira_em &lt;= @agora</c>, sem passar
     /// pelo change tracker —, remove os objetos e só então confirma. A condição é reavaliada pelo
     /// banco na própria remoção: a confirmação concorrente reivindica o registro com um <c>UPDATE</c>
     /// condicionado ao pendente, e as duas disputam o mesmo bloqueio de linha — quem chega depois

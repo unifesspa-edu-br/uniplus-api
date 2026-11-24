@@ -99,7 +99,7 @@ public sealed class DocumentoAPublicarNoBancoIntegrationTests : IClassFixture<Pr
         }
 
         await using UniPlusDbContext independente = _dbFixture.CreateDbContext();
-        (await independente.DocumentosAPublicar.FirstAsync(d => d.Id == documento.Id)).Status.Should().Be(StatusArquivoEnviado.Pendente);
+        (await independente.DocumentosAPublicar.FirstAsync(d => d.Id == documento.Id)).Situacao.Should().Be(StatusArquivoEnviado.Pendente);
     }
 
     private static async Task<DocumentoAPublicar> GravarPendenteAsync(

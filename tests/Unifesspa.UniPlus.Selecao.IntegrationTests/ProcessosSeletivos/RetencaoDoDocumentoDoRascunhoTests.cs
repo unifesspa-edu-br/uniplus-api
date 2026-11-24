@@ -7,9 +7,11 @@ using Microsoft.EntityFrameworkCore;
 using Npgsql;
 
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Application.Commands.Rascunhos;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
+using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Selecao.IntegrationTests.DocumentosAPublicar;
 using Unifesspa.UniPlus.Selecao.IntegrationTests.Rascunhos;
@@ -24,7 +26,7 @@ public sealed class RetencaoDoDocumentoDoRascunhoTests : IClassFixture<ProcessoS
 {
     private const string RestricaoDeRetencao = "ck_documentos_a_publicar_confirmado_retido";
     private const string ApagarDocumento = "DELETE FROM selecao.documentos_a_publicar WHERE id = @id";
-    private const string DesconfirmarDocumento = "UPDATE selecao.documentos_a_publicar SET status = 'PENDENTE' WHERE id = @id";
+    private const string DesconfirmarDocumento = "UPDATE selecao.documentos_a_publicar SET situacao = @situacao WHERE id = @id";
 
     private readonly ProcessoSeletivoDbFixture _fixture;
 
@@ -116,6 +118,7 @@ public sealed class RetencaoDoDocumentoDoRascunhoTests : IClassFixture<ProcessoS
         await conexao.OpenAsync();
         await using NpgsqlCommand comando = new(sql, conexao);
         comando.Parameters.AddWithValue("id", documentoId);
+        comando.Parameters.AddWithValue("situacao", StatusArquivoEnviado.Pendente.Codigo());
         await comando.ExecuteNonQueryAsync();
     }
 }

@@ -76,7 +76,7 @@ public static class ObterAcessoDocumentoAPublicarQueryHandler
                 DocumentoAPublicarErrorCodes.NaoEncontrado, "Documento não encontrado neste Processo Seletivo."));
         }
 
-        return documento.Status != StatusArquivoEnviado.Confirmado || documento.ObjectKeyConfirmado is null
+        return documento.Situacao != StatusArquivoEnviado.Confirmado || documento.ObjectKeyConfirmado is null
             ? Result<DocumentoAPublicar>.Failure(new DomainError(
                 DocumentoAPublicarErrorCodes.NaoConfirmado, "Documento ainda não confirmado — não há conteúdo validado para conferir."))
             : Result<DocumentoAPublicar>.Success(documento);

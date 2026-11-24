@@ -120,7 +120,7 @@ public sealed class RemocaoDeArquivosPendentesVencidosIntegrationTests
         removeu.Should().BeFalse();
         await using UniPlusDbContext leitura = _dbFixture.CreateDbContext();
         (await leitura.DocumentosAPublicar.AsNoTracking().SingleAsync(d => d.Id == documento.Id))
-            .Status.Should().Be(StatusArquivoEnviado.Confirmado);
+            .Situacao.Should().Be(StatusArquivoEnviado.Confirmado);
     }
 
     [Fact(DisplayName = "A remoção do modelo vencido não alcança o que a confirmação concorrente reivindicou primeiro")]
@@ -137,7 +137,7 @@ public sealed class RemocaoDeArquivosPendentesVencidosIntegrationTests
         removeu.Should().BeFalse();
         await using UniPlusDbContext leitura = _dbFixture.CreateDbContext();
         (await leitura.ModelosDeDocumento.AsNoTracking().SingleAsync(m => m.Id == modelo.Id))
-            .Status.Should().Be(StatusArquivoEnviado.Confirmado);
+            .Situacao.Should().Be(StatusArquivoEnviado.Confirmado);
     }
 
     /// <summary>

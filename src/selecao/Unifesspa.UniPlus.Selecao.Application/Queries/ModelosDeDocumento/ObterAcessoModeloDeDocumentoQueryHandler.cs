@@ -49,7 +49,7 @@ public static class ObterAcessoModeloDeDocumentoQueryHandler
                 ModeloDeDocumentoErrorCodes.NaoEncontrado, "Modelo de documento não encontrado neste Processo Seletivo."));
         }
 
-        if (modelo.Status != StatusArquivoEnviado.Confirmado || modelo.ObjectKeyConfirmado is null)
+        if (modelo.Situacao != StatusArquivoEnviado.Confirmado || modelo.ObjectKeyConfirmado is null)
         {
             return Result<AcessoModeloDeDocumentoDto>.Failure(new DomainError(
                 ModeloDeDocumentoErrorCodes.NaoConfirmado, "Modelo de documento ainda não confirmado — não há conteúdo validado para conferir."));

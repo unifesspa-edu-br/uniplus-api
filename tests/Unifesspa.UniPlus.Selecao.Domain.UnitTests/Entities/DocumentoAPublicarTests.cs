@@ -31,7 +31,7 @@ public sealed class DocumentoAPublicarTests
             ProcessoSeletivoId, FinalidadeDoDocumento.DocumentoDoEdital, "Edital 2027", TiposDeMidiaDeDocumento.Pdf, Relogio, ttl).Value!;
 
         documento.ProcessoSeletivoId.Should().Be(ProcessoSeletivoId);
-        documento.Status.Should().Be(StatusArquivoEnviado.Pendente);
+        documento.Situacao.Should().Be(StatusArquivoEnviado.Pendente);
         documento.Formato.Should().Be(FormatoDeDocumento.Pdf);
         documento.NomeArquivo.Should().Be("Edital 2027.pdf");
         documento.ExpiraEm.Should().BeCloseTo(Relogio.GetUtcNow().Add(ttl), TimeSpan.FromSeconds(5));
@@ -160,7 +160,7 @@ public sealed class DocumentoAPublicarTests
         Result resultado = documento.Confirmar(1024, "hash-sha256-fake", Relogio);
 
         resultado.IsSuccess.Should().BeTrue();
-        documento.Status.Should().Be(StatusArquivoEnviado.Confirmado);
+        documento.Situacao.Should().Be(StatusArquivoEnviado.Confirmado);
         documento.TamanhoBytes.Should().Be(1024);
         documento.HashSha256.Should().Be("hash-sha256-fake");
         documento.ConfirmadoEm.Should().BeCloseTo(Relogio.GetUtcNow(), TimeSpan.FromSeconds(5));

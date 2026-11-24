@@ -22,7 +22,7 @@ public sealed class ModeloDeDocumentoConfiguration : IEntityTypeConfiguration<Mo
         builder.ToTable("modelos_de_documento", t =>
         {
             t.HasCheckConstraint("ck_modelos_de_documento_formato", $"formato IN ({SqlDosCodigosDeContrato.Lista<FormatoDeDocumento>()})");
-            t.HasCheckConstraint("ck_modelos_de_documento_status", $"status IN ({SqlDosCodigosDeContrato.Lista<StatusArquivoEnviado>()})");
+            t.HasCheckConstraint("ck_modelos_de_documento_situacao", $"situacao IN ({SqlDosCodigosDeContrato.Lista<StatusArquivoEnviado>()})");
         });
         builder.HasKey(m => m.Id);
         builder.Property(m => m.Id).ValueGeneratedNever();
@@ -30,7 +30,7 @@ public sealed class ModeloDeDocumentoConfiguration : IEntityTypeConfiguration<Mo
         builder.Property(m => m.Formato).HasMaxLength(4).HasComment($"Formato do documento. Códigos: {Codigos<FormatoDeDocumento>()}.").IsRequired();
         builder.Property(m => m.ObjectKey).HasMaxLength(500).IsRequired();
         builder.Property(m => m.ObjectKeyConfirmado).HasMaxLength(500);
-        builder.Property(m => m.Status).HasMaxLength(10).HasComment($"Situação do envio. Códigos: {Codigos<StatusArquivoEnviado>()}.").IsRequired();
+        builder.Property(m => m.Situacao).HasMaxLength(10).HasComment($"Situação do envio. Códigos: {Codigos<StatusArquivoEnviado>()}.").IsRequired();
         builder.Property(m => m.HashSha256).HasMaxLength(64);
         builder.Ignore(m => m.Extensao);
         builder.Ignore(m => m.ContentType);

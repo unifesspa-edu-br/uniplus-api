@@ -12635,11 +12635,11 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("processo_seletivo_id");
 
-                    b.Property<string>("Status")
+                    b.Property<string>("Situacao")
                         .IsRequired()
                         .HasMaxLength(10)
                         .HasColumnType("character varying(10)")
-                        .HasColumnName("status")
+                        .HasColumnName("situacao")
                         .HasComment("Situação do envio. Códigos: PENDENTE, CONFIRMADO.");
 
                     b.Property<long?>("TamanhoBytes")
@@ -12664,7 +12664,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                             t.HasCheckConstraint("ck_documentos_a_publicar_formato", "formato IN ('DOCX', 'ODT', 'PDF')");
 
-                            t.HasCheckConstraint("ck_documentos_a_publicar_status", "status IN ('PENDENTE', 'CONFIRMADO')");
+                            t.HasCheckConstraint("ck_documentos_a_publicar_situacao", "situacao IN ('PENDENTE', 'CONFIRMADO')");
                         });
                 });
 
@@ -14196,11 +14196,11 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("processo_seletivo_id");
 
-                    b.Property<string>("Status")
+                    b.Property<string>("Situacao")
                         .IsRequired()
                         .HasMaxLength(10)
                         .HasColumnType("character varying(10)")
-                        .HasColumnName("status")
+                        .HasColumnName("situacao")
                         .HasComment("Situação do envio. Códigos: PENDENTE, CONFIRMADO.");
 
                     b.Property<long?>("TamanhoBytes")
@@ -14222,7 +14222,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         {
                             t.HasCheckConstraint("ck_modelos_de_documento_formato", "formato IN ('DOCX', 'ODT', 'PDF')");
 
-                            t.HasCheckConstraint("ck_modelos_de_documento_status", "status IN ('PENDENTE', 'CONFIRMADO')");
+                            t.HasCheckConstraint("ck_modelos_de_documento_situacao", "situacao IN ('PENDENTE', 'CONFIRMADO')");
                         });
                 });
 

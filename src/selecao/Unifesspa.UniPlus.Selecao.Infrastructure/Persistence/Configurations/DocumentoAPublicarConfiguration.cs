@@ -23,7 +23,7 @@ public sealed class DocumentoAPublicarConfiguration : IEntityTypeConfiguration<D
         {
             t.HasCheckConstraint("ck_documentos_a_publicar_finalidade", $"finalidade IN ({SqlDosCodigosDeContrato.Lista<FinalidadeDoDocumento>()})");
             t.HasCheckConstraint("ck_documentos_a_publicar_formato", $"formato IN ({SqlDosCodigosDeContrato.Lista<FormatoDeDocumento>()})");
-            t.HasCheckConstraint("ck_documentos_a_publicar_status", $"status IN ({SqlDosCodigosDeContrato.Lista<StatusArquivoEnviado>()})");
+            t.HasCheckConstraint("ck_documentos_a_publicar_situacao", $"situacao IN ({SqlDosCodigosDeContrato.Lista<StatusArquivoEnviado>()})");
         });
         builder.HasKey(d => d.Id);
         // Guid v7 gerado no domínio (EntityBase) — mesma convenção de ProcessoSeletivoConfiguration.
@@ -34,7 +34,7 @@ public sealed class DocumentoAPublicarConfiguration : IEntityTypeConfiguration<D
         builder.Property(d => d.Formato).HasMaxLength(4).HasComment($"Formato do documento. Códigos: {Codigos<FormatoDeDocumento>()}.").IsRequired();
         builder.Property(d => d.ObjectKey).HasMaxLength(500).IsRequired();
         builder.Property(d => d.ObjectKeyConfirmado).HasMaxLength(500);
-        builder.Property(d => d.Status).HasMaxLength(10).HasComment($"Situação do envio. Códigos: {Codigos<StatusArquivoEnviado>()}.").IsRequired();
+        builder.Property(d => d.Situacao).HasMaxLength(10).HasComment($"Situação do envio. Códigos: {Codigos<StatusArquivoEnviado>()}.").IsRequired();
         builder.Property(d => d.HashSha256).HasMaxLength(64);
         builder.Ignore(d => d.Extensao);
         builder.Ignore(d => d.TipoDeMidia);

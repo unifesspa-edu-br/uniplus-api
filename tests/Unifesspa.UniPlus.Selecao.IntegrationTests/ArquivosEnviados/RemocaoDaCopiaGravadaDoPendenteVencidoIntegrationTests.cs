@@ -213,6 +213,6 @@ public sealed class RemocaoDaCopiaGravadaDoPendenteVencidoIntegrationTests
     private async Task<StatusArquivoEnviado> StatusDoDocumentoAsync(Guid id)
     {
         await using UniPlusDbContext leitura = _dbFixture.CreateDbContext();
-        return (await leitura.DocumentosAPublicar.AsNoTracking().SingleAsync(d => d.Id == id)).Status;
+        return (await leitura.DocumentosAPublicar.AsNoTracking().SingleAsync(d => d.Id == id)).Situacao;
     }
 }
