@@ -70,6 +70,6 @@ internal sealed class TipoAtoPublicadoConfiguration : IEntityTypeConfiguration<T
         // este acesso por igualdade.
         builder.HasIndex(t => t.Codigo)
             .HasFilter("is_deleted = false")
-            .HasDatabaseName("ix_tipos_de_ato_publicado_codigo_vivo");
+            .HasDatabaseName("ix_tipos_de_ato_publicado_codigo_ativos");
     }
 }
