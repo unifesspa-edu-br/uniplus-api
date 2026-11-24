@@ -16,9 +16,13 @@ using Unifesspa.UniPlus.Host;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Authentication;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Hosting;
+using Unifesspa.UniPlus.Regras.Enums;
+using Unifesspa.UniPlus.Regras.Formularios;
+using Unifesspa.UniPlus.Regras.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Application.DTOs;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
+using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
@@ -30,7 +34,8 @@ public sealed class LeituraDaProvaPresencialEndpointTests(CascadingFixture fixtu
     public async Task Get_DeclaracaoEPublicacao_DevolveMunicipiosNaOrdemComNomesCopiados()
     {
         await TiposDeAtoSeeder.SemearAsync(fixture.Factory.Services);
-        (Guid id, Guid documento) = await PublicacaoPeloEndpointDeTeste.SemearProcessoAsync(fixture.Factory, "Leitura da prova");
+        (Guid id, Guid documento) = await PublicacaoPeloEndpointDeTeste.SemearProcessoAsync(
+            fixture.Factory, "Leitura da prova", PedirACidadeDeProvaNaInscricao);
         await LimparDeclaracaoAsync(id);
         await using WebApplicationFactory<HostAssemblyMarker> host = HostComGeo();
         using HttpClient client = host.CreateClient();
@@ -40,6 +45,18 @@ public sealed class LeituraDaProvaPresencialEndpointTests(CascadingFixture fixtu
         using HttpResponseMessage publicacao = await PublicacaoPeloEndpointDeTeste.PublicarAsync(client, id, documento);
         publicacao.StatusCode.Should().Be(HttpStatusCode.NoContent, await publicacao.Content.ReadAsStringAsync());
         Conferir(await LerAsync(client, id), "Xinguara", "Marabá");
+    }
+
+    private static void PedirACidadeDeProvaNaInscricao(ProcessoSeletivo processo)
+    {
+        FatoColetado cidade = FatoColetadoDeTeste.Coletando("CIDADE_DE_PROVA", FormularioDeTeste.PrimeiraOrdemDeInscricao)
+            .ComRotulo("Cidade de prova")
+            .DoTipo(TipoRenderizacao.EscolhaUnica)
+            .ComObrigatoriedade(Obrigatoriedade.Sempre)
+            .ComOrigem(OrigemValoresColeta.MunicipiosDaProvaPresencial)
+            .NaSecao(FormularioDeTeste.Secao)
+            .Construir();
+        processo.DefinirItens([cidade]).IsSuccess.Should().BeTrue();
     }
 
     private async Task LimparDeclaracaoAsync(Guid id)

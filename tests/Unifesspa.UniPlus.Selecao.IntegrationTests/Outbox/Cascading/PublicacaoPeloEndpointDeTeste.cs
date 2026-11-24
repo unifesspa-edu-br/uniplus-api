@@ -22,12 +22,13 @@ using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
 /// </summary>
 internal static class PublicacaoPeloEndpointDeTeste
 {
-    internal static async Task<(Guid ProcessoId, Guid DocumentoId)> SemearProcessoAsync(CascadingApiFactory api, string nome)
+    internal static async Task<(Guid ProcessoId, Guid DocumentoId)> SemearProcessoAsync(
+        CascadingApiFactory api, string nome, Action<ProcessoSeletivo>? complementar = null)
     {
         await using AsyncServiceScope scope = api.Services.CreateAsyncScope();
         UniPlusDbContext db = scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
         (ProcessoSeletivo processo, DocumentoAPublicar documento) = await ProcessoSeletivoPublicavelSeeder
-            .SemearAsync(db, new OpcoesDoProcessoSeletivoPublicavel { Nome = $"{nome} {Guid.CreateVersion7()}" });
+            .SemearAsync(db, new OpcoesDoProcessoSeletivoPublicavel { Nome = $"{nome} {Guid.CreateVersion7()}", Complementar = complementar });
         return (processo.Id, documento.Id);
     }
 
