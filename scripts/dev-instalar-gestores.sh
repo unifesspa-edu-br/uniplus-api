@@ -117,7 +117,7 @@ aguardar_documento_verificado() {
     while [ "$SECONDS" -lt "$fim" ]; do
         situacao=$(curl -s -H "Authorization: Bearer $token" "$API_URL/api/autorizacao/instalacao/$id" \
             | jq -r '.situacao // empty' 2>/dev/null || true)
-        [ "$situacao" = "documento_verificado" ] && return 0
+        [ "$situacao" = "DOCUMENTO_VERIFICADO" ] && return 0
         sleep 3
     done
     falha "o documento não chegou a 'documento_verificado' em ${ESPERA_VERIFICACAO}s (última situação: '${situacao:-desconhecida}'). Confira o serviço 'verificador': docker compose -f docker/docker-compose.yml logs verificador clamd-verificador (com COMPOSE_PROJECT_NAME igual ao do ambiente, se houver)."

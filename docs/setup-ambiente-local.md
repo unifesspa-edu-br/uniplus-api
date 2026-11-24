@@ -67,7 +67,7 @@ e a base de CEP no Geo. Não há passo extra além de `cp .env.example .env`.
   11/11/2026 às 00:00 até 26/11/2026 às 23:59:59, e a de `psm-teste-multicurso-2027`, de 11/11/2026 às 00:00 até 24/11/2026 às 06:56:55, horário de Belém.
 - **Pessoas:** as 60 personas fictícias do portal, com e-mail `{usuário}-uniplus-dev@unifesspa.edu.br` (os avisos vão só ao Mailpit) e a
   senha de desenvolvimento do `.env.example`. Gestores de acessos: `diogo.souza` e `leandro.viana`; Representantes do controlador:
-  `betina.neves` e `caroline.jesus`; Encarregado de dados: `marlene.martins`.
+  `betina.neves` e `caroline.jesus`; Gestor de proteção de dados: `marlene.martins`.
 - **O que vem:** bancos `uniplus` e `keycloak` (`docker/base-local/dumps/`), arquivos do MinIO e o Geo (`geo/geo-api-database.tar.xz`, comprimido
   com xz). Os dumps do `uniplus` e do `keycloak` são restaurados juntos: as concessões guardam o id da conta no Keycloak.
 - **Reiniciar do zero:** `docker compose down -v && docker compose up`. A restauração só acontece com o volume vazio, e leva alguns
@@ -131,7 +131,7 @@ anterior: quem segue estes passos não precisa de nenhum dado gravado antes.
    | Envio ao INEP | unidade CEPS | `kevin.carvalho` |
    | Dados e documentos sensíveis | unidade CEPS | `helena.rezende` |
    | Consulta sem dados pessoais | unidade CEPS | `erick.ramos` |
-   | Encarregado de dados (já vem da migration) | instituição | `marlene.martins` |
+   | Gestor de proteção de dados (já vem da migration) | instituição | `marlene.martins` |
 
 3. **Criar os dois processos de exemplo,** com a persona administradora e, em cada um, o período de inscrição (data, hora e fuso de Belém):
    ```bash
