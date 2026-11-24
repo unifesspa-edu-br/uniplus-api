@@ -4302,7 +4302,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                             Nome = "Egresso de escola pública",
                             Origem = "CALCULADO",
                             PontoResolucao = "INSCRICAO",
-                            RegrasPadrao = "[{\"contribui\":null,\"quando\":[[{\"fato\":\"ONDE_CURSOU_EM\",\"operador\":\"ALGUM_DE\",\"valor\":[\"SOMENTE_PUBLICA\",\"COMUNITARIA_CAMPO\",\"PUBLICA_E_COMUNITARIA\"]}],[{\"fato\":\"ONDE_CURSOU_EM\",\"operador\":\"IGUAL\",\"valor\":\"CERTIFICACAO\"},{\"fato\":\"FORMA_CONCLUSAO_EM\",\"operador\":\"ALGUM_DE\",\"valor\":[\"ENCCEJA\",\"PROFICIENCIA\",\"ENEM\"]}]]}]",
+                            RegrasPadrao = "[{\"contribui\":null,\"quando\":[[{\"codigoDoDado\":\"ONDE_CURSOU_EM\",\"operador\":\"ALGUM_DE\",\"valor\":[\"SOMENTE_PUBLICA\",\"COMUNITARIA_CAMPO\",\"PUBLICA_E_COMUNITARIA\"]}],[{\"codigoDoDado\":\"ONDE_CURSOU_EM\",\"operador\":\"IGUAL\",\"valor\":\"CERTIFICACAO\"},{\"codigoDoDado\":\"FORMA_CONCLUSAO_EM\",\"operador\":\"ALGUM_DE\",\"valor\":[\"ENCCEJA\",\"PROFICIENCIA\",\"ENEM\"]}]]}]",
                             SemeadoPeloSistema = true
                         },
                         new
@@ -5429,7 +5429,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                             Nome = "Optou pelas cotas da Lei nº 12.711/2012",
                             Origem = "CALCULADO",
                             PontoResolucao = "INSCRICAO",
-                            RegrasPadrao = "[{\"contribui\":null,\"quando\":[[{\"fato\":\"EGRESSO_ESCOLA_PUBLICA\",\"operador\":\"IGUAL\",\"valor\":true},{\"fato\":\"CONCORRER_EP\",\"operador\":\"IGUAL\",\"valor\":true}]]}]",
+                            RegrasPadrao = "[{\"contribui\":null,\"quando\":[[{\"codigoDoDado\":\"EGRESSO_ESCOLA_PUBLICA\",\"operador\":\"IGUAL\",\"valor\":true},{\"codigoDoDado\":\"CONCORRER_EP\",\"operador\":\"IGUAL\",\"valor\":true}]]}]",
                             SemeadoPeloSistema = true
                         },
                         new
@@ -6739,7 +6739,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                             Descricao = "Cota — baixa renda, preto/pardo/indígena",
                             IsDeleted = false,
                             NaturezaLegal = "COTA_RESERVADA",
-                            RegraDeAplicabilidade = "[[{\"fato\":\"OPTOU_PELAS_COTAS_DA_LEI\",\"operador\":\"IGUAL\",\"valor\":true},{\"fato\":\"COR_RACA\",\"operador\":\"ALGUM_DE\",\"valor\":[\"PRETA\",\"PARDA\"]},{\"fato\":\"CONCORRER_PPI\",\"operador\":\"IGUAL\",\"valor\":true},{\"fato\":\"BAIXA_RENDA\",\"operador\":\"IGUAL\",\"valor\":true},{\"fato\":\"CONCORRER_RENDA\",\"operador\":\"IGUAL\",\"valor\":true}],[{\"fato\":\"OPTOU_PELAS_COTAS_DA_LEI\",\"operador\":\"IGUAL\",\"valor\":true},{\"fato\":\"COR_RACA\",\"operador\":\"IGUAL\",\"valor\":\"INDIGENA\"},{\"fato\":\"INDIGENA\",\"operador\":\"IGUAL\",\"valor\":true},{\"fato\":\"CONCORRER_PPI\",\"operador\":\"IGUAL\",\"valor\":true},{\"fato\":\"BAIXA_RENDA\",\"operador\":\"IGUAL\",\"valor\":true},{\"fato\":\"CONCORRER_RENDA\",\"operador\":\"IGUAL\",\"valor\":true}]]",
+                            RegraDeAplicabilidade = "[[{\"codigoDoDado\":\"OPTOU_PELAS_COTAS_DA_LEI\",\"operador\":\"IGUAL\",\"valor\":true},{\"codigoDoDado\":\"COR_RACA\",\"operador\":\"ALGUM_DE\",\"valor\":[\"PRETA\",\"PARDA\"]},{\"codigoDoDado\":\"CONCORRER_PPI\",\"operador\":\"IGUAL\",\"valor\":true},{\"codigoDoDado\":\"BAIXA_RENDA\",\"operador\":\"IGUAL\",\"valor\":true},{\"codigoDoDado\":\"CONCORRER_RENDA\",\"operador\":\"IGUAL\",\"valor\":true}],[{\"codigoDoDado\":\"OPTOU_PELAS_COTAS_DA_LEI\",\"operador\":\"IGUAL\",\"valor\":true},{\"codigoDoDado\":\"COR_RACA\",\"operador\":\"IGUAL\",\"valor\":\"INDIGENA\"},{\"codigoDoDado\":\"INDIGENA\",\"operador\":\"IGUAL\",\"valor\":true},{\"codigoDoDado\":\"CONCORRER_PPI\",\"operador\":\"IGUAL\",\"valor\":true},{\"codigoDoDado\":\"BAIXA_RENDA\",\"operador\":\"IGUAL\",\"valor\":true},{\"codigoDoDado\":\"CONCORRER_RENDA\",\"operador\":\"IGUAL\",\"valor\":true}]]",
                             RegraRemanejamento = "SEGUE_ORDEM_DE_REMANEJAMENTO"
                         },
                         new
@@ -6752,7 +6752,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                             Descricao = "Cota — baixa renda, quilombola",
                             IsDeleted = false,
                             NaturezaLegal = "COTA_RESERVADA",
-                            RegraDeAplicabilidade = "[[{\"fato\":\"OPTOU_PELAS_COTAS_DA_LEI\",\"operador\":\"IGUAL\",\"valor\":true},{\"fato\":\"QUILOMBOLA\",\"operador\":\"IGUAL\",\"valor\":true},{\"fato\":\"CONCORRER_Q\",\"operador\":\"IGUAL\",\"valor\":true},{\"fato\":\"BAIXA_RENDA\",\"operador\":\"IGUAL\",\"valor\":true},{\"fato\":\"CONCORRER_RENDA\",\"operador\":\"IGUAL\",\"valor\":true}]]",
+                            RegraDeAplicabilidade = "[[{\"codigoDoDado\":\"OPTOU_PELAS_COTAS_DA_LEI\",\"operador\":\"IGUAL\",\"valor\":true},{\"codigoDoDado\":\"QUILOMBOLA\",\"operador\":\"IGUAL\",\"valor\":true},{\"codigoDoDado\":\"CONCORRER_Q\",\"operador\":\"IGUAL\",\"valor\":true},{\"codigoDoDado\":\"BAIXA_RENDA\",\"operador\":\"IGUAL\",\"valor\":true},{\"codigoDoDado\":\"CONCORRER_RENDA\",\"operador\":\"IGUAL\",\"valor\":true}]]",
                             RegraRemanejamento = "SEGUE_ORDEM_DE_REMANEJAMENTO"
                         },
                         new
@@ -6765,7 +6765,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                             Descricao = "Cota — baixa renda, pessoa com deficiência",
                             IsDeleted = false,
                             NaturezaLegal = "COTA_RESERVADA",
-                            RegraDeAplicabilidade = "[[{\"fato\":\"OPTOU_PELAS_COTAS_DA_LEI\",\"operador\":\"IGUAL\",\"valor\":true},{\"fato\":\"PCD\",\"operador\":\"IGUAL\",\"valor\":true},{\"fato\":\"CONCORRER_PCD\",\"operador\":\"IGUAL\",\"valor\":true},{\"fato\":\"BAIXA_RENDA\",\"operador\":\"IGUAL\",\"valor\":true},{\"fato\":\"CONCORRER_RENDA\",\"operador\":\"IGUAL\",\"valor\":true}]]",
+                            RegraDeAplicabilidade = "[[{\"codigoDoDado\":\"OPTOU_PELAS_COTAS_DA_LEI\",\"operador\":\"IGUAL\",\"valor\":true},{\"codigoDoDado\":\"PCD\",\"operador\":\"IGUAL\",\"valor\":true},{\"codigoDoDado\":\"CONCORRER_PCD\",\"operador\":\"IGUAL\",\"valor\":true},{\"codigoDoDado\":\"BAIXA_RENDA\",\"operador\":\"IGUAL\",\"valor\":true},{\"codigoDoDado\":\"CONCORRER_RENDA\",\"operador\":\"IGUAL\",\"valor\":true}]]",
                             RegraRemanejamento = "SEGUE_ORDEM_DE_REMANEJAMENTO"
                         },
                         new
@@ -6778,7 +6778,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                             Descricao = "Cota — baixa renda, egresso de escola pública",
                             IsDeleted = false,
                             NaturezaLegal = "COTA_RESERVADA",
-                            RegraDeAplicabilidade = "[[{\"fato\":\"OPTOU_PELAS_COTAS_DA_LEI\",\"operador\":\"IGUAL\",\"valor\":true},{\"fato\":\"BAIXA_RENDA\",\"operador\":\"IGUAL\",\"valor\":true},{\"fato\":\"CONCORRER_RENDA\",\"operador\":\"IGUAL\",\"valor\":true}]]",
+                            RegraDeAplicabilidade = "[[{\"codigoDoDado\":\"OPTOU_PELAS_COTAS_DA_LEI\",\"operador\":\"IGUAL\",\"valor\":true},{\"codigoDoDado\":\"BAIXA_RENDA\",\"operador\":\"IGUAL\",\"valor\":true},{\"codigoDoDado\":\"CONCORRER_RENDA\",\"operador\":\"IGUAL\",\"valor\":true}]]",
                             RegraRemanejamento = "SEGUE_ORDEM_DE_REMANEJAMENTO"
                         },
                         new
@@ -6791,7 +6791,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                             Descricao = "Cota — independente de renda, preto/pardo/indígena",
                             IsDeleted = false,
                             NaturezaLegal = "COTA_RESERVADA",
-                            RegraDeAplicabilidade = "[[{\"fato\":\"OPTOU_PELAS_COTAS_DA_LEI\",\"operador\":\"IGUAL\",\"valor\":true},{\"fato\":\"COR_RACA\",\"operador\":\"ALGUM_DE\",\"valor\":[\"PRETA\",\"PARDA\"]},{\"fato\":\"CONCORRER_PPI\",\"operador\":\"IGUAL\",\"valor\":true}],[{\"fato\":\"OPTOU_PELAS_COTAS_DA_LEI\",\"operador\":\"IGUAL\",\"valor\":true},{\"fato\":\"COR_RACA\",\"operador\":\"IGUAL\",\"valor\":\"INDIGENA\"},{\"fato\":\"INDIGENA\",\"operador\":\"IGUAL\",\"valor\":true},{\"fato\":\"CONCORRER_PPI\",\"operador\":\"IGUAL\",\"valor\":true}]]",
+                            RegraDeAplicabilidade = "[[{\"codigoDoDado\":\"OPTOU_PELAS_COTAS_DA_LEI\",\"operador\":\"IGUAL\",\"valor\":true},{\"codigoDoDado\":\"COR_RACA\",\"operador\":\"ALGUM_DE\",\"valor\":[\"PRETA\",\"PARDA\"]},{\"codigoDoDado\":\"CONCORRER_PPI\",\"operador\":\"IGUAL\",\"valor\":true}],[{\"codigoDoDado\":\"OPTOU_PELAS_COTAS_DA_LEI\",\"operador\":\"IGUAL\",\"valor\":true},{\"codigoDoDado\":\"COR_RACA\",\"operador\":\"IGUAL\",\"valor\":\"INDIGENA\"},{\"codigoDoDado\":\"INDIGENA\",\"operador\":\"IGUAL\",\"valor\":true},{\"codigoDoDado\":\"CONCORRER_PPI\",\"operador\":\"IGUAL\",\"valor\":true}]]",
                             RegraRemanejamento = "SEGUE_ORDEM_DE_REMANEJAMENTO"
                         },
                         new
@@ -6804,7 +6804,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                             Descricao = "Cota — independente de renda, quilombola",
                             IsDeleted = false,
                             NaturezaLegal = "COTA_RESERVADA",
-                            RegraDeAplicabilidade = "[[{\"fato\":\"OPTOU_PELAS_COTAS_DA_LEI\",\"operador\":\"IGUAL\",\"valor\":true},{\"fato\":\"QUILOMBOLA\",\"operador\":\"IGUAL\",\"valor\":true},{\"fato\":\"CONCORRER_Q\",\"operador\":\"IGUAL\",\"valor\":true}]]",
+                            RegraDeAplicabilidade = "[[{\"codigoDoDado\":\"OPTOU_PELAS_COTAS_DA_LEI\",\"operador\":\"IGUAL\",\"valor\":true},{\"codigoDoDado\":\"QUILOMBOLA\",\"operador\":\"IGUAL\",\"valor\":true},{\"codigoDoDado\":\"CONCORRER_Q\",\"operador\":\"IGUAL\",\"valor\":true}]]",
                             RegraRemanejamento = "SEGUE_ORDEM_DE_REMANEJAMENTO"
                         },
                         new
@@ -6817,7 +6817,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                             Descricao = "Cota — independente de renda, pessoa com deficiência",
                             IsDeleted = false,
                             NaturezaLegal = "COTA_RESERVADA",
-                            RegraDeAplicabilidade = "[[{\"fato\":\"OPTOU_PELAS_COTAS_DA_LEI\",\"operador\":\"IGUAL\",\"valor\":true},{\"fato\":\"PCD\",\"operador\":\"IGUAL\",\"valor\":true},{\"fato\":\"CONCORRER_PCD\",\"operador\":\"IGUAL\",\"valor\":true}]]",
+                            RegraDeAplicabilidade = "[[{\"codigoDoDado\":\"OPTOU_PELAS_COTAS_DA_LEI\",\"operador\":\"IGUAL\",\"valor\":true},{\"codigoDoDado\":\"PCD\",\"operador\":\"IGUAL\",\"valor\":true},{\"codigoDoDado\":\"CONCORRER_PCD\",\"operador\":\"IGUAL\",\"valor\":true}]]",
                             RegraRemanejamento = "SEGUE_ORDEM_DE_REMANEJAMENTO"
                         },
                         new
@@ -6830,7 +6830,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                             Descricao = "Cota — independente de renda, egresso de escola pública",
                             IsDeleted = false,
                             NaturezaLegal = "COTA_RESERVADA",
-                            RegraDeAplicabilidade = "[[{\"fato\":\"OPTOU_PELAS_COTAS_DA_LEI\",\"operador\":\"IGUAL\",\"valor\":true}]]",
+                            RegraDeAplicabilidade = "[[{\"codigoDoDado\":\"OPTOU_PELAS_COTAS_DA_LEI\",\"operador\":\"IGUAL\",\"valor\":true}]]",
                             RegraRemanejamento = "SEGUE_ORDEM_DE_REMANEJAMENTO"
                         },
                         new
@@ -6844,7 +6844,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                             Descricao = "Ampla Concorrência – Pessoa com Deficiência (V)",
                             IsDeleted = false,
                             NaturezaLegal = "ACAO_AFIRMATIVA",
-                            RegraDeAplicabilidade = "[[{\"fato\":\"PCD\",\"operador\":\"IGUAL\",\"valor\":true},{\"fato\":\"CONCORRER_PCD\",\"operador\":\"IGUAL\",\"valor\":true}]]",
+                            RegraDeAplicabilidade = "[[{\"codigoDoDado\":\"PCD\",\"operador\":\"IGUAL\",\"valor\":true},{\"codigoDoDado\":\"CONCORRER_PCD\",\"operador\":\"IGUAL\",\"valor\":true}]]",
                             RegraRemanejamento = "DESTINO_UNICO"
                         },
                         new
@@ -6857,7 +6857,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                             Descricao = "Vaga por acréscimo — candidato indígena (PSIQ)",
                             IsDeleted = false,
                             NaturezaLegal = "ACAO_AFIRMATIVA",
-                            RegraDeAplicabilidade = "[[{\"fato\":\"OPTOU_PELAS_COTAS_DA_LEI\",\"operador\":\"IGUAL\",\"valor\":false},{\"fato\":\"INDIGENA\",\"operador\":\"IGUAL\",\"valor\":true},{\"fato\":\"CONCORRER_VAGA_POR_ACRESCIMO\",\"operador\":\"IGUAL\",\"valor\":true}]]",
+                            RegraDeAplicabilidade = "[[{\"codigoDoDado\":\"OPTOU_PELAS_COTAS_DA_LEI\",\"operador\":\"IGUAL\",\"valor\":false},{\"codigoDoDado\":\"INDIGENA\",\"operador\":\"IGUAL\",\"valor\":true},{\"codigoDoDado\":\"CONCORRER_VAGA_POR_ACRESCIMO\",\"operador\":\"IGUAL\",\"valor\":true}]]",
                             RegraRemanejamento = "CRUZADO"
                         },
                         new
@@ -6870,7 +6870,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                             Descricao = "Vaga por acréscimo — candidato quilombola (PSIQ)",
                             IsDeleted = false,
                             NaturezaLegal = "ACAO_AFIRMATIVA",
-                            RegraDeAplicabilidade = "[[{\"fato\":\"OPTOU_PELAS_COTAS_DA_LEI\",\"operador\":\"IGUAL\",\"valor\":false},{\"fato\":\"QUILOMBOLA\",\"operador\":\"IGUAL\",\"valor\":true},{\"fato\":\"CONCORRER_VAGA_POR_ACRESCIMO\",\"operador\":\"IGUAL\",\"valor\":true}]]",
+                            RegraDeAplicabilidade = "[[{\"codigoDoDado\":\"OPTOU_PELAS_COTAS_DA_LEI\",\"operador\":\"IGUAL\",\"valor\":false},{\"codigoDoDado\":\"QUILOMBOLA\",\"operador\":\"IGUAL\",\"valor\":true},{\"codigoDoDado\":\"CONCORRER_VAGA_POR_ACRESCIMO\",\"operador\":\"IGUAL\",\"valor\":true}]]",
                             RegraRemanejamento = "CRUZADO"
                         });
                 });

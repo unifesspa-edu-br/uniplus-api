@@ -37,7 +37,7 @@ internal static class ColunaDaRegraDeHomologacao
         AllowDuplicateProperties = false,
     });
 
-    private static readonly string[] ChavesDoAtomo = ["fato", "operador", "valor"];
+    private static readonly string[] ChavesDoAtomo = ["codigoDoDado", "operador", "valor"];
 
     // O EF não chama o conversor para nulo: a coluna nula é a fase que não homologa.
     internal static readonly ValueConverter<RegraDeHomologacaoDasInscricoes?, string?> Conversor = new(

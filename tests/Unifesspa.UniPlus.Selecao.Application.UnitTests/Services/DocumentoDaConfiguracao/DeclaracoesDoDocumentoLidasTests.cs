@@ -70,7 +70,7 @@ public sealed class DeclaracoesDoDocumentoLidasTests
               "alternativas": [
                 { "condicoes": [ { "tipo": "RESULTADO_NO_RETORNO_DO_INEP", "edicaoDoExame": 2025, "motivoDesfavoravelCodigo": "SEM_NOTA" } ] },
                 { "condicoes": [ { "tipo": "RESULTADO_NO_RETORNO_DO_INEP", "edicaoDoExame": 2024, "motivoDesfavoravelCodigo": "SEM_NOTA",
-                  "enquadramento": [ [ { "fato": "MODALIDADE", "operador": "ALGUM_DE", "valor": [ "AC", "PPI" ] } ] ] } ] }
+                  "enquadramento": [ [ { "codigoDoDado": "MODALIDADE", "operador": "ALGUM_DE", "valor": [ "AC", "PPI" ] } ] ] } ] }
               ]
             }
           } ] }
@@ -246,7 +246,7 @@ public sealed class DeclaracoesDoDocumentoLidasTests
     {
         JsonObject documento = JsonNode.Parse(Homologacao)!.AsObject();
         JsonObject condicao = documento["cronograma"]!["fases"]![0]!["regraDeHomologacao"]!["alternativas"]![1]!["condicoes"]![0]!.AsObject();
-        condicao["enquadramento"] = JsonNode.Parse("""[ [ { "fato": "MODALIDADE", "operador": "IGUAL", "valor": [ "AC" ] } ] ]""");
+        condicao["enquadramento"] = JsonNode.Parse("""[ [ { "codigoDoDado": "MODALIDADE", "operador": "IGUAL", "valor": [ "AC" ] } ] ]""");
 
         DeclaracoesDoDocumento lidas = DeclaracoesDoDocumentoLidas.De(documento);
 

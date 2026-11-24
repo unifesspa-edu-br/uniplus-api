@@ -11,7 +11,7 @@ using Unifesspa.UniPlus.Regras.ValueObjects;
 
 /// <summary>
 /// A forma JSON de guardar um predicado e uma obrigatoriedade: o predicado é a lista de cláusulas,
-/// cada uma a lista de condições <c>{fato, operador, valor}</c>; a obrigatoriedade é
+/// cada uma a lista de condições <c>{codigoDoDado, operador, valor}</c>; a obrigatoriedade é
 /// <c>{tipo, predicado}</c>, com o predicado só em <c>QUANDO</c>. A leitura remonta pelas mesmas
 /// factories do domínio, então conteúdo gravado que as viola é recusado, nunca aceito em silêncio.
 /// </summary>
@@ -24,7 +24,7 @@ public static class PredicadoDnfJson
         ArgumentNullException.ThrowIfNull(predicado);
         return new JsonArray([.. predicado.Clausulas.Select(static c => (JsonNode)new JsonArray([.. c.Condicoes.Select(static d => (JsonNode)new JsonObject
         {
-            ["fato"] = d.Fato,
+            ["codigoDoDado"] = d.Fato,
             ["operador"] = d.Operador.Codigo(),
             ["valor"] = JsonNode.Parse(d.Valor.GetRawText()),
         })]))]);
@@ -91,6 +91,16 @@ public static class PredicadoDnfJson
             return CondicaoInvalida("");
         }
 
+        return LerCondicaoObjeto(condicao);
+    }
+
+    private static Result<CondicaoDnf> LerCondicaoObjeto(JsonElement condicao)
+    {
+        if (condicao.TryGetProperty("fato", out _))
+        {
+            return Result<CondicaoDnf>.ValidationFailure([new FieldError("fato", Erro("chave 'fato' não é aceita; use 'codigoDoDado'"))]);
+        }
+
         string? campo = CampoAusente(condicao);
         if (campo is not null)
         {
@@ -102,13 +112,13 @@ public static class PredicadoDnfJson
 
     private static Result<CondicaoDnf> CriarCondicao(JsonElement condicao) =>
         CondicaoDnf.CriarInformada(
-            condicao.GetProperty("fato").GetString(), condicao.GetProperty("operador").GetString(), condicao.GetProperty("valor"));
+            condicao.GetProperty("codigoDoDado").GetString(), condicao.GetProperty("operador").GetString(), condicao.GetProperty("valor"));
 
     private static string? CampoAusente(JsonElement condicao)
     {
-        if (!condicao.TryGetProperty("fato", out JsonElement fato) || fato.ValueKind != JsonValueKind.String)
+        if (!condicao.TryGetProperty("codigoDoDado", out JsonElement codigoDoDado) || codigoDoDado.ValueKind != JsonValueKind.String)
         {
-            return "fato";
+            return "codigoDoDado";
         }
 
         if (!condicao.TryGetProperty("operador", out JsonElement operador) || operador.ValueKind != JsonValueKind.String)

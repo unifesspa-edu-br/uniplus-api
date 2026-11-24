@@ -63,7 +63,7 @@ public sealed class ColunaDaRegraDeHomologacaoTests
         string com = ColunaDaRegraDeHomologacao.Escrever(Regra(ResultadoPreliminar, Alternativa(Condicao(2025, "MOTIVO_M", EnquadramentoDaModalidade("AMPLA")))));
 
         sem.Should().NotContain("enquadramento");
-        com.Should().Contain("\"enquadramento\":[[{\"fato\":\"MODALIDADE\",\"operador\":\"IGUAL\",\"valor\":\"AMPLA\"}]]");
+        com.Should().Contain("\"enquadramento\":[[{\"codigoDoDado\":\"MODALIDADE\",\"operador\":\"IGUAL\",\"valor\":\"AMPLA\"}]]");
     }
 
     [Fact(DisplayName = "O conversor grava o documento e lê de volta a mesma regra")]
@@ -112,20 +112,20 @@ public sealed class ColunaDaRegraDeHomologacaoTests
     [InlineData("{\"alternativas\":[{\"condicoes\":[{\"tipo\":\"RESULTADO_NO_RETORNO_DO_INEP\"}]}]}")]
     [InlineData("{\"alternativas\":[{\"condicoes\":[{\"tipo\":\"RESULTADO_NO_RETORNO_DO_INEP\",\"edicaoDoExame\":2025,\"motivoDesfavoravelCodigo\":\"motivo mal formado\"}]}]}")]
     [InlineData("{\"alternativas\":[{\"condicoes\":[{\"tipo\":\"RESULTADO_NO_RETORNO_DO_INEP\",\"edicaoDoExame\":2025,\"enquadramento\":[[]]}]}]}")]
-    [InlineData("{\"alternativas\":[{\"condicoes\":[{\"tipo\":\"RESULTADO_NO_RETORNO_DO_INEP\",\"edicaoDoExame\":2025,\"enquadramento\":[[{\"fato\":\"MODALIDADE\",\"operador\":\"INEXISTENTE\",\"valor\":\"AMPLA\"}]]}]}]}")]
+    [InlineData("{\"alternativas\":[{\"condicoes\":[{\"tipo\":\"RESULTADO_NO_RETORNO_DO_INEP\",\"edicaoDoExame\":2025,\"enquadramento\":[[{\"codigoDoDado\":\"MODALIDADE\",\"operador\":\"INEXISTENTE\",\"valor\":\"AMPLA\"}]]}]}]}")]
     [InlineData("{\"alternativas\":[{\"condicoes\":[{\"tipo\":\"RESULTADO_NO_RETORNO_DO_INEP\",\"edicaoDoExame\":2025,\"enquadramento\":[]}]}]}")]
-    [InlineData("{\"alternativas\":[{\"condicoes\":[{\"tipo\":\"RESULTADO_NO_RETORNO_DO_INEP\",\"edicaoDoExame\":2025,\"enquadrament\":[[{\"fato\":\"MODALIDADE\",\"operador\":\"IGUAL\",\"valor\":\"AMPLA\"}]]}]}]}")]
+    [InlineData("{\"alternativas\":[{\"condicoes\":[{\"tipo\":\"RESULTADO_NO_RETORNO_DO_INEP\",\"edicaoDoExame\":2025,\"enquadrament\":[[{\"codigoDoDado\":\"MODALIDADE\",\"operador\":\"IGUAL\",\"valor\":\"AMPLA\"}]]}]}]}")]
     [InlineData("{\"alternativas\":[{\"condicoes\":[{\"tipo\":\"RESULTADO_NO_RETORNO_DO_INEP\",\"edicaoDoExame\":2025,\"chaveDesconhecida\":1}]}]}")]
     [InlineData("{\"alternativas\":[{\"chaveDesconhecida\":1,\"condicoes\":[{\"tipo\":\"RESULTADO_NO_RETORNO_DO_INEP\",\"edicaoDoExame\":2025}]}]}")]
     [InlineData("{\"chaveDesconhecida\":1,\"alternativas\":[]}")]
     [InlineData("{\"alternativas\":[],\"alternativas\":[]}")]
     [InlineData("{\"alternativas\":[{\"condicoes\":[{\"tipo\":\"RESULTADO_NO_RETORNO_DO_INEP\",\"edicaoDoExame\":2025,\"edicaoDoExame\":2024}]}]}")]
-    [InlineData("{\"alternativas\":[{\"condicoes\":[{\"tipo\":\"RESULTADO_NO_RETORNO_DO_INEP\",\"edicaoDoExame\":2025,\"enquadramento\":[[{\"fato\":\"MODALIDADE\",\"operador\":\"IGUAL\",\"valor\":\"AMPLA\"}]],\"enquadramento\":[[{\"fato\":\"MODALIDADE\",\"operador\":\"IGUAL\",\"valor\":\"AMPLA\"}]]}]}]}")]
-    [InlineData("{\"alternativas\":[{\"condicoes\":[{\"tipo\":\"RESULTADO_NO_RETORNO_DO_INEP\",\"edicaoDoExame\":2025,\"enquadramento\":[[{\"fato\":\"MODALIDADE\",\"operador\":\"IGUAL\",\"valor\":\"AMPLA\",\"chaveDesconhecida\":1}]]}]}]}")]
+    [InlineData("{\"alternativas\":[{\"condicoes\":[{\"tipo\":\"RESULTADO_NO_RETORNO_DO_INEP\",\"edicaoDoExame\":2025,\"enquadramento\":[[{\"codigoDoDado\":\"MODALIDADE\",\"operador\":\"IGUAL\",\"valor\":\"AMPLA\"}]],\"enquadramento\":[[{\"codigoDoDado\":\"MODALIDADE\",\"operador\":\"IGUAL\",\"valor\":\"AMPLA\"}]]}]}]}")]
+    [InlineData("{\"alternativas\":[{\"condicoes\":[{\"tipo\":\"RESULTADO_NO_RETORNO_DO_INEP\",\"edicaoDoExame\":2025,\"enquadramento\":[[{\"codigoDoDado\":\"MODALIDADE\",\"operador\":\"IGUAL\",\"valor\":\"AMPLA\",\"chaveDesconhecida\":1}]]}]}]}")]
     [InlineData("{\"alternativas\":[{\"condicoes\":[{\"tipo\":\"RESULTADO_NO_RETORNO_DO_INEP\",\"edicaoDoExame\":2025,\"enquadramento\":[[{\"operador\":\"IGUAL\",\"valor\":\"AMPLA\"}]]}]}]}")]
-    [InlineData("{\"alternativas\":[{\"condicoes\":[{\"tipo\":\"RESULTADO_NO_RETORNO_DO_INEP\",\"edicaoDoExame\":2025,\"enquadramento\":[[{\"fato\":\"MODALIDADE\",\"valor\":\"AMPLA\"}]]}]}]}")]
-    [InlineData("{\"alternativas\":[{\"condicoes\":[{\"tipo\":\"RESULTADO_NO_RETORNO_DO_INEP\",\"edicaoDoExame\":2025,\"enquadramento\":[[{\"fato\":\"MODALIDADE\",\"operador\":\"IGUAL\"}]]}]}]}")]
-    [InlineData("{\"alternativas\":[{\"condicoes\":[{\"tipo\":\"RESULTADO_NO_RETORNO_DO_INEP\",\"edicaoDoExame\":2025,\"enquadramento\":[[{\"fato\":\"MODALIDADE\",\"operador\":\"IGUAL\",\"valor\":\"AMPLA\",\"valor\":\"COTA\"}]]}]}]}")]
+    [InlineData("{\"alternativas\":[{\"condicoes\":[{\"tipo\":\"RESULTADO_NO_RETORNO_DO_INEP\",\"edicaoDoExame\":2025,\"enquadramento\":[[{\"codigoDoDado\":\"MODALIDADE\",\"valor\":\"AMPLA\"}]]}]}]}")]
+    [InlineData("{\"alternativas\":[{\"condicoes\":[{\"tipo\":\"RESULTADO_NO_RETORNO_DO_INEP\",\"edicaoDoExame\":2025,\"enquadramento\":[[{\"codigoDoDado\":\"MODALIDADE\",\"operador\":\"IGUAL\"}]]}]}]}")]
+    [InlineData("{\"alternativas\":[{\"condicoes\":[{\"tipo\":\"RESULTADO_NO_RETORNO_DO_INEP\",\"edicaoDoExame\":2025,\"enquadramento\":[[{\"codigoDoDado\":\"MODALIDADE\",\"operador\":\"IGUAL\",\"valor\":\"AMPLA\",\"valor\":\"COTA\"}]]}]}]}")]
     public void ConteudoInvalido_Lanca(string documento)
     {
         Action leitura = () => ColunaDaRegraDeHomologacao.Ler(documento);

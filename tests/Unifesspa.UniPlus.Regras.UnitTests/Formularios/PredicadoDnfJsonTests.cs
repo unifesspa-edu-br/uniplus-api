@@ -16,6 +16,39 @@ using Unifesspa.UniPlus.Regras.ValueObjects;
 /// </summary>
 public sealed class PredicadoDnfJsonTests
 {
+    [Theory]
+    [InlineData("""[[{"fato":"IDADE","operador":"IGUAL","valor":18}]]""")]
+    [InlineData("""[[{"codigoDoDado":"IDADE","fato":"IDADE","operador":"IGUAL","valor":18}]]""")]
+    public void DeJson_ComChaveFato_RecusaComFormaInvalida(string json)
+    {
+        using JsonDocument documento = JsonDocument.Parse(json);
+        Result<PredicadoDnf> lido = PredicadoDnfJson.DeJson(documento.RootElement);
+
+        lido.IsFailure.Should().BeTrue();
+        lido.Errors.Select(static e => (e.Field, e.Error.Code, e.Error.Message)).Should().Equal(
+            ("[0][0].fato", PredicadoDnfJson.FormaInvalida, "chave 'fato' não é aceita; use 'codigoDoDado'"));
+    }
+
+    [Fact]
+    public void DeJson_ComCodigoDoDado_AceitaCondicao()
+    {
+        using JsonDocument documento = JsonDocument.Parse("""[[{"codigoDoDado":"IDADE","operador":"IGUAL","valor":18}]]""");
+        PredicadoDnfJson.DeJson(documento.RootElement).IsSuccess.Should().BeTrue();
+    }
+
+    [Fact]
+    public void CondicaoGravada_IdaEVolta_PreservaCondicaoEUsaCodigoDoDado()
+    {
+        CondicaoDnf condicao = CondicaoDnf.Criar("IDADE", Operador.MaiorIgual, JsonSerializer.SerializeToElement(18)).Value!;
+        PredicadoDnf predicado = PredicadoDnf.CriarDeCondicoesAgrupadas([(0, condicao)]).Value!;
+        using JsonDocument documento = JsonDocument.Parse(PredicadoDnfJson.ParaJson(predicado).ToJsonString());
+        JsonElement gravada = documento.RootElement[0][0];
+
+        gravada.GetProperty("codigoDoDado").GetString().Should().Be("IDADE");
+        gravada.TryGetProperty("fato", out _).Should().BeFalse();
+        PredicadoDnfJson.DeJson(documento.RootElement).Value!.MesmoConteudo(predicado).Should().BeTrue();
+    }
+
     [Theory(DisplayName = "O documento escreve cada operador pelo código declarado")]
     [InlineData(Operador.Igual, "IGUAL", "true")]
     [InlineData(Operador.AlgumDe, "ALGUM_DE", "[\"A\"]")]
@@ -30,7 +63,7 @@ public sealed class PredicadoDnfJsonTests
             [(0, CondicaoDnf.Criar("FATO", operador, documento.RootElement).Value!)]).Value!;
 
         PredicadoDnfJson.ParaJson(predicado).ToJsonString()
-            .Should().Be($$"""[[{"fato":"FATO","operador":"{{codigo}}","valor":{{valor}}}]]""");
+            .Should().Be($$"""[[{"codigoDoDado":"FATO","operador":"{{codigo}}","valor":{{valor}}}]]""");
     }
 
     [Theory(DisplayName = "O documento com operador fora do catálogo é recusado no campo do operador, sem virar operador nenhum")]
@@ -39,17 +72,17 @@ public sealed class PredicadoDnfJsonTests
     [InlineData("NENHUMA")]
     public void DeJson_OperadorForaDoCatalogo_RecusaNoCampoDoOperador(string operador)
     {
-        using JsonDocument documento = JsonDocument.Parse($$"""[[{"fato":"FATO","operador":"{{operador}}","valor":true}]]""");
+        using JsonDocument documento = JsonDocument.Parse($$"""[[{"codigoDoDado":"FATO","operador":"{{operador}}","valor":true}]]""");
 
         Result<PredicadoDnf> lido = PredicadoDnfJson.DeJson(documento.RootElement);
 
         lido.Errors.Select(static e => (e.Field, e.Error.Code)).Should().Equal(("[0][0].operador", "CondicaoDnf.OperadorInvalido"));
     }
 
-    [Theory(DisplayName = "O predicado fora da forma esperada é recusado como forma inválida")]
-    [InlineData("""{"fato":"IDADE"}""")]
+    [Theory(DisplayName = "A condição fora da forma esperada é recusada como forma inválida")]
+    [InlineData("""{"codigoDoDado":"IDADE"}""")]
     [InlineData("""[[]]""")]
-    [InlineData("""[[{"fato":"IDADE","operador":"IGUAL"}]]""")]
+    [InlineData("""[[{"codigoDoDado":"IDADE","operador":"IGUAL"}]]""")]
     public void DeJson_ForaDaForma_RecusaComFormaInvalida(string json)
     {
         using JsonDocument documento = JsonDocument.Parse(json);
@@ -61,7 +94,7 @@ public sealed class PredicadoDnfJsonTests
 
     [Theory(DisplayName = "A obrigatoriedade fora da forma esperada é recusada como forma inválida")]
     [InlineData("""{"predicado":null}""")]
-    [InlineData("""{"tipo":"SEMPRE","predicado":[[{"fato":"PCD","operador":"IGUAL","valor":true}]]}""")]
+    [InlineData("""{"tipo":"SEMPRE","predicado":[[{"codigoDoDado":"PCD","operador":"IGUAL","valor":true}]]}""")]
     [InlineData("""{"tipo":"QUANDO","predicado":null}""")]
     public void ObrigatoriedadeDeJson_ForaDaForma_RecusaComFormaInvalida(string json)
     {
@@ -75,7 +108,7 @@ public sealed class PredicadoDnfJsonTests
     [Fact(DisplayName = "O impedimento sem mensagem é recusado como forma inválida")]
     public void ImpedimentoDeJson_SemMensagem_RecusaComFormaInvalida()
     {
-        using JsonDocument documento = JsonDocument.Parse("""{"quando":[[{"fato":"PCD","operador":"IGUAL","valor":true}]]}""");
+        using JsonDocument documento = JsonDocument.Parse("""{"quando":[[{"codigoDoDado":"PCD","operador":"IGUAL","valor":true}]]}""");
 
         Result<Impedimento?> lido = PredicadoDnfJson.ImpedimentoDeJson(documento.RootElement);
 
