@@ -22,13 +22,24 @@ public sealed class RecopiarAoCongelarTests
         ProcessoSeletivo processo = ProcessoConformeFactory.Criar(fase: inscricao);
         DocumentoExigido exigencia = ExigenciaSensivel(processo, inscricao);
         FatoColetado item = processo.FatosColetados.First(static f => f.Formato is not null);
-        UnidadeResponsavelSnapshot renomeada = new(UnidadesDeTeste.Ceps.OrigemId, "NOVA", "Unidade renomeada");
+        UnidadeResponsavelSnapshot renomeada = new(UnidadesDeTeste.Ceps.OrigemId, "NOVO_CODIGO", "NOVA", "Unidade renomeada");
 
         Result recopiado = processo.RecopiarAoCongelar(CopiasComCatalogoIncoerente(item, renomeada, exigencia));
 
         recopiado.IsFailure.Should().BeTrue();
-        processo.CronogramaFases.Single().UnidadeResponsavelSigla.Should().Be(UnidadesDeTeste.Ceps.Sigla);
+        processo.CronogramaFases.Single().UnidadeResponsavel!.Sigla.Should().Be(UnidadesDeTeste.Ceps.Sigla);
         exigencia.ClassificacaoProtecao.Should().Be(ClassificacaoDeProtecao.Sensivel);
+    }
+
+    [Fact]
+    public void RecopiarUnidades_CodigoAlteradoNaMesmaOrigem_CopiaNovoCodigo()
+    {
+        ProcessoSeletivo processo = ProcessoConformeFactory.Criar(fase: FaseDeInscricao());
+        UnidadeResponsavelSnapshot unidade = new(UnidadesDeTeste.Ceps.OrigemId, "CODIGO_NOVO", "CEPS", "Centro de Processos Seletivos");
+
+        processo.RecopiarUnidadesDasFases(new Dictionary<Guid, UnidadeResponsavelSnapshot> { [unidade.OrigemId] = unidade });
+
+        processo.CronogramaFases.Single().UnidadeResponsavel!.Codigo.Should().Be("CODIGO_NOVO");
     }
 
     [Fact]

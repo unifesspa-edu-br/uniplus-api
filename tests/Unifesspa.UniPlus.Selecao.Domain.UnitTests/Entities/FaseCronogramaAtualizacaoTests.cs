@@ -258,6 +258,5 @@ public sealed class FaseCronogramaAtualizacaoTests
         Atualizar(viva, Fase(new() { Unidade = null }));
 
         viva.UnidadeResponsavel.Should().BeNull();
-        viva.UnidadeResponsavelOrigemId.Should().BeNull();
     }
 }

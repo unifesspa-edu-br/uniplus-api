@@ -79,6 +79,7 @@ internal static class SerializacaoDoCronograma
     private static JsonObject SerializarUnidadeResponsavel(UnidadeResponsavelSnapshot unidade) => new()
     {
         ["origemId"] = unidade.OrigemId,
+        ["codigo"] = HashCanonicalComputer.NormalizeNfc(unidade.Codigo),
         ["sigla"] = HashCanonicalComputer.NormalizeNfc(unidade.Sigla),
         ["nome"] = HashCanonicalComputer.NormalizeNfc(unidade.Nome),
     };

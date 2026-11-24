@@ -11,9 +11,9 @@ internal static class UnidadesDeTeste
 {
     /// <summary>O Centro de Processos Seletivos, unidade padrão das fases de teste.</summary>
     public static UnidadeResponsavelSnapshot Ceps { get; } =
-        new(Guid.Parse("0197d6f0-0000-7000-8000-00000000ce95", System.Globalization.CultureInfo.InvariantCulture), "CEPS", "Centro de Processos Seletivos");
+        new(Guid.Parse("0197d6f0-0000-7000-8000-00000000ce95", System.Globalization.CultureInfo.InvariantCulture), "CEPS", "CEPS", "Centro de Processos Seletivos");
 
     /// <summary>O Centro de Gestão Acadêmica, que conduz a habilitação e a matrícula.</summary>
     public static UnidadeResponsavelSnapshot Cga { get; } =
-        new(Guid.Parse("0197d6f0-0000-7000-8000-00000000c9a0", System.Globalization.CultureInfo.InvariantCulture), "CGA", "Centro de Gestão Acadêmica");
+        new(Guid.Parse("0197d6f0-0000-7000-8000-00000000c9a0", System.Globalization.CultureInfo.InvariantCulture), "CGA", "CGA", "Centro de Gestão Acadêmica");
 }

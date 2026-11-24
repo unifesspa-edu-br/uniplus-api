@@ -68,7 +68,7 @@ public sealed record FasesIniciadas
         ArgumentNullException.ThrowIfNull(fase);
 
         return _unidadesPublicadas.TryGetValue(fase.FaseCanonicaOrigemId, out Guid? publicada)
-            && publicada != fase.UnidadeResponsavelOrigemId;
+            && publicada != fase.UnidadeResponsavel?.OrigemId;
     }
 
     /// <summary>

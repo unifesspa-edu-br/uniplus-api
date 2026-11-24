@@ -29,7 +29,7 @@ internal static class EntradaDoPreliminarDaFase
         Linha("codigo", fase.Codigo),
         Linha("inicio", fase.Inicio),
         Linha("fim", fase.Fim),
-        Linha("unidadeResponsavelOrigemId", fase.UnidadeResponsavelOrigemId),
+        Linha("unidadeResponsavelOrigemId", fase.UnidadeResponsavel?.OrigemId),
         Linha("emiteParecerIndividual", fase.EmiteParecerIndividual),
         Linha("origemData", fase.OrigemData),
         Linha("agrupaEtapas", fase.AgrupaEtapas),

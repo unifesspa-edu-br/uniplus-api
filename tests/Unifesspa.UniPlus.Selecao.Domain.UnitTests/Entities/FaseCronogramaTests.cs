@@ -27,10 +27,21 @@ public sealed class FaseCronogramaTests
         Result<FaseCronograma> resultado = Criar(m => m with { OrigemData = OrigemDataFase.NaExecucao, UnidadeResponsavel = UnidadesDeTeste.Cga });
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
-        resultado.Value!.UnidadeResponsavelOrigemId.Should().Be(UnidadesDeTeste.Cga.OrigemId);
-        resultado.Value.UnidadeResponsavelSigla.Should().Be("CGA");
-        resultado.Value.UnidadeResponsavelNome.Should().Be("Centro de Gestão Acadêmica");
+        resultado.Value!.UnidadeResponsavel!.OrigemId.Should().Be(UnidadesDeTeste.Cga.OrigemId);
+        resultado.Value.UnidadeResponsavel!.Codigo.Should().Be(UnidadesDeTeste.Cga.Codigo);
+        resultado.Value.UnidadeResponsavel!.Sigla.Should().Be("CGA");
+        resultado.Value.UnidadeResponsavel!.Nome.Should().Be("Centro de Gestão Acadêmica");
         resultado.Value.UnidadeResponsavel.Should().Be(UnidadesDeTeste.Cga);
+    }
+
+    [Fact(DisplayName = "Fases com a mesma unidade guardam valores independentes")]
+    public void UnidadeResponsavel_CompartilhadaEntreFases_CadaFaseGuardaSuaCopia()
+    {
+        FaseCronograma primeira = Criar(m => m with { OrigemData = OrigemDataFase.NaExecucao, UnidadeResponsavel = UnidadesDeTeste.Cga }).Value!;
+        FaseCronograma segunda = Criar(m => m with { OrigemData = OrigemDataFase.NaExecucao, UnidadeResponsavel = UnidadesDeTeste.Cga }).Value!;
+
+        primeira.UnidadeResponsavel.Should().Be(segunda.UnidadeResponsavel);
+        primeira.UnidadeResponsavel.Should().NotBeSameAs(segunda.UnidadeResponsavel);
     }
 
     [Fact(DisplayName = "O rascunho aceita fase ainda sem unidade responsável")]
@@ -39,8 +50,7 @@ public sealed class FaseCronogramaTests
         Result<FaseCronograma> resultado = Criar(m => m with { OrigemData = OrigemDataFase.NaExecucao, ComUnidade = false });
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
-        resultado.Value!.UnidadeResponsavelOrigemId.Should().BeNull();
-        resultado.Value.UnidadeResponsavel.Should().BeNull();
+        resultado.Value!.UnidadeResponsavel.Should().BeNull();
     }
 
     // ── CA-07 — janela × OrigemData ──

@@ -70,6 +70,31 @@ public sealed class ConformidadeEnemEndpointTests
         await ConfiraConformidadeInsuficienteComAOfertaNoDetalheAsync(response, oferta);
     }
 
+    [Fact]
+    public async Task Retificar_FaseSemUnidadeResponsavel_Recusa()
+    {
+        CascadingApiFactory api = _fixture.Factory;
+        await TiposDeAtoSeeder.SemearAsync(api.Services);
+        using HttpClient client = api.CreateClient();
+        (ProcessoSeletivo processo, DocumentoAPublicar documento) = await SemearAsync(api, nameof(Retificar_FaseSemUnidadeResponsavel_Recusa), ofertaComGrupo: true);
+        await PubliqueAsync(client, processo.Id, documento.Id);
+        Guid documentoRetificacao = await RetirarUnidadeESemearDocumentoAsync(api, processo.Id);
+
+        using HttpResponseMessage resposta = await PostAsync(client, $"{processo.Id}/retificacoes", NovoCorpoRetificacao(documentoRetificacao));
+
+        resposta.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
+        string conteudo = await resposta.Content.ReadAsStringAsync();
+        conteudo.Should().Contain("uniplus.selecao.processo_seletivo.fase_sem_unidade_responsavel");
+    }
+
+    private static async Task<Guid> RetirarUnidadeESemearDocumentoAsync(CascadingApiFactory api, Guid processoId)
+    {
+        await using AsyncServiceScope scope = api.Services.CreateAsyncScope();
+        UniPlusDbContext db = scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
+        await db.Database.ExecuteSqlAsync($"UPDATE selecao.fases_cronograma SET unidade_responsavel_origem_id = NULL, unidade_responsavel_codigo = NULL, unidade_responsavel_sigla = NULL, unidade_responsavel_nome = NULL WHERE processo_seletivo_id = {processoId}");
+        return await SemeieODocumentoDaRetificacaoAsync(db, processoId);
+    }
+
     private static async Task PubliqueAsync(HttpClient client, Guid processoId, Guid documentoId)
     {
         using HttpResponseMessage response = await PostAsync(client, $"{processoId}/publicacao", NovoCorpoPublicacao(documentoId));

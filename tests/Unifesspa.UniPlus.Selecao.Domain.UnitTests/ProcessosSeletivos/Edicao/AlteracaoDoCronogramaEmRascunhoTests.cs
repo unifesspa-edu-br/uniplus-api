@@ -30,13 +30,13 @@ public sealed class AlteracaoDoCronogramaEmRascunhoTests
     {
         ProcessoSeletivo processo = ProcessoConformeFactory.Criar();
         FaseCronograma original = processo.CronogramaFases.Single();
-        original.UnidadeResponsavelOrigemId.Should().Be(UnidadesDeTeste.Ceps.OrigemId);
+        original.UnidadeResponsavel!.OrigemId.Should().Be(UnidadesDeTeste.Ceps.OrigemId);
         FaseCronograma trocada = ComUnidade(original, UnidadesDeTeste.Cga);
 
         Result resultado = processo.DefinirCronogramaFases([trocada], []);
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
-        processo.CronogramaFases.Should().ContainSingle().Which.UnidadeResponsavelOrigemId.Should().Be(UnidadesDeTeste.Cga.OrigemId);
+        processo.CronogramaFases.Should().ContainSingle().Which.UnidadeResponsavel!.OrigemId.Should().Be(UnidadesDeTeste.Cga.OrigemId);
     }
 
     private static FaseCronograma Fase(int ordem, string codigo) =>

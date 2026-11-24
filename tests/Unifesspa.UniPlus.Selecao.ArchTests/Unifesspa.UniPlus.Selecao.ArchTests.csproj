@@ -5,6 +5,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Include="../Unifesspa.UniPlus.Selecao.Domain.UnitTests/ValueObjects/ClassificacaoDasPropriedadesDoPreliminarTests.cs" Link="Conferencias/ClassificacaoDasPropriedadesDoPreliminarTests.cs" />
     <PackageReference Include="Microsoft.CodeAnalysis.BannedApiAnalyzers" PrivateAssets="all" />
     <AdditionalFiles Include="../../BannedSymbols.txt" />
     <PackageReference Include="coverlet.collector" />

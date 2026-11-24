@@ -27,9 +27,6 @@ public sealed class ConferenciaDeConformidadeTests
 {
     private static readonly string HashFixo = new('a', 64);
 
-    private static ReferenciaRegra Regra(string codigo, string hashSeed) =>
-        ReferenciaRegra.De(codigo, "v1", new string(hashSeed[0], 64));
-
     private static ProcessoSeletivo ProcessoConforme(bool declararTaxa = true) =>
         ProcessoConformeFactory.Criar(declararTaxa);
 
@@ -37,26 +34,6 @@ public sealed class ConferenciaDeConformidadeTests
 
     private static Result<VersaoConfiguracao> TentarPublicar(ProcessoSeletivo processo) => processo.Publicar(
         new CenarioDeCongelamento { Dados = Dados(), Documento = new DocumentoCongelado("{}"u8.ToArray(), "1.1", "canonical-json/sha256@v1", HashFixo), AtorUsuarioContaId = "teste" });
-
-    private static Result<VersaoConfiguracao> TentarRetificar(ProcessoSeletivo processo, VersaoConfiguracao versaoAtual) => processo.Retificar(
-        new CenarioDeCongelamento { Dados = Dados(), Documento = new DocumentoCongelado("{}"u8.ToArray(), "1.1", "canonical-json/sha256@v1", HashFixo), AtorUsuarioContaId = "teste" }, versaoAtual, "Correção do prazo");
-
-    private static VersaoConfiguracao Publicar(ProcessoSeletivo processo)
-    {
-        Result<VersaoConfiguracao> publicar = TentarPublicar(processo);
-
-        publicar.IsSuccess.Should().BeTrue(publicar.Error?.Message);
-        return publicar.Value!;
-    }
-
-    // A configuração fica incompleta com o processo já publicado. Hoje não há caminho de API para chegar aqui (todo Definir* é
-    // barrado pós-publicação), mas o estado é alcançável por correção de dados no banco, e a conferência tem de pegá-lo
-    // independentemente de como ele surgiu. A contraprova pelo caminho real (apagar a classificação no Postgres, recarregar o
-    // agregado e retificar) está em RetificacaoConformidadeTests, de integração.
-    private static void ApagarAClassificacaoDoProcessoPublicado(ProcessoSeletivo processo) =>
-        typeof(ProcessoSeletivo)
-            .GetProperty(nameof(ProcessoSeletivo.Classificacao))!
-            .SetValue(processo, null);
 
     [Fact(DisplayName = "Processo incompleto: cada item estrutural pendente é uma causa no bloco do documento, e o cronograma vazio é recusado pela estrutura")]
     public void ProcessoIncompleto_NomeiaCadaItemPendente()
@@ -76,29 +53,6 @@ public sealed class ConferenciaDeConformidadeTests
     public void PendenciaDeConformidade_ProcessoConforme() =>
         CausasDeConformidadeDeTeste.De(ProcessoConforme()).Should().BeEmpty();
 
-    /// <summary>
-    /// <b>Contraprova do CA-09.</b> É a lacuna que esta story fecha: antes,
-    /// <c>Retificar</c> não avaliava conformidade nenhuma.
-    /// </summary>
-    [Fact(DisplayName = "Retificar_ProcessoNaoConforme_Recusa — a retificação avalia a MESMA conferência da publicação")]
-    public void Retificar_ProcessoNaoConforme_Recusa()
-    {
-        ProcessoSeletivo processo = ProcessoConforme();
-        VersaoConfiguracao versaoAtual = Publicar(processo);
-        ApagarAClassificacaoDoProcessoPublicado(processo);
-        processo.Classificacao.Should().BeNull("pré-condição do teste");
-
-        Result<VersaoConfiguracao> retificar = TentarRetificar(processo, versaoAtual);
-
-        retificar.IsFailure.Should().BeTrue(
-            "retificar também congela uma versão append-only e vinculante — congelar configuração incompleta " +
-            "ali produz um documento irreparável, exatamente como na publicação");
-
-        retificar.Error!.Code.Should().Be(
-            "ProcessoSeletivo.ConformidadeInsuficiente",
-            "as duas transições recusam com o MESMO DomainError — fonte única (ADR-0109 D5)");
-    }
-
     [Fact(DisplayName = "Publicar com fase sem unidade responsável recusa e cita a fase")]
     public void Publicar_FaseSemUnidadeResponsavel_RecusaCitandoAFase()
     {
@@ -111,24 +65,6 @@ public sealed class ConferenciaDeConformidadeTests
         publicar.Error!.Code.Should().Be("ProcessoSeletivo.FaseSemUnidadeResponsavel");
         publicar.Error.Message.Should().Contain("RESULTADO_FINAL");
         processo.Status.Should().Be(StatusProcesso.Rascunho, "a recusa não congela nada");
-    }
-
-    [Fact(DisplayName = "Retificar com fase sem unidade responsável recusa com o mesmo erro da publicação")]
-    public void Retificar_FaseSemUnidadeResponsavel_Recusa()
-    {
-        ProcessoSeletivo processo = ProcessoConforme();
-        VersaoConfiguracao versaoAtual = Publicar(processo);
-
-        // A unidade é retirada direto da fase gravada: depois de publicado, nenhum Definir* a
-        // retira, e a conferência da retificação tem de pegar o estado qualquer que seja o caminho.
-        typeof(FaseCronograma)
-            .GetProperty(nameof(FaseCronograma.UnidadeResponsavelOrigemId))!
-            .SetValue(processo.CronogramaFases.Single(), null);
-
-        Result<VersaoConfiguracao> retificar = TentarRetificar(processo, versaoAtual);
-
-        retificar.IsFailure.Should().BeTrue();
-        retificar.Error!.Code.Should().Be("ProcessoSeletivo.FaseSemUnidadeResponsavel");
     }
 
     [Fact(DisplayName = "Publicar_ProcessoNaoConforme_Recusa — a conferência da publicação continua valendo")]

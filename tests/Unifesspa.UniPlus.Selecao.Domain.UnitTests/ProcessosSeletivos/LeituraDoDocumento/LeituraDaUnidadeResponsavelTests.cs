@@ -18,7 +18,7 @@ public sealed class LeituraDaUnidadeResponsavelTests
     {
         IdentificacaoECronogramaLidos lidos = Ler(Documento(Fase(0, "inscricao", unidade: "CGA")));
 
-        lidos.Cronograma.CronogramaFases.Single().UnidadeResponsavel!.Sigla.Should().Be("CGA");
+        lidos.Cronograma.CronogramaFases.Single().UnidadeResponsavel!.Codigo.Should().Be("CGA");
     }
 
     [Fact(DisplayName = "A unidade que o cadastro não tem deixa a fase adotada sem unidade e aponta o campo que a cita")]

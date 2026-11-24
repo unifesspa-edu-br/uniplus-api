@@ -27,7 +27,7 @@ public sealed class EntradaDoPreliminarDaFaseTests
         [nameof(FaseCronograma.Codigo)] = () => Fase(origem: o => o with { Codigo = "PROVA_OBJETIVA" }),
         [nameof(FaseCronograma.Inicio)] = () => Fase(decisoes: d => d with { Inicio = Inicio.AddHours(1) }),
         [nameof(FaseCronograma.Fim)] = () => Fase(decisoes: d => d with { Fim = Inicio.AddDays(6) }),
-        [nameof(FaseCronograma.UnidadeResponsavelOrigemId)] = () => Fase(decisoes: d => d with { UnidadeResponsavel = UnidadesDeTeste.Cga }),
+        [nameof(FaseCronograma.UnidadeResponsavel)] = () => Fase(decisoes: d => d with { UnidadeResponsavel = UnidadesDeTeste.Cga }),
         [nameof(FaseCronograma.EmiteParecerIndividual)] = () => Fase(publicacoes: p => p with { EmiteParecerIndividual = true }),
         [nameof(FaseCronograma.OrigemData)] = () => Fase(origem: o => o with { OrigemData = OrigemDataFase.NaExecucao }),
         [nameof(FaseCronograma.AgrupaEtapas)] = () => Fase(origem: o => o with { AgrupaEtapas = true }),
@@ -42,8 +42,9 @@ public sealed class EntradaDoPreliminarDaFaseTests
     private static readonly Dictionary<string, Func<FaseCronograma>> QueNaoEntram = new()
     {
         [nameof(FaseCronograma.Ordem)] = () => Fase(decisoes: d => d with { Ordem = 7 }),
-        [nameof(FaseCronograma.UnidadeResponsavelSigla)] = () => Fase(decisoes: d => d with { UnidadeResponsavel = new(UnidadesDeTeste.Ceps.OrigemId, "CEPS-X", UnidadesDeTeste.Ceps.Nome) }),
-        [nameof(FaseCronograma.UnidadeResponsavelNome)] = () => Fase(decisoes: d => d with { UnidadeResponsavel = new(UnidadesDeTeste.Ceps.OrigemId, UnidadesDeTeste.Ceps.Sigla, "Outro nome") }),
+        [nameof(UnidadeResponsavelSnapshot.Codigo)] = () => Fase(decisoes: d => d with { UnidadeResponsavel = new(UnidadesDeTeste.Ceps.OrigemId, "CODIGO_NOVO", UnidadesDeTeste.Ceps.Sigla, UnidadesDeTeste.Ceps.Nome) }),
+        [nameof(UnidadeResponsavelSnapshot.Sigla)] = () => Fase(decisoes: d => d with { UnidadeResponsavel = new(UnidadesDeTeste.Ceps.OrigemId, UnidadesDeTeste.Ceps.Codigo, "CEPS-X", UnidadesDeTeste.Ceps.Nome) }),
+        [nameof(UnidadeResponsavelSnapshot.Nome)] = () => Fase(decisoes: d => d with { UnidadeResponsavel = new(UnidadesDeTeste.Ceps.OrigemId, UnidadesDeTeste.Ceps.Codigo, UnidadesDeTeste.Ceps.Sigla, "Outro nome") }),
         [nameof(FaseCronograma.Produtos)] = () => Fase(publicacoes: p => p with { Produtos = [.. p.Produtos, ProdutoDaFase.Criar(Materia, PapelProdutoFase.Definitivo)] }),
     };
 

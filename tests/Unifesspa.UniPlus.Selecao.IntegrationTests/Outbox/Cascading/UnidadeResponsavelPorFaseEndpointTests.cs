@@ -66,6 +66,7 @@ public sealed class UnidadeResponsavelPorFaseEndpointTests
         resposta.StatusCode.Should().Be(HttpStatusCode.NoContent);
         IReadOnlyList<FaseCronogramaDto> lidas = await ctx.ObterFasesLidasPelaApiAsync();
         lidas.Should().OnlyContain(f => f.Cronograma.UnidadeResponsavel == null);
+        (await ctx.ContarFasesComColunasDaUnidadeNulasAsync()).Should().Be(2);
     }
 
     [Fact(DisplayName = "Unidade que o cadastro não tem é recusada no campo da fase, com o código próprio")]
@@ -136,10 +137,11 @@ public sealed class UnidadeResponsavelPorFaseEndpointTests
     private static async Task AfirmarCopiasGravadasAsync(Contexto ctx, Unidade primeira, Unidade segunda)
     {
         IReadOnlyList<FaseCronograma> gravadas = await ctx.ObterFasesGravadasAsync();
-        gravadas[0].UnidadeResponsavelOrigemId.Should().Be(primeira.Id);
-        gravadas[0].UnidadeResponsavelSigla.Should().Be(primeira.Sigla);
-        gravadas[0].UnidadeResponsavelNome.Should().Be(primeira.Nome);
-        gravadas[1].UnidadeResponsavelOrigemId.Should().Be(segunda.Id);
+        gravadas[0].UnidadeResponsavel!.OrigemId.Should().Be(primeira.Id);
+        gravadas[0].UnidadeResponsavel!.Codigo.Should().Be(primeira.Codigo);
+        gravadas[0].UnidadeResponsavel!.Sigla.Should().Be(primeira.Sigla);
+        gravadas[0].UnidadeResponsavel!.Nome.Should().Be(primeira.Nome);
+        gravadas[1].UnidadeResponsavel!.OrigemId.Should().Be(segunda.Id);
     }
 
     private static async Task AfirmarCopiasLidasPelaApiAsync(Contexto ctx, Unidade primeira, Unidade segunda)
@@ -193,6 +195,18 @@ public sealed class UnidadeResponsavelPorFaseEndpointTests
                 .Where(f => f.ProcessoSeletivoId == ProcessoId)
                 .OrderBy(f => f.Ordem)
                 .ToListAsync().ConfigureAwait(false);
+        }
+
+        public async Task<int> ContarFasesComColunasDaUnidadeNulasAsync()
+        {
+            await using AsyncServiceScope scope = Api.Services.CreateAsyncScope();
+            UniPlusDbContext banco = scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
+            return await banco.Database.SqlQuery<int>($"""
+                SELECT count(*)::integer AS "Value" FROM selecao.fases_cronograma
+                WHERE processo_seletivo_id = {ProcessoId}
+                  AND unidade_responsavel_origem_id IS NULL AND unidade_responsavel_codigo IS NULL
+                  AND unidade_responsavel_sigla IS NULL AND unidade_responsavel_nome IS NULL
+                """).SingleAsync().ConfigureAwait(false);
         }
 
         public async Task<IReadOnlyList<FaseCronogramaDto>> ObterFasesLidasPelaApiAsync()

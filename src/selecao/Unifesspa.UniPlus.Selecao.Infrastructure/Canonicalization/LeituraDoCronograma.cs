@@ -166,7 +166,7 @@ internal static class LeituraDoCronograma
 
     /// <summary>
     /// A unidade que responde pela fase, congelada por valor: <c>null</c> enquanto a fase não a
-    /// definiu, ou o objeto <c>{origemId, sigla, nome}</c>.
+    /// definiu, ou o objeto <c>{origemId, codigo, sigla, nome}</c>.
     /// </summary>
     internal static UnidadeResponsavelSnapshot? LerUnidadeResponsavel(LeitorEnvelope leitor, JsonObject faseItem, string pathPai)
     {
@@ -177,11 +177,12 @@ internal static class LeituraDoCronograma
         }
 
         string path = $"{pathPai}.unidadeResponsavel";
-        leitor.ExigirChaves(unidade, path, "origemId", "sigla", "nome");
+        leitor.ExigirChaves(unidade, path, "origemId", "codigo", "sigla", "nome");
         Guid origemId = leitor.Identificador(unidade, "origemId", path);
+        string codigo = leitor.TextoNaoVazio(unidade, "codigo", path, LimitesDoEnvelope.UnidadeAdministradoraCodigo);
         string sigla = leitor.TextoNaoVazio(unidade, "sigla", path, LimitesDoEnvelope.UnidadeAdministradoraSigla);
         string nome = leitor.TextoNaoVazio(unidade, "nome", path, LimitesDoEnvelope.UnidadeAdministradoraNome);
-        return leitor.Falhou ? null : new UnidadeResponsavelSnapshot(origemId, sigla, nome);
+        return leitor.Falhou ? null : new UnidadeResponsavelSnapshot(origemId, codigo, sigla, nome);
     }
 
     /// <summary>

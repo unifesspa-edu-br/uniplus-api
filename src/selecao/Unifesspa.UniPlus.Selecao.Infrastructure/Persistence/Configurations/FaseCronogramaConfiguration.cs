@@ -1,8 +1,11 @@
 namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Configurations;
 
+using Canonicalization;
+
 using Domain.Entities;
 using Domain.Enums;
 using Domain.ValueObjects;
+
 
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
@@ -31,6 +34,9 @@ public sealed class FaseCronogramaConfiguration : IEntityTypeConfiguration<FaseC
         builder.ToTable("fases_cronograma", tabela =>
         {
             tabela.HasComment("Fases e períodos do cronograma de cada processo seletivo.");
+            tabela.HasCheckConstraint("ck_fases_cronograma_unidade_completa",
+                "(unidade_responsavel_origem_id IS NULL AND unidade_responsavel_codigo IS NULL AND unidade_responsavel_sigla IS NULL AND unidade_responsavel_nome IS NULL) "
+                + "OR (unidade_responsavel_origem_id IS NOT NULL AND unidade_responsavel_codigo IS NOT NULL AND unidade_responsavel_sigla IS NOT NULL AND unidade_responsavel_nome IS NOT NULL)");
             tabela.HasCheckConstraint("ck_fases_cronograma_periodo_em_ordem", "inicio IS NULL OR fim IS NULL OR inicio <= fim");
         });
         builder.HasKey(f => f.Id);
@@ -48,12 +54,18 @@ public sealed class FaseCronogramaConfiguration : IEntityTypeConfiguration<FaseC
         builder.Property(f => f.OrigemData).HasConversion<int>().IsRequired()
             .HasComment($"Momento em que as datas da fase são definidas. Códigos: {string.Join(", ", Enum.GetValues<OrigemDataFase>().Select(static valor => $"{(int)valor} ({valor})"))}.");
 
-        // Snapshot-copy (ADR-0061) da unidade responsável: o id sem FK e a cópia de sigla e
-        // nome, que o domínio grava e lê juntos — nulos enquanto o rascunho não a definiu.
-        builder.Property(f => f.UnidadeResponsavelOrigemId).HasComment("Identificador da unidade responsável, copiado quando definida.");
-        builder.Property(f => f.UnidadeResponsavelSigla).HasComment("Sigla da unidade responsável, copiada quando definida.").HasMaxLength(UnidadeSiglaMaxLength);
-        builder.Property(f => f.UnidadeResponsavelNome).HasComment("Nome da unidade responsável, copiado quando definida.").HasMaxLength(UnidadeNomeMaxLength);
-        builder.Ignore(f => f.UnidadeResponsavel);
+        builder.OwnsOne(f => f.UnidadeResponsavel, unidade =>
+        {
+            unidade.ClassificaPorPadrao(ClassificacaoDeProtecao.Interno);
+            unidade.Property(u => u.OrigemId).HasColumnName("unidade_responsavel_origem_id")
+                .HasComment("Identificador da unidade responsável, copiado quando definida.");
+            unidade.Property(u => u.Codigo).HasColumnName("unidade_responsavel_codigo").HasMaxLength(LimitesDoEnvelope.UnidadeAdministradoraCodigo).IsRequired()
+                .HasComment("Código da unidade responsável no cadastro, copiado ao salvar a fase.");
+            unidade.Property(u => u.Sigla).HasColumnName("unidade_responsavel_sigla").HasMaxLength(UnidadeSiglaMaxLength).IsRequired()
+                .HasComment("Sigla da unidade responsável, copiada quando definida.");
+            unidade.Property(u => u.Nome).HasColumnName("unidade_responsavel_nome").HasMaxLength(UnidadeNomeMaxLength).IsRequired()
+                .HasComment("Nome da unidade responsável, copiado quando definida.");
+        });
 
         builder.Property(f => f.Chave)
             .HasConversion(chave => chave.Valor, valor => ChaveLocal.Criar(valor).Value)

@@ -24,6 +24,6 @@ internal sealed class ResolvedorDaUnidadeResponsavel : IResolvedorDaUnidadeRespo
             .ObterPorIdAsync(unidadeId, cancellationToken)
             .ConfigureAwait(false);
 
-        return unidade is null ? null : new UnidadeResponsavelSnapshot(unidade.Id, unidade.Sigla, unidade.Nome);
+        return unidade is null ? null : new UnidadeResponsavelSnapshot(unidade.Id, unidade.Codigo, unidade.Sigla, unidade.Nome);
     }
 }
