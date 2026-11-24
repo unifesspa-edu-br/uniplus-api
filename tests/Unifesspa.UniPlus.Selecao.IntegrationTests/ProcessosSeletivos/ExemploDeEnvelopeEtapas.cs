@@ -100,7 +100,7 @@ internal static class ExemploDeEnvelopeEtapas
             Regra(RegraDePrazoDoRecurso.ContadoDaPublicacaoDoAto.Codigo(), '9'),
             ParametrosDoRecursoDeTeste.Declarados(5.0000m, UnidadePrazo.DiasUteis),
             ProdutoDaObjetivaId(3, variante),
-            ProcedimentosDoExemploComAlvos()).Value!;
+            ProcedimentosDoExemploComAlvos(variante)).Value!;
 
     private static ProcedimentosDeRecurso ProcedimentosDoExemploSemAlvo() => ProcedimentosDeRecurso.De(
     [
@@ -108,13 +108,13 @@ internal static class ExemploDeEnvelopeEtapas
     ]);
 
     // Fora da ordem canônica de propósito: a coleção a normaliza, e o hash não pode depender da ordem de entrada.
-    private static ProcedimentosDeRecurso ProcedimentosDoExemploComAlvos() => ProcedimentosDeRecurso.De(
+    private static ProcedimentosDeRecurso ProcedimentosDoExemploComAlvos(int variante) => ProcedimentosDeRecurso.De(
     [
         ProcedimentoDeRecursoDeclarado.De(
             TipoMotivoDeDecisao.Classificacao, AlvoDoProcedimentoDeRecurso.DaArea(AreaDoEnem.Matematica), Regra(RegraDeProcedimentoDoRecurso.Recalculo.Codigo(), '7')),
         ProcedimentoDeRecursoDeclarado.De(
             TipoMotivoDeDecisao.AnaliseDocumental,
-            AlvoDoProcedimentoDeRecurso.DoItem(Guid.Parse("00000000-0000-7000-8000-0000000000a1")),
+            AlvoDoProcedimentoDeRecurso.DoItem(ItemDeAvaliacaoId(2, variante)),
             Regra(RegraDeProcedimentoDoRecurso.Conferencia.Codigo(), '8')),
         ProcedimentoDeRecursoDeclarado.De(
             TipoMotivoDeDecisao.Classificacao, AlvoDoProcedimentoDeRecurso.DaArea(AreaDoEnem.Linguagens), Regra(RegraDeProcedimentoDoRecurso.Recalculo.Codigo(), '7')),
