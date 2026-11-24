@@ -120,7 +120,7 @@
       ],
       "properties": {
         "referenciaDaData": {
-          "title": "Âncora",
+          "title": "Referência da data",
           "description": "DATA_FIXA usa a data; ENVIO usa o deslocamento em anos e dias.",
           "enum": [
             "DATA_FIXA",
@@ -129,22 +129,22 @@
         },
         "data": {
           "title": "Data",
-          "description": "Data do limite, no formato AAAA-MM-DD. Usada na âncora DATA_FIXA.",
+          "description": "Data do limite, no formato AAAA-MM-DD. Usada com DATA_FIXA.",
           "type": "string",
           "format": "date"
         },
         "anos": {
           "title": "Anos",
-          "description": "Deslocamento em anos a partir do envio, de 0 a 150. Usado na âncora ENVIO.",
+          "description": "Deslocamento em anos a partir do envio, de -150 a 150. Negativo indica antes do envio; por exemplo, -120 indica 120 anos antes. Usado com ENVIO.",
           "type": "integer",
-          "minimum": 0,
+          "minimum": -150,
           "maximum": 150
         },
         "dias": {
           "title": "Dias",
-          "description": "Deslocamento em dias a partir do envio, de 0 a 54900. Usado na âncora ENVIO.",
+          "description": "Deslocamento em dias a partir do envio, de -54900 a 54900. Negativo indica antes do envio; por exemplo, -120 indica 120 dias antes. Usado com ENVIO.",
           "type": "integer",
-          "minimum": 0,
+          "minimum": -54900,
           "maximum": 54900
         }
       }
