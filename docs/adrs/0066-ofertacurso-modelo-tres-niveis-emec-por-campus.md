@@ -109,3 +109,5 @@ A pesquisa sobre os programas itinerantes confirmou um padrão **híbrido nos qu
 **Decisão.** Toda oferta de curso tem um código informado pela gestão, obrigatório e editável, com letra maiúscula seguida de letras maiúsculas, dígitos e sublinhado, de 2 a 50 caracteres. O código é único entre as ofertas vivas (índice único parcial, e o cadastro confere antes e responde 409 na repetição); a oferta removida libera o código. Quem cita a oferta usa esse código, e a identidade continua sendo o identificador: a decisão de negócio usa o `Id`, o código é o que se mostra a quem lê. A cópia congelada da oferta na Seleção guarda o código e o identificador de origem, e o envelope do processo traz os dois.
 
 **Consequências.** Desaparece a referência ambígua, e com ela o resolvedor e os dois códigos de erro que existiam só para ele. Trocar o código no cadastro depois de publicado não altera a cópia congelada. Não há migração de dado: o código é obrigatório e as ofertas já cadastradas são recadastradas.
+
+Emenda: as colunas passam a `codigo_emec` e `codigo_no_sistema_academico`; a decisão permanece inalterada.
