@@ -1,4 +1,4 @@
--- Append-only imposto pelo banco (ADR-0063, ADR-0107). O ato publicado, o vínculo com a entidade, a vaga do objeto e o
+-- Append-only imposto pelo banco (ADR-0063, ADR-0107). O ato publicado, o vínculo com a entidade, a exclusividade de atos do objeto e o
 -- anexo são prova legal: nenhum agregado expõe mutador, e o trigger fecha a brecha do UPDATE/DELETE cru.
 CREATE OR REPLACE FUNCTION publicacoes.fn_atos_normativos_somente_insercao()
 RETURNS trigger
@@ -22,13 +22,13 @@ BEGIN
 END;
 $$;
 
-CREATE OR REPLACE FUNCTION publicacoes.fn_vagas_de_linhagem_somente_insercao()
+CREATE OR REPLACE FUNCTION publicacoes.fn_exclusividades_de_atos_somente_insercao()
 RETURNS trigger
 LANGUAGE plpgsql
 AS $$
 BEGIN
     RAISE EXCEPTION
-        'vagas_de_linhagem é append-only (ADR-0107): operação % é bloqueada; a vaga do objeto não se transfere.', TG_OP
+        'exclusividades_de_atos é append-only (ADR-0107): operação % é bloqueada; a exclusividade de atos do objeto não se transfere.', TG_OP
         USING ERRCODE = 'restrict_violation';
 END;
 $$;
@@ -68,11 +68,11 @@ CREATE TRIGGER trg_vinculos_do_ato_com_entidade_somente_insercao
     FOR EACH ROW
     EXECUTE FUNCTION publicacoes.fn_vinculos_do_ato_com_entidade_somente_insercao();
 
-DROP TRIGGER IF EXISTS trg_vagas_de_linhagem_somente_insercao ON publicacoes.vagas_de_linhagem;
-CREATE TRIGGER trg_vagas_de_linhagem_somente_insercao
-    BEFORE UPDATE OR DELETE ON publicacoes.vagas_de_linhagem
+DROP TRIGGER IF EXISTS trg_exclusividades_de_atos_somente_insercao ON publicacoes.exclusividades_de_atos;
+CREATE TRIGGER trg_exclusividades_de_atos_somente_insercao
+    BEFORE UPDATE OR DELETE ON publicacoes.exclusividades_de_atos
     FOR EACH ROW
-    EXECUTE FUNCTION publicacoes.fn_vagas_de_linhagem_somente_insercao();
+    EXECUTE FUNCTION publicacoes.fn_exclusividades_de_atos_somente_insercao();
 
 DROP TRIGGER IF EXISTS trg_anexos_do_ato_somente_insercao ON publicacoes.anexos_do_ato;
 CREATE TRIGGER trg_anexos_do_ato_somente_insercao
@@ -92,9 +92,9 @@ CREATE TRIGGER trg_vinculos_do_ato_com_entidade_bloqueia_truncate
     FOR EACH STATEMENT
     EXECUTE FUNCTION publicacoes.fn_bloqueia_truncate();
 
-DROP TRIGGER IF EXISTS trg_vagas_de_linhagem_bloqueia_truncate ON publicacoes.vagas_de_linhagem;
-CREATE TRIGGER trg_vagas_de_linhagem_bloqueia_truncate
-    BEFORE TRUNCATE ON publicacoes.vagas_de_linhagem
+DROP TRIGGER IF EXISTS trg_exclusividades_de_atos_bloqueia_truncate ON publicacoes.exclusividades_de_atos;
+CREATE TRIGGER trg_exclusividades_de_atos_bloqueia_truncate
+    BEFORE TRUNCATE ON publicacoes.exclusividades_de_atos
     FOR EACH STATEMENT
     EXECUTE FUNCTION publicacoes.fn_bloqueia_truncate();
 

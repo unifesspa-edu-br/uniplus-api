@@ -12,7 +12,7 @@ using Unifesspa.UniPlus.Monolito.Persistencia;
 namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 {
     [DbContext(typeof(MonolitoDbContext))]
-    [Migration("20261124122221_Inicial")]
+    [Migration("20261124122254_Inicial")]
     partial class Inicial
     {
         /// <inheritdoc />
@@ -10606,7 +10606,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.Property<bool>("EhResultado")
                         .HasColumnType("boolean")
-                        .HasColumnName("eh_resultado");
+                        .HasColumnName("determina_resultado")
+                        .HasComment("Indica se o ato deste tipo determina a situação do candidato (é um resultado).");
 
                     b.Property<bool>("ExigeAtoCorrigido")
                         .HasColumnType("boolean")
@@ -10670,52 +10671,60 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid")
-                        .HasColumnName("id");
+                        .HasColumnName("id")
+                        .HasComment("Identificador da exclusividade de atos.");
 
                     b.Property<Guid>("AtoId")
                         .HasColumnType("uuid")
-                        .HasColumnName("ato_id");
+                        .HasColumnName("ato_id")
+                        .HasComment("Ato que abriu a exclusividade. Pode ser uma retificação, quando o ato inicial foi publicado sem vínculo com o objeto.");
 
                     b.Property<Guid>("EntidadeId")
                         .HasColumnType("uuid")
-                        .HasColumnName("entidade_id");
+                        .HasColumnName("entidade_id")
+                        .HasComment("Identificador da entidade tratada, opaco para o módulo.");
 
                     b.Property<string>("EntidadeTipo")
                         .IsRequired()
                         .HasMaxLength(60)
                         .HasColumnType("character varying(60)")
-                        .HasColumnName("entidade_tipo");
+                        .HasColumnName("entidade_tipo")
+                        .HasComment("Tipo da entidade tratada, opaco para o módulo (por exemplo, PROCESSO_SELETIVO).");
 
                     b.Property<Guid>("RaizId")
                         .HasColumnType("uuid")
-                        .HasColumnName("raiz_id");
+                        .HasColumnName("ato_inicial_id")
+                        .HasComment("Ato inicial da cadeia de retificação que detém a exclusividade: identifica a cadeia inteira.");
 
                     b.Property<string>("TipoCodigo")
                         .IsRequired()
                         .HasMaxLength(60)
                         .HasColumnType("character varying(60)")
-                        .HasColumnName("tipo_codigo");
+                        .HasColumnName("tipo_codigo")
+                        .HasComment("Código do tipo de ato, copiado do ato que abriu a exclusividade.");
 
                     b.HasKey("Id")
-                        .HasName("pk_vagas_de_linhagem");
+                        .HasName("pk_exclusividades_de_atos");
 
                     b.HasIndex("AtoId")
-                        .HasDatabaseName("ix_vagas_de_linhagem_ato_id");
+                        .HasDatabaseName("ix_exclusividades_de_atos_ato_id");
 
                     b.HasIndex("RaizId")
-                        .HasDatabaseName("ix_vagas_de_linhagem_raiz_id");
+                        .HasDatabaseName("ix_exclusividades_de_atos_ato_inicial_id");
 
                     b.HasIndex("EntidadeTipo", "EntidadeId", "TipoCodigo")
                         .IsUnique()
-                        .HasDatabaseName("ux_vagas_de_linhagem_objeto_tipo");
+                        .HasDatabaseName("ux_exclusividades_de_atos_objeto_tipo");
 
-                    b.ToTable("vagas_de_linhagem", "publicacoes", t =>
+                    b.ToTable("exclusividades_de_atos", "publicacoes", t =>
                         {
-                            t.HasCheckConstraint("ck_vagas_de_linhagem_entidade_id_nao_zero", "entidade_id <> '00000000-0000-0000-0000-000000000000'");
+                            t.HasComment("Exclusividade de atos: reserva que um objeto faz para uma única cadeia de retificação de atos de um tipo único por objeto.");
 
-                            t.HasCheckConstraint("ck_vagas_de_linhagem_entidade_tipo_formato", "entidade_tipo ~ '^[A-Z0-9]+(_[A-Z0-9]+)*$'");
+                            t.HasCheckConstraint("ck_exclusividades_de_atos_ato_inicial_nao_zero", "ato_inicial_id <> '00000000-0000-0000-0000-000000000000'");
 
-                            t.HasCheckConstraint("ck_vagas_de_linhagem_raiz_nao_zero", "raiz_id <> '00000000-0000-0000-0000-000000000000'");
+                            t.HasCheckConstraint("ck_exclusividades_de_atos_entidade_id_nao_zero", "entidade_id <> '00000000-0000-0000-0000-000000000000'");
+
+                            t.HasCheckConstraint("ck_exclusividades_de_atos_entidade_tipo_formato", "entidade_tipo ~ '^[A-Z0-9]+(_[A-Z0-9]+)*$'");
                         });
                 });
 
@@ -19766,14 +19775,14 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasForeignKey("AtoId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired()
-                        .HasConstraintName("fk_vagas_de_linhagem_ato");
+                        .HasConstraintName("fk_exclusividades_de_atos_ato");
 
                     b.HasOne("Unifesspa.UniPlus.Publicacoes.Domain.Entities.AtoNormativo", null)
                         .WithMany()
                         .HasForeignKey("RaizId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired()
-                        .HasConstraintName("fk_vagas_de_linhagem_raiz");
+                        .HasConstraintName("fk_exclusividades_de_atos_ato_inicial");
                 });
 
             modelBuilder.Entity("Unifesspa.UniPlus.Publicacoes.Domain.Entities.VinculoAtoEntidade", b =>

@@ -55,7 +55,7 @@ public sealed partial class RecusasDoRegistroNaPublicacaoTests
         using HttpClient client = api.CreateClient();
         (Guid processoId, Guid documentoId) = await PrepararAsync(api, nameof(ConflitoApenasNoHistorico_RecusaAPublicacao));
         await RegistrarEGravarAsync(api, AtoDoProcesso(processoId, DadosDoAtoDeTeste.TipoAbertura, "444/2026", new AtributosDoTipoAto(true, false, false, null)));
-        (await VagasDoObjetoAsync(api, processoId)).Should().Be(0, "pré-condição: o tipo não era único, e não há vaga reservada");
+        (await ExclusividadesDeAtosDoObjetoAsync(api, processoId)).Should().Be(0, "pré-condição: o tipo não era único, e não há vaga reservada");
 
         using HttpResponseMessage resposta = await PublicarAsync(client, processoId, documentoId);
 
@@ -112,7 +112,7 @@ public sealed partial class RecusasDoRegistroNaPublicacaoTests
         (await db.Set<AtoNormativo>().AsNoTracking().CountAsync(a => a.AtoRetificadoId == abertura)).Should().Be(1, "só a retificação feita por fora existe");
     }
 
-    private static async Task<int> VagasDoObjetoAsync(CascadingApiFactory api, Guid processoId)
+    private static async Task<int> ExclusividadesDeAtosDoObjetoAsync(CascadingApiFactory api, Guid processoId)
     {
         await using AsyncServiceScope conferencia = api.Services.CreateAsyncScope();
         return await conferencia.ServiceProvider.GetRequiredService<UniPlusDbContext>().Set<VagaDeLinhagem>().AsNoTracking()

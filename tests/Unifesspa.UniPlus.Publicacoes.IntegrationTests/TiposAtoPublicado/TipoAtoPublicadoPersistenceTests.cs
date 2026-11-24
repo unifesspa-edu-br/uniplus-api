@@ -52,7 +52,7 @@ public sealed class TipoAtoPublicadoPersistenceTests
         """
         INSERT INTO publicacoes.tipos_de_ato_publicado
             (id, codigo, nome, congela_configuracao, unico_por_objeto, efeito_irreversivel,
-             eh_resultado, exige_ato_corrigido, publicavel_como_avulso,
+             determina_resultado, exige_ato_corrigido, publicavel_como_avulso,
              vigencia_inicio, vigencia_fim, created_at, is_deleted)
         VALUES
             (gen_random_uuid(), @codigo, 'Gravado sem o agregado', false, false, false,

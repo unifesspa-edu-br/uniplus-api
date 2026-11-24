@@ -1126,7 +1126,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     congela_configuracao = table.Column<bool>(type: "boolean", nullable: false),
                     unico_por_objeto = table.Column<bool>(type: "boolean", nullable: false),
                     efeito_irreversivel = table.Column<bool>(type: "boolean", nullable: false),
-                    eh_resultado = table.Column<bool>(type: "boolean", nullable: false),
+                    determina_resultado = table.Column<bool>(type: "boolean", nullable: false, comment: "Indica se o ato deste tipo determina a situação do candidato (é um resultado)."),
                     publicavel_como_avulso = table.Column<bool>(type: "boolean", nullable: false),
                     exige_ato_corrigido = table.Column<bool>(type: "boolean", nullable: false),
                     vigencia_inicio = table.Column<DateOnly>(type: "date", nullable: false),
@@ -1445,38 +1445,39 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "vagas_de_linhagem",
+                name: "exclusividades_de_atos",
                 schema: "publicacoes",
                 columns: table => new
                 {
-                    id = table.Column<Guid>(type: "uuid", nullable: false),
-                    entidade_tipo = table.Column<string>(type: "character varying(60)", maxLength: 60, nullable: false),
-                    entidade_id = table.Column<Guid>(type: "uuid", nullable: false),
-                    tipo_codigo = table.Column<string>(type: "character varying(60)", maxLength: 60, nullable: false),
-                    raiz_id = table.Column<Guid>(type: "uuid", nullable: false),
-                    ato_id = table.Column<Guid>(type: "uuid", nullable: false)
+                    id = table.Column<Guid>(type: "uuid", nullable: false, comment: "Identificador da exclusividade de atos."),
+                    entidade_tipo = table.Column<string>(type: "character varying(60)", maxLength: 60, nullable: false, comment: "Tipo da entidade tratada, opaco para o módulo (por exemplo, PROCESSO_SELETIVO)."),
+                    entidade_id = table.Column<Guid>(type: "uuid", nullable: false, comment: "Identificador da entidade tratada, opaco para o módulo."),
+                    tipo_codigo = table.Column<string>(type: "character varying(60)", maxLength: 60, nullable: false, comment: "Código do tipo de ato, copiado do ato que abriu a exclusividade."),
+                    ato_inicial_id = table.Column<Guid>(type: "uuid", nullable: false, comment: "Ato inicial da cadeia de retificação que detém a exclusividade: identifica a cadeia inteira."),
+                    ato_id = table.Column<Guid>(type: "uuid", nullable: false, comment: "Ato que abriu a exclusividade. Pode ser uma retificação, quando o ato inicial foi publicado sem vínculo com o objeto.")
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("pk_vagas_de_linhagem", x => x.id);
-                    table.CheckConstraint("ck_vagas_de_linhagem_entidade_id_nao_zero", "entidade_id <> '00000000-0000-0000-0000-000000000000'");
-                    table.CheckConstraint("ck_vagas_de_linhagem_entidade_tipo_formato", "entidade_tipo ~ '^[A-Z0-9]+(_[A-Z0-9]+)*$'");
-                    table.CheckConstraint("ck_vagas_de_linhagem_raiz_nao_zero", "raiz_id <> '00000000-0000-0000-0000-000000000000'");
+                    table.PrimaryKey("pk_exclusividades_de_atos", x => x.id);
+                    table.CheckConstraint("ck_exclusividades_de_atos_ato_inicial_nao_zero", "ato_inicial_id <> '00000000-0000-0000-0000-000000000000'");
+                    table.CheckConstraint("ck_exclusividades_de_atos_entidade_id_nao_zero", "entidade_id <> '00000000-0000-0000-0000-000000000000'");
+                    table.CheckConstraint("ck_exclusividades_de_atos_entidade_tipo_formato", "entidade_tipo ~ '^[A-Z0-9]+(_[A-Z0-9]+)*$'");
                     table.ForeignKey(
-                        name: "fk_vagas_de_linhagem_ato",
+                        name: "fk_exclusividades_de_atos_ato",
                         column: x => x.ato_id,
                         principalSchema: "publicacoes",
                         principalTable: "atos_normativos",
                         principalColumn: "id",
                         onDelete: ReferentialAction.Restrict);
                     table.ForeignKey(
-                        name: "fk_vagas_de_linhagem_raiz",
-                        column: x => x.raiz_id,
+                        name: "fk_exclusividades_de_atos_ato_inicial",
+                        column: x => x.ato_inicial_id,
                         principalSchema: "publicacoes",
                         principalTable: "atos_normativos",
                         principalColumn: "id",
                         onDelete: ReferentialAction.Restrict);
-                });
+                },
+                comment: "Exclusividade de atos: reserva que um objeto faz para uma única cadeia de retificação de atos de um tipo único por objeto.");
 
             migrationBuilder.CreateTable(
                 name: "vinculos_do_ato_com_entidade",
@@ -6596,6 +6597,25 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 unique: true);
 
             migrationBuilder.CreateIndex(
+                name: "ix_exclusividades_de_atos_ato_id",
+                schema: "publicacoes",
+                table: "exclusividades_de_atos",
+                column: "ato_id");
+
+            migrationBuilder.CreateIndex(
+                name: "ix_exclusividades_de_atos_ato_inicial_id",
+                schema: "publicacoes",
+                table: "exclusividades_de_atos",
+                column: "ato_inicial_id");
+
+            migrationBuilder.CreateIndex(
+                name: "ux_exclusividades_de_atos_objeto_tipo",
+                schema: "publicacoes",
+                table: "exclusividades_de_atos",
+                columns: new[] { "entidade_tipo", "entidade_id", "tipo_codigo" },
+                unique: true);
+
+            migrationBuilder.CreateIndex(
                 name: "ux_fases_cronograma_processo_chave_local",
                 schema: "selecao",
                 table: "fases_cronograma",
@@ -7603,25 +7623,6 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 column: "unidade_superior_id");
 
             migrationBuilder.CreateIndex(
-                name: "ix_vagas_de_linhagem_ato_id",
-                schema: "publicacoes",
-                table: "vagas_de_linhagem",
-                column: "ato_id");
-
-            migrationBuilder.CreateIndex(
-                name: "ix_vagas_de_linhagem_raiz_id",
-                schema: "publicacoes",
-                table: "vagas_de_linhagem",
-                column: "raiz_id");
-
-            migrationBuilder.CreateIndex(
-                name: "ux_vagas_de_linhagem_objeto_tipo",
-                schema: "publicacoes",
-                table: "vagas_de_linhagem",
-                columns: new[] { "entidade_tipo", "entidade_id", "tipo_codigo" },
-                unique: true);
-
-            migrationBuilder.CreateIndex(
                 name: "ux_vagas_ofertadas_configuracao_modalidade",
                 schema: "selecao",
                 table: "vagas_ofertadas",
@@ -7984,6 +7985,10 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 schema: "autorizacao");
 
             migrationBuilder.DropTable(
+                name: "exclusividades_de_atos",
+                schema: "publicacoes");
+
+            migrationBuilder.DropTable(
                 name: "geracoes_de_envio_ao_inep",
                 schema: "selecao");
 
@@ -8206,10 +8211,6 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
             migrationBuilder.DropTable(
                 name: "trocas_de_versao_do_pedido",
                 schema: "autorizacao");
-
-            migrationBuilder.DropTable(
-                name: "vagas_de_linhagem",
-                schema: "publicacoes");
 
             migrationBuilder.DropTable(
                 name: "vagas_ofertadas",

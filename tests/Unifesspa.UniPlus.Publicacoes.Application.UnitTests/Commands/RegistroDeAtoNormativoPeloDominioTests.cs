@@ -140,7 +140,7 @@ public sealed class RegistroDeAtoNormativoPeloDominioTests
     }
 
     [Theory(DisplayName = "Traduz a violação de unicidade do registro de atos na recusa que a nomeia")]
-    [InlineData(RestricoesDoBanco.VagaDeLinhagemObjetoTipoUnica, AtoNormativoErrorCodes.ObjetoJaTemAtoVivoDoTipo)]
+    [InlineData(RestricoesDoBanco.ExclusividadeDeAtosObjetoTipoUnico, AtoNormativoErrorCodes.ObjetoJaTemAtoVivoDoTipo)]
     [InlineData(RestricoesDoBanco.AtoNormativoRetificadoUnico, AtoNormativoErrorCodes.AtoJaRetificado)]
     public void TraduzirConflitoDaGravacao_ConstraintDoRegistro_NomeiaARecusa(string constraint, string codigo)
     {

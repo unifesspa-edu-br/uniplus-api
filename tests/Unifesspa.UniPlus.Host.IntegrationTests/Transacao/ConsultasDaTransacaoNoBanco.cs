@@ -20,9 +20,9 @@ internal static class ConsultasDaTransacaoNoBanco
         ConsultarAsync(servicos, contexto => contexto.Database
             .SqlQuery<int>($"SELECT count(*)::int AS \"Value\" FROM publicacoes.atos_normativos WHERE id = {atoId}").SingleAsync());
 
-    internal static Task<int> VagasDoObjetoAsync(IServiceProvider servicos, Guid objetoId) =>
+    internal static Task<int> ExclusividadesDeAtosDoObjetoAsync(IServiceProvider servicos, Guid objetoId) =>
         ConsultarAsync(servicos, contexto => contexto.Database
-            .SqlQuery<int>($"SELECT count(*)::int AS \"Value\" FROM publicacoes.vagas_de_linhagem WHERE entidade_id = {objetoId}").SingleAsync());
+            .SqlQuery<int>($"SELECT count(*)::int AS \"Value\" FROM publicacoes.exclusividades_de_atos WHERE entidade_id = {objetoId}").SingleAsync());
 
     /// <summary>A transação que gravou a linha: duas linhas com o mesmo valor foram gravadas pela mesma transação.</summary>
     internal static Task<long> TransacaoDoMotivoAsync(IServiceProvider servicos, string codigo) =>

@@ -142,7 +142,7 @@ public sealed class VinculoAtoEntidadePersistenceTests
             InsertVagaCru(segundo.Id, segundo.Id, "PROCESSO_SELETIVO", processo)));
 
         erro.SqlState.Should().Be(UniqueViolation);
-        erro.ConstraintName.Should().Be(RestricoesDoBanco.VagaDeLinhagemObjetoTipoUnica);
+        erro.ConstraintName.Should().Be(RestricoesDoBanco.ExclusividadeDeAtosObjetoTipoUnico);
         primeiro.Id.Should().NotBe(segundo.Id);
     }
 
@@ -312,8 +312,8 @@ public sealed class VinculoAtoEntidadePersistenceTests
 
     private static FormattableString InsertVagaCru(Guid atoId, Guid raizId, string entidadeTipo, Guid entidadeId) =>
         $"""
-        INSERT INTO publicacoes.vagas_de_linhagem
-            (id, entidade_tipo, entidade_id, tipo_codigo, raiz_id, ato_id)
+        INSERT INTO publicacoes.exclusividades_de_atos
+            (id, entidade_tipo, entidade_id, tipo_codigo, ato_inicial_id, ato_id)
         VALUES ({Guid.CreateVersion7()}, {entidadeTipo}, {entidadeId}, {TipoUnico}, {raizId}, {atoId})
         """;
 }

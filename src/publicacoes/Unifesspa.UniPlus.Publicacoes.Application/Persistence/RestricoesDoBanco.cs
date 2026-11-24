@@ -11,7 +11,7 @@ public static class RestricoesDoBanco
 {
     public const string AtoNormativoRetificadoUnico = "ux_atos_normativos_retificado";
 
-    public const string VagaDeLinhagemObjetoTipoUnica = "ux_vagas_de_linhagem_objeto_tipo";
+    public const string ExclusividadeDeAtosObjetoTipoUnico = "ux_exclusividades_de_atos_objeto_tipo";
 
     public const string TipoDeAtoPublicadoCodigoVigencia = "ex_tipos_de_ato_publicado_codigo_vigencia";
 }

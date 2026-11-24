@@ -19,7 +19,7 @@ internal static class ConflitoNaGravacaoDoAto
 {
     private const string IndiceDaRetificacaoUnica = RestricoesDoBanco.AtoNormativoRetificadoUnico;
 
-    private const string IndiceDaVagaDeLinhagem = RestricoesDoBanco.VagaDeLinhagemObjetoTipoUnica;
+    private const string IndiceDaExclusividadeDeAtos = RestricoesDoBanco.ExclusividadeDeAtosObjetoTipoUnico;
 
     private const string AtoJaRetificadoConcorrenteMensagem =
         "O ato retificado já foi retificado por outro ato registrado concorrentemente. "
@@ -42,7 +42,7 @@ internal static class ConflitoNaGravacaoDoAto
         {
             IndiceDaRetificacaoUnica => new DomainError(
                 AtoNormativoErrorCodes.AtoJaRetificado, AtoJaRetificadoConcorrenteMensagem),
-            IndiceDaVagaDeLinhagem => new DomainError(
+            IndiceDaExclusividadeDeAtos => new DomainError(
                 AtoNormativoErrorCodes.ObjetoJaTemAtoVivoDoTipo, VagaOcupadaConcorrenteMensagem),
             _ => null,
         };

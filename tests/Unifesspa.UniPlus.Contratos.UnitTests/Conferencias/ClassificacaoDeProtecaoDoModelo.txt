@@ -1127,6 +1127,12 @@ publicacoes.atos_normativos.tipo_nome: Interno
 publicacoes.atos_normativos.unico_por_objeto: Interno
 publicacoes.atos_normativos.versao_do_objeto_hash: Interno
 publicacoes.atos_normativos.versao_do_objeto_id: Interno
+publicacoes.exclusividades_de_atos.ato_id: Interno
+publicacoes.exclusividades_de_atos.ato_inicial_id: Interno
+publicacoes.exclusividades_de_atos.entidade_id: Interno
+publicacoes.exclusividades_de_atos.entidade_tipo: Interno
+publicacoes.exclusividades_de_atos.id: Interno
+publicacoes.exclusividades_de_atos.tipo_codigo: Interno
 publicacoes.tipos_de_ato_publicado.base_legal: Interno
 publicacoes.tipos_de_ato_publicado.codigo: Interno
 publicacoes.tipos_de_ato_publicado.congela_configuracao: Interno
@@ -1134,8 +1140,8 @@ publicacoes.tipos_de_ato_publicado.created_at: Interno
 publicacoes.tipos_de_ato_publicado.created_by: Pessoal
 publicacoes.tipos_de_ato_publicado.deleted_at: Interno
 publicacoes.tipos_de_ato_publicado.deleted_by: Pessoal
+publicacoes.tipos_de_ato_publicado.determina_resultado: Interno
 publicacoes.tipos_de_ato_publicado.efeito_irreversivel: Interno
-publicacoes.tipos_de_ato_publicado.eh_resultado: Interno
 publicacoes.tipos_de_ato_publicado.exige_ato_corrigido: Interno
 publicacoes.tipos_de_ato_publicado.id: Interno
 publicacoes.tipos_de_ato_publicado.is_deleted: Interno
@@ -1146,12 +1152,6 @@ publicacoes.tipos_de_ato_publicado.updated_at: Interno
 publicacoes.tipos_de_ato_publicado.updated_by: Pessoal
 publicacoes.tipos_de_ato_publicado.vigencia_fim: Interno
 publicacoes.tipos_de_ato_publicado.vigencia_inicio: Interno
-publicacoes.vagas_de_linhagem.ato_id: Interno
-publicacoes.vagas_de_linhagem.entidade_id: Interno
-publicacoes.vagas_de_linhagem.entidade_tipo: Interno
-publicacoes.vagas_de_linhagem.id: Interno
-publicacoes.vagas_de_linhagem.raiz_id: Interno
-publicacoes.vagas_de_linhagem.tipo_codigo: Interno
 publicacoes.vinculos_do_ato_com_entidade.ato_id: Interno
 publicacoes.vinculos_do_ato_com_entidade.entidade_id: Interno
 publicacoes.vinculos_do_ato_com_entidade.entidade_tipo: Interno
