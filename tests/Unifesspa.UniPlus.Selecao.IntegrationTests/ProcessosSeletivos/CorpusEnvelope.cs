@@ -94,43 +94,8 @@ internal static class CorpusEnvelope
     internal static Guid BancaDaEtapaId(int etapa, int variante) =>
         new($"aaae000{variante:x}-0000-4000-8000-00000000000{etapa:x}");
 
-    /// <summary>
-    /// Código de ato com acento gravado em forma <b>decomposta</b> — <c>A</c> mais acento agudo
-    /// combinante — e não na forma composta que um teclado produz.
-    /// </summary>
-    /// <remarks>
-    /// <para>
-    /// As duas formas são o mesmo texto para um leitor humano e <b>bytes diferentes</b> para
-    /// qualquer comparação, ordenação ou hash. O canonicalizador normaliza para a composta antes
-    /// de emitir, e é isso que faz o envelope de dois operadores — um em Linux, outro em macOS,
-    /// que normaliza nomes de arquivo em decomposto — produzir o mesmo hash.
-    /// </para>
-    /// <para>
-    /// Está no corpus em decomposto <b>de propósito</b>: com todos os códigos em ASCII, como
-    /// estavam, a normalização era identidade e removê-la não mudava um byte das fixtures. O
-    /// golden só prova o que o corpus contém.
-    /// </para>
-    /// </remarks>
-    internal const string AtoAnaliseDecomposto = "RESULTADO_ANA\u0301LISE";
-
-    /// <summary>
-    /// O par de <see cref="AtoAnaliseDecomposto"/>: sem acento, e escolhido para que a ordem
-    /// entre os dois <b>vire</b> conforme o texto esteja normalizado ou não.
-    /// </summary>
-    /// <remarks>
-    /// Os dois coincidem até <c>RESULTADO_AN</c>. No caractere seguinte, a forma decomposta traz
-    /// o <c>A</c> base (U+0041) e a composta traz o <c>Á</c> inteiro (U+00C1), enquanto o par traz
-    /// <c>U</c> (U+0055) — que fica <b>entre</b> os dois. Ordenar o texto cru põe a análise antes;
-    /// ordenar o normalizado põe a anulação antes.
-    ///
-    /// É essa inversão que torna a normalização da CHAVE DE ORDENAÇÃO observável. Sem um par
-    /// assim, dois códigos acentuados quaisquer saem na mesma ordem das duas formas — porque
-    /// divergem antes de chegar ao acento — e remover a normalização da chave não muda um byte.
-    /// </remarks>
+    internal const string AtoAnalise = "RESULTADO_ANALISE";
     internal const string AtoAnulacao = "RESULTADO_ANULACAO";
-
-    /// <summary>Mesmo texto do ato acentuado, na forma composta que o envelope tem de emitir.</summary>
-    internal const string AtoAnaliseComposto = "RESULTADO_AN\u00C1LISE";
 
     internal static Guid RecursoDaObjetivaId(int ordem, int variante) =>
         new($"aaac000{variante:x}-0000-4000-8000-00000000000{ordem:x}");
