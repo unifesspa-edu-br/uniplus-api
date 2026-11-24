@@ -721,7 +721,7 @@ buscar_motivo_da_homologacao() {
             rm -f "$cabecalhos"
             fail "GET $caminho → $codigo: $corpo"
         fi
-        motivo=$(jq -r '[.[] | select(.codigo == "SEM_RESULTADO_INEP" and .sentido == "DESFAVORAVEL") | .id][0] // empty' <<< "$corpo")
+        motivo=$(jq -r '[.[] | select(.codigo == "SEM_RESULTADO_INEP" and .sentido.codigo == "DESFAVORAVEL") | .id][0] // empty' <<< "$corpo")
         if [ -n "$motivo" ]; then
             rm -f "$cabecalhos"
             printf '%s\n' "$motivo"
@@ -822,7 +822,11 @@ definir_documentos_exigidos() {
         forma: "DOCUMENTO",
         documento: (.documento | {
             tipoDocumento: {id: .tipoDocumento.id}, momento, aplicabilidade,
-            indeferimento: (.indeferimento | .basesLegais = $bases), requisitos, fatosComprovados
+            indeferimento: (.indeferimento | .basesLegais = $bases),
+            requisitos: (.requisitos
+                | .prazoDeEmissao //= {escolha: "SEM_PRAZO"}
+                | .validade //= {escolha: "NAO_EXIGE_DOCUMENTO_VALIDO"}),
+            fatosComprovados
         })
     }]' <<< "$processo")
     # O modelo com prova sempre traz os documentos do atendimento especializado; sem eles, a
@@ -841,7 +845,7 @@ definir_documentos_exigidos() {
                 momento: {faseId: $fase, finalidade: "HABILITACAO"},
                 aplicabilidade: {tipo: "CONDICIONAL", condicoes: $condicoes},
                 indeferimento: {obrigatorio: true, consequencia: "REMOVE_VANTAGEM", basesLegais: $basesLegais},
-                requisitos: {formatosPermitidos: "QUALQUER", tamanhoMaximoBytes: null, prazoDeEmissao: null, validade: null, modelo: null},
+                requisitos: {formatosPermitidos: "QUALQUER", tamanhoMaximoBytes: null, prazoDeEmissao: {escolha: "SEM_PRAZO"}, validade: {escolha: "NAO_EXIGE_DOCUMENTO_VALIDO"}, modelo: null},
                 fatosComprovados: []
             }
         };
