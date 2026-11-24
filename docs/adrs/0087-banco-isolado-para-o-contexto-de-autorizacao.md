@@ -37,7 +37,7 @@ A versão anterior desta ADR propunha um banco isolado para a autorização. Dep
 - As chaves estrangeiras entre entidades da autorização ficam dentro do schema `autorizacao`.
 - Referências a outros contextos (unidade, processo seletivo, candidato) entram por identificador, resolvidas por leitor ([ADR-0056](0056-modulo-configuracao-e-read-side-via-reader.md)). Não há chave estrangeira do schema `autorizacao` para o schema de outro módulo.
 - A autorização usa o mesmo banco e a mesma instância Wolverine do monólito; não há outbox próprio.
-- O registro de auditoria forense ([ADR-0086](0086-registro-de-auditoria-com-hmac-e-cofre.md)) não é decidida aqui: a fronteira dela (retenção, backup, confidencialidade) depende do Encarregado de dados.
+- O registro de auditoria forense ([ADR-0086](0086-registro-de-auditoria-com-hmac-e-cofre.md)) não é decidido aqui: a fronteira dela (retenção, backup, confidencialidade) depende do gestor de proteção de dados.
 
 ## Consequências
 
@@ -82,7 +82,7 @@ A versão anterior desta ADR propunha um banco isolado para a autorização. Dep
 
 - **Reescrita em 2026-10-28:** a versão proposta em 2026-06-02 escolhia o banco isolado, antes da ADR-0097.
 - **Pendente:** role própria para o schema `autorizacao`, com privilégios separados da role do monólito. Hoje as migrations rodam na subida com a mesma role da aplicação; separar privilégios pede rodar as migrations fora da subida, com uma role proprietária do schema.
-- **Pendente:** a fronteira do registro de auditoria forense, a decidir com o Encarregado de dados.
+- **Pendente:** a fronteira do registro de auditoria forense, a decidir com o gestor de proteção de dados.
 
 ## Emenda (2026-11-13) — o esquema `autorizacao` é contribuição ao contexto único
 
