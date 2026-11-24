@@ -309,7 +309,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     id = table.Column<Guid>(type: "uuid", nullable: false),
                     edital_id = table.Column<Guid>(type: "uuid", nullable: false),
                     numero = table.Column<int>(type: "integer", nullable: false),
-                    status = table.Column<int>(type: "integer", nullable: false),
+                    status = table.Column<string>(type: "character varying(30)", maxLength: 30, nullable: false, comment: "Situação da chamada. Códigos: AGENDADA, EM_ANDAMENTO, CONCLUIDA, CANCELADA."),
                     data_publicacao = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
                     prazo_manifestacao = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
                     created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false, comment: "Data e hora de criação do registro."),
@@ -321,6 +321,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 constraints: table =>
                 {
                     table.PrimaryKey("pk_chamadas", x => x.id);
+                    table.CheckConstraint("ck_chamadas_status", "status IN ('AGENDADA', 'EM_ANDAMENTO', 'CONCLUIDA', 'CANCELADA')");
                 });
 
             migrationBuilder.CreateTable(
@@ -632,7 +633,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     id = table.Column<Guid>(type: "uuid", nullable: false),
                     convocacao_id = table.Column<Guid>(type: "uuid", nullable: false),
                     candidato_id = table.Column<Guid>(type: "uuid", nullable: false),
-                    status = table.Column<int>(type: "integer", nullable: false),
+                    status = table.Column<string>(type: "character varying(30)", maxLength: 30, nullable: false, comment: "Situação da matrícula. Códigos: PENDENTE, DOCUMENTACAO_ENVIADA, EM_ANALISE, DEFERIDA, INDEFERIDA, EFETIVADA, CANCELADA."),
                     codigo_curso = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false),
                     observacoes = table.Column<string>(type: "character varying(2000)", maxLength: 2000, nullable: true),
                     created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false, comment: "Data e hora de criação do registro."),
@@ -644,6 +645,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 constraints: table =>
                 {
                     table.PrimaryKey("pk_matriculas", x => x.id);
+                    table.CheckConstraint("ck_matriculas_status", "status IN ('PENDENTE', 'DOCUMENTACAO_ENVIADA', 'EM_ANALISE', 'DEFERIDA', 'INDEFERIDA', 'EFETIVADA', 'CANCELADA')");
                 });
 
             migrationBuilder.CreateTable(
@@ -1616,7 +1618,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     inscricao_id = table.Column<Guid>(type: "uuid", nullable: false),
                     candidato_id = table.Column<Guid>(type: "uuid", nullable: false),
                     protocolo = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false),
-                    status = table.Column<int>(type: "integer", nullable: false),
+                    status = table.Column<string>(type: "character varying(30)", maxLength: 30, nullable: false, comment: "Situação da convocação. Códigos: PENDENTE, ACEITA, RECUSADA, NAO_COMPARECEU, EXPIRADA."),
                     posicao = table.Column<int>(type: "integer", nullable: false),
                     codigo_curso = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false),
                     data_manifestacao = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
@@ -1629,6 +1631,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 constraints: table =>
                 {
                     table.PrimaryKey("pk_convocacoes", x => x.id);
+                    table.CheckConstraint("ck_convocacoes_status", "status IN ('PENDENTE', 'ACEITA', 'RECUSADA', 'NAO_COMPARECEU', 'EXPIRADA')");
                     table.ForeignKey(
                         name: "fk_convocacoes_chamadas_chamada_id",
                         column: x => x.chamada_id,
