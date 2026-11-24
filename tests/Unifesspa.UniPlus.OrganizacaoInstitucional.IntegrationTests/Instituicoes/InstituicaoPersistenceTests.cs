@@ -132,8 +132,8 @@ public sealed class InstituicaoPersistenceTests : IClassFixture<InstituicaoDbFix
         DbUpdateException ex = (await act.Should().ThrowAsync<DbUpdateException>()).Which;
         Npgsql.PostgresException pg = ex.InnerException.Should().BeOfType<Npgsql.PostgresException>().Which;
         pg.SqlState.Should().Be("23505");
-        pg.ConstraintName.Should().Be(RestricoesDoBanco.InstituicaoUnicaViva);
-        ConstraintVioladaNaGravacao.NomeDaConstraintViolada(ex).Should().Be(RestricoesDoBanco.InstituicaoUnicaViva);
+        pg.ConstraintName.Should().Be(RestricoesDoBanco.InstituicaoUnicaAtiva);
+        ConstraintVioladaNaGravacao.NomeDaConstraintViolada(ex).Should().Be(RestricoesDoBanco.InstituicaoUnicaAtiva);
     }
 
     [Fact(DisplayName = "CHECK constraint impede gravar a sentinela como false (singleton constante no banco)")]

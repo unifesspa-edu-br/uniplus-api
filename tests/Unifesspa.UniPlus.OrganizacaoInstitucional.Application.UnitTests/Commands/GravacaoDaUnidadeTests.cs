@@ -86,8 +86,8 @@ public sealed class GravacaoDaUnidadeTests
 
     [Theory(DisplayName = "Corrida no índice único na criação vira a recusa do identificador, descarta o rastreamento e não invalida o cache")]
     [InlineData(RestricoesDoBanco.UnidadeSlugVivo, UnidadeErrorCodes.SlugJaExiste, "'ceps'")]
-    [InlineData(RestricoesDoBanco.UnidadeSiglaVivo, UnidadeErrorCodes.SiglaJaExiste, "'CEPS'")]
-    [InlineData(RestricoesDoBanco.UnidadeCodigoVivo, UnidadeErrorCodes.CodigoJaExiste, "'0001'")]
+    [InlineData(RestricoesDoBanco.UnidadeSiglaAtivos, UnidadeErrorCodes.SiglaJaExiste, "'CEPS'")]
+    [InlineData(RestricoesDoBanco.UnidadeCodigoAtivos, UnidadeErrorCodes.CodigoJaExiste, "'0001'")]
     public async Task GravarNova_ConflitoDoIndiceDoIdentificador_DevolveARecusaDescartandoSemInvalidarCache(
         string restricao, string codigoEsperado, string valorCitado)
     {
@@ -174,8 +174,8 @@ public sealed class GravacaoDaUnidadeTests
 
     [Theory(DisplayName = "Corrida no índice único na atualização vira a recusa do identificador, descarta o rastreamento e não invalida o cache")]
     [InlineData(RestricoesDoBanco.UnidadeSlugVivo, UnidadeErrorCodes.SlugJaExiste, "'ceps'")]
-    [InlineData(RestricoesDoBanco.UnidadeSiglaVivo, UnidadeErrorCodes.SiglaJaExiste, "'CEPS'")]
-    [InlineData(RestricoesDoBanco.UnidadeCodigoVivo, UnidadeErrorCodes.CodigoJaExiste, "'0001'")]
+    [InlineData(RestricoesDoBanco.UnidadeSiglaAtivos, UnidadeErrorCodes.SiglaJaExiste, "'CEPS'")]
+    [InlineData(RestricoesDoBanco.UnidadeCodigoAtivos, UnidadeErrorCodes.CodigoJaExiste, "'0001'")]
     public async Task GravarAtualizacao_ConflitoDoIndiceDoIdentificador_DevolveARecusaDescartandoSemInvalidarCache(
         string restricao, string codigoEsperado, string valorCitado)
     {

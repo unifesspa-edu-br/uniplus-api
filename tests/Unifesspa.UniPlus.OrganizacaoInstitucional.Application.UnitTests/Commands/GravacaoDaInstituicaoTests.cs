@@ -68,7 +68,7 @@ public sealed class GravacaoDaInstituicaoTests
     [Fact(DisplayName = "Corrida no índice único do singleton vira JaExiste, descarta o rastreamento e não invalida o cache")]
     public async Task GravarNova_ConflitoDoIndiceDoSingleton_DevolveJaExisteDescartandoSemInvalidarCache()
     {
-        GravacaoRecusadaPelaRestricao(RestricoesDoBanco.InstituicaoUnicaViva);
+        GravacaoRecusadaPelaRestricao(RestricoesDoBanco.InstituicaoUnicaAtiva);
 
         Result<Guid> resultado = await GravarNovaAsync();
 
@@ -105,7 +105,7 @@ public sealed class GravacaoDaInstituicaoTests
     public async Task GravarNova_FalhaAoAdicionar_PropagaSemSalvar()
     {
         _repo.AdicionarAsync(Arg.Any<Instituicao>(), Arg.Any<CancellationToken>()).ThrowsAsync(
-            new DbUpdateException("violação sintética", new ViolacaoDeUnicidadeDeTeste(RestricoesDoBanco.InstituicaoUnicaViva)));
+            new DbUpdateException("violação sintética", new ViolacaoDeUnicidadeDeTeste(RestricoesDoBanco.InstituicaoUnicaAtiva)));
 
         Func<Task> act = GravarNovaAsync;
 

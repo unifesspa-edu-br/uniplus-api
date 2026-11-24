@@ -122,12 +122,12 @@ internal sealed class UnidadeConfiguration : IEntityTypeConfiguration<Unidade>
         builder.HasIndex(u => u.Sigla)
             .IsUnique()
             .HasFilter("is_deleted = false")
-            .HasDatabaseName(RestricoesDoBanco.UnidadeSiglaVivo);
+            .HasDatabaseName(RestricoesDoBanco.UnidadeSiglaAtivos);
 
         builder.HasIndex(u => u.Codigo)
             .IsUnique()
             .HasFilter("is_deleted = false")
-            .HasDatabaseName(RestricoesDoBanco.UnidadeCodigoVivo);
+            .HasDatabaseName(RestricoesDoBanco.UnidadeCodigoAtivos);
 
         // Apelido: índice não-único (para agrupamento/busca)
         builder.HasIndex(u => u.Alias)

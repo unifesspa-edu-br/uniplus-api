@@ -95,7 +95,7 @@ Quando `IdentificadorNoEnderecoWeb`, `Sigla`, `Codigo` ou `Apelido` mudam por at
 ## Confirmação
 
 1. Entidade `Unidade` em `Unifesspa.UniPlus.OrganizacaoInstitucional.Domain` com os campos descritos e factory com validação.
-2. Índices únicos parciais `ux_unidades_identificador_no_endereco_web_ativos`, `ix_unidades_sigla_vivo`, `ix_unidades_codigo_vivo` (filtro `is_deleted = false`) e índice não-único `ix_unidades_apelido`.
+2. Índices únicos parciais `ux_unidades_identificador_no_endereco_web_ativos`, `ux_unidades_sigla_ativos`, `ux_unidades_codigo_ativos` (filtro `is_deleted = false`) e índice não-único `ix_unidades_apelido`.
 3. `UnidadeIdentificadorHistorico` registra `TipoIdentificador` (`IDENTIFICADOR_NO_ENDERECO_WEB`/`SIGLA`/`CODIGO`/`APELIDO`), `Valor`, `VigenciaInicio`/`VigenciaFim` e `MotivoMudanca`.
 4. `Id` Guid v7 via `EntityBase` (ADR-0032); hierarquia por `UnidadeSuperiorId` com FK `Restrict`.
 5. Testes de unidade e integração do módulo cobrem a unicidade entre vivos, o histórico na mudança de identificador e a busca acento/caixa-insensível sobre os identificadores.

@@ -84,7 +84,7 @@ public sealed class GravacaoDaInstituicao
             return null;
         }
         catch (Exception ex) when (string.Equals(
-            ConstraintVioladaNaGravacao.NomeDaConstraintViolada(ex), RestricoesDoBanco.InstituicaoUnicaViva, StringComparison.Ordinal))
+            ConstraintVioladaNaGravacao.NomeDaConstraintViolada(ex), RestricoesDoBanco.InstituicaoUnicaAtiva, StringComparison.Ordinal))
         {
             _unitOfWork.DescartarAlteracoesNaoSalvas();
             return InstituicaoHandlerErros.JaExisteInstituicaoViva();
