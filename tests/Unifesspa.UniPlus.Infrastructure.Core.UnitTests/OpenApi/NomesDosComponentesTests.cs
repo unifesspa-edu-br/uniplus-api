@@ -21,7 +21,7 @@ public sealed class NomesDosComponentesTests
     {
         public enum Andamento
         {
-            [CodigoDeContrato("aberto", "Aberto")]
+            [CodigoDeContrato("ABERTO", "Aberto")]
             Aberto = 1,
         }
     }
@@ -30,7 +30,7 @@ public sealed class NomesDosComponentesTests
     {
         public enum Andamento
         {
-            [CodigoDeContrato("fechado", "Fechado")]
+            [CodigoDeContrato("FECHADO", "Fechado")]
             Fechado = 1,
         }
 
@@ -154,8 +154,8 @@ public sealed class NomesDosComponentesTests
         DocumentoPublicado escola = await GeradorDeDocumentoDeTeste.PublicarAsync(app, "escola");
         DocumentoPublicado oficina = await GeradorDeDocumentoDeTeste.PublicarAsync(app, "oficina");
 
-        CodigosDoComponente(escola, "AndamentoCodigo").Should().Equal("aberto");
-        CodigosDoComponente(oficina, "AndamentoCodigo").Should().Equal("fechado");
+        CodigosDoComponente(escola, "AndamentoCodigo").Should().Equal("ABERTO");
+        CodigosDoComponente(oficina, "AndamentoCodigo").Should().Equal("FECHADO");
         DocumentoPublicado.Referencia(oficina.Propriedade("Andamento", "codigo")).Should().Be("#/components/schemas/AndamentoCodigo");
     }
 

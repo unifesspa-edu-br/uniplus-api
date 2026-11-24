@@ -22,7 +22,7 @@ public sealed class OpcoesCanonicasDoHashTests
 
         string texto = JsonSerializer.Serialize(exemplo, HashCanonicalComputer.CanonicalOptions);
 
-        texto.Should().Be("""{"modo":"pelo_correio","situacao":"rascunho"}""");
+        texto.Should().Be("""{"modo":"PELO_CORREIO","situacao":"rascunho"}""");
         JsonSerializer.Deserialize<Exemplo>(texto, HashCanonicalComputer.CanonicalOptions).Should().Be(exemplo);
     }
 

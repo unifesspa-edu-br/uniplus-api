@@ -19,7 +19,7 @@ public sealed class OpcoesJsonDeDocumentoTests
         opcoes.AdicionarConversorDeCodigosDeContrato();
 
         EhAFabricaDeCodigos(opcoes.Converters[0]).Should().BeTrue();
-        JsonSerializer.Serialize(Cor.VerdeClaro, opcoes).Should().Be("\"verde_claro\"");
+        JsonSerializer.Serialize(Cor.VerdeClaro, opcoes).Should().Be("\"VERDE_CLARO\"");
     }
 
     [Fact(DisplayName = "A chamada repetida deixa uma só fábrica, na posição 0")]
@@ -46,7 +46,7 @@ public sealed class OpcoesJsonDeDocumentoTests
 
         opcoes.Converters.Count(EhAFabricaDeCodigos).Should().Be(1);
         EhAFabricaDeCodigos(opcoes.Converters[0]).Should().BeTrue();
-        JsonSerializer.Serialize(Cor.VerdeClaro, opcoes).Should().Be("\"verde_claro\"");
+        JsonSerializer.Serialize(Cor.VerdeClaro, opcoes).Should().Be("\"VERDE_CLARO\"");
     }
 
     [Fact(DisplayName = "O enum sem código segue com o conversor que já o atendia")]
@@ -82,13 +82,13 @@ public sealed class OpcoesJsonDeDocumentoTests
 
         string json = JsonSerializer.Serialize(original, opcoes);
 
-        json.Should().Be("""{"escolhida":"verde_claro","opcional":null,"lista":["azul"],"contagem":{"verde_claro":1}}""");
+        json.Should().Be("""{"escolhida":"VERDE_CLARO","opcional":null,"lista":["AZUL"],"contagem":{"VERDE_CLARO":1}}""");
         JsonSerializer.Deserialize<Documento>(json, opcoes).Should().BeEquivalentTo(original);
     }
 
     [Theory(DisplayName = "O código desconhecido, como valor ou como chave, é recusado pelo ponto de entrada das opções prontas")]
     [InlineData("""{"escolhida":"roxo"}""")]
-    [InlineData("""{"escolhida":"azul","contagem":{"roxo":1}}""")]
+    [InlineData("""{"escolhida":"AZUL","contagem":{"roxo":1}}""")]
     public void Ler_PeloAdicionar_CodigoDesconhecido_LancaJsonException(string json)
     {
         JsonSerializerOptions opcoes = new(JsonSerializerDefaults.Web);
@@ -104,7 +104,7 @@ public sealed class OpcoesJsonDeDocumentoTests
 
         byte[] bytes = JsonSerializer.SerializeToUtf8Bytes(new Ficha(Cor.VerdeClaro, true, "Açaí & cia", null), opcoes);
 
-        bytes.Should().Equal(Encoding.UTF8.GetBytes("""{"escolhida":"verde_claro","ativo":"sim","texto":"Açaí & cia"}"""));
+        bytes.Should().Equal(Encoding.UTF8.GetBytes("""{"escolhida":"VERDE_CLARO","ativo":"sim","texto":"Açaí & cia"}"""));
     }
 
     [Fact(DisplayName = "As opções criadas leem de volta o que escreveram")]
@@ -139,7 +139,7 @@ public sealed class OpcoesJsonDeDocumentoTests
         JsonSerializerOptions opcoes = OpcoesJsonDeDocumento.Criar(JsonSerializerOptions.Web);
 
         opcoes.IsReadOnly.Should().BeTrue();
-        JsonSerializer.Serialize(new Ficha(Cor.Azul, true, "a", null), opcoes).Should().Contain("\"escolhida\":\"azul\"");
+        JsonSerializer.Serialize(new Ficha(Cor.Azul, true, "a", null), opcoes).Should().Contain("\"escolhida\":\"AZUL\"");
     }
 
     [Fact(DisplayName = "O enum sem código segue com o conversor de nome do modelo")]

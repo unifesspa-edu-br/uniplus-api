@@ -9,10 +9,10 @@ using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 
 public enum ModalidadeDeOferta
 {
-    [CodigoDeContrato("em_sala", "Em sala")]
+    [CodigoDeContrato("EM_SALA", "Em sala")]
     Presencial = 1,
 
-    [CodigoDeContrato("a_distancia", "À distância")]
+    [CodigoDeContrato("A_DISTANCIA", "À distância")]
     Remota = 2,
 }
 

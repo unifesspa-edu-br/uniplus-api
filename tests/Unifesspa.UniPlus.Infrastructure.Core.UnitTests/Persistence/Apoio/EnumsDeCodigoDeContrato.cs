@@ -4,19 +4,19 @@ using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 
 public enum FormatoDeAula
 {
-    [CodigoDeContrato("em_sala", "Em sala")]
+    [CodigoDeContrato("EM_SALA", "Em sala")]
     Presencial = 1,
 
-    [CodigoDeContrato("a_distancia", "À distância")]
+    [CodigoDeContrato("A_DISTANCIA", "À distância")]
     Remoto = 2,
 }
 
 public enum SituacaoDaTurma
 {
-    [CodigoDeContrato("aberta", "Aberta")]
+    [CodigoDeContrato("ABERTA", "Aberta")]
     Aberta = 1,
 
-    [CodigoDeContrato("encerrada", "Encerrada")]
+    [CodigoDeContrato("ENCERRADA", "Encerrada")]
     Encerrada = 2,
 }
 
@@ -26,14 +26,14 @@ public enum TurnoDeAula
     Tarde = 2,
 }
 
-public enum CodigoComAspa
+public enum CodigoForaDeOrdem
 {
-    [CodigoDeContrato("ordem_z", "Ordem Z")]
+    [CodigoDeContrato("ORDEM_Z", "Ordem Z")]
     Ultimo = 1,
 
-    [CodigoDeContrato("d'agua", "D'água")]
-    ComAspa = 2,
+    [CodigoDeContrato("D_AGUA", "D'água")]
+    DoMeio = 2,
 
-    [CodigoDeContrato("ordem_a", "Ordem A")]
+    [CodigoDeContrato("ORDEM_A", "Ordem A")]
     Primeiro = 3,
 }

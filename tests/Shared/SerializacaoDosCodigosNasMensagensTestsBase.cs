@@ -26,11 +26,11 @@ public abstract class SerializacaoDosCodigosNasMensagensTestsBase
 
     [Fact(DisplayName = "O enum com código sai na mensagem pelo código declarado, e não pelo nome nem pelo número")]
     public void Escrever_EnumComCodigo_EscreveOCodigoDeclarado() =>
-        Escrever(new MensagemComModo(ModoDeEntregaDeTeste.Postal)).Should().Be("""{"modo":"pelo_correio"}""");
+        Escrever(new MensagemComModo(ModoDeEntregaDeTeste.Postal)).Should().Be("""{"modo":"PELO_CORREIO"}""");
 
     [Theory(DisplayName = "O código declarado volta como o membro que o declara")]
-    [InlineData("em_maos", ModoDeEntregaDeTeste.Presencial)]
-    [InlineData("pelo_correio", ModoDeEntregaDeTeste.Postal)]
+    [InlineData("EM_MAOS", ModoDeEntregaDeTeste.Presencial)]
+    [InlineData("PELO_CORREIO", ModoDeEntregaDeTeste.Postal)]
     public void Ler_CodigoDeclarado_DevolveOMembro(string codigo, ModoDeEntregaDeTeste esperado) =>
         Ler<MensagemComModo>($$"""{"modo":"{{codigo}}"}""").Modo.Should().Be(esperado);
 
@@ -69,7 +69,7 @@ public abstract class SerializacaoDosCodigosNasMensagensTestsBase
         MensagemComModoOpcional preenchida = new(ModoDeEntregaDeTeste.Presencial);
         MensagemComModoOpcional ausente = new(null);
 
-        Escrever(preenchida).Should().Be("""{"modo":"em_maos"}""");
+        Escrever(preenchida).Should().Be("""{"modo":"EM_MAOS"}""");
         Escrever(ausente).Should().Be("""{"modo":null}""");
         Ler<MensagemComModoOpcional>(Escrever(preenchida)).Should().Be(preenchida);
         Ler<MensagemComModoOpcional>(Escrever(ausente)).Should().Be(ausente);
@@ -90,7 +90,7 @@ public abstract class SerializacaoDosCodigosNasMensagensTestsBase
 
         string texto = Escrever(original);
 
-        texto.Should().Be("""{"prazos":{"pelo_correio":"cinco dias"}}""");
+        texto.Should().Be("""{"prazos":{"PELO_CORREIO":"cinco dias"}}""");
         Ler<MensagemComPrazoPorModo>(texto).Prazos.Should().Equal(original.Prazos);
     }
 

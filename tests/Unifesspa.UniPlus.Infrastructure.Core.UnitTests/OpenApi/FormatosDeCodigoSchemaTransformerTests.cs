@@ -21,16 +21,16 @@ public sealed class FormatosDeCodigoSchemaTransformerTests
     [DescricaoDoContrato("Como anda o trabalho, para todos os códigos.")]
     public enum Andamento
     {
-        [CodigoDeContrato("em_andamento", "Em andamento", Descricao = "Ainda há o que fazer.")]
+        [CodigoDeContrato("EM_ANDAMENTO", "Em andamento", Descricao = "Ainda há o que fazer.")]
         EmAndamento = 1,
 
-        [CodigoDeContrato("concluido", "Concluído")]
+        [CodigoDeContrato("CONCLUIDO", "Concluído")]
         Concluido = 2,
     }
 
     public enum Etapa
     {
-        [CodigoDeContrato("unica", "Única")]
+        [CodigoDeContrato("UNICA", "Única")]
         Unica = 1,
     }
 
@@ -61,7 +61,7 @@ public sealed class FormatosDeCodigoSchemaTransformerTests
         JsonNode codigos = documento.Componente("AndamentoCodigo");
 
         codigos.Texto("type").Should().Be("string");
-        codigos.Campo("enum").Textos().Should().Equal("em_andamento", "concluido");
+        codigos.Campo("enum").Textos().Should().Equal("EM_ANDAMENTO", "CONCLUIDO");
     }
 
     [Fact(DisplayName = "A descrição do componente dos códigos traz a descrição do enum, uma linha em branco e um item de lista por código, com o rótulo e, quando há, a descrição")]
@@ -70,7 +70,7 @@ public sealed class FormatosDeCodigoSchemaTransformerTests
         DocumentoPublicado documento = await DocumentoGerado.Value;
 
         documento.Componente("AndamentoCodigo").Texto("description").Should().Be(
-            "Como anda o trabalho, para todos os códigos.\n\n- `em_andamento`: Em andamento — Ainda há o que fazer.\n- `concluido`: Concluído");
+            "Como anda o trabalho, para todos os códigos.\n\n- `EM_ANDAMENTO`: Em andamento — Ainda há o que fazer.\n- `CONCLUIDO`: Concluído");
     }
 
     [Fact(DisplayName = "O componente do enum não tem descrição: a descrição do enum vai só para o componente dos códigos")]
@@ -87,7 +87,7 @@ public sealed class FormatosDeCodigoSchemaTransformerTests
         DocumentoPublicado documento = await DocumentoGerado.Value;
 
         documento.Componente(nameof(Etapa))["description"].Should().BeNull();
-        documento.Componente("EtapaCodigo").Texto("description").Should().Be("- `unica`: Única");
+        documento.Componente("EtapaCodigo").Texto("description").Should().Be("- `UNICA`: Única");
     }
 
     [Fact(DisplayName = "O rótulo é publicado como texto livre")]
@@ -157,7 +157,7 @@ public sealed class FormatosDeCodigoSchemaTransformerTests
 
         InvalidOperationException erro = (await geracao.Should().ThrowAsync<InvalidOperationException>()).Which;
 
-        erro.Message.Should().Contain("ModeloDeCodigosDeTeste+Turno").And.Contain("'noite'").And.NotContain("'manha'");
+        erro.Message.Should().Contain("ModeloDeCodigosDeTeste+Turno").And.Contain("'NOITE'").And.NotContain("'MANHA'");
     }
 
     private static Task<DocumentoPublicado> GerarDocumentoAsync() =>

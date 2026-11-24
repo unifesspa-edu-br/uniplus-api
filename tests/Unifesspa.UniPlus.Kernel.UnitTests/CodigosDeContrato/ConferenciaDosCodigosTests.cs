@@ -12,37 +12,56 @@ public sealed class ConferenciaDosCodigosTests
     public void MembroSemAtributo_Recusa() =>
         Defeitos<SemAtributoEmUmMembro>().Should().ContainSingle().Which.Should().Contain("SemAtributoEmUmMembro.B").And.Contain("falta");
 
-    [Fact(DisplayName = "Código vazio é recusado")]
+    [Fact(DisplayName = "Código com apenas espaço acumula defeitos sem repetir o código")]
+    public void CodigoApenasEspaco_AcumulaDefeitos()
+    {
+        IReadOnlyList<string> defeitos = Defeitos<ComCodigoApenasEspaco>();
+
+        defeitos.Should().HaveCount(3);
+        defeitos.Should().ContainSingle(d => d.Contains("código está vazio", StringComparison.Ordinal));
+        defeitos.Should().ContainSingle(d => d.Contains("espaço no começo ou no fim", StringComparison.Ordinal));
+        defeitos.Should().ContainSingle(d => d.Contains("maiúscula", StringComparison.Ordinal));
+        defeitos.Should().AllSatisfy(d => d.Should().Contain("ComCodigoApenasEspaco.Vazio").And.NotContain("' '").And.NotContain("  "));
+    }
+
+    [Fact(DisplayName = "Código vazio é recusado apenas por estar vazio")]
     public void CodigoVazio_Recusa() =>
         Defeitos<ComCodigoVazio>().Should().ContainSingle().Which.Should().Contain("ComCodigoVazio.Vazio").And.Contain("código está vazio");
 
     [Fact(DisplayName = "Código repetido é recusado e cita o primeiro membro")]
     public void CodigoRepetido_Recusa() =>
-        Defeitos<ComCodigoRepetido>().Should().ContainSingle().Which.Should().Contain("ComCodigoRepetido.Segundo").And.Contain("ComCodigoRepetido.Primeiro");
+        Defeitos<ComCodigoRepetido>().Should().ContainSingle().Which.Should().Contain("ComCodigoRepetido.Segundo").And.Contain("ComCodigoRepetido.Primeiro").And.NotContain("IGUAL");
 
     [Fact(DisplayName = "Código com espaço no começo ou no fim é recusado")]
-    public void CodigoComEspaco_Recusa() =>
-        Defeitos<ComEspacoNoCodigo>().Should().ContainSingle().Which.Should().Contain("ComEspacoNoCodigo.ComEspaco").And.Contain("espaço");
+    public void CodigoComEspaco_Recusa()
+    {
+        IReadOnlyList<string> defeitos = Defeitos<ComEspacoNoCodigo>();
+        defeitos.Should().HaveCount(2);
+        defeitos.Should().ContainSingle(d => d.Contains("espaço", StringComparison.Ordinal)).Which.Should()
+            .Contain("ComEspacoNoCodigo.ComEspaco").And.NotContain(" APARADO");
+        defeitos.Should().ContainSingle(d => d.Contains("maiúscula", StringComparison.Ordinal));
+    }
 
     [Fact(DisplayName = "Rótulo com espaço no começo ou no fim é recusado")]
     public void RotuloComEspaco_Recusa() =>
         Defeitos<ComEspacoNoRotulo>().Should().ContainSingle().Which.Should().Contain("ComEspacoNoRotulo.ComEspaco").And.Contain("rótulo").And.Contain("espaço");
 
-    [Fact(DisplayName = "Código repetido que também tem espaço nas pontas acusa o espaço e a repetição")]
-    public void CodigoRepetidoComEspaco_AcusaOsDois()
+    [Fact(DisplayName = "Código repetido com espaço nas pontas acusa espaço, formato e repetição")]
+    public void CodigoRepetidoComEspaco_AcusaTodos()
     {
         IReadOnlyList<string> defeitos = Defeitos<ComEspacoERepetido>();
 
-        defeitos.Should().HaveCount(3);
+        defeitos.Should().HaveCount(5);
         defeitos.Count(d => d.Contains("espaço", StringComparison.Ordinal)).Should().Be(2);
-        defeitos.Should().ContainSingle(d => d.Contains("ComEspacoERepetido.Segundo", StringComparison.Ordinal) && d.Contains("já é de ComEspacoERepetido.Primeiro", StringComparison.Ordinal));
+        defeitos.Count(d => d.Contains("maiúscula", StringComparison.Ordinal)).Should().Be(2);
+        defeitos.Should().ContainSingle(d => d.Contains("ComEspacoERepetido.Segundo", StringComparison.Ordinal) && d.Contains("já é de ComEspacoERepetido.Primeiro", StringComparison.Ordinal)).Which.Should().NotContain(" IGUAL");
     }
 
     [Fact(DisplayName = "Dois membros com o mesmo valor numérico são recusados")]
     public void ValorNumericoRepetido_Recusa()
     {
         Type enumeracao = EnumsCriadosEmExecucao.Definir(
-            EnumsCriadosEmExecucao.NovoModulo(), "ComValorRepetido", ("um", "Um", 1), ("outro_um", "Outro um", 1));
+            EnumsCriadosEmExecucao.NovoModulo(), "ComValorRepetido", ("UM", "Um", 1), ("OUTRO_UM", "Outro um", 1));
 
         FluentActions.Invoking(() => EnumsDeContrato.Declarados(enumeracao))
             .Should().Throw<CodigosDeContratoInvalidosException>().Which.Defeitos

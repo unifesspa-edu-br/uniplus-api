@@ -20,7 +20,7 @@ public sealed class JsonServiceCollectionExtensionsTests
     private const string InstanteComSetimaCasa = "\"2026-11-12T10:00:00.9999999Z\"";
 
     // O código declarado de ModoDeEntregaDeTeste.Postal, que difere do nome, do nome em camelCase e do número do membro.
-    private const string CodigoDoModoPostalComoTexto = "\"pelo_correio\"";
+    private const string CodigoDoModoPostalComoTexto = "\"PELO_CORREIO\"";
 
     private static readonly DateTimeOffset InstanteEsperado = new DateTimeOffset(2026, 11, 12, 10, 0, 0, TimeSpan.Zero).AddTicks(9_999_990);
 

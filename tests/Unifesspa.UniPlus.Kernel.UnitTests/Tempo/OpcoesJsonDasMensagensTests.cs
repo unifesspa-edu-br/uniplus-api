@@ -114,7 +114,7 @@ public sealed class OpcoesJsonDasMensagensTests
 
         string json = JsonSerializer.Serialize(original, Opcoes);
 
-        json.Should().Be("""{"escolhida":"verde_claro"}""");
+        json.Should().Be("""{"escolhida":"VERDE_CLARO"}""");
         JsonSerializer.Deserialize<ComCorEscolhida>(json, Opcoes).Should().Be(original);
     }
 
@@ -133,7 +133,7 @@ public sealed class OpcoesJsonDasMensagensTests
 
         OpcoesJsonDasMensagens.Configurar(opcoes);
 
-        JsonSerializer.Serialize(new ComCorEscolhida(Cor.VerdeClaro), opcoes).Should().Be("""{"Escolhida":"verde_claro"}""");
+        JsonSerializer.Serialize(new ComCorEscolhida(Cor.VerdeClaro), opcoes).Should().Be("""{"Escolhida":"VERDE_CLARO"}""");
     }
 
     [Fact(DisplayName = "Configurar preserva o resolvedor que as opções já tinham")]

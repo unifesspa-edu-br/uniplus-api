@@ -106,7 +106,7 @@ public sealed class AceitaCodigosDeTests
         documento.Componentes.Should().Contain("FaseCodigo").And.NotContain([nameof(Fase), "FaseComDescricao"]);
         documento.Componente("FaseCodigo").Texto("description").Should().Be(
             "Em que fase o processo está, para todos os códigos.\n\n"
-            + "- `inscricao`: Inscrição — A pessoa ainda pode se inscrever.\n- `resultado`: Resultado — O resultado já saiu.");
+            + "- `INSCRICAO`: Inscrição — A pessoa ainda pode se inscrever.\n- `RESULTADO`: Resultado — O resultado já saiu.");
     }
 
     [Fact(DisplayName = "O campo de pedido sem o atributo continua texto livre")]

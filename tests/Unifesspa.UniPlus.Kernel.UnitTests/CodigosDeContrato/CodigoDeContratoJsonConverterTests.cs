@@ -18,7 +18,7 @@ public sealed class CodigoDeContratoJsonConverterTests
 
         string json = JsonSerializer.Serialize(original, Opcoes);
 
-        json.Should().Be("""{"escolhida":"verde_claro"}""");
+        json.Should().Be("""{"escolhida":"VERDE_CLARO"}""");
         JsonSerializer.Deserialize<ComCorEscolhida>(json, Opcoes).Should().Be(original);
     }
 
@@ -29,7 +29,7 @@ public sealed class CodigoDeContratoJsonConverterTests
 
         string json = JsonSerializer.Serialize(original, Opcoes);
 
-        json.Should().Be("""["verde_claro","azul"]""");
+        json.Should().Be("""["VERDE_CLARO","AZUL"]""");
         JsonSerializer.Deserialize<List<Cor>>(json, Opcoes).Should().Equal(original);
     }
 
@@ -40,13 +40,13 @@ public sealed class CodigoDeContratoJsonConverterTests
 
         string json = JsonSerializer.Serialize(original, Opcoes);
 
-        json.Should().Be("""{"verde_claro":2,"azul":1}""");
+        json.Should().Be("""{"VERDE_CLARO":2,"AZUL":1}""");
         JsonSerializer.Deserialize<Dictionary<Cor, int>>(json, Opcoes).Should().Equal(original);
     }
 
     [Fact(DisplayName = "A escrita usa o código declarado, e não o nome do membro")]
     public void Escrever_UsaOCodigoDeclarado_NaoONomeDoMembro() =>
-        JsonSerializer.Serialize(Cor.VerdeClaro, Opcoes).Should().Be("\"verde_claro\"").And.NotContain(nameof(Cor.VerdeClaro));
+        JsonSerializer.Serialize(Cor.VerdeClaro, Opcoes).Should().Be("\"VERDE_CLARO\"").And.NotContain(nameof(Cor.VerdeClaro));
 
     [Theory(DisplayName = "Código desconhecido ou token que não é texto lançam JsonException que cita o enum")]
     [InlineData("\"roxo\"")]
@@ -75,7 +75,7 @@ public sealed class CodigoDeContratoJsonConverterTests
 
     [Theory(DisplayName = "O enum anulável usa o mesmo conversor, nulo ou preenchido, como propriedade")]
     [InlineData(null, """{"opcional":null}""")]
-    [InlineData(Cor.Azul, """{"opcional":"azul"}""")]
+    [InlineData(Cor.Azul, """{"opcional":"AZUL"}""")]
     public void IdaEVolta_EnumAnulavel_UsaOMesmoConversor(Cor? valor, string jsonEsperado)
     {
         ComCorOpcional original = new(valor);

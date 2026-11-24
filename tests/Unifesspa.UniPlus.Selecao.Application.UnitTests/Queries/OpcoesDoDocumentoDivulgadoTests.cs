@@ -22,7 +22,7 @@ public sealed class OpcoesDoDocumentoDivulgadoTests
 
         string texto = JsonSerializer.Serialize(exemplo, ProjecaoDoCertamePublicado.OpcoesDoDocumento);
 
-        texto.Should().Be("""{"modo":"pelo_correio","situacao":3}""");
+        texto.Should().Be("""{"modo":"PELO_CORREIO","situacao":3}""");
         JsonSerializer.Deserialize<Exemplo>(texto, ProjecaoDoCertamePublicado.OpcoesDoDocumento).Should().Be(exemplo);
     }
 

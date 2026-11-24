@@ -72,10 +72,10 @@ public sealed class CodigosDosEnumsNoDocumentoTests
         JsonNode codigos = documento.Componente("FaseCodigo");
 
         codigos.Texto("type").Should().Be("string");
-        codigos.Campo("enum").Textos().Should().Equal("inscricao", "resultado");
+        codigos.Campo("enum").Textos().Should().Equal("INSCRICAO", "RESULTADO");
         codigos.Texto("description").Should().Be(
             "Em que fase o processo está, para todos os códigos.\n\n"
-            + "- `inscricao`: Inscrição — A pessoa ainda pode se inscrever.\n- `resultado`: Resultado — O resultado já saiu.");
+            + "- `INSCRICAO`: Inscrição — A pessoa ainda pode se inscrever.\n- `RESULTADO`: Resultado — O resultado já saiu.");
     }
 
     [Fact(DisplayName = "A ordem em que o gerador visita os tipos não muda o componente dos códigos")]
