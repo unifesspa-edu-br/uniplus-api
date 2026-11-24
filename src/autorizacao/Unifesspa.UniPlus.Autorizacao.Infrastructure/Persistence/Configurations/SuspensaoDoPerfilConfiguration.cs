@@ -44,7 +44,7 @@ internal sealed class SuspensaoDoPerfilConfiguration : IEntityTypeConfiguration<
         builder.Property(s => s.SuspensaPorNome).HasMaxLength(NomeDeExibicao.MaxLength);
         builder.Property(s => s.Papel).HasColumnName("papel_de_quem_suspendeu").HasConversion(PapelConverter).HasMaxLength(CodigoMaxLength).IsRequired();
         builder.Property(s => s.Motivo).HasMaxLength(MotivoInformado.MaximoDeCaracteres).IsRequired();
-        builder.Property(s => s.OrdemNaTrilha).IsRequired();
+        builder.Property(s => s.OrdemNoHistorico).IsRequired();
 
         builder.Ignore(s => s.Aberta);
         builder.Ignore(s => s.SuspensaPor);
@@ -52,7 +52,7 @@ internal sealed class SuspensaoDoPerfilConfiguration : IEntityTypeConfiguration<
 
         // No máximo uma suspensão aberta por perfil: a segunda, simultânea, é barrada aqui se escapar da trava do perfil.
         builder.HasIndex(s => s.PerfilId).IsUnique().HasFilter("retomada_em IS NULL").HasDatabaseName("ux_suspensoes_do_perfil_aberta");
-        builder.HasIndex(s => s.OrdemNaTrilha).IsUnique().HasDatabaseName("ux_suspensoes_do_perfil_ordem");
+        builder.HasIndex(s => s.OrdemNoHistorico).IsUnique().HasDatabaseName("ux_suspensoes_do_perfil_ordem");
 
         builder.HasMany(s => s.Decisoes).WithOne().HasForeignKey(d => d.SuspensaoId).OnDelete(DeleteBehavior.Restrict);
         builder.Navigation(s => s.Decisoes).UsePropertyAccessMode(PropertyAccessMode.Field);

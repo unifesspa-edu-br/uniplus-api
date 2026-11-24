@@ -41,7 +41,7 @@ public sealed class LiberacaoDaReclassificacao : IForensicEntity, IRegistroDaTri
 
     public int OrdinalLocal { get; private init; }
 
-    public long OrdemNaTrilha { get; private set; }
+    public long OrdemNoHistorico { get; private set; }
 
     public Identidade Decisor => new(DecisorEmissor, DecisorContaId, DecisorNome);
 

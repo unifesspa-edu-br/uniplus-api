@@ -44,7 +44,7 @@ internal sealed class LeituraDoMonitoramento : ILeituraDoMonitoramento
         IQueryable<CodigoDaConcessao> suspensos = _context.CodigosSuspensosPorReclassificacao(agora);
 
         return await _context.Reclassificacoes.AsNoTracking()
-            .Where(r => !_context.Set<ReclassificacaoDaPermissao>().Any(o => o.PerfilId == r.PerfilId && o.Codigo == r.Codigo && o.OrdemNaTrilha > r.OrdemNaTrilha))
+            .Where(r => !_context.Set<ReclassificacaoDaPermissao>().Any(o => o.PerfilId == r.PerfilId && o.Codigo == r.Codigo && o.OrdemNoHistorico > r.OrdemNoHistorico))
             .LongCountAsync(
                 r => suspensos.Any(k => k.Codigo == r.Codigo
                     && _context.Set<Concessao>().Any(c => c.Id == k.ConcessaoId && c.PerfilId == r.PerfilId)),

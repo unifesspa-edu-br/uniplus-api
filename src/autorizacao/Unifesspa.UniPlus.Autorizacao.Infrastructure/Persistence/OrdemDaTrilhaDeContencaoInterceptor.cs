@@ -15,7 +15,7 @@ using Unifesspa.UniPlus.Autorizacao.Domain.Interfaces;
 public sealed class OrdemDaTrilhaDeContencaoInterceptor : SaveChangesInterceptor
 {
     private const string ProximoNumero =
-        $"SELECT nextval('{AutorizacaoContribuicao.NomeDoEsquema}.{AutorizacaoContribuicao.SequenciaDaOrdemDaTrilha}') AS \"Value\"";
+        $"SELECT nextval('{AutorizacaoContribuicao.NomeDoEsquema}.{AutorizacaoContribuicao.SequenciaDaOrdemDoHistoricoDeAcesso}') AS \"Value\"";
 
     public override InterceptionResult<int> SavingChanges(DbContextEventData eventData, InterceptionResult<int> result)
     {
@@ -54,5 +54,5 @@ public sealed class OrdemDaTrilhaDeContencaoInterceptor : SaveChangesInterceptor
             .OrderBy(static e => ((IRegistroDaTrilhaDeContencao)e.Entity).OrdinalLocal)];
 
     private static void Numerar(EntityEntry registro, long numero) =>
-        registro.Property(nameof(IRegistroDaTrilhaDeContencao.OrdemNaTrilha)).CurrentValue = numero;
+        registro.Property(nameof(IRegistroDaTrilhaDeContencao.OrdemNoHistorico)).CurrentValue = numero;
 }

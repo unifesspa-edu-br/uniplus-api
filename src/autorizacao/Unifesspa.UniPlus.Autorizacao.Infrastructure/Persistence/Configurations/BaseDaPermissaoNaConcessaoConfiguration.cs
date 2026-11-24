@@ -45,7 +45,7 @@ internal sealed class BaseDaPermissaoNaConcessaoConfiguration : IEntityTypeConfi
         builder.Property(b => b.DeUnidade);
         builder.Property(b => b.Origem).HasConversion(OrigemConverter).HasMaxLength(OrigemMaxLength).IsRequired();
         builder.Property(b => b.ReferenciaId).IsRequired();
-        builder.Property(b => b.OrdemNaTrilha).IsRequired();
+        builder.Property(b => b.OrdemNoHistorico).IsRequired();
         builder.Ignore(b => b.OrdinalLocal);
 
         // A concessão pertence ao perfil: o banco recusa a base de uma concessão que é de outro perfil.
@@ -56,11 +56,11 @@ internal sealed class BaseDaPermissaoNaConcessaoConfiguration : IEntityTypeConfi
             .HasPrincipalKey(c => new { c.PerfilId, c.Id })
             .OnDelete(DeleteBehavior.Restrict);
 
-        builder.HasIndex(b => new { b.ConcessaoId, b.Codigo, b.OrdemNaTrilha })
+        builder.HasIndex(b => new { b.ConcessaoId, b.Codigo, b.OrdemNoHistorico })
             .IsDescending(false, false, true)
             .HasDatabaseName("ix_bases_da_permissao_concessao_codigo");
         builder.HasIndex(b => new { b.PerfilId, b.ConcessaoId }).HasDatabaseName("ix_bases_da_permissao_concedida_perfil_concessao");
-        builder.HasIndex(b => b.OrdemNaTrilha).IsUnique().HasDatabaseName("ux_bases_da_permissao_ordem");
+        builder.HasIndex(b => b.OrdemNoHistorico).IsUnique().HasDatabaseName("ux_bases_da_permissao_ordem");
     }
 
     private static void ConfigurarRestricoes(TableBuilder<BaseDaPermissaoNaConcessao> tabela)

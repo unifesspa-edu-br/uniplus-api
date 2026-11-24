@@ -35,7 +35,7 @@ public sealed class DesativacaoDoPerfil : EntityBase, IRegistroDaTrilhaDeContenc
 
     public int OrdinalLocal { get; private init; }
 
-    public long OrdemNaTrilha { get; private set; }
+    public long OrdemNoHistorico { get; private set; }
 
     public bool Aberta => ReativadaEm is null;
 

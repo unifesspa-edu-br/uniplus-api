@@ -142,11 +142,11 @@ public sealed class PerfilRepository : IPerfilRepository
         }
 
         return new TrilhaDaContencao(
-            await _context.EventosDaContencao.AsNoTracking().Where(e => e.PerfilId == perfilId).OrderBy(e => e.OrdemNaTrilha)
+            await _context.EventosDaContencao.AsNoTracking().Where(e => e.PerfilId == perfilId).OrderBy(e => e.OrdemNoHistorico)
                 .ToListAsync(cancellationToken).ConfigureAwait(false),
             await _context.DecisoesDasRetomadas.AsNoTracking()
                 .Where(d => _context.Set<SuspensaoDoPerfil>().Any(s => s.Id == d.SuspensaoId && s.PerfilId == perfilId))
-                .OrderBy(d => d.OrdemNaTrilha)
+                .OrderBy(d => d.OrdemNoHistorico)
                 .ToListAsync(cancellationToken).ConfigureAwait(false));
     }
 

@@ -36,7 +36,7 @@ internal static class SuspensaoPorReclassificacao
     public static IQueryable<BaseViva> BasesVivas(this UniPlusDbContext context) =>
         from b in context.BasesDasPermissoes
         where b.Origem != OrigemDaBase.Saida
-            && !context.Set<BaseDaPermissaoNaConcessao>().Any(o => o.ConcessaoId == b.ConcessaoId && o.Codigo == b.Codigo && o.OrdemNaTrilha > b.OrdemNaTrilha)
+            && !context.Set<BaseDaPermissaoNaConcessao>().Any(o => o.ConcessaoId == b.ConcessaoId && o.Codigo == b.Codigo && o.OrdemNoHistorico > b.OrdemNoHistorico)
         select new BaseViva { ConcessaoId = b.ConcessaoId, Codigo = b.Codigo, Classificacao = b.Classificacao!.Value, DeUnidade = b.DeUnidade!.Value };
 }
 

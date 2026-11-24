@@ -36,7 +36,7 @@ public sealed class SuspensaoDoPerfil : EntityBase, IRegistroDaTrilhaDeContencao
 
     public int OrdinalLocal { get; private init; }
 
-    public long OrdemNaTrilha { get; private set; }
+    public long OrdemNoHistorico { get; private set; }
 
     public IReadOnlyList<DecisaoDaRetomada> Decisoes => _decisoes;
 

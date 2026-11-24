@@ -35,7 +35,7 @@ public sealed class BaseDaPermissaoNaConcessao : IForensicEntity, IRegistroDaTri
 
     public int OrdinalLocal { get; private init; }
 
-    public long OrdemNaTrilha { get; private set; }
+    public long OrdemNoHistorico { get; private set; }
 
     // Construtor de materialização do EF Core.
     private BaseDaPermissaoNaConcessao()

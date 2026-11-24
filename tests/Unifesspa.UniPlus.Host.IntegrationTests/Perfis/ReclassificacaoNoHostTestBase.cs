@@ -92,7 +92,7 @@ public abstract class ReclassificacaoNoHostTestBase : AprovacaoDaVersaoNoHostTes
         await using AsyncServiceScope escopo = Fixture.Factory.Services.CreateAsyncScope();
 
         return await escopo.ServiceProvider.GetRequiredService<UniPlusDbContext>().Reclassificacoes.AsNoTracking()
-            .Where(r => r.PerfilId == perfil && r.Codigo == procurado).OrderByDescending(r => r.OrdemNaTrilha).Select(r => r.Id).FirstAsync();
+            .Where(r => r.PerfilId == perfil && r.Codigo == procurado).OrderByDescending(r => r.OrdemNoHistorico).Select(r => r.Id).FirstAsync();
     }
 
     private protected async Task<long> ContarAsync(string sql, params object[] parametros)
@@ -134,7 +134,7 @@ public abstract class ReclassificacaoNoHostTestBase : AprovacaoDaVersaoNoHostTes
         await using AsyncServiceScope escopo = Fixture.Factory.Services.CreateAsyncScope();
 
         return await escopo.ServiceProvider.GetRequiredService<UniPlusDbContext>().Database.SqlQuery<string>(
-            $"""SELECT origem AS "Value" FROM autorizacao.bases_da_permissao_concedida WHERE concessao_id = {concessao} AND codigo = {codigo} ORDER BY ordem_na_trilha DESC LIMIT 1""")
+            $"""SELECT origem AS "Value" FROM autorizacao.bases_da_permissao_concedida WHERE concessao_id = {concessao} AND codigo = {codigo} ORDER BY ordem_no_historico DESC LIMIT 1""")
             .FirstOrDefaultAsync();
     }
 

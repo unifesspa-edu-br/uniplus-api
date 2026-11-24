@@ -46,13 +46,13 @@ internal sealed class DecisaoDaRetomadaConfiguration : IEntityTypeConfiguration<
         builder.Property(d => d.Motivo).HasMaxLength(MotivoInformado.MaximoDeCaracteres).IsRequired();
         builder.Property(d => d.PerfilProtegidoNaDecisao).IsRequired();
         builder.Property(d => d.Instante).IsRequired();
-        builder.Property(d => d.OrdemNaTrilha).IsRequired();
+        builder.Property(d => d.OrdemNoHistorico).IsRequired();
 
         builder.Ignore(d => d.Decisor);
         builder.Ignore(d => d.OrdinalLocal);
 
         // Uma decisão por etapa em cada suspensão: a segunda, simultânea, é barrada aqui se escapar da trava do perfil.
         builder.HasIndex(d => new { d.SuspensaoId, d.Etapa }).IsUnique().HasDatabaseName("ux_decisoes_da_retomada_etapa");
-        builder.HasIndex(d => d.OrdemNaTrilha).IsUnique().HasDatabaseName("ux_decisoes_da_retomada_ordem");
+        builder.HasIndex(d => d.OrdemNoHistorico).IsUnique().HasDatabaseName("ux_decisoes_da_retomada_ordem");
     }
 }

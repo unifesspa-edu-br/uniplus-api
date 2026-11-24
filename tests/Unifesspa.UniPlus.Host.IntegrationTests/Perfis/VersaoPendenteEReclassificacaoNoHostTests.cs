@@ -152,6 +152,6 @@ public sealed class VersaoPendenteEReclassificacaoNoHostTests : ReclassificacaoN
 
     private Task<string?> OrigemDaRetomadaAsync(Guid perfil) =>
         ConsultarTextoAsync(
-            """SELECT origem AS "Value" FROM autorizacao.eventos_de_bloqueio_do_perfil WHERE perfil_id = {0} AND tipo = 'RETOMADA' ORDER BY ordem_na_trilha DESC LIMIT 1""",
+            """SELECT origem AS "Value" FROM autorizacao.eventos_de_bloqueio_do_perfil WHERE perfil_id = {0} AND tipo = 'RETOMADA' ORDER BY ordem_no_historico DESC LIMIT 1""",
             perfil);
 }

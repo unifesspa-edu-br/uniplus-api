@@ -52,7 +52,7 @@ internal sealed class LiberacaoDaReclassificacaoConfiguration : IEntityTypeConfi
         builder.Property(l => l.DecisorTemConcessao).IsRequired();
         builder.Property(l => l.LoteId).IsRequired();
         builder.Property(l => l.Instante).IsRequired();
-        builder.Property(l => l.OrdemNaTrilha).IsRequired();
+        builder.Property(l => l.OrdemNoHistorico).IsRequired();
         builder.Ignore(l => l.Decisor);
         builder.Ignore(l => l.OrdinalLocal);
 
@@ -68,7 +68,7 @@ internal sealed class LiberacaoDaReclassificacaoConfiguration : IEntityTypeConfi
 
         // Uma decisão por etapa em cada concessão: a segunda, simultânea, é barrada aqui se escapar da trava do perfil.
         builder.HasIndex(l => new { l.ReclassificacaoId, l.ConcessaoId, l.Etapa }).IsUnique().HasDatabaseName("ux_liberacoes_da_reclassificacao_etapa");
-        builder.HasIndex(l => l.OrdemNaTrilha).IsUnique().HasDatabaseName("ux_liberacoes_da_reclassificacao_ordem");
+        builder.HasIndex(l => l.OrdemNoHistorico).IsUnique().HasDatabaseName("ux_liberacoes_da_reclassificacao_ordem");
     }
 
     private static void ConfigurarRestricoes(TableBuilder<LiberacaoDaReclassificacao> tabela)

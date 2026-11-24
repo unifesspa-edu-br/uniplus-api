@@ -11,5 +11,5 @@ public interface IRegistroDaTrilhaDeContencao
     int OrdinalLocal { get; }
 
     /// <summary>O número da sequence compartilhada; zero até a gravação.</summary>
-    long OrdemNaTrilha { get; }
+    long OrdemNoHistorico { get; }
 }
