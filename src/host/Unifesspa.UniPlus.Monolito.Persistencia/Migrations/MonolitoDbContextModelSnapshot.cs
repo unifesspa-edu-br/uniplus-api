@@ -11699,7 +11699,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.ToTable("comprovantes_inscricao", "selecao", t =>
                         {
-                            t.HasComment("Comprovante de uma submissão da inscrição (issue #1858) — append-only, sem nenhum número de documento; uma correção soma uma linha nova, nunca muda a anterior.");
+                            t.HasComment("Comprovante de uma submissão da inscrição — append-only, sem nenhum número de documento; uma correção soma uma linha nova, nunca muda a anterior.");
                         });
                 });
 
@@ -12116,7 +12116,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     b.Property<bool>("BaseadoEmEnem")
                         .HasColumnType("boolean")
                         .HasColumnName("baseado_em_enem")
-                        .HasComment("A classificação usa a estrutura de pontuação por área do ENEM — sinal explícito (Story #850) do qual as regras de eliminação do ENEM dependem, substituindo a ramificação por TipoProcesso.");
+                        .HasComment("A classificação usa a estrutura de pontuação por área do ENEM — sinal explícito do qual as regras de eliminação do ENEM dependem, substituindo a ramificação por TipoProcesso.");
 
                     b.Property<int?>("CasasArredondamento")
                         .HasColumnType("integer")
@@ -12367,7 +12367,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.ToTable("configuracoes_taxa_inscricao", "selecao", t =>
                         {
-                            t.HasComment("Configuração de taxa de inscrição e fundamentos de isenção do processo seletivo (issue #1112) — entidade dependente 1:1 de processos_seletivos.");
+                            t.HasComment("Configuração de taxa de inscrição e fundamentos de isenção do processo seletivo — entidade dependente 1:1 de processos_seletivos.");
                         });
                 });
 
@@ -16262,7 +16262,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.ToTable("inscricoes", "selecao", t =>
                         {
-                            t.HasComment("A inscrição de um candidato num processo seletivo (issue #1858) — uma por CPF e processo. As respostas ficam em respostas_da_inscricao e nas tabelas vizinhas.");
+                            t.HasComment("A inscrição de um candidato num processo seletivo — uma por CPF e processo. As respostas ficam em respostas_da_inscricao e nas tabelas vizinhas.");
 
                             t.HasCheckConstraint("ck_inscricoes_situacao", "situacao IN ('RASCUNHO', 'SUBMETIDA', 'CANCELADA')");
                         });
