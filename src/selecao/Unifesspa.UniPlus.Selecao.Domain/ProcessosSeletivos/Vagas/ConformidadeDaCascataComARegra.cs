@@ -13,8 +13,8 @@ public static class ConformidadeDaCascataComARegra
         ArgumentNullException.ThrowIfNull(cascata);
         ArgumentNullException.ThrowIfNull(regra);
         JsonElement declaracao = regra.DeclaracaoDaRegra;
-        return declaracao.TryGetProperty("fallbackCodigo", out JsonElement fallback)
-            && string.Equals(fallback.GetString(), cascata.FallbackCodigo, StringComparison.Ordinal)
+        return declaracao.TryGetProperty("destinoFinalCodigo", out JsonElement destinoFinal)
+            && string.Equals(destinoFinal.GetString(), cascata.FallbackCodigo, StringComparison.Ordinal)
             && declaracao.TryGetProperty("ordens", out JsonElement ordens)
             && ordens.ValueKind == JsonValueKind.Array
             && ConferirOrigens(cascata, ordens);
