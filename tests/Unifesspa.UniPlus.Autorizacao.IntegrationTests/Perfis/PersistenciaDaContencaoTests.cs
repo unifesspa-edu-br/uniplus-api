@@ -35,7 +35,7 @@ public sealed class PersistenciaDaContencaoTests : PerfilEndpointTestBase
         int tabelas = await db.Database.SqlQuery<int>($"""
             SELECT count(*)::int AS "Value" FROM information_schema.tables
             WHERE table_schema = 'autorizacao'
-              AND table_name IN ('suspensoes_do_perfil', 'desativacoes_do_perfil', 'decisoes_da_retomada', 'eventos_da_contencao')
+              AND table_name IN ('suspensoes_do_perfil', 'desativacoes_do_perfil', 'decisoes_da_retomada', 'eventos_de_bloqueio_do_perfil')
             """).SingleAsync();
         int sequencias = await db.Database.SqlQuery<int>($"""
             SELECT count(*)::int AS "Value" FROM information_schema.sequences
@@ -57,7 +57,7 @@ public sealed class PersistenciaDaContencaoTests : PerfilEndpointTestBase
             JOIN pg_class origem ON origem.oid = c.conrelid
             JOIN pg_class alvo ON alvo.oid = c.confrelid
             JOIN pg_namespace na ON na.oid = alvo.relnamespace
-            WHERE c.contype = 'f' AND origem.relname IN ('suspensoes_do_perfil', 'desativacoes_do_perfil', 'decisoes_da_retomada', 'eventos_da_contencao')
+            WHERE c.contype = 'f' AND origem.relname IN ('suspensoes_do_perfil', 'desativacoes_do_perfil', 'decisoes_da_retomada', 'eventos_de_bloqueio_do_perfil')
               AND na.nspname <> 'autorizacao'
             """).SingleAsync();
 
@@ -136,7 +136,7 @@ public sealed class PersistenciaDaContencaoTests : PerfilEndpointTestBase
 
         Func<Task> acao = () => ExecutarAsync(
             $$"""
-            INSERT INTO autorizacao.eventos_da_contencao
+            INSERT INTO autorizacao.eventos_de_bloqueio_do_perfil
                 (id, perfil_id, instante, tipo, suspensao_id, ator, origem, permissao_codigo, ator_emissor, ator_conta_id, papel, motivo, perfil_protegido, ordem_na_trilha)
             VALUES ({0}, {1}, now(), {2}, {3}, {4}, {{Literal(origem)}}, {{Literal(permissao)}}, 'e', 's', 'GESTAO_DE_ACESSOS', 'm', false, nextval('autorizacao.ordem_da_trilha_de_contencao'))
             """,
@@ -154,7 +154,7 @@ public sealed class PersistenciaDaContencaoTests : PerfilEndpointTestBase
 
         Func<Task> acao = () => ExecutarAsync(
             """
-            INSERT INTO autorizacao.eventos_da_contencao
+            INSERT INTO autorizacao.eventos_de_bloqueio_do_perfil
                 (id, perfil_id, instante, tipo, suspensao_id, ator, decisao_id, perfil_protegido, ordem_na_trilha)
             SELECT {0}, {1}, now(), 'RETOMADA', {2}, 'SISTEMA', d.id, false, nextval('autorizacao.ordem_da_trilha_de_contencao')
             FROM autorizacao.decisoes_da_retomada d WHERE d.suspensao_id = {2}
@@ -245,7 +245,7 @@ public sealed class PersistenciaDaContencaoTests : PerfilEndpointTestBase
         await using AsyncServiceScope scope = Fixture.Factory.Services.CreateAsyncScope();
         UniPlusDbContext db = scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
         List<RegistroDaOrdem> linhas = await db.Database.SqlQuery<RegistroDaOrdem>($"""
-            SELECT tipo AS "Tipo", ordem_na_trilha AS "Ordem" FROM autorizacao.eventos_da_contencao WHERE perfil_id = {perfilId}
+            SELECT tipo AS "Tipo", ordem_na_trilha AS "Ordem" FROM autorizacao.eventos_de_bloqueio_do_perfil WHERE perfil_id = {perfilId}
             UNION ALL
             SELECT 'decisao_da_retomada', d.ordem_na_trilha FROM autorizacao.decisoes_da_retomada d
               JOIN autorizacao.suspensoes_do_perfil s ON s.id = d.suspensao_id WHERE s.perfil_id = {perfilId}

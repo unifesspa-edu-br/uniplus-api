@@ -53,7 +53,7 @@ internal sealed class EventoDaContencaoConfiguration : IEntityTypeConfiguration<
 
         builder.ClassificaPorPadrao(ClassificacaoDeProtecao.Pessoal);
 
-        builder.ToTable("eventos_da_contencao", ConfigurarRestricoes);
+        builder.ToTable("eventos_de_bloqueio_do_perfil", ConfigurarRestricoes);
         builder.HasKey(e => e.Id);
         builder.Property(e => e.Id).ValueGeneratedNever();
 
@@ -74,29 +74,29 @@ internal sealed class EventoDaContencaoConfiguration : IEntityTypeConfiguration<
 
         ConfigurarReferencias(builder);
 
-        builder.HasIndex(e => new { e.PerfilId, e.Instante }).HasDatabaseName("ix_eventos_da_contencao_perfil");
-        builder.HasIndex(e => e.OrdemNaTrilha).IsUnique().HasDatabaseName("ux_eventos_da_contencao_ordem");
+        builder.HasIndex(e => new { e.PerfilId, e.Instante }).HasDatabaseName("ix_eventos_de_bloqueio_do_perfil_perfil");
+        builder.HasIndex(e => e.OrdemNaTrilha).IsUnique().HasDatabaseName("ux_eventos_de_bloqueio_do_perfil_ordem");
     }
 
     private static void ConfigurarReferencias(EntityTypeBuilder<EventoDaContencao> builder)
     {
-        builder.HasOne<SuspensaoDoPerfil>().WithMany().HasForeignKey(e => e.SuspensaoId).OnDelete(DeleteBehavior.Restrict);
-        builder.HasOne<DesativacaoDoPerfil>().WithMany().HasForeignKey(e => e.DesativacaoId).OnDelete(DeleteBehavior.Restrict);
-        builder.HasOne<DecisaoDaRetomada>().WithMany().HasForeignKey(e => e.DecisaoId).OnDelete(DeleteBehavior.Restrict);
-        builder.HasOne<VersaoDoPerfil>().WithMany().HasForeignKey(e => e.VersaoQueEntrouId).OnDelete(DeleteBehavior.Restrict);
-        builder.HasOne<VersaoDoPerfil>().WithMany().HasForeignKey(e => e.VersaoVigenteId).OnDelete(DeleteBehavior.Restrict);
+        builder.HasOne<SuspensaoDoPerfil>().WithMany().HasForeignKey(e => e.SuspensaoId).HasConstraintName("fk_eventos_de_bloqueio_suspensao").OnDelete(DeleteBehavior.Restrict);
+        builder.HasOne<DesativacaoDoPerfil>().WithMany().HasForeignKey(e => e.DesativacaoId).HasConstraintName("fk_eventos_de_bloqueio_desativacao").OnDelete(DeleteBehavior.Restrict);
+        builder.HasOne<DecisaoDaRetomada>().WithMany().HasForeignKey(e => e.DecisaoId).HasConstraintName("fk_eventos_de_bloqueio_decisao_da_retomada").OnDelete(DeleteBehavior.Restrict);
+        builder.HasOne<VersaoDoPerfil>().WithMany().HasForeignKey(e => e.VersaoQueEntrouId).HasConstraintName("fk_eventos_de_bloqueio_versao_que_entrou").OnDelete(DeleteBehavior.Restrict);
+        builder.HasOne<VersaoDoPerfil>().WithMany().HasForeignKey(e => e.VersaoVigenteId).HasConstraintName("fk_eventos_de_bloqueio_versao_vigente").OnDelete(DeleteBehavior.Restrict);
     }
 
     private static void ConfigurarRestricoes(TableBuilder<EventoDaContencao> tabela)
     {
         tabela.HasCheckConstraint(
-            "ck_eventos_da_contencao_tipo",
+            "ck_eventos_de_bloqueio_do_perfil_tipo",
             $"tipo IN ('{TipoDoEventoDaContencaoCodigo.Suspensao}', '{TipoDoEventoDaContencaoCodigo.Retomada}',"
             + $" '{TipoDoEventoDaContencaoCodigo.Desativacao}', '{TipoDoEventoDaContencaoCodigo.Reativacao}')");
-        tabela.HasCheckConstraint("ck_eventos_da_contencao_suspensao", RamoDaSuspensao());
-        tabela.HasCheckConstraint("ck_eventos_da_contencao_retomada", RamoDaRetomada());
-        tabela.HasCheckConstraint("ck_eventos_da_contencao_desativacao", RamoDaDesativacaoOuReativacao(TipoDoEventoDaContencaoCodigo.Desativacao));
-        tabela.HasCheckConstraint("ck_eventos_da_contencao_reativacao", RamoDaDesativacaoOuReativacao(TipoDoEventoDaContencaoCodigo.Reativacao));
+        tabela.HasCheckConstraint("ck_eventos_de_bloqueio_do_perfil_suspensao", RamoDaSuspensao());
+        tabela.HasCheckConstraint("ck_eventos_de_bloqueio_do_perfil_retomada", RamoDaRetomada());
+        tabela.HasCheckConstraint("ck_eventos_de_bloqueio_do_perfil_desativacao", RamoDaDesativacaoOuReativacao(TipoDoEventoDaContencaoCodigo.Desativacao));
+        tabela.HasCheckConstraint("ck_eventos_de_bloqueio_do_perfil_reativacao", RamoDaDesativacaoOuReativacao(TipoDoEventoDaContencaoCodigo.Reativacao));
     }
 
     private static string RamoDaSuspensao() =>
