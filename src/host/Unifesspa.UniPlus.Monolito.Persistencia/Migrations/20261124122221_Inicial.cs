@@ -1039,20 +1039,21 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 columns: table => new
                 {
                     id = table.Column<Guid>(type: "uuid", nullable: false, comment: "Identificador interno (UUIDv7) da execução."),
-                    status = table.Column<int>(type: "integer", nullable: false, comment: "Estado da execução (Running/Completed/Partial/Failed)."),
+                    status = table.Column<string>(type: "character varying(30)", maxLength: 30, nullable: false, comment: "Situação da execução. Códigos: EM_ANDAMENTO, CONCLUIDA, PARCIAL, FALHOU."),
                     data_de_referencia = table.Column<DateOnly>(type: "date", nullable: false, comment: "Dia a que a execução se refere — não o instante em que rodou. Uma execução disparada de madrugada refere-se ao dia que começou."),
                     total_items = table.Column<int>(type: "integer", nullable: false, comment: "Quantidade total de itens previstos para esta execução."),
                     processed_items = table.Column<int>(type: "integer", nullable: false, comment: "Quantidade de itens já processados."),
                     success_count = table.Column<int>(type: "integer", nullable: false, comment: "Quantidade de itens processados com sucesso."),
                     error_count = table.Column<int>(type: "integer", nullable: false, comment: "Quantidade de itens que falharam durante o processamento."),
                     started_at = table.Column<DateTime>(type: "timestamp with time zone", nullable: false, comment: "Instante de início da execução."),
-                    finished_at = table.Column<DateTime>(type: "timestamp with time zone", nullable: true, comment: "Instante de conclusão da execução — nulo enquanto o status é Running."),
+                    finished_at = table.Column<DateTime>(type: "timestamp with time zone", nullable: true, comment: "Instante de conclusão da execução — nulo enquanto o status é EM_ANDAMENTO."),
                     created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false, comment: "Data e hora de criação do registro."),
                     updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true, comment: "Data e hora da última alteração, quando houver.")
                 },
                 constraints: table =>
                 {
                     table.PrimaryKey("pk_sincronizacoes_com_o_sigaa", x => x.id);
+                    table.CheckConstraint("ck_sincronizacoes_com_o_sigaa_status", "status IN ('EM_ANDAMENTO', 'CONCLUIDA', 'PARCIAL', 'FALHOU')");
                 },
                 comment: "Controle de execução das rotinas de sincronização de dados discentes com o SIGAA — uma linha por execução.");
 

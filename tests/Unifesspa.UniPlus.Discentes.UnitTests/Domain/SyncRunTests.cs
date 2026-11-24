@@ -19,7 +19,7 @@ public sealed class SyncRunTests
         SyncRun execucao = SyncRun.Iniciar(Dia, _relogio);
 
         execucao.Id.Should().NotBe(Guid.Empty);
-        execucao.Status.Should().Be(SyncRunStatus.Running);
+        execucao.Status.Should().Be(SyncRunStatus.EmAndamento);
         execucao.DataDeReferencia.Should().Be(Dia);
         execucao.StartedAt.Should().Be(Agora.UtcDateTime);
         execucao.FinishedAt.Should().BeNull();
@@ -39,9 +39,9 @@ public sealed class SyncRunTests
         SyncRun execucao = SyncRun.Iniciar(Dia, _relogio);
         _relogio.Avancar(TimeSpan.FromMinutes(4));
 
-        execucao.Concluir(new ContagensDaExecucao(1000, 990, 985, 5), SyncRunStatus.Completed, _relogio);
+        execucao.Concluir(new ContagensDaExecucao(1000, 990, 985, 5), SyncRunStatus.Concluida, _relogio);
 
-        execucao.Status.Should().Be(SyncRunStatus.Completed);
+        execucao.Status.Should().Be(SyncRunStatus.Concluida);
         execucao.TotalItems.Should().Be(1000);
         execucao.ProcessedItems.Should().Be(990);
         execucao.SuccessCount.Should().Be(985);
@@ -50,9 +50,9 @@ public sealed class SyncRunTests
     }
 
     [Theory]
-    [InlineData(SyncRunStatus.Completed)]
-    [InlineData(SyncRunStatus.Partial)]
-    [InlineData(SyncRunStatus.Failed)]
+    [InlineData(SyncRunStatus.Concluida)]
+    [InlineData(SyncRunStatus.Parcial)]
+    [InlineData(SyncRunStatus.Falhou)]
     public void Concluir_aceita_os_tres_desfechos(SyncRunStatus desfecho)
     {
         SyncRun execucao = SyncRun.Iniciar(Dia, _relogio);
@@ -101,7 +101,7 @@ public sealed class SyncRunTests
         SyncRun execucao = SyncRun.Iniciar(Dia, _relogio);
 
         Action comEstadoNaoTerminal = () =>
-            execucao.Concluir(ContagensDaExecucao.Nenhuma, SyncRunStatus.Running, _relogio);
+            execucao.Concluir(ContagensDaExecucao.Nenhuma, SyncRunStatus.EmAndamento, _relogio);
 
         comEstadoNaoTerminal.Should().Throw<ArgumentException>();
     }
@@ -110,10 +110,10 @@ public sealed class SyncRunTests
     public void Concluir_uma_execucao_ja_encerrada_e_recusado()
     {
         SyncRun execucao = SyncRun.Iniciar(Dia, _relogio);
-        execucao.Concluir(ContagensDaExecucao.Nenhuma, SyncRunStatus.Completed, _relogio);
+        execucao.Concluir(ContagensDaExecucao.Nenhuma, SyncRunStatus.Concluida, _relogio);
 
         Action deNovo = () =>
-            execucao.Concluir(ContagensDaExecucao.Nenhuma, SyncRunStatus.Failed, _relogio);
+            execucao.Concluir(ContagensDaExecucao.Nenhuma, SyncRunStatus.Falhou, _relogio);
 
         deNovo.Should().Throw<InvalidOperationException>();
     }
