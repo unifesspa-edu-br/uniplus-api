@@ -4,6 +4,7 @@ using System.Text.Json.Nodes;
 
 using AwesomeAssertions;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Canonicalization;
 
@@ -26,6 +27,7 @@ public sealed class RegraDeDeliberacaoNoEnvelopeTests
         string[] campos = ["modo", "criterio", "desempate", "encerramento", "semUnanimidade"];
         campos.Select(campo => bloco[campo]?.GetValue<string>()).Should().Equal(
             "COLEGIADA_COM_VOTACAO", criterio, desempate, "PRESIDENCIA_NO_QUORUM", semUnanimidade);
+        bloco["contexto"]!["modoRotulo"]!.GetValue<string>().Should().Be(original.Modo.Rotulo());
         leitor.Falhou.Should().BeFalse();
         lida.Should().BeEquivalentTo(original);
     }

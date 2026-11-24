@@ -221,10 +221,10 @@ internal static class LeituraDaDerivacao
         }
 
         // O perfil serializa um JsonObject; envolve-se cada lado num wrapper para comparar array ou
-        // objeto pela mesma projeção. O congelado é clonado antes de reparentar — mutá-lo tiraria o
-        // bloco do payload que ainda está sendo lido.
-        byte[] bytesEsperados = PerfilCanonicoV1.Instancia.Serializar(new JsonObject { ["v"] = esperado });
-        byte[] bytesCongelados = PerfilCanonicoV1.Instancia.Serializar(new JsonObject { ["v"] = congelado.DeepClone() });
+        // objeto pela mesma projeção. O congelado é copiado antes de reparentar — mutá-lo tiraria o
+        // bloco do payload que ainda está sendo lido. O contexto fica fora da comparação.
+        byte[] bytesEsperados = PerfilCanonicoV1.Instancia.Serializar(new JsonObject { ["v"] = ContextoDosRotulos.SemContexto(esperado) });
+        byte[] bytesCongelados = PerfilCanonicoV1.Instancia.Serializar(new JsonObject { ["v"] = ContextoDosRotulos.SemContexto(congelado) });
         return !bytesEsperados.AsSpan().SequenceEqual(bytesCongelados);
     }
 }

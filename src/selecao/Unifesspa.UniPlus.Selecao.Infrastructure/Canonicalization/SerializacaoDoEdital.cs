@@ -93,7 +93,14 @@ internal static class SerializacaoDoEdital
         ]),
     };
 
-    private static JsonNode SerializarDiaNaoUtil(DiaNaoUtilCongelado dia) => new JsonObject
+    private static JsonNode SerializarDiaNaoUtil(DiaNaoUtilCongelado dia)
+    {
+        JsonObject objeto = CamposDoDiaNaoUtil(dia);
+        ContextoDosRotulos.Acrescentar(objeto, "abrangencia", dia.Abrangencia);
+        return objeto;
+    }
+
+    private static JsonObject CamposDoDiaNaoUtil(DiaNaoUtilCongelado dia) => new()
     {
         ["data"] = dia.Data.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
         ["abrangencia"] = dia.Abrangencia.Codigo(),

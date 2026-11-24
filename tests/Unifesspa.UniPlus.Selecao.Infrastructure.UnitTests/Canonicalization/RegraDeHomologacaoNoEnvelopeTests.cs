@@ -4,6 +4,7 @@ using System.Text.Json.Nodes;
 
 using AwesomeAssertions;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.HomologacaoDasInscricoes;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Canonicalization;
@@ -49,7 +50,8 @@ public sealed class RegraDeHomologacaoNoEnvelopeTests
         escrita.ContainsKey("resultadoAtoCodigo").Should().BeTrue();
         escrita["resultadoAtoCodigo"].Should().BeNull();
         JsonObject condicao = escrita["alternativas"]![0]!["condicoes"]![0]!.AsObject();
-        condicao.Select(static par => par.Key).Should().BeEquivalentTo("tipo", "edicaoDoExame", "motivoDesfavoravelCodigo", "enquadramento");
+        condicao.Select(static par => par.Key).Should().BeEquivalentTo("tipo", "edicaoDoExame", "motivoDesfavoravelCodigo", "enquadramento", "contexto");
+        condicao["contexto"]!["tipoRotulo"]!.GetValue<string>().Should().Be(regra.Alternativas[0].Condicoes[0].Tipo.Rotulo());
         condicao["motivoDesfavoravelCodigo"].Should().BeNull();
         lida!.ResultadoAtoCodigo.Should().BeNull();
         lida.Alternativas[0].Condicoes[0].MotivoDesfavoravelCodigo.Should().BeNull();

@@ -27,18 +27,27 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 internal static class SerializacaoDosFormularios
 {
     internal static JsonArray SerializarFormularios(ProcessoSeletivo processo) =>
-        new([.. OrdemCanonicaDaConfiguracao.Formularios(processo.Formularios).Select(formulario => (JsonNode)new JsonObject
-        {
-            ["finalidade"] = formulario.Finalidade.Codigo(),
-            ["faseId"] = formulario.FaseId is { } fase ? JsonValue.Create(fase) : null,
-            ["titulo"] = formulario.Titulo is { } titulo ? HashCanonicalComputer.NormalizeNfc(titulo) : null,
-            ["modeloOrigem"] = SerializarModeloDeOrigem(formulario),
-            ["paginas"] = new JsonArray([.. formulario.Etapas.OrderBy(static e => e.Ordem).Select(SerializarEtapa)]),
-            ["termos"] = new JsonArray([.. processo.TermosExigidos
-                .Where(t => t.Finalidade == formulario.Finalidade)
-                .OrderBy(static t => t.Ordem)
-                .Select(SerializarTermoExigido)]),
-        })]);
+        new([.. OrdemCanonicaDaConfiguracao.Formularios(processo.Formularios).Select(formulario => (JsonNode)SerializarFormulario(processo, formulario))]);
+
+    private static JsonObject SerializarFormulario(ProcessoSeletivo processo, FormularioProcesso formulario)
+    {
+        JsonObject objeto = DadosDoFormulario(processo, formulario);
+        ContextoDosRotulos.Acrescentar(objeto, "finalidade", (FinalidadeFormulario?)formulario.Finalidade);
+        return objeto;
+    }
+
+    private static JsonObject DadosDoFormulario(ProcessoSeletivo processo, FormularioProcesso formulario) => new()
+    {
+        ["finalidade"] = formulario.Finalidade.Codigo(),
+        ["faseId"] = formulario.FaseId is { } fase ? JsonValue.Create(fase) : null,
+        ["titulo"] = formulario.Titulo is { } titulo ? HashCanonicalComputer.NormalizeNfc(titulo) : null,
+        ["modeloOrigem"] = SerializarModeloDeOrigem(formulario),
+        ["paginas"] = new JsonArray([.. formulario.Etapas.OrderBy(static e => e.Ordem).Select(SerializarEtapa)]),
+        ["termos"] = new JsonArray([.. processo.TermosExigidos
+            .Where(t => t.Finalidade == formulario.Finalidade)
+            .OrderBy(static t => t.Ordem)
+            .Select(SerializarTermoExigido)]),
+    };
 
     private static JsonObject? SerializarModeloDeOrigem(FormularioProcesso formulario) =>
         formulario.ModeloOrigemId is { } modelo ? new JsonObject
@@ -48,7 +57,15 @@ internal static class SerializacaoDosFormularios
             ["nome"] = formulario.ModeloOrigemNome is { } nome ? HashCanonicalComputer.NormalizeNfc(nome) : null,
         } : null;
 
-    private static JsonNode SerializarEtapa(EtapaFormulario etapa) => new JsonObject
+    private static JsonNode SerializarEtapa(EtapaFormulario etapa)
+    {
+        JsonObject objeto = SerializarEtapaSemContexto(etapa);
+        ContextoDosRotulos.Acrescentar(objeto, "tipo", etapa.Tipo);
+        ContextoDosRotulos.Acrescentar(objeto, "bloco", etapa.Bloco);
+        return objeto;
+    }
+
+    private static JsonObject SerializarEtapaSemContexto(EtapaFormulario etapa) => new()
     {
         ["codigo"] = HashCanonicalComputer.NormalizeNfc(etapa.Codigo),
         ["ordem"] = etapa.Ordem,
@@ -60,7 +77,23 @@ internal static class SerializacaoDosFormularios
         ["exibicao"] = etapa.Exibicao is { } exibicao ? SerializacaoDosPredicados.SerializarDnf(SerializacaoDosPredicados.LinhasDoPredicado(exibicao)) : null,
     };
 
-    private static JsonNode SerializarTermoExigido(TermoExigidoFormulario termo) => new JsonObject
+    private static JsonNode SerializarTermoExigido(TermoExigidoFormulario termo)
+    {
+        JsonObject objeto = DadosDoTermo(termo);
+        ContextoDosRotulos.Acrescentar(objeto, "formaAceite", (FormaAceite?)termo.FormaAceite);
+        return objeto;
+    }
+
+    private static JsonObject DadosDoTermo(TermoExigidoFormulario termo)
+    {
+        JsonObject objeto = IdentificacaoDoTermo(termo);
+        objeto["hashVersao"] = termo.HashVersao;
+        objeto["exibicao"] = termo.Exibicao is { } exibicao ? SerializacaoDosPredicados.SerializarDnf(SerializacaoDosPredicados.LinhasDoPredicado(exibicao)) : null;
+        objeto["obrigatoriedade"] = SerializarObrigatoriedade(termo.Obrigatoriedade);
+        return objeto;
+    }
+
+    private static JsonObject IdentificacaoDoTermo(TermoExigidoFormulario termo) => new()
     {
         ["codigo"] = HashCanonicalComputer.NormalizeNfc(termo.Codigo),
         ["ordem"] = termo.Ordem,
@@ -72,16 +105,18 @@ internal static class SerializacaoDosFormularios
         ["texto"] = HashCanonicalComputer.NormalizeNfc(termo.Texto),
         ["baseLegal"] = HashCanonicalComputer.NormalizeNfc(termo.BaseLegal),
         ["formaAceite"] = termo.FormaAceite.Codigo(),
-        ["hashVersao"] = termo.HashVersao,
-        ["exibicao"] = termo.Exibicao is { } exibicao ? SerializacaoDosPredicados.SerializarDnf(SerializacaoDosPredicados.LinhasDoPredicado(exibicao)) : null,
-        ["obrigatoriedade"] = SerializarObrigatoriedade(termo.Obrigatoriedade),
     };
 
-    internal static JsonObject SerializarObrigatoriedade(Obrigatoriedade obrigatoriedade) => new()
+    internal static JsonObject SerializarObrigatoriedade(Obrigatoriedade obrigatoriedade)
     {
-        ["tipo"] = obrigatoriedade.Tipo.Codigo(),
-        ["quando"] = obrigatoriedade.Predicado is { } predicado ? SerializacaoDosPredicados.SerializarDnf(SerializacaoDosPredicados.LinhasDoPredicado(predicado)) : null,
-    };
+        JsonObject objeto = new()
+        {
+            ["tipo"] = obrigatoriedade.Tipo.Codigo(),
+            ["quando"] = obrigatoriedade.Predicado is { } predicado ? SerializacaoDosPredicados.SerializarDnf(SerializacaoDosPredicados.LinhasDoPredicado(predicado)) : null,
+        };
+        ContextoDosRotulos.Acrescentar(objeto, "tipo", obrigatoriedade.Tipo);
+        return objeto;
+    }
 
     internal static JsonObject SerializarImpedimento(Impedimento impedimento) => new()
     {
@@ -96,6 +131,7 @@ internal static class SerializacaoDosFormularios
     {
         JsonObject json = DetalheDaRestricao(restricao);
         json["tipo"] = restricao.Tipo.Codigo();
+        ContextoDosRotulos.Acrescentar(json, "tipo", restricao.Tipo);
         return json;
     }
 

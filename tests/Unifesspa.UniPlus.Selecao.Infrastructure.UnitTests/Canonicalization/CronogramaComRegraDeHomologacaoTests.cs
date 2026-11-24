@@ -45,6 +45,28 @@ public sealed class CronogramaComRegraDeHomologacaoTests
         restaurada.RegraDeHomologacao!.MesmoConteudo(regra).Should().BeTrue();
     }
 
+    [Fact]
+    public void Fase_ContextoDosEnums_GravaRotulos()
+    {
+        FaseCronograma fase = Fase(RegraCompleta());
+        JsonObject item = SacarFase(fase);
+        item["contexto"]!["origemDataRotulo"]!.GetValue<string>().Should().Be(fase.OrigemData.Rotulo());
+        item["publicacoesPrevistas"]![0]!["contexto"]!["papelRotulo"]!.GetValue<string>()
+            .Should().Be(fase.Produtos.Single().Papel!.Value.Rotulo());
+    }
+
+    [Fact]
+    public void Fase_RotuloAlterado_LeOMesmoCodigo()
+    {
+        JsonObject original = SacarFase(Fase(RegraCompleta()));
+        JsonObject alterada = original.DeepClone().AsObject();
+        alterada["contexto"]!["origemDataRotulo"] = "Outro rótulo";
+        FaseCronograma primeira = LerFase(original);
+        FaseCronograma segunda = LerFase(alterada);
+        segunda.OrigemData.Should().Be(primeira.OrigemData);
+        segunda.RegraDeHomologacao!.MesmoConteudo(primeira.RegraDeHomologacao!).Should().BeTrue();
+    }
+
     [Fact(DisplayName = "A fase sem regra volta sem regra")]
     public void FaseSemRegra_VoltaSemRegra() =>
         LerFase(SacarFase(Fase(regra: null))).RegraDeHomologacao.Should().BeNull();

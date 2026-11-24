@@ -13,14 +13,29 @@ using Unifesspa.UniPlus.Selecao.Infrastructure.UnitTests.Persistence;
 public sealed class SerializacaoDosProcedimentosDeRecursoTests
 {
     [Fact]
-    public void Serializar_ComAmbosOsAlvos_MantemBytesEHashAnteriores()
+    public void Serializar_ComAmbosOsAlvos_EscreveContextoEMantemOsCodigos()
     {
         ProcedimentosDeRecurso procedimentos = ColunaDosProcedimentosDeRecursoTests.Procedimentos();
-        byte[] atual = PerfilCanonicoV1.Instancia.Serializar(new JsonObject { ["procedimentos"] = SerializacaoDosProcedimentosDeRecurso.Serializar(procedimentos) });
+        JsonArray escritos = SerializacaoDosProcedimentosDeRecurso.Serializar(procedimentos);
+        ConferirContextosERemover(escritos, procedimentos);
+        byte[] atual = PerfilCanonicoV1.Instancia.Serializar(new JsonObject { ["procedimentos"] = escritos });
         byte[] anterior = PerfilCanonicoV1.Instancia.Serializar(new JsonObject { ["procedimentos"] = SerializacaoAnterior(procedimentos) });
 
         atual.Should().Equal(anterior);
         HashCanonicalComputer.ComputeSha256Hex(atual).Should().Be(HashCanonicalComputer.ComputeSha256Hex(anterior));
+    }
+
+    private static void ConferirContextosERemover(JsonArray escritos, ProcedimentosDeRecurso procedimentos)
+    {
+        for (int indice = 0; indice < escritos.Count; indice++)
+        {
+            JsonObject item = escritos[indice]!.AsObject();
+            ProcedimentoDeRecursoDeclarado procedimento = procedimentos.Itens[indice];
+            item["contexto"]!["tipoDeDecisaoRotulo"]!.GetValue<string>().Should().Be(procedimento.TipoDeDecisao.Rotulo());
+            item["alvo"]!["contexto"]!["tipoRotulo"]!.GetValue<string>().Should().Be(procedimento.Alvo!.Tipo.Rotulo());
+            item.Remove("contexto");
+            item["alvo"]!.AsObject().Remove("contexto");
+        }
     }
 
     private static JsonArray SerializacaoAnterior(ProcedimentosDeRecurso procedimentos) =>

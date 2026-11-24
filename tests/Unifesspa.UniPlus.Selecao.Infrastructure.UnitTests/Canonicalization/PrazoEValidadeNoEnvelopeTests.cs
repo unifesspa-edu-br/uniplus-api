@@ -15,6 +15,11 @@ using Unifesspa.UniPlus.Selecao.Infrastructure.Canonicalization;
 /// </summary>
 public sealed class PrazoEValidadeNoEnvelopeTests
 {
+    private const string ContextoDoPrazoComPrazo =
+        """
+        "contexto":{"escolhaRotulo":"Com prazo","unidadeRotulo":"Meses","efeitoForaDoPrazoRotulo":"Recusar documento"}}
+        """;
+
     private static readonly Guid Fase = Guid.Parse("0197a3c4-0000-7000-8000-000000000001");
 
     // O envelope é lido dos bytes que foram gravados, não do objeto que a escrita montou.
@@ -28,13 +33,13 @@ public sealed class PrazoEValidadeNoEnvelopeTests
     [Fact(DisplayName = "Prazo sem prazo escreve só a escolha, com os detalhes nulos")]
     public void Prazo_SemPrazo_EscreveSoAEscolha() =>
         SerializacaoDoPrazoEDaValidade.Prazo(new PrazoDeEmissaoBuilder().SemPrazo().Construir())!.ToJsonString()
-            .Should().Be("""{"escolha":"SEM_PRAZO","valor":null,"unidade":null,"referencia":null,"efeitoForaDoPrazo":null}""");
+            .Should().Be("""{"escolha":"SEM_PRAZO","valor":null,"unidade":null,"referencia":null,"efeitoForaDoPrazo":null,"contexto":{"escolhaRotulo":"Sem prazo"}}""");
 
     [Fact(DisplayName = "Prazo com prazo escreve valor, unidade, referência e efeito pelo código declarado")]
     public void Prazo_ComPrazo_EscreveOsDetalhes() =>
         SerializacaoDoPrazoEDaValidade.Prazo(new PrazoDeEmissaoBuilder().De(3, UnidadeDoPrazoDeEmissao.Meses)
                 .Referenciado(new DataDeReferenciaBuilder().NoFimDaFase(Fase).Construir()).Construir())!.ToJsonString()
-            .Should().Be($$"""{"escolha":"COM_PRAZO","valor":3,"unidade":"MESES","referencia":{"tipo":"FIM_DA_FASE","data":null,"faseId":"{{Fase}}"},"efeitoForaDoPrazo":"RECUSAR_DOCUMENTO"}""");
+            .Should().Be("""{"escolha":"COM_PRAZO","valor":3,"unidade":"MESES","referencia":{"tipo":"FIM_DA_FASE","data":null,"faseId":"0197a3c4-0000-7000-8000-000000000001","contexto":{"tipoRotulo":"Fim da fase"}},"efeitoForaDoPrazo":"RECUSAR_DOCUMENTO",""" + ContextoDoPrazoComPrazo);
 
     [Fact(DisplayName = "Sem a escolha da validade, o envelope escreve a validade nula")]
     public void Validade_NaoEscolhida_EscreveNulo() =>
@@ -43,12 +48,12 @@ public sealed class PrazoEValidadeNoEnvelopeTests
     [Fact(DisplayName = "Validade que não exige documento válido escreve só a escolha")]
     public void Validade_NaoExige_EscreveSoAEscolha() =>
         SerializacaoDoPrazoEDaValidade.Validade(new ValidadeDoDocumentoBuilder().NaoExige().Construir())!.ToJsonString()
-            .Should().Be("""{"escolha":"NAO_EXIGE_DOCUMENTO_VALIDO","referencia":null,"efeitoDoVencimento":null}""");
+            .Should().Be("""{"escolha":"NAO_EXIGE_DOCUMENTO_VALIDO","referencia":null,"efeitoDoVencimento":null,"contexto":{"escolhaRotulo":"N\u00E3o exige documento v\u00E1lido"}}""");
 
     [Fact(DisplayName = "Validade que exige documento válido escreve a referência e o efeito")]
     public void Validade_Exige_EscreveOsDetalhes() =>
         SerializacaoDoPrazoEDaValidade.Validade(new ValidadeDoDocumentoBuilder().Referenciada(new DataDeReferenciaBuilder().NaData(new DateOnly(2026, 3, 1)).Construir()).Construir())!
-            .ToJsonString().Should().Be("""{"escolha":"EXIGE_DOCUMENTO_VALIDO","referencia":{"tipo":"DATA_ESPECIFICA","data":"2026-03-01","faseId":null},"efeitoDoVencimento":"RECUSAR_DOCUMENTO"}""");
+            .ToJsonString().Should().Be("""{"escolha":"EXIGE_DOCUMENTO_VALIDO","referencia":{"tipo":"DATA_ESPECIFICA","data":"2026-03-01","faseId":null,"contexto":{"tipoRotulo":"Data espec\u00EDfica"}},"efeitoDoVencimento":"RECUSAR_DOCUMENTO","contexto":{"escolhaRotulo":"Exige documento v\u00E1lido","efeitoDoVencimentoRotulo":"Recusar documento"}}""");
 
     [Fact(DisplayName = "O prazo escrito é lido de volta no mesmo valor")]
     public void Prazo_EscritoELido_VoltaIgual()

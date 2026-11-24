@@ -32,13 +32,7 @@ internal static class SerializacaoDasExigencias
         {
             ["exigencias"] = SerializarExigencias(processo.DocumentosExigidos),
             ["obrigatoriedades"] = SerializarObrigatoriedades(conformidade),
-            ["referenciaTemporalDosDados"] = processo.ReferenciaTemporalFatos is { } referencia ? new JsonObject
-            {
-                ["tipo"] = referencia.Tipo.Codigo(),
-                ["data"] = referencia.Data?.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
-                ["faseId"] = referencia.FaseId,
-            }
-            : null,
+            ["referenciaTemporalDosDados"] = processo.ReferenciaTemporalFatos is { } referencia ? SerializarReferencia(referencia) : null,
             ["dataDeReferenciaDosDados"] = Domain.ProcessosSeletivos.Fatos.ReferenciaTemporalDosFatos.ResolverDataReferenciaFatos(processo.Declaracao(), fusoHorario) is { } data
             ? data.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)
             : null,
@@ -48,7 +42,25 @@ internal static class SerializacaoDasExigencias
     internal static JsonArray SerializarRegrasDeComprovacao(ProcessoSeletivo processo) =>
         new([.. processo.RegrasDeComprovacaoSemGrupo.OrderBy(static r => r.Ordem).Select(static r => (JsonNode)SerializarRegra(r))]);
 
-    private static JsonObject SerializarRegra(RegraDeComprovacao regra) => new()
+    private static JsonObject SerializarRegra(RegraDeComprovacao regra)
+    {
+        JsonObject objeto = DadosDaRegra(regra);
+        ContextoDosRotulos.Acrescentar(objeto, "forma", (FormaDeComprovacao?)regra.Forma);
+        ContextoDosRotulos.Acrescentar(objeto, "criterioDeDistincao", regra.Distincao?.Criterio);
+        return objeto;
+    }
+
+    private static JsonObject DadosDaRegra(RegraDeComprovacao regra)
+    {
+        JsonObject objeto = IdentificacaoDaRegra(regra);
+        objeto["dataReferencia"] = regra.Distincao?.DataReferencia?.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
+        objeto["ocorrenciasEsperadas"] = SerializarOcorrencias(regra.Distincao);
+        objeto["grupoDoFormularioParaRepeticao"] = regra.GrupoDoFormularioParaRepeticao;
+        objeto["itens"] = new JsonArray([.. regra.Itens.OrderBy(static f => f.Ordem).Select(static f => (JsonNode)SerializarRegra(f))]);
+        return objeto;
+    }
+
+    private static JsonObject IdentificacaoDaRegra(RegraDeComprovacao regra) => new()
     {
         ["id"] = regra.Id,
         ["ordem"] = regra.Ordem,
@@ -58,23 +70,27 @@ internal static class SerializacaoDasExigencias
         ["consequencia"] = regra.Consequencia is { } consequencia ? HashCanonicalComputer.NormalizeNfc(consequencia) : null,
         ["basesLegais"] = SerializarBasesLegaisDaRegra(regra.BasesLegaisResolvidas()),
         ["criterioDeDistincao"] = regra.Distincao?.Criterio?.Codigo(),
-        ["dataReferencia"] = regra.Distincao?.DataReferencia?.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
-        ["ocorrenciasEsperadas"] = SerializarOcorrencias(regra.Distincao),
-        ["grupoDoFormularioParaRepeticao"] = regra.GrupoDoFormularioParaRepeticao,
-        ["itens"] = new JsonArray([.. regra.Itens.OrderBy(static f => f.Ordem).Select(static f => (JsonNode)SerializarRegra(f))]),
     };
 
     private static JsonArray? SerializarOcorrencias(DistincaoDasApresentacoes? distincao) =>
         distincao?.OcorrenciasEsperadas is { } ocorrencias ? EscritaCanonica.TextosEmOrdemCanonica(ocorrencias) : null;
 
     private static JsonArray SerializarBasesLegaisDaRegra(IEnumerable<BaseLegalDaComprovacao> basesLegais) =>
-        EscritaCanonica.OrdenarPorConteudo(basesLegais.Select(static b => new JsonObject
+        EscritaCanonica.OrdenarPorConteudo(basesLegais.Select(static b => SerializarBaseLegalDaRegra(b)));
+
+    private static JsonObject SerializarBaseLegalDaRegra(BaseLegalDaComprovacao b)
+    {
+        JsonObject objeto = new()
         {
             ["referencia"] = HashCanonicalComputer.NormalizeNfc(b.Referencia),
             ["abrangencia"] = b.Abrangencia.Codigo(),
             ["situacao"] = b.Situacao.Codigo(),
             ["observacao"] = b.Observacao is { } observacao ? HashCanonicalComputer.NormalizeNfc(observacao) : null,
-        }));
+        };
+        ContextoDosRotulos.Acrescentar(objeto, "abrangencia", (TipoAbrangencia?)b.Abrangencia);
+        ContextoDosRotulos.Acrescentar(objeto, "situacao", (StatusBaseLegal?)b.Situacao);
+        return objeto;
+    }
 
     private static JsonArray SerializarExigencias(IReadOnlyCollection<DocumentoExigido> exigencias)
     {
@@ -86,12 +102,14 @@ internal static class SerializacaoDasExigencias
                 ComparadorLexicograficoDeBytes.Instancia)
             .ThenBy(static e => e.Id);
 
-        return new JsonArray([.. ordenadas.Select(static e =>
-        {
-            JsonObject item = SerializarExigenciaSemIdentidade(e);
-            item.Insert(0, "exigenciaId", JsonValue.Create(e.Id));
-            return (JsonNode)item;
-        })]);
+        return new JsonArray([.. ordenadas.Select(SerializarExigencia)]);
+    }
+
+    private static JsonNode SerializarExigencia(DocumentoExigido exigencia)
+    {
+        JsonObject item = SerializarExigenciaSemIdentidade(exigencia);
+        item.Insert(0, "exigenciaId", JsonValue.Create(exigencia.Id));
+        return item;
     }
 
     private static JsonObject SerializarExigenciaSemIdentidade(DocumentoExigido exigencia)
@@ -122,6 +140,13 @@ internal static class SerializacaoDasExigencias
         item["exigidoNaEtapaId"] = exigencia.ExigidoNaEtapaId;
         item["finalidade"] = exigencia.Finalidade?.Codigo();
         item["aplicabilidade"] = exigencia.Aplicabilidade.Codigo();
+        ContextoDosRotulos.Acrescentar(item, "finalidade", exigencia.Finalidade);
+        ContextoDosRotulos.Acrescentar(item, "aplicabilidade", (Aplicabilidade?)exigencia.Aplicabilidade);
+        AcrescentarDetalhesDaExigencia(item, exigencia);
+    }
+
+    private static void AcrescentarDetalhesDaExigencia(JsonObject item, DocumentoExigido exigencia)
+    {
         item["obrigatorio"] = exigencia.Obrigatorio;
         item["consequenciaIndeferimento"] = exigencia.ConsequenciaIndeferimento is { } consequencia
             ? HashCanonicalComputer.NormalizeNfc(consequencia)
@@ -139,7 +164,14 @@ internal static class SerializacaoDasExigencias
         item["modelo"] = exigencia.Modelo is { } modelo ? SerializarModelo(modelo) : null;
     }
 
-    private static JsonObject SerializarModelo(ModeloDaExigencia modelo) => new()
+    private static JsonObject SerializarModelo(ModeloDaExigencia modelo)
+    {
+        JsonObject objeto = DadosDoModelo(modelo);
+        ContextoDosRotulos.Acrescentar(objeto, "formato", (FormatoDeDocumento?)modelo.Formato);
+        return objeto;
+    }
+
+    private static JsonObject DadosDoModelo(ModeloDaExigencia modelo) => new()
     {
         ["modeloId"] = modelo.ModeloId,
         ["nomeArquivo"] = HashCanonicalComputer.NormalizeNfc(modelo.NomeArquivo),
@@ -151,11 +183,7 @@ internal static class SerializacaoDasExigencias
     {
         ["qualquer"] = formatosPermitidos.Qualquer,
         ["lista"] = formatosPermitidos.Lista is { } lista
-            ? EscritaCanonica.OrdenarPorConteudo(lista.Select(static e => new JsonObject
-            {
-                ["formato"] = e.Formato.Codigo(),
-                ["tamanhoMaximoBytesMax"] = e.TamanhoMaximoBytesMax,
-            }))
+            ? EscritaCanonica.OrdenarPorConteudo(lista.Select(SerializarFormatoPermitido))
             : null,
     };
 
@@ -163,13 +191,21 @@ internal static class SerializacaoDasExigencias
         SerializacaoDosPredicados.SerializarDnf(condicoes.Select(static c => (c.Clausula, c.Fato, c.Operador, c.Valor)));
 
     private static JsonArray SerializarBasesLegais(IEnumerable<DocumentoExigidoBaseLegal> basesLegais) =>
-        EscritaCanonica.OrdenarPorConteudo(basesLegais.Select(static b => new JsonObject
+        EscritaCanonica.OrdenarPorConteudo(basesLegais.Select(SerializarBaseLegal));
+
+    private static JsonObject SerializarBaseLegal(DocumentoExigidoBaseLegal b)
+    {
+        JsonObject objeto = new()
         {
             ["referencia"] = HashCanonicalComputer.NormalizeNfc(b.Referencia),
             ["abrangencia"] = b.Abrangencia.Codigo(),
             ["situacao"] = b.Situacao.Codigo(),
             ["observacao"] = b.Observacao is { } observacao ? HashCanonicalComputer.NormalizeNfc(observacao) : null,
-        }));
+        };
+        ContextoDosRotulos.Acrescentar(objeto, "abrangencia", (TipoAbrangencia?)b.Abrangencia);
+        ContextoDosRotulos.Acrescentar(objeto, "situacao", (StatusBaseLegal?)b.Situacao);
+        return objeto;
+    }
 
     private static JsonArray SerializarObrigatoriedades(ResultadoConformidade? conformidade)
     {
@@ -181,7 +217,25 @@ internal static class SerializacaoDasExigencias
         return EscritaCanonica.OrdenarPorConteudo(conformidade.Regras.Select(SerializarObrigatoriedade));
     }
 
-    private static JsonObject SerializarObrigatoriedade(RegraAvaliada regra) => new()
+    private static JsonObject SerializarObrigatoriedade(RegraAvaliada regra)
+    {
+        JsonObject objeto = DadosDaObrigatoriedade(regra);
+        ContextoDosRotulos.Acrescentar(objeto, "categoria", (CategoriaObrigatoriedade?)regra.Categoria);
+        return objeto;
+    }
+
+    private static JsonObject DadosDaObrigatoriedade(RegraAvaliada regra)
+    {
+        JsonObject objeto = IdentificacaoDaObrigatoriedade(regra);
+        objeto["portariaInterna"] = regra.PortariaInterna is { } portaria ? HashCanonicalComputer.NormalizeNfc(portaria) : null;
+        objeto["descricaoHumana"] = HashCanonicalComputer.NormalizeNfc(regra.DescricaoHumana);
+        objeto["vigenciaInicio"] = regra.VigenciaInicio.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
+        objeto["vigenciaFim"] = regra.VigenciaFim?.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
+        objeto["hash"] = regra.Hash;
+        return objeto;
+    }
+
+    private static JsonObject IdentificacaoDaObrigatoriedade(RegraAvaliada regra) => new()
     {
         ["regraId"] = regra.RegraId,
         ["regraCodigo"] = HashCanonicalComputer.NormalizeNfc(regra.RegraCodigo),
@@ -191,10 +245,19 @@ internal static class SerializacaoDasExigencias
         ["aprovada"] = regra.Aprovada,
         ["baseLegal"] = HashCanonicalComputer.NormalizeNfc(regra.BaseLegal),
         ["atoNormativoUrl"] = regra.AtoNormativoUrl is { } url ? HashCanonicalComputer.NormalizeNfc(url) : null,
-        ["portariaInterna"] = regra.PortariaInterna is { } portaria ? HashCanonicalComputer.NormalizeNfc(portaria) : null,
-        ["descricaoHumana"] = HashCanonicalComputer.NormalizeNfc(regra.DescricaoHumana),
-        ["vigenciaInicio"] = regra.VigenciaInicio.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
-        ["vigenciaFim"] = regra.VigenciaFim?.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
-        ["hash"] = regra.Hash,
     };
+
+    private static JsonObject SerializarReferencia(ReferenciaTemporalFatos referencia)
+    {
+        JsonObject objeto = new() { ["tipo"] = referencia.Tipo.Codigo(), ["data"] = referencia.Data?.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture), ["faseId"] = referencia.FaseId };
+        ContextoDosRotulos.Acrescentar(objeto, "tipo", (ReferenciaTipo?)referencia.Tipo);
+        return objeto;
+    }
+
+    private static JsonObject SerializarFormatoPermitido(FormatoPermitidoEntry formato)
+    {
+        JsonObject objeto = new() { ["formato"] = formato.Formato.Codigo(), ["tamanhoMaximoBytesMax"] = formato.TamanhoMaximoBytesMax };
+        ContextoDosRotulos.Acrescentar(objeto, "formato", (FormatoPermitido?)formato.Formato);
+        return objeto;
+    }
 }

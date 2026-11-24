@@ -47,7 +47,14 @@ internal static class RegraDeHomologacaoNoEnvelope
         [ChaveDasCondicoes] = new JsonArray([.. alternativa.Condicoes.Select(static condicao => (JsonNode)SerializarCondicao(condicao))]),
     };
 
-    private static JsonObject SerializarCondicao(CondicaoDeHomologacao condicao) => new()
+    private static JsonObject SerializarCondicao(CondicaoDeHomologacao condicao)
+    {
+        JsonObject objeto = CamposDaCondicao(condicao);
+        ContextoDosRotulos.Acrescentar(objeto, ChaveDoTipo, condicao.Tipo);
+        return objeto;
+    }
+
+    private static JsonObject CamposDaCondicao(CondicaoDeHomologacao condicao) => new()
     {
         [ChaveDoTipo] = condicao.Tipo.Codigo(),
         [ChaveDaEdicaoDoExame] = condicao.EdicaoDoExame,

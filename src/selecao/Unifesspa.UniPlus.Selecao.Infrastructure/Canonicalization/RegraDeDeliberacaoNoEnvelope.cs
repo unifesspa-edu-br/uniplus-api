@@ -15,19 +15,32 @@ internal static class RegraDeDeliberacaoNoEnvelope
     private static readonly string[] Chaves =
         ["modo", "integrantes", "suplentes", "quorum", "criterio", "desempate", "encerramento", "semUnanimidade"];
 
-    internal static JsonNode? Serializar(RegraDeDeliberacao? regra) => regra is null
-        ? null
-        : new JsonObject
+    internal static JsonNode? Serializar(RegraDeDeliberacao? regra)
+    {
+        if (regra is null)
         {
-            ["modo"] = regra.Modo.Codigo(),
-            ["integrantes"] = regra.Integrantes,
-            ["suplentes"] = regra.Suplentes,
-            ["quorum"] = regra.Quorum,
-            ["criterio"] = regra.Criterio?.Codigo(),
-            ["desempate"] = regra.Desempate?.Codigo(),
-            ["encerramento"] = regra.Encerramento?.Codigo(),
-            ["semUnanimidade"] = regra.SemUnanimidade?.Codigo(),
-        };
+            return null;
+        }
+        JsonObject objeto = CamposDaRegra(regra);
+        ContextoDosRotulos.Acrescentar(objeto, "modo", regra.Modo);
+        ContextoDosRotulos.Acrescentar(objeto, "criterio", regra.Criterio);
+        ContextoDosRotulos.Acrescentar(objeto, "desempate", regra.Desempate);
+        ContextoDosRotulos.Acrescentar(objeto, "encerramento", regra.Encerramento);
+        ContextoDosRotulos.Acrescentar(objeto, "semUnanimidade", regra.SemUnanimidade);
+        return objeto;
+    }
+
+    private static JsonObject CamposDaRegra(RegraDeDeliberacao regra) => new()
+    {
+        ["modo"] = regra.Modo.Codigo(),
+        ["integrantes"] = regra.Integrantes,
+        ["suplentes"] = regra.Suplentes,
+        ["quorum"] = regra.Quorum,
+        ["criterio"] = regra.Criterio?.Codigo(),
+        ["desempate"] = regra.Desempate?.Codigo(),
+        ["encerramento"] = regra.Encerramento?.Codigo(),
+        ["semUnanimidade"] = regra.SemUnanimidade?.Codigo(),
+    };
 
     internal static RegraDeDeliberacao? Ler(LeitorEnvelope leitor, JsonObject banca, string pathDaBanca)
     {

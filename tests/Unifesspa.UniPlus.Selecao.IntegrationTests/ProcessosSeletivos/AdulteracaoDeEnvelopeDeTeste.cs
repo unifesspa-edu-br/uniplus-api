@@ -76,10 +76,10 @@ internal static class AdulteracaoDeEnvelopeDeTeste
         JsonObject envelope = EnvelopeDosBytes(originais);
         adulterar(envelope);
 
-        byte[] adulterados = PerfilCanonicoV1.Instancia.Serializar(envelope);
-        adulterados.Should().NotEqual(originais, "pré-condição: a adulteração tem de mudar os bytes");
+        PerfilCanonicoV1.Instancia.Serializar(envelope).Should().NotEqual(originais, "pré-condição: a adulteração tem de mudar os bytes");
 
-        return adulterados;
+        // Os rótulos acompanham o código escrito; a adulteração troca só o código, e a leitura decide por ele.
+        return PerfilCanonicoV1.Instancia.Serializar(ContextoDosRotulos.SemContexto(envelope).AsObject());
     }
 
     private static SnapshotCanonico CongelarReferencia(ProcessoSeletivo processo, DadosEdital dados) =>

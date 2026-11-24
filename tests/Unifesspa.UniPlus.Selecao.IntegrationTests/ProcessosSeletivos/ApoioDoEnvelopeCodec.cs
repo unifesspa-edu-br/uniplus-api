@@ -133,8 +133,9 @@ internal static class ApoioDoEnvelopeCodec
         ExemploDeEnvelopeEntrada.Publicar(processo);
         JsonObject mutado = Envelope(congelado);
         mutar(mutado);
-        byte[] bytesMutados = PerfilCanonicoV1.Instancia.Serializar(mutado);
-        bytesMutados.Should().NotEqual(congelado.Bytes, "pré-condição: a mutação tem de mudar os bytes");
+        PerfilCanonicoV1.Instancia.Serializar(mutado).Should().NotEqual(congelado.Bytes, "pré-condição: a mutação tem de mudar os bytes");
+        // Os rótulos acompanham o código escrito; a mutação troca só o código, e a leitura decide por ele.
+        byte[] bytesMutados = PerfilCanonicoV1.Instancia.Serializar(ContextoDosRotulos.SemContexto(mutado).AsObject());
 
         return Reidratado(ExemploDeEnvelopeEntrada.VersaoDeAbertura(processo, bytesMutados));
     }

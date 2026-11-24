@@ -5,6 +5,7 @@ using System.Text.Json.Nodes;
 
 using AwesomeAssertions;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Canonicalization;
@@ -25,16 +26,24 @@ public sealed class OperadorNoEnvelopeTests
     [InlineData(Operador.MaiorIgual, "MAIOR_IGUAL", "18")]
     [InlineData(Operador.MenorIgual, "MENOR_IGUAL", "60")]
     [InlineData(Operador.Diferente, "DIFERENTE", "true")]
-    public void SerializarDnf_Operador_EscrevePeloCodigo(Operador operador, string codigo, string valor) =>
-        SerializacaoDosPredicados.SerializarDnf([(0, "FATO", operador, Valor(valor))])!.ToJsonString()
-            .Should().Be($$"""[[{"codigoDoDado":"FATO","operador":"{{codigo}}","valor":{{valor}}}]]""");
+    public void SerializarDnf_Operador_EscrevePeloCodigo(Operador operador, string codigo, string valor)
+    {
+        JsonNode item = SerializacaoDosPredicados.SerializarDnf([(0, "FATO", operador, Valor(valor))])![0]![0]!;
+        item["operador"]!.GetValue<string>().Should().Be(codigo);
+        item["contexto"]!["operadorRotulo"]!.GetValue<string>().Should().Be(operador.Rotulo());
+        item["valor"]!.ToJsonString().Should().Be(valor);
+    }
 
     [Theory(DisplayName = "O envelope escreve os operadores de lista pelo código declarado")]
     [InlineData(Operador.AlgumDe, "ALGUM_DE")]
     [InlineData(Operador.NenhumDe, "NENHUM_DE")]
-    public void SerializarDnf_OperadorDeLista_EscrevePeloCodigo(Operador operador, string codigo) =>
-        SerializacaoDosPredicados.SerializarDnf([(0, "FATO", operador, Valor("[\"A\"]"))])!.ToJsonString()
-            .Should().Be($$"""[[{"codigoDoDado":"FATO","operador":"{{codigo}}","valor":["A"]}]]""");
+    public void SerializarDnf_OperadorDeLista_EscrevePeloCodigo(Operador operador, string codigo)
+    {
+        JsonNode item = SerializacaoDosPredicados.SerializarDnf([(0, "FATO", operador, Valor("[\"A\"]"))])![0]![0]!;
+        item["operador"]!.GetValue<string>().Should().Be(codigo);
+        item["contexto"]!["operadorRotulo"]!.GetValue<string>().Should().Be(operador.Rotulo());
+        item["valor"]!.ToJsonString().Should().Be("[\"A\"]");
+    }
 
     [Fact(DisplayName = "O envelope lê o código declarado")]
     public void LerDnf_CodigoDeclarado_LeOOperador()

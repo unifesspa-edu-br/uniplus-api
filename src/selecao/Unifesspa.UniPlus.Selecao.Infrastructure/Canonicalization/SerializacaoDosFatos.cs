@@ -28,18 +28,28 @@ internal static class SerializacaoDosFatos
     internal static JsonArray SerializarFatosDerivados(IReadOnlyDictionary<string, FatoDerivadoCongelado>? fatos) =>
         new([.. (fatos ?? new Dictionary<string, FatoDerivadoCongelado>(StringComparer.Ordinal)).Values
             .OrderBy(static f => HashCanonicalComputer.NormalizeNfc(f.Codigo), StringComparer.Ordinal)
-            .Select(static f => (JsonNode?)new JsonObject
-            {
-                ["codigo"] = HashCanonicalComputer.NormalizeNfc(f.Codigo),
-                ["nome"] = HashCanonicalComputer.NormalizeNfc(f.Nome),
-                ["descricao"] = HashCanonicalComputer.NormalizeNfc(f.Descricao),
-                ["componenteExibicao"] = f.ComponenteExibicao,
-                ["tipo"] = f.Dominio.Codigo(),
-                ["quantidadeDeValores"] = f.Cardinalidade.Codigo(),
-                ["classificacaoProtecao"] = f.ClassificacaoProtecao,
-                ["hipoteseLegal"] = f.HipoteseLegal,
-                ["finalidadeTratamento"] = HashCanonicalComputer.NormalizeNfc(f.FinalidadeTratamento),
-            })]);
+            .Select(static f => (JsonNode?)SerializarFatoDerivado(f))]);
+
+    private static JsonObject SerializarFatoDerivado(FatoDerivadoCongelado f)
+    {
+        JsonObject objeto = DadosDoFatoDerivado(f);
+        ContextoDosRotulos.Acrescentar(objeto, "tipo", (TipoDoDado?)f.Dominio);
+        ContextoDosRotulos.Acrescentar(objeto, "quantidadeDeValores", (QuantidadeDeValores?)f.Cardinalidade);
+        return objeto;
+    }
+
+    private static JsonObject DadosDoFatoDerivado(FatoDerivadoCongelado f) => new()
+    {
+        ["codigo"] = HashCanonicalComputer.NormalizeNfc(f.Codigo),
+        ["nome"] = HashCanonicalComputer.NormalizeNfc(f.Nome),
+        ["descricao"] = HashCanonicalComputer.NormalizeNfc(f.Descricao),
+        ["componenteExibicao"] = f.ComponenteExibicao,
+        ["tipo"] = f.Dominio.Codigo(),
+        ["quantidadeDeValores"] = f.Cardinalidade.Codigo(),
+        ["classificacaoProtecao"] = f.ClassificacaoProtecao,
+        ["hipoteseLegal"] = f.HipoteseLegal,
+        ["finalidadeTratamento"] = HashCanonicalComputer.NormalizeNfc(f.FinalidadeTratamento),
+    };
 
     internal static JsonArray SerializarMetadadosFatos(IReadOnlyDictionary<string, MetadadoFatoCongelado>? metadadosFatosCongelados)
     {
@@ -53,7 +63,16 @@ internal static class SerializacaoDosFatos
             .Select(static metadado => (JsonNode)SerializarMetadadoDoFato(metadado))]);
     }
 
-    private static JsonObject SerializarMetadadoDoFato(MetadadoFatoCongelado metadado) => new()
+    private static JsonObject SerializarMetadadoDoFato(MetadadoFatoCongelado metadado)
+    {
+        JsonObject objeto = DadosDoMetadado(metadado);
+        ContextoDosRotulos.Acrescentar(objeto, "tipo", (TipoDoDado?)metadado.Dominio);
+        ContextoDosRotulos.Acrescentar(objeto, "origem", (OrigemFato?)metadado.Origem);
+        ContextoDosRotulos.Acrescentar(objeto, "quantidadeDeValores", (QuantidadeDeValores?)metadado.Cardinalidade);
+        return objeto;
+    }
+
+    private static JsonObject DadosDoMetadado(MetadadoFatoCongelado metadado) => new()
     {
         ["codigoDoDado"] = HashCanonicalComputer.NormalizeNfc(metadado.Codigo),
         ["tipo"] = metadado.Dominio.Codigo(),
@@ -61,12 +80,8 @@ internal static class SerializacaoDosFatos
         ["quantidadeDeValores"] = metadado.Cardinalidade.Codigo(),
         ["faseDeDisponibilidade"] = HashCanonicalComputer.NormalizeNfc(metadado.PontoResolucao),
         ["fonteDoValor"] = HashCanonicalComputer.NormalizeNfc(metadado.Binding),
-        ["opcoes"] = metadado.ValoresDominio is { } valores
-            ? EscritaCanonica.TextosEmOrdemCanonica(valores)
-            : null,
-        ["opcoesDeclaradas"] = metadado.ValoresDominioDeclarados is { } declarados
-            ? SerializarValoresDominioDeclarados(declarados)
-            : null,
+        ["opcoes"] = metadado.ValoresDominio is { } valores ? EscritaCanonica.TextosEmOrdemCanonica(valores) : null,
+        ["opcoesDeclaradas"] = metadado.ValoresDominioDeclarados is { } declarados ? SerializarValoresDominioDeclarados(declarados) : null,
     };
 
     private static JsonArray SerializarValoresDominioDeclarados(IEnumerable<ValorDominioDeclaradoCongelado> declarados) =>
@@ -103,13 +118,15 @@ internal static class SerializacaoDosFatos
 
         if (DefeitoDoDicionarioDeValores(ehFatoDeSelecao, temEntrada, valoresDoFato) is { } defeito)
         {
-            throw new InvalidOperationException(
-                $"O fato coletado '{fato.FatoCodigo}' {(ehFatoDeSelecao ? "é" : "não é")} de seleção " +
-                $"({fato.TipoRenderizacao}), mas o dicionário de valores selecionáveis {defeito}");
+            throw ErroNosValoresSelecionaveis(fato, ehFatoDeSelecao, defeito);
         }
 
         return valoresDoFato;
     }
+
+    private static InvalidOperationException ErroNosValoresSelecionaveis(FatoColetado fato, bool ehFatoDeSelecao, string defeito) =>
+        new($"O fato coletado '{fato.FatoCodigo}' {(ehFatoDeSelecao ? "é" : "não é")} de seleção " +
+            $"({fato.TipoRenderizacao}), mas o dicionário de valores selecionáveis {defeito}");
 
     private static string? DefeitoDoDicionarioDeValores(
         bool ehFatoDeSelecao,
@@ -130,21 +147,24 @@ internal static class SerializacaoDosFatos
         FatoColetado fato,
         IReadOnlyList<ValorDominioDeclaradoCongelado>? valoresDoFato)
     {
-        JsonObject objeto = new()
-        {
-            ["codigoDoDado"] = HashCanonicalComputer.NormalizeNfc(fato.FatoCodigo),
-            ["finalidade"] = fato.Finalidade!.Value.Codigo(),
-            ["paginaCodigo"] = fato.EtapaCodigo is { } etapa ? HashCanonicalComputer.NormalizeNfc(etapa) : null,
-            ["ordem"] = fato.Ordem,
-            ["rotulo"] = HashCanonicalComputer.NormalizeNfc(fato.Rotulo),
-            ["tipoDeCampo"] = fato.TipoRenderizacao.Codigo(),
-        };
+        JsonObject objeto = IdentificacaoDoFato(fato);
         AdicionarRegrasDaResposta(objeto, fato);
         AdicionarTratamentoDoDado(objeto, fato);
         AdicionarApresentacaoEOpcoes(objeto, fato, valoresDoFato);
-
+        ContextoDosRotulos.Acrescentar(objeto, "finalidade", fato.Finalidade);
+        ContextoDosRotulos.Acrescentar(objeto, "tipoDeCampo", (TipoRenderizacao?)fato.TipoRenderizacao);
         return objeto;
     }
+
+    private static JsonObject IdentificacaoDoFato(FatoColetado fato) => new()
+    {
+        ["codigoDoDado"] = HashCanonicalComputer.NormalizeNfc(fato.FatoCodigo),
+        ["finalidade"] = fato.Finalidade!.Value.Codigo(),
+        ["paginaCodigo"] = fato.EtapaCodigo is { } etapa ? HashCanonicalComputer.NormalizeNfc(etapa) : null,
+        ["ordem"] = fato.Ordem,
+        ["rotulo"] = HashCanonicalComputer.NormalizeNfc(fato.Rotulo),
+        ["tipoDeCampo"] = fato.TipoRenderizacao.Codigo(),
+    };
 
     private static void AdicionarRegrasDaResposta(JsonObject objeto, FatoColetado fato)
     {
@@ -158,6 +178,7 @@ internal static class SerializacaoDosFatos
     private static void AdicionarTratamentoDoDado(JsonObject objeto, FatoColetado fato)
     {
         objeto["origemValores"] = fato.OrigemValores.Codigo();
+        ContextoDosRotulos.Acrescentar(objeto, "origemValores", (OrigemValoresColeta?)fato.OrigemValores);
         objeto["formato"] = fato.Formato;
         objeto["classificacaoProtecao"] = fato.ClassificacaoProtecao;
         objeto["hipoteseLegal"] = fato.HipoteseLegal;
@@ -197,21 +218,23 @@ internal static class SerializacaoDosFatos
         IReadOnlyDictionary<string, IReadOnlyList<ValorDominioDeclaradoCongelado>?>? valoresSelecionaveisCongelados,
         IReadOnlyList<DefinicaoAgregado>? agregados)
     {
-        JsonObject objeto = new()
-        {
-            ["codigo"] = HashCanonicalComputer.NormalizeNfc(g.Codigo),
-            ["finalidade"] = g.Finalidade!.Value.Codigo(),
-            ["paginaCodigo"] = g.EtapaCodigo is { } etapa ? HashCanonicalComputer.NormalizeNfc(etapa) : null,
-            ["ordem"] = g.Ordem,
-            ["rotulo"] = HashCanonicalComputer.NormalizeNfc(g.Rotulo),
-            ["minimo"] = g.Minimo,
-            ["maximo"] = g.Maximo,
-            ["incluiCandidato"] = g.IncluiCandidato,
-        };
+        JsonObject objeto = IdentificacaoDoGrupo(g);
         AdicionarRegrasEComposicaoDoGrupo(objeto, g, valoresSelecionaveisCongelados, agregados);
-
+        ContextoDosRotulos.Acrescentar(objeto, "finalidade", g.Finalidade);
         return objeto;
     }
+
+    private static JsonObject IdentificacaoDoGrupo(GrupoColetado g) => new()
+    {
+        ["codigo"] = HashCanonicalComputer.NormalizeNfc(g.Codigo),
+        ["finalidade"] = g.Finalidade!.Value.Codigo(),
+        ["paginaCodigo"] = g.EtapaCodigo is { } etapa ? HashCanonicalComputer.NormalizeNfc(etapa) : null,
+        ["ordem"] = g.Ordem,
+        ["rotulo"] = HashCanonicalComputer.NormalizeNfc(g.Rotulo),
+        ["minimo"] = g.Minimo,
+        ["maximo"] = g.Maximo,
+        ["incluiCandidato"] = g.IncluiCandidato,
+    };
 
     private static void AdicionarRegrasEComposicaoDoGrupo(
         JsonObject objeto,
@@ -229,12 +252,19 @@ internal static class SerializacaoDosFatos
         new([.. (agregados ?? [])
             .Where(a => string.Equals(a.GrupoCodigo, g.Codigo, StringComparison.Ordinal))
             .OrderBy(static a => a.Codigo, StringComparer.Ordinal)
-            .Select(static a => (JsonNode)new JsonObject
-            {
-                ["codigo"] = HashCanonicalComputer.NormalizeNfc(a.Codigo),
-                ["codigoDoDadoDoMembro"] = HashCanonicalComputer.NormalizeNfc(a.FatoDeMembro),
-                ["operacao"] = a.Operacao.Codigo(),
-            })]);
+            .Select(static a => SerializarAgregado(a))]);
+
+    private static JsonObject SerializarAgregado(DefinicaoAgregado agregado)
+    {
+        JsonObject objeto = new()
+        {
+            ["codigo"] = HashCanonicalComputer.NormalizeNfc(agregado.Codigo),
+            ["codigoDoDadoDoMembro"] = HashCanonicalComputer.NormalizeNfc(agregado.FatoDeMembro),
+            ["operacao"] = agregado.Operacao.Codigo(),
+        };
+        ContextoDosRotulos.Acrescentar(objeto, "operacao", agregado.Operacao);
+        return objeto;
+    }
 
     internal static JsonArray SerializarRegrasDerivacao(IEnumerable<ConfiguracaoDerivacaoFato> regrasDerivacao) =>
         [.. regrasDerivacao
@@ -271,15 +301,17 @@ internal static class SerializacaoDosFatos
         {
             ["identificador"] = no.Identidade,
         })]),
-        ["ligacoes"] = new JsonArray([.. grafo.Dependencias.Select(aresta => (JsonNode)new JsonObject
-        {
-            ["tipo"] = aresta.Motivo.Codigo(),
-            ["origem"] = aresta.Origem.Identidade,
-            ["destino"] = aresta.Destino.Identidade,
-        })]),
+        ["ligacoes"] = new JsonArray([.. grafo.Dependencias.Select(aresta => (JsonNode)SerializarDependencia(aresta))]),
         ["ordemDeDependencia"] = new JsonArray(
             [.. grafo.OrdemDeColeta.Select(no => (JsonNode?)JsonValue.Create(no.Identidade))]),
     };
+
+    private static JsonObject SerializarDependencia(DependenciaEntrePartes aresta)
+    {
+        JsonObject objeto = new() { ["tipo"] = aresta.Motivo.Codigo(), ["origem"] = aresta.Origem.Identidade, ["destino"] = aresta.Destino.Identidade };
+        ContextoDosRotulos.Acrescentar(objeto, "tipo", (MotivoDaDependencia?)aresta.Motivo);
+        return objeto;
+    }
 
     internal static JsonArray SerializarModalidadesOfertadas(IEnumerable<ConfiguracaoDistribuicaoVagas> distribuicao)
     {

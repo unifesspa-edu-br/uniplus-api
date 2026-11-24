@@ -72,18 +72,60 @@ internal sealed class LeitorEnvelope
 
     private void ConferirChaves(JsonObject objeto, string path, string[] esperadas)
     {
+        string? problema = ProblemaDeChaves(objeto, esperadas);
+        if (problema is not null)
+        {
+            Malformado<object>(path, problema);
+            return;
+        }
+
+        ConferirContextoSePresente(objeto, path);
+    }
+
+    private static string? ProblemaDeChaves(JsonObject objeto, string[] esperadas)
+    {
         HashSet<string> presentes = [.. objeto.Select(static p => p.Key)];
         string? ausente = esperadas.FirstOrDefault(esperada => !presentes.Contains(esperada));
-        string? intrusa = presentes.FirstOrDefault(presente => !esperadas.Contains(presente, StringComparer.Ordinal));
+        string? intrusa = presentes.FirstOrDefault(presente => presente != "contexto" && !esperadas.Contains(presente, StringComparer.Ordinal));
         if (ausente is not null)
         {
-            Malformado<object>(path, $"a chave '{ausente}' está ausente.");
+            return $"a chave '{ausente}' está ausente.";
         }
-        else if (intrusa is not null)
+
+        return intrusa is null ? null : $"a chave '{intrusa}' não pertence a esta versão do envelope.";
+    }
+
+    private void ConferirContextoSePresente(JsonObject objeto, string path)
+    {
+        if (objeto.ContainsKey("contexto"))
         {
-            Malformado<object>(path, $"a chave '{intrusa}' não pertence a esta versão do envelope.");
+            ConferirContexto(objeto, path);
         }
     }
+
+    private void ConferirContexto(JsonObject dono, string path)
+    {
+        if (dono["contexto"] is not JsonObject contexto || contexto.Any(propriedade => !RotuloValido(dono, propriedade)))
+        {
+            Malformado<object>($"{path}.contexto", "esperado um objeto de rótulos textuais.");
+        }
+    }
+
+    private static bool RotuloValido(JsonObject dono, KeyValuePair<string, JsonNode?> rotulo) =>
+        rotulo.Key.EndsWith("Rotulos", StringComparison.Ordinal)
+            ? ListaDeRotulosValida(dono, rotulo)
+            : RotuloUnicoValido(dono, rotulo);
+
+    private static bool RotuloUnicoValido(JsonObject dono, KeyValuePair<string, JsonNode?> rotulo) =>
+        rotulo.Key.EndsWith("Rotulo", StringComparison.Ordinal)
+        && dono.ContainsKey(rotulo.Key[..^"Rotulo".Length])
+        && rotulo.Value is JsonValue valor && valor.TryGetValue<string>(out _);
+
+    private static bool ListaDeRotulosValida(JsonObject dono, KeyValuePair<string, JsonNode?> rotulos) =>
+        dono[rotulos.Key[..^"Rotulos".Length]] is JsonArray codigos
+        && rotulos.Value is JsonArray textos
+        && textos.Count == codigos.Count
+        && textos.All(static texto => texto is JsonValue valor && valor.TryGetValue<string>(out _));
 
     public JsonObject Objeto(JsonObject pai, string chave, string path)
     {

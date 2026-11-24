@@ -5,6 +5,7 @@ using System.Text.Json.Nodes;
 
 using AwesomeAssertions;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
@@ -39,7 +40,9 @@ public sealed class TipoDeBancaNoEnvelopeTests
 
         TipoDeBancaNoEnvelope.Serializar(banca, Tipo("Comissão"));
 
-        banca.Select(static p => p.Key).Should().BeEquivalentTo(TipoDeBancaNoEnvelope.Chaves);
+        banca.Select(static p => p.Key).Should().BeEquivalentTo(TipoDeBancaNoEnvelope.Chaves.Append("contexto"));
+        banca["contexto"]!["codigoRotulo"]!.GetValue<string>().Should().Be(TipoDeBanca.Heteroidentificacao.Rotulo());
+        banca["contexto"]!["papelRotulo"]!.GetValue<string>().Should().Be(PapelDaBanca.AvaliaOMerito.Rotulo());
     }
 
     [Fact(DisplayName = "A cópia do tipo de 2ª instância, escrita e lida de volta pelo envelope, mantém o tipo e o papel que julga o recurso em 2ª instância")]

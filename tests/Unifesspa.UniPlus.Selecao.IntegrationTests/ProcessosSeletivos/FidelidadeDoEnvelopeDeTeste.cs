@@ -44,9 +44,13 @@ internal static class FidelidadeDoEnvelopeDeTeste
         recodificados.Should().NotEqual(original.Bytes);
         if (!ordena)
         {
-            recodificados.Should().Equal(alterados);
+            SemContexto(recodificados).Should().Equal(SemContexto(alterados));
         }
     }
+
+    // O rótulo é recalculado pelo código ao reescrever; a mutação troca só o código.
+    private static byte[] SemContexto(byte[] bytes) =>
+        PerfilCanonicoV1.Instancia.Serializar(ContextoDosRotulos.SemContexto(JsonNode.Parse(bytes)!).AsObject());
 
     private static byte[] Alterar(SnapshotCanonico original, string caminho, string valor)
     {

@@ -82,6 +82,9 @@ internal static class SerializacaoDasVagas
     private static JsonObject AcrescentarRemanejamento(JsonObject objeto, ModalidadeSelecionada modalidade)
     {
         objeto["regraRemanejamento"] = modalidade.RegraRemanejamento is { } regra ? regra.Codigo() : null;
+        ContextoDosRotulos.Acrescentar(objeto, "naturezaLegal", modalidade.NaturezaLegal);
+        ContextoDosRotulos.Acrescentar(objeto, "composicaoVagas", modalidade.ComposicaoVagas);
+        ContextoDosRotulos.Acrescentar(objeto, "regraRemanejamento", modalidade.RegraRemanejamento);
         objeto["remanejamentoDestino"] = modalidade.RemanejamentoDestino;
         objeto["remanejamentoPar"] = modalidade.RemanejamentoPar;
         objeto["remanejamentoDestinoFinal"] = modalidade.RemanejamentoFallback;
