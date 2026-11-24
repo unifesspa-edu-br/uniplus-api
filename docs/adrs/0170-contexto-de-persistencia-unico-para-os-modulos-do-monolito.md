@@ -40,7 +40,7 @@ Ele impede, porém, a transação entre módulos: o Wolverine não admite dois `
 
 ### Escopo
 
-Os módulos internos do host compartilham um contexto. Ficam de fora o portal (`PortalDbContext`, implantação própria), a API GEO, o verificador de documentos e a trilha de auditoria forense ([ADR-0086](0086-registro-de-auditoria-com-hmac-e-cofre.md)).
+Os módulos internos do host compartilham um contexto. Ficam de fora o portal (`PortalDbContext`, implantação própria), a API GEO, o verificador de documentos e o registro de auditoria forense ([ADR-0086](0086-registro-de-auditoria-com-hmac-e-cofre.md)).
 
 ### Fronteira
 
