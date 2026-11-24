@@ -92,6 +92,15 @@ public sealed class LimitesDoEsquemaDaConfiguracaoTests
 
     public static TheoryData<string> Constantes => [.. Paridades.Select(static p => p.Constante)];
 
+    [Fact]
+    public void UnidadeResponsavelCodigo_LimiteDoCadastro_EstaContidoNoLimiteDoEsquema()
+    {
+        int limiteDoEsquema = MaximoDoEsquema(Comuns, "/$defs/codigoDeCatalogo");
+
+        LimitesDoEnvelope.UnidadeAdministradoraCodigo.Should().Be(50);
+        limiteDoEsquema.Should().BeGreaterThanOrEqualTo(LimitesDoEnvelope.UnidadeAdministradoraCodigo);
+    }
+
     [Theory(DisplayName = "O limite de tamanho do esquema bate com o que o codec aplica")]
     [MemberData(nameof(Constantes))]
     public void LimiteDoEsquema_BateComOCodec(string constante)

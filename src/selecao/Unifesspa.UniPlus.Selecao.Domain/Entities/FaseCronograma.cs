@@ -52,18 +52,8 @@ public sealed class FaseCronograma : EntityBase, IParteDoProcesso, IPeriodoDaFas
 
     public string TipoFaseNome { get; private set; } = string.Empty;
 
-    /// <summary>Id da unidade que responde pela fase, congelado sem FK (ADR-0061); opcional no rascunho, exigido na publicação.</summary>
-    public Guid? UnidadeResponsavelOrigemId { get; private set; }
-
-    public string? UnidadeResponsavelSigla { get; private set; }
-
-    public string? UnidadeResponsavelNome { get; private set; }
-
-    /// <summary>A unidade responsável como valor, ou <see langword="null"/> quando a fase ainda não a tem.</summary>
-    public UnidadeResponsavelSnapshot? UnidadeResponsavel =>
-        UnidadeResponsavelOrigemId is { } origemId
-            ? new UnidadeResponsavelSnapshot(origemId, UnidadeResponsavelSigla!, UnidadeResponsavelNome!)
-            : null;
+    /// <summary>A unidade responsável, opcional no rascunho e exigida na publicação.</summary>
+    public UnidadeResponsavelSnapshot? UnidadeResponsavel { get; private set; }
 
     /// <summary>Quando a data da fase é fixada (no edital ou na execução); decide a obrigatoriedade da janela.</summary>
     public OrigemDataFase OrigemData { get; private set; }
@@ -253,23 +243,19 @@ public sealed class FaseCronograma : EntityBase, IParteDoProcesso, IPeriodoDaFas
     /// <summary>O que da fase entra no resultado preliminar que ela publica (ver <see cref="ValueObjects.EntradaDoPreliminar"/>).</summary>
     public EntradaDoPreliminar EntradaDoPreliminar() => EntradaDoPreliminarDaFase.De(this);
 
-    /// <summary>Refaz a cópia de sigla e nome da unidade que a fase já tem, pelo valor vivo do cadastro.</summary>
+    /// <summary>Refaz a cópia de código, sigla e nome da unidade que a fase já tem, pelo valor vivo do cadastro.</summary>
     internal void RecopiarUnidadeResponsavel(UnidadeResponsavelSnapshot viva)
     {
         ArgumentNullException.ThrowIfNull(viva);
 
-        if (UnidadeResponsavelOrigemId == viva.OrigemId)
+        if (UnidadeResponsavel?.OrigemId == viva.OrigemId)
         {
             DefinirUnidadeResponsavel(viva);
         }
     }
 
-    private void DefinirUnidadeResponsavel(UnidadeResponsavelSnapshot? unidade)
-    {
-        UnidadeResponsavelOrigemId = unidade?.OrigemId;
-        UnidadeResponsavelSigla = unidade?.Sigla;
-        UnidadeResponsavelNome = unidade?.Nome;
-    }
+    private void DefinirUnidadeResponsavel(UnidadeResponsavelSnapshot? unidade) =>
+        UnidadeResponsavel = unidade is null ? null : new UnidadeResponsavelSnapshot(unidade.OrigemId, unidade.Codigo, unidade.Sigla, unidade.Nome);
 
     void IParteDoProcesso.VincularProcesso(Guid processoSeletivoId) =>
         ProcessoSeletivoId = processoSeletivoId;

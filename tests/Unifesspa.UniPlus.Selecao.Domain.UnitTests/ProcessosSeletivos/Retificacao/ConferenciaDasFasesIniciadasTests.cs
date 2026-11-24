@@ -39,6 +39,15 @@ public sealed class ConferenciaDasFasesIniciadasTests
         Conferencia(Iniciadas(habilitacao), [ComUnidade(habilitacao, UnidadesDeTeste.Ceps)]).Should().BeEmpty();
     }
 
+    [Fact]
+    public void Conferir_CodigoDaMesmaUnidadeAlterado_NaoRecusa()
+    {
+        FaseCronograma habilitacao = Fase(1, "HABILITACAO");
+        UnidadeResponsavelSnapshot unidade = new(UnidadesDeTeste.Ceps.OrigemId, "CODIGO_NOVO", UnidadesDeTeste.Ceps.Sigla, UnidadesDeTeste.Ceps.Nome);
+
+        Conferencia(Iniciadas(habilitacao), [ComUnidade(habilitacao, unidade)]).Should().BeEmpty();
+    }
+
     [Fact(DisplayName = "A unidade trocada numa fase que não começou não é recusada")]
     public void Conferir_UnidadeTrocadaEmFaseNaoIniciada_NaoRecusa()
     {

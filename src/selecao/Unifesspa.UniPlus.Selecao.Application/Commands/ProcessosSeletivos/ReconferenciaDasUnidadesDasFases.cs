@@ -48,10 +48,10 @@ internal static class ReconferenciaDasUnidadesDasFases
         FaseCronograma[] fases = [.. OrdemCanonicaDaConfiguracao.Fases(processo.CronogramaFases)];
         for (int indice = 0; indice < fases.Length; indice++)
         {
-            if (fases[indice].UnidadeResponsavelOrigemId is { } unidadeId
+            if (fases[indice].UnidadeResponsavel?.OrigemId is { } unidadeId
                 && await ResolverUmaVezAsync(unidadeId, resolvedor, resolvidas, cancellationToken).ConfigureAwait(false) is null)
             {
-                erros.Add(UnidadeNaoEncontrada(indice, fases[indice], unidadeId));
+                erros.Add(UnidadeNaoEncontrada(indice, fases[indice]));
             }
         }
 
@@ -73,9 +73,9 @@ internal static class ReconferenciaDasUnidadesDasFases
         return viva;
     }
 
-    private static FieldError UnidadeNaoEncontrada(int indice, FaseCronograma fase, Guid unidadeId) => new(
+    private static FieldError UnidadeNaoEncontrada(int indice, FaseCronograma fase) => new(
         $"fases[{indice}].unidadeResponsavel",
         new DomainError(
             "FaseCronograma.UnidadeResponsavelNaoEncontrada",
-            $"Unidade responsável {unidadeId} da fase '{fase.Codigo}' não encontrada ou não está mais viva. Escolha outra unidade para a fase."));
+            $"Unidade responsável '{fase.UnidadeResponsavel!.Sigla}' (código '{fase.UnidadeResponsavel.Codigo}') da fase '{fase.Codigo}' não encontrada ou não está mais viva. Escolha outra unidade para a fase."));
 }

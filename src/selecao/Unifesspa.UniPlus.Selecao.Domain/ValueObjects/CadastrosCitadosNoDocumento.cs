@@ -108,7 +108,7 @@ public sealed class CadastrosCitadosNoDocumento
 /// <summary>A unidade que o documento cita: o id dela no cadastro e a cópia que o processo guarda; a fase a guarda só como responsável.</summary>
 public sealed record UnidadeCitada(Guid OrigemId, UnidadeAdministradoraSnapshot Cadastro)
 {
-    internal UnidadeResponsavelSnapshot ComoResponsavel() => new(OrigemId, Cadastro.Sigla, Cadastro.Nome);
+    internal UnidadeResponsavelSnapshot ComoResponsavel() => new(OrigemId, Cadastro.Codigo, Cadastro.Sigla, Cadastro.Nome);
 }
 
 /// <summary>A categoria de documento que o documento cita nos candidatos atendidos por uma banca.</summary>

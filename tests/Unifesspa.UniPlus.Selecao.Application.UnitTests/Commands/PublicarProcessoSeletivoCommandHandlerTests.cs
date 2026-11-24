@@ -148,8 +148,8 @@ public sealed partial class PublicarProcessoSeletivoCommandHandlerTests
 
     /// <summary>
     /// A leitura do calendário vigente é <b>uma por handler</b>: a mesma resposta alimenta a verificação
-    /// da raiz e o bloco congelado do envelope. Duas leituras abririam a janela em que o dataset
-    /// muda entre validar e congelar, e a versão publicada carregaria um calendário que a verificação
+    /// do processo e o documento congelado. Duas leituras poderiam usar dados diferentes
+    /// na validação e no congelamento, e a versão publicada carregaria um calendário que a verificação
     /// não aprovou — defeito que nenhuma asserção sobre o resultado pegaria, porque num teste
     /// comum as duas leituras devolveriam o mesmo valor.
     /// </summary>
@@ -187,13 +187,27 @@ public sealed partial class PublicarProcessoSeletivoCommandHandlerTests
         ProcessoSeletivo processo = NovoProcessoConforme(out _);
         EntradaCanonicalizacao? entrada = null;
         (Mocks mocks, DocumentoAPublicar documento) = NovosMocks(processo, e => entrada = e);
-        var renomeada = new UnidadeResponsavelSnapshot(UnidadesDeTeste.Ceps.OrigemId, "CEPS", "Centro de Processos Seletivos e Concursos");
+        var renomeada = new UnidadeResponsavelSnapshot(UnidadesDeTeste.Ceps.OrigemId, "CEPS", "CEPS", "Centro de Processos Seletivos e Concursos");
 
         (Result resposta, IEnumerable<object> _) = await HandleAsync(
             mocks, processo, documento, unidades: ResolvedorDeUnidadeDeTeste.Com(renomeada));
 
         resposta.IsSuccess.Should().BeTrue(resposta.Error?.Message);
-        entrada!.Processo.CronogramaFases.Should().OnlyContain(f => f.UnidadeResponsavelNome == renomeada.Nome);
+        entrada!.Processo.CronogramaFases.Should().OnlyContain(f => f.UnidadeResponsavel != null && f.UnidadeResponsavel.Nome == renomeada.Nome);
+    }
+
+    [Fact]
+    public async Task Handle_CodigoDaUnidadeAlterado_CongelaOCodigoNovo()
+    {
+        ProcessoSeletivo processo = NovoProcessoConforme(out _);
+        EntradaCanonicalizacao? entrada = null;
+        (Mocks mocks, DocumentoAPublicar documento) = NovosMocks(processo, e => entrada = e);
+        var unidade = new UnidadeResponsavelSnapshot(UnidadesDeTeste.Ceps.OrigemId, "CODIGO_NOVO", UnidadesDeTeste.Ceps.Sigla, UnidadesDeTeste.Ceps.Nome);
+
+        (Result resposta, IEnumerable<object> _) = await HandleAsync(mocks, processo, documento, unidades: ResolvedorDeUnidadeDeTeste.Com(unidade));
+
+        resposta.IsSuccess.Should().BeTrue(resposta.Error?.Message);
+        entrada!.Processo.CronogramaFases.Should().OnlyContain(f => f.UnidadeResponsavel != null && f.UnidadeResponsavel.Codigo == unidade.Codigo);
     }
 
     [Theory(DisplayName = "O documento do edital que não é PDF é recusado antes de qualquer escrita")]

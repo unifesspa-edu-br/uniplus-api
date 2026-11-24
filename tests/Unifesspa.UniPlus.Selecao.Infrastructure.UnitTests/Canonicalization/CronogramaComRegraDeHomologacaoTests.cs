@@ -126,7 +126,7 @@ public sealed class CronogramaComRegraDeHomologacaoTests
             OrigemId: new Guid("4444dddd-0000-4000-8000-000000000001"), Codigo: "HOMOLOGACAO_INSCRICOES", OrigemData: OrigemDataFase.NoEdital,
             AgrupaEtapas: false, PermiteComplementacao: false, ColetaInscricao: false, ColetaSolicitacaoIsencao: false),
         new DecisoesDeCronogramaDaFase(
-            Ordem: 1, Inicio: null, Fim: null, UnidadeResponsavel: new UnidadeResponsavelSnapshot(new Guid("5555eeee-0000-4000-8000-000000000001"), "CEPS", "Centro de Processos Seletivos")),
+            Ordem: 1, Inicio: null, Fim: null, UnidadeResponsavel: new UnidadeResponsavelSnapshot(new Guid("5555eeee-0000-4000-8000-000000000001"), "CEPS", "CEPS", "Centro de Processos Seletivos")),
         new PublicacoesDaFase(
             Produtos: [ProdutoDaFase.Reidratar(new Guid("7777bbbb-0000-4000-8000-000000000001"), "RESULTADO_PRELIMINAR_HOMOLOGACAO", PapelProdutoFase.Preliminar)],
             EmiteParecerIndividual: false,

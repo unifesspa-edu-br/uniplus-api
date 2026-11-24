@@ -64,7 +64,7 @@ public sealed class ProjecaoDaFaseDoCronogramaTests
         FaseCronograma.Reidratar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("fase").Value!,
             FaseId,
             Origem(agrupaEtapas, permiteComplementacao, coletaInscricao, coletaIsencao),
-            Cronograma(new UnidadeResponsavelSnapshot(UnidadeId, "CEPS", "Centro de Processos Seletivos"), noMesmoMomentoDaAnterior),
+            Cronograma(new UnidadeResponsavelSnapshot(UnidadeId, "CEPS", "CEPS", "Centro de Processos Seletivos"), noMesmoMomentoDaAnterior),
             new PublicacoesDaFase(
                 Produtos: Produtos(),
                 EmiteParecerIndividual: true,

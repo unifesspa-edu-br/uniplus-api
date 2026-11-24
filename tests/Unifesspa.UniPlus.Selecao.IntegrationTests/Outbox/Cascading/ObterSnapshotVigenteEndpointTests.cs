@@ -43,19 +43,19 @@ public sealed class ObterSnapshotVigenteEndpointTests
     public async Task ObterSnapshotVigente_AposPublicar_ResolveAbertura()
     {
         CascadingApiFactory api = _fixture.Factory;
-
         await TiposDeAtoSeeder.SemearAsync(api.Services);
         using HttpClient client = api.CreateClient();
-
         (Guid processoId, Guid documentoId) = await SemearAsync(api, nameof(ObterSnapshotVigente_AposPublicar_ResolveAbertura));
         (await PostPublicarAsync(client, processoId, documentoId)).StatusCode.Should().Be(HttpStatusCode.NoContent);
-
         HttpResponseMessage response = await GetSnapshotVigenteAsync(client, processoId, instante: null);
         response.StatusCode.Should().Be(HttpStatusCode.OK);
-
         using JsonDocument doc = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
         JsonElement root = doc.RootElement;
+        AfirmarConfiguracaoDaAbertura(root);
+    }
 
+    private static void AfirmarConfiguracaoDaAbertura(JsonElement root)
+    {
         // O ato entra por VALOR — o par {id, hash} (ADR-0061). O contrato não republica
         // atributo documental algum: o documento é o ato publicado, e vive em Publicações.
         root.GetProperty("atoId").GetGuid().Should().NotBeEmpty();
@@ -74,34 +74,39 @@ public sealed class ObterSnapshotVigenteEndpointTests
     public async Task ObterSnapshotVigente_MudancaNoCadastroDaUnidade_NaoAlteraOProcessoPublicado()
     {
         CascadingApiFactory api = _fixture.Factory;
-
         await TiposDeAtoSeeder.SemearAsync(api.Services);
         using HttpClient client = api.CreateClient();
-
         string sufixo = Guid.CreateVersion7().ToString("N")[^8..];
         Guid unidadeId = await SemearUnidadeAsync(api, sufixo);
-        UnidadeResponsavelSnapshot congelada = new(unidadeId, $"CGA{sufixo}".ToUpperInvariant(), "Centro de Gestão Acadêmica");
-
+        UnidadeResponsavelSnapshot congelada = new(unidadeId, $"CGA-{sufixo}", $"CGA{sufixo}".ToUpperInvariant(), "Centro de Gestão Acadêmica");
         (Guid processoId, Guid documentoId) = await SemearAsync(
             api, nameof(ObterSnapshotVigente_MudancaNoCadastroDaUnidade_NaoAlteraOProcessoPublicado), congelada);
         (await PostPublicarAsync(client, processoId, documentoId)).StatusCode.Should().Be(HttpStatusCode.NoContent);
-
         await RenomearUnidadeAsync(api, unidadeId, $"CGAX{sufixo}", "Centro de Gestão Acadêmica (renomeado)");
+        await AfirmarUnidadeCongeladaAsync(api, client, processoId, congelada);
+    }
 
+    private static async Task AfirmarUnidadeCongeladaAsync(
+        CascadingApiFactory api, HttpClient client, Guid processoId, UnidadeResponsavelSnapshot congelada)
+    {
         HttpResponseMessage response = await GetSnapshotVigenteAsync(client, processoId, instante: null);
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         using JsonDocument doc = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
         JsonElement unidade = doc.RootElement.GetProperty("configuracao")
             .GetProperty("cronogramaFases").GetProperty("fases")[0].GetProperty("unidadeResponsavel");
-
-        unidade.GetProperty("origemId").GetGuid().Should().Be(unidadeId);
+        unidade.GetProperty("origemId").GetGuid().Should().Be(congelada.OrigemId);
+        unidade.GetProperty("codigo").GetString().Should().Be(congelada.Codigo);
         unidade.GetProperty("sigla").GetString().Should().Be(congelada.Sigla);
         unidade.GetProperty("nome").GetString().Should().Be(congelada.Nome);
+        await AfirmarUnidadeGravadaAsync(api, processoId, congelada);
+    }
 
+    private static async Task AfirmarUnidadeGravadaAsync(CascadingApiFactory api, Guid processoId, UnidadeResponsavelSnapshot congelada)
+    {
         await using AsyncServiceScope scope = api.Services.CreateAsyncScope();
         UniPlusDbContext db = scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
         FaseCronograma fase = await db.Set<FaseCronograma>().AsNoTracking().SingleAsync(f => f.ProcessoSeletivoId == processoId);
-        fase.UnidadeResponsavel.Should().Be(congelada, "a fase publicada guarda a cópia de quando a unidade foi definida");
+        fase.UnidadeResponsavel.Should().Be(congelada);
     }
 
     [Fact(DisplayName =
@@ -109,42 +114,36 @@ public sealed class ObterSnapshotVigenteEndpointTests
     public async Task ObterSnapshotVigente_AposRetificar_ResolveRetificacao()
     {
         CascadingApiFactory api = _fixture.Factory;
-
         await TiposDeAtoSeeder.SemearAsync(api.Services);
         using HttpClient client = api.CreateClient();
-
         (Guid processoId, Guid documentoAbertura) = await SemearAsync(api, nameof(ObterSnapshotVigente_AposRetificar_ResolveRetificacao));
         (await PostPublicarAsync(client, processoId, documentoAbertura)).StatusCode.Should().Be(HttpStatusCode.NoContent);
-
         Guid documentoRetificacao = await SemearDocumentoConfirmadoAsync(api, processoId);
         (await PostRetificarAsync(client, processoId, documentoRetificacao)).StatusCode.Should().Be(HttpStatusCode.NoContent);
-
         HttpResponseMessage response = await GetSnapshotVigenteAsync(client, processoId, instante: null);
         response.StatusCode.Should().Be(HttpStatusCode.OK);
-
         using JsonDocument doc = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        await AfirmarRetificacaoAsync(api, processoId, doc.RootElement);
+    }
 
-        // O vigente é a versão do TOPO da cadeia — a que a retificação criou. Note o que o
-        // corpo NÃO carrega: não há campo dizendo "isto é uma retificação". Retificar é uma
-        // relação entre atos (ADR-0103), e a relação vive no ato, que é de Publicações. O
-        // contrato de leitura da Seleção publica do ato apenas o par {id, hash}.
+    private static async Task AfirmarRetificacaoAsync(CascadingApiFactory api, Guid processoId, JsonElement raiz)
+    {
         await using AsyncServiceScope scope = api.Services.CreateAsyncScope();
         UniPlusDbContext db = scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
         VersaoConfiguracao esperado = await db.VersoesConfiguracao.AsNoTracking()
-            .Where(v => v.ProcessoSeletivoId == processoId)
-            .OrderByDescending(v => v.NumeroVersao)
-            .FirstAsync();
-        esperado.NumeroVersao.Should().Be(2, "pré-condição: a retificação sucedeu a abertura");
-        esperado.AtoCriadorRetificaId.Should().NotBeNull("a versão do topo foi criada por um ato que emenda outro");
+            .Where(v => v.ProcessoSeletivoId == processoId).OrderByDescending(v => v.NumeroVersao).FirstAsync();
+        esperado.NumeroVersao.Should().Be(2);
+        esperado.AtoCriadorRetificaId.Should().NotBeNull();
+        AfirmarVersaoRetificada(raiz, esperado);
+    }
 
-        doc.RootElement.GetProperty("hashConfiguracao").GetString().Should().Be(esperado.HashConfiguracao);
-        // A referência forense durável (ADR-0075) — mesmo id do ProcessoPublicadoEvent.
-        doc.RootElement.GetProperty("snapshotPublicacaoId").GetGuid().Should().Be(esperado.Id);
-        // E a referência por valor ao ato: o par {id, hash} (ADR-0061).
-        doc.RootElement.GetProperty("atoId").GetGuid().Should().Be(esperado.AtoCriadorId);
-        doc.RootElement.GetProperty("hashEdital").GetString().Should().Be(esperado.AtoCriadorHash);
-        doc.RootElement.TryGetProperty("natureza", out _).Should().BeFalse(
-            "o enum de natureza não existe mais no contrato: acrescentar um tipo de ato é linha de cadastro");
+    private static void AfirmarVersaoRetificada(JsonElement raiz, VersaoConfiguracao esperado)
+    {
+        raiz.GetProperty("hashConfiguracao").GetString().Should().Be(esperado.HashConfiguracao);
+        raiz.GetProperty("snapshotPublicacaoId").GetGuid().Should().Be(esperado.Id);
+        raiz.GetProperty("atoId").GetGuid().Should().Be(esperado.AtoCriadorId);
+        raiz.GetProperty("hashEdital").GetString().Should().Be(esperado.AtoCriadorHash);
+        raiz.TryGetProperty("natureza", out _).Should().BeFalse();
     }
 
     [Fact(DisplayName =
@@ -211,19 +210,19 @@ public sealed class ObterSnapshotVigenteEndpointTests
         (Guid processoId, _) = await SemearAsync(api, nameof(ObterSnapshotVigente_VersaoDeMidiaNaoSuportada_Retorna406));
         using HttpClient client = api.CreateClient();
 
-        // O filtro de negociação roda antes do handler. O processo existe, porque o acesso
-        // a ele é decidido antes da negociação. Pede uma v2 inexistente do recurso.
-        using HttpRequestMessage request = new(HttpMethod.Get,
-            new Uri($"/api/selecao/processos-seletivos/{processoId}/snapshot-vigente", UriKind.Relative));
-        AppendTestAuth(request);
-        request.Headers.TryAddWithoutValidation(
-            "Accept", "application/vnd.uniplus.snapshot-vigente-processo-seletivo.v2+json");
-
-        HttpResponseMessage response = await client.SendAsync(request);
-
+        HttpResponseMessage response = await PedirVersaoNaoSuportadaAsync(client, processoId);
         response.StatusCode.Should().Be(HttpStatusCode.NotAcceptable);
         using JsonDocument doc = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
         doc.RootElement.GetProperty("code").GetString().Should().Be("uniplus.contract.versao_nao_suportada");
+    }
+
+    private static async Task<HttpResponseMessage> PedirVersaoNaoSuportadaAsync(HttpClient client, Guid processoId)
+    {
+        using HttpRequestMessage request = new(HttpMethod.Get,
+            new Uri($"/api/selecao/processos-seletivos/{processoId}/snapshot-vigente", UriKind.Relative));
+        AppendTestAuth(request);
+        request.Headers.TryAddWithoutValidation("Accept", "application/vnd.uniplus.snapshot-vigente-processo-seletivo.v2+json");
+        return await client.SendAsync(request);
     }
 
     private static async Task<HttpResponseMessage> GetSnapshotVigenteAsync(
@@ -242,49 +241,30 @@ public sealed class ObterSnapshotVigenteEndpointTests
 
     private static async Task<HttpResponseMessage> PostPublicarAsync(HttpClient client, Guid processoId, Guid documentoEditalId)
     {
-        object corpo = new
-        {
-            numero = "001/2026",
-            documentoEditalId,
-            ato = new
-            {
-                orgao = "CEPS",
-                serie = "EDITAL",
-                ano = 2026,
-                dataDoAto = DateOnly.FromDateTime(DateTime.UtcNow).ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
-                assinante = "Diretor do CEPS",
-                tipoAtoCodigo = "EDITAL_ABERTURA",
-            },
-        };
-        using HttpRequestMessage request = new(HttpMethod.Post,
-            new Uri($"/api/selecao/processos-seletivos/{processoId}/publicacao", UriKind.Relative))
-        {
-            Content = JsonContent.Create(corpo),
-        };
-        AppendTestAuth(request);
-        request.Headers.TryAddWithoutValidation("Idempotency-Key", Guid.CreateVersion7().ToString("N"));
-        return await client.SendAsync(request).ConfigureAwait(false);
+        object corpo = new { numero = "001/2026", documentoEditalId, ato = Ato("EDITAL_ABERTURA") };
+        return await EnviarPublicacaoAsync(client, processoId, "publicacao", corpo);
     }
 
     private static async Task<HttpResponseMessage> PostRetificarAsync(HttpClient client, Guid processoId, Guid documentoEditalId)
     {
-        object corpo = new
-        {
-            motivo = "Correção do prazo de inscrição",
-            numero = "001/2026-R1",
-            documentoEditalId,
-            ato = new
-            {
-                orgao = "CEPS",
-                serie = "EDITAL",
-                ano = 2026,
-                dataDoAto = DateOnly.FromDateTime(DateTime.UtcNow).ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
-                assinante = "Diretor do CEPS",
-                tipoAtoCodigo = "EDITAL_RETIFICACAO",
-            },
-        };
+        object corpo = new { motivo = "Correção do prazo de inscrição", numero = "001/2026-R1", documentoEditalId, ato = Ato("EDITAL_RETIFICACAO") };
+        return await EnviarPublicacaoAsync(client, processoId, "retificacoes", corpo);
+    }
+
+    private static object Ato(string tipoAtoCodigo) => new
+    {
+        orgao = "CEPS",
+        serie = "EDITAL",
+        ano = 2026,
+        dataDoAto = DateOnly.FromDateTime(DateTime.UtcNow).ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
+        assinante = "Diretor do CEPS",
+        tipoAtoCodigo,
+    };
+
+    private static async Task<HttpResponseMessage> EnviarPublicacaoAsync(HttpClient client, Guid processoId, string caminho, object corpo)
+    {
         using HttpRequestMessage request = new(HttpMethod.Post,
-            new Uri($"/api/selecao/processos-seletivos/{processoId}/retificacoes", UriKind.Relative))
+            new Uri($"/api/selecao/processos-seletivos/{processoId}/{caminho}", UriKind.Relative))
         {
             Content = JsonContent.Create(corpo),
         };

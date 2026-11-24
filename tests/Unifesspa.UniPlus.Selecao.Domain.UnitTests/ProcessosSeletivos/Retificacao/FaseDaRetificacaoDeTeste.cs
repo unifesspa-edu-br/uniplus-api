@@ -79,7 +79,7 @@ internal static class FaseDaRetificacaoDeTeste
             bancasRequeridas: []).Value!;
 
     internal static FasesIniciadas Iniciadas(params FaseCronograma[] fases) =>
-        new(fases.Select(static f => KeyValuePair.Create(f.FaseCanonicaOrigemId, f.UnidadeResponsavelOrigemId)));
+        new(fases.Select(static f => KeyValuePair.Create(f.FaseCanonicaOrigemId, f.UnidadeResponsavel?.OrigemId)));
 
     internal static FatosDaExecucao Fatos(FasesIniciadas iniciadas, params IdentidadeDoItemDoEdital[] publicados) =>
         new() { Instante = Instante, FasesIniciadas = iniciadas, ItensPublicados = new HashSet<IdentidadeDoItemDoEdital>(publicados) };

@@ -86,7 +86,7 @@ internal static class RegrasDoCronograma
 
         foreach (FaseCronograma fase in fases)
         {
-            if (fase.UnidadeResponsavelOrigemId is { } origemId && vivas.TryGetValue(origemId, out UnidadeResponsavelSnapshot? viva))
+            if (fase.UnidadeResponsavel?.OrigemId is { } origemId && vivas.TryGetValue(origemId, out UnidadeResponsavelSnapshot? viva))
             {
                 fase.RecopiarUnidadeResponsavel(viva);
             }

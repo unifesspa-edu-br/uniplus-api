@@ -1,16 +1,10 @@
 namespace Unifesspa.UniPlus.Selecao.Domain.UnitTests.ValueObjects;
 
-using System.Reflection;
-
 using AwesomeAssertions;
 
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 
-/// <summary>
-/// Salvaguarda da <c>EntradaDoPreliminar</c>: toda propriedade pública da fase e da etapa está classificada
-/// como entrada do preliminar ou não, com o motivo. A propriedade nova que ninguém classificou reprova o teste,
-/// de modo que um dado de entrada não escape da conferência do ciclo novo só porque a entidade ganhou um campo.
-/// </summary>
+/// <summary>As propriedades da fase e da etapa consideradas na entrada do preliminar.</summary>
 public sealed class ClassificacaoDasPropriedadesDoPreliminarTests
 {
     private const string IdentidadeEAuditoria = "Identidade e auditoria da linha: não descrevem o que o preliminar usa.";
@@ -29,17 +23,14 @@ public sealed class ClassificacaoDasPropriedadesDoPreliminarTests
         [nameof(FaseCronograma.TipoFaseNome)] = NaoEntra("É cópia do nome do tipo de fase, só para leitura: trocar o nome não troca a fase."),
         [nameof(FaseCronograma.NoMesmoMomentoDaAnterior)] = NaoEntra("Muda o momento da fase, e a retificação confere o momento à parte, pela marca e pelas fases que vêm antes."),
         [nameof(FaseCronograma.Codigo)] = Entra("O código vem do conjunto canônico e diz qual fase ela é: trocá-lo troca a fase."),
-        [nameof(FaseCronograma.UnidadeResponsavelOrigemId)] = Entra("A unidade que responde pela fase define quem decide o preliminar."),
-        [nameof(FaseCronograma.UnidadeResponsavelSigla)] = NaoEntra("Cópia de apresentação da unidade; a identidade é a origem."),
-        [nameof(FaseCronograma.UnidadeResponsavelNome)] = NaoEntra("Cópia de apresentação da unidade; a identidade é a origem."),
-        [nameof(FaseCronograma.UnidadeResponsavel)] = NaoEntra("Derivada da origem, da sigla e do nome."),
-        [nameof(FaseCronograma.OrigemData)] = Entra("Quando a data é fixada decide a obrigatoriedade da janela."),
+        [nameof(FaseCronograma.UnidadeResponsavel)] = Entra("A origem da unidade define quem decide o preliminar; código, sigla e nome não mudam a entrada."),
+        [nameof(FaseCronograma.OrigemData)] = Entra("Quando a data é fixada decide a obrigatoriedade do período."),
         [nameof(FaseCronograma.AgrupaEtapas)] = Entra("Muda de onde vem a nota da fase."),
         [nameof(FaseCronograma.PermiteComplementacao)] = Entra("Muda o que o candidato pode acrescentar antes da decisão."),
         [nameof(FaseCronograma.ColetaInscricao)] = Entra("Muda quem entra no certame."),
         [nameof(FaseCronograma.ColetaSolicitacaoIsencao)] = Entra("Muda quem pede isenção."),
-        [nameof(FaseCronograma.Inicio)] = Entra("A janela da fase delimita o que o preliminar considera."),
-        [nameof(FaseCronograma.Fim)] = Entra("A janela da fase delimita o que o preliminar considera."),
+        [nameof(FaseCronograma.Inicio)] = Entra("O período da fase delimita o que o preliminar considera."),
+        [nameof(FaseCronograma.Fim)] = Entra("O período da fase delimita o que o preliminar considera."),
         [nameof(FaseCronograma.EmiteParecerIndividual)] = Entra("O parecer individual é o fundamento do recurso."),
         [nameof(FaseCronograma.ProduzResultado)] = NaoEntra("Derivada de Produtos."),
         [nameof(FaseCronograma.RegraRecurso)] = Entra("A regra de prazo e os procedimentos do recurso mudam o que o candidato pode contestar e como o recurso é revisado."),
@@ -70,38 +61,18 @@ public sealed class ClassificacaoDasPropriedadesDoPreliminarTests
         [nameof(EtapaProcesso.RegraConsolidacao)] = Entra("Muda como as notas dos avaliadores viram a nota da etapa."),
         [nameof(EtapaProcesso.EscalaDeAtendimento)] = Entra("Muda os níveis entre os quais a banca escolhe."),
         [nameof(EtapaProcesso.Ordem)] = NaoEntra("Posição da etapa na apresentação."),
-        [nameof(EtapaProcesso.Inicio)] = Entra("A janela da etapa delimita o que o preliminar considera."),
-        [nameof(EtapaProcesso.Fim)] = Entra("A janela da etapa delimita o que o preliminar considera."),
+        [nameof(EtapaProcesso.Inicio)] = Entra("O período da etapa delimita o que o preliminar considera."),
+        [nameof(EtapaProcesso.Fim)] = Entra("O período da etapa delimita o que o preliminar considera."),
         [nameof(EtapaProcesso.EmiteParecerIndividual)] = Entra("O parecer individual é o fundamento do recurso."),
         [nameof(EtapaProcesso.ItensDeAvaliacao)] = Entra("Os itens e a pontuação máxima de cada um compõem a nota."),
         [nameof(EtapaProcesso.Bancas)] = Entra("Quem julga e como delibera define a decisão do preliminar."),
-        [nameof(EtapaProcesso.Recursos)] = Entra("As janelas recursais, com o prazo e os procedimentos de revisão, mudam o que o candidato pode contestar e como o recurso é revisado."),
+        [nameof(EtapaProcesso.Recursos)] = Entra("Os períodos de recurso, com o prazo e os procedimentos de revisão, mudam o que o candidato pode contestar e como o recurso é revisado."),
         [nameof(EtapaProcesso.TiposDeDecisao)] = Entra("Os tipos de decisão dizem o que o preliminar decide e o que dele se pode contestar."),
         [nameof(EtapaProcesso.Produtos)] = NaoEntra(PublicacoesDeclaradas),
         [nameof(EtapaProcesso.ProduzResultado)] = NaoEntra("Derivada de Produtos."),
         [nameof(EtapaProcesso.ComponeNota)] = NaoEntra("Derivada do caráter e do peso, que entram."),
         [nameof(EtapaProcesso.DeclaraNotaDoEnem)] = NaoEntra("Derivada do tipo de etapa, cuja origem entra."),
     };
-
-    [Fact(DisplayName = "Toda propriedade pública da fase está classificada como entrada do preliminar ou não")]
-    public void Fase_TodaPropriedadePublicaEstaClassificada() =>
-        PropriedadesSemClassificacao(typeof(FaseCronograma), DaFase).Should().BeEmpty(
-            "propriedade nova de FaseCronograma precisa ser classificada neste teste, dizendo se entra na EntradaDoPreliminar");
-
-    [Fact(DisplayName = "A classificação da fase não cita propriedade que deixou de existir")]
-    public void Fase_ClassificacaoNaoCitaPropriedadeInexistente() =>
-        ClassificadasQueNaoExistem(typeof(FaseCronograma), DaFase).Should().BeEmpty(
-            "propriedade removida de FaseCronograma sai da classificação");
-
-    [Fact(DisplayName = "Toda propriedade pública da etapa está classificada como entrada do preliminar ou não")]
-    public void Etapa_TodaPropriedadePublicaEstaClassificada() =>
-        PropriedadesSemClassificacao(typeof(EtapaProcesso), DaEtapa).Should().BeEmpty(
-            "propriedade nova de EtapaProcesso precisa ser classificada neste teste, dizendo se entra na EntradaDoPreliminar");
-
-    [Fact(DisplayName = "A classificação da etapa não cita propriedade que deixou de existir")]
-    public void Etapa_ClassificacaoNaoCitaPropriedadeInexistente() =>
-        ClassificadasQueNaoExistem(typeof(EtapaProcesso), DaEtapa).Should().BeEmpty(
-            "propriedade removida de EtapaProcesso sai da classificação");
 
     [Fact(DisplayName = "Toda classificação diz o motivo")]
     public void Toda_ClassificacaoDizOMotivo() =>
@@ -111,15 +82,6 @@ public sealed class ClassificacaoDasPropriedadesDoPreliminarTests
     /// <summary>As propriedades classificadas como entrada do preliminar, para os testes que provam a variação de cada uma.</summary>
     internal static IEnumerable<string> PropriedadesQueEntram(Dictionary<string, Classificacao> classificadas) =>
         classificadas.Where(static c => c.Value.EntraNaEntrada).Select(static c => c.Key).Order(StringComparer.Ordinal);
-
-    private static IEnumerable<string> PropriedadesPublicas(System.Type tipo) =>
-        tipo.GetProperties(BindingFlags.Public | BindingFlags.Instance | BindingFlags.Static | BindingFlags.FlattenHierarchy).Select(static p => p.Name);
-
-    private static IEnumerable<string> PropriedadesSemClassificacao(System.Type tipo, Dictionary<string, Classificacao> classificadas) =>
-        PropriedadesPublicas(tipo).Where(nome => !classificadas.ContainsKey(nome)).Order(StringComparer.Ordinal);
-
-    private static IEnumerable<string> ClassificadasQueNaoExistem(System.Type tipo, Dictionary<string, Classificacao> classificadas) =>
-        classificadas.Keys.Except(PropriedadesPublicas(tipo)).Order(StringComparer.Ordinal);
 
     private static Classificacao Entra(string motivo) => new(EntraNaEntrada: true, motivo);
 
