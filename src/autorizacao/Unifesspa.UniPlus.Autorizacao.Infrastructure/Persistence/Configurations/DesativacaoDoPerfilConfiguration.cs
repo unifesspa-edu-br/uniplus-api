@@ -38,14 +38,14 @@ internal sealed class DesativacaoDoPerfilConfiguration : IEntityTypeConfiguratio
         builder.Property(d => d.ReativadaPorContaId).HasMaxLength(IdentidadeMaxLength);
         builder.Property(d => d.ReativadaPorNome).HasMaxLength(NomeDeExibicao.MaxLength);
         builder.Property(d => d.MotivoDaReativacao).HasMaxLength(MotivoInformado.MaximoDeCaracteres);
-        builder.Property(d => d.OrdemNaTrilha).IsRequired();
+        builder.Property(d => d.OrdemNoHistorico).IsRequired();
 
         builder.Ignore(d => d.Aberta);
         builder.Ignore(d => d.DesativadaPor);
         builder.Ignore(d => d.OrdinalLocal);
 
         builder.HasIndex(d => d.PerfilId).IsUnique().HasFilter("reativada_em IS NULL").HasDatabaseName("ux_desativacoes_do_perfil_aberta");
-        builder.HasIndex(d => d.OrdemNaTrilha).IsUnique().HasDatabaseName("ux_desativacoes_do_perfil_ordem");
+        builder.HasIndex(d => d.OrdemNoHistorico).IsUnique().HasDatabaseName("ux_desativacoes_do_perfil_ordem");
     }
 
     // Ou nenhum campo da reativação existe, ou todos os obrigatórios existem; o nome de quem reativa é sempre opcional.

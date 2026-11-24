@@ -46,7 +46,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 schema: "selecao");
 
             migrationBuilder.CreateSequence(
-                name: "ordem_da_trilha_de_contencao",
+                name: "ordem_do_historico_de_acesso",
                 schema: "autorizacao");
 
             migrationBuilder.CreateTable(
@@ -434,7 +434,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     escopo = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: false, comment: "Pessoa a que se refere: CANDIDATO ou MEMBRO_GRUPO."),
                     classificacao_protecao = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: false, comment: "Classificação de proteção: PUBLICO, INTERNO, PESSOAL, IDENTIFICADOR ou SENSIVEL."),
                     finalidade_tratamento = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: false, comment: "Finalidade informada para o tratamento do dado."),
-                    hipotese_legal = table.Column<string>(type: "character varying(40)", maxLength: 40, nullable: false, comment: "Hipótese legal: CONSENTIMENTO, CUMPRIMENTO_OBRIGACAO_LEGAL, EXECUCAO_POLITICAS_PUBLICAS, ESTUDOS_POR_ORGAO_DE_PESQUISA, EXECUCAO_CONTRATO, EXERCICIO_REGULAR_DE_DIREITOS, PROTECAO_DA_VIDA, TUTELA_DA_SAUDE, INTERESSE_LEGITIMO, PROTECAO_DO_CREDITO ou PREVENCAO_A_FRAUDE."),
+                    hipotese_legal = table.Column<string>(type: "character varying(40)", maxLength: 40, nullable: false, comment: "Hipótese legal: CONSENTIMENTO, CUMPRIMENTO_OBRIGACAO_LEGAL, EXECUCAO_POLITICAS_PUBLICAS, ESTUDOS_POR_ORGAO_DE_PESQUISA, EXECUCAO_CONTRATO, EXERCICIO_REGULAR_DE_DIREITOS, PROTECAO_DA_VIDA, TUTELA_DA_SAUDE, INTERESSE_LEGITIMO, PROTECAO_DO_CREDITO, PREVENCAO_A_FRAUDE."),
                     semeado_pelo_sistema = table.Column<bool>(type: "boolean", nullable: false, comment: "Indica se o dado foi fornecido pelo sistema."),
                     protecao_situacao = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: false, comment: "Situação da análise: PENDENTE, SOLICITADA, APROVADA, AJUSTE_RECOMENDADO ou REPROVADA."),
                     protecao_ciclo = table.Column<int>(type: "integer", nullable: false, comment: "Número do ciclo de análise da proteção, iniciado em 1."),
@@ -1925,7 +1925,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     reativada_por_conta_id = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true),
                     reativada_por_nome = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true),
                     motivo_da_reativacao = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: true),
-                    ordem_na_trilha = table.Column<long>(type: "bigint", nullable: false),
+                    ordem_no_historico = table.Column<long>(type: "bigint", nullable: false),
                     created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false, comment: "Data e hora de criação do registro."),
                     updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true, comment: "Data e hora da última alteração, quando houver.")
                 },
@@ -1955,12 +1955,12 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     de = table.Column<string>(type: "character varying(40)", maxLength: 40, nullable: true),
                     para = table.Column<string>(type: "character varying(40)", maxLength: 40, nullable: true),
                     instante = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
-                    ordem_na_trilha = table.Column<long>(type: "bigint", nullable: false)
+                    ordem_no_historico = table.Column<long>(type: "bigint", nullable: false)
                 },
                 constraints: table =>
                 {
                     table.PrimaryKey("pk_divergencias_da_governanca", x => x.id);
-                    table.CheckConstraint("ck_divergencias_da_governanca_tipo", "tipo IN ('composicao_faltante', 'composicao_excedente', 'classificacao', 'escopo')");
+                    table.CheckConstraint("ck_divergencias_da_governanca_tipo", "tipo IN ('COMPOSICAO_FALTANTE', 'COMPOSICAO_EXCEDENTE', 'CLASSIFICACAO', 'ESCOPO')");
                     table.ForeignKey(
                         name: "fk_divergencias_da_governanca_implantacao",
                         column: x => x.implantacao_id,
@@ -2011,7 +2011,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     de_unidade_anterior = table.Column<bool>(type: "boolean", nullable: false),
                     de_unidade_novo = table.Column<bool>(type: "boolean", nullable: false),
                     instante = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
-                    ordem_na_trilha = table.Column<long>(type: "bigint", nullable: false)
+                    ordem_no_historico = table.Column<long>(type: "bigint", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -2047,7 +2047,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     papel_de_quem_suspendeu = table.Column<string>(type: "character varying(40)", maxLength: 40, nullable: false),
                     motivo = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: false),
                     retomada_em = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
-                    ordem_na_trilha = table.Column<long>(type: "bigint", nullable: false),
+                    ordem_no_historico = table.Column<long>(type: "bigint", nullable: false),
                     xmin = table.Column<uint>(type: "xid", rowVersion: true, nullable: false, comment: "Versão da linha mantida pelo PostgreSQL para controle de alterações concorrentes."),
                     created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false, comment: "Data e hora de criação do registro."),
                     updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true, comment: "Data e hora da última alteração, quando houver.")
@@ -2055,7 +2055,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 constraints: table =>
                 {
                     table.PrimaryKey("pk_suspensoes_do_perfil", x => x.id);
-                    table.CheckConstraint("ck_suspensoes_do_perfil_papel", "papel_de_quem_suspendeu IN ('gestao_de_acessos', 'protecao_de_dados')");
+                    table.CheckConstraint("ck_suspensoes_do_perfil_papel", "papel_de_quem_suspendeu IN ('GESTAO_DE_ACESSOS', 'PROTECAO_DE_DADOS')");
                     table.ForeignKey(
                         name: "fk_suspensoes_do_perfil_perfis_perfil_id",
                         column: x => x.perfil_id,
@@ -2106,10 +2106,10 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 {
                     table.PrimaryKey("pk_versoes_do_perfil", x => x.id);
                     table.UniqueConstraint("ak_versoes_do_perfil_perfil_versao", x => new { x.perfil_id, x.id });
-                    table.CheckConstraint("ck_versoes_do_perfil_cancelamento", "(situacao = 'cancelada') = (forma_do_cancelamento IS NOT NULL AND cancelada_em IS NOT NULL) AND (forma_do_cancelamento IS NULL) = (cancelada_em IS NULL)");
-                    table.CheckConstraint("ck_versoes_do_perfil_expiracao", "(situacao = 'expirada') = (expirada_em IS NOT NULL)");
-                    table.CheckConstraint("ck_versoes_do_perfil_motivo_do_cancelamento", "forma_do_cancelamento IS DISTINCT FROM 'pessoa' OR motivo_do_cancelamento IS NOT NULL");
-                    table.CheckConstraint("ck_versoes_do_perfil_origem", "(origem = 'remocao' AND motivo_da_remocao IS NOT NULL AND versao_do_documento IS NOT NULL AND expira_em IS NULL) OR (origem = 'proposta' AND expira_em IS NOT NULL AND motivo_da_remocao IS NULL AND versao_do_documento IS NULL)");
+                    table.CheckConstraint("ck_versoes_do_perfil_cancelamento", "(situacao = 'CANCELADA') = (forma_do_cancelamento IS NOT NULL AND cancelada_em IS NOT NULL) AND (forma_do_cancelamento IS NULL) = (cancelada_em IS NULL)");
+                    table.CheckConstraint("ck_versoes_do_perfil_expiracao", "(situacao = 'EXPIRADA') = (expirada_em IS NOT NULL)");
+                    table.CheckConstraint("ck_versoes_do_perfil_motivo_do_cancelamento", "forma_do_cancelamento IS DISTINCT FROM 'PESSOA' OR motivo_do_cancelamento IS NOT NULL");
+                    table.CheckConstraint("ck_versoes_do_perfil_origem", "(origem = 'REMOCAO' AND motivo_da_remocao IS NOT NULL AND versao_do_documento IS NOT NULL AND expira_em IS NULL) OR (origem = 'PROPOSTA' AND expira_em IS NOT NULL AND motivo_da_remocao IS NULL AND versao_do_documento IS NULL)");
                     table.ForeignKey(
                         name: "fk_versoes_do_perfil_perfis_perfil_id",
                         column: x => x.perfil_id,
@@ -3220,12 +3220,12 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     motivo = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: false),
                     perfil_protegido_na_decisao = table.Column<bool>(type: "boolean", nullable: false),
                     instante = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
-                    ordem_na_trilha = table.Column<long>(type: "bigint", nullable: false)
+                    ordem_no_historico = table.Column<long>(type: "bigint", nullable: false)
                 },
                 constraints: table =>
                 {
                     table.PrimaryKey("pk_decisoes_da_retomada", x => x.id);
-                    table.CheckConstraint("ck_decisoes_da_retomada_etapa", "etapa IN ('gestao_de_acessos', 'protecao_de_dados')");
+                    table.CheckConstraint("ck_decisoes_da_retomada_etapa", "etapa IN ('GESTAO_DE_ACESSOS', 'PROTECAO_DE_DADOS')");
                     table.ForeignKey(
                         name: "fk_decisoes_da_retomada_suspensoes_do_perfil_suspensao_id",
                         column: x => x.suspensao_id,
@@ -3258,9 +3258,9 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 constraints: table =>
                 {
                     table.PrimaryKey("pk_decisoes_da_versao", x => x.id);
-                    table.CheckConstraint("ck_decisoes_da_versao_etapa", "etapa IN ('gestao_de_acessos', 'protecao_de_dados')");
-                    table.CheckConstraint("ck_decisoes_da_versao_motivo_na_recusa", "(resultado = 'recusado') = (motivo IS NOT NULL)");
-                    table.CheckConstraint("ck_decisoes_da_versao_resultado", "resultado IN ('aprovado', 'recusado')");
+                    table.CheckConstraint("ck_decisoes_da_versao_etapa", "etapa IN ('GESTAO_DE_ACESSOS', 'PROTECAO_DE_DADOS')");
+                    table.CheckConstraint("ck_decisoes_da_versao_motivo_na_recusa", "(resultado = 'RECUSADO') = (motivo IS NOT NULL)");
+                    table.CheckConstraint("ck_decisoes_da_versao_resultado", "resultado IN ('APROVADO', 'RECUSADO')");
                     table.ForeignKey(
                         name: "fk_decisoes_da_versao_versoes_do_perfil_versao_id",
                         column: x => x.versao_id,
@@ -3378,8 +3378,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     table.PrimaryKey("pk_revisoes_das_concessoes", x => x.id);
                     table.UniqueConstraint("ak_revisao_das_concessoes_do_perfil_id_perfil_id", x => new { x.id, x.perfil_id });
                     table.CheckConstraint("ck_revisoes_das_concessoes_encerramento", "(encerrada_em IS NULL) = (forma_do_encerramento IS NULL)");
-                    table.CheckConstraint("ck_revisoes_das_concessoes_forma", "forma_do_encerramento IS NULL OR forma_do_encerramento IN ('concluida', 'prazo', 'manual')");
-                    table.CheckConstraint("ck_revisoes_das_concessoes_manual", "COALESCE(forma_do_encerramento = 'manual', false) = (motivo_do_encerramento IS NOT NULL AND encerrada_por_conta_id IS NOT NULL)");
+                    table.CheckConstraint("ck_revisoes_das_concessoes_forma", "forma_do_encerramento IS NULL OR forma_do_encerramento IN ('CONCLUIDA', 'PRAZO', 'MANUAL')");
+                    table.CheckConstraint("ck_revisoes_das_concessoes_manual", "COALESCE(forma_do_encerramento = 'MANUAL', false) = (motivo_do_encerramento IS NOT NULL AND encerrada_por_conta_id IS NOT NULL)");
                     table.CheckConstraint("ck_revisoes_das_concessoes_termino", "termina_em = aberta_em + interval '72 hours'");
                     table.ForeignKey(
                         name: "fk_revisoes_das_concessoes_perfis_perfil_id",
@@ -4216,7 +4216,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 comment: "Uma importação do retorno do INEP para um processo, uma etapa e uma edição do ENEM. Os registros não são alterados ou excluídos; vale por inteiro o lote mais recente para esses dados. Do arquivo, guarda-se apenas o resumo do conteúdo.");
 
             migrationBuilder.CreateTable(
-                name: "eventos_da_contencao",
+                name: "eventos_de_bloqueio_do_perfil",
                 schema: "autorizacao",
                 columns: table => new
                 {
@@ -4238,53 +4238,53 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     motivo = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: true),
                     versao_vigente_id = table.Column<Guid>(type: "uuid", nullable: true),
                     perfil_protegido = table.Column<bool>(type: "boolean", nullable: false),
-                    ordem_na_trilha = table.Column<long>(type: "bigint", nullable: false)
+                    ordem_no_historico = table.Column<long>(type: "bigint", nullable: false)
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("pk_eventos_da_contencao", x => x.id);
-                    table.CheckConstraint("ck_eventos_da_contencao_desativacao", "tipo <> 'desativacao' OR (ator = 'humano' AND ator_emissor IS NOT NULL AND ator_conta_id IS NOT NULL AND motivo IS NOT NULL AND desativacao_id IS NOT NULL AND suspensao_id IS NULL AND papel IS NULL AND origem IS NULL AND decisao_id IS NULL AND versao_que_entrou_id IS NULL AND permissao_codigo IS NULL)");
-                    table.CheckConstraint("ck_eventos_da_contencao_reativacao", "tipo <> 'reativacao' OR (ator = 'humano' AND ator_emissor IS NOT NULL AND ator_conta_id IS NOT NULL AND motivo IS NOT NULL AND desativacao_id IS NOT NULL AND suspensao_id IS NULL AND papel IS NULL AND origem IS NULL AND decisao_id IS NULL AND versao_que_entrou_id IS NULL AND permissao_codigo IS NULL)");
-                    table.CheckConstraint("ck_eventos_da_contencao_retomada", "tipo <> 'retomada' OR (ator = 'sistema' AND suspensao_id IS NOT NULL AND desativacao_id IS NULL AND ator_emissor IS NULL AND ator_conta_id IS NULL AND ator_nome IS NULL AND papel IS NULL AND motivo IS NULL AND origem IS NOT NULL AND ((origem = 'decisao_da_etapa' AND decisao_id IS NOT NULL AND versao_que_entrou_id IS NULL AND permissao_codigo IS NULL) OR (origem = 'troca_de_vigencia' AND versao_que_entrou_id IS NOT NULL AND decisao_id IS NULL AND permissao_codigo IS NULL) OR (origem = 'reclassificacao' AND permissao_codigo IS NOT NULL AND decisao_id IS NULL AND versao_que_entrou_id IS NULL)))");
-                    table.CheckConstraint("ck_eventos_da_contencao_suspensao", "tipo <> 'suspensao' OR (ator = 'humano' AND ator_emissor IS NOT NULL AND ator_conta_id IS NOT NULL AND motivo IS NOT NULL AND suspensao_id IS NOT NULL AND desativacao_id IS NULL AND papel IS NOT NULL AND origem IS NULL AND decisao_id IS NULL AND versao_que_entrou_id IS NULL AND permissao_codigo IS NULL)");
-                    table.CheckConstraint("ck_eventos_da_contencao_tipo", "tipo IN ('suspensao', 'retomada', 'desativacao', 'reativacao')");
+                    table.PrimaryKey("pk_eventos_de_bloqueio_do_perfil", x => x.id);
+                    table.CheckConstraint("ck_eventos_de_bloqueio_do_perfil_desativacao", "tipo <> 'DESATIVACAO' OR (ator = 'HUMANO' AND ator_emissor IS NOT NULL AND ator_conta_id IS NOT NULL AND motivo IS NOT NULL AND desativacao_id IS NOT NULL AND suspensao_id IS NULL AND papel IS NULL AND origem IS NULL AND decisao_id IS NULL AND versao_que_entrou_id IS NULL AND permissao_codigo IS NULL)");
+                    table.CheckConstraint("ck_eventos_de_bloqueio_do_perfil_reativacao", "tipo <> 'REATIVACAO' OR (ator = 'HUMANO' AND ator_emissor IS NOT NULL AND ator_conta_id IS NOT NULL AND motivo IS NOT NULL AND desativacao_id IS NOT NULL AND suspensao_id IS NULL AND papel IS NULL AND origem IS NULL AND decisao_id IS NULL AND versao_que_entrou_id IS NULL AND permissao_codigo IS NULL)");
+                    table.CheckConstraint("ck_eventos_de_bloqueio_do_perfil_retomada", "tipo <> 'RETOMADA' OR (ator = 'SISTEMA' AND suspensao_id IS NOT NULL AND desativacao_id IS NULL AND ator_emissor IS NULL AND ator_conta_id IS NULL AND ator_nome IS NULL AND papel IS NULL AND motivo IS NULL AND origem IS NOT NULL AND ((origem = 'DECISAO_DA_ETAPA' AND decisao_id IS NOT NULL AND versao_que_entrou_id IS NULL AND permissao_codigo IS NULL) OR (origem = 'TROCA_DE_VIGENCIA' AND versao_que_entrou_id IS NOT NULL AND decisao_id IS NULL AND permissao_codigo IS NULL) OR (origem = 'RECLASSIFICACAO' AND permissao_codigo IS NOT NULL AND decisao_id IS NULL AND versao_que_entrou_id IS NULL)))");
+                    table.CheckConstraint("ck_eventos_de_bloqueio_do_perfil_suspensao", "tipo <> 'SUSPENSAO' OR (ator = 'HUMANO' AND ator_emissor IS NOT NULL AND ator_conta_id IS NOT NULL AND motivo IS NOT NULL AND suspensao_id IS NOT NULL AND desativacao_id IS NULL AND papel IS NOT NULL AND origem IS NULL AND decisao_id IS NULL AND versao_que_entrou_id IS NULL AND permissao_codigo IS NULL)");
+                    table.CheckConstraint("ck_eventos_de_bloqueio_do_perfil_tipo", "tipo IN ('SUSPENSAO', 'RETOMADA', 'DESATIVACAO', 'REATIVACAO')");
                     table.ForeignKey(
-                        name: "fk_eventos_da_contencao_decisoes_da_retomada_decisao_id",
+                        name: "fk_eventos_de_bloqueio_decisao_da_retomada",
                         column: x => x.decisao_id,
                         principalSchema: "autorizacao",
                         principalTable: "decisoes_da_retomada",
                         principalColumn: "id",
                         onDelete: ReferentialAction.Restrict);
                     table.ForeignKey(
-                        name: "fk_eventos_da_contencao_desativacoes_do_perfil_desativacao_id",
+                        name: "fk_eventos_de_bloqueio_desativacao",
                         column: x => x.desativacao_id,
                         principalSchema: "autorizacao",
                         principalTable: "desativacoes_do_perfil",
                         principalColumn: "id",
                         onDelete: ReferentialAction.Restrict);
                     table.ForeignKey(
-                        name: "fk_eventos_da_contencao_perfil_perfil_id",
+                        name: "fk_eventos_de_bloqueio_do_perfil_perfil_perfil_id",
                         column: x => x.perfil_id,
                         principalSchema: "autorizacao",
                         principalTable: "perfis",
                         principalColumn: "id",
                         onDelete: ReferentialAction.Restrict);
                     table.ForeignKey(
-                        name: "fk_eventos_da_contencao_suspensao_do_perfil_suspensao_id",
+                        name: "fk_eventos_de_bloqueio_suspensao",
                         column: x => x.suspensao_id,
                         principalSchema: "autorizacao",
                         principalTable: "suspensoes_do_perfil",
                         principalColumn: "id",
                         onDelete: ReferentialAction.Restrict);
                     table.ForeignKey(
-                        name: "fk_eventos_da_contencao_versao_do_perfil_versao_que_entrou_id",
+                        name: "fk_eventos_de_bloqueio_versao_que_entrou",
                         column: x => x.versao_que_entrou_id,
                         principalSchema: "autorizacao",
                         principalTable: "versoes_do_perfil",
                         principalColumn: "id",
                         onDelete: ReferentialAction.Restrict);
                     table.ForeignKey(
-                        name: "fk_eventos_da_contencao_versao_do_perfil_versao_vigente_id",
+                        name: "fk_eventos_de_bloqueio_versao_vigente",
                         column: x => x.versao_vigente_id,
                         principalSchema: "autorizacao",
                         principalTable: "versoes_do_perfil",
@@ -4351,7 +4351,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 {
                     table.PrimaryKey("pk_concessoes", x => x.id);
                     table.UniqueConstraint("ak_concessao_perfil_id_id", x => new { x.perfil_id, x.id });
-                    table.CheckConstraint("ck_concessoes_escopo_unidade", "(escopo_tipo = 'unidade') = (unidade_id IS NOT NULL)");
+                    table.CheckConstraint("ck_concessoes_escopo_unidade", "(escopo_tipo = 'UNIDADE') = (unidade_id IS NOT NULL)");
                     table.CheckConstraint("ck_concessoes_revogacao_completa", "(revogada_em IS NULL AND revogada_por_emissor IS NULL AND revogada_por_conta_id IS NULL AND motivo_revogacao IS NULL AND revogada_pela_revisao_id IS NULL) OR (revogada_em IS NOT NULL AND revogada_por_emissor IS NOT NULL AND revogada_por_conta_id IS NOT NULL AND motivo_revogacao IS NOT NULL AND revogada_pela_revisao_id IS NULL) OR (revogada_em IS NOT NULL AND revogada_por_emissor IS NULL AND revogada_por_conta_id IS NULL AND motivo_revogacao IS NOT NULL AND revogada_pela_revisao_id IS NOT NULL)");
                     table.CheckConstraint("ck_concessoes_validade_posterior", "valida_ate IS NULL OR valida_ate > concedida_em");
                     table.ForeignKey(
@@ -4398,7 +4398,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 {
                     table.PrimaryKey("pk_envios_de_decisoes", x => x.id);
                     table.UniqueConstraint("ak_envio_de_decisoes_da_revisao_revisao_id_id_etapa", x => new { x.revisao_id, x.id, x.etapa });
-                    table.CheckConstraint("ck_envios_de_decisoes_etapa", "etapa IN ('gestao_de_acessos', 'protecao_de_dados')");
+                    table.CheckConstraint("ck_envios_de_decisoes_etapa", "etapa IN ('GESTAO_DE_ACESSOS', 'PROTECAO_DE_DADOS')");
                     table.ForeignKey(
                         name: "fk_envios_de_decisoes_revisao_das_concessoes",
                         columns: x => new { x.revisao_id, x.perfil_id },
@@ -4733,13 +4733,13 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     de_unidade = table.Column<bool>(type: "boolean", nullable: true),
                     origem = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: false),
                     referencia_id = table.Column<Guid>(type: "uuid", nullable: false),
-                    ordem_na_trilha = table.Column<long>(type: "bigint", nullable: false)
+                    ordem_no_historico = table.Column<long>(type: "bigint", nullable: false)
                 },
                 constraints: table =>
                 {
                     table.PrimaryKey("pk_bases_da_permissao_concedida", x => x.id);
-                    table.CheckConstraint("ck_bases_da_permissao_origem", "origem IN ('migracao', 'saida', 'liberacao', 'conciliacao')");
-                    table.CheckConstraint("ck_bases_da_permissao_saida", "(origem = 'saida') = (classificacao IS NULL AND de_unidade IS NULL)");
+                    table.CheckConstraint("ck_bases_da_permissao_origem", "origem IN ('MIGRACAO', 'SAIDA', 'LIBERACAO', 'CONCILIACAO')");
+                    table.CheckConstraint("ck_bases_da_permissao_saida", "(origem = 'SAIDA') = (classificacao IS NULL AND de_unidade IS NULL)");
                     table.ForeignKey(
                         name: "fk_bases_da_permissao_concedida_concessao",
                         columns: x => new { x.perfil_id, x.concessao_id },
@@ -4805,13 +4805,13 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     decisor_tem_concessao = table.Column<bool>(type: "boolean", nullable: false),
                     lote_id = table.Column<Guid>(type: "uuid", nullable: false),
                     instante = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
-                    ordem_na_trilha = table.Column<long>(type: "bigint", nullable: false)
+                    ordem_no_historico = table.Column<long>(type: "bigint", nullable: false)
                 },
                 constraints: table =>
                 {
                     table.PrimaryKey("pk_liberacoes_da_reclassificacao", x => x.id);
-                    table.CheckConstraint("ck_liberacoes_da_reclassificacao_etapa", "etapa IN ('gestao_de_acessos', 'protecao_de_dados')");
-                    table.CheckConstraint("ck_liberacoes_da_reclassificacao_motivo", "(resultado = 'mantida') = (motivo IS NOT NULL) AND resultado IN ('liberada', 'mantida')");
+                    table.CheckConstraint("ck_liberacoes_da_reclassificacao_etapa", "etapa IN ('GESTAO_DE_ACESSOS', 'PROTECAO_DE_DADOS')");
+                    table.CheckConstraint("ck_liberacoes_da_reclassificacao_motivo", "(resultado = 'MANTIDA') = (motivo IS NOT NULL) AND resultado IN ('LIBERADA', 'MANTIDA')");
                     table.ForeignKey(
                         name: "fk_liberacoes_da_reclassificacao_concessao",
                         columns: x => new { x.perfil_id, x.concessao_id },
@@ -4847,7 +4847,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 constraints: table =>
                 {
                     table.PrimaryKey("pk_migracoes_da_concessao", x => x.id);
-                    table.CheckConstraint("ck_migracoes_da_concessao_situacao", "situacao IN ('retida', 'aguardando_protecao_de_dados', 'migrada', 'recusada', 'nao_migrada', 'fora_da_lista')");
+                    table.CheckConstraint("ck_migracoes_da_concessao_situacao", "situacao IN ('RETIDA', 'AGUARDANDO_PROTECAO_DE_DADOS', 'MIGRADA', 'RECUSADA', 'NAO_MIGRADA', 'FORA_DA_LISTA')");
                     table.ForeignKey(
                         name: "fk_migracoes_da_concessao_concessoes_perfil_id_concessao_id",
                         columns: x => new { x.perfil_id, x.concessao_id },
@@ -4891,10 +4891,10 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 constraints: table =>
                 {
                     table.PrimaryKey("pk_providencias", x => x.id);
-                    table.CheckConstraint("ck_providencias_desfecho_completo", "(estado = 'aberta' AND desfecho_em IS NULL AND desfecho_por_emissor IS NULL AND desfecho_por_conta_id IS NULL AND desfecho_por_nome IS NULL AND motivo_do_desfecho IS NULL) OR (estado <> 'aberta' AND desfecho_em IS NOT NULL AND desfecho_por_emissor IS NOT NULL AND desfecho_por_conta_id IS NOT NULL AND motivo_do_desfecho IS NOT NULL)");
-                    table.CheckConstraint("ck_providencias_estado", "estado IN ('aberta', 'respondida', 'atendida')");
+                    table.CheckConstraint("ck_providencias_desfecho_completo", "(estado = 'ABERTA' AND desfecho_em IS NULL AND desfecho_por_emissor IS NULL AND desfecho_por_conta_id IS NULL AND desfecho_por_nome IS NULL AND motivo_do_desfecho IS NULL) OR (estado <> 'ABERTA' AND desfecho_em IS NOT NULL AND desfecho_por_emissor IS NOT NULL AND desfecho_por_conta_id IS NOT NULL AND motivo_do_desfecho IS NOT NULL)");
+                    table.CheckConstraint("ck_providencias_estado", "estado IN ('ABERTA', 'RESPONDIDA', 'ATENDIDA')");
                     table.CheckConstraint("ck_providencias_fundamento", "char_length(fundamento) BETWEEN 10 AND 2000");
-                    table.CheckConstraint("ck_providencias_tipo", "tipo IN ('retirada', 'revisao')");
+                    table.CheckConstraint("ck_providencias_tipo", "tipo IN ('RETIRADA', 'REVISAO')");
                     table.ForeignKey(
                         name: "fk_providencias_concessoes_concessao_id",
                         column: x => x.concessao_id,
@@ -4935,9 +4935,9 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 constraints: table =>
                 {
                     table.PrimaryKey("pk_decisoes_da_migracao", x => x.id);
-                    table.CheckConstraint("ck_decisoes_da_migracao_envio", "(envio_id IS NULL) = (envio_etapa IS NULL) AND (envio_etapa IS NULL OR envio_etapa IN ('gestao_de_acessos', 'protecao_de_dados'))");
-                    table.CheckConstraint("ck_decisoes_da_migracao_envio_de_origem", "(envio_de_origem_id IS NULL) = (envio_de_origem_etapa IS NULL) AND (envio_de_origem_etapa IS NULL OR envio_de_origem_etapa = 'gestao_de_acessos')");
-                    table.CheckConstraint("ck_decisoes_da_migracao_ramo", "(ator = 'humano' AND etapa IN ('gestao_de_acessos', 'protecao_de_dados') AND decisao IN ('migrar', 'recusar') AND decisor_emissor IS NOT NULL AND decisor_conta_id IS NOT NULL AND decisor_tem_concessao IS NOT NULL AND envio_de_origem_id IS NOT NULL AND (envio_etapa IS NULL OR envio_etapa = etapa) AND (etapa <> 'protecao_de_dados' OR envio_id IS NOT NULL) AND (etapa <> 'gestao_de_acessos' OR envio_id IS NULL OR envio_id = envio_de_origem_id)) OR (ator = 'sistema' AND decisor_emissor IS NULL AND decisor_conta_id IS NULL AND decisor_nome IS NULL AND decisor_tem_concessao IS NULL AND envio_id IS NULL AND ((etapa = 'gestao_de_acessos' AND decisao = 'reter' AND envio_de_origem_id IS NOT NULL) OR (etapa = 'sistema' AND decisao IN ('nao_migrada', 'fora_da_lista'))))");
+                    table.CheckConstraint("ck_decisoes_da_migracao_envio", "(envio_id IS NULL) = (envio_etapa IS NULL) AND (envio_etapa IS NULL OR envio_etapa IN ('GESTAO_DE_ACESSOS', 'PROTECAO_DE_DADOS'))");
+                    table.CheckConstraint("ck_decisoes_da_migracao_envio_de_origem", "(envio_de_origem_id IS NULL) = (envio_de_origem_etapa IS NULL) AND (envio_de_origem_etapa IS NULL OR envio_de_origem_etapa = 'GESTAO_DE_ACESSOS')");
+                    table.CheckConstraint("ck_decisoes_da_migracao_ramo", "(ator = 'HUMANO' AND etapa IN ('GESTAO_DE_ACESSOS', 'PROTECAO_DE_DADOS') AND decisao IN ('MIGRAR', 'RECUSAR') AND decisor_emissor IS NOT NULL AND decisor_conta_id IS NOT NULL AND decisor_tem_concessao IS NOT NULL AND envio_de_origem_id IS NOT NULL AND (envio_etapa IS NULL OR envio_etapa = etapa) AND (etapa <> 'PROTECAO_DE_DADOS' OR envio_id IS NOT NULL) AND (etapa <> 'GESTAO_DE_ACESSOS' OR envio_id IS NULL OR envio_id = envio_de_origem_id)) OR (ator = 'SISTEMA' AND decisor_emissor IS NULL AND decisor_conta_id IS NULL AND decisor_nome IS NULL AND decisor_tem_concessao IS NULL AND envio_id IS NULL AND ((etapa = 'GESTAO_DE_ACESSOS' AND decisao = 'RETER' AND envio_de_origem_id IS NOT NULL) OR (etapa = 'SISTEMA' AND decisao IN ('NAO_MIGRADA', 'FORA_DA_LISTA'))))");
                     table.ForeignKey(
                         name: "fk_decisoes_da_migracao_concessoes_perfil_id_concessao_id",
                         columns: x => new { x.perfil_id, x.concessao_id },
@@ -5104,7 +5104,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 constraints: table =>
                 {
                     table.PrimaryKey("pk_decisoes_do_pedido", x => x.id);
-                    table.CheckConstraint("ck_decisoes_do_pedido_motivo_na_recusa", "resultado <> 'recusado' OR motivo IS NOT NULL");
+                    table.CheckConstraint("ck_decisoes_do_pedido_motivo_na_recusa", "resultado <> 'RECUSADO' OR motivo IS NOT NULL");
                 });
 
             migrationBuilder.CreateTable(
@@ -5169,9 +5169,9 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 {
                     table.PrimaryKey("pk_pedidos_de_concessao", x => x.id);
                     table.CheckConstraint("ck_pedidos_beneficiario_completo", "(beneficiario_emissor IS NULL) = (beneficiario_conta_id IS NULL)");
-                    table.CheckConstraint("ck_pedidos_concessao_so_aprovado", "concessao_id IS NULL OR situacao = 'aprovado'");
-                    table.CheckConstraint("ck_pedidos_decisao_com_beneficiario", "situacao IN ('aguardando_documento', 'aguardando_beneficiario', 'cancelado', 'devolvido') OR beneficiario_conta_id IS NOT NULL");
-                    table.CheckConstraint("ck_pedidos_encerramento", "(situacao IN ('aprovado', 'recusado', 'cancelado', 'devolvido')) = (encerrado_em IS NOT NULL)");
+                    table.CheckConstraint("ck_pedidos_concessao_so_aprovado", "concessao_id IS NULL OR situacao = 'APROVADO'");
+                    table.CheckConstraint("ck_pedidos_decisao_com_beneficiario", "situacao IN ('AGUARDANDO_DOCUMENTO', 'AGUARDANDO_BENEFICIARIO', 'CANCELADO', 'DEVOLVIDO') OR beneficiario_conta_id IS NOT NULL");
+                    table.CheckConstraint("ck_pedidos_encerramento", "(situacao IN ('APROVADO', 'RECUSADO', 'CANCELADO', 'DEVOLVIDO')) = (encerrado_em IS NOT NULL)");
                     table.CheckConstraint("ck_pedidos_termo_completo", "(termo_versao_id IS NULL) = (termo_numero IS NULL) AND (termo_versao_id IS NULL) = (termo_resumo IS NULL)");
                     table.ForeignKey(
                         name: "fk_pedidos_de_concessao_perfil_perfil_id",
@@ -5277,7 +5277,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 constraints: table =>
                 {
                     table.PrimaryKey("pk_termos_na_instalacao", x => x.id);
-                    table.CheckConstraint("ck_termos_na_instalacao_versao", "(situacao = 'sem_termo_publicado') = (versao_do_termo_id IS NULL) AND (versao_do_termo_id IS NULL) = (numero IS NULL)");
+                    table.CheckConstraint("ck_termos_na_instalacao_versao", "(situacao = 'SEM_TERMO_PUBLICADO') = (versao_do_termo_id IS NULL) AND (versao_do_termo_id IS NULL) = (numero IS NULL)");
                     table.ForeignKey(
                         name: "fk_termos_na_instalacao_instalacoes_instalacao_id",
                         column: x => x.instalacao_id,
@@ -5405,9 +5405,9 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 columns: new[] { "id", "ativo", "created_at", "descricao", "governanca", "nome", "updated_at" },
                 values: new object[,]
                 {
-                    { new Guid("019a0000-0000-7000-8000-000000000001"), true, new DateTimeOffset(new DateTime(2026, 10, 28, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), "Opera as concessões de acesso, mantém os perfis de acesso e publica o termo de responsabilidade.", "gestor-de-acessos", "Gestor de acessos", null },
-                    { new Guid("019a0000-0000-7000-8000-000000000002"), true, new DateTimeOffset(new DateTime(2026, 10, 28, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), "Decide, em nome da Unifesspa, a segunda etapa dos pedidos com dado pessoal, as versões protegidas de perfil, a revisão das concessões e a proteção do catálogo, e conduz a revisão periódica dos acessos.", "representante-do-controlador", "Representante do controlador", null },
-                    { new Guid("019a0000-0000-7000-8000-000000000003"), true, new DateTimeOffset(new DateTime(2026, 10, 28, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), "Acompanha o tratamento de dados pessoais na gestão de acessos: consulta pedidos, concessões, revisões, versões de perfil, revisão das concessões e catálogo, registra manifestação técnica na proteção do catálogo e solicita providências sobre concessões, sem aprovar, recusar nem revogar.", "encarregado-de-dados", "Encarregado de dados", null }
+                    { new Guid("019a0000-0000-7000-8000-000000000001"), true, new DateTimeOffset(new DateTime(2026, 10, 28, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), "Opera as concessões de acesso, mantém os perfis de acesso e publica o termo de responsabilidade.", "GESTOR_DE_ACESSOS", "Gestor de acessos", null },
+                    { new Guid("019a0000-0000-7000-8000-000000000002"), true, new DateTimeOffset(new DateTime(2026, 10, 28, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), "Decide, em nome da Unifesspa, a segunda etapa dos pedidos com dado pessoal, as versões protegidas de perfil, a revisão das concessões e a proteção do catálogo, e conduz a revisão periódica dos acessos.", "REPRESENTANTE_DO_CONTROLADOR", "Representante do controlador", null },
+                    { new Guid("019a0000-0000-7000-8000-000000000003"), true, new DateTimeOffset(new DateTime(2026, 10, 28, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), "Acompanha o tratamento de dados pessoais na gestão de acessos: consulta pedidos, concessões, revisões, versões de perfil, revisão das concessões e catálogo, registra manifestação técnica na proteção do catálogo e solicita providências sobre concessões, sem aprovar, recusar nem revogar.", "GESTOR_DE_PROTECAO_DE_DADOS", "Gestor de proteção de dados", null }
                 });
 
             migrationBuilder.InsertData(
@@ -5991,14 +5991,14 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 name: "ix_bases_da_permissao_concessao_codigo",
                 schema: "autorizacao",
                 table: "bases_da_permissao_concedida",
-                columns: new[] { "concessao_id", "codigo", "ordem_na_trilha" },
+                columns: new[] { "concessao_id", "codigo", "ordem_no_historico" },
                 descending: new[] { false, false, true });
 
             migrationBuilder.CreateIndex(
                 name: "ux_bases_da_permissao_ordem",
                 schema: "autorizacao",
                 table: "bases_da_permissao_concedida",
-                column: "ordem_na_trilha",
+                column: "ordem_no_historico",
                 unique: true);
 
             migrationBuilder.CreateIndex(
@@ -6364,7 +6364,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 name: "ux_decisoes_da_retomada_ordem",
                 schema: "autorizacao",
                 table: "decisoes_da_retomada",
-                column: "ordem_na_trilha",
+                column: "ordem_no_historico",
                 unique: true);
 
             migrationBuilder.CreateIndex(
@@ -6406,7 +6406,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 name: "ux_desativacoes_do_perfil_ordem",
                 schema: "autorizacao",
                 table: "desativacoes_do_perfil",
-                column: "ordem_na_trilha",
+                column: "ordem_no_historico",
                 unique: true);
 
             migrationBuilder.CreateIndex(
@@ -6445,7 +6445,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 name: "ux_divergencias_da_governanca_ordem",
                 schema: "autorizacao",
                 table: "divergencias_da_governanca",
-                column: "ordem_na_trilha",
+                column: "ordem_no_historico",
                 unique: true);
 
             migrationBuilder.CreateIndex(
@@ -6467,7 +6467,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 table: "documentos_da_versao",
                 column: "versao_id",
                 unique: true,
-                filter: "situacao <> 'recusado'");
+                filter: "situacao <> 'RECUSADO'");
 
             migrationBuilder.CreateIndex(
                 name: "ix_documentos_exigidos_exigido_na_etapa_id",
@@ -6526,7 +6526,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 table: "envios_de_decisoes",
                 column: "revisao_id",
                 unique: true,
-                filter: "etapa = 'gestao_de_acessos'");
+                filter: "etapa = 'GESTAO_DE_ACESSOS'");
 
             migrationBuilder.CreateIndex(
                 name: "ux_etapas_formulario_formulario_codigo",
@@ -6556,46 +6556,46 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 unique: true);
 
             migrationBuilder.CreateIndex(
-                name: "ix_eventos_da_contencao_decisao_id",
+                name: "ix_eventos_de_bloqueio_do_perfil_decisao_id",
                 schema: "autorizacao",
-                table: "eventos_da_contencao",
+                table: "eventos_de_bloqueio_do_perfil",
                 column: "decisao_id");
 
             migrationBuilder.CreateIndex(
-                name: "ix_eventos_da_contencao_desativacao_id",
+                name: "ix_eventos_de_bloqueio_do_perfil_desativacao_id",
                 schema: "autorizacao",
-                table: "eventos_da_contencao",
+                table: "eventos_de_bloqueio_do_perfil",
                 column: "desativacao_id");
 
             migrationBuilder.CreateIndex(
-                name: "ix_eventos_da_contencao_perfil",
+                name: "ix_eventos_de_bloqueio_do_perfil_perfil",
                 schema: "autorizacao",
-                table: "eventos_da_contencao",
+                table: "eventos_de_bloqueio_do_perfil",
                 columns: new[] { "perfil_id", "instante" });
 
             migrationBuilder.CreateIndex(
-                name: "ix_eventos_da_contencao_suspensao_id",
+                name: "ix_eventos_de_bloqueio_do_perfil_suspensao_id",
                 schema: "autorizacao",
-                table: "eventos_da_contencao",
+                table: "eventos_de_bloqueio_do_perfil",
                 column: "suspensao_id");
 
             migrationBuilder.CreateIndex(
-                name: "ix_eventos_da_contencao_versao_que_entrou_id",
+                name: "ix_eventos_de_bloqueio_do_perfil_versao_que_entrou_id",
                 schema: "autorizacao",
-                table: "eventos_da_contencao",
+                table: "eventos_de_bloqueio_do_perfil",
                 column: "versao_que_entrou_id");
 
             migrationBuilder.CreateIndex(
-                name: "ix_eventos_da_contencao_versao_vigente_id",
+                name: "ix_eventos_de_bloqueio_do_perfil_versao_vigente_id",
                 schema: "autorizacao",
-                table: "eventos_da_contencao",
+                table: "eventos_de_bloqueio_do_perfil",
                 column: "versao_vigente_id");
 
             migrationBuilder.CreateIndex(
-                name: "ux_eventos_da_contencao_ordem",
+                name: "ux_eventos_de_bloqueio_do_perfil_ordem",
                 schema: "autorizacao",
-                table: "eventos_da_contencao",
-                column: "ordem_na_trilha",
+                table: "eventos_de_bloqueio_do_perfil",
+                column: "ordem_no_historico",
                 unique: true);
 
             migrationBuilder.CreateIndex(
@@ -6744,7 +6744,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 table: "instalacoes",
                 columns: new[] { "executor_emissor", "executor_conta_id" },
                 unique: true,
-                filter: "situacao IN ('aguardando_documento', 'documento_em_verificacao', 'documento_verificado', 'aguardando_codigo')");
+                filter: "situacao IN ('AGUARDANDO_DOCUMENTO', 'DOCUMENTO_EM_VERIFICACAO', 'DOCUMENTO_VERIFICADO', 'AGUARDANDO_CODIGO')");
 
             migrationBuilder.CreateIndex(
                 name: "ix_instituicoes_cidade_codigo_ibge",
@@ -6840,7 +6840,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 name: "ux_liberacoes_da_reclassificacao_ordem",
                 schema: "autorizacao",
                 table: "liberacoes_da_reclassificacao",
-                column: "ordem_na_trilha",
+                column: "ordem_no_historico",
                 unique: true);
 
             migrationBuilder.CreateIndex(
@@ -7094,7 +7094,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 table: "pedidos_de_concessao",
                 columns: new[] { "beneficiario_email", "perfil_id", "unidade_id" },
                 unique: true,
-                filter: "situacao IN ('aguardando_documento', 'aguardando_beneficiario', 'aguardando_gestor', 'aguardando_protecao_de_dados')")
+                filter: "situacao IN ('AGUARDANDO_DOCUMENTO', 'AGUARDANDO_BENEFICIARIO', 'AGUARDANDO_GESTOR', 'AGUARDANDO_PROTECAO_DE_DADOS')")
                 .Annotation("Npgsql:NullsDistinct", false);
 
             migrationBuilder.CreateIndex(
@@ -7153,7 +7153,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 table: "providencias",
                 column: "concessao_id",
                 unique: true,
-                filter: "estado = 'aberta'");
+                filter: "estado = 'ABERTA'");
 
             migrationBuilder.CreateIndex(
                 name: "ux_publicacoes_previstas_da_etapa_ato",
@@ -7187,7 +7187,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 name: "ix_reclassificacoes_da_permissao_perfil_codigo",
                 schema: "autorizacao",
                 table: "reclassificacoes_da_permissao",
-                columns: new[] { "perfil_id", "codigo", "ordem_na_trilha" },
+                columns: new[] { "perfil_id", "codigo", "ordem_no_historico" },
                 descending: new[] { false, false, true });
 
             migrationBuilder.CreateIndex(
@@ -7201,7 +7201,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 name: "ux_reclassificacoes_da_permissao_ordem",
                 schema: "autorizacao",
                 table: "reclassificacoes_da_permissao",
-                column: "ordem_na_trilha",
+                column: "ordem_no_historico",
                 unique: true);
 
             migrationBuilder.CreateIndex(
@@ -7387,7 +7387,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 name: "ux_suspensoes_do_perfil_ordem",
                 schema: "autorizacao",
                 table: "suspensoes_do_perfil",
-                column: "ordem_na_trilha",
+                column: "ordem_no_historico",
                 unique: true);
 
             migrationBuilder.CreateIndex(
@@ -7671,7 +7671,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 table: "versoes_do_perfil",
                 column: "perfil_id",
                 unique: true,
-                filter: "situacao = 'pendente'");
+                filter: "situacao = 'PENDENTE'");
 
             migrationBuilder.CreateIndex(
                 name: "ix_versoes_do_termo_resumo",
@@ -7983,7 +7983,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 schema: "selecao");
 
             migrationBuilder.DropTable(
-                name: "eventos_da_contencao",
+                name: "eventos_de_bloqueio_do_perfil",
                 schema: "autorizacao");
 
             migrationBuilder.DropTable(
@@ -8467,7 +8467,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 schema: "selecao");
 
             migrationBuilder.DropSequence(
-                name: "ordem_da_trilha_de_contencao",
+                name: "ordem_do_historico_de_acesso",
                 schema: "autorizacao");
         }
     }

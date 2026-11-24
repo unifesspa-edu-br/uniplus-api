@@ -187,7 +187,7 @@ public sealed class Concessao : EntityBase
                 OrigemDaBase.Migracao, versaoAlvoId, ordinal);
 
     private bool TemBaseAtiva(CodigoDePermissao codigo) =>
-        _bases.Where(b => b.Codigo == codigo).MaxBy(static b => b.OrdemNaTrilha) is { Origem: not OrigemDaBase.Saida };
+        _bases.Where(b => b.Codigo == codigo).MaxBy(static b => b.OrdemNoHistorico) is { Origem: not OrigemDaBase.Saida };
 
     /// <summary>
     /// O e-mail digitado para confirmar a revogação é o do beneficiário: compara sem diferenciar maiúsculas nem espaços nas

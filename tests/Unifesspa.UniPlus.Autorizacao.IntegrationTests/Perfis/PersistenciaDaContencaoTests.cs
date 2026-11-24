@@ -39,7 +39,7 @@ public sealed class PersistenciaDaContencaoTests : PerfilEndpointTestBase
             """).SingleAsync();
         int sequencias = await db.Database.SqlQuery<int>($"""
             SELECT count(*)::int AS "Value" FROM information_schema.sequences
-            WHERE sequence_schema = 'autorizacao' AND sequence_name = 'ordem_da_trilha_de_contencao'
+            WHERE sequence_schema = 'autorizacao' AND sequence_name = 'ordem_do_historico_de_acesso'
             """).SingleAsync();
         tabelas.Should().Be(4);
         sequencias.Should().Be(1);
@@ -137,8 +137,8 @@ public sealed class PersistenciaDaContencaoTests : PerfilEndpointTestBase
         Func<Task> acao = () => ExecutarAsync(
             $$"""
             INSERT INTO autorizacao.eventos_de_bloqueio_do_perfil
-                (id, perfil_id, instante, tipo, suspensao_id, ator, origem, permissao_codigo, ator_emissor, ator_conta_id, papel, motivo, perfil_protegido, ordem_na_trilha)
-            VALUES ({0}, {1}, now(), {2}, {3}, {4}, {{Literal(origem)}}, {{Literal(permissao)}}, 'e', 's', 'GESTAO_DE_ACESSOS', 'm', false, nextval('autorizacao.ordem_da_trilha_de_contencao'))
+                (id, perfil_id, instante, tipo, suspensao_id, ator, origem, permissao_codigo, ator_emissor, ator_conta_id, papel, motivo, perfil_protegido, ordem_no_historico)
+            VALUES ({0}, {1}, now(), {2}, {3}, {4}, {{Literal(origem)}}, {{Literal(permissao)}}, 'e', 's', 'GESTAO_DE_ACESSOS', 'm', false, nextval('autorizacao.ordem_do_historico_de_acesso'))
             """,
             Guid.CreateVersion7(), perfil, tipo, suspensao, ator);
 
@@ -155,8 +155,8 @@ public sealed class PersistenciaDaContencaoTests : PerfilEndpointTestBase
         Func<Task> acao = () => ExecutarAsync(
             """
             INSERT INTO autorizacao.eventos_de_bloqueio_do_perfil
-                (id, perfil_id, instante, tipo, suspensao_id, ator, decisao_id, perfil_protegido, ordem_na_trilha)
-            SELECT {0}, {1}, now(), 'RETOMADA', {2}, 'SISTEMA', d.id, false, nextval('autorizacao.ordem_da_trilha_de_contencao')
+                (id, perfil_id, instante, tipo, suspensao_id, ator, decisao_id, perfil_protegido, ordem_no_historico)
+            SELECT {0}, {1}, now(), 'RETOMADA', {2}, 'SISTEMA', d.id, false, nextval('autorizacao.ordem_do_historico_de_acesso')
             FROM autorizacao.decisoes_da_retomada d WHERE d.suspensao_id = {2}
             """,
             Guid.CreateVersion7(), perfil, suspensao);
@@ -245,9 +245,9 @@ public sealed class PersistenciaDaContencaoTests : PerfilEndpointTestBase
         await using AsyncServiceScope scope = Fixture.Factory.Services.CreateAsyncScope();
         UniPlusDbContext db = scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
         List<RegistroDaOrdem> linhas = await db.Database.SqlQuery<RegistroDaOrdem>($"""
-            SELECT tipo AS "Tipo", ordem_na_trilha AS "Ordem" FROM autorizacao.eventos_de_bloqueio_do_perfil WHERE perfil_id = {perfilId}
+            SELECT tipo AS "Tipo", ordem_no_historico AS "Ordem" FROM autorizacao.eventos_de_bloqueio_do_perfil WHERE perfil_id = {perfilId}
             UNION ALL
-            SELECT 'decisao_da_retomada', d.ordem_na_trilha FROM autorizacao.decisoes_da_retomada d
+            SELECT 'decisao_da_retomada', d.ordem_no_historico FROM autorizacao.decisoes_da_retomada d
               JOIN autorizacao.suspensoes_do_perfil s ON s.id = d.suspensao_id WHERE s.perfil_id = {perfilId}
             ORDER BY 2
             """).ToListAsync();
@@ -261,8 +261,8 @@ public sealed class PersistenciaDaContencaoTests : PerfilEndpointTestBase
         await ExecutarAsync(
             """
             INSERT INTO autorizacao.suspensoes_do_perfil
-                (id, perfil_id, suspensa_em, suspensa_por_emissor, suspensa_por_conta_id, papel_de_quem_suspendeu, motivo, ordem_na_trilha, created_at)
-            VALUES ({0}, {1}, now(), 'emissor', 'diogo.souza', {2}, 'm', nextval('autorizacao.ordem_da_trilha_de_contencao'), now())
+                (id, perfil_id, suspensa_em, suspensa_por_emissor, suspensa_por_conta_id, papel_de_quem_suspendeu, motivo, ordem_no_historico, created_at)
+            VALUES ({0}, {1}, now(), 'emissor', 'diogo.souza', {2}, 'm', nextval('autorizacao.ordem_do_historico_de_acesso'), now())
             """,
             id, perfilId, papel);
 
@@ -275,8 +275,8 @@ public sealed class PersistenciaDaContencaoTests : PerfilEndpointTestBase
         await ExecutarAsync(
             """
             INSERT INTO autorizacao.desativacoes_do_perfil
-                (id, perfil_id, desativada_em, desativada_por_emissor, desativada_por_conta_id, motivo, ordem_na_trilha, created_at)
-            VALUES ({0}, {1}, now(), 'emissor', 'diogo.souza', 'm', nextval('autorizacao.ordem_da_trilha_de_contencao'), now())
+                (id, perfil_id, desativada_em, desativada_por_emissor, desativada_por_conta_id, motivo, ordem_no_historico, created_at)
+            VALUES ({0}, {1}, now(), 'emissor', 'diogo.souza', 'm', nextval('autorizacao.ordem_do_historico_de_acesso'), now())
             """,
             id, perfilId);
 
@@ -287,8 +287,8 @@ public sealed class PersistenciaDaContencaoTests : PerfilEndpointTestBase
         ExecutarAsync(
             """
             INSERT INTO autorizacao.decisoes_da_retomada
-                (id, suspensao_id, etapa, decisor_emissor, decisor_conta_id, decisor_tem_concessao, motivo, perfil_protegido_na_decisao, instante, ordem_na_trilha)
-            VALUES ({0}, {1}, {2}, 'emissor', 'isabella.figueiredo', false, 'm', false, now(), nextval('autorizacao.ordem_da_trilha_de_contencao'))
+                (id, suspensao_id, etapa, decisor_emissor, decisor_conta_id, decisor_tem_concessao, motivo, perfil_protegido_na_decisao, instante, ordem_no_historico)
+            VALUES ({0}, {1}, {2}, 'emissor', 'isabella.figueiredo', false, 'm', false, now(), nextval('autorizacao.ordem_do_historico_de_acesso'))
             """,
             Guid.CreateVersion7(), suspensaoId, etapa);
 

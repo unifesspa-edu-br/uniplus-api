@@ -45,13 +45,13 @@ internal sealed class DivergenciaDaGovernancaConfiguration : IEntityTypeConfigur
         builder.Property(d => d.De).HasMaxLength(ValorMaxLength);
         builder.Property(d => d.Para).HasMaxLength(ValorMaxLength);
         builder.Property(d => d.Instante).IsRequired();
-        builder.Property(d => d.OrdemNaTrilha).IsRequired();
+        builder.Property(d => d.OrdemNoHistorico).IsRequired();
         builder.Ignore(d => d.OrdinalLocal);
 
         builder.HasOne<ImplantacaoDasPermissoes>().WithMany().HasForeignKey(d => d.ImplantacaoId)
             .HasConstraintName("fk_divergencias_da_governanca_implantacao").OnDelete(DeleteBehavior.Restrict);
         builder.HasOne<Perfil>().WithMany().HasForeignKey(d => d.PerfilId).OnDelete(DeleteBehavior.Restrict);
 
-        builder.HasIndex(d => d.OrdemNaTrilha).IsUnique().HasDatabaseName("ux_divergencias_da_governanca_ordem");
+        builder.HasIndex(d => d.OrdemNoHistorico).IsUnique().HasDatabaseName("ux_divergencias_da_governanca_ordem");
     }
 }

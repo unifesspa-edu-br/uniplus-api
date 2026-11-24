@@ -38,7 +38,7 @@ public sealed class ReclassificacaoDaPermissao : IForensicEntity, IRegistroDaTri
 
     public int OrdinalLocal { get; private init; }
 
-    public long OrdemNaTrilha { get; private set; }
+    public long OrdemNoHistorico { get; private set; }
 
     /// <summary>A classificação da permissão subiu.</summary>
     public bool Subiu => ClassificacaoNova > ClassificacaoAnterior;

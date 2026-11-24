@@ -43,7 +43,7 @@ internal sealed class ReclassificacaoDaPermissaoConfiguration : IEntityTypeConfi
         builder.Property(r => r.DeUnidadeAnterior).IsRequired();
         builder.Property(r => r.DeUnidadeNovo).IsRequired();
         builder.Property(r => r.Instante).IsRequired();
-        builder.Property(r => r.OrdemNaTrilha).IsRequired();
+        builder.Property(r => r.OrdemNoHistorico).IsRequired();
         builder.Ignore(r => r.OrdinalLocal);
         builder.Ignore(r => r.Subiu);
         builder.Ignore(r => r.Desceu);
@@ -54,9 +54,9 @@ internal sealed class ReclassificacaoDaPermissaoConfiguration : IEntityTypeConfi
         builder.HasOne<Perfil>().WithMany().HasForeignKey(r => r.PerfilId).OnDelete(DeleteBehavior.Restrict);
 
         builder.HasIndex(r => new { r.ImplantacaoId, r.PerfilId, r.Codigo }).IsUnique().HasDatabaseName("ux_reclassificacoes_da_permissao_fato");
-        builder.HasIndex(r => new { r.PerfilId, r.Codigo, r.OrdemNaTrilha })
+        builder.HasIndex(r => new { r.PerfilId, r.Codigo, r.OrdemNoHistorico })
             .IsDescending(false, false, true)
             .HasDatabaseName("ix_reclassificacoes_da_permissao_perfil_codigo");
-        builder.HasIndex(r => r.OrdemNaTrilha).IsUnique().HasDatabaseName("ux_reclassificacoes_da_permissao_ordem");
+        builder.HasIndex(r => r.OrdemNoHistorico).IsUnique().HasDatabaseName("ux_reclassificacoes_da_permissao_ordem");
     }
 }

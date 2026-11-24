@@ -68,14 +68,14 @@ internal sealed class EventoDaContencaoConfiguration : IEntityTypeConfiguration<
         builder.Property(e => e.Papel).HasConversion(PapelConverter).HasMaxLength(CodigoMaxLength);
         builder.Property(e => e.Motivo).HasMaxLength(MotivoInformado.MaximoDeCaracteres);
         builder.Property(e => e.PerfilProtegido).IsRequired();
-        builder.Property(e => e.OrdemNaTrilha).IsRequired();
+        builder.Property(e => e.OrdemNoHistorico).IsRequired();
 
         builder.Ignore(e => e.OrdinalLocal);
 
         ConfigurarReferencias(builder);
 
         builder.HasIndex(e => new { e.PerfilId, e.Instante }).HasDatabaseName("ix_eventos_de_bloqueio_do_perfil_perfil");
-        builder.HasIndex(e => e.OrdemNaTrilha).IsUnique().HasDatabaseName("ux_eventos_de_bloqueio_do_perfil_ordem");
+        builder.HasIndex(e => e.OrdemNoHistorico).IsUnique().HasDatabaseName("ux_eventos_de_bloqueio_do_perfil_ordem");
     }
 
     private static void ConfigurarReferencias(EntityTypeBuilder<EventoDaContencao> builder)

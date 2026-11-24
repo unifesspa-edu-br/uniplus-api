@@ -51,7 +51,7 @@ public sealed class EventoDaContencao : IForensicEntity, IRegistroDaTrilhaDeCont
 
     public int OrdinalLocal { get; private set; }
 
-    public long OrdemNaTrilha { get; private set; }
+    public long OrdemNoHistorico { get; private set; }
 
     // Construtor de materialização do EF Core.
     private EventoDaContencao()

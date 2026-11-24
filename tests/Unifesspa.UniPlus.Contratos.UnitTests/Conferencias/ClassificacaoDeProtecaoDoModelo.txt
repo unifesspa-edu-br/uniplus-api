@@ -39,7 +39,7 @@ autorizacao.bases_da_permissao_concedida.codigo: Interno
 autorizacao.bases_da_permissao_concedida.concessao_id: Interno
 autorizacao.bases_da_permissao_concedida.de_unidade: Interno
 autorizacao.bases_da_permissao_concedida.id: Interno
-autorizacao.bases_da_permissao_concedida.ordem_na_trilha: Interno
+autorizacao.bases_da_permissao_concedida.ordem_no_historico: Interno
 autorizacao.bases_da_permissao_concedida.origem: Interno
 autorizacao.bases_da_permissao_concedida.perfil_id: Interno
 autorizacao.bases_da_permissao_concedida.referencia_id: Interno
@@ -97,7 +97,7 @@ autorizacao.decisoes_da_retomada.etapa: Pessoal
 autorizacao.decisoes_da_retomada.id: Pessoal
 autorizacao.decisoes_da_retomada.instante: Pessoal
 autorizacao.decisoes_da_retomada.motivo: Pessoal
-autorizacao.decisoes_da_retomada.ordem_na_trilha: Pessoal
+autorizacao.decisoes_da_retomada.ordem_no_historico: Pessoal
 autorizacao.decisoes_da_retomada.perfil_protegido_na_decisao: Pessoal
 autorizacao.decisoes_da_retomada.suspensao_id: Pessoal
 autorizacao.decisoes_da_versao.acrescimo_avaliado: Pessoal
@@ -135,7 +135,7 @@ autorizacao.desativacoes_do_perfil.desativada_por_nome: Pessoal
 autorizacao.desativacoes_do_perfil.id: Pessoal
 autorizacao.desativacoes_do_perfil.motivo: Pessoal
 autorizacao.desativacoes_do_perfil.motivo_da_reativacao: Pessoal
-autorizacao.desativacoes_do_perfil.ordem_na_trilha: Pessoal
+autorizacao.desativacoes_do_perfil.ordem_no_historico: Pessoal
 autorizacao.desativacoes_do_perfil.perfil_id: Pessoal
 autorizacao.desativacoes_do_perfil.reativada_em: Pessoal
 autorizacao.desativacoes_do_perfil.reativada_por_conta_id: Pessoal
@@ -147,7 +147,7 @@ autorizacao.divergencias_da_governanca.de: Interno
 autorizacao.divergencias_da_governanca.id: Interno
 autorizacao.divergencias_da_governanca.implantacao_id: Interno
 autorizacao.divergencias_da_governanca.instante: Interno
-autorizacao.divergencias_da_governanca.ordem_na_trilha: Interno
+autorizacao.divergencias_da_governanca.ordem_no_historico: Interno
 autorizacao.divergencias_da_governanca.para: Interno
 autorizacao.divergencias_da_governanca.perfil_id: Interno
 autorizacao.divergencias_da_governanca.tipo: Interno
@@ -184,7 +184,7 @@ autorizacao.eventos_de_bloqueio_do_perfil.desativacao_id: Pessoal
 autorizacao.eventos_de_bloqueio_do_perfil.id: Pessoal
 autorizacao.eventos_de_bloqueio_do_perfil.instante: Pessoal
 autorizacao.eventos_de_bloqueio_do_perfil.motivo: Pessoal
-autorizacao.eventos_de_bloqueio_do_perfil.ordem_na_trilha: Pessoal
+autorizacao.eventos_de_bloqueio_do_perfil.ordem_no_historico: Pessoal
 autorizacao.eventos_de_bloqueio_do_perfil.origem: Pessoal
 autorizacao.eventos_de_bloqueio_do_perfil.papel: Pessoal
 autorizacao.eventos_de_bloqueio_do_perfil.perfil_id: Pessoal
@@ -253,7 +253,7 @@ autorizacao.liberacoes_da_reclassificacao.id: Pessoal
 autorizacao.liberacoes_da_reclassificacao.instante: Pessoal
 autorizacao.liberacoes_da_reclassificacao.lote_id: Pessoal
 autorizacao.liberacoes_da_reclassificacao.motivo: Pessoal
-autorizacao.liberacoes_da_reclassificacao.ordem_na_trilha: Pessoal
+autorizacao.liberacoes_da_reclassificacao.ordem_no_historico: Pessoal
 autorizacao.liberacoes_da_reclassificacao.perfil_id: Pessoal
 autorizacao.liberacoes_da_reclassificacao.reclassificacao_id: Pessoal
 autorizacao.liberacoes_da_reclassificacao.resultado: Pessoal
@@ -346,7 +346,7 @@ autorizacao.reclassificacoes_da_permissao.de_unidade_novo: Interno
 autorizacao.reclassificacoes_da_permissao.id: Interno
 autorizacao.reclassificacoes_da_permissao.implantacao_id: Interno
 autorizacao.reclassificacoes_da_permissao.instante: Interno
-autorizacao.reclassificacoes_da_permissao.ordem_na_trilha: Interno
+autorizacao.reclassificacoes_da_permissao.ordem_no_historico: Interno
 autorizacao.reclassificacoes_da_permissao.perfil_id: Interno
 autorizacao.revisoes_das_concessoes.aberta_em: Pessoal
 autorizacao.revisoes_das_concessoes.aviso_24h_em: Pessoal
@@ -378,7 +378,7 @@ autorizacao.revisoes_de_acessos.xmin: Pessoal
 autorizacao.suspensoes_do_perfil.created_at: Pessoal
 autorizacao.suspensoes_do_perfil.id: Pessoal
 autorizacao.suspensoes_do_perfil.motivo: Pessoal
-autorizacao.suspensoes_do_perfil.ordem_na_trilha: Pessoal
+autorizacao.suspensoes_do_perfil.ordem_no_historico: Pessoal
 autorizacao.suspensoes_do_perfil.papel_de_quem_suspendeu: Pessoal
 autorizacao.suspensoes_do_perfil.perfil_id: Pessoal
 autorizacao.suspensoes_do_perfil.retomada_em: Pessoal

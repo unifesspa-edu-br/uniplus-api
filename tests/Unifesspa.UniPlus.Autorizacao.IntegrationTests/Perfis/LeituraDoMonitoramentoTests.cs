@@ -59,8 +59,8 @@ public sealed class LeituraDoMonitoramentoTests : PerfilEndpointTestBase
 
         await ExecutarAsync(
             """
-            INSERT INTO autorizacao.divergencias_da_governanca (id, implantacao_id, perfil_id, codigo, tipo, instante, ordem_na_trilha)
-            SELECT {0}, c.id, {1}, 'teste:inscricoes:operar', 'COMPOSICAO_FALTANTE', now(), nextval('autorizacao.ordem_da_trilha_de_contencao')
+            INSERT INTO autorizacao.divergencias_da_governanca (id, implantacao_id, perfil_id, codigo, tipo, instante, ordem_no_historico)
+            SELECT {0}, c.id, {1}, 'teste:inscricoes:operar', 'COMPOSICAO_FALTANTE', now(), nextval('autorizacao.ordem_do_historico_de_acesso')
             FROM autorizacao.implantacoes_das_permissoes c ORDER BY c.sequencia DESC LIMIT 1
             """,
             Guid.CreateVersion7(), perfil);

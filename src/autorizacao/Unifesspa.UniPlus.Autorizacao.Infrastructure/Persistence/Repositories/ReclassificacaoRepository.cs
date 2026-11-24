@@ -82,7 +82,7 @@ public sealed class ReclassificacaoRepository : IReclassificacaoRepository
 
     public async Task<IReadOnlyList<ReclassificacaoDaPermissao>> ListarVigentesQueSuspendemAsync(CancellationToken cancellationToken = default) =>
         await Vigentes()
-            .OrderBy(r => r.OrdemNaTrilha)
+            .OrderBy(r => r.OrdemNoHistorico)
             .ToListAsync(cancellationToken)
             .ConfigureAwait(false);
 
@@ -95,14 +95,14 @@ public sealed class ReclassificacaoRepository : IReclassificacaoRepository
 
     private IQueryable<ReclassificacaoDaPermissao> Vigentes() =>
         _context.Reclassificacoes.AsNoTracking()
-            .Where(r => !_context.Set<ReclassificacaoDaPermissao>().Any(o => o.PerfilId == r.PerfilId && o.Codigo == r.Codigo && o.OrdemNaTrilha > r.OrdemNaTrilha)
+            .Where(r => !_context.Set<ReclassificacaoDaPermissao>().Any(o => o.PerfilId == r.PerfilId && o.Codigo == r.Codigo && o.OrdemNoHistorico > r.OrdemNoHistorico)
                 && _context.ImplantacaoAtual().Any(p => p.Codigo == r.Codigo && p.Classificacao == r.ClassificacaoNova && p.DeUnidade == r.DeUnidadeNovo));
 
     public async Task<IReadOnlyList<LiberacaoDaReclassificacao>> ListarLiberacoesAsync(
         Guid reclassificacaoId, CancellationToken cancellationToken = default) =>
         await _context.LiberacoesDasReclassificacoes.AsNoTracking()
             .Where(l => l.ReclassificacaoId == reclassificacaoId)
-            .OrderBy(l => l.OrdemNaTrilha)
+            .OrderBy(l => l.OrdemNoHistorico)
             .ToListAsync(cancellationToken)
             .ConfigureAwait(false);
 
@@ -149,7 +149,7 @@ public sealed class ReclassificacaoRepository : IReclassificacaoRepository
 
     public async Task<IReadOnlyList<DivergenciaDaGovernanca>> ListarDivergenciasAsync(CancellationToken cancellationToken = default) =>
         await _context.DivergenciasDaGovernanca.AsNoTracking()
-            .OrderByDescending(d => d.OrdemNaTrilha)
+            .OrderByDescending(d => d.OrdemNoHistorico)
             .ToListAsync(cancellationToken)
             .ConfigureAwait(false);
 
@@ -179,14 +179,14 @@ public sealed class ReclassificacaoRepository : IReclassificacaoRepository
         _context.Reclassificacoes.AsNoTracking()
             .Where(r => (FuncoesDoBanco.OrdemDaClassificacao(r.ClassificacaoNova) > FuncoesDoBanco.OrdemDaClassificacao(r.ClassificacaoAnterior) || r.DeUnidadeNovo != r.DeUnidadeAnterior)
                 && !_context.Set<AvisoDaReclassificacao>().Any(a => a.Origem == OrigemDoAviso.Reclassificacao && a.OrigemId == r.Id))
-            .OrderBy(r => r.OrdemNaTrilha)
+            .OrderBy(r => r.OrdemNoHistorico)
             .Take(limite)
             .Select(r => new FatoSemAviso(OrigemDoAviso.Reclassificacao, r.Id));
 
     private IQueryable<FatoSemAviso> DivergenciasSemAviso(int limite) =>
         _context.DivergenciasDaGovernanca.AsNoTracking()
             .Where(d => !_context.Set<AvisoDaReclassificacao>().Any(a => a.Origem == OrigemDoAviso.Divergencia && a.OrigemId == d.Id))
-            .OrderBy(d => d.OrdemNaTrilha)
+            .OrderBy(d => d.OrdemNoHistorico)
             .Take(limite)
             .Select(d => new FatoSemAviso(OrigemDoAviso.Divergencia, d.Id));
 
