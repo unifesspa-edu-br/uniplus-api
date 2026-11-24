@@ -24,7 +24,7 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
 /// <summary>
-/// O formulário renderizável da versão que a inscrição fixou ao iniciar (issue #1859): resolve
+/// O formulário renderizável da versão que a inscrição fixou ao iniciar: resolve
 /// pelo <c>VersaoFormularioId</c> gravado, nunca pela divulgação atual — a mesma projeção de
 /// <see cref="ProcessosSeletivos.ObterFormularioRenderizavelQueryHandlerTests"/>, só a resolução
 /// da versão é diferente.

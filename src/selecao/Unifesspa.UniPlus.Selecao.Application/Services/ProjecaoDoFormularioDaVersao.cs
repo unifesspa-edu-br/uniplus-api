@@ -19,8 +19,8 @@ using Unifesspa.UniPlus.Regras.Formularios;
 
 /// <summary>
 /// Projeta o formulário renderizável de uma finalidade a partir de uma <see cref="VersaoConfiguracao"/>
-/// JÁ RESOLVIDA (ADR-0139) — extraído de <c>ObterFormularioRenderizavelQueryHandler</c> (issue #1059,
-/// UNI-REQ-0072) para ser reusado por <c>ObterFormularioDaInscricaoQueryHandler</c> (issue #1859):
+/// JÁ RESOLVIDA (ADR-0139) — extraído de <c>ObterFormularioRenderizavelQueryHandler</c> (UNI-REQ-0072)
+/// para ser reusado por <c>ObterFormularioDaInscricaoQueryHandler</c>:
 /// as duas leituras projetam os mesmos bytes congelados do mesmo jeito — a única diferença entre
 /// elas é COMO a versão é resolvida (pela divulgação atual, ou pela versão em que está a inscrição:
 /// a divulgada no rascunho, a congelada no primeiro envio depois dele), nunca o que se faz com ela depois de resolvida.
@@ -151,7 +151,7 @@ public static class ProjecaoDoFormularioDaVersao
 
     /// <summary>
     /// A mesma data de referência dos fatos que <see cref="Projetar"/> usa para montar a
-    /// apresentação — reusada pelo handler de Submeter (issue #1859) para calcular
+    /// apresentação — reusada pelo handler de Submeter para calcular
     /// <c>FAIXA_ETARIA</c> na data CONGELADA na publicação, nunca na de hoje. Nula quando o
     /// processo não declara referência temporal.
     /// </summary>

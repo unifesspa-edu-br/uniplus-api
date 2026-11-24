@@ -8,7 +8,7 @@ using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 /// <summary>
-/// Fonte única do seed da biblioteca <c>regras_do_catalogo</c> (Story #772): as
+/// Fonte única do seed da biblioteca <c>regras_do_catalogo</c>: as
 /// regras <c>v1</c> tipadas e versionadas que a configuração do Processo
 /// Seletivo referencia. Consumida tanto pelo modelo (<c>HasData</c>, que materializa as
 /// linhas) quanto pelos testes (que recomputam o hash e conferem a

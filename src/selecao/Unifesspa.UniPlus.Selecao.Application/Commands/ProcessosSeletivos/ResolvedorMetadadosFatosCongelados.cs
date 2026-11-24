@@ -11,7 +11,7 @@ using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Edicao;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Referencias;
 
 /// <summary>
-/// Resolve o metadado congelável (Story #919, congelamento dos parâmetros na publicação, UNI-REQ-0019) de cada fato do candidato citado em
+/// Resolve o metadado congelável (congelamento dos parâmetros na publicação, UNI-REQ-0019) de cada fato do candidato citado em
 /// alguma <see cref="CondicaoGatilho"/> de alguma <see cref="DocumentoExigido"/> viva do
 /// processo — mapeando <see cref="FatoCandidatoView"/> (Configuração) para
 /// <see cref="MetadadoFatoCongelado"/> (Application.Abstractions), nunca reaproveitando

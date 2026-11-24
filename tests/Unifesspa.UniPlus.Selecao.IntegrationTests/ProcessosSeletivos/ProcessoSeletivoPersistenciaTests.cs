@@ -72,7 +72,7 @@ public sealed class ProcessoSeletivoPersistenciaTests : IClassFixture<ProcessoSe
             && processo.TipoProcesso.Nome == "SiSU");
     }
 
-    [Fact(DisplayName = "Persiste e recarrega a Unidade administradora sem perda, inclusive a cidade (issue #849 CA-05, issue #1114)")]
+    [Fact(DisplayName = "Persiste e recarrega a Unidade administradora sem perda, inclusive a cidade (CA-05)")]
     public async Task PersisteERecarrega_UnidadeAdministradora()
     {
         Guid unidadeId = Guid.NewGuid();
@@ -88,7 +88,7 @@ public sealed class ProcessoSeletivoPersistenciaTests : IClassFixture<ProcessoSe
         ConferirAUnidadeDoCepsEmMaraba(recarregado.UnidadeAdministradora);
     }
 
-    [Fact(DisplayName = "CHECK ck_processos_seletivos_unidade_administradora_cidade_completa rejeita UPDATE cru com trio de cidade parcial (issue #1114)")]
+    [Fact(DisplayName = "CHECK ck_processos_seletivos_unidade_administradora_cidade_completa rejeita UPDATE cru com trio de cidade parcial")]
     public async Task CheckCidadeCompleta_RejeitaTrioParcial()
     {
         ProcessoSeletivo processo = NovoProcesso("PS 2026 — Cidade Parcial", unidade: UnidadeDoCeps(new CidadeCopiadaDaUnidade("1504208", "Marabá", "PA")));
@@ -119,7 +119,7 @@ public sealed class ProcessoSeletivoPersistenciaTests : IClassFixture<ProcessoSe
             "numeric(18,4) arredonda em silêncio, e o EF hidrata sem passar pelo domínio");
     }
 
-    [Fact(DisplayName = "Inserir sem Unidade administradora viola a constraint NOT NULL da coluna (issue #849, CA-05)")]
+    [Fact(DisplayName = "Inserir sem Unidade administradora viola a constraint NOT NULL da coluna (CA-05)")]
     public async Task Inserir_SemUnidadeAdministradora_ViolaNotNull()
     {
         Guid processoId = Guid.CreateVersion7();

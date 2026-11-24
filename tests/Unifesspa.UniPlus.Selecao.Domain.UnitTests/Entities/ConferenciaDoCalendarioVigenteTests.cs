@@ -65,7 +65,7 @@ public sealed class ConferenciaDoCalendarioVigenteTests
         [FaseDeInscricao(), FasePreliminarComRecurso(unidade), FaseDoResultadoFinal()];
 
     // A fase que coleta inscrição precisa de janela para publicar, mesmo com origem
-    // NA_EXECUCAO (issue #1350) — as demais fases deste cronograma seguem sem data.
+    // NA_EXECUCAO — as demais fases deste cronograma seguem sem data.
     private static FaseCronograma FaseDeInscricao() => FaseCronograma.Criar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("fase").Value!,
         OrigensCanonicasDeTeste.ComNome(new OrigemCanonicaDaFase(
             Guid.CreateVersion7(), "INSCRICAO", OrigemDataFase.NaExecucao, AgrupaEtapas: false, PermiteComplementacao: false, ColetaInscricao: true, ColetaSolicitacaoIsencao: false)),

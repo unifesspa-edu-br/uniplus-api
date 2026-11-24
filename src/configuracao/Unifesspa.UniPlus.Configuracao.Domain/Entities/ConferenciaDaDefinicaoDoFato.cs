@@ -212,7 +212,7 @@ internal static class ConferenciaDaDefinicaoDoFato
             // Texto (em todo formato, inclusive o livre, que pode conter qualquer coisa), data e
             // endereço identificam ou localizam a pessoa: nunca são menos que dado pessoal. Texto
             // também aceita `Identificador` — número de documento é sempre texto, nunca outro
-            // domínio (ADR-0136, emenda de #1857).
+            // domínio (ADR-0136).
             nivel => tipo is { } tipoConferido && !AtendeClassificacaoMinimaDoTipo(tipoConferido, nivel)
                 ? new DomainError(
                     FatoCandidatoErrorCodes.ClassificacaoAbaixoDoMinimoDoDominio,
@@ -228,7 +228,7 @@ internal static class ConferenciaDaDefinicaoDoFato
                 or ClassificacaoDeProtecao.Sensivel,
             // Identificador é só para texto — número de documento nunca é categórico, booleano
             // nem numérico. Sem essa recusa, um categórico Identificador citado como membro de
-            // agregado elevaria a classificação mínima do derivado (ADR-0136, emenda de #1857).
+            // agregado elevaria a classificação mínima do derivado (ADR-0136).
             _ => classificacao != ClassificacaoDeProtecao.Identificador,
         };
 

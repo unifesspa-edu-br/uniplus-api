@@ -12,8 +12,7 @@ using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.Regras.Enums;
 
 /// <summary>
-/// Integração ponta-a-ponta do catálogo de termos de consentimento (UNI-REQ-0086,
-/// issue #1018) contra Postgres real: persistência do agregado + versões
+/// Integração ponta-a-ponta do catálogo de termos de consentimento (UNI-REQ-0086) contra Postgres real: persistência do agregado + versões
 /// promovidas (<c>IForensicEntity</c>, append-only) e soft-delete preservando
 /// as versões filhas (<c>ClientNoAction</c>, mesmo padrão de
 /// <c>CalendarioDiasUteis.DiasNaoUteis</c>).

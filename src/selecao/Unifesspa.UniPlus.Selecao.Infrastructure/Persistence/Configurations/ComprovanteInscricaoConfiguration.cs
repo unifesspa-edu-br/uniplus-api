@@ -31,7 +31,7 @@ internal sealed class ComprovanteInscricaoConfiguration : IEntityTypeConfigurati
         builder.ClassificaPorPadrao(ClassificacaoDeProtecao.Interno);
 
         builder.ToTable("comprovantes_inscricao", t => t.HasComment(
-            "Comprovante de uma submissão da inscrição (issue #1858) — append-only, sem nenhum " +
+            "Comprovante de uma submissão da inscrição — append-only, sem nenhum " +
             "número de documento; uma correção soma uma linha nova, nunca muda a anterior."));
 
         builder.HasKey(c => c.Id);

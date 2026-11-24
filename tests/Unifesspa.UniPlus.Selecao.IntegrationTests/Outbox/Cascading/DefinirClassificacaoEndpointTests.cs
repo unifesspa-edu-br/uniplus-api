@@ -23,8 +23,8 @@ using Unifesspa.UniPlus.Selecao.Domain.Enums;
 
 /// <summary>
 /// O endpoint <c>PUT /processos-seletivos/{id}/classificacao</c>, fim a fim pelo HTTP —
-/// prova a obrigatoriedade real de <c>BaseadoEmEnem</c> na desserialização (issue #850,
-/// CA-10): o host não habilita <c>RespectRequiredConstructorParameters</c>
+/// prova a obrigatoriedade real de <c>BaseadoEmEnem</c> na desserialização
+/// (CA-10): o host não habilita <c>RespectRequiredConstructorParameters</c>
 /// (<c>Program.cs</c> só configura naming policy e enum converter), então por padrão do
 /// <c>System.Text.Json</c> um parâmetro de construtor de record ausente no corpo recebe o
 /// valor default (<see langword="false"/>) — indistinguível de um <see langword="false"/>

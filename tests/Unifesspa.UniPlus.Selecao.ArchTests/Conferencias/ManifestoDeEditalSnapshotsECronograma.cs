@@ -45,7 +45,7 @@ internal static class ManifestoDeEditalSnapshotsECronograma
             ["Valor"],
             []),
 
-        // Issue #1071 — snapshot de tipo de etapa, mesmo padrão de cópia por valor de
+        // Snapshot de tipo de etapa, mesmo padrão de cópia por valor de
         // ReferenciaRegra acima.
         [typeof(TipoEtapaSnapshot)] = (
             ["OrigemId", "Codigo", "Nome", "AdmitePontuacao", "AdmiteEliminacao", "NotaDeOrigemNoEnem", "ExigeCorrecaoIndependente"],
@@ -76,7 +76,7 @@ internal static class ManifestoDeEditalSnapshotsECronograma
         [typeof(ParametrosDesempateIdoso)] = (["IdadeMinima"], []),
         [typeof(ParametrosDesempatePredicadoFato)] = (["Condicao"], []),
         [typeof(ParametrosDesempateMaiorNotaAreaEnem)] = (["Areas"], []),
-        // CondicaoDnf (ADR-0111, Story #847): átomo tipado { Fato, Operador, Valor }
+        // CondicaoDnf (ADR-0111): átomo tipado { Fato, Operador, Valor }
         // reusado literalmente pela variante acima — mesmo cuidado de propriedade
         // esquecida se aplica aqui.
         [typeof(CondicaoDnf)] = (["Fato", "Operador", "Valor"], []),
@@ -86,7 +86,7 @@ internal static class ManifestoDeEditalSnapshotsECronograma
         [typeof(ParametrosEliminacaoPorFaltaEmDiaDeProvaDoEnem)] = ([], []),
         [typeof(ParametrosEliminacaoPorAusenciaNaEtapa)] = (["EtapaRef"], []),
 
-        // Cronograma de fases (Story #851) — o eixo temporal do certame.
+        // Cronograma de fases — o eixo temporal do certame.
         [typeof(ChaveLocal)] = (["Valor"], []),
 
         [typeof(FaseCronograma)] = (
@@ -165,7 +165,7 @@ internal static class ManifestoDeEditalSnapshotsECronograma
 
         [typeof(PrazoDoRecurso)] = (["Valor", "Unidade"], []),
 
-        // Conformidade legal (Story #853) — não pende de ConfiguracaoPublicada (não é reposta no
+        // Conformidade legal — não pende de ConfiguracaoPublicada (não é reposta no
         // agregado vivo); alcançada a partir de EnvelopeReidratado.Conformidade, semeada
         // manualmente no traversal como DadosEdital já era.
         [typeof(ResultadoConformidade)] = (
@@ -187,7 +187,7 @@ internal static class ManifestoDeEditalSnapshotsECronograma
         // pelo campo `tipo` no envelope (o próprio predicado já é a forma que o domínio
         // serializa, ao contrário de ParametrosCriterioDesempate/ParametrosRegraEliminacao, cuja variante
         // vem do código da regra externa). BonusObrigatorio, oitava variante original, foi
-        // descartada (ADR-0114, executado pela #853): ConfiguracaoBonusRegional é global ao
+        // descartada (ADR-0114): ConfiguracaoBonusRegional é global ao
         // processo, sem lista de modalidades.
         [typeof(EtapaObrigatoria)] = (["TipoEtapaCodigo"], []),
         [typeof(ModalidadesMinimas)] = (["Codigos"], []),

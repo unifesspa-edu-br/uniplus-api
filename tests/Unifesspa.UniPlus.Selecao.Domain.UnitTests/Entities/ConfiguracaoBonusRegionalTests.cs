@@ -98,7 +98,7 @@ public sealed class ConfiguracaoBonusRegionalTests
         resultado.Error!.Code.Should().Be("ConfiguracaoBonusRegional.TetoInvalido");
     }
 
-    [Fact(DisplayName = "Criar sem nenhum município falha — defesa contra envelope adulterado com municipios:[] (Story #1466)")]
+    [Fact(DisplayName = "Criar sem nenhum município falha — defesa contra envelope adulterado com municipios:[]")]
     public void Criar_SemMunicipios_Falha()
     {
         Result<ConfiguracaoBonusRegional> resultado = Criar(municipios: []);

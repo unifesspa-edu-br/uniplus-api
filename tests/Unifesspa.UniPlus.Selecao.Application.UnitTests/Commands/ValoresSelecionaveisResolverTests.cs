@@ -22,7 +22,7 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
 /// <summary>
-/// A resolução dos valores selecionáveis (issue #1059, UNI-REQ-0072), atravessando um HANDLER
+/// A resolução dos valores selecionáveis (UNI-REQ-0072), atravessando um HANDLER
 /// REAL de publicação — nunca o canonicalizador com entrada já pronta (CA-01): é o handler quem
 /// resolve o dicionário a partir do catálogo, e é essa resolução que este teste prova. O
 /// canonicalizador é mockado apenas para não precisar dos demais 22 blocos do envelope — a

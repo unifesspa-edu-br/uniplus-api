@@ -11,7 +11,7 @@ using Unifesspa.UniPlus.Testes.Compartilhado;
 using static Unifesspa.UniPlus.Selecao.Domain.UnitTests.Entities.ApoioFaseCronograma;
 
 /// <summary>
-/// Cobertura de <see cref="FaseCronograma.Criar"/> (Story #851): as invariantes que a
+/// Cobertura de <see cref="FaseCronograma.Criar"/>: as invariantes que a
 /// factory prova sozinha — janela × <see cref="OrigemDataFase"/> (CA-07), a unicidade do
 /// tipo de ato dentro da fase, a promessa de parecer individual sustentada por publicação
 /// de resultado, e a âncora do prazo de recurso derivada do produto preliminar da própria
@@ -109,7 +109,7 @@ public sealed class FaseCronogramaTests
         resultado.Error!.Code.Should().Be("FaseCronograma.JanelaInvertida");
     }
 
-    // ── A janela é guardada em UTC (issue #1124) ──
+    // ── A janela é guardada em UTC ──
 
     [Theory(DisplayName = "A janela informada com offset é guardada em UTC, preservando o instante")]
     [InlineData(-3, 0)]

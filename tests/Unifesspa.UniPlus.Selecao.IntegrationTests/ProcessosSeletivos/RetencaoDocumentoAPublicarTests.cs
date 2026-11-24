@@ -15,8 +15,8 @@ using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
 /// <summary>
-/// Retenção do documento publicado, contra o Postgres real. É o guard rail que a #804 teve
-/// de <b>repor</b>, e não apenas mover.
+/// Retenção do documento publicado, contra o Postgres real. É o guard rail que
+/// precisou ser <b>reposto</b>, e não apenas movido, quando o <c>Edital</c> deixou de existir.
 /// </summary>
 /// <remarks>
 /// <para>
@@ -78,7 +78,7 @@ public sealed class RetencaoDocumentoEditalTests : IClassFixture<ProcessoSeletiv
 
         // Reter só o DELETE deixaria o desvio aberto: `UPDATE status = 'PENDENTE'` seguido de DELETE
         // levaria a evidência do mesmo jeito. Confirmado não tem caminho de volta — é o que o
-        // ciclo de vida já declarava, e agora o banco o impõe.
+        // ciclo de vida declara, e o banco o impõe.
         Func<Task> desconfirmar = () => ExecutarAsync(conexao, $"UPDATE selecao.documentos_a_publicar SET status = 'PENDENTE' WHERE id = '{documentoId}'");
 
         (await desconfirmar.Should().ThrowAsync<PostgresException>())

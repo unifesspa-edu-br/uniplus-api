@@ -17,9 +17,9 @@ using static Unifesspa.UniPlus.Selecao.Domain.UnitTests.Entities.ApoioDaConformi
 
 /// <summary>
 /// Cobertura do gate de publicação para as pendências do cronograma que só afloram no
-/// congelamento (<c>ProcessoSeletivo.PendenciaDoCronograma</c>, Story #851 §3.4/§3.5):
-/// piso mínimo derivado da origem dos candidatos (issue #851, CA-11), indistinguibilidade por tipo
-/// (issue #851, CA-12), vagas sem fase que produz resultado (issue #851, CA-13), a direção lazy da
+/// congelamento (<c>ProcessoSeletivo.PendenciaDoCronograma</c>):
+/// piso mínimo derivado da origem dos candidatos (CA-11), indistinguibilidade por tipo
+/// (CA-12), vagas sem fase que produz resultado (CA-13), a direção lazy da
 /// bicondicional fase×etapa (CA-14) e o divisor da média sob fórmula local (CA-15).
 /// </summary>
 public sealed class ConformidadeCronogramaTests
@@ -61,7 +61,7 @@ public sealed class ConformidadeCronogramaTests
         [TiposDeProcessoDeTeste.PSIQ],
     ];
 
-    [Theory(DisplayName = "Issue #851, CA-12: ImportacaoExterna publica sem inscrição/etapa/fórmula local — o veredicto NÃO muda com o tipo (indistinguibilidade)")]
+    [Theory(DisplayName = "CA-12: ImportacaoExterna publica sem inscrição/etapa/fórmula local — o veredicto NÃO muda com o tipo (indistinguibilidade)")]
     [MemberData(nameof(TiposDeProcessoDistintos))]
     public void ImportacaoExterna_MesmaConfiguracao_TiposDiferentes_MesmoVeredicto(TipoProcessoSnapshot tipo)
     {

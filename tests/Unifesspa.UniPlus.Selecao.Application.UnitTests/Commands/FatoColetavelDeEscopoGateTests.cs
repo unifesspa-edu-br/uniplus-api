@@ -22,7 +22,7 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
 /// <summary>
-/// Issue #1077: um fato coletável de SELEÇÃO (CONDICAO_ATENDIMENTO/TIPO_DEFICIENCIA) sem
+/// Um fato coletável de SELEÇÃO (CONDICAO_ATENDIMENTO/TIPO_DEFICIENCIA) sem
 /// nenhum valor ofertado publicaria um seletor sem opção nenhuma para o candidato escolher.
 /// Prova, nos <b>três</b> handlers que congelam (ao lado de <see cref="ColetabilidadeDeFatosGateTests"/>
 /// e <see cref="ConformidadeLegalGateTests"/>), que o gate recusa ANTES da canonicalização.

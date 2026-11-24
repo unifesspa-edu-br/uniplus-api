@@ -82,7 +82,7 @@ internal static class ApoioDaPublicacaoDoProcessoSeletivo
         bancasRequeridas: [BancasDeTeste.DaHomologacaoDasInscricoesDaFase()]).Value!;
 
     /// <summary>
-    /// Base legal RESOLVIDO qualquer (Story #554, PR #898) — as fixtures abaixo testam
+    /// Base legal RESOLVIDO qualquer — as fixtures abaixo testam
     /// checagens POSTERIORES ao 5º item de <see cref="ProcessoSeletivo.AvaliarConformidade"/>
     /// (B-01/CA-01), então precisam satisfazer o gate de base legal primeiro, ou nunca o
     /// alcançariam.

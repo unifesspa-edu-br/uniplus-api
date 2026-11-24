@@ -15,7 +15,7 @@ using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Protecao;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
 
 /// <summary>
-/// Configuração EF Core de <see cref="CondicaoGatilho"/> (Story #554, PR #896) — entidade
+/// Configuração EF Core de <see cref="CondicaoGatilho"/> — entidade
 /// filha de <see cref="DocumentoExigido"/>, <c>EntityBase</c> puro (sem soft-delete).
 /// </summary>
 public sealed class CondicaoGatilhoConfiguration : IEntityTypeConfiguration<CondicaoGatilho>

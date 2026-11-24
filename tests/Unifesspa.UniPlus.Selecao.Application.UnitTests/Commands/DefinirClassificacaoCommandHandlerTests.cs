@@ -55,7 +55,7 @@ public sealed class DefinirClassificacaoCommandHandlerTests
         processo.Classificacao!.EscalaNotaFinal.Should().Be(1000m);
     }
 
-    [Theory(DisplayName = "Handle repassa BaseadoEmEnem para Criar — chega até a configuração persistida (#850)")]
+    [Theory(DisplayName = "Handle repassa BaseadoEmEnem para Criar — chega até a configuração persistida")]
     [InlineData(true)]
     [InlineData(false)]
     public async Task Handle_PropagaBaseadoEmEnem(bool baseadoEmEnem)

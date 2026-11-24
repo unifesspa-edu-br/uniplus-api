@@ -12,8 +12,8 @@ using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 
 /// <summary>
-/// Configuração EF Core de <see cref="FatoColetado"/> (Story #926; apresentação —
-/// Rotulo/TipoRenderizacao/Obrigatorio — Story #559) — entidade filha de
+/// Configuração EF Core de <see cref="FatoColetado"/> (apresentação —
+/// Rotulo/TipoRenderizacao/Obrigatorio) — entidade filha de
 /// <c>ProcessoSeletivo</c>, <c>EntityBase</c> puro (sem soft-delete). Substituível por inteiro
 /// junto com o processo, mesmo padrão de <c>DocumentoExigido</c>.
 /// </summary>

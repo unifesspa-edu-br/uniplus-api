@@ -38,8 +38,7 @@ public sealed class ObrigatoriedadeLegalPredicadoEndpointTests : Obrigatoriedade
     /// O discriminador do predicado é <c>$tipo</c> (ADR-0058), e não o <c>type</c> que a maioria
     /// das bibliotecas usa por convenção: errar o <c>$</c> é o modo de falha esperado de quem
     /// integra pela primeira vez. Isso devolvia 500 — "erro interno do servidor" para um defeito
-    /// do cliente que a API sabe descrever, e num status que endpoint nenhum declara (issue
-    /// #1410).
+    /// do cliente que a API sabe descrever, e num status que endpoint nenhum declara.
     /// </summary>
     [Theory(DisplayName = "POST com predicado sem '$tipo' devolve 400 nomeando o campo e o discriminador")]
     [InlineData("tipo")]

@@ -20,7 +20,7 @@ using Unifesspa.UniPlus.IntegrationTests.Fixtures.Authentication;
 /// <summary>
 /// O endpoint <c>PUT /processos-seletivos/{id}/taxa-inscricao</c>, fim a fim pelo HTTP —
 /// prova a obrigatoriedade real de <c>Cobra</c> na desserialização (mesmo raciocínio de
-/// <see cref="DefinirClassificacaoEndpointTests"/>, issue #850): o host não habilita
+/// <see cref="DefinirClassificacaoEndpointTests"/>): o host não habilita
 /// <c>RespectRequiredConstructorParameters</c>, então por padrão do <c>System.Text.Json</c>
 /// um parâmetro de construtor ausente no corpo recebe o valor default (<see langword="null"/>)
 /// — indistinguível de um <c>cobra: null</c> explícito, que o handler interpreta como remoção
@@ -88,9 +88,9 @@ public sealed class DefinirTaxaInscricaoEndpointTests
         taxa.Cobra.Should().BeFalse();
     }
 
-    // Issue #1310: quem cobra declara ao menos um fundamento de isenção — o corpo de sucesso
+    // Quem cobra declara ao menos um fundamento de isenção — o corpo de sucesso
     // do ramo "cobra" carrega o fundamento que a fábrica exige.
-    [Fact(DisplayName = "cobra=true sem fundamento de isenção é rejeitado com 422 nomeado (issue #1310)")]
+    [Fact(DisplayName = "cobra=true sem fundamento de isenção é rejeitado com 422 nomeado")]
     public async Task ComCobraSemFundamento_422()
     {
         Contexto ctx = await SemearRascunhoAsync(nameof(ComCobraSemFundamento_422));
@@ -109,7 +109,7 @@ public sealed class DefinirTaxaInscricaoEndpointTests
             "a recusa preserva a declaração de não cobrança");
     }
 
-    [Fact(DisplayName = "cobra=true com fundamento é aceito e persiste o fundamento (issue #1310)")]
+    [Fact(DisplayName = "cobra=true com fundamento é aceito e persiste o fundamento")]
     public async Task ComCobraEFundamento_204EPersisteFundamento()
     {
         Contexto ctx = await SemearRascunhoAsync(nameof(ComCobraEFundamento_204EPersisteFundamento));

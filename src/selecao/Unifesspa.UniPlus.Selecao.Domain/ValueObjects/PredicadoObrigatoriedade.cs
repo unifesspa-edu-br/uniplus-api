@@ -21,7 +21,7 @@ using System.Text.Json.Serialization;
 /// O discriminator <c>$tipo</c> bate com o ADR-0058 §"Discriminated union".
 /// Os 7 names são camelCase para alinhar com a política do projeto —
 /// <c>BonusObrigatorio</c>, oitava variante original, foi descartada
-/// (ADR-0114, executado pela #853): <c>ConfiguracaoBonusRegional</c> é
+/// (ADR-0114): <c>ConfiguracaoBonusRegional</c> é
 /// global ao processo, sem lista de modalidades, tornando a variante
 /// incompatível com o agregado real.</para>
 /// <para>Exhaustividade do pattern match consumidor é garantida em build:

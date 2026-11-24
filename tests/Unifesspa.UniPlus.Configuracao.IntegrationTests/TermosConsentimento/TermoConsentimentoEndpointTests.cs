@@ -13,7 +13,7 @@ using Unifesspa.UniPlus.IntegrationTests.Fixtures.Authentication;
 
 /// <summary>
 /// Smoke + caminho de escrita dos endpoints de <c>TermoConsentimento</c>
-/// (UNI-REQ-0086, issue #1018): routing, vendor media type, HATEOAS,
+/// (UNI-REQ-0086): routing, vendor media type, HATEOAS,
 /// autenticação/autorização, idempotência e o ciclo rascunho → revisão →
 /// promoção, com Wolverine rodando contra Postgres efêmero.
 /// </summary>

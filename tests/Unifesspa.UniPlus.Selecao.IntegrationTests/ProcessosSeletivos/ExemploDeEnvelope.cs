@@ -30,7 +30,7 @@ using static Unifesspa.UniPlus.Selecao.IntegrationTests.ProcessosSeletivos.Exemp
 /// </summary>
 /// <remarks>
 /// <para>
-/// A golden fixture da #842 <b>não serve de oráculo</b> aqui: ela normaliza os ids
+/// A golden fixture de <c>EnvelopeDeReferencia</c> <b>não serve de oráculo</b> aqui: ela normaliza os ids
 /// voláteis para tokens (<c>&lt;&lt;id-1&gt;&gt;</c>, que não é um GUID e não decodifica) e
 /// o agregado dela é pobre de propósito — atendimento vazio, sem bônus, sem desempate,
 /// sem eliminações. Um decoder que perdesse metade dos campos passaria por ela.
@@ -120,7 +120,7 @@ internal static class ExemploDeEnvelope
         Regra(ConvencaoDeContagemDoPrazo.ExcluiDiaInicial.Codigo(), '8');
 
     /// <summary>
-    /// Snapshots de tipo de etapa fixos (issue #1071) — mesmos <c>origemId</c> semeados no
+    /// Snapshots de tipo de etapa fixos — mesmos <c>origemId</c> semeados no
     /// cadastro real de Configuração (<c>CriaCadastroTiposEtapa</c>), por legibilidade; o
     /// decoder/round-trip nunca consulta o cadastro, então a coincidência não é requisito.
     /// </summary>
@@ -138,8 +138,8 @@ internal static class ExemploDeEnvelope
         TipoEtapaSnapshot.Criar(new Guid("019fee1e-7000-7000-8000-000000000003"), "ENTREVISTA", "Entrevista", admitePontuacao: false, admiteEliminacao: true, notaDeOrigemNoEnem: false, exigeCorrecaoIndependente: true).Value!;
 
     /// <summary>
-    /// Permuta a ORDEM DE ENTRADA de uma coleção não ordenada, sem mudar o conteúdo (Story
-    /// #928, §7.5): o mesmo conjunto de itens, apresentado ao agregado em ordem física
+    /// Permuta a ORDEM DE ENTRADA de uma coleção não ordenada, sem mudar o conteúdo
+    /// (§7.5): o mesmo conjunto de itens, apresentado ao agregado em ordem física
     /// inversa, tem de produzir bytes canônicos idênticos — a projeção ordena tudo por
     /// chave determinística antes de serializar. Compartilhado por toda coleção do exemplo
     /// que declara <c>permutar</c>: etapas, distribuição de vagas, critérios de desempate,

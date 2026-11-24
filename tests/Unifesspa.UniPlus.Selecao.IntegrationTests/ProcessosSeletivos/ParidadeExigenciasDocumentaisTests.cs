@@ -20,14 +20,14 @@ using Xunit;
 
 /// <summary>
 /// Paridade bidirecional entre <see cref="DocumentoExigido"/> viva e o item congelado no
-/// envelope (Story #554, PR #903, CA-11), e a imunidade do envelope já congelado a mudanças
+/// envelope (CA-11), e a imunidade do envelope já congelado a mudanças
 /// posteriores na configuração viva (CA-12).
 /// </summary>
 /// <remarks>
 /// A golden fixture (<see cref="EnvelopeCanonicoGoldenTests"/>) prova a FORMA de uma
 /// publicação isolada; não prova a dimensão TEMPORAL da paridade — o que diverge ENTRE
 /// o agregado vivo e um envelope já congelado quando o tempo passa e a configuração
-/// muda. É exatamente essa lacuna que as duas contraprovas nomeadas na issue #548
+/// muda. É exatamente essa lacuna que as duas contraprovas abaixo
 /// cobrem: órfã VIVA (configurada depois da última publicação) e órfã CONGELADA
 /// (publicada e depois removida da configuração viva). A projeção é pura (ADR-0109 D6),
 /// então esta suíte não precisa de banco — um <see cref="SnapshotCanonico"/> em memória

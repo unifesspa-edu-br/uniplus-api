@@ -24,7 +24,7 @@ using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Edicao;
 /// <summary>
 /// Avalia o checklist de conformidade de um processo seletivo: lê o que o agregado não tem e projeta o
 /// resultado de <see cref="ChecklistDeConformidade"/> para o DTO público. O checklist em si vive no Domain,
-/// coincide com a conferência da configuração que <c>Publicar</c> e <c>Retificar</c> aplicam (issue #1092): a fonte
+/// coincide com a conferência da configuração que <c>Publicar</c> e <c>Retificar</c> aplicam: a fonte
 /// única evita que a leitura pública e a publicação divirjam.
 /// </summary>
 /// <remarks>

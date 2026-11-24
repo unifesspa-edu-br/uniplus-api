@@ -9,7 +9,7 @@ using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 /// <summary>
-/// Bônus regional do <see cref="ProcessoSeletivo"/> (Fator de Atenuação das Desigualdades de Acesso, UNI-REQ-0015, Story #774):
+/// Bônus regional do <see cref="ProcessoSeletivo"/> (Fator de Atenuação das Desigualdades de Acesso, UNI-REQ-0015):
 /// referencia a regra tipada <c>FADA_MULTIPLICATIVO</c>
 /// do <c>regras_do_catalogo</c> e seus parâmetros (<see cref="Fator"/>, <see cref="Teto"/>).
 /// </summary>
@@ -46,13 +46,13 @@ public sealed class ConfiguracaoBonusRegional : EntityBase, IParteDoProcesso
     /// <summary>O fato booleano do processo que decide quem recebe o acréscimo (ADR-0142).</summary>
     public string? FatoElegibilidadeCodigo { get; private set; }
 
-    /// <summary>Id do cadastro de Base Legal de Bônus Regional (Configuração, Story #1465) referenciado.</summary>
+    /// <summary>Id do cadastro de Base Legal de Bônus Regional (Configuração) referenciado.</summary>
     public Guid BaseLegalBonusRegionalId { get; private set; }
 
     /// <summary>Snapshot congelado do código estável da Base Legal, o que o documento de configuração usa para referenciá-la.</summary>
     public string BaseLegalBonusRegionalCodigo { get; private set; } = string.Empty;
 
-    /// <summary>Snapshot congelado no momento da gravação — código canônico UPPER_SNAKE (Story #1464).</summary>
+    /// <summary>Snapshot congelado no momento da gravação — código canônico UPPER_SNAKE.</summary>
     public string TipoInstrumento { get; private set; } = string.Empty;
 
     /// <summary>Snapshot congelado da identificação da Base Legal (ex.: "Portaria Unifesspa nº 2514/2023").</summary>

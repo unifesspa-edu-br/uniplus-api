@@ -24,7 +24,7 @@ using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
 using Wolverine;
 
 /// <summary>
-/// Cobertura de concorrência (revisão do PR #791, achado P1): dois handlers
+/// Cobertura de concorrência: dois handlers
 /// que carregam o MESMO processo via <c>ObterComConfiguracaoAsync</c> — um
 /// <c>DefinirEtapas</c> e um <c>Publicar</c> — não podem produzir um estado
 /// em que o processo está Publicado mas o snapshot congelado diverge da

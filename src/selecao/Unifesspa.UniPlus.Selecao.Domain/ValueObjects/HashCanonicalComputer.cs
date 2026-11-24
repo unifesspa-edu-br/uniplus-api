@@ -14,7 +14,7 @@ using Unifesspa.UniPlus.Selecao.Domain.Enums;
 
 /// <summary>
 /// Computa o hash SHA-256 canônico de uma <see cref="ObrigatoriedadeLegal"/>
-/// per ADR-0058 §"Snapshot-on-bind" e CA-05 da Story #460.
+/// per ADR-0058 §"Snapshot-on-bind" e CA-05.
 /// </summary>
 /// <remarks>
 /// <para>

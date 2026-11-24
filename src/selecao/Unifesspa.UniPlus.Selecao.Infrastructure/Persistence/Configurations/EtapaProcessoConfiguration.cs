@@ -53,8 +53,7 @@ public sealed class EtapaProcessoConfiguration : IEntityTypeConfiguration<EtapaP
             .HasComment("Finalidade da etapa na avaliação: classificatoria, eliminatoria ou ambas.");
 
         builder.Ignore(e => e.TipoEtapaOrigemId);
-        // Sem produção em nenhum ambiente: o vínculo nasce obrigatório, sem coluna nullable
-        // transitória (issue #1071).
+        // O vínculo com o tipo de etapa é obrigatório: a coluna não admite nulo.
         builder.OwnsOne(e => e.TipoEtapa, tipo =>
         {
             tipo.ClassificaPorPadrao(ClassificacaoDeProtecao.Interno);

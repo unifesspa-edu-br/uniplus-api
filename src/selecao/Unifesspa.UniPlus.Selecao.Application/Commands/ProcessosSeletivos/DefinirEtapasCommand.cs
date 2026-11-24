@@ -28,7 +28,7 @@ using Unifesspa.UniPlus.Selecao.Application.DTOs;
 /// declarado.
 /// </param>
 /// <param name="TipoEtapaOrigemId">
-/// Id do tipo de etapa ativo em Configuração (issue #1071). Obrigatório em toda
+/// Id do tipo de etapa ativo em Configuração. Obrigatório em toda
 /// definição — o handler resolve o item via <c>ITipoEtapaReader</c> e congela um
 /// cópia congelada independente do rótulo editorial (<paramref name="Nome"/>).
 /// </param>
@@ -168,8 +168,8 @@ public sealed record RecursoDaEtapaInput(
 public sealed record ProdutoDaEtapaInput(string AtoCodigo, [property: AceitaCodigosDe<PapelDaPublicacaoPrevista>] string? Papel);
 
 /// <summary>
-/// Substitui integralmente as etapas pontuadas do processo (CA-02 da Story
-/// #758). Etapas de caráter classificatória/ambas com peso compõem o divisor
+/// Substitui integralmente as etapas pontuadas do processo (CA-02).
+/// Etapas de caráter classificatória/ambas com peso compõem o divisor
 /// da média.
 /// </summary>
 public sealed record DefinirEtapasCommand(

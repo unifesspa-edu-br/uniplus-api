@@ -22,7 +22,7 @@ using Unifesspa.UniPlus.Testes.Compartilhado;
 
 /// <summary>
 /// Cobertura de integração (Postgres real via Testcontainers) da persistência EF de
-/// <see cref="ConfiguracaoDivulgacao"/> (UNI-REQ-0050, issue #563) — o que só o banco real
+/// <see cref="ConfiguracaoDivulgacao"/> (UNI-REQ-0050) — o que só o banco real
 /// prova: o <c>Include</c> de <see cref="ProcessoSeletivoRepository"/>, o cascade, a
 /// substituição sem resíduo (CA-05) e a estabilidade do <c>ValueComparer</c> do jsonb.
 /// </summary>

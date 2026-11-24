@@ -76,7 +76,7 @@ internal static class CatalogosDoEnvelopeFechado
     }
 
     /// <summary>
-    /// Unidade administradora sem cidade recusa a criação do processo (issue #1114, CA-02), e este
+    /// Unidade administradora sem cidade recusa a criação do processo (CA-02), e este
     /// catálogo é consumido justamente para criar um.
     /// </summary>
     private static async Task<Guid> SemearUnidadeAdministradoraAsync(CascadingApiFactory api, string sufixo)
@@ -251,7 +251,7 @@ internal static class CatalogosDoEnvelopeFechado
     }
 
     /// <summary>
-    /// Semeia uma Base Legal de Bônus Regional (Configuração, Story #1465) direto no
+    /// Semeia uma Base Legal de Bônus Regional (Configuração) direto no
     /// contexto de persistência — o E2E cascateado testa a drenagem de eventos de Seleção, não o
     /// cadastro de Configuração, então seguir o mesmo atalho de <see cref="SemearDocumentoConfirmadoAsync"/>
     /// evita um HTTP round-trip extra sem cobertura adicional.

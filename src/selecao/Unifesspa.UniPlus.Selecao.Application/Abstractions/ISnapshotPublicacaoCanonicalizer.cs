@@ -46,7 +46,7 @@ public sealed record ValorDominioDeclaradoCongelado(string Codigo, string? Descr
 
 /// <summary>
 /// Metadado de um fato do candidato (ADR-0111) congelado no envelope de publicação
-/// (Story #919, congelamento dos parâmetros na publicação, UNI-REQ-0019) — domínio, origem, cardinalidade, ponto de resolução, binding e
+/// (congelamento dos parâmetros na publicação, UNI-REQ-0019) — domínio, origem, cardinalidade, ponto de resolução, binding e
 /// o(s) conjunto(s) de valores, no instante em que o fato foi citado numa condição de
 /// gatilho de <see cref="Domain.Entities.DocumentoExigido"/>. Mapeado pelo HANDLER a
 /// partir de <c>Unifesspa.UniPlus.Configuracao.Contracts.FatoCandidatoView</c> —
@@ -141,7 +141,7 @@ public sealed record FatoDerivadoCongelado(
 /// <param name="HashDocumento">SHA-256 do PDF confirmado do ato.</param>
 /// <param name="Retificacao">Presente apenas quando o ato é de retificação.</param>
 /// <param name="Conformidade">
-/// Veredicto da conformidade legal (Story #853 §3.4), montado pelo handler a partir do
+/// Veredicto da conformidade legal, montado pelo handler a partir do
 /// catálogo <c>ObrigatoriedadeLegal</c> — o canonicalizador não injeta repositório
 /// (ADR-0042). Só regras aprovadas chegam aqui: se qualquer uma reprovasse, o handler já
 /// teria recusado a transição antes de canonicalizar.

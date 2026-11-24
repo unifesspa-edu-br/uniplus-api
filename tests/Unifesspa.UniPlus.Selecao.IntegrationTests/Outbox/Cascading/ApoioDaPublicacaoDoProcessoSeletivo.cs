@@ -20,7 +20,7 @@ using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Authentication;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
 
-// Cenário fim-a-fim do fluxo de referência ADR-0005 (Story #759, T4 #785):
+// Cenário fim-a-fim do fluxo de referência ADR-0005:
 // HTTP request → PublicarProcessoSeletivoCommand → handler convention-based
 // produtivo → ProcessoSeletivo.Publicar(, ExemploDeEnvelopeDadosDoEdital.ContextoRico()) emite ProcessoPublicadoEvent via
 // AddDomainEvent → handler retorna (Result, IEnumerable<object>) com o
@@ -51,8 +51,8 @@ internal sealed class ApoioDaPublicacaoDoProcessoSeletivo
     /// <summary>
     /// Semeia via <paramref name="semear"/>, publica e confirma que o 422 tem o <paramref
     /// name="codigoEsperado"/> e que <c>pendencias</c> contém o item de código <paramref
-    /// name="codigoDoItemVermelho"/> — corpo comum aos quatro grupos de gate estrutural da
-    /// issue #1096 (CA-01 a CA-04).
+    /// name="codigoDoItemVermelho"/> — corpo comum aos quatro grupos de gate estrutural
+    /// (CA-01 a CA-04).
     /// </summary>
     /// <remarks>
     /// A asserção é pelo código do item, não pela frase: a mensagem é redação e muda sem que

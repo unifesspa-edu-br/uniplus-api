@@ -10,7 +10,7 @@ using Unifesspa.UniPlus.Regras.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
-/// <summary>Cobre CA-04 e CA-05 da Story #847 (ADR-0111).</summary>
+/// <summary>Cobre CA-04 e CA-05 (ADR-0111).</summary>
 public sealed class CondicaoDnfTests
 {
     private static JsonElement Json(string raw)
@@ -66,7 +66,7 @@ public sealed class CondicaoDnfTests
         resultado.Error!.Code.Should().Be("CondicaoDnf.FormaIncoerenteComOperador");
     }
 
-    [Theory(DisplayName = "Story #916: ALGUM_DE/NENHUM_DE aceitam array vazio na FORMA — a semântica de avaliação é de PredicadoDnf, não desta factory")]
+    [Theory(DisplayName = "ALGUM_DE/NENHUM_DE aceitam array vazio na FORMA — a semântica de avaliação é de PredicadoDnf, não desta factory")]
     [InlineData(Operador.AlgumDe)]
     [InlineData(Operador.NenhumDe)]
     public void CondicaoDnf_EmOuNaoEm_Aceita_Lista_Vazia(Operador operador)
@@ -76,7 +76,7 @@ public sealed class CondicaoDnfTests
         resultado.IsSuccess.Should().BeTrue();
     }
 
-    [Fact(DisplayName = "Story #916: DIFERENTE aceita a mesma forma escalar de IGUAL")]
+    [Fact(DisplayName = "DIFERENTE aceita a mesma forma escalar de IGUAL")]
     public void CondicaoDnf_Diferente_AceitaEscalar()
     {
         Result<CondicaoDnf> resultado = CondicaoDnf.Criar("SEXO", Operador.Diferente, Json("\"FEMININO\""));
@@ -84,7 +84,7 @@ public sealed class CondicaoDnfTests
         resultado.IsSuccess.Should().BeTrue();
     }
 
-    [Fact(DisplayName = "Story #916: DIFERENTE rejeita array, mesma checagem de forma escalar")]
+    [Fact(DisplayName = "DIFERENTE rejeita array, mesma checagem de forma escalar")]
     public void CondicaoDnf_Diferente_RejeitaArray()
     {
         Result<CondicaoDnf> resultado = CondicaoDnf.Criar("SEXO", Operador.Diferente, Json("[\"FEMININO\"]"));
@@ -93,7 +93,7 @@ public sealed class CondicaoDnfTests
         resultado.Error!.Code.Should().Be("CondicaoDnf.FormaIncoerenteComOperador");
     }
 
-    [Fact(DisplayName = "Story #916: NENHUM_DE rejeita valor não lista, mesma checagem de ALGUM_DE")]
+    [Fact(DisplayName = "NENHUM_DE rejeita valor não lista, mesma checagem de ALGUM_DE")]
     public void CondicaoDnf_NaoEm_RejeitaValorNaoLista()
     {
         Result<CondicaoDnf> resultado = CondicaoDnf.Criar("COR_RACA", Operador.NenhumDe, Json("\"BRANCA\""));

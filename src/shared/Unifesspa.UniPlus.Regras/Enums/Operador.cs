@@ -5,8 +5,8 @@ using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 /// <summary>
 /// Operador de uma <see cref="Regras.ValueObjects.CondicaoDnf"/> — a tripla
 /// <c>{ Fato, Operador, Valor }</c> que compõe a forma normal disjuntiva de um
-/// predicado sobre o candidato (ADR-0111, Story #847; operadores de exclusão
-/// <see cref="Diferente"/>/<see cref="NenhumDe"/>, Story #916). Conjunto fechado por
+/// predicado sobre o candidato (ADR-0111; operadores de exclusão
+/// <see cref="Diferente"/>/<see cref="NenhumDe"/>). Conjunto fechado por
 /// design: os seis operadores espelham exatamente a matriz operador ×
 /// domínio da ADR-0111.
 /// </summary>
@@ -39,7 +39,7 @@ public enum Operador
     MenorIgual = 4,
 
     /// <summary>
-    /// Negação de <see cref="Igual"/> (Story #916) — aceito em todo domínio onde
+    /// Negação de <see cref="Igual"/> — aceito em todo domínio onde
     /// <see cref="Igual"/> vale. Sobre dado com vários valores significa que nenhum elemento do
     /// conjunto é igual ao valor configurado.
     /// </summary>
@@ -48,7 +48,7 @@ public enum Operador
     Diferente = 5,
 
     /// <summary>
-    /// Negação de <see cref="AlgumDe"/> (Story #916) — só aceito onde <see cref="AlgumDe"/> vale.
+    /// Negação de <see cref="AlgumDe"/> — só aceito onde <see cref="AlgumDe"/> vale.
     /// Sobre dado com vários valores significa interseção vazia com a lista configurada.
     /// </summary>
     [CodigoDeContrato("NENHUM_DE", "não é nenhum de")]

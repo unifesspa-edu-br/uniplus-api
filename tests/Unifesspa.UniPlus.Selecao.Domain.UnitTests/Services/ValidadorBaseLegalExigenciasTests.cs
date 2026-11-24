@@ -9,8 +9,7 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
 /// <summary>
-/// Cobertura de <see cref="ValidadorBaseLegalExigencias"/> (Story #554, PR #898, issue #549,
-/// ADR-0074) — 5º item de <c>ProcessoSeletivo.AvaliarConformidade</c>.
+/// Cobertura de <see cref="ValidadorBaseLegalExigencias"/> (ADR-0074) — 5º item de <c>ProcessoSeletivo.AvaliarConformidade</c>.
 /// </summary>
 public sealed class ValidadorBaseLegalExigenciasTests
 {

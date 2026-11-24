@@ -12,7 +12,7 @@ using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 
 /// <summary>
-/// Configuração EF Core de <see cref="ModalidadeSelecionada"/> (Story #773) —
+/// Configuração EF Core de <see cref="ModalidadeSelecionada"/> —
 /// entidade filha de <see cref="ConfiguracaoDistribuicaoVagas"/>, snapshot-copy
 /// por valor da <c>Modalidade</c> viva do módulo Configuração.
 /// </summary>

@@ -25,15 +25,15 @@ using static Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Seed.SqlD
 /// <remarks>
 /// <para>
 /// É dado administrado — depois de semeado, edita-se pelas telas de administração —, gravado direto
-/// no banco por decisão do líder técnico (uniplus-api#1802), para o processo real estar disponível
+/// no banco por decisão do líder técnico, para o processo real estar disponível
 /// sem cadastro manual em cada ambiente. Cada linha é construída pelas factories do domínio: o que o
 /// domínio recusaria derruba a preparação do banco em vez de gravar dado que a API não aceita.
 /// </para>
 /// <para>
 /// Os identificadores são fixos, para a inserção ser idempotente e as chaves estrangeiras baterem
 /// em todo ambiente; o prefixo é próprio, distinto do <c>fa70…</c> dos fatos de sistema. O
-/// conteúdo que o PO ainda não confirmou — valores dos domínios e textos dos termos — é proposta
-/// listada na issue, e a confirmação chega pela tela.
+/// conteúdo que o PO ainda não confirmou — valores dos domínios e textos dos termos — é proposta, e a
+/// confirmação chega pela tela.
 /// </para>
 /// </remarks>
 public static class SementePsrMedicina2027

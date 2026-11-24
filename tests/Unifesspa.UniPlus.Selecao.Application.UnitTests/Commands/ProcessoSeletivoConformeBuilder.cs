@@ -15,7 +15,7 @@ using Unifesspa.UniPlus.Testes.Compartilhado;
 /// <summary>
 /// Processo mínimo conforme às seis dimensões estruturais de
 /// <c>ProcessoSeletivo.ItensEstruturaisDeConformidade</c> (etapas, atendimento especializado,
-/// distribuição de vagas, classificação, cronograma de fases, taxa de inscrição — issue #1112)
+/// distribuição de vagas, classificação, cronograma de fases, taxa de inscrição)
 /// — compartilhado pelos testes dos handlers que congelam (Publicar/Retificar),
 /// que precisam de um processo que passe pelo gate estrutural antes de exercitar o gate
 /// específico de cada teste.
@@ -87,7 +87,7 @@ internal static class ProcessoSeletivoConformeBuilder
 
     private static void DefinirTaxaSemCobranca(ProcessoSeletivo processo)
     {
-        // Issue #1112: publicar sem declarar cobrança de taxa é recusado (CA-01).
+        // Publicar sem declarar cobrança de taxa é recusado (CA-01).
         processo.DefinirTaxaInscricao(
             ConfiguracaoTaxaInscricao.Criar(cobra: false, valor: null, fundamentosCodigos: null).Value!).IsSuccess.Should().BeTrue();
         DeclaracoesObrigatoriasDeTeste.Declarar(processo);

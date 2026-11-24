@@ -6,10 +6,10 @@ using Unifesspa.UniPlus.Selecao.Domain.Enums;
 
 /// <summary>
 /// Política, no nível do <b>processo</b>, que ancora a apuração de <c>FAIXA_ETARIA</c> na
-/// publicação (Story #554, PR #896 — B-03 do plano). Uma única política ancora TODOS os
+/// publicação. Uma única política ancora TODOS os
 /// gatilhos por idade do processo. O congelamento da <c>DateOnly</c> concreta
-/// (<c>dataReferenciaFatos</c> no envelope) é da PR #903; este VO e a validação estrutural de
-/// publicação (<see cref="Entities.ProcessoSeletivo"/>) nascem aqui.
+/// (<c>dataReferenciaFatos</c> no envelope) é feito na publicação; este VO e a validação estrutural de
+/// publicação (<see cref="Entities.ProcessoSeletivo"/>) ficam aqui.
 /// </summary>
 /// <remarks>
 /// Coerência tudo-ou-nada por variante (N-I01): <see cref="Enums.ReferenciaTipo.DataEspecifica"/>

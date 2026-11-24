@@ -3,8 +3,7 @@ namespace Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 
 /// <summary>
-/// De onde vêm os candidatos do <see cref="Entities.ProcessoSeletivo"/> (§3.4 da Story
-/// #851) — o eixo que deriva o piso mínimo do cronograma de fases, <b>nunca</b> o
+/// De onde vêm os candidatos do <see cref="Entities.ProcessoSeletivo"/> — o eixo que deriva o piso mínimo do cronograma de fases, <b>nunca</b> o
 /// <see cref="TipoProcesso"/>. Atributo declarado, obrigatório na criação do processo; a origem ainda
 /// não declarada é <see langword="null"/>.
 /// </summary>

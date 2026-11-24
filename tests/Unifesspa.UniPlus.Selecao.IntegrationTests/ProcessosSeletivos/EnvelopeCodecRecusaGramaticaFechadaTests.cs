@@ -98,8 +98,8 @@ public sealed class EnvelopeCodecRecusaGramaticaFechadaTests
     }
 
     /// <summary>
-    /// Mesmo raciocínio de <see cref="BonusPresenteFalsoComParametros_Recusa"/>, agora para a
-    /// cascata (Story #575): um leitor que só olhasse <c>presente</c> leria
+    /// Mesmo raciocínio de <see cref="BonusPresenteFalsoComParametros_Recusa"/>, para a
+    /// cascata: um leitor que só olhasse <c>presente</c> leria
     /// <c>{"presente":false,"regra":{...},...}</c> como "sem cascata" e descartaria a
     /// sequência legal de remanejamento (cascata de remanejamento de cotas, UNI-REQ-0056) de um certame publicado, sem
     /// deixar rastro — exatamente o modo de falha que <c>ExigirChaves</c> torna impossível.

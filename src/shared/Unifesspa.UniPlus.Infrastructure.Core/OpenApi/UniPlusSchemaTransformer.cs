@@ -16,7 +16,7 @@ using Unifesspa.UniPlus.Kernel.Domain.Enums;
 /// <summary>
 /// Schema transformer que aplica invariantes de domínio Uni+ a propriedades
 /// tipadas. Hoje cobre <c>cpf</c> (regex de 11 dígitos + nota PII) e
-/// <c>valoresSelecionaveis</c> (cardinalidade mínima 1, issue #1077).
+/// <c>valoresSelecionaveis</c> (cardinalidade mínima 1).
 /// <para>
 /// O <c>code</c> de ProblemDetails NÃO é coberto aqui: o campo vive em
 /// <c>ProblemDetails.Extensions["code"]</c> (<c>[JsonExtensionData]</c>) e
@@ -77,7 +77,7 @@ public sealed class UniPlusSchemaTransformer : IOpenApiSchemaTransformer
         }
     }
 
-    // issue #1077: um seletor de ESCOLHA_UNICA/ESCOLHA_MULTIPLA publicado sem opção
+    // Um seletor de ESCOLHA_UNICA/ESCOLHA_MULTIPLA publicado sem opção
     // nenhuma não é respondível — o contrato exige pelo menos um valor selecionável
     // quando o array está presente (null continua válido para SIM_OU_NAO/NUMERO).
     private static void ExigirAoMenosUmValorSelecionavel(OpenApiSchema schema, JsonSchemaType tipo, string propertyName)

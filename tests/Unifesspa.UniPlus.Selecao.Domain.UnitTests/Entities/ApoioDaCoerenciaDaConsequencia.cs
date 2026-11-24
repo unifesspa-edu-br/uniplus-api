@@ -40,9 +40,9 @@ internal static class ApoioDaCoerenciaDaConsequencia
         naturezaLegal == NaturezaLegalModalidade.CotaReservada ? RegraRemanejamentoModalidade.SegueOrdemDeRemanejamento : null;
 
     /// <summary>
-    /// A matriz legal 8×7 completa, fallback AC (Story #575) — usada por
+    /// A matriz legal 8×7 completa, fallback AC — usada por
     /// <see cref="NovoProcessoComModalidade"/> sempre que a modalidade do chamador é
-    /// <see cref="NaturezaLegalModalidade.CotaReservada"/>: desde a #575, a cascata de remanejamento de cotas (UNI-REQ-0056)
+    /// <see cref="NaturezaLegalModalidade.CotaReservada"/>: a cascata de remanejamento de cotas (UNI-REQ-0056)
     /// recusa <c>SegueCascata</c> fora do regime federal, então uma cota reservada só
     /// publica com uma cascata legítima por trás.
     /// </summary>
@@ -134,7 +134,7 @@ internal static class ApoioDaCoerenciaDaConsequencia
         }).Value!;
         processo.DefinirClassificacao(classificacao).IsSuccess.Should().BeTrue();
 
-        // Publicar sem declarar cobrança de taxa é recusado (issue #1112, CA-01).
+        // Publicar sem declarar cobrança de taxa é recusado (CA-01).
         processo.DefinirTaxaInscricao(
             ConfiguracaoTaxaInscricao.Criar(cobra: false, valor: null, fundamentosCodigos: null).Value!).IsSuccess.Should().BeTrue();
         DeclaracoesObrigatoriasDeTeste.Declarar(processo);

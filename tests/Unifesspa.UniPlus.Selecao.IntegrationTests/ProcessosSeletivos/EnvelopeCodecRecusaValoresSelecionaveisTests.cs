@@ -98,7 +98,7 @@ public sealed class EnvelopeCodecRecusaValoresSelecionaveisTests
         resultado.Error!.Code.Should().Be(ErrosCodecEnvelope.EnvelopeMalformado);
     }
 
-    /// <summary>issue #1077 — §4, CA-13: um envelope adulterado com array VAZIO para um fato de seleção é malformado, não um caso legítimo a reidratar.</summary>
+    /// <summary>§4, CA-13: um envelope adulterado com array VAZIO para um fato de seleção é malformado, não um caso legítimo a reidratar.</summary>
     [Fact(DisplayName = "Bicondicional: valoresSelecionaveis com array VAZIO num fato de SELEÇÃO é recusado — cardinalidade mínima 1")]
     public void ValoresSelecionaveis_ArrayVazioEmFatoDeSelecao_Recusa()
     {

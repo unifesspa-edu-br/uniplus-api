@@ -19,7 +19,7 @@ using Unifesspa.UniPlus.Selecao.Application.DTOs;
 using static Unifesspa.UniPlus.Selecao.IntegrationTests.Outbox.Cascading.ApoioDoCronogramaDeFasesPeloEndpoint;
 
 /// <summary>
-/// O período do cronograma de fases informado com deslocamento diferente de UTC (issue #1124),
+/// O período do cronograma de fases informado com deslocamento diferente de UTC,
 /// pelo HTTP e contra Postgres real — o contrato declara <c>inicio</c>/<c>fim</c> como
 /// <c>date-time</c>, e um instante RFC 3339 é inequívoco qualquer que seja o offset com
 /// que o cliente o escreva.
@@ -43,7 +43,7 @@ using static Unifesspa.UniPlus.Selecao.IntegrationTests.Outbox.Cascading.ApoioDo
 public sealed class CronogramaFasesPeriodoComDeslocamentoEndpointTests
 {
     /// <summary>
-    /// Fase de origem de data NO_EDITAL — a que exige período (CA-07 da Story #851) e, por
+    /// Fase de origem de data NO_EDITAL — a que exige período (CA-07) e, por
     /// isso, a que exercita a gravação de <c>inicio</c>/<c>fim</c>. Não produz resultado,
     /// então não arrasta a exigência de ato produzido para o arranjo.
     /// </summary>
@@ -145,7 +145,7 @@ public sealed class CronogramaFasesPeriodoComDeslocamentoEndpointTests
     /// Processo em rascunho <b>sem cronograma</b> — o PUT sob teste é o primeiro a escrevê-lo.
     /// Um processo que já trouxesse uma fase em outra ordem faria o PUT remover uma linha e
     /// inserir outra no mesmo slot único (<c>ux_fases_cronograma_processo_ordem</c>), um
-    /// segundo assunto que não é o desta issue.
+    /// segundo assunto que não é o deste teste.
     /// </summary>
     private async Task<Contexto> SemearAsync(string nome)
     {

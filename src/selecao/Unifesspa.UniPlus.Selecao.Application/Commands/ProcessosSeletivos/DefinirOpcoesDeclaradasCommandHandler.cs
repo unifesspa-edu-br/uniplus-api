@@ -12,7 +12,7 @@ using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.Services;
 
 /// <summary>
-/// Handler do <see cref="DefinirOpcoesDeclaradasCommand"/> (issue #1619): confere no catálogo que
+/// Handler do <see cref="DefinirOpcoesDeclaradasCommand"/>: confere no catálogo que
 /// a fonte dos valores do fato é o processo e entrega as opções ao agregado, que recusa o fato
 /// gerido pelo atendimento especializado, a lista vazia, o código repetido e a remoção de opção
 /// citada por exigência viva.

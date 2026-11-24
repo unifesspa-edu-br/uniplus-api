@@ -22,7 +22,7 @@ using Unifesspa.UniPlus.Testes.Compartilhado;
 
 /// <summary>
 /// Cobertura de integração (Postgres real via Testcontainers) da distribuição
-/// de vagas (Story #773): persiste e recarrega
+/// de vagas: persiste e recarrega
 /// <c>ConfiguracaoDistribuicaoVagas</c> + <c>ModalidadeSelecionada</c>,
 /// provando o mapeamento EF (owned type <c>ReferenciaRegra</c>, snapshot de
 /// referência demográfica opcional, jsonb de critérios cumulativos) contra

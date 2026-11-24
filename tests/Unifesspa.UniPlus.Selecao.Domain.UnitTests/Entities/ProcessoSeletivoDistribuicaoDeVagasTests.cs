@@ -19,12 +19,12 @@ using Unifesspa.UniPlus.Testes.Compartilhado;
 using static Unifesspa.UniPlus.Selecao.Domain.UnitTests.Entities.ApoioDoProcessoSeletivoEmRascunho;
 
 /// <summary>
-/// Distribuição de vagas por oferta de curso do <see cref="ProcessoSeletivo"/> (Story #773):
+/// Distribuição de vagas por oferta de curso do <see cref="ProcessoSeletivo"/>:
 /// o vínculo com a raiz, as recusas de coerência entre ofertas e a concorrência dupla derivada.
 /// </summary>
 public sealed class ProcessoSeletivoDistribuicaoDeVagasTests
 {
-    [Fact(DisplayName = "DefinirDistribuicaoVagas vincula a configuração à raiz (Story #773)")]
+    [Fact(DisplayName = "DefinirDistribuicaoVagas vincula a configuração à raiz")]
     public void DefinirDistribuicaoVagas_Vincula()
     {
         ProcessoSeletivo processo = NovoProcesso();

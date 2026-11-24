@@ -100,7 +100,7 @@ public sealed class DefinirTaxaInscricaoCommandHandlerTests
         await mocks.UnitOfWork.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
     }
 
-    [Fact(DisplayName = "Handle com Cobra=true e nenhum fundamento propaga FundamentoObrigatorioQuandoCobra e NÃO persiste (issue #1310)")]
+    [Fact(DisplayName = "Handle com Cobra=true e nenhum fundamento propaga FundamentoObrigatorioQuandoCobra e NÃO persiste")]
     public async Task Handle_CobraSemFundamento_PropagaErroENaoPersiste()
     {
         ProcessoSeletivo processo = NovoProcesso();

@@ -10,7 +10,7 @@ using Unifesspa.UniPlus.Selecao.Infrastructure.Canonicalization;
 using Xunit;
 
 /// <summary>
-/// <b>Invariância à permutação</b> (Story #928, §7.5; issue #1087): o envelope canônico depende só
+/// <b>Invariância à permutação</b> (§7.5): o envelope canônico depende só
 /// do <b>conteúdo</b> da configuração, nunca da ordem em que as coleções não ordenadas chegam ao
 /// agregado. Permutar a ordem de entrada de etapas, do atendimento especializado (condições, recursos e
 /// tipos de deficiência), distribuição de vagas e ofertas, critérios de desempate, cronograma de
@@ -75,7 +75,7 @@ public sealed class EnvelopeCanonicoPermutacaoTests
     }
 
     /// <summary>
-    /// Issue #1059 (UNI-REQ-0072): a mesma invariância vale para as LISTAS de valores
+    /// UNI-REQ-0072: a mesma invariância vale para as LISTAS de valores
     /// selecionáveis dentro do dicionário — permutar a ordem de entrada de cada lista, sem mudar
     /// o conteúdo, não pode mudar um único byte. O encoder ordena por <c>Ordem</c>/<c>Codigo</c>
     /// (D2); esta é a prova de que ele não depende da ordem em que o resolvedor os entregou.

@@ -22,7 +22,7 @@ using Unifesspa.UniPlus.Testes.Compartilhado;
 
 /// <summary>
 /// A leitura do processo devolve, para cada atributo de domínio fechado, o mesmo token que
-/// a fonte daquele atributo já usa (issue #1294) — a escrita, quando o campo é escrito
+/// a fonte daquele atributo já usa — a escrita, quando o campo é escrito
 /// aqui; o catálogo de Configuração, quando é snapshot-copy (ADR-0061).
 /// </summary>
 /// <remarks>

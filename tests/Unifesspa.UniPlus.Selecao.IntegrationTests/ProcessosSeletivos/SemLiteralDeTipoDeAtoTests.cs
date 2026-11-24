@@ -7,7 +7,7 @@ using AwesomeAssertions;
 using Npgsql;
 
 /// <summary>
-/// Fitness test da #804 (ADR-0103), contra o catálogo do Postgres real: <b>nenhum índice
+/// Fitness test (ADR-0103), contra o catálogo do Postgres real: <b>nenhum índice
 /// nem CHECK do schema <c>selecao</c> carrega um literal de tipo de ato no filtro</b>, e o
 /// enum de natureza não existe mais na persistência. Acrescentar um tipo de ato passa a ser
 /// linha de cadastro — sem migration, sem deploy.

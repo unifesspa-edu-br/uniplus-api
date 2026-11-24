@@ -32,7 +32,7 @@ public sealed class EnvelopeCodecInsumosDeRecomputacaoTests
 
     /// <summary>
     /// <c>vagasOfertadasBase</c>, <c>percentualDaReservaLegal</c> e a referência demográfica
-    /// (issue #848/ADR-0115) não são campos-folha: são insumo do quadro de vagas, que
+    /// (ADR-0115) não são campos-folha: são insumo do quadro de vagas, que
     /// <see cref="Domain.Entities.ConfiguracaoDistribuicaoVagas.Criar"/> recalcula do zero a cada
     /// reidratação (a prova não-circular exige recomputar do insumo, não reler o quadro congelado).
     /// Mutar um insumo sem mutar o quadro deixa o congelado diferente do que a declaração monta, e a
@@ -161,5 +161,5 @@ public sealed class EnvelopeCodecInsumosDeRecomputacaoTests
         return File.Exists(caminho) ? File.ReadAllBytes(caminho) : null;
     }
 
-    // ── Round-trip com exigência documental rica (Story #554, PR #903; Story #919, congelamento dos parâmetros na publicação, UNI-REQ-0019) ──
+    // ── Round-trip com exigência documental rica (congelamento dos parâmetros na publicação, UNI-REQ-0019) ──
 }

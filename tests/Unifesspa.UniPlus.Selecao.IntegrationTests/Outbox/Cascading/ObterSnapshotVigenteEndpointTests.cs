@@ -24,8 +24,8 @@ using Unifesspa.UniPlus.Selecao.Domain.Services;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
 
-// Contrato HTTP do seletor de snapshot vigente (Story #759, T6 #787,
-// ADR-0075/0076/0068): GET .../snapshot-vigente resolve a publicação vigente
+// Contrato HTTP do seletor de snapshot vigente
+// (ADR-0075/0076/0068): GET .../snapshot-vigente resolve a publicação vigente
 // num instante e projeta o snapshot congelado; 422 Snapshot.VigenteAusente
 // quando não há vigente ≤ o instante, 404 quando o processo não existe.
 [Collection(CascadingCollection.Name)]

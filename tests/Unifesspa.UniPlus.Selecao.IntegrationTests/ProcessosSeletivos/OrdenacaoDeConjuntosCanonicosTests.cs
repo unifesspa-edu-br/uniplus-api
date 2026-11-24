@@ -21,8 +21,8 @@ using Unifesspa.UniPlus.Testes.Compartilhado;
 using Xunit;
 
 /// <summary>
-/// Issue #1067 — os sete arrays do envelope que são <b>conjuntos</b> (sem precedência entre os
-/// elementos) passam a ordenar pela <b>chave de conteúdo</b> (ADR-0109 D9): os bytes canônicos
+/// Os sete arrays do envelope que são <b>conjuntos</b> (sem precedência entre os
+/// elementos) ordenam pela <b>chave de conteúdo</b> (ADR-0109 D9): os bytes canônicos
 /// do próprio item, não a ordem de entrada nem a identidade técnica da linha.
 /// </summary>
 /// <remarks>
@@ -32,7 +32,7 @@ using Xunit;
 /// método privado que ordena (<c>EscritaCanonica.OrdenarPorConteudo</c>). A
 /// mesma asserção também serve de <c>CA-02</c> quando o teste reordena a entrada e exige os
 /// MESMOS bytes na saída — determinismo canônico, não ausência de semântica (essa vem da
-/// evidência de consumidor documentada no plano da issue, não de um teste de permutação).
+/// evidência de consumidor documentada, não de um teste de permutação).
 /// </para>
 /// <para>
 /// A projeção é pura (ADR-0109 D6) — nenhum teste aqui precisa de banco.
@@ -63,7 +63,7 @@ public sealed class OrdenacaoDeConjuntosCanonicosTests
     /// aleatórios do resto do envelope em que cada um está embutido (<see cref="MontarProcesso"/>
     /// não fixa ids: dois processos distintos nunca têm o envelope INTEIRO byte-idêntico, mas o
     /// fragmento sob teste tem de ser). <c>internal</c>: reaproveitado por
-    /// <c>PredicadoDnfOrdenacaoCanonicaTests</c> (issue #1068), mesma necessidade de comparar
+    /// <c>PredicadoDnfOrdenacaoCanonicaTests</c>, mesma necessidade de comparar
     /// fragmento em vez de envelope inteiro.
     /// </summary>
     internal static byte[] BytesDoFragmento(JsonNode fragmento) =>
@@ -81,7 +81,7 @@ public sealed class OrdenacaoDeConjuntosCanonicosTests
     /// <summary>
     /// Um processo mínimo, válido para <see cref="SnapshotPublicacaoCanonicalizer.Canonicalizar"/>,
     /// com os dois knobs que os testes de <c>ocorrenciasEsperadas</c> e
-    /// <c>formatosPermitidos.lista</c> precisam variar — os outros quatro arrays da issue
+    /// <c>formatosPermitidos.lista</c> precisam variar — os outros quatro arrays
     /// (<c>obrigatoriedades</c>, os dois <c>predicado.parametros</c> e <c>valoresDominio</c>) entram
     /// pela <see cref="EntradaCanonicalizacao"/>, não pelo agregado, e não precisam deste builder.
     /// </summary>

@@ -25,7 +25,7 @@ internal sealed class InscricaoRecordConfiguration : IEntityTypeConfiguration<In
         {
             t.HasCheckConstraint("ck_inscricoes_situacao", $"situacao IN ({SqlDosCodigosDeContrato.Lista<SituacaoInscricao>()})");
             t.HasComment(
-            "A inscrição de um candidato num processo seletivo (issue #1858) — uma por CPF e " +
+            "A inscrição de um candidato num processo seletivo — uma por CPF e " +
             "processo. As respostas ficam em respostas_da_inscricao e nas tabelas vizinhas.");
         });
 
@@ -108,7 +108,7 @@ internal sealed class InscricaoRecordConfiguration : IEntityTypeConfiguration<In
             .HasFilter("situacao <> 'CANCELADA'")
             .HasDatabaseName("ux_inscricoes_processo_cpf_indice");
 
-        // "Minhas inscrições" (issue #1860) busca por CPF em qualquer processo — o índice
+        // "Minhas inscrições" busca por CPF em qualquer processo — o índice
         // composto acima não serve essa consulta, porque não filtra por ProcessoSeletivoId.
         builder.HasIndex(i => i.CpfIndice)
             .HasDatabaseName("ix_inscricoes_cpf_indice");

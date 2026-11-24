@@ -42,7 +42,7 @@ using Unifesspa.UniPlus.Regras.ValueObjects;
 /// <see cref="OrigemFato.Declarado"/> (resposta/seleção direta do candidato), inclusive
 /// os cinco opt-ins <c>CONCORRER_*</c> — que são seleção direta, ainda que expressem
 /// vontade e não afirmação de elegibilidade. <see cref="OrigemFato.Integracao"/> fica
-/// reservada, sem fato semeado (fonte externa futura, ex.: SIGAA #874).
+/// reservada, sem fato semeado (fonte externa futura, ex.: SIGAA).
 /// </para>
 /// <para>
 /// <c>BAIXA_RENDA</c> <b>não</b> substitui <c>RENDA_PER_CAPITA</c>: são fatos distintos e
@@ -257,7 +257,7 @@ public static class FatoCandidatoSeed
             FaseCanonicaCatalogo.CodigoSolicitacaoIsencao, $"CAMPO_FORMULARIO:{IsencaoPorCarenciaSocioeconomica.FatoRenda}",
             ClassificacaoDeProtecao.Pessoal, FinalidadeIsencaoDaTaxa),
 
-        // A edição do ENEM cujas notas serão importadas (issue #1620) — as opções são as
+        // A edição do ENEM cujas notas serão importadas — as opções são as
         // edições que o processo admite, declaradas por ele (ADR-0136, fonte PROCESSO), nunca
         // uma lista fixa no código. Só existe em processo com classificação baseada em ENEM
         // (ProcessoSeletivo.DefinirOpcoesDeclaradas recusa fora desse caso).

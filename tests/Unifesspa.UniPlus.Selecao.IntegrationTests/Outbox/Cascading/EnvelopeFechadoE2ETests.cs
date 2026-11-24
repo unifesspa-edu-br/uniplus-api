@@ -43,16 +43,15 @@ using static Unifesspa.UniPlus.Selecao.IntegrationTests.Outbox.Cascading.PassosD
 using static Unifesspa.UniPlus.Selecao.IntegrationTests.Outbox.Cascading.PayloadsDoEnvelopeFechado;
 
 /// <summary>
-/// A cadeia completa do envelope fechado (issue #1045, story-pai #40): um processo RICO,
-/// publicado pelo caminho HTTP com todas as dimensões que a cascata #1059/#1067/#1068/#563/#1069
-/// entregou, o ato confirmado em Publicações — não só enfileirado —, a retificação pelo envio
+/// A cadeia completa do envelope fechado: um processo RICO,
+/// publicado pelo caminho HTTP com todas as dimensões do envelope, o ato confirmado em Publicações — não só enfileirado —, a retificação pelo envio
 /// único, o segundo ato confirmado retificando o primeiro, e a versão vigente refletindo a
 /// retificação.
 /// </summary>
 /// <remarks>
 /// <para>
-/// Nenhum cenário isolado aqui é novo: cada elo já tem dono (§2 do plano da issue —
-/// <c>RegistroDeAtoPorFilaDuravelTests</c>, <c>CicloDaRetificacaoEndpointTests</c>,
+/// Nenhum cenário isolado aqui é novo: cada elo já tem dono
+/// (<c>RegistroDeAtoPorFilaDuravelTests</c>, <c>CicloDaRetificacaoEndpointTests</c>,
 /// <c>EnvelopeCodecRoundTripTests</c>, <c>PoliticaDeOrdenacaoTests</c>). O que não existia em teste
 /// algum era a <b>corrente inteira</b>, pelo caminho HTTP, com um processo que exercita fatos
 /// coletados, cascata de remanejamento, divulgação e formulário — o exemplo rico só era exercitado

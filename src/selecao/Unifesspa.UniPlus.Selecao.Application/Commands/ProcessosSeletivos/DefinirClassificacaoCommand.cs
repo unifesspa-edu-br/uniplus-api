@@ -27,11 +27,10 @@ public sealed record RegraEliminacaoInput(
     string? AreaCodigo);
 
 /// <summary>
-/// Define (ou substitui) a configuração de classificação do processo (Story
-/// #775) — o 15º bloco canônico, que compõe por
+/// Define (ou substitui) a configuração de classificação do processo — o 15º bloco canônico, que compõe por
 /// referência a fórmula da nota, a precisão, a lista de eliminação e a ordem
 /// de alocação. Bônus e desempate não são parâmetros aqui: já são dimensões
-/// do próprio agregado (Story #774).
+/// do próprio agregado.
 /// </summary>
 /// <param name="ResolucaoPesoAreaEnem">
 /// Resolução de Pesos por Área que a classificação usa — obrigatória na classificação

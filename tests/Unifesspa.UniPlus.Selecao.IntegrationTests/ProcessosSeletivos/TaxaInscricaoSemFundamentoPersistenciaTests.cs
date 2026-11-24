@@ -21,7 +21,7 @@ using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
 /// <summary>
-/// Issue #1310: a fábrica recusa <c>Cobra = true</c> sem fundamento de isenção, mas essa
+/// A fábrica recusa <c>Cobra = true</c> sem fundamento de isenção, mas essa
 /// combinação é MATERIALIZÁVEL — o EF hidrata <see cref="ConfiguracaoTaxaInscricao"/> direto da
 /// coluna <c>jsonb</c>, sem passar por <c>Criar</c>. Configuração gravada antes da regra volta
 /// ao agregado nesse estado, e sem o item de conformidade
@@ -43,7 +43,7 @@ public sealed class TaxaInscricaoSemFundamentoPersistenciaTests : IClassFixture<
 
     // O estado gravado por quem configurou a taxa antes de a regra existir: a fábrica recusa produzi-lo hoje,
     // mas o EF hidrata a linha direto da coluna.
-    [Fact(DisplayName = "Configuração hidratada com cobrança e lista de fundamentos vazia marca o item vermelho e recusa a publicação (issue #1310)")]
+    [Fact(DisplayName = "Configuração hidratada com cobrança e lista de fundamentos vazia marca o item vermelho e recusa a publicação")]
     public async Task CobraSemFundamento_ItemVermelhoEPublicacaoRecusada()
     {
         Guid processoId = await SemearProcessoQueCobraComFundamentoAsync(
@@ -74,7 +74,7 @@ public sealed class TaxaInscricaoSemFundamentoPersistenciaTests : IClassFixture<
         publicacao.Error!.Code.Should().Be("ProcessoSeletivo.ConformidadeInsuficiente");
     }
 
-    [Fact(DisplayName = "Token fora do vocabulário na coluna estoura na carga do agregado — o estado inválido é alto, não silencioso (issue #1310)")]
+    [Fact(DisplayName = "Token fora do vocabulário na coluna estoura na carga do agregado — o estado inválido é alto, não silencioso")]
     public async Task FundamentoForaDoVocabulario_EstouraNaCarga()
     {
         Guid processoId = await SemearProcessoQueCobraComFundamentoAsync(
@@ -93,7 +93,7 @@ public sealed class TaxaInscricaoSemFundamentoPersistenciaTests : IClassFixture<
             "código desconhecido é recusado na leitura");
     }
 
-    [Fact(DisplayName = "Contraprova: configuração hidratada com cobrança e fundamento reconhecido publica normalmente (issue #1310)")]
+    [Fact(DisplayName = "Contraprova: configuração hidratada com cobrança e fundamento reconhecido publica normalmente")]
     public async Task CobraComFundamento_PublicaNormalmente()
     {
         Guid processoId = await SemearProcessoQueCobraComFundamentoAsync(

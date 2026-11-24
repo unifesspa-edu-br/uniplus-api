@@ -127,7 +127,7 @@ public sealed class ProcessoSeletivoPublicarCoerenciaDaConsequenciaTests
     // com um dicionário de fatos só com MODALIDADE; a condição de FAIXA_ETARIA (fato
     // ausente) avaliava como falsa (PredicadoDnf.Avaliar), reprovando a cláusula
     // inteira e escondendo QUALQUER modalidade da conferência CA-05 — publicaria incoerente.
-    [Fact(DisplayName = "CA-05 (5/5 — gatilho não-modal): ELIMINA condicionado só a FAIXA_ETARIA (nenhuma condição de MODALIDADE) ainda é incoerente com RECLASSIFICA_AC — achado de revisão da PR #903")]
+    [Fact(DisplayName = "CA-05 (5/5 — gatilho não-modal): ELIMINA condicionado só a FAIXA_ETARIA (nenhuma condição de MODALIDADE) ainda é incoerente com RECLASSIFICA_AC")]
     public void Publicar_GatilhoPorFaixaEtariaSemCondicaoDeModalidadeElimina_IncoerenteComAcaoDaModalidade()
     {
         ProcessoSeletivo processo = ProcessoQueEliminaPorFaixaEtariaNaModalidadeQueReclassifica();

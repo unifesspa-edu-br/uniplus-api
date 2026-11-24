@@ -14,7 +14,7 @@ using Unifesspa.UniPlus.Selecao.Application.DTOs;
 
 /// <summary>
 /// Entrada de recurso de uma fase, usada por <see cref="FaseCronogramaInput"/>.
-/// Presença = a fase admite recurso (Story #851 §3.6) — sem enum, sem flag.
+/// Presença = a fase admite recurso — sem enum, sem flag.
 /// </summary>
 /// <param name="AtoAncoraCodigo">
 /// Tipo de ato do qual o prazo conta o instante de publicação. É resolvido <b>dentro dos
@@ -130,7 +130,7 @@ public sealed record FaseCronogramaInput(
 }
 
 /// <summary>
-/// Substitui integralmente o cronograma de fases do processo (Story #851, CA-06):
+/// Substitui integralmente o cronograma de fases do processo (CA-06):
 /// o handler resolve, via <c>IFaseCanonicaReader</c>/<c>ITipoBancaReader</c>/
 /// <c>ICategoriaDocumentoReader</c>/<c>IPrecedenciaFaseReader</c> (módulo Configuração,
 /// ADR-0056) e

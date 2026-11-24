@@ -49,7 +49,7 @@ internal static class ExemploDeConfiguracao
 
     private static void DefinirCronograma(ProcessoSeletivo processo)
     {
-        // Cronograma mínimo (Story #851): UMA fase satisfaz as duas exigências do corpus —
+        // Cronograma mínimo: UMA fase satisfaz as duas exigências do corpus —
         // AgrupaEtapas (há etapa acima) e ProduzResultado (há vagas ofertadas abaixo).
         processo.DefinirCronogramaFases([
             FaseCronograma.Criar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("fase").Value!,

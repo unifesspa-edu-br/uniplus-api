@@ -42,7 +42,7 @@ public sealed class CriarProcessoSeletivoCommandValidatorTests
         result.Errors.Should().Contain(e => e.PropertyName == "TipoProcessoOrigemId");
     }
 
-    [Theory(DisplayName = "Validator falha quando a origem dos candidatos falta ou não é um código conhecido (Story #851 §3.4)")]
+    [Theory(DisplayName = "Validator falha quando a origem dos candidatos falta ou não é um código conhecido")]
     [InlineData(null)]
     [InlineData("")]
     [InlineData("origemQueNaoExiste")]
@@ -55,7 +55,7 @@ public sealed class CriarProcessoSeletivoCommandValidatorTests
         result.Errors.Should().Contain(e => e.PropertyName == "OrigemCandidatos");
     }
 
-    [Fact(DisplayName = "Validator falha quando UnidadeAdministradoraOrigemId é Guid.Empty (issue #849, CA-01)")]
+    [Fact(DisplayName = "Validator falha quando UnidadeAdministradoraOrigemId é Guid.Empty (CA-01)")]
     public void Rejeita_UnidadeAdministradoraOrigemIdVazio()
     {
         ValidationResult result = new CriarProcessoSeletivoCommandValidator()

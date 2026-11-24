@@ -13,7 +13,7 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
 /// <summary>
-/// Cobertura de <see cref="DocumentoExigido"/> (Story #554, PR #895): fábrica, guard de
+/// Cobertura de <see cref="DocumentoExigido"/>: fábrica, guard de
 /// coerência de aplicabilidade (CA-01) e <see cref="DocumentoExigido.DeterminaResultado"/>.
 /// </summary>
 public sealed class DocumentoExigidoTests
@@ -119,7 +119,7 @@ public sealed class DocumentoExigidoTests
         erro!.Code.Should().Be("DocumentoExigido.GeralComCondicao");
     }
 
-    [Fact(DisplayName = "Story #892 (PR #896): Criar recusa GERAL com condição real (não mais parâmetro sintético)")]
+    [Fact(DisplayName = "Criar recusa GERAL com condição real (e não parâmetro sintético)")]
     public void Criar_GeralComCondicaoReal_Recusa()
     {
         Result<DocumentoExigido> resultado = Exigencia(Aplicabilidade.Geral, condicoes: [CondicaoQualquer()]);
@@ -128,7 +128,7 @@ public sealed class DocumentoExigidoTests
         resultado.Error!.Code.Should().Be("DocumentoExigido.GeralComCondicao");
     }
 
-    [Fact(DisplayName = "Story #892 (PR #896): Criar aceita CONDICIONAL com condição real e a anexa à coleção")]
+    [Fact(DisplayName = "Criar aceita CONDICIONAL com condição real e a anexa à coleção")]
     public void Criar_CondicionalComCondicaoReal_Aceita()
     {
         CondicaoGatilho condicao = CondicaoQualquer();
@@ -217,7 +217,7 @@ public sealed class DocumentoExigidoTests
         erros.Select(e => e.Error.Code).Should().BeEquivalentTo(["DocumentoExigido.GeralComCondicao"]);
     }
 
-    // ── Story #554/issue #549 (PR #898) — base legal 1:N ──
+    // ── Base legal 1:N ──
 
     [Fact(DisplayName = "CA-06: BasesLegaisResolvidas exclui toda base PENDENTE")]
     public void BasesLegaisResolvidas_ExcluiPendente()
@@ -241,7 +241,7 @@ public sealed class DocumentoExigidoTests
         exigencia.BasesLegaisResolvidas().Should().BeEmpty();
     }
 
-    // ── Story #916 — AplicavelPara ternário ──
+    // ── AplicavelPara ternário ──
 
     private static CondicaoGatilho CondicaoDe(string fato, Operador operador, string valorJson)
     {
@@ -287,7 +287,7 @@ public sealed class DocumentoExigidoTests
         exigencia.AplicavelPara(fatosDivergentes).Should().Be(Ternario.Falso);
     }
 
-    // ── Story #916 — PodeAlcancarModalidade com DIFERENTE/NENHUM_DE ──
+    // ── PodeAlcancarModalidade com DIFERENTE/NENHUM_DE ──
 
     [Fact(DisplayName = "PodeAlcancarModalidade: MODALIDADE DIFERENTE X alcança qualquer modalidade que não seja X")]
     public void PodeAlcancarModalidade_Diferente_AlcancaModalidadeDivergente()
@@ -311,10 +311,10 @@ public sealed class DocumentoExigidoTests
         exigencia.PodeAlcancarModalidade("LB_Q", FatosDeModalidadeDeTeste.DoCatalogo).Should().BeFalse();
     }
 
-    // ── Story #918 §4 — não-expiração do laudo de deficiência permanente sai de GATILHO,
+    // ── Não-expiração do laudo de deficiência permanente sai de GATILHO,
     // sem campo especial: TIPO_DEFICIENCIA ALGUM_DE/NENHUM_DE {valores permanentes} já é inteiramente
-    // coberto pelos operadores/avaliação ternária da PR2 (Story #916) + o vocabulário da PR1
-    // (Story #917) — os 3 cenários abaixo usam SÓ código pré-existente dessas duas PRs,
+    // coberto pelos operadores/avaliação ternária + o vocabulário de deficiência
+    // — os 3 cenários abaixo usam SÓ esse código já existente,
     // provando que nenhuma produção nova é necessária para a exceção de idade.
 
     private static readonly string[] ValoresPermanentes = ["TEA", "AMPUTACAO"];
@@ -322,7 +322,7 @@ public sealed class DocumentoExigidoTests
     private static DocumentoExigido ExigenciaSemIdadeGatilhadaPorTipoDeficiencia(Operador operador, string valorJson) =>
         Exigencia(Aplicabilidade.Condicional, condicoes: [CondicaoDe("TIPO_DEFICIENCIA", operador, valorJson)]).Value!;
 
-    [Fact(DisplayName = "Story #918 §4: laudo PERMANENTE — exigência SEM idade (ALGUM_DE permanentes) é Verdadeiro, exigência COM idade (NENHUM_DE permanentes) é Falso")]
+    [Fact(DisplayName = "Laudo PERMANENTE — exigência SEM idade (ALGUM_DE permanentes) é Verdadeiro, exigência COM idade (NENHUM_DE permanentes) é Falso")]
     public void AplicavelPara_TipoDeficienciaPermanente_ExcecaoDeIdadeResolveCorretamente()
     {
         string listaPermanentes = JsonSerializer.Serialize(ValoresPermanentes);
@@ -339,7 +339,7 @@ public sealed class DocumentoExigidoTests
             "TEA é permanente — a exigência COM idade máxima (gatilhada por NENHUM_DE permanentes) NÃO se aplica");
     }
 
-    [Fact(DisplayName = "Story #918 §4: laudo NÃO-PERMANENTE — o oposto: exigência SEM idade é Falso, exigência COM idade é Verdadeiro")]
+    [Fact(DisplayName = "Laudo NÃO-PERMANENTE — o oposto: exigência SEM idade é Falso, exigência COM idade é Verdadeiro")]
     public void AplicavelPara_TipoDeficienciaNaoPermanente_ExcecaoDeIdadeResolveCorretamente()
     {
         string listaPermanentes = JsonSerializer.Serialize(ValoresPermanentes);
@@ -356,7 +356,7 @@ public sealed class DocumentoExigidoTests
             "DEPRESSAO não é permanente — a exigência COM idade máxima (gatilhada por NENHUM_DE permanentes) se aplica");
     }
 
-    [Fact(DisplayName = "Story #918 §4: TIPO_DEFICIENCIA ausente — AMBAS as exigências ficam Indeterminado (fail-closed, nunca 'nenhuma se aplica')")]
+    [Fact(DisplayName = "TIPO_DEFICIENCIA ausente — AMBAS as exigências ficam Indeterminado (fail-closed, nunca 'nenhuma se aplica')")]
     public void AplicavelPara_TipoDeficienciaAusente_AmbasIndeterminado()
     {
         string listaPermanentes = JsonSerializer.Serialize(ValoresPermanentes);

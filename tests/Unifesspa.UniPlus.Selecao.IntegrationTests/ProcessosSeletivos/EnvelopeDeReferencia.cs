@@ -67,8 +67,8 @@ internal static class EnvelopeDeReferencia
         documentoEditalId: DocumentoFixo).Value!;
 
     /// <summary>
-    /// Metadado dos fatos citados na condição de gatilho do documento de referência (Story #919,
-    /// congelamento dos parâmetros na publicação, UNI-REQ-0019) — exercita <c>metadadosFatos</c> com DOIS itens reais.
+    /// Metadado dos fatos citados na condição de gatilho do documento de referência
+    /// (congelamento dos parâmetros na publicação, UNI-REQ-0019) — exercita <c>metadadosFatos</c> com DOIS itens reais.
     /// MODALIDADE é derivado e de escopo-processo (ADR-0116): seus valores vêm da oferta congelada,
     /// então <c>valoresDominio</c> e <c>valoresDominioDeclarados</c> são nulos. COR_RACA é categórico
     /// ESTÁTICO: <c>valoresDominioDeclarados</c> é populado — a variante que, sem este fato no
@@ -83,7 +83,7 @@ internal static class EnvelopeDeReferencia
 
     /// <summary>
     /// Os valores selecionáveis dos dois fatos coletados do processo de referência (COR_RACA,
-    /// RENDA — ambos <c>ESCOLHA_UNICA</c>, issue #1059) — totalidade exigida pelo encoder (D1-ter).
+    /// RENDA — ambos <c>ESCOLHA_UNICA</c>) — totalidade exigida pelo encoder (D1-ter).
     /// COR_RACA reusa o MESMO vocabulário dos metadados: é o mesmo fato do catálogo, congelado nos dois blocos.
     /// </summary>
     internal static Dictionary<string, IReadOnlyList<ValorDominioDeclaradoCongelado>?> ValoresSelecionaveisDeReferencia() =>
@@ -109,7 +109,7 @@ internal static class EnvelopeDeReferencia
         Canonicalizer.Canonicalizar(new EntradaCanonicalizacao(ProcessoDeReferencia(), DadosDeReferencia(), HashFixo, FusoInstitucional.ZoneId, Retificacao: null, Conformidade: null, DadosDeCatalogo: new DadosDeCatalogoDaConfiguracaoPublicada(MetadadosFatosCongelados: MetadadosFatosDeReferencia(), ValoresSelecionaveisCongelados: ValoresSelecionaveisDeReferencia(), ApresentacaoDosPressupostos: ExemploDeEnvelopeEntrada.ApresentacaoRica, TiposDeAtoCongelados: TiposDeAtoCongeladosDeTeste.Dos(ProcessoDeReferencia()), FatosDerivadosCongelados: FatosDerivadosCongeladosDeTeste.Padrao)));
 
     /// <summary>
-    /// O agregado de referência COM a cascata de remanejamento configurada (Story #575) — a matriz
+    /// O agregado de referência COM a cascata de remanejamento configurada — a matriz
     /// legal completa (8×7, fallback AC). A oferta de referência é institucional (não federal): a
     /// canonicalização é pura (ADR-0109 D6) e não valida <c>PendenciaDaCascata</c>, então este
     /// agregado não precisa ser publicável — ele só existe para congelar a forma
@@ -173,7 +173,7 @@ internal static class EnvelopeDeReferencia
     }
 
     // Com o documento de referência gatado pela modalidade do candidato, derivada da única
-    // ofertada, o snapshot fecha as QUATRO classes de aresta do grafo conjunto (Story #928, §7.4):
+    // ofertada, o snapshot fecha as QUATRO classes de aresta do grafo conjunto (§7.4):
     // produção (campo→fato), pré-condição (COR_RACA gata RENDA), derivação (RENDA→REGIME_DE_VAGA)
     // e gatilho (MODALIDADE→exigência).
     private static void DefinirDocumentosEFatos(ProcessoSeletivo processo, FaseCronograma fase)
@@ -188,7 +188,7 @@ internal static class EnvelopeDeReferencia
         processo.DefinirItens([FatoCorRaca(), FatoRendaGatadoPelaCorRaca()]).IsSuccess.Should().BeTrue();
     }
 
-    // O formulário de inscrição (Story #559, UNI-REQ-0086) traz título e um termo exigido: a
+    // O formulário de inscrição (UNI-REQ-0086) traz título e um termo exigido: a
     // fixture congela a forma real do bloco "formularios", não só o caso sem termos.
     private static void DefinirFormularioEDerivacao(ProcessoSeletivo processo)
     {
@@ -206,7 +206,7 @@ internal static class EnvelopeDeReferencia
         ]).IsSuccess.Should().BeTrue();
     }
 
-    // O exemplo BASE declara "não cobra" (issue #1112): a combinação do CA-08 complementar ao
+    // O exemplo BASE declara "não cobra": a combinação do CA-08 complementar ao
     // exemplo RICO ("cobra com fundamentos").
     private static void DefinirTaxaDeInscricao(ProcessoSeletivo processo)
     {

@@ -19,7 +19,7 @@ using Unifesspa.UniPlus.Testes.Compartilhado;
 
 /// <summary>
 /// Cobertura de <see cref="ObterProcessoSeletivoQueryHandler.Handle"/> para a leitura tipada de
-/// fatos coletados e regras de derivação (Story #987): a ordenação determinística, o contrato
+/// fatos coletados e regras de derivação: a ordenação determinística, o contrato
 /// "ausência é null, nunca []" e o round-trip do valor tipado.
 /// </summary>
 public sealed class ObterProcessoSeletivoQueryHandlerColetaDeFatosTests

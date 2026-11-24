@@ -28,7 +28,7 @@ public enum ClassificacaoDeProtecao
     /// Dado pessoal que identifica diretamente o titular: número de documento (CPF, RG,
     /// passaporte). Isola um indivíduo entre os demais sem revelar nenhum atributo seu —
     /// por isso cifrado em repouso, diferente de <see cref="Pessoal"/> e <see cref="Sensivel"/>
-    /// (ADR-0121, ADR-0136, emenda de #1856).
+    /// (ADR-0121, ADR-0136).
     /// </summary>
     [CodigoDeContrato("IDENTIFICADOR", "Identificador", Descricao = "Dado pessoal que identifica diretamente uma pessoa.")]
     Identificador = 4,

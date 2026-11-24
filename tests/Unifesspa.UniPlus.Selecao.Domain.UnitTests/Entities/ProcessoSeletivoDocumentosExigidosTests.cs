@@ -14,9 +14,9 @@ using Unifesspa.UniPlus.Testes.Compartilhado;
 using static Unifesspa.UniPlus.Selecao.Domain.UnitTests.Entities.ApoioDosDocumentosExigidosDoProcessoSeletivo;
 
 /// <summary>
-/// Cobertura de <see cref="ProcessoSeletivo.DefinirDocumentosExigidos"/> (Story #554,
-/// PR #895): substituição integral e pertencimento da fase ao cronograma do MESMO
-/// processo (§2 da issue #547).
+/// Cobertura de <see cref="ProcessoSeletivo.DefinirDocumentosExigidos"/>:
+/// substituição integral e pertencimento da fase ao cronograma do MESMO
+/// processo.
 /// </summary>
 public sealed class ProcessoSeletivoDocumentosExigidosTests
 {

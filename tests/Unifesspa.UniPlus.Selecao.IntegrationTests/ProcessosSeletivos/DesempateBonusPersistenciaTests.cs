@@ -21,7 +21,7 @@ using Unifesspa.UniPlus.Testes.Compartilhado;
 
 /// <summary>
 /// Cobertura de integração (Postgres real via Testcontainers) do bônus
-/// regional (Fator de Atenuação das Desigualdades de Acesso, UNI-REQ-0015) e dos critérios de desempate (Story #774): persiste e
+/// regional (Fator de Atenuação das Desigualdades de Acesso, UNI-REQ-0015) e dos critérios de desempate: persiste e
 /// recarrega as 5 variantes de
 /// <c>ParametrosCriterioDesempate</c> (jsonb polimórfico) e o owned type
 /// <c>ReferenciaRegra</c>, e prova a reconfiguração sobre o agregado tracked

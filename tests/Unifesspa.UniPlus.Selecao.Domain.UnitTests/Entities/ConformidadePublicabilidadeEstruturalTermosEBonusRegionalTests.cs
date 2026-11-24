@@ -100,7 +100,7 @@ public sealed class ConformidadePublicabilidadeEstruturalTermosEBonusRegionalTes
     }
 
     // ══════════════════════════════════════════════════════════════════════════════════════
-    // Municípios do bônus regional como opções (issue #1691)
+    // Municípios do bônus regional como opções
     // ══════════════════════════════════════════════════════════════════════════════════════
 
     private static FatoColetado FatoMunicipioDoBonus() => FatoColetadoDeTeste.Coletando("MUNICIPIO_EM_AREA_BONUS", 0)

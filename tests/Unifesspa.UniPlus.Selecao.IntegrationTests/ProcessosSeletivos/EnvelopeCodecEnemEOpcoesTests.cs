@@ -224,7 +224,7 @@ public sealed class EnvelopeCodecEnemEOpcoesTests
             processo.DefinirItens([FormularioDeTeste.CampoDaEdicaoDoEnem(0)]).IsSuccess.Should().BeTrue();
         }
 
-        // Issue #1112: publicar sem declarar cobrança de taxa é recusado (CA-01).
+        // Publicar sem declarar cobrança de taxa é recusado (CA-01).
         processo.DefinirTaxaInscricao(
             ConfiguracaoTaxaInscricao.Criar(cobra: false, valor: null, fundamentosCodigos: null).Value!).IsSuccess.Should().BeTrue();
         DeclaracoesObrigatoriasDeTeste.Declarar(processo);

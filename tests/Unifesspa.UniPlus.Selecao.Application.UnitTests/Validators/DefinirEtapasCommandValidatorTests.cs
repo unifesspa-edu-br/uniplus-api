@@ -132,7 +132,7 @@ public sealed class DefinirEtapasCommandValidatorTests
         result.IsValid.Should().BeTrue();
     }
 
-    [Fact(DisplayName = "Validator aceita lista de etapas vazia (Story #851 §3.5 — processo sem prova é válido)")]
+    [Fact(DisplayName = "Validator aceita lista de etapas vazia (processo sem prova é válido)")]
     public void Aceita_ListaVazia()
     {
         ValidationResult result = new DefinirEtapasCommandValidator()
@@ -164,7 +164,7 @@ public sealed class DefinirEtapasCommandValidatorTests
     }
 
     /// <summary>
-    /// issue #1071 — cenário 3: tipo é obrigatório desde a definição da etapa. Sem produção em
+    /// Tipo é obrigatório desde a definição da etapa. Sem produção em
     /// nenhum ambiente, não há transição com tipo opcional (ver ADR-0123).
     /// </summary>
     [Fact(DisplayName = "Validator falha quando TipoEtapaOrigemId não é informado")]

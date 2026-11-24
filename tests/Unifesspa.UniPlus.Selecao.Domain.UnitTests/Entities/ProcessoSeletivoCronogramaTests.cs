@@ -15,8 +15,8 @@ using Unifesspa.UniPlus.Testes.Compartilhado;
 using static Unifesspa.UniPlus.Selecao.Domain.UnitTests.Entities.ApoioProcessoSeletivoCronograma;
 
 /// <summary>
-/// Cobertura de <see cref="ProcessoSeletivo.DefinirCronogramaFases"/> (Story #851
-/// §3.3/§3.5): estrutura do cronograma (CA-06), precedência entre fases — inclusive a
+/// Cobertura de <see cref="ProcessoSeletivo.DefinirCronogramaFases"/>:
+/// estrutura do cronograma (CA-06), precedência entre fases — inclusive a
 /// contraprova de ausência (CA-08), sobreposição de janelas (CA-09), a aresta da
 /// heteroidentificação (CA-10), a direção eager da bicondicional fase×etapa (CA-14) e a
 /// conclusão do ciclo recursal por matéria.

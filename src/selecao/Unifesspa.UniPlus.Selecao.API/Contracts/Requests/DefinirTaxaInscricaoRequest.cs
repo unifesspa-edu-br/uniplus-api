@@ -13,7 +13,7 @@ using Unifesspa.UniPlus.Selecao.Domain.Enums;
 /// </summary>
 /// <remarks>
 /// <c>Cobra</c> é <c>[JsonRequired]</c> (mesmo raciocínio de
-/// <c>DefinirClassificacaoRequest.BaseadoEmEnem</c>, issue #850): o host não habilita
+/// <c>DefinirClassificacaoRequest.BaseadoEmEnem</c>): o host não habilita
 /// <c>RespectRequiredConstructorParameters</c>, então por padrão do <c>System.Text.Json</c> um
 /// parâmetro de construtor ausente no JSON recebe o valor default (<see langword="null"/>) —
 /// indistinguível de <c>cobra: null</c> explícito, que o handler interpreta como remoção

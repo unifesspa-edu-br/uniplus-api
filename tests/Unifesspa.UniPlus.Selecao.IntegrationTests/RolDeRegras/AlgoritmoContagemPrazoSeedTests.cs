@@ -12,7 +12,7 @@ using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Readers;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Seed;
 
 /// <summary>
-/// Cobertura das entradas de <c>tipo=algoritmo_contagem_prazo</c> (#1135): as
+/// Cobertura das entradas de <c>tipo=algoritmo_contagem_prazo</c>: as
 /// convenções nomeadas de contagem do prazo de interposição que o UNI-REQ-0112
 /// tornou decláraveis por edital. Prova o conteúdo do seed (as quatro
 /// resoluções declaradas, com exemplos nas âncoras canônicas; esquema de

@@ -25,11 +25,11 @@ using Unifesspa.UniPlus.Testes.Compartilhado;
 using Xunit;
 
 /// <summary>
-/// Issue #1068 — as cláusulas de um predicado DNF (<c>condicaoGatilho</c>, pré-condição de fato,
-/// <c>quando</c> de derivação, predicado de desempate) passam a ordenar pelos bytes da cláusula
+/// As cláusulas de um predicado DNF (<c>condicaoGatilho</c>, pré-condição de fato,
+/// <c>quando</c> de derivação, predicado de desempate) ordenam pelos bytes da cláusula
 /// já canonicalizada, não pelo ordinal <c>Clausula</c> que quem envia a configuração escolhe
 /// livremente para AGRUPAR os átomos. Os arrays de alternativas sob operador de pertencimento
-/// (<c>ALGUM_DE</c>/<c>NENHUM_DE</c>) passam a ordenar do mesmo jeito.
+/// (<c>ALGUM_DE</c>/<c>NENHUM_DE</c>) ordenam do mesmo jeito.
 /// </summary>
 /// <remarks>
 /// <para>
@@ -79,7 +79,7 @@ public sealed class PredicadoDnfOrdenacaoCanonicaTests
     /// Um processo mínimo, válido para <see cref="SnapshotPublicacaoCanonicalizer.Canonicalizar"/>,
     /// com uma única exigência CONDICIONAL carregando o gatilho <paramref name="condicoes"/> —
     /// mesmo esqueleto de <see cref="OrdenacaoDeConjuntosCanonicosTests.MontarProcesso"/>, mas com
-    /// o gatilho como o knob variável em vez dos conjuntos da issue #1067.
+    /// o gatilho como o knob variável em vez dos conjuntos.
     /// </summary>
     internal static ProcessoSeletivo MontarProcessoComGatilho(IReadOnlyList<CondicaoGatilho> condicoes)
     {
@@ -163,9 +163,9 @@ public sealed class PredicadoDnfOrdenacaoCanonicaTests
     // ── Teste central: o ordinal do cliente sai do digest ──
 
     /// <summary>
-    /// O discriminante central da issue: o MESMO predicado — mesma partição em cláusulas, mesmo
+    /// O discriminante central: o MESMO predicado — mesma partição em cláusulas, mesmo
     /// conteúdo — enviado com ordinais DIFERENTES tem de produzir os MESMOS bytes. Fundido com o
-    /// cenário "cláusulas em ordem inversa" do corpo da issue (§5 do plano): tomado ao pé da
+    /// cenário "cláusulas em ordem inversa": tomado ao pé da
     /// letra, inverter só a ENUMERAÇÃO mantendo os mesmos ordinais já produz os mesmos bytes hoje
     /// (o código agrupa e ordena pelo ordinal) — vacuamente verde. O que discrimina de fato é
     /// TROCAR os ordinais entre as cláusulas inteiras, preservando a partição: aqui a config 2 tem

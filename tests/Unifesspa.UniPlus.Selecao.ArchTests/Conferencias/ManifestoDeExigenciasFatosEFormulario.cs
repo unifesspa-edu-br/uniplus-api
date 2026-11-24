@@ -16,8 +16,8 @@ internal static class ManifestoDeExigenciasFatosEFormulario
             ["Campos", "GruposColetados", "Formularios", "TermosExigidos", "OpcoesDeclaradas", "RegrasDerivacao", "ReferenciaTemporalFatos"],
             [("Itens", "Projeção de Campos que exclui os campos de grupos repetíveis.")]),
 
-        // Documentos exigidos (Story #554, PR #903) — exigencias[] real, CA-09 (exigenciaId
-        // estável). Aplicabilidade entra porque é o que o resolvedor (PR #903, fora deste
+        // Documentos exigidos — exigencias[] real, CA-09 (exigenciaId
+        // estável). Aplicabilidade entra porque é o que o resolvedor (fora deste
         // bloco) consome para correlacionar apresentação↔exigência.
         [typeof(DocumentoExigido)] = (
             [
@@ -62,7 +62,7 @@ internal static class ManifestoDeExigenciasFatosEFormulario
         [typeof(ValidadeDoDocumento)] = (["Escolha", "Referencia", "EfeitoDoVencimento"], []),
         [typeof(DataDeReferenciaDoDocumento)] = (["Tipo", "Data", "FaseId"], []),
 
-        // Formatos permitidos (Story #918) — substitui o campo singular FormatoPermitido?
+        // Formatos permitidos — substitui o campo singular FormatoPermitido?
         // (enum, fora do alcance deste manifesto — EDoDominio exclui enums).
         [typeof(FormatosPermitidos)] = (["Qualquer", "Lista"], []),
         [typeof(ModeloDaExigencia)] = (["ModeloId", "NomeArquivo", "Formato", "HashSha256"], []),
@@ -75,9 +75,9 @@ internal static class ManifestoDeExigenciasFatosEFormulario
             ["Tipo", "Data", "FaseId"],
             []),
 
-        // Coleta de fatos + derivação (Story #928, §7.4) — congeladas nos blocos de topo
+        // Coleta de fatos + derivação — congeladas nos blocos de topo
         // `fatosColetados`/`regrasDerivacao` e testemunhadas no grafo conjunto (`grafoDependencia`).
-        // Rotulo/TipoRenderizacao/Obrigatorio (Story #559) — a apresentação do campo no
+        // Rotulo/TipoRenderizacao/Obrigatorio — a apresentação do campo no
         // formulário de inscrição, congelada junto do fato no mesmo bloco `fatosColetados`.
         [typeof(FatoColetado)] = (
             ["FatoCodigo", "Finalidade", "EtapaCodigo", "Ordem", "Rotulo", "TipoRenderizacao", "Obrigatoriedade", "Ajuda", "PedirConfirmacao", "Restricoes", "Impedimento", "OrigemValores", "Formato", "ClassificacaoProtecao", "HipoteseLegal", "FinalidadeTratamento", "Descricao", "ComponenteExibicao", "Precondicoes"],
@@ -105,7 +105,7 @@ internal static class ManifestoDeExigenciasFatosEFormulario
                 ("Regras", "Agrupa Exibicao e Obrigatoriedade, já congeladas uma a uma — congelar o grupo duplicaria a fonte de verdade."),
             ]),
 
-        // Opções declaradas pelo processo (issue #1619) — congeladas nos valores selecionáveis do
+        // Opções declaradas pelo processo — congeladas nos valores selecionáveis do
         // fato coletado de fonte do processo, e reconstruídas deles pelo decoder.
         [typeof(OpcaoDeclaradaFato)] = (
             ["FatoCodigo", "Codigo", "Rotulo", "Ordem"],

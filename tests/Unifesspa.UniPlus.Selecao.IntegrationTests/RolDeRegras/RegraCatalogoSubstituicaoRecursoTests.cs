@@ -11,7 +11,7 @@ using Unifesspa.UniPlus.Selecao.Infrastructure.DocumentoDaConfiguracao;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Seed;
 
 /// <summary>
-/// Cobertura da substituição da regra de prazo de recurso (#854): a antiga
+/// Cobertura da substituição da regra de prazo de recurso: a antiga
 /// <c>RECURSO-MULTI-INSTANCIA</c> — que atribuía ao Uni+ a gestão de uma segunda
 /// instância inexistente — dá lugar a <c>RECURSO_PRAZO_CONTADO_DA_PUBLICACAO_DO_ATO</c>, que
 /// declara o efeito suspensivo, a guarda da vaga e o prazo da 2ª instância e inicia o prazo em um ato

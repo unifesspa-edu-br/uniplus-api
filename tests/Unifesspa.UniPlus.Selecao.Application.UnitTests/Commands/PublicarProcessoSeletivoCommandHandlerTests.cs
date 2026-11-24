@@ -27,17 +27,17 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
 /// <summary>
-/// Cobertura do congelamento de metadado de fato (Story #919, congelamento dos parâmetros na publicação, UNI-REQ-0019) em
+/// Cobertura do congelamento de metadado de fato (congelamento dos parâmetros na publicação, UNI-REQ-0019) em
 /// <see cref="PublicarProcessoSeletivoCommandHandler"/>: o resultado da resolução alimenta
 /// <see cref="EntradaCanonicalizacao.MetadadosFatosCongelados"/>, e um código de fato que não
 /// resolve no catálogo aborta a publicação com um erro nomeado ANTES de canonicalizar.
 /// </summary>
 /// <remarks>
-/// Desde a issue #1059 (D4-bis), <see cref="IFatoCandidatoReader.ListarAsync"/> é consultado
+/// <see cref="IFatoCandidatoReader.ListarAsync"/> é consultado
 /// UMA vez por congelamento, sempre — mesmo sem condição de gatilho — porque a verificação de valor
 /// inativo do domínio precisa do catálogo inteiro independente de o processo ter fato coletado
-/// ou gatilho. É esse catálogo compartilhado, não mais <c>ObterPorCodigoAsync</c> por código,
-/// que <see cref="ResolvedorMetadadosFatosCongelados"/> agora consulta.
+/// ou gatilho. É esse catálogo compartilhado, e não <c>ObterPorCodigoAsync</c> por código,
+/// que <see cref="ResolvedorMetadadosFatosCongelados"/> consulta.
 /// </remarks>
 public sealed partial class PublicarProcessoSeletivoCommandHandlerTests
 {

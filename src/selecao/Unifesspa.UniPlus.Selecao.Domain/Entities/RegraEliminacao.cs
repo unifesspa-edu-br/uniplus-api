@@ -8,8 +8,8 @@ using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 /// <summary>
-/// Uma regra de eliminação por cálculo da <see cref="ConfiguracaoClassificacao"/>
-/// (Story #775): referencia uma regra tipada do
+/// Uma regra de eliminação por cálculo da <see cref="ConfiguracaoClassificacao"/>:
+/// referencia uma regra tipada do
 /// <c>regras_do_catalogo</c> (<c>tipo=regra_eliminacao</c>) e seus parâmetros aplicados.
 /// Cardinalidade múltipla — ex.: o PS Convênios exige duas
 /// <c>ELIMINACAO_NOTA_MINIMA_ETAPA</c> independentes (Objetiva e Redação).

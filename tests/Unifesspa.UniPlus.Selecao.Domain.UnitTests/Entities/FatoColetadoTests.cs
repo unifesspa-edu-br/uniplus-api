@@ -13,7 +13,7 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
 /// <summary>
-/// Story #559 — a apresentação do campo no formulário de inscrição (Rotulo/TipoRenderizacao/
+/// A apresentação do campo no formulário de inscrição (Rotulo/TipoRenderizacao/
 /// Obrigatorio) na factory de <see cref="FatoColetado"/>. A coerência entre TipoRenderizacao e o
 /// Dominio do fato no catálogo é validada na Application (cross-módulo) — coberta em
 /// <c>DefinirFatosColetadosCommandHandlerTests</c>, não aqui.

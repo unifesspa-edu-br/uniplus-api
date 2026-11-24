@@ -8,9 +8,9 @@ using Unifesspa.UniPlus.Regras.Enums;
 /// <summary>
 /// Predicado sobre o candidato na forma normal disjuntiva — um OU de
 /// <see cref="ClausulaDnf"/>, cada uma um E de <see cref="CondicaoDnf"/>
-/// (ADR-0111, Story #847). Compartilhado por <c>DESEMPATE_CONDICAO_SOBRE_DADO</c>
-/// (via <c>ParametrosDesempatePredicadoFato</c>) e pelos futuros consumidores
-/// #554 (<c>CondicaoGatilho</c>) e #559 (<c>CampoFormulario.CondicaoExibicao</c>).
+/// (ADR-0111). Compartilhado por <c>DESEMPATE_CONDICAO_SOBRE_DADO</c>
+/// (via <c>ParametrosDesempatePredicadoFato</c>) e pelos consumidores
+/// <c>CondicaoGatilho</c> e <c>CampoFormulario.CondicaoExibicao</c>.
 /// </summary>
 /// <remarks>
 /// Zero cláusulas é um estado <b>estruturalmente válido</b> de construção —
@@ -99,7 +99,7 @@ public sealed record PredicadoDnf
 
     /// <summary>
     /// Avalia o predicado contra os fatos já resolvidos de um candidato: OU ternário
-    /// (Story #916) sobre as cláusulas, cada uma um E ternário sobre as suas condições
+    /// sobre as cláusulas, cada uma um E ternário sobre as suas condições
     /// (<see cref="ClausulaDnf.Avaliar"/>). <see cref="Ternario.Verdadeiro"/> se qualquer
     /// cláusula for verdadeira; senão <see cref="Ternario.Indeterminado"/> se qualquer uma
     /// for indeterminada; senão <see cref="Ternario.Falso"/>. Um fato citado numa condição

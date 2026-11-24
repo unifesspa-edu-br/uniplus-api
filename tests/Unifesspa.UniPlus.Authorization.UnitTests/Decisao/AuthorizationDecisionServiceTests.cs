@@ -12,7 +12,7 @@ using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using static Unifesspa.UniPlus.Authorization.UnitTests.Decisao.CenariosDeDecisao;
 
 /// <summary>
-/// Cenários de aceite da Task #1244 sobre o ponto de decisão único: concede pela
+/// Cenários de aceite sobre o ponto de decisão único: concede pela
 /// concessão gravada, nega com o motivo correto em cada situação e registra
 /// toda decisão.
 /// </summary>

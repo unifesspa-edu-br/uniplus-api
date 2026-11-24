@@ -7,7 +7,7 @@ using Controllers;
 /// omite <c>ProcessoSeletivoId</c> (vem da rota).
 /// </summary>
 /// <remarks>
-/// Contrato por variante de <c>Tipo</c> (Story #554, PR #896 — issue #892; tokens em
+/// Contrato por variante de <c>Tipo</c> (tokens em
 /// <see cref="Domain.Enums.ReferenciaTipo"/>), tudo-ou-nada por linha (N-I01):
 /// <list type="table">
 /// <listheader><term>Tipo</term><description>Data</description><description>FaseId</description></listheader>

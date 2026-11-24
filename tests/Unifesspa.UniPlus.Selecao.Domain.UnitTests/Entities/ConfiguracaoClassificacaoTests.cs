@@ -198,7 +198,7 @@ public sealed class ConfiguracaoClassificacaoTests
         resultado.Value.RegrasEliminacao.Single().ConfiguracaoClassificacaoId.Should().Be(resultado.Value.Id);
     }
 
-    // ── BaseadoEmEnem: a invariante que fecha as duas ramificações por TipoProcesso (#850) ──
+    // ── BaseadoEmEnem: a invariante que fecha as duas ramificações por TipoProcesso ──
 
     [Fact(DisplayName = "Criar seta BaseadoEmEnem no valor informado")]
     public void Criar_SetaBaseadoEmEnem()

@@ -21,16 +21,16 @@ using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Canonicalization;
 
 /// <summary>
-/// Configuração EF Core de <see cref="DocumentoExigido"/> (Story #554, PR #895) — entidade
+/// Configuração EF Core de <see cref="DocumentoExigido"/> — entidade
 /// filha do agregado <see cref="ProcessoSeletivo"/>, <c>EntityBase</c> puro (sem
 /// soft-delete). As colunas que gravam o código de um enum (aplicabilidade, escolhas, unidade, efeitos e tipo
 /// da data de referência) têm CHECK com os códigos declarados no enum (ADR-0176); a consequência do
 /// indeferimento fica sem CHECK. O resto da integridade é C# (guard de domínio + FluentValidation), mesmo
 /// padrão de <see cref="FaseCronograma"/>/<see cref="ModalidadeSelecionada"/>.
-/// <see cref="FormatosPermitidos"/> (Story #918) é a exceção: o CHECK
+/// <see cref="FormatosPermitidos"/> é a exceção: o CHECK
 /// <c>ck_documentos_exigidos_formatos_permitidos_coerente</c> é defesa em profundidade contra a
 /// corrida check-then-act do domínio, mesmo padrão de <c>FatoCandidatoConfiguration</c> (módulo
-/// Configuração, PR #914 irmã).
+/// Configuração).
 /// </summary>
 public sealed class DocumentoExigidoConfiguration : IEntityTypeConfiguration<DocumentoExigido>
 {

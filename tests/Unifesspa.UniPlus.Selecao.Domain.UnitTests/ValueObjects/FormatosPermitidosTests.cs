@@ -7,9 +7,8 @@ using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 /// <summary>
-/// Cobertura de <see cref="FormatosPermitidos"/> (Story #918) — substitui o campo singular
-/// <c>FormatoPermitido?</c> (PR #900): lista de <see cref="FormatoPermitidoEntry"/> OU o
-/// token <c>QUALQUER</c>, mutuamente exclusivos, campo agora obrigatório (nunca "ausente").
+/// Cobertura de <see cref="FormatosPermitidos"/> — lista de <see cref="FormatoPermitidoEntry"/> OU o
+/// token <c>QUALQUER</c>, mutuamente exclusivos, campo obrigatório (nunca "ausente").
 /// </summary>
 public sealed class FormatosPermitidosTests
 {

@@ -21,7 +21,7 @@ using static Unifesspa.UniPlus.Selecao.Application.UnitTests.Queries.CenarioDaCo
 using static Unifesspa.UniPlus.Selecao.Application.UnitTests.TestSupport.CenariosDeDefinirEtapas;
 
 /// <summary>
-/// Story #853, CA-16 (fonte única): a consulta pública usa exatamente a mesma dupla de
+/// CA-16 (fonte única): a consulta pública usa exatamente a mesma dupla de
 /// chamadas do gate que bloqueia a transição —
 /// <c>ObterVigentesParaTipoProcessoAsync</c> + <c>AvaliadorConformidadeLegal.Avaliar</c>
 /// (ver <see cref="ObterConformidadeLegalProcessoSeletivoQueryHandler"/> e
@@ -141,7 +141,7 @@ public sealed class ObterConformidadeLegalProcessoSeletivoQueryHandlerTests
     /// tinha como distinguir a pendência de uma falha de rede — o campo de período fica atrás do erro, e o processo
     /// vira impublicável.
     /// </summary>
-    [Fact(DisplayName = "#1456 — sem fase de coleta e sem período informado, recusa com o código do gate (422), nunca com 404")]
+    [Fact(DisplayName = "Sem fase de coleta e sem período informado, recusa com o código do gate (422), nunca com 404")]
     public async Task SemFaseDeColetaESemPeriodo_RecusaComOCodigoDoGate()
     {
         ProcessoSeletivo processo = ProcessoDeImportacaoExternaSemFaseDeColeta();
@@ -164,7 +164,7 @@ public sealed class ObterConformidadeLegalProcessoSeletivoQueryHandlerTests
     /// mandaria o operador preencher um campo no ato, quando o que falta é CRIAR a fase que coleta inscrição no
     /// cronograma. A consulta leva um período informado, que neste ramo a verificação nem chega a olhar.
     /// </summary>
-    [Fact(DisplayName = "#1456 — inscrição própria sem fase que colete recusa com InscricaoPropriaSemFaseDeColeta, e não com o do período")]
+    [Fact(DisplayName = "Inscrição própria sem fase que colete recusa com InscricaoPropriaSemFaseDeColeta, e não com o do período")]
     public async Task InscricaoPropriaSemFaseDeColeta_RecusaComOCodigoQueOGateEmitePrimeiro()
     {
         ProcessoSeletivo processo = ProcessoDeInscricaoPropriaSemFaseDeColeta();
@@ -186,7 +186,7 @@ public sealed class ObterConformidadeLegalProcessoSeletivoQueryHandlerTests
         new PublicacoesDaFase(Produtos: [], EmiteParecerIndividual: false, RegraRecurso: null),
         bancasRequeridas: []).Value!;
 
-    [Theory(DisplayName = "#1456 — janela MEIO-ABERTA da fase âncora recusa como o gate, e não responde 200")]
+    [Theory(DisplayName = "Janela MEIO-ABERTA da fase âncora recusa como o gate, e não responde 200")]
     [InlineData(true, false)]
     [InlineData(false, true)]
     public async Task FaseDeColetaComJanelaMeioAberta_RecusaComOCodigoDoGate(bool temInicio, bool temFim)
@@ -213,10 +213,10 @@ public sealed class ObterConformidadeLegalProcessoSeletivoQueryHandlerTests
         new PublicacoesDaFase(Produtos: [], EmiteParecerIndividual: false, RegraRecurso: null),
         bancasRequeridas: []).Value!;
 
-    [Fact(DisplayName = "#1456 — fase que coleta inscrição sem janela recusa com FaseQueColetaInscricaoSemJanela (422), nunca com 404")]
+    [Fact(DisplayName = "Fase que coleta inscrição sem janela recusa com FaseQueColetaInscricaoSemJanela (422), nunca com 404")]
     public async Task FaseDeColetaSemJanela_RecusaComOCodigoDoGate()
     {
-        // A fase NA_EXECUCAO pode ficar sem janela no cadastro (§3.2), e o rascunho chega assim à
+        // A fase NA_EXECUCAO pode ficar sem janela no cadastro, e o rascunho chega assim à
         // Revisão. O gate recusa a publicação com este código; a consulta tem de dizer o mesmo,
         // para a tela apontar o cronograma em vez de mandar tentar de novo.
         ProcessoSeletivo processo = ProcessoBase();

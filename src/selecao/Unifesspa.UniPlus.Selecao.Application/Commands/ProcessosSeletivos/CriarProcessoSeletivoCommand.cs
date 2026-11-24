@@ -11,14 +11,14 @@ using Kernel.Results;
 using Unifesspa.UniPlus.Application.Abstractions.Messaging;
 
 /// <summary>
-/// Cria a raiz do agregado <c>ProcessoSeletivo</c> em rascunho (CA-01 da
-/// Story #758). Validado pelo middleware FluentValidation do Wolverine via
+/// Cria a raiz do agregado <c>ProcessoSeletivo</c> em rascunho (CA-01).
+/// Validado pelo middleware FluentValidation do Wolverine via
 /// <c>CriarProcessoSeletivoCommandValidator</c>.
 /// </summary>
 /// <param name="TipoProcessoOrigemId">Id de um tipo de processo ativo em Configuração, resolvido e congelado na criação.</param>
-/// <param name="OrigemCandidatos">Código de <see cref="Domain.Enums.OrigemCandidatos"/>: de onde vêm os candidatos (Story #851 §3.4), exigido na criação.</param>
-/// <param name="UnidadeAdministradoraOrigemId">Quem responde pelo certame (CA-04 da Feature #40; issue #849) — NOT NULL, exigido na criação, resolvido via <c>IUnidadeReader</c>.</param>
-/// <param name="IdentificadorLegivel">Identificador legível do certame (issue #1479), em kebab-case — exigido na criação; de onde derivam o endereço público e a chave no acervo.</param>
+/// <param name="OrigemCandidatos">Código de <see cref="Domain.Enums.OrigemCandidatos"/>: de onde vêm os candidatos, exigido na criação.</param>
+/// <param name="UnidadeAdministradoraOrigemId">Quem responde pelo certame (CA-04) — NOT NULL, exigido na criação, resolvido via <c>IUnidadeReader</c>.</param>
+/// <param name="IdentificadorLegivel">Identificador legível do certame, em kebab-case — exigido na criação; de onde derivam o endereço público e a chave no acervo.</param>
 /// <param name="LocalidadeCodigoIbge">Código IBGE do município cujo calendário rege a contagem dos prazos (UNI-REQ-0111) — exigido na criação, nunca deduzido da Unidade administradora.</param>
 /// <param name="LocalidadeNome">Nome do município da localidade regente — cache de exibição.</param>
 /// <param name="LocalidadeUf">UF da localidade regente — cache de exibição.</param>

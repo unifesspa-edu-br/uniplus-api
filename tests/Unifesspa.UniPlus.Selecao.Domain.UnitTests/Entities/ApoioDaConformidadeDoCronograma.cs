@@ -46,7 +46,7 @@ internal static class ApoioDaConformidadeDoCronograma
         new CenarioDeCongelamento { Dados = Dados(), Documento = new DocumentoCongelado("{}"u8.ToArray(), "1.1", "canonical-json/sha256@v1", HashFixo), AtorUsuarioContaId = "teste" });
 
     /// <summary>
-    /// Issue #1112: publicar sem declarar cobrança de taxa é recusado (CA-01) — declarada em
+    /// Publicar sem declarar cobrança de taxa é recusado (CA-01) — declarada em
     /// todo teste deste arquivo para que a pendência de CRONOGRAMA isolada por cada um seja a
     /// única a aflorar, não mascarada pela pendência estrutural genérica.
     /// </summary>

@@ -322,7 +322,7 @@ public sealed class ConformidadePublicabilidadeEstruturalDerivacaoEContraprovaTe
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
     }
 
-    [Fact(DisplayName = "Contraprova: SiSU com CLASSIFICACAO_IMPORTADA e SEM etapa é estado válido — os dois itens de coerência etapa×fase ficam Ok (Story #851 §3.5)")]
+    [Fact(DisplayName = "Contraprova: SiSU com CLASSIFICACAO_IMPORTADA e SEM etapa é estado válido — os dois itens de coerência etapa×fase ficam Ok")]
     public void Contraprova_SiSU_ClassificacaoImportadaSemEtapa_ChecklistVerde()
     {
         ProcessoSeletivo processo = ProcessoConforme();

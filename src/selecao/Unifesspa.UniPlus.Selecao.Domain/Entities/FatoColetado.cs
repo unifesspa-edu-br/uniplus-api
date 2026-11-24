@@ -15,8 +15,8 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 /// <summary>
 /// Um fato do vocabulário que <b>este</b> processo seletivo coleta do candidato, com a sua
 /// posição na ordem de coleta, a pré-condição que decide se o campo produtor é apresentado
-/// (Story #926) e a apresentação do campo no formulário de inscrição — rótulo, tipo de
-/// renderização e obrigatoriedade (Story #559).
+/// e a apresentação do campo no formulário de inscrição — rótulo, tipo de
+/// renderização e obrigatoriedade.
 /// </summary>
 /// <remarks>
 /// <para>
@@ -99,7 +99,7 @@ public sealed class FatoColetado : EntityBase, IParteDoProcesso
     /// Classificação de proteção de dados do fato (token canônico: PUBLICO, INTERNO, PESSOAL,
     /// IDENTIFICADOR, SENSIVEL), copiada do catálogo quando a coleta é definida e recopiada ao
     /// publicar, enquanto nenhuma versão publicada coletou o fato; reclassificar o fato no catálogo
-    /// depois não muda o que já foi congelado (ADR-0136, emenda de #1857).
+    /// depois não muda o que já foi congelado (ADR-0136).
     /// </summary>
     public string ClassificacaoProtecao { get; private set; } = string.Empty;
 
