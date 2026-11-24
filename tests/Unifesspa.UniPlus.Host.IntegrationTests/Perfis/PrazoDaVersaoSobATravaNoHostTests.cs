@@ -50,7 +50,7 @@ public sealed class PrazoDaVersaoSobATravaNoHostTests : AprovacaoDaVersaoNoHostT
         using HttpResponseMessage resposta = await ChamarAtravessandoOPrazoAsync(vigente.PerfilId, () => AprovarBrutoAsync(gestao, versao, EtapaGestao));
 
         await ConferirRecusaDoPerfilAsync(resposta, HttpStatusCode.UnprocessableEntity, "versao_expirada");
-        (await SituacaoDaVersaoNoBancoAsync(versao.VersaoId)).Should().Be("expirada");
+        (await SituacaoDaVersaoNoBancoAsync(versao.VersaoId)).Should().Be("EXPIRADA");
         (await DecisoesAsync(versao.VersaoId)).Should().BeEmpty();
         (await VigenciasAsync(vigente.PerfilId)).Should().ContainSingle(v => v.Aberta && v.VersaoId == vigente.VersaoId);
     }
@@ -66,7 +66,7 @@ public sealed class PrazoDaVersaoSobATravaNoHostTests : AprovacaoDaVersaoNoHostT
             vigente.PerfilId, () => RemoverBrutoAsync(gestor, vigente.PerfilId, [Sensivel]));
 
         resposta.StatusCode.Should().Be(HttpStatusCode.OK, await resposta.Content.ReadAsStringAsync());
-        (await SituacaoDaVersaoNoBancoAsync(versao.VersaoId)).Should().Be("expirada");
+        (await SituacaoDaVersaoNoBancoAsync(versao.VersaoId)).Should().Be("EXPIRADA");
     }
 
     [Fact(DisplayName = "A decisão que trava primeiro expira a versão vencida e a rotina que vem depois não expira nada")]
@@ -116,8 +116,8 @@ public sealed class PrazoDaVersaoSobATravaNoHostTests : AprovacaoDaVersaoNoHostT
         DesfechoDoResultadoDaVersao desfecho = await RegistrarNoRelogioAsync(versao.DocumentoId);
 
         desfecho.Should().Be(DesfechoDoResultadoDaVersao.Aplicado);
-        (await SituacaoNoBancoAsync(versao.DocumentoId)).Should().Be("verificado");
-        (await SituacaoDaVersaoNoBancoAsync(versao.VersaoId)).Should().Be("expirada");
+        (await SituacaoNoBancoAsync(versao.DocumentoId)).Should().Be("VERIFICADO");
+        (await SituacaoDaVersaoNoBancoAsync(versao.VersaoId)).Should().Be("EXPIRADA");
         (await VigenciasAsync(vigente.PerfilId)).Should().ContainSingle(v => v.Aberta && v.VersaoId == vigente.VersaoId);
     }
 
@@ -126,13 +126,13 @@ public sealed class PrazoDaVersaoSobATravaNoHostTests : AprovacaoDaVersaoNoHostT
     {
         (_, Envio versao) = await VigenteEPendenteEmVerificacaoAsync();
         (await RegistrarNoRelogioAsync(versao.DocumentoId)).Should().Be(DesfechoDoResultadoDaVersao.Aplicado);
-        (await SituacaoDaVersaoNoBancoAsync(versao.VersaoId)).Should().Be("pendente");
+        (await SituacaoDaVersaoNoBancoAsync(versao.VersaoId)).Should().Be("PENDENTE");
 
         AtravessarOPrazo();
         DesfechoDoResultadoDaVersao desfecho = await RegistrarNoRelogioAsync(versao.DocumentoId);
 
         desfecho.Should().Be(DesfechoDoResultadoDaVersao.Ignorado);
-        (await SituacaoDaVersaoNoBancoAsync(versao.VersaoId)).Should().Be("expirada");
+        (await SituacaoDaVersaoNoBancoAsync(versao.VersaoId)).Should().Be("EXPIRADA");
     }
 
     private async Task<(Envio Vigente, Envio Versao)> VigenteEPendenteEmVerificacaoAsync()
@@ -216,7 +216,7 @@ public sealed class PrazoDaVersaoSobATravaNoHostTests : AprovacaoDaVersaoNoHostT
 
     private async Task ConferirVersaoSoExpiradaAsync(Envio vigente, Envio versao)
     {
-        (await SituacaoDaVersaoNoBancoAsync(versao.VersaoId)).Should().Be("expirada");
+        (await SituacaoDaVersaoNoBancoAsync(versao.VersaoId)).Should().Be("EXPIRADA");
         (await DecisoesAsync(versao.VersaoId)).Should().BeEmpty();
         (await VigenciasAsync(vigente.PerfilId)).Should().ContainSingle(v => v.Aberta && v.VersaoId == vigente.VersaoId);
     }

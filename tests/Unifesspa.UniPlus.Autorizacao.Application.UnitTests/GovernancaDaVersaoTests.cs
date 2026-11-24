@@ -28,8 +28,8 @@ public sealed class GovernancaDaVersaoTests
     private const string A = "selecao:processos:consultar";
     private const string B = "selecao:processos:operar";
     private const string Pessoal = "selecao:dados-pessoais:consultar";
-    private const string EtapaGestao = "gestao_de_acessos";
-    private const string EtapaProtecao = "protecao_de_dados";
+    private const string EtapaGestao = "GESTAO_DE_ACESSOS";
+    private const string EtapaProtecao = "PROTECAO_DE_DADOS";
 
     private static readonly TitularDaPermissao Rebeca = new("https://idp.test/realms/unifesspa", "rebeca.lima", "rebeca-lima12@uniplus-test.local");
 
@@ -227,7 +227,7 @@ public sealed class GovernancaDaVersaoTests
         CenarioDaGovernancaDaVersao cenario = new(perfil, PerfisDeTeste.Gestor, [Manter], [Rebeca, Titular(PerfisDeTeste.Gestor)]);
 
         GravacaoDaOperacao<PerfilDto> gravacao = await cenario.Remocao.RemoverAsync(
-            perfil.Id, new RemoverPermissoesRequest([B, B], "Permissão concedida por engano.", "erro_de_composicao"), CancellationToken.None);
+            perfil.Id, new RemoverPermissoesRequest([B, B], "Permissão concedida por engano.", "ERRO_DE_COMPOSICAO"), CancellationToken.None);
 
         gravacao.Resultado.IsSuccess.Should().BeTrue();
         perfil.ComposicaoEmVigor.Should().BeEquivalentTo([A]);

@@ -5,7 +5,7 @@ using Unifesspa.UniPlus.Autorizacao.Domain.Errors;
 using Unifesspa.UniPlus.Kernel.Results;
 
 /// <summary>
-/// O que o Encarregado de dados pede sobre uma concessão: o tipo, retirada ou revisão, e o fundamento, como o corpo da
+/// O que o Gestor de proteção de dados pede sobre uma concessão: o tipo, retirada ou revisão, e o fundamento, como o corpo da
 /// requisição os traz. Juntos são o pedido; o agregado os confere ao abrir a providência (UNI-REQ-0375).
 /// </summary>
 /// <param name="Tipo">O código do tipo: <c>retirada</c> ou <c>revisao</c>.</param>

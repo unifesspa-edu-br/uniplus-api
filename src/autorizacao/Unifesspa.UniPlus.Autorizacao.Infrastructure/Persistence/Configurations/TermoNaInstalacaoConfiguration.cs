@@ -27,7 +27,7 @@ public sealed class TermoNaInstalacaoConfiguration : IEntityTypeConfiguration<Te
         builder.ToTable("termos_na_instalacao", tabela =>
             tabela.HasCheckConstraint(
                 "ck_termos_na_instalacao_versao",
-                "(situacao = 'sem_termo_publicado') = (versao_do_termo_id IS NULL) AND (versao_do_termo_id IS NULL) = (numero IS NULL)"));
+                "(situacao = 'SEM_TERMO_PUBLICADO') = (versao_do_termo_id IS NULL) AND (versao_do_termo_id IS NULL) = (numero IS NULL)"));
         builder.HasKey(t => t.Id);
         builder.Property(t => t.Id).ValueGeneratedNever();
         builder.Property(t => t.Situacao).HasConversion(SituacaoConverter).HasMaxLength(SituacaoMaxLength).IsRequired();

@@ -148,10 +148,10 @@ public sealed class VersaoPendenteEReclassificacaoNoHostTests : ReclassificacaoN
         ContarAsync("""SELECT count(*) AS "Value" FROM autorizacao.divergencias_da_governanca""");
 
     private Task<long> AvisosDeDivergenciaAsync() =>
-        ContarAsync("""SELECT count(*) AS "Value" FROM autorizacao.avisos_da_reclassificacao WHERE origem = 'divergencia'""");
+        ContarAsync("""SELECT count(*) AS "Value" FROM autorizacao.avisos_da_reclassificacao WHERE origem = 'DIVERGENCIA'""");
 
     private Task<string?> OrigemDaRetomadaAsync(Guid perfil) =>
         ConsultarTextoAsync(
-            """SELECT origem AS "Value" FROM autorizacao.eventos_da_contencao WHERE perfil_id = {0} AND tipo = 'retomada' ORDER BY ordem_na_trilha DESC LIMIT 1""",
+            """SELECT origem AS "Value" FROM autorizacao.eventos_da_contencao WHERE perfil_id = {0} AND tipo = 'RETOMADA' ORDER BY ordem_na_trilha DESC LIMIT 1""",
             perfil);
 }

@@ -122,10 +122,10 @@ public sealed class PerfilEndpointTests : PerfilEndpointTestBase
         desativacao.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
         (await desativacao.Content.ReadAsStringAsync()).Should().Contain("uniplus.autorizacao.perfil.governanca_imutavel");
         using JsonDocument perfil = await LerAsync(diogo, id);
-        perfil.RootElement.GetProperty("governanca").GetString().Should().Be("gestor-de-acessos");
+        perfil.RootElement.GetProperty("governanca").GetString().Should().Be("GESTOR_DE_ACESSOS");
         perfil.RootElement.GetProperty("composicaoEmVigor").GetProperty("versaoId").ValueKind.Should().Be(JsonValueKind.Null);
         perfil.RootElement.GetProperty("composicaoEmVigor").GetProperty("permissoes").GetArrayLength().Should().BePositive();
-        perfil.RootElement.GetProperty("situacaoDoAcesso").GetProperty("codigo").GetString().Should().Be("em_vigor");
+        perfil.RootElement.GetProperty("situacaoDoAcesso").GetProperty("codigo").GetString().Should().Be("EM_VIGOR");
     }
 
     [Fact(DisplayName = "Desativar e reativar alternam o estado do perfil")]
@@ -154,12 +154,12 @@ public sealed class PerfilEndpointTests : PerfilEndpointTestBase
         JsonElement[] itens = await ListarTudoAsync(diogo);
 
         JsonElement vigente = itens.Single(i => i.GetProperty("id").GetGuid() == comVigente);
-        vigente.GetProperty("situacaoDoAcesso").GetProperty("codigo").GetString().Should().Be("em_vigor");
+        vigente.GetProperty("situacaoDoAcesso").GetProperty("codigo").GetString().Should().Be("EM_VIGOR");
         vigente.GetProperty("situacaoDoAcesso").GetProperty("rotulo").GetString().Should().NotBeNullOrWhiteSpace();
         vigente.TryGetProperty("temVersaoVigente", out _).Should().BeFalse();
         vigente.GetProperty("temVersaoPendente").GetBoolean().Should().BeFalse();
         JsonElement pendente = itens.Single(i => i.GetProperty("id").GetGuid() == semVigente);
-        pendente.GetProperty("situacaoDoAcesso").GetProperty("codigo").GetString().Should().Be("sem_versao_em_vigor");
+        pendente.GetProperty("situacaoDoAcesso").GetProperty("codigo").GetString().Should().Be("SEM_VERSAO_EM_VIGOR");
         pendente.GetProperty("temVersaoPendente").GetBoolean().Should().BeTrue();
     }
 
@@ -199,7 +199,7 @@ public sealed class PerfilEndpointTests : PerfilEndpointTestBase
         foreach (JsonElement perfil in new[] { detalhe.RootElement, listado })
         {
             perfil.GetProperty("ativo").GetBoolean().Should().Be(ativo);
-            perfil.GetProperty("situacaoDoAcesso").GetProperty("codigo").GetString().Should().Be("suspenso");
+            perfil.GetProperty("situacaoDoAcesso").GetProperty("codigo").GetString().Should().Be("SUSPENSO");
             perfil.GetProperty("suspensao").ValueKind.Should().Be(JsonValueKind.Object);
         }
     }

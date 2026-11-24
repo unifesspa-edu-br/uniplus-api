@@ -69,8 +69,8 @@ public sealed class ManifestacoesNoHistoricoDoCadastroEndpointTests : Manifestac
         (representante.StatusCode, inexistente.StatusCode).Should().Be((HttpStatusCode.Forbidden, HttpStatusCode.NotFound));
     }
 
-    [Fact(DisplayName = "O Encarregado lê pelas rotas do cadastro com a permissão de consultar a proteção, e a leitura é registrada")]
-    public async Task Encarregado_LeERegistra()
+    [Fact(DisplayName = "O Gestor de proteção de dados lê pelas rotas do cadastro com a permissão de consultar a proteção, e a leitura é registrada")]
+    public async Task GestorDeProtecaoDeDados_LeERegistra()
     {
         using HttpClient client = Fixture.Factory.CreateClient();
         (Guid tipo, Guid fato) = await DoisItensManifestadosAsync(client);
@@ -83,7 +83,7 @@ public sealed class ManifestacoesNoHistoricoDoCadastroEndpointTests : Manifestac
             .Select(static r => r.Permissao).Should().HaveCount(2).And.OnlyContain(static p => p == "configuracao:protecao-do-catalogo:consultar");
     }
 
-    [Fact(DisplayName = "O Representante do controlador e o Encarregado continuam lendo pelo endpoint da proteção")]
+    [Fact(DisplayName = "O Representante do controlador e o Gestor de proteção de dados continuam lendo pelo endpoint da proteção")]
     public async Task EndpointDaProtecao_ContinuaServindo()
     {
         using HttpClient client = Fixture.Factory.CreateClient();

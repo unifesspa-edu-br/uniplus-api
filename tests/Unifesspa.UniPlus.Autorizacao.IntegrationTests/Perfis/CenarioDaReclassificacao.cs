@@ -55,7 +55,7 @@ internal sealed class CenarioDaReclassificacao(AutorizacaoEndpointFixture fixtur
         """
         UPDATE autorizacao.permissoes_da_versao_do_perfil SET classificacao = {0}, de_unidade = {1}
         WHERE codigo = {3}
-          AND versao_id = (SELECT id FROM autorizacao.versoes_do_perfil WHERE perfil_id = {2} AND situacao = 'vigente')
+          AND versao_id = (SELECT id FROM autorizacao.versoes_do_perfil WHERE perfil_id = {2} AND situacao = 'VIGENTE')
         """;
 
     internal async Task ConciliarAsync()

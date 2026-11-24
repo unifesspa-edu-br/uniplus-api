@@ -5,5 +5,5 @@ ALTER TABLE autorizacao.versoes_do_perfil
 
 ALTER TABLE autorizacao.versoes_do_perfil
     ADD CONSTRAINT ex_versoes_do_perfil_vigente_unica
-    EXCLUDE USING btree (perfil_id WITH =) WHERE (situacao = 'vigente')
+    EXCLUDE USING btree (perfil_id WITH =) WHERE (situacao = 'VIGENTE')
     DEFERRABLE INITIALLY DEFERRED;

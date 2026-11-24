@@ -13,8 +13,8 @@ public enum ResultadoDaLiberacao
 /// <summary>Código textual canônico de <see cref="ResultadoDaLiberacao"/>, o valor gravado e exposto.</summary>
 public static class ResultadoDaLiberacaoCodigo
 {
-    public const string Liberada = "liberada";
-    public const string Mantida = "mantida";
+    public const string Liberada = "LIBERADA";
+    public const string Mantida = "MANTIDA";
 
     public static string ToCodigo(this ResultadoDaLiberacao valor) => valor switch
     {

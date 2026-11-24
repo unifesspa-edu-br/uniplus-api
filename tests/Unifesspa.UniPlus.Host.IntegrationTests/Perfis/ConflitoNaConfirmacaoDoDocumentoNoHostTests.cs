@@ -46,7 +46,7 @@ public sealed class ConflitoNaConfirmacaoDoDocumentoNoHostTests : AprovacaoDaVer
         string corpo = await resposta.Content.ReadAsStringAsync();
         resposta.StatusCode.Should().Be(HttpStatusCode.Conflict, corpo);
         corpo.Should().Contain("uniplus.concorrencia.conflito");
-        (await SituacaoNoBancoAsync(envio.DocumentoId)).Should().Be("aguardando_envio");
+        (await SituacaoNoBancoAsync(envio.DocumentoId)).Should().Be("AGUARDANDO_ENVIO");
     }
 
     public void Dispose() => _host.Dispose();

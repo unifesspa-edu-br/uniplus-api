@@ -8,7 +8,7 @@ using Unifesspa.UniPlus.Autorizacao.Domain.Errors;
 using Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Kernel.Results;
 
-/// <summary>A abertura da providência pelo Encarregado de dados (UNI-REQ-0375).</summary>
+/// <summary>A abertura da providência pelo Gestor de proteção de dados (UNI-REQ-0375).</summary>
 public sealed class ProvidenciaAberturaTests
 {
     private static readonly DateTimeOffset Agora = ProvidenciaBuilder.Agora;
@@ -39,13 +39,13 @@ public sealed class ProvidenciaAberturaTests
     public void Abrir_TiposAceitos()
     {
         Abrir(ProvidenciaBuilder.ConcessaoDeLeandro(), new("REVISAO", ProvidenciaBuilder.Fundamento)).Value!.Tipo.Should().Be(TipoDaProvidencia.Revisao);
-        Abrir(ProvidenciaBuilder.ConcessaoDeLeandro(), new("retirada", ProvidenciaBuilder.Fundamento)).Value!.Tipo.Should().Be(TipoDaProvidencia.Retirada);
+        Abrir(ProvidenciaBuilder.ConcessaoDeLeandro(), new("RETIRADA", ProvidenciaBuilder.Fundamento)).Value!.Tipo.Should().Be(TipoDaProvidencia.Retirada);
     }
 
     [Fact(DisplayName = "Tipo fora do vocabulário e fundamento ausente são recusados juntos, cada um no seu campo")]
     public void Abrir_TipoEFundamentoInvalidos_Acumulam()
     {
-        Result<Providencia> resultado = Abrir(ProvidenciaBuilder.ConcessaoDeLeandro(), new("suspensao", "  "));
+        Result<Providencia> resultado = Abrir(ProvidenciaBuilder.ConcessaoDeLeandro(), new("SUSPENSAO", "  "));
 
         resultado.Errors.Select(e => (e.Field, e.Error.Code)).Should().Equal(
             ("tipo", ProvidenciaErrorCodes.TipoInvalido), ("fundamento", ProvidenciaErrorCodes.FundamentoInvalido));
@@ -62,13 +62,13 @@ public sealed class ProvidenciaAberturaTests
     {
         string fundamento = string.Concat(Enumerable.Repeat(caractere, repeticoes));
 
-        Abrir(ProvidenciaBuilder.ConcessaoDeLeandro(), new("retirada", fundamento)).IsSuccess.Should().Be(aceita);
+        Abrir(ProvidenciaBuilder.ConcessaoDeLeandro(), new("RETIRADA", fundamento)).IsSuccess.Should().Be(aceita);
     }
 
     [Fact(DisplayName = "O fundamento com o caractere nulo é recusado")]
     public void Abrir_FundamentoComCaractereNulo_Recusa()
     {
-        Abrir(ProvidenciaBuilder.ConcessaoDeLeandro(), new("retirada", $"{ProvidenciaBuilder.Fundamento}\0")).Errors
+        Abrir(ProvidenciaBuilder.ConcessaoDeLeandro(), new("RETIRADA", $"{ProvidenciaBuilder.Fundamento}\0")).Errors
             .Should().ContainSingle(e => e.Error.Code == ProvidenciaErrorCodes.FundamentoInvalido);
     }
 
@@ -95,7 +95,7 @@ public sealed class ProvidenciaAberturaTests
         ProvidenciaBuilder cenario = new();
         Providencia primeira = cenario.Aberta();
 
-        Result<Providencia> segunda = Providencia.Abrir(cenario.Concessao, primeira, new("revisao", null), Cecilia, Agora);
+        Result<Providencia> segunda = Providencia.Abrir(cenario.Concessao, primeira, new("REVISAO", null), Cecilia, Agora);
 
         CodigosDe(segunda).Should().Equal(ProvidenciaErrorCodes.JaHaAberta);
     }
@@ -109,7 +109,7 @@ public sealed class ProvidenciaAberturaTests
         Providencia.Abrir(cenario.Concessao, respondida, Valida(), Cecilia, Agora).IsSuccess.Should().BeTrue();
     }
 
-    [Fact(DisplayName = "O Encarregado pode solicitar providência sobre a própria concessão")]
+    [Fact(DisplayName = "O Gestor de proteção de dados pode solicitar providência sobre a própria concessão")]
     public void Abrir_SobreAPropriaConcessao_Aceita()
     {
         PessoaNoToken leandro = ProvidenciaBuilder.Leandro;
@@ -120,7 +120,7 @@ public sealed class ProvidenciaAberturaTests
     private static Result<Providencia> Abrir(Concessao concessao, SolicitacaoDaProvidencia solicitacao, PessoaNoToken? solicitante = null) =>
         Providencia.Abrir(concessao, null, solicitacao, solicitante ?? Cecilia, Agora);
 
-    private static SolicitacaoDaProvidencia Valida() => new("retirada", ProvidenciaBuilder.Fundamento);
+    private static SolicitacaoDaProvidencia Valida() => new("RETIRADA", ProvidenciaBuilder.Fundamento);
 
     private static string[] CodigosDe(Result<Providencia> resultado) => [.. resultado.Errors.Select(e => e.Error.Code)];
 }

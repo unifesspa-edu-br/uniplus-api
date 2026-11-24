@@ -40,7 +40,7 @@ public sealed class ContinuidadeDoRepresentanteTests
 
     [Theory(DisplayName = "A concessão de outro perfil não reduz o papel de Representante")]
     [InlineData(TipoDeGovernanca.GestorDeAcessos)]
-    [InlineData(TipoDeGovernanca.EncarregadoDeDados)]
+    [InlineData(TipoDeGovernanca.GestorDeProtecaoDeDados)]
     public void EDesignacaoVigente_OutroPerfil_NaoConta(TipoDeGovernanca governanca)
     {
         Concessao outra = ConcessaoBuilder.DoPerfil(PerfilDeGovernanca(governanca), Catalogo).Para(Isabella.Identidade).Em(Agora).Construir();
@@ -71,7 +71,7 @@ public sealed class ContinuidadeDoRepresentanteTests
     // prazo e passa ao perfil de Representante, como ficou gravada na base de antes da mudança.
     private static Concessao DesignacaoAnteriorARegra(DateTimeOffset validaAte)
     {
-        Concessao concessao = ConcessaoBuilder.DoPerfil(PerfilDeGovernanca(TipoDeGovernanca.EncarregadoDeDados), Catalogo)
+        Concessao concessao = ConcessaoBuilder.DoPerfil(PerfilDeGovernanca(TipoDeGovernanca.GestorDeProtecaoDeDados), Catalogo)
             .Para(Isabella.Identidade).Em(Agora.AddDays(-1)).ValidaAte(validaAte).Construir();
         typeof(Concessao).GetProperty(nameof(Concessao.PerfilId))!.SetValue(concessao, PerfisDeSistema.RepresentanteDoControladorId);
         return concessao;

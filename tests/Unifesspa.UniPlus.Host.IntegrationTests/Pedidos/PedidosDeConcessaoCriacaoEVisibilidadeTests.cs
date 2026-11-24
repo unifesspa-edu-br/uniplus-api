@@ -33,7 +33,7 @@ public sealed class PedidosDeConcessaoCriacaoEVisibilidadeTests : PedidosDeConce
         await ConferirRecusaAsync(await AceitarAsync(outraPessoa, id), HttpStatusCode.Forbidden, "nao_e_o_beneficiario");
         await ConferirRecusaAsync(await AceitarAsync(semVerificar, id), HttpStatusCode.Forbidden, "nao_e_o_beneficiario");
         await ConferirRecusaAsync(await AceitarAsync(betina, id), HttpStatusCode.Forbidden, "nao_e_o_beneficiario");
-        (await SituacaoAsync(betina, id)).Should().Be("aguardando_beneficiario");
+        (await SituacaoAsync(betina, id)).Should().Be("AGUARDANDO_BENEFICIARIO");
 
         using HttpClient leandro = Cliente(Leandro);
         (await AceitarAsync(leandro, id)).StatusCode.Should().Be(HttpStatusCode.OK);
@@ -49,7 +49,7 @@ public sealed class PedidosDeConcessaoCriacaoEVisibilidadeTests : PedidosDeConce
         using HttpResponseMessage resposta = await CriarBrutoAsync(leandro, perfil, unidade, null);
 
         JsonElement corpo = await CorpoAsync(resposta, HttpStatusCode.Created);
-        corpo.GetProperty("situacao").GetString().Should().Be("aguardando_gestor");
+        corpo.GetProperty("situacao").GetString().Should().Be("AGUARDANDO_GESTOR");
         corpo.GetProperty("beneficiario").GetProperty("identidade").GetProperty("contaId").GetString().Should().Be(Leandro.ContaId.ToString());
         corpo.GetProperty("solicitante").GetProperty("contaId").GetString().Should().Be(Leandro.ContaId.ToString());
     }
@@ -126,7 +126,7 @@ public sealed class PedidosDeConcessaoCriacaoEVisibilidadeTests : PedidosDeConce
 
         (await ListarFilaAsync(betina, "meus")).Should().Equal(esperando);
         (await ListarFilaAsync(leandro, "meus")).Should().BeEquivalentTo([esperando, noGestor]);
-        (await ListarFilaAsync(leandro, "meus", "aguardando_gestor")).Should().Equal(noGestor);
+        (await ListarFilaAsync(leandro, "meus", "AGUARDANDO_GESTOR")).Should().Equal(noGestor);
     }
 
     [Fact(DisplayName = "Depois do aceite a lista e o detalhe seguem a identidade, e não mais o e-mail: quem herda o e-mail não vê o pedido")]
@@ -184,8 +184,8 @@ public sealed class PedidosDeConcessaoCriacaoEVisibilidadeTests : PedidosDeConce
     private async Task ConferirFilasDosAprovadoresAsync(HttpClient diogo, HttpClient leandro, Guid esperando, Guid noGestor)
     {
         using HttpClient marlene = await ClienteComPermissoesAsync(Marlene, AprovarProtecaoDeDados);
-        (await ListarFilaAsync(diogo, "gestor")).Should().Contain(noGestor).And.NotContain(esperando);
-        (await ListarFilaAsync(marlene, "protecao_de_dados")).Should().BeEmpty();
+        (await ListarFilaAsync(diogo, "GESTOR")).Should().Contain(noGestor).And.NotContain(esperando);
+        (await ListarFilaAsync(marlene, "PROTECAO_DE_DADOS")).Should().BeEmpty();
         (await ListarFilaAsync(diogo, "todos")).Should().Equal([noGestor, esperando], "o histórico lista do pedido mais recente ao mais antigo");
         (await EnviarAsync(leandro, HttpMethod.Get, $"{Rota}?fila=gestor")).StatusCode.Should().Be(HttpStatusCode.Forbidden);
         (await EnviarAsync(diogo, HttpMethod.Get, $"{Rota}?fila=protecao_de_dados")).StatusCode.Should().Be(HttpStatusCode.Forbidden);

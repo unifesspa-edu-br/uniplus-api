@@ -10,8 +10,8 @@ using Unifesspa.UniPlus.Host.IntegrationTests.Instalacao;
 using Unifesspa.UniPlus.Host.IntegrationTests.Pedidos;
 
 /// <summary>
-/// O conflito de designações recusado nas duas ordens, sem concorrência: o Encarregado de dados vigente não pede para si o
-/// papel de Representante do controlador, e o Representante vigente, gestor ou não, não aceita o pedido de Encarregado.
+/// O conflito de designações recusado nas duas ordens, sem concorrência: o Gestor de proteção de dados vigente não pede para si o
+/// papel de Representante do controlador, e o Representante vigente, gestor ou não, não aceita o pedido de Gestor de proteção de dados.
 /// O gestor de acessos acumula com o papel de Representante (ADR-0162).
 /// </summary>
 [Collection(MonolitoDaInstalacaoCollection.Name)]
@@ -19,34 +19,34 @@ public sealed class PapeisIncompativeisEmSequenciaNoHostTests : PedidosDeConcess
 {
     private static readonly Guid Gestor = PerfisDeSistema.GestorDeAcessosId;
     private static readonly Guid Representante = PerfisDeSistema.RepresentanteDoControladorId;
-    private static readonly Guid Encarregado = PerfisDeSistema.EncarregadoDeDadosId;
+    private static readonly Guid GestorDeProtecaoDeDados = PerfisDeSistema.GestorDeProtecaoDeDadosId;
 
     public PapeisIncompativeisEmSequenciaNoHostTests(MonolitoDaInstalacaoFixture fixture)
         : base(fixture)
     {
     }
 
-    [Fact(DisplayName = "O Encarregado de dados vigente que pede para si o papel de Representante é recusado na criação, com 409")]
-    public async Task EncarregadoVigente_PedeRepresentanteParaSi_RecusadoNaCriacao()
+    [Fact(DisplayName = "O Gestor de proteção de dados vigente que pede para si o papel de Representante é recusado na criação, com 409")]
+    public async Task GestorDeProtecaoDeDadosVigente_PedeRepresentanteParaSi_RecusadoNaCriacao()
     {
         await ResetarAsync();
-        await SemearConcessaoAsync(Leandro, Encarregado, EscopoDaConcessao.DaInstituicao());
+        await SemearConcessaoAsync(Leandro, GestorDeProtecaoDeDados, EscopoDaConcessao.DaInstituicao());
 
         using HttpResponseMessage resposta = await CriarBrutoAsync(Cliente(Leandro), Representante, null, null);
 
         await ConferirRecusaAsync(resposta, HttpStatusCode.Conflict, "papeis_incompativeis");
     }
 
-    [Theory(DisplayName = "O Representante vigente, gestor ou não, não aceita o pedido de Encarregado: 409 no aceite, e o pedido fica onde estava")]
+    [Theory(DisplayName = "O Representante vigente, gestor ou não, não aceita o pedido de Gestor de proteção de dados: 409 no aceite, e o pedido fica onde estava")]
     [InlineData(false)]
     [InlineData(true)]
-    public async Task RepresentanteVigente_AceitaEncarregado_RecusadoNoAceite(bool tambemGestor)
+    public async Task RepresentanteVigente_AceitaGestorDeProtecaoDeDados_RecusadoNoAceite(bool tambemGestor)
     {
         await ResetarAsync();
         await SemearConcessaoAsync(Leandro, Representante, EscopoDaConcessao.DaInstituicao());
         await SemearSeAsync(tambemGestor, Leandro, Gestor);
         using HttpClient betina = Cliente(Betina);
-        Guid id = await CriarAsync(betina, Encarregado, null, Leandro);
+        Guid id = await CriarAsync(betina, GestorDeProtecaoDeDados, null, Leandro);
         await AnexarVerificadoAsync(betina, id);
         string antes = await SituacaoAsync(betina, id);
 

@@ -58,8 +58,8 @@ public sealed class HistoricoDasManifestacoesEndpointTests : ManifestacaoDaProte
         (aprovacao.Justificativa, aprovacao.Ciclo.Numero, aprovacao.DianteDeManifestacaoDesfavoravel).Should().Be((Justificativa, 2, false));
     }
 
-    [Fact(DisplayName = "O Encarregado de dados lê o histórico com a situação de cada evento, e a leitura é registrada pela permissão de consultar")]
-    public async Task Historico_LidoPelaEncarregada()
+    [Fact(DisplayName = "O Gestor de proteção de dados lê o histórico com a situação de cada evento, e a leitura é registrada pela permissão de consultar")]
+    public async Task Historico_LidoPelaGestorDeProtecaoDeDados()
     {
         Guid id = await DoisCiclosAsync();
         using HttpClient client = Fixture.Factory.CreateClient();

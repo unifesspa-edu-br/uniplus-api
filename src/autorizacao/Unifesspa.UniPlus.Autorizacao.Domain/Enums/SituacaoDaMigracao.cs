@@ -25,12 +25,12 @@ public enum SituacaoDaMigracao
 /// <summary>Código textual canônico de <see cref="SituacaoDaMigracao"/>, o valor gravado e exposto.</summary>
 public static class SituacaoDaMigracaoCodigo
 {
-    public const string Retida = "retida";
-    public const string AguardandoProtecaoDeDados = "aguardando_protecao_de_dados";
-    public const string Migrada = "migrada";
-    public const string Recusada = "recusada";
-    public const string NaoMigrada = "nao_migrada";
-    public const string ForaDaLista = "fora_da_lista";
+    public const string Retida = "RETIDA";
+    public const string AguardandoProtecaoDeDados = "AGUARDANDO_PROTECAO_DE_DADOS";
+    public const string Migrada = "MIGRADA";
+    public const string Recusada = "RECUSADA";
+    public const string NaoMigrada = "NAO_MIGRADA";
+    public const string ForaDaLista = "FORA_DA_LISTA";
 
     public static string ToCodigo(this SituacaoDaMigracao situacao) => situacao switch
     {

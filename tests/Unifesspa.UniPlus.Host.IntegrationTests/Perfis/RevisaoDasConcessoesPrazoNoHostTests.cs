@@ -51,7 +51,7 @@ public sealed class RevisaoDasConcessoesPrazoNoHostTests : RevisaoDasConcessoesN
         using HttpResponseMessage resposta = await EnviarAposOPrazoAsync(gestao, cenario.PerfilId, concessao, bloqueio);
 
         await ConferirRecusaDaMigracaoAsync(resposta, HttpStatusCode.UnprocessableEntity, "prazo_encerrado");
-        SituacaoDe(await RevisaoAsync(gestao, cenario.PerfilId), concessao).Should().Be("nao_migrada");
+        SituacaoDe(await RevisaoAsync(gestao, cenario.PerfilId), concessao).Should().Be("NAO_MIGRADA");
     }
 
     [Fact(DisplayName = "A rotina depois do prazo encerra a revisão e marca quem não migrou, uma só vez")]
@@ -68,8 +68,8 @@ public sealed class RevisaoDasConcessoesPrazoNoHostTests : RevisaoDasConcessoesN
         segunda.Should().Be(0);
         JsonElement revisao = await RevisaoAsync(gestao, cenario.PerfilId);
         revisao.GetProperty("situacao").GetString().Should().Be("encerrada");
-        revisao.GetProperty("forma").GetString().Should().Be("prazo");
-        SituacaoDe(revisao, cenario.Concessoes[Leandro]).Should().Be("nao_migrada");
+        revisao.GetProperty("forma").GetString().Should().Be("PRAZO");
+        SituacaoDe(revisao, cenario.Concessoes[Leandro]).Should().Be("NAO_MIGRADA");
     }
 
     [Fact(DisplayName = "A leitura da revisão encerrada lista só as concessões que ela registrou, não as de uma versão posterior")]
@@ -97,14 +97,14 @@ public sealed class RevisaoDasConcessoesPrazoNoHostTests : RevisaoDasConcessoesN
         string chave = Guid.NewGuid().ToString();
         Relogio.Avancar(DepoisDoPrazo);
 
-        using HttpResponseMessage primeira = await EnviarDecisoesDaGestaoAsync(gestao, cenario.PerfilId, [Decisao(cenario.Concessoes[Leandro], "migrar")], chave: chave);
-        using HttpResponseMessage repeticao = await EnviarDecisoesDaGestaoAsync(gestao, cenario.PerfilId, [Decisao(cenario.Concessoes[Leandro], "migrar")], chave: chave);
+        using HttpResponseMessage primeira = await EnviarDecisoesDaGestaoAsync(gestao, cenario.PerfilId, [Decisao(cenario.Concessoes[Leandro], "MIGRAR")], chave: chave);
+        using HttpResponseMessage repeticao = await EnviarDecisoesDaGestaoAsync(gestao, cenario.PerfilId, [Decisao(cenario.Concessoes[Leandro], "MIGRAR")], chave: chave);
 
         await ConferirRecusaDaMigracaoAsync(primeira, HttpStatusCode.UnprocessableEntity, "prazo_encerrado");
         await ConferirRecusaDaMigracaoAsync(repeticao, HttpStatusCode.UnprocessableEntity, "prazo_encerrado");
         JsonElement revisao = await RevisaoAsync(gestao, cenario.PerfilId);
         revisao.GetProperty("situacao").GetString().Should().Be("encerrada");
-        SituacaoDe(revisao, cenario.Concessoes[Leandro]).Should().Be("nao_migrada");
+        SituacaoDe(revisao, cenario.Concessoes[Leandro]).Should().Be("NAO_MIGRADA");
     }
 
     [Fact(DisplayName = "A rotina emite o lembrete de 48 horas e depois o de 24 horas, cada um uma só vez")]
@@ -127,7 +127,7 @@ public sealed class RevisaoDasConcessoesPrazoNoHostTests : RevisaoDasConcessoesN
     {
         RevisaoAberta cenario = await AbrirRevisaoAsync(Leandro);
         using HttpClient gestao = await GestaoAsync();
-        object[] decisoes = [Decisao(cenario.Concessoes[Leandro], "migrar")];
+        object[] decisoes = [Decisao(cenario.Concessoes[Leandro], "MIGRAR")];
 
         HttpResponseMessage[] respostas = await EmFilaSobOBloqueioAsync(
             cenario.PerfilId,
@@ -140,7 +140,7 @@ public sealed class RevisaoDasConcessoesPrazoNoHostTests : RevisaoDasConcessoesN
     }
     private async Task<HttpResponseMessage> EnviarAposOPrazoAsync(HttpClient gestao, Guid perfilId, Guid concessao, TransacaoRetidaDeTeste bloqueio)
     {
-        Task<HttpResponseMessage> envio = EnviarDecisoesDaGestaoAsync(gestao, perfilId, [Decisao(concessao, "migrar")]);
+        Task<HttpResponseMessage> envio = EnviarDecisoesDaGestaoAsync(gestao, perfilId, [Decisao(concessao, "MIGRAR")]);
         await bloqueio.AguardarBloqueioAsync();
         Relogio.Avancar(DepoisDoPrazo);
         await bloqueio.ConfirmarAsync();

@@ -31,14 +31,14 @@ public enum SituacaoDaInstalacao
 /// <summary>Código textual canônico de <see cref="SituacaoDaInstalacao"/>, o valor gravado e exposto.</summary>
 public static class SituacaoDaInstalacaoCodigo
 {
-    public const string AguardandoDocumento = "aguardando_documento";
-    public const string DocumentoEmVerificacao = "documento_em_verificacao";
-    public const string DocumentoVerificado = "documento_verificado";
-    public const string DocumentoRecusado = "documento_recusado";
-    public const string AguardandoCodigo = "aguardando_codigo";
-    public const string Confirmada = "confirmada";
-    public const string Cancelada = "cancelada";
-    public const string Expirada = "expirada";
+    public const string AguardandoDocumento = "AGUARDANDO_DOCUMENTO";
+    public const string DocumentoEmVerificacao = "DOCUMENTO_EM_VERIFICACAO";
+    public const string DocumentoVerificado = "DOCUMENTO_VERIFICADO";
+    public const string DocumentoRecusado = "DOCUMENTO_RECUSADO";
+    public const string AguardandoCodigo = "AGUARDANDO_CODIGO";
+    public const string Confirmada = "CONFIRMADA";
+    public const string Cancelada = "CANCELADA";
+    public const string Expirada = "EXPIRADA";
 
     public static string ToCodigo(this SituacaoDaInstalacao situacao) => situacao switch
     {

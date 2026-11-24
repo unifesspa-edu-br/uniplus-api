@@ -142,7 +142,7 @@ public abstract class ReclassificacaoNoHostTestBase : AprovacaoDaVersaoNoHostTes
         ContarAsync(
             """
             SELECT count(*) AS "Value" FROM autorizacao.avisos_da_reclassificacao a
-            JOIN autorizacao.reclassificacoes_da_permissao r ON a.origem = 'reclassificacao' AND a.origem_id = r.id
+            JOIN autorizacao.reclassificacoes_da_permissao r ON a.origem = 'RECLASSIFICACAO' AND a.origem_id = r.id
             WHERE r.perfil_id = {0}
             """,
             perfil);
@@ -239,8 +239,8 @@ public abstract class ReclassificacaoNoHostTestBase : AprovacaoDaVersaoNoHostTes
         using HttpClient cliente = await ClienteComPermissoesAsync(decisor, etapa == EtapaProtecao ? AprovarProtecaoDeDados : AprovarFuncional);
         await LerODocumentoAsync(perfil, decisor);
         object corpo = concessoes.Length == 0
-            ? new { etapa, resultado = "liberada", todas = true }
-            : new { etapa, resultado = "liberada", concessoes, todas = false };
+            ? new { etapa, resultado = "LIBERADA", todas = true }
+            : new { etapa, resultado = "LIBERADA", concessoes, todas = false };
 
         return await EnviarAsync(cliente, HttpMethod.Post, $"{RotaReclassificacoes}/{reclassificacao}/decisoes", corpo);
     }

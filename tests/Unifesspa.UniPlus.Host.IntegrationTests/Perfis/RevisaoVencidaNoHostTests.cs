@@ -25,7 +25,7 @@ public sealed class RevisaoVencidaNoHostTests : RevisaoDasConcessoesNoHostTestBa
         CREATE OR REPLACE FUNCTION autorizacao.falha_depois_dos_avisos_da_revisao() RETURNS trigger LANGUAGE plpgsql AS $$
         BEGIN
             IF EXISTS (SELECT 1 FROM autorizacao.avisos_emitidos a JOIN autorizacao.revisoes_das_concessoes j ON j.id = a.fato_id
-                       WHERE a.tipo = 'versao_encerrada' AND j.perfil_id = NEW.perfil_id) THEN
+                       WHERE a.tipo = 'VERSAO_ENCERRADA' AND j.perfil_id = NEW.perfil_id) THEN
                 RAISE EXCEPTION 'falha forçada depois dos avisos da materialização';
             END IF;
             RETURN NEW;
@@ -68,7 +68,7 @@ public sealed class RevisaoVencidaNoHostTests : RevisaoDasConcessoesNoHostTestBa
         pedido.Should().NotBeEmpty();
         (await EncerradaEmAsync(cenario.PerfilId)).Should().NotBeNull();
         using HttpClient gestao = await GestaoAsync();
-        SituacaoDe(await RevisaoAsync(gestao, cenario.PerfilId), cenario.Concessoes[Leandro]).Should().Be("nao_migrada");
+        SituacaoDe(await RevisaoAsync(gestao, cenario.PerfilId), cenario.Concessoes[Leandro]).Should().Be("NAO_MIGRADA");
     }
 
     [Fact(DisplayName = "A última pendência revogada com a rotina parada deixa a revisão de bloquear o pedido, e a operação seguinte a encerra")]
@@ -96,13 +96,13 @@ public sealed class RevisaoVencidaNoHostTests : RevisaoDasConcessoesNoHostTestBa
         (await RevogarAsync(administrador, cenario.Concessoes[Leandro], MotivoDaRevogacao, Leandro.Email)).Dispose();
         string chave = Guid.NewGuid().ToString();
 
-        using HttpResponseMessage primeira = await EnviarDecisoesDaGestaoAsync(gestao, cenario.PerfilId, [Decisao(cenario.Concessoes[Leandro], "migrar")], chave: chave);
-        using HttpResponseMessage replay = await EnviarDecisoesDaGestaoAsync(gestao, cenario.PerfilId, [Decisao(cenario.Concessoes[Leandro], "migrar")], chave: chave);
+        using HttpResponseMessage primeira = await EnviarDecisoesDaGestaoAsync(gestao, cenario.PerfilId, [Decisao(cenario.Concessoes[Leandro], "MIGRAR")], chave: chave);
+        using HttpResponseMessage replay = await EnviarDecisoesDaGestaoAsync(gestao, cenario.PerfilId, [Decisao(cenario.Concessoes[Leandro], "MIGRAR")], chave: chave);
 
         await ConferirRecusaDaMigracaoAsync(primeira, HttpStatusCode.UnprocessableEntity, "revisao_encerrada");
         await ConferirRecusaDaMigracaoAsync(replay, HttpStatusCode.UnprocessableEntity, "revisao_encerrada");
         (await EncerradaEmAsync(cenario.PerfilId)).Should().NotBeNull();
-        (await RevisaoAsync(gestao, cenario.PerfilId)).GetProperty("forma").GetString().Should().Be("concluida");
+        (await RevisaoAsync(gestao, cenario.PerfilId)).GetProperty("forma").GetString().Should().Be("CONCLUIDA");
     }
 
     [Fact(DisplayName = "O replay do envio, da etapa e do encerramento devolve a mesma resposta sem repetir a transição")]
@@ -111,11 +111,11 @@ public sealed class RevisaoVencidaNoHostTests : RevisaoDasConcessoesNoHostTestBa
         RevisaoAberta cenario = await AbrirRevisaoAsync(Leandro, Betina);
         using HttpClient gestao = await GestaoAsync();
         using HttpClient protecao = await ProtecaoAsync();
-        object[] envio = [Decisao(cenario.Concessoes[Leandro], "migrar"), Decisao(cenario.Concessoes[Betina], "migrar")];
+        object[] envio = [Decisao(cenario.Concessoes[Leandro], "MIGRAR"), Decisao(cenario.Concessoes[Betina], "MIGRAR")];
         object encerramento = new { motivo = "Prazo acordado com a gestão.", confirmacaoDeExclusao = true };
 
         await ConferirReplayIgualAsync(chave => EnviarDecisoesDaGestaoAsync(gestao, cenario.PerfilId, envio, chave: chave));
-        await ConferirReplayIgualAsync(chave => EtapaDaProtecaoAsync(protecao, cenario.PerfilId, [Decisao(cenario.Concessoes[Leandro], "migrar")], chave));
+        await ConferirReplayIgualAsync(chave => EtapaDaProtecaoAsync(protecao, cenario.PerfilId, [Decisao(cenario.Concessoes[Leandro], "MIGRAR")], chave));
         await ConferirReplayIgualAsync(chave => EnviarAsync(gestao, HttpMethod.Post, RotaDaRevisao(cenario.PerfilId, "/encerramento"), encerramento, chave));
 
         (await ContarAsync("SELECT count(*)::int AS \"Value\" FROM autorizacao.envios_de_decisoes")).Should().Be(2);
@@ -127,15 +127,15 @@ public sealed class RevisaoVencidaNoHostTests : RevisaoDasConcessoesNoHostTestBa
         RevisaoAberta cenario = await AbrirRevisaoAsync(Leandro, Betina);
         using HttpClient gestao = await GestaoAsync();
         using HttpClient protecao = await ProtecaoAsync();
-        (await EnviarDecisoesDaGestaoAsync(gestao, cenario.PerfilId, [Decisao(cenario.Concessoes[Leandro], "migrar"), Decisao(cenario.Concessoes[Betina], "migrar")])).Dispose();
+        (await EnviarDecisoesDaGestaoAsync(gestao, cenario.PerfilId, [Decisao(cenario.Concessoes[Leandro], "MIGRAR"), Decisao(cenario.Concessoes[Betina], "MIGRAR")])).Dispose();
 
         using HttpResponseMessage etapa = await EtapaDaProtecaoAsync(
-            protecao, cenario.PerfilId, [Decisao(cenario.Concessoes[Leandro], "migrar"), Decisao(Guid.CreateVersion7(), "migrar")]);
+            protecao, cenario.PerfilId, [Decisao(cenario.Concessoes[Leandro], "MIGRAR"), Decisao(Guid.CreateVersion7(), "MIGRAR")]);
 
         etapa.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity, await etapa.Content.ReadAsStringAsync());
         JsonElement revisao = await RevisaoAsync(gestao, cenario.PerfilId);
-        SituacaoDe(revisao, cenario.Concessoes[Leandro]).Should().Be("aguardando_protecao_de_dados");
-        SituacaoDe(revisao, cenario.Concessoes[Betina]).Should().Be("aguardando_protecao_de_dados");
+        SituacaoDe(revisao, cenario.Concessoes[Leandro]).Should().Be("AGUARDANDO_PROTECAO_DE_DADOS");
+        SituacaoDe(revisao, cenario.Concessoes[Betina]).Should().Be("AGUARDANDO_PROTECAO_DE_DADOS");
         (await ContarAsync("SELECT count(*)::int AS \"Value\" FROM autorizacao.envios_de_decisoes")).Should().Be(1);
     }
 
@@ -298,7 +298,7 @@ public sealed class RevisaoVencidaNoHostTests : RevisaoDasConcessoesNoHostTestBa
             SELECT a.mensagem_id AS "Value" FROM autorizacao.avisos_emitidos a
             JOIN autorizacao.migracoes_da_concessao m ON m.id = a.fato_id
             JOIN autorizacao.revisoes_das_concessoes j ON j.id = m.revisao_id
-            WHERE a.tipo = 'concessao_revogada' AND j.perfil_id = {perfilId}
+            WHERE a.tipo = 'CONCESSAO_REVOGADA' AND j.perfil_id = {perfilId}
             """);
 
     private Task<List<Guid>> MensagensDosEncerramentosAsync(Guid perfilId) =>
@@ -306,7 +306,7 @@ public sealed class RevisaoVencidaNoHostTests : RevisaoDasConcessoesNoHostTestBa
             $"""
             SELECT a.mensagem_id AS "Value" FROM autorizacao.avisos_emitidos a
             JOIN autorizacao.revisoes_das_concessoes j ON j.id = a.fato_id
-            WHERE a.tipo = 'versao_encerrada' AND j.perfil_id = {perfilId}
+            WHERE a.tipo = 'VERSAO_ENCERRADA' AND j.perfil_id = {perfilId}
             """);
 
     private async Task<List<Guid>> MensagensAsync(FormattableString sql)

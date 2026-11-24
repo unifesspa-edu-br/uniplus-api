@@ -35,7 +35,7 @@ public sealed class CancelamentoDaVersaoNoHostTests : AprovacaoDaVersaoNoHostTes
 
         JsonElement perfil = await CorpoAsync(resposta, HttpStatusCode.OK);
         perfil.GetProperty("versaoPendente").ValueKind.Should().Be(JsonValueKind.Null);
-        perfil.GetProperty("ultimaVersaoEncerradaSemVigor").GetProperty("situacao").GetString().Should().Be("cancelada");
+        perfil.GetProperty("ultimaVersaoEncerradaSemVigor").GetProperty("situacao").GetString().Should().Be("CANCELADA");
     }
 
     [Fact(DisplayName = "Terceiro sem a permissão de manter perfis não cancela a versão")]
@@ -50,7 +50,7 @@ public sealed class CancelamentoDaVersaoNoHostTests : AprovacaoDaVersaoNoHostTes
         using HttpResponseMessage resposta = await CancelarBrutoAsync(leandro, versao);
 
         await ConferirRecusaDoPerfilAsync(resposta, HttpStatusCode.Forbidden, "sem_permissao_na_etapa");
-        (await SituacaoDaVersaoNoBancoAsync(versao.VersaoId)).Should().Be("pendente");
+        (await SituacaoDaVersaoNoBancoAsync(versao.VersaoId)).Should().Be("PENDENTE");
     }
 
     [Fact(DisplayName = "Sem a permissão de manter perfis a recusa é a mesma para o perfil que existe e o que não existe")]
@@ -94,7 +94,7 @@ public sealed class CancelamentoDaVersaoNoHostTests : AprovacaoDaVersaoNoHostTes
         using HttpResponseMessage resposta = await CancelarBrutoAsync(diogo, versao);
 
         resposta.StatusCode.Should().Be(HttpStatusCode.OK, await resposta.Content.ReadAsStringAsync());
-        (await SituacaoDaVersaoNoBancoAsync(versao.VersaoId)).Should().Be("cancelada");
+        (await SituacaoDaVersaoNoBancoAsync(versao.VersaoId)).Should().Be("CANCELADA");
     }
 
     [Fact(DisplayName = "O cancelamento sem motivo é recusado e a versão segue pendente")]
@@ -108,7 +108,7 @@ public sealed class CancelamentoDaVersaoNoHostTests : AprovacaoDaVersaoNoHostTes
         using HttpResponseMessage resposta = await CancelarBrutoAsync(diogo, versao, motivo: null);
 
         await ConferirRecusaDoPerfilAsync(resposta, HttpStatusCode.UnprocessableEntity, "motivo_invalido");
-        (await SituacaoDaVersaoNoBancoAsync(versao.VersaoId)).Should().Be("pendente");
+        (await SituacaoDaVersaoNoBancoAsync(versao.VersaoId)).Should().Be("PENDENTE");
     }
 
     [Fact(DisplayName = "A rotina expira a versão vencida sem pô-la em vigor, e a vigente segue")]
@@ -123,9 +123,9 @@ public sealed class CancelamentoDaVersaoNoHostTests : AprovacaoDaVersaoNoHostTes
         int expiradas = await ExpirarAsync();
 
         expiradas.Should().BeGreaterThanOrEqualTo(1);
-        (await SituacaoDaVersaoNoBancoAsync(versao.VersaoId)).Should().Be("expirada");
+        (await SituacaoDaVersaoNoBancoAsync(versao.VersaoId)).Should().Be("EXPIRADA");
         (await TemVigenteComVersaoAsync(diogo, vigente.PerfilId, vigente.VersaoId)).Should().BeTrue();
-        (await SituacaoDaUltimaEncerradaAsync(diogo, vigente.PerfilId)).Should().Be("expirada");
+        (await SituacaoDaUltimaEncerradaAsync(diogo, vigente.PerfilId)).Should().Be("EXPIRADA");
     }
 
     [Fact(DisplayName = "Aprovar a versão vencida grava a expiração sem registrar decisão")]
@@ -162,7 +162,7 @@ public sealed class CancelamentoDaVersaoNoHostTests : AprovacaoDaVersaoNoHostTes
 
     private async Task ConferirExpiracaoSemDecisoesAsync(Envio versao)
     {
-        (await SituacaoDaVersaoNoBancoAsync(versao.VersaoId)).Should().Be("expirada");
+        (await SituacaoDaVersaoNoBancoAsync(versao.VersaoId)).Should().Be("EXPIRADA");
         (await DecisoesAsync(versao.VersaoId)).Should().BeEmpty("a expiração não é decisão de ninguém");
     }
 

@@ -18,7 +18,7 @@ using Unifesspa.UniPlus.Kernel.Results;
 
 /// <summary>
 /// O circuito de aprovação da proteção de dados dos tipos de documento e dos fatos do candidato (ADR-0153): o que
-/// aguarda a aprovação, a solicitação que o administrador do cadastro envia, a manifestação técnica do Encarregado de
+/// aguarda a aprovação, a solicitação que o administrador do cadastro envia, a manifestação técnica do Gestor de proteção de dados de
 /// dados e a decisão do Representante do controlador (ADR-0163). O aceite da recomendação fica no cadastro de cada
 /// item, que é de quem o mantém.
 /// </summary>

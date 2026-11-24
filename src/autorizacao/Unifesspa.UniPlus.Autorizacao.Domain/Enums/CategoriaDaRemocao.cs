@@ -13,9 +13,9 @@ public enum CategoriaDaRemocao
 /// <summary>Código textual canônico de <see cref="CategoriaDaRemocao"/>, o valor gravado e exposto.</summary>
 public static class CategoriaDaRemocaoCodigo
 {
-    public const string Incidente = "incidente";
-    public const string ErroDeComposicao = "erro_de_composicao";
-    public const string MudancaDeFuncao = "mudanca_de_funcao";
+    public const string Incidente = "INCIDENTE";
+    public const string ErroDeComposicao = "ERRO_DE_COMPOSICAO";
+    public const string MudancaDeFuncao = "MUDANCA_DE_FUNCAO";
 
     public static string ToCodigo(this CategoriaDaRemocao categoria) => categoria switch
     {

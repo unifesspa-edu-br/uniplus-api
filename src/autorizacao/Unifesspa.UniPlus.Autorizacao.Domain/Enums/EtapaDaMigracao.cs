@@ -16,9 +16,9 @@ public enum EtapaDaMigracao
 /// <summary>Código textual canônico de <see cref="EtapaDaMigracao"/>, o valor gravado e exposto.</summary>
 public static class EtapaDaMigracaoCodigo
 {
-    public const string GestaoDeAcessos = "gestao_de_acessos";
-    public const string ProtecaoDeDados = "protecao_de_dados";
-    public const string Sistema = "sistema";
+    public const string GestaoDeAcessos = "GESTAO_DE_ACESSOS";
+    public const string ProtecaoDeDados = "PROTECAO_DE_DADOS";
+    public const string Sistema = "SISTEMA";
 
     public static string ToCodigo(this EtapaDaMigracao etapa) => etapa switch
     {

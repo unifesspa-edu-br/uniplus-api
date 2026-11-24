@@ -83,13 +83,13 @@ public sealed class RevogacaoDaConcessaoTests
         await _papel.DidNotReceiveWithAnyArgs().HaOutroVigenteAsync(default, default);
     }
 
-    [Fact(DisplayName = "Revogar a concessão de Encarregado de dados não confere mínimo nenhum")]
-    public async Task Aplicar_Encarregado_NaoConfereMinimo()
+    [Fact(DisplayName = "Revogar a concessão de Gestor de proteção de dados não confere mínimo nenhum")]
+    public async Task Aplicar_GestorDeProtecaoDeDados_NaoConfereMinimo()
     {
-        Concessao encarregado = ConcessaoBuilder.DoPerfil(Perfil(TipoDeGovernanca.EncarregadoDeDados), new CatalogoLivre()).Para(Isabella).Em(Agora.AddDays(-1)).Construir();
-        _concessoes.ObterGovernancaDoPerfilAsync(encarregado.PerfilId, Arg.Any<CancellationToken>()).Returns(TipoDeGovernanca.EncarregadoDeDados);
+        Concessao gestorDeProtecaoDeDados = ConcessaoBuilder.DoPerfil(Perfil(TipoDeGovernanca.GestorDeProtecaoDeDados), new CatalogoLivre()).Para(Isabella).Em(Agora.AddDays(-1)).Construir();
+        _concessoes.ObterGovernancaDoPerfilAsync(gestorDeProtecaoDeDados.PerfilId, Arg.Any<CancellationToken>()).Returns(TipoDeGovernanca.GestorDeProtecaoDeDados);
 
-        (await AplicarAsync(encarregado)).IsSuccess.Should().BeTrue();
+        (await AplicarAsync(gestorDeProtecaoDeDados)).IsSuccess.Should().BeTrue();
 
         await _papel.DidNotReceiveWithAnyArgs().HaOutroVigenteAsync(default, default);
         await _concessoes.DidNotReceive().TravarGovernancaParaEscritaAsync(Arg.Any<CancellationToken>());

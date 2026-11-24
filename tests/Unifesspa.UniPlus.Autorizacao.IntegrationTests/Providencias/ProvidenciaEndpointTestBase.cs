@@ -15,7 +15,7 @@ using Unifesspa.UniPlus.Autorizacao.IntegrationTests.Infrastructure;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 
 /// <summary>
-/// O apoio dos testes da providência pelo endpoint real: Cecília Moura é o Encarregado de dados que solicita, Diogo Souza
+/// O apoio dos testes da providência pelo endpoint real: Cecília Moura é o Gestor de proteção de dados que solicita, Diogo Souza
 /// e Isabella Figueiredo administram concessões e Leandro Viana é o beneficiário. Cada teste cria um perfil novo, e a
 /// concessão alvo é dele.
 /// </summary>
@@ -31,19 +31,19 @@ public abstract class ProvidenciaEndpointTestBase : ConcessaoEndpointTestBase
     {
     }
 
-    private protected Task<HttpClient> ClienteDoEncarregadoAsync() => ClienteDeGovernancaAsync(Cecilia, TipoDeGovernanca.EncarregadoDeDados);
+    private protected Task<HttpClient> ClienteDoGestorDeProtecaoDeDadosAsync() => ClienteDeGovernancaAsync(Cecilia, TipoDeGovernanca.GestorDeProtecaoDeDados);
 
     /// <summary>A concessão do beneficiário (Leandro, sem outro informado) num perfil novo, ativa, e a providência aberta por Cecília sobre ela.</summary>
     private protected async Task<(Guid ConcessaoId, Guid ProvidenciaId)> ProvidenciaAbertaAsync(Identidade? beneficiario = null)
     {
         Guid concessaoId = await ConcederAsync(await CriarPerfilComumAsync(), beneficiario ?? Leandro, EscopoDaConcessao.DaUnidade(Guid.NewGuid()));
-        using HttpClient cecilia = await ClienteDoEncarregadoAsync();
+        using HttpClient cecilia = await ClienteDoGestorDeProtecaoDeDadosAsync();
         using HttpResponseMessage resposta = await SolicitarAsync(cecilia, concessaoId);
 
         return (concessaoId, (await CorpoAsync(resposta, HttpStatusCode.Created)).GetProperty("id").GetGuid());
     }
 
-    private protected static Task<HttpResponseMessage> SolicitarAsync(HttpClient cliente, Guid concessaoId, string? tipo = "retirada", string? fundamento = Fundamento) =>
+    private protected static Task<HttpResponseMessage> SolicitarAsync(HttpClient cliente, Guid concessaoId, string? tipo = "RETIRADA", string? fundamento = Fundamento) =>
         EnviarAsync(cliente, HttpMethod.Post, RotaDasProvidencias, new { concessaoId, tipo, fundamento });
 
     private protected static Task<HttpResponseMessage> ResponderAsync(HttpClient cliente, Guid providenciaId, string? motivo = "O acesso segue necessário até o fim do recurso.") =>

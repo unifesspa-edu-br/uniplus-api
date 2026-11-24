@@ -5,7 +5,7 @@ using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Kernel.Domain.Interfaces;
 
 /// <summary>
-/// Um evento de manifestação técnica do Encarregado de dados sobre a proteção de um tipo de documento ou fato do
+/// Um evento de manifestação técnica do Gestor de proteção de dados sobre a proteção de um tipo de documento ou fato do
 /// candidato, num ciclo de aprovação (UNI-REQ-0373, ADR-0163): o registro inicial ou a substituição da manifestação
 /// vigente da mesma pessoa no mesmo ciclo. Só se acrescenta, nunca se altera nem se apaga: a substituição é um evento novo que aponta para a
 /// anterior, e o reinício do ciclo a encerra sem apagá-la. É evidência forense (ADR-0063).

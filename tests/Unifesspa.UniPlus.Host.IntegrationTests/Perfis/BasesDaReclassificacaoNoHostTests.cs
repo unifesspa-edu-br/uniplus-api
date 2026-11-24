@@ -29,7 +29,7 @@ public sealed class BasesDaReclassificacaoNoHostTests : ReclassificacaoNoHostTes
         await ProcessarAvisosAsync();
 
         (await ReclassificacoesAsync(perfil.Perfil)).Should().Be(1);
-        (await BasesDaOrigemAsync(perfil.Perfil, "conciliacao")).Should().Be(1);
+        (await BasesDaOrigemAsync(perfil.Perfil, "CONCILIACAO")).Should().Be(1);
         (await AvisosAsync(perfil.Perfil)).Should().Be(0);
         await FluentActions.Awaiting(() => PermissoesAsync(Leandro, perfil.Perfil)).Should().ThrowAsync<CatalogoDesatualizadoException>();
     }
@@ -89,7 +89,7 @@ public sealed class BasesDaReclassificacaoNoHostTests : ReclassificacaoNoHostTes
 
         (await PermissoesAsync(Betina, perfil.Perfil)).Should().Equal(Consultar);
         (await PermissoesAsync(Leandro, perfil.Perfil)).Should().BeEmpty();
-        (await OrigemDaBaseAsync(perfil.De(Leandro), Consultar)).Should().Be("migracao");
+        (await OrigemDaBaseAsync(perfil.De(Leandro), Consultar)).Should().Be("MIGRACAO");
     }
 
     [Fact(DisplayName = "O código removido e reintroduzido usa a classificação da versão que o reintroduziu, e não a base antiga")]
@@ -102,7 +102,7 @@ public sealed class BasesDaReclassificacaoNoHostTests : ReclassificacaoNoHostTes
         await TrocarComposicaoAsync(perfil.Perfil, Sensivel, Consultar);
         await MigrarNaRevisaoAsync(perfil.Perfil, perfil.De(Leandro));
 
-        (await OrigemDaBaseAsync(perfil.De(Leandro), Consultar)).Should().Be("saida");
+        (await OrigemDaBaseAsync(perfil.De(Leandro), Consultar)).Should().Be("SAIDA");
         (await PermissoesAsync(Leandro, perfil.Perfil)).Should().BeEquivalentTo(Consultar, Sensivel);
     }
 
@@ -110,7 +110,7 @@ public sealed class BasesDaReclassificacaoNoHostTests : ReclassificacaoNoHostTes
     {
         using HttpClient gestao = await GestaoAsync();
         using HttpResponseMessage lote = await EnviarAsync(
-            gestao, HttpMethod.Post, $"{RotaPerfis}/{perfil}/revisao-das-concessoes/decisoes", new { decisoes = new[] { new { concessaoId = concessao, decisao = "migrar" } }, confirmacaoDeExclusao = false });
+            gestao, HttpMethod.Post, $"{RotaPerfis}/{perfil}/revisao-das-concessoes/decisoes", new { decisoes = new[] { new { concessaoId = concessao, decisao = "MIGRAR" } }, confirmacaoDeExclusao = false });
         lote.StatusCode.Should().Be(HttpStatusCode.OK, await lote.Content.ReadAsStringAsync());
     }
 

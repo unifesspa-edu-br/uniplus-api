@@ -225,7 +225,7 @@ public enum PermissaoConfiguracao
         ReservadaAGovernanca = true)]
     ProtecaoDoCatalogoAprovar = 26,
 
-    /// <summary>Consultar, como Encarregado de dados, a proteção de dados do catálogo, sem decidir.</summary>
+    /// <summary>Consultar, como Gestor de proteção de dados, a proteção de dados do catálogo, sem decidir.</summary>
     [Permissao(
         "configuracao:protecao-do-catalogo:consultar",
         "Consultar a proteção de dados do catálogo",
@@ -235,7 +235,7 @@ public enum PermissaoConfiguracao
         ReservadaAGovernanca = true)]
     ProtecaoDoCatalogoConsultar = 27,
 
-    /// <summary>Manifestar-se, como Encarregado de dados, sobre a proteção de dados do catálogo, sem decidir.</summary>
+    /// <summary>Manifestar-se, como Gestor de proteção de dados, sobre a proteção de dados do catálogo, sem decidir.</summary>
     [Permissao(
         "configuracao:protecao-do-catalogo:manifestar",
         "Manifestar-se sobre a proteção de dados do catálogo",

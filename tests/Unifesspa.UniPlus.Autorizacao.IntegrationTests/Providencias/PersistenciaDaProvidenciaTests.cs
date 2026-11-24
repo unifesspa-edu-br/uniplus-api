@@ -11,7 +11,7 @@ using Unifesspa.UniPlus.Autorizacao.IntegrationTests.Infrastructure;
 
 /// <summary>
 /// O que o banco garante sozinho na providência, mesmo contra a gravação que não passa pelo agregado: no máximo uma aberta
-/// por concessão, o estado gravado sem "prejudicada", o desfecho inteiro ou nenhum, o fundamento nos limites e a concessão
+/// por concessão, o estado gravado sem "PREJUDICADA", o desfecho inteiro ou nenhum, o fundamento nos limites e a concessão
 /// alvo que não se exclui.
 /// </summary>
 [Collection(AutorizacaoEndpointCollection.Name)]
@@ -33,18 +33,18 @@ public sealed class PersistenciaDaProvidenciaTests : ProvidenciaEndpointTestBase
     public async Task IndiceUnico_DaAberta()
     {
         Guid concessao = await ConcessaoAsync();
-        await InserirAsync(concessao, "aberta");
-        await InserirAsync(concessao, "respondida", comDesfecho: true);
+        await InserirAsync(concessao, "ABERTA");
+        await InserirAsync(concessao, "RESPONDIDA", comDesfecho: true);
 
-        PostgresException violacao = await FalharAsync(() => InserirAsync(concessao, "aberta"));
+        PostgresException violacao = await FalharAsync(() => InserirAsync(concessao, "ABERTA"));
 
         (violacao.SqlState, violacao.ConstraintName).Should().Be(("23505", "ux_providencias_concessao_aberta"));
     }
 
     [Theory(DisplayName = "O desfecho é gravado inteiro na respondida e na atendida, e a aberta não tem desfecho")]
-    [InlineData("respondida", false)]
-    [InlineData("atendida", false)]
-    [InlineData("aberta", true)]
+    [InlineData("RESPONDIDA", false)]
+    [InlineData("ATENDIDA", false)]
+    [InlineData("ABERTA", true)]
     public async Task Check_DesfechoCompleto(string estado, bool comDesfecho)
     {
         Guid concessao = await ConcessaoAsync();
@@ -55,16 +55,16 @@ public sealed class PersistenciaDaProvidenciaTests : ProvidenciaEndpointTestBase
     }
 
     [Theory(DisplayName = "O banco recusa o estado prejudicada, o tipo fora do vocabulário e o fundamento fora dos limites")]
-    [InlineData("prejudicada", "retirada", 10, "ck_providencias_estado")]
-    [InlineData("aberta", "suspensao", 10, "ck_providencias_tipo")]
-    [InlineData("aberta", "retirada", 9, "ck_providencias_fundamento")]
+    [InlineData("PREJUDICADA", "RETIRADA", 10, "ck_providencias_estado")]
+    [InlineData("ABERTA", "SUSPENSAO", 10, "ck_providencias_tipo")]
+    [InlineData("ABERTA", "RETIRADA", 9, "ck_providencias_fundamento")]
     public async Task Check_Vocabulario(string estado, string tipo, int caracteres, string restricao)
     {
         Guid concessao = await ConcessaoAsync();
 
         // Com o desfecho preenchido fora da aberta, a recusa vem só da regra testada, e não da do desfecho completo.
         PostgresException violacao = await FalharAsync(
-            () => InserirAsync(concessao, estado, tipo, new string('a', caracteres), comDesfecho: estado != "aberta"));
+            () => InserirAsync(concessao, estado, tipo, new string('a', caracteres), comDesfecho: estado != "ABERTA"));
 
         violacao.ConstraintName.Should().Be(restricao);
     }
@@ -73,7 +73,7 @@ public sealed class PersistenciaDaProvidenciaTests : ProvidenciaEndpointTestBase
     public async Task ChaveEstrangeira_Restrita()
     {
         Guid concessao = await ConcessaoAsync();
-        await InserirAsync(concessao, "aberta");
+        await InserirAsync(concessao, "ABERTA");
 
         PostgresException violacao = await FalharAsync(() => ExecutarSqlAsync("DELETE FROM autorizacao.concessoes WHERE id = {0}", concessao));
 
@@ -83,7 +83,7 @@ public sealed class PersistenciaDaProvidenciaTests : ProvidenciaEndpointTestBase
     private async Task<Guid> ConcessaoAsync() =>
         await ConcederAsync(await CriarPerfilComumAsync(), Leandro, EscopoDaConcessao.DaUnidade(Guid.NewGuid()));
 
-    private Task<int> InserirAsync(Guid concessaoId, string estado, string tipo = "retirada", string fundamento = Fundamento, bool comDesfecho = false) =>
+    private Task<int> InserirAsync(Guid concessaoId, string estado, string tipo = "RETIRADA", string fundamento = Fundamento, bool comDesfecho = false) =>
         ExecutarSqlAsync(
             Inserir, Guid.CreateVersion7(), concessaoId, tipo, fundamento, estado,
             Se(comDesfecho, DateTimeOffset.UtcNow, NpgsqlDbType.TimestampTz), Se(comDesfecho, "https://idp.test", NpgsqlDbType.Text),

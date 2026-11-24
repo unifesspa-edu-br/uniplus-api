@@ -31,14 +31,14 @@ public static class ComposicaoDaGovernanca
         Reune(PerfisDeSistema.RepresentanteDoControladorId, "autorizacao:permissoes:consultar-catalogo"),
         Reune(PerfisDeSistema.RepresentanteDoControladorId, "autorizacao:revisoes:conduzir"),
         Reune(PerfisDeSistema.RepresentanteDoControladorId, "configuracao:protecao-do-catalogo:aprovar"),
-        Reune(PerfisDeSistema.EncarregadoDeDadosId, "autorizacao:concessoes:consultar"),
-        Reune(PerfisDeSistema.EncarregadoDeDadosId, "autorizacao:pedidos:consultar"),
-        Reune(PerfisDeSistema.EncarregadoDeDadosId, "autorizacao:perfis:consultar-versoes"),
-        Reune(PerfisDeSistema.EncarregadoDeDadosId, "autorizacao:permissoes:consultar-catalogo"),
-        Reune(PerfisDeSistema.EncarregadoDeDadosId, "autorizacao:providencias:solicitar"),
-        Reune(PerfisDeSistema.EncarregadoDeDadosId, "autorizacao:revisoes:consultar"),
-        Reune(PerfisDeSistema.EncarregadoDeDadosId, "configuracao:protecao-do-catalogo:consultar"),
-        Reune(PerfisDeSistema.EncarregadoDeDadosId, "configuracao:protecao-do-catalogo:manifestar"),
+        Reune(PerfisDeSistema.GestorDeProtecaoDeDadosId, "autorizacao:concessoes:consultar"),
+        Reune(PerfisDeSistema.GestorDeProtecaoDeDadosId, "autorizacao:pedidos:consultar"),
+        Reune(PerfisDeSistema.GestorDeProtecaoDeDadosId, "autorizacao:perfis:consultar-versoes"),
+        Reune(PerfisDeSistema.GestorDeProtecaoDeDadosId, "autorizacao:permissoes:consultar-catalogo"),
+        Reune(PerfisDeSistema.GestorDeProtecaoDeDadosId, "autorizacao:providencias:solicitar"),
+        Reune(PerfisDeSistema.GestorDeProtecaoDeDadosId, "autorizacao:revisoes:consultar"),
+        Reune(PerfisDeSistema.GestorDeProtecaoDeDadosId, "configuracao:protecao-do-catalogo:consultar"),
+        Reune(PerfisDeSistema.GestorDeProtecaoDeDadosId, "configuracao:protecao-do-catalogo:manifestar"),
     ];
 
     private static PermissaoDeGovernanca Reune(Guid perfilId, string codigo) => new(perfilId, CodigoDePermissao.De(codigo));

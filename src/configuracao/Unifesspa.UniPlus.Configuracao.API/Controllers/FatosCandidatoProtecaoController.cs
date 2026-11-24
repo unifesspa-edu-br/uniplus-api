@@ -87,7 +87,7 @@ public sealed class FatosCandidatoProtecaoController : ControllerBase
 
     /// <summary>
     /// Todas as manifestações técnicas sobre a proteção de dados do fato do candidato, de todos os ciclos, com o texto, o nome
-    /// de quem se manifestou e a situação de cada uma: vigente, substituída ou encerrada (UNI-REQ-0374). Quem consulta o cadastro de fatos do candidato as lê sem poder se manifestar nem decidir; o Encarregado de dados, pela permissão de consultar a proteção de dados.
+    /// de quem se manifestou e a situação de cada uma: vigente, substituída ou encerrada (UNI-REQ-0374). Quem consulta o cadastro de fatos do candidato as lê sem poder se manifestar nem decidir; o Gestor de proteção de dados, pela permissão de consultar a proteção de dados.
     /// A leitura é registrada antes da resposta conforme a classe da permissão que a autorizou; sem o registro, é
     /// recusada com 503.
     /// </summary>

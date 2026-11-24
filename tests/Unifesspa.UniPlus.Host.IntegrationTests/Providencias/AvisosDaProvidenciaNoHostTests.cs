@@ -29,7 +29,7 @@ public sealed class AvisosDaProvidenciaNoHostTests : ProvidenciasNoHostTestBase
     public async Task Abertura_AvisaAdministracaoMenosOBeneficiario()
     {
         Governanca g = await GovernancaAsync();
-        await ConcessoesDeTeste.ConcederGovernancaAsync(Fixture.Factory.Services, Betina.ContaId.ToString(), TipoDeGovernanca.EncarregadoDeDados, Betina.Email);
+        await ConcessoesDeTeste.ConcederGovernancaAsync(Fixture.Factory.Services, Betina.ContaId.ToString(), TipoDeGovernanca.GestorDeProtecaoDeDados, Betina.Email);
         await ClienteComPermissoesAsync(Leandro, Administrar);
         Guid providencia = await SolicitarAsync(g.Betina, await ConcessaoDeLeandroAsync());
 
@@ -39,12 +39,12 @@ public sealed class AvisosDaProvidenciaNoHostTests : ProvidenciasNoHostTestBase
         (await MensagensAsync(Leandro, providencia)).Should().BeEmpty();
     }
 
-    [Fact(DisplayName = "A resposta avisa quem solicitou mesmo depois de ele perder o perfil de Encarregado")]
+    [Fact(DisplayName = "A resposta avisa quem solicitou mesmo depois de ele perder o perfil de Gestor de proteção de dados")]
     public async Task Resposta_AvisaQuemSolicitouSemOPerfil()
     {
         Governanca g = await GovernancaAsync();
         Guid providencia = await SolicitarAsync(g.Cecilia, await ConcessaoDeLeandroAsync());
-        Guid perfilDeCecilia = await ConcessoesDeTeste.ConcederGovernancaAsync(Fixture.Factory.Services, Cecilia.ContaId.ToString(), TipoDeGovernanca.EncarregadoDeDados, Cecilia.Email);
+        Guid perfilDeCecilia = await ConcessoesDeTeste.ConcederGovernancaAsync(Fixture.Factory.Services, Cecilia.ContaId.ToString(), TipoDeGovernanca.GestorDeProtecaoDeDados, Cecilia.Email);
         (await RevogarAsync(g.Diogo, perfilDeCecilia, "Deixou a função.", Cecilia.Email)).StatusCode.Should().Be(HttpStatusCode.NoContent);
 
         (await ResponderAsync(g.Isabella, providencia)).StatusCode.Should().Be(HttpStatusCode.OK);

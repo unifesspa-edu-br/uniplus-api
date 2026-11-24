@@ -182,7 +182,7 @@ public abstract partial class InstalacaoTestBase
         string etag = await EnviarPdfAsync(url);
         (await EnviarAsync(executor, HttpMethod.Post, $"{Rota}/{id}/documento/confirmacao", new { etag })).StatusCode.Should().Be(HttpStatusCode.OK);
         await InjetarResultadoAsync(id, VeredictoDaVerificacao.Verificado);
-        await AguardarSituacaoAsync(executor, id, "documento_verificado");
+        await AguardarSituacaoAsync(executor, id, "DOCUMENTO_VERIFICADO");
         return id;
     }
 

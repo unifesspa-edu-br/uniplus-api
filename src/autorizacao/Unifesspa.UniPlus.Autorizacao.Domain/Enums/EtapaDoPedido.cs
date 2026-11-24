@@ -13,8 +13,8 @@ public enum EtapaDoPedido
 /// <summary>Código textual canônico de <see cref="EtapaDoPedido"/>, o valor gravado e exposto.</summary>
 public static class EtapaDoPedidoCodigo
 {
-    public const string Gestor = "gestor";
-    public const string ProtecaoDeDados = "protecao_de_dados";
+    public const string Gestor = "GESTOR";
+    public const string ProtecaoDeDados = "PROTECAO_DE_DADOS";
 
     public static string ToCodigo(this EtapaDoPedido etapa) => etapa switch
     {

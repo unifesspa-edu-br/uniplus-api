@@ -27,7 +27,7 @@ public readonly record struct AcessoAoCatalogoDeProtecao
 
     public bool Aprovar => Aprovacao is DecisaoPermitida;
 
-    /// <summary>Consulta a proteção do catálogo, como o Encarregado de dados, sem decidir nem solicitar.</summary>
+    /// <summary>Consulta a proteção do catálogo, como o Gestor de proteção de dados, sem decidir nem solicitar.</summary>
     public bool Consultar => Consulta is DecisaoPermitida;
 
     public bool Algum => ManterTipos || ManterFatos || Aprovar || Consultar;

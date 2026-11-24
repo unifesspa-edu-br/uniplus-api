@@ -95,14 +95,14 @@ public sealed class AprovacaoContraAConciliacaoNoHostTests : ReclassificacaoNoHo
         (HttpStatusCode Status, string Corpo) resultadoDoEnvio = default;
         Func<Task> migrar = async () => resultadoDoEnvio = await LerRespostaAsync(EnviarAsync(
             gestao, HttpMethod.Post, $"{RotaPerfis}/{envio.PerfilId}/revisao-das-concessoes/decisoes",
-            new { decisoes = new[] { new { concessaoId = concessao, decisao = "migrar" } }, confirmacaoDeExclusao = false }));
+            new { decisoes = new[] { new { concessaoId = concessao, decisao = "MIGRAR" } }, confirmacaoDeExclusao = false }));
 
         await EmFilaAsync(envio.PerfilId, Ordenar(migrar, envioPrimeiro));
 
         _instanciaAnterior = false;
         resultadoDoEnvio.Status.Should().Be(HttpStatusCode.OK, resultadoDoEnvio.Corpo);
         (await ReclassificacoesAsync(envio.PerfilId)).Should().Be(1);
-        (await OrigemDaBaseAsync(concessao, Consultar)).Should().Be("migracao");
+        (await OrigemDaBaseAsync(concessao, Consultar)).Should().Be("MIGRACAO");
         (await PermissoesAsync(Leandro, envio.PerfilId)).Should().Equal(Consultar);
     }
 
@@ -180,7 +180,7 @@ public sealed class AprovacaoContraAConciliacaoNoHostTests : ReclassificacaoNoHo
         (await ConsultarTextoAsync(
             """SELECT classificacao_anterior || '>' || classificacao_nova AS "Value" FROM autorizacao.reclassificacoes_da_permissao WHERE id = {0}""",
             reclassificacao)).Should().Be("INTERNO>SENSIVEL");
-        (await BasesDaOrigemAsync(perfil, "conciliacao")).Should().Be(0);
+        (await BasesDaOrigemAsync(perfil, "CONCILIACAO")).Should().Be(0);
         Guid unidade = await SemearUnidadeAsync();
         await ConcederDepoisAsync(new Cenario(perfil, unidade, new Dictionary<Persona, Guid>()), Betina);
         (await PermissoesAsync(Betina, perfil)).Should().Equal(Consultar);
@@ -198,7 +198,7 @@ public sealed class AprovacaoContraAConciliacaoNoHostTests : ReclassificacaoNoHo
     {
         await ConfirmarEnvioAsync(criador, envio);
         await InjetarResultadoAsync(envio.DocumentoId, VeredictoDaVerificacao.Verificado);
-        await AguardarAsync(async () => await SituacaoDoDocumentoAsync(criador, envio.PerfilId) == "verificado", "o documento não foi verificado");
+        await AguardarAsync(async () => await SituacaoDoDocumentoAsync(criador, envio.PerfilId) == "VERIFICADO", "o documento não foi verificado");
     }
 
     private async Task<(Envio Envio, Guid Concessao)> RevisaoAbertaAsync()

@@ -19,10 +19,10 @@ public enum TipoDoEventoDaContencao
 /// <summary>Código textual canônico de <see cref="TipoDoEventoDaContencao"/>, o valor gravado e exposto.</summary>
 public static class TipoDoEventoDaContencaoCodigo
 {
-    public const string Suspensao = "suspensao";
-    public const string Retomada = "retomada";
-    public const string Desativacao = "desativacao";
-    public const string Reativacao = "reativacao";
+    public const string Suspensao = "SUSPENSAO";
+    public const string Retomada = "RETOMADA";
+    public const string Desativacao = "DESATIVACAO";
+    public const string Reativacao = "REATIVACAO";
 
     public static string ToCodigo(this TipoDoEventoDaContencao tipo) => tipo switch
     {

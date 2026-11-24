@@ -27,7 +27,7 @@ public sealed class AberturaDaProvidenciaTests
     {
         (Result<ProvidenciaDto> resposta, IEnumerable<object> mensagens) = await AbrirAsync(Valida());
 
-        (resposta.Value!.Situacao, resposta.Value.Tipo, resposta.Value.ImpedidoDeResponder).Should().Be(("aberta", "retirada", true));
+        (resposta.Value!.Situacao, resposta.Value.Tipo, resposta.Value.ImpedidoDeResponder).Should().Be(("ABERTA", "RETIRADA", true));
         mensagens.Should().HaveCount(3);
         Received.InOrder(() =>
         {
@@ -84,7 +84,7 @@ public sealed class AberturaDaProvidenciaTests
         ProvidenciaCommandHandler.Handle(
             new SolicitarProvidenciaCommand(concessaoId ?? _concessao.Id, solicitacao), _cenario.Abertura, Usuarios.De(ProvidenciaBuilder.Cecilia), CancellationToken.None);
 
-    private static SolicitacaoDaProvidencia Valida() => new("retirada", ProvidenciaBuilder.Fundamento);
+    private static SolicitacaoDaProvidencia Valida() => new("RETIRADA", ProvidenciaBuilder.Fundamento);
 
     private static Microsoft.EntityFrameworkCore.DbUpdateException ViolacaoDoIndiceDaAberta() =>
         new("violação", new ViolacaoDeIndiceUnico("23505", "ux_providencias_concessao_aberta"));

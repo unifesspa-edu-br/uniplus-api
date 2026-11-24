@@ -7,9 +7,9 @@ public static class PerfisDeSistema
 
     public static readonly Guid RepresentanteDoControladorId = new("019a0000-0000-7000-8000-000000000002");
 
-    public static readonly Guid EncarregadoDeDadosId = new("019a0000-0000-7000-8000-000000000003");
+    public static readonly Guid GestorDeProtecaoDeDadosId = new("019a0000-0000-7000-8000-000000000003");
 
     /// <summary>O perfil é um dos perfis de governança, que só a carga inicial cria.</summary>
     public static bool EhDeGovernanca(Guid perfilId) =>
-        perfilId == GestorDeAcessosId || perfilId == RepresentanteDoControladorId || perfilId == EncarregadoDeDadosId;
+        perfilId == GestorDeAcessosId || perfilId == RepresentanteDoControladorId || perfilId == GestorDeProtecaoDeDadosId;
 }

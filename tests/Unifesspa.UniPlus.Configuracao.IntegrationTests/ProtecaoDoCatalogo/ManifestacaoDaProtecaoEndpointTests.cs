@@ -10,7 +10,7 @@ using Unifesspa.UniPlus.Configuracao.IntegrationTests.Infrastructure;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Authentication;
 
 /// <summary>
-/// A manifestação técnica do Encarregado de dados na proteção do catálogo de tipos de documento e de fatos do candidato
+/// A manifestação técnica do Gestor de proteção de dados na proteção do catálogo de tipos de documento e de fatos do candidato
 /// pelo host real (UNI-REQ-0373, ADR-0163): quem tem a permissão de se manifestar registra o parecer num item com
 /// aprovação solicitada, sem decidir.
 /// </summary>
@@ -22,7 +22,7 @@ public sealed class ManifestacaoDaProtecaoEndpointTests : ManifestacaoDaProtecao
     {
     }
 
-    [Theory(DisplayName = "O Encarregado se manifesta no item solicitado, o detalhe mostra a vigente e o item continua solicitado")]
+    [Theory(DisplayName = "O Gestor de proteção de dados se manifesta no item solicitado, o detalhe mostra a vigente e o item continua solicitado")]
     [InlineData("TIPO_DOCUMENTO")]
     [InlineData("FATO")]
     public async Task Manifestar_ItemSolicitado_204(string cadastro)
@@ -112,18 +112,18 @@ public sealed class ManifestacaoDaProtecaoEndpointTests : ManifestacaoDaProtecao
         (await client.SendAsync(request)).StatusCode.Should().Be(HttpStatusCode.BadRequest);
     }
 
-    [Fact(DisplayName = "O Representante do controlador não se manifesta, e o Encarregado não decide")]
-    public async Task Permissoes_RepresentanteNaoSeManifestaEEncarregadoNaoDecide()
+    [Fact(DisplayName = "O Representante do controlador não se manifesta, e o Gestor de proteção de dados não decide")]
+    public async Task Permissoes_RepresentanteNaoSeManifestaEGestorDeProtecaoDeDadosNaoDecide()
     {
         await PrepararTodosAsync();
         using HttpClient client = Fixture.Factory.CreateClient();
         Guid id = await SolicitadoAsync(client, "TIPO_DOCUMENTO");
 
         HttpResponseMessage representante = await ManifestarAsync(client, Betina, "TIPO_DOCUMENTO", id, "ADEQUADA");
-        HttpResponseMessage encarregado = await DecidirComoAsync(client, Kevin, "TIPO_DOCUMENTO", id, "APROVAR");
+        HttpResponseMessage gestorDeProtecaoDeDados = await DecidirComoAsync(client, Kevin, "TIPO_DOCUMENTO", id, "APROVAR");
 
         representante.StatusCode.Should().Be(HttpStatusCode.Forbidden);
-        encarregado.StatusCode.Should().Be(HttpStatusCode.Forbidden);
+        gestorDeProtecaoDeDados.StatusCode.Should().Be(HttpStatusCode.Forbidden);
         (await DetalheAsync(client, "TIPO_DOCUMENTO", id)).GetProperty("aprovacao").GetProperty("situacao").GetString().Should().Be("SOLICITADA");
     }
 

@@ -20,8 +20,8 @@ public abstract class ConcessoesEmVigenciaTestBase : ConcessaoEndpointTestBase
     private protected const string SemPrazo = "sem-prazo";
     private protected const string PrazoFuturo = "prazo-futuro";
     private protected const string NaUnidade = "na-unidade";
-    private protected const string Revogada = "revogada";
-    private protected const string Vencida = "vencida";
+    private protected const string Revogada = "REVOGADA";
+    private protected const string Vencida = "VENCIDA";
     private protected const string NoLimite = "no-limite";
 
     // O banco guarda microssegundos: o instante de referência também, para o limite exato comparar igual nos dois lados.

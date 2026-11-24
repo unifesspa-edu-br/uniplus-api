@@ -15,7 +15,7 @@ using Unifesspa.UniPlus.Host.IntegrationTests.Perfis;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 
 /// <summary>
-/// A mesma pessoa não tem, ao mesmo tempo, concessões vigentes de Representante do controlador e de Encarregado de dados,
+/// A mesma pessoa não tem, ao mesmo tempo, concessões vigentes de Representante do controlador e de Gestor de proteção de dados,
 /// pelo host real e com transações concorrentes de verdade (ADR-0162). Leandro Viana é designado para os dois papéis ao
 /// mesmo tempo, cada pedido aprovado na segunda etapa por um Representante diferente; a trava da pessoa serializa as duas
 /// aprovações, e a que chega depois lê a concessão gravada pela outra.
@@ -24,10 +24,10 @@ using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 public sealed class PapeisIncompativeisNoHostTests : PedidosDeConcessaoTestBase
 {
     private const string TravaDaGravacaoDeConcessoes = "LOCK TABLE autorizacao.concessoes IN SHARE ROW EXCLUSIVE MODE";
-    private const string NaSegundaEtapa = "aguardando_protecao_de_dados";
+    private const string NaSegundaEtapa = "AGUARDANDO_PROTECAO_DE_DADOS";
 
     private static readonly Guid Representante = PerfisDeSistema.RepresentanteDoControladorId;
-    private static readonly Guid Encarregado = PerfisDeSistema.EncarregadoDeDadosId;
+    private static readonly Guid GestorDeProtecaoDeDados = PerfisDeSistema.GestorDeProtecaoDeDadosId;
 
     public PapeisIncompativeisNoHostTests(MonolitoDaInstalacaoFixture fixture)
         : base(fixture)
@@ -45,7 +45,7 @@ public sealed class PapeisIncompativeisNoHostTests : PedidosDeConcessaoTestBase
         await ConferirUmaSoDesignacaoAsync(respostas);
     }
 
-    public static TheoryData<Guid> PapeisVencidos => new() { Encarregado, Representante };
+    public static TheoryData<Guid> PapeisVencidos => new() { GestorDeProtecaoDeDados, Representante };
 
     [Theory(DisplayName = "Com a concessão vencida de um dos papéis, as designações cruzadas e simultâneas ainda concluem uma só")]
     [MemberData(nameof(PapeisVencidos))]
@@ -67,7 +67,7 @@ public sealed class PapeisIncompativeisNoHostTests : PedidosDeConcessaoTestBase
         await SemearConcessaoAsync(Marlene, Representante, EscopoDaConcessao.DaInstituicao());
         await SemearConcessaoAsync(Isabella, Representante, EscopoDaConcessao.DaInstituicao());
         using HttpClient diogo = await ClienteComPermissoesAsync(Diogo, AprovarFuncional);
-        Guid[] pedidos = [await DesignacaoAceitaAsync(Representante, Leandro), await DesignacaoAceitaAsync(Encarregado, Leandro)];
+        Guid[] pedidos = [await DesignacaoAceitaAsync(Representante, Leandro), await DesignacaoAceitaAsync(GestorDeProtecaoDeDados, Leandro)];
         foreach (Guid id in pedidos)
         {
             (await EnviarAsync(diogo, HttpMethod.Post, $"{Rota}/{id}/aprovacoes")).StatusCode.Should().Be(HttpStatusCode.OK);
@@ -105,7 +105,7 @@ public sealed class PapeisIncompativeisNoHostTests : PedidosDeConcessaoTestBase
     private async Task<Concessao[]> VigentesAsync(Persona pessoa)
     {
         DateTimeOffset agora = DateTimeOffset.UtcNow;
-        Concessao[] concessoes = [.. await ConcessoesAsync(pessoa, Representante), .. await ConcessoesAsync(pessoa, Encarregado)];
+        Concessao[] concessoes = [.. await ConcessoesAsync(pessoa, Representante), .. await ConcessoesAsync(pessoa, GestorDeProtecaoDeDados)];
         return [.. concessoes.Where(c => c.EstaAtiva(agora))];
     }
 

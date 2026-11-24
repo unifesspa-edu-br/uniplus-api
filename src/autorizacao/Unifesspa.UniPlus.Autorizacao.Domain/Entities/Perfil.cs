@@ -58,7 +58,7 @@ public sealed class Perfil : EntityBase
     /// <summary>
     /// Os perfis de gestor de acessos e de Representante do controlador não admitem concessão com prazo: a concessão que
     /// vencesse sozinha furaria o mínimo de dois gestores ou deixaria a instituição sem Representante vigente, e só a
-    /// revogação confere esses mínimos. O Encarregado de dados pode ser designado por prazo, e a concessão vencida deixa de
+    /// revogação confere esses mínimos. O Gestor de proteção de dados pode ser designado por prazo, e a concessão vencida deixa de
     /// valer para toda regra.
     /// </summary>
     public bool AdmitePrazo => AdmitePrazoCom(Governanca);

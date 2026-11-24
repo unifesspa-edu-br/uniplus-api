@@ -25,12 +25,12 @@ public enum SituacaoDaVersao
 /// <summary>Código textual canônico de <see cref="SituacaoDaVersao"/>, o valor gravado e exposto.</summary>
 public static class SituacaoDaVersaoCodigo
 {
-    public const string Pendente = "pendente";
-    public const string Vigente = "vigente";
-    public const string Encerrada = "encerrada";
-    public const string Cancelada = "cancelada";
-    public const string Recusada = "recusada";
-    public const string Expirada = "expirada";
+    public const string Pendente = "PENDENTE";
+    public const string Vigente = "VIGENTE";
+    public const string Encerrada = "ENCERRADA";
+    public const string Cancelada = "CANCELADA";
+    public const string Recusada = "RECUSADA";
+    public const string Expirada = "EXPIRADA";
 
     public static string ToCodigo(this SituacaoDaVersao situacao) => situacao switch
     {

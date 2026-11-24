@@ -93,7 +93,7 @@ public sealed class CicloDaVersaoDoPerfilNoHostTests : VersoesDoPerfilNoHostTest
         Envio envio = await CriarPerfilAsync(gestor, Consultar);
         await ConfirmarEnvioAsync(gestor, envio);
         await InjetarResultadoAsync(envio.DocumentoId, VeredictoDaVerificacao.Recusado);
-        await AguardarAsync(async () => await SituacaoDoDocumentoAsync(gestor, envio.PerfilId) == "recusado", "o documento não foi recusado");
+        await AguardarAsync(async () => await SituacaoDoDocumentoAsync(gestor, envio.PerfilId) == "RECUSADO", "o documento não foi recusado");
 
         using HttpResponseMessage nova = await EnviarAsync(
             gestor, HttpMethod.Post, $"{RotaPerfis}/{envio.PerfilId}/versoes/{envio.VersaoId}/documento", new { tamanhoDoDocumento = Pdf.Length });

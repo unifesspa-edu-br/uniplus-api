@@ -18,10 +18,10 @@ using Unifesspa.UniPlus.IntegrationTests.Fixtures.Hosting;
 
 /// <summary>
 /// Quem recebe os avisos de decisão protegida, lido no banco: só o Representante do controlador com concessão vigente.
-/// A concessão vencida ou revogada não gera destinatário, e o Encarregado de dados não recebe aviso de decisão, tanto
+/// A concessão vencida ou revogada não gera destinatário, e o Gestor de proteção de dados não recebe aviso de decisão, tanto
 /// na resolução pelo perfil, que o pedido usa, quanto na resolução pela permissão reservada, que a governança de perfis
 /// usa. As personas são exclusivas desta classe: Sérgio tem o papel de Representante vigente, Roberto tem a concessão
-/// vencida, Thiago a revogada e Lara tem o papel de Encarregado.
+/// vencida, Thiago a revogada e Lara tem o papel de Gestor de proteção de dados.
 /// </summary>
 [Collection(MonolitoDaInstalacaoCollection.Name)]
 public sealed class DestinatariosDoRepresentanteNoHostTests : PedidosDeConcessaoTestBase, IAsyncLifetime
@@ -48,7 +48,7 @@ public sealed class DestinatariosDoRepresentanteNoHostTests : PedidosDeConcessao
         await ConcederAsync(Sergio, TipoDeGovernanca.RepresentanteDoControlador);
         Guid vencida = await ConcederAsync(Roberto, TipoDeGovernanca.RepresentanteDoControlador);
         Guid revogada = await ConcederAsync(Thiago, TipoDeGovernanca.RepresentanteDoControlador);
-        await ConcederAsync(Lara, TipoDeGovernanca.EncarregadoDeDados);
+        await ConcederAsync(Lara, TipoDeGovernanca.GestorDeProtecaoDeDados);
         await ExecutarSqlAsync(
             "UPDATE autorizacao.concessoes SET concedida_em = now() - interval '10 days', valida_ate = now() - interval '1 day' WHERE id = {0}", vencida);
         await ExecutarSqlAsync(
@@ -64,7 +64,7 @@ public sealed class DestinatariosDoRepresentanteNoHostTests : PedidosDeConcessao
         await ExecutarSqlAsync("DELETE FROM autorizacao.concessoes WHERE id = ANY({0})", criadas);
     }
 
-    [Fact(DisplayName = "Só o Representante vigente é avisado pela permissão reservada; vencido, revogado e Encarregado não")]
+    [Fact(DisplayName = "Só o Representante vigente é avisado pela permissão reservada; vencido, revogado e Gestor de proteção de dados não")]
     public async Task PelaPermissao_SoORepresentanteVigente()
     {
         await using AsyncServiceScope escopo = Fixture.Factory.Services.CreateAsyncScope();
@@ -75,7 +75,7 @@ public sealed class DestinatariosDoRepresentanteNoHostTests : PedidosDeConcessao
         SoOVigente(titulares.Select(static t => t.Email));
     }
 
-    [Fact(DisplayName = "Só o Representante vigente é avisado pelo perfil; vencido, revogado e Encarregado não")]
+    [Fact(DisplayName = "Só o Representante vigente é avisado pelo perfil; vencido, revogado e Gestor de proteção de dados não")]
     public async Task PeloPerfil_SoORepresentanteVigente()
     {
         await using AsyncServiceScope escopo = Fixture.Factory.Services.CreateAsyncScope();
@@ -91,7 +91,7 @@ public sealed class DestinatariosDoRepresentanteNoHostTests : PedidosDeConcessao
         emails.Should().Contain(Sergio.Email).And.NotContain([Roberto.Email, Thiago.Email, Lara.Email]);
 
     private static Guid PerfilDe(TipoDeGovernanca governanca) =>
-        governanca == TipoDeGovernanca.RepresentanteDoControlador ? PerfisDeSistema.RepresentanteDoControladorId : PerfisDeSistema.EncarregadoDeDadosId;
+        governanca == TipoDeGovernanca.RepresentanteDoControlador ? PerfisDeSistema.RepresentanteDoControladorId : PerfisDeSistema.GestorDeProtecaoDeDadosId;
 
     // Confere antes se a concessão já existia, porque o apoio reaproveita a igual e devolve o mesmo id.
     private async Task<Guid> ConcederAsync(Persona persona, TipoDeGovernanca governanca)

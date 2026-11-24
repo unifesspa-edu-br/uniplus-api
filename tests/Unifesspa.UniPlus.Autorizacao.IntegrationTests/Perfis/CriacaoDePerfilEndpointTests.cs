@@ -18,7 +18,7 @@ public sealed class CriacaoDePerfilEndpointTests : IClassFixture<CenarioDeCriaca
     public void Criar_Valido_DevolveEnvio()
     {
         _cenario.Status.Should().Be(HttpStatusCode.Created);
-        _cenario.RespostaDeEnvio.GetProperty("situacao").GetString().Should().Be("aguardando_envio");
+        _cenario.RespostaDeEnvio.GetProperty("situacao").GetString().Should().Be("AGUARDANDO_ENVIO");
         _cenario.RespostaDeEnvio.GetProperty("tipoDeMidia").GetString().Should().Be("application/pdf");
         _cenario.RespostaDeEnvio.GetProperty("urlDeEnvio").GetString().Should().StartWith("http");
     }
@@ -37,7 +37,7 @@ public sealed class CriacaoDePerfilEndpointTests : IClassFixture<CenarioDeCriaca
     {
         JsonElement pendente = _cenario.Perfil.GetProperty("versaoPendente");
         pendente.GetProperty("numero").GetInt32().Should().Be(1);
-        pendente.GetProperty("situacaoDoDocumento").GetString().Should().Be("aguardando_envio");
+        pendente.GetProperty("situacaoDoDocumento").GetString().Should().Be("AGUARDANDO_ENVIO");
         pendente.GetProperty("permissoes").EnumerateArray()
             .Select(p => p.GetProperty("codigo").GetString())
             .Should().Equal(PerfilEndpointTestBase.ConsultarCatalogo, PerfilEndpointTestBase.ManterMotivos);

@@ -17,8 +17,8 @@ public sealed class ContencaoPorSuspensaoTests
 {
     private const string Consultar = "selecao:processos:consultar";
     private const string Dados = "selecao:dados-pessoais:consultar";
-    private const string EtapaGestao = "gestao_de_acessos";
-    private const string EtapaProtecao = "protecao_de_dados";
+    private const string EtapaGestao = "GESTAO_DE_ACESSOS";
+    private const string EtapaProtecao = "PROTECAO_DE_DADOS";
     private const string Motivo = PerfisDeTeste.MotivoDaContencao;
 
     private static readonly TitularDaPermissao Rebeca = new("https://idp.test/realms/unifesspa", "rebeca.lima", "rebeca-lima12@uniplus-test.local");

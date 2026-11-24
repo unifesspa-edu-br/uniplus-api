@@ -26,7 +26,7 @@ public sealed class ReclassificacoesRecusadasTests
 
         IVerificadorDeAcesso verificador = SemAutor();
 
-        Result<IReadOnlyList<ItemDaFilaDeReclassificacoesDto>> fila = await ListarFila("gestao_de_acessos", verificador, repositorio);
+        Result<IReadOnlyList<ItemDaFilaDeReclassificacoesDto>> fila = await ListarFila("GESTAO_DE_ACESSOS", verificador, repositorio);
 
         fila.Errors.Single().Error.Code.Should().Be(PerfilErrorCodes.AutorNaoIdentificado);
         repositorio.ReceivedCalls().Should().BeEmpty();
@@ -34,8 +34,8 @@ public sealed class ReclassificacoesRecusadasTests
     }
 
     [Theory(DisplayName = "A fila de reclassificações recusa quem não tem a permissão da etapa antes de consultar")]
-    [InlineData("gestao_de_acessos", Gestao, Protecao)]
-    [InlineData("protecao_de_dados", Protecao, Gestao)]
+    [InlineData("GESTAO_DE_ACESSOS", Gestao, Protecao)]
+    [InlineData("PROTECAO_DE_DADOS", Protecao, Gestao)]
     public async Task Fila_SemPermissao_RecusaPelaEtapa(string etapa, string permissaoDaEtapa, string permissaoDeOutraEtapa)
     {
         IReclassificacaoRepository repositorio = Substitute.For<IReclassificacaoRepository>();
@@ -49,8 +49,8 @@ public sealed class ReclassificacoesRecusadasTests
     }
 
     [Theory(DisplayName = "A fila de reclassificações é listada a quem tem a permissão da etapa")]
-    [InlineData("gestao_de_acessos", Gestao)]
-    [InlineData("protecao_de_dados", Protecao)]
+    [InlineData("GESTAO_DE_ACESSOS", Gestao)]
+    [InlineData("PROTECAO_DE_DADOS", Protecao)]
     public async Task Fila_ComPermissao_Lista(string etapa, string permissaoDaEtapa)
     {
         VerificadorDeTeste verificador = new(PerfisDeTeste.Gestor.ContaId, [permissaoDaEtapa]);

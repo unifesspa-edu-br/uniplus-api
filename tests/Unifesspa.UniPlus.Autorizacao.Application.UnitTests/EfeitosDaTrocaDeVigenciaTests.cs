@@ -108,7 +108,7 @@ public sealed class EfeitosDaTrocaDeVigenciaTests
 
     private static void ConferirAvisoDeDevolucao(EnviarEmail aviso) =>
         aviso.CorpoTexto.Should().Contain("Faça o pedido de novo depois que o perfil for atualizado")
-            .And.NotContain(Betina.Nome!).And.NotContain(Leandro.Nome!).And.NotContain(Justificativa).And.NotContain("revisao");
+            .And.NotContain(Betina.Nome!).And.NotContain(Leandro.Nome!).And.NotContain(Justificativa).And.NotContain("REVISAO");
 
     [Fact(DisplayName = "O pedido de outro perfil e o pedido já encerrado ficam como estão")]
     public async Task PedidoDeOutroPerfilEEncerrado_FicamInalterados()

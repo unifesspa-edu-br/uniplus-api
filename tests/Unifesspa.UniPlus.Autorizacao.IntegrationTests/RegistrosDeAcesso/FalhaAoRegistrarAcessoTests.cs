@@ -20,7 +20,7 @@ using Unifesspa.UniPlus.IntegrationTests.Fixtures.Hosting;
 
 /// <summary>
 /// Com o registro de acesso indisponível, a operação protegida responde 503 com o código próprio e o dado não é entregue.
-/// Diogo Souza é gestor de acessos; Cecília Moura é Encarregada de dados, e cada leitura dela é recusada sem o registro.
+/// Diogo Souza é gestor de acessos; Cecília Moura é Gestor de proteção de dados, e cada leitura dela é recusada sem o registro.
 /// </summary>
 [Collection(AutorizacaoEndpointCollection.Name)]
 public sealed class FalhaAoRegistrarAcessoTests
@@ -45,7 +45,7 @@ public sealed class FalhaAoRegistrarAcessoTests
         corpo.Should().Contain(Falha).And.NotContain("banco fora");
     }
 
-    [Theory(DisplayName = "Com o registro indisponível, cada leitura do Encarregado de dados responde 503 sem entregar o dado")]
+    [Theory(DisplayName = "Com o registro indisponível, cada leitura do Gestor de proteção de dados responde 503 sem entregar o dado")]
     [InlineData("/api/autorizacao/pedidos-de-concessao?fila=todos")]
     [InlineData("/api/autorizacao/concessoes")]
     [InlineData("/api/autorizacao/instalacoes/tentativas-sem-pendencia")]
@@ -54,10 +54,10 @@ public sealed class FalhaAoRegistrarAcessoTests
     [InlineData("/api/autorizacao/governanca/divergencias")]
     [InlineData("/api/configuracao/admin/protecao-do-catalogo")]
     [InlineData("/api/configuracao/admin/protecao-do-catalogo/decisoes")]
-    public async Task LeituraDoEncarregado_RegistroIndisponivel_503(string rota)
+    public async Task LeituraDoGestorDeProtecaoDeDados_RegistroIndisponivel_503(string rota)
     {
         await ConcessoesDeTeste.RemoverDaPessoaAsync(_fixture.Factory.Services, "cecilia.moura");
-        await ConcessoesDeTeste.ConcederGovernancaAsync(_fixture.Factory.Services, "cecilia.moura", TipoDeGovernanca.EncarregadoDeDados);
+        await ConcessoesDeTeste.ConcederGovernancaAsync(_fixture.Factory.Services, "cecilia.moura", TipoDeGovernanca.GestorDeProtecaoDeDados);
         await using WebApplicationFactory<HostAssemblyMarker> comFalha = ComRegistroQueFalha();
         using HttpClient cecilia = Cliente(comFalha, "cecilia.moura");
 

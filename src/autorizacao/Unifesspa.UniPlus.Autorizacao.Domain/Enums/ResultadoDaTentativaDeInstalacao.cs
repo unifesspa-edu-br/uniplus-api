@@ -24,12 +24,12 @@ public enum ResultadoDaTentativaDeInstalacao
 /// <summary>Código textual canônico de <see cref="ResultadoDaTentativaDeInstalacao"/>, o valor gravado e exposto.</summary>
 public static class ResultadoDaTentativaDeInstalacaoCodigo
 {
-    public const string Aceita = "aceita";
-    public const string CodigoErrado = "codigo_errado";
-    public const string Expirada = "expirada";
-    public const string SemPendencia = "sem_pendencia";
-    public const string JaHaviaGestor = "ja_havia_gestor";
-    public const string CodigoReenviado = "codigo_reenviado";
+    public const string Aceita = "ACEITA";
+    public const string CodigoErrado = "CODIGO_ERRADO";
+    public const string Expirada = "EXPIRADA";
+    public const string SemPendencia = "SEM_PENDENCIA";
+    public const string JaHaviaGestor = "JA_HAVIA_GESTOR";
+    public const string CodigoReenviado = "CODIGO_REENVIADO";
 
     public static string ToCodigo(this ResultadoDaTentativaDeInstalacao resultado) => resultado switch
     {

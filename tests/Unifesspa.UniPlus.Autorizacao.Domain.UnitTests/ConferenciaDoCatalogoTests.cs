@@ -129,22 +129,22 @@ public sealed class ConferenciaDoCatalogoTests
     {
         ComposicaoDaGovernanca.CodigosDe(PerfisDeSistema.GestorDeAcessosId).Should().HaveCount(7);
         ComposicaoDaGovernanca.CodigosDe(PerfisDeSistema.RepresentanteDoControladorId).Should().HaveCount(6);
-        ComposicaoDaGovernanca.CodigosDe(PerfisDeSistema.EncarregadoDeDadosId).Should().HaveCount(8);
+        ComposicaoDaGovernanca.CodigosDe(PerfisDeSistema.GestorDeProtecaoDeDadosId).Should().HaveCount(8);
         ComposicaoDaGovernanca.CodigosDe(Guid.NewGuid()).Should().BeEmpty();
     }
 
-    [Fact(DisplayName = "As permissões de decisão protegida estão no perfil de Representante do controlador e não no do gestor nem no do Encarregado")]
+    [Fact(DisplayName = "As permissões de decisão protegida estão no perfil de Representante do controlador e não no do gestor nem no do Gestor de proteção de dados")]
     public void Composicao_DecisoesProtegidas_SoNoRepresentante()
     {
         ComposicaoDaGovernanca.CodigosDe(PerfisDeSistema.RepresentanteDoControladorId).Should().Contain(CodigosDasDecisoesProtegidas);
         ComposicaoDaGovernanca.CodigosDe(PerfisDeSistema.GestorDeAcessosId).Should().NotContain(CodigosDasDecisoesProtegidas);
-        ComposicaoDaGovernanca.CodigosDe(PerfisDeSistema.EncarregadoDeDadosId).Should().NotContain(CodigosDasDecisoesProtegidas);
+        ComposicaoDaGovernanca.CodigosDe(PerfisDeSistema.GestorDeProtecaoDeDadosId).Should().NotContain(CodigosDasDecisoesProtegidas);
     }
 
-    [Fact(DisplayName = "O Encarregado de dados não reúne decisão, revogação nem administração de concessões")]
-    public void Composicao_Encarregado_SoConsultaManifestaESolicita()
+    [Fact(DisplayName = "O Gestor de proteção de dados não reúne decisão, revogação nem administração de concessões")]
+    public void Composicao_GestorDeProtecaoDeDados_SoConsultaManifestaESolicita()
     {
-        IReadOnlyList<CodigoDePermissao> codigos = ComposicaoDaGovernanca.CodigosDe(PerfisDeSistema.EncarregadoDeDadosId);
+        IReadOnlyList<CodigoDePermissao> codigos = ComposicaoDaGovernanca.CodigosDe(PerfisDeSistema.GestorDeProtecaoDeDadosId);
 
         codigos.Should().NotContain(c => c.Acao.StartsWith("aprovar", StringComparison.Ordinal) || c.Acao == "conduzir");
         codigos.Select(static c => c.Valor).Should().NotContain(["autorizacao:concessoes:administrar", "autorizacao:perfis:manter", "autorizacao:revisoes:rever-protecao-de-dados"]);

@@ -13,8 +13,8 @@ public enum ResultadoDoItemDaRevisao
 /// <summary>Código textual canônico de <see cref="ResultadoDoItemDaRevisao"/>, o valor gravado e exposto.</summary>
 public static class ResultadoDoItemDaRevisaoCodigo
 {
-    public const string Confirmada = "confirmada";
-    public const string Revogada = "revogada";
+    public const string Confirmada = "CONFIRMADA";
+    public const string Revogada = "REVOGADA";
 
     public static string ToCodigo(this ResultadoDoItemDaRevisao resultado) => resultado switch
     {

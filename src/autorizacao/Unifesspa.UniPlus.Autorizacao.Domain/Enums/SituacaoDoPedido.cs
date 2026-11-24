@@ -37,14 +37,14 @@ public enum SituacaoDoPedido
 /// <summary>Código textual canônico de <see cref="SituacaoDoPedido"/>, o valor gravado e exposto.</summary>
 public static class SituacaoDoPedidoCodigo
 {
-    public const string AguardandoBeneficiario = "aguardando_beneficiario";
-    public const string AguardandoGestor = "aguardando_gestor";
-    public const string AguardandoProtecaoDeDados = "aguardando_protecao_de_dados";
-    public const string Aprovado = "aprovado";
-    public const string Recusado = "recusado";
-    public const string Cancelado = "cancelado";
-    public const string AguardandoDocumento = "aguardando_documento";
-    public const string Devolvido = "devolvido";
+    public const string AguardandoBeneficiario = "AGUARDANDO_BENEFICIARIO";
+    public const string AguardandoGestor = "AGUARDANDO_GESTOR";
+    public const string AguardandoProtecaoDeDados = "AGUARDANDO_PROTECAO_DE_DADOS";
+    public const string Aprovado = "APROVADO";
+    public const string Recusado = "RECUSADO";
+    public const string Cancelado = "CANCELADO";
+    public const string AguardandoDocumento = "AGUARDANDO_DOCUMENTO";
+    public const string Devolvido = "DEVOLVIDO";
 
     public static string ToCodigo(this SituacaoDoPedido situacao) => situacao switch
     {

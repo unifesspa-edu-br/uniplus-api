@@ -15,7 +15,7 @@ using static Unifesspa.UniPlus.Autorizacao.Domain.UnitTests.PedidoDeConcessaoBui
 /// A designação de Representante do controlador não tem prazo, como a de gestor de acessos: ela só termina pela
 /// revogação, que confere a regra do último Representante (UNI-REQ-0200, UNI-REQ-0394). O prazo é recusado na sugestão do
 /// pedido, na aprovação do gestor, na segunda etapa do pedido que já trazia o prazo de antes da regra e na própria
-/// concessão; o Encarregado de dados continua com prazo opcional.
+/// concessão; o Gestor de proteção de dados continua com prazo opcional.
 /// </summary>
 public sealed class PrazoDoRepresentanteTests
 {
@@ -72,14 +72,14 @@ public sealed class PrazoDoRepresentanteTests
     public void Conceder_RepresentanteSemPrazo_Aceita() =>
         Conceder(Representante(), null).Value!.ValidaAte.Should().BeNull();
 
-    [Fact(DisplayName = "O Encarregado de dados continua aceitando prazo, na concessão e na aprovação do gestor")]
-    public void Encarregado_ComPrazo_Aceita()
+    [Fact(DisplayName = "O Gestor de proteção de dados continua aceitando prazo, na concessão e na aprovação do gestor")]
+    public void GestorDeProtecaoDeDados_ComPrazo_Aceita()
     {
-        PerfilAvaliado deEncarregado = new(["autorizacao:concessoes:administrar"], "PESSOAL", true, TipoDeGovernanca.EncarregadoDeDados);
+        PerfilAvaliado deGestorDeProtecaoDeDados = new(["autorizacao:concessoes:administrar"], "PESSOAL", true, TipoDeGovernanca.GestorDeProtecaoDeDados);
         PedidoDeConcessao pedido = Pedido().Protegido().AguardandoGestor();
 
-        Conceder(PerfilDeGovernanca(TipoDeGovernanca.EncarregadoDeDados), Agora.AddDays(30)).Value!.ValidaAte.Should().Be(Agora.AddDays(30));
-        pedido.Aprovar(Diogo.Identidade, deEncarregado, Contexto, Agora, Agora.AddMonths(3)).IsSuccess.Should().BeTrue();
+        Conceder(PerfilDeGovernanca(TipoDeGovernanca.GestorDeProtecaoDeDados), Agora.AddDays(30)).Value!.ValidaAte.Should().Be(Agora.AddDays(30));
+        pedido.Aprovar(Diogo.Identidade, deGestorDeProtecaoDeDados, Contexto, Agora, Agora.AddMonths(3)).IsSuccess.Should().BeTrue();
         pedido.Andamento.ValidaAte.Should().Be(Agora.AddMonths(3));
     }
 

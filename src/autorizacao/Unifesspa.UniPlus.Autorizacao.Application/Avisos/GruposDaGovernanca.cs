@@ -16,7 +16,7 @@ public enum GrupoDaGovernanca
 
     /// <summary>
     /// Os Representantes do controlador: quem aprova pela proteção de dados, permissão reservada que só o perfil do
-    /// Representante reúne. O Encarregado de dados não entra: não recebe aviso de decisão.
+    /// Representante reúne. O Gestor de proteção de dados não entra: não recebe aviso de decisão.
     /// </summary>
     RepresentanteDoControlador = 3,
 

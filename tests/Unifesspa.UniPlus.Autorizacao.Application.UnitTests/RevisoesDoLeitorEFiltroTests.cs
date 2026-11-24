@@ -52,9 +52,9 @@ public sealed class RevisoesDoLeitorEFiltroTests
     }
 
     [Theory(DisplayName = "O código da situação da revisão é lido sem distinguir caixa, e o desconhecido não vira situação")]
-    [InlineData("em_andamento", SituacaoDaRevisao.EmAndamento)]
+    [InlineData("EM_ANDAMENTO", SituacaoDaRevisao.EmAndamento)]
     [InlineData(" CONCLUIDA ", SituacaoDaRevisao.Concluida)]
-    [InlineData("pendente", null)]
+    [InlineData("PENDENTE", null)]
     [InlineData(null, null)]
     public void DoCodigo_LeOsCodigosPublicados(string? codigo, SituacaoDaRevisao? esperada) =>
         SituacaoDaRevisaoCodigo.DoCodigo(codigo).Should().Be(esperada);

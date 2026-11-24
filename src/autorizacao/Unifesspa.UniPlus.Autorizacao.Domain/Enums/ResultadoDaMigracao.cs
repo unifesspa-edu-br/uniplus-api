@@ -19,11 +19,11 @@ public enum ResultadoDaMigracao
 /// <summary>Código textual canônico de <see cref="ResultadoDaMigracao"/>, o valor gravado e exposto.</summary>
 public static class ResultadoDaMigracaoCodigo
 {
-    public const string Migrar = "migrar";
-    public const string Recusar = "recusar";
-    public const string Reter = "reter";
-    public const string NaoMigrada = "nao_migrada";
-    public const string ForaDaLista = "fora_da_lista";
+    public const string Migrar = "MIGRAR";
+    public const string Recusar = "RECUSAR";
+    public const string Reter = "RETER";
+    public const string NaoMigrada = "NAO_MIGRADA";
+    public const string ForaDaLista = "FORA_DA_LISTA";
 
     public static string ToCodigo(this ResultadoDaMigracao resultado) => resultado switch
     {

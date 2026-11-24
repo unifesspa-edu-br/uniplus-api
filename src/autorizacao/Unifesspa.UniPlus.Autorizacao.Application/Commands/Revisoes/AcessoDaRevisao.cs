@@ -9,7 +9,7 @@ using Unifesspa.UniPlus.Autorizacao.Domain.Enums;
 /// <summary>
 /// O que o solicitante da requisição pode fazer na revisão dos acessos: conduzi-la como Representante do controlador e
 /// decidir os itens dela, rever como gestor de acessos os itens de quem é Representante, ou só consultar, como o
-/// Encarregado de dados. Cada capacidade é avaliada pelo ponto de decisão único, por permissão do catálogo, sem registrar:
+/// Gestor de proteção de dados. Cada capacidade é avaliada pelo ponto de decisão único, por permissão do catálogo, sem registrar:
 /// quem usa o resultado grava a decisão que governou o desfecho, para que a trilha traga a decisão real e não a de uma
 /// permissão que a operação não exigia. A consulta só lê: nunca abre revisão nem decide item.
 /// </summary>

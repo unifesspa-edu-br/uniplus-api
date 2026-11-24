@@ -19,10 +19,10 @@ public enum OrigemDaBase
 /// <summary>Código textual canônico de <see cref="OrigemDaBase"/>, o valor gravado e exposto.</summary>
 public static class OrigemDaBaseCodigo
 {
-    public const string Migracao = "migracao";
-    public const string Saida = "saida";
-    public const string Liberacao = "liberacao";
-    public const string Conciliacao = "conciliacao";
+    public const string Migracao = "MIGRACAO";
+    public const string Saida = "SAIDA";
+    public const string Liberacao = "LIBERACAO";
+    public const string Conciliacao = "CONCILIACAO";
 
     public static string ToCodigo(this OrigemDaBase valor) => valor switch
     {

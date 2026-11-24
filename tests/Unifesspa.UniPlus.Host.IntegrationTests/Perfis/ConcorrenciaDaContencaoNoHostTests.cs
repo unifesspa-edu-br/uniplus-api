@@ -35,7 +35,7 @@ public sealed class ConcorrenciaDaContencaoNoHostTests : ContencaoDoPerfilNoHost
 
         respostas[0].StatusCode.Should().Be(HttpStatusCode.NoContent);
         await ConferirRecusaDoPerfilAsync(respostas[1], HttpStatusCode.UnprocessableEntity, "ja_suspenso");
-        (await TiposDaContencaoAsync(diogo, perfilId)).Should().Equal("suspensao");
+        (await TiposDaContencaoAsync(diogo, perfilId)).Should().Equal("SUSPENSAO");
         DescartarTodas(respostas);
     }
 
@@ -53,7 +53,7 @@ public sealed class ConcorrenciaDaContencaoNoHostTests : ContencaoDoPerfilNoHost
             perfilId, () => RetomarAsync(isabella, perfilId, EtapaGestao), () => RetomarAsync(marlene, perfilId, EtapaProtecao));
 
         respostas.Select(r => r.StatusCode).Should().AllBeEquivalentTo(HttpStatusCode.OK);
-        (await TiposDaContencaoAsync(diogo, perfilId)).Should().Equal("suspensao", "decisao_da_retomada", "decisao_da_retomada", "retomada");
+        (await TiposDaContencaoAsync(diogo, perfilId)).Should().Equal("SUSPENSAO", "decisao_da_retomada", "decisao_da_retomada", "RETOMADA");
         (await PermissoesDaConcessaoAsync(perfilId)).Should().NotBeEmpty();
         DescartarTodas(respostas);
     }
@@ -91,7 +91,7 @@ public sealed class ConcorrenciaDaContencaoNoHostTests : ContencaoDoPerfilNoHost
 
         respostas[0].StatusCode.Should().Be(HttpStatusCode.OK);
         await ConferirRecusaDoPerfilAsync(respostas[1], HttpStatusCode.UnprocessableEntity, "nao_suspenso");
-        (await TiposDaContencaoAsync(diogo, perfilId)).Should().Equal("suspensao", "decisao_da_retomada", "retomada");
+        (await TiposDaContencaoAsync(diogo, perfilId)).Should().Equal("SUSPENSAO", "decisao_da_retomada", "RETOMADA");
         DescartarTodas(respostas);
     }
 
@@ -140,7 +140,7 @@ public sealed class ConcorrenciaDaContencaoNoHostTests : ContencaoDoPerfilNoHost
 
         primeira.StatusCode.Should().Be(HttpStatusCode.NoContent);
         repetida.StatusCode.Should().Be(HttpStatusCode.NoContent);
-        (await TiposDaContencaoAsync(diogo, perfilId)).Should().Equal("suspensao");
+        (await TiposDaContencaoAsync(diogo, perfilId)).Should().Equal("SUSPENSAO");
     }
 
     [Fact(DisplayName = "O conflito de concorrência na retomada, com chave de idempotência, vira 409 e nada fica gravado")]
@@ -158,7 +158,7 @@ public sealed class ConcorrenciaDaContencaoNoHostTests : ContencaoDoPerfilNoHost
         string corpo = await resposta.Content.ReadAsStringAsync();
         resposta.StatusCode.Should().Be(HttpStatusCode.Conflict, corpo);
         corpo.Should().Contain("uniplus.concorrencia.conflito");
-        (await TiposDaContencaoAsync(diogo, perfilId)).Should().Equal("suspensao");
+        (await TiposDaContencaoAsync(diogo, perfilId)).Should().Equal("SUSPENSAO");
     }
 
     private protected override HttpClient NovoCliente() => _hostDaClasse.Obter(Fixture).CreateClient();

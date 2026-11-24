@@ -46,7 +46,7 @@ public sealed class AvisosDaGovernancaTests
     {
         ChaveDoAviso chave = new(TipoDeAviso.PermissoesRemovidas, Guid.Parse("0190a1b2-c3d4-7e5f-8a9b-0c1d2e3f4a5b"), string.Empty, Rebeca);
 
-        IdDoAviso.De(chave).Should().Be(Guid.Parse("c5b1005e-07f5-824a-a021-dd66c99adcfa"));
+        IdDoAviso.De(chave).Should().Be(Guid.Parse("a1e4e28d-605a-87d0-ab8a-77df9d23588c"));
     }
 
     [Fact(DisplayName = "Os componentes da chave não se confundem quando o texto contém o separador")]
@@ -61,14 +61,14 @@ public sealed class AvisosDaGovernancaTests
     }
 
     [Theory(DisplayName = "Cada tipo de aviso tem código, finalidade, assunto e abertura próprios")]
-    [InlineData(TipoDeAviso.PermissoesRemovidas, "permissoes_removidas")]
-    [InlineData(TipoDeAviso.VersaoCanceladaPelaRemocao, "versao_cancelada_pela_remocao")]
-    [InlineData(TipoDeAviso.AprovacoesDescartadas, "aprovacoes_descartadas")]
-    [InlineData(TipoDeAviso.PerfilSuspenso, "perfil_suspenso")]
+    [InlineData(TipoDeAviso.PermissoesRemovidas, "PERMISSOES_REMOVIDAS")]
+    [InlineData(TipoDeAviso.VersaoCanceladaPelaRemocao, "VERSAO_CANCELADA_PELA_REMOCAO")]
+    [InlineData(TipoDeAviso.AprovacoesDescartadas, "APROVACOES_DESCARTADAS")]
+    [InlineData(TipoDeAviso.PerfilSuspenso, "PERFIL_SUSPENSO")]
     public void Tipo_TemCodigoEFinalidade(TipoDeAviso tipo, string codigo)
     {
         tipo.ToCodigo().Should().Be(codigo);
-        tipo.Finalidade().Should().Be($"perfil.{codigo}");
+        tipo.Finalidade().Should().Be($"perfil.{codigo}".ToLowerInvariant());
         RedacaoDoAviso.Assunto(tipo).Should().NotBeNullOrWhiteSpace();
         RedacaoDoAviso.CorpoEmTexto(Modelo(tipo)).Should().Contain("Análise <de> atendimento").And.Contain("Versão: 2");
     }

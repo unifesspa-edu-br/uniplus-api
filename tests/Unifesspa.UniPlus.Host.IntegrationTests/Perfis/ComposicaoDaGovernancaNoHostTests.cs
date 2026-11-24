@@ -24,7 +24,7 @@ using Unifesspa.UniPlus.Kernel.Domain.ValueObjects;
 /// <summary>
 /// Os perfis de governança não têm versão, aprovação nem revisão, e a composição deles só muda pela carga do modelo. Reúnem
 /// permissões do módulo de autorização e, de outros módulos, só as reservadas à governança: uma permissão comum de outro
-/// módulo chegaria a todos os gestores, Representantes ou Encarregados sem passar pela aprovação que os perfis comuns
+/// módulo chegaria a todos os gestores, Representantes ou Gestor de proteção de dados sem passar pela aprovação que os perfis comuns
 /// exigem. O perfil comum, por sua vez, nunca reúne permissão reservada.
 /// </summary>
 [Collection(MonolitoDaInstalacaoCollection.Name)]
@@ -36,7 +36,7 @@ public sealed class ComposicaoDaGovernancaNoHostTests
     private const string ManifestacaoNaProtecaoDoCatalogo = "configuracao:protecao-do-catalogo:manifestar";
 
     private static readonly Guid[] PerfisDeGovernanca =
-        [PerfisDeSistema.GestorDeAcessosId, PerfisDeSistema.RepresentanteDoControladorId, PerfisDeSistema.EncarregadoDeDadosId];
+        [PerfisDeSistema.GestorDeAcessosId, PerfisDeSistema.RepresentanteDoControladorId, PerfisDeSistema.GestorDeProtecaoDeDadosId];
 
     private readonly MonolitoDaInstalacaoFixture _fixture;
 
@@ -57,7 +57,7 @@ public sealed class ComposicaoDaGovernancaNoHostTests
         codigos.Select(static c => c.Valor).Should().Contain([AprovacaoDaProtecaoDoCatalogo, ConsultaDaProtecaoDoCatalogo, ManifestacaoNaProtecaoDoCatalogo]);
     }
 
-    [Fact(DisplayName = "A composição gravada dos perfis de gestor, de Representante e de Encarregado é a esperada")]
+    [Fact(DisplayName = "A composição gravada dos perfis de gestor, de Representante e de Gestor de proteção de dados é a esperada")]
     public async Task PerfisDeGovernanca_ComposicaoGravadaEAEsperada()
     {
         PermissaoDeGovernanca[] gravada = await ComposicaoGravadaAsync();
@@ -68,15 +68,15 @@ public sealed class ComposicaoDaGovernancaNoHostTests
         }
     }
 
-    [Fact(DisplayName = "Reservada de outro módulo: a de decisão só no Representante, as de consulta e manifestação só no Encarregado")]
-    public void PermissoesReservadasDeOutroModulo_DecisaoNoRepresentanteConsultaNoEncarregado()
+    [Fact(DisplayName = "Reservada de outro módulo: a de decisão só no Representante, as de consulta e manifestação só no Gestor de proteção de dados")]
+    public void PermissoesReservadasDeOutroModulo_DecisaoNoRepresentanteConsultaNoGestorDeProtecaoDeDados()
     {
         string[] deOutroModulo = [.. Catalogo.Definicoes.Where(static d => d.ReservadaAGovernanca && d.Modulo != ModuloDeAutorizacao).Select(static d => d.Codigo)];
 
         deOutroModulo.Should().BeEquivalentTo([AprovacaoDaProtecaoDoCatalogo, ConsultaDaProtecaoDoCatalogo, ManifestacaoNaProtecaoDoCatalogo]);
         PerfisQueReunem(AprovacaoDaProtecaoDoCatalogo).Should().Equal(PerfisDeSistema.RepresentanteDoControladorId);
-        PerfisQueReunem(ConsultaDaProtecaoDoCatalogo).Should().Equal(PerfisDeSistema.EncarregadoDeDadosId);
-        PerfisQueReunem(ManifestacaoNaProtecaoDoCatalogo).Should().Equal(PerfisDeSistema.EncarregadoDeDadosId);
+        PerfisQueReunem(ConsultaDaProtecaoDoCatalogo).Should().Equal(PerfisDeSistema.GestorDeProtecaoDeDadosId);
+        PerfisQueReunem(ManifestacaoNaProtecaoDoCatalogo).Should().Equal(PerfisDeSistema.GestorDeProtecaoDeDadosId);
     }
 
     [Fact(DisplayName = "A governança recusa a permissão não reservada de outro módulo e aceita a reservada")]
@@ -103,7 +103,7 @@ public sealed class ComposicaoDaGovernancaNoHostTests
     [Theory(DisplayName = "O catálogo de permissões é consultado com cada um dos três perfis de governança")]
     [InlineData(TipoDeGovernanca.GestorDeAcessos)]
     [InlineData(TipoDeGovernanca.RepresentanteDoControlador)]
-    [InlineData(TipoDeGovernanca.EncarregadoDeDados)]
+    [InlineData(TipoDeGovernanca.GestorDeProtecaoDeDados)]
     public async Task CatalogoDePermissoes_ConsultadoPelosTresPerfis(TipoDeGovernanca governanca)
     {
         string contaId = $"catalogo.{governanca}".ToLowerInvariant();

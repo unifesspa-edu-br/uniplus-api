@@ -36,7 +36,7 @@ public sealed class PedidosDeConcessaoFluxoTests : PedidosDeConcessaoTestBase
 
         JsonElement aprovado = await CorpoAsync(await EnviarAsync(diogo, HttpMethod.Post, $"{Rota}/{id}/aprovacoes"), HttpStatusCode.OK);
 
-        aprovado.GetProperty("situacao").GetString().Should().Be("aprovado");
+        aprovado.GetProperty("situacao").GetString().Should().Be("APROVADO");
         Concessao concessao = (await ConcessoesAsync(Leandro, perfil)).Single();
         ConferirConcessaoDoPedido(concessao, id, unidade);
         aprovado.GetProperty("decisoes").EnumerateArray().Single().GetProperty("decisor").GetProperty("nome").GetString().Should().Be(Diogo.Nome);
@@ -90,7 +90,7 @@ public sealed class PedidosDeConcessaoFluxoTests : PedidosDeConcessaoTestBase
             HttpStatusCode.UnprocessableEntity,
             "validade_invalida");
 
-        (await SituacaoAsync(betina, id)).Should().Be("aguardando_gestor");
+        (await SituacaoAsync(betina, id)).Should().Be("AGUARDANDO_GESTOR");
     }
 
     [Fact(DisplayName = "Pedido de perfil sensível passa pelas duas aprovações, e a concessão só nasce na segunda")]
@@ -104,12 +104,12 @@ public sealed class PedidosDeConcessaoFluxoTests : PedidosDeConcessaoTestBase
         await ConferirPrimeiraEtapaAsync(diogo, marlene, id, perfil);
         JsonElement protecao = await CorpoAsync(await EnviarAsync(marlene, HttpMethod.Post, $"{Rota}/{id}/aprovacoes"), HttpStatusCode.OK);
 
-        protecao.GetProperty("situacao").GetString().Should().Be("aprovado");
+        protecao.GetProperty("situacao").GetString().Should().Be("APROVADO");
         (await ConcessoesAsync(Leandro, perfil)).Should().ContainSingle().Which.ConcedidaPorContaId.Should().Be(Marlene.ContaId.ToString());
         JsonElement[] decisoes = [.. protecao.GetProperty("decisoes").EnumerateArray()];
-        decisoes.Select(d => d.GetProperty("etapa").GetString()).Should().Equal("gestor", "protecao_de_dados");
+        decisoes.Select(d => d.GetProperty("etapa").GetString()).Should().Equal("GESTOR", "PROTECAO_DE_DADOS");
         decisoes[0].GetProperty("sensibilidadeAvaliada").GetString().Should().Be("SENSIVEL");
-        (await ListarFilaAsync(marlene, "protecao_de_dados")).Should().NotContain(id);
+        (await ListarFilaAsync(marlene, "PROTECAO_DE_DADOS")).Should().NotContain(id);
     }
 
     [Fact(DisplayName = "A proteção de dados não decide antes do gestor, o gestor não decide a etapa dela, e sem permissão a resposta é 403")]
@@ -124,7 +124,7 @@ public sealed class PedidosDeConcessaoFluxoTests : PedidosDeConcessaoTestBase
         await ConferirRecusaAsync(await EnviarAsync(marlene, HttpMethod.Post, $"{Rota}/{id}/aprovacoes"), HttpStatusCode.UnprocessableEntity, "etapa_invalida");
         await ConferirRecusaAsync(await EnviarAsync(marlene, HttpMethod.Post, $"{Rota}/{id}/recusa", new { motivo = "Cedo demais." }), HttpStatusCode.UnprocessableEntity, "etapa_invalida");
         await ConferirSemPermissaoAsync(betina, id);
-        (await SituacaoAsync(betina, id)).Should().Be("aguardando_gestor");
+        (await SituacaoAsync(betina, id)).Should().Be("AGUARDANDO_GESTOR");
 
         await EnviarAsync(diogo, HttpMethod.Post, $"{Rota}/{id}/aprovacoes");
         await ConferirRecusaAsync(await EnviarAsync(diogo, HttpMethod.Post, $"{Rota}/{id}/aprovacoes"), HttpStatusCode.UnprocessableEntity, "etapa_invalida");
@@ -141,7 +141,7 @@ public sealed class PedidosDeConcessaoFluxoTests : PedidosDeConcessaoTestBase
         using HttpResponseMessage resposta = await EnviarAsync(semJti, HttpMethod.Post, $"{Rota}/{id}/aprovacoes");
 
         resposta.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
-        (await SituacaoAsync(betina, id)).Should().Be("aguardando_gestor");
+        (await SituacaoAsync(betina, id)).Should().Be("AGUARDANDO_GESTOR");
     }
 
     [Theory(DisplayName = "Ninguém aprova pedido em que é solicitante ou beneficiário")]
@@ -173,7 +173,7 @@ public sealed class PedidosDeConcessaoFluxoTests : PedidosDeConcessaoTestBase
         await ConferirRecusaAsync(await EnviarAsync(isabella, HttpMethod.Post, $"{Rota}/{id}/aprovacoes"), HttpStatusCode.UnprocessableEntity, "mesmo_decisor_nas_duas_etapas");
         await ConferirRecusaAsync(await EnviarAsync(isabella, HttpMethod.Post, $"{Rota}/{id}/recusa", new { motivo = "De novo." }), HttpStatusCode.UnprocessableEntity, "mesmo_decisor_nas_duas_etapas");
 
-        (await SituacaoAsync(betina, id)).Should().Be("aguardando_protecao_de_dados");
+        (await SituacaoAsync(betina, id)).Should().Be("AGUARDANDO_PROTECAO_DE_DADOS");
     }
 
     [Fact(DisplayName = "Recusa encerra o pedido com o motivo, sem concessão, e a trilha a registra; sem motivo é recusada")]
@@ -188,7 +188,7 @@ public sealed class PedidosDeConcessaoFluxoTests : PedidosDeConcessaoTestBase
         JsonElement recusado = await CorpoAsync(
             await EnviarAsync(diogo, HttpMethod.Post, $"{Rota}/{id}/recusa", new { motivo = "função não exige acesso a laudos" }), HttpStatusCode.OK);
 
-        recusado.GetProperty("situacao").GetString().Should().Be("recusado");
+        recusado.GetProperty("situacao").GetString().Should().Be("RECUSADO");
         recusado.GetProperty("concessaoId").ValueKind.Should().Be(JsonValueKind.Null);
         (await ConcessoesAsync(Betina, perfil)).Should().BeEmpty();
         await ConferirRecusaNaTrilhaENasFilasAsync(betina, diogo, id);
@@ -201,11 +201,11 @@ public sealed class PedidosDeConcessaoFluxoTests : PedidosDeConcessaoTestBase
         using HttpClient betina = Cliente(Betina);
         using HttpClient diogo = await ClienteComPermissoesAsync(Diogo, AprovarFuncional);
         Guid cancelado = await CriarAsync(betina, perfil, unidade, null);
-        (await ListarFilaAsync(diogo, "gestor")).Should().Contain(cancelado);
+        (await ListarFilaAsync(diogo, "GESTOR")).Should().Contain(cancelado);
 
         await CancelarSoPeloSolicitanteAsync(betina, cancelado);
 
-        (await ListarFilaAsync(diogo, "gestor")).Should().NotContain(cancelado);
+        (await ListarFilaAsync(diogo, "GESTOR")).Should().NotContain(cancelado);
         (await TiposDaTrilhaAsync(betina, cancelado)).Should().Equal("pedido_criado", "termo_aceito", "cancelado");
         await ConferirRecusaAsync(await EnviarAsync(diogo, HttpMethod.Post, $"{Rota}/{cancelado}/aprovacoes"), HttpStatusCode.UnprocessableEntity, "situacao_invalida");
 
@@ -219,11 +219,11 @@ public sealed class PedidosDeConcessaoFluxoTests : PedidosDeConcessaoTestBase
         using HttpClient betina = Cliente(Betina);
         using HttpClient leandro = Cliente(Leandro);
         Guid id = await CriarAsync(betina, perfil, unidade, Leandro);
-        (await SituacaoAsync(betina, id)).Should().Be("aguardando_beneficiario");
+        (await SituacaoAsync(betina, id)).Should().Be("AGUARDANDO_BENEFICIARIO");
         await ConferirRecusaAsync(await EnviarAsync(diogo, HttpMethod.Post, $"{Rota}/{id}/aprovacoes"), HttpStatusCode.UnprocessableEntity, "situacao_invalida");
 
         JsonElement aceito = await CorpoAsync(await AceitarAsync(leandro, id), HttpStatusCode.OK);
-        aceito.GetProperty("situacao").GetString().Should().Be("aguardando_gestor");
+        aceito.GetProperty("situacao").GetString().Should().Be("AGUARDANDO_GESTOR");
         aceito.GetProperty("beneficiario").GetProperty("nome").GetString().Should().Be(Leandro.Nome);
         aceito.GetProperty("beneficiario").GetProperty("identidade").GetProperty("contaId").GetString().Should().Be(Leandro.ContaId.ToString());
         (await ConcessoesAsync(Leandro, perfil)).Should().BeEmpty();
@@ -243,14 +243,14 @@ public sealed class PedidosDeConcessaoFluxoTests : PedidosDeConcessaoTestBase
 
     private async Task ConferirTrilhasAsync(HttpClient diogo, Guid pedidoId, Guid concessaoId)
     {
-        (await TiposDaTrilhaAsync(diogo, pedidoId)).Should().Equal("pedido_criado", "beneficiario_aceitou", "aprovado");
+        (await TiposDaTrilhaAsync(diogo, pedidoId)).Should().Equal("pedido_criado", "beneficiario_aceitou", "APROVADO");
         JsonElement trilhaDoPedido = await LerAsync(diogo, $"{Rota}/{pedidoId}/trilha");
         trilhaDoPedido.EnumerateArray().Select(e => e.GetProperty("autor").GetProperty("nome").GetString()).Should()
             .Equal(Betina.Nome, Leandro.Nome, Diogo.Nome);
         using HttpClient administrador = await ClienteComPermissoesAsync(Diogo, Administrar);
         JsonElement daConcessao = await LerAsync(administrador, $"/api/autorizacao/concessoes/{concessaoId}/trilha");
         daConcessao.EnumerateArray().Select(e => e.GetProperty("tipo").GetString()).Should()
-            .Contain(["concedida", "pedido_criado", "beneficiario_aceitou", "aprovado"]);
+            .Contain(["concedida", "pedido_criado", "beneficiario_aceitou", "APROVADO"]);
     }
 
     private async Task<Guid> CriarComSugestaoAsync(Guid perfil, Guid unidade, DateTimeOffset sugerida)
@@ -279,11 +279,11 @@ public sealed class PedidosDeConcessaoFluxoTests : PedidosDeConcessaoTestBase
     {
         JsonElement gestor = await CorpoAsync(await EnviarAsync(diogo, HttpMethod.Post, $"{Rota}/{id}/aprovacoes"), HttpStatusCode.OK);
 
-        gestor.GetProperty("situacao").GetString().Should().Be("aguardando_protecao_de_dados");
-        gestor.GetProperty("etapaAtual").GetString().Should().Be("protecao_de_dados");
+        gestor.GetProperty("situacao").GetString().Should().Be("AGUARDANDO_PROTECAO_DE_DADOS");
+        gestor.GetProperty("etapaAtual").GetString().Should().Be("PROTECAO_DE_DADOS");
         (await ConcessoesAsync(Leandro, perfil)).Should().BeEmpty("Leandro ainda não tem a concessão");
-        (await ListarFilaAsync(marlene, "protecao_de_dados")).Should().Contain(id);
-        (await ListarFilaAsync(diogo, "gestor")).Should().NotContain(id);
+        (await ListarFilaAsync(marlene, "PROTECAO_DE_DADOS")).Should().Contain(id);
+        (await ListarFilaAsync(diogo, "GESTOR")).Should().NotContain(id);
     }
 
     private static async Task ConferirSemPermissaoAsync(HttpClient semPermissao, Guid id)
@@ -296,11 +296,11 @@ public sealed class PedidosDeConcessaoFluxoTests : PedidosDeConcessaoTestBase
     private static async Task ConferirRecusaNaTrilhaENasFilasAsync(HttpClient betina, HttpClient diogo, Guid id)
     {
         JsonElement trilha = await LerAsync(diogo, $"{Rota}/{id}/trilha");
-        JsonElement evento = trilha.EnumerateArray().Single(e => e.GetProperty("tipo").GetString() == "recusado");
+        JsonElement evento = trilha.EnumerateArray().Single(e => e.GetProperty("tipo").GetString() == "RECUSADO");
         evento.GetProperty("detalhe").GetString().Should().Contain("função não exige acesso a laudos");
-        (await ListarFilaAsync(diogo, "gestor")).Should().NotContain(id);
+        (await ListarFilaAsync(diogo, "GESTOR")).Should().NotContain(id);
         (await ListarFilaAsync(diogo, "todos")).Should().Contain(id);
-        (await ListarFilaAsync(diogo, "todos", "recusado")).Should().Equal(id);
+        (await ListarFilaAsync(diogo, "todos", "RECUSADO")).Should().Equal(id);
         (await EnviarAsync(betina, HttpMethod.Get, $"{Rota}?fila=todos")).StatusCode.Should().Be(HttpStatusCode.Forbidden);
         await ConferirRecusaAsync(await EnviarAsync(diogo, HttpMethod.Post, $"{Rota}/{id}/aprovacoes"), HttpStatusCode.UnprocessableEntity, "situacao_invalida");
     }
@@ -310,7 +310,7 @@ public sealed class PedidosDeConcessaoFluxoTests : PedidosDeConcessaoTestBase
         using HttpClient leandro = Cliente(Leandro);
         (await EnviarAsync(leandro, HttpMethod.Delete, $"{Rota}/{id}")).StatusCode.Should().Be(HttpStatusCode.NotFound);
         (await EnviarAsync(betina, HttpMethod.Delete, $"{Rota}/{id}")).StatusCode.Should().Be(HttpStatusCode.NoContent);
-        (await SituacaoAsync(betina, id)).Should().Be("cancelado");
+        (await SituacaoAsync(betina, id)).Should().Be("CANCELADO");
     }
 
     private async Task<Guid> DecididoPeloGestorAsync(HttpClient diogo, Guid perfil, Guid unidade)

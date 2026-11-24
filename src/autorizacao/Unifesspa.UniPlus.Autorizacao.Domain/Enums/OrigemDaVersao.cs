@@ -13,8 +13,8 @@ public enum OrigemDaVersao
 /// <summary>Código textual canônico de <see cref="OrigemDaVersao"/>, o valor gravado e exposto.</summary>
 public static class OrigemDaVersaoCodigo
 {
-    public const string Proposta = "proposta";
-    public const string Remocao = "remocao";
+    public const string Proposta = "PROPOSTA";
+    public const string Remocao = "REMOCAO";
 
     public static string ToCodigo(this OrigemDaVersao origem) => origem switch
     {

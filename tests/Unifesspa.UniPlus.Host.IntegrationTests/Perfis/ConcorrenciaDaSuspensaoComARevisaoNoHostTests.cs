@@ -28,7 +28,7 @@ public sealed class ConcorrenciaDaSuspensaoComARevisaoNoHostTests : RevisaoDasCo
         HttpResponseMessage[] respostas = await EmFilaSobOBloqueioAsync(
             cenario.PerfilId,
             () => ChamadasDaContencao.SuspenderAsync(diogo, cenario.PerfilId),
-            () => EnviarDecisoesDaGestaoAsync(gestao, cenario.PerfilId, [Decisao(cenario.Concessoes[Leandro], "migrar")]));
+            () => EnviarDecisoesDaGestaoAsync(gestao, cenario.PerfilId, [Decisao(cenario.Concessoes[Leandro], "MIGRAR")]));
 
         await ConferirAsync(respostas, cenario);
     }
@@ -42,7 +42,7 @@ public sealed class ConcorrenciaDaSuspensaoComARevisaoNoHostTests : RevisaoDasCo
 
         HttpResponseMessage[] respostas = await EmFilaSobOBloqueioAsync(
             cenario.PerfilId,
-            () => EnviarDecisoesDaGestaoAsync(gestao, cenario.PerfilId, [Decisao(cenario.Concessoes[Leandro], "migrar")]),
+            () => EnviarDecisoesDaGestaoAsync(gestao, cenario.PerfilId, [Decisao(cenario.Concessoes[Leandro], "MIGRAR")]),
             () => ChamadasDaContencao.SuspenderAsync(diogo, cenario.PerfilId));
 
         await ConferirAsync([respostas[1], respostas[0]], cenario);

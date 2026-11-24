@@ -23,7 +23,7 @@ public sealed class ProvidenciaMappingTests
 
         ProvidenciaDto dto = ProvidenciaMapping.ToDto(Item(p, cenario), Agora.AddMinutes(10), ProvidenciaBuilder.Diogo);
 
-        (dto.Situacao, dto.EncerramentoDaConcessao, dto.Concessao.Ativa).Should().Be(("prejudicada", new EncerramentoDaConcessaoDto("revogada", Agora.AddMinutes(5)), false));
+        (dto.Situacao, dto.EncerramentoDaConcessao, dto.Concessao.Ativa).Should().Be(("PREJUDICADA", new EncerramentoDaConcessaoDto("REVOGADA", Agora.AddMinutes(5)), false));
         (dto.Fundamento, dto.Desfecho, dto.ImpedidoDeResponder).Should().Be((ProvidenciaBuilder.Fundamento, (DesfechoDaProvidenciaDto?)null, false));
     }
 
@@ -34,7 +34,7 @@ public sealed class ProvidenciaMappingTests
 
         ProvidenciaDto dto = ProvidenciaMapping.ToDto(Item(cenario.Aberta(), cenario), Agora.AddHours(2), null);
 
-        (dto.Situacao, dto.EncerramentoDaConcessao).Should().Be(("prejudicada", new EncerramentoDaConcessaoDto("vencida", Agora.AddHours(1))));
+        (dto.Situacao, dto.EncerramentoDaConcessao).Should().Be(("PREJUDICADA", new EncerramentoDaConcessaoDto("VENCIDA", Agora.AddHours(1))));
     }
 
     [Fact(DisplayName = "O item da fila não traz o fundamento nem o motivo do desfecho, e marca quem lê se está impedido")]
@@ -45,14 +45,14 @@ public sealed class ProvidenciaMappingTests
 
         ProvidenciaResumoDto resumo = ProvidenciaMapping.ToResumo(Item(p, cenario), Agora, ProvidenciaBuilder.Cecilia.Identidade);
 
-        (resumo.Situacao, resumo.Desfecho, resumo.ImpedidoDeResponder).Should().Be(("respondida", new AtoDoDesfechoDto(Agora, new IdentidadeDto(ProvidenciaBuilder.Emissor, "diogo.souza", ProvidenciaBuilder.Diogo.Nome)), true));
+        (resumo.Situacao, resumo.Desfecho, resumo.ImpedidoDeResponder).Should().Be(("RESPONDIDA", new AtoDoDesfechoDto(Agora, new IdentidadeDto(ProvidenciaBuilder.Emissor, "diogo.souza", ProvidenciaBuilder.Diogo.Nome)), true));
         resumo.EncerramentoDaConcessao.Should().BeNull();
     }
 
     [Fact(DisplayName = "A trilha da concessão mostra a solicitação, com o tipo e o fundamento, e o atendimento, com o motivo")]
     public void Trilha_SolicitacaoEAtendimento()
     {
-        Providencia p = new ProvidenciaBuilder().DoTipo("revisao").Atendida();
+        Providencia p = new ProvidenciaBuilder().DoTipo("REVISAO").Atendida();
 
         EventoDaTrilhaDto[] eventos = [.. ProvidenciaMapping.EventosDaTrilha(p)];
 
@@ -91,7 +91,7 @@ public sealed class ProvidenciaMappingTests
         ConcessaoMapping.EventosDaConcessao(cenario.Concessao, Agora.AddHours(4)).Select(static e => (e.Tipo, e.Instante)).Should().Equal(
             ("concedida", Agora.AddDays(-30)), ("vencida", Agora.AddHours(1)), ("revogada", Agora.AddHours(3)));
         ProvidenciaMapping.ToDto(Item(p, cenario), Agora.AddHours(4), null).EncerramentoDaConcessao
-            .Should().Be(new EncerramentoDaConcessaoDto("vencida", Agora.AddHours(1)));
+            .Should().Be(new EncerramentoDaConcessaoDto("VENCIDA", Agora.AddHours(1)));
     }
 
     private static ProvidenciaComConcessao Item(Providencia p, ProvidenciaBuilder cenario) =>

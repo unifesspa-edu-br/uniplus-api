@@ -14,7 +14,7 @@ using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 [Collection(AutorizacaoEndpointCollection.Name)]
 public sealed class RegistroDeAvisosNoBancoTests
 {
-    private const string Tipo = "permissoes_removidas";
+    private const string Tipo = "PERMISSOES_REMOVIDAS";
 
     private readonly AutorizacaoEndpointFixture _fixture;
 

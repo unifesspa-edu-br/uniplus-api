@@ -43,7 +43,7 @@ public sealed class PropostaComRemocaoNoHostTests : AprovacaoDaVersaoNoHostTestB
         perfil.GetProperty("composicaoEmVigor").GetProperty("numero").GetInt32().Should().Be(2);
         perfil.GetProperty("composicaoEmVigor").GetProperty("permissoes").EnumerateArray()
             .Select(p => p.GetProperty("codigo").GetString()).Should().Equal(Consultar);
-        (await SituacaoDaVersaoNoBancoAsync(pendente.VersaoId)).Should().Be("pendente");
+        (await SituacaoDaVersaoNoBancoAsync(pendente.VersaoId)).Should().Be("PENDENTE");
         (await VigenciasAsync(vigente.PerfilId)).Count(v => v.Aberta).Should().Be(1);
     }
 
@@ -56,9 +56,9 @@ public sealed class PropostaComRemocaoNoHostTests : AprovacaoDaVersaoNoHostTestB
 
         await EnviarEVerificarAsync(diogo, pendente);
 
-        (await SituacaoDaVersaoNoBancoAsync(pendente.VersaoId)).Should().Be("vigente");
-        (await SituacaoDaVersaoNoBancoAsync(reduzidaId)).Should().Be("encerrada");
-        (await SituacaoDaVersaoNoBancoAsync(vigente.VersaoId)).Should().Be("encerrada");
+        (await SituacaoDaVersaoNoBancoAsync(pendente.VersaoId)).Should().Be("VIGENTE");
+        (await SituacaoDaVersaoNoBancoAsync(reduzidaId)).Should().Be("ENCERRADA");
+        (await SituacaoDaVersaoNoBancoAsync(vigente.VersaoId)).Should().Be("ENCERRADA");
         (await QuantidadeDeVersoesVigentesAsync(vigente.PerfilId)).Should().Be(1);
     }
 

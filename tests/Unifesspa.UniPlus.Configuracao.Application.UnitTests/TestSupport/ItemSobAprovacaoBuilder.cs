@@ -9,7 +9,7 @@ using static Unifesspa.UniPlus.Configuracao.Application.UnitTests.TestSupport.Ca
 
 /// <summary>
 /// Monta o laudo médico complementar (tipo de documento) ou o fato "tem renda" no circuito de aprovação, solicitado por
-/// Isabella e, quando o cenário pede, com as manifestações técnicas de Kevin e de Lúcia, Encarregados de dados.
+/// Isabella e, quando o cenário pede, com as manifestações técnicas de Kevin e de Lúcia, Gestores de proteção de dados.
 /// </summary>
 internal sealed class ItemSobAprovacaoBuilder
 {

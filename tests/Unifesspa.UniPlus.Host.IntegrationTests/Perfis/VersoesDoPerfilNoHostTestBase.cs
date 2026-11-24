@@ -27,8 +27,8 @@ public abstract class VersoesDoPerfilNoHostTestBase : PedidosDeConcessaoTestBase
     private protected const string RotaPerfis = "/api/autorizacao/perfis";
     private protected const string Consultar = "teste:inscricoes:operar";
     private protected const string Sensivel = "teste:atendimento:analisar";
-    private protected const string EtapaGestao = "gestao_de_acessos";
-    private protected const string EtapaProtecao = "protecao_de_dados";
+    private protected const string EtapaGestao = "GESTAO_DE_ACESSOS";
+    private protected const string EtapaProtecao = "PROTECAO_DE_DADOS";
     private protected const string Protocolo = "23479.000123/2026-11";
 
     private TransacaoRetidaDeTeste? _bloqueioDaFila;
@@ -50,7 +50,7 @@ public abstract class VersoesDoPerfilNoHostTestBase : PedidosDeConcessaoTestBase
             protocolo = Protocolo,
             tamanhoDoDocumento = Pdf.Length,
             motivoDaRemocao = motivo,
-            categoriaDaRemocao = "incidente",
+            categoriaDaRemocao = "INCIDENTE",
         };
 
     private protected static string Nome() => $"Perfil {Guid.NewGuid():N}";
@@ -89,7 +89,7 @@ public abstract class VersoesDoPerfilNoHostTestBase : PedidosDeConcessaoTestBase
         string etag = await EnviarPdfAsync(new Uri(envio.UrlDeEnvio, UriKind.Absolute));
         using HttpResponseMessage confirmacao = await EnviarAsync(
             gestor, HttpMethod.Post, $"{RotaPerfis}/{envio.PerfilId}/versoes/{envio.VersaoId}/documento/confirmacao", new { etag });
-        (await CorpoAsync(confirmacao, HttpStatusCode.OK)).GetProperty("situacao").GetString().Should().Be("em_verificacao");
+        (await CorpoAsync(confirmacao, HttpStatusCode.OK)).GetProperty("situacao").GetString().Should().Be("EM_VERIFICACAO");
     }
 
     /// <summary>
@@ -111,19 +111,19 @@ public abstract class VersoesDoPerfilNoHostTestBase : PedidosDeConcessaoTestBase
         return envio;
     }
 
-    /// <summary>Quem criou confirma o envio e o veredicto "verificado" chega ao documento da versão.</summary>
+    /// <summary>Quem criou confirma o envio e o veredicto "VERIFICADO" chega ao documento da versão.</summary>
     private protected async Task ConfirmarEVerificarAsync(HttpClient criador, Envio envio)
     {
         await ConfirmarEnvioAsync(criador, envio);
         await VerificarDocumentoAsync(criador, envio);
     }
 
-    /// <summary>O veredicto "verificado" chega pela fila e o perfil passa a mostrá-lo.</summary>
+    /// <summary>O veredicto "VERIFICADO" chega pela fila e o perfil passa a mostrá-lo.</summary>
     private protected async Task VerificarDocumentoAsync(HttpClient criador, Envio envio)
     {
         await InjetarResultadoAsync(envio.DocumentoId, VeredictoDaVerificacao.Verificado);
         await AguardarAsync(
-            async () => await SituacaoDoDocumentoAsync(criador, envio.PerfilId) == "verificado",
+            async () => await SituacaoDoDocumentoAsync(criador, envio.PerfilId) == "VERIFICADO",
             $"o documento da versão {envio.VersaoId} não foi verificado");
     }
 
@@ -347,7 +347,7 @@ public abstract class VersoesDoPerfilNoHostTestBase : PedidosDeConcessaoTestBase
         await using AsyncServiceScope scope = Fixture.Factory.Services.CreateAsyncScope();
         UniPlusDbContext db = scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
 
-        return await db.Database.SqlQuery<int>($"SELECT count(*)::int AS \"Value\" FROM autorizacao.versoes_do_perfil WHERE perfil_id = {perfilId} AND situacao = 'vigente'").SingleAsync();
+        return await db.Database.SqlQuery<int>($"SELECT count(*)::int AS \"Value\" FROM autorizacao.versoes_do_perfil WHERE perfil_id = {perfilId} AND situacao = 'VIGENTE'").SingleAsync();
     }
 
     /// <summary>Concede o perfil na transação do chamador, pela mesma leitura bloqueada da concessão real, e devolve o perfil avaliado.</summary>

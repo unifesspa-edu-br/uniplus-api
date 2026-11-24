@@ -8,7 +8,7 @@ using Unifesspa.UniPlus.Autorizacao.Domain.Enums;
 using static Unifesspa.UniPlus.Autorizacao.Application.UnitTests.CenarioDaGovernancaDaVersao;
 
 /// <summary>
-/// Quem só consulta as versões de perfil, como o Encarregado de dados, lê o perfil, o documento, a revisão, a contenção, a
+/// Quem só consulta as versões de perfil, como o Gestor de proteção de dados, lê o perfil, o documento, a revisão, a contenção, a
 /// reclassificação e as divergências, com a leitura registrada pela consulta; as filas de decisão continuam de quem decide
 /// a etapa. Cecília Moura só consulta.
 /// </summary>
@@ -21,8 +21,8 @@ public sealed class LeituraDoPerfilPorQuemConsultaTests
     [Theory(DisplayName = "Quem só consulta as versões lê e a trilha registra a consulta permitida")]
     [InlineData("perfil")]
     [InlineData("documento")]
-    [InlineData("contencao")]
-    [InlineData("reclassificacao")]
+    [InlineData("CONTENCAO")]
+    [InlineData("RECLASSIFICACAO")]
     [InlineData("divergencias")]
     public async Task Leitura_ComSoAConsulta_Permite(string leitura)
     {
@@ -50,8 +50,8 @@ public sealed class LeituraDoPerfilPorQuemConsultaTests
     {
         "perfil" => AcessoDaVersao.AvaliarLeituraDoPerfilAsync(verificador, Recurso, CancellationToken.None),
         "documento" => AcessoDaVersao.AvaliarLeituraDoDocumentoAsync(verificador, Recurso, CancellationToken.None),
-        "contencao" => AcessoDaVersao.AvaliarLeituraDaContencaoAsync(verificador, Recurso, CancellationToken.None),
-        "reclassificacao" => AcessoDaVersao.AvaliarLeituraDaReclassificacaoAsync(verificador, Recurso, CancellationToken.None),
+        "CONTENCAO" => AcessoDaVersao.AvaliarLeituraDaContencaoAsync(verificador, Recurso, CancellationToken.None),
+        "RECLASSIFICACAO" => AcessoDaVersao.AvaliarLeituraDaReclassificacaoAsync(verificador, Recurso, CancellationToken.None),
         _ => AcessoDaVersao.AvaliarVisaoDaGovernancaAsync(verificador, CancellationToken.None),
     };
 }

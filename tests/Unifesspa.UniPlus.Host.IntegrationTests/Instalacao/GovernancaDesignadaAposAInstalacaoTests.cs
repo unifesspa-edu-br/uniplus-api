@@ -14,7 +14,7 @@ using Unifesspa.UniPlus.Verificador.Contratos;
 /// A governança montada na ordem em que um ambiente novo a recebe, pelo host real: a instalação concede os dois primeiros
 /// gestores de acessos (Diogo e Isabella), o primeiro Representante do controlador (Manoel) é designado só pelo gestor, o
 /// segundo (a gestora Isabella, que acumula os dois papéis) passa pela segunda etapa decidida pelo primeiro, e a
-/// Encarregada de dados (Betina) também. A designação cruzada do Representante como Encarregado é recusada (ADR-0162).
+/// Gestor de proteção de dados (Betina) também. A designação cruzada do Representante como Gestor de proteção de dados é recusada (ADR-0162).
 /// </summary>
 [Collection(MonolitoDaInstalacaoCollection.Name)]
 public sealed class GovernancaDesignadaAposAInstalacaoTests : InstalacaoTestBase
@@ -26,15 +26,15 @@ public sealed class GovernancaDesignadaAposAInstalacaoTests : InstalacaoTestBase
     private static readonly Persona Leandro = new("leandro.viana", "leandro-viana84@uniplus-test.local");
 
     private static readonly Guid Representante = PerfisDeSistema.RepresentanteDoControladorId;
-    private static readonly Guid Encarregado = PerfisDeSistema.EncarregadoDeDadosId;
+    private static readonly Guid GestorDeProtecaoDeDados = PerfisDeSistema.GestorDeProtecaoDeDadosId;
 
     public GovernancaDesignadaAposAInstalacaoTests(MonolitoDaInstalacaoFixture fixture)
         : base(fixture)
     {
     }
 
-    [Fact(DisplayName = "Instalados os gestores, as designações de Representante e de Encarregado concluem nessa ordem, e a cruzada é recusada")]
-    public async Task GestoresRepresentanteEncarregado_ConcluemNaOrdem()
+    [Fact(DisplayName = "Instalados os gestores, as designações de Representante e de Gestor de proteção de dados concluem nessa ordem, e a cruzada é recusada")]
+    public async Task GestoresRepresentanteGestorDeProtecaoDeDados_ConcluemNaOrdem()
     {
         try
         {
@@ -52,11 +52,11 @@ public sealed class GovernancaDesignadaAposAInstalacaoTests : InstalacaoTestBase
         using HttpClient diogo = Cliente(Diogo, papel: false);
         using HttpClient manoel = Cliente(Manoel, papel: false);
 
-        (await AprovarAsync(diogo, await DesignacaoAceitaAsync(Representante, Manoel))).Should().Be("aprovado", "o primeiro Representante só passa pelo gestor");
-        (await AprovarNasDuasEtapasAsync(diogo, manoel, await DesignacaoAceitaAsync(Representante, Isabella))).Should().Be("aprovado");
-        (await AprovarNasDuasEtapasAsync(diogo, manoel, await DesignacaoAceitaAsync(Encarregado, Betina))).Should().Be("aprovado");
+        (await AprovarAsync(diogo, await DesignacaoAceitaAsync(Representante, Manoel))).Should().Be("APROVADO", "o primeiro Representante só passa pelo gestor");
+        (await AprovarNasDuasEtapasAsync(diogo, manoel, await DesignacaoAceitaAsync(Representante, Isabella))).Should().Be("APROVADO");
+        (await AprovarNasDuasEtapasAsync(diogo, manoel, await DesignacaoAceitaAsync(GestorDeProtecaoDeDados, Betina))).Should().Be("APROVADO");
 
-        Guid cruzado = await DesignacaoComDocumentoAsync(Encarregado, Manoel);
+        Guid cruzado = await DesignacaoComDocumentoAsync(GestorDeProtecaoDeDados, Manoel);
         using HttpResponseMessage aceite = await TermoNoHostDeTeste.AceitarAsync(Fixture.Factory.Services, manoel, cruzado);
         await PedidosDeConcessaoTestBase.ConferirRecusaAsync(aceite, HttpStatusCode.Conflict, "papeis_incompativeis");
     }
@@ -75,7 +75,7 @@ public sealed class GovernancaDesignadaAposAInstalacaoTests : InstalacaoTestBase
     }
 
     // Os avisos dos pedidos saem pelo outbox depois das respostas: a caixa só se limpa quando para de receber, e as
-    // designações, as concessões de Representante e de Encarregado e os gestores instalados não ficam para os outros testes.
+    // designações, as concessões de Representante e de Gestor de proteção de dados e os gestores instalados não ficam para os outros testes.
     private async Task DescartarOQueCriouAsync()
     {
         int antes = -1;
@@ -103,12 +103,12 @@ public sealed class GovernancaDesignadaAposAInstalacaoTests : InstalacaoTestBase
             await ExecutarSqlAsync($"DELETE FROM autorizacao.{tabela}");
         }
 
-        await ExecutarSqlAsync("DELETE FROM autorizacao.concessoes WHERE perfil_id IN ({0}, {1})", Representante, Encarregado);
+        await ExecutarSqlAsync("DELETE FROM autorizacao.concessoes WHERE perfil_id IN ({0}, {1})", Representante, GestorDeProtecaoDeDados);
     }
 
     private static async Task<string> AprovarNasDuasEtapasAsync(HttpClient gestor, HttpClient representante, Guid id)
     {
-        (await AprovarAsync(gestor, id)).Should().Be("aguardando_protecao_de_dados");
+        (await AprovarAsync(gestor, id)).Should().Be("AGUARDANDO_PROTECAO_DE_DADOS");
         return await AprovarAsync(representante, id);
     }
 
@@ -135,7 +135,7 @@ public sealed class GovernancaDesignadaAposAInstalacaoTests : InstalacaoTestBase
         Guid anexoId = await PedidosDeConcessaoTestBase.AnexarEmVerificacaoAsync(leandro, id);
         await InjetarResultadoAsync(anexoId, VeredictoDaVerificacao.Verificado);
         await AguardarAsync(
-            async () => await PedidosDeConcessaoTestBase.SituacaoDoAnexoAsync(leandro, id, anexoId) == "verificado", $"o anexo {anexoId} não chegou a verificado");
+            async () => await PedidosDeConcessaoTestBase.SituacaoDoAnexoAsync(leandro, id, anexoId) == "VERIFICADO", $"o anexo {anexoId} não chegou a verificado");
 
         return id;
     }

@@ -58,7 +58,7 @@ public sealed class PapeisIncompativeisNoPedidoTests
         IConcessaoRepository concessoes = Substitute.For<IConcessaoRepository>();
 
         Result concedida = await new ConcessaoDoPedidoAprovado(concessoes, new CatalogoInstitucional(), new PapeisDeTeste(travas, Betina.Identidade))
-            .ConcederAsync(Decisao(PerfisDeSistema.EncarregadoDeDadosId), DateTimeOffset.UtcNow, CancellationToken.None);
+            .ConcederAsync(Decisao(PerfisDeSistema.GestorDeProtecaoDeDadosId), DateTimeOffset.UtcNow, CancellationToken.None);
 
         concedida.Error!.Code.Should().Be(PedidoErrorCodes.PapeisIncompativeis);
         travas.Should().Equal("pessoa:" + Betina.Identidade.ContaId);

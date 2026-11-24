@@ -43,11 +43,11 @@ public sealed class ConcorrenciaDaRevisaoNoHostTests : RevisaoDasConcessoesNoHos
         await using TransacaoRetidaDeTeste trava = await TravarConcessaoAsync(cenario.Concessoes[Leandro]);
 
         (Task<HttpResponseMessage> revogacao, Task<HttpResponseMessage> envio) = await EmFilaAsync(
-            trava, () => RevogarAsync(administrador, cenario.Concessoes[Leandro], MotivoDaRevogacao, Leandro.Email), () => EnviarDecisoesDaGestaoAsync(gestao, cenario.PerfilId, [Decisao(cenario.Concessoes[Leandro], "migrar"), Decisao(cenario.Concessoes[Betina], "migrar")]));
+            trava, () => RevogarAsync(administrador, cenario.Concessoes[Leandro], MotivoDaRevogacao, Leandro.Email), () => EnviarDecisoesDaGestaoAsync(gestao, cenario.PerfilId, [Decisao(cenario.Concessoes[Leandro], "MIGRAR"), Decisao(cenario.Concessoes[Betina], "MIGRAR")]));
 
         using HttpResponseMessage respostaDaRevogacao = await revogacao;
         JsonElement revisao = await CorpoAsync(await envio, HttpStatusCode.OK);
-        SituacaoDe(revisao, cenario.Concessoes[Betina]).Should().Be("aguardando_protecao_de_dados");
+        SituacaoDe(revisao, cenario.Concessoes[Betina]).Should().Be("AGUARDANDO_PROTECAO_DE_DADOS");
         revisao.GetProperty("itens").EnumerateArray().Should().NotContain(i => i.GetProperty("concessaoId").GetGuid() == cenario.Concessoes[Leandro]);
         (await ContarEnviosAsync(), await DeadlocksAsync()).Should().Be((1, deadlocks));
     }
@@ -59,16 +59,16 @@ public sealed class ConcorrenciaDaRevisaoNoHostTests : RevisaoDasConcessoesNoHos
         Guid concessao = cenario.Concessoes[Leandro];
         using HttpClient gestao = await GestaoAsync();
         using HttpClient protecao = await ProtecaoAsync();
-        SituacaoDe(await CorpoAsync(await EnviarDecisoes(gestao, cenario), HttpStatusCode.OK), concessao).Should().Be("aguardando_protecao_de_dados");
+        SituacaoDe(await CorpoAsync(await EnviarDecisoes(gestao, cenario), HttpStatusCode.OK), concessao).Should().Be("AGUARDANDO_PROTECAO_DE_DADOS");
         await using TransacaoRetidaDeTeste trava = await TravarConcessaoAsync(concessao);
 
-        Task<HttpResponseMessage> etapa = EnviarAsync(protecao, HttpMethod.Post, RotaDaRevisao(cenario.PerfilId, "/protecao-de-dados"), new { decisoes = new[] { Decisao(concessao, "migrar") } });
+        Task<HttpResponseMessage> etapa = EnviarAsync(protecao, HttpMethod.Post, RotaDaRevisao(cenario.PerfilId, "/protecao-de-dados"), new { decisoes = new[] { Decisao(concessao, "MIGRAR") } });
         await trava.AguardarBloqueioAsync();
         Relogio.Avancar(DepoisDoPrazo);
         await trava.ConfirmarAsync();
 
         await ConferirRecusaDaMigracaoAsync(await etapa, HttpStatusCode.UnprocessableEntity, "prazo_encerrado");
-        SituacaoDe(await RevisaoAsync(gestao, cenario.PerfilId), concessao).Should().Be("nao_migrada");
+        SituacaoDe(await RevisaoAsync(gestao, cenario.PerfilId), concessao).Should().Be("NAO_MIGRADA");
     }
 
     [Theory(DisplayName = "A remoção na revisão e o envio do mesmo perfil se resolvem por quem trava primeiro, nas duas ordens, sem deadlock")]
@@ -100,7 +100,7 @@ public sealed class ConcorrenciaDaRevisaoNoHostTests : RevisaoDasConcessoesNoHos
         using HttpResponseMessage resposta = await EnviarDecisoes(gestao, cenario);
 
         JsonElement item = ItemDe(await CorpoAsync(resposta, HttpStatusCode.OK), cenario.Concessoes[Leandro]);
-        item.GetProperty("situacao").GetString().Should().Be("aguardando_protecao_de_dados");
+        item.GetProperty("situacao").GetString().Should().Be("AGUARDANDO_PROTECAO_DE_DADOS");
         item.TryGetProperty("dispensa", out _).Should().BeFalse("a migração deixou de ter dispensa");
     }
 
@@ -113,7 +113,7 @@ public sealed class ConcorrenciaDaRevisaoNoHostTests : RevisaoDasConcessoesNoHos
 
         using HttpResponseMessage resposta = await EnviarDecisoes(gestao, cenario).WaitAsync(TimeSpan.FromSeconds(30));
 
-        SituacaoDe(await CorpoAsync(resposta, HttpStatusCode.OK), cenario.Concessoes[Leandro]).Should().Be("aguardando_protecao_de_dados");
+        SituacaoDe(await CorpoAsync(resposta, HttpStatusCode.OK), cenario.Concessoes[Leandro]).Should().Be("AGUARDANDO_PROTECAO_DE_DADOS");
         await papel.ConfirmarAsync();
     }
 
@@ -129,7 +129,7 @@ public sealed class ConcorrenciaDaRevisaoNoHostTests : RevisaoDasConcessoesNoHos
         pulada.Should().Be(0);
         seguinte.Should().BeGreaterThanOrEqualTo(1);
         using HttpClient gestao = await GestaoAsync();
-        SituacaoDe(await RevisaoAsync(gestao, cenario.PerfilId), cenario.Concessoes[Leandro]).Should().Be("nao_migrada");
+        SituacaoDe(await RevisaoAsync(gestao, cenario.PerfilId), cenario.Concessoes[Leandro]).Should().Be("NAO_MIGRADA");
     }
 
     [Fact(DisplayName = "Depois de uma falha na gravação da rotina a execução seguinte assume e conclui")]
@@ -172,7 +172,7 @@ public sealed class ConcorrenciaDaRevisaoNoHostTests : RevisaoDasConcessoesNoHos
         using HttpClient gestao = await GestaoAsync();
         string chave = Guid.NewGuid().ToString();
         Func<Task<HttpResponseMessage>> recusar = () => EnviarDecisoesDaGestaoAsync(
-            gestao, cenario.PerfilId, [Decisao(cenario.Concessoes[Leandro], "recusar")], confirmacaoDeExclusao: true, chave: chave);
+            gestao, cenario.PerfilId, [Decisao(cenario.Concessoes[Leandro], "RECUSAR")], confirmacaoDeExclusao: true, chave: chave);
 
         // O gatilho descarta a revogação da concessão que o envio recusa: a gravação amarrada ao xmin não encontra a linha na versão lida.
         HttpStatusCode comConflito = await ComGatilhoAsync("concessoes", "RETURN NULL;", async () => (await recusar()).StatusCode);
@@ -183,7 +183,7 @@ public sealed class ConcorrenciaDaRevisaoNoHostTests : RevisaoDasConcessoesNoHos
     }
 
     private static Task<HttpResponseMessage> EnviarDecisoes(HttpClient gestao, RevisaoAberta cenario) =>
-        EnviarDecisoesDaGestaoAsync(gestao, cenario.PerfilId, [Decisao(cenario.Concessoes[Leandro], "migrar")]);
+        EnviarDecisoesDaGestaoAsync(gestao, cenario.PerfilId, [Decisao(cenario.Concessoes[Leandro], "MIGRAR")]);
 
     private async Task<TransacaoRetidaDeTeste> TravarConcessaoAsync(Guid concessaoId)
     {

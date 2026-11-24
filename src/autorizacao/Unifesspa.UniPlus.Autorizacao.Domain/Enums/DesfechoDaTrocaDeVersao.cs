@@ -19,9 +19,9 @@ public enum DesfechoDaTrocaDeVersao
 /// <summary>Código textual canônico de <see cref="DesfechoDaTrocaDeVersao"/>, o valor gravado e exposto.</summary>
 public static class DesfechoDaTrocaDeVersaoCodigo
 {
-    public const string VersaoAtualizada = "versao_atualizada";
-    public const string VoltouAoGestor = "voltou_ao_gestor";
-    public const string Devolvido = "devolvido";
+    public const string VersaoAtualizada = "VERSAO_ATUALIZADA";
+    public const string VoltouAoGestor = "VOLTOU_AO_GESTOR";
+    public const string Devolvido = "DEVOLVIDO";
 
     public static string ToCodigo(this DesfechoDaTrocaDeVersao desfecho) => desfecho switch
     {

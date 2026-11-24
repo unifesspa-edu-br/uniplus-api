@@ -17,7 +17,7 @@ using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Hosting;
 
 /// <summary>
-/// Base das suítes da providência pelo host real, com transações reais. Cecília Moura é o Encarregado de dados que
+/// Base das suítes da providência pelo host real, com transações reais. Cecília Moura é o Gestor de proteção de dados que
 /// solicita; Diogo, Isabella e Betina são gestores de acessos, e Marlene é Representante do controlador; Leandro é o
 /// beneficiário, com o e-mail dele gravado na concessão.
 /// </summary>
@@ -40,11 +40,11 @@ public abstract class ProvidenciasNoHostTestBase : PedidosDeConcessaoTestBase
     {
     }
 
-    /// <summary>Reinicia o ambiente com três gestores de acessos, o Representante do controlador e o Encarregado de dados, e devolve o cliente de cada um.</summary>
+    /// <summary>Reinicia o ambiente com três gestores de acessos, o Representante do controlador e o Gestor de proteção de dados, e devolve o cliente de cada um.</summary>
     private protected async Task<Governanca> GovernancaAsync()
     {
         await ResetarAsync();
-        await ConcessoesDeTeste.ConcederGovernancaAsync(Fixture.Factory.Services, Cecilia.ContaId.ToString(), TipoDeGovernanca.EncarregadoDeDados, Cecilia.Email);
+        await ConcessoesDeTeste.ConcederGovernancaAsync(Fixture.Factory.Services, Cecilia.ContaId.ToString(), TipoDeGovernanca.GestorDeProtecaoDeDados, Cecilia.Email);
         return new Governanca(
             await ClienteComPermissoesAsync(Diogo, Administrar), await ClienteComPermissoesAsync(Isabella, Administrar),
             await ClienteComPermissoesAsync(Betina, Administrar), await ClienteComPermissoesAsync(Marlene, AprovarProtecaoDeDados), Cliente(Cecilia));
@@ -55,13 +55,13 @@ public abstract class ProvidenciasNoHostTestBase : PedidosDeConcessaoTestBase
         await ConcessoesDeTeste.ConcederAsync(
             Fixture.Factory.Services, Leandro.ContaId.ToString(), await SemearPerfilSensivelAsync(), EscopoDaConcessao.DaUnidade(await SemearUnidadeAsync()), validaAte, Leandro.Email);
 
-    private protected static async Task<Guid> SolicitarAsync(HttpClient encarregada, Guid concessaoId)
+    private protected static async Task<Guid> SolicitarAsync(HttpClient gestorDeProtecaoDeDados, Guid concessaoId)
     {
-        using HttpResponseMessage resposta = await SolicitarBrutoAsync(encarregada, concessaoId);
+        using HttpResponseMessage resposta = await SolicitarBrutoAsync(gestorDeProtecaoDeDados, concessaoId);
         return (await CorpoAsync(resposta, HttpStatusCode.Created)).GetProperty("id").GetGuid();
     }
 
-    private protected static Task<HttpResponseMessage> SolicitarBrutoAsync(HttpClient cliente, Guid concessaoId, string tipo = "retirada") =>
+    private protected static Task<HttpResponseMessage> SolicitarBrutoAsync(HttpClient cliente, Guid concessaoId, string tipo = "RETIRADA") =>
         EnviarAsync(cliente, HttpMethod.Post, RotaDasProvidencias, new { concessaoId, tipo, fundamento = Fundamento });
 
     private protected static Task<HttpResponseMessage> ResponderAsync(HttpClient cliente, Guid providenciaId, string motivo = "O acesso segue necessário até o fim do recurso.") =>

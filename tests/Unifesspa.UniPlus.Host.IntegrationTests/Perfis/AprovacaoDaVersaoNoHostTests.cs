@@ -145,7 +145,7 @@ public sealed class AprovacaoDaVersaoNoHostTests : AprovacaoDaVersaoNoHostTestBa
 
         JsonElement perfil = await CorpoAsync(recusa, HttpStatusCode.OK);
         perfil.GetProperty("versaoPendente").ValueKind.Should().Be(JsonValueKind.Null);
-        perfil.GetProperty("ultimaVersaoEncerradaSemVigor").GetProperty("situacao").GetString().Should().Be("recusada");
+        perfil.GetProperty("ultimaVersaoEncerradaSemVigor").GetProperty("situacao").GetString().Should().Be("RECUSADA");
         perfil.GetRawText().Should().NotContain("O protocolo não cobre");
         (await TemVigenteComVersaoAsync(diogo, vigente.PerfilId, vigente.VersaoId)).Should().BeTrue();
     }
@@ -170,7 +170,7 @@ public sealed class AprovacaoDaVersaoNoHostTests : AprovacaoDaVersaoNoHostTestBa
         Envio versao = await CriarVersaoAsync(criador, perfilId, Nome(), Catalogo);
         await ConfirmarEnvioAsync(criador, versao);
         await InjetarResultadoAsync(versao.DocumentoId, VeredictoDaVerificacao.Verificado);
-        await AguardarAsync(async () => await SituacaoDoDocumentoAsync(criador, perfilId) == "verificado", "o documento não foi verificado");
+        await AguardarAsync(async () => await SituacaoDoDocumentoAsync(criador, perfilId) == "VERIFICADO", "o documento não foi verificado");
 
         return versao;
     }

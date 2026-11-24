@@ -56,13 +56,13 @@ public sealed class TrilhaDaMigracaoNoHostTests : RevisaoDasConcessoesNoHostTest
 
     private static async Task DecidirNaRevisaoAsync(HttpClient isabella, HttpClient diogo, HttpClient protecao, Guid perfilId, Guid migrada, Guid propria)
     {
-        using HttpResponseMessage envio = await EnviarDecisoesDaGestaoAsync(isabella, perfilId, [Decisao(migrada, "migrar")]);
+        using HttpResponseMessage envio = await EnviarDecisoesDaGestaoAsync(isabella, perfilId, [Decisao(migrada, "MIGRAR")]);
         (await CorpoAsync(envio, HttpStatusCode.OK)).Should().NotBeNull();
-        using HttpResponseMessage retida = await EnviarAsync(diogo, HttpMethod.Post, RotaDaRevisao(perfilId, $"/retidas/{propria}"), new { decisao = "migrar" });
+        using HttpResponseMessage retida = await EnviarAsync(diogo, HttpMethod.Post, RotaDaRevisao(perfilId, $"/retidas/{propria}"), new { decisao = "MIGRAR" });
         (await CorpoAsync(retida, HttpStatusCode.OK)).Should().NotBeNull();
         using HttpResponseMessage etapa = await EnviarAsync(protecao, HttpMethod.Post, RotaDaRevisao(perfilId, "/protecao-de-dados"),
-            new { decisoes = new[] { Decisao(migrada, "migrar"), Decisao(propria, "migrar") } });
-        SituacaoDe(await CorpoAsync(etapa, HttpStatusCode.OK), migrada).Should().Be("migrada");
+            new { decisoes = new[] { Decisao(migrada, "MIGRAR"), Decisao(propria, "MIGRAR") } });
+        SituacaoDe(await CorpoAsync(etapa, HttpStatusCode.OK), migrada).Should().Be("MIGRADA");
     }
 
     private static void ConferirTrilhas(JsonElement trilhaDaMigrada, JsonElement trilhaDaPropria, string revisaoId)
@@ -71,10 +71,10 @@ public sealed class TrilhaDaMigracaoNoHostTests : RevisaoDasConcessoesNoHostTest
         decisoes.Should().HaveCount(2);
         decisoes.Select(d => d.GetProperty("autor").GetProperty("contaId").GetString())
             .Should().BeEquivalentTo([Isabella.ContaId.ToString(), Marlene.ContaId.ToString()]);
-        decisoes.Should().OnlyContain(d => d.GetProperty("ator").GetString() == "humano");
+        decisoes.Should().OnlyContain(d => d.GetProperty("ator").GetString() == "HUMANO");
         decisoes.Should().OnlyContain(d => d.GetProperty("detalhe").GetString()!.Contains(revisaoId, StringComparison.Ordinal));
         JsonElement retencao = EventosDoTipo(trilhaDaPropria, "migracao_reter").Single();
-        retencao.GetProperty("ator").GetString().Should().Be("sistema");
+        retencao.GetProperty("ator").GetString().Should().Be("SISTEMA");
         DecisoresDe(trilhaDaPropria).Should().NotContain(Isabella.ContaId.ToString());
         DecisoresDe(trilhaDaPropria).Should().Contain([Diogo.ContaId.ToString(), Marlene.ContaId.ToString()]);
     }
@@ -83,7 +83,7 @@ public sealed class TrilhaDaMigracaoNoHostTests : RevisaoDasConcessoesNoHostTest
     {
         JsonElement naoMigrada = EventosDoTipo(trilha, "migracao_nao_migrada").Single();
         naoMigrada.GetProperty("detalhe").GetString().Should().Contain(revisaoId);
-        naoMigrada.GetProperty("ator").GetString().Should().Be("sistema");
+        naoMigrada.GetProperty("ator").GetString().Should().Be("SISTEMA");
         naoMigrada.TryGetProperty("autor", out JsonElement autorDaDecisao).Should().BeTrue();
         autorDaDecisao.ValueKind.Should().BeOneOf(JsonValueKind.Null, JsonValueKind.Undefined);
         JsonElement revogada = EventosDoTipo(trilha, "revogada_pela_migracao").Single();

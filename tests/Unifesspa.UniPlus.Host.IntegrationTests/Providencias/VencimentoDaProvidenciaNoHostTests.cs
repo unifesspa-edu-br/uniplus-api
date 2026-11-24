@@ -45,7 +45,7 @@ public sealed class VencimentoDaProvidenciaNoHostTests : ProvidenciasNoHostTestB
         _relogio.Avancar(TimeSpan.FromHours(2));
         JsonElement lida = await ProvidenciaAsync(g.Diogo, providencia);
 
-        (lida.GetProperty("situacao").GetString(), lida.GetProperty("encerramentoDaConcessao").GetProperty("causa").GetString()).Should().Be(("prejudicada", "vencida"));
+        (lida.GetProperty("situacao").GetString(), lida.GetProperty("encerramentoDaConcessao").GetProperty("causa").GetString()).Should().Be(("PREJUDICADA", "VENCIDA"));
         lida.GetProperty("encerramentoDaConcessao").GetProperty("em").GetDateTimeOffset().Should().BeCloseTo(validaAte, TimeSpan.FromMilliseconds(1));
         (await LinhaAsync(providencia)).Should().Be(antes, "a situação derivada não grava nada");
         (await FilaDasProvidenciasAsync(g.Diogo)).Should().NotContain(providencia);
@@ -66,7 +66,7 @@ public sealed class VencimentoDaProvidenciaNoHostTests : ProvidenciasNoHostTestB
         await trava.ConfirmarAsync();
 
         await ConferirCodigoAsync(await resposta, HttpStatusCode.Conflict, "uniplus.autorizacao.providencia.concessao_nao_ativa");
-        (await LinhaAsync(providencia)).Estado.Should().Be("aberta");
+        (await LinhaAsync(providencia)).Estado.Should().Be("ABERTA");
     }
 
     public void Dispose() => _host.Dispose();

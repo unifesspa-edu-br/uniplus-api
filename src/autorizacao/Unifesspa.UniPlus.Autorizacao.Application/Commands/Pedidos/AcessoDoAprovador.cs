@@ -10,7 +10,7 @@ using Unifesspa.UniPlus.Kernel.Results;
 
 /// <summary>
 /// O que o solicitante da requisição pode fazer no fluxo dos pedidos: decidir cada etapa, administrar concessões e
-/// consultar os pedidos sem decidir, como o Encarregado de dados. Cada capacidade é avaliada pelo ponto de decisão único,
+/// consultar os pedidos sem decidir, como o Gestor de proteção de dados. Cada capacidade é avaliada pelo ponto de decisão único,
 /// por permissão do catálogo, sem registrar: quem usa o resultado grava o que governou o desfecho
 /// (<see cref="RegistrarAsync"/>, <see cref="RegistrarDoDesfechoAsync"/> e, para os pedidos exibidos,
 /// <see cref="RegistrarLeituraAsync"/>), para que a trilha traga a decisão real e não uma negativa falsa de uma permissão
@@ -122,7 +122,7 @@ internal sealed record AcessoDoAprovador(
 
     /// <summary>
     /// A decisão que governa a leitura de quem é parte do pedido, sem gravar: a da consulta dos pedidos, quando a pessoa a
-    /// tem, como o Encarregado de dados, para que a leitura entre na trilha por ela (UNI-REQ-0372). Nula para quem não tem a
+    /// tem, como o Gestor de proteção de dados, para que a leitura entre na trilha por ela (UNI-REQ-0372). Nula para quem não tem a
     /// consulta, que lê os próprios pedidos por titularidade e tem a leitura registrada com essa origem (ADR-0166). A
     /// pergunta é de capacidade: a negativa não se grava. Sem sujeito na decisão, a falha é a identidade incompleta, e a
     /// leitura não sai, porque não se sabe por qual origem registrá-la.

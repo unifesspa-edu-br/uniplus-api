@@ -7,7 +7,7 @@ using Unifesspa.UniPlus.Autorizacao.Application.Commands.Pedidos;
 using Unifesspa.UniPlus.Autorizacao.Domain.Interfaces;
 
 /// <summary>
-/// A consulta dos pedidos sem decidir, do Encarregado de dados: lê a fila de todos e o pedido alheio, mas não as filas de
+/// A consulta dos pedidos sem decidir, do Gestor de proteção de dados: lê a fila de todos e o pedido alheio, mas não as filas de
 /// decisão, e a aprovação e a recusa nem avaliam a consulta, para não registrar uma permissão que não governou. Cecília
 /// Moura só consulta os pedidos.
 /// </summary>

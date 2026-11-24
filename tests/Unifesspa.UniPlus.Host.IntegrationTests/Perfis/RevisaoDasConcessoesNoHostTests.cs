@@ -42,16 +42,16 @@ public sealed class RevisaoDasConcessoesNoHostTests : RevisaoDasConcessoesNoHost
         Guid concessao = cenario.Concessoes[Leandro];
         using HttpClient gestao = await GestaoAsync();
 
-        using HttpResponseMessage envio = await EnviarDecisoesDaGestaoAsync(gestao, cenario.PerfilId, [Decisao(concessao, "migrar")]);
+        using HttpResponseMessage envio = await EnviarDecisoesDaGestaoAsync(gestao, cenario.PerfilId, [Decisao(concessao, "MIGRAR")]);
 
-        SituacaoDe(await CorpoAsync(envio, HttpStatusCode.OK), concessao).Should().Be("aguardando_protecao_de_dados");
+        SituacaoDe(await CorpoAsync(envio, HttpStatusCode.OK), concessao).Should().Be("AGUARDANDO_PROTECAO_DE_DADOS");
         using HttpClient protecao = await ProtecaoAsync();
         using HttpResponseMessage etapa = await EnviarAsync(
-            protecao, HttpMethod.Post, RotaDaRevisao(cenario.PerfilId, "/protecao-de-dados"), new { decisoes = new[] { Decisao(concessao, "migrar") } });
+            protecao, HttpMethod.Post, RotaDaRevisao(cenario.PerfilId, "/protecao-de-dados"), new { decisoes = new[] { Decisao(concessao, "MIGRAR") } });
         JsonElement revisao = await CorpoAsync(etapa, HttpStatusCode.OK);
-        SituacaoDe(revisao, concessao).Should().Be("migrada");
+        SituacaoDe(revisao, concessao).Should().Be("MIGRADA");
         revisao.GetProperty("situacao").GetString().Should().Be("encerrada");
-        revisao.GetProperty("forma").GetString().Should().Be("concluida");
+        revisao.GetProperty("forma").GetString().Should().Be("CONCLUIDA");
     }
 
     [Fact(DisplayName = "O envio que recusa exige a confirmação da exclusão e, confirmado, revoga a concessão")]
@@ -61,11 +61,11 @@ public sealed class RevisaoDasConcessoesNoHostTests : RevisaoDasConcessoesNoHost
         Guid concessao = cenario.Concessoes[Leandro];
         using HttpClient gestao = await GestaoAsync();
 
-        using HttpResponseMessage semConfirmacao = await EnviarDecisoesDaGestaoAsync(gestao, cenario.PerfilId, [Decisao(concessao, "recusar")]);
-        using HttpResponseMessage confirmado = await EnviarDecisoesDaGestaoAsync(gestao, cenario.PerfilId, [Decisao(concessao, "recusar")], confirmacaoDeExclusao: true);
+        using HttpResponseMessage semConfirmacao = await EnviarDecisoesDaGestaoAsync(gestao, cenario.PerfilId, [Decisao(concessao, "RECUSAR")]);
+        using HttpResponseMessage confirmado = await EnviarDecisoesDaGestaoAsync(gestao, cenario.PerfilId, [Decisao(concessao, "RECUSAR")], confirmacaoDeExclusao: true);
 
         await ConferirRecusaDaMigracaoAsync(semConfirmacao, HttpStatusCode.UnprocessableEntity, "exclusao_nao_confirmada");
-        SituacaoDe(await CorpoAsync(confirmado, HttpStatusCode.OK), concessao).Should().Be("recusada");
+        SituacaoDe(await CorpoAsync(confirmado, HttpStatusCode.OK), concessao).Should().Be("RECUSADA");
         (await TemConcessaoAtivaAsync(Leandro, cenario.PerfilId)).Should().BeFalse();
     }
 
@@ -75,14 +75,14 @@ public sealed class RevisaoDasConcessoesNoHostTests : RevisaoDasConcessoesNoHost
         RevisaoAberta cenario = await AbrirRevisaoAsync(Leandro, Betina);
         using HttpClient gestao = await GestaoAsync();
 
-        using HttpResponseMessage incompleto = await EnviarDecisoesDaGestaoAsync(gestao, cenario.PerfilId, [Decisao(cenario.Concessoes[Leandro], "migrar")]);
+        using HttpResponseMessage incompleto = await EnviarDecisoesDaGestaoAsync(gestao, cenario.PerfilId, [Decisao(cenario.Concessoes[Leandro], "MIGRAR")]);
         using HttpResponseMessage completo = await EnviarDecisoesDaGestaoAsync(
-            gestao, cenario.PerfilId, [Decisao(cenario.Concessoes[Leandro], "migrar"), Decisao(cenario.Concessoes[Betina], "migrar")]);
+            gestao, cenario.PerfilId, [Decisao(cenario.Concessoes[Leandro], "MIGRAR"), Decisao(cenario.Concessoes[Betina], "MIGRAR")]);
         using HttpResponseMessage segundo = await EnviarDecisoesDaGestaoAsync(
-            gestao, cenario.PerfilId, [Decisao(cenario.Concessoes[Leandro], "migrar"), Decisao(cenario.Concessoes[Betina], "migrar")]);
+            gestao, cenario.PerfilId, [Decisao(cenario.Concessoes[Leandro], "MIGRAR"), Decisao(cenario.Concessoes[Betina], "MIGRAR")]);
 
         await ConferirRecusaDaMigracaoAsync(incompleto, HttpStatusCode.UnprocessableEntity, "decisoes_incompletas");
-        SituacaoDe(await CorpoAsync(completo, HttpStatusCode.OK), cenario.Concessoes[Betina]).Should().Be("aguardando_protecao_de_dados");
+        SituacaoDe(await CorpoAsync(completo, HttpStatusCode.OK), cenario.Concessoes[Betina]).Should().Be("AGUARDANDO_PROTECAO_DE_DADOS");
         await ConferirRecusaDaMigracaoAsync(segundo, HttpStatusCode.Conflict, "decisoes_ja_enviadas");
     }
 
@@ -92,17 +92,17 @@ public sealed class RevisaoDasConcessoesNoHostTests : RevisaoDasConcessoesNoHost
         RevisaoAberta cenario = await AbrirRevisaoAsync(Isabella, Leandro);
         Guid propria = cenario.Concessoes[Isabella];
         using HttpClient isabella = await GestaoAsync();
-        using HttpResponseMessage envio = await EnviarDecisoesDaGestaoAsync(isabella, cenario.PerfilId, [Decisao(cenario.Concessoes[Leandro], "migrar")]);
-        SituacaoDe(await CorpoAsync(envio, HttpStatusCode.OK), propria).Should().Be("retida");
+        using HttpResponseMessage envio = await EnviarDecisoesDaGestaoAsync(isabella, cenario.PerfilId, [Decisao(cenario.Concessoes[Leandro], "MIGRAR")]);
+        SituacaoDe(await CorpoAsync(envio, HttpStatusCode.OK), propria).Should().Be("RETIDA");
         using HttpClient diogo = await GestorAsync();
 
         using HttpResponseMessage propriaDecisao = await EnviarAsync(
-            isabella, HttpMethod.Post, RotaDaRevisao(cenario.PerfilId, $"/retidas/{propria}"), new { decisao = "migrar" });
+            isabella, HttpMethod.Post, RotaDaRevisao(cenario.PerfilId, $"/retidas/{propria}"), new { decisao = "MIGRAR" });
         using HttpResponseMessage decidida = await EnviarAsync(
-            diogo, HttpMethod.Post, RotaDaRevisao(cenario.PerfilId, $"/retidas/{propria}"), new { decisao = "migrar" });
+            diogo, HttpMethod.Post, RotaDaRevisao(cenario.PerfilId, $"/retidas/{propria}"), new { decisao = "MIGRAR" });
 
         await ConferirRecusaDaMigracaoAsync(propriaDecisao, HttpStatusCode.UnprocessableEntity, "decisao_da_propria_concessao");
-        SituacaoDe(await CorpoAsync(decidida, HttpStatusCode.OK), propria).Should().Be("aguardando_protecao_de_dados");
+        SituacaoDe(await CorpoAsync(decidida, HttpStatusCode.OK), propria).Should().Be("AGUARDANDO_PROTECAO_DE_DADOS");
     }
 
     [Fact(DisplayName = "Com a revisão aberta, a versão nova do perfil é recusada")]
@@ -152,8 +152,8 @@ public sealed class RevisaoDasConcessoesNoHostTests : RevisaoDasConcessoesNoHost
 
         await ConferirRecusaDaMigracaoAsync(semConfirmacao, HttpStatusCode.UnprocessableEntity, "exclusao_nao_confirmada");
         JsonElement revisao = await CorpoAsync(confirmado, HttpStatusCode.OK);
-        revisao.GetProperty("forma").GetString().Should().Be("manual");
-        SituacaoDe(revisao, cenario.Concessoes[Leandro]).Should().Be("nao_migrada");
+        revisao.GetProperty("forma").GetString().Should().Be("MANUAL");
+        SituacaoDe(revisao, cenario.Concessoes[Leandro]).Should().Be("NAO_MIGRADA");
         (await TemConcessaoAtivaAsync(Leandro, cenario.PerfilId)).Should().BeFalse();
     }
 }

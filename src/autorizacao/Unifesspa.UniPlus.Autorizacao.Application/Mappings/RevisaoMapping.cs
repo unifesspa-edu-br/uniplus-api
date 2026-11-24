@@ -57,7 +57,7 @@ public static class RevisaoMapping
     private static string Situacao(int pendentes) => pendentes > 0 ? EmAndamento : Concluida;
 
     private static string Situacao(ItemDaRevisaoComConcessao item) =>
-        item.Item.Resultado?.ToCodigo() ?? (item.ConcessaoAtiva ? "pendente" : "concessao_encerrada");
+        item.Item.Resultado?.ToCodigo() ?? (item.ConcessaoAtiva ? "PENDENTE" : "CONCESSAO_ENCERRADA");
 
     // O item decidido mostra a governança gravada na decisão; o pendente, a que o decidiria agora.
     private static TipoDeGovernanca QuemDecide(ItemDaRevisao item, Concessao concessao, IReadOnlySet<Identidade> representantes) =>

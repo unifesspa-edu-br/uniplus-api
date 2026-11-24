@@ -13,7 +13,7 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// <remarks>
 /// No perfil de governança, a pessoa do beneficiário se trava depois do pedido e antes da concessão, na ordem única de
 /// travas, e a incompatibilidade dos papéis se confere sob a trava: duas designações cruzadas da mesma pessoa, como
-/// Representante do controlador e como Encarregado de dados, não leem ambas que ela não tem o outro papel. Com o pedido
+/// Representante do controlador e como Gestor de proteção de dados, não leem ambas que ela não tem o outro papel. Com o pedido
 /// travado, o beneficiário lido é o definitivo (ADR-0162).
 /// </remarks>
 public sealed class ConcessaoDoPedidoAprovado

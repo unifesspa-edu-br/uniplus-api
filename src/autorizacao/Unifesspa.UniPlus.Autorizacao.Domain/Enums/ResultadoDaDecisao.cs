@@ -22,11 +22,11 @@ public enum ResultadoDaDecisao
 /// <summary>Código textual canônico de <see cref="ResultadoDaDecisao"/>, o valor gravado e exposto.</summary>
 public static class ResultadoDaDecisaoCodigo
 {
-    public const string Aprovado = "aprovado";
-    public const string Recusado = "recusado";
-    public const string PerfilAlterado = "perfil_alterado";
-    public const string PrazoVencido = "prazo_vencido";
-    public const string TermoExigido = "termo_exigido";
+    public const string Aprovado = "APROVADO";
+    public const string Recusado = "RECUSADO";
+    public const string PerfilAlterado = "PERFIL_ALTERADO";
+    public const string PrazoVencido = "PRAZO_VENCIDO";
+    public const string TermoExigido = "TERMO_EXIGIDO";
 
     public static string ToCodigo(this ResultadoDaDecisao resultado) => resultado switch
     {

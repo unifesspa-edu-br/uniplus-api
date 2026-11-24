@@ -58,10 +58,10 @@ public sealed class PersistenciaDoPerfilTests : PerfilEndpointTestBase
         Guid id = await SemearPerfilVigenteAsync(ConsultarCatalogo);
         Guid vigente = await VersaoVigenteAsync(id);
 
-        Func<Task> outraVigente = () => InserirVersaoAsync(id, 2, "vigente");
+        Func<Task> outraVigente = () => InserirVersaoAsync(id, 2, "VIGENTE");
         Func<Task> vigenciaAberta = () => InserirVigenciaAsync(id, vigente);
-        await InserirVersaoAsync(id, 3, "pendente");
-        Func<Task> outraPendente = () => InserirVersaoAsync(id, 4, "pendente");
+        await InserirVersaoAsync(id, 3, "PENDENTE");
+        Func<Task> outraPendente = () => InserirVersaoAsync(id, 4, "PENDENTE");
 
         await outraVigente.Should().ThrowAsync<Npgsql.PostgresException>();
         await vigenciaAberta.Should().ThrowAsync<Npgsql.PostgresException>();
@@ -89,23 +89,23 @@ public sealed class PersistenciaDoPerfilTests : PerfilEndpointTestBase
         using HttpResponseMessage criada = await EnviarAsync(diogo, HttpMethod.Post, Rota, Corpo(Nome(), [ConsultarCatalogo]));
         Envio envio = LerEnvio(await criada.Content.ReadAsStringAsync());
 
-        Func<Task> segundoVivo = () => InserirDocumentoAsync(envio, "aguardando_envio");
-        await ExecutarAsync("UPDATE autorizacao.documentos_da_versao SET situacao = 'recusado' WHERE id = {0}", envio.DocumentoId);
+        Func<Task> segundoVivo = () => InserirDocumentoAsync(envio, "AGUARDANDO_ENVIO");
+        await ExecutarAsync("UPDATE autorizacao.documentos_da_versao SET situacao = 'RECUSADO' WHERE id = {0}", envio.DocumentoId);
 
-        await InserirDocumentoAsync(envio, "aguardando_envio");
+        await InserirDocumentoAsync(envio, "AGUARDANDO_ENVIO");
         await segundoVivo.Should().ThrowAsync<Npgsql.PostgresException>();
     }
 
     [Theory(DisplayName = "O banco barra a versão cuja situação final contradiz os campos do encerramento")]
-    [InlineData("situacao = 'cancelada', forma_do_cancelamento = NULL, cancelada_em = NULL")]
-    [InlineData("situacao = 'cancelada', forma_do_cancelamento = 'pessoa', cancelada_em = now(), motivo_do_cancelamento = NULL")]
-    [InlineData("situacao = 'expirada', expirada_em = NULL")]
-    [InlineData("origem = 'remocao', expira_em = NULL, motivo_da_remocao = NULL, versao_do_documento = NULL")]
-    [InlineData("origem = 'proposta', expira_em = NULL")]
+    [InlineData("situacao = 'CANCELADA', forma_do_cancelamento = NULL, cancelada_em = NULL")]
+    [InlineData("situacao = 'CANCELADA', forma_do_cancelamento = 'PESSOA', cancelada_em = now(), motivo_do_cancelamento = NULL")]
+    [InlineData("situacao = 'EXPIRADA', expirada_em = NULL")]
+    [InlineData("origem = 'REMOCAO', expira_em = NULL, motivo_da_remocao = NULL, versao_do_documento = NULL")]
+    [InlineData("origem = 'PROPOSTA', expira_em = NULL")]
     public async Task Banco_BarraEncerramentoIncoerente(string alteracao)
     {
         Guid id = await SemearPerfilVigenteAsync(ConsultarCatalogo);
-        await InserirVersaoAsync(id, 3, "pendente");
+        await InserirVersaoAsync(id, 3, "PENDENTE");
         Guid pendente = await VersaoPendenteAsync(id);
 
         Func<Task> acao = () => ExecutarAsync($"UPDATE autorizacao.versoes_do_perfil SET {alteracao} WHERE id = {{0}}", pendente);
@@ -118,14 +118,14 @@ public sealed class PersistenciaDoPerfilTests : PerfilEndpointTestBase
     public async Task Banco_BarraDecisaoRepetidaEProtegeAVersaoDecidida()
     {
         Guid id = await SemearPerfilVigenteAsync(ConsultarCatalogo);
-        await InserirVersaoAsync(id, 3, "pendente");
+        await InserirVersaoAsync(id, 3, "PENDENTE");
         Guid pendente = await VersaoPendenteAsync(id);
-        await InserirDecisaoAsync(pendente, 1, "gestao_de_acessos");
+        await InserirDecisaoAsync(pendente, 1, "GESTAO_DE_ACESSOS");
 
-        Func<Task> repetida = () => InserirDecisaoAsync(pendente, 1, "gestao_de_acessos");
+        Func<Task> repetida = () => InserirDecisaoAsync(pendente, 1, "GESTAO_DE_ACESSOS");
         Func<Task> apagar = () => ExecutarAsync("DELETE FROM autorizacao.versoes_do_perfil WHERE id = {0}", pendente);
 
-        await InserirDecisaoAsync(pendente, 2, "gestao_de_acessos");
+        await InserirDecisaoAsync(pendente, 2, "GESTAO_DE_ACESSOS");
         await repetida.Should().ThrowAsync<Npgsql.PostgresException>();
         await apagar.Should().ThrowAsync<Npgsql.PostgresException>();
         await LimparPendentesInseridasAsync(id);
@@ -148,7 +148,7 @@ public sealed class PersistenciaDoPerfilTests : PerfilEndpointTestBase
         UniPlusDbContext db = scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
 
         return await db.Database
-            .SqlQuery<Guid>($"SELECT id AS \"Value\" FROM autorizacao.versoes_do_perfil WHERE perfil_id = {perfilId} AND situacao = 'pendente'")
+            .SqlQuery<Guid>($"SELECT id AS \"Value\" FROM autorizacao.versoes_do_perfil WHERE perfil_id = {perfilId} AND situacao = 'PENDENTE'")
             .SingleAsync();
     }
 
@@ -157,12 +157,12 @@ public sealed class PersistenciaDoPerfilTests : PerfilEndpointTestBase
             """
             INSERT INTO autorizacao.decisoes_da_versao
                 (id, versao_id, ciclo, etapa, resultado, decisor_emissor, decisor_conta_id, decisor_tem_concessao, acrescimo_avaliado, exigia_protecao_de_dados, instante)
-            VALUES ({0}, {1}, {2}, {3}, 'aprovado', 'emissor', 'isabella.figueiredo', false, ARRAY[]::text[], false, now())
+            VALUES ({0}, {1}, {2}, {3}, 'APROVADO', 'emissor', 'isabella.figueiredo', false, ARRAY[]::text[], false, now())
             """,
             Guid.CreateVersion7(), versaoId, ciclo, etapa);
 
     private Task InserirAvisoAsync(Guid mensagemId) =>
         ExecutarAsync(
-            "INSERT INTO autorizacao.avisos_emitidos (mensagem_id, tipo, fato_id, emitido_em) VALUES ({0}, 'permissoes_removidas', {1}, now())",
+            "INSERT INTO autorizacao.avisos_emitidos (mensagem_id, tipo, fato_id, emitido_em) VALUES ({0}, 'PERMISSOES_REMOVIDAS', {1}, now())",
             mensagemId, Guid.CreateVersion7());
 }

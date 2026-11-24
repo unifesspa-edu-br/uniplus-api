@@ -19,10 +19,10 @@ public enum TipoDeDivergencia
 /// <summary>Código textual canônico de <see cref="TipoDeDivergencia"/>, o valor gravado e exposto.</summary>
 public static class TipoDeDivergenciaCodigo
 {
-    public const string ComposicaoFaltante = "composicao_faltante";
-    public const string ComposicaoExcedente = "composicao_excedente";
-    public const string Classificacao = "classificacao";
-    public const string Escopo = "escopo";
+    public const string ComposicaoFaltante = "COMPOSICAO_FALTANTE";
+    public const string ComposicaoExcedente = "COMPOSICAO_EXCEDENTE";
+    public const string Classificacao = "CLASSIFICACAO";
+    public const string Escopo = "ESCOPO";
 
     public static string ToCodigo(this TipoDeDivergencia valor) => valor switch
     {

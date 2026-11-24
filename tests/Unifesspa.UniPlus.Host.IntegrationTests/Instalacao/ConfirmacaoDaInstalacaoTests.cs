@@ -60,8 +60,8 @@ public sealed class ConfirmacaoDaInstalacaoTests : InstalacaoTestBase
 
         await ConferirRecusaAsync(resposta, "codigo_invalido");
         JsonElement situacao = await LerAsync(paulo, $"{Rota}/{id}");
-        (situacao.GetProperty("tentativasRestantes").GetInt32(), situacao.GetProperty("situacao").GetString()).Should().Be((Instalacao.MaximoDeTentativas, "aguardando_codigo"));
-        (await ListarTentativasSemPendenciaAsync()).Should().Contain(t => t.Autor == Manoel.ContaId.ToString() && t.Resultado == "sem_pendencia");
+        (situacao.GetProperty("tentativasRestantes").GetInt32(), situacao.GetProperty("situacao").GetString()).Should().Be((Instalacao.MaximoDeTentativas, "AGUARDANDO_CODIGO"));
+        (await ListarTentativasSemPendenciaAsync()).Should().Contain(t => t.Autor == Manoel.ContaId.ToString() && t.Resultado == "SEM_PENDENCIA");
         (await EnviarAsync(paulo, HttpMethod.Post, $"{Rota}/confirmacao", new { codigo = codigoDePaulo })).StatusCode
             .Should().Be(HttpStatusCode.NoContent, "o código de Paulo continua valendo");
     }
@@ -78,7 +78,7 @@ public sealed class ConfirmacaoDaInstalacaoTests : InstalacaoTestBase
         string novo = await PedirCodigoAsync(paulo, id, Paulo);
 
         novo.Should().NotBe(antigo);
-        (await LerAsync(paulo, $"{Rota}/{id}")).GetProperty("situacao").GetString().Should().Be("aguardando_codigo");
+        (await LerAsync(paulo, $"{Rota}/{id}")).GetProperty("situacao").GetString().Should().Be("AGUARDANDO_CODIGO");
         Dictionary<string, DateTimeOffset> trilha = await InstantesDaTrilhaDaInstalacaoAsync(id);
         trilha.Should().ContainKeys("codigo_enviado", "codigo_reenviado");
         trilha["codigo_enviado"].Should().BeBefore(trilha["codigo_reenviado"].AddHours(-2), "o envio original mantém o instante dele");
@@ -130,7 +130,7 @@ public sealed class ConfirmacaoDaInstalacaoTests : InstalacaoTestBase
         using HttpResponseMessage resposta = await EnviarAsync(paulo, HttpMethod.Post, $"{Rota}/confirmacao", new { codigo });
 
         await ConferirRecusaAsync(resposta, "codigo_invalido");
-        (await LerAsync(paulo, $"{Rota}/{id}")).GetProperty("situacao").GetString().Should().Be("expirada");
+        (await LerAsync(paulo, $"{Rota}/{id}")).GetProperty("situacao").GetString().Should().Be("EXPIRADA");
         (await ListarGestoresAtivosAsync()).Should().BeEmpty();
         (await TiposDaTrilhaDaInstalacaoAsync(id)).Should().Contain("instalacao_expirada");
     }
@@ -146,7 +146,7 @@ public sealed class ConfirmacaoDaInstalacaoTests : InstalacaoTestBase
         (Guid segunda, _) = await IniciarAsync(paulo, Diogo, Betina);
 
         segunda.Should().NotBe(primeira);
-        (await LerAsync(paulo, $"{Rota}/{primeira}")).GetProperty("situacao").GetString().Should().Be("cancelada");
+        (await LerAsync(paulo, $"{Rota}/{primeira}")).GetProperty("situacao").GetString().Should().Be("CANCELADA");
         using HttpResponseMessage resposta = await EnviarAsync(paulo, HttpMethod.Post, $"{Rota}/confirmacao", new { codigo = codigoDaPrimeira });
         await ConferirRecusaAsync(resposta, "codigo_invalido");
         (await ListarGestoresAtivosAsync()).Should().BeEmpty();
@@ -166,7 +166,7 @@ public sealed class ConfirmacaoDaInstalacaoTests : InstalacaoTestBase
             await ConferirRecusaAsync(await ConfirmarAsync(paulo, Errado(certo)), "codigo_invalido");
         }
 
-        (await LerAsync(paulo, $"{Rota}/{id}")).GetProperty("situacao").GetString().Should().Be("cancelada");
+        (await LerAsync(paulo, $"{Rota}/{id}")).GetProperty("situacao").GetString().Should().Be("CANCELADA");
         await ConferirRecusaAsync(await ConfirmarAsync(paulo, certo), "codigo_invalido");
         (await ListarGestoresAtivosAsync()).Should().BeEmpty();
     }
@@ -220,7 +220,7 @@ public sealed class ConfirmacaoDaInstalacaoTests : InstalacaoTestBase
         using HttpResponseMessage resposta = await EnviarAsync(paulo, HttpMethod.Post, $"{Rota}/confirmacao", new { codigo });
 
         await ConferirRecusaAsync(resposta, "ja_ha_gestor");
-        (await LerAsync(paulo, $"{Rota}/{id}")).GetProperty("situacao").GetString().Should().Be("aguardando_codigo");
+        (await LerAsync(paulo, $"{Rota}/{id}")).GetProperty("situacao").GetString().Should().Be("AGUARDANDO_CODIGO");
         (await ListarGestoresAtivosAsync()).Should().BeEmpty("a concessão de Diogo, a primeira, foi revertida junto");
     }
 

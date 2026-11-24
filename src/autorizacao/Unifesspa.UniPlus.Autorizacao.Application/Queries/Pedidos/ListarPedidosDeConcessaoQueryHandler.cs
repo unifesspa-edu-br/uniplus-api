@@ -16,7 +16,7 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// Handler da listagem. A fila de uma etapa exige a permissão dela, e a fila de todos, a de uma das duas etapas ou a de
 /// consultar os pedidos; a lista de quem pergunta exige só a identidade. Cada pedido exibido entra na trilha de acesso pela
 /// decisão permitida que governou a fila, antes de a página sair (ADR-0153). Na lista de quem pergunta, essa decisão é a
-/// da consulta dos pedidos, como a do Encarregado de dados (UNI-REQ-0372); sem ela, cada pedido exibido é registrado por
+/// da consulta dos pedidos, como a do Gestor de proteção de dados (UNI-REQ-0372); sem ela, cada pedido exibido é registrado por
 /// titularidade (ADR-0166). A página vazia não grava nada. A mecânica de keyset vive no repositório.
 /// </summary>
 public static class ListarPedidosDeConcessaoQueryHandler

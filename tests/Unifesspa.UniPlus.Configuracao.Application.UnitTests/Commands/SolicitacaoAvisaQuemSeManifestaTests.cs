@@ -67,7 +67,7 @@ public sealed class SolicitacaoAvisaQuemSeManifestaTests
         mensagens.Should().BeEmpty();
     }
 
-    [Fact(DisplayName = "Os avisos da solicitação nomeiam o Representante do controlador e o Encarregado de dados e qualificam o catálogo")]
+    [Fact(DisplayName = "Os avisos da solicitação nomeiam o Representante do controlador e o Gestor de proteção de dados e qualificam o catálogo")]
     public async Task Solicitar_TextosNomeiamOsPapeis()
     {
         (_, IEnumerable<object> mensagens) = await SolicitarAsync([Caroline], [Kevin]);
@@ -76,7 +76,7 @@ public sealed class SolicitacaoAvisaQuemSeManifestaTests
         EnviarEmail aQuemDecide = avisos.Single(static e => e.Finalidade == "catalogo.protecao.solicitacao");
         EnviarEmail aQuemSeManifesta = avisos.Single(static e => e.Finalidade == "catalogo.protecao.solicitacao.manifestacao");
         aQuemDecide.Assunto.Should().Contain("aguardam a decisão do Representante do controlador");
-        aQuemSeManifesta.Assunto.Should().Contain("manifestação do Encarregado de dados");
+        aQuemSeManifesta.Assunto.Should().Contain("manifestação do Gestor de proteção de dados");
         aQuemSeManifesta.CorpoTexto.Should().Contain("a decisão cabe ao Representante do controlador");
         avisos.Should().OnlyContain(static e => CatalogoQualificado(e.Assunto) && CatalogoQualificado(e.CorpoTexto) && CatalogoQualificado(e.CorpoHtml));
     }

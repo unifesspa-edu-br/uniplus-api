@@ -11,7 +11,7 @@ using Unifesspa.UniPlus.IntegrationTests.Fixtures.Hosting;
 
 /// <summary>
 /// O catálogo de permissões é lido por quem exerce só um dos três perfis de governança, pelo host real: gestor de
-/// acessos, Representante do controlador e Encarregado de dados. Cecília Moura recebe cada perfil sozinha.
+/// acessos, Representante do controlador e Gestor de proteção de dados. Cecília Moura recebe cada perfil sozinha.
 /// </summary>
 [Collection(MonolitoDaInstalacaoCollection.Name)]
 public sealed class CatalogoNosPerfisDeGovernancaNoHostTests : PedidosDeConcessaoTestBase
@@ -26,7 +26,7 @@ public sealed class CatalogoNosPerfisDeGovernancaNoHostTests : PedidosDeConcessa
     [Theory(DisplayName = "Cada perfil de governança, sozinho, lê o catálogo de permissões")]
     [InlineData(TipoDeGovernanca.GestorDeAcessos)]
     [InlineData(TipoDeGovernanca.RepresentanteDoControlador)]
-    [InlineData(TipoDeGovernanca.EncarregadoDeDados)]
+    [InlineData(TipoDeGovernanca.GestorDeProtecaoDeDados)]
     public async Task PerfilDeGovernancaIsolado_LeOCatalogo(TipoDeGovernanca governanca)
     {
         await ConcessoesDeTeste.RemoverDaPessoaAsync(Fixture.Factory.Services, Cecilia.ContaId.ToString());

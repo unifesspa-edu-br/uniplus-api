@@ -47,10 +47,10 @@ public sealed class OrdemDasDecisoesDaMigracaoNoHostTests : RevisaoDasConcessoes
     {
         using HttpClient gestao = await GestaoAsync();
         using HttpClient protecao = await ProtecaoAsync();
-        using HttpResponseMessage envio = await EnviarDecisoesDaGestaoAsync(gestao, perfilId, [Decisao(concessao, "migrar")]);
+        using HttpResponseMessage envio = await EnviarDecisoesDaGestaoAsync(gestao, perfilId, [Decisao(concessao, "MIGRAR")]);
         (await CorpoAsync(envio, HttpStatusCode.OK)).Should().NotBeNull();
         using HttpResponseMessage etapa = await EnviarAsync(
-            protecao, HttpMethod.Post, RotaDaRevisao(perfilId, "/protecao-de-dados"), new { decisoes = new[] { Decisao(concessao, "migrar") } });
+            protecao, HttpMethod.Post, RotaDaRevisao(perfilId, "/protecao-de-dados"), new { decisoes = new[] { Decisao(concessao, "MIGRAR") } });
         (await CorpoAsync(etapa, HttpStatusCode.OK)).Should().NotBeNull();
     }
 }

@@ -35,8 +35,8 @@ public sealed class ConcorrenciaDaProvidenciaNoHostTests : ProvidenciasNoHostTes
         respostas[0].StatusCode.Should().Be(HttpStatusCode.NoContent, await respostas[0].Content.ReadAsStringAsync());
         await ConferirCodigoAsync(respostas[1], HttpStatusCode.Conflict, "uniplus.autorizacao.providencia.concessao_nao_ativa");
         JsonElement lida = await ProvidenciaAsync(g.Diogo, providencia);
-        (lida.GetProperty("situacao").GetString(), lida.GetProperty("encerramentoDaConcessao").GetProperty("causa").GetString()).Should().Be(("prejudicada", "revogada"));
-        (await LinhaAsync(providencia)).Estado.Should().Be("aberta");
+        (lida.GetProperty("situacao").GetString(), lida.GetProperty("encerramentoDaConcessao").GetProperty("causa").GetString()).Should().Be(("PREJUDICADA", "REVOGADA"));
+        (await LinhaAsync(providencia)).Estado.Should().Be("ABERTA");
     }
 
     [Fact(DisplayName = "Duas respostas simultâneas: uma grava, a outra recebe o conflito de concorrência retentável, e só um aviso sai")]
@@ -53,7 +53,7 @@ public sealed class ConcorrenciaDaProvidenciaNoHostTests : ProvidenciasNoHostTes
         string conflito = await respostas.Single(static r => r.StatusCode == HttpStatusCode.Conflict).Content.ReadAsStringAsync();
         conflito.Should().Contain("uniplus.concorrencia.conflito").And.Contain("\"retryable\":true");
         (await LinhaAsync(providencia)).Motivo.Should().Be((await CorpoAsync(gravada, HttpStatusCode.OK)).GetProperty("desfecho").GetProperty("motivo").GetString());
-        (await AvisosEmitidosAsync(providencia, "providencia_respondida")).Should().Be(1);
+        (await AvisosEmitidosAsync(providencia, "PROVIDENCIA_RESPONDIDA")).Should().Be(1);
     }
 
     [Fact(DisplayName = "A resposta que chega depois da primeira confirmada é recusada por providência já respondida")]
@@ -81,7 +81,7 @@ public sealed class ConcorrenciaDaProvidenciaNoHostTests : ProvidenciasNoHostTes
         (await repetida.Content.ReadAsStringAsync()).Should().Be(await primeira.Content.ReadAsStringAsync());
         (primeira.StatusCode, repetida.StatusCode, repetida.Headers.GetValues("Idempotency-Replayed").Single()).Should().Be((HttpStatusCode.OK, HttpStatusCode.OK, "true"));
         (await TiposDaTrilhaDaConcessaoAsync(g.Diogo, concessao)).Count(static t => t is "revogada" or "providencia_atendida").Should().Be(2);
-        (await AvisosEmitidosAsync(providencia, "providencia_atendida"), await AvisosEmitidosAsync(providencia, "concessao_revogada_no_atendimento")).Should().Be((1, 1));
+        (await AvisosEmitidosAsync(providencia, "PROVIDENCIA_ATENDIDA"), await AvisosEmitidosAsync(providencia, "CONCESSAO_REVOGADA_NO_ATENDIMENTO")).Should().Be((1, 1));
         await ConferirCodigoAsync(await AtenderAsync(g.Diogo, providencia, Leandro.Email), HttpStatusCode.Conflict, "uniplus.autorizacao.providencia.ja_atendida");
     }
 
@@ -89,15 +89,15 @@ public sealed class ConcorrenciaDaProvidenciaNoHostTests : ProvidenciasNoHostTes
     public async Task AtendimentoDoPenultimoGestor_MinimoDeGestores()
     {
         await ResetarAsync();
-        await ConcessoesDeTeste.ConcederGovernancaAsync(Fixture.Factory.Services, Cecilia.ContaId.ToString(), TipoDeGovernanca.EncarregadoDeDados, Cecilia.Email);
+        await ConcessoesDeTeste.ConcederGovernancaAsync(Fixture.Factory.Services, Cecilia.ContaId.ToString(), TipoDeGovernanca.GestorDeProtecaoDeDados, Cecilia.Email);
         using HttpClient isabella = await ClienteComPermissoesAsync(Isabella, Administrar);
         Guid concessaoDeDiogo = await ConcessoesDeTeste.ConcederGovernancaAsync(Fixture.Factory.Services, Diogo.ContaId.ToString(), TipoDeGovernanca.GestorDeAcessos, Diogo.Email);
         Guid providencia = await SolicitarAsync(Cliente(Cecilia), concessaoDeDiogo);
 
         await ConferirCodigoAsync(await AtenderAsync(isabella, providencia, Diogo.Email), HttpStatusCode.UnprocessableEntity, "uniplus.autorizacao.concessao.minimo_de_gestores");
 
-        (await LinhaAsync(providencia)).Estado.Should().Be("aberta");
-        (await AvisosEmitidosAsync(providencia, "providencia_atendida")).Should().Be(0);
+        (await LinhaAsync(providencia)).Estado.Should().Be("ABERTA");
+        (await AvisosEmitidosAsync(providencia, "PROVIDENCIA_ATENDIDA")).Should().Be(0);
         (await LerAsync(isabella, $"/api/autorizacao/concessoes/{concessaoDeDiogo}")).GetProperty("ativa").GetBoolean().Should().BeTrue();
     }
 
@@ -112,7 +112,7 @@ public sealed class ConcorrenciaDaProvidenciaNoHostTests : ProvidenciasNoHostTes
         JsonElement comum = await CorpoAsync(await RevogarAsync(g.Diogo, concessao, Motivo, "outra.pessoa@uniplus-test.local"), HttpStatusCode.UnprocessableEntity);
         (divergente.GetProperty("title").GetString(), divergente.GetProperty("errors")[0].GetProperty("field").GetString()).Should().Be((comum.GetProperty("title").GetString(), "confirmacaoEmail"));
         await ConferirCodigoAsync(await AtenderAsync(g.Diogo, providencia, null), HttpStatusCode.UnprocessableEntity, "uniplus.autorizacao.concessao.confirmacao_divergente");
-        (await AvisosEmitidosAsync(providencia, "providencia_atendida")).Should().Be(0);
+        (await AvisosEmitidosAsync(providencia, "PROVIDENCIA_ATENDIDA")).Should().Be(0);
 
         (await AtenderAsync(g.Diogo, providencia, $"  {Leandro.Email.ToUpperInvariant()} ")).StatusCode.Should().Be(HttpStatusCode.OK);
     }
@@ -124,7 +124,7 @@ public sealed class ConcorrenciaDaProvidenciaNoHostTests : ProvidenciasNoHostTes
         Guid concessao = await ConcessaoDeLeandroAsync();
 
         HttpResponseMessage[] respostas = await EmFilaSobATravaDaLinhaAsync(
-            TravaDaConcessao, concessao, () => SolicitarBrutoAsync(g.Cecilia, concessao), () => SolicitarBrutoAsync(g.Cecilia, concessao, "revisao"));
+            TravaDaConcessao, concessao, () => SolicitarBrutoAsync(g.Cecilia, concessao), () => SolicitarBrutoAsync(g.Cecilia, concessao, "REVISAO"));
 
         respostas.Select(static r => r.StatusCode).Should().BeEquivalentTo([HttpStatusCode.Created, HttpStatusCode.Conflict]);
         (await respostas.Single(static r => r.StatusCode == HttpStatusCode.Conflict).Content.ReadAsStringAsync())

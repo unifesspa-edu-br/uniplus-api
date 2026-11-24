@@ -82,7 +82,7 @@ public sealed class AtomicidadeDaVersaoNoHostTests : AprovacaoDaVersaoNoHostTest
         using var cenario = new CenarioDeNomeTomado(this, diogo, isabella);
         await cenario.ExecutarAsync();
         cenario.Falha.StatusCode.Should().Be(HttpStatusCode.Conflict, await cenario.Falha.Content.ReadAsStringAsync());
-        (await SituacaoDaVersaoNoBancoAsync(cenario.Versao.VersaoId)).Should().Be("pendente");
+        (await SituacaoDaVersaoNoBancoAsync(cenario.Versao.VersaoId)).Should().Be("PENDENTE");
         (await DecisoesAsync(cenario.Versao.VersaoId)).Should().BeEmpty();
         (await VigenciasAsync(cenario.Vigente.PerfilId)).Should().ContainSingle(v => v.Aberta && v.VersaoId == cenario.Vigente.VersaoId);
         using HttpResponseMessage repeticao = await AprovarBrutoAsync(isabella, cenario.Versao, EtapaGestao);

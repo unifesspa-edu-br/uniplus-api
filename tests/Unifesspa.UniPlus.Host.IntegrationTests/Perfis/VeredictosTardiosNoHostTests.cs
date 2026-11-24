@@ -21,12 +21,12 @@ public sealed class VeredictosTardiosNoHostTests : VersoesDoPerfilNoHostTestBase
     }
 
     [Theory(DisplayName = "O veredicto tardio grava o documento sem reabrir a versão e sua repetição é ignorada")]
-    [InlineData(VeredictoDaVerificacao.Verificado, "cancelada")]
-    [InlineData(VeredictoDaVerificacao.Recusado, "cancelada")]
-    [InlineData(VeredictoDaVerificacao.ReenvioNecessario, "cancelada")]
-    [InlineData(VeredictoDaVerificacao.Verificado, "recusada")]
-    [InlineData(VeredictoDaVerificacao.Recusado, "recusada")]
-    [InlineData(VeredictoDaVerificacao.ReenvioNecessario, "recusada")]
+    [InlineData(VeredictoDaVerificacao.Verificado, "CANCELADA")]
+    [InlineData(VeredictoDaVerificacao.Recusado, "CANCELADA")]
+    [InlineData(VeredictoDaVerificacao.ReenvioNecessario, "CANCELADA")]
+    [InlineData(VeredictoDaVerificacao.Verificado, "RECUSADA")]
+    [InlineData(VeredictoDaVerificacao.Recusado, "RECUSADA")]
+    [InlineData(VeredictoDaVerificacao.ReenvioNecessario, "RECUSADA")]
     public async Task VeredictoTardio_GravaDocumentoSemReabrirVersao(VeredictoDaVerificacao veredicto, string situacao)
     {
         await ResetarAsync();
@@ -36,7 +36,7 @@ public sealed class VeredictosTardiosNoHostTests : VersoesDoPerfilNoHostTestBase
 
         cenario.Primeiro.Should().Be(DesfechoDoResultadoDaVersao.Aplicado);
         cenario.Repeticao.Should().Be(DesfechoDoResultadoDaVersao.Ignorado);
-        cenario.Documento.Should().Be(veredicto == VeredictoDaVerificacao.Verificado ? "verificado" : "recusado");
+        cenario.Documento.Should().Be(veredicto == VeredictoDaVerificacao.Verificado ? "VERIFICADO" : "RECUSADO");
         (await SituacaoNoBancoAsync(cenario.Envio.DocumentoId)).Should().Be(cenario.Documento);
         (await SituacaoDaVersaoNoBancoAsync(cenario.Envio.VersaoId)).Should().Be(situacao);
         (await VigenciasAsync(cenario.Envio.PerfilId)).Should().BeEmpty();
@@ -70,7 +70,7 @@ public sealed class VeredictosTardiosNoHostTests : VersoesDoPerfilNoHostTestBase
 
     private async Task EncerrarVersaoAsync(HttpClient gestor, Envio envio, string situacao)
     {
-        if (situacao == "cancelada")
+        if (situacao == "CANCELADA")
         {
             (await CancelarBrutoAsync(gestor, envio)).StatusCode.Should().Be(System.Net.HttpStatusCode.OK);
             return;

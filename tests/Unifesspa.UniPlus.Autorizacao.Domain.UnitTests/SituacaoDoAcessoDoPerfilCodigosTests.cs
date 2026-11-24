@@ -12,9 +12,9 @@ public sealed class SituacaoDoAcessoDoPerfilCodigosTests
         Enum.GetValues<SituacaoDoAcessoDoPerfil>().ToDictionary(static v => v, static v => v.Codigo())
             .Should().Equal(new Dictionary<SituacaoDoAcessoDoPerfil, string>
             {
-                [SituacaoDoAcessoDoPerfil.Suspenso] = "suspenso",
-                [SituacaoDoAcessoDoPerfil.EmVigor] = "em_vigor",
-                [SituacaoDoAcessoDoPerfil.SemVersaoEmVigor] = "sem_versao_em_vigor",
+                [SituacaoDoAcessoDoPerfil.Suspenso] = "SUSPENSO",
+                [SituacaoDoAcessoDoPerfil.EmVigor] = "EM_VIGOR",
+                [SituacaoDoAcessoDoPerfil.SemVersaoEmVigor] = "SEM_VERSAO_EM_VIGOR",
             });
 
     [Fact(DisplayName = "Toda situação do acesso do perfil tem rótulo")]

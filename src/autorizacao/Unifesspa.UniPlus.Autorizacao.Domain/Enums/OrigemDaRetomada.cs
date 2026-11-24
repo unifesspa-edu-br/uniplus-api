@@ -16,9 +16,9 @@ public enum OrigemDaRetomada
 /// <summary>Código textual canônico de <see cref="OrigemDaRetomada"/>, o valor gravado e exposto.</summary>
 public static class OrigemDaRetomadaCodigo
 {
-    public const string DecisaoDaEtapa = "decisao_da_etapa";
-    public const string TrocaDeVigencia = "troca_de_vigencia";
-    public const string Reclassificacao = "reclassificacao";
+    public const string DecisaoDaEtapa = "DECISAO_DA_ETAPA";
+    public const string TrocaDeVigencia = "TROCA_DE_VIGENCIA";
+    public const string Reclassificacao = "RECLASSIFICACAO";
 
     public static string ToCodigo(this OrigemDaRetomada origem) => origem switch
     {

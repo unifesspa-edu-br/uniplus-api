@@ -1,7 +1,7 @@
 namespace Unifesspa.UniPlus.Configuracao.Domain.Enums;
 
 /// <summary>
-/// O parecer da manifestação técnica do Encarregado de dados sobre a proteção de um tipo de documento ou fato do
+/// O parecer da manifestação técnica do Gestor de proteção de dados sobre a proteção de um tipo de documento ou fato do
 /// candidato (UNI-REQ-0373).
 /// A manifestação não decide: quem decide é o Representante do controlador (ADR-0162).
 /// </summary>

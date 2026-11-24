@@ -38,7 +38,7 @@ public sealed class FiltroDasRevisoesNoHostTests : PedidosDeConcessaoTestBase
         (Guid Id, string Situacao)[] lidas = [.. (await PaginasAsync(marlene, $"{Revisoes}?situacao=concluida&limit=2")).SelectMany(static p => p)];
 
         lidas.Select(static r => r.Id).Should().BeEquivalentTo(concluidas).And.NotContain(emAndamento);
-        lidas.Should().OnlyContain(static r => r.Situacao == "concluida");
+        lidas.Should().OnlyContain(static r => r.Situacao == "CONCLUIDA");
     }
 
     [Fact(DisplayName = "O filtro de em andamento traz só a revisão com item pendente")]
@@ -49,7 +49,7 @@ public sealed class FiltroDasRevisoesNoHostTests : PedidosDeConcessaoTestBase
 
         (Guid Id, string Situacao)[] lidas = [.. (await PaginasAsync(marlene, $"{Revisoes}?situacao=em_andamento&limit=2")).SelectMany(static p => p)];
 
-        lidas.Should().Equal((emAndamento, "em_andamento"));
+        lidas.Should().Equal((emAndamento, "EM_ANDAMENTO"));
     }
 
     [Fact(DisplayName = "Com a revisão em andamento entre as concluídas, as páginas do filtro saem cheias: o filtro vem antes da paginação")]
