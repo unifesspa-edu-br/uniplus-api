@@ -90,7 +90,7 @@ public sealed class PublicarAtoAvulsoDoProcessoCommandHandlerTests
 
     private void ConferirRegistro(AtoDoProcesso gravado, IEnumerable<object> mensagens)
     {
-        gravado.SlugDaUnidadeAdministradora.Should().Be("ceps", "a chave no acervo usa a unidade e o identificador da versão divulgada");
+        gravado.IdentificadorNoEnderecoWebDaUnidadeAdministradora.Should().Be("ceps", "a chave no acervo usa a unidade e o identificador da versão divulgada");
         gravado.IdentificadorLegivelDoProcesso.Should().Be("psm-medicina-2027");
         gravado.DocumentoPrincipalId.Should().Be(_principal.Id);
         gravado.Anexos.Should().ContainSingle().Which.NomeDeExibicao.Should().Be("Quadro de vagas.docx");

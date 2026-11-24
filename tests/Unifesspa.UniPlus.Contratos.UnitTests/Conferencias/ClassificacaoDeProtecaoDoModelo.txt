@@ -1214,6 +1214,7 @@ selecao.atos_do_processo.data_do_ato: Interno
 selecao.atos_do_processo.documento_principal_id: Interno
 selecao.atos_do_processo.id: Interno
 selecao.atos_do_processo.identificador_legivel_do_processo: Interno
+selecao.atos_do_processo.identificador_no_endereco_web_da_unidade_administradora: Interno
 selecao.atos_do_processo.item_do_edital: Interno
 selecao.atos_do_processo.motivo_da_correcao: Interno
 selecao.atos_do_processo.numero: Interno
@@ -1222,7 +1223,6 @@ selecao.atos_do_processo.politica_de_divulgacao_confirmada_em: Interno
 selecao.atos_do_processo.politica_de_divulgacao_confirmada_por_conta_id: Pessoal
 selecao.atos_do_processo.processo_seletivo_id: Interno
 selecao.atos_do_processo.publicado_em: Interno
-selecao.atos_do_processo.slug_da_unidade_administradora: Interno
 selecao.atos_do_processo.tipo_codigo: Interno
 selecao.atos_do_processo.tipo_nome: Interno
 selecao.atos_do_processo.updated_at: Interno
@@ -1891,10 +1891,10 @@ selecao.processos_seletivos.unidade_administradora_cidade_codigo_ibge: Interno
 selecao.processos_seletivos.unidade_administradora_cidade_nome: Interno
 selecao.processos_seletivos.unidade_administradora_cidade_uf: Interno
 selecao.processos_seletivos.unidade_administradora_codigo: Interno
+selecao.processos_seletivos.unidade_administradora_identificador_no_endereco_web: Interno
 selecao.processos_seletivos.unidade_administradora_nome: Interno
 selecao.processos_seletivos.unidade_administradora_origem_id: Interno
 selecao.processos_seletivos.unidade_administradora_sigla: Interno
-selecao.processos_seletivos.unidade_administradora_slug: Interno
 selecao.processos_seletivos.unidade_administradora_tipo: Interno
 selecao.processos_seletivos.updated_at: Interno
 selecao.publicacoes_previstas_da_etapa.ato_codigo: Interno

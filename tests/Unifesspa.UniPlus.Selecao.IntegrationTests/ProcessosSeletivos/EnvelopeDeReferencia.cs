@@ -50,7 +50,7 @@ internal static class EnvelopeDeReferencia
     /// <param name="comBancasExigidasNaPublicacao">Opt-in: acrescenta a banca de homologação das inscrições que a publicação exige; a golden fixture não a tem.</param>
     internal static ProcessoSeletivo ProcessoDeReferencia(bool comBancasExigidasNaPublicacao = false)
     {
-        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS Referencia 2026", TiposDeProcessoDeTeste.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, identificadorLegivel: IdentificadoresDeTeste.Novo());
+        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS Referencia 2026", TiposDeProcessoDeTeste.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "CEPS", "ceps", "Centro de Processos Seletivos", "PRO_REITORIA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, identificadorLegivel: IdentificadoresDeTeste.Novo());
 
         DefinirVagasEClassificacao(processo);
         FaseCronograma fase = DefinirCronogramaEEtapas(processo, comBancasExigidasNaPublicacao);

@@ -59,7 +59,7 @@ internal static class QuadroDeConfrontoDosLimites
         new(nameof(LimitesDoEnvelope.PrecisaoEscalaNotaFinal), LimitesDoEnvelope.PrecisaoEscalaNotaFinal, ClasseDeConfrontoDoLimite.SemColuna, "definida pela mesma constante da nota final"),
         new(nameof(LimitesDoEnvelope.UnidadeAdministradoraSigla), LimitesDoEnvelope.UnidadeAdministradoraSigla, ClasseDeConfrontoDoLimite.TipoEmbutido),
         new(nameof(LimitesDoEnvelope.UnidadeAdministradoraCodigo), LimitesDoEnvelope.UnidadeAdministradoraCodigo, ClasseDeConfrontoDoLimite.TipoEmbutido),
-        new(nameof(LimitesDoEnvelope.UnidadeAdministradoraSlug), LimitesDoEnvelope.UnidadeAdministradoraSlug, ClasseDeConfrontoDoLimite.TipoEmbutido),
+        new(nameof(LimitesDoEnvelope.UnidadeAdministradoraIdentificadorNoEnderecoWeb), LimitesDoEnvelope.UnidadeAdministradoraIdentificadorNoEnderecoWeb, ClasseDeConfrontoDoLimite.TipoEmbutido),
         new(nameof(LimitesDoEnvelope.UnidadeAdministradoraNome), LimitesDoEnvelope.UnidadeAdministradoraNome, ClasseDeConfrontoDoLimite.TipoEmbutido),
         new(nameof(LimitesDoEnvelope.UnidadeAdministradoraTipo), LimitesDoEnvelope.UnidadeAdministradoraTipo, ClasseDeConfrontoDoLimite.TipoEmbutido),
         new(nameof(LimitesDoEnvelope.UnidadeAdministradoraCidadeCodigoIbge), LimitesDoEnvelope.UnidadeAdministradoraCidadeCodigoIbge, ClasseDeConfrontoDoLimite.TipoEmbutido),
