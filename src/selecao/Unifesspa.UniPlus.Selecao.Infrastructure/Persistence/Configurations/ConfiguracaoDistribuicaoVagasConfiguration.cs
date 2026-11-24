@@ -95,11 +95,11 @@ internal sealed class ConfiguracaoDistribuicaoVagasConfiguration : IEntityTypeCo
             grupo.Property(g => g.Codigo)
                 .HasColumnName("grupo_area_enem_codigo")
                 .HasMaxLength(LimitesDoEnvelope.GrupoAreaEnemCodigo)
-                .HasComment("Código do grupo de área do ENEM do curso da oferta, sem abreviação e sem acento, congelado por valor do cadastro de cursos na definição da distribuição; casa a oferta com a linha de Pesos por Área. Nulo quando o curso não declara grupo.");
+                .HasComment("Código do grupo de área do ENEM do curso da oferta, sem abreviação e sem acento, copiado do cadastro de cursos na definição da distribuição e na publicação; casa a oferta com a linha de Pesos por Área. Nulo quando o curso não declara grupo.");
             grupo.Property(g => g.Rotulo)
                 .HasColumnName("grupo_area_enem_rotulo")
                 .HasMaxLength(LimitesDoEnvelope.GrupoAreaEnemRotulo)
-                .HasComment("Rótulo do grupo de área do ENEM do curso da oferta, congelado por valor junto do código na definição da distribuição. Nulo quando o curso não declara grupo.");
+                .HasComment("Rótulo do grupo de área do ENEM do curso da oferta, copiado junto do código na definição da distribuição e na publicação. Nulo quando o curso não declara grupo.");
         });
         builder.Navigation(c => c.GrupoAreaEnem).IsRequired(false);
     }
@@ -114,22 +114,22 @@ internal sealed class ConfiguracaoDistribuicaoVagasConfiguration : IEntityTypeCo
             oferta.Property(o => o.Codigo)
                 .HasColumnName("oferta_curso_codigo")
                 .HasMaxLength(OfertaCursoSnapshot.CodigoMaxLength)
-                .HasComment("Código da oferta de curso, congelado por valor do cadastro na definição da distribuição.");
+                .HasComment("Código da oferta de curso, copiado do cadastro na definição da distribuição e na publicação.");
             oferta.Property(o => o.CursoNome)
                 .HasColumnName("oferta_curso_nome")
                 .HasMaxLength(OfertaCursoSnapshot.CursoNomeMaxLength)
-                .HasComment("Nome do curso da oferta, congelado por valor do cadastro na definição da distribuição.");
+                .HasComment("Nome do curso da oferta, copiado do cadastro na definição da distribuição e na publicação.");
             oferta.Property(o => o.CursoGrau)
                 .HasColumnName("oferta_curso_grau")
                 .HasMaxLength(OfertaCursoSnapshot.CursoGrauMaxLength)
-                .HasComment("Grau do curso da oferta, congelado por valor do cadastro na definição da distribuição.");
+                .HasComment("Grau do curso da oferta, copiado do cadastro na definição da distribuição e na publicação.");
             oferta.Property(o => o.UnidadeOfertanteNome)
                 .HasColumnName("oferta_unidade_ofertante_nome")
                 .HasMaxLength(OfertaCursoSnapshot.UnidadeOfertanteNomeMaxLength)
-                .HasComment("Nome da unidade ofertante, congelado por valor do cadastro na definição da distribuição.");
+                .HasComment("Nome da unidade ofertante, copiado do cadastro na definição da distribuição e na publicação.");
             oferta.Property(o => o.Turnos)
                 .HasColumnName("oferta_turnos")
-                .HasComment("Turnos que a oferta ocupa (tokens), congelados por valor do cadastro na definição da distribuição.");
+                .HasComment("Turnos que a oferta ocupa (tokens), copiados do cadastro na definição da distribuição e na publicação.");
         });
         builder.Navigation(c => c.OfertaCurso).IsRequired(false);
     }

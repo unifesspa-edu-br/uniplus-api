@@ -61,9 +61,9 @@ internal static class ApoioDaDefinicaoDasRegrasDeDerivacao
         new(Guid.CreateVersion7(), "BAIXA_RENDA", "Baixa renda", "Descrição do fato.", CodigoComRotulo<TipoDoDado>.De(TipoDoDado.SimOuNao), CodigoComRotulo<OrigemFato>.De(OrigemFato.Declarado), CodigoComRotulo<QuantidadeDeValores>.De(QuantidadeDeValores.ValorUnico),
             null, "INSCRICAO", "CAMPO_FORMULARIO:BAIXA_RENDA", null, null, Ativo: true, ClassificacaoProtecao: "PESSOAL", HipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, FinalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, ProtecaoAprovada: true),
         new(Guid.CreateVersion7(), OrigemEscolar.FatoEgresso, "Egresso de escola pública", "Descrição do fato.", CodigoComRotulo<TipoDoDado>.De(TipoDoDado.SimOuNao), CodigoComRotulo<OrigemFato>.De(OrigemFato.Calculado), CodigoComRotulo<QuantidadeDeValores>.De(QuantidadeDeValores.ValorUnico),
-            null, "INSCRICAO", $"REGRA_DERIVACAO:{OrigemEscolar.FatoEgresso}", null, null, Ativo: true, ClassificacaoProtecao: "PESSOAL", HipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, FinalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, ProtecaoAprovada: true),
+            null, "INSCRICAO", $"REGRA_DE_CALCULO:{OrigemEscolar.FatoEgresso}", null, null, Ativo: true, ClassificacaoProtecao: "PESSOAL", HipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, FinalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, ProtecaoAprovada: true),
         new(Guid.CreateVersion7(), Derivado, "Regime de vaga", "Descrição do fato.", CodigoComRotulo<TipoDoDado>.De(TipoDoDado.Opcao), CodigoComRotulo<OrigemFato>.De(OrigemFato.Calculado), CodigoComRotulo<QuantidadeDeValores>.De(QuantidadeDeValores.VariosValores),
-            ["AC", "AC_PCD"], "INSCRICAO", $"REGRA_DERIVACAO:{Derivado}",
+            ["AC", "AC_PCD"], "INSCRICAO", $"REGRA_DE_CALCULO:{Derivado}",
             [new FatoValorDominioViewItem("AC", "Ampla", 0, true), new FatoValorDominioViewItem("AC_PCD", "Reserva", 1, true)],
             CodigoComRotulo<FonteValoresFato>.De(FonteValoresFato.Catalogo), Ativo: true, ClassificacaoProtecao: "PESSOAL", HipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, FinalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, ProtecaoAprovada: true),
     ];
@@ -122,7 +122,7 @@ internal static class ApoioDaDefinicaoDasRegrasDeDerivacao
         IReadOnlyList<FatoValorDominioViewItem> valoresDeclarados,
         FonteValoresFato? fonteValores) => new(
         Guid.CreateVersion7(), codigo, nome, "Descrição do fato.", CodigoComRotulo<TipoDoDado>.De(dominio), CodigoComRotulo<OrigemFato>.De(OrigemFato.Calculado), CodigoComRotulo<QuantidadeDeValores>.De(cardinalidade), valoresDominio, "INSCRICAO",
-        $"REGRA_DERIVACAO:{codigo}", valoresDeclarados, (fonteValores is { } fonteValoresInformada ? CodigoComRotulo<FonteValoresFato>.De(fonteValoresInformada) : null), Ativo: true, ClassificacaoProtecao: "PESSOAL",
+        $"REGRA_DE_CALCULO:{codigo}", valoresDeclarados, (fonteValores is { } fonteValoresInformada ? CodigoComRotulo<FonteValoresFato>.De(fonteValoresInformada) : null), Ativo: true, ClassificacaoProtecao: "PESSOAL",
         HipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, FinalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, ProtecaoAprovada: true);
 
     internal static ModalidadeSelecionada ModalidadeDe(string codigo, NaturezaLegalModalidade natureza) =>

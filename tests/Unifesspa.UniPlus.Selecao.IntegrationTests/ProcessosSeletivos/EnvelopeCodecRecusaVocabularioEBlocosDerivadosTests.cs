@@ -50,7 +50,7 @@ public sealed class EnvelopeCodecRecusaVocabularioEBlocosDerivadosTests
     [InlineData("fada.regra", "BONUS-XPTO")]
     [InlineData("criteriosDesempate.0.regra", "DESEMPATE-XPTO")]
     [InlineData("classificacao.regrasEliminacao.0.regra", "ELIMINACAO-XPTO")]
-    [InlineData("cascataRemanejamento.regra", "REMANEJ-XPTO")]
+    [InlineData("ordemDeRemanejamento.regra", "REMANEJ-XPTO")]
     public void CodigoDeRegraForaDoRol_Recusa(string caminho, string codigo)
     {
         Result<EnvelopeReidratado> resultado = ReidratarComEnvelopeAdulterado(envelope =>

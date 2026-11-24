@@ -16755,10 +16755,10 @@
               "$ref": "#/components/schemas/DocumentoDaConfiguracaoDistribuicaoDeVagas"
             }
           },
-          "cascataRemanejamento": {
+          "ordemDeRemanejamento": {
             "title": "Cascata de remanejamento",
             "description": "A cascata de remanejamento entre modalidades. Ausente quando o processo n\u00E3o tem cascata.",
-            "$ref": "#/components/schemas/DocumentoDaConfiguracaoCascataDeRemanejamento"
+            "$ref": "#/components/schemas/DocumentoDaConfiguracaoOrdemDeRemanejamento"
           },
           "cronograma": {
             "$ref": "#/components/schemas/DocumentoDaConfiguracaoCronograma"
@@ -16777,7 +16777,7 @@
           "divulgacao": {
             "$ref": "#/components/schemas/DocumentoDaConfiguracaoDivulgacao"
           },
-          "tiposDeAtoCongelados": {
+          "tiposDeAto": {
             "title": "Tipos de ato congelados",
             "description": "C\u00F3pia, congelada na publica\u00E7\u00E3o, dos tipos de ato do cat\u00E1logo de Publica\u00E7\u00F5es que o processo usa, com o que cada um significa. Existe s\u00F3 no processo publicado. Campo s\u00F3 de leitura: ignorado na importa\u00E7\u00E3o; a refer\u00EAncia \u00E9 o c\u00F3digo do tipo de ato em cada produto de fase e de etapa.",
             "type": "array",
@@ -17075,66 +17075,6 @@
               "DESFAVORAVEL",
               "NOVA_VOTACAO"
             ]
-          }
-        }
-      },
-      "DocumentoDaConfiguracaoCascataDeRemanejamento": {
-        "title": "Cascata de remanejamento",
-        "description": "A ordem em que as vagas n\u00E3o preenchidas de uma modalidade passam a outras. No m\u00E1ximo uma cascata por processo; sem o objeto, o processo n\u00E3o tem cascata.",
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "regra": {
-            "title": "Regra de remanejamento",
-            "description": "Regra do cat\u00E1logo que define o remanejamento.",
-            "$ref": "#/components/schemas/DocumentoDaConfiguracaoComunsReferenciaDeRegra"
-          },
-          "destinoFinalCodigo": {
-            "title": "Modalidade de destino final",
-            "description": "C\u00F3digo da modalidade que recebe as vagas quando nenhum destino da cascata as absorve, em geral a ampla concorr\u00EAncia.",
-            "type": "string",
-            "minLength": 1,
-            "maxLength": 60,
-            "pattern": "^[A-Z0-9_]\u002B$"
-          },
-          "destinos": {
-            "title": "Destinos",
-            "description": "Os destinos de cada modalidade de origem, at\u00E9 56 no total e at\u00E9 8 origens distintas.",
-            "type": "array",
-            "maxItems": 56,
-            "items": {
-              "type": "object",
-              "additionalProperties": false,
-              "required": [
-                "modalidadeOrigemCodigo",
-                "ordem",
-                "modalidadeDestinoCodigo"
-              ],
-              "properties": {
-                "modalidadeOrigemCodigo": {
-                  "title": "Modalidade de origem",
-                  "description": "C\u00F3digo da modalidade que cede as vagas.",
-                  "type": "string",
-                  "minLength": 1,
-                  "maxLength": 60,
-                  "pattern": "^[A-Z0-9_]\u002B$"
-                },
-                "ordem": {
-                  "title": "Ordem",
-                  "description": "Posi\u00E7\u00E3o do destino na cascata da origem, a partir de 1. A ordem \u00E9 sem\u00E2ntica: decide quem recebe primeiro.",
-                  "type": "integer",
-                  "minimum": 1
-                },
-                "modalidadeDestinoCodigo": {
-                  "title": "Modalidade de destino",
-                  "description": "C\u00F3digo da modalidade que recebe as vagas.",
-                  "type": "string",
-                  "minLength": 1,
-                  "maxLength": 60,
-                  "pattern": "^[A-Z0-9_]\u002B$"
-                }
-              }
-            }
           }
         }
       },
@@ -20144,6 +20084,66 @@
         "description": "C\u00F3digo do motivo no cat\u00E1logo: mai\u00FAscula inicial, depois mai\u00FAsculas, d\u00EDgitos e sublinhado, de 2 a 50 caracteres.",
         "type": "string",
         "pattern": "^[A-Z][A-Z0-9_]{1,49}$"
+      },
+      "DocumentoDaConfiguracaoOrdemDeRemanejamento": {
+        "title": "Ordem de remanejamento",
+        "description": "A ordem em que as vagas n\u00E3o preenchidas de uma modalidade passam a outras. No m\u00E1ximo uma ordem por processo; sem o objeto, o processo n\u00E3o tem ordem de remanejamento.",
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "regra": {
+            "title": "Regra de remanejamento",
+            "description": "Regra do cat\u00E1logo que define o remanejamento.",
+            "$ref": "#/components/schemas/DocumentoDaConfiguracaoComunsReferenciaDeRegra"
+          },
+          "destinoFinalCodigo": {
+            "title": "Modalidade de destino final",
+            "description": "C\u00F3digo da modalidade que recebe as vagas quando nenhum destino da ordem as absorve, em geral a ampla concorr\u00EAncia.",
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 60,
+            "pattern": "^[A-Z0-9_]\u002B$"
+          },
+          "destinos": {
+            "title": "Destinos",
+            "description": "Os destinos de cada modalidade de origem, at\u00E9 56 no total e at\u00E9 8 origens distintas.",
+            "type": "array",
+            "maxItems": 56,
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "modalidadeOrigemCodigo",
+                "ordem",
+                "modalidadeDestinoCodigo"
+              ],
+              "properties": {
+                "modalidadeOrigemCodigo": {
+                  "title": "Modalidade de origem",
+                  "description": "C\u00F3digo da modalidade que cede as vagas.",
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 60,
+                  "pattern": "^[A-Z0-9_]\u002B$"
+                },
+                "ordem": {
+                  "title": "Ordem",
+                  "description": "Posi\u00E7\u00E3o do destino na ordem da origem, a partir de 1. A ordem \u00E9 sem\u00E2ntica: decide quem recebe primeiro.",
+                  "type": "integer",
+                  "minimum": 1
+                },
+                "modalidadeDestinoCodigo": {
+                  "title": "Modalidade de destino",
+                  "description": "C\u00F3digo da modalidade que recebe as vagas.",
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 60,
+                  "pattern": "^[A-Z0-9_]\u002B$"
+                }
+              }
+            }
+          }
+        }
       },
       "DocumentoDaConfiguracaoPesosPorArea": {
         "title": "Grupo de pesos por \u00E1rea",

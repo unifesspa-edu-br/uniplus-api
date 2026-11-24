@@ -5,7 +5,7 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// <summary>
 /// A regra de derivação completa de um fato: a lista de regras <c>{quando, contribui}</c> mais a
 /// lista <b>explícita</b> de fatos dependentes. É o dado de estrutura fechada que o
-/// binding <c>REGRA_DERIVACAO:</c> referencia.
+/// binding <c>REGRA_DE_CALCULO:</c> referencia.
 /// </summary>
 /// <remarks>
 /// <para>

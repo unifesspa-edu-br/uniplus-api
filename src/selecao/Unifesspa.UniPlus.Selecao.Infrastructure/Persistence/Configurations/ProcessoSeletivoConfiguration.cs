@@ -49,6 +49,9 @@ public sealed class ProcessoSeletivoConfiguration : IEntityTypeConfiguration<Pro
                 "ck_processos_seletivos_numero_de_opcoes_de_curso",
                 "numero_de_opcoes_de_curso IS NULL OR numero_de_opcoes_de_curso IN (1, 2)");
             t.HasCheckConstraint(
+                "ck_processos_seletivos_situacao",
+                $"situacao IN ({SqlDosCodigosDeContrato.Lista<StatusProcesso>()})");
+            t.HasCheckConstraint(
                 "ck_processos_seletivos_origem_candidatos",
                 $"origem_candidatos IN ({SqlDosCodigosDeContrato.Lista<OrigemCandidatos>()})");
         });
@@ -94,7 +97,8 @@ public sealed class ProcessoSeletivoConfiguration : IEntityTypeConfiguration<Pro
             tipo.Property(x => x.Nome).HasColumnName("tipo_processo_nome").HasMaxLength(200).IsRequired().HasComment("Nome do tipo de processo copiado do cadastro na criação.");
         });
         builder.Navigation(p => p.TipoProcesso).IsRequired();
-        builder.Property(p => p.Status).HasMaxLength(9).IsRequired().HasComment("Situação do processo: rascunho, publicado, encerrado ou cancelado.");
+        builder.Property(p => p.Status).HasColumnName("situacao").HasMaxLength(TamanhoDoCodigoDeContrato.Maximo).IsRequired()
+            .HasComment($"Situação do processo seletivo. {ComentarioDosCodigosDeContrato.Codigos<StatusProcesso>()}");
         // NOT NULL, exigido na criação.
         builder.Property(p => p.OrigemCandidatos)
             .HasMaxLength(TamanhoDoCodigoDeContrato.Maximo)
@@ -336,9 +340,9 @@ public sealed class ProcessoSeletivoConfiguration : IEntityTypeConfiguration<Pro
             referencia.Property(r => r.Tipo)
                 .HasColumnName("referencia_temporal_dados_tipo")
                 .HasMaxLength(ReferenciaTemporalFatosTipoMaxLength)
-                .HasComment("Referência para apurar os fatos: FIM_INSCRICAO, INICIO_FASE, FIM_FASE ou DATA_ESPECIFICA. Ausente quando não declarada.");
-            referencia.Property(r => r.Data).HasColumnName("referencia_temporal_dados_data").HasComment("Data escolhida quando a referência para apurar os fatos é uma data específica.");
-            referencia.Property(r => r.FaseId).HasColumnName("referencia_temporal_dados_fase_id").HasComment("Identificador da fase escolhida quando a referência para apurar os fatos é o início ou o fim de uma fase.");
+                .HasComment("Referência para apurar os dados do candidato: FIM_INSCRICAO, INICIO_FASE, FIM_FASE ou DATA_ESPECIFICA. Ausente quando não declarada.");
+            referencia.Property(r => r.Data).HasColumnName("referencia_temporal_dados_data").HasComment("Data escolhida quando a referência para apurar os dados do candidato é uma data específica.");
+            referencia.Property(r => r.FaseId).HasColumnName("referencia_temporal_dados_fase_id").HasComment("Identificador da fase escolhida quando a referência para apurar os dados do candidato é o início ou o fim de uma fase.");
         });
 
         builder.Navigation(p => p.Etapas)

@@ -73,7 +73,7 @@ internal sealed class ConfiguracaoClassificacaoConfiguration : IEntityTypeConfig
             .HasMaxLength(LimitesDoEnvelope.ResolucaoPesoAreaEnem)
             .HasComment(
                 "Resolução de Pesos por Área declarada pela classificação baseada em ENEM com cálculo local; " +
-                "o vínculo com o cadastro é pelo valor, e o quadro fica congelado em grupos_do_quadro_de_pesos. " +
+                "o quadro é copiado na definição da classificação e substituído quando ela muda. " +
                 "Nulo nas demais classificações.");
 
         builder.HasMany(c => c.QuadroPesoAreaEnem)

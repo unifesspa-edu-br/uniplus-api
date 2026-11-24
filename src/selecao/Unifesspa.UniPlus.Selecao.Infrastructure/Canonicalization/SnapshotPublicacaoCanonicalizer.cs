@@ -121,7 +121,7 @@ public sealed class SnapshotPublicacaoCanonicalizer : ISnapshotPublicacaoCanonic
         payload["opcoesDeCurso"] = SerializacaoDasVagas.SerializarOpcoesDeCurso(processo);
         payload["atendimento"] = SerializacaoDoBonusEDoAtendimento.SerializarAtendimento(processo);
         payload["fada"] = SerializacaoDoBonusEDoAtendimento.SerializarBonusRegional(processo);
-        payload["cascataRemanejamento"] = SerializacaoDaCascata.SerializarCascataRemanejamento(processo);
+        payload["ordemDeRemanejamento"] = SerializacaoDaCascata.SerializarCascataRemanejamento(processo);
         payload["modalidadesOfertadas"] = SerializacaoDosFatos.SerializarModalidadesOfertadas(processo.DistribuicaoVagas);
     }
 

@@ -23,7 +23,7 @@ public static class ReferenciasDeRegraDaConfiguracao
     [
         .. Posicoes(configuracao.Vagas.DistribuicaoVagas.Count, "distribuicaoVagas", configuracao.Origem)
             .SelectMany(i => DaOferta(configuracao.Vagas.DistribuicaoVagas[i], i)),
-        .. Referencia("cascataRemanejamento.regra", configuracao.Vagas.Cascata?.Regra),
+        .. Referencia("ordemDeRemanejamento.regra", configuracao.Vagas.Cascata?.Regra),
     ];
 
     private static IEnumerable<(string Campo, ReferenciaRegra Regra)> DaOferta(ConfiguracaoDistribuicaoVagas oferta, int i) =>

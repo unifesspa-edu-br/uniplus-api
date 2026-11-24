@@ -47,7 +47,7 @@ internal sealed class ConfiguracaoBonusRegionalConfiguration : IEntityTypeConfig
 
         builder.Property(b => b.Fator).HasComment("Multiplicador do Fator de Atenuação das Desigualdades de Acesso (FADA).").HasPrecision(6, 4).IsRequired();
         builder.Property(b => b.Teto).HasComment("Limite da nota após o Fator de Atenuação das Desigualdades de Acesso (FADA), quando definido.").HasPrecision(6, 4);
-        builder.Property(b => b.FatoElegibilidadeCodigo).HasComment("Código do dado que decide a elegibilidade ao Fator de Atenuação das Desigualdades de Acesso (FADA), quando definido.").HasMaxLength(FormaDoItem.FatoCodigoMaxLength);
+        builder.Property(b => b.FatoElegibilidadeCodigo).HasColumnName("codigo_do_dado_de_elegibilidade").HasComment("Código do dado do candidato que decide a elegibilidade ao Fator de Atenuação das Desigualdades de Acesso (FADA), quando definido.").HasMaxLength(FormaDoItem.FatoCodigoMaxLength);
 
         builder.Property(b => b.BaseLegalBonusRegionalId).HasColumnName("base_legal_id").HasComment("Identificador da base legal do Fator de Atenuação das Desigualdades de Acesso (FADA) copiado na configuração.").IsRequired();
         builder.Property(b => b.BaseLegalBonusRegionalCodigo).HasColumnName("base_legal_codigo").HasComment("Código da base legal do Fator de Atenuação das Desigualdades de Acesso (FADA) copiado na configuração.").HasMaxLength(CodigoBaseLegalMaxLength).IsRequired();

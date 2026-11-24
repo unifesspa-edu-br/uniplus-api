@@ -66,7 +66,7 @@ public sealed partial class PublicarProcessoSeletivoCommandHandlerTests
         Cardinalidade: CodigoComRotulo<QuantidadeDeValores>.De(QuantidadeDeValores.VariosValores),
         ValoresDominio: null,
         PontoResolucao: "INSCRICAO",
-        Binding: "REGRA_DERIVACAO:MODALIDADE",
+        Binding: "REGRA_DE_CALCULO:MODALIDADE",
         ValoresDominioDeclarados: null, FonteValores: CodigoComRotulo<FonteValoresFato>.De(FonteValoresFato.Modalidade), Ativo: true, ClassificacaoProtecao: "PESSOAL", HipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, FinalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, ProtecaoAprovada: true);
 
     private sealed record Mocks(

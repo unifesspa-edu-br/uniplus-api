@@ -105,7 +105,7 @@ internal static class CadastrosVivos
     /// <summary>A modalidade de concorrência e o grupo em que o candidato foi convocado, como o seed os publica.</summary>
     public static IReadOnlyList<FatoCandidatoView> FatosDeModalidade() =>
     [
-        FatoDeModalidade("MODALIDADE", "INSCRICAO", "REGRA_DERIVACAO:MODALIDADE"),
+        FatoDeModalidade("MODALIDADE", "INSCRICAO", "REGRA_DE_CALCULO:MODALIDADE"),
         FatoDeModalidade("MODALIDADE_CONVOCACAO", "RESULTADO_FINAL", "CLASSIFICACAO:MODALIDADE_CONVOCACAO"),
     ];
 

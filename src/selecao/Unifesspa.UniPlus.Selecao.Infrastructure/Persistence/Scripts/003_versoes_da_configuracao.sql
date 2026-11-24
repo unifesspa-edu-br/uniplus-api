@@ -8,7 +8,7 @@ LANGUAGE plpgsql
 AS $$
 BEGIN
     RAISE EXCEPTION
-        'versoes_configuracao é append-only (ADR-0063): operação % é bloqueada; a configuração congelada não se muta.', TG_OP
+        'versoes_configuracao é append-only (ADR-0063): operação % é bloqueada; a configuração copiada na publicação não se altera.', TG_OP
         USING ERRCODE = 'restrict_violation';
 END;
 $$;

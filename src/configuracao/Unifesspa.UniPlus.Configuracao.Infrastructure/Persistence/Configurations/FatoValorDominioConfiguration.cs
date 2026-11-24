@@ -41,7 +41,7 @@ internal sealed class FatoValorDominioConfiguration : IEntityTypeConfiguration<F
 
         builder.HasKey(v => v.Id);
         builder.Property(v => v.Id).HasComment("Identificador da opção.");
-        builder.Property(v => v.FatoCandidatoId).HasComment("Identificador do dado ao qual a opção pertence.");
+        builder.Property(v => v.FatoCandidatoId).HasColumnName("dado_do_candidato_id").HasComment("Identificador do dado ao qual a opção pertence.");
         builder.Property(v => v.Codigo).HasComment("Código da opção, único no dado.");
         builder.Property(v => v.Descricao).HasComment("Descrição da opção, quando informada.");
         builder.Property(v => v.Orientacao).HasComment("Orientação para a escolha, quando informada.");

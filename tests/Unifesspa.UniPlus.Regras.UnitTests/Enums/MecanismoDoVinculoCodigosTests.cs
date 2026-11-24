@@ -16,7 +16,7 @@ public sealed class MecanismoDoVinculoCodigosTests
             {
                 [MecanismoDoVinculo.CampoFormulario] = ("CAMPO_FORMULARIO", "Campo do formulário"),
                 [MecanismoDoVinculo.AtributoCandidato] = ("ATRIBUTO_CANDIDATO", "Atributo do candidato"),
-                [MecanismoDoVinculo.RegraDeDerivacao] = ("REGRA_DERIVACAO", "Regra de derivação"),
+                [MecanismoDoVinculo.RegraDeDerivacao] = ("REGRA_DE_CALCULO", "Regra de cálculo"),
                 [MecanismoDoVinculo.Classificacao] = ("CLASSIFICACAO", "Classificação"),
                 [MecanismoDoVinculo.Integracao] = ("INTEGRACAO", "Integração"),
                 [MecanismoDoVinculo.ResumoDeGrupo] = ("RESUMO_DE_GRUPO", "Resumo de grupo"),

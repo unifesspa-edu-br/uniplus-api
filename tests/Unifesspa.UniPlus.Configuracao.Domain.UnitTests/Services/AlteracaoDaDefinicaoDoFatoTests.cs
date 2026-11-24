@@ -63,7 +63,7 @@ public sealed class AlteracaoDaDefinicaoDoFatoTests
             Cardinalidade = QuantidadeDeValores.VariosValores,
             FonteValores = FonteValoresFato.Catalogo,
             PontoResolucao = "HABILITACAO",
-            Binding = "REGRA_DERIVACAO:PERFIL",
+            Binding = "REGRA_DE_CALCULO:PERFIL",
         });
     }
 

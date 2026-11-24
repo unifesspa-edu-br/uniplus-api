@@ -76,10 +76,10 @@ public sealed class FatoCandidatoVinculoTests
 
     [Theory(DisplayName = "Binding com prefixo incoerente com a origem é rejeitado")]
     [InlineData(OrigemFato.Declarado, "ATRIBUTO_CANDIDATO:COR_RACA")]
-    [InlineData(OrigemFato.Declarado, "REGRA_DERIVACAO:MODALIDADE")]
+    [InlineData(OrigemFato.Declarado, "REGRA_DE_CALCULO:MODALIDADE")]
     [InlineData(OrigemFato.Calculado, "CAMPO_FORMULARIO:FAIXA_ETARIA")]
     [InlineData(OrigemFato.Integracao, "CAMPO_FORMULARIO:ANO_ENEM")]
-    [InlineData(OrigemFato.Integracao, "REGRA_DERIVACAO:ALGO")]
+    [InlineData(OrigemFato.Integracao, "REGRA_DE_CALCULO:ALGO")]
     public void Criar_BindingPrefixoIncoerenteComOrigem_Falha(OrigemFato origem, string binding)
     {
         Result<FatoCandidato> resultado = Criar(origem: origem, binding: binding);
@@ -88,27 +88,27 @@ public sealed class FatoCandidatoVinculoTests
         resultado.Error!.Code.Should().Be(FatoCandidatoErrorCodes.BindingPrefixoIncoerenteComOrigem);
     }
 
-    [Fact(DisplayName = "REGRA_DERIVACAO cuja referência não é o código do próprio fato é recusado")]
+    [Fact(DisplayName = "REGRA_DE_CALCULO cuja referência não é o código do próprio fato é recusado")]
     public void Criar_BindingRegraDerivacaoReferenciaOutroFato_Falha()
     {
         Result<FatoCandidato> resultado = Criar(
             descritivo: Descritivo with { Codigo = "FAIXA_ETARIA" },
             origem: OrigemFato.Calculado,
-            binding: "REGRA_DERIVACAO:MODALIDADE");
+            binding: "REGRA_DE_CALCULO:MODALIDADE");
 
         resultado.IsFailure.Should().BeTrue(
             "a regra de derivação referenciada é a do próprio fato — apontar para outro congelaria metadado de derivação alheio");
         resultado.Error!.Code.Should().Be(FatoCandidatoErrorCodes.BindingReferenciaRegraIncoerente);
     }
 
-    [Fact(DisplayName = "REGRA_DERIVACAO cuja referência é o código do próprio fato é aceito")]
+    [Fact(DisplayName = "REGRA_DE_CALCULO cuja referência é o código do próprio fato é aceito")]
     public void Criar_BindingRegraDerivacaoReferenciaProprioFato_Aceita()
     {
         Result<FatoCandidato> resultado = Criar(
             descritivo: Descritivo with { Codigo = "MODALIDADE" },
             definicao: Definicao with { Dominio = TipoDoDado.Opcao, Cardinalidade = QuantidadeDeValores.VariosValores },
             origem: OrigemFato.Calculado,
-            binding: "REGRA_DERIVACAO:MODALIDADE");
+            binding: "REGRA_DE_CALCULO:MODALIDADE");
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
     }
@@ -120,15 +120,15 @@ public sealed class FatoCandidatoVinculoTests
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Message.Should().Contain("ATRIBUTO_CANDIDATO")
-            .And.Contain("REGRA_DERIVACAO",
+            .And.Contain("REGRA_DE_CALCULO",
                 "a origem derivada aceita dois prefixos — a mensagem precisa apontar ambos, não um só");
     }
 
     [Theory(DisplayName = "Binding com prefixo coerente com a origem é aceito")]
     [InlineData(OrigemFato.Declarado, "CAMPO_FORMULARIO:COR_RACA")]
     [InlineData(OrigemFato.Calculado, "ATRIBUTO_CANDIDATO:FAIXA_ETARIA")]
-    // REGRA_DERIVACAO referencia o próprio fato: a referência bate com o código FATO_QUALQUER.
-    [InlineData(OrigemFato.Calculado, "REGRA_DERIVACAO:FATO_QUALQUER")]
+    // REGRA_DE_CALCULO referencia o próprio fato: a referência bate com o código FATO_QUALQUER.
+    [InlineData(OrigemFato.Calculado, "REGRA_DE_CALCULO:FATO_QUALQUER")]
     [InlineData(OrigemFato.Integracao, "INTEGRACAO:ANO_ENEM")]
     public void Criar_BindingPrefixoCoerenteComOrigem_Aceita(OrigemFato origem, string binding)
     {

@@ -15,7 +15,7 @@ public sealed class VagasDoEsquemaDaConfiguracaoTests
 {
     private const string Distribuicao = "distribuicao-de-vagas.schema.json";
 
-    private const string Cascata = "cascata-de-remanejamento.schema.json";
+    private const string Cascata = "ordem-de-remanejamento.schema.json";
 
     private const string DistribuicaoValida = """
         {
@@ -46,7 +46,7 @@ public sealed class VagasDoEsquemaDaConfiguracaoTests
             { "formato": "uniplus.selecao.configuracao", "versaoFormato": 1,
               "opcoesDeCurso": { "numero": 2 },
               "distribuicaoVagas": [ { "ofertaCursoCodigo": "ENG_CIVIL_MARABA" } ],
-              "cascataRemanejamento": { "regra": { "codigo": "REMANEJAMENTO_ORDEM_LEI_12711", "versao": "v1" }, "destinoFinalCodigo": "AC",
+              "ordemDeRemanejamento": { "regra": { "codigo": "REMANEJAMENTO_ORDEM_LEI_12711", "versao": "v1" }, "destinoFinalCodigo": "AC",
                 "destinos": [ { "modalidadeOrigemCodigo": "LB_PPI", "ordem": 1, "modalidadeDestinoCodigo": "LB_Q" } ] } }
             """)).Should().BeEmpty();
 

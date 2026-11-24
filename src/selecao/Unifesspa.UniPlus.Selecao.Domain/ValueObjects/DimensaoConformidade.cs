@@ -57,7 +57,7 @@ public static class DimensaoConformidade
         [Etapas] = "etapas",
         [TaxaInscricao] = "taxaDeInscricao",
         [ExigenciasDocumentais] = "documentosExigidos",
-        [CascataRemanejamento] = "cascataRemanejamento",
+        [CascataRemanejamento] = "ordemDeRemanejamento",
         [ColetaDeFatos] = "coleta",
         [BonusRegional] = "fada",
         [ProvaPresencial] = "provaPresencial",

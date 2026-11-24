@@ -113,7 +113,7 @@ internal static class EnvelopeDeReferencia
     /// legal completa (8×7, fallback AC). A oferta de referência é institucional (não federal): a
     /// canonicalização é pura (ADR-0109 D6) e não valida <c>PendenciaDaCascata</c>, então este
     /// agregado não precisa ser publicável — ele só existe para congelar a forma
-    /// <c>presente:true</c> do bloco <c>cascataRemanejamento</c>.
+    /// <c>presente:true</c> do bloco <c>ordemDeRemanejamento</c>.
     /// </summary>
     internal static SnapshotCanonico CanonicalizarReferenciaComCascata() =>
         Canonicalizer.Canonicalizar(new EntradaCanonicalizacao(ProcessoDeReferenciaComCascata(), DadosDeReferencia(), HashFixo, FusoInstitucional.ZoneId, Retificacao: null, Conformidade: null, DadosDeCatalogo: new DadosDeCatalogoDaConfiguracaoPublicada(MetadadosFatosCongelados: MetadadosFatosDeReferencia(), ValoresSelecionaveisCongelados: ValoresSelecionaveisDeReferencia(), TiposDeAtoCongelados: TiposDeAtoCongeladosDeTeste.Dos(ProcessoDeReferenciaComCascata()), FatosDerivadosCongelados: FatosDerivadosCongeladosDeTeste.Padrao)));
@@ -292,7 +292,7 @@ internal static class EnvelopeDeReferencia
         Origem: OrigemFato.Calculado,
         Cardinalidade: QuantidadeDeValores.VariosValores,
         PontoResolucao: "INSCRICAO",
-        Binding: "REGRA_DERIVACAO:MODALIDADE",
+        Binding: "REGRA_DE_CALCULO:MODALIDADE",
         ValoresDominio: null,
         ValoresDominioDeclarados: null);
 

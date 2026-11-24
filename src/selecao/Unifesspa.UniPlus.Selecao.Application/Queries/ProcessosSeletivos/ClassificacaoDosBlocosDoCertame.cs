@@ -63,7 +63,7 @@ public static class ClassificacaoDosBlocosDoCertame
         "classificacao",
         "criteriosDesempate",
         "fada",
-        "cascataRemanejamento",
+        "ordemDeRemanejamento",
         "distribuicao",
         "modalidades",
         "regrasDeComprovacao",

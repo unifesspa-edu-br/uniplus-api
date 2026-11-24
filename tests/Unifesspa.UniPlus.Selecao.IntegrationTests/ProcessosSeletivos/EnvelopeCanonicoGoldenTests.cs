@@ -81,7 +81,7 @@ public sealed class EnvelopeCanonicoGoldenTests
     }
 
     /// <summary>
-    /// O bloco <c>cascataRemanejamento</c> tem dois estados — <c>Envelope_BateGoldenFixture</c> acima já cobre a ausência
+    /// O bloco <c>ordemDeRemanejamento</c> tem dois estados — <c>Envelope_BateGoldenFixture</c> acima já cobre a ausência
     /// (<c>{"presente":false}</c>, a forma do processo de referência); esta fixture congela a
     /// presença (<c>{"presente":true,...}</c>, matriz legal completa) byte a byte.
     /// </summary>

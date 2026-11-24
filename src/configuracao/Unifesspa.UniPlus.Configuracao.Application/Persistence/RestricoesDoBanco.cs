@@ -27,7 +27,7 @@ public static class RestricoesDoBanco
 
     public const string FatoDoCandidatoCodigoUnico = "ux_dados_do_candidato_codigo";
 
-    public const string ValorDeDominioDoFatoCodigoUnico = "ux_opcoes_dos_dados_fato_codigo";
+    public const string ValorDeDominioDoFatoCodigoUnico = "ux_opcoes_dos_dados_dado_codigo";
 
     public const string ManifestacaoDaProtecaoInicialDoAutorUnica = "ux_manifestacoes_da_protecao_inicial_do_autor";
 

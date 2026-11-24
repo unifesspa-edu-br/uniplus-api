@@ -105,7 +105,7 @@ public static class DefinirRegrasDerivacaoCommandHandler
 /// <summary>
 /// Política de derivabilidade de um fato. Só pode ter regras de derivação configuradas
 /// o fato de <c>Origem = CALCULADO</c> cujo binding é o da própria regra de derivação
-/// (<c>REGRA_DERIVACAO:{codigo}</c>). Um fato declarado, ou derivado por outro mecanismo (ex.:
+/// (<c>REGRA_DE_CALCULO:{codigo}</c>). Um fato declarado, ou derivado por outro mecanismo (ex.:
 /// computado de atributo do candidato), não é alvo de configuração de regras.
 /// </summary>
 internal static class DerivabilidadeDeFato

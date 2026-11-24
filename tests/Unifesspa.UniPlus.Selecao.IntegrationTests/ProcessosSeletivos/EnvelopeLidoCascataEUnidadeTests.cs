@@ -28,7 +28,7 @@ public sealed class EnvelopeLidoCascataEUnidadeTests
     {
         (ProcessoSeletivo processo, _) = ApoioDoEnvelopeCodec.ProcessoDeInscricao("PS sem cascata");
         SnapshotCanonico congelado = ExemploDeEnvelope.Canonicalizador.Canonicalizar(ExemploDeEnvelopeEntrada.Entrada(processo));
-        ApoioDoEnvelopeCodec.Envelope(congelado)["cascataRemanejamento"]!["presente"]!.GetValue<bool>().Should().BeFalse();
+        ApoioDoEnvelopeCodec.Envelope(congelado)["ordemDeRemanejamento"]!["presente"]!.GetValue<bool>().Should().BeFalse();
 
         EnvelopeReidratado lido = FidelidadeDoEnvelopeDeTeste.Conferir(processo,
             ExemploDeEnvelopeEntrada.VersaoDeAbertura(processo, congelado.Bytes), congelado);

@@ -8,7 +8,7 @@ internal static class ProjecaoDeCascataRemanejamento
 {
     public static JsonNode? Projetar(JsonObject congelado, FormaDoNo formaDaParte, ChavesDoDocumentoCongelado chaves)
     {
-        if (congelado["cascataRemanejamento"] is not JsonObject cascata || cascata["presente"]?.GetValue<bool>() != true)
+        if (congelado["ordemDeRemanejamento"] is not JsonObject cascata || cascata["presente"]?.GetValue<bool>() != true)
         {
             return null;
         }

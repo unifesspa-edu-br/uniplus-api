@@ -170,7 +170,7 @@ public sealed partial class PublicarProcessoSeletivoCommandHandlerTests
         metadado.Origem.Should().Be(OrigemFato.Calculado);
         metadado.Cardinalidade.Should().Be(QuantidadeDeValores.VariosValores);
         metadado.PontoResolucao.Should().Be("RESULTADO_FINAL");
-        metadado.Binding.Should().Be("REGRA_DERIVACAO:MODALIDADE");
+        metadado.Binding.Should().Be("REGRA_DE_CALCULO:MODALIDADE");
         metadado.ValoresDominioDeclarados.Should().BeNull("MODALIDADE é escopo-processo — os valores vêm da oferta do processo, não de FatoValorDominio");
     }
 
@@ -210,7 +210,7 @@ public sealed partial class PublicarProcessoSeletivoCommandHandlerTests
         (Mocks mocks, DocumentoAPublicar documento) = NovosMocks(processo);
         mocks.FatoCandidatoReader.ListarAsync(Arg.Any<CancellationToken>())
             .Returns(CatalogoDoConjuntoBasico.Com((IReadOnlyList<FatoCandidatoView>)[
-                FatoModalidade() with { Codigo = derivado, Binding = $"REGRA_DERIVACAO:{derivado}", PontoResolucao = "RESULTADO_FINAL" }]));
+                FatoModalidade() with { Codigo = derivado, Binding = $"REGRA_DE_CALCULO:{derivado}", PontoResolucao = "RESULTADO_FINAL" }]));
 
         (Result resposta, IEnumerable<object> _) = await HandleAsync(mocks, processo, documento);
 

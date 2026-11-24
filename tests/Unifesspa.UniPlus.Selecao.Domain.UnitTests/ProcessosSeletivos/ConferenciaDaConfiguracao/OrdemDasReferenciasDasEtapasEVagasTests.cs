@@ -28,7 +28,7 @@ public sealed class OrdemDasReferenciasDasEtapasEVagasTests
         (string Campo, ReferenciaRegra Regra)[] referencias = [.. ReferenciasDeRegraDaConfiguracao.De(configuracao)];
 
         referencias.Select(static item => item.Campo).Should().Equal(
-            "distribuicaoVagas[0].regraDistribuicao", "distribuicaoVagas[0].regraAjuste", "cascataRemanejamento.regra",
+            "distribuicaoVagas[0].regraDistribuicao", "distribuicaoVagas[0].regraAjuste", "ordemDeRemanejamento.regra",
             "classificacao.regraCalculo", "classificacao.regraOrdemAlocacao", "classificacao.criteriosDeDesempate[0].regra", "bonusRegional.regra");
         referencias[0].Regra.Should().Be(oferta.RegraDistribuicao);
         referencias[1].Regra.Should().Be(oferta.RegraAjuste);
@@ -193,7 +193,7 @@ public sealed class OrdemDasReferenciasDasEtapasEVagasTests
     private static string[] CamposRecusados() =>
     [
         "identificacao.algoritmoContagemPrazo", "distribuicaoVagas[0].regraDistribuicao",
-        "cascataRemanejamento.regra", "fases[0].regraRecurso.regraCodigo",
+        "ordemDeRemanejamento.regra", "fases[0].regraRecurso.regraCodigo",
         "fases[0].regraRecurso.procedimentos[0].regra", "fases[0].regraRecurso.procedimentos[1].regra",
         "etapas[1].regraConsolidacao", "etapas[1].recursos[0].regraCodigo",
         "etapas[1].recursos[0].procedimentosDeRecurso[1].regra", "etapas[1].recursos[0].procedimentosDeRecurso[0].regra",
@@ -222,7 +222,7 @@ public sealed class OrdemDasReferenciasDasEtapasEVagasTests
 
     private static void ConferirOrdemDosBlocos(string[] campos) =>
         campos.Should().Equal("identificacao.algoritmoContagemPrazo", "distribuicaoVagas[0].regraDistribuicao",
-            "distribuicaoVagas[0].regraAjuste", "cascataRemanejamento.regra", "fases[0].regraRecurso.regraCodigo",
+            "distribuicaoVagas[0].regraAjuste", "ordemDeRemanejamento.regra", "fases[0].regraRecurso.regraCodigo",
             "fases[0].regraRecurso.procedimentos[0].regra", "fases[0].regraRecurso.procedimentos[1].regra",
             "etapas[0].regraConsolidacao", "etapas[0].recursos[0].regraCodigo",
             "etapas[0].recursos[0].procedimentosDeRecurso[0].regra", "etapas[0].recursos[0].procedimentosDeRecurso[1].regra",

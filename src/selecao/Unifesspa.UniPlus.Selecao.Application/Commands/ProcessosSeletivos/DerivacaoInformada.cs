@@ -66,7 +66,7 @@ internal sealed class DerivacaoInformada
     }
 
     // O alvo tem de existir e ser derivado com o binding da própria regra de derivação
-    // (REGRA_DERIVACAO:{codigo}); um fato declarado, ou derivado por outro mecanismo, não tem regras configuráveis.
+    // (REGRA_DE_CALCULO:{codigo}); um fato declarado, ou derivado por outro mecanismo, não tem regras configuráveis.
     private IEnumerable<FieldError> RecusasDoFatoAlvo(IReadOnlyDictionary<string, FatoCandidatoView> catalogo)
     {
         if (!_fatoAlvoBemFormado)

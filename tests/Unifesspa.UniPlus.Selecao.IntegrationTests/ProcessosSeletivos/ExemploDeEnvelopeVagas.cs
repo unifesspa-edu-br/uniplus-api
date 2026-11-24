@@ -34,7 +34,7 @@ internal static class ExemploDeEnvelopeVagas
     /// REMANEJAMENTO_ORDEM_LEI_12711 v1. <paramref name="permutar"/> inverte a ordem de ENTRADA dos
     /// destinos DENTRO de cada origem — nunca a ordem das origens em si: cada origem aparece uma
     /// única vez na cascata, então permutar a sequência de origens não exercitaria a ordenação de
-    /// <c>cascataRemanejamento…destinos</c> — só a dos destinos de uma MESMA origem prova isso.
+    /// <c>ordemDeRemanejamento…destinos</c> — só a dos destinos de uma MESMA origem prova isso.
     /// </summary>
     internal static ConfiguracaoCascataRemanejamento CascataLegalCompleta(bool permutar = false)
     {

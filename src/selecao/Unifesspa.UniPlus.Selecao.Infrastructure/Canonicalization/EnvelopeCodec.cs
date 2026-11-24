@@ -30,7 +30,7 @@ public sealed class EnvelopeCodec : IRegistroCodecsEnvelope
         "ofertas",
         "atendimento",
         "fada",
-        "cascataRemanejamento",
+        "ordemDeRemanejamento",
         "criteriosDesempate",
         "classificacao",
         "hashesEdital",

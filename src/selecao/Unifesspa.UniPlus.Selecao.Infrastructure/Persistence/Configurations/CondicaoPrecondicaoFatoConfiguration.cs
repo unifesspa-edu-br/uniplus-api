@@ -30,7 +30,7 @@ public sealed class CondicaoPrecondicaoFatoConfiguration : IEntityTypeConfigurat
 
         builder.ClassificaPorPadrao(ClassificacaoDeProtecao.Interno);
 
-        builder.Property(c => c.FatoColetadoId).HasComment("Identificador do dado do formulário ao qual a condição pertence.");
+        builder.Property(c => c.FatoColetadoId).HasColumnName("dado_do_formulario_id").HasComment("Identificador do dado do formulário ao qual a condição pertence.");
         builder.Property(c => c.Clausula).HasComment("Número da alternativa que reúne condições atendidas em conjunto.");
         builder.Property(c => c.Fato).HasComment("Código do dado do candidato usado na condição. Exemplos: RENDA_PER_CAPITA, CONCORRER_RENDA.");
         builder.Property(c => c.Operador).HasComment("Comparação aplicada ao valor: ALGUM_DE, DIFERENTE, IGUAL, MAIOR_IGUAL, MENOR_IGUAL ou NENHUM_DE.");
@@ -38,6 +38,7 @@ public sealed class CondicaoPrecondicaoFatoConfiguration : IEntityTypeConfigurat
 
         builder.ToTable("condicoes_de_exibicao_do_dado", t => t.HasComment("Condições que determinam a exibição de um dado no formulário."));
         builder.HasKey(c => c.Id);
+        builder.HasIndex(c => c.FatoColetadoId).HasDatabaseName("ix_condicoes_de_exibicao_do_dado_dado_do_formulario_id");
         builder.Property(c => c.Id).ValueGeneratedNever();
 
         builder.Property(c => c.Clausula).HasColumnName("alternativa").IsRequired();

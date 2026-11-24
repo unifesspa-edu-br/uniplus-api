@@ -25,7 +25,7 @@ public sealed class ConstraintsDosDestinosDaCascataTests
 
     private const string ComandoDeInsercao = """
         INSERT INTO selecao.destinos_remanejamento (
-            id, configuracao_cascata_remanejamento_id, modalidade_origem_codigo, ordem, modalidade_destino_codigo,
+            id, configuracao_de_remanejamento_id, modalidade_origem_codigo, ordem, modalidade_destino_codigo,
             created_at)
         VALUES (@id, @cascataId, @origem, @ordem, @destino, now())
         """;
@@ -48,7 +48,7 @@ public sealed class ConstraintsDosDestinosDaCascataTests
             () => InserirDestinoCruAsync(cascataId, "LB_PPI", 1, "LB_PCD"));
 
         erro.SqlState.Should().Be(UniqueViolation);
-        erro.ConstraintName.Should().Be("ux_destinos_remanejamento_cascata_origem_ordem");
+        erro.ConstraintName.Should().Be("ux_destinos_remanejamento_configuracao_origem_ordem");
     }
 
     [Fact(DisplayName = "Índice único (cascata, origem, destino) — o banco recusa a mesma origem apontando duas vezes para o mesmo destino")]
@@ -62,7 +62,7 @@ public sealed class ConstraintsDosDestinosDaCascataTests
             () => InserirDestinoCruAsync(cascataId, "LB_PPI", 2, "LB_Q"));
 
         erro.SqlState.Should().Be(UniqueViolation);
-        erro.ConstraintName.Should().Be("ux_destinos_remanejamento_cascata_origem_destino");
+        erro.ConstraintName.Should().Be("ux_destinos_remanejamento_configuracao_origem_destino");
     }
 
     [Fact(DisplayName = "CHECK ordem >= 1 — o banco recusa uma posição de fila zero ou negativa")]
