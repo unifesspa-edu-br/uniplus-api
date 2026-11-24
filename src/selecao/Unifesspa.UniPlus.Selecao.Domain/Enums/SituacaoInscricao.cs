@@ -1,5 +1,7 @@
 namespace Unifesspa.UniPlus.Selecao.Domain.Enums;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
+
 /// <summary>
 /// Ciclo de vida da inscrição do candidato (issue #1858): nasce <see cref="Rascunho"/> ao iniciar e
 /// passa a <see cref="Submetida"/> no envio. Uma correção dentro do período mantém a situação
@@ -8,7 +10,10 @@ namespace Unifesspa.UniPlus.Selecao.Domain.Enums;
 /// </summary>
 public enum SituacaoInscricao
 {
+    [CodigoDeContrato("RASCUNHO", "Rascunho", Descricao = "A inscrição está em preenchimento.")]
     Rascunho = 1,
+    [CodigoDeContrato("SUBMETIDA", "Submetida", Descricao = "A inscrição foi enviada.")]
     Submetida = 2,
+    [CodigoDeContrato("CANCELADA", "Cancelada", Descricao = "A inscrição enviada foi cancelada.")]
     Cancelada = 3,
 }

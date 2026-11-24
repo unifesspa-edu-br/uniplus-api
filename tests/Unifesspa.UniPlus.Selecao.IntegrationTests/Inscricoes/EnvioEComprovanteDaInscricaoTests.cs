@@ -98,8 +98,8 @@ public sealed class EnvioEComprovanteDaInscricaoTests
     private async Task ConferirModalidadesGravadasAsync(Guid inscricaoId)
     {
         (await _cenario.LinhasDaModalidadeAsync(inscricaoId)).Should().Equal(
-            (0, (int)OrigemDaResposta.Derivada, "AC"), (1, (int)OrigemDaResposta.Derivada, "LB_EP"), (2, (int)OrigemDaResposta.Derivada, "LB_PPI"),
-            (3, (int)OrigemDaResposta.Derivada, "LI_EP"), (4, (int)OrigemDaResposta.Derivada, "LI_PPI"));
+            (0, "CALCULADA", "AC"), (1, "CALCULADA", "LB_EP"), (2, "CALCULADA", "LB_PPI"),
+            (3, "CALCULADA", "LI_EP"), (4, "CALCULADA", "LI_PPI"));
     }
 
     private static void ConferirModalidadesDoComprovante(ComprovanteInscricao comprovante)

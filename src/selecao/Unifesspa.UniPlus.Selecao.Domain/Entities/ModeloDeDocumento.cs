@@ -8,6 +8,7 @@ using Interfaces;
 
 using Services;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Domain.Entities;
 using Unifesspa.UniPlus.Kernel.Extensions;
 using Unifesspa.UniPlus.Kernel.Results;
@@ -174,20 +175,14 @@ public sealed class ModeloDeDocumento : EntityBase, IArquivoEnviado
     };
 
     /// <summary>O formato do token do contrato; nulo quando não é editável (DOCX ou ODT).</summary>
-    public static FormatoDeDocumento? FormatoDoToken(string? token) => token switch
-    {
-        "DOCX" => FormatoDeDocumento.Docx,
-        "ODT" => FormatoDeDocumento.Odt,
-        _ => null,
-    };
+    public static FormatoDeDocumento? FormatoDoToken(string? token) =>
+        CatalogoDe<FormatoDeDocumento>.TentarObter(token, out FormatoDeDocumento formato)
+        && formato is FormatoDeDocumento.Docx or FormatoDeDocumento.Odt ? formato : null;
 
-    /// <summary>O token do formato no contrato.</summary>
-    public static string TokenDe(FormatoDeDocumento formato) => formato switch
-    {
-        FormatoDeDocumento.Docx => "DOCX",
-        FormatoDeDocumento.Odt => "ODT",
-        _ => throw new ArgumentOutOfRangeException(nameof(formato), formato, "Formato de modelo sem token."),
-    };
+    /// <summary>O código do formato no contrato.</summary>
+    public static string TokenDe(FormatoDeDocumento formato) => formato is FormatoDeDocumento.Docx or FormatoDeDocumento.Odt
+        ? formato.Codigo()
+        : throw new ArgumentOutOfRangeException(nameof(formato), formato, "Formato de modelo inválido.");
 
     private static DomainError StatusInvalidoParaConfirmacao { get; } = new(
         ModeloDeDocumentoErrorCodes.StatusInvalidoParaConfirmacao, "Somente um modelo pendente pode ser confirmado.");

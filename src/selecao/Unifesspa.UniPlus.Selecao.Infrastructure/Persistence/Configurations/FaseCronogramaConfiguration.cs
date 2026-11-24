@@ -10,6 +10,7 @@ using Domain.ValueObjects;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence.CodigosDeContrato;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Protecao;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
 
@@ -38,6 +39,7 @@ public sealed class FaseCronogramaConfiguration : IEntityTypeConfiguration<FaseC
                 "(unidade_responsavel_origem_id IS NULL AND unidade_responsavel_codigo IS NULL AND unidade_responsavel_sigla IS NULL AND unidade_responsavel_nome IS NULL) "
                 + "OR (unidade_responsavel_origem_id IS NOT NULL AND unidade_responsavel_codigo IS NOT NULL AND unidade_responsavel_sigla IS NOT NULL AND unidade_responsavel_nome IS NOT NULL)");
             tabela.HasCheckConstraint("ck_fases_cronograma_periodo_em_ordem", "inicio IS NULL OR fim IS NULL OR inicio <= fim");
+            tabela.HasCheckConstraint("ck_fases_cronograma_origem_data", $"origem_data IN ({SqlDosCodigosDeContrato.Lista<OrigemDataFase>()})");
         });
         builder.HasKey(f => f.Id);
         // Chave Guid v7 do domínio (EntityBase) — ValueGeneratedNever para o EF
@@ -51,8 +53,8 @@ public sealed class FaseCronogramaConfiguration : IEntityTypeConfiguration<FaseC
         builder.Property(f => f.Codigo).HasComment("Código da fase de origem copiado ao definir o cronograma. Exemplo: HOMOLOGACAO_INSCRICOES.").HasMaxLength(CodigoMaxLength).IsRequired();
         builder.Property(f => f.TipoFaseNome).HasColumnName("tipo_fase_nome").HasMaxLength(FaseCronograma.TipoFaseNomeMaxLength).IsRequired()
             .HasComment("Nome do tipo de fase copiado do cadastro ao definir o cronograma.");
-        builder.Property(f => f.OrigemData).HasConversion<int>().IsRequired()
-            .HasComment($"Momento em que as datas da fase são definidas. Códigos: {string.Join(", ", Enum.GetValues<OrigemDataFase>().Select(static valor => $"{(int)valor} ({valor})"))}.");
+        builder.Property(f => f.OrigemData).HasMaxLength(TamanhoDoCodigoDeContrato.Maximo).IsRequired()
+            .HasComment("Momento em que as datas da fase são definidas: NO_EDITAL ou NA_EXECUCAO.");
 
         builder.OwnsOne(f => f.UnidadeResponsavel, unidade =>
         {

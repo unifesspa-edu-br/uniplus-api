@@ -57,7 +57,7 @@ public sealed class AncoraDoRecursoPersistenciaTests : IClassFixture<ProcessoSel
     public async Task AncoraEmProdutoDefinitivo_ItemVermelhoEPublicacaoRecusada()
     {
         Guid processoId = await SemearProcessoConformeAsync($"PS 1427 ancora {Guid.CreateVersion7()}");
-        await ApontarAncoraParaAsync(processoId, "RESULTADO_CLASSIFICACAO", PapelProdutoFase.Definitivo);
+        await ApontarAncoraParaAsync(processoId, "RESULTADO_CLASSIFICACAO", PapelDaPublicacaoPrevista.Definitivo);
         await using UniPlusDbContext db = _fixture.CreateDbContext();
         ProcessoSeletivo processo = await CarregarAsync(db, processoId);
 
@@ -70,7 +70,7 @@ public sealed class AncoraDoRecursoPersistenciaTests : IClassFixture<ProcessoSel
         FaseCronograma fase = processo.CronogramaFases.Single();
 
         fase.RegraRecurso!.ProdutoAncoraId.Should().Be(
-            fase.Produtos.Single(p => p.AtoCodigo == "RESULTADO_CLASSIFICACAO" && p.Papel == PapelProdutoFase.Definitivo).Id,
+            fase.Produtos.Single(p => p.AtoCodigo == "RESULTADO_CLASSIFICACAO" && p.Papel == PapelDaPublicacaoPrevista.Definitivo).Id,
             "pré-condição: o EF hidratou a âncora incoerente sem passar por fábrica nenhuma");
     }
 
@@ -204,13 +204,10 @@ public sealed class AncoraDoRecursoPersistenciaTests : IClassFixture<ProcessoSel
 
     private static void DefinirVagas(ProcessoSeletivo processo)
     {
-        ModalidadeSelecionada modalidade = ModalidadeSelecionada.Criar(
-            Guid.CreateVersion7(), "AC", null, NaturezaLegalModalidade.Ampla, ComposicaoVagasModalidade.RestanteDasVagasOfertadas,
-            null, RegraRemanejamentoModalidade.Nenhuma, null, null, null, RegrasDeAplicabilidadeDeTeste.DaNatureza(NaturezaLegalModalidade.Ampla), null, "Res. Unifesspa 532/2021",
-            quantidadeDeclarada: 40).Value!;
+        ModalidadeSelecionada modalidade = ModalidadeSelecionada.Criar(ModalidadesNoCadastroDeTeste.Da("AC", NaturezaLegalModalidade.Ampla, ComposicaoVagasModalidade.RestanteDasVagasOfertadas) with { RegraRemanejamento = null, BaseLegal = "Res. Unifesspa 532/2021" }, 40).Value!;
         processo.DefinirDistribuicaoVagas(
             [ConfiguracaoDistribuicaoVagas.Criar(Guid.CreateVersion7(),
-                new DistribuicaoDeVagasDeclarada { VagasOfertadasBase = 40, PercentualDaReservaLegal = 1m, RegraDeDistribuicao = Regra(RegraDistribuicaoVagasCodigo.Institucional, 'a'), Modalidades = [modalidade] },
+                new DistribuicaoDeVagasDeclarada { VagasOfertadasBase = 40, PercentualDaReservaLegal = 1m, RegraDeDistribuicao = Regra(RegraDeDistribuicaoDeVagas.Institucional.Codigo(), 'a'), Modalidades = [modalidade] },
                 new FatosDaOfertaNoCadastro { OfertaCurso = OfertaCursoDeTeste.Medicina }).Value!], FatosDeModalidadeDeTeste.DoCatalogo).IsSuccess.Should().BeTrue();
     }
 
@@ -218,14 +215,14 @@ public sealed class AncoraDoRecursoPersistenciaTests : IClassFixture<ProcessoSel
         processo.DefinirClassificacao(
             ConfiguracaoClassificacao.Criar(new DeclaracaoDaClassificacao
             {
-                RegraCalculo = Regra(RegraCalculoCodigo.ClassificacaoImportada, 'b'),
-                RegraOrdemAlocacao = Regra(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, 'c'),
+                RegraCalculo = Regra(RegraDeCalculoDaNota.ClassificacaoImportada.Codigo(), 'b'),
+                RegraOrdemAlocacao = Regra(RegraDeOrdemDeAlocacao.PrimeiraOpcaoPrioritaria.Codigo(), 'c'),
             }).Value!).IsSuccess.Should().BeTrue();
 
     private static void DefinirDemaisDeclaracoes(ProcessoSeletivo processo)
     {
         processo.DefinirAlgoritmoContagemPrazo(
-            Regra(AlgoritmoContagemPrazoCodigo.ExcluiDiaInicial, 'd'))
+            Regra(ConvencaoDeContagemDoPrazo.ExcluiDiaInicial.Codigo(), 'd'))
             .IsSuccess.Should().BeTrue();
 
         processo.DefinirTaxaInscricao(
@@ -248,12 +245,12 @@ public sealed class AncoraDoRecursoPersistenciaTests : IClassFixture<ProcessoSel
         """;
 
     /// <summary>Reaponta a âncora para o produto da fase que publica <paramref name="atoCodigo"/> com o <paramref name="papel"/>.</summary>
-    private Task ApontarAncoraParaAsync(Guid processoId, string atoCodigo, PapelProdutoFase papel) => ExecutarAsync(
+    private Task ApontarAncoraParaAsync(Guid processoId, string atoCodigo, PapelDaPublicacaoPrevista papel) => ExecutarAsync(
         AtualizacaoDaAncoraPorProduto,
         comando =>
         {
             comando.Parameters.AddWithValue("ato", atoCodigo);
-            comando.Parameters.AddWithValue("papel", (int)papel);
+            comando.Parameters.AddWithValue("papel", papel.Codigo());
             comando.Parameters.AddWithValue("processo", processoId);
         });
 
@@ -308,7 +305,7 @@ public sealed class AncoraDoRecursoPersistenciaTests : IClassFixture<ProcessoSel
 
     private static FaseCronograma FaseConforme(ProcedimentosDeRecurso procedimentos)
     {
-        ProdutoDaFase preliminar = ProdutoDaFase.Criar("RESULTADO_CLASSIFICACAO", PapelProdutoFase.Preliminar);
+        ProdutoDaFase preliminar = ProdutoDaFase.Criar("RESULTADO_CLASSIFICACAO", PapelDaPublicacaoPrevista.Preliminar);
 
         return FaseCronograma.Criar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("fase").Value!,
             OrigensCanonicasDeTeste.ComNome(new OrigemCanonicaDaFase(
@@ -317,7 +314,7 @@ public sealed class AncoraDoRecursoPersistenciaTests : IClassFixture<ProcessoSel
             new DecisoesDeCronogramaDaFase(
                 Ordem: 1, Inicio: new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero), Fim: new DateTimeOffset(2026, 1, 31, 0, 0, 0, TimeSpan.Zero), UnidadeResponsavel: UnidadesDeTeste.Ceps),
             HomologacaoDasInscricoesDeTeste.PublicacoesDaFaseQueHomologa(
-                [preliminar, ProdutoDaFase.Criar("RESULTADO_CLASSIFICACAO", PapelProdutoFase.Definitivo)], RegraDeRecurso(preliminar.Id, procedimentos)) with
+                [preliminar, ProdutoDaFase.Criar("RESULTADO_CLASSIFICACAO", PapelDaPublicacaoPrevista.Definitivo)], RegraDeRecurso(preliminar.Id, procedimentos)) with
             { TiposDeDecisao = TiposDeDecisaoDaFase() },
             bancasRequeridas: [BancasDeTeste.DaHomologacaoDasInscricoesDaFase(), BancasDeTeste.DeRecursosDaFase()]).Value!;
     }
@@ -328,25 +325,25 @@ public sealed class AncoraDoRecursoPersistenciaTests : IClassFixture<ProcessoSel
 
     private static ProcedimentosDeRecurso ProcedimentosCoerentesComAFase() => ProcedimentosDeRecurso.De(
     [
-        ProcedimentoDeRecursoDeclarado.De(TipoMotivoDeDecisao.Classificacao, null, Regra(RegraProcedimentoRecursoCodigo.Recalculo, 'f')),
-        ProcedimentoDeRecursoDeclarado.De(TipoMotivoDeDecisao.AnaliseDocumental, null, Regra(RegraProcedimentoRecursoCodigo.Conferencia, 'f')),
-        ProcedimentoDeRecursoDeclarado.De(TipoMotivoDeDecisao.HomologacaoDasInscricoes, null, Regra(RegraProcedimentoRecursoCodigo.CorrecaoMaterial, 'f')),
+        ProcedimentoDeRecursoDeclarado.De(TipoMotivoDeDecisao.Classificacao, null, Regra(RegraDeProcedimentoDoRecurso.Recalculo.Codigo(), 'f')),
+        ProcedimentoDeRecursoDeclarado.De(TipoMotivoDeDecisao.AnaliseDocumental, null, Regra(RegraDeProcedimentoDoRecurso.Conferencia.Codigo(), 'f')),
+        ProcedimentoDeRecursoDeclarado.De(TipoMotivoDeDecisao.HomologacaoDasInscricoes, null, Regra(RegraDeProcedimentoDoRecurso.CorrecaoMaterial.Codigo(), 'f')),
     ]);
 
     private static ProcedimentosDeRecurso ProcedimentosDaJanela() => ProcedimentosDeRecurso.De(
     [
         ProcedimentoDeRecursoDeclarado.De(
-            TipoMotivoDeDecisao.Classificacao, AlvoDoProcedimentoDeRecurso.DaArea(AreaDoEnem.Matematica), Regra(RegraProcedimentoRecursoCodigo.Recalculo, 'f')),
+            TipoMotivoDeDecisao.Classificacao, AlvoDoProcedimentoDeRecurso.DaArea(AreaDoEnem.Matematica), Regra(RegraDeProcedimentoDoRecurso.Recalculo.Codigo(), 'f')),
         ProcedimentoDeRecursoDeclarado.De(
             TipoMotivoDeDecisao.AnaliseDocumental,
             AlvoDoProcedimentoDeRecurso.DoItem(Guid.Parse("00000000-0000-7000-8000-0000000000b1")),
-            Regra(RegraProcedimentoRecursoCodigo.Conferencia, 'f')),
-        ProcedimentoDeRecursoDeclarado.De(TipoMotivoDeDecisao.HomologacaoDasInscricoes, null, Regra(RegraProcedimentoRecursoCodigo.CorrecaoMaterial, 'f')),
+            Regra(RegraDeProcedimentoDoRecurso.Conferencia.Codigo(), 'f')),
+        ProcedimentoDeRecursoDeclarado.De(TipoMotivoDeDecisao.HomologacaoDasInscricoes, null, Regra(RegraDeProcedimentoDoRecurso.CorrecaoMaterial.Codigo(), 'f')),
     ]);
 
     private static RegraRecursoFase RegraDeRecurso(Guid produtoPreliminarId, ProcedimentosDeRecurso procedimentos) =>
         RegraRecursoFase.Criar(
-            Regra(RegraPrazoRecursoCodigo.AncoradoEmAto, 'e'),
+            Regra(RegraDePrazoDoRecurso.ContadoDaPublicacaoDoAto.Codigo(), 'e'),
             ParametrosDoRecursoDeTeste.Declarados(48m, UnidadePrazo.Horas),
             produtoPreliminarId,
             procedimentos).Value!;

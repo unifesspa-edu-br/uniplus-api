@@ -32,7 +32,7 @@ internal static class RegrasDasEtapas
     /// vale para as demais.
     /// </summary>
     internal static bool AusenciaNaEtapaDoEnem(ParametrosRegraEliminacao parametros, IEnumerable<EtapaProcesso> etapas) =>
-        parametros is ParametrosElimAusenciaNaEtapa ausencia
+        parametros is ParametrosEliminacaoPorAusenciaNaEtapa ausencia
         && etapas.Any(e => e.Id == ausencia.EtapaRef && e.DeclaraNotaDoEnem);
 
     internal static DomainError AusenciaNaEtapaDoEnemRecusada() => new(
@@ -214,9 +214,9 @@ internal static class RegrasDasEtapas
         configuracao.Avaliacao.CriteriosDesempate.Any(c => c.Parametros is ParametrosDesempateMaiorNotaEtapa parametros && parametros.EtapaRef == etapaId);
 
     /// <summary>As regras de eliminação por nota mínima que citam a etapa.</summary>
-    internal static IEnumerable<ParametrosElimNotaMinimaEtapa> EliminacoesPorNotaMinimaDaEtapa(ConfiguracaoDeclarada configuracao, Guid etapaId) =>
+    internal static IEnumerable<ParametrosEliminacaoPorNotaMinimaNaEtapa> EliminacoesPorNotaMinimaDaEtapa(ConfiguracaoDeclarada configuracao, Guid etapaId) =>
         (configuracao.Avaliacao.Classificacao?.RegrasEliminacao ?? [])
             .Select(static regra => regra.Parametros)
-            .OfType<ParametrosElimNotaMinimaEtapa>()
+            .OfType<ParametrosEliminacaoPorNotaMinimaNaEtapa>()
             .Where(parametros => parametros.EtapaRef == etapaId);
 }

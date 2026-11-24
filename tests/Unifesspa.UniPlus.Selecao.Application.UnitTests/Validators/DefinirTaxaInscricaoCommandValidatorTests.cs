@@ -85,7 +85,7 @@ public sealed class DefinirTaxaInscricaoCommandValidatorTests
     public void Aceita_ComandoCompleto()
     {
         ValidationResult result = Validator.Validate(new DefinirTaxaInscricaoCommand(
-            Guid.CreateVersion7(), true, 150.00m, [FundamentoIsencaoCodigo.CadastroUnico]));
+            Guid.CreateVersion7(), true, 150.00m, ["CADASTRO_UNICO"]));
 
         result.IsValid.Should().BeTrue();
     }

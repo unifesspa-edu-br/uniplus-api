@@ -5,6 +5,7 @@ using System.Text.Json.Nodes;
 using System.Text.RegularExpressions;
 
 using Unifesspa.UniPlus.Kernel.Domain.Cidades;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Enums;
@@ -42,29 +43,41 @@ internal static class LeituraDosFormatosEBasesLegais
             return null;
         }
 
-        string path = $"{pathPai}.formatosPermitidos";
-        leitor.ExigirChaves(formatosJson, path, "qualquer", "lista");
+        return LerObjetoDeFormatos(leitor, formatosJson, $"{pathPai}.formatosPermitidos");
+    }
 
+    private static FormatosPermitidos? LerObjetoDeFormatos(LeitorEnvelope leitor, JsonObject formatosJson, string path)
+    {
+        leitor.ExigirChaves(formatosJson, path, "qualquer", "lista");
         bool qualquer = leitor.Booleano(formatosJson, "qualquer", path);
         if (leitor.Falhou)
         {
             return null;
         }
 
+        return LerListaDeFormatos(leitor, formatosJson, path, qualquer);
+    }
+
+    private static FormatosPermitidos? LerListaDeFormatos(LeitorEnvelope leitor, JsonObject formatosJson, string path, bool qualquer)
+    {
         JsonNode? listaNode = formatosJson["lista"];
         if (listaNode is not null and not JsonArray)
         {
             return leitor.Recusar<FormatosPermitidos>($"'{path}.lista' deveria ser um array ou null.");
         }
 
-        List<(string Formato, int? TamanhoMaximoBytesMax)>? entradas = listaNode is JsonArray listaArray
-            ? LerEntradasDeFormato(leitor, listaArray, $"{path}.lista")
-            : null;
+        List<(string Formato, int? TamanhoMaximoBytesMax)>? entradas = listaNode is JsonArray lista
+            ? LerEntradasDeFormato(leitor, lista, $"{path}.lista") : null;
         if (leitor.Falhou)
         {
             return null;
         }
 
+        return CriarFormatosPermitidos(leitor, qualquer, entradas);
+    }
+
+    private static FormatosPermitidos? CriarFormatosPermitidos(LeitorEnvelope leitor, bool qualquer, List<(string Formato, int? TamanhoMaximoBytesMax)>? entradas)
+    {
         Result<FormatosPermitidos> resultado = FormatosPermitidos.Criar(qualquer, entradas);
         return resultado.IsFailure ? leitor.Propagar<FormatosPermitidos>(resultado.Error!) : resultado.Value;
     }
@@ -74,21 +87,26 @@ internal static class LeituraDosFormatosEBasesLegais
         List<(string Formato, int? TamanhoMaximoBytesMax)> entradas = [];
         for (int i = 0; i < lista.Count; i++)
         {
-            string itemPath = $"{path}[{i}]";
-            JsonObject entradaJson = leitor.ItemObjeto(lista, i, path);
-            leitor.ExigirChaves(entradaJson, itemPath, "formato", "tamanhoMaximoBytesMax");
-
-            string formatoCodigo = leitor.TextoNaoVazio(entradaJson, "formato", itemPath);
-            int? tamanhoMaximoBytesMax = leitor.InteiroOpcional(entradaJson, "tamanhoMaximoBytesMax", itemPath);
+            (string Formato, int? TamanhoMaximoBytesMax) entrada = LerEntradaDeFormato(leitor, lista, i, path);
             if (leitor.Falhou)
             {
                 return entradas;
             }
 
-            entradas.Add((formatoCodigo, tamanhoMaximoBytesMax));
+            entradas.Add(entrada);
         }
 
         return entradas;
+    }
+
+    private static (string Formato, int? TamanhoMaximoBytesMax) LerEntradaDeFormato(LeitorEnvelope leitor, JsonArray lista, int indice, string path)
+    {
+        string itemPath = $"{path}[{indice}]";
+        JsonObject entrada = leitor.ItemObjeto(lista, indice, path);
+        leitor.ExigirChaves(entrada, itemPath, "formato", "tamanhoMaximoBytesMax");
+        string formato = leitor.TextoNaoVazio(entrada, "formato", itemPath);
+        int? tamanho = leitor.InteiroOpcional(entrada, "tamanhoMaximoBytesMax", itemPath);
+        return (formato, tamanho);
     }
 
     /// <summary>Só <c>RESOLVIDO</c> é congelado — todo item lido aqui reidrata como tal.</summary>
@@ -100,13 +118,15 @@ internal static class LeituraDosFormatosEBasesLegais
             return [];
         }
 
+        return LerListaDeBasesLegais(leitor, array, pathPai);
+    }
+
+    private static List<DocumentoExigidoBaseLegal> LerListaDeBasesLegais(LeitorEnvelope leitor, JsonArray array, string pathPai)
+    {
         List<DocumentoExigidoBaseLegal> basesLegais = [];
         for (int i = 0; i < array.Count; i++)
         {
-            DocumentoExigidoBaseLegal? baseLegal = LerBaseLegal(
-                leitor,
-                leitor.ItemObjeto(array, i, $"{pathPai}.basesLegais"),
-                $"{pathPai}.basesLegais[{i}]");
+            DocumentoExigidoBaseLegal? baseLegal = LerBaseLegalDoArray(leitor, array, i, pathPai);
             if (baseLegal is null)
             {
                 return [];
@@ -117,6 +137,9 @@ internal static class LeituraDosFormatosEBasesLegais
 
         return basesLegais;
     }
+
+    private static DocumentoExigidoBaseLegal? LerBaseLegalDoArray(LeitorEnvelope leitor, JsonArray array, int indice, string pathPai) =>
+        LerBaseLegal(leitor, leitor.ItemObjeto(array, indice, $"{pathPai}.basesLegais"), $"{pathPai}.basesLegais[{indice}]");
 
     private static DocumentoExigidoBaseLegal? LerBaseLegal(LeitorEnvelope leitor, JsonObject baseItem, string path)
     {
@@ -146,10 +169,20 @@ internal static class LeituraDosFormatosEBasesLegais
             return null;
         }
 
-        StatusBaseLegal situacao = StatusBaseLegalCodigo.FromCodigo(situacaoCodigo);
-        return situacao == StatusBaseLegal.Resolvido
-            ? new BaseLegalLida(referencia, TipoAbrangenciaCodigo.FromCodigo(abrangenciaCodigo), situacao, observacao)
-            : leitor.Recusar<BaseLegalLida?>($"'{path}.situacao' deveria ser sempre RESOLVIDO — encontrado '{situacaoCodigo}'.");
+        return ConferirBaseLegalResolvida(leitor, path, referencia, abrangenciaCodigo, situacaoCodigo, observacao);
+    }
+
+    private static BaseLegalLida? ConferirBaseLegalResolvida(LeitorEnvelope leitor, string path, string referencia,
+        string abrangenciaCodigo, string situacaoCodigo, string? observacao)
+    {
+        if (!CatalogoDe<StatusBaseLegal>.TentarObter(situacaoCodigo, out StatusBaseLegal situacao) || situacao != StatusBaseLegal.Resolvido)
+        {
+            return leitor.Recusar<BaseLegalLida?>($"A situação em {path} deve ser resolvida.");
+        }
+
+        return CatalogoDe<TipoAbrangencia>.TentarObter(abrangenciaCodigo, out TipoAbrangencia abrangencia)
+            ? new BaseLegalLida(referencia, abrangencia, situacao, observacao)
+            : leitor.Recusar<BaseLegalLida?>($"A abrangência em {path} é desconhecida.");
     }
 
     /// <summary>

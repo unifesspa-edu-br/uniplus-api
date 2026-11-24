@@ -5,6 +5,7 @@ using System.Text.Json.Nodes;
 using System.Text.RegularExpressions;
 
 using Unifesspa.UniPlus.Kernel.Domain.Cidades;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
@@ -65,11 +66,11 @@ internal static class LeituraDosPrazosDeRecurso
     /// <summary>
     /// A regra de recurso da fase (0..1 — a PRESENÇA do bloco é o que faz a fase admitir
     /// recurso). O vocabulário de <c>regra.codigo</c> é fechado a
-    /// <see cref="RegraPrazoRecursoCodigo.AncoradoEmAto"/> — a única variante que
+    /// <see cref="RegraDePrazoDoRecurso.ContadoDaPublicacaoDoAto"/> — a única variante que
     /// <see cref="RegraRecursoFase"/> admite.
     /// </summary>
     /// <remarks>
-    /// O <c>produtoAncoraId</c> é irmão de <c>regra</c> e <c>parametros</c>, e não campo de
+    /// O <c>publicacaoDeReferenciaId</c> é irmão de <c>regra</c> e <c>parametros</c>, e não campo de
     /// <c>parametros</c>: ele não é parâmetro que alguém preencha, e sim a referência que a fase
     /// deriva do próprio produto preliminar. A reidratação o repõe como estava congelado —
     /// é ele que o ato já publicado resolve de volta para achar o prazo que lhe corresponde
@@ -89,7 +90,7 @@ internal static class LeituraDosPrazosDeRecurso
     private static RegraRecursoFase? LerRegra(LeitorEnvelope leitor, JsonObject bloco, string path)
     {
         leitor.ExigirChaves(bloco, path, "regra", "publicacaoDeReferenciaId", "parametros", "procedimentos");
-        ReferenciaRegra regra = leitor.Regra(bloco, "regra", path, RegraPrazoRecursoCodigo.AncoradoEmAto);
+        ReferenciaRegra regra = leitor.Regra<RegraDePrazoDoRecurso>(bloco, "regra", path);
         Guid ancora = leitor.Identificador(bloco, "publicacaoDeReferenciaId", path);
         JsonObject objeto = leitor.Objeto(bloco, "parametros", path);
         return leitor.Falhou ? null : MontarRegra(leitor, bloco, path, regra, ancora, objeto);

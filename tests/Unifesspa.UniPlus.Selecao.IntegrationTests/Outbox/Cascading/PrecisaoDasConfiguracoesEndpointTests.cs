@@ -9,6 +9,7 @@ using Microsoft.Extensions.DependencyInjection;
 
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Selecao.Application.DTOs;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 
@@ -88,7 +89,7 @@ public sealed class PrecisaoDasConfiguracoesEndpointTests(CascadingFixture fixtu
     private static object Bonus(Guid baseLegal, decimal fator, decimal teto) => new
     {
         aplica = true,
-        regra = new { codigo = RegraBonusCodigo.Multiplicativo, versao = "v1" },
+        regra = new { codigo = RegraDeBonus.Multiplicativo.Codigo(), versao = "v1" },
         fator,
         teto,
         baseLegal = new { id = baseLegal },
@@ -99,9 +100,9 @@ public sealed class PrecisaoDasConfiguracoesEndpointTests(CascadingFixture fixtu
         ofertaCursoId = c.Ctx.Catalogos.OfertaCursoId,
         vagasOfertadasBase = vagas,
         percentualDaReservaLegal = percentual,
-        regraDistribuicaoCodigo = RegraDistribuicaoVagasCodigo.Lei12711,
+        regraDistribuicaoCodigo = RegraDeDistribuicaoDeVagas.Lei12711.Codigo(),
         regraDistribuicaoVersao = "v1",
-        regraAjusteCodigo = RegraAjusteDistribuicaoVagasCodigo.ReconciliacaoArt11ParagrafoUnico,
+        regraAjusteCodigo = RegraDeAjusteDaDistribuicaoDeVagas.AjusteDoTotalPeloArtigo11.Codigo(),
         regraAjusteVersao = "v1",
         referenciaReservaDemograficaId = c.Ctx.Catalogos.ReferenciaReservaDemograficaId,
         modalidadeIds = c.Ctx.Catalogos.ModalidadeIdPorCodigo.Values.ToArray(),

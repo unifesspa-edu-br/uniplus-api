@@ -2,6 +2,8 @@ namespace Unifesspa.UniPlus.Selecao.Application.UnitTests.Queries;
 
 using AwesomeAssertions;
 
+using Unifesspa.UniPlus.Application.Abstractions.Respostas;
+
 using Unifesspa.UniPlus.Selecao.Application.DTOs;
 using Unifesspa.UniPlus.Selecao.Application.Queries.ProcessosSeletivos;
 using Unifesspa.UniPlus.Selecao.Application.UnitTests.TestSupport;
@@ -62,7 +64,7 @@ public sealed class ProjecaoDaColetaTests
 
         ReferenciaTemporalFatosDto? dto = ProjecaoDaColeta.ProjetarReferenciaTemporal(referencia);
 
-        dto.Should().Be(new ReferenciaTemporalFatosDto("DATA_ESPECIFICA", DataDeReferencia, null));
+        dto.Should().Be(new ReferenciaTemporalFatosDto(CodigoComRotulo<ReferenciaTipo>.De(ReferenciaTipo.DataEspecifica), DataDeReferencia, null));
     }
 
     [Fact(DisplayName = "A referência temporal de fim de fase devolve o tipo e a fase, sem data")]
@@ -72,7 +74,7 @@ public sealed class ProjecaoDaColetaTests
 
         ReferenciaTemporalFatosDto? dto = ProjecaoDaColeta.ProjetarReferenciaTemporal(referencia);
 
-        dto.Should().Be(new ReferenciaTemporalFatosDto("FIM_FASE", null, FaseDeReferenciaId));
+        dto.Should().Be(new ReferenciaTemporalFatosDto(CodigoComRotulo<ReferenciaTipo>.De(ReferenciaTipo.FimFase), null, FaseDeReferenciaId));
     }
 
     private static ProcessoSeletivo ProcessoComOpcoesDeDoisFatos()

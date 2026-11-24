@@ -2,6 +2,7 @@ namespace Unifesspa.UniPlus.Selecao.Application.UnitTests.TestSupport;
 
 using NSubstitute;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
@@ -48,8 +49,8 @@ internal static class VersaoPublicadaDeTeste
             new CronogramaDeclarado(ConfiguracaoPublicadaDeTeste.Localidade, null, [.. processoDeOrigem.CronogramaFases]),
             new AvaliacaoDeclarada([.. processoDeOrigem.Etapas], [.. processoDeOrigem.CriteriosDesempate], ConfiguracaoClassificacao.Criar(new DeclaracaoDaClassificacao
             {
-                RegraCalculo = ReferenciaRegra.De(RegraCalculoCodigo.ClassificacaoImportada, "v1", new string('b', 64)),
-                RegraOrdemAlocacao = ReferenciaRegra.De(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, "v1", new string('d', 64)),
+                RegraCalculo = ReferenciaRegra.De(RegraDeCalculoDaNota.ClassificacaoImportada.Codigo(), "v1", new string('b', 64)),
+                RegraOrdemAlocacao = ReferenciaRegra.De(RegraDeOrdemDeAlocacao.PrimeiraOpcaoPrioritaria.Codigo(), "v1", new string('d', 64)),
             }).Value!),
             new VagasDeclaradas([.. processoDeOrigem.DistribuicaoVagas], 1, processoDeOrigem.BonusRegional is not null,
                 processoDeOrigem.BonusRegional, null, AtendimentoEspecializado.Criar([], [], []).Value!),

@@ -2,6 +2,8 @@ namespace Unifesspa.UniPlus.Selecao.Domain.UnitTests.Conferencias;
 
 using AwesomeAssertions;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
+
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 
 /// <summary>
@@ -13,7 +15,7 @@ using Unifesspa.UniPlus.Selecao.Domain.Enums;
 public sealed class TipoRegraConsultavelTests
 {
     private static IReadOnlyList<TipoRegra> TiposReais() =>
-        [.. Enum.GetValues<TipoRegra>().Where(static t => t != TipoRegra.Nenhuma)];
+        [.. Enum.GetValues<TipoRegra>()];
 
     [Fact(DisplayName = "Todo tipo de regra, exceto a sentinela, tem código de wire e volta ao mesmo tipo na ida e volta")]
     public void TodoTipoTemCodigoConsultavel()
@@ -22,9 +24,9 @@ public sealed class TipoRegraConsultavelTests
 
         TiposReais().Should().AllSatisfy(tipo =>
         {
-            string codigo = tipo.ToCodigo();
+            string codigo = tipo.Codigo();
             codigo.Should().NotBeNullOrWhiteSpace();
-            TipoRegraCodigo.FromCodigo(codigo).Should().Be(tipo,
+            CatalogoDe<TipoRegra>.Obter(codigo).Should().Be(tipo,
                 "o filtro `tipo` da listagem converte o texto recebido de volta pelo mesmo mapa — "
                 + "uma ida e volta que não fecha faria a API recusar o código que ela própria devolve");
         });
@@ -33,14 +35,7 @@ public sealed class TipoRegraConsultavelTests
     [Fact(DisplayName = "Nenhum código de wire se repete entre tipos — o filtro precisa resolver um tipo só")]
     public void CodigosDeWireSaoUnicos()
     {
-        TiposReais().Select(static t => t.ToCodigo()).Should().OnlyHaveUniqueItems();
+        TiposReais().Select(static t => t.Codigo()).Should().OnlyHaveUniqueItems();
     }
 
-    [Fact(DisplayName = "A sentinela não tem código: anunciá-la daria a entender que existe um tipo chamado 'nenhuma' para filtrar")]
-    public void SentinelaNaoTemCodigo()
-    {
-        Action anunciar = () => TipoRegra.Nenhuma.ToCodigo();
-
-        anunciar.Should().Throw<ArgumentOutOfRangeException>();
-    }
 }

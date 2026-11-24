@@ -157,7 +157,7 @@ public sealed class FormaDasRecusasAoCongelarTests
             new DeclaracaoDaAvaliacaoDaEtapa(
                 Peso: 3m, NotaMinima: null, NotaMaxima: 10m, PassoDoLancamento: null, FormaDeAvaliacao: FormaDeAvaliacao.Objetiva, RegraConsolidacao: null, EscalaDeAtendimento: null)).Value!;
         processo.DefinirEtapas([etapa]).IsSuccess.Should().BeTrue();
-        etapa.DefinirProdutos([ProdutoDaEtapa.Criar("RESULTADO_PROVA", PapelProdutoFase.Preliminar)]).IsSuccess.Should().BeTrue();
+        etapa.DefinirProdutos([ProdutoDaEtapa.Criar("RESULTADO_PROVA", PapelDaPublicacaoPrevista.Preliminar)]).IsSuccess.Should().BeTrue();
 
         return etapa;
     }

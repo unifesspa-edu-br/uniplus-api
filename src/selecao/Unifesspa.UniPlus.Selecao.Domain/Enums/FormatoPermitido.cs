@@ -1,16 +1,14 @@
 namespace Unifesspa.UniPlus.Selecao.Domain.Enums;
 
-/// <summary>
-/// Formato de arquivo aceito para a apresentação de um <see cref="Entities.DocumentoExigido"/>
-/// (Story #554, PR #900, issue #893) — congelado na própria exigência, opcional
-/// (<see langword="null"/> = sem restrição de formato). O módulo Configuração não mantém
-/// catálogo de formatos de arquivo (só classifica o <c>TipoDocumento</c>); por isso a
-/// lista é fechada em código, não resolvida por leitura externa.
-/// </summary>
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
+
+/// <summary>Formato de arquivo aceito para apresentação de documento.</summary>
 public enum FormatoPermitido
 {
-    Nenhum = 0,
+    [CodigoDeContrato("PDF", "PDF", Descricao = "Documento em formato PDF.")]
     Pdf = 1,
+    [CodigoDeContrato("JPEG", "JPEG", Descricao = "Imagem em formato JPEG.")]
     Jpeg = 2,
+    [CodigoDeContrato("PNG", "PNG", Descricao = "Imagem em formato PNG.")]
     Png = 3,
 }

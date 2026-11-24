@@ -93,7 +93,7 @@ public sealed class CriacaoDoProcessoLiberaAChaveEndpointTests : IAsyncLifetime
         {
           "nome": "PS libera chave {{Guid.CreateVersion7():N}}",
           "tipoProcessoOrigemId": "{{tipoProcessoId}}",
-          "origemCandidatos": "inscricaoPropria",
+          "origemCandidatos": "INSCRICAO_PROPRIA",
           "unidadeAdministradoraOrigemId": "{{unidadeId}}",
           "localidadeCodigoIbge": "1504208",
           "localidadeNome": "Marabá",

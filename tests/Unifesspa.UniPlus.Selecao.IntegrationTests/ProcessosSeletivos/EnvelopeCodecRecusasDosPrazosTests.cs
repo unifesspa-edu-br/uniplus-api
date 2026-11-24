@@ -4,8 +4,10 @@ using System.Text.Json.Nodes;
 
 using AwesomeAssertions;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
+using Unifesspa.UniPlus.Selecao.Domain.Enums;
 
 using Xunit;
 
@@ -33,7 +35,7 @@ public sealed class EnvelopeCodecRecusasDosPrazosTests
     private static JsonObject Parametros(JsonObject envelope, bool etapa) => etapa
         ? envelope["etapas"]!.AsArray().Select(e => e!.AsObject())
             .SelectMany(e => e["recursos"]!.AsArray().Select(r => r!.AsObject()))
-            .First(r => r["eventoInicialDoPrazo"]!.GetValue<string>() == "AtoPublicado")["parametros"]!.AsObject()
+            .First(r => r["eventoInicialDoPrazo"]!.GetValue<string>() == EventoInicialDoPrazo.PublicacaoDoAto.Codigo())["parametros"]!.AsObject()
         : envelope["cronogramaFases"]!["fases"]!.AsArray().Select(f => f!.AsObject())
             .Single(f => f["regraRecurso"] is JsonObject)["regraRecurso"]!["parametros"]!.AsObject();
 }

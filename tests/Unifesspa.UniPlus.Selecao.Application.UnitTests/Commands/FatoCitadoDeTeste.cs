@@ -34,13 +34,13 @@ internal static class FatoCitadoDeTeste
         ItemColetado(FatoNovo, 100, "Tem endereço próprio?", TipoRenderizacao.Booleano, Obrigatoriedade.Nunca);
 
     public static DocumentoExigido ExigenciaComGatilho(Guid faseId, bool citaFatoAusenteDoCatalogo = false) =>
-        new Unifesspa.UniPlus.Selecao.Domain.UnitTests.Cenarios.DocumentoExigidoBuilder()
-            .ComTipo(new CopiaDoTipoDeDocumento(CadastrosVivos.IdentidadeDe("LAUDO_MEDICO"), "DECLARACAO", "Declaração", "PESSOAL", ProtecaoDoDocumentoDeTeste.Pessoal))
-            .ComMomento(new MomentoDaExigencia(faseId, null, FinalidadeFormulario.Inscricao))
-            .ComAplicabilidade(new AplicabilidadeDaExigencia(Aplicabilidade.Condicional, CondicoesDoGatilho(citaFatoAusenteDoCatalogo)))
-            .ComIndeferimento(new IndeferimentoDoDocumento(true, null, [DocumentoExigidoBaseLegal.Criar("Res. Unifesspa 532/2021, art. 12", TipoAbrangencia.InternaNorma, StatusBaseLegal.Resolvido, null).Value!]))
-            .ComRequisitos(new RequisitosDoDocumento(FormatosPermitidos.Criar(true, null).Value!, null, null, new PrazoDeEmissaoBuilder().SemPrazo().Construir(), new ValidadeDoDocumentoBuilder().NaoExige().Construir()))
-            .ComFatos(null)
+        DocumentoExigidoDeTeste.Novo()
+            .NaFase(faseId)
+            .ComTipoDeOrigem(CadastrosVivos.IdentidadeDe("LAUDO_MEDICO"))
+            .ComTipo("DECLARACAO", "Declaração", "PESSOAL")
+            .Condicional(CondicoesDoGatilho(citaFatoAusenteDoCatalogo))
+            .ComBasesLegais([DocumentoExigidoBaseLegal.Criar("Res. Unifesspa 532/2021, art. 12", TipoAbrangencia.InternaNorma, StatusBaseLegal.Resolvido, null).Value!])
+            .NaFinalidade(FinalidadeFormulario.Inscricao)
             .Criar().Value!;
 
     /// <summary>O processo conforme que coleta o fato e exige um documento sob o gatilho dele.</summary>

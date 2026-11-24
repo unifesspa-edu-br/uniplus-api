@@ -13,7 +13,7 @@ using Unifesspa.UniPlus.Selecao.Domain.MotivosDeDecisao;
 internal static class MotivoDeTeste
 {
     internal static MotivoDeDecisao Motivo(
-        TipoMotivoDeDecisao tipo = TipoMotivoDeDecisao.IsencaoDaTaxa, string codigo = "RENDA_ACIMA_DO_LIMITE", string? subclassificacao = FundamentoIsencaoCodigo.CadastroUnico) =>
+        TipoMotivoDeDecisao tipo = TipoMotivoDeDecisao.IsencaoDaTaxa, string codigo = "RENDA_ACIMA_DO_LIMITE", string? subclassificacao = "CADASTRO_UNICO") =>
         MotivoDeDecisao.Criar(new CamposDoMotivo(tipo.Codigo(), codigo, "Renda familiar per capita acima do limite legal.", subclassificacao, SentidoDoMotivo.Desfavoravel)).Value!;
 
     /// <summary>O lugar da primeira fase do cronograma do processo.</summary>

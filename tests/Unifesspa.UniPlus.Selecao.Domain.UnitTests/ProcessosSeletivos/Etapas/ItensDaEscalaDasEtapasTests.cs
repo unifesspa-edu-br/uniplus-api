@@ -35,7 +35,7 @@ public sealed class ItensDaEscalaDasEtapasTests
     [Fact(DisplayName = "Etapa de nota do ENEM com nota máxima ou passo reprova o item do ENEM e nunca fica indeterminada")]
     public void NotaDoEnem_ComEscala_ReprovaSemIndeterminar()
     {
-        EtapaDeclarada comEscala = (new ModeloDeEtapa("Nota do ENEM").DoEnem() with { NotaMaxima = 10m, Carater = Unifesspa.UniPlus.Selecao.Domain.Enums.CaraterEtapa.Nenhum }).Declarar();
+        EtapaDeclarada comEscala = (new ModeloDeEtapa("Nota do ENEM").DoEnem() with { NotaMaxima = 10m, Carater = (Unifesspa.UniPlus.Selecao.Domain.Enums.CaraterEtapa)99 }).Declarar();
 
         Item("etapa_do_enem_com_escala", comEscala).Mensagem.Should().EndWith("(etapas: \"Nota do ENEM\")");
         Item("etapa_do_enem_com_escala", new ModeloDeEtapa("Nota do ENEM").DoEnem().Declarar()).Ok.Should().BeTrue();

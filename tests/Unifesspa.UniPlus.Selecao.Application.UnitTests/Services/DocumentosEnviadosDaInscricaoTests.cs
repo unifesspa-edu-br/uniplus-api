@@ -128,13 +128,8 @@ public sealed class DocumentosEnviadosDaInscricaoTests
         new DocumentosEnviadosDaInscricao(cenario.Repositorio).CarregarAsync(InscricaoId, CancellationToken.None);
 
     private static DocumentoExigido Exigencia() =>
-        new Unifesspa.UniPlus.Selecao.Domain.UnitTests.Cenarios.DocumentoExigidoBuilder()
-            .ComTipo(new CopiaDoTipoDeDocumento(Guid.CreateVersion7(), "LAUDO", "Laudo", "CAT", ProtecaoDoDocumentoDeTeste.Pessoal))
-            .ComMomento(new MomentoDaExigencia(Guid.CreateVersion7(), null, null))
-            .ComAplicabilidade(new AplicabilidadeDaExigencia(Aplicabilidade.Geral, []))
-            .ComIndeferimento(new IndeferimentoDoDocumento(true, null, []))
-            .ComRequisitos(new RequisitosDoDocumento(FormatosPermitidos.Criar(true, null).Value!, null, null, null, null))
-            .ComFatos(null)
+        DocumentoExigidoDeTeste.Novo()
+            .ComTipo("LAUDO", "Laudo", "CAT")
             .Criar().Value!;
 
     private sealed record Cenario(IDocumentoDaInscricaoRepository Repositorio, ArquivoDaApresentacao Arquivo)

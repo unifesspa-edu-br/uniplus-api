@@ -10,6 +10,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Selecao.Application.DTOs;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
@@ -83,10 +84,10 @@ public sealed partial class IdentificadoresDasRecusasDaPublicacaoTests
 
     private async Task<JsonElement> PublicarComRegraDeRecursoDaFaseDivergenteAsync()
     {
-        ProdutoDaFase preliminar = ProdutoDaFase.Criar(HomologacaoDasInscricoesDeTeste.ResultadoDaFase, PapelProdutoFase.Preliminar);
-        ProdutoDaFase definitivo = ProdutoDaFase.Criar(HomologacaoDasInscricoesDeTeste.ResultadoDaFase, PapelProdutoFase.Definitivo);
+        ProdutoDaFase preliminar = ProdutoDaFase.Criar(HomologacaoDasInscricoesDeTeste.ResultadoDaFase, PapelDaPublicacaoPrevista.Preliminar);
+        ProdutoDaFase definitivo = ProdutoDaFase.Criar(HomologacaoDasInscricoesDeTeste.ResultadoDaFase, PapelDaPublicacaoPrevista.Definitivo);
         RegraRecursoFase regra = RegraRecursoFase.Criar(
-            ReferenciaRegra.De(RegraPrazoRecursoCodigo.AncoradoEmAto, "v1", HashDiferenteDoCatalogo),
+            ReferenciaRegra.De(RegraDePrazoDoRecurso.ContadoDaPublicacaoDoAto.Codigo(), "v1", HashDiferenteDoCatalogo),
             ParametrosDoRecursoDeTeste.Declarados(48m, UnidadePrazo.Horas),
             preliminar.Id).Value!;
 
@@ -105,7 +106,7 @@ public sealed partial class IdentificadoresDasRecusasDaPublicacaoTests
             new OpcoesDoProcessoSeletivoPublicavel { Nome = string.Empty, Complementar = p => ComDoisRecursosNaEtapa(p, doCatalogo) });
         EtapaProcesso etapa = processo.Etapas.Single();
         RecursoDaEtapa[] naOrdemCanonica = [.. etapa.Recursos];
-        int posicao = Array.FindIndex(naOrdemCanonica, static r => r.Ancora == AncoraDoRecurso.CienciaIndividual);
+        int posicao = Array.FindIndex(naOrdemCanonica, static r => r.Ancora == EventoInicialDoPrazo.CienciaIndividual);
 
         return (await PublicarRecusadaAsync(processo.Id, documento.Id), etapa.Id, posicao, naOrdemCanonica[posicao].Id);
     }
@@ -116,18 +117,18 @@ public sealed partial class IdentificadoresDasRecusasDaPublicacaoTests
     {
         EtapaProcesso etapa = processo.Etapas.Single();
         etapa.DefinirJanelaEParecer(null, null, emiteParecerIndividual: true).IsSuccess.Should().BeTrue();
-        etapa.DefinirProdutos([ProdutoDaEtapa.Criar("GABARITO", PapelProdutoFase.Preliminar)]).IsSuccess.Should().BeTrue();
+        etapa.DefinirProdutos([ProdutoDaEtapa.Criar("GABARITO", PapelDaPublicacaoPrevista.Preliminar)]).IsSuccess.Should().BeTrue();
 
         Guid produtoPreliminar = etapa.Produtos.Single().Id;
         ReferenciaRegra divergente = ReferenciaRegra.De(doCatalogo.Codigo, doCatalogo.Versao, HashDiferenteDoCatalogo);
         etapa.DefinirRecursos(
         [
-            RecursoDaEtapaDe(AncoraDoRecurso.CienciaIndividual, divergente, Guid.Empty),
-            RecursoDaEtapaDe(AncoraDoRecurso.AtoPublicado, doCatalogo, produtoPreliminar),
+            RecursoDaEtapaDe(EventoInicialDoPrazo.CienciaIndividual, divergente, Guid.Empty),
+            RecursoDaEtapaDe(EventoInicialDoPrazo.PublicacaoDoAto, doCatalogo, produtoPreliminar),
         ]).IsSuccess.Should().BeTrue();
     }
 
-    private static RecursoDaEtapa RecursoDaEtapaDe(AncoraDoRecurso ancora, ReferenciaRegra regra, Guid produtoAncoraId) =>
+    private static RecursoDaEtapa RecursoDaEtapaDe(EventoInicialDoPrazo ancora, ReferenciaRegra regra, Guid produtoAncoraId) =>
         RecursoDaEtapa.Criar(ancora, regra, ParametrosDoRecursoDeTeste.Declarados(48m, UnidadePrazo.Horas), produtoAncoraId).Value!;
 
     private async Task<ReferenciaRegra> RegraDePrazoDoCatalogoAsync()
@@ -136,7 +137,7 @@ public sealed partial class IdentificadoresDasRecusasDaPublicacaoTests
         UniPlusDbContext db = scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
 
         return (await db.RolDeRegras.AsNoTracking().SingleAsync(regra =>
-            regra.Codigo == RegraPrazoRecursoCodigo.AncoradoEmAto && regra.Versao == "v1")).Referencia();
+            regra.Codigo == RegraDePrazoDoRecurso.ContadoDaPublicacaoDoAto.Codigo() && regra.Versao == "v1")).Referencia();
     }
 
     private async Task<(ProcessoSeletivo Processo, DocumentoAPublicar Documento)> SemearAsync(string cenario, OpcoesDoProcessoSeletivoPublicavel opcoes)
@@ -207,7 +208,7 @@ public sealed partial class IdentificadoresDasRecusasDaPublicacaoTests
 
     private static void ExigirOsIndicesDaNovaRecusa(JsonElement recusa, ProcessoSeletivoDto lido, Guid etapaId)
     {
-        Guid recursoId = lido.Etapas.Single(e => e.Id == etapaId).Publicacoes.Recursos.Single(r => r.Ancora == AncoraDoRecurso.CienciaIndividual).Id;
+        Guid recursoId = lido.Etapas.Single(e => e.Id == etapaId).Publicacoes.Recursos.Single(r => r.Ancora.Codigo == EventoInicialDoPrazo.CienciaIndividual.Codigo()).Id;
 
         PosicoesLidas depois = ConferirOsIndicesDaRecusaContraALeitura(recusa, lido, etapaId, recursoId);
 

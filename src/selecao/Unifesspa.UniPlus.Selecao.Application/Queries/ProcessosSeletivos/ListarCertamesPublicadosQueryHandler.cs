@@ -6,6 +6,7 @@ using Domain.Interfaces;
 using DTOs;
 
 using Unifesspa.UniPlus.Application.Abstractions.Consultas;
+using Unifesspa.UniPlus.Application.Abstractions.Respostas;
 using Unifesspa.UniPlus.Kernel.Pagination;
 using Unifesspa.UniPlus.Kernel.Results;
 
@@ -92,6 +93,6 @@ public static class ListarCertamesPublicadosQueryHandler
         certame.ModalidadesOfertadas,
         divulgado.InscricoesDe,
         divulgado.InscricoesAte,
-        SituacaoDaVitrine.Classificar(divulgado.InscricoesDe, divulgado.InscricoesAte, instante, SituacaoDaVitrine.LimiarDosUltimosDias),
+        CodigoComRotulo<SituacaoDoCertame>.De(SituacaoDaVitrine.Classificar(divulgado.InscricoesDe, divulgado.InscricoesAte, instante, SituacaoDaVitrine.LimiarDosUltimosDias)),
         certame.Vagas.Sum(static v => v.TotalDeVagasDoEdital));
 }

@@ -1,5 +1,7 @@
 namespace Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
+
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 
@@ -88,34 +90,32 @@ public sealed record FormatosPermitidos
     private static Result<FormatosPermitidos> CriarLista(IReadOnlyList<(string Formato, int? TamanhoMaximoBytesMax)> entradas)
     {
         List<FormatoPermitidoEntry> lista = [];
-        HashSet<FormatoPermitido> formatosVistos = [];
-        foreach ((string formatoCodigo, int? tamanhoMaximoBytesMax) in entradas)
+        HashSet<FormatoPermitido> vistos = [];
+        foreach ((string codigo, int? tamanho) in entradas)
         {
-            Result<FormatoPermitidoEntry> entrada = CriarEntrada(formatoCodigo, tamanhoMaximoBytesMax, formatosVistos);
-            if (entrada.IsFailure)
+            Result<FormatoPermitidoEntry> resultado = CriarEntrada(codigo, tamanho, vistos);
+            if (resultado.IsFailure)
             {
-                return Result<FormatosPermitidos>.Failure(entrada.Error!);
+                return Result<FormatosPermitidos>.Failure(resultado.Error!);
             }
 
-            lista.Add(entrada.Value!);
+            lista.Add(resultado.Value!);
         }
 
         return Result<FormatosPermitidos>.Success(new FormatosPermitidos(false, lista));
     }
 
-    private static Result<FormatoPermitidoEntry> CriarEntrada(string formatoCodigo, int? tamanhoMaximoBytesMax, HashSet<FormatoPermitido> formatosVistos)
+    private static Result<FormatoPermitidoEntry> CriarEntrada(string codigo, int? tamanho, HashSet<FormatoPermitido> vistos)
     {
-        if (FormatoPermitidoCodigo.FromCodigo(formatoCodigo) is not { } formato)
+        if (!CatalogoDe<FormatoPermitido>.TentarObter(codigo, out FormatoPermitido formato))
         {
             return Result<FormatoPermitidoEntry>.Failure(new DomainError(
-                "FormatosPermitidos.FormatoInvalido",
-                $"Formato '{formatoCodigo}' não reconhecido."));
+                "FormatosPermitidos.FormatoInvalido", "Formato não reconhecido."));
         }
 
-        return formatosVistos.Add(formato)
-            ? FormatoPermitidoEntry.Criar(formato, tamanhoMaximoBytesMax)
+        return vistos.Add(formato)
+            ? FormatoPermitidoEntry.Criar(formato, tamanho)
             : Result<FormatoPermitidoEntry>.Failure(new DomainError(
-                "FormatosPermitidos.FormatoDuplicado",
-                $"O formato '{formatoCodigo}' aparece mais de uma vez na lista."));
+                "FormatosPermitidos.FormatoDuplicado", $"O formato '{codigo}' aparece mais de uma vez na lista."));
     }
 }

@@ -16,7 +16,7 @@ internal static class IsencaoDeTeste
     {
         ArgumentNullException.ThrowIfNull(processo);
 
-        ConfiguracaoTaxaInscricao taxa = ConfiguracaoTaxaInscricao.Criar(true, 100m, [FundamentoIsencaoCodigo.CadastroUnico]).Value!;
+        ConfiguracaoTaxaInscricao taxa = ConfiguracaoTaxaInscricao.Criar(true, 100m, ["CADASTRO_UNICO"]).Value!;
         if (processo.Status == StatusProcesso.Publicado)
         {
             typeof(ProcessoSeletivo).GetProperty(nameof(ProcessoSeletivo.ConfiguracaoTaxaInscricao))!.SetValue(processo, taxa);

@@ -5,6 +5,7 @@ using System.Text.Json;
 
 using AwesomeAssertions;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.Errors;
@@ -43,21 +44,21 @@ public sealed class ConformidadePublicabilidadeEstruturalEnemEOpcoesTests
     }
 
     private static Result DefinirODesempatePorAreaEnem(ProcessoSeletivo processo) => processo.DefinirCriteriosDesempate(
-        [CriterioDesempate.Criar(1, Regra(CriterioDesempateCodigo.MaiorNotaAreaEnem, 'e'), new ParametrosDesempateMaiorNotaAreaEnem(["REDACAO"])).Value!]);
+        [CriterioDesempate.Criar(1, Regra(RegraDeDesempate.MaiorNotaPorAreaDoEnem.Codigo(), 'e'), new ParametrosDesempateMaiorNotaAreaEnem(["REDACAO"])).Value!]);
 
     private static ConfiguracaoClassificacao ClassificacaoLocalSemEnem() => ConfiguracaoClassificacao.Criar(new DeclaracaoDaClassificacao
     {
-        RegraCalculo = Regra(RegraCalculoCodigo.FormulaMediaPonderada, 'a'),
-        RegraArredondamento = Regra(RegraArredondamentoCodigo.PrecisaoTruncar, 'b'),
+        RegraCalculo = Regra(RegraDeCalculoDaNota.MediaPonderada.Codigo(), 'a'),
+        RegraArredondamento = Regra(RegraDeArredondamentoDaNota.Truncar.Codigo(), 'b'),
         CasasArredondamento = 2,
-        RegraOrdemAlocacao = Regra(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, 'c'),
+        RegraOrdemAlocacao = Regra(RegraDeOrdemDeAlocacao.PrimeiraOpcaoPrioritaria.Codigo(), 'c'),
         EscalaNotaFinal = 100m,
     }).Value!;
 
     private static ConfiguracaoClassificacao ClassificacaoImportadaBaseadaEmEnem() => ConfiguracaoClassificacao.Criar(new DeclaracaoDaClassificacao
     {
-        RegraCalculo = Regra(RegraCalculoCodigo.ClassificacaoImportada, 'b'),
-        RegraOrdemAlocacao = Regra(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, 'c'),
+        RegraCalculo = Regra(RegraDeCalculoDaNota.ClassificacaoImportada.Codigo(), 'b'),
+        RegraOrdemAlocacao = Regra(RegraDeOrdemDeAlocacao.PrimeiraOpcaoPrioritaria.Codigo(), 'c'),
         BaseadoEmEnem = true,
     }).Value!;
 
@@ -95,7 +96,7 @@ public sealed class ConformidadePublicabilidadeEstruturalEnemEOpcoesTests
     {
         ConfiguracaoDistribuicaoVagas nomeada = OfertaAmpla(10, grupoAreaEnem: null);
         ConfiguracaoDistribuicaoVagas semNome = ConfiguracaoDistribuicaoVagas.Criar(Guid.CreateVersion7(),
-            new DistribuicaoDeVagasDeclarada { VagasOfertadasBase = 5, PercentualDaReservaLegal = 1m, RegraDeDistribuicao = Regra(RegraDistribuicaoVagasCodigo.Institucional, 'a'), Modalidades = [Modalidade("AC", NaturezaLegalModalidade.Ampla, RegraRemanejamentoModalidade.Nenhuma, 5, null)] }).Value!;
+            new DistribuicaoDeVagasDeclarada { VagasOfertadasBase = 5, PercentualDaReservaLegal = 1m, RegraDeDistribuicao = Regra(RegraDeDistribuicaoDeVagas.Institucional.Codigo(), 'a'), Modalidades = [Modalidade("AC", NaturezaLegalModalidade.Ampla, null, 5, null)] }).Value!;
         ProcessoSeletivo processo = ProcessoConforme([nomeada, semNome]);
 
         SoEstesItensVermelhos(processo, "distribuicao_vagas_oferta_sem_nome");
@@ -178,7 +179,7 @@ public sealed class ConformidadePublicabilidadeEstruturalEnemEOpcoesTests
     {
         ProcessoSeletivo processo = ProcessoEnemLocal([OfertaAmpla(10, GrupoTecnologica)]);
         processo.DefinirCriteriosDesempate(
-            [CriterioDesempate.Criar(1, Regra(CriterioDesempateCodigo.MaiorNotaAreaEnem, 'e'), new ParametrosDesempateMaiorNotaAreaEnem(["REDACAO"])).Value!]).IsSuccess.Should().BeTrue();
+            [CriterioDesempate.Criar(1, Regra(RegraDeDesempate.MaiorNotaPorAreaDoEnem.Codigo(), 'e'), new ParametrosDesempateMaiorNotaAreaEnem(["REDACAO"])).Value!]).IsSuccess.Should().BeTrue();
 
         ConfiguracaoClassificacao semQuadro = ClassificacaoEnemLocal(QuadroPesoAreaEnemDeTeste.Completo());
         EsvaziarQuadro(semQuadro);

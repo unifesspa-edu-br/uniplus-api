@@ -2,6 +2,8 @@ namespace Unifesspa.UniPlus.Selecao.Application.DTOs;
 
 using Domain.Enums;
 
+using Unifesspa.UniPlus.Application.Abstractions.Respostas;
+
 /// <summary>
 /// Resposta do passo 1 (iniciar o envio). <paramref name="ContentTypeExigido"/> é o valor exato do
 /// header <c>Content-Type</c> que o PUT direto ao <see cref="UrlUpload"/> precisa enviar — a
@@ -43,10 +45,10 @@ public sealed record IniciarEnvioDoDocumentoAPublicarDto(
 public sealed record DocumentoAPublicarDto(
     Guid Id,
     Guid ProcessoSeletivoId,
-    FinalidadeDoDocumento Finalidade,
+    CodigoComRotulo<FinalidadeDoDocumento> Finalidade,
     string NomeArquivo,
     string TipoDeMidia,
-    string Status,
+    CodigoComRotulo<StatusArquivoEnviado> Status,
     DateTimeOffset CriadoEm,
     DateTimeOffset ExpiraEm,
     long? TamanhoBytes,

@@ -21,7 +21,7 @@ public static class ConsolidacaoDoConceitoCategorico
     /// <exception cref="ArgumentOutOfRangeException">Os corretores exigidos são menos que um, ou o critério é desconhecido.</exception>
     public static ResultadoDaConsolidacaoDoConceito Consolidar(
         ConceitoDaEtapa conceitoCategorico,
-        CriterioDeConsolidacaoDoConceito criterio,
+        CriterioDeApuracaoDoConceito criterio,
         int corretoresExigidos,
         IReadOnlyList<string> valoresAtribuidos)
     {
@@ -33,7 +33,7 @@ public static class ConsolidacaoDoConceitoCategorico
     }
 
     private static void ExigirPrecondicoes(
-        ConceitoDaEtapa conceito, CriterioDeConsolidacaoDoConceito criterio, int corretoresExigidos, IReadOnlyList<string> valoresAtribuidos)
+        ConceitoDaEtapa conceito, CriterioDeApuracaoDoConceito criterio, int corretoresExigidos, IReadOnlyList<string> valoresAtribuidos)
     {
         ArgumentNullException.ThrowIfNull(conceito);
         ArgumentNullException.ThrowIfNull(valoresAtribuidos);
@@ -59,16 +59,16 @@ public static class ConsolidacaoDoConceitoCategorico
         }
     }
 
-    private static ResultadoDaConsolidacaoDoConceito Apurar(CriterioDeConsolidacaoDoConceito criterio, IReadOnlyList<string> valores)
+    private static ResultadoDaConsolidacaoDoConceito Apurar(CriterioDeApuracaoDoConceito criterio, IReadOnlyList<string> valores)
     {
         List<KeyValuePair<string, int>> contagens =
             [.. valores.CountBy(static valor => valor, StringComparer.Ordinal).OrderByDescending(static contagem => contagem.Value)];
 
         return criterio switch
         {
-            CriterioDeConsolidacaoDoConceito.Unanimidade => PorUnanimidade(contagens),
-            CriterioDeConsolidacaoDoConceito.MaioriaSimples => PorMaioriaSimples(contagens),
-            CriterioDeConsolidacaoDoConceito.MaioriaAbsoluta => PorMaioriaAbsoluta(contagens, valores.Count),
+            CriterioDeApuracaoDoConceito.Unanimidade => PorUnanimidade(contagens),
+            CriterioDeApuracaoDoConceito.MaioriaSimples => PorMaioriaSimples(contagens),
+            CriterioDeApuracaoDoConceito.MaioriaAbsoluta => PorMaioriaAbsoluta(contagens, valores.Count),
             _ => throw new ArgumentOutOfRangeException(nameof(criterio), criterio, "Critério de consolidação desconhecido."),
         };
     }

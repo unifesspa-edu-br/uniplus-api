@@ -34,7 +34,7 @@ internal static class SerializacaoDasExigencias
             ["obrigatoriedades"] = SerializarObrigatoriedades(conformidade),
             ["referenciaTemporalDosDados"] = processo.ReferenciaTemporalFatos is { } referencia ? new JsonObject
             {
-                ["tipo"] = referencia.Tipo.ToCodigo(),
+                ["tipo"] = referencia.Tipo.Codigo(),
                 ["data"] = referencia.Data?.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
                 ["faseId"] = referencia.FaseId,
             }
@@ -57,7 +57,7 @@ internal static class SerializacaoDasExigencias
         ["quantidadeMinima"] = regra.QuantidadeMinima,
         ["consequencia"] = regra.Consequencia is { } consequencia ? HashCanonicalComputer.NormalizeNfc(consequencia) : null,
         ["basesLegais"] = SerializarBasesLegaisDaRegra(regra.BasesLegaisResolvidas()),
-        ["criterioDeDistincao"] = regra.Distincao?.Criterio?.ToCodigo(),
+        ["criterioDeDistincao"] = regra.Distincao?.Criterio?.Codigo(),
         ["dataReferencia"] = regra.Distincao?.DataReferencia?.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
         ["ocorrenciasEsperadas"] = SerializarOcorrencias(regra.Distincao),
         ["grupoDoFormularioParaRepeticao"] = regra.GrupoDoFormularioParaRepeticao,
@@ -71,8 +71,8 @@ internal static class SerializacaoDasExigencias
         EscritaCanonica.OrdenarPorConteudo(basesLegais.Select(static b => new JsonObject
         {
             ["referencia"] = HashCanonicalComputer.NormalizeNfc(b.Referencia),
-            ["abrangencia"] = b.Abrangencia.ToCodigo(),
-            ["situacao"] = b.Situacao.ToCodigo(),
+            ["abrangencia"] = b.Abrangencia.Codigo(),
+            ["situacao"] = b.Situacao.Codigo(),
             ["observacao"] = b.Observacao is { } observacao ? HashCanonicalComputer.NormalizeNfc(observacao) : null,
         }));
 
@@ -121,7 +121,7 @@ internal static class SerializacaoDasExigencias
         item["exigidoNaFaseId"] = exigencia.ExigidoNaFaseId;
         item["exigidoNaEtapaId"] = exigencia.ExigidoNaEtapaId;
         item["finalidade"] = exigencia.Finalidade is { } finalidade ? EstruturaFormulario.ParaToken(finalidade) : null;
-        item["aplicabilidade"] = exigencia.Aplicabilidade.ToString();
+        item["aplicabilidade"] = exigencia.Aplicabilidade.Codigo();
         item["obrigatorio"] = exigencia.Obrigatorio;
         item["consequenciaIndeferimento"] = exigencia.ConsequenciaIndeferimento is { } consequencia
             ? HashCanonicalComputer.NormalizeNfc(consequencia)
@@ -153,7 +153,7 @@ internal static class SerializacaoDasExigencias
         ["lista"] = formatosPermitidos.Lista is { } lista
             ? EscritaCanonica.OrdenarPorConteudo(lista.Select(static e => new JsonObject
             {
-                ["formato"] = e.Formato.ToCodigo(),
+                ["formato"] = e.Formato.Codigo(),
                 ["tamanhoMaximoBytesMax"] = e.TamanhoMaximoBytesMax,
             }))
             : null,
@@ -166,8 +166,8 @@ internal static class SerializacaoDasExigencias
         EscritaCanonica.OrdenarPorConteudo(basesLegais.Select(static b => new JsonObject
         {
             ["referencia"] = HashCanonicalComputer.NormalizeNfc(b.Referencia),
-            ["abrangencia"] = b.Abrangencia.ToCodigo(),
-            ["situacao"] = b.Situacao.ToCodigo(),
+            ["abrangencia"] = b.Abrangencia.Codigo(),
+            ["situacao"] = b.Situacao.Codigo(),
             ["observacao"] = b.Observacao is { } observacao ? HashCanonicalComputer.NormalizeNfc(observacao) : null,
         }));
 
@@ -185,7 +185,7 @@ internal static class SerializacaoDasExigencias
     {
         ["regraId"] = regra.RegraId,
         ["regraCodigo"] = HashCanonicalComputer.NormalizeNfc(regra.RegraCodigo),
-        ["categoria"] = regra.Categoria.ToString(),
+        ["categoria"] = regra.Categoria.Codigo(),
         ["tipoProcessoCodigoAvaliado"] = HashCanonicalComputer.NormalizeNfc(regra.TipoProcessoCodigoAvaliado),
         ["condicoes"] = SerializacaoDosPredicados.SerializarPredicadoObrigatoriedade(regra.Predicado),
         ["aprovada"] = regra.Aprovada,

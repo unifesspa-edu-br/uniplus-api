@@ -71,7 +71,7 @@ public sealed record AvaliacaoDaInscricaoDto(
     private static ModalidadesDaInscricaoDto ProjetarModalidades(ModalidadesDeConcorrencia modalidades) =>
         new(
             modalidades.Derivada,
-            modalidades.Situacao.ToCodigo(),
+            modalidades.Situacao is { } situacao ? CodigoComRotulo<SituacaoDasModalidades>.De(situacao) : null,
             [.. modalidades.Itens.Select(static m => new ModalidadeDaInscricaoDto(m.Codigo, m.Nome, m.Ordem))],
             [.. modalidades.Pendencias.Select(Pendencia)]);
 
@@ -85,20 +85,20 @@ public sealed record AvaliacaoDaInscricaoDto(
             documento.Id, documento.TipoDocumentoCodigo, documento.TipoDocumentoNome, documento.Obrigatorio,
             documento.Finalidade is { } finalidade ? EstruturaFormulario.ParaToken(finalidade) : null,
             documento.ExigidoNaEtapaId, Formatos(documento), Modelo(documento, enderecoDoModelo),
-            avaliado.Situacao.ToCodigo(), avaliado.GrupoCodigo, avaliado.OcorrenciaId,
+            CodigoComRotulo<SituacaoDoDocumento>.De(avaliado.Situacao), avaliado.GrupoCodigo, avaliado.OcorrenciaId,
             [.. avaliado.Grupos.Select(static g => new GrupoDeComprovacaoDto(g.GrupoId, CodigoComRotulo<FormaDeComprovacao>.De(g.Forma), g.Minimo, g.GrupoDoFormularioParaRepeticao))],
             avaliado.GrupoDoFormularioParaRepeticao,
-            [.. ArquivoDaApresentacao.FormatosAceitosPor(documento).Select(static f => f.ToCodigo())],
+            [.. ArquivoDaApresentacao.FormatosAceitosPor(documento).Select(static f => f.Codigo())],
             ArquivoDaApresentacao.LimiteAnunciadoDe(documento), avaliado.QuantidadeMinima,
             [.. arquivos.Where(a => a.ExigenciaId == documento.Id && a.OcorrenciaId == avaliado.OcorrenciaId)]);
     }
 
     private static FormatosAceitosCertameDto Formatos(DocumentoExigido documento) =>
-        new(documento.FormatosPermitidos.Qualquer, documento.FormatosPermitidos.Lista?.Select(static e => e.Formato.ToCodigo()).ToList());
+        new(documento.FormatosPermitidos.Qualquer, documento.FormatosPermitidos.Lista?.Select(static e => e.Formato.Codigo()).ToList());
 
     private static ModeloDocumentalCertameDto? Modelo(DocumentoExigido documento, Func<ModeloDaExigencia, Uri?> enderecoDoModelo) =>
         documento.Modelo is { } modelo
-            ? new ModeloDocumentalCertameDto(modelo.NomeArquivo, ModeloDeDocumento.TokenDe(modelo.Formato), modelo.HashSha256, enderecoDoModelo(modelo))
+            ? new ModeloDocumentalCertameDto(modelo.NomeArquivo, CodigoComRotulo<FormatoDeDocumento>.De(modelo.Formato), modelo.HashSha256, enderecoDoModelo(modelo))
             : null;
 
 }
@@ -154,7 +154,7 @@ public sealed record DocumentoDaInscricaoDto(
     Guid? EtapaId,
     FormatosAceitosCertameDto Formatos,
     ModeloDocumentalCertameDto? Modelo,
-    string Situacao,
+    CodigoComRotulo<SituacaoDoDocumento> Situacao,
     string? GrupoCodigo,
     string? OcorrenciaId,
     IReadOnlyList<GrupoDeComprovacaoDto> Grupos,
@@ -176,7 +176,7 @@ public sealed record GrupoDeComprovacaoDto(Guid GrupoId, CodigoComRotulo<FormaDe
 /// </summary>
 public sealed record ModalidadesDaInscricaoDto(
     bool Derivada,
-    string? Situacao,
+    CodigoComRotulo<SituacaoDasModalidades>? Situacao,
     IReadOnlyList<ModalidadeDaInscricaoDto> Itens,
     IReadOnlyList<PendenciaDaAvaliacaoDto> Pendencias);
 

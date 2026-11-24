@@ -4,8 +4,8 @@ using Unifesspa.UniPlus.Selecao.Domain.Enums;
 
 /// <summary>
 /// De quem é o processo: de onde vêm os candidatos, o identificador legível, o tipo e a unidade que o administra. A declaração que
-/// vem de um documento de rascunho pode estar sem o tipo, sem a unidade administradora ou com a origem dos candidatos em
-/// <see cref="OrigemCandidatos.Nenhuma"/>: a identificação incompleta existe como declaração, e a regra de completude a recusa ao publicar.
+/// vem de um documento de rascunho pode estar sem o tipo, sem a unidade administradora ou com a origem dos candidatos ausente:
+/// a identificação incompleta existe como declaração, e a regra de completude a recusa ao publicar.
 /// </summary>
 public sealed class IdentidadeDoProcessoDeclarada
 {
@@ -29,7 +29,7 @@ public sealed class IdentidadeDoProcessoDeclarada
 
     internal IdentidadeDoProcessoDeclarada(
         string? nome,
-        OrigemCandidatos origemCandidatos,
+        OrigemCandidatos? origemCandidatos,
         IdentificadorLegivel? identificadorLegivel,
         TipoProcessoSnapshot? tipoProcesso,
         UnidadeAdministradoraSnapshot? unidadeAdministradora)
@@ -44,7 +44,7 @@ public sealed class IdentidadeDoProcessoDeclarada
     /// <summary>O nome do processo como o documento o traz; a leitura o copia, sem conferi-lo.</summary>
     public string? Nome { get; }
 
-    public OrigemCandidatos OrigemCandidatos { get; }
+    public OrigemCandidatos? OrigemCandidatos { get; }
 
     public IdentificadorLegivel? IdentificadorLegivel { get; }
 

@@ -30,7 +30,7 @@ public sealed class IdentificacaoDosItensDaCausaTests
         ProcessoSeletivo processo = ProcessoConformeFactory.Criar();
         EtapaProcesso etapa = processo.Etapas.Single();
         etapa.DefinirJanelaEParecer(null, null, emiteParecerIndividual: true).IsSuccess.Should().BeTrue();
-        etapa.DefinirProdutos([ProdutoDaEtapa.Criar("GABARITO", PapelProdutoFase.Preliminar)]).IsSuccess.Should().BeTrue();
+        etapa.DefinirProdutos([ProdutoDaEtapa.Criar("GABARITO", PapelDaPublicacaoPrevista.Preliminar)]).IsSuccess.Should().BeTrue();
         etapa.DefinirRecursos([RecursoModelo.NaCiencia(), RecursoModelo.AoAto(etapa.Produtos.Single().Id)]).IsSuccess.Should().BeTrue();
 
         return (processo.Declaracao(), etapa);

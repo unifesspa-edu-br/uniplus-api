@@ -1,16 +1,18 @@
 namespace Unifesspa.UniPlus.Selecao.Domain.Enums;
 
-/// <summary>
-/// Abrangência de uma <see cref="Entities.DocumentoExigidoBaseLegal"/> (Story #554, PR #898,
-/// issue #549, ADR-0074). <c>InternaEdital</c> conta sozinha como base legal — as demais
-/// referenciam normas externas ao próprio edital.
-/// </summary>
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
+
+/// <summary>Valores de TipoAbrangencia.</summary>
 public enum TipoAbrangencia
 {
-    Nenhuma = 0,
+    [CodigoDeContrato("FEDERAL", "Federal", Descricao = "Aplica-se a norma federal.")]
     Federal = 1,
+    [CodigoDeContrato("ESTADUAL", "Estadual", Descricao = "Aplica-se a norma estadual.")]
     Estadual = 2,
+    [CodigoDeContrato("MUNICIPAL", "Municipal", Descricao = "Aplica-se a norma municipal.")]
     Municipal = 3,
+    [CodigoDeContrato("INTERNA_NORMA", "Norma interna", Descricao = "Aplica-se a norma da instituição.")]
     InternaNorma = 4,
+    [CodigoDeContrato("INTERNA_EDITAL", "Edital", Descricao = "Aplica-se o próprio edital.")]
     InternaEdital = 5,
 }

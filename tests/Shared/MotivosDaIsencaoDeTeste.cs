@@ -21,7 +21,7 @@ internal static class MotivosDaIsencaoDeTeste
     {
         ArgumentNullException.ThrowIfNull(processo);
 
-        IReadOnlyList<string> fundamentos = [.. processo.ConfiguracaoTaxaInscricao?.Fundamentos.Select(static f => f.ToCodigo()) ?? []];
+        IReadOnlyList<string> fundamentos = [.. processo.ConfiguracaoTaxaInscricao?.Fundamentos.Select(static f => f.Codigo()) ?? []];
 
         return [.. LugaresQueDeclaramOTipo(processo).SelectMany(lugar => EscolherEm(processo, lugar, fundamentos))];
     }

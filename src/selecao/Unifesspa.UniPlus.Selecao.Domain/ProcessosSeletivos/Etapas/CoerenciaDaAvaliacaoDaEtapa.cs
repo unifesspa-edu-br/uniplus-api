@@ -1,5 +1,7 @@
 namespace Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Etapas;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
+
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
@@ -67,9 +69,9 @@ public static class CoerenciaDaAvaliacaoDaEtapa
 
         return Recusa(forma != FormaDeAvaliacao.Humana, "regraConsolidacao", EtapaProcessoErrorCodes.RegraDeConsolidacaoForaDaFormaHumana,
                 "A regra de consolidação só se aplica à avaliação humana: com mais de um avaliador é que as notas precisam ser combinadas.")
-            ?? Recusa(!RegraConsolidacaoCodigo.Rol.Contains(regraConsolidacaoCodigo), "regraConsolidacao",
+            ?? Recusa(!CatalogoDe<RegraDeApuracaoDaAvaliacao>.TentarObter(regraConsolidacaoCodigo, out _), "regraConsolidacao",
                 EtapaProcessoErrorCodes.RegraDeConsolidacaoInvalida,
-                $"A regra '{regraConsolidacaoCodigo}' não é uma regra de consolidação do catálogo.");
+                "A regra informada não é uma regra de apuração da avaliação do catálogo.");
     }
 
     private static FieldError? RecusaDaFormaNoTipoQueExigeCorrecao(AvaliacaoParaCoerencia avaliacao) =>

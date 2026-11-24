@@ -34,7 +34,7 @@ internal static class LotesDoEnemDeTeste
         PersonasDeTeste.PessoaFicticia pessoa,
         SituacaoInscricao situacao = SituacaoInscricao.Submetida,
         string? edicao = Edicao) =>
-        InscricoesDoEnemDeTeste.NovaInscricaoAsync(fixture, escopo.ProcessoId, pessoa, situacao, edicao);
+        InscricoesDoEnemDeTeste.NovaInscricaoAsync(fixture, new(escopo.ProcessoId, pessoa, situacao, edicao));
 
     public static ResultadoDaAreaNoRetorno[] Areas(decimal nota = 600m, SituacaoDaProvaNoEnem situacao = SituacaoDaProvaNoEnem.Presente) =>
         [.. AreaDoEnem.Todas.Select(a => new ResultadoDaAreaNoRetorno(a, nota, situacao))];

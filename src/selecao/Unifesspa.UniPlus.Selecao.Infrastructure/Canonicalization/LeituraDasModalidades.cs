@@ -64,13 +64,13 @@ internal static class LeituraDasModalidades
     {
         leitor.ExigirChaves(item, path, ChavesDaModalidade);
 
-        DeclaracaoDaModalidade declaracao = LerDeclaracao(leitor, item, path);
+        ModalidadeLidaDoEnvelope declaracao = LerDeclaracao(leitor, item, path);
         if (leitor.Falhou)
         {
             return null;
         }
 
-        if (VocabularioDaModalidade(declaracao.Codigo, declaracao.AcaoQuandoIndeferido, declaracao.ComposicaoOrigem, declaracao.Destino, declaracao.Par, declaracao.Fallback) is { } vocabulario)
+        if (declaracao.RecusaDoVocabulario() is { } vocabulario)
         {
             return leitor.Propagar<ModalidadeSelecionada>(vocabulario);
         }
@@ -78,7 +78,7 @@ internal static class LeituraDasModalidades
         return Reidratar(leitor, declaracao);
     }
 
-    private static DeclaracaoDaModalidade LerDeclaracao(LeitorEnvelope leitor, JsonObject item, string path) =>
+    private static ModalidadeLidaDoEnvelope LerDeclaracao(LeitorEnvelope leitor, JsonObject item, string path) =>
         LerEstruturaDeVagas(leitor, item, path) with
         {
             // A modalidade incondicional não tem cláusula, e o encoder a grava nula.
@@ -88,7 +88,7 @@ internal static class LeituraDasModalidades
             QuantidadeDeclarada = leitor.InteiroOpcional(item, "quantidadeDeclarada", path),
         };
 
-    private static DeclaracaoDaModalidade LerEstruturaDeVagas(LeitorEnvelope leitor, JsonObject item, string path) => new()
+    private static ModalidadeLidaDoEnvelope LerEstruturaDeVagas(LeitorEnvelope leitor, JsonObject item, string path) => new()
     {
         OrigemId = leitor.Identificador(item, "modalidadeOrigemId", path),
         Codigo = leitor.TextoNaoVazio(item, "codigo", path, LimitesDoEnvelope.ModalidadeCodigo),
@@ -102,7 +102,7 @@ internal static class LeituraDasModalidades
         Fallback = leitor.TextoOpcional(item, "remanejamentoDestinoFinal", path, LimitesDoEnvelope.ModalidadeCodigo),
     };
 
-    private static ModalidadeSelecionada? Reidratar(LeitorEnvelope leitor, DeclaracaoDaModalidade d)
+    private static ModalidadeSelecionada? Reidratar(LeitorEnvelope leitor, ModalidadeLidaDoEnvelope d)
     {
         Result<PredicadoDnf?> regraLida = LeituraDasCondicoes.PredicadoOpcional(d.Regra);
         if (regraLida.IsFailure)
@@ -110,44 +110,22 @@ internal static class LeituraDasModalidades
             return leitor.Propagar<ModalidadeSelecionada>(regraLida.Error!);
         }
 
-        return ReidratarModalidade(leitor, d, regraLida.Value);
-    }
-
-    private static ModalidadeSelecionada? ReidratarModalidade(LeitorEnvelope leitor, DeclaracaoDaModalidade d, PredicadoDnf? regra)
-    {
-        Result<ModalidadeSelecionada> modalidade = CriarModalidade(d, regra);
-
+        Result<ModalidadeSelecionada> modalidade = ModalidadeSelecionada.Criar(
+            d.NoCadastro(regraLida.Value ?? PredicadoDnf.SemClausula), d.QuantidadeDeclarada);
         if (modalidade.IsFailure)
         {
             return leitor.Propagar<ModalidadeSelecionada>(modalidade.Error!);
         }
 
-        // A coerência entre natureza e remanejamento é do cadastro, e a cópia congelada não passa por
-        // ele: um envelope adulterado reidrataria, por exemplo, uma ampla concorrência que remaneja as
-        // próprias vagas ociosas. A regra é a mesma que a publicação aplica.
-        return modalidade.Value!.RemanejamentoCoerenteComANatureza()
-            ? modalidade.Value
-            : leitor.Malformado<ModalidadeSelecionada?>("modalidades", $"a regra de remanejamento de {d.Codigo} não é a que a natureza dela pede.");
+        return ConferirRemanejamentoPelaNatureza(leitor, modalidade.Value!);
     }
 
-    private static Result<ModalidadeSelecionada> CriarModalidade(DeclaracaoDaModalidade d, PredicadoDnf? regra) =>
-        ModalidadeSelecionada.Criar(
-            d.OrigemId,
-            d.Codigo,
-            d.Descricao,
-            d.Natureza,
-            d.Composicao,
-            d.ComposicaoOrigem,
-            d.Remanejamento,
-            d.Destino,
-            d.Par,
-            d.Fallback,
-            regra ?? PredicadoDnf.SemClausula,
-            d.AcaoQuandoIndeferido,
-            d.BaseLegal,
-            d.QuantidadeDeclarada);
+    // O envelope não passa pelo cadastro; a coerência é a mesma exigida na publicação.
+    private static ModalidadeSelecionada? ConferirRemanejamentoPelaNatureza(LeitorEnvelope leitor, ModalidadeSelecionada modalidade) =>
+        modalidade.RemanejamentoCoerenteComANatureza() ? modalidade
+            : leitor.Malformado<ModalidadeSelecionada?>("modalidades", $"a regra de remanejamento de {modalidade.Codigo} não é a que a natureza dela pede.");
 
-    private sealed record DeclaracaoDaModalidade
+    private sealed record ModalidadeLidaDoEnvelope
     {
         public Guid OrigemId { get; init; }
 
@@ -161,7 +139,7 @@ internal static class LeituraDasModalidades
 
         public string? ComposicaoOrigem { get; init; }
 
-        public RegraRemanejamentoModalidade Remanejamento { get; init; }
+        public RegraRemanejamentoModalidade? Remanejamento { get; init; }
 
         public string? Destino { get; init; }
 
@@ -176,53 +154,42 @@ internal static class LeituraDasModalidades
         public string BaseLegal { get; init; } = string.Empty;
 
         public int? QuantidadeDeclarada { get; init; }
-    }
 
-    /// <summary>
-    /// O <b>vocabulário</b> da modalidade — os tokens que só o cadastro produz.
-    /// </summary>
-    /// <remarks>
-    /// O código é <b>chave</b>: a composição (<c>RETIRADA_DE_OUTRA_MODALIDADE</c>) e o remanejamento
-    /// (<c>DESTINO_UNICO</c>, <c>CRUZADO</c>) apontam para códigos de outras modalidades da
-    /// mesma oferta. Um código fora do formato do cadastro (<c>^[A-Z0-9_]+$</c>) nunca sai
-    /// de lá — mas um envelope adulterado o usaria como chave, e o motor de vagas do certame
-    /// receberia um grafo de remanejamento cujos nós não existem no cadastro.
-    /// </remarks>
-    internal static DomainError? VocabularioDaModalidade(
-        string codigo,
-        string? acaoQuandoIndeferido,
-        string? composicaoOrigem,
-        string? destino,
-        string? par,
-        string? fallback)
-    {
-        IEnumerable<string> foraDoFormato = new[] { codigo, composicaoOrigem, destino, par, fallback }
-            .Where(static c => c is not null)
-            .Select(static c => c!)
-            .Where(c => !FormatoCodigoModalidade.IsMatch(c));
-
-        foreach (string cruzamento in foraDoFormato)
+        internal ModalidadeNoCadastro NoCadastro(PredicadoDnf regra) => new()
         {
-            return new DomainError(
-                ErrosCodecEnvelope.EnvelopeMalformado,
-                $"Envelope malformado em 'modalidades': o código '{cruzamento}' não tem o formato do cadastro " +
-                "(A-Z, 0-9 e underscore) — e códigos são chave de composição e de remanejamento dentro da oferta.");
-        }
+            Id = OrigemId,
+            Codigo = Codigo,
+            Descricao = Descricao,
+            NaturezaLegal = Natureza,
+            ComposicaoVagas = Composicao,
+            ComposicaoOrigemCodigo = ComposicaoOrigem,
+            RegraRemanejamento = Remanejamento,
+            RemanejamentoDestino = Destino,
+            RemanejamentoPar = Par,
+            RemanejamentoFallback = Fallback,
+            RegraDeAplicabilidade = regra,
+            AcaoQuandoIndeferido = AcaoQuandoIndeferido,
+            BaseLegal = BaseLegal,
+        };
 
-        return ConferirAcaoQuandoIndeferido(acaoQuandoIndeferido);
+        internal DomainError? RecusaDoVocabulario() =>
+            CodigoForaDoFormato() is { } codigo ? RecusaDoFormatoDoCodigo(codigo)
+            : AcaoQuandoIndeferido is { } acao && !AcoesQuandoIndeferido.Contains(acao, StringComparer.Ordinal)
+                ? RecusaDaAcaoAoIndeferir(acao) : null;
+
+        private string? CodigoForaDoFormato() => new[] { Codigo, ComposicaoOrigem, Destino, Par, Fallback }
+            .FirstOrDefault(codigo => codigo is not null && !FormatoCodigoModalidade.IsMatch(codigo));
+
+        private static DomainError RecusaDoFormatoDoCodigo(string codigo) => new(
+            ErrosCodecEnvelope.EnvelopeMalformado,
+            $"Envelope malformado em 'modalidades': o código '{codigo}' não tem o formato do cadastro " +
+            "(A-Z, 0-9 e underscore) — e códigos são chave de composição e de remanejamento dentro da oferta.");
+
+        private static DomainError RecusaDaAcaoAoIndeferir(string acao) => new(
+            ErrosCodecEnvelope.EnvelopeMalformado,
+            $"Envelope malformado em 'modalidades': a ação ao indeferir '{acao}' não pertence ao " +
+            $"domínio fechado do cadastro ({string.Join(", ", AcoesQuandoIndeferido)}) — restaurá-la daria ao " +
+            "motor de homologação uma instrução que ele não sabe executar.");
     }
 
-    private static DomainError? ConferirAcaoQuandoIndeferido(string? acaoQuandoIndeferido)
-    {
-        if (acaoQuandoIndeferido is not null && !AcoesQuandoIndeferido.Contains(acaoQuandoIndeferido, StringComparer.Ordinal))
-        {
-            return new DomainError(
-                ErrosCodecEnvelope.EnvelopeMalformado,
-                $"Envelope malformado em 'modalidades': a ação ao indeferir '{acaoQuandoIndeferido}' não pertence ao " +
-                $"domínio fechado do cadastro ({string.Join(", ", AcoesQuandoIndeferido)}) — restaurá-la daria ao " +
-                "motor de homologação uma instrução que ele não sabe executar.");
-        }
-
-        return null;
-    }
 }

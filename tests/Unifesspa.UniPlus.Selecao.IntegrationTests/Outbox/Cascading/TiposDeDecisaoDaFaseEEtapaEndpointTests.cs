@@ -17,6 +17,7 @@ using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence;
 
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Authentication;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Selecao.IntegrationTests.TestSupport;
 
 /// <summary>
@@ -178,7 +179,7 @@ public sealed class TiposDeDecisaoDaFaseEEtapaEndpointTests
         int ordem, Guid tipoEtapaOrigemId, string[] tiposDeDecisao, DateTimeOffset? inicio, DateTimeOffset? fim) => new
         {
             nome = $"Etapa {ordem}",
-            carater = (int)CaraterEtapa.Classificatoria,
+            carater = CaraterEtapa.Classificatoria.Codigo(),
             tipoEtapaOrigemId,
             peso = 1.0m,
             notaMinima = (decimal?)null,

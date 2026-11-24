@@ -1,5 +1,7 @@
 namespace Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Conformidade;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
+
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Kernel.Extensions;
 using Unifesspa.UniPlus.Regras.Errors;
@@ -123,7 +125,7 @@ internal static class ItensEstruturaisDeConformidade
     }
 
     private static List<ItemConformidade> ItensDaFormulaDaClassificacao(ConfiguracaoDeclarada configuracao) =>
-        configuracao.Avaliacao.Classificacao is { RegraCalculo.Codigo: RegraCalculoCodigo.FormulaMediaPonderada }
+        configuracao.Avaliacao.Classificacao is { } classificacao && classificacao.RegraCalculo.Codigo == RegraDeCalculoDaNota.MediaPonderada.Codigo()
             ?
             [
                 new ItemConformidade("classificacao_divisor_media_invalido", DimensaoConformidade.Classificacao, "Divisor da média (fórmula local)", configuracao.Avaliacao.CalcularDivisorMedia() > 0),
@@ -226,13 +228,6 @@ internal static class ItensEstruturaisDeConformidade
     /// e quando o processo declara não cobrar, caso em que fundamento nenhum é o estado correto
     /// (UNI-REQ-0100).
     /// </summary>
-    /// <remarks>
-    /// Contar elementos basta: token fora do vocabulário não chega até aqui como lista "cheia de
-    /// nada". O conversor de <c>ConfiguracaoTaxaInscricaoConfiguration</c> LANÇA ao reserializar
-    /// <see cref="FundamentoIsencao.Nenhum"/>, então uma coluna adulterada estoura na carga do
-    /// agregado, alto e cedo, em vez de virar publicação silenciosa
-    /// (<c>TaxaInscricaoSemFundamentoPersistenciaTests</c> prova as duas metades).
-    /// </remarks>
     internal static bool TemFundamentoDeIsencaoQuandoCobra(ConfiguracaoDeclarada configuracao) =>
         configuracao.DivulgacaoETaxa.ConfiguracaoTaxaInscricao is not { Cobra: true, Fundamentos.Count: 0 };
 

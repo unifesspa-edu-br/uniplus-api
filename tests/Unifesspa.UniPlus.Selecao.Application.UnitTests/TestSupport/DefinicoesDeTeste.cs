@@ -12,7 +12,7 @@ internal static class DefinicoesDeTeste
         respostas.ToDictionary(
             static r => r.Key,
             static r => new DefinicaoDaResposta(
-                r.Value.ValueKind is JsonValueKind.True or JsonValueKind.False ? TipoDoValorDeResposta.Booleano : TipoDoValorDeResposta.Texto,
+                r.Value.ValueKind is JsonValueKind.True or JsonValueKind.False ? TipoDoValorDeResposta.SimOuNao : TipoDoValorDeResposta.Texto,
                 Multivalorado: false,
                 Identificador: false),
             StringComparer.Ordinal),

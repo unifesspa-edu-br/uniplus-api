@@ -2,6 +2,7 @@ namespace Unifesspa.UniPlus.Selecao.Domain.UnitTests.ProcessosSeletivos.Etapas;
 
 using AwesomeAssertions;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
@@ -37,7 +38,7 @@ public sealed class CoerenciaDaAvaliacaoDaEtapaTests
     public void Validar_EtapaDoEnemComRegra_RecusaARegra()
     {
         List<FieldError> erros = Validar(
-            notaDeOrigemNoEnem: true, passoDoLancamento: null, forma: null, RegraConsolidacaoCodigo.AvaliacaoUnica);
+            notaDeOrigemNoEnem: true, passoDoLancamento: null, forma: null, RegraDeApuracaoDaAvaliacao.AvaliacaoUnica.Codigo());
 
         Pares(erros).Should().Equal(("regraConsolidacao", EtapaProcessoErrorCodes.AvaliacaoNaEtapaDoEnem));
     }
@@ -67,7 +68,7 @@ public sealed class CoerenciaDaAvaliacaoDaEtapaTests
             notaDeOrigemNoEnem: true,
             passoDoLancamento: 0.5m,
             FormaDeAvaliacao.Objetiva,
-            RegraConsolidacaoCodigo.CorrecaoIndependente,
+            RegraDeApuracaoDaAvaliacao.CorrecaoIndependente.Codigo(),
             declaraItens: false,
             declaraEscala: true);
 
@@ -83,7 +84,7 @@ public sealed class CoerenciaDaAvaliacaoDaEtapaTests
     public void Validar_RegraForaDaFormaHumana_Recusa(FormaDeAvaliacao? forma)
     {
         List<FieldError> erros = Validar(
-            notaDeOrigemNoEnem: false, passoDoLancamento: null, forma, RegraConsolidacaoCodigo.AvaliacaoUnica);
+            notaDeOrigemNoEnem: false, passoDoLancamento: null, forma, RegraDeApuracaoDaAvaliacao.AvaliacaoUnica.Codigo());
 
         Pares(erros).Should().Equal(("regraConsolidacao", EtapaProcessoErrorCodes.RegraDeConsolidacaoForaDaFormaHumana));
     }
@@ -94,13 +95,13 @@ public sealed class CoerenciaDaAvaliacaoDaEtapaTests
         List<FieldError> erros = DaEtapaHumana(regra: "CONSOLIDACAO-INEXISTENTE");
 
         Pares(erros).Should().Equal(("regraConsolidacao", EtapaProcessoErrorCodes.RegraDeConsolidacaoInvalida));
-        erros.Single().Error.Message.Should().Contain("'CONSOLIDACAO-INEXISTENTE'");
+        erros.Single().Error.Message.Should().NotContain("CONSOLIDACAO-INEXISTENTE");
     }
 
     [Fact(DisplayName = "A regra do rol na forma humana não é recusada")]
     public void Validar_RegraDoRolNaFormaHumana_NaoRecusa()
     {
-        DaEtapaHumana(regra: RegraConsolidacaoCodigo.CorrecaoIndependente).Should().BeEmpty();
+        DaEtapaHumana(regra: RegraDeApuracaoDaAvaliacao.CorrecaoIndependente.Codigo()).Should().BeEmpty();
     }
 
     [Fact(DisplayName = "O passo do lançamento não se aplica à forma objetiva")]

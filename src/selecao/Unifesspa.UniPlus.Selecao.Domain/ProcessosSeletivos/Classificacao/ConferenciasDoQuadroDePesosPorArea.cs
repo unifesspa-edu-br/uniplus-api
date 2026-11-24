@@ -1,5 +1,7 @@
 namespace Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Classificacao;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
+
 using Unifesspa.UniPlus.Kernel.Extensions;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
@@ -25,7 +27,7 @@ internal static class ConferenciasDoQuadroDePesosPorArea
     {
         ArgumentNullException.ThrowIfNull(regraCalculo);
 
-        return baseadoEmEnem && regraCalculo.Codigo == RegraCalculoCodigo.FormulaMediaPonderada;
+        return baseadoEmEnem && regraCalculo.Codigo == RegraDeCalculoDaNota.MediaPonderada.Codigo();
     }
 
     /// <summary>

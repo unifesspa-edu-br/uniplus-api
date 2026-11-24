@@ -1,5 +1,6 @@
 namespace Unifesspa.UniPlus.Selecao.Application.DTOs.NotasDoEnem;
 
+using Unifesspa.UniPlus.Application.Abstractions.Respostas;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
@@ -39,38 +40,26 @@ public sealed record LoteDeNotasDoEnemDto(
         ArgumentNullException.ThrowIfNull(lote);
 
         return new LoteDeNotasDoEnemDto(
-            lote.Id,
-            lote.EdicaoCodigo,
-            lote.LeiauteCodigo,
-            lote.LeiauteVersao,
-            lote.LeiauteHash,
-            lote.ArquivoHash,
-            lote.ImportadoPor,
-            lote.ImportadoPorNome,
-            lote.ImportadoEm,
-            lote.TotalDeLinhas,
-            lote.TotalDeInscritosComNota,
-            lote.TotalDeLancamentos,
-            lote.TotalDeInscritosSemLinha,
-            lote.TotalDeLinhasSemInscrito,
-            lote.TotalDeInscritosEmConflito,
-            vigente,
-            detalhe is null
-                ? null
-                : [.. lote.Ocorrencias
-                    .Select(o => OcorrenciaDoLoteDto.De(o, detalhe))
-                    .OrderBy(static o => o.Tipo, StringComparer.Ordinal)
-                    .ThenBy(static o => o.NumeroDeInscricao, StringComparer.Ordinal)
-                    .ThenBy(static o => o.NumerosDasLinhas?[0])],
-            totalDeInscritosAusentes,
-            detalhe is null
-                ? null
-                : [.. detalhe.AusentesPorInscricao
-                    .Select(a => AusenteDoLoteDto.De(a.Key, a.Value, detalhe))
-                    .OrderBy(static a => a.NumeroDeInscricao is null)
-                    .ThenBy(static a => a.NumeroDeInscricao, StringComparer.Ordinal)
-                    .ThenBy(static a => a.InscricaoId)]);
+            lote.Id, lote.EdicaoCodigo, lote.LeiauteCodigo, lote.LeiauteVersao, lote.LeiauteHash,
+            lote.ArquivoHash, lote.ImportadoPor, lote.ImportadoPorNome, lote.ImportadoEm, lote.TotalDeLinhas,
+            lote.TotalDeInscritosComNota, lote.TotalDeLancamentos, lote.TotalDeInscritosSemLinha,
+            lote.TotalDeLinhasSemInscrito, lote.TotalDeInscritosEmConflito, vigente,
+            OcorrenciasDe(lote, detalhe), totalDeInscritosAusentes, AusentesDe(detalhe));
     }
+
+    private static IReadOnlyList<OcorrenciaDoLoteDto>? OcorrenciasDe(LoteDeNotasDoEnem lote, DetalheDoLoteDeNotas? detalhe) =>
+        detalhe is null ? null : [.. lote.Ocorrencias
+            .Select(o => OcorrenciaDoLoteDto.De(o, detalhe))
+            .OrderBy(static o => o.Tipo.Codigo, StringComparer.Ordinal)
+            .ThenBy(static o => o.NumeroDeInscricao, StringComparer.Ordinal)
+            .ThenBy(static o => o.NumerosDasLinhas?[0])];
+
+    private static IReadOnlyList<AusenteDoLoteDto>? AusentesDe(DetalheDoLoteDeNotas? detalhe) =>
+        detalhe is null ? null : [.. detalhe.AusentesPorInscricao
+            .Select(a => AusenteDoLoteDto.De(a.Key, a.Value, detalhe))
+            .OrderBy(static a => a.NumeroDeInscricao is null)
+            .ThenBy(static a => a.NumeroDeInscricao, StringComparer.Ordinal)
+            .ThenBy(static a => a.InscricaoId)];
 }
 
 /// <summary>
@@ -80,7 +69,7 @@ public sealed record LoteDeNotasDoEnemDto(
 /// na importação, sem inscrição.
 /// </summary>
 public sealed record OcorrenciaDoLoteDto(
-    string Tipo,
+    CodigoComRotulo<TipoDeOcorrenciaDoLote> Tipo,
     Guid? InscricaoId,
     string? NumeroDeInscricao,
     IReadOnlyList<int>? NumerosDasLinhas,
@@ -98,18 +87,9 @@ public sealed record OcorrenciaDoLoteDto(
         InscritoDoLote? inscrito = inscricaoId is { } id ? detalhe.Inscrito(id) : null;
 
         return new OcorrenciaDoLoteDto(
-            ocorrencia.Tipo switch
-            {
-                TipoDeOcorrenciaDoLote.InscritoSemLinha => "INSCRITO_SEM_LINHA",
-                TipoDeOcorrenciaDoLote.LinhaSemInscrito => "LINHA_SEM_INSCRITO",
-                _ => "CONFLITO",
-            },
-            inscricaoId,
-            inscrito?.NumeroDeInscricao,
-            ocorrencia.NumerosDasLinhas,
-            inscrito?.Nome ?? ocorrencia.Nome,
-            inscrito?.CpfMascarado ?? ocorrencia.CpfMascarado,
-            ocorrencia.Sexo,
+            CodigoComRotulo<TipoDeOcorrenciaDoLote>.De(ocorrencia.Tipo),
+            inscricaoId, inscrito?.NumeroDeInscricao, ocorrencia.NumerosDasLinhas,
+            inscrito?.Nome ?? ocorrencia.Nome, inscrito?.CpfMascarado ?? ocorrencia.CpfMascarado, ocorrencia.Sexo,
             inscricaoId is { } o ? detalhe.OfertasDe(o) : null);
     }
 }

@@ -2,6 +2,7 @@ namespace Unifesspa.UniPlus.Selecao.Domain.UnitTests.ProcessosSeletivos.Recursos
 
 using AwesomeAssertions;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.Services;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
@@ -35,7 +36,7 @@ public sealed class ProcedimentosDeRecursoTests
     {
         ProcedimentosDeRecurso base1 = ProcedimentosDeRecurso.De([Classificacao]);
 
-        base1.MesmoConteudo(ProcedimentosDeRecurso.De([Procedimento(codigoDaRegra: RegraProcedimentoRecursoCodigo.Conferencia)])).Should().BeFalse();
+        base1.MesmoConteudo(ProcedimentosDeRecurso.De([Procedimento(codigoDaRegra: RegraDeProcedimentoDoRecurso.Conferencia.Codigo())])).Should().BeFalse();
         base1.MesmoConteudo(ProcedimentosDeRecurso.De([Procedimento(alvo: AlvoItem())])).Should().BeFalse();
         base1.MesmoConteudo(ProcedimentosDeRecurso.De([HomologacaoSemAlvo])).Should().BeFalse();
         base1.MesmoConteudo(ProcedimentosDeRecurso.Nenhum).Should().BeFalse();

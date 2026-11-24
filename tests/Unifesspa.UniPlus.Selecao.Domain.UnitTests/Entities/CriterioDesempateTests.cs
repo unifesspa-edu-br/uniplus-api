@@ -4,6 +4,7 @@ using System.Text.Json;
 
 using AwesomeAssertions;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.ValueObjects;
@@ -16,48 +17,58 @@ public sealed class CriterioDesempateTests
     private static ReferenciaRegra Regra(string codigo) =>
         ReferenciaRegra.De(codigo, "v1", new string('a', 64));
 
+    private static ReferenciaRegra Regra(RegraDeDesempate regra) => Regra(regra.Codigo());
+
     private static CondicaoDnf CondicaoProfessorRural() =>
         CondicaoDnf.Criar("PROFESSOR_RURAL", Operador.Igual, JsonSerializer.SerializeToElement(true)).Value!;
 
-    [Fact(DisplayName = "Criar DESEMPATE-MAIOR-NOTA-ETAPA com parâmetros compatíveis tem sucesso")]
+    [Fact]
+    public void Criar_RegraDesconhecida_RecusaParametrosIncompativeis()
+    {
+        Result<CriterioDesempate> resultado = CriterioDesempate.Criar(
+            1, Regra("DESEMPATE-INEXISTENTE"), new ParametrosDesempateMaiorIdade());
+        resultado.Error!.Code.Should().Be("CriterioDesempate.ParametrosIncompativeisComRegra");
+    }
+
+    [Fact(DisplayName = "Criar DESEMPATE_MAIOR_NOTA_ETAPA com parâmetros compatíveis tem sucesso")]
     public void Criar_MaiorNotaEtapa_Sucesso()
     {
         Guid etapaId = Guid.CreateVersion7();
         Result<CriterioDesempate> resultado = CriterioDesempate.Criar(
-            1, Regra(CriterioDesempateCodigo.MaiorNotaEtapa), new ParametrosDesempateMaiorNotaEtapa(etapaId));
+            1, Regra(RegraDeDesempate.MaiorNotaNaEtapa), new ParametrosDesempateMaiorNotaEtapa(etapaId));
 
         resultado.IsSuccess.Should().BeTrue();
         ((ParametrosDesempateMaiorNotaEtapa)resultado.Value!.Parametros).EtapaRef.Should().Be(etapaId);
     }
 
-    [Fact(DisplayName = "Criar DESEMPATE-MAIOR-IDADE (sem parâmetros) tem sucesso")]
+    [Fact(DisplayName = "Criar DESEMPATE_MAIOR_IDADE (sem parâmetros) tem sucesso")]
     public void Criar_MaiorIdade_Sucesso()
     {
         Result<CriterioDesempate> resultado = CriterioDesempate.Criar(
-            1, Regra(CriterioDesempateCodigo.MaiorIdade), new ParametrosDesempateMaiorIdade());
+            1, Regra(RegraDeDesempate.MaiorIdade), new ParametrosDesempateMaiorIdade());
 
         resultado.IsSuccess.Should().BeTrue();
     }
 
-    [Fact(DisplayName = "Criar DESEMPATE-IDOSO com idade mínima válida tem sucesso")]
+    [Fact(DisplayName = "Criar DESEMPATE_IDOSO com idade mínima válida tem sucesso")]
     public void Criar_Idoso_Sucesso()
     {
         Result<CriterioDesempate> resultado = CriterioDesempate.Criar(
-            1, Regra(CriterioDesempateCodigo.Idoso), new ParametrosDesempateIdoso(60));
+            1, Regra(RegraDeDesempate.Idoso), new ParametrosDesempateIdoso(60));
 
         resultado.IsSuccess.Should().BeTrue();
     }
 
-    [Fact(DisplayName = "Criar DESEMPATE-PREDICADO-FATO com parâmetros completos tem sucesso")]
+    [Fact(DisplayName = "Criar DESEMPATE_CONDICAO_SOBRE_DADO com parâmetros completos tem sucesso")]
     public void Criar_PredicadoFato_Sucesso()
     {
         Result<CriterioDesempate> resultado = CriterioDesempate.Criar(
-            1, Regra(CriterioDesempateCodigo.PredicadoFato), new ParametrosDesempatePredicadoFato(CondicaoProfessorRural()));
+            1, Regra(RegraDeDesempate.CondicaoSobreDado), new ParametrosDesempatePredicadoFato(CondicaoProfessorRural()));
 
         resultado.IsSuccess.Should().BeTrue();
     }
 
-    [Fact(DisplayName = "Criar DESEMPATE-PREDICADO-FATO com fato fora do vocabulário fechado falha")]
+    [Fact(DisplayName = "Criar DESEMPATE_CONDICAO_SOBRE_DADO com fato fora do vocabulário fechado falha")]
     public void Criar_PredicadoFato_FatoDesconhecido_Falha()
     {
         Dictionary<string, DescritorFatoCandidato> vocabulario = new()
@@ -68,7 +79,7 @@ public sealed class CriterioDesempateTests
         CondicaoDnf condicaoDesconhecida = CondicaoDnf.Criar("FATO_INEXISTENTE", Operador.Igual, JsonSerializer.SerializeToElement(true)).Value!;
 
         Result<CriterioDesempate> resultado = CriterioDesempate.Criar(
-            1, Regra(CriterioDesempateCodigo.PredicadoFato), new ParametrosDesempatePredicadoFato(condicaoDesconhecida), vocabulario);
+            1, Regra(RegraDeDesempate.CondicaoSobreDado), new ParametrosDesempatePredicadoFato(condicaoDesconhecida), vocabulario);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("PredicadoDnf.FatoDesconhecido");
@@ -87,12 +98,12 @@ public sealed class CriterioDesempateTests
         CondicaoDnf condicao = CondicaoDnf.Criar(fato, operador, JsonDocument.Parse(valor).RootElement.Clone()).Value!;
 
         Result<CriterioDesempate> resultado = CriterioDesempate.Criar(
-            1, Regra(CriterioDesempateCodigo.PredicadoFato), new ParametrosDesempatePredicadoFato(condicao), vocabulario);
+            1, Regra(RegraDeDesempate.CondicaoSobreDado), new ParametrosDesempatePredicadoFato(condicao), vocabulario);
 
         resultado.Errors.Should().ContainSingle().Which.Field.Should().Be(campo);
     }
 
-    [Fact(DisplayName = "Criar DESEMPATE-PREDICADO-FATO com fato do vocabulário fechado tem sucesso")]
+    [Fact(DisplayName = "Criar DESEMPATE_CONDICAO_SOBRE_DADO com fato do vocabulário fechado tem sucesso")]
     public void Criar_PredicadoFato_FatoConhecido_Sucesso()
     {
         Dictionary<string, DescritorFatoCandidato> vocabulario = new()
@@ -101,7 +112,7 @@ public sealed class CriterioDesempateTests
         };
 
         Result<CriterioDesempate> resultado = CriterioDesempate.Criar(
-            1, Regra(CriterioDesempateCodigo.PredicadoFato), new ParametrosDesempatePredicadoFato(CondicaoProfessorRural()), vocabulario);
+            1, Regra(RegraDeDesempate.CondicaoSobreDado), new ParametrosDesempatePredicadoFato(CondicaoProfessorRural()), vocabulario);
 
         resultado.IsSuccess.Should().BeTrue();
     }
@@ -110,7 +121,7 @@ public sealed class CriterioDesempateTests
     public void Criar_OrdemInvalida_Falha()
     {
         Result<CriterioDesempate> resultado = CriterioDesempate.Criar(
-            0, Regra(CriterioDesempateCodigo.MaiorIdade), new ParametrosDesempateMaiorIdade());
+            0, Regra(RegraDeDesempate.MaiorIdade), new ParametrosDesempateMaiorIdade());
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("CriterioDesempate.OrdemInvalida");
@@ -120,17 +131,17 @@ public sealed class CriterioDesempateTests
     public void Criar_ParametrosIncompativeis_Falha()
     {
         Result<CriterioDesempate> resultado = CriterioDesempate.Criar(
-            1, Regra(CriterioDesempateCodigo.MaiorNotaEtapa), new ParametrosDesempateMaiorIdade());
+            1, Regra(RegraDeDesempate.MaiorNotaNaEtapa), new ParametrosDesempateMaiorIdade());
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("CriterioDesempate.ParametrosIncompativeisComRegra");
     }
 
-    [Fact(DisplayName = "Criar DESEMPATE-IDOSO com idade mínima não positiva falha")]
+    [Fact(DisplayName = "Criar DESEMPATE_IDOSO com idade mínima não positiva falha")]
     public void Criar_IdadeMinimaInvalida_Falha()
     {
         Result<CriterioDesempate> resultado = CriterioDesempate.Criar(
-            1, Regra(CriterioDesempateCodigo.Idoso), new ParametrosDesempateIdoso(0));
+            1, Regra(RegraDeDesempate.Idoso), new ParametrosDesempateIdoso(0));
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("CriterioDesempate.IdadeMinimaInvalida");
@@ -140,7 +151,7 @@ public sealed class CriterioDesempateTests
     public void Criar_OrdemInvalidaEIdadeMinimaInvalida_AcumulaAsDuasViolacoes()
     {
         Result<CriterioDesempate> resultado = CriterioDesempate.Criar(
-            0, Regra(CriterioDesempateCodigo.Idoso), new ParametrosDesempateIdoso(0));
+            0, Regra(RegraDeDesempate.Idoso), new ParametrosDesempateIdoso(0));
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Errors.Select(e => e.Error.Code).Should().BeEquivalentTo(
@@ -150,11 +161,11 @@ public sealed class CriterioDesempateTests
         ]);
     }
 
-    [Fact(DisplayName = "Criar DESEMPATE-MAIOR-NOTA-AREA-ENEM guarda os códigos na ordem declarada")]
+    [Fact(DisplayName = "Criar DESEMPATE_MAIOR_NOTA_AREA_ENEM guarda os códigos na ordem declarada")]
     public void Criar_MaiorNotaAreaEnem_Sucesso()
     {
         Result<CriterioDesempate> resultado = CriterioDesempate.Criar(
-            1, Regra(CriterioDesempateCodigo.MaiorNotaAreaEnem), new ParametrosDesempateMaiorNotaAreaEnem(["REDACAO", "MATEMATICA"]));
+            1, Regra(RegraDeDesempate.MaiorNotaPorAreaDoEnem), new ParametrosDesempateMaiorNotaAreaEnem(["REDACAO", "MATEMATICA"]));
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
         ((ParametrosDesempateMaiorNotaAreaEnem)resultado.Value!.Parametros).Areas.Should().Equal("REDACAO", "MATEMATICA");
@@ -165,7 +176,7 @@ public sealed class CriterioDesempateTests
     {
         string[] areas = ["REDACAO", "MATEMATICA"];
         CriterioDesempate criterio = CriterioDesempate.Criar(
-            1, Regra(CriterioDesempateCodigo.MaiorNotaAreaEnem), new ParametrosDesempateMaiorNotaAreaEnem(areas)).Value!;
+            1, Regra(RegraDeDesempate.MaiorNotaPorAreaDoEnem), new ParametrosDesempateMaiorNotaAreaEnem(areas)).Value!;
 
         areas[0] = "redacao";
         areas[1] = "REDACAO";
@@ -189,7 +200,7 @@ public sealed class CriterioDesempateTests
     public void Criar_ParametrosDeAreaSobOutraRegra_Falha()
     {
         Result<CriterioDesempate> resultado = CriterioDesempate.Criar(
-            1, Regra(CriterioDesempateCodigo.MaiorIdade), new ParametrosDesempateMaiorNotaAreaEnem(["REDACAO"]));
+            1, Regra(RegraDeDesempate.MaiorIdade), new ParametrosDesempateMaiorNotaAreaEnem(["REDACAO"]));
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("CriterioDesempate.ParametrosIncompativeisComRegra");
@@ -199,7 +210,7 @@ public sealed class CriterioDesempateTests
     public void Criar_MaiorNotaAreaEnem_SemAreas_Falha()
     {
         Result<CriterioDesempate> resultado = CriterioDesempate.Criar(
-            1, Regra(CriterioDesempateCodigo.MaiorNotaAreaEnem), new ParametrosDesempateMaiorNotaAreaEnem([]));
+            1, Regra(RegraDeDesempate.MaiorNotaPorAreaDoEnem), new ParametrosDesempateMaiorNotaAreaEnem([]));
 
         resultado.IsFailure.Should().BeTrue();
         FieldError erro = resultado.Errors.Should().ContainSingle().Subject;
@@ -211,7 +222,7 @@ public sealed class CriterioDesempateTests
     public void Criar_MaiorNotaAreaEnem_AreaRepetida_Falha()
     {
         Result<CriterioDesempate> resultado = CriterioDesempate.Criar(
-            1, Regra(CriterioDesempateCodigo.MaiorNotaAreaEnem), new ParametrosDesempateMaiorNotaAreaEnem(["REDACAO", "MATEMATICA", "REDACAO"]));
+            1, Regra(RegraDeDesempate.MaiorNotaPorAreaDoEnem), new ParametrosDesempateMaiorNotaAreaEnem(["REDACAO", "MATEMATICA", "REDACAO"]));
 
         resultado.IsFailure.Should().BeTrue();
         FieldError erro = resultado.Errors.Should().ContainSingle().Subject;
@@ -230,7 +241,7 @@ public sealed class CriterioDesempateTests
     public void Criar_MaiorNotaAreaEnem_CodigoInvalido_Falha(string codigo)
     {
         Result<CriterioDesempate> resultado = CriterioDesempate.Criar(
-            1, Regra(CriterioDesempateCodigo.MaiorNotaAreaEnem), new ParametrosDesempateMaiorNotaAreaEnem(["MATEMATICA", codigo]));
+            1, Regra(RegraDeDesempate.MaiorNotaPorAreaDoEnem), new ParametrosDesempateMaiorNotaAreaEnem(["MATEMATICA", codigo]));
 
         resultado.IsFailure.Should().BeTrue();
         FieldError erro = resultado.Errors.Should().ContainSingle().Subject;
@@ -241,10 +252,10 @@ public sealed class CriterioDesempateTests
     [Fact(DisplayName = "Ordem de áreas acima do teto é recusada")]
     public void Criar_MaiorNotaAreaEnem_AreasEmExcesso_Falha()
     {
-        string[] areas = [.. Enumerable.Range(0, CriterioDesempate.AreasMaximo + 1).Select(static i => $"AREA_{i}")];
+        string[] areas = [.. Enumerable.Range(0, ParametrosDesempateMaiorNotaAreaEnem.AreasMaximo + 1).Select(static i => $"AREA_{i}")];
 
         Result<CriterioDesempate> resultado = CriterioDesempate.Criar(
-            1, Regra(CriterioDesempateCodigo.MaiorNotaAreaEnem), new ParametrosDesempateMaiorNotaAreaEnem(areas));
+            1, Regra(RegraDeDesempate.MaiorNotaPorAreaDoEnem), new ParametrosDesempateMaiorNotaAreaEnem(areas));
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("CriterioDesempate.AreasEmExcesso");
@@ -254,7 +265,7 @@ public sealed class CriterioDesempateTests
     public void Criar_OrdemInvalidaEAreaRepetida_AcumulaAsDuasViolacoes()
     {
         Result<CriterioDesempate> resultado = CriterioDesempate.Criar(
-            0, Regra(CriterioDesempateCodigo.MaiorNotaAreaEnem), new ParametrosDesempateMaiorNotaAreaEnem(["REDACAO", "REDACAO"]));
+            0, Regra(RegraDeDesempate.MaiorNotaPorAreaDoEnem), new ParametrosDesempateMaiorNotaAreaEnem(["REDACAO", "REDACAO"]));
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Errors.Select(e => e.Error.Code).Should().BeEquivalentTo(
@@ -264,7 +275,7 @@ public sealed class CriterioDesempateTests
         ]);
     }
 
-    [Fact(DisplayName = "ValidarOrdem sem violação retorna lote vazio")]
+    [Fact(DisplayName = "ValidarOrdem sem violação não devolve recusa")]
     public void ValidarOrdem_SemViolacao_Vazio()
     {
         List<FieldError> erros = CriterioDesempate.ValidarOrdem(1);

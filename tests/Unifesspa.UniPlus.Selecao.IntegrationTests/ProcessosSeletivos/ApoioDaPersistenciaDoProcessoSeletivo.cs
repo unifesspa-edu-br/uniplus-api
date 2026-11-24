@@ -11,6 +11,7 @@ using Npgsql;
 
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Interceptors;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Monolito.Persistencia;
 using Unifesspa.UniPlus.Regras.Enums;
@@ -73,11 +74,8 @@ internal sealed class ApoioDaPersistenciaDoProcessoSeletivo
     internal static void DefinirDistribuicaoDoSplitQuery(GrafoDeTodasAsColecoes grafo)
     {
         ReferenciaRegra regraDistribuicao = ReferenciaRegra.De(
-            RegraDistribuicaoVagasCodigo.Institucional, "v1", HashFixoTeste);
-        ModalidadeSelecionada modalidade = ModalidadeSelecionada.Criar(
-            grafo.ModalidadeOrigemId, "AC", null, NaturezaLegalModalidade.Ampla, ComposicaoVagasModalidade.RestanteDasVagasOfertadas,
-            null, RegraRemanejamentoModalidade.Nenhuma, null, null, null, RegrasDeAplicabilidadeDeTeste.DaNatureza(NaturezaLegalModalidade.Ampla), null,
-            "Res. Unifesspa 532/2021", quantidadeDeclarada: 40).Value!;
+            RegraDeDistribuicaoDeVagas.Institucional.Codigo(), "v1", HashFixoTeste);
+        ModalidadeSelecionada modalidade = ModalidadeSelecionada.Criar(ModalidadesNoCadastroDeTeste.Da("AC", NaturezaLegalModalidade.Ampla, ComposicaoVagasModalidade.RestanteDasVagasOfertadas) with { Id = grafo.ModalidadeOrigemId, RegraRemanejamento = null, BaseLegal = "Res. Unifesspa 532/2021" }, 40).Value!;
         ConfiguracaoDistribuicaoVagas distribuicao = ConfiguracaoDistribuicaoVagas.Criar(Guid.CreateVersion7(),
             new DistribuicaoDeVagasDeclarada { VagasOfertadasBase = 40, PercentualDaReservaLegal = 1m, RegraDeDistribuicao = regraDistribuicao, Modalidades = [modalidade] },
             new FatosDaOfertaNoCadastro { OfertaCurso = OfertaCursoDeTeste.Medicina }).Value!;
@@ -87,14 +85,14 @@ internal sealed class ApoioDaPersistenciaDoProcessoSeletivo
     internal static void DefinirClassificacaoDoSplitQuery(ProcessoSeletivo processo, EtapaProcesso etapa)
     {
         RegraEliminacao eliminacao = RegraEliminacao.Criar(
-            ReferenciaRegra.De(RegraEliminacaoCodigo.ElimNotaMinimaEtapa, "v1", HashFixoTeste),
-            new ParametrosElimNotaMinimaEtapa(etapa.Id, 4m)).Value!;
+            ReferenciaRegra.De(RegraDeEliminacaoPorCalculo.NotaMinimaNaEtapa.Codigo(), "v1", HashFixoTeste),
+            new ParametrosEliminacaoPorNotaMinimaNaEtapa(etapa.Id, 4m)).Value!;
         ConfiguracaoClassificacao classificacao = ConfiguracaoClassificacao.Criar(new DeclaracaoDaClassificacao
         {
-            RegraCalculo = ReferenciaRegra.De(RegraCalculoCodigo.FormulaMediaPonderada, "v1", HashFixoTeste),
-            RegraArredondamento = ReferenciaRegra.De(RegraArredondamentoCodigo.PrecisaoTruncar, "v1", HashFixoTeste),
+            RegraCalculo = ReferenciaRegra.De(RegraDeCalculoDaNota.MediaPonderada.Codigo(), "v1", HashFixoTeste),
+            RegraArredondamento = ReferenciaRegra.De(RegraDeArredondamentoDaNota.Truncar.Codigo(), "v1", HashFixoTeste),
             CasasArredondamento = 2,
-            RegraOrdemAlocacao = ReferenciaRegra.De(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, "v1", HashFixoTeste),
+            RegraOrdemAlocacao = ReferenciaRegra.De(RegraDeOrdemDeAlocacao.PrimeiraOpcaoPrioritaria.Codigo(), "v1", HashFixoTeste),
             RegrasEliminacao = [eliminacao],
             EscalaNotaFinal = 100m,
         }).Value!;

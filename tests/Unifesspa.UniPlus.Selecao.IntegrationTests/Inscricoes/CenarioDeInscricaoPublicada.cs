@@ -154,7 +154,7 @@ internal sealed class CenarioDeInscricaoPublicada
         return (inscricao, await NovoRepositorioDeComprovantes(leitura).ObterComprovantesAsync([inscricao.Id], CancellationToken.None));
     }
 
-    public async Task<List<(int Posicao, int Origem, string Codigo)>> LinhasDaModalidadeAsync(Guid inscricaoId)
+    public async Task<List<(int Posicao, string Origem, string Codigo)>> LinhasDaModalidadeAsync(Guid inscricaoId)
     {
         await using NpgsqlConnection connection = new(_fixture.ConnectionString);
         await connection.OpenAsync();
@@ -167,13 +167,13 @@ internal sealed class CenarioDeInscricaoPublicada
         return await LerLinhasDaModalidadeAsync(command);
     }
 
-    private static async Task<List<(int, int, string)>> LerLinhasDaModalidadeAsync(NpgsqlCommand command)
+    private static async Task<List<(int, string, string)>> LerLinhasDaModalidadeAsync(NpgsqlCommand command)
     {
-        List<(int, int, string)> linhas = [];
+        List<(int, string, string)> linhas = [];
         await using NpgsqlDataReader reader = await command.ExecuteReaderAsync();
         while (await reader.ReadAsync())
         {
-            linhas.Add((reader.GetInt32(0), reader.GetInt32(1), reader.GetString(2)));
+            linhas.Add((reader.GetInt32(0), reader.GetString(1), reader.GetString(2)));
         }
 
         return linhas;

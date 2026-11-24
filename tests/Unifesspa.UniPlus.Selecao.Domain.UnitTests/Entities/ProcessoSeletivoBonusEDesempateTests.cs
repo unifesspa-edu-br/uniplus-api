@@ -2,6 +2,7 @@ namespace Unifesspa.UniPlus.Selecao.Domain.UnitTests.Entities;
 
 using AwesomeAssertions;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
@@ -20,7 +21,7 @@ public sealed class ProcessoSeletivoBonusEDesempateTests
     public void DefinirBonusRegional_DefineERemove()
     {
         ProcessoSeletivo processo = NovoProcesso();
-        ConfiguracaoBonusRegional bonus = ConfiguracaoBonusRegional.Criar(ReferenciaRegra.De(RegraBonusCodigo.Multiplicativo, "v1", new string('a', 64)), 1.20m, null, null, new BaseLegalCongelada(Guid.CreateVersion7(), "PORTARIA_UNIFESSPA_NO_2514_2023", "PORTARIA", "Portaria Unifesspa nº 2514/2023", "Institui inclusão regional", [("1504208", "Marabá", "PA")])).Value!;
+        ConfiguracaoBonusRegional bonus = ConfiguracaoBonusRegional.Criar(ReferenciaRegra.De(RegraDeBonus.Multiplicativo.Codigo(), "v1", new string('a', 64)), 1.20m, null, null, new BaseLegalCongelada(Guid.CreateVersion7(), "PORTARIA_UNIFESSPA_NO_2514_2023", "PORTARIA", "Portaria Unifesspa nº 2514/2023", "Institui inclusão regional", [("1504208", "Marabá", "PA")])).Value!;
 
         processo.DefinirBonusRegional(aplica: true, bonus: bonus).IsSuccess.Should().BeTrue();
         processo.BonusRegional.Should().NotBeNull();
@@ -135,11 +136,11 @@ public sealed class ProcessoSeletivoBonusEDesempateTests
         ReferenciaRegra.De(codigo, "v1", new string('a', 64));
 
     private static CriterioDesempate CriterioIdoso(int ordem) =>
-        CriterioDesempate.Criar(ordem, RegraDesempate(CriterioDesempateCodigo.Idoso), new ParametrosDesempateIdoso(60)).Value!;
+        CriterioDesempate.Criar(ordem, RegraDesempate(RegraDeDesempate.Idoso.Codigo()), new ParametrosDesempateIdoso(60)).Value!;
 
     private static CriterioDesempate CriterioMaiorIdade(int ordem) =>
-        CriterioDesempate.Criar(ordem, RegraDesempate(CriterioDesempateCodigo.MaiorIdade), new ParametrosDesempateMaiorIdade()).Value!;
+        CriterioDesempate.Criar(ordem, RegraDesempate(RegraDeDesempate.MaiorIdade.Codigo()), new ParametrosDesempateMaiorIdade()).Value!;
 
     private static CriterioDesempate CriterioDeMaiorNotaDaEtapa(Guid etapaId) =>
-        CriterioDesempate.Criar(1, RegraDesempate(CriterioDesempateCodigo.MaiorNotaEtapa), new ParametrosDesempateMaiorNotaEtapa(etapaId)).Value!;
+        CriterioDesempate.Criar(1, RegraDesempate(RegraDeDesempate.MaiorNotaNaEtapa.Codigo()), new ParametrosDesempateMaiorNotaEtapa(etapaId)).Value!;
 }

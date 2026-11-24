@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
 using Unifesspa.UniPlus.Infrastructure.Core.Errors;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.API.Errors;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
@@ -62,7 +63,7 @@ public sealed class RecusaDeUnidadeNoPrazoDeInterposicaoProblemDetailsTests
         problem.Extensions["code"].Should().Be("uniplus.selecao.configuracao_do_recurso_da_fase.prazo_em_fracao_de_dia_util");
         problem.Type.Should().Be(BaseUriDeErros + "uniplus.selecao.configuracao_do_recurso_da_fase.prazo_em_fracao_de_dia_util");
         problem.Title.Should().Be("O prazo do recurso em dias úteis exige número inteiro");
-        problem.Detail.Should().Contain("horas",
+        problem.Detail.Should().Contain("HORAS",
             "quem declarou fração precisa ser levado à saída que serve ao caso dele, que é declarar em horas");
     }
 
@@ -90,14 +91,14 @@ public sealed class RecusaDeUnidadeNoPrazoDeInterposicaoProblemDetailsTests
 
     private static Result<RegraRecursoFase> CriarComSegundaInstancia(UnidadePrazo unidade) =>
         RegraRecursoFase.Criar(
-            ReferenciaRegra.De(RegraPrazoRecursoCodigo.AncoradoEmAto, "v1", new string('a', 64)),
+            ReferenciaRegra.De(RegraDePrazoDoRecurso.ContadoDaPublicacaoDoAto.Codigo(), "v1", new string('a', 64)),
             ParametrosDoRecursoDeTeste.Declarados(
                 2m, UnidadePrazo.DiasUteis, admiteInstanciaSuperior: true, segundaInstancia: new PrazoDoRecurso(3m, unidade)),
             Guid.CreateVersion7());
 
     private static Result<RegraRecursoFase> Criar(UnidadePrazo prazoUnidade, decimal prazoValor) =>
         RegraRecursoFase.Criar(
-            ReferenciaRegra.De(RegraPrazoRecursoCodigo.AncoradoEmAto, "v1", new string('a', 64)),
+            ReferenciaRegra.De(RegraDePrazoDoRecurso.ContadoDaPublicacaoDoAto.Codigo(), "v1", new string('a', 64)),
             ParametrosDoRecursoDeTeste.Declarados(prazoValor, prazoUnidade),
             Guid.CreateVersion7());
 

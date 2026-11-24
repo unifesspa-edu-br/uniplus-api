@@ -2,6 +2,7 @@ namespace Unifesspa.UniPlus.Selecao.Domain.UnitTests.ProcessosSeletivos.Conferen
 
 using AwesomeAssertions;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.ConferenciaDaConfiguracao;
@@ -61,7 +62,7 @@ public sealed class OrdemDasReferenciasDaClassificacaoTests
     }
 
     private static CriterioDesempate Criterio(int ordem, char hash) => CriterioDesempate.Criar(
-        ordem, ReferenciaRegra.De(CriterioDesempateCodigo.MaiorIdade, "v1", new string(hash, 64)),
+        ordem, ReferenciaRegra.De(RegraDeDesempate.MaiorIdade.Codigo(), "v1", new string(hash, 64)),
         new ParametrosDesempateMaiorIdade()).Value!;
 
     private static ConfiguracaoDeclarada Configuracao(RegraEliminacao primeira, RegraEliminacao segunda)
@@ -81,15 +82,15 @@ public sealed class OrdemDasReferenciasDaClassificacaoTests
     internal static ConfiguracaoClassificacao Classificacao(RegraEliminacao primeira, RegraEliminacao segunda) =>
         ConfiguracaoClassificacao.Criar(new DeclaracaoDaClassificacao
         {
-            RegraCalculo = ProcessoConformeFactory.Regra(RegraCalculoCodigo.FormulaMediaPonderada, "c"),
-            RegraArredondamento = ProcessoConformeFactory.Regra(RegraArredondamentoCodigo.PrecisaoTruncar, "d"),
+            RegraCalculo = ProcessoConformeFactory.Regra(RegraDeCalculoDaNota.MediaPonderada.Codigo(), "c"),
+            RegraArredondamento = ProcessoConformeFactory.Regra(RegraDeArredondamentoDaNota.Truncar.Codigo(), "d"),
             CasasArredondamento = 2,
-            RegraOrdemAlocacao = ProcessoConformeFactory.Regra(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, "e"),
+            RegraOrdemAlocacao = ProcessoConformeFactory.Regra(RegraDeOrdemDeAlocacao.PrimeiraOpcaoPrioritaria.Codigo(), "e"),
             RegrasEliminacao = [primeira, segunda],
             EscalaNotaFinal = 100m,
         }).Value!;
 
     internal static RegraEliminacao Eliminacao(char hash) => RegraEliminacao.Criar(
-        ReferenciaRegra.De(RegraEliminacaoCodigo.ElimNotaMinimaEtapa, "v1", new string(hash, 64)),
-        new ParametrosElimNotaMinimaEtapa(Guid.CreateVersion7(), 4m)).Value!;
+        ReferenciaRegra.De(RegraDeEliminacaoPorCalculo.NotaMinimaNaEtapa.Codigo(), "v1", new string(hash, 64)),
+        new ParametrosEliminacaoPorNotaMinimaNaEtapa(Guid.CreateVersion7(), 4m)).Value!;
 }

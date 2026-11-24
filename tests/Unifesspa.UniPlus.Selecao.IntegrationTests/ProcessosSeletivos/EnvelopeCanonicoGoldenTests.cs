@@ -4,6 +4,7 @@ using System.Text.Json.Nodes;
 
 using AwesomeAssertions;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.ValueObjects;
@@ -220,16 +221,16 @@ public sealed class EnvelopeCanonicoGoldenTests
         return processo;
     }
 
-    // As duas regras (ELIM-CORTE-REDACAO e ELIM-ZERO-EM-AREA) não referenciam etapa nos seus parâmetros:
+    // As duas regras (ELIMINACAO-CORTE-REDACAO e ELIMINACAO_ZERO_EM_AREA) não referenciam etapa nos seus parâmetros:
     // o teste isola a única variável que quer variar, a ordem de criação. O cálculo local exige
     // regra de precisão declarada.
     private static Result<ConfiguracaoClassificacao> ClassificacaoComEliminacoes(bool corteRedacaoPrimeiro) =>
         ConfiguracaoClassificacao.Criar(new DeclaracaoDaClassificacao
         {
-            RegraCalculo = Regra(RegraCalculoCodigo.FormulaMediaPonderada, "b"),
-            RegraArredondamento = Regra(RegraArredondamentoCodigo.PrecisaoTruncar, "d"),
+            RegraCalculo = Regra(RegraDeCalculoDaNota.MediaPonderada.Codigo(), "b"),
+            RegraArredondamento = Regra(RegraDeArredondamentoDaNota.Truncar.Codigo(), "d"),
             CasasArredondamento = 2,
-            RegraOrdemAlocacao = Regra(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, "c"),
+            RegraOrdemAlocacao = Regra(RegraDeOrdemDeAlocacao.PrimeiraOpcaoPrioritaria.Codigo(), "c"),
             RegrasEliminacao = corteRedacaoPrimeiro
                 ? [CriarCorteNaRedacao(), CriarZeroEmArea()]
                 : [CriarZeroEmArea(), CriarCorteNaRedacao()],
@@ -240,10 +241,10 @@ public sealed class EnvelopeCanonicoGoldenTests
         });
 
     private static RegraEliminacao CriarCorteNaRedacao() => RegraEliminacao.Criar(
-        Regra(RegraEliminacaoCodigo.ElimCorteEmArea, "e"),
-        new ParametrosElimCorteEmArea("REDACAO", 400m)).Value!;
+        Regra(RegraDeEliminacaoPorCalculo.CorteEmAreaDoEnem.Codigo(), "e"),
+        new ParametrosEliminacaoPorCorteEmAreaDoEnem("REDACAO", 400m)).Value!;
 
     private static RegraEliminacao CriarZeroEmArea() => RegraEliminacao.Criar(
-        Regra(RegraEliminacaoCodigo.ElimZeroEmArea, "f"),
-        new ParametrosElimZeroEmArea()).Value!;
+        Regra(RegraDeEliminacaoPorCalculo.ZeroEmAreaDoEnem.Codigo(), "f"),
+        new ParametrosEliminacaoPorZeroEmAreaDoEnem()).Value!;
 }

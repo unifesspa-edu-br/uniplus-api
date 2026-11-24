@@ -53,31 +53,27 @@ public sealed class ConsultaDoLoteDeNotasEndpointTests
         await ConferirDadosGravadosAsync(loteId);
     }
 
-    private static byte[] ArquivoDeTeste()
-    {
-        string[] outraNota = ["100", "722.2", "833.3", "544.4", "960"];
-        return Bytes(
-        [
-            LinhaComMatematicaAusente(Pessoas[0], 1),
-            LinhaDeAusente(Pessoas[1], 2),
-            Linha(Pessoas[2], 3),
-            Linha(Pessoas[4], 4),
-            Linha(Pessoas[4], 4, outraNota),
-            Linha(Pessoas[5], 6),
-        ]);
-    }
+    private static byte[] ArquivoDeTeste() => Bytes(
+    [
+        LinhaComMatematicaAusente(Pessoas[0], 1), LinhaDeAusente(Pessoas[1], 2), Linha(Pessoas[2], 3),
+        Linha(Pessoas[4], 4), Linha(Pessoas[4], 4, ["100", "722.2", "833.3", "544.4", "960"]), Linha(Pessoas[5], 6),
+    ]);
 
     private static void ConferirOcorrencias(JsonElement raiz)
     {
         raiz.GetProperty("importadoPorNome").GetString().Should().Be("Test User");
         JsonElement[] ocorrencias = [.. raiz.GetProperty("ocorrencias").EnumerateArray()];
-        ConferirSemLinha(ocorrencias.Single(o => o.GetProperty("tipo").GetString() == "INSCRITO_SEM_LINHA"));
-        ConferirConflito(ocorrencias.Single(o => o.GetProperty("tipo").GetString() == "CONFLITO"));
-        ConferirSemInscrito(ocorrencias.Single(o => o.GetProperty("tipo").GetString() == "LINHA_SEM_INSCRITO"));
+        ConferirInscritoSemLinha(ocorrencias);
+        ConferirConflito(ocorrencias);
+        ConferirLinhaSemInscrito(ocorrencias);
     }
 
-    private static void ConferirSemLinha(JsonElement semLinha)
+    private static JsonElement Ocorrencia(JsonElement[] ocorrencias, string codigo) =>
+        ocorrencias.Single(o => o.GetProperty("tipo").GetProperty("codigo").GetString() == codigo);
+
+    private static void ConferirInscritoSemLinha(JsonElement[] ocorrencias)
     {
+        JsonElement semLinha = Ocorrencia(ocorrencias, "INSCRITO_SEM_LINHA");
         semLinha.GetProperty("nomeDoCandidato").GetString().Should().Be(Pessoas[3].Nome);
         semLinha.GetProperty("cpfMascarado").GetString().Should().Be(Mascara(Pessoas[3]));
         OpcoesDe(semLinha).Should().Equal(
@@ -85,14 +81,16 @@ public sealed class ConsultaDoLoteDeNotasEndpointTests
             "2:Pedagogia (Licenciatura) — Campus Universitário de Marabá — Noturno");
     }
 
-    private static void ConferirConflito(JsonElement conflito)
+    private static void ConferirConflito(JsonElement[] ocorrencias)
     {
+        JsonElement conflito = Ocorrencia(ocorrencias, "CONFLITO");
         conflito.GetProperty("nomeDoCandidato").GetString().Should().Be(Pessoas[4].Nome);
         OpcoesDe(conflito).Should().Equal("1:Medicina (Bacharelado) — Campus Universitário de Marabá — Matutino e Vespertino");
     }
 
-    private static void ConferirSemInscrito(JsonElement semInscrito)
+    private static void ConferirLinhaSemInscrito(JsonElement[] ocorrencias)
     {
+        JsonElement semInscrito = Ocorrencia(ocorrencias, "LINHA_SEM_INSCRITO");
         semInscrito.GetProperty("cpfMascarado").GetString().Should().Be(Mascara(Pessoas[5]));
         semInscrito.GetProperty("nomeDoCandidato").GetString().Should().Be(Pessoas[5].Nome);
         semInscrito.GetProperty("sexo").GetString().Should().Be(Pessoas[5].Sexo[..1]);
@@ -116,13 +114,11 @@ public sealed class ConsultaDoLoteDeNotasEndpointTests
     {
         await using AsyncServiceScope scope = _fixture.Factory.Services.CreateAsyncScope();
         UniPlusDbContext db = scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
-        string[] linhasGravadas = await db.Database
-            .SqlQuery<string>($"""
-                SELECT o::text AS "Value" FROM selecao.ocorrencias_da_importacao o WHERE o.importacao_id = {loteId}
-                UNION ALL
-                SELECT l::text AS "Value" FROM selecao.importacoes_de_notas_do_enem l WHERE l.id = {loteId}
-                """)
-            .ToArrayAsync();
+        string[] linhasGravadas = await db.Database.SqlQuery<string>($"""
+            SELECT o::text AS "Value" FROM selecao.ocorrencias_da_importacao o WHERE o.importacao_id = {loteId}
+            UNION ALL
+            SELECT l::text AS "Value" FROM selecao.importacoes_de_notas_do_enem l WHERE l.id = {loteId}
+            """).ToArrayAsync();
         linhasGravadas.Should().NotBeEmpty();
         foreach (string gravada in linhasGravadas)
         {

@@ -2,6 +2,7 @@ namespace Unifesspa.UniPlus.Selecao.Domain.UnitTests.Entities;
 
 using AwesomeAssertions;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Kernel.Tempo;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
@@ -202,8 +203,8 @@ public sealed class JanelaDeSolicitacaoDeIsencaoTests
             new DecisoesDeCronogramaDaFase(Ordem: 2, Inicio: inicio, Fim: fim, UnidadeResponsavel: UnidadesDeTeste.Ceps),
             new PublicacoesDaFase(
                 Produtos: [
-                    ProdutoDaFase.Reidratar(ProdutoPreliminarId, "RESULTADO_ISENCAO", PapelProdutoFase.Preliminar),
-                    ProdutoDaFase.Criar("RESULTADO_ISENCAO", PapelProdutoFase.Definitivo),
+                    ProdutoDaFase.Reidratar(ProdutoPreliminarId, "RESULTADO_ISENCAO", PapelDaPublicacaoPrevista.Preliminar),
+                    ProdutoDaFase.Criar("RESULTADO_ISENCAO", PapelDaPublicacaoPrevista.Definitivo),
                 ],
                 EmiteParecerIndividual: false,
                 RegraRecurso: recurso ?? RecursoEmDiasUteis(2m)),
@@ -213,7 +214,7 @@ public sealed class JanelaDeSolicitacaoDeIsencaoTests
     private static readonly Guid ProdutoPreliminarId = new("77770000-0000-4000-8000-000000000003");
 
     private static RegraRecursoFase RecursoEmDiasUteis(decimal prazo) => RegraRecursoFase.Criar(
-        ReferenciaRegra.De(RegraPrazoRecursoCodigo.AncoradoEmAto, "v1", new string('d', 64)),
+        ReferenciaRegra.De(RegraDePrazoDoRecurso.ContadoDaPublicacaoDoAto.Codigo(), "v1", new string('d', 64)),
         ParametrosDoRecursoDeTeste.Declarados(prazo, UnidadePrazo.DiasUteis),
         ProdutoPreliminarId).Value!;
 

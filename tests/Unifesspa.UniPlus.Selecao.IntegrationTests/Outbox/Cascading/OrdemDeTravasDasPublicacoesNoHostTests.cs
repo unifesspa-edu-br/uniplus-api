@@ -83,7 +83,7 @@ public sealed class OrdemDeTravasDasPublicacoesNoHostTests
     private static async Task<Guid> ItemPreliminarAsync(HttpClient client, Guid processoId) =>
         (await PublicarProdutoDoEditalEndpointTests.ConsultarItensAsync(client, processoId)).GetProperty("fases").EnumerateArray()
             .SelectMany(static f => f.GetProperty("produtos").EnumerateArray())
-            .Single(static p => p.GetProperty("papel").GetString() == "PRELIMINAR").GetProperty("id").GetGuid();
+            .Single(static p => p.GetProperty("papel").GetProperty("codigo").GetString() == "PRELIMINAR").GetProperty("id").GetGuid();
 
     /// <summary>
     /// Uma sessão do teste trava o processo; a operação é enviada e espera por ela. Enquanto espera, não pode segurar escrita nem

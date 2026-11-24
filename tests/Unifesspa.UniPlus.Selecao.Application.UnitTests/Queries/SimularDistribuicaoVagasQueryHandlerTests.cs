@@ -7,6 +7,7 @@ using AwesomeAssertions;
 using NSubstitute;
 
 using Unifesspa.UniPlus.Configuracao.Contracts;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
@@ -61,7 +62,7 @@ public sealed class SimularDistribuicaoVagasQueryHandlerTests
 
     private static ModalidadeView NovaModalidadeCotaReservada(Guid id, string codigo) => new(
         id, codigo, null, "COTA_RESERVADA", "DENTRO_DA_RESERVA_LEGAL",
-        null, "SEGUE_CASCATA", null, null, null, PredicadoDnf.CriarDeCondicoesAgrupadas([]).Value!, null, "Lei 12.711/2012 art. 3º");
+        null, "SEGUE_ORDEM_DE_REMANEJAMENTO", null, null, null, PredicadoDnf.CriarDeCondicoesAgrupadas([]).Value!, null, "Lei 12.711/2012 art. 3º");
 
     private static readonly IReadOnlyDictionary<string, int> QuadroDaFormulaDoArtigo10 = new Dictionary<string, int>
     {
@@ -85,7 +86,7 @@ public sealed class SimularDistribuicaoVagasQueryHandlerTests
         SimularDistribuicaoVagasQuery query = new(
             processoId,
             [new ConfiguracaoDistribuicaoVagasInput(
-                ofertaCursoId, vagas, 1m, RegraDistribuicaoVagasCodigo.Institucional, "v1", null, null, null,
+                ofertaCursoId, vagas, 1m, RegraDeDistribuicaoDeVagas.Institucional.Codigo(), "v1", null, null, null,
                 [modalidadeId], [new QuantidadeVagaInput(modalidadeId, vagas)])]);
 
         return SimularDistribuicaoVagasQueryHandler.Handle(query, mocks.Repository, mocks.Resolvedor, CancellationToken.None);
@@ -94,8 +95,8 @@ public sealed class SimularDistribuicaoVagasQueryHandlerTests
     private static void ConfigurarCatalogoInstitucional(Mocks mocks, Guid ofertaCursoId, Guid modalidadeId)
     {
         mocks.OfertaCursoReader.ObterPorIdAsync(ofertaCursoId, Arg.Any<CancellationToken>()).Returns(NovaOferta(ofertaCursoId));
-        mocks.RegraCatalogoReader.ObterAsync(RegraDistribuicaoVagasCodigo.Institucional, "v1", Arg.Any<CancellationToken>())
-            .Returns(RegraDistribuicao(RegraDistribuicaoVagasCodigo.Institucional));
+        mocks.RegraCatalogoReader.ObterAsync(RegraDeDistribuicaoDeVagas.Institucional.Codigo(), "v1", Arg.Any<CancellationToken>())
+            .Returns(RegraDistribuicao(RegraDeDistribuicaoDeVagas.Institucional.Codigo()));
         mocks.ModalidadeReader.ObterPorIdAsync(modalidadeId, Arg.Any<CancellationToken>()).Returns(NovaModalidadeAmpla(modalidadeId));
     }
 
@@ -109,8 +110,8 @@ public sealed class SimularDistribuicaoVagasQueryHandlerTests
         SimularDistribuicaoVagasQuery query = new(
             processoId,
             [new ConfiguracaoDistribuicaoVagasInput(
-                ofertaCursoId, vagasBase, 0.5m, RegraDistribuicaoVagasCodigo.Lei12711, "v1",
-                RegraAjusteDistribuicaoVagasCodigo.ReconciliacaoArt11ParagrafoUnico, "v1", referenciaId,
+                ofertaCursoId, vagasBase, 0.5m, RegraDeDistribuicaoDeVagas.Lei12711.Codigo(), "v1",
+                RegraDeAjusteDaDistribuicaoDeVagas.AjusteDoTotalPeloArtigo11.Codigo(), "v1", referenciaId,
                 modalidadeIds, [])]);
 
         return SimularDistribuicaoVagasQueryHandler.Handle(query, mocks.Repository, mocks.Resolvedor, CancellationToken.None);
@@ -119,11 +120,11 @@ public sealed class SimularDistribuicaoVagasQueryHandlerTests
     private static void ConfigurarRegrasDaLei12711(Mocks mocks, Guid ofertaCursoId, Guid referenciaId)
     {
         mocks.OfertaCursoReader.ObterPorIdAsync(ofertaCursoId, Arg.Any<CancellationToken>()).Returns(NovaOferta(ofertaCursoId));
-        mocks.RegraCatalogoReader.ObterAsync(RegraDistribuicaoVagasCodigo.Lei12711, "v1", Arg.Any<CancellationToken>())
-            .Returns(RegraDistribuicao(RegraDistribuicaoVagasCodigo.Lei12711));
-        mocks.RegraCatalogoReader.ObterAsync(RegraAjusteDistribuicaoVagasCodigo.ReconciliacaoArt11ParagrafoUnico, "v1", Arg.Any<CancellationToken>())
+        mocks.RegraCatalogoReader.ObterAsync(RegraDeDistribuicaoDeVagas.Lei12711.Codigo(), "v1", Arg.Any<CancellationToken>())
+            .Returns(RegraDistribuicao(RegraDeDistribuicaoDeVagas.Lei12711.Codigo()));
+        mocks.RegraCatalogoReader.ObterAsync(RegraDeAjusteDaDistribuicaoDeVagas.AjusteDoTotalPeloArtigo11.Codigo(), "v1", Arg.Any<CancellationToken>())
             .Returns(RegraCatalogo.Criar(
-                RegraAjusteDistribuicaoVagasCodigo.ReconciliacaoArt11ParagrafoUnico, "v1", TipoRegra.RegraAjusteDistribuicaoVagas, Json("{}"), Json("[]"), "art. 11 §único"));
+                RegraDeAjusteDaDistribuicaoDeVagas.AjusteDoTotalPeloArtigo11.Codigo(), "v1", TipoRegra.RegraAjusteDistribuicaoVagas, Json("{}"), Json("[]"), "art. 11 §único"));
         mocks.ReferenciaReservaDemograficaReader.ObterPorIdAsync(referenciaId, Arg.Any<CancellationToken>())
             .Returns(new ReferenciaReservaDemograficaView(referenciaId, "2022", 50m, 10m, 10m, "Censo 2022"));
     }
@@ -150,7 +151,7 @@ public sealed class SimularDistribuicaoVagasQueryHandlerTests
     private static void ConfirmarQuadroDeQuarentaVagasPelaFormulaDoArtigo10(ConfiguracaoDistribuicaoVagasDto dto)
     {
         dto.Quadro.ToDictionary(v => v.ModalidadeCodigo, v => v.Quantidade).Should().Contain(QuadroDaFormulaDoArtigo10);
-        dto.RamoDaDistribuicao.Should().Be(RamoDaDistribuicaoDeVagasCodigo.LeiDeCotas);
+        dto.RamoDaDistribuicao.Should().Be(ModoDeMontagemDoQuadroDeVagas.LeiDeCotas.Codigo());
         dto.ConferenciaDaReservaLegal.Should().Be(new ConferenciaDaReservaLegalDto(
             ReservaLegalNominal: 20, ReservaLegalEfetiva: 20, ExcedenteSobreAReservaLegal: 0, VagasCortadasPorEscassez: 0));
         dto.AjusteDoQuadroFixado.Should().BeNull();
@@ -192,7 +193,7 @@ public sealed class SimularDistribuicaoVagasQueryHandlerTests
         ConfigurarCatalogoInstitucional(mocks, ofertaCursoId, modalidadeId);
 
         ConfiguracaoDistribuicaoVagasInput pedido = new(
-            ofertaCursoId, 99999, 1m, RegraDistribuicaoVagasCodigo.Institucional, "v1", null, null, null,
+            ofertaCursoId, 99999, 1m, RegraDeDistribuicaoDeVagas.Institucional.Codigo(), "v1", null, null, null,
             [modalidadeId], [new QuantidadeVagaInput(modalidadeId, 99999)]);
         Result<IReadOnlyList<ConfiguracaoDistribuicaoVagasDto>> result = await SimularAsync(mocks, processoId, pedido);
 
@@ -211,7 +212,7 @@ public sealed class SimularDistribuicaoVagasQueryHandlerTests
 
         result.IsSuccess.Should().BeTrue();
         ConfiguracaoDistribuicaoVagasDto dto = result.Value!.Should().ContainSingle().Subject;
-        dto.RamoDaDistribuicao.Should().Be(RamoDaDistribuicaoDeVagasCodigo.QuadroFixadoNoEdital);
+        dto.RamoDaDistribuicao.Should().Be(ModoDeMontagemDoQuadroDeVagas.QuadroFixadoNoEdital.Codigo());
         dto.VagasOfertadasBase.Should().Be(60);
         dto.Quadro.Should().ContainSingle(v => v.Quantidade == 60);
         dto.TotalDeVagasDoEdital.Should().Be(60);
@@ -268,10 +269,10 @@ public sealed class SimularDistribuicaoVagasQueryHandlerTests
         Guid modalidadeId = Guid.CreateVersion7();
         Mocks mocks = NovosMocks(processoExiste: true, processoId);
         ConfigurarCatalogoInstitucional(mocks, ofertaId, modalidadeId);
-        mocks.RegraCatalogoReader.ObterAsync(RegraDistribuicaoVagasCodigo.Psiq, "v1", Arg.Any<CancellationToken>())
-            .Returns(RegraDistribuicao(RegraDistribuicaoVagasCodigo.Psiq, """{"modalidades_admitidas":["AC_I","AC_Q"]}"""));
+        mocks.RegraCatalogoReader.ObterAsync(RegraDeDistribuicaoDeVagas.PorAcrescimoIndigenaEQuilombola.Codigo(), "v1", Arg.Any<CancellationToken>())
+            .Returns(RegraDistribuicao(RegraDeDistribuicaoDeVagas.PorAcrescimoIndigenaEQuilombola.Codigo(), """{"modalidades_admitidas":["AC_I","AC_Q"]}"""));
         ConfiguracaoDistribuicaoVagasInput pedido = new(
-            ofertaId, 10, 1m, RegraDistribuicaoVagasCodigo.Psiq, "v1", null, null, null,
+            ofertaId, 10, 1m, RegraDeDistribuicaoDeVagas.PorAcrescimoIndigenaEQuilombola.Codigo(), "v1", null, null, null,
             [modalidadeId], [new QuantidadeVagaInput(modalidadeId, 10)]);
         return SimularAsync(mocks, processoId, pedido);
     }
@@ -287,7 +288,7 @@ public sealed class SimularDistribuicaoVagasQueryHandlerTests
         mocks.ModalidadeReader.ObterPorIdAsync(modalidade1, Arg.Any<CancellationToken>()).Returns(NovaModalidadeCotaReservada(modalidade1, "IND"));
         mocks.ModalidadeReader.ObterPorIdAsync(modalidade2, Arg.Any<CancellationToken>()).Returns(NovaModalidadeCotaReservada(modalidade2, "IND"));
         ConfiguracaoDistribuicaoVagasInput pedido = new(
-            ofertaId, 60, 1m, RegraDistribuicaoVagasCodigo.Institucional, "v1", null, null, null, [modalidade1, modalidade2], []);
+            ofertaId, 60, 1m, RegraDeDistribuicaoDeVagas.Institucional.Codigo(), "v1", null, null, null, [modalidade1, modalidade2], []);
         return SimularAsync(mocks, processoId, pedido);
     }
 
@@ -320,11 +321,11 @@ public sealed class SimularDistribuicaoVagasQueryHandlerTests
         (Guid processoId, Guid ofertaCursoId, Guid modalidadeId) = (Guid.CreateVersion7(), Guid.CreateVersion7(), Guid.CreateVersion7());
         Mocks mocks = NovosMocks(processoExiste: true, processoId);
         mocks.OfertaCursoReader.ObterPorIdAsync(ofertaCursoId, Arg.Any<CancellationToken>()).Returns(NovaOferta(ofertaCursoId));
-        mocks.RegraCatalogoReader.ObterAsync(RegraDistribuicaoVagasCodigo.Institucional, "v1", Arg.Any<CancellationToken>())
-            .Returns(RegraDistribuicao(RegraDistribuicaoVagasCodigo.Institucional));
+        mocks.RegraCatalogoReader.ObterAsync(RegraDeDistribuicaoDeVagas.Institucional.Codigo(), "v1", Arg.Any<CancellationToken>())
+            .Returns(RegraDistribuicao(RegraDeDistribuicaoDeVagas.Institucional.Codigo()));
         mocks.ModalidadeReader.ObterPorIdAsync(modalidadeId, Arg.Any<CancellationToken>()).Returns(NovaModalidadeAmpla(modalidadeId));
         ConfiguracaoDistribuicaoVagasInput pedido = new(
-            ofertaCursoId, 60, null, RegraDistribuicaoVagasCodigo.Institucional, "v1", null, null, null,
+            ofertaCursoId, 60, null, RegraDeDistribuicaoDeVagas.Institucional.Codigo(), "v1", null, null, null,
             [modalidadeId], [new QuantidadeVagaInput(modalidadeId, -3)]);
 
         CamposECodigos(await SimularAsync(mocks, processoId, pedido)).Should().Equal(

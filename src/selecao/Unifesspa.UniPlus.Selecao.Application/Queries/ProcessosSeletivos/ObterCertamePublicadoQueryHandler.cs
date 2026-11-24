@@ -6,6 +6,7 @@ using Domain.ValueObjects;
 
 using DTOs;
 
+using Unifesspa.UniPlus.Application.Abstractions.Respostas;
 using Unifesspa.UniPlus.Kernel.Results;
 
 /// <summary>
@@ -75,14 +76,15 @@ public static class ObterCertamePublicadoQueryHandler
             return LeituraDoDocumentoDivulgado.RecusarDocumentoIlegivel();
         }
 
+        return Result<CertamePublicadoDto>.Success(PrepararCertame(divulgado, certame, instante));
+    }
+
+    private static CertamePublicadoDto PrepararCertame(CertameDivulgado divulgado, CertamePublicadoDto certame, DateTimeOffset instante)
+    {
         SituacaoDoCertame situacao = SituacaoDaVitrine.Classificar(
             divulgado.InscricoesDe, divulgado.InscricoesAte, instante, SituacaoDaVitrine.LimiarDosUltimosDias);
-
-        // O documento guardado já traz o endereço dos documentos da versão; o público só os vê quando a cópia do ato
-        // da versão ao acervo registrou o endereço, para o link nunca apontar para arquivo ausente.
         CertamePublicadoDto servido = divulgado.CopiouOsDocumentosDoAto(certame.AtoCriadorId) ? certame : SemEnderecos(certame);
-
-        return Result<CertamePublicadoDto>.Success(servido with { Situacao = situacao, EditaisPublicados = EditaisServidos(divulgado) });
+        return servido with { Situacao = CodigoComRotulo<SituacaoDoCertame>.De(situacao), EditaisPublicados = EditaisServidos(divulgado) };
     }
 
     private static List<EditalPublicadoCertameDto> EditaisServidos(CertameDivulgado divulgado) =>

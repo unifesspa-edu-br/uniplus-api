@@ -31,7 +31,7 @@ public sealed class AvaliacaoIniciadaNoLugarDasFasesIniciadasTests : IClassFixtu
         (Guid daFaseId, FaseCronograma fase, _) = await _cenario.PublicadoAsync("PS ato produz a fase", Abertura);
         (Guid daEtapaId, FaseCronograma outraFase, EtapaProcesso etapa) = await _cenario.PublicadoAsync("PS ato da etapa nao produz a fase", Abertura);
         await _cenario.SemearAtoAsync(daFaseId, IdentidadeDoItemDoEdital.DaFase(fase, fase.Produtos.Single()));
-        await _cenario.SemearAtoAsync(daEtapaId, IdentidadeDoItemDoEdital.DaEtapa(etapa, ProdutoDaEtapa.Criar("RESULTADO_CLASSIFICACAO", PapelProdutoFase.Definitivo)));
+        await _cenario.SemearAtoAsync(daEtapaId, IdentidadeDoItemDoEdital.DaEtapa(etapa, ProdutoDaEtapa.Criar("RESULTADO_CLASSIFICACAO", PapelDaPublicacaoPrevista.Definitivo)));
 
         FasesIniciadas daFase = await _cenario.IniciadasAsync(daFaseId, DateTimeOffset.UtcNow);
         FasesIniciadas daEtapa = await _cenario.IniciadasAsync(daEtapaId, DateTimeOffset.UtcNow);

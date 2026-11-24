@@ -189,9 +189,9 @@ public sealed class FaseCronogramaTests
     }
 
     [Theory(DisplayName = "CA-04: produto COM papel torna a fase produtora de resultado")]
-    [InlineData(PapelProdutoFase.Preliminar)]
-    [InlineData(PapelProdutoFase.Definitivo)]
-    public void Produtos_ComPapel_ProduzResultado(PapelProdutoFase papel)
+    [InlineData(PapelDaPublicacaoPrevista.Preliminar)]
+    [InlineData(PapelDaPublicacaoPrevista.Definitivo)]
+    public void Produtos_ComPapel_ProduzResultado(PapelDaPublicacaoPrevista papel)
     {
         Result<FaseCronograma> resultado = Criar(m => m with { OrigemData = OrigemDataFase.NaExecucao, Produtos = [ProdutoDaFase.Criar("RESULTADO_CLASSIFICACAO", papel)] });
 
@@ -214,8 +214,8 @@ public sealed class FaseCronogramaTests
         {
             OrigemData = OrigemDataFase.NaExecucao,
             Produtos = [
-                    ProdutoDaFase.Criar("RESULTADO_HOMOLOGACAO", PapelProdutoFase.Preliminar),
-                    ProdutoDaFase.Criar("RESULTADO_HOMOLOGACAO", PapelProdutoFase.Definitivo),
+                    ProdutoDaFase.Criar("RESULTADO_HOMOLOGACAO", PapelDaPublicacaoPrevista.Preliminar),
+                    ProdutoDaFase.Criar("RESULTADO_HOMOLOGACAO", PapelDaPublicacaoPrevista.Definitivo),
                 ],
         });
 
@@ -230,8 +230,8 @@ public sealed class FaseCronogramaTests
         {
             OrigemData = OrigemDataFase.NaExecucao,
             Produtos = [
-                    ProdutoDaFase.Criar("GABARITO", PapelProdutoFase.Preliminar),
-                    ProdutoDaFase.Criar("GABARITO", PapelProdutoFase.Definitivo),
+                    ProdutoDaFase.Criar("GABARITO", PapelDaPublicacaoPrevista.Preliminar),
+                    ProdutoDaFase.Criar("GABARITO", PapelDaPublicacaoPrevista.Definitivo),
                 ],
         });
 
@@ -245,8 +245,8 @@ public sealed class FaseCronogramaTests
         {
             OrigemData = OrigemDataFase.NaExecucao,
             Produtos = [
-                    ProdutoDaFase.Criar("RESULTADO_CLASSIFICACAO", PapelProdutoFase.Preliminar),
-                    ProdutoDaFase.Criar("RESULTADO_CLASSIFICACAO", PapelProdutoFase.Preliminar),
+                    ProdutoDaFase.Criar("RESULTADO_CLASSIFICACAO", PapelDaPublicacaoPrevista.Preliminar),
+                    ProdutoDaFase.Criar("RESULTADO_CLASSIFICACAO", PapelDaPublicacaoPrevista.Preliminar),
                 ],
         });
 

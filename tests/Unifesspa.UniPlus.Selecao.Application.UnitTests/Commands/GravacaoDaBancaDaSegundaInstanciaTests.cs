@@ -6,6 +6,7 @@ using NSubstitute;
 
 using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 using Unifesspa.UniPlus.Configuracao.Contracts;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
@@ -55,7 +56,7 @@ public sealed class GravacaoDaBancaDaSegundaInstanciaTests
         ITipoBancaReader tiposDeBanca = Substitute.For<ITipoBancaReader>();
         tiposDeBanca.ObterPorIdAsync(TipoDeSegundaInstancia.Id, Arg.Any<CancellationToken>()).Returns(TipoDeSegundaInstancia);
         EtapaProcessoInput etapa = new(
-            "Prova oral", CaraterEtapa.Classificatoria, TipoProvaObjetivaOrigemId, 1m, null, 1, Produtos: [], Recursos: [],
+            "Prova oral", CaraterEtapa.Classificatoria.Codigo(), TipoProvaObjetivaOrigemId, 1m, null, 1, Produtos: [], Recursos: [],
             Bancas: [new BancaDaEtapaInput(TipoDeSegundaInstancia.Id, RegrasDeDeliberacaoDeTeste.AtoIndividualComVotacaoDoRecurso())]);
 
         Result resultado = await Executar(

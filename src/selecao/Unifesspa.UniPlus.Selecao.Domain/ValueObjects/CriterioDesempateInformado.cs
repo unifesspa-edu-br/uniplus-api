@@ -17,7 +17,7 @@ public readonly record struct CriterioDesempateInformado(int Ordem, ParametrosCr
 
     /// <summary>As áreas bem formadas que o critério cita, com a posição de cada uma na ordem declarada.</summary>
     public IEnumerable<(int IndiceArea, string Codigo)> AreasCitadas =>
-        Parametros is ParametrosDesempateMaiorNotaAreaEnem porArea ? Entities.CriterioDesempate.ConferirAreas(porArea.Areas).BemFormadas : [];
+        Parametros is ParametrosDesempateMaiorNotaAreaEnem porArea ? porArea.ConferirAreas().BemFormadas : [];
 
     public static CriterioDesempateInformado De(Entities.CriterioDesempate criterio)
     {

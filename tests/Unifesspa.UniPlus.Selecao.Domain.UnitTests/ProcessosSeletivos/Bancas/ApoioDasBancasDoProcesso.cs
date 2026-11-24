@@ -2,6 +2,7 @@ namespace Unifesspa.UniPlus.Selecao.Domain.UnitTests.ProcessosSeletivos.Bancas;
 
 using AwesomeAssertions;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
@@ -26,18 +27,18 @@ internal static class ApoioDasBancasDoProcesso
     internal static readonly Guid Tipo = new("0197d6f0-0000-7000-8000-00000000b4c1");
 
     internal static RegraRecursoFase RegraDeRecurso() => RegraRecursoFase.Criar(
-        ReferenciaRegra.De(RegraPrazoRecursoCodigo.AncoradoEmAto, "v1", new string('c', 64)),
+        ReferenciaRegra.De(RegraDePrazoDoRecurso.ContadoDaPublicacaoDoAto.Codigo(), "v1", new string('c', 64)),
         ParametrosDoRecursoDeTeste.Declarados(2m, UnidadePrazo.DiasUteis),
         ProcessoConformeFactory.ProdutoPreliminarId).Value!;
 
     internal static readonly ReferenciaRegra CorrecaoIndependente =
-        ReferenciaRegra.De(RegraConsolidacaoCodigo.CorrecaoIndependente, "v1", new string('d', 64));
+        ReferenciaRegra.De(RegraDeApuracaoDaAvaliacao.CorrecaoIndependente.Codigo(), "v1", new string('d', 64));
 
     internal static readonly ReferenciaRegra MaioriaSimples =
-        ReferenciaRegra.De(RegraConsolidacaoCodigo.ConceitoMaioriaSimples, "v1", new string('f', 64));
+        ReferenciaRegra.De(RegraDeApuracaoDaAvaliacao.ConceitoMaioriaSimples.Codigo(), "v1", new string('f', 64));
 
     internal static readonly ReferenciaRegra AvaliacaoUnica =
-        ReferenciaRegra.De(RegraConsolidacaoCodigo.AvaliacaoUnica, "v1", new string('e', 64));
+        ReferenciaRegra.De(RegraDeApuracaoDaAvaliacao.AvaliacaoUnica.Codigo(), "v1", new string('e', 64));
 
     internal static EtapaProcesso NovaEtapa(string nome, int ordem, ReferenciaRegra? consolidacao = null) => EtapaProcesso.Criar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("etapa").Value!,
         new IdentificacaoDaEtapa(Nome: nome, Carater: CaraterEtapa.Classificatoria, TipoEtapa: TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!, Ordem: ordem, FaseCodigo: "RESULTADO_FINAL"),
@@ -48,12 +49,12 @@ internal static class ApoioDasBancasDoProcesso
     {
         etapa.DefinirProdutos(
         [
-            ProdutoDaEtapa.Criar("RESULTADO_PROVA", PapelProdutoFase.Preliminar),
-            ProdutoDaEtapa.Criar("RESULTADO_PROVA", PapelProdutoFase.Definitivo),
+            ProdutoDaEtapa.Criar("RESULTADO_PROVA", PapelDaPublicacaoPrevista.Preliminar),
+            ProdutoDaEtapa.Criar("RESULTADO_PROVA", PapelDaPublicacaoPrevista.Definitivo),
         ]).IsSuccess.Should().BeTrue();
-        Guid preliminar = etapa.Produtos.Single(p => p.Papel == PapelProdutoFase.Preliminar).Id;
+        Guid preliminar = etapa.Produtos.Single(p => p.Papel == PapelDaPublicacaoPrevista.Preliminar).Id;
         etapa.DefinirRecursos([RecursoDaEtapa.Criar(
-            AncoraDoRecurso.AtoPublicado, RegraDeRecurso().Regra, ParametrosDoRecursoDeTeste.DeclaradosDe(RegraDeRecurso().Parametros), preliminar).Value!]).IsSuccess.Should().BeTrue();
+            EventoInicialDoPrazo.PublicacaoDoAto, RegraDeRecurso().Regra, ParametrosDoRecursoDeTeste.DeclaradosDe(RegraDeRecurso().Parametros), preliminar).Value!]).IsSuccess.Should().BeTrue();
         return etapa;
     }
 

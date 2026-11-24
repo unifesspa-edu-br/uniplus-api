@@ -135,7 +135,7 @@ public sealed class AtualizarModalidadeCommandHandlerTests
         Modalidade existente = ExistenteNoRepositorio("LB_PPI");
         var comando = new AtualizarModalidadeCommand(
             existente.Id, NaturezaLegal: "AMPLA", ComposicaoVagas: "DENTRO_DA_RESERVA_LEGAL",
-            Remanejamento: new("SEGUE_CASCATA"), RegraDeAplicabilidade: Incondicional);
+            Remanejamento: new("SEGUE_ORDEM_DE_REMANEJAMENTO"), RegraDeAplicabilidade: Incondicional);
 
         Result resultado = await Atualizar(comando);
 

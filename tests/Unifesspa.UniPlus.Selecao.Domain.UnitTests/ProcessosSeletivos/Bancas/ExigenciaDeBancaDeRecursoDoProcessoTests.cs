@@ -78,8 +78,8 @@ public sealed class ExigenciaDeBancaDeRecursoDoProcessoTests
             1, new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero), new DateTimeOffset(2026, 1, 31, 0, 0, 0, TimeSpan.Zero), UnidadesDeTeste.Ceps),
         new PublicacoesDaFase(
             [
-                ProdutoDaFase.Reidratar(ProcessoConformeFactory.ProdutoPreliminarId, "RESULTADO_CLASSIFICACAO", PapelProdutoFase.Preliminar),
-                ProdutoDaFase.Criar("RESULTADO_CLASSIFICACAO", PapelProdutoFase.Definitivo),
+                ProdutoDaFase.Reidratar(ProcessoConformeFactory.ProdutoPreliminarId, "RESULTADO_CLASSIFICACAO", PapelDaPublicacaoPrevista.Preliminar),
+                ProdutoDaFase.Criar("RESULTADO_CLASSIFICACAO", PapelDaPublicacaoPrevista.Definitivo),
             ],
             false,
             RegraDeRecurso()),

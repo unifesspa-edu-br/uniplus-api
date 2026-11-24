@@ -37,13 +37,13 @@ public sealed class MotivoDeDecisaoCommandHandlersTests
     {
         _repository.CodigoExisteAsync(TipoMotivoDeDecisao.IsencaoDaTaxa, Codigo, Arg.Any<CancellationToken>()).Returns(false);
 
-        Result<Guid> resultado = await CriarAsync(Comando(SentidoDoMotivoCodigo.Desfavoravel));
+        Result<Guid> resultado = await CriarAsync(Comando(SentidoDoMotivo.Desfavoravel.Codigo()));
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
         await _repository.Received(1).AdicionarAsync(
             Arg.Is<MotivoDeDecisao>(motivo =>
                 motivo.Tipo == TipoMotivoDeDecisao.IsencaoDaTaxa
-                && motivo.Subclassificacao == FundamentoIsencaoCodigo.CadastroUnico
+                && motivo.Subclassificacao == "CADASTRO_UNICO"
                 && motivo.Sentido == SentidoDoMotivo.Desfavoravel),
             Arg.Any<CancellationToken>());
         await _unitOfWork.Received(1).SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
@@ -54,7 +54,7 @@ public sealed class MotivoDeDecisaoCommandHandlersTests
     {
         _repository.CodigoExisteAsync(TipoMotivoDeDecisao.IsencaoDaTaxa, Codigo, Arg.Any<CancellationToken>()).Returns(true);
 
-        Result<Guid> resultado = await CriarAsync(Comando(SentidoDoMotivoCodigo.Desfavoravel));
+        Result<Guid> resultado = await CriarAsync(Comando(SentidoDoMotivo.Desfavoravel.Codigo()));
 
         resultado.Error!.Code.Should().Be(MotivoDeDecisaoErrorCodes.CodigoJaExiste);
         await _repository.DidNotReceive().AdicionarAsync(
@@ -75,7 +75,7 @@ public sealed class MotivoDeDecisaoCommandHandlersTests
     [Fact(DisplayName = "Criar recusa tipo fora do vocabulário como tipo inválido, sem tocar no repositório")]
     public async Task Criar_TipoForaDoVocabulario_RecusaComoInvalido()
     {
-        CriarMotivoDeDecisaoCommand comando = Comando(SentidoDoMotivoCodigo.Desfavoravel) with { Tipo = "RECURSO" };
+        CriarMotivoDeDecisaoCommand comando = Comando(SentidoDoMotivo.Desfavoravel.Codigo()) with { Tipo = "RECURSO" };
 
         Result<Guid> resultado = await CriarAsync(comando);
 
@@ -90,7 +90,7 @@ public sealed class MotivoDeDecisaoCommandHandlersTests
     [InlineData("   ")]
     public async Task Criar_TipoAusente_RecusaComoObrigatorio(string? tipo)
     {
-        CriarMotivoDeDecisaoCommand comando = Comando(SentidoDoMotivoCodigo.Desfavoravel) with { Tipo = tipo };
+        CriarMotivoDeDecisaoCommand comando = Comando(SentidoDoMotivo.Desfavoravel.Codigo()) with { Tipo = tipo };
 
         Result<Guid> resultado = await CriarAsync(comando);
 
@@ -228,7 +228,7 @@ public sealed class MotivoDeDecisaoCommandHandlersTests
         _unitOfWork.SalvarAlteracoesAsync(Arg.Any<CancellationToken>())
             .ThrowsAsync(new DbUpdateException("violação sintética", new ViolacaoDeUnicidade("ux_motivos_de_decisao_tipo_codigo")));
 
-        Result<Guid> resultado = await CriarAsync(Comando(SentidoDoMotivoCodigo.Favoravel));
+        Result<Guid> resultado = await CriarAsync(Comando(SentidoDoMotivo.Favoravel.Codigo()));
 
         resultado.Error!.Code.Should().Be(MotivoDeDecisaoErrorCodes.CodigoJaExiste);
         _unitOfWork.Received(1).DescartarAlteracoesNaoSalvas();
@@ -242,7 +242,7 @@ public sealed class MotivoDeDecisaoCommandHandlersTests
             .ThrowsAsync(new DbUpdateException("violação sintética", new ViolacaoDeUnicidade("outro_indice")));
 
         Func<Task> criar = () => CriarMotivoDeDecisaoCommandHandler.Handle(
-            Comando(SentidoDoMotivoCodigo.Favoravel), _repository, _unitOfWork, CancellationToken.None);
+            Comando(SentidoDoMotivo.Favoravel.Codigo()), _repository, _unitOfWork, CancellationToken.None);
 
         await criar.Should().ThrowAsync<DbUpdateException>();
     }
@@ -251,14 +251,14 @@ public sealed class MotivoDeDecisaoCommandHandlersTests
         CriarMotivoDeDecisaoCommandHandler.Handle(comando, _repository, _unitOfWork, CancellationToken.None);
 
     private static CriarMotivoDeDecisaoCommand Comando(string sentido) =>
-        new(TipoMotivoDeDecisao.IsencaoDaTaxa.Codigo(), Codigo, Descricao, FundamentoIsencaoCodigo.CadastroUnico, sentido);
+        new(TipoMotivoDeDecisao.IsencaoDaTaxa.Codigo(), Codigo, Descricao, "CADASTRO_UNICO", sentido);
 
     private static MotivoDeDecisao MotivoValido() =>
         MotivoDeDecisao.Criar(new CamposDoMotivo(
             TipoMotivoDeDecisao.IsencaoDaTaxa.Codigo(),
             Codigo,
             Descricao,
-            FundamentoIsencaoCodigo.CadastroUnico,
+            "CADASTRO_UNICO",
             SentidoDoMotivo.Desfavoravel)).Value!;
 
     /// <summary>Imita a exceção do provedor, que expõe o SQLSTATE e o nome do índice violado.</summary>

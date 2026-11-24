@@ -2,6 +2,7 @@ namespace Unifesspa.UniPlus.Selecao.Domain.UnitTests.ProcessosSeletivos.Retifica
 
 using AwesomeAssertions;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.Services;
@@ -195,14 +196,14 @@ public sealed class ConferenciaDoCicloNovoDaRetificacaoTests
     public void ProcedimentoDeRecursoDaEtapaDoPreliminar_ExigeDeclararOCiclo()
     {
         Guid etapaId = Guid.CreateVersion7();
-        EtapaProcesso publicada = EtapaDaProvaComProcedimento(etapaId, RegraProcedimentoRecursoCodigo.Recalculo);
-        EtapaProcesso nova = EtapaDaProvaComProcedimento(etapaId, RegraProcedimentoRecursoCodigo.Recorrecao);
+        EtapaProcesso publicada = EtapaDaProvaComProcedimento(etapaId, RegraDeProcedimentoDoRecurso.Recalculo.Codigo());
+        EtapaProcesso nova = EtapaDaProvaComProcedimento(etapaId, RegraDeProcedimentoDoRecurso.Recorrecao.Codigo());
         FaseCronograma prova = Fase(1, "PROVA");
         IdentidadeDoItemDoEdital item = PreliminarDaEtapa(publicada);
 
         ResultadoDoCicloNovo trocado = ConferenciaDoCicloNovoDaRetificacao.Conferir([prova], [publicada], [prova], [nova], new HashSet<IdentidadeDoItemDoEdital>(), Fatos(Iniciadas(), item));
         ResultadoDoCicloNovo mantido = ConferenciaDoCicloNovoDaRetificacao.Conferir(
-            [prova], [publicada], [prova], [EtapaDaProvaComProcedimento(etapaId, RegraProcedimentoRecursoCodigo.Recalculo)], new HashSet<IdentidadeDoItemDoEdital>(), Fatos(Iniciadas(), item));
+            [prova], [publicada], [prova], [EtapaDaProvaComProcedimento(etapaId, RegraDeProcedimentoDoRecurso.Recalculo.Codigo())], new HashSet<IdentidadeDoItemDoEdital>(), Fatos(Iniciadas(), item));
 
         trocado.Recusas.Should().ContainSingle().Which.Error.Code.Should().Be(RetificacaoErrorCodes.CicloNovoNaoDeclarado);
         mantido.Recusas.Should().BeEmpty();
@@ -282,19 +283,19 @@ public sealed class ConferenciaDoCicloNovoDaRetificacaoTests
         itens.OrderBy(static i => i.Chave, StringComparer.Ordinal).Select(static i => i.AtoCodigo);
 
     private static IdentidadeDoItemDoEdital PreliminarDaEtapa(EtapaProcesso etapa) =>
-        IdentidadeDoItemDoEdital.DaEtapa(etapa, etapa.Produtos.Single(static p => p.Papel == PapelProdutoFase.Preliminar));
+        IdentidadeDoItemDoEdital.DaEtapa(etapa, etapa.Produtos.Single(static p => p.Papel == PapelDaPublicacaoPrevista.Preliminar));
 
     private static EtapaProcesso EtapaDaProva(Guid id, decimal peso) =>
-        EtapaComPeso(id, "Prova objetiva", peso, "PROVA", ProdutoDaEtapa.Criar(Materia, PapelProdutoFase.Preliminar), ProdutoDaEtapa.Criar(Materia, PapelProdutoFase.Definitivo));
+        EtapaComPeso(id, "Prova objetiva", peso, "PROVA", ProdutoDaEtapa.Criar(Materia, PapelDaPublicacaoPrevista.Preliminar), ProdutoDaEtapa.Criar(Materia, PapelDaPublicacaoPrevista.Definitivo));
 
     private static EtapaProcesso EtapaDaProvaComProcedimento(Guid id, string regraDoProcedimento)
     {
         EtapaProcesso etapa = EtapaDaProva(id, peso: 1m);
         RecursoDaEtapa recurso = RecursoDaEtapa.Criar(
-            AncoraDoRecurso.AtoPublicado,
-            ReferenciaRegra.De(RegraPrazoRecursoCodigo.AncoradoEmAto, "v1", new string('c', 64)),
+            EventoInicialDoPrazo.PublicacaoDoAto,
+            ReferenciaRegra.De(RegraDePrazoDoRecurso.ContadoDaPublicacaoDoAto.Codigo(), "v1", new string('c', 64)),
             ParametrosDoRecursoDeTeste.Declarados(2m, UnidadePrazo.DiasUteis),
-            etapa.Produtos.Single(static p => p.Papel == PapelProdutoFase.Preliminar).Id,
+            etapa.Produtos.Single(static p => p.Papel == PapelDaPublicacaoPrevista.Preliminar).Id,
             ProcedimentosDeRecurso.De([ProcedimentoDeRecursoDeclarado.De(
                 TipoMotivoDeDecisao.Classificacao, null, ReferenciaRegra.De(regraDoProcedimento, "v1", new string('a', 64)))])).Value!;
         etapa.DefinirRecursos([recurso]).IsSuccess.Should().BeTrue();

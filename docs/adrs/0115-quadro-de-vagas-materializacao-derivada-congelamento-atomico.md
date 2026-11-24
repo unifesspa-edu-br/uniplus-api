@@ -18,7 +18,7 @@ O bloco `vagas` do envelope canônico (ADR-0100, ADR-0109) é hoje um dos 5 bloc
 
 Sem o quadro materializado e congelado, o edital publicado não diz quantas vagas há por modalidade, não há como provar que o certame respeitou a Lei 12.711/2012 (redação da Lei 14.723/2023), o gate de consequência do indeferimento (documentos exigidos) não tem a linha `(oferta × modalidade)` sobre a qual raciocinar, e o envelope nunca fecha as suas 17 chaves.
 
-Dois ramos de regra coexistem no catálogo (`regras_do_catalogo`), já semeados e sem consumidor: `DISTRIBUICAO-LEI-12711` (a quantidade de cada sub-reserva é **calculada** pela fórmula legal a partir das vagas ofertadas base, do percentual da reserva legal e dos percentuais demográficos) e `DISTRIBUICAO-INSTITUCIONAL` (a quantidade de cada modalidade é **fixada** integralmente pelo edital, sem cálculo). Uma terceira regra, `RECONCILIACAO-VAGAS-ARTIGO-11-PARAGRAFO-UNICO`, rege a capagem nas vagas ofertadas base na escassez e a prioridade legal entre sub-reservas — também semeada, também órfã.
+Dois ramos de regra coexistem no catálogo (`regras_do_catalogo`), já semeados e sem consumidor: `DISTRIBUICAO_LEI_12711` (a quantidade de cada sub-reserva é **calculada** pela fórmula legal a partir das vagas ofertadas base, do percentual da reserva legal e dos percentuais demográficos) e `DISTRIBUICAO_INSTITUCIONAL` (a quantidade de cada modalidade é **fixada** integralmente pelo edital, sem cálculo). Uma terceira regra, `AJUSTE_VAGAS_ARTIGO_11_PARAGRAFO_UNICO`, rege a capagem nas vagas ofertadas base na escassez e a prioridade legal entre sub-reservas — também semeada, também órfã.
 
 Falta decidir: (1) onde o quadro vive no agregado, (2) se ele nasce por um comando próprio ou junto com os insumos, e (3) como os dois ramos convivem sob o mesmo tipo de saída sem o código ramificar por tipo de processo.
 
@@ -60,7 +60,7 @@ O cálculo do ramo federal é um **domain service puro** (`CalculadoraQuadroVaga
 
 ### Neutras
 
-- A regra de ajuste (`RECONCILIACAO-VAGAS-ARTIGO-11-PARAGRAFO-UNICO`) é referenciada e congelada por esta decisão, mas os motores de ajuste não-federais que ela também descreve (`REDUZIR_DE`, `REDUZIR_PROPORCIONAL_EM`) não são executados — ficam como referência congelada para incremento futuro, fora do escopo desta ADR.
+- A regra de ajuste (`AJUSTE_VAGAS_ARTIGO_11_PARAGRAFO_UNICO`) é referenciada e congelada por esta decisão, mas os motores de ajuste não-federais que ela também descreve (`REDUZIR_DE`, `REDUZIR_PROPORCIONAL_EM`) não são executados — ficam como referência congelada para incremento futuro, fora do escopo desta ADR.
 
 ## Confirmação
 
@@ -101,10 +101,10 @@ O cálculo do ramo federal é um **domain service puro** (`CalculadoraQuadroVaga
 
 A decisão fala em "resolve o ramo pelo código da regra de distribuição (`Lei12711` ou
 `Institucional`)" — correto quando só duas regras de distribuição existiam. O catálogo passou
-a ter cinco: duas do ramo federal (`DISTRIBUICAO-LEI-12711` e a variação
-`DISTRIBUICAO-LEI-12711-COM-AMPLA-CONCORRENCIA-E-PESSOA-COM-DEFICIENCIA`, que soma uma décima modalidade ao rol sem mudar a
-fórmula) e três de quadro fixo (`DISTRIBUICAO-INSTITUCIONAL`, `DISTRIBUICAO-POR-ACRESCIMO-INDIGENA-E-QUILOMBOLA` e
-`DISTRIBUICAO-COM-AMPLA-CONCORRENCIA-E-PESSOA-COM-DEFICIENCIA`).
+a ter cinco: duas do ramo federal (`DISTRIBUICAO_LEI_12711` e a variação
+`DISTRIBUICAO_LEI_12711_COM_AMPLA_CONCORRENCIA_E_PESSOA_COM_DEFICIENCIA`, que soma uma décima modalidade ao rol sem mudar a
+fórmula) e três de quadro fixo (`DISTRIBUICAO_INSTITUCIONAL`, `DISTRIBUICAO_POR_ACRESCIMO_INDIGENA_E_QUILOMBOLA` e
+`DISTRIBUICAO_COM_AMPLA_CONCORRENCIA_E_PESSOA_COM_DEFICIENCIA`).
 
 O texto original já descrevia corretamente **o mecanismo** — "a única coisa que varia entre
 um PSIQ e um SiSU é qual regra o cadastro associa à oferta, nunca o código que a interpreta"
@@ -129,6 +129,6 @@ códigos cada caminho reconhece.
 
 **Decisão.** O quadro tem um tipo por ramo: o quadro da lei de cotas carrega a conferência da reserva legal; o quadro fixado no edital carrega o ajuste que o reduziu, quando houve. O ramo é resolvido pelo código da regra de distribuição (`RegraDistribuicaoVagasCodigo.RamoDe`). O envelope grava, por oferta, `vagasOfertadasBase`, o `percentualDaReservaLegal` (ausente no quadro fixado), o `ajusteDoQuadro` e o `totalDeVagasDoEdital`; a leitura recalcula o quadro e recusa o envelope cujo bloco `vagas` diverge do recalculado. O motor de ajuste só vale no quadro fixado: a regra de ajuste declarada num processo de lei de cotas é recusada.
 
-**Correção da Emenda 1.** A Emenda 1 listava como terceira regra de quadro fixo a de código `DISTRIB-VAGAS-COM-PCD-PURO`. O código vigente do catálogo é `DISTRIBUICAO-COM-AMPLA-CONCORRENCIA-E-PESSOA-COM-DEFICIENCIA`, e a regra não é "PcD puro": o rol fechado é ampla concorrência e pessoa com deficiência, e a montagem é a do quadro fixado no edital, como a das outras duas.
+**Correção da Emenda 1.** A Emenda 1 listava como terceira regra de quadro fixo a de código `DISTRIB-VAGAS-COM-PCD-PURO`. O código vigente do catálogo é `DISTRIBUICAO_COM_AMPLA_CONCORRENCIA_E_PESSOA_COM_DEFICIENCIA`, e a regra não é "PcD puro": o rol fechado é ampla concorrência e pessoa com deficiência, e a montagem é a do quadro fixado no edital, como a das outras duas.
 
 **Consequências.** O recálculo na leitura continua provando o quadro a partir dos insumos congelados; a distinção por ramo evita campo sem sentido no envelope e torna a divergência detectável por ramo.

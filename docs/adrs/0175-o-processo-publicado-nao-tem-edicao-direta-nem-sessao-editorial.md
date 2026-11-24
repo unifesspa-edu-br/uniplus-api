@@ -81,3 +81,11 @@ Testes de unidade fixam, por dimensão, a recusa em processo publicado e em proc
 ## Emenda (2026-11-22) — projeto de testes
 
 O catálogo de erros e os contratos OpenAPI são conferidos em `Unifesspa.UniPlus.Contratos.UnitTests`.
+
+## Emenda 1 (2026-11-23) — codec único até a primeira publicação em produção; sai a estrutura de várias versões
+
+Decisão do líder técnico (23/11/2026), com a nota de 23/11 da ADR-0109. O item 3 fica assim: "A leitura do envelope publicado permanece. Até a primeira publicação em produção, há um codec só, o do envelope atual, reescrito no lugar a cada mudança de forma (ADR-0110, E2.1, com o limite da ADR-0137); o leitor lê só o envelope atual. A partir da primeira publicação em produção, volta o regime da ADR-0110, D1: cada versão publicada mantém a sua leitura, e a primeira mudança de forma depois dela cria a versão nova ao lado da anterior. A reposição da configuração congelada no processo vivo, com sombra de verificação, deixa de existir."
+
+Consequência no código: a porta `IRegistroCodecsEnvelope` continua, com o mesmo nome, e passa a ter uma implementação só, com o codec do envelope atual. Sai a estrutura de várias versões, que não tem nenhuma versão anterior em uso: as capacidades por versão, a recodificação por versão, a interface de codec por versão e a recusa `EnvelopeCodec.VersaoNaoReidratavel`, com o seu código no catálogo de erros e a sua página no portal. A recusa da versão desconhecida continua.
+
+E a linha das consequências fica assim: "A ADR-0110 passa a substituída; o que ela decidiu sobre codecs (D1, E2.1 e E2.2, com o limite da ADR-0137) e sobre a identidade das filhas continua valendo como registro, no escopo do item 3."

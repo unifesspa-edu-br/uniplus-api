@@ -19,21 +19,21 @@ public sealed class ParametrosDeclaradosDoRecursoTests
     private static ParametrosDeclaradosDoRecurso ComInstanciaSuperior => Valido with
     {
         AdmiteInstanciaSuperior = true,
-        PrazoDaSegundaInstancia = new PrazoDeclarado(3m, "diasUteis"),
+        PrazoDaSegundaInstancia = new PrazoDeclarado(3m, "DIAS_UTEIS"),
     };
 
     private static readonly ParametrosDeclaradosDoRecurso[] DeclaracoesDeUmaCausa =
     [
-        Valido with { PrazoDeInterposicao = new PrazoDeclarado(0m, "horas") },
-        Valido with { PrazoDeInterposicao = new PrazoDeclarado(1.12345m, "horas") },
-        Valido with { PrazoDeInterposicao = new PrazoDeclarado(1m, "dias") },
+        Valido with { PrazoDeInterposicao = new PrazoDeclarado(0m, "HORAS") },
+        Valido with { PrazoDeInterposicao = new PrazoDeclarado(1.12345m, "HORAS") },
+        Valido with { PrazoDeInterposicao = new PrazoDeclarado(1m, "DIAS") },
         Valido with { PrazoDeInterposicao = new PrazoDeclarado(1m, null) },
-        Valido with { PrazoDeInterposicao = new PrazoDeclarado(1.5m, "diasUteis") },
+        Valido with { PrazoDeInterposicao = new PrazoDeclarado(1.5m, "DIAS_UTEIS") },
         Valido with { EfeitoSuspensivo = null },
         Valido with { GuardaDaVaga = "talvez" },
         ComInstanciaSuperior with { PrazoDaSegundaInstancia = PrazoDeclarado.Ausente },
-        Valido with { PrazoDaSegundaInstancia = new PrazoDeclarado(1m, "horas") },
-        ComInstanciaSuperior with { GuardaDaVaga = "naoGuarda" },
+        Valido with { PrazoDaSegundaInstancia = new PrazoDeclarado(1m, "HORAS") },
+        ComInstanciaSuperior with { GuardaDaVaga = "NAO_GUARDA" },
     ];
 
     private static (MotivoDaRecusaDosParametros Motivo, string Campo)[] Recusas(ParametrosDeclaradosDoRecurso declarados) =>
@@ -63,8 +63,8 @@ public sealed class ParametrosDeclaradosDoRecursoTests
     {
         ParametrosDeclaradosDoRecurso declarados = ComInstanciaSuperior with
         {
-            PrazoDeInterposicao = new PrazoDeclarado(1.12345m, "horas"),
-            PrazoDaSegundaInstancia = new PrazoDeclarado(2.12345m, "horas"),
+            PrazoDeInterposicao = new PrazoDeclarado(1.12345m, "HORAS"),
+            PrazoDaSegundaInstancia = new PrazoDeclarado(2.12345m, "HORAS"),
         };
         Recusas(declarados).Should().Equal(
             (MotivoDaRecusaDosParametros.PrazoPrecisaoInvalida, "prazoValor"),
@@ -72,8 +72,8 @@ public sealed class ParametrosDeclaradosDoRecursoTests
     }
 
     [Theory(DisplayName = "A guarda declarada é conferida pelo código, e as duas opções valem sem instância superior")]
-    [InlineData("ateOResultadoDefinitivo", GuardaDaVaga.AteOResultadoDefinitivo)]
-    [InlineData("naoGuarda", GuardaDaVaga.NaoGuarda)]
+    [InlineData("ATE_O_RESULTADO_DEFINITIVO", GuardaDaVaga.AteOResultadoDefinitivo)]
+    [InlineData("NAO_GUARDA", GuardaDaVaga.NaoGuarda)]
     [InlineData(null, GuardaDaVaga.AteOResultadoDefinitivo)]
     public void Guarda_ConferidaPeloCodigo(string? codigo, GuardaDaVaga esperada) =>
         (Valido with { GuardaDaVaga = codigo }).Conferir().Conferidos!.GuardaDaVaga.Should().Be(esperada);
@@ -83,7 +83,7 @@ public sealed class ParametrosDeclaradosDoRecursoTests
     [InlineData(0)]
     [InlineData(-1)]
     public void PrazoNaoPositivo(int? valor) =>
-        Recusas(Valido with { PrazoDeInterposicao = new PrazoDeclarado(valor, "horas") })
+        Recusas(Valido with { PrazoDeInterposicao = new PrazoDeclarado(valor, "HORAS") })
             .Should().Equal((MotivoDaRecusaDosParametros.PrazoNaoPositivo, "prazoValor"));
 
     [Theory(DisplayName = "Unidade ausente ou desconhecida é recusada como unidade não declarável")]
@@ -97,7 +97,7 @@ public sealed class ParametrosDeclaradosDoRecursoTests
 
     [Fact(DisplayName = "Dias corridos são recusados na unidade, com causa própria")]
     public void PrazoEmDiasCorridos() =>
-        Recusas(Valido with { PrazoDeInterposicao = new PrazoDeclarado(5m, "dias") })
+        Recusas(Valido with { PrazoDeInterposicao = new PrazoDeclarado(5m, "DIAS") })
             .Should().Equal((MotivoDaRecusaDosParametros.PrazoEmDiasCorridos, "prazoUnidade"));
 
     [Theory(DisplayName = "Fração de dia útil é recusada no valor; em horas a fração é aceita")]
@@ -105,14 +105,14 @@ public sealed class ParametrosDeclaradosDoRecursoTests
     [InlineData(0.5)]
     public void PrazoEmFracaoDeDiaUtil(decimal valor)
     {
-        Recusas(Valido with { PrazoDeInterposicao = new PrazoDeclarado(valor, "diasUteis") })
+        Recusas(Valido with { PrazoDeInterposicao = new PrazoDeclarado(valor, "DIAS_UTEIS") })
             .Should().Equal((MotivoDaRecusaDosParametros.PrazoEmFracaoDeDiaUtil, "prazoValor"));
-        Recusas(Valido with { PrazoDeInterposicao = new PrazoDeclarado(valor, "horas") }).Should().BeEmpty();
+        Recusas(Valido with { PrazoDeInterposicao = new PrazoDeclarado(valor, "HORAS") }).Should().BeEmpty();
     }
 
     [Fact(DisplayName = "O valor não positivo é recusado antes da unidade: trocar a unidade não conserta um prazo que fecha antes de abrir")]
     public void ValorAntesDaUnidade() =>
-        Recusas(Valido with { PrazoDeInterposicao = new PrazoDeclarado(-5m, "dias") })
+        Recusas(Valido with { PrazoDeInterposicao = new PrazoDeclarado(-5m, "DIAS") })
             .Should().Equal((MotivoDaRecusaDosParametros.PrazoNaoPositivo, "prazoValor"));
 
     [Theory(DisplayName = "Efeito suspensivo ausente ou desconhecido é recusado, cada um com a mensagem própria")]
@@ -143,20 +143,20 @@ public sealed class ParametrosDeclaradosDoRecursoTests
     [Fact(DisplayName = "O prazo da 2ª instância passa pelas mesmas conferências, no campo dela")]
     public void PrazoDaSegundaInstancia_MesmasConferencias()
     {
-        Recusas(ComInstanciaSuperior with { PrazoDaSegundaInstancia = new PrazoDeclarado(0m, "diasUteis") })
+        Recusas(ComInstanciaSuperior with { PrazoDaSegundaInstancia = new PrazoDeclarado(0m, "DIAS_UTEIS") })
             .Should().Equal((MotivoDaRecusaDosParametros.PrazoNaoPositivo, "prazoSegundaInstanciaValor"));
-        Recusas(ComInstanciaSuperior with { PrazoDaSegundaInstancia = new PrazoDeclarado(3m, "dias") })
+        Recusas(ComInstanciaSuperior with { PrazoDaSegundaInstancia = new PrazoDeclarado(3m, "DIAS") })
             .Should().Equal((MotivoDaRecusaDosParametros.PrazoEmDiasCorridos, "prazoSegundaInstanciaUnidade"));
         Recusas(ComInstanciaSuperior with { PrazoDaSegundaInstancia = new PrazoDeclarado(3m, null) })
             .Should().Equal((MotivoDaRecusaDosParametros.PrazoSemUnidadeDeclaravel, "prazoSegundaInstanciaUnidade"));
-        Recusas(ComInstanciaSuperior with { PrazoDaSegundaInstancia = new PrazoDeclarado(2.5m, "diasUteis") })
+        Recusas(ComInstanciaSuperior with { PrazoDaSegundaInstancia = new PrazoDeclarado(2.5m, "DIAS_UTEIS") })
             .Should().Equal((MotivoDaRecusaDosParametros.PrazoEmFracaoDeDiaUtil, "prazoSegundaInstanciaValor"));
     }
 
     [Theory(DisplayName = "Sem instância superior, o prazo da 2ª instância é recusado, no valor ou, sozinha, na unidade")]
-    [InlineData(3, "diasUteis", "prazoSegundaInstanciaValor")]
+    [InlineData(3, "DIAS_UTEIS", "prazoSegundaInstanciaValor")]
     [InlineData(3, null, "prazoSegundaInstanciaValor")]
-    [InlineData(null, "horas", "prazoSegundaInstanciaUnidade")]
+    [InlineData(null, "HORAS", "prazoSegundaInstanciaUnidade")]
     public void PrazoSegundaInstanciaSemInstanciaSuperior(int? valor, string? unidade, string campo) =>
         Recusas(Valido with { PrazoDaSegundaInstancia = new PrazoDeclarado(valor, unidade) })
             .Should().Equal((MotivoDaRecusaDosParametros.PrazoSegundaInstanciaSemInstanciaSuperior, campo));
@@ -164,7 +164,7 @@ public sealed class ParametrosDeclaradosDoRecursoTests
     [Fact(DisplayName = "Com instância superior, não guardar a vaga é recusado na guarda")]
     public void NaoGuardaComInstanciaSuperior()
     {
-        RecusaDosParametrosDoRecurso recusa = (ComInstanciaSuperior with { GuardaDaVaga = "naoGuarda" }).Conferir().Recusas.Single();
+        RecusaDosParametrosDoRecurso recusa = (ComInstanciaSuperior with { GuardaDaVaga = "NAO_GUARDA" }).Conferir().Recusas.Single();
 
         recusa.Motivo.Should().Be(MotivoDaRecusaDosParametros.NaoGuardaComInstanciaSuperior);
         recusa.Campo.Should().Be("guardaDaVaga");
@@ -172,7 +172,7 @@ public sealed class ParametrosDeclaradosDoRecursoTests
 
     [Fact(DisplayName = "Sem instância superior, não guardar a vaga é aceito")]
     public void NaoGuardaSemInstanciaSuperior() =>
-        Recusas(Valido with { GuardaDaVaga = "naoGuarda" }).Should().BeEmpty();
+        Recusas(Valido with { GuardaDaVaga = "NAO_GUARDA" }).Should().BeEmpty();
 
     [Fact(DisplayName = "A guarda desconhecida com instância superior é recusada só por ela: a outra recusa depende de um dado já recusado")]
     public void GuardaDesconhecidaComInstanciaSuperior() =>
@@ -183,7 +183,7 @@ public sealed class ParametrosDeclaradosDoRecursoTests
     public void CausasIndependentes_AcumuladasEmOrdem()
     {
         ParametrosDeclaradosDoRecurso declarados = new(
-            new PrazoDeclarado(0m, "dias"), AdmiteInstanciaSuperior: false, new PrazoDeclarado(1m, "diasUteis"), EfeitoSuspensivo: null, GuardaDaVaga: "talvez");
+            new PrazoDeclarado(0m, "DIAS"), AdmiteInstanciaSuperior: false, new PrazoDeclarado(1m, "DIAS_UTEIS"), EfeitoSuspensivo: null, GuardaDaVaga: "talvez");
 
         Recusas(declarados).Should().Equal(
             (MotivoDaRecusaDosParametros.PrazoNaoPositivo, "prazoValor"),
@@ -201,7 +201,7 @@ public sealed class ParametrosDeclaradosDoRecursoTests
     {
         ParametrosDeclaradosDoRecurso declarados = Valido with
         {
-            PrazoDeInterposicao = new PrazoDeclarado(77.7777m, "dias"),
+            PrazoDeInterposicao = new PrazoDeclarado(77.7777m, "DIAS"),
             EfeitoSuspensivo = "efeitoEstranho",
             GuardaDaVaga = "guardaEstranha",
         };

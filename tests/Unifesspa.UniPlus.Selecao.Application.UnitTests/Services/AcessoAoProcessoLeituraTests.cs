@@ -39,7 +39,6 @@ public sealed class AcessoAoProcessoLeituraTests
     [Theory(DisplayName = "Rascunho, cancelado sem publicação e status fora da lista seguem a regra do rascunho: pedem configurar na unidade dona")]
     [InlineData(StatusProcesso.Rascunho)]
     [InlineData(StatusProcesso.Cancelado)]
-    [InlineData(StatusProcesso.Nenhum)]
     public async Task ForaDaLista_PedeConfigurarNaUnidade(StatusProcesso status)
     {
         IVerificadorDeAcesso verificador = Substitute.For<IVerificadorDeAcesso>();

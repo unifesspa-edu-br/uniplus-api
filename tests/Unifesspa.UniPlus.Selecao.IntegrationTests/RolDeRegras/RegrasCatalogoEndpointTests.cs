@@ -1,5 +1,6 @@
 namespace Unifesspa.UniPlus.Selecao.IntegrationTests.RolDeRegras;
 
+
 using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
@@ -14,6 +15,8 @@ using Unifesspa.UniPlus.IntegrationTests.Fixtures.Authentication;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Hosting;
 using Unifesspa.UniPlus.Selecao.Application.Permissoes;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
+
+using CodigoDeContratoExtensions = Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato.CodigoDeContratoExtensions;
 
 /// <summary>
 /// Contrato HTTP da leitura do <c>regras_do_catalogo</c>: as rotas existem, exigem autenticação,
@@ -107,7 +110,7 @@ public sealed class RegrasCatalogoEndpointTests : IAsyncLifetime
     {
         regra.GetProperty("codigo").GetString().Should().NotBeNullOrWhiteSpace();
         regra.GetProperty("versao").GetString().Should().NotBeNullOrWhiteSpace();
-        regra.GetProperty("tipo").GetString().Should().NotBeNullOrWhiteSpace();
+        regra.GetProperty("tipo").GetProperty("codigo").GetString().Should().NotBeNullOrWhiteSpace();
         regra.GetProperty("hash").GetString().Should().HaveLength(64);
         regra.GetProperty("baseLegal").GetString().Should().NotBeNull();
         regra.GetProperty("declaracaoDaRegra").ValueKind.Should().NotBe(JsonValueKind.String);
@@ -126,7 +129,7 @@ public sealed class RegrasCatalogoEndpointTests : IAsyncLifetime
         using HttpClient client = _fixture.Factory.CreateClient();
 
         using JsonDocument doc = await ListarAsync(
-            client, $"?tipo={TipoRegraCodigo.RegraDistribuicaoVagas}&limit=10");
+            client, $"?tipo={CodigoDeContratoExtensions.Codigo(TipoRegra.RegraDistribuicaoVagas)}&limit=10");
 
         ConferirModalidadesAdmitidas(doc.RootElement);
     }
@@ -135,13 +138,13 @@ public sealed class RegrasCatalogoEndpointTests : IAsyncLifetime
     {
         JsonElement[] regras = [.. resultado.EnumerateArray()];
 
-        JsonElement psiq = regras.Single(r => r.GetProperty("codigo").GetString() == RegraDistribuicaoVagasCodigo.Psiq);
+        JsonElement psiq = regras.Single(r => r.GetProperty("codigo").GetString() == Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato.CodigoDeContratoExtensions.Codigo(RegraDeDistribuicaoDeVagas.PorAcrescimoIndigenaEQuilombola));
         JsonElement modalidadesPsiq = psiq.GetProperty("modalidadesAdmitidas");
         modalidadesPsiq.ValueKind.Should().Be(JsonValueKind.Array);
         modalidadesPsiq.EnumerateArray().Select(m => m.GetString())
             .Should().BeEquivalentTo(["AC_I", "AC_Q"]);
 
-        JsonElement institucional = regras.Single(r => r.GetProperty("codigo").GetString() == RegraDistribuicaoVagasCodigo.Institucional);
+        JsonElement institucional = regras.Single(r => r.GetProperty("codigo").GetString() == Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato.CodigoDeContratoExtensions.Codigo(RegraDeDistribuicaoDeVagas.Institucional));
         institucional.GetProperty("modalidadesAdmitidas").ValueKind.Should().Be(
             JsonValueKind.Null, "rol aberto — a regra institucional não restringe o conjunto");
     }
@@ -152,8 +155,8 @@ public sealed class RegrasCatalogoEndpointTests : IAsyncLifetime
         using HttpClient client = _fixture.Factory.CreateClient();
 
         using JsonDocument distribuicao = await ListarAsync(
-            client, $"?tipo={TipoRegraCodigo.RegraDistribuicaoVagas}&limit=10");
-        using JsonDocument desempate = await ListarAsync(client, $"?tipo={TipoRegraCodigo.CriterioDesempate}");
+            client, $"?tipo={CodigoDeContratoExtensions.Codigo(TipoRegra.RegraDistribuicaoVagas)}&limit=10");
+        using JsonDocument desempate = await ListarAsync(client, $"?tipo={CodigoDeContratoExtensions.Codigo(TipoRegra.CriterioDesempate)}");
 
         ConferirRamosDeDistribuicao(distribuicao.RootElement);
         desempate.RootElement.EnumerateArray()
@@ -165,11 +168,11 @@ public sealed class RegrasCatalogoEndpointTests : IAsyncLifetime
         Dictionary<string, string?> ramoPorRegra = resultado.EnumerateArray().ToDictionary(
             static r => r.GetProperty("codigo").GetString()!, static r => r.GetProperty("ramoDaDistribuicao").GetString(), StringComparer.Ordinal);
         ramoPorRegra.Values.Should().AllSatisfy(static ramo => ramo.Should().NotBeNull("toda regra de distribuição pertence a um dos dois ramos"));
-        ramoPorRegra[RegraDistribuicaoVagasCodigo.Lei12711].Should().Be("LEI_DE_COTAS");
-        ramoPorRegra[RegraDistribuicaoVagasCodigo.Lei12711ComAcPcd].Should().Be("LEI_DE_COTAS");
-        ramoPorRegra[RegraDistribuicaoVagasCodigo.Institucional].Should().Be("QUADRO_FIXADO_NO_EDITAL");
-        ramoPorRegra[RegraDistribuicaoVagasCodigo.Psiq].Should().Be("QUADRO_FIXADO_NO_EDITAL");
-        ramoPorRegra[RegraDistribuicaoVagasCodigo.ComAcPcd].Should().Be("QUADRO_FIXADO_NO_EDITAL");
+        ramoPorRegra[Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato.CodigoDeContratoExtensions.Codigo(RegraDeDistribuicaoDeVagas.Lei12711)].Should().Be("LEI_DE_COTAS");
+        ramoPorRegra[Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato.CodigoDeContratoExtensions.Codigo(RegraDeDistribuicaoDeVagas.Lei12711ComAmplaConcorrenciaEPessoaComDeficiencia)].Should().Be("LEI_DE_COTAS");
+        ramoPorRegra[Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato.CodigoDeContratoExtensions.Codigo(RegraDeDistribuicaoDeVagas.Institucional)].Should().Be("QUADRO_FIXADO_NO_EDITAL");
+        ramoPorRegra[Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato.CodigoDeContratoExtensions.Codigo(RegraDeDistribuicaoDeVagas.PorAcrescimoIndigenaEQuilombola)].Should().Be("QUADRO_FIXADO_NO_EDITAL");
+        ramoPorRegra[Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato.CodigoDeContratoExtensions.Codigo(RegraDeDistribuicaoDeVagas.ComAmplaConcorrenciaEPessoaComDeficiencia)].Should().Be("QUADRO_FIXADO_NO_EDITAL");
     }
 
     [Fact(DisplayName = "O filtro aceita o mesmo código de tipo que a resposta devolve — quem relê um valor da API e o usa como filtro é atendido")]
@@ -177,12 +180,12 @@ public sealed class RegrasCatalogoEndpointTests : IAsyncLifetime
     {
         using HttpClient client = _fixture.Factory.CreateClient();
 
-        using JsonDocument doc = await ListarAsync(client, $"?tipo={TipoRegraCodigo.CriterioDesempate}");
+        using JsonDocument doc = await ListarAsync(client, $"?tipo={CodigoDeContratoExtensions.Codigo(TipoRegra.CriterioDesempate)}");
 
         doc.RootElement.EnumerateArray().Should().NotBeEmpty();
         doc.RootElement.EnumerateArray()
-            .Should().AllSatisfy(r => r.GetProperty("tipo").GetString()
-                .Should().Be(TipoRegraCodigo.CriterioDesempate));
+            .Should().AllSatisfy(r => r.GetProperty("tipo").GetProperty("codigo").GetString()
+                .Should().Be(CodigoDeContratoExtensions.Codigo(TipoRegra.CriterioDesempate)));
     }
 
     [Fact(DisplayName = "Tipo desconhecido recusa com 400, em vez de devolver lista vazia como se não houvesse regra daquele tipo")]

@@ -2,6 +2,7 @@ namespace Unifesspa.UniPlus.Selecao.Domain.UnitTests.Entities;
 
 using AwesomeAssertions;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
@@ -26,12 +27,12 @@ public sealed class EtapaProcessoTests
     {
         EtapaProcesso etapa = EtapaDeProvaObjetivaParaAmbosOsCarateres();
 
-        etapa.DefinirProdutos([ProdutoDaEtapa.Criar("RESULTADO_CLASSIFICACAO", PapelProdutoFase.Preliminar)])
+        etapa.DefinirProdutos([ProdutoDaEtapa.Criar("RESULTADO_CLASSIFICACAO", PapelDaPublicacaoPrevista.Preliminar)])
             .IsSuccess.Should().BeTrue();
         Guid idOriginal = etapa.Produtos.Single().Id;
 
         // O cliente devolve a coleção que leu: instâncias novas, mesmo conteúdo.
-        etapa.DefinirProdutos([ProdutoDaEtapa.Criar("RESULTADO_CLASSIFICACAO", PapelProdutoFase.Preliminar)])
+        etapa.DefinirProdutos([ProdutoDaEtapa.Criar("RESULTADO_CLASSIFICACAO", PapelDaPublicacaoPrevista.Preliminar)])
             .IsSuccess.Should().BeTrue();
 
         etapa.Produtos.Single().Id.Should().Be(idOriginal,
@@ -74,8 +75,8 @@ public sealed class EtapaProcessoTests
         EtapaProcesso etapa = EtapaDeProvaObjetivaParaAmbosOsCarateres();
 
         Result resultado = etapa.DefinirProdutos([
-            ProdutoDaEtapa.Criar("GABARITO", PapelProdutoFase.Preliminar),
-            ProdutoDaEtapa.Criar("GABARITO", PapelProdutoFase.Preliminar),
+            ProdutoDaEtapa.Criar("GABARITO", PapelDaPublicacaoPrevista.Preliminar),
+            ProdutoDaEtapa.Criar("GABARITO", PapelDaPublicacaoPrevista.Preliminar),
         ]);
 
         resultado.IsFailure.Should().BeTrue();
@@ -88,8 +89,8 @@ public sealed class EtapaProcessoTests
         EtapaProcesso etapa = EtapaDeProvaObjetivaParaAmbosOsCarateres();
 
         etapa.DefinirProdutos([
-            ProdutoDaEtapa.Criar("GABARITO", PapelProdutoFase.Preliminar),
-            ProdutoDaEtapa.Criar("GABARITO", PapelProdutoFase.Definitivo),
+            ProdutoDaEtapa.Criar("GABARITO", PapelDaPublicacaoPrevista.Preliminar),
+            ProdutoDaEtapa.Criar("GABARITO", PapelDaPublicacaoPrevista.Definitivo),
         ]).IsSuccess.Should().BeTrue();
     }
 
@@ -97,12 +98,12 @@ public sealed class EtapaProcessoTests
     public void DefinirProdutos_ParQueMuda_TrocaDeLinha()
     {
         EtapaProcesso etapa = EtapaComResultadoDaClassificacaoPreliminarEDefinitivo();
-        Guid idPreliminar = etapa.Produtos.Single(p => p.Papel == PapelProdutoFase.Preliminar).Id;
+        Guid idPreliminar = etapa.Produtos.Single(p => p.Papel == PapelDaPublicacaoPrevista.Preliminar).Id;
 
         // O definitivo sai, o preliminar fica, e um ato novo entra.
         DeclararProdutosAceitos(etapa,
-            ProdutoDaEtapa.Criar("RESULTADO_CLASSIFICACAO", PapelProdutoFase.Preliminar),
-            ProdutoDaEtapa.Criar("GABARITO", PapelProdutoFase.Preliminar));
+            ProdutoDaEtapa.Criar("RESULTADO_CLASSIFICACAO", PapelDaPublicacaoPrevista.Preliminar),
+            ProdutoDaEtapa.Criar("GABARITO", PapelDaPublicacaoPrevista.Preliminar));
 
         etapa.Produtos.Should().HaveCount(2);
         etapa.Produtos.Single(p => p.AtoCodigo == "RESULTADO_CLASSIFICACAO").Id.Should().Be(idPreliminar,
@@ -114,8 +115,8 @@ public sealed class EtapaProcessoTests
     {
         EtapaProcesso etapa = EtapaDeProvaObjetivaParaAmbosOsCarateres();
         DeclararProdutosAceitos(etapa,
-            ProdutoDaEtapa.Criar("RESULTADO_CLASSIFICACAO", PapelProdutoFase.Preliminar),
-            ProdutoDaEtapa.Criar("RESULTADO_CLASSIFICACAO", PapelProdutoFase.Definitivo));
+            ProdutoDaEtapa.Criar("RESULTADO_CLASSIFICACAO", PapelDaPublicacaoPrevista.Preliminar),
+            ProdutoDaEtapa.Criar("RESULTADO_CLASSIFICACAO", PapelDaPublicacaoPrevista.Definitivo));
 
         return etapa;
     }
@@ -130,7 +131,7 @@ public sealed class EtapaProcessoTests
 
     // ── Como a nota da etapa é obtida ──
 
-    private static ReferenciaRegra RegraDeConsolidacao(string codigo = RegraConsolidacaoCodigo.AvaliacaoUnica) =>
+    private static ReferenciaRegra RegraDeConsolidacao(string codigo = "APURACAO_AVALIACAO_UNICA") =>
         ReferenciaRegra.De(codigo, "v1", new string('c', 64));
 
     private static TipoEtapaSnapshot TipoEtapaDoEnem() =>
@@ -192,7 +193,7 @@ public sealed class EtapaProcessoTests
             new DeclaracaoDaAvaliacaoDaEtapa(Peso: 1m, NotaMinima: null, NotaMaxima: null, PassoDoLancamento: null, FormaDeAvaliacao: FormaDeAvaliacao.Humana, RegraConsolidacao: null, EscalaDeAtendimento: null)).IsSuccess.Should().BeTrue();
         EtapaProcesso.Criar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("etapa").Value!,
             new IdentificacaoDaEtapa(Nome: "Redação", Carater: CaraterEtapa.Classificatoria, TipoEtapa: TipoEtapaProvaObjetiva(), Ordem: 1, FaseCodigo: null),
-            new DeclaracaoDaAvaliacaoDaEtapa(Peso: 1m, NotaMinima: null, NotaMaxima: 10m, PassoDoLancamento: 0.5m, FormaDeAvaliacao: FormaDeAvaliacao.Humana, RegraConsolidacao: RegraDeConsolidacao(RegraConsolidacaoCodigo.CorrecaoIndependente), EscalaDeAtendimento: null)).IsSuccess.Should().BeTrue();
+            new DeclaracaoDaAvaliacaoDaEtapa(Peso: 1m, NotaMinima: null, NotaMaxima: 10m, PassoDoLancamento: 0.5m, FormaDeAvaliacao: FormaDeAvaliacao.Humana, RegraConsolidacao: RegraDeConsolidacao(RegraDeApuracaoDaAvaliacao.CorrecaoIndependente.Codigo()), EscalaDeAtendimento: null)).IsSuccess.Should().BeTrue();
     }
 
     [Fact(DisplayName = "Criar com dados válidos tem sucesso")]
@@ -238,11 +239,11 @@ public sealed class EtapaProcessoTests
         resultado.Errors.Select(e => e.Error.Code).Should().Contain("EtapaProcesso.NomeTamanho");
     }
 
-    [Fact(DisplayName = "Criar com caráter Nenhum falha com CaraterObrigatorio")]
+    [Fact(DisplayName = "Criar com caráter indefinido falha com CaraterObrigatorio")]
     public void Criar_CaraterNenhum_Falha()
     {
         Result<EtapaProcesso> resultado = EtapaProcesso.Criar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("etapa").Value!,
-            new IdentificacaoDaEtapa(Nome: "Prova Objetiva", Carater: CaraterEtapa.Nenhum, TipoEtapa: TipoEtapaProvaObjetiva(), Ordem: 1, FaseCodigo: null),
+            new IdentificacaoDaEtapa(Nome: "Prova Objetiva", Carater: (CaraterEtapa)99, TipoEtapa: TipoEtapaProvaObjetiva(), Ordem: 1, FaseCodigo: null),
             new DeclaracaoDaAvaliacaoDaEtapa(Peso: null, NotaMinima: null, NotaMaxima: null, PassoDoLancamento: null, FormaDeAvaliacao: null, RegraConsolidacao: null, EscalaDeAtendimento: null));
 
         resultado.IsFailure.Should().BeTrue();

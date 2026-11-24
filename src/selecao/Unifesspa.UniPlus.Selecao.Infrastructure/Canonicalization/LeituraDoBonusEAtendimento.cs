@@ -5,6 +5,7 @@ using System.Text.Json.Nodes;
 using System.Text.RegularExpressions;
 
 using Unifesspa.UniPlus.Kernel.Domain.Cidades;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.ValueObjects;
@@ -122,7 +123,7 @@ internal static partial class LeituraDoBonusEAtendimento
 
     private static ConfiguracaoBonusRegional? LerParametrosDoBonus(LeitorEnvelope leitor, JsonObject bloco)
     {
-        ReferenciaRegra regra = leitor.Regra(bloco, "regra", "fada", RegraBonusCodigo.Multiplicativo);
+        ReferenciaRegra regra = leitor.Regra<RegraDeBonus>(bloco, "regra", "fada");
         decimal fator = leitor.Decimal(bloco, "fator", EscritaCanonica.EscalaPadrao, "fada", LimitesDoEnvelope.PrecisaoBonus);
         decimal? teto = leitor.DecimalOpcional(bloco, "teto", EscritaCanonica.EscalaPadrao, "fada", LimitesDoEnvelope.PrecisaoBonus);
         string? fatoElegibilidade = leitor.TextoOpcional(bloco, "codigoDoDadoDeElegibilidade", "fada", LimitesDoEnvelope.FatoElegibilidadeBonusRegional);

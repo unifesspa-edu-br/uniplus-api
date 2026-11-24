@@ -55,7 +55,7 @@ internal static class ApoioDaPersistenciaDeModalidades
             SementeDeAplicabilidadeLegal.AmplaConcorrencia, null, null)).Value!;
 
     internal static Modalidade Cota(string codigo) =>
-        Modalidade.Criar(codigo, new DeclaracaoDaModalidade("Cota", "COTA_RESERVADA", "DENTRO_DA_RESERVA_LEGAL", null, "SEGUE_CASCATA", null, null, null,
+        Modalidade.Criar(codigo, new DeclaracaoDaModalidade("Cota", "COTA_RESERVADA", "DENTRO_DA_RESERVA_LEGAL", null, "SEGUE_ORDEM_DE_REMANEJAMENTO", null, null, null,
             SementeDeAplicabilidadeLegal.LiEp, null, null)).Value!;
 
     internal static Modalidade RetiradaDeOutraModalidade(string codigo, string origem) =>

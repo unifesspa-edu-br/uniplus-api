@@ -61,8 +61,8 @@ public sealed class GrafoDependenciaConjuntaTests
     private static FatoColetado NaFinalidade(FinalidadeFormulario finalidade, string codigo, int ordem, string secao) =>
         FatoColetadoDeTeste.Coletando(codigo, ordem).NaSecao(secao).DaFinalidade(finalidade).Construir();
 
-    private static int Posicao(GrafoDependenciaConjunta grafo, ClasseNoGrafo classe, string codigo) =>
-        grafo.OrdemTopologica.ToList().FindIndex(n => n.Classe == classe && n.Codigo == codigo);
+    private static int Posicao(GrafoDependenciaConjunta grafo, TipoDeParteDaConfiguracao classe, string codigo) =>
+        grafo.OrdemDeColeta.ToList().FindIndex(n => n.Tipo == classe && n.Codigo == codigo);
 
     [Fact(DisplayName = "Aresta de produção existe e põe o campo antes do fato na ordem topológica")]
     public void Producao_CampoAntesDoFato()
@@ -72,11 +72,11 @@ public sealed class GrafoDependenciaConjuntaTests
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
         GrafoDependenciaConjunta grafo = resultado.Value!;
 
-        grafo.Arestas.Should().ContainSingle(a =>
-            a.Tipo == TipoArestaGrafo.Producao
-            && a.Origem.Classe == ClasseNoGrafo.Campo && a.Origem.Codigo == "PCD"
-            && a.Destino.Classe == ClasseNoGrafo.Fato && a.Destino.Codigo == "PCD");
-        Posicao(grafo, ClasseNoGrafo.Campo, "PCD").Should().BeLessThan(Posicao(grafo, ClasseNoGrafo.Fato, "PCD"));
+        grafo.Dependencias.Should().ContainSingle(a =>
+            a.Motivo == MotivoDaDependencia.InformaDado
+            && a.Origem.Tipo == TipoDeParteDaConfiguracao.Campo && a.Origem.Codigo == "PCD"
+            && a.Destino.Tipo == TipoDeParteDaConfiguracao.Dado && a.Destino.Codigo == "PCD");
+        Posicao(grafo, TipoDeParteDaConfiguracao.Campo, "PCD").Should().BeLessThan(Posicao(grafo, TipoDeParteDaConfiguracao.Dado, "PCD"));
     }
 
     [Fact(DisplayName = "O derivado do sistema citado entra no grafo pela dependência declarada pelo mecanismo dele")]
@@ -85,17 +85,17 @@ public sealed class GrafoDependenciaConjuntaTests
         FatoColetado dataDeNascimento = Declarado("DATA_NASCIMENTO", 0);
         FatoColetado responsavel = Declarado("RESPONSAVEL_LEGAL", 1, "FAIXA_ETARIA");
 
-        IReadOnlyList<ArestaGrafoDependencia> arestas = Construir([dataDeNascimento, responsavel], [], []).Value!.Arestas;
+        IReadOnlyList<DependenciaEntrePartes> arestas = Construir([dataDeNascimento, responsavel], [], []).Value!.Dependencias;
 
-        arestas.Should().Contain(a => a.Tipo == TipoArestaGrafo.Derivacao && a.Origem.Codigo == "DATA_NASCIMENTO" && a.Destino.Codigo == "FAIXA_ETARIA");
-        arestas.Should().Contain(a => a.Tipo == TipoArestaGrafo.Precondicao
-            && a.Origem.Codigo == "FAIXA_ETARIA" && a.Destino.Classe == ClasseNoGrafo.Campo && a.Destino.Codigo == "RESPONSAVEL_LEGAL");
+        arestas.Should().Contain(a => a.Motivo == MotivoDaDependencia.CalculaDado && a.Origem.Codigo == "DATA_NASCIMENTO" && a.Destino.Codigo == "FAIXA_ETARIA");
+        arestas.Should().Contain(a => a.Motivo == MotivoDaDependencia.CondicionaExibicao
+            && a.Origem.Codigo == "FAIXA_ETARIA" && a.Destino.Tipo == TipoDeParteDaConfiguracao.Campo && a.Destino.Codigo == "RESPONSAVEL_LEGAL");
     }
 
     [Fact(DisplayName = "O derivado do sistema que nenhuma regra cita fica fora do grafo")]
     public void DerivadoDoSistemaNaoCitado_FicaFora()
     {
-        Construir([Declarado("DATA_NASCIMENTO", 0)], [], []).Value!.Arestas
+        Construir([Declarado("DATA_NASCIMENTO", 0)], [], []).Value!.Dependencias
             .Should().NotContain(static a => a.Destino.Codigo == "FAIXA_ETARIA");
     }
 
@@ -110,14 +110,14 @@ public sealed class GrafoDependenciaConjuntaTests
             [Declarado("PCD", 0), Declarado("CONCORRER_PCD", 1, "PCD")], [Derivado("MODALIDADE", "CONCORRER_PCD")], [ExigenciaGatilhadaPor("MODALIDADE")]);
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
-        IReadOnlyList<ArestaGrafoDependencia> arestas = resultado.Value!.Arestas;
-        arestas.Should().Contain(a => a.Tipo == TipoArestaGrafo.Precondicao
-            && a.Origem.Codigo == "PCD" && a.Destino.Classe == ClasseNoGrafo.Campo && a.Destino.Codigo == "CONCORRER_PCD");
-        arestas.Should().Contain(a => a.Tipo == TipoArestaGrafo.Derivacao
-            && a.Origem.Codigo == "CONCORRER_PCD" && a.Destino.Classe == ClasseNoGrafo.Fato && a.Destino.Codigo == "MODALIDADE");
-        arestas.Should().Contain(a => a.Tipo == TipoArestaGrafo.Gatilho
-            && a.Origem.Codigo == "MODALIDADE" && a.Destino.Classe == ClasseNoGrafo.Exigencia);
-        arestas.Should().Contain(a => a.Tipo == TipoArestaGrafo.Producao && a.Origem.Codigo == "PCD");
+        IReadOnlyList<DependenciaEntrePartes> arestas = resultado.Value!.Dependencias;
+        arestas.Should().Contain(a => a.Motivo == MotivoDaDependencia.CondicionaExibicao
+            && a.Origem.Codigo == "PCD" && a.Destino.Tipo == TipoDeParteDaConfiguracao.Campo && a.Destino.Codigo == "CONCORRER_PCD");
+        arestas.Should().Contain(a => a.Motivo == MotivoDaDependencia.CalculaDado
+            && a.Origem.Codigo == "CONCORRER_PCD" && a.Destino.Tipo == TipoDeParteDaConfiguracao.Dado && a.Destino.Codigo == "MODALIDADE");
+        arestas.Should().Contain(a => a.Motivo == MotivoDaDependencia.CondicionaExigencia
+            && a.Origem.Codigo == "MODALIDADE" && a.Destino.Tipo == TipoDeParteDaConfiguracao.Exigencia);
+        arestas.Should().Contain(a => a.Motivo == MotivoDaDependencia.InformaDado && a.Origem.Codigo == "PCD");
     }
 
     [Fact(DisplayName = "Ordem topológica respeita todas as arestas: campo→fato→campo dependente→derivado→exigência")]
@@ -130,12 +130,12 @@ public sealed class GrafoDependenciaConjuntaTests
 
         GrafoDependenciaConjunta grafo = Construir([pcd, concorrer], [modalidade], [laudo]).Value!;
 
-        Posicao(grafo, ClasseNoGrafo.Fato, "PCD")
-            .Should().BeLessThan(Posicao(grafo, ClasseNoGrafo.Campo, "CONCORRER_PCD"), "a pré-condição precede o campo gatado");
-        Posicao(grafo, ClasseNoGrafo.Fato, "CONCORRER_PCD")
-            .Should().BeLessThan(Posicao(grafo, ClasseNoGrafo.Fato, "MODALIDADE"), "a derivação precede o derivado");
-        int exigencia = grafo.OrdemTopologica.ToList().FindIndex(n => n.Classe == ClasseNoGrafo.Exigencia);
-        Posicao(grafo, ClasseNoGrafo.Fato, "MODALIDADE")
+        Posicao(grafo, TipoDeParteDaConfiguracao.Dado, "PCD")
+            .Should().BeLessThan(Posicao(grafo, TipoDeParteDaConfiguracao.Campo, "CONCORRER_PCD"), "a pré-condição precede o campo gatado");
+        Posicao(grafo, TipoDeParteDaConfiguracao.Dado, "CONCORRER_PCD")
+            .Should().BeLessThan(Posicao(grafo, TipoDeParteDaConfiguracao.Dado, "MODALIDADE"), "a derivação precede o derivado");
+        int exigencia = grafo.OrdemDeColeta.ToList().FindIndex(n => n.Tipo == TipoDeParteDaConfiguracao.Exigencia);
+        Posicao(grafo, TipoDeParteDaConfiguracao.Dado, "MODALIDADE")
             .Should().BeLessThan(exigencia, "o gatilho precede a exigência");
     }
 
@@ -146,8 +146,8 @@ public sealed class GrafoDependenciaConjuntaTests
         FatoColetado b = Declarado("B", 1);
         FatoColetado c = Declarado("C", 2);
 
-        List<string> ordem1 = [.. Construir([a, b, c]).Value!.OrdemTopologica.Select(n => n.Rotulo)];
-        List<string> ordem2 = [.. Construir([c, b, a]).Value!.OrdemTopologica.Select(n => n.Rotulo)];
+        List<string> ordem1 = [.. Construir([a, b, c]).Value!.OrdemDeColeta.Select(n => n.Rotulo)];
+        List<string> ordem2 = [.. Construir([c, b, a]).Value!.OrdemDeColeta.Select(n => n.Rotulo)];
 
         ordem2.Should().Equal(ordem1, "a ordem não depende da ordem de entrada das componentes");
     }
@@ -162,10 +162,10 @@ public sealed class GrafoDependenciaConjuntaTests
 
         GrafoDependenciaConjunta grafo = Construir([z, a]).Value!;
 
-        Posicao(grafo, ClasseNoGrafo.Fato, "Z")
-            .Should().BeLessThan(Posicao(grafo, ClasseNoGrafo.Fato, "A"), "Z é coletado antes (ordem 0), apesar de 'A' < 'Z'");
-        Posicao(grafo, ClasseNoGrafo.Campo, "Z")
-            .Should().BeLessThan(Posicao(grafo, ClasseNoGrafo.Campo, "A"));
+        Posicao(grafo, TipoDeParteDaConfiguracao.Dado, "Z")
+            .Should().BeLessThan(Posicao(grafo, TipoDeParteDaConfiguracao.Dado, "A"), "Z é coletado antes (ordem 0), apesar de 'A' < 'Z'");
+        Posicao(grafo, TipoDeParteDaConfiguracao.Campo, "Z")
+            .Should().BeLessThan(Posicao(grafo, TipoDeParteDaConfiguracao.Campo, "A"));
     }
 
     [Fact(DisplayName = "Fato derivado que gata um campo intermediário é coletado antes de um campo posterior independente")]
@@ -181,10 +181,10 @@ public sealed class GrafoDependenciaConjuntaTests
 
         GrafoDependenciaConjunta grafo = Construir([a, b, c], [d]).Value!;
 
-        Posicao(grafo, ClasseNoGrafo.Fato, "D")
-            .Should().BeLessThan(Posicao(grafo, ClasseNoGrafo.Campo, "C"), "o derivado que gata B@1 é coletado antes de C@2");
-        Posicao(grafo, ClasseNoGrafo.Campo, "B")
-            .Should().BeLessThan(Posicao(grafo, ClasseNoGrafo.Campo, "C"), "B@1 não é furado por C@2 apesar de esperar a derivação");
+        Posicao(grafo, TipoDeParteDaConfiguracao.Dado, "D")
+            .Should().BeLessThan(Posicao(grafo, TipoDeParteDaConfiguracao.Campo, "C"), "o derivado que gata B@1 é coletado antes de C@2");
+        Posicao(grafo, TipoDeParteDaConfiguracao.Campo, "B")
+            .Should().BeLessThan(Posicao(grafo, TipoDeParteDaConfiguracao.Campo, "C"), "B@1 não é furado por C@2 apesar de esperar a derivação");
     }
 
     [Fact(DisplayName = "Nós e arestas expostos são determinísticos — não dependem da ordem de entrada")]
@@ -197,9 +197,9 @@ public sealed class GrafoDependenciaConjuntaTests
         GrafoDependenciaConjunta g1 = Construir([pcd, concorrer], [modalidade]).Value!;
         GrafoDependenciaConjunta g2 = Construir([concorrer, pcd], [modalidade]).Value!;
 
-        g2.Nos.Select(n => n.Rotulo).Should().Equal(g1.Nos.Select(n => n.Rotulo));
-        g2.Arestas.Select(a => $"{a.Tipo}:{a.Origem.Rotulo}->{a.Destino.Rotulo}")
-            .Should().Equal(g1.Arestas.Select(a => $"{a.Tipo}:{a.Origem.Rotulo}->{a.Destino.Rotulo}"));
+        g2.Partes.Select(n => n.Rotulo).Should().Equal(g1.Partes.Select(n => n.Rotulo));
+        g2.Dependencias.Select(a => $"{a.Motivo}:{a.Origem.Rotulo}->{a.Destino.Rotulo}")
+            .Should().Equal(g1.Dependencias.Select(a => $"{a.Motivo}:{a.Origem.Rotulo}->{a.Destino.Rotulo}"));
     }
 
     [Fact(DisplayName = "Ciclo pelas quatro classes juntas é recusado com erro nomeado")]
@@ -240,7 +240,7 @@ public sealed class GrafoDependenciaConjuntaTests
         Result<GrafoDependenciaConjunta> resultado = Construir(exigencias: [exigencia]);
 
         resultado.IsSuccess.Should().BeTrue();
-        resultado.Value!.Arestas.Should().NotContain(a => a.Tipo == TipoArestaGrafo.Gatilho);
+        resultado.Value!.Dependencias.Should().NotContain(a => a.Motivo == MotivoDaDependencia.CondicionaExigencia);
     }
 
     private static FormularioProcesso InscricaoComSecaoDeCotasCondicionada() => FormularioProcesso.Criar(FinalidadeFormulario.Inscricao, null, null,
@@ -257,10 +257,10 @@ public sealed class GrafoDependenciaConjuntaTests
             [NaFinalidade(FinalidadeFormulario.Inscricao, "EGRESSO", 0, "DADOS"), NaFinalidade(FinalidadeFormulario.Inscricao, "CONCORRER_EP", 1, "COTAS")],
             formularios: [InscricaoComSecaoDeCotasCondicionada()]).Value!;
 
-        grafo.Arestas.Should().Contain(a => a.Tipo == TipoArestaGrafo.Precondicao
-            && a.Origem == new NoGrafoDependencia(ClasseNoGrafo.Fato, "EGRESSO") && a.Destino == new NoGrafoDependencia(ClasseNoGrafo.Secao, "INSCRICAO.COTAS"));
-        Posicao(grafo, ClasseNoGrafo.Fato, "EGRESSO").Should().BeLessThan(Posicao(grafo, ClasseNoGrafo.Secao, "INSCRICAO.COTAS"));
-        Posicao(grafo, ClasseNoGrafo.Secao, "INSCRICAO.COTAS").Should().BeLessThan(Posicao(grafo, ClasseNoGrafo.Campo, "CONCORRER_EP"));
+        grafo.Dependencias.Should().Contain(a => a.Motivo == MotivoDaDependencia.CondicionaExibicao
+            && a.Origem == new ParteDaConfiguracao(TipoDeParteDaConfiguracao.Dado, "EGRESSO") && a.Destino == new ParteDaConfiguracao(TipoDeParteDaConfiguracao.Secao, "INSCRICAO.COTAS"));
+        Posicao(grafo, TipoDeParteDaConfiguracao.Dado, "EGRESSO").Should().BeLessThan(Posicao(grafo, TipoDeParteDaConfiguracao.Secao, "INSCRICAO.COTAS"));
+        Posicao(grafo, TipoDeParteDaConfiguracao.Secao, "INSCRICAO.COTAS").Should().BeLessThan(Posicao(grafo, TipoDeParteDaConfiguracao.Campo, "CONCORRER_EP"));
     }
 
     [Fact(DisplayName = "Termo com condição é nó do grafo, consumidor do fato que cita")]
@@ -273,8 +273,8 @@ public sealed class GrafoDependenciaConjuntaTests
 
         GrafoDependenciaConjunta grafo = Construir([NaFinalidade(FinalidadeFormulario.Inscricao, "EGRESSO", 0, "DADOS")], termos: [termo]).Value!;
 
-        grafo.Arestas.Should().Contain(a => a.Tipo == TipoArestaGrafo.Precondicao
-            && a.Origem == new NoGrafoDependencia(ClasseNoGrafo.Fato, "EGRESSO") && a.Destino == new NoGrafoDependencia(ClasseNoGrafo.Termo, "INSCRICAO.CONSULTA"));
+        grafo.Dependencias.Should().Contain(a => a.Motivo == MotivoDaDependencia.CondicionaExibicao
+            && a.Origem == new ParteDaConfiguracao(TipoDeParteDaConfiguracao.Dado, "EGRESSO") && a.Destino == new ParteDaConfiguracao(TipoDeParteDaConfiguracao.Termo, "INSCRICAO.CONSULTA"));
     }
 
     [Fact(DisplayName = "A ordem de coleta segue a finalidade antes da ordem: formulários com a mesma ordem não se intercalam")]
@@ -287,7 +287,7 @@ public sealed class GrafoDependenciaConjuntaTests
             NaFinalidade(FinalidadeFormulario.Inscricao, "CONCORRER_EP", 1, "DADOS"),
         ]).Value!;
 
-        Posicao(grafo, ClasseNoGrafo.Campo, "CONCORRER_EP").Should().BeLessThan(Posicao(grafo, ClasseNoGrafo.Campo, "COMPROVANTE"),
+        Posicao(grafo, TipoDeParteDaConfiguracao.Campo, "CONCORRER_EP").Should().BeLessThan(Posicao(grafo, TipoDeParteDaConfiguracao.Campo, "COMPROVANTE"),
             "todo campo da inscrição vem antes dos da habilitação");
     }
 
@@ -306,7 +306,7 @@ public sealed class GrafoDependenciaConjuntaTests
             [NaFinalidade(FinalidadeFormulario.Inscricao, "EGRESSO", 0, "DADOS"), NaFinalidade(FinalidadeFormulario.Inscricao, "CONCLUSAO", 1, "FINAL")],
             formularios: [inscricao]).Value!;
 
-        Posicao(grafo, ClasseNoGrafo.Secao, "INSCRICAO.AVISO").Should().BeLessThan(Posicao(grafo, ClasseNoGrafo.Campo, "CONCLUSAO"));
+        Posicao(grafo, TipoDeParteDaConfiguracao.Secao, "INSCRICAO.AVISO").Should().BeLessThan(Posicao(grafo, TipoDeParteDaConfiguracao.Campo, "CONCLUSAO"));
     }
 
     [Fact(DisplayName = "Termos condicionados mantêm a ordem declarada entre si, depois dos campos")]
@@ -320,7 +320,25 @@ public sealed class GrafoDependenciaConjuntaTests
             [NaFinalidade(FinalidadeFormulario.Inscricao, "EGRESSO", 0, "DADOS"), NaFinalidade(FinalidadeFormulario.Inscricao, "ULTIMO", 1, "DADOS")],
             termos: [segundo, primeiro]).Value!;
 
-        Posicao(grafo, ClasseNoGrafo.Termo, "INSCRICAO.Z_PRIMEIRO").Should().BeLessThan(Posicao(grafo, ClasseNoGrafo.Termo, "INSCRICAO.A_SEGUNDO"));
-        Posicao(grafo, ClasseNoGrafo.Campo, "ULTIMO").Should().BeLessThan(Posicao(grafo, ClasseNoGrafo.Termo, "INSCRICAO.Z_PRIMEIRO"));
+        Posicao(grafo, TipoDeParteDaConfiguracao.Termo, "INSCRICAO.Z_PRIMEIRO").Should().BeLessThan(Posicao(grafo, TipoDeParteDaConfiguracao.Termo, "INSCRICAO.A_SEGUNDO"));
+        Posicao(grafo, TipoDeParteDaConfiguracao.Campo, "ULTIMO").Should().BeLessThan(Posicao(grafo, TipoDeParteDaConfiguracao.Termo, "INSCRICAO.Z_PRIMEIRO"));
     }
+    [Fact(DisplayName = "Seção condicional sem campos seguintes fica entre os campos e os termos")]
+    public void SecaoSemCamposSeguintes_FicaEntreCamposETermos()
+    {
+        VersaoTermoEscolhida versao = new(Guid.CreateVersion7(), Guid.CreateVersion7(), "TERMO_DE_TESTE", 1, "Termo", "Texto", "Base", FormaAceite.RegistroDigitalSemLogIp, new string('a', 64));
+        TermoExigidoFormulario termo = TermoExigidoFormulario.Criar("CONSULTA", 0, versao, Cita("EGRESSO"), Obrigatoriedade.Sempre, FinalidadeFormulario.Inscricao).Value!;
+        GrafoDependenciaConjunta grafo = Construir([NaFinalidade(FinalidadeFormulario.Inscricao, "EGRESSO", 0, "DADOS")],
+            formularios: [InscricaoComSecaoDeCotasCondicionada()], termos: [termo]).Value!;
+        Posicao(grafo, TipoDeParteDaConfiguracao.Campo, "EGRESSO").Should().BeLessThan(Posicao(grafo, TipoDeParteDaConfiguracao.Secao, "INSCRICAO.COTAS"));
+        Posicao(grafo, TipoDeParteDaConfiguracao.Secao, "INSCRICAO.COTAS").Should().BeLessThan(Posicao(grafo, TipoDeParteDaConfiguracao.Termo, "INSCRICAO.CONSULTA"));
+    }
+
+    [Fact]
+    public void Ciclo_Mensagem_DescreveCadaDependencia()
+    {
+        Result<GrafoDependenciaConjunta> resultado = Construir([Declarado("A", 0, "MODALIDADE")], [Derivado("MODALIDADE", "A")]);
+        resultado.Error!.Message.Should().Be("As dependências entre campos, dados, exigências, seções e termos da configuração formam um ciclo; cada um depende do seguinte: Campo do formulário A → Dado do candidato MODALIDADE → Dado do candidato A → Campo do formulário A.");
+    }
+
 }

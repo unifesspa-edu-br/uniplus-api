@@ -4,6 +4,7 @@ using System.Text.Json.Nodes;
 
 using AwesomeAssertions;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Tempo;
 using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Regras.ValueObjects;
@@ -129,7 +130,7 @@ public sealed class EnvelopeLidoConjuntosOrdenadosTests
         envelope.Configuracao.Exigencias.RegrasDeComprovacao.Single().Distincao!.OcorrenciasEsperadas.Should().Equal(
             noJson.Ocorrencias, "o decoder tem de preservar a sequência que leu — nunca recalculá-la");
         envelope.Configuracao.Exigencias.DocumentosExigidos.Single().FormatosPermitidos.Lista!
-            .Select(static f => f.Formato.ToCodigo()).Should().Equal(noJson.Formatos);
+            .Select(static f => f.Formato.Codigo()).Should().Equal(noJson.Formatos);
         envelope.Conformidade!.Regras.Select(static r => r.RegraCodigo).Should().Equal(noJson.RegraCodigos);
         envelope.DadosDeCatalogo.MetadadosFatosCongelados!["COR_RACA"].ValoresDominio.Should().Equal(noJson.ValoresDominio);
         ((ModalidadesMinimas)PredicadoDaRegra(envelope, "REGRA-MODALIDADES-MINIMAS")).Codigos.Should().Equal(noJson.Codigos);

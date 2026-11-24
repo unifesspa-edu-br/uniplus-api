@@ -2,6 +2,7 @@ namespace Unifesspa.UniPlus.Selecao.Domain.UnitTests.Entities;
 
 using AwesomeAssertions;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
@@ -18,18 +19,18 @@ internal static class ApoioDoDesempatePorAreaEnem
         ReferenciaRegra.De(codigo, "v1", new string(semente, 64));
 
     internal static CriterioDesempate PorArea(int ordem, params string[] areas) =>
-        CriterioDesempate.Criar(ordem, Regra(CriterioDesempateCodigo.MaiorNotaAreaEnem, 'e'), new ParametrosDesempateMaiorNotaAreaEnem(areas)).Value!;
+        CriterioDesempate.Criar(ordem, Regra(RegraDeDesempate.MaiorNotaPorAreaDoEnem.Codigo(), 'e'), new ParametrosDesempateMaiorNotaAreaEnem(areas)).Value!;
 
     internal static CriterioDesempate MaiorIdade(int ordem) =>
-        CriterioDesempate.Criar(ordem, Regra(CriterioDesempateCodigo.MaiorIdade, 'f'), new ParametrosDesempateMaiorIdade()).Value!;
+        CriterioDesempate.Criar(ordem, Regra(RegraDeDesempate.MaiorIdade.Codigo(), 'f'), new ParametrosDesempateMaiorIdade()).Value!;
 
     internal static ConfiguracaoClassificacao ClassificacaoEnem(IReadOnlyList<GrupoPesoAreaEnemCongelado>? quadro = null) =>
         ConfiguracaoClassificacao.Criar(new DeclaracaoDaClassificacao
         {
-            RegraCalculo = Regra(RegraCalculoCodigo.FormulaMediaPonderada, 'a'),
-            RegraArredondamento = Regra(RegraArredondamentoCodigo.PrecisaoTruncar, 'b'),
+            RegraCalculo = Regra(RegraDeCalculoDaNota.MediaPonderada.Codigo(), 'a'),
+            RegraArredondamento = Regra(RegraDeArredondamentoDaNota.Truncar.Codigo(), 'b'),
             CasasArredondamento = 2,
-            RegraOrdemAlocacao = Regra(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, 'c'),
+            RegraOrdemAlocacao = Regra(RegraDeOrdemDeAlocacao.PrimeiraOpcaoPrioritaria.Codigo(), 'c'),
             BaseadoEmEnem = true,
             ResolucaoPesoAreaEnem = QuadroPesoAreaEnemDeTeste.Resolucao,
             QuadroPesoAreaEnem = quadro ?? QuadroPesoAreaEnemDeTeste.Completo(),
@@ -39,26 +40,26 @@ internal static class ApoioDoDesempatePorAreaEnem
     internal static ConfiguracaoClassificacao ClassificacaoSemEnem() =>
         ConfiguracaoClassificacao.Criar(new DeclaracaoDaClassificacao
         {
-            RegraCalculo = Regra(RegraCalculoCodigo.FormulaMediaPonderada, 'a'),
-            RegraArredondamento = Regra(RegraArredondamentoCodigo.PrecisaoTruncar, 'b'),
+            RegraCalculo = Regra(RegraDeCalculoDaNota.MediaPonderada.Codigo(), 'a'),
+            RegraArredondamento = Regra(RegraDeArredondamentoDaNota.Truncar.Codigo(), 'b'),
             CasasArredondamento = 2,
-            RegraOrdemAlocacao = Regra(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, 'c'),
+            RegraOrdemAlocacao = Regra(RegraDeOrdemDeAlocacao.PrimeiraOpcaoPrioritaria.Codigo(), 'c'),
             EscalaNotaFinal = 100m,
         }).Value!;
 
     internal static ConfiguracaoClassificacao ClassificacaoImportadaDoEnem() =>
         ConfiguracaoClassificacao.Criar(new DeclaracaoDaClassificacao
         {
-            RegraCalculo = Regra(RegraCalculoCodigo.ClassificacaoImportada, 'a'),
-            RegraOrdemAlocacao = Regra(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, 'c'),
+            RegraCalculo = Regra(RegraDeCalculoDaNota.ClassificacaoImportada.Codigo(), 'a'),
+            RegraOrdemAlocacao = Regra(RegraDeOrdemDeAlocacao.PrimeiraOpcaoPrioritaria.Codigo(), 'c'),
             BaseadoEmEnem = true,
         }).Value!;
 
     internal static ConfiguracaoClassificacao ClassificacaoImportadaSemEnem() =>
         ConfiguracaoClassificacao.Criar(new DeclaracaoDaClassificacao
         {
-            RegraCalculo = Regra(RegraCalculoCodigo.ClassificacaoImportada, 'a'),
-            RegraOrdemAlocacao = Regra(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, 'c'),
+            RegraCalculo = Regra(RegraDeCalculoDaNota.ClassificacaoImportada.Codigo(), 'a'),
+            RegraOrdemAlocacao = Regra(RegraDeOrdemDeAlocacao.PrimeiraOpcaoPrioritaria.Codigo(), 'c'),
         }).Value!;
 
     /// <summary>Quadro em que um dos grupos não tem a área de Matemática.</summary>

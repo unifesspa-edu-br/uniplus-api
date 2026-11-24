@@ -31,4 +31,4 @@ public sealed record PublicacoesNoDocumento(
     RegraDeHomologacaoNoDocumento? RegraDeHomologacao);
 
 /// <summary>Um ato que a fase publica, com a posição dele na lista de produtos enviada; o papel ausente é nulo.</summary>
-public sealed record ProdutoNoDocumento(int PosicaoNoDocumento, string AtoCodigo, PapelProdutoFase? Papel);
+public sealed record ProdutoNoDocumento(int PosicaoNoDocumento, string AtoCodigo, PapelDaPublicacaoPrevista? Papel);

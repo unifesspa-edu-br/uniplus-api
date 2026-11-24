@@ -16,7 +16,6 @@ public sealed class GuardaDeEdicaoTests
             .Code.Should().Be("ProcessoSeletivo.MutacaoPosPublicacaoBloqueada");
 
     [Theory(DisplayName = "Status fora de rascunho e publicado não edita")]
-    [InlineData(StatusProcesso.Nenhum)]
     [InlineData(StatusProcesso.Encerrado)]
     [InlineData(StatusProcesso.Cancelado)]
     public void StatusForaDaListaDePermissao_Bloqueia(StatusProcesso status) =>

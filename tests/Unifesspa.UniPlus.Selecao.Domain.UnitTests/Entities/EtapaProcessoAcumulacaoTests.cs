@@ -38,7 +38,7 @@ public sealed class EtapaProcessoAcumulacaoTests
     public void Criar_ViolacoesSimultaneas_AcumulaTodasNoMesmoLote()
     {
         Result<EtapaProcesso> resultado = EtapaProcesso.Criar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("etapa").Value!,
-            new IdentificacaoDaEtapa(Nome: string.Empty, Carater: CaraterEtapa.Nenhum, TipoEtapa: TipoEtapaProvaObjetiva(), Ordem: 0, FaseCodigo: null),
+            new IdentificacaoDaEtapa(Nome: string.Empty, Carater: (CaraterEtapa)99, TipoEtapa: TipoEtapaProvaObjetiva(), Ordem: 0, FaseCodigo: null),
             new DeclaracaoDaAvaliacaoDaEtapa(Peso: 0m, NotaMinima: -1m, NotaMaxima: null, PassoDoLancamento: null, FormaDeAvaliacao: null, RegraConsolidacao: null, EscalaDeAtendimento: null));
 
         resultado.IsFailure.Should().BeTrue();
@@ -90,7 +90,7 @@ public sealed class EtapaProcessoAcumulacaoTests
     public void ValidarFormaBasica_CaraterAusenteComPeso_ReportaSoOCarater()
     {
         List<FieldError> erros = ConferenciaDaDeclaracaoDaEtapa.ValidarFormaBasica(
-            "Etapa", CaraterEtapa.Nenhum, ordem: 1,
+            "Etapa", null, ordem: 1,
             new DeclaracaoDaAvaliacaoDaEtapa(Peso: 3m, NotaMinima: 5m, NotaMaxima: null, PassoDoLancamento: null, FormaDeAvaliacao: null, RegraConsolidacao: null, EscalaDeAtendimento: null),
             itens: null);
 

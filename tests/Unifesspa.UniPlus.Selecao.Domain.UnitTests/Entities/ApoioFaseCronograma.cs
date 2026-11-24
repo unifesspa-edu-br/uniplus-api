@@ -2,6 +2,7 @@ namespace Unifesspa.UniPlus.Selecao.Domain.UnitTests.Entities;
 
 using AwesomeAssertions;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
@@ -18,7 +19,7 @@ internal static class ApoioFaseCronograma
             [.. categorias.Select(static c => CategoriaJulgada.Criar(Guid.CreateVersion7(), c, c))]);
 
     internal static ReferenciaRegra RegraAncorada() =>
-        ReferenciaRegra.De(RegraPrazoRecursoCodigo.AncoradoEmAto, "v1", new string('a', 64));
+        ReferenciaRegra.De(RegraDePrazoDoRecurso.ContadoDaPublicacaoDoAto.Codigo(), "v1", new string('a', 64));
 
     internal static RegraRecursoFase Recurso(Guid produtoAncoraId) =>
         RegraRecursoFase.Criar(RegraAncorada(), ParametrosValidos(), produtoAncoraId).Value!;

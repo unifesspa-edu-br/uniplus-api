@@ -320,3 +320,11 @@ soft-delete, com FK `RESTRICT` para `editais` (em #461) e para
 - [ADR-0057](0057-areas-rbac-snapshot-historia-invariantes.md) — RBAC por áreas com snapshot, histórico, invariantes.
 - [ADR-0063](0063-entidades-forensics-isentas-de-soft-delete.md) — Entidades forensics append-only isentas de soft-delete.
 - [ADR-0064](0064-convencao-roteamento-path-based-com-prefixo-modulo.md) — Convenção de roteamento path-based com prefixo de módulo.
+
+## Emenda 2 (2026-11-23) — o resumo da obrigatoriedade legal usa o código da categoria
+
+Decisão do líder técnico (23/11/2026), com a emenda 3 da ADR-0176.
+
+O resumo criptográfico (`Hash`) de cada obrigatoriedade legal e o histórico dela passam a usar o código declarado de `CategoriaObrigatoriedade` (por exemplo, `ETAPA`), e não o nome do membro do enum (`Etapa`). A categoria antes chamada `Bonus` tem o código `FADA`, do Fator de Atenuação das Desigualdades de Acesso (FADA). O código é o mesmo da coluna do banco, da resposta e do documento congelado (ADR-0176, item 5).
+
+Como ainda não há produção, todos os resumos são calculados de novo e as sementes são geradas de novo junto com a mudança; nenhum resumo antigo precisa ser preservado. A partir da primeira publicação em produção, mudar o que entra no resumo exige emenda própria.

@@ -4,6 +4,8 @@ using Entities;
 
 using Enums;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
+
 /// <summary>
 /// O que identifica um item que o edital declara publicar, entre versões de configuração: onde ele está,
 /// o tipo de ato e o papel no ciclo recursal.
@@ -31,7 +33,7 @@ public sealed record IdentidadeDoItemDoEdital
     private const char SeparadorDaChave = '|';
     private const int TamanhoDaIdentidade = 36;
 
-    private IdentidadeDoItemDoEdital(string lugar, string atoCodigo, PapelProdutoFase? papel)
+    private IdentidadeDoItemDoEdital(string lugar, string atoCodigo, PapelDaPublicacaoPrevista? papel)
     {
         Lugar = lugar;
         AtoCodigo = atoCodigo;
@@ -42,10 +44,10 @@ public sealed record IdentidadeDoItemDoEdital
 
     public string AtoCodigo { get; }
 
-    public PapelProdutoFase? Papel { get; }
+    public PapelDaPublicacaoPrevista? Papel { get; }
 
     /// <summary>A forma gravada no ato publicado: o par lugar, tipo de ato e papel, numa só chave.</summary>
-    public string Chave => $"{Lugar}{SeparadorDaChave}{AtoCodigo}{SeparadorDaChave}{Papel.ToCodigo() ?? SemPapel}";
+    public string Chave => $"{Lugar}{SeparadorDaChave}{AtoCodigo}{SeparadorDaChave}{(Papel is { } papel ? papel.Codigo() : SemPapel)}";
 
     public static IdentidadeDoItemDoEdital DaFase(FaseCronograma fase, ProdutoDaFase produto)
     {

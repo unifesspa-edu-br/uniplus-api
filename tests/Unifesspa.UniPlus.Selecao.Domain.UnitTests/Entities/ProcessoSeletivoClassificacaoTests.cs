@@ -2,6 +2,7 @@ namespace Unifesspa.UniPlus.Selecao.Domain.UnitTests.Entities;
 
 using AwesomeAssertions;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.ValueObjects;
@@ -18,7 +19,7 @@ using static Unifesspa.UniPlus.Selecao.Domain.UnitTests.Entities.ApoioDoProcesso
 /// indistinguibilidade entre tipos de processo.
 /// </summary>
 /// <remarks>
-/// A recusa e o aceite de ELIM-CORTE-REDACAO/ELIM-ZERO-EM-AREA por BaseadoEmEnem vivem em
+/// A recusa e o aceite de ELIMINACAO-CORTE-REDACAO/ELIMINACAO_ZERO_EM_AREA por BaseadoEmEnem vivem em
 /// ConfiguracaoClassificacaoTests: <c>Criar</c> valida essa invariante, então não existe
 /// ConfiguracaoClassificacao ENEM-inválida para entregar a <c>DefinirClassificacao</c>. O que
 /// permanece na raiz depende de <c>_etapas</c>: a indistinguibilidade entre tipos e a
@@ -111,15 +112,15 @@ public sealed class ProcessoSeletivoClassificacaoTests
 
     private static RegraEliminacao EliminacaoPorNotaMinimaNaEtapa(Guid etapaId) =>
         RegraEliminacao.Criar(
-            ReferenciaRegra.De(RegraEliminacaoCodigo.ElimNotaMinimaEtapa, "v1", new string('d', 64)),
-            new ParametrosElimNotaMinimaEtapa(etapaId, 4m)).Value!;
+            ReferenciaRegra.De(RegraDeEliminacaoPorCalculo.NotaMinimaNaEtapa.Codigo(), "v1", new string('d', 64)),
+            new ParametrosEliminacaoPorNotaMinimaNaEtapa(etapaId, 4m)).Value!;
 
     private static ConfiguracaoClassificacao ClassificacaoEnemComCorteEmArea() =>
         NovaClassificacao(
             [
                 RegraEliminacao.Criar(
-                    ReferenciaRegra.De(RegraEliminacaoCodigo.ElimCorteEmArea, "v1", new string('e', 64)),
-                    new ParametrosElimCorteEmArea("REDACAO", 400m)).Value!,
+                    ReferenciaRegra.De(RegraDeEliminacaoPorCalculo.CorteEmAreaDoEnem.Codigo(), "v1", new string('e', 64)),
+                    new ParametrosEliminacaoPorCorteEmAreaDoEnem("REDACAO", 400m)).Value!,
             ],
             baseadoEmEnem: true);
 
@@ -127,10 +128,10 @@ public sealed class ProcessoSeletivoClassificacaoTests
         IReadOnlyList<RegraEliminacao>? regrasEliminacao = null, bool baseadoEmEnem = false) =>
         ConfiguracaoClassificacao.Criar(new DeclaracaoDaClassificacao
         {
-            RegraCalculo = ReferenciaRegra.De(RegraCalculoCodigo.FormulaMediaPonderada, "v1", new string('a', 64)),
-            RegraArredondamento = ReferenciaRegra.De(RegraArredondamentoCodigo.PrecisaoTruncar, "v1", new string('b', 64)),
+            RegraCalculo = ReferenciaRegra.De(RegraDeCalculoDaNota.MediaPonderada.Codigo(), "v1", new string('a', 64)),
+            RegraArredondamento = ReferenciaRegra.De(RegraDeArredondamentoDaNota.Truncar.Codigo(), "v1", new string('b', 64)),
             CasasArredondamento = 2,
-            RegraOrdemAlocacao = ReferenciaRegra.De(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, "v1", new string('c', 64)),
+            RegraOrdemAlocacao = ReferenciaRegra.De(RegraDeOrdemDeAlocacao.PrimeiraOpcaoPrioritaria.Codigo(), "v1", new string('c', 64)),
             RegrasEliminacao = regrasEliminacao ?? [],
             BaseadoEmEnem = baseadoEmEnem,
             ResolucaoPesoAreaEnem = baseadoEmEnem ? QuadroPesoAreaEnemDeTeste.Resolucao : null,

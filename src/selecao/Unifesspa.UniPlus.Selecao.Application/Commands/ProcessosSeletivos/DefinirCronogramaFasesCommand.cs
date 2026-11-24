@@ -56,7 +56,7 @@ public sealed record RegraRecursoFaseInput(
 /// resultado: a fase publica um aviso sem que isso a torne produtora de resultado. O papel
 /// só é aceito em tipo de ato que o catálogo declara resultado — o handler resolve.
 /// </param>
-public sealed record ProdutoDaFaseInput(string AtoCodigo, string? Papel);
+public sealed record ProdutoDaFaseInput(string AtoCodigo, [property: AceitaCodigosDe<PapelDaPublicacaoPrevista>] string? Papel);
 
 /// <summary>
 /// Entrada de uma banca requerida pela fase, usada por <see cref="FaseCronogramaInput"/>.

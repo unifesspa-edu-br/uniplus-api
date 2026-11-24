@@ -22572,7 +22572,7 @@
           "NA_EXECUCAO"
         ],
         "type": "string",
-        "description": "- \u0060NO_EDITAL\u0060: No edital\n- \u0060NA_EXECUCAO\u0060: Na execu\u00E7\u00E3o do processo"
+        "description": "- \u0060NO_EDITAL\u0060: No edital \u2014 A data \u00E9 fixada no edital: o per\u00EDodo \u00E9 obrigat\u00F3rio.\n- \u0060NA_EXECUCAO\u0060: Na execu\u00E7\u00E3o do processo \u2014 A data n\u00E3o \u00E9 fixada no edital: a unidade respons\u00E1vel pela fase a define na execu\u00E7\u00E3o, e o per\u00EDodo \u00E9 opcional."
       },
       "PapelDaBanca": {
         "required": [
@@ -23374,12 +23374,12 @@
       },
       "RegraRemanejamentoCodigo": {
         "enum": [
-          "SEGUE_CASCATA",
+          "SEGUE_ORDEM_DE_REMANEJAMENTO",
           "DESTINO_UNICO",
           "CRUZADO"
         ],
         "type": "string",
-        "description": "- \u0060SEGUE_CASCATA\u0060: Segue a cascata\n- \u0060DESTINO_UNICO\u0060: Destino \u00FAnico\n- \u0060CRUZADO\u0060: Cruzado"
+        "description": "- \u0060SEGUE_ORDEM_DE_REMANEJAMENTO\u0060: Segue a ordem de remanejamento\n- \u0060DESTINO_UNICO\u0060: Destino \u00FAnico\n- \u0060CRUZADO\u0060: Cruzado"
       },
       "RegrasDoCampoAvaliadas": {
         "required": [

@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Text.Json.Serialization;
 
+using Unifesspa.UniPlus.Application.Abstractions.Respostas;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
@@ -25,7 +26,7 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 public sealed record ObrigatoriedadeLegalDto(
     Guid Id,
     string TipoProcessoCodigo,
-    CategoriaObrigatoriedade Categoria,
+    CodigoComRotulo<CategoriaObrigatoriedade> Categoria,
     string RegraCodigo,
     PredicadoObrigatoriedade Predicado,
     string DescricaoHumana,

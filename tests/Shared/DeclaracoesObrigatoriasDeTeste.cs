@@ -1,5 +1,6 @@
 namespace Unifesspa.UniPlus.Testes.Compartilhado;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
@@ -49,7 +50,7 @@ internal static class DeclaracoesObrigatoriasDeTeste
     {
         if (processo.OrigemCandidatos == OrigemCandidatos.InscricaoPropria && processo.CriteriosDesempate.Count == 0)
         {
-            ReferenciaRegra regra = ReferenciaRegra.De(CriterioDesempateCodigo.MaiorIdade, "v1", new string('f', 64));
+            ReferenciaRegra regra = ReferenciaRegra.De(RegraDeDesempate.MaiorIdade.Codigo(), "v1", new string('f', 64));
             CriterioDesempate criterio = CriterioDesempate.Criar(1, regra, new ParametrosDesempateMaiorIdade()).Value!;
             ExigirSucesso(processo.DefinirCriteriosDesempate([criterio]));
         }

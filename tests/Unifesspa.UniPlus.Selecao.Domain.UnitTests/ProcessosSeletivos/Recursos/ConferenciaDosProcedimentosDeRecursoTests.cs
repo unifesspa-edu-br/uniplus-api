@@ -2,6 +2,7 @@ namespace Unifesspa.UniPlus.Selecao.Domain.UnitTests.ProcessosSeletivos.Recursos
 
 using AwesomeAssertions;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.Services;
@@ -30,7 +31,7 @@ public sealed class ConferenciaDosProcedimentosDeRecursoTests
     [Fact(DisplayName = "Regra que não é do rol de procedimentos é recusada no campo da regra")]
     public void Regra_ForaDoRol_Recusa()
     {
-        IReadOnlyList<FieldError> faltas = Faltas(Contexto(), Procedimento(codigoDaRegra: "CONSOLIDACAO-AVALIACAO-UNICA"));
+        IReadOnlyList<FieldError> faltas = Faltas(Contexto(), Procedimento(codigoDaRegra: "APURACAO_AVALIACAO_UNICA"));
 
         faltas.Should().ContainSingle();
         faltas[0].Field.Should().Be("procedimentosDeRecurso[0].regra");
@@ -81,8 +82,8 @@ public sealed class ConferenciaDosProcedimentosDeRecursoTests
     public void MesmaMateria_Duplicada_RecusaNaSegunda()
     {
         IReadOnlyList<FieldError> faltas = Faltas(Contexto(),
-            Procedimento(codigoDaRegra: RegraProcedimentoRecursoCodigo.Recalculo),
-            Procedimento(codigoDaRegra: RegraProcedimentoRecursoCodigo.Conferencia));
+            Procedimento(codigoDaRegra: RegraDeProcedimentoDoRecurso.Recalculo.Codigo()),
+            Procedimento(codigoDaRegra: RegraDeProcedimentoDoRecurso.Conferencia.Codigo()));
 
         faltas.Should().ContainSingle();
         faltas[0].Field.Should().Be("procedimentosDeRecurso[1]");

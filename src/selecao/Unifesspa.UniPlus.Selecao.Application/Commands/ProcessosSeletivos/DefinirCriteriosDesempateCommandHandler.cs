@@ -17,7 +17,7 @@ using Unifesspa.UniPlus.Regras.ValueObjects;
 /// antes de bloquear o processo; depois do 404 e do teto, resolve cada critério no catálogo já lido, monta os
 /// parâmetros tipados conforme o código da regra e congela a referência — a existência do <c>etapaRef</c> no processo
 /// é garantida pela raiz (<see cref="ProcessoSeletivo.DefinirCriteriosDesempate"/>). Quando algum critério referencia
-/// <c>DESEMPATE-PREDICADO-FATO</c>, a condição é validada contra o vocabulário fechado de fatos do candidato
+/// <c>DESEMPATE_CONDICAO_SOBRE_DADO</c>, a condição é validada contra o vocabulário fechado de fatos do candidato
 /// (ADR-0111). As recusas de todos os critérios se acumulam, cada uma no campo do critério, granularidade nunca coberta
 /// pelo FluentValidation.
 /// </summary>

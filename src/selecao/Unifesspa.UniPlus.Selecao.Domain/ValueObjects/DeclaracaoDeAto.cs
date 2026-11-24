@@ -6,4 +6,4 @@ using Unifesspa.UniPlus.Selecao.Domain.Enums;
 /// <param name="AtoCodigo">Código do tipo de ato.</param>
 /// <param name="Lugar">Onde a declaração está, já em texto para o operador ("na fase 'X'").</param>
 /// <param name="Papel">O papel declarado para o produto, ou nulo quando ele não tem papel.</param>
-public sealed record DeclaracaoDeAto(string AtoCodigo, string Lugar, PapelProdutoFase? Papel = null);
+public sealed record DeclaracaoDeAto(string AtoCodigo, string Lugar, PapelDaPublicacaoPrevista? Papel = null);

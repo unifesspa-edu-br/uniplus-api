@@ -33,9 +33,9 @@ internal static class ErrosDoDesempate
         new("CriterioDesempate.IdadeMinimaInvalida", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.criterio_desempate.idade_minima_invalida", "A idade mínima do critério IDOSO deve ser maior que zero")),
         new("CriterioDesempate.RegraNaoEncontrada", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.criterio_desempate.regra_nao_encontrada", "Regra de desempate não encontrada no catálogo de regras")),
         new("CriterioDesempate.RegraTipoInvalido", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.criterio_desempate.regra_tipo_invalido", "A regra referenciada não é do tipo criterio_desempate")),
-        new("CriterioDesempate.EtapaRefObrigatorio", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.criterio_desempate.etapa_ref_obrigatorio", "EtapaRef é obrigatório para a regra DESEMPATE-MAIOR-NOTA-ETAPA")),
-        new("CriterioDesempate.IdadeMinimaObrigatoria", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.criterio_desempate.idade_minima_obrigatoria", "IdadeMinima é obrigatória para a regra DESEMPATE-IDOSO")),
-        new("CriterioDesempate.PredicadoFatoIncompleto", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.criterio_desempate.predicado_fato_incompleto", "Fato, Operador e Valor são obrigatórios para a regra DESEMPATE-PREDICADO-FATO")),
+        new("CriterioDesempate.EtapaRefObrigatorio", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.criterio_desempate.etapa_ref_obrigatorio", "EtapaRef é obrigatório para a regra DESEMPATE_MAIOR_NOTA_ETAPA")),
+        new("CriterioDesempate.IdadeMinimaObrigatoria", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.criterio_desempate.idade_minima_obrigatoria", "IdadeMinima é obrigatória para a regra DESEMPATE_IDOSO")),
+        new("CriterioDesempate.PredicadoFatoIncompleto", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.criterio_desempate.predicado_fato_incompleto", "Fato, Operador e Valor são obrigatórios para a regra DESEMPATE_CONDICAO_SOBRE_DADO")),
     ];
 
     /// <summary>Forma da ordem de áreas e coerência dela com o quadro de pesos por área congelado na classificação.</summary>

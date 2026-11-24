@@ -5,6 +5,7 @@ using System.Diagnostics.CodeAnalysis;
 using Microsoft.EntityFrameworkCore;
 
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Pagination;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
@@ -58,80 +59,61 @@ internal sealed class RegraCatalogoReader : IRegraCatalogoReader
         PaginationDirection direction,
         CancellationToken cancellationToken = default)
     {
+        List<RegraCatalogo> ordenadas = await ListarOrdenadasAsync(tipo, cancellationToken).ConfigureAwait(false);
+        int posicao = afterId is { } id ? ordenadas.FindIndex(r => r.Id == id) : 0;
+        if (posicao < 0)
+        {
+            return ([], null, null);
+        }
+
+        (List<RegraCatalogo> pagina, int inicio) = RecortarPagina(ordenadas, afterId, posicao, limit, direction);
+        return CursoresDaPagina(ordenadas, pagina, inicio);
+    }
+
+    private async Task<List<RegraCatalogo>> ListarOrdenadasAsync(TipoRegra? tipo, CancellationToken cancellationToken)
+    {
         IQueryable<RegraCatalogo> filtrada = _dbContext.RolDeRegras.AsNoTracking();
         if (tipo is { } valor)
         {
             filtrada = filtrada.Where(r => r.Tipo == valor);
         }
 
-        // A janela é recortada em memória, sobre o conjunto já filtrado por tipo. Duas razões,
-        // e nenhuma delas é conveniência:
-        //
-        // A ordem do contrato é lexicográfica sobre a tripla (tipo, código, versão), e nem
-        // `string.Compare` nem `CompareTo` são traduzidos pelo provider — o keyset em SQL
-        // exigiria SQL bruto para uma comparação que o Postgres faria sob a collation da
-        // instalação, isto é, uma ordem que muda de ambiente para ambiente.
-        //
-        // `StringComparer.Ordinal` dá a ordem por ponto de código, igual em qualquer lugar. Para
-        // um catálogo seed-governado de dezenas de entradas — que este mesmo reader já lê
-        // inteiro em ListarPorTipoAsync —, carregar e ordenar aqui custa menos do que uma
-        // paginação cuja ordem depende de como o banco foi criado.
-        List<RegraCatalogo> ordenadas = await filtrada
-            .ToListAsync(cancellationToken)
-            .ConfigureAwait(false);
-
+        // A comparação ordinal mantém a mesma ordem independentemente da collation do banco.
+        List<RegraCatalogo> ordenadas = await filtrada.ToListAsync(cancellationToken).ConfigureAwait(false);
         ordenadas.Sort(static (a, b) => Comparar(ChaveDe(a), ChaveDe(b)));
+        return ordenadas;
+    }
 
-        int posicaoDaAncora = 0;
-        if (afterId is { } id)
-        {
-            int indice = ordenadas.FindIndex(r => r.Id == id);
-
-            // Uma âncora que não existe mais — ou que o filtro atual exclui — não pode ser lida
-            // como "começar do início": devolveria a primeira página sob um cursor que o cliente
-            // acredita apontar para o meio, e ele repetiria itens já vistos sem perceber.
-            if (indice < 0)
-            {
-                return ([], null, null);
-            }
-
-            posicaoDaAncora = indice;
-        }
-
-        bool paraTras = direction == PaginationDirection.Prev;
-
-        List<RegraCatalogo> janela;
-        int inicioDaJanela;
+    private static (List<RegraCatalogo> Pagina, int Inicio) RecortarPagina(
+        List<RegraCatalogo> ordenadas, Guid? afterId, int posicao, int limit, PaginationDirection direction)
+    {
         if (afterId is null)
         {
-            inicioDaJanela = 0;
-            janela = [.. ordenadas.Take(limit)];
-        }
-        else if (paraTras)
-        {
-            // Exclusivo da âncora e ancorado à esquerda: a página anterior termina imediatamente
-            // antes dela, então é do fim para trás que se conta.
-            int quantos = Math.Min(limit, posicaoDaAncora);
-            inicioDaJanela = posicaoDaAncora - quantos;
-            janela = [.. ordenadas.Skip(inicioDaJanela).Take(quantos)];
-        }
-        else
-        {
-            inicioDaJanela = posicaoDaAncora + 1;
-            janela = [.. ordenadas.Skip(inicioDaJanela).Take(limit)];
+            return ([.. ordenadas.Take(limit)], 0);
         }
 
-        if (janela.Count == 0)
+        if (direction == PaginationDirection.Prev)
+        {
+            int quantos = Math.Min(limit, posicao);
+            int inicioAnterior = posicao - quantos;
+            return ([.. ordenadas.Skip(inicioAnterior).Take(quantos)], inicioAnterior);
+        }
+
+        int inicio = posicao + 1;
+        return ([.. ordenadas.Skip(inicio).Take(limit)], inicio);
+    }
+
+    private static (IReadOnlyList<RegraCatalogo>, Guid?, Guid?) CursoresDaPagina(
+        List<RegraCatalogo> ordenadas, List<RegraCatalogo> pagina, int inicio)
+    {
+        if (pagina.Count == 0)
         {
             return ([], null, null);
         }
 
-        // As âncoras dos dois lados saem da posição real da janela no conjunto ordenado, e não
-        // de uma sonda `n+1`: só há lado quando existe pelo menos um item além da fronteira.
-        bool haAnterior = inicioDaJanela > 0;
-        bool haProxima = inicioDaJanela + janela.Count < ordenadas.Count;
-
-        return (janela, haAnterior ? janela[0].Id : null, haProxima ? janela[^1].Id : null);
+        bool haAnterior = inicio > 0;
+        bool haProxima = inicio + pagina.Count < ordenadas.Count;
+        return (pagina, haAnterior ? pagina[0].Id : null, haProxima ? pagina[^1].Id : null);
     }
 
     /// <summary>
@@ -146,7 +128,7 @@ internal sealed class RegraCatalogoReader : IRegraCatalogoReader
     private sealed record ChaveDeOrdem(string Tipo, string Codigo, string Versao);
 
     private static ChaveDeOrdem ChaveDe(RegraCatalogo regra) =>
-        new(regra.Tipo.ToCodigo(), regra.Codigo, regra.Versao);
+        new(regra.Tipo.Codigo(), regra.Codigo, regra.Versao);
 
     /// <summary>
     /// Comparação lexicográfica da tripla, por ponto de código

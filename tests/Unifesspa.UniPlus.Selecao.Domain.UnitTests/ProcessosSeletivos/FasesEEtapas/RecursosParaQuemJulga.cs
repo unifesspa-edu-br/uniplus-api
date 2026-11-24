@@ -16,14 +16,14 @@ using Unifesspa.UniPlus.Testes.Compartilhado;
 internal static class RecursosParaQuemJulga
 {
     internal static ProcedimentoDeRecursoDeclarado Procedimento(TipoMotivoDeDecisao tipo, AlvoDoProcedimentoDeRecurso? alvo = null) =>
-        ProcedimentoDeRecursoDeclarado.De(tipo, alvo, ReferenciaRegra.De(RegraProcedimentoRecursoCodigo.Recalculo, "v1", new string('7', 64)));
+        ProcedimentoDeRecursoDeclarado.De(tipo, alvo, ReferenciaRegra.De(RegraDeProcedimentoDoRecurso.Recalculo.Codigo(), "v1", new string('7', 64)));
 
     internal static ModeloDeFase FaseComRecurso(
         string codigo, ProcedimentoDeRecursoDeclarado[] procedimentos, bool instanciaSuperior = false, params BancaRequerida[] bancas)
     {
         ProdutoDaFase preliminar = ModeloDeFase.Preliminar("RESULTADO");
         RegraRecursoFase regra = RegraRecursoFase.Criar(
-            ReferenciaRegra.De(RegraPrazoRecursoCodigo.AncoradoEmAto, "v1", new string('a', 64)),
+            ReferenciaRegra.De(RegraDePrazoDoRecurso.ContadoDaPublicacaoDoAto.Codigo(), "v1", new string('a', 64)),
             Parametros(instanciaSuperior),
             preliminar.Id,
             ProcedimentosDeRecurso.De(procedimentos)).Value!;
@@ -38,8 +38,8 @@ internal static class RecursosParaQuemJulga
             FaseCodigo = codigoDaFase,
             EmiteParecerIndividual = true,
             Recursos = [RecursoDaEtapa.Criar(
-                AncoraDoRecurso.CienciaIndividual,
-                ReferenciaRegra.De(RegraPrazoRecursoCodigo.AncoradoEmAto, "v1", new string('a', 64)),
+                EventoInicialDoPrazo.CienciaIndividual,
+                ReferenciaRegra.De(RegraDePrazoDoRecurso.ContadoDaPublicacaoDoAto.Codigo(), "v1", new string('a', 64)),
                 Parametros(instanciaSuperior),
                 Guid.Empty,
                 ProcedimentosDeRecurso.De(procedimentos)).Value!],

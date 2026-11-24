@@ -4,6 +4,7 @@ using System.Text.Json;
 
 using AwesomeAssertions;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
@@ -70,9 +71,9 @@ internal static class ApoioDasCotasFederaisNaConformidade
         PredicadoDnf.CriarDeCondicoesAgrupadas([.. atomos.Select(static a => (0, CondicaoDnf.Criar(
             a.Fato, Operador.Igual, JsonSerializer.SerializeToElement(a.Valor)).Value!))]).Value!;
 
-    internal static ReferenciaRegra RegraLei12711() => Regra(RegraDistribuicaoVagasCodigo.Lei12711, 'f');
+    internal static ReferenciaRegra RegraLei12711() => Regra(RegraDeDistribuicaoDeVagas.Lei12711.Codigo(), 'f');
 
-    internal static ReferenciaRegra RegraCascataRemanejamento() => Regra(RegraRemanejamentoCodigo.Cascata, 'e');
+    internal static ReferenciaRegra RegraCascataRemanejamento() => Regra(CriterioDeRemanejamento.OrdemDaLei12711.Codigo(), 'e');
 
     internal static DestinoRemanejamento Destino(string origem, int ordem, string destino) =>
         DestinoRemanejamento.Criar(origem, ordem, destino).Value!;
@@ -95,11 +96,11 @@ internal static class ApoioDasCotasFederaisNaConformidade
     internal static List<ModalidadeSelecionada> AsOitoFederaisMaisAc() =>
     [
         .. OrigensFederais.Select(codigo =>
-            Modalidade(codigo, NaturezaLegalModalidade.CotaReservada, RegraRemanejamentoModalidade.SegueCascata, quantidadeDeclarada: null)),
-        Modalidade(ModalidadesFederaisLei12711.Ac, NaturezaLegalModalidade.Ampla, RegraRemanejamentoModalidade.Nenhuma, quantidadeDeclarada: null),
+            Modalidade(codigo, NaturezaLegalModalidade.CotaReservada, RegraRemanejamentoModalidade.SegueOrdemDeRemanejamento, quantidadeDeclarada: null)),
+        Modalidade(ModalidadesFederaisLei12711.Ac, NaturezaLegalModalidade.Ampla, null, quantidadeDeclarada: null),
     ];
 
-    internal static ReferenciaRegra RegraAjusteArt11() => Regra("RECONCILIACAO-VAGAS-ARTIGO-11-PARAGRAFO-UNICO", 'd');
+    internal static ReferenciaRegra RegraAjusteArt11() => Regra("AJUSTE_VAGAS_ARTIGO_11_PARAGRAFO_UNICO", 'd');
 
     internal static ConfiguracaoDistribuicaoVagas OfertaFederalCompleta() => ConfiguracaoDistribuicaoVagas.Criar(Guid.CreateVersion7(),
         new DistribuicaoDeVagasDeclarada { VagasOfertadasBase = 40, PercentualDaReservaLegal = 0.5m, RegraDeDistribuicao = RegraLei12711(), RegraDeAjuste = RegraAjusteArt11(), ReferenciaDemografica = Demografica(), Modalidades = AsOitoFederaisMaisAc() },
@@ -124,16 +125,14 @@ internal static class ApoioDasCotasFederaisNaConformidade
     }
 
     private static ModalidadeSelecionada AcaoAfirmativaQueRetiraDaAmpla(string codigo, PredicadoDnf regra) =>
-        ModalidadeSelecionada.Criar(
-            Guid.CreateVersion7(), codigo, null, NaturezaLegalModalidade.AcaoAfirmativa, ComposicaoVagasModalidade.RetiradaDeOutraModalidade,
-            ModalidadesFederaisLei12711.Ac, RegraRemanejamentoModalidade.DestinoUnico, ModalidadesFederaisLei12711.Ac, null, null, regra, null, "base legal", 2).Value!;
+        ModalidadeSelecionada.Criar(ModalidadesNoCadastroDeTeste.Da(codigo, NaturezaLegalModalidade.AcaoAfirmativa, ComposicaoVagasModalidade.RetiradaDeOutraModalidade) with { ComposicaoOrigemCodigo = ModalidadesFederaisLei12711.Ac, RegraRemanejamento = RegraRemanejamentoModalidade.DestinoUnico, RemanejamentoDestino = ModalidadesFederaisLei12711.Ac, RegraDeAplicabilidade = regra, BaseLegal = "base legal" }, 2).Value!;
 
     private static IReadOnlyList<ModalidadeSelecionada> ModalidadesComCotasEAcoesAfirmativas(
         PredicadoDnf regraDasCotas, ModalidadeSelecionada[] acoesAfirmativas) =>
     [
         .. OrigensFederais.Select(codigo =>
-            Modalidade(codigo, NaturezaLegalModalidade.CotaReservada, RegraRemanejamentoModalidade.SegueCascata, quantidadeDeclarada: null, regra: regraDasCotas)),
-        Modalidade(ModalidadesFederaisLei12711.Ac, NaturezaLegalModalidade.Ampla, RegraRemanejamentoModalidade.Nenhuma, quantidadeDeclarada: null),
+            Modalidade(codigo, NaturezaLegalModalidade.CotaReservada, RegraRemanejamentoModalidade.SegueOrdemDeRemanejamento, quantidadeDeclarada: null, regra: regraDasCotas)),
+        Modalidade(ModalidadesFederaisLei12711.Ac, NaturezaLegalModalidade.Ampla, null, quantidadeDeclarada: null),
         .. acoesAfirmativas,
     ];
 }

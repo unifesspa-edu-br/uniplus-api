@@ -114,18 +114,18 @@ social como dado público e nome civil como dado pessoal, e a persistência da p
 ### 1.1 — Vocabulário de divulgação: piso obrigatório + exceção nominal justificada
 
 A identificação numa lista pública de classificação/resultado usa o vocabulário fechado de
-`ConfiguracaoDivulgacao` (UNI-REQ-0050): três tokens, dos quais `numero_inscricao` é **sempre presente** (piso
+`ConfiguracaoDivulgacao` (UNI-REQ-0050): três tokens, dos quais `NUMERO_INSCRICAO` é **sempre presente** (piso
 obrigatório) e os dois tokens nominais são **mutuamente exclusivos entre si** — não há três formas independentes,
 há três *conjuntos* válidos:
 
 | Conjunto publicado | Justificativa |
 |---|---|
-| `{ numero_inscricao }` | não exigida — é o default de menor exposição |
-| `{ numero_inscricao, nome_abreviado }` | não exigida — iniciais dos primeiros nomes + último sobrenome por extenso (regra vigente desta ADR, §"Resultado da decisão"), padrão institucional recomendado quando o processo amplia além do piso |
-| `{ numero_inscricao, nome }` | **obrigatória**, registrada e congelada por processo (RN08) |
+| `{ NUMERO_INSCRICAO }` | não exigida — é o default de menor exposição |
+| `{ NUMERO_INSCRICAO, NOME_ABREVIADO }` | não exigida — iniciais dos primeiros nomes + último sobrenome por extenso (regra vigente desta ADR, §"Resultado da decisão"), padrão institucional recomendado quando o processo amplia além do piso |
+| `{ NUMERO_INSCRICAO, NOME }` | **obrigatória**, registrada e congelada por processo (RN08) |
 
 "Não exigida" não é "proibida": `ConfiguracaoDivulgacao.Criar` não rejeita uma justificativa informada nos dois
-primeiros conjuntos — só a exige quando `nome` está presente. Uma justificativa opcional, quando informada nesses
+primeiros conjuntos — só a exige quando `NOME` está presente. Uma justificativa opcional, quando informada nesses
 conjuntos, é normalizada e congelada como qualquer outra.
 
 A exceção do nome completo **não é uma escolha livre de conveniência administrativa**: só é admissível quando há
@@ -145,7 +145,7 @@ acesso à rota a essa role, mas não constitui, por si, um gate de mérito sobre
 O gate de mérito desta ADR é o **publicador**: é na publicação que `PublicarProcessoSeletivoCommandHandler`
 congela a identidade do ator responsável — `VersaoConfiguracao.AtorUsuarioContaId` ("ContaId do usuário que publicou —
 evidência forense de autoria"), campo distinto de `AtoCriadorId`/`AtoCriadorHash` (identidade e integridade do
-**ato**, não da pessoa). Antes de publicar um processo com `nome` na divulgação, é o `plataforma-admin` que
+**ato**, não da pessoa). Antes de publicar um processo com `NOME` na divulgação, é o `plataforma-admin` que
 publica quem deve conferir a existência e a aplicabilidade da norma citada na justificativa, e a impossibilidade
 de atender à finalidade por forma menos invasiva (1.2) — responsabilidade de governança, não decorrente do
 `[Authorize]` da rota. A trilha resultante identifica **quem publicou** sob qual justificativa; **não** identifica
@@ -158,7 +158,7 @@ trabalho de acompanhamento a registrar em issue própria.
 A leitura original desta ADR ("Resultado da decisão") não distinguia piso técnico de prática recomendada: descrevia
 a identificação pública, sem exceção, como "número de inscrição acompanhado de uma forma abreviada do nome". Esta
 emenda **substitui** essa leitura por duas camadas — o default operacional de um processo sem
-`ConfiguracaoDivulgacao` explícita passa a ser `numero_inscricao` sozinho (a menor exposição possível), e "número +
+`ConfiguracaoDivulgacao` explícita passa a ser `NUMERO_INSCRICAO` sozinho (a menor exposição possível), e "número +
 nome abreviado" vira a **prática institucional recomendada** quando o processo amplia a divulgação, não mais o
 único padrão normativo. A consequência é deliberada: um processo publicado sem configuração explícita deixa de
 seguir o resultado que a redação original descrevia — passa a divulgar só o número.
@@ -167,23 +167,23 @@ Nenhum dos três conjuntos de 1.1 tem conformidade com a LGPD garantida automati
 o princípio da necessidade (art. 6º, III) é relacional à finalidade de cada certame, não uma propriedade fixa do
 token:
 
-- `numero_inscricao` é o piso de menor exposição; sua suficiência depende de a finalidade do certame (identificar
+- `NUMERO_INSCRICAO` é o piso de menor exposição; sua suficiência depende de a finalidade do certame (identificar
   o candidato numa lista pública) ser atendida só com o número — o que é o caso típico, e por isso é o default.
-- `nome_abreviado` é a ampliação recomendada quando o piso não atende à finalidade daquele certame — recomendação
+- `NOME_ABREVIADO` é a ampliação recomendada quando o piso não atende à finalidade daquele certame — recomendação
   institucional (Parecer 002/2026, §4), não teste de proporcionalidade automático por si só.
-- `nome` completo não "sai" da minimização por definição do token: quando há norma específica do certame que o
+- `NOME` completo não "sai" da minimização por definição do token: quando há norma específica do certame que o
   impõe e a finalidade não pode ser atendida por forma menos invasiva, a divulgação integral pode ser, para aquele
   caso, o mínimo necessário. O próprio Parecer recomenda "que seja adotada a forma menos invasiva possível" mesmo
   sob a exceção — é essa avaliação, específica do certame, que a justificativa registrada documenta.
 
 ### 1.3 — A exceção nunca autoriza nome civil contra a preferência do titular
 
-Os tokens `nome_abreviado` e `nome` operam sobre o **nome de exibição já resolvido pela preferência persistida**
+Os tokens `NOME_ABREVIADO` e `NOME` operam sobre o **nome de exibição já resolvido pela preferência persistida**
 desta ADR (§"Resultado da decisão") — nome social quando o candidato o prefere, nome civil só na ausência de
 preferência social. A exceção de 1.1 amplia **o que** é publicado (a forma nominal), nunca **qual** nome é
 publicado: não cria uma segunda via para expor o nome civil de quem prefere nome social. O próprio Parecer 002/2026
 é explícito nesse sentido — mesmo sob norma que imponha divulgação nominal, recomenda "evitando-se exposição
-integral do nome civil" (§4). Uma projeção pública que resolvesse `nome`/`nome_abreviado` para o nome civil contra
+integral do nome civil" (§4). Uma projeção pública que resolvesse `NOME`/`NOME_ABREVIADO` para o nome civil contra
 a preferência do titular violaria o núcleo desta ADR e o Decreto 8.727/2016, independentemente de haver
 justificativa registrada para a ampliação.
 

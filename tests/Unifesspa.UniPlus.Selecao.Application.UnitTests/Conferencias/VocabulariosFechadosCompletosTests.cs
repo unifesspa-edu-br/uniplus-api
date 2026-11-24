@@ -2,6 +2,7 @@ namespace Unifesspa.UniPlus.Selecao.Application.UnitTests.Conferencias;
 
 using AwesomeAssertions;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Selecao.Application.Queries.Vocabularios;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
@@ -11,14 +12,13 @@ using Unifesspa.UniPlus.Selecao.Domain.Enums;
 /// </summary>
 public sealed class VocabulariosFechadosCompletosTests
 {
-    [Fact(DisplayName = "Todo fundamento de isenção do enum, exceto a sentinela, é anunciado pela leitura pública")]
+    [Fact(DisplayName = "Todo fundamento de isenção do enum é anunciado pela leitura pública")]
     public void FundamentosDoEnum_TodosAnunciados()
     {
         string[] noDominio =
         [
             .. Enum.GetValues<FundamentoIsencao>()
-                .Where(static f => f != FundamentoIsencao.Nenhum)
-                .Select(static f => f.ToCodigo()),
+                .Select(static f => f.Codigo()),
         ];
 
         string[] anunciados = [.. ListarFundamentosIsencaoQueryHandler

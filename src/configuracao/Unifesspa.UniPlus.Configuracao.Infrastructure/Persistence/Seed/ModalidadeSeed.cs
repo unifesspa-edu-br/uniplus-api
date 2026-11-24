@@ -83,35 +83,35 @@ public static class ModalidadeSeed
 
         new(SeedId(2), CodigoModalidade.LbPpi, "Cota — baixa renda, preto/pardo/indígena",
             NaturezaLegal.CotaReservada, ComposicaoVagas.DentroDaReservaLegal, ComposicaoOrigem: null,
-            RegraRemanejamento.SegueCascata, RemanejamentoParametros.Vazio, BaseLegalLei12711, SementeDeAplicabilidadeLegal.LbPpi),
+            RegraRemanejamento.SegueOrdemDeRemanejamento, RemanejamentoParametros.Vazio, BaseLegalLei12711, SementeDeAplicabilidadeLegal.LbPpi),
 
         new(SeedId(3), CodigoModalidade.LbQ, "Cota — baixa renda, quilombola",
             NaturezaLegal.CotaReservada, ComposicaoVagas.DentroDaReservaLegal, ComposicaoOrigem: null,
-            RegraRemanejamento.SegueCascata, RemanejamentoParametros.Vazio, BaseLegalLei12711, SementeDeAplicabilidadeLegal.LbQ),
+            RegraRemanejamento.SegueOrdemDeRemanejamento, RemanejamentoParametros.Vazio, BaseLegalLei12711, SementeDeAplicabilidadeLegal.LbQ),
 
         new(SeedId(4), CodigoModalidade.LbPcd, "Cota — baixa renda, pessoa com deficiência",
             NaturezaLegal.CotaReservada, ComposicaoVagas.DentroDaReservaLegal, ComposicaoOrigem: null,
-            RegraRemanejamento.SegueCascata, RemanejamentoParametros.Vazio, BaseLegalLei12711, SementeDeAplicabilidadeLegal.LbPcd),
+            RegraRemanejamento.SegueOrdemDeRemanejamento, RemanejamentoParametros.Vazio, BaseLegalLei12711, SementeDeAplicabilidadeLegal.LbPcd),
 
         new(SeedId(5), CodigoModalidade.LbEp, "Cota — baixa renda, egresso de escola pública",
             NaturezaLegal.CotaReservada, ComposicaoVagas.DentroDaReservaLegal, ComposicaoOrigem: null,
-            RegraRemanejamento.SegueCascata, RemanejamentoParametros.Vazio, BaseLegalLei12711, SementeDeAplicabilidadeLegal.LbEp),
+            RegraRemanejamento.SegueOrdemDeRemanejamento, RemanejamentoParametros.Vazio, BaseLegalLei12711, SementeDeAplicabilidadeLegal.LbEp),
 
         new(SeedId(6), CodigoModalidade.LiPpi, "Cota — independente de renda, preto/pardo/indígena",
             NaturezaLegal.CotaReservada, ComposicaoVagas.DentroDaReservaLegal, ComposicaoOrigem: null,
-            RegraRemanejamento.SegueCascata, RemanejamentoParametros.Vazio, BaseLegalLei12711, SementeDeAplicabilidadeLegal.LiPpi),
+            RegraRemanejamento.SegueOrdemDeRemanejamento, RemanejamentoParametros.Vazio, BaseLegalLei12711, SementeDeAplicabilidadeLegal.LiPpi),
 
         new(SeedId(7), CodigoModalidade.LiQ, "Cota — independente de renda, quilombola",
             NaturezaLegal.CotaReservada, ComposicaoVagas.DentroDaReservaLegal, ComposicaoOrigem: null,
-            RegraRemanejamento.SegueCascata, RemanejamentoParametros.Vazio, BaseLegalLei12711, SementeDeAplicabilidadeLegal.LiQ),
+            RegraRemanejamento.SegueOrdemDeRemanejamento, RemanejamentoParametros.Vazio, BaseLegalLei12711, SementeDeAplicabilidadeLegal.LiQ),
 
         new(SeedId(8), CodigoModalidade.LiPcd, "Cota — independente de renda, pessoa com deficiência",
             NaturezaLegal.CotaReservada, ComposicaoVagas.DentroDaReservaLegal, ComposicaoOrigem: null,
-            RegraRemanejamento.SegueCascata, RemanejamentoParametros.Vazio, BaseLegalLei12711, SementeDeAplicabilidadeLegal.LiPcd),
+            RegraRemanejamento.SegueOrdemDeRemanejamento, RemanejamentoParametros.Vazio, BaseLegalLei12711, SementeDeAplicabilidadeLegal.LiPcd),
 
         new(SeedId(9), CodigoModalidade.LiEp, "Cota — independente de renda, egresso de escola pública",
             NaturezaLegal.CotaReservada, ComposicaoVagas.DentroDaReservaLegal, ComposicaoOrigem: null,
-            RegraRemanejamento.SegueCascata, RemanejamentoParametros.Vazio, BaseLegalLei12711, SementeDeAplicabilidadeLegal.LiEp),
+            RegraRemanejamento.SegueOrdemDeRemanejamento, RemanejamentoParametros.Vazio, BaseLegalLei12711, SementeDeAplicabilidadeLegal.LiEp),
 
         new(SeedId(10), CodigoModalidade.AcPcd, "Ampla Concorrência – Pessoa com Deficiência (V)",
             NaturezaLegal.AcaoAfirmativa, ComposicaoVagas.RetiradaDeOutraModalidade, ComposicaoOrigem: CodigoModalidade.Ac,

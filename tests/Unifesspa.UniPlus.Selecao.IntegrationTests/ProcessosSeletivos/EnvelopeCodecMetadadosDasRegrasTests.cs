@@ -47,7 +47,7 @@ public sealed class EnvelopeCodecMetadadosDasRegrasTests
         Result<EnvelopeReidratado> resultado = ReidratarComEnvelopeAdulterado(envelope =>
         {
             JsonObject grupo = PrimeiraRegra(envelope, "QUANTIDADE_MINIMA_DE_ITENS");
-            grupo["criterioDeDistincao"] = CriterioDeDistincaoDasApresentacoesCodigo.CompetenciaMensal;
+            grupo["criterioDeDistincao"] = "COMPETENCIA_MENSAL";
             grupo["dataReferencia"] = "2026-10-10";
         }, comRegrasDeComprovacao: true);
 
@@ -166,7 +166,7 @@ public sealed class EnvelopeCodecMetadadosDasRegrasTests
     {
         grupo[campo] = campo switch
         {
-            "criterioDeDistincao" => JsonValue.Create(CriterioDeDistincaoDasApresentacoesCodigo.CompetenciaMensal),
+            "criterioDeDistincao" => JsonValue.Create("COMPETENCIA_MENSAL"),
             "dataReferencia" => JsonValue.Create("2026-10-10"),
             "ocorrenciasEsperadas" => new JsonArray(),
             _ => throw new ArgumentOutOfRangeException(nameof(campo)),

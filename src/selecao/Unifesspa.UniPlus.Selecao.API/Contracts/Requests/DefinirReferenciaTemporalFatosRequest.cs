@@ -8,7 +8,7 @@ using Controllers;
 /// </summary>
 /// <remarks>
 /// Contrato por variante de <c>Tipo</c> (Story #554, PR #896 — issue #892; tokens em
-/// <see cref="Domain.Enums.ReferenciaTipoCodigo"/>), tudo-ou-nada por linha (N-I01):
+/// <see cref="Domain.Enums.ReferenciaTipo"/>), tudo-ou-nada por linha (N-I01):
 /// <list type="table">
 /// <listheader><term>Tipo</term><description>Data</description><description>FaseId</description></listheader>
 /// <item><term><see langword="null"/> (remove a referência)</term><description>proibido</description><description>proibido</description></item>

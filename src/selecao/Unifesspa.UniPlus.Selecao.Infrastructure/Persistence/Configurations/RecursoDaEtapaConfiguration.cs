@@ -3,9 +3,11 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Configurations;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence.CodigosDeContrato;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Protecao;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
+using Unifesspa.UniPlus.Selecao.Domain.Enums;
 
 /// <summary>
 /// Mapeamento de <see cref="RecursoDaEtapa"/>. <c>publicacao_de_referencia_id</c> é coluna crua, sem
@@ -25,11 +27,17 @@ public sealed class RecursoDaEtapaConfiguration : IEntityTypeConfiguration<Recur
 
         builder.ClassificaPorPadrao(ClassificacaoDeProtecao.Interno);
 
-        builder.ToTable("recursos_configurados_da_etapa", tabela => tabela.HasComment("Configurações dos recursos de uma etapa de avaliação."));
+        builder.ToTable("recursos_configurados_da_etapa", tabela =>
+        {
+            tabela.HasComment("Configurações dos recursos de uma etapa de avaliação.");
+            tabela.HasCheckConstraint(
+                "ck_recursos_configurados_da_etapa_evento_inicial_do_prazo",
+                $"evento_inicial_do_prazo IN ({SqlDosCodigosDeContrato.Lista<EventoInicialDoPrazo>()})");
+        });
         builder.Property(r => r.EtapaProcessoId).HasComment("Identificador do registro ao qual esta configuração pertence.");
         builder.HasKey(r => r.Id);
         builder.Property(r => r.Id).HasComment("Identificador do registro.").ValueGeneratedNever();
-        builder.Property(r => r.Ancora).HasComment("Evento que inicia o prazo: 1 (publicação do ato) ou 2 (ciência individual).").HasColumnName("evento_inicial_do_prazo").HasConversion<int>().IsRequired();
+        builder.Property(r => r.Ancora).HasComment("Evento que inicia o prazo: PUBLICACAO_DO_ATO ou CIENCIA_INDIVIDUAL.").HasColumnName("evento_inicial_do_prazo").HasMaxLength(TamanhoDoCodigoDeContrato.Maximo).IsRequired();
         builder.Property(r => r.ProdutoAncoraId).HasComment("Identificador da publicação usada como referência para o início do prazo.").HasColumnName("publicacao_de_referencia_id");
         builder.MapearProcedimentosDeRecurso(r => r.Procedimentos);
 

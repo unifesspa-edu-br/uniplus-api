@@ -147,7 +147,7 @@ public sealed class UnidadeDaFaseNaVersaoVigenteRemocaoDeFaseEEtapaTests : IClas
         (Guid encerradaId, _, EtapaProcesso encerrada) = await _cenario.PublicadoAsync("PS etapa encerrada", Abertura);
         await _apoio.SucederNoEnvelopeAsync(encerradaId, DateTimeOffset.UtcNow, envelope => envelope["etapas"]!.AsArray()[0]!["fim"] = InstanteCanonico(2020, 1, 31));
         (Guid comAtoId, _, EtapaProcesso comAto) = await _cenario.PublicadoAsync("PS etapa com ato", Abertura);
-        await _cenario.SemearAtoAsync(comAtoId, IdentidadeDoItemDoEdital.DaEtapa(comAto, ProdutoDaEtapa.Criar("RESULTADO_CLASSIFICACAO", PapelProdutoFase.Definitivo)));
+        await _cenario.SemearAtoAsync(comAtoId, IdentidadeDoItemDoEdital.DaEtapa(comAto, ProdutoDaEtapa.Criar("RESULTADO_CLASSIFICACAO", PapelDaPublicacaoPrevista.Definitivo)));
 
         (await _cenario.IniciadasAsync(encerradaId, DateTimeOffset.UtcNow)).ContemEtapa(encerrada.Id).Should().BeTrue();
         (await _cenario.IniciadasAsync(comAtoId, DateTimeOffset.UtcNow)).ContemEtapa(comAto.Id).Should().BeTrue();

@@ -2,6 +2,7 @@ namespace Unifesspa.UniPlus.Selecao.Application.UnitTests.DTOs;
 
 using System.Text.Json;
 
+using Unifesspa.UniPlus.Application.Abstractions.Respostas;
 using Unifesspa.UniPlus.Selecao.Application.DTOs;
 using Unifesspa.UniPlus.Selecao.Application.DTOs.Comprovantes;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
@@ -32,7 +33,7 @@ internal static class ExemplosDoContratoDeInscricao
     {
         Id = Guid.Parse("0199e000-0000-7000-8000-000000000010"),
         ProcessoSeletivoId = Guid.Parse("0199e000-0000-7000-8000-000000000011"),
-        Situacao = SituacaoInscricao.Submetida,
+        Situacao = CodigoComRotulo<SituacaoInscricao>.De(SituacaoInscricao.Submetida),
         NumeroInscricao = "000123",
         Formulario = new FormularioDaInscricaoDto(
                 Guid.Parse("0199e000-0000-7000-8000-000000000012"),
@@ -47,7 +48,7 @@ internal static class ExemplosDoContratoDeInscricao
                  new OfertaDeCursoCertameDto(Guid.Parse("0199e000-0000-7000-8000-000000000003"), "Engenharia da Computação", "Bacharelado", "Campus de Marabá", ["VESPERTINO"])]),
         ETag = "\"42\"",
         Avaliacao = new AvaliacaoDaInscricaoDto(new ModalidadesDaInscricaoDto(
-                Derivada: true, Situacao: "CONCORRE", [new ModalidadeDaInscricaoDto("AC", "Ampla concorrência", 0)], []),
+                Derivada: true, Situacao: CodigoComRotulo<SituacaoDasModalidades>.De(SituacaoDasModalidades.Concorre), [new ModalidadeDaInscricaoDto("AC", "Ampla concorrência", 0)], []),
                 new DocumentosDaInscricaoDto([])),
     };
 
@@ -89,7 +90,7 @@ internal static class ExemplosDoContratoDeInscricao
         ProcessoSeletivoId = Guid.Parse("0199e000-0000-7000-8000-000000000011"),
         NomeDoProcesso = "PSS Medicina 2027",
         NumeroInscricao = "000123",
-        Situacao = SituacaoInscricao.Submetida,
+        Situacao = CodigoComRotulo<SituacaoInscricao>.De(SituacaoInscricao.Submetida),
         OpcoesDeCurso = [new OpcaoDeCursoDaInscricaoDto(1, "Medicina", "Bacharelado"), new OpcaoDeCursoDaInscricaoDto(2, "Direito", "Bacharelado")],
         CanceladaEm = null,
         MotivoDoCancelamento = null,

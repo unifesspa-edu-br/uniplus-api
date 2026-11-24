@@ -7,7 +7,7 @@ namespace Unifesspa.UniPlus.Selecao.Domain.Interfaces;
 /// promove, e o registro e o objeto enviado são só sobra.
 /// </summary>
 /// <remarks>
-/// Vencido é o registro <c>Pendente</c> cujo <c>ExpiraEm</c> já passou no instante dado. O
+/// Vencido é o registro <c>PENDENTE</c> cujo <c>ExpiraEm</c> já passou no instante dado. O
 /// confirmado nunca entra na conta, qualquer que seja o prazo gravado nele.
 /// </remarks>
 public interface IArquivoEnviadoRepository

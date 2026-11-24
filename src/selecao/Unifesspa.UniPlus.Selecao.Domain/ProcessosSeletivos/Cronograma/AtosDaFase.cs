@@ -19,7 +19,7 @@ public sealed record AtosDaFase
         RegraDeHomologacao = publicacoes.RegraDeHomologacao;
         Produtos = [.. publicacoes.Produtos.Select(static (produto, posicao) => (posicao, produto.AtoCodigo, produto.Papel))];
         AtoDaAncoraDoRecurso = publicacoes.Produtos
-            .FirstOrDefault(produto => produto.Id == publicacoes.RegraRecurso?.ProdutoAncoraId && produto.Papel == PapelProdutoFase.Preliminar)?.AtoCodigo;
+            .FirstOrDefault(produto => produto.Id == publicacoes.RegraRecurso?.ProdutoAncoraId && produto.Papel == PapelDaPublicacaoPrevista.Preliminar)?.AtoCodigo;
     }
 
     public bool EmiteParecerIndividual { get; }
@@ -36,16 +36,16 @@ public sealed record AtosDaFase
 
     public RegraDeHomologacaoDasInscricoes? RegraDeHomologacao { get; }
 
-    public IReadOnlyList<(int Posicao, string AtoCodigo, PapelProdutoFase? Papel)> Produtos { get; }
+    public IReadOnlyList<(int Posicao, string AtoCodigo, PapelDaPublicacaoPrevista? Papel)> Produtos { get; }
 
     /// <summary>O tipo de ato do produto preliminar em que a regra de recurso ancora o prazo; ausente quando a fase não admite recurso ou a âncora não é um preliminar da fase.</summary>
     public string? AtoDaAncoraDoRecurso { get; }
 
     public bool ProduzResultado => CicloRecursal.ProduzResultado(ParesDeAto);
 
-    public bool PublicaResultadoPreliminar => CicloRecursal.PublicaComPapel(ParesDeAto, PapelProdutoFase.Preliminar);
+    public bool PublicaResultadoPreliminar => CicloRecursal.PublicaComPapel(ParesDeAto, PapelDaPublicacaoPrevista.Preliminar);
 
-    public bool PublicaResultadoDefinitivo => CicloRecursal.PublicaComPapel(ParesDeAto, PapelProdutoFase.Definitivo);
+    public bool PublicaResultadoDefinitivo => CicloRecursal.PublicaComPapel(ParesDeAto, PapelDaPublicacaoPrevista.Definitivo);
 
     /// <summary>Se a fase publica o tipo de ato com algum papel: é produto da fase, e não só um ato que ela cita.</summary>
     public bool PublicaComPapel(string atoCodigo) =>
@@ -55,6 +55,6 @@ public sealed record AtosDaFase
 
     public IReadOnlyList<string> TiposFechadosNaPropriaFase() => CicloRecursal.TiposFechadosNoProprioLugar(ParesDeAto);
 
-    private IEnumerable<(string AtoCodigo, PapelProdutoFase? Papel)> ParesDeAto =>
+    private IEnumerable<(string AtoCodigo, PapelDaPublicacaoPrevista? Papel)> ParesDeAto =>
         Produtos.Select(static produto => (produto.AtoCodigo, produto.Papel));
 }

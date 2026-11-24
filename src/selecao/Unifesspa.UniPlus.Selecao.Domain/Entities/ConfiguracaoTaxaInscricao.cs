@@ -1,5 +1,6 @@
 namespace Unifesspa.UniPlus.Selecao.Domain.Entities;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Domain.Entities;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
@@ -48,7 +49,9 @@ public sealed class ConfiguracaoTaxaInscricao : EntityBase, IParteDoProcesso
     public decimal? Valor { get; private set; }
 
     /// <summary>Fundamentos de isenção referenciados, deduplicados e na ordem canônica. Nunca vazio quando <see cref="Cobra"/> (issue #1310).</summary>
-    public IReadOnlyList<FundamentoIsencao> Fundamentos { get; private set; } = [];
+    private List<FundamentoIsencao> _fundamentos = [];
+
+    public IReadOnlyList<FundamentoIsencao> Fundamentos => _fundamentos;
 
     private ConfiguracaoTaxaInscricao() { }
 
@@ -71,7 +74,7 @@ public sealed class ConfiguracaoTaxaInscricao : EntityBase, IParteDoProcesso
             {
                 Cobra = cobra,
                 Valor = valor,
-                Fundamentos = fundamentos,
+                _fundamentos = fundamentos,
             });
     }
 
@@ -109,16 +112,18 @@ public sealed class ConfiguracaoTaxaInscricao : EntityBase, IParteDoProcesso
 
     private static List<FundamentoIsencao> LerFundamentos(IReadOnlyList<string> codigos, List<FieldError> erros)
     {
-        FundamentoIsencao[] fundamentos = [.. codigos.Select(FundamentoIsencaoCodigo.FromCodigo)];
-        if (fundamentos.Contains(FundamentoIsencao.Nenhum))
+        List<FundamentoIsencao> fundamentos = [.. codigos.Select(LerFundamento).OfType<FundamentoIsencao>()];
+        if (fundamentos.Count != codigos.Count)
         {
             erros.Add(new("fundamentos", new DomainError("ConfiguracaoTaxaInscricao.FundamentoDesconhecido",
                 "Um ou mais fundamentos de isenção informados não pertencem ao catálogo conhecido.")));
         }
 
-        return [.. fundamentos.Where(static f => f != FundamentoIsencao.Nenhum)
-            .Distinct().OrderBy(static f => f.ToCodigo(), StringComparer.Ordinal)];
+        return [.. fundamentos.Distinct().OrderBy(static f => f.Codigo(), StringComparer.Ordinal)];
     }
+
+    private static FundamentoIsencao? LerFundamento(string codigo) =>
+        CatalogoDe<FundamentoIsencao>.TentarObter(codigo, out FundamentoIsencao fundamento) ? fundamento : null;
 
     void IParteDoProcesso.VincularProcesso(Guid processoSeletivoId) =>
         ProcessoSeletivoId = processoSeletivoId;

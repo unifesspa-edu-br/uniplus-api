@@ -55,7 +55,7 @@ public sealed class DefinirCronogramaFasesProdutosDaFaseTests
             .ComTipoDeAto(TipoAtoDaClassificacao()).ComTipoDeAto(TipoAtoDoComunicado());
         FaseCronogramaInput primeira = cenario.CadastrarFase(FaseCanonicaRecorrivel());
         FaseCronogramaInput cadastrada = cenario.CadastrarFase(FaseCanonicaDoResultadoFinal());
-        FaseCronogramaInput segunda = cadastrada with { Ordem = 2, Produtos = [ProdutoDoComunicado(PapelProdutoFaseCodigo.Definitivo)] };
+        FaseCronogramaInput segunda = cadastrada with { Ordem = 2, Produtos = [ProdutoDoComunicado("DEFINITIVO")] };
 
         Result resultado = await cenario.DefinirFasesAsync(primeira, segunda);
 
@@ -118,7 +118,7 @@ public sealed class DefinirCronogramaFasesProdutosDaFaseTests
             .ComTipoDeAto(TipoAtoDoComunicado()).SemVersaoVigenteDoTipoDeAto("ATO_INEXISTENTE");
         FaseCronogramaInput fase = cenario.CadastrarFase(FaseCanonicaDoResultadoFinal()) with
         {
-            Produtos = [ProdutoDoComunicado(PapelProdutoFaseCodigo.Preliminar), new ProdutoDaFaseInput("ATO_INEXISTENTE", null)],
+            Produtos = [ProdutoDoComunicado("PRELIMINAR"), new ProdutoDaFaseInput("ATO_INEXISTENTE", null)],
         };
 
         Result resultado = await cenario.DefinirFasesAsync(fase);

@@ -33,7 +33,7 @@ internal static class ApoioDaModalidade
     {
         CodigoDaNaturezaLegal = "COTA_RESERVADA",
         CodigoDaComposicaoDeVagas = "DENTRO_DA_RESERVA_LEGAL",
-        CodigoDaRegraDeRemanejamento = "SEGUE_CASCATA",
+        CodigoDaRegraDeRemanejamento = "SEGUE_ORDEM_DE_REMANEJAMENTO",
     };
 
     /// <summary>Ação afirmativa suplementar ao total, com a regra de remanejamento dada.</summary>

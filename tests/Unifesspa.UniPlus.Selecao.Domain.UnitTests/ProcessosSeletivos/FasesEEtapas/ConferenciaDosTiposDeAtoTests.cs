@@ -48,7 +48,7 @@ public sealed class ConferenciaDosTiposDeAtoTests
     [Fact(DisplayName = "O resultado com papel e o ato que não é resultado sem papel não são recusados")]
     public void ResultadoSemPapel_ComPapelOuNaoResultado_SemCausa()
     {
-        CronogramaDoProcesso cronograma = Fases(FaseCom(ProdutoDaFase.Criar("COMUNICADO", null), ProdutoDaFase.Criar("RESULTADO_FINAL", PapelProdutoFase.Definitivo)));
+        CronogramaDoProcesso cronograma = Fases(FaseCom(ProdutoDaFase.Criar("COMUNICADO", null), ProdutoDaFase.Criar("RESULTADO_FINAL", PapelDaPublicacaoPrevista.Definitivo)));
 
         ConferenciaDosTiposDeAto.ConferirResultadosSemPapel(cronograma, Etapas(), Catalogo).Should().BeEmpty();
     }
@@ -56,7 +56,7 @@ public sealed class ConferenciaDosTiposDeAtoTests
     [Fact(DisplayName = "O tipo que congela a configuração declarado com papel é recusado no papel do produto")]
     public void TipoQueCongela_ComPapel_RecusaNoPapel()
     {
-        CronogramaDoProcesso cronograma = Fases(FaseCom(ProdutoDaFase.Criar("EDITAL", PapelProdutoFase.Preliminar)));
+        CronogramaDoProcesso cronograma = Fases(FaseCom(ProdutoDaFase.Criar("EDITAL", PapelDaPublicacaoPrevista.Preliminar)));
 
         Causas(ConferenciaDosTiposDeAto.ConferirTiposQueCongelamComoResultado(cronograma, Etapas(), Catalogo))
             .Should().Equal(("fases[0].produtos[0].papel", "ProcessoSeletivo.TipoQueCongelaDeclaradoComoResultado"));
@@ -78,7 +78,7 @@ public sealed class ConferenciaDosTiposDeAtoTests
     [Fact(DisplayName = "O tipo único declarado duas vezes no mesmo lugar cita a contagem, e declarado uma vez não é recusado")]
     public void TipoUnico_MesmoLugar_CitaAContagem()
     {
-        CronogramaDoProcesso duas = Fases(FaseCom(ProdutoDaFase.Criar("EDITAL", null), ProdutoDaFase.Criar("EDITAL", PapelProdutoFase.Definitivo)));
+        CronogramaDoProcesso duas = Fases(FaseCom(ProdutoDaFase.Criar("EDITAL", null), ProdutoDaFase.Criar("EDITAL", PapelDaPublicacaoPrevista.Definitivo)));
 
         FieldError causa = ConferenciaDosTiposDeAto.ConferirTiposUnicosRepetidos(duas, Etapas(), Catalogo).Single();
 
@@ -90,7 +90,7 @@ public sealed class ConferenciaDosTiposDeAtoTests
     [Fact(DisplayName = "Cada produto repetido, da segunda ocorrência em diante, é uma causa no campo dele, as fases antes das etapas")]
     public void TipoUnico_TresOcorrencias_UmaCausaPorProdutoRepetido()
     {
-        CronogramaDoProcesso cronograma = Fases(FaseCom(ProdutoDaFase.Criar("EDITAL", null), ProdutoDaFase.Criar("EDITAL", PapelProdutoFase.Definitivo)));
+        CronogramaDoProcesso cronograma = Fases(FaseCom(ProdutoDaFase.Criar("EDITAL", null), ProdutoDaFase.Criar("EDITAL", PapelDaPublicacaoPrevista.Definitivo)));
         EtapasDoProcesso etapas = Etapas(EtapaCom(ProdutoDaEtapa.Criar("EDITAL", null)));
 
         Causas(ConferenciaDosTiposDeAto.ConferirTiposUnicosRepetidos(cronograma, etapas, Catalogo)).Select(static causa => causa.Campo).Should().Equal(
@@ -111,7 +111,7 @@ public sealed class ConferenciaDosTiposDeAtoTests
     public void Itens_TresAssuntos_NaOrdemEComACausaDeCada()
     {
         CronogramaDoProcesso conforme = Fases(FaseCom(ProdutoDaFase.Criar("COMUNICADO", null)));
-        CronogramaDoProcesso comCausas = Fases(FaseCom(ProdutoDaFase.Criar("RESULTADO_FINAL", null), ProdutoDaFase.Criar("EDITAL", PapelProdutoFase.Preliminar), ProdutoDaFase.Criar("EDITAL", null)));
+        CronogramaDoProcesso comCausas = Fases(FaseCom(ProdutoDaFase.Criar("RESULTADO_FINAL", null), ProdutoDaFase.Criar("EDITAL", PapelDaPublicacaoPrevista.Preliminar), ProdutoDaFase.Criar("EDITAL", null)));
 
         IReadOnlyList<ItemConformidade> verdes = ConferenciaDosTiposDeAto.Itens(conforme, Etapas(), Catalogo);
         IReadOnlyList<ItemConformidade> vermelhos = ConferenciaDosTiposDeAto.Itens(comCausas, Etapas(), Catalogo);

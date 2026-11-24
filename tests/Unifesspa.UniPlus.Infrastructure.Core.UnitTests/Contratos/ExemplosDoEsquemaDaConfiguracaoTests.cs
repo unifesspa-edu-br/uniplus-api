@@ -24,7 +24,7 @@ public sealed class ExemplosDoEsquemaDaConfiguracaoTests
         string[] origens = [.. ArquivosDeExemplo
             .Select(static arquivo => Carregar(Path.Join("exemplos", arquivo))["identificacao"]!["origemCandidatos"]!.GetValue<string>())];
 
-        origens.Should().BeEquivalentTo(["inscricaoPropria", "importacaoExterna"]);
+        origens.Should().BeEquivalentTo(["INSCRICAO_PROPRIA", "IMPORTACAO_EXTERNA"]);
     }
 
     [Fact(DisplayName = "O rascunho só com a identificação e uma fase com a chave e a fase canônica, sem datas, valida")]

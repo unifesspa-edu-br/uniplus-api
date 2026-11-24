@@ -46,7 +46,7 @@ public sealed class ItensDaAvaliacaoDasEtapasTests
     [Fact(DisplayName = "Carater recusado deixa os itens que dependem do modo vermelhos com o eco de declaração recusada")]
     public void CaraterRecusado_DeixaOsItensDoModoVermelhos()
     {
-        EtapaDeclarada etapa = Redacao(new ModeloDeEtapa("Redação") with { Carater = CaraterEtapa.Nenhum });
+        EtapaDeclarada etapa = Redacao(new ModeloDeEtapa("Redação") with { Carater = (CaraterEtapa)99 });
 
         Vermelhos(null, etapa).Should().BeEquivalentTo(ItensQueDependemDoModo);
         Item("etapa_humana_sem_banca", etapa).Mensagem.Should().EndWith("(etapas com declaração recusada: \"Redação\")");

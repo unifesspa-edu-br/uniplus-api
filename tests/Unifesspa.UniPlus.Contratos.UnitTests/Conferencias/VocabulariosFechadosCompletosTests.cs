@@ -5,6 +5,7 @@ using System.Text.Json;
 using AwesomeAssertions;
 
 using Unifesspa.UniPlus.Contratos.UnitTests.Hosting;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 
@@ -21,7 +22,7 @@ public sealed class VocabulariosFechadosCompletosTests
             .GetProperty(esquema).GetProperty("properties").GetProperty(propriedade).GetProperty("items").GetProperty("enum");
         string?[] publicados = [.. valores.EnumerateArray().Select(static valor => valor.GetString())];
         IEnumerable<string> esperados = propriedade == "fundamentos"
-            ? FundamentoIsencaoCodigo.Descritos.Select(static f => f.Codigo)
+            ? CatalogoDe<FundamentoIsencao>.Todos().Select(static f => f.Codigo)
             : ConfiguracaoDivulgacao.CamposPermitidos.Select(static c => c.Codigo);
 
         publicados.Should().BeEquivalentTo(esperados);

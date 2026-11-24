@@ -14,12 +14,12 @@ internal interface IProdutoPublicado
     /// <summary>Código do tipo de ato publicado; com o papel, é a chave natural dentro da fase ou da etapa.</summary>
     string AtoCodigo { get; }
 
-    PapelProdutoFase? Papel { get; }
+    PapelDaPublicacaoPrevista? Papel { get; }
 
     /// <summary>
     /// Troca o papel preservando a linha rastreada. A reconciliação casa o produto vivo pelo ato
     /// quando o papel foi o que mudou; recriá-lo faria a mesma matéria sair e voltar, com DELETE e
     /// INSERT disputando o mesmo slot do índice único na mesma transação.
     /// </summary>
-    void AtualizarPapel(PapelProdutoFase? papel);
+    void AtualizarPapel(PapelDaPublicacaoPrevista? papel);
 }

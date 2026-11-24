@@ -2,6 +2,7 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Canonicalization;
 
 using System.Text.Json.Nodes;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Regras.Serializacao;
 using Unifesspa.UniPlus.Regras.ValueObjects;
@@ -53,8 +54,8 @@ internal static class LeituraDosInsumosDaDistribuicao
     // O rol deriva do catálogo de regras, não de literais: uma regra publicada sob qualquer código
     // do catálogo tem de reidratar, e uma lista escrita à mão deixaria de fora a que não a acompanhasse.
     private static RegrasDaDistribuicao LerRegras(LeitorEnvelope leitor, JsonObject item, string path) => new(
-        leitor.Regra(item, "regraDistribuicao", path, [.. RegraDistribuicaoVagasCodigo.Todos]),
-        leitor.RegraOpcional(item, "regraAjuste", path, RegraAjusteDistribuicaoVagasCodigo.ReconciliacaoArt11ParagrafoUnico),
+        leitor.Regra<RegraDeDistribuicaoDeVagas>(item, "regraDistribuicao", path),
+        leitor.RegraOpcional<RegraDeAjusteDaDistribuicaoDeVagas>(item, "regraAjuste", path),
         LerAjusteDoQuadro(leitor, item, path));
 
     /// <summary>

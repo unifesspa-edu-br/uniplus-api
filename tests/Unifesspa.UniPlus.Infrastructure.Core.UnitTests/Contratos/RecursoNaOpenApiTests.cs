@@ -42,7 +42,7 @@ public sealed class RecursoNaOpenApiTests
     public void UnidadeDoPrazo_NaLeitura_EOCodigo()
     {
         Componentes["UnidadePrazoCodigo"]!["type"]!.GetValue<string>().Should().Be("string");
-        Componentes["UnidadePrazoCodigo"]!["enum"]!.AsArray().Select(static n => n!.GetValue<string>()).Should().Contain(["horas", "diasUteis"]);
+        Componentes["UnidadePrazoCodigo"]!["enum"]!.AsArray().Select(static n => n!.GetValue<string>()).Should().Contain(["HORAS", "DIAS_UTEIS"]);
     }
 
     [Fact(DisplayName = "O erro do problema publica a lista de erros com o campo, o código, a mensagem e a identificação do item")]

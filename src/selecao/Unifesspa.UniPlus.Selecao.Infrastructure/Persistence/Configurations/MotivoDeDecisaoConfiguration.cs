@@ -6,6 +6,7 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Protecao;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
+using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.MotivosDeDecisao;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
@@ -40,7 +41,7 @@ internal sealed class MotivoDeDecisaoConfiguration : IEntityTypeConfiguration<Mo
             .IsRequired();
         builder.Property(m => m.Descricao).HasMaxLength(ValidacaoDoMotivo.DescricaoMaxLength).IsRequired();
         builder.Property(m => m.Subclassificacao).HasMaxLength(SubclassificacaoMaxLength);
-        builder.Property(m => m.Sentido).HasConversion<string>().HasMaxLength(EnumMaxLength).IsRequired();
+        builder.Property(m => m.Sentido).HasMaxLength(12).IsRequired();
         builder.Property(m => m.Ativo).IsRequired();
     }
 

@@ -31,6 +31,8 @@ internal static class ApoioDaProjecaoDosDocumentosExigidos
     {
         internal Guid TipoDocumentoOrigemId { get; init; } = Guid.CreateVersion7();
 
+        internal string? Consequencia { get; init; }
+
         internal Aplicabilidade Aplicabilidade { get; init; } = Aplicabilidade.Geral;
 
         internal IReadOnlyList<CondicaoGatilho> Condicoes { get; init; } = [];
@@ -46,14 +48,19 @@ internal static class ApoioDaProjecaoDosDocumentosExigidos
         internal int? TamanhoMaximoBytes { get; init; }
 
         internal DocumentoExigido NaFase(Guid faseId) =>
-            new Unifesspa.UniPlus.Selecao.Domain.UnitTests.Cenarios.DocumentoExigidoBuilder()
-            .ComTipo(new CopiaDoTipoDeDocumento(TipoDocumentoOrigemId, "IDENTIDADE", "Documento de identidade", "PESSOAL", ProtecaoDoDocumentoDeTeste.Pessoal))
-            .ComMomento(new MomentoDaExigencia(faseId, null, null))
-            .ComAplicabilidade(new AplicabilidadeDaExigencia(Aplicabilidade, Condicoes))
-            .ComIndeferimento(new IndeferimentoDoDocumento(true, null, BasesLegais))
-            .ComRequisitos(new RequisitosDoDocumento(FormatosPermitidos, TamanhoMaximoBytes, null, PrazoDeEmissao, Validade))
-            .ComFatos(null)
-            .Criar().Value!;
+            DocumentoExigidoDeTeste.Novo()
+                .NaFase(faseId)
+                .ComTipoDeOrigem(TipoDocumentoOrigemId)
+                .ComTipo("IDENTIDADE", "Documento de identidade", "PESSOAL")
+                .ComAplicabilidade(Aplicabilidade)
+                .ComCondicoes(Condicoes)
+                .ComConsequencia(Consequencia)
+                .ComBasesLegais(BasesLegais)
+                .ComPrazoDeEmissao(PrazoDeEmissao)
+                .ComValidade(Validade)
+                .ComFormatos(FormatosPermitidos)
+                .ComTamanhoMaximo(TamanhoMaximoBytes)
+                .Criar().Value!;
     }
 
     internal static ProcessoSeletivo NovoProcesso() => ApoioDosDocumentosExigidos.NovoProcesso("PS Query");

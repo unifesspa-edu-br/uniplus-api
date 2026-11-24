@@ -8,7 +8,7 @@ using Unifesspa.UniPlus.Regras.Enums;
 /// <summary>
 /// Predicado sobre o candidato na forma normal disjuntiva — um OU de
 /// <see cref="ClausulaDnf"/>, cada uma um E de <see cref="CondicaoDnf"/>
-/// (ADR-0111, Story #847). Compartilhado por <c>DESEMPATE-PREDICADO-FATO</c>
+/// (ADR-0111, Story #847). Compartilhado por <c>DESEMPATE_CONDICAO_SOBRE_DADO</c>
 /// (via <c>ParametrosDesempatePredicadoFato</c>) e pelos futuros consumidores
 /// #554 (<c>CondicaoGatilho</c>) e #559 (<c>CampoFormulario.CondicaoExibicao</c>).
 /// </summary>
@@ -69,6 +69,18 @@ public sealed record PredicadoDnf
         ArgumentNullException.ThrowIfNull(linhas);
 
         List<ClausulaDnf> clausulas = [];
+        Result resultado = AdicionarClausulas(linhas, clausulas);
+        if (resultado.IsFailure)
+        {
+            return Result<PredicadoDnf>.Failure(resultado.Error!);
+        }
+
+        return Result<PredicadoDnf>.Success(new PredicadoDnf(clausulas));
+    }
+
+    private static Result AdicionarClausulas(
+        IReadOnlyList<(int Clausula, CondicaoDnf Condicao)> linhas, List<ClausulaDnf> clausulas)
+    {
         foreach (IGrouping<int, (int Clausula, CondicaoDnf Condicao)> grupo in linhas
             .GroupBy(static linha => linha.Clausula)
             .OrderBy(static grupo => grupo.Key))
@@ -76,13 +88,13 @@ public sealed record PredicadoDnf
             Result<ClausulaDnf> clausulaResult = ClausulaDnf.Criar([.. grupo.Select(static linha => linha.Condicao)]);
             if (clausulaResult.IsFailure)
             {
-                return Result<PredicadoDnf>.Failure(clausulaResult.Error!);
+                return Result.Failure(clausulaResult.Error!);
             }
 
             clausulas.Add(clausulaResult.Value!);
         }
 
-        return Result<PredicadoDnf>.Success(new PredicadoDnf(clausulas));
+        return Result.Success();
     }
 
     /// <summary>
@@ -101,6 +113,11 @@ public sealed record PredicadoDnf
     {
         ArgumentNullException.ThrowIfNull(fatosResolvidos);
 
+        return AvaliarClausulas(fatosResolvidos);
+    }
+
+    private Ternario AvaliarClausulas(IReadOnlyDictionary<string, FatoResolvido> fatosResolvidos)
+    {
         bool algumaIndeterminada = false;
         foreach (ClausulaDnf clausula in Clausulas)
         {
@@ -110,10 +127,7 @@ public sealed record PredicadoDnf
                 return Ternario.Verdadeiro;
             }
 
-            if (resultado == Ternario.Indeterminado)
-            {
-                algumaIndeterminada = true;
-            }
+            algumaIndeterminada |= resultado == Ternario.Indeterminado;
         }
 
         return algumaIndeterminada ? Ternario.Indeterminado : Ternario.Falso;

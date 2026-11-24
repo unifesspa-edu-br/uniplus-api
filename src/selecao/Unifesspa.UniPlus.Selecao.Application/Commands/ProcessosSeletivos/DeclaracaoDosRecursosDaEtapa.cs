@@ -9,6 +9,8 @@ using Domain.ValueObjects;
 
 using Kernel.Results;
 
+using Services;
+
 /// <summary>
 /// Declara as janelas recursais de uma etapa. A âncora em ato é declarada pelo código e resolvida DENTRO
 /// dos produtos desta etapa: ancorar na publicação de outra etapa deixa de ser exprimível.
@@ -103,7 +105,7 @@ internal sealed class DeclaracaoDosRecursosDaEtapa(
         return procedimentos.IsFailure
             ? Result<RecursoDaEtapa>.ValidationFailure(procedimentos.Errors)
             : ComoRecursoDoIndice(
-                RecursoDaEtapa.Criar(declarado.Ancora, regra, ParametrosDeclarados(declarado), produtoAncora?.Id ?? Guid.Empty, procedimentos.Value),
+                RecursoDaEtapa.Criar(CodigoLidoDoPedido.Ler<EventoInicialDoPrazo>(declarado.Ancora), regra, ParametrosDeclarados(declarado), produtoAncora?.Id ?? Guid.Empty, procedimentos.Value),
                 posicao);
     }
 
@@ -124,8 +126,8 @@ internal sealed class DeclaracaoDosRecursosDaEtapa(
     // preliminar que a janela corre. Resolver só pelo código devolveria o definitivo quando ele viesse
     // primeiro, e a etapa seria recusada por ancorar onde não se pode.
     private static ProdutoDaEtapa? ProdutoAncora(EtapaProcesso etapa, RecursoDaEtapaInput declarado) =>
-        declarado.Ancora == AncoraDoRecurso.AtoPublicado
-            ? etapa.Produtos.FirstOrDefault(p => p.Papel == PapelProdutoFase.Preliminar
+        CodigoLidoDoPedido.Ler<EventoInicialDoPrazo>(declarado.Ancora) == EventoInicialDoPrazo.PublicacaoDoAto
+            ? etapa.Produtos.FirstOrDefault(p => p.Papel == PapelDaPublicacaoPrevista.Preliminar
                 && string.Equals(p.AtoCodigo, declarado.AtoAncoraCodigo, StringComparison.Ordinal))
             : null;
 

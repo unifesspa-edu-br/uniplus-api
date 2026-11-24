@@ -18,9 +18,9 @@ internal sealed class ValorGravadoDaResposta
 {
     private static readonly Dictionary<TipoDoValorDeResposta, Action<RespostaDaInscricaoRecord, JsonElement>> GravadoresPorTipo = new()
     {
-        [TipoDoValorDeResposta.Booleano] = static (linha, valor) => linha.ValorBooleano = valor.GetBoolean(),
+        [TipoDoValorDeResposta.SimOuNao] = static (linha, valor) => linha.ValorBooleano = valor.GetBoolean(),
         [TipoDoValorDeResposta.Numero] = static (linha, valor) => linha.ValorNumero = valor.GetDecimal(),
-        [TipoDoValorDeResposta.Codigo] = static (linha, valor) => linha.ValorCodigo = valor.GetString(),
+        [TipoDoValorDeResposta.Opcao] = static (linha, valor) => linha.ValorCodigo = valor.GetString(),
         [TipoDoValorDeResposta.Texto] = static (linha, valor) => linha.ValorTexto = valor.GetString(),
         [TipoDoValorDeResposta.Data] = static (linha, valor) =>
             linha.ValorData = DateOnly.ParseExact(valor.GetString()!, "yyyy-MM-dd", CultureInfo.InvariantCulture),
@@ -92,9 +92,9 @@ internal sealed class ValorGravadoDaResposta
     private static JsonElement LerDaColuna(RespostaDaInscricaoRecord linha) =>
         linha.Tipo switch
         {
-            TipoDoValorDeResposta.Booleano => JsonSerializer.SerializeToElement(linha.ValorBooleano!.Value),
+            TipoDoValorDeResposta.SimOuNao => JsonSerializer.SerializeToElement(linha.ValorBooleano!.Value),
             TipoDoValorDeResposta.Numero => JsonSerializer.SerializeToElement(linha.ValorNumero!.Value),
-            TipoDoValorDeResposta.Codigo => JsonSerializer.SerializeToElement(linha.ValorCodigo!),
+            TipoDoValorDeResposta.Opcao => JsonSerializer.SerializeToElement(linha.ValorCodigo!),
             TipoDoValorDeResposta.Municipio => linha.ValorRotulo is { } rotulo
                 ? ValorDeMunicipio.Gravado(linha.ValorCodigo!, rotulo)
                 : JsonSerializer.SerializeToElement(linha.ValorCodigo!),

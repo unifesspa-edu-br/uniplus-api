@@ -1,14 +1,9 @@
 namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Configurations;
 
-using System.Text.Json;
-
 using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.ChangeTracking;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
-using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Protecao;
-using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
@@ -19,8 +14,6 @@ using Unifesspa.UniPlus.Selecao.Domain.Enums;
 /// </summary>
 internal sealed class ConfiguracaoTaxaInscricaoConfiguration : IEntityTypeConfiguration<ConfiguracaoTaxaInscricao>
 {
-    private static readonly JsonSerializerOptions JsonOptions = OpcoesJsonDeDocumento.Criar(new() { PropertyNamingPolicy = JsonNamingPolicy.CamelCase });
-
     public void Configure(EntityTypeBuilder<ConfiguracaoTaxaInscricao> builder)
     {
         ArgumentNullException.ThrowIfNull(builder);
@@ -46,34 +39,11 @@ internal sealed class ConfiguracaoTaxaInscricaoConfiguration : IEntityTypeConfig
             .HasPrecision(ConfiguracaoTaxaInscricao.ValorPrecisao, ConfiguracaoTaxaInscricao.ValorEscala)
             .HasComment("Valor da taxa em reais, positivo quando cobra=true; sempre nulo quando cobra=false (CA-02/CA-03).");
 
-        // fundamentos: lista de tokens (não ordinais de enum — nomes de coluna vendor-neutral,
-        // mesmo raciocínio de ConfiguracaoDivulgacao.CamposPublicos). SEM DEFAULT: quem não cobra
-        // grava a lista vazia explicitamente, e não há valor a fabricar por ausência de linha.
-        builder.Property(c => c.Fundamentos)
-            .HasConversion(FundamentosConverter, FundamentosComparer)
-            .HasColumnType("jsonb")
+        builder.Ignore(c => c.Fundamentos);
+        builder.PrimitiveCollection<List<FundamentoIsencao>>("_fundamentos")
+            .HasColumnName("fundamentos")
+            .HasComment("Fundamentos de isenção.")
             .IsRequired()
-            .HasComment("Fundamentos de isenção referenciados (tokens de FundamentoIsencaoCodigo), deduplicados e em ordem canônica; vazio somente quando cobra=false (issue #1310).");
+            .UsePropertyAccessMode(PropertyAccessMode.Field);
     }
-
-    private static readonly ValueConverter<IReadOnlyList<FundamentoIsencao>, string> FundamentosConverter =
-        new(
-            fundamentos => SerializeFundamentos(fundamentos),
-            json => (IReadOnlyList<FundamentoIsencao>)DeserializeFundamentos(json));
-
-    private static readonly ValueComparer<IReadOnlyList<FundamentoIsencao>> FundamentosComparer =
-        new(
-            (a, b) => SerializeFundamentos(a) == SerializeFundamentos(b),
-            v => v == null ? 0 : SerializeFundamentos(v).GetHashCode(StringComparison.Ordinal),
-            v => (IReadOnlyList<FundamentoIsencao>)DeserializeFundamentos(SerializeFundamentos(v)));
-
-    private static string SerializeFundamentos(IReadOnlyList<FundamentoIsencao>? fundamentos) =>
-        fundamentos is null
-            ? "[]"
-            : JsonSerializer.Serialize(fundamentos.Select(static f => f.ToCodigo()), JsonOptions);
-
-    private static List<FundamentoIsencao> DeserializeFundamentos(string json) =>
-        string.IsNullOrEmpty(json)
-            ? []
-            : [.. (JsonSerializer.Deserialize<List<string>>(json, JsonOptions) ?? []).Select(static c => FundamentoIsencaoCodigo.FromCodigo(c))];
 }

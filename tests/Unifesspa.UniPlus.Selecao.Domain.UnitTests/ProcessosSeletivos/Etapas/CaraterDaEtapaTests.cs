@@ -17,7 +17,6 @@ public sealed class CaraterDaEtapaTests
     [InlineData(CaraterEtapa.Classificatoria, true)]
     [InlineData(CaraterEtapa.Ambas, true)]
     [InlineData(CaraterEtapa.Eliminatoria, false)]
-    [InlineData(CaraterEtapa.Nenhum, false)]
     public void Pontua_ConformeOCarater(CaraterEtapa carater, bool pontua)
     {
         CaraterDaEtapa.Pontua(carater).Should().Be(pontua);
@@ -27,16 +26,15 @@ public sealed class CaraterDaEtapaTests
     [InlineData(CaraterEtapa.Eliminatoria, true)]
     [InlineData(CaraterEtapa.Ambas, true)]
     [InlineData(CaraterEtapa.Classificatoria, false)]
-    [InlineData(CaraterEtapa.Nenhum, false)]
     public void Elimina_ConformeOCarater(CaraterEtapa carater, bool elimina)
     {
         CaraterDaEtapa.Elimina(carater).Should().Be(elimina);
     }
 
     [Theory(DisplayName = "O caráter ausente ou fora do enum é recusado")]
-    [InlineData(CaraterEtapa.Nenhum)]
+    [InlineData(null)]
     [InlineData((CaraterEtapa)4)]
-    public void ValidarDeclarado_CaraterIndefinido_Recusa(CaraterEtapa carater)
+    public void ValidarDeclarado_CaraterIndefinido_Recusa(CaraterEtapa? carater)
     {
         List<FieldError> erros = CaraterDaEtapa.ValidarDeclarado(carater, peso: null, notaMinima: null);
 
@@ -96,7 +94,7 @@ public sealed class CaraterDaEtapaTests
     [Fact(DisplayName = "As recusas do caráter declarado acumulam: caráter, peso e nota mínima, nesta ordem")]
     public void ValidarDeclarado_TodasAsRecusas_AcumulamNaOrdem()
     {
-        List<FieldError> erros = CaraterDaEtapa.ValidarDeclarado(CaraterEtapa.Nenhum, peso: 0m, notaMinima: -1m);
+        List<FieldError> erros = CaraterDaEtapa.ValidarDeclarado(null, peso: 0m, notaMinima: -1m);
 
         Pares(erros).Should().Equal(
             ("carater", "EtapaProcesso.CaraterObrigatorio"),

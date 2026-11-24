@@ -63,7 +63,7 @@ public sealed class ObrigatoriedadeLegal : SoftDeletableEntity, IAuditableEntity
 
     private ObrigatoriedadeLegal(
         string? tipoProcessoCodigo,
-        CategoriaObrigatoriedade categoria,
+        CategoriaObrigatoriedade? categoria,
         string? regraCodigo,
         PredicadoObrigatoriedade? predicado,
         TextoNormativo texto,
@@ -78,7 +78,7 @@ public sealed class ObrigatoriedadeLegal : SoftDeletableEntity, IAuditableEntity
     /// </summary>
     public static Result ValidarCampos(
         string? tipoProcessoCodigo,
-        CategoriaObrigatoriedade categoria,
+        CategoriaObrigatoriedade? categoria,
         string? regraCodigo,
         PredicadoObrigatoriedade? predicado,
         TextoNormativo texto,
@@ -92,7 +92,7 @@ public sealed class ObrigatoriedadeLegal : SoftDeletableEntity, IAuditableEntity
     /// </summary>
     public static Result<ObrigatoriedadeLegal> Criar(
         string? tipoProcessoCodigo,
-        CategoriaObrigatoriedade categoria,
+        CategoriaObrigatoriedade? categoria,
         string? regraCodigo,
         PredicadoObrigatoriedade? predicado,
         TextoNormativo texto,
@@ -116,7 +116,7 @@ public sealed class ObrigatoriedadeLegal : SoftDeletableEntity, IAuditableEntity
     /// </summary>
     public Result Atualizar(
         string? tipoProcessoCodigo,
-        CategoriaObrigatoriedade categoria,
+        CategoriaObrigatoriedade? categoria,
         string? regraCodigo,
         PredicadoObrigatoriedade? predicado,
         TextoNormativo texto,
@@ -191,7 +191,7 @@ public sealed class ObrigatoriedadeLegal : SoftDeletableEntity, IAuditableEntity
     // Só recebe lote que passou por ValidarCampos: os campos obrigatórios chegam preenchidos.
     private void Aplicar(
         string? tipoProcessoCodigo,
-        CategoriaObrigatoriedade categoria,
+        CategoriaObrigatoriedade? categoria,
         string? regraCodigo,
         PredicadoObrigatoriedade? predicado,
         TextoNormativo texto,
@@ -199,7 +199,7 @@ public sealed class ObrigatoriedadeLegal : SoftDeletableEntity, IAuditableEntity
         DateOnly? vigenciaFim)
     {
         TipoProcessoCodigo = TextoNormalizavel.AparadoEmNfc(ValidacaoDaObrigatoriedadeLegal.Aparar(tipoProcessoCodigo));
-        Categoria = categoria;
+        Categoria = categoria!.Value;
         RegraCodigo = ValidacaoDaObrigatoriedadeLegal.Aparar(regraCodigo);
         Predicado = predicado!;
         AplicarTexto(texto);

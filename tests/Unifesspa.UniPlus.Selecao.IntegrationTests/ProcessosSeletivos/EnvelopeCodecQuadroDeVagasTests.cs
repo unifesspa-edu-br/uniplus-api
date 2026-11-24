@@ -4,6 +4,7 @@ using System.Text.Json.Nodes;
 
 using AwesomeAssertions;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Services;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
@@ -108,8 +109,8 @@ public sealed class EnvelopeCodecQuadroDeVagasTests
             new DistribuicaoDeVagasDeclarada
             {
                 VagasOfertadasBase = VagasOfertadasBaseDoQuadroFixado,
-                RegraDeDistribuicao = ExemploDeEnvelope.Regra(RegraDistribuicaoVagasCodigo.Institucional, 'a'),
-                RegraDeAjuste = ExemploDeEnvelope.Regra(RegraAjusteDistribuicaoVagasCodigo.ReconciliacaoArt11ParagrafoUnico, 'b'),
+                RegraDeDistribuicao = ExemploDeEnvelope.Regra(RegraDeDistribuicaoDeVagas.Institucional.Codigo(), 'a'),
+                RegraDeAjuste = ExemploDeEnvelope.Regra(RegraDeAjusteDaDistribuicaoDeVagas.AjusteDoTotalPeloArtigo11.Codigo(), 'b'),
                 AjusteDoQuadro = ajuste,
                 Modalidades = [ModalidadeDoQuadroFixado("AC", 25, null), ModalidadeDoQuadroFixado("IND", 10, "AC"), ModalidadeDoQuadroFixado("QUI", 9, "AC")],
             },
@@ -120,15 +121,5 @@ public sealed class EnvelopeCodecQuadroDeVagasTests
     }
 
     private static ModalidadeSelecionada ModalidadeDoQuadroFixado(string codigo, int quantidade, string? origem) =>
-        ModalidadeSelecionada.Criar(
-            Guid.CreateVersion7(), codigo, null,
-            origem is null ? NaturezaLegalModalidade.Ampla : NaturezaLegalModalidade.AcaoAfirmativa,
-            origem is null ? ComposicaoVagasModalidade.RestanteDasVagasOfertadas : ComposicaoVagasModalidade.RetiradaDeOutraModalidade,
-            origem,
-            origem is null ? RegraRemanejamentoModalidade.Nenhuma : RegraRemanejamentoModalidade.Cruzado,
-            null,
-            origem is null ? null : (codigo == "IND" ? "QUI" : "IND"),
-            origem,
-            RegrasDeAplicabilidadeDeTeste.DaNatureza(origem is null ? NaturezaLegalModalidade.Ampla : NaturezaLegalModalidade.AcaoAfirmativa),
-            null, "Res. Unifesspa 532/2021", quantidadeDeclarada: quantidade).Value!;
+        ModalidadeSelecionada.Criar(ModalidadesNoCadastroDeTeste.Da(codigo, origem is null ? NaturezaLegalModalidade.Ampla : NaturezaLegalModalidade.AcaoAfirmativa, origem is null ? ComposicaoVagasModalidade.RestanteDasVagasOfertadas : ComposicaoVagasModalidade.RetiradaDeOutraModalidade) with { ComposicaoOrigemCodigo = origem, RegraRemanejamento = origem is null ? null : RegraRemanejamentoModalidade.Cruzado, RemanejamentoPar = origem is null ? null : (codigo == "IND" ? "QUI" : "IND"), RemanejamentoFallback = origem, BaseLegal = "Res. Unifesspa 532/2021" }, quantidade).Value!;
 }

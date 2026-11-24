@@ -6,6 +6,7 @@ using System.Text.Json.Nodes;
 
 using AwesomeAssertions;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Kernel.Tempo;
 using Unifesspa.UniPlus.Regras.Enums;
@@ -92,7 +93,7 @@ internal static class ApoioDaPublicacaoDoProcessoSeletivo
     private static void DefinirOfertaDeAmplaConcorrencia(ProcessoSeletivo processo)
     {
         ReferenciaRegra regraDistribuicao = ReferenciaRegra.De(
-            RegraDistribuicaoVagasCodigo.Institucional, "v1", HashFixo);
+            RegraDeDistribuicaoDeVagas.Institucional.Codigo(), "v1", HashFixo);
         ModalidadeSelecionada modalidade = ModalidadeDeAmplaConcorrencia();
         ConfiguracaoDistribuicaoVagas distribuicao = ConfiguracaoDistribuicaoVagas.Criar(Guid.CreateVersion7(),
             new DistribuicaoDeVagasDeclarada { VagasOfertadasBase = 40, PercentualDaReservaLegal = 1m, RegraDeDistribuicao = regraDistribuicao, Modalidades = [modalidade] },
@@ -104,9 +105,9 @@ internal static class ApoioDaPublicacaoDoProcessoSeletivo
     private static void DefinirClassificacaoImportada(ProcessoSeletivo processo)
     {
         ReferenciaRegra regraCalculo = ReferenciaRegra.De(
-            RegraCalculoCodigo.ClassificacaoImportada, "v1", HashFixo);
+            RegraDeCalculoDaNota.ClassificacaoImportada.Codigo(), "v1", HashFixo);
         ReferenciaRegra regraOrdemAlocacao = ReferenciaRegra.De(
-            RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, "v1", HashFixo);
+            RegraDeOrdemDeAlocacao.PrimeiraOpcaoPrioritaria.Codigo(), "v1", HashFixo);
         ConfiguracaoClassificacao classificacao = ConfiguracaoClassificacao.Criar(new DeclaracaoDaClassificacao
         {
             RegraCalculo = regraCalculo,
@@ -118,17 +119,7 @@ internal static class ApoioDaPublicacaoDoProcessoSeletivo
 
     private static ModalidadeSelecionada ModalidadeDeAmplaConcorrencia()
     {
-        ModalidadeSelecionada modalidade = ModalidadeSelecionada.Criar(
-            modalidadeOrigemId: Guid.CreateVersion7(),
-            codigo: "AC",
-            descricao: null, naturezaLegal: NaturezaLegalModalidade.Ampla,
-            composicaoVagas: ComposicaoVagasModalidade.RestanteDasVagasOfertadas,
-            composicaoOrigemCodigo: null, regraRemanejamento: RegraRemanejamentoModalidade.Nenhuma,
-            remanejamentoDestino: null, remanejamentoPar: null, remanejamentoFallback: null,
-            regraDeAplicabilidade: RegrasDeAplicabilidadeDeTeste.DaNatureza(NaturezaLegalModalidade.Ampla),
-            acaoQuandoIndeferido: null,
-            baseLegal: "Res. Unifesspa 532/2021",
-            quantidadeDeclarada: 40).Value!;
+        ModalidadeSelecionada modalidade = ModalidadeSelecionada.Criar(ModalidadesNoCadastroDeTeste.Da("AC", NaturezaLegalModalidade.Ampla, ComposicaoVagasModalidade.RestanteDasVagasOfertadas) with { BaseLegal = "Res. Unifesspa 532/2021" }, 40).Value!;
         return modalidade;
     }
 

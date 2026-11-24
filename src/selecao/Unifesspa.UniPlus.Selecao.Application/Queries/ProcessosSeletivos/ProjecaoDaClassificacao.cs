@@ -84,9 +84,9 @@ internal static class ProjecaoDaClassificacao
 
         return regra.Parametros switch
         {
-            ParametrosElimNotaMinimaEtapa parametros => new RegraEliminacaoDto(regra.Id, referenciaRegra, parametros.EtapaRef, parametros.NotaMinima, null, null),
-            ParametrosElimAusenciaNaEtapa parametros => new RegraEliminacaoDto(regra.Id, referenciaRegra, parametros.EtapaRef, null, null, null),
-            ParametrosElimCorteEmArea parametros => new RegraEliminacaoDto(regra.Id, referenciaRegra, null, null, parametros.Minimo, parametros.AreaCodigo),
+            ParametrosEliminacaoPorNotaMinimaNaEtapa parametros => new RegraEliminacaoDto(regra.Id, referenciaRegra, parametros.EtapaRef, parametros.NotaMinima, null, null),
+            ParametrosEliminacaoPorAusenciaNaEtapa parametros => new RegraEliminacaoDto(regra.Id, referenciaRegra, parametros.EtapaRef, null, null, null),
+            ParametrosEliminacaoPorCorteEmAreaDoEnem parametros => new RegraEliminacaoDto(regra.Id, referenciaRegra, null, null, parametros.Minimo, parametros.AreaCodigo),
             _ => new RegraEliminacaoDto(regra.Id, referenciaRegra, null, null, null, null),
         };
     }

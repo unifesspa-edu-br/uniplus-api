@@ -4,6 +4,7 @@ using System.Text.Json.Nodes;
 
 using AwesomeAssertions;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
@@ -47,7 +48,7 @@ public sealed class CronogramaComAMarcaDeMesmoMomentoTests
     {
         ["cronogramaFases"] = new JsonObject
         {
-            ["origemCandidatos"] = OrigemCandidatos.InscricaoPropria.ToString(),
+            ["origemCandidatos"] = OrigemCandidatos.InscricaoPropria.Codigo(),
             ["fases"] = new JsonArray(item),
         },
     };

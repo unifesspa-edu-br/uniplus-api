@@ -210,7 +210,7 @@ public sealed class RegraDeHomologacaoNoCronogramaEndpointTests
         faseCanonicaId,
         inicio = Inicio,
         fim = Fim,
-        produtos = new object[] { new { atoCodigo = ResultadoDaFase, papel = PapelProdutoFaseCodigo.Definitivo } },
+        produtos = new object[] { new { atoCodigo = ResultadoDaFase, papel = "DEFINITIVO" } },
         emiteParecerIndividual = false,
         bancasRequeridas = Array.Empty<object>(),
         regraRecurso = (object?)null,

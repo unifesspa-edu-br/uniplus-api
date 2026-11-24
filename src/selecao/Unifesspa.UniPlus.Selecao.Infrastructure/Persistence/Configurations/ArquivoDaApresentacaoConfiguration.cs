@@ -29,15 +29,15 @@ internal sealed class ArquivoDaApresentacaoConfiguration : IEntityTypeConfigurat
         builder.HasKey(a => a.Id);
         builder.Property(a => a.Id).ValueGeneratedNever();
 
-        builder.Property(a => a.Formato).HasConversion<int>().IsRequired()
-            .HasComment("O formato do arquivo (PDF, JPEG ou PNG), conferido contra a exigência no início do envio.");
+        builder.Property(a => a.Formato).HasMaxLength(4).IsRequired()
+            .HasComment("Formato do arquivo.");
         builder.Property(a => a.TamanhoMaximoBytes)
             .HasComment("O maior tamanho que a exigência admite para o formato; o teto do sistema (10 MB) só quando ela não define limite, e nunca acima de 20 MB. Copiado da exigência no início do envio.");
         builder.Property(a => a.ObjectKey).HasMaxLength(500).IsRequired()
             .HasComment("A chave do objeto no bucket de envio (quarentena); só o id do arquivo a compõe.");
-        builder.Property(a => a.Situacao).HasConversion<int>().IsRequired()
+        builder.Property(a => a.Situacao).HasMaxLength(18).IsRequired()
             .HasColumnName("situacao")
-            .HasComment("Pendente (0), em verificação (1), verificado (2), recusado (3) ou reenvio necessário (4). Só o verificado atende a exigência.");
+            .HasComment("Situação da verificação; só o arquivo verificado atende à exigência.");
         builder.Property(a => a.ETag).HasColumnName("etag").HasMaxLength(256)
             .HasComment("O ETag que o PUT devolveu ao candidato, enviado na confirmação; fixa a versão do objeto que o verificador confere.");
         builder.Property(a => a.Publicacoes).IsRequired()
@@ -46,7 +46,7 @@ internal sealed class ArquivoDaApresentacaoConfiguration : IEntityTypeConfigurat
             .HasComment("Quando a reconciliação pode republicar o pedido: a última publicação mais o prazo, que cresce a cada publicação.");
         builder.Property(a => a.ChaveDefinitiva).HasMaxLength(500)
             .HasComment("A chave do objeto promovido ao bucket definitivo; nula enquanto não verificado.");
-        builder.Property(a => a.MotivoDaRecusa).ClassificaComo(ClassificacaoDeProtecao.Pessoal)
+        builder.Property(a => a.MotivoDaRecusa).ClassificaComo(ClassificacaoDeProtecao.Pessoal).HasMaxLength(38)
             .HasComment("Por que a verificação recusou o arquivo; nulo fora da recusa.");
         builder.Property(a => a.HashSha256).HasMaxLength(64)
             .HasComment("O SHA-256 do conteúdo, calculado pelo verificador; nulo enquanto não verificado.");
@@ -72,6 +72,6 @@ internal sealed class ArquivoDaApresentacaoConfiguration : IEntityTypeConfigurat
 
         builder.HasIndex(a => a.ProximaPublicacaoEm)
             .HasDatabaseName("ix_arquivos_da_apresentacao_em_verificacao")
-            .HasFilter($"situacao = {(int)SituacaoDoArquivoDoCandidato.EmVerificacao}");
+            .HasFilter("situacao = 'EM_VERIFICACAO'");
     }
 }

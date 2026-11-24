@@ -23,14 +23,14 @@ internal static class LeituraDaDivulgacaoETaxa
     /// </summary>
     /// <remarks>
     /// O decodificador é tão estrito quanto o encoder: vocabulário fechado, piso
-    /// <c>numero_inscricao</c> sempre presente e <c>nome</c>/<c>nome_abreviado</c> nunca juntos
+    /// <c>NUMERO_INSCRICAO</c> sempre presente e <c>NOME</c>/<c>NOME_ABREVIADO</c> nunca juntos
     /// são reconferidos por <see cref="ConfiguracaoDivulgacao.Criar"/>, que este método chama
     /// como fonte única daquelas invariantes. O que só a LEITURA pode conferir — porque o
     /// congelamento nunca as violaria pelo caminho normal de escrita — fica aqui: repetição,
     /// ordem canônica (pela MESMA política do encoder,
     /// <see cref="EscritaCanonica.OrdenarPorConteudo(IEnumerable{JsonValue})"/>,
     /// nunca um <see cref="StringComparer.Ordinal"/> reimplementado), a bicondicional entre
-    /// <c>nome_abreviado</c> e <c>regraNomeAbreviado</c>, o identificador de regra conhecido, e a
+    /// <c>NOME_ABREVIADO</c> e <c>regraNomeAbreviado</c>, o identificador de regra conhecido, e a
     /// forma canônica (Trim + NFC) da justificativa. Um bloco cujo conteúdo é exatamente o
     /// default minimizado reidrata como <see langword="null"/> — a reidratação não fabrica
     /// entidade para um processo que nunca configurou divulgação.
@@ -83,7 +83,7 @@ internal static class LeituraDaDivulgacaoETaxa
 
         if (camposPublicos.Contains(ConfiguracaoDivulgacao.NomeAbreviado, StringComparer.Ordinal) != (regraNomeAbreviado is not null))
         {
-            return "'divulgacao.regraNomeAbreviado' tem de estar presente se, e somente se, 'camposPublicos' contém 'nome_abreviado'.";
+            return "'divulgacao.regraNomeAbreviado' tem de estar presente se, e somente se, 'camposPublicos' contém 'NOME_ABREVIADO'.";
         }
 
         if (regraNomeAbreviado is not null && !RegrasDeNomeAbreviado.EhConhecida(regraNomeAbreviado))

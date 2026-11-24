@@ -2,6 +2,7 @@ namespace Unifesspa.UniPlus.Selecao.Application.UnitTests.Queries;
 
 using AwesomeAssertions;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Selecao.Application.DTOs;
 using Unifesspa.UniPlus.Selecao.Application.Queries.ProcessosSeletivos;
@@ -34,8 +35,8 @@ public sealed class LeituraDoProcessoEmOrdemCanonicaTests
         LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
 
     private static RecursoDaEtapa AoAto(Guid produtoId) => RecursoDaEtapa.Criar(
-        AncoraDoRecurso.AtoPublicado,
-        ReferenciaRegra.De(RegraPrazoRecursoCodigo.AncoradoEmAto, "v1", new string('a', 64)),
+        EventoInicialDoPrazo.PublicacaoDoAto,
+        ReferenciaRegra.De(RegraDePrazoDoRecurso.ContadoDaPublicacaoDoAto.Codigo(), "v1", new string('a', 64)),
         ParametrosDoRecursoDeTeste.Declarados(48m, UnidadePrazo.Horas),
         produtoId).Value!;
 
@@ -52,8 +53,8 @@ public sealed class LeituraDoProcessoEmOrdemCanonicaTests
     public void ProjetarEtapa_ListasDaEtapa_SaemNaOrdemCanonica()
     {
         EtapaProcesso etapa = Etapa("Prova", 1);
-        ProdutoDaEtapa resultado = ProdutoDaEtapa.Criar("RESULTADO_DA_PROVA", PapelProdutoFase.Preliminar);
-        ProdutoDaEtapa gabarito = ProdutoDaEtapa.Criar("GABARITO", PapelProdutoFase.Preliminar);
+        ProdutoDaEtapa resultado = ProdutoDaEtapa.Criar("RESULTADO_DA_PROVA", PapelDaPublicacaoPrevista.Preliminar);
+        ProdutoDaEtapa gabarito = ProdutoDaEtapa.Criar("GABARITO", PapelDaPublicacaoPrevista.Preliminar);
         etapa.DefinirProdutos([resultado, gabarito]).IsSuccess.Should().BeTrue();
         etapa.DefinirBancas([BancaDaEtapa.Criar(ChaveLocal.Criar("banca").Value, TiposDeBancaCopiadosDeTeste.De(TipoDeBanca.Entrevista)), BancaDaEtapa.Criar(ChaveLocal.Criar("banca").Value, TiposDeBancaCopiadosDeTeste.De(TipoDeBanca.AnaliseDocumental))]);
         etapa.DefinirRecursos([AoAto(resultado.Id), AoAto(gabarito.Id)]).IsSuccess.Should().BeTrue();

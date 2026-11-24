@@ -14,15 +14,6 @@ using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
 /// </summary>
 internal static class VersoesDoProcessoNaListagem
 {
-    /// <summary>
-    /// Se a classe do nome entra nos pares que a listagem pede ao projetor: o identificador nunca sai pelo nome, e o
-    /// sensível só entra com a base legal congelada em todas as versões, para que a trilha não registre uma classe que o
-    /// nome não vai usar.
-    /// </summary>
-    public static bool EntraNosPares(ClassificacaoDeProtecao classificacao, string? baseLegal) =>
-        classificacao != ClassificacaoDeProtecao.Identificador
-        && (classificacao != ClassificacaoDeProtecao.Sensivel || !string.IsNullOrWhiteSpace(baseLegal));
-
     public static async Task<LeituraDasVersoes> LerAsync(
         Guid processoSeletivoId,
         IProcessoSeletivoRepository processoRepository,
@@ -91,4 +82,16 @@ internal static class VersoesDoProcessoNaListagem
 internal sealed record LeituraDasVersoes(
     ClassificacaoDeProtecao ClassificacaoDoNome,
     string? BaseLegalDoNome,
-    IReadOnlyDictionary<Guid, IReadOnlyDictionary<Guid, string>> NomesDasOfertasPorVersao);
+    IReadOnlyDictionary<Guid, IReadOnlyDictionary<Guid, string>> NomesDasOfertasPorVersao)
+{
+    /// <summary>
+    /// Se a classe do nome entra nos pares que a listagem pede ao projetor: o identificador nunca sai pelo nome, e o
+    /// sensível só entra com a base legal congelada em todas as versões, para que a trilha não registre uma classe que o
+    /// nome não vai usar.
+    /// </summary>
+    public bool NomeEntraNosPares => ClassificacaoDoNome != ClassificacaoDeProtecao.Identificador
+        && (ClassificacaoDoNome != ClassificacaoDeProtecao.Sensivel || !string.IsNullOrWhiteSpace(BaseLegalDoNome));
+
+    public IReadOnlyDictionary<Guid, string> NomesDasOfertasDa(Guid versaoId) =>
+        NomesDasOfertasPorVersao.GetValueOrDefault(versaoId) ?? new Dictionary<Guid, string>();
+}

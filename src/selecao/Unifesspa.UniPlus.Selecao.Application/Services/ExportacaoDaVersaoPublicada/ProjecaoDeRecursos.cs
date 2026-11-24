@@ -1,7 +1,9 @@
 namespace Unifesspa.UniPlus.Selecao.Application.Services.ExportacaoDaVersaoPublicada;
 
-using System.Text.Json;
 using System.Text.Json.Nodes;
+
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
+using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 internal static class ProjecaoDeRecursos
 {
@@ -21,8 +23,6 @@ internal static class ProjecaoDeRecursos
     private static JsonObject PrepararRecurso(JsonObject recurso, JsonObject lugar, ChavesDoDocumentoCongelado chaves)
     {
         JsonObject copia = (JsonObject)recurso.DeepClone();
-        if (recurso["eventoInicialDoPrazo"] is { } evento)
-            copia["eventoInicialDoPrazo"] = JsonNamingPolicy.CamelCase.ConvertName(evento.ToString());
         ProjecaoDeParte.Transferir(copia, "regraCodigo", recurso["regra"]?["codigo"]);
         ProjecaoDeParte.Transferir(copia, "regraVersao", recurso["regra"]?["versao"]);
         if (recurso["parametros"] is JsonObject parametros)
@@ -51,13 +51,16 @@ internal static class ProjecaoDeRecursos
         JsonObject copia = (JsonObject)procedimento.DeepClone();
         if (procedimento["alvo"] is JsonObject alvo && alvo["valor"] is { } valor)
         {
-            copia["alvo"] = alvo["tipo"]?.ToString() switch
+            copia["alvo"] = TipoDoAlvo(alvo["tipo"]) switch
             {
-                "item_avaliacao" => new JsonObject { ["itemDeAvaliacaoChave"] = chaves.ItemDeAvaliacao(valor.ToString()) },
-                "area_enem" => new JsonObject { ["areaDoEnem"] = valor.DeepClone() },
+                TipoDeAlvoDoProcedimentoDeRecurso.ItemDeAvaliacao => new JsonObject { ["itemDeAvaliacaoChave"] = chaves.ItemDeAvaliacao(valor.ToString()) },
+                TipoDeAlvoDoProcedimentoDeRecurso.AreaDoEnem => new JsonObject { ["areaDoEnem"] = valor.DeepClone() },
                 _ => throw new InvalidOperationException($"Tipo de alvo '{alvo["tipo"]}' não encontrado no documento congelado."),
             };
         }
         return copia;
     }
+
+    private static TipoDeAlvoDoProcedimentoDeRecurso TipoDoAlvo(JsonNode? tipo) =>
+        CatalogoDe<TipoDeAlvoDoProcedimentoDeRecurso>.TentarObter(tipo?.ToString(), out TipoDeAlvoDoProcedimentoDeRecurso lido) ? lido : default;
 }

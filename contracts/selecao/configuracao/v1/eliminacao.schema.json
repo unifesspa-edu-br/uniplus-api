@@ -28,7 +28,7 @@
           "regra": {
             "properties": {
               "codigo": {
-                "const": "ELIM-NOTA-MINIMA-ETAPA"
+                "const": "ELIMINACAO_NOTA_MINIMA_ETAPA"
               }
             },
             "required": [
@@ -54,7 +54,7 @@
           "regra": {
             "properties": {
               "codigo": {
-                "const": "ELIM-CORTE-EM-AREA"
+                "const": "ELIMINACAO_CORTE_EM_AREA"
               }
             },
             "required": [
@@ -80,7 +80,7 @@
           "regra": {
             "properties": {
               "codigo": {
-                "const": "ELIM-ZERO-EM-AREA"
+                "const": "ELIMINACAO_ZERO_EM_AREA"
               }
             },
             "required": [
@@ -106,7 +106,7 @@
           "regra": {
             "properties": {
               "codigo": {
-                "const": "ELIM-FALTA-EM-DIA-DE-PROVA-ENEM"
+                "const": "ELIMINACAO_FALTA_EM_DIA_DE_PROVA_ENEM"
               }
             },
             "required": [
@@ -132,7 +132,7 @@
           "regra": {
             "properties": {
               "codigo": {
-                "const": "ELIM-AUSENCIA-NA-ETAPA"
+                "const": "ELIMINACAO_AUSENCIA_NA_ETAPA"
               }
             },
             "required": [

@@ -6,7 +6,7 @@ namespace Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
 /// </summary>
 /// <param name="TipoDeDecisao">Código do vocabulário de tipos de decisão, como a fase e a etapa o declaram.</param>
 /// <param name="Alvo">A parte da matéria que o procedimento cobre; ausente quando cobre o tipo de decisão inteiro.</param>
-/// <param name="RegraCodigo">Código da regra do tipo <c>regra_procedimento_recurso</c> no catálogo.</param>
+/// <param name="RegraCodigo">Código da regra do tipo <c>REGRA_PROCEDIMENTO_RECURSO</c> no catálogo.</param>
 /// <param name="RegraVersao">Versão da regra no catálogo.</param>
 public sealed record ProcedimentoDeRecursoInput(
     string? TipoDeDecisao,

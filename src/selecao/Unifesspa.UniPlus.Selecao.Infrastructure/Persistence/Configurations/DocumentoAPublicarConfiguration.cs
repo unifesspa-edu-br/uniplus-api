@@ -1,11 +1,13 @@
 namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Configurations;
 
 using Domain.Entities;
+using Domain.Enums;
 
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Protecao;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
 
 public sealed class DocumentoAPublicarConfiguration : IEntityTypeConfiguration<DocumentoAPublicar>
@@ -21,12 +23,12 @@ public sealed class DocumentoAPublicarConfiguration : IEntityTypeConfiguration<D
         // Guid v7 gerado no domínio (EntityBase) — mesma convenção de ProcessoSeletivoConfiguration.
         builder.Property(d => d.Id).ValueGeneratedNever();
 
-        builder.Property(d => d.Finalidade).HasConversion<int>().IsRequired();
+        builder.Property(d => d.Finalidade).HasMaxLength(19).HasComment($"Finalidade do documento. Códigos: {Codigos<FinalidadeDoDocumento>()}.").IsRequired();
         builder.Property(d => d.NomeArquivo).HasMaxLength(DocumentoAPublicar.NomeArquivoMaxLength).IsRequired();
-        builder.Property(d => d.Formato).HasConversion<int>().IsRequired();
+        builder.Property(d => d.Formato).HasMaxLength(4).HasComment($"Formato do documento. Códigos: {Codigos<FormatoDeDocumento>()}.").IsRequired();
         builder.Property(d => d.ObjectKey).HasMaxLength(500).IsRequired();
         builder.Property(d => d.ObjectKeyConfirmado).HasMaxLength(500);
-        builder.Property(d => d.Status).HasConversion<int>().IsRequired();
+        builder.Property(d => d.Status).HasMaxLength(10).HasComment($"Situação do envio. Códigos: {Codigos<StatusArquivoEnviado>()}.").IsRequired();
         builder.Property(d => d.HashSha256).HasMaxLength(64);
         builder.Ignore(d => d.Extensao);
         builder.Ignore(d => d.TipoDeMidia);
@@ -42,4 +44,7 @@ public sealed class DocumentoAPublicarConfiguration : IEntityTypeConfiguration<D
             .IsDescending(false, true, true)
             .HasDatabaseName("ix_documentos_a_publicar_processo_recentes");
     }
+
+    private static string Codigos<TEnum>() where TEnum : struct, Enum =>
+        string.Join(", ", CatalogoDe<TEnum>.Todos().Select(c => c.Codigo));
 }

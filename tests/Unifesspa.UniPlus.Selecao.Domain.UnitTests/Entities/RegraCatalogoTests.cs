@@ -21,7 +21,7 @@ public sealed class RegraCatalogoTests
     }
 
     private static RegraCatalogo CriarValida() => RegraCatalogo.Criar(
-        "BONUS-MULTIPLICATIVO", "v1", TipoRegra.RegraBonus,
+        "FADA_MULTIPLICATIVO", "v1", TipoRegra.RegraBonus,
         Json("""{"fator":"numeric","teto":"numeric|null"}"""),
         Json("""["nota_final × fator, após os pesos"]"""),
         "Bônus multiplicativo aplicado à nota final após os pesos das áreas do ENEM");
@@ -58,12 +58,12 @@ public sealed class RegraCatalogoTests
         criar.Should().Throw<ArgumentException>().WithParameterName(parametro);
     }
 
-    [Fact(DisplayName = "Criar recusa tipo Nenhuma (sentinela)")]
-    public void Criar_TipoNenhuma_LancaArgumentOutOfRange()
+    [Fact(DisplayName = "Criar recusa tipo fora do catálogo")]
+    public void Criar_TipoForaDoCatalogo_LancaArgumentOutOfRange()
     {
-        Action criar = () => RegraCatalogo.Criar("R", "v1", TipoRegra.Nenhuma, Json("{}"), Json("[]"), "base");
+        Action criar = () => RegraCatalogo.Criar("R", "v1", (TipoRegra)0, Json("{}"), Json("[]"), "base");
 
-        criar.Should().Throw<ArgumentOutOfRangeException>().WithParameterName("tipo");
+        criar.Should().Throw<ArgumentOutOfRangeException>().WithParameterName("valor");
     }
 
     [Fact(DisplayName = "Criar recusa declaracao_da_regra que não é objeto JSON")]

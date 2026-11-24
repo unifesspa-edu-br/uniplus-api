@@ -45,45 +45,55 @@ public static class LeituraDoCalendarioVigente
             return Result<CalendarioDiasUteisCongelado?>.Success(null);
         }
 
-        List<DiaNaoUtilCongelado> dias = [];
-        foreach (DiaNaoUtilView dia in vigente.DiasNaoUteis)
+        Result<IReadOnlyList<DiaNaoUtilCongelado>> dias = TraduzirDias(vigente.DiasNaoUteis);
+        if (dias.IsFailure)
         {
-            // A forma bruta é conferida ANTES do colapso. Escolher a UF pela abrangência e
-            // seguir adiante descartaria em silêncio um campo que a abrangência proíbe — um dia
-            // municipal que também trouxesse Uf preenchida seria congelado como se ela não
-            // existisse, e a contradição do dado de origem desapareceria dentro de um artefato
-            // imutável. Depois do colapso, o value object não teria como saber que havia um
-            // segundo campo.
-            Result forma = ConferirFormaBruta(dia);
-            if (forma.IsFailure)
-            {
-                return Result<CalendarioDiasUteisCongelado?>.Failure(forma.Error!);
-            }
+            return Result<CalendarioDiasUteisCongelado?>.Failure(dias.Error!);
+        }
 
-            // A view separa MunicipioUf e Uf, um por abrangência; o snapshot tem um campo só.
-            string? uf = dia.Abrangencia switch
-            {
-                AbrangenciaDiaNaoUtil.Municipal => dia.MunicipioUf,
-                AbrangenciaDiaNaoUtil.Estadual => dia.Uf,
-                _ => null,
-            };
+        return CriarCalendario(vigente, dias.Value!);
+    }
 
-            Result<DiaNaoUtilCongelado> congelado = DiaNaoUtilCongelado.Criar(
-                dia.Data, dia.Abrangencia, dia.MunicipioIbge, dia.MunicipioNome, uf);
+    private static Result<CalendarioDiasUteisCongelado?> CriarCalendario(CalendarioVigenteView vigente, IReadOnlyList<DiaNaoUtilCongelado> dias)
+    {
+        Result<CalendarioDiasUteisCongelado> calendario = CalendarioDiasUteisCongelado.Criar(vigente.Id, vigente.VersaoDataset, dias);
+        return calendario.IsFailure
+            ? Result<CalendarioDiasUteisCongelado?>.Failure(calendario.Error!)
+            : Result<CalendarioDiasUteisCongelado?>.Success(calendario.Value);
+    }
+
+    private static Result<IReadOnlyList<DiaNaoUtilCongelado>> TraduzirDias(IEnumerable<DiaNaoUtilView> origem)
+    {
+        List<DiaNaoUtilCongelado> dias = [];
+        foreach (DiaNaoUtilView dia in origem)
+        {
+            Result<DiaNaoUtilCongelado> congelado = TraduzirDia(dia);
             if (congelado.IsFailure)
             {
-                return Result<CalendarioDiasUteisCongelado?>.Failure(congelado.Error!);
+                return Result<IReadOnlyList<DiaNaoUtilCongelado>>.Failure(congelado.Error!);
             }
 
             dias.Add(congelado.Value!);
         }
 
-        Result<CalendarioDiasUteisCongelado> calendario =
-            CalendarioDiasUteisCongelado.Criar(vigente.Id, vigente.VersaoDataset, dias);
+        return Result<IReadOnlyList<DiaNaoUtilCongelado>>.Success(dias);
+    }
 
-        return calendario.IsFailure
-            ? Result<CalendarioDiasUteisCongelado?>.Failure(calendario.Error!)
-            : Result<CalendarioDiasUteisCongelado?>.Success(calendario.Value);
+    private static Result<DiaNaoUtilCongelado> TraduzirDia(DiaNaoUtilView dia)
+    {
+        Result forma = ConferirFormaBruta(dia);
+        if (forma.IsFailure)
+        {
+            return Result<DiaNaoUtilCongelado>.Failure(forma.Error!);
+        }
+
+        string? uf = dia.Abrangencia switch
+        {
+            "MUNICIPAL" => dia.MunicipioUf,
+            "ESTADUAL" => dia.Uf,
+            _ => null,
+        };
+        return DiaNaoUtilCongelado.Criar(dia.Data, dia.Abrangencia, dia.MunicipioIbge, dia.MunicipioNome, uf);
     }
 
     /// <summary>
@@ -98,23 +108,26 @@ public static class LeituraDoCalendarioVigente
     /// </remarks>
     private static Result ConferirFormaBruta(DiaNaoUtilView dia)
     {
-        bool temMunicipio = !string.IsNullOrWhiteSpace(dia.MunicipioIbge)
-            || !string.IsNullOrWhiteSpace(dia.MunicipioNome)
-            || !string.IsNullOrWhiteSpace(dia.MunicipioUf);
+        bool temMunicipio = TemMunicipio(dia);
         bool temUfEstadual = !string.IsNullOrWhiteSpace(dia.Uf);
 
         return dia.Abrangencia switch
         {
-            AbrangenciaDiaNaoUtil.Municipal when temUfEstadual => Recusa(
+            "MUNICIPAL" when temUfEstadual => Recusa(
                 dia, "dia municipal não carrega UF estadual — a UF vem do município"),
-            AbrangenciaDiaNaoUtil.Estadual when temMunicipio => Recusa(
+            "ESTADUAL" when temMunicipio => Recusa(
                 dia, "dia estadual não carrega município"),
-            AbrangenciaDiaNaoUtil.Nacional or AbrangenciaDiaNaoUtil.Institucional
+            "NACIONAL" or "INSTITUCIONAL"
                 when temMunicipio || temUfEstadual => Recusa(
                     dia, $"dia de abrangência {dia.Abrangencia} incide em todo lugar e não carrega recorte territorial"),
             _ => Result.Success(),
         };
     }
+
+    private static bool TemMunicipio(DiaNaoUtilView dia) =>
+        !string.IsNullOrWhiteSpace(dia.MunicipioIbge)
+        || !string.IsNullOrWhiteSpace(dia.MunicipioNome)
+        || !string.IsNullOrWhiteSpace(dia.MunicipioUf);
 
     private static Result Recusa(DiaNaoUtilView dia, string motivo) =>
         Result.Failure(new DomainError(

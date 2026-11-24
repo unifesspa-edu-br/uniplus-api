@@ -102,7 +102,7 @@ public sealed class InclusaoDeMotivoTests
     public void MotivoInativo_Recusa()
     {
         ProcessoSeletivo processo = ProcessoParaMotivos.Rascunho();
-        MotivoDeDecisao origem = ProcessoParaMotivos.DaIsencao(FundamentoIsencaoCodigo.CadastroUnico, SentidoDoMotivo.Favoravel);
+        MotivoDeDecisao origem = ProcessoParaMotivos.DaIsencao("CADASTRO_UNICO", SentidoDoMotivo.Favoravel);
         origem.Desativar();
 
         Incluir(processo, ProcessoParaMotivos.LugarDaFase(processo, "INSCRICAO"), origem).Error!.Code.Should().Be(MotivoDeDecisaoErrorCodes.MotivoInativo);

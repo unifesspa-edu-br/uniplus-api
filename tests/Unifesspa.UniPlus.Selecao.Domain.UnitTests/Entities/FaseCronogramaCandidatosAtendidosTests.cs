@@ -20,8 +20,8 @@ public sealed class FaseCronogramaCandidatosAtendidosTests
         {
             OrigemData = OrigemDataFase.NaExecucao,
             Produtos = [
-                    ProdutoDaFase.Criar("GABARITO", PapelProdutoFase.Preliminar),
-                    ProdutoDaFase.Criar("RESULTADO_CLASSIFICACAO", PapelProdutoFase.Preliminar),
+                    ProdutoDaFase.Criar("GABARITO", PapelDaPublicacaoPrevista.Preliminar),
+                    ProdutoDaFase.Criar("RESULTADO_CLASSIFICACAO", PapelDaPublicacaoPrevista.Preliminar),
                 ],
         });
 
@@ -45,7 +45,7 @@ public sealed class FaseCronogramaCandidatosAtendidosTests
     [Fact(DisplayName = "CA-14 (contraprova): fase que promete parecer individual e publica resultado é aceita")]
     public void ParecerIndividual_ComResultado_Aceita()
     {
-        Result<FaseCronograma> resultado = Criar(m => m with { OrigemData = OrigemDataFase.NaExecucao, Produtos = [ProdutoDaFase.Criar("RESULTADO_CLASSIFICACAO", PapelProdutoFase.Definitivo)], EmiteParecerIndividual = true });
+        Result<FaseCronograma> resultado = Criar(m => m with { OrigemData = OrigemDataFase.NaExecucao, Produtos = [ProdutoDaFase.Criar("RESULTADO_CLASSIFICACAO", PapelDaPublicacaoPrevista.Definitivo)], EmiteParecerIndividual = true });
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
         resultado.Value!.EmiteParecerIndividual.Should().BeTrue();
@@ -63,8 +63,8 @@ public sealed class FaseCronogramaCandidatosAtendidosTests
     [Fact(DisplayName = "Reidratar recusa âncora em produto que não é preliminar, como Criar e o decodificador recusam")]
     public void Reidratar_AncoraEmProdutoNaoPreliminar_Lanca()
     {
-        ProdutoDaFase definitivo = ProdutoDaFase.Criar("RESULTADO_CLASSIFICACAO", PapelProdutoFase.Definitivo);
-        ProdutoDaFase preliminar = ProdutoDaFase.Criar("RESULTADO_CLASSIFICACAO", PapelProdutoFase.Preliminar);
+        ProdutoDaFase definitivo = ProdutoDaFase.Criar("RESULTADO_CLASSIFICACAO", PapelDaPublicacaoPrevista.Definitivo);
+        ProdutoDaFase preliminar = ProdutoDaFase.Criar("RESULTADO_CLASSIFICACAO", PapelDaPublicacaoPrevista.Preliminar);
 
         Action reidratar = () => Reidratar([preliminar, definitivo], Recurso(definitivo.Id));
 
@@ -78,8 +78,8 @@ public sealed class FaseCronogramaCandidatosAtendidosTests
     [Fact(DisplayName = "Reidratar recusa âncora em produto de outra fase")]
     public void Reidratar_AncoraForaDaFase_Lanca()
     {
-        ProdutoDaFase preliminarDaOutraFase = ProdutoDaFase.Criar("RESULTADO_CLASSIFICACAO", PapelProdutoFase.Preliminar);
-        ProdutoDaFase preliminarDesta = ProdutoDaFase.Criar("RESULTADO_CLASSIFICACAO", PapelProdutoFase.Preliminar);
+        ProdutoDaFase preliminarDaOutraFase = ProdutoDaFase.Criar("RESULTADO_CLASSIFICACAO", PapelDaPublicacaoPrevista.Preliminar);
+        ProdutoDaFase preliminarDesta = ProdutoDaFase.Criar("RESULTADO_CLASSIFICACAO", PapelDaPublicacaoPrevista.Preliminar);
 
         Action reidratar = () => Reidratar([preliminarDesta], Recurso(preliminarDaOutraFase.Id));
 
@@ -89,7 +89,7 @@ public sealed class FaseCronogramaCandidatosAtendidosTests
     [Fact(DisplayName = "Contraprova: Reidratar aceita a âncora no produto preliminar da própria fase")]
     public void Reidratar_AncoraNoPreliminarDaPropriaFase_Aceita()
     {
-        ProdutoDaFase preliminar = ProdutoDaFase.Criar("RESULTADO_CLASSIFICACAO", PapelProdutoFase.Preliminar);
+        ProdutoDaFase preliminar = ProdutoDaFase.Criar("RESULTADO_CLASSIFICACAO", PapelDaPublicacaoPrevista.Preliminar);
 
         FaseCronograma fase = Reidratar([preliminar], Recurso(preliminar.Id));
 
@@ -101,7 +101,7 @@ public sealed class FaseCronogramaCandidatosAtendidosTests
     [Fact(DisplayName = "CA-03: fase que admite recurso e não publica produto preliminar é recusada")]
     public void RegraRecurso_SemProdutoPreliminar_Recusa()
     {
-        ProdutoDaFase definitivo = ProdutoDaFase.Criar("RESULTADO_CLASSIFICACAO", PapelProdutoFase.Definitivo);
+        ProdutoDaFase definitivo = ProdutoDaFase.Criar("RESULTADO_CLASSIFICACAO", PapelDaPublicacaoPrevista.Definitivo);
 
         Result<FaseCronograma> resultado = Criar(m => m with { OrigemData = OrigemDataFase.NaExecucao, Produtos = [definitivo], RegraRecurso = Recurso(definitivo.Id) });
 
@@ -124,10 +124,10 @@ public sealed class FaseCronogramaCandidatosAtendidosTests
     [Fact(DisplayName = "CA-01: a fase que publica preliminar E definitiva ancora o prazo no preliminar")]
     public void RegraRecurso_AncoraNoProdutoPreliminar_Aceita()
     {
-        ProdutoDaFase preliminar = ProdutoDaFase.Criar("RESULTADO_CLASSIFICACAO", PapelProdutoFase.Preliminar);
+        ProdutoDaFase preliminar = ProdutoDaFase.Criar("RESULTADO_CLASSIFICACAO", PapelDaPublicacaoPrevista.Preliminar);
         RegraRecursoFase regraRecurso = Recurso(preliminar.Id);
 
-        Result<FaseCronograma> resultado = Criar(m => m with { OrigemData = OrigemDataFase.NaExecucao, Produtos = [preliminar, ProdutoDaFase.Criar("RESULTADO_CLASSIFICACAO", PapelProdutoFase.Definitivo)], RegraRecurso = regraRecurso });
+        Result<FaseCronograma> resultado = Criar(m => m with { OrigemData = OrigemDataFase.NaExecucao, Produtos = [preliminar, ProdutoDaFase.Criar("RESULTADO_CLASSIFICACAO", PapelDaPublicacaoPrevista.Definitivo)], RegraRecurso = regraRecurso });
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
         resultado.Value!.RegraRecurso!.ProdutoAncoraId.Should().Be(preliminar.Id,
@@ -137,8 +137,8 @@ public sealed class FaseCronogramaCandidatosAtendidosTests
     [Fact(DisplayName = "CA-02: ancorar num produto que NÃO é preliminar desta fase é recusado")]
     public void RegraRecurso_AncoraForaDosPreliminares_Recusa()
     {
-        ProdutoDaFase preliminar = ProdutoDaFase.Criar("RESULTADO_CLASSIFICACAO", PapelProdutoFase.Preliminar);
-        ProdutoDaFase definitivo = ProdutoDaFase.Criar("RESULTADO_CLASSIFICACAO", PapelProdutoFase.Definitivo);
+        ProdutoDaFase preliminar = ProdutoDaFase.Criar("RESULTADO_CLASSIFICACAO", PapelDaPublicacaoPrevista.Preliminar);
+        ProdutoDaFase definitivo = ProdutoDaFase.Criar("RESULTADO_CLASSIFICACAO", PapelDaPublicacaoPrevista.Definitivo);
 
         Result<FaseCronograma> resultado = Criar(m => m with { OrigemData = OrigemDataFase.NaExecucao, Produtos = [preliminar, definitivo], RegraRecurso = Recurso(definitivo.Id) });
 
@@ -151,8 +151,8 @@ public sealed class FaseCronogramaCandidatosAtendidosTests
     [Fact(DisplayName = "CA-02: ancorar no produto de OUTRA fase que publica o MESMO tipo de ato é recusado")]
     public void RegraRecurso_AncoraNoProdutoHomonimoDeOutraFase_Recusa()
     {
-        ProdutoDaFase preliminarDaOutraFase = ProdutoDaFase.Criar("RESULTADO_CLASSIFICACAO", PapelProdutoFase.Preliminar);
-        ProdutoDaFase preliminarDesta = ProdutoDaFase.Criar("RESULTADO_CLASSIFICACAO", PapelProdutoFase.Preliminar);
+        ProdutoDaFase preliminarDaOutraFase = ProdutoDaFase.Criar("RESULTADO_CLASSIFICACAO", PapelDaPublicacaoPrevista.Preliminar);
+        ProdutoDaFase preliminarDesta = ProdutoDaFase.Criar("RESULTADO_CLASSIFICACAO", PapelDaPublicacaoPrevista.Preliminar);
 
         Result<FaseCronograma> resultado = Criar(m => m with { OrigemData = OrigemDataFase.NaExecucao, Produtos = [preliminarDesta], RegraRecurso = Recurso(preliminarDaOutraFase.Id) });
 
@@ -165,8 +165,8 @@ public sealed class FaseCronogramaCandidatosAtendidosTests
     [Fact(DisplayName = "CA-01: a fase que publica DOIS preliminares ancora no que declarou, não no outro")]
     public void RegraRecurso_DoisPreliminares_AncoraNoDeclarado()
     {
-        ProdutoDaFase gabarito = ProdutoDaFase.Criar("GABARITO", PapelProdutoFase.Preliminar);
-        ProdutoDaFase resultadoPreliminar = ProdutoDaFase.Criar("RESULTADO_CLASSIFICACAO", PapelProdutoFase.Preliminar);
+        ProdutoDaFase gabarito = ProdutoDaFase.Criar("GABARITO", PapelDaPublicacaoPrevista.Preliminar);
+        ProdutoDaFase resultadoPreliminar = ProdutoDaFase.Criar("RESULTADO_CLASSIFICACAO", PapelDaPublicacaoPrevista.Preliminar);
 
         Result<FaseCronograma> resultado = Criar(m => m with { OrigemData = OrigemDataFase.NaExecucao, Produtos = [gabarito, resultadoPreliminar], RegraRecurso = Recurso(resultadoPreliminar.Id) });
 

@@ -25,8 +25,8 @@ internal sealed class RespostaDaInscricaoRecordConfiguration : IEntityTypeConfig
         builder.Property(r => r.OcorrenciaId).HasComment("Identificador da ocorrência de grupo, quando a resposta pertence a um grupo repetível.");
         builder.Property(r => r.Posicao).HasComment("Posição do valor em uma resposta com vários valores; nula para valor único.");
         builder.Property(r => r.FatoCodigo).HasComment("Código do dado do candidato. Exemplos: RENDA_PER_CAPITA, CONCORRER_RENDA.");
-        builder.Property(r => r.Origem).HasComment("Origem da resposta: 1 informada pela pessoa candidata ou 2 calculada pelo sistema.");
-        builder.Property(r => r.Tipo).HasComment("Tipo do valor: 1 booleano, 2 número, 3 código, 4 texto, 5 data ou 7 município.");
+        builder.Property(r => r.Origem).HasComment("Origem da resposta: INFORMADA pela pessoa candidata ou CALCULADA pelo sistema.");
+        builder.Property(r => r.Tipo).HasComment("Tipo do valor: SIM_OU_NAO, NUMERO, OPCAO, TEXTO, DATA ou MUNICIPIO.");
         builder.Property(r => r.ValorBooleano).HasComment("Resposta booleana, quando aplicável.");
         builder.Property(r => r.ValorNumero).HasComment("Resposta numérica, quando aplicável.");
         builder.Property(r => r.ValorCodigo).HasComment("Código da opção ou município respondido, quando aplicável.");
@@ -35,19 +35,19 @@ internal sealed class RespostaDaInscricaoRecordConfiguration : IEntityTypeConfig
 
         builder.ToTable("respostas_da_inscricao", t =>
         {
-            t.HasComment("Um valor respondido na inscrição, na coluna do tipo do fato, com a origem: informado pelo candidato ou derivado de outra resposta.");
+            t.HasComment("Um valor respondido na inscrição, na coluna do tipo do fato, com a origem: informado pelo candidato ou calculado a partir de outra resposta.");
             t.HasCheckConstraint(
                 "ck_respostas_da_inscricao_valor_do_tipo",
-                "num_nonnulls(valor_booleano, valor_numero, valor_codigo, valor_texto, valor_data, valor_cifrado) = 1 AND tipo IN (1, 2, 3, 4, 5, 7) AND ("
+                "num_nonnulls(valor_booleano, valor_numero, valor_codigo, valor_texto, valor_data, valor_cifrado) = 1 AND tipo IN ('SIM_OU_NAO', 'NUMERO', 'OPCAO', 'TEXTO', 'DATA', 'MUNICIPIO') AND ("
                 + "valor_cifrado IS NOT NULL"
-                + " OR (tipo = 1 AND valor_booleano IS NOT NULL)"
-                + " OR (tipo = 2 AND valor_numero IS NOT NULL)"
-                + " OR (tipo = 3 AND valor_codigo IS NOT NULL)"
-                + " OR (tipo = 4 AND valor_texto IS NOT NULL)"
-                + " OR (tipo = 5 AND valor_data IS NOT NULL)"
-                + " OR (tipo = 7 AND valor_codigo IS NOT NULL))"
-                + " AND (valor_rotulo IS NULL OR (tipo = 7 AND valor_codigo IS NOT NULL))");
-            t.HasCheckConstraint("ck_respostas_da_inscricao_origem", "origem IN (1, 2)");
+                + " OR (tipo = 'SIM_OU_NAO' AND valor_booleano IS NOT NULL)"
+                + " OR (tipo = 'NUMERO' AND valor_numero IS NOT NULL)"
+                + " OR (tipo = 'OPCAO' AND valor_codigo IS NOT NULL)"
+                + " OR (tipo = 'TEXTO' AND valor_texto IS NOT NULL)"
+                + " OR (tipo = 'DATA' AND valor_data IS NOT NULL)"
+                + " OR (tipo = 'MUNICIPIO' AND valor_codigo IS NOT NULL))"
+                + " AND (valor_rotulo IS NULL OR (tipo = 'MUNICIPIO' AND valor_codigo IS NOT NULL))");
+            t.HasCheckConstraint("ck_respostas_da_inscricao_origem", "origem IN ('INFORMADA', 'CALCULADA')");
         });
 
         builder.HasKey(r => r.Id);
@@ -57,8 +57,8 @@ internal sealed class RespostaDaInscricaoRecordConfiguration : IEntityTypeConfig
         builder.Property(r => r.Posicao).ClassificaComo(ClassificacaoDeProtecao.Interno);
 
         builder.Property(r => r.FatoCodigo).HasColumnName("codigo_do_dado").ClassificaComo(ClassificacaoDeProtecao.Interno).HasMaxLength(FormaDoItem.FatoCodigoMaxLength).IsRequired();
-        builder.Property(r => r.Origem).ClassificaComo(ClassificacaoDeProtecao.Interno).HasConversion<int>().IsRequired();
-        builder.Property(r => r.Tipo).ClassificaComo(ClassificacaoDeProtecao.Interno).HasConversion<int>().IsRequired();
+        builder.Property(r => r.Origem).ClassificaComo(ClassificacaoDeProtecao.Interno).HasMaxLength(9).IsRequired().HasComment("Origem da resposta.");
+        builder.Property(r => r.Tipo).ClassificaComo(ClassificacaoDeProtecao.Interno).HasMaxLength(10).IsRequired().HasComment("Tipo do valor da resposta.");
         builder.Property(r => r.ValorCodigo).HasMaxLength(OpcaoDeclaradaFato.CodigoMaxLength);
         builder.Property(r => r.ValorRotulo)
             .HasComment("O nome que o Geo conferiu para o município de valor_codigo; nulo no rascunho e preenchido na inscrição enviada.");

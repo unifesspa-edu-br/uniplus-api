@@ -104,12 +104,12 @@ public sealed class ModalidadeValidacaoDosCamposTests
     [Fact(DisplayName = "ValidarCamposDoPayload não avalia coerência cruzada — é só o pré-check do handler")]
     public void ValidarCamposDoPayload_PayloadIncoerenteMasComTokensValidos_Aceita()
     {
-        // AMPLA + SEGUE_CASCATA é incoerente (invariante 3), mas ValidarCamposDoPayload
+        // AMPLA + SEGUE_ORDEM_DE_REMANEJAMENTO é incoerente (invariante 3), mas ValidarCamposDoPayload
         // não avalia coerência cruzada — só parse e tamanhos. A guarda do catálogo
         // legal fixo (handler) precisa rodar ANTES dessa incoerência ser reportada.
         Result r = ValidacaoDosCamposDaModalidade.ValidarCamposDoPayload(new DeclaracaoDaModalidade(
             Descricao: null, CodigoDaNaturezaLegal: "AMPLA", CodigoDaComposicaoDeVagas: "DENTRO_DA_RESERVA_LEGAL",
-            ComposicaoOrigem: null, CodigoDaRegraDeRemanejamento: "SEGUE_CASCATA", RemanejamentoDestino: null,
+            ComposicaoOrigem: null, CodigoDaRegraDeRemanejamento: "SEGUE_ORDEM_DE_REMANEJAMENTO", RemanejamentoDestino: null,
             RemanejamentoPar: null, RemanejamentoFallback: null, RegraDeAplicabilidade: Incondicional(),
             CodigoDaAcaoQuandoIndeferido: null, BaseLegal: null));
 

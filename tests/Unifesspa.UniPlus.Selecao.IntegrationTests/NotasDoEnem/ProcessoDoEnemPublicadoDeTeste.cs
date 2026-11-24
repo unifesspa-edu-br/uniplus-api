@@ -12,6 +12,7 @@ using Microsoft.Extensions.DependencyInjection;
 
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Authentication;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
@@ -128,10 +129,10 @@ internal static class ProcessoDoEnemPublicadoDeTeste
         Exigir(processo.DefinirClassificacao(
             ConfiguracaoClassificacao.Criar(new DeclaracaoDaClassificacao
             {
-                RegraCalculo = regras[RegraCalculoCodigo.FormulaMediaPonderada],
-                RegraArredondamento = regras[RegraArredondamentoCodigo.PrecisaoTruncar],
+                RegraCalculo = regras[RegraDeCalculoDaNota.MediaPonderada.Codigo()],
+                RegraArredondamento = regras[RegraDeArredondamentoDaNota.Truncar.Codigo()],
                 CasasArredondamento = 2,
-                RegraOrdemAlocacao = regras[RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria],
+                RegraOrdemAlocacao = regras[RegraDeOrdemDeAlocacao.PrimeiraOpcaoPrioritaria.Codigo()],
                 BaseadoEmEnem = true,
                 ResolucaoPesoAreaEnem = QuadroPesoAreaEnemDeTeste.Resolucao,
                 QuadroPesoAreaEnem = QuadroPesoAreaEnemDeTeste.Completo(),
@@ -142,13 +143,10 @@ internal static class ProcessoDoEnemPublicadoDeTeste
 
     private static ConfiguracaoDistribuicaoVagas DistribuicaoDaOferta(Guid ofertaCursoOrigemId, (string? Codigo, string? Rotulo) grupoAreaEnem, OfertaCursoSnapshot ofertaCurso, Dictionary<string, ReferenciaRegra> regras)
     {
-        ModalidadeSelecionada modalidade = ModalidadeSelecionada.Criar(
-            Guid.CreateVersion7(), "AC", "Ampla concorrência", NaturezaLegalModalidade.Ampla, ComposicaoVagasModalidade.RestanteDasVagasOfertadas,
-            null, RegraRemanejamentoModalidade.Nenhuma, null, null, null,
-            RegrasDeAplicabilidadeDeTeste.DaNatureza(NaturezaLegalModalidade.Ampla), null, "Res. Unifesspa 532/2021", quantidadeDeclarada: 40).Value!;
+        ModalidadeSelecionada modalidade = ModalidadeSelecionada.Criar(ModalidadesNoCadastroDeTeste.Da("AC", NaturezaLegalModalidade.Ampla, ComposicaoVagasModalidade.RestanteDasVagasOfertadas) with { Descricao = "Ampla concorrência", RegraRemanejamento = null, BaseLegal = "Res. Unifesspa 532/2021" }, 40).Value!;
 
         return ConfiguracaoDistribuicaoVagas.Criar(ofertaCursoOrigemId,
-            new DistribuicaoDeVagasDeclarada { VagasOfertadasBase = 40, PercentualDaReservaLegal = 1m, RegraDeDistribuicao = Copiar(regras[RegraDistribuicaoVagasCodigo.Institucional]), Modalidades = [modalidade] },
+            new DistribuicaoDeVagasDeclarada { VagasOfertadasBase = 40, PercentualDaReservaLegal = 1m, RegraDeDistribuicao = Copiar(regras[RegraDeDistribuicaoDeVagas.Institucional.Codigo()]), Modalidades = [modalidade] },
             new FatosDaOfertaNoCadastro { GrupoAreaEnem = grupoAreaEnem, OfertaCurso = ofertaCurso }).Value!;
     }
 

@@ -14,7 +14,7 @@ public sealed class ApuracaoDoEnvioTests
     public void Construir_ColecoesAlteradasDepois_PreservaValoresApurados()
     {
         Dictionary<string, JsonElement> derivados = new() { ["UF_RESIDENCIA"] = JsonSerializer.SerializeToElement("PA") };
-        Dictionary<string, DefinicaoDaResposta> definicoes = new() { ["UF_RESIDENCIA"] = new(TipoDoValorDeResposta.Codigo, false, false) };
+        Dictionary<string, DefinicaoDaResposta> definicoes = new() { ["UF_RESIDENCIA"] = new(TipoDoValorDeResposta.Opcao, false, false) };
         List<ArquivoConfirmado> arquivos = [];
         ApuracaoDoEnvio apuracao = new(FormularioDeTeste.AvaliacaoSemOcultos, derivados, definicoes, arquivos);
         derivados.Clear();
@@ -31,7 +31,7 @@ public sealed class ApuracaoDoEnvioTests
     {
         ApuracaoDoEnvio apuracao = new(FormularioDeTeste.AvaliacaoSemOcultos,
             new Dictionary<string, JsonElement> { ["UF_RESIDENCIA"] = JsonSerializer.SerializeToElement(1234) },
-            new Dictionary<string, DefinicaoDaResposta> { ["UF_RESIDENCIA"] = new(TipoDoValorDeResposta.Codigo, false, false) }, []);
+            new Dictionary<string, DefinicaoDaResposta> { ["UF_RESIDENCIA"] = new(TipoDoValorDeResposta.Opcao, false, false) }, []);
 
         apuracao.RecusasDosDerivados().Should().ContainSingle().Which.Field.Should().Be("UF_RESIDENCIA");
         apuracao.RecusasDosDerivados().Single().Error.Message.Should().NotContain("1234");
@@ -44,7 +44,7 @@ public sealed class ApuracaoDoEnvioTests
         List<string> fatos = ["CONCORRER_PCD"];
         ResultadoDaAvaliacaoDaInscricao avaliacao = FormularioDeTeste.AvaliacaoSemOcultos with
         {
-            Modalidades = new(true, SituacaoDasModalidades.Concorre, itens, [], new(fatos, [])),
+            Modalidades = new(SituacaoDasModalidades.Concorre, itens, [], new(fatos, [])),
         };
         ModalidadesDoEnvio modalidades = ModalidadesDoEnvio.DaAvaliacao(avaliacao, OpcoesDeCursoDaInscricao.Reidratar(null, null));
         itens.Clear();

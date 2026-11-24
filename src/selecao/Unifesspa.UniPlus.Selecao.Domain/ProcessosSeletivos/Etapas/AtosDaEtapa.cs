@@ -15,7 +15,7 @@ public sealed record AtosDaEtapa
         TiposDeDecisao = TiposDeDecisaoDeclarados.Canonicos(publicacoes.TiposDeDecisao);
         TemRecursos = publicacoes.Recursos.Count > 0;
         Recursos = [.. publicacoes.Recursos.Select(RecursoDeclarado.Da)];
-        TemRecursoEmAto = publicacoes.Recursos.Any(static recurso => recurso.Ancora == AncoraDoRecurso.AtoPublicado);
+        TemRecursoEmAto = publicacoes.Recursos.Any(static recurso => recurso.Ancora == EventoInicialDoPrazo.PublicacaoDoAto);
         Produtos = [.. publicacoes.Produtos.Select(static (produto, posicao) => (posicao, produto.AtoCodigo, produto.Papel))];
     }
 
@@ -33,7 +33,7 @@ public sealed record AtosDaEtapa
 
     public bool TemRecursoEmAto { get; }
 
-    public IReadOnlyList<(int Posicao, string AtoCodigo, PapelProdutoFase? Papel)> Produtos { get; }
+    public IReadOnlyList<(int Posicao, string AtoCodigo, PapelDaPublicacaoPrevista? Papel)> Produtos { get; }
 
     public bool TemProdutos => Produtos.Count > 0;
 

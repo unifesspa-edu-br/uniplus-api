@@ -152,13 +152,14 @@ public sealed record DocumentoAusente(IReadOnlyList<DocumentoExigido> Alternativ
 /// neles que o candidato confere as respostas quando não concorre a nenhuma.
 /// </summary>
 public sealed record ModalidadesDeConcorrencia(
-    bool Derivada,
-    SituacaoDasModalidades Situacao,
+    SituacaoDasModalidades? Situacao,
     IReadOnlyList<ModalidadeDeConcorrencia> Itens,
     IReadOnlyList<PendenciaDaAvaliacao> Pendencias,
     DependenciasDaAvaliacao Dependencias)
 {
-    public static ModalidadesDeConcorrencia SemDerivacao { get; } = new(false, SituacaoDasModalidades.Nenhuma, [], [], new DependenciasDaAvaliacao([], []));
+    public bool Derivada => Situacao.HasValue;
+
+    public static ModalidadesDeConcorrencia SemDerivacao { get; } = new(null, [], [], new DependenciasDaAvaliacao([], []));
 }
 
 /// <summary>Uma modalidade em que o candidato concorre: o código, o nome congelado e a posição na ordem das ofertadas.</summary>

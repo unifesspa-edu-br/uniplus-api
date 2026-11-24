@@ -3,9 +3,11 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Configurations;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence.CodigosDeContrato;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Protecao;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
+using Unifesspa.UniPlus.Selecao.Domain.Enums;
 
 /// <summary>
 /// Mapeamento de <see cref="ProdutoDaEtapa"/> — filha de <see cref="EtapaProcesso"/>, no
@@ -21,13 +23,17 @@ public sealed class ProdutoDaEtapaConfiguration : IEntityTypeConfiguration<Produ
 
         builder.ClassificaPorPadrao(ClassificacaoDeProtecao.Interno);
 
-        builder.ToTable("publicacoes_previstas_da_etapa", tabela => tabela.HasComment("Publicações previstas para uma etapa de avaliação."));
+        builder.ToTable("publicacoes_previstas_da_etapa", tabela =>
+        {
+            tabela.HasComment("Publicações previstas para uma etapa de avaliação.");
+            tabela.HasCheckConstraint("ck_publicacoes_previstas_da_etapa_papel", $"papel IS NULL OR papel IN ({SqlDosCodigosDeContrato.Lista<PapelDaPublicacaoPrevista>()})");
+        });
         builder.Property(p => p.EtapaProcessoId).HasComment("Identificador do registro ao qual esta configuração pertence.");
         builder.HasKey(p => p.Id);
         builder.Property(p => p.Id).HasComment("Identificador do registro.").ValueGeneratedNever();
 
         builder.Property(p => p.AtoCodigo).HasComment("Código do ato previsto para publicação.").HasMaxLength(AtoCodigoMaxLength).IsRequired();
-        builder.Property(p => p.Papel).HasComment("Papel da publicação no resultado, quando aplicável: 1 (preliminar) ou 2 (definitivo).").HasConversion<int>();
+        builder.Property(p => p.Papel).HasMaxLength(TamanhoDoCodigoDeContrato.Maximo).HasComment("Papel da publicação no resultado, quando aplicável: PRELIMINAR ou DEFINITIVO.");
 
         // O par ato + papel uma única vez por etapa, pela mesma razão dos produtos da fase:
         // a matéria é uma, o papel é que distingue a publicação que abre o ciclo recursal da

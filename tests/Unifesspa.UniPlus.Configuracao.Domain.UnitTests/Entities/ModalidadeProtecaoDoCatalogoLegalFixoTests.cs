@@ -19,7 +19,7 @@ public sealed class ModalidadeProtecaoDoCatalogoLegalFixoTests
 
         Result r = m.Atualizar(new DeclaracaoDaModalidade(
             Descricao: "Cota", CodigoDaNaturezaLegal: "AMPLA", CodigoDaComposicaoDeVagas: "DENTRO_DA_RESERVA_LEGAL",
-            ComposicaoOrigem: null, CodigoDaRegraDeRemanejamento: "SEGUE_CASCATA",
+            ComposicaoOrigem: null, CodigoDaRegraDeRemanejamento: "SEGUE_ORDEM_DE_REMANEJAMENTO",
             RemanejamentoDestino: null, RemanejamentoPar: null, RemanejamentoFallback: null,
             RegraDeAplicabilidade: AplicavelA("AMPLA"), CodigoDaAcaoQuandoIndeferido: null, BaseLegal: "Lei 12.711/2012"));
 
@@ -35,7 +35,7 @@ public sealed class ModalidadeProtecaoDoCatalogoLegalFixoTests
 
         Result r = m.Atualizar(new DeclaracaoDaModalidade(
             Descricao: "Cota", CodigoDaNaturezaLegal: "COTA_RESERVADA", CodigoDaComposicaoDeVagas: "SUPLEMENTAR_AO_TOTAL",
-            ComposicaoOrigem: null, CodigoDaRegraDeRemanejamento: "SEGUE_CASCATA",
+            ComposicaoOrigem: null, CodigoDaRegraDeRemanejamento: "SEGUE_ORDEM_DE_REMANEJAMENTO",
             RemanejamentoDestino: null, RemanejamentoPar: null, RemanejamentoFallback: null,
             RegraDeAplicabilidade: AplicavelA("COTA_RESERVADA"), CodigoDaAcaoQuandoIndeferido: null, BaseLegal: "Lei 12.711/2012"));
 
@@ -51,7 +51,7 @@ public sealed class ModalidadeProtecaoDoCatalogoLegalFixoTests
 
         Result r = m.Atualizar(new DeclaracaoDaModalidade(
             Descricao: "Cota", CodigoDaNaturezaLegal: "COTA_RESERVADA", CodigoDaComposicaoDeVagas: "DENTRO_DA_RESERVA_LEGAL",
-            ComposicaoOrigem: "AC", CodigoDaRegraDeRemanejamento: "SEGUE_CASCATA",
+            ComposicaoOrigem: "AC", CodigoDaRegraDeRemanejamento: "SEGUE_ORDEM_DE_REMANEJAMENTO",
             RemanejamentoDestino: null, RemanejamentoPar: null, RemanejamentoFallback: null,
             RegraDeAplicabilidade: AplicavelA("COTA_RESERVADA"), CodigoDaAcaoQuandoIndeferido: null, BaseLegal: "Lei 12.711/2012"));
 
@@ -73,7 +73,7 @@ public sealed class ModalidadeProtecaoDoCatalogoLegalFixoTests
 
         r.IsFailure.Should().BeTrue();
         r.Error!.Code.Should().Be(ModalidadeErrorCodes.EstruturaProtegidaNaoEditavel);
-        m.RegraRemanejamento.Should().Be(RegraRemanejamento.SegueCascata);
+        m.RegraRemanejamento.Should().Be(RegraRemanejamento.SegueOrdemDeRemanejamento);
     }
 
     [Fact(DisplayName = "Legal fixa recusa alteração da regra de aplicabilidade")]
@@ -83,7 +83,7 @@ public sealed class ModalidadeProtecaoDoCatalogoLegalFixoTests
 
         Result r = m.Atualizar(new DeclaracaoDaModalidade(
             Descricao: "Cota", CodigoDaNaturezaLegal: "COTA_RESERVADA", CodigoDaComposicaoDeVagas: "DENTRO_DA_RESERVA_LEGAL",
-            ComposicaoOrigem: null, CodigoDaRegraDeRemanejamento: "SEGUE_CASCATA",
+            ComposicaoOrigem: null, CodigoDaRegraDeRemanejamento: "SEGUE_ORDEM_DE_REMANEJAMENTO",
             RemanejamentoDestino: null, RemanejamentoPar: null, RemanejamentoFallback: null,
             RegraDeAplicabilidade: ComOpcaoPelasCotas(optou: true, ("BAIXA_RENDA", true)), CodigoDaAcaoQuandoIndeferido: null,
             BaseLegal: "Lei 12.711/2012"));
@@ -101,7 +101,7 @@ public sealed class ModalidadeProtecaoDoCatalogoLegalFixoTests
 
         Result r = m.Atualizar(new DeclaracaoDaModalidade(
             Descricao: "Cota", CodigoDaNaturezaLegal: "COTA_RESERVADA", CodigoDaComposicaoDeVagas: "DENTRO_DA_RESERVA_LEGAL",
-            ComposicaoOrigem: null, CodigoDaRegraDeRemanejamento: "SEGUE_CASCATA",
+            ComposicaoOrigem: null, CodigoDaRegraDeRemanejamento: "SEGUE_ORDEM_DE_REMANEJAMENTO",
             RemanejamentoDestino: null, RemanejamentoPar: null, RemanejamentoFallback: null,
             RegraDeAplicabilidade: AplicavelA("COTA_RESERVADA"), CodigoDaAcaoQuandoIndeferido: "RECLASSIFICAR_AC",
             BaseLegal: "Lei 12.711/2012"));
@@ -141,7 +141,7 @@ public sealed class ModalidadeProtecaoDoCatalogoLegalFixoTests
 
         Result r = m.Atualizar(new DeclaracaoDaModalidade(
             Descricao: "Cota — baixa renda, preto/pardo/indígena", CodigoDaNaturezaLegal: "COTA_RESERVADA",
-            CodigoDaComposicaoDeVagas: "DENTRO_DA_RESERVA_LEGAL", ComposicaoOrigem: null, CodigoDaRegraDeRemanejamento: "SEGUE_CASCATA",
+            CodigoDaComposicaoDeVagas: "DENTRO_DA_RESERVA_LEGAL", ComposicaoOrigem: null, CodigoDaRegraDeRemanejamento: "SEGUE_ORDEM_DE_REMANEJAMENTO",
             RemanejamentoDestino: null, RemanejamentoPar: null, RemanejamentoFallback: null,
             RegraDeAplicabilidade: ComOpcaoPelasCotas(optou: true, ("BAIXA_RENDA", true)), CodigoDaAcaoQuandoIndeferido: null,
             BaseLegal: "Lei 12.711/2012 (red. Lei 14.723/2023)"));
@@ -159,7 +159,7 @@ public sealed class ModalidadeProtecaoDoCatalogoLegalFixoTests
 
         Result r = m.Atualizar(new DeclaracaoDaModalidade(
             Descricao: null, CodigoDaNaturezaLegal: "XPTO", CodigoDaComposicaoDeVagas: "DENTRO_DA_RESERVA_LEGAL",
-            ComposicaoOrigem: null, CodigoDaRegraDeRemanejamento: "SEGUE_CASCATA",
+            ComposicaoOrigem: null, CodigoDaRegraDeRemanejamento: "SEGUE_ORDEM_DE_REMANEJAMENTO",
             RemanejamentoDestino: null, RemanejamentoPar: null, RemanejamentoFallback: null,
             RegraDeAplicabilidade: AplicavelA("XPTO"), CodigoDaAcaoQuandoIndeferido: null, BaseLegal: null));
 

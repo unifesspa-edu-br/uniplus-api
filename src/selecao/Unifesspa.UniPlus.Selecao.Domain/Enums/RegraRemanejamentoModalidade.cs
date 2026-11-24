@@ -1,22 +1,16 @@
 namespace Unifesspa.UniPlus.Selecao.Domain.Enums;
 
-/// <summary>
-/// Regra de remanejamento da modalidade quando suas vagas não são preenchidas
-/// (snapshot-copy do <c>RegraRemanejamento</c> de <c>Modalidade</c>, ADR-0061).
-/// <see cref="Nenhuma"/> é o valor de modalidades que não remanejam (ex.:
-/// ampla concorrência, suplementares institucionais).
-/// </summary>
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
+
+/// <summary>Valores de RegraRemanejamentoModalidade.</summary>
 public enum RegraRemanejamentoModalidade
 {
-    /// <summary>Modalidade não remaneja (ex.: AC, suplementar institucional).</summary>
-    Nenhuma = 0,
+    [CodigoDeContrato("SEGUE_ORDEM_DE_REMANEJAMENTO", "Segue a ordem de remanejamento", Descricao = "As vagas seguem a ordem legal de remanejamento.")]
+    SegueOrdemDeRemanejamento = 1,
 
-    /// <summary>Segue a cascata legal 8×7 da Lei 12.711 — obrigatória para <see cref="NaturezaLegalModalidade.CotaReservada"/>.</summary>
-    SegueCascata = 1,
-
-    /// <summary>Remaneja para um destino único e fixo (<see cref="ModalidadeSelecionada.RemanejamentoDestino"/>).</summary>
+    [CodigoDeContrato("DESTINO_UNICO", "Destino único", Descricao = "As vagas seguem para uma modalidade de destino.")]
     DestinoUnico = 2,
 
-    /// <summary>Remanejamento cruzado com par + fallback (ex.: PSIQ IND↔QUIL).</summary>
+    [CodigoDeContrato("CRUZADO", "Remanejamento cruzado", Descricao = "As vagas são remanejadas entre modalidades pareadas.")]
     Cruzado = 3,
 }

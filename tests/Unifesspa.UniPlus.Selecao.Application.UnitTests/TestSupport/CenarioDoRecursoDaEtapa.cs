@@ -7,6 +7,7 @@ using AwesomeAssertions;
 using NSubstitute;
 
 using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Domain.Entities;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Publicacoes.Contracts;
@@ -77,7 +78,7 @@ internal sealed class CenarioDoRecursoDaEtapa
         bool comRecurso = true,
         bool admiteInstanciaSuperior = false,
         IReadOnlyList<ProdutoDaEtapaInput>? produtos = null) => new(
-        nome, CaraterEtapa.Classificatoria, TipoProvaObjetivaOrigemId, 1m, null, 1, id,
+        nome, CaraterEtapa.Classificatoria.Codigo(), TipoProvaObjetivaOrigemId, 1m, null, 1, id,
         Produtos: produtos ?? [Preliminar, Definitivo],
         Bancas: [],
         Recursos: comRecurso ? [Recurso(admiteInstanciaSuperior)] : []);
@@ -112,11 +113,11 @@ internal sealed class CenarioDoRecursoDaEtapa
     }
 
     private static RecursoDaEtapaInput Recurso(bool admiteInstanciaSuperior) => new(
-        AncoraDoRecurso.AtoPublicado, "RECURSO-PRAZO-ANCORADO-EM-ATO", "v1", 2m, "diasUteis", TipoDoAto,
-        admiteInstanciaSuperior, admiteInstanciaSuperior ? 3m : null, admiteInstanciaSuperior ? "diasUteis" : null, "semEfeitoSuspensivo", null);
+        EventoInicialDoPrazo.PublicacaoDoAto.Codigo(), "RECURSO_PRAZO_CONTADO_DA_PUBLICACAO_DO_ATO", "v1", 2m, "DIAS_UTEIS", TipoDoAto,
+        admiteInstanciaSuperior, admiteInstanciaSuperior ? 3m : null, admiteInstanciaSuperior ? "DIAS_UTEIS" : null, "SEM_EFEITO_SUSPENSIVO", null);
 
     private static RegraCatalogo RegraDePrazoDoRecurso() => RegraCatalogo.Criar(
-        "RECURSO-PRAZO-ANCORADO-EM-ATO", "v1", TipoRegra.RegraPrazoRecurso,
+        "RECURSO_PRAZO_CONTADO_DA_PUBLICACAO_DO_ATO", "v1", TipoRegra.RegraPrazoRecurso,
         JsonDocument.Parse("{}").RootElement, JsonDocument.Parse("[]").RootElement, "Lei 9.784/1999, art. 59");
 
     private Task<Result> ExecutarComOCatalogo(EtapaProcessoInput etapa, ITipoAtoPublicadoReader catalogo) =>

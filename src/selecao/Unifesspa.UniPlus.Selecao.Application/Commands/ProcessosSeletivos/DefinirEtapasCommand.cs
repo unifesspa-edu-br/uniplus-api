@@ -95,7 +95,7 @@ using Unifesspa.UniPlus.Selecao.Application.DTOs;
 /// </remarks>
 public sealed record EtapaProcessoInput(
     string Nome,
-    CaraterEtapa Carater,
+    [property: AceitaCodigosDe<CaraterEtapa>] string? Carater,
     Guid TipoEtapaOrigemId,
     decimal? Peso,
     decimal? NotaMinima,
@@ -110,7 +110,7 @@ public sealed record EtapaProcessoInput(
     [property: JsonRequired] IReadOnlyList<RecursoDaEtapaInput> Recursos = null!,
     decimal? NotaMaxima = null,
     decimal? PassoDoLancamento = null,
-    string? FormaDeAvaliacao = null,
+    [property: AceitaCodigosDe<FormaDeAvaliacao>] string? FormaDeAvaliacao = null,
     string? RegraConsolidacaoCodigo = null,
     string? RegraConsolidacaoVersao = null,
     IReadOnlyList<ItemDeAvaliacaoInput>? ItensDeAvaliacao = null,
@@ -150,7 +150,7 @@ public sealed record BancaDaEtapaInput(Guid TipoBancaId, RegraDeDeliberacaoInput
 /// <param name="EfeitoSuspensivo">Código do efeito suspensivo da 1ª instância; obrigatório.</param>
 /// <param name="GuardaDaVaga">Código da guarda da vaga; ausente vale guardar até o resultado definitivo.</param>
 public sealed record RecursoDaEtapaInput(
-    AncoraDoRecurso Ancora,
+    [property: AceitaCodigosDe<EventoInicialDoPrazo>] string? Ancora,
     string RegraCodigo,
     string RegraVersao,
     decimal? PrazoValor,
@@ -164,8 +164,8 @@ public sealed record RecursoDaEtapaInput(
     IReadOnlyList<ProcedimentoDeRecursoInput>? Procedimentos = null);
 
 /// <summary>O que uma etapa publica: o código do tipo de ato e o papel no ciclo recursal.</summary>
-/// <param name="Papel">Token UPPER_SNAKE, como o produto da fase o recebe.</param>
-public sealed record ProdutoDaEtapaInput(string AtoCodigo, string? Papel);
+/// <param name="Papel">Código de <see cref="PapelDaPublicacaoPrevista"/>, como o produto da fase o recebe.</param>
+public sealed record ProdutoDaEtapaInput(string AtoCodigo, [property: AceitaCodigosDe<PapelDaPublicacaoPrevista>] string? Papel);
 
 /// <summary>
 /// Substitui integralmente as etapas pontuadas do processo (CA-02 da Story

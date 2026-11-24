@@ -4,6 +4,7 @@ using System.Text.Json;
 
 using AwesomeAssertions;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.Formularios;
@@ -31,8 +32,8 @@ public sealed class EdicaoDoEnemNaInscricaoTests
     private static ConfiguracaoClassificacao ClassificacaoImportadaDoEnem() =>
         ConfiguracaoClassificacao.Criar(new DeclaracaoDaClassificacao
         {
-            RegraCalculo = ProcessoConformeFactory.Regra(RegraCalculoCodigo.ClassificacaoImportada, "a"),
-            RegraOrdemAlocacao = ProcessoConformeFactory.Regra(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, "c"),
+            RegraCalculo = ProcessoConformeFactory.Regra(RegraDeCalculoDaNota.ClassificacaoImportada.Codigo(), "a"),
+            RegraOrdemAlocacao = ProcessoConformeFactory.Regra(RegraDeOrdemDeAlocacao.PrimeiraOpcaoPrioritaria.Codigo(), "c"),
             BaseadoEmEnem = true,
         }).Value!;
 
@@ -136,8 +137,8 @@ public sealed class EdicaoDoEnemNaInscricaoTests
     private static ConfiguracaoClassificacao ClassificacaoImportadaSemEnem() =>
         ConfiguracaoClassificacao.Criar(new DeclaracaoDaClassificacao
         {
-            RegraCalculo = ProcessoConformeFactory.Regra(RegraCalculoCodigo.ClassificacaoImportada, "a"),
-            RegraOrdemAlocacao = ProcessoConformeFactory.Regra(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, "c"),
+            RegraCalculo = ProcessoConformeFactory.Regra(RegraDeCalculoDaNota.ClassificacaoImportada.Codigo(), "a"),
+            RegraOrdemAlocacao = ProcessoConformeFactory.Regra(RegraDeOrdemDeAlocacao.PrimeiraOpcaoPrioritaria.Codigo(), "c"),
         }).Value!;
 
     [Fact(DisplayName = "A classificação que deixa de ser baseada em ENEM retira as edições do ENEM declaradas")]

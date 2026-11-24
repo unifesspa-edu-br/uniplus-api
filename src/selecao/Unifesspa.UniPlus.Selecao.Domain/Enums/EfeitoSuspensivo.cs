@@ -9,7 +9,7 @@ using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 public enum EfeitoSuspensivo
 {
     [CodigoDeContrato(
-        "semEfeitoSuspensivo",
+        "SEM_EFEITO_SUSPENSIVO",
         "Sem efeito suspensivo",
         Descricao = "O recurso não suspende o processo: as fases seguintes começam nas datas do cronograma, mesmo com recurso em análise.")]
     SemEfeitoSuspensivo = 1,

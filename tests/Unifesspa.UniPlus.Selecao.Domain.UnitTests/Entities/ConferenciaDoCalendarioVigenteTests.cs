@@ -2,6 +2,7 @@ namespace Unifesspa.UniPlus.Selecao.Domain.UnitTests.Entities;
 
 using AwesomeAssertions;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Kernel.Tempo;
 using Unifesspa.UniPlus.Regras.Formularios;
@@ -51,7 +52,7 @@ public sealed class ConferenciaDoCalendarioVigenteTests
     private static readonly Guid ProdutoPreliminarId = new("77770000-0000-4000-8000-000000000002");
 
     private static RegraRecursoFase Recurso(UnidadePrazo unidade) => RegraRecursoFase.Criar(
-        Regra(RegraPrazoRecursoCodigo.AncoradoEmAto, 'd'),
+        Regra(RegraDePrazoDoRecurso.ContadoDaPublicacaoDoAto.Codigo(), 'd'),
         ParametrosDoRecursoDeTeste.Declarados(unidade == UnidadePrazo.Horas ? 48m : 2m, unidade),
         ProdutoPreliminarId).Value!;
 
@@ -80,8 +81,8 @@ public sealed class ConferenciaDoCalendarioVigenteTests
         new PublicacoesDaFase(
             Produtos:
             [
-                ProdutoDaFase.Reidratar(ProdutoPreliminarId, "RESULTADO_CLASSIFICACAO", PapelProdutoFase.Preliminar),
-                ProdutoDaFase.Criar("RESULTADO_CLASSIFICACAO", PapelProdutoFase.Definitivo),
+                ProdutoDaFase.Reidratar(ProdutoPreliminarId, "RESULTADO_CLASSIFICACAO", PapelDaPublicacaoPrevista.Preliminar),
+                ProdutoDaFase.Criar("RESULTADO_CLASSIFICACAO", PapelDaPublicacaoPrevista.Definitivo),
             ],
             EmiteParecerIndividual: false, RegraRecurso: Recurso(unidade)),
         bancasRequeridas: [BancasDeTeste.DeRecursosDaFase()]).Value!;
@@ -111,7 +112,7 @@ public sealed class ConferenciaDoCalendarioVigenteTests
     }
 
     private static void DeclararAConvencao(ProcessoSeletivo processo) =>
-        processo.DefinirAlgoritmoContagemPrazo(Regra(AlgoritmoContagemPrazoCodigo.AvancaDataUtil, 'e'))
+        processo.DefinirAlgoritmoContagemPrazo(Regra(ConvencaoDeContagemDoPrazo.AvancaDataUtil.Codigo(), 'e'))
             .IsSuccess.Should().BeTrue();
 
     private static IReadOnlyList<ItemConformidade> Checklist(ProcessoSeletivo processo, ContextoDeContagemDePrazos contexto) =>

@@ -1,26 +1,19 @@
 namespace Unifesspa.UniPlus.Selecao.Domain.Enums;
 
-/// <summary>
-/// Forma de composição aritmética da modalidade no total de vagas da oferta
-/// (snapshot-copy do <c>ComposicaoVagas</c> de <c>Modalidade</c>, ADR-0061).
-/// Determina como a modalidade entra na fórmula de conservação do
-/// <c>QuadroDeVagas</c> (derivado, motor futuro):
-/// <c>reserva legal final + retiradas + ampla concorrência = vagas ofertadas base</c> e
-/// <c>total de vagas do edital = vagas ofertadas base + Σ(SuplementarAoTotal)</c>.
-/// </summary>
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
+
+/// <summary>Valores de ComposicaoVagasModalidade.</summary>
 public enum ComposicaoVagasModalidade
 {
-    Nenhuma = 0,
-
-    /// <summary>Ampla concorrência: o residual das vagas ofertadas base após as reservas.</summary>
+    [CodigoDeContrato("RESTANTE_DAS_VAGAS_OFERTADAS", "Restante das vagas ofertadas", Descricao = "Vagas restantes após as reservas.")]
     RestanteDasVagasOfertadas = 1,
 
-    /// <summary>Sub-reserva dentro do total da reserva legal da Lei 12.711.</summary>
+    [CodigoDeContrato("DENTRO_DA_RESERVA_LEGAL", "Dentro da reserva legal", Descricao = "Vagas incluídas na reserva legal.")]
     DentroDaReservaLegal = 2,
 
-    /// <summary>Retira vagas de outra modalidade (<see cref="ModalidadeSelecionada.ComposicaoOrigemCodigo"/>) — não soma ao total.</summary>
+    [CodigoDeContrato("RETIRADA_DE_OUTRA_MODALIDADE", "Retirada de outra modalidade", Descricao = "Vagas retiradas de outra modalidade.")]
     RetiradaDeOutraModalidade = 3,
 
-    /// <summary>Soma ao total de vagas do edital (<c>vagas ofertadas base + n</c>) — vaga institucional adicional.</summary>
+    [CodigoDeContrato("SUPLEMENTAR_AO_TOTAL", "Suplementar ao total", Descricao = "Vagas adicionais ao total ofertado.")]
     SuplementarAoTotal = 4,
 }

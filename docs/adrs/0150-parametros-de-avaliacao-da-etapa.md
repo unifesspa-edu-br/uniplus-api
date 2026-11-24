@@ -94,7 +94,7 @@ A decisão permanece: a etapa declara a forma de avaliação e a regra de consol
 
 - **Sinalizador "exige correção independente".** O cadastro do tipo de etapa ganha o sinalizador "exige correção independente", ligado nos tipos redação, carta de intenção e provas discursivas (UNI-REQ-0175, UNI-REQ-0097). A publicação do edital **recusa a etapa de tipo com o sinalizador cuja regra de consolidação tem menos de dois corretores distintos** (UNI-REQ-0393), e a avaliação única, de um só corretor, é o caso comum. O número vem da versão da regra no catálogo, lido ao congelar, e a regra cujo número não foi lido é recusada, sem presumir valor; a gravação da etapa não recusa a regra. O sinalizador é o que a ADR já previa para o caso de o PO decidir que a correção independente é obrigatória; o tipo, nesses casos, restringe a regra, como já restringe o caráter.
 - **Tipo de regra "procedimento de recurso".** O rol de regras ganha o tipo **procedimento de recurso**, de lista fechada, versionado e congelado na publicação, como as demais regras. O edital o declara **por matéria do ciclo**, identificada pelo produtor (fase ou etapa), pelo tipo de decisão e por um alvo opcional.
-- **Corretores da regra de consolidação.** O número de **corretores distintos** é dado da versão da regra de consolidação: `CONSOLIDACAO-CORRECAO-INDEPENDENTE`, 3; `CONSOLIDACAO-AVALIACAO-UNICA`, 1; sem consolidação humana, 0.
+- **Corretores da regra de consolidação.** O número de **corretores distintos** é dado da versão da regra de consolidação: `APURACAO_CORRECAO_INDEPENDENTE`, 3; `APURACAO_AVALIACAO_UNICA`, 1; sem consolidação humana, 0.
 
 Nenhum outro trecho desta ADR muda.
 
@@ -113,13 +113,13 @@ Nenhum outro trecho desta ADR muda.
 
 **Contexto.** A emenda 2 prevê a consolidação categórica com critério e tratamento declarados pela versão, sem fixar o formato nem o conjunto de tratamentos. A apuração do valor do conceito precisa desses dados lidos do catálogo, e nenhum deles pode ficar fixo no código, porque as bancas variam o critério, o número de corretores e o que fazer quando os corretores não chegam a um valor.
 
-**Decisão.** O rol ganha três regras de consolidação, `CONSOLIDACAO-CONCEITO-UNANIMIDADE`, `CONSOLIDACAO-CONCEITO-MAIORIA-SIMPLES` e `CONSOLIDACAO-CONCEITO-MAIORIA-ABSOLUTA`, aplicáveis só ao conceito categórico. A versão da regra declara no `declaracao_da_regra`:
+**Decisão.** O rol ganha três regras de consolidação, `APURACAO_CONCEITO_UNANIMIDADE`, `APURACAO_CONCEITO_MAIORIA_SIMPLES` e `APURACAO_CONCEITO_MAIORIA_ABSOLUTA`, aplicáveis só ao conceito categórico. A versão da regra declara no `declaracao_da_regra`:
 
-- `criterio`: `unanimidade`, `maioria_simples` ou `maioria_absoluta`;
+- `criterio`: `UNANIMIDADE`, `MAIORIA_SIMPLES` ou `MAIORIA_ABSOLUTA`;
 - `corretores_distintos`: o número de corretores que a versão exige;
 - `naturezas_do_conceito`: as naturezas a que a versão se aplica;
-- `quando_nao_consolida`: o tratamento quando o critério não converge (falta de unanimidade ou empate), `novo_corretor` ou `decisao_da_banca`.
+- `quando_nao_consolida`: o tratamento quando o critério não converge (falta de unanimidade ou empate), `NOVO_CORRETOR` ou `DECISAO_DA_BANCA`.
 
 O edital só escolhe qual regra e qual versão referenciar. Mudar o critério, os corretores ou o tratamento é versão nova da regra (ADR-0112), sem alcançar a versão que um edital publicado já congelou. O conjunto de tratamentos é fechado e só cresce por emenda desta ADR. A leitura do esquema falha, e nada é presumido, quando uma das chaves falta, tem tipo errado ou token desconhecido; as regras numéricas não declaram critério nem tratamento.
 
-**Consequências.** Critério, número de corretores e tratamento viram dado congelado com a versão da regra, e a apuração decide pelo snapshot, não pelo cadastro vivo. Um tratamento novo exige emenda, o que mantém o conjunto auditável. Na unanimidade, acrescentar corretores não resolve a divergência, então a versão semeada declara `decisao_da_banca`; as versões de maioria declaram `novo_corretor`, e a banca que prefere outro tratamento precisa de versão própria da regra. Quando o tratamento é `novo_corretor`, o mínimo de integrantes da banca (UNI-REQ-0387) conta os corretores distintos mais um, porque o novo corretor é pessoa da banca fora dos corretores originais; nos demais casos, o mínimo conta só os corretores distintos.
+**Consequências.** Critério, número de corretores e tratamento viram dado congelado com a versão da regra, e a apuração decide pelo snapshot, não pelo cadastro vivo. Um tratamento novo exige emenda, o que mantém o conjunto auditável. Na unanimidade, acrescentar corretores não resolve a divergência, então a versão semeada declara `DECISAO_DA_BANCA`; as versões de maioria declaram `NOVO_CORRETOR`, e a banca que prefere outro tratamento precisa de versão própria da regra. Quando o tratamento é `NOVO_CORRETOR`, o mínimo de integrantes da banca (UNI-REQ-0387) conta os corretores distintos mais um, porque o novo corretor é pessoa da banca fora dos corretores originais; nos demais casos, o mínimo conta só os corretores distintos.

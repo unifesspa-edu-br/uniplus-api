@@ -71,12 +71,6 @@ internal static class LeituraDosMotivosDeDecisao
         _ => leitor.Malformado<LugarDaDecisao>($"{caminho}.lugar.tipo", "esperado FASE ou ETAPA."),
     };
 
-    private static SentidoDoMotivo LerSentido(LeitorEnvelope leitor, JsonObject item, string caminho)
-    {
-        string codigo = leitor.TextoNaoVazio(item, "sentido", caminho);
-        SentidoDoMotivo sentido = SentidoDoMotivoCodigo.FromCodigo(codigo);
-        return leitor.Falhou || sentido != SentidoDoMotivo.Nenhum
-            ? sentido
-            : leitor.Malformado<SentidoDoMotivo>($"{caminho}.sentido", "sentido desconhecido.");
-    }
+    private static SentidoDoMotivo LerSentido(LeitorEnvelope leitor, JsonObject item, string caminho) =>
+        leitor.CodigoDeContrato<SentidoDoMotivo>(item, "sentido", caminho);
 }

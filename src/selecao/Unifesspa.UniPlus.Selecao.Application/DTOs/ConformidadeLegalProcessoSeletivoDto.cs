@@ -2,6 +2,7 @@ namespace Unifesspa.UniPlus.Selecao.Application.DTOs;
 
 using System.Diagnostics.CodeAnalysis;
 
+using Unifesspa.UniPlus.Application.Abstractions.Respostas;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
@@ -33,7 +34,7 @@ public sealed record ConformidadeLegalProcessoSeletivoDto(
 public sealed record RegraAvaliadaDto(
     Guid RegraId,
     string RegraCodigo,
-    CategoriaObrigatoriedade Categoria,
+    CodigoComRotulo<CategoriaObrigatoriedade> Categoria,
     string TipoProcessoCodigoAvaliado,
     PredicadoObrigatoriedade Predicado,
     bool Aprovada,

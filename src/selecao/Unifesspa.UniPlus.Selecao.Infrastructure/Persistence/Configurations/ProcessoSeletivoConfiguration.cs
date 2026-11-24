@@ -7,6 +7,7 @@ using Domain.ValueObjects;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence.CodigosDeContrato;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Protecao;
 using Unifesspa.UniPlus.Kernel.Domain.Cidades;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
@@ -47,6 +48,9 @@ public sealed class ProcessoSeletivoConfiguration : IEntityTypeConfiguration<Pro
             t.HasCheckConstraint(
                 "ck_processos_seletivos_numero_de_opcoes_de_curso",
                 "numero_de_opcoes_de_curso IS NULL OR numero_de_opcoes_de_curso IN (1, 2)");
+            t.HasCheckConstraint(
+                "ck_processos_seletivos_origem_candidatos",
+                $"origem_candidatos IN ({SqlDosCodigosDeContrato.Lista<OrigemCandidatos>()})");
         });
         builder.HasKey(p => p.Id);
         // Chave Guid v7 gerada no domínio (EntityBase): ValueGeneratedNever
@@ -90,9 +94,12 @@ public sealed class ProcessoSeletivoConfiguration : IEntityTypeConfiguration<Pro
             tipo.Property(x => x.Nome).HasColumnName("tipo_processo_nome").HasMaxLength(200).IsRequired().HasComment("Nome do tipo de processo copiado do cadastro na criação.");
         });
         builder.Navigation(p => p.TipoProcesso).IsRequired();
-        builder.Property(p => p.Status).HasConversion<int>().IsRequired().HasComment("Situação do processo: 1 = rascunho, 2 = publicado, 3 = encerrado, 4 = cancelado.");
+        builder.Property(p => p.Status).HasMaxLength(9).IsRequired().HasComment("Situação do processo: rascunho, publicado, encerrado ou cancelado.");
         // Story #851 §3.4: NOT NULL, exigido na criação.
-        builder.Property(p => p.OrigemCandidatos).HasConversion<int>().IsRequired().HasComment("Origem dos candidatos: 1 = inscrição própria, 2 = importação externa.");
+        builder.Property(p => p.OrigemCandidatos)
+            .HasMaxLength(TamanhoDoCodigoDeContrato.Maximo)
+            .HasComment("Como os candidatos chegam ao processo: INSCRICAO_PROPRIA ou IMPORTACAO_EXTERNA.")
+            .IsRequired();
 
         // Issue #849 (CA-04 da Feature #40): quem responde pelo certame — NOT NULL, exigido
         // na criação, imutável depois. Escalar de topo sem FK cross-schema (ADR-0061) + owned
@@ -330,7 +337,6 @@ public sealed class ProcessoSeletivoConfiguration : IEntityTypeConfiguration<Pro
             referencia.ClassificaPorPadrao(ClassificacaoDeProtecao.Interno);
             referencia.Property(r => r.Tipo)
                 .HasColumnName("referencia_temporal_fatos_tipo")
-                .HasConversion(ReferenciaTipoConverter)
                 .HasMaxLength(ReferenciaTemporalFatosTipoMaxLength)
                 .HasComment("Referência para apurar os fatos: FIM_INSCRICAO, INICIO_FASE, FIM_FASE ou DATA_ESPECIFICA. Ausente quando não declarada.");
             referencia.Property(r => r.Data).HasColumnName("referencia_temporal_fatos_data").HasComment("Data escolhida quando a referência para apurar os fatos é uma data específica.");
@@ -378,8 +384,4 @@ public sealed class ProcessoSeletivoConfiguration : IEntityTypeConfiguration<Pro
                 $"Dado inválido no banco ao reidratar o identificador legível '{valor}' ({resultado.Error!.Code}).");
     }
 
-    private static readonly Microsoft.EntityFrameworkCore.Storage.ValueConversion.ValueConverter<ReferenciaTipo, string?> ReferenciaTipoConverter =
-        new(
-            tipo => tipo == ReferenciaTipo.Nenhuma ? null : tipo.ToCodigo(),
-            codigo => ReferenciaTipoCodigo.FromCodigo(codigo));
 }

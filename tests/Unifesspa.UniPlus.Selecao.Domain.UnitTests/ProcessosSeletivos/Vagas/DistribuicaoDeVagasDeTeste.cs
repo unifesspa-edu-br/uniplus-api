@@ -1,5 +1,7 @@
 namespace Unifesspa.UniPlus.Selecao.Domain.UnitTests.ProcessosSeletivos.Vagas;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
+
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Vagas;
@@ -23,10 +25,7 @@ internal static class DistribuicaoDeVagasDeTeste
         ComposicaoVagasModalidade composicao,
         int? quantidadeDeclarada = null,
         string? composicaoOrigemCodigo = null) =>
-        ModalidadeSelecionada.Criar(
-            Guid.CreateVersion7(), codigo, null, natureza, composicao, composicaoOrigemCodigo,
-            natureza == NaturezaLegalModalidade.CotaReservada ? RegraRemanejamentoModalidade.SegueCascata : RegraRemanejamentoModalidade.Nenhuma,
-            null, null, null, RegrasDeAplicabilidadeDeTeste.DaNatureza(natureza), null, "base legal", quantidadeDeclarada).Value!;
+        ModalidadeSelecionada.Criar(ModalidadesNoCadastroDeTeste.Da(codigo, natureza, composicao) with { ComposicaoOrigemCodigo = composicaoOrigemCodigo, RegraRemanejamento = natureza == NaturezaLegalModalidade.CotaReservada ? RegraRemanejamentoModalidade.SegueOrdemDeRemanejamento : null, BaseLegal = "base legal" }, quantidadeDeclarada).Value!;
 
     internal static ModalidadeSelecionada Federal(string codigo) =>
         Modalidade(codigo, NaturezaLegalModalidade.CotaReservada, ComposicaoVagasModalidade.DentroDaReservaLegal);
@@ -42,17 +41,17 @@ internal static class DistribuicaoDeVagasDeTeste
 
     internal static DistribuicaoDeVagasDeclarada DaLeiDeCotas() => new()
     {
-        RegraDeDistribuicao = Regra(RegraDistribuicaoVagasCodigo.Lei12711),
+        RegraDeDistribuicao = Regra(RegraDeDistribuicaoDeVagas.Lei12711.Codigo()),
         VagasOfertadasBase = 50,
         PercentualDaReservaLegal = 0.5m,
         ReferenciaDemografica = Demografica(),
-        RegraDeAjuste = Regra("RECONCILIACAO-VAGAS-ARTIGO-11-PARAGRAFO-UNICO"),
+        RegraDeAjuste = Regra("AJUSTE_VAGAS_ARTIGO_11_PARAGRAFO_UNICO"),
         Modalidades = AsOitoFederaisMaisAmplaConcorrencia(),
     };
 
     internal static DistribuicaoDeVagasDeclarada FixadaNoEdital(params ModalidadeSelecionada[] modalidades) => new()
     {
-        RegraDeDistribuicao = Regra(RegraDistribuicaoVagasCodigo.Institucional),
+        RegraDeDistribuicao = Regra(RegraDeDistribuicaoDeVagas.Institucional.Codigo()),
         VagasOfertadasBase = 50,
         Modalidades = modalidades,
     };

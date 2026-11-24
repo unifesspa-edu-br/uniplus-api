@@ -8,7 +8,7 @@ using Kernel.Results;
 internal abstract record ProdutoConferido
 {
     /// <summary>O produto é coerente com o catálogo e entra no dono que o declarou.</summary>
-    internal sealed record Aceito(string AtoCodigo, PapelProdutoFase? Papel) : ProdutoConferido;
+    internal sealed record Aceito(string AtoCodigo, PapelDaPublicacaoPrevista? Papel) : ProdutoConferido;
 
     /// <summary>O produto é recusado, e a recusa se soma às da coleção.</summary>
     internal sealed record Recusado(FieldError Recusa) : ProdutoConferido;

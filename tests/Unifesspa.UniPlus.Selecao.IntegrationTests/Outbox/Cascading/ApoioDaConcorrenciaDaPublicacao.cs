@@ -15,6 +15,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Selecao.Domain.Services;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
@@ -41,13 +42,13 @@ internal static class ApoioDaConcorrenciaDaPublicacao
 
     internal static DefinirEtapasCommand ComandoEtapas(Guid processoId) => new(
         processoId, [new EtapaProcessoInput(
-            "Prova Discursiva (revisada)", CaraterEtapa.Classificatoria,
+            "Prova Discursiva (revisada)", CaraterEtapa.Classificatoria.Codigo(),
             TipoEtapaOrigemId: new Guid("019fee1e-7000-7000-8000-000000000001"),
             Peso: 1m, NotaMinima: null, Ordem: 1, Produtos: [], Bancas: [], Recursos: [],
             NotaMaxima: 10m, FormaDeAvaliacao: "OBJETIVA", FaseCodigo: "RESULTADO_FINAL")]);
 
     internal static DefinirCascataRemanejamentoCommand ComandoCascata(Guid processoId) => new(
-        processoId, RegraCodigo: "REMANEJ-CASCATA-LEI-12711", RegraVersao: "v1",
+        processoId, RegraCodigo: "REMANEJAMENTO_ORDEM_LEI_12711", RegraVersao: "v1",
         FallbackCodigo: "AC", Destinos: MatrizLegalCompletaComoInput());
 
     internal static PublicarProcessoSeletivoCommand ComandoPublicar(Guid processoId, Guid documentoId) => new(
@@ -175,7 +176,7 @@ internal static class ApoioDaConcorrenciaDaPublicacao
 
     /// <summary>
     /// A matriz legal completa (8×7), fallback AC, como <c>DestinoRemanejamentoInput</c> —
-    /// mesma forma exigida pelo <c>declaracao_da_regra</c> congelado de <c>REMANEJ-CASCATA-LEI-12711
+    /// mesma forma exigida pelo <c>declaracao_da_regra</c> congelado de <c>REMANEJAMENTO_ORDEM_LEI_12711
     /// v1</c> (cascata de remanejamento de cotas, UNI-REQ-0056, validada pelo handler): cada origem lista as outras 7 federais,
     /// na ordem de <see cref="ModalidadesFederaisLei12711.Codigos"/>.
     /// </summary>

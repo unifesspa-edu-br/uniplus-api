@@ -87,6 +87,7 @@
     <Compile Include="../Shared/QuadroDeConfrontoDosLimites.cs" Link="QuadroDeConfrontoDosLimites.cs" />
     <Compile Include="../Shared/EntradaDeConfrontoDoLimite.cs" Link="EntradaDeConfrontoDoLimite.cs" />
     <Compile Include="../Shared/ClasseDeConfrontoDoLimite.cs" Link="ClasseDeConfrontoDoLimite.cs" />
+    <Compile Include="../Shared/ModalidadesNoCadastroDeTeste.cs" Link="ModalidadesNoCadastroDeTeste.cs" />
     <Compile Include="../Shared/InstanteEmBelem.cs" Link="InstanteEmBelem.cs" />
     <Compile Include="../Shared/RelogioFixo.cs" Link="RelogioFixo.cs" />
     <Compile Include="../Shared/RelogioControlado.cs" Link="RelogioControlado.cs" />

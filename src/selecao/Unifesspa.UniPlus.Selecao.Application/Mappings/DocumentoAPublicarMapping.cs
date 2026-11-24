@@ -1,7 +1,9 @@
 namespace Unifesspa.UniPlus.Selecao.Application.Mappings;
 
+using Unifesspa.UniPlus.Application.Abstractions.Respostas;
 using Unifesspa.UniPlus.Selecao.Application.DTOs;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
+using Unifesspa.UniPlus.Selecao.Domain.Enums;
 
 /// <summary>
 /// Projeção <c>DocumentoAPublicar</c> → <c>DocumentoAPublicarDto</c>. Ponto único de
@@ -18,10 +20,10 @@ public static class DocumentoAPublicarMapping
         return new DocumentoAPublicarDto(
             Id: documento.Id,
             ProcessoSeletivoId: documento.ProcessoSeletivoId,
-            Finalidade: documento.Finalidade,
+            Finalidade: CodigoComRotulo<FinalidadeDoDocumento>.De(documento.Finalidade),
             NomeArquivo: documento.NomeArquivo,
             TipoDeMidia: documento.TipoDeMidia,
-            Status: documento.Status.ToString(),
+            Status: CodigoComRotulo<StatusArquivoEnviado>.De(documento.Status),
             CriadoEm: documento.CreatedAt,
             ExpiraEm: documento.ExpiraEm,
             TamanhoBytes: documento.TamanhoBytes,

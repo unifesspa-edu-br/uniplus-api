@@ -40,7 +40,7 @@ public sealed class ProdutoDaFase : EntityBase, IProdutoPublicado
     /// ato não é resultado — a fase publica um aviso sem que isso a torne produtora de
     /// resultado.
     /// </summary>
-    public PapelProdutoFase? Papel { get; private set; }
+    public PapelDaPublicacaoPrevista? Papel { get; private set; }
 
     private ProdutoDaFase() { }
 
@@ -49,7 +49,7 @@ public sealed class ProdutoDaFase : EntityBase, IProdutoPublicado
     /// catálogo é I/O — resolvido em Application (ADR-0042), onde a view do tipo já está em
     /// mãos.
     /// </summary>
-    public static ProdutoDaFase Criar(string atoCodigo, PapelProdutoFase? papel)
+    public static ProdutoDaFase Criar(string atoCodigo, PapelDaPublicacaoPrevista? papel)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(atoCodigo);
 
@@ -64,7 +64,7 @@ public sealed class ProdutoDaFase : EntityBase, IProdutoPublicado
     /// Reidrata o produto a partir de uma <c>VersaoConfiguracao</c> congelada, preservando
     /// o <see cref="EntityBase.Id"/> — ver o <c>&lt;remarks&gt;</c> da classe.
     /// </summary>
-    public static ProdutoDaFase Reidratar(Guid id, string atoCodigo, PapelProdutoFase? papel)
+    public static ProdutoDaFase Reidratar(Guid id, string atoCodigo, PapelDaPublicacaoPrevista? papel)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(atoCodigo);
         if (id == Guid.Empty)
@@ -88,5 +88,5 @@ public sealed class ProdutoDaFase : EntityBase, IProdutoPublicado
     /// <see cref="FaseCronograma.AtualizarDe"/> aplica — ver o <c>&lt;remarks&gt;</c> de lá sobre
     /// por que o índice único proíbe recriar a linha.
     /// </summary>
-    void IProdutoPublicado.AtualizarPapel(PapelProdutoFase? papel) => Papel = papel;
+    void IProdutoPublicado.AtualizarPapel(PapelDaPublicacaoPrevista? papel) => Papel = papel;
 }

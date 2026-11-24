@@ -2,6 +2,7 @@ namespace Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.ConceitoDaAvaliaca
 
 using System.Text.Json;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 
@@ -20,7 +21,7 @@ internal static class TratamentoDaRegraDeConsolidacao
     /// <paramref name="tratamento"/> nulo quando a versão não declara a chave nem critério, como as regras numéricas: a
     /// versão que declara critério sem tratamento está incompleta, e a leitura a recusa.
     /// </summary>
-    internal static bool Tentar(RegraCatalogo regra, out TratamentoDaFaltaDeConsolidacao? tratamento)
+    internal static bool Tentar(RegraCatalogo regra, out TratamentoDaFaltaDeApuracao? tratamento)
     {
         tratamento = null;
         if (regra.DeclaracaoDaRegra.ValueKind != JsonValueKind.Object || !regra.DeclaracaoDaRegra.TryGetProperty(ChaveDoTratamento, out JsonElement declarado))
@@ -29,7 +30,7 @@ internal static class TratamentoDaRegraDeConsolidacao
         }
 
         string? token = declarado.ValueKind == JsonValueKind.String ? declarado.GetString() : null;
-        bool conhecido = TratamentoDaFaltaDeConsolidacaoCodigo.TentarConverter(token, out TratamentoDaFaltaDeConsolidacao lido);
+        bool conhecido = CatalogoDe<TratamentoDaFaltaDeApuracao>.TentarObter(token, out TratamentoDaFaltaDeApuracao lido);
         tratamento = conhecido ? lido : null;
 
         return conhecido;

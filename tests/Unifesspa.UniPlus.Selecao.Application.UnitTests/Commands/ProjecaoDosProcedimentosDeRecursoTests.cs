@@ -3,6 +3,7 @@ namespace Unifesspa.UniPlus.Selecao.Application.UnitTests.Commands;
 using AwesomeAssertions;
 
 using Unifesspa.UniPlus.Application.Abstractions.Respostas;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.Services;
 using Unifesspa.UniPlus.Selecao.Application.DTOs;
@@ -17,7 +18,7 @@ using Xunit;
 public sealed class ProjecaoDosProcedimentosDeRecursoTests
 {
     private static readonly Guid Item = Guid.Parse("11111111-1111-1111-1111-111111111111");
-    private static readonly ReferenciaRegra Regra = ReferenciaRegra.De(RegraProcedimentoRecursoCodigo.Recalculo, "v1", new string('a', 64));
+    private static readonly ReferenciaRegra Regra = ReferenciaRegra.De(RegraDeProcedimentoDoRecurso.Recalculo.Codigo(), "v1", new string('a', 64));
 
     private static CodigoComRotulo<TipoMotivoDeDecisao> Tipo(TipoMotivoDeDecisao tipo) => CodigoComRotulo<TipoMotivoDeDecisao>.De(tipo);
 
@@ -39,8 +40,8 @@ public sealed class ProjecaoDosProcedimentosDeRecursoTests
 
         ReferenciaRegraDto referencia = new(Regra.Codigo, Regra.Versao, Regra.Hash);
         leitura.Should().Equal(
-            new ProcedimentoDeRecursoDto(Tipo(TipoMotivoDeDecisao.AnaliseDocumental), new AlvoDoProcedimentoDeRecursoDto(Item, null), referencia, RegraProcedimentoRecursoCodigo.Recorrecao),
-            new ProcedimentoDeRecursoDto(Tipo(TipoMotivoDeDecisao.Classificacao), new AlvoDoProcedimentoDeRecursoDto(null, AreaDoEnem.Redacao), referencia, RegraProcedimentoRecursoCodigo.Recalculo),
+            new ProcedimentoDeRecursoDto(Tipo(TipoMotivoDeDecisao.AnaliseDocumental), new AlvoDoProcedimentoDeRecursoDto(Item, null), referencia, RegraDeProcedimentoDoRecurso.Recorrecao.Codigo()),
+            new ProcedimentoDeRecursoDto(Tipo(TipoMotivoDeDecisao.Classificacao), new AlvoDoProcedimentoDeRecursoDto(null, AreaDoEnem.Redacao), referencia, RegraDeProcedimentoDoRecurso.Recalculo.Codigo()),
             new ProcedimentoDeRecursoDto(Tipo(TipoMotivoDeDecisao.HomologacaoDasInscricoes), null, referencia, null));
     }
 
@@ -52,7 +53,7 @@ public sealed class ProjecaoDosProcedimentosDeRecursoTests
 
         ProcedimentoDeRecursoDto objetiva = ProjecaoDosProcedimentosDeRecurso.De(procedimentos, new(FormaDeAvaliacao.Objetiva, false)).Single();
 
-        objetiva.Sugestao.Should().Be(RegraProcedimentoRecursoCodigo.Recalculo);
+        objetiva.Sugestao.Should().Be(RegraDeProcedimentoDoRecurso.Recalculo.Codigo());
         objetiva.Regra.Codigo.Should().Be(Regra.Codigo);
     }
 }

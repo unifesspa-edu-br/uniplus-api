@@ -51,13 +51,13 @@ public sealed class ConfiguracaoClassificacao : EntityBase, IParteDoProcesso
 {
     public Guid ProcessoSeletivoId { get; private set; }
 
-    /// <summary>Fórmula da nota final (<c>FORMULA-MEDIA-PONDERADA</c> ou <c>CLASSIFICACAO-IMPORTADA</c>).</summary>
+    /// <summary>Fórmula da nota final (<c>FORMULA_MEDIA_PONDERADA</c> ou <c>CLASSIFICACAO_IMPORTADA</c>).</summary>
     public ReferenciaRegra RegraCalculo { get; private set; } = null!;
 
     /// <summary>
     /// Precisão da nota — obrigatória quando <see cref="RegraCalculo"/> é
-    /// <c>FORMULA-MEDIA-PONDERADA</c> (cálculo local exige uma regra de
-    /// arredondamento); ausente quando é <c>CLASSIFICACAO-IMPORTADA</c>
+    /// <c>FORMULA_MEDIA_PONDERADA</c> (cálculo local exige uma regra de
+    /// arredondamento); ausente quando é <c>CLASSIFICACAO_IMPORTADA</c>
     /// (a classificação importada não exige precisão local).
     /// </summary>
     public ReferenciaRegra? RegraArredondamento { get; private set; }
@@ -80,14 +80,14 @@ public sealed class ConfiguracaoClassificacao : EntityBase, IParteDoProcesso
     /// <summary>
     /// Escala em que a nota final é publicada (10, 100, 1.000...): a média ponderada das notas já
     /// convertidas para a escala comum é multiplicada por ela. Obrigatória para publicar com
-    /// cálculo local (<c>FORMULA-MEDIA-PONDERADA</c>), cobrada pelo gate de conformidade — o
+    /// cálculo local (<c>FORMULA_MEDIA_PONDERADA</c>), cobrada pelo gate de conformidade — o
     /// rascunho a tolera ausente —, e ausente na classificação importada, cujo resultado vem
     /// pronto de fora. Congelada na publicação (UNI-REQ-0175).
     /// </summary>
     public decimal? EscalaNotaFinal { get; private set; }
 
     /// <summary>
-    /// Ordem de alocação (<c>ALOCACAO-PRIMEIRA-OPCAO-PRIORITARIA</c>, UNI-REQ-0045): todas as 1ªs
+    /// Ordem de alocação (<c>ALOCACAO_PRIMEIRA_OPCAO_PRIORITARIA</c>, UNI-REQ-0045): todas as 1ªs
     /// opções do curso, depois o remanejamento entre modalidades dentro do curso, e só a vaga que
     /// sobra vai à 2ª opção; quem não entra em nenhuma opção vai para a lista de espera.
     /// </summary>
@@ -95,8 +95,8 @@ public sealed class ConfiguracaoClassificacao : EntityBase, IParteDoProcesso
 
     /// <summary>
     /// A classificação usa a estrutura de pontuação por área do ENEM — o
-    /// sinal explícito (Story #850) do qual as eliminações do ENEM (<c>ELIM-CORTE-EM-AREA</c>,
-    /// <c>ELIM-ZERO-EM-AREA</c> e <c>ELIM-FALTA-EM-DIA-DE-PROVA-ENEM</c>) dependem. Deixou de
+    /// sinal explícito (Story #850) do qual as eliminações do ENEM (<c>ELIMINACAO_CORTE_EM_AREA</c>,
+    /// <c>ELIMINACAO_ZERO_EM_AREA</c> e <c>ELIMINACAO_FALTA_EM_DIA_DE_PROVA_ENEM</c>) dependem. Deixou de
     /// ser calculado a partir de <see cref="ProcessoSeletivo.TipoProcesso"/>: o rótulo do processo não decide
     /// comportamento, só a configuração declarada decide.
     /// </summary>
@@ -113,7 +113,7 @@ public sealed class ConfiguracaoClassificacao : EntityBase, IParteDoProcesso
 
     /// <summary>
     /// Resolução de Pesos por Área que a classificação usa — presente se e somente se a
-    /// classificação é baseada em ENEM com cálculo local (<c>FORMULA-MEDIA-PONDERADA</c>).
+    /// classificação é baseada em ENEM com cálculo local (<c>FORMULA_MEDIA_PONDERADA</c>).
     /// </summary>
     public string? ResolucaoPesoAreaEnem { get; private set; }
 

@@ -1,5 +1,6 @@
 namespace Unifesspa.UniPlus.Selecao.Domain.MotivosDeDecisao;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
@@ -35,7 +36,7 @@ public static class ValidacaoDoMotivo
 
         return erros.Count > 0
             ? Result<CamposValidados>.ValidationFailure(erros)
-            : Result<CamposValidados>.Success(new CamposValidados(tipo!.Value, codigo!, descricao!, subclassificacao, campos.Sentido));
+            : Result<CamposValidados>.Success(new CamposValidados(tipo!.Value, codigo!, descricao!, subclassificacao, campos.Sentido!.Value));
     }
 
     /// <summary>Valida e normaliza a descrição, único campo que a edição alcança.</summary>
@@ -80,15 +81,15 @@ public static class ValidacaoDoMotivo
     private static string? ConferirSubclassificacao(List<FieldError> erros, IPoliticaDoTipoDeMotivo? politica, string? subclassificacao) =>
         politica is null ? null : Coletar(erros, "subclassificacao", politica.ConferirSubclassificacao(subclassificacao));
 
-    private static void ConferirSentido(List<FieldError> erros, IPoliticaDoTipoDeMotivo? politica, SentidoDoMotivo sentido)
+    private static void ConferirSentido(List<FieldError> erros, IPoliticaDoTipoDeMotivo? politica, SentidoDoMotivo? sentido)
     {
-        if (sentido == SentidoDoMotivo.Nenhum)
+        if (sentido is null)
         {
             erros.Add(new FieldError("sentido", new DomainError(
                 MotivoDeDecisaoErrorCodes.SentidoObrigatorio,
-                $"Motivo de decisão deve declarar exatamente um sentido: {string.Join(" ou ", SentidoDoMotivoCodigo.Todos)}.")));
+                $"Motivo de decisão deve declarar exatamente um sentido: {string.Join(" ou ", CatalogoDe<SentidoDoMotivo>.Todos().Select(static item => item.Codigo))}.")));
         }
-        else if (politica is not null && !politica.AdmiteSentido(sentido))
+        else if (politica is not null && !politica.AdmiteSentido(sentido.Value))
         {
             erros.Add(new FieldError("sentido", new DomainError(
                 MotivoDeDecisaoErrorCodes.SentidoNaoAdmitido,

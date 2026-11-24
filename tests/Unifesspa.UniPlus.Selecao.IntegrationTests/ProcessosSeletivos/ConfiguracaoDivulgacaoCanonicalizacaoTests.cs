@@ -5,6 +5,7 @@ using System.Text.Json.Nodes;
 
 using AwesomeAssertions;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Tempo;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
@@ -67,8 +68,8 @@ public sealed class ConfiguracaoDivulgacaoCanonicalizacaoTests
     {
         processo.DefinirClassificacao(ConfiguracaoClassificacao.Criar(new DeclaracaoDaClassificacao
         {
-            RegraCalculo = ReferenciaRegra.De(RegraCalculoCodigo.ClassificacaoImportada, "v1", HashFixo),
-            RegraOrdemAlocacao = ReferenciaRegra.De(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, "v1", HashFixo),
+            RegraCalculo = ReferenciaRegra.De(RegraDeCalculoDaNota.ClassificacaoImportada.Codigo(), "v1", HashFixo),
+            RegraOrdemAlocacao = ReferenciaRegra.De(RegraDeOrdemDeAlocacao.PrimeiraOpcaoPrioritaria.Codigo(), "v1", HashFixo),
         }).Value!).IsSuccess.Should().BeTrue();
         processo.DefinirOpcoesDeCurso(1).IsSuccess.Should().BeTrue();
     }
@@ -86,11 +87,9 @@ public sealed class ConfiguracaoDivulgacaoCanonicalizacaoTests
 
     private static void DefinirDistribuicao(ProcessoSeletivo processo)
     {
-        ModalidadeSelecionada modalidade = ModalidadeSelecionada.Criar(
-            Guid.CreateVersion7(), "AC", null, NaturezaLegalModalidade.Ampla, ComposicaoVagasModalidade.RestanteDasVagasOfertadas,
-            null, RegraRemanejamentoModalidade.Nenhuma, null, null, null, RegrasDeAplicabilidadeDeTeste.DaNatureza(NaturezaLegalModalidade.Ampla), null, "Res. Unifesspa 532/2021", quantidadeDeclarada: 40).Value!;
+        ModalidadeSelecionada modalidade = ModalidadeSelecionada.Criar(ModalidadesNoCadastroDeTeste.Da("AC", NaturezaLegalModalidade.Ampla, ComposicaoVagasModalidade.RestanteDasVagasOfertadas) with { RegraRemanejamento = null, BaseLegal = "Res. Unifesspa 532/2021" }, 40).Value!;
         processo.DefinirDistribuicaoVagas([ConfiguracaoDistribuicaoVagas.Criar(Guid.CreateVersion7(),
-            new DistribuicaoDeVagasDeclarada { VagasOfertadasBase = 40, PercentualDaReservaLegal = 1m, RegraDeDistribuicao = ReferenciaRegra.De(RegraDistribuicaoVagasCodigo.Institucional, "v1", HashFixo), Modalidades = [modalidade] },
+            new DistribuicaoDeVagasDeclarada { VagasOfertadasBase = 40, PercentualDaReservaLegal = 1m, RegraDeDistribuicao = ReferenciaRegra.De(RegraDeDistribuicaoDeVagas.Institucional.Codigo(), "v1", HashFixo), Modalidades = [modalidade] },
             new FatosDaOfertaNoCadastro { OfertaCurso = OfertaCursoDeTeste.Medicina }).Value!], FatosDeModalidadeDeTeste.DoCatalogo).IsSuccess.Should().BeTrue();
     }
 
@@ -121,7 +120,7 @@ public sealed class ConfiguracaoDivulgacaoCanonicalizacaoTests
         SerializarParaComparacao(ExtrairBlocoDivulgacao(canonico.Bytes)).Should().Equal(SerializarParaComparacao(esperado));
     }
 
-    [Fact(DisplayName = "CA-07: com nome_abreviado e justificativa decombinada, o bloco congela a regra vigente e a justificativa em NFC — bytes idênticos ao oráculo montado à parte")]
+    [Fact(DisplayName = "CA-07: com NOME_ABREVIADO e justificativa decombinada, o bloco congela a regra vigente e a justificativa em NFC — bytes idênticos ao oráculo montado à parte")]
     public void ComNomeAbreviadoEJustificativaDecombinada_CongelaRegraEJustificativaNormalizada()
     {
         ProcessoSeletivo processo = NovoProcessoConforme();
@@ -145,7 +144,7 @@ public sealed class ConfiguracaoDivulgacaoCanonicalizacaoTests
         string justificativaDecombinada = "  Divulgação ampliada.  ";
 
         processo.DefinirConfiguracaoDivulgacao(
-            ConfiguracaoDivulgacao.Criar(["numero_inscricao", "nome_abreviado"], justificativaDecombinada).Value!).IsSuccess.Should().BeTrue();
+            ConfiguracaoDivulgacao.Criar(["NUMERO_INSCRICAO", "NOME_ABREVIADO"], justificativaDecombinada).Value!).IsSuccess.Should().BeTrue();
     }
 
     private static JsonObject BlocoEsperado(string justificativaPreComposta)

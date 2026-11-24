@@ -71,7 +71,7 @@ internal static class MontagemDasEtapas
         ChaveLocal chave = FormacaoDeChaveLocal.Formar("etapa", tipo.Codigo, chaves);
         chaves.Adicionar(chave);
         return EtapaProcesso.Criar(
-            chave, IdentificacaoDeclarada(conferida.Declarada, tipo),
+            chave, IdentificacaoDeclarada(conferida, tipo),
             AvaliacaoDeclarada(conferida), EscritaDasEtapasDoProcesso.ItensDeclarados(conferida.Declarada));
     }
 
@@ -79,7 +79,7 @@ internal static class MontagemDasEtapas
     {
         EtapaProcesso existente = conferida.Existente!;
         Result atualizada = existente.AtualizarDados(
-            IdentificacaoDeclarada(conferida.Declarada, tipo),
+            IdentificacaoDeclarada(conferida, tipo),
             AvaliacaoDeclarada(conferida),
             EscritaDasEtapasDoProcesso.ItensDeclarados(conferida.Declarada));
         return atualizada.IsSuccess
@@ -87,8 +87,9 @@ internal static class MontagemDasEtapas
             : Result<EtapaProcesso>.ValidationFailure(atualizada.Errors);
     }
 
-    private static IdentificacaoDaEtapa IdentificacaoDeclarada(EtapaProcessoInput etapa, TipoEtapaSnapshot tipo) =>
-        new(etapa.Nome, etapa.Carater, tipo, etapa.Ordem, etapa.FaseCodigo);
+    // O caráter já foi conferido pela forma da etapa, antes de qualquer leitura.
+    private static IdentificacaoDaEtapa IdentificacaoDeclarada(EtapaConferida conferida, TipoEtapaSnapshot tipo) =>
+        new(conferida.Declarada.Nome, conferida.Carater!.Value, tipo, conferida.Declarada.Ordem, conferida.Declarada.FaseCodigo);
 
     private static DeclaracaoDaAvaliacaoDaEtapa AvaliacaoDeclarada(EtapaConferida conferida) =>
         EscritaDasEtapasDoProcesso.DeclaracaoDaAvaliacao(conferida.Declarada, conferida.Forma, conferida.Consolidacao);

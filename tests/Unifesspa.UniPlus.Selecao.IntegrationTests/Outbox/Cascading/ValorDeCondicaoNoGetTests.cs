@@ -42,7 +42,7 @@ public sealed class ValorDeCondicaoNoGetTests
         new
         {
             ordem = 1,
-            regra = new { codigo = "DESEMPATE-PREDICADO-FATO", versao = "v1" },
+            regra = new { codigo = "DESEMPATE_CONDICAO_SOBRE_DADO", versao = "v1" },
             parametros = new { fato, operador, valor },
         },
     ];

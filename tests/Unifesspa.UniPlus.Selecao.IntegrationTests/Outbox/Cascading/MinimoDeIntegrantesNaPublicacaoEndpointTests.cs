@@ -9,6 +9,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
@@ -74,7 +75,7 @@ public sealed class MinimoDeIntegrantesNaPublicacaoEndpointTests
     {
         HttpResponseMessage resposta = await PublicarComBancaDeAsync(
             integrantes, $"{nameof(Publicar_MaioriaSimplesComNovoCorretor_ExigeOsCorretoresMaisUm)} {integrantes}", hashDaReferencia: null,
-            RegraConsolidacaoCodigo.ConceitoMaioriaSimples);
+            RegraDeApuracaoDaAvaliacao.ConceitoMaioriaSimples.Codigo());
 
         resposta.StatusCode.Should().Be(esperado);
         if (esperado == HttpStatusCode.UnprocessableEntity)
@@ -89,13 +90,13 @@ public sealed class MinimoDeIntegrantesNaPublicacaoEndpointTests
     public async Task Publicar_UnanimidadeComDecisaoDaBanca_Retorna204()
     {
         HttpResponseMessage resposta = await PublicarComBancaDeAsync(
-            integrantes: 2, nameof(Publicar_UnanimidadeComDecisaoDaBanca_Retorna204), hashDaReferencia: null, RegraConsolidacaoCodigo.ConceitoUnanimidade);
+            integrantes: 2, nameof(Publicar_UnanimidadeComDecisaoDaBanca_Retorna204), hashDaReferencia: null, RegraDeApuracaoDaAvaliacao.ConceitoUnanimidade.Codigo());
 
         resposta.StatusCode.Should().Be(HttpStatusCode.NoContent);
     }
 
     private async Task<HttpResponseMessage> PublicarComBancaDeAsync(
-        int integrantes, string cenario, string? hashDaReferencia, string codigoDaRegra = RegraConsolidacaoCodigo.CorrecaoIndependente)
+        int integrantes, string cenario, string? hashDaReferencia, string codigoDaRegra = "APURACAO_CORRECAO_INDEPENDENTE")
     {
         CascadingApiFactory api = _fixture.Factory;
         await TiposDeAtoSeeder.SemearAsync(api.Services);

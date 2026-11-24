@@ -16,7 +16,7 @@ internal static class ParametrosDoRecursoDeTeste
         UnidadePrazo unidade = UnidadePrazo.DiasUteis,
         bool admiteInstanciaSuperior = false,
         PrazoDoRecurso? segundaInstancia = null,
-        string? efeitoSuspensivo = "semEfeitoSuspensivo",
+        string? efeitoSuspensivo = "SEM_EFEITO_SUSPENSIVO",
         string? guardaDaVaga = null) =>
         new(
             new PrazoDeclarado(valor, unidade.Codigo()),

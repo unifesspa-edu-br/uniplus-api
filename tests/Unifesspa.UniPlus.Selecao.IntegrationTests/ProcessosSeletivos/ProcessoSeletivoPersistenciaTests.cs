@@ -9,6 +9,7 @@ using Microsoft.EntityFrameworkCore;
 using Npgsql;
 
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.ValueObjects;
@@ -207,7 +208,7 @@ public sealed class ProcessoSeletivoPersistenciaTests : IClassFixture<ProcessoSe
                 unidade_administradora_sigla, unidade_administradora_slug, unidade_administradora_nome, unidade_administradora_tipo,
                 created_at, is_deleted)
             VALUES (
-                {processoId}, 'PS sem unidade', {TiposDeProcessoDeTeste.SiSU.OrigemId}, 'SiSU', 'SiSU', 1, 1, '1504208', 'Marabá', 'PA',
+                {processoId}, 'PS sem unidade', {TiposDeProcessoDeTeste.SiSU.OrigemId}, 'SiSU', 'SiSU', 'RASCUNHO', 'INSCRICAO_PROPRIA', '1504208', 'Marabá', 'PA',
                 {Guid.NewGuid()},
                 NULL, 'ceps', 'Centro de Processos Seletivos', 'ADMINISTRATIVA',
                 now(), false)
@@ -257,7 +258,7 @@ public sealed class ProcessoSeletivoPersistenciaTests : IClassFixture<ProcessoSe
             DeclaracaoComPeso(3m, notaMaxima: 10m, passo: 0.25m) with
             {
                 FormaDeAvaliacao = FormaDeAvaliacao.Humana,
-                RegraConsolidacao = ReferenciaRegra.De(RegraConsolidacaoCodigo.AvaliacaoUnica, "v1", new string('c', 64)),
+                RegraConsolidacao = ReferenciaRegra.De(RegraDeApuracaoDaAvaliacao.AvaliacaoUnica.Codigo(), "v1", new string('c', 64)),
             });
 
     private static AtendimentoEspecializado AtendimentoDaFundacao(Guid condicaoOrigemId, Guid recursoOrigemId, Guid tipoDeficienciaOrigemId)
@@ -296,7 +297,7 @@ public sealed class ProcessoSeletivoPersistenciaTests : IClassFixture<ProcessoSe
         recarregado.Etapas.Single(e => e.Ordem == 1).Should().Match<EtapaProcesso>(
             e => e.NotaMaxima == 10m && e.PassoDoLancamento == 0.25m
                 && e.FormaDeAvaliacao == FormaDeAvaliacao.Humana
-                && e.RegraConsolidacao!.Codigo == RegraConsolidacaoCodigo.AvaliacaoUnica);
+                && e.RegraConsolidacao!.Codigo == RegraDeApuracaoDaAvaliacao.AvaliacaoUnica.Codigo());
         recarregado.Etapas.Single(e => e.Ordem == 2).Should().Match<EtapaProcesso>(
             e => e.NotaMaxima == null && e.PassoDoLancamento == null
                 && e.FormaDeAvaliacao == null && e.RegraConsolidacao == null);

@@ -4,6 +4,7 @@ using AwesomeAssertions;
 
 using NSubstitute;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Selecao.Application.UnitTests.Commands;
@@ -127,7 +128,7 @@ internal static class ProcessoComCorrecaoIndependente
     {
         processo.DefinirEtapas(etapas).IsSuccess.Should().BeTrue();
         processo.DefinirAlgoritmoContagemPrazo(
-            ReferenciaRegra.De(AlgoritmoContagemPrazoCodigo.AvancaDataUtil, "v1", ProcessoSeletivoConformeBuilder.HashFixo)).IsSuccess.Should().BeTrue();
+            ReferenciaRegra.De(ConvencaoDeContagemDoPrazo.AvancaDataUtil.Codigo(), "v1", ProcessoSeletivoConformeBuilder.HashFixo)).IsSuccess.Should().BeTrue();
         foreach (EtapaProcesso etapa in processo.Etapas)
         {
             ComRecurso(etapa);
@@ -149,15 +150,15 @@ internal static class ProcessoComCorrecaoIndependente
     {
         etapa.DefinirProdutos(
         [
-            ProdutoDaEtapa.Criar("RESULTADO_PROVA", PapelProdutoFase.Preliminar),
-            ProdutoDaEtapa.Criar("RESULTADO_PROVA", PapelProdutoFase.Definitivo),
+            ProdutoDaEtapa.Criar("RESULTADO_PROVA", PapelDaPublicacaoPrevista.Preliminar),
+            ProdutoDaEtapa.Criar("RESULTADO_PROVA", PapelDaPublicacaoPrevista.Definitivo),
         ]).IsSuccess.Should().BeTrue();
-        Guid preliminar = etapa.Produtos.Single(produto => produto.Papel == PapelProdutoFase.Preliminar).Id;
+        Guid preliminar = etapa.Produtos.Single(produto => produto.Papel == PapelDaPublicacaoPrevista.Preliminar).Id;
         RegraRecursoFase prazo = RegraRecursoFase.Criar(
-            ReferenciaRegra.De(RegraPrazoRecursoCodigo.AncoradoEmAto, "v1", ProcessoSeletivoConformeBuilder.HashFixo),
+            ReferenciaRegra.De(RegraDePrazoDoRecurso.ContadoDaPublicacaoDoAto.Codigo(), "v1", ProcessoSeletivoConformeBuilder.HashFixo),
             ParametrosDoRecursoDeTeste.Declarados(48m, UnidadePrazo.Horas),
             preliminar).Value!;
-        etapa.DefinirRecursos([RecursoDaEtapa.Criar(AncoraDoRecurso.AtoPublicado, prazo.Regra, ParametrosDoRecursoDeTeste.DeclaradosDe(prazo.Parametros), preliminar).Value!])
+        etapa.DefinirRecursos([RecursoDaEtapa.Criar(EventoInicialDoPrazo.PublicacaoDoAto, prazo.Regra, ParametrosDoRecursoDeTeste.DeclaradosDe(prazo.Parametros), preliminar).Value!])
             .IsSuccess.Should().BeTrue();
     }
 }

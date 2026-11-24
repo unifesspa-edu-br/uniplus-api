@@ -8,6 +8,7 @@ using Domain.Enums;
 using Kernel.Results;
 
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
 using static Unifesspa.UniPlus.Selecao.IntegrationTests.Outbox.Cascading.ApoioDoProcessoConformeSemeado;
@@ -47,10 +48,10 @@ internal static class ProcessoSeletivoEnemComCalculoLocalSeeder
     {
         Result<ConfiguracaoClassificacao> classificacaoResult = ConfiguracaoClassificacao.Criar(new DeclaracaoDaClassificacao
         {
-            RegraCalculo = RegraDoCatalogo(db, RegraCalculoCodigo.FormulaMediaPonderada),
-            RegraArredondamento = RegraDoCatalogo(db, RegraArredondamentoCodigo.PrecisaoTruncar),
+            RegraCalculo = RegraDoCatalogo(db, RegraDeCalculoDaNota.MediaPonderada.Codigo()),
+            RegraArredondamento = RegraDoCatalogo(db, RegraDeArredondamentoDaNota.Truncar.Codigo()),
             CasasArredondamento = 2,
-            RegraOrdemAlocacao = RegraDoCatalogo(db, RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria),
+            RegraOrdemAlocacao = RegraDoCatalogo(db, RegraDeOrdemDeAlocacao.PrimeiraOpcaoPrioritaria.Codigo()),
             BaseadoEmEnem = true,
             ResolucaoPesoAreaEnem = QuadroPesoAreaEnemDeTeste.Resolucao,
             QuadroPesoAreaEnem = QuadroPesoAreaEnemDeTeste.Completo(),

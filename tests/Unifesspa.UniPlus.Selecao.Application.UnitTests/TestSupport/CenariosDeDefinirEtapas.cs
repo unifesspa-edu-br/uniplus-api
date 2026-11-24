@@ -6,6 +6,7 @@ using NSubstitute;
 
 using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 using Unifesspa.UniPlus.Configuracao.Contracts;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Publicacoes.Contracts;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
@@ -113,7 +114,7 @@ internal static class CenariosDeDefinirEtapas
     /// <summary>A etapa que o operador envia no corpo da requisição, sem produtos, bancas nem recursos.</summary>
     internal static EtapaProcessoInput EtapaInput(
         string nome, CaraterEtapa carater, Guid tipoEtapaOrigemId, decimal? peso, decimal? notaMinima, int ordem, Guid? id = null) =>
-        new(nome, carater, tipoEtapaOrigemId, peso, notaMinima, ordem, id, Produtos: [], Bancas: [], Recursos: []);
+        new(nome, carater.Codigo(), tipoEtapaOrigemId, peso, notaMinima, ordem, id, Produtos: [], Bancas: [], Recursos: []);
 
     /// <summary>O tipo de etapa como o cadastro o devolve hoje, sem descrição e sem conceitos.</summary>
     internal static TipoEtapaView TipoNoCadastro(

@@ -12,8 +12,8 @@ public sealed class CodigosDeContratoDaDeliberacaoTests
         Enum.GetValues<ModoDeDeliberacao>().ToDictionary(static v => v, static v => v.Codigo())
             .Should().Equal(new Dictionary<ModoDeDeliberacao, string>
             {
-                [ModoDeDeliberacao.ColegiadaComVotacao] = "colegiadaComVotacao",
-                [ModoDeDeliberacao.AtoIndividual] = "atoIndividual",
+                [ModoDeDeliberacao.ColegiadaComVotacao] = "COLEGIADA_COM_VOTACAO",
+                [ModoDeDeliberacao.AtoIndividual] = "ATO_INDIVIDUAL",
             });
 
     [Fact]
@@ -21,9 +21,9 @@ public sealed class CodigosDeContratoDaDeliberacaoTests
         Enum.GetValues<CriterioDeVotacao>().ToDictionary(static v => v, static v => v.Codigo())
             .Should().Equal(new Dictionary<CriterioDeVotacao, string>
             {
-                [CriterioDeVotacao.MaioriaSimples] = "maioriaSimples",
-                [CriterioDeVotacao.MaioriaAbsoluta] = "maioriaAbsoluta",
-                [CriterioDeVotacao.Unanimidade] = "unanimidade",
+                [CriterioDeVotacao.MaioriaSimples] = "MAIORIA_SIMPLES",
+                [CriterioDeVotacao.MaioriaAbsoluta] = "MAIORIA_ABSOLUTA",
+                [CriterioDeVotacao.Unanimidade] = "UNANIMIDADE",
             });
 
     [Fact]
@@ -31,8 +31,8 @@ public sealed class CodigosDeContratoDaDeliberacaoTests
         Enum.GetValues<DesempateDaVotacao>().ToDictionary(static v => v, static v => v.Codigo())
             .Should().Equal(new Dictionary<DesempateDaVotacao, string>
             {
-                [DesempateDaVotacao.VotoDaPresidencia] = "votoDaPresidencia",
-                [DesempateDaVotacao.NovaVotacao] = "novaVotacao",
+                [DesempateDaVotacao.VotoDaPresidencia] = "VOTO_DA_PRESIDENCIA",
+                [DesempateDaVotacao.NovaVotacao] = "NOVA_VOTACAO",
             });
 
     [Fact]
@@ -40,8 +40,8 @@ public sealed class CodigosDeContratoDaDeliberacaoTests
         Enum.GetValues<EncerramentoDaVotacao>().ToDictionary(static v => v, static v => v.Codigo())
             .Should().Equal(new Dictionary<EncerramentoDaVotacao, string>
             {
-                [EncerramentoDaVotacao.TodosOsTitulares] = "todosOsTitulares",
-                [EncerramentoDaVotacao.PresidenciaNoQuorum] = "presidenciaNoQuorum",
+                [EncerramentoDaVotacao.TodosOsTitulares] = "TODOS_OS_TITULARES",
+                [EncerramentoDaVotacao.PresidenciaNoQuorum] = "PRESIDENCIA_NO_QUORUM",
             });
 
     [Fact]
@@ -49,9 +49,9 @@ public sealed class CodigosDeContratoDaDeliberacaoTests
         Enum.GetValues<ResultadoSemUnanimidade>().ToDictionary(static v => v, static v => v.Codigo())
             .Should().Equal(new Dictionary<ResultadoSemUnanimidade, string>
             {
-                [ResultadoSemUnanimidade.Favoravel] = "favoravel",
-                [ResultadoSemUnanimidade.Desfavoravel] = "desfavoravel",
-                [ResultadoSemUnanimidade.NovaVotacao] = "novaVotacao",
+                [ResultadoSemUnanimidade.Favoravel] = "FAVORAVEL",
+                [ResultadoSemUnanimidade.Desfavoravel] = "DESFAVORAVEL",
+                [ResultadoSemUnanimidade.NovaVotacao] = "NOVA_VOTACAO",
             });
 
 }

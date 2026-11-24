@@ -1,25 +1,41 @@
 namespace Unifesspa.UniPlus.Selecao.Domain.Enums;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
+
 /// <summary>
 /// De onde vêm as opções de um <see cref="Entities.FatoColetado"/> no processo, copiado da fonte
-/// dos valores do fato no catálogo quando a coleta é definida (ADR-0136). A Seleção congela por
+/// dos valores do dado no catálogo quando a coleta é definida (ADR-0136). A Seleção congela por
 /// cópia e não lê o catálogo ao publicar, por isso guarda a origem no próprio campo.
 /// </summary>
-/// <remarks>A numeração dos membros é identidade de persistência; o envelope grava o nome do membro.</remarks>
 public enum OrigemValoresColeta
 {
-    /// <summary>Os valores vêm do catálogo, ou o campo não é de seleção.</summary>
+    [CodigoDeContrato(
+        "CATALOGO",
+        "Catálogo",
+        Descricao = "Os valores vêm do catálogo, ou o campo não é de escolha.")]
     Catalogo = 0,
 
-    /// <summary>As opções são as que o processo declara (fonte <c>PROCESSO</c>).</summary>
+    [CodigoDeContrato(
+        "OPCOES_DO_PROCESSO",
+        "Opções do processo",
+        Descricao = "As opções são as que o processo declara.")]
     OpcoesDoProcesso = 1,
 
-    /// <summary>As opções são os municípios do bônus regional do processo (fonte <c>MUNICIPIOS_BONUS</c>).</summary>
+    [CodigoDeContrato(
+        "MUNICIPIOS_DO_BONUS",
+        "Municípios do bônus",
+        Descricao = "As opções são os municípios do bônus regional do processo.")]
     MunicipiosDoBonus = 2,
 
-    /// <summary>As opções são as unidades federativas (fonte <c>GEO_UF</c>), enumeradas sem consultar o Geo.</summary>
+    [CodigoDeContrato(
+        "UNIDADES_FEDERATIVAS",
+        "Unidades federativas",
+        Descricao = "As opções são as unidades federativas, listadas sem consultar o serviço de geografia.")]
     UnidadesFederativas = 3,
 
-    /// <summary>As opções são os municípios da prova presencial do processo.</summary>
+    [CodigoDeContrato(
+        "MUNICIPIOS_DA_PROVA_PRESENCIAL",
+        "Municípios da prova presencial",
+        Descricao = "As opções são os municípios da prova presencial do processo.")]
     MunicipiosDaProvaPresencial = 4,
 }

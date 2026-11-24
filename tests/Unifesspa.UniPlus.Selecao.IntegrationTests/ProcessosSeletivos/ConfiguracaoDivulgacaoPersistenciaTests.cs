@@ -5,6 +5,7 @@ using AwesomeAssertions;
 using Microsoft.EntityFrameworkCore;
 
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Kernel.Tempo;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
@@ -43,7 +44,7 @@ public sealed class ConfiguracaoDivulgacaoPersistenciaTests : IClassFixture<Proc
     {
         ProcessoSeletivo processo = NovoProcesso(nameof(Divulgacao_SobreviveASaveChangesEReload));
         processo.DefinirConfiguracaoDivulgacao(
-            ConfiguracaoDivulgacao.Criar(["numero_inscricao", "nome"], "Transparência do resultado — decisão CEPS 12/2026.").Value!).IsSuccess.Should().BeTrue();
+            ConfiguracaoDivulgacao.Criar(["NUMERO_INSCRICAO", "NOME"], "Transparência do resultado — decisão CEPS 12/2026.").Value!).IsSuccess.Should().BeTrue();
 
         await GravarProcessoAsync(processo);
 
@@ -59,7 +60,7 @@ public sealed class ConfiguracaoDivulgacaoPersistenciaTests : IClassFixture<Proc
     {
         ProcessoSeletivo processo = NovoProcesso(nameof(Divulgacao_SubstituidaDuasVezes_UmaLinhaComOsValoresDaSegunda));
         processo.DefinirConfiguracaoDivulgacao(
-            ConfiguracaoDivulgacao.Criar(["numero_inscricao", "nome_abreviado"], null).Value!).IsSuccess.Should().BeTrue();
+            ConfiguracaoDivulgacao.Criar(["NUMERO_INSCRICAO", "NOME_ABREVIADO"], null).Value!).IsSuccess.Should().BeTrue();
         Guid idPrimeiraVersao = processo.ConfiguracaoDivulgacao!.Id;
 
         Guid processoId = processo.Id;
@@ -75,7 +76,7 @@ public sealed class ConfiguracaoDivulgacaoPersistenciaTests : IClassFixture<Proc
     {
         ProcessoSeletivo processo = NovoProcesso(nameof(Divulgacao_Removida_SomeDaTabela));
         processo.DefinirConfiguracaoDivulgacao(
-            ConfiguracaoDivulgacao.Criar(["numero_inscricao", "nome_abreviado"], null).Value!).IsSuccess.Should().BeTrue();
+            ConfiguracaoDivulgacao.Criar(["NUMERO_INSCRICAO", "NOME_ABREVIADO"], null).Value!).IsSuccess.Should().BeTrue();
         Guid idConfiguracao = processo.ConfiguracaoDivulgacao!.Id;
 
         Guid processoId = processo.Id;
@@ -91,11 +92,11 @@ public sealed class ConfiguracaoDivulgacaoPersistenciaTests : IClassFixture<Proc
     {
         ProcessoSeletivo processoA = NovoProcesso($"{nameof(Divulgacao_RequisicoesEquivalentes_PersistemNaMesmaOrdem)}-A");
         processoA.DefinirConfiguracaoDivulgacao(
-            ConfiguracaoDivulgacao.Criar(["nome_abreviado", "numero_inscricao"], null).Value!).IsSuccess.Should().BeTrue();
+            ConfiguracaoDivulgacao.Criar(["NOME_ABREVIADO", "NUMERO_INSCRICAO"], null).Value!).IsSuccess.Should().BeTrue();
 
         ProcessoSeletivo processoB = NovoProcesso($"{nameof(Divulgacao_RequisicoesEquivalentes_PersistemNaMesmaOrdem)}-B");
         processoB.DefinirConfiguracaoDivulgacao(
-            ConfiguracaoDivulgacao.Criar(["numero_inscricao", "nome_abreviado"], null).Value!).IsSuccess.Should().BeTrue();
+            ConfiguracaoDivulgacao.Criar(["NUMERO_INSCRICAO", "NOME_ABREVIADO"], null).Value!).IsSuccess.Should().BeTrue();
 
         await GravarProcessosAsync(processoA, processoB);
 
@@ -143,7 +144,7 @@ public sealed class ConfiguracaoDivulgacaoPersistenciaTests : IClassFixture<Proc
         ProcessoSeletivo relido = (await leitura.ObterComConfiguracaoAsync(processoId, CancellationToken.None))!;
 
         relido.ConfiguracaoDivulgacao.Should().NotBeNull();
-        relido.ConfiguracaoDivulgacao!.CamposPublicos.Should().Equal("nome", "numero_inscricao");
+        relido.ConfiguracaoDivulgacao!.CamposPublicos.Should().Equal("NOME", "NUMERO_INSCRICAO");
         relido.ConfiguracaoDivulgacao.Justificativa.Should().Be("Justificativa da segunda versão.");
 
         await ConferirSubstituicaoAsync(readContext, processoId, idPrimeiraVersao);
@@ -155,7 +156,7 @@ public sealed class ConfiguracaoDivulgacaoPersistenciaTests : IClassFixture<Proc
             "a configuração sobrevive ao SaveChanges e ao reload — sem o Include em ComConfiguracao ela nasceria " +
             "null em todo carregamento novo do agregado");
         relido.ConfiguracaoDivulgacao!.ProcessoSeletivoId.Should().Be(processoId);
-        relido.ConfiguracaoDivulgacao.CamposPublicos.Should().Equal("nome", "numero_inscricao");
+        relido.ConfiguracaoDivulgacao.CamposPublicos.Should().Equal("NOME", "NUMERO_INSCRICAO");
         relido.ConfiguracaoDivulgacao.Justificativa.Should().Be("Transparência do resultado — decisão CEPS 12/2026.");
     }
 
@@ -192,7 +193,7 @@ public sealed class ConfiguracaoDivulgacaoPersistenciaTests : IClassFixture<Proc
         ProcessoSeletivo relidoB = (await leitura.ObterComConfiguracaoAsync(segundoId, CancellationToken.None))!;
 
         relidoA.ConfiguracaoDivulgacao!.CamposPublicos.Should().Equal(relidoB.ConfiguracaoDivulgacao!.CamposPublicos);
-        relidoA.ConfiguracaoDivulgacao.CamposPublicos.Should().Equal("nome_abreviado", "numero_inscricao");
+        relidoA.ConfiguracaoDivulgacao.CamposPublicos.Should().Equal("NOME_ABREVIADO", "NUMERO_INSCRICAO");
     }
 
     private static void DefinirTaxaSemCobranca(ProcessoSeletivo processo) =>
@@ -203,8 +204,8 @@ public sealed class ConfiguracaoDivulgacaoPersistenciaTests : IClassFixture<Proc
     {
         processo.DefinirClassificacao(ConfiguracaoClassificacao.Criar(new DeclaracaoDaClassificacao
         {
-            RegraCalculo = ReferenciaRegra.De(RegraCalculoCodigo.ClassificacaoImportada, "v1", HashFixo),
-            RegraOrdemAlocacao = ReferenciaRegra.De(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, "v1", HashFixo),
+            RegraCalculo = ReferenciaRegra.De(RegraDeCalculoDaNota.ClassificacaoImportada.Codigo(), "v1", HashFixo),
+            RegraOrdemAlocacao = ReferenciaRegra.De(RegraDeOrdemDeAlocacao.PrimeiraOpcaoPrioritaria.Codigo(), "v1", HashFixo),
         }).Value!).IsSuccess.Should().BeTrue();
     }
 
@@ -221,11 +222,9 @@ public sealed class ConfiguracaoDivulgacaoPersistenciaTests : IClassFixture<Proc
 
     private static void DefinirDistribuicao(ProcessoSeletivo processo)
     {
-        ModalidadeSelecionada modalidade = ModalidadeSelecionada.Criar(
-            Guid.CreateVersion7(), "AC", null, NaturezaLegalModalidade.Ampla, ComposicaoVagasModalidade.RestanteDasVagasOfertadas,
-            null, RegraRemanejamentoModalidade.Nenhuma, null, null, null, RegrasDeAplicabilidadeDeTeste.DaNatureza(NaturezaLegalModalidade.Ampla), null, "Res. Unifesspa 532/2021", quantidadeDeclarada: 40).Value!;
+        ModalidadeSelecionada modalidade = ModalidadeSelecionada.Criar(ModalidadesNoCadastroDeTeste.Da("AC", NaturezaLegalModalidade.Ampla, ComposicaoVagasModalidade.RestanteDasVagasOfertadas) with { RegraRemanejamento = null, BaseLegal = "Res. Unifesspa 532/2021" }, 40).Value!;
         processo.DefinirDistribuicaoVagas([ConfiguracaoDistribuicaoVagas.Criar(Guid.CreateVersion7(),
-            new DistribuicaoDeVagasDeclarada { VagasOfertadasBase = 40, PercentualDaReservaLegal = 1m, RegraDeDistribuicao = ReferenciaRegra.De(RegraDistribuicaoVagasCodigo.Institucional, "v1", HashFixo), Modalidades = [modalidade] },
+            new DistribuicaoDeVagasDeclarada { VagasOfertadasBase = 40, PercentualDaReservaLegal = 1m, RegraDeDistribuicao = ReferenciaRegra.De(RegraDeDistribuicaoDeVagas.Institucional.Codigo(), "v1", HashFixo), Modalidades = [modalidade] },
             new FatosDaOfertaNoCadastro { OfertaCurso = OfertaCursoDeTeste.Medicina }).Value!], FatosDeModalidadeDeTeste.DoCatalogo).IsSuccess.Should().BeTrue();
     }
 
@@ -252,7 +251,7 @@ public sealed class ConfiguracaoDivulgacaoPersistenciaTests : IClassFixture<Proc
         ProcessoSeletivoRepository repository = ProcessoSeletivoRepositoryDeTeste.Criar(sessao);
         ProcessoSeletivo tracked = (await repository.ObterComConfiguracaoAsync(processoId, CancellationToken.None))!;
         tracked.DefinirConfiguracaoDivulgacao(
-            ConfiguracaoDivulgacao.Criar(["numero_inscricao", "nome"], "Justificativa da segunda versão.").Value!).IsSuccess.Should().BeTrue();
+            ConfiguracaoDivulgacao.Criar(["NUMERO_INSCRICAO", "NOME"], "Justificativa da segunda versão.").Value!).IsSuccess.Should().BeTrue();
         await sessao.SaveChangesAsync(CancellationToken.None);
     }
 

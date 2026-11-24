@@ -22,8 +22,8 @@ public sealed record CondicaoGatilhoInput(int Clausula, string Fato, [AceitaCodi
 /// <summary>
 /// Entrada de uma base legal (ADR-0074), usada por <see cref="IndeferimentoDoDocumentoInput"/> e por
 /// <see cref="IndeferimentoDoGrupoInput"/>. <see cref="Abrangencia"/>/<see cref="Status"/>
-/// são tokens canônicos (<see cref="Domain.Enums.TipoAbrangenciaCodigo"/>/
-/// <see cref="Domain.Enums.StatusBaseLegalCodigo"/>). A validação de <b>gate</b> (≥1
+/// são tokens canônicos (<see cref="Domain.Enums.TipoAbrangencia"/>/
+/// <see cref="Domain.Enums.StatusBaseLegal"/>). A validação de <b>gate</b> (≥1
 /// RESOLVIDO por exigência que determina resultado) é da publicação, não deste PUT —
 /// aqui só a forma de cada item é validada.
 /// </summary>
@@ -63,7 +63,7 @@ public sealed record MomentoDaExigenciaInput(Guid FaseId, Guid? EtapaId = null, 
 /// </summary>
 /// <param name="Tipo">Token <c>GERAL</c> ou <c>CONDICIONAL</c>; ausente, o domínio recusa a exigência.</param>
 /// <param name="Condicoes">As condições do gatilho, em forma normal disjuntiva.</param>
-public sealed record AplicabilidadeDaExigenciaInput(string? Tipo, IReadOnlyList<CondicaoGatilhoInput>? Condicoes)
+public sealed record AplicabilidadeDaExigenciaInput([property: AceitaCodigosDe<Aplicabilidade>] string? Tipo, IReadOnlyList<CondicaoGatilhoInput>? Condicoes)
 {
     /// <summary>O caminho do tipo da aplicabilidade no pedido.</summary>
     public const string CaminhoDoTipo = "aplicabilidade.tipo";
@@ -143,7 +143,7 @@ public sealed record ItemDocumentoExigidoInput(
 /// do domínio: <c>COMPETENCIA_MENSAL</c>/<c>EXERCICIO_ANUAL</c> (calendário derivável, exige
 /// <see cref="DataReferencia"/>) ou <c>OCORRENCIA</c> (<see cref="OcorrenciasEsperadas"/> opcional).
 /// </summary>
-/// <param name="CriterioDeDistincao">Código do critério de distinção (<see cref="Domain.Enums.CriterioDeDistincaoDasApresentacoesCodigo"/>).</param>
+/// <param name="CriterioDeDistincao">Código do critério de distinção (<see cref="Domain.Enums.CriterioDeDistincaoDasApresentacoes"/>).</param>
 /// <param name="DataReferencia">Data a partir da qual o calendário é derivado.</param>
 /// <param name="OcorrenciasEsperadas">Identificadores das ocorrências esperadas.</param>
 public sealed record DistincaoDasApresentacoesInput(string? CriterioDeDistincao, DateOnly? DataReferencia, IReadOnlyList<string>? OcorrenciasEsperadas)

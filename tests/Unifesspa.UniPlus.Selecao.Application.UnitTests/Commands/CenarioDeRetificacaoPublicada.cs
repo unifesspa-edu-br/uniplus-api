@@ -113,7 +113,7 @@ internal sealed class CenarioDeRetificacaoPublicada
     /// </summary>
     public void ComPreliminarPublicadoEDefinitivoPendente()
     {
-        ProdutoDaFase preliminar = ProdutoDaFase.Criar("RESULTADO_PROVA", PapelProdutoFase.Preliminar);
+        ProdutoDaFase preliminar = ProdutoDaFase.Criar("RESULTADO_PROVA", PapelDaPublicacaoPrevista.Preliminar);
         FaseCronograma fase = FaseDaProvaComPreliminarEDefinitivo(preliminar);
         _handlers.Codecs.Reidratar(_versao).Returns(Result<EnvelopeReidratado>.Success(EnvelopeDaVersaoComAFase(fase)));
         _handlers.Atos.ListarDoProcessoAsync(Processo.Id, Arg.Any<CancellationToken>()).Returns([PreliminarJaPublicado(Processo.Id, fase, preliminar)]);
@@ -129,7 +129,7 @@ internal sealed class CenarioDeRetificacaoPublicada
             OrigensCanonicasDeTeste.ComNome(new OrigemCanonicaDaFase(
                 Guid.CreateVersion7(), "PROVA", OrigemDataFase.NoEdital, AgrupaEtapas: false, PermiteComplementacao: false, ColetaInscricao: false, ColetaSolicitacaoIsencao: false)),
             new DecisoesDeCronogramaDaFase(1, Inicio: Agora, Fim: Agora.AddDays(10), UnidadeResponsavel: UnidadesDeTeste.Ceps),
-            new PublicacoesDaFase(Produtos: [preliminar, ProdutoDaFase.Criar("RESULTADO_PROVA", PapelProdutoFase.Definitivo)], EmiteParecerIndividual: false, RegraRecurso: null),
+            new PublicacoesDaFase(Produtos: [preliminar, ProdutoDaFase.Criar("RESULTADO_PROVA", PapelDaPublicacaoPrevista.Definitivo)], EmiteParecerIndividual: false, RegraRecurso: null),
             bancasRequeridas: []).Value!;
 
     private static AtoDoProcesso PreliminarJaPublicado(Guid processoId, FaseCronograma fase, ProdutoDaFase preliminar)

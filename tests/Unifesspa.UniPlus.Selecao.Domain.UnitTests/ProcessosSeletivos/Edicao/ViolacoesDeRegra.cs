@@ -4,6 +4,7 @@ using System.Text.Json;
 
 using AwesomeAssertions;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.Formularios;
@@ -114,20 +115,20 @@ internal sealed record ViolacaoDeRegra(
 
     private static CriterioDesempate CriterioMaiorIdade(int ordem) => CriterioDesempate.Criar(
         ordem,
-        ReferenciaRegra.De(CriterioDesempateCodigo.MaiorIdade, "v1", new string('f', 64)),
+        ReferenciaRegra.De(RegraDeDesempate.MaiorIdade.Codigo(), "v1", new string('f', 64)),
         new ParametrosDesempateMaiorIdade()).Value!;
 
     // A regra de eliminação cita uma etapa que o processo não tem.
     private static ConfiguracaoClassificacao ClassificacaoQueEliminaPorEtapaInexistente() => ConfiguracaoClassificacao.Criar(new DeclaracaoDaClassificacao
     {
-        RegraCalculo = ReferenciaRegra.De(RegraCalculoCodigo.FormulaMediaPonderada, "v1", new string('a', 64)),
-        RegraArredondamento = ReferenciaRegra.De(RegraArredondamentoCodigo.PrecisaoTruncar, "v1", new string('b', 64)),
+        RegraCalculo = ReferenciaRegra.De(RegraDeCalculoDaNota.MediaPonderada.Codigo(), "v1", new string('a', 64)),
+        RegraArredondamento = ReferenciaRegra.De(RegraDeArredondamentoDaNota.Truncar.Codigo(), "v1", new string('b', 64)),
         CasasArredondamento = 2,
-        RegraOrdemAlocacao = ReferenciaRegra.De(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, "v1", new string('c', 64)),
+        RegraOrdemAlocacao = ReferenciaRegra.De(RegraDeOrdemDeAlocacao.PrimeiraOpcaoPrioritaria.Codigo(), "v1", new string('c', 64)),
         RegrasEliminacao = [
             RegraEliminacao.Criar(
-                ReferenciaRegra.De(RegraEliminacaoCodigo.ElimNotaMinimaEtapa, "v1", new string('d', 64)),
-                new ParametrosElimNotaMinimaEtapa(Guid.CreateVersion7(), 4m)).Value!,
+                ReferenciaRegra.De(RegraDeEliminacaoPorCalculo.NotaMinimaNaEtapa.Codigo(), "v1", new string('d', 64)),
+                new ParametrosEliminacaoPorNotaMinimaNaEtapa(Guid.CreateVersion7(), 4m)).Value!,
         ],
         EscalaNotaFinal = 100m,
     }).Value!;

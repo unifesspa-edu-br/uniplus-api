@@ -20,11 +20,11 @@ public sealed class MotivosDeDecisaoQueryHandlersTests
 {
     private readonly IMotivoDeDecisaoRepository _repository = Substitute.For<IMotivoDeDecisaoRepository>();
 
-    [Fact(DisplayName = "A listagem repassa o filtro e projeta o tipo com código e rótulo, a subclassificação e o sentido como código")]
+    [Fact(DisplayName = "A listagem repassa o filtro e projeta o tipo e o sentido com código e rótulo e a subclassificação")]
     public async Task Listar_RepassaFiltroEProjeta()
     {
         MotivoDeDecisao motivo = Motivo();
-        FiltroDosMotivos filtro = new(TipoMotivoDeDecisao.IsencaoDaTaxa, FundamentoIsencaoCodigo.CadastroUnico, ApenasAtivos: true);
+        FiltroDosMotivos filtro = new(TipoMotivoDeDecisao.IsencaoDaTaxa, "CADASTRO_UNICO", ApenasAtivos: true);
 
         ListarMotivosDeDecisaoResult resultado = await ListarAsync(filtro, motivo);
 
@@ -33,8 +33,8 @@ public sealed class MotivosDeDecisaoQueryHandlersTests
             motivo.Id,
             Tipo = CodigoComRotulo<TipoMotivoDeDecisao>.De(TipoMotivoDeDecisao.IsencaoDaTaxa),
             Codigo = "RENDA_ACIMA_DO_LIMITE",
-            Subclassificacao = FundamentoIsencaoCodigo.CadastroUnico,
-            Sentido = SentidoDoMotivoCodigo.Favoravel,
+            Subclassificacao = "CADASTRO_UNICO",
+            Sentido = new { Codigo = "FAVORAVEL", Rotulo = "favorável" },
             Ativo = true,
         });
     }
@@ -72,5 +72,5 @@ public sealed class MotivosDeDecisaoQueryHandlersTests
 
     private static MotivoDeDecisao Motivo() =>
         MotivoDeDecisao.Criar(new CamposDoMotivo(
-            TipoMotivoDeDecisao.IsencaoDaTaxa.Codigo(), "RENDA_ACIMA_DO_LIMITE", "Renda dentro do limite legal.", FundamentoIsencaoCodigo.CadastroUnico, SentidoDoMotivo.Favoravel)).Value!;
+            TipoMotivoDeDecisao.IsencaoDaTaxa.Codigo(), "RENDA_ACIMA_DO_LIMITE", "Renda dentro do limite legal.", "CADASTRO_UNICO", SentidoDoMotivo.Favoravel)).Value!;
 }

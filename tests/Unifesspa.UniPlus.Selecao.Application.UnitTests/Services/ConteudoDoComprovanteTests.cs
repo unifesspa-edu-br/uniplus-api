@@ -4,6 +4,7 @@ using System.Text.Json;
 
 using AwesomeAssertions;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Regras.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Application.DTOs.Comprovantes;
@@ -164,11 +165,11 @@ public sealed class ConteudoDoComprovanteTests
     {
         return ComprovanteComDocumentos(
             inscricao,
-            Documento("Laudo", SituacaoDoDocumentoCodigo.Satisfeita, new ArquivoDoComprovante(new string('a', 64), 2048, "PDF")),
-            Documento("Histórico", SituacaoDoDocumentoCodigo.Pendente),
+            Documento("Laudo", SituacaoDoDocumento.Satisfeita.Codigo(), new ArquivoDoComprovante(new string('a', 64), 2048, "PDF")),
+            Documento("Histórico", SituacaoDoDocumento.Pendente.Codigo()),
             Documento("Renda", DocumentosDoComprovante.SituacaoDispensada),
-            Documento("Diploma", SituacaoDoDocumentoCodigo.DependeDeFasePosterior),
-            Documento("Declaração", SituacaoDoDocumentoCodigo.PodeSerExigido),
+            Documento("Diploma", SituacaoDoDocumento.DependeDeFasePosterior.Codigo()),
+            Documento("Declaração", SituacaoDoDocumento.PodeSerExigido.Codigo()),
             Documento("Outro", "SITUACAO_NOVA"));
     }
 

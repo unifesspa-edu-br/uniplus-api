@@ -39,8 +39,8 @@ public sealed class ExigenciaDaIsencaoDaTaxa : IExigenciaDeMotivos
         return from lugar in lugares.QueDeclaram(TipoMotivoDeDecisao.IsencaoDaTaxa)
                from fundamento in fundamentos
                from sentido in Sentidos
-               where !escolhidos.Any(e => Cobre(e, lugar, fundamento.ToCodigo(), sentido))
-               select Falta(lugar, fundamento.ToCodigo(), sentido);
+               where !escolhidos.Any(e => Cobre(e, lugar, fundamento.Codigo(), sentido))
+               select Falta(lugar, fundamento.Codigo(), sentido);
     }
 
     private static IReadOnlyList<FundamentoIsencao> FundamentosHabilitados(ConfiguracaoDeclarada configuracao) =>
@@ -60,5 +60,5 @@ public sealed class ExigenciaDaIsencaoDaTaxa : IExigenciaDeMotivos
     private static FieldError SemLugarQueDeclareOTipo(FundamentoIsencao fundamento) =>
         new("taxaDeInscricao.fundamentos", new DomainError(
             MotivoDeDecisaoErrorCodes.TipoDeDecisaoNaoDeclarado,
-            $"O fundamento de isenção {fundamento.ToCodigo()} é habilitado, mas nenhuma fase nem etapa declara o tipo de decisão {TipoMotivoDeDecisao.IsencaoDaTaxa.Codigo()}."));
+            $"O fundamento de isenção {fundamento.Codigo()} é habilitado, mas nenhuma fase nem etapa declara o tipo de decisão {TipoMotivoDeDecisao.IsencaoDaTaxa.Codigo()}."));
 }

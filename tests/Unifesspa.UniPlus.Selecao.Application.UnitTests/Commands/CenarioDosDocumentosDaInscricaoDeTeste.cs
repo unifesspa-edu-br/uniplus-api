@@ -62,14 +62,12 @@ internal sealed class CenarioDosDocumentosDaInscricaoDeTeste
     public IArquivoDoCandidatoStorage Armazenamento { get; } = Substitute.For<IArquivoDoCandidatoStorage>();
     public IUnitOfWork UnidadeDeTrabalho { get; } = Substitute.For<IUnitOfWork>();
 
-    internal static DocumentoExigido Exigencia(string codigo, Guid faseId = default) => new Unifesspa.UniPlus.Selecao.Domain.UnitTests.Cenarios.DocumentoExigidoBuilder()
-            .ComTipo(new CopiaDoTipoDeDocumento(Guid.CreateVersion7(), codigo, codigo, "PESSOAL", ProtecaoDoDocumentoDeTeste.Pessoal))
-            .ComMomento(new MomentoDaExigencia(faseId == Guid.Empty ? Guid.CreateVersion7() : faseId, null, null))
-            .ComAplicabilidade(new AplicabilidadeDaExigencia(Aplicabilidade.Geral, []))
-            .ComIndeferimento(new IndeferimentoDoDocumento(false, null, []))
-            .ComRequisitos(new RequisitosDoDocumento(FormatosPermitidos.Criar(false, [("PDF", null)]).Value!, null, null, null, null))
-            .ComFatos(null)
-            .Criar().Value!;
+    internal static DocumentoExigido Exigencia(string codigo, Guid faseId = default) => DocumentoExigidoDeTeste.Novo()
+        .NaFase(faseId == Guid.Empty ? Guid.CreateVersion7() : faseId)
+        .ComTipo(codigo, codigo, "PESSOAL")
+        .Facultativa()
+        .ComFormatos(FormatosPermitidos.Criar(false, [("PDF", null)]).Value!)
+        .Criar().Value!;
 
     public Inscricao Rascunho(params string[] dependentes)
     {
@@ -137,7 +135,7 @@ internal sealed class CenarioDosDocumentosDaInscricaoDeTeste
         new DecisoesDeCronogramaDaFase(
             ordem, Inicio: new DateTimeOffset(2026, 3, 1, 12, 0, 0, TimeSpan.Zero), Fim: new DateTimeOffset(2026, 3, 20, 12, 0, 0, TimeSpan.Zero),
             UnidadeResponsavel: UnidadesDeTeste.Ceps),
-        new PublicacoesDaFase(Produtos: [ProdutoDaFase.Criar(codigo, PapelProdutoFase.Definitivo)], EmiteParecerIndividual: false, RegraRecurso: null),
+        new PublicacoesDaFase(Produtos: [ProdutoDaFase.Criar(codigo, PapelDaPublicacaoPrevista.Definitivo)], EmiteParecerIndividual: false, RegraRecurso: null),
         bancasRequeridas: []).Value!;
 
     private ConfiguracaoPublicada ConfiguracaoComDocumentos(ConfiguracaoPublicada conforme, FaseCronograma faseDaInscricao, FaseCronograma outraFase)

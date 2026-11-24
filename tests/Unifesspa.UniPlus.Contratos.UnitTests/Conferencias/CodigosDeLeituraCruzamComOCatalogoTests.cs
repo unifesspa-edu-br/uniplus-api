@@ -10,7 +10,6 @@ using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using ComposicaoVagasDoCatalogo = Unifesspa.UniPlus.Configuracao.Domain.Enums.ComposicaoVagas;
 using NaturezaLegalDoCatalogo = Unifesspa.UniPlus.Configuracao.Domain.Enums.NaturezaLegal;
 using OrigemDataDoCatalogo = Unifesspa.UniPlus.Configuracao.Domain.Enums.OrigemDataFase;
-using RegraRemanejamentoDoCatalogo = Unifesspa.UniPlus.Configuracao.Domain.Enums.RegraRemanejamento;
 
 /// <summary>
 /// Amarra os códigos que a leitura de Seleção emite aos que o catálogo de Configuração
@@ -34,54 +33,31 @@ using RegraRemanejamentoDoCatalogo = Unifesspa.UniPlus.Configuracao.Domain.Enums
 /// </remarks>
 public sealed class CodigosDeLeituraCruzamComOCatalogoTests
 {
-    [Fact(DisplayName = "Natureza legal: o código que Seleção lê é o que o catálogo publica")]
+    [Fact(DisplayName = "Natureza legal tem o mesmo código nos dois módulos")]
     public void NaturezaLegal_MesmoCodigoNosDoisModulos() =>
         CadaMembroExceto<NaturezaLegalModalidade, NaturezaLegalDoCatalogo>(
-            NaturezaLegalModalidade.Nenhuma,
-            static local => local.ToCodigo(),
-            CodigoDeContratoExtensions.Codigo);
+            default, CodigoDeContratoExtensions.Codigo, CodigoDeContratoExtensions.Codigo);
 
-    [Fact(DisplayName = "Composição de vagas: o código que Seleção lê é o que o catálogo publica")]
+    [Fact(DisplayName = "Composição de vagas tem o mesmo código nos dois módulos")]
     public void ComposicaoVagas_MesmoCodigoNosDoisModulos() =>
         CadaMembroExceto<ComposicaoVagasModalidade, ComposicaoVagasDoCatalogo>(
-            ComposicaoVagasModalidade.Nenhuma,
-            static local => local.ToCodigo(),
-            CodigoDeContratoExtensions.Codigo);
+            default, CodigoDeContratoExtensions.Codigo, CodigoDeContratoExtensions.Codigo);
 
     [Fact(DisplayName = "Origem da data da fase: o código que Seleção lê é o que o catálogo publica")]
     public void OrigemDataFase_MesmoCodigoNosDoisModulos() =>
         CadaMembroExceto<OrigemDataFase, OrigemDataDoCatalogo>(
-            OrigemDataFase.Nenhuma,
-            static local => local.ToCodigo(),
+            excecao: null,
+            CodigoDeContratoExtensions.Codigo,
             CodigoDeContratoExtensions.Codigo);
-
-    /// <summary>
-    /// Remanejamento tem um caso a mais: <c>Nenhuma</c> não indica corrupção, e sim
-    /// a modalidade que não remaneja. O catálogo a representa por ausência do campo, e a
-    /// leitura de Seleção precisa fazer o mesmo — um código próprio ali seria vocabulário
-    /// que a outra rota não publica, e o cruzamento voltaria a falhar.
-    /// </summary>
-    [Fact(DisplayName = "Regra de remanejamento: mesmo código, e a ausência é representada por null nos dois")]
-    public void RegraRemanejamento_MesmoCodigoEAusenciaEmAmbos()
-    {
-        CadaMembroExceto<RegraRemanejamentoModalidade, RegraRemanejamentoDoCatalogo>(
-            RegraRemanejamentoModalidade.Nenhuma,
-            static local => local.ToCodigo()!,
-            CodigoDeContratoExtensions.Codigo);
-
-        RegraRemanejamentoModalidade.Nenhuma.ToCodigo().Should().BeNull(
-            "o catálogo publica ausência (o campo é opcional na origem) para a modalidade que não "
-            + "remaneja — emitir um código aqui inventaria vocabulário que a outra rota não conhece");
-    }
 
     private static void CadaMembroExceto<TLocal, TCatalogo>(
-        TLocal excecao,
+        TLocal? excecao,
         Func<TLocal, string> codigoEmSelecao,
         Func<TCatalogo, string> codigoNoCatalogo)
         where TLocal : struct, Enum
         where TCatalogo : struct, Enum
     {
-        foreach (TLocal local in Enum.GetValues<TLocal>().Where(v => !v.Equals(excecao)))
+        foreach (TLocal local in Enum.GetValues<TLocal>().Where(v => excecao is null || !v.Equals(excecao.Value)))
         {
             string nome = local.ToString();
 

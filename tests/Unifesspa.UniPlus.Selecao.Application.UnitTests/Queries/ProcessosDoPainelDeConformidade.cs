@@ -5,6 +5,7 @@ using AwesomeAssertions;
 using NSubstitute;
 
 using Unifesspa.UniPlus.Configuracao.Contracts;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Regras.ValueObjects;
@@ -38,7 +39,7 @@ internal static class ProcessosDoPainelDeConformidade
                 OrigensCanonicasDeTeste.ComNome(new OrigemCanonicaDaFase(
                     Guid.CreateVersion7(), "CLASSIFICACAO", OrigemDataFase.NaExecucao, AgrupaEtapas: false, PermiteComplementacao: false, ColetaInscricao: false, ColetaSolicitacaoIsencao: false)),
                 new DecisoesDeCronogramaDaFase(1, Inicio: null, Fim: null, UnidadeResponsavel: UnidadesDeTeste.Ceps),
-                new PublicacoesDaFase(Produtos: [ProdutoDaFase.Criar("ATO_UNICO", PapelProdutoFase.Definitivo)], EmiteParecerIndividual: false, RegraRecurso: null),
+                new PublicacoesDaFase(Produtos: [ProdutoDaFase.Criar("ATO_UNICO", PapelDaPublicacaoPrevista.Definitivo)], EmiteParecerIndividual: false, RegraRecurso: null),
                 bancasRequeridas: []).Value!],
             []).IsSuccess.Should().BeTrue();
 
@@ -63,7 +64,7 @@ internal static class ProcessosDoPainelDeConformidade
     {
         ProcessoSeletivo processo = ProcessosDeTeste.SemConfiguracao("PS 2026 — Falso Verde", OrigemCandidatos.InscricaoPropria);
         processo.DefinirEtapas([]).IsSuccess.Should().BeTrue(
-            "Story #851 §3.5: lista vazia é estado válido sob CLASSIFICACAO-IMPORTADA — sem etapa, não precisamos de fase que agrupe etapas");
+            "Story #851 §3.5: lista vazia é estado válido sob CLASSIFICACAO_IMPORTADA — sem etapa, não precisamos de fase que agrupe etapas");
         processo.DefinirAtendimentoEspecializado(AtendimentoEspecializado.Criar([], [], []).Value!).IsSuccess.Should().BeTrue();
         processo.DefinirDistribuicaoVagas([DistribuicaoComAmpla()], FatosDeModalidadeDeTeste.DoCatalogo).IsSuccess.Should().BeTrue();
         processo.DefinirClassificacao(ClassificacaoImportada()).IsSuccess.Should().BeTrue();
@@ -105,13 +106,12 @@ internal static class ProcessosDoPainelDeConformidade
     public static ProcessoSeletivo QueExigeODocumento(string nome, TipoDocumentoView tipo, IReadOnlyList<string>? fatosComprovados = null)
     {
         ProcessoSeletivo processo = ProcessoSeletivoConformeBuilder.Criar(nome, out Guid faseId);
-        DocumentoExigido exigencia = new Unifesspa.UniPlus.Selecao.Domain.UnitTests.Cenarios.DocumentoExigidoBuilder()
-            .ComTipo(new CopiaDoTipoDeDocumento(tipo.Id, tipo.Codigo, tipo.Nome, tipo.Categoria, ProtecaoDoDocumentoDeTeste.Pessoal))
-            .ComMomento(new MomentoDaExigencia(faseId, null, FinalidadeFormulario.Inscricao))
-            .ComAplicabilidade(new AplicabilidadeDaExigencia(Aplicabilidade.Geral, []))
-            .ComIndeferimento(new IndeferimentoDoDocumento(true, null, []))
-            .ComRequisitos(new RequisitosDoDocumento(FormatosPermitidos.Criar(true, null).Value!, null, null, null, null))
-            .ComFatos(fatosComprovados)
+        DocumentoExigido exigencia = DocumentoExigidoDeTeste.Novo()
+            .NaFase(faseId)
+            .ComTipoDeOrigem(tipo.Id)
+            .ComTipo(tipo.Codigo, tipo.Nome, tipo.Categoria)
+            .NaFinalidade(FinalidadeFormulario.Inscricao)
+            .ComFatosComprovados(fatosComprovados)
             .Criar().Value!;
         Result definida = processo.DefinirDocumentosExigidos([RegraDeComprovacao.CriarRegraDeDocumento(exigencia, 0).Value!]);
         definida.IsSuccess.Should().BeTrue(definida.Error?.Message);
@@ -126,11 +126,9 @@ internal static class ProcessosDoPainelDeConformidade
 
     private static ConfiguracaoDistribuicaoVagas DistribuicaoComAmpla()
     {
-        ModalidadeSelecionada ampla = ModalidadeSelecionada.Criar(
-            Guid.CreateVersion7(), "AC", null, NaturezaLegalModalidade.Ampla, ComposicaoVagasModalidade.RestanteDasVagasOfertadas,
-            null, RegraRemanejamentoModalidade.Nenhuma, null, null, null, RegrasDeAplicabilidadeDeTeste.DaNatureza(NaturezaLegalModalidade.Ampla), null, "base legal", quantidadeDeclarada: 50).Value!;
+        ModalidadeSelecionada ampla = ModalidadeSelecionada.Criar(ModalidadesNoCadastroDeTeste.Da("AC", NaturezaLegalModalidade.Ampla, ComposicaoVagasModalidade.RestanteDasVagasOfertadas) with { RegraRemanejamento = null, BaseLegal = "base legal" }, 50).Value!;
         ReferenciaRegra regraInstitucional = ReferenciaRegra.De(
-            RegraDistribuicaoVagasCodigo.Institucional, "v1", ProcessoSeletivoConformeBuilder.HashFixo);
+            RegraDeDistribuicaoDeVagas.Institucional.Codigo(), "v1", ProcessoSeletivoConformeBuilder.HashFixo);
 
         return ConfiguracaoDistribuicaoVagas.Criar(Guid.CreateVersion7(),
             new DistribuicaoDeVagasDeclarada { VagasOfertadasBase = 50, PercentualDaReservaLegal = 1m, RegraDeDistribuicao = regraInstitucional, Modalidades = [ampla] },
@@ -140,17 +138,17 @@ internal static class ProcessosDoPainelDeConformidade
     private static ConfiguracaoClassificacao ClassificacaoImportada() =>
         ConfiguracaoClassificacao.Criar(new DeclaracaoDaClassificacao
         {
-            RegraCalculo = ReferenciaRegra.De(RegraCalculoCodigo.ClassificacaoImportada, "v1", ProcessoSeletivoConformeBuilder.HashFixo),
-            RegraOrdemAlocacao = ReferenciaRegra.De(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, "v1", ProcessoSeletivoConformeBuilder.HashFixo),
+            RegraCalculo = ReferenciaRegra.De(RegraDeCalculoDaNota.ClassificacaoImportada.Codigo(), "v1", ProcessoSeletivoConformeBuilder.HashFixo),
+            RegraOrdemAlocacao = ReferenciaRegra.De(RegraDeOrdemDeAlocacao.PrimeiraOpcaoPrioritaria.Codigo(), "v1", ProcessoSeletivoConformeBuilder.HashFixo),
         }).Value!;
 
     private static ConfiguracaoClassificacao ClassificacaoPorMediaPonderada() =>
         ConfiguracaoClassificacao.Criar(new DeclaracaoDaClassificacao
         {
-            RegraCalculo = ReferenciaRegra.De(RegraCalculoCodigo.FormulaMediaPonderada, "v1", new string('b', 64)),
-            RegraArredondamento = ReferenciaRegra.De(RegraArredondamentoCodigo.PrecisaoTruncar, "v1", new string('c', 64)),
+            RegraCalculo = ReferenciaRegra.De(RegraDeCalculoDaNota.MediaPonderada.Codigo(), "v1", new string('b', 64)),
+            RegraArredondamento = ReferenciaRegra.De(RegraDeArredondamentoDaNota.Truncar.Codigo(), "v1", new string('c', 64)),
             CasasArredondamento = 2,
-            RegraOrdemAlocacao = ReferenciaRegra.De(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, "v1", ProcessoSeletivoConformeBuilder.HashFixo),
+            RegraOrdemAlocacao = ReferenciaRegra.De(RegraDeOrdemDeAlocacao.PrimeiraOpcaoPrioritaria.Codigo(), "v1", ProcessoSeletivoConformeBuilder.HashFixo),
             EscalaNotaFinal = 100m,
         }).Value!;
 

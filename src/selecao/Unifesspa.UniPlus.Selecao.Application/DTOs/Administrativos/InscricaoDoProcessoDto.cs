@@ -2,6 +2,7 @@ namespace Unifesspa.UniPlus.Selecao.Application.DTOs.Administrativos;
 
 using System.Text.Json.Serialization;
 
+using Unifesspa.UniPlus.Application.Abstractions.Respostas;
 using Unifesspa.UniPlus.Authorization.Projecao;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Application.DTOs;
@@ -28,7 +29,7 @@ public sealed record InscricaoDoProcessoDto(
     string? NumeroInscricao,
     [property: ProtegidoComo(ClassificacaoDeProtecao.Publico, Fonte = "selecao.inscricoes.situacao")]
     [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
-    SituacaoInscricao? Situacao,
+    CodigoComRotulo<SituacaoInscricao>? Situacao,
     [property: ProtegidoComo(ClassificacaoDeProtecao.Publico, Fonte = "selecao.inscricoes.oferta_curso_id")]
     [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     IReadOnlyList<OfertaEscolhidaDto>? Ofertas,

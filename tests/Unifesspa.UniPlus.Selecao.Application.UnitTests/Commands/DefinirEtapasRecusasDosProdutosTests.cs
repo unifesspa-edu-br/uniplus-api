@@ -5,6 +5,7 @@ using AwesomeAssertions;
 using NSubstitute;
 
 using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Publicacoes.Contracts;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
@@ -35,13 +36,13 @@ public sealed class DefinirEtapasRecusasDosProdutosTests
     private static ProdutoDaEtapaInput Produto(string ato, string? papel) => new(ato, papel);
 
     private static EtapaProcessoInput EtapaCom(params ProdutoDaEtapaInput[] produtos) => new(
-        "Prova Objetiva", CaraterEtapa.Classificatoria, TipoProvaObjetivaOrigemId, 1m, null, 1,
+        "Prova Objetiva", CaraterEtapa.Classificatoria.Codigo(), TipoProvaObjetivaOrigemId, 1m, null, 1,
         Produtos: produtos, Bancas: [], Recursos: []);
 
     private static ProdutoDaEtapaInput[] ProdutosComPapelDesconhecidoNoPrimeiroEAtoForaDoCatalogoNoTerceiro() =>
     [
         Produto(AtoDaClassificacao, PapelForaDoVocabulario),
-        Produto(AtoDaClassificacao, PapelProdutoFaseCodigo.Preliminar),
+        Produto(AtoDaClassificacao, "PRELIMINAR"),
         Produto(AtoForaDoCatalogo, null),
     ];
 
@@ -117,9 +118,9 @@ public sealed class DefinirEtapasRecusasDosProdutosTests
     public async Task Handle_AtoRepetidoEmAba_RecusaOTerceiroProduto()
     {
         EtapaProcessoInput etapa = EtapaCom(
-            Produto(AtoDaClassificacao, PapelProdutoFaseCodigo.Preliminar),
-            Produto(AtoDoResultadoFinal, PapelProdutoFaseCodigo.Preliminar),
-            Produto(AtoDaClassificacao, PapelProdutoFaseCodigo.Preliminar));
+            Produto(AtoDaClassificacao, "PRELIMINAR"),
+            Produto(AtoDoResultadoFinal, "PRELIMINAR"),
+            Produto(AtoDaClassificacao, "PRELIMINAR"));
 
         Result resultado = await Definir(etapa);
 
@@ -130,8 +131,8 @@ public sealed class DefinirEtapasRecusasDosProdutosTests
     public async Task Handle_ProdutoRecusadoEAtoRepetido_DevolveSoARecusaDoProduto()
     {
         EtapaProcessoInput etapa = EtapaCom(
-            Produto(AtoDaClassificacao, PapelProdutoFaseCodigo.Preliminar),
-            Produto(AtoDaClassificacao, PapelProdutoFaseCodigo.Preliminar),
+            Produto(AtoDaClassificacao, "PRELIMINAR"),
+            Produto(AtoDaClassificacao, "PRELIMINAR"),
             Produto(AtoDaClassificacao, PapelForaDoVocabulario));
 
         Result resultado = await Definir(etapa, out ProcessoSeletivo processo);
@@ -144,8 +145,8 @@ public sealed class DefinirEtapasRecusasDosProdutosTests
     public async Task Handle_ProdutoRecusado_NaoJulgaORecurso()
     {
         RecursoDaEtapaInput recursoComEventoInicialNaoPublicado = new(
-            AncoraDoRecurso.AtoPublicado, RegraPrazoRecursoCodigo.AncoradoEmAto, "v1", 2m, "diasUteis",
-            AtoDoResultadoFinal, false, null, null, "semEfeitoSuspensivo", null);
+            EventoInicialDoPrazo.PublicacaoDoAto.Codigo(), RegraDePrazoDoRecurso.ContadoDaPublicacaoDoAto.Codigo(), "v1", 2m, "DIAS_UTEIS",
+            AtoDoResultadoFinal, false, null, null, "SEM_EFEITO_SUSPENSIVO", null);
         EtapaProcessoInput etapa = EtapaCom(Produto(AtoDaClassificacao, PapelForaDoVocabulario)) with
         {
             Recursos = [recursoComEventoInicialNaoPublicado],
@@ -189,7 +190,7 @@ public sealed class DefinirEtapasRecusasDosProdutosTests
     public async Task Handle_PapelIncompativelComOAto_ApontaOPapel()
     {
         Result resultado = await Definir(EtapaCom(
-            Produto(AtoQueNaoEResultado, PapelProdutoFaseCodigo.Preliminar),
+            Produto(AtoQueNaoEResultado, "PRELIMINAR"),
             Produto(AtoForaDoCatalogo, null)));
 
         Recusas(resultado).Select(static r => r.Campo).Should().Equal("etapas[0].produtos[0].papel", "etapas[0].produtos[1].atoCodigo");

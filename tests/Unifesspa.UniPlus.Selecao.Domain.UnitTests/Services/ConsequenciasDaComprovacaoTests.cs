@@ -39,7 +39,7 @@ public sealed class ConsequenciasDaComprovacaoTests
     public void GrupoPendente_AplicaConsequenciaPropria()
     {
         DocumentoExigido a = DocumentoGeral("ELIMINA");
-        DocumentoExigido b = DocumentoGeral("PENDENCIA_REENVIO");
+        DocumentoExigido b = DocumentoGeral("ABRE_PRAZO_PARA_REENVIO");
         RegraDeComprovacao regraSemGrupo = RegraDeComprovacao.CriarGrupo(
             FormaDeComprovacao.QuantidadeMinimaDeItens, 0, 1, "RECLASSIFICA_AC", [BaseLegalResolvida()],
             [RegraDeComprovacao.CriarRegraDeDocumento(a, 0).Value!, RegraDeComprovacao.CriarRegraDeDocumento(b, 1).Value!]).Value!;

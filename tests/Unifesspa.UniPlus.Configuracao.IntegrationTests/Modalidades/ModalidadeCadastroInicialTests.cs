@@ -72,7 +72,7 @@ public sealed class ModalidadeCadastroInicialTests(ConfiguracaoDbFixture fixture
         semeadas.Where(m => m.Codigo.Valor.StartsWith('L')).Should().OnlyContain(m =>
             m.NaturezaLegal == NaturezaLegal.CotaReservada
             && m.ComposicaoVagas == ComposicaoVagas.DentroDaReservaLegal
-            && m.RegraRemanejamento == RegraRemanejamento.SegueCascata);
+            && m.RegraRemanejamento == RegraRemanejamento.SegueOrdemDeRemanejamento);
 
     [Theory(DisplayName = "As modalidades por acréscimo formam par recíproco")]
     [InlineData("AC_I", "AC_Q")]

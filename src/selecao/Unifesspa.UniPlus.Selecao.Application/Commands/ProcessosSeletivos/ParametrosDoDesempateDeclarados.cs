@@ -9,6 +9,7 @@ using Domain.ValueObjects;
 
 using Kernel.Results;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Regras.ValueObjects;
 
 /// <summary>
@@ -20,16 +21,19 @@ using Unifesspa.UniPlus.Regras.ValueObjects;
 internal static class ParametrosDoDesempateDeclarados
 {
     public static Result<ParametrosCriterioDesempate> Montar(int ordem, ParametrosDoCriterioDesempateInput parametros, string regraCodigo) =>
-        regraCodigo switch
+        CatalogoDe<RegraDeDesempate>.TentarObter(regraCodigo, out RegraDeDesempate regra)
+            ? DaRegra(ordem, parametros, regra)
+            : Recusa("regraCodigo", new DomainError("CriterioDesempate.RegraTipoInvalido", $"Código de regra de desempate desconhecido: {regraCodigo}."));
+
+    private static Result<ParametrosCriterioDesempate> DaRegra(int ordem, ParametrosDoCriterioDesempateInput parametros, RegraDeDesempate regra) =>
+        regra switch
         {
-            CriterioDesempateCodigo.MaiorNotaEtapa => DaMaiorNotaNaEtapa(ordem, parametros),
-            CriterioDesempateCodigo.MaiorIdade => Result<ParametrosCriterioDesempate>.Success(new ParametrosDesempateMaiorIdade()),
-            CriterioDesempateCodigo.Idoso => DoIdoso(ordem, parametros),
-            CriterioDesempateCodigo.PredicadoFato => DoPredicadoDeFato(ordem, parametros),
-            CriterioDesempateCodigo.MaiorNotaAreaEnem => DaMaiorNotaPorAreaDoEnem(parametros),
-            _ => Recusa("regraCodigo", new DomainError(
-                "CriterioDesempate.RegraTipoInvalido",
-                $"Código de regra de desempate desconhecido: {regraCodigo}.")),
+            RegraDeDesempate.MaiorNotaNaEtapa => DaMaiorNotaNaEtapa(ordem, parametros),
+            RegraDeDesempate.MaiorIdade => Result<ParametrosCriterioDesempate>.Success(new ParametrosDesempateMaiorIdade()),
+            RegraDeDesempate.Idoso => DoIdoso(ordem, parametros),
+            RegraDeDesempate.CondicaoSobreDado => DoPredicadoDeFato(ordem, parametros),
+            RegraDeDesempate.MaiorNotaPorAreaDoEnem => DaMaiorNotaPorAreaDoEnem(parametros),
+            _ => throw new ArgumentOutOfRangeException(nameof(regra)),
         };
 
     private static Result<ParametrosCriterioDesempate> Recusa(string campo, DomainError erro) =>
@@ -40,14 +44,14 @@ internal static class ParametrosDoDesempateDeclarados
             ? Result<ParametrosCriterioDesempate>.Success(new ParametrosDesempateMaiorNotaEtapa(etapaRef))
             : Recusa("etapaRef", new DomainError(
                 "CriterioDesempate.EtapaRefObrigatorio",
-                $"O critério na ordem {ordem} exige EtapaRef para a regra {CriterioDesempateCodigo.MaiorNotaEtapa}."));
+                $"O critério na ordem {ordem} exige EtapaRef para a regra {RegraDeDesempate.MaiorNotaNaEtapa.Codigo()}."));
 
     private static Result<ParametrosCriterioDesempate> DoIdoso(int ordem, ParametrosDoCriterioDesempateInput parametros) =>
         parametros.IdadeMinima is { } idadeMinima
             ? Result<ParametrosCriterioDesempate>.Success(new ParametrosDesempateIdoso(idadeMinima))
             : Recusa("idadeMinima", new DomainError(
                 "CriterioDesempate.IdadeMinimaObrigatoria",
-                $"O critério na ordem {ordem} exige IdadeMinima para a regra {CriterioDesempateCodigo.Idoso}."));
+                $"O critério na ordem {ordem} exige IdadeMinima para a regra {RegraDeDesempate.Idoso.Codigo()}."));
 
     /// <summary>
     /// A ordem ausente vira lista vazia, e item nulo vira texto vazio: quem recusa, com o campo de cada item, é
@@ -56,7 +60,7 @@ internal static class ParametrosDoDesempateDeclarados
     /// </summary>
     private static Result<ParametrosCriterioDesempate> DaMaiorNotaPorAreaDoEnem(ParametrosDoCriterioDesempateInput parametros) =>
         Result<ParametrosCriterioDesempate>.Success(new ParametrosDesempateMaiorNotaAreaEnem(
-            [.. (parametros.Areas ?? []).Take(CriterioDesempate.AreasMaximo + 1).Select(static area => area?.Trim() ?? string.Empty)]));
+            [.. (parametros.Areas ?? []).Take(ParametrosDesempateMaiorNotaAreaEnem.AreasMaximo + 1).Select(static area => area?.Trim() ?? string.Empty)]));
 
     private static Result<ParametrosCriterioDesempate> DoPredicadoDeFato(int ordem, ParametrosDoCriterioDesempateInput parametros)
     {
@@ -73,7 +77,7 @@ internal static class ParametrosDoDesempateDeclarados
             .Where(static campo => string.IsNullOrWhiteSpace(campo.Texto))
             .Select(campo => new FieldError(campo.Campo, new DomainError(
                 "CriterioDesempate.PredicadoFatoIncompleto",
-                $"O critério na ordem {ordem} exige Fato, Operador e Valor para a regra {CriterioDesempateCodigo.PredicadoFato}.")))];
+                $"O critério na ordem {ordem} exige Fato, Operador e Valor para a regra {RegraDeDesempate.CondicaoSobreDado.Codigo()}.")))];
     }
 
     /// <summary>

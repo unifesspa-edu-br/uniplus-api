@@ -6,6 +6,7 @@ using NSubstitute;
 
 using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 using Unifesspa.UniPlus.Configuracao.Contracts;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
@@ -59,21 +60,24 @@ internal sealed class CenarioDaClassificacao
 
     public static DefinirClassificacaoCommand ComandoDeMediaPonderada(Guid processoId) =>
         new(processoId,
-            RegraCalculoCodigo.FormulaMediaPonderada, "v1",
-            RegraArredondamentoCodigo.PrecisaoTruncar, "v1", 2,
-            RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, "v1",
+            RegraDeCalculoDaNota.MediaPonderada.Codigo(), "v1",
+            RegraDeArredondamentoDaNota.Truncar.Codigo(), "v1", 2,
+            RegraDeOrdemDeAlocacao.PrimeiraOpcaoPrioritaria.Codigo(), "v1",
             [], false, null, null);
 
     public static DefinirClassificacaoCommand ComandoComEliminacao(Guid processoId, RegraEliminacaoInput eliminacao) =>
         ComandoDeMediaPonderada(processoId) with { RegrasEliminacao = [eliminacao] };
 
     public static DefinirClassificacaoCommand ComandoEnemLocal(
-        Guid processoId, string? resolucao, bool baseadoEmEnem = true, string regraCalculo = RegraCalculoCodigo.FormulaMediaPonderada) =>
-        regraCalculo == RegraCalculoCodigo.ClassificacaoImportada
+        Guid processoId, string? resolucao, bool baseadoEmEnem = true, string? regraCalculo = null)
+    {
+        regraCalculo ??= RegraDeCalculoDaNota.MediaPonderada.Codigo();
+        return regraCalculo == RegraDeCalculoDaNota.ClassificacaoImportada.Codigo()
             ? new(processoId, regraCalculo, "v1", null, null, null,
-                RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, "v1", [], baseadoEmEnem, resolucao, null)
-            : new(processoId, regraCalculo, "v1", RegraArredondamentoCodigo.PrecisaoTruncar, "v1", 2,
-                RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, "v1", [], baseadoEmEnem, resolucao, null);
+                RegraDeOrdemDeAlocacao.PrimeiraOpcaoPrioritaria.Codigo(), "v1", [], baseadoEmEnem, resolucao, null)
+            : new(processoId, regraCalculo, "v1", RegraDeArredondamentoDaNota.Truncar.Codigo(), "v1", 2,
+                RegraDeOrdemDeAlocacao.PrimeiraOpcaoPrioritaria.Codigo(), "v1", [], baseadoEmEnem, resolucao, null);
+    }
 
     public static DefinirClassificacaoCommand ComandoEnemLocalComEliminacao(Guid processoId, RegraEliminacaoInput eliminacao) =>
         ComandoEnemLocal(processoId, ResolucaoDePesos) with { RegrasEliminacao = [eliminacao] };
@@ -93,9 +97,9 @@ internal sealed class CenarioDaClassificacao
     }
 
     public CenarioDaClassificacao ComRegrasBasicas() =>
-        ComRegra(RegraCalculoCodigo.FormulaMediaPonderada, TipoRegra.RegraCalculo)
-            .ComRegra(RegraArredondamentoCodigo.PrecisaoTruncar, TipoRegra.RegraArredondamento)
-            .ComRegra(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, TipoRegra.RegraOrdemAlocacao);
+        ComRegra(RegraDeCalculoDaNota.MediaPonderada.Codigo(), TipoRegra.RegraCalculo)
+            .ComRegra(RegraDeArredondamentoDaNota.Truncar.Codigo(), TipoRegra.RegraArredondamento)
+            .ComRegra(RegraDeOrdemDeAlocacao.PrimeiraOpcaoPrioritaria.Codigo(), TipoRegra.RegraOrdemAlocacao);
 
     public CenarioDaClassificacao SemNenhumaRegraNoCatalogo()
     {

@@ -1,5 +1,6 @@
 namespace Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Domain.Errors;
 
@@ -72,70 +73,69 @@ public sealed record CalendarioDiasUteisCongelado
         string? versaoDataset,
         IReadOnlyList<DiaNaoUtilCongelado>? diasNaoUteis)
     {
+        DomainError? erro = ValidarOrigem(origemId, versaoDataset) ?? ValidarDias(diasNaoUteis);
+        if (erro is not null)
+        {
+            return Result<CalendarioDiasUteisCongelado>.Failure(erro);
+        }
+
+        List<DiaNaoUtilCongelado> ordenados = [.. Ordenar(diasNaoUteis!)];
+        DomainError? duplicado = DiaDuplicado(ordenados);
+        return duplicado is not null
+            ? Result<CalendarioDiasUteisCongelado>.Failure(duplicado)
+            : Result<CalendarioDiasUteisCongelado>.Success(new CalendarioDiasUteisCongelado(origemId, versaoDataset?.Trim() ?? string.Empty, ordenados));
+    }
+
+    private static DomainError? ValidarOrigem(Guid origemId, string? versaoDataset)
+    {
         if (origemId == Guid.Empty)
         {
-            return Falha(CalendarioDiasUteisCongeladoErrorCodes.OrigemObrigatoria, "O identificador do dataset de origem é obrigatório.");
+            return new DomainError(CalendarioDiasUteisCongeladoErrorCodes.OrigemObrigatoria, "O identificador do dataset de origem é obrigatório.");
         }
 
         if (string.IsNullOrWhiteSpace(versaoDataset))
         {
-            return Falha(CalendarioDiasUteisCongeladoErrorCodes.VersaoDatasetObrigatoria, "A versão do dataset de origem é obrigatória.");
+            return new DomainError(CalendarioDiasUteisCongeladoErrorCodes.VersaoDatasetObrigatoria, "A versão do dataset de origem é obrigatória.");
         }
 
-        if (versaoDataset.Trim().Length > VersaoDatasetMaxLength)
-        {
-            return Falha(
-                CalendarioDiasUteisCongeladoErrorCodes.VersaoDatasetTamanho,
-                $"A versão do dataset excede {VersaoDatasetMaxLength} caracteres — o cadastro de origem não a gravaria.");
-        }
+        return versaoDataset.Trim().Length > VersaoDatasetMaxLength
+            ? new DomainError(CalendarioDiasUteisCongeladoErrorCodes.VersaoDatasetTamanho, $"A versão do dataset excede {VersaoDatasetMaxLength} caracteres — o cadastro de origem não a gravaria.")
+            : null;
+    }
 
-        if (diasNaoUteis is null)
-        {
-            return Falha(CalendarioDiasUteisCongeladoErrorCodes.DiasObrigatorios, "A lista de dias não úteis é obrigatória.");
-        }
+    private static DomainError? ValidarDias(IReadOnlyList<DiaNaoUtilCongelado>? dias) => dias switch
+    {
+        null => new DomainError(CalendarioDiasUteisCongeladoErrorCodes.DiasObrigatorios, "A lista de dias não úteis é obrigatória."),
+        { Count: 0 } => new DomainError(CalendarioDiasUteisCongeladoErrorCodes.SemDiaNaoUtil, "O calendário congelado precisa de ao menos um dia não útil — um calendário vazio não conta nada."),
+        _ => null,
+    };
 
-        // Mesma cardinalidade do agregado de origem: um dataset sem nenhum dia não útil não
-        // conta nada. Congelá-lo faria a versão publicada afirmar que todo dia é útil, e a
-        // contagem produziria prazo diferente do calendário que rege o certame — de forma
-        // imutável, e sem nada acusar.
-        if (diasNaoUteis.Count == 0)
+    private static DomainError? DiaDuplicado(List<DiaNaoUtilCongelado> dias)
+    {
+        for (int i = 1; i < dias.Count; i++)
         {
-            return Falha(
-                CalendarioDiasUteisCongeladoErrorCodes.SemDiaNaoUtil,
-                "O calendário congelado precisa de ao menos um dia não útil — um calendário vazio não conta nada.");
-        }
-
-        List<DiaNaoUtilCongelado> ordenados = [.. Ordenar(diasNaoUteis)];
-
-        for (int i = 1; i < ordenados.Count; i++)
-        {
-            if (MesmaChave(ordenados[i - 1], ordenados[i]))
+            if (MesmaChave(dias[i - 1], dias[i]))
             {
-                return Falha(
-                    CalendarioDiasUteisCongeladoErrorCodes.DiaDuplicado,
-                    $"O dia {ordenados[i].Data:yyyy-MM-dd} aparece mais de uma vez com a mesma abrangência e o mesmo recorte territorial.");
+                return new DomainError(CalendarioDiasUteisCongeladoErrorCodes.DiaDuplicado,
+                    $"O dia {dias[i].Data:yyyy-MM-dd} aparece mais de uma vez com a mesma abrangência e o mesmo recorte territorial.");
             }
         }
 
-        return Result<CalendarioDiasUteisCongelado>.Success(
-            new CalendarioDiasUteisCongelado(origemId, versaoDataset.Trim(), ordenados));
+        return null;
     }
 
     /// <summary>A ordem canônica do bloco, também usada pelo codec do envelope.</summary>
     public static IEnumerable<DiaNaoUtilCongelado> Ordenar(IEnumerable<DiaNaoUtilCongelado> dias) =>
         dias
             .OrderBy(static d => d.Data)
-            .ThenBy(static d => d.Abrangencia, StringComparer.Ordinal)
+            .ThenBy(static d => d.Abrangencia.Codigo(), StringComparer.Ordinal)
             .ThenBy(static d => d.MunicipioIbge ?? string.Empty, StringComparer.Ordinal)
             .ThenBy(static d => d.Uf ?? string.Empty, StringComparer.Ordinal);
 
     private static bool MesmaChave(DiaNaoUtilCongelado a, DiaNaoUtilCongelado b) =>
         a.Data == b.Data
-        && string.Equals(a.Abrangencia, b.Abrangencia, StringComparison.Ordinal)
+        && a.Abrangencia == b.Abrangencia
         && string.Equals(a.MunicipioIbge, b.MunicipioIbge, StringComparison.Ordinal)
         && string.Equals(a.Uf, b.Uf, StringComparison.Ordinal);
 
-    private static Result<CalendarioDiasUteisCongelado> Falha(string code, string mensagem) =>
-        Result<CalendarioDiasUteisCongelado>.Failure(
-            new DomainError(code, mensagem));
 }

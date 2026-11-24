@@ -33,8 +33,8 @@ internal static class ApoioProcessoSeletivoCronograma
     }
 
     internal static IReadOnlyList<ProdutoDaFase> Preliminar(string atoCodigo = "RESULTADO_CLASSIFICACAO") =>
-        [ProdutoDaFase.Criar(atoCodigo, PapelProdutoFase.Preliminar)];
+        [ProdutoDaFase.Criar(atoCodigo, PapelDaPublicacaoPrevista.Preliminar)];
 
     internal static IReadOnlyList<ProdutoDaFase> Definitiva(string atoCodigo = "RESULTADO_CLASSIFICACAO") =>
-        [ProdutoDaFase.Criar(atoCodigo, PapelProdutoFase.Definitivo)];
+        [ProdutoDaFase.Criar(atoCodigo, PapelDaPublicacaoPrevista.Definitivo)];
 }

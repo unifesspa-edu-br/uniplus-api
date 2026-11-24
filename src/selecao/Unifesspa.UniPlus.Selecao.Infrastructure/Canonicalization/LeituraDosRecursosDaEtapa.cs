@@ -2,6 +2,7 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Canonicalization;
 
 using System.Text.Json.Nodes;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
@@ -40,10 +41,10 @@ internal static class LeituraDosRecursosDaEtapa
     private static RecursoDaEtapa? LerRecurso(LeitorEnvelope leitor, JsonObject itemRecurso, string pathRecurso)
     {
         leitor.ExigirChaves(itemRecurso, pathRecurso, "eventoInicialDoPrazo", "regra", "parametros", "publicacaoDeReferenciaId", "procedimentos");
-        AncoraDoRecurso ancora = leitor.Enumeracao<AncoraDoRecurso>(itemRecurso, "eventoInicialDoPrazo", pathRecurso);
+        EventoInicialDoPrazo ancora = leitor.CodigoDeContrato<EventoInicialDoPrazo>(itemRecurso, "eventoInicialDoPrazo", pathRecurso);
 
         // A referência vem inteira e conferida contra o código de regra esperado.
-        ReferenciaRegra regra = leitor.Regra(itemRecurso, "regra", pathRecurso, RegraPrazoRecursoCodigo.AncoradoEmAto);
+        ReferenciaRegra regra = leitor.Regra<RegraDePrazoDoRecurso>(itemRecurso, "regra", pathRecurso);
 
         // A âncora por ciência não tem produto: o campo vem nulo.
         Guid? ancoraId = leitor.IdentificadorOpcional(itemRecurso, "publicacaoDeReferenciaId", pathRecurso);
@@ -57,15 +58,10 @@ internal static class LeituraDosRecursosDaEtapa
     private static ProcedimentosDeRecurso? LerProcedimentos(LeitorEnvelope leitor, JsonObject item, string path) =>
         leitor.Falhou ? null : LeituraDosProcedimentosDeRecurso.Ler(leitor, item, path, CodigosDoProcedimentoDeRecurso.DaEtapa);
 
-    private sealed record RecursoLido(AncoraDoRecurso Ancora, ReferenciaRegra Regra, Guid? AncoraId, ProcedimentosDeRecurso Procedimentos);
+    private sealed record RecursoLido(EventoInicialDoPrazo Ancora, ReferenciaRegra Regra, Guid? AncoraId, ProcedimentosDeRecurso Procedimentos);
 
     private static RecursoDaEtapa? Reidratar(LeitorEnvelope leitor, RecursoLido lido, JsonObject parametrosObjeto, string pathRecurso)
     {
-        if (lido.Ancora == AncoraDoRecurso.Nenhuma)
-        {
-            return leitor.Malformado<RecursoDaEtapa?>($"{pathRecurso}.eventoInicialDoPrazo", "o recurso tem de declarar de que instante o prazo corre.");
-        }
-
         ParametrosDeclaradosDoRecurso? parametros = LeituraDosPrazosDeRecurso.LerParametrosDePrazoDeRecurso(leitor, parametrosObjeto, $"{pathRecurso}.parametros");
         if (leitor.Falhou || parametros is null)
         {

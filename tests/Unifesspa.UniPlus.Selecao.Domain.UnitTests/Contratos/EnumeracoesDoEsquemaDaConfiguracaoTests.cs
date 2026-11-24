@@ -32,46 +32,46 @@ public sealed class EnumeracoesDoEsquemaDaConfiguracaoTests
     private static readonly (string Arquivo, string Caminho, Func<IEnumerable<string?>> Dominio)[] Paridades =
     [
         (RegrasDeComprovacao, "/properties/forma", () => Codigos<FormaDeComprovacao>(static v => v.Codigo())),
-        (RegrasDeComprovacao, "/properties/consequencia", () => ConsequenciaIndeferimentoCodigo.Validas),
-        (RegrasDeComprovacao, "/properties/criterioDeDistincao", () => Codigos<CriterioDeDistincaoDasApresentacoes>(static v => v.ToCodigo())),
+        (RegrasDeComprovacao, "/properties/consequencia", () => CatalogoDe<ConsequenciaDoIndeferimento>.Valores().Select(static valor => valor.Codigo()).ToArray()),
+        (RegrasDeComprovacao, "/properties/criterioDeDistincao", () => Codigos<CriterioDeDistincaoDasApresentacoes>(static v => v.Codigo())),
         (Bancas, $"{Deliberacao}/modo", () => Codigos<ModoDeDeliberacao>(static v => v.Codigo())),
         (Bancas, $"{Deliberacao}/criterio", () => Codigos<CriterioDeVotacao>(static v => v.Codigo())),
         (Bancas, $"{Deliberacao}/desempate", () => Codigos<DesempateDaVotacao>(static v => v.Codigo())),
         (Bancas, $"{Deliberacao}/encerramento", () => Codigos<EncerramentoDaVotacao>(static v => v.Codigo())),
         (Bancas, $"{Deliberacao}/semUnanimidade", () => Codigos<ResultadoSemUnanimidade>(static v => v.Codigo())),
-        ("coleta.schema.json", "/properties/referenciaTemporalDosDados/properties/tipo", () => Codigos<ReferenciaTipo>(static v => v.ToCodigo())),
-        (Comuns, "/$defs/publicacaoPrevista/properties/papel", () => Codigos<PapelProdutoFase>(static v => ((PapelProdutoFase?)v).ToCodigo()!)),
+        ("coleta.schema.json", "/properties/referenciaTemporalDosDados/properties/tipo", () => Codigos<ReferenciaTipo>(static v => v.Codigo())),
+        (Comuns, "/$defs/publicacaoPrevista/properties/papel", () => Codigos<PapelDaPublicacaoPrevista>(static v => v.Codigo())),
         (Comuns, $"{Recurso}/prazoUnidade", () => Codigos<UnidadePrazo>(static v => v.Codigo())),
         (Comuns, $"{Recurso}/prazoSegundaInstanciaUnidade", () => Codigos<UnidadePrazo>(static v => v.Codigo())),
         (Comuns, $"{Recurso}/efeitoSuspensivo", () => Codigos<EfeitoSuspensivo>(static v => v.Codigo())),
         (Comuns, $"{Recurso}/guardaDaVaga", () => Codigos<GuardaDaVaga>(static v => v.Codigo())),
         (Condicoes, "/$defs/condicao/properties/operador", () => Codigos<Operador>(static v => v.Codigo())),
         (Condicoes, "/$defs/obrigatoriedade/properties/tipo", () => [PredicadoDnfJson.ObrigatoriedadeSempre, PredicadoDnfJson.ObrigatoriedadeNunca, PredicadoDnfJson.ObrigatoriedadeQuando]),
-        (Condicoes, "/$defs/baseLegal/properties/abrangencia", () => Codigos<TipoAbrangencia>(static v => v.ToCodigo())),
-        (Condicoes, "/$defs/baseLegal/properties/situacao", () => Codigos<StatusBaseLegal>(static v => v.ToCodigo())),
+        (Condicoes, "/$defs/baseLegal/properties/abrangencia", () => Codigos<TipoAbrangencia>(static v => v.Codigo())),
+        (Condicoes, "/$defs/baseLegal/properties/situacao", () => Codigos<StatusBaseLegal>(static v => v.Codigo())),
         ("divulgacao.schema.json", "/properties/camposPublicos/items", () => ConfiguracaoDivulgacao.CamposPermitidos.Select(static c => c.Codigo)),
         (Comuns, "/$defs/tipoDeDecisao", () => CatalogoDe<TipoMotivoDeDecisao>.Todos().Select(static c => c.Codigo)),
-        ("motivo.schema.json", "/properties/sentido", () => SentidoDoMotivoCodigo.Todos),
-        ("etapas.schema.json", "/properties/carater", Nomes<CaraterEtapa>),
-        ("etapas.schema.json", "/properties/formaDeAvaliacao", () => Codigos<FormaDeAvaliacao>(static v => ((FormaDeAvaliacao?)v).ToCodigo()!)),
-        ("etapas.schema.json", "/$defs/recursoDaEtapa/properties/eventoInicialDoPrazo", Nomes<AncoraDoRecurso>),
+        ("motivo.schema.json", "/properties/sentido", () => CatalogoDe<SentidoDoMotivo>.Todos().Select(static item => item.Codigo).ToArray()),
+        ("etapas.schema.json", "/properties/carater", () => Codigos<CaraterEtapa>(static v => v.Codigo())),
+        ("etapas.schema.json", "/properties/formaDeAvaliacao", () => Codigos<FormaDeAvaliacao>(static v => v.Codigo())),
+        ("etapas.schema.json", "/$defs/recursoDaEtapa/properties/eventoInicialDoPrazo", () => Codigos<EventoInicialDoPrazo>(static v => v.Codigo())),
         (Exigencias, $"{Exigencia}/classificacaoProtecao", () => ClassificacoesDeProtecao.TokensCanonicos),
-        (Exigencias, $"{Exigencia}/aplicabilidade", () => Enum.GetNames<Aplicabilidade>().Where(static n => n != nameof(Aplicabilidade.Nenhuma))),
-        (Exigencias, $"{Exigencia}/consequenciaIndeferimento", () => ConsequenciaIndeferimentoCodigo.Validas),
+        (Exigencias, $"{Exigencia}/aplicabilidade", () => Codigos<Aplicabilidade>(static v => v.Codigo())),
+        (Exigencias, $"{Exigencia}/consequenciaIndeferimento", () => CatalogoDe<ConsequenciaDoIndeferimento>.Valores().Select(static valor => valor.Codigo()).ToArray()),
         (Exigencias, "/$defs/prazoDeEmissao/properties/escolha", () => CatalogoDe<EscolhaDoPrazoDeEmissao>.Todos().Select(static c => c.Codigo)),
         (Exigencias, "/$defs/prazoDeEmissao/properties/unidade", () => CatalogoDe<UnidadeDoPrazoDeEmissao>.Todos().Select(static c => c.Codigo)),
         (Exigencias, "/$defs/prazoDeEmissao/properties/efeitoForaDoPrazo", () => CatalogoDe<EfeitoNaAnaliseDoDocumento>.Todos().Select(static c => c.Codigo)),
         (Exigencias, "/$defs/validade/properties/escolha", () => CatalogoDe<EscolhaDaValidade>.Todos().Select(static c => c.Codigo)),
         (Exigencias, "/$defs/validade/properties/efeitoDoVencimento", () => CatalogoDe<EfeitoNaAnaliseDoDocumento>.Todos().Select(static c => c.Codigo)),
         (Exigencias, "/$defs/dataDeReferenciaDoDocumento/properties/tipo", () => CatalogoDe<TipoDaDataDeReferencia>.Todos().Select(static c => c.Codigo)),
-        (Exigencias, "/$defs/formatosPermitidos/properties/lista/items/properties/formato", () => Codigos<FormatoPermitido>(static v => v.ToCodigo())),
-        ("identificacao.schema.json", "/properties/origemCandidatos", Nomes<OrigemCandidatos>),
-        ("taxa-de-inscricao.schema.json", "/properties/fundamentos/items", () => FundamentoIsencaoCodigo.Codigos),
+        (Exigencias, "/$defs/formatosPermitidos/properties/lista/items/properties/formato", () => CatalogoDe<FormatoPermitido>.Todos().Select(static c => c.Codigo)),
+        ("identificacao.schema.json", "/properties/origemCandidatos", () => Codigos<OrigemCandidatos>(static v => v.Codigo())),
+        ("taxa-de-inscricao.schema.json", "/properties/fundamentos/items", () => CatalogoDe<FundamentoIsencao>.Todos().Select(static v => v.Codigo).ToArray()),
         ("formulario.schema.json", "/properties/finalidade", () => [EstruturaFormulario.FinalidadeInscricao, EstruturaFormulario.FinalidadeIsencaoTaxa, EstruturaFormulario.FinalidadeHabilitacao]),
         ("formulario.schema.json", "/$defs/pagina/properties/tipo", () => [EstruturaFormulario.TipoSecao, EstruturaFormulario.TipoBloco]),
         ("formulario.schema.json", "/$defs/pagina/properties/bloco", () => [EstruturaFormulario.BlocoComprovacaoDocumental, EstruturaFormulario.BlocoModalidadesCalculadas, EstruturaFormulario.BlocoRevisaoEAceite]),
         (Comuns, "/$defs/alvoDoProcedimentoDeRecurso/properties/areaDoEnem", () => AreaDoEnem.Todas),
-        (Comuns, "/$defs/procedimentoDeRecurso/properties/regra/properties/codigo", () => RegraProcedimentoRecursoCodigo.Rol),
+        (Comuns, "/$defs/procedimentoDeRecurso/properties/regra/properties/codigo", () => CatalogoDe<RegraDeProcedimentoDoRecurso>.Todos().Select(static item => item.Codigo)),
         ("restricao-de-valor.schema.json", "/$defs/limiteDeData/properties/referenciaDaData", () => [RestricaoValorJson.AncoraDataFixa, RestricaoValorJson.AncoraEnvio]),
     ];
 
@@ -99,10 +99,6 @@ public sealed class EnumeracoesDoEsquemaDaConfiguracaoTests
     private static IEnumerable<string> Codigos<T>(Func<T, string> codigo)
         where T : struct, Enum =>
         Enum.GetValues<T>().Where(static v => v.ToString() is not ("Nenhum" or "Nenhuma")).Select(codigo);
-
-    private static IEnumerable<string> Nomes<T>()
-        where T : struct, Enum =>
-        Enum.GetNames<T>().Where(static n => n is not ("Nenhum" or "Nenhuma")).Select(static n => JsonNamingPolicy.CamelCase.ConvertName(n));
 
     private static IEnumerable<string?> ValoresDoEsquema(string arquivo, string caminho)
     {

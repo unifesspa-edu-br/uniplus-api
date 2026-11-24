@@ -47,7 +47,7 @@ public sealed record AvisoConformidadeDto(string Codigo, string Dimensao, string
 /// aplica o bônus (a ausência da declaração é pendência; a da configuração só significa "sem
 /// bônus" quando a declaração é falsa), e o desempate é obrigatório quando a inscrição é feita no
 /// sistema (com resultado importado a lista já vem classificada). Etapa também deixou de ser
-/// item incondicional (Story #851 §3.5): um processo sem prova (SiSU, <c>CLASSIFICACAO-IMPORTADA</c>)
+/// item incondicional (Story #851 §3.5): um processo sem prova (SiSU, <c>CLASSIFICACAO_IMPORTADA</c>)
 /// publica sem etapa quando o cronograma é coerente.
 /// </para>
 /// <para>

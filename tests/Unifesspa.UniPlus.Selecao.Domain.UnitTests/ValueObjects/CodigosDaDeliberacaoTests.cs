@@ -8,7 +8,7 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 public sealed class CodigosDaDeliberacaoTests
 {
     private static DeclaracaoDaDeliberacao Valida() =>
-        new("colegiadaComVotacao", 3, 0, new(2, "maioriaSimples", "votoDaPresidencia", "presidenciaNoQuorum", null));
+        new("COLEGIADA_COM_VOTACAO", 3, 0, new(2, "MAIORIA_SIMPLES", "VOTO_DA_PRESIDENCIA", "PRESIDENCIA_NO_QUORUM", null));
 
     [Fact]
     public void Criar_ModoDesconhecidoEIntegrantesInvalidos_AcumulaAsRecusas()
@@ -44,7 +44,7 @@ public sealed class CodigosDaDeliberacaoTests
     [Fact]
     public void Criar_AtoIndividualComCriterioDesconhecido_RecusaOpcaoSemDizerQueFalta()
     {
-        DeclaracaoDaDeliberacao declarada = Valida() with { Modo = "atoIndividual", Votacao = Valida().Votacao with { Criterio = "outro" } };
+        DeclaracaoDaDeliberacao declarada = Valida() with { Modo = "ATO_INDIVIDUAL", Votacao = Valida().Votacao with { Criterio = "outro" } };
         Result<RegraDeDeliberacao> resultado = RegraDeDeliberacao.Criar(declarada);
 
         resultado.Errors.Should().ContainSingle().Which.Error.Code.Should().Be("Banca.CriterioObrigatorio");
@@ -60,7 +60,7 @@ public sealed class CodigosDaDeliberacaoTests
         {
             "modo" => Valida() with { Modo = "outro" },
             "desempate" => Valida() with { Votacao = Valida().Votacao with { Desempate = "outro" } },
-            _ => Valida() with { Votacao = Valida().Votacao with { Criterio = "unanimidade", Desempate = null, SemUnanimidade = "outro" } },
+            _ => Valida() with { Votacao = Valida().Votacao with { Criterio = "UNANIMIDADE", Desempate = null, SemUnanimidade = "outro" } },
         };
         RegraDeDeliberacao.Criar(declarada).Errors.Should().ContainSingle(e => e.Field == campo);
     }

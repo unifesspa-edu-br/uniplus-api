@@ -7,6 +7,7 @@ using Microsoft.EntityFrameworkCore;
 using Npgsql;
 
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Kernel.Tempo;
 using Unifesspa.UniPlus.Regras.Enums;
@@ -217,13 +218,10 @@ public sealed class CandidatosAtendidosConferenciaPersistenciaTests : IClassFixt
 
     private static void DefinirAsVagas(ProcessoSeletivo processo)
     {
-        ModalidadeSelecionada modalidade = ModalidadeSelecionada.Criar(
-            Guid.CreateVersion7(), "AC", null, NaturezaLegalModalidade.Ampla, ComposicaoVagasModalidade.RestanteDasVagasOfertadas,
-            null, RegraRemanejamentoModalidade.Nenhuma, null, null, null, RegrasDeAplicabilidadeDeTeste.DaNatureza(NaturezaLegalModalidade.Ampla), null, "Res. Unifesspa 532/2021",
-            quantidadeDeclarada: 40).Value!;
+        ModalidadeSelecionada modalidade = ModalidadeSelecionada.Criar(ModalidadesNoCadastroDeTeste.Da("AC", NaturezaLegalModalidade.Ampla, ComposicaoVagasModalidade.RestanteDasVagasOfertadas) with { RegraRemanejamento = null, BaseLegal = "Res. Unifesspa 532/2021" }, 40).Value!;
         processo.DefinirDistribuicaoVagas(
             [ConfiguracaoDistribuicaoVagas.Criar(Guid.CreateVersion7(),
-                new DistribuicaoDeVagasDeclarada { VagasOfertadasBase = 40, PercentualDaReservaLegal = 1m, RegraDeDistribuicao = Regra(RegraDistribuicaoVagasCodigo.Institucional, 'a'), Modalidades = [modalidade] },
+                new DistribuicaoDeVagasDeclarada { VagasOfertadasBase = 40, PercentualDaReservaLegal = 1m, RegraDeDistribuicao = Regra(RegraDeDistribuicaoDeVagas.Institucional.Codigo(), 'a'), Modalidades = [modalidade] },
                 new FatosDaOfertaNoCadastro { OfertaCurso = OfertaCursoDeTeste.Medicina }).Value!], FatosDeModalidadeDeTeste.DoCatalogo).IsSuccess.Should().BeTrue();
     }
 
@@ -232,8 +230,8 @@ public sealed class CandidatosAtendidosConferenciaPersistenciaTests : IClassFixt
         processo.DefinirClassificacao(
             ConfiguracaoClassificacao.Criar(new DeclaracaoDaClassificacao
             {
-                RegraCalculo = Regra(RegraCalculoCodigo.ClassificacaoImportada, 'b'),
-                RegraOrdemAlocacao = Regra(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, 'c'),
+                RegraCalculo = Regra(RegraDeCalculoDaNota.ClassificacaoImportada.Codigo(), 'b'),
+                RegraOrdemAlocacao = Regra(RegraDeOrdemDeAlocacao.PrimeiraOpcaoPrioritaria.Codigo(), 'c'),
             }).Value!).IsSuccess.Should().BeTrue();
     }
 
@@ -241,7 +239,7 @@ public sealed class CandidatosAtendidosConferenciaPersistenciaTests : IClassFixt
     {
         processo.DefinirAtendimentoEspecializado(AtendimentoEspecializado.Criar([], [], []).Value!).IsSuccess.Should().BeTrue();
         processo.DefinirAlgoritmoContagemPrazo(
-            Regra(AlgoritmoContagemPrazoCodigo.ExcluiDiaInicial, 'd'))
+            Regra(ConvencaoDeContagemDoPrazo.ExcluiDiaInicial.Codigo(), 'd'))
             .IsSuccess.Should().BeTrue();
 
         processo.DefinirTaxaInscricao(
@@ -282,7 +280,7 @@ public sealed class CandidatosAtendidosConferenciaPersistenciaTests : IClassFixt
 
     private static FaseCronograma FaseConforme()
     {
-        ProdutoDaFase preliminar = ProdutoDaFase.Criar("RESULTADO_CLASSIFICACAO", PapelProdutoFase.Preliminar);
+        ProdutoDaFase preliminar = ProdutoDaFase.Criar("RESULTADO_CLASSIFICACAO", PapelDaPublicacaoPrevista.Preliminar);
 
         return FaseCronograma.Criar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("fase").Value!,
             OrigensCanonicasDeTeste.ComNome(new OrigemCanonicaDaFase(
@@ -291,7 +289,7 @@ public sealed class CandidatosAtendidosConferenciaPersistenciaTests : IClassFixt
             new DecisoesDeCronogramaDaFase(
                 Ordem: 1, Inicio: new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero), Fim: new DateTimeOffset(2026, 1, 31, 0, 0, 0, TimeSpan.Zero), UnidadeResponsavel: UnidadesDeTeste.Ceps),
             HomologacaoDasInscricoesDeTeste.PublicacoesDaFaseQueHomologa(
-                [preliminar, ProdutoDaFase.Criar("RESULTADO_CLASSIFICACAO", PapelProdutoFase.Definitivo)], RegraDeRecurso(preliminar.Id)),
+                [preliminar, ProdutoDaFase.Criar("RESULTADO_CLASSIFICACAO", PapelDaPublicacaoPrevista.Definitivo)], RegraDeRecurso(preliminar.Id)),
             bancasRequeridas: [.. BancasDoMesmoTipoComCandidatosAtendidosDistintos(), BancasDeTeste.DaHomologacaoDasInscricoesDaFase(), BancasDeTeste.DeRecursosDaFase()]).Value!;
     }
 
@@ -309,7 +307,7 @@ public sealed class CandidatosAtendidosConferenciaPersistenciaTests : IClassFixt
 
     private static RegraRecursoFase RegraDeRecurso(Guid produtoPreliminarId) =>
         RegraRecursoFase.Criar(
-            Regra(RegraPrazoRecursoCodigo.AncoradoEmAto, 'e'),
+            Regra(RegraDePrazoDoRecurso.ContadoDaPublicacaoDoAto.Codigo(), 'e'),
             ParametrosDoRecursoDeTeste.Declarados(48m, UnidadePrazo.Horas),
             produtoPreliminarId,
             HomologacaoDasInscricoesDeTeste.ProcedimentosDaHomologacao()).Value!;

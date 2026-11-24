@@ -77,7 +77,7 @@ public static class ConferenciaDoCicloRecursalAberto
         Dictionary<Guid, IdentidadeDoItemDoEdital> publicados = IdentidadeDoItemDoEdital.Dos(fasesPublicadas, etapasPublicadas);
 
         return publicados
-            .Where(i => i.Value.Papel == PapelProdutoFase.Preliminar && itensPublicados.Contains(i.Value))
+            .Where(i => i.Value.Papel == PapelDaPublicacaoPrevista.Preliminar && itensPublicados.Contains(i.Value))
             .Select(i => new CicloAberto(
                 i.Value,
                 [.. PreliminaresDaMateria.DefinitivosQueFecham(fasesPublicadas, etapasPublicadas, i.Key).Select(d => publicados[d])]))

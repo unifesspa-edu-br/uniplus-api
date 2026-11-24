@@ -218,7 +218,7 @@ public static class RegrasDoDesempate
                 continue;
             }
 
-            violacoes.AddRange(CriterioDesempate.ConferirAreas(parametros.Areas).Erros.Select(erro => new ViolacaoDoDesempatePorArea(
+            violacoes.AddRange(parametros.ConferirAreas().Erros.Select(erro => new ViolacaoDoDesempatePorArea(
                 indice, criterio.Ordem, null, null,
                 erro.Error with { Message = $"{erro.Error.Message} Critério de desempate na ordem {criterio.Ordem}." })));
         }

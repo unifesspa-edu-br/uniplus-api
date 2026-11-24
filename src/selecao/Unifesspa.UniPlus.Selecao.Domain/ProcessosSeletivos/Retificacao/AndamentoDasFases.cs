@@ -38,7 +38,7 @@ public sealed record AndamentoDasFases(
         Dictionary<Guid, IdentidadeDoItemDoEdital> identidades = IdentidadeDoItemDoEdital.Dos(FasesDaBase, EtapasDaBase);
 
         return fase.Produtos
-            .Where(static produto => produto.Papel == PapelProdutoFase.Definitivo)
+            .Where(static produto => produto.Papel == PapelDaPublicacaoPrevista.Definitivo)
             .All(definitivo => Fatos.ItensPublicados.Contains(identidades[definitivo.Id]));
     }
 }

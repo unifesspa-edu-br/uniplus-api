@@ -33,7 +33,7 @@ public sealed class CausasQueImpedemCongelarTests
             Guid.CreateVersion7(), "INSCRICAO", OrigemDataFase.NoEdital, AgrupaEtapas: true, PermiteComplementacao: false, ColetaInscricao: true, ColetaSolicitacaoIsencao: false)),
         new DecisoesDeCronogramaDaFase(1, Abertura, Abertura.AddDays(30), UnidadeResponsavel: UnidadesDeTeste.Ceps),
         new PublicacoesDaFase(
-            [ProdutoDaFase.Criar(HomologacaoDasInscricoesDeTeste.ResultadoDaFase, PapelProdutoFase.Definitivo)],
+            [ProdutoDaFase.Criar(HomologacaoDasInscricoesDeTeste.ResultadoDaFase, PapelDaPublicacaoPrevista.Definitivo)],
             EmiteParecerIndividual: false,
             RegraRecurso: null,
             regra is null ? null : HomologacaoDasInscricoesDeTeste.TiposDeDecisao,
@@ -44,7 +44,7 @@ public sealed class CausasQueImpedemCongelarTests
         OrigensCanonicasDeTeste.ComNome(new OrigemCanonicaDaFase(
             Guid.CreateVersion7(), "RESULTADO_FINAL", OrigemDataFase.NaExecucao, AgrupaEtapas: true, PermiteComplementacao: false, ColetaInscricao: false, ColetaSolicitacaoIsencao: false)),
         new DecisoesDeCronogramaDaFase(1, Inicio: null, Fim: null, UnidadeResponsavel: UnidadesDeTeste.Ceps),
-        new PublicacoesDaFase([ProdutoDaFase.Criar(HomologacaoDasInscricoesDeTeste.ResultadoDaFase, PapelProdutoFase.Definitivo)], EmiteParecerIndividual: false, RegraRecurso: null),
+        new PublicacoesDaFase([ProdutoDaFase.Criar(HomologacaoDasInscricoesDeTeste.ResultadoDaFase, PapelDaPublicacaoPrevista.Definitivo)], EmiteParecerIndividual: false, RegraRecurso: null),
         bancasRequeridas: []).Value!;
 
     private static string[] Codigos(ProcessoSeletivo processo) =>

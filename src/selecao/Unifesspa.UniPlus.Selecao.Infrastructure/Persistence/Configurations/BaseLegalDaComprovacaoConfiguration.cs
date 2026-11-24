@@ -1,11 +1,9 @@
 namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Configurations;
 
 using Domain.Entities;
-using Domain.Enums;
 
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
-using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Protecao;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
@@ -31,21 +29,14 @@ public sealed class BaseLegalDaComprovacaoConfiguration : IEntityTypeConfigurati
         builder.Property(b => b.Referencia).HasMaxLength(ReferenciaMaxLength).IsRequired();
 
         builder.Property(b => b.Abrangencia)
-            .HasConversion(AbrangenciaConverter)
             .HasMaxLength(AbrangenciaCodigoMaxLength)
             .IsRequired();
 
         builder.Property(b => b.Situacao)
-            .HasConversion(StatusConverter)
             .HasMaxLength(StatusCodigoMaxLength)
             .IsRequired();
 
         builder.Property(b => b.Observacao).HasMaxLength(ObservacaoMaxLength);
     }
 
-    private static readonly ValueConverter<TipoAbrangencia, string> AbrangenciaConverter =
-        new(abrangencia => abrangencia.ToCodigo(), codigo => TipoAbrangenciaCodigo.FromCodigo(codigo));
-
-    private static readonly ValueConverter<StatusBaseLegal, string> StatusConverter =
-        new(status => status.ToCodigo(), codigo => StatusBaseLegalCodigo.FromCodigo(codigo));
 }

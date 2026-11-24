@@ -2,6 +2,7 @@ namespace Unifesspa.UniPlus.Selecao.Domain.UnitTests.ProcessosSeletivos.FasesEEt
 
 using AwesomeAssertions;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
@@ -24,7 +25,7 @@ using static CenarioDeProcesso;
 public sealed class ConferenciaDasBancasTests
 {
     private static readonly ReferenciaRegra AvaliacaoUnica =
-        ReferenciaRegra.De(RegraConsolidacaoCodigo.AvaliacaoUnica, "v1", new string('a', 64));
+        ReferenciaRegra.De(RegraDeApuracaoDaAvaliacao.AvaliacaoUnica.Codigo(), "v1", new string('a', 64));
 
     private static readonly CorretoresDasEtapas TresCorretores = new(new Dictionary<ReferenciaRegra, CorretoresDaRegra> { [AvaliacaoUnica] = CorretoresDaRegra.SemNovoCorretor(3) });
 
@@ -182,7 +183,7 @@ public sealed class ConferenciaDasBancasTests
     public void Minimo_RegraNaoResolvida_DepoisDasBancasAbaixoDoMinimo()
     {
         CronogramaDoProcesso cronograma = Fases(new ModeloDeFase("AVALIACAO", 1) with { Bancas = [DeRecursos(integrantes: 2, quorum: 2)] });
-        EtapasDoProcesso etapas = Etapas(ComRecurso("AVALIACAO", DeRecursosDaEtapa(integrantes: 2, quorum: 2)), ComRecurso("AVALIACAO") with { Id = Guid.CreateVersion7(), Nome = "Entrevista", RegraConsolidacao = ReferenciaRegra.De(RegraConsolidacaoCodigo.CorrecaoIndependente, "v1", new string('b', 64)) });
+        EtapasDoProcesso etapas = Etapas(ComRecurso("AVALIACAO", DeRecursosDaEtapa(integrantes: 2, quorum: 2)), ComRecurso("AVALIACAO") with { Id = Guid.CreateVersion7(), Nome = "Entrevista", RegraConsolidacao = ReferenciaRegra.De(RegraDeApuracaoDaAvaliacao.CorrecaoIndependente.Codigo(), "v1", new string('b', 64)) });
 
         Causas(ConferenciaDasBancas.ConferirMinimoDeIntegrantes(cronograma, etapas, TresCorretores)).Should().Equal(
             ("etapas[0].bancas[0]", "Banca.IntegrantesAbaixoDoMinimo"),

@@ -198,7 +198,7 @@ internal static class PassosDoEnvelopeFechado
         await ExecutarPassoAsync(() => c.Ctx.PutCascataRemanejamentoAsync(), HttpStatusCode.NoContent, "PUT cascata-remanejamento", "/cascata-remanejamento");
         await ExecutarPassoAsync(() => c.Ctx.PutDocumentosExigidosAsync([]), HttpStatusCode.NoContent, "PUT documentos-exigidos", "/documentos-exigidos");
         await ExecutarPassoAsync(
-            () => c.Ctx.PutDivulgacaoAsync(["numero_inscricao", "nome_abreviado"], justificativa: null),
+            () => c.Ctx.PutDivulgacaoAsync(["NUMERO_INSCRICAO", "NOME_ABREVIADO"], justificativa: null),
             HttpStatusCode.NoContent, "PUT divulgacao", "/divulgacao");
     }
 

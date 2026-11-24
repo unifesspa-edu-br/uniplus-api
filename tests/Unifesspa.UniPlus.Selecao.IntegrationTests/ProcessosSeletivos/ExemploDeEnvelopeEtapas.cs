@@ -53,12 +53,12 @@ internal static class ExemploDeEnvelopeEtapas
     // O código e o papel determinam a ordem das publicações previstas.
     internal static IReadOnlyList<ProdutoDaEtapa> ProdutosDaObjetiva(int variante, bool permutar) =>
         Ordem([
-            ProdutoDaEtapa.Reidratar(ProdutoDaObjetivaId(1, variante), "RESULTADO_CLASSIFICACAO", PapelProdutoFase.Preliminar),
-            ProdutoDaEtapa.Reidratar(ProdutoDaObjetivaId(2, variante), "RESULTADO_CLASSIFICACAO", PapelProdutoFase.Definitivo),
-            ProdutoDaEtapa.Reidratar(ProdutoDaObjetivaId(3, variante), AtoAnalise, PapelProdutoFase.Preliminar),
-            ProdutoDaEtapa.Reidratar(ProdutoDaObjetivaId(4, variante), AtoAnulacao, PapelProdutoFase.Preliminar),
-            ProdutoDaEtapa.Reidratar(ProdutoDaObjetivaId(5, variante), AtoAnalise, PapelProdutoFase.Definitivo),
-            ProdutoDaEtapa.Reidratar(ProdutoDaObjetivaId(6, variante), AtoAnulacao, PapelProdutoFase.Definitivo),
+            ProdutoDaEtapa.Reidratar(ProdutoDaObjetivaId(1, variante), "RESULTADO_CLASSIFICACAO", PapelDaPublicacaoPrevista.Preliminar),
+            ProdutoDaEtapa.Reidratar(ProdutoDaObjetivaId(2, variante), "RESULTADO_CLASSIFICACAO", PapelDaPublicacaoPrevista.Definitivo),
+            ProdutoDaEtapa.Reidratar(ProdutoDaObjetivaId(3, variante), AtoAnalise, PapelDaPublicacaoPrevista.Preliminar),
+            ProdutoDaEtapa.Reidratar(ProdutoDaObjetivaId(4, variante), AtoAnulacao, PapelDaPublicacaoPrevista.Preliminar),
+            ProdutoDaEtapa.Reidratar(ProdutoDaObjetivaId(5, variante), AtoAnalise, PapelDaPublicacaoPrevista.Definitivo),
+            ProdutoDaEtapa.Reidratar(ProdutoDaObjetivaId(6, variante), AtoAnulacao, PapelDaPublicacaoPrevista.Definitivo),
         ], permutar);
 
     // A etapa requer banca: é o bloco em que o envelope congela a identidade da banca, a posição
@@ -82,8 +82,8 @@ internal static class ExemploDeEnvelopeEtapas
     internal static RecursoDaEtapa RecursoDaObjetivaAncoradoNoPrimeiroProduto(int variante) =>
         RecursoDaEtapa.Reidratar(
             RecursoDaObjetivaId(1, variante),
-            AncoraDoRecurso.AtoPublicado,
-            Regra(RegraPrazoRecursoCodigo.AncoradoEmAto, '9'),
+            EventoInicialDoPrazo.PublicacaoDoAto,
+            Regra(RegraDePrazoDoRecurso.ContadoDaPublicacaoDoAto.Codigo(), '9'),
             ParametrosDoRecursoDeTeste.Declarados(
                 3m, UnidadePrazo.DiasUteis, admiteInstanciaSuperior: true, segundaInstancia: new PrazoDoRecurso(1m, UnidadePrazo.DiasUteis)),
             ProdutoDaObjetivaId(1, variante),
@@ -96,35 +96,35 @@ internal static class ExemploDeEnvelopeEtapas
     internal static RecursoDaEtapa RecursoDaObjetivaAncoradoNoSegundoProduto(int variante) =>
         RecursoDaEtapa.Reidratar(
             RecursoDaObjetivaId(2, variante),
-            AncoraDoRecurso.AtoPublicado,
-            Regra(RegraPrazoRecursoCodigo.AncoradoEmAto, '9'),
+            EventoInicialDoPrazo.PublicacaoDoAto,
+            Regra(RegraDePrazoDoRecurso.ContadoDaPublicacaoDoAto.Codigo(), '9'),
             ParametrosDoRecursoDeTeste.Declarados(5.0000m, UnidadePrazo.DiasUteis),
             ProdutoDaObjetivaId(3, variante),
             ProcedimentosDoExemploComAlvos()).Value!;
 
     private static ProcedimentosDeRecurso ProcedimentosDoExemploSemAlvo() => ProcedimentosDeRecurso.De(
     [
-        ProcedimentoDeRecursoDeclarado.De(TipoMotivoDeDecisao.Classificacao, null, Regra(RegraProcedimentoRecursoCodigo.Recalculo, '7')),
+        ProcedimentoDeRecursoDeclarado.De(TipoMotivoDeDecisao.Classificacao, null, Regra(RegraDeProcedimentoDoRecurso.Recalculo.Codigo(), '7')),
     ]);
 
     // Fora da ordem canônica de propósito: a coleção a normaliza, e o hash não pode depender da ordem de entrada.
     private static ProcedimentosDeRecurso ProcedimentosDoExemploComAlvos() => ProcedimentosDeRecurso.De(
     [
         ProcedimentoDeRecursoDeclarado.De(
-            TipoMotivoDeDecisao.Classificacao, AlvoDoProcedimentoDeRecurso.DaArea(AreaDoEnem.Matematica), Regra(RegraProcedimentoRecursoCodigo.Recalculo, '7')),
+            TipoMotivoDeDecisao.Classificacao, AlvoDoProcedimentoDeRecurso.DaArea(AreaDoEnem.Matematica), Regra(RegraDeProcedimentoDoRecurso.Recalculo.Codigo(), '7')),
         ProcedimentoDeRecursoDeclarado.De(
             TipoMotivoDeDecisao.AnaliseDocumental,
             AlvoDoProcedimentoDeRecurso.DoItem(Guid.Parse("00000000-0000-7000-8000-0000000000a1")),
-            Regra(RegraProcedimentoRecursoCodigo.Conferencia, '8')),
+            Regra(RegraDeProcedimentoDoRecurso.Conferencia.Codigo(), '8')),
         ProcedimentoDeRecursoDeclarado.De(
-            TipoMotivoDeDecisao.Classificacao, AlvoDoProcedimentoDeRecurso.DaArea(AreaDoEnem.Linguagens), Regra(RegraProcedimentoRecursoCodigo.Recalculo, '7')),
+            TipoMotivoDeDecisao.Classificacao, AlvoDoProcedimentoDeRecurso.DaArea(AreaDoEnem.Linguagens), Regra(RegraDeProcedimentoDoRecurso.Recalculo.Codigo(), '7')),
     ]);
 
     internal static RecursoDaEtapa RecursoDaObjetivaPorCiencia(int variante) =>
         RecursoDaEtapa.Reidratar(
             RecursoDaObjetivaId(3, variante),
-            AncoraDoRecurso.CienciaIndividual,
-            Regra(RegraPrazoRecursoCodigo.AncoradoEmAto, '9'),
+            EventoInicialDoPrazo.CienciaIndividual,
+            Regra(RegraDePrazoDoRecurso.ContadoDaPublicacaoDoAto.Codigo(), '9'),
             ParametrosDoRecursoDeTeste.Declarados(48.0000m, UnidadePrazo.Horas),
             Guid.Empty,
             ProcedimentosDoExemploSemAlvo()).Value!;
@@ -142,7 +142,7 @@ internal static class ExemploDeEnvelopeEtapas
         EtapaProcesso etapa = EtapaProcesso.Reidratar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("etapa_entrevista").Value!,
             EtapaId(3, variante),
             new IdentificacaoDaEtapa(Nome: "Entrevista", Carater: CaraterEtapa.Eliminatoria, TipoEtapa: TipoEtapaEntrevista(), Ordem: 3, FaseCodigo: "RESULTADO_FINAL"),
-            new DeclaracaoDaAvaliacaoDaEtapa(Peso: null, NotaMinima: 60.0000m, NotaMaxima: 100.0000m, PassoDoLancamento: 0.5000m, FormaDeAvaliacao: FormaDeAvaliacao.Humana, RegraConsolidacao: Regra(RegraConsolidacaoCodigo.AvaliacaoUnica, 'f'), EscalaDeAtendimento: null),
+            new DeclaracaoDaAvaliacaoDaEtapa(Peso: null, NotaMinima: 60.0000m, NotaMaxima: 100.0000m, PassoDoLancamento: 0.5000m, FormaDeAvaliacao: FormaDeAvaliacao.Humana, RegraConsolidacao: Regra(RegraDeApuracaoDaAvaliacao.AvaliacaoUnica.Codigo(), 'f'), EscalaDeAtendimento: null),
             itens: [
                 ItemDeAvaliacao.Reidratar(ChaveLocal.Criar("item_primeiro_acesso").Value, ItemDeAvaliacaoId(5, variante), "Primeiro acesso ao ensino superior", 20.5000m),
                 ItemDeAvaliacao.Reidratar(ChaveLocal.Criar("item_dominio").Value, ItemDeAvaliacaoId(6, variante), "Domínio do conteúdo", 79.5000m),
@@ -159,7 +159,7 @@ internal static class ExemploDeEnvelopeEtapas
         EtapaProcesso etapa = EtapaProcesso.Reidratar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("etapa_defesa").Value!,
             EtapaId(4, variante),
             new IdentificacaoDaEtapa(Nome: "Defesa oral", Carater: CaraterEtapa.Eliminatoria, TipoEtapa: TipoEtapaEntrevista(), Ordem: 4, FaseCodigo: "RESULTADO_FINAL"),
-            new DeclaracaoDaAvaliacaoDaEtapa(Peso: null, NotaMinima: 50.0000m, NotaMaxima: 100.0000m, PassoDoLancamento: null, FormaDeAvaliacao: FormaDeAvaliacao.Humana, RegraConsolidacao: Regra(RegraConsolidacaoCodigo.CorrecaoIndependente, 'e'), EscalaDeAtendimento: EscalaDeAtendimentoDaDefesa()),
+            new DeclaracaoDaAvaliacaoDaEtapa(Peso: null, NotaMinima: 50.0000m, NotaMaxima: 100.0000m, PassoDoLancamento: null, FormaDeAvaliacao: FormaDeAvaliacao.Humana, RegraConsolidacao: Regra(RegraDeApuracaoDaAvaliacao.CorrecaoIndependente.Codigo(), 'e'), EscalaDeAtendimento: EscalaDeAtendimentoDaDefesa()),
             itens: [
                 ItemDeAvaliacao.Reidratar(ChaveLocal.Criar("item_coesao").Value, ItemDeAvaliacaoId(4, variante), "Coesão da exposição", 30.0000m),
                 ItemDeAvaliacao.Reidratar(ChaveLocal.Criar("item_argumentacao").Value, ItemDeAvaliacaoId(3, variante), "Argumentação", 70.0000m),

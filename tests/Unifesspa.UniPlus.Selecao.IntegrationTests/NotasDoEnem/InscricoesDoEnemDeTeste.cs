@@ -52,86 +52,75 @@ internal static class InscricoesDoEnemDeTeste
         return versao.Id;
     }
 
-    /// <summary>Grava a inscrição da persona; <paramref name="edicao"/> nulo deixa a inscrição sem a resposta da edição.</summary>
-    public static async Task<Guid> NovaInscricaoAsync(
-        InscricaoDbFixture fixture,
-        Guid processoId,
-        PersonasDeTeste.PessoaFicticia pessoa,
-        SituacaoInscricao situacao,
-        string? edicao,
-        string? numeroDeInscricao = null,
-        Guid? ofertaCursoId = null,
-        Guid? ofertaCursoSegundaOpcaoId = null)
+    public static async Task<Guid> NovaInscricaoAsync(InscricaoDbFixture fixture, DadosDaInscricaoDoEnem dados)
     {
         await using UniPlusDbContext context = fixture.CreateDbContext();
-        return await NovaInscricaoAsync(
-            context, fixture.Encryption, fixture.BlindIndex, processoId, pessoa, situacao, edicao, numeroDeInscricao, ofertaCursoId, ofertaCursoSegundaOpcaoId);
+        return await NovaInscricaoAsync(context, fixture.Encryption, fixture.BlindIndex, dados);
     }
 
     public static async Task<Guid> NovaInscricaoAsync(
-        UniPlusDbContext context,
-        IUniPlusEncryptionService encryption,
-        IUniPlusBlindIndexService blindIndex,
-        Guid processoId,
-        PersonasDeTeste.PessoaFicticia pessoa,
-        SituacaoInscricao situacao,
-        string? edicao,
-        string? numeroDeInscricao = null,
-        Guid? ofertaCursoId = null,
-        Guid? ofertaCursoSegundaOpcaoId = null,
-        Guid? versaoFormularioId = null,
-        string? nome = null)
+        UniPlusDbContext context, IUniPlusEncryptionService encryption,
+        IUniPlusBlindIndexService blindIndex, DadosDaInscricaoDoEnem dados)
     {
         byte[] cifrado = await encryption.EncryptAsync(
-            SelecaoEncryptionKeys.IdentificadoresAesGcm, JsonSerializer.SerializeToUtf8Bytes(pessoa.Cpf));
-        byte[] indice = await new CalculadorDoIndiceCegoDoCpf(blindIndex).ComputarAsync(pessoa.Cpf);
-
+            SelecaoEncryptionKeys.IdentificadoresAesGcm, JsonSerializer.SerializeToUtf8Bytes(dados.Pessoa.Cpf));
+        byte[] indice = await new CalculadorDoIndiceCegoDoCpf(blindIndex).ComputarAsync(dados.Pessoa.Cpf);
         Guid id = Guid.CreateVersion7();
-        context.Inscricoes.Add(new InscricaoRecord
-        {
-            Id = id,
-            ProcessoSeletivoId = processoId,
-            CpfIndice = indice,
-            ContaId = $"conta-{id:N}",
-            EmissorToken = "https://issuer",
-            Situacao = situacao,
-            VersaoFormularioId = versaoFormularioId ?? Guid.CreateVersion7(),
-            NumeroInscricao = numeroDeInscricao ?? $"UNI-{id.ToString("N")[^8..]}",
-            Revisao = 1,
-            OfertaCursoId = ofertaCursoId,
-            OfertaCursoSegundaOpcaoId = ofertaCursoSegundaOpcaoId,
-            CreatedAt = DateTimeOffset.UtcNow,
-        });
-        context.RespostasDaInscricao.Add(new RespostaDaInscricaoRecord
-        {
-            Id = Guid.CreateVersion7(),
-            InscricaoId = id,
-            FatoCodigo = ConjuntoBasicoDaInscricao.Cpf,
-            Origem = OrigemDaResposta.Informada,
-            Tipo = TipoDoValorDeResposta.Texto,
-            ValorCifrado = cifrado,
-        });
-        if (edicao is not null)
-        {
-            context.RespostasDaInscricao.Add(RespostaDaEdicao(id, edicao));
-        }
-
-        if (nome is not null)
-        {
-            context.RespostasDaInscricao.Add(new RespostaDaInscricaoRecord
-            {
-                Id = Guid.CreateVersion7(),
-                InscricaoId = id,
-                FatoCodigo = ConjuntoBasicoDaInscricao.Nome,
-                Origem = OrigemDaResposta.Informada,
-                Tipo = TipoDoValorDeResposta.Texto,
-                ValorTexto = nome,
-            });
-        }
-
+        context.Inscricoes.Add(Inscricao(id, indice, dados));
+        context.RespostasDaInscricao.Add(RespostaDoCpf(id, cifrado));
+        AdicionarRespostasOpcionais(context, id, dados);
         await context.SaveChangesAsync();
         return id;
     }
+
+    private static InscricaoRecord Inscricao(Guid id, byte[] indice, DadosDaInscricaoDoEnem dados) => new()
+    {
+        Id = id,
+        ProcessoSeletivoId = dados.ProcessoId,
+        CpfIndice = indice,
+        ContaId = $"conta-{id:N}",
+        EmissorToken = "https://issuer",
+        Situacao = dados.Situacao,
+        VersaoFormularioId = dados.VersaoFormularioId ?? Guid.CreateVersion7(),
+        NumeroInscricao = dados.NumeroDeInscricao ?? $"UNI-{id.ToString("N")[^8..]}",
+        Revisao = 1,
+        OfertaCursoId = dados.OfertaCursoId,
+        OfertaCursoSegundaOpcaoId = dados.OfertaCursoSegundaOpcaoId,
+        CreatedAt = DateTimeOffset.UtcNow,
+    };
+
+    private static RespostaDaInscricaoRecord RespostaDoCpf(Guid inscricaoId, byte[] cifrado) => new()
+    {
+        Id = Guid.CreateVersion7(),
+        InscricaoId = inscricaoId,
+        FatoCodigo = ConjuntoBasicoDaInscricao.Cpf,
+        Origem = OrigemDaResposta.Informada,
+        Tipo = TipoDoValorDeResposta.Texto,
+        ValorCifrado = cifrado,
+    };
+
+    private static void AdicionarRespostasOpcionais(UniPlusDbContext context, Guid inscricaoId, DadosDaInscricaoDoEnem dados)
+    {
+        if (dados.Edicao is not null)
+        {
+            context.RespostasDaInscricao.Add(RespostaDaEdicao(inscricaoId, dados.Edicao));
+        }
+
+        if (dados.Nome is not null)
+        {
+            context.RespostasDaInscricao.Add(RespostaDoNome(inscricaoId, dados.Nome));
+        }
+    }
+
+    private static RespostaDaInscricaoRecord RespostaDoNome(Guid inscricaoId, string nome) => new()
+    {
+        Id = Guid.CreateVersion7(),
+        InscricaoId = inscricaoId,
+        FatoCodigo = ConjuntoBasicoDaInscricao.Nome,
+        Origem = OrigemDaResposta.Informada,
+        Tipo = TipoDoValorDeResposta.Texto,
+        ValorTexto = nome,
+    };
 
     public static async Task TrocarEdicaoAsync(InscricaoDbFixture fixture, Guid inscricaoId, string novaEdicao)
     {
@@ -147,7 +136,17 @@ internal static class InscricoesDoEnemDeTeste
         InscricaoId = inscricaoId,
         FatoCodigo = EdicaoDoEnem.Fato,
         Origem = OrigemDaResposta.Informada,
-        Tipo = TipoDoValorDeResposta.Codigo,
+        Tipo = TipoDoValorDeResposta.Opcao,
         ValorCodigo = edicao,
     };
+}
+
+internal sealed record DadosDaInscricaoDoEnem(
+    Guid ProcessoId, PersonasDeTeste.PessoaFicticia Pessoa, SituacaoInscricao Situacao, string? Edicao)
+{
+    public string? NumeroDeInscricao { get; init; }
+    public Guid? OfertaCursoId { get; init; }
+    public Guid? OfertaCursoSegundaOpcaoId { get; init; }
+    public Guid? VersaoFormularioId { get; init; }
+    public string? Nome { get; init; }
 }

@@ -38,6 +38,6 @@ internal sealed class DeclaracaoDosProdutosDaEtapa(AtosConsultadosNaEdicao atos)
     private static IReadOnlyList<FieldError> Recusas(EtapaProcesso etapa, ProdutosConferidos<ProdutoDaEtapa> conferidos) =>
         conferidos.Integros ? etapa.DefinirProdutos(conferidos.Produtos).Errors : conferidos.Recusas;
 
-    private static List<(string AtoCodigo, PapelProdutoFase? Papel)> JaDeclarados(EtapaProcesso etapa) =>
+    private static List<(string AtoCodigo, PapelDaPublicacaoPrevista? Papel)> JaDeclarados(EtapaProcesso etapa) =>
         [.. etapa.Produtos.Select(static p => (p.AtoCodigo, p.Papel))];
 }

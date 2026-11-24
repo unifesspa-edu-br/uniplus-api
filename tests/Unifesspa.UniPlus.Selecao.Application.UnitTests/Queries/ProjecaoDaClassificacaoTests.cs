@@ -4,6 +4,7 @@ using System.Text.Json;
 
 using AwesomeAssertions;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Application.DTOs;
@@ -39,9 +40,9 @@ public sealed class ProjecaoDaClassificacaoTests
     {
         ConfiguracaoClassificacaoDto dto = ProjetarClassificacao(Declaracao(baseadoEmEnem: false));
 
-        dto.RegraCalculo.Should().Be(new ReferenciaRegraDto(RegraCalculoCodigo.FormulaMediaPonderada, "v1", HashDoCalculo));
-        dto.RegraArredondamento.Should().Be(new ReferenciaRegraDto(RegraArredondamentoCodigo.PrecisaoTruncar, "v1", HashDoArredondamento));
-        dto.RegraOrdemAlocacao.Should().Be(new ReferenciaRegraDto(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, "v1", HashDaAlocacao));
+        dto.RegraCalculo.Should().Be(new ReferenciaRegraDto(RegraDeCalculoDaNota.MediaPonderada.Codigo(), "v1", HashDoCalculo));
+        dto.RegraArredondamento.Should().Be(new ReferenciaRegraDto(RegraDeArredondamentoDaNota.Truncar.Codigo(), "v1", HashDoArredondamento));
+        dto.RegraOrdemAlocacao.Should().Be(new ReferenciaRegraDto(RegraDeOrdemDeAlocacao.PrimeiraOpcaoPrioritaria.Codigo(), "v1", HashDaAlocacao));
         dto.CasasArredondamento.Should().Be(2);
         dto.EscalaNotaFinal.Should().Be(100m);
     }
@@ -51,7 +52,7 @@ public sealed class ProjecaoDaClassificacaoTests
     {
         DeclaracaoDaClassificacao importada = Declaracao(baseadoEmEnem: false) with
         {
-            RegraCalculo = ReferenciaRegra.De(RegraCalculoCodigo.ClassificacaoImportada, "v1", HashDoCalculo),
+            RegraCalculo = ReferenciaRegra.De(RegraDeCalculoDaNota.ClassificacaoImportada.Codigo(), "v1", HashDoCalculo),
             RegraArredondamento = null,
             CasasArredondamento = null,
             EscalaNotaFinal = null,
@@ -59,7 +60,7 @@ public sealed class ProjecaoDaClassificacaoTests
 
         ConfiguracaoClassificacaoDto dto = ProjetarClassificacao(importada);
 
-        dto.RegraCalculo.Codigo.Should().Be(RegraCalculoCodigo.ClassificacaoImportada);
+        dto.RegraCalculo.Codigo.Should().Be(RegraDeCalculoDaNota.ClassificacaoImportada.Codigo());
         dto.RegraArredondamento.Should().BeNull();
         dto.CasasArredondamento.Should().BeNull();
         dto.EscalaNotaFinal.Should().BeNull();
@@ -83,8 +84,8 @@ public sealed class ProjecaoDaClassificacaoTests
         {
             RegrasEliminacao =
             [
-                Eliminacao(RegraEliminacaoCodigo.ElimNotaMinimaEtapa, new ParametrosElimNotaMinimaEtapa(etapaId, 3m)),
-                Eliminacao(RegraEliminacaoCodigo.ElimAusenciaNaEtapa, new ParametrosElimAusenciaNaEtapa(etapaId)),
+                Eliminacao(RegraDeEliminacaoPorCalculo.NotaMinimaNaEtapa.Codigo(), new ParametrosEliminacaoPorNotaMinimaNaEtapa(etapaId, 3m)),
+                Eliminacao(RegraDeEliminacaoPorCalculo.AusenciaNaEtapa.Codigo(), new ParametrosEliminacaoPorAusenciaNaEtapa(etapaId)),
             ],
         });
 
@@ -97,7 +98,7 @@ public sealed class ProjecaoDaClassificacaoTests
     {
         ConfiguracaoClassificacaoDto dto = ProjetarClassificacao(Declaracao(baseadoEmEnem: true) with
         {
-            RegrasEliminacao = [Eliminacao(RegraEliminacaoCodigo.ElimCorteEmArea, new ParametrosElimCorteEmArea("REDACAO", 400m))],
+            RegrasEliminacao = [Eliminacao(RegraDeEliminacaoPorCalculo.CorteEmAreaDoEnem.Codigo(), new ParametrosEliminacaoPorCorteEmAreaDoEnem("REDACAO", 400m))],
         });
 
         dto.RegrasEliminacao.Should().ContainSingle().Which.Should()
@@ -111,13 +112,13 @@ public sealed class ProjecaoDaClassificacaoTests
         {
             RegrasEliminacao =
             [
-                Eliminacao(RegraEliminacaoCodigo.ElimZeroEmArea, new ParametrosElimZeroEmArea()),
-                Eliminacao(RegraEliminacaoCodigo.ElimFaltaEmDiaDeProvaEnem, new ParametrosElimFaltaEmDiaDeProvaEnem()),
+                Eliminacao(RegraDeEliminacaoPorCalculo.ZeroEmAreaDoEnem.Codigo(), new ParametrosEliminacaoPorZeroEmAreaDoEnem()),
+                Eliminacao(RegraDeEliminacaoPorCalculo.FaltaEmDiaDeProvaDoEnem.Codigo(), new ParametrosEliminacaoPorFaltaEmDiaDeProvaDoEnem()),
             ],
         });
 
         dto.RegrasEliminacao.Select(static r => r.Regra.Codigo)
-            .Should().Equal(RegraEliminacaoCodigo.ElimZeroEmArea, RegraEliminacaoCodigo.ElimFaltaEmDiaDeProvaEnem);
+            .Should().Equal(RegraDeEliminacaoPorCalculo.ZeroEmAreaDoEnem.Codigo(), RegraDeEliminacaoPorCalculo.FaltaEmDiaDeProvaDoEnem.Codigo());
         dto.RegrasEliminacao.Should().OnlyContain(static r => r.EtapaRef == null && r.NotaMinima == null && r.Minimo == null && r.AreaCodigo == null);
     }
 
@@ -158,25 +159,25 @@ public sealed class ProjecaoDaClassificacaoTests
         ProcessoSeletivo processo = ProcessoComUmaEtapa();
         processo.DefinirCriteriosDesempate(
         [
-            Criterio(3, CriterioDesempateCodigo.Idoso, new ParametrosDesempateIdoso(60)),
-            Criterio(1, CriterioDesempateCodigo.MaiorIdade, new ParametrosDesempateMaiorIdade()),
-            Criterio(2, CriterioDesempateCodigo.MaiorNotaEtapa, new ParametrosDesempateMaiorNotaEtapa(processo.Etapas.Single().Id)),
+            Criterio(3, RegraDeDesempate.Idoso.Codigo(), new ParametrosDesempateIdoso(60)),
+            Criterio(1, RegraDeDesempate.MaiorIdade.Codigo(), new ParametrosDesempateMaiorIdade()),
+            Criterio(2, RegraDeDesempate.MaiorNotaNaEtapa.Codigo(), new ParametrosDesempateMaiorNotaEtapa(processo.Etapas.Single().Id)),
         ]).IsSuccess.Should().BeTrue();
 
         IReadOnlyList<CriterioDesempateDto> dtos = ProjecaoDaClassificacao.ProjetarCriteriosDeDesempate(processo);
 
         dtos.Select(static d => (d.Ordem, d.Regra.Codigo)).Should().Equal(
-            (1, CriterioDesempateCodigo.MaiorIdade), (2, CriterioDesempateCodigo.MaiorNotaEtapa), (3, CriterioDesempateCodigo.Idoso));
+            (1, RegraDeDesempate.MaiorIdade.Codigo()), (2, RegraDeDesempate.MaiorNotaNaEtapa.Codigo()), (3, RegraDeDesempate.Idoso.Codigo()));
     }
 
     [Fact(DisplayName = "O desempate por maior idade não tem parâmetros e sai só com a regra")]
     public void ProjetarCriteriosDeDesempate_MaiorIdade_SaiSemParametros()
     {
         CriterioDesempateDto dto = ProjetarUnicoCriterio(
-            CenariosDeDefinirEtapas.ProcessoSemEtapas(), Criterio(1, CriterioDesempateCodigo.MaiorIdade, new ParametrosDesempateMaiorIdade()));
+            CenariosDeDefinirEtapas.ProcessoSemEtapas(), Criterio(1, RegraDeDesempate.MaiorIdade.Codigo(), new ParametrosDesempateMaiorIdade()));
 
         dto.Should().Be(new CriterioDesempateDto(
-            dto.Id, 1, new ReferenciaRegraDto(CriterioDesempateCodigo.MaiorIdade, "v1", HashDoCriterio),
+            dto.Id, 1, new ReferenciaRegraDto(RegraDeDesempate.MaiorIdade.Codigo(), "v1", HashDoCriterio),
             new ParametrosDoCriterioDesempateDto(null, null, null, null, null, null)));
     }
 
@@ -187,7 +188,7 @@ public sealed class ProjecaoDaClassificacaoTests
         Guid etapaId = processo.Etapas.Single().Id;
 
         CriterioDesempateDto dto = ProjetarUnicoCriterio(
-            processo, Criterio(1, CriterioDesempateCodigo.MaiorNotaEtapa, new ParametrosDesempateMaiorNotaEtapa(etapaId)));
+            processo, Criterio(1, RegraDeDesempate.MaiorNotaNaEtapa.Codigo(), new ParametrosDesempateMaiorNotaEtapa(etapaId)));
 
         dto.Parametros.EtapaRef.Should().Be(etapaId);
         dto.Parametros.IdadeMinima.Should().BeNull();
@@ -198,7 +199,7 @@ public sealed class ProjecaoDaClassificacaoTests
     public void ProjetarCriteriosDeDesempate_Idoso_DevolveAIdadeMinima()
     {
         CriterioDesempateDto dto = ProjetarUnicoCriterio(
-            CenariosDeDefinirEtapas.ProcessoSemEtapas(), Criterio(1, CriterioDesempateCodigo.Idoso, new ParametrosDesempateIdoso(60)));
+            CenariosDeDefinirEtapas.ProcessoSemEtapas(), Criterio(1, RegraDeDesempate.Idoso.Codigo(), new ParametrosDesempateIdoso(60)));
 
         dto.Parametros.IdadeMinima.Should().Be(60);
         dto.Parametros.EtapaRef.Should().BeNull();
@@ -247,7 +248,7 @@ public sealed class ProjecaoDaClassificacaoTests
         ProcessoSeletivo processo = ProcessoComUmaEtapa();
         processo.DefinirClassificacao(ConfiguracaoClassificacao.Criar(Declaracao(baseadoEmEnem: true)).Value!).IsSuccess.Should().BeTrue();
         CriterioDesempate criterio = Criterio(
-            1, CriterioDesempateCodigo.MaiorNotaAreaEnem, new ParametrosDesempateMaiorNotaAreaEnem(["REDACAO", "MATEMATICA", "LINGUAGENS"]));
+            1, RegraDeDesempate.MaiorNotaPorAreaDoEnem.Codigo(), new ParametrosDesempateMaiorNotaAreaEnem(["REDACAO", "MATEMATICA", "LINGUAGENS"]));
 
         CriterioDesempateDto dto = ProjetarUnicoCriterio(processo, criterio);
 
@@ -281,10 +282,10 @@ public sealed class ProjecaoDaClassificacaoTests
 
     private static DeclaracaoDaClassificacao Declaracao(bool baseadoEmEnem) => new()
     {
-        RegraCalculo = ReferenciaRegra.De(RegraCalculoCodigo.FormulaMediaPonderada, "v1", HashDoCalculo),
-        RegraArredondamento = ReferenciaRegra.De(RegraArredondamentoCodigo.PrecisaoTruncar, "v1", HashDoArredondamento),
+        RegraCalculo = ReferenciaRegra.De(RegraDeCalculoDaNota.MediaPonderada.Codigo(), "v1", HashDoCalculo),
+        RegraArredondamento = ReferenciaRegra.De(RegraDeArredondamentoDaNota.Truncar.Codigo(), "v1", HashDoArredondamento),
         CasasArredondamento = 2,
-        RegraOrdemAlocacao = ReferenciaRegra.De(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, "v1", HashDaAlocacao),
+        RegraOrdemAlocacao = ReferenciaRegra.De(RegraDeOrdemDeAlocacao.PrimeiraOpcaoPrioritaria.Codigo(), "v1", HashDaAlocacao),
         BaseadoEmEnem = baseadoEmEnem,
         ResolucaoPesoAreaEnem = baseadoEmEnem ? QuadroPesoAreaEnemDeTeste.Resolucao : null,
         QuadroPesoAreaEnem = baseadoEmEnem ? QuadroPesoAreaEnemDeTeste.Completo() : [],
@@ -298,6 +299,6 @@ public sealed class ProjecaoDaClassificacaoTests
         CriterioDesempate.Criar(ordem, ReferenciaRegra.De(codigo, "v1", HashDoCriterio), parametros).Value!;
 
     private static CriterioDesempate CriterioDePredicado(string fato, Operador operador, object valor) =>
-        Criterio(1, CriterioDesempateCodigo.PredicadoFato, new ParametrosDesempatePredicadoFato(
+        Criterio(1, RegraDeDesempate.CondicaoSobreDado.Codigo(), new ParametrosDesempatePredicadoFato(
             CondicaoDnf.Criar(fato, operador, JsonSerializer.SerializeToElement(valor)).Value!));
 }

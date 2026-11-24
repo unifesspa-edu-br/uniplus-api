@@ -2,6 +2,7 @@ namespace Unifesspa.UniPlus.Selecao.Application.UnitTests.Commands;
 
 using AwesomeAssertions;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
@@ -18,24 +19,24 @@ using static Unifesspa.UniPlus.Selecao.Application.UnitTests.Commands.CenarioDos
 public sealed class DefinirCriteriosDesempatePredicadoDeFatoCommandHandlerTests
 {
     private static CriterioDesempateInput PredicadoDoFato(string? fato, string? operador, string? valor) =>
-        CriterioDesempateDeTeste.DaRegra(CriterioDesempateCodigo.PredicadoFato).ComPredicado(fato, operador, valor).Construir();
+        CriterioDesempateDeTeste.DaRegra(RegraDeDesempate.CondicaoSobreDado.Codigo()).ComPredicado(fato, operador, valor).Construir();
 
     [Fact(DisplayName = "Predicado sem fato e sem valor recusa nos dois campos")]
     public async Task Handle_PredicadoSemFatoESemValor_RecusaNosDoisCampos()
     {
         ProcessoSeletivo processo = ProcessoComClassificacaoEnem();
-        CenarioDosCriteriosDeDesempate cenario = Com(processo).ComRegra(CriterioDesempateCodigo.PredicadoFato);
+        CenarioDosCriteriosDeDesempate cenario = Com(processo).ComRegra(RegraDeDesempate.CondicaoSobreDado.Codigo());
 
         Result result = await cenario.DefinirAsync(Comando(processo.Id, PredicadoDoFato(null, "IGUAL", null)));
 
         result.Errors.Select(static e => e.Field).Should().Equal("criterios[0].parametros.fato", "criterios[0].parametros.valor");
     }
 
-    [Fact(DisplayName = "Handle com DESEMPATE-PREDICADO-FATO sobre fato do vocabulário fechado resolve e persiste")]
+    [Fact(DisplayName = "Handle com DESEMPATE_CONDICAO_SOBRE_DADO sobre fato do vocabulário fechado resolve e persiste")]
     public async Task Handle_PredicadoFato_FatoConhecido_Persiste()
     {
         ProcessoSeletivo processo = NovoProcesso("PSE 2026", TiposDeProcessoDeTeste.PSECampo);
-        CenarioDosCriteriosDeDesempate cenario = Com(processo).ComRegra(CriterioDesempateCodigo.PredicadoFato);
+        CenarioDosCriteriosDeDesempate cenario = Com(processo).ComRegra(RegraDeDesempate.CondicaoSobreDado.Codigo());
 
         Result result = await cenario.DefinirAsync(Comando(processo.Id, PredicadoDoFato("PROFESSOR_RURAL", "IGUAL", "true")));
 
@@ -45,11 +46,11 @@ public sealed class DefinirCriteriosDesempatePredicadoDeFatoCommandHandlerTests
         parametros.Condicao.Valor.GetBoolean().Should().BeTrue();
     }
 
-    [Fact(DisplayName = "Handle com DESEMPATE-PREDICADO-FATO sobre fato fora do vocabulário fechado recusa")]
+    [Fact(DisplayName = "Handle com DESEMPATE_CONDICAO_SOBRE_DADO sobre fato fora do vocabulário fechado recusa")]
     public async Task Handle_PredicadoFato_FatoDesconhecido_Recusa()
     {
         ProcessoSeletivo processo = NovoProcesso("PSE 2026", TiposDeProcessoDeTeste.PSECampo);
-        CenarioDosCriteriosDeDesempate cenario = Com(processo).ComRegra(CriterioDesempateCodigo.PredicadoFato);
+        CenarioDosCriteriosDeDesempate cenario = Com(processo).ComRegra(RegraDeDesempate.CondicaoSobreDado.Codigo());
 
         Result result = await cenario.DefinirAsync(Comando(processo.Id, PredicadoDoFato("FATO_INEXISTENTE", "IGUAL", "S")));
 
@@ -57,11 +58,11 @@ public sealed class DefinirCriteriosDesempatePredicadoDeFatoCommandHandlerTests
         result.Error!.Code.Should().Be("PredicadoDnf.FatoDesconhecido");
     }
 
-    [Fact(DisplayName = "Handle com DESEMPATE-PREDICADO-FATO incompleto recusa")]
+    [Fact(DisplayName = "Handle com DESEMPATE_CONDICAO_SOBRE_DADO incompleto recusa")]
     public async Task Handle_PredicadoFatoIncompleto_Recusa()
     {
         ProcessoSeletivo processo = NovoProcesso("PSE 2026", TiposDeProcessoDeTeste.PSECampo);
-        CenarioDosCriteriosDeDesempate cenario = Com(processo).ComRegra(CriterioDesempateCodigo.PredicadoFato);
+        CenarioDosCriteriosDeDesempate cenario = Com(processo).ComRegra(RegraDeDesempate.CondicaoSobreDado.Codigo());
 
         Result result = await cenario.DefinirAsync(Comando(processo.Id, PredicadoDoFato("PROFESSOR_RURAL", null, null)));
 

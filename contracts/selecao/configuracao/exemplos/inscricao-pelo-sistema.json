@@ -11,13 +11,13 @@
     "unidadeAdministradoraCodigo": "CEPS",
     "unidadeAdministradoraNome": "Centro de Processos Seletivos",
     "unidadeAdministradoraSigla": "CEPS",
-    "origemCandidatos": "inscricaoPropria",
+    "origemCandidatos": "INSCRICAO_PROPRIA",
     "localidadeCodigoIbge": "1504208",
     "localidadeNome": "Marabá",
     "localidadeUf": "PA",
     "identificadorLegivel": "processo-exemplo-2027",
     "algoritmoContagemPrazo": {
-      "codigo": "CONTAGEM-PRAZO-AVANCA-DATA-UTIL",
+      "codigo": "CONTAGEM_PRAZO_AVANCA_DATA_UTIL",
       "versao": "v1"
     }
   },
@@ -178,7 +178,7 @@
         "versao": "v1"
       },
       "regraAjuste": {
-        "codigo": "RECONCILIACAO-VAGAS-ART11-PU",
+        "codigo": "AJUSTE_VAGAS_ARTIGO_11_PARAGRAFO_UNICO",
         "versao": "v1"
       },
       "referenciaDemograficaCodigo": "CENSO_2022",
@@ -213,7 +213,7 @@
   ],
   "cascataRemanejamento": {
     "regra": {
-      "codigo": "REMANEJ-CASCATA-LEI-12711",
+      "codigo": "REMANEJAMENTO_ORDEM_LEI_12711",
       "versao": "v1"
     },
     "destinoFinalCodigo": "AC",
@@ -274,30 +274,30 @@
             "tipoBancaCodigo": "BANCA_ANALISE_RECURSOS",
             "categoriasDocumentoCodigos": [],
             "regraDeDeliberacao": {
-              "modo": "colegiadaComVotacao",
+              "modo": "COLEGIADA_COM_VOTACAO",
               "integrantes": 3,
               "suplentes": 1,
               "quorum": 2,
-              "criterio": "maioriaSimples",
-              "desempate": "votoDaPresidencia",
-              "encerramento": "presidenciaNoQuorum"
+              "criterio": "MAIORIA_SIMPLES",
+              "desempate": "VOTO_DA_PRESIDENCIA",
+              "encerramento": "PRESIDENCIA_NO_QUORUM"
             }
           }
         ],
         "regraRecurso": {
-          "regraCodigo": "RECURSO-PRAZO-ANCORADO-EM-ATO",
+          "regraCodigo": "RECURSO_PRAZO_CONTADO_DA_PUBLICACAO_DO_ATO",
           "regraVersao": "v1",
           "prazoValor": 2,
-          "prazoUnidade": "diasUteis",
+          "prazoUnidade": "DIAS_UTEIS",
           "publicacaoDeReferenciaAtoCodigo": "RESULTADO_FINAL",
           "admiteInstanciaSuperior": false,
-          "efeitoSuspensivo": "semEfeitoSuspensivo",
-          "guardaDaVaga": "ateOResultadoDefinitivo",
+          "efeitoSuspensivo": "SEM_EFEITO_SUSPENSIVO",
+          "guardaDaVaga": "ATE_O_RESULTADO_DEFINITIVO",
           "procedimentosDeRecurso": [
             {
               "tipoDeDecisao": "HOMOLOGACAO_DAS_INSCRICOES",
               "regra": {
-                "codigo": "PROCEDIMENTO-RECURSO-CONFERENCIA",
+                "codigo": "PROCEDIMENTO_RECURSO_CONFERENCIA",
                 "versao": "v1"
               }
             }
@@ -322,7 +322,7 @@
     {
       "chave": "etapa_prova_objetiva",
       "nome": "Prova Objetiva",
-      "carater": "ambas",
+      "carater": "AMBAS",
       "tipoEtapaCodigo": "PROVA_OBJETIVA",
       "peso": 1.0,
       "notaMinima": 30,
@@ -330,7 +330,7 @@
       "passoDoLancamento": 0.5,
       "formaDeAvaliacao": "HUMANA",
       "regraDeApuracaoDaAvaliacao": {
-        "codigo": "CONSOLIDACAO-AVALIACAO-UNICA",
+        "codigo": "APURACAO_AVALIACAO_UNICA",
         "versao": "v1"
       },
       "itensDeAvaliacao": [
@@ -379,7 +379,7 @@
           "chave": "banca_correcao_redacoes",
           "tipoBancaCodigo": "BANCA_CORRECAO_REDACOES",
           "regraDeDeliberacao": {
-            "modo": "atoIndividual",
+            "modo": "ATO_INDIVIDUAL",
             "integrantes": 1,
             "suplentes": 0
           }
@@ -387,16 +387,16 @@
       ],
       "recursos": [
         {
-          "eventoInicialDoPrazo": "atoPublicado",
-          "regraCodigo": "RECURSO-PRAZO-ANCORADO-EM-ATO",
+          "eventoInicialDoPrazo": "PUBLICACAO_DO_ATO",
+          "regraCodigo": "RECURSO_PRAZO_CONTADO_DA_PUBLICACAO_DO_ATO",
           "regraVersao": "v1",
           "prazoValor": 2,
-          "prazoUnidade": "diasUteis",
+          "prazoUnidade": "DIAS_UTEIS",
           "publicacaoDeReferenciaAtoCodigo": "RESULTADO_PRELIMINAR",
           "admiteInstanciaSuperior": true,
           "prazoSegundaInstanciaValor": 3,
-          "prazoSegundaInstanciaUnidade": "diasUteis",
-          "efeitoSuspensivo": "semEfeitoSuspensivo",
+          "prazoSegundaInstanciaUnidade": "DIAS_UTEIS",
+          "efeitoSuspensivo": "SEM_EFEITO_SUSPENSIVO",
           "procedimentosDeRecurso": [
             {
               "tipoDeDecisao": "CLASSIFICACAO",
@@ -404,7 +404,7 @@
                 "itemDeAvaliacaoChave": "item_argumentacao"
               },
               "regra": {
-                "codigo": "PROCEDIMENTO-RECURSO-RECORRECAO",
+                "codigo": "PROCEDIMENTO_RECURSO_RECORRECAO",
                 "versao": "v1"
               }
             },
@@ -414,7 +414,7 @@
                 "areaDoEnem": "REDACAO"
               },
               "regra": {
-                "codigo": "PROCEDIMENTO-RECURSO-RECALCULO",
+                "codigo": "PROCEDIMENTO_RECURSO_RECALCULO",
                 "versao": "v1"
               }
             }
@@ -436,8 +436,8 @@
   },
   "divulgacao": {
     "camposPublicos": [
-      "numero_inscricao",
-      "nome_abreviado"
+      "NUMERO_INSCRICAO",
+      "NOME_ABREVIADO"
     ]
   },
   "tiposDeAtoCongelados": [
@@ -462,9 +462,9 @@
         "tipoDocumentoNome": "Documento de identificação",
         "faseChave": "fase_inscricao",
         "finalidade": "INSCRICAO",
-        "aplicabilidade": "Geral",
+        "aplicabilidade": "GERAL",
         "obrigatorio": true,
-        "consequenciaIndeferimento": "PENDENCIA_REENVIO",
+        "consequenciaIndeferimento": "ABRE_PRAZO_PARA_REENVIO",
         "formatosPermitidos": {
           "qualquer": true
         },
@@ -476,7 +476,7 @@
         "tipoDocumentoNome": "Comprovante de renda",
         "faseChave": "fase_inscricao",
         "finalidade": "ISENCAO_TAXA",
-        "aplicabilidade": "Condicional",
+        "aplicabilidade": "CONDICIONAL",
         "obrigatorio": true,
         "consequenciaIndeferimento": "REMOVE_VANTAGEM",
         "condicoes": [
@@ -541,7 +541,7 @@
     "regrasEliminacao": [
       {
         "regra": {
-          "codigo": "ELIM-NOTA-MINIMA-ETAPA",
+          "codigo": "ELIMINACAO_NOTA_MINIMA_ETAPA",
           "versao": "v1"
         },
         "parametros": {
@@ -551,7 +551,7 @@
       },
       {
         "regra": {
-          "codigo": "ELIM-AUSENCIA-NA-ETAPA",
+          "codigo": "ELIMINACAO_AUSENCIA_NA_ETAPA",
           "versao": "v1"
         },
         "parametros": {
@@ -563,7 +563,7 @@
       {
         "ordem": 1,
         "regra": {
-          "codigo": "DESEMPATE-MAIOR-NOTA-ETAPA",
+          "codigo": "DESEMPATE_MAIOR_NOTA_ETAPA",
           "versao": "v1"
         },
         "parametros": {
@@ -573,7 +573,7 @@
       {
         "ordem": 2,
         "regra": {
-          "codigo": "DESEMPATE-MAIOR-IDADE",
+          "codigo": "DESEMPATE_MAIOR_IDADE",
           "versao": "v1"
         },
         "parametros": {}

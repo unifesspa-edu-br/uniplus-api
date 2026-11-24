@@ -4,6 +4,8 @@ using Domain.Entities;
 using Domain.Enums;
 using Domain.ValueObjects;
 
+using Services;
+
 using Unifesspa.UniPlus.Configuracao.Contracts;
 
 /// <summary>
@@ -29,8 +31,11 @@ internal sealed record EtapaConferida(
     /// <summary>Se a etapa mantém o tipo de etapa ao qual já estava vinculada.</summary>
     public bool VinculoInalterado => Existente?.TipoEtapaOrigemId == Declarada.TipoEtapaOrigemId;
 
+    /// <summary>O caráter declarado; nulo quando ausente ou desconhecido, que o domínio recusa junto das demais recusas da etapa.</summary>
+    public CaraterEtapa? Carater => CodigoLidoDoPedido.Ler<CaraterEtapa>(Declarada.Carater);
+
     /// <summary>Se a etapa mantém o vínculo e o caráter, e por isso não é reavaliada contra o cadastro.</summary>
-    public bool CaraterInalterado => VinculoInalterado && Existente!.Carater == Declarada.Carater;
+    public bool CaraterInalterado => VinculoInalterado && Existente!.Carater == Carater;
 
     /// <summary>Se a nota da etapa vem do ENEM: o snapshot congelado enquanto o vínculo não muda, o tipo lido quando muda.</summary>
     public bool NotaDeOrigemNoEnem => VinculoInalterado ? Existente!.TipoEtapa.NotaDeOrigemNoEnem : TipoLido!.Avaliacao.NotaDeOrigemNoEnem;

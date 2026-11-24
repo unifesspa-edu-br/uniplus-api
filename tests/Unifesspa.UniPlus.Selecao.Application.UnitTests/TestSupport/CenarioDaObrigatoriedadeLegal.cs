@@ -6,6 +6,7 @@ using NSubstitute;
 
 using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 using Unifesspa.UniPlus.Configuracao.Contracts;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Application.Commands.ObrigatoriedadesLegais;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
@@ -42,7 +43,7 @@ internal sealed class CenarioDaObrigatoriedadeLegal
     internal static CriarObrigatoriedadeLegalCommand ComandoDeCriar(PredicadoObrigatoriedade? predicado = null) =>
         new(
             TipoProcessoDoCenario,
-            CategoriaObrigatoriedade.Etapa,
+            CategoriaObrigatoriedade.Etapa.Codigo(),
             "REGRA_NOVA",
             predicado ?? new EtapaObrigatoria(TipoEtapaCodigo),
             "Descrição da regra.",
@@ -56,7 +57,7 @@ internal sealed class CenarioDaObrigatoriedadeLegal
         new(
             id,
             TipoProcessoDoCenario,
-            CategoriaObrigatoriedade.Etapa,
+            CategoriaObrigatoriedade.Etapa.Codigo(),
             "REGRA_GRAVADA",
             predicado ?? new EtapaObrigatoria(TipoEtapaCodigo),
             "Descrição da regra.",

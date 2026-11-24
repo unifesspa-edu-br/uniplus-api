@@ -1,5 +1,7 @@
 namespace Unifesspa.UniPlus.Selecao.Application.Mappings;
 
+using Unifesspa.UniPlus.Application.Abstractions.Respostas;
+
 using Unifesspa.UniPlus.Selecao.Application.DTOs;
 using Unifesspa.UniPlus.Selecao.Application.Services;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
@@ -14,16 +16,18 @@ public static class RegraCatalogoMapping
     public static RegraCatalogoDto ToDto(RegraCatalogo regra)
     {
         ArgumentNullException.ThrowIfNull(regra);
-
         return new RegraCatalogoDto(
             Codigo: regra.Codigo,
             Versao: regra.Versao,
-            Tipo: regra.Tipo.ToCodigo(),
+            Tipo: CodigoComRotulo<TipoRegra>.De(regra.Tipo),
             DeclaracaoDaRegra: regra.DeclaracaoDaRegra,
             Invariantes: regra.Invariantes,
             BaseLegal: regra.BaseLegal,
             Hash: regra.Hash,
             ModalidadesAdmitidas: ModalidadesAdmitidasDaDeclaracaoDaRegra.Extrair(regra),
-            RamoDaDistribuicao: regra.Tipo == TipoRegra.RegraDistribuicaoVagas ? RegraDistribuicaoVagasCodigo.RamoDe(regra.Codigo) : null);
+            RamoDaDistribuicao: regra.Tipo == TipoRegra.RegraDistribuicaoVagas ? PoliticaDaDistribuicaoDeVagas.ModoDeMontagemDe(regra.Codigo) : null)
+        {
+            Rotulo = RotuloDaRegra.Obter(regra),
+        };
     }
 }

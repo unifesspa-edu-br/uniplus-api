@@ -154,7 +154,7 @@ public sealed class SnapshotPublicadoPersistidoTests
         // porque este teste não configura divulgação nenhuma.
         objeto["divulgacao"]!.AsObject().Should().NotContainKey("status");
         objeto["divulgacao"]!.AsObject()["camposPublicos"]!.AsArray().Should().ContainSingle()
-            .Which!.GetValue<string>().Should().Be("numero_inscricao");
+            .Which!.GetValue<string>().Should().Be("NUMERO_INSCRICAO");
         objeto["documentosExigidos"]!["exigencias"]!.AsArray().Should().BeEmpty(
             "nenhum DocumentoExigido foi configurado para este processo neste teste");
         objeto["documentosExigidos"]!["obrigatoriedades"]!.AsArray().Should().BeEmpty(

@@ -8,6 +8,8 @@ using Domain.Services;
 
 using Services;
 
+using Unifesspa.UniPlus.Application.Abstractions.Respostas;
+
 /// <summary>
 /// Resposta do passo 1 do envio de um documento da inscrição. <paramref name="ContentTypeExigido"/> é o
 /// valor exato do header <c>Content-Type</c> que o PUT direto ao <paramref name="UrlUpload"/> precisa
@@ -38,7 +40,7 @@ public sealed record ArquivoDaApresentacaoDto(
     long? TamanhoBytes,
     string? HashSha256,
     DateTimeOffset ConfirmadoEm,
-    SituacaoDoArquivoDoCandidato Situacao,
+    CodigoComRotulo<SituacaoDoArquivoDoCandidato> Situacao,
     string? Mensagem,
     string Rotulo,
     string? NomeParaDownload)
@@ -56,7 +58,7 @@ public sealed record ArquivoDaApresentacaoDto(
         return new ArquivoDaApresentacaoDto(
             arquivo.Id, arquivo.ApresentacaoId, apresentacao.ExigenciaId, apresentacao.OcorrenciaId,
             arquivo.TipoDeMidia, arquivo.TamanhoBytes, arquivo.HashSha256, arquivo.ConfirmadoEm!.Value,
-            arquivo.Situacao, arquivo.MensagemAoCandidato, rotulo, NomeDeDownload(arquivo, apresentacao, rotulo));
+            CodigoComRotulo<SituacaoDoArquivoDoCandidato>.De(arquivo.Situacao), arquivo.MensagemAoCandidato, rotulo, NomeDeDownload(arquivo, apresentacao, rotulo));
     }
 
     private static string? NomeDeDownload(ArquivoDaApresentacao arquivo, ApresentacaoDeDocumento apresentacao, string rotulo) =>

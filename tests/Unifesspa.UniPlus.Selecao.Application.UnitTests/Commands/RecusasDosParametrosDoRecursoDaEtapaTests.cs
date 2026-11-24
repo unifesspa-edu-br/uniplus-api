@@ -7,6 +7,7 @@ using AwesomeAssertions;
 using NSubstitute;
 
 using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Publicacoes.Contracts;
 using Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
@@ -40,7 +41,7 @@ public sealed class RecusasDosParametrosDoRecursoDaEtapaTests
     {
         Result resultado = await DefinirAsync(
             Recurso(ParametrosDoPedidoDoRecurso.Valido),
-            Recurso(ParametrosDoPedidoDoRecurso.Valido with { EfeitoSuspensivo = null }, AncoraDoRecurso.CienciaIndividual));
+            Recurso(ParametrosDoPedidoDoRecurso.Valido with { EfeitoSuspensivo = null }, EventoInicialDoPrazo.CienciaIndividual));
 
         resultado.Errors.Select(static erro => (erro.Field, erro.Error.Code)).Should().Equal(
             ("etapas[0].recursos[1].efeitoSuspensivo", "RecursoDaEtapa.EfeitoSuspensivoNaoDeclarado"));
@@ -57,8 +58,8 @@ public sealed class RecusasDosParametrosDoRecursoDaEtapaTests
         processo.Etapas.Single().Recursos.Single().Parametros.GuardaDaVaga.Should().Be(GuardaDaVaga.AteOResultadoDefinitivo);
     }
 
-    private static RecursoDaEtapaInput Recurso(ParametrosDoPedidoDoRecurso pedido, AncoraDoRecurso eventoInicialDoPrazo = AncoraDoRecurso.AtoPublicado) => new(
-        eventoInicialDoPrazo, "RECURSO-PRAZO-ANCORADO-EM-ATO", "v1",
+    private static RecursoDaEtapaInput Recurso(ParametrosDoPedidoDoRecurso pedido, EventoInicialDoPrazo eventoInicialDoPrazo = EventoInicialDoPrazo.PublicacaoDoAto) => new(
+        eventoInicialDoPrazo.Codigo(), "RECURSO_PRAZO_CONTADO_DA_PUBLICACAO_DO_ATO", "v1",
         pedido.PrazoValor, pedido.PrazoUnidade, "RESULTADO_CLASSIFICACAO", pedido.AdmiteInstanciaSuperior,
         pedido.PrazoSegundaInstanciaValor, pedido.PrazoSegundaInstanciaUnidade, pedido.EfeitoSuspensivo, pedido.GuardaDaVaga);
 
@@ -71,7 +72,7 @@ public sealed class RecusasDosParametrosDoRecursoDaEtapaTests
         cadastros: new(Regras: CatalogoComARegraDeRecurso(), Atos: CatalogoComOAtoDeResultado()));
 
     private static EtapaProcessoInput EtapaComRecursos(RecursoDaEtapaInput[] recursos) => new(
-        "Prova Objetiva", CaraterEtapa.Classificatoria, TipoProvaObjetivaOrigemId, 1m, null, 1,
+        "Prova Objetiva", CaraterEtapa.Classificatoria.Codigo(), TipoProvaObjetivaOrigemId, 1m, null, 1,
         Produtos:
         [
             new ProdutoDaEtapaInput("RESULTADO_CLASSIFICACAO", "PRELIMINAR"),
@@ -84,7 +85,7 @@ public sealed class RecusasDosParametrosDoRecursoDaEtapaTests
     {
         IRegraCatalogoReader regras = Substitute.For<IRegraCatalogoReader>();
         regras.ObterAsync(Arg.Any<string>(), Arg.Any<string>(), Arg.Any<CancellationToken>()).Returns(RegraCatalogo.Criar(
-            "RECURSO-PRAZO-ANCORADO-EM-ATO", "v1", TipoRegra.RegraPrazoRecurso,
+            "RECURSO_PRAZO_CONTADO_DA_PUBLICACAO_DO_ATO", "v1", TipoRegra.RegraPrazoRecurso,
             JsonDocument.Parse("{}").RootElement, JsonDocument.Parse("[]").RootElement, "Lei 9.784/1999, art. 59"));
         return regras;
     }

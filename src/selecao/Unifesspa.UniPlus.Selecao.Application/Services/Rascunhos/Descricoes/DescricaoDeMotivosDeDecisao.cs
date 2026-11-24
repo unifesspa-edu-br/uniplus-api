@@ -19,5 +19,5 @@ public sealed class DescricaoDeMotivosDeDecisao(IMotivoDeDecisaoRepository motiv
 
     // O rascunho antecede a primeira publicação do edital.
     private static IReadOnlyList<object?> Atributos(MotivoDeDecisao motivo) =>
-        [motivo.Descricao, motivo.Subclassificacao, motivo.Sentido.ToCodigo(), motivo.Sentido.Rotulo(), 1];
+        [motivo.Descricao, motivo.Subclassificacao, motivo.Sentido.Codigo(), motivo.Sentido.Rotulo(), 1];
 }

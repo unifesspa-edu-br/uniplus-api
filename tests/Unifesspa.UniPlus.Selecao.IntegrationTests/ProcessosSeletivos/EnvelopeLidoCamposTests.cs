@@ -6,7 +6,7 @@ public sealed class EnvelopeLidoCamposTests
     [InlineData("etapas.0.nome", "Prova Objetiva Reformulada")]
     [InlineData("etapas.0.peso", "9.8750")]
     [InlineData("etapas.0.notaMinima", "12.3400")]
-    [InlineData("etapas.0.carater", "Classificatoria")]
+    [InlineData("etapas.0.carater", "CLASSIFICATORIA")]
     [InlineData("etapas.1.tipoEtapa.notaDeOrigemNoEnem", "true")]
     [InlineData("etapas.2.tipoEtapa.exigeCorrecaoIndependente", "false")]
     [InlineData("periodo.numero", "099/2026")]

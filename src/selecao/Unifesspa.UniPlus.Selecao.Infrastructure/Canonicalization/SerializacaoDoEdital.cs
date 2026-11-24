@@ -4,6 +4,7 @@ using System.Globalization;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Kernel.Extensions;
 using Unifesspa.UniPlus.Kernel.Results;
@@ -78,19 +79,24 @@ internal static class SerializacaoDoEdital
             return new JsonObject { ["presente"] = false };
         }
 
-        return new JsonObject
-        {
-            ["presente"] = true,
-            ["origemId"] = calendario.OrigemId,
-            ["versaoDoCalendario"] = HashCanonicalComputer.NormalizeNfc(calendario.VersaoDataset),
-            ["diasNaoUteis"] = new JsonArray([.. CalendarioDiasUteisCongelado.Ordenar(calendario.DiasNaoUteis).Select(SerializarDiaNaoUtil)]),
-        };
+        return SerializarCalendarioPresente(calendario);
     }
+
+    private static JsonObject SerializarCalendarioPresente(CalendarioDiasUteisCongelado calendario) => new()
+    {
+        ["presente"] = true,
+        ["origemId"] = calendario.OrigemId,
+        ["versaoDoCalendario"] = HashCanonicalComputer.NormalizeNfc(calendario.VersaoDataset),
+        ["diasNaoUteis"] = new JsonArray(
+        [
+            .. CalendarioDiasUteisCongelado.Ordenar(calendario.DiasNaoUteis).Select(SerializarDiaNaoUtil),
+        ]),
+    };
 
     private static JsonNode SerializarDiaNaoUtil(DiaNaoUtilCongelado dia) => new JsonObject
     {
         ["data"] = dia.Data.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
-        ["abrangencia"] = dia.Abrangencia,
+        ["abrangencia"] = dia.Abrangencia.Codigo(),
         ["municipioIbge"] = dia.MunicipioIbge,
         ["municipioNome"] = dia.MunicipioNome is { } nome ? HashCanonicalComputer.NormalizeNfc(nome) : null,
         ["uf"] = dia.Uf,

@@ -39,7 +39,7 @@ internal static class LeituraDaCascata
     {
         leitor.ExigirChaves(bloco, "cascataRemanejamento", "presente", "regra", "destinoFinalCodigo", "ordens");
 
-        ReferenciaRegra regra = leitor.Regra(bloco, "regra", "cascataRemanejamento", RegraRemanejamentoCodigo.Cascata);
+        ReferenciaRegra regra = leitor.Regra<CriterioDeRemanejamento>(bloco, "regra", "cascataRemanejamento");
         string fallbackCodigo = leitor.Texto(bloco, "destinoFinalCodigo", "cascataRemanejamento", LimitesDoEnvelope.ModalidadeCodigo);
         JsonArray ordens = leitor.Array(bloco, "ordens", "cascataRemanejamento");
         if (leitor.Falhou)

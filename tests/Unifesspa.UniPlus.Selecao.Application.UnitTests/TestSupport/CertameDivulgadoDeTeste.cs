@@ -2,9 +2,11 @@ namespace Unifesspa.UniPlus.Selecao.Application.UnitTests.TestSupport;
 
 using System.Text.Json;
 
+using Unifesspa.UniPlus.Application.Abstractions.Respostas;
 using Unifesspa.UniPlus.Selecao.Application.DTOs;
 using Unifesspa.UniPlus.Selecao.Application.Queries.ProcessosSeletivos;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
+using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
@@ -57,5 +59,5 @@ internal static class CertameDivulgadoDeTeste
         new UnidadeAdministradoraCertameDto("UNIFESSPA", "Universidade", "Autarquia", "Marabá", "PA"),
         new DocumentoEditalCertameDto(Guid.CreateVersion7(), new string('b', 64), new Uri("https://acervo.teste/edital.pdf")),
         [], new OpcoesDeCursoCertameDto(1), ["AC"], [new QuadroDeVagasCertameDto(Guid.CreateVersion7(), [], 100)],
-        [], "Externa", [], [], new AtendimentoCertameDto([], [], []), null, null);
+        [], CodigoComRotulo<OrigemCandidatos>.De(OrigemCandidatos.ImportacaoExterna), [], [], new AtendimentoCertameDto([], [], []), null, null);
 }

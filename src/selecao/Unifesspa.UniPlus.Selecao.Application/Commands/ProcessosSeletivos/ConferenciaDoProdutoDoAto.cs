@@ -3,6 +3,7 @@ namespace Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
 using Domain.Enums;
 using Domain.ValueObjects;
 
+using Kernel.Domain.CodigosDeContrato;
 using Kernel.Results;
 
 /// <summary>
@@ -19,7 +20,7 @@ internal static class ConferenciaDoProdutoDoAto
     public static DomainError PapelDesconhecido(RotuloDoDonoDoProduto dono) =>
         new(
             dono.CodigoDoPapelDesconhecido,
-            $"O papel declarado{dono.Qualificador} não é um dos aceitos — use '{PapelProdutoFaseCodigo.Preliminar}', '{PapelProdutoFaseCodigo.Definitivo}' ou nenhum.");
+            $"O papel declarado{dono.Qualificador} não é um dos aceitos — use {string.Join(", ", CatalogoDe<PapelDaPublicacaoPrevista>.Todos().Select(static declarado => $"'{declarado.Codigo}'"))} ou nenhum.");
 
     public static DomainError AtoNaoEncontrado(RotuloDoDonoDoProduto dono) =>
         new(
@@ -32,7 +33,7 @@ internal static class ConferenciaDoProdutoDoAto
     /// de resultado (UNI-REQ-0157).
     /// </summary>
     public static DomainError? RecusaDoPapel(
-        string atoCodigo, PapelProdutoFase? papel, ClassificacaoDoTipoDeAto classificacao, RotuloDoDonoDoProduto dono) =>
+        string atoCodigo, PapelDaPublicacaoPrevista? papel, ClassificacaoDoTipoDeAto classificacao, RotuloDoDonoDoProduto dono) =>
         papel is not null && !classificacao.EhResultado
             ? new DomainError(
                 dono.CodigoDoPapelEmAtoQueNaoEhResultado,

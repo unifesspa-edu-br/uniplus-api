@@ -49,22 +49,22 @@ internal static class LeituraDasExigencias
     {
         leitor.ExigirChaves(item, path, ChavesDaExigencia);
 
-        DeclaracaoDaExigencia declaracao = LerDeclaracao(leitor, item, path);
+        CamposDaExigenciaNoEnvelope campos = LerCamposDaExigencia(leitor, item, path);
         if (leitor.Falhou)
         {
             return null;
         }
 
-        if (!ClassificacoesDeProtecao.TryAnalisar(declaracao.ClassificacaoToken, out ClassificacaoDeProtecao classificacaoProtecao))
+        if (!ClassificacoesDeProtecao.TryAnalisar(campos.ClassificacaoToken, out ClassificacaoDeProtecao classificacaoProtecao))
         {
             return Recusar(leitor, $"'{path}.classificacaoProtecao' fora do vocabulário de classificações de proteção.");
         }
 
-        return MontarExigencia(leitor, item, path, declaracao, classificacaoProtecao);
+        return LerExigenciaClassificada(leitor, item, path, campos, classificacaoProtecao);
     }
 
-    private static DocumentoExigido? MontarExigencia(
-        LeitorEnvelope leitor, JsonObject item, string path, DeclaracaoDaExigencia declaracao, ClassificacaoDeProtecao classificacaoProtecao)
+    private static DocumentoExigido? LerExigenciaClassificada(
+        LeitorEnvelope leitor, JsonObject item, string path, CamposDaExigenciaNoEnvelope campos, ClassificacaoDeProtecao classificacaoProtecao)
     {
         ComplementosDaExigencia? complementos = LerComplementos(leitor, item, path);
         if (complementos is null)
@@ -72,23 +72,23 @@ internal static class LeituraDasExigencias
             return null;
         }
 
-        FinalidadeFormulario? finalidade = declaracao.FinalidadeToken is null ? null : EstruturaFormulario.FinalidadeDoToken(declaracao.FinalidadeToken);
-        if (RecusaDaFinalidadeOuDoTamanho(declaracao, finalidade, path) is { } recusa)
+        FinalidadeFormulario? finalidade = campos.FinalidadeToken is null ? null : EstruturaFormulario.FinalidadeDoToken(campos.FinalidadeToken);
+        if (RecusaDaFinalidadeOuDoTamanho(campos, finalidade, path) is { } recusa)
         {
             return Recusar(leitor, recusa);
         }
 
-        return Reidratar(declaracao, classificacaoProtecao, finalidade, complementos);
+        return Reidratar(campos, classificacaoProtecao, finalidade, complementos);
     }
 
-    private static string? RecusaDaFinalidadeOuDoTamanho(DeclaracaoDaExigencia declaracao, FinalidadeFormulario? finalidade, string path)
+    private static string? RecusaDaFinalidadeOuDoTamanho(CamposDaExigenciaNoEnvelope campos, FinalidadeFormulario? finalidade, string path)
     {
         if (finalidade == FinalidadeFormulario.Nenhuma)
         {
             return $"'{path}.finalidade' fora do vocabulário de finalidades.";
         }
 
-        return declaracao.TamanhoMaximoBytes is <= 0
+        return campos.TamanhoMaximoBytes is <= 0
             ? $"'{path}.tamanhoMaximoBytes' deve ser maior que zero quando presente."
             : null;
     }
@@ -109,7 +109,7 @@ internal static class LeituraDasExigencias
     }
 
     private static DocumentoExigido Reidratar(
-        DeclaracaoDaExigencia d,
+        CamposDaExigenciaNoEnvelope d,
         ClassificacaoDeProtecao classificacaoProtecao,
         FinalidadeFormulario? finalidade,
         ComplementosDaExigencia c) => DocumentoExigido.Reidratar(
@@ -134,19 +134,19 @@ internal static class LeituraDasExigencias
     private static DocumentoExigido? Recusar(LeitorEnvelope leitor, string mensagem) =>
         leitor.Propagar<DocumentoExigido>(new DomainError(ErrosCodecEnvelope.EnvelopeMalformado, mensagem));
 
-    private static DeclaracaoDaExigencia LerDeclaracao(LeitorEnvelope leitor, JsonObject item, string path) =>
-        LerIdentificacaoDaExigencia(leitor, item, path) with
+    private static CamposDaExigenciaNoEnvelope LerCamposDaExigencia(LeitorEnvelope leitor, JsonObject item, string path) =>
+        LerIdentidadeETipoDaExigencia(leitor, item, path) with
         {
             ExigidoNaFaseId = leitor.Identificador(item, "exigidoNaFaseId", path),
             ExigidoNaEtapaId = leitor.IdentificadorOpcional(item, "exigidoNaEtapaId", path),
             FinalidadeToken = leitor.TextoOpcional(item, "finalidade", path, LimitesDoEnvelope.Token),
-            Aplicabilidade = leitor.Enumeracao<Aplicabilidade>(item, "aplicabilidade", path),
+            Aplicabilidade = leitor.CodigoDeContrato<Aplicabilidade>(item, "aplicabilidade", path),
             Obrigatorio = leitor.Booleano(item, "obrigatorio", path),
             ConsequenciaIndeferimento = leitor.TextoOpcional(item, "consequenciaIndeferimento", path, LimitesDoEnvelope.Token),
             TamanhoMaximoBytes = leitor.InteiroOpcional(item, "tamanhoMaximoBytes", path),
         };
 
-    private static DeclaracaoDaExigencia LerIdentificacaoDaExigencia(LeitorEnvelope leitor, JsonObject item, string path) => new()
+    private static CamposDaExigenciaNoEnvelope LerIdentidadeETipoDaExigencia(LeitorEnvelope leitor, JsonObject item, string path) => new()
     {
         ExigenciaId = leitor.Identificador(item, "exigenciaId", path),
         Chave = ChavesNoEnvelope.Ler(leitor, item, path),
@@ -159,7 +159,7 @@ internal static class LeituraDasExigencias
         HipoteseLegal = leitor.TextoNaoVazio(item, "hipoteseLegal", path, LimitesDoEnvelope.HipoteseLegal),
     };
 
-    private sealed record DeclaracaoDaExigencia
+    private sealed record CamposDaExigenciaNoEnvelope
     {
         public Guid ExigenciaId { get; init; }
 
@@ -219,26 +219,19 @@ internal static class LeituraDasExigencias
     private static ModeloDaExigencia? LerBlocoDoModelo(LeitorEnvelope leitor, JsonObject bloco, string path)
     {
         leitor.ExigirChaves(bloco, path, "modeloId", "nomeArquivo", "formato", "hashSha256");
-        Guid modeloId = leitor.Identificador(bloco, "modeloId", path);
-        string nomeArquivo = leitor.TextoNaoVazio(bloco, "nomeArquivo", path, LimitesDoEnvelope.NomeArquivoDoModelo);
-        string formato = leitor.Texto(bloco, "formato", path);
-        string hash = leitor.Texto(bloco, "hashSha256", path);
-        if (leitor.Falhou)
-        {
-            return null;
-        }
-
-        return ConferirModelo(leitor, path, modeloId, nomeArquivo, formato, hash);
+        ModeloNoEnvelope lido = new(
+            leitor.Identificador(bloco, "modeloId", path),
+            leitor.TextoNaoVazio(bloco, "nomeArquivo", path, LimitesDoEnvelope.NomeArquivoDoModelo),
+            leitor.Texto(bloco, "formato", path),
+            leitor.Texto(bloco, "hashSha256", path));
+        return leitor.Falhou ? null : ModeloDoEnvelope(leitor, path, lido);
     }
 
-    private static ModeloDaExigencia? ConferirModelo(
-        LeitorEnvelope leitor, string path, Guid modeloId, string nomeArquivo, string formato, string hash)
-    {
-        FormatoDeDocumento? formatoDoModelo = ModeloDeDocumento.FormatoDoToken(formato);
-        bool hashValido = EhSha256Hexadecimal(hash);
-        return formatoDoModelo is { } formatoValido && hashValido
-            ? new ModeloDaExigencia(modeloId, nomeArquivo, formatoValido, hash)
+    private static ModeloDaExigencia? ModeloDoEnvelope(LeitorEnvelope leitor, string path, ModeloNoEnvelope lido) =>
+        ModeloDeDocumento.FormatoDoToken(lido.Formato) is { } formato && EhSha256Hexadecimal(lido.Hash)
+            ? new ModeloDaExigencia(lido.ModeloId, lido.NomeArquivo, formato, lido.Hash)
             : leitor.Propagar<ModeloDaExigencia>(new DomainError(
                 ErrosCodecEnvelope.EnvelopeMalformado, $"'{path}' com formato fora dos editáveis ou hash que não é SHA-256 em hexadecimal minúsculo."));
-    }
+
+    private sealed record ModeloNoEnvelope(Guid ModeloId, string NomeArquivo, string Formato, string Hash);
 }

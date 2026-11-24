@@ -9,12 +9,12 @@ using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Seed;
 public sealed class DeclaracoesVaziasDoCatalogoTests
 {
     [Theory]
-    [InlineData("PRECISAO-TRUNCAR")]
-    [InlineData("PRECISAO-ARREDONDAR-CIMA")]
-    [InlineData("BONUS-MULTIPLICATIVO")]
-    [InlineData("RECURSO-PRAZO-ANCORADO-EM-ATO")]
+    [InlineData("PRECISAO_TRUNCAR")]
+    [InlineData("PRECISAO_ARREDONDAR_A_PARTIR_DE_CINCO")]
+    [InlineData("FADA_MULTIPLICATIVO")]
+    [InlineData("RECURSO_PRAZO_CONTADO_DA_PUBLICACAO_DO_ATO")]
     [InlineData("RENDA-PER-CAPITA-LEI-12711")]
-    [InlineData("RECONCILIACAO-VAGAS-ARTIGO-11-PARAGRAFO-UNICO")]
+    [InlineData("AJUSTE_VAGAS_ARTIGO_11_PARAGRAFO_UNICO")]
     public void Declaracao_DaRegraSemDeclaracaoDeVersao_EhVazia(string codigo)
     {
         RegraCatalogoSeedItem item = RegraCatalogoSeed.Itens.Single(i => i.Codigo == codigo);

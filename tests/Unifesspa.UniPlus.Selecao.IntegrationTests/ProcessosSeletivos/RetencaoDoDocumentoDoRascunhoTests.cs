@@ -24,7 +24,7 @@ public sealed class RetencaoDoDocumentoDoRascunhoTests : IClassFixture<ProcessoS
 {
     private const string RestricaoDeRetencao = "ck_documentos_a_publicar_confirmado_retido";
     private const string ApagarDocumento = "DELETE FROM selecao.documentos_a_publicar WHERE id = @id";
-    private const string DesconfirmarDocumento = "UPDATE selecao.documentos_a_publicar SET status = 0 WHERE id = @id";
+    private const string DesconfirmarDocumento = "UPDATE selecao.documentos_a_publicar SET status = 'PENDENTE' WHERE id = @id";
 
     private readonly ProcessoSeletivoDbFixture _fixture;
 

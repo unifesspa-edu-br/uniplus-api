@@ -116,16 +116,20 @@ public sealed class DesativacaoNoCatalogoTests
         Guid.CreateVersion7(), "BAIXA_RENDA", "Baixa renda", "Descrição do fato.", "BOOLEANO", "DECLARADO", "ESCALAR",
         null, "INSCRICAO", "CAMPO_FORMULARIO:BAIXA_RENDA", null, null, true, "PESSOAL", ProtecaoDoFatoDeTeste.HipoteseLegal, ProtecaoDoFatoDeTeste.Finalidade, ProtecaoAprovada: true);
 
+    private static DocumentoExigido ExigenciaCondicionadaACorOuRaca(Guid faseId) =>
+        DocumentoExigidoDeTeste.Novo()
+            .NaFase(faseId)
+            .ComTipo("AUTODECLARACAO", "Autodeclaração", "PESSOAL")
+            .Condicional([CondicaoGatilho.Criar(0, "COR_RACA", Operador.Igual, JsonSerializer.SerializeToElement("BRANCA")).Value!])
+            .ComBasesLegais([DocumentoExigidoBaseLegal.Criar("Lei 12.711/2012, art. 3º", TipoAbrangencia.InternaEdital, StatusBaseLegal.Resolvido, null).Value!])
+            .NaFinalidade(FinalidadeFormulario.Inscricao)
+            .Criar().Value!;
+
     [Fact(DisplayName = "O metadado do fato citado em gatilho congela o mesmo vocabulário: sem o valor desativado que nada cita")]
     public void Metadado_SemValorDesativadoNaoCitado()
     {
         ProcessoSeletivo processo = ProcessoSeletivoConformeBuilder.Criar("PS Metadado", out Guid faseId);
-        DocumentoExigido exigencia = new DocumentoExigidoBuilder()
-            .ComTipo(new CopiaDoTipoDeDocumento(Guid.CreateVersion7(), "AUTODECLARACAO", "Autodeclaração", "PESSOAL", ProtecaoDoDocumentoDeTeste.Pessoal))
-            .NaFase(faseId, FinalidadeFormulario.Inscricao)
-            .ComAplicabilidade(new AplicabilidadeDaExigencia(Aplicabilidade.Condicional, [CondicaoGatilho.Criar(0, "COR_RACA", Operador.Igual, JsonSerializer.SerializeToElement("BRANCA")).Value!]))
-            .ComIndeferimento(new IndeferimentoDoDocumento(true, null, [DocumentoExigidoBaseLegal.Criar("Lei 12.711/2012, art. 3º", TipoAbrangencia.InternaEdital, StatusBaseLegal.Resolvido, null).Value!]))
-            .Construir();
+        DocumentoExigido exigencia = ExigenciaCondicionadaACorOuRaca(faseId);
         processo.DefinirDocumentosExigidos([RegraDeComprovacao.CriarRegraDeDocumento(exigencia, 0).Value!])
             .IsSuccess.Should().BeTrue();
 

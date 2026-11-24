@@ -53,11 +53,11 @@ internal sealed class InscricaoRecordConfiguration : IEntityTypeConfiguration<In
             .IsRequired()
             .HasComment("O emissor (issuer) do token de quem iniciou a inscrição.");
 
-        // Lifecycle enum simples — mesmo padrão de ProcessoSeletivoConfiguration (StatusProcesso).
         builder.Property(i => i.Situacao)
             .ClassificaComo(ClassificacaoDeProtecao.Publico)
-            .HasConversion<int>()
-            .IsRequired();
+            .HasMaxLength(9)
+            .IsRequired()
+            .HasComment("Situação da inscrição.");
 
         builder.Property(i => i.VersaoFormularioId)
             .HasComment("A versão do formulário da inscrição (UNI-REQ-0084): a divulgada que o rascunho adotou por último; o primeiro envio a congela.");
@@ -100,7 +100,7 @@ internal sealed class InscricaoRecordConfiguration : IEntityTypeConfiguration<In
         // devolver a inscrição existente em vez de um 500. Nunca duas ativas para o mesmo candidato.
         builder.HasIndex(i => new { i.ProcessoSeletivoId, i.CpfIndice })
             .IsUnique()
-            .HasFilter($"situacao <> {(int)SituacaoInscricao.Cancelada}")
+            .HasFilter("situacao <> 'CANCELADA'")
             .HasDatabaseName("ux_inscricoes_processo_cpf_indice");
 
         // "Minhas inscrições" (issue #1860) busca por CPF em qualquer processo — o índice

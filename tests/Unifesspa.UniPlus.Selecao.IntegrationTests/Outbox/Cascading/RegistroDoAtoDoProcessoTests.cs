@@ -1,7 +1,6 @@
 namespace Unifesspa.UniPlus.Selecao.IntegrationTests.Outbox.Cascading;
 
 using System.Net;
-using System.Net.Http.Headers;
 using System.Text.Json;
 
 using AwesomeAssertions;
@@ -13,7 +12,6 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
-using Unifesspa.UniPlus.IntegrationTests.Fixtures.Authentication;
 using Unifesspa.UniPlus.Publicacoes.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
 
@@ -42,15 +40,13 @@ public sealed class RegistroDoAtoDoProcessoTests
         DateTimeOffset publicadoEm = new(2026, 11, 14, 12, 0, 0, TimeSpan.Zero);
         await SemearAtoAsync(api, atoId, processoId, documentoId, publicadoEm);
 
-        using HttpRequestMessage pedido = new(HttpMethod.Get, new Uri($"/api/selecao/processos-seletivos/{processoId}/atos", UriKind.Relative));
-        pedido.Headers.Authorization = new AuthenticationHeaderValue(TestAuthHandler.AuthorizationScheme, TestAuthHandler.TokenValue);
-        pedido.Headers.TryAddWithoutValidation(TestAuthHandler.RolesHeader, "plataforma-admin");
-        pedido.Headers.TryAddWithoutValidation("Accept", "application/vnd.uniplus.ato-do-processo.v1+json");
-        using HttpResponseMessage resposta = await client.SendAsync(pedido);
+        IReadOnlyList<JsonElement> atos = await PublicarAtoAvulsoEndpointTests.ConsultarAtosAsync(client, processoId);
 
-        resposta.StatusCode.Should().Be(HttpStatusCode.OK);
-        using JsonDocument corpo = JsonDocument.Parse(await resposta.Content.ReadAsStringAsync());
-        JsonElement ato = corpo.RootElement.EnumerateArray().Single();
+        AfirmarAtoConsultado(atos.Single(), atoId, documentoId, publicadoEm);
+    }
+
+    private static void AfirmarAtoConsultado(JsonElement ato, Guid atoId, Guid documentoId, DateTimeOffset publicadoEm)
+    {
         ato.GetProperty("id").GetGuid().Should().Be(atoId);
         ato.GetProperty("tipoCodigo").GetString().Should().Be(DadosDoAtoDeTeste.TipoAviso);
         ato.GetProperty("publicadoEm").GetDateTimeOffset().Should().Be(publicadoEm);
@@ -70,42 +66,31 @@ public sealed class RegistroDoAtoDoProcessoTests
         await TiposDeAtoSeeder.SemearAsync(api.Services);
         (Guid processoId, Guid documentoId) = await SemearAsync(api);
 
-        using HttpRequestMessage pedido = new(HttpMethod.Post, new Uri($"/api/selecao/processos-seletivos/{processoId}/publicacao", UriKind.Relative))
-        {
-            Content = System.Net.Http.Json.JsonContent.Create(new
-            {
-                numero = numeroDeclarado,
-                documentoEditalId = documentoId,
-                ato = new
-                {
-                    orgao = "CEPS",
-                    serie = "EDITAL",
-                    ano = 2026,
-                    dataDoAto = DateOnly.FromDateTime(DateTime.UtcNow).ToString("yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture),
-                    assinante = "Diretor do CEPS",
-                    tipoAtoCodigo = DadosDoAtoDeTeste.TipoAbertura,
-                },
-            }),
-        };
-        pedido.Headers.Authorization = new AuthenticationHeaderValue(TestAuthHandler.AuthorizationScheme, TestAuthHandler.TokenValue);
-        pedido.Headers.TryAddWithoutValidation(TestAuthHandler.RolesHeader, "plataforma-admin");
-        pedido.Headers.TryAddWithoutValidation("Idempotency-Key", Guid.CreateVersion7().ToString("N"));
-        (await client.SendAsync(pedido)).StatusCode.Should().Be(HttpStatusCode.NoContent, "o número em branco é ausência de número, não erro");
+        await PublicarEditalAsync(client, processoId, documentoId, numeroDeclarado, 2026);
 
-        await using AsyncServiceScope escopo = api.Services.CreateAsyncScope();
-        UniPlusDbContext db = escopo.ServiceProvider.GetRequiredService<UniPlusDbContext>();
-        Guid atoId = await db.VersoesConfiguracao.AsNoTracking()
-            .Where(v => v.ProcessoSeletivoId == processoId)
-            .Select(v => v.AtoCriadorId)
-            .SingleAsync();
-
+        Guid atoId = await AtoCriadorDaVersaoAsync(api, processoId);
         AtoDoProcesso registrado = await LerAsync(api, atoId);
         await AtoNoRegistroCentral.LerAsync(api, atoId);
+        AfirmarEditalComoPrincipal(registrado, documentoId, numeroGravado);
+    }
+
+    private static void AfirmarEditalComoPrincipal(AtoDoProcesso registrado, Guid documentoId, string? numeroGravado)
+    {
         registrado.DocumentoPrincipalId.Should().Be(documentoId);
         registrado.TipoCodigo.Should().Be(DadosDoAtoDeTeste.TipoAbertura);
         registrado.Numero.Should().Be(numeroGravado);
         registrado.Assinante.Should().Be("Diretor do CEPS");
         registrado.AtoCorrigidoId.Should().BeNull();
+    }
+
+    private static async Task<Guid> AtoCriadorDaVersaoAsync(CascadingApiFactory api, Guid processoId)
+    {
+        await using AsyncServiceScope escopo = api.Services.CreateAsyncScope();
+        UniPlusDbContext db = escopo.ServiceProvider.GetRequiredService<UniPlusDbContext>();
+        return await db.VersoesConfiguracao.AsNoTracking()
+            .Where(v => v.ProcessoSeletivoId == processoId)
+            .Select(v => v.AtoCriadorId)
+            .SingleAsync();
     }
 
     [Fact(DisplayName = "A consulta devolve do ato publicado mais recentemente para o mais antigo")]
@@ -118,20 +103,13 @@ public sealed class RegistroDoAtoDoProcessoTests
         Guid segundoDocumento = await SemearDocumentoAsync(api, processoId);
         Guid primeiro = Guid.CreateVersion7();
         Guid segundo = Guid.CreateVersion7();
-
         DateTimeOffset instanteBase = new(2026, 11, 14, 12, 0, 0, TimeSpan.Zero);
         await SemearAtoAsync(api, primeiro, processoId, primeiroDocumento, instanteBase);
         await SemearAtoAsync(api, segundo, processoId, segundoDocumento, instanteBase.AddMinutes(5));
 
-        using HttpRequestMessage pedido = new(HttpMethod.Get, new Uri($"/api/selecao/processos-seletivos/{processoId}/atos", UriKind.Relative));
-        pedido.Headers.Authorization = new AuthenticationHeaderValue(TestAuthHandler.AuthorizationScheme, TestAuthHandler.TokenValue);
-        pedido.Headers.TryAddWithoutValidation(TestAuthHandler.RolesHeader, "plataforma-admin");
-        pedido.Headers.TryAddWithoutValidation("Accept", "application/vnd.uniplus.ato-do-processo.v1+json");
-        using HttpResponseMessage resposta = await client.SendAsync(pedido);
+        IReadOnlyList<JsonElement> atos = await PublicarAtoAvulsoEndpointTests.ConsultarAtosAsync(client, processoId);
 
-        resposta.StatusCode.Should().Be(HttpStatusCode.OK);
-        using JsonDocument corpo = JsonDocument.Parse(await resposta.Content.ReadAsStringAsync());
-        corpo.RootElement.EnumerateArray().Select(a => a.GetProperty("id").GetGuid()).Should().Equal(segundo, primeiro);
+        atos.Select(a => a.GetProperty("id").GetGuid()).Should().Equal(segundo, primeiro);
     }
 
     [Fact(DisplayName = "A consulta dos itens previstos lê o cronograma congelado e passa o item a publicado quando o ato dele é publicado")]
@@ -143,38 +121,52 @@ public sealed class RegistroDoAtoDoProcessoTests
         await TiposDeAtoSeeder.SemearAsync(api.Services);
         await SemearTipoDeResultadoAsync(api, tipoDoItem);
         (Guid processoId, Guid documentoId) = await SemearAsync(api);
-        await PublicarEditalAsync(client, processoId, documentoId);
+        await PublicarEditalAsync(client, processoId, documentoId, "001/2027", 2027);
 
-        JsonElement antes = await ConsultarItensPrevistosAsync(client, processoId);
+        JsonElement item = await ItemPrevistoUnicoAsync(client, processoId);
+        AfirmarItemAberto(item, tipoDoItem);
+        Guid atoId = await RegistrarAtoDoItemAsync(api, processoId, documentoId, tipoDoItem, item.GetProperty("id").GetGuid());
 
-        JsonElement item = antes.GetProperty("fases").EnumerateArray().Single().GetProperty("produtos").EnumerateArray().Single();
+        JsonElement publicado = await ItemPrevistoUnicoAsync(client, processoId);
+        AfirmarItemPublicado(publicado, atoId, documentoId);
+    }
+
+    private static void AfirmarItemAberto(JsonElement item, string tipoDoItem)
+    {
         item.GetProperty("tipoCodigo").GetString().Should().Be(tipoDoItem);
         item.GetProperty("tipoNome").GetString().Should().Be("Resultado final");
-        item.GetProperty("papel").GetString().Should().Be("DEFINITIVO");
-        item.GetProperty("situacao").GetString().Should().Be("aberto");
+        item.GetProperty("papel").GetProperty("codigo").GetString().Should().Be("DEFINITIVO");
+        item.GetProperty("situacao").GetProperty("codigo").GetString().Should().Be("ABERTO");
         item.GetProperty("podePublicar").GetBoolean().Should().BeTrue();
+    }
 
-        IdentidadeDoItemDoEdital identidadeDoItem = await IdentidadeDoItemNoBanco.DoItemAsync(api.Services, processoId, item.GetProperty("id").GetGuid());
-        Guid atoId = Guid.CreateVersion7();
-        await using (AsyncServiceScope escopo = api.Services.CreateAsyncScope())
-        {
-            UniPlusDbContext db = escopo.ServiceProvider.GetRequiredService<UniPlusDbContext>();
-            AtoDoProcesso ato = AtoDoProcesso.Registrar(
-                new NovoAtoDoProcesso(
-                    atoId, processoId, tipoDoItem, "Resultado final", "7/2027", new DateOnly(2027, 1, 20),
-                    "Diretor do CEPS", "ceps", "psm-medicina-2027", documentoId, [], ItemDoEdital: identidadeDoItem),
-                TimeProvider.System.GetUtcNow()).Value!;
-            db.AtosDoProcesso.Add(ato);
-            await db.SaveChangesAsync();
-        }
-
-        JsonElement depois = await ConsultarItensPrevistosAsync(client, processoId);
-
-        JsonElement publicado = depois.GetProperty("fases").EnumerateArray().Single().GetProperty("produtos").EnumerateArray().Single();
-        publicado.GetProperty("situacao").GetString().Should().Be("publicado");
+    private static void AfirmarItemPublicado(JsonElement publicado, Guid atoId, Guid documentoId)
+    {
+        publicado.GetProperty("situacao").GetProperty("codigo").GetString().Should().Be("PUBLICADO");
         publicado.GetProperty("ato").GetProperty("id").GetGuid().Should().Be(atoId);
         publicado.GetProperty("ato").GetProperty("documentoPrincipal").GetProperty("documentoAPublicarId").GetGuid().Should().Be(documentoId);
         publicado.GetProperty("podePublicar").GetBoolean().Should().BeFalse();
+    }
+
+    private static async Task<JsonElement> ItemPrevistoUnicoAsync(HttpClient client, Guid processoId)
+    {
+        JsonElement itens = await ConsultarItensPrevistosAsync(client, processoId);
+        return itens.GetProperty("fases").EnumerateArray().Single().GetProperty("produtos").EnumerateArray().Single();
+    }
+
+    private static async Task<Guid> RegistrarAtoDoItemAsync(CascadingApiFactory api, Guid processoId, Guid documentoId, string tipoDoItem, Guid itemId)
+    {
+        IdentidadeDoItemDoEdital identidadeDoItem = await IdentidadeDoItemNoBanco.DoItemAsync(api.Services, processoId, itemId);
+        Guid atoId = Guid.CreateVersion7();
+        await using AsyncServiceScope escopo = api.Services.CreateAsyncScope();
+        UniPlusDbContext db = escopo.ServiceProvider.GetRequiredService<UniPlusDbContext>();
+        db.AtosDoProcesso.Add(AtoDoProcesso.Registrar(
+            new NovoAtoDoProcesso(
+                atoId, processoId, tipoDoItem, "Resultado final", "7/2027", new DateOnly(2027, 1, 20),
+                "Diretor do CEPS", "ceps", "psm-medicina-2027", documentoId, [], ItemDoEdital: identidadeDoItem),
+            TimeProvider.System.GetUtcNow()).Value!);
+        await db.SaveChangesAsync();
+        return atoId;
     }
 
     private static async Task SemearTipoDeResultadoAsync(CascadingApiFactory api, string codigo)
@@ -192,41 +184,43 @@ public sealed class RegistroDoAtoDoProcessoTests
         await db.SaveChangesAsync();
     }
 
-    private static async Task PublicarEditalAsync(HttpClient client, Guid processoId, Guid documentoId)
+    private static async Task PublicarEditalAsync(HttpClient client, Guid processoId, Guid documentoId, string numero, int ano)
     {
-        using HttpRequestMessage pedido = new(HttpMethod.Post, new Uri($"/api/selecao/processos-seletivos/{processoId}/publicacao", UriKind.Relative))
-        {
-            Content = System.Net.Http.Json.JsonContent.Create(new
-            {
-                numero = "001/2027",
-                documentoEditalId = documentoId,
-                ato = new
-                {
-                    orgao = "CEPS",
-                    serie = "EDITAL",
-                    ano = 2027,
-                    dataDoAto = DateOnly.FromDateTime(DateTime.UtcNow).ToString("yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture),
-                    assinante = "Diretor do CEPS",
-                    tipoAtoCodigo = DadosDoAtoDeTeste.TipoAbertura,
-                },
-            }),
-        };
-        pedido.Headers.Authorization = new AuthenticationHeaderValue(TestAuthHandler.AuthorizationScheme, TestAuthHandler.TokenValue);
-        pedido.Headers.TryAddWithoutValidation(TestAuthHandler.RolesHeader, "plataforma-admin");
+        using HttpRequestMessage pedido = PublicarAtoAvulsoEndpointTests.Autenticado(
+            HttpMethod.Post, $"/api/selecao/processos-seletivos/{processoId}/publicacao");
+        pedido.Content = CorpoDaPublicacaoDoEdital(documentoId, numero, ano);
         pedido.Headers.TryAddWithoutValidation("Idempotency-Key", Guid.CreateVersion7().ToString("N"));
-        (await client.SendAsync(pedido)).StatusCode.Should().Be(HttpStatusCode.NoContent);
+        using HttpResponseMessage resposta = await client.SendAsync(pedido);
+
+        resposta.StatusCode.Should().Be(HttpStatusCode.NoContent, await resposta.Content.ReadAsStringAsync());
     }
+
+    private static System.Net.Http.Json.JsonContent CorpoDaPublicacaoDoEdital(Guid documentoId, string numero, int ano) =>
+        System.Net.Http.Json.JsonContent.Create(new
+        {
+            numero,
+            documentoEditalId = documentoId,
+            ato = new
+            {
+                orgao = "CEPS",
+                serie = "EDITAL",
+                ano,
+                dataDoAto = PublicarAtoAvulsoEndpointTests.HojeEmTexto(),
+                assinante = "Diretor do CEPS",
+                tipoAtoCodigo = DadosDoAtoDeTeste.TipoAbertura,
+            },
+        });
 
     private static async Task<JsonElement> ConsultarItensPrevistosAsync(HttpClient client, Guid processoId)
     {
-        using HttpRequestMessage pedido = new(HttpMethod.Get, new Uri($"/api/selecao/processos-seletivos/{processoId}/produtos-previstos", UriKind.Relative));
-        pedido.Headers.Authorization = new AuthenticationHeaderValue(TestAuthHandler.AuthorizationScheme, TestAuthHandler.TokenValue);
-        pedido.Headers.TryAddWithoutValidation(TestAuthHandler.RolesHeader, "plataforma-admin");
+        using HttpRequestMessage pedido = PublicarAtoAvulsoEndpointTests.Autenticado(
+            HttpMethod.Get, $"/api/selecao/processos-seletivos/{processoId}/produtos-previstos");
         pedido.Headers.TryAddWithoutValidation("Accept", "application/vnd.uniplus.produtos-previstos-do-processo.v1+json");
         using HttpResponseMessage resposta = await client.SendAsync(pedido);
 
         resposta.StatusCode.Should().Be(HttpStatusCode.OK);
-        return JsonDocument.Parse(await resposta.Content.ReadAsStringAsync()).RootElement.Clone();
+        using JsonDocument corpo = JsonDocument.Parse(await resposta.Content.ReadAsStringAsync());
+        return corpo.RootElement.Clone();
     }
 
     private static async Task<Guid> SemearDocumentoAsync(CascadingApiFactory api, Guid processoId)
@@ -250,8 +244,15 @@ public sealed class RegistroDoAtoDoProcessoTests
         (Guid processoId, Guid documentoId) = await SemearAsync(api);
         await using AsyncServiceScope escopo = api.Services.CreateAsyncScope();
         UniPlusDbContext db = escopo.ServiceProvider.GetRequiredService<UniPlusDbContext>();
+        db.CertamesDivulgados.Add(CertameDeTeste(processoId));
+        await db.SaveChangesAsync();
+        return (processoId, documentoId);
+    }
+
+    private static CertameDivulgado CertameDeTeste(Guid processoId)
+    {
         DateTimeOffset agora = DateTimeOffset.UtcNow;
-        db.CertamesDivulgados.Add(CertameDivulgado.Criar(
+        return CertameDivulgado.Criar(
             processoId,
             1,
             Guid.CreateVersion7(),
@@ -259,9 +260,7 @@ public sealed class RegistroDoAtoDoProcessoTests
             "teste",
             new FacetasDoCertameDivulgado($"certame-{Guid.NewGuid():N}"[..40], "Certame de teste", null, [], agora, agora.AddDays(30)),
             "{}",
-            agora));
-        await db.SaveChangesAsync();
-        return (processoId, documentoId);
+            agora);
     }
 
     private static async Task<(Guid ProcessoId, Guid DocumentoId)> SemearAsync(CascadingApiFactory api)

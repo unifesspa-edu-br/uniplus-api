@@ -2,11 +2,14 @@ namespace Unifesspa.UniPlus.Selecao.Application.Queries.ProcessosSeletivos;
 
 using System.Text.Json.Nodes;
 
+using Domain.Enums;
+
 using DTOs;
 
+using Unifesspa.UniPlus.Application.Abstractions.Respostas;
 using Unifesspa.UniPlus.Kernel.Results;
 
-using CronogramaDeFases = (string OrigemCandidatos, List<DTOs.FaseCronogramaCertameDto> Fases);
+using CronogramaDeFases = (Unifesspa.UniPlus.Application.Abstractions.Respostas.CodigoComRotulo<Unifesspa.UniPlus.Selecao.Domain.Enums.OrigemCandidatos> OrigemCandidatos, List<DTOs.FaseCronogramaCertameDto> Fases);
 
 /// <summary>
 /// O que o candidato precisa saber para participar: as etapas, a origem dos candidatos e as fases do
@@ -16,7 +19,7 @@ using CronogramaDeFases = (string OrigemCandidatos, List<DTOs.FaseCronogramaCert
 /// <param name="Taxa">Nulo quando a publicação não configurou taxa de inscrição.</param>
 internal sealed record ParticipacaoNoCertame(
     List<EtapaCertameDto> Etapas,
-    string OrigemCandidatos,
+    CodigoComRotulo<OrigemCandidatos> OrigemCandidatos,
     List<FaseCronogramaCertameDto> Fases,
     List<ExigenciaDocumentalCertameDto> Exigencias,
     AtendimentoCertameDto Atendimento,
@@ -37,7 +40,7 @@ internal sealed record ParticipacaoNoCertame(
             : ProjecaoDoCertamePublicado.Recusar<List<EtapaCertameDto>>("etapas");
 
     private static Result<CronogramaDeFases> LerCronograma(JsonObject envelope) =>
-        LeituraDoCertameCronograma.TentarCronograma(envelope, out string? origemCandidatos, out List<FaseCronogramaCertameDto>? fases)
+        LeituraDoCertameCronograma.TentarCronograma(envelope, out CodigoComRotulo<OrigemCandidatos>? origemCandidatos, out List<FaseCronogramaCertameDto>? fases)
             ? Result<CronogramaDeFases>.Success((origemCandidatos, fases))
             : ProjecaoDoCertamePublicado.Recusar<CronogramaDeFases>("cronograma");
 

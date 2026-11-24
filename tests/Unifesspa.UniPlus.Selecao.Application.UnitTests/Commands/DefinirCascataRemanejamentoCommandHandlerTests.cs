@@ -8,6 +8,7 @@ using AwesomeAssertions;
 using NSubstitute;
 
 using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
@@ -102,7 +103,7 @@ public sealed class DefinirCascataRemanejamentoCommandHandlerTests
         ProcessoSeletivo processo = NovoProcesso();
         Mocks mocks = NovosMocks(processo, processo.Id);
         RegraCatalogo regraTipoErrado = RegraCatalogo.Criar(
-            RegraRemanejamentoCodigo.Cascata, "v1", TipoRegra.RegraCalculo, Json("{}"), Json("[]"), "base legal");
+            CriterioDeRemanejamento.OrdemDaLei12711.Codigo(), "v1", TipoRegra.RegraCalculo, Json("{}"), Json("[]"), "base legal");
         ConfigurarRegra(mocks, regraTipoErrado);
         DefinirCascataRemanejamentoCommand command = Comando(processo.Id);
 

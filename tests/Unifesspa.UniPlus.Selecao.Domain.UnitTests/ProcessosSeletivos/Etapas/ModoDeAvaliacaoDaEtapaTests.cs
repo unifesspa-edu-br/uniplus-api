@@ -63,7 +63,7 @@ public sealed class ModoDeAvaliacaoDaEtapaTests
         ModeloDeEtapa modelo = new("Prova");
         modelo = dadoRecusado switch
         {
-            "carater" => modelo with { Carater = CaraterEtapa.Nenhum },
+            "carater" => modelo with { Carater = (CaraterEtapa)99 },
             "peso" => modelo with { Peso = -1m },
             "notaMinima" => modelo with { NotaMinima = -1m },
             _ => modelo.DoEnem() with { Conceito = NotaDeZeroADez() },

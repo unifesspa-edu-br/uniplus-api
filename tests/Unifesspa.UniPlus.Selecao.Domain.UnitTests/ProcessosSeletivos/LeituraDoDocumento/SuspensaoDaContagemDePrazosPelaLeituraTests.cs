@@ -2,6 +2,7 @@ namespace Unifesspa.UniPlus.Selecao.Domain.UnitTests.ProcessosSeletivos.LeituraD
 
 using AwesomeAssertions;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Conformidade;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.LeituraDoDocumento;
@@ -35,7 +36,7 @@ public sealed class SuspensaoDaContagemDePrazosPelaLeituraTests
     [Fact(DisplayName = "A convenção ausente com regra de recurso válida em dias úteis é pendência declarada")]
     public void ConvencaoAusente_ComRegraValida_EPendencia()
     {
-        IdentificacaoECronogramaLidos lidos = Ler(SemConvencao(), ComRegraEmDiasUteis(RegraPrazoRecursoCodigo.AncoradoEmAto));
+        IdentificacaoECronogramaLidos lidos = Ler(SemConvencao(), ComRegraEmDiasUteis(RegraDePrazoDoRecurso.ContadoDaPublicacaoDoAto.Codigo()));
 
         ContagemDePrazos.PendenciaDoAlgoritmoDeContagem(Configuracao(lidos)).Should().NotBeNull();
     }
@@ -69,7 +70,7 @@ public sealed class SuspensaoDaContagemDePrazosPelaLeituraTests
     [Fact(DisplayName = "A convenção recusada pela leitura não é convenção ausente, e o item da convenção fica pendente")]
     public void ConvencaoRecusada_NaoEAusente()
     {
-        IdentificacaoECronogramaLidos lidos = Ler(Identificacao() with { AlgoritmoContagemPrazo = new("CONVENCAO-DIGITADA", "v1") }, ComRegraEmDiasUteis(RegraPrazoRecursoCodigo.AncoradoEmAto));
+        IdentificacaoECronogramaLidos lidos = Ler(Identificacao() with { AlgoritmoContagemPrazo = new("CONVENCAO-DIGITADA", "v1") }, ComRegraEmDiasUteis(RegraDePrazoDoRecurso.ContadoDaPublicacaoDoAto.Codigo()));
 
         ContagemDePrazos.PendenciaDoAlgoritmoDeContagem(Configuracao(lidos)).Should().BeNull();
         ItemAprovado(lidos, "algoritmo_contagem_prazo_nao_declarado").Should().BeFalse();

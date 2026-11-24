@@ -1,5 +1,7 @@
 namespace Unifesspa.UniPlus.Selecao.Domain.UnitTests.ProcessosSeletivos.HomologacaoDasInscricoes;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
+
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.HomologacaoDasInscricoes;
@@ -27,12 +29,12 @@ internal static class FasesDeHomologacaoParaTestes
             new PublicacoesDaFase([], EmiteParecerIndividual: false, RegraRecurso: null),
             []).Value!;
 
-    internal static ProdutoDaFase Preliminar(string atoCodigo = ResultadoDaLista) => ProdutoDaFase.Criar(atoCodigo, PapelProdutoFase.Preliminar);
+    internal static ProdutoDaFase Preliminar(string atoCodigo = ResultadoDaLista) => ProdutoDaFase.Criar(atoCodigo, PapelDaPublicacaoPrevista.Preliminar);
 
-    internal static ProdutoDaFase Definitivo(string atoCodigo = ResultadoDaLista) => ProdutoDaFase.Criar(atoCodigo, PapelProdutoFase.Definitivo);
+    internal static ProdutoDaFase Definitivo(string atoCodigo = ResultadoDaLista) => ProdutoDaFase.Criar(atoCodigo, PapelDaPublicacaoPrevista.Definitivo);
 
     internal static RegraRecursoFase JanelaDeRecurso(Guid produtoPreliminarId) => RegraRecursoFase.Criar(
-        ReferenciaRegra.De(RegraPrazoRecursoCodigo.AncoradoEmAto, "v1", new string('a', 64)),
+        ReferenciaRegra.De(RegraDePrazoDoRecurso.ContadoDaPublicacaoDoAto.Codigo(), "v1", new string('a', 64)),
         ParametrosDoRecursoDeTeste.Declarados(48m, UnidadePrazo.Horas),
         produtoPreliminarId).Value!;
 }

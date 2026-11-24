@@ -10,9 +10,11 @@ using Permissoes;
 using Services;
 
 using Unifesspa.UniPlus.Application.Abstractions.Authentication;
+using Unifesspa.UniPlus.Application.Abstractions.Respostas;
 using Unifesspa.UniPlus.Authorization.Abstractions;
 using Unifesspa.UniPlus.Authorization.Contracts;
 using Unifesspa.UniPlus.Authorization.ValueObjects;
+using Unifesspa.UniPlus.Selecao.Domain.Enums;
 
 /// <summary>
 /// A listagem carrega apenas a raiz (sem a configuração) e projeta em
@@ -39,7 +41,7 @@ public static class ListarProcessosSeletivosQueryHandler
         ArgumentNullException.ThrowIfNull(userContext);
         ArgumentNullException.ThrowIfNull(verificador);
 
-        Guid[] unidadesDoRascunho = await UnidadesOndeConfiguraAsync(concessoes, verificador, userContext, cancellationToken).ConfigureAwait(false);
+        Guid[] unidadesDoRascunho = await UnidadesDoRascunhoAsync(concessoes, verificador, userContext, cancellationToken).ConfigureAwait(false);
 
         (IReadOnlyList<ProcessoSeletivo> itens, Guid? anteriorAfterId, Guid? proximoAfterId) = await processoSeletivoRepository
             .ListarPaginadoAsync(query.AfterId, query.Limit, query.Direction, unidadesDoRascunho, cancellationToken)
@@ -56,7 +58,7 @@ public static class ListarProcessosSeletivosQueryHandler
             processo.TipoProcessoOrigemId,
             processo.TipoProcesso.Codigo,
             processo.TipoProcesso.Nome),
-        processo.Status,
+        CodigoComRotulo<StatusProcesso>.De(processo.Status),
         processo.CreatedAt);
 
     /// <summary>
@@ -64,7 +66,7 @@ public static class ListarProcessosSeletivosQueryHandler
     /// olhar; escopo, vigência e código da permissão são regras da decisão, que cada unidade candidata consulta. É
     /// pergunta de capacidade: não registra acesso.
     /// </summary>
-    private static async Task<Guid[]> UnidadesOndeConfiguraAsync(
+    private static async Task<Guid[]> UnidadesDoRascunhoAsync(
         IConcessoesAtivasDoSujeito concessoes, IVerificadorDeAcesso verificador, IUserContext userContext, CancellationToken cancellationToken)
     {
         if (!userContext.IsAuthenticated
@@ -74,20 +76,6 @@ public static class ListarProcessosSeletivosQueryHandler
         }
 
         IReadOnlyList<ConcessaoAtiva> ativas = await concessoes.ListarAsync(usuario.Value!, cancellationToken).ConfigureAwait(false);
-        List<Guid> permitidas = [];
-        foreach (Guid unidade in ativas.Where(static c => c.UnidadeId is not null).Select(static c => c.UnidadeId!.Value).Distinct())
-        {
-            ResultadoDoAcesso acesso = await AcessoAoProcesso
-                .PodeNaUnidadeAsync(
-                    verificador, unidade, PermissaoSelecao.ProcessosConfigurar,
-                    dona => AcessoAoProcesso.ResourceDoProcesso(dona, processoId: null), cancellationToken)
-                .ConfigureAwait(false);
-            if (acesso == ResultadoDoAcesso.Permitido)
-            {
-                permitidas.Add(unidade);
-            }
-        }
-
-        return [.. permitidas];
+        return await AcessoAoProcesso.UnidadesOndeConfiguraAsync(verificador, ativas, cancellationToken).ConfigureAwait(false);
     }
 }

@@ -53,7 +53,7 @@ public sealed class DocumentoAPublicarEnvioIntegrationTests : IClassFixture<Proc
         Result<DocumentoAPublicarDto> confirmar = await envio.ConfirmarAsync(iniciar.DocumentoAPublicarId);
 
         confirmar.IsSuccess.Should().BeTrue();
-        confirmar.Value!.Status.Should().Be("Confirmado");
+        confirmar.Value!.Status.Codigo.Should().Be("CONFIRMADO");
         confirmar.Value.TamanhoBytes.Should().Be(ConteudoPdfValido.Length);
         confirmar.Value.HashSha256.Should().Be(Convert.ToHexStringLower(SHA256.HashData(ConteudoPdfValido)));
     }
@@ -201,7 +201,7 @@ public sealed class DocumentoAPublicarEnvioIntegrationTests : IClassFixture<Proc
         Result<DocumentoAPublicarDto> retry = await retentativa.ConfirmarAsync(documentoId);
 
         retry.IsSuccess.Should().BeTrue();
-        retry.Value!.Status.Should().Be("Confirmado");
+        retry.Value!.Status.Codigo.Should().Be("CONFIRMADO");
         retry.Value.TamanhoBytes.Should().Be(ConteudoPdfValido.Length);
         await ConferirCopiaGravadaIntegraAsync(retentativa, documentoId, chaveDaCopia);
     }

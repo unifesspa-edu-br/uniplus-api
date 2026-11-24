@@ -32,7 +32,7 @@ public sealed class CompletudeDaIdentificacaoTests
     {
         TipoProcessoCodigo = null,
         UnidadeAdministradoraCodigo = null,
-        OrigemCandidatos = OrigemCandidatos.Nenhuma,
+        OrigemCandidatos = null,
     };
 
     private static (string? Campo, string Codigo)[] Causas(IdentificacaoNoDocumento identificacao) =>
@@ -91,7 +91,7 @@ public sealed class CompletudeDaIdentificacaoTests
     public void OrigemAusente_DeixaAInscricaoPropriaPendente()
     {
         ItemConformidade[] itens =
-        [.. ChecklistDeConformidade.AvaliarConformidade(Configuracao(Ler(Identificacao() with { OrigemCandidatos = OrigemCandidatos.Nenhuma })), CadastrosDeTeste.Padrao)
+        [.. ChecklistDeConformidade.AvaliarConformidade(Configuracao(Ler(Identificacao() with { OrigemCandidatos = null })), CadastrosDeTeste.Padrao)
             .Where(static item => item.Codigo == "cronograma_inscricao_propria_sem_fase_de_coleta")];
 
         itens.Should().ContainSingle().Which.Ok.Should().BeFalse();

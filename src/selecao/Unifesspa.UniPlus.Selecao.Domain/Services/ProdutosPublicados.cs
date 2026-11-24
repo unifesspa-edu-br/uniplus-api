@@ -23,7 +23,7 @@ internal static class ProdutosPublicados
     internal static IReadOnlyList<int> PosicoesRepetidas<T>(IEnumerable<T> produtos, Func<string, string> chaveDoAto)
         where T : class, IProdutoPublicado
     {
-        HashSet<(string Ato, PapelProdutoFase? Papel)> jaDeclarados = [];
+        HashSet<(string Ato, PapelDaPublicacaoPrevista? Papel)> jaDeclarados = [];
 
         return
         [

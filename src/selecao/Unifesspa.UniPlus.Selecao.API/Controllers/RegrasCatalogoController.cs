@@ -12,6 +12,7 @@ using Unifesspa.UniPlus.Infrastructure.Core.Errors;
 using Unifesspa.UniPlus.Infrastructure.Core.Formatting;
 using Unifesspa.UniPlus.Infrastructure.Core.Hateoas;
 using Unifesspa.UniPlus.Infrastructure.Core.Pagination;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Pagination;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Application.DTOs;
@@ -98,42 +99,47 @@ public sealed class RegrasCatalogoController : ControllerBase
         CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(page);
-
-        // O filtro chega como texto e passa pelo mesmo mapa canônico que a coluna usa, não por
-        // binding direto no enum. Ligado ao enum, o parâmetro aceitaria a grafia dos membros em
-        // C# e recusaria justamente o código que esta API devolve em `tipo` — quem relesse o
-        // valor de uma resposta e o usasse como filtro receberia 400.
-        TipoRegra? tipoFiltrado = null;
-        if (!string.IsNullOrWhiteSpace(tipo))
+        if (!TentarLerTipo(tipo, out TipoRegra? tipoFiltrado))
         {
-            try
-            {
-                tipoFiltrado = TipoRegraCodigo.FromCodigo(tipo);
-            }
-            catch (ArgumentOutOfRangeException)
-            {
-                return BadRequest(new ProblemDetails
-                {
-                    Title = "Tipo de regra desconhecido",
-                    Detail = "O filtro aceita apenas os códigos canônicos de tipo de regra do catálogo.",
-                    Status = StatusCodes.Status400BadRequest,
-                });
-            }
+            return TipoDesconhecido();
         }
 
         ListarRegrasCatalogoResult resultado = await _queryBus.Send(
             new ListarRegrasCatalogoQuery(tipoFiltrado, page.AfterId, page.Limit, page.Direction),
             cancellationToken).ConfigureAwait(false);
+        return await MontarPaginaAsync(resultado, page, cancellationToken).ConfigureAwait(false);
+    }
 
-        RegraCatalogoDto[] comLinks =
-            [.. resultado.Items.Select(r => r with { Links = _linksBuilder.Build(r) })];
+    private static bool TentarLerTipo(string? tipo, out TipoRegra? resultado)
+    {
+        resultado = null;
+        if (string.IsNullOrWhiteSpace(tipo))
+        {
+            return true;
+        }
 
+        if (!CatalogoDe<TipoRegra>.TentarObter(tipo, out TipoRegra conhecido))
+        {
+            return false;
+        }
+
+        resultado = conhecido;
+        return true;
+    }
+
+    private BadRequestObjectResult TipoDesconhecido() => BadRequest(new ProblemDetails
+    {
+        Title = "Tipo de regra desconhecido",
+        Detail = "O filtro aceita apenas os códigos de tipo de regra do catálogo.",
+        Status = StatusCodes.Status400BadRequest,
+    });
+
+    private async Task<IActionResult> MontarPaginaAsync(
+        ListarRegrasCatalogoResult resultado, PageRequest page, CancellationToken cancellationToken)
+    {
+        RegraCatalogoDto[] comLinks = [.. resultado.Items.Select(r => r with { Links = _linksBuilder.Build(r) })];
         return await this.OkPaginatedAsync(
-            comLinks,
-            resultado.AnteriorAfterId,
-            resultado.ProximoAfterId,
-            page,
-            ResourceTag,
+            comLinks, resultado.AnteriorAfterId, resultado.ProximoAfterId, page, ResourceTag,
             cancellationToken: cancellationToken).ConfigureAwait(false);
     }
 

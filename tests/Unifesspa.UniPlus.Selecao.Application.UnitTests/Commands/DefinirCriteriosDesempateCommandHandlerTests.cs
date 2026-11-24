@@ -4,6 +4,7 @@ using AwesomeAssertions;
 
 using NSubstitute;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
@@ -23,9 +24,9 @@ public sealed class DefinirCriteriosDesempateCommandHandlerTests
     private static CriterioDesempateInput[] UmCriterioComCadaRecusaSemCampo() =>
     [
         CriterioSimples(1, "INEXISTENTE"),
-        CriterioSimples(2, CriterioDesempateCodigo.MaiorNotaEtapa),
-        CriterioSimples(3, CriterioDesempateCodigo.Idoso),
-        CriterioDesempateDeTeste.DaRegra(CriterioDesempateCodigo.PredicadoFato).NaOrdem(4).ComPredicado("PROFESSOR_RURAL", null, "true").Construir(),
+        CriterioSimples(2, RegraDeDesempate.MaiorNotaNaEtapa.Codigo()),
+        CriterioSimples(3, RegraDeDesempate.Idoso.Codigo()),
+        CriterioDesempateDeTeste.DaRegra(RegraDeDesempate.CondicaoSobreDado.Codigo()).NaOrdem(4).ComPredicado("PROFESSOR_RURAL", null, "true").Construir(),
     ];
 
     [Fact(DisplayName = "Handle com processo inexistente retorna ProcessoSeletivo.NaoEncontrado")]
@@ -39,14 +40,14 @@ public sealed class DefinirCriteriosDesempateCommandHandlerTests
         result.Error!.Code.Should().Be("ProcessoSeletivo.NaoEncontrado");
     }
 
-    [Fact(DisplayName = "Handle com DESEMPATE-MAIOR-NOTA-ETAPA resolve parâmetros e persiste")]
+    [Fact(DisplayName = "Handle com DESEMPATE_MAIOR_NOTA_ETAPA resolve parâmetros e persiste")]
     public async Task Handle_MaiorNotaEtapa_Persiste()
     {
         ProcessoSeletivo processo = NovoProcesso("PSIQ 2026", TiposDeProcessoDeTeste.PSIQ);
         EtapaProcesso etapa = EtapaEntrevista();
         processo.DefinirEtapas([etapa]);
-        CenarioDosCriteriosDeDesempate cenario = Com(processo).ComRegra(CriterioDesempateCodigo.MaiorNotaEtapa);
-        CriterioDesempateInput criterio = CriterioDesempateDeTeste.DaRegra(CriterioDesempateCodigo.MaiorNotaEtapa).NaEtapa(etapa.Id).Construir();
+        CenarioDosCriteriosDeDesempate cenario = Com(processo).ComRegra(RegraDeDesempate.MaiorNotaNaEtapa.Codigo());
+        CriterioDesempateInput criterio = CriterioDesempateDeTeste.DaRegra(RegraDeDesempate.MaiorNotaNaEtapa.Codigo()).NaEtapa(etapa.Id).Construir();
 
         Result result = await cenario.DefinirAsync(Comando(processo.Id, criterio));
 
@@ -56,24 +57,24 @@ public sealed class DefinirCriteriosDesempateCommandHandlerTests
         await cenario.UnitOfWork.Received(1).SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
     }
 
-    [Fact(DisplayName = "Handle com DESEMPATE-MAIOR-NOTA-ETAPA sem EtapaRef recusa")]
+    [Fact(DisplayName = "Handle com DESEMPATE_MAIOR_NOTA_ETAPA sem EtapaRef recusa")]
     public async Task Handle_MaiorNotaEtapaSemEtapaRef_Recusa()
     {
         ProcessoSeletivo processo = NovoProcesso("PSIQ 2026", TiposDeProcessoDeTeste.PSIQ);
-        CenarioDosCriteriosDeDesempate cenario = Com(processo).ComRegra(CriterioDesempateCodigo.MaiorNotaEtapa);
+        CenarioDosCriteriosDeDesempate cenario = Com(processo).ComRegra(RegraDeDesempate.MaiorNotaNaEtapa.Codigo());
 
-        Result result = await cenario.DefinirAsync(Comando(processo.Id, CriterioSimples(1, CriterioDesempateCodigo.MaiorNotaEtapa)));
+        Result result = await cenario.DefinirAsync(Comando(processo.Id, CriterioSimples(1, RegraDeDesempate.MaiorNotaNaEtapa.Codigo())));
 
         result.IsFailure.Should().BeTrue();
         result.Error!.Code.Should().Be("CriterioDesempate.EtapaRefObrigatorio");
     }
 
-    [Fact(DisplayName = "Handle com DESEMPATE-IDOSO resolve parâmetros e persiste")]
+    [Fact(DisplayName = "Handle com DESEMPATE_IDOSO resolve parâmetros e persiste")]
     public async Task Handle_Idoso_Persiste()
     {
         ProcessoSeletivo processo = NovoProcesso("PSE 2026", TiposDeProcessoDeTeste.PSECampo);
-        CenarioDosCriteriosDeDesempate cenario = Com(processo).ComRegra(CriterioDesempateCodigo.Idoso);
-        CriterioDesempateInput criterio = CriterioDesempateDeTeste.DaRegra(CriterioDesempateCodigo.Idoso).ComIdadeMinima(60).Construir();
+        CenarioDosCriteriosDeDesempate cenario = Com(processo).ComRegra(RegraDeDesempate.Idoso.Codigo());
+        CriterioDesempateInput criterio = CriterioDesempateDeTeste.DaRegra(RegraDeDesempate.Idoso.Codigo()).ComIdadeMinima(60).Construir();
 
         Result result = await cenario.DefinirAsync(Comando(processo.Id, criterio));
 
@@ -112,9 +113,9 @@ public sealed class DefinirCriteriosDesempateCommandHandlerTests
     public async Task Handle_CatalogoLidoAntesDaTrava()
     {
         ProcessoSeletivo processo = ProcessoComClassificacaoEnem();
-        CenarioDosCriteriosDeDesempate cenario = Com(processo).ComCriteriosNoCatalogo(CriterioDesempateCodigo.MaiorIdade);
+        CenarioDosCriteriosDeDesempate cenario = Com(processo).ComCriteriosNoCatalogo(RegraDeDesempate.MaiorIdade.Codigo());
 
-        await cenario.DefinirAsync(Comando(processo.Id, CriterioSimples(1, CriterioDesempateCodigo.MaiorIdade)));
+        await cenario.DefinirAsync(Comando(processo.Id, CriterioSimples(1, RegraDeDesempate.MaiorIdade.Codigo())));
 
         Received.InOrder(() =>
         {
@@ -128,7 +129,7 @@ public sealed class DefinirCriteriosDesempateCommandHandlerTests
     {
         ProcessoSeletivo processo = ProcessoComClassificacaoEnem();
         CenarioDosCriteriosDeDesempate cenario = Com(processo).ComRegraInexistente("INEXISTENTE")
-            .ComRegra(CriterioDesempateCodigo.MaiorNotaEtapa).ComRegra(CriterioDesempateCodigo.Idoso).ComRegra(CriterioDesempateCodigo.PredicadoFato);
+            .ComRegra(RegraDeDesempate.MaiorNotaNaEtapa.Codigo()).ComRegra(RegraDeDesempate.Idoso.Codigo()).ComRegra(RegraDeDesempate.CondicaoSobreDado.Codigo());
 
         Result result = await cenario.DefinirAsync(Comando(processo.Id, UmCriterioComCadaRecusaSemCampo()));
 
@@ -143,10 +144,10 @@ public sealed class DefinirCriteriosDesempateCommandHandlerTests
     public async Task Handle_OrdemDuplicadaComCriterioRecusado_Acusa()
     {
         ProcessoSeletivo processo = ProcessoComClassificacaoEnem();
-        CenarioDosCriteriosDeDesempate cenario = Com(processo).ComRegraInexistente("INEXISTENTE").ComRegra(CriterioDesempateCodigo.MaiorIdade);
+        CenarioDosCriteriosDeDesempate cenario = Com(processo).ComRegraInexistente("INEXISTENTE").ComRegra(RegraDeDesempate.MaiorIdade.Codigo());
 
         Result result = await cenario.DefinirAsync(
-            Comando(processo.Id, CriterioSimples(1, CriterioDesempateCodigo.MaiorIdade), CriterioSimples(1, "INEXISTENTE")));
+            Comando(processo.Id, CriterioSimples(1, RegraDeDesempate.MaiorIdade.Codigo()), CriterioSimples(1, "INEXISTENTE")));
 
         result.Errors.Select(static e => (e.Field, e.Error.Code)).Should().Equal(
             ("criterios[1].regra.codigo", "CriterioDesempate.RegraNaoEncontrada"),
@@ -158,10 +159,10 @@ public sealed class DefinirCriteriosDesempateCommandHandlerTests
     {
         ProcessoSeletivo processo = ProcessoComClassificacaoEnem();
         CenarioDosCriteriosDeDesempate cenario = Com(processo)
-            .ComCriteriosNoCatalogo(CriterioDesempateCodigo.MaiorNotaAreaEnem, CriterioDesempateCodigo.MaiorIdade);
+            .ComCriteriosNoCatalogo(RegraDeDesempate.MaiorNotaPorAreaDoEnem.Codigo(), RegraDeDesempate.MaiorIdade.Codigo());
 
         Result result = await cenario.DefinirAsync(Comando(
-            processo.Id, CriterioDeAreas(1, "REDACAO"), CriterioSimples(2, CriterioDesempateCodigo.MaiorIdade), CriterioDeAreas(3, "MATEMATICA")));
+            processo.Id, CriterioDeAreas(1, "REDACAO"), CriterioSimples(2, RegraDeDesempate.MaiorIdade.Codigo()), CriterioDeAreas(3, "MATEMATICA")));
 
         result.IsSuccess.Should().BeTrue(result.Error?.Message);
         await cenario.RegraCatalogoReader.Received(1).ListarPorTipoAsync(TipoRegra.CriterioDesempate, Arg.Any<CancellationToken>());
@@ -184,9 +185,9 @@ public sealed class DefinirCriteriosDesempateCommandHandlerTests
     public async Task Handle_RegraTipoInvalido_Recusa()
     {
         ProcessoSeletivo processo = NovoProcesso("PSIQ 2026", TiposDeProcessoDeTeste.PSIQ);
-        CenarioDosCriteriosDeDesempate cenario = Com(processo).ComRegra(RegraCalculoCodigo.FormulaMediaPonderada, TipoRegra.RegraCalculo);
+        CenarioDosCriteriosDeDesempate cenario = Com(processo).ComRegra(RegraDeCalculoDaNota.MediaPonderada.Codigo(), TipoRegra.RegraCalculo);
 
-        Result result = await cenario.DefinirAsync(Comando(processo.Id, CriterioSimples(1, RegraCalculoCodigo.FormulaMediaPonderada)));
+        Result result = await cenario.DefinirAsync(Comando(processo.Id, CriterioSimples(1, RegraDeCalculoDaNota.MediaPonderada.Codigo())));
 
         result.IsFailure.Should().BeTrue();
         result.Error!.Code.Should().Be("CriterioDesempate.RegraTipoInvalido");
@@ -199,7 +200,7 @@ public sealed class DefinirCriteriosDesempateCommandHandlerTests
         CenarioDosCriteriosDeDesempate cenario = Com(processo);
 
         Result result = await cenario.DefinirAsync(Comando(
-            processo.Id, CriterioSimples(0, CriterioDesempateCodigo.MaiorIdade), CriterioSimples(-1, "INEXISTENTE"), CriterioSimples(2, "INEXISTENTE")));
+            processo.Id, CriterioSimples(0, RegraDeDesempate.MaiorIdade.Codigo()), CriterioSimples(-1, "INEXISTENTE"), CriterioSimples(2, "INEXISTENTE")));
 
         result.Errors.Select(static e => (e.Field, e.Error.Code)).Should().BeEquivalentTo(
         [
@@ -217,7 +218,7 @@ public sealed class DefinirCriteriosDesempateCommandHandlerTests
         CenarioDosCriteriosDeDesempate cenario = Com(processo);
 
         Result result = await cenario.DefinirAsync(Comando(
-            processo.Id, CriterioSimples(0, CriterioDesempateCodigo.MaiorIdade), CriterioSimples(-1, CriterioDesempateCodigo.MaiorIdade)));
+            processo.Id, CriterioSimples(0, RegraDeDesempate.MaiorIdade.Codigo()), CriterioSimples(-1, RegraDeDesempate.MaiorIdade.Codigo())));
 
         result.IsFailure.Should().BeTrue();
         result.Errors.Select(e => e.Field).Should().BeEquivalentTo(["criterios[0].ordem", "criterios[1].ordem"]);
@@ -228,10 +229,10 @@ public sealed class DefinirCriteriosDesempateCommandHandlerTests
     public async Task Handle_SegundoCriterioComIdadeMinimaInvalida_PrefixaIndiceNoField()
     {
         ProcessoSeletivo processo = NovoProcesso("PSE 2026", TiposDeProcessoDeTeste.PSECampo);
-        CenarioDosCriteriosDeDesempate cenario = Com(processo).ComRegra(CriterioDesempateCodigo.MaiorIdade).ComRegra(CriterioDesempateCodigo.Idoso);
-        CriterioDesempateInput idosoSemIdade = CriterioDesempateDeTeste.DaRegra(CriterioDesempateCodigo.Idoso).NaOrdem(2).ComIdadeMinima(0).Construir();
+        CenarioDosCriteriosDeDesempate cenario = Com(processo).ComRegra(RegraDeDesempate.MaiorIdade.Codigo()).ComRegra(RegraDeDesempate.Idoso.Codigo());
+        CriterioDesempateInput idosoSemIdade = CriterioDesempateDeTeste.DaRegra(RegraDeDesempate.Idoso.Codigo()).NaOrdem(2).ComIdadeMinima(0).Construir();
 
-        Result result = await cenario.DefinirAsync(Comando(processo.Id, CriterioSimples(1, CriterioDesempateCodigo.MaiorIdade), idosoSemIdade));
+        Result result = await cenario.DefinirAsync(Comando(processo.Id, CriterioSimples(1, RegraDeDesempate.MaiorIdade.Codigo()), idosoSemIdade));
 
         result.IsFailure.Should().BeTrue();
         result.Errors.Select(e => e.Field).Should().BeEquivalentTo(["criterios[1].parametros.idadeMinima"]);
@@ -255,7 +256,7 @@ public sealed class DefinirCriteriosDesempateCommandHandlerTests
     {
         ProcessoSeletivo processo = ProcessoComClassificacaoEnem();
         CenarioDosCriteriosDeDesempate cenario = Com(processo).ComRegraInexistente(string.Empty);
-        CriterioDesempateInput semRegra = CriterioDesempateDeTeste.DaRegra(CriterioDesempateCodigo.MaiorIdade).SemRegra().Construir();
+        CriterioDesempateInput semRegra = CriterioDesempateDeTeste.DaRegra(RegraDeDesempate.MaiorIdade.Codigo()).SemRegra().Construir();
 
         Result result = await cenario.DefinirAsync(Comando(processo.Id, semRegra));
 

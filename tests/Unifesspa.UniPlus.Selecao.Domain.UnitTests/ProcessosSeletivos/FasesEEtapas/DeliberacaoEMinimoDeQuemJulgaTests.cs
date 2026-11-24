@@ -38,9 +38,9 @@ public sealed class DeliberacaoEMinimoDeQuemJulgaTests
 
     private static readonly TipoDeBancaCopiado Entrevista = Avaliadora(TipoDeBanca.Entrevista, false, TipoMotivoDeDecisao.NotaDaEtapa);
 
-    private static readonly ReferenciaRegra RegraLida = ReferenciaRegra.De(RegraConsolidacaoCodigo.AvaliacaoUnica, "v1", new string('a', 64));
+    private static readonly ReferenciaRegra RegraLida = ReferenciaRegra.De(RegraDeApuracaoDaAvaliacao.AvaliacaoUnica.Codigo(), "v1", new string('a', 64));
 
-    private static readonly ReferenciaRegra RegraForaDoCatalogo = ReferenciaRegra.De(RegraConsolidacaoCodigo.AvaliacaoUnica, "v1", new string('b', 64));
+    private static readonly ReferenciaRegra RegraForaDoCatalogo = ReferenciaRegra.De(RegraDeApuracaoDaAvaliacao.AvaliacaoUnica.Codigo(), "v1", new string('b', 64));
 
     private static readonly CorretoresDasEtapas TresCorretores =
         new(new Dictionary<ReferenciaRegra, CorretoresDaRegra> { [RegraLida] = CorretoresDaRegra.SemNovoCorretor(3) });

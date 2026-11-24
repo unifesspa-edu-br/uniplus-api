@@ -144,7 +144,7 @@ public sealed class RegraDeHomologacaoPersistenciaTests(ProcessoSeletivoDbFixtur
 
     private static ProdutoDaFase[] ProdutosDoResultado(RegraDeHomologacaoDasInscricoes? regra) =>
         regra?.ResultadoAtoCodigo is { } resultado
-            ? [ProdutoDaFase.Criar(resultado, PapelProdutoFase.Preliminar), ProdutoDaFase.Criar(resultado, PapelProdutoFase.Definitivo)]
+            ? [ProdutoDaFase.Criar(resultado, PapelDaPublicacaoPrevista.Preliminar), ProdutoDaFase.Criar(resultado, PapelDaPublicacaoPrevista.Definitivo)]
             : [];
 
     private async Task<(Guid ProcessoId, Guid FaseId)> GravarProcessoAsync(Guid origemId, RegraDeHomologacaoDasInscricoes? regra)

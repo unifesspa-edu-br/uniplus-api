@@ -4,6 +4,7 @@ using System.Text.Json;
 
 using AwesomeAssertions;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Regras.Services;
@@ -116,7 +117,7 @@ internal static class ExemploDeEnvelope
     /// que precisa ser estável é o byte congelado.
     /// </summary>
     internal static ReferenciaRegra AlgoritmoDeContagemDoExemplo() =>
-        Regra(AlgoritmoContagemPrazoCodigo.ExcluiDiaInicial, '8');
+        Regra(ConvencaoDeContagemDoPrazo.ExcluiDiaInicial.Codigo(), '8');
 
     /// <summary>
     /// Snapshots de tipo de etapa fixos (issue #1071) — mesmos <c>origemId</c> semeados no

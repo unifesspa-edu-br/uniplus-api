@@ -144,7 +144,7 @@ public sealed class DefinirCronogramaFasesResolucaoDosCadastrosTests
         cenario.TipoBancaReader.ObterPorIdAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>()).Returns((TipoBancaView?)null);
         FaseCronogramaInput primeira = cenario.CadastrarFase(FaseCanonicaDoResultadoFinal()) with
         {
-            Produtos = [ProdutoDoComunicado(PapelProdutoFaseCodigo.Definitivo)],
+            Produtos = [ProdutoDoComunicado("DEFINITIVO")],
         };
         FaseCronogramaInput segunda = cenario.CadastrarFase(FaseCanonicaDoResultadoFinal()) with
         {

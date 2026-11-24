@@ -1,16 +1,14 @@
 namespace Unifesspa.UniPlus.Selecao.Domain.Enums;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
+
 /// <summary>Critério que distingue as apresentações exigidas de um documento.</summary>
 public enum CriterioDeDistincaoDasApresentacoes
 {
-    Nenhuma = 0,
-
-    /// <summary>Unidade = mês ("AAAA-MM") — "últimos N" = as N competências mensais regulares imediatamente ≤ <see cref="ValueObjects.DistincaoDasApresentacoes.DataReferencia"/>.</summary>
+    [CodigoDeContrato("COMPETENCIA_MENSAL", "Competência mensal", Descricao = "Distingue as apresentações pelo mês a que se referem.")]
     CompetenciaMensal = 1,
-
-    /// <summary>Unidade = ano ("AAAA") — "últimos N" = os N exercícios anuais regulares imediatamente ≤ <see cref="ValueObjects.DistincaoDasApresentacoes.DataReferencia"/>.</summary>
+    [CodigoDeContrato("EXERCICIO_ANUAL", "Exercício anual", Descricao = "Distingue as apresentações pelo ano a que se referem.")]
     ExercicioAnual = 2,
-
-    /// <summary>Eventos irregulares, com identificações esperadas opcionais ou apenas contagem de ocorrências diferentes.</summary>
+    [CodigoDeContrato("OCORRENCIA", "Ocorrência", Descricao = "Distingue as apresentações por ocorrência.")]
     Ocorrencia = 3,
 }

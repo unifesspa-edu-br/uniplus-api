@@ -20,32 +20,32 @@ public static class CicloRecursal
     /// Os tipos de ato cujo preliminar é publicado sem o definitivo do mesmo tipo no mesmo
     /// lugar: o ciclo desses tipos nunca fecha.
     /// </summary>
-    public static IReadOnlyList<string> TiposComCicloAberto(IEnumerable<(string AtoCodigo, PapelProdutoFase? Papel)> produtos)
+    public static IReadOnlyList<string> TiposComCicloAberto(IEnumerable<(string AtoCodigo, PapelDaPublicacaoPrevista? Papel)> produtos)
     {
         ArgumentNullException.ThrowIfNull(produtos);
 
-        List<(string AtoCodigo, PapelProdutoFase? Papel)> declarados = [.. produtos];
-        HashSet<string> definitivos = [.. TiposComPapel(declarados, PapelProdutoFase.Definitivo)];
+        List<(string AtoCodigo, PapelDaPublicacaoPrevista? Papel)> declarados = [.. produtos];
+        HashSet<string> definitivos = [.. TiposComPapel(declarados, PapelDaPublicacaoPrevista.Definitivo)];
 
-        return [.. TiposComPapel(declarados, PapelProdutoFase.Preliminar).Where(tipo => !definitivos.Contains(tipo))];
+        return [.. TiposComPapel(declarados, PapelDaPublicacaoPrevista.Preliminar).Where(tipo => !definitivos.Contains(tipo))];
     }
 
     /// <summary>
     /// Os tipos de ato que o lugar fecha sozinho: o preliminar e o definitivo do mesmo tipo
     /// são publicados nele.
     /// </summary>
-    public static IReadOnlyList<string> TiposFechadosNoProprioLugar(IEnumerable<(string AtoCodigo, PapelProdutoFase? Papel)> produtos)
+    public static IReadOnlyList<string> TiposFechadosNoProprioLugar(IEnumerable<(string AtoCodigo, PapelDaPublicacaoPrevista? Papel)> produtos)
     {
         ArgumentNullException.ThrowIfNull(produtos);
 
-        List<(string AtoCodigo, PapelProdutoFase? Papel)> declarados = [.. produtos];
-        HashSet<string> definitivos = [.. TiposComPapel(declarados, PapelProdutoFase.Definitivo)];
+        List<(string AtoCodigo, PapelDaPublicacaoPrevista? Papel)> declarados = [.. produtos];
+        HashSet<string> definitivos = [.. TiposComPapel(declarados, PapelDaPublicacaoPrevista.Definitivo)];
 
-        return [.. TiposComPapel(declarados, PapelProdutoFase.Preliminar).Where(definitivos.Contains)];
+        return [.. TiposComPapel(declarados, PapelDaPublicacaoPrevista.Preliminar).Where(definitivos.Contains)];
     }
 
     /// <summary>Se algum dos produtos é publicado com o papel dado.</summary>
-    public static bool PublicaComPapel(IEnumerable<(string AtoCodigo, PapelProdutoFase? Papel)> produtos, PapelProdutoFase papel)
+    public static bool PublicaComPapel(IEnumerable<(string AtoCodigo, PapelDaPublicacaoPrevista? Papel)> produtos, PapelDaPublicacaoPrevista papel)
     {
         ArgumentNullException.ThrowIfNull(produtos);
 
@@ -53,7 +53,7 @@ public static class CicloRecursal
     }
 
     /// <summary>Se algum dos produtos tem papel: o lugar publica ao menos um resultado.</summary>
-    public static bool ProduzResultado(IEnumerable<(string AtoCodigo, PapelProdutoFase? Papel)> produtos)
+    public static bool ProduzResultado(IEnumerable<(string AtoCodigo, PapelDaPublicacaoPrevista? Papel)> produtos)
     {
         ArgumentNullException.ThrowIfNull(produtos);
 
@@ -65,7 +65,7 @@ public static class CicloRecursal
     /// definitivo do mesmo tipo fecha neste lugar, a fase ou a etapa que os declara.
     /// </summary>
     public static IReadOnlyList<Guid> PreliminaresDoTipo(
-        IEnumerable<(Guid Id, string AtoCodigo, PapelProdutoFase? Papel)> produtos,
+        IEnumerable<(Guid Id, string AtoCodigo, PapelDaPublicacaoPrevista? Papel)> produtos,
         string atoCodigo)
     {
         ArgumentNullException.ThrowIfNull(produtos);
@@ -73,7 +73,7 @@ public static class CicloRecursal
         return
         [
             .. produtos
-                .Where(p => p.Papel == PapelProdutoFase.Preliminar && string.Equals(p.AtoCodigo, atoCodigo, StringComparison.Ordinal))
+                .Where(p => p.Papel == PapelDaPublicacaoPrevista.Preliminar && string.Equals(p.AtoCodigo, atoCodigo, StringComparison.Ordinal))
                 .Select(static p => p.Id),
         ];
     }
@@ -94,7 +94,7 @@ public static class CicloRecursal
         return
         [
             .. declaracoes
-                .Where(static d => d.Papel == PapelProdutoFase.Definitivo)
+                .Where(static d => d.Papel == PapelDaPublicacaoPrevista.Definitivo)
                 .GroupBy(static d => d.AtoCodigo, StringComparer.Ordinal)
                 .Select(static grupo => (
                     AtoCodigo: grupo.Key,
@@ -104,8 +104,8 @@ public static class CicloRecursal
     }
 
     private static IEnumerable<string> TiposComPapel(
-        IEnumerable<(string AtoCodigo, PapelProdutoFase? Papel)> produtos,
-        PapelProdutoFase papel) =>
+        IEnumerable<(string AtoCodigo, PapelDaPublicacaoPrevista? Papel)> produtos,
+        PapelDaPublicacaoPrevista papel) =>
         produtos
             .Where(p => p.Papel == papel)
             .Select(static p => p.AtoCodigo)

@@ -18,7 +18,7 @@ using Kernel.Results;
 /// </remarks>
 internal sealed class MontagemDosProdutosDaFase(AtosConsultadosNaEdicao atos)
 {
-    private static readonly IReadOnlyCollection<(string AtoCodigo, PapelProdutoFase? Papel)> NenhumJaDeclarado = [];
+    private static readonly IReadOnlyCollection<(string AtoCodigo, PapelDaPublicacaoPrevista? Papel)> NenhumJaDeclarado = [];
 
     private readonly ConferenciaDoProdutoDeclarado _conferencia = new(atos);
 

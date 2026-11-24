@@ -114,7 +114,7 @@ public sealed record CronogramaDoProcesso
     /// O que o processo exige do cronograma: a origem que recebe inscrição tem fase que a coleta, e as vagas ofertadas têm fase
     /// que produz resultado. A origem e a oferta de vagas chegam como valor: o cronograma só conhece as fases.
     /// </summary>
-    public IReadOnlyList<FieldError> ConferirCronogramaExigidoPeloProcesso(OrigemCandidatos origem, bool haVagasOfertadas)
+    public IReadOnlyList<FieldError> ConferirCronogramaExigidoPeloProcesso(OrigemCandidatos? origem, bool haVagasOfertadas)
     {
         List<FieldError> causas = [];
         if (InscricaoPropriaSemFaseDeColeta(origem))
@@ -139,11 +139,11 @@ public sealed record CronogramaDoProcesso
         "Há vagas ofertadas, e nenhuma fase do cronograma produz resultado.");
 
     // A origem ausente não diz se o processo coleta a própria inscrição: o item fica pendente, e a causa é a da identificação.
-    public ItemConformidade ItemDaInscricaoPropria(OrigemCandidatos origem) => new(
+    public ItemConformidade ItemDaInscricaoPropria(OrigemCandidatos? origem) => new(
         "cronograma_inscricao_propria_sem_fase_de_coleta",
         DimensaoConformidade.Cronograma,
         "Cronograma: inscrição própria tem fase que coleta inscrição",
-        origem != OrigemCandidatos.Nenhuma && !InscricaoPropriaSemFaseDeColeta(origem) && !ColetaDeInscricaoIndeterminada(origem));
+        origem is not null && !InscricaoPropriaSemFaseDeColeta(origem) && !ColetaDeInscricaoIndeterminada(origem));
 
     public ItemConformidade ItemDasVagasOfertadas(bool haVagasOfertadas) => new(
         "cronograma_vagas_sem_fase_que_produz_resultado",
@@ -234,10 +234,10 @@ public sealed record CronogramaDoProcesso
         new(string.IsNullOrEmpty(campo) ? $"fases[{posicao}]" : $"fases[{posicao}].{campo}", erro);
 
     // O piso mínimo vem da origem dos candidatos, nunca do tipo do processo.
-    private bool InscricaoPropriaSemFaseDeColeta(OrigemCandidatos origem) =>
+    private bool InscricaoPropriaSemFaseDeColeta(OrigemCandidatos? origem) =>
         origem == OrigemCandidatos.InscricaoPropria && !TemParteRecusadaNaListaDeFases && !Fases.Any(static fase => fase.ColetaInscricao);
 
-    private bool ColetaDeInscricaoIndeterminada(OrigemCandidatos origem) =>
+    private bool ColetaDeInscricaoIndeterminada(OrigemCandidatos? origem) =>
         origem == OrigemCandidatos.InscricaoPropria && TemParteRecusadaNaListaDeFases;
 
     private bool VagasSemFaseQueProduzResultado(bool haVagasOfertadas) =>

@@ -6,6 +6,7 @@ using AwesomeAssertions;
 
 using NSubstitute;
 
+using Unifesspa.UniPlus.Application.Abstractions.Respostas;
 using Unifesspa.UniPlus.Kernel.Pagination;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Application.DTOs;
@@ -79,13 +80,13 @@ public sealed class LeituraPublicaDoCertameTests
         Result<CertamePublicadoDto> resultado = await ObterCertamePublicadoQueryHandler.Handle(
             new ObterCertamePublicadoQuery(processoId, Agora), repository, CancellationToken.None);
 
-        resultado.Value!.Situacao.Should().Be(esperada);
+        resultado.Value!.Situacao.Should().Be(CodigoComRotulo<SituacaoDoCertame>.De(esperada));
     }
 
     [Fact(DisplayName = "A situação não entra no documento divulgado: é calculada na leitura")]
     public void Situacao_NaoEntraNoDocumentoDivulgado()
     {
-        CertamePublicadoDto lido = Projecao(Guid.CreateVersion7()) with { Situacao = SituacaoDoCertame.InscricoesAbertas };
+        CertamePublicadoDto lido = Projecao(Guid.CreateVersion7()) with { Situacao = CodigoComRotulo<SituacaoDoCertame>.De(SituacaoDoCertame.InscricoesAbertas) };
 
         string documento = JsonSerializer.Serialize(lido with { Situacao = null }, ProjecaoDoCertamePublicado.OpcoesDoDocumento);
 
@@ -97,8 +98,8 @@ public sealed class LeituraPublicaDoCertameTests
     {
         CertamePublicadoDto certame = Projecao(Guid.CreateVersion7());
 
-        string aberto = SeloDoCertamePublicado.De(certame with { Situacao = SituacaoDoCertame.InscricoesAbertas });
-        string ultimosDias = SeloDoCertamePublicado.De(certame with { Situacao = SituacaoDoCertame.UltimosDias });
+        string aberto = SeloDoCertamePublicado.De(certame with { Situacao = CodigoComRotulo<SituacaoDoCertame>.De(SituacaoDoCertame.InscricoesAbertas) });
+        string ultimosDias = SeloDoCertamePublicado.De(certame with { Situacao = CodigoComRotulo<SituacaoDoCertame>.De(SituacaoDoCertame.UltimosDias) });
 
         ultimosDias.Should().NotBe(aberto);
     }
@@ -112,11 +113,7 @@ public sealed class LeituraPublicaDoCertameTests
         AtoDivulgado abertura = new(Guid.CreateVersion7(), 1, "https://acervo.teste/abertura.pdf");
         Registrar(divulgado, retificacao);
         Registrar(divulgado, abertura);
-        ICertameDivulgadoRepository repository = Substitute.For<ICertameDivulgadoRepository>();
-        repository.ObterParaLeituraAsync(processoId, Arg.Any<CancellationToken>()).Returns(divulgado);
-
-        Result<CertamePublicadoDto> resultado = await ObterCertamePublicadoQueryHandler.Handle(
-            new ObterCertamePublicadoQuery(processoId, Agora), repository, CancellationToken.None);
+        Result<CertamePublicadoDto> resultado = await LerCertameDivulgado(processoId, divulgado);
 
         resultado.Value!.EditaisPublicados!.Select(static e => (e.AtoId, e.UrlDownload?.OriginalString)).Should().Equal(
             (abertura.AtoId, abertura.UrlDownload),
@@ -132,11 +129,7 @@ public sealed class LeituraPublicaDoCertameTests
         AtoDivulgado abertura = new(Guid.CreateVersion7(), 1, "https://acervo.teste/abertura.pdf");
         Registrar(divulgado, aviso);
         Registrar(divulgado, abertura);
-        ICertameDivulgadoRepository repository = Substitute.For<ICertameDivulgadoRepository>();
-        repository.ObterParaLeituraAsync(processoId, Arg.Any<CancellationToken>()).Returns(divulgado);
-
-        Result<CertamePublicadoDto> resultado = await ObterCertamePublicadoQueryHandler.Handle(
-            new ObterCertamePublicadoQuery(processoId, Agora), repository, CancellationToken.None);
+        Result<CertamePublicadoDto> resultado = await LerCertameDivulgado(processoId, divulgado);
 
         resultado.Value!.EditaisPublicados!.Select(static e => e.AtoId).Should().Equal(abertura.AtoId, aviso.AtoId);
     }
@@ -147,28 +140,12 @@ public sealed class LeituraPublicaDoCertameTests
         Guid processoId = Guid.CreateVersion7();
         CertameDivulgado divulgado = Divulgado(processoId, Projecao(processoId));
         AtoDivulgado antigo = new(Guid.CreateVersion7(), 1, "https://acervo.teste/abertura.pdf");
-        AtoDivulgado comAnexos = new(
-            Guid.CreateVersion7(),
-            2,
-            "https://acervo.teste/retificacao.pdf",
-            [
-                new DocumentoDivulgado(PapelDoDocumentoDivulgado.Principal, "edital.pdf", "application/pdf", 1200, new string('a', 64), "https://acervo.teste/retificacao.pdf"),
-                new DocumentoDivulgado(PapelDoDocumentoDivulgado.Anexo, "Quadro de vagas.docx", "application/vnd.openxmlformats-officedocument.wordprocessingml.document", 800, new string('b', 64), "https://acervo.teste/quadro.docx"),
-                new DocumentoDivulgado(PapelDoDocumentoDivulgado.Anexo, "Sem endereço.pdf", "application/pdf", 10, new string('c', 64), "acervo/sem-esquema.pdf"),
-            ]);
+        AtoDivulgado comAnexos = EditalComAnexos();
         Registrar(divulgado, antigo);
         Registrar(divulgado, comAnexos);
-        ICertameDivulgadoRepository repository = Substitute.For<ICertameDivulgadoRepository>();
-        repository.ObterParaLeituraAsync(processoId, Arg.Any<CancellationToken>()).Returns(divulgado);
+        Result<CertamePublicadoDto> resultado = await LerCertameDivulgado(processoId, divulgado);
 
-        Result<CertamePublicadoDto> resultado = await ObterCertamePublicadoQueryHandler.Handle(
-            new ObterCertamePublicadoQuery(processoId, Agora), repository, CancellationToken.None);
-
-        IReadOnlyList<EditalPublicadoCertameDto> editais = resultado.Value!.EditaisPublicados!;
-        editais[0].Documentos.Should().BeEmpty();
-        editais[1].Documentos.Select(static d => (d.Papel, d.Nome, d.TamanhoBytes, d.UrlDownload.OriginalString)).Should().Equal(
-            ("principal", "edital.pdf", 1200L, "https://acervo.teste/retificacao.pdf"),
-            ("anexo", "Quadro de vagas.docx", 800L, "https://acervo.teste/quadro.docx"));
+        ConferirDocumentosDosEditais(resultado.Value!.EditaisPublicados!);
     }
 
     [Fact(DisplayName = "Edital com endereço ilegível fica fora da lista sem derrubar o detalhe")]
@@ -180,11 +157,7 @@ public sealed class LeituraPublicaDoCertameTests
         AtoDivulgado retificacao = new(Guid.CreateVersion7(), 2, "https://acervo.teste/retificacao.pdf");
         Registrar(divulgado, abertura);
         Registrar(divulgado, retificacao);
-        ICertameDivulgadoRepository repository = Substitute.For<ICertameDivulgadoRepository>();
-        repository.ObterParaLeituraAsync(processoId, Arg.Any<CancellationToken>()).Returns(divulgado);
-
-        Result<CertamePublicadoDto> resultado = await ObterCertamePublicadoQueryHandler.Handle(
-            new ObterCertamePublicadoQuery(processoId, Agora), repository, CancellationToken.None);
+        Result<CertamePublicadoDto> resultado = await LerCertameDivulgado(processoId, divulgado);
 
         resultado.IsSuccess.Should().BeTrue();
         resultado.Value!.EditaisPublicados!.Select(static e => e.AtoId).Should().Equal(retificacao.AtoId);
@@ -212,7 +185,7 @@ public sealed class LeituraPublicaDoCertameTests
     [Fact(DisplayName = "O selo do detalhe muda quando entra um edital, com o mesmo documento divulgado")]
     public void Selo_MudaQuandoEntraEdital()
     {
-        CertamePublicadoDto certame = Projecao(Guid.CreateVersion7()) with { Situacao = SituacaoDoCertame.InscricoesAbertas };
+        CertamePublicadoDto certame = Projecao(Guid.CreateVersion7()) with { Situacao = CodigoComRotulo<SituacaoDoCertame>.De(SituacaoDoCertame.InscricoesAbertas) };
         EditalPublicadoCertameDto abertura = new(Guid.CreateVersion7(), new Uri("https://acervo.teste/abertura.pdf"), []);
         EditalPublicadoCertameDto retificacao = new(Guid.CreateVersion7(), new Uri("https://acervo.teste/retificacao.pdf"), []);
 
@@ -226,7 +199,7 @@ public sealed class LeituraPublicaDoCertameTests
     [Fact(DisplayName = "O selo do detalhe muda quando muda um anexo do edital, com o mesmo endereço do edital")]
     public void Selo_MudaQuandoMudaUmAnexo()
     {
-        CertamePublicadoDto certame = Projecao(Guid.CreateVersion7()) with { Situacao = SituacaoDoCertame.InscricoesAbertas };
+        CertamePublicadoDto certame = Projecao(Guid.CreateVersion7()) with { Situacao = CodigoComRotulo<SituacaoDoCertame>.De(SituacaoDoCertame.InscricoesAbertas) };
         Guid ato = Guid.CreateVersion7();
         DocumentoDoAtoCertameDto anexo = new("anexo", "Quadro.pdf", "application/pdf", 10, new string('a', 64), new Uri("https://acervo.teste/q.pdf"));
         EditalPublicadoCertameDto semAnexo = new(ato, new Uri("https://acervo.teste/e.pdf"), []);
@@ -263,20 +236,15 @@ public sealed class LeituraPublicaDoCertameTests
         // O fuso de quem lê não decide prazo de edital, e a janela tem dois lados: um edital
         // publicado antes de a inscrição abrir não está recebendo inscrição.
         Guid processoId = Guid.CreateVersion7();
-        ICertameDivulgadoRepository repository = Substitute.For<ICertameDivulgadoRepository>();
         CertameDivulgado linha = Divulgado(
             processoId, Projecao(processoId),
             inscricoesDe: Agora.AddDays(diasAteAbrir), inscricoesAte: Agora.AddDays(diasAteFechar));
-        repository.ListarVitrineAsync(
-                Arg.Any<DateTimeOffset>(), Arg.Any<RecorteDaVitrine>(), Arg.Any<IReadOnlyList<SortField>>(),
-                Arg.Any<TimeSpan>(), Arg.Any<string?>(), Arg.Any<Guid?>(), Arg.Any<int>(),
-                Arg.Any<PaginationDirection>(), Arg.Any<bool>(), Arg.Any<string>(), Arg.Any<CancellationToken>())
-            .Returns(new PaginaDaVitrine([linha], Agora, null, null, null, RevisaoDoRecorte));
+        ICertameDivulgadoRepository repository = RepositorioComCertameNaVitrine(linha);
 
         ListarCertamesPublicadosResult resultado = (await ListarCertamesPublicadosQueryHandler.Handle(
             Consulta(), repository, CancellationToken.None)).Value!;
 
-        resultado.Items.Should().ContainSingle().Which.Situacao.Should().Be(esperada);
+        resultado.Items.Should().ContainSingle().Which.Situacao.Should().Be(CodigoComRotulo<SituacaoDoCertame>.De(esperada));
     }
 
     [Fact(DisplayName = "Contadores só são calculados quando pedidos")]
@@ -308,6 +276,46 @@ public sealed class LeituraPublicaDoCertameTests
             Consulta(), repository, CancellationToken.None)).Value!;
 
         resultado.Revisao.Should().Be(RevisaoDoRecorte);
+    }
+
+    private static async Task<Result<CertamePublicadoDto>> LerCertameDivulgado(Guid processoId, CertameDivulgado divulgado)
+    {
+        ICertameDivulgadoRepository repository = Substitute.For<ICertameDivulgadoRepository>();
+        repository.ObterParaLeituraAsync(processoId, Arg.Any<CancellationToken>()).Returns(divulgado);
+        return await ObterCertamePublicadoQueryHandler.Handle(
+            new ObterCertamePublicadoQuery(processoId, Agora), repository, CancellationToken.None);
+    }
+
+    private static void ConferirDocumentosDosEditais(IReadOnlyList<EditalPublicadoCertameDto> editais)
+    {
+        editais[0].Documentos.Should().BeEmpty();
+        editais[1].Documentos.Select(static d => (d.Papel, d.Nome, d.TamanhoBytes, d.UrlDownload.OriginalString)).Should().Equal(
+            ("principal", "edital.pdf", 1200L, "https://acervo.teste/retificacao.pdf"),
+            ("anexo", "Quadro de vagas.docx", 800L, "https://acervo.teste/quadro.docx"));
+    }
+
+    private static ICertameDivulgadoRepository RepositorioComCertameNaVitrine(CertameDivulgado certame)
+    {
+        ICertameDivulgadoRepository repository = Substitute.For<ICertameDivulgadoRepository>();
+        repository.ListarVitrineAsync(
+                Arg.Any<DateTimeOffset>(), Arg.Any<RecorteDaVitrine>(), Arg.Any<IReadOnlyList<SortField>>(),
+                Arg.Any<TimeSpan>(), Arg.Any<string?>(), Arg.Any<Guid?>(), Arg.Any<int>(),
+                Arg.Any<PaginationDirection>(), Arg.Any<bool>(), Arg.Any<string>(), Arg.Any<CancellationToken>())
+            .Returns(new PaginaDaVitrine([certame], Agora, null, null, null, RevisaoDoRecorte));
+        return repository;
+    }
+
+    private static AtoDivulgado EditalComAnexos()
+    {
+        return new(
+            Guid.CreateVersion7(),
+            2,
+            "https://acervo.teste/retificacao.pdf",
+            [
+                new DocumentoDivulgado(PapelDoDocumentoDivulgado.Principal, "edital.pdf", "application/pdf", 1200, new string('a', 64), "https://acervo.teste/retificacao.pdf"),
+                new DocumentoDivulgado(PapelDoDocumentoDivulgado.Anexo, "Quadro de vagas.docx", "application/vnd.openxmlformats-officedocument.wordprocessingml.document", 800, new string('b', 64), "https://acervo.teste/quadro.docx"),
+                new DocumentoDivulgado(PapelDoDocumentoDivulgado.Anexo, "Sem endereço.pdf", "application/pdf", 10, new string('c', 64), "acervo/sem-esquema.pdf"),
+            ]);
     }
 
     private const string RevisaoDoRecorte = "revisao-do-recorte";

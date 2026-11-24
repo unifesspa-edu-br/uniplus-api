@@ -5,6 +5,7 @@ using AwesomeAssertions;
 using NSubstitute;
 
 using Unifesspa.UniPlus.Configuracao.Contracts;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
@@ -153,11 +154,11 @@ public sealed class DefinirClassificacaoPesosPorAreaDoEnemCommandHandlerTests
     {
         ProcessoSeletivo processo = NovoProcessoEnem();
         CenarioDaClassificacao cenario = Com(processo)
-            .ComRegra(RegraCalculoCodigo.ClassificacaoImportada, TipoRegra.RegraCalculo)
-            .ComRegra(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, TipoRegra.RegraOrdemAlocacao);
+            .ComRegra(RegraDeCalculoDaNota.ClassificacaoImportada.Codigo(), TipoRegra.RegraCalculo)
+            .ComRegra(RegraDeOrdemDeAlocacao.PrimeiraOpcaoPrioritaria.Codigo(), TipoRegra.RegraOrdemAlocacao);
 
         Result result = await cenario.DefinirAsync(
-            ComandoEnemLocal(processo.Id, "Resolução com quarenta e um caracteres ..", baseadoEmEnem: true, RegraCalculoCodigo.ClassificacaoImportada));
+            ComandoEnemLocal(processo.Id, "Resolução com quarenta e um caracteres ..", baseadoEmEnem: true, RegraDeCalculoDaNota.ClassificacaoImportada.Codigo()));
 
         result.Errors.Select(e => e.Error.Code).Should().Equal(
             ["ConfiguracaoClassificacao.ResolucaoPesoAreaEnemIndevida"],
@@ -200,8 +201,8 @@ public sealed class DefinirClassificacaoPesosPorAreaDoEnemCommandHandlerTests
     public async Task Handle_FaltaEmDiaDeProvaEnemRepetidaComResolucaoInexistente_AcumulaAsDuas()
     {
         ProcessoSeletivo processo = NovoProcessoEnem();
-        CenarioDaClassificacao cenario = CenarioDeEnemLocal(processo).ComRegra(RegraEliminacaoCodigo.ElimFaltaEmDiaDeProvaEnem, TipoRegra.RegraEliminacao).ComResolucaoCadastrada(null);
-        RegraEliminacaoInput falta = new(RegraEliminacaoCodigo.ElimFaltaEmDiaDeProvaEnem, "v1", null, null, null, null);
+        CenarioDaClassificacao cenario = CenarioDeEnemLocal(processo).ComRegra(RegraDeEliminacaoPorCalculo.FaltaEmDiaDeProvaDoEnem.Codigo(), TipoRegra.RegraEliminacao).ComResolucaoCadastrada(null);
+        RegraEliminacaoInput falta = new(RegraDeEliminacaoPorCalculo.FaltaEmDiaDeProvaDoEnem.Codigo(), "v1", null, null, null, null);
         DefinirClassificacaoCommand command = ComandoEnemLocal(processo.Id, "Res. inexistente") with { RegrasEliminacao = [falta, falta] };
 
         Result result = await cenario.DefinirAsync(command);
@@ -216,15 +217,15 @@ public sealed class DefinirClassificacaoPesosPorAreaDoEnemCommandHandlerTests
     }
 
     [Theory(DisplayName = "Resolução informada fora da classificação baseada em ENEM com cálculo local é recusada sem consultar o cadastro")]
-    [InlineData(false, RegraCalculoCodigo.FormulaMediaPonderada)]
-    [InlineData(true, RegraCalculoCodigo.ClassificacaoImportada)]
-    [InlineData(false, RegraCalculoCodigo.ClassificacaoImportada)]
-    public async Task Handle_ResolucaoForaDeEnemLocal_RecusaComoIndevida(bool baseadoEmEnem, string regraCalculo)
+    [InlineData(false, RegraDeCalculoDaNota.MediaPonderada)]
+    [InlineData(true, RegraDeCalculoDaNota.ClassificacaoImportada)]
+    [InlineData(false, RegraDeCalculoDaNota.ClassificacaoImportada)]
+    public async Task Handle_ResolucaoForaDeEnemLocal_RecusaComoIndevida(bool baseadoEmEnem, RegraDeCalculoDaNota regraCalculo)
     {
         ProcessoSeletivo processo = NovoProcessoEnem();
-        CenarioDaClassificacao cenario = CenarioDeEnemLocal(processo).ComRegra(RegraCalculoCodigo.ClassificacaoImportada, TipoRegra.RegraCalculo);
+        CenarioDaClassificacao cenario = CenarioDeEnemLocal(processo).ComRegra(RegraDeCalculoDaNota.ClassificacaoImportada.Codigo(), TipoRegra.RegraCalculo);
 
-        Result result = await cenario.DefinirAsync(ComandoEnemLocal(processo.Id, ResolucaoDePesos, baseadoEmEnem, regraCalculo));
+        Result result = await cenario.DefinirAsync(ComandoEnemLocal(processo.Id, ResolucaoDePesos, baseadoEmEnem, regraCalculo.Codigo()));
 
         result.IsFailure.Should().BeTrue();
         result.Errors.Should().ContainSingle(e =>

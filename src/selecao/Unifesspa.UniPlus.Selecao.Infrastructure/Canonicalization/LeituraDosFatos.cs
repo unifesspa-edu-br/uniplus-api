@@ -50,12 +50,9 @@ internal static class LeituraDosFatos
         return leitor.Falhou ? null : CriarReferenciaTemporal(leitor, tipoCodigo, data, faseId);
     }
 
-    // FromCodigo mapeia um token não reconhecido para o sentinela Nenhuma — e Criar já o rejeita com
-    // um DomainError nomeado (ReferenciaTemporalFatos.TipoObrigatorio), sem precisar de uma checagem
-    // de "código desconhecido" própria aqui.
     private static ReferenciaTemporalFatos? CriarReferenciaTemporal(LeitorEnvelope leitor, string tipoCodigo, DateOnly? data, Guid? faseId)
     {
-        Result<ReferenciaTemporalFatos> resultado = ReferenciaTemporalFatos.Criar(ReferenciaTipoCodigo.FromCodigo(tipoCodigo), data, faseId);
+        Result<ReferenciaTemporalFatos> resultado = ReferenciaTemporalFatos.Criar(tipoCodigo, data, faseId);
         return resultado.IsFailure ? leitor.Propagar<ReferenciaTemporalFatos>(resultado.Error!) : resultado.Value;
     }
 
@@ -217,7 +214,7 @@ internal static class LeituraDosFatos
     };
 
     private static CopiaDoItemNoCatalogo LerCopiaDoCatalogo(LeitorEnvelope leitor, JsonObject item, string path) => new(
-        leitor.Enumeracao<OrigemValoresColeta>(item, "origemValores", path),
+        leitor.CodigoDeContrato<OrigemValoresColeta>(item, "origemValores", path),
         leitor.TextoOpcional(item, "formato", path, LimitesDoEnvelope.Token),
         leitor.TextoNaoVazio(item, "classificacaoProtecao", path, LimitesDoEnvelope.Token),
         leitor.TextoNaoVazio(item, "hipoteseLegal", path, LimitesDoEnvelope.HipoteseLegal),

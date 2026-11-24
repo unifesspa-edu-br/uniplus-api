@@ -8,6 +8,7 @@ using NSubstitute;
 
 using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 using Unifesspa.UniPlus.Configuracao.Contracts;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
@@ -50,10 +51,10 @@ internal sealed class CenarioDosCriteriosDeDesempate
         ProcessoSeletivo processo = NovoProcesso("PS ENEM 2027", TiposDeProcessoDeTeste.PSIQ);
         processo.DefinirClassificacao(ConfiguracaoClassificacao.Criar(new DeclaracaoDaClassificacao
         {
-            RegraCalculo = ReferenciaRegra.De(RegraCalculoCodigo.FormulaMediaPonderada, "v1", new string('a', 64)),
-            RegraArredondamento = ReferenciaRegra.De(RegraArredondamentoCodigo.PrecisaoTruncar, "v1", new string('b', 64)),
+            RegraCalculo = ReferenciaRegra.De(RegraDeCalculoDaNota.MediaPonderada.Codigo(), "v1", new string('a', 64)),
+            RegraArredondamento = ReferenciaRegra.De(RegraDeArredondamentoDaNota.Truncar.Codigo(), "v1", new string('b', 64)),
             CasasArredondamento = 2,
-            RegraOrdemAlocacao = ReferenciaRegra.De(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, "v1", new string('c', 64)),
+            RegraOrdemAlocacao = ReferenciaRegra.De(RegraDeOrdemDeAlocacao.PrimeiraOpcaoPrioritaria.Codigo(), "v1", new string('c', 64)),
             BaseadoEmEnem = true,
             ResolucaoPesoAreaEnem = QuadroPesoAreaEnemDeTeste.Resolucao,
             QuadroPesoAreaEnem = QuadroPesoAreaEnemDeTeste.Completo(),
@@ -69,7 +70,7 @@ internal sealed class CenarioDosCriteriosDeDesempate
         CriterioDesempateDeTeste.DaRegra(codigo).NaOrdem(ordem).Construir();
 
     public static CriterioDesempateInput CriterioDeAreas(int ordem, params string[] areas) =>
-        CriterioDesempateDeTeste.DaRegra(CriterioDesempateCodigo.MaiorNotaAreaEnem).NaOrdem(ordem).ComAreas(areas).Construir();
+        CriterioDesempateDeTeste.DaRegra(RegraDeDesempate.MaiorNotaPorAreaDoEnem.Codigo()).NaOrdem(ordem).ComAreas(areas).Construir();
 
     public CenarioDosCriteriosDeDesempate ComRegra(string codigo, TipoRegra tipo = TipoRegra.CriterioDesempate)
     {
@@ -118,10 +119,10 @@ internal sealed class CenarioDosCriteriosDeDesempate
 
     private static IReadOnlyList<RegraCatalogo> CriteriosDoCatalogo() =>
     [
-        Regra(CriterioDesempateCodigo.MaiorNotaEtapa, TipoRegra.CriterioDesempate),
-        Regra(CriterioDesempateCodigo.MaiorIdade, TipoRegra.CriterioDesempate),
-        Regra(CriterioDesempateCodigo.Idoso, TipoRegra.CriterioDesempate),
-        Regra(CriterioDesempateCodigo.PredicadoFato, TipoRegra.CriterioDesempate),
-        Regra(CriterioDesempateCodigo.MaiorNotaAreaEnem, TipoRegra.CriterioDesempate),
+        Regra(RegraDeDesempate.MaiorNotaNaEtapa.Codigo(), TipoRegra.CriterioDesempate),
+        Regra(RegraDeDesempate.MaiorIdade.Codigo(), TipoRegra.CriterioDesempate),
+        Regra(RegraDeDesempate.Idoso.Codigo(), TipoRegra.CriterioDesempate),
+        Regra(RegraDeDesempate.CondicaoSobreDado.Codigo(), TipoRegra.CriterioDesempate),
+        Regra(RegraDeDesempate.MaiorNotaPorAreaDoEnem.Codigo(), TipoRegra.CriterioDesempate),
     ];
 }

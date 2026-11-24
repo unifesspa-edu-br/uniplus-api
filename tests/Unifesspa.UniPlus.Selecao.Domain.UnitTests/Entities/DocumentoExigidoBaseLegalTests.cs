@@ -49,7 +49,7 @@ public sealed class DocumentoExigidoBaseLegalTests
     public void Criar_AbrangenciaNenhuma_Recusa()
     {
         Result<DocumentoExigidoBaseLegal> resultado = DocumentoExigidoBaseLegal.Criar(
-            "Lei X", TipoAbrangencia.Nenhuma, StatusBaseLegal.Resolvido, null);
+            "Lei X", null, StatusBaseLegal.Resolvido, null);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("DocumentoExigidoBaseLegal.AbrangenciaObrigatoria");
@@ -59,7 +59,7 @@ public sealed class DocumentoExigidoBaseLegalTests
     public void Criar_StatusNenhuma_Recusa()
     {
         Result<DocumentoExigidoBaseLegal> resultado = DocumentoExigidoBaseLegal.Criar(
-            "Lei X", TipoAbrangencia.Federal, StatusBaseLegal.Nenhuma, null);
+            "Lei X", TipoAbrangencia.Federal, null, null);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("DocumentoExigidoBaseLegal.SituacaoObrigatoria");
@@ -87,7 +87,7 @@ public sealed class DocumentoExigidoBaseLegalTests
     public void Criar_ReferenciaVaziaEAbrangenciaNenhuma_AcumulaAsDuasViolacoes()
     {
         Result<DocumentoExigidoBaseLegal> resultado = DocumentoExigidoBaseLegal.Criar(
-            "", TipoAbrangencia.Nenhuma, StatusBaseLegal.Resolvido, null);
+            "", null, StatusBaseLegal.Resolvido, null);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Errors.Select(e => e.Error.Code).Should().BeEquivalentTo(

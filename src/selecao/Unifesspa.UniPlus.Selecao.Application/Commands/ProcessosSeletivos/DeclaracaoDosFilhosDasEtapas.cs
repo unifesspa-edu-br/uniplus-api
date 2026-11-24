@@ -69,6 +69,6 @@ internal sealed class DeclaracaoDosFilhosDasEtapas(
 
     private static HashSet<string> AtosJaAncorados(EtapaProcesso etapa) =>
         [.. etapa.Recursos.SelectMany(recurso => etapa.Produtos
-            .Where(p => p.Id == recurso.ProdutoAncoraId && p.Papel == PapelProdutoFase.Preliminar)
+            .Where(p => p.Id == recurso.ProdutoAncoraId && p.Papel == PapelDaPublicacaoPrevista.Preliminar)
             .Select(static p => p.AtoCodigo))];
 }

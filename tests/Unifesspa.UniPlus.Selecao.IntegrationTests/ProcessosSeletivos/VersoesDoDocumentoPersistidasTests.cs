@@ -23,10 +23,10 @@ public sealed class VersoesDoDocumentoPersistidasTests(ProcessoSeletivoDbFixture
     public async Task Persistir_RemocaoDoNomeAbreviado_ConservaAberturaEGravaRegraNula()
     {
         ProcessoSeletivo processo = ExemploDeEnvelopeProcessoRico.ProcessoRico(1);
-        processo.DefinirConfiguracaoDivulgacao(ConfiguracaoDivulgacao.Criar(["numero_inscricao", "nome_abreviado"], null).Value!)
+        processo.DefinirConfiguracaoDivulgacao(ConfiguracaoDivulgacao.Criar(["NUMERO_INSCRICAO", "NOME_ABREVIADO"], null).Value!)
             .IsSuccess.Should().BeTrue();
         VersaoConfiguracao abertura = Abrir(processo);
-        processo.DefinirConfiguracaoDivulgacao(ConfiguracaoDivulgacao.Criar(["numero_inscricao"], null).Value!).IsSuccess.Should().BeTrue();
+        processo.DefinirConfiguracaoDivulgacao(ConfiguracaoDivulgacao.Criar(["NUMERO_INSCRICAO"], null).Value!).IsSuccess.Should().BeTrue();
         VersaoConfiguracao sucessora = Suceder(processo, abertura);
         await PersistirAsync(processo, abertura, sucessora);
         await using UniPlusDbContext db = fixture.CreateDbContext();
@@ -34,7 +34,7 @@ public sealed class VersoesDoDocumentoPersistidasTests(ProcessoSeletivoDbFixture
         VersaoConfiguracao nova = await LerAsync(db, sucessora.Id);
         ConferirImutabilidade(antiga, abertura);
         Divulgacao(antiga)["regraNomeAbreviado"]!.GetValue<string>().Should().Be(RegrasDeNomeAbreviado.Vigente);
-        Divulgacao(nova)["camposPublicos"]!.AsArray().Select(n => n!.GetValue<string>()).Should().Equal("numero_inscricao");
+        Divulgacao(nova)["camposPublicos"]!.AsArray().Select(n => n!.GetValue<string>()).Should().Equal("NUMERO_INSCRICAO");
         Divulgacao(nova)["regraNomeAbreviado"].Should().BeNull();
     }
 

@@ -1,6 +1,7 @@
 namespace Unifesspa.UniPlus.Selecao.Application.Commands.MotivosDeDecisao;
 
 using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
@@ -30,7 +31,7 @@ public static class CriarMotivoDeDecisaoCommandHandler
     }
 
     private static CamposDoMotivo CamposDe(CriarMotivoDeDecisaoCommand command) =>
-        new(command.Tipo, command.Codigo, command.Descricao, command.Subclassificacao, SentidoDoMotivoCodigo.FromCodigo(command.Sentido));
+        new(command.Tipo, command.Codigo, command.Descricao, command.Subclassificacao, CatalogoDe<SentidoDoMotivo>.TentarObter(command.Sentido, out SentidoDoMotivo sentido) ? sentido : null);
 
     private static async Task<Result<Guid>> GravarAsync(
         MotivoDeDecisao motivo, IMotivoDeDecisaoRepository repository, IUnitOfWork unitOfWork, CancellationToken cancellationToken)

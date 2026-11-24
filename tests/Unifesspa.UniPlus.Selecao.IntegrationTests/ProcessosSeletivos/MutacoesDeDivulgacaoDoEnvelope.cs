@@ -26,19 +26,19 @@ public static class MutacoesDeDivulgacaoDoEnvelope
             ErrosCodecEnvelope.EnvelopeMalformado, "divulgacao.camposPublicos"),
         Caso("array fora da ordem canônica (a ordenação faz parte dos bytes)", CamposForaDaOrdemCanonica,
             ErrosCodecEnvelope.EnvelopeMalformado, "divulgacao.camposPublicos"),
-        Caso("sem numero_inscricao (o piso)", CamposSemNumeroDeInscricao,
-            "ConfiguracaoDivulgacao.NumeroInscricaoObrigatorio", "numero_inscricao"),
-        Caso("nome e nome_abreviado juntos (formas excludentes)", NomeENomeAbreviadoJuntos,
+        Caso("sem NUMERO_INSCRICAO (o piso)", CamposSemNumeroDeInscricao,
+            "ConfiguracaoDivulgacao.NumeroInscricaoObrigatorio", "NUMERO_INSCRICAO"),
+        Caso("nome e NOME_ABREVIADO juntos (formas excludentes)", NomeENomeAbreviadoJuntos,
             "ConfiguracaoDivulgacao.FormasDeIdentificacaoExcludentes", "ao mesmo tempo"),
     ];
 
     private static IEnumerable<object[]> SobreARegraDoNomeAbreviado() =>
     [
-        Caso("regraNomeAbreviado preenchido sem nome_abreviado (regra sem abreviação)",
+        Caso("regraNomeAbreviado preenchido sem NOME_ABREVIADO (regra sem abreviação)",
             envelope => Bloco(envelope)["regraNomeAbreviado"] = RegrasDeNomeAbreviado.Vigente,
             ErrosCodecEnvelope.EnvelopeMalformado, "divulgacao.regraNomeAbreviado"),
-        Caso("nome_abreviado sem regraNomeAbreviado (abreviação sem regra)",
-            envelope => Bloco(envelope)["camposPublicos"] = Campos("nome_abreviado", "numero_inscricao"),
+        Caso("NOME_ABREVIADO sem regraNomeAbreviado (abreviação sem regra)",
+            envelope => Bloco(envelope)["camposPublicos"] = Campos("NOME_ABREVIADO", "NUMERO_INSCRICAO"),
             ErrosCodecEnvelope.EnvelopeMalformado, "divulgacao.regraNomeAbreviado"),
         Caso("regra com identificador desconhecido (despacho por identificador conhecido)", RegraComIdentificadorDesconhecido,
             ErrosCodecEnvelope.EnvelopeMalformado, "regra_do_futuro"),
@@ -94,27 +94,27 @@ public static class MutacoesDeDivulgacaoDoEnvelope
 
     // errors[].message nunca ecoa o valor rejeitado: a mensagem é genérica, não "'cpf'".
     private static void CamposComTokenEstranho(JsonObject envelope) =>
-        Bloco(envelope)["camposPublicos"] = Campos("cpf", "numero_inscricao");
+        Bloco(envelope)["camposPublicos"] = Campos("cpf", "NUMERO_INSCRICAO");
 
     private static void CamposComTokenRepetido(JsonObject envelope) =>
-        Bloco(envelope)["camposPublicos"] = Campos("numero_inscricao", "numero_inscricao");
+        Bloco(envelope)["camposPublicos"] = Campos("NUMERO_INSCRICAO", "NUMERO_INSCRICAO");
 
     private static void CamposForaDaOrdemCanonica(JsonObject envelope) =>
-        ComCamposEARegraVigente(envelope, "numero_inscricao", "nome_abreviado");
+        ComCamposEARegraVigente(envelope, "NUMERO_INSCRICAO", "NOME_ABREVIADO");
 
     private static void CamposSemNumeroDeInscricao(JsonObject envelope) =>
-        ComCamposEARegraVigente(envelope, "nome_abreviado");
+        ComCamposEARegraVigente(envelope, "NOME_ABREVIADO");
 
     private static void NomeENomeAbreviadoJuntos(JsonObject envelope)
     {
-        ComCamposEARegraVigente(envelope, "nome", "nome_abreviado", "numero_inscricao");
+        ComCamposEARegraVigente(envelope, "NOME", "NOME_ABREVIADO", "NUMERO_INSCRICAO");
         Bloco(envelope)["justificativa"] = "Justificativa qualquer.";
     }
 
     private static void RegraComIdentificadorDesconhecido(JsonObject envelope)
     {
         JsonObject bloco = Bloco(envelope);
-        bloco["camposPublicos"] = Campos("nome_abreviado", "numero_inscricao");
+        bloco["camposPublicos"] = Campos("NOME_ABREVIADO", "NUMERO_INSCRICAO");
         bloco["regraNomeAbreviado"] = "regra_do_futuro";
     }
 

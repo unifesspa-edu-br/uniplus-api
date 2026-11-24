@@ -3,6 +3,7 @@ namespace Unifesspa.UniPlus.Selecao.IntegrationTests.ProcessosSeletivos;
 using AwesomeAssertions;
 
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
@@ -20,7 +21,7 @@ public sealed class ProdutosAposInsercaoDeFasePersistenciaTests(ProcessoSeletivo
         (ProcessoSeletivo processo, FaseCronograma inscricao) = ApoioDoEnvelopeCodec.ProcessoDeInscricao("PS identidade do produto");
         Guid origem = Guid.CreateVersion7();
         processo.DefinirCronogramaFases([inscricao, Fase(2, origem, comRecurso)], []).IsSuccess.Should().BeTrue();
-        Guid produto = processo.CronogramaFases.Single(f => f.Ordem == 2).Produtos.Single(p => p.Papel == PapelProdutoFase.Preliminar).Id;
+        Guid produto = processo.CronogramaFases.Single(f => f.Ordem == 2).Produtos.Single(p => p.Papel == PapelDaPublicacaoPrevista.Preliminar).Id;
         await PersistirAsync(processo);
         await InserirFaseAsync(processo.Id, origem, comRecurso, produto);
         await ConferirAsync(processo.Id, produto, comRecurso);
@@ -38,7 +39,7 @@ public sealed class ProdutosAposInsercaoDeFasePersistenciaTests(ProcessoSeletivo
         await using UniPlusDbContext db = fixture.CreateDbContext();
         ProcessoSeletivo processo = (await ProcessoSeletivoRepositoryDeTeste.Criar(db).ObterComConfiguracaoAsync(id, CancellationToken.None))!;
         FaseCronograma nova = Fase(3, origem, comRecurso);
-        nova.Produtos.Single(p => p.Papel == PapelProdutoFase.Preliminar).Id.Should().NotBe(produtoAnterior);
+        nova.Produtos.Single(p => p.Papel == PapelDaPublicacaoPrevista.Preliminar).Id.Should().NotBe(produtoAnterior);
         FaseCronograma inserida = FaseCronograma.Criar(ChaveLocal.Criar("fase_habilitacao").Value!,
             OrigensCanonicasDeTeste.ComNome(new OrigemCanonicaDaFase(Guid.CreateVersion7(), "HABILITACAO", OrigemDataFase.NaExecucao, false, false, false, false)),
             new DecisoesDeCronogramaDaFase(2, null, null, UnidadesDeTeste.Ceps), new PublicacoesDaFase([], false, null), []).Value!;
@@ -52,7 +53,7 @@ public sealed class ProdutosAposInsercaoDeFasePersistenciaTests(ProcessoSeletivo
         ProcessoSeletivo processo = (await ProcessoSeletivoRepositoryDeTeste.Criar(db).ObterComConfiguracaoAsync(id, CancellationToken.None))!;
         processo.CronogramaFases.Should().HaveCount(3);
         FaseCronograma fase = processo.CronogramaFases.Single(f => f.Ordem == 3);
-        ProdutoDaFase produto = fase.Produtos.Single(p => p.Papel == PapelProdutoFase.Preliminar);
+        ProdutoDaFase produto = fase.Produtos.Single(p => p.Papel == PapelDaPublicacaoPrevista.Preliminar);
         produto.Id.Should().Be(produtoId);
         produto.FaseCronogramaId.Should().Be(fase.Id);
         processo.CronogramaFases.SelectMany(f => f.Produtos).Select(p => p.Id).Should().OnlyHaveUniqueItems();
@@ -64,16 +65,16 @@ public sealed class ProdutosAposInsercaoDeFasePersistenciaTests(ProcessoSeletivo
 
     private static FaseCronograma Fase(int ordem, Guid origem, bool comRecurso)
     {
-        ProdutoDaFase preliminar = ProdutoDaFase.Criar("RESULTADO_CLASSIFICACAO", PapelProdutoFase.Preliminar);
+        ProdutoDaFase preliminar = ProdutoDaFase.Criar("RESULTADO_CLASSIFICACAO", PapelDaPublicacaoPrevista.Preliminar);
         return FaseCronograma.Criar(ChaveLocal.Criar("fase_resultado_final").Value!,
             OrigensCanonicasDeTeste.ComNome(new OrigemCanonicaDaFase(origem, "RESULTADO_FINAL", OrigemDataFase.NaExecucao, false, false, false, false)),
             new DecisoesDeCronogramaDaFase(ordem, null, null, UnidadesDeTeste.Ceps),
-            new PublicacoesDaFase([preliminar, ProdutoDaFase.Criar("RESULTADO_CLASSIFICACAO", PapelProdutoFase.Definitivo)], false,
+            new PublicacoesDaFase([preliminar, ProdutoDaFase.Criar("RESULTADO_CLASSIFICACAO", PapelDaPublicacaoPrevista.Definitivo)], false,
                 comRecurso ? Recurso(preliminar.Id) : null), comRecurso ? [BancasDeTeste.DeRecursosDaFase()] : []).Value!;
     }
 
     private static RegraRecursoFase Recurso(Guid produto) => RegraRecursoFase.Criar(
-        ExemploDeEnvelope.Regra(RegraPrazoRecursoCodigo.AncoradoEmAto, 'e'),
+        ExemploDeEnvelope.Regra(RegraDePrazoDoRecurso.ContadoDaPublicacaoDoAto.Codigo(), 'e'),
         ParametrosDoRecursoDeTeste.Declarados(48m, UnidadePrazo.Horas), produto,
         ProcedimentosDeRecurso.De([])).Value!;
 }

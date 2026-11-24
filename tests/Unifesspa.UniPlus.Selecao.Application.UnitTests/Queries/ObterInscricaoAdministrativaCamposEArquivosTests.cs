@@ -6,6 +6,7 @@ using AwesomeAssertions;
 
 using NSubstitute;
 
+using Unifesspa.UniPlus.Application.Abstractions.Respostas;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Selecao.Application.DTOs;
@@ -63,7 +64,7 @@ public sealed class ObterInscricaoAdministrativaCamposEArquivosTests
         InscricaoAdministrativaDto dto = await ConsultarDto(cenario, leandro);
 
         dto.Id.Should().Be(cenario.InscricaoId);
-        dto.Situacao.Should().Be(SituacaoInscricao.Submetida);
+        dto.Situacao.Should().Be(CodigoComRotulo<SituacaoInscricao>.De(SituacaoInscricao.Submetida));
         dto.Ofertas.Should().Equal(new OfertaEscolhidaDto(cenario.OfertaCursoId, InscricaoAdministrativaDeTeste.NomeDaOferta, 1));
         dto.Processo.Should().Be(new ProcessoDaInscricaoDto(cenario.ProcessoId, InscricaoAdministrativaDeTeste.NomeDoProcesso));
         dto.NumeroInscricao.Should().BeNull("o número é dado interno");

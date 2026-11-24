@@ -28,7 +28,7 @@ internal static class VocabularioDeFatos
     private const string FonteProcesso = "PROCESSO";
     private const string FonteModalidade = "MODALIDADE";
     private const string FonteMunicipiosBonus = "MUNICIPIOS_BONUS";
-    private const string FonteMunicipiosProvaPresencial = OrigemValoresColetaCodigo.MunicipiosDaProvaPresencial;
+    private const string FonteMunicipiosProvaPresencial = "MUNICIPIOS_PROVA_PRESENCIAL";
     private const string FonteGeoUf = DominioDoCatalogo.FonteGeoUf;
     private const string FonteGeoMunicipio = DominioDoCatalogo.FonteGeoMunicipio;
     private const string FonteTiposDeficiencia = DominioDoCatalogo.FonteTiposDeficiencia;

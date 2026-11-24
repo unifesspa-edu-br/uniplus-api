@@ -38,7 +38,7 @@ public sealed class EtapaProcessoRecusasTests
         Guid.CreateVersion7(), "ENTREVISTA", "Entrevista",
         admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: doEnem).Value!;
 
-    private static ReferenciaRegra Regra(string codigo = RegraConsolidacaoCodigo.AvaliacaoUnica) =>
+    private static ReferenciaRegra Regra(string codigo = "APURACAO_AVALIACAO_UNICA") =>
         ReferenciaRegra.De(codigo, "v1", new string('c', 64));
 
     private static ItemDeAvaliacaoDeclarado Item(string rotulo, decimal pontuacao) => new(null, rotulo, pontuacao);
@@ -63,7 +63,7 @@ public sealed class EtapaProcessoRecusasTests
         [.. erros.Select(static e => (e.Field, e.Error.Code))];
 
     private static List<FieldError> FormaBasica(
-        CaraterEtapa carater, decimal? peso = null, decimal? notaMinima = null, decimal? notaMaxima = null, decimal? passo = null) =>
+        CaraterEtapa? carater, decimal? peso = null, decimal? notaMinima = null, decimal? notaMaxima = null, decimal? passo = null) =>
         ConferenciaDaDeclaracaoDaEtapa.ValidarFormaBasica(
             "Entrevista", carater, ordem: 1,
             new DeclaracaoDaAvaliacaoDaEtapa(Peso: peso, NotaMinima: notaMinima, NotaMaxima: notaMaxima, PassoDoLancamento: passo, FormaDeAvaliacao: null, RegraConsolidacao: null, EscalaDeAtendimento: null),
@@ -95,7 +95,7 @@ public sealed class EtapaProcessoRecusasTests
     private static EntradaDaEtapa EntradaComRecusasDaFormaEDaAvaliacao() => new()
     {
         Nome = string.Empty,
-        Carater = CaraterEtapa.Nenhum,
+        Carater = (CaraterEtapa)99,
         Peso = 0m,
         NotaMinima = -1m,
         Ordem = 0,
@@ -164,9 +164,9 @@ public sealed class EtapaProcessoRecusasTests
     [InlineData(CaraterEtapa.Classificatoria, false)]
     [InlineData(CaraterEtapa.Ambas, false)]
     [InlineData(CaraterEtapa.Eliminatoria, true)]
-    [InlineData(CaraterEtapa.Nenhum, false)]
+    [InlineData(null, false)]
     [InlineData((CaraterEtapa)4, false)]
-    public void ValidarFormaBasica_PesoPorCarater_RecusaSoNaEliminatoria(CaraterEtapa carater, bool recusa)
+    public void ValidarFormaBasica_PesoPorCarater_RecusaSoNaEliminatoria(CaraterEtapa? carater, bool recusa)
     {
         List<FieldError> erros = FormaBasica(carater, peso: 2m);
 
@@ -177,9 +177,9 @@ public sealed class EtapaProcessoRecusasTests
     [InlineData(CaraterEtapa.Classificatoria, true)]
     [InlineData(CaraterEtapa.Ambas, false)]
     [InlineData(CaraterEtapa.Eliminatoria, false)]
-    [InlineData(CaraterEtapa.Nenhum, false)]
+    [InlineData(null, false)]
     [InlineData((CaraterEtapa)4, false)]
-    public void ValidarFormaBasica_NotaMinimaPorCarater_RecusaSoNaClassificatoria(CaraterEtapa carater, bool recusa)
+    public void ValidarFormaBasica_NotaMinimaPorCarater_RecusaSoNaClassificatoria(CaraterEtapa? carater, bool recusa)
     {
         List<FieldError> erros = FormaBasica(carater, notaMinima: 5m);
 
@@ -187,9 +187,9 @@ public sealed class EtapaProcessoRecusasTests
     }
 
     [Theory(DisplayName = "Peso e nota mínima juntos em caráter indefinido recusam só o caráter")]
-    [InlineData(CaraterEtapa.Nenhum)]
+    [InlineData(null)]
     [InlineData((CaraterEtapa)4)]
-    public void ValidarFormaBasica_CaraterIndefinidoComPesoENotaMinima_RecusaSoOCarater(CaraterEtapa carater)
+    public void ValidarFormaBasica_CaraterIndefinidoComPesoENotaMinima_RecusaSoOCarater(CaraterEtapa? carater)
     {
         List<FieldError> erros = FormaBasica(carater, peso: 2m, notaMinima: 5m);
 

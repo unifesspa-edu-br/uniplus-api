@@ -44,14 +44,14 @@ public sealed class ProjecaoDaFaseDoCronogramaTests
     { NoMesmoMomentoDaAnterior = noMesmoMomentoDaAnterior };
 
     private static RegraRecursoFase RegraDeRecurso() => RegraRecursoFase.Criar(
-        ReferenciaRegra.De(RegraPrazoRecursoCodigo.AncoradoEmAto, "1", new string('a', 64)),
+        ReferenciaRegra.De(RegraDePrazoDoRecurso.ContadoDaPublicacaoDoAto.Codigo(), "1", new string('a', 64)),
         ParametrosDoRecursoDeTeste.ComInstanciaSuperior(2m, UnidadePrazo.DiasUteis),
         ProdutoDoResultadoId).Value!;
 
     private static ProdutoDaFase[] Produtos() =>
     [
-        ProdutoDaFase.Reidratar(ProdutoDoResultadoId, "RESULTADO_CLASSIFICACAO", PapelProdutoFase.Preliminar),
-        ProdutoDaFase.Reidratar(ProdutoDoGabaritoId, "GABARITO", PapelProdutoFase.Preliminar),
+        ProdutoDaFase.Reidratar(ProdutoDoResultadoId, "RESULTADO_CLASSIFICACAO", PapelDaPublicacaoPrevista.Preliminar),
+        ProdutoDaFase.Reidratar(ProdutoDoGabaritoId, "GABARITO", PapelDaPublicacaoPrevista.Preliminar),
     ];
 
     private static BancaRequerida Banca() => BancaRequerida.Criar(ChaveLocal.Criar("banca").Value,
@@ -119,7 +119,7 @@ public sealed class ProjecaoDaFaseDoCronogramaTests
 
         grupo.Should().BeEquivalentTo(new FaseCanonicaCongeladaDto(
             OrigemId: OrigemId,
-            OrigemData: "NO_EDITAL",
+            OrigemData: CodigoComRotulo<OrigemDataFase>.De(OrigemDataFase.NoEdital),
             AgrupaEtapas: agrupaEtapas,
             PermiteComplementacao: permiteComplementacao,
             ColetaInscricao: coletaInscricao,
@@ -205,15 +205,15 @@ public sealed class ProjecaoDaFaseDoCronogramaTests
     private static PublicacoesDaFaseDto PublicacoesEsperadas(RegraRecursoFase regra) => new(
         Produtos:
         [
-            new ProdutoDaFaseDto(ProdutoDoGabaritoId, "GABARITO", "PRELIMINAR"),
-            new ProdutoDaFaseDto(ProdutoDoResultadoId, "RESULTADO_CLASSIFICACAO", "PRELIMINAR"),
+            new ProdutoDaFaseDto(ProdutoDoGabaritoId, "GABARITO", CodigoComRotulo<PapelDaPublicacaoPrevista>.De(PapelDaPublicacaoPrevista.Preliminar)),
+            new ProdutoDaFaseDto(ProdutoDoResultadoId, "RESULTADO_CLASSIFICACAO", CodigoComRotulo<PapelDaPublicacaoPrevista>.De(PapelDaPublicacaoPrevista.Preliminar)),
         ],
         ProduzResultado: true,
         EmiteParecerIndividual: true,
         RegraRecurso: new RegraRecursoFaseDto(
             regra.Id,
             ProdutoDoResultadoId,
-            new ReferenciaRegraDto(RegraPrazoRecursoCodigo.AncoradoEmAto, "1", new string('a', 64)),
+            new ReferenciaRegraDto(RegraDePrazoDoRecurso.ContadoDaPublicacaoDoAto.Codigo(), "1", new string('a', 64)),
             ParametrosEsperados(),
             []),
         TiposDeDecisao: [CodigoComRotulo<TipoMotivoDeDecisao>.De(TipoMotivoDeDecisao.Classificacao), CodigoComRotulo<TipoMotivoDeDecisao>.De(TipoMotivoDeDecisao.IsencaoDaTaxa)],

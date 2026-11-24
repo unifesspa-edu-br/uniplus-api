@@ -2,6 +2,7 @@ namespace Unifesspa.UniPlus.Selecao.Domain.UnitTests.Entities;
 
 using AwesomeAssertions;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
@@ -26,13 +27,13 @@ using Unifesspa.UniPlus.Testes.Compartilhado;
 public sealed class RecursoDaEtapaTests
 {
     private static readonly ReferenciaRegra Regra = ReferenciaRegra.De(
-        RegraPrazoRecursoCodigo.AncoradoEmAto, "v1", new string('a', 64));
+        RegraDePrazoDoRecurso.ContadoDaPublicacaoDoAto.Codigo(), "v1", new string('a', 64));
 
     private static readonly Guid Ancora = Guid.CreateVersion7();
 
     private static Result<RecursoDaEtapa> Criar(
         ParametrosDeclaradosDoRecurso parametros,
-        AncoraDoRecurso ancora = AncoraDoRecurso.AtoPublicado) =>
+        EventoInicialDoPrazo? ancora = EventoInicialDoPrazo.PublicacaoDoAto) =>
         RecursoDaEtapa.Criar(ancora, Regra, parametros, Ancora);
 
     [Fact(DisplayName = "Recurso da etapa com prazo e evento que inicia o prazo válidos é criado")]
@@ -58,9 +59,9 @@ public sealed class RecursoDaEtapaTests
     /// também a âncora de ciência individual.
     /// </summary>
     [Theory(DisplayName = "Prazo em dias corridos é recusado nas duas âncoras")]
-    [InlineData(AncoraDoRecurso.AtoPublicado)]
-    [InlineData(AncoraDoRecurso.CienciaIndividual)]
-    public void PrazoEmDiasCorridos_Recusa(AncoraDoRecurso ancora)
+    [InlineData(EventoInicialDoPrazo.PublicacaoDoAto)]
+    [InlineData(EventoInicialDoPrazo.CienciaIndividual)]
+    public void PrazoEmDiasCorridos_Recusa(EventoInicialDoPrazo ancora)
     {
         Result<RecursoDaEtapa> resultado = Criar(ParametrosDoRecursoDeTeste.Declarados(3m, UnidadePrazo.Dias), ancora);
 
@@ -89,7 +90,7 @@ public sealed class RecursoDaEtapaTests
     [Fact(DisplayName = "Âncora não declarada continua sendo recusada")]
     public void AncoraNenhuma_Recusa()
     {
-        Result<RecursoDaEtapa> resultado = Criar(ParametrosDoRecursoDeTeste.Declarados(), AncoraDoRecurso.Nenhuma);
+        Result<RecursoDaEtapa> resultado = Criar(ParametrosDoRecursoDeTeste.Declarados(), null);
 
         resultado.IsFailure.Should().BeTrue();
     }
@@ -106,7 +107,7 @@ public sealed class RecursoDaEtapaTests
             "RECURSO-PRAZO-OUTRA-CONTAGEM", "v1", new string('b', 64));
 
         Result<RecursoDaEtapa> resultado = RecursoDaEtapa.Criar(
-            AncoraDoRecurso.AtoPublicado, outra, ParametrosDoRecursoDeTeste.Declarados(), Ancora);
+            EventoInicialDoPrazo.PublicacaoDoAto, outra, ParametrosDoRecursoDeTeste.Declarados(), Ancora);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("RecursoDaEtapa.RegraCatalogoInvalida");
@@ -116,7 +117,7 @@ public sealed class RecursoDaEtapaTests
     public void Aceita_RegraAncoradaEmAto()
     {
         Result<RecursoDaEtapa> resultado = RecursoDaEtapa.Criar(
-            AncoraDoRecurso.AtoPublicado, Regra, ParametrosDoRecursoDeTeste.Declarados(), Ancora);
+            EventoInicialDoPrazo.PublicacaoDoAto, Regra, ParametrosDoRecursoDeTeste.Declarados(), Ancora);
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
     }
@@ -151,7 +152,7 @@ public sealed class RecursoDaEtapaTests
     [Fact(DisplayName = "Recurso da etapa com instância superior que não guarda a vaga é recusado")]
     public void ComInstanciaSuperior_NaoGuarda_Recusa()
     {
-        Result<RecursoDaEtapa> resultado = Criar(ParametrosDoRecursoDeTeste.ComInstanciaSuperior() with { GuardaDaVaga = "naoGuarda" });
+        Result<RecursoDaEtapa> resultado = Criar(ParametrosDoRecursoDeTeste.ComInstanciaSuperior() with { GuardaDaVaga = "NAO_GUARDA" });
 
         resultado.Error!.Code.Should().Be("RecursoDaEtapa.NaoGuardaComInstanciaSuperior");
     }

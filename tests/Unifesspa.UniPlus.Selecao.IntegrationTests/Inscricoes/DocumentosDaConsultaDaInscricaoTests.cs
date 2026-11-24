@@ -114,7 +114,7 @@ public sealed class DocumentosDaConsultaDaInscricaoTests
     }
 
     private static IEnumerable<(string Tipo, string? Ocorrencia, string Situacao)> Situacoes(DocumentosDaInscricaoDto documentos) =>
-        documentos.Fases.Single().Documentos.Select(static d => (d.TipoDocumentoCodigo, d.OcorrenciaId, d.Situacao));
+        documentos.Fases.Single().Documentos.Select(static d => (d.TipoDocumentoCodigo, d.OcorrenciaId, d.Situacao.Codigo));
 
     private async Task<Result<AvaliacaoDaInscricaoDto>> AvaliarDocumentosAsync(
         UniPlusDbContext db, Guid processoId, IUserContext usuario, bool? declaraRenda, string[] membros, Guid faseId)

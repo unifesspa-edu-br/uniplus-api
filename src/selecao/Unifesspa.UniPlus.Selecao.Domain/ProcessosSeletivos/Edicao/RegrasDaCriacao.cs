@@ -30,7 +30,7 @@ internal static class RegrasDaCriacao
             throw new ArgumentException("Tipo do processo é obrigatório.", nameof(tipoProcesso));
         }
 
-        if (origemCandidatos == OrigemCandidatos.Nenhuma)
+        if (!Enum.IsDefined(origemCandidatos))
         {
             throw new ArgumentException("Origem dos candidatos é obrigatória.", nameof(origemCandidatos));
         }

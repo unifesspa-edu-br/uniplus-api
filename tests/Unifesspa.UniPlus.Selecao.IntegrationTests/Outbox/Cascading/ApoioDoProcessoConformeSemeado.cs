@@ -9,6 +9,7 @@ using Domain.ValueObjects;
 using Kernel.Results;
 
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Vagas;
 using Unifesspa.UniPlus.Selecao.Domain.Services;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
@@ -38,7 +39,7 @@ internal static class ApoioDoProcessoConformeSemeado
         DefinirClassificacaoImportada(processo, db);
 
         DefinirTaxaSemCobranca(processo);
-        processo.DefinirCriteriosDesempate([CriterioDesempate.Criar(1, RegraDoCatalogo(db, CriterioDesempateCodigo.MaiorIdade), new ParametrosDesempateMaiorIdade()).Value!]).IsSuccess.Should().BeTrue();
+        processo.DefinirCriteriosDesempate([CriterioDesempate.Criar(1, RegraDoCatalogo(db, RegraDeDesempate.MaiorIdade.Codigo()), new ParametrosDesempateMaiorIdade()).Value!]).IsSuccess.Should().BeTrue();
 
         return processo;
     }
@@ -72,15 +73,9 @@ internal static class ApoioDoProcessoConformeSemeado
 
     internal static ConfiguracaoDistribuicaoVagas DistribuicaoAmplaPadrao(UniPlusDbContext db, (string? Codigo, string? Rotulo)? grupoAreaEnem = null)
     {
-        ModalidadeSelecionada modalidade = ModalidadeSelecionada.Criar(
-            modalidadeOrigemId: Guid.CreateVersion7(), codigo: "AC", descricao: "Ampla concorrência",
-            naturezaLegal: NaturezaLegalModalidade.Ampla, composicaoVagas: ComposicaoVagasModalidade.RestanteDasVagasOfertadas,
-            composicaoOrigemCodigo: null, regraRemanejamento: RegraRemanejamentoModalidade.Nenhuma,
-            remanejamentoDestino: null, remanejamentoPar: null, remanejamentoFallback: null,
-            regraDeAplicabilidade: RegrasDeAplicabilidadeDeTeste.DaNatureza(NaturezaLegalModalidade.Ampla), acaoQuandoIndeferido: null, baseLegal: "Res. Unifesspa 532/2021",
-            quantidadeDeclarada: 40).Value!;
+        ModalidadeSelecionada modalidade = ModalidadeSelecionada.Criar(ModalidadesNoCadastroDeTeste.Da("AC", NaturezaLegalModalidade.Ampla, ComposicaoVagasModalidade.RestanteDasVagasOfertadas) with { Descricao = "Ampla concorrência", RegraRemanejamento = null, BaseLegal = "Res. Unifesspa 532/2021" }, 40).Value!;
         return ConfiguracaoDistribuicaoVagas.Criar(Guid.CreateVersion7(),
-            new DistribuicaoDeVagasDeclarada { VagasOfertadasBase = 40, PercentualDaReservaLegal = 1m, RegraDeDistribuicao = RegraDoCatalogo(db, RegraDistribuicaoVagasCodigo.Institucional), Modalidades = [modalidade] },
+            new DistribuicaoDeVagasDeclarada { VagasOfertadasBase = 40, PercentualDaReservaLegal = 1m, RegraDeDistribuicao = RegraDoCatalogo(db, RegraDeDistribuicaoDeVagas.Institucional.Codigo()), Modalidades = [modalidade] },
             new FatosDaOfertaNoCadastro { GrupoAreaEnem = grupoAreaEnem, OfertaCurso = OfertaCursoDeTeste.Medicina }).Value!;
     }
 
@@ -123,8 +118,8 @@ internal static class ApoioDoProcessoConformeSemeado
 
     private static void DefinirClassificacaoImportada(ProcessoSeletivo processo, UniPlusDbContext db)
     {
-        ReferenciaRegra regraCalculo = RegraDoCatalogo(db, RegraCalculoCodigo.ClassificacaoImportada);
-        ReferenciaRegra regraOrdemAlocacao = RegraDoCatalogo(db, RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria);
+        ReferenciaRegra regraCalculo = RegraDoCatalogo(db, RegraDeCalculoDaNota.ClassificacaoImportada.Codigo());
+        ReferenciaRegra regraOrdemAlocacao = RegraDoCatalogo(db, RegraDeOrdemDeAlocacao.PrimeiraOpcaoPrioritaria.Codigo());
         Result<ConfiguracaoClassificacao> classificacaoResult = ConfiguracaoClassificacao.Criar(new DeclaracaoDaClassificacao
         {
             RegraCalculo = regraCalculo,

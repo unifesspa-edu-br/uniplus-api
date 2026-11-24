@@ -2,7 +2,9 @@ namespace Unifesspa.UniPlus.Selecao.Application.Commands.ObrigatoriedadesLegais;
 
 using Unifesspa.UniPlus.Configuracao.Contracts;
 using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Selecao.Application.Services;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
+using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 /// <summary>
@@ -21,7 +23,7 @@ public sealed class ConferenciaDaObrigatoriedadeLegal(
 
         return ObrigatoriedadeLegal.ValidarCampos(
             conteudo.TipoProcessoCodigo,
-            conteudo.Categoria,
+            CodigoLidoDoPedido.Ler<CategoriaObrigatoriedade>(conteudo.Categoria),
             conteudo.RegraCodigo,
             conteudo.Predicado,
             conteudo.ComoTextoNormativo(),

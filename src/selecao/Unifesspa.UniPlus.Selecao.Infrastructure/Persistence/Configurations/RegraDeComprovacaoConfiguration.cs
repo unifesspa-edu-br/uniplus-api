@@ -48,8 +48,8 @@ public sealed class RegraDeComprovacaoConfiguration : IEntityTypeConfiguration<R
         t.HasCheckConstraint(
             "ck_regras_de_comprovacao_criterio_de_distincao_coerente",
             "(criterio_de_distincao IS NULL AND data_referencia IS NULL AND ocorrencias_esperadas IS NULL) OR " +
-            "(criterio_de_distincao IS NOT NULL AND criterio_de_distincao IN (1, 2) AND data_referencia IS NOT NULL AND ocorrencias_esperadas IS NULL) OR " +
-            "(criterio_de_distincao IS NOT NULL AND criterio_de_distincao = 3 AND data_referencia IS NULL AND (ocorrencias_esperadas IS NULL OR jsonb_array_length(ocorrencias_esperadas) > 0))");
+            "(criterio_de_distincao IS NOT NULL AND criterio_de_distincao IN ('COMPETENCIA_MENSAL', 'EXERCICIO_ANUAL') AND data_referencia IS NOT NULL AND ocorrencias_esperadas IS NULL) OR " +
+            "(criterio_de_distincao IS NOT NULL AND criterio_de_distincao = 'OCORRENCIA' AND data_referencia IS NULL AND (ocorrencias_esperadas IS NULL OR jsonb_array_length(ocorrencias_esperadas) > 0))");
     }
 
     private static void ConfigurarCampos(EntityTypeBuilder<RegraDeComprovacao> builder)
@@ -110,7 +110,7 @@ public sealed class RegraDeComprovacaoConfiguration : IEntityTypeConfiguration<R
     private static void ConfigurarDistincao(OwnedNavigationBuilder<RegraDeComprovacao, DistincaoDasApresentacoes> builder)
     {
         builder.ClassificaPorPadrao(ClassificacaoDeProtecao.Interno);
-        builder.Property(d => d.Criterio).HasColumnName("criterio_de_distincao").HasConversion<int?>();
+        builder.Property(d => d.Criterio).HasColumnName("criterio_de_distincao").HasMaxLength(18);
         builder.Property(d => d.DataReferencia).HasColumnName("data_referencia");
         builder.Property(d => d.OcorrenciasEsperadas).HasColumnName("ocorrencias_esperadas")
             .HasConversion(OcorrenciasEsperadasConverter, OcorrenciasEsperadasComparer).HasColumnType("jsonb");

@@ -1,5 +1,6 @@
 namespace Unifesspa.UniPlus.Selecao.Application.DTOs.NotasDoEnem;
 
+using Unifesspa.UniPlus.Application.Abstractions.Respostas;
 using Unifesspa.UniPlus.Selecao.Domain.Leiautes;
 
 /// <summary>Um leiaute de arquivo do INEP que o administrador pode escolher.</summary>
@@ -12,7 +13,7 @@ using Unifesspa.UniPlus.Selecao.Domain.Leiautes;
 public sealed record LeiauteDoInepDto(
     string Codigo,
     string Versao,
-    string Tipo,
+    CodigoComRotulo<TipoDeLeiauteDoInep> Tipo,
     string Descricao,
     string Hash,
     int QuantidadeDeCampos)
@@ -24,7 +25,7 @@ public sealed record LeiauteDoInepDto(
         return new LeiauteDoInepDto(
             leiaute.Codigo,
             leiaute.Versao,
-            leiaute.Tipo == TipoDeLeiauteDoInep.Envio ? "ENVIO" : "RETORNO",
+            CodigoComRotulo<TipoDeLeiauteDoInep>.De(leiaute.Tipo),
             leiaute.Descricao,
             leiaute.Hash,
             leiaute.QuantidadeDeCampos);

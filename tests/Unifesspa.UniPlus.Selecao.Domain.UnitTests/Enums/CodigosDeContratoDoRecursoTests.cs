@@ -17,9 +17,9 @@ public sealed class CodigosDeContratoDoRecursoTests
         Enum.GetValues<UnidadePrazo>().ToDictionary(static v => v, static v => v.Codigo())
             .Should().Equal(new Dictionary<UnidadePrazo, string>
             {
-                [UnidadePrazo.Horas] = "horas",
-                [UnidadePrazo.Dias] = "dias",
-                [UnidadePrazo.DiasUteis] = "diasUteis",
+                [UnidadePrazo.Horas] = "HORAS",
+                [UnidadePrazo.Dias] = "DIAS",
+                [UnidadePrazo.DiasUteis] = "DIAS_UTEIS",
             });
 
     [Fact(DisplayName = "Cada efeito suspensivo tem o código que o contrato publica")]
@@ -27,7 +27,7 @@ public sealed class CodigosDeContratoDoRecursoTests
         Enum.GetValues<EfeitoSuspensivo>().ToDictionary(static v => v, static v => v.Codigo())
             .Should().Equal(new Dictionary<EfeitoSuspensivo, string>
             {
-                [EfeitoSuspensivo.SemEfeitoSuspensivo] = "semEfeitoSuspensivo",
+                [EfeitoSuspensivo.SemEfeitoSuspensivo] = "SEM_EFEITO_SUSPENSIVO",
             });
 
     [Fact(DisplayName = "Cada guarda da vaga tem o código que o contrato publica")]
@@ -35,8 +35,8 @@ public sealed class CodigosDeContratoDoRecursoTests
         Enum.GetValues<GuardaDaVaga>().ToDictionary(static v => v, static v => v.Codigo())
             .Should().Equal(new Dictionary<GuardaDaVaga, string>
             {
-                [GuardaDaVaga.AteOResultadoDefinitivo] = "ateOResultadoDefinitivo",
-                [GuardaDaVaga.NaoGuarda] = "naoGuarda",
+                [GuardaDaVaga.AteOResultadoDefinitivo] = "ATE_O_RESULTADO_DEFINITIVO",
+                [GuardaDaVaga.NaoGuarda] = "NAO_GUARDA",
             });
 
     [Fact(DisplayName = "Cada tipo de alvo tem o código gravado no contrato")]
@@ -44,8 +44,8 @@ public sealed class CodigosDeContratoDoRecursoTests
         Enum.GetValues<TipoDeAlvoDoProcedimentoDeRecurso>().ToDictionary(static v => v, static v => v.Codigo())
             .Should().Equal(new Dictionary<TipoDeAlvoDoProcedimentoDeRecurso, string>
             {
-                [TipoDeAlvoDoProcedimentoDeRecurso.ItemDeAvaliacao] = "item_avaliacao",
-                [TipoDeAlvoDoProcedimentoDeRecurso.AreaDoEnem] = "area_enem",
+                [TipoDeAlvoDoProcedimentoDeRecurso.ItemDeAvaliacao] = "ITEM_AVALIACAO",
+                [TipoDeAlvoDoProcedimentoDeRecurso.AreaDoEnem] = "AREA_ENEM",
             });
 
     [Fact(DisplayName = "Todo valor dos enums do recurso tem rótulo")]

@@ -20,7 +20,7 @@ public static class MotivoDeDecisaoMapping
             motivo.Codigo.Valor,
             motivo.Descricao,
             motivo.Subclassificacao,
-            motivo.Sentido.ToCodigo(),
+            CodigoComRotulo<SentidoDoMotivo>.De(motivo.Sentido),
             motivo.Ativo);
     }
 
@@ -35,7 +35,7 @@ public static class MotivoDeDecisaoMapping
             motivo.Codigo.Valor,
             motivo.Descricao,
             motivo.Subclassificacao,
-            motivo.Sentido.ToCodigo(),
+            CodigoComRotulo<SentidoDoMotivo>.De(motivo.Sentido),
             new VigenciaDoMotivoDto(motivo.Vigencia.VersaoDoEditalDeEntrada, motivo.Vigencia.VersaoDoEditalDeSaida),
             motivo.JustificativaDaInclusao);
     }

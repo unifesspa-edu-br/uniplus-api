@@ -8,6 +8,7 @@ using NSubstitute;
 
 using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 using Unifesspa.UniPlus.Configuracao.Contracts;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
@@ -43,10 +44,10 @@ public sealed class DefinirDistribuicaoVagasRecusasTests
         ProcessoSeletivo processo = NovoProcesso();
         Mocks mocks = NovosMocks(processo, processo.Id);
         mocks.OfertaCursoReader.ObterPorIdAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>()).Returns(NovaOferta(Guid.CreateVersion7()));
-        RegraCatalogo regraErrada = RegraCatalogo.Criar("FORMULA-MEDIA-PONDERADA", "v1", TipoRegra.RegraCalculo, Json("{}"), Json("[]"), "base");
+        RegraCatalogo regraErrada = RegraCatalogo.Criar("FORMULA_MEDIA_PONDERADA", "v1", TipoRegra.RegraCalculo, Json("{}"), Json("[]"), "base");
         mocks.RegraCatalogoReader.ObterAsync(Arg.Any<string>(), Arg.Any<string>(), Arg.Any<CancellationToken>()).Returns(regraErrada);
 
-        Result<IReadOnlyList<ConfiguracaoDistribuicaoVagasDto>> result = await mocks.DefinirAsync(ComandoDaDistribuicao(processo, DistribuicaoSemQuadro(Guid.CreateVersion7(), "FORMULA-MEDIA-PONDERADA", [Guid.CreateVersion7()])));
+        Result<IReadOnlyList<ConfiguracaoDistribuicaoVagasDto>> result = await mocks.DefinirAsync(ComandoDaDistribuicao(processo, DistribuicaoSemQuadro(Guid.CreateVersion7(), "FORMULA_MEDIA_PONDERADA", [Guid.CreateVersion7()])));
 
         result.Error!.Code.Should().Be("ConfiguracaoDistribuicaoVagas.RegraDistribuicaoTipoInvalido");
     }
@@ -71,7 +72,7 @@ public sealed class DefinirDistribuicaoVagasRecusasTests
         Mocks mocks = NovosMocks(processo, processo.Id).ComOferta(ofertaCursoId).ComRegraInstitucional();
         mocks.ModalidadeReader.ObterPorIdAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>()).Returns((ModalidadeView?)null);
 
-        Result<IReadOnlyList<ConfiguracaoDistribuicaoVagasDto>> result = await mocks.DefinirAsync(ComandoDaDistribuicao(processo, DistribuicaoSemQuadro(ofertaCursoId, RegraDistribuicaoVagasCodigo.Institucional, [Guid.CreateVersion7()])));
+        Result<IReadOnlyList<ConfiguracaoDistribuicaoVagasDto>> result = await mocks.DefinirAsync(ComandoDaDistribuicao(processo, DistribuicaoSemQuadro(ofertaCursoId, RegraDeDistribuicaoDeVagas.Institucional.Codigo(), [Guid.CreateVersion7()])));
 
         result.Error!.Code.Should().Be("ConfiguracaoDistribuicaoVagas.ModalidadeNaoEncontrada");
     }
@@ -82,11 +83,11 @@ public sealed class DefinirDistribuicaoVagasRecusasTests
         ProcessoSeletivo processo = NovoProcesso(TiposDeProcessoDeTeste.SiSU);
         Guid ofertaCursoId = Guid.CreateVersion7();
         Mocks mocks = NovosMocks(processo, processo.Id).ComOferta(ofertaCursoId);
-        mocks.RegraCatalogoReader.ObterAsync(RegraDistribuicaoVagasCodigo.Lei12711, "v1", Arg.Any<CancellationToken>())
-            .Returns(RegraDistribuicao(RegraDistribuicaoVagasCodigo.Lei12711));
+        mocks.RegraCatalogoReader.ObterAsync(RegraDeDistribuicaoDeVagas.Lei12711.Codigo(), "v1", Arg.Any<CancellationToken>())
+            .Returns(RegraDistribuicao(RegraDeDistribuicaoDeVagas.Lei12711.Codigo()));
         mocks.ReferenciaReservaDemograficaReader.ObterPorIdAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>()).Returns((ReferenciaReservaDemograficaView?)null);
         ConfiguracaoDistribuicaoVagasInput distribuicao = DistribuicaoSemQuadro(
-            ofertaCursoId, RegraDistribuicaoVagasCodigo.Lei12711, [Guid.CreateVersion7()], 0.5m, Guid.CreateVersion7());
+            ofertaCursoId, RegraDeDistribuicaoDeVagas.Lei12711.Codigo(), [Guid.CreateVersion7()], 0.5m, Guid.CreateVersion7());
 
         Result<IReadOnlyList<ConfiguracaoDistribuicaoVagasDto>> result = await mocks.DefinirAsync(ComandoDaDistribuicao(processo, distribuicao));
 
@@ -104,7 +105,7 @@ public sealed class DefinirDistribuicaoVagasRecusasTests
         mocks.ModalidadeReader.ObterPorIdAsync(modalidadeIds[0], Arg.Any<CancellationToken>()).Returns(NovaModalidadeCotaReservada(modalidadeIds[0], "IND"));
         mocks.ModalidadeReader.ObterPorIdAsync(modalidadeIds[1], Arg.Any<CancellationToken>()).Returns(NovaModalidadeCotaReservada(modalidadeIds[1], "IND"));
 
-        Result<IReadOnlyList<ConfiguracaoDistribuicaoVagasDto>> result = await mocks.DefinirAsync(ComandoDaDistribuicao(processo, DistribuicaoSemQuadro(ofertaCursoId, RegraDistribuicaoVagasCodigo.Institucional, modalidadeIds)));
+        Result<IReadOnlyList<ConfiguracaoDistribuicaoVagasDto>> result = await mocks.DefinirAsync(ComandoDaDistribuicao(processo, DistribuicaoSemQuadro(ofertaCursoId, RegraDeDistribuicaoDeVagas.Institucional.Codigo(), modalidadeIds)));
 
         result.Errors.Should().Contain(e => e.Error.Code == "ConfiguracaoDistribuicaoVagas.ModalidadeDuplicada");
         result.Errors.Select(e => e.Field).Should().OnlyContain(campo => campo == "distribuicaoVagas[0].modalidadeIds");

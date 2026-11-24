@@ -2,6 +2,7 @@ namespace Unifesspa.UniPlus.Selecao.Domain.UnitTests.Entities;
 
 using AwesomeAssertions;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
@@ -38,15 +39,15 @@ public sealed class ProcessoSeletivoEtapaNotaEnemTests
             new DeclaracaoDaAvaliacaoDaEtapa(Peso: null, NotaMinima: null, NotaMaxima: null, PassoDoLancamento: null, FormaDeAvaliacao: null, RegraConsolidacao: null, EscalaDeAtendimento: null)).Value!;
 
     private static ReferenciaRegra RegraDoRecurso =>
-        ReferenciaRegra.De(RegraPrazoRecursoCodigo.AncoradoEmAto, "v1", new string('a', 64));
+        ReferenciaRegra.De(RegraDePrazoDoRecurso.ContadoDaPublicacaoDoAto.Codigo(), "v1", new string('a', 64));
 
     private static ParametrosDeclaradosDoRecurso PrazoDoRecurso => ParametrosDoRecursoDeTeste.Declarados(48m, UnidadePrazo.Horas);
 
     private static RecursoDaEtapa RecursoPorCiencia() =>
-        RecursoDaEtapa.Criar(AncoraDoRecurso.CienciaIndividual, RegraDoRecurso, PrazoDoRecurso, Guid.Empty).Value!;
+        RecursoDaEtapa.Criar(EventoInicialDoPrazo.CienciaIndividual, RegraDoRecurso, PrazoDoRecurso, Guid.Empty).Value!;
 
     private static RecursoDaEtapa RecursoEmAto() =>
-        RecursoDaEtapa.Criar(AncoraDoRecurso.AtoPublicado, RegraDoRecurso, PrazoDoRecurso, Guid.CreateVersion7()).Value!;
+        RecursoDaEtapa.Criar(EventoInicialDoPrazo.PublicacaoDoAto, RegraDoRecurso, PrazoDoRecurso, Guid.CreateVersion7()).Value!;
 
     private static ReferenciaRegra Regra(string codigo, char semente) =>
         ReferenciaRegra.De(codigo, "v1", new string(semente, 64));
@@ -54,10 +55,10 @@ public sealed class ProcessoSeletivoEtapaNotaEnemTests
     private static ConfiguracaoClassificacao ClassificacaoMediaPonderada(bool baseadoEmEnem) =>
         ConfiguracaoClassificacao.Criar(new DeclaracaoDaClassificacao
         {
-            RegraCalculo = Regra(RegraCalculoCodigo.FormulaMediaPonderada, 'a'),
-            RegraArredondamento = Regra(RegraArredondamentoCodigo.PrecisaoTruncar, 'b'),
+            RegraCalculo = Regra(RegraDeCalculoDaNota.MediaPonderada.Codigo(), 'a'),
+            RegraArredondamento = Regra(RegraDeArredondamentoDaNota.Truncar.Codigo(), 'b'),
             CasasArredondamento = 2,
-            RegraOrdemAlocacao = Regra(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, 'c'),
+            RegraOrdemAlocacao = Regra(RegraDeOrdemDeAlocacao.PrimeiraOpcaoPrioritaria.Codigo(), 'c'),
             BaseadoEmEnem = baseadoEmEnem,
             ResolucaoPesoAreaEnem = baseadoEmEnem ? QuadroPesoAreaEnemDeTeste.Resolucao : null,
             QuadroPesoAreaEnem = baseadoEmEnem ? QuadroPesoAreaEnemDeTeste.Completo() : [],
@@ -67,8 +68,8 @@ public sealed class ProcessoSeletivoEtapaNotaEnemTests
     private static ConfiguracaoClassificacao ClassificacaoImportadaDoEnem() =>
         ConfiguracaoClassificacao.Criar(new DeclaracaoDaClassificacao
         {
-            RegraCalculo = Regra(RegraCalculoCodigo.ClassificacaoImportada, 'a'),
-            RegraOrdemAlocacao = Regra(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, 'c'),
+            RegraCalculo = Regra(RegraDeCalculoDaNota.ClassificacaoImportada.Codigo(), 'a'),
+            RegraOrdemAlocacao = Regra(RegraDeOrdemDeAlocacao.PrimeiraOpcaoPrioritaria.Codigo(), 'c'),
             BaseadoEmEnem = true,
         }).Value!;
 
@@ -187,10 +188,10 @@ public sealed class ProcessoSeletivoEtapaNotaEnemTests
     }
 
     [Theory(DisplayName = "Etapa de nota do ENEM com qualquer produto é recusada, apontando a regra de recurso da fase")]
-    [InlineData(PapelProdutoFase.Preliminar)]
-    [InlineData(PapelProdutoFase.Definitivo)]
+    [InlineData(PapelDaPublicacaoPrevista.Preliminar)]
+    [InlineData(PapelDaPublicacaoPrevista.Definitivo)]
     [InlineData(null)]
-    public void DefinirEtapas_NotaEnemComProduto_Recusa(PapelProdutoFase? papel)
+    public void DefinirEtapas_NotaEnemComProduto_Recusa(PapelDaPublicacaoPrevista? papel)
     {
         ProcessoSeletivo processo = NovoProcesso();
         EtapaProcesso etapa = EtapaNotaEnem();
@@ -219,7 +220,7 @@ public sealed class ProcessoSeletivoEtapaNotaEnemTests
     {
         EtapaProcesso comTudo = EtapaNotaEnemForaDaMedia(CaraterEtapa.Eliminatoria);
         comTudo.DefinirBancas([BancaDaEtapa.Criar(ChaveLocal.Criar("banca").Value, TiposDeBancaCopiadosDeTeste.De(TipoDeBanca.CorrecaoDeRedacoes, Guid.CreateVersion7()))]);
-        comTudo.DefinirProdutos([ProdutoDaEtapa.Criar("RESULTADO_CLASSIFICACAO", PapelProdutoFase.Preliminar)]).IsSuccess.Should().BeTrue();
+        comTudo.DefinirProdutos([ProdutoDaEtapa.Criar("RESULTADO_CLASSIFICACAO", PapelDaPublicacaoPrevista.Preliminar)]).IsSuccess.Should().BeTrue();
 
         NovoProcesso().DefinirEtapas([comTudo, EtapaNotaEnem(ordem: 2)])
             .Error!.Code.Should().Be("ProcessoSeletivo.EtapaNotaEnemDuplicada");
@@ -228,7 +229,7 @@ public sealed class ProcessoSeletivoEtapaNotaEnemTests
 
         EtapaProcesso comBancaEProduto = EtapaNotaEnem();
         comBancaEProduto.DefinirBancas([BancaDaEtapa.Criar(ChaveLocal.Criar("banca").Value, TiposDeBancaCopiadosDeTeste.De(TipoDeBanca.CorrecaoDeRedacoes, Guid.CreateVersion7()))]);
-        comBancaEProduto.DefinirProdutos([ProdutoDaEtapa.Criar("RESULTADO_CLASSIFICACAO", PapelProdutoFase.Preliminar)]).IsSuccess.Should().BeTrue();
+        comBancaEProduto.DefinirProdutos([ProdutoDaEtapa.Criar("RESULTADO_CLASSIFICACAO", PapelDaPublicacaoPrevista.Preliminar)]).IsSuccess.Should().BeTrue();
         NovoProcesso().DefinirEtapas([comBancaEProduto])
             .Error!.Code.Should().Be("ProcessoSeletivo.EtapaNotaEnemComBanca");
     }

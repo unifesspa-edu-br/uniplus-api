@@ -46,7 +46,7 @@ internal static class JanelasRecursaisDaEtapa
         IEnumerable<RecursoDaEtapa> recursos)
     {
         HashSet<Guid> preliminares =
-            [.. produtos.Where(static p => p.Papel == PapelProdutoFase.Preliminar).Select(static p => p.Id)];
+            [.. produtos.Where(static p => p.Papel == PapelDaPublicacaoPrevista.Preliminar).Select(static p => p.Id)];
 
         return recursos
             .Select(recurso => ViolacaoDaJanela(recurso, preliminares, notaVemDoEnem, emiteParecerIndividual))
@@ -74,14 +74,14 @@ internal static class JanelasRecursaisDaEtapa
     private static DomainError? ViolacaoDaJanela(
         RecursoDaEtapa recurso, HashSet<Guid> preliminares, bool notaVemDoEnem, bool emiteParecerIndividual)
     {
-        if (recurso.Ancora == AncoraDoRecurso.AtoPublicado && !notaVemDoEnem && !preliminares.Contains(recurso.ProdutoAncoraId))
+        if (recurso.Ancora == EventoInicialDoPrazo.PublicacaoDoAto && !notaVemDoEnem && !preliminares.Contains(recurso.ProdutoAncoraId))
         {
             return new DomainError(
                 AncoraForaDosPreliminares,
                 "O prazo do recurso contra ato publicado começa na publicação de um resultado preliminar desta etapa. Indique um resultado preliminar publicado por esta etapa.");
         }
 
-        return recurso.Ancora == AncoraDoRecurso.CienciaIndividual && !emiteParecerIndividual
+        return recurso.Ancora == EventoInicialDoPrazo.CienciaIndividual && !emiteParecerIndividual
             ? new DomainError(
                 CienciaSemParecerIndividual,
                 "O prazo que corre da ciência do candidato exige que a etapa prometa parecer individual: é dele que o candidato toma ciência.")
@@ -89,5 +89,5 @@ internal static class JanelasRecursaisDaEtapa
     }
 
     private static string FatoRecorrivel(RecursoDaEtapa recurso) =>
-        recurso.Ancora == AncoraDoRecurso.AtoPublicado ? $"ato:{recurso.ProdutoAncoraId}" : "ciencia";
+        recurso.Ancora == EventoInicialDoPrazo.PublicacaoDoAto ? $"ato:{recurso.ProdutoAncoraId}" : "ciencia";
 }

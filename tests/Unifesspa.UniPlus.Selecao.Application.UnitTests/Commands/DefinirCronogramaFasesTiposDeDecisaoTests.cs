@@ -5,6 +5,7 @@ using AwesomeAssertions;
 using NSubstitute;
 using NSubstitute.ExceptionExtensions;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Services;
 using Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
@@ -60,7 +61,7 @@ public sealed class DefinirCronogramaFasesTiposDeDecisaoTests
             TiposDeDecisao = tiposDeDecisao,
             RegraRecurso = RecursoAncoradoNaClassificacao() with
             {
-                Procedimentos = [new(Classificacao, null, RegraProcedimentoRecursoCodigo.Recalculo, "v1")],
+                Procedimentos = [new(Classificacao, null, RegraDeProcedimentoDoRecurso.Recalculo.Codigo(), "v1")],
             },
         };
 
@@ -135,7 +136,7 @@ public sealed class DefinirCronogramaFasesTiposDeDecisaoTests
         FaseCronogramaInput comTipoInvalido = FaseDoCadastro(cenario, 1, TipoForaDoVocabulario);
         FaseCronogramaInput comAtoRepetido = FaseDoCadastro(cenario, 2) with
         {
-            Produtos = [ProdutoDaClassificacao(PapelProdutoFaseCodigo.Definitivo), ProdutoDaClassificacao(PapelProdutoFaseCodigo.Definitivo)],
+            Produtos = [ProdutoDaClassificacao("DEFINITIVO"), ProdutoDaClassificacao("DEFINITIVO")],
         };
 
         Result resultado = await cenario.DefinirFasesAsync(comTipoInvalido, comAtoRepetido);
@@ -195,7 +196,7 @@ public sealed class DefinirCronogramaFasesTiposDeDecisaoTests
         CenarioDoCronogramaDeFases cenario = CenarioDoCronogramaDeFases.EmRascunho().ComTipoDeAto(TipoAtoDoComunicado());
         FaseCronogramaInput fase = FaseDoCadastro(cenario, 1, Classificacao) with
         {
-            Produtos = [ProdutoDoComunicado(PapelProdutoFaseCodigo.Definitivo)],
+            Produtos = [ProdutoDoComunicado("DEFINITIVO")],
         };
 
         Result resultado = await cenario.DefinirFasesAsync(fase);

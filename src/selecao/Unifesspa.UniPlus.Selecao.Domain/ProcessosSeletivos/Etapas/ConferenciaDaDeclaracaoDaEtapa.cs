@@ -20,7 +20,7 @@ public static class ConferenciaDaDeclaracaoDaEtapa
     /// </summary>
     public static List<FieldError> ValidarFormaBasica(
         string? nome,
-        CaraterEtapa carater,
+        CaraterEtapa? carater,
         int? ordem,
         DeclaracaoDaAvaliacaoDaEtapa avaliacao,
         IReadOnlyList<ItemDeAvaliacaoDeclarado?>? itens)
@@ -61,7 +61,7 @@ public static class ConferenciaDaDeclaracaoDaEtapa
         ArgumentException.ThrowIfNullOrWhiteSpace(nome);
         ArgumentNullException.ThrowIfNull(tipoEtapa);
         ExigirIdCongelado(id);
-        if (carater == CaraterEtapa.Nenhum)
+        if (!Enum.IsDefined(carater))
         {
             throw new ArgumentException(
                 "Caráter da etapa é obrigatório (classificatória, eliminatória ou ambas).", nameof(carater));

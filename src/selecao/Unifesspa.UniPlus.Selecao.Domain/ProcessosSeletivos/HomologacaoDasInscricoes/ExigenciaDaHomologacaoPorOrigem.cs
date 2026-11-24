@@ -24,7 +24,7 @@ internal static class ExigenciaDaHomologacaoPorOrigem
     /// As causas da exigência, na ordem em que o autor as corrige: a fase ausente, o ciclo da importação externa e a confirmação
     /// do INEP. A falta da fase de coleta é conferida antes, pelo cronograma.
     /// </summary>
-    internal static IReadOnlyList<FieldError> Causas(OrigemCandidatos origem, CronogramaDoProcesso cronograma, EtapasDoProcesso etapas)
+    internal static IReadOnlyList<FieldError> Causas(OrigemCandidatos? origem, CronogramaDoProcesso cronograma, EtapasDoProcesso etapas)
     {
         ArgumentNullException.ThrowIfNull(cronograma);
         ArgumentNullException.ThrowIfNull(etapas);
@@ -38,7 +38,7 @@ internal static class ExigenciaDaHomologacaoPorOrigem
     }
 
     /// <summary>Os itens do painel, cada um derivado do veredicto da exigência de que a conferência tira as causas.</summary>
-    internal static IReadOnlyList<ItemConformidade> Itens(OrigemCandidatos origem, CronogramaDoProcesso cronograma, EtapasDoProcesso etapas)
+    internal static IReadOnlyList<ItemConformidade> Itens(OrigemCandidatos? origem, CronogramaDoProcesso cronograma, EtapasDoProcesso etapas)
     {
         ArgumentNullException.ThrowIfNull(cronograma);
         ArgumentNullException.ThrowIfNull(etapas);
@@ -56,14 +56,14 @@ internal static class ExigenciaDaHomologacaoPorOrigem
 
     // Sem a fase que tem a regra não há resultado nem condição a conferir, e a recusa é só desta. Com fase recusada pela leitura
     // não se sabe se a regra está nela.
-    private static Veredicto FaseQueHomologa(OrigemCandidatos origem, CronogramaDoProcesso cronograma, EtapasDoProcesso etapas)
+    private static Veredicto FaseQueHomologa(OrigemCandidatos? origem, CronogramaDoProcesso cronograma, EtapasDoProcesso etapas)
     {
         if (cronograma.Fases.Any(HomologaAsInscricoes))
         {
             return Veredicto.Atendido;
         }
 
-        return origem == OrigemCandidatos.Nenhuma || cronograma.TemParteRecusadaNaListaDeFases || RegraRecusadaEmAlgumaFase(cronograma) || (origem != OrigemCandidatos.ImportacaoExterna && etapas.UsoDaNotaDoEnemIndeterminado)
+        return origem is null || cronograma.TemParteRecusadaNaListaDeFases || RegraRecusadaEmAlgumaFase(cronograma) || (origem != OrigemCandidatos.ImportacaoExterna && etapas.UsoDaNotaDoEnemIndeterminado)
             ? Veredicto.SemJulgar
             : Veredicto.Recusado([new FieldError(CampoDasFases, FaseAusente(origem, etapas))]);
     }
@@ -76,7 +76,7 @@ internal static class ExigenciaDaHomologacaoPorOrigem
     internal static bool HomologaAsInscricoes(FaseDeclarada fase) =>
         !fase.ParteRecusadaEm(FaseDeclarada.CampoDaRegraDeHomologacao) && fase.Atos.RegraDeHomologacao is not null;
 
-    private static DomainError FaseAusente(OrigemCandidatos origem, EtapasDoProcesso etapas) => origem switch
+    private static DomainError FaseAusente(OrigemCandidatos? origem, EtapasDoProcesso etapas) => origem switch
     {
         OrigemCandidatos.ImportacaoExterna => new DomainError(
             ProcessoSeletivoErrorCodes.ImportacaoExternaSemHomologacaoDasInscricoes,
@@ -91,11 +91,11 @@ internal static class ExigenciaDaHomologacaoPorOrigem
 
     // Basta uma fase completa. A fase que pode estar completa sem que se saiba, por parte recusada na leitura, impede concluir
     // que nenhuma está.
-    private static Veredicto CicloDaImportacaoExterna(OrigemCandidatos origem, CronogramaDoProcesso cronograma)
+    private static Veredicto CicloDaImportacaoExterna(OrigemCandidatos? origem, CronogramaDoProcesso cronograma)
     {
         if (origem != OrigemCandidatos.ImportacaoExterna)
         {
-            return origem == OrigemCandidatos.Nenhuma ? Veredicto.SemJulgar : Veredicto.Atendido;
+            return origem is null ? Veredicto.SemJulgar : Veredicto.Atendido;
         }
 
         CicloDaFase[] fases = [.. cronograma.Fases.Select(CicloDaFase.De).Where(static ciclo => HomologaAsInscricoes(ciclo.Fase))];

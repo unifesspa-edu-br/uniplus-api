@@ -7,6 +7,7 @@ using Microsoft.EntityFrameworkCore;
 using Npgsql;
 
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
@@ -166,20 +167,20 @@ public sealed class QuadroDePesoPorAreaEnemPersistenciaTests
     private static ConfiguracaoClassificacao ClassificacaoSemEnem() =>
         ConfiguracaoClassificacao.Criar(new DeclaracaoDaClassificacao
         {
-            RegraCalculo = Regra(RegraCalculoCodigo.FormulaMediaPonderada, "a"),
-            RegraArredondamento = Regra(RegraArredondamentoCodigo.PrecisaoTruncar, "b"),
+            RegraCalculo = Regra(RegraDeCalculoDaNota.MediaPonderada.Codigo(), "a"),
+            RegraArredondamento = Regra(RegraDeArredondamentoDaNota.Truncar.Codigo(), "b"),
             CasasArredondamento = 2,
-            RegraOrdemAlocacao = Regra(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, "c"),
+            RegraOrdemAlocacao = Regra(RegraDeOrdemDeAlocacao.PrimeiraOpcaoPrioritaria.Codigo(), "c"),
             EscalaNotaFinal = 100m,
         }).Value!;
 
     private static ConfiguracaoClassificacao ClassificacaoDoEnem() =>
         ConfiguracaoClassificacao.Criar(new DeclaracaoDaClassificacao
         {
-            RegraCalculo = Regra(RegraCalculoCodigo.FormulaMediaPonderada, "a"),
-            RegraArredondamento = Regra(RegraArredondamentoCodigo.PrecisaoTruncar, "b"),
+            RegraCalculo = Regra(RegraDeCalculoDaNota.MediaPonderada.Codigo(), "a"),
+            RegraArredondamento = Regra(RegraDeArredondamentoDaNota.Truncar.Codigo(), "b"),
             CasasArredondamento = 2,
-            RegraOrdemAlocacao = Regra(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, "c"),
+            RegraOrdemAlocacao = Regra(RegraDeOrdemDeAlocacao.PrimeiraOpcaoPrioritaria.Codigo(), "c"),
             BaseadoEmEnem = true,
             ResolucaoPesoAreaEnem = QuadroPesoAreaEnemDeTeste.Resolucao,
             QuadroPesoAreaEnem = QuadroPesoAreaEnemDeTeste.Completo(),

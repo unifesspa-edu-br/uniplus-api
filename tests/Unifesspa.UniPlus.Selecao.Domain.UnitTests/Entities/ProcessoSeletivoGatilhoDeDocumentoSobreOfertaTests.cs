@@ -4,6 +4,7 @@ using System.Text.Json;
 
 using AwesomeAssertions;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.ValueObjects;
@@ -30,26 +31,12 @@ public sealed class ProcessoSeletivoGatilhoDeDocumentoSobreOfertaTests
     private static CondicaoGatilho CondicaoDe(string fato, string valor) => CondicaoGatilho.Criar(
         0, fato, Operador.Igual, JsonSerializer.SerializeToElement(valor)).Value!;
 
-    private static ModalidadeSelecionada Modalidade(string codigo) => ModalidadeSelecionada.Criar(
-        modalidadeOrigemId: Guid.CreateVersion7(),
-        codigo: codigo,
-        descricao: null,
-        naturezaLegal: NaturezaLegalModalidade.Ampla,
-        composicaoVagas: ComposicaoVagasModalidade.RestanteDasVagasOfertadas,
-        composicaoOrigemCodigo: null,
-        regraRemanejamento: RegraRemanejamentoModalidade.Nenhuma,
-        remanejamentoDestino: null,
-        remanejamentoPar: null,
-        remanejamentoFallback: null,
-        regraDeAplicabilidade: RegrasDeAplicabilidadeDeTeste.DaNatureza(NaturezaLegalModalidade.Ampla),
-        acaoQuandoIndeferido: null,
-        baseLegal: "Res. Unifesspa 532/2021",
-        quantidadeDeclarada: 10).Value!;
+    private static ModalidadeSelecionada Modalidade(string codigo) => ModalidadeSelecionada.Criar(ModalidadesNoCadastroDeTeste.Da(codigo, NaturezaLegalModalidade.Ampla, ComposicaoVagasModalidade.RestanteDasVagasOfertadas) with { BaseLegal = "Res. Unifesspa 532/2021" }, 10).Value!;
 
     private static ConfiguracaoDistribuicaoVagas DistribuicaoCom(params string[] codigosModalidade)
     {
         ReferenciaRegra regra = ReferenciaRegra.De(
-            RegraDistribuicaoVagasCodigo.Institucional, "v1", string.Concat(Enumerable.Repeat("ab01234567", 7))[..64]);
+            RegraDeDistribuicaoDeVagas.Institucional.Codigo(), "v1", string.Concat(Enumerable.Repeat("ab01234567", 7))[..64]);
         return ConfiguracaoDistribuicaoVagas.Criar(Guid.CreateVersion7(),
             new DistribuicaoDeVagasDeclarada { VagasOfertadasBase = codigosModalidade.Length * 10, PercentualDaReservaLegal = 1m, RegraDeDistribuicao = regra, Modalidades = [.. codigosModalidade.Select(Modalidade)] },
             new FatosDaOfertaNoCadastro { OfertaCurso = OfertaCursoDeTeste.Medicina }).Value!;

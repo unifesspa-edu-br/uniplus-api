@@ -26,9 +26,9 @@ public sealed class InstanciaSuperiorDaJanelaDeRecursoJsonTests
     {
         const string json = """
         {
-          "regraCodigo": "RECURSO-PRAZO-ANCORADO-EM-ATO", "regraVersao": "v1",
-          "prazoValor": 2, "prazoUnidade": "diasUteis", "atoAncoraCodigo": "RESULTADO_PRELIMINAR",
-          "efeitoSuspensivo": "semEfeitoSuspensivo"
+          "regraCodigo": "RECURSO_PRAZO_CONTADO_DA_PUBLICACAO_DO_ATO", "regraVersao": "v1",
+          "prazoValor": 2, "prazoUnidade": "DIAS_UTEIS", "atoAncoraCodigo": "RESULTADO_PRELIMINAR",
+          "efeitoSuspensivo": "SEM_EFEITO_SUSPENSIVO"
         }
         """;
 
@@ -42,9 +42,9 @@ public sealed class InstanciaSuperiorDaJanelaDeRecursoJsonTests
     {
         const string json = """
         {
-          "ancora": "AtoPublicado", "regraCodigo": "RECURSO-PRAZO-ANCORADO-EM-ATO", "regraVersao": "v1",
-          "prazoValor": 2, "prazoUnidade": "diasUteis", "atoAncoraCodigo": "RESULTADO_PRELIMINAR",
-          "efeitoSuspensivo": "semEfeitoSuspensivo"
+          "ancora": "PUBLICACAO_DO_ATO", "regraCodigo": "RECURSO_PRAZO_CONTADO_DA_PUBLICACAO_DO_ATO", "regraVersao": "v1",
+          "prazoValor": 2, "prazoUnidade": "DIAS_UTEIS", "atoAncoraCodigo": "RESULTADO_PRELIMINAR",
+          "efeitoSuspensivo": "SEM_EFEITO_SUSPENSIVO"
         }
         """;
 
@@ -58,10 +58,10 @@ public sealed class InstanciaSuperiorDaJanelaDeRecursoJsonTests
     {
         const string json = """
         {
-          "regraCodigo": "RECURSO-PRAZO-ANCORADO-EM-ATO", "regraVersao": "v1",
-          "prazoValor": 2, "prazoUnidade": "diasUteis", "atoAncoraCodigo": "RESULTADO_PRELIMINAR",
-          "admiteInstanciaSuperior": true, "prazoSegundaInstanciaValor": 3, "prazoSegundaInstanciaUnidade": "horas",
-          "efeitoSuspensivo": "semEfeitoSuspensivo", "guardaDaVaga": "naoGuarda"
+          "regraCodigo": "RECURSO_PRAZO_CONTADO_DA_PUBLICACAO_DO_ATO", "regraVersao": "v1",
+          "prazoValor": 2, "prazoUnidade": "DIAS_UTEIS", "atoAncoraCodigo": "RESULTADO_PRELIMINAR",
+          "admiteInstanciaSuperior": true, "prazoSegundaInstanciaValor": 3, "prazoSegundaInstanciaUnidade": "HORAS",
+          "efeitoSuspensivo": "SEM_EFEITO_SUSPENSIVO", "guardaDaVaga": "NAO_GUARDA"
         }
         """;
 
@@ -69,6 +69,6 @@ public sealed class InstanciaSuperiorDaJanelaDeRecursoJsonTests
 
         regra.Should().NotBeNull();
         (regra!.PrazoUnidade, regra.PrazoSegundaInstanciaUnidade, regra.EfeitoSuspensivo, regra.GuardaDaVaga)
-            .Should().Be(("diasUteis", "horas", "semEfeitoSuspensivo", "naoGuarda"));
+            .Should().Be(("DIAS_UTEIS", "HORAS", "SEM_EFEITO_SUSPENSIVO", "NAO_GUARDA"));
     }
 }

@@ -19,10 +19,7 @@ public sealed class ConferenciaDaOfertaDeVagasTests
 {
     private static ModalidadeSelecionada Modalidade(
         string codigo, NaturezaLegalModalidade natureza = NaturezaLegalModalidade.AcaoAfirmativa, string? acaoQuandoIndeferido = null) =>
-        ModalidadeSelecionada.Criar(
-            Guid.CreateVersion7(), codigo, null, natureza, ComposicaoVagasModalidade.SuplementarAoTotal, null,
-            natureza == NaturezaLegalModalidade.CotaReservada ? RegraRemanejamentoModalidade.SegueCascata : RegraRemanejamentoModalidade.Nenhuma,
-            null, null, null, RegrasDeAplicabilidadeDeTeste.DaNatureza(natureza), acaoQuandoIndeferido, "base legal", quantidadeDeclarada: 1).Value!;
+        ModalidadeSelecionada.Criar(ModalidadesNoCadastroDeTeste.Da(codigo, natureza, ComposicaoVagasModalidade.SuplementarAoTotal) with { RegraRemanejamento = natureza == NaturezaLegalModalidade.CotaReservada ? RegraRemanejamentoModalidade.SegueOrdemDeRemanejamento : null, AcaoQuandoIndeferido = acaoQuandoIndeferido, BaseLegal = "base legal" }, 1).Value!;
 
     private static DistribuicaoDeVagasDaOferta Oferta(Guid cursoId, params ModalidadeSelecionada[] modalidades) =>
         new(cursoId, modalidades);

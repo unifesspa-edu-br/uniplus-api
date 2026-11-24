@@ -29,7 +29,7 @@ public sealed class PoliticaDeOrdenacaoIdentidadeDeOrigemTests
             ColetaSolicitacaoIsencao: false)),
         new DecisoesDeCronogramaDaFase(
             Ordem: 2, Inicio: new DateTimeOffset(2026, 2, 1, 0, 0, 0, TimeSpan.Zero), Fim: new DateTimeOffset(2026, 2, 28, 0, 0, 0, TimeSpan.Zero), UnidadeResponsavel: UnidadesDeTeste.Ceps),
-        new PublicacoesDaFase(Produtos: [ProdutoDaFase.Criar("ALFA_FASE", PapelProdutoFase.Definitivo)], EmiteParecerIndividual: false, RegraRecurso: null),
+        new PublicacoesDaFase(Produtos: [ProdutoDaFase.Criar("ALFA_FASE", PapelDaPublicacaoPrevista.Definitivo)], EmiteParecerIndividual: false, RegraRecurso: null),
         bancasRequeridas: []);
 
     private static FaseCronograma FaseDeZetaFase() => FaseCronograma.Reidratar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("fase").Value!,
@@ -39,7 +39,7 @@ public sealed class PoliticaDeOrdenacaoIdentidadeDeOrigemTests
             ColetaSolicitacaoIsencao: false)),
         new DecisoesDeCronogramaDaFase(
             Ordem: 1, Inicio: new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero), Fim: new DateTimeOffset(2026, 1, 31, 0, 0, 0, TimeSpan.Zero), UnidadeResponsavel: UnidadesDeTeste.Ceps),
-        new PublicacoesDaFase(Produtos: [ProdutoDaFase.Criar("ZETA_FASE", PapelProdutoFase.Definitivo)], EmiteParecerIndividual: false, RegraRecurso: null),
+        new PublicacoesDaFase(Produtos: [ProdutoDaFase.Criar("ZETA_FASE", PapelDaPublicacaoPrevista.Definitivo)], EmiteParecerIndividual: false, RegraRecurso: null),
         bancasRequeridas: []);
 
     [Fact(DisplayName = "cronogramaFases.fases: Ordem governa sobre o conteúdo — oráculo de sequência exata")]
@@ -115,7 +115,7 @@ public sealed class PoliticaDeOrdenacaoIdentidadeDeOrigemTests
             ColetaSolicitacaoIsencao: false)),
         new DecisoesDeCronogramaDaFase(
             Ordem: 1, Inicio: new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero), Fim: new DateTimeOffset(2026, 1, 31, 0, 0, 0, TimeSpan.Zero), UnidadeResponsavel: UnidadesDeTeste.Ceps),
-        new PublicacoesDaFase(Produtos: [ProdutoDaFase.Criar("INSCRICAO", PapelProdutoFase.Definitivo)], EmiteParecerIndividual: false, RegraRecurso: null),
+        new PublicacoesDaFase(Produtos: [ProdutoDaFase.Criar("INSCRICAO", PapelDaPublicacaoPrevista.Definitivo)], EmiteParecerIndividual: false, RegraRecurso: null),
         bancasRequeridas: bancas).Value!;
 
     private static JsonArray BancasRequeridasEnvelopadas(FaseCronograma fase) =>
@@ -165,7 +165,7 @@ public sealed class PoliticaDeOrdenacaoIdentidadeDeOrigemTests
         ConferirDestinosContrarios(destinoZeta, destinoAlfa);
 
         ConfiguracaoCascataRemanejamento cascata = ConfiguracaoCascataRemanejamento.Criar(
-            Regra(RegraRemanejamentoCodigo.Cascata, 'e'), "FALLBACK_TESTE", [destinoAlfa, destinoZeta]).Value!;
+            Regra(CriterioDeRemanejamento.OrdemDaLei12711.Codigo(), 'e'), "FALLBACK_TESTE", [destinoAlfa, destinoZeta]).Value!;
 
         ProcessoSeletivo processo = MontarComCascata(cascata);
 
@@ -184,7 +184,7 @@ public sealed class PoliticaDeOrdenacaoIdentidadeDeOrigemTests
         // Inserida fisicamente na ordem ERRADA (ZETA_ORIGEM antes de ALFA_ORIGEM) — um canonicalizador
         // que preservasse a ordem de ENTRADA reproduziria esta mesma sequência errada.
         ConfiguracaoCascataRemanejamento cascata = ConfiguracaoCascataRemanejamento.Criar(
-            Regra(RegraRemanejamentoCodigo.Cascata, 'f'), "FALLBACK_TESTE", [destinoDaZeta, destinoDaAlfa]).Value!;
+            Regra(CriterioDeRemanejamento.OrdemDaLei12711.Codigo(), 'f'), "FALLBACK_TESTE", [destinoDaZeta, destinoDaAlfa]).Value!;
 
         ProcessoSeletivo processo = MontarComCascata(cascata);
 

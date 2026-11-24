@@ -63,14 +63,14 @@ public sealed class VocabulariosEndpointTests
 
     [Theory(DisplayName = "As leituras de vocabulário devolvem código e rótulo, na ordem do enum, sem exigir autenticação")]
     [InlineData("/api/selecao/vocabularios/formas-comprovacao", "forma-de-comprovacao", new[] { "DOCUMENTO", "TODOS_OS_ITENS", "QUANTIDADE_MINIMA_DE_ITENS" })]
-    [InlineData("/api/selecao/unidades-do-prazo-de-recurso", "unidade-do-prazo-de-recurso", new[] { "horas", "diasUteis" })]
-    [InlineData("/api/selecao/efeitos-suspensivos", "efeito-suspensivo", new[] { "semEfeitoSuspensivo" })]
-    [InlineData("/api/selecao/guardas-da-vaga", "guarda-da-vaga", new[] { "ateOResultadoDefinitivo", "naoGuarda" })]
-    [InlineData("/api/selecao/vocabularios/modos-deliberacao", "modo-deliberacao", new[] { "colegiadaComVotacao", "atoIndividual" })]
-    [InlineData("/api/selecao/vocabularios/criterios-votacao", "criterio-votacao", new[] { "maioriaSimples", "maioriaAbsoluta", "unanimidade" })]
-    [InlineData("/api/selecao/vocabularios/desempates-votacao", "desempate-votacao", new[] { "votoDaPresidencia", "novaVotacao" })]
-    [InlineData("/api/selecao/vocabularios/encerramentos-votacao", "encerramento-votacao", new[] { "todosOsTitulares", "presidenciaNoQuorum" })]
-    [InlineData("/api/selecao/vocabularios/resultados-sem-unanimidade", "resultado-sem-unanimidade", new[] { "favoravel", "desfavoravel", "novaVotacao" })]
+    [InlineData("/api/selecao/unidades-do-prazo-de-recurso", "unidade-do-prazo-de-recurso", new[] { "HORAS", "DIAS_UTEIS" })]
+    [InlineData("/api/selecao/efeitos-suspensivos", "efeito-suspensivo", new[] { "SEM_EFEITO_SUSPENSIVO" })]
+    [InlineData("/api/selecao/guardas-da-vaga", "guarda-da-vaga", new[] { "ATE_O_RESULTADO_DEFINITIVO", "NAO_GUARDA" })]
+    [InlineData("/api/selecao/vocabularios/modos-deliberacao", "modo-deliberacao", new[] { "COLEGIADA_COM_VOTACAO", "ATO_INDIVIDUAL" })]
+    [InlineData("/api/selecao/vocabularios/criterios-votacao", "criterio-votacao", new[] { "MAIORIA_SIMPLES", "MAIORIA_ABSOLUTA", "UNANIMIDADE" })]
+    [InlineData("/api/selecao/vocabularios/desempates-votacao", "desempate-votacao", new[] { "VOTO_DA_PRESIDENCIA", "NOVA_VOTACAO" })]
+    [InlineData("/api/selecao/vocabularios/encerramentos-votacao", "encerramento-votacao", new[] { "TODOS_OS_TITULARES", "PRESIDENCIA_NO_QUORUM" })]
+    [InlineData("/api/selecao/vocabularios/resultados-sem-unanimidade", "resultado-sem-unanimidade", new[] { "FAVORAVEL", "DESFAVORAVEL", "NOVA_VOTACAO" })]
     public async Task Vocabularios_DevolvemCodigoERotulo(string rota, string recurso, string[] codigos)
     {
         using HttpClient client = _fixture.Factory.CreateClient();

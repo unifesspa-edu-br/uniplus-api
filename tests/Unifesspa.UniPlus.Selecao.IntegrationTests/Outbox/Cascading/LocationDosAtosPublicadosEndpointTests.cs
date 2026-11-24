@@ -56,7 +56,7 @@ public sealed class LocationDosAtosPublicadosEndpointTests
         (await PublicarProdutoDoEditalEndpointTests.ConsultarItensAsync(client, processoId))
             .GetProperty("fases").EnumerateArray()
             .SelectMany(static f => f.GetProperty("produtos").EnumerateArray())
-            .Single(static p => p.GetProperty("papel").GetString() == "PRELIMINAR")
+            .Single(static p => p.GetProperty("papel").GetProperty("codigo").GetString() == "PRELIMINAR")
             .GetProperty("id").GetGuid();
 
     private static async Task ExigirLocationDoAtoAsync(HttpResponseMessage resposta, Guid processoId, HttpClient client)

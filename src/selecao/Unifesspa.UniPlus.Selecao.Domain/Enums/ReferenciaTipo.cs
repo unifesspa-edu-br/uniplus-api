@@ -1,24 +1,16 @@
 namespace Unifesspa.UniPlus.Selecao.Domain.Enums;
 
-/// <summary>
-/// Âncora de <see cref="ValueObjects.ReferenciaTemporalFatos"/> (Story #554, PR #896) — de onde
-/// vem a <c>DateOnly</c> que apura <c>FAIXA_ETARIA</c> na publicação. <c>DATA_SUBMISSAO</c>
-/// deliberadamente NÃO é uma variante aqui: ela só entra na idade de emissão do
-/// <b>documento</b> (PR #900), nunca na idade do <b>candidato</b> (ADR-0111:235-236).
-/// </summary>
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
+
+/// <summary>Valores de ReferenciaTipo.</summary>
 public enum ReferenciaTipo
 {
-    Nenhuma = 0,
-
-    /// <summary>Fim da fase que coleta inscrição (<c>FaseCronograma.ColetaInscricao</c>).</summary>
+    [CodigoDeContrato("FIM_INSCRICAO", "Fim da inscrição", Descricao = "Usa o fim da inscrição como referência.")]
     FimInscricao = 1,
-
-    /// <summary>Início de uma fase específica do cronograma — exige <c>FaseId</c>.</summary>
+    [CodigoDeContrato("INICIO_FASE", "Início da fase", Descricao = "Usa o início da fase como referência.")]
     InicioFase = 2,
-
-    /// <summary>Fim de uma fase específica do cronograma — exige <c>FaseId</c>.</summary>
+    [CodigoDeContrato("FIM_FASE", "Fim da fase", Descricao = "Usa o fim da fase como referência.")]
     FimFase = 3,
-
-    /// <summary>Data fixa declarada pelo administrador — exige <c>Data</c>.</summary>
+    [CodigoDeContrato("DATA_ESPECIFICA", "Data específica", Descricao = "Usa a data informada como referência.")]
     DataEspecifica = 4,
 }

@@ -2,6 +2,7 @@ namespace Unifesspa.UniPlus.Selecao.Domain.UnitTests.ProcessosSeletivos.Bancas;
 
 using AwesomeAssertions;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Errors;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Bancas;
@@ -15,10 +16,10 @@ using Xunit;
 public sealed class PoliticasDeBancaPorValoresTests
 {
     private static readonly ReferenciaRegra CorrecaoIndependente =
-        ReferenciaRegra.De(RegraConsolidacaoCodigo.CorrecaoIndependente, "v1", new string('a', 64));
+        ReferenciaRegra.De(RegraDeApuracaoDaAvaliacao.CorrecaoIndependente.Codigo(), "v1", new string('a', 64));
 
     private static readonly ReferenciaRegra Desconhecida =
-        ReferenciaRegra.De(RegraConsolidacaoCodigo.AvaliacaoUnica, "v1", new string('b', 64));
+        ReferenciaRegra.De(RegraDeApuracaoDaAvaliacao.AvaliacaoUnica.Codigo(), "v1", new string('b', 64));
 
     [Fact(DisplayName = "O mínimo é o maior entre o quórum e os corretores das julgadas, e sem julgadas é o quórum")]
     public void Exigido_EOMaiorEntreQuorumECorretores()

@@ -12,7 +12,7 @@ using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 /// <para>É opcional, e a <b>ausência é declaração, não omissão</b>: a modalidade não
 /// reclassifica ninguém. Quem responde pelo destino do candidato indeferido é a
 /// consequência declarada na exigência documental que o alcançou — <c>ELIMINA</c>,
-/// <c>RECLASSIFICA_AC</c>, <c>REMOVE_VANTAGEM</c> ou <c>PENDENCIA_REENVIO</c>, no
+/// <c>RECLASSIFICA_AC</c>, <c>REMOVE_VANTAGEM</c> ou <c>ABRE_PRAZO_PARA_REENVIO</c>, no
 /// vocabulário do módulo Seleção. A conferência de coerência da publicação lê exatamente assim:
 /// só confronta a consequência da exigência com esta ação <b>quando ela está declarada</b>.</para>
 /// <para>Nenhuma das modalidades semeadas a preenche, inclusive as oito cotas da Lei

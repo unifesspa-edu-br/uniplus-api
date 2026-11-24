@@ -47,7 +47,7 @@ internal static class ProcessoSeletivoPublicavelSeeder
         new DecisoesDeCronogramaDaFase(
             Ordem: opcoes.OrdemDaFaseDeResultado, Inicio: new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero), Fim: opcoes.FimDasInscricoes ?? new DateTimeOffset(2026, 1, 31, 0, 0, 0, TimeSpan.Zero), UnidadeResponsavel: opcoes.UnidadeResponsavel ?? UnidadesDeTeste.Ceps),
         new PublicacoesDaFase(
-            Produtos: opcoes.ProdutosDaFase ?? [ProdutoDaFase.Criar(HomologacaoDasInscricoesDeTeste.ResultadoDaFase, PapelProdutoFase.Definitivo)],
+            Produtos: opcoes.ProdutosDaFase ?? [ProdutoDaFase.Criar(HomologacaoDasInscricoesDeTeste.ResultadoDaFase, PapelDaPublicacaoPrevista.Definitivo)],
             EmiteParecerIndividual: false,
             RegraRecurso: opcoes.RegraDeRecursoDaFase,
             TiposDeDecisao: TiposDeDecisaoDaFaseUnica,
@@ -90,7 +90,7 @@ internal static class ProcessoSeletivoPublicavelSeeder
 
     private static void DefinirDesempate(ProcessoSeletivo processo, Dictionary<string, ReferenciaRegra> regras)
     {
-        CriterioDesempate criterio = CriterioDesempate.Criar(1, regras[CriterioDesempateCodigo.MaiorIdade], new ParametrosDesempateMaiorIdade()).Value!;
+        CriterioDesempate criterio = CriterioDesempate.Criar(1, regras[RegraDeDesempate.MaiorIdade.Codigo()], new ParametrosDesempateMaiorIdade()).Value!;
         processo.DefinirCriteriosDesempate([criterio]).IsSuccess.Should().BeTrue();
     }
 
@@ -127,7 +127,7 @@ internal static class ProcessoSeletivoPublicavelSeeder
 
     private static void DefinirDistribuicaoDeVagas(ProcessoSeletivo processo, Dictionary<string, ReferenciaRegra> regras)
     {
-        ReferenciaRegra regraDistribuicao = regras[RegraDistribuicaoVagasCodigo.Institucional];
+        ReferenciaRegra regraDistribuicao = regras[RegraDeDistribuicaoDeVagas.Institucional.Codigo()];
         ModalidadeSelecionada modalidade = CriarModalidadeDeAmplaConcorrencia();
         Result<ConfiguracaoDistribuicaoVagas> distribuicaoResult = ConfiguracaoDistribuicaoVagas.Criar(Guid.CreateVersion7(),
             new DistribuicaoDeVagasDeclarada { VagasOfertadasBase = 40, PercentualDaReservaLegal = 1m, RegraDeDistribuicao = regraDistribuicao, Modalidades = [modalidade] },
@@ -138,26 +138,12 @@ internal static class ProcessoSeletivoPublicavelSeeder
     }
 
     private static ModalidadeSelecionada CriarModalidadeDeAmplaConcorrencia() =>
-        ModalidadeSelecionada.Criar(
-            modalidadeOrigemId: Guid.CreateVersion7(),
-            codigo: "AC",
-            descricao: "Ampla concorrência",
-            naturezaLegal: NaturezaLegalModalidade.Ampla,
-            composicaoVagas: ComposicaoVagasModalidade.RestanteDasVagasOfertadas,
-            composicaoOrigemCodigo: null,
-            regraRemanejamento: RegraRemanejamentoModalidade.Nenhuma,
-            remanejamentoDestino: null,
-            remanejamentoPar: null,
-            remanejamentoFallback: null,
-            regraDeAplicabilidade: RegrasDeAplicabilidadeDeTeste.DaNatureza(NaturezaLegalModalidade.Ampla),
-            acaoQuandoIndeferido: null,
-            baseLegal: "Res. Unifesspa 532/2021",
-            quantidadeDeclarada: 40).Value!;
+        ModalidadeSelecionada.Criar(ModalidadesNoCadastroDeTeste.Da("AC", NaturezaLegalModalidade.Ampla, ComposicaoVagasModalidade.RestanteDasVagasOfertadas) with { Descricao = "Ampla concorrência", RegraRemanejamento = null, BaseLegal = "Res. Unifesspa 532/2021" }, 40).Value!;
 
     private static void DefinirClassificacao(ProcessoSeletivo processo, Dictionary<string, ReferenciaRegra> regras)
     {
-        ReferenciaRegra regraCalculo = regras[RegraCalculoCodigo.ClassificacaoImportada];
-        ReferenciaRegra regraOrdemAlocacao = regras[RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria];
+        ReferenciaRegra regraCalculo = regras[RegraDeCalculoDaNota.ClassificacaoImportada.Codigo()];
+        ReferenciaRegra regraOrdemAlocacao = regras[RegraDeOrdemDeAlocacao.PrimeiraOpcaoPrioritaria.Codigo()];
         Result<ConfiguracaoClassificacao> classificacaoResult = ConfiguracaoClassificacao.Criar(new DeclaracaoDaClassificacao
         {
             RegraCalculo = regraCalculo,

@@ -6,6 +6,7 @@ using AwesomeAssertions;
 
 using NSubstitute;
 
+using Unifesspa.UniPlus.Application.Abstractions.Respostas;
 using Unifesspa.UniPlus.Authorization.Abstractions;
 using Unifesspa.UniPlus.Authorization.Contracts;
 using Unifesspa.UniPlus.Authorization.Projecao;
@@ -18,6 +19,7 @@ using Unifesspa.UniPlus.Selecao.Application.DTOs;
 using Unifesspa.UniPlus.Selecao.Application.DTOs.Administrativos;
 using Unifesspa.UniPlus.Selecao.Application.Permissoes;
 using Unifesspa.UniPlus.Selecao.Application.Queries.InscricoesDoProcesso;
+using Unifesspa.UniPlus.Selecao.Application.Services.ListagemDeInscricoes;
 using Unifesspa.UniPlus.Selecao.Application.UnitTests.TestSupport;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
@@ -70,12 +72,7 @@ public sealed class ListarInscricoesDoProcessoQueryHandlerTests
         primeira.Nome!.Valor.Should().Be(PersonasDeTeste.NomeFernandaDrumond);
         primeira.Cpf.Should().BeNull("o CPF mascarado sai pela permissão do identificador, e não pela de dados pessoais");
         primeira.NumeroInscricao.Should().BeNull("o número é dado interno e Diogo não tem essa permissão");
-        await diogo.Verificador.Received(1).RegistrarParaCadaAsync(
-            Arg.Is<DecisaoPermitida>(d => d.Registro.Permissao == CodigoPessoais),
-            ResourceTiposSelecao.Inscricao,
-            Arg.Is<IReadOnlyCollection<Guid>>(ids => ids.Count == 20 && ids.SequenceEqual(vinte.Select(static i => i.Id))),
-            true,
-            Arg.Any<CancellationToken>());
+        await diogo.RegistrouCadaInscricaoComAsync(CodigoPessoais, [.. vinte.Select(static i => i.Id)]);
     }
 
     [Fact(DisplayName = "Com dados internos e sem dados públicos a linha traz id, número e data")]
@@ -146,7 +143,7 @@ public sealed class ListarInscricoesDoProcessoQueryHandlerTests
         ListarInscricoesDoProcessoResult resultado = await Listar(leandro);
 
         InscricaoDoProcessoDto linha = resultado.Items.Single();
-        linha.Situacao.Should().Be(SituacaoInscricao.Submetida);
+        linha.Situacao.Should().Be(CodigoComRotulo<SituacaoInscricao>.De(SituacaoInscricao.Submetida));
         linha.Ofertas.Should().Equal(new OfertaEscolhidaDto(Curso, null, 1));
         (linha.Nome, linha.Cpf, linha.NumeroInscricao, linha.SubmetidaEm).Should().Be((null, null, null, null));
     }
@@ -214,9 +211,7 @@ public sealed class ListarInscricoesDoProcessoQueryHandlerTests
         DecisoesDeAcessoDeTeste diogo = new("diogo.souza", PermissaoSelecao.InscricoesConsultar, PermissaoSelecao.DadosPessoaisConsultar);
         Paginar([Resumo(1)]);
 
-        ListarInscricoesDoProcessoResult resultado = await ListarInscricoesDoProcessoQueryHandler.Handle(
-            new ListarInscricoesDoProcessoQuery(ProcessoId, null, 100, PaginationDirection.Next),
-            diogo.Verificador, new ProjetorDeItens(diogo.Verificador, _requisicao), new PortaDePermissaoPorPar<PermissaoSelecao>(), processos, _inscricoes, codecs, CancellationToken.None);
+        ListarInscricoesDoProcessoResult resultado = await Listar(diogo, processos, codecs);
 
         resultado.Items.Single().Nome.Should().BeNull();
     }
@@ -226,26 +221,18 @@ public sealed class ListarInscricoesDoProcessoQueryHandlerTests
     [InlineData(true, "Ariel Drumond")]
     public async Task NomeSocialPessoal_SaiSoComDadosPessoais(bool comDadosPessoais, string? esperado)
     {
-        InscricaoAdministrativaDeTeste.Mundo mundo = new InscricaoAdministrativaDeTeste(PersonasDeTeste.FernandaDrumond, processoId: ProcessoId)
-            .Fato("NOME", "PUBLICO", TipoRenderizacao.Texto, null)
-            .Fato("NOME_SOCIAL", "PESSOAL", TipoRenderizacao.Texto, null)
-            .Montar();
+        (IProcessoSeletivoRepository processos, IRegistroCodecsEnvelope codecs) = ProcessoComFatosDoNome(
+            ("NOME", "PUBLICO"), ("NOME_SOCIAL", "PESSOAL"));
         DecisoesDeAcessoDeTeste persona = comDadosPessoais
             ? new("diogo.souza", PermissaoSelecao.InscricoesConsultar, PermissaoSelecao.DadosPublicosConsultar, PermissaoSelecao.DadosPessoaisConsultar)
             : new("leandro.viana", PermissaoSelecao.InscricoesConsultar, PermissaoSelecao.DadosPublicosConsultar);
-        _inscricoes.ListarEnviadasDoProcessoAsync(
-                ProcessoId, null, 100, PaginationDirection.Next, Arg.Any<bool>(), Arg.Any<bool>(), Arg.Any<CancellationToken>())
-            .Returns(chamada => (
-                (IReadOnlyList<ResumoDaInscricaoDoProcesso>)[Resumo(1) with { Nome = chamada.ArgAt<bool>(4) ? "Ariel Drumond" : null }],
-                (Guid?)null,
-                (Guid?)null));
+        PaginarComNomeLido("Ariel Drumond");
 
-        ListarInscricoesDoProcessoResult resultado = await Listar(persona, mundo.Processos, mundo.Codecs);
+        ListarInscricoesDoProcessoResult resultado = await Listar(persona, processos, codecs);
 
         resultado.Items.Single().Nome?.Valor.Should().Be(esperado);
         JsonSerializer.Serialize(resultado.Items).Should().NotContain(PersonasDeTeste.NomeFernandaDrumond);
-        await _inscricoes.Received(1).ListarEnviadasDoProcessoAsync(
-            ProcessoId, null, 100, PaginationDirection.Next, Arg.Is<bool>(lerNome => lerNome == comDadosPessoais), Arg.Any<bool>(), Arg.Any<CancellationToken>());
+        await LeuAPaginaAsync(comDadosPessoais, false);
     }
 
     [Fact(DisplayName = "Se o processo congelou o nome como interno, a linha que exibe o CPF registra a decisão do identificador")]
@@ -255,9 +242,7 @@ public sealed class ListarInscricoesDoProcessoQueryHandlerTests
         DecisoesDeAcessoDeTeste diogo = new("diogo.souza", PermissaoSelecao.InscricoesConsultar, PermissaoSelecao.DadosInternosConsultar, PermissaoSelecao.DadosIdentificadoresConsultar);
         Paginar([Resumo(1)]);
 
-        await ListarInscricoesDoProcessoQueryHandler.Handle(
-            new ListarInscricoesDoProcessoQuery(ProcessoId, null, 100, PaginationDirection.Next),
-            diogo.Verificador, new ProjetorDeItens(diogo.Verificador, _requisicao), new PortaDePermissaoPorPar<PermissaoSelecao>(), processos, _inscricoes, codecs, CancellationToken.None);
+        await Listar(diogo, processos, codecs);
 
         await diogo.Verificador.Received(1).RegistrarParaCadaAsync(
             Arg.Is<DecisaoPermitida>(d => d.Registro.Permissao == CodigoIdentificadores),
@@ -281,10 +266,7 @@ public sealed class ListarInscricoesDoProcessoQueryHandlerTests
     [Fact(DisplayName = "Nome sensível sem versão resolvida não tem base legal: não sai, não é lido nem registra dados sensíveis, ainda que a pessoa os tenha")]
     public async Task NomeSensivelSemBaseLegal_NaoSaiNemELido()
     {
-        IProcessoSeletivoRepository semVersoes = Substitute.For<IProcessoSeletivoRepository>();
-        semVersoes.ObterUnidadeENomeAsync(ProcessoId, Arg.Any<CancellationToken>())
-            .Returns(new UnidadeENomeDoProcesso(DecisoesDeAcessoDeTeste.UnidadeDona, "PSR 2027"));
-        semVersoes.ObterVersoesAsync(ProcessoId, Arg.Any<CancellationToken>()).Returns([]);
+        IProcessoSeletivoRepository semVersoes = ProcessoSemVersoes();
         DecisoesDeAcessoDeTeste persona = new(
             "diogo.souza", PermissaoSelecao.InscricoesConsultar, PermissaoSelecao.DadosSensiveisConsultar, PermissaoSelecao.DadosIdentificadoresConsultar);
         Paginar([Resumo(1)]);
@@ -327,9 +309,7 @@ public sealed class ListarInscricoesDoProcessoQueryHandlerTests
         DecisoesDeAcessoDeTeste diogo = new("diogo.souza", PermissaoSelecao.InscricoesConsultar, PermissaoSelecao.DadosPessoaisConsultar);
         Paginar([Resumo(1)]);
 
-        ListarInscricoesDoProcessoResult resultado = await ListarInscricoesDoProcessoQueryHandler.Handle(
-            new ListarInscricoesDoProcessoQuery(ProcessoId, null, 100, PaginationDirection.Next),
-            diogo.Verificador, new ProjetorDeItens(diogo.Verificador, _requisicao), new PortaDePermissaoPorPar<PermissaoSelecao>(), semVersoes, _inscricoes, _codecs, CancellationToken.None);
+        ListarInscricoesDoProcessoResult resultado = await Listar(diogo, semVersoes, _codecs);
 
         resultado.Items.Single().Nome.Should().BeNull();
     }
@@ -348,11 +328,8 @@ public sealed class ListarInscricoesDoProcessoQueryHandlerTests
         ListarInscricoesDoProcessoResult resultado = await Listar(persona, processos, codecs);
 
         resultado.Items.Single().Nome!.Valor.Should().Be(PersonasDeTeste.NomeFernandaDrumond);
-        await persona.Verificador.Received(1).AvaliarAsync(
-            Arg.Is<PermissionRequirement>(r => r.Permissao == CodigoSensiveis), Arg.Any<ResourceContext?>(), Arg.Any<CancellationToken>());
-        await persona.Verificador.Received(1).RegistrarParaCadaAsync(
-            Arg.Is<DecisaoPermitida>(d => d.Registro.Permissao == CodigoSensiveis),
-            ResourceTiposSelecao.Inscricao, Arg.Any<IReadOnlyCollection<Guid>>(), true, Arg.Any<CancellationToken>());
+        await persona.AvaliouAsync(CodigoSensiveis);
+        await persona.RegistrouCadaInscricaoComAsync(CodigoSensiveis);
     }
 
     [Fact(DisplayName = "Versão ilegível ao lado de uma legível: o par sensível não é pedido, o nome não sai e o registro por inscrição é o do identificador")]
@@ -394,22 +371,8 @@ public sealed class ListarInscricoesDoProcessoQueryHandlerTests
     [Fact(DisplayName = "Página com inscrições de duas versões: cada linha nomeia as ofertas pela sua versão, com uma leitura de versões e nenhuma por inscrição")]
     public async Task DuasVersoes_CadaLinhaUsaOsNomesDaSuaVersao()
     {
-        (VersaoConfiguracao Versao, Result<EnvelopeReidratado> Envelope) primeira = VersoesDoNomeDeTeste.VersaoComNome("PESSOAL", VersoesDoNomeDeTeste.Hipotese);
-        (VersaoConfiguracao Versao, Result<EnvelopeReidratado> Envelope) segunda = VersoesDoNomeDeTeste.VersaoComNome("PESSOAL", VersoesDoNomeDeTeste.Hipotese);
-        (IProcessoSeletivoRepository processos, IRegistroCodecsEnvelope codecs) = VersoesDoNomeDeTeste.Processo(ProcessoId, primeira, segunda);
-        Guid ofertaDaPrimeira = VersoesDoNomeDeTeste.OfertaDa(primeira.Envelope);
-        Guid ofertaDaSegunda = VersoesDoNomeDeTeste.OfertaDa(segunda.Envelope);
+        (IProcessoSeletivoRepository processos, IRegistroCodecsEnvelope codecs) = DuasVersoesComOfertas();
         DecisoesDeAcessoDeTeste persona = new("diogo.souza", PermissaoSelecao.InscricoesConsultar, PermissaoSelecao.DadosPublicosConsultar);
-        _inscricoes.ListarEnviadasDoProcessoAsync(
-                ProcessoId, null, 100, PaginationDirection.Next, Arg.Any<bool>(), Arg.Any<bool>(), Arg.Any<CancellationToken>())
-            .Returns((
-                (IReadOnlyList<ResumoDaInscricaoDoProcesso>)
-                [
-                    Resumo(1) with { VersaoFormularioId = primeira.Versao.Id, OfertaCursoId = ofertaDaPrimeira, OfertaCursoSegundaOpcaoId = ofertaDaSegunda },
-                    Resumo(2) with { VersaoFormularioId = segunda.Versao.Id, OfertaCursoId = ofertaDaSegunda },
-                ],
-                (Guid?)null,
-                (Guid?)null));
 
         IReadOnlyList<InscricaoDoProcessoDto> linhas = (await Listar(persona, processos, codecs)).Items;
 
@@ -430,13 +393,58 @@ public sealed class ListarInscricoesDoProcessoQueryHandlerTests
         linha.Processo.Should().Be(new ProcessoDaInscricaoDto(ProcessoId, "PSR 2027"));
     }
 
+    private static (IProcessoSeletivoRepository, IRegistroCodecsEnvelope) ProcessoComFatosDoNome(params (string Codigo, string Classificacao)[] fatos)
+    {
+        InscricaoAdministrativaDeTeste cenario = new(PersonasDeTeste.FernandaDrumond, processoId: ProcessoId);
+        foreach ((string codigo, string classificacao) in fatos)
+        {
+            cenario.Fato(codigo, classificacao, TipoRenderizacao.Texto, null);
+        }
+
+        InscricaoAdministrativaDeTeste.Mundo mundo = cenario.Montar();
+        return (mundo.Processos, mundo.Codecs);
+    }
+
+    private static IProcessoSeletivoRepository ProcessoSemVersoes()
+    {
+        IProcessoSeletivoRepository processos = Substitute.For<IProcessoSeletivoRepository>();
+        processos.ObterUnidadeENomeAsync(ProcessoId, Arg.Any<CancellationToken>())
+            .Returns(new UnidadeENomeDoProcesso(DecisoesDeAcessoDeTeste.UnidadeDona, "PSR 2027"));
+        processos.ObterVersoesAsync(ProcessoId, Arg.Any<CancellationToken>()).Returns([]);
+        return processos;
+    }
+
+    private void PaginarComNomeLido(string nome) => _inscricoes.ListarEnviadasDoProcessoAsync(
+        ProcessoId, null, 100, PaginationDirection.Next, Arg.Any<bool>(), Arg.Any<bool>(), Arg.Any<CancellationToken>())
+        .Returns(chamada => ((IReadOnlyList<ResumoDaInscricaoDoProcesso>)[Resumo(1) with { Nome = chamada.ArgAt<bool>(4) ? nome : null }],
+            (Guid?)null, (Guid?)null));
+
+    private async Task LeuAPaginaAsync(bool lerNome, bool lerCpf) => await _inscricoes.Received(1).ListarEnviadasDoProcessoAsync(
+        ProcessoId, null, 100, PaginationDirection.Next, lerNome, lerCpf, Arg.Any<CancellationToken>());
+
+    private (IProcessoSeletivoRepository, IRegistroCodecsEnvelope) DuasVersoesComOfertas()
+    {
+        (VersaoConfiguracao Versao, Result<EnvelopeReidratado> Envelope) primeira = VersoesDoNomeDeTeste.VersaoComNome("PESSOAL", VersoesDoNomeDeTeste.Hipotese);
+        (VersaoConfiguracao Versao, Result<EnvelopeReidratado> Envelope) segunda = VersoesDoNomeDeTeste.VersaoComNome("PESSOAL", VersoesDoNomeDeTeste.Hipotese);
+        (IProcessoSeletivoRepository processos, IRegistroCodecsEnvelope codecs) = VersoesDoNomeDeTeste.Processo(ProcessoId, primeira, segunda);
+        Guid ofertaDaPrimeira = VersoesDoNomeDeTeste.OfertaDa(primeira.Envelope);
+        Guid ofertaDaSegunda = VersoesDoNomeDeTeste.OfertaDa(segunda.Envelope);
+        Paginar([
+            Resumo(1) with { VersaoFormularioId = primeira.Versao.Id, OfertaCursoId = ofertaDaPrimeira, OfertaCursoSegundaOpcaoId = ofertaDaSegunda },
+            Resumo(2) with { VersaoFormularioId = segunda.Versao.Id, OfertaCursoId = ofertaDaSegunda },
+        ]);
+
+        return (processos, codecs);
+    }
+
     private Task<ListarInscricoesDoProcessoResult> Listar(DecisoesDeAcessoDeTeste persona) => Listar(persona, _processos, _codecs);
 
     private Task<ListarInscricoesDoProcessoResult> Listar(
         DecisoesDeAcessoDeTeste persona, IProcessoSeletivoRepository processos, IRegistroCodecsEnvelope codecs) =>
         ListarInscricoesDoProcessoQueryHandler.Handle(
             new ListarInscricoesDoProcessoQuery(ProcessoId, null, 100, PaginationDirection.Next),
-            persona.Verificador, new ProjetorDeItens(persona.Verificador, _requisicao), new PortaDePermissaoPorPar<PermissaoSelecao>(), processos, _inscricoes, codecs, CancellationToken.None);
+            new ProjetorDaListagemDeInscricoes(persona.Verificador, new ProjetorDeItens(persona.Verificador, _requisicao),
+                new PortaDePermissaoPorPar<PermissaoSelecao>(), processos, codecs), processos, _inscricoes, CancellationToken.None);
 
     private void Paginar(IReadOnlyList<ResumoDaInscricaoDoProcesso> pagina) =>
         _inscricoes.ListarEnviadasDoProcessoAsync(

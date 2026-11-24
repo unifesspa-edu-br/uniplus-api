@@ -48,19 +48,21 @@ public sealed record DefinicaoDaResposta(
         formato = fatoCodigo is null ? formato : ConjuntoBasicoDaInscricao.FormatoDaResposta(fatoCodigo, formato);
         bool identificador = string.Equals(classificacaoProtecao, ClassificacaoIdentificador, StringComparison.Ordinal);
         bool cifra = TemCifraIndividual(fatoCodigo, classificacaoProtecao);
-        return renderizacao switch
-        {
-            TipoRenderizacao.Booleano => new(TipoDoValorDeResposta.Booleano, false, identificador, null, cifra),
-            TipoRenderizacao.Numero => new(TipoDoValorDeResposta.Numero, false, identificador, null, cifra),
-            TipoRenderizacao.SelecaoUnica => new(TipoDoValorDeResposta.Codigo, false, identificador, null, cifra),
-            TipoRenderizacao.Municipio => new(TipoDoValorDeResposta.Municipio, false, identificador, null, cifra),
-            TipoRenderizacao.SelecaoMultipla => new(TipoDoValorDeResposta.Codigo, true, identificador, null, cifra),
-            TipoRenderizacao.Texto => new(TipoDoValorDeResposta.Texto, false, identificador, formato, cifra),
-            TipoRenderizacao.Data => new(TipoDoValorDeResposta.Data, false, identificador, null, cifra),
-            TipoRenderizacao.Endereco => new(TipoDoValorDeResposta.Endereco, false, identificador, null, cifra),
-            _ => throw new ArgumentOutOfRangeException(nameof(renderizacao), renderizacao, "Tipo de renderização sem tipo de valor."),
-        };
+        return new DefinicaoDaResposta(TipoDe(renderizacao), renderizacao == TipoRenderizacao.SelecaoMultipla,
+            identificador, renderizacao == TipoRenderizacao.Texto ? formato : null, cifra);
     }
+
+    private static TipoDoValorDeResposta TipoDe(TipoRenderizacao renderizacao) => renderizacao switch
+    {
+        TipoRenderizacao.Booleano => TipoDoValorDeResposta.SimOuNao,
+        TipoRenderizacao.Numero => TipoDoValorDeResposta.Numero,
+        TipoRenderizacao.SelecaoUnica or TipoRenderizacao.SelecaoMultipla => TipoDoValorDeResposta.Opcao,
+        TipoRenderizacao.Municipio => TipoDoValorDeResposta.Municipio,
+        TipoRenderizacao.Texto => TipoDoValorDeResposta.Texto,
+        TipoRenderizacao.Data => TipoDoValorDeResposta.Data,
+        TipoRenderizacao.Endereco => TipoDoValorDeResposta.Endereco,
+        _ => throw new ArgumentOutOfRangeException(nameof(renderizacao), renderizacao, "Tipo de renderização sem tipo de valor."),
+    };
 
     /// <summary>O valor cabe no tipo: um elemento escalar, ou uma lista deles quando multivalorado.</summary>
     public bool Aceita(JsonElement valor) =>
@@ -77,11 +79,7 @@ public sealed record DefinicaoDaResposta(
     {
         if (Tipo == TipoDoValorDeResposta.Endereco)
         {
-            // O CEP é gravado só com os dígitos, para que nenhum consumidor tenha de tirar a máscara.
-            return EnderecoDeclarado.TentarLer(valor, out EnderecoDeclarado endereco)
-                && endereco.CepSomenteDigitos is { } cep && !string.Equals(cep, endereco.Cep, StringComparison.Ordinal)
-                    ? (endereco with { Cep = cep }).ParaJson()
-                    : valor;
+            return EnderecoNaFormaCanonica(valor);
         }
 
         if (Formato is null || valor.ValueKind != JsonValueKind.String)
@@ -95,15 +93,25 @@ public sealed record DefinicaoDaResposta(
             : valor;
     }
 
+    private static JsonElement EnderecoNaFormaCanonica(JsonElement valor) =>
+        EnderecoDeclarado.TentarLer(valor, out EnderecoDeclarado endereco)
+        && endereco.CepSomenteDigitos is { } cep && !string.Equals(cep, endereco.Cep, StringComparison.Ordinal)
+            ? (endereco with { Cep = cep }).ParaJson()
+            : valor;
+
     private bool AceitaEscalar(JsonElement valor) => Tipo switch
     {
-        TipoDoValorDeResposta.Booleano => valor.ValueKind is JsonValueKind.True or JsonValueKind.False,
-        TipoDoValorDeResposta.Numero => valor.ValueKind == JsonValueKind.Number && valor.TryGetDecimal(out _),
-        TipoDoValorDeResposta.Codigo or TipoDoValorDeResposta.Municipio => valor.ValueKind == JsonValueKind.String
-            && valor.GetString() is { Length: > 0 and <= OpcaoDeclaradaFato.CodigoMaxLength },
+        TipoDoValorDeResposta.SimOuNao => valor.ValueKind is JsonValueKind.True or JsonValueKind.False,
+        TipoDoValorDeResposta.Numero => AceitaNumero(valor),
+        TipoDoValorDeResposta.Opcao or TipoDoValorDeResposta.Municipio => AceitaOpcao(valor),
         TipoDoValorDeResposta.Texto => valor.ValueKind == JsonValueKind.String,
         TipoDoValorDeResposta.Data => DiaDoCalendario.Ler(valor) is not null,
         TipoDoValorDeResposta.Endereco => EnderecoDeclarado.TentarLer(valor, out _),
         _ => false,
     };
+
+    private static bool AceitaNumero(JsonElement valor) => valor.ValueKind == JsonValueKind.Number && valor.TryGetDecimal(out _);
+
+    private static bool AceitaOpcao(JsonElement valor) => valor.ValueKind == JsonValueKind.String
+        && valor.GetString() is { Length: > 0 and <= OpcaoDeclaradaFato.CodigoMaxLength };
 }

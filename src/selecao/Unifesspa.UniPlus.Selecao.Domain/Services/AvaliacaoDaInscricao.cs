@@ -29,7 +29,7 @@ public static class AvaliacaoDaInscricao
     public const string FatoDaModalidadeDaSegundaOpcao = ModalidadeDoCandidato.FatoSegundaOpcao;
 
     /// <summary>Como a modalidade derivada é gravada: os códigos das modalidades, um por linha, na ordem das ofertadas.</summary>
-    public static DefinicaoDaResposta DefinicaoDaModalidade { get; } = new(TipoDoValorDeResposta.Codigo, Multivalorado: true, Identificador: false);
+    public static DefinicaoDaResposta DefinicaoDaModalidade { get; } = new(TipoDoValorDeResposta.Opcao, Multivalorado: true, Identificador: false);
 
     /// <summary>
     /// Só as modalidades em que o candidato concorre, sem avaliar as regras de comprovação nem os documentos: para
@@ -232,7 +232,7 @@ public static class AvaliacaoDaInscricao
         if (modalidade is not { Estado: EstadoFato.Resolvido, Valor: { } valor })
         {
             return new ModalidadesDeConcorrencia(
-                true, SituacaoDasModalidades.FaltaResponder, [], new PendenciasDaInscricao(configuracao, formulario, dependencias).Apurar(), dependencias);
+                SituacaoDasModalidades.FaltaResponder, [], new PendenciasDaInscricao(configuracao, formulario, dependencias).Apurar(), dependencias);
         }
 
         return ModalidadesResolvidas(configuracao, dependencias, valor);
@@ -248,7 +248,7 @@ public static class AvaliacaoDaInscricao
             .OrderBy(static m => m.Ordem)];
 
         return new ModalidadesDeConcorrencia(
-            true, itens.Length > 0 ? SituacaoDasModalidades.Concorre : SituacaoDasModalidades.NaoConcorre, itens, [], dependencias);
+            itens.Length > 0 ? SituacaoDasModalidades.Concorre : SituacaoDasModalidades.NaoConcorre, itens, [], dependencias);
     }
 
     /// <summary>

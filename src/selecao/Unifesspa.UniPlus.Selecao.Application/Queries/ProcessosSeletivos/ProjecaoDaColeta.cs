@@ -137,7 +137,7 @@ internal static class ProjecaoDaColeta
     // formulário de edição podia sobrescrevê-lo ou removê-lo sem querer ao pré-preencher com um estado
     // que não reflete o persistido.
     internal static ReferenciaTemporalFatosDto? ProjetarReferenciaTemporal(ReferenciaTemporalFatos? referencia) =>
-        referencia is null ? null : new ReferenciaTemporalFatosDto(referencia.Tipo.ToCodigo(), referencia.Data, referencia.FaseId);
+        referencia is null ? null : new ReferenciaTemporalFatosDto(CodigoComRotulo<ReferenciaTipo>.De(referencia.Tipo), referencia.Data, referencia.FaseId);
 
     private static DocumentoExigidoDto ProjetarDocumento(DocumentoExigido documento) => new(
         documento.Id,
@@ -147,10 +147,10 @@ internal static class ProjecaoDaColeta
                 ClassificacoesDeProtecao.ParaTokenCanonico(documento.ClassificacaoProtecao), documento.FinalidadeTratamento, documento.HipoteseLegal)),
         ProjetarMomento(documento),
         new AplicabilidadeDaExigenciaDto(
-            ProjetarAplicabilidade(documento.Aplicabilidade),
+            CodigoComRotulo<Aplicabilidade>.De(documento.Aplicabilidade),
             [.. documento.Condicoes.OrderBy(c => c.Clausula).ThenBy(c => c.Id).Select(ProjetarCondicaoDoGatilho)]),
         new IndeferimentoDoDocumentoDto(
-            documento.Obrigatorio, documento.ConsequenciaIndeferimento, [.. documento.BasesLegais.OrderBy(b => b.Id).Select(ProjetarBaseLegal)]),
+            documento.Obrigatorio, ProjetarConsequencia(documento.ConsequenciaIndeferimento), [.. documento.BasesLegais.OrderBy(b => b.Id).Select(ProjetarBaseLegal)]),
         ProjetarRequisitos(documento),
         [.. documento.FatosComprovados])
     { Chave = documento.Chave.Valor };
@@ -168,28 +168,31 @@ internal static class ProjecaoDaColeta
         ProjetarModelo(documento.Modelo));
 
     private static ModeloDaExigenciaDto? ProjetarModelo(ModeloDaExigencia? modelo) => modelo is null ? null
-        : new ModeloDaExigenciaDto(modelo.ModeloId, modelo.NomeArquivo, ModeloDeDocumento.TokenDe(modelo.Formato), modelo.HashSha256);
+        : new ModeloDaExigenciaDto(modelo.ModeloId, modelo.NomeArquivo, CodigoComRotulo<FormatoDeDocumento>.De(modelo.Formato), modelo.HashSha256);
 
     private static RegraDeComprovacaoDto ProjetarRegra(RegraDeComprovacao regra) => new(
         regra.Id,
         CodigoComRotulo<FormaDeComprovacao>.De(regra.Forma),
         regra.Forma == FormaDeComprovacao.Documento ? ProjetarDocumento(regra.DocumentoExigido!) : null,
         new CardinalidadeQualificadaDto(regra.QuantidadeMinima, ProjetarDistincao(regra.Distincao)),
-        new IndeferimentoDoGrupoDto(regra.Consequencia, [.. regra.BasesLegais.OrderBy(static b => b.Id).Select(ProjetarBaseLegalDaRegra)]),
+        new IndeferimentoDoGrupoDto(ProjetarConsequencia(regra.Consequencia), [.. regra.BasesLegais.OrderBy(static b => b.Id).Select(ProjetarBaseLegalDaRegra)]),
         [.. regra.Itens.OrderBy(static f => f.Ordem).ThenBy(static f => f.Id).Select(ProjetarRegra)],
         regra.GrupoDoFormularioParaRepeticao);
 
+    private static CodigoComRotulo<ConsequenciaDoIndeferimento>? ProjetarConsequencia(string? codigo) =>
+        codigo is null ? null : CodigoComRotulo<ConsequenciaDoIndeferimento>.De(CatalogoDe<ConsequenciaDoIndeferimento>.Obter(codigo));
+
     private static DistincaoDasApresentacoesDto? ProjetarDistincao(DistincaoDasApresentacoes? distincao) =>
-        distincao is null ? null : new DistincaoDasApresentacoesDto(distincao.Criterio?.ToCodigo(), distincao.DataReferencia, distincao.OcorrenciasEsperadas);
+        distincao is null ? null : new DistincaoDasApresentacoesDto(distincao.Criterio is { } criterio ? CodigoComRotulo<CriterioDeDistincaoDasApresentacoes>.De(criterio) : null, distincao.DataReferencia, distincao.OcorrenciasEsperadas);
 
     private static BaseLegalDto ProjetarBaseLegalDaRegra(BaseLegalDaComprovacao baseLegal) => new(
-        baseLegal.Id, baseLegal.Referencia, baseLegal.Abrangencia.ToCodigo(), baseLegal.Situacao.ToCodigo(), baseLegal.Observacao);
+        baseLegal.Id, baseLegal.Referencia, CodigoComRotulo<TipoAbrangencia>.De(baseLegal.Abrangencia), CodigoComRotulo<StatusBaseLegal>.De(baseLegal.Situacao), baseLegal.Observacao);
 
     private static BaseLegalDto ProjetarBaseLegal(DocumentoExigidoBaseLegal baseLegal) => new(
         baseLegal.Id,
         baseLegal.Referencia,
-        baseLegal.Abrangencia.ToCodigo(),
-        baseLegal.Situacao.ToCodigo(),
+        CodigoComRotulo<TipoAbrangencia>.De(baseLegal.Abrangencia),
+        CodigoComRotulo<StatusBaseLegal>.De(baseLegal.Situacao),
         baseLegal.Observacao);
 
     /// <summary>
@@ -202,7 +205,7 @@ internal static class ProjecaoDaColeta
             ? JsonSerializer.SerializeToElement("QUALQUER")
             : JsonSerializer.SerializeToElement(formatosPermitidos.Lista!.Select(static e => new
             {
-                formato = e.Formato.ToCodigo(),
+                formato = e.Formato.Codigo(),
                 tamanhoMaximoBytesMax = e.TamanhoMaximoBytesMax,
             }));
 
@@ -214,13 +217,4 @@ internal static class ProjecaoDaColeta
         condicao.Fato,
         condicao.Operador.Codigo(),
         condicao.Valor.GetRawText());
-
-    // Emite o mesmo token de wire aceito pelo validador de documentos exigidos ("GERAL" e "CONDICIONAL"):
-    // Aplicabilidade.ToString() produziria PascalCase, que o validador rejeitaria num reenvio direto do GET para o PUT.
-    private static string ProjetarAplicabilidade(Aplicabilidade aplicabilidade) => aplicabilidade switch
-    {
-        Aplicabilidade.Geral => "GERAL",
-        Aplicabilidade.Condicional => "CONDICIONAL",
-        _ => throw new InvalidOperationException($"Aplicabilidade '{aplicabilidade}' não deveria estar persistida — DocumentoExigido.Criar recusa Aplicabilidade.Nenhuma."),
-    };
 }

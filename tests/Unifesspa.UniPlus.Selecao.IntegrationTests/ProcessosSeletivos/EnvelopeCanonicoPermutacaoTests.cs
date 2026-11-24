@@ -24,8 +24,7 @@ using Xunit;
 /// A projeção ordena cada coleção por uma chave determinística (a <c>Ordem</c> onde é semântica, a
 /// identidade de negócio onde existe, a chave de conteúdo onde não há chave natural), então duas
 /// entradas equivalentes convergem para os mesmos bytes. O determinismo do grafo conjunto e da
-/// identidade canônica é provado no grão do value object (<c>GrafoDependenciaConjuntaTests</c>,
-/// <c>IdCanonicoTests</c>); aqui a prova é sobre os <b>bytes do envelope inteiro</b>.
+/// identidade é provado em <c>GrafoDependenciaConjuntaTests</c>; aqui a prova é sobre os <b>bytes do envelope inteiro</b>.
 /// </para>
 /// <para>
 /// <c>atendimentoEspecializado</c> (condições/recursos/tipos de deficiência) e

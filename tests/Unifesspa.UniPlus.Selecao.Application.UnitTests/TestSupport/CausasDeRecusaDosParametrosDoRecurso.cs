@@ -13,7 +13,7 @@ internal sealed record ParametrosDoPedidoDoRecurso(
     string? GuardaDaVaga)
 {
     /// <summary>Declaração aceita: 2 dias úteis, sem instância superior, sem efeito suspensivo e sem guarda declarada.</summary>
-    internal static ParametrosDoPedidoDoRecurso Valido { get; } = new(2m, "diasUteis", false, null, null, "semEfeitoSuspensivo", null);
+    internal static ParametrosDoPedidoDoRecurso Valido { get; } = new(2m, "DIAS_UTEIS", false, null, null, "SEM_EFEITO_SUSPENSIVO", null);
 }
 
 /// <summary>
@@ -26,19 +26,19 @@ internal static class CausasDeRecusaDosParametrosDoRecurso
     {
         AdmiteInstanciaSuperior = true,
         PrazoSegundaInstanciaValor = 3m,
-        PrazoSegundaInstanciaUnidade = "diasUteis",
+        PrazoSegundaInstanciaUnidade = "DIAS_UTEIS",
     };
 
     internal static readonly (string Codigo, string Campo, ParametrosDoPedidoDoRecurso Pedido)[] Todas =
     [
         ("PrazoNaoPositivo", "prazoValor", ParametrosDoPedidoDoRecurso.Valido with { PrazoValor = 0m }),
         ("PrazoSemUnidadeDeclaravel", "prazoUnidade", ParametrosDoPedidoDoRecurso.Valido with { PrazoUnidade = null }),
-        ("PrazoEmDiasCorridos", "prazoUnidade", ParametrosDoPedidoDoRecurso.Valido with { PrazoUnidade = "dias" }),
+        ("PrazoEmDiasCorridos", "prazoUnidade", ParametrosDoPedidoDoRecurso.Valido with { PrazoUnidade = "DIAS" }),
         ("PrazoEmFracaoDeDiaUtil", "prazoValor", ParametrosDoPedidoDoRecurso.Valido with { PrazoValor = 1.5m }),
         ("EfeitoSuspensivoNaoDeclarado", "efeitoSuspensivo", ParametrosDoPedidoDoRecurso.Valido with { EfeitoSuspensivo = null }),
         ("PrazoSegundaInstanciaNaoDeclarado", "prazoSegundaInstanciaValor", ComInstanciaSuperior with { PrazoSegundaInstanciaValor = null, PrazoSegundaInstanciaUnidade = null }),
-        ("PrazoSegundaInstanciaSemInstanciaSuperior", "prazoSegundaInstanciaValor", ParametrosDoPedidoDoRecurso.Valido with { PrazoSegundaInstanciaValor = 3m, PrazoSegundaInstanciaUnidade = "diasUteis" }),
-        ("NaoGuardaComInstanciaSuperior", "guardaDaVaga", ComInstanciaSuperior with { GuardaDaVaga = "naoGuarda" }),
+        ("PrazoSegundaInstanciaSemInstanciaSuperior", "prazoSegundaInstanciaValor", ParametrosDoPedidoDoRecurso.Valido with { PrazoSegundaInstanciaValor = 3m, PrazoSegundaInstanciaUnidade = "DIAS_UTEIS" }),
+        ("NaoGuardaComInstanciaSuperior", "guardaDaVaga", ComInstanciaSuperior with { GuardaDaVaga = "NAO_GUARDA" }),
         ("GuardaDaVagaNaoDeclaravel", "guardaDaVaga", ParametrosDoPedidoDoRecurso.Valido with { GuardaDaVaga = "talvez" }),
     ];
 

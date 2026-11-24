@@ -2,6 +2,7 @@ namespace Unifesspa.UniPlus.Selecao.Domain.UnitTests.ProcessosSeletivos.Etapas;
 
 using AwesomeAssertions;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
@@ -25,22 +26,22 @@ public sealed class JanelasRecursaisDaEtapaTests
         return etapa;
     }
 
-    private static RecursoDaEtapa Janela(AncoraDoRecurso ancora, Guid produtoAncoraId, decimal horas = 48m) => RecursoDaEtapa.Criar(
+    private static RecursoDaEtapa Janela(EventoInicialDoPrazo ancora, Guid produtoAncoraId, decimal horas = 48m) => RecursoDaEtapa.Criar(
         ancora,
-        ReferenciaRegra.De(RegraPrazoRecursoCodigo.AncoradoEmAto, "v1", new string('a', 64)),
+        ReferenciaRegra.De(RegraDePrazoDoRecurso.ContadoDaPublicacaoDoAto.Codigo(), "v1", new string('a', 64)),
         ParametrosDoRecursoDeTeste.Declarados(horas, UnidadePrazo.Horas),
         produtoAncoraId).Value!;
 
-    private static ProdutoDaEtapa Preliminar(string ato) => ProdutoDaEtapa.Criar(ato, PapelProdutoFase.Preliminar);
+    private static ProdutoDaEtapa Preliminar(string ato) => ProdutoDaEtapa.Criar(ato, PapelDaPublicacaoPrevista.Preliminar);
 
-    private static ProdutoDaEtapa Definitivo(string ato) => ProdutoDaEtapa.Criar(ato, PapelProdutoFase.Definitivo);
+    private static ProdutoDaEtapa Definitivo(string ato) => ProdutoDaEtapa.Criar(ato, PapelDaPublicacaoPrevista.Definitivo);
 
     [Fact(DisplayName = "A âncora no produto preliminar da etapa não é violação")]
     public void ViolacaoDaAncora_AtoPreliminarDaEtapa_NaoViola()
     {
         EtapaProcesso etapa = Etapa(false, Preliminar("GABARITO"));
 
-        JanelasRecursaisDaEtapa.ViolacaoDaAncora(etapa, [Janela(AncoraDoRecurso.AtoPublicado, etapa.Produtos.Single().Id)])
+        JanelasRecursaisDaEtapa.ViolacaoDaAncora(etapa, [Janela(EventoInicialDoPrazo.PublicacaoDoAto, etapa.Produtos.Single().Id)])
             .Should().BeNull();
     }
 
@@ -50,7 +51,7 @@ public sealed class JanelasRecursaisDaEtapaTests
         EtapaProcesso etapa = Etapa(false, Definitivo("GABARITO"));
 
         DomainError? violacao = JanelasRecursaisDaEtapa.ViolacaoDaAncora(
-            etapa, [Janela(AncoraDoRecurso.AtoPublicado, etapa.Produtos.Single().Id)]);
+            etapa, [Janela(EventoInicialDoPrazo.PublicacaoDoAto, etapa.Produtos.Single().Id)]);
 
         violacao!.Code.Should().Be("EtapaProcesso.AncoraNaoEhProdutoPreliminarDaEtapa");
     }
@@ -60,7 +61,7 @@ public sealed class JanelasRecursaisDaEtapaTests
     {
         EtapaProcesso etapa = Etapa(false, Preliminar("GABARITO"));
 
-        JanelasRecursaisDaEtapa.ViolacaoDaAncora(etapa, [Janela(AncoraDoRecurso.AtoPublicado, Guid.CreateVersion7())])!
+        JanelasRecursaisDaEtapa.ViolacaoDaAncora(etapa, [Janela(EventoInicialDoPrazo.PublicacaoDoAto, Guid.CreateVersion7())])!
             .Code.Should().Be("EtapaProcesso.AncoraNaoEhProdutoPreliminarDaEtapa");
     }
 
@@ -69,7 +70,7 @@ public sealed class JanelasRecursaisDaEtapaTests
     {
         EtapaProcesso etapa = Etapa(true, Definitivo("GABARITO"));
 
-        JanelasRecursaisDaEtapa.ViolacaoDaAncora(etapa, [Janela(AncoraDoRecurso.AtoPublicado, Guid.CreateVersion7())])
+        JanelasRecursaisDaEtapa.ViolacaoDaAncora(etapa, [Janela(EventoInicialDoPrazo.PublicacaoDoAto, Guid.CreateVersion7())])
             .Should().BeNull();
     }
 
@@ -78,7 +79,7 @@ public sealed class JanelasRecursaisDaEtapaTests
     {
         EtapaProcesso etapa = Etapa();
 
-        JanelasRecursaisDaEtapa.ViolacaoDaAncora(etapa, [Janela(AncoraDoRecurso.CienciaIndividual, Guid.Empty)])!
+        JanelasRecursaisDaEtapa.ViolacaoDaAncora(etapa, [Janela(EventoInicialDoPrazo.CienciaIndividual, Guid.Empty)])!
             .Code.Should().Be("EtapaProcesso.CienciaSemParecerIndividual");
     }
 
@@ -88,7 +89,7 @@ public sealed class JanelasRecursaisDaEtapaTests
         EtapaProcesso etapa = Etapa();
         etapa.DefinirJanelaEParecer(null, null, emiteParecerIndividual: true).IsSuccess.Should().BeTrue();
 
-        JanelasRecursaisDaEtapa.ViolacaoDaAncora(etapa, [Janela(AncoraDoRecurso.CienciaIndividual, Guid.Empty)])
+        JanelasRecursaisDaEtapa.ViolacaoDaAncora(etapa, [Janela(EventoInicialDoPrazo.CienciaIndividual, Guid.Empty)])
             .Should().BeNull();
     }
 
@@ -104,7 +105,7 @@ public sealed class JanelasRecursaisDaEtapaTests
         Guid produto = Guid.CreateVersion7();
 
         DomainError? recusa = JanelasRecursaisDaEtapa.FatoRepetido(
-            [Janela(AncoraDoRecurso.AtoPublicado, produto), Janela(AncoraDoRecurso.AtoPublicado, produto, 24m)]);
+            [Janela(EventoInicialDoPrazo.PublicacaoDoAto, produto), Janela(EventoInicialDoPrazo.PublicacaoDoAto, produto, 24m)]);
 
         recusa!.Code.Should().Be("EtapaProcesso.RecursoDuplicadoNaEtapa");
     }
@@ -113,7 +114,7 @@ public sealed class JanelasRecursaisDaEtapaTests
     public void FatoRepetido_DuasJanelasParaACiencia_Recusa()
     {
         DomainError? recusa = JanelasRecursaisDaEtapa.FatoRepetido(
-            [Janela(AncoraDoRecurso.CienciaIndividual, Guid.Empty), Janela(AncoraDoRecurso.CienciaIndividual, Guid.Empty)]);
+            [Janela(EventoInicialDoPrazo.CienciaIndividual, Guid.Empty), Janela(EventoInicialDoPrazo.CienciaIndividual, Guid.Empty)]);
 
         recusa!.Code.Should().Be("EtapaProcesso.RecursoDuplicadoNaEtapa");
     }
@@ -123,9 +124,9 @@ public sealed class JanelasRecursaisDaEtapaTests
     {
         JanelasRecursaisDaEtapa.FatoRepetido(
         [
-            Janela(AncoraDoRecurso.AtoPublicado, Guid.CreateVersion7()),
-            Janela(AncoraDoRecurso.AtoPublicado, Guid.CreateVersion7()),
-            Janela(AncoraDoRecurso.CienciaIndividual, Guid.Empty),
+            Janela(EventoInicialDoPrazo.PublicacaoDoAto, Guid.CreateVersion7()),
+            Janela(EventoInicialDoPrazo.PublicacaoDoAto, Guid.CreateVersion7()),
+            Janela(EventoInicialDoPrazo.CienciaIndividual, Guid.Empty),
         ]).Should().BeNull();
     }
 }

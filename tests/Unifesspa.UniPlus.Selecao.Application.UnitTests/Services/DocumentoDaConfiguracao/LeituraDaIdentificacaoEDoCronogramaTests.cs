@@ -22,7 +22,7 @@ public sealed class LeituraDaIdentificacaoEDoCronogramaTests
 {
     private const string Documento = """
         {
-          "identificacao": { "nome": "Processo de Teste", "tipoProcessoCodigo": "SiSU", "unidadeAdministradoraCodigo": "CEPS", "origemCandidatos": "importacaoExterna", "localidadeCodigoIbge": "1504208" },
+          "identificacao": { "nome": "Processo de Teste", "tipoProcessoCodigo": "SiSU", "unidadeAdministradoraCodigo": "CEPS", "origemCandidatos": "IMPORTACAO_EXTERNA", "localidadeCodigoIbge": "1504208" },
           "cronograma": { "fases": [
             { "chave": "inscricao", "tipoFaseCodigo": "INSCRICAO", "unidadeResponsavelCodigo": "CEPS" },
             { "chave": "recurso", "tipoFaseCodigo": "RECURSO", "unidadeResponsavelCodigo": "CEPS" },

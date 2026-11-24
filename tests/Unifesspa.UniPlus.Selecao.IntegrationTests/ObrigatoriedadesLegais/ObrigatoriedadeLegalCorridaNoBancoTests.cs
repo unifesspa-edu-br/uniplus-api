@@ -9,6 +9,7 @@ using NSubstitute;
 using Outbox.Cascading;
 
 using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Application.Commands.ObrigatoriedadesLegais;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
@@ -91,7 +92,7 @@ public sealed class ObrigatoriedadeLegalCorridaNoBancoTests : ObrigatoriedadeLeg
         new(
             id,
             "*",
-            CategoriaObrigatoriedade.Outros,
+            CategoriaObrigatoriedade.Outros.Codigo(),
             regraCodigo,
             new ConcorrenciaDuplaObrigatoria(),
             "Descrição da regra.",
@@ -129,7 +130,7 @@ public sealed class ObrigatoriedadeLegalCorridaNoBancoTests : ObrigatoriedadeLeg
     private static CriarObrigatoriedadeLegalCommand ComandoDeCriar(string regraCodigo) =>
         new(
             "*",
-            CategoriaObrigatoriedade.Outros,
+            CategoriaObrigatoriedade.Outros.Codigo(),
             regraCodigo,
             new ConcorrenciaDuplaObrigatoria(),
             "Descrição da regra.",

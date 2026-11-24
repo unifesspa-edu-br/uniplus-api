@@ -3,10 +3,12 @@ namespace Unifesspa.UniPlus.Selecao.Application.Commands.DocumentosAPublicar;
 using Abstractions;
 
 using Domain.Entities;
+using Domain.Enums;
 using Domain.Interfaces;
 
 using DTOs;
 
+using Kernel.Domain.CodigosDeContrato;
 using Kernel.Results;
 
 using Services;
@@ -51,7 +53,7 @@ public static class IniciarEnvioDoDocumentoAPublicarCommandHandler
         CancellationToken cancellationToken)
     {
         Result<DocumentoAPublicar> pendente = DocumentoAPublicar.IniciarPendente(
-            command.ProcessoSeletivoId, command.Finalidade, command.NomeArquivo, command.TipoDeMidia, clock, PrazosDoArquivoEnviado.Envio);
+            command.ProcessoSeletivoId, FinalidadeDeclarada(command.Finalidade), command.NomeArquivo, command.TipoDeMidia, clock, PrazosDoArquivoEnviado.Envio);
 
         return pendente.IsFailure
             ? Result<IniciarEnvioDoDocumentoAPublicarDto>.ValidationFailure(pendente.Errors)
@@ -77,4 +79,7 @@ public static class IniciarEnvioDoDocumentoAPublicarCommandHandler
         return Result<IniciarEnvioDoDocumentoAPublicarDto>.Success(new IniciarEnvioDoDocumentoAPublicarDto(
             documento.Id, new Uri(urlUpload, UriKind.Absolute), documento.TipoDeMidia, documento.ExpiraEm));
     }
+
+    private static FinalidadeDoDocumento? FinalidadeDeclarada(string? codigo) =>
+        CatalogoDe<FinalidadeDoDocumento>.TentarObter(codigo, out FinalidadeDoDocumento finalidade) ? finalidade : null;
 }

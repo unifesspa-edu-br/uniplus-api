@@ -18,6 +18,7 @@ using Services;
 
 
 using Unifesspa.UniPlus.Application.Abstractions.Authentication;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Publicacoes.Contracts;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Cronograma;
@@ -175,7 +176,7 @@ public sealed class ConferenciaDoProdutoDoEdital(
 
         return impedimento is null
             ? Result.Success()
-            : Result.Failure(new DomainError(CodigoDoImpedimento(impedimento.Motivo), impedimento.Mensagem));
+            : Result.Failure(new DomainError(CodigoDoImpedimento(CatalogoDe<ImpedimentoDoProduto>.Obter(impedimento.Motivo.Codigo)), impedimento.Mensagem));
     }
 
     /// <summary>
@@ -208,7 +209,7 @@ public sealed class ConferenciaDoProdutoDoEdital(
         ProjecaoDosProdutosPrevistos.Declarado produto, ConfiguracaoPublicada grafo, CadeiasDosProdutosPrevistos cadeias)
     {
         Dictionary<Guid, IdentidadeDoItemDoEdital> itens = IdentidadeDoItemDoEdital.Dos(grafo.Cronograma.CronogramaFases, grafo.Avaliacao.Etapas);
-        return produto.Papel == PapelProdutoFase.Preliminar
+        return produto.Papel == PapelDaPublicacaoPrevista.Preliminar
             && PreliminaresDaMateria.DefinitivosQueFecham(grafo, produto.Id).Any(d => cadeias.PrimeiraPublicacaoDe(itens[d]) is not null);
     }
 

@@ -27,7 +27,7 @@ internal static class SerializacaoDoCronograma
 {
     internal static JsonObject SerializarCronogramaFases(ProcessoSeletivo processo) => new()
     {
-        ["origemCandidatos"] = processo.OrigemCandidatos.ToString(),
+        ["origemCandidatos"] = processo.OrigemCandidatos.Codigo(),
         ["fases"] = SerializarFasesCronograma(processo),
     };
 
@@ -50,7 +50,7 @@ internal static class SerializacaoDoCronograma
         item["tipoFaseOrigemId"] = fase.FaseCanonicaOrigemId;
         item["codigo"] = HashCanonicalComputer.NormalizeNfc(fase.Codigo);
         item["tipoFaseNome"] = HashCanonicalComputer.NormalizeNfc(fase.TipoFaseNome);
-        item["origemData"] = fase.OrigemData.ToString();
+        item["origemData"] = fase.OrigemData.Codigo();
         item["agrupaEtapas"] = fase.AgrupaEtapas;
         item["permiteComplementacao"] = fase.PermiteComplementacao;
         item["coletaInscricao"] = fase.ColetaInscricao;
@@ -93,7 +93,7 @@ internal static class SerializacaoDoCronograma
         {
             ["id"] = p.Id,
             ["atoCodigo"] = HashCanonicalComputer.NormalizeNfc(p.AtoCodigo),
-            ["papel"] = p.Papel?.ToString(),
+            ["papel"] = p.Papel?.Codigo(),
         })]);
     }
 

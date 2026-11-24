@@ -11,7 +11,7 @@ informed:
 
 # ADR-0110: A retificação é uma sessão editorial sobre a configuração, não um estado do certame
 
-> **Superada.** A [ADR-0175](0175-o-processo-publicado-nao-tem-edicao-direta-nem-sessao-editorial.md) retira a sessão editorial, a reposição da configuração congelada e o `If-Match` das gravações por dimensão. A leitura das versões publicadas segue o regime de codec único da Emenda 2 e da emenda da ADR-0137. Leia o restante como registro histórico, não como contrato.
+> **Superada.** A [ADR-0175](0175-o-processo-publicado-nao-tem-edicao-direta-nem-sessao-editorial.md) retira a sessão editorial, a reposição da configuração congelada e o `If-Match` das gravações por dimensão. O que esta ADR decidiu sobre os codecs do envelope segue valendo para a leitura das versões publicadas: até a primeira publicação em produção, um codec só, o do envelope atual (E2.1, com o limite da ADR-0137); a partir dela, uma leitura por versão publicada (D1 e E2.2). A estrutura de várias versões só é escrita quando houver a segunda versão (ADR-0175, emenda 1). Leia o restante como registro histórico, não como contrato.
 
 ## Contexto e enunciado do problema
 

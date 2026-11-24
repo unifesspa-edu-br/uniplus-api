@@ -46,7 +46,7 @@ public static class AncoraDoRecursoDaFase
         }
 
         List<ProdutoDaFase> preliminares =
-            [.. produtos.Where(static p => p.Papel == PapelProdutoFase.Preliminar)];
+            [.. produtos.Where(static p => p.Papel == PapelDaPublicacaoPrevista.Preliminar)];
 
         return preliminares.Count == 0
             ? FaseSemProdutoPreliminar()

@@ -18,6 +18,7 @@ using Unifesspa.UniPlus.Application.Abstractions.Messaging;
 using Unifesspa.UniPlus.Infrastructure.Core.Errors;
 using Unifesspa.UniPlus.Infrastructure.Core.Formatting;
 using Unifesspa.UniPlus.Infrastructure.Core.Idempotency;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.API.Authorization;
 using Unifesspa.UniPlus.Selecao.Application.Permissoes;
@@ -55,18 +56,25 @@ public sealed class DocumentosAPublicarController : ControllerBase
     /// rascunho depois de um refresh, em vez de reenviar o arquivo que já subiu.
     /// Devolve apenas metadados: nenhum endereço de storage e nenhuma URL
     /// assinada atravessa o contrato. O filtro <c>finalidade</c> restringe aos documentos enviados
-    /// para ela — quem escolhe o edital lista só os de finalidade <c>documentoDoEdital</c>.
+    /// para ela — quem escolhe o edital lista só os de finalidade <c>DOCUMENTO_DO_EDITAL</c>.
     /// </summary>
     [HttpGet]
     [VendorMediaType(Resource = "documento-a-publicar", Versions = [1])]
     [ProducesResponseType(typeof(IEnumerable<DocumentoAPublicarDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status406NotAcceptable)]
     public async Task<IActionResult> Listar(
-        Guid processoSeletivoId, [FromQuery] FinalidadeDoDocumento? finalidade, CancellationToken cancellationToken)
+        Guid processoSeletivoId, [FromQuery, AceitaCodigosDe<FinalidadeDoDocumento>] string? finalidade, CancellationToken cancellationToken)
     {
+        Result<FinalidadeDoDocumento?> filtro = FiltroDeFinalidadeDosDocumentosAPublicar.Ler(finalidade);
+        if (filtro.IsFailure)
+        {
+            return filtro.ToActionResult(_mapper);
+        }
+
         Result<ListarDocumentosAPublicarResult> resultado = await _queryBus
-            .Send(new ListarDocumentosAPublicarQuery(processoSeletivoId, finalidade), cancellationToken)
+            .Send(new ListarDocumentosAPublicarQuery(processoSeletivoId, filtro.Value), cancellationToken)
             .ConfigureAwait(false);
 
         return resultado.IsSuccess ? Ok(resultado.Value!.Items) : resultado.ToActionResult(_mapper);

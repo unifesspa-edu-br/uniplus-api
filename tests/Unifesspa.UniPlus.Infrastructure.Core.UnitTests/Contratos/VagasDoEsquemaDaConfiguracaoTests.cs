@@ -46,7 +46,7 @@ public sealed class VagasDoEsquemaDaConfiguracaoTests
             { "formato": "uniplus.selecao.configuracao", "versaoFormato": 1,
               "opcoesDeCurso": { "numero": 2 },
               "distribuicaoVagas": [ { "ofertaCursoCodigo": "ENG_CIVIL_MARABA" } ],
-              "cascataRemanejamento": { "regra": { "codigo": "REMANEJ-CASCATA-LEI-12711", "versao": "v1" }, "destinoFinalCodigo": "AC",
+              "cascataRemanejamento": { "regra": { "codigo": "REMANEJAMENTO_ORDEM_LEI_12711", "versao": "v1" }, "destinoFinalCodigo": "AC",
                 "destinos": [ { "modalidadeOrigemCodigo": "LB_PPI", "ordem": 1, "modalidadeDestinoCodigo": "LB_Q" } ] } }
             """)).Should().BeEmpty();
 

@@ -22,9 +22,9 @@ public sealed class ProdutosPublicadosTests
 
     private static string MesmaChave(string ato) => "RESULTADO";
 
-    private static ProdutoDaFase Fase(string ato, PapelProdutoFase? papel) => ProdutoDaFase.Criar(ato, papel);
+    private static ProdutoDaFase Fase(string ato, PapelDaPublicacaoPrevista? papel) => ProdutoDaFase.Criar(ato, papel);
 
-    private static ProdutoDaEtapa Etapa(string ato, PapelProdutoFase? papel) => ProdutoDaEtapa.Criar(ato, papel);
+    private static ProdutoDaEtapa Etapa(string ato, PapelDaPublicacaoPrevista? papel) => ProdutoDaEtapa.Criar(ato, papel);
 
     private static ProdutosReconciliados<ProdutoDaFase> UmaPassada(
         IReadOnlyList<ProdutoDaFase> vivos, IReadOnlyList<ProdutoDaFase> chegados) =>
@@ -37,8 +37,8 @@ public sealed class ProdutosPublicadosTests
     [Fact]
     public void UmaPassada_ParExato_ReaproveitaALinhaViva()
     {
-        ProdutoDaFase viva = Fase("GABARITO", PapelProdutoFase.Preliminar);
-        ProdutoDaFase chegado = Fase("GABARITO", PapelProdutoFase.Preliminar);
+        ProdutoDaFase viva = Fase("GABARITO", PapelDaPublicacaoPrevista.Preliminar);
+        ProdutoDaFase chegado = Fase("GABARITO", PapelDaPublicacaoPrevista.Preliminar);
 
         ProdutosReconciliados<ProdutoDaFase> resultado = UmaPassada([viva], [chegado]);
 
@@ -48,7 +48,7 @@ public sealed class ProdutosPublicadosTests
     [Fact]
     public void UmaPassada_SemPar_EntraComoProdutoNovo()
     {
-        ProdutoDaFase chegado = Fase("GABARITO", PapelProdutoFase.Preliminar);
+        ProdutoDaFase chegado = Fase("GABARITO", PapelDaPublicacaoPrevista.Preliminar);
 
         ProdutosReconciliados<ProdutoDaFase> resultado = UmaPassada([], [chegado]);
 
@@ -58,8 +58,8 @@ public sealed class ProdutosPublicadosTests
     [Fact]
     public void UmaPassada_LinhaVivaSemPar_Sai()
     {
-        ProdutoDaFase viva = Fase("GABARITO", PapelProdutoFase.Preliminar);
-        ProdutoDaFase chegado = Fase("RESULTADO", PapelProdutoFase.Definitivo);
+        ProdutoDaFase viva = Fase("GABARITO", PapelDaPublicacaoPrevista.Preliminar);
+        ProdutoDaFase chegado = Fase("RESULTADO", PapelDaPublicacaoPrevista.Definitivo);
 
         ProdutosReconciliados<ProdutoDaFase> resultado = UmaPassada([viva], [chegado]);
 
@@ -69,23 +69,23 @@ public sealed class ProdutosPublicadosTests
     [Fact]
     public void UmaPassada_TrocaDePapel_RecriaOProdutoEMantemOPapelDaLinhaViva()
     {
-        ProdutoDaFase viva = Fase("GABARITO", PapelProdutoFase.Preliminar);
-        ProdutoDaFase chegado = Fase("GABARITO", PapelProdutoFase.Definitivo);
+        ProdutoDaFase viva = Fase("GABARITO", PapelDaPublicacaoPrevista.Preliminar);
+        ProdutoDaFase chegado = Fase("GABARITO", PapelDaPublicacaoPrevista.Definitivo);
 
         ProdutosReconciliados<ProdutoDaFase> resultado = UmaPassada([viva], [chegado]);
 
         resultado.Produtos.Should().ContainSingle().Which.Should().BeSameAs(chegado);
-        viva.Papel.Should().Be(PapelProdutoFase.Preliminar);
+        viva.Papel.Should().Be(PapelDaPublicacaoPrevista.Preliminar);
     }
 
     [Fact]
     public void UmaPassada_ParRepetidoNaChegada_ConsomeAPrimeiraLinhaVivaNaoConsumidaDeCadaVez()
     {
-        ProdutoDaFase primeiraViva = Fase("GABARITO", PapelProdutoFase.Preliminar);
-        ProdutoDaFase segundaViva = Fase("GABARITO", PapelProdutoFase.Preliminar);
-        ProdutoDaFase primeiroChegado = Fase("GABARITO", PapelProdutoFase.Preliminar);
-        ProdutoDaFase segundoChegado = Fase("GABARITO", PapelProdutoFase.Preliminar);
-        ProdutoDaFase terceiroChegado = Fase("GABARITO", PapelProdutoFase.Preliminar);
+        ProdutoDaFase primeiraViva = Fase("GABARITO", PapelDaPublicacaoPrevista.Preliminar);
+        ProdutoDaFase segundaViva = Fase("GABARITO", PapelDaPublicacaoPrevista.Preliminar);
+        ProdutoDaFase primeiroChegado = Fase("GABARITO", PapelDaPublicacaoPrevista.Preliminar);
+        ProdutoDaFase segundoChegado = Fase("GABARITO", PapelDaPublicacaoPrevista.Preliminar);
+        ProdutoDaFase terceiroChegado = Fase("GABARITO", PapelDaPublicacaoPrevista.Preliminar);
 
         ProdutosReconciliados<ProdutoDaFase> resultado = UmaPassada(
             [primeiraViva, segundaViva], [primeiroChegado, segundoChegado, terceiroChegado]);
@@ -96,13 +96,13 @@ public sealed class ProdutosPublicadosTests
     [Fact]
     public void UmaPassada_PreservaAOrdemDeChegada()
     {
-        ProdutoDaFase vivaDoResultado = Fase("RESULTADO", PapelProdutoFase.Definitivo);
-        ProdutoDaFase vivaDoGabarito = Fase("GABARITO", PapelProdutoFase.Preliminar);
+        ProdutoDaFase vivaDoResultado = Fase("RESULTADO", PapelDaPublicacaoPrevista.Definitivo);
+        ProdutoDaFase vivaDoGabarito = Fase("GABARITO", PapelDaPublicacaoPrevista.Preliminar);
         ProdutoDaFase novo = Fase("EDITAL", null);
 
         ProdutosReconciliados<ProdutoDaFase> resultado = UmaPassada(
             [vivaDoGabarito, vivaDoResultado],
-            [Fase("RESULTADO", PapelProdutoFase.Definitivo), novo, Fase("GABARITO", PapelProdutoFase.Preliminar)]);
+            [Fase("RESULTADO", PapelDaPublicacaoPrevista.Definitivo), novo, Fase("GABARITO", PapelDaPublicacaoPrevista.Preliminar)]);
 
         resultado.Produtos.Should().Equal(vivaDoResultado, novo, vivaDoGabarito);
     }
@@ -120,8 +120,8 @@ public sealed class ProdutosPublicadosTests
     [Fact]
     public void UmaPassada_ComparaOAtoPelaChaveDeQuemChama()
     {
-        ProdutoDaEtapa viva = Etapa(SegundoAto, PapelProdutoFase.Preliminar);
-        ProdutoDaEtapa chegado = Etapa(PrimeiroAto, PapelProdutoFase.Preliminar);
+        ProdutoDaEtapa viva = Etapa(SegundoAto, PapelDaPublicacaoPrevista.Preliminar);
+        ProdutoDaEtapa chegado = Etapa(PrimeiroAto, PapelDaPublicacaoPrevista.Preliminar);
 
         ProdutosReconciliados<ProdutoDaEtapa> pelaForma = ProdutosPublicados
             .ReconciliarPreservandoIdentidade([viva], [chegado], MesmaChave);
@@ -135,8 +135,8 @@ public sealed class ProdutosPublicadosTests
     [Fact]
     public void UmaPassada_MapaAssociaOIdDoChegadoAoIdDaLinhaFinal()
     {
-        ProdutoDaFase viva = Fase("GABARITO", PapelProdutoFase.Preliminar);
-        ProdutoDaFase chegadoComPar = Fase("GABARITO", PapelProdutoFase.Preliminar);
+        ProdutoDaFase viva = Fase("GABARITO", PapelDaPublicacaoPrevista.Preliminar);
+        ProdutoDaFase chegadoComPar = Fase("GABARITO", PapelDaPublicacaoPrevista.Preliminar);
         ProdutoDaFase chegadoNovo = Fase("EDITAL", null);
 
         ProdutosReconciliados<ProdutoDaFase> resultado = UmaPassada([viva], [chegadoComPar, chegadoNovo]);
@@ -148,9 +148,9 @@ public sealed class ProdutosPublicadosTests
     [Fact]
     public void DuasPassadas_ParExato_TemPrioridadeSobreOMesmoAto()
     {
-        ProdutoDaFase viva = Fase("GABARITO", PapelProdutoFase.Preliminar);
-        ProdutoDaFase semPar = Fase("GABARITO", PapelProdutoFase.Definitivo);
-        ProdutoDaFase comPar = Fase("GABARITO", PapelProdutoFase.Preliminar);
+        ProdutoDaFase viva = Fase("GABARITO", PapelDaPublicacaoPrevista.Preliminar);
+        ProdutoDaFase semPar = Fase("GABARITO", PapelDaPublicacaoPrevista.Definitivo);
+        ProdutoDaFase comPar = Fase("GABARITO", PapelDaPublicacaoPrevista.Preliminar);
 
         ProdutosReconciliados<ProdutoDaFase> resultado = DuasPassadas([viva], [semPar, comPar]);
 
@@ -160,20 +160,20 @@ public sealed class ProdutosPublicadosTests
     [Fact]
     public void DuasPassadas_TrocaDePapel_ReaproveitaALinhaVivaEAtualizaOPapel()
     {
-        ProdutoDaFase viva = Fase("GABARITO", PapelProdutoFase.Preliminar);
-        ProdutoDaFase chegado = Fase("GABARITO", PapelProdutoFase.Definitivo);
+        ProdutoDaFase viva = Fase("GABARITO", PapelDaPublicacaoPrevista.Preliminar);
+        ProdutoDaFase chegado = Fase("GABARITO", PapelDaPublicacaoPrevista.Definitivo);
 
         ProdutosReconciliados<ProdutoDaFase> resultado = DuasPassadas([viva], [chegado]);
 
         resultado.Produtos.Should().ContainSingle().Which.Should().BeSameAs(viva);
-        viva.Papel.Should().Be(PapelProdutoFase.Definitivo);
+        viva.Papel.Should().Be(PapelDaPublicacaoPrevista.Definitivo);
     }
 
     [Fact]
     public void DuasPassadas_CadaLinhaVivaEConsumidaNoMaximoUmaVez()
     {
-        ProdutoDaFase viva = Fase("GABARITO", PapelProdutoFase.Preliminar);
-        ProdutoDaFase primeiro = Fase("GABARITO", PapelProdutoFase.Definitivo);
+        ProdutoDaFase viva = Fase("GABARITO", PapelDaPublicacaoPrevista.Preliminar);
+        ProdutoDaFase primeiro = Fase("GABARITO", PapelDaPublicacaoPrevista.Definitivo);
         ProdutoDaFase segundo = Fase("GABARITO", null);
 
         ProdutosReconciliados<ProdutoDaFase> resultado = DuasPassadas([viva], [primeiro, segundo]);
@@ -184,19 +184,19 @@ public sealed class ProdutosPublicadosTests
     [Fact]
     public void DuasPassadas_ChegadoSemParNemAto_EntraComoProdutoNovo()
     {
-        ProdutoDaFase viva = Fase("GABARITO", PapelProdutoFase.Preliminar);
-        ProdutoDaFase chegado = Fase("RESULTADO", PapelProdutoFase.Definitivo);
+        ProdutoDaFase viva = Fase("GABARITO", PapelDaPublicacaoPrevista.Preliminar);
+        ProdutoDaFase chegado = Fase("RESULTADO", PapelDaPublicacaoPrevista.Definitivo);
 
         ProdutosReconciliados<ProdutoDaFase> resultado = DuasPassadas([viva], [chegado]);
 
         resultado.Produtos.Should().ContainSingle().Which.Should().BeSameAs(chegado);
-        viva.Papel.Should().Be(PapelProdutoFase.Preliminar);
+        viva.Papel.Should().Be(PapelDaPublicacaoPrevista.Preliminar);
     }
 
     [Fact]
     public void DuasPassadas_LinhaVivaNaoConsumida_Sai()
     {
-        ProdutoDaFase viva = Fase("GABARITO", PapelProdutoFase.Preliminar);
+        ProdutoDaFase viva = Fase("GABARITO", PapelDaPublicacaoPrevista.Preliminar);
 
         ProdutosReconciliados<ProdutoDaFase> resultado = DuasPassadas([viva], []);
 
@@ -206,13 +206,13 @@ public sealed class ProdutosPublicadosTests
     [Fact]
     public void DuasPassadas_LinhaReaproveitadaPeloAto_OcupaOLugarDaOrdemDeChegada()
     {
-        ProdutoDaFase vivaQueTrocaDePapel = Fase("GABARITO", PapelProdutoFase.Preliminar);
-        ProdutoDaFase vivaDoResultado = Fase("RESULTADO", PapelProdutoFase.Definitivo);
+        ProdutoDaFase vivaQueTrocaDePapel = Fase("GABARITO", PapelDaPublicacaoPrevista.Preliminar);
+        ProdutoDaFase vivaDoResultado = Fase("RESULTADO", PapelDaPublicacaoPrevista.Definitivo);
         ProdutoDaFase novo = Fase("EDITAL", null);
 
         ProdutosReconciliados<ProdutoDaFase> resultado = DuasPassadas(
             [vivaQueTrocaDePapel, vivaDoResultado],
-            [Fase("GABARITO", PapelProdutoFase.Definitivo), novo, Fase("RESULTADO", PapelProdutoFase.Definitivo)]);
+            [Fase("GABARITO", PapelDaPublicacaoPrevista.Definitivo), novo, Fase("RESULTADO", PapelDaPublicacaoPrevista.Definitivo)]);
 
         resultado.Produtos.Should().Equal(vivaQueTrocaDePapel, novo, vivaDoResultado);
     }
@@ -220,21 +220,21 @@ public sealed class ProdutosPublicadosTests
     [Fact]
     public void DuasPassadas_ComparaOAtoDaSegundaPassadaPelaChaveDeQuemChama()
     {
-        ProdutoDaEtapa viva = Etapa(SegundoAto, PapelProdutoFase.Preliminar);
-        ProdutoDaEtapa chegado = Etapa(PrimeiroAto, PapelProdutoFase.Definitivo);
+        ProdutoDaEtapa viva = Etapa(SegundoAto, PapelDaPublicacaoPrevista.Preliminar);
+        ProdutoDaEtapa chegado = Etapa(PrimeiroAto, PapelDaPublicacaoPrevista.Definitivo);
 
         ProdutosReconciliados<ProdutoDaEtapa> pelaForma = ProdutosPublicados
             .ReconciliarPreservandoIdentidadeMesmoComTrocaDePapel([viva], [chegado], MesmaChave);
 
         pelaForma.Produtos.Should().ContainSingle().Which.Should().BeSameAs(viva);
-        viva.Papel.Should().Be(PapelProdutoFase.Definitivo);
+        viva.Papel.Should().Be(PapelDaPublicacaoPrevista.Definitivo);
     }
 
     [Fact]
     public void DuasPassadas_ComChaveOrdinal_AtoComFormaDiferenteNaoCasa()
     {
-        ProdutoDaEtapa viva = Etapa(SegundoAto, PapelProdutoFase.Preliminar);
-        ProdutoDaEtapa chegado = Etapa(PrimeiroAto, PapelProdutoFase.Definitivo);
+        ProdutoDaEtapa viva = Etapa(SegundoAto, PapelDaPublicacaoPrevista.Preliminar);
+        ProdutoDaEtapa chegado = Etapa(PrimeiroAto, PapelDaPublicacaoPrevista.Definitivo);
 
         ProdutosReconciliados<ProdutoDaEtapa> resultado = ProdutosPublicados
             .ReconciliarPreservandoIdentidadeMesmoComTrocaDePapel([viva], [chegado], Ordinal);
@@ -245,12 +245,12 @@ public sealed class ProdutosPublicadosTests
     [Fact]
     public void DuasPassadas_MapaAponta_ParaALinhaFinalDeCadaChegado()
     {
-        ProdutoDaFase vivaDoPar = Fase("RESULTADO", PapelProdutoFase.Definitivo);
-        ProdutoDaFase vivaQueTrocaDePapel = Fase("GABARITO", PapelProdutoFase.Preliminar);
+        ProdutoDaFase vivaDoPar = Fase("RESULTADO", PapelDaPublicacaoPrevista.Definitivo);
+        ProdutoDaFase vivaQueTrocaDePapel = Fase("GABARITO", PapelDaPublicacaoPrevista.Preliminar);
         ProdutoDaFase[] chegados =
         [
-            Fase("RESULTADO", PapelProdutoFase.Definitivo),
-            Fase("GABARITO", PapelProdutoFase.Definitivo),
+            Fase("RESULTADO", PapelDaPublicacaoPrevista.Definitivo),
+            Fase("GABARITO", PapelDaPublicacaoPrevista.Definitivo),
             Fase("EDITAL", null),
         ];
 
@@ -266,11 +266,11 @@ public sealed class ProdutosPublicadosTests
     {
         ProdutoDaFase[] produtos =
         [
-            Fase("A", PapelProdutoFase.Preliminar),
-            Fase("B", PapelProdutoFase.Preliminar),
-            Fase("B", PapelProdutoFase.Preliminar),
-            Fase("A", PapelProdutoFase.Preliminar),
-            Fase("B", PapelProdutoFase.Preliminar),
+            Fase("A", PapelDaPublicacaoPrevista.Preliminar),
+            Fase("B", PapelDaPublicacaoPrevista.Preliminar),
+            Fase("B", PapelDaPublicacaoPrevista.Preliminar),
+            Fase("A", PapelDaPublicacaoPrevista.Preliminar),
+            Fase("B", PapelDaPublicacaoPrevista.Preliminar),
         ];
 
         ProdutosPublicados.PosicoesRepetidas(produtos, Ordinal).Should().Equal(2, 3, 4);
@@ -281,8 +281,8 @@ public sealed class ProdutosPublicadosTests
     {
         ProdutoDaFase[] produtos =
         [
-            Fase("A", PapelProdutoFase.Preliminar),
-            Fase("A", PapelProdutoFase.Definitivo),
+            Fase("A", PapelDaPublicacaoPrevista.Preliminar),
+            Fase("A", PapelDaPublicacaoPrevista.Definitivo),
             Fase("A", null),
         ];
 
@@ -294,8 +294,8 @@ public sealed class ProdutosPublicadosTests
     {
         ProdutoDaEtapa[] produtos =
         [
-            Etapa(PrimeiroAto, PapelProdutoFase.Preliminar),
-            Etapa(SegundoAto, PapelProdutoFase.Preliminar),
+            Etapa(PrimeiroAto, PapelDaPublicacaoPrevista.Preliminar),
+            Etapa(SegundoAto, PapelDaPublicacaoPrevista.Preliminar),
         ];
 
         ProdutosPublicados.PosicoesRepetidas(produtos, MesmaChave).Should().Equal(1);

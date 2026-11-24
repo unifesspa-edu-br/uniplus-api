@@ -1,6 +1,8 @@
 namespace Unifesspa.UniPlus.Selecao.Application.Queries.ProdutosPrevistos;
 
+using Unifesspa.UniPlus.Application.Abstractions.Respostas;
 using Unifesspa.UniPlus.Selecao.Application.DTOs;
+using Unifesspa.UniPlus.Selecao.Application.Queries.ProcessosSeletivos;
 using Unifesspa.UniPlus.Selecao.Application.Services;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
@@ -33,7 +35,7 @@ internal static class ProjecaoDosProdutosPrevistos
     /// <param name="AtoCodigo">O tipo de ato do item.</param>
     /// <param name="Papel">O papel do item no ciclo recursal.</param>
     /// <param name="Item">A identidade do item entre versões, a que o ato publicado guarda.</param>
-    internal sealed record Declarado(Guid Id, string AtoCodigo, PapelProdutoFase? Papel, IdentidadeDoItemDoEdital Item);
+    internal sealed record Declarado(Guid Id, string AtoCodigo, PapelDaPublicacaoPrevista? Papel, IdentidadeDoItemDoEdital Item);
 
     /// <summary>Os códigos dos tipos de ato que o cronograma declara publicar.</summary>
     public static IReadOnlyList<string> TiposDeAtoDeclarados(ConfiguracaoPublicada configuracaoPublicada)
@@ -144,8 +146,8 @@ internal static class ProjecaoDosProdutosPrevistos
             produto.Id,
             produto.AtoCodigo,
             tiposVigentes.GetValueOrDefault(produto.AtoCodigo) ?? primeira?.TipoNome,
-            produto.Papel.ToCodigo(),
-            situacao,
+            ProjecaoDoPapelDaPublicacao.De(produto.Papel),
+            CodigoComRotulo<SituacaoDoProdutoPrevisto>.De(situacao),
             primeira is null ? null : projetarAto(primeira),
             primeira is null ? [] : [.. cadeias.CorrecoesDe(primeira).Select(projetarAto)],
             PodePublicar: impedimento is null,
@@ -172,7 +174,7 @@ internal static class ProjecaoDosProdutosPrevistos
             return new(ImpedimentoDoProduto.JaPublicado, MensagemDoItemJaPublicado);
         }
 
-        if (produto.Papel == PapelProdutoFase.Definitivo && ImpedimentoDoPreliminar(produto, configuracaoPublicada, cadeias) is { } doPreliminar)
+        if (produto.Papel == PapelDaPublicacaoPrevista.Definitivo && ImpedimentoDoPreliminar(produto, configuracaoPublicada, cadeias) is { } doPreliminar)
         {
             return doPreliminar;
         }

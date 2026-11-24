@@ -52,7 +52,7 @@ internal static class CompletudeDaIdentificacao
         IdentidadeDoProcessoDeclarada.CampoDaOrigemDosCandidatos,
         "Origem dos candidatos do certame",
         "A origem dos candidatos é obrigatória para gerar versão publicada.",
-        configuracao.Identidade.OrigemCandidatos == OrigemCandidatos.Nenhuma,
+        configuracao.Identidade.OrigemCandidatos is null,
         Recusada: false);
 
     private sealed record Exigencia(string Codigo, string CodigoDoItem, string Campo, string Rotulo, string Mensagem, bool Ausente, bool Recusada);

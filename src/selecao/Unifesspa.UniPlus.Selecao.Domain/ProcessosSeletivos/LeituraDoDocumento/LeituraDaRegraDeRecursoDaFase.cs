@@ -1,5 +1,7 @@
 namespace Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.LeituraDoDocumento;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
+
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
@@ -61,10 +63,10 @@ internal static class LeituraDaRegraDeRecursoDaFase
 
     // A âncora é um preliminar da própria fase: o mesmo ato pode ser publicado nos dois papéis, e o prazo conta do preliminar.
     private static bool EhOPreliminarAncora(ProdutoDaFase produto, RegraDeRecursoNoDocumento declarada) =>
-        produto.Papel == PapelProdutoFase.Preliminar && string.Equals(produto.AtoCodigo, declarada.AtoAncoraCodigo, StringComparison.Ordinal);
+        produto.Papel == PapelDaPublicacaoPrevista.Preliminar && string.Equals(produto.AtoCodigo, declarada.AtoAncoraCodigo, StringComparison.Ordinal);
 
     private static IEnumerable<RecusaDaParte> RegraInvalida(FaseNoDocumento fase, RegraDoCatalogoCitada? regra) =>
-        regra is { Tipo: TipoRegra.RegraPrazoRecurso } && regra.Referencia.Codigo == RegraPrazoRecursoCodigo.AncoradoEmAto
+        regra is { Tipo: TipoRegra.RegraPrazoRecurso } && regra.Referencia.Codigo == RegraDePrazoDoRecurso.ContadoDaPublicacaoDoAto.Codigo()
             ? []
             : [Recusa(fase, FaseDeclarada.CampoDaRegraDeRecurso, $"{FaseDeclarada.CampoDaRegraDeRecurso}.regraCodigo", new DomainError(
                 FaseCronogramaErrorCodes.RegraDeRecursoInvalida,

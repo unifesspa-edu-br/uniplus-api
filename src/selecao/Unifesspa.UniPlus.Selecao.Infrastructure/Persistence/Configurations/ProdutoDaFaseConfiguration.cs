@@ -5,8 +5,10 @@ using Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence.CodigosDeContrato;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Protecao;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
+using Unifesspa.UniPlus.Selecao.Domain.Enums;
 
 /// <summary>
 /// Configuração EF Core de <see cref="ProdutoDaFase"/> — filha 0..* de
@@ -24,13 +26,17 @@ public sealed class ProdutoDaFaseConfiguration : IEntityTypeConfiguration<Produt
 
         builder.ClassificaPorPadrao(ClassificacaoDeProtecao.Interno);
 
-        builder.ToTable("publicacoes_previstas_da_fase", tabela => tabela.HasComment("Publicações previstas para uma fase do cronograma."));
+        builder.ToTable("publicacoes_previstas_da_fase", tabela =>
+        {
+            tabela.HasComment("Publicações previstas para uma fase do cronograma.");
+            tabela.HasCheckConstraint("ck_publicacoes_previstas_da_fase_papel", $"papel IS NULL OR papel IN ({SqlDosCodigosDeContrato.Lista<PapelDaPublicacaoPrevista>()})");
+        });
         builder.Property(p => p.FaseCronogramaId).HasComment("Identificador do registro ao qual esta configuração pertence.");
         builder.HasKey(p => p.Id);
         builder.Property(p => p.Id).HasComment("Identificador do registro.").ValueGeneratedNever();
 
         builder.Property(p => p.AtoCodigo).HasComment("Código do ato previsto para publicação.").HasMaxLength(AtoCodigoMaxLength).IsRequired();
-        builder.Property(p => p.Papel).HasComment("Papel da publicação no resultado, quando aplicável: 1 (preliminar) ou 2 (definitivo).").HasConversion<int>();
+        builder.Property(p => p.Papel).HasMaxLength(TamanhoDoCodigoDeContrato.Maximo).HasComment("Papel da publicação no resultado, quando aplicável: PRELIMINAR ou DEFINITIVO.");
 
         // O par ato + papel declarado uma única vez por fase — a mesma matéria é publicada
         // uma vez como preliminar e outra como definitiva, então o ato sozinho não é chave.

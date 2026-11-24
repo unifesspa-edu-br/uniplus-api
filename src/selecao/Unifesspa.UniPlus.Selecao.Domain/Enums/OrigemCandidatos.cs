@@ -1,9 +1,12 @@
 namespace Unifesspa.UniPlus.Selecao.Domain.Enums;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
+
 /// <summary>
 /// De onde vêm os candidatos do <see cref="Entities.ProcessoSeletivo"/> (§3.4 da Story
 /// #851) — o eixo que deriva o piso mínimo do cronograma de fases, <b>nunca</b> o
-/// <see cref="TipoProcesso"/>. Atributo declarado, obrigatório na criação do processo.
+/// <see cref="TipoProcesso"/>. Atributo declarado, obrigatório na criação do processo; a origem ainda
+/// não declarada é <see langword="null"/>.
 /// </summary>
 /// <remarks>
 /// Prova de indistinguibilidade: um processo do tipo SiSU com
@@ -13,11 +16,15 @@ namespace Unifesspa.UniPlus.Selecao.Domain.Enums;
 /// </remarks>
 public enum OrigemCandidatos
 {
-    Nenhuma = 0,
-
-    /// <summary>O certame coleta a própria inscrição — exige ao menos uma fase com <c>ColetaInscricao</c>.</summary>
+    [CodigoDeContrato(
+        "INSCRICAO_PROPRIA",
+        "Inscrição própria",
+        Descricao = "O processo coleta a própria inscrição: exige ao menos uma fase de coleta de inscrição.")]
     InscricaoPropria = 1,
 
-    /// <summary>Os candidatos vêm de importação externa (ex.: SiSU/MEC) — nenhuma fase de coleta é exigida.</summary>
+    [CodigoDeContrato(
+        "IMPORTACAO_EXTERNA",
+        "Importação externa",
+        Descricao = "Os candidatos vêm de importação externa, como a do SiSU: nenhuma fase de coleta é exigida.")]
     ImportacaoExterna = 2,
 }

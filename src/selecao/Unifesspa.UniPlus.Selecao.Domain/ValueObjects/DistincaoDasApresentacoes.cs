@@ -21,9 +21,9 @@ public sealed record DistincaoDasApresentacoes
     }
 
     public static DistincaoDasApresentacoes? Reidratar(CriterioDeDistincaoDasApresentacoes? criterio, DateOnly? dataReferencia, IReadOnlyList<string>? ocorrenciasEsperadas) =>
-        (criterio is null or CriterioDeDistincaoDasApresentacoes.Nenhuma) && dataReferencia is null && ocorrenciasEsperadas is null ? null : new()
+        criterio is null && dataReferencia is null && ocorrenciasEsperadas is null ? null : new()
         {
-            Criterio = criterio == CriterioDeDistincaoDasApresentacoes.Nenhuma ? null : criterio,
+            Criterio = criterio,
             DataReferencia = dataReferencia,
             OcorrenciasEsperadas = ocorrenciasEsperadas is null ? null : Array.AsReadOnly(ocorrenciasEsperadas.ToArray()),
         };

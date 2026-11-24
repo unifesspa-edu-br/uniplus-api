@@ -5,6 +5,7 @@ using System.Text.Json;
 
 using AwesomeAssertions;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Kernel.Tempo;
 using Unifesspa.UniPlus.Regras.Enums;
@@ -112,7 +113,7 @@ public sealed class ConformidadePublicabilidadeEstruturalContraprovaEEscalaTests
             ColetaInscricao: false, ColetaSolicitacaoIsencao: false)),
         new DecisoesDeCronogramaDaFase(ordem, Inicio: null, Fim: null, UnidadeResponsavel: UnidadesDeTeste.Ceps),
         new PublicacoesDaFase(
-            Produtos: [ProdutoDaFase.Criar("RESULTADO_CLASSIFICACAO", PapelProdutoFase.Definitivo)], EmiteParecerIndividual: false,
+            Produtos: [ProdutoDaFase.Criar("RESULTADO_CLASSIFICACAO", PapelDaPublicacaoPrevista.Definitivo)], EmiteParecerIndividual: false,
             RegraRecurso: null),
         bancasRequeridas: []).Value!;
 
@@ -153,7 +154,7 @@ public sealed class ConformidadePublicabilidadeEstruturalContraprovaEEscalaTests
         new DecisoesDeCronogramaDaFase(
             2, Inicio: null, Fim: new DateTimeOffset(2026, 1, 31, 0, 0, 0, TimeSpan.Zero), UnidadeResponsavel: UnidadesDeTeste.Ceps),
         new PublicacoesDaFase(
-            Produtos: [ProdutoDaFase.Criar("GABARITO", PapelProdutoFase.Preliminar)], EmiteParecerIndividual: false, RegraRecurso: null),
+            Produtos: [ProdutoDaFase.Criar("GABARITO", PapelDaPublicacaoPrevista.Preliminar)], EmiteParecerIndividual: false, RegraRecurso: null),
         bancasRequeridas: []).Value!;
 
     // Entrega as fases à lista do processo como a hidratação do EF faz, sem passar pela gravação do cronograma.
@@ -256,10 +257,10 @@ public sealed class ConformidadePublicabilidadeEstruturalContraprovaEEscalaTests
 
     private static ConfiguracaoClassificacao ClassificacaoLocalSemEscala() => ConfiguracaoClassificacao.Criar(new DeclaracaoDaClassificacao
     {
-        RegraCalculo = Regra(RegraCalculoCodigo.FormulaMediaPonderada, 'a'),
-        RegraArredondamento = Regra(RegraArredondamentoCodigo.PrecisaoTruncar, 'b'),
+        RegraCalculo = Regra(RegraDeCalculoDaNota.MediaPonderada.Codigo(), 'a'),
+        RegraArredondamento = Regra(RegraDeArredondamentoDaNota.Truncar.Codigo(), 'b'),
         CasasArredondamento = 2,
-        RegraOrdemAlocacao = Regra(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, 'c'),
+        RegraOrdemAlocacao = Regra(RegraDeOrdemDeAlocacao.PrimeiraOpcaoPrioritaria.Codigo(), 'c'),
         BaseadoEmEnem = true,
         ResolucaoPesoAreaEnem = QuadroPesoAreaEnemDeTeste.Resolucao,
         QuadroPesoAreaEnem = QuadroPesoAreaEnemDeTeste.Completo(),

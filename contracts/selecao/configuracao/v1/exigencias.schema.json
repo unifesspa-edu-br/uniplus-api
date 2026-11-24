@@ -129,8 +129,8 @@
           "title": "Aplicabilidade",
           "description": "GERAL vale para todos os candidatos; CONDICIONAL vale só quando a condição de gatilho é verdadeira.",
           "enum": [
-            "Geral",
-            "Condicional"
+            "GERAL",
+            "CONDICIONAL"
           ]
         },
         "obrigatorio": {
@@ -145,7 +145,7 @@
             "ELIMINA",
             "RECLASSIFICA_AC",
             "REMOVE_VANTAGEM",
-            "PENDENCIA_REENVIO"
+            "ABRE_PRAZO_PARA_REENVIO"
           ]
         },
         "condicoes": {

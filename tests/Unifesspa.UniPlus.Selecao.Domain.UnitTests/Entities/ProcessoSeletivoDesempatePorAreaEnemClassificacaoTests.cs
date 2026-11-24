@@ -2,6 +2,7 @@ namespace Unifesspa.UniPlus.Selecao.Domain.UnitTests.Entities;
 
 using AwesomeAssertions;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
@@ -95,7 +96,7 @@ public sealed class ProcessoSeletivoDesempatePorAreaEnemClassificacaoTests
         ProcessoSeletivo processo = NovoProcesso();
         processo.DefinirCriteriosDesempate([PorArea(1, "REDACAO")]).IsSuccess.Should().BeTrue();
         RegraEliminacao eliminacaoDeEtapaInexistente = RegraEliminacao.Criar(
-            Regra(RegraEliminacaoCodigo.ElimNotaMinimaEtapa, 'd'), new ParametrosElimNotaMinimaEtapa(Guid.CreateVersion7(), 50m)).Value!;
+            Regra(RegraDeEliminacaoPorCalculo.NotaMinimaNaEtapa.Codigo(), 'd'), new ParametrosEliminacaoPorNotaMinimaNaEtapa(Guid.CreateVersion7(), 50m)).Value!;
 
         Result result = processo.DefinirClassificacao(ConfiguracaoClassificacao.Criar(
             ApoioDaConfiguracaoClassificacao.DeclaracaoMediaPonderada() with { RegrasEliminacao = [eliminacaoDeEtapaInexistente], EscalaNotaFinal = 100m }).Value!);

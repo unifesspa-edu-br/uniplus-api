@@ -2,7 +2,9 @@ namespace Unifesspa.UniPlus.Selecao.Application.Commands.ObrigatoriedadesLegais;
 
 using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Selecao.Application.Services;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
+using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
@@ -81,7 +83,7 @@ public static class AtualizarObrigatoriedadeLegalCommandHandler
         PredicadoObrigatoriedade predicado) =>
         regra.Atualizar(
             command.TipoProcessoCodigo,
-            command.Categoria,
+            CodigoLidoDoPedido.Ler<CategoriaObrigatoriedade>(command.Categoria),
             command.RegraCodigo,
             predicado,
             command.ComoTextoNormativo(),

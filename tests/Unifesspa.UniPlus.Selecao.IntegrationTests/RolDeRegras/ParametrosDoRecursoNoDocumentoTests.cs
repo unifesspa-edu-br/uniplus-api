@@ -27,8 +27,8 @@ public sealed class ParametrosDoRecursoNoDocumentoTests
     {
         JsonObject recurso = Recurso();
         recurso["prazoSegundaInstanciaValor"] = 1.2345m;
-        recurso["prazoSegundaInstanciaUnidade"] = "horas";
-        recurso["guardaDaVaga"] = "ateOResultadoDefinitivo";
+        recurso["prazoSegundaInstanciaUnidade"] = "HORAS";
+        recurso["guardaDaVaga"] = "ATE_O_RESULTADO_DEFINITIVO";
 
         Esquema.Avaliar(Documento(naFase, recurso)).Should().BeEmpty();
     }
@@ -39,7 +39,7 @@ public sealed class ParametrosDoRecursoNoDocumentoTests
     public void DiasCorridos_ChegamAoDominio(string campo)
     {
         JsonObject recurso = Recurso();
-        recurso[campo] = "dias";
+        recurso[campo] = "DIAS";
 
         Esquema.Avaliar(Documento(false, recurso)).Should().BeEmpty();
     }
@@ -64,10 +64,10 @@ public sealed class ParametrosDoRecursoNoDocumentoTests
 
     private static JsonObject Recurso() => new()
     {
-        ["regraCodigo"] = "RECURSO-PRAZO-ANCORADO-EM-ATO",
+        ["regraCodigo"] = "RECURSO_PRAZO_CONTADO_DA_PUBLICACAO_DO_ATO",
         ["regraVersao"] = "v1",
         ["admiteInstanciaSuperior"] = true,
-        ["efeitoSuspensivo"] = "semEfeitoSuspensivo",
+        ["efeitoSuspensivo"] = "SEM_EFEITO_SUSPENSIVO",
     };
 
     private static JsonObject Documento(bool naFase, JsonObject recurso)

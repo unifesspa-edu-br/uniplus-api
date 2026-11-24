@@ -76,7 +76,7 @@ public sealed class DefinirCronogramaFasesAtosCongeladosTests
     [
         ComProdutos(cenario.CadastrarFase(FaseCanonicaRecorrivel()), 1, ProdutoDaClassificacao("PRELIMINARY")),
         ComProdutos(
-            cenario.CadastrarFase(FaseCanonicaDoResultadoFinal()), 2, ProdutoDaClassificacao("PRELIMINARY"), ProdutoDaClassificacao(PapelProdutoFaseCodigo.Preliminar)),
+            cenario.CadastrarFase(FaseCanonicaDoResultadoFinal()), 2, ProdutoDaClassificacao("PRELIMINARY"), ProdutoDaClassificacao("PRELIMINAR")),
         ComProdutos(cenario.CadastrarFase(FaseCanonicaRecorrivel() with { Id = Guid.CreateVersion7() }), 3, ProdutoDaClassificacao("PRELIMINARY")),
     ];
 

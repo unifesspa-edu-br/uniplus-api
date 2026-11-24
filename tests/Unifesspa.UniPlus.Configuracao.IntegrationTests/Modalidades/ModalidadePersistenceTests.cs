@@ -41,7 +41,7 @@ public sealed class ModalidadePersistenceTests(ConfiguracaoDbFixture fixture)
         Modalidade persistida = await context.Modalidades.SingleAsync(m => m.Id == modalidade.Id);
         persistida.Codigo.Valor.Should().Be(codigo);
         persistida.NaturezaLegal.Should().Be(Domain.Enums.NaturezaLegal.CotaReservada);
-        persistida.RegraRemanejamento.Should().Be(Domain.Enums.RegraRemanejamento.SegueCascata);
+        persistida.RegraRemanejamento.Should().Be(Domain.Enums.RegraRemanejamento.SegueOrdemDeRemanejamento);
         persistida.CreatedBy.Should().Be(AdminA);
         persistida.IsDeleted.Should().BeFalse();
     }
@@ -60,7 +60,7 @@ public sealed class ModalidadePersistenceTests(ConfiguracaoDbFixture fixture)
                 """)
             .ToListAsync();
 
-        gravados.Should().Equal("COTA_RESERVADA|DENTRO_DA_RESERVA_LEGAL|SEGUE_CASCATA");
+        gravados.Should().Equal("COTA_RESERVADA|DENTRO_DA_RESERVA_LEGAL|SEGUE_ORDEM_DE_REMANEJAMENTO");
     }
 
     [Fact(DisplayName = "Modalidade criada fica visível pelo leitor")]
@@ -74,7 +74,7 @@ public sealed class ModalidadePersistenceTests(ConfiguracaoDbFixture fixture)
         view.Should().NotBeNull();
         view!.Codigo.Should().Be(codigo);
         view.NaturezaLegal.Should().Be("COTA_RESERVADA");
-        view.RegraRemanejamento.Should().Be("SEGUE_CASCATA");
+        view.RegraRemanejamento.Should().Be("SEGUE_ORDEM_DE_REMANEJAMENTO");
     }
 
     [Fact(DisplayName = "UNIQUE parcial do código rejeita segunda modalidade viva com mesmo código")]

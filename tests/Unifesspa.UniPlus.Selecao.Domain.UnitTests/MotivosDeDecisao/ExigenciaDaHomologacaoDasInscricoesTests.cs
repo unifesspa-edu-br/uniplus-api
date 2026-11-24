@@ -187,7 +187,7 @@ public sealed class ExigenciaDaHomologacaoDasInscricoesTests
     private static MotivoDeDecisaoDoProcesso Escolha(ConfiguracaoDeclarada configuracao, TipoMotivoDeDecisao tipo, SentidoDoMotivo sentido)
     {
         LugarDaDecisao lugar = LugarDaDecisao.DaFase(configuracao.Cronograma.CronogramaFases[0].FaseCanonicaOrigemId);
-        MotivoDeDecisao motivo = ProcessoParaMotivos.Motivo(tipo, Codigo, sentido, tipo == TipoMotivoDeDecisao.IsencaoDaTaxa ? FundamentoIsencaoCodigo.CadastroUnico : null);
+        MotivoDeDecisao motivo = ProcessoParaMotivos.Motivo(tipo, Codigo, sentido, tipo == TipoMotivoDeDecisao.IsencaoDaTaxa ? "CADASTRO_UNICO" : null);
         return MotivoDeDecisaoDoProcesso.Copiar(Guid.NewGuid(), lugar, motivo, 1, null);
     }
 

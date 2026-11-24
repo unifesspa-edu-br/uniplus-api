@@ -10,6 +10,8 @@ using Domain.ValueObjects;
 
 using Kernel.Results;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
+
 /// <summary>
 /// Monta a regra de recurso de uma fase. A regra referenciada é resolvida pelo mesmo
 /// <see cref="IRegraCatalogoReader"/> das demais definições, e a referência sai dos valores RESOLVIDOS do
@@ -112,7 +114,7 @@ internal sealed class MontagemDaRegraDeRecursoDaFase(
             .ObterAsync(declarada.RegraCodigo, declarada.RegraVersao, cancellationToken).ConfigureAwait(false);
         if (regra is null
             || regra.Tipo != TipoRegra.RegraPrazoRecurso
-            || regra.Codigo != RegraPrazoRecursoCodigo.AncoradoEmAto)
+            || regra.Codigo != RegraDePrazoDoRecurso.ContadoDaPublicacaoDoAto.Codigo())
         {
             return Recusa<ReferenciaRegra>($"{campo}.regraCodigo", new DomainError(
                 "RegraRecursoFase.RegraCatalogoInvalida",
@@ -129,7 +131,7 @@ internal sealed class MontagemDaRegraDeRecursoDaFase(
     // prazo corre. Buscar só pelo código devolveria o definitivo quando ele viesse primeiro, e a fase seria
     // recusada por ancorar onde não se pode.
     private static ProdutoDaFase? ProdutoAncora(IReadOnlyList<ProdutoDaFase> produtos, string atoAncoraCodigo) =>
-        produtos.FirstOrDefault(p => p.Papel == PapelProdutoFase.Preliminar
+        produtos.FirstOrDefault(p => p.Papel == PapelDaPublicacaoPrevista.Preliminar
             && string.Equals(p.AtoCodigo, atoAncoraCodigo, StringComparison.Ordinal));
 
     private static ParametrosDeclaradosDoRecurso ParametrosDeclarados(RegraRecursoFaseInput declarada) =>

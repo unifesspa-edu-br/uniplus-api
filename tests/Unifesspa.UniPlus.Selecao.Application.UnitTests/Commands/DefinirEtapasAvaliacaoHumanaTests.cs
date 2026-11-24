@@ -8,6 +8,7 @@ using NSubstitute;
 
 using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 using Unifesspa.UniPlus.Configuracao.Contracts;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
@@ -38,7 +39,7 @@ public sealed class DefinirEtapasAvaliacaoHumanaTests
         processo.Id,
         [
             new EtapaProcessoInput(
-                "Redação", CaraterEtapa.Classificatoria, TipoRedacaoOrigemId, 1m, null, 1,
+                "Redação", CaraterEtapa.Classificatoria.Codigo(), TipoRedacaoOrigemId, 1m, null, 1,
                 Produtos: [], Bancas: [], Recursos: [], NotaMaxima: 10m, PassoDoLancamento: 0.5m,
                 FormaDeAvaliacao: forma, RegraConsolidacaoCodigo: regraCodigo, RegraConsolidacaoVersao: regraVersao),
         ]);
@@ -47,12 +48,12 @@ public sealed class DefinirEtapasAvaliacaoHumanaTests
     public async Task Handle_FormaHumanaComRegraDeConsolidacao_GravaAReferenciaDoCatalogo()
     {
         (ProcessoSeletivo processo, IProcessoSeletivoRepository repository) = ProcessoEmRascunho();
-        RegraCatalogo regra = RegraDoCatalogo(RegraConsolidacaoCodigo.CorrecaoIndependente, TipoRegra.RegraConsolidacao);
+        RegraCatalogo regra = RegraDoCatalogo(RegraDeApuracaoDaAvaliacao.CorrecaoIndependente.Codigo(), TipoRegra.RegraApuracaoAvaliacao);
         IRegraCatalogoReader regraCatalogoReader = Substitute.For<IRegraCatalogoReader>();
-        regraCatalogoReader.ObterAsync(RegraConsolidacaoCodigo.CorrecaoIndependente, "v1", Arg.Any<CancellationToken>()).Returns(regra);
+        regraCatalogoReader.ObterAsync(RegraDeApuracaoDaAvaliacao.CorrecaoIndependente.Codigo(), "v1", Arg.Any<CancellationToken>()).Returns(regra);
 
         Result resultado = await Executar(
-            RedacaoHumana(processo, FormaDeAvaliacaoCodigo.Humana, RegraConsolidacaoCodigo.CorrecaoIndependente),
+            RedacaoHumana(processo, "HUMANA", RegraDeApuracaoDaAvaliacao.CorrecaoIndependente.Codigo()),
             repository, Substitute.For<IUnitOfWork>(), cadastros: new(Regras: regraCatalogoReader));
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
@@ -67,12 +68,12 @@ public sealed class DefinirEtapasAvaliacaoHumanaTests
     {
         (ProcessoSeletivo processo, IProcessoSeletivoRepository repository) = ProcessoEmRascunho();
         IRegraCatalogoReader regraCatalogoReader = Substitute.For<IRegraCatalogoReader>();
-        regraCatalogoReader.ObterAsync("PRECISAO-TRUNCAR", "v1", Arg.Any<CancellationToken>())
-            .Returns(RegraDoCatalogo("PRECISAO-TRUNCAR", TipoRegra.RegraArredondamento));
+        regraCatalogoReader.ObterAsync("PRECISAO_TRUNCAR", "v1", Arg.Any<CancellationToken>())
+            .Returns(RegraDoCatalogo("PRECISAO_TRUNCAR", TipoRegra.RegraArredondamento));
         IUnitOfWork unitOfWork = Substitute.For<IUnitOfWork>();
 
         Result resultado = await Executar(
-            RedacaoHumana(processo, FormaDeAvaliacaoCodigo.Humana, "PRECISAO-TRUNCAR"),
+            RedacaoHumana(processo, "HUMANA", "PRECISAO_TRUNCAR"),
             repository, unitOfWork, cadastros: new(Regras: regraCatalogoReader));
 
         resultado.Errors.Should().ContainSingle().Which.Field.Should().Be("etapas[0].regraConsolidacao");
@@ -81,10 +82,10 @@ public sealed class DefinirEtapasAvaliacaoHumanaTests
     }
 
     private static EtapaProcessoInput ObjetivaComPasso(string nome, int ordem) => new(
-        nome, CaraterEtapa.Classificatoria, TipoProvaObjetivaOrigemId, 1m, null, ordem,
+        nome, CaraterEtapa.Classificatoria.Codigo(), TipoProvaObjetivaOrigemId, 1m, null, ordem,
         Produtos: [], Bancas: [], Recursos: [], NotaMaxima: 10m, PassoDoLancamento: 0.5m,
-        FormaDeAvaliacao: FormaDeAvaliacaoCodigo.Objetiva,
-        RegraConsolidacaoCodigo: RegraConsolidacaoCodigo.AvaliacaoUnica, RegraConsolidacaoVersao: "v1");
+        FormaDeAvaliacao: "OBJETIVA",
+        RegraConsolidacaoCodigo: RegraDeApuracaoDaAvaliacao.AvaliacaoUnica.Codigo(), RegraConsolidacaoVersao: "v1");
 
     private static (string Campo, string Codigo)[] RecusasDaObjetivaComPasso(int indice) =>
     [
@@ -107,14 +108,14 @@ public sealed class DefinirEtapasAvaliacaoHumanaTests
     }
 
     [Theory(DisplayName = "Código sem versão, ou versão sem código, é recusado dizendo qual metade falta")]
-    [InlineData("CONSOLIDACAO-AVALIACAO-UNICA", null, "a versão")]
+    [InlineData("APURACAO_AVALIACAO_UNICA", null, "a versão")]
     [InlineData(null, "v1", "o código")]
     public async Task Handle_RegraDeConsolidacaoPelaMetade_Recusa(string? codigo, string? versao, string falta)
     {
         (ProcessoSeletivo processo, IProcessoSeletivoRepository repository) = ProcessoEmRascunho();
 
         Result resultado = await Executar(
-            RedacaoHumana(processo, FormaDeAvaliacaoCodigo.Humana, codigo, versao),
+            RedacaoHumana(processo, "HUMANA", codigo, versao),
             repository, Substitute.For<IUnitOfWork>());
 
         resultado.Errors.Should().ContainSingle().Which.Error.Message.Should().Contain(falta);
@@ -136,9 +137,9 @@ public sealed class DefinirEtapasAvaliacaoHumanaTests
 
     private static EtapaProcessoInput EntrevistaComItens(
         Guid? id, IReadOnlyList<ItemDeAvaliacaoInput> itens, IReadOnlyList<NivelDeAtendimentoInput>? escala = null) => new(
-        "Entrevista", CaraterEtapa.Classificatoria, TipoRedacaoOrigemId, 1m, null, 1,
+        "Entrevista", CaraterEtapa.Classificatoria.Codigo(), TipoRedacaoOrigemId, 1m, null, 1,
         Id: id, Produtos: [], Bancas: [], Recursos: [], NotaMaxima: 10m,
-        FormaDeAvaliacao: FormaDeAvaliacaoCodigo.Humana, ItensDeAvaliacao: itens, EscalaDeAtendimento: escala);
+        FormaDeAvaliacao: "HUMANA", ItensDeAvaliacao: itens, EscalaDeAtendimento: escala);
 
     private static async Task<Result> GravarEntrevistaAsync(
         ProcessoSeletivo processo, IProcessoSeletivoRepository repository, Guid? etapaId, IReadOnlyList<ItemDeAvaliacaoInput> itens) =>

@@ -105,7 +105,7 @@ public static class HashCanonicalComputer
     private static JsonObject DefinicaoDaObrigatoriedadeLegal(ObrigatoriedadeLegal regra) => new()
     {
         ["baseLegal"] = regra.BaseLegal,
-        ["categoria"] = regra.Categoria.ToString(),
+        ["categoria"] = regra.Categoria.Codigo(),
         ["portariaInternaCodigo"] = regra.PortariaInternaCodigo,
         ["predicado"] = JsonSerializer.SerializeToNode(regra.Predicado, CanonicalOptions),
         ["regraCodigo"] = regra.RegraCodigo,
@@ -140,7 +140,7 @@ public static class HashCanonicalComputer
         ["codigo"] = regra.Codigo,
         ["declaracaoDaRegra"] = JsonNode.Parse(regra.DeclaracaoDaRegra.GetRawText()),
         ["invariantes"] = JsonNode.Parse(regra.Invariantes.GetRawText()),
-        ["tipo"] = regra.Tipo.ToCodigo(),
+        ["tipo"] = regra.Tipo.Codigo(),
         ["versao"] = regra.Versao,
     };
 

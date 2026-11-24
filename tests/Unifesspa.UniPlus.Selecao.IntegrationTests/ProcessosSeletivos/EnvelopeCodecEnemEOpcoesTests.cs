@@ -9,6 +9,7 @@ using System.Text.Json.Nodes;
 
 using AwesomeAssertions;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Kernel.Tempo;
 using Unifesspa.UniPlus.Regras.Enums;
@@ -119,10 +120,10 @@ public sealed class EnvelopeCodecEnemEOpcoesTests
 
     private static ConfiguracaoClassificacao Classificacao(string resolucao) => ConfiguracaoClassificacao.Criar(new DeclaracaoDaClassificacao
     {
-        RegraCalculo = ExemploDeEnvelope.Regra(RegraCalculoCodigo.FormulaMediaPonderada, '2'),
-        RegraArredondamento = ExemploDeEnvelope.Regra(RegraArredondamentoCodigo.PrecisaoTruncar, '3'),
+        RegraCalculo = ExemploDeEnvelope.Regra(RegraDeCalculoDaNota.MediaPonderada.Codigo(), '2'),
+        RegraArredondamento = ExemploDeEnvelope.Regra(RegraDeArredondamentoDaNota.Truncar.Codigo(), '3'),
         CasasArredondamento = 2,
-        RegraOrdemAlocacao = ExemploDeEnvelope.Regra(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, '4'),
+        RegraOrdemAlocacao = ExemploDeEnvelope.Regra(RegraDeOrdemDeAlocacao.PrimeiraOpcaoPrioritaria.Codigo(), '4'),
         BaseadoEmEnem = true,
         ResolucaoPesoAreaEnem = resolucao,
         QuadroPesoAreaEnem = QuadroPesoAreaEnemDeTeste.Completo(),
@@ -142,12 +143,12 @@ public sealed class EnvelopeCodecEnemEOpcoesTests
     }
 
 
-    /// <summary>Exemplo mínimo sem ELIM-CORTE-REDACAO/ELIM-ZERO-EM-AREA — os dois valores de <c>baseadoEmEnem</c> continuam válidos.</summary>
+    /// <summary>Exemplo mínimo sem ELIMINACAO_CORTE_REDACAO/ELIMINACAO_ZERO_EM_AREA — os dois valores de <c>baseadoEmEnem</c> continuam válidos.</summary>
     private static ProcessoSeletivo ProcessoSemEliminacaoEnem(bool baseadoEmEnem) =>
         ProcessoMinimo(ConfiguracaoClassificacao.Criar(new DeclaracaoDaClassificacao
         {
-            RegraCalculo = ExemploDeEnvelope.Regra(RegraCalculoCodigo.ClassificacaoImportada, '2'),
-            RegraOrdemAlocacao = ExemploDeEnvelope.Regra(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, '4'),
+            RegraCalculo = ExemploDeEnvelope.Regra(RegraDeCalculoDaNota.ClassificacaoImportada.Codigo(), '2'),
+            RegraOrdemAlocacao = ExemploDeEnvelope.Regra(RegraDeOrdemDeAlocacao.PrimeiraOpcaoPrioritaria.Codigo(), '4'),
             BaseadoEmEnem = baseadoEmEnem,
         }).Value!, etapaDeNotaDoEnem: false);
 
@@ -202,7 +203,7 @@ public sealed class EnvelopeCodecEnemEOpcoesTests
             {
                 VagasOfertadasBase = 40,
                 PercentualDaReservaLegal = 1m,
-                RegraDeDistribuicao = ExemploDeEnvelope.Regra(RegraDistribuicaoVagasCodigo.Institucional, '1'),
+                RegraDeDistribuicao = ExemploDeEnvelope.Regra(RegraDeDistribuicaoDeVagas.Institucional.Codigo(), '1'),
                 Modalidades = [
                 ModalidadeAmpla(),
             ]
@@ -212,10 +213,7 @@ public sealed class EnvelopeCodecEnemEOpcoesTests
     }
 
 
-    private static ModalidadeSelecionada ModalidadeAmpla() => ModalidadeSelecionada.Criar(
-                    Guid.CreateVersion7(), "AC", null, NaturezaLegalModalidade.Ampla,
-                    ComposicaoVagasModalidade.RestanteDasVagasOfertadas, null, RegraRemanejamentoModalidade.Nenhuma,
-                    null, null, null, RegrasDeAplicabilidadeDeTeste.DaNatureza(NaturezaLegalModalidade.Ampla), null, "Res. Unifesspa 532/2021", quantidadeDeclarada: 40).Value!;
+    private static ModalidadeSelecionada ModalidadeAmpla() => ModalidadeSelecionada.Criar(ModalidadesNoCadastroDeTeste.Da("AC", NaturezaLegalModalidade.Ampla, ComposicaoVagasModalidade.RestanteDasVagasOfertadas) with { RegraRemanejamento = null, BaseLegal = "Res. Unifesspa 532/2021" }, 40).Value!;
 
 
     private static void DefinirInscricao(ProcessoSeletivo processo, bool baseadoEmEnem)

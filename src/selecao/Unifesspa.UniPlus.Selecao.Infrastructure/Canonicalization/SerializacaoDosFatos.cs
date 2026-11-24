@@ -157,7 +157,7 @@ internal static class SerializacaoDosFatos
 
     private static void AdicionarTratamentoDoDado(JsonObject objeto, FatoColetado fato)
     {
-        objeto["origemValores"] = fato.OrigemValores.ToString();
+        objeto["origemValores"] = fato.OrigemValores.Codigo();
         objeto["formato"] = fato.Formato;
         objeto["classificacaoProtecao"] = fato.ClassificacaoProtecao;
         objeto["hipoteseLegal"] = fato.HipoteseLegal;
@@ -267,21 +267,19 @@ internal static class SerializacaoDosFatos
 
     internal static JsonObject SerializarGrafoDependencia(GrafoDependenciaConjunta grafo) => new()
     {
-        ["itens"] = new JsonArray([.. grafo.Nos.Select(no => (JsonNode)new JsonObject
+        ["itens"] = new JsonArray([.. grafo.Partes.Select(no => (JsonNode)new JsonObject
         {
-            ["identificador"] = RotuloCanonico(no),
+            ["identificador"] = no.Identidade,
         })]),
-        ["ligacoes"] = new JsonArray([.. grafo.Arestas.Select(aresta => (JsonNode)new JsonObject
+        ["ligacoes"] = new JsonArray([.. grafo.Dependencias.Select(aresta => (JsonNode)new JsonObject
         {
-            ["tipo"] = aresta.Tipo.ToCodigo(),
-            ["origem"] = RotuloCanonico(aresta.Origem),
-            ["destino"] = RotuloCanonico(aresta.Destino),
+            ["tipo"] = aresta.Motivo.Codigo(),
+            ["origem"] = aresta.Origem.Identidade,
+            ["destino"] = aresta.Destino.Identidade,
         })]),
         ["ordemDeDependencia"] = new JsonArray(
-            [.. grafo.OrdemTopologica.Select(no => (JsonNode?)JsonValue.Create(RotuloCanonico(no)))]),
+            [.. grafo.OrdemDeColeta.Select(no => (JsonNode?)JsonValue.Create(no.Identidade))]),
     };
-
-    private static string RotuloCanonico(NoGrafoDependencia no) => $"{no.Classe.ToCodigo()}/{no.Codigo}";
 
     internal static JsonArray SerializarModalidadesOfertadas(IEnumerable<ConfiguracaoDistribuicaoVagas> distribuicao)
     {

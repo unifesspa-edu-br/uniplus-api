@@ -95,16 +95,10 @@ internal static class ProcessoComMatrizDaLeiDeTeste
     /// lei ofertada.
     /// </summary>
     private static ModalidadeSelecionada ModalidadeDaLei(string codigo, PredicadoDnf regra) => codigo == "AC"
-        ? ModalidadeSelecionada.Criar(
-            Guid.CreateVersion7(), codigo, "Ampla concorrência", NaturezaLegalModalidade.Ampla, ComposicaoVagasModalidade.RestanteDasVagasOfertadas,
-            null, RegraRemanejamentoModalidade.Nenhuma, null, null, null, regra, null, "Res. Unifesspa 532/2021", quantidadeDeclarada: 22).Value!
+        ? ModalidadeSelecionada.Criar(ModalidadesNoCadastroDeTeste.Da(codigo, NaturezaLegalModalidade.Ampla, ComposicaoVagasModalidade.RestanteDasVagasOfertadas) with { Descricao = "Ampla concorrência", RegraRemanejamento = null, RegraDeAplicabilidade = regra, BaseLegal = "Res. Unifesspa 532/2021" }, 22).Value!
         : codigo == "AC_PCD"
-            ? ModalidadeSelecionada.Criar(
-                Guid.CreateVersion7(), codigo, $"Modalidade {codigo}", NaturezaLegalModalidade.AcaoAfirmativa, ComposicaoVagasModalidade.RetiradaDeOutraModalidade,
-                "AC", RegraRemanejamentoModalidade.DestinoUnico, "AC", null, null, regra, null, "Res. Unifesspa 532/2021", quantidadeDeclarada: 2).Value!
-            : ModalidadeSelecionada.Criar(
-                Guid.CreateVersion7(), codigo, $"Modalidade {codigo}", NaturezaLegalModalidade.Ampla, ComposicaoVagasModalidade.RetiradaDeOutraModalidade,
-                "AC", RegraRemanejamentoModalidade.Nenhuma, null, null, null, regra, null, "Res. Unifesspa 532/2021", quantidadeDeclarada: 2).Value!;
+            ? ModalidadeSelecionada.Criar(ModalidadesNoCadastroDeTeste.Da(codigo, NaturezaLegalModalidade.AcaoAfirmativa, ComposicaoVagasModalidade.RetiradaDeOutraModalidade) with { Descricao = $"Modalidade {codigo}", ComposicaoOrigemCodigo = "AC", RegraRemanejamento = RegraRemanejamentoModalidade.DestinoUnico, RemanejamentoDestino = "AC", RegraDeAplicabilidade = regra, BaseLegal = "Res. Unifesspa 532/2021" }, 2).Value!
+            : ModalidadeSelecionada.Criar(ModalidadesNoCadastroDeTeste.Da(codigo, NaturezaLegalModalidade.Ampla, ComposicaoVagasModalidade.RetiradaDeOutraModalidade) with { Descricao = $"Modalidade {codigo}", ComposicaoOrigemCodigo = "AC", RegraRemanejamento = null, RegraDeAplicabilidade = regra, BaseLegal = "Res. Unifesspa 532/2021" }, 2).Value!;
 
     /// <summary>A derivação na forma que o processo grava: cada cláusula do predicado vira um grupo de condições.</summary>
     private static ConfiguracaoDerivacaoFato Configurada(DerivacaoDoFato derivacao) =>

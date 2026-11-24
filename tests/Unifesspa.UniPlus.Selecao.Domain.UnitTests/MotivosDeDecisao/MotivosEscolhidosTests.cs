@@ -23,7 +23,7 @@ public sealed class MotivosEscolhidosTests
     public void Desativados_Pendente_Recusa()
     {
         ProcessoSeletivo processo = ProcessoParaMotivos.Rascunho();
-        MotivoDeDecisao origem = ProcessoParaMotivos.DaIsencao(FundamentoIsencaoCodigo.CadastroUnico, SentidoDoMotivo.Favoravel, "RENDA_ACIMA_DO_LIMITE");
+        MotivoDeDecisao origem = ProcessoParaMotivos.DaIsencao("CADASTRO_UNICO", SentidoDoMotivo.Favoravel, "RENDA_ACIMA_DO_LIMITE");
         MotivoEscolhidoComOrigem escolhido = NaInscricao(processo, origem, versaoDeEntrada: VersaoQueNasce);
         origem.Desativar();
 
@@ -39,7 +39,7 @@ public sealed class MotivosEscolhidosTests
     public void Desativados_SemOrigem_Recusa()
     {
         ProcessoSeletivo processo = ProcessoParaMotivos.Rascunho();
-        MotivoDeDecisaoDoProcesso escolhido = Escolha(processo, ProcessoParaMotivos.DaIsencao(FundamentoIsencaoCodigo.CadastroUnico, SentidoDoMotivo.Favoravel), VersaoQueNasce);
+        MotivoDeDecisaoDoProcesso escolhido = Escolha(processo, ProcessoParaMotivos.DaIsencao("CADASTRO_UNICO", SentidoDoMotivo.Favoravel), VersaoQueNasce);
 
         OsMotivos(new MotivoEscolhidoComOrigem(escolhido, null)).Desativados(ProcessoParaMotivos.Lugares(processo))
             .Should().ContainSingle().Which.Error.Code.Should().Be(MotivoDeDecisaoErrorCodes.MotivoDesativado);
@@ -49,7 +49,7 @@ public sealed class MotivosEscolhidosTests
     public void Desativados_JaPublicado_NaoRecusa()
     {
         ProcessoSeletivo processo = ProcessoParaMotivos.Rascunho();
-        MotivoDeDecisao origem = ProcessoParaMotivos.DaIsencao(FundamentoIsencaoCodigo.CadastroUnico, SentidoDoMotivo.Favoravel);
+        MotivoDeDecisao origem = ProcessoParaMotivos.DaIsencao("CADASTRO_UNICO", SentidoDoMotivo.Favoravel);
         MotivoEscolhidoComOrigem publicado = NaInscricao(processo, origem, versaoDeEntrada: 1);
         origem.Desativar();
 
@@ -60,7 +60,7 @@ public sealed class MotivosEscolhidosTests
     public void Desativados_Ativo_NaoRecusa()
     {
         ProcessoSeletivo processo = ProcessoParaMotivos.Rascunho();
-        MotivoEscolhidoComOrigem ativo = NaInscricao(processo, ProcessoParaMotivos.DaIsencao(FundamentoIsencaoCodigo.CadastroUnico, SentidoDoMotivo.Favoravel), VersaoQueNasce);
+        MotivoEscolhidoComOrigem ativo = NaInscricao(processo, ProcessoParaMotivos.DaIsencao("CADASTRO_UNICO", SentidoDoMotivo.Favoravel), VersaoQueNasce);
 
         OsMotivos(ativo).Desativados(ProcessoParaMotivos.Lugares(processo)).Should().BeEmpty();
     }
@@ -180,9 +180,9 @@ public sealed class MotivosEscolhidosTests
     public void QueCompoemAVersao_SemOsPendentesDesativados()
     {
         ProcessoSeletivo processo = ProcessoParaMotivos.Rascunho();
-        MotivoDeDecisao antiga = ProcessoParaMotivos.DaIsencao(FundamentoIsencaoCodigo.CadastroUnico, SentidoDoMotivo.Favoravel, "ANTIGO");
-        MotivoDeDecisao desativada = ProcessoParaMotivos.DaIsencao(FundamentoIsencaoCodigo.CadastroUnico, SentidoDoMotivo.Desfavoravel, "DESATIVADO");
-        MotivoDeDecisao ativa = ProcessoParaMotivos.DaIsencao(FundamentoIsencaoCodigo.CadastroUnico, SentidoDoMotivo.Desfavoravel, "ATIVO");
+        MotivoDeDecisao antiga = ProcessoParaMotivos.DaIsencao("CADASTRO_UNICO", SentidoDoMotivo.Favoravel, "ANTIGO");
+        MotivoDeDecisao desativada = ProcessoParaMotivos.DaIsencao("CADASTRO_UNICO", SentidoDoMotivo.Desfavoravel, "DESATIVADO");
+        MotivoDeDecisao ativa = ProcessoParaMotivos.DaIsencao("CADASTRO_UNICO", SentidoDoMotivo.Desfavoravel, "ATIVO");
         MotivoEscolhidoComOrigem[] escolhidos =
         [
             NaInscricao(processo, antiga, versaoDeEntrada: 1), NaInscricao(processo, desativada, VersaoQueNasce), NaInscricao(processo, ativa, VersaoQueNasce),
@@ -200,8 +200,8 @@ public sealed class MotivosEscolhidosTests
         MotivoEscolhidoComOrigem[] escolhidos =
         [
             Na(processo, ProcessoParaMotivos.LugarDaEtapa(processo, "Prova objetiva"), IsencaoFavoravel(), VersaoQueNasce),
-            NaInscricao(processo, ProcessoParaMotivos.DaIsencao(FundamentoIsencaoCodigo.CadastroUnico, SentidoDoMotivo.Desfavoravel, "PUBLICADO"), versaoDeEntrada: 1),
-            NaInscricao(processo, ProcessoParaMotivos.DaIsencao(FundamentoIsencaoCodigo.CadastroUnico, SentidoDoMotivo.Desfavoravel, "DECLARADO"), VersaoQueNasce),
+            NaInscricao(processo, ProcessoParaMotivos.DaIsencao("CADASTRO_UNICO", SentidoDoMotivo.Desfavoravel, "PUBLICADO"), versaoDeEntrada: 1),
+            NaInscricao(processo, ProcessoParaMotivos.DaIsencao("CADASTRO_UNICO", SentidoDoMotivo.Desfavoravel, "DECLARADO"), VersaoQueNasce),
         ];
         ProcessoParaMotivos.DeclararNaFase(processo, "INSCRICAO", TipoMotivoDeDecisao.IsencaoDaTaxa);
 
@@ -227,7 +227,7 @@ public sealed class MotivosEscolhidosTests
     private static MotivosEscolhidos OsMotivos(params MotivoEscolhidoComOrigem[] escolhidos) => new(escolhidos, VersaoQueNasce);
 
     private static MotivoDeDecisao IsencaoFavoravel() =>
-        ProcessoParaMotivos.DaIsencao(FundamentoIsencaoCodigo.CadastroUnico, SentidoDoMotivo.Favoravel);
+        ProcessoParaMotivos.DaIsencao("CADASTRO_UNICO", SentidoDoMotivo.Favoravel);
 
     private static MotivoDeDecisaoDoProcesso Escolha(ProcessoSeletivo processo, MotivoDeDecisao origem, int versaoDeEntrada) =>
         ProcessoParaMotivos.Escolha(processo, ProcessoParaMotivos.LugarDaFase(processo, "INSCRICAO"), origem, versaoDeEntrada);
@@ -241,7 +241,7 @@ public sealed class MotivosEscolhidosTests
     // O tipo é de isenção da taxa em qualquer lugar: só o código distingue as recusas na ordem esperada.
     private static MotivoEscolhidoComOrigem EmDesativado(ProcessoSeletivo processo, LugarDaDecisao lugar, string codigo)
     {
-        MotivoDeDecisao origem = ProcessoParaMotivos.DaIsencao(FundamentoIsencaoCodigo.CadastroUnico, SentidoDoMotivo.Favoravel, codigo);
+        MotivoDeDecisao origem = ProcessoParaMotivos.DaIsencao("CADASTRO_UNICO", SentidoDoMotivo.Favoravel, codigo);
         MotivoEscolhidoComOrigem escolhido = Na(processo, lugar, origem, VersaoQueNasce);
         origem.Desativar();
 

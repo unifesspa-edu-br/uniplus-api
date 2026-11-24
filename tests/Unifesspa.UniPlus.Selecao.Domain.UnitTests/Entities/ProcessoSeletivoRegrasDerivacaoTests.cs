@@ -4,6 +4,7 @@ using System.Text.Json;
 
 using AwesomeAssertions;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.Formularios;
@@ -54,7 +55,7 @@ public sealed class ProcessoSeletivoRegrasDerivacaoTests
     private static void OfertarModalidades(ProcessoSeletivo processo, params (string Codigo, PredicadoDnf Regra)[] ofertadas)
     {
         List<ModalidadeSelecionada> modalidades = [.. ofertadas.Select(static oferta => ModalidadeAmplaDeDezVagas(oferta.Codigo, oferta.Regra))];
-        ReferenciaRegra regraDeDistribuicao = ReferenciaRegra.De(RegraDistribuicaoVagasCodigo.Institucional, "v1", new string('a', 64));
+        ReferenciaRegra regraDeDistribuicao = ReferenciaRegra.De(RegraDeDistribuicaoDeVagas.Institucional.Codigo(), "v1", new string('a', 64));
         ConfiguracaoDistribuicaoVagas config = ConfiguracaoDistribuicaoVagas.Criar(Guid.CreateVersion7(),
             new DistribuicaoDeVagasDeclarada { VagasOfertadasBase = modalidades.Count * 10, PercentualDaReservaLegal = 1m, RegraDeDistribuicao = regraDeDistribuicao, Modalidades = modalidades },
             new FatosDaOfertaNoCadastro { OfertaCurso = OfertaCursoDeTeste.Medicina }).Value!;
@@ -62,21 +63,7 @@ public sealed class ProcessoSeletivoRegrasDerivacaoTests
         processo.DefinirDistribuicaoVagas([config], FatosDeModalidadeDeTeste.DoCatalogo).IsSuccess.Should().BeTrue();
     }
 
-    private static ModalidadeSelecionada ModalidadeAmplaDeDezVagas(string codigo, PredicadoDnf regraDeAplicabilidade) => ModalidadeSelecionada.Criar(
-        modalidadeOrigemId: Guid.CreateVersion7(),
-        codigo: codigo,
-        descricao: null,
-        naturezaLegal: NaturezaLegalModalidade.Ampla,
-        composicaoVagas: ComposicaoVagasModalidade.RestanteDasVagasOfertadas,
-        composicaoOrigemCodigo: null,
-        regraRemanejamento: RegraRemanejamentoModalidade.Nenhuma,
-        remanejamentoDestino: null,
-        remanejamentoPar: null,
-        remanejamentoFallback: null,
-        regraDeAplicabilidade: regraDeAplicabilidade,
-        acaoQuandoIndeferido: null,
-        baseLegal: "Res. Unifesspa 532/2021",
-        quantidadeDeclarada: 10).Value!;
+    private static ModalidadeSelecionada ModalidadeAmplaDeDezVagas(string codigo, PredicadoDnf regraDeAplicabilidade) => ModalidadeSelecionada.Criar(ModalidadesNoCadastroDeTeste.Da(codigo, NaturezaLegalModalidade.Ampla, ComposicaoVagasModalidade.RestanteDasVagasOfertadas) with { RegraDeAplicabilidade = regraDeAplicabilidade, BaseLegal = "Res. Unifesspa 532/2021" }, 10).Value!;
 
     /// <summary>
     /// Um ciclo de derivação (D1 depende de D2, D2 depende de D1) atravessa a validação isolada
@@ -263,7 +250,7 @@ public sealed class ProcessoSeletivoRegrasDerivacaoTests
         Result<GrafoDependenciaConjunta> grafo = CitacoesDosFormularios.ConstruirGrafoDependencia(processo.Declaracao());
 
         grafo.IsSuccess.Should().BeTrue(grafo.Error?.Message);
-        grafo.Value!.Nos.Should().Contain(n => n.Classe == ClasseNoGrafo.Fato && n.Codigo == "MODALIDADE");
+        grafo.Value!.Partes.Should().Contain(n => n.Tipo == TipoDeParteDaConfiguracao.Dado && n.Codigo == "MODALIDADE");
     }
 
     [Fact(DisplayName = "Ciclo de derivação passa nas factories das componentes mas o grafo conjunto o recusa")]

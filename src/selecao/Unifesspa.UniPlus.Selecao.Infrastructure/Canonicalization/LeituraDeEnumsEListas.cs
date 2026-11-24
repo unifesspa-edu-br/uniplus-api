@@ -15,29 +15,6 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 internal static class LeituraDeEnumsEListas
 {
     /// <summary>
-    /// Enum pelo <b>nome exato</b> — o encoder escreve <c>ToString()</c>. Aceitar
-    /// case-insensitive faria dois envelopes textualmente distintos reidratarem no mesmo
-    /// valor, e o round-trip acusaria uma divergência que a leitura já deveria ter
-    /// recusado.
-    /// </summary>
-    public static TEnum Enumeracao<TEnum>(this LeitorEnvelope leitor, JsonObject pai, string chave, string path)
-        where TEnum : struct, Enum
-    {
-        string texto = leitor.Texto(pai, chave, path);
-        if (leitor.Falhou)
-        {
-            return default;
-        }
-
-        if (!Enum.TryParse(texto, ignoreCase: false, out TEnum valor) || !Enum.IsDefined(valor))
-        {
-            return leitor.Malformado<TEnum>($"{path}.{chave}", $"valor '{texto}' não é um {typeof(TEnum).Name} conhecido.");
-        }
-
-        return valor;
-    }
-
-    /// <summary>
     /// Enum de código de contrato pelo <b>código exato</b>: o encoder escreve <c>Codigo()</c>, e o código que o vocabulário não
     /// conhece é recusado, sem aparar espaço nem ignorar caixa.
     /// </summary>
@@ -56,10 +33,10 @@ internal static class LeituraDeEnumsEListas
     }
 
     /// <summary>
-    /// Variante opcional de <see cref="Enumeracao{TEnum}"/>: <see langword="null"/> é valor legítimo
+    /// Variante opcional de <see cref="CodigoDeContrato{TEnum}"/>: <see langword="null"/> é valor legítimo
     /// quando o campo não se aplica à configuração.
     /// </summary>
-    public static TEnum? EnumeracaoOpcional<TEnum>(this LeitorEnvelope leitor, JsonObject pai, string chave, string path)
+    public static TEnum? CodigoDeContratoOpcional<TEnum>(this LeitorEnvelope leitor, JsonObject pai, string chave, string path)
         where TEnum : struct, Enum
     {
         if (leitor.Falhou)
@@ -68,7 +45,7 @@ internal static class LeituraDeEnumsEListas
         }
 
         JsonNode? node = pai[chave];
-        return node is null ? null : leitor.Enumeracao<TEnum>(pai, chave, path);
+        return node is null ? null : leitor.CodigoDeContrato<TEnum>(pai, chave, path);
     }
 
     /// <summary>
@@ -181,6 +158,18 @@ internal static class LeituraDeEnumsEListas
     /// a tripla <i>existiu</i> é o hash do <b>envelope</b>, que cobre os três campos.
     /// </para>
     /// </remarks>
+    public static ReferenciaRegra Regra<TRegra>(this LeitorEnvelope leitor, JsonObject pai, string chave, string path)
+        where TRegra : struct, Enum =>
+        leitor.Regra(pai, chave, path, [.. CatalogoDe<TRegra>.Valores().Select(static valor => valor.Codigo())]);
+
+    public static ReferenciaRegra? RegraOpcional<TRegra>(this LeitorEnvelope leitor, JsonObject pai, string chave, string path)
+        where TRegra : struct, Enum =>
+        leitor.RegraOpcional(pai, chave, path, [.. CatalogoDe<TRegra>.Valores().Select(static valor => valor.Codigo())]);
+
+    public static ReferenciaRegra RegraDoObjeto<TRegra>(this LeitorEnvelope leitor, JsonObject objeto, string path, params string[] chavesAlemDaTripla)
+        where TRegra : struct, Enum =>
+        leitor.RegraDoObjeto(objeto, path, [.. CatalogoDe<TRegra>.Valores().Select(static valor => valor.Codigo())], chavesAlemDaTripla);
+
     public static ReferenciaRegra Regra(this LeitorEnvelope leitor, JsonObject pai, string chave, string path, params string[] rol)
     {
         if (leitor.Falhou)

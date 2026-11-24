@@ -30,26 +30,26 @@ public sealed class DocumentoExigidoBaseLegal : EntityBase
     private DocumentoExigidoBaseLegal() { }
 
     /// <summary>Confere os dados informados da base legal e acumula as recusas.</summary>
-    public static List<FieldError> ValidarFormaBasica(string? referencia, TipoAbrangencia abrangencia, StatusBaseLegal situacao) =>
+    public static List<FieldError> ValidarFormaBasica(string? referencia, TipoAbrangencia? abrangencia, StatusBaseLegal? situacao) =>
         [.. new[] { RecusaDaReferencia(referencia), RecusaDaAbrangencia(abrangencia), RecusaDaSituacao(situacao) }.OfType<FieldError>()];
 
     private static FieldError? RecusaDaReferencia(string? referencia) => string.IsNullOrWhiteSpace(referencia)
         ? new("referencia", new DomainError("DocumentoExigidoBaseLegal.ReferenciaObrigatoria", "A referência da base legal é obrigatória."))
         : null;
 
-    private static FieldError? RecusaDaAbrangencia(TipoAbrangencia abrangencia) => abrangencia == TipoAbrangencia.Nenhuma
+    private static FieldError? RecusaDaAbrangencia(TipoAbrangencia? abrangencia) => abrangencia is null
         ? new("abrangencia", new DomainError("DocumentoExigidoBaseLegal.AbrangenciaObrigatoria", "A abrangência da base legal é obrigatória."))
         : null;
 
-    private static FieldError? RecusaDaSituacao(StatusBaseLegal situacao) => situacao == StatusBaseLegal.Nenhuma
+    private static FieldError? RecusaDaSituacao(StatusBaseLegal? situacao) => situacao is null
         ? new("situacao", new DomainError("DocumentoExigidoBaseLegal.SituacaoObrigatoria", "A situação da base legal é obrigatória."))
         : null;
 
     public static Result<DocumentoExigidoBaseLegal> Criar(
-        string referencia, TipoAbrangencia abrangencia, StatusBaseLegal situacao, string? observacao)
+        string referencia, TipoAbrangencia? abrangencia, StatusBaseLegal? situacao, string? observacao)
     {
         List<FieldError> erros = ValidarFormaBasica(referencia, abrangencia, situacao);
-        if (erros.Count > 0 || referencia is null)
+        if (erros.Count > 0 || referencia is null || abrangencia is null || situacao is null)
         {
             return Result<DocumentoExigidoBaseLegal>.ValidationFailure(erros);
         }
@@ -57,8 +57,8 @@ public sealed class DocumentoExigidoBaseLegal : EntityBase
         return Result<DocumentoExigidoBaseLegal>.Success(new DocumentoExigidoBaseLegal
         {
             Referencia = referencia.Trim(),
-            Abrangencia = abrangencia,
-            Situacao = situacao,
+            Abrangencia = abrangencia.Value,
+            Situacao = situacao.Value,
             Observacao = string.IsNullOrWhiteSpace(observacao) ? null : observacao.Trim(),
         });
     }

@@ -1,5 +1,7 @@
 namespace Unifesspa.UniPlus.Selecao.Domain.UnitTests.ProcessosSeletivos.LeituraDoDocumento;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
+
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Cronograma;
@@ -51,8 +53,8 @@ internal static class DocumentoLidoDeTeste
 
     private static Dictionary<(string Codigo, string Versao), RegraDoCatalogoCitada> Regras() => new()
     {
-        [(CodigoDaConvencao, "v1")] = Regra(TipoRegra.AlgoritmoContagemPrazo, CodigoDaConvencao),
-        [(RegraPrazoRecursoCodigo.AncoradoEmAto, "v1")] = Regra(TipoRegra.RegraPrazoRecurso, RegraPrazoRecursoCodigo.AncoradoEmAto),
+        [(CodigoDaConvencao, "v1")] = Regra(TipoRegra.ConvencaoContagemPrazo, CodigoDaConvencao),
+        [(RegraDePrazoDoRecurso.ContadoDaPublicacaoDoAto.Codigo(), "v1")] = Regra(TipoRegra.RegraPrazoRecurso, RegraDePrazoDoRecurso.ContadoDaPublicacaoDoAto.Codigo()),
         [(CodigoDoProcedimento, "v1")] = Regra(TipoRegra.RegraProcedimentoRecurso, CodigoDoProcedimento),
     };
 
@@ -72,9 +74,9 @@ internal static class DocumentoLidoDeTeste
 
     internal static CondicaoNoDocumento Condicao(TipoDeCondicaoDeHomologacao? tipo, int edicao, string motivo) => new(tipo, edicao, motivo, null);
 
-    internal static ProdutoNoDocumento Preliminar(int posicao, string ato) => new(posicao, ato, PapelProdutoFase.Preliminar);
+    internal static ProdutoNoDocumento Preliminar(int posicao, string ato) => new(posicao, ato, PapelDaPublicacaoPrevista.Preliminar);
 
-    internal static ProdutoNoDocumento Definitivo(int posicao, string ato) => new(posicao, ato, PapelProdutoFase.Definitivo);
+    internal static ProdutoNoDocumento Definitivo(int posicao, string ato) => new(posicao, ato, PapelDaPublicacaoPrevista.Definitivo);
 
     internal static IdentificacaoECronogramaLidos Ler(DeclaracoesDoDocumento documento) =>
         IdentificacaoECronogramaLidos.Ler(documento, Cadastros());

@@ -102,10 +102,10 @@ internal static class ExemploDeEnvelopeCronograma
 
     internal static IReadOnlyList<ProdutoDaFase> ProdutosDaFaseDeRecurso(int variante, bool permutar) =>
         Ordem<ProdutoDaFase>([
-            ProdutoDaFase.Reidratar(ProdutoId(2, 1, variante), "GABARITO", PapelProdutoFase.Preliminar),
-            ProdutoDaFase.Reidratar(ProdutoId(2, 2, variante), "RESULTADO_CLASSIFICACAO", PapelProdutoFase.Preliminar),
-            ProdutoDaFase.Reidratar(ProdutoId(2, 3, variante), "GABARITO", PapelProdutoFase.Definitivo),
-            ProdutoDaFase.Reidratar(ProdutoId(2, 4, variante), "RESULTADO_CLASSIFICACAO", PapelProdutoFase.Definitivo),
+            ProdutoDaFase.Reidratar(ProdutoId(2, 1, variante), "GABARITO", PapelDaPublicacaoPrevista.Preliminar),
+            ProdutoDaFase.Reidratar(ProdutoId(2, 2, variante), "RESULTADO_CLASSIFICACAO", PapelDaPublicacaoPrevista.Preliminar),
+            ProdutoDaFase.Reidratar(ProdutoId(2, 3, variante), "GABARITO", PapelDaPublicacaoPrevista.Definitivo),
+            ProdutoDaFase.Reidratar(ProdutoId(2, 4, variante), "RESULTADO_CLASSIFICACAO", PapelDaPublicacaoPrevista.Definitivo),
         ], permutar);
 
     // DUAS bancas do MESMO tipo, distinguidas pelo id, pela posição no tipo e pelos candidatos
@@ -172,8 +172,8 @@ internal static class ExemploDeEnvelopeCronograma
 
     internal static RegraRecursoFase RegraDeRecursoDaFase(int variante) =>
         RegraRecursoFase.Criar(
-            Regra(RegraPrazoRecursoCodigo.AncoradoEmAto, '9'),
-            ParametrosDoRecursoDeTeste.Declarados(48m, UnidadePrazo.Horas, guardaDaVaga: "naoGuarda"),
+            Regra(RegraDePrazoDoRecurso.ContadoDaPublicacaoDoAto.Codigo(), '9'),
+            ParametrosDoRecursoDeTeste.Declarados(48m, UnidadePrazo.Horas, guardaDaVaga: "NAO_GUARDA"),
             // Ancora no resultado preliminar, não no gabarito preliminar: os dois têm o
             // mesmo papel, e é a identidade do produto que diz qual publicação abre a janela.
             ProdutoId(2, 2, variante),
@@ -181,8 +181,8 @@ internal static class ExemploDeEnvelopeCronograma
 
     private static ProcedimentosDeRecurso ProcedimentosDoExemploDaFase() => ProcedimentosDeRecurso.De(
     [
-        ProcedimentoDeRecursoDeclarado.De(TipoMotivoDeDecisao.Classificacao, null, Regra(RegraProcedimentoRecursoCodigo.Recalculo, '7')),
-        ProcedimentoDeRecursoDeclarado.De(TipoMotivoDeDecisao.HomologacaoDasInscricoes, null, Regra(RegraProcedimentoRecursoCodigo.Recorrecao, '8')),
+        ProcedimentoDeRecursoDeclarado.De(TipoMotivoDeDecisao.Classificacao, null, Regra(RegraDeProcedimentoDoRecurso.Recalculo.Codigo(), '7')),
+        ProcedimentoDeRecursoDeclarado.De(TipoMotivoDeDecisao.HomologacaoDasInscricoes, null, Regra(RegraDeProcedimentoDoRecurso.Recorrecao.Codigo(), '8')),
     ]);
 
     /// <summary>

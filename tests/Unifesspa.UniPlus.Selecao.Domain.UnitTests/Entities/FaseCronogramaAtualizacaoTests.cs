@@ -32,7 +32,7 @@ public sealed class FaseCronogramaAtualizacaoTests
 
         ProdutoDaFase produto = viva.Produtos.Should().ContainSingle().Subject;
         produto.Id.Should().Be(idDaLinha);
-        produto.Papel.Should().Be(PapelProdutoFase.Definitivo);
+        produto.Papel.Should().Be(PapelDaPublicacaoPrevista.Definitivo);
     }
 
     [Fact(DisplayName = "Preliminar e definitiva da mesma matéria não casam com a mesma linha viva")]
@@ -45,7 +45,7 @@ public sealed class FaseCronogramaAtualizacaoTests
 
         Atualizar(viva, nova);
 
-        viva.Produtos.Select(static p => p.Papel).Should().Equal(PapelProdutoFase.Definitivo, PapelProdutoFase.Preliminar);
+        viva.Produtos.Select(static p => p.Papel).Should().Equal(PapelDaPublicacaoPrevista.Definitivo, PapelDaPublicacaoPrevista.Preliminar);
         viva.Produtos.Select(static p => p.Id).Should().Equal(definitivoNovo.Id, idPreliminarVivo);
     }
 
@@ -53,8 +53,8 @@ public sealed class FaseCronogramaAtualizacaoTests
     public void AtualizarDe_DuasLinhasVivasEmOrdemTrocada_CadaPapelMantemOSeuId()
     {
         FaseCronograma viva = Fase(new() { Produtos = [Preliminar(Resultado), Definitivo(Resultado)] });
-        Guid idPreliminar = viva.Produtos.Single(static p => p.Papel == PapelProdutoFase.Preliminar).Id;
-        Guid idDefinitivo = viva.Produtos.Single(static p => p.Papel == PapelProdutoFase.Definitivo).Id;
+        Guid idPreliminar = viva.Produtos.Single(static p => p.Papel == PapelDaPublicacaoPrevista.Preliminar).Id;
+        Guid idDefinitivo = viva.Produtos.Single(static p => p.Papel == PapelDaPublicacaoPrevista.Definitivo).Id;
         FaseCronograma nova = Fase(new() { Produtos = [Definitivo(Resultado), Preliminar(Resultado)] });
 
         Atualizar(viva, nova);
@@ -66,7 +66,7 @@ public sealed class FaseCronogramaAtualizacaoTests
     public void AtualizarDe_LinhaQueNaoChega_SaiDaColecao()
     {
         FaseCronograma viva = Fase(new() { Produtos = [Preliminar(Resultado), Definitivo(Resultado)] });
-        Guid idDefinitivo = viva.Produtos.Single(static p => p.Papel == PapelProdutoFase.Definitivo).Id;
+        Guid idDefinitivo = viva.Produtos.Single(static p => p.Papel == PapelDaPublicacaoPrevista.Definitivo).Id;
         FaseCronograma nova = Fase(new() { Produtos = [Definitivo(Resultado)] });
 
         Atualizar(viva, nova);

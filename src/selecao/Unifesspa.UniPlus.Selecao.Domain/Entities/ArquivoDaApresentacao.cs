@@ -4,6 +4,7 @@ using Enums;
 
 using Errors;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Domain.Entities;
 using Unifesspa.UniPlus.Kernel.Extensions;
 using Unifesspa.UniPlus.Kernel.Results;
@@ -273,7 +274,7 @@ public sealed class ArquivoDaApresentacao : EntityBase
         MotivoDeRecusaDoArquivo.TamanhoExcedido =>
             $"Este arquivo passa do tamanho máximo de {MegabytesDe(TamanhoMaximoBytes)} MB para este documento. Envie um arquivo menor.",
         MotivoDeRecusaDoArquivo.FormatoNaoCorresponde =>
-            $"O conteúdo deste arquivo não corresponde ao formato {Formato.ToCodigo()}. Envie o arquivo original.",
+            $"O conteúdo deste arquivo não corresponde ao formato {Formato.Codigo()}. Envie o arquivo original.",
         MotivoDeRecusaDoArquivo.PdfComSenha => "Este PDF está protegido por senha. Envie o arquivo sem senha.",
         _ => "Este arquivo não passou na verificação de segurança (antivírus) e não foi aceito. Envie outro arquivo.",
     };

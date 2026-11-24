@@ -46,10 +46,10 @@
     },
     "origemCandidatos": {
       "title": "Origem dos candidatos",
-      "description": "Como os candidatos chegam ao processo: inscrevendo-se pelo sistema (inscricaoPropria) ou por importação de uma lista externa (importacaoExterna).",
+      "description": "Como os candidatos chegam ao processo: inscrevendo-se pelo sistema (INSCRICAO_PROPRIA) ou por importação de uma lista externa (IMPORTACAO_EXTERNA).",
       "enum": [
-        "inscricaoPropria",
-        "importacaoExterna"
+        "INSCRICAO_PROPRIA",
+        "IMPORTACAO_EXTERNA"
       ]
     },
     "localidadeCodigoIbge": {

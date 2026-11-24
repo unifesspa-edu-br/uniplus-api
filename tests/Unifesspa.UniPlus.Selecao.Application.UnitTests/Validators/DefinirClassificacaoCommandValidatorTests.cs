@@ -11,8 +11,8 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 public sealed class DefinirClassificacaoCommandValidatorTests
 {
     private static DefinirClassificacaoCommand ComandoValido(IReadOnlyList<RegraEliminacaoInput> regrasEliminacao) => new(
-        Guid.CreateVersion7(), "FORMULA-MEDIA-PONDERADA", "v1", "PRECISAO-TRUNCAR", "v1", 2,
-        "ALOCACAO-PRIMEIRA-OPCAO-PRIORITARIA", "v1", regrasEliminacao, false, null, null);
+        Guid.CreateVersion7(), "FORMULA_MEDIA_PONDERADA", "v1", "PRECISAO_TRUNCAR", "v1", 2,
+        "ALOCACAO_PRIMEIRA_OPCAO_PRIORITARIA", "v1", regrasEliminacao, false, null, null);
 
     [Fact(DisplayName = "Validator passa com comando válido e lista de eliminação vazia")]
     public void Aceita_ComandoValido()

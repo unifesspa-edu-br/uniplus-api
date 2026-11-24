@@ -50,8 +50,8 @@ public sealed class LeiautesDoInepEndpointTests : IAsyncLifetime
     }
 
     [Theory(DisplayName = "o filtro por tipo devolve só os leiautes daquele tipo; sem filtro, os dois")]
-    [InlineData("?tipo=Retorno", "INEP_ENEM_RETORNO", 20)]
-    [InlineData("?tipo=Envio", "INEP_ENEM_ENVIO", 1)]
+    [InlineData("?tipo=RETORNO", "INEP_ENEM_RETORNO", 20)]
+    [InlineData("?tipo=ENVIO", "INEP_ENEM_ENVIO", 1)]
     public async Task Listar_FiltraPorTipo(string filtro, string codigo, int campos)
     {
         using HttpClient client = _fixture.Factory.CreateClient();

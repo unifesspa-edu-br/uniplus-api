@@ -3,6 +3,7 @@ namespace Unifesspa.UniPlus.Selecao.Application.UnitTests.Commands;
 using System.Text.Json;
 
 using Unifesspa.UniPlus.Configuracao.Contracts;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Publicacoes.Contracts;
 using Unifesspa.UniPlus.Regras.Services;
 using Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
@@ -28,7 +29,7 @@ internal static class FasesDoCronogramaDeTeste
         FaseCanonicaId: faseCanonicaId,
         Inicio: new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero),
         Fim: new DateTimeOffset(2026, 1, 31, 0, 0, 0, TimeSpan.Zero),
-        Produtos: [ProdutoDaClassificacao(PapelProdutoFaseCodigo.Definitivo)],
+        Produtos: [ProdutoDaClassificacao("DEFINITIVO")],
         EmiteParecerIndividual: false,
         BancasRequeridas: [],
         RegraRecurso: null);
@@ -39,20 +40,20 @@ internal static class FasesDoCronogramaDeTeste
 
     public static ProdutoDaFaseInput[] ProdutosPreliminarEDefinitivo() =>
     [
-        ProdutoDaClassificacao(PapelProdutoFaseCodigo.Preliminar),
-        ProdutoDaClassificacao(PapelProdutoFaseCodigo.Definitivo),
+        ProdutoDaClassificacao("PRELIMINAR"),
+        ProdutoDaClassificacao("DEFINITIVO"),
     ];
 
     public static RegraRecursoFaseInput RecursoAncoradoNaClassificacao() => new(
-        RegraCodigo: RegraPrazoRecursoCodigo.AncoradoEmAto,
+        RegraCodigo: RegraDePrazoDoRecurso.ContadoDaPublicacaoDoAto.Codigo(),
         RegraVersao: "v1",
         PrazoValor: 48m,
-        PrazoUnidade: "horas",
+        PrazoUnidade: "HORAS",
         AtoAncoraCodigo: AtoDaClassificacao,
         AdmiteInstanciaSuperior: false,
         PrazoSegundaInstanciaValor: null,
         PrazoSegundaInstanciaUnidade: null,
-        EfeitoSuspensivo: "semEfeitoSuspensivo",
+        EfeitoSuspensivo: "SEM_EFEITO_SUSPENSIVO",
         GuardaDaVaga: null);
 
     public static TipoAtoPublicadoView TipoAtoDaClassificacao() => new(
@@ -64,13 +65,13 @@ internal static class FasesDoCronogramaDeTeste
         CongelaConfiguracao: false, UnicoPorObjeto: false, EfeitoIrreversivel: false, EhResultado: false);
 
     public static RegraCatalogo RegraDePrazoDeRecurso() =>
-        RegraDoCatalogo(RegraPrazoRecursoCodigo.AncoradoEmAto, TipoRegra.RegraPrazoRecurso, "Lei 9.784/1999 art. 56");
+        RegraDoCatalogo(RegraDePrazoDoRecurso.ContadoDaPublicacaoDoAto.Codigo(), TipoRegra.RegraPrazoRecurso, "Lei 9.784/1999 art. 56");
 
     public static RegraCatalogo RegraDoProcedimentoDeRecalculo() =>
-        RegraDoCatalogo(RegraProcedimentoRecursoCodigo.Recalculo, TipoRegra.RegraProcedimentoRecurso, "base legal");
+        RegraDoCatalogo(RegraDeProcedimentoDoRecurso.Recalculo.Codigo(), TipoRegra.RegraProcedimentoRecurso, "base legal");
 
     public static RegraCatalogo RegraDeBonus() =>
-        RegraDoCatalogo("BONUS-MULTIPLICATIVO", TipoRegra.RegraBonus, "base legal");
+        RegraDoCatalogo("FADA_MULTIPLICATIVO", TipoRegra.RegraBonus, "base legal");
 
     private static FaseCanonicaView FaseCanonica(string codigo, string nome) => new(
         Guid.CreateVersion7(), codigo, nome, null,

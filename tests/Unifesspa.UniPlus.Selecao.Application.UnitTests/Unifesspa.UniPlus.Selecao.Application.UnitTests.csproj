@@ -39,6 +39,7 @@
     <Compile Include="../Shared/Cenarios/PrazoDeEmissaoBuilder.cs" Link="Cenarios/PrazoDeEmissaoBuilder.cs" />
     <Compile Include="../Shared/Cenarios/ValidadeDoDocumentoBuilder.cs" Link="Cenarios/ValidadeDoDocumentoBuilder.cs" />
     <Compile Include="../Shared/ProtecaoDoDocumentoDeTeste.cs" Link="ProtecaoDoDocumentoDeTeste.cs" />
+    <Compile Include="../Shared/DocumentoExigidoDeTeste.cs" Link="DocumentoExigidoDeTeste.cs" />
     <Compile Include="../Shared/ProtecaoDoFatoDeTeste.cs" Link="ProtecaoDoFatoDeTeste.cs" />
     <Compile Include="../Shared/FatoColetadoDeTeste.cs" Link="FatoColetadoDeTeste.cs" />
     <Compile Include="../Shared/GrupoColetadoDeTeste.cs" Link="GrupoColetadoDeTeste.cs" />
@@ -63,6 +64,7 @@
     <Compile Include="../Shared/ContagemDePrazosDeTeste.cs" Link="ContagemDePrazosDeTeste.cs" />
     <Compile Include="../Shared/CorretoresDeTeste.cs" Link="CorretoresDeTeste.cs" />
     <Compile Include="../Shared/RegrasDeAplicabilidadeDeTeste.cs" Link="RegrasDeAplicabilidadeDeTeste.cs" />
+    <Compile Include="../Shared/ModalidadesNoCadastroDeTeste.cs" Link="ModalidadesNoCadastroDeTeste.cs" />
     <Compile Include="../Shared/InstanteEmBelem.cs" Link="InstanteEmBelem.cs" />
     <Compile Include="../Shared/RelogioFixo.cs" Link="RelogioFixo.cs" />
     <Compile Include="../Shared/ResolvedorFusoDeTeste.cs" Link="ResolvedorFusoDeTeste.cs" />

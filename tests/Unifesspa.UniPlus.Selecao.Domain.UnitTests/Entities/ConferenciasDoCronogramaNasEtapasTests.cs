@@ -2,6 +2,7 @@ namespace Unifesspa.UniPlus.Selecao.Domain.UnitTests.Entities;
 
 using AwesomeAssertions;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Kernel.Tempo;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
@@ -26,7 +27,7 @@ public sealed class ConferenciasDoCronogramaNasEtapasTests
         ProcessoConformeFactory.Criar(fase: fase);
 
     private static ReferenciaRegra Algoritmo() => ReferenciaRegra.De(
-        AlgoritmoContagemPrazoCodigo.ExcluiDiaInicial, "v1", new string('b', 64));
+        ConvencaoDeContagemDoPrazo.ExcluiDiaInicial.Codigo(), "v1", new string('b', 64));
 
     private static ContextoDeContagemDePrazos ComCalendario() => new(
         CalendarioDiasUteisCongelado.Criar(
@@ -46,8 +47,8 @@ public sealed class ConferenciasDoCronogramaNasEtapasTests
             .Where(static i => !i.Ok).Select(static i => i.Codigo);
 
     private static RecursoDaEtapa Janela(Guid produtoAncoraId) => RecursoDaEtapa.Criar(
-        AncoraDoRecurso.AtoPublicado,
-        ReferenciaRegra.De(RegraPrazoRecursoCodigo.AncoradoEmAto, "v1", new string('c', 64)),
+        EventoInicialDoPrazo.PublicacaoDoAto,
+        ReferenciaRegra.De(RegraDePrazoDoRecurso.ContadoDaPublicacaoDoAto.Codigo(), "v1", new string('c', 64)),
         ParametrosDoRecursoDeTeste.Declarados(2m, UnidadePrazo.DiasUteis),
         produtoAncoraId).Value!;
 
@@ -61,10 +62,10 @@ public sealed class ConferenciasDoCronogramaNasEtapasTests
         EtapaProcesso etapa = processo.Etapas.Single();
         etapa.DefinirProdutos(
         [
-            ProdutoDaEtapa.Criar("RESULTADO_PROVA", PapelProdutoFase.Preliminar),
-            ProdutoDaEtapa.Criar("RESULTADO_PROVA", PapelProdutoFase.Definitivo),
+            ProdutoDaEtapa.Criar("RESULTADO_PROVA", PapelDaPublicacaoPrevista.Preliminar),
+            ProdutoDaEtapa.Criar("RESULTADO_PROVA", PapelDaPublicacaoPrevista.Definitivo),
         ]).IsSuccess.Should().BeTrue();
-        Guid preliminar = etapa.Produtos.Single(p => p.Papel == PapelProdutoFase.Preliminar).Id;
+        Guid preliminar = etapa.Produtos.Single(p => p.Papel == PapelDaPublicacaoPrevista.Preliminar).Id;
         etapa.DefinirRecursos([Janela(preliminar)]).IsSuccess.Should().BeTrue();
         etapa.DefinirBancas([BancasDeTeste.DeRecursosDaEtapa()]);
         return etapa;
@@ -118,7 +119,7 @@ public sealed class ConferenciasDoCronogramaNasEtapasTests
 
     private static void AcrescentarRecursoComProdutoDefinitivo(EtapaProcesso etapa)
     {
-        Guid definitivo = etapa.Produtos.Single(p => p.Papel == PapelProdutoFase.Definitivo).Id;
+        Guid definitivo = etapa.Produtos.Single(p => p.Papel == PapelDaPublicacaoPrevista.Definitivo).Id;
         typeof(EtapaProcesso).GetField("_recursos", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)!
             .GetValue(etapa).Should().BeAssignableTo<List<RecursoDaEtapa>>().Which.Add(Janela(definitivo));
     }
@@ -130,8 +131,8 @@ public sealed class ConferenciasDoCronogramaNasEtapasTests
         EtapaProcesso etapa = processo.Etapas.Single();
         etapa.DefinirProdutos(
         [
-            ProdutoDaEtapa.Criar("GABARITO", PapelProdutoFase.Preliminar),
-            ProdutoDaEtapa.Criar("RESULTADO_PROVA", PapelProdutoFase.Definitivo),
+            ProdutoDaEtapa.Criar("GABARITO", PapelDaPublicacaoPrevista.Preliminar),
+            ProdutoDaEtapa.Criar("RESULTADO_PROVA", PapelDaPublicacaoPrevista.Definitivo),
         ]).IsSuccess.Should().BeTrue();
 
         Result gravar = processo.DefinirEtapas([etapa]);
@@ -145,8 +146,8 @@ public sealed class ConferenciasDoCronogramaNasEtapasTests
         ProcessoSeletivo processo = ProcessoConforme();
         processo.Etapas.Single().DefinirProdutos(
         [
-            ProdutoDaEtapa.Criar("GABARITO", PapelProdutoFase.Preliminar),
-            ProdutoDaEtapa.Criar("RESULTADO_PROVA", PapelProdutoFase.Definitivo),
+            ProdutoDaEtapa.Criar("GABARITO", PapelDaPublicacaoPrevista.Preliminar),
+            ProdutoDaEtapa.Criar("RESULTADO_PROVA", PapelDaPublicacaoPrevista.Definitivo),
         ]).IsSuccess.Should().BeTrue();
 
         Vermelhos(processo, ContagemDePrazosDeTeste.ComCalendarioVigente).Should().Equal("cronograma_conclusao_do_ciclo_recursal");
@@ -180,7 +181,7 @@ public sealed class ConferenciasDoCronogramaNasEtapasTests
     public void ResultadoSemPapel_Recusa()
     {
         ProcessoSeletivo processo = ProcessoConforme(FaseComProdutos(
-            ProdutoDaFase.Criar("RESULTADO_CLASSIFICACAO", PapelProdutoFase.Definitivo),
+            ProdutoDaFase.Criar("RESULTADO_CLASSIFICACAO", PapelDaPublicacaoPrevista.Definitivo),
             ProdutoDaFase.Criar("GABARITO", papel: null)));
         TiposDeAtoUnicosPorObjeto tipos = Catalogo("GABARITO", ehResultado: true, congela: false);
 
@@ -195,7 +196,7 @@ public sealed class ConferenciasDoCronogramaNasEtapasTests
     [Fact(DisplayName = "Tipo que congela a configuração declarado como item de resultado: item vermelho e a publicação recusa")]
     public void TipoQueCongelaComoResultado_Recusa()
     {
-        ProcessoSeletivo processo = ProcessoConforme(FaseComProdutos(ProdutoDaFase.Criar("RESULTADO_CLASSIFICACAO", PapelProdutoFase.Definitivo)));
+        ProcessoSeletivo processo = ProcessoConforme(FaseComProdutos(ProdutoDaFase.Criar("RESULTADO_CLASSIFICACAO", PapelDaPublicacaoPrevista.Definitivo)));
         TiposDeAtoUnicosPorObjeto tipos = Catalogo("RESULTADO_CLASSIFICACAO", ehResultado: true, congela: true);
 
         Vermelhos(processo, ContagemDePrazosDeTeste.ComCalendarioVigente, tipos).Should().Equal("cronograma_tipo_que_congela_nao_eh_resultado");
@@ -210,7 +211,7 @@ public sealed class ConferenciasDoCronogramaNasEtapasTests
     public void TipoQueNaoEhResultadoSemPapel_Passa()
     {
         ProcessoSeletivo processo = ProcessoConforme(FaseComProdutos(
-            ProdutoDaFase.Criar("RESULTADO_CLASSIFICACAO", PapelProdutoFase.Definitivo),
+            ProdutoDaFase.Criar("RESULTADO_CLASSIFICACAO", PapelDaPublicacaoPrevista.Definitivo),
             ProdutoDaFase.Criar("COMUNICADO", papel: null)));
 
         Vermelhos(processo, ContagemDePrazosDeTeste.ComCalendarioVigente, Catalogo("COMUNICADO", ehResultado: false, congela: false))
@@ -221,7 +222,7 @@ public sealed class ConferenciasDoCronogramaNasEtapasTests
     private static void AdicionarRecursoNoResultadoDefinitivo(EtapaProcesso etapa)
     {
         // O estado só existe em processo carregado do banco: DefinirRecursos o recusa na gravação.
-        Guid definitivo = etapa.Produtos.Single(p => p.Papel == PapelProdutoFase.Definitivo).Id;
+        Guid definitivo = etapa.Produtos.Single(p => p.Papel == PapelDaPublicacaoPrevista.Definitivo).Id;
         typeof(EtapaProcesso).GetField("_recursos", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)!
             .GetValue(etapa).Should().BeAssignableTo<List<RecursoDaEtapa>>().Which
             .Add(Janela(definitivo));

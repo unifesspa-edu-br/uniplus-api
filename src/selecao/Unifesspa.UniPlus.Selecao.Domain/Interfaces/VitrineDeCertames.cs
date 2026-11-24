@@ -1,5 +1,7 @@
 namespace Unifesspa.UniPlus.Selecao.Domain.Interfaces;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
+
 /// <summary>
 /// Situação da janela de inscrição de um certame, resolvida contra o instante da consulta.
 /// </summary>
@@ -18,15 +20,19 @@ namespace Unifesspa.UniPlus.Selecao.Domain.Interfaces;
 public enum SituacaoDoCertame
 {
     /// <summary>Divulgado, com a janela de inscrição ainda por abrir.</summary>
+    [CodigoDeContrato("EM_BREVE", "Em breve", Descricao = "As inscrições ainda não começaram.")]
     EmBreve = 1,
 
     /// <summary>Recebe inscrição, e o encerramento ainda está além do limiar final.</summary>
+    [CodigoDeContrato("INSCRICOES_ABERTAS", "Inscrições abertas", Descricao = "As inscrições estão abertas.")]
     InscricoesAbertas = 2,
 
     /// <summary>Recebe inscrição, e o encerramento já está dentro do limiar final.</summary>
+    [CodigoDeContrato("ULTIMOS_DIAS", "Últimos dias", Descricao = "As inscrições estão nos últimos dias.")]
     UltimosDias = 3,
 
     /// <summary>A janela já encerrou.</summary>
+    [CodigoDeContrato("ENCERRADAS", "Encerradas", Descricao = "As inscrições estão encerradas.")]
     Encerradas = 4,
 }
 

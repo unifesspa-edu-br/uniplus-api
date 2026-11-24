@@ -24,7 +24,7 @@ public static class DerivadosDoSistemaInscricao
     public static readonly IReadOnlyDictionary<string, DefinicaoDaResposta> DefinicoesDasRespostas = new Dictionary<string, DefinicaoDaResposta>(StringComparer.Ordinal)
     {
         ["FAIXA_ETARIA"] = new(TipoDoValorDeResposta.Numero, Multivalorado: false, Identificador: false),
-        [UfDeResidencia] = new(TipoDoValorDeResposta.Codigo, Multivalorado: false, Identificador: false),
+        [UfDeResidencia] = new(TipoDoValorDeResposta.Opcao, Multivalorado: false, Identificador: false),
         ["MUNICIPIO_RESIDENCIA"] = new(TipoDoValorDeResposta.Municipio, Multivalorado: false, Identificador: false),
     };
 
@@ -72,20 +72,27 @@ public static class DerivadosDoSistemaInscricao
             valores["FAIXA_ETARIA"] = JsonSerializer.SerializeToElement(idade);
         }
 
+        return CalcularResidencia(respostas, enderecos, valores, nomes);
+    }
+
+    private static DerivadosCalculados CalcularResidencia(
+        IReadOnlyDictionary<string, JsonElement> respostas, ConferenciaDosEnderecos enderecos,
+        Dictionary<string, JsonElement> valores, Dictionary<string, string> nomes)
+    {
         if (!respostas.ContainsKey(EnderecoResidencial))
         {
             return new DerivadosCalculados(valores, nomes, SemDerivadosIndeterminados, GeoIndisponivel: null);
         }
 
-        if (enderecos.Resolvidos.TryGetValue(EnderecoResidencial, out CepResolvido? resolvido))
+        if (!enderecos.Resolvidos.TryGetValue(EnderecoResidencial, out CepResolvido? resolvido))
         {
-            valores["UF_RESIDENCIA"] = JsonSerializer.SerializeToElement(resolvido.Uf);
-            valores["MUNICIPIO_RESIDENCIA"] = JsonSerializer.SerializeToElement(resolvido.CodigoIbge);
-            nomes["MUNICIPIO_RESIDENCIA"] = resolvido.Cidade;
-            return new DerivadosCalculados(valores, nomes, SemDerivadosIndeterminados, GeoIndisponivel: null);
+            return new DerivadosCalculados(valores, nomes, FatosDaResidencia, enderecos.GeoIndisponivel);
         }
 
-        return new DerivadosCalculados(valores, nomes, FatosDaResidencia, enderecos.GeoIndisponivel);
+        valores["UF_RESIDENCIA"] = JsonSerializer.SerializeToElement(resolvido.Uf);
+        valores["MUNICIPIO_RESIDENCIA"] = JsonSerializer.SerializeToElement(resolvido.CodigoIbge);
+        nomes["MUNICIPIO_RESIDENCIA"] = resolvido.Cidade;
+        return new DerivadosCalculados(valores, nomes, SemDerivadosIndeterminados, GeoIndisponivel: null);
     }
 
     /// <summary>
@@ -106,26 +113,37 @@ public static class DerivadosDoSistemaInscricao
         ArgumentNullException.ThrowIfNull(pedidos);
 
         Dictionary<string, FatoResolvido> apurados = new(StringComparer.Ordinal);
+        AcrescentarFaixaEtaria(apurados, respostas, dataReferenciaFatos, pedidos);
+
+        if (pedidos.Overlaps(FatosDaResidencia))
+        {
+            ResidenciaApurada residencia = await ResidenciaAsync(respostas, conferencia, cancellationToken).ConfigureAwait(false);
+            AcrescentarResidencia(apurados, residencia);
+        }
+
+        return apurados;
+    }
+
+    private static void AcrescentarFaixaEtaria(
+        Dictionary<string, FatoResolvido> apurados, IReadOnlyDictionary<string, JsonElement> respostas,
+        DateOnly? dataReferenciaFatos, IReadOnlySet<string> pedidos)
+    {
         if (pedidos.Contains("FAIXA_ETARIA"))
         {
             apurados["FAIXA_ETARIA"] = FaixaEtaria(respostas, dataReferenciaFatos) is { } idade
                 ? FatoResolvido.Resolvido(JsonSerializer.SerializeToElement(idade))
                 : FatoResolvido.Indeterminado();
         }
+    }
 
-        if (pedidos.Overlaps(FatosDaResidencia))
-        {
-            ResidenciaApurada residencia = await ResidenciaAsync(respostas, conferencia, cancellationToken).ConfigureAwait(false);
-            bool conferida = residencia.Conferida;
-            apurados["UF_RESIDENCIA"] = conferida
-                ? FatoResolvido.Resolvido(JsonSerializer.SerializeToElement(residencia.Uf))
-                : FatoResolvido.Indeterminado();
-            apurados["MUNICIPIO_RESIDENCIA"] = conferida
-                ? FatoResolvido.Resolvido(JsonSerializer.SerializeToElement(residencia.Codigo))
-                : FatoResolvido.Indeterminado();
-        }
-
-        return apurados;
+    private static void AcrescentarResidencia(Dictionary<string, FatoResolvido> apurados, ResidenciaApurada residencia)
+    {
+        apurados["UF_RESIDENCIA"] = residencia.Conferida
+            ? FatoResolvido.Resolvido(JsonSerializer.SerializeToElement(residencia.Uf))
+            : FatoResolvido.Indeterminado();
+        apurados["MUNICIPIO_RESIDENCIA"] = residencia.Conferida
+            ? FatoResolvido.Resolvido(JsonSerializer.SerializeToElement(residencia.Codigo))
+            : FatoResolvido.Indeterminado();
     }
 
     /// <summary>
@@ -173,12 +191,15 @@ public static class DerivadosDoSistemaInscricao
             return ResidenciaApurada.Indeterminada;
         }
 
-        // O ramo por município serve à apuração de quem ainda não tem CEP: confere pela cidade e nunca recusa por falta de CEP.
+        return await ConferirResidenciaAsync(endereco, codigoIbge, uf, conferencia, cancellationToken).ConfigureAwait(false);
+    }
+
+    private static async Task<ResidenciaApurada> ConferirResidenciaAsync(
+        EnderecoDeclarado endereco, string codigoIbge, string uf, IConferenciaEnderecoGeo conferencia, CancellationToken cancellationToken)
+    {
         Result<string> conferido = endereco.CepSomenteDigitos is { } cep
             ? await conferencia.ConferirCepAsync(cep, codigoIbge, uf, cancellationToken).ConfigureAwait(false)
             : await conferencia.ConferirMunicipioAsync(codigoIbge, uf, cancellationToken).ConfigureAwait(false);
-
-        // O pressuposto de elegibilidade é o que o Geo confirmou, nunca o que o candidato mandou.
         return conferido.IsSuccess ? new ResidenciaApurada(uf, codigoIbge) : ResidenciaApurada.Indeterminada;
     }
 

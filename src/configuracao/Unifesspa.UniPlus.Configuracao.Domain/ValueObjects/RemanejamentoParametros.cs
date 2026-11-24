@@ -14,7 +14,7 @@ public sealed record RemanejamentoParametros
     /// <summary>Código da modalidade de destino final no remanejamento cruzado (regra <c>Cruzado</c>).</summary>
     public string? DestinoFinal { get; init; }
 
-    /// <summary>Parâmetros sem nenhum valor (regra <c>SegueCascata</c> ou ausente).</summary>
+    /// <summary>Parâmetros sem nenhum valor (regra <c>SegueOrdemDeRemanejamento</c> ou ausente).</summary>
     public static RemanejamentoParametros Vazio => new();
 
     /// <summary>

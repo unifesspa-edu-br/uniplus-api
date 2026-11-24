@@ -34,7 +34,7 @@
           "regra": {
             "properties": {
               "codigo": {
-                "const": "DESEMPATE-MAIOR-NOTA-ETAPA"
+                "const": "DESEMPATE_MAIOR_NOTA_ETAPA"
               }
             },
             "required": [
@@ -60,7 +60,7 @@
           "regra": {
             "properties": {
               "codigo": {
-                "const": "DESEMPATE-MAIOR-IDADE"
+                "const": "DESEMPATE_MAIOR_IDADE"
               }
             },
             "required": [
@@ -86,7 +86,7 @@
           "regra": {
             "properties": {
               "codigo": {
-                "const": "DESEMPATE-IDOSO"
+                "const": "DESEMPATE_IDOSO"
               }
             },
             "required": [
@@ -112,7 +112,7 @@
           "regra": {
             "properties": {
               "codigo": {
-                "const": "DESEMPATE-PREDICADO-FATO"
+                "const": "DESEMPATE_CONDICAO_SOBRE_DADO"
               }
             },
             "required": [
@@ -138,7 +138,7 @@
           "regra": {
             "properties": {
               "codigo": {
-                "const": "DESEMPATE-MAIOR-NOTA-AREA-ENEM"
+                "const": "DESEMPATE_MAIOR_NOTA_AREA_ENEM"
               }
             },
             "required": [

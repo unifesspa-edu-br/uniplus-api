@@ -5,6 +5,7 @@ using System.Text.Json.Serialization;
 using Domain.Enums;
 using Domain.ValueObjects;
 
+using Kernel.Domain.CodigosDeContrato;
 using Kernel.Results;
 
 using Unifesspa.UniPlus.Application.Abstractions.Messaging;
@@ -15,7 +16,7 @@ using Unifesspa.UniPlus.Application.Abstractions.Messaging;
 /// <c>CriarProcessoSeletivoCommandValidator</c>.
 /// </summary>
 /// <param name="TipoProcessoOrigemId">Id de um tipo de processo ativo em Configuração, resolvido e congelado na criação.</param>
-/// <param name="OrigemCandidatos">De onde vêm os candidatos (Story #851 §3.4) — NOT NULL, exigido na criação.</param>
+/// <param name="OrigemCandidatos">Código de <see cref="Domain.Enums.OrigemCandidatos"/>: de onde vêm os candidatos (Story #851 §3.4), exigido na criação.</param>
 /// <param name="UnidadeAdministradoraOrigemId">Quem responde pelo certame (CA-04 da Feature #40; issue #849) — NOT NULL, exigido na criação, resolvido via <c>IUnidadeReader</c>.</param>
 /// <param name="IdentificadorLegivel">Identificador legível do certame (issue #1479), em kebab-case — exigido na criação; de onde derivam o endereço público e a chave no acervo.</param>
 /// <param name="LocalidadeCodigoIbge">Código IBGE do município cujo calendário rege a contagem dos prazos (UNI-REQ-0111) — exigido na criação, nunca deduzido da Unidade administradora.</param>
@@ -25,7 +26,7 @@ using Unifesspa.UniPlus.Application.Abstractions.Messaging;
 public sealed record CriarProcessoSeletivoCommand(
     string Nome,
     Guid TipoProcessoOrigemId,
-    OrigemCandidatos OrigemCandidatos,
+    [property: AceitaCodigosDe<OrigemCandidatos>] string? OrigemCandidatos,
     Guid UnidadeAdministradoraOrigemId,
     string? LocalidadeCodigoIbge,
     string? LocalidadeNome,
@@ -45,7 +46,7 @@ public sealed record CriarProcessoSeletivoCommand(
         : this(
             nome,
             tipoProcesso?.OrigemId ?? Guid.Empty,
-            origemCandidatos,
+            origemCandidatos.Codigo(),
             unidadeAdministradoraOrigemId,
             localidadeCodigoIbge,
             localidadeNome,

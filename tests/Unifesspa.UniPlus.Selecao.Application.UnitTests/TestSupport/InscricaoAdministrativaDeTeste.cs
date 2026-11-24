@@ -128,13 +128,12 @@ internal sealed class InscricaoAdministrativaDeTeste
 
     private DocumentoExigido CriarExigencia(string codigo, ClassificacaoDeProtecao classificacao)
     {
-        return new Unifesspa.UniPlus.Selecao.Domain.UnitTests.Cenarios.DocumentoExigidoBuilder()
-            .ComTipo(new CopiaDoTipoDeDocumento(Guid.CreateVersion7(), codigo, $"Documento {codigo}", "CATEGORIA", ProtecaoDoDocumentoDeTeste.De(classificacao)))
-            .ComMomento(new MomentoDaExigencia(_faseId, null, null))
-            .ComAplicabilidade(new AplicabilidadeDaExigencia(Aplicabilidade.Geral, []))
-            .ComIndeferimento(new IndeferimentoDoDocumento(false, null, []))
-            .ComRequisitos(new RequisitosDoDocumento(FormatosPermitidos.Criar(false, [("PDF", null)]).Value!, null, null, null, null))
-            .ComFatos(null)
+        return DocumentoExigidoDeTeste.Novo()
+            .NaFase(_faseId)
+            .ComTipo(codigo, $"Documento {codigo}", "CATEGORIA")
+            .ComProtecao(ProtecaoDoDocumentoDeTeste.De(classificacao))
+            .Facultativa()
+            .ComFormatos(FormatosPermitidos.Criar(false, [("PDF", null)]).Value!)
             .Criar().Value!;
     }
 

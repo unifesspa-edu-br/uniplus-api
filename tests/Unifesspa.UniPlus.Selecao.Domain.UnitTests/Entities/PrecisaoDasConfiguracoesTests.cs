@@ -2,6 +2,7 @@ namespace Unifesspa.UniPlus.Selecao.Domain.UnitTests.Entities;
 
 using AwesomeAssertions;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
@@ -78,9 +79,9 @@ public sealed class PrecisaoDasConfiguracoesTests
     }
 
     private static Result<ConfiguracaoBonusRegional> Bonus(decimal fator, decimal teto) =>
-        ConfiguracaoBonusRegional.Criar(ReferenciaRegra.De(RegraBonusCodigo.Multiplicativo, "v1", new string('a', 64)),
+        ConfiguracaoBonusRegional.Criar(ReferenciaRegra.De(RegraDeBonus.Multiplicativo.Codigo(), "v1", new string('a', 64)),
             fator, teto, null, new BaseLegalCongelada(Guid.CreateVersion7(), "BASE", "PORTARIA", "Portaria", "Descrição", [("1504208", "Marabá", "PA")]));
 
     private static Result<ConfiguracaoTaxaInscricao> Taxa(decimal valor) =>
-        ConfiguracaoTaxaInscricao.Criar(true, valor, [FundamentoIsencaoCodigo.CadastroUnico]);
+        ConfiguracaoTaxaInscricao.Criar(true, valor, ["CADASTRO_UNICO"]);
 }

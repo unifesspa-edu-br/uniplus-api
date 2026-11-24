@@ -1,7 +1,9 @@
 namespace Unifesspa.UniPlus.Selecao.Application.Mappings;
 
+using Unifesspa.UniPlus.Application.Abstractions.Respostas;
 using Unifesspa.UniPlus.Selecao.Application.DTOs;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
+using Unifesspa.UniPlus.Selecao.Domain.Enums;
 
 /// <summary>
 /// Mapeamento <c>ObrigatoriedadeLegal</c> → <c>ObrigatoriedadeLegalDto</c>.
@@ -17,7 +19,7 @@ public static class ObrigatoriedadeLegalMapping
         return new ObrigatoriedadeLegalDto(
             Id: regra.Id,
             TipoProcessoCodigo: regra.TipoProcessoCodigo,
-            Categoria: regra.Categoria,
+            Categoria: CodigoComRotulo<CategoriaObrigatoriedade>.De(regra.Categoria),
             RegraCodigo: regra.RegraCodigo,
             Predicado: regra.Predicado,
             DescricaoHumana: regra.DescricaoHumana,

@@ -1,5 +1,7 @@
 namespace Unifesspa.UniPlus.Selecao.Application.Services.InscricaoAdministrativa;
 
+using Unifesspa.UniPlus.Application.Abstractions.Respostas;
+
 using Unifesspa.UniPlus.Authorization.Projecao;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Application.DTOs;
@@ -24,7 +26,7 @@ public static class MontadorDaInscricaoAdministrativa
         ItensVisiveis itens = ItensVisiveis.De(conteudo, projecao);
 
         return new InscricaoAdministrativaDto(
-            conteudo.Inscricao.Id, processo, campos.Situacao, campos.Ofertas, campos.NumeroInscricao, campos.SubmetidaEm, campos.CanceladaEm, campos.MotivoDoCancelamento,
+            conteudo.Inscricao.Id, processo, campos.Situacao is { } situacao ? CodigoComRotulo<SituacaoInscricao>.De(situacao) : null, campos.Ofertas, campos.NumeroInscricao, campos.SubmetidaEm, campos.CanceladaEm, campos.MotivoDoCancelamento,
             itens.Secoes, itens.Derivados, itens.Arquivos, podeEmitirComprovante, conteudo.NumeroDoUltimoComprovante);
     }
 

@@ -15,9 +15,9 @@ internal static class FaseDaRetificacaoDeTeste
 
     private static readonly Guid TipoDaEtapaDeTeste = Guid.Parse("0197d6f0-0000-7000-8000-00000000e7a0");
 
-    internal static ProdutoDaFase Preliminar(string ato) => ProdutoDaFase.Criar(ato, PapelProdutoFase.Preliminar);
+    internal static ProdutoDaFase Preliminar(string ato) => ProdutoDaFase.Criar(ato, PapelDaPublicacaoPrevista.Preliminar);
 
-    internal static ProdutoDaFase Definitivo(string ato) => ProdutoDaFase.Criar(ato, PapelProdutoFase.Definitivo);
+    internal static ProdutoDaFase Definitivo(string ato) => ProdutoDaFase.Criar(ato, PapelDaPublicacaoPrevista.Definitivo);
 
     internal static FaseCronograma Fase(
         int ordem,

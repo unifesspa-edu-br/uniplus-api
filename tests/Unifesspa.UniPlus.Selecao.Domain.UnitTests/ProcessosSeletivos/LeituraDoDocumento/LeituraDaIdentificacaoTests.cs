@@ -2,6 +2,7 @@ namespace Unifesspa.UniPlus.Selecao.Domain.UnitTests.ProcessosSeletivos.LeituraD
 
 using AwesomeAssertions;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Errors;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.LeituraDoDocumento;
@@ -57,7 +58,7 @@ public sealed class LeituraDaIdentificacaoTests
     [Fact(DisplayName = "A regra citada como convenção que não é algoritmo de contagem é recusada no campo da convenção")]
     public void Convencao_QueNaoEAlgoritmo_ApontaOCampo()
     {
-        IdentificacaoECronogramaLidos lidos = Ler(Identificacao() with { AlgoritmoContagemPrazo = new(RegraPrazoRecursoCodigo.AncoradoEmAto, "v1") });
+        IdentificacaoECronogramaLidos lidos = Ler(Identificacao() with { AlgoritmoContagemPrazo = new(RegraDePrazoDoRecurso.ContadoDaPublicacaoDoAto.Codigo(), "v1") });
 
         lidos.Cronograma.AlgoritmoContagemPrazo.Should().BeNull();
         PartesRecusadas(lidos).Should().Equal(("/identificacao/algoritmoContagemPrazo/codigo", ProcessoSeletivoErrorCodes.AlgoritmoContagemPrazoNaoEncontrado));
@@ -74,7 +75,7 @@ public sealed class LeituraDaIdentificacaoTests
     [Fact(DisplayName = "Os campos de identificação ausentes ficam sem valor e sem parte recusada")]
     public void Identificacao_SemCodigos_FicaSemValorESemRecusa()
     {
-        IdentificacaoECronogramaLidos lidos = Ler(new IdentificacaoNoDocumento(null, null, null, OrigemCandidatos.Nenhuma, null, null, null));
+        IdentificacaoECronogramaLidos lidos = Ler(new IdentificacaoNoDocumento(null, null, null, null, null, null, null));
 
         lidos.Identidade.TipoProcesso.Should().BeNull();
         lidos.Identidade.UnidadeAdministradora.Should().BeNull();

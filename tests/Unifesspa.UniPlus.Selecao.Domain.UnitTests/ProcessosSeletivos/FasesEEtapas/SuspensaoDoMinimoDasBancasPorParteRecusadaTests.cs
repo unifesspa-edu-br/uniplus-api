@@ -2,6 +2,7 @@ namespace Unifesspa.UniPlus.Selecao.Domain.UnitTests.ProcessosSeletivos.FasesEEt
 
 using AwesomeAssertions;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
@@ -28,7 +29,7 @@ public sealed class SuspensaoDoMinimoDasBancasPorParteRecusadaTests
     private const string ItemDoMinimo = "cronograma_banca_com_o_minimo_de_integrantes";
 
     private static readonly ReferenciaRegra AvaliacaoUnica =
-        ReferenciaRegra.De(RegraConsolidacaoCodigo.AvaliacaoUnica, "v1", new string('a', 64));
+        ReferenciaRegra.De(RegraDeApuracaoDaAvaliacao.AvaliacaoUnica.Codigo(), "v1", new string('a', 64));
 
     private static readonly CorretoresDasEtapas TresCorretores =
         new(new Dictionary<ReferenciaRegra, CorretoresDaRegra> { [AvaliacaoUnica] = CorretoresDaRegra.SemNovoCorretor(3) });

@@ -11,13 +11,13 @@ public sealed record DeclaracoesDoDocumento(IdentificacaoNoDocumento Identificac
 
 /// <summary>
 /// A identificação do processo como o documento a traz. O nome e o identificador legível vão como foram escritos, cada código de
-/// catálogo também, e ausente é nulo; a origem dos candidatos ausente é <see cref="OrigemCandidatos.Nenhuma"/>.
+/// catálogo também, e ausente é nulo.
 /// </summary>
 public sealed record IdentificacaoNoDocumento(
     string? Nome,
     string? TipoProcessoCodigo,
     string? UnidadeAdministradoraCodigo,
-    OrigemCandidatos OrigemCandidatos,
+    OrigemCandidatos? OrigemCandidatos,
     string? LocalidadeCodigoIbge,
     string? IdentificadorLegivel,
     ReferenciaDeRegraNoDocumento? AlgoritmoContagemPrazo);

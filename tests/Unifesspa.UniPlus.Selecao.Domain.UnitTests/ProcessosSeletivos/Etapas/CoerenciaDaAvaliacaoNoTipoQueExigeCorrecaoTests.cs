@@ -2,6 +2,7 @@ namespace Unifesspa.UniPlus.Selecao.Domain.UnitTests.ProcessosSeletivos.Etapas;
 
 using AwesomeAssertions;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Errors;
@@ -28,13 +29,13 @@ public sealed class CoerenciaDaAvaliacaoNoTipoQueExigeCorrecaoTests
 
     [Fact(DisplayName = "A avaliação única em tipo que exige correção independente não é recusada na gravação: o número de corretores é conferido ao congelar")]
     public void AvaliacaoUnica_NaoRecusaNaGravacao() =>
-        Validar(FormaDeAvaliacao.Humana, RegraConsolidacaoCodigo.AvaliacaoUnica).Should().BeEmpty();
+        Validar(FormaDeAvaliacao.Humana, RegraDeApuracaoDaAvaliacao.AvaliacaoUnica.Codigo()).Should().BeEmpty();
 
     [Theory(DisplayName = "Regra de consolidação de mais de um corretor é aceita em tipo que exige correção independente")]
-    [InlineData(RegraConsolidacaoCodigo.CorrecaoIndependente)]
-    [InlineData(RegraConsolidacaoCodigo.ConceitoUnanimidade)]
-    [InlineData(RegraConsolidacaoCodigo.ConceitoMaioriaSimples)]
-    [InlineData(RegraConsolidacaoCodigo.ConceitoMaioriaAbsoluta)]
+    [InlineData("APURACAO_CORRECAO_INDEPENDENTE")]
+    [InlineData("APURACAO_CONCEITO_UNANIMIDADE")]
+    [InlineData("APURACAO_CONCEITO_MAIORIA_SIMPLES")]
+    [InlineData("APURACAO_CONCEITO_MAIORIA_ABSOLUTA")]
     public void RegraDeMaisDeUmCorretor_Aceita(string regra) =>
         Validar(FormaDeAvaliacao.Humana, regra).Should().BeEmpty();
 
@@ -50,7 +51,7 @@ public sealed class CoerenciaDaAvaliacaoNoTipoQueExigeCorrecaoTests
     public void TipoQueNaoExige_AceitaObjetivaEAvaliacaoUnica()
     {
         Validar(FormaDeAvaliacao.Objetiva, regra: null, exigeCorrecaoIndependente: false).Should().BeEmpty();
-        Validar(FormaDeAvaliacao.Humana, RegraConsolidacaoCodigo.AvaliacaoUnica, exigeCorrecaoIndependente: false).Should().BeEmpty();
+        Validar(FormaDeAvaliacao.Humana, RegraDeApuracaoDaAvaliacao.AvaliacaoUnica.Codigo(), exigeCorrecaoIndependente: false).Should().BeEmpty();
     }
 
     [Fact(DisplayName = "A etapa de nota do ENEM recusa só a forma declarada, sem repetir a recusa do tipo que exige correção")]
@@ -63,6 +64,6 @@ public sealed class CoerenciaDaAvaliacaoNoTipoQueExigeCorrecaoTests
 
     [Fact(DisplayName = "A etapa humana de correção independente sem conceito ainda não é recusada: a ligação do conceito à etapa não existe")]
     public void ExigeCorrecaoSemConceito_AindaNaoEhConferido() =>
-        Validar(FormaDeAvaliacao.Humana, RegraConsolidacaoCodigo.CorrecaoIndependente).Should().BeEmpty(
+        Validar(FormaDeAvaliacao.Humana, RegraDeApuracaoDaAvaliacao.CorrecaoIndependente.Codigo()).Should().BeEmpty(
             "a coerência entre exigir correção independente e a etapa ter conceito depende de a etapa carregar o conceito");
 }

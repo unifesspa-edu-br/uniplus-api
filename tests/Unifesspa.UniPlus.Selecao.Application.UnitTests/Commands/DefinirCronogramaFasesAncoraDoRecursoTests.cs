@@ -37,7 +37,7 @@ public sealed class DefinirCronogramaFasesAncoraDoRecursoTests
     public async Task Handle_AncoraEmAtoCongelante_Recusa()
     {
         CenarioDoCronogramaDeFases cenario = CenarioComTipoDaClassificacao(TipoAtoDaClassificacao() with { CongelaConfiguracao = true });
-        FaseCronogramaInput fase = FaseRecorrivelAncorada(cenario, ProdutoDaClassificacao(PapelProdutoFaseCodigo.Preliminar));
+        FaseCronogramaInput fase = FaseRecorrivelAncorada(cenario, ProdutoDaClassificacao("PRELIMINAR"));
 
         Result resultado = await cenario.DefinirFasesAsync(fase);
 
@@ -49,7 +49,7 @@ public sealed class DefinirCronogramaFasesAncoraDoRecursoTests
     public async Task Handle_AncoraEmAtoIrreversivel_Recusa()
     {
         CenarioDoCronogramaDeFases cenario = CenarioComTipoDaClassificacao(TipoAtoDaClassificacao() with { EfeitoIrreversivel = true });
-        FaseCronogramaInput fase = FaseRecorrivelAncorada(cenario, ProdutoDaClassificacao(PapelProdutoFaseCodigo.Preliminar));
+        FaseCronogramaInput fase = FaseRecorrivelAncorada(cenario, ProdutoDaClassificacao("PRELIMINAR"));
 
         Result resultado = await cenario.DefinirFasesAsync(fase);
 
@@ -63,7 +63,7 @@ public sealed class DefinirCronogramaFasesAncoraDoRecursoTests
     {
         CenarioDoCronogramaDeFases cenario = CenarioComTipoDaClassificacao(TipoAtoDaClassificacao());
         FaseCronogramaInput ancorada = FaseRecorrivelAncorada(cenario, ProdutosPreliminarEDefinitivo());
-        FaseCronogramaInput fase = ancorada with { RegraRecurso = RecursoAncoradoNaClassificacao() with { AdmiteInstanciaSuperior = true, PrazoSegundaInstanciaValor = 3m, PrazoSegundaInstanciaUnidade = "diasUteis" } };
+        FaseCronogramaInput fase = ancorada with { RegraRecurso = RecursoAncoradoNaClassificacao() with { AdmiteInstanciaSuperior = true, PrazoSegundaInstanciaValor = 3m, PrazoSegundaInstanciaUnidade = "DIAS_UTEIS" } };
 
         Result resultado = await cenario.DefinirFasesAsync(fase);
 
@@ -103,7 +103,7 @@ public sealed class DefinirCronogramaFasesAncoraDoRecursoTests
         cenario.CadastrarFase(faseCanonica) with
         {
             Ordem = ordem,
-            Produtos = [ProdutoDaClassificacao(PapelProdutoFaseCodigo.Preliminar)],
+            Produtos = [ProdutoDaClassificacao("PRELIMINAR")],
             RegraRecurso = RecursoAncoradoNaClassificacao(),
         };
 

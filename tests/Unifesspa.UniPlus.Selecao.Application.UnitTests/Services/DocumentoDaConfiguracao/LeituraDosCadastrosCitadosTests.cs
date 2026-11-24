@@ -140,13 +140,13 @@ public sealed class LeituraDosCadastrosCitadosTests
     [Fact(DisplayName = "A regra do catálogo é lida pelo par de código e versão, com o tipo e a referência que o processo congela")]
     public async Task Regra_ELidaPeloParDeCodigoEVersao()
     {
-        RegraCatalogo regra = Regra("CONTAGEM", TipoRegra.AlgoritmoContagemPrazo);
+        RegraCatalogo regra = Regra("CONTAGEM", TipoRegra.ConvencaoContagemPrazo);
         _regras.ObterAsync("CONTAGEM", "v1", Arg.Any<CancellationToken>()).Returns(regra);
 
         Result<CadastrosCitadosNoDocumento> lidos = await Ler(SemCodigos with { Regras = [("CONTAGEM", "v1"), ("OUTRA", "v1")] });
 
         lidos.Value!.Regras.Keys.Should().Equal(("CONTAGEM", "v1"));
-        lidos.Value.Regras[("CONTAGEM", "v1")].Should().Be(new RegraDoCatalogoCitada(TipoRegra.AlgoritmoContagemPrazo, regra.Referencia()));
+        lidos.Value.Regras[("CONTAGEM", "v1")].Should().Be(new RegraDoCatalogoCitada(TipoRegra.ConvencaoContagemPrazo, regra.Referencia()));
     }
 
     [Fact(DisplayName = "O município que o Geo conhece fica pelo código, conferido na UF do prefixo do código IBGE")]

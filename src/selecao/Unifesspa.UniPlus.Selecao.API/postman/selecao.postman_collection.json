@@ -1332,7 +1332,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"nome\": \"SiSU 2026.1 (smoke)\",\n  \"tipoProcessoOrigemId\": \"{{tipo_processo_id}}\",\n  \"origemCandidatos\": \"inscricaoPropria\",\n  \"unidadeAdministradoraOrigemId\": \"{{unidade_id}}\",\n  \"localidadeCodigoIbge\": \"1504208\",\n  \"localidadeNome\": \"Marabá\",\n  \"localidadeUf\": \"PA\",\n  \"identificadorLegivel\": \"smoke-{{run_suffix}}\"\n}",
+              "raw": "{\n  \"nome\": \"SiSU 2026.1 (smoke)\",\n  \"tipoProcessoOrigemId\": \"{{tipo_processo_id}}\",\n  \"origemCandidatos\": \"INSCRICAO_PROPRIA\",\n  \"unidadeAdministradoraOrigemId\": \"{{unidade_id}}\",\n  \"localidadeCodigoIbge\": \"1504208\",\n  \"localidadeNome\": \"Marabá\",\n  \"localidadeUf\": \"PA\",\n  \"identificadorLegivel\": \"smoke-{{run_suffix}}\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -1402,7 +1402,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "[\n  {\n    \"nome\": \"Prova Objetiva\",\n    \"tipoEtapaOrigemId\": \"{{tipo_etapa_prova_id}}\",\n    \"carater\": \"classificatoria\",\n    \"peso\": 1.0,\n    \"notaMinima\": null,\n    \"ordem\": 1,\n    \"produtos\": [],\n    \"bancas\": [],\n    \"recursos\": []\n  },\n  {\n    \"nome\": \"Entrevista\",\n    \"tipoEtapaOrigemId\": \"{{tipo_etapa_entrevista_id}}\",\n    \"carater\": \"classificatoria\",\n    \"peso\": 1.0,\n    \"notaMinima\": null,\n    \"ordem\": 2,\n    \"produtos\": [],\n    \"bancas\": [],\n    \"recursos\": []\n  }\n]",
+              "raw": "[\n  {\n    \"nome\": \"Prova Objetiva\",\n    \"tipoEtapaOrigemId\": \"{{tipo_etapa_prova_id}}\",\n    \"carater\": \"CLASSIFICATORIA\",\n    \"peso\": 1.0,\n    \"notaMinima\": null,\n    \"ordem\": 1,\n    \"produtos\": [],\n    \"bancas\": [],\n    \"recursos\": []\n  },\n  {\n    \"nome\": \"Entrevista\",\n    \"tipoEtapaOrigemId\": \"{{tipo_etapa_entrevista_id}}\",\n    \"carater\": \"CLASSIFICATORIA\",\n    \"peso\": 1.0,\n    \"notaMinima\": null,\n    \"ordem\": 2,\n    \"produtos\": [],\n    \"bancas\": [],\n    \"recursos\": []\n  }\n]",
               "options": {
                 "raw": {
                   "language": "json"
@@ -1715,7 +1715,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"regraCalculoCodigo\": \"CLASSIFICACAO-IMPORTADA\",\n  \"regraCalculoVersao\": \"v1\",\n  \"regraArredondamentoCodigo\": null,\n  \"regraArredondamentoVersao\": null,\n  \"casasArredondamento\": null,\n  \"regraOrdemAlocacaoCodigo\": \"ALOCACAO-PRIMEIRA-OPCAO-PRIORITARIA\",\n  \"regraOrdemAlocacaoVersao\": \"v1\",\n  \"regrasEliminacao\": [],\n  \"baseadoEmEnem\": false\n}",
+              "raw": "{\n  \"regraCalculoCodigo\": \"CLASSIFICACAO_IMPORTADA\",\n  \"regraCalculoVersao\": \"v1\",\n  \"regraArredondamentoCodigo\": null,\n  \"regraArredondamentoVersao\": null,\n  \"casasArredondamento\": null,\n  \"regraOrdemAlocacaoCodigo\": \"ALOCACAO_PRIMEIRA_OPCAO_PRIORITARIA\",\n  \"regraOrdemAlocacaoVersao\": \"v1\",\n  \"regrasEliminacao\": [],\n  \"baseadoEmEnem\": false\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -1959,7 +1959,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"aplica\": true,\n  \"regra\": {\n    \"codigo\": \"BONUS-MULTIPLICATIVO\",\n    \"versao\": \"v1\"\n  },\n  \"fator\": 1.2,\n  \"teto\": null,\n  \"baseLegal\": {\n    \"id\": \"{{base_legal_bonus_regional_id}}\"\n  }\n}",
+              "raw": "{\n  \"aplica\": true,\n  \"regra\": {\n    \"codigo\": \"FADA_MULTIPLICATIVO\",\n    \"versao\": \"v1\"\n  },\n  \"fator\": 1.2,\n  \"teto\": null,\n  \"baseLegal\": {\n    \"id\": \"{{base_legal_bonus_regional_id}}\"\n  }\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -2083,7 +2083,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "[\n  {\n    \"ordem\": 1,\n    \"regra\": {\n      \"codigo\": \"DESEMPATE-IDOSO\",\n      \"versao\": \"v1\"\n    },\n    \"parametros\": {\n      \"idadeMinima\": 60\n    }\n  }\n]",
+              "raw": "[\n  {\n    \"ordem\": 1,\n    \"regra\": {\n      \"codigo\": \"DESEMPATE_IDOSO\",\n      \"versao\": \"v1\"\n    },\n    \"parametros\": {\n      \"idadeMinima\": 60\n    }\n  }\n]",
               "options": {
                 "raw": {
                   "language": "json"
@@ -2274,7 +2274,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"itens\": [\n    {\n      \"fatoCodigo\": \"BAIXA_RENDA\",\n      \"ordem\": 1,\n      \"rotulo\": \"Baixa renda\",\n      \"tipoRenderizacao\": \"BOOLEANO\",\n      \"obrigatoriedade\": \"NUNCA\",\n      \"precondicao\": [\n        [\n          {\n            \"fato\": \"COR_RACA\",\n            \"operador\": \"IGUAL\",\n            \"valor\": \"PRETA\"\n          }\n        ]\n      ],\n      \"etapaCodigo\": \"DADOS\"\n    },\n    {\n      \"fatoCodigo\": \"CONDICAO_ATENDIMENTO\",\n      \"ordem\": 2,\n      \"rotulo\": \"Condição de atendimento especializado\",\n      \"tipoRenderizacao\": \"SELECAO_MULTIPLA\",\n      \"obrigatoriedade\": \"NUNCA\",\n      \"precondicao\": null,\n      \"etapaCodigo\": \"DADOS\"\n    }\n  ],\n  \"grupos\": [\n    {\n      \"codigo\": \"COMPOSICAO_FAMILIAR\",\n      \"ordem\": 5,\n      \"rotulo\": \"Composição familiar\",\n      \"etapaCodigo\": \"DADOS\",\n      \"minimo\": 1,\n      \"maximo\": 10,\n      \"obrigatoriedade\": \"SEMPRE\",\n      \"subitens\": [\n        {\n          \"fatoCodigo\": \"MAIOR_IDADE\",\n          \"ordem\": 0,\n          \"rotulo\": \"Maior de idade\",\n          \"tipoRenderizacao\": \"BOOLEANO\",\n          \"obrigatoriedade\": \"SEMPRE\"\n        }\n      ]\n    }\n  ]\n}",
+              "raw": "{\n  \"itens\": [\n    {\n      \"fatoCodigo\": \"BAIXA_RENDA\",\n      \"ordem\": 1,\n      \"rotulo\": \"Baixa renda\",\n      \"tipoRenderizacao\": \"SIM_OU_NAO\",\n      \"obrigatoriedade\": \"NUNCA\",\n      \"precondicao\": [\n        [\n          {\n            \"fato\": \"COR_RACA\",\n            \"operador\": \"IGUAL\",\n            \"valor\": \"PRETA\"\n          }\n        ]\n      ],\n      \"etapaCodigo\": \"DADOS\"\n    },\n    {\n      \"fatoCodigo\": \"CONDICAO_ATENDIMENTO\",\n      \"ordem\": 2,\n      \"rotulo\": \"Condição de atendimento especializado\",\n      \"tipoRenderizacao\": \"ESCOLHA_MULTIPLA\",\n      \"obrigatoriedade\": \"NUNCA\",\n      \"precondicao\": null,\n      \"etapaCodigo\": \"DADOS\"\n    }\n  ],\n  \"grupos\": [\n    {\n      \"codigo\": \"COMPOSICAO_FAMILIAR\",\n      \"ordem\": 5,\n      \"rotulo\": \"Composição familiar\",\n      \"etapaCodigo\": \"DADOS\",\n      \"minimo\": 1,\n      \"maximo\": 10,\n      \"obrigatoriedade\": \"SEMPRE\",\n      \"subitens\": [\n        {\n          \"fatoCodigo\": \"MAIOR_IDADE\",\n          \"ordem\": 0,\n          \"rotulo\": \"Maior de idade\",\n          \"tipoRenderizacao\": \"SIM_OU_NAO\",\n          \"obrigatoriedade\": \"SEMPRE\"\n        }\n      ]\n    }\n  ]\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -3391,7 +3391,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"finalidade\": \"documentoDoEdital\",\n  \"nomeArquivo\": \"edital.pdf\",\n  \"tipoDeMidia\": \"application/pdf\"\n}",
+              "raw": "{\n  \"finalidade\": \"DOCUMENTO_DO_EDITAL\",\n  \"nomeArquivo\": \"edital.pdf\",\n  \"tipoDeMidia\": \"application/pdf\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -3524,7 +3524,7 @@
                 "exec": [
                   "pm.test(\"200 OK, status Confirmado\", () => {",
                   "  pm.response.to.have.status(200);",
-                  "  pm.expect(pm.response.json().status).to.eql('Confirmado');",
+                  "  pm.expect(pm.response.json().status).to.eql('CONFIRMADO');",
                   "});"
                 ]
               }
@@ -3946,7 +3946,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"finalidade\": \"documentoDoEdital\",\n  \"nomeArquivo\": \"edital.pdf\",\n  \"tipoDeMidia\": \"application/pdf\"\n}",
+              "raw": "{\n  \"finalidade\": \"DOCUMENTO_DO_EDITAL\",\n  \"nomeArquivo\": \"edital.pdf\",\n  \"tipoDeMidia\": \"application/pdf\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -4079,7 +4079,7 @@
                 "exec": [
                   "pm.test(\"200 OK, status Confirmado\", () => {",
                   "  pm.response.to.have.status(200);",
-                  "  pm.expect(pm.response.json().status).to.eql('Confirmado');",
+                  "  pm.expect(pm.response.json().status).to.eql('CONFIRMADO');",
                   "});"
                 ]
               }
@@ -4194,7 +4194,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"nome\": \"Regras — Padrão 1: Certificado e Histórico\",\n  \"tipoProcessoOrigemId\": \"{{tipo_processo_id}}\",\n  \"origemCandidatos\": \"inscricaoPropria\",\n  \"unidadeAdministradoraOrigemId\": \"{{unidade_id}}\",\n  \"localidadeCodigoIbge\": \"1504208\",\n  \"localidadeNome\": \"Marabá\",\n  \"localidadeUf\": \"PA\",\n  \"identificadorLegivel\": \"regras-p1-{{run_suffix}}\"\n}",
+              "raw": "{\n  \"nome\": \"Regras — Padrão 1: Certificado e Histórico\",\n  \"tipoProcessoOrigemId\": \"{{tipo_processo_id}}\",\n  \"origemCandidatos\": \"INSCRICAO_PROPRIA\",\n  \"unidadeAdministradoraOrigemId\": \"{{unidade_id}}\",\n  \"localidadeCodigoIbge\": \"1504208\",\n  \"localidadeNome\": \"Marabá\",\n  \"localidadeUf\": \"PA\",\n  \"identificadorLegivel\": \"regras-p1-{{run_suffix}}\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -4259,7 +4259,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "[\n  {\n    \"nome\": \"Prova\",\n    \"tipoEtapaOrigemId\": \"{{tipo_etapa_prova_id}}\",\n    \"carater\": \"classificatoria\",\n    \"peso\": 1.0,\n    \"notaMinima\": null,\n    \"ordem\": 1,\n    \"produtos\": [],\n    \"bancas\": [],\n    \"recursos\": []\n  }\n]",
+              "raw": "[\n  {\n    \"nome\": \"Prova\",\n    \"tipoEtapaOrigemId\": \"{{tipo_etapa_prova_id}}\",\n    \"carater\": \"CLASSIFICATORIA\",\n    \"peso\": 1.0,\n    \"notaMinima\": null,\n    \"ordem\": 1,\n    \"produtos\": [],\n    \"bancas\": [],\n    \"recursos\": []\n  }\n]",
               "options": {
                 "raw": {
                   "language": "json"
@@ -4445,7 +4445,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"regraCalculoCodigo\": \"CLASSIFICACAO-IMPORTADA\",\n  \"regraCalculoVersao\": \"v1\",\n  \"regraArredondamentoCodigo\": null,\n  \"regraArredondamentoVersao\": null,\n  \"casasArredondamento\": null,\n  \"regraOrdemAlocacaoCodigo\": \"ALOCACAO-PRIMEIRA-OPCAO-PRIORITARIA\",\n  \"regraOrdemAlocacaoVersao\": \"v1\",\n  \"regrasEliminacao\": [],\n  \"baseadoEmEnem\": false\n}",
+              "raw": "{\n  \"regraCalculoCodigo\": \"CLASSIFICACAO_IMPORTADA\",\n  \"regraCalculoVersao\": \"v1\",\n  \"regraArredondamentoCodigo\": null,\n  \"regraArredondamentoVersao\": null,\n  \"casasArredondamento\": null,\n  \"regraOrdemAlocacaoCodigo\": \"ALOCACAO_PRIMEIRA_OPCAO_PRIORITARIA\",\n  \"regraOrdemAlocacaoVersao\": \"v1\",\n  \"regrasEliminacao\": [],\n  \"baseadoEmEnem\": false\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -4723,7 +4723,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"nome\": \"Regras — Padrão 2: RG ou CPF e Certidão\",\n  \"tipoProcessoOrigemId\": \"{{tipo_processo_id}}\",\n  \"origemCandidatos\": \"inscricaoPropria\",\n  \"unidadeAdministradoraOrigemId\": \"{{unidade_id}}\",\n  \"localidadeCodigoIbge\": \"1504208\",\n  \"localidadeNome\": \"Marabá\",\n  \"localidadeUf\": \"PA\",\n  \"identificadorLegivel\": \"regras-p2-{{run_suffix}}\"\n}",
+              "raw": "{\n  \"nome\": \"Regras — Padrão 2: RG ou CPF e Certidão\",\n  \"tipoProcessoOrigemId\": \"{{tipo_processo_id}}\",\n  \"origemCandidatos\": \"INSCRICAO_PROPRIA\",\n  \"unidadeAdministradoraOrigemId\": \"{{unidade_id}}\",\n  \"localidadeCodigoIbge\": \"1504208\",\n  \"localidadeNome\": \"Marabá\",\n  \"localidadeUf\": \"PA\",\n  \"identificadorLegivel\": \"regras-p2-{{run_suffix}}\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -4788,7 +4788,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "[\n  {\n    \"nome\": \"Prova\",\n    \"tipoEtapaOrigemId\": \"{{tipo_etapa_prova_id}}\",\n    \"carater\": \"classificatoria\",\n    \"peso\": 1.0,\n    \"notaMinima\": null,\n    \"ordem\": 1,\n    \"produtos\": [],\n    \"bancas\": [],\n    \"recursos\": []\n  }\n]",
+              "raw": "[\n  {\n    \"nome\": \"Prova\",\n    \"tipoEtapaOrigemId\": \"{{tipo_etapa_prova_id}}\",\n    \"carater\": \"CLASSIFICATORIA\",\n    \"peso\": 1.0,\n    \"notaMinima\": null,\n    \"ordem\": 1,\n    \"produtos\": [],\n    \"bancas\": [],\n    \"recursos\": []\n  }\n]",
               "options": {
                 "raw": {
                   "language": "json"
@@ -4974,7 +4974,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"regraCalculoCodigo\": \"CLASSIFICACAO-IMPORTADA\",\n  \"regraCalculoVersao\": \"v1\",\n  \"regraArredondamentoCodigo\": null,\n  \"regraArredondamentoVersao\": null,\n  \"casasArredondamento\": null,\n  \"regraOrdemAlocacaoCodigo\": \"ALOCACAO-PRIMEIRA-OPCAO-PRIORITARIA\",\n  \"regraOrdemAlocacaoVersao\": \"v1\",\n  \"regrasEliminacao\": [],\n  \"baseadoEmEnem\": false\n}",
+              "raw": "{\n  \"regraCalculoCodigo\": \"CLASSIFICACAO_IMPORTADA\",\n  \"regraCalculoVersao\": \"v1\",\n  \"regraArredondamentoCodigo\": null,\n  \"regraArredondamentoVersao\": null,\n  \"casasArredondamento\": null,\n  \"regraOrdemAlocacaoCodigo\": \"ALOCACAO_PRIMEIRA_OPCAO_PRIORITARIA\",\n  \"regraOrdemAlocacaoVersao\": \"v1\",\n  \"regrasEliminacao\": [],\n  \"baseadoEmEnem\": false\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -5173,7 +5173,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"itens\": [],\n  \"grupos\": [\n    {\n      \"codigo\": \"COMPOSICAO_FAMILIAR\",\n      \"ordem\": 0,\n      \"rotulo\": \"Composição familiar\",\n      \"etapaCodigo\": \"DADOS\",\n      \"minimo\": 1,\n      \"maximo\": 10,\n      \"obrigatoriedade\": \"SEMPRE\",\n      \"subitens\": [\n        {\n          \"fatoCodigo\": \"MAIOR_IDADE\",\n          \"ordem\": 0,\n          \"rotulo\": \"Maior de idade\",\n          \"tipoRenderizacao\": \"BOOLEANO\",\n          \"obrigatoriedade\": \"SEMPRE\"\n        },\n        {\n          \"fatoCodigo\": \"SEM_RENDA\",\n          \"ordem\": 1,\n          \"rotulo\": \"Sem renda\",\n          \"tipoRenderizacao\": \"BOOLEANO\",\n          \"obrigatoriedade\": \"SEMPRE\"\n        },\n        {\n          \"fatoCodigo\": \"SOB_GUARDA\",\n          \"ordem\": 2,\n          \"rotulo\": \"Sob guarda\",\n          \"tipoRenderizacao\": \"BOOLEANO\",\n          \"obrigatoriedade\": \"SEMPRE\"\n        }\n      ]\n    }\n  ]\n}",
+              "raw": "{\n  \"itens\": [],\n  \"grupos\": [\n    {\n      \"codigo\": \"COMPOSICAO_FAMILIAR\",\n      \"ordem\": 0,\n      \"rotulo\": \"Composição familiar\",\n      \"etapaCodigo\": \"DADOS\",\n      \"minimo\": 1,\n      \"maximo\": 10,\n      \"obrigatoriedade\": \"SEMPRE\",\n      \"subitens\": [\n        {\n          \"fatoCodigo\": \"MAIOR_IDADE\",\n          \"ordem\": 0,\n          \"rotulo\": \"Maior de idade\",\n          \"tipoRenderizacao\": \"SIM_OU_NAO\",\n          \"obrigatoriedade\": \"SEMPRE\"\n        },\n        {\n          \"fatoCodigo\": \"SEM_RENDA\",\n          \"ordem\": 1,\n          \"rotulo\": \"Sem renda\",\n          \"tipoRenderizacao\": \"SIM_OU_NAO\",\n          \"obrigatoriedade\": \"SEMPRE\"\n        },\n        {\n          \"fatoCodigo\": \"SOB_GUARDA\",\n          \"ordem\": 2,\n          \"rotulo\": \"Sob guarda\",\n          \"tipoRenderizacao\": \"SIM_OU_NAO\",\n          \"obrigatoriedade\": \"SEMPRE\"\n        }\n      ]\n    }\n  ]\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -5341,7 +5341,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"nome\": \"Regras — Padrão 3: guarda condicional\",\n  \"tipoProcessoOrigemId\": \"{{tipo_processo_id}}\",\n  \"origemCandidatos\": \"inscricaoPropria\",\n  \"unidadeAdministradoraOrigemId\": \"{{unidade_id}}\",\n  \"localidadeCodigoIbge\": \"1504208\",\n  \"localidadeNome\": \"Marabá\",\n  \"localidadeUf\": \"PA\",\n  \"identificadorLegivel\": \"regras-p3-{{run_suffix}}\"\n}",
+              "raw": "{\n  \"nome\": \"Regras — Padrão 3: guarda condicional\",\n  \"tipoProcessoOrigemId\": \"{{tipo_processo_id}}\",\n  \"origemCandidatos\": \"INSCRICAO_PROPRIA\",\n  \"unidadeAdministradoraOrigemId\": \"{{unidade_id}}\",\n  \"localidadeCodigoIbge\": \"1504208\",\n  \"localidadeNome\": \"Marabá\",\n  \"localidadeUf\": \"PA\",\n  \"identificadorLegivel\": \"regras-p3-{{run_suffix}}\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -5406,7 +5406,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "[\n  {\n    \"nome\": \"Prova\",\n    \"tipoEtapaOrigemId\": \"{{tipo_etapa_prova_id}}\",\n    \"carater\": \"classificatoria\",\n    \"peso\": 1.0,\n    \"notaMinima\": null,\n    \"ordem\": 1,\n    \"produtos\": [],\n    \"bancas\": [],\n    \"recursos\": []\n  }\n]",
+              "raw": "[\n  {\n    \"nome\": \"Prova\",\n    \"tipoEtapaOrigemId\": \"{{tipo_etapa_prova_id}}\",\n    \"carater\": \"CLASSIFICATORIA\",\n    \"peso\": 1.0,\n    \"notaMinima\": null,\n    \"ordem\": 1,\n    \"produtos\": [],\n    \"bancas\": [],\n    \"recursos\": []\n  }\n]",
               "options": {
                 "raw": {
                   "language": "json"
@@ -5592,7 +5592,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"regraCalculoCodigo\": \"CLASSIFICACAO-IMPORTADA\",\n  \"regraCalculoVersao\": \"v1\",\n  \"regraArredondamentoCodigo\": null,\n  \"regraArredondamentoVersao\": null,\n  \"casasArredondamento\": null,\n  \"regraOrdemAlocacaoCodigo\": \"ALOCACAO-PRIMEIRA-OPCAO-PRIORITARIA\",\n  \"regraOrdemAlocacaoVersao\": \"v1\",\n  \"regrasEliminacao\": [],\n  \"baseadoEmEnem\": false\n}",
+              "raw": "{\n  \"regraCalculoCodigo\": \"CLASSIFICACAO_IMPORTADA\",\n  \"regraCalculoVersao\": \"v1\",\n  \"regraArredondamentoCodigo\": null,\n  \"regraArredondamentoVersao\": null,\n  \"casasArredondamento\": null,\n  \"regraOrdemAlocacaoCodigo\": \"ALOCACAO_PRIMEIRA_OPCAO_PRIORITARIA\",\n  \"regraOrdemAlocacaoVersao\": \"v1\",\n  \"regrasEliminacao\": [],\n  \"baseadoEmEnem\": false\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -5791,7 +5791,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"itens\": [],\n  \"grupos\": [\n    {\n      \"codigo\": \"COMPOSICAO_FAMILIAR\",\n      \"ordem\": 0,\n      \"rotulo\": \"Composição familiar\",\n      \"etapaCodigo\": \"DADOS\",\n      \"minimo\": 1,\n      \"maximo\": 10,\n      \"obrigatoriedade\": \"SEMPRE\",\n      \"subitens\": [\n        {\n          \"fatoCodigo\": \"MAIOR_IDADE\",\n          \"ordem\": 0,\n          \"rotulo\": \"Maior de idade\",\n          \"tipoRenderizacao\": \"BOOLEANO\",\n          \"obrigatoriedade\": \"SEMPRE\"\n        },\n        {\n          \"fatoCodigo\": \"SEM_RENDA\",\n          \"ordem\": 1,\n          \"rotulo\": \"Sem renda\",\n          \"tipoRenderizacao\": \"BOOLEANO\",\n          \"obrigatoriedade\": \"SEMPRE\"\n        },\n        {\n          \"fatoCodigo\": \"SOB_GUARDA\",\n          \"ordem\": 2,\n          \"rotulo\": \"Sob guarda\",\n          \"tipoRenderizacao\": \"BOOLEANO\",\n          \"obrigatoriedade\": \"SEMPRE\"\n        }\n      ]\n    }\n  ]\n}",
+              "raw": "{\n  \"itens\": [],\n  \"grupos\": [\n    {\n      \"codigo\": \"COMPOSICAO_FAMILIAR\",\n      \"ordem\": 0,\n      \"rotulo\": \"Composição familiar\",\n      \"etapaCodigo\": \"DADOS\",\n      \"minimo\": 1,\n      \"maximo\": 10,\n      \"obrigatoriedade\": \"SEMPRE\",\n      \"subitens\": [\n        {\n          \"fatoCodigo\": \"MAIOR_IDADE\",\n          \"ordem\": 0,\n          \"rotulo\": \"Maior de idade\",\n          \"tipoRenderizacao\": \"SIM_OU_NAO\",\n          \"obrigatoriedade\": \"SEMPRE\"\n        },\n        {\n          \"fatoCodigo\": \"SEM_RENDA\",\n          \"ordem\": 1,\n          \"rotulo\": \"Sem renda\",\n          \"tipoRenderizacao\": \"SIM_OU_NAO\",\n          \"obrigatoriedade\": \"SEMPRE\"\n        },\n        {\n          \"fatoCodigo\": \"SOB_GUARDA\",\n          \"ordem\": 2,\n          \"rotulo\": \"Sob guarda\",\n          \"tipoRenderizacao\": \"SIM_OU_NAO\",\n          \"obrigatoriedade\": \"SEMPRE\"\n        }\n      ]\n    }\n  ]\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -5952,7 +5952,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"nome\": \"Regras — Padrão 4: IRPF/isento por adulto\",\n  \"tipoProcessoOrigemId\": \"{{tipo_processo_id}}\",\n  \"origemCandidatos\": \"inscricaoPropria\",\n  \"unidadeAdministradoraOrigemId\": \"{{unidade_id}}\",\n  \"localidadeCodigoIbge\": \"1504208\",\n  \"localidadeNome\": \"Marabá\",\n  \"localidadeUf\": \"PA\",\n  \"identificadorLegivel\": \"regras-p4-{{run_suffix}}\"\n}",
+              "raw": "{\n  \"nome\": \"Regras — Padrão 4: IRPF/isento por adulto\",\n  \"tipoProcessoOrigemId\": \"{{tipo_processo_id}}\",\n  \"origemCandidatos\": \"INSCRICAO_PROPRIA\",\n  \"unidadeAdministradoraOrigemId\": \"{{unidade_id}}\",\n  \"localidadeCodigoIbge\": \"1504208\",\n  \"localidadeNome\": \"Marabá\",\n  \"localidadeUf\": \"PA\",\n  \"identificadorLegivel\": \"regras-p4-{{run_suffix}}\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -6017,7 +6017,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "[\n  {\n    \"nome\": \"Prova\",\n    \"tipoEtapaOrigemId\": \"{{tipo_etapa_prova_id}}\",\n    \"carater\": \"classificatoria\",\n    \"peso\": 1.0,\n    \"notaMinima\": null,\n    \"ordem\": 1,\n    \"produtos\": [],\n    \"bancas\": [],\n    \"recursos\": []\n  }\n]",
+              "raw": "[\n  {\n    \"nome\": \"Prova\",\n    \"tipoEtapaOrigemId\": \"{{tipo_etapa_prova_id}}\",\n    \"carater\": \"CLASSIFICATORIA\",\n    \"peso\": 1.0,\n    \"notaMinima\": null,\n    \"ordem\": 1,\n    \"produtos\": [],\n    \"bancas\": [],\n    \"recursos\": []\n  }\n]",
               "options": {
                 "raw": {
                   "language": "json"
@@ -6203,7 +6203,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"regraCalculoCodigo\": \"CLASSIFICACAO-IMPORTADA\",\n  \"regraCalculoVersao\": \"v1\",\n  \"regraArredondamentoCodigo\": null,\n  \"regraArredondamentoVersao\": null,\n  \"casasArredondamento\": null,\n  \"regraOrdemAlocacaoCodigo\": \"ALOCACAO-PRIMEIRA-OPCAO-PRIORITARIA\",\n  \"regraOrdemAlocacaoVersao\": \"v1\",\n  \"regrasEliminacao\": [],\n  \"baseadoEmEnem\": false\n}",
+              "raw": "{\n  \"regraCalculoCodigo\": \"CLASSIFICACAO_IMPORTADA\",\n  \"regraCalculoVersao\": \"v1\",\n  \"regraArredondamentoCodigo\": null,\n  \"regraArredondamentoVersao\": null,\n  \"casasArredondamento\": null,\n  \"regraOrdemAlocacaoCodigo\": \"ALOCACAO_PRIMEIRA_OPCAO_PRIORITARIA\",\n  \"regraOrdemAlocacaoVersao\": \"v1\",\n  \"regrasEliminacao\": [],\n  \"baseadoEmEnem\": false\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -6402,7 +6402,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"itens\": [],\n  \"grupos\": [\n    {\n      \"codigo\": \"COMPOSICAO_FAMILIAR\",\n      \"ordem\": 0,\n      \"rotulo\": \"Composição familiar\",\n      \"etapaCodigo\": \"DADOS\",\n      \"minimo\": 1,\n      \"maximo\": 10,\n      \"obrigatoriedade\": \"SEMPRE\",\n      \"subitens\": [\n        {\n          \"fatoCodigo\": \"MAIOR_IDADE\",\n          \"ordem\": 0,\n          \"rotulo\": \"Maior de idade\",\n          \"tipoRenderizacao\": \"BOOLEANO\",\n          \"obrigatoriedade\": \"SEMPRE\"\n        },\n        {\n          \"fatoCodigo\": \"SEM_RENDA\",\n          \"ordem\": 1,\n          \"rotulo\": \"Sem renda\",\n          \"tipoRenderizacao\": \"BOOLEANO\",\n          \"obrigatoriedade\": \"SEMPRE\"\n        },\n        {\n          \"fatoCodigo\": \"SOB_GUARDA\",\n          \"ordem\": 2,\n          \"rotulo\": \"Sob guarda\",\n          \"tipoRenderizacao\": \"BOOLEANO\",\n          \"obrigatoriedade\": \"SEMPRE\"\n        }\n      ]\n    }\n  ]\n}",
+              "raw": "{\n  \"itens\": [],\n  \"grupos\": [\n    {\n      \"codigo\": \"COMPOSICAO_FAMILIAR\",\n      \"ordem\": 0,\n      \"rotulo\": \"Composição familiar\",\n      \"etapaCodigo\": \"DADOS\",\n      \"minimo\": 1,\n      \"maximo\": 10,\n      \"obrigatoriedade\": \"SEMPRE\",\n      \"subitens\": [\n        {\n          \"fatoCodigo\": \"MAIOR_IDADE\",\n          \"ordem\": 0,\n          \"rotulo\": \"Maior de idade\",\n          \"tipoRenderizacao\": \"SIM_OU_NAO\",\n          \"obrigatoriedade\": \"SEMPRE\"\n        },\n        {\n          \"fatoCodigo\": \"SEM_RENDA\",\n          \"ordem\": 1,\n          \"rotulo\": \"Sem renda\",\n          \"tipoRenderizacao\": \"SIM_OU_NAO\",\n          \"obrigatoriedade\": \"SEMPRE\"\n        },\n        {\n          \"fatoCodigo\": \"SOB_GUARDA\",\n          \"ordem\": 2,\n          \"rotulo\": \"Sob guarda\",\n          \"tipoRenderizacao\": \"SIM_OU_NAO\",\n          \"obrigatoriedade\": \"SEMPRE\"\n        }\n      ]\n    }\n  ]\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -6567,7 +6567,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"nome\": \"Regras — Padrão 5: PF + PJ vinculada\",\n  \"tipoProcessoOrigemId\": \"{{tipo_processo_id}}\",\n  \"origemCandidatos\": \"inscricaoPropria\",\n  \"unidadeAdministradoraOrigemId\": \"{{unidade_id}}\",\n  \"localidadeCodigoIbge\": \"1504208\",\n  \"localidadeNome\": \"Marabá\",\n  \"localidadeUf\": \"PA\",\n  \"identificadorLegivel\": \"regras-p5-{{run_suffix}}\"\n}",
+              "raw": "{\n  \"nome\": \"Regras — Padrão 5: PF + PJ vinculada\",\n  \"tipoProcessoOrigemId\": \"{{tipo_processo_id}}\",\n  \"origemCandidatos\": \"INSCRICAO_PROPRIA\",\n  \"unidadeAdministradoraOrigemId\": \"{{unidade_id}}\",\n  \"localidadeCodigoIbge\": \"1504208\",\n  \"localidadeNome\": \"Marabá\",\n  \"localidadeUf\": \"PA\",\n  \"identificadorLegivel\": \"regras-p5-{{run_suffix}}\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -6632,7 +6632,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "[\n  {\n    \"nome\": \"Prova\",\n    \"tipoEtapaOrigemId\": \"{{tipo_etapa_prova_id}}\",\n    \"carater\": \"classificatoria\",\n    \"peso\": 1.0,\n    \"notaMinima\": null,\n    \"ordem\": 1,\n    \"produtos\": [],\n    \"bancas\": [],\n    \"recursos\": []\n  }\n]",
+              "raw": "[\n  {\n    \"nome\": \"Prova\",\n    \"tipoEtapaOrigemId\": \"{{tipo_etapa_prova_id}}\",\n    \"carater\": \"CLASSIFICATORIA\",\n    \"peso\": 1.0,\n    \"notaMinima\": null,\n    \"ordem\": 1,\n    \"produtos\": [],\n    \"bancas\": [],\n    \"recursos\": []\n  }\n]",
               "options": {
                 "raw": {
                   "language": "json"
@@ -6818,7 +6818,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"regraCalculoCodigo\": \"CLASSIFICACAO-IMPORTADA\",\n  \"regraCalculoVersao\": \"v1\",\n  \"regraArredondamentoCodigo\": null,\n  \"regraArredondamentoVersao\": null,\n  \"casasArredondamento\": null,\n  \"regraOrdemAlocacaoCodigo\": \"ALOCACAO-PRIMEIRA-OPCAO-PRIORITARIA\",\n  \"regraOrdemAlocacaoVersao\": \"v1\",\n  \"regrasEliminacao\": [],\n  \"baseadoEmEnem\": false\n}",
+              "raw": "{\n  \"regraCalculoCodigo\": \"CLASSIFICACAO_IMPORTADA\",\n  \"regraCalculoVersao\": \"v1\",\n  \"regraArredondamentoCodigo\": null,\n  \"regraArredondamentoVersao\": null,\n  \"casasArredondamento\": null,\n  \"regraOrdemAlocacaoCodigo\": \"ALOCACAO_PRIMEIRA_OPCAO_PRIORITARIA\",\n  \"regraOrdemAlocacaoVersao\": \"v1\",\n  \"regrasEliminacao\": [],\n  \"baseadoEmEnem\": false\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -7017,7 +7017,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"codigo\": \"CNPJ_PJ_VINCULADA\",\n  \"nome\": \"CNPJ da pessoa jurídica vinculada\",\n  \"descricao\": null,\n  \"dominio\": \"TEXTO\",\n  \"cardinalidade\": \"ESCALAR\",\n  \"fonteValores\": null,\n  \"formato\": null,\n  \"pontoResolucao\": \"INSCRICAO\",\n  \"escopo\": \"MEMBRO_GRUPO\",\n  \"classificacaoProtecao\": \"PESSOAL\",\n  \"finalidadeTratamento\": \"Comprovação documental das pessoas jurídicas vinculadas ao candidato.\",\n  \"hipoteseLegal\": \"CUMPRIMENTO_OBRIGACAO_LEGAL\"\n}",
+              "raw": "{\n  \"codigo\": \"CNPJ_PJ_VINCULADA\",\n  \"nome\": \"CNPJ da pessoa jurídica vinculada\",\n  \"descricao\": null,\n  \"dominio\": \"TEXTO\",\n  \"cardinalidade\": \"VALOR_UNICO\",\n  \"fonteValores\": null,\n  \"formato\": null,\n  \"pontoResolucao\": \"INSCRICAO\",\n  \"escopo\": \"MEMBRO_GRUPO\",\n  \"classificacaoProtecao\": \"PESSOAL\",\n  \"finalidadeTratamento\": \"Comprovação documental das pessoas jurídicas vinculadas ao candidato.\",\n  \"hipoteseLegal\": \"CUMPRIMENTO_OBRIGACAO_LEGAL\"\n}",
               "options": {
                 "raw": {
                   "language": "json"

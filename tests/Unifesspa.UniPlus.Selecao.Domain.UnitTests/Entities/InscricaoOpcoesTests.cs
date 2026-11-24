@@ -131,7 +131,7 @@ public sealed class InscricaoOpcoesTests
         ResultadoDaAvaliacaoDaInscricao avaliacao = ComModalidadesPorOpcao([ampla], SituacaoDasModalidades.Concorre, ampla) with
         {
             Modalidades = new ModalidadesDeConcorrencia(
-                true, SituacaoDasModalidades.NaoConcorre, [], [], new DependenciasDaAvaliacao(["CONCORRER_PCD"], [])),
+                SituacaoDasModalidades.NaoConcorre, [], [], new DependenciasDaAvaliacao(["CONCORRER_PCD"], [])),
         };
 
         Result<ComprovanteInscricao> resultado = SubmeterOpcoes(inscricao, OfertaDoProcesso, SegundaOfertaDoProcesso, avaliacao);

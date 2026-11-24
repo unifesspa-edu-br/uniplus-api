@@ -2,6 +2,7 @@ namespace Unifesspa.UniPlus.Selecao.Domain.UnitTests.Entities;
 
 using AwesomeAssertions;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
@@ -20,21 +21,21 @@ public sealed class RegraRecursoFaseTests
     private static readonly Guid ProdutoAncoraId = new("77770000-0000-4000-8000-000000000001");
 
     private static ReferenciaRegra RegraAncorada() => ReferenciaRegra.De(
-        RegraPrazoRecursoCodigo.AncoradoEmAto, "v1", new string('a', 64));
+        RegraDePrazoDoRecurso.ContadoDaPublicacaoDoAto.Codigo(), "v1", new string('a', 64));
 
-    [Fact(DisplayName = "Referencia a regra por símbolo (RegraPrazoRecursoCodigo.AncoradoEmAto), não por literal solto")]
+    [Fact(DisplayName = "Referencia a regra por símbolo (RegraDePrazoDoRecurso.ContadoDaPublicacaoDoAto.Codigo()), não por literal solto")]
     public void ReferenciaRegraPorSimbolo()
     {
         Result<RegraRecursoFase> resultado = RegraRecursoFase.Criar(RegraAncorada(), ParametrosDoRecursoDeTeste.Declarados(), ProdutoAncoraId);
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
-        resultado.Value!.Regra.Codigo.Should().Be(RegraPrazoRecursoCodigo.AncoradoEmAto);
+        resultado.Value!.Regra.Codigo.Should().Be(RegraDePrazoDoRecurso.ContadoDaPublicacaoDoAto.Codigo());
     }
 
     [Fact(DisplayName = "Referenciar qualquer outra regra do catálogo é recusado")]
     public void RegraDeTipoIncompativel_Recusa()
     {
-        ReferenciaRegra outraRegra = ReferenciaRegra.De("BONUS-MULTIPLICATIVO", "v1", new string('b', 64));
+        ReferenciaRegra outraRegra = ReferenciaRegra.De("FADA_MULTIPLICATIVO", "v1", new string('b', 64));
 
         Result<RegraRecursoFase> resultado = RegraRecursoFase.Criar(outraRegra, ParametrosDoRecursoDeTeste.Declarados(), ProdutoAncoraId);
 
@@ -106,7 +107,7 @@ public sealed class RegraRecursoFaseTests
     public void SemInstanciaSuperior_SemPrazoDaSegundaInstancia()
     {
         Result<RegraRecursoFase> resultado = RegraRecursoFase.Criar(
-            RegraAncorada(), ParametrosDoRecursoDeTeste.Declarados(guardaDaVaga: "naoGuarda"), ProdutoAncoraId);
+            RegraAncorada(), ParametrosDoRecursoDeTeste.Declarados(guardaDaVaga: "NAO_GUARDA"), ProdutoAncoraId);
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
         resultado.Value!.Parametros.PrazoDaSegundaInstancia.Should().BeNull();

@@ -26,13 +26,13 @@ internal static class InscricaoDeTeste
     {
         ["NOME_SOCIAL"] = new(TipoDoValorDeResposta.Texto, Multivalorado: false, Identificador: false),
         ["CPF"] = new(TipoDoValorDeResposta.Texto, Multivalorado: false, Identificador: true),
-        ["DESEJA_NOME_SOCIAL"] = new(TipoDoValorDeResposta.Booleano, Multivalorado: false, Identificador: false),
+        ["DESEJA_NOME_SOCIAL"] = new(TipoDoValorDeResposta.SimOuNao, Multivalorado: false, Identificador: false),
         ["RG_NUMERO"] = new(TipoDoValorDeResposta.Texto, Multivalorado: false, Identificador: true),
-        ["PARENTESCO"] = new(TipoDoValorDeResposta.Codigo, Multivalorado: false, Identificador: false),
+        ["PARENTESCO"] = new(TipoDoValorDeResposta.Opcao, Multivalorado: false, Identificador: false),
         ["TELEFONE"] = new(TipoDoValorDeResposta.Texto, Multivalorado: false, Identificador: false, Formato: "TELEFONE"),
         ["RENDA_MENSAL"] = new(TipoDoValorDeResposta.Texto, Multivalorado: false, Identificador: false),
-        ["SEXO_CIVIL"] = new(TipoDoValorDeResposta.Codigo, Multivalorado: false, Identificador: false),
-        ["IDENTIDADE_GENERO"] = new(TipoDoValorDeResposta.Codigo, Multivalorado: false, Identificador: false, CifraIndividual: true),
+        ["SEXO_CIVIL"] = new(TipoDoValorDeResposta.Opcao, Multivalorado: false, Identificador: false),
+        ["IDENTIDADE_GENERO"] = new(TipoDoValorDeResposta.Opcao, Multivalorado: false, Identificador: false, CifraIndividual: true),
         ["ENDERECO_RESIDENCIAL"] = new(TipoDoValorDeResposta.Endereco, Multivalorado: false, Identificador: false),
     };
 
@@ -67,7 +67,7 @@ internal static class InscricaoDeTeste
 
     internal static readonly Dictionary<string, DefinicaoDaResposta> DefinicoesDosDerivados = new(StringComparer.Ordinal)
     {
-        ["UF_RESIDENCIA"] = new(TipoDoValorDeResposta.Codigo, Multivalorado: false, Identificador: false),
+        ["UF_RESIDENCIA"] = new(TipoDoValorDeResposta.Opcao, Multivalorado: false, Identificador: false),
     };
 
     internal static Inscricao NovaInscricaoEnviada()
@@ -133,7 +133,7 @@ internal static class InscricaoDeTeste
         FormularioDeTeste.AvaliacaoSemOcultos with
         {
             Modalidades = new ModalidadesDeConcorrencia(
-                true, situacao, itens, [], new DependenciasDaAvaliacao(["CONCORRER_PCD", "COMPOSICAO_FAMILIAR.RENDA"], ["COMPOSICAO_FAMILIAR"])),
+                situacao, itens, [], new DependenciasDaAvaliacao(["CONCORRER_PCD", "COMPOSICAO_FAMILIAR.RENDA"], ["COMPOSICAO_FAMILIAR"])),
         };
 
     internal static Result<ComprovanteInscricao> SubmeterCom(Inscricao inscricao, ResultadoDaAvaliacaoDaInscricao avaliacao) =>
@@ -164,8 +164,8 @@ internal static class InscricaoDeTeste
         DependenciasDaAvaliacao dependencias = new(["CONCORRER_PCD"], []);
         return FormularioDeTeste.AvaliacaoSemOcultos with
         {
-            Modalidades = new ModalidadesDeConcorrencia(true, SituacaoDasModalidades.Concorre, daPrimeira, [], dependencias),
-            ModalidadesSegundaOpcao = new ModalidadesDeConcorrencia(true, situacaoDaSegunda, daSegunda, [], dependencias),
+            Modalidades = new ModalidadesDeConcorrencia(SituacaoDasModalidades.Concorre, daPrimeira, [], dependencias),
+            ModalidadesSegundaOpcao = new ModalidadesDeConcorrencia(situacaoDaSegunda, daSegunda, [], dependencias),
         };
     }
 

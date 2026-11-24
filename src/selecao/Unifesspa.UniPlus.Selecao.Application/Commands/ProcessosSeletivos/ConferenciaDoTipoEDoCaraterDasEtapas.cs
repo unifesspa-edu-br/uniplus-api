@@ -61,7 +61,7 @@ internal sealed class ConferenciaDoTipoEDoCaraterDasEtapas(ITipoEtapaReader tipo
         }
 
         return (etapa with { TipoLido = tipo },
-            RecusasDoCarater(declarada.Carater, tipo.Avaliacao.AdmitePontuacao, tipo.Avaliacao.AdmiteEliminacao, tipo.Nome, indice));
+            RecusasDoCarater(etapa.Carater!.Value, tipo.Avaliacao.AdmitePontuacao, tipo.Avaliacao.AdmiteEliminacao, tipo.Nome, indice));
     }
 
     // Vínculo inalterado e tipo desde então desativado: recusar puniria quem só quer corrigir o caráter
@@ -69,7 +69,7 @@ internal sealed class ConferenciaDoTipoEDoCaraterDasEtapas(ITipoEtapaReader tipo
     private static IReadOnlyList<FieldError> ErrosContraOTipoCongelado(EtapaConferida etapa, int indice)
     {
         TipoEtapaSnapshot congelado = etapa.Existente!.TipoEtapa;
-        return RecusasDoCarater(etapa.Declarada.Carater, congelado.AdmitePontuacao, congelado.AdmiteEliminacao, congelado.Nome, indice);
+        return RecusasDoCarater(etapa.Carater!.Value, congelado.AdmitePontuacao, congelado.AdmiteEliminacao, congelado.Nome, indice);
     }
 
     private static IReadOnlyList<FieldError> RecusasDoCarater(

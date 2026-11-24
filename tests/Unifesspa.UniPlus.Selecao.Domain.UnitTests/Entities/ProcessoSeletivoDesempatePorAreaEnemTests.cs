@@ -2,6 +2,7 @@ namespace Unifesspa.UniPlus.Selecao.Domain.UnitTests.Entities;
 
 using AwesomeAssertions;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
@@ -139,11 +140,11 @@ public sealed class ProcessoSeletivoDesempatePorAreaEnemTests
         ProcessoSeletivo processo = NovoProcesso();
         processo.DefinirClassificacao(ClassificacaoEnem()).IsSuccess.Should().BeTrue();
         CriterioDesempate[] criterios = [.. Enumerable.Range(1, RegrasDoDesempate.CriteriosDesempateMaximo).Select(ordem =>
-            PorArea(ordem, [.. Enumerable.Range(0, CriterioDesempate.AreasMaximo).Select(i => $"AREA_{ordem}_{i}")]))];
+            PorArea(ordem, [.. Enumerable.Range(0, ParametrosDesempateMaiorNotaAreaEnem.AreasMaximo).Select(i => $"AREA_{ordem}_{i}")]))];
 
         Result result = processo.DefinirCriteriosDesempate(criterios);
 
-        result.Errors.Should().HaveCount(RegrasDoDesempate.CriteriosDesempateMaximo * CriterioDesempate.AreasMaximo);
+        result.Errors.Should().HaveCount(RegrasDoDesempate.CriteriosDesempateMaximo * ParametrosDesempateMaiorNotaAreaEnem.AreasMaximo);
         result.Errors.Count(static e => e.Error.Message.Contains("Áreas aceitas", StringComparison.Ordinal)).Should().Be(1);
         result.Errors[0].Error.Message.Should().Contain("Áreas aceitas: CIENCIAS_DA_NATUREZA");
         result.Errors.Sum(static e => e.Error.Message.Length).Should().BeLessThan(400 * 160,
@@ -156,7 +157,7 @@ public sealed class ProcessoSeletivoDesempatePorAreaEnemTests
         ProcessoSeletivo processo = NovoProcesso();
         processo.DefinirClassificacao(ClassificacaoEnem()).IsSuccess.Should().BeTrue();
         CriterioDesempate porEtapa = CriterioDesempate.Criar(
-            2, Regra(CriterioDesempateCodigo.MaiorNotaEtapa, 'd'), new ParametrosDesempateMaiorNotaEtapa(Guid.CreateVersion7())).Value!;
+            2, Regra(RegraDeDesempate.MaiorNotaNaEtapa.Codigo(), 'd'), new ParametrosDesempateMaiorNotaEtapa(Guid.CreateVersion7())).Value!;
 
         Result result = processo.DefinirCriteriosDesempate([PorArea(1, "FISICA"), porEtapa, MaiorIdade(1)]);
 

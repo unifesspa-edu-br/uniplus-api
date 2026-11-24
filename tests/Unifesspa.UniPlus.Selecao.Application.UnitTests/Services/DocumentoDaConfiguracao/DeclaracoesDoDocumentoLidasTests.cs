@@ -35,8 +35,8 @@ public sealed class DeclaracoesDoDocumentoLidasTests
             "publicacoesPrevistas": [ { "atoCodigo": "AVISO" }, { "atoCodigo": "RESULTADO_PRELIMINAR", "papel": "PRELIMINAR" } ],
             "bancasRequeridas": [
               { "chave": "documental", "tipoBancaCodigo": "BANCA_DOCUMENTAL", "categoriasDocumentoCodigos": [ "RENDA", "IDENTIDADE" ] },
-              { "chave": "colegiado", "tipoBancaCodigo": "BANCA_COLEGIADA", "regraDeDeliberacao": { "modo": "colegiadaComVotacao", "integrantes": 3, "suplentes": 1, "quorum": 2,
-                "criterio": "maioriaAbsoluta", "desempate": "votoDaPresidencia", "encerramento": "presidenciaNoQuorum" } }
+              { "chave": "colegiado", "tipoBancaCodigo": "BANCA_COLEGIADA", "regraDeDeliberacao": { "modo": "COLEGIADA_COM_VOTACAO", "integrantes": 3, "suplentes": 1, "quorum": 2,
+                "criterio": "MAIORIA_ABSOLUTA", "desempate": "VOTO_DA_PRESIDENCIA", "encerramento": "PRESIDENCIA_NO_QUORUM" } }
             ]
           } ] }
         }
@@ -47,10 +47,10 @@ public sealed class DeclaracoesDoDocumentoLidasTests
           "cronograma": { "fases": [ {
             "chave": "analise", "tipoFaseCodigo": "ANALISE",
             "regraRecurso": {
-              "regraCodigo": "PRAZO-ANCORADO", "regraVersao": "v2", "prazoValor": 2.5, "prazoUnidade": "diasUteis",
+              "regraCodigo": "PRAZO-ANCORADO", "regraVersao": "v2", "prazoValor": 2.5, "prazoUnidade": "DIAS_UTEIS",
               "publicacaoDeReferenciaAtoCodigo": "RESULTADO_PRELIMINAR", "admiteInstanciaSuperior": true,
-              "prazoSegundaInstanciaValor": 3, "prazoSegundaInstanciaUnidade": "horas",
-              "efeitoSuspensivo": "semEfeitoSuspensivo", "guardaDaVaga": "ateOResultadoDefinitivo",
+              "prazoSegundaInstanciaValor": 3, "prazoSegundaInstanciaUnidade": "HORAS",
+              "efeitoSuspensivo": "SEM_EFEITO_SUSPENSIVO", "guardaDaVaga": "ATE_O_RESULTADO_DEFINITIVO",
               "procedimentosDeRecurso": [
                 { "tipoDeDecisao": "ANALISE_DOCUMENTAL", "regra": { "codigo": "PROCEDIMENTO-CONFERENCIA", "versao": "v1" } },
                 { "tipoDeDecisao": "NOTA_DA_ETAPA", "alvo": { "areaDoEnem": "REDACAO" }, "regra": { "codigo": "PROCEDIMENTO-RECALCULO", "versao": "v1" } },
@@ -85,7 +85,7 @@ public sealed class DeclaracoesDoDocumentoLidasTests
     public void Identificacao_CopiaOsCodigosEAOrigem()
     {
         IdentificacaoNoDocumento identificacao = Lidas("""
-            { "identificacao": { "nome": "Processo Seletivo de Exemplo 2027", "tipoProcessoCodigo": "SiSU", "unidadeAdministradoraCodigo": "CEPS", "origemCandidatos": "importacaoExterna",
+            { "identificacao": { "nome": "Processo Seletivo de Exemplo 2027", "tipoProcessoCodigo": "SiSU", "unidadeAdministradoraCodigo": "CEPS", "origemCandidatos": "IMPORTACAO_EXTERNA",
               "localidadeCodigoIbge": "1504208", "identificadorLegivel": "processo-de-teste", "algoritmoContagemPrazo": { "codigo": "CONTAGEM", "versao": "v1" } } }
             """).Identificacao;
 
@@ -95,7 +95,7 @@ public sealed class DeclaracoesDoDocumentoLidasTests
 
     [Fact(DisplayName = "A identificação ausente fica sem código e com a origem dos candidatos sem valor")]
     public void IdentificacaoAusente_FicaSemCodigoESemOrigem() =>
-        Lidas("{}").Identificacao.Should().Be(new IdentificacaoNoDocumento(null, null, null, OrigemCandidatos.Nenhuma, null, null, null));
+        Lidas("{}").Identificacao.Should().Be(new IdentificacaoNoDocumento(null, null, null, null, null, null, null));
 
     [Fact(DisplayName = "O documento sem cronograma não tem fase")]
     public void DocumentoSemCronograma_NaoTemFase() => Lidas("{}").Fases.Should().BeEmpty();
@@ -129,7 +129,7 @@ public sealed class DeclaracoesDoDocumentoLidasTests
 
         publicacoes.Produtos.Should().Equal(
             new ProdutoNoDocumento(0, "AVISO", null),
-            new ProdutoNoDocumento(1, "RESULTADO_PRELIMINAR", PapelProdutoFase.Preliminar));
+            new ProdutoNoDocumento(1, "RESULTADO_PRELIMINAR", PapelDaPublicacaoPrevista.Preliminar));
         publicacoes.EmiteParecerIndividual.Should().BeTrue();
         publicacoes.TiposDeDecisao.Should().Equal("ANALISE_DOCUMENTAL", "HOMOLOGACAO_DAS_INSCRICOES");
     }
@@ -190,7 +190,7 @@ public sealed class DeclaracoesDoDocumentoLidasTests
         regra.Regra.Should().Be(new ReferenciaDeRegraNoDocumento("PRAZO-ANCORADO", "v2"));
         regra.AtoAncoraCodigo.Should().Be("RESULTADO_PRELIMINAR");
         regra.Parametros.Should().Be(new ParametrosDeclaradosDoRecurso(
-            new PrazoDeclarado(2.5m, "diasUteis"), true, new PrazoDeclarado(3m, "horas"), "semEfeitoSuspensivo", "ateOResultadoDefinitivo"));
+            new PrazoDeclarado(2.5m, "DIAS_UTEIS"), true, new PrazoDeclarado(3m, "HORAS"), "SEM_EFEITO_SUSPENSIVO", "ATE_O_RESULTADO_DEFINITIVO"));
     }
 
     [Fact(DisplayName = "O procedimento de recurso copia a posição, o tipo de decisão, o alvo e a regra, e a regra ausente é referência vazia")]

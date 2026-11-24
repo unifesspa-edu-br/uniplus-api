@@ -1,5 +1,6 @@
 namespace Unifesspa.UniPlus.Selecao.Application.Services.DocumentoDaConfiguracao;
 
+
 using System.Text.Json;
 using System.Text.Json.Nodes;
 
@@ -30,7 +31,7 @@ internal static class DeclaracoesDoDocumentoLidas
         Texto(bloco, "nome"),
         Texto(bloco, "tipoProcessoCodigo"),
         Texto(bloco, "unidadeAdministradoraCodigo"),
-        Enumeracao<OrigemCandidatos>(bloco, "origemCandidatos") ?? OrigemCandidatos.Nenhuma,
+        CodigoDoCatalogo<OrigemCandidatos>(Texto(bloco, "origemCandidatos")),
         Texto(bloco, "localidadeCodigoIbge"),
         Texto(bloco, "identificadorLegivel"),
         Referencia(Objeto(bloco, "algoritmoContagemPrazo")));
@@ -56,8 +57,7 @@ internal static class DeclaracoesDoDocumentoLidas
     private static ProdutoNoDocumento Produto(int posicao, JsonObject produto) =>
         new(posicao, Texto(produto, "atoCodigo")!, PapelDoProduto(Texto(produto, "papel")));
 
-    private static PapelProdutoFase? PapelDoProduto(string? codigo) =>
-        PapelProdutoFaseCodigo.TentarConverter(codigo, out PapelProdutoFase? papel) ? papel : null;
+    private static PapelDaPublicacaoPrevista? PapelDoProduto(string? codigo) => CodigoDoCatalogo<PapelDaPublicacaoPrevista>(codigo);
 
     private static string?[]? TiposDeDecisao(JsonObject fase) =>
         fase["tiposDeDecisao"] is JsonArray lista ? [.. lista.Select(static tipo => tipo?.GetValue<string>())] : null;
@@ -103,8 +103,7 @@ internal static class DeclaracoesDoDocumentoLidas
         Alvo(Objeto(procedimento, "alvo")),
         Referencia(Objeto(procedimento, "regra")) ?? new ReferenciaDeRegraNoDocumento(null, null));
 
-    private static TipoMotivoDeDecisao? TipoDeDecisao(string? codigo) =>
-        CatalogoDe<TipoMotivoDeDecisao>.TentarObter(codigo, out TipoMotivoDeDecisao tipo) ? tipo : null;
+    private static TipoMotivoDeDecisao? TipoDeDecisao(string? codigo) => CodigoDoCatalogo<TipoMotivoDeDecisao>(codigo);
 
     private static AlvoNoDocumento? Alvo(JsonObject? alvo) =>
         alvo is null ? null : new(Texto(alvo, "itemDeAvaliacaoChave"), Texto(alvo, "areaDoEnem"));
@@ -126,7 +125,7 @@ internal static class DeclaracoesDoDocumentoLidas
 
     // O esquema fecha o tipo em uma enumeração; o código que o domínio não conhece fica ausente, e o domínio o recusa.
     private static TipoDeCondicaoDeHomologacao? TipoDaCondicao(string? codigo) =>
-        TiposDeCondicaoDeHomologacao.DoCodigo(codigo) is { IsSuccess: true } tipo ? tipo.Value : null;
+        CatalogoDe<TipoDeCondicaoDeHomologacao>.TentarObter(codigo, out TipoDeCondicaoDeHomologacao tipo) ? tipo : null;
 
     private static ReferenciaDeRegraNoDocumento? Referencia(JsonObject? referencia) =>
         referencia is null ? null : new(Texto(referencia, "codigo"), Texto(referencia, "versao"));
@@ -143,10 +142,10 @@ internal static class DeclaracoesDoDocumentoLidas
         where T : struct =>
         pai?[propriedade] is JsonValue valor ? valor.GetValue<T>() : null;
 
-    // A enumeração do documento tem o nome do membro em camelCase, e o esquema só deixa passar um dos nomes.
-    private static T? Enumeracao<T>(JsonObject? pai, string propriedade)
+    // O esquema só deixa passar um dos códigos do catálogo; o que o domínio não conhece fica ausente, e o domínio o recusa.
+    private static T? CodigoDoCatalogo<T>(string? codigo)
         where T : struct, Enum =>
-        Texto(pai, propriedade) is { } texto ? Enum.Parse<T>(texto, ignoreCase: true) : null;
+        CatalogoDe<T>.TentarObter(codigo, out T valor) ? valor : null;
 
     private static IEnumerable<(int Posicao, JsonObject Item)> Itens(JsonObject? pai, string propriedade) =>
         pai?[propriedade] is JsonArray lista ? lista.Select(static (item, posicao) => (posicao, item!.AsObject())) : [];

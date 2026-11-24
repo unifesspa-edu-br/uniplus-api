@@ -27,7 +27,7 @@ public sealed class MotivoDeDecisaoTests
         motivo.Tipo.Should().Be(TipoMotivoDeDecisao.IsencaoDaTaxa);
         motivo.Codigo.Valor.Should().Be("RENDA_ACIMA_DO_LIMITE");
         motivo.Descricao.Should().Be(DescricaoValida);
-        motivo.Subclassificacao.Should().Be(FundamentoIsencaoCodigo.CadastroUnico);
+        motivo.Subclassificacao.Should().Be("CADASTRO_UNICO");
         motivo.Sentido.Should().Be(SentidoDoMotivo.Desfavoravel);
         motivo.Ativo.Should().BeTrue();
     }
@@ -53,7 +53,7 @@ public sealed class MotivoDeDecisaoTests
     [InlineData(TipoMotivoDeDecisao.NotaDaEtapa)]
     public void Criar_TipoSemSubclassificacao_RecusaADeclarada(TipoMotivoDeDecisao tipo)
     {
-        Result<MotivoDeDecisao> resultado = Criar(tipo, "DOCUMENTO_ILEGIVEL", FundamentoIsencaoCodigo.CadastroUnico, SentidoDoMotivo.Desfavoravel);
+        Result<MotivoDeDecisao> resultado = Criar(tipo, "DOCUMENTO_ILEGIVEL", "CADASTRO_UNICO", SentidoDoMotivo.Desfavoravel);
 
         resultado.Errors.Should().ContainSingle().Which.Should().Match<FieldError>(e =>
             e.Field == "subclassificacao" && e.Error.Code == MotivoDeDecisaoErrorCodes.SubclassificacaoNaoAdmitida);
@@ -82,13 +82,13 @@ public sealed class MotivoDeDecisaoTests
     {
         Result<MotivoDeDecisao> resultado = Criar(TipoMotivoDeDecisao.IsencaoDaTaxa, "RENDA_ACIMA_DO_LIMITE", " DOACAO_MEDULA_OSSEA ", SentidoDoMotivo.Favoravel);
 
-        resultado.Value!.Subclassificacao.Should().Be(FundamentoIsencaoCodigo.DoacaoMedulaOssea);
+        resultado.Value!.Subclassificacao.Should().Be("DOACAO_MEDULA_OSSEA");
     }
 
     [Fact(DisplayName = "Motivo sem sentido é recusado")]
     public void Criar_SemSentido_Recusa()
     {
-        Result<MotivoDeDecisao> resultado = Criar(TipoMotivoDeDecisao.IsencaoDaTaxa, "RENDA_ACIMA_DO_LIMITE", FundamentoIsencaoCodigo.CadastroUnico, SentidoDoMotivo.Nenhum);
+        Result<MotivoDeDecisao> resultado = Criar(TipoMotivoDeDecisao.IsencaoDaTaxa, "RENDA_ACIMA_DO_LIMITE", "CADASTRO_UNICO", null);
 
         resultado.Errors.Should().ContainSingle()
             .Which.Error.Code.Should().Be(MotivoDeDecisaoErrorCodes.SentidoObrigatorio);
@@ -98,7 +98,7 @@ public sealed class MotivoDeDecisaoTests
     public void Criar_PayloadInteiroInvalido_AcumulaViolacoes()
     {
         Result<MotivoDeDecisao> resultado = MotivoDeDecisao.Criar(new CamposDoMotivo(
-            null, "código minúsculo", "  ", "QUALQUER", SentidoDoMotivo.Nenhum));
+            null, "código minúsculo", "  ", "QUALQUER", null));
 
         resultado.Errors.Select(erro => erro.Error.Code).Should().BeEquivalentTo(
             [
@@ -137,7 +137,7 @@ public sealed class MotivoDeDecisaoTests
         // O caractere nulo não é espaço em branco e cabe no tamanho, mas a coluna textual do banco
         // não o armazena: sem a recusa o payload inválido só falharia ao gravar.
         Result<MotivoDeDecisao> resultado = Criar(
-            TipoMotivoDeDecisao.IsencaoDaTaxa, "RENDA_ACIMA_DO_LIMITE", FundamentoIsencaoCodigo.CadastroUnico, SentidoDoMotivo.Desfavoravel, "Renda\0acima do limite.");
+            TipoMotivoDeDecisao.IsencaoDaTaxa, "RENDA_ACIMA_DO_LIMITE", "CADASTRO_UNICO", SentidoDoMotivo.Desfavoravel, "Renda\0acima do limite.");
 
         resultado.Errors.Should().ContainSingle()
             .Which.Error.Code.Should().Be(MotivoDeDecisaoErrorCodes.DescricaoCaractereInvalido);
@@ -154,7 +154,7 @@ public sealed class MotivoDeDecisaoTests
         motivo.Descricao.Should().Be("Renda per capita apurada acima do teto da Lei 12.799/2013.");
         motivo.Tipo.Should().Be(TipoMotivoDeDecisao.IsencaoDaTaxa);
         motivo.Codigo.Valor.Should().Be("RENDA_ACIMA_DO_LIMITE");
-        motivo.Subclassificacao.Should().Be(FundamentoIsencaoCodigo.CadastroUnico);
+        motivo.Subclassificacao.Should().Be("CADASTRO_UNICO");
         motivo.Sentido.Should().Be(SentidoDoMotivo.Desfavoravel);
     }
 
@@ -235,9 +235,9 @@ public sealed class MotivoDeDecisaoTests
     }
 
     internal static MotivoDeDecisao CriarValido() =>
-        Criar(TipoMotivoDeDecisao.IsencaoDaTaxa, "RENDA_ACIMA_DO_LIMITE", FundamentoIsencaoCodigo.CadastroUnico, SentidoDoMotivo.Desfavoravel).Value!;
+        Criar(TipoMotivoDeDecisao.IsencaoDaTaxa, "RENDA_ACIMA_DO_LIMITE", "CADASTRO_UNICO", SentidoDoMotivo.Desfavoravel).Value!;
 
     private static Result<MotivoDeDecisao> Criar(
-        TipoMotivoDeDecisao tipo, string? codigo, string? subclassificacao, SentidoDoMotivo sentido, string descricao = DescricaoValida) =>
+        TipoMotivoDeDecisao tipo, string? codigo, string? subclassificacao, SentidoDoMotivo? sentido, string descricao = DescricaoValida) =>
         MotivoDeDecisao.Criar(new CamposDoMotivo(tipo.Codigo(), codigo, descricao, subclassificacao, sentido));
 }

@@ -11,6 +11,7 @@ using Domain.ValueObjects;
 using DTOs;
 
 using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
+using Unifesspa.UniPlus.Application.Abstractions.Respostas;
 using Unifesspa.UniPlus.Configuracao.Contracts;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
@@ -113,7 +114,7 @@ public static class ObterConformidadeLegalProcessoSeletivoQueryHandler
         RegraAvaliadaDto[] regrasDto = [.. resultado.Regras.Select(r => new RegraAvaliadaDto(
             r.RegraId,
             r.RegraCodigo,
-            r.Categoria,
+            CodigoComRotulo<CategoriaObrigatoriedade>.De(r.Categoria),
             r.TipoProcessoCodigoAvaliado,
             r.Predicado,
             r.Aprovada && !inavaliaveis.ContainsKey(r.RegraId),

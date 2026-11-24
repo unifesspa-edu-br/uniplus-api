@@ -7,6 +7,7 @@ using AwesomeAssertions;
 using Microsoft.EntityFrameworkCore;
 
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.ValueObjects;
@@ -110,25 +111,25 @@ public sealed class DesempateBonusPersistenciaTests : IClassFixture<ProcessoSele
         new(Peso: peso, NotaMinima: null, NotaMaxima: null, PassoDoLancamento: null, FormaDeAvaliacao: null, RegraConsolidacao: null, EscalaDeAtendimento: null);
 
     private static CriterioDesempate CriterioDeMaiorNotaEtapa(Guid etapaId) =>
-        CriterioDesempate.Criar(1, Regra(CriterioDesempateCodigo.MaiorNotaEtapa, "a"), new ParametrosDesempateMaiorNotaEtapa(etapaId)).Value!;
+        CriterioDesempate.Criar(1, Regra(RegraDeDesempate.MaiorNotaNaEtapa.Codigo(), "a"), new ParametrosDesempateMaiorNotaEtapa(etapaId)).Value!;
 
     private static CriterioDesempate CriterioDeMaiorIdade(int ordem, string hashSeed) =>
-        CriterioDesempate.Criar(ordem, Regra(CriterioDesempateCodigo.MaiorIdade, hashSeed), new ParametrosDesempateMaiorIdade()).Value!;
+        CriterioDesempate.Criar(ordem, Regra(RegraDeDesempate.MaiorIdade.Codigo(), hashSeed), new ParametrosDesempateMaiorIdade()).Value!;
 
     private static CriterioDesempate[] CriteriosDeTodasAsVariantes(Guid etapaId) =>
     [
         CriterioDeMaiorNotaEtapa(etapaId),
-        CriterioDesempate.Criar(2, Regra(CriterioDesempateCodigo.Idoso, "b"), new ParametrosDesempateIdoso(60)).Value!,
+        CriterioDesempate.Criar(2, Regra(RegraDeDesempate.Idoso.Codigo(), "b"), new ParametrosDesempateIdoso(60)).Value!,
         CriterioDeMaiorIdade(3, "c"),
         CriterioDesempate.Criar(
-            4, Regra(CriterioDesempateCodigo.PredicadoFato, "d"), new ParametrosDesempatePredicadoFato(CondicaoProfessorRural())).Value!,
+            4, Regra(RegraDeDesempate.CondicaoSobreDado.Codigo(), "d"), new ParametrosDesempatePredicadoFato(CondicaoProfessorRural())).Value!,
         CriterioDesempate.Criar(
-            5, Regra(CriterioDesempateCodigo.MaiorNotaAreaEnem, "f"), new ParametrosDesempateMaiorNotaAreaEnem(["REDACAO", "MATEMATICA", "LINGUAGENS"])).Value!,
+            5, Regra(RegraDeDesempate.MaiorNotaPorAreaDoEnem.Codigo(), "f"), new ParametrosDesempateMaiorNotaAreaEnem(["REDACAO", "MATEMATICA", "LINGUAGENS"])).Value!,
     ];
 
     private static ConfiguracaoBonusRegional BonusMultiplicativo(Guid baseLegalId, decimal fator, decimal? teto, string? fatoDeElegibilidade, string hashSeed) =>
         ConfiguracaoBonusRegional.Criar(
-            Regra(RegraBonusCodigo.Multiplicativo, hashSeed), fator, teto, fatoDeElegibilidade,
+            Regra(RegraDeBonus.Multiplicativo.Codigo(), hashSeed), fator, teto, fatoDeElegibilidade,
             new BaseLegalCongelada(baseLegalId, "PORTARIA_UNIFESSPA_NO_2514_2023", "PORTARIA", "Portaria Unifesspa nº 2514/2023", "Institui inclusão regional", [("1504208", "Marabá", "PA")])).Value!;
 
     private async Task<ProcessoSeletivo> RecarregarComDesempateEBonusAsync(Guid processoId)
@@ -164,7 +165,7 @@ public sealed class DesempateBonusPersistenciaTests : IClassFixture<ProcessoSele
     {
         await using UniPlusDbContext configureContext = _fixture.CreateDbContext();
         ProcessoSeletivo carregado = (await ProcessoSeletivoRepositoryDeTeste.Criar(configureContext).ObterComConfiguracaoAsync(processoId, CancellationToken.None))!;
-        CriterioDesempate idoso = CriterioDesempate.Criar(1, Regra(CriterioDesempateCodigo.Idoso, "c"), new ParametrosDesempateIdoso(65)).Value!;
+        CriterioDesempate idoso = CriterioDesempate.Criar(1, Regra(RegraDeDesempate.Idoso.Codigo(), "c"), new ParametrosDesempateIdoso(65)).Value!;
 
         carregado.DefinirCriteriosDesempate([idoso, CriterioDeMaiorIdade(2, "d")]).IsSuccess.Should().BeTrue();
         carregado.DefinirBonusRegional(aplica: true, bonus: BonusMultiplicativo(Guid.CreateVersion7(), 1.30m, 5m, null, "e")).IsSuccess.Should().BeTrue();
@@ -194,7 +195,7 @@ public sealed class DesempateBonusPersistenciaTests : IClassFixture<ProcessoSele
     private static void ConferirOsCriteriosRecarregados(ProcessoSeletivo recarregado, Guid etapaId)
     {
         CriterioDesempate maiorNotaEtapa = recarregado.CriteriosDesempate.Single(c => c.Ordem == 1);
-        maiorNotaEtapa.Regra.Codigo.Should().Be(CriterioDesempateCodigo.MaiorNotaEtapa);
+        maiorNotaEtapa.Regra.Codigo.Should().Be(RegraDeDesempate.MaiorNotaNaEtapa.Codigo());
         ((ParametrosDesempateMaiorNotaEtapa)maiorNotaEtapa.Parametros).EtapaRef.Should().Be(etapaId);
         ((ParametrosDesempateIdoso)recarregado.CriteriosDesempate.Single(c => c.Ordem == 2).Parametros).IdadeMinima.Should().Be(60);
         recarregado.CriteriosDesempate.Single(c => c.Ordem == 3).Parametros.Should().BeOfType<ParametrosDesempateMaiorIdade>();
@@ -211,7 +212,7 @@ public sealed class DesempateBonusPersistenciaTests : IClassFixture<ProcessoSele
     {
         recarregado.BonusRegional.Should().NotBeNull();
         ConfiguracaoBonusRegional bonus = recarregado.BonusRegional!;
-        bonus.Regra.Codigo.Should().Be(RegraBonusCodigo.Multiplicativo);
+        bonus.Regra.Codigo.Should().Be(RegraDeBonus.Multiplicativo.Codigo());
         bonus.Fator.Should().Be(1.20m);
         bonus.Teto.Should().BeNull();
         bonus.FatoElegibilidadeCodigo.Should().Be("PEDE_O_ACRESCIMO");

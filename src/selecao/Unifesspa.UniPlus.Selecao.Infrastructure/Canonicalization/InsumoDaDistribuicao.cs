@@ -35,7 +35,7 @@ internal readonly record struct InsumoDaDistribuicao(
     // O rol deriva do catálogo de regras: a leitura confere o que a regra publicada admitia.
     internal FatosDaOfertaNoCadastro FatosDoCadastro(OfertaCursoSnapshot nomeDaOferta) => new()
     {
-        ModalidadesAdmitidas = RegraDistribuicaoVagasCodigo.RolFechado(Regras.Distribuicao.Codigo),
+        ModalidadesAdmitidas = PoliticaDaDistribuicaoDeVagas.RolFechado(Regras.Distribuicao.Codigo),
         GrupoAreaEnem = GrupoAreaEnem,
         OfertaCurso = nomeDaOferta,
     };

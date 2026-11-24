@@ -13,7 +13,7 @@ using static Unifesspa.UniPlus.Selecao.Domain.UnitTests.Entities.ApoioDosDocumen
 
 /// <summary>
 /// Cobertura de <c>PermiteComplementacao</c> da fase quando há exigência com consequência
-/// <c>PENDENCIA_REENVIO</c>: a fase não pode deixar de permitir a complementação que o reenvio exige.
+/// <c>ABRE_PRAZO_PARA_REENVIO</c>: a fase não pode deixar de permitir a complementação que o reenvio exige.
 /// </summary>
 public sealed class ProcessoSeletivoComplementacaoDaFaseComPendenciaDeReenvioTests
 {
@@ -39,9 +39,9 @@ public sealed class ProcessoSeletivoComplementacaoDaFaseComPendenciaDeReenvioTes
             []);
 
     private static DocumentoExigido ExigenciaComPendenciaDeReenvio(Guid faseId) =>
-        Exigencia(faseId, Aplicabilidade.Geral, consequenciaIndeferimento: "PENDENCIA_REENVIO");
+        Exigencia(faseId, Aplicabilidade.Geral, consequenciaIndeferimento: "ABRE_PRAZO_PARA_REENVIO");
 
-    [Fact(DisplayName = "CA-04: retirar PermiteComplementacao de fase referenciada por exigência PENDENCIA_REENVIO é recusado")]
+    [Fact(DisplayName = "CA-04: retirar PermiteComplementacao de fase referenciada por exigência ABRE_PRAZO_PARA_REENVIO é recusado")]
     public void DefinirCronogramaFases_RetiraComplementacaoComPendenciaReenvio_Recusa()
     {
         FaseCronograma fase = FaseComComplementacao(1, "ENVIO_DOCUMENTOS", permiteComplementacao: true);
@@ -54,7 +54,7 @@ public sealed class ProcessoSeletivoComplementacaoDaFaseComPendenciaDeReenvioTes
         resultado.Error.Message.Should().Be($"A fase '{fase.Codigo}' (ordem {fase.Ordem}) precisa permitir complementação, pois uma regra de comprovação dessa fase prevê reenvio.");
     }
 
-    [Fact(DisplayName = "Retirar PermiteComplementacao sem exigência PENDENCIA_REENVIO é aceito (contraprova)")]
+    [Fact(DisplayName = "Retirar PermiteComplementacao sem exigência ABRE_PRAZO_PARA_REENVIO é aceito (contraprova)")]
     public void DefinirCronogramaFases_RetiraComplementacaoSemPendenciaReenvio_Aceita()
     {
         FaseCronograma fase = FaseComComplementacao(1, "ENVIO_DOCUMENTOS", permiteComplementacao: true);
@@ -65,7 +65,7 @@ public sealed class ProcessoSeletivoComplementacaoDaFaseComPendenciaDeReenvioTes
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
     }
 
-    [Fact(DisplayName = "Manter PermiteComplementacao verdadeiro com exigência PENDENCIA_REENVIO é aceito (contraprova)")]
+    [Fact(DisplayName = "Manter PermiteComplementacao verdadeiro com exigência ABRE_PRAZO_PARA_REENVIO é aceito (contraprova)")]
     public void DefinirCronogramaFases_MantemComplementacaoComPendenciaReenvio_Aceita()
     {
         FaseCronograma fase = FaseComComplementacao(1, "ENVIO_DOCUMENTOS", permiteComplementacao: true);

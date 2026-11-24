@@ -5,6 +5,7 @@ using System.Text.Json.Nodes;
 
 using AwesomeAssertions;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
@@ -183,7 +184,7 @@ public sealed class EnvelopeCodecRecusaClassificacaoEnemTests
     {
         ProcessoSeletivo processo = ExemploDeEnvelopeProcessoRico.ProcessoRico();
         processo.DefinirCriteriosDesempate(
-            [CriterioDesempate.Criar(1, ExemploDeEnvelope.Regra(CriterioDesempateCodigo.MaiorIdade, 'f'), new ParametrosDesempateMaiorIdade()).Value!]).IsSuccess.Should().BeTrue();
+            [CriterioDesempate.Criar(1, ExemploDeEnvelope.Regra(RegraDeDesempate.MaiorIdade.Codigo(), 'f'), new ParametrosDesempateMaiorIdade()).Value!]).IsSuccess.Should().BeTrue();
         Result definir = processo.DefinirClassificacao(ClassificacaoSemEnem());
         definir.IsSuccess.Should().BeTrue(string.Join("; ", definir.Errors.Select(static e => e.Error.Message)) + definir.Error?.Message);
 
@@ -193,8 +194,8 @@ public sealed class EnvelopeCodecRecusaClassificacaoEnemTests
     private static ConfiguracaoClassificacao ClassificacaoSemEnem() =>
         ConfiguracaoClassificacao.Criar(new DeclaracaoDaClassificacao
         {
-            RegraCalculo = ExemploDeEnvelope.Regra(RegraCalculoCodigo.ClassificacaoImportada, 'a'),
-            RegraOrdemAlocacao = ExemploDeEnvelope.Regra(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, '3'),
+            RegraCalculo = ExemploDeEnvelope.Regra(RegraDeCalculoDaNota.ClassificacaoImportada.Codigo(), 'a'),
+            RegraOrdemAlocacao = ExemploDeEnvelope.Regra(RegraDeOrdemDeAlocacao.PrimeiraOpcaoPrioritaria.Codigo(), '3'),
         }).Value!;
 
     /// <summary>

@@ -4,6 +4,7 @@ using Entities;
 
 using Enums;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Regras.Formularios;
 
 using ValueObjects;
@@ -29,34 +30,33 @@ public static class DocumentosDoComprovante
         DocumentoAvaliado[] daInscricao = [.. documentos.Itens
             .Where(static d => d.Situacao != SituacaoDoDocumento.NaoExigido && d.Documento.Finalidade == FinalidadeFormulario.Inscricao)];
 
-        return [.. daInscricao.Select(d =>
-        {
-            bool dispensada = d.DispensadoPeloGrupo;
-            DocumentoExigido exigencia = d.Documento;
-            return new DocumentoDoComprovante(
-                exigencia.Id,
-                exigencia.TipoDocumentoCodigo,
-                exigencia.TipoDocumentoNome,
-                exigencia.Obrigatorio,
-                dispensada ? SituacaoDispensada : d.Situacao.ToCodigo(),
-                d.OcorrenciaId,
-                dispensada ? null : ConsequenciaDe(d, daInscricao),
-                [.. arquivos
-                    .Where(a => a.ExigenciaId == exigencia.Id && string.Equals(a.OcorrenciaId, d.OcorrenciaId, StringComparison.Ordinal))
-                    .OrderBy(static a => a.ConfirmadoEm)
-                    .ThenBy(static a => a.ArquivoId)
-                    .Select(static a => new ArquivoDoComprovante(a.HashSha256, a.TamanhoBytes, a.Formato.ToCodigo()))]);
-        })];
+        return [.. daInscricao.Select(d => ComporItem(d, daInscricao, arquivos))];
     }
+
+    private static DocumentoDoComprovante ComporItem(
+        DocumentoAvaliado avaliado, DocumentoAvaliado[] todos, IReadOnlyList<ArquivoConfirmado> arquivos)
+    {
+        bool dispensada = avaliado.DispensadoPeloGrupo;
+        DocumentoExigido exigencia = avaliado.Documento;
+        return new DocumentoDoComprovante(
+            exigencia.Id, exigencia.TipoDocumentoCodigo, exigencia.TipoDocumentoNome, exigencia.Obrigatorio,
+            dispensada ? SituacaoDispensada : avaliado.Situacao.Codigo(), avaliado.OcorrenciaId,
+            dispensada ? null : ConsequenciaDe(avaliado, todos), ArquivosDoItem(avaliado, arquivos));
+    }
+
+    private static IReadOnlyList<ArquivoDoComprovante> ArquivosDoItem(DocumentoAvaliado avaliado, IReadOnlyList<ArquivoConfirmado> arquivos) =>
+        [.. arquivos.Where(a => a.ExigenciaId == avaliado.Documento.Id && string.Equals(a.OcorrenciaId, avaliado.OcorrenciaId, StringComparison.Ordinal))
+            .OrderBy(static a => a.ConfirmadoEm).ThenBy(static a => a.ArquivoId)
+            .Select(static a => new ArquivoDoComprovante(a.HashSha256, a.TamanhoBytes, a.Formato.Codigo()))];
 
     /// <summary>A consequência de não atender a exigência, em linguagem do candidato; nula sem consequência declarada.</summary>
     /// <param name="referencia">O que falta, no meio da frase, como "o documento RG".</param>
-    public static string? ConsequenciaPorEscrito(string? consequencia, string referencia) => consequencia switch
+    public static string? ConsequenciaPorEscrito(string? consequencia, string referencia) => (CatalogoDe<ConsequenciaDoIndeferimento>.TentarObter(consequencia, out ConsequenciaDoIndeferimento valor) ? valor : (ConsequenciaDoIndeferimento?)null) switch
     {
-        ConsequenciaIndeferimentoCodigo.Elimina => $"Sem {referencia}, você será eliminado do processo seletivo.",
-        ConsequenciaIndeferimentoCodigo.ReclassificaAc => $"Sem {referencia}, você perderá a vaga reservada e passará a concorrer na ampla concorrência.",
-        ConsequenciaIndeferimentoCodigo.RemoveVantagem => $"Sem {referencia}, a vantagem que você pleiteia não será concedida.",
-        ConsequenciaIndeferimentoCodigo.PendenciaReenvio => $"Sem {referencia}, você será notificado para reenviá-lo no prazo da fase.",
+        ConsequenciaDoIndeferimento.Elimina => $"Sem {referencia}, você será eliminado do processo seletivo.",
+        ConsequenciaDoIndeferimento.ReclassificaAc => $"Sem {referencia}, você perderá a vaga reservada e passará a concorrer na ampla concorrência.",
+        ConsequenciaDoIndeferimento.RemoveVantagem => $"Sem {referencia}, a vantagem que você pleiteia não será concedida.",
+        ConsequenciaDoIndeferimento.AbrePrazoParaReenvio => $"Sem {referencia}, você será notificado para reenviá-lo no prazo da fase.",
         _ => null,
     };
 

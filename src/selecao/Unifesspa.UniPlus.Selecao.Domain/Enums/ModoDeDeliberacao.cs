@@ -6,10 +6,10 @@ using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 public enum ModoDeDeliberacao
 {
     /// <summary>Os titulares votam e a decisão sai do critério, do quórum e do encerramento declarados.</summary>
-    [CodigoDeContrato("colegiadaComVotacao", "Colegiada, com votação")]
+    [CodigoDeContrato("COLEGIADA_COM_VOTACAO", "Colegiada, com votação")]
     ColegiadaComVotacao = 1,
 
     /// <summary>Qualquer titular designado pratica o ato, sem quórum nem votação.</summary>
-    [CodigoDeContrato("atoIndividual", "Ato individual")]
+    [CodigoDeContrato("ATO_INDIVIDUAL", "Ato individual")]
     AtoIndividual = 2,
 }

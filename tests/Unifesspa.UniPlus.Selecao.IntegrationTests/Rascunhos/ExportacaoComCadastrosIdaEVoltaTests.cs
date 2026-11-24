@@ -13,6 +13,7 @@ using Unifesspa.UniPlus.Configuracao.Domain.Enums;
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Hosting;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.Entities;
 using Unifesspa.UniPlus.OrganizacaoInstitucional.Infrastructure.Persistence;
@@ -64,7 +65,7 @@ public sealed class ExportacaoComCadastrosIdaEVoltaTests(CascadingFixture fixtur
         TipoDocumento tipo = TipoDocumento.Criar(codigo, NomeDocumento, null, "IDENTIFICACAO", null, null, null,
             ClassificacaoDeProtecao.Pessoal, Finalidade, HipoteseLegalTratamento.CumprimentoObrigacaoLegal).Value!;
         MotivoDeDecisao motivo = MotivoDeDecisao.Criar(new CamposDoMotivo("ISENCAO_DA_TAXA", codigo, Descricao,
-            FundamentoIsencaoCodigo.CadastroUnico, SentidoDoMotivo.Desfavoravel)).Value!;
+            FundamentoIsencao.CadastroUnico.Codigo(), SentidoDoMotivo.Desfavoravel)).Value!;
         banco.Add(tipo);
         banco.Add(motivo);
         await banco.SaveChangesAsync();

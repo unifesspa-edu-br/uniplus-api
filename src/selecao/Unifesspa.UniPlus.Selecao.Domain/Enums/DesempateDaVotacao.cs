@@ -5,8 +5,8 @@ using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 /// <summary>Como a banca resolve o empate nos critérios de maioria.</summary>
 public enum DesempateDaVotacao
 {
-    [CodigoDeContrato("votoDaPresidencia", "Voto da presidência")]
+    [CodigoDeContrato("VOTO_DA_PRESIDENCIA", "Voto da presidência")]
     VotoDaPresidencia = 1,
-    [CodigoDeContrato("novaVotacao", "Nova votação")]
+    [CodigoDeContrato("NOVA_VOTACAO", "Nova votação")]
     NovaVotacao = 2,
 }

@@ -67,7 +67,7 @@ public static class ConferenciaDosProcedimentosDeRecurso
     }
 
     private static FieldError? FaltaDaRegra(ProcedimentoDeRecursoDeclarado procedimento, CodigosDoProcedimentoDeRecurso codigos, string campo) =>
-        RegraProcedimentoRecursoCodigo.Rol.Contains(procedimento.Regra.Codigo, StringComparer.Ordinal)
+        CatalogoDe<RegraDeProcedimentoDoRecurso>.TentarObter(procedimento.Regra.Codigo, out _)
             ? null
             : new FieldError($"{campo}.regra", ProcedimentoForaDoCatalogo(codigos));
 
@@ -81,7 +81,7 @@ public static class ConferenciaDosProcedimentosDeRecurso
 
         return new(
             codigos.Desconhecido,
-            $"O procedimento de recurso informado, ou a versão dele, não consta do catálogo. Procedimentos aceitos: {string.Join(", ", RegraProcedimentoRecursoCodigo.Rol)}.");
+            $"O procedimento de recurso informado, ou a versão dele, não consta do catálogo. Procedimentos aceitos: {string.Join(", ", CatalogoDe<RegraDeProcedimentoDoRecurso>.Todos().Select(static item => item.Codigo))}.");
     }
 
     private static FieldError? FaltaDoTipo(

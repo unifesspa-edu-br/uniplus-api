@@ -36,9 +36,9 @@ public sealed class EtapaProcessoProdutosTests
         return etapa;
     }
 
-    private static ProdutoDaEtapa Preliminar(string ato) => ProdutoDaEtapa.Criar(ato, PapelProdutoFase.Preliminar);
+    private static ProdutoDaEtapa Preliminar(string ato) => ProdutoDaEtapa.Criar(ato, PapelDaPublicacaoPrevista.Preliminar);
 
-    private static ProdutoDaEtapa Definitivo(string ato) => ProdutoDaEtapa.Criar(ato, PapelProdutoFase.Definitivo);
+    private static ProdutoDaEtapa Definitivo(string ato) => ProdutoDaEtapa.Criar(ato, PapelDaPublicacaoPrevista.Definitivo);
 
     [Fact(DisplayName = "DefinirProdutos recria o produto que trocou de papel, em uma passada só")]
     public void DefinirProdutos_ProdutoQueTrocouDePapel_RecriaALinha()
@@ -50,7 +50,7 @@ public sealed class EtapaProcessoProdutosTests
 
         ProdutoDaEtapa produto = etapa.Produtos.Should().ContainSingle().Subject;
         produto.Id.Should().NotBe(idAntigo);
-        produto.Papel.Should().Be(PapelProdutoFase.Definitivo);
+        produto.Papel.Should().Be(PapelDaPublicacaoPrevista.Definitivo);
     }
 
     [Fact(DisplayName = "DefinirProdutos casa o ato em forma de acento diferente e preserva o Id")]

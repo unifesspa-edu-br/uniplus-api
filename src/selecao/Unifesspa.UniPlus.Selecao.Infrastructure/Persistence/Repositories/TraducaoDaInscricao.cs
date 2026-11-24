@@ -47,7 +47,7 @@ internal sealed class TraducaoDaInscricao
         LinhasDaInscricao linhas = LinhasDaInscricao.Vazias;
 
         await AcrescentarRespostasAsync(linhas, entity, entity.Formulario.Preenchimento.Respostas, null, OrigemDaResposta.Informada, cancellationToken).ConfigureAwait(false);
-        await AcrescentarRespostasAsync(linhas, entity, entity.Formulario.Derivados, null, OrigemDaResposta.Derivada, cancellationToken).ConfigureAwait(false);
+        await AcrescentarRespostasAsync(linhas, entity, entity.Formulario.Derivados, null, OrigemDaResposta.Calculada, cancellationToken).ConfigureAwait(false);
         await AcrescentarOcorrenciasAsync(linhas, entity, cancellationToken).ConfigureAwait(false);
         linhas.Aceites.AddRange(AceitesGravaveis(entity));
 

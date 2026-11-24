@@ -9,7 +9,7 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 /// <summary>
 /// A sequência legal de remanejamento das cotas reservadas de um
 /// <see cref="ProcessoSeletivo"/> (Story #575, cascata de remanejamento de cotas, UNI-REQ-0056) — a outra
-/// metade da flag <see cref="Enums.RegraRemanejamentoModalidade.SegueCascata"/>
+/// metade da flag <see cref="Enums.RegraRemanejamentoModalidade.SegueOrdemDeRemanejamento"/>
 /// de <see cref="ModalidadeSelecionada"/>, que hoje aponta para o nada.
 /// </summary>
 /// <remarks>

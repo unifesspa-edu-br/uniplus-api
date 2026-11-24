@@ -115,7 +115,7 @@ public sealed class CertameDivulgadoNaPublicacaoTests
 
         item.GetProperty("identificadorLegivel").GetString().Should().Be(identificador);
         certame.RootElement.GetProperty("identificadorLegivel").GetString().Should().Be(identificador, "o identificador exposto é o congelado");
-        certame.RootElement.GetProperty("situacao").GetString().Should().Be(item.GetProperty("situacao").GetString(), "o mesmo vocabulário e a mesma regra da vitrine");
+        certame.RootElement.GetProperty("situacao").GetProperty("codigo").GetString().Should().Be(item.GetProperty("situacao").GetProperty("codigo").GetString(), "o mesmo vocabulário e a mesma regra da vitrine");
     }
 
     private static async Task<HttpStatusCode> StatusDoFormularioAsync(HttpClient client, Guid processoId)

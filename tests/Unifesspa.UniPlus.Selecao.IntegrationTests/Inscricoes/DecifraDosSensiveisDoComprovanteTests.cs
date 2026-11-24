@@ -31,7 +31,7 @@ public sealed class DecifraDosSensiveisDoComprovanteTests : IClassFixture<Inscri
         UPDATE selecao.comprovantes_inscricao c
         SET sensiveis_cifrados = o.sensiveis_cifrados
         FROM selecao.comprovantes_inscricao o
-        WHERE c.inscricao_id = @id AND o.inscricao_id = @id AND o.numero_inscricao = c.numero_inscricao AND o.instante < c.instante
+        WHERE c.inscricao_id = @id AND o.inscricao_id = @id AND o.NUMERO_INSCRICAO = c.NUMERO_INSCRICAO AND o.instante < c.instante
         """;
 
     private readonly InscricaoDbFixture _fixture;

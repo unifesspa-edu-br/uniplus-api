@@ -9,8 +9,8 @@ internal static class ConferenciaDaDistincao
 {
     internal static List<FieldError> Conferir(DistincaoDeclarada dados, int quantidade)
     {
-        CriterioDeDistincaoDasApresentacoes criterio = dados.Criterio ?? CriterioDeDistincaoDasApresentacoes.Nenhuma;
-        if (!dados.CriterioReconhecido || !Enum.IsDefined(criterio))
+        CriterioDeDistincaoDasApresentacoes? criterio = dados.Criterio;
+        if (!dados.CriterioReconhecido || (criterio is { } valor && !Enum.IsDefined(valor)))
         {
             return [Recusa("criterioDeDistincao", "CriterioDeDistincaoInvalido", "O critério para distinguir as apresentações não é reconhecido. Escolha \"COMPETENCIA_MENSAL\" para mês, \"EXERCICIO_ANUAL\" para ano ou \"OCORRENCIA\" para ocorrência.")];
         }
@@ -21,9 +21,9 @@ internal static class ConferenciaDaDistincao
         return erros;
     }
 
-    private static IEnumerable<FieldError> ConferirData(CriterioDeDistincaoDasApresentacoes criterio, DateOnly? data)
+    private static IEnumerable<FieldError> ConferirData(CriterioDeDistincaoDasApresentacoes? criterio, DateOnly? data)
     {
-        if (data is not null && criterio is CriterioDeDistincaoDasApresentacoes.Nenhuma or CriterioDeDistincaoDasApresentacoes.Ocorrencia)
+        if (data is not null && criterio is null or CriterioDeDistincaoDasApresentacoes.Ocorrencia)
         {
             yield return Recusa("dataReferencia", "DataReferenciaIndevidaParaCriterio",
                 "A data de referência não se aplica ao critério escolhido. Retire a data ou escolha um critério por mês ou ano.");
@@ -35,7 +35,7 @@ internal static class ConferenciaDaDistincao
         }
     }
 
-    private static IEnumerable<FieldError> ConferirOcorrencias(CriterioDeDistincaoDasApresentacoes criterio, IReadOnlyList<string>? ocorrencias, int quantidade)
+    private static IEnumerable<FieldError> ConferirOcorrencias(CriterioDeDistincaoDasApresentacoes? criterio, IReadOnlyList<string>? ocorrencias, int quantidade)
     {
         if (ocorrencias is null)
         {
@@ -75,7 +75,7 @@ internal static class ConferenciaDaDistincao
             ? [Recusa("quantidadeMinima", "QuantidadeMinimaDiferenteDasOcorrencias",
                 "A quantidade mínima não coincide com o número de ocorrências esperadas. Ajuste a quantidade ou a lista.")] : [];
 
-    private static IEnumerable<FieldError> ConferirCalendario(CriterioDeDistincaoDasApresentacoes criterio, DateOnly? data, int quantidade)
+    private static IEnumerable<FieldError> ConferirCalendario(CriterioDeDistincaoDasApresentacoes? criterio, DateOnly? data, int quantidade)
     {
         if (data is null || RegraDeComprovacao.RecusaDaQuantidadeDeApresentacoes(quantidade) is not null)
         {

@@ -3,6 +3,7 @@ namespace Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.ConceitoDaAvaliaca
 using System.Diagnostics.CodeAnalysis;
 using System.Text.Json;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 
@@ -18,9 +19,9 @@ using Unifesspa.UniPlus.Selecao.Domain.Enums;
 /// <param name="CorretoresDistintos">Os corretores distintos que a versão exige, no mínimo um.</param>
 /// <param name="Tratamento">O que se faz quando o critério não converge.</param>
 public sealed record DeclaracaoDaConsolidacaoDoConceito(
-    CriterioDeConsolidacaoDoConceito Criterio,
+    CriterioDeApuracaoDoConceito Criterio,
     int CorretoresDistintos,
-    TratamentoDaFaltaDeConsolidacao Tratamento)
+    TratamentoDaFaltaDeApuracao Tratamento)
 {
     private const string ChaveDoCriterio = "criterio";
 
@@ -43,8 +44,8 @@ public sealed record DeclaracaoDaConsolidacaoDoConceito(
         declaracao = null;
         if (!CorretoresDaRegraDeConsolidacao.Tentar(regra, out int corretores)
             || !NaturezasDaConsolidacao.Tentar(regra, out _)
-            || !CriterioDeConsolidacaoDoConceitoCodigo.TentarConverter(LerTexto(regra, ChaveDoCriterio), out CriterioDeConsolidacaoDoConceito criterio)
-            || !TratamentoDaRegraDeConsolidacao.Tentar(regra, out TratamentoDaFaltaDeConsolidacao? tratamento)
+            || !CatalogoDe<CriterioDeApuracaoDoConceito>.TentarObter(LerTexto(regra, ChaveDoCriterio), out CriterioDeApuracaoDoConceito criterio)
+            || !TratamentoDaRegraDeConsolidacao.Tentar(regra, out TratamentoDaFaltaDeApuracao? tratamento)
             || tratamento is not { } declarado)
         {
             return false;

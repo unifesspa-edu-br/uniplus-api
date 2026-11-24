@@ -3,6 +3,9 @@ namespace Unifesspa.UniPlus.Selecao.Application.DTOs;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
+using Unifesspa.UniPlus.Application.Abstractions.Respostas;
+using Unifesspa.UniPlus.Selecao.Domain.Enums;
+
 /// <summary>
 /// Uma entrada do <c>regras_do_catalogo</c> como o cliente administrativo a enxerga: a identidade
 /// <c>(codigo, versao)</c> que ele referencia numa configuração, o tipo, a declaração da versão da regra, as invariantes declaradas, a base legal e o hash.
@@ -35,7 +38,7 @@ using System.Text.Json.Serialization;
 public sealed record RegraCatalogoDto(
     string Codigo,
     string Versao,
-    string Tipo,
+    CodigoComRotulo<TipoRegra> Tipo,
     JsonElement DeclaracaoDaRegra,
     JsonElement Invariantes,
     string BaseLegal,
@@ -43,6 +46,8 @@ public sealed record RegraCatalogoDto(
     IReadOnlyList<string>? ModalidadesAdmitidas,
     string? RamoDaDistribuicao)
 {
+    public string? Rotulo { get; init; }
+
     /// <summary>
     /// Hypermedia links (HATEOAS Level 1, ADR-0029) — opt-in, populado no boundary HTTP para
     /// respostas single. Coleções navegam pelo header <c>Link</c> (ADR-0026).
