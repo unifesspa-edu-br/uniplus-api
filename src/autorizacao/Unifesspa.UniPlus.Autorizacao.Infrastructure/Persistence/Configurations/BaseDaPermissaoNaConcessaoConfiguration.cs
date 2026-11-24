@@ -58,18 +58,18 @@ internal sealed class BaseDaPermissaoNaConcessaoConfiguration : IEntityTypeConfi
 
         builder.HasIndex(b => new { b.ConcessaoId, b.Codigo, b.OrdemNoHistorico })
             .IsDescending(false, false, true)
-            .HasDatabaseName("ix_bases_da_permissao_concessao_codigo");
+            .HasDatabaseName("ix_bases_da_permissao_concedida_concessao_codigo");
         builder.HasIndex(b => new { b.PerfilId, b.ConcessaoId }).HasDatabaseName("ix_bases_da_permissao_concedida_perfil_concessao");
-        builder.HasIndex(b => b.OrdemNoHistorico).IsUnique().HasDatabaseName("ux_bases_da_permissao_ordem");
+        builder.HasIndex(b => b.OrdemNoHistorico).IsUnique().HasDatabaseName("ux_bases_da_permissao_concedida_ordem");
     }
 
     private static void ConfigurarRestricoes(TableBuilder<BaseDaPermissaoNaConcessao> tabela)
     {
         tabela.HasCheckConstraint(
-            "ck_bases_da_permissao_origem",
+            "ck_bases_da_permissao_concedida_origem",
             $"origem IN ('{OrigemDaBaseCodigo.Migracao}', '{OrigemDaBaseCodigo.Saida}', '{OrigemDaBaseCodigo.Liberacao}', '{OrigemDaBaseCodigo.Conciliacao}')");
         tabela.HasCheckConstraint(
-            "ck_bases_da_permissao_saida",
+            "ck_bases_da_permissao_concedida_saida",
             $"(origem = '{OrigemDaBaseCodigo.Saida}') = (classificacao IS NULL AND de_unidade IS NULL)");
     }
 }

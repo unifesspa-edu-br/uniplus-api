@@ -50,19 +50,19 @@ internal sealed class PedidoDeConcessaoConfiguration : IEntityTypeConfiguration<
         builder.ToTable("pedidos_de_concessao", tabela =>
         {
             tabela.HasCheckConstraint(
-                "ck_pedidos_beneficiario_completo",
+                "ck_pedidos_de_concessao_beneficiario_completo",
                 "(beneficiario_emissor IS NULL) = (beneficiario_conta_id IS NULL)");
             tabela.HasCheckConstraint(
-                "ck_pedidos_decisao_com_beneficiario",
+                "ck_pedidos_de_concessao_decisao_com_beneficiario",
                 "situacao IN ('AGUARDANDO_DOCUMENTO', 'AGUARDANDO_BENEFICIARIO', 'CANCELADO', 'DEVOLVIDO') OR beneficiario_conta_id IS NOT NULL");
             tabela.HasCheckConstraint(
-                "ck_pedidos_encerramento",
+                "ck_pedidos_de_concessao_encerramento",
                 "(situacao IN ('APROVADO', 'RECUSADO', 'CANCELADO', 'DEVOLVIDO')) = (encerrado_em IS NOT NULL)");
             tabela.HasCheckConstraint(
-                "ck_pedidos_concessao_so_aprovado",
+                "ck_pedidos_de_concessao_concessao_so_aprovado",
                 "concessao_id IS NULL OR situacao = 'APROVADO'");
             tabela.HasCheckConstraint(
-                "ck_pedidos_termo_completo",
+                "ck_pedidos_de_concessao_termo_completo",
                 "(termo_versao_id IS NULL) = (termo_numero IS NULL) AND (termo_versao_id IS NULL) = (termo_resumo IS NULL)");
         });
 
@@ -92,7 +92,7 @@ internal sealed class PedidoDeConcessaoConfiguration : IEntityTypeConfiguration<
             andamento.Property(a => a.EncerradoEm).HasColumnName("encerrado_em");
             andamento.Ignore(a => a.Ativo);
             andamento.Ignore(a => a.EtapaAtual);
-            andamento.HasIndex(a => a.Situacao).HasDatabaseName("ix_pedidos_situacao");
+            andamento.HasIndex(a => a.Situacao).HasDatabaseName("ix_pedidos_de_concessao_situacao");
         });
         builder.Navigation(p => p.Andamento).IsRequired();
     }
@@ -133,7 +133,7 @@ internal sealed class PedidoDeConcessaoConfiguration : IEntityTypeConfiguration<
             solicitante.Property(s => s.Nome).HasColumnName("solicitante_nome").HasMaxLength(NomeDeExibicao.MaxLength);
             solicitante.Property(s => s.Email).HasColumnName("solicitante_email").HasMaxLength(EmailDaPessoa.MaxLength);
             solicitante.Ignore(s => s.Identidade);
-            solicitante.HasIndex(s => new { s.Emissor, s.ContaId }).HasDatabaseName("ix_pedidos_solicitante");
+            solicitante.HasIndex(s => new { s.Emissor, s.ContaId }).HasDatabaseName("ix_pedidos_de_concessao_solicitante");
         });
         builder.Navigation(p => p.Solicitante).IsRequired();
     }
@@ -204,6 +204,6 @@ internal sealed class PedidoDeConcessaoConfiguration : IEntityTypeConfiguration<
                 "situacao IN ("
                 + string.Join(", ", AndamentoDoPedido.SituacoesAtivas.Select(s => $"'{s.ToCodigo()}'"))
                 + ")")
-            .HasDatabaseName("ux_pedidos_ativo_unico");
+            .HasDatabaseName("ux_pedidos_de_concessao_ativo_unico");
     }
 }

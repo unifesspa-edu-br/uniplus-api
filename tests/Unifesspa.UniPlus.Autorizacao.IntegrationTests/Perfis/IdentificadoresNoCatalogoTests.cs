@@ -23,7 +23,7 @@ public sealed class IdentificadoresNoCatalogoTests(AutorizacaoEndpointFixture fi
             "fk_bases_da_permissao_concedida_concessao",
             "fk_liberacoes_da_reclassificacao_concessao",
             "fk_liberacoes_da_reclassificacao_reclassificacao_da_permissao",
-            "ix_bases_da_permissao_concessao_codigo",
+            "ix_bases_da_permissao_concedida_concessao_codigo",
             "ix_bases_da_permissao_concedida_perfil_concessao",
             "ix_liberacoes_da_reclassificacao_concessao",
         ]);
