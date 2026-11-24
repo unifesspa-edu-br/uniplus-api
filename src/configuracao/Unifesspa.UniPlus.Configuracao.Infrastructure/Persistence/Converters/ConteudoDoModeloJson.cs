@@ -33,7 +33,7 @@ internal static class ConteudoDoModeloJson
     public static string Serializar(ConteudoDoModelo conteudo) => new JsonObject
     {
         ["titulo"] = conteudo.Titulo,
-        ["etapas"] = new JsonArray([.. conteudo.Etapas.Select(EtapaParaJson)]),
+        ["paginas"] = new JsonArray([.. conteudo.Etapas.Select(EtapaParaJson)]),
         ["itens"] = new JsonArray([.. conteudo.Itens.Select(CampoParaJson)]),
         ["termos"] = new JsonArray([.. conteudo.Termos.Select(TermoParaJson)]),
         ["pressupostos"] = new JsonArray([.. conteudo.Pressupostos.Select(static pressuposto => (JsonNode)pressuposto)]),
@@ -58,7 +58,7 @@ internal static class ConteudoDoModeloJson
     {
         ["codigoDoDado"] = campo.FatoCodigo,
         ["ordem"] = campo.Ordem,
-        ["etapaCodigo"] = campo.EtapaCodigo,
+        ["paginaCodigo"] = campo.EtapaCodigo,
         ["rotulo"] = campo.Apresentacao.Rotulo,
         ["tipoDeCampo"] = campo.Apresentacao.TipoRenderizacao.Codigo(),
         ["formato"] = campo.Formato,
@@ -84,7 +84,7 @@ internal static class ConteudoDoModeloJson
     {
         ["codigo"] = grupo.Codigo,
         ["ordem"] = grupo.Ordem,
-        ["etapaCodigo"] = grupo.EtapaCodigo,
+        ["paginaCodigo"] = grupo.EtapaCodigo,
         ["rotulo"] = grupo.Rotulo,
         ["minimo"] = grupo.Ocorrencias.Minimo,
         ["maximo"] = grupo.Ocorrencias.Maximo,
@@ -168,7 +168,7 @@ internal static class ConteudoDoModeloJson
         JsonElement elementoPrincipal = documento.RootElement;
         return new ConteudoDoModelo(
             Texto(elementoPrincipal, "titulo"),
-            [.. elementoPrincipal.GetProperty("etapas").EnumerateArray().Select(EtapaDeJson)],
+            [.. elementoPrincipal.GetProperty("paginas").EnumerateArray().Select(EtapaDeJson)],
             [.. elementoPrincipal.GetProperty("itens").EnumerateArray().Select(CampoDeJson)],
             [.. elementoPrincipal.GetProperty("termos").EnumerateArray().Select(TermoDeJson)],
             [.. elementoPrincipal.GetProperty("pressupostos").EnumerateArray().Select(static pressuposto => pressuposto.GetString()!)],
@@ -189,7 +189,7 @@ internal static class ConteudoDoModeloJson
     private static ItemDoModelo CampoDeJson(JsonElement campo) => new(
         campo.GetProperty("codigoDoDado").GetString()!,
         campo.GetProperty("ordem").GetInt32(),
-        Texto(campo, "etapaCodigo"),
+        Texto(campo, "paginaCodigo"),
         ApresentacaoDeJson(campo),
         Texto(campo, "formato"),
         RegrasDeJson(campo));
@@ -217,7 +217,7 @@ internal static class ConteudoDoModeloJson
     private static GrupoDoModelo GrupoDeJson(JsonElement grupo) => new(
         grupo.GetProperty("codigo").GetString()!,
         grupo.GetProperty("ordem").GetInt32(),
-        Texto(grupo, "etapaCodigo"),
+        Texto(grupo, "paginaCodigo"),
         grupo.GetProperty("rotulo").GetString()!,
         new OcorrenciasDoGrupo(
             grupo.GetProperty("minimo").GetInt32(), InteiroOuNulo(grupo.GetProperty("maximo")), grupo.GetProperty("incluiCandidato").GetBoolean()),

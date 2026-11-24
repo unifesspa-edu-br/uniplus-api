@@ -45,7 +45,7 @@ public sealed class FatoColetadoConfiguration : IEntityTypeConfiguration<FatoCol
         builder.Property(f => f.FinalidadeTratamento).HasComment("Finalidade informada para o tratamento do dado.");
         builder.Property(f => f.Descricao).HasComment("Descrição do dado solicitado.");
         builder.Property(f => f.ComponenteExibicao).HasComment("Componente usado para exibir o dado, quando especificado.");
-        builder.Property(f => f.EtapaCodigo).HasComment("Código da etapa do formulário, quando houver.");
+        builder.Property(f => f.EtapaCodigo).HasComment("Código da página do formulário, quando houver.");
 
         builder.ToTable("dados_dos_formularios", t =>
         {
@@ -86,7 +86,7 @@ public sealed class FatoColetadoConfiguration : IEntityTypeConfiguration<FatoCol
         builder.Ignore(f => f.Apresentacao);
         builder.Ignore(f => f.Regras);
         builder.Property(f => f.Finalidade).HasMaxLength(TamanhoDoCodigoDeContrato.Maximo).IsRequired().HasComment($"Finalidade do formulário. {ComentarioDosCodigosDeContrato.Codigos<FinalidadeFormulario>()}");
-        builder.Property(f => f.EtapaCodigo).HasMaxLength(FormaDaEtapa.CodigoMaxLength);
+        builder.Property(f => f.EtapaCodigo).HasColumnName("pagina_codigo").HasMaxLength(FormaDaEtapa.CodigoMaxLength);
 
         // As duas unicidades são invariantes do agregado, feitas cumprir em
         // DefinirFatosColetados; os índices as garantem também contra escrita concorrente e

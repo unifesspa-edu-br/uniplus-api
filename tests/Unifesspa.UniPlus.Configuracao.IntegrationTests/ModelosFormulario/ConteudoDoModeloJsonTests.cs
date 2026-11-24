@@ -178,6 +178,16 @@ public sealed class ConteudoDoModeloJsonTests
         ler.Should().Throw<KeyNotFoundException>();
     }
 
+    [Fact(DisplayName = "A chave antiga das páginas é dado corrompido e lança")]
+    public void Desserializar_ChaveAntigaDePagina_Lanca()
+    {
+        string json = ConteudoDoModeloJson.Serializar(ConteudoCompleto()).Replace("\"paginas\":", "\"etapas\":", StringComparison.Ordinal);
+
+        Action ler = () => ConteudoDoModeloJson.Desserializar(json);
+
+        ler.Should().Throw<KeyNotFoundException>();
+    }
+
     [Theory(DisplayName = "O máximo de ocorrências do grupo que não é inteiro nem nulo é dado corrompido e lança")]
     [InlineData("\"cinco\"")]
     [InlineData("true")]
@@ -258,19 +268,19 @@ public sealed class ConteudoDoModeloJsonTests
         """{"codigo":"REVISAO","ordem":1,"tipo":"BLOCO","bloco":"REVISAO_E_ACEITE","titulo":"Revis\u00E3o","descricao":null,"aviso":null,"exibicao":null}""";
 
     private const string ItemRendaJson =
-        """{"codigoDoDado":"RENDA","ordem":1,"etapaCodigo":"DADOS","rotulo":"Renda familiar","tipoDeCampo":"NUMERO","formato":"LIVRE","ajuda":"Some a renda de todos","obrigatoriedade":{"tipo":"QUANDO","predicado":[[{"codigoDoDado":"BAIXA_RENDA","operador":"IGUAL","valor":true}]]},"exibicao":[[{"codigoDoDado":"QUILOMBOLA","operador":"IGUAL","valor":true}]],"restricoes":[{"tipo":"FAIXA_NUMERICA","minimo":0,"maximo":10},{"tipo":"OPCOES_DAS_RESPOSTAS","codigosDosDados":["COR_RACA"]}],"pedirConfirmacao":true,"impedimento":{"quando":[[{"codigoDoDado":"BAIXA_RENDA","operador":"IGUAL","valor":false}]],"mensagem":"Renda acima do limite"}}""";
+        """{"codigoDoDado":"RENDA","ordem":1,"paginaCodigo":"DADOS","rotulo":"Renda familiar","tipoDeCampo":"NUMERO","formato":"LIVRE","ajuda":"Some a renda de todos","obrigatoriedade":{"tipo":"QUANDO","predicado":[[{"codigoDoDado":"BAIXA_RENDA","operador":"IGUAL","valor":true}]]},"exibicao":[[{"codigoDoDado":"QUILOMBOLA","operador":"IGUAL","valor":true}]],"restricoes":[{"tipo":"FAIXA_NUMERICA","minimo":0,"maximo":10},{"tipo":"OPCOES_DAS_RESPOSTAS","codigosDosDados":["COR_RACA"]}],"pedirConfirmacao":true,"impedimento":{"quando":[[{"codigoDoDado":"BAIXA_RENDA","operador":"IGUAL","valor":false}]],"mensagem":"Renda acima do limite"}}""";
 
     private const string TermoUsoJson =
         """{"codigo":"TERMO_USO","ordem":0,"termoId":"11111111-1111-1111-1111-111111111111","versaoId":"22222222-2222-2222-2222-222222222222","exibicao":[[{"codigoDoDado":"QUILOMBOLA","operador":"IGUAL","valor":true}]],"obrigatoriedade":{"tipo":"QUANDO","predicado":[[{"codigoDoDado":"BAIXA_RENDA","operador":"IGUAL","valor":true}]]}}""";
 
     private const string ItemParentescoJson =
-        """{"codigoDoDado":"PARENTESCO","ordem":0,"etapaCodigo":null,"rotulo":"Pergunta","tipoDeCampo":"SIM_OU_NAO","formato":null,"ajuda":null,"obrigatoriedade":{"tipo":"SEMPRE","predicado":null},"exibicao":null,"restricoes":[],"pedirConfirmacao":false,"impedimento":null}""";
+        """{"codigoDoDado":"PARENTESCO","ordem":0,"paginaCodigo":null,"rotulo":"Pergunta","tipoDeCampo":"SIM_OU_NAO","formato":null,"ajuda":null,"obrigatoriedade":{"tipo":"SEMPRE","predicado":null},"exibicao":null,"restricoes":[],"pedirConfirmacao":false,"impedimento":null}""";
 
     private const string ItemRendaMembroJson =
-        """{"codigoDoDado":"RENDA_MEMBRO","ordem":1,"etapaCodigo":null,"rotulo":"Pergunta","tipoDeCampo":"SIM_OU_NAO","formato":null,"ajuda":null,"obrigatoriedade":{"tipo":"SEMPRE","predicado":null},"exibicao":null,"restricoes":[],"pedirConfirmacao":false,"impedimento":null}""";
+        """{"codigoDoDado":"RENDA_MEMBRO","ordem":1,"paginaCodigo":null,"rotulo":"Pergunta","tipoDeCampo":"SIM_OU_NAO","formato":null,"ajuda":null,"obrigatoriedade":{"tipo":"SEMPRE","predicado":null},"exibicao":null,"restricoes":[],"pedirConfirmacao":false,"impedimento":null}""";
 
     private const string GrupoFamiliaJson =
-        $$"""{"codigo":"FAMILIA","ordem":2,"etapaCodigo":"DADOS","rotulo":"Composi\u00E7\u00E3o familiar","minimo":1,"maximo":5,"incluiCandidato":true,"exibicao":[[{"codigoDoDado":"QUILOMBOLA","operador":"IGUAL","valor":true}]],"obrigatoriedade":{"tipo":"QUANDO","predicado":[[{"codigoDoDado":"BAIXA_RENDA","operador":"IGUAL","valor":true}]]},"subitens":[{{ItemParentescoJson}},{{ItemRendaMembroJson}}]}""";
+        $$"""{"codigo":"FAMILIA","ordem":2,"paginaCodigo":"DADOS","rotulo":"Composi\u00E7\u00E3o familiar","minimo":1,"maximo":5,"incluiCandidato":true,"exibicao":[[{"codigoDoDado":"QUILOMBOLA","operador":"IGUAL","valor":true}]],"obrigatoriedade":{"tipo":"QUANDO","predicado":[[{"codigoDoDado":"BAIXA_RENDA","operador":"IGUAL","valor":true}]]},"subitens":[{{ItemParentescoJson}},{{ItemRendaMembroJson}}]}""";
 
     private const string PrazoCompletoJson =
         """{"escolha":"COM_PRAZO","valor":90,"unidade":"DIAS","referencia":{"tipo":"INICIO_DA_FASE","data":null,"faseCodigo":"HABILITACAO"},"efeitoForaDoPrazo":"RECUSAR_DOCUMENTO"}""";
@@ -282,7 +292,7 @@ public sealed class ConteudoDoModeloJsonTests
         $$$"""{"faseCodigo":"HABILITACAO","tipoDocumentoCodigo":"CERTIDAO","obrigatorio":false,"quando":[[{"codigoDoDado":"QUILOMBOLA","operador":"IGUAL","valor":true}]],"consequenciaIndeferimento":"PERDA_DA_VAGA","basesLegais":[{"referencia":"Lei 12.711/2012","abrangencia":"NACIONAL","situacao":"VIGENTE","observacao":"Art. 3"},{"referencia":"Portaria 18/2012","abrangencia":"NACIONAL","situacao":"VIGENTE","observacao":null}],"prazoDeEmissao":{{{PrazoCompletoJson}}},"validade":{{{ValidadeCompletaJson}}},"porOpcao":{"codigoDoDado":"OPCAO_DE_CURSO","exceto":["MEDICINA","ODONTOLOGIA"]}}""";
 
     private const string ItemQuilombolaJson =
-        """{"codigoDoDado":"QUILOMBOLA","ordem":0,"etapaCodigo":null,"rotulo":"Pergunta","tipoDeCampo":"SIM_OU_NAO","formato":null,"ajuda":null,"obrigatoriedade":{"tipo":"SEMPRE","predicado":null},"exibicao":null,"restricoes":[],"pedirConfirmacao":false,"impedimento":null}""";
+        """{"codigoDoDado":"QUILOMBOLA","ordem":0,"paginaCodigo":null,"rotulo":"Pergunta","tipoDeCampo":"SIM_OU_NAO","formato":null,"ajuda":null,"obrigatoriedade":{"tipo":"SEMPRE","predicado":null},"exibicao":null,"restricoes":[],"pedirConfirmacao":false,"impedimento":null}""";
 
     private const string EtapaDadosMinimaJson =
         """{"codigo":"DADOS","ordem":0,"tipo":"SECAO","bloco":null,"titulo":"Dados","descricao":null,"aviso":null,"exibicao":null}""";
@@ -291,7 +301,7 @@ public sealed class ConteudoDoModeloJsonTests
         """{"codigo":"TERMO_USO","ordem":0,"termoId":"11111111-1111-1111-1111-111111111111","versaoId":"22222222-2222-2222-2222-222222222222","exibicao":null,"obrigatoriedade":{"tipo":"SEMPRE","predicado":null}}""";
 
     private const string GrupoFamiliaMinimoJson =
-        $$"""{"codigo":"FAMILIA","ordem":0,"etapaCodigo":null,"rotulo":"Fam\u00EDlia","minimo":1,"maximo":null,"incluiCandidato":false,"exibicao":null,"obrigatoriedade":{"tipo":"NUNCA","predicado":null},"subitens":[{{ItemParentescoJson}}]}""";
+        $$"""{"codigo":"FAMILIA","ordem":0,"paginaCodigo":null,"rotulo":"Fam\u00EDlia","minimo":1,"maximo":null,"incluiCandidato":false,"exibicao":null,"obrigatoriedade":{"tipo":"NUNCA","predicado":null},"subitens":[{{ItemParentescoJson}}]}""";
 
     private const string PrazoSemPrazoJson =
         """{"escolha":"SEM_PRAZO","valor":null,"unidade":null,"referencia":null,"efeitoForaDoPrazo":null}""";
@@ -306,22 +316,22 @@ public sealed class ConteudoDoModeloJsonTests
         $$"""{"quantidadeMinima":2,"consequenciaIndeferimento":"ELIMINA","basesLegais":[],"documentos":[{{DocumentoCertidaoJson}}]}""";
 
     private const string JsonCompleto =
-        $$"""{"titulo":"Inscri\u00E7\u00E3o \u0022Medicina\u0022 \u003C2027\u003E","etapas":[{{EtapaDadosJson}},{{EtapaRevisaoJson}}],"itens":[{{ItemRendaJson}}],"termos":[{{TermoUsoJson}}],"pressupostos":["COR_RACA"],"grupos":[{{GrupoFamiliaJson}}],"documentosExigidos":[{{DocumentoCertidaoJson}}],"gruposDeDocumentos":[{{GrupoDeDocumentosJson}}]}""";
+        $$"""{"titulo":"Inscri\u00E7\u00E3o \u0022Medicina\u0022 \u003C2027\u003E","paginas":[{{EtapaDadosJson}},{{EtapaRevisaoJson}}],"itens":[{{ItemRendaJson}}],"termos":[{{TermoUsoJson}}],"pressupostos":["COR_RACA"],"grupos":[{{GrupoFamiliaJson}}],"documentosExigidos":[{{DocumentoCertidaoJson}}],"gruposDeDocumentos":[{{GrupoDeDocumentosJson}}]}""";
 
     private const string JsonMinimo =
-        $$"""{"titulo":null,"etapas":[{{EtapaDadosMinimaJson}}],"itens":[{{ItemQuilombolaJson}}],"termos":[{{TermoUsoMinimoJson}}],"pressupostos":[],"grupos":[{{GrupoFamiliaMinimoJson}}],"documentosExigidos":[{{DocumentoMinimoJson}}],"gruposDeDocumentos":[]}""";
+        $$"""{"titulo":null,"paginas":[{{EtapaDadosMinimaJson}}],"itens":[{{ItemQuilombolaJson}}],"termos":[{{TermoUsoMinimoJson}}],"pressupostos":[],"grupos":[{{GrupoFamiliaMinimoJson}}],"documentosExigidos":[{{DocumentoMinimoJson}}],"gruposDeDocumentos":[]}""";
 
     private const string JsonLegado =
-        """{"titulo":"Legado","etapas":[{"codigo":"DADOS","ordem":0,"tipo":"SECAO","titulo":"Dados"}],"itens":[{"codigoDoDado":"QUILOMBOLA","ordem":0,"rotulo":"Pergunta","tipoDeCampo":"SIM_OU_NAO","obrigatoriedade":{"tipo":"SEMPRE"},"restricoes":[],"pedirConfirmacao":false}],"termos":[],"pressupostos":[],"grupos":[{"codigo":"FAMILIA","ordem":0,"rotulo":"Fam\u00EDlia","minimo":1,"maximo":null,"obrigatoriedade":{"tipo":"NUNCA"},"subitens":[],"incluiCandidato":false}]}""";
+        """{"titulo":"Legado","paginas":[{"codigo":"DADOS","ordem":0,"tipo":"SECAO","titulo":"Dados"}],"itens":[{"codigoDoDado":"QUILOMBOLA","ordem":0,"rotulo":"Pergunta","tipoDeCampo":"SIM_OU_NAO","obrigatoriedade":{"tipo":"SEMPRE"},"restricoes":[],"pedirConfirmacao":false}],"termos":[],"pressupostos":[],"grupos":[{"codigo":"FAMILIA","ordem":0,"rotulo":"Fam\u00EDlia","minimo":1,"maximo":null,"obrigatoriedade":{"tipo":"NUNCA"},"subitens":[],"incluiCandidato":false}]}""";
 
     private const string JsonLegadoRegravado =
-        $$"""{"titulo":"Legado","etapas":[{"codigo":"DADOS","ordem":0,"tipo":"SECAO","bloco":null,"titulo":"Dados","descricao":null,"aviso":null,"exibicao":null}],"itens":[{{ItemQuilombolaJson}}],"termos":[],"pressupostos":[],"grupos":[{"codigo":"FAMILIA","ordem":0,"etapaCodigo":null,"rotulo":"Fam\u00EDlia","minimo":1,"maximo":null,"incluiCandidato":false,"exibicao":null,"obrigatoriedade":{"tipo":"NUNCA","predicado":null},"subitens":[]}],"documentosExigidos":[],"gruposDeDocumentos":[]}""";
+        $$"""{"titulo":"Legado","paginas":[{"codigo":"DADOS","ordem":0,"tipo":"SECAO","bloco":null,"titulo":"Dados","descricao":null,"aviso":null,"exibicao":null}],"itens":[{{ItemQuilombolaJson}}],"termos":[],"pressupostos":[],"grupos":[{"codigo":"FAMILIA","ordem":0,"paginaCodigo":null,"rotulo":"Fam\u00EDlia","minimo":1,"maximo":null,"incluiCandidato":false,"exibicao":null,"obrigatoriedade":{"tipo":"NUNCA","predicado":null},"subitens":[]}],"documentosExigidos":[],"gruposDeDocumentos":[]}""";
 
     private const string JsonDocumentoLegado =
-        """{"titulo":null,"etapas":[],"itens":[],"termos":[],"pressupostos":[],"grupos":[],"documentosExigidos":[{"faseCodigo":"INSCRICAO","tipoDocumentoCodigo":"RG","obrigatorio":true,"consequenciaIndeferimento":"INDEFERIMENTO","basesLegais":[{"referencia":"Lei 1","abrangencia":"NACIONAL","situacao":"VIGENTE"}],"porOpcao":null}]}""";
+        """{"titulo":null,"paginas":[],"itens":[],"termos":[],"pressupostos":[],"grupos":[],"documentosExigidos":[{"faseCodigo":"INSCRICAO","tipoDocumentoCodigo":"RG","obrigatorio":true,"consequenciaIndeferimento":"INDEFERIMENTO","basesLegais":[{"referencia":"Lei 1","abrangencia":"NACIONAL","situacao":"VIGENTE"}],"porOpcao":null}]}""";
 
     private const string JsonDocumentoLegadoRegravado =
-        """{"titulo":null,"etapas":[],"itens":[],"termos":[],"pressupostos":[],"grupos":[],"documentosExigidos":[{"faseCodigo":"INSCRICAO","tipoDocumentoCodigo":"RG","obrigatorio":true,"quando":null,"consequenciaIndeferimento":"INDEFERIMENTO","basesLegais":[{"referencia":"Lei 1","abrangencia":"NACIONAL","situacao":"VIGENTE","observacao":null}],"prazoDeEmissao":null,"validade":null,"porOpcao":null}],"gruposDeDocumentos":[]}""";
+        """{"titulo":null,"paginas":[],"itens":[],"termos":[],"pressupostos":[],"grupos":[],"documentosExigidos":[{"faseCodigo":"INSCRICAO","tipoDocumentoCodigo":"RG","obrigatorio":true,"quando":null,"consequenciaIndeferimento":"INDEFERIMENTO","basesLegais":[{"referencia":"Lei 1","abrangencia":"NACIONAL","situacao":"VIGENTE","observacao":null}],"prazoDeEmissao":null,"validade":null,"porOpcao":null}],"gruposDeDocumentos":[]}""";
 
     private static ConteudoDoModelo ConteudoCompleto() => new(
         "Inscrição \"Medicina\" <2027>",
