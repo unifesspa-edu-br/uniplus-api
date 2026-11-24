@@ -2,21 +2,8 @@ namespace Unifesspa.UniPlus.Discentes.UnitTests.Sincronizacao;
 
 using AwesomeAssertions;
 
-using JasperFx.CodeGeneration.Model;
-
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
-
-using Unifesspa.UniPlus.Discentes.API;
 using Unifesspa.UniPlus.Discentes.Domain.Entities;
 using Unifesspa.UniPlus.Discentes.Domain.Enums;
-using Unifesspa.UniPlus.Discentes.Infrastructure.Sigaa;
-using Unifesspa.UniPlus.Discentes.Infrastructure.Sincronizacao;
-using Unifesspa.UniPlus.Discentes.UnitTests.Sigaa;
-
-using Wolverine;
 
 /// <summary>
 /// Exercita o handler da sincronização pelo Wolverine real.
@@ -34,22 +21,41 @@ public sealed class PipelineWolverineDaSincronizacaoTests
     [Fact]
     public async Task Wolverine_monta_o_pipeline_e_despacha_a_sincronizacao()
     {
-        ExecucoesEmMemoria execucoes = new();
-        using IHost host = await SubirAsync(execucoes);
+        ExecucoesEmMemoria execucoes = await SincronizarComSucesso();
 
-        try
-        {
-            await host.Services.GetRequiredService<IMessageBus>()
-                .InvokeAsync(new SincronizarVinculosDiscentes(Dia));
+        execucoes.Registradas.Should().ContainSingle();
+    }
 
-            execucoes.Registradas.Should().ContainSingle();
-            execucoes.Registradas[0].Status.Should().Be(SyncRunStatus.Concluida);
-            execucoes.Registradas[0].DataDeReferencia.Should().Be(Dia);
-        }
-        finally
-        {
-            await host.StopAsync();
-        }
+    [Fact]
+    public async Task Sincronizacao_despachada_termina_concluida()
+    {
+        ExecucoesEmMemoria execucoes = await SincronizarComSucesso();
+
+        execucoes.Registradas[0].Status.Should().Be(SyncRunStatus.Concluida);
+    }
+
+    [Fact]
+    public async Task Sincronizacao_despachada_guarda_a_data_de_referencia_pedida()
+    {
+        ExecucoesEmMemoria execucoes = await SincronizarComSucesso();
+
+        execucoes.Registradas[0].DataDeReferencia.Should().Be(Dia);
+    }
+
+    [Fact]
+    public async Task Falha_da_origem_chega_a_quem_pediu_a_sincronizacao()
+    {
+        (_, Exception? falha) = await SincronizarComOrigemQueFalha();
+
+        falha.Should().NotBeNull();
+    }
+
+    [Fact]
+    public async Task Execucao_que_falha_fica_registrada_uma_unica_vez()
+    {
+        (ExecucoesEmMemoria execucoes, _) = await SincronizarComOrigemQueFalha();
+
+        execucoes.Registradas.Should().ContainSingle();
     }
 
     [Fact]
@@ -57,67 +63,35 @@ public sealed class PipelineWolverineDaSincronizacaoTests
     {
         // Sem isto, uma falha deixaria a execução presa em andamento para sempre — e é ela
         // que a próxima execução consulta para saber se o dia já foi tratado.
-        ExecucoesEmMemoria execucoes = new();
-        using IHost host = await SubirAsync(execucoes, origemQueFalha: true);
+        (ExecucoesEmMemoria execucoes, _) = await SincronizarComOrigemQueFalha();
 
-        try
-        {
-            Func<Task> sincronizar = () => host.Services.GetRequiredService<IMessageBus>()
-                .InvokeAsync(new SincronizarVinculosDiscentes(Dia));
-
-            await sincronizar.Should().ThrowAsync<Exception>();
-
-            execucoes.Registradas.Should().ContainSingle();
-            execucoes.Registradas[0].Status.Should().Be(SyncRunStatus.Falhou);
-            execucoes.Registradas[0].FinishedAt.Should().NotBeNull();
-        }
-        finally
-        {
-            await host.StopAsync();
-        }
+        execucoes.Registradas[0].Status.Should().Be(SyncRunStatus.Falhou);
     }
 
-    private static async Task<IHost> SubirAsync(
-        ExecucoesEmMemoria execucoes,
-        bool origemQueFalha = false)
+    [Fact]
+    public async Task Execucao_que_falha_fica_com_o_instante_de_termino_registrado()
     {
-        OrigemSimulada origem = new();
-        if (!origemQueFalha)
-        {
-            origem.ResponderPorIngresso();
-        }
+        (ExecucoesEmMemoria execucoes, _) = await SincronizarComOrigemQueFalha();
 
-        IHost host = Host.CreateDefaultBuilder()
-            .UseWolverine(opts =>
-            {
-                opts.Discovery.IncludeType(typeof(SincronizarVinculosDiscentesHandler));
+        execucoes.Registradas[0].FinishedAt.Should().NotBeNull();
+    }
 
-                // Mesma política do host: o gerador não pode recorrer ao contêiner por
-                // conta própria. Sem isto, o teste passaria mesmo faltando a declaração
-                // das portas — e o defeito só apareceria na primeira sincronização real.
-                opts.ServiceLocationPolicy = ServiceLocationPolicy.NotAllowed;
+    private static async Task<ExecucoesEmMemoria> SincronizarComSucesso()
+    {
+        await using HospedeWolverineDaSincronizacao hospede = await HospedeWolverineDaSincronizacao.SubirAsync();
 
-                DiscentesCodegenRegistration.ConfigurarCodegenWolverine(opts);
-            })
-            .ConfigureServices(services =>
-            {
-                services.AddLogging(b => b.SetMinimumLevel(LogLevel.Warning));
-                services.AddSingleton<TimeProvider>(
-                    new RelogioControlado(new DateTimeOffset(2026, 9, 2, 3, 0, 0, TimeSpan.Zero)));
-                // Registradas por fábrica, como no host: a unidade de trabalho encaminha
-                // para a mesma instância que os repositórios usam, e o gerador não tem
-                // como enxergar o tipo concreto por trás disso.
-                services.AddSingleton(execucoes);
-                services.AddScoped<IRegistroDeExecucoes>(sp => sp.GetRequiredService<ExecucoesEmMemoria>());
-                services.AddSingleton<ISigaaVinculoDiscenteClient>(
-                    origemQueFalha ? new OrigemQueFalha() : origem);
-                services.AddSingleton<IGravadorDeVinculos, GravadorSimulado>();
-                services.AddSingleton(Options.Create(new SincronizacaoOptions()));
-                services.AddScoped<OrquestradorDeSincronizacao>();
-            })
-            .Build();
+        await hospede.SincronizarAsync(Dia);
 
-        await host.StartAsync();
-        return host;
+        return hospede.Execucoes;
+    }
+
+    private static async Task<(ExecucoesEmMemoria Execucoes, Exception? Falha)> SincronizarComOrigemQueFalha()
+    {
+        await using HospedeWolverineDaSincronizacao hospede =
+            await HospedeWolverineDaSincronizacao.SubirAsync(origemQueFalha: true);
+
+        Exception? falha = await Record.ExceptionAsync(() => hospede.SincronizarAsync(Dia));
+
+        return (hospede.Execucoes, falha);
     }
 }
