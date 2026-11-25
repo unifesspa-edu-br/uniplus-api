@@ -109,20 +109,7 @@ public sealed class PesoAreaEnemEndpointTests
         id.Should().NotBe(Guid.Empty);
 
         using JsonDocument doc = await ObterAsync(client, id);
-        JsonElement root = doc.RootElement;
-        root.GetProperty("grupoCurso").GetProperty("codigo").GetString().Should().Be(GrupoCurso.Tecnologica);
-        root.GetProperty("grupoCurso").GetProperty("rotulo").GetString().Should().Be("Tecnológica");
-        root.GetProperty("baseLegal").GetString().Should().Be(BaseLegal);
-        root.TryGetProperty("pesoRedacao", out _).Should().BeFalse("os cinco pesos fixos saíram do contrato");
-        root.TryGetProperty("corteRedacao", out _).Should().BeFalse("o corte passou a ser de cada área");
-        root.TryGetProperty("_links", out _).Should().BeTrue("HATEOAS Level 1 expõe _links.self (ADR-0029)");
-
-        JsonElement[] areas = [.. root.GetProperty("areas").EnumerateArray()];
-        areas.Select(a => (a.GetProperty("codigo").GetString()!, a.GetProperty("rotulo").GetString()!))
-            .Should().Equal(AreasEsperadas);
-        areas.Select(a => a.GetProperty("peso").GetDecimal()).Should().Equal(2.00m, 1.50m, 2.50m, 2.50m, 1.50m);
-        areas[0].GetProperty("corte").GetDecimal().Should().Be(400m);
-        areas.Skip(1).Should().OnlyContain(a => a.GetProperty("corte").ValueKind == JsonValueKind.Null);
+        ConferirPesoCriado(doc.RootElement);
     }
 
     [Fact(DisplayName = "POST admin grava o rótulo do sistema mesmo com as áreas em outra ordem")]
@@ -156,13 +143,7 @@ public sealed class PesoAreaEnemEndpointTests
 
         atualizar.StatusCode.Should().Be(HttpStatusCode.NoContent);
         using JsonDocument doc = await ObterAsync(client, id);
-        JsonElement[] areas = [.. doc.RootElement.GetProperty("areas").EnumerateArray()];
-        areas[0].GetProperty("peso").GetDecimal().Should().Be(3.00m);
-        areas[0].GetProperty("corte").ValueKind.Should().Be(JsonValueKind.Null, "corte ausente no PUT é sem corte");
-        areas[4].GetProperty("peso").GetDecimal().Should().Be(4.25m);
-        areas.Select(a => (a.GetProperty("codigo").GetString()!, a.GetProperty("rotulo").GetString()!))
-            .Should().Equal(AreasEsperadas);
-        doc.RootElement.GetProperty("baseLegal").GetString().Should().Be("Nova base");
+        ConferirPesoAtualizado(doc.RootElement);
     }
 
     [Fact(DisplayName = "POST admin com peso acima do teto retorna 422 no campo do peso da área")]
@@ -218,13 +199,7 @@ public sealed class PesoAreaEnemEndpointTests
 
         response.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
         using JsonDocument doc = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
-        doc.RootElement.GetProperty("errors").EnumerateArray()
-            .Select(e => (e.GetProperty("field").GetString(), e.GetProperty("code").GetString()))
-            .Should().BeEquivalentTo(
-            [
-                ("areas[2].codigo", "uniplus.configuracao.peso_area_enem.area_fora_do_dominio"),
-                ("areas", "uniplus.configuracao.peso_area_enem.area_faltando"),
-            ]);
+        ConferirErrosDeAreaForaDoDominio(doc.RootElement);
     }
 
     [Fact(DisplayName = "POST admin com área repetida retorna 422 no campo do código repetido")]
@@ -259,6 +234,45 @@ public sealed class PesoAreaEnemEndpointTests
         var body = new { resolucao = ResolucaoUnica(), grupoCurso, areas = AreasValidas(), baseLegal = BaseLegal };
 
         await AssertRecusaNoCampo(body, "grupoCurso", "uniplus.configuracao.peso_area_enem.grupo_curso_invalido");
+    }
+
+    private static void ConferirPesoCriado(JsonElement root)
+    {
+        root.GetProperty("grupoCurso").GetProperty("codigo").GetString().Should().Be(GrupoCurso.Tecnologica);
+        root.GetProperty("grupoCurso").GetProperty("rotulo").GetString().Should().Be("Tecnológica");
+        root.GetProperty("baseLegal").GetString().Should().Be(BaseLegal);
+        root.TryGetProperty("pesoRedacao", out _).Should().BeFalse("os cinco pesos fixos saíram do contrato");
+        root.TryGetProperty("corteRedacao", out _).Should().BeFalse("o corte passou a ser de cada área");
+        root.TryGetProperty("_links", out _).Should().BeTrue("HATEOAS Level 1 expõe _links.self (ADR-0029)");
+
+        JsonElement[] areas = [.. root.GetProperty("areas").EnumerateArray()];
+        areas.Select(a => (a.GetProperty("codigo").GetString()!, a.GetProperty("rotulo").GetString()!))
+            .Should().Equal(AreasEsperadas);
+        areas.Select(a => a.GetProperty("peso").GetDecimal()).Should().Equal(2.00m, 1.50m, 2.50m, 2.50m, 1.50m);
+        areas[0].GetProperty("corte").GetDecimal().Should().Be(400m);
+        areas.Skip(1).Should().OnlyContain(a => a.GetProperty("corte").ValueKind == JsonValueKind.Null);
+    }
+
+    private static void ConferirPesoAtualizado(JsonElement root)
+    {
+        JsonElement[] areas = [.. root.GetProperty("areas").EnumerateArray()];
+        areas[0].GetProperty("peso").GetDecimal().Should().Be(3.00m);
+        areas[0].GetProperty("corte").ValueKind.Should().Be(JsonValueKind.Null, "corte ausente no PUT é sem corte");
+        areas[4].GetProperty("peso").GetDecimal().Should().Be(4.25m);
+        areas.Select(a => (a.GetProperty("codigo").GetString()!, a.GetProperty("rotulo").GetString()!))
+            .Should().Equal(AreasEsperadas);
+        root.GetProperty("baseLegal").GetString().Should().Be("Nova base");
+    }
+
+    private static void ConferirErrosDeAreaForaDoDominio(JsonElement root)
+    {
+        root.GetProperty("errors").EnumerateArray()
+            .Select(e => (e.GetProperty("field").GetString(), e.GetProperty("code").GetString()))
+            .Should().BeEquivalentTo(
+            [
+                ("areas[2].codigo", "uniplus.configuracao.peso_area_enem.area_fora_do_dominio"),
+                ("areas", "uniplus.configuracao.peso_area_enem.area_faltando"),
+            ]);
     }
 
     private static object[] AreasValidas() =>
