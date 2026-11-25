@@ -199,3 +199,7 @@ A convenção `ValueObjectConventions` e os quatro conversores que ela registrav
 ## Emenda 3 (2026-11-25) — leitura do Value Object gravado
 
 O conversor de um Value Object de um só campo refaz o valor pelo método de criação do próprio Value Object. Dado gravado que não passa na regra interrompe a leitura na hora, com `InvalidOperationException` que informa o nome do valor e o código do erro, nunca o conteúdo gravado: o texto da exceção chega ao log, e o conteúdo pode ser dado pessoal. A regra fica num ponto único da infraestrutura compartilhada, usado por todos os conversores de Value Object; nenhum conversor monta essa mensagem por conta própria. Enums com código de contrato continuam regidos pela ADR-0176.
+
+## Emenda 4 (2026-11-25) — Value Object gravado como documento JSON
+
+A Emenda 3 vale também para o Value Object gravado como documento JSON numa coluna. A leitura refaz o valor pelas fábricas do domínio; se houver recusa, a exceção informa o nome do valor e os códigos das recusas, sem repetição e na ordem em que o domínio as deu, nunca o texto da recusa nem o caminho do item, que podem repetir o conteúdo gravado. Documento que não é JSON válido falha com o nome do valor e o motivo "documento JSON inválido", sem levar a exceção da biblioteca como causa, porque o texto dela pode repetir trecho do documento. As duas formas ficam no mesmo ponto único da Emenda 3. Semente escrita no código não é leitura de dado gravado e fica fora desta regra.
