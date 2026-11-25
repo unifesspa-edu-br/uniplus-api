@@ -115,7 +115,7 @@ internal sealed class ResolucaoDaDistribuicao(
                 ? null
                 : RecusasDaResolucaoDeVagas.RegraDeDistribuicaoDeTipoInvalido(pedido.RegraDistribuicaoCodigo, pedido.RegraDistribuicaoVersao);
 
-    // Ausência é válida: a distribuição decide se a regra de ajuste é obrigatória conforme o ramo.
+    // Ausência é válida: a distribuição decide se a regra de ajuste é obrigatória conforme o tipo de distribuição.
     private async Task<DomainError?> ResolverRegraDeAjusteAsync(CancellationToken cancellationToken)
     {
         if (pedido.RegraAjusteCodigo is null)
@@ -165,12 +165,22 @@ internal sealed class ResolucaoDaDistribuicao(
         {
             Result<ModalidadeSelecionada> modalidade = await ResolverModalidadeAsync(pedido.ModalidadeIds[indice], cancellationToken)
                 .ConfigureAwait(false);
-            Recusar(DadoDaDistribuicaoDeVagas.Modalidades, $"modalidadeIds[{indice}]", modalidade.Error);
+            RecusarAModalidade(indice, modalidade.Errors);
             if (modalidade.IsSuccess)
             {
                 _modalidades.Add(modalidade.Value!);
             }
         }
+    }
+
+    private void RecusarAModalidade(int indice, IReadOnlyList<FieldError> causas)
+    {
+        if (causas.Count > 0)
+        {
+            _recusados.Add(DadoDaDistribuicaoDeVagas.Modalidades);
+        }
+
+        _recusasDoCadastro.AddRange(causas.Select(c => c.NoCaminhoDoItem($"modalidadeIds[{indice}]")));
     }
 
     private async Task<Result<ModalidadeSelecionada>> ResolverModalidadeAsync(Guid modalidadeId, CancellationToken cancellationToken)
