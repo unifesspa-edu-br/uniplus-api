@@ -66,6 +66,7 @@ public sealed class BuscaDeUnidadesNoEndpointTests
 
         PaginaDeUnidades.ParametroDe(pagina.Self!, "q").Should().Be(q);
         PaginaDeUnidades.ParametroDe(pagina.Next!, "q").Should().Be(q);
+        (await PaginaDeUnidades.LerAsync(client, pagina.Next!)).Status.Should().Be(HttpStatusCode.OK);
     }
 
     [Theory(DisplayName = "Texto só de caractere nulo, com ou sem espaços, não é busca e não dá 500")]

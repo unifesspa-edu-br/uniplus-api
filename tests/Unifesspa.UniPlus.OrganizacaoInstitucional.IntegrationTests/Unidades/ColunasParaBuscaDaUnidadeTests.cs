@@ -5,6 +5,7 @@ using AwesomeAssertions;
 using Microsoft.EntityFrameworkCore;
 
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
+using Unifesspa.UniPlus.Kernel.Domain.ValueObjects;
 using Unifesspa.UniPlus.Kernel.Pagination;
 using Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.Entities;
 using Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.Interfaces;
@@ -230,7 +231,7 @@ public sealed class ColunasParaBuscaDaUnidadeTests : IClassFixture<UnidadeDbFixt
 
     private async Task<IReadOnlyList<Guid>> ListarIdsAsync(string texto)
     {
-        FiltroListagemUnidades filtro = new(texto, []);
+        FiltroListagemUnidades filtro = new(TermoDeBusca.Criar(texto).Value, []);
         await using UniPlusDbContext contexto = _fixture.CreateDbContext(userId: null);
         (IReadOnlyList<Unidade> itens, _, _) = await new UnidadeRepository(contexto)
             .ListarPaginadoAsync(null, 100, PaginationDirection.Next, filtro, CancellationToken.None);

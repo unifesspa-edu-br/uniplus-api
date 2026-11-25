@@ -12,6 +12,7 @@ using Npgsql;
 
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Interceptors;
+using Unifesspa.UniPlus.Kernel.Domain.ValueObjects;
 using Unifesspa.UniPlus.Monolito.Persistencia;
 using Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.Entities;
 using Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.Interfaces;
@@ -22,7 +23,7 @@ using Unifesspa.UniPlus.OrganizacaoInstitucional.Infrastructure.Persistence.Repo
 /// Os índices trigrama das colunas <c>*_para_busca</c> podem ser usados pela consulta que a listagem emite.
 /// </summary>
 /// <remarks>
-/// A consulta é a que o EF emite para o recorte da busca, com os parâmetros ligados: literal embutido daria outro
+/// A consulta é a que o EF emite para o filtro da busca, com os parâmetros ligados: literal embutido daria outro
 /// plano. Com varreduras sequenciais desativadas e custo elevado por entrada de índice, o plano mostra que os índices
 /// <b>podem</b> ser usados; não prova que o planejador os escolhe no uso normal. O volume da amostra e o
 /// <c>ANALYZE</c> existem para que as estatísticas reflitam uma tabela com milhares de linhas, e o termo é raro nela.
@@ -83,7 +84,7 @@ public sealed class PlanoDeExecucaoDaBuscaDeUnidadesTests : IClassFixture<Unidad
     {
         CapturadorDeConsulta capturador = new();
         await using MonolitoDbContext contexto = new(OpcoesCapturandoCom(capturador));
-        FiltroListagemUnidades filtro = new(TermoRaro, []);
+        FiltroListagemUnidades filtro = new(TermoDeBusca.Criar(TermoRaro).Value, []);
         List<Unidade> encontradas = await contexto.Unidades.AsNoTracking().Filtradas(filtro).ToListAsync();
 
         encontradas.Should().HaveCount(Volume / 1000, "o termo raro está em uma unidade a cada mil");

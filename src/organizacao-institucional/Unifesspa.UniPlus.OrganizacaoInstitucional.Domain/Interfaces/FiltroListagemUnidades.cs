@@ -1,5 +1,6 @@
 namespace Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.Interfaces;
 
+using Unifesspa.UniPlus.Kernel.Domain.ValueObjects;
 using Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.Enums;
 
 /// <summary>
@@ -10,19 +11,16 @@ using Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.Enums;
 /// já filtrado.
 /// </summary>
 /// <param name="Termo">
-/// Termo de busca bruto do usuário; <c>null</c> ou vazio = sem filtro textual.
+/// Termo de busca validado e normalizado; <c>null</c> = sem filtro textual.
 /// O repositório prepara o termo e consulta as colunas normalizadas pela plataforma.
 /// </param>
 /// <param name="Tipos">
 /// Tipos de unidade a incluir (OR entre si); vazio = sem filtro por tipo.
 /// </param>
-public sealed record FiltroListagemUnidades(string? Termo, IReadOnlyList<TipoUnidade> Tipos)
+public sealed record FiltroListagemUnidades(TermoDeBusca? Termo, IReadOnlyList<TipoUnidade> Tipos)
 {
     /// <summary>Filtro sem critérios — equivalente a listar tudo.</summary>
     public static FiltroListagemUnidades Nenhum { get; } = new(null, []);
-
-    /// <summary>Indica se há termo de busca textual aplicável.</summary>
-    public bool TemBusca => !string.IsNullOrWhiteSpace(Termo);
 
     /// <summary>Indica se há filtro por tipo aplicável.</summary>
     public bool TemTipos => Tipos.Count > 0;
