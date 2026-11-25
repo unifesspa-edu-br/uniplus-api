@@ -8,6 +8,7 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Protecao;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
+using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Converters;
 
 /// <summary>Configuração EF Core de <see cref="BancaRequerida"/> — filha 0..* de <see cref="FaseCronograma"/>.</summary>
 public sealed class BancaRequeridaConfiguration : IEntityTypeConfiguration<BancaRequerida>
@@ -22,7 +23,7 @@ public sealed class BancaRequeridaConfiguration : IEntityTypeConfiguration<Banca
         builder.HasKey(b => b.Id);
         builder.Property<Guid>("ProcessoSeletivoId").HasComment("Processo seletivo ao qual a banca pertence.");
         builder.Property(b => b.Chave)
-            .HasConversion(chave => chave.Valor, valor => ChaveLocal.Criar(valor).Value)
+            .HasConversion<ChaveLocalValueConverter>()
             .HasColumnName("chave_local").HasMaxLength(ChaveLocal.ComprimentoMaximo).IsRequired()
             .HasComment("Identificador que a parte guarda dentro da configuração publicada; único no processo.");
         builder.HasIndex("ProcessoSeletivoId", nameof(BancaRequerida.Chave)).IsUnique().HasDatabaseName("ux_bancas_requeridas_processo_chave_local");

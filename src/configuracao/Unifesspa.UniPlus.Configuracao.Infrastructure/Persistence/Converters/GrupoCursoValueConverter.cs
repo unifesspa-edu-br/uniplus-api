@@ -4,22 +4,15 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence.CodigosDeContrato;
-using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Converters;
 
-// Mapeia GrupoCurso ↔ código do grupo (varchar); o rótulo volta da lista do domínio.
-// O comprimento da coluna é definido na própria propriedade via HasMaxLength no
-// IEntityTypeConfiguration. A reidratação
-// falha explicitamente (com contexto) caso a coluna seja corrompida fora do fluxo
-// da aplicação, em vez do NullReferenceException tardio de `GrupoCurso.Criar(v).Value!`.
-// O fail-fast é inlinado porque o helper compartilhado ValueObjectMaterialization é
-// internal ao assembly Infrastructure.Core (este converter mora no módulo, pois
-// GrupoCurso é vocabulário específico de Configuração).
+// A leitura falha com contexto se o valor gravado não respeita a regra do domínio.
 public sealed class GrupoCursoValueConverter : ValueConverter<GrupoCurso, string>
 {
     public GrupoCursoValueConverter()
         : base(
             grupo => grupo.Codigo,
-            valor => Reidratar(valor))
+            valor => ObjetoDeValorGravado.Reidratar(GrupoCurso.Criar(valor), nameof(GrupoCurso)))
     {
     }
 
@@ -29,18 +22,4 @@ public sealed class GrupoCursoValueConverter : ValueConverter<GrupoCurso, string
     /// </summary>
     internal static string CodigosEmSql() =>
         SqlDosCodigosDeContrato.Lista(GrupoCurso.Todos.Select(static grupo => grupo.Codigo));
-
-    private static GrupoCurso Reidratar(string valor)
-    {
-        Result<GrupoCurso> resultado = GrupoCurso.Criar(valor);
-        if (resultado.IsFailure || resultado.Value is null)
-        {
-            throw new InvalidOperationException(
-                $"Dado inválido no banco ao reidratar {nameof(GrupoCurso)}: " +
-                $"{resultado.Error?.Code ?? "Desconhecido"}. " +
-                "Verifique se houve alteração manual da coluna fora do fluxo da aplicação.");
-        }
-
-        return resultado.Value;
-    }
 }

@@ -46,9 +46,8 @@ internal sealed class ReferenciaReservaDemograficaConfiguration
             .HasMaxLength(CensoReferenciaMaxLength)
             .IsRequired();
 
-        // Percentual é value object — persistido por valor como numeric(5,2)
-        // via PercentualValueConverter (reidratação fail-fast, ADR de VOs). O
-        // nome de coluna snake_case vem da convenção global.
+        // Percentual é value object gravado como numeric(5,2) pelo PercentualValueConverter;
+        // valor gravado inválido interrompe a leitura na hora (ADR-0054, emenda 3).
         builder.Property(r => r.PpiPercentual)
             .HasConversion<PercentualValueConverter>()
             .HasPrecision(5, 2)

@@ -94,17 +94,17 @@ public sealed class MapeamentoDoVinculoDiscenteTests
     }
 
     [Theory]
-    [InlineData("Curso corrompido", "Curso.NomeVazio")]
-    [InlineData("Situação corrompida", "SituacaoAcademica.DescricaoVazia")]
-    [InlineData("Período corrompido", "PeriodoIngresso.PeriodoInvalido")]
-    public void Registro_corrompido_falha_alto_com_o_codigo_da_regra(string defeito, string codigo)
+    [InlineData(nameof(CursoCopiadoDoSigaa), "Curso.NomeVazio")]
+    [InlineData(nameof(SituacaoAcademicaCopiada), "SituacaoAcademica.DescricaoVazia")]
+    [InlineData(nameof(PeriodoIngresso), "PeriodoIngresso.PeriodoInvalido")]
+    public void Registro_corrompido_falha_alto_com_o_codigo_da_regra(string nome, string codigo)
     {
         VinculoDiscenteRecord registro = RegistroValido();
-        Corromper(registro, defeito);
+        Corromper(registro, nome);
 
         Action ler = () => MapeamentoDoVinculoDiscente.ParaDominio(registro, VinculoDeTeste.CpfDeTeste());
 
-        ler.Should().Throw<InvalidOperationException>().WithMessage($"{defeito} no registro persistido ({codigo}).");
+        ler.Should().Throw<InvalidOperationException>().WithMessage($"Dado inválido no banco ao reidratar {nome}: {codigo}. Verifique se houve alteração manual da coluna fora do fluxo da aplicação.");
     }
 
     [Fact]
@@ -116,7 +116,7 @@ public sealed class MapeamentoDoVinculoDiscenteTests
         Action ler = () => MapeamentoDoVinculoDiscente.ParaDominio(registro, VinculoDeTeste.CpfDeTeste());
 
         ler.Should().Throw<InvalidOperationException>()
-            .WithMessage("Dados copiados corrompidos no registro persistido (VinculoDiscente.MatriculaNaoNumerica).");
+            .WithMessage("Dado inválido no banco ao reidratar IdentificacaoDoDiscente: VinculoDiscente.MatriculaNaoNumerica. Verifique se houve alteração manual da coluna fora do fluxo da aplicação.");
     }
 
     private static VinculoDiscenteRecord RegistroValido()
@@ -127,14 +127,14 @@ public sealed class MapeamentoDoVinculoDiscenteTests
         return registro;
     }
 
-    private static void Corromper(VinculoDiscenteRecord registro, string defeito)
+    private static void Corromper(VinculoDiscenteRecord registro, string nome)
     {
-        switch (defeito)
+        switch (nome)
         {
-            case "Curso corrompido":
+            case nameof(CursoCopiadoDoSigaa):
                 registro.CursoNome = " ";
                 break;
-            case "Situação corrompida":
+            case nameof(SituacaoAcademicaCopiada):
                 registro.SituacaoDescricao = " ";
                 break;
             default:

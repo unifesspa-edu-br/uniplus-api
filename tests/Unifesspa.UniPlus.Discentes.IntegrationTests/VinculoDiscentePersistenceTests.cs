@@ -9,7 +9,9 @@ using Microsoft.EntityFrameworkCore;
 using Npgsql;
 
 using Unifesspa.UniPlus.Discentes.Domain.Entities;
+using Unifesspa.UniPlus.Discentes.Domain.ValueObjects;
 using Unifesspa.UniPlus.Discentes.Infrastructure.Persistence;
+using Unifesspa.UniPlus.Discentes.Infrastructure.Persistence.Cryptography;
 using Unifesspa.UniPlus.Discentes.Infrastructure.Persistence.Repositories;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 
@@ -81,25 +83,25 @@ public sealed class VinculoDiscentePersistenceTests : IClassFixture<VinculoDisce
     }
 
     /// <summary>
-    /// Dado persistido que não passa mais pela regra de domínio falha alto, com a mensagem da
-    /// parte que acusou. Quando há mais de uma parte corrompida, vale a ordem: curso, situação,
+    /// Dado persistido que não passa mais pela regra de domínio falha alto, com o nome do valor
+    /// que acusou. Quando há mais de uma parte corrompida, vale a ordem: curso, situação,
     /// período e, por último, o restante do vínculo (identificação e nível).
     /// </summary>
     [Theory]
-    [InlineData(2001, "nome = ''", "Dados copiados corrompidos")]
-    [InlineData(2002, "matricula = '12A'", "Dados copiados corrompidos")]
-    [InlineData(2003, "nivel = ''", "Dados copiados corrompidos")]
-    [InlineData(2004, "curso_nome = ''", "Curso corrompido")]
-    [InlineData(2005, "situacao_descricao = ''", "Situação corrompida")]
-    [InlineData(2006, "ano_ingresso = 0", "Período corrompido")]
-    [InlineData(2007, "nome = '', curso_nome = ''", "Curso corrompido")]
-    [InlineData(2008, "curso_nome = '', situacao_descricao = ''", "Curso corrompido")]
-    [InlineData(2009, "situacao_descricao = '', ano_ingresso = 0", "Situação corrompida")]
-    [InlineData(2010, "ano_ingresso = 0, nome = ''", "Período corrompido")]
+    [InlineData(2001, "nome = ''", nameof(IdentificacaoDoDiscente))]
+    [InlineData(2002, "matricula = '12A'", nameof(IdentificacaoDoDiscente))]
+    [InlineData(2003, "nivel = ''", nameof(VinculoDiscenteCopiado))]
+    [InlineData(2004, "curso_nome = ''", nameof(CursoCopiadoDoSigaa))]
+    [InlineData(2005, "situacao_descricao = ''", nameof(SituacaoAcademicaCopiada))]
+    [InlineData(2006, "ano_ingresso = 0", nameof(PeriodoIngresso))]
+    [InlineData(2007, "nome = '', curso_nome = ''", nameof(CursoCopiadoDoSigaa))]
+    [InlineData(2008, "curso_nome = '', situacao_descricao = ''", nameof(CursoCopiadoDoSigaa))]
+    [InlineData(2009, "situacao_descricao = '', ano_ingresso = 0", nameof(SituacaoAcademicaCopiada))]
+    [InlineData(2010, "ano_ingresso = 0, nome = ''", nameof(PeriodoIngresso))]
     public async Task Registro_corrompido_falha_alto_com_a_mensagem_da_primeira_parte(
         long idSigaa,
         string corrupcao,
-        string mensagem)
+        string nome)
     {
         await AdicionarAsync(Novo(idSigaa));
         await CorromperAsync(idSigaa, corrupcao);
@@ -107,7 +109,33 @@ public sealed class VinculoDiscentePersistenceTests : IClassFixture<VinculoDisce
         Func<Task> leitura = () => LerPorIdSigaaAsync(idSigaa);
 
         (await leitura.Should().ThrowAsync<InvalidOperationException>())
-            .Which.Message.Should().StartWith(mensagem);
+            .Which.Message.Should().StartWith($"Dado inválido no banco ao reidratar {nome}:");
+    }
+
+    [Fact]
+    public async Task Cpf_invalido_cifrado_falha_sem_expor_o_valor()
+    {
+        const string cpfInvalido = "00000000000";
+        await AdicionarAsync(Novo(2011));
+        byte[] cifrado = await _fixture.Encryption.EncryptAsync(
+            DiscentesEncryptionKeys.IdentificadoresPessoais, Encoding.UTF8.GetBytes(cpfInvalido));
+        await GravarCpfCifradoAsync(2011, cifrado);
+
+        Func<Task> leitura = () => LerPorIdSigaaAsync(2011);
+        string mensagem = (await leitura.Should().ThrowAsync<InvalidOperationException>()).Which.Message;
+        mensagem.Should().StartWith("Dado inválido no banco ao reidratar Cpf: Cpf.Invalido");
+        mensagem.Should().NotContain(cpfInvalido);
+    }
+
+    private async Task GravarCpfCifradoAsync(long idSigaa, byte[] cifrado)
+    {
+        await using NpgsqlConnection conexao = new(_fixture.ConnectionString);
+        await conexao.OpenAsync();
+        await using NpgsqlCommand comando = new(
+            "UPDATE discentes.vinculos_de_discentes SET cpf_ciphertext = @cpf WHERE id_discente_sigaa = @id", conexao);
+        comando.Parameters.AddWithValue("cpf", cifrado);
+        comando.Parameters.AddWithValue("id", idSigaa);
+        await comando.ExecuteNonQueryAsync();
     }
 
     private async Task CorromperAsync(long idSigaa, string atribuicoes)

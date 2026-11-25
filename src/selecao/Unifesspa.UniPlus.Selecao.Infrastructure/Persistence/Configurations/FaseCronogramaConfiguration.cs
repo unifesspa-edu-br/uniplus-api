@@ -6,13 +6,13 @@ using Domain.Entities;
 using Domain.Enums;
 using Domain.ValueObjects;
 
-
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence.CodigosDeContrato;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Protecao;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
+using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Converters;
 
 /// <summary>
 /// Configuração EF Core de <see cref="FaseCronograma"/> — entidade filha
@@ -70,7 +70,7 @@ public sealed class FaseCronogramaConfiguration : IEntityTypeConfiguration<FaseC
         });
 
         builder.Property(f => f.Chave)
-            .HasConversion(chave => chave.Valor, valor => ChaveLocal.Criar(valor).Value)
+            .HasConversion<ChaveLocalValueConverter>()
             .HasColumnName("chave_local").HasMaxLength(ChaveLocal.ComprimentoMaximo).IsRequired()
             .HasComment("Identificador que a parte guarda dentro da configuração publicada; único no processo.");
         builder.HasIndex(f => new { f.ProcessoSeletivoId, f.Chave })

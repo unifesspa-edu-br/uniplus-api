@@ -8,11 +8,11 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence.CodigosDeContrato;
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Converters;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Protecao;
 using Unifesspa.UniPlus.Kernel.Domain.Cidades;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Kernel.Domain.ValueObjects;
-using Unifesspa.UniPlus.Kernel.Results;
 
 public sealed class ProcessoSeletivoConfiguration : IEntityTypeConfiguration<ProcessoSeletivo>
 {
@@ -376,15 +376,5 @@ public sealed class ProcessoSeletivoConfiguration : IEntityTypeConfiguration<Pro
     private static readonly Microsoft.EntityFrameworkCore.Storage.ValueConversion.ValueConverter<IdentificadorLegivel, string> IdentificadorLegivelConverter =
         new(
             identificador => identificador.Valor,
-            valor => ReidratarIdentificadorLegivel(valor));
-
-    private static IdentificadorLegivel ReidratarIdentificadorLegivel(string valor)
-    {
-        Result<IdentificadorLegivel> resultado = IdentificadorLegivel.Criar(valor);
-        return resultado.IsSuccess
-            ? resultado.Value!
-            : throw new InvalidOperationException(
-                $"Dado inválido no banco ao reidratar o identificador legível '{valor}' ({resultado.Error!.Code}).");
-    }
-
+            valor => ObjetoDeValorGravado.Reidratar(IdentificadorLegivel.Criar(valor), nameof(IdentificadorLegivel)));
 }

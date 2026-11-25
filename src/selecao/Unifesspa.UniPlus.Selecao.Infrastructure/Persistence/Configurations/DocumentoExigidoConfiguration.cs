@@ -19,6 +19,7 @@ using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Canonicalization;
+using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Converters;
 
 /// <summary>
 /// Configuração EF Core de <see cref="DocumentoExigido"/> — entidade
@@ -76,7 +77,7 @@ public sealed class DocumentoExigidoConfiguration : IEntityTypeConfiguration<Doc
     private static void ConfigurarColunasDaExigencia(EntityTypeBuilder<DocumentoExigido> builder)
     {
         builder.Property(d => d.Chave)
-            .HasConversion(chave => chave.Valor, valor => ChaveLocal.Criar(valor).Value)
+            .HasConversion<ChaveLocalValueConverter>()
             .HasColumnName("chave_local").HasMaxLength(ChaveLocal.ComprimentoMaximo).IsRequired()
             .HasComment("Identificador que a parte guarda dentro da configuração publicada; único no processo.");
         builder.HasIndex(d => new { d.ProcessoSeletivoId, d.Chave })
