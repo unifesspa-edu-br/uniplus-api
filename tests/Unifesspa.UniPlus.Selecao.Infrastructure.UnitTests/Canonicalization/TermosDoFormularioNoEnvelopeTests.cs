@@ -102,6 +102,34 @@ public sealed class TermosDoFormularioNoEnvelopeTests
     }
 
     [Fact]
+    public void LerFormularios_SegundoTermoNaoEObjeto_RecusaComCaminho()
+    {
+        JsonObject formulario = FormularioComTermosNoEnvelope.Formulario("INSCRICAO", FormularioComTermosNoEnvelope.Termo("PRIMEIRO", 1));
+        formulario["termos"]!.AsArray().Add("inválido");
+        JsonObject documento = FormularioComTermosNoEnvelope.Documento(formulario);
+
+        ConferirRecusa(documento, "EnvelopeCodec.EnvelopeMalformado", "Envelope malformado em 'formularios[0].termos[1]': esperado um objeto.");
+    }
+
+    [Fact]
+    public void LerFormularios_PaginaNaoEObjeto_RecusaComCaminho()
+    {
+        JsonObject formulario = FormularioComTermosNoEnvelope.Formulario("INSCRICAO");
+        formulario["paginas"]!.AsArray()[0] = JsonValue.Create("inválido");
+        JsonObject documento = FormularioComTermosNoEnvelope.Documento(formulario);
+
+        ConferirRecusa(documento, "EnvelopeCodec.EnvelopeMalformado", "Envelope malformado em 'formularios[0].paginas[0]': esperado um objeto.");
+    }
+
+    [Fact]
+    public void LerFormularios_FormularioNaoEObjeto_RecusaComCaminho()
+    {
+        JsonObject documento = new() { ["formularios"] = new JsonArray(JsonValue.Create("inválido")) };
+
+        ConferirRecusa(documento, "EnvelopeCodec.EnvelopeMalformado", "Envelope malformado em 'formularios[0]': esperado um objeto.");
+    }
+
+    [Fact]
     public void LerFormularios_ChaveAusenteNoSegundoTermo_RecusaComCaminho()
     {
         JsonObject termo = FormularioComTermosNoEnvelope.Termo("SEGUNDO", 2);
