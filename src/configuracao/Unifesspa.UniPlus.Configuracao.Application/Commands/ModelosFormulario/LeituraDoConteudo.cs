@@ -157,7 +157,7 @@ internal sealed class LeituraDoConteudo(IReadOnlyDictionary<string, string> form
     {
         int recusasAntes = _recusas.Count;
         OcorrenciasLidasDoGrupo ocorrencias = OcorrenciasLidasDoGrupo.Ler(entrada.Ocorrencias);
-        _recusas.AddRange(ocorrencias.Recusas.Select(recusa => recusa with { Field = $"{campo}.{recusa.Field}" }));
+        _recusas.AddRange(ocorrencias.Recusas.Select(recusa => recusa.NoCaminhoDoItem(campo)));
         ExibicaoEObrigatoriedade? regras = LerExibicaoEObrigatoriedade(entrada.Regras, $"{campo}.{GrupoColetadoInput.CaminhoDasRegras}");
         List<ItemDoModelo> subitens = [.. Lista(entrada.Subitens, $"{campo}.subitens", LerItem).Select(static subitem => subitem.Parte)];
         return RecusouDesde(recusasAntes)
@@ -237,7 +237,7 @@ internal sealed class LeituraDoConteudo(IReadOnlyDictionary<string, string> form
     private RequisitosDoDocumentoDoModelo? LerRequisitos(RequisitosDoDocumentoDoModeloInput? entrada, string campo)
     {
         RequisitosLidosDoDocumento requisitos = RequisitosLidosDoDocumento.Ler(entrada);
-        _recusas.AddRange(requisitos.Recusas.Select(recusa => recusa with { Field = $"{campo}.{recusa.Field}" }));
+        _recusas.AddRange(requisitos.Recusas.Select(recusa => recusa.NoCaminhoDoItem(campo)));
         return requisitos.Declarados;
     }
 
@@ -313,7 +313,7 @@ internal sealed class LeituraDoConteudo(IReadOnlyDictionary<string, string> form
         Result<Impedimento?> impedimento = EntradaDeRegras.Impedimento(entrada);
         if (impedimento.IsFailure)
         {
-            _recusas.AddRange(impedimento.Errors.Select(e => new FieldError($"{campo}.impedimento.quando{e.Field}", e.Error)));
+            _recusas.AddRange(impedimento.Errors.Select(e => e.NoCaminhoDoItem($"{campo}.impedimento.quando")));
         }
 
         return impedimento.Value;
@@ -324,7 +324,7 @@ internal sealed class LeituraDoConteudo(IReadOnlyDictionary<string, string> form
         Result<PredicadoDnf?> predicado = EntradaDeRegras.Predicado(entrada);
         if (predicado.IsFailure)
         {
-            _recusas.AddRange(predicado.Errors.Select(e => new FieldError($"{campo}{e.Field}", e.Error)));
+            _recusas.AddRange(predicado.Errors.Select(e => e.NoCaminhoDoItem(campo)));
         }
 
         return predicado.Value;

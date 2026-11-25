@@ -53,7 +53,7 @@ public static class ConferenciaDaRegraDeAplicabilidade
         if (PredicadoDnfValidador.ValidarComCausa(regra, vocabulario, dominiosDinamicos: VocabularioDoCatalogo.DominiosDinamicos(fatos.Values))
             is ({ IsFailure: true } predicado, { } causa, _))
         {
-            recusar($"{Campo}{predicado.Errors[0].Field}", predicado.Error!.Code, predicado.Error.Message, causa);
+            recusar(predicado.Errors[0].NoCaminhoDe(Campo).Field!, predicado.Error!.Code, predicado.Error.Message, causa);
         }
     }
 

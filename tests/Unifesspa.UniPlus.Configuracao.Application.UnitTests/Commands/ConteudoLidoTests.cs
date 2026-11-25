@@ -79,6 +79,21 @@ public sealed class ConteudoLidoTests
         lido.Paginas.Should().BeEmpty();
     }
 
+    [Fact(DisplayName = "As condições inválidas da exibição e do impedimento apontam os respectivos campos")]
+    public void Ler_CondicoesInvalidas_RecusaNoCampoDeCadaRegra()
+    {
+        Condicoes condicoes = [[new CondicaoPrecondicaoInput(string.Empty, "IGUAL", JsonSerializer.SerializeToElement(true))]];
+        FatoColetadoInput item = Item("CERTIFICADO", 0).ExibidoQuando(condicoes)
+            .ComImpedimento(new ImpedimentoInput(condicoes, null)).Construir();
+        LeituraDoConteudo leitura = new(Formatos);
+
+        leitura.Ler(new ConteudoDoModeloInput(null, null, [item], null, null));
+
+        leitura.Recusas.Select(static e => (e.Field, e.Error.Code)).Should().Equal(
+            ("itens[0].regras.exibicao[0][0].fato", "CondicaoDnf.FatoObrigatorio"),
+            ("itens[0].regras.impedimento.quando[0][0].fato", "CondicaoDnf.FatoObrigatorio"));
+    }
+
     [Fact(DisplayName = "O bloco ausente é a pagina sem bloco, e o código do bloco lido vai para a pagina")]
     public void Ler_BlocoAusenteOuDeclarado_VaiParaAPagina()
     {
