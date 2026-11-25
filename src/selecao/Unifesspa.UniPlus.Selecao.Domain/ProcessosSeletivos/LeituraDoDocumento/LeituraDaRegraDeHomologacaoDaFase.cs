@@ -68,14 +68,8 @@ internal static class LeituraDaRegraDeHomologacaoDaFase
             [.. predicado.Errors.Select(static erro => erro with { Error = new DomainError(erro.Error.Code, MensagemDoEnquadramento(erro.Error)) })]);
     }
 
-    private static string MensagemDoEnquadramento(DomainError erro) => erro.Code switch
-    {
-        PredicadoDnfJson.FormaInvalida => erro.Message,
-        "CondicaoDnf.FatoObrigatorio" => "Informe o fato da condição.",
-        "CondicaoDnf.OperadorInvalido" => "O operador informado não é reconhecido.",
-        "CondicaoDnf.FormaIncoerenteComOperador" => "O formato do valor não corresponde ao operador informado.",
-        _ => "Confira a forma do enquadramento informado.",
-    };
+    internal static string MensagemDoEnquadramento(DomainError erro) => erro.Code == PredicadoDnfJson.FormaInvalida
+        ? erro.Message : MensagensDoEnquadramento.DoDefeitoDeForma(erro.Code) ?? "Confira a forma do enquadramento informado.";
 
     private static RecusaDaParte[] Recusas(FaseNoDocumento fase, string campo, IReadOnlyList<FieldError> erros) =>
         [.. erros.Select(erro => new RecusaDaParte(FaseDeclarada.CampoDaRegraDeHomologacao, erro.NoCaminhoDoItem(campo).Field!, fase.PosicaoNoDocumento, null, erro.Error))];
