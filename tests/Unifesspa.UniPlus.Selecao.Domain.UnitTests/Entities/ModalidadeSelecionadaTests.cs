@@ -10,6 +10,25 @@ using Unifesspa.UniPlus.Testes.Compartilhado;
 
 public sealed class ModalidadeSelecionadaTests
 {
+    [Theory]
+    [InlineData(NaturezaLegalModalidade.Ampla, null, true)]
+    [InlineData(NaturezaLegalModalidade.Ampla, RegraRemanejamentoModalidade.SegueOrdemDeRemanejamento, false)]
+    [InlineData(NaturezaLegalModalidade.Ampla, RegraRemanejamentoModalidade.DestinoUnico, false)]
+    [InlineData(NaturezaLegalModalidade.Ampla, RegraRemanejamentoModalidade.Cruzado, false)]
+    [InlineData(NaturezaLegalModalidade.AcaoAfirmativa, null, false)]
+    [InlineData(NaturezaLegalModalidade.AcaoAfirmativa, RegraRemanejamentoModalidade.SegueOrdemDeRemanejamento, false)]
+    [InlineData(NaturezaLegalModalidade.AcaoAfirmativa, RegraRemanejamentoModalidade.DestinoUnico, true)]
+    [InlineData(NaturezaLegalModalidade.AcaoAfirmativa, RegraRemanejamentoModalidade.Cruzado, true)]
+    [InlineData(NaturezaLegalModalidade.CotaReservada, null, true)]
+    [InlineData(NaturezaLegalModalidade.CotaReservada, RegraRemanejamentoModalidade.SegueOrdemDeRemanejamento, true)]
+    [InlineData(NaturezaLegalModalidade.CotaReservada, RegraRemanejamentoModalidade.DestinoUnico, true)]
+    [InlineData(NaturezaLegalModalidade.CotaReservada, RegraRemanejamentoModalidade.Cruzado, true)]
+    public void RemanejamentoCoerenteComANatureza_NaturezaERegra_ConfereCoerencia(
+        NaturezaLegalModalidade natureza, RegraRemanejamentoModalidade? regra, bool esperado)
+    {
+        ModalidadeSelecionada.RemanejamentoCoerenteComANatureza(natureza, regra).Should().Be(esperado);
+    }
+
     private static Result<ModalidadeSelecionada> CriarAmpla() => ModalidadeSelecionada.Criar(ModalidadesNoCadastroDeTeste.Da("AC", NaturezaLegalModalidade.Ampla, ComposicaoVagasModalidade.RestanteDasVagasOfertadas) with { Descricao = "Ampla concorrência" });
 
     [Fact(DisplayName = "Criar sem a identidade da modalidade de origem recusa")]

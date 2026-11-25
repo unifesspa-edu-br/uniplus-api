@@ -17,12 +17,20 @@ public static class RegrasDaDistribuicaoDeVagas
     {
         ArgumentNullException.ThrowIfNull(configuracao);
 
+        DomainError? recusa = PrimeiraRecusaDaSubstituicao(configuracao, distribuicao, fatosDeModalidade);
+        return recusa is null ? Result.Success() : Result.Failure(recusa);
+    }
+
+    private static DomainError? PrimeiraRecusaDaSubstituicao(
+        ConfiguracaoDeclarada configuracao,
+        IReadOnlyList<ConfiguracaoDistribuicaoVagas> distribuicao,
+        FatosDeModalidade fatosDeModalidade)
+    {
         HashSet<string> novosCodigos = [.. distribuicao.SelectMany(static d => d.Modalidades).Select(static m => m.Codigo)];
 
         // Sem campo: o corpo da operação é só a lista de ofertas, e o campo que se corrige é o
         // número de opções, em outra operação.
-        DomainError? recusa =
-            DistribuicaoVazia(distribuicao)
+        return DistribuicaoVazia(distribuicao)
             ?? OfertaDeCursoRepetida(distribuicao)
             ?? (HaAcaoQuandoIndeferidoDivergenteEntreOfertas(distribuicao) ? AcaoQuandoIndeferidoDivergente() : null)
             ?? RegraDeAplicabilidadeDivergenteEntreOfertas(distribuicao)
@@ -30,7 +38,6 @@ public static class RegrasDaDistribuicaoDeVagas
             ?? (OpcoesDeCursoAcimaDasOfertas(configuracao.Vagas.NumeroDeOpcoesDeCurso, distribuicao.Count)
                 ? ErroDeOpcoesDeCursoAcimaDasOfertas()
                 : null);
-        return recusa is null ? Result.Success() : Result.Failure(recusa);
     }
 
     internal static Result ConferirOpcoesDeCurso(ConfiguracaoDeclarada configuracao, int numero)
@@ -137,7 +144,7 @@ public static class RegrasDaDistribuicaoDeVagas
     internal static DomainError? RemanejamentoIncoerenteComANatureza(IEnumerable<ConfiguracaoDistribuicaoVagas> distribuicaoVagas) =>
         distribuicaoVagas
             .SelectMany(static d => d.Modalidades)
-            .FirstOrDefault(static m => !m.RemanejamentoCoerenteComANatureza()) is { } incoerente
+            .FirstOrDefault(static m => !ModalidadeSelecionada.RemanejamentoCoerenteComANatureza(m.NaturezaLegal, m.RegraRemanejamento)) is { } incoerente
             ? new DomainError(
                 ProcessoSeletivoErrorCodes.RemanejamentoIncoerenteComANatureza,
                 $"A regra de remanejamento da modalidade {incoerente.Codigo} não é a que a natureza dela pede; grave a distribuição de vagas de novo para copiar o remanejamento do cadastro.")

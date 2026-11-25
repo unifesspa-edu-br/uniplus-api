@@ -68,6 +68,79 @@ public sealed class CausasDaModalidadeNoEnvelopeTests
         CaminhoNoDocumento.Existe(new JsonObject { ["modalidades"] = new JsonArray(modalidade) }, causa.Field!).Should().BeTrue();
     }
 
+    [Fact]
+    public void LerModalidade_RemanejamentoIncoerente_SituaCausaNoItem()
+    {
+        JsonObject modalidade = Modalidade();
+        modalidade["regraRemanejamento"] = "SEGUE_ORDEM_DE_REMANEJAMENTO";
+        modalidade["descricao"] = "Descrição fictícia da candidata Ana";
+        modalidade["baseLegal"] = "Norma fictícia da candidata Ana";
+        LeitorEnvelope leitor = new();
+        LeituraDasModalidades.LerModalidade(leitor, modalidade, "modalidades[0]");
+        FieldError causa = leitor.Falha<object>().Errors.Single();
+        causa.Should().Be(new FieldError("modalidades[0]", new DomainError(ErrosCodecEnvelope.EnvelopeMalformado,
+            "Envelope malformado em 'modalidades': a regra de remanejamento não é a que a natureza da modalidade pede.")));
+        causa.Field.Should().NotContain("candidata Ana");
+        causa.Error.Message.Should().NotContain("candidata Ana");
+    }
+
+    [Fact]
+    public void LerModalidade_OrigemIndevidaERemanejamentoIncoerente_PropagaAmbasAsCausas()
+    {
+        JsonObject modalidade = Modalidade();
+        modalidade["composicaoOrigemCodigo"] = "OUTRA";
+        modalidade["regraRemanejamento"] = "SEGUE_ORDEM_DE_REMANEJAMENTO";
+        LeitorEnvelope leitor = new();
+        LeituraDasModalidades.LerModalidade(leitor, modalidade, "modalidades[0]");
+        Result<object> resultado = leitor.Falha<object>();
+        resultado.Error!.Code.Should().Be("ModalidadeSelecionada.ComposicaoOrigemIndevida");
+        resultado.Errors.Select(causa => (causa.Field, causa.Error.Code)).Should().Equal(
+            ("modalidades[0]", "ModalidadeSelecionada.ComposicaoOrigemIndevida"),
+            ("modalidades[0]", ErrosCodecEnvelope.EnvelopeMalformado));
+    }
+
+    [Fact]
+    public void LerModalidade_ParIndevidoERemanejamentoIncoerente_PropagaAmbasAsCausas()
+    {
+        JsonObject modalidade = Modalidade();
+        modalidade["remanejamentoPar"] = "PAR";
+        modalidade["regraRemanejamento"] = "SEGUE_ORDEM_DE_REMANEJAMENTO";
+        LeitorEnvelope leitor = new();
+        LeituraDasModalidades.LerModalidade(leitor, modalidade, "modalidades[0]");
+        Result<object> resultado = leitor.Falha<object>();
+        resultado.Error!.Code.Should().Be("ModalidadeSelecionada.RemanejamentoCruzadoIndevido");
+        resultado.Errors.Select(causa => (causa.Field, causa.Error.Code)).Should().Equal(
+            ("modalidades[0]", "ModalidadeSelecionada.RemanejamentoCruzadoIndevido"),
+            ("modalidades[0]", ErrosCodecEnvelope.EnvelopeMalformado));
+    }
+
+    [Fact]
+    public void LerModalidade_CotaReservadaComDestinoUnico_RecusaSomenteCascata()
+    {
+        JsonObject modalidade = Modalidade();
+        modalidade["naturezaLegal"] = "COTA_RESERVADA";
+        modalidade["regraRemanejamento"] = "DESTINO_UNICO";
+        LeitorEnvelope leitor = new();
+        LeituraDasModalidades.LerModalidade(leitor, modalidade, "modalidades[0]");
+        FieldError causa = leitor.Falha<object>().Errors.Single();
+        causa.Field.Should().Be("modalidades[0]");
+        causa.Error.Code.Should().Be("ModalidadeSelecionada.CotaReservadaExigeCascata");
+    }
+
+    [Fact]
+    public void LerModalidade_AcaoAoIndeferirInvalida_RecusaVocabulario()
+    {
+        JsonObject modalidade = Modalidade();
+        modalidade["acaoQuandoIndeferido"] = "INVALIDA";
+        LeitorEnvelope leitor = new();
+        LeituraDasModalidades.LerModalidade(leitor, modalidade, "modalidades[0]");
+        FieldError causa = leitor.Falha<object>().Errors.Single();
+        causa.Field.Should().Be("modalidades[0]");
+        causa.Error.Should().Be(new DomainError(ErrosCodecEnvelope.EnvelopeMalformado,
+            "Envelope malformado em 'modalidades': a ação ao indeferir não pertence ao domínio fechado do cadastro " +
+            "(RECLASSIFICA_AC, RECLASSIFICA_CONFORME_EDITAL) — restaurá-la daria à homologação das inscrições uma instrução que ela não sabe executar."));
+    }
+
     private static JsonObject Modalidade() => JsonNode.Parse("""
         {"ofertaCursoOrigemId":"11111111-1111-1111-1111-111111111111","modalidadeOrigemId":"22222222-2222-2222-2222-222222222222",
         "codigo":"AC","descricao":null,"naturezaLegal":"AMPLA","composicaoVagas":"RESTANTE_DAS_VAGAS_OFERTADAS",

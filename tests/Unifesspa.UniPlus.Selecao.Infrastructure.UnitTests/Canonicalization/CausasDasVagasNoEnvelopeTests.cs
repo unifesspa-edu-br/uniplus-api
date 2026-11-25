@@ -50,6 +50,36 @@ public sealed class CausasDasVagasNoEnvelopeTests
         causa.Error.Should().Be(new DomainError("EnvelopeCodec.BlocosDerivadosIncoerentes", "Os blocos 'distribuicao', 'modalidades', 'vagas' e 'ofertas' derivam da mesma coleção e não declaram o mesmo conjunto de ofertas de curso."));
     }
 
+    [Fact]
+    public void LerDistribuicao_SegundaModalidadeIncoerente_ApontaSegundaPosicao()
+    {
+        JsonObject documento = Documento();
+        JsonArray modalidades = documento["modalidades"]!.AsArray();
+        modalidades.Add(modalidades[0]!.DeepClone());
+        modalidades.Add(modalidades[0]!.DeepClone());
+        modalidades[1]!["regraRemanejamento"] = "SEGUE_ORDEM_DE_REMANEJAMENTO";
+        LeitorEnvelope leitor = new();
+        LeituraDasVagas.LerDistribuicao(leitor, documento);
+        FieldError causa = leitor.Falha<object>().Errors.Single();
+        ConferirCausaNoDocumento.Conferir(documento, causa, "modalidades[1]", "EnvelopeCodec.EnvelopeMalformado",
+            "Envelope malformado em 'modalidades': a regra de remanejamento não é a que a natureza da modalidade pede.");
+    }
+
+    [Fact]
+    public void LerDistribuicao_DuasModalidadesIncoerentes_ParaNaPrimeira()
+    {
+        JsonObject documento = Documento();
+        JsonArray modalidades = documento["modalidades"]!.AsArray();
+        modalidades.Add(modalidades[0]!.DeepClone());
+        modalidades[0]!["regraRemanejamento"] = "SEGUE_ORDEM_DE_REMANEJAMENTO";
+        modalidades[1]!["regraRemanejamento"] = "SEGUE_ORDEM_DE_REMANEJAMENTO";
+        LeitorEnvelope leitor = new();
+        LeituraDasVagas.LerDistribuicao(leitor, documento);
+        FieldError causa = leitor.Falha<object>().Errors.Single();
+        causa.Field.Should().Be("modalidades[0]");
+        causa.Error.Code.Should().Be("EnvelopeCodec.EnvelopeMalformado");
+    }
+
     private static JsonObject Documento() => JsonNode.Parse("""
         {"distribuicao":[{"ofertaCursoOrigemId":"11111111-1111-1111-1111-111111111111","vagasOfertadasBase":40,
         "percentualDaReservaLegal":null,"regraDistribuicao":{"codigo":"DISTRIBUICAO_INSTITUCIONAL","versao":"v1","hash":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"},
