@@ -62,7 +62,7 @@ internal static class LeituraDasBancasDaFase
                 "Uma categoria de documento dos candidatos atendidos pela banca não existe ou está desativada no cadastro.")));
 
     private static IEnumerable<RecusaDaParte> DaDeliberacao(BancaNoDocumento banca, IReadOnlyList<FieldError> violacoes) =>
-        violacoes.Select(violacao => Recusa(banca, $"bancasRequeridas[{banca.PosicaoNoDocumento}].regraDeDeliberacao.{violacao.Field}", violacao.Error));
+        violacoes.Select(violacao => Recusa(banca, violacao.NoCaminhoDoItem($"bancasRequeridas[{banca.PosicaoNoDocumento}].regraDeDeliberacao").Field!, violacao.Error));
 
     private static RecusaDaParte Recusa(BancaNoDocumento banca, string campo, DomainError erro) =>
         new(FaseDeclarada.ListaDasBancasRequeridas, campo, banca.PosicaoNoDocumento, banca.Chave, erro);

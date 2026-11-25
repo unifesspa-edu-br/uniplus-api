@@ -13,6 +13,7 @@ public sealed class PropagacaoDasCausasNoLeitorTests
     [InlineData(null, "itens[0]")]
     [InlineData("", "itens[0]")]
     [InlineData("valor", "itens[0].valor")]
+    [InlineData("[1].valor", "itens[0][1].valor")]
     public void Propagar_CampoRelativo_SituaCausaNoItem(string? campo, string caminhoEsperado)
     {
         LeitorEnvelope leitor = new();

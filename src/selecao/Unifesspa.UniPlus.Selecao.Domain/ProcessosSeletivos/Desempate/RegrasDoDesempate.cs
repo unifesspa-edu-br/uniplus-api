@@ -51,13 +51,16 @@ public static class RegrasDoDesempate
     /// <c>etapaRef</c> e <c>areas[1]</c>), e o caminho sai no lugar em que o comando o recebe:
     /// <c>ordem</c> no critério, <c>regra.codigo</c> na referência da regra e o restante em <c>parametros</c>.
     /// </summary>
-    public static string CampoDoCriterioDesempate(int indice, string? campo = null) => campo switch
+    public static FieldError CampoDoCriterioDesempate(int indice, FieldError causa)
     {
-        null => $"criterios[{indice}]",
-        "ordem" => $"criterios[{indice}].ordem",
-        "regraCodigo" => $"criterios[{indice}].regra.codigo",
-        _ => $"criterios[{indice}].parametros.{campo}",
-    };
+        ArgumentNullException.ThrowIfNull(causa);
+        return causa.Field switch
+        {
+            null or "ordem" => causa.NoCaminhoDoItem($"criterios[{indice}]"),
+            "regraCodigo" => (causa with { Field = "regra.codigo" }).NoCaminhoDoItem($"criterios[{indice}]"),
+            _ => causa.NoCaminhoDoItem($"criterios[{indice}].parametros"),
+        };
+    }
 
     /// <summary>
     /// As invariantes que um critério de desempate só cumpre diante do processo — ordem única,
@@ -91,17 +94,16 @@ public static class RegrasDoDesempate
             .GroupBy(static par => par.criterio.Ordem)
             .SelectMany(static grupo => grupo.Skip(1))
             .OrderBy(static par => par.indice)
-            .Select(static par => new FieldError(CampoDoCriterioDesempate(par.indice, "ordem"), new DomainError(
+            .Select(static par => CampoDoCriterioDesempate(par.indice, new FieldError("ordem", new DomainError(
                 "ProcessoSeletivo.OrdemDesempateDuplicada",
-                "Cada critério de desempate deve ter uma ordem única dentro do processo.")));
+                "Cada critério de desempate deve ter uma ordem única dentro do processo."))));
 
     private static IEnumerable<FieldError> EtapasCitadasInexistentes(IReadOnlyList<CriterioDesempateInformado> criterios, IEnumerable<EtapaProcesso> etapas) =>
         criterios
             .Select(static (criterio, indice) => (criterio, indice))
             .Where(par => par.criterio.EtapaCitada is { } etapa && !etapas.Any(e => e.Id == etapa))
-            .Select(static par => new FieldError(
-                CampoDoCriterioDesempate(par.indice, "etapaRef"),
-                ReferenciaAEtapaInexistente.PeloDesempate(par.criterio.Ordem, par.criterio.EtapaCitada!.Value)));
+            .Select(static par => CampoDoCriterioDesempate(par.indice, new FieldError(
+                "etapaRef", ReferenciaAEtapaInexistente.PeloDesempate(par.criterio.Ordem, par.criterio.EtapaCitada!.Value))));
 
     // O desempate é gravado antes da classificação no fluxo de configuração: num processo novo ela ainda é nula aqui, e
     // só então a coerência com o quadro de pesos por área fica para DefinirClassificacao conferir. A área citada por
@@ -115,10 +117,9 @@ public static class RegrasDoDesempate
         [
             .. AreasCitadasPorOutroCriterio(criterios)
                 .Where(v => !contraOQuadro.Any(q => q.IndiceCriterio == v.IndiceCriterio && q.IndiceArea == v.IndiceArea))
-                .Select(static v => new FieldError(CampoDoCriterioDesempate(v.IndiceCriterio, $"areas[{v.IndiceArea}]"), v.Erro)),
-            .. contraOQuadro.Select(static v => new FieldError(
-                CampoDoCriterioDesempate(v.IndiceCriterio, v.IndiceArea is { } indiceArea ? $"areas[{indiceArea}]" : "regraCodigo"),
-                v.Erro)),
+                .Select(static v => CampoDoCriterioDesempate(v.IndiceCriterio, new FieldError($"areas[{v.IndiceArea}]", v.Erro))),
+            .. contraOQuadro.Select(static v => CampoDoCriterioDesempate(v.IndiceCriterio, new FieldError(
+                v.IndiceArea is { } indiceArea ? $"areas[{indiceArea}]" : "regraCodigo", v.Erro))),
         ];
     }
 
