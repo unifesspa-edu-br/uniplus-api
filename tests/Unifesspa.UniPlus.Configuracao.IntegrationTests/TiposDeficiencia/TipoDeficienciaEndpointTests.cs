@@ -124,7 +124,7 @@ public sealed class TipoDeficienciaEndpointTests
     [InlineData("1_DEFICIENCIA")]
     [InlineData("DEFICIÊNCIA_VISUAL")]
     [InlineData("DEFICIENCIA-VISUAL")]
-    [InlineData("D")]
+    [InlineData("D_")]
     [InlineData("DEFICIENCIA_VISUAL_COM_NOME_LONGO_QUE_PASSA_DE_CINQUENTA")]
     public async Task Criar_CodigoForaDoFormato_Retorna422(string codigo)
     {

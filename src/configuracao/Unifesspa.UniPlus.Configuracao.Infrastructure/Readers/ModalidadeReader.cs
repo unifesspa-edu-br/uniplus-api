@@ -73,11 +73,7 @@ internal sealed class ModalidadeReader : IModalidadeReader
         return entidade is null ? null : ParaView(entidade);
     }
 
-    // Trim + NFC antes da query pelo mesmo motivo do leitor de tipo de etapa: o EF
-    // não traduz normalização Unicode para SQL, e o cadastro guarda o código já
-    // normalizado — comparar sem isso erraria o "mesmo" texto em outra forma.
-    // Código fora do formato do value object não tem modalidade viva alguma, então
-    // a consulta é dispensável.
+    // Código fora do formato não tem modalidade viva, então a consulta é dispensável.
     private static CodigoModalidade? CodigoInformado(string codigo)
     {
         Result<CodigoModalidade> resultado = CodigoModalidade.Criar(codigo);

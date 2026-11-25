@@ -6,7 +6,7 @@ using Unifesspa.UniPlus.Kernel.Results;
 
 /// <summary>
 /// Código estável de um termo de consentimento, o que o documento de configuração usa para citá-lo. É formado uma vez, na
-/// criação, a partir do nome (ex.: <c>TERMO_DE_USO_E_PRIVACIDADE</c>), e nunca muda, mesmo que o termo seja editado depois.
+/// criação, a partir do nome (por exemplo: <c>TERMO_DE_USO_E_PRIVACIDADE</c>), e nunca muda, mesmo que o termo seja editado depois.
 /// Formato fechado: letra maiúscula seguida de letras maiúsculas, dígitos e sublinhado, até <see cref="TamanhoMaximo"/>
 /// caracteres.
 /// </summary>
@@ -62,7 +62,7 @@ public sealed record CodigoTermoConsentimento
             ? Result<CodigoTermoConsentimento>.Success(new CodigoTermoConsentimento(valor!))
             : Result<CodigoTermoConsentimento>.Failure(new DomainError(
                 TermoConsentimentoErrorCodes.CodigoFormatoInvalido,
-                $"O código do termo, formado pelo nome, deve iniciar com letra e conter apenas letras, dígitos e sublinhado, com no máximo {TamanhoMaximo} caracteres: o nome precisa começar por uma letra por uma letra."));
+                $"O código do termo, formado pelo nome, deve iniciar com letra e conter apenas letras, dígitos e sublinhado, com no máximo {TamanhoMaximo} caracteres: o nome precisa começar por uma letra."));
     }
 
     public static bool EhValido(string? valor) =>

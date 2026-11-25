@@ -42,14 +42,28 @@ public sealed class ConfiguracaoBonusRegionalTests
         resultado.Value!.Teto.Should().Be(10m);
     }
 
-    [Theory(DisplayName = "O fato de elegibilidade, quando citado, tem de 1 a 60 caracteres")]
+    [Theory(DisplayName = "O fato de elegibilidade, quando citado, segue o formato do cadastro e tem até 50 caracteres")]
     [InlineData("   ")]
-    [InlineData("FATO_DE_ELEGIBILIDADE_COM_UM_CODIGO_QUE_PASSA_DE_SESSENTA_CARACTERES")]
+    [InlineData(" FATO ")]
+    [InlineData("fato")]
+    [InlineData("FATO__INVALIDO")]
+    [InlineData("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA")]
     public void Criar_FatoDeElegibilidadeMalFormado_Falha(string fato)
     {
         Result<ConfiguracaoBonusRegional> resultado = Criar(fatoElegibilidade: fato);
 
         resultado.Errors.Should().ContainSingle(e => e.Error.Code == "ConfiguracaoBonusRegional.FatoElegibilidadeInvalido");
+    }
+
+    [Theory]
+    [InlineData("A")]
+    [InlineData("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA")]
+    public void Criar_FatoDeElegibilidadeNoFormato_Aceita(string fato)
+    {
+        Result<ConfiguracaoBonusRegional> resultado = Criar(fatoElegibilidade: fato);
+
+        resultado.IsSuccess.Should().BeTrue();
+        resultado.Value!.FatoElegibilidadeCodigo.Should().Be(fato);
     }
 
     [Fact(DisplayName = "Criar congela o snapshot da Base Legal (Id, código, tipo, identificação, descrição e municípios)")]

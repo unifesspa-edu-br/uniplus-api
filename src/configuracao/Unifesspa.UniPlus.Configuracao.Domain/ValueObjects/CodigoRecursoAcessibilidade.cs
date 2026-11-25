@@ -6,11 +6,11 @@ using Unifesspa.UniPlus.Kernel.Results;
 
 /// <summary>
 /// Código do recurso de acessibilidade (UNI-REQ-0012 e UNI-REQ-0061, módulo
-/// Configuração) — identidade semântica do apoio ofertado (ex.: <c>LEDOR</c>,
-/// <c>SALA_AMAMENTACAO</c>). Value object com formato fechado:
-/// <c>^[A-Z][A-Z0-9]*(_[A-Z0-9]+)*$</c> — inicia com letra maiúscula, segue com letras
+/// Configuração) — identidade semântica do apoio ofertado (por exemplo: <c>LEDOR</c>,
+/// <c>SALA_AMAMENTACAO</c>). Código no formato de:
+/// <see cref="FormatoDoCodigo"/> — inicia com letra maiúscula, segue com letras
 /// maiúsculas, dígitos e sublinhado, total de no máximo 50 caracteres. Persistido como
-/// <c>varchar</c> via conversor de valor (fail-fast na reidratação).
+/// <c>varchar</c> via conversor de valor (falha imediata na reidratação).
 /// </summary>
 /// <remarks>
 /// Espelha <see cref="CodigoTipoDeficiencia"/> em formato e disciplina de erro, sem

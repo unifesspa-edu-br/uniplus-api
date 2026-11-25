@@ -343,10 +343,10 @@ public sealed class OrdenacaoDeConjuntosCanonicosTests
     }
 
     private static RegraAvaliada RegraModalidadesMinimas(IReadOnlyList<string> valores) =>
-        RegraDeConformidade("REGRA-MM", Guid.CreateVersion7()) with { Predicado = new ModalidadesMinimas(valores) };
+        RegraDeConformidade("REGRA_MM", Guid.CreateVersion7()) with { Predicado = new ModalidadesMinimas(valores) };
 
     private static RegraAvaliada RegraAtendimentoDisponivel(IReadOnlyList<string> valores) =>
-        RegraDeConformidade("REGRA-AD", Guid.CreateVersion7()) with { Predicado = new AtendimentoDisponivel(valores) };
+        RegraDeConformidade("REGRA_AD", Guid.CreateVersion7()) with { Predicado = new AtendimentoDisponivel(valores) };
 
     private static JsonArray Ocorrencias(IReadOnlyList<string> ocorrencias) =>
         ApoioDoEnvelopeCodec.Envelope(Canonicalizador.Canonicalizar(Entrada(MontarProcesso(ocorrenciasEsperadas: ocorrencias))))

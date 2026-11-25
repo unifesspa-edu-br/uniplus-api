@@ -270,7 +270,7 @@ public static class LimitesDoEnvelope
     public const int TipoInstrumentoNormativo = 30;
 
     /// <summary><c>ConfiguracaoBonusRegional.FatoElegibilidadeCodigo</c> — código do fato que decide quem recebe o acréscimo.</summary>
-    public const int FatoElegibilidadeBonusRegional = FormaDoItem.FatoCodigoMaxLength;
+    public const int FatoElegibilidadeBonusRegional = ConfiguracaoBonusRegional.FatoElegibilidadeCodigoMaxLength;
 
     /// <summary><c>ConfiguracaoBonusRegional.BaseLegalBonusRegionalCodigo</c> — cópia do código estável da Base Legal (teto do <c>CodigoBaseLegalBonusRegional</c>).</summary>
     public const int CodigoBaseLegalBonusRegional = 80;

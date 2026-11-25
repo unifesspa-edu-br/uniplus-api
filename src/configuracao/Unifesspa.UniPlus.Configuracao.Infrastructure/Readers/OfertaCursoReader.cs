@@ -71,8 +71,7 @@ internal sealed class OfertaCursoReader : IOfertaCursoReader
     {
         ArgumentNullException.ThrowIfNull(codigo);
 
-        // Trim + NFC antes da query, como no leitor de modalidade: o EF não traduz normalização Unicode para SQL e o
-        // cadastro guarda o código já normalizado. Código fora do formato não tem oferta viva, e a consulta é dispensável.
+        // Código fora do formato não tem oferta viva, então a consulta é dispensável.
         Result<CodigoOfertaCurso> codigoResult = CodigoOfertaCurso.Criar(codigo);
 
         return codigoResult.IsFailure ? null : await ObterPorCodigoInformadoAsync(codigoResult.Value!.Valor, cancellationToken).ConfigureAwait(false);

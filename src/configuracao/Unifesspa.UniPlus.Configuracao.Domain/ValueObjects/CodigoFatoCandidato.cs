@@ -6,14 +6,14 @@ using Unifesspa.UniPlus.Kernel.Results;
 
 /// <summary>
 /// Código de um <see cref="Entities.FatoCandidato"/> (UNI-REQ-0077) — chave natural
-/// classificatória do vocabulário de fatos (ex.: <c>COR_RACA</c>, <c>PCD</c>,
-/// <c>MODALIDADE</c>). Value object com formato fechado <c>^[A-Z][A-Z0-9]*(_[A-Z0-9]+)*$</c>
-/// — começa por letra maiúscula, seguido de maiúsculas e dígitos, com sublinhados isolados, até 50 caracteres. Persistido como texto via conversor de valor (fail-fast na
+/// classificatória do vocabulário de fatos (por exemplo: <c>COR_RACA</c>, <c>PCD</c>,
+/// <c>MODALIDADE</c>). Código no formato de <see cref="FormatoDoCodigo"/>
+/// — começa por letra maiúscula, seguido de maiúsculas e dígitos, com sublinhados isolados, até 50 caracteres. Persistido como texto via conversor de valor (falha imediata na
 /// reidratação).
 /// </summary>
 /// <remarks>
 /// O código é <b>imutável</b>: é ele que entra, por valor, dentro de um predicado
-/// congelado num snapshot de publicação (congelamento dos parâmetros na publicação, UNI-REQ-0019, ADR-0061) — renomear reinterpretaria
+/// congelado num documento de publicação (congelamento dos parâmetros na publicação, UNI-REQ-0019, ADR-0061) — renomear reinterpretaria
 /// o passado. A entidade não expõe método que o altere.
 /// </remarks>
 public sealed record CodigoFatoCandidato
@@ -46,7 +46,7 @@ public sealed record CodigoFatoCandidato
                 + "dígitos e sublinhado, com no máximo 50 caracteres (ex.: COR_RACA, PCD, MODALIDADE)."));
     }
 
-    /// <summary>Indica se <paramref name="valor"/> respeita o formato fechado, sem alocar value object.</summary>
+    /// <summary>Indica se <paramref name="valor"/> respeita o formato fechado, sem criar o objeto.</summary>
     public static bool EhValido(string? valor) =>
         valor is not null && valor.Length <= TamanhoMaximo && FormatoDoCodigo.TemFormatoValido(valor);
 

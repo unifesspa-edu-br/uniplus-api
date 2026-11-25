@@ -200,22 +200,17 @@ public sealed class TipoDocumentoEndpointTests
             "só categoria viva vale — o soft-delete tira a categoria de circulação para novos tipos");
     }
 
-    [Fact(DisplayName = "Categoria com espaço em volta é persistida normalizada, não só comparada normalizada")]
-    public async Task Criar_CategoriaComEspaco_PersisteNormalizada()
+    [Fact(DisplayName = "Categoria com espaço em volta é recusada")]
+    public async Task Criar_CategoriaComEspaco_Recusa()
     {
         using HttpClient client = _fixture.Factory.CreateClient();
         HttpResponseMessage criar = await EnviarPostAdmin(
             client, new { codigo = CodigoUnico(), nome = "Comprovante de renda", categoria = " RENDA ", classificacaoProtecao = "PESSOAL", finalidadeTratamento = "Comprovação documental do candidato.", hipoteseLegal = "CUMPRIMENTO_OBRIGACAO_LEGAL" });
 
-        criar.StatusCode.Should().Be(HttpStatusCode.Created);
-        Guid id = await criar.Content.ReadFromJsonAsync<Guid>();
-
-        HttpResponseMessage obter = await client.GetAsync(
-            new Uri($"/api/configuracao/tipos-documento/{id}", UriKind.Relative));
-        using JsonDocument doc = JsonDocument.Parse(await obter.Content.ReadAsStringAsync());
-
-        doc.RootElement.GetProperty("categoria").GetString().Should().Be("RENDA",
-            "o valor que persiste é o normalizado — a comparação a jusante é ordinal");
+        criar.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
+        string corpo = await criar.Content.ReadAsStringAsync();
+        corpo.Should().Contain("categoria_formato_invalido");
+        corpo.Should().NotContain(" RENDA ");
     }
 
     [Fact(DisplayName = "Categoria com o tamanho máximo do cadastro é aceita no tipo de documento")]

@@ -6,11 +6,11 @@ using Unifesspa.UniPlus.Kernel.Results;
 
 /// <summary>
 /// Código do tipo de deficiência (UNI-REQ-0012 e UNI-REQ-0061, módulo
-/// Configuração) — identidade semântica classificatória (ex.:
-/// <c>DEFICIENCIA_VISUAL</c>, <c>TEA</c>). Value object com formato fechado:
-/// <c>^[A-Z][A-Z0-9]*(_[A-Z0-9]+)*$</c> — inicia com letra maiúscula, segue com letras
+/// Configuração) — identidade semântica classificatória (por exemplo:
+/// <c>DEFICIENCIA_VISUAL</c>, <c>TEA</c>). Código no formato de:
+/// <see cref="FormatoDoCodigo"/> — inicia com letra maiúscula, segue com letras
 /// maiúsculas, dígitos e sublinhado, total de no máximo 50 caracteres. Persistido como
-/// <c>varchar</c> via conversor de valor (fail-fast na reidratação).
+/// <c>varchar</c> via conversor de valor (falha imediata na reidratação).
 /// </summary>
 /// <remarks>
 /// Espelha <see cref="CodigoCondicao"/> em formato e disciplina de erro, mas sem
@@ -48,7 +48,7 @@ public sealed record CodigoTipoDeficiencia
                 + "caracteres (ex.: DEFICIENCIA_VISUAL, TEA)."));
     }
 
-    /// <summary>Indica se <paramref name="valor"/> respeita o formato fechado, sem alocar value object.</summary>
+    /// <summary>Indica se <paramref name="valor"/> respeita o formato fechado, sem criar o objeto.</summary>
     public static bool EhValido(string? valor) =>
         valor is not null && valor.Length <= TamanhoMaximo && FormatoDoCodigo.TemFormatoValido(valor);
 

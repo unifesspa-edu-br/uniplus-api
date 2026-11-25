@@ -212,7 +212,7 @@ public sealed class EnvelopeCodecRecusaGramaticaFechadaTests
     [InlineData("COM PONTUACAO!")]
     [InlineData("1COMECA_POR_DIGITO")]
     [InlineData("COM-HIFEN")]
-    [InlineData("A")]
+    [InlineData("A_")]
     [InlineData("TERMINA_EM_QUEBRA\n")]
     public void Bonus_CodigoDaBaseLegalForaDaGramatica_RecusaOEnvelope(string codigo)
     {
