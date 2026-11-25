@@ -25,13 +25,16 @@ using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.HomologacaoDasInscrico
 /// <remarks>
 /// A leitura remonta a regra pelas mesmas fábricas do domínio e o enquadramento pela forma de
 /// <see cref="PredicadoDnfJson"/>; conteúdo gravado que as viola é dado corrompido e a leitura falha, nunca
-/// devolve uma regra que o domínio não declararia. A leitura é estrita: chave desconhecida ou repetida também
-/// é dado corrompido, porque uma chave de enquadramento ignorada faria a condição valer para todos.
+/// devolve uma regra que o domínio não declararia. A leitura exige nomes em camelCase com caixa exata,
+/// números como números e chaves conhecidas e únicas, pois ignorar conteúdo pode alterar o sentido da regra.
 /// </remarks>
 internal static class ColunaDaRegraDeHomologacao
 {
-    private static readonly JsonSerializerOptions Opcoes = OpcoesJsonDeDocumento.Criar(new(JsonSerializerDefaults.Web)
+    private static readonly JsonSerializerOptions Opcoes = OpcoesJsonDeDocumento.Criar(new()
     {
+        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+        PropertyNameCaseInsensitive = false,
+        NumberHandling = JsonNumberHandling.Strict,
         DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
         UnmappedMemberHandling = JsonUnmappedMemberHandling.Disallow,
         AllowDuplicateProperties = false,
@@ -65,12 +68,24 @@ internal static class ColunaDaRegraDeHomologacao
 
     internal static RegraDeHomologacaoDasInscricoes Ler(string documento)
     {
-        RegraPersistida regra = JsonSerializer.Deserialize<RegraPersistida>(documento, Opcoes)
+        RegraPersistida regra = Desserializar(documento)
             ?? throw Corrompida("o documento não é um objeto");
         IReadOnlyList<AlternativaPersistida> alternativas = regra.Alternativas
             ?? throw Corrompida("o documento não tem a lista de alternativas");
 
         return RegraDeHomologacaoDasInscricoes.Declarar(regra.ResultadoAtoCodigo, [.. alternativas.Select(Alternativa)]);
+    }
+
+    private static RegraPersistida? Desserializar(string documento)
+    {
+        try
+        {
+            return JsonSerializer.Deserialize<RegraPersistida>(documento, Opcoes);
+        }
+        catch (JsonException excecao)
+        {
+            throw new InvalidOperationException("Regra de homologação gravada inválida: documento JSON inválido.", excecao);
+        }
     }
 
     private static AlternativaPersistida PersistirAlternativa(AlternativaDeCondicoes alternativa) =>
