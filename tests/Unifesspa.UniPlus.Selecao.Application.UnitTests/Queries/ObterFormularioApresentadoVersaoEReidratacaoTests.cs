@@ -13,10 +13,10 @@ using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Publicacao;
 
-using static Unifesspa.UniPlus.Selecao.Application.UnitTests.Queries.ApoioDoFormularioRenderizavel;
+using static Unifesspa.UniPlus.Selecao.Application.UnitTests.Queries.ApoioDoFormularioApresentado;
 
 /// <summary>A recusa de versão aposentada e de versão que não se prova, e a garantia de que a leitura pública não consulta o catálogo vivo.</summary>
-public sealed class ObterFormularioRenderizavelVersaoEReidratacaoTests
+public sealed class ObterFormularioApresentadoVersaoEReidratacaoTests
 {
     /// <summary>
     /// Uma versão que já foi corrente e deixou de ser reconhecida quando o codec vivo avançou —
@@ -56,7 +56,7 @@ public sealed class ObterFormularioRenderizavelVersaoEReidratacaoTests
         Guid processoId = Guid.CreateVersion7();
         IProcessoSeletivoRepository repository = MockComVersaoVigente(processoId, EnvelopeFormaCorrente, VersaoAposentada);
 
-        Result<FormularioRenderizavelDto> resultado = await HandleAsync(repository, processoId);
+        Result<FormularioApresentadoDoProcessoDto> resultado = await HandleAsync(repository, processoId);
 
         resultado.IsFailure.Should().BeTrue(
             $"a versão '{VersaoAposentada}' deixou de ser reconhecida quando o codec vivo avançou para " +
@@ -72,8 +72,8 @@ public sealed class ObterFormularioRenderizavelVersaoEReidratacaoTests
         IRegistroCodecsEnvelope registro = RegistroComHashDivergente();
 
         ICertameDivulgadoRepository divulgacao = RepositorioComDivulgacao(processoId);
-        Result<FormularioRenderizavelDto> resultado = await ObterFormularioRenderizavelQueryHandler.Handle(
-            new ObterFormularioRenderizavelQuery(processoId, FinalidadeFormulario.Inscricao),
+        Result<FormularioApresentadoDoProcessoDto> resultado = await ObterFormularioApresentadoQueryHandler.Handle(
+            new ObterFormularioApresentadoQuery(processoId, FinalidadeFormulario.Inscricao),
             MockComVersaoVigente(processoId, EnvelopeComReidratacaoRecusada),
             divulgacao,
             registro,
@@ -103,8 +103,8 @@ public sealed class ObterFormularioRenderizavelVersaoEReidratacaoTests
     [Fact(DisplayName = "O grafo de dependências do Handle não alcança IFatoCandidatoReader — a leitura pública é imune ao catálogo vivo")]
     public void Handle_NaoDependeDeLeitorDeCatalogo()
     {
-        System.Reflection.MethodInfo handle = typeof(ObterFormularioRenderizavelQueryHandler)
-            .GetMethod(nameof(ObterFormularioRenderizavelQueryHandler.Handle))!;
+        System.Reflection.MethodInfo handle = typeof(ObterFormularioApresentadoQueryHandler)
+            .GetMethod(nameof(ObterFormularioApresentadoQueryHandler.Handle))!;
 
         handle.GetParameters().Select(static p => p.ParameterType.Name).Should().NotContain(
             "IFatoCandidatoReader",

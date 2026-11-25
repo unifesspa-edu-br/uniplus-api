@@ -22,8 +22,8 @@ using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Publicacao;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
-/// <summary>Montagens comuns dos testes do formulário renderizável: divulgação, registro de codecs, envelope reidratado e chamada ao handler.</summary>
-internal static class ApoioDoFormularioRenderizavel
+/// <summary>Montagens comuns dos testes do formulário apresentado: divulgação, registro de codecs, envelope reidratado e chamada ao handler.</summary>
+internal static class ApoioDoFormularioApresentado
 {
     /// <summary>
     /// A versão que o registro de codecs FAKE (<see cref="RegistroReconhecendoVersaoCorrente"/>)
@@ -57,15 +57,15 @@ internal static class ApoioDoFormularioRenderizavel
         return new EnderecosDosDocumentosDoAto(divulgacao, acervo);
     }
 
-    internal static Task<Result<FormularioRenderizavelDto>> HandleAsync(
+    internal static Task<Result<FormularioApresentadoDoProcessoDto>> HandleAsync(
         IProcessoSeletivoRepository repository,
         Guid processoId,
         ICertameDivulgadoRepository? divulgadoRepository = null,
         FinalidadeFormulario finalidade = FinalidadeFormulario.Inscricao)
     {
         ICertameDivulgadoRepository divulgacao = divulgadoRepository ?? RepositorioComDivulgacao(processoId);
-        return ObterFormularioRenderizavelQueryHandler.Handle(
-            new ObterFormularioRenderizavelQuery(processoId, finalidade),
+        return ObterFormularioApresentadoQueryHandler.Handle(
+            new ObterFormularioApresentadoQuery(processoId, finalidade),
             repository,
             divulgacao,
             RegistroReconhecendoVersaoCorrente,
@@ -153,13 +153,13 @@ internal static class ApoioDoFormularioRenderizavel
                 EtapaFormulario.Criar(new EtapaEstrutura("REVISAO", 1, TipoEtapaFormulario.Bloco, BlocoSistema.RevisaoEAceite), "Revisão e aceite", null, null).Value!,
             ]).Value!;
 
-    internal static Task<Result<FormularioRenderizavelDto>> HandleAsync(
+    internal static Task<Result<FormularioApresentadoDoProcessoDto>> HandleAsync(
         Guid processoId, string envelopeJson, EnvelopeReidratado reidratado, FinalidadeFormulario finalidade,
         ICertameDivulgadoRepository? divulgacao = null)
     {
         ICertameDivulgadoRepository lida = divulgacao ?? RepositorioComDivulgacao(processoId);
-        return ObterFormularioRenderizavelQueryHandler.Handle(
-            new ObterFormularioRenderizavelQuery(processoId, finalidade),
+        return ObterFormularioApresentadoQueryHandler.Handle(
+            new ObterFormularioApresentadoQuery(processoId, finalidade),
             MockComVersaoVigente(processoId, envelopeJson),
             lida,
             RegistroReidratando(reidratado),

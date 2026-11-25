@@ -97,25 +97,25 @@ internal sealed class CenarioDeFormularioPublicado
         return publicar.Value!;
     }
 
-    public async Task<FormularioRenderizavelDto> LerPublicadoAsync(
+    public async Task<FormularioApresentadoDoProcessoDto> LerPublicadoAsync(
         Guid processoId, FinalidadeFormulario finalidade = FinalidadeFormulario.Inscricao)
     {
         await using UniPlusDbContext readContext = _fixture.CreateDbContext();
-        Result<FormularioRenderizavelDto> lido = await ObterFormularioRenderizavelQueryHandler.Handle(
-            new ObterFormularioRenderizavelQuery(processoId, finalidade), ProcessoSeletivoRepositoryDeTeste.Criar(readContext),
+        Result<FormularioApresentadoDoProcessoDto> lido = await ObterFormularioApresentadoQueryHandler.Handle(
+            new ObterFormularioApresentadoQuery(processoId, finalidade), ProcessoSeletivoRepositoryDeTeste.Criar(readContext),
             new CertameDivulgadoRepository(readContext), RegistroCodecs,
             new EnderecosDosDocumentosDoAto(new CertameDivulgadoRepository(readContext), AcervoDeTeste.Endereco), CancellationToken.None);
         lido.IsSuccess.Should().BeTrue(lido.Error?.Message);
         return lido.Value!;
     }
 
-    public async Task<FormularioRenderizavelDto> LerRascunhoAsync(Guid processoId, IReadOnlyList<FatoCandidatoView> catalogoVivo)
+    public async Task<FormularioApresentadoDoProcessoDto> LerRascunhoAsync(Guid processoId, IReadOnlyList<FatoCandidatoView> catalogoVivo)
     {
         IFatoCandidatoReader leitor = Substitute.For<IFatoCandidatoReader>();
         leitor.ListarAsync(Arg.Any<CancellationToken>()).Returns(catalogoVivo);
         await using UniPlusDbContext rascunhoContext = _fixture.CreateDbContext();
-        Result<FormularioRenderizavelDto> rascunho = await ObterFormularioRenderizavelDoRascunhoQueryHandler.Handle(
-            new ObterFormularioRenderizavelDoRascunhoQuery(processoId, FinalidadeFormulario.Inscricao),
+        Result<FormularioApresentadoDoProcessoDto> rascunho = await ObterFormularioApresentadoDoRascunhoQueryHandler.Handle(
+            new ObterFormularioApresentadoDoRascunhoQuery(processoId, FinalidadeFormulario.Inscricao),
             ProcessoSeletivoRepositoryDeTeste.Criar(rascunhoContext), leitor, FusoInstitucionalDeTeste(), CancellationToken.None);
 
         rascunho.IsSuccess.Should().BeTrue(rascunho.Error?.Message);

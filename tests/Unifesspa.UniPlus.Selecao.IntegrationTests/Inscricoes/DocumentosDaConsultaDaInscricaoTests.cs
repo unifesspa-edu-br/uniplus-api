@@ -48,7 +48,7 @@ public sealed class DocumentosDaConsultaDaInscricaoTests
 
         await ConferirConsultasAsync(db, processoId, fernanda, fase);
 
-        Result<FormularioRenderizavelDto> formulario = await _cenario.ObterFormularioAsync(db, processoId, fernanda);
+        Result<FormularioApresentadoDoProcessoDto> formulario = await _cenario.ObterFormularioAsync(db, processoId, fernanda);
         formulario.Value!.DependenciasDaAvaliacao!.Fatos.Should().Contain("DECLARA_RENDA", "a resposta que decide o gatilho muda a avaliação");
     }
 

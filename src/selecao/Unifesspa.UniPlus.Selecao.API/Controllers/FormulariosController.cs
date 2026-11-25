@@ -52,7 +52,7 @@ public sealed class FormulariosController : ControllerBase
     }
 
     /// <summary>
-    /// Renderização pública do formulário de uma finalidade — título, seções, termos e os fatos
+    /// Apresentação pública do formulário de uma finalidade — título, seções, termos e os fatos
     /// coletados com sua apresentação, e as regras que o front interpreta (ADR-0139), projetados da
     /// versão que o certame <b>divulgado</b> serve.
     /// </summary>
@@ -72,11 +72,11 @@ public sealed class FormulariosController : ControllerBase
     [HttpGet("processos-seletivos/{id:guid}/formularios/{finalidade}")]
     [AllowAnonymous]
     [VendorMediaType(Resource = "formulario", Versions = [2])]
-    [ProducesResponseType(typeof(FormularioRenderizavelDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(FormularioApresentadoDoProcessoDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status406NotAcceptable)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status422UnprocessableEntity)]
-    public async Task<IActionResult> ObterFormularioRenderizavel(Guid id, [AceitaCodigosDe<FinalidadeFormulario>] string finalidade, CancellationToken cancellationToken)
+    public async Task<IActionResult> ObterFormularioApresentado(Guid id, [AceitaCodigosDe<FinalidadeFormulario>] string finalidade, CancellationToken cancellationToken)
     {
         // Revalidação obrigatória, não cache proibido: o endereço não muda quando a divulgação
         // chega nem quando o certame é retificado, e sem diretiva um cache compartilhado atribui
@@ -88,8 +88,8 @@ public sealed class FormulariosController : ControllerBase
             return NotFound();
         }
 
-        Result<FormularioRenderizavelDto> resultado = await _queryBus
-            .Send(new ObterFormularioRenderizavelQuery(id, alvo), cancellationToken)
+        Result<FormularioApresentadoDoProcessoDto> resultado = await _queryBus
+            .Send(new ObterFormularioApresentadoQuery(id, alvo), cancellationToken)
             .ConfigureAwait(false);
         return resultado.IsSuccess ? Ok(resultado.Value) : resultado.ToActionResult(_mapper);
     }
@@ -98,25 +98,25 @@ public sealed class FormulariosController : ControllerBase
     /// O formulário da finalidade como a configuração viva o define agora — o rascunho, no mesmo formato que o certame divulgado serve. É o que a simulação do
     /// administrador interpreta antes de publicar; nada é gravado.
     /// </summary>
-    [HttpGet("admin/processos-seletivos/{id:guid}/formularios/{finalidade}/renderizavel")]
+    [HttpGet("admin/processos-seletivos/{id:guid}/formularios/{finalidade}/apresentacao")]
     [Authorize]
     [ExigePermissaoNoProcesso(PermissaoSelecao.ProcessosConfigurar)]
     [VendorMediaType(Resource = "formulario", Versions = [2])]
-    [ProducesResponseType(typeof(FormularioRenderizavelDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(FormularioApresentadoDoProcessoDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status406NotAcceptable)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status422UnprocessableEntity)]
-    public async Task<IActionResult> ObterFormularioRenderizavelDoRascunho(Guid id, [AceitaCodigosDe<FinalidadeFormulario>] string finalidade, CancellationToken cancellationToken)
+    public async Task<IActionResult> ObterFormularioApresentadoDoRascunho(Guid id, [AceitaCodigosDe<FinalidadeFormulario>] string finalidade, CancellationToken cancellationToken)
     {
         if (EstruturaFormulario.FinalidadeDoCodigo(finalidade) is not { } alvo)
         {
             return NotFound();
         }
 
-        Result<FormularioRenderizavelDto> resultado = await _queryBus
-            .Send(new ObterFormularioRenderizavelDoRascunhoQuery(id, alvo), cancellationToken)
+        Result<FormularioApresentadoDoProcessoDto> resultado = await _queryBus
+            .Send(new ObterFormularioApresentadoDoRascunhoQuery(id, alvo), cancellationToken)
             .ConfigureAwait(false);
         return resultado.IsSuccess ? Ok(resultado.Value) : resultado.ToActionResult(_mapper);
     }

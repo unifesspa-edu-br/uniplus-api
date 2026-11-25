@@ -18,21 +18,21 @@ using Unifesspa.UniPlus.Regras.Leituras;
 /// (ADR-0139), para a simulação do administrador interpretar o modelo antes de aplicá-lo; nulo quando
 /// o modelo não existe.
 /// </summary>
-public sealed record ObterFormularioRenderizavelDoModeloQuery(Guid Id) : IQuery<FormularioRenderizavel?>;
+public sealed record ObterFormularioApresentadoDoModeloQuery(Guid Id) : IQuery<FormularioApresentado?>;
 
 /// <summary>
 /// Projeta a simulação do modelo — o conteúdo como aplicado, com o catálogo vivo — no formato do
-/// renderizável: as regras pela mesma definição da pré-visualização do modelo, recortadas como um
+/// apresentado: as regras pela mesma definição da pré-visualização do modelo, recortadas como um
 /// formulário só; as opções que o catálogo oferece a cada campo; e o conteúdo da versão escolhida de cada
 /// termo. As opções que só existem no processo — as que ele declara, as modalidades, os municípios do
 /// bônus — saem nulas: no modelo, ainda não há processo que as oferte. A condição de atendimento, o
 /// recurso de acessibilidade, o tipo de deficiência e os municípios do bônus são a exceção: oferecem o
 /// cadastro institucional, que o processo recorta.
 /// </summary>
-public static class ObterFormularioRenderizavelDoModeloQueryHandler
+public static class ObterFormularioApresentadoDoModeloQueryHandler
 {
-    public static async Task<FormularioRenderizavel?> Handle(
-        ObterFormularioRenderizavelDoModeloQuery query,
+    public static async Task<FormularioApresentado?> Handle(
+        ObterFormularioApresentadoDoModeloQuery query,
         IModeloFormularioRepository repository,
         IFatoCandidatoRepository fatoRepository,
         OpcoesDoCadastroInstitucional cadastro,
@@ -48,10 +48,10 @@ public static class ObterFormularioRenderizavelDoModeloQueryHandler
         ModeloFormulario? modelo = await repository.ObterPorIdParaLeituraAsync(query.Id, cancellationToken).ConfigureAwait(false);
         return modelo is null
             ? null
-            : await RenderizarAsync(modelo, fatoRepository, cadastro, termoRepository, cancellationToken).ConfigureAwait(false);
+            : await ApresentarAsync(modelo, fatoRepository, cadastro, termoRepository, cancellationToken).ConfigureAwait(false);
     }
 
-    private static async Task<FormularioRenderizavel> RenderizarAsync(
+    private static async Task<FormularioApresentado> ApresentarAsync(
         ModeloFormulario modelo,
         IFatoCandidatoRepository fatoRepository,
         OpcoesDoCadastroInstitucional cadastro,
@@ -60,32 +60,32 @@ public static class ObterFormularioRenderizavelDoModeloQueryHandler
     {
         IReadOnlyList<FatoCandidato> fatos = await fatoRepository.ListarTodosAsync(cancellationToken).ConfigureAwait(false);
         SimulacaoDoModelo simulacao = await SimulacaoDoModelo.MontarAsync(modelo, fatos, cadastro, cancellationToken).ConfigureAwait(false);
-        IReadOnlyList<TermoRenderizavel> termos = await TermosAsync(modelo.Id, simulacao.Conteudo, termoRepository, cancellationToken).ConfigureAwait(false);
+        IReadOnlyList<TermoApresentado> termos = await TermosAsync(modelo.Id, simulacao.Conteudo, termoRepository, cancellationToken).ConfigureAwait(false);
         return Montar(modelo.Finalidade, simulacao, termos);
     }
 
-    private static FormularioRenderizavel Montar(FinalidadeFormulario finalidade, SimulacaoDoModelo simulacao, IReadOnlyList<TermoRenderizavel> termos)
+    private static FormularioApresentado Montar(FinalidadeFormulario finalidade, SimulacaoDoModelo simulacao, IReadOnlyList<TermoApresentado> termos)
     {
         ConteudoDoModelo conteudo = simulacao.Conteudo;
         RecorteDaFinalidade recorte = RecorteDaFinalidade.DoFormulario(simulacao.Definicao(), simulacao.Ofertas);
         DescricaoDosPressupostos descricao = new([], VocabularioDoCatalogo.ApresentacaoDos(simulacao.Fatos, recorte.Pressupostos), [.. simulacao.Agregados]);
 
-        return new FormularioRenderizavel(
+        return new FormularioApresentado(
             finalidade.Codigo(),
             conteudo.Titulo,
             [.. conteudo.Etapas.OrderBy(static e => e.Ordem).Select(Secao)],
             termos,
-            new ColetaRenderizavel(
+            new ColetaApresentada(
                 [.. conteudo.Itens.OrderBy(static i => i.Ordem).Select(i => Campo(finalidade, i, simulacao.Opcoes))],
                 [.. conteudo.Grupos.OrderBy(static g => g.Ordem).Select(g => Grupo(finalidade, g, simulacao.Opcoes))]),
             recorte.Regras,
             new PressupostosDoFormulario(descricao.Descrever(recorte.Pressupostos), null, null));
     }
 
-    private static async Task<IReadOnlyList<TermoRenderizavel>> TermosAsync(
+    private static async Task<IReadOnlyList<TermoApresentado>> TermosAsync(
         Guid modeloId, ConteudoDoModelo conteudo, ITermoConsentimentoRepository termoRepository, CancellationToken cancellationToken)
     {
-        List<TermoRenderizavel> termos = [];
+        List<TermoApresentado> termos = [];
         foreach (TermoDoModelo termo in conteudo.Termos.OrderBy(static t => t.Ordem))
         {
             termos.Add(await TermoAsync(modeloId, termo, termoRepository, cancellationToken).ConfigureAwait(false));
@@ -94,7 +94,7 @@ public static class ObterFormularioRenderizavelDoModeloQueryHandler
         return termos;
     }
 
-    private static async Task<TermoRenderizavel> TermoAsync(
+    private static async Task<TermoApresentado> TermoAsync(
         Guid modeloId, TermoDoModelo termo, ITermoConsentimentoRepository termoRepository, CancellationToken cancellationToken)
     {
         TermoConsentimento? doCatalogo = await termoRepository.ObterPorIdParaLeituraAsync(termo.TermoId, cancellationToken).ConfigureAwait(false);
@@ -107,7 +107,7 @@ public static class ObterFormularioRenderizavelDoModeloQueryHandler
         }
 
         ConteudoDoTermoDto conteudo = new(doCatalogo.Nome, versao.Texto, versao.BaseLegal, CodigoComRotulo<FormaAceite>.De(versao.FormaAceite), versao.Hash);
-        return new TermoRenderizavel(termo.Codigo, termo.Codigo, termo.Ordem, termo.TermoId, termo.VersaoId, conteudo);
+        return new TermoApresentado(termo.Codigo, termo.Codigo, termo.Ordem, termo.TermoId, termo.VersaoId, conteudo);
     }
 
     private static SecaoRenderizavel Secao(EtapaDoModelo etapa) => new(
@@ -118,7 +118,7 @@ public static class ObterFormularioRenderizavelDoModeloQueryHandler
         etapa.Bloco?.Codigo(),
         new ApresentacaoDaEtapaDto(etapa.Titulo, etapa.Descricao, etapa.Aviso));
 
-    private static GrupoRenderizavel Grupo(
+    private static GrupoApresentado Grupo(
         FinalidadeFormulario finalidade, GrupoDoModelo grupo, IReadOnlyDictionary<string, IReadOnlyList<ValorSelecionavel>?> opcoes) => new(
         grupo.Codigo,
         grupo.Ordem,
@@ -127,7 +127,7 @@ public static class ObterFormularioRenderizavelDoModeloQueryHandler
         new OcorrenciasDoGrupoDto(grupo.Ocorrencias.Minimo, grupo.Ocorrencias.Maximo, grupo.Ocorrencias.IncluiCandidato),
         [.. grupo.Subitens.OrderBy(static s => s.Ordem).Select(s => Campo(finalidade, s, opcoes))]);
 
-    private static CampoRenderizavel Campo(
+    private static CampoApresentado Campo(
         FinalidadeFormulario finalidade, ItemDoModelo item, IReadOnlyDictionary<string, IReadOnlyList<ValorSelecionavel>?> opcoes) => new(
         item.FatoCodigo,
         item.Ordem,

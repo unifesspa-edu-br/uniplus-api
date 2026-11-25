@@ -42,7 +42,7 @@ public sealed record LimiteDeDataInput(string Ancora, DateOnly? Data = null, int
 
 /// <summary>
 /// O envio que a simulação supõe: o instante e a zona, no identificador IANA, em que se conta o dia
-/// dele — o mesmo que o formulário renderizável publica em <c>fusoDoEnvio</c>.
+/// dele — o mesmo que o formulário apresentado publica em <c>fusoDoEnvio</c>.
 /// </summary>
 public sealed record EnvioSimuladoInput([property: JsonRequired] DateTimeOffset Instante, string Fuso);
 

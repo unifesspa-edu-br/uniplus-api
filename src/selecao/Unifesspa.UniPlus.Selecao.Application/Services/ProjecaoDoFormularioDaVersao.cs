@@ -18,9 +18,9 @@ using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Formularios;
 
 /// <summary>
-/// Projeta o formulário renderizável de uma finalidade a partir de uma <see cref="VersaoConfiguracao"/>
-/// JÁ RESOLVIDA (ADR-0139) — extraído de <c>ObterFormularioRenderizavelQueryHandler</c> (UNI-REQ-0072)
-/// para ser reusado por <c>ObterFormularioDaInscricaoQueryHandler</c>:
+/// Projeta o formulário apresentado de uma finalidade a partir de uma <see cref="VersaoConfiguracao"/>
+/// JÁ RESOLVIDA (ADR-0139), para ser usado por
+/// <c>ObterFormularioDaInscricaoQueryHandler</c> e <c>ObterFormularioApresentadoQueryHandler</c>:
 /// as duas leituras projetam os mesmos bytes congelados do mesmo jeito — a única diferença entre
 /// elas é COMO a versão é resolvida (pela divulgação atual, ou pela versão em que está a inscrição:
 /// a divulgada no rascunho, a congelada no primeiro envio depois dele), nunca o que se faz com ela depois de resolvida.
@@ -36,7 +36,7 @@ public static class ProjecaoDoFormularioDaVersao
     /// Sucesso com o formulário; sucesso com <see langword="null"/> quando a versão não tem formulário para a
     /// <paramref name="finalidade"/> (ausência, e não falha de leitura); falha quando o congelado não se deixa ler.
     /// </returns>
-    public static Result<FormularioRenderizavelDto?> Projetar(
+    public static Result<FormularioApresentadoDoProcessoDto?> Projetar(
         VersaoConfiguracao versao,
         FinalidadeFormulario finalidade,
         IRegistroCodecsEnvelope registroCodecs,
@@ -47,7 +47,7 @@ public static class ProjecaoDoFormularioDaVersao
 
         Result<ConfiguracaoLida> lida = LerConfiguracao(versao, registroCodecs);
         return lida.IsFailure
-            ? Result<FormularioRenderizavelDto?>.Failure(lida.Error!)
+            ? Result<FormularioApresentadoDoProcessoDto?>.Failure(lida.Error!)
             : ProjetarFormulario(lida.Value!, finalidade, acervoDaComprovacao);
     }
 
@@ -103,36 +103,36 @@ public static class ProjecaoDoFormularioDaVersao
         "Snapshot.VigenteAusente",
         $"A configuração congelada do processo {versao.ProcessoSeletivoId} não é um documento legível.");
 
-    private static Result<FormularioRenderizavelDto?> ProjetarFormulario(
+    private static Result<FormularioApresentadoDoProcessoDto?> ProjetarFormulario(
         ConfiguracaoLida lida, FinalidadeFormulario finalidade, DocumentosDoAtoNoAcervo? acervoDaComprovacao)
     {
         if (!TentarDataReferenciaFatos(lida.Envelope, out DateOnly? dataReferenciaFatos))
         {
-            return ProjecaoDoCertamePublicado.Recusar<FormularioRenderizavelDto?>("referenciaTemporalDosFatos");
+            return ProjecaoDoCertamePublicado.Recusar<FormularioApresentadoDoProcessoDto?>("referenciaTemporalDosFatos");
         }
 
         ConfiguracaoPublicada configuracaoPublicada = lida.Configuracao;
-        return ProjecaoDoFormularioRenderizavel.Projetar(
+        return ProjecaoDoFormularioApresentado.Projetar(
                 finalidade, lida.Avaliavel, configuracaoPublicada.Coleta.Formularios, [.. configuracaoPublicada.Coleta.Itens], configuracaoPublicada.Coleta.GruposColetados, configuracaoPublicada.Coleta.TermosExigidos,
                 dataReferenciaFatos) is { } formulario
             ? ComporFormulario(lida, finalidade, formulario, acervoDaComprovacao)
-            : Result<FormularioRenderizavelDto?>.Success(null);
+            : Result<FormularioApresentadoDoProcessoDto?>.Success(null);
     }
 
-    private static Result<FormularioRenderizavelDto?> ComporFormulario(
-        ConfiguracaoLida lida, FinalidadeFormulario finalidade, FormularioRenderizavel formulario, DocumentosDoAtoNoAcervo? acervoDaComprovacao)
+    private static Result<FormularioApresentadoDoProcessoDto?> ComporFormulario(
+        ConfiguracaoLida lida, FinalidadeFormulario finalidade, FormularioApresentado formulario, DocumentosDoAtoNoAcervo? acervoDaComprovacao)
     {
         FormularioProcesso doFormulario = lida.Configuracao.Coleta.Formularios.First(f => f.Finalidade == finalidade);
         List<ExigenciaDocumentalCertameDto>? comprovacao = null;
         if (acervoDaComprovacao is not null
             && !TentarComprovacaoDocumental(lida, doFormulario, formulario.Finalidade, acervoDaComprovacao, out comprovacao))
         {
-            return ProjecaoDoCertamePublicado.Recusar<FormularioRenderizavelDto?>("comprovacaoDocumental");
+            return ProjecaoDoCertamePublicado.Recusar<FormularioApresentadoDoProcessoDto?>("comprovacaoDocumental");
         }
 
         (DependenciasDaAvaliacaoDto? dependencias, DependenciasDaAvaliacaoDto? dependenciasDoFator) = DependenciasDaInscricao(lida, finalidade);
-        return Result<FormularioRenderizavelDto?>.Success(
-            new FormularioRenderizavelDto(formulario, doFormulario.FaseId, comprovacao, dependencias, dependenciasDoFator));
+        return Result<FormularioApresentadoDoProcessoDto?>.Success(
+            new FormularioApresentadoDoProcessoDto(formulario, doFormulario.FaseId, comprovacao, dependencias, dependenciasDoFator));
     }
 
     private static (DependenciasDaAvaliacaoDto? Fatos, DependenciasDaAvaliacaoDto? Fator) DependenciasDaInscricao(

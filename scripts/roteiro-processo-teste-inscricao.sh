@@ -1045,7 +1045,7 @@ aplicar_modelo_inscricao() {
 # substitui os itens quando o formulário nasce agora, não quando já existe).
 vincular_fase_do_formulario() {
     log "Vincular o formulário de inscrição à fase do cronograma"
-    local processo fase_inscricao_processo_id renderizavel titulo etapas
+    local processo fase_inscricao_processo_id apresentado titulo etapas
 
     processo=$(api_get "/api/selecao/processos-seletivos/$PROCESSO_ID")
     fase_inscricao_processo_id=$(jq -r '.cronogramaFases[] | select(.codigo=="INSCRICAO") | .id' <<< "$processo")
@@ -1056,21 +1056,21 @@ vincular_fase_do_formulario() {
     # da Medicina. DADOS_BASICOS é excluída: o handler do PUT já a repõe por
     # conta própria (ConjuntoBasicoDaInscricao.MesclarEtapas) a partir da
     # referência do processo — reenviá-la é redundante, e arriscaria recusa
-    # por SecaoReservadaAlterada se a renderização um dia divergir, por
+    # por SecaoReservadaAlterada se a apresentação um dia divergir, por
     # pouco que seja, da referência que o handler usa para comparar.
-    # A projeção renderizável
+    # A projeção do formulário apresentado
     # não traz a exibição condicional de cada etapa (SecaoRenderizavel não
     # tem esse campo) — hoje o modelo da Medicina não usa exibição condicional
     # em nenhuma seção/bloco, então "exibicao: null" aqui reflete o estado
     # real; um modelo futuro com seção condicional exigiria uma fonte própria
     # para esse dado, não esta leitura.
-    renderizavel=$(curl -sS -w '\n%{http_code}' -H "Authorization: Bearer $TOKEN" -H "Accept: application/vnd.uniplus.formulario.v2+json" \
-        "$API_URL/api/selecao/admin/processos-seletivos/$PROCESSO_ID/formularios/INSCRICAO/renderizavel")
-    [ "$(tail -n1 <<< "$renderizavel")" = "200" ] || fail "GET formulário renderizável falhou: $(sed '$d' <<< "$renderizavel")"
-    renderizavel=$(sed '$d' <<< "$renderizavel")
-    titulo=$(jq -r '.formulario.titulo' <<< "$renderizavel")
+    apresentado=$(curl -sS -w '\n%{http_code}' -H "Authorization: Bearer $TOKEN" -H "Accept: application/vnd.uniplus.formulario.v2+json" \
+        "$API_URL/api/selecao/admin/processos-seletivos/$PROCESSO_ID/formularios/INSCRICAO/apresentacao")
+    [ "$(tail -n1 <<< "$apresentado")" = "200" ] || fail "GET formulário apresentado falhou: $(sed '$d' <<< "$apresentado")"
+    apresentado=$(sed '$d' <<< "$apresentado")
+    titulo=$(jq -r '.formulario.titulo' <<< "$apresentado")
     [ -n "$titulo" ] && [ "$titulo" != "null" ] || fail "formulário INSCRICAO sem título — a aplicação do modelo falhou em silêncio?"
-    etapas=$(jq -c '[.formulario.etapas[] | select(.codigo != "DADOS_BASICOS") | {codigo, ordem, tipo, bloco, apresentacao, exibicao: null}]' <<< "$renderizavel")
+    etapas=$(jq -c '[.formulario.etapas[] | select(.codigo != "DADOS_BASICOS") | {codigo, ordem, tipo, bloco, apresentacao, exibicao: null}]' <<< "$apresentado")
     [ "$(jq 'length' <<< "$etapas")" -gt 0 ] || fail "formulário INSCRICAO sem etapas — a aplicação do modelo falhou em silêncio?"
 
     api PUT "/api/selecao/admin/processos-seletivos/$PROCESSO_ID/formularios/INSCRICAO" "$(jq -nc \
@@ -1081,29 +1081,29 @@ vincular_fase_do_formulario() {
 
 aplicar_modelo_habilitacao() {
     log "Aplicar e vincular o modelo de habilitação"
-    local modelo_id processo fase_id renderizavel titulo etapas
+    local modelo_id processo fase_id apresentado titulo etapas
     modelo_id="5e3d0006-0000-7000-8000-000000000002"
     processo=$(api_get "/api/selecao/processos-seletivos/$PROCESSO_ID")
     fase_id=$(jq -r '.cronogramaFases[] | select(.codigo == "HABILITACAO") | .id' <<< "$processo")
     exigir_id "fase HABILITACAO" "$fase_id"
     api POST "/api/selecao/admin/processos-seletivos/$PROCESSO_ID/formularios/aplicacoes-de-modelo" \
         "{\"modeloId\": \"$modelo_id\"}" >/dev/null
-    renderizavel=$(curl -sS -w '\n%{http_code}' -H "Authorization: Bearer $TOKEN" -H "Accept: application/vnd.uniplus.formulario.v2+json" \
-        "$API_URL/api/selecao/admin/processos-seletivos/$PROCESSO_ID/formularios/HABILITACAO/renderizavel")
-    [ "$(tail -n1 <<< "$renderizavel")" = "200" ] || fail "não foi possível ler o formulário de habilitação: $(sed '$d' <<< "$renderizavel")"
-    renderizavel=$(sed '$d' <<< "$renderizavel")
-    jq -e '[.formulario.etapas[] | select((.codigo == "CONCLUSAO_ENSINO_MEDIO" and .tipo == "SECAO") or (.codigo == "COMPOSICAO_FAMILIAR" and .tipo == "SECAO") or (.codigo == "DOCUMENTOS" and .tipo == "BLOCO" and .bloco == "COMPROVACAO_DOCUMENTAL") or (.codigo == "REVISAO" and .tipo == "BLOCO" and .bloco == "REVISAO_E_ACEITE")) | .codigo] | unique | length == 4' <<< "$renderizavel" >/dev/null \
+    apresentado=$(curl -sS -w '\n%{http_code}' -H "Authorization: Bearer $TOKEN" -H "Accept: application/vnd.uniplus.formulario.v2+json" \
+        "$API_URL/api/selecao/admin/processos-seletivos/$PROCESSO_ID/formularios/HABILITACAO/apresentacao")
+    [ "$(tail -n1 <<< "$apresentado")" = "200" ] || fail "não foi possível ler o formulário de habilitação: $(sed '$d' <<< "$apresentado")"
+    apresentado=$(sed '$d' <<< "$apresentado")
+    jq -e '[.formulario.etapas[] | select((.codigo == "CONCLUSAO_ENSINO_MEDIO" and .tipo == "SECAO") or (.codigo == "COMPOSICAO_FAMILIAR" and .tipo == "SECAO") or (.codigo == "DOCUMENTOS" and .tipo == "BLOCO" and .bloco == "COMPROVACAO_DOCUMENTAL") or (.codigo == "REVISAO" and .tipo == "BLOCO" and .bloco == "REVISAO_E_ACEITE")) | .codigo] | unique | length == 4' <<< "$apresentado" >/dev/null \
         || fail "formulário de habilitação sem as seções ou blocos esperados"
-    titulo=$(jq -r '.formulario.titulo // empty' <<< "$renderizavel")
+    titulo=$(jq -r '.formulario.titulo // empty' <<< "$apresentado")
     [ -n "$titulo" ] || fail "formulário de habilitação sem título"
-    etapas=$(jq -c '[.formulario.etapas[] | {codigo, ordem, tipo, bloco, apresentacao, exibicao: null}]' <<< "$renderizavel")
+    etapas=$(jq -c '[.formulario.etapas[] | {codigo, ordem, tipo, bloco, apresentacao, exibicao: null}]' <<< "$apresentado")
     api PUT "/api/selecao/admin/processos-seletivos/$PROCESSO_ID/formularios/HABILITACAO" "$(jq -nc \
         --arg fase "$fase_id" --arg titulo "$titulo" --argjson etapas "$etapas" \
         '{faseId: $fase, titulo: $titulo, etapas: $etapas}')" >/dev/null
-    renderizavel=$(curl -sS -w '\n%{http_code}' -H "Authorization: Bearer $TOKEN" -H "Accept: application/vnd.uniplus.formulario.v2+json" \
-        "$API_URL/api/selecao/admin/processos-seletivos/$PROCESSO_ID/formularios/HABILITACAO/renderizavel")
-    [ "$(tail -n1 <<< "$renderizavel")" = "200" ] || fail "não foi possível conferir o formulário de habilitação"
-    sed '$d' <<< "$renderizavel" | jq -e '[.formulario.etapas[] | select((.codigo == "CONCLUSAO_ENSINO_MEDIO" and .tipo == "SECAO") or (.codigo == "COMPOSICAO_FAMILIAR" and .tipo == "SECAO") or (.codigo == "DOCUMENTOS" and .tipo == "BLOCO" and .bloco == "COMPROVACAO_DOCUMENTAL") or (.codigo == "REVISAO" and .tipo == "BLOCO" and .bloco == "REVISAO_E_ACEITE")) | .codigo] | unique | length == 4' >/dev/null \
+    apresentado=$(curl -sS -w '\n%{http_code}' -H "Authorization: Bearer $TOKEN" -H "Accept: application/vnd.uniplus.formulario.v2+json" \
+        "$API_URL/api/selecao/admin/processos-seletivos/$PROCESSO_ID/formularios/HABILITACAO/apresentacao")
+    [ "$(tail -n1 <<< "$apresentado")" = "200" ] || fail "não foi possível conferir o formulário de habilitação"
+    sed '$d' <<< "$apresentado" | jq -e '[.formulario.etapas[] | select((.codigo == "CONCLUSAO_ENSINO_MEDIO" and .tipo == "SECAO") or (.codigo == "COMPOSICAO_FAMILIAR" and .tipo == "SECAO") or (.codigo == "DOCUMENTOS" and .tipo == "BLOCO" and .bloco == "COMPROVACAO_DOCUMENTAL") or (.codigo == "REVISAO" and .tipo == "BLOCO" and .bloco == "REVISAO_E_ACEITE")) | .codigo] | unique | length == 4' >/dev/null \
         || fail "formulário de habilitação vinculado sem as seções ou blocos esperados"
     ok "modelo de habilitação vinculado à fase $fase_id"
 }

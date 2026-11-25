@@ -15,11 +15,11 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
 /// <summary>
-/// A projeção única do formulário renderizável (ADR-0139): a apresentação sai das entidades e dos
+/// A projeção única do formulário apresentado (ADR-0139): a apresentação sai das entidades e dos
 /// valores selecionáveis, e as regras, do recorte da definição avaliável; o certame divulgado e o
 /// rascunho passam pelo mesmo caminho.
 /// </summary>
-public sealed class ProjecaoDoFormularioRenderizavelTests
+public sealed class ProjecaoDoFormularioApresentadoTests
 {
     private const string Secao = "DADOS";
 
@@ -40,7 +40,7 @@ public sealed class ProjecaoDoFormularioRenderizavelTests
             [],
             [Termo("VERACIDADE", FinalidadeFormulario.Inscricao)]);
 
-        FormularioRenderizavel formulario = configuracao.Projetar(FinalidadeFormulario.Inscricao)!;
+        FormularioApresentado formulario = configuracao.Projetar(FinalidadeFormulario.Inscricao)!;
 
         formulario.Etapas.Select(static e => (e.Codigo, e.CodigoNasRegras)).Should().Equal(
             (Secao, DefinicaoDoProcesso.CodigoDaEtapa(FinalidadeFormulario.Inscricao, Secao)), ("REVISAO", (string?)null));
@@ -61,7 +61,7 @@ public sealed class ProjecaoDoFormularioRenderizavelTests
             [],
             []);
 
-        FormularioRenderizavel formulario = configuracao.Projetar(FinalidadeFormulario.Inscricao)!;
+        FormularioApresentado formulario = configuracao.Projetar(FinalidadeFormulario.Inscricao)!;
 
         formulario.Coleta.Itens.Single(static f => f.FatoCodigo == "NOME").Formato.Should().BeNull();
         formulario.Coleta.Itens.Single(static f => f.FatoCodigo == "NOME_MAE").Formato.Should().Be("NOME_PESSOA");
@@ -79,7 +79,7 @@ public sealed class ProjecaoDoFormularioRenderizavelTests
             [],
             []);
 
-        FormularioRenderizavel formulario = configuracao.Projetar(FinalidadeFormulario.Inscricao)!;
+        FormularioApresentado formulario = configuracao.Projetar(FinalidadeFormulario.Inscricao)!;
 
         formulario.Coleta.Itens.Single(static f => f.FatoCodigo == "NOME_SOCIAL").Apresentacao.Ajuda
             .Should().Be(ConjuntoBasicoDaInscricao.Itens.Single(static i => i.FatoCodigo == "NOME_SOCIAL").Apresentacao!.Ajuda);
@@ -95,7 +95,7 @@ public sealed class ProjecaoDoFormularioRenderizavelTests
             [],
             []);
 
-        FormularioRenderizavel formulario = configuracao.Projetar(FinalidadeFormulario.Habilitacao)!;
+        FormularioApresentado formulario = configuracao.Projetar(FinalidadeFormulario.Habilitacao)!;
 
         formulario.Coleta.Itens.Single(static f => f.FatoCodigo == "NOME_SOCIAL").Apresentacao.Ajuda.Should().BeNull();
     }
@@ -105,7 +105,7 @@ public sealed class ProjecaoDoFormularioRenderizavelTests
     {
         Configuracao configuracao = ConfiguracaoComValores();
 
-        FormularioRenderizavel formulario = configuracao.Projetar(FinalidadeFormulario.Inscricao)!;
+        FormularioApresentado formulario = configuracao.Projetar(FinalidadeFormulario.Inscricao)!;
 
         formulario.Coleta.Itens[0].ValoresSelecionaveis!.Select(static v => v.Codigo).Should().Equal("BRANCA", "AMARELA", "PRETA");
         formulario.Coleta.Itens[0].ValoresSelecionaveis!.Select(static v => v.Orientacao)
@@ -121,13 +121,13 @@ public sealed class ProjecaoDoFormularioRenderizavelTests
     {
         Configuracao configuracao = ConfiguracaoComPressupostos();
 
-        IReadOnlyList<PressupostoRenderizavel> pressupostos = configuracao.Projetar(FinalidadeFormulario.Habilitacao)!.Pressupostos.Fatos;
+        IReadOnlyList<FatoPressuposto> pressupostos = configuracao.Projetar(FinalidadeFormulario.Habilitacao)!.Pressupostos.Fatos;
 
         pressupostos.Should().BeEquivalentTo(
             [
-                new PressupostoRenderizavel("COR_RACA", "COR_RACA", "ESCOLHA_UNICA", null, [new ValorSelecionavel("PRETA", "Preta", 0)], null),
-                new PressupostoRenderizavel("FAIXA_ETARIA", null, null, null, null, ["DATA_NASCIMENTO"]),
-                new PressupostoRenderizavel("RURAL_NA_FAMILIA", null, null, null, null, ["TRABALHADOR_RURAL"]),
+                new FatoPressuposto("COR_RACA", "COR_RACA", "ESCOLHA_UNICA", null, [new ValorSelecionavel("PRETA", "Preta", 0)], null),
+                new FatoPressuposto("FAIXA_ETARIA", null, null, null, null, ["DATA_NASCIMENTO"]),
+                new FatoPressuposto("RURAL_NA_FAMILIA", null, null, null, null, ["TRABALHADOR_RURAL"]),
             ]);
     }
 
@@ -174,7 +174,7 @@ public sealed class ProjecaoDoFormularioRenderizavelTests
 
         public IReadOnlyList<DefinicaoAgregado> Agregados { get; init; } = [];
 
-        public FormularioRenderizavel? Projetar(FinalidadeFormulario finalidade)
+        public FormularioApresentado? Projetar(FinalidadeFormulario finalidade)
         {
             ProcessoSeletivo estrutura = ProcessoSeletivoConformeBuilder.Criar("PS 2026 — SiSU");
             EnvelopeReidratado envelope = new(
@@ -184,7 +184,7 @@ public sealed class ProjecaoDoFormularioRenderizavelTests
                 new string('a', 64), "America/Sao_Paulo", retificacao: null, conformidade: null,
                 dadosDeCatalogo: new DadosDeCatalogoDaConfiguracaoPublicada(ValoresSelecionaveisCongelados: Valores, AgregadosDosGrupos: Agregados));
 
-            return ProjecaoDoFormularioRenderizavel.Projetar(
+            return ProjecaoDoFormularioApresentado.Projetar(
                 finalidade, DefinicaoAvaliavelDoProcesso.DoCongelado(envelope).Value!, Formularios, Fatos, Grupos, Termos, dataReferenciaFatos: null);
         }
 

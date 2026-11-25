@@ -18,14 +18,14 @@ using Unifesspa.UniPlus.Application.Abstractions.Authentication;
 using Unifesspa.UniPlus.Regras.Formularios;
 
 /// <summary>
-/// O formulário renderizável da versão em que está a inscrição do dono do token — a divulgada, no
+/// O formulário apresentado da versão em que está a inscrição do dono do token — a divulgada, no
 /// rascunho; a congelada no primeiro envio, depois dele. É a mesma projeção de
-/// <c>ObterFormularioRenderizavelQueryHandler</c> (<see cref="ProjecaoDoFormularioDaVersao"/>), com a
+/// <c>ObterFormularioApresentadoQueryHandler</c> (<see cref="ProjecaoDoFormularioDaVersao"/>), com a
 /// versão resolvida por <see cref="VersaoDaInscricaoResolver"/>.
 /// </summary>
 public static class ObterFormularioDaInscricaoQueryHandler
 {
-    public static async Task<Result<FormularioRenderizavelDto>> Handle(
+    public static async Task<Result<FormularioApresentadoDoProcessoDto>> Handle(
         ObterFormularioDaInscricaoQuery query,
         IInscricaoRepository inscricaoRepository,
         ICertameDivulgadoRepository certameDivulgadoRepository,
@@ -43,7 +43,7 @@ public static class ObterFormularioDaInscricaoQueryHandler
         Result<Inscricao> doCandidato = await InscricaoDoCandidatoAsync(query, inscricaoRepository, userContext, cancellationToken)
             .ConfigureAwait(false);
         return doCandidato.IsFailure
-            ? Result<FormularioRenderizavelDto>.Failure(doCandidato.Error!)
+            ? Result<FormularioApresentadoDoProcessoDto>.Failure(doCandidato.Error!)
             : await FormularioDaVersaoDaInscricaoAsync(
                 query, doCandidato.Value!, certameDivulgadoRepository, processoSeletivoRepository, registroCodecs, cancellationToken)
                 .ConfigureAwait(false);
@@ -89,7 +89,7 @@ public static class ObterFormularioDaInscricaoQueryHandler
             : cpf;
     }
 
-    private static async Task<Result<FormularioRenderizavelDto>> FormularioDaVersaoDaInscricaoAsync(
+    private static async Task<Result<FormularioApresentadoDoProcessoDto>> FormularioDaVersaoDaInscricaoAsync(
         ObterFormularioDaInscricaoQuery query,
         Inscricao inscricao,
         ICertameDivulgadoRepository certameDivulgadoRepository,
@@ -101,25 +101,25 @@ public static class ObterFormularioDaInscricaoQueryHandler
             .ConfigureAwait(false);
         if (resolvida.IsFailure)
         {
-            return Result<FormularioRenderizavelDto>.Failure(resolvida.Error!);
+            return Result<FormularioApresentadoDoProcessoDto>.Failure(resolvida.Error!);
         }
 
         return FormularioDeInscricaoDaVersao(query, resolvida.Value!, registroCodecs);
     }
 
-    private static Result<FormularioRenderizavelDto> FormularioDeInscricaoDaVersao(
+    private static Result<FormularioApresentadoDoProcessoDto> FormularioDeInscricaoDaVersao(
         ObterFormularioDaInscricaoQuery query, VersaoConfiguracao versao, IRegistroCodecsEnvelope registroCodecs)
     {
-        Result<FormularioRenderizavelDto?> projetado = ProjecaoDoFormularioDaVersao.Projetar(
+        Result<FormularioApresentadoDoProcessoDto?> projetado = ProjecaoDoFormularioDaVersao.Projetar(
             versao, FinalidadeFormulario.Inscricao, registroCodecs, acervoDaComprovacao: null);
         if (projetado.IsFailure)
         {
-            return Result<FormularioRenderizavelDto>.Failure(projetado.Error!);
+            return Result<FormularioApresentadoDoProcessoDto>.Failure(projetado.Error!);
         }
 
         // Uma versão que recebeu inscrição foi publicada com o formulário de inscrição: a ausência
         // dele numa versão fixada é estado que a publicação não produz.
-        return Result<FormularioRenderizavelDto>.Success(projetado.Value
+        return Result<FormularioApresentadoDoProcessoDto>.Success(projetado.Value
             ?? throw new InvalidOperationException(
                 $"A versão fixada da inscrição do processo {query.ProcessoSeletivoId} não tem o formulário de inscrição."));
     }

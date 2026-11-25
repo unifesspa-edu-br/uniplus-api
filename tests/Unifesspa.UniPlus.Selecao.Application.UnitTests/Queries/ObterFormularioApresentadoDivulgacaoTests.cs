@@ -11,10 +11,10 @@ using Unifesspa.UniPlus.Selecao.Application.Queries.ProcessosSeletivos;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
 
-using static Unifesspa.UniPlus.Selecao.Application.UnitTests.Queries.ApoioDoFormularioRenderizavel;
+using static Unifesspa.UniPlus.Selecao.Application.UnitTests.Queries.ApoioDoFormularioApresentado;
 
-/// <summary>O <see cref="ObterFormularioRenderizavelQueryHandler"/> resolve o formulário pela divulgação do certame: sem divulgação não há formulário, e a versão consultada é a que ela aponta.</summary>
-public sealed class ObterFormularioRenderizavelDivulgacaoTests
+/// <summary>O <see cref="ObterFormularioApresentadoQueryHandler"/> resolve o formulário pela divulgação do certame: sem divulgação não há formulário, e a versão consultada é a que ela aponta.</summary>
+public sealed class ObterFormularioApresentadoDivulgacaoTests
 {
     /// <summary>Repositório sem linha: o processo não é público, seja qual for o motivo.</summary>
     private static ICertameDivulgadoRepository RepositorioSemDivulgacao()
@@ -35,7 +35,7 @@ public sealed class ObterFormularioRenderizavelDivulgacaoTests
         Guid processoId = Guid.CreateVersion7();
         IProcessoSeletivoRepository repository = Substitute.For<IProcessoSeletivoRepository>();
 
-        Result<FormularioRenderizavelDto> resultado = await HandleAsync(
+        Result<FormularioApresentadoDoProcessoDto> resultado = await HandleAsync(
             repository, processoId, RepositorioSemDivulgacao());
 
         resultado.IsFailure.Should().BeTrue();
@@ -68,7 +68,7 @@ public sealed class ObterFormularioRenderizavelDivulgacaoTests
         repository.ObterVersoesPorAtoCriadorAsync(Arg.Any<IReadOnlyCollection<Guid>>(), Arg.Any<CancellationToken>())
             .Returns([]);
 
-        Result<FormularioRenderizavelDto> resultado = await HandleAsync(repository, processoId);
+        Result<FormularioApresentadoDoProcessoDto> resultado = await HandleAsync(repository, processoId);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("Snapshot.VigenteAusente");

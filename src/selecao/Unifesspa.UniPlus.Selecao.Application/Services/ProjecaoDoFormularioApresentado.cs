@@ -14,16 +14,16 @@ using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Regras.Leituras;
 
 /// <summary>
-/// O formulário renderizável de uma finalidade a partir da configuração do processo — a congelada na
+/// O formulário apresentado de uma finalidade a partir da configuração do processo — a congelada na
 /// versão divulgada ou a viva do rascunho —: a apresentação sai das entidades e dos valores
 /// selecionáveis, e as regras, do recorte da definição avaliável (ADR-0139). Uma projeção só, para o
 /// público e para o rascunho servirem o mesmo formulário. O dia do envio se conta no fuso
 /// institucional, o mesmo do período de inscrição.
 /// </summary>
-public static class ProjecaoDoFormularioRenderizavel
+public static class ProjecaoDoFormularioApresentado
 {
     /// <summary>Nulo quando o processo não tem formulário da finalidade.</summary>
-    public static FormularioRenderizavel? Projetar(
+    public static FormularioApresentado? Projetar(
         FinalidadeFormulario finalidade,
         DefinicaoAvaliavel avaliavel,
         IReadOnlyCollection<FormularioProcesso> formularios,
@@ -43,7 +43,7 @@ public static class ProjecaoDoFormularioRenderizavel
             : null;
     }
 
-    private static FormularioRenderizavel Formulario(
+    private static FormularioApresentado Formulario(
         FinalidadeFormulario finalidade,
         FormularioProcesso formulario,
         DefinicaoAvaliavel avaliavel,
@@ -55,7 +55,7 @@ public static class ProjecaoDoFormularioRenderizavel
         IReadOnlyDictionary<string, IReadOnlyList<ValorDominioDeclaradoCongelado>?> valores = avaliavel.ValoresSelecionaveis;
         RecorteDaFinalidade recorte = RecorteDaFinalidade.De(avaliavel.Definicao, DefinicaoDoProcesso.CodigoDaEtapa(finalidade, null), avaliavel.Ofertas);
 
-        return new FormularioRenderizavel(
+        return new FormularioApresentado(
             finalidade.Codigo(),
             formulario.Titulo,
             [.. formulario.Etapas.OrderBy(static e => e.Ordem).Select(e => Secao(finalidade, e))],
@@ -80,7 +80,7 @@ public static class ProjecaoDoFormularioRenderizavel
         return new PressupostosDoFormulario(descricao.Descrever(recorte.Pressupostos), dataReferenciaFatos, FusoInstitucional.ZoneId);
     }
 
-    private static ColetaRenderizavel Coleta(
+    private static ColetaApresentada Coleta(
         FinalidadeFormulario finalidade,
         IReadOnlyCollection<FatoColetado> fatos,
         IReadOnlyCollection<GrupoColetado> grupos,
@@ -96,7 +96,7 @@ public static class ProjecaoDoFormularioRenderizavel
         etapa.Bloco?.Codigo(),
         new ApresentacaoDaEtapaDto(etapa.Titulo, etapa.Descricao, etapa.Aviso));
 
-    private static TermoRenderizavel Termo(FinalidadeFormulario finalidade, TermoExigidoFormulario termo) => new(
+    private static TermoApresentado Termo(FinalidadeFormulario finalidade, TermoExigidoFormulario termo) => new(
         termo.Codigo,
         DefinicaoDoProcesso.CodigoDoTermo(finalidade, termo.Codigo),
         termo.Ordem,
@@ -104,7 +104,7 @@ public static class ProjecaoDoFormularioRenderizavel
         termo.VersaoId,
         new ConteudoDoTermoDto(termo.Nome, termo.Texto, termo.BaseLegal, CodigoComRotulo<FormaAceite>.De(termo.FormaAceite), termo.HashVersao));
 
-    private static GrupoRenderizavel Grupo(
+    private static GrupoApresentado Grupo(
         GrupoColetado grupo, IReadOnlyDictionary<string, IReadOnlyList<ValorDominioDeclaradoCongelado>?> valores) => new(
         grupo.Codigo,
         grupo.Ordem,
@@ -114,7 +114,7 @@ public static class ProjecaoDoFormularioRenderizavel
         [.. grupo.Subitens.OrderBy(static s => s.Ordem).Select(s => Campo(s, valores))]);
 
     /// <summary>O campo, com os valores selecionáveis na ordem de apresentação quando é de seleção.</summary>
-    private static CampoRenderizavel Campo(
+    private static CampoApresentado Campo(
         FatoColetado fato, IReadOnlyDictionary<string, IReadOnlyList<ValorDominioDeclaradoCongelado>?> valores) => new(
         fato.FatoCodigo,
         fato.Ordem,

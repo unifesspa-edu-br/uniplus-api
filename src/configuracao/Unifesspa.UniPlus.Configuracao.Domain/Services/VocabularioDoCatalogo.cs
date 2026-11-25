@@ -241,7 +241,7 @@ public static class VocabularioDoCatalogo
 
     /// <summary>
     /// Os códigos que cada campo de seleção do modelo oferta, das opções do catálogo: a resposta fora
-    /// deles não vale, na pré-visualização e no renderizável.
+    /// deles não vale, na pré-visualização e no formulário apresentado.
     /// </summary>
     public static Dictionary<string, IReadOnlySet<string>> Ofertas(IReadOnlyDictionary<string, IReadOnlyList<ValorSelecionavel>?> opcoes)
     {

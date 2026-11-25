@@ -21,18 +21,18 @@ using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Fatos;
 /// O formulário de uma finalidade como a configuração viva o define agora — o rascunho —, no mesmo formato que o certame divulgado serve (ADR-0139). É o que a
 /// simulação do administrador interpreta antes de publicar; nada é gravado.
 /// </summary>
-public sealed record ObterFormularioRenderizavelDoRascunhoQuery(
-    Guid ProcessoSeletivoId, FinalidadeFormulario Finalidade) : IQuery<Result<FormularioRenderizavelDto>>;
+public sealed record ObterFormularioApresentadoDoRascunhoQuery(
+    Guid ProcessoSeletivoId, FinalidadeFormulario Finalidade) : IQuery<Result<FormularioApresentadoDoProcessoDto>>;
 
 /// <summary>
 /// Projeta a configuração viva pela mesma projeção do certame divulgado, com o catálogo vivo: a
 /// definição avaliável da pré-visualização, os valores que o catálogo oferece hoje e a data de
 /// referência dos fatos que o rascunho já resolve. A comprovação documental sai da publicação.
 /// </summary>
-public static class ObterFormularioRenderizavelDoRascunhoQueryHandler
+public static class ObterFormularioApresentadoDoRascunhoQueryHandler
 {
-    public static async Task<Result<FormularioRenderizavelDto>> Handle(
-        ObterFormularioRenderizavelDoRascunhoQuery query,
+    public static async Task<Result<FormularioApresentadoDoProcessoDto>> Handle(
+        ObterFormularioApresentadoDoRascunhoQuery query,
         IProcessoSeletivoRepository repository,
         IFatoCandidatoReader fatoCandidatoReader,
         IResolvedorFusoInstitucional resolvedorFuso,
@@ -49,7 +49,7 @@ public static class ObterFormularioRenderizavelDoRascunhoQueryHandler
             : await ProjetarAsync(processo, query.Finalidade, fatoCandidatoReader, resolvedorFuso, cancellationToken).ConfigureAwait(false);
     }
 
-    private static async Task<Result<FormularioRenderizavelDto>> ProjetarAsync(
+    private static async Task<Result<FormularioApresentadoDoProcessoDto>> ProjetarAsync(
         ProcessoSeletivo processo,
         FinalidadeFormulario finalidade,
         IFatoCandidatoReader fatoCandidatoReader,
@@ -59,27 +59,27 @@ public static class ObterFormularioRenderizavelDoRascunhoQueryHandler
         Result<TimeZoneInfo> fuso = resolvedorFuso.Resolver();
         if (fuso.IsFailure)
         {
-            return Result<FormularioRenderizavelDto>.Failure(fuso.Error!);
+            return Result<FormularioApresentadoDoProcessoDto>.Failure(fuso.Error!);
         }
 
         IReadOnlyList<FatoCandidatoView> catalogo = await fatoCandidatoReader.ListarAsync(cancellationToken).ConfigureAwait(false);
         Result<DefinicaoAvaliavel> avaliavel = DefinicaoAvaliavelDoProcesso.DaConfiguracaoViva(processo, catalogo);
         return avaliavel.IsFailure
-            ? Result<FormularioRenderizavelDto>.Failure(avaliavel.Error!)
+            ? Result<FormularioApresentadoDoProcessoDto>.Failure(avaliavel.Error!)
             : Projetar(processo, finalidade, avaliavel.Value!, fuso.Value!);
     }
 
-    private static Result<FormularioRenderizavelDto> Projetar(
+    private static Result<FormularioApresentadoDoProcessoDto> Projetar(
         ProcessoSeletivo processo, FinalidadeFormulario finalidade, DefinicaoAvaliavel avaliavel, TimeZoneInfo fuso) =>
-        ProjecaoDoFormularioRenderizavel.Projetar(
+        ProjecaoDoFormularioApresentado.Projetar(
             finalidade, avaliavel, processo.Formularios, processo.FatosColetados, processo.GruposColetados, processo.TermosExigidos,
             ReferenciaTemporalDosFatos.DataReferenciaFatosEmMontagem(processo.Declaracao(), fuso)) is { } formulario
-            ? Result<FormularioRenderizavelDto>.Success(new FormularioRenderizavelDto(
+            ? Result<FormularioApresentadoDoProcessoDto>.Success(new FormularioApresentadoDoProcessoDto(
                 formulario, processo.Formularios.FirstOrDefault(f => f.Finalidade == finalidade)?.FaseId, null, null, null))
             : NaoEncontrado(processo.Id);
 
-    private static Result<FormularioRenderizavelDto> NaoEncontrado(Guid processoSeletivoId) =>
-        Result<FormularioRenderizavelDto>.Failure(new DomainError(
+    private static Result<FormularioApresentadoDoProcessoDto> NaoEncontrado(Guid processoSeletivoId) =>
+        Result<FormularioApresentadoDoProcessoDto>.Failure(new DomainError(
             "ProcessoSeletivo.NaoEncontrado",
             $"Processo Seletivo {processoSeletivoId} não encontrado, ou sem formulário da finalidade."));
 }

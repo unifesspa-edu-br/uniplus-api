@@ -104,7 +104,7 @@ public static class VeredictoDeSubmissao
             }
 
             // avaliacao.Termos usa o código PREFIXADO pela finalidade (DefinicaoDoProcesso.CodigoDoTermo) —
-            // o mesmo que a apresentação do formulário já expõe (ProjecaoDoFormularioRenderizavel.Termo).
+            // o mesmo que a apresentação do formulário já expõe (ProjecaoDoFormularioApresentado.Termo).
             // termosExigidos e aceites usam o código NU, que é o que o candidato conhece e envia; a
             // recusa é sobre o aceite, então sai nele.
             TermoExigidoFormulario? exigido = termosExigidos.FirstOrDefault(t =>

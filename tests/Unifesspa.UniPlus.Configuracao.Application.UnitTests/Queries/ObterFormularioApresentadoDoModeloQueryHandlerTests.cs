@@ -21,10 +21,10 @@ using Unifesspa.UniPlus.Regras.ValueObjects;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
 /// <summary>
-/// O renderizável do modelo projeta o conteúdo como aplicado, com o catálogo vivo e o cadastro
+/// O apresentado do modelo projeta o conteúdo como aplicado, com o catálogo vivo e o cadastro
 /// institucional, no mesmo formato que o certame divulgado serve.
 /// </summary>
-public sealed class ObterFormularioRenderizavelDoModeloQueryHandlerTests
+public sealed class ObterFormularioApresentadoDoModeloQueryHandlerTests
 {
     private const string Finalidade = "Verificação dos requisitos do processo seletivo.";
 
@@ -40,16 +40,16 @@ public sealed class ObterFormularioRenderizavelDoModeloQueryHandlerTests
     private readonly ITermoConsentimentoRepository _termos = Substitute.For<ITermoConsentimentoRepository>();
     private readonly OpcoesDoCadastroInstitucional _cadastro;
 
-    public ObterFormularioRenderizavelDoModeloQueryHandlerTests()
+    public ObterFormularioApresentadoDoModeloQueryHandlerTests()
     {
         _cadastro = new OpcoesDoCadastroInstitucional(_condicoes, _recursos, _tiposDeficiencia, _basesDoBonus);
         _fatos.ListarTodosAsync(Arg.Any<CancellationToken>()).Returns(_ => []);
     }
 
-    [Fact(DisplayName = "Modelo inexistente não tem renderizável nem consulta o catálogo")]
+    [Fact(DisplayName = "Modelo inexistente não tem apresentado nem consulta o catálogo")]
     public async Task Handle_ModeloInexistente_DevolveNuloSemConsultarOCatalogo()
     {
-        FormularioRenderizavel? resultado = await ObterAsync(Guid.NewGuid());
+        FormularioApresentado? resultado = await ObterAsync(Guid.NewGuid());
 
         resultado.Should().BeNull();
         await _fatos.DidNotReceiveWithAnyArgs().ListarTodosAsync(default);
@@ -60,7 +60,7 @@ public sealed class ObterFormularioRenderizavelDoModeloQueryHandlerTests
     {
         ModeloFormulario modelo = Modelo(itens: [Item("SEGUNDO", 1), Item("PRIMEIRO", 0)]);
 
-        FormularioRenderizavel resultado = (await ObterAsync(modelo))!;
+        FormularioApresentado resultado = (await ObterAsync(modelo))!;
 
         resultado.Finalidade.Should().Be("HABILITACAO");
         resultado.Titulo.Should().Be("Habilitação");
@@ -78,7 +78,7 @@ public sealed class ObterFormularioRenderizavelDoModeloQueryHandlerTests
         cor.AdicionarValorDominio("AMARELA", "Amarela", 1, ativo: false).IsSuccess.Should().BeTrue();
         _fatos.ListarTodosAsync(Arg.Any<CancellationToken>()).Returns(_ => [cor, Fato("MODALIDADE", FonteValoresFato.OpcoesDoProcesso)]);
 
-        FormularioRenderizavel resultado = (await ObterAsync(Modelo(itens: [Item("COR_RACA", 0), Item("MODALIDADE", 1)])))!;
+        FormularioApresentado resultado = (await ObterAsync(Modelo(itens: [Item("COR_RACA", 0), Item("MODALIDADE", 1)])))!;
 
         resultado.Coleta.Itens.Single(static c => c.FatoCodigo == "COR_RACA").ValoresSelecionaveis.Should().Equal(new ValorSelecionavel("PRETA", "Preta", 0));
         resultado.Coleta.Itens.Single(static c => c.FatoCodigo == "MODALIDADE").ValoresSelecionaveis.Should().BeNull();
@@ -90,7 +90,7 @@ public sealed class ObterFormularioRenderizavelDoModeloQueryHandlerTests
         _condicoes.ListarVivosParaLeituraAsync(Arg.Any<CancellationToken>()).Returns([CondicaoAtendimentoEspecializado.Criar("TEA", "Autismo", null).Value!]);
         _fatos.ListarTodosAsync(Arg.Any<CancellationToken>()).Returns(_ => [Fato("CONDICAO_ATENDIMENTO", FonteValoresFato.OpcoesDoProcesso)]);
 
-        FormularioRenderizavel resultado = (await ObterAsync(Modelo(itens: [Item("CONDICAO_ATENDIMENTO", 0)])))!;
+        FormularioApresentado resultado = (await ObterAsync(Modelo(itens: [Item("CONDICAO_ATENDIMENTO", 0)])))!;
 
         resultado.Coleta.Itens.Single().ValoresSelecionaveis.Should().Equal(new ValorSelecionavel("TEA", "Autismo", 0));
     }
@@ -102,9 +102,9 @@ public sealed class ObterFormularioRenderizavelDoModeloQueryHandlerTests
         _termos.ObterPorIdParaLeituraAsync(termo.Id, Arg.Any<CancellationToken>()).Returns(termo);
         ModeloFormulario modelo = Modelo(termos: [new("ACEITE_DADOS", 3, termo.Id, versao.Id, new ExibicaoEObrigatoriedade(null, Obrigatoriedade.Sempre))]);
 
-        FormularioRenderizavel resultado = (await ObterAsync(modelo))!;
+        FormularioApresentado resultado = (await ObterAsync(modelo))!;
 
-        resultado.Termos.Should().ContainSingle().Which.Should().Be(new TermoRenderizavel(
+        resultado.Termos.Should().ContainSingle().Which.Should().Be(new TermoApresentado(
             "ACEITE_DADOS",
             "ACEITE_DADOS",
             3,
@@ -142,9 +142,9 @@ public sealed class ObterFormularioRenderizavelDoModeloQueryHandlerTests
             "FAMILIA", 1, "DADOS", "Composição familiar", new OcorrenciasDoGrupo(1, 3, IncluiCandidato: false), new ExibicaoEObrigatoriedade(null, Obrigatoriedade.Sempre),
             [Subitem("SEGUNDO", 1), Subitem("PRIMEIRO", 0)]);
 
-        FormularioRenderizavel resultado = (await ObterAsync(Modelo(grupos: [familia])))!;
+        FormularioApresentado resultado = (await ObterAsync(Modelo(grupos: [familia])))!;
 
-        GrupoRenderizavel grupo = resultado.Coleta.Grupos.Should().ContainSingle().Which;
+        GrupoApresentado grupo = resultado.Coleta.Grupos.Should().ContainSingle().Which;
         (grupo.Codigo, grupo.Ordem, grupo.EtapaCodigo, grupo.Rotulo, grupo.Ocorrencias)
             .Should().Be(("FAMILIA", 1, "DADOS", "Composição familiar", new OcorrenciasDoGrupoDto(1, 3, false)));
         grupo.Subitens.Select(static c => c.FatoCodigo).Should().Equal("PRIMEIRO", "SEGUNDO");
@@ -155,7 +155,7 @@ public sealed class ObterFormularioRenderizavelDoModeloQueryHandlerTests
     {
         ModeloFormulario modelo = Modelo(FinalidadeFormulario.Inscricao, itens: [Item("CERTIFICADO", 100)]);
 
-        FormularioRenderizavel resultado = (await ObterAsync(modelo))!;
+        FormularioApresentado resultado = (await ObterAsync(modelo))!;
 
         resultado.Finalidade.Should().Be("INSCRICAO");
         resultado.Coleta.Itens.Should().Contain(static c => c.FatoCodigo == "CERTIFICADO").And.HaveCountGreaterThan(1);
@@ -166,22 +166,22 @@ public sealed class ObterFormularioRenderizavelDoModeloQueryHandlerTests
     {
         ModeloFormulario modelo = Modelo(itens: [Item("CERTIFICADO", 0).ComExibicao(Quando("CONCLUSAO_REGULAR", true))], pressupostos: ["CONCLUSAO_REGULAR"]);
 
-        FormularioRenderizavel resultado = (await ObterAsync(modelo))!;
+        FormularioApresentado resultado = (await ObterAsync(modelo))!;
 
         resultado.Pressupostos.Fatos.Select(static p => p.FatoCodigo).Should().Equal("CONCLUSAO_REGULAR");
         resultado.Pressupostos.DataReferenciaFatos.Should().BeNull();
         resultado.Pressupostos.FusoDoEnvio.Should().BeNull();
     }
 
-    private Task<FormularioRenderizavel?> ObterAsync(ModeloFormulario modelo)
+    private Task<FormularioApresentado?> ObterAsync(ModeloFormulario modelo)
     {
         _repository.ObterPorIdParaLeituraAsync(modelo.Id, Arg.Any<CancellationToken>()).Returns(modelo);
         return ObterAsync(modelo.Id);
     }
 
-    private Task<FormularioRenderizavel?> ObterAsync(Guid id) =>
-        ObterFormularioRenderizavelDoModeloQueryHandler.Handle(
-            new ObterFormularioRenderizavelDoModeloQuery(id), _repository, _fatos, _cadastro, _termos, CancellationToken.None);
+    private Task<FormularioApresentado?> ObterAsync(Guid id) =>
+        ObterFormularioApresentadoDoModeloQueryHandler.Handle(
+            new ObterFormularioApresentadoDoModeloQuery(id), _repository, _fatos, _cadastro, _termos, CancellationToken.None);
 
     private static TermoConsentimento TermoPromovido(out TermoConsentimentoVersao versao)
     {

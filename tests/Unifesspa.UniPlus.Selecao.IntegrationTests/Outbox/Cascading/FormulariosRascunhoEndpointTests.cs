@@ -11,7 +11,7 @@ using static Unifesspa.UniPlus.Selecao.IntegrationTests.Outbox.Cascading.ApoioDo
 
 /// <summary>
 /// A leitura administrativa do rascunho do formulário por finalidade (UNI-REQ-0144), fim a fim
-/// pelo HTTP, sob <c>/admin/processos-seletivos/{id}/formularios/{finalidade}/renderizavel</c> (ADR-0064).
+/// pelo HTTP, sob <c>/admin/processos-seletivos/{id}/formularios/{finalidade}/apresentacao</c> (ADR-0064).
 /// </summary>
 [Collection(CascadingCollection.Name)]
 [Trait("Category", "OutboxCapability")]

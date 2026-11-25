@@ -101,7 +101,7 @@ internal static class ApoioDoFormularioPeloEndpoint
         {
             using HttpRequestMessage request = new(
                 HttpMethod.Get,
-                new Uri($"/api/selecao/admin/processos-seletivos/{ProcessoId}/formularios/{finalidade}/renderizavel", UriKind.Relative));
+                new Uri($"/api/selecao/admin/processos-seletivos/{ProcessoId}/formularios/{finalidade}/apresentacao", UriKind.Relative));
             Autenticar(request, autenticar);
             return await Client.SendAsync(request).ConfigureAwait(false);
         }
