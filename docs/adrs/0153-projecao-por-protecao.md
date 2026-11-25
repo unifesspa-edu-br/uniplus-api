@@ -111,7 +111,7 @@ Um único resolvedor responde qual é a proteção de cada item:
 - **Valor derivado:** o identificador mascarado (o CPF no padrão `***.999.999-**`, os demais com máscara total) mantém a classe `Identificador` e é decidido pelo par (dado, `Identificador`), com `dados-identificadores:consultar`; já não sai por `dados-pessoais`. A fonte sem transformação nunca sai.
 - **Classificação no modelo:** declarada por extensão Fluent na configuração do EF, o único lugar que alcança de forma uniforme records da Infrastructure, owned types e shadow properties, no mesmo padrão da [ADR-0124](0124-comentarios-schema-postgresql-via-hascomment-ef-core.md). Toda entidade declara uma classificação padrão, e a propriedade só é anotada quando difere. Os membros de auditoria (`CreatedBy`, `UpdatedBy`, `DeletedBy`) são classificados `Pessoal` uma vez, pela interface ou pela base. O owned type com dado pessoal declara a própria classificação, sem herdar a do dono. Coluna sem classificação resolvida reprova a conferência.
 - **Inscrição:** padrão `Interno`; situação e ofertas `Publico` (o `id` sai pelo acesso ao resource); o índice cego do CPF `Identificador`; o dono da inscrição, quem a cancelou e o motivo do cancelamento `Pessoal`.
-- **Teste do arquivo de referência:** o mapa coluna → classificação de todo o modelo fica num arquivo versionado, e qualquer mudança reprova o teste até o arquivo ser atualizado, de modo que todo rebaixamento aparece no diff. Rebaixar a classificação de coluna fixa exige aprovação da proteção de dados, registrada no PR.
+- **Teste do arquivo de referência:** o mapa coluna → classificação de todo o modelo fica num arquivo versionado, e qualquer mudança reprova o teste até o arquivo ser atualizado, de modo que todo rebaixamento aparece no diff. Rebaixar a classificação de coluna fixa exige aprovação do Representante do controlador, registrada no PR.
 - **O DTO administrativo declara a própria classificação**, por atributo na propriedade de coluna fixa e por item em cada resposta, documento e valor derivado. Uma conferência na subida garante que a propriedade lida direto da fonte não fica abaixo da classificação dela.
 - Classificar, expor e cifrar são decisões diferentes: a cifra em repouso continua sendo da [ADR-0121](0121-criptografia-de-dados-sensiveis-em-repouso.md).
 
@@ -176,7 +176,7 @@ A banca não é desenhada aqui, mas a base não a bloqueia:
 
 ### Aprovação da proteção de dados como pré-condição
 
-Todo tipo de documento e todo fato do catálogo, em qualquer classificação, passa pela aprovação da proteção de dados na criação e quando muda a classificação, a hipótese legal ou a finalidade, inclusive o catálogo semeado. No fato de sistema, a classificação, a hipótese legal e a finalidade deixam de ser fixas na semente: a semente dá só o valor inicial, e a mudança passa pela tela e pela mesma aprovação; a definição que o código do sistema calcula ou lê continua travada. O projetor respeita a classificação como está, então esse fluxo é o que impede, por exemplo, um laudo cadastrado como `Interno` por engano. Ele entra **no mesmo deploy** do projetor. As permissões sobre dado pessoal, identificador ou sensível seguem a dupla aprovação da ADR-0152.
+Todo tipo de documento e todo fato do catálogo, em qualquer classificação, passa pela aprovação do Representante do controlador na criação e quando muda a classificação, a hipótese legal ou a finalidade, inclusive o catálogo semeado. No fato de sistema, a classificação, a hipótese legal e a finalidade deixam de ser fixas na semente: a semente dá só o valor inicial, e a mudança passa pela tela e pela mesma aprovação; a definição que o código do sistema calcula ou lê continua travada. O Representante aprova, recomenda ajuste ou devolve o item ao administrador, sempre com justificativa no ato de devolução; o item fica na situação devolvida. O gestor de proteção de dados pode registrar manifestação técnica, sem decidir. O projetor respeita a classificação como está, então esse fluxo é o que impede, por exemplo, um laudo cadastrado como `Interno` por engano. Ele entra **no mesmo deploy** do projetor. As permissões sobre dado pessoal, identificador ou sensível seguem a dupla aprovação da ADR-0152.
 
 ### Contrato
 
@@ -245,7 +245,7 @@ Descartados também, dentro da opção escolhida: a permissão de acesso ao reso
 - **Emenda a [ADR-0081](0081-lgpd-by-design-dto-por-permissao.md):** o DTO por permissão é substituído pelo DTO único classificado, com o projetor como controle primário; a defesa secundária passa de mascarar a omitir; a "visão controlada" da emenda 1.3 é a projeção na aplicação.
 - **Emenda a [ADR-0151](0151-catalogo-de-permissoes-em-codigo-por-modulo.md):** o `[Permissao]` declara a natureza, e a unicidade do par entra nas conferências da subida.
 - **Responde à pendência da [ADR-0136](0136-catalogo-de-fatos-do-candidato-administravel.md)** ("Proteção dos valores"): o fato cadastrado em tempo de execução é projetado pela classificação e pela base legal congeladas no processo. O armazenamento e a cifra seguem a ADR-0141 e a ADR-0121.
-- **Emenda à governança da [ADR-0136](0136-catalogo-de-fatos-do-candidato-administravel.md)**: a classificação do fato de sistema deixa de ser fixa na semente e passa à aprovação da proteção de dados.
+- **Emenda à governança da [ADR-0136](0136-catalogo-de-fatos-do-candidato-administravel.md)**: a classificação do fato de sistema deixa de ser fixa na semente e passa à aprovação do Representante do controlador.
 - [ADR-0152](0152-governanca-das-concessoes-de-acesso.md) não muda: a revelação a pedido segue a regra do CPF dela, agora para todo identificador.
 - [ADR-0078](0078-modelo-de-autorizacao-pbac-abac.md): ponto de decisão único e verificações de contexto; a chamada, listada lá entre os escopos da concessão, sai do motor pela banca acima.
 - [ADR-0084](0084-concessao-excepcional-e-atuacao-institucional-server-side.md): a concessão excepcional deixa de ser escopada por processo, chamada ou banca; esse escopo passa à designação, e a concessão fica com unidade e tipo de resource.
@@ -275,3 +275,7 @@ A classificação das colunas é conferida em `Unifesspa.UniPlus.Contratos.UnitT
 ## Emenda — aprovação das referências
 
 Os testes comparam o resultado à referência aprovada e indicam o arquivo obtido quando há divergência. A aprovação e a cópia para o arquivo versionado são explícitas, conforme o [procedimento de referências](../../CONTRIBUTING.md#aprovação-de-referências-de-teste).
+
+## Emenda (2026-11-24) — vocabulário da proteção do catálogo
+
+Códigos: situação `DEVOLVIDA`; decisões e atos `APROVACAO`, `AJUSTE_RECOMENDADO` e `DEVOLUCAO`; pareceres `RECOMENDA_APROVACAO`, `RECOMENDA_AJUSTE` e `RECOMENDA_NAO_USO`; perfil `GESTOR_DE_PROTECAO_DE_DADOS`.

@@ -167,7 +167,7 @@ itens_da_protecao() {
 decidir_item_da_protecao() {
     local item="$1" token="$2"
     como "a aprovação da proteção de $(jq -r '.codigo' <<< "$item")" "$token" POST "/api/configuracao/admin/protecao-do-catalogo" \
-        "$(jq -c '{cadastro: (if .tipo == "DADO_DO_CANDIDATO" then "DADO_DO_CANDIDATO" else "TIPO_DOCUMENTO" end), itemId: .id, decisao: "APROVAR",
+        "$(jq -c '{cadastro: (if .tipo == "DADO_DO_CANDIDATO" then "DADO_DO_CANDIDATO" else "TIPO_DOCUMENTO" end), itemId: .id, decisao: "APROVACAO",
                    classificacaoProtecao, hipoteseLegal, finalidadeTratamento,
                    ciclo: .aprovacao.ciclo, manifestacoesNoCiclo: .aprovacao.manifestacoesNoCiclo}
                   + (if .aprovacao.manifestacaoDesfavoravel
