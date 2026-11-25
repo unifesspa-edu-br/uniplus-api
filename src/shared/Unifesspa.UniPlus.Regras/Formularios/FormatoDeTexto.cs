@@ -2,6 +2,7 @@ namespace Unifesspa.UniPlus.Regras.Formularios;
 
 using System.Text.Json;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Domain.ValueObjects;
 using Unifesspa.UniPlus.Regras.Enums;
 
@@ -15,18 +16,15 @@ using Unifesspa.UniPlus.Regras.Enums;
 /// </summary>
 public sealed record FormatoDeTexto : RestricaoValor
 {
-    /// <summary>O token do formato CPF no catálogo.</summary>
-    public const string FormatoCpf = "CPF";
-
     /// <summary>A forma canônica do texto em cada formato; nula quando o texto não está no formato.</summary>
     private static readonly Dictionary<string, Func<string, string?>> FormasCanonicas = new(StringComparer.Ordinal)
     {
-        ["LIVRE"] = static texto => texto,
-        [FormatoCpf] = static texto => Cpf.Criar(texto) is { IsSuccess: true } cpf ? cpf.Value!.Valor : null,
-        ["EMAIL"] = static texto => Email.Criar(texto) is { IsSuccess: true } email ? email.Value!.Valor : null,
-        ["TELEFONE"] = static texto => Telefone.Criar(texto) is { IsSuccess: true } telefone ? telefone.Value!.Valor : null,
-        ["CEP"] = static texto => Cep.Criar(texto) is { IsSuccess: true } cep ? cep.Value!.Valor : null,
-        ["NOME_PESSOA"] = static texto => NomePessoa.Criar(texto) is { IsSuccess: true } nome ? nome.Value!.Valor : null,
+        [FormatoTexto.Livre.Codigo()] = static texto => texto,
+        [FormatoTexto.Cpf.Codigo()] = static texto => Cpf.Criar(texto) is { IsSuccess: true } cpf ? cpf.Value!.Valor : null,
+        [FormatoTexto.Email.Codigo()] = static texto => Email.Criar(texto) is { IsSuccess: true } email ? email.Value!.Valor : null,
+        [FormatoTexto.Telefone.Codigo()] = static texto => Telefone.Criar(texto) is { IsSuccess: true } telefone ? telefone.Value!.Valor : null,
+        [FormatoTexto.Cep.Codigo()] = static texto => Cep.Criar(texto) is { IsSuccess: true } cep ? cep.Value!.Valor : null,
+        [FormatoTexto.NomePessoa.Codigo()] = static texto => NomePessoa.Criar(texto) is { IsSuccess: true } nome ? nome.Value!.Valor : null,
     };
 
     public FormatoDeTexto(string formato)
@@ -45,7 +43,7 @@ public sealed record FormatoDeTexto : RestricaoValor
 
     public override TipoRestricaoValor Tipo => TipoRestricaoValor.FormatoTexto;
 
-    /// <summary>O token do formato no catálogo, como <c>CPF</c> ou <c>EMAIL</c>.</summary>
+    /// <summary>O código do formato no catálogo, como <c>CPF</c> ou <c>EMAIL</c>.</summary>
     public string Formato { get; }
 
     public override Ternario Avaliar(JsonElement resposta, ContextoDaResposta contexto) =>

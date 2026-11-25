@@ -1,7 +1,9 @@
 namespace Unifesspa.UniPlus.Selecao.Application.Services;
 
 using Unifesspa.UniPlus.Kernel.Domain.Cidades;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
+using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
@@ -236,7 +238,7 @@ internal sealed record FatosDaVersao(
 
     private static bool EhCpf(string fatoCodigo, string? formato) =>
         string.Equals(fatoCodigo, ConjuntoBasicoDaInscricao.Cpf, StringComparison.Ordinal)
-        || string.Equals(formato, FormatoDeTexto.FormatoCpf, StringComparison.Ordinal);
+        || string.Equals(formato, FormatoTexto.Cpf.Codigo(), StringComparison.Ordinal);
 
     private static ClassificacaoDeProtecao Classificacao(string? token) =>
         ClassificacoesDeProtecao.Resolvida(ClassificacoesDeProtecao.TryAnalisar(token, out ClassificacaoDeProtecao classificacao) ? classificacao : null);

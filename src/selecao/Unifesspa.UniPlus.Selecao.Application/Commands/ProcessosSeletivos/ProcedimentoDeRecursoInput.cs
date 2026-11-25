@@ -1,5 +1,8 @@
 namespace Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
+using Unifesspa.UniPlus.Regras.Enums;
+
 /// <summary>
 /// O procedimento que o edital declara para revisar o recurso de uma matéria: o tipo de decisão recorrida, o alvo
 /// opcional dentro dela e a regra do catálogo que diz como revisar.
@@ -9,7 +12,7 @@ namespace Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
 /// <param name="RegraCodigo">Código da regra do tipo <c>REGRA_PROCEDIMENTO_RECURSO</c> no catálogo.</param>
 /// <param name="RegraVersao">Versão da regra no catálogo.</param>
 public sealed record ProcedimentoDeRecursoInput(
-    string? TipoDeDecisao,
+    [property: AceitaCodigosDe<TipoMotivoDeDecisao>] string? TipoDeDecisao,
     AlvoDoProcedimentoDeRecursoInput? Alvo,
     string? RegraCodigo,
     string? RegraVersao);

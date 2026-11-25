@@ -3,6 +3,9 @@ namespace Unifesspa.UniPlus.Configuracao.API.Contracts.Requests;
 using Unifesspa.UniPlus.Configuracao.Application.Commands.ProtecaoDoCatalogo;
 using Unifesspa.UniPlus.Configuracao.Domain.Enums;
 using Unifesspa.UniPlus.Infrastructure.Core.OpenApi;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
+using Unifesspa.UniPlus.Kernel.Domain.Enums;
+using Unifesspa.UniPlus.Regras.Enums;
 
 /// <summary>
 /// Corpo da decisão do Representante do controlador sobre a proteção de dados de um tipo de documento ou fato do
@@ -28,12 +31,12 @@ public sealed record DecidirProtecaoDoCatalogoRequest(
         AtosDaProtecao.TokenAjusteRecomendado,
         AtosDaProtecao.TokenDevolucao)]
     string? Decisao,
-    string? ClassificacaoProtecao,
-    string? HipoteseLegal,
+    [property: AceitaCodigosDe<ClassificacaoDeProtecao>] string? ClassificacaoProtecao,
+    [property: AceitaCodigosDe<HipoteseLegalTratamento>] string? HipoteseLegal,
     string? FinalidadeTratamento,
     int? Ciclo,
     int? ManifestacoesNoCiclo,
-    string? ClassificacaoRecomendada = null,
+    [property: AceitaCodigosDe<ClassificacaoDeProtecao>] string? ClassificacaoRecomendada = null,
     string? Justificativa = null)
 {
     // O corpo continua plano, porque é o contrato; o comando recebe as partes agrupadas, ainda não conferidas.

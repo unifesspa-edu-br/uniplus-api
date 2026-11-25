@@ -1,6 +1,7 @@
 namespace Unifesspa.UniPlus.Regras.Formularios;
 
 using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
+using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.Leituras;
 
 /// <summary>Uma página: o código com que o avaliador a identifica, a exibição da página inteira, os itens e os grupos.</summary>
@@ -20,7 +21,7 @@ public sealed record ItemPortavel(
     string FatoCodigo,
     RegrasDoCampoDto Regras,
     IReadOnlyList<string>? Oferta,
-    string? Formato);
+    [property: AceitaCodigosDe<FormatoTexto>] string? Formato);
 
 /// <summary>Um grupo repetível: as ocorrências admitidas, a exibição e a obrigatoriedade e os subitens.</summary>
 public sealed record GrupoPortavel(

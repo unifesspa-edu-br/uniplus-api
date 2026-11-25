@@ -1,6 +1,8 @@
 namespace Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Regras.Entradas;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.HomologacaoDasInscricoes;
 
 /// <summary>
 /// Uma condição da regra de homologação das inscrições, como o cliente a escreve.
@@ -17,7 +19,7 @@ using Unifesspa.UniPlus.Regras.Entradas;
 /// ao menos uma cláusula.
 /// </param>
 public sealed record CondicaoDeHomologacaoInput(
-    string? Tipo = null,
+    [property: AceitaCodigosDe<TipoDeCondicaoDeHomologacao>] string? Tipo = null,
     int? EdicaoDoExame = null,
     string? MotivoDesfavoravelCodigo = null,
     IReadOnlyList<IReadOnlyList<CondicaoPrecondicaoInput>>? Enquadramento = null);

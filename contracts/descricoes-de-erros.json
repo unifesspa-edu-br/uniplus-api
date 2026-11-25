@@ -5915,6 +5915,20 @@
       ]
     },
     {
+      "codigo": "uniplus.configuracao.modelo_formulario.abrangencia_desconhecida",
+      "requisitos": [],
+      "oQueAconteceu": [
+        "Abrangência da base legal desconhecida. A resposta indica o campo e acumula as demais recusas da leitura. Nada é gravado."
+      ],
+      "comoResolver": [
+        "Informe no campo indicado um código conhecido do respectivo vocabulário e repita o pedido."
+      ],
+      "ondeAparece": [
+        "Criação de um modelo de formulário",
+        "Atualização de um modelo de formulário"
+      ]
+    },
+    {
       "codigo": "uniplus.configuracao.modelo_formulario.codigo_ja_existe",
       "requisitos": [],
       "oQueAconteceu": [
@@ -5971,6 +5985,20 @@
         "Atualização de um modelo de formulário",
         "Ativação de um modelo de formulário",
         "Desativação de um modelo de formulário"
+      ]
+    },
+    {
+      "codigo": "uniplus.configuracao.modelo_formulario.consequencia_desconhecida",
+      "requisitos": [],
+      "oQueAconteceu": [
+        "Consequência do indeferimento desconhecida. A resposta indica o campo e acumula as demais recusas da leitura. Nada é gravado."
+      ],
+      "comoResolver": [
+        "Informe no campo indicado um código conhecido do respectivo vocabulário e repita o pedido."
+      ],
+      "ondeAparece": [
+        "Criação de um modelo de formulário",
+        "Atualização de um modelo de formulário"
       ]
     },
     {
@@ -6202,6 +6230,20 @@
       ],
       "comoResolver": [
         "Retire o fato de `pressupostos`, se o modelo deve coletá-lo, ou retire o item que o coleta, se ele deve vir da inscrição, e repita o pedido."
+      ],
+      "ondeAparece": [
+        "Criação de um modelo de formulário",
+        "Atualização de um modelo de formulário"
+      ]
+    },
+    {
+      "codigo": "uniplus.configuracao.modelo_formulario.situacao_da_base_legal_desconhecida",
+      "requisitos": [],
+      "oQueAconteceu": [
+        "Situação da base legal desconhecida. A resposta indica o campo e acumula as demais recusas da leitura. Nada é gravado."
+      ],
+      "comoResolver": [
+        "Informe no campo indicado um código conhecido do respectivo vocabulário e repita o pedido."
       ],
       "ondeAparece": [
         "Criação de um modelo de formulário",

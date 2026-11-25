@@ -5,6 +5,7 @@ using Domain.Enums;
 using Kernel.Results;
 
 using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
+using Unifesspa.UniPlus.Regras.Enums;
 
 /// <summary>Confere e constrói as bases legais informadas, acumulando as recusas por posição.</summary>
 internal static class EscritaDasBasesLegais

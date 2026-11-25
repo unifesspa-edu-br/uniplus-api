@@ -3,6 +3,7 @@ namespace Unifesspa.UniPlus.Selecao.Application.Commands.MotivosDeDecisao;
 using Unifesspa.UniPlus.Application.Abstractions.Messaging;
 using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 
 /// <summary>
@@ -12,8 +13,8 @@ using Unifesspa.UniPlus.Selecao.Domain.Enums;
 /// (o fundamento, na isenção da taxa).
 /// </summary>
 public sealed record CriarMotivoDeDecisaoCommand(
-    string? Tipo,
+    [property: AceitaCodigosDe<TipoMotivoDeDecisao>] string? Tipo,
     string? Codigo,
     string? Descricao,
-    string? Subclassificacao,
+    [property: AceitaCodigosDe<FundamentoIsencao>] string? Subclassificacao,
     [property: AceitaCodigosDe<SentidoDoMotivo>] string? Sentido) : ICommand<Result<Guid>>;

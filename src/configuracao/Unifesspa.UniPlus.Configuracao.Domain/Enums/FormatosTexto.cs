@@ -1,6 +1,7 @@
 namespace Unifesspa.UniPlus.Configuracao.Domain.Enums;
 
 using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Regras.Enums;
 
 /// <summary>A exibição parcial do texto de um fato de domínio texto, conforme o <see cref="FormatoTexto"/>.</summary>
 public static class FormatosTexto

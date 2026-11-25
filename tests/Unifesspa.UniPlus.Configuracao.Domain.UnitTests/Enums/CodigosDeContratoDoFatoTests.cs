@@ -18,16 +18,6 @@ public sealed class CodigosDeContratoDoFatoTests
         (EscopoFato.MembroGrupo, "MEMBRO_GRUPO", "Membro do grupo"),
     ];
 
-    private static readonly (FormatoTexto Valor, string Codigo, string Rotulo)[] Formatos =
-    [
-        (FormatoTexto.Livre, "LIVRE", "Texto livre"),
-        (FormatoTexto.Cpf, "CPF", "CPF"),
-        (FormatoTexto.Email, "EMAIL", "E-mail"),
-        (FormatoTexto.Telefone, "TELEFONE", "Telefone"),
-        (FormatoTexto.Cep, "CEP", "CEP"),
-        (FormatoTexto.NomePessoa, "NOME_PESSOA", "Nome de pessoa"),
-    ];
-
     private static readonly (ComponenteDeExibicao Valor, string Codigo, string Rotulo)[] Componentes =
     [
         (ComponenteDeExibicao.Moeda, "MOEDA", "Valor em reais"),
@@ -36,9 +26,6 @@ public sealed class CodigosDeContratoDoFatoTests
 
     [Fact(DisplayName = "Cada escopo do fato tem o código e o rótulo que o contrato publica")]
     public void EscopoFato_CodigoERotuloDeCadaValor() => ConferirPares(Escopos);
-
-    [Fact(DisplayName = "Cada formato de texto tem o código e o rótulo que o contrato publica")]
-    public void FormatoTexto_CodigoERotuloDeCadaValor() => ConferirPares(Formatos);
 
     [Fact(DisplayName = "Cada componente de exibição tem o código e o rótulo que o contrato publica")]
     public void ComponenteDeExibicao_CodigoERotuloDeCadaValor() => ConferirPares(Componentes);
@@ -49,12 +36,6 @@ public sealed class CodigosDeContratoDoFatoTests
     [InlineData("TODOS")]
     public void EscopoFato_CodigoForaDoContrato_NaoEhReconhecido(string codigo) =>
         CatalogoDe<EscopoFato>.TentarObter(codigo, out _).Should().BeFalse();
-
-    [Theory(DisplayName = "O código de formato fora do contrato não é reconhecido")]
-    [InlineData("livre")]
-    [InlineData("NENHUM")]
-    public void FormatoTexto_CodigoForaDoContrato_NaoEhReconhecido(string codigo) =>
-        CatalogoDe<FormatoTexto>.TentarObter(codigo, out _).Should().BeFalse();
 
     [Theory(DisplayName = "O código de componente fora do contrato não é reconhecido")]
     [InlineData("moeda")]

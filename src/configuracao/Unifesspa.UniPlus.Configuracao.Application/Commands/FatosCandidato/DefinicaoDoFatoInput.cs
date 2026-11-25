@@ -1,6 +1,8 @@
 namespace Unifesspa.UniPlus.Configuracao.Application.Commands.FatosCandidato;
 
+using Unifesspa.UniPlus.Configuracao.Domain.Enums;
 using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
+using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Regras.Enums;
 
 /// <summary>
@@ -13,11 +15,11 @@ using Unifesspa.UniPlus.Regras.Enums;
 /// </summary>
 public sealed record DefinicaoDoFatoInput(
     string PontoResolucao,
-    string ClassificacaoProtecao,
+    [property: AceitaCodigosDe<ClassificacaoDeProtecao>] string ClassificacaoProtecao,
     string FinalidadeTratamento,
-    string HipoteseLegal,
+    [property: AceitaCodigosDe<HipoteseLegalTratamento>] string HipoteseLegal,
     [property: AceitaCodigosDe<TipoDoDado>] string? Dominio = null,
     [property: AceitaCodigosDe<QuantidadeDeValores>] string? Cardinalidade = null,
     [property: AceitaCodigosDe<FonteValoresFato>] string? FonteValores = null,
-    string? Formato = null,
-    string? Escopo = null);
+    [property: AceitaCodigosDe<FormatoTexto>] string? Formato = null,
+    [property: AceitaCodigosDe<EscopoFato>] string? Escopo = null);

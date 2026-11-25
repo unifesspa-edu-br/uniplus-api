@@ -9,6 +9,7 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence.CodigosDeContrato;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Protecao;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
+using Unifesspa.UniPlus.Regras.Enums;
 
 /// <summary>Configura a persistência da base legal da regra de comprovação.</summary>
 public sealed class BaseLegalDaComprovacaoConfiguration : IEntityTypeConfiguration<BaseLegalDaComprovacao>

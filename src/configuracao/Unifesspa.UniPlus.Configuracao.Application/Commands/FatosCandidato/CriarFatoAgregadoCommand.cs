@@ -1,7 +1,10 @@
 namespace Unifesspa.UniPlus.Configuracao.Application.Commands.FatosCandidato;
 
 using Unifesspa.UniPlus.Application.Abstractions.Messaging;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
+using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Regras.Enums;
 
 /// <summary>
 /// Cadastro do agregado sobre grupo repetível pelo administrador (ADR-0138, UNI-REQ-0146): o fato do
@@ -14,7 +17,7 @@ public sealed record CriarFatoAgregadoCommand(
     string? Descricao,
     string FatoDeMembro,
     string PontoResolucao,
-    string ClassificacaoProtecao,
+    [property: AceitaCodigosDe<ClassificacaoDeProtecao>] string ClassificacaoProtecao,
     string FinalidadeTratamento,
-    string HipoteseLegal,
-    string? ComponenteExibicao = null) : ICommand<Result<Guid>>;
+    [property: AceitaCodigosDe<HipoteseLegalTratamento>] string HipoteseLegal,
+    [property: AceitaCodigosDe<ComponenteDeExibicao>] string? ComponenteExibicao = null) : ICommand<Result<Guid>>;

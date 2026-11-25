@@ -22,33 +22,6 @@ public sealed class CodigosDeContratoDasBasesLegaisEReferenciaTests
     }
 
     [Fact]
-    public void TipoAbrangencia_CadaValor_TemCodigoERotuloEsperados()
-    {
-        Enum.GetValues<TipoAbrangencia>()
-            .ToDictionary(static valor => valor, static valor => (valor.Codigo(), valor.Rotulo()))
-            .Should().Equal(new Dictionary<TipoAbrangencia, (string, string)>
-            {
-                [TipoAbrangencia.Federal] = ("FEDERAL", "Federal"),
-                [TipoAbrangencia.Estadual] = ("ESTADUAL", "Estadual"),
-                [TipoAbrangencia.Municipal] = ("MUNICIPAL", "Municipal"),
-                [TipoAbrangencia.InternaNorma] = ("INTERNA_NORMA", "Norma interna"),
-                [TipoAbrangencia.InternaEdital] = ("INTERNA_EDITAL", "Edital"),
-            });
-    }
-
-    [Fact]
-    public void StatusBaseLegal_CadaValor_TemCodigoERotuloEsperados()
-    {
-        Enum.GetValues<StatusBaseLegal>()
-            .ToDictionary(static valor => valor, static valor => (valor.Codigo(), valor.Rotulo()))
-            .Should().Equal(new Dictionary<StatusBaseLegal, (string, string)>
-            {
-                [StatusBaseLegal.Pendente] = ("PENDENTE", "Pendente"),
-                [StatusBaseLegal.Resolvido] = ("RESOLVIDO", "Resolvido"),
-            });
-    }
-
-    [Fact]
     public void AbrangenciaDoDiaNaoUtil_CadaValor_TemCodigoERotuloEsperados()
     {
         Enum.GetValues<AbrangenciaDoDiaNaoUtil>()
