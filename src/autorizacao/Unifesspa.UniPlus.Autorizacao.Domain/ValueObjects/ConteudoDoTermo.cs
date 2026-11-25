@@ -4,6 +4,7 @@ using System.Security.Cryptography;
 using System.Text;
 
 using Unifesspa.UniPlus.Autorizacao.Domain.Errors;
+using Unifesspa.UniPlus.Kernel.Extensions;
 using Unifesspa.UniPlus.Kernel.Results;
 
 /// <summary>
@@ -61,7 +62,7 @@ public sealed record ConteudoDoTermo
     // Nulo quando o texto, depois de normalizado, não cabe nos limites ou traz caractere proibido.
     private static string? NormalizarTexto(string? texto)
     {
-        if (string.IsNullOrWhiteSpace(texto) || TemSurrogateSolto(texto))
+        if (string.IsNullOrWhiteSpace(texto) || texto.TemSubstitutoIsolado())
         {
             return null;
         }
@@ -108,21 +109,4 @@ public sealed record ConteudoDoTermo
     private static bool TemControleProibido(string texto) =>
         texto.Any(static c => char.IsControl(c) && c is not '\n' and not '\t');
 
-    // A normalização Unicode não aceita metade de um par de surrogates: o texto que a traz é recusado, não corrigido.
-    private static bool TemSurrogateSolto(string texto)
-    {
-        for (int i = 0; i < texto.Length; i++)
-        {
-            if (char.IsHighSurrogate(texto[i]) && i + 1 < texto.Length && char.IsLowSurrogate(texto[i + 1]))
-            {
-                i++;
-            }
-            else if (char.IsSurrogate(texto[i]))
-            {
-                return true;
-            }
-        }
-
-        return false;
-    }
 }

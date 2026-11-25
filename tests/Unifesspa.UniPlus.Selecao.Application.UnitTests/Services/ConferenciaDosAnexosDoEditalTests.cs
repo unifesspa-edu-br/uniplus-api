@@ -48,18 +48,12 @@ public sealed class ConferenciaDosAnexosDoEditalTests
     [Fact(DisplayName = "Anexo com o mesmo documento e o mesmo nome mantém a identidade; trocado ou renomeado ganha outra")]
     public async Task Identidade_MantidaSoQuandoNadaMuda()
     {
-        DocumentoAPublicar quadro = Documento("Quadro", TiposDeMidiaDeDocumento.Pdf);
-        DocumentoAPublicar cronograma = Documento("Cronograma", TiposDeMidiaDeDocumento.Pdf);
+        (DocumentoAPublicar quadro, AnexoDoEdital vigenteQuadro) = DocumentoEAnexoVigente("Quadro");
+        (DocumentoAPublicar cronograma, AnexoDoEdital vigenteCronograma) = DocumentoEAnexoVigente("Cronograma");
         DocumentoAPublicar quadroNovo = Documento("Quadro", TiposDeMidiaDeDocumento.Pdf);
-        AnexoDoEdital vigenteQuadro = AnexoVigente(quadro);
-        AnexoDoEdital vigenteCronograma = AnexoVigente(cronograma);
 
         Result<IReadOnlyList<AnexoDoEdital>> resultado = await ConferirAsync(
-            [
-                new AnexoSolicitadoDoEdital(quadro.Id, "Quadro"),
-                new AnexoSolicitadoDoEdital(cronograma.Id, "Cronograma revisado"),
-                new AnexoSolicitadoDoEdital(quadroNovo.Id, "Quadro novo"),
-            ],
+            AnexosSolicitadosNaRetificacao(quadro, cronograma, quadroNovo),
             [vigenteQuadro, vigenteCronograma],
             quadro, cronograma, quadroNovo);
 
@@ -103,6 +97,36 @@ public sealed class ConferenciaDosAnexosDoEditalTests
         resultado.Error!.Code.Should().Be(AnexoDoEditalErrorCodes.FinalidadeIncompativel);
     }
 
+    [Fact(DisplayName = "Finalidade incompatível prevalece sobre documento não confirmado e nome com substituto isolado")]
+    public void Criar_OutraFinalidadeENomeComSubstitutoIsolado_RecusaFinalidade()
+    {
+        DocumentoAPublicar documento = Documento("Quadro", TiposDeMidiaDeDocumento.Pdf, confirmado: false, finalidade: FinalidadeDoDocumento.DocumentoDoEdital);
+
+        Result<AnexoDoEdital> resultado = AnexoDoEdital.Criar(Guid.CreateVersion7(), documento, "Quadro\uD800");
+
+        resultado.Error!.Code.Should().Be(AnexoDoEditalErrorCodes.FinalidadeIncompativel);
+    }
+
+    [Fact(DisplayName = "Documento não confirmado prevalece sobre nome com substituto isolado")]
+    public void Criar_NaoConfirmadoENomeComSubstitutoIsolado_RecusaDocumentoNaoConfirmado()
+    {
+        DocumentoAPublicar documento = Documento("Quadro", TiposDeMidiaDeDocumento.Pdf, confirmado: false);
+
+        Result<AnexoDoEdital> resultado = AnexoDoEdital.Criar(Guid.CreateVersion7(), documento, "Quadro\uD800");
+
+        resultado.Error!.Code.Should().Be(AnexoDoEditalErrorCodes.NaoConfirmado);
+    }
+
+    [Fact]
+    public void Criar_ConfirmadoENomeComSubstitutoIsolado_RecusaNome()
+    {
+        DocumentoAPublicar documento = Documento("Quadro", TiposDeMidiaDeDocumento.Pdf);
+
+        Result<AnexoDoEdital> resultado = AnexoDoEdital.Criar(Guid.CreateVersion7(), documento, "Quadro\uD800");
+
+        resultado.Error!.Code.Should().Be(AnexoDoEditalErrorCodes.NomeInvalido);
+    }
+
     [Fact(DisplayName = "Nome que o download não aceita é recusado com erro nomeado")]
     public async Task NomeInvalido_Recusa()
     {
@@ -139,6 +163,20 @@ public sealed class ConferenciaDosAnexosDoEditalTests
 
     private static AnexoDoEdital AnexoVigente(DocumentoAPublicar documento) =>
         AnexoDoEdital.Criar(Guid.CreateVersion7(), documento, documento.NomeArquivo).Value!;
+
+    private static (DocumentoAPublicar Documento, AnexoDoEdital Anexo) DocumentoEAnexoVigente(string nome)
+    {
+        DocumentoAPublicar documento = Documento(nome, TiposDeMidiaDeDocumento.Pdf);
+        return (documento, AnexoVigente(documento));
+    }
+
+    private static AnexoSolicitadoDoEdital[] AnexosSolicitadosNaRetificacao(
+        DocumentoAPublicar quadro, DocumentoAPublicar cronograma, DocumentoAPublicar quadroNovo) =>
+        [
+            new(quadro.Id, "Quadro"),
+            new(cronograma.Id, "Cronograma revisado"),
+            new(quadroNovo.Id, "Quadro novo"),
+        ];
 
     private static DocumentoAPublicar Documento(
         string nome,

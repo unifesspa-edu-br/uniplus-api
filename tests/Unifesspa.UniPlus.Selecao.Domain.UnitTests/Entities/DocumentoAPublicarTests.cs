@@ -22,6 +22,15 @@ public sealed class DocumentoAPublicarTests
     private static readonly TimeProvider Relogio = TimeProvider.System;
     private static readonly byte[] ConteudoPdfValido = [.. "%PDF-1.7 conteúdo qualquer"u8];
 
+    [Fact]
+    public void IniciarPendente_NomeComSubstitutoIsolado_RecusaNome()
+    {
+        Result<DocumentoAPublicar> resultado = DocumentoAPublicar.IniciarPendente(
+            ProcessoSeletivoId, FinalidadeDoDocumento.AnexoDoEdital, "anexo\uD800", TiposDeMidiaDeDocumento.Pdf, Relogio, TimeSpan.FromMinutes(15));
+
+        resultado.Errors.Should().ContainSingle().Which.Error.Code.Should().Be(DocumentoAPublicarErrorCodes.NomeArquivoInvalido);
+    }
+
     [Fact(DisplayName = "IniciarPendente cria o registro em Pendente com ExpiraEm = agora + ttl, formato e nome")]
     public void IniciarPendente_CriaRegistroPendente()
     {

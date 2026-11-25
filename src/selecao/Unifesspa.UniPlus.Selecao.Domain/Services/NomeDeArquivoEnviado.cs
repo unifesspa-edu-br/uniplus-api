@@ -2,6 +2,8 @@ namespace Unifesspa.UniPlus.Selecao.Domain.Services;
 
 using System.Text;
 
+using Unifesspa.UniPlus.Kernel.Extensions;
+
 /// <summary>
 /// A regra do nome com que o administrador envia um arquivo ao processo — o nome que a pessoa
 /// recebe no download. Única para o modelo de documento e para o documento a publicar.
@@ -28,18 +30,10 @@ public static class NomeDeArquivoEnviado
         ArgumentNullException.ThrowIfNull(extensao);
 
         string sufixo = extensao.Length == 0 ? string.Empty : "." + extensao;
-        string nome = (nomeArquivo ?? string.Empty).Trim().Normalize(NormalizationForm.FormC);
-        if (sufixo.Length > 0 && nome.EndsWith(sufixo, StringComparison.OrdinalIgnoreCase))
-        {
-            nome = nome[..^sufixo.Length].TrimEnd();
-        }
-
-        if (nome.Length == 0 || nome.Any(static c => char.IsControl(c) || CaracteresProibidos.Contains(c, StringComparison.Ordinal)))
-        {
-            return null;
-        }
-
+        string nome = nomeArquivo?.TemSubstitutoIsolado() == true ? string.Empty : (nomeArquivo ?? string.Empty).Trim().Normalize(NormalizationForm.FormC);
+        nome = nome.EndsWith(sufixo, StringComparison.OrdinalIgnoreCase) ? nome[..^sufixo.Length].TrimEnd() : nome;
         string comExtensao = nome + sufixo;
-        return comExtensao.Length <= TamanhoMaximo ? comExtensao : null;
+        return nome.Length == 0 || nome.Any(static c => char.IsControl(c) || CaracteresProibidos.Contains(c, StringComparison.Ordinal))
+            || comExtensao.Length > TamanhoMaximo ? null : comExtensao;
     }
 }
