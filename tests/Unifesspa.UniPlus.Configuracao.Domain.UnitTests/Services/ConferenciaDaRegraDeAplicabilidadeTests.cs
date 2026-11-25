@@ -40,6 +40,46 @@ public sealed class ConferenciaDaRegraDeAplicabilidadeTests
             .Should().Equal(ModalidadeErrorCodes.RegraCitaFatoNaoCitavel);
     }
 
+    [Fact]
+    public void Conferir_FatoNaoCitavel_NaoRepeteCodigo()
+    {
+        FatoCandidato fato = Declarado("FATO_DE_TESTE", TipoDoDado.Texto, formato: FormatoTexto.NomePessoa);
+        FieldError erro = ConferenciaDaRegraDeAplicabilidade.Conferir(
+            Quando(("FATO_DE_TESTE", "valor")), vigente: null, Catalogo(fato)).Single();
+
+        erro.Field.Should().Be("regraDeAplicabilidade");
+        erro.Error.Code.Should().Be(ModalidadeErrorCodes.RegraCitaFatoNaoCitavel);
+        erro.Error.Message.Should().NotContain("FATO_DE_TESTE");
+        erro.Origem.Should().Be("FATO_DE_TESTE");
+    }
+
+    [Fact]
+    public void Conferir_FatoDesativado_NaoRepeteCodigo()
+    {
+        FatoCandidato fato = Declarado("FATO_DE_TESTE");
+        fato.Desativar();
+        FieldError erro = ConferenciaDaRegraDeAplicabilidade.Conferir(
+            Quando(("FATO_DE_TESTE", true)), vigente: null, Catalogo(fato)).Single();
+
+        erro.Field.Should().Be("regraDeAplicabilidade");
+        erro.Error.Code.Should().Be(ModalidadeErrorCodes.RegraCitaFatoDesativado);
+        erro.Error.Message.Should().NotContain("FATO_DE_TESTE");
+        erro.Origem.Should().Be("FATO_DE_TESTE");
+    }
+
+    [Fact]
+    public void Conferir_FatoPosteriorAInscricao_NaoRepeteCodigo()
+    {
+        FatoCandidato fato = Declarado("FATO_DE_TESTE", ponto: "RESULTADO_FINAL");
+        FieldError erro = ConferenciaDaRegraDeAplicabilidade.Conferir(
+            Quando(("FATO_DE_TESTE", true)), vigente: null, Catalogo(fato)).Single();
+
+        erro.Field.Should().Be("regraDeAplicabilidade");
+        erro.Error.Code.Should().Be(ModalidadeErrorCodes.RegraCitaFatoPosteriorAInscricao);
+        erro.Error.Message.Should().NotContain("FATO_DE_TESTE").And.Contain("RESULTADO_FINAL");
+        erro.Origem.Should().Be("FATO_DE_TESTE");
+    }
+
     [Fact(DisplayName = "Fato desativado recusa citação nova e mantém a que a regra vigente já fazia")]
     public void Conferir_FatoDesativado_SoRecusaCitacaoNova()
     {
@@ -65,6 +105,20 @@ public sealed class ConferenciaDaRegraDeAplicabilidadeTests
             .Should().Equal(ModalidadeErrorCodes.RegraCitaValorDesativado);
         ConferenciaDaRegraDeAplicabilidade.Conferir(Quando(("COR_RACA", "PARDA")), vigente: Quando(("COR_RACA", "PARDA")), catalogo)
             .Should().BeEmpty();
+    }
+
+    [Fact]
+    public void Conferir_ValorDesativado_NaoRepeteCodigos()
+    {
+        FatoCandidato fato = Declarado("FATO_DE_TESTE", TipoDoDado.Opcao);
+        fato.AdicionarValorDominio("VALOR_DE_TESTE", "Valor", 0, ativo: true).IsSuccess.Should().BeTrue();
+        fato.DesativarValor("VALOR_DE_TESTE").IsSuccess.Should().BeTrue();
+        FieldError erro = ConferenciaDaRegraDeAplicabilidade.Conferir(
+            Quando(("FATO_DE_TESTE", "VALOR_DE_TESTE")), vigente: null, Catalogo(fato)).Single();
+
+        erro.Field.Should().Be("regraDeAplicabilidade");
+        erro.Error.Code.Should().Be(ModalidadeErrorCodes.RegraCitaValorDesativado);
+        erro.Error.Message.Should().NotContain("FATO_DE_TESTE").And.NotContain("VALOR_DE_TESTE");
     }
 
     [Theory(DisplayName = "Só fato conhecido até a inscrição decide a modalidade; fase sem precedência até ela é recusada")]

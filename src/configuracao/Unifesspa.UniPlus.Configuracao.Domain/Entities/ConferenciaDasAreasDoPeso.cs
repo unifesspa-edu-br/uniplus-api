@@ -2,7 +2,6 @@ namespace Unifesspa.UniPlus.Configuracao.Domain.Entities;
 
 using Unifesspa.UniPlus.Configuracao.Domain.Errors;
 using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
-using Unifesspa.UniPlus.Kernel.Extensions;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Services;
 
@@ -15,7 +14,6 @@ internal sealed class ConferenciaDasAreasDoPeso
 {
     private const int EscalaPeso = 2;
     private const int EscalaCorte = 3;
-    private const int TamanhoMaximoDoCodigoEcoado = 40;
 
     /// <summary>
     /// Teto de itens aceitos em <c>areas</c>: acima dele a lista é recusada inteira, sem um erro por item —
@@ -91,7 +89,7 @@ internal sealed class ConferenciaDasAreasDoPeso
 
         Recusar($"{campo}.codigo", PesoAreaEnemErrorCodes.AreaForaDoDominio, string.IsNullOrEmpty(codigo)
             ? $"Informe o código da área. Aceitas: {AreasAceitas}."
-            : $"\"{CaracteresInvisiveis.ParaEco(codigo, TamanhoMaximoDoCodigoEcoado)}\" não é uma área do Peso por Área. Aceitas: {AreasAceitas}.");
+            : $"A área informada não pertence às áreas do Peso por Área. Aceitas: {AreasAceitas}.");
         return null;
     }
 

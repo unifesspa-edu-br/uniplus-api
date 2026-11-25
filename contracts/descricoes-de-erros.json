@@ -4092,7 +4092,7 @@
       ],
       "oQueAconteceu": [
         "O administrador cadastrou um fato que resume respostas de grupo (`POST /api/configuracao/admin/fatos-candidato/agregados`) sobre um fato que existe no catálogo, mas que não é um fato declarado de membro de grupo. Esse fato reúne as respostas de cada membro de um grupo repetível, como a composição familiar (UNI-REQ-0146). Um fato derivado, um fato de integração e um fato declarado com escopo `CANDIDATO`, que o candidato responde uma única vez, não têm respostas por membro para resumir.",
-        "A recusa vem na lista `errors` da resposta, com `field` igual a `fatoDeMembro`. A mensagem cita o código do fato. Nada é gravado."
+        "A recusa vem na lista `errors` da resposta, com `field` igual a `fatoDeMembro`. A mensagem descreve a regra sem repetir o código do fato. Nada é gravado."
       ],
       "comoResolver": [
         "Escolha como fato de membro um fato declarado com escopo `MEMBRO_GRUPO`. Se o dado ainda não é coletado por membro, cadastre um fato declarado com esse escopo (`POST /api/configuracao/admin/fatos-candidato`) e use-o no resumo de grupo."
