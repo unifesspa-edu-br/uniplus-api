@@ -46,10 +46,7 @@ public sealed class ObrigatoriedadeLegalPredicadoEndpointTests : Obrigatoriedade
     public async Task Criar_PredicadoSemDiscriminador_Retorna400NomeandoOCampo(string chaveErrada)
     {
         using HttpClient client = await ClienteComConcessaoAsync();
-        Dictionary<string, object> predicadoSemDiscriminador = new(StringComparer.Ordinal)
-        {
-            [chaveErrada] = "concorrenciaDuplaObrigatoria",
-        };
+        Dictionary<string, object> predicadoSemDiscriminador = PredicadoSemDiscriminador(chaveErrada);
 
         HttpResponseMessage response = await PostAsync(
             client,
@@ -59,13 +56,7 @@ public sealed class ObrigatoriedadeLegalPredicadoEndpointTests : Obrigatoriedade
         string body = await response.Content.ReadAsStringAsync();
         response.StatusCode.Should().Be(HttpStatusCode.BadRequest, $"body: {body}");
 
-        using JsonDocument problema = JsonDocument.Parse(body);
-        problema.RootElement.GetProperty("code").GetString()
-            .Should().Be("uniplus.requisicao.malformada");
-        string detalhe = problema.RootElement.GetProperty("detail").GetString()!;
-        detalhe.Should().Contain("'predicado'").And.Contain("'$tipo'");
-        detalhe.Should().NotContain("Unifesspa.UniPlus",
-            "o nome do tipo CLR que falhou a desserialização não é assunto de quem chamou");
+        VerificarProblemaDePredicadoSemDiscriminador(body);
     }
 
     /// <summary>
@@ -101,6 +92,22 @@ public sealed class ObrigatoriedadeLegalPredicadoEndpointTests : Obrigatoriedade
 
         response.StatusCode.Should().Be(HttpStatusCode.Created,
             $"body: {await response.Content.ReadAsStringAsync()}");
+    }
+
+    private static Dictionary<string, object> PredicadoSemDiscriminador(string chaveErrada) => new(StringComparer.Ordinal)
+    {
+        [chaveErrada] = "concorrenciaDuplaObrigatoria",
+    };
+
+    private static void VerificarProblemaDePredicadoSemDiscriminador(string body)
+    {
+        using JsonDocument problema = JsonDocument.Parse(body);
+        problema.RootElement.GetProperty("code").GetString()
+            .Should().Be("uniplus.requisicao.malformada");
+        string detalhe = problema.RootElement.GetProperty("detail").GetString()!;
+        detalhe.Should().Contain("'predicado'").And.Contain("'$tipo'");
+        detalhe.Should().NotContain("Unifesspa.UniPlus",
+            "o nome do tipo CLR que falhou a desserialização não é assunto de quem chamou");
     }
 
     /// <summary>O corpo mínimo aceito pelo endpoint, variando só o predicado.</summary>

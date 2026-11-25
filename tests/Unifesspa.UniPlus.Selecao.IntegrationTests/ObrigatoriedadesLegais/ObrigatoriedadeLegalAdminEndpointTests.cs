@@ -51,32 +51,14 @@ public sealed class ObrigatoriedadeLegalAdminEndpointTests : ObrigatoriedadeLega
         using HttpClient client = await ClienteComConcessaoAsync();
         string regraCodigo = UniqueRegraCodigo();
 
-        object payload = new
-        {
-            tipoProcessoCodigo = "*",
-            categoria = "ETAPA",
-            regraCodigo,
-            predicado = PredicadoEtapaProvaObjetiva,
-            descricaoHumana = "Edital deve incluir Prova Objetiva",
-            baseLegal = "Lei 12.711/2012 art.1º",
-            vigenciaInicio = "2026-01-01",
-            vigenciaFim = (string?)null,
-            atoNormativoUrl = (string?)null,
-            portariaInternaCodigo = (string?)null,
-        };
+        object payload = CorposDeObrigatoriedadeLegal.RegraUniversal(regraCodigo, PredicadoEtapaProvaObjetiva);
 
         HttpResponseMessage response = await PostAsync(client, "/api/selecao/admin/obrigatoriedades-legais", payload);
 
         string body = await response.Content.ReadAsStringAsync();
         response.StatusCode.Should().Be(HttpStatusCode.Created,
             $"esperava Created mas veio {response.StatusCode}. Body: {body}");
-        await using (AsyncServiceScope scope = Fixture.Factory.Services.CreateAsyncScope())
-        await using (UniPlusDbContext db = ResolveDbContext(scope))
-        {
-            ObrigatoriedadeLegal? regra = await db.ObrigatoriedadesLegais
-                .FirstOrDefaultAsync(o => o.RegraCodigo == regraCodigo);
-            regra.Should().NotBeNull();
-        }
+        await VerificarRegraGravadaAsync(regraCodigo);
     }
 
     [Fact(DisplayName = "POST sem Idempotency-Key retorna 400 ou 422")]
@@ -84,16 +66,7 @@ public sealed class ObrigatoriedadeLegalAdminEndpointTests : ObrigatoriedadeLega
     {
         using HttpClient client = await ClienteComConcessaoAsync();
 
-        object payload = new
-        {
-            tipoProcessoCodigo = "*",
-            categoria = "OUTROS",
-            regraCodigo = UniqueRegraCodigo(),
-            predicado = PredicadoConcorrenciaDupla,
-            descricaoHumana = "x",
-            baseLegal = "Lei",
-            vigenciaInicio = "2026-01-01",
-        };
+        object payload = CorposDeObrigatoriedadeLegal.RegraSemChave(UniqueRegraCodigo(), PredicadoConcorrenciaDupla);
 
         using HttpRequestMessage request = new(HttpMethod.Post,
             new Uri("/api/selecao/admin/obrigatoriedades-legais", UriKind.Relative));
@@ -111,16 +84,7 @@ public sealed class ObrigatoriedadeLegalAdminEndpointTests : ObrigatoriedadeLega
     {
         using HttpClient client = await ClienteComConcessaoAsync();
 
-        object payload = new
-        {
-            tipoProcessoCodigo = "SISU_ANTIGO",
-            categoria = "OUTROS",
-            regraCodigo = UniqueRegraCodigo(),
-            predicado = PredicadoConcorrenciaDupla,
-            descricaoHumana = "Tipo inválido",
-            baseLegal = "Lei",
-            vigenciaInicio = "2026-01-01",
-        };
+        object payload = CorposDeObrigatoriedadeLegal.RegraComTipoInvalido(UniqueRegraCodigo(), PredicadoConcorrenciaDupla);
 
         HttpResponseMessage response = await PostAsync(client, "/api/selecao/admin/obrigatoriedades-legais", payload);
 
@@ -137,32 +101,14 @@ public sealed class ObrigatoriedadeLegalAdminEndpointTests : ObrigatoriedadeLega
         string regraCodigo = UniqueRegraCodigo();
         string idempotencyKey = Guid.NewGuid().ToString();
 
-        object payload = new
-        {
-            tipoProcessoCodigo = "*",
-            categoria = "OUTROS",
-            regraCodigo,
-            predicado = PredicadoConcorrenciaDupla,
-            descricaoHumana = "Regra idempotente",
-            baseLegal = "Lei",
-            vigenciaInicio = "2026-01-01",
-        };
+        object payload = CorposDeObrigatoriedadeLegal.RegraIdempotente(regraCodigo, PredicadoConcorrenciaDupla);
 
-        HttpResponseMessage primeira = await PostAsync(
-            client, "/api/selecao/admin/obrigatoriedades-legais", payload, idempotencyKey);
-        primeira.StatusCode.Should().Be(HttpStatusCode.Created);
-        string primeiroBody = await primeira.Content.ReadAsStringAsync();
-        Guid primeiroId = JsonSerializer.Deserialize<Guid>(primeiroBody);
+        Guid primeiroId = await CriarRegraIdempotenteAsync(client, payload, idempotencyKey);
 
         HttpResponseMessage repetida = await PostAsync(
             client, "/api/selecao/admin/obrigatoriedades-legais", payload, idempotencyKey);
 
-        ((int)repetida.StatusCode).Should().BeOneOf([200, 201],
-            "replay da mesma Idempotency-Key retorna a representação anterior");
-
-        string repetidoBody = await repetida.Content.ReadAsStringAsync();
-        Guid repetidoId = JsonSerializer.Deserialize<Guid>(repetidoBody);
-        repetidoId.Should().Be(primeiroId, "replay devolve o mesmo Id");
+        await VerificarRespostaIdempotenteAsync(repetida, primeiroId);
     }
 
     [Fact(DisplayName = "POST com RegraCodigo duplicado retorna 409 com type específico")]
@@ -171,42 +117,17 @@ public sealed class ObrigatoriedadeLegalAdminEndpointTests : ObrigatoriedadeLega
         using HttpClient client = await ClienteComConcessaoAsync();
         string regraCodigo = UniqueRegraCodigo();
 
-        object payload = new
-        {
-            tipoProcessoCodigo = "*",
-            categoria = "OUTROS",
-            regraCodigo,
-            predicado = PredicadoConcorrenciaDupla,
-            descricaoHumana = "Regra original",
-            baseLegal = "Lei",
-            vigenciaInicio = "2026-01-01",
-        };
-
-        HttpResponseMessage primeira = await PostAsync(
-            client, "/api/selecao/admin/obrigatoriedades-legais", payload);
-        primeira.StatusCode.Should().Be(HttpStatusCode.Created);
+        await CriarRegraOriginalAsync(client, regraCodigo);
 
         // Tenta criar OUTRA regra com mesmo RegraCodigo mas conteúdo diferente
         // (baseLegal mudada → hash distinto, então NÃO bate na constraint de Hash;
         // o UNIQUE parcial sobre regra_codigo é o que defende).
-        object duplicado = new
-        {
-            tipoProcessoCodigo = "*",
-            categoria = "OUTROS",
-            regraCodigo,
-            predicado = PredicadoConcorrenciaDupla,
-            descricaoHumana = "Regra duplicada com outro conteúdo",
-            baseLegal = "Lei 14.723/2023",
-            vigenciaInicio = "2026-02-01",
-        };
+        object duplicado = CorposDeObrigatoriedadeLegal.RegraDuplicada(regraCodigo, PredicadoConcorrenciaDupla);
 
         HttpResponseMessage segunda = await PostAsync(
             client, "/api/selecao/admin/obrigatoriedades-legais", duplicado);
 
-        segunda.StatusCode.Should().Be(HttpStatusCode.Conflict);
-        using JsonDocument doc = JsonDocument.Parse(await segunda.Content.ReadAsStringAsync());
-        doc.RootElement.GetProperty("type").GetString()
-            .Should().EndWith("uniplus.selecao.obrigatoriedade_legal.regra_codigo_duplicada");
+        await VerificarConflitoDeRegraDuplicadaAsync(segunda);
     }
 
     [Fact(DisplayName = "PUT full-replace altera campo e mantém URI estável")]
@@ -217,37 +138,11 @@ public sealed class ObrigatoriedadeLegalAdminEndpointTests : ObrigatoriedadeLega
 
         Guid id = await SeedRegraAsync(client, regraCodigo, baseLegal: "Lei original");
 
-        object putPayload = new
-        {
-            id,
-            tipoProcessoCodigo = "*",
-            categoria = "OUTROS",
-            regraCodigo,
-            predicado = PredicadoConcorrenciaDupla,
-            descricaoHumana = "Regra atualizada",
-            baseLegal = "Lei 14.723/2023 art.2º — nova",
-            vigenciaInicio = "2026-01-01",
-            vigenciaFim = (string?)null,
-            atoNormativoUrl = (string?)null,
-            portariaInternaCodigo = (string?)null,
-        };
+        object putPayload = CorposDeObrigatoriedadeLegal.RegraAtualizada(id, regraCodigo, PredicadoConcorrenciaDupla);
 
-        HttpResponseMessage put = await PutAsync(
-            client,
-            $"/api/selecao/admin/obrigatoriedades-legais/{id}",
-            putPayload);
+        await AtualizarRegraAsync(client, id, putPayload);
 
-        put.StatusCode.Should().Be(HttpStatusCode.NoContent);
-
-        await using AsyncServiceScope scope = Fixture.Factory.Services.CreateAsyncScope();
-        await using UniPlusDbContext db = ResolveDbContext(scope);
-        ObrigatoriedadeLegal regra = await db.ObrigatoriedadesLegais.SingleAsync(o => o.Id == id);
-        regra.BaseLegal.Should().Be("Lei 14.723/2023 art.2º — nova");
-
-        int historico = await db.ObrigatoriedadeLegalHistorico
-            .Where(h => h.RegraId == id)
-            .CountAsync();
-        historico.Should().Be(2, "insert + update geram 2 linhas no histórico forensic");
+        await VerificarAtualizacaoGravadaAsync(id);
     }
 
     [Fact(DisplayName = "PUT com Id path divergente do body retorna 400")]
@@ -258,32 +153,14 @@ public sealed class ObrigatoriedadeLegalAdminEndpointTests : ObrigatoriedadeLega
         Guid idReal = await SeedRegraAsync(client, regraCodigo);
         Guid idDivergente = Guid.NewGuid();
 
-        object putPayload = new
-        {
-            id = idDivergente,
-            tipoProcessoCodigo = "*",
-            categoria = "OUTROS",
-            regraCodigo,
-            predicado = PredicadoConcorrenciaDupla,
-            descricaoHumana = "x",
-            baseLegal = "Lei",
-            vigenciaInicio = "2026-01-01",
-            vigenciaFim = (string?)null,
-            atoNormativoUrl = (string?)null,
-            portariaInternaCodigo = (string?)null,
-        };
+        object putPayload = CorposDeObrigatoriedadeLegal.RegraComIdDivergente(idDivergente, regraCodigo, PredicadoConcorrenciaDupla);
 
         HttpResponseMessage response = await PutAsync(
             client,
             $"/api/selecao/admin/obrigatoriedades-legais/{idReal}",
             putPayload);
 
-        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
-        using JsonDocument problema = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
-        DomainErrorMapping definicao = ErrosDaFronteiraHttp.IdDaRotaDivergenteDoCorpo;
-        problema.RootElement.GetProperty("type").GetString().Should().Be(definicao.Code);
-        problema.RootElement.GetProperty("title").GetString().Should().Be(definicao.Title);
-        problema.RootElement.GetProperty("status").GetInt32().Should().Be(definicao.Status);
+        await VerificarProblemaDeIdDivergenteAsync(response);
     }
 
     [Fact(DisplayName = "DELETE soft-delete retorna 204 e regra some do GET público")]
@@ -297,18 +174,9 @@ public sealed class ObrigatoriedadeLegalAdminEndpointTests : ObrigatoriedadeLega
             new Uri($"/api/selecao/admin/obrigatoriedades-legais/{id}", UriKind.Relative));
         delete.StatusCode.Should().Be(HttpStatusCode.NoContent);
 
-        // GET público — query filter aplica IsDeleted=false, então 404.
-        HttpResponseMessage publicGet = await client.GetAsync(
-            new Uri($"/api/selecao/obrigatoriedades-legais/{id}", UriKind.Relative));
-        publicGet.StatusCode.Should().Be(HttpStatusCode.NotFound);
+        await VerificarRegraDesativadaNoCatalogoAsync(client, id);
 
-        // Histórico forensic mantém a regra com snapshot pós-soft-delete.
-        await using AsyncServiceScope scope = Fixture.Factory.Services.CreateAsyncScope();
-        await using UniPlusDbContext db = ResolveDbContext(scope);
-        int historico = await db.ObrigatoriedadeLegalHistorico
-            .Where(h => h.RegraId == id)
-            .CountAsync();
-        historico.Should().BeGreaterThanOrEqualTo(2, "insert + soft-delete = 2 snapshots no mínimo");
+        await VerificarHistoricoDaDesativacaoAsync(id);
     }
 
     [Fact(DisplayName = "GET com filtros admin retorna apenas regras matching")]
@@ -324,13 +192,7 @@ public sealed class ObrigatoriedadeLegalAdminEndpointTests : ObrigatoriedadeLega
         HttpResponseMessage response = await client.GetAsync(
             new Uri("/api/selecao/obrigatoriedades-legais?categoria=ETAPA&limit=50", UriKind.Relative));
 
-        response.StatusCode.Should().Be(HttpStatusCode.OK);
-        using JsonDocument doc = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
-        IReadOnlyList<string> regraCodigos = [.. doc.RootElement.EnumerateArray()
-            .Select(e => e.GetProperty("regraCodigo").GetString()!)];
-
-        regraCodigos.Should().Contain(regraCodigoEtapa);
-        regraCodigos.Should().NotContain(regraCodigoModalidade, "filtro categoria=ETAPA exclui modalidade");
+        await VerificarFiltroDeCategoriaAsync(response, regraCodigoEtapa, regraCodigoModalidade);
     }
 
     [Fact(DisplayName = "GET filtra por tipoProcesso e ignora o parâmetro legado")]
@@ -342,6 +204,68 @@ public sealed class ObrigatoriedadeLegalAdminEndpointTests : ObrigatoriedadeLega
         await SeedRegraAsync(client, regraSiSU, tipoProcessoCodigo: "SiSU");
         await SeedRegraAsync(client, regraPSIQ, tipoProcessoCodigo: "PSIQ");
 
+        await VerificarFiltroDeTipoProcessoAsync(client, regraSiSU, regraPSIQ);
+
+        await VerificarParametroLegadoAsync(client, regraSiSU, regraPSIQ);
+    }
+
+    private static async Task VerificarRespostaIdempotenteAsync(HttpResponseMessage repetida, Guid primeiroId)
+    {
+        ((int)repetida.StatusCode).Should().BeOneOf([200, 201],
+            "replay da mesma Idempotency-Key retorna a representação anterior");
+
+        string repetidoBody = await repetida.Content.ReadAsStringAsync();
+        Guid repetidoId = JsonSerializer.Deserialize<Guid>(repetidoBody);
+        repetidoId.Should().Be(primeiroId, "replay devolve o mesmo Id");
+    }
+
+    private static async Task CriarRegraOriginalAsync(HttpClient client, string regraCodigo)
+    {
+        object payload = CorposDeObrigatoriedadeLegal.RegraOriginal(regraCodigo, PredicadoConcorrenciaDupla);
+        HttpResponseMessage primeira = await PostAsync(
+            client, "/api/selecao/admin/obrigatoriedades-legais", payload);
+        primeira.StatusCode.Should().Be(HttpStatusCode.Created);
+    }
+
+    private static async Task VerificarConflitoDeRegraDuplicadaAsync(HttpResponseMessage segunda)
+    {
+        segunda.StatusCode.Should().Be(HttpStatusCode.Conflict);
+        using JsonDocument doc = JsonDocument.Parse(await segunda.Content.ReadAsStringAsync());
+        doc.RootElement.GetProperty("type").GetString()
+            .Should().EndWith("uniplus.selecao.obrigatoriedade_legal.regra_codigo_duplicada");
+    }
+
+    private static async Task AtualizarRegraAsync(HttpClient client, Guid id, object putPayload)
+    {
+        HttpResponseMessage put = await PutAsync(
+            client,
+            $"/api/selecao/admin/obrigatoriedades-legais/{id}",
+            putPayload);
+
+        put.StatusCode.Should().Be(HttpStatusCode.NoContent);
+    }
+
+    private static async Task VerificarRegraDesativadaNoCatalogoAsync(HttpClient client, Guid id)
+    {
+        // GET público — query filter aplica IsDeleted=false, então 404.
+        HttpResponseMessage publicGet = await client.GetAsync(
+            new Uri($"/api/selecao/obrigatoriedades-legais/{id}", UriKind.Relative));
+        publicGet.StatusCode.Should().Be(HttpStatusCode.NotFound);
+    }
+
+    private static async Task VerificarFiltroDeCategoriaAsync(HttpResponseMessage response, string regraCodigoEtapa, string regraCodigoModalidade)
+    {
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        using JsonDocument doc = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        IReadOnlyList<string> regraCodigos = [.. doc.RootElement.EnumerateArray()
+            .Select(e => e.GetProperty("regraCodigo").GetString()!)];
+
+        regraCodigos.Should().Contain(regraCodigoEtapa);
+        regraCodigos.Should().NotContain(regraCodigoModalidade, "filtro categoria=ETAPA exclui modalidade");
+    }
+
+    private static async Task VerificarFiltroDeTipoProcessoAsync(HttpClient client, string regraSiSU, string regraPSIQ)
+    {
         HttpResponseMessage filtrada = await client.GetAsync(
             new Uri("/api/selecao/obrigatoriedades-legais?tipoProcesso=SiSU&limit=50", UriKind.Relative));
         using JsonDocument filtradaJson = JsonDocument.Parse(await filtrada.Content.ReadAsStringAsync());
@@ -349,7 +273,55 @@ public sealed class ObrigatoriedadeLegalAdminEndpointTests : ObrigatoriedadeLega
             .Select(static item => item.GetProperty("regraCodigo").GetString()!)];
         filtradas.Should().Contain(regraSiSU);
         filtradas.Should().NotContain(regraPSIQ);
+    }
 
+    private async Task VerificarRegraGravadaAsync(string regraCodigo)
+    {
+        await using (AsyncServiceScope scope = Fixture.Factory.Services.CreateAsyncScope())
+        await using (UniPlusDbContext db = ResolveDbContext(scope))
+        {
+            ObrigatoriedadeLegal? regra = await db.ObrigatoriedadesLegais
+                .FirstOrDefaultAsync(o => o.RegraCodigo == regraCodigo);
+            regra.Should().NotBeNull();
+        }
+    }
+
+    private async Task VerificarAtualizacaoGravadaAsync(Guid id)
+    {
+        await using AsyncServiceScope scope = Fixture.Factory.Services.CreateAsyncScope();
+        await using UniPlusDbContext db = ResolveDbContext(scope);
+        ObrigatoriedadeLegal regra = await db.ObrigatoriedadesLegais.SingleAsync(o => o.Id == id);
+        regra.BaseLegal.Should().Be("Lei 14.723/2023 art.2º — nova");
+
+        int historico = await db.ObrigatoriedadeLegalHistorico
+            .Where(h => h.RegraId == id)
+            .CountAsync();
+        historico.Should().Be(2, "insert + update geram 2 linhas no histórico forensic");
+    }
+
+    private static async Task VerificarProblemaDeIdDivergenteAsync(HttpResponseMessage response)
+    {
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        using JsonDocument problema = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        DomainErrorMapping definicao = ErrosDaFronteiraHttp.IdDaRotaDivergenteDoCorpo;
+        problema.RootElement.GetProperty("type").GetString().Should().Be(definicao.Code);
+        problema.RootElement.GetProperty("title").GetString().Should().Be(definicao.Title);
+        problema.RootElement.GetProperty("status").GetInt32().Should().Be(definicao.Status);
+    }
+
+    private async Task VerificarHistoricoDaDesativacaoAsync(Guid id)
+    {
+        // Histórico forensic mantém a regra com snapshot pós-soft-delete.
+        await using AsyncServiceScope scope = Fixture.Factory.Services.CreateAsyncScope();
+        await using UniPlusDbContext db = ResolveDbContext(scope);
+        int historico = await db.ObrigatoriedadeLegalHistorico
+            .Where(h => h.RegraId == id)
+            .CountAsync();
+        historico.Should().BeGreaterThanOrEqualTo(2, "insert + soft-delete = 2 snapshots no mínimo");
+    }
+
+    private static async Task VerificarParametroLegadoAsync(HttpClient client, string regraSiSU, string regraPSIQ)
+    {
         HttpResponseMessage legado = await client.GetAsync(
             new Uri("/api/selecao/obrigatoriedades-legais?tipoEdital=SiSU&limit=50", UriKind.Relative));
         using JsonDocument legadoJson = JsonDocument.Parse(await legado.Content.ReadAsStringAsync());
@@ -359,6 +331,15 @@ public sealed class ObrigatoriedadeLegalAdminEndpointTests : ObrigatoriedadeLega
         semFiltro.Should().Contain(regraPSIQ);
     }
 
+    private static async Task<Guid> CriarRegraIdempotenteAsync(HttpClient client, object payload, string idempotencyKey)
+    {
+        HttpResponseMessage primeira = await PostAsync(
+            client, "/api/selecao/admin/obrigatoriedades-legais", payload, idempotencyKey);
+        primeira.StatusCode.Should().Be(HttpStatusCode.Created);
+        string primeiroBody = await primeira.Content.ReadAsStringAsync();
+        return JsonSerializer.Deserialize<Guid>(primeiroBody);
+    }
+
     private static async Task<Guid> SeedRegraAsync(
         HttpClient client,
         string regraCodigo,
@@ -366,19 +347,7 @@ public sealed class ObrigatoriedadeLegalAdminEndpointTests : ObrigatoriedadeLega
         string baseLegal = "Lei seed",
         string tipoProcessoCodigo = "*")
     {
-        object payload = new
-        {
-            tipoProcessoCodigo,
-            categoria,
-            regraCodigo,
-            predicado = PredicadoConcorrenciaDupla,
-            descricaoHumana = "Seed",
-            baseLegal,
-            vigenciaInicio = "2026-01-01",
-            vigenciaFim = (string?)null,
-            atoNormativoUrl = (string?)null,
-            portariaInternaCodigo = (string?)null,
-        };
+        object payload = CorposDeObrigatoriedadeLegal.RegraInicial(regraCodigo, categoria, baseLegal, tipoProcessoCodigo, PredicadoConcorrenciaDupla);
 
         HttpResponseMessage response = await PostAsync(client, "/api/selecao/admin/obrigatoriedades-legais", payload);
         response.StatusCode.Should().Be(HttpStatusCode.Created,
