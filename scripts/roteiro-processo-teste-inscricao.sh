@@ -326,11 +326,10 @@ setup_configuracao() {
     exigir_id "FASE_CHAMADA_ID" "$FASE_CHAMADA_ID"
     exigir_id "FASE_MATRICULA_ID" "$FASE_MATRICULA_ID"
 
-    # Os tipos de documento vêm do catálogo semeado (TipoDocumentoSeed): o
-    # histórico prova o ensino médio cursado na área, e o comprovante de
-    # residência, a residência no período.
+    # Tipos de documento do catálogo semeado.
     local tipos_documento
     tipos_documento=$(api_get "/api/configuracao/tipos-documento?limit=100")
+    TIPOS_DOCUMENTO="$tipos_documento"
     TIPO_DOCUMENTO_HISTORICO_ID=$(jq -r '.[] | select(.codigo=="HISTORICO_ENSINO_MEDIO") | .id' <<< "$tipos_documento")
     TIPO_DOCUMENTO_RESIDENCIA_ID=$(jq -r '.[] | select(.codigo=="COMPROVANTE_RESIDENCIA") | .id' <<< "$tipos_documento")
     exigir_id "TIPO_DOCUMENTO_HISTORICO_ID" "$TIPO_DOCUMENTO_HISTORICO_ID"
@@ -902,20 +901,77 @@ vincular_fase_do_formulario() {
     ok "formulário vinculado à fase $fase_inscricao_processo_id"
 }
 
-# Cadastra, na fase de habilitação, o documento que comprova cada caminho do
-# FADA (itens 1.6 e 13): o histórico escolar para quem pede pelo ensino médio
-# cursado na área — quem concluiu no regular ou na EJA, ou quem concluiu por
-# certificação e escolheu esse caminho — e a conta de energia, água ou
-# telefone do período para quem escolheu a residência. A comprovação negada
-# remove o acréscimo, não elimina. Vem depois do modelo: os gatilhos citam
-# fatos que o formulário coleta.
+aplicar_modelo_habilitacao() {
+    log "Aplicar e vincular o modelo de habilitação"
+    local modelo_id processo fase_id renderizavel titulo etapas
+    modelo_id="5e3d0006-0000-7000-8000-000000000002"
+    processo=$(api_get "/api/selecao/processos-seletivos/$PROCESSO_ID")
+    fase_id=$(jq -r '.cronogramaFases[] | select(.codigo == "HABILITACAO") | .id' <<< "$processo")
+    exigir_id "fase HABILITACAO" "$fase_id"
+    api POST "/api/selecao/admin/processos-seletivos/$PROCESSO_ID/formularios/aplicacoes-de-modelo" \
+        "{\"modeloId\": \"$modelo_id\"}" >/dev/null
+    renderizavel=$(curl -sS -w '\n%{http_code}' -H "Authorization: Bearer $TOKEN" -H "Accept: application/vnd.uniplus.formulario.v2+json" \
+        "$API_URL/api/selecao/admin/processos-seletivos/$PROCESSO_ID/formularios/HABILITACAO/renderizavel")
+    [ "$(tail -n1 <<< "$renderizavel")" = "200" ] || fail "não foi possível ler o formulário de habilitação: $(sed '$d' <<< "$renderizavel")"
+    renderizavel=$(sed '$d' <<< "$renderizavel")
+    jq -e '[.formulario.etapas[] | select((.codigo == "CONCLUSAO_ENSINO_MEDIO" and .tipo == "SECAO") or (.codigo == "COMPOSICAO_FAMILIAR" and .tipo == "SECAO") or (.codigo == "DOCUMENTOS" and .tipo == "BLOCO" and .bloco == "COMPROVACAO_DOCUMENTAL") or (.codigo == "REVISAO" and .tipo == "BLOCO" and .bloco == "REVISAO_E_ACEITE")) | .codigo] | unique | length == 4' <<< "$renderizavel" >/dev/null \
+        || fail "formulário de habilitação sem as seções ou blocos esperados"
+    titulo=$(jq -r '.formulario.titulo // empty' <<< "$renderizavel")
+    [ -n "$titulo" ] || fail "formulário de habilitação sem título"
+    etapas=$(jq -c '[.formulario.etapas[] | {codigo, ordem, tipo, bloco, apresentacao, exibicao: null}]' <<< "$renderizavel")
+    api PUT "/api/selecao/admin/processos-seletivos/$PROCESSO_ID/formularios/HABILITACAO" "$(jq -nc \
+        --arg fase "$fase_id" --arg titulo "$titulo" --argjson etapas "$etapas" \
+        '{faseId: $fase, titulo: $titulo, etapas: $etapas}')" >/dev/null
+    renderizavel=$(curl -sS -w '\n%{http_code}' -H "Authorization: Bearer $TOKEN" -H "Accept: application/vnd.uniplus.formulario.v2+json" \
+        "$API_URL/api/selecao/admin/processos-seletivos/$PROCESSO_ID/formularios/HABILITACAO/renderizavel")
+    [ "$(tail -n1 <<< "$renderizavel")" = "200" ] || fail "não foi possível conferir o formulário de habilitação"
+    sed '$d' <<< "$renderizavel" | jq -e '[.formulario.etapas[] | select((.codigo == "CONCLUSAO_ENSINO_MEDIO" and .tipo == "SECAO") or (.codigo == "COMPOSICAO_FAMILIAR" and .tipo == "SECAO") or (.codigo == "DOCUMENTOS" and .tipo == "BLOCO" and .bloco == "COMPROVACAO_DOCUMENTAL") or (.codigo == "REVISAO" and .tipo == "BLOCO" and .bloco == "REVISAO_E_ACEITE")) | .codigo] | unique | length == 4' >/dev/null \
+        || fail "formulário de habilitação vinculado sem as seções ou blocos esperados"
+    ok "modelo de habilitação vinculado à fase $fase_id"
+}
+
+documentos_comuns_da_habilitacao() {
+    local fase="$1" bases="$2"
+    jq -nc --arg fase "$fase" --argjson tipos "$TIPOS_DOCUMENTO" --argjson bases "$bases" '
+        def id($codigo): ([$tipos[] | select(.codigo == $codigo) | .id][0] // error("tipo de documento ausente: " + $codigo));
+        def documento($codigo; $prazo): {forma: "DOCUMENTO", documento: {
+            tipoDocumento: {id: id($codigo)}, momento: {faseId: $fase, finalidade: "HABILITACAO"},
+            aplicabilidade: {tipo: "GERAL", condicoes: []},
+            indeferimento: {obrigatorio: true, consequencia: "ELIMINA", basesLegais: $bases},
+            requisitos: {formatosPermitidos: "QUALQUER", tamanhoMaximoBytes: null, prazoDeEmissao: $prazo,
+                validade: {escolha: "NAO_EXIGE_DOCUMENTO_VALIDO"}, modelo: null}, fatosComprovados: []}};
+        def sem_prazo: {escolha: "SEM_PRAZO"};
+        (["FOTO_3X4", "RG", "HISTORICO_ENSINO_MEDIO"] | map(documento(.; sem_prazo))) +
+        [documento("COMPROVANTE_RESIDENCIA"; {escolha: "COM_PRAZO", valor: 90, unidade: "DIAS", referencia: {tipo: "DATA_DA_APRESENTACAO"}, efeitoForaDoPrazo: "RECUSAR_DOCUMENTO"}),
+         {forma: "QUANTIDADE_MINIMA_DE_ITENS", cardinalidade: {quantidadeMinima: 1}, indeferimento: {consequencia: "ELIMINA", basesLegais: $bases},
+          itens: [documento("CERTIFICADO_ENSINO_MEDIO"; sem_prazo),
+                  (documento("DECLARACAO_CONCLUSAO_ENSINO_MEDIO"; sem_prazo) |
+                   .documento.indeferimento.basesLegais |= map(.observacao = "Aceita quando o certificado ainda não tiver sido recebido, se atualizada e emitida há no máximo 90 dias ou dentro do prazo de validade da instituição de origem. A pessoa candidata ou responsável legal deve assinar termo de responsabilidade e entregar o certificado em até 60 dias após a matrícula."))] |
+                 map(.documento.indeferimento.consequencia = null)},
+         {forma: "QUANTIDADE_MINIMA_DE_ITENS", cardinalidade: {quantidadeMinima: 1}, indeferimento: {consequencia: "ELIMINA", basesLegais: $bases},
+          itens: (["CERTIDAO_NASCIMENTO", "CERTIDAO_CASAMENTO"] | map(documento(.; sem_prazo) | .documento.indeferimento.consequencia = null))}]'
+}
+
+documentos_do_fada() {
+    local fase="$1" bases="$2"
+    jq -nc --arg fase "$fase" --arg historico "$TIPO_DOCUMENTO_HISTORICO_ID" --arg residencia "$TIPO_DOCUMENTO_RESIDENCIA_ID" --argjson bases "$bases" '
+        def regra($tipo; $condicoes; $observacao): {forma: "DOCUMENTO", documento: {
+            tipoDocumento: {id: $tipo}, momento: {faseId: $fase, finalidade: "HABILITACAO"},
+            aplicabilidade: {tipo: "CONDICIONAL", condicoes: $condicoes},
+            indeferimento: {obrigatorio: true, consequencia: "REMOVE_VANTAGEM", basesLegais: ($bases | map(.observacao = $observacao))},
+            requisitos: {formatosPermitidos: "QUALQUER", tamanhoMaximoBytes: null, prazoDeEmissao: {escolha: "SEM_PRAZO"}, validade: {escolha: "NAO_EXIGE_DOCUMENTO_VALIDO"}, modelo: null}, fatosComprovados: []}};
+        def pedido($clausula): {clausula: $clausula, fato: "SOLICITA_FATOR_ATENUACAO", operador: "IGUAL", valor: "true"};
+        [regra($historico; [pedido(0), {clausula: 0, fato: "FORMA_CONCLUSAO_EM", operador: "ALGUM_DE", valor: "[\"REGULAR\",\"EJA\"]"}, pedido(1), {clausula: 1, fato: "CAMINHO_FATOR_ATENUACAO", operador: "IGUAL", valor: "\"ENSINO_MEDIO\""}]; null),
+         regra($residencia; [pedido(0), {clausula: 0, fato: "CAMINHO_FATOR_ATENUACAO", operador: "IGUAL", valor: "\"RESIDENCIA\""}]; "Contas de água ou luz que comprovem residência por pelo menos um ano ininterrupto entre 20/11/2024 e 20/11/2026, em nome da pessoa candidata, de seus pais, cônjuge ou irmãos, com documentos pessoais que comprovem o vínculo com o titular.")]'
+}
+
 definir_documentos_exigidos() {
-    log "Definir os documentos que comprovam o FADA na habilitação, mantendo os do modelo"
-    local fase_habilitacao_processo_id base_legal processo documentos_do_modelo
+    log "Definir os documentos comuns e do FADA na habilitação"
+    local fase_habilitacao_processo_id base_legal processo documentos_do_modelo documentos_comuns documentos_fada
     processo=$(api_get "/api/selecao/processos-seletivos/$PROCESSO_ID")
     fase_habilitacao_processo_id=$(jq -r '.cronogramaFases[] | select(.codigo=="HABILITACAO") | .id' <<< "$processo")
     [ -n "$fase_habilitacao_processo_id" ] || fail "fase HABILITACAO não encontrada no cronograma do processo $PROCESSO_ID"
-    base_legal='[{"referencia": "Edital nº XX/2026-CEPS/Unifesspa, itens 1.6 e 13", "abrangencia": "INTERNA_EDITAL", "situacao": "RESOLVIDO", "observacao": null}]'
+    base_legal='[{"referencia": "Edital nº XX/2026-CEPS/Unifesspa, itens 1.5 a 1.9 e 9", "abrangencia": "INTERNA_EDITAL", "situacao": "RESOLVIDO", "observacao": null}]'
 
     # O PUT substitui todas as regras: os documentos que o modelo de inscrição trouxer voltam na
     # entrada, com a base legal resolvida — o modelo a deixa pendente até o CEPS indicar a norma, e
@@ -953,31 +1009,12 @@ definir_documentos_exigidos() {
         fail "o modelo com prova não trouxe os documentos do atendimento especializado"
     fi
 
+    documentos_comuns=$(documentos_comuns_da_habilitacao "$fase_habilitacao_processo_id" "$base_legal")
+    documentos_fada=$(documentos_do_fada "$fase_habilitacao_processo_id" "$base_legal")
     api PUT "/api/selecao/processos-seletivos/$PROCESSO_ID/documentos-exigidos" "$(jq -nc \
-        --argjson doModelo "$documentos_do_modelo" --arg fase "$fase_habilitacao_processo_id" --arg historico "$TIPO_DOCUMENTO_HISTORICO_ID" \
-        --arg residencia "$TIPO_DOCUMENTO_RESIDENCIA_ID" --argjson basesLegais "$base_legal" '
-        def regra_de_documento($tipo; $condicoes): {
-            forma: "DOCUMENTO",
-            documento: {
-                tipoDocumento: {id: $tipo},
-                momento: {faseId: $fase, finalidade: "HABILITACAO"},
-                aplicabilidade: {tipo: "CONDICIONAL", condicoes: $condicoes},
-                indeferimento: {obrigatorio: true, consequencia: "REMOVE_VANTAGEM", basesLegais: $basesLegais},
-                requisitos: {formatosPermitidos: "QUALQUER", tamanhoMaximoBytes: null, prazoDeEmissao: {escolha: "SEM_PRAZO"}, validade: {escolha: "NAO_EXIGE_DOCUMENTO_VALIDO"}, modelo: null},
-                fatosComprovados: []
-            }
-        };
-        def pedido($clausula): {clausula: $clausula, fato: "SOLICITA_FATOR_ATENUACAO", operador: "IGUAL", valor: "true"};
-        $doModelo + [
-            regra_de_documento($historico; [
-                pedido(0), {clausula: 0, fato: "FORMA_CONCLUSAO_EM", operador: "ALGUM_DE", valor: "[\"REGULAR\",\"EJA\"]"},
-                pedido(1), {clausula: 1, fato: "CAMINHO_FATOR_ATENUACAO", operador: "IGUAL", valor: "\"ENSINO_MEDIO\""}
-            ]),
-            regra_de_documento($residencia; [
-                pedido(0), {clausula: 0, fato: "CAMINHO_FATOR_ATENUACAO", operador: "IGUAL", valor: "\"RESIDENCIA\""}
-            ])
-        ]')" >/dev/null
-    ok "documentos do modelo mantidos e documentos do FADA definidos na fase $fase_habilitacao_processo_id"
+        --argjson modelo "$documentos_do_modelo" --argjson comuns "$documentos_comuns" --argjson fada "$documentos_fada" \
+        '$modelo + $comuns + $fada')" >/dev/null
+    ok "documentos comuns e do FADA definidos na fase $fase_habilitacao_processo_id"
 }
 
 documento_do_edital() {
@@ -1098,6 +1135,7 @@ main() {
     escolher_motivo_da_homologacao
     aplicar_modelo_inscricao
     vincular_fase_do_formulario
+    aplicar_modelo_habilitacao
     definir_documentos_exigidos
     documento_do_edital
     divulgar
