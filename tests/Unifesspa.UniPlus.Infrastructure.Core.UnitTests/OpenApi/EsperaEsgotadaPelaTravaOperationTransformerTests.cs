@@ -1,16 +1,13 @@
 namespace Unifesspa.UniPlus.Infrastructure.Core.UnitTests.OpenApi;
 
-using System.Reflection;
-
 using AwesomeAssertions;
 
-using Microsoft.AspNetCore.Mvc.ApiExplorer;
-using Microsoft.AspNetCore.Mvc.Controllers;
 using Microsoft.AspNetCore.OpenApi;
 using Microsoft.OpenApi;
 
-using Unifesspa.UniPlus.Infrastructure.Core.Idempotency;
 using Unifesspa.UniPlus.Infrastructure.Core.OpenApi;
+using Unifesspa.UniPlus.Infrastructure.Core.UnitTests.Apoio;
+using Unifesspa.UniPlus.Infrastructure.Core.UnitTests.Apoio.ControllersDeTeste;
 
 public sealed class EsperaEsgotadaPelaTravaOperationTransformerTests
 {
@@ -21,7 +18,7 @@ public sealed class EsperaEsgotadaPelaTravaOperationTransformerTests
     {
         OpenApiOperation operation = new();
 
-        await Transformar(operation, typeof(ControllerMarcado), nameof(ControllerMarcado.Mutar), metodoHttp);
+        await Transformar(operation, typeof(TravaMarcadaDeTesteController), nameof(TravaMarcadaDeTesteController.Mutar), metodoHttp);
 
         OpenApiResponse recusa = operation.Responses!["503"].Should().BeOfType<OpenApiResponse>().Subject;
         recusa.Content!["application/problem+json"].Schema.Should().BeOfType<OpenApiSchemaReference>()
@@ -35,7 +32,7 @@ public sealed class EsperaEsgotadaPelaTravaOperationTransformerTests
     {
         OpenApiOperation operation = new();
 
-        await Transformar(operation, typeof(ControllerMarcado), nameof(ControllerMarcado.MutarSemChave), "POST");
+        await Transformar(operation, typeof(TravaMarcadaDeTesteController), nameof(TravaMarcadaDeTesteController.MutarSemChave), "POST");
 
         OpenApiResponse recusa = operation.Responses!["503"].Should().BeOfType<OpenApiResponse>().Subject;
         recusa.Headers.Should().BeNullOrEmpty();
@@ -47,7 +44,7 @@ public sealed class EsperaEsgotadaPelaTravaOperationTransformerTests
     {
         OpenApiOperation operation = new();
 
-        await Transformar(operation, typeof(ControllerSemMarca), nameof(ControllerSemMarca.MutarMarcada), "PUT");
+        await Transformar(operation, typeof(TravaSemMarcaDeTesteController), nameof(TravaSemMarcaDeTesteController.MutarMarcada), "PUT");
 
         operation.Responses.Should().ContainKey("503");
     }
@@ -59,7 +56,8 @@ public sealed class EsperaEsgotadaPelaTravaOperationTransformerTests
     {
         OpenApiOperation operation = new();
 
-        await Transformar(operation, typeof(ControllerMarcado), nameof(ControllerMarcado.Mutar), metodoHttp);
+        await Transformar(operation, typeof(TravaMarcadaDeTesteController),
+            metodoHttp == "GET" ? nameof(TravaMarcadaDeTesteController.Ler) : nameof(TravaMarcadaDeTesteController.LerHead), metodoHttp);
 
         operation.Responses.Should().BeNullOrEmpty();
     }
@@ -69,7 +67,7 @@ public sealed class EsperaEsgotadaPelaTravaOperationTransformerTests
     {
         OpenApiOperation operation = new();
 
-        await Transformar(operation, typeof(ControllerSemMarca), nameof(ControllerSemMarca.Mutar), "PUT");
+        await Transformar(operation, typeof(TravaSemMarcaDeTesteController), nameof(TravaSemMarcaDeTesteController.Mutar), "PUT");
 
         operation.Responses.Should().BeNullOrEmpty();
     }
@@ -81,7 +79,7 @@ public sealed class EsperaEsgotadaPelaTravaOperationTransformerTests
 
         await Transformar(
             new OpenApiOperation { Responses = new OpenApiResponses { ["503"] = propria } },
-            typeof(ControllerMarcado), nameof(ControllerMarcado.Mutar), "PUT");
+            typeof(TravaMarcadaDeTesteController), nameof(TravaMarcadaDeTesteController.Mutar), "PUT");
 
         propria.Description.Should().Be("Indisponível por motivo próprio");
         propria.Content.Should().BeNullOrEmpty();
@@ -97,39 +95,8 @@ public sealed class EsperaEsgotadaPelaTravaOperationTransformerTests
         {
             DocumentName = "selecao",
             ApplicationServices = NSubstitute.Substitute.For<IServiceProvider>(),
-            Description = new ApiDescription
-            {
-                HttpMethod = metodoHttp,
-                ActionDescriptor = new ControllerActionDescriptor
-                {
-                    MethodInfo = controller.GetMethod(acao)!,
-                    ControllerTypeInfo = controller.GetTypeInfo(),
-                },
-            },
+            Description = Mvc.Descricao(controller, acao, metodoHttp),
         };
 
-    [EmiteEsperaEsgotadaPelaTrava]
-    private sealed class ControllerMarcado
-    {
-        [RequiresIdempotencyKey]
-        public static void Mutar()
-        {
-        }
-
-        public static void MutarSemChave()
-        {
-        }
-    }
-
-    private sealed class ControllerSemMarca
-    {
-        public static void Mutar()
-        {
-        }
-
-        [EmiteEsperaEsgotadaPelaTrava]
-        public static void MutarMarcada()
-        {
-        }
-    }
+    private static readonly AcoesDoMvcDeTeste Mvc = new(typeof(TravaMarcadaDeTesteController), typeof(TravaSemMarcaDeTesteController));
 }

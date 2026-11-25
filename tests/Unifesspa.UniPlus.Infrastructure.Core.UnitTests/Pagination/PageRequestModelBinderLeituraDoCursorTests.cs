@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Mvc.ModelBinding;
 using Microsoft.Extensions.DependencyInjection;
 
 using Unifesspa.UniPlus.Infrastructure.Core.Pagination;
+using Unifesspa.UniPlus.Infrastructure.Core.UnitTests.Apoio.ControllersDeTeste;
 using Unifesspa.UniPlus.Kernel.Pagination;
 
 using static CursorBinderTestSupport;
@@ -73,7 +74,7 @@ public sealed class PageRequestModelBinderLeituraDoCursorTests
         ServiceProvider services = CreateCursorServices().BuildServiceProvider();
         string cursor = await EncodeAsync(services, ValidPayload("cidades") with { Limit = 20 });
 
-        ModelBindingContext context = await BindAsync(QueryWithCursor(cursor), BinderActions.SortedCidades, services);
+        ModelBindingContext context = await BindAsync(QueryWithCursor(cursor), nameof(CursorDeTesteController.SortedCidades), services);
 
         context.Result.IsModelSet.Should().BeFalse();
         context.HttpContext.Items[CursorBindingErrorCodes.HttpContextItemKey]
@@ -87,7 +88,7 @@ public sealed class PageRequestModelBinderLeituraDoCursorTests
         ServiceProvider services = CreateCursorServices().BuildServiceProvider();
         string cursor = await EncodeAsync(services, ValidPayload("cidades") with { After = expectedAfter.ToString(), Limit = 20, SortKey = "maraba" });
 
-        ModelBindingContext context = await BindAsync(QueryWithCursor(cursor), BinderActions.SortedCidades, services);
+        ModelBindingContext context = await BindAsync(QueryWithCursor(cursor), nameof(CursorDeTesteController.SortedCidades), services);
 
         PageRequest page = context.Result.Model.Should().BeOfType<PageRequest>().Subject;
         page.AfterId.Should().Be(expectedAfter);

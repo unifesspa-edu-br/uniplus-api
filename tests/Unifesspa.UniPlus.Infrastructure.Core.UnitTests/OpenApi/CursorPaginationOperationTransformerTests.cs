@@ -1,20 +1,17 @@
 namespace Unifesspa.UniPlus.Infrastructure.Core.UnitTests.OpenApi;
 
-using System.Reflection;
-
 using AwesomeAssertions;
 
-using Microsoft.AspNetCore.Mvc.ApiExplorer;
-using Microsoft.AspNetCore.Mvc.Controllers;
 using Microsoft.AspNetCore.OpenApi;
 using Microsoft.OpenApi;
 
 using Unifesspa.UniPlus.Infrastructure.Core.OpenApi;
-using Unifesspa.UniPlus.Infrastructure.Core.Pagination;
+using Unifesspa.UniPlus.Infrastructure.Core.UnitTests.Apoio;
+using Unifesspa.UniPlus.Infrastructure.Core.UnitTests.Apoio.ControllersDeTeste;
 
 public sealed class CursorPaginationOperationTransformerTests
 {
-    private const string FixtureResource = "editais";
+    private static readonly AcoesDoMvcDeTeste Mvc = new(typeof(CursorDeTesteController));
 
     [Fact(DisplayName = "Action com [FromCursor] remove AfterId/Limit vazados e adiciona cursor/limit como query params")]
     public async Task TransformAsync_Should_ReplaceLeakedParameters_WithWireParameters()
@@ -183,27 +180,17 @@ public sealed class CursorPaginationOperationTransformerTests
         };
 
     private static OpenApiOperationTransformerContext ContextForActionWithCursor() =>
-        ContextForAction(new Action<PageRequest>(FixtureController.Listar).Method);
+        ContextForAction(nameof(CursorDeTesteController.Listar));
 
     private static OpenApiOperationTransformerContext ContextForActionWithoutCursor() =>
-        ContextForAction(new Action<int>(FixtureController.SemCursor).Method);
+        ContextForAction(nameof(CursorDeTesteController.SemCursor));
 
-    private static OpenApiOperationTransformerContext ContextForAction(MethodInfo methodInfo)
+    private static OpenApiOperationTransformerContext ContextForAction(string action) => new()
     {
-        ControllerActionDescriptor descriptor = DescribeAction(methodInfo);
-
-        ApiDescription description = new()
-        {
-            ActionDescriptor = descriptor,
-        };
-
-        return new OpenApiOperationTransformerContext
-        {
-            DocumentName = "selecao",
-            ApplicationServices = NSubstitute.Substitute.For<IServiceProvider>(),
-            Description = description,
-        };
-    }
+        DocumentName = "selecao",
+        ApplicationServices = NSubstitute.Substitute.For<IServiceProvider>(),
+        Description = Mvc.Descricao(typeof(CursorDeTesteController), action, "GET"),
+    };
 
     private static void AssertLinkHeader(OpenApiResponse response)
     {
@@ -230,25 +217,4 @@ public sealed class CursorPaginationOperationTransformerTests
         ],
     };
 
-    private static ControllerActionDescriptor DescribeAction(MethodInfo methodInfo) => new()
-    {
-        EndpointMetadata = [],
-        MethodInfo = methodInfo,
-        Parameters = methodInfo.GetParameters()
-            .Select(parameter => (Microsoft.AspNetCore.Mvc.Abstractions.ParameterDescriptor)
-                new ControllerParameterDescriptor
-                {
-                    Name = parameter.Name!,
-                    ParameterType = parameter.ParameterType,
-                    ParameterInfo = parameter,
-                })
-            .ToList(),
-    };
-
-    private static class FixtureController
-    {
-        public static void Listar([FromCursor(FixtureResource)] PageRequest page) => _ = page;
-
-        public static void SemCursor(int id) => _ = id;
-    }
 }

@@ -1,13 +1,11 @@
 namespace Unifesspa.UniPlus.Infrastructure.Core.UnitTests.Idempotency;
 
 using System.Diagnostics.CodeAnalysis;
-using System.Reflection;
 
 using AwesomeAssertions;
 
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.Abstractions;
 using Microsoft.AspNetCore.Mvc.Controllers;
 using Microsoft.AspNetCore.Mvc.Filters;
 using Microsoft.AspNetCore.Routing;
@@ -19,18 +17,20 @@ using Unifesspa.UniPlus.Application.Abstractions.Authentication;
 using Unifesspa.UniPlus.Infrastructure.Core.Cryptography;
 using Unifesspa.UniPlus.Infrastructure.Core.Errors;
 using Unifesspa.UniPlus.Infrastructure.Core.Idempotency;
+using Unifesspa.UniPlus.Infrastructure.Core.UnitTests.Apoio;
+using Unifesspa.UniPlus.Infrastructure.Core.UnitTests.Apoio.ControllersDeTeste;
 
 public sealed class IdempotencyFilterTetoDoCorpoTests
 {
     private const long TetoGlobal = 50;
 
     [Theory(DisplayName = "O teto do corpo é o do atributo quando ele declara um, senão o global; o tamanho exato passa e um byte a mais recusa")]
-    [InlineData(nameof(EndpointsDeTeste.SemTeto), 50, StatusCodes.Status422UnprocessableEntity)]
-    [InlineData(nameof(EndpointsDeTeste.SemTeto), 51, StatusCodes.Status413PayloadTooLarge)]
-    [InlineData(nameof(EndpointsDeTeste.ComTetoMaiorQueOGlobal), 200, StatusCodes.Status422UnprocessableEntity)]
-    [InlineData(nameof(EndpointsDeTeste.ComTetoMaiorQueOGlobal), 201, StatusCodes.Status413PayloadTooLarge)]
-    [InlineData(nameof(EndpointsDeTeste.ComTetoMenorQueOGlobal), 10, StatusCodes.Status422UnprocessableEntity)]
-    [InlineData(nameof(EndpointsDeTeste.ComTetoMenorQueOGlobal), 11, StatusCodes.Status413PayloadTooLarge)]
+    [InlineData(nameof(IdempotenciaDeTesteController.SemTeto), 50, StatusCodes.Status422UnprocessableEntity)]
+    [InlineData(nameof(IdempotenciaDeTesteController.SemTeto), 51, StatusCodes.Status413PayloadTooLarge)]
+    [InlineData(nameof(IdempotenciaDeTesteController.ComTetoMaiorQueOGlobal), 200, StatusCodes.Status422UnprocessableEntity)]
+    [InlineData(nameof(IdempotenciaDeTesteController.ComTetoMaiorQueOGlobal), 201, StatusCodes.Status413PayloadTooLarge)]
+    [InlineData(nameof(IdempotenciaDeTesteController.ComTetoMenorQueOGlobal), 10, StatusCodes.Status422UnprocessableEntity)]
+    [InlineData(nameof(IdempotenciaDeTesteController.ComTetoMenorQueOGlobal), 11, StatusCodes.Status413PayloadTooLarge)]
     public async Task Corpo_ComparadoAoTetoDoEndpoint(string endpoint, int tamanhoDoCorpo, int statusEsperado)
     {
         ResourceExecutingContext contexto = Contexto(endpoint, tamanhoDoCorpo);
@@ -74,31 +74,10 @@ public sealed class IdempotencyFilterTetoDoCorpoTests
         http.Request.Body = new MemoryStream(new byte[tamanhoDoCorpo]);
         http.Request.ContentLength = tamanhoDoCorpo;
 
-        ControllerActionDescriptor acao = new()
-        {
-            MethodInfo = typeof(EndpointsDeTeste).GetMethod(endpoint)!,
-            ControllerTypeInfo = typeof(EndpointsDeTeste).GetTypeInfo(),
-        };
+        using AcoesDoMvcDeTeste mvc = new(typeof(IdempotenciaDeTesteController));
+        ControllerActionDescriptor acao = mvc.Acao(typeof(IdempotenciaDeTesteController), endpoint);
 
         return new ResourceExecutingContext(new ActionContext(http, new RouteData(), acao), [], []);
-    }
-
-    private static class EndpointsDeTeste
-    {
-        [RequiresIdempotencyKey]
-        public static void SemTeto()
-        {
-        }
-
-        [RequiresIdempotencyKey(MaxBodyBytes = 200)]
-        public static void ComTetoMaiorQueOGlobal()
-        {
-        }
-
-        [RequiresIdempotencyKey(MaxBodyBytes = 10)]
-        public static void ComTetoMenorQueOGlobal()
-        {
-        }
     }
 
     private sealed class MapeadorDeTeste : IDomainErrorMapper
