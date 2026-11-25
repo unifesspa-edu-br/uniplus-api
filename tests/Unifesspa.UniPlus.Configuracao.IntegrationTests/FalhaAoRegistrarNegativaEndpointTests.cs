@@ -67,7 +67,14 @@ public sealed class FalhaAoRegistrarNegativaEndpointTests : IAsyncLifetime
                 services.AddSingleton<IRegistroOperacionalRestrito, RegistroQueFalha>();
             }));
         using HttpClient client = comFalha.CreateClient();
-        using HttpRequestMessage request = new(
+        using HttpRequestMessage request = CriarRequisicaoDeManutencaoDeCampus();
+
+        return await client.SendAsync(request);
+    }
+
+    private static HttpRequestMessage CriarRequisicaoDeManutencaoDeCampus()
+    {
+        HttpRequestMessage request = new(
             HttpMethod.Post, new Uri($"/api/configuracao/admin/{PermissaoConfiguracao.CampiManter.Resource}", UriKind.Relative))
         {
             Content = JsonContent.Create(new { }),
@@ -75,7 +82,7 @@ public sealed class FalhaAoRegistrarNegativaEndpointTests : IAsyncLifetime
         request.Headers.Authorization = new AuthenticationHeaderValue(TestAuthHandler.AuthorizationScheme, TestAuthHandler.TokenValue);
         request.Headers.TryAddWithoutValidation(TestAuthHandler.UserIdHeader, Leandro);
 
-        return await client.SendAsync(request);
+        return request;
     }
 
     private sealed class RegistroQueFalha : IRegistroOperacionalRestrito
