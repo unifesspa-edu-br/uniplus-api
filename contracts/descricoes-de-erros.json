@@ -1597,12 +1597,12 @@
         "UNI-REQ-0376"
       ],
       "oQueAconteceu": [
-        "Situação inválida. Use aberta, respondida, atendida, prejudicada ou todas.",
-        "Sem o parâmetro `situacao`, a lista é a fila prioritária das providências abertas, da mais antiga para a mais recente. O filtro é aplicado no servidor, e o valor desconhecido é recusado em vez de devolver uma página vazia. Nenhuma providência foi listada.",
+        "Situação inválida. Use um dos códigos publicados para a situação da providência.",
+        "Sem o parâmetro `situacao`, a lista não é filtrada por situação e apresenta as providências da mais antiga para a mais recente. O filtro é aplicado no servidor, e o valor desconhecido é recusado em vez de devolver uma página vazia. Nenhuma providência foi listada.",
         "Regra da tramitação da providência sobre concessão de acesso, definida na ADR-0164 da uniplus-api."
       ],
       "comoResolver": [
-        "Envie `situacao` com `aberta`, `respondida`, `atendida`, `prejudicada` ou `todas`, ou omita o parâmetro para ver a fila das abertas."
+        "Envie `situacao` com `ABERTA`, `RESPONDIDA`, `ATENDIDA` ou `PREJUDICADA`, ou omita o parâmetro para não filtrar por situação."
       ],
       "ondeAparece": [
         "Lista de providências (`GET /api/autorizacao/providencias`)"

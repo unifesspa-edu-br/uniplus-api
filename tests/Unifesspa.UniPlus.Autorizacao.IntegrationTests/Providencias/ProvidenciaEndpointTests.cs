@@ -120,7 +120,7 @@ public sealed class ProvidenciaEndpointTests : ProvidenciaEndpointTestBase
         lida.RootElement.GetProperty("ativa").GetBoolean().Should().BeTrue();
     }
 
-    [Fact(DisplayName = "A revogação por outro caminho deixa a providência prejudicada: sai da fila padrão e entra no filtro de prejudicadas")]
+    [Fact(DisplayName = "A revogação deixa a providência prejudicada: permanece sem filtro e sai do filtro de abertas")]
     public async Task Prejudicada_PelaRevogacaoComum()
     {
         (Guid concessao, Guid providencia) = await ProvidenciaAbertaAsync();
@@ -130,18 +130,62 @@ public sealed class ProvidenciaEndpointTests : ProvidenciaEndpointTestBase
         JsonElement lida = await CorpoAsync(await diogo.GetAsync(new Uri($"{RotaDasProvidencias}/{providencia}", UriKind.Relative)), HttpStatusCode.OK);
 
         (lida.GetProperty("situacao").GetString(), lida.GetProperty("encerramentoDaConcessao").GetProperty("causa").GetString()).Should().Be(("PREJUDICADA", "REVOGADA"));
-        (await FilaAsync(diogo, $"?concessao={concessao}")).Should().BeEmpty();
-        (await FilaAsync(diogo, $"?concessao={concessao}&situacao=prejudicada")).Should().Equal(providencia);
+        (await FilaAsync(diogo, $"?concessao={concessao}")).Should().Equal(providencia);
+        (await FilaAsync(diogo, $"?concessao={concessao}&situacao=ABERTA")).Should().BeEmpty();
+        (await FilaAsync(diogo, $"?concessao={concessao}&situacao=PREJUDICADA")).Should().Equal(providencia);
         await ConferirRecusaAsync(await ResponderAsync(diogo, providencia), HttpStatusCode.Conflict, "uniplus.autorizacao.providencia.concessao_nao_ativa");
     }
 
-    [Fact(DisplayName = "A situação fora do vocabulário do filtro responde 400")]
-    public async Task Fila_SituacaoInvalida()
+    [Theory(DisplayName = "A situação fora do vocabulário do filtro responde 400")]
+    [InlineData("aberta")]
+    [InlineData("%20ABERTA%20")]
+    [InlineData("todas")]
+    [InlineData("arquivada")]
+    public async Task Fila_SituacaoInvalida(string situacao)
     {
         using HttpClient diogo = await ClienteDoGestorAsync(Diogo);
 
-        using HttpResponseMessage resposta = await diogo.GetAsync(new Uri($"{RotaDasProvidencias}?situacao=pendente", UriKind.Relative));
+        using HttpResponseMessage resposta = await diogo.GetAsync(new Uri($"{RotaDasProvidencias}?situacao={situacao}", UriKind.Relative));
 
         await ConferirRecusaAsync(resposta, HttpStatusCode.BadRequest, "uniplus.autorizacao.providencia.filtro_de_situacao_invalido");
+        string corpo = await resposta.Content.ReadAsStringAsync();
+        corpo.Should().NotContain(situacao).And.NotContain("ABERTA").And.NotContain("RESPONDIDA");
     }
+    [Fact]
+    public async Task Fila_SemPermissaoEFiltroInvalido_RecusaPermissao()
+    {
+        using HttpClient pessoa = Cliente(Pessoa("caroline.jesus"));
+
+        using HttpResponseMessage resposta = await pessoa.GetAsync(new Uri($"{RotaDasProvidencias}?situacao=arquivada", UriKind.Relative));
+
+        resposta.StatusCode.Should().Be(HttpStatusCode.Forbidden);
+    }
+
+    [Fact]
+    public async Task Fila_CodigoExato_FiltraAbertas()
+    {
+        (Guid concessao, Guid providencia) = await ProvidenciaAbertaAsync();
+        using HttpClient diogo = await ClienteDoGestorAsync(Diogo);
+
+        (await FilaAsync(diogo, $"?concessao={concessao}&situacao=ABERTA")).Should().Equal(providencia);
+    }
+
+    [Fact]
+    public async Task Fila_SemSituacao_IncluiCadaSituacao()
+    {
+        (Guid concessaoAberta, Guid aberta) = await ProvidenciaAbertaAsync();
+        (Guid concessaoRespondida, Guid respondida) = await ProvidenciaAbertaAsync();
+        (Guid concessaoAtendida, Guid atendida) = await ProvidenciaAbertaAsync();
+        (Guid concessaoPrejudicada, Guid prejudicada) = await ProvidenciaAbertaAsync();
+        using HttpClient diogo = await ClienteDoGestorAsync(Diogo);
+        (await ResponderAsync(diogo, respondida)).StatusCode.Should().Be(HttpStatusCode.OK);
+        (await AtenderAsync(diogo, atendida)).StatusCode.Should().Be(HttpStatusCode.OK);
+        (await RevogarAsync(diogo, concessaoPrejudicada)).StatusCode.Should().Be(HttpStatusCode.NoContent);
+
+        (await FilaAsync(diogo, $"?concessao={concessaoAberta}")).Should().Equal(aberta);
+        (await FilaAsync(diogo, $"?concessao={concessaoRespondida}")).Should().Equal(respondida);
+        (await FilaAsync(diogo, $"?concessao={concessaoAtendida}")).Should().Equal(atendida);
+        (await FilaAsync(diogo, $"?concessao={concessaoPrejudicada}")).Should().Equal(prejudicada);
+    }
+
 }

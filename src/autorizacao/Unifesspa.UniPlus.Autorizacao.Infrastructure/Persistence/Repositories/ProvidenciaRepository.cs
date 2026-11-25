@@ -122,7 +122,8 @@ public sealed class ProvidenciaRepository : IProvidenciaRepository
             SituacaoDaProvidencia.Prejudicada => providencias.Where(p => p.Estado == EstadoDaProvidencia.Aberta && !ativas.Contains(p.ConcessaoId)),
             SituacaoDaProvidencia.Respondida => providencias.Where(p => p.Estado == EstadoDaProvidencia.Respondida),
             SituacaoDaProvidencia.Atendida => providencias.Where(p => p.Estado == EstadoDaProvidencia.Atendida),
-            _ => providencias,
+            null => providencias,
+            _ => throw new ArgumentOutOfRangeException(nameof(filtro), filtro.Situacao, "Situação da providência desconhecida."),
         };
     }
 

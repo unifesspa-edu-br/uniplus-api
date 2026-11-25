@@ -77,6 +77,18 @@ public sealed class LeituraDaProvidenciaTests
             Arg.Is<FiltroDeProvidencias>(f => f.Situacao == SituacaoDaProvidencia.Aberta && f.Agora == ProvidenciaBuilder.Agora), "chave", null, 20, PaginationDirection.Next, Arg.Any<CancellationToken>());
     }
 
+    [Fact]
+    public async Task Listar_SemSituacao_RepassaAusenciaAoRepositorio()
+    {
+        VerificadorDeTeste verificador = new("diogo.souza", [Administrar]);
+        ListarProvidenciasQuery query = new(null, null, "chave", null, 20, PaginationDirection.Next);
+
+        await ProvidenciaQueryHandler.Handle(query, Leitura(), verificador, Usuarios.De(ProvidenciaBuilder.Diogo), CancellationToken.None);
+
+        await _cenario.Providencias.Received(1).ListarPaginadoAsync(
+            Arg.Is<FiltroDeProvidencias>(f => f.Situacao == null), "chave", null, 20, PaginationDirection.Next, Arg.Any<CancellationToken>());
+    }
+
     [Fact(DisplayName = "A fila vazia não registra nada")]
     public async Task Listar_Vazia_NaoRegistra()
     {
