@@ -7,7 +7,7 @@ using AwesomeAssertions;
 using Unifesspa.UniPlus.Infrastructure.Core.Middleware;
 
 // Smoke tests do CorrelationIdMiddleware via WebApplicationFactory<Program>
-// (issues #116 / #117). Cobrem o que os 25 testes unitários do middleware
+// Cobrem o que os 25 testes unitários do middleware
 // (DefaultHttpContext) NÃO conseguem cobrir: ordem de registro em
 // Program.cs, propagação ao longo do pipeline real e comportamento
 // post-OnStarting com a resposta sendo flushada.
@@ -59,32 +59,10 @@ public sealed class CorrelationIdMiddlewareSmokeTests : IClassFixture<InfraCoreA
     [Fact(DisplayName = "GET /health com X-Correlation-Id contendo CRLF — resposta sanitiza com UUID v4 distinto (log injection defense)")]
     public async Task ComHeaderCrLf_DeveDescartarValorSanitizando()
     {
-        // O middleware aceita apenas `^[A-Za-z0-9\-_.]{1,128}$`. CRLF cai fora
-        // do alfabeto permitido e dispara o fallback para Guid.NewGuid().
-        //
-        // `TryAddWithoutValidation` é necessário porque o HttpClient valida o
-        // valor do header antes de enviar e rejeita CRLF cliente-side com
-        // FormatException. O TestServer em uso pelo WebApplicationFactory é
-        // mais permissivo do que o Kestrel produtivo nesse aspecto — aceita
-        // o byte e entrega ao middleware, que então valida via regex e cai
-        // para UUID. Em produção, Kestrel rejeitaria com 400; o smoke aqui
-        // garante a defesa de profundidade do middleware em qualquer
-        // transporte que entregue o valor cru.
         const string idForjado = "abc\r\n[admin] forjado";
         using HttpClient client = _factory.CreateClient();
         using HttpRequestMessage request = new(HttpMethod.Get, HealthUri);
-
-        // Provar que o header REALMENTE saiu com o valor CRLF antes de afirmar
-        // que o servidor o sanitizou. Sem isso, se uma versão futura do
-        // HttpClient passar a rejeitar CRLF silenciosamente (TryAddWithout-
-        // Validation retorna false), o request sairia sem header e o teste
-        // viraria falso positivo do cenário "sem header → UUID gerado".
-        bool adicionou = request.Headers.TryAddWithoutValidation(CorrelationIdMiddleware.HeaderName, idForjado);
-        adicionou.Should().BeTrue(
-            "TryAddWithoutValidation deve aceitar CRLF; se rejeitar, o smoke não exercita CA-05");
-        request.Headers.GetValues(CorrelationIdMiddleware.HeaderName)
-            .Should().ContainSingle().Which.Should().Be(idForjado,
-                "header precisa carregar o valor CRLF intacto para validar a defesa do middleware");
+        AdicionarHeaderCrLf(request, idForjado);
 
         HttpResponseMessage response = await client.SendAsync(request);
 
@@ -92,6 +70,16 @@ public sealed class CorrelationIdMiddlewareSmokeTests : IClassFixture<InfraCoreA
         correlationId.Should().NotBe(idForjado,
             "CRLF não passa pela regex de validação e o middleware deve gerar um UUID novo");
         ValidarUuidV4(correlationId);
+    }
+
+    private static void AdicionarHeaderCrLf(HttpRequestMessage request, string idForjado)
+    {
+        bool adicionou = request.Headers.TryAddWithoutValidation(CorrelationIdMiddleware.HeaderName, idForjado);
+        adicionou.Should().BeTrue(
+            "TryAddWithoutValidation deve aceitar CRLF; se rejeitar, o smoke não exercita CA-05");
+        request.Headers.GetValues(CorrelationIdMiddleware.HeaderName)
+            .Should().ContainSingle().Which.Should().Be(idForjado,
+                "header precisa carregar o valor CRLF intacto para validar a defesa do middleware");
     }
 
     private static string ExtrairCorrelationId(HttpResponseMessage response)

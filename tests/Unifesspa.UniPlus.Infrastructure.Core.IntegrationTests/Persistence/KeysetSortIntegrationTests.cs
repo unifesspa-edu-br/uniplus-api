@@ -15,10 +15,6 @@ using Unifesspa.UniPlus.Kernel.Pagination;
 /// prioridade, cada uma com o próprio sentido, e a travessia que retoma
 /// exatamente de onde parou.
 /// </summary>
-[System.Diagnostics.CodeAnalysis.SuppressMessage(
-    "Naming",
-    "CA1711:Identifiers should not have incorrect suffix",
-    Justification = "Convenção xUnit para classes de teste.")]
 public sealed class KeysetSortIntegrationTests : IAsyncLifetime
 {
     private readonly PostgreSqlContainer _postgres = new PostgreSqlBuilder("postgres:18-alpine")
@@ -38,12 +34,7 @@ public sealed class KeysetSortIntegrationTests : IAsyncLifetime
             ("Barros", "b1"), ("Alves", "a2"), ("Alves", "a1"), ("Castro", "c1"));
 
         OrderedKeysetPage<Linha> pagina = await OrderedKeysetCursor.ApplyAsync(
-            contexto.Linhas.AsNoTracking(),
-            PorSobrenomeECodigo(SortDirection.Ascending),
-            afterSortKey: null,
-            afterId: null,
-            limit: 10,
-            direction: PaginationDirection.Next);
+            contexto.Linhas.AsNoTracking(), PorSobrenomeECodigo(SortDirection.Ascending), null, null, 10, PaginationDirection.Next);
 
         pagina.Items.Select(l => l.Codigo).Should().Equal("a1", "a2", "b1", "c1");
     }
@@ -54,21 +45,10 @@ public sealed class KeysetSortIntegrationTests : IAsyncLifetime
         await using TestDbContext contexto = await ComDadosAsync(
             ("Barros", "b1"), ("Alves", "a1"), ("Castro", "c1"));
 
-        // A coluna nasce ascendente e é invertida depois — o caminho que uma
-        // ordenação escolhida em tempo de execução percorre ao aplicar o sentido
-        // pedido sobre a coluna do catálogo.
-        KeysetSort<Linha> descendente = new(
-            [.. PorSobrenomeECodigo(SortDirection.Ascending).Columns
-                .Select(c => c.With(SortDirection.Descending))],
-            (partes, id) => new Linha { Sobrenome = partes[0], Codigo = partes[1], Id = id });
+        KeysetSort<Linha> descendente = PorSobrenomeECodigoInvertido();
 
         OrderedKeysetPage<Linha> pagina = await OrderedKeysetCursor.ApplyAsync(
-            contexto.Linhas.AsNoTracking(),
-            descendente,
-            afterSortKey: null,
-            afterId: null,
-            limit: 10,
-            direction: PaginationDirection.Next);
+            contexto.Linhas.AsNoTracking(), descendente, null, null, 10, PaginationDirection.Next);
 
         pagina.Items.Select(l => l.Codigo).Should().Equal("c1", "b1", "a1");
     }
@@ -81,27 +61,14 @@ public sealed class KeysetSortIntegrationTests : IAsyncLifetime
 
         KeysetSort<Linha> sort = PorSobrenomeECodigo(SortDirection.Ascending);
 
-        OrderedKeysetPage<Linha> primeira = await OrderedKeysetCursor.ApplyAsync(
-            contexto.Linhas.AsNoTracking(), sort, null, null, 2, PaginationDirection.Next);
+        OrderedKeysetPage<Linha> primeira = await PrimeiraPaginaAsync(contexto, 2);
         primeira.Items.Select(l => l.Codigo).Should().Equal("a1", "a2");
         primeira.Previous.Should().BeNull("é a primeira página");
 
-        OrderedKeysetPage<Linha> segunda = await OrderedKeysetCursor.ApplyAsync(
-            contexto.Linhas.AsNoTracking(),
-            sort,
-            primeira.Next!.Value.SortKey,
-            primeira.Next!.Value.Id,
-            2,
-            PaginationDirection.Next);
+        OrderedKeysetPage<Linha> segunda = await PaginaDaAncoraAsync(contexto, sort, primeira.Next!.Value, PaginationDirection.Next);
         segunda.Items.Select(l => l.Codigo).Should().Equal("b1", "c1");
 
-        OrderedKeysetPage<Linha> volta = await OrderedKeysetCursor.ApplyAsync(
-            contexto.Linhas.AsNoTracking(),
-            sort,
-            segunda.Previous!.Value.SortKey,
-            segunda.Previous!.Value.Id,
-            2,
-            PaginationDirection.Prev);
+        OrderedKeysetPage<Linha> volta = await PaginaDaAncoraAsync(contexto, sort, segunda.Previous!.Value, PaginationDirection.Prev);
         volta.Items.Select(l => l.Codigo).Should().Equal("a1", "a2");
     }
 
@@ -130,23 +97,12 @@ public sealed class KeysetSortIntegrationTests : IAsyncLifetime
         // Cursor emitido para a ordenação ascendente, reapresentado à descendente:
         // mesmas columns, mesma quantidade, sentido oposto. O seek partiria dos
         // valores certos na direção errada, pulando ou repetindo linhas.
-        OrderedKeysetPage<Linha> ascendente = await OrderedKeysetCursor.ApplyAsync(
-            contexto.Linhas.AsNoTracking(),
-            PorSobrenomeECodigo(SortDirection.Ascending),
-            null,
-            null,
-            1,
-            PaginationDirection.Next);
+        OrderedKeysetPage<Linha> ascendente = await PrimeiraPaginaAsync(contexto);
 
         (string SortKey, Guid Id) ancora = ascendente.Next!.Value;
 
         Func<Task> act = async () => await OrderedKeysetCursor.ApplyAsync(
-            contexto.Linhas.AsNoTracking(),
-            PorSobrenomeECodigo(SortDirection.Descending),
-            ancora.SortKey,
-            ancora.Id,
-            1,
-            PaginationDirection.Next);
+            contexto.Linhas.AsNoTracking(), PorSobrenomeECodigo(SortDirection.Descending), ancora.SortKey, ancora.Id, 1, PaginationDirection.Next);
 
         await act.Should().ThrowAsync<CursorAnchorMismatchException>();
     }
@@ -156,43 +112,26 @@ public sealed class KeysetSortIntegrationTests : IAsyncLifetime
     {
         await using TestDbContext contexto = await ComDadosAsync(("Alves", "a1"), ("Barros", "b1"));
 
-        OrderedKeysetPage<Linha> porSobrenome = await OrderedKeysetCursor.ApplyAsync(
-            contexto.Linhas.AsNoTracking(),
-            PorSobrenomeECodigo(SortDirection.Ascending),
-            null,
-            null,
-            1,
-            PaginationDirection.Next);
+        OrderedKeysetPage<Linha> porSobrenome = await PrimeiraPaginaAsync(contexto);
 
         (string SortKey, Guid Id) ancora = porSobrenome.Next!.Value;
 
-        // Duas columns nos dois casos, mas ordenando por outra coisa.
-        KeysetSort<Linha> porCodigoESobrenome = new(
-            [
-                KeysetSortColumn<Linha>.For("codigo", l => l.Codigo, l => l.Codigo),
-                KeysetSortColumn<Linha>.For("sobrenome", l => l.Sobrenome, l => l.Sobrenome),
-            ],
-            (partes, id) => new Linha { Codigo = partes[0], Sobrenome = partes[1], Id = id });
+        KeysetSort<Linha> porCodigoESobrenome = PorCodigoESobrenome();
 
         Func<Task> act = async () => await OrderedKeysetCursor.ApplyAsync(
-            contexto.Linhas.AsNoTracking(),
-            porCodigoESobrenome,
-            ancora.SortKey,
-            ancora.Id,
-            1,
-            PaginationDirection.Next);
+            contexto.Linhas.AsNoTracking(), porCodigoESobrenome, ancora.SortKey, ancora.Id, 1, PaginationDirection.Next);
 
         await act.Should().ThrowAsync<CursorAnchorMismatchException>();
     }
 
+    // Os dois conjuntos de tokens são diferentes, mas concatená-los com ":" e "|"
+    // produziria a mesma string nos dois casos. Se a assinatura fosse montada
+    // assim, o cursor de uma ordenação seria aceito pela outra.
     [Fact(DisplayName = "Tokens que contêm o separador não fazem duas ordenações parecerem a mesma")]
     public async Task TokensComSeparador_NaoColidem()
     {
         await using TestDbContext context = await ComDadosAsync(("Alves", "a1"), ("Barros", "b1"));
 
-        // Os dois conjuntos de tokens são diferentes, mas concatená-los com ":" e "|"
-        // produziria a mesma string nos dois casos. Se a assinatura fosse montada
-        // assim, o cursor de uma ordenação seria aceito pela outra.
         KeysetSort<Linha> primeira = ComTokens("sobrenome", "codigo:asc|extra");
         KeysetSort<Linha> segunda = ComTokens("sobrenome:asc|codigo", "extra");
 
@@ -206,6 +145,26 @@ public sealed class KeysetSortIntegrationTests : IAsyncLifetime
 
         await act.Should().ThrowAsync<CursorAnchorMismatchException>();
     }
+
+    private static Task<OrderedKeysetPage<Linha>> PaginaDaAncoraAsync(
+        TestDbContext contexto, KeysetSort<Linha> sort, (string SortKey, Guid Id) ancora, PaginationDirection direction) =>
+        OrderedKeysetCursor.ApplyAsync(contexto.Linhas.AsNoTracking(), sort, ancora.SortKey, ancora.Id, 2, direction);
+
+    private static Task<OrderedKeysetPage<Linha>> PrimeiraPaginaAsync(TestDbContext contexto, int limite = 1) =>
+        OrderedKeysetCursor.ApplyAsync(contexto.Linhas.AsNoTracking(),
+            PorSobrenomeECodigo(SortDirection.Ascending), null, null, limite, PaginationDirection.Next);
+
+    private static KeysetSort<Linha> PorSobrenomeECodigoInvertido() => new(
+        [.. PorSobrenomeECodigo(SortDirection.Ascending).Columns
+            .Select(c => c.With(SortDirection.Descending))],
+        (partes, id) => new Linha { Sobrenome = partes[0], Codigo = partes[1], Id = id });
+
+    private static KeysetSort<Linha> PorCodigoESobrenome() => new(
+        [
+            KeysetSortColumn<Linha>.For("codigo", l => l.Codigo, l => l.Codigo),
+            KeysetSortColumn<Linha>.For("sobrenome", l => l.Sobrenome, l => l.Sobrenome),
+        ],
+        (partes, id) => new Linha { Codigo = partes[0], Sobrenome = partes[1], Id = id });
 
     private static KeysetSort<Linha> ComTokens(string tokenA, string tokenB) => new(
         [
@@ -230,8 +189,15 @@ public sealed class KeysetSortIntegrationTests : IAsyncLifetime
 
         await contexto.Database.EnsureCreatedAsync();
 
-        // Ids sorteados fora da ordem das columns: a posição tem de vir das
-        // columns de ordenação, não do identificador de desempate.
+        AdicionarLinhas(contexto, linhas);
+
+        await contexto.SaveChangesAsync();
+        contexto.ChangeTracker.Clear();
+        return contexto;
+    }
+
+    private static void AdicionarLinhas(TestDbContext contexto, (string Sobrenome, string Codigo)[] linhas)
+    {
         foreach ((string sobrenome, string codigo) in linhas)
         {
             contexto.Linhas.Add(new Linha
@@ -241,10 +207,6 @@ public sealed class KeysetSortIntegrationTests : IAsyncLifetime
                 Codigo = codigo,
             });
         }
-
-        await contexto.SaveChangesAsync();
-        contexto.ChangeTracker.Clear();
-        return contexto;
     }
 
     internal sealed class Linha : IIdentificavel
