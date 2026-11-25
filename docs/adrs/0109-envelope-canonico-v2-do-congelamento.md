@@ -353,3 +353,19 @@ A classificação de cada bloco é registrada em `ClassificacaoDosBlocosDoCertam
 O documento congelado guarda, na raiz, o `nome` do processo seletivo, com o mesmo nome da `v1` (`identificacao.nome`). É obrigatório, tem de 1 a 300 caracteres e é gravado em NFC; o leitor exige a chave. É lido do próprio processo ao congelar, na publicação e na retificação, e entra nos bytes e no resumo criptográfico. A página pública, a busca e a exportação da versão publicada tiram o nome do documento congelado, nunca do processo gravado no banco. A D1 e a nota de 23/11 sobre a versão não mudam: o envelope continua em `0.0.57`, editado no lugar.
 
 **Consequência:** os três envelopes de referência dos testes são gerados de novo, e a retificação que muda o nome do processo muda o resumo da versão.
+
+## Emenda 8 (2026-11-25) — a chave do endereço web da unidade administradora
+
+No documento congelado, o objeto da unidade administradora guarda o identificador no endereço web
+da unidade na chave `identificadorNoEnderecoWeb`, com a mesma grafia das outras chaves do documento.
+A chave `slug` deixa de existir. O valor tem no máximo 64 caracteres, o mesmo limite do
+identificador no cadastro da unidade.
+
+A chave entra nos bytes e no resumo (hash) da versão; trocar seu nome muda o resumo de todo
+documento já escrito. A gravação e a leitura usam somente a chave nova, e nenhum leitor aceita a
+chave antiga. A versão do envelope não muda: até a primeira publicação em produção, há um envelope
+só, o atual, editado no lugar.
+
+**Consequência:** os três envelopes de referência dos testes são gerados de novo, e os processos
+de homologação são recriados. Versões já publicadas em produção manteriam seus bytes e seu resumo,
+mas ainda não existem versões publicadas em produção.
