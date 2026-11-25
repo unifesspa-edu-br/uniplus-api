@@ -64,7 +64,7 @@ public sealed class ObterInscricaoAdministrativaProjecaoDosDadosTests
     public async Task Identificador_PorConsultarERevelar(bool consultar, bool revelar, bool comValor, bool podeRevelar)
     {
         InscricaoAdministrativaDeTeste cenario = new InscricaoAdministrativaDeTeste(CpfDeErick)
-            .Fato("PASSAPORTE_NUMERO", "IDENTIFICADOR", TipoRenderizacao.Texto, Texto("FX123456"));
+            .Fato("PASSAPORTE_NUMERO", "IDENTIFICADOR", TipoDeCampo.Texto, Texto("FX123456"));
         DecisoesDeAcessoDeTeste diogo = new("diogo.souza", Permissoes(consultar, revelar));
 
         InscricaoAdministrativaDto dto = await ConsultarDto(cenario, diogo);
@@ -95,7 +95,7 @@ public sealed class ObterInscricaoAdministrativaProjecaoDosDadosTests
     public async Task CpfReclassificadoComoPessoal_SaiMascarado()
     {
         InscricaoAdministrativaDeTeste cenario = new InscricaoAdministrativaDeTeste(PersonasDeTeste.FernandaDrumond)
-            .Fato("CPF", "PESSOAL", TipoRenderizacao.Texto, Texto(PersonasDeTeste.FernandaDrumond.Valor), ordem: 0, formato: "CPF");
+            .Fato("CPF", "PESSOAL", TipoDeCampo.Texto, Texto(PersonasDeTeste.FernandaDrumond.Valor), ordem: 0, formato: "CPF");
         DecisoesDeAcessoDeTeste kevin = new("kevin.carvalho", PermissaoSelecao.InscricoesConsultar, PermissaoSelecao.DadosPessoaisConsultar);
 
         InscricaoAdministrativaDto dto = await ConsultarDto(cenario, kevin);
@@ -110,7 +110,7 @@ public sealed class ObterInscricaoAdministrativaProjecaoDosDadosTests
     public async Task NomeSocialPessoal_SaiSoComDadosPessoais(bool comDadosPessoais)
     {
         InscricaoAdministrativaDeTeste cenario = DeFernanda()
-            .Fato("NOME_SOCIAL", "PESSOAL", TipoRenderizacao.Texto, Texto("Ariel Drumond"), ordem: 3);
+            .Fato("NOME_SOCIAL", "PESSOAL", TipoDeCampo.Texto, Texto("Ariel Drumond"), ordem: 3);
         DecisoesDeAcessoDeTeste persona = comDadosPessoais
             ? new("diogo.souza", PermissaoSelecao.InscricoesConsultar, PermissaoSelecao.DadosPublicosConsultar, PermissaoSelecao.DadosPessoaisConsultar)
             : new("leandro.viana", PermissaoSelecao.InscricoesConsultar, PermissaoSelecao.DadosPublicosConsultar);
@@ -160,7 +160,7 @@ public sealed class ObterInscricaoAdministrativaProjecaoDosDadosTests
     public async Task Identificador_RespostaVazia_SemItem(string resposta)
     {
         InscricaoAdministrativaDeTeste cenario = new InscricaoAdministrativaDeTeste(CpfDeErick)
-            .Fato("PASSAPORTE_NUMERO", "IDENTIFICADOR", TipoRenderizacao.Texto, Texto(resposta));
+            .Fato("PASSAPORTE_NUMERO", "IDENTIFICADOR", TipoDeCampo.Texto, Texto(resposta));
         DecisoesDeAcessoDeTeste diogo = new("diogo.souza", Permissoes(consultar: true, revelar: true));
 
         InscricaoAdministrativaDto dto = await ConsultarDto(cenario, diogo);

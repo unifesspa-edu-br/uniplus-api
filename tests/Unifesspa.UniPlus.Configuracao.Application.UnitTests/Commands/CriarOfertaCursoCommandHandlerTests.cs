@@ -58,7 +58,7 @@ public sealed class CriarOfertaCursoCommandHandlerTests
         string? baseLegal = null) =>
         new(cursoId, localOfertaId, unidadeOrigemId, "ENF_BACHARELADO_MARABA", programa,
             RegimeDeFuncionamento: "EXTENSIVO", RegimeDeTurno: "REGULAR", Turnos: ["MATUTINO"],
-            FormatoPedagogico: "PRESENCIAL", EMecCodigo: "123456", CodigoSga: "ENG-01",
+            FormatoPedagogico: "PRESENCIAL", CodigoEmec: "123456", CodigoNoSistemaAcademico: "ENG-01",
             VagasAnuaisAutorizadas: 40, BaseLegal: baseLegal, AtoAutorizacaoMec: null);
 
     private Task<Result<Guid>> HandleAsync(CriarOfertaCursoCommand comando) =>

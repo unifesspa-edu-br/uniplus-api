@@ -27,7 +27,7 @@ public sealed class LeituraDaBaseDaRetificacaoTests
         Result<BaseDaRetificacao> resposta = await servicos.LeituraDaBase().DaVersaoPublicadaAsync(processo, "Correção do prazo", CancellationToken.None);
 
         resposta.Error!.Code.Should().Be("ProcessoSeletivo.TransicaoInvalida");
-        resposta.Error.Message.Should().Contain(processo.Status.ToString());
+        resposta.Error.Message.Should().Contain("situação atual: Rascunho");
         await servicos.Atos.DidNotReceive().ListarDoProcessoAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>());
     }
 

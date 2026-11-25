@@ -40,7 +40,7 @@ public sealed class FatoDeElegibilidadeDoAcrescimoTests
 
     private static FatoColetado Numero(string codigo, int ordem) =>
         FatoColetadoDeTeste.Coletando(codigo, ordem)
-            .DoTipo(TipoRenderizacao.Numero)
+            .DoTipo(TipoDeCampo.Numero)
             .ComObrigatoriedade(Obrigatoriedade.Sempre)
             .NaSecao(FormularioDeTeste.Secao)
             .Construir();

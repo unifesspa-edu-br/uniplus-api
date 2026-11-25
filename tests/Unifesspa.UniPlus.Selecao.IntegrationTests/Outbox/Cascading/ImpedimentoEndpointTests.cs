@@ -72,7 +72,7 @@ public sealed class ImpedimentoEndpointTests
         fatoCodigo = "QUILOMBOLA",
         ordem = FormularioDeTeste.PrimeiraOrdemDeInscricao,
         etapaCodigo = FormularioDeTeste.Secao,
-        apresentacao = new { rotulo = "Quilombola", tipoRenderizacao = "SIM_OU_NAO" },
+        apresentacao = new { rotulo = "Quilombola", tipoDeCampo = "SIM_OU_NAO" },
         regras = new
         {
             obrigatoriedade = new { tipo = "SEMPRE" },

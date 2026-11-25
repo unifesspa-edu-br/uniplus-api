@@ -38,14 +38,15 @@ public sealed class TransicoesDaVersaoSequenciaTests
         processo.Retificar(
             new CenarioDeCongelamento { Dados = Dados(), Documento = new DocumentoCongelado(Bytes, "1.1", "canonical-json/sha256@v1", Hash), Relogio = new RelogioFixo(Agora) }, versao, "Correção do prazo");
 
-    [Fact(DisplayName = "Publicar um processo já publicado recusa pelo status")]
-    public void Publicar_JaPublicado_RecusaPeloStatus()
+    [Fact(DisplayName = "Publicar um processo já publicado recusa pela situação")]
+    public void Publicar_JaPublicado_RecusaPelaSituacao()
     {
         ProcessoSeletivo publicado = ProcessoEmEdicaoDeTeste.Publicado(out _);
 
         Result<VersaoConfiguracao> resultado = Publicar(publicado);
 
         resultado.Error!.Code.Should().Be("ProcessoSeletivo.TransicaoInvalida");
+        resultado.Error.Message.Should().Contain("situação atual: Publicado");
     }
 
     [Fact(DisplayName = "Publicar um rascunho conforme tem sucesso")]
@@ -74,8 +75,8 @@ public sealed class TransicoesDaVersaoSequenciaTests
         ProcessoSeletivo rascunho = ProcessoConformeFactory.Criar();
         ProcessoEmEdicaoDeTeste.Publicado(out VersaoConfiguracao deOutro);
 
-        TransicoesDaVersao.ConferirEstadoParaPublicar(rascunho.Status).IsSuccess.Should().BeTrue();
-        TransicoesDaVersao.ConferirEstadoParaRetificar(rascunho.Id, rascunho.Status, deOutro, "Correção do prazo").Error!.Code.Should().Be("ProcessoSeletivo.TransicaoInvalida");
+        TransicoesDaVersao.ConferirEstadoParaPublicar(rascunho.Situacao).IsSuccess.Should().BeTrue();
+        TransicoesDaVersao.ConferirEstadoParaRetificar(rascunho.Id, rascunho.Situacao, deOutro, "Correção do prazo").Error!.Message.Should().Contain("situação atual: Rascunho");
     }
 
     [Fact(DisplayName = "O estado do processo publicado não admite publicar de novo e exige o motivo da retificação")]
@@ -83,9 +84,9 @@ public sealed class TransicoesDaVersaoSequenciaTests
     {
         ProcessoSeletivo publicado = ProcessoEmEdicaoDeTeste.Publicado(out VersaoConfiguracao versao);
 
-        TransicoesDaVersao.ConferirEstadoParaPublicar(publicado.Status).Error!.Code.Should().Be("ProcessoSeletivo.TransicaoInvalida");
-        TransicoesDaVersao.ConferirEstadoParaRetificar(publicado.Id, publicado.Status, versao, " ").Error!.Code.Should().Be("ProcessoSeletivo.MotivoRetificacaoObrigatorio");
-        TransicoesDaVersao.ConferirEstadoParaRetificar(publicado.Id, publicado.Status, versao, "Correção do prazo").IsSuccess.Should().BeTrue();
+        TransicoesDaVersao.ConferirEstadoParaPublicar(publicado.Situacao).Error!.Code.Should().Be("ProcessoSeletivo.TransicaoInvalida");
+        TransicoesDaVersao.ConferirEstadoParaRetificar(publicado.Id, publicado.Situacao, versao, " ").Error!.Code.Should().Be("ProcessoSeletivo.MotivoRetificacaoObrigatorio");
+        TransicoesDaVersao.ConferirEstadoParaRetificar(publicado.Id, publicado.Situacao, versao, "Correção do prazo").IsSuccess.Should().BeTrue();
     }
 
     [Fact(DisplayName = "A versão corrente de outro processo lança sem mutar o processo")]
@@ -94,13 +95,13 @@ public sealed class TransicoesDaVersaoSequenciaTests
         ProcessoSeletivo publicado = ProcessoEmEdicaoDeTeste.Publicado(out _);
         ProcessoEmEdicaoDeTeste.Publicado(out VersaoConfiguracao deOutro);
 
-        Action conferir = () => TransicoesDaVersao.ConferirEstadoParaRetificar(publicado.Id, publicado.Status, deOutro, "Correção do prazo");
+        Action conferir = () => TransicoesDaVersao.ConferirEstadoParaRetificar(publicado.Id, publicado.Situacao, deOutro, "Correção do prazo");
 
         conferir.Should().Throw<ArgumentOutOfRangeException>().WithParameterName("versaoAtual");
     }
 
-    [Fact(DisplayName = "Retificar lança pela versão atual nula antes de conferir o status")]
-    public void Retificar_VersaoAtualNula_LancaAntesDoStatus()
+    [Fact(DisplayName = "Retificar lança pela versão atual nula antes de conferir a situação")]
+    public void Retificar_VersaoAtualNula_LancaAntesDaSituacao()
     {
         ProcessoSeletivo rascunho = ProcessoConformeFactory.Criar();
 

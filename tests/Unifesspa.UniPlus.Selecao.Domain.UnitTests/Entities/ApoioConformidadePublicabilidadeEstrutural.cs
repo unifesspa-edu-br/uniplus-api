@@ -37,7 +37,7 @@ internal static class ApoioConformidadePublicabilidadeEstrutural
 
     internal static FatoColetado FatoDeOpcaoDeTeste() => FatoColetadoDeTeste.Coletando("FATO_OPCAO_DE_TESTE", 0)
         .ComRotulo("Fato de opção do processo")
-        .DoTipo(TipoRenderizacao.EscolhaUnica)
+        .DoTipo(TipoDeCampo.EscolhaUnica)
         .ComObrigatoriedade(Obrigatoriedade.Sempre)
         .ComOrigem(OrigemValoresColeta.OpcoesDoProcesso)
         .Construir();

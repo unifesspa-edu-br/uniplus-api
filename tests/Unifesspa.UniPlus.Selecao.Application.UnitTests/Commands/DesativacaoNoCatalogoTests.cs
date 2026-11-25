@@ -104,7 +104,7 @@ public sealed class DesativacaoNoCatalogoTests
 
     private static FatoColetado CorRacaColetada() => FatoColetadoDeTeste.Coletando("COR_RACA", 0)
         .ComRotulo("Cor ou raça")
-        .DoTipo(TipoRenderizacao.EscolhaUnica)
+        .DoTipo(TipoDeCampo.EscolhaUnica)
         .ComObrigatoriedade(Obrigatoriedade.Sempre)
         .Construir();
 

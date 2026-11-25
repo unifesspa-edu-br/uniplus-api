@@ -179,8 +179,8 @@ public sealed class ConferenciaDoModeloTests
     private static Recusa[] RecusasDosItens() =>
     [
         ("itens[1].fatoCodigo", ItemFormularioErrorCodes.FatoDesconhecido, "O fato 'NAO_EXISTE' não pertence ao catálogo de fatos do candidato."),
-        ("itens[2].apresentacao.tipoRenderizacao", ItemFormularioErrorCodes.TipoRenderizacaoIncoerenteComDominio,
-            "O tipo de campo 'NUMERO' não é coerente com o tipo do dado 'SIM_OU_NAO', a quantidade de valores 'VALOR_UNICO' e a fonte de valores 'nenhuma' do fato 'CERTIFICADO'."),
+        ("itens[2].apresentacao.tipoDeCampo", ItemFormularioErrorCodes.TipoDeCampoIncoerenteComDominio,
+            "O tipo de campo 'NUMERO' não é coerente com o tipo do dado 'SIM_OU_NAO', a quantidade de valores 'VALOR_UNICO' e a fonte de valores 'nenhuma' do dado 'CERTIFICADO'."),
         FatoInexistenteNoPredicado("itens[2].regras.exibicao"),
         FatoInexistenteNoPredicado("itens[2].regras.obrigatoriedade.predicado"),
         FatoInexistenteNoPredicado("itens[2].regras.impedimento.quando"),
@@ -198,8 +198,8 @@ public sealed class ConferenciaDoModeloTests
         FatoInexistenteNoPredicado("grupos[0].regras.obrigatoriedade.predicado"),
         ("grupos[0].subitens[0].fatoCodigo", ItemFormularioErrorCodes.FatoNaoColetavel,
             "O fato 'CERTIFICADO' não é coletável num campo do grupo: só o fato declarado de membro de grupo é respondido em cada ocorrência — fatos do candidato, derivados e calculados não."),
-        ("grupos[0].subitens[1].apresentacao.tipoRenderizacao", ItemFormularioErrorCodes.TipoRenderizacaoIncoerenteComDominio,
-            "O tipo de campo 'NUMERO' não é coerente com o tipo do dado 'SIM_OU_NAO', a quantidade de valores 'VALOR_UNICO' e a fonte de valores 'nenhuma' do fato 'MAIOR_IDADE'."),
+        ("grupos[0].subitens[1].apresentacao.tipoDeCampo", ItemFormularioErrorCodes.TipoDeCampoIncoerenteComDominio,
+            "O tipo de campo 'NUMERO' não é coerente com o tipo do dado 'SIM_OU_NAO', a quantidade de valores 'VALOR_UNICO' e a fonte de valores 'nenhuma' do dado 'MAIOR_IDADE'."),
     ];
 
     private static Recusa[] RecusasDosDocumentos() =>

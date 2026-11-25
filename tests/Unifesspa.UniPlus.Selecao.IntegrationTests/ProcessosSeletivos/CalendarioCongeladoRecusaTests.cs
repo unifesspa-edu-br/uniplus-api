@@ -106,7 +106,7 @@ public sealed class CalendarioCongeladoRecusaTests
         bloco => Dia(bloco, "NACIONAL")["descricao"] = "Confraternização Universal",
         "um leitor tolerante a chave extra deixaria passar configuração que o encoder nunca produziu");
 
-    [Fact(DisplayName = "Versão do dataset vazia é recusada")]
+    [Fact(DisplayName = "Versão do calendário vazia é recusada")]
     public void VersaoVazia_Recusada() => DeveRecusar(
         bloco => bloco["versaoDoCalendario"] = string.Empty,
         "a versão identifica a remessa de onde a lista veio — vazia, não identifica nada");
@@ -176,12 +176,12 @@ public sealed class CalendarioCongeladoRecusaTests
         bloco => bloco["diasNaoUteis"] = new JsonArray(),
         "um calendário sem nenhum dia não útil afirmaria que todo dia é útil — o cadastro de origem também o recusa");
 
-    [Fact(DisplayName = "Versão do dataset acima do limite do cadastro é recusada")]
+    [Fact(DisplayName = "Versão do calendário acima do limite do cadastro é recusada")]
     public void VersaoAcimaDoLimite_Recusada() => DeveRecusar(
         bloco => bloco["versaoDoCalendario"] = new string('A', 61),
         "o cadastro de origem grava no máximo 60 caracteres — aceitar 61 reidrataria um calendário que não veio dele");
 
-    [Fact(DisplayName = "Versão do dataset com espaço em volta é recusada em vez de aparada")]
+    [Fact(DisplayName = "Versão do calendário com espaço em volta é recusada em vez de aparada")]
     public void VersaoForaDaFormaCanonica_Recusada() => DeveRecusar(
         bloco => bloco["versaoDoCalendario"] = " 2026 ",
         "a factory apara a versão, e aceitar o texto aparado devolveria um objeto que não representa os bytes decodificados");

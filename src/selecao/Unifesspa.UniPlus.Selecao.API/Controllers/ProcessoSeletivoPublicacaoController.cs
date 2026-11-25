@@ -49,7 +49,7 @@ public sealed class ProcessoSeletivoPublicacaoController : ControllerBase
 
     /// <summary>
     /// Publica o processo (congelamento dos parâmetros na publicação, UNI-REQ-0019): valida a conformidade, congela a versão 1 da
-    /// configuração (append-only) e transita o status para Publicado, tudo na mesma
+    /// configuração (append-only) e transita a situação para Publicado, tudo na mesma
     /// transação — junto do registro do ato em Publicações, que a Seleção chama na mesma
     /// gravação (ADR-0170). Toda recusa 422 é reavaliada contra o checklist estrutural:
     /// havendo item vermelho no estado atual, o corpo carrega

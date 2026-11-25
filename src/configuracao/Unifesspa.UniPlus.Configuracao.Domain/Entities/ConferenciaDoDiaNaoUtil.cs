@@ -40,7 +40,7 @@ internal sealed class ConferenciaDoDiaNaoUtil
 
     /// <summary>
     /// Confere o dia declarado. <paramref name="campo"/> é o rótulo do item nas recusas (<c>"diasNaoUteis[i]"</c> dentro
-    /// do dataset, <c>"item"</c> na inclusão pontual); os subcampos vão em camelCase (ADR-0023).
+    /// do calendário, <c>"item"</c> na inclusão pontual); os subcampos vão em camelCase (ADR-0023).
     /// </summary>
     public static Result<DiaNaoUtilResolvido> Conferir(DiaNaoUtilCriacao? dia, string campo)
     {
@@ -72,7 +72,7 @@ internal sealed class ConferenciaDoDiaNaoUtil
         // (RespectRequiredConstructorParameters desabilitado): um payload sem
         // o campo materializa DateOnly.MinValue (0001-01-01) em vez de falhar
         // no bind. Sem esta checagem, essa data passaria para o agregado, e um
-        // dataset vigente com ela seria irreconstruível na publicação —
+        // calendário vigente com ela seria irreconstruível na publicação —
         // DiaNaoUtilCongelado.Criar (Selecao) recusa o mesmo default (mesma
         // razão), então o defeito só apareceria ali, longe de onde nasceu.
         if (_dia.Data == default)

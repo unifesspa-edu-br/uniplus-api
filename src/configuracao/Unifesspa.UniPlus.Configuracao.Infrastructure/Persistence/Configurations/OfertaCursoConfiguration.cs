@@ -16,8 +16,8 @@ internal sealed class OfertaCursoConfiguration : IEntityTypeConfiguration<Oferta
 {
     private const int CodigoDeContratoMaxLength = 30;
     private const int CodigoMaxLength = CodigoOfertaCurso.TamanhoMaximo;
-    private const int EMecCodigoMaxLength = 20;
-    private const int CodigoSgaMaxLength = 30;
+    private const int CodigoEmecMaxLength = 20;
+    private const int CodigoNoSistemaAcademicoMaxLength = 30;
     private const int BaseLegalMaxLength = 500;
     private const int AtoAutorizacaoMecMaxLength = 300;
     private const int AuditUserMaxLength = 255;
@@ -86,11 +86,11 @@ internal sealed class OfertaCursoConfiguration : IEntityTypeConfiguration<Oferta
     // Os nomes das colunas identificam os códigos nos respectivos sistemas.
     private static void ConfigurarCadastroNoMec(EntityTypeBuilder<OfertaCurso> builder)
     {
-        builder.Property(o => o.EMecCodigo)
+        builder.Property(o => o.CodigoEmec)
             .HasColumnName("codigo_emec")
-            .HasMaxLength(EMecCodigoMaxLength);
+            .HasMaxLength(CodigoEmecMaxLength);
 
-        builder.Property(o => o.CodigoSga).HasColumnName("codigo_no_sistema_academico").HasMaxLength(CodigoSgaMaxLength);
+        builder.Property(o => o.CodigoNoSistemaAcademico).HasColumnName("codigo_no_sistema_academico").HasMaxLength(CodigoNoSistemaAcademicoMaxLength);
         builder.Property(o => o.VagasAnuaisAutorizadas);
         builder.Property(o => o.BaseLegal).HasMaxLength(BaseLegalMaxLength);
         builder.Property(o => o.AtoAutorizacaoMec).HasMaxLength(AtoAutorizacaoMecMaxLength);

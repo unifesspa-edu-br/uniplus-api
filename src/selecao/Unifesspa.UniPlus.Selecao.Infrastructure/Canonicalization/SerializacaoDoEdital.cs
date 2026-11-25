@@ -32,7 +32,7 @@ internal static class SerializacaoDoEdital
             {
                 ["codigoDoDado"] = a.FatoCodigo,
                 ["rotulo"] = HashCanonicalComputer.NormalizeNfc(a.Rotulo),
-                ["tipoDeCampo"] = a.TipoRenderizacao,
+                ["tipoDeCampo"] = a.TipoDeCampo,
             })]);
 
     internal static JsonArray SerializarTiposDeAto(IReadOnlyDictionary<string, TipoDeAtoCongelado>? tipos) =>
@@ -86,7 +86,7 @@ internal static class SerializacaoDoEdital
     {
         ["presente"] = true,
         ["origemId"] = calendario.OrigemId,
-        ["versaoDoCalendario"] = HashCanonicalComputer.NormalizeNfc(calendario.VersaoDataset),
+        ["versaoDoCalendario"] = HashCanonicalComputer.NormalizeNfc(calendario.VersaoDoCalendario),
         ["diasNaoUteis"] = new JsonArray(
         [
             .. CalendarioDiasUteisCongelado.Ordenar(calendario.DiasNaoUteis).Select(SerializarDiaNaoUtil),

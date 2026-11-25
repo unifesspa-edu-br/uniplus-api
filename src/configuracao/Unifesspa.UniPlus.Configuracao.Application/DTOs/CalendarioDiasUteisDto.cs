@@ -9,7 +9,7 @@ using System.Text.Json.Serialization;
 /// </summary>
 public sealed record CalendarioDiasUteisDto(
     Guid Id,
-    string VersaoDataset,
+    string VersaoDoCalendario,
     bool Vigente,
     IReadOnlyList<DiaNaoUtilDto> DiasNaoUteis,
     DateTimeOffset CriadoEm)

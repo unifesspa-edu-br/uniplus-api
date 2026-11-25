@@ -115,8 +115,8 @@ public sealed class OfertaCursoPersistenceTests
         persistida.RegimeDeFuncionamento.Should().Be(RegimeDeFuncionamento.Extensivo);
         persistida.RegimeDeTurno.Should().Be(RegimeDeTurno.Regular);
         persistida.Turnos.Should().Equal(TurnoOferta.Matutino);
-        persistida.EMecCodigo.Should().BeNull();
-        persistida.CodigoSga.Should().BeNull();
+        persistida.CodigoEmec.Should().BeNull();
+        persistida.CodigoNoSistemaAcademico.Should().BeNull();
         persistida.VagasAnuaisAutorizadas.Should().BeNull();
         persistida.BaseLegal.Should().BeNull();
         persistida.AtoAutorizacaoMec.Should().BeNull();
@@ -187,8 +187,8 @@ public sealed class OfertaCursoPersistenceTests
         persistida.RegimeDeFuncionamento.Should().Be(RegimeDeFuncionamento.Intensivo);
         persistida.RegimeDeTurno.Should().Be(RegimeDeTurno.Integral);
         persistida.Turnos.Should().Equal(TurnoOferta.Vespertino, TurnoOferta.Noturno);
-        persistida.EMecCodigo.Should().Be("123456");
-        persistida.CodigoSga.Should().Be("ENG-01");
+        persistida.CodigoEmec.Should().Be("123456");
+        persistida.CodigoNoSistemaAcademico.Should().Be("ENG-01");
         persistida.VagasAnuaisAutorizadas.Should().Be(40);
         persistida.BaseLegal.Should().Be("Decreto 6.755/2009");
         persistida.AtoAutorizacaoMec.Should().Be("Portaria MEC 9/2009");

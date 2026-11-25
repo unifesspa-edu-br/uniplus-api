@@ -9,12 +9,12 @@ using Unifesspa.UniPlus.Configuracao.Domain.Interfaces;
 using Unifesspa.UniPlus.Kernel.Results;
 
 /// <summary>
-/// Handler do <see cref="IncluirDiaNaoUtilCommand"/>: carrega o dataset (vigente ou
+/// Handler do <see cref="IncluirDiaNaoUtilCommand"/>: carrega o calendário (vigente ou
 /// rascunho), inclui a data via <see cref="CalendarioDiasUteis.IncluirDiaNaoUtil"/> e
 /// persiste. Marca o pai como alterado (<see cref="ICalendarioDiasUteisRepository.RegistrarInclusaoDeDiaNaoUtil"/>)
 /// para que o <c>UPDATE</c> dele participe do mesmo <c>SaveChangesAsync</c> do
 /// <c>INSERT</c> do filho — sem isso, uma remoção (soft-delete) concorrente do
-/// mesmo dataset não vira conflito, porque inserir só o filho nunca compara o
+/// mesmo calendário não vira conflito, porque inserir só o filho nunca compara o
 /// <c>xmin</c> do pai (achado de revisão, api#1458 PR #1460).
 /// </summary>
 public static class IncluirDiaNaoUtilCommandHandler
@@ -75,13 +75,13 @@ public static class IncluirDiaNaoUtilCommandHandler
             // deste catch (500 em vez de 422).
             unitOfWork.DescartarAlteracoesNaoSalvas();
             return Result<CalendarioDiasUteisDto>.Failure(new DomainError(
-                CalendarioDiasUteisErrorCodes.DataDuplicadaNoDataset,
-                "Data duplicada no dataset (mesma abrangência, município e UF)."));
+                CalendarioDiasUteisErrorCodes.DataDuplicadaNoCalendario,
+                "Data duplicada no calendário (mesma abrangência, município e UF)."));
         }
         catch (Exception ex) when (OptimisticConcurrencyViolation.Is(ex))
         {
             // Corrida entre esta inclusão e uma remoção (soft-delete) ou
-            // ativação de vigência concorrente do MESMO dataset (xmin): o
+            // ativação de vigência concorrente do MESMO calendário (xmin): o
             // UPDATE do pai, forçado por RegistrarInclusaoDeDiaNaoUtil, compara
             // o xmin lido na leitura contra o valor atual — se outra operação já
             // mudou a linha, este UPDATE afeta 0 linhas e o EF Core lança aqui.
@@ -92,7 +92,7 @@ public static class IncluirDiaNaoUtilCommandHandler
             unitOfWork.DescartarAlteracoesNaoSalvas();
             return Result<CalendarioDiasUteisDto>.Failure(new DomainError(
                 CalendarioDiasUteisErrorCodes.ConflitoDeConcorrencia,
-                "Este dataset foi modificado concorrentemente (possivelmente removido). Tente novamente."));
+                "Este calendário foi modificado concorrentemente (possivelmente removido). Tente novamente."));
         }
 
         return Result<CalendarioDiasUteisDto>.Success(calendario.ToDto());

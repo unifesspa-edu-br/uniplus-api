@@ -36,7 +36,7 @@ public sealed class ProjecaoDoFormularioRenderizavelTests
     {
         Configuracao configuracao = new(
             [Formulario(FinalidadeFormulario.Inscricao)],
-            [Campo("NOME_SOCIAL", 0, TipoRenderizacao.Texto, FinalidadeFormulario.Inscricao, formato: "NOME_PESSOA")],
+            [Campo("NOME_SOCIAL", 0, TipoDeCampo.Texto, FinalidadeFormulario.Inscricao, formato: "NOME_PESSOA")],
             [],
             [Termo("VERACIDADE", FinalidadeFormulario.Inscricao)]);
 
@@ -55,8 +55,8 @@ public sealed class ProjecaoDoFormularioRenderizavelTests
         Configuracao configuracao = new(
             [Formulario(FinalidadeFormulario.Inscricao)],
             [
-                Campo("NOME", 0, TipoRenderizacao.Texto, FinalidadeFormulario.Inscricao, formato: "NOME_PESSOA"),
-                Campo("NOME_MAE", 1, TipoRenderizacao.Texto, FinalidadeFormulario.Inscricao, formato: "NOME_PESSOA"),
+                Campo("NOME", 0, TipoDeCampo.Texto, FinalidadeFormulario.Inscricao, formato: "NOME_PESSOA"),
+                Campo("NOME_MAE", 1, TipoDeCampo.Texto, FinalidadeFormulario.Inscricao, formato: "NOME_PESSOA"),
             ],
             [],
             []);
@@ -73,8 +73,8 @@ public sealed class ProjecaoDoFormularioRenderizavelTests
         Configuracao configuracao = new(
             [Formulario(FinalidadeFormulario.Inscricao)],
             [
-                Campo("NOME_SOCIAL", 0, TipoRenderizacao.Texto, FinalidadeFormulario.Inscricao, formato: "NOME_PESSOA"),
-                Campo("NOME_MAE", 1, TipoRenderizacao.Texto, FinalidadeFormulario.Inscricao, formato: "NOME_PESSOA"),
+                Campo("NOME_SOCIAL", 0, TipoDeCampo.Texto, FinalidadeFormulario.Inscricao, formato: "NOME_PESSOA"),
+                Campo("NOME_MAE", 1, TipoDeCampo.Texto, FinalidadeFormulario.Inscricao, formato: "NOME_PESSOA"),
             ],
             [],
             []);
@@ -91,7 +91,7 @@ public sealed class ProjecaoDoFormularioRenderizavelTests
     {
         Configuracao configuracao = new(
             [Formulario(FinalidadeFormulario.Habilitacao)],
-            [Campo("NOME_SOCIAL", 0, TipoRenderizacao.Texto, FinalidadeFormulario.Habilitacao, formato: "NOME_PESSOA")],
+            [Campo("NOME_SOCIAL", 0, TipoDeCampo.Texto, FinalidadeFormulario.Habilitacao, formato: "NOME_PESSOA")],
             [],
             []);
 
@@ -133,8 +133,8 @@ public sealed class ProjecaoDoFormularioRenderizavelTests
 
     private static Configuracao ConfiguracaoComValores() => new(
         [Formulario(FinalidadeFormulario.Inscricao)],
-        [Campo("COR_RACA", 0, TipoRenderizacao.EscolhaUnica, FinalidadeFormulario.Inscricao),
-         Campo("NOME_SOCIAL", 1, TipoRenderizacao.Texto, FinalidadeFormulario.Inscricao, formato: "NOME_PESSOA")], [], [])
+        [Campo("COR_RACA", 0, TipoDeCampo.EscolhaUnica, FinalidadeFormulario.Inscricao),
+         Campo("NOME_SOCIAL", 1, TipoDeCampo.Texto, FinalidadeFormulario.Inscricao, formato: "NOME_PESSOA")], [], [])
     {
         Valores = new Dictionary<string, IReadOnlyList<ValorDominioDeclaradoCongelado>?>(StringComparer.Ordinal)
         {
@@ -145,10 +145,10 @@ public sealed class ProjecaoDoFormularioRenderizavelTests
 
     private static Configuracao ConfiguracaoComPressupostos() => new(
         [Formulario(FinalidadeFormulario.Inscricao), Formulario(FinalidadeFormulario.Habilitacao)],
-        [Campo("COR_RACA", 0, TipoRenderizacao.EscolhaUnica, FinalidadeFormulario.Inscricao),
-         Campo("CERTIFICADO", 0, TipoRenderizacao.SimOuNao, FinalidadeFormulario.Habilitacao, quando: [("COR_RACA", "PRETA")]),
-         Campo("DECLARACAO_RURAL", 1, TipoRenderizacao.SimOuNao, FinalidadeFormulario.Habilitacao, quando: [("RURAL_NA_FAMILIA", true)]),
-         Campo("DECLARACAO_MAIORIDADE", 2, TipoRenderizacao.SimOuNao, FinalidadeFormulario.Habilitacao, quando: [("FAIXA_ETARIA", 18)])],
+        [Campo("COR_RACA", 0, TipoDeCampo.EscolhaUnica, FinalidadeFormulario.Inscricao),
+         Campo("CERTIFICADO", 0, TipoDeCampo.SimOuNao, FinalidadeFormulario.Habilitacao, quando: [("COR_RACA", "PRETA")]),
+         Campo("DECLARACAO_RURAL", 1, TipoDeCampo.SimOuNao, FinalidadeFormulario.Habilitacao, quando: [("RURAL_NA_FAMILIA", true)]),
+         Campo("DECLARACAO_MAIORIDADE", 2, TipoDeCampo.SimOuNao, FinalidadeFormulario.Habilitacao, quando: [("FAIXA_ETARIA", 18)])],
         [Familia()], [])
     {
         Valores = new Dictionary<string, IReadOnlyList<ValorDominioDeclaradoCongelado>?>(StringComparer.Ordinal) { ["COR_RACA"] = [new("PRETA", "Preta", 0)] },
@@ -158,7 +158,7 @@ public sealed class ProjecaoDoFormularioRenderizavelTests
     private static GrupoColetado Familia() => GrupoColetadoDeTeste.Agrupando("COMPOSICAO_FAMILIAR", 1)
         .NaSecao(Secao)
         .ComOcorrencias(0, null)
-        .ComCampos(Campo("TRABALHADOR_RURAL", 0, TipoRenderizacao.SimOuNao, FinalidadeFormulario.Inscricao, etapa: null))
+        .ComCampos(Campo("TRABALHADOR_RURAL", 0, TipoDeCampo.SimOuNao, FinalidadeFormulario.Inscricao, etapa: null))
         .DaFinalidade(FinalidadeFormulario.Inscricao)
         .Construir();
 
@@ -213,7 +213,7 @@ public sealed class ProjecaoDoFormularioRenderizavelTests
     private static FatoColetado Campo(
         string codigo,
         int ordem,
-        TipoRenderizacao tipo,
+        TipoDeCampo tipo,
         FinalidadeFormulario finalidade,
         string? formato = null,
         string? etapa = Secao,

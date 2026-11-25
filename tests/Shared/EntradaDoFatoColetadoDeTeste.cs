@@ -46,7 +46,7 @@ internal sealed record EntradaDoFatoColetadoDeTeste
     public EntradaDoFatoColetadoDeTeste ComRotulo(string? rotulo) => this with { Rotulo = rotulo };
 
     /// <summary>O código do tipo de campo, como o pedido o informa; nulo é o tipo ausente.</summary>
-    public EntradaDoFatoColetadoDeTeste DoTipo(string? tipoRenderizacao) => this with { Tipo = tipoRenderizacao };
+    public EntradaDoFatoColetadoDeTeste DoTipo(string? tipoDeCampo) => this with { Tipo = tipoDeCampo };
 
     public EntradaDoFatoColetadoDeTeste ComAjuda(string? ajuda) => this with { Ajuda = ajuda };
 

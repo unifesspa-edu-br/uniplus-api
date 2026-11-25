@@ -31,8 +31,8 @@ public sealed record AtualizarOfertaCursoCommand(
     [property: AceitaCodigosDe<RegimeDeTurno>] string? RegimeDeTurno,
     [property: AceitaCodigosDe<TurnoOferta>] IReadOnlyList<string?>? Turnos,
     [property: AceitaCodigosDe<FormatoPedagogico>] string? FormatoPedagogico = null,
-    string? EMecCodigo = null,
-    string? CodigoSga = null,
+    string? CodigoEmec = null,
+    string? CodigoNoSistemaAcademico = null,
     int? VagasAnuaisAutorizadas = null,
     string? BaseLegal = null,
     string? AtoAutorizacaoMec = null) : ICommand<Result>
@@ -40,5 +40,5 @@ public sealed record AtualizarOfertaCursoCommand(
     /// <summary>O que a gestão declara da oferta, com o código que a identifica para quem a cita.</summary>
     public DeclaracaoDaOfertaDeCurso Declaracao() => new(
         Codigo, ProgramaDeOferta, FormatoPedagogico, RegimeDeFuncionamento, RegimeDeTurno, Turnos,
-        EMecCodigo, CodigoSga, VagasAnuaisAutorizadas, BaseLegal, AtoAutorizacaoMec);
+        CodigoEmec, CodigoNoSistemaAcademico, VagasAnuaisAutorizadas, BaseLegal, AtoAutorizacaoMec);
 }

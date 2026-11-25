@@ -43,16 +43,16 @@ public sealed class CriarCalendarioDiasUteisCommandHandlerTests
         await _unitOfWork.Received(1).SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
     }
 
-    [Fact(DisplayName = "Comando com versão do dataset vazia falha sem persistir")]
-    public async Task Handle_VersaoDatasetVazia_RetornaErroSemPersistir()
+    [Fact(DisplayName = "Comando com versão do calendário vazia falha sem persistir")]
+    public async Task Handle_VersaoDoCalendarioVazia_RetornaErroSemPersistir()
     {
-        CriarCalendarioDiasUteisCommand comando = ComandoValido() with { VersaoDataset = string.Empty };
+        CriarCalendarioDiasUteisCommand comando = ComandoValido() with { VersaoDoCalendario = string.Empty };
 
         Result<Guid> resultado = await CriarCalendarioDiasUteisCommandHandler.Handle(
             comando, _repository, _unitOfWork, CancellationToken.None);
 
         resultado.IsFailure.Should().BeTrue();
-        resultado.Error!.Code.Should().Be(CalendarioDiasUteisErrorCodes.VersaoDatasetObrigatoria);
+        resultado.Error!.Code.Should().Be(CalendarioDiasUteisErrorCodes.VersaoDoCalendarioObrigatoria);
         await _repository.DidNotReceive().AdicionarAsync(Arg.Any<CalendarioDiasUteis>(), Arg.Any<CancellationToken>());
         await _unitOfWork.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
     }

@@ -43,25 +43,25 @@ public sealed record DefinicaoDaResposta(
     /// <summary>O fato é um dos que têm cifra individual, qualquer que seja a classificação gravada.</summary>
     public static bool EhFatoComCifraIndividual(string fatoCodigo) => FatosComCifraIndividual.Contains(fatoCodigo);
 
-    public static DefinicaoDaResposta De(TipoRenderizacao renderizacao, string classificacaoProtecao, string? formato = null, string? fatoCodigo = null)
+    public static DefinicaoDaResposta De(TipoDeCampo tipoDeCampo, string classificacaoProtecao, string? formato = null, string? fatoCodigo = null)
     {
         formato = fatoCodigo is null ? formato : ConjuntoBasicoDaInscricao.FormatoDaResposta(fatoCodigo, formato);
         bool identificador = string.Equals(classificacaoProtecao, ClassificacaoIdentificador, StringComparison.Ordinal);
         bool cifra = TemCifraIndividual(fatoCodigo, classificacaoProtecao);
-        return new DefinicaoDaResposta(TipoDe(renderizacao), renderizacao == TipoRenderizacao.EscolhaMultipla,
-            identificador, renderizacao == TipoRenderizacao.Texto ? formato : null, cifra);
+        return new DefinicaoDaResposta(TipoDe(tipoDeCampo), tipoDeCampo == TipoDeCampo.EscolhaMultipla,
+            identificador, tipoDeCampo == TipoDeCampo.Texto ? formato : null, cifra);
     }
 
-    private static TipoDoValorDeResposta TipoDe(TipoRenderizacao renderizacao) => renderizacao switch
+    private static TipoDoValorDeResposta TipoDe(TipoDeCampo tipoDeCampo) => tipoDeCampo switch
     {
-        TipoRenderizacao.SimOuNao => TipoDoValorDeResposta.SimOuNao,
-        TipoRenderizacao.Numero => TipoDoValorDeResposta.Numero,
-        TipoRenderizacao.EscolhaUnica or TipoRenderizacao.EscolhaMultipla => TipoDoValorDeResposta.Opcao,
-        TipoRenderizacao.Municipio => TipoDoValorDeResposta.Municipio,
-        TipoRenderizacao.Texto => TipoDoValorDeResposta.Texto,
-        TipoRenderizacao.Data => TipoDoValorDeResposta.Data,
-        TipoRenderizacao.Endereco => TipoDoValorDeResposta.Endereco,
-        _ => throw new ArgumentOutOfRangeException(nameof(renderizacao), renderizacao, "Tipo de renderização sem tipo de valor."),
+        TipoDeCampo.SimOuNao => TipoDoValorDeResposta.SimOuNao,
+        TipoDeCampo.Numero => TipoDoValorDeResposta.Numero,
+        TipoDeCampo.EscolhaUnica or TipoDeCampo.EscolhaMultipla => TipoDoValorDeResposta.Opcao,
+        TipoDeCampo.Municipio => TipoDoValorDeResposta.Municipio,
+        TipoDeCampo.Texto => TipoDoValorDeResposta.Texto,
+        TipoDeCampo.Data => TipoDoValorDeResposta.Data,
+        TipoDeCampo.Endereco => TipoDoValorDeResposta.Endereco,
+        _ => throw new ArgumentOutOfRangeException(nameof(tipoDeCampo), tipoDeCampo, "Tipo de campo sem tipo de valor."),
     };
 
     /// <summary>O valor cabe no tipo: um elemento escalar, ou uma lista deles quando multivalorado.</summary>

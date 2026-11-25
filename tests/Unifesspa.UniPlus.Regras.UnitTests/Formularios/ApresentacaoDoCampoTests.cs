@@ -16,15 +16,15 @@ public sealed class ApresentacaoDoCampoTests
     [InlineData(-1)]
     public void Construtor_TipoForaDoEnum_Lanca(int valor)
     {
-        Action criar = () => _ = new ApresentacaoDoCampo("Nome", (TipoRenderizacao)valor);
+        Action criar = () => _ = new ApresentacaoDoCampo("Nome", (TipoDeCampo)valor);
 
-        criar.Should().Throw<ArgumentOutOfRangeException>().WithParameterName("tipoRenderizacao");
+        criar.Should().Throw<ArgumentOutOfRangeException>().WithParameterName("tipoDeCampo");
     }
 
     [Fact(DisplayName = "Sem ajuda e sem pedido de confirmação, o padrão é nenhum dos dois")]
     public void Construtor_SoComRotuloETipo_SemAjudaESemConfirmacao()
     {
-        ApresentacaoDoCampo apresentacao = new("Nome", TipoRenderizacao.Texto);
+        ApresentacaoDoCampo apresentacao = new("Nome", TipoDeCampo.Texto);
 
         apresentacao.Ajuda.Should().BeNull();
         apresentacao.PedirConfirmacao.Should().BeFalse();
@@ -33,11 +33,11 @@ public sealed class ApresentacaoDoCampoTests
     [Fact(DisplayName = "Na forma gravada, o rótulo e a ajuda saem aparados, e o resto fica como veio")]
     public void NaFormaGravada_RotuloEAjudaComEspacos_Aparados()
     {
-        ApresentacaoDoCampo informada = new("  Nome completo ", TipoRenderizacao.Texto, "  Como no documento  ", pedirConfirmacao: true);
+        ApresentacaoDoCampo informada = new("  Nome completo ", TipoDeCampo.Texto, "  Como no documento  ", pedirConfirmacao: true);
 
         ApresentacaoDoCampo gravada = informada.NaFormaGravada();
 
-        gravada.Should().Be(new ApresentacaoDoCampo("Nome completo", TipoRenderizacao.Texto, "Como no documento", pedirConfirmacao: true));
+        gravada.Should().Be(new ApresentacaoDoCampo("Nome completo", TipoDeCampo.Texto, "Como no documento", pedirConfirmacao: true));
     }
 
     [Theory(DisplayName = "Na forma gravada, a ajuda vazia vira ausente")]
@@ -45,14 +45,14 @@ public sealed class ApresentacaoDoCampoTests
     [InlineData("")]
     [InlineData("   ")]
     public void NaFormaGravada_AjudaVazia_ViraNula(string? ajuda) =>
-        new ApresentacaoDoCampo("Nome", TipoRenderizacao.Texto, ajuda).NaFormaGravada().Ajuda.Should().BeNull();
+        new ApresentacaoDoCampo("Nome", TipoDeCampo.Texto, ajuda).NaFormaGravada().Ajuda.Should().BeNull();
 
     [Theory(DisplayName = "A ajuda tem até 1000 caracteres")]
     [InlineData(1000, 0)]
     [InlineData(1001, 1)]
     public void ConferirAjuda_Tamanho_RecusaSoAcimaDoLimite(int tamanho, int recusas)
     {
-        List<FieldError> erros = [.. new ApresentacaoDoCampo("Nome", TipoRenderizacao.Texto, new string('a', tamanho)).ConferirAjuda()];
+        List<FieldError> erros = [.. new ApresentacaoDoCampo("Nome", TipoDeCampo.Texto, new string('a', tamanho)).ConferirAjuda()];
 
         erros.Should().HaveCount(recusas);
         erros.Select(static e => (e.Field, e.Error.Code)).Should().OnlyContain(e => e.Field == "ajuda" && e.Code == ItemFormularioErrorCodes.AjudaTamanho);
@@ -60,5 +60,5 @@ public sealed class ApresentacaoDoCampoTests
 
     [Fact(DisplayName = "O limite da ajuda conta o texto aparado")]
     public void ConferirAjuda_EspacosNasPontas_NaoContam() =>
-        new ApresentacaoDoCampo("Nome", TipoRenderizacao.Texto, $"  {new string('a', 1000)}  ").ConferirAjuda().Should().BeEmpty();
+        new ApresentacaoDoCampo("Nome", TipoDeCampo.Texto, $"  {new string('a', 1000)}  ").ConferirAjuda().Should().BeEmpty();
 }

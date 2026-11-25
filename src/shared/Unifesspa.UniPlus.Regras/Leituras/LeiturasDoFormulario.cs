@@ -28,7 +28,7 @@ public sealed record ObrigatoriedadeDto([property: AceitaCodigosDe<TipoObrigator
 /// </summary>
 public sealed record ApresentacaoDoCampoDto(
     string Rotulo,
-    [property: AceitaCodigosDe<TipoRenderizacao>] string TipoRenderizacao,
+    [property: AceitaCodigosDe<TipoDeCampo>] string TipoDeCampo,
     string? Ajuda,
     bool PedirConfirmacao);
 

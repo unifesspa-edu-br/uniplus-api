@@ -37,8 +37,8 @@ public sealed record CriarOfertaCursoCommand(
     [property: AceitaCodigosDe<RegimeDeTurno>] string? RegimeDeTurno,
     [property: AceitaCodigosDe<TurnoOferta>] IReadOnlyList<string?>? Turnos,
     [property: AceitaCodigosDe<FormatoPedagogico>] string? FormatoPedagogico = null,
-    string? EMecCodigo = null,
-    string? CodigoSga = null,
+    string? CodigoEmec = null,
+    string? CodigoNoSistemaAcademico = null,
     int? VagasAnuaisAutorizadas = null,
     string? BaseLegal = null,
     string? AtoAutorizacaoMec = null) : ICommand<Result<Guid>>
@@ -46,5 +46,5 @@ public sealed record CriarOfertaCursoCommand(
     /// <summary>O que a gestão declara da oferta, sem o curso, o local e a unidade, que não mudam depois de criada.</summary>
     public DeclaracaoDaOfertaDeCurso Declaracao() => new(
         Codigo, ProgramaDeOferta, FormatoPedagogico, RegimeDeFuncionamento, RegimeDeTurno, Turnos,
-        EMecCodigo, CodigoSga, VagasAnuaisAutorizadas, BaseLegal, AtoAutorizacaoMec);
+        CodigoEmec, CodigoNoSistemaAcademico, VagasAnuaisAutorizadas, BaseLegal, AtoAutorizacaoMec);
 }

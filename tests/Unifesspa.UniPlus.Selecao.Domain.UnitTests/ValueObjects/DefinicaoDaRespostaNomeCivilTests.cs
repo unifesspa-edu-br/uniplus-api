@@ -12,8 +12,8 @@ public sealed class DefinicaoDaRespostaNomeCivilTests
     [Fact(DisplayName = "A resposta do NOME não carrega o formato congelado no formulário; a do nome da mãe carrega")]
     public void De_FormatoCongelado_SoValeForaDoNomeCivil()
     {
-        DefinicaoDaResposta nome = DefinicaoDaResposta.De(TipoRenderizacao.Texto, "PESSOAL", "NOME_PESSOA", "NOME");
-        DefinicaoDaResposta mae = DefinicaoDaResposta.De(TipoRenderizacao.Texto, "PESSOAL", "NOME_PESSOA", "NOME_MAE");
+        DefinicaoDaResposta nome = DefinicaoDaResposta.De(TipoDeCampo.Texto, "PESSOAL", "NOME_PESSOA", "NOME");
+        DefinicaoDaResposta mae = DefinicaoDaResposta.De(TipoDeCampo.Texto, "PESSOAL", "NOME_PESSOA", "NOME_MAE");
 
         nome.Formato.Should().BeNull();
         mae.Formato.Should().Be("NOME_PESSOA");

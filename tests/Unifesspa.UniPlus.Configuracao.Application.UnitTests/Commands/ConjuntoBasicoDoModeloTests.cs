@@ -99,7 +99,7 @@ public sealed class ConjuntoBasicoDoModeloTests
     }
 
     private static ItemDoModelo ItemOpcionalDeBaixaRenda(int ordem) =>
-        new("BAIXA_RENDA", ordem, "DADOS", new ApresentacaoDoCampo("Baixa renda", TipoRenderizacao.SimOuNao), null, new RegrasDoCampo(null, Obrigatoriedade.Nunca, []));
+        new("BAIXA_RENDA", ordem, "DADOS", new ApresentacaoDoCampo("Baixa renda", TipoDeCampo.SimOuNao), null, new RegrasDoCampo(null, Obrigatoriedade.Nunca, []));
 
     private static ModeloFormulario ModeloGravado(FinalidadeFormulario finalidade)
     {

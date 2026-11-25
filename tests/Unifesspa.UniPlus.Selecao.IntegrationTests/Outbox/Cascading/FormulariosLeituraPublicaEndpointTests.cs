@@ -89,7 +89,7 @@ public sealed class FormulariosLeituraPublicaEndpointTests
         fato.GetProperty("fatoCodigo").GetString().Should().Be("COR_RACA");
         JsonElement apresentacao = fato.GetProperty("apresentacao");
         apresentacao.GetProperty("rotulo").GetString().Should().Be("Cor ou raça");
-        apresentacao.GetProperty("tipoRenderizacao").GetString().Should().Be("ESCOLHA_UNICA");
+        apresentacao.GetProperty("tipoDeCampo").GetString().Should().Be("ESCOLHA_UNICA");
         fato.GetProperty("etapaCodigo").GetString().Should().Be(ConjuntoBasicoDaInscricao.CodigoDaSecao);
         fato.TryGetProperty("obrigatoriedade", out _).Should().BeFalse("as regras do campo estão só nas regras do formulário");
         ConferirRegraDaCorRaca(root);

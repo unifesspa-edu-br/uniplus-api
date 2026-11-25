@@ -53,7 +53,7 @@ public sealed class DefinirFatosColetadosCommandHandlerTests
             .ComOcorrencias(0, 10)
             .ComCampos(FatoColetadoDeTeste.Coletando("PARENTESCO", 0)
                 .ComRotulo("Parentesco")
-                .DoTipo(TipoRenderizacao.EscolhaUnica)
+                .DoTipo(TipoDeCampo.EscolhaUnica)
                 .ComObrigatoriedade(Obrigatoriedade.Sempre)
                 .Construir())
             .DaFinalidade(FinalidadeFormulario.Inscricao)
@@ -275,7 +275,7 @@ public sealed class DefinirFatosColetadosCommandHandlerTests
         resultado.Error!.Code.Should().Be("GrafoFormulario.CitaFatoPosterior");
     }
 
-    [Theory(DisplayName = "TipoRenderizacao incoerente com tipo do dado e a quantidade de valores do fato no catálogo é recusado")]
+    [Theory(DisplayName = "TipoDeCampo incoerente com tipo do dado e a quantidade de valores do fato no catálogo é recusado")]
     [InlineData("COR_RACA", "SIM_OU_NAO", "COR_RACA é OPCAO com um valor só — só ESCOLHA_UNICA é coerente")]
     [InlineData("COR_RACA", "NUMERO", "COR_RACA é OPCAO com um valor só — NUMERO não é coerente com nenhuma opção")]
     [InlineData("COR_RACA", "ESCOLHA_MULTIPLA", "COR_RACA tem um valor só, não vários valores — só ESCOLHA_UNICA é coerente")]
@@ -285,15 +285,15 @@ public sealed class DefinirFatosColetadosCommandHandlerTests
     [InlineData("BAIXA_RENDA", "TEXTO", "BAIXA_RENDA é SIM_OU_NAO — TEXTO não é coerente")]
     [InlineData("DATA_NASCIMENTO", "TEXTO", "DATA_NASCIMENTO é DATA — só DATA é coerente")]
     [InlineData("ENDERECO_RESIDENCIAL", "DATA", "ENDERECO_RESIDENCIAL é ENDERECO — só ENDERECO é coerente")]
-    public async Task Handle_TipoRenderizacaoIncoerente_RetornaErroDeCoerencia(
-        string fatoCodigo, string tipoRenderizacaoIncoerente, string motivo)
+    public async Task Handle_TipoDeCampoIncoerente_RetornaErroDeCoerencia(
+        string fatoCodigo, string tipoDeCampoIncoerente, string motivo)
     {
         Result resultado = await DefinirNaHabilitacaoAsync(
             ProcessoEmRascunho(),
-            [EntradaDoFatoColetadoDeTeste.Coletando(fatoCodigo).ComRotulo("Rótulo").DoTipo(tipoRenderizacaoIncoerente).ComObrigatoriedade("NUNCA").Construir()]);
+            [EntradaDoFatoColetadoDeTeste.Coletando(fatoCodigo).ComRotulo("Rótulo").DoTipo(tipoDeCampoIncoerente).ComObrigatoriedade("NUNCA").Construir()]);
 
         resultado.IsFailure.Should().BeTrue(motivo);
-        resultado.Error!.Code.Should().Be("ItemFormulario.TipoRenderizacaoIncoerenteComDominio");
+        resultado.Error!.Code.Should().Be("ItemFormulario.TipoDeCampoIncoerenteComDominio");
     }
 
     [Theory(DisplayName = "Obrigatoriedade é SEMPRE ou NUNCA sem predicado, ou QUANDO com ele; o resto é recusado no campo")]

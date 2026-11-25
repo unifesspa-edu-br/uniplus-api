@@ -59,14 +59,14 @@ public sealed class EnvelopeLidoParametrosCongeladosTests
 
     private static void DefinirCondicaoDeAtendimento(ProcessoSeletivo processo) =>
         processo.DefinirItens([
-            Campo("COR_RACA", 0, TipoRenderizacao.EscolhaUnica),
-            Campo("RENDA", 1, TipoRenderizacao.EscolhaUnica),
-            Campo("CONDICAO_ATENDIMENTO", 2, TipoRenderizacao.EscolhaMultipla),
+            Campo("COR_RACA", 0, TipoDeCampo.EscolhaUnica),
+            Campo("RENDA", 1, TipoDeCampo.EscolhaUnica),
+            Campo("CONDICAO_ATENDIMENTO", 2, TipoDeCampo.EscolhaMultipla),
             FormularioDeTeste.CampoDaEdicaoDoEnem(3),
-            Campo(OpcaoPelasCotasDaLei.FatoConcorrerEscolaPublica, 4, TipoRenderizacao.SimOuNao),
+            Campo(OpcaoPelasCotasDaLei.FatoConcorrerEscolaPublica, 4, TipoDeCampo.SimOuNao),
         ], grupos: []).IsSuccess.Should().BeTrue();
 
-    private static FatoColetado Campo(string codigo, int ordem, TipoRenderizacao tipo) =>
+    private static FatoColetado Campo(string codigo, int ordem, TipoDeCampo tipo) =>
         FatoColetadoDeTeste.Coletando(codigo, ordem).ComRotulo("Campo de teste").DoTipo(tipo).ComObrigatoriedade(Obrigatoriedade.Sempre).Construir();
 
     private static void ConferirValores(IReadOnlyDictionary<string, IReadOnlyList<ValorDominioDeclaradoCongelado>?> valores)

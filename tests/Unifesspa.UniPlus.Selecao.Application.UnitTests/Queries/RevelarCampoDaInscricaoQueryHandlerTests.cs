@@ -194,7 +194,7 @@ public sealed class RevelarCampoDaInscricaoQueryHandlerTests
 
     private static InscricaoAdministrativaDeTeste CenarioComCpf() =>
         new InscricaoAdministrativaDeTeste(PersonasDeTeste.FernandaDrumond)
-            .Fato("CPF", "IDENTIFICADOR", TipoRenderizacao.Texto, null, formato: "CPF");
+            .Fato("CPF", "IDENTIFICADOR", TipoDeCampo.Texto, null, formato: "CPF");
 
     private static InscricaoAdministrativaDeTeste.Mundo Mundo(InscricaoAdministrativaDeTeste cenario, string? decifrado)
     {

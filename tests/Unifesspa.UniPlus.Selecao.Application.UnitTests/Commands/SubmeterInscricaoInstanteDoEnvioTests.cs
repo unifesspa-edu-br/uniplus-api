@@ -32,7 +32,7 @@ public sealed class SubmeterInscricaoInstanteDoEnvioTests
 {
     private static readonly FatoColetado DataAteOEnvio = FatoColetadoDeTeste.Coletando("DATA_DO_EVENTO", 1)
         .ComRotulo("Data do evento")
-        .DoTipo(TipoRenderizacao.Data)
+        .DoTipo(TipoDeCampo.Data)
         .ComObrigatoriedade(Obrigatoriedade.Sempre)
         .ComRestricoes(new FaixaDeData(minima: null, LimiteDeData.NoEnvio(anos: 0, dias: 0)))
         .Construir();

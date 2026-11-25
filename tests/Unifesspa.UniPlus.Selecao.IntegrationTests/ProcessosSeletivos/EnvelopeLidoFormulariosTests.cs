@@ -142,7 +142,7 @@ public sealed class EnvelopeLidoFormulariosTests
     private static FatoColetadoDeTeste SelecaoObrigatoria(string codigo, int ordem, string rotulo) =>
         FatoColetadoDeTeste.Coletando(codigo, ordem)
             .ComRotulo(rotulo)
-            .DoTipo(TipoRenderizacao.EscolhaUnica)
+            .DoTipo(TipoDeCampo.EscolhaUnica)
             .ComObrigatoriedade(Obrigatoriedade.Sempre);
 
     private static FatoColetado ConcorrerEscolaPublica(int ordem) =>
@@ -167,13 +167,13 @@ public sealed class EnvelopeLidoFormulariosTests
                 .ExibidoQuando(ExibicaoDeTeste.Quando("COR_RACA", Operador.Igual, "PRETA"))
                 .Construir(),
             FatoColetadoDeTeste.Coletando("NOME_SOCIAL", 2).ComRotulo("Nome social").DeTexto("NOME_PESSOA").Construir(),
-            ObrigatorioDoTipo("DATA_NASCIMENTO", 3, "Data de nascimento", TipoRenderizacao.Data),
-            ObrigatorioDoTipo("ENDERECO_RESIDENCIAL", 4, "Endereço residencial", TipoRenderizacao.Endereco),
+            ObrigatorioDoTipo("DATA_NASCIMENTO", 3, "Data de nascimento", TipoDeCampo.Data),
+            ObrigatorioDoTipo("ENDERECO_RESIDENCIAL", 4, "Endereço residencial", TipoDeCampo.Endereco),
             FormularioDeTeste.CampoDaEdicaoDoEnem(5),
             ConcorrerEscolaPublica(6),
         ], grupos: []).IsSuccess.Should().BeTrue();
 
-    private static FatoColetado ObrigatorioDoTipo(string codigo, int ordem, string rotulo, TipoRenderizacao tipo) =>
+    private static FatoColetado ObrigatorioDoTipo(string codigo, int ordem, string rotulo, TipoDeCampo tipo) =>
         FatoColetadoDeTeste.Coletando(codigo, ordem)
             .ComRotulo(rotulo)
             .DoTipo(tipo)

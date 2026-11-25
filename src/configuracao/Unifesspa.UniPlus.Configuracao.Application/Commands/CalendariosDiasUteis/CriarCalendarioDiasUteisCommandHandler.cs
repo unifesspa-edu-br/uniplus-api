@@ -9,7 +9,7 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// Handler do <see cref="CriarCalendarioDiasUteisCommand"/> (convention-based
 /// Wolverine): constrói o agregado (token de abrangência analisado e invariantes
 /// de coerência conferidas no próprio <c>CalendarioDiasUteis.Criar</c>), persiste
-/// e commita. Sem checagem de unicidade — <c>VersaoDataset</c> não é chave natural.
+/// e commita. Sem checagem de unicidade — <c>VersaoDoCalendario</c> não é chave natural.
 /// </summary>
 public static class CriarCalendarioDiasUteisCommandHandler
 {
@@ -24,7 +24,7 @@ public static class CriarCalendarioDiasUteisCommandHandler
         ArgumentNullException.ThrowIfNull(unitOfWork);
 
         Result<CalendarioDiasUteis> calendarioResult = CalendarioDiasUteis.Criar(
-            command.VersaoDataset,
+            command.VersaoDoCalendario,
             command.DiasNaoUteis?.Select(d => d is null
                 ? null
                 : new DiaNaoUtilCriacao(

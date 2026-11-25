@@ -93,7 +93,7 @@ public sealed class AplicarModeloDeIsencaoDaTaxaTests
     private static FatoColetado PerguntaDeEscolhaUnica(string fatoCodigo, int ordem, string rotulo) =>
         FatoColetadoDeTeste.Coletando(fatoCodigo, ordem)
             .ComRotulo(rotulo)
-            .DoTipo(TipoRenderizacao.EscolhaUnica)
+            .DoTipo(TipoDeCampo.EscolhaUnica)
             .ComObrigatoriedade(Obrigatoriedade.Sempre)
             .Construir();
 

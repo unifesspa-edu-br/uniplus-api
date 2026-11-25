@@ -10,7 +10,7 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// Handler do <see cref="RemoverCalendarioDiasUteisCommand"/>. Soft-delete via
 /// <c>SoftDeleteInterceptor</c>; os dias não úteis (filhos, sem soft-delete
 /// próprio) permanecem intactos sob a linha soft-deleted (ADR do padrão
-/// Unidade/Historico). Recusa remover o dataset vigente — trocar de vigente é
+/// Unidade/Historico). Recusa remover o calendário vigente — trocar de vigente é
 /// operação explícita (<c>MarcarVigenteCalendarioDiasUteisCommand</c>), nunca
 /// efeito colateral de uma remoção.
 /// </summary>
@@ -40,16 +40,16 @@ public static class RemoverCalendarioDiasUteisCommandHandler
         {
             return Result.Failure(new DomainError(
                 CalendarioDiasUteisErrorCodes.NaoRemoveVigente,
-                "O dataset vigente não pode ser removido — marque outro dataset como vigente antes."));
+                "O calendário vigente não pode ser removido — marque outro calendário como vigente antes."));
         }
 
         repository.Remover(calendario);
 
-        // Corrida com uma ativação concorrente do MESMO dataset (xmin, ver
+        // Corrida com uma ativação concorrente do MESMO calendário (xmin, ver
         // CalendarioDiasUteisConfiguration): a checagem acima leu Vigente=false, mas
         // MarcarVigenteCalendarioDiasUteisCommandHandler pode ter marcado este
-        // dataset como o vigente entre a leitura e este commit — sem o token de
-        // concorrência, o resultado seria remover silenciosamente o dataset que
+        // calendário como o vigente entre a leitura e este commit — sem o token de
+        // concorrência, o resultado seria remover silenciosamente o calendário que
         // acabou de virar vigente, deixando nenhum vigente visível.
         // DbUpdateConcurrencyException propaga sem catch local: o
         // GlobalExceptionMiddleware mapeia para 409 (ADR-0119) — deixar propagar

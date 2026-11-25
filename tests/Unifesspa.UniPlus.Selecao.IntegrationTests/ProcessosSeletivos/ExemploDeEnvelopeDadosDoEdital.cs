@@ -159,7 +159,7 @@ internal static class ExemploDeEnvelopeDadosDoEdital
 
     private static FatoColetado Parentesco() => FatoColetadoDeTeste.Coletando(CandidatoComoMembro.FatoParentesco, 2)
         .ComRotulo("Parentesco")
-        .DoTipo(TipoRenderizacao.EscolhaUnica)
+        .DoTipo(TipoDeCampo.EscolhaUnica)
         .ComObrigatoriedade(Obrigatoriedade.Sempre)
         .Construir();
 

@@ -8,7 +8,7 @@ using Unifesspa.UniPlus.Selecao.Domain.Errors;
 
 /// <summary>
 /// Um dia não útil copiado por valor do calendário vigente no momento da publicação
-/// (UNI-REQ-0080, ADR-0061). É o que permite recontar um prazo depois de o dataset de
+/// (UNI-REQ-0080, ADR-0061). É o que permite recontar um prazo depois de o calendário de
 /// origem deixar de ser vigente — ou ser removido do cadastro.
 /// </summary>
 /// <remarks>

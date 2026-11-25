@@ -60,7 +60,7 @@ internal static class ConteudosDeModeloParaTeste
     public static ModeloFormulario Existente(string? tipo)
     {
         ItemDoModelo item = new(
-            "CERTIFICADO", 0, "DADOS", new ApresentacaoDoCampo("Certificado", TipoRenderizacao.SimOuNao), null, new RegrasDoCampo(null, Obrigatoriedade.Sempre, []));
+            "CERTIFICADO", 0, "DADOS", new ApresentacaoDoCampo("Certificado", TipoDeCampo.SimOuNao), null, new RegrasDoCampo(null, Obrigatoriedade.Sempre, []));
         return ModeloFormulario.Criar(
             "HABILITACAO_MEDICINA", "Habilitação Medicina", null, FinalidadeFormulario.Habilitacao, tipo,
             new ConteudoDoModelo("Habilitação", [Secao, Revisao], [item], [], [], []),

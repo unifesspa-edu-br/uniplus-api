@@ -51,7 +51,7 @@ public sealed class EdicaoDoEnemNaInscricaoTests
         Obrigatoriedade? obrigatoriedade = null, PredicadoDnf? exibicao = null, string secao = FormularioDeTeste.Secao) =>
         FatoColetadoDeTeste.Coletando(EdicaoDoEnem.Fato, FormularioDeTeste.PrimeiraOrdemDeInscricao)
             .ComRotulo("Qual edição do ENEM você vai usar?")
-            .DoTipo(TipoRenderizacao.EscolhaUnica)
+            .DoTipo(TipoDeCampo.EscolhaUnica)
             .ComObrigatoriedade(obrigatoriedade ?? Obrigatoriedade.Sempre)
             .ExibidoQuando(exibicao)
             .ComOrigem(OrigemValoresColeta.OpcoesDoProcesso)

@@ -43,7 +43,7 @@ public sealed class ObterInscricaoAdministrativaMontagemDosItensTests
     public async Task Componente_DeclaradoValeSobreOResto()
     {
         InscricaoAdministrativaDeTeste cenario = new InscricaoAdministrativaDeTeste(PersonasDeTeste.FernandaDrumond)
-            .Fato("RENDA_FAMILIAR_PER_CAPITA", "PESSOAL", TipoRenderizacao.Numero, JsonSerializer.SerializeToElement(1234.56m), new MetadadosDoFatoDeTeste
+            .Fato("RENDA_FAMILIAR_PER_CAPITA", "PESSOAL", TipoDeCampo.Numero, JsonSerializer.SerializeToElement(1234.56m), new MetadadosDoFatoDeTeste
             {
                 Componente = "MOEDA",
             });
@@ -60,7 +60,7 @@ public sealed class ObterInscricaoAdministrativaMontagemDosItensTests
     public async Task Opcao_SaiComCodigoERotulo()
     {
         InscricaoAdministrativaDeTeste cenario = new InscricaoAdministrativaDeTeste(PersonasDeTeste.FernandaDrumond)
-            .Fato("COR_RACA", "PESSOAL", TipoRenderizacao.EscolhaUnica, Texto("PARDA"));
+            .Fato("COR_RACA", "PESSOAL", TipoDeCampo.EscolhaUnica, Texto("PARDA"));
 
         InscricaoAdministrativaDto dto = await ConsultarDto(cenario, ComDadosPessoais());
 
@@ -75,7 +75,7 @@ public sealed class ObterInscricaoAdministrativaMontagemDosItensTests
     public async Task Uf_SaiPeloNome(string valor)
     {
         InscricaoAdministrativaDeTeste cenario = new InscricaoAdministrativaDeTeste(PersonasDeTeste.FernandaDrumond)
-            .Fato("NATURALIDADE_UF", "PESSOAL", TipoRenderizacao.EscolhaUnica, Texto(valor), new MetadadosDoFatoDeTeste
+            .Fato("NATURALIDADE_UF", "PESSOAL", TipoDeCampo.EscolhaUnica, Texto(valor), new MetadadosDoFatoDeTeste
             {
                 OrigemValores = OrigemValoresColeta.UnidadesFederativas,
             });
@@ -118,8 +118,8 @@ public sealed class ObterInscricaoAdministrativaMontagemDosItensTests
     public async Task Secao_SaiComOTituloCongelado()
     {
         InscricaoAdministrativaDeTeste cenario = new InscricaoAdministrativaDeTeste(PersonasDeTeste.FernandaDrumond)
-            .Fato("NOME", "PESSOAL", TipoRenderizacao.Texto, Texto("Fernanda"), secao: "DADOS", ordem: 0)
-            .Fato("ANTIGO", "PESSOAL", TipoRenderizacao.Texto, Texto("a"), secao: "SECAO_QUE_A_VERSAO_NAO_TEM", ordem: 1);
+            .Fato("NOME", "PESSOAL", TipoDeCampo.Texto, Texto("Fernanda"), secao: "DADOS", ordem: 0)
+            .Fato("ANTIGO", "PESSOAL", TipoDeCampo.Texto, Texto("a"), secao: "SECAO_QUE_A_VERSAO_NAO_TEM", ordem: 1);
 
         InscricaoAdministrativaDto dto = await ConsultarDto(cenario, ComDadosPessoais());
 
@@ -134,7 +134,7 @@ public sealed class ObterInscricaoAdministrativaMontagemDosItensTests
 
     private static InscricaoAdministrativaDeTeste CenarioComMunicipio(JsonElement salvador) =>
         new InscricaoAdministrativaDeTeste(PersonasDeTeste.ErickIsaacRamos)
-            .Fato("NATURALIDADE_MUNICIPIO", "PESSOAL", TipoRenderizacao.Municipio, salvador, new MetadadosDoFatoDeTeste
+            .Fato("NATURALIDADE_MUNICIPIO", "PESSOAL", TipoDeCampo.Municipio, salvador, new MetadadosDoFatoDeTeste
             {
                 Restricoes = [new MunicipiosDaUf("NATURALIDADE_UF")],
             })
@@ -148,7 +148,7 @@ public sealed class ObterInscricaoAdministrativaMontagemDosItensTests
             .ComOcorrencias(0, null)
             .ComCampos(FatoColetadoDeTeste.Coletando("LOCAL_MUNICIPIO", 0)
                 .ComRotulo("Município do local")
-                .DoTipo(TipoRenderizacao.Municipio)
+                .DoTipo(TipoDeCampo.Municipio)
                 .ComCopia(ProtecaoDoFatoDeTeste.Copia() with { HipoteseLegal = InscricaoAdministrativaDeTeste.Hipotese, Descricao = "Município do local" })
                 .ComRestricoes(new MunicipiosDaUf("NATURALIDADE_UF"))
                 .Construir())
@@ -157,7 +157,7 @@ public sealed class ObterInscricaoAdministrativaMontagemDosItensTests
     private static InscricaoAdministrativaDeTeste ComAjudaEDescricao()
     {
         return new InscricaoAdministrativaDeTeste(PersonasDeTeste.FernandaDrumond)
-            .Fato("NOME", "PESSOAL", TipoRenderizacao.Texto, Texto("Fernanda"), new MetadadosDoFatoDeTeste
+            .Fato("NOME", "PESSOAL", TipoDeCampo.Texto, Texto("Fernanda"), new MetadadosDoFatoDeTeste
             {
                 Ajuda = "Digite o nome como no documento",
                 Descricao = "Nome civil do candidato",

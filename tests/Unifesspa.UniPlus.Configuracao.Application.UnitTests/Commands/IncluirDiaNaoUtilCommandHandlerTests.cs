@@ -37,7 +37,7 @@ public sealed class IncluirDiaNaoUtilCommandHandlerTests
         resultado.IsSuccess.Should().BeTrue();
         resultado.Value!.DiasNaoUteis.Should().HaveCount(2);
         resultado.Value.Id.Should().Be(calendario.Id);
-        resultado.Value.VersaoDataset.Should().Be("2027.1");
+        resultado.Value.VersaoDoCalendario.Should().Be("2027.1");
         await _unitOfWork.Received(1).SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
     }
 
@@ -71,7 +71,7 @@ public sealed class IncluirDiaNaoUtilCommandHandlerTests
         await _unitOfWork.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
     }
 
-    [Fact(DisplayName = "Item duplicado contra o agregado já persistido devolve DataDuplicadaNoDataset sem persistir")]
+    [Fact(DisplayName = "Item duplicado contra o agregado já persistido devolve DataDuplicadaNoCalendario sem persistir")]
     public async Task Handle_ItemDuplicadoContraAgregado_RetornaErroSemPersistir()
     {
         CalendarioDiasUteis calendario = CalendarioExistente();
@@ -83,7 +83,7 @@ public sealed class IncluirDiaNaoUtilCommandHandlerTests
             new IncluirDiaNaoUtilCommand(calendario.Id, itemDuplicado), _repository, _unitOfWork, CancellationToken.None);
 
         resultado.IsFailure.Should().BeTrue();
-        resultado.Error!.Code.Should().Be(CalendarioDiasUteisErrorCodes.DataDuplicadaNoDataset);
+        resultado.Error!.Code.Should().Be(CalendarioDiasUteisErrorCodes.DataDuplicadaNoCalendario);
         await _unitOfWork.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
     }
 }

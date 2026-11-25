@@ -30,7 +30,7 @@ public sealed class ResolvedorEstadoFatosTests
 
     private static FatoColetado Fato(string codigo, int ordem, params (string Fato, Operador Operador, object Valor)[] condicoes) =>
         FatoColetadoDeTeste.Coletando(codigo, ordem)
-            .DoTipo(TipoRenderizacao.EscolhaUnica)
+            .DoTipo(TipoDeCampo.EscolhaUnica)
             .ExibidoQuando(condicoes.Length == 0 ? null : ExibicaoDeTeste.QuandoTodas(condicoes))
             .Construir();
 
@@ -111,7 +111,7 @@ public sealed class ResolvedorEstadoFatosTests
 
         return FatoColetadoDeTeste.Coletando("COR_RACA", 1)
             .ComRotulo("Cor ou raça")
-            .DoTipo(TipoRenderizacao.EscolhaUnica)
+            .DoTipo(TipoDeCampo.EscolhaUnica)
             .ComRestricoes(new OpcoesPermitidas([new OpcoesCondicionadas(egresso, ["PRETA"]), new OpcoesCondicionadas(null, ["BRANCA"])]))
             .Construir();
     }
@@ -187,7 +187,7 @@ public sealed class ResolvedorEstadoFatosTests
     {
         FatoColetado corRaca = FatoColetadoDeTeste.Coletando("COR_RACA", 0)
             .ComRotulo("Cor ou raça")
-            .DoTipo(TipoRenderizacao.EscolhaUnica)
+            .DoTipo(TipoDeCampo.EscolhaUnica)
             .ComObrigatoriedade(Obrigatoriedade.Sempre)
             .DaFinalidade(FinalidadeFormulario.Inscricao)
             .Construir();

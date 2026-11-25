@@ -94,7 +94,7 @@ internal static class ModelosDaSementePsrMedicina2027
         .. CamposDeConcorrenciaPorCota(),
         .. CamposDeRenda(),
         .. comProva ? CamposDoAtendimento() : Array.Empty<ItemDoModelo>(),
-        .. comProva ? [Campo(CidadeDeProva, 121, CidadeDeProva, "Em qual cidade você fará a prova?", TipoRenderizacao.EscolhaUnica, null)] : Array.Empty<ItemDoModelo>(),
+        .. comProva ? [Campo(CidadeDeProva, 121, CidadeDeProva, "Em qual cidade você fará a prova?", TipoDeCampo.EscolhaUnica, null)] : Array.Empty<ItemDoModelo>(),
     ];
 
     private static EtapaDoModelo[] EtapasDaInscricao(bool comProva) =>
@@ -112,10 +112,10 @@ internal static class ModelosDaSementePsrMedicina2027
 
     private static ItemDoModelo[] CamposDoEnemEDaEscolaridade() =>
     [
-        Campo(EdicaoDoEnem.Fato, 100, Enem, "Qual edição do ENEM você vai usar?", TipoRenderizacao.EscolhaUnica,
+        Campo(EdicaoDoEnem.Fato, 100, Enem, "Qual edição do ENEM você vai usar?", TipoDeCampo.EscolhaUnica,
             "Só aparecem as edições que o edital aceita."),
-        Campo(OrigemEscolar.FatoFormaDeConclusao, 101, Escolaridade, "Como você concluiu o ensino médio?", TipoRenderizacao.EscolhaUnica, null),
-        Campo(OrigemEscolar.FatoOndeCursou, 102, Escolaridade, "Onde você cursou o ensino médio?", TipoRenderizacao.EscolhaUnica,
+        Campo(OrigemEscolar.FatoFormaDeConclusao, 101, Escolaridade, "Como você concluiu o ensino médio?", TipoDeCampo.EscolhaUnica, null),
+        Campo(OrigemEscolar.FatoOndeCursou, 102, Escolaridade, "Onde você cursou o ensino médio?", TipoDeCampo.EscolhaUnica,
             "A resposta define se você pode concorrer às vagas para quem cursou o ensino médio em escola pública.")
             .ComRestricoes([OpcoesDeOndeCursou()]),
     ];
@@ -126,34 +126,34 @@ internal static class ModelosDaSementePsrMedicina2027
     /// </summary>
     private static ItemDoModelo[] CamposDoPedidoDoFator() =>
     [
-        Campo(SolicitaFator, 103, Fator, "Deseja solicitar o Fator de Atenuação das Desigualdades de Acesso?", TipoRenderizacao.SimOuNao,
+        Campo(SolicitaFator, 103, Fator, "Deseja solicitar o Fator de Atenuação das Desigualdades de Acesso?", TipoDeCampo.SimOuNao,
             "Para quem cursou pelo menos um ano do ensino médio num dos municípios da área que o edital lista ou, se concluiu por certificação, residiu num deles no período do edital. A comprovação é pedida na habilitação."),
-        Campo(CaminhoFator, 104, Fator, "Por qual vínculo com a área você solicita o Fator?", TipoRenderizacao.EscolhaUnica,
+        Campo(CaminhoFator, 104, Fator, "Por qual vínculo com a área você solicita o Fator?", TipoDeCampo.EscolhaUnica,
             "Como você concluiu o ensino médio por certificação, pode usar o ensino médio cursado na área ou a residência na área no período do edital.",
             exibicao: SeAlguma([Condicao(SolicitaFator, Operador.Igual, true), Condicao(OrigemEscolar.FatoFormaDeConclusao, Operador.AlgumDe, OrigemEscolar.Certificacoes)])),
     ];
 
     private static ItemDoModelo[] CamposDoMunicipioDoFator() =>
     [
-        Campo("MUNICIPIO_ENSINO_MEDIO_FATOR_ATENUACAO", 105, Fator, "Em qual município da área de influência você cursou o ensino médio? Se foi em mais de um, informe aquele em que estudou mais tempo.", TipoRenderizacao.EscolhaUnica,
+        Campo("MUNICIPIO_ENSINO_MEDIO_FATOR_ATENUACAO", 105, Fator, "Em qual município da área de influência você cursou o ensino médio? Se foi em mais de um, informe aquele em que estudou mais tempo.", TipoDeCampo.EscolhaUnica,
             "Vale o município em que você cursou pelo menos um ano do ensino médio, em escola pública ou privada. Só aparecem os municípios que o edital lista.",
             exibicao: SeAlguma(
                 [Condicao(SolicitaFator, Operador.Igual, true), Condicao(OrigemEscolar.FatoFormaDeConclusao, Operador.AlgumDe, ConclusoesPorCurso)],
                 [Condicao(SolicitaFator, Operador.Igual, true), Condicao(CaminhoFator, Operador.Igual, CaminhoPeloEnsinoMedio)])),
-        Campo("MUNICIPIO_RESIDENCIA_FATOR_ATENUACAO", 106, Fator, "Em qual município da área de abrangência você residiu no período? Se foi em mais de um, informe aquele em que residiu mais tempo.", TipoRenderizacao.EscolhaUnica,
+        Campo("MUNICIPIO_RESIDENCIA_FATOR_ATENUACAO", 106, Fator, "Em qual município da área de abrangência você residiu no período? Se foi em mais de um, informe aquele em que residiu mais tempo.", TipoDeCampo.EscolhaUnica,
             "Vale ter residido pelo menos um ano ininterrupto na área, no período de 20/11/2024 a 20/11/2026, conforme o edital.",
             exibicao: SeAlguma([Condicao(SolicitaFator, Operador.Igual, true), Condicao(CaminhoFator, Operador.Igual, CaminhoPelaResidencia)])),
     ];
 
     private static ItemDoModelo[] CamposDeDeficiencia() =>
     [
-        Campo("PCD", 107, ReservaDeVagas, "Você é pessoa com deficiência?", TipoRenderizacao.SimOuNao,
+        Campo("PCD", 107, ReservaDeVagas, "Você é pessoa com deficiência?", TipoDeCampo.SimOuNao,
             "A deficiência é comprovada por laudo, conforme o edital."),
-        Campo("TIPO_DEFICIENCIA", 108, ReservaDeVagas, "Tipo de deficiência", TipoRenderizacao.EscolhaUnica, null,
+        Campo("TIPO_DEFICIENCIA", 108, ReservaDeVagas, "Tipo de deficiência", TipoDeCampo.EscolhaUnica, null,
             exibicao: Se("PCD", Operador.Igual, true)),
-        Campo("CONCORRER_PCD", 109, ReservaDeVagas, "Deseja concorrer às vagas para pessoas com deficiência?", TipoRenderizacao.SimOuNao, null,
+        Campo("CONCORRER_PCD", 109, ReservaDeVagas, "Deseja concorrer às vagas para pessoas com deficiência?", TipoDeCampo.SimOuNao, null,
             exibicao: Se("PCD", Operador.Igual, true)),
-        Campo(OpcaoPelasCotasDaLei.FatoConcorrerEscolaPublica, 110, ReservaDeVagas, "Deseja concorrer às vagas para quem cursou o ensino médio em escola pública?", TipoRenderizacao.SimOuNao, null,
+        Campo(OpcaoPelasCotasDaLei.FatoConcorrerEscolaPublica, 110, ReservaDeVagas, "Deseja concorrer às vagas para quem cursou o ensino médio em escola pública?", TipoDeCampo.SimOuNao, null,
             exibicao: Se(OrigemEscolar.FatoEgresso, Operador.Igual, true)),
     ];
 
@@ -165,10 +165,10 @@ internal static class ModelosDaSementePsrMedicina2027
     /// </summary>
     private static ItemDoModelo[] CamposDoPertencimento() =>
     [
-        Campo(Indigena, 111, ReservaDeVagas, "Você pertence a um povo indígena?", TipoRenderizacao.SimOuNao,
+        Campo(Indigena, 111, ReservaDeVagas, "Você pertence a um povo indígena?", TipoDeCampo.SimOuNao,
             "O pertencimento é comprovado na habilitação, conforme o edital.",
             exibicao: SeAlguma([Optou, Condicao(CorRaca, Operador.Igual, CorIndigena)])),
-        Campo(Quilombola, 112, ReservaDeVagas, "Você se autodeclara quilombola?", TipoRenderizacao.SimOuNao,
+        Campo(Quilombola, 112, ReservaDeVagas, "Você se autodeclara quilombola?", TipoDeCampo.SimOuNao,
             "Quem é quilombola pode ter qualquer cor ou raça, exceto a raça indígena. As vagas para pretos e pardos são para quem informou essa cor ou raça em Dados do candidato.",
             exibicao: SeAlguma([Optou, Condicao(CorRaca, Operador.Diferente, CorIndigena)])),
     ];
@@ -176,21 +176,21 @@ internal static class ModelosDaSementePsrMedicina2027
     /// <summary>Concorre à PPI quem se declarou preto ou pardo, ou indígena com o pertencimento.</summary>
     private static ItemDoModelo[] CamposDeConcorrenciaPorCota() =>
     [
-        Campo("CONCORRER_PPI", 113, ReservaDeVagas, "Deseja concorrer às vagas para pretos, pardos e indígenas?", TipoRenderizacao.SimOuNao,
+        Campo("CONCORRER_PPI", 113, ReservaDeVagas, "Deseja concorrer às vagas para pretos, pardos e indígenas?", TipoDeCampo.SimOuNao,
             "Para quem se autodeclara preto, pardo ou indígena.",
             exibicao: SeAlguma(
                 [Optou, Condicao(CorRaca, Operador.AlgumDe, CoresPretaOuParda)],
                 [Optou, Condicao(CorRaca, Operador.Igual, CorIndigena), Condicao(Indigena, Operador.Igual, true)])),
-        Campo("CONCORRER_Q", 114, ReservaDeVagas, "Deseja concorrer às vagas para quilombolas?", TipoRenderizacao.SimOuNao, null,
+        Campo("CONCORRER_Q", 114, ReservaDeVagas, "Deseja concorrer às vagas para quilombolas?", TipoDeCampo.SimOuNao, null,
             exibicao: SeAlguma([Optou, Condicao(Quilombola, Operador.Igual, true)])),
     ];
 
     private static ItemDoModelo[] CamposDeRenda() =>
     [
-        Campo(BaixaRenda, 115, ReservaDeVagas, "A renda da sua família é de até um salário mínimo por pessoa?", TipoRenderizacao.SimOuNao,
+        Campo(BaixaRenda, 115, ReservaDeVagas, "A renda da sua família é de até um salário mínimo por pessoa?", TipoDeCampo.SimOuNao,
             "Some a renda bruta mensal de todos da família e divida pelo número de pessoas. A renda é comprovada na habilitação.",
             exibicao: SeAlguma([Optou])),
-        Campo(ConcorrerRenda, 116, ReservaDeVagas, "Deseja concorrer às vagas com critério de renda?", TipoRenderizacao.SimOuNao, null,
+        Campo(ConcorrerRenda, 116, ReservaDeVagas, "Deseja concorrer às vagas com critério de renda?", TipoDeCampo.SimOuNao, null,
             exibicao: SeAlguma([Optou, Condicao(BaixaRenda, Operador.Igual, true)])),
     ];
 
@@ -203,16 +203,16 @@ internal static class ModelosDaSementePsrMedicina2027
     /// </summary>
     private static ItemDoModelo[] CamposDoAtendimento() =>
     [
-        Campo(SolicitaAtendimento, 117, Atendimento, "Você precisa de atendimento especializado em alguma etapa presencial do processo?", TipoRenderizacao.SimOuNao,
+        Campo(SolicitaAtendimento, 117, Atendimento, "Você precisa de atendimento especializado em alguma etapa presencial do processo?", TipoDeCampo.SimOuNao,
             "Por exemplo, por deficiência, gestação, amamentação, idade ou transtorno de aprendizagem."),
-        Campo(CondicaoAtendimento, 118, Atendimento, "Em quais condições você se enquadra?", TipoRenderizacao.EscolhaMultipla,
+        Campo(CondicaoAtendimento, 118, Atendimento, "Em quais condições você se enquadra?", TipoDeCampo.EscolhaMultipla,
             "Marque todas as que se aplicam a você.",
             exibicao: Se(SolicitaAtendimento, Operador.Igual, true)),
-        Campo("DESCRICAO_OUTRA_CONDICAO_ATENDIMENTO", 119, Atendimento, "Descreva a sua condição específica", TipoRenderizacao.Texto,
+        Campo("DESCRICAO_OUTRA_CONDICAO_ATENDIMENTO", 119, Atendimento, "Descreva a sua condição específica", TipoDeCampo.Texto,
             "Diga qual é a condição, em poucas palavras.",
             exibicao: Se(CondicaoAtendimento, Operador.Igual, CondicaoForaDaLista))
             .ComFormato("LIVRE").ComRestricoes([new TamanhoTexto(null, LimiteDaDescricaoDaOutraCondicao)]),
-        Campo("RECURSO_ACESSIBILIDADE", 120, Atendimento, "De quais recursos você vai precisar nas etapas presenciais?", TipoRenderizacao.EscolhaMultipla,
+        Campo("RECURSO_ACESSIBILIDADE", 120, Atendimento, "De quais recursos você vai precisar nas etapas presenciais?", TipoDeCampo.EscolhaMultipla,
             "Só aparecem os recursos que o processo oferece. Marque todos de que você precisa.",
             exibicao: Se(SolicitaAtendimento, Operador.Igual, true)),
     ];
@@ -264,12 +264,12 @@ internal static class ModelosDaSementePsrMedicina2027
 
     private static ItemDoModelo[] CamposDaHabilitacao() =>
     [
-        Campo("CERTIFICADO_EM_EMITIDO", 1, Conclusao, "Seu certificado de conclusão do ensino médio já foi emitido?", TipoRenderizacao.SimOuNao,
+        Campo("CERTIFICADO_EM_EMITIDO", 1, Conclusao, "Seu certificado de conclusão do ensino médio já foi emitido?", TipoDeCampo.SimOuNao,
             "Se ainda não, apresente a declaração de conclusão e o termo de responsabilidade.",
             exibicao: Se(OrigemEscolar.FatoFormaDeConclusao, Operador.Igual, OrigemEscolar.Regular)),
-        Campo("HABILITACAO_POR_PROCURADOR", 2, Conclusao, "Outra pessoa fará a habilitação em seu nome, por procuração?", TipoRenderizacao.SimOuNao,
+        Campo("HABILITACAO_POR_PROCURADOR", 2, Conclusao, "Outra pessoa fará a habilitação em seu nome, por procuração?", TipoDeCampo.SimOuNao,
             "O procurador apresenta a procuração e o próprio documento de identificação."),
-        Campo("VINCULO_OUTRA_IES_PUBLICA_OU_PROUNI", 3, Conclusao, "Você tem matrícula ativa em outra instituição pública de ensino superior ou bolsa do ProUni?", TipoRenderizacao.SimOuNao, null),
+        Campo("VINCULO_OUTRA_IES_PUBLICA_OU_PROUNI", 3, Conclusao, "Você tem matrícula ativa em outra instituição pública de ensino superior ou bolsa do ProUni?", TipoDeCampo.SimOuNao, null),
     ];
 
     private static GrupoDoModelo GrupoDaComposicaoFamiliar() =>
@@ -277,10 +277,10 @@ internal static class ModelosDaSementePsrMedicina2027
             new OcorrenciasDoGrupo(Minimo: 1, Maximo: null, IncluiCandidato: true),
             new ExibicaoEObrigatoriedade(null, Obrigatoriedade.Sempre),
             [
-                Campo(CandidatoComoMembro.FatoParentesco, 1, null, "Parentesco com você", TipoRenderizacao.EscolhaUnica, null),
-                Campo("CATEGORIA_RENDA", 2, null, "Fontes de renda desta pessoa", TipoRenderizacao.EscolhaMultipla,
+                Campo(CandidatoComoMembro.FatoParentesco, 1, null, "Parentesco com você", TipoDeCampo.EscolhaUnica, null),
+                Campo("CATEGORIA_RENDA", 2, null, "Fontes de renda desta pessoa", TipoDeCampo.EscolhaMultipla,
                     "Marque todas. Elas definem os documentos de renda a apresentar."),
-                Campo("SOB_GUARDA", 3, null, "É menor de idade sob guarda?", TipoRenderizacao.SimOuNao,
+                Campo("SOB_GUARDA", 3, null, "É menor de idade sob guarda?", TipoDeCampo.SimOuNao,
                     "Sob a sua guarda ou a de alguém da família."),
             ]);
 
@@ -291,7 +291,7 @@ internal static class ModelosDaSementePsrMedicina2027
         new(codigo, ordem, TipoEtapaFormulario.Bloco, bloco, titulo, null, null, null);
 
     private static ItemDoModelo Campo(
-        string fato, int ordem, string? etapa, string rotulo, TipoRenderizacao tipo, string? ajuda, PredicadoDnf? exibicao = null) =>
+        string fato, int ordem, string? etapa, string rotulo, TipoDeCampo tipo, string? ajuda, PredicadoDnf? exibicao = null) =>
         new(fato, ordem, etapa, new ApresentacaoDoCampo(rotulo, tipo, ajuda), null, new RegrasDoCampo(exibicao, Obrigatoriedade.Sempre, []));
 
     private static ItemDoModelo ComFormato(this ItemDoModelo item, string formato) => item with { Formato = formato };

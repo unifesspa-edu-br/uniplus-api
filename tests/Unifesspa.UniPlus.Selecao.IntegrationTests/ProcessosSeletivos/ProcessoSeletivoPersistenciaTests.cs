@@ -105,11 +105,11 @@ public sealed class ProcessoSeletivoPersistenciaTests : IClassFixture<ProcessoSe
     }
 
     [Theory(DisplayName = "Situações válidas são gravadas e lidas do banco")]
-    [InlineData("RASCUNHO", StatusProcesso.Rascunho)]
-    [InlineData("PUBLICADO", StatusProcesso.Publicado)]
-    [InlineData("ENCERRADO", StatusProcesso.Encerrado)]
-    [InlineData("CANCELADO", StatusProcesso.Cancelado)]
-    public async Task Situacao_CodigoValido_GravaELeDoBanco(string codigo, StatusProcesso esperado)
+    [InlineData("RASCUNHO", SituacaoDoProcessoSeletivo.Rascunho)]
+    [InlineData("PUBLICADO", SituacaoDoProcessoSeletivo.Publicado)]
+    [InlineData("ENCERRADO", SituacaoDoProcessoSeletivo.Encerrado)]
+    [InlineData("CANCELADO", SituacaoDoProcessoSeletivo.Cancelado)]
+    public async Task Situacao_CodigoValido_GravaELeDoBanco(string codigo, SituacaoDoProcessoSeletivo esperado)
     {
         ProcessoSeletivo processo = NovoProcesso("PS — Situação");
         await _apoio.GravarAsync(processo);
@@ -117,7 +117,7 @@ public sealed class ProcessoSeletivoPersistenciaTests : IClassFixture<ProcessoSe
         await contexto.Database.ExecuteSqlAsync($"UPDATE selecao.processos_seletivos SET situacao = {codigo} WHERE id = {processo.Id}");
 
         ProcessoSeletivo recarregado = await contexto.ProcessosSeletivos.AsNoTracking().SingleAsync(p => p.Id == processo.Id);
-        recarregado.Status.Should().Be(esperado);
+        recarregado.Situacao.Should().Be(esperado);
     }
 
     [Fact(DisplayName = "CHECK de situação rejeita código inválido")]
@@ -315,7 +315,7 @@ public sealed class ProcessoSeletivoPersistenciaTests : IClassFixture<ProcessoSe
 
     private static void ConferirOProcessoEAsEtapasDaFundacao(ProcessoSeletivo recarregado)
     {
-        recarregado.Status.Should().Be(StatusProcesso.Rascunho);
+        recarregado.Situacao.Should().Be(SituacaoDoProcessoSeletivo.Rascunho);
         recarregado.TipoProcesso.OrigemId.Should().Be(TiposDeProcessoDeTeste.SiSU.OrigemId);
         recarregado.TipoProcessoOrigemId.Should().Be(TiposDeProcessoDeTeste.SiSU.OrigemId);
         recarregado.TipoProcesso.Codigo.Should().Be("SiSU");

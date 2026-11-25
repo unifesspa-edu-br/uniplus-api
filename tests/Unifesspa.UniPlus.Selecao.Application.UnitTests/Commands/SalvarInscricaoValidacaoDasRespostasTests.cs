@@ -89,7 +89,7 @@ public sealed class SalvarInscricaoValidacaoDasRespostasTests
     {
         FatoColetado endereco = FatoColetadoDeTeste.Coletando("ENDERECO_RESIDENCIAL", 0)
             .ComRotulo("Endereço residencial")
-            .DoTipo(TipoRenderizacao.Endereco)
+            .DoTipo(TipoDeCampo.Endereco)
             .ComObrigatoriedade(Obrigatoriedade.Sempre)
             .Construir();
         SalvarRespostaDeTeste cenario = SalvarRespostaDeTeste.ComItem(endereco);
@@ -146,7 +146,7 @@ public sealed class SalvarInscricaoValidacaoDasRespostasTests
     private static FatoColetado DataDeNascimento() =>
         FatoColetadoDeTeste.Coletando("DATA_NASCIMENTO", 0)
             .ComRotulo("Data de nascimento")
-            .DoTipo(TipoRenderizacao.Data)
+            .DoTipo(TipoDeCampo.Data)
             .ComObrigatoriedade(Obrigatoriedade.Sempre)
             .ComRestricoes(new FaixaDeData(LimiteDeData.NoEnvio(anos: -120, dias: 0), LimiteDeData.NoEnvio(anos: 0, dias: 0)))
             .Construir();

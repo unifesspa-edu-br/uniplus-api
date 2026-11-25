@@ -114,7 +114,7 @@ public sealed class OfertaCursoCicloEndpointTests
         valido["programaDeOferta"] = "PARFOR";
         valido["formatoPedagogico"] = "EAD";
         valido["turnos"] = new[] { "NOTURNO" };
-        valido["eMecCodigo"] = "654321";
+        valido["codigoEmec"] = "654321";
         valido["vagasAnuaisAutorizadas"] = 0;
         valido["baseLegal"] = "Decreto 6.755/2009";
 
@@ -132,7 +132,7 @@ public sealed class OfertaCursoCicloEndpointTests
         root.GetProperty("regimeDeTurno").GetProperty("codigo").GetString().Should().Be("REGULAR");
         root.GetProperty("turnos").EnumerateArray().Select(t => t.GetProperty("codigo").GetString())
             .Should().Equal(["NOTURNO"], "a oferta a distância também declara turno");
-        root.GetProperty("eMecCodigo").GetString().Should().Be("654321");
+        root.GetProperty("codigoEmec").GetString().Should().Be("654321");
         root.GetProperty("vagasAnuaisAutorizadas").GetInt32().Should().Be(0, "zero é teto válido");
         root.GetProperty("baseLegal").GetString().Should().Be("Decreto 6.755/2009");
         root.GetProperty("cursoId").GetGuid().Should().Be(cursoId, "curso é imutável");

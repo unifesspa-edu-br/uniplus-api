@@ -75,7 +75,7 @@ public sealed class PreVisualizarModeloFormularioQueryHandlerTests
     [Fact(DisplayName = "A resposta que viola restrição aparece com o tipo da restrição")]
     public async Task Handle_RespostaForaDaRestricao_DevolveOTipoDaRestricao()
     {
-        ItemDoModelo idade = Item("IDADE", 0, TipoRenderizacao.Numero).ComRestricoes([RestricoesDeValor.Faixa(0, 10).Value!]);
+        ItemDoModelo idade = Item("IDADE", 0, TipoDeCampo.Numero).ComRestricoes([RestricoesDeValor.Faixa(0, 10).Value!]);
 
         PreVisualizacaoDoModeloDto resultado = (await PreVisualizarAsync(Modelo([idade]), respostas: new() { ["IDADE"] = 20 }))!;
 
@@ -139,7 +139,7 @@ public sealed class PreVisualizarModeloFormularioQueryHandlerTests
     {
         _fatos.ListarTodosAsync(Arg.Any<CancellationToken>()).Returns(_ => [_certificado, CorComAmarelaDesativada()]);
         ModeloFormulario modelo = Modelo([
-            Item("COR_RACA", 0, TipoRenderizacao.EscolhaUnica),
+            Item("COR_RACA", 0, TipoDeCampo.EscolhaUnica),
             Item("CERTIFICADO", 1, exibicao: Quando("COR_RACA", "AMARELA")),
         ]);
 
@@ -155,7 +155,7 @@ public sealed class PreVisualizarModeloFormularioQueryHandlerTests
         _condicoes.ListarVivosParaLeituraAsync(Arg.Any<CancellationToken>()).Returns([CondicaoAtendimentoEspecializado.Criar("TEA", "Autismo", null).Value!]);
         _fatos.ListarTodosAsync(Arg.Any<CancellationToken>()).Returns(_ => [_certificado, Declarado("CONDICAO_ATENDIMENTO", TipoDoDado.Opcao, FonteValoresFato.OpcoesDoProcesso)]);
         ModeloFormulario modelo = Modelo([
-            Item("CONDICAO_ATENDIMENTO", 0, TipoRenderizacao.EscolhaUnica),
+            Item("CONDICAO_ATENDIMENTO", 0, TipoDeCampo.EscolhaUnica),
             Item("CERTIFICADO", 1, exibicao: Quando("CONDICAO_ATENDIMENTO", "TEA")),
         ]);
 
@@ -172,7 +172,7 @@ public sealed class PreVisualizarModeloFormularioQueryHandlerTests
         OpcoesPermitidas filtro = new([new OpcoesCondicionadas(Quando("CERTIFICADO", true), ["COM_CERTIFICADO"])]);
         ModeloFormulario modelo = Modelo([
             Item("CERTIFICADO", 0),
-            Item("SITUACAO", 1, TipoRenderizacao.EscolhaUnica).ComObrigatoriedade(Obrigatoriedade.Nunca).ComRestricoes([filtro]),
+            Item("SITUACAO", 1, TipoDeCampo.EscolhaUnica).ComObrigatoriedade(Obrigatoriedade.Nunca).ComRestricoes([filtro]),
         ]);
 
         PreVisualizacaoDoModeloDto resultado = (await PreVisualizarAsync(modelo, respostas: new() { ["CERTIFICADO"] = true }))!;
@@ -239,11 +239,11 @@ public sealed class PreVisualizarModeloFormularioQueryHandlerTests
         return modelo.Value!;
     }
 
-    private static ItemDoModelo Item(string fato, int ordem, TipoRenderizacao tipo = TipoRenderizacao.SimOuNao, PredicadoDnf? exibicao = null) =>
+    private static ItemDoModelo Item(string fato, int ordem, TipoDeCampo tipo = TipoDeCampo.SimOuNao, PredicadoDnf? exibicao = null) =>
         new(fato, ordem, "DADOS", new ApresentacaoDoCampo(fato, tipo), null, new RegrasDoCampo(exibicao, Obrigatoriedade.Sempre, []));
 
     private static ItemDoModelo Subitem(string fato, int ordem, PredicadoDnf? exibicao = null) =>
-        new(fato, ordem, null, new ApresentacaoDoCampo(fato, TipoRenderizacao.SimOuNao), null, new RegrasDoCampo(exibicao, Obrigatoriedade.Sempre, []));
+        new(fato, ordem, null, new ApresentacaoDoCampo(fato, TipoDeCampo.SimOuNao), null, new RegrasDoCampo(exibicao, Obrigatoriedade.Sempre, []));
 
     private static PredicadoDnf Quando(string fato, object valor) =>
         PredicadoDnf.CriarDeCondicoesAgrupadas([(0, CondicaoDnf.Criar(fato, Operador.Igual, JsonSerializer.SerializeToElement(valor)).Value!)]).Value!;

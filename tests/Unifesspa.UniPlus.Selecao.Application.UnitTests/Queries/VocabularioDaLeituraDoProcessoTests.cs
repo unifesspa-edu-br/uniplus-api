@@ -48,7 +48,7 @@ public sealed class VocabularioDaLeituraDoProcessoTests
         Converters = { new JsonStringEnumConverter(JsonNamingPolicy.CamelCase) },
     };
 
-    [Fact(DisplayName = "A raiz devolve status e origemCandidatos no vocabulário que a criação aceita")]
+    [Fact(DisplayName = "A raiz devolve situacao e origemCandidatos no vocabulário que a criação aceita")]
     public async Task Raiz_DevolveTokensDaEscrita()
     {
         ProcessoSeletivo processo = NovoProcesso();
@@ -58,7 +58,7 @@ public sealed class VocabularioDaLeituraDoProcessoTests
         json.GetProperty("origemCandidatos").GetProperty("codigo").GetString().Should().Be("INSCRICAO_PROPRIA",
             "é o token que `CriarProcessoSeletivoCommand.origemCandidatos` aceita — quem grava e "
             + "relê o mesmo recurso tem de receber de volta o que enviou");
-        json.GetProperty("status").GetProperty("codigo").GetString().Should().Be("RASCUNHO");
+        json.GetProperty("situacao").GetProperty("codigo").GetString().Should().Be("RASCUNHO");
     }
 
     [Fact(DisplayName = "A etapa devolve carater no vocabulário que a definição de etapas aceita")]

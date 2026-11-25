@@ -36,7 +36,7 @@ internal sealed record SituacaoDoFatoCitado
     /// <summary>O catálogo vivo reclassificou o próprio fato citado como derivado, e ele deixou de ser coletável.</summary>
     public bool FatoCitadoReclassificadoNoCatalogo { get; init; }
 
-    public TipoRenderizacao TipoDoItemPublicado => ItemPublicadoComoData ? TipoRenderizacao.Data : TipoRenderizacao.SimOuNao;
+    public TipoDeCampo TipoDoItemPublicado => ItemPublicadoComoData ? TipoDeCampo.Data : TipoDeCampo.SimOuNao;
 
     public bool PublicadoDivergeDoProcesso => ItemPublicadoComoData || ComItemNovo;
 }

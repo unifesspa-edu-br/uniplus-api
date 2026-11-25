@@ -172,7 +172,7 @@ public sealed class SubmeterInscricaoEnderecoEIndisponibilidadeDoGeoTests
     {
         FatoColetado doEstado = FatoColetadoDeTeste.Coletando("LOCAL_NO_ESTADO", 8)
             .ComRotulo("Local no estado")
-            .DoTipo(TipoRenderizacao.Municipio)
+            .DoTipo(TipoDeCampo.Municipio)
             .ComObrigatoriedade(Obrigatoriedade.Sempre)
             .ComRestricoes(new MunicipiosDaUf("UF_RESIDENCIA"))
             .Construir();

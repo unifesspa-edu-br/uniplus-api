@@ -8,6 +8,7 @@ using Domain.ProcessosSeletivos.Publicacao;
 using Domain.ProcessosSeletivos.Retificacao;
 using Domain.ValueObjects;
 
+using Kernel.Domain.CodigosDeContrato;
 using Kernel.Results;
 
 /// <summary>
@@ -31,7 +32,7 @@ public sealed class LeituraDaBaseDaRetificacao(
         {
             return Result<BaseDaRetificacao>.Failure(new DomainError(
                 "ProcessoSeletivo.TransicaoInvalida",
-                $"Só é possível retificar um processo publicado — status atual: {processo.Status}."));
+                $"Só é possível retificar um processo publicado — situação atual: {processo.Situacao.Rotulo()}."));
         }
 
         string motivo = HashCanonicalComputer.NormalizeNfc(motivoDoPedido.Trim());

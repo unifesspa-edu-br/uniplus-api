@@ -17,7 +17,7 @@ O wizard de Configuração de Edital precisa expressar **quais cursos têm vagas
 A deliberação precisou responder a duas perguntas acopladas:
 
 1. Qual a granularidade do "curso" que o edital referencia — a matriz curricular ou a oferta concreta?
-2. Onde vive o `e_mec_codigo` — é atributo estável do curso, ou varia por local de oferta?
+2. Onde vive o `codigo_emec` — é atributo estável do curso, ou varia por local de oferta?
 
 Quatro fontes institucionais autoritativas (endereços e-MEC da IES 18440; campo `codigoIES` do COC; campos `cod_curso`/`nome_oficial`/`unidade` do SIGAA; campo `cod_emec` do registro de diploma) foram cruzadas em 2026-05-19. Elas provaram que o código e-MEC **varia por campus-sede** e é herdado pelos convênios: Engenharia Civil → `1262444` (Marabá/IGE) e `1276153` (Santana/IEA); História Licenciatura → `1262485` (Marabá) e `1270446` (Xinguara); Matemática Licenciatura → `12037` (Marabá) e `1270326` (Santana).
 
@@ -25,18 +25,18 @@ Quatro fontes institucionais autoritativas (endereços e-MEC da IES 18440; campo
 
 - **Consistência regulatória**: o edital deve apontar para uma oferta estável e auditável, não para um conceito ambíguo que confunde matriz, local e código.
 - **Granularidade mista real**: a unidade ofertante (instituto acadêmico responsável) varia por local para o mesmo curso — isso é característica da oferta, não inconsistência do curso.
-- **Evidência sobre inferência**: a localização do `e_mec_codigo` deve seguir as quatro fontes legadas, não suposição.
+- **Evidência sobre inferência**: a localização do `codigo_emec` deve seguir as quatro fontes legadas, não suposição.
 - **Forward-compat**: novos formatos pedagógicos, turnos e polos devem tocar apenas a oferta, mantendo a matriz curricular estável.
 
 ## Opções consideradas
 
-- **Modelo de dois níveis** — `Curso` carregando local, modalidade e `e_mec_codigo`, com uma linha por combinação. Foi o ponto de partida do protótipo.
-- **Modelo de três níveis com `e_mec_codigo` no Curso** — separar `Curso` (curricular) de `OfertaCurso` (regulatória), mantendo o código e-MEC como atributo único do curso.
-- **Modelo de três níveis com `e_mec_codigo` na OfertaCurso** — separar curricular de regulatório e mover o código e-MEC para a oferta, refletindo a variação por campus comprovada nas fontes.
+- **Modelo de dois níveis** — `Curso` carregando local, modalidade e `codigo_emec`, com uma linha por combinação. Foi o ponto de partida do protótipo.
+- **Modelo de três níveis com `codigo_emec` no Curso** — separar `Curso` (curricular) de `OfertaCurso` (regulatória), mantendo o código e-MEC como atributo único do curso.
+- **Modelo de três níveis com `codigo_emec` na OfertaCurso** — separar curricular de regulatório e mover o código e-MEC para a oferta, refletindo a variação por campus comprovada nas fontes.
 
 ## Resultado da decisão
 
-**Escolhida:** "Modelo de três níveis com `e_mec_codigo` na OfertaCurso" (`Curso → OfertaCurso → Turma`), porque é o único que reconcilia a granularidade mista observada (mesmo curso, institutos e códigos e-MEC diferentes por campus) com a estabilidade da matriz curricular.
+**Escolhida:** "Modelo de três níveis com `codigo_emec` na OfertaCurso" (`Curso → OfertaCurso → Turma`), porque é o único que reconcilia a granularidade mista observada (mesmo curso, institutos e códigos e-MEC diferentes por campus) com a estabilidade da matriz curricular.
 
 Como catálogo cross-módulo, `Curso` e `OfertaCurso` vivem no módulo **Parametrizacao** ([ADR-0056](0056-modulo-configuracao-e-read-side-via-reader.md)). A referência de `OfertaCurso` à `Unidade` ofertante atravessa o bounded context `OrganizacaoInstitucional` ([ADR-0055](0055-organizacao-institucional-bounded-context.md)) e, por isso, segue o snapshot-copy da [ADR-0061](0061-referencia-cross-modulo-via-snapshot-copy.md) (cópia imutável dos dados relevantes da unidade, sem FK cross-banco).
 
@@ -45,7 +45,7 @@ Como catálogo cross-módulo, `Curso` e `OfertaCurso` vivem no módulo **Paramet
 - `Codigo`, `Nome`, `Grau`.
 - Opcionalmente `TitulacaoFeminino`/`TitulacaoMasculino` (do SIGAA, para diploma e para a RN02 de `docs/visao-do-projeto.md` — nome social).
 - `CargaHorariaTotal`, `DuracaoSemestresPadrao`, `DescricaoCurricular`, `Ativo`.
-- **Sem `e_mec_codigo`.**
+- **Sem `codigo_emec`.**
 
 **`OfertaCurso` — instância regulatória (cerca de uma centena de entradas reais):**
 
@@ -55,8 +55,8 @@ Como catálogo cross-módulo, `Curso` e `OfertaCurso` vivem no módulo **Paramet
 - `Modalidade` — `Regular`, `FormaPara`, `Parfor`, `Pronera`, `Pepeti`, `ConvenioOutro`, `Outro`.
 - `FormatoPedagogico` — `Presencial` (default, não-nulo), `Semipresencial`, `Ead`.
 - `Turno` — `Matutino`, `Vespertino`, `Noturno`, `Integral`. **Superseded pela [ADR-0126](0126-regime-de-turno-da-oferta-de-curso.md):** `Integral` deixou de ser turno, o campo virou `RegimeDeTurno` + coleção de `Turnos`, e o turno passou a ser obrigatório em todo formato pedagógico.
-- `EMecCodigo` — código e-MEC **por campus-sede** (do registro de diploma/COC), herdado pelos convênios do mesmo campus.
-- `CodigoSga` — código no Sistema de Gestão Acadêmica (do `cod_curso` do SIGAA). Nome **vendor-neutral** (ver a convenção de nome na seção "Mais informações") para não acoplar o domínio ao SIGAA.
+- `CodigoEmec` — código e-MEC **por campus-sede** (do registro de diploma/COC), herdado pelos convênios do mesmo campus.
+- `CodigoNoSistemaAcademico` — código no sistema acadêmico (do `cod_curso` do SIGAA). Nome **vendor-neutral** (ver a convenção de nome na seção "Mais informações") para não acoplar o domínio ao SIGAA.
 - `VagasAnuaisAutorizadas`.
 - `BaseLegal` — **obrigatório quando `Modalidade != Regular`** (programa-mãe, ex.: "Convênio Forma Pará nº 004/2020").
 - `AtoAutorizacaoMec` — **opcional** (ato específico da oferta, ex.: "Carta de aceite Prefeitura de Almeirim 2024").
@@ -66,20 +66,20 @@ Como catálogo cross-módulo, `Curso` e `OfertaCurso` vivem no módulo **Paramet
 
 O edital referencia `OfertaCurso` (estável entre semestres), não `Curso`. A junção edital↔oferta carrega `VagasOfertadas ≤ OfertaCurso.VagasAnuaisAutorizadas`.
 
-A pesquisa sobre os programas itinerantes confirmou um padrão **híbrido nos quatro** (Forma Pará, PARFOR, Pronera, Pepeti): sempre há um programa-mãe (guarda-chuva, em `BaseLegal`) mais um ato específico por oferta (opcional, em `AtoAutorizacaoMec`). O `e_mec_codigo` permanece atributo do registro nacional por campus; a oferta adiciona o local de funcionamento.
+A pesquisa sobre os programas itinerantes confirmou um padrão **híbrido nos quatro** (Forma Pará, PARFOR, Pronera, Pepeti): sempre há um programa-mãe (guarda-chuva, em `BaseLegal`) mais um ato específico por oferta (opcional, em `AtoAutorizacaoMec`). O `codigo_emec` permanece atributo do registro nacional por campus; a oferta adiciona o local de funcionamento.
 
 ## Consequências
 
 ### Positivas
 
 - A granularidade mista (institutos diferentes por campus para o mesmo curso) deixa de ser inconsistência e vira característica da oferta.
-- O `e_mec_codigo` reflete as quatro fontes legadas (varia por campus-sede), eliminando a contradição de tratá-lo como único por curso.
+- O `codigo_emec` reflete as quatro fontes legadas (varia por campus-sede), eliminando a contradição de tratá-lo como único por curso.
 - O edital aponta para algo estável (`OfertaCurso`); novos formatos/turnos/polos tocam só a oferta.
 - As quatro fontes legadas cruzadas tornam-se base de migração de dados para produção.
 
 ### Negativas
 
-- Migração dos dados legados exige separar cerca de 40 cursos curriculares das ofertas regulatórias, com matching COC↔SIGAA imperfeito (parte das ofertas ainda sem `CodigoSga`).
+- Migração dos dados legados exige separar cerca de 40 cursos curriculares das ofertas regulatórias, com matching COC↔SIGAA imperfeito (parte das ofertas ainda sem `CodigoNoSistemaAcademico`).
 - Snapshot-copy da unidade ofertante ([ADR-0061](0061-referencia-cross-modulo-via-snapshot-copy.md)) exige disciplina de rebinding quando a unidade muda — trade-off já assumido pela ADR-0061.
 
 ### Neutras
@@ -88,13 +88,13 @@ A pesquisa sobre os programas itinerantes confirmou um padrão **híbrido nos qu
 
 ## Confirmação
 
-- `e_mec_codigo` **não** existe em `Curso`; existe em `OfertaCurso`. Verificável por inspeção do modelo e por teste de migração que confirma códigos distintos para o mesmo curso em campi diferentes (ex.: Engenharia Civil `1262444` vs `1276153`).
+- `codigo_emec` **não** existe em `Curso`; existe em `OfertaCurso`. Verificável por inspeção do modelo e por teste de migração que confirma códigos distintos para o mesmo curso em campi diferentes (ex.: Engenharia Civil `1262444` vs `1276153`).
 - `BaseLegal` é obrigatório sempre que `Modalidade != Regular` — candidato a invariante validado no domínio.
 - `OfertaCurso.UnidadeOfertante` é value object (snapshot), não FK cross-banco ([ADR-0061](0061-referencia-cross-modulo-via-snapshot-copy.md)).
 
 ## Mais informações
 
-- **Convenção de nome vendor-neutral:** `e_mec_codigo` mantém nome próprio (registro nacional estável), mas `CodigoSga` (SGA = Sistema de Gestão Acadêmica) é genérico para não acoplar o domínio ao SIGAA.
+- **Convenção de nome vendor-neutral:** `codigo_emec` mantém nome próprio (registro nacional estável), mas `CodigoNoSistemaAcademico` é genérico para não acoplar o domínio ao SIGAA.
 - Os sete cursos que a busca pública não localizou foram completados pelo registro de diploma (Biologia Lic. `1442854`, Jornalismo `1276154`, Engenharia Florestal `1457294`, Arquitetura `1483808`, Zootecnia `1276151`, Medicina Veterinária `1276152`).
 - Refina a [ADR-0065](0065-localoferta-flat-um-por-endereco-emec.md): convênios de interiorização (Jacundá, Parauapebas, Canaã não-Pepeti) têm `LocalOferta.Tipo = ConvenioInteriorizacao`, com o vínculo acadêmico em `OfertaCurso.UnidadeOfertante`.
 - **Pendências a confirmar com PROEG/Procuradoria (não bloqueiam):** granularidade exata da autorização PARFOR (turma vs lote de edital); Pronera (1 projeto = 1 ou N turmas); financiador do Pepeti.
@@ -104,7 +104,7 @@ A pesquisa sobre os programas itinerantes confirmou um padrão **híbrido nos qu
 
 ## Emenda 1 (2026-11-16) — a oferta é citada pelo código informado pela gestão
 
-**Contexto.** A oferta não tem chave natural única: a repetição de curso, local e unidade é admitida de propósito (turnos ou programas diferentes), o código e-MEC se repete entre a sede e os convênios do mesmo campus, e o código no sistema de gestão acadêmica é opcional e externo. Sem um nome estável, o documento de configuração e o edital não tinham como citar uma oferta sem ambiguidade; a primeira solução, resolver a referência pelas ofertas vivas que a satisfazem e recusar a ambígua, empurrava o problema para quem escreve o documento.
+**Contexto.** A oferta não tem chave natural única: a repetição de curso, local e unidade é admitida de propósito (turnos ou programas diferentes), o código e-MEC se repete entre a sede e os convênios do mesmo campus, e o código no sistema acadêmico é opcional e externo. Sem um nome estável, o documento de configuração e o edital não tinham como citar uma oferta sem ambiguidade; a primeira solução, resolver a referência pelas ofertas vivas que a satisfazem e recusar a ambígua, empurrava o problema para quem escreve o documento.
 
 **Decisão.** Toda oferta de curso tem um código informado pela gestão, obrigatório e editável, com letra maiúscula seguida de letras maiúsculas, dígitos e sublinhado, de 2 a 50 caracteres. O código é único entre as ofertas vivas (índice único parcial, e o cadastro confere antes e responde 409 na repetição); a oferta removida libera o código. Quem cita a oferta usa esse código, e a identidade continua sendo o identificador: a decisão de negócio usa o `Id`, o código é o que se mostra a quem lê. A cópia congelada da oferta na Seleção guarda o código e o identificador de origem, e o envelope do processo traz os dois.
 

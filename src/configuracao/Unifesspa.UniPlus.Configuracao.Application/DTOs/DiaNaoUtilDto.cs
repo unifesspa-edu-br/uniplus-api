@@ -4,7 +4,7 @@ using Unifesspa.UniPlus.Application.Abstractions.Respostas;
 using Unifesspa.UniPlus.Configuracao.Domain.Enums;
 
 /// <summary>
-/// Um dia não útil do dataset, projetado para resposta HTTP (a
+/// Um dia não útil do calendário, projetado para resposta HTTP (a
 /// abrangência sai como código e rótulo). Dias municipais carregam a cópia do código
 /// IBGE, nome e UF; <c>Uf</c> permanece reservada à abrangência estadual.
 /// </summary>

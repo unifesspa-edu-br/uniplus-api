@@ -66,7 +66,7 @@ public sealed class LerProcessoSeletivoQueryHandlerTests
         IProcessoSeletivoRepository repositorio = Substitute.For<IProcessoSeletivoRepository>();
         repositorio.ObterComConfiguracaoAsync(processo.Id, Arg.Any<CancellationToken>()).Returns(processo);
         repositorio.ObterEstadoAsync(processo.Id, Arg.Any<CancellationToken>())
-            .Returns(new EstadoDoProcesso(processo.UnidadeAdministradoraOrigemId, StatusProcesso.Publicado, JaPublicado: true));
+            .Returns(new EstadoDoProcesso(processo.UnidadeAdministradoraOrigemId, SituacaoDoProcessoSeletivo.Publicado, JaPublicado: true));
         ICertameDivulgadoRepository divulgacoes = Divulgacao(repositorio, processo.Id, envelope);
         return (repositorio, divulgacoes);
     }

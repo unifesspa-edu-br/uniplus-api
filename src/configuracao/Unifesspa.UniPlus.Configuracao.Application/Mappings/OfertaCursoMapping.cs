@@ -16,7 +16,7 @@ public static class OfertaCursoMapping
             CodigoComRotulo<ProgramaDeOferta>.De(oferta.ProgramaDeOferta), CodigoComRotulo<FormatoPedagogico>.De(oferta.FormatoPedagogico),
             CodigoComRotulo<RegimeDeFuncionamento>.De(oferta.RegimeDeFuncionamento), CodigoComRotulo<RegimeDeTurno>.De(oferta.RegimeDeTurno),
             [.. TurnosOferta.OrdenarCanonicamente(oferta.Turnos).Select(CodigoComRotulo<TurnoOferta>.De)],
-            oferta.EMecCodigo, oferta.CodigoSga, oferta.VagasAnuaisAutorizadas, oferta.BaseLegal, oferta.AtoAutorizacaoMec, oferta.CreatedAt);
+            oferta.CodigoEmec, oferta.CodigoNoSistemaAcademico, oferta.VagasAnuaisAutorizadas, oferta.BaseLegal, oferta.AtoAutorizacaoMec, oferta.CreatedAt);
     }
 
     private static UnidadeOfertanteDto ParaDto(UnidadeOfertante unidade) =>

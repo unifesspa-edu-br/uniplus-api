@@ -50,7 +50,7 @@ public sealed class ProcessoSeletivoConfiguration : IEntityTypeConfiguration<Pro
                 "numero_de_opcoes_de_curso IS NULL OR numero_de_opcoes_de_curso IN (1, 2)");
             t.HasCheckConstraint(
                 "ck_processos_seletivos_situacao",
-                $"situacao IN ({SqlDosCodigosDeContrato.Lista<StatusProcesso>()})");
+                $"situacao IN ({SqlDosCodigosDeContrato.Lista<SituacaoDoProcessoSeletivo>()})");
             t.HasCheckConstraint(
                 "ck_processos_seletivos_origem_candidatos",
                 $"origem_candidatos IN ({SqlDosCodigosDeContrato.Lista<OrigemCandidatos>()})");
@@ -97,7 +97,7 @@ public sealed class ProcessoSeletivoConfiguration : IEntityTypeConfiguration<Pro
             tipo.Property(x => x.Nome).HasColumnName("tipo_processo_nome").HasMaxLength(200).IsRequired().HasComment("Nome do tipo de processo copiado do cadastro na criação.");
         });
         builder.Navigation(p => p.TipoProcesso).IsRequired();
-        builder.Property(p => p.Status).HasColumnName("situacao").HasMaxLength(TamanhoDoCodigoDeContrato.Maximo).IsRequired()
+        builder.Property(p => p.Situacao).HasColumnName("situacao").HasMaxLength(TamanhoDoCodigoDeContrato.Maximo).IsRequired()
             .HasComment("Situação do processo seletivo.");
         // NOT NULL, exigido na criação.
         builder.Property(p => p.OrigemCandidatos)

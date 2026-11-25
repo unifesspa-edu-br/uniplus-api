@@ -203,7 +203,7 @@ internal static class FormularioDeTeste
     public static FatoColetado CampoDaEdicaoDoEnem(int ordem) =>
         FatoColetadoDeTeste.Coletando(EdicaoDoEnem.Fato, ordem)
             .ComRotulo("Qual edição do ENEM você vai usar?")
-            .DoTipo(TipoRenderizacao.EscolhaUnica)
+            .DoTipo(TipoDeCampo.EscolhaUnica)
             .ComObrigatoriedade(Obrigatoriedade.Sempre)
             .ComOrigem(Unifesspa.UniPlus.Selecao.Domain.Enums.OrigemValoresColeta.OpcoesDoProcesso)
             .Construir();
@@ -313,7 +313,7 @@ internal static class FormularioDeTeste
     private static FatoColetado Basico(FatoColetadoInput entrada) =>
         FatoColetadoDeTeste.Coletando(entrada.FatoCodigo, entrada.Ordem)
             .ComRotulo(entrada.Apresentacao!.Rotulo!)
-            .DoTipo(CatalogoDe<TipoRenderizacao>.Obter(entrada.Apresentacao.TipoRenderizacao!))
+            .DoTipo(CatalogoDe<TipoDeCampo>.Obter(entrada.Apresentacao.TipoDeCampo!))
             .ComObrigatoriedade(ObrigatoriedadeDaEntrada(entrada))
             .ExibidoQuando(ExibicaoDaEntrada(entrada))
             .ComCopia(CopiaDoCatalogoDoBasico(entrada))

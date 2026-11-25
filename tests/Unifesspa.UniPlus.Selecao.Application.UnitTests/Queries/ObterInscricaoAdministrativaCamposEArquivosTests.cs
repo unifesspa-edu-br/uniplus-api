@@ -43,7 +43,7 @@ public sealed class ObterInscricaoAdministrativaCamposEArquivosTests
     public async Task ClassificacaoNaoResolvida_ValeSensivel()
     {
         InscricaoAdministrativaDeTeste cenario = new InscricaoAdministrativaDeTeste(PersonasDeTeste.FernandaDrumond)
-            .Fato("DADO_ANTIGO", "PUBLICO", TipoRenderizacao.Texto, Texto("a"))
+            .Fato("DADO_ANTIGO", "PUBLICO", TipoDeCampo.Texto, Texto("a"))
             .Exigencia("COMPROVANTE_SEM_EXIGENCIA", ClassificacaoDeProtecao.Pessoal, noEnvelope: false);
         DecisoesDeAcessoDeTeste comPessoais = new(
             "diogo.souza", PermissaoSelecao.InscricoesConsultar, PermissaoSelecao.DadosPublicosConsultar, PermissaoSelecao.DadosPessoaisConsultar,
@@ -142,9 +142,9 @@ public sealed class ObterInscricaoAdministrativaCamposEArquivosTests
 
     private static InscricaoAdministrativaDeTeste AvaliacaoDeKevin() =>
         new InscricaoAdministrativaDeTeste(PersonasDeTeste.KevinCarvalho)
-            .Fato("CPF", "IDENTIFICADOR", TipoRenderizacao.Texto, Texto(PersonasDeTeste.KevinCarvalho.Valor), formato: "CPF")
-            .Fato("NOME", "PESSOAL", TipoRenderizacao.Texto, Texto(PersonasDeTeste.NomeKevinCarvalho), ordem: 1)
-            .Fato("RESUMO_DO_ARTIGO", "PUBLICO", TipoRenderizacao.Texto, Texto("Ensaio sobre o ensino"), ordem: 2)
+            .Fato("CPF", "IDENTIFICADOR", TipoDeCampo.Texto, Texto(PersonasDeTeste.KevinCarvalho.Valor), formato: "CPF")
+            .Fato("NOME", "PESSOAL", TipoDeCampo.Texto, Texto(PersonasDeTeste.NomeKevinCarvalho), ordem: 1)
+            .Fato("RESUMO_DO_ARTIGO", "PUBLICO", TipoDeCampo.Texto, Texto("Ensaio sobre o ensino"), ordem: 2)
             .Exigencia("ARTIGO_PUBLICADO", ClassificacaoDeProtecao.Publico)
             .Exigencia("COMPROVANTE_RESIDENCIA", ClassificacaoDeProtecao.Pessoal);
 

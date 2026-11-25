@@ -15,9 +15,9 @@ using Unifesspa.UniPlus.Regras.ValueObjects;
 public sealed record Impedimento(PredicadoDnf Quando, string Mensagem)
 {
     /// <summary>Os tipos de campo que aceitam impedimento: os que entram em regra (ADR-0136).</summary>
-    public static bool CabeNoCampo(TipoRenderizacao campo) => campo is
-        TipoRenderizacao.SimOuNao or TipoRenderizacao.Numero or TipoRenderizacao.EscolhaUnica
-        or TipoRenderizacao.EscolhaMultipla or TipoRenderizacao.Municipio;
+    public static bool CabeNoCampo(TipoDeCampo campo) => campo is
+        TipoDeCampo.SimOuNao or TipoDeCampo.Numero or TipoDeCampo.EscolhaUnica
+        or TipoDeCampo.EscolhaMultipla or TipoDeCampo.Municipio;
 
     /// <summary>
     /// A recusa de cada item com impedimento, na posição dele, quando o formulário não é o de

@@ -14,7 +14,7 @@ using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 /// nem é peso de ordenação — mesmo raciocínio de <see cref="Operador"/>.
 /// </remarks>
 [DescricaoDoContrato("Como o campo do formulário é apresentado e respondido pelo candidato.")]
-public enum TipoRenderizacao
+public enum TipoDeCampo
 {
     /// <summary>Campo numérico — só aceito quando o dado é do tipo <c>NUMERICO</c>.</summary>
     [CodigoDeContrato("NUMERO", "Número", Descricao = "Campo em que o candidato digita um número inteiro.")]

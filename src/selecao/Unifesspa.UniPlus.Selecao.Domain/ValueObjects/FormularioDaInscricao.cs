@@ -41,7 +41,7 @@ public sealed class FormularioDaInscricao : IEquatable<FormularioDaInscricao>
     /// classificação congelada no processo — reclassificar o fato não pode deixar o CPF em claro na inscrição nem no comprovante.
     /// </summary>
     private static readonly DefinicaoDaResposta DefinicaoDoCpf =
-        DefinicaoDaResposta.De(TipoRenderizacao.Texto, DefinicaoDaResposta.ClassificacaoIdentificador, fatoCodigo: ConjuntoBasicoDaInscricao.Cpf);
+        DefinicaoDaResposta.De(TipoDeCampo.Texto, DefinicaoDaResposta.ClassificacaoIdentificador, fatoCodigo: ConjuntoBasicoDaInscricao.Cpf);
 
     /// <summary>As definições admitidas pela versão, com a do CPF forçada a identificador cifrado.</summary>
     private static Dictionary<string, DefinicaoDaResposta> ComCpfCifrado(IEnumerable<KeyValuePair<string, DefinicaoDaResposta>> definicoes) =>

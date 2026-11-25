@@ -218,7 +218,7 @@ public sealed class TestesDaConsultaDosIndicadoresDoProcesso
     {
         IProcessoSeletivoRepository processos = Substitute.For<IProcessoSeletivoRepository>();
         processos.ObterEstadoAsync(ProcessoId, Arg.Any<CancellationToken>())
-            .Returns(new EstadoDoProcesso(UnidadeId, estaEmRascunho ? StatusProcesso.Rascunho : StatusProcesso.Publicado, JaPublicado: !estaEmRascunho));
+            .Returns(new EstadoDoProcesso(UnidadeId, estaEmRascunho ? SituacaoDoProcessoSeletivo.Rascunho : SituacaoDoProcessoSeletivo.Publicado, JaPublicado: !estaEmRascunho));
         ICertameDivulgadoRepository divulgado = Substitute.For<ICertameDivulgadoRepository>();
         IIndicadoresDoProcessoReader leitor = Substitute.For<IIndicadoresDoProcessoReader>();
         leitor.LerAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>()).Returns(new ContagensDoProcesso(0, 0, 0));

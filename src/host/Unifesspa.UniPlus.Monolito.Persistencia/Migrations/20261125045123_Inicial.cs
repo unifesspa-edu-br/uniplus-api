@@ -4127,7 +4127,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     codigo_do_dado = table.Column<string>(type: "character varying(60)", maxLength: 60, nullable: false, comment: "Código do dado do candidato. Exemplos: RENDA_PER_CAPITA, CONCORRER_RENDA."),
                     ordem = table.Column<int>(type: "integer", nullable: false, comment: "Posição de apresentação ou avaliação no conjunto."),
                     rotulo = table.Column<string>(type: "character varying(300)", maxLength: 300, nullable: false, comment: "Texto apresentado à pessoa candidata."),
-                    tipo_de_campo = table.Column<string>(type: "character varying(30)", maxLength: 30, nullable: false, comment: "Tipo de campo. Códigos: NUMERO, SIM_OU_NAO, ESCOLHA_UNICA, ESCOLHA_MULTIPLA, TEXTO, DATA, ENDERECO, MUNICIPIO."),
+                    tipo_de_campo = table.Column<string>(type: "character varying(30)", maxLength: 30, nullable: false, comment: "Tipo de campo: NUMERO, SIM_OU_NAO, ESCOLHA_UNICA, ESCOLHA_MULTIPLA, TEXTO, DATA, ENDERECO ou MUNICIPIO. Códigos: NUMERO, SIM_OU_NAO, ESCOLHA_UNICA, ESCOLHA_MULTIPLA, TEXTO, DATA, ENDERECO, MUNICIPIO."),
                     obrigatoriedade = table.Column<string>(type: "jsonb", nullable: false, comment: "Regra que determina quando a resposta é obrigatória, em JSON."),
                     ajuda = table.Column<string>(type: "character varying(1000)", maxLength: 1000, nullable: true, comment: "Orientação adicional exibida junto ao campo, quando houver."),
                     pedir_confirmacao = table.Column<bool>(type: "boolean", nullable: false, comment: "Indica se a resposta deve ser confirmada pela pessoa candidata."),

@@ -24,7 +24,7 @@ public sealed class InclusaoDeDiaNaoUtilTests
         calendario.DiasNaoUteis.Should().Contain(d => d.Abrangencia == Abrangencia.Estadual && d.Uf == "PA");
     }
 
-    [Fact(DisplayName = "IncluirDiaNaoUtil preserva Id, VersaoDataset e Vigente do calendário")]
+    [Fact(DisplayName = "IncluirDiaNaoUtil preserva Id, VersaoDoCalendario e Vigente do calendário")]
     public void IncluirDiaNaoUtil_ItemValido_PreservaIdentidadeDoCalendario()
     {
         CalendarioDiasUteis calendario = CalendarioDiasUteis.Criar("2027.1", [Nacional()]).Value!;
@@ -34,7 +34,7 @@ public sealed class InclusaoDeDiaNaoUtilTests
         calendario.IncluirDiaNaoUtil(Estadual());
 
         calendario.Id.Should().Be(idOriginal);
-        calendario.VersaoDataset.Should().Be("2027.1");
+        calendario.VersaoDoCalendario.Should().Be("2027.1");
         calendario.Vigente.Should().BeTrue();
     }
 
@@ -89,7 +89,7 @@ public sealed class InclusaoDeDiaNaoUtilTests
         calendario.DiasNaoUteis.Should().HaveCount(1);
     }
 
-    [Fact(DisplayName = "IncluirDiaNaoUtil com combinação já cadastrada no agregado falha com DataDuplicadaNoDataset")]
+    [Fact(DisplayName = "IncluirDiaNaoUtil com combinação já cadastrada no agregado falha com DataDuplicadaNoCalendario")]
     public void IncluirDiaNaoUtil_DuplicataContraAgregadoJaPersistido_Falha()
     {
         CalendarioDiasUteis calendario = CalendarioDiasUteis.Criar(
@@ -99,7 +99,7 @@ public sealed class InclusaoDeDiaNaoUtilTests
             Municipal(municipioIbge: "1501402", municipioNome: "Belém", municipioUf: "PA"));
 
         resultado.IsFailure.Should().BeTrue();
-        resultado.Error!.Code.Should().Be(CalendarioDiasUteisErrorCodes.DataDuplicadaNoDataset);
+        resultado.Error!.Code.Should().Be(CalendarioDiasUteisErrorCodes.DataDuplicadaNoCalendario);
         calendario.DiasNaoUteis.Should().HaveCount(1);
     }
 
@@ -125,7 +125,7 @@ public sealed class InclusaoDeDiaNaoUtilTests
         Result<DiaNaoUtil> resultado = calendario.IncluirDiaNaoUtil(item);
 
         resultado.IsFailure.Should().BeTrue();
-        resultado.Error!.Code.Should().Be(CalendarioDiasUteisErrorCodes.DataDuplicadaNoDataset);
+        resultado.Error!.Code.Should().Be(CalendarioDiasUteisErrorCodes.DataDuplicadaNoCalendario);
         calendario.DiasNaoUteis.Should().HaveCount(2);
     }
 }

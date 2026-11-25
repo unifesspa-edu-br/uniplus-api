@@ -45,7 +45,7 @@ public sealed class OpcoesDaVersaoFixadaTests
     {
         FatoColetado campoRecurso = FatoColetadoDeTeste.Coletando(AtendimentoEspecializado.FatoRecursoAcessibilidade, 1)
             .ComRotulo("De qual recurso de acessibilidade você vai precisar?")
-            .DoTipo(TipoRenderizacao.EscolhaMultipla)
+            .DoTipo(TipoDeCampo.EscolhaMultipla)
             .ComClassificacao("SENSIVEL")
             .Construir();
         AtendimentoEspecializado atendimento = AtendimentoEspecializado.Criar(

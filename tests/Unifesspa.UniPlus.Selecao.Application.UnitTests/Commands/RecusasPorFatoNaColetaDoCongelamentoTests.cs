@@ -124,5 +124,5 @@ public sealed class RecusasPorFatoNaColetaDoCongelamentoTests
         FinalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, ProtecaoAprovada: true);
 
     private static FatoColetado ItemDeSelecao(string codigo, int ordem) =>
-        FatoColetadoDeTeste.Coletando(codigo, ordem).DoTipo(TipoRenderizacao.EscolhaUnica).ComObrigatoriedade(Obrigatoriedade.Sempre).Construir();
+        FatoColetadoDeTeste.Coletando(codigo, ordem).DoTipo(TipoDeCampo.EscolhaUnica).ComObrigatoriedade(Obrigatoriedade.Sempre).Construir();
 }

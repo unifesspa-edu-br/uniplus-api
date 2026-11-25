@@ -128,7 +128,7 @@ public sealed class DefinirDocumentosExigidosGatilhoPorFaseCommandHandlerTests
             .Returns(TipoDocumentoResultado(tipoDocumentoId));
         mocks.FatoCandidatoReader.ListarAsync(Arg.Any<CancellationToken>())
             .Returns(CatalogoDoConjuntoBasico.Com((IReadOnlyList<FatoCandidatoView>)[FatoSexoComPontoResolucao(pontoResolucaoDoSexo)]));
-        ColetarFato(processo, "SEXO", TipoRenderizacao.EscolhaUnica);
+        ColetarFato(processo, "SEXO", TipoDeCampo.EscolhaUnica);
         CondicaoGatilhoInput condicao = new(0, "SEXO", "IGUAL", "\"MASCULINO\"");
         ItemDocumentoExigidoDeTeste item = ItemDocumentoExigidoDeTeste.Geral(faseDaExigenciaId, tipoDocumentoId).Condicional(condicao);
 

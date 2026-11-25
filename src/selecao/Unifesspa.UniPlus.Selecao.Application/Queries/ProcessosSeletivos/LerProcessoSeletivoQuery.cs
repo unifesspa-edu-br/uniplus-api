@@ -72,7 +72,7 @@ public static class LerProcessoSeletivoQueryHandler
     }
 
     private static ProcessoSeletivoDto SoIdentificacao(ProcessoSeletivoDto processo, LocalidadeRegenteDto localidade) => new(
-        processo.Id, processo.Nome, IdentificadorLegivel: null, processo.TipoProcesso, processo.Status,
+        processo.Id, processo.Nome, IdentificadorLegivel: null, processo.TipoProcesso, processo.Situacao,
         processo.OrigemCandidatos, processo.UnidadeAdministradora, localidade, Etapas: [], AtendimentoEspecializado: null,
         DistribuicaoVagas: [], BonusRegional: null, AplicaBonusRegional: null, OpcoesDeCurso: null, ProvaPresencial: null,
         Cascata: null, CriteriosDesempate: [], Classificacao: null, CronogramaFases: [], DocumentosExigidos: [],

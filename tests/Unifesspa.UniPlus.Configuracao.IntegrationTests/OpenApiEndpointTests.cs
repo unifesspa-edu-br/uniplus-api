@@ -257,7 +257,7 @@ public sealed class OpenApiEndpointTests : IClassFixture<ConfiguracaoApiFactory>
         CodigosDeEnumNoContrato.CamposComTextoCru(spec.RootElement).Should().BeEmpty(
             "o campo que leva código de enum de contrato publica o componente dos códigos do enum (ADR-0176)");
         CodigosDeEnumNoContrato.ReferenciaOsCodigos(spec.RootElement, "CondicaoDoPredicadoDto", "operador").Should().BeTrue();
-        CodigosDeEnumNoContrato.ReferenciaOsCodigos(spec.RootElement, "ApresentacaoDoCampoDto", "tipoRenderizacao").Should().BeTrue();
+        CodigosDeEnumNoContrato.ReferenciaOsCodigos(spec.RootElement, "ApresentacaoDoCampoDto", "tipoDeCampo").Should().BeTrue();
     }
 
     private async Task<string> ObterDocumentoAsync()

@@ -110,7 +110,7 @@ internal sealed class LeituraDoConteudo(IReadOnlyDictionary<string, string> form
     private ItemDoModelo? LerItem(FatoColetadoInput entrada, string campo)
     {
         int recusasAntes = _recusas.Count;
-        TipoRenderizacao? tipo = LerTipoRenderizacao(entrada.Apresentacao?.TipoRenderizacao, $"{campo}.{FatoColetadoInput.CaminhoDaApresentacao}");
+        TipoDeCampo? tipo = LerTipoDeCampo(entrada.Apresentacao?.TipoDeCampo, $"{campo}.{FatoColetadoInput.CaminhoDaApresentacao}");
         RegrasDoCampo? regras = LerRegrasDoCampo(entrada.Regras, $"{campo}.{FatoColetadoInput.CaminhoDasRegras}");
         return RecusouDesde(recusasAntes)
             ? null
@@ -133,12 +133,12 @@ internal sealed class LeituraDoConteudo(IReadOnlyDictionary<string, string> form
         return obrigatoriedade is null ? null : new RegrasDoCampo(exibicao, obrigatoriedade, restricoes, impedimento);
     }
 
-    private TipoRenderizacao? LerTipoRenderizacao(string? codigo, string campo)
+    private TipoDeCampo? LerTipoDeCampo(string? codigo, string campo)
     {
-        Result<TipoRenderizacao> tipo = TipoRenderizacaoDaEntrada.Ler(codigo);
+        Result<TipoDeCampo> tipo = TipoDeCampoDaEntrada.Ler(codigo);
         if (tipo.IsFailure)
         {
-            _recusas.Add(new($"{campo}.tipoRenderizacao", tipo.Error!));
+            _recusas.Add(new($"{campo}.tipoDeCampo", tipo.Error!));
         }
 
         return tipo.IsSuccess ? tipo.Value : null;

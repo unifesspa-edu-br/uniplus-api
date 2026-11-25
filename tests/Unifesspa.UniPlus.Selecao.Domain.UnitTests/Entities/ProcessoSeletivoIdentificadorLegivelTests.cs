@@ -64,7 +64,7 @@ public sealed class ProcessoSeletivoIdentificadorLegivelTests
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be(ProcessoSeletivoErrorCodes.IdentificadorLegivelAusente);
-        processo.Status.Should().Be(StatusProcesso.Rascunho);
+        processo.Situacao.Should().Be(SituacaoDoProcessoSeletivo.Rascunho);
     }
 
     [Fact(DisplayName = "O checklist de conformidade aponta o identificador ausente, e só ele")]

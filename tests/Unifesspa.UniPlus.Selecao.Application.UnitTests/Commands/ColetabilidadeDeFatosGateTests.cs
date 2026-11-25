@@ -79,7 +79,7 @@ public sealed class ColetabilidadeDeFatosGateTests
     private static FatoColetado FatoColetadoModalidade() =>
         FatoColetadoDeTeste.Coletando("MODALIDADE", 0)
             .ComRotulo("Modalidade")
-            .DoTipo(TipoRenderizacao.EscolhaUnica)
+            .DoTipo(TipoDeCampo.EscolhaUnica)
             .ComObrigatoriedade(Obrigatoriedade.Sempre)
             .Construir();
 
@@ -94,7 +94,7 @@ public sealed class ColetabilidadeDeFatosGateTests
         (Result resposta, IEnumerable<object> eventos) = await ServicosComModalidadeDerivada(processo, canonicalizer).PublicarAsync(processo.Id);
 
         AfirmarRecusaDoFatoNaoMaisDeclarado(resposta, eventos, canonicalizer);
-        processo.Status.Should().Be(StatusProcesso.Rascunho, "a publicação recusada não transita o processo");
+        processo.Situacao.Should().Be(SituacaoDoProcessoSeletivo.Rascunho, "a publicação recusada não transita o processo");
     }
 
     [Fact(DisplayName = "Retificar_ComFatoColetadoNaoMaisDeclarado_RecusaSemCanonicalizar — mesmo gate na retificação")]

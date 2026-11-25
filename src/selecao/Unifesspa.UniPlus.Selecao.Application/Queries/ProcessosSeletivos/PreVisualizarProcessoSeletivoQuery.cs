@@ -99,7 +99,7 @@ public static class PreVisualizarProcessoSeletivoQueryHandler
         Dictionary<string, DefinicaoDaResposta> definicoes = new(StringComparer.Ordinal);
         foreach (FatoColetado fato in processo.FatosColetados.Concat(processo.GruposColetados.SelectMany(static g => g.Subitens)))
         {
-            definicoes.TryAdd(fato.FatoCodigo, DefinicaoDaResposta.De(fato.TipoRenderizacao, fato.ClassificacaoProtecao, fato.Formato, fato.FatoCodigo));
+            definicoes.TryAdd(fato.FatoCodigo, DefinicaoDaResposta.De(fato.TipoDeCampo, fato.ClassificacaoProtecao, fato.Formato, fato.FatoCodigo));
         }
 
         return DerivadosDoSistemaInscricao.ComOsDerivados(definicoes);

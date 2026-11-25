@@ -84,9 +84,9 @@ internal static class ApoioDosDocumentosExigidos
     /// Sem isto, a exigência condicionada nunca se aplicaria a candidato nenhum — o fato
     /// ficaria indeterminado para sempre, e a exigência pendente. O comando recusa por isso.
     /// </summary>
-    internal static void ColetarFato(ProcessoSeletivo processo, string codigo, TipoRenderizacao renderizacao = TipoRenderizacao.EscolhaUnica)
+    internal static void ColetarFato(ProcessoSeletivo processo, string codigo, TipoDeCampo tipoDeCampo = TipoDeCampo.EscolhaUnica)
     {
-        FatoColetado fato = FatoColetadoDeTeste.Coletando(codigo, 0).DoTipo(renderizacao).ComObrigatoriedade(Obrigatoriedade.Sempre).Construir();
+        FatoColetado fato = FatoColetadoDeTeste.Coletando(codigo, 0).DoTipo(tipoDeCampo).ComObrigatoriedade(Obrigatoriedade.Sempre).Construir();
         processo.DefinirItens([fato]).IsSuccess.Should().BeTrue();
     }
 

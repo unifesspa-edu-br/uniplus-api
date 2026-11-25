@@ -39,7 +39,7 @@ public sealed class ConformidadePublicabilidadeEstruturalContraprovaEEscalaTests
         processo.DefinirAtendimentoEspecializado(OfertaComCondicaoPcd()).IsSuccess.Should().BeTrue();
         FatoColetado fato = FatoColetadoDeTeste.Coletando("CONDICAO_ATENDIMENTO", 0)
             .ComRotulo("Você se enquadra em alguma condição de atendimento?")
-            .DoTipo(TipoRenderizacao.EscolhaMultipla)
+            .DoTipo(TipoDeCampo.EscolhaMultipla)
             .Construir();
         processo.DefinirItensComFaseDeInscricao([fato]).IsSuccess.Should().BeTrue();
 
@@ -50,11 +50,11 @@ public sealed class ConformidadePublicabilidadeEstruturalContraprovaEEscalaTests
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
     }
 
-    [Fact(DisplayName = "Contraprova: fato coletável renderizado como Booleano não aciona a conferência, mesmo sem oferta correspondente")]
+    [Fact(DisplayName = "Contraprova: fato coletável com tipo de campo Booleano não aciona a conferência, mesmo sem oferta correspondente")]
     public void Contraprova_FatoColetadoBooleano_NaoAcionaAConferencia()
     {
         ProcessoSeletivo processo = ProcessoConforme();
-        // Mesmo código de fato da conferência, mas TipoRenderizacao fora de {SelecaoUnica, SelecaoMultipla}
+        // Mesmo código de fato da conferência, mas TipoDeCampo fora de {SelecaoUnica, SelecaoMultipla}
         // — a conferência só se aplica a campo com opções, que é o que fica vazio sem oferta.
         FatoColetado fato = FatoColetadoDeTeste.Coletando("CONDICAO_ATENDIMENTO", 0).ComRotulo("Possui alguma condição de atendimento?").Construir();
         processo.DefinirItensComFaseDeInscricao([fato]).IsSuccess.Should().BeTrue();

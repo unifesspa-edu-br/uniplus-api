@@ -10,14 +10,14 @@ using Unifesspa.UniPlus.Kernel.Pagination;
 /// </summary>
 public interface ICalendarioDiasUteisRepository
 {
-    /// <summary>Carrega o dataset rastreado pelo contexto (com <see cref="CalendarioDiasUteis.DiasNaoUteis"/>), para mutação.</summary>
+    /// <summary>Carrega o calendário rastreado pelo contexto (com <see cref="CalendarioDiasUteis.DiasNaoUteis"/>), para mutação.</summary>
     Task<CalendarioDiasUteis?> ObterPorIdAsync(Guid id, CancellationToken cancellationToken);
 
-    /// <summary>Carrega o dataset para leitura (<c>AsNoTracking</c>) — projeção em DTO.</summary>
+    /// <summary>Carrega o calendário para leitura (<c>AsNoTracking</c>) — projeção em DTO.</summary>
     Task<CalendarioDiasUteis?> ObterPorIdParaLeituraAsync(Guid id, CancellationToken cancellationToken);
 
     /// <summary>
-    /// Lista datasets vivos paginados por cursor keyset bidirecional (ADR-0026 +
+    /// Lista calendários vivos paginados por cursor keyset bidirecional (ADR-0026 +
     /// ADR-0089): ordena por <c>Id</c> (Guid v7, ADR-0032) e devolve as âncoras
     /// de <c>prev</c>/<c>next</c> (nulas quando não há aquele lado).
     /// </summary>
@@ -27,13 +27,13 @@ public interface ICalendarioDiasUteisRepository
         PaginationDirection direction,
         CancellationToken cancellationToken);
 
-    /// <summary>Carrega o dataset vigente, rastreado, se houver — para o handler desmarcá-lo ao trocar de vigente.</summary>
+    /// <summary>Carrega o calendário vigente, rastreado, se houver — para o handler desmarcá-lo ao trocar de vigente.</summary>
     Task<CalendarioDiasUteis?> ObterVigenteAsync(CancellationToken cancellationToken);
 
     Task AdicionarAsync(CalendarioDiasUteis calendario, CancellationToken cancellationToken);
 
     /// <summary>
-    /// Marca o dataset para remoção; o <c>SoftDeleteInterceptor</c> converte em
+    /// Marca o calendário para remoção; o <c>SoftDeleteInterceptor</c> converte em
     /// soft-delete preenchendo <c>DeletedBy</c>/<c>DeletedAt</c>.
     /// </summary>
     void Remover(CalendarioDiasUteis calendario);
@@ -41,8 +41,8 @@ public interface ICalendarioDiasUteisRepository
     /// <summary>
     /// Registra explicitamente no <c>ChangeTracker</c> a inclusão de um
     /// <see cref="DiaNaoUtil"/> num <see cref="CalendarioDiasUteis"/> já
-    /// rastreado (<see cref="CalendarioDiasUteis.IncluirDiaNaoUtil"/>, api#1458),
-    /// e marca o próprio dataset como alterado.
+    /// rastreado (<see cref="CalendarioDiasUteis.IncluirDiaNaoUtil"/>),
+    /// e marca o próprio calendário como alterado.
     /// </summary>
     /// <remarks>
     /// <para>O <c>Add</c> do filho é necessário porque o <c>ChangeTracker</c> não
@@ -60,7 +60,7 @@ public interface ICalendarioDiasUteisRepository
     /// <c>UPDATE</c> do pai entrar no mesmo <c>SaveChangesAsync</c> do <c>INSERT</c>
     /// do filho, com a cláusula <c>WHERE xmin = ...</c> — sem isso, inserir só o
     /// filho nunca compara o <c>xmin</c> do pai, e uma remoção (soft-delete)
-    /// concorrente do MESMO dataset não vira conflito: o <c>INSERT</c> do filho
+    /// concorrente do MESMO calendário não vira conflito: o <c>INSERT</c> do filho
     /// sucede porque a FK só exige que a linha física do pai exista, não que
     /// ela esteja viva (<c>is_deleted = false</c>) — deixando uma linha
     /// <c>dias_nao_uteis</c> inalcançável sob um calendário já escondido.</para>

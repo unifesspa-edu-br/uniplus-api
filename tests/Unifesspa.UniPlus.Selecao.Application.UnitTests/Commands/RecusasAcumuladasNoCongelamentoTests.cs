@@ -194,7 +194,7 @@ public sealed class RecusasAcumuladasNoCongelamentoTests
     private static FatoColetado ItemDaModalidade() =>
         FatoColetadoDeTeste.Coletando("MODALIDADE", 0)
             .ComRotulo("Modalidade")
-            .DoTipo(TipoRenderizacao.EscolhaUnica)
+            .DoTipo(TipoDeCampo.EscolhaUnica)
             .ComObrigatoriedade(Obrigatoriedade.Sempre)
             .Construir();
 }

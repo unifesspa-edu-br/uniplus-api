@@ -30,7 +30,7 @@ public sealed class AcessoARevelacaoPelaBancaTests
     private static readonly string Revelar = PermissaoSelecao.DadosIdentificadoresRevelar.Codigo;
 
     private readonly InscricaoAdministrativaDeTeste _cenario = new InscricaoAdministrativaDeTeste(PersonasDeTeste.FernandaDrumond)
-        .Fato("CPF", "IDENTIFICADOR", TipoRenderizacao.Texto, null, formato: "CPF");
+        .Fato("CPF", "IDENTIFICADOR", TipoDeCampo.Texto, null, formato: "CPF");
 
     private readonly Guid _banca = Guid.CreateVersion7();
     private readonly Guid _etapa = Guid.CreateVersion7();

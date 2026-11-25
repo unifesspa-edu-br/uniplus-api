@@ -179,7 +179,7 @@ public sealed class ConferenciaDoCalendarioVigenteTests
     }
 
     /// <summary>
-    /// Dataset vigente existe mas veio incoerente do cadastro. A causa é distinta da ausência, e
+    /// Calendário vigente existe mas veio incoerente do cadastro. A causa é distinta da ausência, e
     /// só alcança quem precisa do calendário.
     /// </summary>
     /// <remarks>

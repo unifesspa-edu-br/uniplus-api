@@ -44,7 +44,7 @@ public sealed class CalendarioDiasUteisRepository : ICalendarioDiasUteisReposito
         CancellationToken cancellationToken)
     {
         // Keyset bidirecional (ADR-0089): ordenação por Id (Guid v7, ADR-0026/0032).
-        // Sem Include de DiasNaoUteis — a listagem projeta só o cabeçalho do dataset.
+        // Sem Include de DiasNaoUteis — a listagem projeta só o cabeçalho do calendário.
         CursorKeysetPage<CalendarioDiasUteis> page = await CursorKeyset
             .ApplyAsync(_dbContext.CalendariosDiasUteis.AsNoTracking(), afterId, limit, direction, cancellationToken)
             .ConfigureAwait(false);

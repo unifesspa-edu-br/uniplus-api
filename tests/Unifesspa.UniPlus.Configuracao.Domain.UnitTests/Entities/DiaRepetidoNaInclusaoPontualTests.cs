@@ -26,7 +26,7 @@ public sealed class DiaRepetidoNaInclusaoPontualTests
 
         Result<DiaNaoUtil> resultado = calendario.IncluirDiaNaoUtil(Estadual("PA"));
 
-        resultado.Error?.Code.Should().Be(CalendarioDiasUteisErrorCodes.DataDuplicadaNoDataset);
+        resultado.Error?.Code.Should().Be(CalendarioDiasUteisErrorCodes.DataDuplicadaNoCalendario);
         calendario.DiasNaoUteis.Should().HaveCount(2);
     }
 

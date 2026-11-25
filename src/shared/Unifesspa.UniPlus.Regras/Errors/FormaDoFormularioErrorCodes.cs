@@ -8,14 +8,14 @@ public static class ItemFormularioErrorCodes
     public const string OrdemInvalida = "ItemFormulario.OrdemInvalida";
     public const string RotuloObrigatorio = "ItemFormulario.RotuloObrigatorio";
     public const string RotuloTamanho = "ItemFormulario.RotuloTamanho";
-    public const string TipoRenderizacaoObrigatorio = "ItemFormulario.TipoRenderizacaoObrigatorio";
-    public const string TipoRenderizacaoInvalido = "ItemFormulario.TipoRenderizacaoInvalido";
+    public const string TipoDeCampoObrigatorio = "ItemFormulario.TipoDeCampoObrigatorio";
+    public const string TipoDeCampoInvalido = "ItemFormulario.TipoDeCampoInvalido";
     public const string AjudaTamanho = "ItemFormulario.AjudaTamanho";
     public const string FormatoIncoerente = "ItemFormulario.FormatoIncoerente";
     public const string RegraAutorreferente = "ItemFormulario.RegraAutorreferente";
     public const string RestricaoIncoerente = "ItemFormulario.RestricaoIncoerente";
     public const string OpcionalQueAlimentaRegra = "ItemFormulario.OpcionalQueAlimentaRegra";
-    public const string TipoRenderizacaoIncoerenteComDominio = "ItemFormulario.TipoRenderizacaoIncoerenteComDominio";
+    public const string TipoDeCampoIncoerenteComDominio = "ItemFormulario.TipoDeCampoIncoerenteComDominio";
     public const string FatoDesconhecido = "ItemFormulario.FatoDesconhecido";
     public const string FatoNaoColetavel = "ItemFormulario.FatoNaoColetavel";
     public const string ItensEmExcesso = "ItemFormulario.ItensEmExcesso";

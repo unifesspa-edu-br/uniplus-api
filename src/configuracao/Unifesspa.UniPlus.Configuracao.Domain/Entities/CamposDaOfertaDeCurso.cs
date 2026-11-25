@@ -10,8 +10,8 @@ internal sealed record CamposDaOfertaDeCurso(
     RegimeDeFuncionamento RegimeDeFuncionamento,
     RegimeDeTurno RegimeDeTurno,
     IReadOnlyList<TurnoOferta> Turnos,
-    string? EMecCodigo,
-    string? CodigoSga,
+    string? CodigoEmec,
+    string? CodigoNoSistemaAcademico,
     int? VagasAnuaisAutorizadas,
     string? BaseLegal,
     string? AtoAutorizacaoMec);

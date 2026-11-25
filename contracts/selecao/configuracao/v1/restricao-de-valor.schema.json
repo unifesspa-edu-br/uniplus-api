@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://uniplus.unifesspa.edu.br/contracts/selecao/configuracao/v1/restricao-de-valor.schema.json",
   "title": "Restrição de valor",
-  "description": "Limite que o formulário impõe à resposta de um campo. O tipo escolhe quais outras propriedades valem; a coerência com o tipo de renderização do fato é regra do domínio, não do esquema.",
+  "description": "Limite que o formulário impõe à resposta de um campo. O tipo escolhe quais outras propriedades valem; a coerência com o tipo de campo do fato é regra do domínio, não do esquema.",
   "type": "object",
   "additionalProperties": false,
   "required": [

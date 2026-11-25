@@ -57,7 +57,7 @@ public sealed class CondicoesDaCanonicalizacaoTests
 
     private static FatoColetado FatoDosMunicipiosDoBonus() => FatoColetadoDeTeste.Coletando("MUNICIPIO_EM_AREA_BONUS", 0)
         .ComRotulo("Município")
-        .DoTipo(TipoRenderizacao.EscolhaUnica)
+        .DoTipo(TipoDeCampo.EscolhaUnica)
         .ComObrigatoriedade(Obrigatoriedade.Sempre)
         .ComOrigem(OrigemValoresColeta.MunicipiosDoFada)
         .Construir();

@@ -17,7 +17,7 @@ internal static class VersoesDoNomeDeTeste
     public static (VersaoConfiguracao Versao, Result<EnvelopeReidratado> Envelope) VersaoComNome(string classificacao, string hipotese)
     {
         InscricaoAdministrativaDeTeste mundo = new InscricaoAdministrativaDeTeste(PersonasDeTeste.FernandaDrumond)
-            .Fato("NOME", classificacao, TipoRenderizacao.Texto, null, new MetadadosDoFatoDeTeste
+            .Fato("NOME", classificacao, TipoDeCampo.Texto, null, new MetadadosDoFatoDeTeste
             {
                 HipoteseLegal = hipotese,
             });

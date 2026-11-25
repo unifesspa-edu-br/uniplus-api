@@ -10,23 +10,23 @@ internal static class CalendarioDiasUteisErrorMappings
 {
     internal static readonly IReadOnlyList<KeyValuePair<string, DomainErrorMapping>> Todos =
     [
-        new(CalendarioDiasUteisErrorCodes.VersaoDatasetObrigatoria,
+        new(CalendarioDiasUteisErrorCodes.VersaoDoCalendarioObrigatoria,
             new DomainErrorMapping(
                 StatusCodes.Status422UnprocessableEntity,
-                "uniplus.configuracao.calendario_dias_uteis.versao_dataset_obrigatoria",
-                "Versão do dataset é obrigatória")),
+                "uniplus.configuracao.calendario_dias_uteis.versao_do_calendario_obrigatoria",
+                "Versão do calendário é obrigatória")),
 
-        new(CalendarioDiasUteisErrorCodes.VersaoDatasetTamanho,
+        new(CalendarioDiasUteisErrorCodes.VersaoDoCalendarioTamanho,
             new DomainErrorMapping(
                 StatusCodes.Status422UnprocessableEntity,
-                "uniplus.configuracao.calendario_dias_uteis.versao_dataset_tamanho",
-                "Tamanho da versão do dataset inválido")),
+                "uniplus.configuracao.calendario_dias_uteis.versao_do_calendario_tamanho",
+                "Tamanho da versão do calendário inválido")),
 
         new(CalendarioDiasUteisErrorCodes.SemDiaNaoUtil,
             new DomainErrorMapping(
                 StatusCodes.Status422UnprocessableEntity,
                 "uniplus.configuracao.calendario_dias_uteis.sem_dia_nao_util",
-                "O dataset precisa de ao menos um dia não útil")),
+                "O calendário precisa de ao menos um dia não útil")),
 
         new(CalendarioDiasUteisErrorCodes.AbrangenciaInvalida,
             new DomainErrorMapping(
@@ -82,23 +82,23 @@ internal static class CalendarioDiasUteisErrorMappings
                 "uniplus.configuracao.calendario_dias_uteis.descricao_tamanho",
                 "Tamanho da descrição do dia não útil inválido")),
 
-        new(CalendarioDiasUteisErrorCodes.DataDuplicadaNoDataset,
+        new(CalendarioDiasUteisErrorCodes.DataDuplicadaNoCalendario,
             new DomainErrorMapping(
                 StatusCodes.Status422UnprocessableEntity,
-                "uniplus.configuracao.calendario_dias_uteis.data_duplicada_no_dataset",
-                "Data duplicada no dataset (mesma abrangência e município)")),
+                "uniplus.configuracao.calendario_dias_uteis.data_duplicada_no_calendario",
+                "Data duplicada no calendário (mesma abrangência, município e UF)")),
 
         new(CalendarioDiasUteisErrorCodes.JaVigente,
             new DomainErrorMapping(
                 StatusCodes.Status409Conflict,
                 "uniplus.configuracao.calendario_dias_uteis.ja_vigente",
-                "Este dataset já é o vigente")),
+                "Este calendário já é o vigente")),
 
         new(CalendarioDiasUteisErrorCodes.NaoRemoveVigente,
             new DomainErrorMapping(
                 StatusCodes.Status409Conflict,
                 "uniplus.configuracao.calendario_dias_uteis.nao_remove_vigente",
-                "O dataset vigente não pode ser removido")),
+                "O calendário vigente não pode ser removido")),
 
         new(CalendarioDiasUteisErrorCodes.NaoEncontrado,
             new DomainErrorMapping(
@@ -110,7 +110,7 @@ internal static class CalendarioDiasUteisErrorMappings
             new DomainErrorMapping(
                 StatusCodes.Status409Conflict,
                 "uniplus.configuracao.calendario_dias_uteis.conflito_de_concorrencia",
-                "Outra alteração concorrente modificou o mesmo dataset ou o dataset vigente",
+                "Outra alteração concorrente modificou o mesmo calendário ou o calendário vigente",
                 RetryableConflict: true)),
     ];
 }

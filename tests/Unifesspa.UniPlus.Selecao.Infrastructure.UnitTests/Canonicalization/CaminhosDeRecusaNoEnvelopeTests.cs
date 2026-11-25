@@ -20,7 +20,7 @@ public sealed class CaminhosDeRecusaNoEnvelopeTests
         LeituraDosFatos.LerFatosColetados(leitor, new JsonObject { ["dadosDosFormularios"] = fatos });
 
         leitor.Falhou.Should().BeTrue();
-        leitor.Erro.Message.Should().Contain("dadosDosFormularios[0].tipoDeCampo").And.NotContain("tipoRenderizacao");
+        leitor.Erro.Message.Should().Contain("dadosDosFormularios[0].tipoDeCampo");
     }
 
     [Fact]
@@ -34,6 +34,6 @@ public sealed class CaminhosDeRecusaNoEnvelopeTests
         LeituraDoCalendario.LerCalendarioDiasUteis(leitor, new JsonObject { ["calendarioDiasUteis"] = bloco }, [], []);
 
         leitor.Falhou.Should().BeTrue();
-        leitor.Erro.Message.Should().Contain("calendarioDiasUteis.versaoDoCalendario").And.NotContain("versaoDataset");
+        leitor.Erro.Message.Should().Contain("calendarioDiasUteis.versaoDoCalendario");
     }
 }

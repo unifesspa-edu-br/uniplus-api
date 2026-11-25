@@ -132,16 +132,16 @@ public static class FormaDoItem
         [
             .. ValidarFormaBasica(fatoCodigo, ordem, apresentacao.Rotulo),
             .. apresentacao.ConferirAjuda().Select(static erro => erro.NoCaminhoDe(FatoColetadoInput.CaminhoDaApresentacao)),
-            .. RecusasDoFormato(apresentacao.TipoRenderizacao, formato),
-            .. regras.ConferirNoCampo(fatoCodigo?.Trim() ?? string.Empty, apresentacao.TipoRenderizacao)
+            .. RecusasDoFormato(apresentacao.TipoDeCampo, formato),
+            .. regras.ConferirNoCampo(fatoCodigo?.Trim() ?? string.Empty, apresentacao.TipoDeCampo)
                 .Select(static erro => erro.NoCaminhoDe(FatoColetadoInput.CaminhoDasRegras)),
         ];
     }
 
-    private static IEnumerable<FieldError> RecusasDoFormato(TipoRenderizacao tipoRenderizacao, string? formato)
+    private static IEnumerable<FieldError> RecusasDoFormato(TipoDeCampo tipoDeCampo, string? formato)
     {
         string? formatoNormalizado = TextoOpcional(formato);
-        if ((tipoRenderizacao == TipoRenderizacao.Texto) != (formatoNormalizado is not null)
+        if ((tipoDeCampo == TipoDeCampo.Texto) != (formatoNormalizado is not null)
             || formatoNormalizado is { Length: > FormatoMaxLength })
         {
             yield return new("formato", new DomainError(
@@ -151,14 +151,14 @@ public static class FormaDoItem
     }
 
     /// <summary>Se o tipo de restrição se aplica ao tipo de campo.</summary>
-    public static bool RestricaoCabeNoCampo(TipoRestricaoValor restricao, TipoRenderizacao campo) =>
+    public static bool RestricaoCabeNoCampo(TipoRestricaoValor restricao, TipoDeCampo campo) =>
         restricao switch
         {
-            TipoRestricaoValor.FaixaNumerica => campo == TipoRenderizacao.Numero,
-            TipoRestricaoValor.TamanhoTexto => campo == TipoRenderizacao.Texto,
+            TipoRestricaoValor.FaixaNumerica => campo == TipoDeCampo.Numero,
+            TipoRestricaoValor.TamanhoTexto => campo == TipoDeCampo.Texto,
             TipoRestricaoValor.OpcoesPermitidas or TipoRestricaoValor.OpcoesDasRespostas => campo.EhEscolha(),
-            TipoRestricaoValor.MunicipiosDaUf => campo == TipoRenderizacao.Municipio,
-            TipoRestricaoValor.FaixaDeData => campo == TipoRenderizacao.Data,
+            TipoRestricaoValor.MunicipiosDaUf => campo == TipoDeCampo.Municipio,
+            TipoRestricaoValor.FaixaDeData => campo == TipoDeCampo.Data,
             _ => throw new ArgumentOutOfRangeException(nameof(restricao), restricao, "Tipo de restrição desconhecido."),
         };
 

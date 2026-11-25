@@ -55,7 +55,7 @@ public sealed record RegrasDoCampo
     /// e o impedimento é coerente com ele. A autorreferência é ciclo de comprimento um, recusada aqui
     /// sem precisar conhecer os outros campos.
     /// </summary>
-    public IEnumerable<FieldError> ConferirNoCampo(string fatoDoCampo, TipoRenderizacao tipo) =>
+    public IEnumerable<FieldError> ConferirNoCampo(string fatoDoCampo, TipoDeCampo tipo) =>
     [
         .. RecusasDaExibicao(fatoDoCampo),
         .. RecusasDaObrigatoriedade(fatoDoCampo),
@@ -86,34 +86,34 @@ public sealed record RegrasDoCampo
     /// no de data —, não se repetem por tipo, não citam o próprio fato, e os limites da faixa cabem
     /// nas casas decimais do edital.
     /// </summary>
-    private IEnumerable<FieldError> RecusasDasRestricoes(string fatoDoCampo, TipoRenderizacao tipo) =>
+    private IEnumerable<FieldError> RecusasDasRestricoes(string fatoDoCampo, TipoDeCampo tipo) =>
     [
         .. RecusasDoConjuntoDeRestricoes(tipo),
         .. Restricoes.SelectMany((restricao, indice) => RecusasDaRestricao(fatoDoCampo, tipo, restricao, indice)),
     ];
 
-    private IEnumerable<FieldError> RecusasDoConjuntoDeRestricoes(TipoRenderizacao tipo)
+    private IEnumerable<FieldError> RecusasDoConjuntoDeRestricoes(TipoDeCampo tipo)
     {
         if (RestricoesDeValor.TipoRepetido(Restricoes) is { } repetido)
         {
             yield return new("restricoes", repetido);
         }
 
-        if (tipo == TipoRenderizacao.Municipio && !Restricoes.Any(static r => r is MunicipiosDaUf))
+        if (tipo == TipoDeCampo.Municipio && !Restricoes.Any(static r => r is MunicipiosDaUf))
         {
             yield return new("restricoes", new DomainError(
                 ItemFormularioErrorCodes.MunicipioSemUf, "O campo de município cita a UF respondida antes, pelos municípios da UF."));
         }
     }
 
-    private static IEnumerable<FieldError> RecusasDaRestricao(string fatoDoCampo, TipoRenderizacao tipo, RestricaoValor restricao, int indice) =>
+    private static IEnumerable<FieldError> RecusasDaRestricao(string fatoDoCampo, TipoDeCampo tipo, RestricaoValor restricao, int indice) =>
     [
         .. RecusasDeRestricaoForaDoTipoDoCampo(tipo, restricao, indice),
         .. RecusasDeCasasDecimaisDaFaixa(restricao, indice),
         .. RecusasDeRestricaoQueCitaOProprioFato(fatoDoCampo, restricao, indice),
     ];
 
-    private static IEnumerable<FieldError> RecusasDeRestricaoForaDoTipoDoCampo(TipoRenderizacao tipo, RestricaoValor restricao, int indice)
+    private static IEnumerable<FieldError> RecusasDeRestricaoForaDoTipoDoCampo(TipoDeCampo tipo, RestricaoValor restricao, int indice)
     {
         if (!FormaDoItem.RestricaoCabeNoCampo(restricao.Tipo, tipo))
         {
@@ -146,7 +146,7 @@ public sealed record RegrasDoCampo
     /// O impedimento cabe no tipo do campo, cada cláusula dele cita a resposta do próprio campo, e a
     /// mensagem ao candidato é obrigatória e limitada.
     /// </summary>
-    private IEnumerable<FieldError> RecusasDoImpedimento(string fatoDoCampo, TipoRenderizacao tipo) =>
+    private IEnumerable<FieldError> RecusasDoImpedimento(string fatoDoCampo, TipoDeCampo tipo) =>
         Impedimento is null
             ? []
             :
@@ -156,7 +156,7 @@ public sealed record RegrasDoCampo
                 .. RecusasDaMensagemDoImpedimento(Impedimento),
             ];
 
-    private static IEnumerable<FieldError> RecusasDoImpedimentoForaDoTipoDoCampo(TipoRenderizacao tipo)
+    private static IEnumerable<FieldError> RecusasDoImpedimentoForaDoTipoDoCampo(TipoDeCampo tipo)
     {
         if (!Impedimento.CabeNoCampo(tipo))
         {

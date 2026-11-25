@@ -14,27 +14,27 @@ using Unifesspa.UniPlus.Regras.Formularios;
 public sealed class CampoDeMunicipioTests
 {
     [Theory]
-    [InlineData(FonteValoresFato.Municipios, TipoRenderizacao.Municipio, true)]
-    [InlineData(FonteValoresFato.Municipios, TipoRenderizacao.EscolhaUnica, false)]
-    [InlineData(FonteValoresFato.UnidadesFederativas, TipoRenderizacao.Municipio, false)]
-    [InlineData(FonteValoresFato.UnidadesFederativas, TipoRenderizacao.EscolhaUnica, true)]
-    public void Coerencia_MunicipioDoGeo_SoNoCampoDeMunicipio(FonteValoresFato fonte, TipoRenderizacao tipo, bool coerente) =>
+    [InlineData(FonteValoresFato.Municipios, TipoDeCampo.Municipio, true)]
+    [InlineData(FonteValoresFato.Municipios, TipoDeCampo.EscolhaUnica, false)]
+    [InlineData(FonteValoresFato.UnidadesFederativas, TipoDeCampo.Municipio, false)]
+    [InlineData(FonteValoresFato.UnidadesFederativas, TipoDeCampo.EscolhaUnica, true)]
+    public void Coerencia_MunicipioDoGeo_SoNoCampoDeMunicipio(FonteValoresFato fonte, TipoDeCampo tipo, bool coerente) =>
         (CoerenciaDoCampo.Validar("CAMPO", tipo, TipoDoDado.Opcao, QuantidadeDeValores.ValorUnico, fonte) is null).Should().Be(coerente);
 
     [Fact]
     public void Forma_CampoDeMunicipioSemAUf_Recusa() =>
-        Conferir(TipoRenderizacao.Municipio, []).Select(static e => e.Error.Code).Should().Equal(ItemFormularioErrorCodes.MunicipioSemUf);
+        Conferir(TipoDeCampo.Municipio, []).Select(static e => e.Error.Code).Should().Equal(ItemFormularioErrorCodes.MunicipioSemUf);
 
     [Fact]
     public void Forma_MunicipiosDaUfEmCampoDeSelecao_Recusa() =>
-        Conferir(TipoRenderizacao.EscolhaUnica, [new MunicipiosDaUf("NATURALIDADE_UF")])
+        Conferir(TipoDeCampo.EscolhaUnica, [new MunicipiosDaUf("NATURALIDADE_UF")])
             .Select(static e => e.Error.Code).Should().Equal(ItemFormularioErrorCodes.RestricaoIncoerente);
 
     [Fact]
     public void Forma_CampoDeMunicipioComAUf_Aceita() =>
-        Conferir(TipoRenderizacao.Municipio, [new MunicipiosDaUf("NATURALIDADE_UF")]).Should().BeEmpty();
+        Conferir(TipoDeCampo.Municipio, [new MunicipiosDaUf("NATURALIDADE_UF")]).Should().BeEmpty();
 
-    private static List<FieldError> Conferir(TipoRenderizacao tipo, IReadOnlyList<RestricaoValor> restricoes) =>
+    private static List<FieldError> Conferir(TipoDeCampo tipo, IReadOnlyList<RestricaoValor> restricoes) =>
         FormaDoItem.Conferir(
             "NATURALIDADE_MUNICIPIO",
             1,

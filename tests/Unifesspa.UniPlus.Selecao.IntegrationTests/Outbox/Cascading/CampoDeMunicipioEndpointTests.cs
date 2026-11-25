@@ -42,7 +42,7 @@ public sealed class CampoDeMunicipioEndpointTests
     private static void ConferirMunicipioDeNascimento(JsonElement municipio)
     {
         municipio.GetProperty("etapaCodigo").GetString().Should().Be("DADOS_BASICOS");
-        municipio.GetProperty("apresentacao").GetProperty("tipoRenderizacao").GetString().Should().Be("MUNICIPIO");
+        municipio.GetProperty("apresentacao").GetProperty("tipoDeCampo").GetString().Should().Be("MUNICIPIO");
         JsonElement restricao = municipio.GetProperty("regras").GetProperty("restricoes").EnumerateArray().Single();
         restricao.GetProperty("tipo").GetString().Should().Be("MUNICIPIOS_DA_UF");
         restricao.GetProperty("fatos").EnumerateArray().Single().GetString().Should().Be("NATURALIDADE_UF");

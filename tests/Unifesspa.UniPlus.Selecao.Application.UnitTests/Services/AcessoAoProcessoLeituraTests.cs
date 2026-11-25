@@ -13,13 +13,13 @@ using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
 public sealed class AcessoAoProcessoLeituraTests
 {
     [Theory(DisplayName = "Publicado e encerrado são lidos sem consultar o verificador")]
-    [InlineData(StatusProcesso.Publicado)]
-    [InlineData(StatusProcesso.Encerrado)]
-    public async Task LeituraAberta_NaoConsultaOVerificador(StatusProcesso status)
+    [InlineData(SituacaoDoProcessoSeletivo.Publicado)]
+    [InlineData(SituacaoDoProcessoSeletivo.Encerrado)]
+    public async Task LeituraAberta_NaoConsultaOVerificador(SituacaoDoProcessoSeletivo situacao)
     {
         IVerificadorDeAcesso verificador = Substitute.For<IVerificadorDeAcesso>();
 
-        ResultadoDoAcesso resultado = await Verificar(verificador, status);
+        ResultadoDoAcesso resultado = await Verificar(verificador, situacao);
 
         resultado.Should().Be(ResultadoDoAcesso.Permitido);
         await verificador.DidNotReceiveWithAnyArgs().ExigirAsync(default!, default, default);
@@ -30,21 +30,21 @@ public sealed class AcessoAoProcessoLeituraTests
     {
         IVerificadorDeAcesso verificador = Substitute.For<IVerificadorDeAcesso>();
 
-        ResultadoDoAcesso resultado = await Verificar(verificador, StatusProcesso.Cancelado, jaPublicado: true);
+        ResultadoDoAcesso resultado = await Verificar(verificador, SituacaoDoProcessoSeletivo.Cancelado, jaPublicado: true);
 
         resultado.Should().Be(ResultadoDoAcesso.Permitido);
         await verificador.DidNotReceiveWithAnyArgs().ExigirAsync(default!, default, default);
     }
 
-    [Theory(DisplayName = "Rascunho, cancelado sem publicação e status fora da lista seguem a regra do rascunho: pedem configurar na unidade dona")]
-    [InlineData(StatusProcesso.Rascunho)]
-    [InlineData(StatusProcesso.Cancelado)]
-    public async Task ForaDaLista_PedeConfigurarNaUnidade(StatusProcesso status)
+    [Theory(DisplayName = "Rascunho, cancelado sem publicação e situação fora da lista seguem a regra do rascunho: pedem configurar na unidade dona")]
+    [InlineData(SituacaoDoProcessoSeletivo.Rascunho)]
+    [InlineData(SituacaoDoProcessoSeletivo.Cancelado)]
+    public async Task ForaDaLista_PedeConfigurarNaUnidade(SituacaoDoProcessoSeletivo situacao)
     {
         IVerificadorDeAcesso verificador = Substitute.For<IVerificadorDeAcesso>();
         verificador.ExigirAsync(default!, default, default).ReturnsForAnyArgs(ResultadoDoAcesso.Negado);
 
-        ResultadoDoAcesso resultado = await Verificar(verificador, status);
+        ResultadoDoAcesso resultado = await Verificar(verificador, situacao);
 
         resultado.Should().Be(ResultadoDoAcesso.Negado);
         await verificador.ReceivedWithAnyArgs(1).ExigirAsync(default!, default, default);
@@ -64,7 +64,7 @@ public sealed class AcessoAoProcessoLeituraTests
     }
 
     private static Task<ResultadoDoAcesso> Verificar(
-        IVerificadorDeAcesso verificador, StatusProcesso situacao, bool jaPublicado = false)
+        IVerificadorDeAcesso verificador, SituacaoDoProcessoSeletivo situacao, bool jaPublicado = false)
     {
         IProcessoSeletivoRepository processos = Substitute.For<IProcessoSeletivoRepository>();
         processos.ObterEstadoAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>())

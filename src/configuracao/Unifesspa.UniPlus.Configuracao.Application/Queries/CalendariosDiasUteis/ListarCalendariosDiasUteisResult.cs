@@ -3,7 +3,7 @@ namespace Unifesspa.UniPlus.Configuracao.Application.Queries.CalendariosDiasUtei
 using Unifesspa.UniPlus.Configuracao.Application.DTOs;
 
 /// <summary>
-/// Resultado da <see cref="ListarCalendariosDiasUteisQuery"/>: lote de datasets
+/// Resultado da <see cref="ListarCalendariosDiasUteisQuery"/>: lote de calendários
 /// projetados + âncoras opcionais para o controller construir os cursores
 /// prev/next (ADR-0026 + ADR-0089). Não vaza entidades de domínio.
 /// </summary>

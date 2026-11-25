@@ -17,7 +17,7 @@ internal static class CongelamentoDeTeste
     public static Result<VersaoConfiguracao> Publicar(this ProcessoSeletivo processo, CenarioDeCongelamento cenario) =>
         Congelar(
             processo,
-            TransicoesDaVersao.ConferirEstadoParaPublicar(processo.Status),
+            TransicoesDaVersao.ConferirEstadoParaPublicar(processo.Situacao),
             cenario,
             configuracao => processo.Publicar(Pedido(cenario, configuracao)));
 
@@ -25,7 +25,7 @@ internal static class CongelamentoDeTeste
         this ProcessoSeletivo processo, CenarioDeCongelamento cenario, VersaoConfiguracao versaoAtual, string motivo) =>
         Congelar(
             processo,
-            TransicoesDaVersao.ConferirEstadoParaRetificar(processo.Id, processo.Status, versaoAtual, motivo),
+            TransicoesDaVersao.ConferirEstadoParaRetificar(processo.Id, processo.Situacao, versaoAtual, motivo),
             cenario,
             configuracao => processo.Retificar(Pedido(cenario, configuracao), versaoAtual, motivo));
 

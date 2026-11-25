@@ -132,7 +132,7 @@ public sealed class ConformidadePublicabilidadeEstruturalPreCanonicalizacaoTests
         // ProcessoConforme já oferta atendimento vazio (sem condições) — só falta o fato coletável.
         FatoColetado fato = FatoColetadoDeTeste.Coletando("CONDICAO_ATENDIMENTO", 0)
             .ComRotulo("Você se enquadra em alguma condição de atendimento?")
-            .DoTipo(TipoRenderizacao.EscolhaMultipla)
+            .DoTipo(TipoDeCampo.EscolhaMultipla)
             .Construir();
         processo.DefinirItensComFaseDeInscricao([fato]).IsSuccess.Should().BeTrue();
 
@@ -148,7 +148,7 @@ public sealed class ConformidadePublicabilidadeEstruturalPreCanonicalizacaoTests
         ProcessoSeletivo processo = ProcessoConforme();
         FatoColetado fato = FatoColetadoDeTeste.Coletando("TIPO_DEFICIENCIA", 0)
             .ComRotulo("Qual o tipo de deficiência?")
-            .DoTipo(TipoRenderizacao.EscolhaUnica)
+            .DoTipo(TipoDeCampo.EscolhaUnica)
             .ComClassificacao("SENSIVEL")
             .Construir();
         processo.DefinirItensComFaseDeInscricao([fato]).IsSuccess.Should().BeTrue();
@@ -164,7 +164,7 @@ public sealed class ConformidadePublicabilidadeEstruturalPreCanonicalizacaoTests
     /// </summary>
     private static FatoColetado FatoDeTipoDeDeficienciaDoProcesso() => FatoColetadoDeTeste.Coletando("TIPO_DEFICIENCIA", 0)
         .ComRotulo("Qual o tipo de deficiência?")
-        .DoTipo(TipoRenderizacao.EscolhaUnica)
+        .DoTipo(TipoDeCampo.EscolhaUnica)
         .ComOrigem(OrigemValoresColeta.OpcoesDoProcesso)
         .Construir();
 
@@ -183,7 +183,7 @@ public sealed class ConformidadePublicabilidadeEstruturalPreCanonicalizacaoTests
 
     private static FatoColetado CampoRecursoAcessibilidade() => FatoColetadoDeTeste.Coletando(AtendimentoEspecializado.FatoRecursoAcessibilidade, 0)
         .ComRotulo("De qual recurso de acessibilidade você vai precisar?")
-        .DoTipo(TipoRenderizacao.EscolhaMultipla)
+        .DoTipo(TipoDeCampo.EscolhaMultipla)
         .ComClassificacao("SENSIVEL")
         .Construir();
 
@@ -251,7 +251,7 @@ public sealed class ConformidadePublicabilidadeEstruturalPreCanonicalizacaoTests
         ProcessoSeletivo processo = CotaEAcaoAfirmativaPor("CONDICAO_ATENDIMENTO", "A", "B");
         FatoColetado condicao = FatoColetadoDeTeste.Coletando("CONDICAO_ATENDIMENTO", 0)
             .ComRotulo("Você se enquadra em alguma condição de atendimento?")
-            .DoTipo(TipoRenderizacao.EscolhaMultipla)
+            .DoTipo(TipoDeCampo.EscolhaMultipla)
             .Construir();
         processo.DefinirItensComFaseDeInscricao([condicao]).IsSuccess.Should().BeTrue();
 

@@ -75,9 +75,9 @@ public sealed class CodigosDeContratoDasRegrasTests
                 [Operador.NenhumDe] = "não é nenhum de",
             });
 
-    [Fact(DisplayName = "Cada tipo de renderização tem o número e o código que o contrato publica")]
-    public void Codigo_DeCadaTipoDeRenderizacao_EOQueOContratoPublica() =>
-        Enum.GetValues<TipoRenderizacao>().ToDictionary(static v => (int)v, static v => v.Codigo())
+    [Fact(DisplayName = "Cada tipo de campo tem o número e o código que o contrato publica")]
+    public void Codigo_DeCadaTipoDeCampo_EOQueOContratoPublica() =>
+        Enum.GetValues<TipoDeCampo>().ToDictionary(static v => (int)v, static v => v.Codigo())
             .Should().Equal(new Dictionary<int, string>
             {
                 [1] = "NUMERO",
@@ -90,19 +90,19 @@ public sealed class CodigosDeContratoDasRegrasTests
                 [8] = "MUNICIPIO",
             });
 
-    [Fact(DisplayName = "Cada tipo de renderização tem o rótulo de negócio")]
-    public void Rotulo_DeCadaTipoDeRenderizacao_EODeNegocio() =>
-        Enum.GetValues<TipoRenderizacao>().ToDictionary(static v => v, static v => v.Rotulo())
-            .Should().Equal(new Dictionary<TipoRenderizacao, string>
+    [Fact(DisplayName = "Cada tipo de campo tem o rótulo de negócio")]
+    public void Rotulo_DeCadaTipoDeCampo_EODeNegocio() =>
+        Enum.GetValues<TipoDeCampo>().ToDictionary(static v => v, static v => v.Rotulo())
+            .Should().Equal(new Dictionary<TipoDeCampo, string>
             {
-                [TipoRenderizacao.Numero] = "Número",
-                [TipoRenderizacao.SimOuNao] = "Sim ou não",
-                [TipoRenderizacao.EscolhaUnica] = "Escolha de um valor",
-                [TipoRenderizacao.EscolhaMultipla] = "Escolha de vários valores",
-                [TipoRenderizacao.Texto] = "Texto",
-                [TipoRenderizacao.Data] = "Data",
-                [TipoRenderizacao.Endereco] = "Endereço",
-                [TipoRenderizacao.Municipio] = "Município",
+                [TipoDeCampo.Numero] = "Número",
+                [TipoDeCampo.SimOuNao] = "Sim ou não",
+                [TipoDeCampo.EscolhaUnica] = "Escolha de um valor",
+                [TipoDeCampo.EscolhaMultipla] = "Escolha de vários valores",
+                [TipoDeCampo.Texto] = "Texto",
+                [TipoDeCampo.Data] = "Data",
+                [TipoDeCampo.Endereco] = "Endereço",
+                [TipoDeCampo.Municipio] = "Município",
             });
 
     [Fact(DisplayName = "Os códigos de contrato dos enums das regras passam na conferência da subida")]

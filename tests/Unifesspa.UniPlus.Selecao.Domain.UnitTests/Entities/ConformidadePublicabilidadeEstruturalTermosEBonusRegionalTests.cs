@@ -105,7 +105,7 @@ public sealed class ConformidadePublicabilidadeEstruturalTermosEBonusRegionalTes
 
     private static FatoColetado FatoMunicipioDoBonus() => FatoColetadoDeTeste.Coletando("MUNICIPIO_EM_AREA_BONUS", 0)
         .ComRotulo("Município")
-        .DoTipo(TipoRenderizacao.EscolhaUnica)
+        .DoTipo(TipoDeCampo.EscolhaUnica)
         .ComObrigatoriedade(Obrigatoriedade.Sempre)
         .ComOrigem(OrigemValoresColeta.MunicipiosDoFada)
         .Construir();

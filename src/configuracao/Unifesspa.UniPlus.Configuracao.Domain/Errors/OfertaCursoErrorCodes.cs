@@ -38,8 +38,8 @@ public static class OfertaCursoErrorCodes
     public const string VagasAnuaisNegativas = "OfertaCurso.VagasAnuaisNegativas";
 
     // Tamanhos dos campos textuais opcionais.
-    public const string EMecCodigoTamanho = "OfertaCurso.EMecCodigoTamanho";
-    public const string CodigoSgaTamanho = "OfertaCurso.CodigoSgaTamanho";
+    public const string CodigoEmecTamanho = "OfertaCurso.CodigoEmecTamanho";
+    public const string CodigoNoSistemaAcademicoTamanho = "OfertaCurso.CodigoNoSistemaAcademicoTamanho";
     public const string BaseLegalTamanho = "OfertaCurso.BaseLegalTamanho";
     public const string AtoAutorizacaoMecTamanho = "OfertaCurso.AtoAutorizacaoMecTamanho";
 

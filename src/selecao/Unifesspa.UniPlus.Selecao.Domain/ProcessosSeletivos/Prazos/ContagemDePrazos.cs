@@ -109,7 +109,7 @@ public static class ContagemDePrazos
             return null;
         }
 
-        // Dataset vigente que veio incoerente do cadastro: a causa é essa, não a ausência.
+        // Calendário vigente que veio incoerente do cadastro: a causa é essa, não a ausência.
         // Reportar "não há calendário" mandaria cadastrar um que já está lá.
         return contexto.FalhaDoCalendarioVigente
             ?? new DomainError(

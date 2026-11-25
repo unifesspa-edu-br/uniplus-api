@@ -89,7 +89,7 @@ internal static class ProcessoParaMotivos
     internal static ProcessoSeletivo Publicado()
     {
         ProcessoSeletivo processo = Rascunho();
-        typeof(ProcessoSeletivo).GetProperty(nameof(ProcessoSeletivo.Status))!.SetValue(processo, StatusProcesso.Publicado);
+        typeof(ProcessoSeletivo).GetProperty(nameof(ProcessoSeletivo.Situacao))!.SetValue(processo, SituacaoDoProcessoSeletivo.Publicado);
         return processo;
     }
 

@@ -83,7 +83,7 @@ public sealed class ModeloFormularioEstruturaECicloDeVidaTests
     public void RestricaoIncoerente_ApontaAPosicaoEnviada()
     {
         ItemDoModelo item = Item("IDADE", 0)
-            .ComTipoDeCampo(TipoRenderizacao.Numero)
+            .ComTipoDeCampo(TipoDeCampo.Numero)
             .ComRestricoes([new TamanhoTexto(1, 10), new FaixaNumerica(0, 10)]);
 
         Result<ModeloFormulario> modelo = Criar(FinalidadeFormulario.Habilitacao, Conteudo([item]));

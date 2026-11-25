@@ -203,7 +203,7 @@ public static class PendenciasDosFatos
     /// </summary>
     internal static DomainError? PendenciaDeFatoColetadoSemValoresOfertados(ConfiguracaoDeclarada configuracao) =>
         configuracao.Coleta.Campos
-            .Where(static fato => fato.TipoRenderizacao.EhEscolha())
+            .Where(static fato => fato.TipoDeCampo.EhEscolha())
             .Where(fato => !EdicaoDoEnemForaDaClassificacaoEnem(configuracao, fato))
             .Select(fato => SemValoresOfertados(configuracao, fato))
             .FirstOrDefault(static pendencia => pendencia is not null);

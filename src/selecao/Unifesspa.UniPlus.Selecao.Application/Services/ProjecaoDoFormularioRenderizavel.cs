@@ -121,7 +121,7 @@ public static class ProjecaoDoFormularioRenderizavel
         fato.EtapaCodigo,
         new ApresentacaoDoCampoDto(
             fato.Rotulo,
-            fato.TipoRenderizacao.Codigo(),
+            fato.TipoDeCampo.Codigo(),
             ConjuntoBasicoDaInscricao.AjudaDoCampo(fato.Finalidade!.Value, fato.FatoCodigo, fato.Ajuda),
             fato.PedirConfirmacao),
         ConjuntoBasicoDaInscricao.FormatoDaResposta(fato.FatoCodigo, fato.Formato),

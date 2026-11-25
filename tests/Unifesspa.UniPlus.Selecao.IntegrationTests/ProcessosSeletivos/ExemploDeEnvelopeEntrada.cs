@@ -81,7 +81,7 @@ internal static class ExemploDeEnvelopeEntrada
             atoCriadorId: AtoRetificador, atorUsuarioContaId: Ator, instante: new DateTimeOffset(2026, 3, 20, 12, 0, 0, TimeSpan.Zero));
 
     /// <summary>
-    /// Publica o processo para que ele fique em <see cref="StatusProcesso.Publicado"/>, com
+    /// Publica o processo para que ele fique em <see cref="SituacaoDoProcessoSeletivo.Publicado"/>, com
     /// a versão congelada.
     /// </summary>
     internal static void Publicar(ProcessoSeletivo processo, EntradaCanonicalizacao? entrada = null)

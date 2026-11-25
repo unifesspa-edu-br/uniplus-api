@@ -288,7 +288,7 @@ public sealed class ConteudoLidoTests
             "CPF_RESPONSAVEL",
             0,
             "DADOS",
-            new ApresentacaoDoCampo("CPF do responsável", TipoRenderizacao.Texto, "Ajuda", pedirConfirmacao: true),
+            new ApresentacaoDoCampo("CPF do responsável", TipoDeCampo.Texto, "Ajuda", pedirConfirmacao: true),
             "CPF",
             new RegrasDoCampo(
                 Predicado("CERTIFICADO"),
@@ -310,7 +310,7 @@ public sealed class ConteudoLidoTests
         new("COMPOSICAO", 1, "DADOS", "Composição", new OcorrenciasDoGrupo(1, 5, true),
             new ExibicaoEObrigatoriedade(Predicado("CERTIFICADO"), Obrigatoriedade.Sempre),
             [new ItemDoModelo(
-                "MAIOR_IDADE", 0, null, new ApresentacaoDoCampo("MAIOR_IDADE", TipoRenderizacao.SimOuNao), null, new RegrasDoCampo(null, Obrigatoriedade.Sempre, []))]);
+                "MAIOR_IDADE", 0, null, new ApresentacaoDoCampo("MAIOR_IDADE", TipoDeCampo.SimOuNao), null, new RegrasDoCampo(null, Obrigatoriedade.Sempre, []))]);
 
     private static DocumentoExigidoDoModeloInput DocumentoValido() =>
         new("INSCRICAO", "LAUDO_MEDICO", Quando("CERTIFICADO"),

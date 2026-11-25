@@ -38,7 +38,7 @@ public sealed class EixosDoItemNaRetificacaoTests
 
         FieldError causa = resposta.Errors.Should().ContainSingle().Subject;
         causa.Error.Code.Should().Be(CodigoDaRecusaDoEixoAlterado);
-        causa.Error.Message.Should().Contain(Fato).And.Contain("tipo de renderização");
+        causa.Error.Message.Should().Contain(Fato).And.Contain("tipo de campo");
         causa.Field.Should().Be("/formularios/0/itens/28");
         await ConferirAusenciaDeEfeitosAsync(cenario, eventos);
     }
@@ -53,7 +53,7 @@ public sealed class EixosDoItemNaRetificacaoTests
 
         resposta.Errors.Select(static e => e.Error.Code).Should().Equal(CodigoDaRecusaDoEixoAlterado, CodigoDaRecusaDoEixoAlterado);
         resposta.Errors.Select(static e => e.Field).Should().Equal("/formularios/0/itens/28", null);
-        resposta.Errors[0].Error.Message.Should().Contain("tipo de renderização");
+        resposta.Errors[0].Error.Message.Should().Contain("tipo de campo");
         resposta.Errors[1].Error.Message.Should().Contain("domínio");
         await ConferirAusenciaDeEfeitosAsync(cenario, eventos);
     }
@@ -68,7 +68,7 @@ public sealed class EixosDoItemNaRetificacaoTests
 
         resposta.Errors.Select(static e => e.Error.Code).Should().Equal("ProcessoSeletivo.FatoColetadoNaoMaisDeclarado", CodigoDaRecusaDoEixoAlterado);
         resposta.Errors[0].Error.Message.Should().Contain(FatoNovo);
-        resposta.Errors[1].Error.Message.Should().Contain(Fato).And.Contain("tipo de renderização");
+        resposta.Errors[1].Error.Message.Should().Contain(Fato).And.Contain("tipo de campo");
         await ConferirAusenciaDeEfeitosAsync(cenario, eventos);
     }
 

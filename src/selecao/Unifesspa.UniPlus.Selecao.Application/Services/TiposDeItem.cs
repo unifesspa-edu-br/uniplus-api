@@ -35,15 +35,15 @@ public static class TiposDeItem
     /// <summary>Um objeto de endereço.</summary>
     public const string Endereco = "endereco";
 
-    /// <summary>O tipo do fato coletado, pelo tipo de renderização que o processo congelou.</summary>
-    public static string De(TipoRenderizacao renderizacao) => renderizacao switch
+    /// <summary>O tipo do fato coletado, pelo tipo de campo que o processo congelou.</summary>
+    public static string De(TipoDeCampo tipoDeCampo) => tipoDeCampo switch
     {
-        TipoRenderizacao.Numero => Numero,
-        TipoRenderizacao.SimOuNao => Booleano,
-        TipoRenderizacao.EscolhaUnica or TipoRenderizacao.Municipio => Opcao,
-        TipoRenderizacao.EscolhaMultipla => Opcoes,
-        TipoRenderizacao.Data => Data,
-        TipoRenderizacao.Endereco => Endereco,
+        TipoDeCampo.Numero => Numero,
+        TipoDeCampo.SimOuNao => Booleano,
+        TipoDeCampo.EscolhaUnica or TipoDeCampo.Municipio => Opcao,
+        TipoDeCampo.EscolhaMultipla => Opcoes,
+        TipoDeCampo.Data => Data,
+        TipoDeCampo.Endereco => Endereco,
         _ => Texto,
     };
 

@@ -30,7 +30,7 @@ public interface IProcessoSeletivoRepository : IRepository<ProcessoSeletivo>
     /// <remarks>
     /// <b>O lock.</b> <c>SELECT ... FOR UPDATE</c> na raiz serializa os handlers concorrentes que tocam o MESMO
     /// processo (os <c>Definir*</c>, publicar e retificar). Sem ele, um <c>Definir*</c> que leu
-    /// <c>Status = Rascunho</c> antes de uma publicação concorrente persistiria a mutação <b>depois</b> de a versão já
+    /// <c>Situacao = Rascunho</c> antes de uma publicação concorrente persistiria a mutação <b>depois</b> de a versão já
     /// ter sido congelada — furando o congelamento dos parâmetros na publicação (UNI-REQ-0019) sem que o guard em
     /// memória tivesse visibilidade da publicação alheia. Roda na transação ambiente do Wolverine: a segunda
     /// transação bloqueia aqui até a primeira committar.
@@ -186,7 +186,7 @@ public interface IProcessoSeletivoRepository : IRepository<ProcessoSeletivo>
     Task<UnidadeENomeDoProcesso?> ObterUnidadeENomeAsync(Guid processoSeletivoId, CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// A unidade dona, o status e a existência de retificação em curso do processo: o que a decisão de leitura precisa
+    /// A unidade dona, a situação e a existência de retificação em curso do processo: o que a decisão de leitura precisa
     /// saber, numa consulta só. <see langword="null"/> quando o processo não existe.
     /// </summary>
     /// <remarks>Projeção estreita, pelo mesmo motivo de <see cref="ObterNomeAsync"/>.</remarks>

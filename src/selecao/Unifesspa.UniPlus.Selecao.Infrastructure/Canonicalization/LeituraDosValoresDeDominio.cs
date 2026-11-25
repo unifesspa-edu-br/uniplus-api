@@ -140,7 +140,7 @@ internal static class LeituraDosValoresDeDominio
 
     /// <summary>
     /// Os valores selecionáveis de um fato coletado (UNI-REQ-0072) — bicondicional
-    /// com <paramref name="tipoRenderizacao"/> : <c>ESCOLHA_UNICA</c>/
+    /// com <paramref name="tipoDeCampo"/> : <c>ESCOLHA_UNICA</c>/
     /// <c>ESCOLHA_MULTIPLA</c> exige array com cardinalidade mínima 1 (nunca vazio);
     /// <c>SIM_OU_NAO</c>/<c>NUMERO</c> exige <see langword="null"/>. Um envelope que descumpra a
     /// bicondicional em qualquer sentido — seletor mudo (<c>null</c> ou <c>[]</c> onde deveria
@@ -150,23 +150,23 @@ internal static class LeituraDosValoresDeDominio
     /// <c>LerValoresDominioDeclarados</c> aplica a <c>opcoesDeclaradas</c>.
     /// </summary>
     internal static IReadOnlyList<ValorDominioDeclaradoCongelado>? LerValoresSelecionaveis(
-        LeitorEnvelope leitor, JsonObject item, string pathPai, TipoRenderizacao tipoRenderizacao)
+        LeitorEnvelope leitor, JsonObject item, string pathPai, TipoDeCampo tipoDeCampo)
     {
         string path = $"{pathPai}.valoresSelecionaveis";
-        bool ehFatoDeSelecao = tipoRenderizacao.EhEscolha();
+        bool ehFatoDeSelecao = tipoDeCampo.EhEscolha();
 
         if (item["valoresSelecionaveis"] is not JsonNode node)
         {
             return ehFatoDeSelecao
-                ? Recusar(leitor, $"'{path}' é null, mas o tipo de renderização é de seleção — a bicondicional exige um array.")
+                ? Recusar(leitor, $"'{path}' é null, mas o tipo de campo é de seleção — a bicondicional exige um array.")
                 : null;
         }
 
-        return LerVocabularioSelecionavel(leitor, node, path, tipoRenderizacao, ehFatoDeSelecao);
+        return LerVocabularioSelecionavel(leitor, node, path, tipoDeCampo, ehFatoDeSelecao);
     }
 
     private static IReadOnlyList<ValorDominioDeclaradoCongelado>? LerVocabularioSelecionavel(
-        LeitorEnvelope leitor, JsonNode node, string path, TipoRenderizacao tipoRenderizacao, bool ehFatoDeSelecao)
+        LeitorEnvelope leitor, JsonNode node, string path, TipoDeCampo tipoDeCampo, bool ehFatoDeSelecao)
     {
         if (node is not JsonArray array)
         {
@@ -176,7 +176,7 @@ internal static class LeituraDosValoresDeDominio
         if (!ehFatoDeSelecao)
         {
             return Recusar(
-                leitor, $"'{path}' é um array, mas o tipo de renderização '{tipoRenderizacao}' não é de seleção — a bicondicional exige null.");
+                leitor, $"'{path}' é um array, mas o tipo de campo '{tipoDeCampo}' não é de seleção — a bicondicional exige null.");
         }
 
         return LerOpcoesDoSeletor(leitor, array, path);
@@ -188,7 +188,7 @@ internal static class LeituraDosValoresDeDominio
 
         // Um seletor publicado sem opção nenhuma não é respondível: o array vazio é malformado.
         return valores is { Count: 0 }
-            ? Recusar(leitor, $"'{path}' é um array vazio, mas o tipo de renderização é de seleção — a cardinalidade mínima é 1.")
+            ? Recusar(leitor, $"'{path}' é um array vazio, mas o tipo de campo é de seleção — a cardinalidade mínima é 1.")
             : valores;
     }
 

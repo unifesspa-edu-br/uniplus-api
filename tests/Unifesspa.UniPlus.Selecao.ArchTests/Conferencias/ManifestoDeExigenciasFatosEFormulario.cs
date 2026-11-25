@@ -77,10 +77,10 @@ internal static class ManifestoDeExigenciasFatosEFormulario
 
         // Coleta de fatos + derivação — congeladas nos blocos de topo
         // `fatosColetados`/`regrasDerivacao` e testemunhadas no grafo conjunto (`grafoDependencia`).
-        // Rotulo/TipoRenderizacao/Obrigatorio — a apresentação do campo no
+        // Rotulo/TipoDeCampo/Obrigatorio — a apresentação do campo no
         // formulário de inscrição, congelada junto do fato no mesmo bloco `fatosColetados`.
         [typeof(FatoColetado)] = (
-            ["FatoCodigo", "Finalidade", "EtapaCodigo", "Ordem", "Rotulo", "TipoRenderizacao", "Obrigatoriedade", "Ajuda", "PedirConfirmacao", "Restricoes", "Impedimento", "OrigemValores", "Formato", "ClassificacaoProtecao", "HipoteseLegal", "FinalidadeTratamento", "Descricao", "ComponenteExibicao", "Precondicoes"],
+            ["FatoCodigo", "Finalidade", "EtapaCodigo", "Ordem", "Rotulo", "TipoDeCampo", "Obrigatoriedade", "Ajuda", "PedirConfirmacao", "Restricoes", "Impedimento", "OrigemValores", "Formato", "ClassificacaoProtecao", "HipoteseLegal", "FinalidadeTratamento", "Descricao", "ComponenteExibicao", "Precondicoes"],
             [
                 ("ProcessoSeletivoId", "FK interna — reconstruída junto com o grafo, nunca congelada (ADR-0110 D2)."),
                 ("GrupoColetadoId", "FK interna do campo de grupo — o campo é congelado dentro do grupo, em `gruposColetados`."),
@@ -89,7 +89,7 @@ internal static class ManifestoDeExigenciasFatosEFormulario
                 ("Condicoes", "Derivada das Precondicoes, da Obrigatoriedade e das Restricoes — recomputada, nunca persistida."),
                 ("OpcoesDoProcesso", "Derivada de OrigemValores — congelá-la duplicaria a fonte de verdade."),
                 ("Exibicao", "Derivada das Precondicoes — o predicado é recomputado, nunca persistido."),
-                ("Apresentacao", "Agrupa Rotulo, TipoRenderizacao, Ajuda e PedirConfirmacao, já congelados um a um — congelar o grupo duplicaria a fonte de verdade."),
+                ("Apresentacao", "Agrupa Rotulo, TipoDeCampo, Ajuda e PedirConfirmacao, já congelados um a um — congelar o grupo duplicaria a fonte de verdade."),
                 ("Regras", "Agrupa Precondicoes, Obrigatoriedade, Restricoes e Impedimento, já congelados um a um — congelar o grupo duplicaria a fonte de verdade."),
             ]),
 

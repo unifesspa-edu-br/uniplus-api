@@ -13,7 +13,7 @@ using static Unifesspa.UniPlus.Selecao.IntegrationTests.ProcessosSeletivos.Adult
 
 /// <summary>
 /// Os blocos de valores selecionáveis (UNI-REQ-0072) e a bicondicional de
-/// <c>fatosColetados[].valoresSelecionaveis</c> com <c>tipoRenderizacao</c>, nos dois sentidos: o decoder
+/// <c>fatosColetados[].valoresSelecionaveis</c> com <c>tipoDeCampo</c>, nos dois sentidos: o decoder
 /// recusa o que o encoder nunca emite, nos fatos coletados e nos metadados dos fatos documentais.
 /// </summary>
 public sealed class EnvelopeCodecRecusaValoresSelecionaveisTests
@@ -120,7 +120,7 @@ public sealed class EnvelopeCodecRecusaValoresSelecionaveisTests
             FatoColetadoPorCodigo(envelope, "COR_RACA")["tipoDeCampo"] = "SIM_OU_NAO");
 
         resultado.IsFailure.Should().BeTrue(
-            "trocar o tipo de renderização para SIM_OU_NAO sem esvaziar 'valoresSelecionaveis' deixa um " +
+            "trocar o tipo de campo para SIM_OU_NAO sem esvaziar 'valoresSelecionaveis' deixa um " +
             "vocabulário de seleção pendurado num campo que a bicondicional proíbe de tê-lo");
         resultado.Error!.Code.Should().Be(ErrosCodecEnvelope.EnvelopeMalformado);
     }

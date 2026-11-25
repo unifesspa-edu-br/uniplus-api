@@ -82,15 +82,15 @@ public static class MarcarVigenteCalendarioDiasUteisCommandHandler
             // que falharia com 25P02 fora de qualquer catch).
             return Result.Failure(new DomainError(
                 CalendarioDiasUteisErrorCodes.ConflitoDeConcorrencia,
-                "Outra alteração concorrente já marcou um dataset como vigente. Tente novamente."));
+                "Outra alteração concorrente já marcou um calendário como vigente. Tente novamente."));
         }
         catch (Exception ex) when (OptimisticConcurrencyViolation.Is(ex))
         {
             // Corrida entre esta ativação e uma remoção concorrente do MESMO
-            // dataset (xmin) — padrão canônico da ADR-0119: como o endpoint tem
+            // calendário (xmin) — padrão canônico da ADR-0119: como o endpoint tem
             // [RequiresIdempotencyKey], a exceção não pode propagar sem catch
             // (IdempotencyFilter não verifica ResourceExecutedContext.Exception
-            // antes de cachear a resposta — issue #1028). Descarta o
+            // antes de cachear a resposta). Descarta o
             // rastreamento ANTES de devolver: o SaveChangesAsync automático do
             // outbox roda de novo depois que este handler retorna, e sem isso a
             // mesma exceção estouraria de novo fora deste catch, virando 500 em
@@ -98,7 +98,7 @@ public static class MarcarVigenteCalendarioDiasUteisCommandHandler
             unitOfWork.DescartarAlteracoesNaoSalvas();
             return Result.Failure(new DomainError(
                 CalendarioDiasUteisErrorCodes.ConflitoDeConcorrencia,
-                "Este dataset foi modificado concorrentemente (possivelmente removido). Tente novamente."));
+                "Este calendário foi modificado concorrentemente (possivelmente removido). Tente novamente."));
         }
 
         return Result.Success();

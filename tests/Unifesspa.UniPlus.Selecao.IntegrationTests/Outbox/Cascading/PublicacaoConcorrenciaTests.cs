@@ -117,7 +117,7 @@ public sealed class PublicacaoConcorrenciaTests
         UniPlusDbContext db = escopo.ServiceProvider.GetRequiredService<UniPlusDbContext>();
         ProcessoSeletivo processo = await db.ProcessosSeletivos.AsNoTracking().Include(p => p.Etapas).FirstAsync(p => p.Id == processoId);
         publicacao.IsSuccess.Should().BeTrue(publicacao.Error?.Message);
-        processo.Status.Should().Be(StatusProcesso.Publicado);
+        processo.Situacao.Should().Be(SituacaoDoProcessoSeletivo.Publicado);
         if (definicao.IsFailure)
         {
             definicao.Error!.Code.Should().Be("ProcessoSeletivo.MutacaoPosPublicacaoBloqueada");
@@ -155,14 +155,14 @@ public sealed class PublicacaoConcorrenciaTests
     private static async Task ConferirPublicacaoSemCascataRecusadaAsync(UniPlusDbContext db, ProcessoSeletivo processo, Result publicacao)
     {
         publicacao.Error!.Code.Should().Be("ProcessoSeletivo.CascataOrigemAusente");
-        processo.Status.Should().Be(StatusProcesso.Rascunho);
+        processo.Situacao.Should().Be(SituacaoDoProcessoSeletivo.Rascunho);
         bool existeVersao = await db.VersoesConfiguracao.AsNoTracking().AnyAsync(versao => versao.ProcessoSeletivoId == processo.Id);
         existeVersao.Should().BeFalse("a publicação recusada não deixa uma versão congelada");
     }
 
     private static async Task ConferirCascataPublicadaAsync(UniPlusDbContext db, ProcessoSeletivo processo)
     {
-        processo.Status.Should().Be(StatusProcesso.Publicado);
+        processo.Situacao.Should().Be(SituacaoDoProcessoSeletivo.Publicado);
         JsonNode configuracao = await ConfiguracaoPublicadaAsync(db, processo.Id);
         JsonObject cascata = configuracao["ordemDeRemanejamento"]!.AsObject();
         cascata["presente"]!.GetValue<bool>().Should().BeTrue();

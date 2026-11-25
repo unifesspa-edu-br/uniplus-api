@@ -54,7 +54,7 @@ public sealed class ConformidadeLegalGateTests
         resposta.Error!.Code.Should().Be("ProcessoSeletivo.ConformidadeLegalInsuficiente");
         _ = handlers.Canonicalizer.DidNotReceive().Canonicalizar(Arg.Any<EntradaCanonicalizacao>());
         eventos.Should().BeEmpty();
-        handlers.Processo.Status.Should().Be(StatusProcesso.Rascunho, "a publicação recusada não transita o processo");
+        handlers.Processo.Situacao.Should().Be(SituacaoDoProcessoSeletivo.Rascunho, "a publicação recusada não transita o processo");
     }
 
     [Fact(DisplayName = "CA-13 (Publicar): regra legal aprovada congela ResultadoConformidade no campo novo da entrada")]

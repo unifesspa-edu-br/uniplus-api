@@ -13,7 +13,7 @@ using Unifesspa.UniPlus.IntegrationTests.Fixtures.Authentication;
 /// <summary>
 /// Smoke + caminho de escrita dos endpoints de <c>CalendarioDiasUteis</c>
 /// (UNI-REQ-0116): routing, vendor media type, HATEOAS, autenticação/autorização,
-/// idempotência, invariante de vigência única e bloqueio de remoção do dataset
+/// idempotência, invariante de vigência única e bloqueio de remoção do calendário
 /// vigente, com Wolverine rodando contra Postgres efêmero.
 /// </summary>
 [Collection(ConfiguracaoEndpointCollection.Name)]
@@ -156,25 +156,25 @@ public sealed class CalendarioDiasUteisEndpointTests
     {
         using HttpClient client = _fixture.Factory.CreateClient();
 
-        Guid primeiroId = await CriarDataset(client, VersaoUnica());
+        Guid primeiroId = await CriarCalendario(client, VersaoUnica());
         HttpResponseMessage marcarPrimeiro = await EnviarPostAdmin(client, $"{AdminPath}/{primeiroId}/vigente", null);
         marcarPrimeiro.StatusCode.Should().Be(HttpStatusCode.NoContent);
 
         (await ObterVigente(client, primeiroId)).Should().BeTrue();
 
-        Guid segundoId = await CriarDataset(client, VersaoUnica());
+        Guid segundoId = await CriarCalendario(client, VersaoUnica());
         HttpResponseMessage marcarSegundo = await EnviarPostAdmin(client, $"{AdminPath}/{segundoId}/vigente", null);
         marcarSegundo.StatusCode.Should().Be(HttpStatusCode.NoContent);
 
         (await ObterVigente(client, segundoId)).Should().BeTrue();
-        (await ObterVigente(client, primeiroId)).Should().BeFalse("no máximo um dataset é vigente por vez");
+        (await ObterVigente(client, primeiroId)).Should().BeFalse("no máximo um calendário é vigente por vez");
     }
 
-    [Fact(DisplayName = "DELETE em dataset vigente retorna 409 com o código de erro NaoRemoveVigente")]
-    public async Task Remover_DatasetVigente_Retorna409()
+    [Fact(DisplayName = "DELETE em calendário vigente retorna 409 com o código de erro NaoRemoveVigente")]
+    public async Task Remover_CalendarioVigente_Retorna409()
     {
         using HttpClient client = _fixture.Factory.CreateClient();
-        Guid id = await CriarDataset(client, VersaoUnica());
+        Guid id = await CriarCalendario(client, VersaoUnica());
         HttpResponseMessage marcarVigente = await EnviarPostAdmin(client, $"{AdminPath}/{id}/vigente", null);
         marcarVigente.StatusCode.Should().Be(HttpStatusCode.NoContent);
 
@@ -185,19 +185,19 @@ public sealed class CalendarioDiasUteisEndpointTests
             "uniplus.configuracao.calendario_dias_uteis.nao_remove_vigente");
     }
 
-    [Fact(DisplayName = "DELETE em dataset não vigente retorna 204")]
-    public async Task Remover_DatasetNaoVigente_Retorna204()
+    [Fact(DisplayName = "DELETE em calendário não vigente retorna 204")]
+    public async Task Remover_CalendarioNaoVigente_Retorna204()
     {
         using HttpClient client = _fixture.Factory.CreateClient();
-        Guid id = await CriarDataset(client, VersaoUnica());
+        Guid id = await CriarCalendario(client, VersaoUnica());
 
         HttpResponseMessage response = await EnviarDeleteAdmin(client, id);
 
         response.StatusCode.Should().Be(HttpStatusCode.NoContent);
     }
 
-    [Fact(DisplayName = "POST com versaoDataset genuinamente ausente no JSON retorna 422 (não 400 de model binding)")]
-    public async Task Criar_VersaoDatasetAusenteNoJson_Retorna422()
+    [Fact(DisplayName = "POST com versaoDoCalendario genuinamente ausente no JSON retorna 422 (não 400 de model binding)")]
+    public async Task Criar_VersaoDoCalendarioAusenteNoJson_Retorna422()
     {
         object corpo = CorpoSemVersao();
 
@@ -211,7 +211,7 @@ public sealed class CalendarioDiasUteisEndpointTests
     [Fact(DisplayName = "POST com violações em dois itens da lista acumula em errors[] com o índice de cada item")]
     public async Task Criar_ViolacoesEmDoisItens_AcumulaEmErrorsComIndiceDeCadaItem()
     {
-        object corpo = new { versaoDataset = VersaoUnica(), diasNaoUteis = new[] { DiaInvalido("INVALIDO", "2027-05-08", "Item quebrado"), DiaInvalido("ESTADUAL", "2027-05-09", "Falta UF") } };
+        object corpo = new { versaoDoCalendario = VersaoUnica(), diasNaoUteis = new[] { DiaInvalido("INVALIDO", "2027-05-08", "Item quebrado"), DiaInvalido("ESTADUAL", "2027-05-09", "Falta UF") } };
 
         using HttpClient client = _fixture.Factory.CreateClient();
         HttpResponseMessage response = await EnviarPostAdmin(client, AdminPath, corpo);
@@ -229,13 +229,13 @@ public sealed class CalendarioDiasUteisEndpointTests
         foreach (JsonElement item in itens.EnumerateArray())
         {
             item.TryGetProperty("diasNaoUteis", out _).Should().BeFalse(
-                "a listagem não carrega a coleção filha — use ObterPorId para o dataset completo");
+                "a listagem não carrega a coleção filha — use ObterPorId para o calendário completo");
         }
     }
 
     private static void ConferirCalendarioCriado(JsonElement root)
     {
-        root.GetProperty("vigente").GetBoolean().Should().BeFalse("todo dataset nasce não vigente");
+        root.GetProperty("vigente").GetBoolean().Should().BeFalse("todo calendário nasce não vigente");
         JsonElement dias = root.GetProperty("diasNaoUteis");
         dias.GetArrayLength().Should().Be(3);
         dias.EnumerateArray().Should().Contain(d => d.GetProperty("abrangencia").GetProperty("codigo").GetString() == "NACIONAL");
@@ -280,9 +280,9 @@ public sealed class CalendarioDiasUteisEndpointTests
         descricao,
     };
 
-    private static object CorpoValido(string? versaoDataset = null) => new
+    private static object CorpoValido(string? versaoDoCalendario = null) => new
     {
-        versaoDataset = versaoDataset ?? "2027.1",
+        versaoDoCalendario = versaoDoCalendario ?? "2027.1",
         diasNaoUteis = new object[]
         {
             new { abrangencia = "NACIONAL", municipioIbge = (string?)null, municipioNome = (string?)null, municipioUf = (string?)null, data = "2027-01-01", descricao = "Confraternização Universal" },
@@ -293,17 +293,17 @@ public sealed class CalendarioDiasUteisEndpointTests
 
     private static object CorpoComDia(string abrangencia, string? municipioIbge, string? municipioNome, string? municipioUf, string? uf = null) => new
     {
-        versaoDataset = VersaoUnica(),
+        versaoDoCalendario = VersaoUnica(),
         diasNaoUteis = new[] { new { abrangencia, municipioIbge, municipioNome, municipioUf, uf, data = "2027-05-08", descricao = "Dia não útil" } },
     };
 
     // Versão de até 60 chars, única por teste — não é chave natural, mas a
-    // unicidade evita confundir datasets entre testes que rodam na mesma coleção.
+    // unicidade evita confundir calendários entre testes que rodam na mesma coleção.
     private static string VersaoUnica() => $"cal-{Guid.NewGuid():N}"[..20];
 
-    private static async Task<Guid> CriarDataset(HttpClient client, string versaoDataset)
+    private static async Task<Guid> CriarCalendario(HttpClient client, string versaoDoCalendario)
     {
-        HttpResponseMessage criar = await EnviarPostAdmin(client, AdminPath, CorpoValido(versaoDataset));
+        HttpResponseMessage criar = await EnviarPostAdmin(client, AdminPath, CorpoValido(versaoDoCalendario));
         criar.StatusCode.Should().Be(HttpStatusCode.Created);
         return await criar.Content.ReadFromJsonAsync<Guid>();
     }

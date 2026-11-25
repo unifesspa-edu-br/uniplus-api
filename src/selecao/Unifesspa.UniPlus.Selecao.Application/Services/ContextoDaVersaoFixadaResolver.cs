@@ -222,7 +222,7 @@ public sealed class ContextoDaVersaoFixadaResolver(
         IEnumerable<FatoColetado> coletados = configuracaoPublicada.Coleta.Campos.Where(static f => f.Finalidade == FinalidadeFormulario.Inscricao);
         foreach (FatoColetado fato in coletados)
         {
-            definicoes.TryAdd(fato.FatoCodigo, DefinicaoDaResposta.De(fato.TipoRenderizacao, fato.ClassificacaoProtecao, fato.Formato, fato.FatoCodigo));
+            definicoes.TryAdd(fato.FatoCodigo, DefinicaoDaResposta.De(fato.TipoDeCampo, fato.ClassificacaoProtecao, fato.Formato, fato.FatoCodigo));
         }
 
         return definicoes;

@@ -160,7 +160,7 @@ public sealed class InclusaoDeMotivoConcorrenteComPublicacaoTests : IAsyncLifeti
     {
         EstadoFinal estado = await LerEstadoFinalAsync(cenario.ProcessoId);
 
-        estado.Status.Should().Be(StatusProcesso.Publicado);
+        estado.Situacao.Should().Be(SituacaoDoProcessoSeletivo.Publicado);
         estado.Versoes.Should().ContainSingle("a publicação criou uma só versão, a primeira").Which.NumeroVersao.Should().Be(1);
         ConferirEscolhaSemDuplicidadeNemOrfa(estado.Escolhas);
         estado.Escolhas.Select(e => e.MotivoDeDecisaoOrigemId).Should().BeEquivalentTo(
@@ -193,7 +193,7 @@ public sealed class InclusaoDeMotivoConcorrenteComPublicacaoTests : IAsyncLifeti
         UniPlusDbContext db = escopo.ServiceProvider.GetRequiredService<UniPlusDbContext>();
 
         return new EstadoFinal(
-            await db.ProcessosSeletivos.AsNoTracking().Where(p => p.Id == processoId).Select(p => p.Status).SingleAsync(),
+            await db.ProcessosSeletivos.AsNoTracking().Where(p => p.Id == processoId).Select(p => p.Situacao).SingleAsync(),
             await EscolhasDoTesteAsync(db, processoId),
             await db.VersoesConfiguracao.AsNoTracking().Where(v => v.ProcessoSeletivoId == processoId).ToListAsync());
     }
@@ -210,5 +210,5 @@ public sealed class InclusaoDeMotivoConcorrenteComPublicacaoTests : IAsyncLifeti
 
     private sealed record Desfecho(Result Inclusao, Result Publicacao);
 
-    private sealed record EstadoFinal(StatusProcesso Status, IReadOnlyList<MotivoDeDecisaoDoProcesso> Escolhas, IReadOnlyList<VersaoConfiguracao> Versoes);
+    private sealed record EstadoFinal(SituacaoDoProcessoSeletivo Situacao, IReadOnlyList<MotivoDeDecisaoDoProcesso> Escolhas, IReadOnlyList<VersaoConfiguracao> Versoes);
 }

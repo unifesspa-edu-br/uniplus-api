@@ -87,14 +87,14 @@ public sealed class DefinirTermosDoFormularioCommandHandlerTests
     private static FatoColetado ItemCorRaca() =>
         FatoColetadoDeTeste.Coletando("COR_RACA", 0)
             .ComRotulo("Cor ou raça")
-            .DoTipo(TipoRenderizacao.EscolhaUnica)
+            .DoTipo(TipoDeCampo.EscolhaUnica)
             .ComObrigatoriedade(Obrigatoriedade.Sempre)
             .Construir();
 
     private static FatoColetado ItemDataDeNascimento() =>
         FatoColetadoDeTeste.Coletando("DATA_NASCIMENTO", 1)
             .ComRotulo("Data de nascimento")
-            .DoTipo(TipoRenderizacao.Data)
+            .DoTipo(TipoDeCampo.Data)
             .ComObrigatoriedade(Obrigatoriedade.Sempre)
             .Construir();
 

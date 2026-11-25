@@ -8,7 +8,7 @@ using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Canonicalization;
 
-public sealed class TipoRenderizacaoNoEnvelopeTests
+public sealed class TipoDeCampoNoEnvelopeTests
 {
     private static JsonObject Payload(string tipo) => (JsonObject)JsonNode.Parse(
         $$"""{"dadosCitadosSemPergunta":[{"codigoDoDado":"FATO","rotulo":"Fato","tipoDeCampo":{{tipo}}}]}""")!;
@@ -29,7 +29,7 @@ public sealed class TipoRenderizacaoNoEnvelopeTests
         Dictionary<string, ApresentacaoDoFato> lidos = LeituraDoEdital.LerApresentacaoDosPressupostos(leitor, Payload($"\"{codigo}\""));
 
         leitor.Falhou.Should().BeFalse();
-        lidos["FATO"].TipoRenderizacao.Should().Be(codigo);
+        lidos["FATO"].TipoDeCampo.Should().Be(codigo);
     }
 
     [Theory(DisplayName = "O envelope recusa o tipo de campo que não é código declarado, listando os aceitos sem repetir o valor")]

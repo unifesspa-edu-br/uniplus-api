@@ -46,7 +46,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
     /// <summary>Cópia do tipo escolhido na criação, imutável para a vida do processo.</summary>
     public TipoProcessoSnapshot TipoProcesso { get; private set; } = null!;
 
-    public StatusProcesso Status { get; private set; }
+    public SituacaoDoProcessoSeletivo Situacao { get; private set; }
 
     /// <summary>De onde vêm os candidatos; deriva o piso mínimo do cronograma e nunca ramifica por tipo de processo.</summary>
     public OrigemCandidatos OrigemCandidatos { get; private set; }
@@ -223,7 +223,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
             UnidadeAdministradora = unidadeAdministradora,
             Localidade = localidade,
             IdentificadorLegivel = identificadorLegivel,
-            Status = StatusProcesso.Rascunho,
+            Situacao = SituacaoDoProcessoSeletivo.Rascunho,
         };
     }
 
@@ -465,10 +465,10 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
     /// <summary>
     /// Publica o processo em rascunho (UNI-REQ-0019): confere a transição, abre
     /// a versão 1 a partir dos bytes canônicos que a Application produziu (o Domain não canonicaliza,
-    /// ADR-0042) e transita o status, tudo em memória e atomicamente.
+    /// ADR-0042) e transita a situação, tudo em memória e atomicamente.
     /// </summary>
     public Result<VersaoConfiguracao> Publicar(PedidoDeCongelamento pedido) =>
-        AssumirVersaoEmitida(TransicoesDaVersao.Publicar(Id, Status, pedido));
+        AssumirVersaoEmitida(TransicoesDaVersao.Publicar(Id, Situacao, pedido));
 
     /// <summary>
     /// Retifica um processo publicado (ADR-0101/0103): emite o ato que emenda o ato criador da
@@ -477,7 +477,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
     /// <param name="versaoAtual">A versão corrente, carregada pelo handler: <see cref="VersaoConfiguracao"/> é agregado próprio.</param>
     /// <param name="motivo">Justificativa obrigatória do ato (ADR-0101).</param>
     public Result<VersaoConfiguracao> Retificar(PedidoDeCongelamento pedido, VersaoConfiguracao versaoAtual, string motivo) =>
-        AssumirVersaoEmitida(TransicoesDaVersao.Retificar(Id, Status, pedido, versaoAtual, motivo));
+        AssumirVersaoEmitida(TransicoesDaVersao.Retificar(Id, Situacao, pedido, versaoAtual, motivo));
 
     private Result<VersaoConfiguracao> AssumirVersaoEmitida(Result<VersaoEmitida> emissao)
     {
@@ -486,7 +486,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
             return Result<VersaoConfiguracao>.Failure(emissao.Error!);
         }
 
-        Status = StatusProcesso.Publicado;
+        Situacao = SituacaoDoProcessoSeletivo.Publicado;
         AddDomainEvent(emissao.Value!.Evento);
         return Result<VersaoConfiguracao>.Success(emissao.Value.Versao);
     }
@@ -496,7 +496,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
     /// por retificação, que traz o documento inteiro. Os handlers a antecipam antes de validar o payload, porque a recusa
     /// de estado precede a regra de negócio; cada operação a repete por dentro.
     /// </summary>
-    public DomainError? MutacaoBloqueada() => Status.RecusaDeEdicaoForaDoRascunho();
+    public DomainError? MutacaoBloqueada() => Situacao.RecusaDeEdicaoForaDoRascunho();
 
     /// <summary>
     /// O protocolo de edição (ADR-0125 §5): a guarda de mutação, o plano calculado sem efeito e a aplicação do plano.

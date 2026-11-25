@@ -134,7 +134,7 @@ public sealed class EnvelopeCodecEnemEOpcoesTests
     {
         processo.DefinirItens([FatoColetadoDeTeste.Coletando("FATO_OPCAO_DE_TESTE", 0)
             .ComRotulo("Opção de teste")
-            .DoTipo(TipoRenderizacao.EscolhaUnica)
+            .DoTipo(TipoDeCampo.EscolhaUnica)
             .ComObrigatoriedade(Obrigatoriedade.Sempre)
             .ComOrigem(OrigemValoresColeta.OpcoesDoProcesso)
             .Construir()]).IsSuccess.Should().BeTrue();
