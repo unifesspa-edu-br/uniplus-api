@@ -4,6 +4,7 @@ using System.Diagnostics.CodeAnalysis;
 
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Routing;
 
 using Unifesspa.UniPlus.Application.Abstractions.Messaging;
 using Unifesspa.UniPlus.Configuracao.Application.Commands.TiposEtapa;
@@ -40,6 +41,7 @@ public sealed class TiposEtapaController : ControllerBase
     }
 
     [HttpGet("tipos-etapa")]
+    [EndpointName("ListarTiposDeEtapa")]
     [AllowAnonymous]
     [VendorMediaType(Resource = "tipo-etapa", Versions = [1])]
     [ProducesResponseType(typeof(IEnumerable<TipoEtapaDto>), StatusCodes.Status200OK)]
@@ -57,6 +59,7 @@ public sealed class TiposEtapaController : ControllerBase
     }
 
     [HttpGet("tipos-etapa/{id:guid}")]
+    [EndpointName("ObterTipoDeEtapa")]
     [AllowAnonymous]
     [VendorMediaType(Resource = "tipo-etapa", Versions = [1])]
     [ProducesResponseType(typeof(TipoEtapaDto), StatusCodes.Status200OK)]
@@ -73,6 +76,7 @@ public sealed class TiposEtapaController : ControllerBase
     /// <c>avaliacao</c>, na forma que a resposta devolve, sem <c>notaDeOrigemNoEnem</c>.
     /// </summary>
     [HttpPost("admin/tipos-etapa")]
+    [EndpointName("CadastrarTipoDeEtapa")]
     [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.TiposEtapaManter, ResourceTipo = ResourceTiposConfiguracao.TipoEtapa)]
     [RequiresIdempotencyKey]
     [ProducesResponseType(typeof(Guid), StatusCodes.Status201Created)]
@@ -93,6 +97,7 @@ public sealed class TiposEtapaController : ControllerBase
     /// substituem o conjunto inteiro.
     /// </summary>
     [HttpPut("admin/tipos-etapa/{id:guid}")]
+    [EndpointName("AlterarTipoDeEtapa")]
     [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.TiposEtapaManter, ResourceTipo = ResourceTiposConfiguracao.TipoEtapa)]
     [RequiresIdempotencyKey]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
@@ -114,6 +119,7 @@ public sealed class TiposEtapaController : ControllerBase
     }
 
     [HttpDelete("admin/tipos-etapa/{id:guid}")]
+    [EndpointName("DesativarTipoDeEtapa")]
     [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.TiposEtapaManter, ResourceTipo = ResourceTiposConfiguracao.TipoEtapa)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]

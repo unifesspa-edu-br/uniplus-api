@@ -2,6 +2,7 @@ namespace Unifesspa.UniPlus.Configuracao.API.Controllers;
 
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Routing;
 
 using Unifesspa.UniPlus.Application.Abstractions.Messaging;
 using Unifesspa.UniPlus.Application.Abstractions.Respostas;
@@ -16,6 +17,7 @@ public sealed class VocabulariosDoDadoController(IQueryBus queryBus) : Controlle
 {
     /// <summary>Lista os tipos de dado com código e rótulo.</summary>
     [HttpGet("vocabularios/tipos-do-dado")]
+    [EndpointName("ListarTiposDoDado")]
     [AllowAnonymous]
     [VendorMediaType(Resource = "tipo-do-dado", Versions = [1])]
     [ProducesResponseType(typeof(IReadOnlyList<CodigoComRotulo<TipoDoDado>>), StatusCodes.Status200OK)]
@@ -25,6 +27,7 @@ public sealed class VocabulariosDoDadoController(IQueryBus queryBus) : Controlle
 
     /// <summary>Lista as quantidades de valores com código e rótulo.</summary>
     [HttpGet("vocabularios/quantidades-de-valores")]
+    [EndpointName("ListarQuantidadesDeValores")]
     [AllowAnonymous]
     [VendorMediaType(Resource = "quantidade-de-valores", Versions = [1])]
     [ProducesResponseType(typeof(IReadOnlyList<CodigoComRotulo<QuantidadeDeValores>>), StatusCodes.Status200OK)]

@@ -4,6 +4,7 @@ using System.Diagnostics.CodeAnalysis;
 
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Routing;
 
 using Unifesspa.UniPlus.Application.Abstractions.Messaging;
 using Unifesspa.UniPlus.Configuracao.Application.Commands.TiposDeficiencia;
@@ -57,6 +58,7 @@ public sealed class TiposDeficienciaController : ControllerBase
     /// seu <c>_links.self</c> (ADR-0029).
     /// </summary>
     [HttpGet("tipos-deficiencia")]
+    [EndpointName("ListarTiposDeDeficiencia")]
     [AllowAnonymous]
     [VendorMediaType(Resource = "tipo-deficiencia", Versions = [1])]
     [ProducesResponseType(typeof(IEnumerable<TipoDeficienciaDto>), StatusCodes.Status200OK)]
@@ -84,6 +86,7 @@ public sealed class TiposDeficienciaController : ControllerBase
 
     /// <summary>Obtém um tipo de deficiência pelo Id. Retorna 404 quando inexistente.</summary>
     [HttpGet("tipos-deficiencia/{id:guid}")]
+    [EndpointName("ObterTipoDeDeficiencia")]
     [AllowAnonymous]
     [VendorMediaType(Resource = "tipo-deficiencia", Versions = [1])]
     [ProducesResponseType(typeof(TipoDeficienciaDto), StatusCodes.Status200OK)]
@@ -106,6 +109,7 @@ public sealed class TiposDeficienciaController : ControllerBase
 
     /// <summary>Cria um novo tipo de deficiência. Exige a permissão de manutenção. Idempotency-Key obrigatório (ADR-0027).</summary>
     [HttpPost("admin/tipos-deficiencia")]
+    [EndpointName("CadastrarTipoDeDeficiencia")]
     [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.TiposDeficienciaManter, ResourceTipo = ResourceTiposConfiguracao.TipoDeficiencia)]
     [RequiresIdempotencyKey]
     [ProducesResponseType(typeof(Guid), StatusCodes.Status201Created)]
@@ -129,6 +133,7 @@ public sealed class TiposDeficienciaController : ControllerBase
 
     /// <summary>Atualiza um tipo de deficiência existente. Exige a permissão de manutenção.</summary>
     [HttpPut("admin/tipos-deficiencia/{id:guid}")]
+    [EndpointName("AlterarTipoDeDeficiencia")]
     [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.TiposDeficienciaManter, ResourceTipo = ResourceTiposConfiguracao.TipoDeficiencia)]
     [RequiresIdempotencyKey]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
@@ -159,6 +164,7 @@ public sealed class TiposDeficienciaController : ControllerBase
 
     /// <summary>Remove (soft-delete) um tipo de deficiência. Exige a permissão de manutenção.</summary>
     [HttpDelete("admin/tipos-deficiencia/{id:guid}")]
+    [EndpointName("ExcluirTipoDeDeficiencia")]
     [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.TiposDeficienciaManter, ResourceTipo = ResourceTiposConfiguracao.TipoDeficiencia)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]

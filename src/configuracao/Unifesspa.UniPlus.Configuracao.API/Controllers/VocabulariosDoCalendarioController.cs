@@ -4,6 +4,7 @@ using System.Collections.Generic;
 
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Routing;
 
 using Unifesspa.UniPlus.Application.Abstractions.Messaging;
 using Unifesspa.UniPlus.Application.Abstractions.Respostas;
@@ -32,6 +33,7 @@ public sealed class VocabulariosDoCalendarioController : ControllerBase
 
     /// <summary>Lista as abrangências de dia não útil, com código e rótulo, na ordem de exibição.</summary>
     [HttpGet("vocabularios/abrangencias-dia-nao-util")]
+    [EndpointName("ListarAbrangenciasDoDiaNaoUtil")]
     [AllowAnonymous]
     [VendorMediaType(Resource = "codigo-abrangencia-dia-nao-util", Versions = [1])]
     [ProducesResponseType(typeof(IReadOnlyList<CodigoComRotulo<Abrangencia>>), StatusCodes.Status200OK)]

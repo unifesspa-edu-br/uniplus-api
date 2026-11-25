@@ -4,6 +4,7 @@ using System.Collections.Generic;
 
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Routing;
 
 using Unifesspa.UniPlus.Application.Abstractions.Messaging;
 using Unifesspa.UniPlus.Application.Abstractions.Respostas;
@@ -29,6 +30,7 @@ public sealed class VocabulariosDaBaseLegalController : ControllerBase
 
     /// <summary>Lista os tipos de instrumento normativo da Base Legal de Bônus Regional, com código, rótulo e descrição.</summary>
     [HttpGet("vocabularios/tipos-instrumento-normativo")]
+    [EndpointName("ListarTiposDeInstrumentoNormativo")]
     [AllowAnonymous]
     [VendorMediaType(Resource = "codigo-tipo-instrumento-normativo", Versions = [1])]
     [ProducesResponseType(typeof(IEnumerable<CodigoComDescricao<TipoInstrumentoNormativo>>), StatusCodes.Status200OK)]

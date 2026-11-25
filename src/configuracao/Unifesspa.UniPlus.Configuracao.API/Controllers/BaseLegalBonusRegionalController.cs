@@ -4,6 +4,7 @@ using System.Diagnostics.CodeAnalysis;
 
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Routing;
 
 using Unifesspa.UniPlus.Application.Abstractions.Messaging;
 using Unifesspa.UniPlus.Configuracao.Application.Commands.BaseLegalBonusRegional;
@@ -43,6 +44,7 @@ public sealed class BaseLegalBonusRegionalController : ControllerBase
     }
 
     [HttpGet("base-legal-bonus-regional")]
+    [EndpointName("ListarBasesLegaisDaFada")]
     [AllowAnonymous]
     [VendorMediaType(Resource = "base-legal-bonus-regional", Versions = [1])]
     [ProducesResponseType(typeof(IEnumerable<BaseLegalBonusRegionalDto>), StatusCodes.Status200OK)]
@@ -69,6 +71,7 @@ public sealed class BaseLegalBonusRegionalController : ControllerBase
     }
 
     [HttpGet("base-legal-bonus-regional/{id:guid}")]
+    [EndpointName("ObterBaseLegalDaFada")]
     [AllowAnonymous]
     [VendorMediaType(Resource = "base-legal-bonus-regional", Versions = [1])]
     [ProducesResponseType(typeof(BaseLegalBonusRegionalDto), StatusCodes.Status200OK)]
@@ -90,6 +93,7 @@ public sealed class BaseLegalBonusRegionalController : ControllerBase
     }
 
     [HttpPost("admin/base-legal-bonus-regional")]
+    [EndpointName("CadastrarBaseLegalDaFada")]
     [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.BaseLegalBonusRegionalManter, ResourceTipo = ResourceTiposConfiguracao.BaseLegalBonusRegional)]
     [RequiresIdempotencyKey]
     [ProducesResponseType(typeof(Guid), StatusCodes.Status201Created)]
@@ -116,6 +120,7 @@ public sealed class BaseLegalBonusRegionalController : ControllerBase
     }
 
     [HttpPut("admin/base-legal-bonus-regional/{id:guid}")]
+    [EndpointName("AlterarBaseLegalDaFada")]
     [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.BaseLegalBonusRegionalManter, ResourceTipo = ResourceTiposConfiguracao.BaseLegalBonusRegional)]
     [RequiresIdempotencyKey]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
@@ -144,6 +149,7 @@ public sealed class BaseLegalBonusRegionalController : ControllerBase
     }
 
     [HttpDelete("admin/base-legal-bonus-regional/{id:guid}")]
+    [EndpointName("ExcluirBaseLegalDaFada")]
     [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.BaseLegalBonusRegionalManter, ResourceTipo = ResourceTiposConfiguracao.BaseLegalBonusRegional)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]

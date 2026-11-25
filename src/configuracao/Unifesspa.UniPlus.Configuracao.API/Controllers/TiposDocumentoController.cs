@@ -2,6 +2,7 @@ namespace Unifesspa.UniPlus.Configuracao.API.Controllers;
 
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Routing;
 
 using Unifesspa.UniPlus.Application.Abstractions.Messaging;
 using Unifesspa.UniPlus.Authorization.Abstractions;
@@ -57,6 +58,7 @@ public sealed class TiposDocumentoController : ControllerBase
     /// seu <c>_links.self</c> (ADR-0029).
     /// </summary>
     [HttpGet("tipos-documento")]
+    [EndpointName("ListarTiposDeDocumento")]
     [AllowAnonymous]
     [VendorMediaType(Resource = "tipo-documento", Versions = [1])]
     [ProducesResponseType(typeof(IEnumerable<TipoDocumentoDto>), StatusCodes.Status200OK)]
@@ -84,6 +86,7 @@ public sealed class TiposDocumentoController : ControllerBase
 
     /// <summary>Obtém um tipo de documento pelo Id. Retorna 404 quando inexistente.</summary>
     [HttpGet("tipos-documento/{id:guid}")]
+    [EndpointName("ObterTipoDeDocumento")]
     [AllowAnonymous]
     [VendorMediaType(Resource = "tipo-documento", Versions = [1])]
     [ProducesResponseType(typeof(TipoDocumentoDto), StatusCodes.Status200OK)]
@@ -106,6 +109,7 @@ public sealed class TiposDocumentoController : ControllerBase
 
     /// <summary>Cria um novo tipo de documento. Exige a permissão de manutenção. Idempotency-Key obrigatório (ADR-0027).</summary>
     [HttpPost("admin/tipos-documento")]
+    [EndpointName("CadastrarTipoDeDocumento")]
     [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.TiposDocumentoManter, ResourceTipo = ResourceTiposConfiguracao.TipoDocumento)]
     [RequiresIdempotencyKey]
     [ProducesResponseType(typeof(Guid), StatusCodes.Status201Created)]
@@ -129,6 +133,7 @@ public sealed class TiposDocumentoController : ControllerBase
 
     /// <summary>Atualiza um tipo de documento existente. Exige a permissão de manutenção.</summary>
     [HttpPut("admin/tipos-documento/{id:guid}")]
+    [EndpointName("AlterarTipoDeDocumento")]
     [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.TiposDocumentoManter, ResourceTipo = ResourceTiposConfiguracao.TipoDocumento)]
     [RequiresIdempotencyKey]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
@@ -160,6 +165,7 @@ public sealed class TiposDocumentoController : ControllerBase
     /// sem nova solicitação, e os Representantes do controlador são avisados. Exige a permissão de manutenção.
     /// </summary>
     [HttpPost("admin/tipos-documento/{id:guid}/aceite-da-recomendacao")]
+    [EndpointName("AceitarRecomendacaoDaProtecaoDoTipoDeDocumento")]
     [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.TiposDocumentoManter, ResourceTipo = ResourceTiposConfiguracao.TipoDocumento)]
     [RequiresIdempotencyKey]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
@@ -186,6 +192,7 @@ public sealed class TiposDocumentoController : ControllerBase
     /// Todos os atos registrados da proteção de dados do tipo — solicitação, decisão e aceite —, em ordem cronológica, com o nome de quem agiu. O tipo de documento não tem permissão de consulta administrativa (a leitura é pública), então exige a permissão de manutenção ou a de consultar a proteção de dados do catálogo. A leitura é registrada antes da resposta; sem o registro, é recusada com 503.
     /// </summary>
     [HttpGet("admin/tipos-documento/{id:guid}/protecao/atos")]
+    [EndpointName("ListarAtosDaProtecaoDoTipoDeDocumento")]
     [ExigePermissao<PermissaoConfiguracao>(
         PermissaoConfiguracao.TiposDocumentoManter,
         ResourceTipo = ResourceTiposConfiguracao.TipoDocumento,
@@ -213,6 +220,7 @@ public sealed class TiposDocumentoController : ControllerBase
     /// recusada com 503.
     /// </summary>
     [HttpGet("admin/tipos-documento/{id:guid}/protecao/manifestacoes")]
+    [EndpointName("ListarManifestacoesDaProtecaoDoTipoDeDocumento")]
     [ExigePermissao<PermissaoConfiguracao>(
         PermissaoConfiguracao.TiposDocumentoManter,
         ResourceTipo = ResourceTiposConfiguracao.TipoDocumento,
@@ -235,6 +243,7 @@ public sealed class TiposDocumentoController : ControllerBase
 
     /// <summary>Remove (soft-delete) um tipo de documento. Exige a permissão de manutenção.</summary>
     [HttpDelete("admin/tipos-documento/{id:guid}")]
+    [EndpointName("ExcluirTipoDeDocumento")]
     [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.TiposDocumentoManter, ResourceTipo = ResourceTiposConfiguracao.TipoDocumento)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]

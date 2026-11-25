@@ -2,6 +2,7 @@ namespace Unifesspa.UniPlus.Configuracao.API.Controllers;
 
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Routing;
 
 using Unifesspa.UniPlus.Application.Abstractions.Messaging;
 using Unifesspa.UniPlus.Configuracao.API.Contracts.Requests;
@@ -49,6 +50,7 @@ public sealed class ProtecaoDoCatalogoController : ControllerBase
     /// cada cadastro, e não por um único atributo, porque a lista alcança os dois.
     /// </summary>
     [HttpGet("admin/protecao-do-catalogo")]
+    [EndpointName("ListarItensDaProtecaoDoCatalogo")]
     [VendorMediaType(Resource = "protecao-do-catalogo", Versions = [1])]
     [ProducesResponseType(typeof(IEnumerable<ItemDaProtecaoDoCatalogoDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
@@ -74,6 +76,7 @@ public sealed class ProtecaoDoCatalogoController : ControllerBase
     /// (nome ou código do item, sem distinguir maiúsculas nem acentos) se combinam.
     /// </summary>
     [HttpGet("admin/protecao-do-catalogo/decisoes")]
+    [EndpointName("ListarDecisoesDaProtecaoDoCatalogo")]
     [ExigePermissao<PermissaoConfiguracao>(
         PermissaoConfiguracao.ProtecaoDoCatalogoAprovar,
         ResourceTipo = ResourceTiposConfiguracao.ProtecaoDoCatalogo,
@@ -112,6 +115,7 @@ public sealed class ProtecaoDoCatalogoController : ControllerBase
     /// resposta (sem o registro, 503).
     /// </summary>
     [HttpGet("admin/protecao-do-catalogo/{cadastro:regex(^(tipos-documento|fatos)$)}/{id:guid}")]
+    [EndpointName("ObterProtecaoDoItemDoCatalogo")]
     [ExigePermissao<PermissaoConfiguracao>(
         PermissaoConfiguracao.ProtecaoDoCatalogoAprovar,
         ResourceTipo = ResourceTiposConfiguracao.ProtecaoDoCatalogo,
@@ -139,6 +143,7 @@ public sealed class ProtecaoDoCatalogoController : ControllerBase
     /// antes da resposta (sem o registro, 503).
     /// </summary>
     [HttpGet("admin/protecao-do-catalogo/{cadastro:regex(^(tipos-documento|fatos)$)}/{id:guid}/manifestacoes")]
+    [EndpointName("ListarManifestacoesDaProtecaoDoItemDoCatalogo")]
     [ExigePermissao<PermissaoConfiguracao>(
         PermissaoConfiguracao.ProtecaoDoCatalogoAprovar,
         ResourceTipo = ResourceTiposConfiguracao.ProtecaoDoCatalogo,
@@ -165,6 +170,7 @@ public sealed class ProtecaoDoCatalogoController : ControllerBase
     /// cadastro, e avisa por e-mail quem tem a permissão de aprovar. Idempotency-Key obrigatório (ADR-0027).
     /// </summary>
     [HttpPost("admin/protecao-do-catalogo/solicitacoes")]
+    [EndpointName("SolicitarAprovacaoDaProtecao")]
     [RequiresIdempotencyKey]
     [ProducesResponseType(typeof(SolicitacaoDaProtecaoDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
@@ -188,6 +194,7 @@ public sealed class ProtecaoDoCatalogoController : ControllerBase
     /// candidato. Idempotency-Key obrigatório (ADR-0027).
     /// </summary>
     [HttpPost("admin/protecao-do-catalogo/manifestacoes")]
+    [EndpointName("RegistrarManifestacaoDaProtecao")]
     [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.ProtecaoDoCatalogoManifestar, ResourceTipo = ResourceTiposConfiguracao.ProtecaoDoCatalogo)]
     [RequiresIdempotencyKey]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
@@ -213,6 +220,7 @@ public sealed class ProtecaoDoCatalogoController : ControllerBase
     /// fatos do candidato. Idempotency-Key obrigatório (ADR-0027).
     /// </summary>
     [HttpPost("admin/protecao-do-catalogo")]
+    [EndpointName("DecidirProtecaoDoCatalogo")]
     [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.ProtecaoDoCatalogoAprovar, ResourceTipo = ResourceTiposConfiguracao.ProtecaoDoCatalogo)]
     [RequiresIdempotencyKey]
     [ProducesResponseType(StatusCodes.Status204NoContent)]

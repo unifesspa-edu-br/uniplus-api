@@ -4,6 +4,7 @@ using System.Collections.Generic;
 
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Routing;
 
 using Unifesspa.UniPlus.Application.Abstractions.Messaging;
 using Unifesspa.UniPlus.Application.Abstractions.Respostas;
@@ -30,6 +31,7 @@ public sealed class VocabulariosDoTipoConceitoController : ControllerBase
 
     /// <summary>Lista as naturezas de tipo de conceito, com código e rótulo, na ordem do enum.</summary>
     [HttpGet("vocabularios/naturezas-conceito")]
+    [EndpointName("ListarNaturezasDoConceito")]
     [AllowAnonymous]
     [VendorMediaType(Resource = "codigo-natureza-conceito", Versions = [1])]
     [ProducesResponseType(typeof(IEnumerable<CodigoComRotulo<FormaDoConceito>>), StatusCodes.Status200OK)]

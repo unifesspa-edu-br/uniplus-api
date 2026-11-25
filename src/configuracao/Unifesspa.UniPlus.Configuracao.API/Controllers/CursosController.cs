@@ -5,6 +5,7 @@ using System.Diagnostics.CodeAnalysis;
 
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Routing;
 
 using Unifesspa.UniPlus.Application.Abstractions.Messaging;
 using Unifesspa.UniPlus.Configuracao.Application.Commands.Cursos;
@@ -60,6 +61,7 @@ public sealed class CursosController : ControllerBase
     /// <c>Link</c>; cada item carrega seu <c>_links.self</c> (ADR-0029).
     /// </summary>
     [HttpGet("cursos")]
+    [EndpointName("ListarCursos")]
     [AllowAnonymous]
     [VendorMediaType(Resource = "curso", Versions = [1])]
     [ProducesResponseType(typeof(IEnumerable<CursoDto>), StatusCodes.Status200OK)]
@@ -109,6 +111,7 @@ public sealed class CursosController : ControllerBase
 
     /// <summary>Obtém um curso pelo Id. Retorna 404 quando inexistente.</summary>
     [HttpGet("cursos/{id:guid}")]
+    [EndpointName("ObterCurso")]
     [AllowAnonymous]
     [VendorMediaType(Resource = "curso", Versions = [1])]
     [ProducesResponseType(typeof(CursoDto), StatusCodes.Status200OK)]
@@ -131,6 +134,7 @@ public sealed class CursosController : ControllerBase
 
     /// <summary>Cria um novo curso. Exige a permissão de manutenção. Idempotency-Key obrigatório (ADR-0027).</summary>
     [HttpPost("admin/cursos")]
+    [EndpointName("CadastrarCurso")]
     [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.CursosManter, ResourceTipo = ResourceTiposConfiguracao.Curso)]
     [RequiresIdempotencyKey]
     [ProducesResponseType(typeof(Guid), StatusCodes.Status201Created)]
@@ -154,6 +158,7 @@ public sealed class CursosController : ControllerBase
 
     /// <summary>Atualiza um curso existente. Exige a permissão de manutenção.</summary>
     [HttpPut("admin/cursos/{id:guid}")]
+    [EndpointName("AlterarCurso")]
     [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.CursosManter, ResourceTipo = ResourceTiposConfiguracao.Curso)]
     [RequiresIdempotencyKey]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
@@ -184,6 +189,7 @@ public sealed class CursosController : ControllerBase
 
     /// <summary>Remove (soft-delete) um curso. Exige a permissão de manutenção. Bloqueado (409) quando referenciado por oferta de curso viva (#749).</summary>
     [HttpDelete("admin/cursos/{id:guid}")]
+    [EndpointName("ExcluirCurso")]
     [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.CursosManter, ResourceTipo = ResourceTiposConfiguracao.Curso)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]

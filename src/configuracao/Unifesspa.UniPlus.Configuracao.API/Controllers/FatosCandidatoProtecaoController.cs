@@ -2,6 +2,7 @@ namespace Unifesspa.UniPlus.Configuracao.API.Controllers;
 
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Routing;
 
 using Unifesspa.UniPlus.Application.Abstractions.Messaging;
 using Unifesspa.UniPlus.Authorization.Abstractions;
@@ -43,6 +44,7 @@ public sealed class FatosCandidatoProtecaoController : ControllerBase
     /// semeado: o fato fica aprovado com ela, sem nova solicitação, e os Representantes do controlador são avisados.
     /// </summary>
     [HttpPost("admin/fatos-candidato/{id:guid}/aceite-da-recomendacao")]
+    [EndpointName("AceitarRecomendacaoDaProtecaoDoDadoDoCandidato")]
     [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.FatosCandidatoManter, ResourceTipo = ResourceTiposConfiguracao.FatoCandidato)]
     [RequiresIdempotencyKey]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
@@ -65,6 +67,7 @@ public sealed class FatosCandidatoProtecaoController : ControllerBase
     /// Todos os atos registrados da proteção de dados do fato — solicitação, decisão e aceite —, em ordem cronológica, com o nome de quem agiu. Exige a permissão de consultar o cadastro ou a de consultar a proteção de dados do catálogo. A leitura é registrada antes da resposta; sem o registro, é recusada com 503.
     /// </summary>
     [HttpGet("admin/fatos-candidato/{id:guid}/protecao/atos")]
+    [EndpointName("ListarAtosDaProtecaoDoDadoDoCandidato")]
     [ExigePermissao<PermissaoConfiguracao>(
         PermissaoConfiguracao.FatosCandidatoConsultar,
         ResourceTipo = ResourceTiposConfiguracao.FatoCandidato,
@@ -92,6 +95,7 @@ public sealed class FatosCandidatoProtecaoController : ControllerBase
     /// recusada com 503.
     /// </summary>
     [HttpGet("admin/fatos-candidato/{id:guid}/protecao/manifestacoes")]
+    [EndpointName("ListarManifestacoesDaProtecaoDoDadoDoCandidato")]
     [ExigePermissao<PermissaoConfiguracao>(
         PermissaoConfiguracao.FatosCandidatoConsultar,
         ResourceTipo = ResourceTiposConfiguracao.FatoCandidato,

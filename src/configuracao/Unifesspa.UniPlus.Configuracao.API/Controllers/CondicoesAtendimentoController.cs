@@ -4,6 +4,7 @@ using System.Diagnostics.CodeAnalysis;
 
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Routing;
 
 using Unifesspa.UniPlus.Application.Abstractions.Messaging;
 using Unifesspa.UniPlus.Configuracao.Application.Commands.CondicoesAtendimento;
@@ -57,6 +58,7 @@ public sealed class CondicoesAtendimentoController : ControllerBase
     /// cada item carrega seu <c>_links.self</c> (ADR-0029).
     /// </summary>
     [HttpGet("condicoes-atendimento")]
+    [EndpointName("ListarCondicoesDeAtendimento")]
     [AllowAnonymous]
     [VendorMediaType(Resource = "condicao-atendimento", Versions = [1])]
     [ProducesResponseType(typeof(IEnumerable<CondicaoAtendimentoDto>), StatusCodes.Status200OK)]
@@ -84,6 +86,7 @@ public sealed class CondicoesAtendimentoController : ControllerBase
 
     /// <summary>Obtém uma condição pelo Id. Retorna 404 quando inexistente.</summary>
     [HttpGet("condicoes-atendimento/{id:guid}")]
+    [EndpointName("ObterCondicaoDeAtendimento")]
     [AllowAnonymous]
     [VendorMediaType(Resource = "condicao-atendimento", Versions = [1])]
     [ProducesResponseType(typeof(CondicaoAtendimentoDto), StatusCodes.Status200OK)]
@@ -106,6 +109,7 @@ public sealed class CondicoesAtendimentoController : ControllerBase
 
     /// <summary>Cria uma nova condição. Exige a permissão de manutenção. Idempotency-Key obrigatório (ADR-0027).</summary>
     [HttpPost("admin/condicoes-atendimento")]
+    [EndpointName("CadastrarCondicaoDeAtendimento")]
     [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.CondicoesAtendimentoManter, ResourceTipo = ResourceTiposConfiguracao.CondicaoAtendimento)]
     [RequiresIdempotencyKey]
     [ProducesResponseType(typeof(Guid), StatusCodes.Status201Created)]
@@ -129,6 +133,7 @@ public sealed class CondicoesAtendimentoController : ControllerBase
 
     /// <summary>Atualiza uma condição existente. Exige a permissão de manutenção.</summary>
     [HttpPut("admin/condicoes-atendimento/{id:guid}")]
+    [EndpointName("AlterarCondicaoDeAtendimento")]
     [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.CondicoesAtendimentoManter, ResourceTipo = ResourceTiposConfiguracao.CondicaoAtendimento)]
     [RequiresIdempotencyKey]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
@@ -159,6 +164,7 @@ public sealed class CondicoesAtendimentoController : ControllerBase
 
     /// <summary>Remove (soft-delete) uma condição. Exige a permissão de manutenção.</summary>
     [HttpDelete("admin/condicoes-atendimento/{id:guid}")]
+    [EndpointName("ExcluirCondicaoDeAtendimento")]
     [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.CondicoesAtendimentoManter, ResourceTipo = ResourceTiposConfiguracao.CondicaoAtendimento)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]

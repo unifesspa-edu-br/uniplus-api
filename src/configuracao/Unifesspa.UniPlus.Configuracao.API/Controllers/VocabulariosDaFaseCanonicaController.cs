@@ -4,6 +4,7 @@ using System.Collections.Generic;
 
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Routing;
 
 using Unifesspa.UniPlus.Application.Abstractions.Messaging;
 using Unifesspa.UniPlus.Application.Abstractions.Respostas;
@@ -30,6 +31,7 @@ public sealed class VocabulariosDaFaseCanonicaController : ControllerBase
 
     /// <summary>Lista as quatorze fases do conjunto canônico, com código e rótulo.</summary>
     [HttpGet("vocabularios/fases-canonicas")]
+    [EndpointName("ListarCodigosDeTipoDeFase")]
     [AllowAnonymous]
     [VendorMediaType(Resource = "codigo-fase-canonica", Versions = [1])]
     [ProducesResponseType(typeof(IEnumerable<FaseCanonicaVocabularioDto>), StatusCodes.Status200OK)]
@@ -45,6 +47,7 @@ public sealed class VocabulariosDaFaseCanonicaController : ControllerBase
 
     /// <summary>Lista as origens da data de uma fase, com código e rótulo, na ordem de exibição.</summary>
     [HttpGet("vocabularios/origens-data-fase")]
+    [EndpointName("ListarOrigensDaDataDaFase")]
     [AllowAnonymous]
     [VendorMediaType(Resource = "codigo-origem-data-fase", Versions = [1])]
     [ProducesResponseType(typeof(IReadOnlyList<CodigoComRotulo<OrigemDataFase>>), StatusCodes.Status200OK)]

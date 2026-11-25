@@ -4,6 +4,7 @@ using System.Diagnostics.CodeAnalysis;
 
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Routing;
 
 using Unifesspa.UniPlus.Application.Abstractions.Messaging;
 using Unifesspa.UniPlus.Configuracao.Application.Commands.LocaisOferta;
@@ -57,6 +58,7 @@ public sealed class LocaisOfertaController : ControllerBase
     /// seu <c>_links.self</c> (ADR-0029 §"Coleção").
     /// </summary>
     [HttpGet("locais-oferta")]
+    [EndpointName("ListarLocaisDeOferta")]
     [AllowAnonymous]
     [VendorMediaType(Resource = "local-oferta", Versions = [1])]
     [ProducesResponseType(typeof(IEnumerable<LocalOfertaDto>), StatusCodes.Status200OK)]
@@ -83,6 +85,7 @@ public sealed class LocaisOfertaController : ControllerBase
 
     /// <summary>Obtém um local de oferta pelo Id. Retorna 404 quando inexistente.</summary>
     [HttpGet("locais-oferta/{id:guid}")]
+    [EndpointName("ObterLocalDeOferta")]
     [AllowAnonymous]
     [VendorMediaType(Resource = "local-oferta", Versions = [1])]
     [ProducesResponseType(typeof(LocalOfertaDto), StatusCodes.Status200OK)]
@@ -105,6 +108,7 @@ public sealed class LocaisOfertaController : ControllerBase
 
     /// <summary>Cria um novo local de oferta. Exige a permissão de manutenção. Idempotency-Key obrigatório (ADR-0027).</summary>
     [HttpPost("admin/locais-oferta")]
+    [EndpointName("CadastrarLocalDeOferta")]
     [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.LocaisOfertaManter, ResourceTipo = ResourceTiposConfiguracao.LocalOferta)]
     [RequiresIdempotencyKey]
     [ProducesResponseType(typeof(Guid), StatusCodes.Status201Created)]
@@ -127,6 +131,7 @@ public sealed class LocaisOfertaController : ControllerBase
 
     /// <summary>Atualiza um local de oferta existente. Exige a permissão de manutenção.</summary>
     [HttpPut("admin/locais-oferta/{id:guid}")]
+    [EndpointName("AlterarLocalDeOferta")]
     [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.LocaisOfertaManter, ResourceTipo = ResourceTiposConfiguracao.LocalOferta)]
     [RequiresIdempotencyKey]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
@@ -156,6 +161,7 @@ public sealed class LocaisOfertaController : ControllerBase
 
     /// <summary>Remove (soft-delete) um local de oferta. Exige a permissão de manutenção.</summary>
     [HttpDelete("admin/locais-oferta/{id:guid}")]
+    [EndpointName("ExcluirLocalDeOferta")]
     [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.LocaisOfertaManter, ResourceTipo = ResourceTiposConfiguracao.LocalOferta)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]

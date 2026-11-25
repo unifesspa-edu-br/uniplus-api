@@ -4,6 +4,7 @@ using System.Diagnostics.CodeAnalysis;
 
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Routing;
 
 using Unifesspa.UniPlus.Application.Abstractions.Messaging;
 using Unifesspa.UniPlus.Configuracao.Application.Commands.ReferenciasReservaDemografica;
@@ -57,6 +58,7 @@ public sealed class ReferenciasReservaDemograficaController : ControllerBase
     /// cada item carrega seu <c>_links.self</c> (ADR-0029).
     /// </summary>
     [HttpGet("referencias-reserva-demografica")]
+    [EndpointName("ListarReferenciasDaReservaDemografica")]
     [AllowAnonymous]
     [VendorMediaType(Resource = "referencia-reserva-demografica", Versions = [1])]
     [ProducesResponseType(typeof(IEnumerable<ReferenciaReservaDemograficaDto>), StatusCodes.Status200OK)]
@@ -84,6 +86,7 @@ public sealed class ReferenciasReservaDemograficaController : ControllerBase
 
     /// <summary>Obtém uma referência pelo Id. Retorna 404 quando inexistente.</summary>
     [HttpGet("referencias-reserva-demografica/{id:guid}")]
+    [EndpointName("ObterReferenciaDaReservaDemografica")]
     [AllowAnonymous]
     [VendorMediaType(Resource = "referencia-reserva-demografica", Versions = [1])]
     [ProducesResponseType(typeof(ReferenciaReservaDemograficaDto), StatusCodes.Status200OK)]
@@ -106,6 +109,7 @@ public sealed class ReferenciasReservaDemograficaController : ControllerBase
 
     /// <summary>Cria uma nova referência. Exige a permissão de manutenção. Idempotency-Key obrigatório (ADR-0027).</summary>
     [HttpPost("admin/referencias-reserva-demografica")]
+    [EndpointName("CadastrarReferenciaDaReservaDemografica")]
     [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.ReferenciasReservaDemograficaManter, ResourceTipo = ResourceTiposConfiguracao.ReferenciaReservaDemografica)]
     [RequiresIdempotencyKey]
     [ProducesResponseType(typeof(Guid), StatusCodes.Status201Created)]
@@ -129,6 +133,7 @@ public sealed class ReferenciasReservaDemograficaController : ControllerBase
 
     /// <summary>Atualiza uma referência existente. Exige a permissão de manutenção.</summary>
     [HttpPut("admin/referencias-reserva-demografica/{id:guid}")]
+    [EndpointName("AlterarReferenciaDaReservaDemografica")]
     [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.ReferenciasReservaDemograficaManter, ResourceTipo = ResourceTiposConfiguracao.ReferenciaReservaDemografica)]
     [RequiresIdempotencyKey]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
@@ -159,6 +164,7 @@ public sealed class ReferenciasReservaDemograficaController : ControllerBase
 
     /// <summary>Remove (soft-delete) uma referência. Exige a permissão de manutenção.</summary>
     [HttpDelete("admin/referencias-reserva-demografica/{id:guid}")]
+    [EndpointName("ExcluirReferenciaDaReservaDemografica")]
     [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.ReferenciasReservaDemograficaManter, ResourceTipo = ResourceTiposConfiguracao.ReferenciaReservaDemografica)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]

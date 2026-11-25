@@ -4,6 +4,7 @@ using System.Diagnostics.CodeAnalysis;
 
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Routing;
 
 using Unifesspa.UniPlus.Application.Abstractions.Messaging;
 using Unifesspa.UniPlus.Configuracao.Application.Commands.Modalidades;
@@ -57,6 +58,7 @@ public sealed class ModalidadesController : ControllerBase
     /// seu <c>_links.self</c> (ADR-0029).
     /// </summary>
     [HttpGet("modalidades")]
+    [EndpointName("ListarModalidades")]
     [AllowAnonymous]
     [VendorMediaType(Resource = "modalidade", Versions = [1])]
     [ProducesResponseType(typeof(IEnumerable<ModalidadeDto>), StatusCodes.Status200OK)]
@@ -84,6 +86,7 @@ public sealed class ModalidadesController : ControllerBase
 
     /// <summary>Obtém uma modalidade pelo Id. Retorna 404 quando inexistente.</summary>
     [HttpGet("modalidades/{id:guid}")]
+    [EndpointName("ObterModalidade")]
     [AllowAnonymous]
     [VendorMediaType(Resource = "modalidade", Versions = [1])]
     [ProducesResponseType(typeof(ModalidadeDto), StatusCodes.Status200OK)]
@@ -106,6 +109,7 @@ public sealed class ModalidadesController : ControllerBase
 
     /// <summary>Cria uma nova modalidade. Exige a permissão de manutenção. Idempotency-Key obrigatório (ADR-0027).</summary>
     [HttpPost("admin/modalidades")]
+    [EndpointName("CadastrarModalidade")]
     [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.ModalidadesManter, ResourceTipo = ResourceTiposConfiguracao.Modalidade)]
     [RequiresIdempotencyKey]
     [ProducesResponseType(typeof(Guid), StatusCodes.Status201Created)]
@@ -129,6 +133,7 @@ public sealed class ModalidadesController : ControllerBase
 
     /// <summary>Atualiza uma modalidade existente. O código é imutável. Exige a permissão de manutenção.</summary>
     [HttpPut("admin/modalidades/{id:guid}")]
+    [EndpointName("AlterarModalidade")]
     [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.ModalidadesManter, ResourceTipo = ResourceTiposConfiguracao.Modalidade)]
     [RequiresIdempotencyKey]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
@@ -158,6 +163,7 @@ public sealed class ModalidadesController : ControllerBase
 
     /// <summary>Remove (soft-delete) uma modalidade. Exige a permissão de manutenção.</summary>
     [HttpDelete("admin/modalidades/{id:guid}")]
+    [EndpointName("ExcluirModalidade")]
     [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.ModalidadesManter, ResourceTipo = ResourceTiposConfiguracao.Modalidade)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]

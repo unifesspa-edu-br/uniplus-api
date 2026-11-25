@@ -4,6 +4,7 @@ using System.Diagnostics.CodeAnalysis;
 
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Routing;
 
 using Unifesspa.UniPlus.Application.Abstractions.Messaging;
 using Unifesspa.UniPlus.Configuracao.Application.Commands.CategoriasDocumento;
@@ -55,6 +56,7 @@ public sealed class CategoriasDocumentoController : ControllerBase
     /// carrega seu <c>_links.self</c> (ADR-0029).
     /// </summary>
     [HttpGet("categorias-documento")]
+    [EndpointName("ListarCategoriasDeDocumento")]
     [AllowAnonymous]
     [VendorMediaType(Resource = "categoria-documento", Versions = [1])]
     [ProducesResponseType(typeof(IEnumerable<CategoriaDocumentoDto>), StatusCodes.Status200OK)]
@@ -73,6 +75,7 @@ public sealed class CategoriasDocumentoController : ControllerBase
 
     /// <summary>Obtém uma categoria pelo Id. Retorna 404 quando inexistente.</summary>
     [HttpGet("categorias-documento/{id:guid}")]
+    [EndpointName("ObterCategoriaDeDocumento")]
     [AllowAnonymous]
     [VendorMediaType(Resource = "categoria-documento", Versions = [1])]
     [ProducesResponseType(typeof(CategoriaDocumentoDto), StatusCodes.Status200OK)]
@@ -95,6 +98,7 @@ public sealed class CategoriasDocumentoController : ControllerBase
 
     /// <summary>Cria uma nova categoria. Exige a permissão de manutenção. Idempotency-Key obrigatório (ADR-0027).</summary>
     [HttpPost("admin/categorias-documento")]
+    [EndpointName("CadastrarCategoriaDeDocumento")]
     [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.CategoriasDocumentoManter, ResourceTipo = ResourceTiposConfiguracao.CategoriaDocumento)]
     [RequiresIdempotencyKey]
     [ProducesResponseType(typeof(Guid), StatusCodes.Status201Created)]
@@ -118,6 +122,7 @@ public sealed class CategoriasDocumentoController : ControllerBase
 
     /// <summary>Atualiza uma categoria existente. Exige a permissão de manutenção.</summary>
     [HttpPut("admin/categorias-documento/{id:guid}")]
+    [EndpointName("AlterarCategoriaDeDocumento")]
     [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.CategoriasDocumentoManter, ResourceTipo = ResourceTiposConfiguracao.CategoriaDocumento)]
     [RequiresIdempotencyKey]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
@@ -148,6 +153,7 @@ public sealed class CategoriasDocumentoController : ControllerBase
 
     /// <summary>Remove (soft-delete) uma categoria. Exige a permissão de manutenção.</summary>
     [HttpDelete("admin/categorias-documento/{id:guid}")]
+    [EndpointName("ExcluirCategoriaDeDocumento")]
     [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.CategoriasDocumentoManter, ResourceTipo = ResourceTiposConfiguracao.CategoriaDocumento)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]

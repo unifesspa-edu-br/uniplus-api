@@ -3,6 +3,7 @@ namespace Unifesspa.UniPlus.Configuracao.API.Controllers;
 
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Routing;
 
 using Unifesspa.UniPlus.Application.Abstractions.Messaging;
 using Unifesspa.UniPlus.Configuracao.Application.Commands.TiposConceito;
@@ -38,6 +39,7 @@ public sealed class TiposConceitoController : ControllerBase
     }
 
     [HttpGet("tipos-conceito")]
+    [EndpointName("ListarTiposDeConceito")]
     [AllowAnonymous]
     [VendorMediaType(Resource = "tipo-conceito", Versions = [1])]
     [ProducesResponseType(typeof(IEnumerable<TipoConceitoDto>), StatusCodes.Status200OK)]
@@ -55,6 +57,7 @@ public sealed class TiposConceitoController : ControllerBase
     }
 
     [HttpGet("tipos-conceito/{id:guid}")]
+    [EndpointName("ObterTipoDeConceito")]
     [AllowAnonymous]
     [VendorMediaType(Resource = "tipo-conceito", Versions = [1])]
     [ProducesResponseType(typeof(TipoConceitoDto), StatusCodes.Status200OK)]
@@ -71,6 +74,7 @@ public sealed class TiposConceitoController : ControllerBase
     /// resposta devolve, com <c>natureza</c> pelo código.
     /// </summary>
     [HttpPost("admin/tipos-conceito")]
+    [EndpointName("CadastrarTipoDeConceito")]
     [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.TiposConceitoManter, ResourceTipo = ResourceTiposConfiguracao.TipoConceito)]
     [RequiresIdempotencyKey]
     [ProducesResponseType(typeof(Guid), StatusCodes.Status201Created)]
@@ -91,6 +95,7 @@ public sealed class TiposConceitoController : ControllerBase
     /// categóricos enviados substituem em bloco os gravados: o que não vier é removido.
     /// </summary>
     [HttpPut("admin/tipos-conceito/{id:guid}")]
+    [EndpointName("AlterarTipoDeConceito")]
     [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.TiposConceitoManter, ResourceTipo = ResourceTiposConfiguracao.TipoConceito)]
     [RequiresIdempotencyKey]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
@@ -112,6 +117,7 @@ public sealed class TiposConceitoController : ControllerBase
     }
 
     [HttpDelete("admin/tipos-conceito/{id:guid}")]
+    [EndpointName("DesativarTipoDeConceito")]
     [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.TiposConceitoManter, ResourceTipo = ResourceTiposConfiguracao.TipoConceito)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]

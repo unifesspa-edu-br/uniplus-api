@@ -4,6 +4,7 @@ using System.Diagnostics.CodeAnalysis;
 
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Routing;
 
 using Unifesspa.UniPlus.Application.Abstractions.Messaging;
 using Unifesspa.UniPlus.Configuracao.Application.Commands.FasesCanonicas;
@@ -57,6 +58,7 @@ public sealed class FasesCanonicasController : ControllerBase
     /// seu <c>_links.self</c> (ADR-0029).
     /// </summary>
     [HttpGet("fases-canonicas")]
+    [EndpointName("ListarTiposDeFase")]
     [AllowAnonymous]
     [VendorMediaType(Resource = "fase-canonica", Versions = [1])]
     [ProducesResponseType(typeof(IEnumerable<FaseCanonicaDto>), StatusCodes.Status200OK)]
@@ -84,6 +86,7 @@ public sealed class FasesCanonicasController : ControllerBase
 
     /// <summary>Obtém uma fase canônica pelo Id. Retorna 404 quando inexistente.</summary>
     [HttpGet("fases-canonicas/{id:guid}")]
+    [EndpointName("ObterTipoDeFase")]
     [AllowAnonymous]
     [VendorMediaType(Resource = "fase-canonica", Versions = [1])]
     [ProducesResponseType(typeof(FaseCanonicaDto), StatusCodes.Status200OK)]
@@ -106,6 +109,7 @@ public sealed class FasesCanonicasController : ControllerBase
 
     /// <summary>Cria uma nova fase canônica. Exige a permissão de manutenção. Idempotency-Key obrigatório (ADR-0027).</summary>
     [HttpPost("admin/fases-canonicas")]
+    [EndpointName("CadastrarTipoDeFase")]
     [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.FasesCanonicasManter, ResourceTipo = ResourceTiposConfiguracao.FaseCanonica)]
     [RequiresIdempotencyKey]
     [ProducesResponseType(typeof(Guid), StatusCodes.Status201Created)]
@@ -129,6 +133,7 @@ public sealed class FasesCanonicasController : ControllerBase
 
     /// <summary>Atualiza uma fase canônica existente, substituindo tudo o que é editável pelo corpo: o que ele omite fica falso ou vazio, inclusive os sinalizadores. O código é imutável. Exige a permissão de manutenção.</summary>
     [HttpPut("admin/fases-canonicas/{id:guid}")]
+    [EndpointName("AlterarTipoDeFase")]
     [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.FasesCanonicasManter, ResourceTipo = ResourceTiposConfiguracao.FaseCanonica)]
     [RequiresIdempotencyKey]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
@@ -158,6 +163,7 @@ public sealed class FasesCanonicasController : ControllerBase
 
     /// <summary>Remove (soft-delete) uma fase canônica. Exige a permissão de manutenção.</summary>
     [HttpDelete("admin/fases-canonicas/{id:guid}")]
+    [EndpointName("ExcluirTipoDeFase")]
     [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.FasesCanonicasManter, ResourceTipo = ResourceTiposConfiguracao.FaseCanonica)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]

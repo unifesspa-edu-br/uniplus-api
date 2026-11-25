@@ -5,6 +5,7 @@ using System.Diagnostics.CodeAnalysis;
 
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Routing;
 
 using Unifesspa.UniPlus.Application.Abstractions.Messaging;
 using Unifesspa.UniPlus.Configuracao.Application.Commands.OfertasCurso;
@@ -72,6 +73,7 @@ public sealed class OfertasCursoController : ControllerBase
     /// não default a herdar deste endpoint.</para>
     /// </summary>
     [HttpGet("ofertas-curso")]
+    [EndpointName("ListarOfertasDeCurso")]
     [AllowAnonymous]
     [VendorMediaType(Resource = "oferta-curso", Versions = [1])]
     [ProducesResponseType(typeof(IEnumerable<OfertaCursoDto>), StatusCodes.Status200OK)]
@@ -129,6 +131,7 @@ public sealed class OfertasCursoController : ControllerBase
 
     /// <summary>Obtém uma oferta de curso pelo Id. Retorna 404 quando inexistente.</summary>
     [HttpGet("ofertas-curso/{id:guid}")]
+    [EndpointName("ObterOfertaDeCurso")]
     [AllowAnonymous]
     [VendorMediaType(Resource = "oferta-curso", Versions = [1])]
     [ProducesResponseType(typeof(OfertaCursoDto), StatusCodes.Status200OK)]
@@ -155,6 +158,7 @@ public sealed class OfertasCursoController : ControllerBase
     /// Idempotency-Key obrigatório (ADR-0027).
     /// </summary>
     [HttpPost("admin/ofertas-curso")]
+    [EndpointName("CadastrarOfertaDeCurso")]
     [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.OfertasCursoManter, ResourceTipo = ResourceTiposConfiguracao.OfertaCurso)]
     [RequiresIdempotencyKey]
     [ProducesResponseType(typeof(Guid), StatusCodes.Status201Created)]
@@ -181,6 +185,7 @@ public sealed class OfertasCursoController : ControllerBase
     /// Exige a permissão de manutenção.
     /// </summary>
     [HttpPut("admin/ofertas-curso/{id:guid}")]
+    [EndpointName("AlterarOfertaDeCurso")]
     [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.OfertasCursoManter, ResourceTipo = ResourceTiposConfiguracao.OfertaCurso)]
     [RequiresIdempotencyKey]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
@@ -214,6 +219,7 @@ public sealed class OfertasCursoController : ControllerBase
     /// congelados em outros módulos (cópias desacopladas — ADR-0061).
     /// </summary>
     [HttpDelete("admin/ofertas-curso/{id:guid}")]
+    [EndpointName("ExcluirOfertaDeCurso")]
     [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.OfertasCursoManter, ResourceTipo = ResourceTiposConfiguracao.OfertaCurso)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]

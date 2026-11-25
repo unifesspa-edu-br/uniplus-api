@@ -4,6 +4,7 @@ using System.Diagnostics.CodeAnalysis;
 
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Routing;
 
 using Unifesspa.UniPlus.Application.Abstractions.Messaging;
 using Unifesspa.UniPlus.Configuracao.Application.Commands.TiposBanca;
@@ -57,6 +58,7 @@ public sealed class TiposBancaController : ControllerBase
     /// seu <c>_links.self</c> (ADR-0029).
     /// </summary>
     [HttpGet("tipos-banca")]
+    [EndpointName("ListarTiposDeBanca")]
     [AllowAnonymous]
     [VendorMediaType(Resource = "tipo-banca", Versions = [1])]
     [ProducesResponseType(typeof(IEnumerable<TipoBancaDto>), StatusCodes.Status200OK)]
@@ -84,6 +86,7 @@ public sealed class TiposBancaController : ControllerBase
 
     /// <summary>Obtém um tipo de banca pelo Id. Retorna 404 quando inexistente.</summary>
     [HttpGet("tipos-banca/{id:guid}")]
+    [EndpointName("ObterTipoDeBanca")]
     [AllowAnonymous]
     [VendorMediaType(Resource = "tipo-banca", Versions = [1])]
     [ProducesResponseType(typeof(TipoBancaDto), StatusCodes.Status200OK)]
@@ -106,6 +109,7 @@ public sealed class TiposBancaController : ControllerBase
 
     /// <summary>Cria um novo tipo de banca. Exige a permissão de manutenção. Idempotency-Key obrigatório (ADR-0027).</summary>
     [HttpPost("admin/tipos-banca")]
+    [EndpointName("CadastrarTipoDeBanca")]
     [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.TiposBancaManter, ResourceTipo = ResourceTiposConfiguracao.TipoBanca)]
     [RequiresIdempotencyKey]
     [ProducesResponseType(typeof(Guid), StatusCodes.Status201Created)]
@@ -129,6 +133,7 @@ public sealed class TiposBancaController : ControllerBase
 
     /// <summary>Atualiza um tipo de banca existente. O código é imutável. Exige a permissão de manutenção.</summary>
     [HttpPut("admin/tipos-banca/{id:guid}")]
+    [EndpointName("AlterarTipoDeBanca")]
     [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.TiposBancaManter, ResourceTipo = ResourceTiposConfiguracao.TipoBanca)]
     [RequiresIdempotencyKey]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
@@ -158,6 +163,7 @@ public sealed class TiposBancaController : ControllerBase
 
     /// <summary>Remove (soft-delete) um tipo de banca. Exige a permissão de manutenção.</summary>
     [HttpDelete("admin/tipos-banca/{id:guid}")]
+    [EndpointName("ExcluirTipoDeBanca")]
     [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.TiposBancaManter, ResourceTipo = ResourceTiposConfiguracao.TipoBanca)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]

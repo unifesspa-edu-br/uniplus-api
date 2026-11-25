@@ -4,6 +4,7 @@ using System.Collections.Generic;
 
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Routing;
 
 using Unifesspa.UniPlus.Application.Abstractions.Messaging;
 using Unifesspa.UniPlus.Application.Abstractions.Respostas;
@@ -37,6 +38,7 @@ public sealed class VocabulariosDoLocalOfertaController : ControllerBase
 
     /// <summary>Lista os tipos de local de oferta, com código e rótulo, na ordem de exibição.</summary>
     [HttpGet("vocabularios/tipos-local-oferta")]
+    [EndpointName("ListarTiposDeLocalDeOferta")]
     [AllowAnonymous]
     [VendorMediaType(Resource = "codigo-tipo-local-oferta", Versions = [1])]
     [ProducesResponseType(typeof(IReadOnlyList<CodigoComRotulo<TipoLocalOferta>>), StatusCodes.Status200OK)]
