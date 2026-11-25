@@ -1,5 +1,5 @@
 ---
-status: "proposed"
+status: "accepted"
 date: "2026-11-13"
 decision-makers:
   - "Tech Lead (CTIC)"
@@ -79,3 +79,13 @@ A classificação do que entra e do que não entra vive no código da entidade, 
 O orquestrador acumula as recusas das etapas em ordem fixa: conferência do estado da transição, ato e documento no mesmo instante, conferência da configuração ([ADR-0174](0174-conferencia-unica-da-configuracao-do-processo-com-todas-as-causas.md)), conferência da operação e só então montagem, transição e gravação. A recusa devolve todas as causas independentes numa só resposta 422, com o erro principal igual à primeira causa e a lista `errors[]` conforme a [ADR-0023](0023-wire-formato-erro-rfc-9457.md) (emenda de 17/11/2026), e uma etapa só deixa de rodar quando lê dado que a anterior recusou. A montagem do congelamento deixa de ser assíncrona e deixa de recusar, porque tudo o que ela lê já foi conferido.
 
 **Consequências.** O cliente recebe todas as causas numa só resposta. Cada código de erro continua o mesmo, mas a primeira causa de um processo com mais de uma recusa pode mudar, porque a ordem dos assuntos é única ([ADR-0174](0174-conferencia-unica-da-configuracao-do-processo-com-todas-as-causas.md)); cada mudança tem teste que a registra. A mensagem de conformidade pendente ganha ponto final.
+
+## Emenda 3 (2026-11-25) — serviço registrado chega pronto ao consumidor
+
+Serviços de aplicação montavam com `new` outros serviços já registrados. Para isso, recebiam portas que só repassavam e repetiam a lista de dependências do serviço montado.
+
+Quem precisa de um serviço registrado o recebe pronto, pelo construtor ou pelo parâmetro do tratador estático. Nenhum tipo de produção de Application, Infrastructure ou API da Seleção constrói com `new` um serviço registrado pela Application ou pela Infrastructure. Validadores do FluentValidation ficam fora da regra, pois compor um validador filho é o uso normal da biblioteca. Auxiliar estático continua só quando não tem dependência.
+
+A regra de arquitetura em [`ServicosRecebidosPeloConstrutorTests.cs`](../../tests/Unifesspa.UniPlus.Selecao.ArchTests/ServicosRecebidosPeloConstrutorTests.cs) obtém a lista de serviços do contêiner montado pelo registro e usa uma contraprova compilada que inclui método assíncrono.
+
+**Consequências.** Mudar a dependência de um serviço altera um lugar só. Os testes compõem os serviços reais pelo construtor público.
