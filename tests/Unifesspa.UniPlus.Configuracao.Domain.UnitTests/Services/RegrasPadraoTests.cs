@@ -196,6 +196,79 @@ public sealed class RegrasPadraoTests
         ]);
     }
 
+    [Fact(DisplayName = "Fato não citável não aparece na mensagem de recusa")]
+    public void Definir_FatoNaoCitavel_MensagemNaoRepeteCodigo()
+    {
+        FatoCandidato fato = Declarado("FATO_DE_TESTE", TipoDoDado.Texto, formato: FormatoTexto.NomePessoa);
+        FatoCandidato derivado = Derivado("DERIVADO");
+
+        Result resultado = derivado.DefinirRegrasPadrao([Booleana(("FATO_DE_TESTE", "texto"))], Catalogo(fato, derivado));
+
+        FieldError erro = resultado.Errors.Single();
+        erro.Field.Should().Be("regras[0]");
+        erro.Error.Code.Should().Be(FatoCandidatoErrorCodes.RegraCitaFatoNaoCitavel);
+        erro.Error.Message.Should().NotContain("FATO_DE_TESTE");
+    }
+
+    [Fact(DisplayName = "Dependência mais protegida não aparece na mensagem de recusa")]
+    public void Definir_ClassificacaoMaisFraca_MensagemNaoRepeteCodigo()
+    {
+        FatoCandidato fato = Declarado("FATO_DE_TESTE", classificacao: ClassificacaoDeProtecao.Sensivel);
+        FatoCandidato derivado = Derivado("DERIVADO", classificacao: ClassificacaoDeProtecao.Pessoal);
+
+        Result resultado = derivado.DefinirRegrasPadrao([Booleana(("FATO_DE_TESTE", true))], Catalogo(fato, derivado));
+
+        FieldError erro = resultado.Errors.Single();
+        erro.Field.Should().Be("regras[0]");
+        erro.Error.Code.Should().Be(FatoCandidatoErrorCodes.ClassificacaoAbaixoDaDependencia);
+        erro.Error.Message.Should().NotContain("FATO_DE_TESTE");
+    }
+
+    [Fact(DisplayName = "Dependência posterior não aparece na mensagem, que preserva as fases")]
+    public void Definir_PontoAnterior_MensagemNaoRepeteCodigo()
+    {
+        FatoCandidato fato = Declarado("FATO_DE_TESTE", ponto: "HABILITACAO");
+        FatoCandidato derivado = Derivado("DERIVADO", ponto: "INSCRICAO");
+        PrecedenciaFase precedencia = PrecedenciaFase.Criar("INSCRICAO", "HABILITACAO", permiteSobreposicao: false, []).Value!;
+
+        Result resultado = derivado.DefinirRegrasPadrao([Booleana(("FATO_DE_TESTE", true))], new([fato, derivado], [precedencia]));
+
+        FieldError erro = resultado.Errors.Single();
+        erro.Field.Should().Be("regras[0]");
+        erro.Error.Code.Should().Be(FatoCandidatoErrorCodes.PontoResolucaoAnteriorADependencia);
+        erro.Error.Message.Should().NotContain("FATO_DE_TESTE").And.Contain("INSCRICAO").And.Contain("HABILITACAO");
+    }
+
+    [Fact(DisplayName = "Fato desativado não aparece na mensagem de recusa")]
+    public void Definir_FatoDesativado_MensagemNaoRepeteCodigo()
+    {
+        FatoCandidato fato = Declarado("FATO_DE_TESTE");
+        FatoCandidato derivado = Derivado("DERIVADO");
+        fato.Desativar();
+
+        Result resultado = derivado.DefinirRegrasPadrao([Booleana(("FATO_DE_TESTE", true))], Catalogo(fato, derivado));
+
+        FieldError erro = resultado.Errors.Single();
+        erro.Field.Should().Be("regras[0]");
+        erro.Error.Code.Should().Be(FatoCandidatoErrorCodes.RegraCitaFatoDesativado);
+        erro.Error.Message.Should().NotContain("FATO_DE_TESTE");
+    }
+
+    [Fact(DisplayName = "Valor desativado e seu fato não aparecem na mensagem de recusa")]
+    public void Definir_ValorDesativado_MensagemNaoRepeteCodigos()
+    {
+        FatoCandidato fato = Declarado("FATO_DE_TESTE", TipoDoDado.Opcao);
+        fato.AdicionarValorDominio("VALOR_DE_TESTE", "Valor", 0, ativo: true).IsSuccess.Should().BeTrue();
+        fato.DesativarValor("VALOR_DE_TESTE").IsSuccess.Should().BeTrue();
+        FatoCandidato derivado = Derivado("DERIVADO");
+
+        Result resultado = derivado.DefinirRegrasPadrao([Booleana(("FATO_DE_TESTE", "VALOR_DE_TESTE"))], Catalogo(fato, derivado));
+
+        FieldError erro = resultado.Errors.Single(e => e.Error.Code == FatoCandidatoErrorCodes.RegraCitaValorDesativado);
+        erro.Field.Should().Be("regras[0]");
+        erro.Error.Message.Should().NotContain("FATO_DE_TESTE").And.NotContain("VALOR_DE_TESTE");
+    }
+
     private static Result DefinirContribuicao(TipoDoDado dominio, string contribui)
     {
         FatoCandidato renda = Declarado("TEM_RENDA");
@@ -252,7 +325,7 @@ public sealed class RegrasPadraoTests
         EscopoFato escopo = EscopoFato.Candidato) =>
         CriacaoDoFato.CriarDoAdministrador(
             new DescritivoDoFato(codigo, codigo, "Descrição do fato."),
-            new DefinicaoDoFato(dominio, QuantidadeDeValores.ValorUnico, null, formato, ponto, escopo, classificacao, Finalidade, Hipotese)).Value!;
+            new DefinicaoDoFato(dominio, QuantidadeDeValores.ValorUnico, dominio == TipoDoDado.Opcao ? FonteValoresFato.Catalogo : null, formato, ponto, escopo, classificacao, Finalidade, Hipotese)).Value!;
 
     private static CatalogoDeFatos Catalogo(params FatoCandidato[] fatos) => new(fatos, []);
 

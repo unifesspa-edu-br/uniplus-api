@@ -98,13 +98,13 @@ public static class ValidadorRegrasPadrao
         if (naoCitavel)
         {
             recusar(campo, FatoCandidatoErrorCodes.RegraCitaFatoNaoCitavel,
-                $"O fato '{citado}' não pode ser citado em regra: texto, data, endereço, fato de membro de grupo e categórico sem valores não entram em predicado.", $"{campo}.{citado}");
+                "O fato não pode ser citado em regra: texto, data, endereço, fato de membro de grupo e categórico sem valores não entram em predicado.", $"{campo}.{citado}");
         }
 
         if (derivado.ClassificacaoProtecao < dependencia.ClassificacaoProtecao)
         {
             recusar(campo, FatoCandidatoErrorCodes.ClassificacaoAbaixoDaDependencia,
-                $"O derivado revela o que se sabe de '{citado}' e não pode ter proteção de dados mais fraca que a dele.", $"{campo}.{citado}");
+                "O derivado revela o que se sabe do fato citado e não pode ter proteção de dados mais fraca que a dele.", $"{campo}.{citado}");
         }
 
         ConferirPrecedencia(derivado, dependencia, precedencias, campo, recusar);
@@ -117,7 +117,7 @@ public static class ValidadorRegrasPadrao
         if (Precede(derivado.PontoResolucao, dependencia.PontoResolucao, precedencias))
         {
             recusar(campo, FatoCandidatoErrorCodes.PontoResolucaoAnteriorADependencia,
-                $"O derivado resolve em {derivado.PontoResolucao}, antes de '{citado}', que só é conhecido em {dependencia.PontoResolucao}.", $"{campo}.{citado}");
+                $"O derivado resolve em {derivado.PontoResolucao}, antes do fato citado, que só é conhecido em {dependencia.PontoResolucao}.", $"{campo}.{citado}");
         }
     }
 
@@ -152,7 +152,7 @@ public static class ValidadorRegrasPadrao
         foreach (string fato in fatosDesativados)
         {
             recusar(campo, FatoCandidatoErrorCodes.RegraCitaFatoDesativado,
-                $"O fato '{fato}' está desativado e não aceita citação nova.", $"{campo}.{fato}");
+                "O fato está desativado e não aceita citação nova.", $"{campo}.{fato}");
         }
 
     }
@@ -166,7 +166,7 @@ public static class ValidadorRegrasPadrao
         foreach ((string fato, string valor) in valoresDesativados)
         {
             recusar(campo, FatoCandidatoErrorCodes.RegraCitaValorDesativado,
-                $"O valor '{valor}' do fato '{fato}' está desativado e não aceita citação nova.", $"{campo}.{fato}.{valor}");
+                "O valor do fato está desativado e não aceita citação nova.", $"{campo}.{fato}.{valor}");
         }
     }
 
