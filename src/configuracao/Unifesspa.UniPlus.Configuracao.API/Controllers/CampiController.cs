@@ -123,15 +123,7 @@ public sealed class CampiController : ControllerBase
             .Send(command, cancellationToken)
             .ConfigureAwait(false);
 
-        if (resultado.IsSuccess)
-        {
-            return CreatedAtAction(
-                nameof(ObterPorId),
-                new { id = resultado.Value },
-                resultado.Value);
-        }
-
-        return resultado.ToActionResult(_mapper);
+        return resultado.ToCreatedResult(this, nameof(ObterPorId), _mapper);
     }
 
     /// <summary>Atualiza um campus existente. Exige a permissão de manutenção.</summary>

@@ -124,15 +124,7 @@ public sealed class ModalidadesController : ControllerBase
             .Send(command, cancellationToken)
             .ConfigureAwait(false);
 
-        if (resultado.IsSuccess)
-        {
-            return CreatedAtAction(
-                nameof(ObterPorId),
-                new { id = resultado.Value },
-                resultado.Value);
-        }
-
-        return resultado.ToActionResult(_mapper);
+        return resultado.ToCreatedResult(this, nameof(ObterPorId), _mapper);
     }
 
     /// <summary>Atualiza uma modalidade existente. O código é imutável. Exige a permissão de manutenção.</summary>

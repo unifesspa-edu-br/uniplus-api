@@ -18,6 +18,21 @@ public static class ResultExtensions
     /// </summary>
     public const string RetryableExtensionName = "retryable";
 
+    public static IActionResult ToCreatedResult(
+        this Result<Guid> resultado,
+        ControllerBase controlador,
+        string acaoDeLeitura,
+        IDomainErrorMapper mapeador)
+    {
+        ArgumentNullException.ThrowIfNull(resultado);
+        ArgumentNullException.ThrowIfNull(controlador);
+        ArgumentNullException.ThrowIfNull(mapeador);
+
+        return resultado.IsSuccess
+            ? controlador.CreatedAtAction(acaoDeLeitura, new { id = resultado.Value }, resultado.Value)
+            : resultado.ToActionResult(mapeador);
+    }
+
     public static IActionResult ToActionResult<T>(this Result<T> result, IDomainErrorMapper mapper)
     {
         ArgumentNullException.ThrowIfNull(result);
