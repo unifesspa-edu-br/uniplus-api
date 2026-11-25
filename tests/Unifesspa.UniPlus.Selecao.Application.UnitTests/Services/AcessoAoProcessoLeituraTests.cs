@@ -64,11 +64,11 @@ public sealed class AcessoAoProcessoLeituraTests
     }
 
     private static Task<ResultadoDoAcesso> Verificar(
-        IVerificadorDeAcesso verificador, StatusProcesso status, bool jaPublicado = false)
+        IVerificadorDeAcesso verificador, StatusProcesso situacao, bool jaPublicado = false)
     {
         IProcessoSeletivoRepository processos = Substitute.For<IProcessoSeletivoRepository>();
         processos.ObterEstadoAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>())
-            .Returns(new EstadoDoProcesso(Guid.CreateVersion7(), status, jaPublicado));
+            .Returns(new EstadoDoProcesso(Guid.CreateVersion7(), situacao, jaPublicado));
 
         return AcessoAoProcesso.VerificarLeituraAsync(verificador, processos, Guid.CreateVersion7(), CancellationToken.None);
     }

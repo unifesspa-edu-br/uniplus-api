@@ -140,5 +140,5 @@ public static class ObterIndicadoresDoProcessoQueryHandler
     private static DomainError ErroNaoEncontrado() =>
         new(AcessoAoProcesso.NaoEncontrado(Guid.Empty).Code, "Processo não encontrado.");
 
-    private static bool EstaEmRascunho(EstadoDoProcesso estado) => estado.Status == StatusProcesso.Rascunho;
+    private static bool EstaEmRascunho(EstadoDoProcesso estado) => estado.Situacao == StatusProcesso.Rascunho;
 }

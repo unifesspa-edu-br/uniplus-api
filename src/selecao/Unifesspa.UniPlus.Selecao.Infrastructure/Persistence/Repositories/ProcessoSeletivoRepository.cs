@@ -337,7 +337,7 @@ public sealed class ProcessoSeletivoRepository : IProcessoSeletivoRepository
 
         // Keyset bidirecional (ADR-0089); com Guid v7 (ADR-0032) a ordem por Id é cronológica.
         IQueryable<ProcessoSeletivo> query = _context.ProcessosSeletivos.AsNoTracking()
-            .Where(p => EstadoDoProcesso.StatusDeLeituraAberta.Contains(p.Status)
+            .Where(p => EstadoDoProcesso.SituacoesDeLeituraAberta.Contains(p.Status)
                 || (p.Status == StatusProcesso.Cancelado
                     && _context.Set<VersaoConfiguracao>().Any(v => v.ProcessoSeletivoId == p.Id))
                 || unidadesDoRascunho.Contains(p.UnidadeAdministradoraOrigemId));
