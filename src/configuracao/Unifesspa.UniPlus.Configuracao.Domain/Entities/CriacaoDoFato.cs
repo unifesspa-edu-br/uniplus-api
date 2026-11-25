@@ -114,7 +114,7 @@ public static class CriacaoDoFato
     {
         List<FieldError> erros = [];
         OperacaoAgregado? operacao = AgregadoDeGrupo.OperacaoDoDominio(membro?.Dominio);
-        bool membroValido = ConferirFatoDeMembro(erros, membro, membroCodigo, operacao);
+        bool membroValido = ConferirFatoDeMembro(erros, membro, operacao);
         Result<FatoCandidato> criado = Criar(
             descritivo, OrigemFato.Calculado, VinculoDeFato.De(MecanismoDoVinculo.ResumoDeGrupo, membroCodigo),
             ComEixosInferidosDoAgregado(definicao, operacao, membro?.FonteValores), sistema: false);
@@ -141,23 +141,23 @@ public static class CriacaoDoFato
         return definicao with { Dominio = dominio, Cardinalidade = cardinalidade, FonteValores = fonteValores, Formato = null, Escopo = EscopoFato.Candidato };
     }
 
-    private static bool ConferirFatoDeMembro(List<FieldError> erros, FatoCandidato? membro, string codigo, OperacaoAgregado? operacao)
+    private static bool ConferirFatoDeMembro(List<FieldError> erros, FatoCandidato? membro, OperacaoAgregado? operacao)
     {
-        if (!RegistrarRecusa(erros, "fatoDeMembro", RecusaDoFatoDeMembro(membro, codigo)))
+        if (!RegistrarRecusa(erros, "fatoDeMembro", RecusaDoFatoDeMembro(membro)))
         {
             return false;
         }
 
-        RegistrarRecusa(erros, "fatoDeMembro", RecusaDoFatoDeMembroDesativado(membro!, codigo));
+        RegistrarRecusa(erros, "fatoDeMembro", RecusaDoFatoDeMembroDesativado(membro!));
         return RegistrarRecusa(erros, "fatoDeMembro", RecusaDoAgregadoSobreDominioQueNaoAgrega(operacao));
     }
 
-    private static (string Codigo, string Mensagem)? RecusaDoFatoDeMembro(FatoCandidato? membro, string codigo) => membro switch
+    private static (string Codigo, string Mensagem)? RecusaDoFatoDeMembro(FatoCandidato? membro) => membro switch
     {
-        null => (FatoCandidatoErrorCodes.AgregadoSemFatoDeMembro, $"O fato de membro '{codigo}' não pertence ao catálogo."),
+        null => (FatoCandidatoErrorCodes.AgregadoSemFatoDeMembro, "O fato de membro não pertence ao catálogo."),
         { Escopo: not EscopoFato.MembroGrupo } or { Origem: not OrigemFato.Declarado } => (
             FatoCandidatoErrorCodes.AgregadoSobreFatoQueNaoEhCampoDeGrupo,
-            $"O fato '{codigo}' não é fato declarado de membro de grupo: o agregado resume o que cada membro respondeu."),
+            "O fato deve ser declarado de membro de grupo: o agregado resume o que cada membro respondeu."),
         _ => null,
     };
 
@@ -166,10 +166,10 @@ public static class CriacaoDoFato
             ? (FatoCandidatoErrorCodes.AgregadoSobreDominioQueNaoAgrega, "O agregado resume fato de membro booleano (existe membro que…) ou categórico (valores presentes).")
             : null;
 
-    private static (string Codigo, string Mensagem)? RecusaDoFatoDeMembroDesativado(FatoCandidato membro, string membroCodigo) =>
+    private static (string Codigo, string Mensagem)? RecusaDoFatoDeMembroDesativado(FatoCandidato membro) =>
         membro.Ativo
             ? null
-            : (VinculoCatalogoErrorCodes.FatoDesativado, $"O fato '{membroCodigo}' está desativado no catálogo e não aceita vínculo novo.");
+            : (VinculoCatalogoErrorCodes.FatoDesativado, "O fato de membro está desativado no catálogo e não aceita vínculo novo.");
 
     /// <summary>A quantidade de valores e a fonte que o derivado por regra infere do próprio tipo do dado.</summary>
     internal static (QuantidadeDeValores Cardinalidade, FonteValoresFato? FonteValores) EixosInferidosDoDerivado(TipoDoDado? tipo) =>

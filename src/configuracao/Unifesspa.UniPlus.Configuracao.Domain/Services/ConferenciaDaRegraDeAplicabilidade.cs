@@ -91,7 +91,7 @@ public static class ConferenciaDaRegraDeAplicabilidade
         if (foraDoVocabulario)
         {
             recusar(ModalidadeErrorCodes.RegraCitaFatoNaoCitavel,
-                $"O fato '{citado}' não pode ser citado em regra: texto, data, endereço, fato de membro de grupo e categórico sem valores não entram em predicado.", citado);
+                "O fato não pode ser citado em regra: texto, data, endereço, fato de membro de grupo e categórico sem valores não entram em predicado.", citado);
         }
 
         ConferirDisponibilidade(fato, existentes, precedencias, recusar);
@@ -104,13 +104,13 @@ public static class ConferenciaDaRegraDeAplicabilidade
         string citado = fato.Codigo;
         if (!fato.Ativo && !existentes.Fatos.Contains(citado))
         {
-            recusar(ModalidadeErrorCodes.RegraCitaFatoDesativado, $"O fato '{citado}' está desativado e não aceita citação nova.", citado);
+            recusar(ModalidadeErrorCodes.RegraCitaFatoDesativado, "O fato está desativado e não aceita citação nova.", citado);
         }
 
         if (!ConhecidoAteAInscricao(fato.PontoResolucao, precedencias))
         {
             recusar(ModalidadeErrorCodes.RegraCitaFatoPosteriorAInscricao,
-                $"O fato '{citado}' só é conhecido em {fato.PontoResolucao}, que não antecede a inscrição, em que a modalidade se decide.", citado);
+                $"O fato só é conhecido em {fato.PontoResolucao}, que não antecede a inscrição, em que a modalidade se decide.", citado);
         }
     }
 
@@ -123,7 +123,7 @@ public static class ConferenciaDaRegraDeAplicabilidade
             .OrderBy(static v => v.Fato, StringComparer.Ordinal).ThenBy(static v => v.Valor, StringComparer.Ordinal);
         foreach ((string fato, string valor) in valoresDesativados)
         {
-            recusar(ModalidadeErrorCodes.RegraCitaValorDesativado, $"O valor '{valor}' do fato '{fato}' está desativado e não aceita citação nova.", $"{fato}.{valor}");
+            recusar(ModalidadeErrorCodes.RegraCitaValorDesativado, "O valor do fato está desativado e não aceita citação nova.", $"{fato}.{valor}");
         }
     }
 

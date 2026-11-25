@@ -49,6 +49,41 @@ public sealed class AgregadoDoAdministradorTests
         agregado.FonteValores.Should().Be(FonteValoresFato.OpcoesDoProcesso);
     }
 
+    [Fact]
+    public void CriarAgregado_FatoForaDoCatalogo_NaoRepeteCodigo()
+    {
+        FieldError erro = Criar("AGREGADO", "FATO_DE_TESTE").Errors.Single();
+
+        erro.Field.Should().Be("fatoDeMembro");
+        erro.Error.Code.Should().Be(FatoCandidatoErrorCodes.AgregadoSemFatoDeMembro);
+        erro.Error.Message.Should().NotContain("FATO_DE_TESTE");
+    }
+
+    [Fact]
+    public void CriarAgregado_FatoQueNaoEhDeMembro_NaoRepeteCodigo()
+    {
+        FatoCandidato fato = CriacaoDoFato.CriarDoAdministrador(
+            new DescritivoDoFato("FATO_DE_TESTE", "Fato", "Descrição do fato."),
+            new DefinicaoDoFato(TipoDoDado.SimOuNao, QuantidadeDeValores.ValorUnico, null, null, "INSCRICAO", EscopoFato.Candidato, ClassificacaoDeProtecao.Pessoal, Finalidade, Hipotese)).Value!;
+        FieldError erro = Criar("AGREGADO", "FATO_DE_TESTE", fato).Errors.Single();
+
+        erro.Field.Should().Be("fatoDeMembro");
+        erro.Error.Code.Should().Be(FatoCandidatoErrorCodes.AgregadoSobreFatoQueNaoEhCampoDeGrupo);
+        erro.Error.Message.Should().NotContain("FATO_DE_TESTE");
+    }
+
+    [Fact]
+    public void CriarAgregado_FatoDeMembroDesativado_NaoRepeteCodigo()
+    {
+        FatoCandidato fato = DeMembro("FATO_DE_TESTE");
+        fato.Desativar().IsSuccess.Should().BeTrue();
+        FieldError erro = Criar("AGREGADO", "FATO_DE_TESTE", fato).Errors.Single();
+
+        erro.Field.Should().Be("fatoDeMembro");
+        erro.Error.Code.Should().Be(VinculoCatalogoErrorCodes.FatoDesativado);
+        erro.Error.Message.Should().NotContain("FATO_DE_TESTE");
+    }
+
     [Theory]
     [InlineData("INEXISTENTE", FatoCandidatoErrorCodes.AgregadoSemFatoDeMembro)]
     [InlineData("RENDA_DECLARADA", FatoCandidatoErrorCodes.AgregadoSobreFatoQueNaoEhCampoDeGrupo)]

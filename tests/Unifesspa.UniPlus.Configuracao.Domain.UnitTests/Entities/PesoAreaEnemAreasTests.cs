@@ -38,6 +38,20 @@ public sealed class PesoAreaEnemAreasTests
         resultado.Errors.Should().Contain(e => e.Error.Code == PesoAreaEnemErrorCodes.AreaFaltando);
     }
 
+    [Fact]
+    public void Criar_AreaDesconhecida_NaoRepeteCodigoEListaAreasAceitas()
+    {
+        Result<PesoAreaEnem> resultado = Criar(ComArea(2, new("AREA_DE_TESTE", 1m, null)));
+
+        FieldError erro = resultado.Errors.Single(e => e.Error.Code == PesoAreaEnemErrorCodes.AreaForaDoDominio);
+        erro.Field.Should().Be("areas[2].codigo");
+        erro.Error.Message.Should().NotContain("AREA_DE_TESTE");
+        foreach (AreaEnemDescrita area in PesoAreaEnem.Areas)
+        {
+            erro.Error.Message.Should().Contain(area.Codigo).And.Contain(area.Rotulo);
+        }
+    }
+
     [Fact(DisplayName = "Área repetida é recusada no campo da repetição, e a área que faltou é nomeada")]
     public void Criar_AreaRepetida_Falha()
     {
@@ -191,10 +205,8 @@ public sealed class PesoAreaEnemAreasTests
     [Fact(DisplayName = "Criar acumula as violações independentes de todos os campos")]
     public void Criar_AcumulaViolacoes()
     {
-        List<AreaInformada> areas = AreasValidas();
-        areas[1] = new(PesoAreaEnem.CodigoCienciasDaNatureza, -1m, null);
+        List<AreaInformada> areas = ComArea(1, new(PesoAreaEnem.CodigoCienciasDaNatureza, -1m, null));
         areas[3] = new("FISICA", 1m, null);
-
         Result<PesoAreaEnem> resultado = Criar(areas, resolucao: "", grupo: "Engenharias", baseLegal: null);
 
         resultado.Errors.Select(e => (e.Field, e.Error.Code)).Should().BeEquivalentTo(
@@ -235,7 +247,7 @@ public sealed class PesoAreaEnemAreasTests
 
         string mensagem = resultado.Errors.Single(e => e.Error.Code == PesoAreaEnemErrorCodes.AreaForaDoDominio).Error.Message;
         mensagem.Should().NotContain(codigo);
-        mensagem.Should().Contain(new string('X', 40) + "…");
+        mensagem.Should().NotContain(new string('X', 40));
     }
 
     [Fact(DisplayName = "Código só com espaços pede o código da área")]
@@ -269,28 +281,6 @@ public sealed class PesoAreaEnemAreasTests
 
         resultado.Errors.Select(e => e.Error.Code).Should().BeEquivalentTo(
             [PesoAreaEnemErrorCodes.AreasEmExcesso, PesoAreaEnemErrorCodes.BaseLegalObrigatoria]);
-    }
-
-    [Fact(DisplayName = "O corte da mensagem não parte um par substituto na fronteira")]
-    public void Criar_CodigoComEmojiNaFronteira_NaoPartePar()
-    {
-        string codigo = new string('X', 39) + "😀" + "RESTO";
-
-        Result<PesoAreaEnem> resultado = Criar(ComArea(2, new(codigo, 1m, null)));
-
-        string mensagem = resultado.Errors.Single(e => e.Error.Code == PesoAreaEnemErrorCodes.AreaForaDoDominio).Error.Message;
-        mensagem.Should().Contain(new string('X', 39) + "…");
-        for (int i = 0; i < mensagem.Length; i++)
-        {
-            if (char.IsHighSurrogate(mensagem[i]))
-            {
-                (i + 1 < mensagem.Length && char.IsLowSurrogate(mensagem[i + 1])).Should().BeTrue("nenhum surrogate fica isolado");
-            }
-            else if (char.IsLowSurrogate(mensagem[i]))
-            {
-                (i > 0 && char.IsHighSurrogate(mensagem[i - 1])).Should().BeTrue("nenhum surrogate fica isolado");
-            }
-        }
     }
 
     [Theory(DisplayName = "As mensagens de peso e de corte nomeiam a área em português correto, inclusive sem área reconhecida")]
@@ -330,7 +320,7 @@ public sealed class PesoAreaEnemAreasTests
         Result<PesoAreaEnem> resultado = Criar(ComArea(2, new("AB\nCD\u202EEF\u2028GH\u2029IJ", 1m, null)));
 
         string mensagem = resultado.Errors.Single(e => e.Error.Code == PesoAreaEnemErrorCodes.AreaForaDoDominio).Error.Message;
-        mensagem.Should().Contain("\"AB?CD?EF?GH?IJ\"");
+        mensagem.Should().NotContain("AB?CD?EF?GH?IJ");
         mensagem.Should().NotContain("\n").And.NotContain("\u202E").And.NotContain("\u2028").And.NotContain("\u2029");
     }
 
@@ -342,7 +332,7 @@ public sealed class PesoAreaEnemAreasTests
         Result<PesoAreaEnem> resultado = Criar(ComArea(2, new("AB\U000E0041CD", 1m, null)));
 
         string mensagem = resultado.Errors.Single(e => e.Error.Code == PesoAreaEnemErrorCodes.AreaForaDoDominio).Error.Message;
-        mensagem.Should().Contain("\"AB?CD\"");
+        mensagem.Should().NotContain("AB?CD");
         mensagem.Should().NotContain("\U000E0041");
     }
 
