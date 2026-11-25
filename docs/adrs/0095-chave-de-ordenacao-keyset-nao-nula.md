@@ -40,7 +40,7 @@ A pergunta é como garantir que a chave de ordenação seja sempre não-nula par
 - A regra geral é: **uma coluna nullable nunca entra direto num keyset**. O keyset ordenado deve usar uma chave não-nula.
 - Em Estado/Cidade, essa chave é `nome_ordenacao`, coluna gerada pelo banco a partir de `COALESCE(NULLIF(nome_normalizado, ''), nome)` com `lower(translate(...))` para remover acentos no fallback.
 - `nome_normalizado` mantém a semântica de busca/autocomplete e pode continuar nulo quando a fonte não traz o texto sem acento.
-- O índice de suporte é B-tree sobre `(nome_ordenacao, id)`, casando o `ORDER BY`/`WHERE` gerado pelo motor de seek.
+- O índice de suporte é B-tree sobre `(nome_ordenacao, id)`, casando o `ORDER BY`/`WHERE` gerado pela biblioteca de paginação por chave.
 - A âncora do cursor carrega `SortKey = nome_ordenacao` e `After = Id`; cursores ordenados sem `SortKey` são inválidos no boundary HTTP.
 
 ## Consequências

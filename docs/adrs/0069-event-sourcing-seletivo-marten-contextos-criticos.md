@@ -75,8 +75,8 @@ suficiente.
   eventos.
 - Replay para recriar projeções e read models derivados.
 - Preservação da versão de regra aplicada em cada decisão automatizada,
-  alinhada ao congelamento de parâmetros por edital (RN08) e ao motor de
-  classificação como serviço de domínio puro (ADR-0013).
+  alinhada ao congelamento de parâmetros por edital (RN08) e à classificação dos
+  candidatos como serviço de domínio puro (ADR-0013).
 - Ausência de novo componente operacional fora do PostgreSQL já adotado
   (ADR-0007).
 - Coerência com a stack existente: Wolverine e Marten pertencem ao ecossistema
@@ -439,7 +439,7 @@ Hardening e decisões de implementação do piloto (não bloqueiam o gate):
 - [ADR-0005](0005-cascading-messages-para-drenagem-de-domain-events.md): cascading messages como drenagem canônica de domain events.
 - [ADR-0007](0007-postgresql-18-como-banco-primario.md): PostgreSQL como banco primário.
 - [ADR-0012](0012-archunitnet-como-fitness-tests-arquiteturais.md): ArchUnitNET como fitness tests arquiteturais.
-- [ADR-0013](0013-motor-de-classificacao-como-servicos-de-dominio-puros.md): motor de classificação como serviços de domínio puros.
+- [ADR-0013](0013-motor-de-classificacao-como-servicos-de-dominio-puros.md): classificação dos candidatos como serviços de domínio puros.
 - [ADR-0014](0014-kafka-como-bus-assincrono-inter-modulos.md): Kafka como bus assíncrono inter-módulos.
 - [ADR-0039](0039-provisioning-schema-wolverine-via-deploy.md): provisioning de schema como responsabilidade do deploy.
 - [ADR-0040](0040-helper-wolverine-outbox-cascading-canonico.md), [ADR-0041](0041-padrao-retorno-handlers-wolverine-cascading.md), [ADR-0044](0044-roteamento-domain-events-pg-queue-kafka-opcional.md): helper, retorno de handlers e roteamento atual do outbox.

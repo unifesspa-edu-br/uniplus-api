@@ -13,7 +13,7 @@ informed: []
 
 ## Contexto e enunciado do problema
 
-Hoje só o módulo Seleção avalia regras sobre fatos do candidato. O predicado em forma normal disjuntiva, com operadores, cláusulas, validador e códigos de erro, sustenta a pré-condição de campo, o gatilho de exigência documental, a regra de derivação e o desempate por predicado. A avaliação ternária e o motor de derivação também moram em `Selecao.Domain`.
+Hoje só o módulo Seleção avalia regras sobre fatos do candidato. O predicado em forma normal disjuntiva, com operadores, cláusulas, validador e códigos de erro, sustenta a pré-condição de campo, o gatilho de exigência documental, a regra de derivação e o desempate por predicado. A avaliação ternária e o cálculo dos dados do candidato também moram em `Selecao.Domain`.
 
 O módulo Configuração passa a precisar da mesma lógica. O modelo de formulário por tipo de processo, cadastro novo da Configuração, valida exibição e obrigatoriedade condicionadas a fatos e oferece pré-visualização com respostas simuladas. Essa validação não pode esperar a Seleção: a recusa precisa sair no momento em que o administrador grava o modelo.
 
@@ -60,7 +60,7 @@ Três restrições delimitam onde esse código pode morar:
 **Fica em cada módulo o que depende de entidade do módulo:**
 
 - `ResolvedorEstadoFatos`, que hoje percorre a entidade `FatoColetado`, passa a delegar ao avaliador.
-- A avaliação da árvore de exigências documentais (`ResolvedorArvoreSatisfacao`) continua na Seleção, dona das exigências.
+- A avaliação das regras de comprovação (`AvaliadorDaComprovacao`) continua na Seleção, dona das exigências.
 
 O projeto não tem entidade, repositório, persistência nem acesso a I/O. É lógica pura sobre valores.
 

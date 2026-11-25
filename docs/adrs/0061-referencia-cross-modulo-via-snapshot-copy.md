@@ -200,7 +200,7 @@ O reader **não** materializa o valor continuamente na entidade consumidora. Nã
 - [ADR-0060](0060-junction-tables-por-entidade-com-view-unificada.md) — Mesmo raciocínio de isolation entre bancos.
 - RN08 de `docs/visao-do-projeto.md` — Congelamento de parâmetros no `Publicar()` do edital.
 - [ADR-0054](0054-naming-convention-e-strategy-migrations.md) — Política de isolation de bancos.
-- [ADR-0028](0028-versionamento-per-resource-content-negotiation.md) — Snapshot-on-bind no motor de classificação.
+- [ADR-0028](0028-versionamento-per-resource-content-negotiation.md) — Snapshot-on-bind na classificação dos candidatos.
 
 ## Emenda (2026-11-13) — um contexto só, e a fronteira continua sendo o módulo
 

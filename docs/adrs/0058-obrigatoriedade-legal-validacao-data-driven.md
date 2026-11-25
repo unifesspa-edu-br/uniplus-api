@@ -310,7 +310,7 @@ soft-delete, com FK `RESTRICT` para `editais` (em #461) e para
 
 ## Mais informações
 
-- [ADR-0013](0013-motor-de-classificacao-como-servicos-de-dominio-puros.md) — Motor de classificação como pure domain services (precedent para evaluator data-driven sem DSL).
+- [ADR-0013](0013-motor-de-classificacao-como-servicos-de-dominio-puros.md) — Classificação dos candidatos como pure domain services (precedent para evaluator data-driven sem DSL).
 - [ADR-0028](0028-versionamento-per-resource-content-negotiation.md) — Versionamento per-resource.
 - RN08 de `docs/visao-do-projeto.md` — Congelamento de parâmetros na publicação do edital.
 - DAMA-DMBOK 2 — Reference Data Management (snapshot patterns).
