@@ -366,3 +366,7 @@ cifra fica no MinIO (SSE-KMS, chave do KES guardada no Vault), com uma chave de 
 individual do parecer do Encarregado de dados de 13/10/2026, aprovada por ele. A verificação do antivírus
 passa a um verificador que lê direto do armazenamento. O restante desta ADR, a cifra de campo na fronteira do
 repositório e o índice cego, não muda.
+
+## Emenda 4 (2026-11-25) — remoção do conversor de CPF e da convenção global de conversores
+
+O `CpfValueConverter` e a convenção `ValueObjectConventions`, citados no contexto, nas consequências e em "Mais informações", foram removidos (issue #2914, emenda 2 da ADR-0054): nenhuma propriedade os usava. Deixa de valer o item das consequências neutras segundo o qual o `CpfValueConverter` "continua existindo, sem alteração", e os dois caminhos de arquivo de "Mais informações" que apontam para eles não existem mais. A decisão desta ADR não muda: a cifra de campo sensível é adotada por propriedade, na fronteira do repositório, e nunca como característica de todas as propriedades de um tipo. O CPF é gravado só cifrado, pelos repositórios do Discentes e da Seleção; não há mapeamento de CPF em texto claro.

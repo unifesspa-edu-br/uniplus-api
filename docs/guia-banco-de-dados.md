@@ -181,9 +181,18 @@ builder.OwnsOne(e => e.NumeroEdital, ne =>
 
 **Por que `HasColumnName` aqui** (contradiz §2): convention default geraria `cpf_valor` (verbose). Para VOs 1-campo, manter o nome da coluna semântico (`cpf`, `email`, `protocolo`). VOs compostos seguem convention com prefixo (`numero_edital_numero`...).
 
-### ValueObjectConventions
+### Conversor na propriedade
 
-Existe `ValueObjectConventions.ConfigureValueObjectConverters()` (`Infrastructure.Core/Persistence/Converters/`) com 4 converters (`Cpf`, `Email`, `NomeSocial`, `NotaFinal`). **Não está ativada** porque é incompatível com `OwnsOne` para o mesmo tipo CLR. Fica disponível para a transição futura (#397) ou para uso pontual em entity onde VO seja primitive property.
+Não há convenção que aplique um conversor a todas as propriedades de um tipo de Value Object. Quando um Value Object de um só campo é gravado como coluna simples, a configuração da entidade declara o conversor na própria propriedade, junto com o tipo da coluna:
+
+```csharp
+builder.Property(r => r.PpiPercentual)
+    .HasConversion<PercentualValueConverter>()
+    .HasPrecision(5, 2)
+    .IsRequired();
+```
+
+A leitura refaz o Value Object pelo `Criar` dele: dado gravado que não passa na regra falha na hora, com o nome do valor e o código do erro, em vez de virar um valor inválido.
 
 ## 7. Workflow de migration
 
