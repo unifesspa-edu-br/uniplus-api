@@ -39,7 +39,7 @@ internal static class LeituraDeDatasENumeros
 
         if (!DateOnly.TryParseExact(texto, "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out DateOnly valor))
         {
-            return leitor.Malformado<DateOnly>($"{path}.{chave}", $"esperada uma data 'yyyy-MM-dd', encontrado '{texto}'.");
+            return leitor.Malformado<DateOnly>($"{path}.{chave}", "esperada uma data 'yyyy-MM-dd'.");
         }
 
         return valor == default
@@ -86,7 +86,7 @@ internal static class LeituraDeDatasENumeros
 
         if (!DateOnly.TryParseExact(texto, "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out DateOnly valor))
         {
-            return leitor.Malformado<DateOnly?>($"{path}.{chave}", $"esperada uma data 'yyyy-MM-dd', encontrado '{texto}'.");
+            return leitor.Malformado<DateOnly?>($"{path}.{chave}", "esperada uma data 'yyyy-MM-dd'.");
         }
 
         return valor == default
@@ -111,7 +111,7 @@ internal static class LeituraDeDatasENumeros
             ? valor
             : leitor.Malformado<DateTimeOffset?>(
                 $"{path}.{chave}",
-                $"esperado um instante canônico ('{HashCanonicalComputer.CanonicalInstantFormat}'), encontrado '{texto}'.");
+                $"esperado um instante canônico ('{HashCanonicalComputer.CanonicalInstantFormat}').");
     }
 
     public static bool Booleano(this LeitorEnvelope leitor, JsonObject pai, string chave, string path)
@@ -216,7 +216,7 @@ internal static class LeituraDeDatasENumeros
         if (!decimal.TryParse(texto, NumberStyles.AllowLeadingSign | NumberStyles.AllowDecimalPoint, CultureInfo.InvariantCulture, out decimal valor)
             || !string.Equals(HashCanonicalComputer.SerializeDecimalCanonical(valor, escala), texto, StringComparison.Ordinal))
         {
-            return leitor.Malformado<decimal?>($"{path}.{chave}", $"esperado um decimal canônico com {escala} casas, encontrado '{texto}'.");
+            return leitor.Malformado<decimal?>($"{path}.{chave}", $"esperado um decimal canônico com {escala} casas.");
         }
 
         // A escala sozinha não basta. `numeric(18,4)` também limita o total de dígitos, e um
@@ -228,7 +228,7 @@ internal static class LeituraDeDatasENumeros
         {
             return leitor.Malformado<decimal?>(
                 $"{path}.{chave}",
-                $"o decimal '{texto}' tem mais dígitos do que a coluna comporta (numeric({precisao},{escala})).");
+                $"o decimal tem mais dígitos do que a coluna comporta (numeric({precisao},{escala})).");
         }
 
         return valor;
