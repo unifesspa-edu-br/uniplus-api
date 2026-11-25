@@ -147,6 +147,16 @@ public sealed class ProcessoSeletivoProtecaoDasExigenciasTests
             .Contain("exigencia_fato_comprovado_fora_do_processo").And.NotContain("exigencia_menos_protegida_que_fato_comprovado");
     }
 
+    [Theory]
+    [InlineData(" RENDA ")]
+    [InlineData("renda")]
+    public void FatoComprovadoDiferenteDaReferencia_Recusa(string fato)
+    {
+        ProcessoSeletivo processo = Processo(f => Exigencia(f, "COMPROVANTE_RENDA", ClassificacaoDeProtecao.Pessoal, [fato]));
+
+        Pendencia(processo, ComCatalogo)!.Code.Should().Be(DocumentoExigido.FatoComprovadoForaDoProcesso);
+    }
+
     [Fact(DisplayName = "Fato derivado congelado na publicação, que nenhum formulário coleta, pode ser comprovado")]
     public void FatoDerivadoDoCatalogo_Aceita()
     {

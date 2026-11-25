@@ -25,12 +25,11 @@ public sealed class PoliticaDaIsencaoDaTaxa : IPoliticaDoTipoDeMotivo
                 + $"{string.Join(", ", CatalogoDe<FundamentoIsencao>.Todos().Select(static item => item.Codigo))}."));
         }
 
-        string normalizada = subclassificacao.Trim();
-        return !CatalogoDe<FundamentoIsencao>.TentarObter(normalizada, out _)
+        return !CatalogoDe<FundamentoIsencao>.TentarObter(subclassificacao, out _)
             ? Result<string?>.Failure(new DomainError(
                 MotivoDeDecisaoErrorCodes.SubclassificacaoInvalida,
                 $"Fundamento de isenção desconhecido. Use um dos códigos: {string.Join(", ", CatalogoDe<FundamentoIsencao>.Todos().Select(static item => item.Codigo))}."))
-            : Result<string?>.Success(normalizada);
+            : Result<string?>.Success(subclassificacao);
     }
 
     public bool AdmiteSentido(SentidoDoMotivo sentido) => sentido is SentidoDoMotivo.Favoravel or SentidoDoMotivo.Desfavoravel;

@@ -32,8 +32,7 @@ public sealed class ConferenciaDaObrigatoriedadeLegal(
     }
 
     /// <summary>
-    /// Confere o tipo de processo e depois as referências do predicado, devolvendo o predicado com os códigos
-    /// normalizados: é ele, e não o enviado, que entra no hash da regra. Pressupõe campos já conferidos.
+    /// Confere o tipo de processo e depois as referências do predicado, devolvendo o predicado conferido. Pressupõe campos já conferidos.
     /// </summary>
     public async Task<Result<PredicadoObrigatoriedade>> ConferirReferenciasAsync(
         IObrigatoriedadeLegalDoComando conteudo,
@@ -41,14 +40,14 @@ public sealed class ConferenciaDaObrigatoriedadeLegal(
     {
         ArgumentNullException.ThrowIfNull(conteudo);
 
-        string tipoProcesso = conteudo.TipoProcessoCodigo!.Trim();
+        string tipoProcesso = conteudo.TipoProcessoCodigo!;
         if (!await TipoDeProcessoServeAsync(tipoProcesso, cancellationToken).ConfigureAwait(false))
         {
-            return Result<PredicadoObrigatoriedade>.Failure(RecusasDaObrigatoriedadeLegal.TipoProcessoNaoEncontradoOuInativo(tipoProcesso));
+            return Result<PredicadoObrigatoriedade>.Failure(RecusasDaObrigatoriedadeLegal.TipoProcessoNaoEncontradoOuInativo());
         }
 
         return await referenciasDoPredicado
-            .NormalizarEValidarAsync(conteudo.Predicado!, cancellationToken)
+            .ConferirAsync(conteudo.Predicado!, cancellationToken)
             .ConfigureAwait(false);
     }
 

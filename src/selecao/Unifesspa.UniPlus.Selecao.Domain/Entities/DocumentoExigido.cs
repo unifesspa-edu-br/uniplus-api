@@ -158,8 +158,8 @@ public sealed class DocumentoExigido : EntityBase, IParteDoProcesso
     private static void ValidarFatos(IReadOnlyList<string>? fatos, List<FieldError> erros)
     {
         if (fatos is { Count: > 0 }
-            && (fatos.Any(static f => string.IsNullOrWhiteSpace(f) || f.Trim().Length > FatoComprovadoMaxLength)
-                || fatos.Select(static f => f.Trim()).Distinct(StringComparer.Ordinal).Count() != fatos.Count))
+            && (fatos.Any(static f => string.IsNullOrWhiteSpace(f) || f.Length > FatoComprovadoMaxLength)
+                || fatos.Distinct(StringComparer.Ordinal).Count() != fatos.Count))
         {
             erros.Add(new("fatosComprovados", new DomainError(FatosComprovadosInvalidos,
                 $"Os fatos comprovados são códigos de fato não repetidos, de até {FatoComprovadoMaxLength} caracteres.")));
@@ -172,7 +172,7 @@ public sealed class DocumentoExigido : EntityBase, IParteDoProcesso
     /// null o bastante para <see cref="DeterminaResultado"/> ignorar) e é persistido cru.
     /// </summary>
     private static string? NormalizarConsequencia(string? consequenciaIndeferimento) =>
-        string.IsNullOrWhiteSpace(consequenciaIndeferimento) ? null : consequenciaIndeferimento.Trim();
+        string.IsNullOrWhiteSpace(consequenciaIndeferimento) ? null : consequenciaIndeferimento;
 
     public static Result<DocumentoExigido> Criar(ChaveLocal chave, DocumentoExigidoDeclarado declarado)
     {
@@ -212,7 +212,7 @@ public sealed class DocumentoExigido : EntityBase, IParteDoProcesso
         ExigidoNaEtapaId = declarado.Momento.EtapaId;
         Finalidade = declarado.Momento.Finalidade;
         CopiarTipo(declarado.Tipo);
-        FatosComprovados = [.. declarado.FatosComprovados?.Select(static f => f.Trim()) ?? []];
+        FatosComprovados = [.. declarado.FatosComprovados ?? []];
         Aplicabilidade = declarado.Aplicabilidade.Tipo
             ?? throw new ArgumentException("A exigência deve declarar a aplicabilidade.", nameof(declarado));
         Obrigatorio = declarado.Indeferimento.Obrigatorio;

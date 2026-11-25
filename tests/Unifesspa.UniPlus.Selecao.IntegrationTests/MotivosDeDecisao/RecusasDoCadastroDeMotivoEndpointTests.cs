@@ -88,6 +88,8 @@ public sealed class RecusasDoCadastroDeMotivoEndpointTests : IAsyncLifetime
     [Theory(DisplayName = "O filtro recusa tipo fora do vocabulário com o mesmo erro do cadastro, sem repetir o valor")]
     [InlineData(TipoRecusado)]
     [InlineData("NENHUM")]
+    [InlineData(" ISENCAO_DA_TAXA ")]
+    [InlineData("isencao_da_taxa")]
     public async Task Listar_TipoForaDoVocabulario_RecusaComoInvalido(string tipo)
     {
         using HttpClient client = _fixture.Factory.CreateClient();

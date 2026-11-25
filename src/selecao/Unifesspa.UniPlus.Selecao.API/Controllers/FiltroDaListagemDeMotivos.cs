@@ -15,13 +15,13 @@ internal static class FiltroDaListagemDeMotivos
 {
     public static Result<FiltroDosMotivos> Ler(string? tipo, string? subclassificacao, bool apenasAtivos)
     {
-        string? subclassificacaoFiltrada = string.IsNullOrWhiteSpace(subclassificacao) ? null : subclassificacao.Trim();
+        string? subclassificacaoFiltrada = string.IsNullOrWhiteSpace(subclassificacao) ? null : subclassificacao;
         if (string.IsNullOrWhiteSpace(tipo))
         {
             return Result<FiltroDosMotivos>.Success(new FiltroDosMotivos(null, subclassificacaoFiltrada, apenasAtivos));
         }
 
-        Result<TipoMotivoDeDecisao> tipoFiltrado = TipoDoMotivoInformado.Converter(tipo.Trim());
+        Result<TipoMotivoDeDecisao> tipoFiltrado = TipoDoMotivoInformado.Converter(tipo);
         return tipoFiltrado.IsFailure
             ? Result<FiltroDosMotivos>.ValidationFailure(tipoFiltrado.Errors)
             : Result<FiltroDosMotivos>.Success(new FiltroDosMotivos(tipoFiltrado.Value, subclassificacaoFiltrada, apenasAtivos));
