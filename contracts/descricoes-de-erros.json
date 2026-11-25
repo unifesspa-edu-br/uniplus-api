@@ -3378,8 +3378,8 @@
       "requisitos": [],
       "oQueAconteceu": [
         "O código informado não segue o formato exigido. O código da categoria de documento:",
-        "- começa com uma letra maiúscula;\n- continua só com letras maiúsculas, dígitos e sublinhado (`_`);\n- tem até 50 caracteres no total;\n- não tem espaço no meio, acento nem hífen.",
-        "Exemplos válidos: `RENDA`, `DOCUMENTO_PROCESSUAL`, `RACA_ETNIA`. Os espaços do começo e do fim são removidos antes da conferência e aceitos; só espaço **no meio** do código é recusado. Nada foi gravado."
+        "- começa com uma letra maiúscula;\n- continua só com letras maiúsculas, dígitos e sublinhado (`_`);\n- tem até 50 caracteres no total;\n- não tem espaços, acento nem hífen.",
+        "Exemplos válidos: `RENDA`, `DOCUMENTO_PROCESSUAL`, `RACA_ETNIA`. O código é conferido como recebido; espaços nas pontas ou no meio são recusados. Nada foi gravado."
       ],
       "comoResolver": [
         "Reescreva `codigo` no formato descrito, trocando espaços internos e hífens por sublinhado e retirando os acentos."
@@ -5450,15 +5450,15 @@
       "codigo": "uniplus.configuracao.modalidade.codigo_formato_invalido",
       "requisitos": [],
       "oQueAconteceu": [
-        "Este código é compartilhado por duas causas distintas, que a entrada do\ncatálogo não distingue no `detail`:",
-        "- O **código da própria modalidade** não respeita o formato fechado —\n  `^[A-Z][A-Z0-9]*(_[A-Z0-9]+)*$` (letra inicial maiúscula, letras maiúsculas, dígitos e sublinhados isolados), com no\n  máximo 60 caracteres (ex.: `AC`, `LB_PPI`, `LI_Q`).\n- O **código de origem** da composição `RETIRADA_DE_OUTRA_MODALIDADE` (`composicao_origem`)\n  excede 60 caracteres — este segundo caso só confere o tamanho, não o\n  formato: um código de origem com caracteres fora do padrão `^[A-Z][A-Z0-9]*(_[A-Z0-9]+)*$`\n  não é recusado aqui (a integridade referencial de que ele aponta para uma\n  modalidade viva é conferida à parte, ver\n  [referência inexistente ou inativa](/erros/uniplus.configuracao.modalidade.referencia_inexistente_ou_inativa))."
+        "O código da modalidade ou uma referência a outra modalidade não respeita o formato: letra maiúscula inicial, seguida de letras maiúsculas ou dígitos separados por sublinhados isolados, com até 60 caracteres. O código é conferido como recebido; espaços nas pontas são recusados.",
+        "A referência de composição e os destinos e par de remanejamento são conferidos individualmente. Referências bem formadas também precisam apontar para modalidades existentes e ativas (ver [referência inexistente ou inativa](/erros/uniplus.configuracao.modalidade.referencia_inexistente_ou_inativa))."
       ],
       "comoResolver": [
-        "Se a causa é o código próprio: use apenas letras maiúsculas, dígitos e\nsublinhado, com até 60 caracteres. Se a causa é o código de origem da\ncomposição `RETIRADA_DE_OUTRA_MODALIDADE`: reduza-o para até 60 caracteres."
+        "Use o código exato, com letra maiúscula inicial, letras maiúsculas, dígitos e sublinhados isolados, sem espaços e com até 60 caracteres."
       ],
       "ondeAparece": [
         "Criação de uma modalidade de concorrência, quando o código próprio é inválido",
-        "Criação ou atualização de uma modalidade de concorrência, quando o código de origem da composição RETIRADA_DE_OUTRA_MODALIDADE excede o tamanho máximo"
+        "Criação ou atualização de uma modalidade de concorrência, quando uma referência de composição ou remanejamento tem formato inválido"
       ]
     },
     {
@@ -7690,8 +7690,8 @@
       "requisitos": [],
       "oQueAconteceu": [
         "O código informado não segue o formato exigido. O código do recurso de acessibilidade:",
-        "- começa com uma letra maiúscula;\n- continua só com letras maiúsculas, dígitos e sublinhado (`_`);\n- tem até 50 caracteres no total;\n- não tem espaço no meio, acento nem hífen.",
-        "Exemplos válidos: `LEDOR`, `SALA_AMAMENTACAO`. Os espaços do começo e do fim são removidos antes da conferência e aceitos; só espaço **no meio** do código é recusado. Nada foi gravado."
+        "- começa com uma letra maiúscula;\n- continua só com letras maiúsculas, dígitos e sublinhado (`_`);\n- tem até 50 caracteres no total;\n- não tem espaços, acento nem hífen.",
+        "Exemplos válidos: `LEDOR`, `SALA_AMAMENTACAO`. O código é conferido como recebido; espaços nas pontas ou no meio são recusados. Nada foi gravado."
       ],
       "comoResolver": [
         "Reescreva `codigo` no formato descrito, trocando espaços internos e hífens por sublinhado e retirando os acentos."
@@ -8654,7 +8654,7 @@
       ],
       "oQueAconteceu": [
         "O **código** informado não respeita o formato fechado —\n`^[A-Z][A-Z0-9]*(_[A-Z0-9]+)*$`: inicia com letra maiúscula, segue com letras\nmaiúsculas, dígitos e sublinhado, com até 50 caracteres no total (ex.:\n`DEFICIENCIA_VISUAL`, `TEA`, `SURDOCEGUEIRA`).",
-        "São recusados, entre outros, o código em caixa baixa\n(`deficiencia_visual`), o que começa por dígito (`1_DEFICIENCIA`), o que\ntraz caractere acentuado (`DEFICIÊNCIA_VISUAL`), o que usa hífen no lugar\ndo sublinhado (`DEFICIENCIA-VISUAL`) e o de um único caractere (`D`)."
+        "São recusados, entre outros, o código em caixa baixa\n(`deficiencia_visual`), o que começa por dígito (`1_DEFICIENCIA`), o que\ntraz caractere acentuado (`DEFICIÊNCIA_VISUAL`), o que usa hífen no lugar\ndo sublinhado (`DEFICIENCIA-VISUAL`)."
       ],
       "comoResolver": [
         "Use um código que comece com letra maiúscula e contenha apenas letras\nmaiúsculas, dígitos e sublinhado, com até 50 caracteres."
@@ -8866,7 +8866,7 @@
       ],
       "oQueAconteceu": [
         "O **código** informado não respeita o formato fechado —\n`^[A-Z][A-Z0-9]*(_[A-Z0-9]+)*$`: inicia com letra maiúscula, segue com letras\nmaiúsculas, dígitos e sublinhado, com até 50 caracteres no total (ex.: `RG`,\n`LAUDO_MEDICO`, `DECLARACAO_IRPF_2025`).",
-        "São recusados, entre outros, o código em caixa baixa (`laudo_medico`), o que\ncomeça por dígito (`01`), o que traz caractere acentuado (`LAUDO_MÉDICO`), o\nque usa hífen no lugar do sublinhado (`LAUDO-MEDICO`) e o de um único\ncaractere (`L`).",
+        "São recusados, entre outros, o código em caixa baixa (`laudo_medico`), o que\ncomeça por dígito (`01`), o que traz caractere acentuado (`LAUDO_MÉDICO`), o\nque usa hífen no lugar do sublinhado (`LAUDO-MEDICO`).",
         "O dígito é aceito em qualquer posição **menos a primeira**. É essa restrição\nque separa o código semântico da numeração sequencial: preserva usos legítimos\ncomo `DECLARACAO_IRPF_2025`, onde o número é o exercício fiscal, e `LEI_12711`,\nonde é o número da lei — e recusa `01`, que não identifica nada por si.",
         "O código do tipo de documento não é rótulo de exibição. É a chave de igualdade\ncom que o sistema decide se as exigências documentais de um edital satisfazem a\nregra legal aplicável, e é congelado no registro imutável da publicação. Um\nedital publicado guarda o código tal como estava no momento em que foi\ncongelado, de modo que corrigir o cadastro depois não corrige o edital já\npublicado.",
         "Daí a exigência de um código que se explique por leitura: `LAUDO_MEDICO`\nidentifica o documento em qualquer contexto; `01` só faz sentido para quem tem\na tabela de correspondência à mão."
