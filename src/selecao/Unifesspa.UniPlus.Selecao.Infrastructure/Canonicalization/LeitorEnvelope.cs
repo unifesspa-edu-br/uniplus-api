@@ -237,6 +237,10 @@ internal sealed class LeitorEnvelope
         return default!;
     }
 
+    /// <summary>Aponta o item quando o campo do domínio não é chave do documento.</summary>
+    internal static IReadOnlyList<FieldError> NoProprioItem(IReadOnlyList<FieldError> causas) =>
+        [.. causas.Select(static causa => causa with { Field = null })];
+
     /// <summary>Preserva todas as causas do domínio para situá-las no item do envelope.</summary>
     public T Propagar<T>(IReadOnlyList<FieldError> causas, string caminhoDoItem)
     {

@@ -59,7 +59,7 @@ internal static class LeituraDoEdital
 
         Result<IdentificadorLegivel> identificador = IdentificadorLegivel.Criar(valor);
         return identificador.IsFailure
-            ? leitor.Propagar<IdentificadorLegivel?>(identificador.Error!)
+            ? leitor.Propagar<IdentificadorLegivel?>(identificador.Errors, "identificadorLegivel")
             : identificador.Value;
     }
 
@@ -206,11 +206,11 @@ internal static class LeituraDoEdital
         string? cidadeUf = leitor.TextoOpcional(administradora, "cidadeUf", path, LimitesDoEnvelope.UnidadeAdministradoraCidadeUf);
         if (!leitor.Falhou)
         {
-            ConferirCidade(leitor, cidadeCodigoIbge, cidadeNome, cidadeUf);
+            ConferirCidade(leitor, cidadeCodigoIbge, cidadeNome, cidadeUf, path);
         }
     }
 
-    private static void ConferirCidade(LeitorEnvelope leitor, string? codigoIbge, string? nome, string? uf)
+    private static void ConferirCidade(LeitorEnvelope leitor, string? codigoIbge, string? nome, string? uf, string caminho)
     {
         bool algumPresente = codigoIbge is not null || nome is not null || uf is not null;
         bool todosPresentes = codigoIbge is not null && nome is not null && uf is not null;
@@ -222,7 +222,7 @@ internal static class LeituraDoEdital
 
         if (todosPresentes && ReferenciaCidadeGeo.Validar(codigoIbge, nome, uf) is { IsFailure: true } cidadeInvalida)
         {
-            leitor.Propagar<object?>(cidadeInvalida.Error!);
+            leitor.Propagar<object?>(cidadeInvalida.Errors, caminho);
         }
     }
 

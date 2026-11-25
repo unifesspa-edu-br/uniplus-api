@@ -47,7 +47,7 @@ internal static partial class LeituraDoBonusEAtendimento
         }
 
         Result<AtendimentoEspecializado> atendimento = AtendimentoEspecializado.Criar(condicoes, recursos, tipos);
-        return atendimento.IsFailure ? leitor.Propagar<AtendimentoEspecializado>(atendimento.Error!) : atendimento.Value;
+        return atendimento.IsFailure ? leitor.Propagar<AtendimentoEspecializado>(LeitorEnvelope.NoProprioItem(atendimento.Errors), "atendimento") : atendimento.Value;
     }
 
     private static List<T>? LerItens<T>(LeitorEnvelope leitor, JsonArray array, string pathArray, Func<LeitorEnvelope, JsonObject, string, T?> lerItem)
@@ -134,8 +134,12 @@ internal static partial class LeituraDoBonusEAtendimento
         }
 
         Result<ConfiguracaoBonusRegional> bonus = ConfiguracaoBonusRegional.Criar(regra, fator, teto, fatoElegibilidade, baseLegal);
-        return bonus.IsFailure ? leitor.Propagar<ConfiguracaoBonusRegional>(bonus.Error!) : bonus.Value;
+        return bonus.IsFailure ? leitor.Propagar<ConfiguracaoBonusRegional>(CausasDaFadaNoDocumento(bonus.Errors), "fada") : bonus.Value;
     }
+
+    private static IReadOnlyList<FieldError> CausasDaFadaNoDocumento(IReadOnlyList<FieldError> causas) =>
+        [.. causas.Select(static causa => causa.Field is "regra.codigo" or "fator" or "teto"
+            ? causa : LeitorEnvelope.NoProprioItem([causa])[0])];
 
     private static string LerCodigoDaBaseLegal(LeitorEnvelope leitor, JsonObject bloco)
     {

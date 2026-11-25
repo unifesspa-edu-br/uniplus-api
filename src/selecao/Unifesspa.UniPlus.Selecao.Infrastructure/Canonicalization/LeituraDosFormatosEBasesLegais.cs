@@ -73,13 +73,13 @@ internal static class LeituraDosFormatosEBasesLegais
             return null;
         }
 
-        return CriarFormatosPermitidos(leitor, qualquer, entradas);
+        return CriarFormatosPermitidos(leitor, qualquer, entradas, path);
     }
 
-    private static FormatosPermitidos? CriarFormatosPermitidos(LeitorEnvelope leitor, bool qualquer, List<(string Formato, int? TamanhoMaximoBytesMax)>? entradas)
+    private static FormatosPermitidos? CriarFormatosPermitidos(LeitorEnvelope leitor, bool qualquer, List<(string Formato, int? TamanhoMaximoBytesMax)>? entradas, string caminho)
     {
         Result<FormatosPermitidos> resultado = FormatosPermitidos.Criar(qualquer, entradas);
-        return resultado.IsFailure ? leitor.Propagar<FormatosPermitidos>(resultado.Error!) : resultado.Value;
+        return resultado.IsFailure ? leitor.Propagar<FormatosPermitidos>(resultado.Errors, caminho) : resultado.Value;
     }
 
     private static List<(string Formato, int? TamanhoMaximoBytesMax)> LerEntradasDeFormato(LeitorEnvelope leitor, JsonArray lista, string path)
@@ -149,7 +149,7 @@ internal static class LeituraDosFormatosEBasesLegais
         }
 
         Result<DocumentoExigidoBaseLegal> baseLegal = DocumentoExigidoBaseLegal.Criar(lida.Referencia, lida.Abrangencia, lida.Situacao, lida.Observacao);
-        return baseLegal.IsFailure ? leitor.Propagar<DocumentoExigidoBaseLegal?>(baseLegal.Error!) : baseLegal.Value;
+        return baseLegal.IsFailure ? leitor.Propagar<DocumentoExigidoBaseLegal?>(baseLegal.Errors, path) : baseLegal.Value;
     }
 
     /// <summary>

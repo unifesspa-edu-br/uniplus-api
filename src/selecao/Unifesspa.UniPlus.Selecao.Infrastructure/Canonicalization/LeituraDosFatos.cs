@@ -47,13 +47,13 @@ internal static class LeituraDosFatos
         string tipoCodigo = leitor.TextoNaoVazio(json, "tipo", path);
         DateOnly? data = leitor.DataOpcional(json, "data", path);
         Guid? faseId = leitor.IdentificadorOpcional(json, "faseId", path);
-        return leitor.Falhou ? null : CriarReferenciaTemporal(leitor, tipoCodigo, data, faseId);
+        return leitor.Falhou ? null : CriarReferenciaTemporal(leitor, tipoCodigo, data, faseId, path);
     }
 
-    private static ReferenciaTemporalFatos? CriarReferenciaTemporal(LeitorEnvelope leitor, string tipoCodigo, DateOnly? data, Guid? faseId)
+    private static ReferenciaTemporalFatos? CriarReferenciaTemporal(LeitorEnvelope leitor, string tipoCodigo, DateOnly? data, Guid? faseId, string caminho)
     {
         Result<ReferenciaTemporalFatos> resultado = ReferenciaTemporalFatos.Criar(tipoCodigo, data, faseId);
-        return resultado.IsFailure ? leitor.Propagar<ReferenciaTemporalFatos>(resultado.Error!) : resultado.Value;
+        return resultado.IsFailure ? leitor.Propagar<ReferenciaTemporalFatos>(resultado.Errors, caminho) : resultado.Value;
     }
 
     /// <summary>
@@ -119,12 +119,16 @@ internal static class LeituraDosFatos
         Result<FatoColetado> fato = CriarFato(d, c);
         if (fato.IsFailure)
         {
-            return leitor.Propagar<FatoColetado?>(fato.Error!);
+            return leitor.Propagar<FatoColetado?>(CausasDoFatoNoDocumento(fato.Errors), path);
         }
 
         valoresSelecionaveis[d.FatoCodigo] = c.ValoresSelecionaveis;
         return fato.Value;
     }
+
+    private static IReadOnlyList<FieldError> CausasDoFatoNoDocumento(IReadOnlyList<FieldError> causas) =>
+        [.. causas.Select(static causa => causa.Field is "ordem" or "formato" or "classificacaoProtecao" or "componenteExibicao"
+            ? causa : LeitorEnvelope.NoProprioItem([causa])[0])];
 
     private static DeclaracaoDoFato? LerDeclaracaoNoVocabulario(LeitorEnvelope leitor, JsonObject item, string path)
     {
