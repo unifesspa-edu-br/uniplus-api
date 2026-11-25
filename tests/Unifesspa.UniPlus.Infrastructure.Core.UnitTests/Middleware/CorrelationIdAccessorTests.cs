@@ -55,25 +55,18 @@ public class CorrelationIdAccessorTests
     public async Task CorrelationId_EmContextosParalelos_DeveIsolarValores()
     {
         CorrelationIdAccessor accessor = new();
-        string? observadoEmCtx1 = null;
-        string? observadoEmCtx2 = null;
+        string?[] observados = await Task.WhenAll(
+            Task.Run(() => ObservarCorrelationIdAsync(accessor, "ctx-1")),
+            Task.Run(() => ObservarCorrelationIdAsync(accessor, "ctx-2")));
 
-        await Task.WhenAll(
-            Task.Run(async () =>
-            {
-                accessor.SetCorrelationId("ctx-1");
-                await Task.Delay(10);
-                observadoEmCtx1 = accessor.CorrelationId;
-            }),
-            Task.Run(async () =>
-            {
-                accessor.SetCorrelationId("ctx-2");
-                await Task.Delay(10);
-                observadoEmCtx2 = accessor.CorrelationId;
-            })
-        );
+        observados[0].Should().Be("ctx-1");
+        observados[1].Should().Be("ctx-2");
+    }
 
-        observadoEmCtx1.Should().Be("ctx-1");
-        observadoEmCtx2.Should().Be("ctx-2");
+    private static async Task<string?> ObservarCorrelationIdAsync(CorrelationIdAccessor accessor, string id)
+    {
+        accessor.SetCorrelationId(id);
+        await Task.Delay(10);
+        return accessor.CorrelationId;
     }
 }

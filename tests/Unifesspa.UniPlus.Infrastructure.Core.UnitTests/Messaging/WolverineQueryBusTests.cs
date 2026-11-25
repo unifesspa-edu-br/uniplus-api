@@ -17,10 +17,8 @@ public class WolverineQueryBusTests
         // por SendAsync, PublishAsync ou outro método, este teste quebra antes
         // de chegar em integração.
         const string respostaEsperada = "ok";
-        Wolverine.IMessageBus bus = Substitute.For<Wolverine.IMessageBus>();
         TestQuery query = new(Guid.NewGuid());
-        bus.InvokeAsync<string>(query, Arg.Any<CancellationToken>())
-           .Returns(Task.FromResult(respostaEsperada));
+        Wolverine.IMessageBus bus = BusDeTeste.ComResposta(query, respostaEsperada);
 
         WolverineQueryBus wrapper = new(bus);
 
@@ -33,10 +31,8 @@ public class WolverineQueryBusTests
     [Fact]
     public async Task Send_DevePropagarCancellationToken()
     {
-        Wolverine.IMessageBus bus = Substitute.For<Wolverine.IMessageBus>();
         TestQuery query = new(Guid.NewGuid());
-        bus.InvokeAsync<string>(query, Arg.Any<CancellationToken>())
-           .Returns(Task.FromResult("ok"));
+        Wolverine.IMessageBus bus = BusDeTeste.ComResposta(query, "ok");
 
         WolverineQueryBus wrapper = new(bus);
         using CancellationTokenSource cts = new();
