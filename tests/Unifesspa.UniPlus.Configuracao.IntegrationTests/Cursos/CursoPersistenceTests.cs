@@ -14,6 +14,7 @@ using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Repositories;
 using Unifesspa.UniPlus.Configuracao.IntegrationTests.Infrastructure;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
+using Unifesspa.UniPlus.Kernel.Domain.ValueObjects;
 using Unifesspa.UniPlus.Kernel.Pagination;
 
 /// <summary>
@@ -37,6 +38,20 @@ public sealed class CursoPersistenceTests
     public CursoPersistenceTests(ConfiguracaoDbFixture fixture)
     {
         _fixture = fixture;
+    }
+
+    [Fact]
+    public async Task ListarPaginadoAsync_TermoNormalizado_FiltraCursos()
+    {
+        string codigo = CodigoUnico();
+        Curso curso = Novo(codigo);
+        await GravarCursoAsync(curso);
+        await using UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null);
+        var repository = new CursoRepository(ctx);
+        TermoDeBusca termo = TermoDeBusca.Criar($"  {codigo}  ").Value!;
+        (IReadOnlyList<Curso> itens, _, _) = await repository.ListarPaginadoAsync(
+            OrdenacaoPadraoDeCurso, termo, null, null, 20, PaginationDirection.Next, CancellationToken.None);
+        itens.Should().ContainSingle().Which.Id.Should().Be(curso.Id);
     }
 
     [Fact(DisplayName = "Criar persiste os campos (com grupo de área do ENEM) e carimba a auditoria")]

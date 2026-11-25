@@ -8,6 +8,7 @@ using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Configurations;
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Repositories.Ordenacao;
 using Unifesspa.UniPlus.Infrastructure.Core.Pagination;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
+using Unifesspa.UniPlus.Kernel.Domain.ValueObjects;
 using Unifesspa.UniPlus.Kernel.Pagination;
 
 public sealed class CursoRepository : ICursoRepository
@@ -44,7 +45,7 @@ public sealed class CursoRepository : ICursoRepository
     public async Task<(IReadOnlyList<Curso> Itens, (string SortKey, Guid Id)? Anterior, (string SortKey, Guid Id)? Proximo)>
         ListarPaginadoAsync(
             IReadOnlyList<SortField> ordenacao,
-            string? busca,
+            TermoDeBusca? busca,
             string? afterSortKey,
             Guid? afterId,
             int limit,
@@ -56,7 +57,7 @@ public sealed class CursoRepository : ICursoRepository
         string? termo = NormalizacaoTextual.PrepararTermoDeBusca(busca);
         IQueryable<CursoOrdenado> consulta = Filtrar(ProjetarCursos(), termo);
         OrderedKeysetPage<CursoOrdenado> pagina = await OrderedKeysetCursor.ApplyAsync(
-            consulta, OrdenacaoDeCursos.DeCursos(ordenacao, RecorteDeCurso(termo)),
+            consulta, OrdenacaoDeCursos.DeCursos(ordenacao, CondicoesDoFiltroDeCursos(termo)),
             afterSortKey, afterId, limit, direction, cancellationToken).ConfigureAwait(false);
         return ([.. pagina.Items.Select(static linha => linha.Entidade)], pagina.Previous, pagina.Next);
     }
@@ -88,7 +89,7 @@ public sealed class CursoRepository : ICursoRepository
     /// para que a continuação de uma busca não retome dentro de outra: a âncora é
     /// uma posição num conjunto, e trocar o conjunto a torna sem sentido.
     /// </summary>
-    private static IReadOnlyList<string> RecorteDeCurso(string? termo) =>
+    private static IReadOnlyList<string> CondicoesDoFiltroDeCursos(string? termo) =>
         [termo ?? string.Empty];
 
     public async Task AdicionarAsync(Curso curso, CancellationToken cancellationToken)
