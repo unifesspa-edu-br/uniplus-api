@@ -74,39 +74,48 @@ public sealed class MarcarVigenteExclusionConstraintConcorrenciaTests
     public async Task MarcarVigente_DuasAtivacoesConcorrentesDeCalendariosDiferentes_ColideNaExclusionConstraint()
     {
         MonolitoApiFactory api = _fixture.Factory;
+        (Guid idA, Guid idB) = await CriarCalendariosSemVigenteAsync(api);
+        await ConcorrerAtivacoesAsync(api, idA, idB);
+    }
 
-        Guid idA;
-        Guid idB;
-        await using (AsyncServiceScope setupScope = api.Services.CreateAsyncScope())
-        {
-            UniPlusDbContext db = setupScope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
+    // ConfiguracaoEndpointFixture é compartilhado por toda a
+    // ConfiguracaoEndpointCollection — outro teste da mesma collection
+    // (ex.: CalendarioDiasUteisEndpointTests.MarcarVigente_DesmarcaOAnterior)
+    // pode ter deixado um terceiro calendário vigente=true para trás.
+    // Sem desmarcá-lo aqui, o handler de A leria ESSE terceiro registro
+    // como vigenteAnterior e tentaria demarcá-lo dentro da própria
+    // transação — um xmin extra fora do controle deste teste, alheio à
+    // corrida A-vs-B que ele quer provar.
+    private static async Task<(Guid IdA, Guid IdB)> CriarCalendariosSemVigenteAsync(MonolitoApiFactory api)
+    {
+        await using AsyncServiceScope setupScope = api.Services.CreateAsyncScope();
+        UniPlusDbContext db = setupScope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
+        await db.Database.ExecuteSqlInterpolatedAsync(
+            $"UPDATE configuracao.calendarios_de_dias_uteis SET vigente = false WHERE vigente = true");
+        CalendarioDiasUteis calendarA = CriarCalendario("exc-a");
+        CalendarioDiasUteis calendarB = CriarCalendario("exc-b");
+        db.CalendariosDiasUteis.AddRange(calendarA, calendarB);
+        await db.SaveChangesAsync();
+        return (calendarA.Id, calendarB.Id);
+    }
 
-            // ConfiguracaoEndpointFixture é compartilhado por toda a
-            // ConfiguracaoEndpointCollection — outro teste da mesma collection
-            // (ex.: CalendarioDiasUteisEndpointTests.MarcarVigente_DesmarcaOAnterior)
-            // pode ter deixado um terceiro calendário vigente=true para trás.
-            // Sem desmarcá-lo aqui, o handler de A leria ESSE terceiro registro
-            // como vigenteAnterior e tentaria demarcá-lo dentro da própria
-            // transação — um xmin extra fora do controle deste teste, alheio à
-            // corrida A-vs-B que ele quer provar.
-            await db.Database.ExecuteSqlInterpolatedAsync(
-                $"UPDATE configuracao.calendarios_de_dias_uteis SET vigente = false WHERE vigente = true");
+    private static CalendarioDiasUteis CriarCalendario(string prefixo)
+    {
+        return CalendarioDiasUteis.Criar(
+            $"{prefixo}-{Guid.NewGuid():N}"[..20],
+            [new DiaNaoUtilCriacao("NACIONAL", null, null, null, new DateOnly(2099, 1, 1), "Ano novo")]).Value!;
+    }
 
-            CalendarioDiasUteis calendarA = CalendarioDiasUteis.Criar(
-                $"exc-a-{Guid.NewGuid():N}"[..20],
-                [new DiaNaoUtilCriacao("NACIONAL", null, null, null, new DateOnly(2099, 1, 1), "Ano novo")]).Value!;
-            CalendarioDiasUteis calendarB = CalendarioDiasUteis.Criar(
-                $"exc-b-{Guid.NewGuid():N}"[..20],
-                [new DiaNaoUtilCriacao("NACIONAL", null, null, null, new DateOnly(2099, 1, 1), "Ano novo")]).Value!;
-            db.CalendariosDiasUteis.AddRange(calendarA, calendarB);
-            await db.SaveChangesAsync();
-            idA = calendarA.Id;
-            idB = calendarB.Id;
-        }
-
-        // txB: marca B como vigente via UPDATE cru, sem commitar — nenhum calendário
-        // fica vigente=true no estado COMMITADO enquanto txB está aberta, então o
-        // handler de A não vê "vigenteAnterior" nenhum e não toca a linha de B.
+    // txB: marca B como vigente via UPDATE cru, sem commitar — nenhum calendário
+    // fica vigente=true no estado COMMITADO enquanto txB está aberta, então o
+    // handler de A não vê "vigenteAnterior" nenhum e não toca a linha de B.
+    // Prova direta de que a checagem forçada (SET CONSTRAINTS ALL IMMEDIATE) do
+    // handler de A está bloqueada esperando txB resolver — não uma aposta de
+    // tempo. Diferente do teste de xmin, o texto da query bloqueada não contém o
+    // nome da tabela (é o comando SET CONSTRAINTS em si), por isso o filtro é por
+    // esse texto, não pela tabela.
+    private static async Task ConcorrerAtivacoesAsync(MonolitoApiFactory api, Guid idA, Guid idB)
+    {
         await using AsyncServiceScope scopeB = api.Services.CreateAsyncScope();
         UniPlusDbContext dbB = scopeB.ServiceProvider.GetRequiredService<UniPlusDbContext>();
         await using IDbContextTransaction txB = await dbB.Database.BeginTransactionAsync();
@@ -117,32 +126,39 @@ public sealed class MarcarVigenteExclusionConstraintConcorrenciaTests
         IMessageBus busA = scopeA.ServiceProvider.GetRequiredService<IMessageBus>();
         Task<Result> taskA = busA.InvokeAsync<Result>(new MarcarVigenteCalendarioDiasUteisCommand(idA));
 
-        // Prova direta de que a checagem forçada (SET CONSTRAINTS ALL IMMEDIATE) do
-        // handler de A está bloqueada esperando txB resolver — não uma aposta de
-        // tempo. Diferente do teste de xmin, o texto da query bloqueada não contém o
-        // nome da tabela (é o comando SET CONSTRAINTS em si), por isso o filtro é por
-        // esse texto, não pela tabela.
+        await ConcluirAtivacoesAsync(api, txB, taskA, idA, idB);
+    }
+
+    private static async Task ConcluirAtivacoesAsync(
+        MonolitoApiFactory api, IDbContextTransaction txB, Task<Result> taskA, Guid idA, Guid idB)
+    {
         await WaitForConstraintCheckToBlockAsync(api, taskA);
-
         await txB.CommitAsync();
-
         Result result = await taskA;
+        VerificarFalhaNaAtivacao(result);
+        await VerificarCalendariosPersistidosAsync(api, idA, idB);
+    }
 
+    private static void VerificarFalhaNaAtivacao(Result result)
+    {
         // Registra o resultado observado para orientar a decisão de fix — o valor
         // desta asserção é DOCUMENTAR o comportamento real, não presumi-lo.
         result.IsFailure.Should().BeTrue(
             "as duas linhas (A e B) ficaram vigente=true simultaneamente assim que txB commitou — " +
             "a exclusion constraint deve ter estourado dentro do próprio catch do handler");
+    }
 
-        // Comportamento crítico sob investigação: o SaveChangesAsync automático do
-        // outbox do Wolverine roda LOGO APÓS o handler retornar, na MESMA
-        // transação/DbContext (ADR-0004). Se ChangeTracker.Clear() não bastar porque
-        // a transação Postgres ficou ABORTADA pelo "SET CONSTRAINTS ALL IMMEDIATE"
-        // que falhou, esse SaveChangesAsync automático relança — e como ele roda FORA
-        // de qualquer catch do handler, vira 500 em vez do 409 que o handler já
-        // decidiu. `taskA` já awaitou o ciclo completo do Wolverine (incluindo o
-        // outbox); chegar aqui sem exceção não capturada é a prova de que o outbox
-        // não relançou.
+    // Comportamento crítico sob investigação: o SaveChangesAsync automático do
+    // outbox do Wolverine roda LOGO APÓS o handler retornar, na MESMA
+    // transação/DbContext (ADR-0004). Se ChangeTracker.Clear() não bastar porque
+    // a transação Postgres ficou ABORTADA pelo "SET CONSTRAINTS ALL IMMEDIATE"
+    // que falhou, esse SaveChangesAsync automático relança — e como ele roda FORA
+    // de qualquer catch do handler, vira 500 em vez do 409 que o handler já
+    // decidiu. `taskA` já awaitou o ciclo completo do Wolverine (incluindo o
+    // outbox); chegar aqui sem exceção não capturada é a prova de que o outbox
+    // não relançou.
+    private static async Task VerificarCalendariosPersistidosAsync(MonolitoApiFactory api, Guid idA, Guid idB)
+    {
         await using AsyncServiceScope readScope = api.Services.CreateAsyncScope();
         UniPlusDbContext readDb = readScope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
         CalendarioDiasUteis persistedA = await readDb.CalendariosDiasUteis.SingleAsync(c => c.Id == idA);
@@ -159,23 +175,16 @@ public sealed class MarcarVigenteExclusionConstraintConcorrenciaTests
         await using AsyncServiceScope pollScope = api.Services.CreateAsyncScope();
         UniPlusDbContext pollDb = pollScope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
 
+        await AguardarVerificacaoBloqueadaAsync(pollDb, taskExpectedToBlock);
+    }
+
+    private static async Task AguardarVerificacaoBloqueadaAsync(UniPlusDbContext db, Task taskExpectedToBlock)
+    {
         DateTimeOffset deadline = DateTimeOffset.UtcNow.AddSeconds(5);
         while (DateTimeOffset.UtcNow < deadline)
         {
-            if (taskExpectedToBlock.IsCompleted)
-            {
-                Assert.Fail("A tarefa completou antes de bloquear na checagem da constraint — a corrida não foi forçada como esperado.");
-            }
-
-            int blockedBackends = await pollDb.Database
-                .SqlQuery<int>(
-                    $"""
-                    SELECT count(*)::int AS "Value" FROM pg_stat_activity
-                    WHERE wait_event_type = 'Lock' AND query ILIKE '%SET CONSTRAINTS%'
-                    """)
-                .SingleAsync();
-
-            if (blockedBackends > 0)
+            VerificarTarefaEmAndamento(taskExpectedToBlock);
+            if (await ContarVerificacoesDeConstraintBloqueadasAsync(db) > 0)
             {
                 return;
             }
@@ -184,5 +193,24 @@ public sealed class MarcarVigenteExclusionConstraintConcorrenciaTests
         }
 
         Assert.Fail("Nenhum backend ficou bloqueado na checagem da constraint dentro do prazo — a corrida não foi forçada.");
+    }
+
+    private static void VerificarTarefaEmAndamento(Task taskExpectedToBlock)
+    {
+        if (taskExpectedToBlock.IsCompleted)
+        {
+            Assert.Fail("A tarefa completou antes de bloquear na checagem da constraint — a corrida não foi forçada como esperado.");
+        }
+    }
+
+    private static async Task<int> ContarVerificacoesDeConstraintBloqueadasAsync(UniPlusDbContext db)
+    {
+        return await db.Database
+            .SqlQuery<int>(
+                $"""
+                SELECT count(*)::int AS "Value" FROM pg_stat_activity
+                WHERE wait_event_type = 'Lock' AND query ILIKE '%SET CONSTRAINTS%'
+                """)
+            .SingleAsync();
     }
 }
