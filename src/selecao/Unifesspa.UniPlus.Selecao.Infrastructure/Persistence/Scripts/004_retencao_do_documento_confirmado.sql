@@ -1,39 +1,24 @@
--- O documento confirmado é a evidência do que foi publicado. Só o confirmado (situacao = 'CONFIRMADO') é retido: o pendente é um envio
--- que nunca se completou, e a limpeza dos vencidos continua possível. O RAISE declara CONSTRAINT/TABLE/SCHEMA para que
--- PostgresException.ConstraintName chegue preenchida à aplicação (ADR-0102).
---
--- Desconfirmar é proibido sempre. A remoção, não: a retenção vale para o documento de um processo que já existe, e o
--- documento de um rascunho excluído sai junto com ele. A existência do processo é a da linha, sem olhar a exclusão
--- lógica: o processo excluído logicamente continua existindo e seus documentos continuam retidos.
-CREATE OR REPLACE FUNCTION selecao.fn_documentos_a_publicar_retencao()
+-- O documento a publicar e o modelo de documento confirmados preservam a evidência do que foi publicado.
+-- Pendentes podem ser removidos. Um confirmado pode ser removido quando não existe linha de processo,
+-- como na exclusão de um rascunho; a exclusão lógica mantém a linha e a retenção. Desconfirmar e
+-- mudar o processo de um confirmado e truncar são sempre proibidos, pois permitiriam apagar a evidência.
+CREATE OR REPLACE FUNCTION selecao.fn_retencao_do_documento_confirmado()
 RETURNS trigger
 LANGUAGE plpgsql
 AS $$
 BEGIN
-    RAISE EXCEPTION
-        'Documento confirmado é a evidência do que foi publicado: não se remove nem se desconfirma.'
-        USING ERRCODE = 'check_violation',
-              CONSTRAINT = 'ck_documentos_a_publicar_confirmado_retido',
-              TABLE = 'documentos_a_publicar',
-              SCHEMA = 'selecao';
-END;
-$$;
-
-CREATE OR REPLACE FUNCTION selecao.fn_documentos_a_publicar_retencao_delete()
-RETURNS trigger
-LANGUAGE plpgsql
-AS $$
-BEGIN
-    IF EXISTS (SELECT 1 FROM selecao.processos_seletivos WHERE id = OLD.processo_seletivo_id) THEN
-        RAISE EXCEPTION
-            'Documento confirmado é a evidência do que foi publicado: não se remove nem se desconfirma.'
-            USING ERRCODE = 'check_violation',
-                  CONSTRAINT = 'ck_documentos_a_publicar_confirmado_retido',
-                  TABLE = 'documentos_a_publicar',
-                  SCHEMA = 'selecao';
+    IF TG_OP = 'DELETE' THEN
+        IF NOT EXISTS (SELECT 1 FROM selecao.processos_seletivos WHERE id = OLD.processo_seletivo_id) THEN
+            RETURN OLD;
+        END IF;
     END IF;
 
-    RETURN OLD;
+    RAISE EXCEPTION
+        'Documento confirmado é evidência do que foi publicado: não se remove, não se desconfirma nem muda de processo.'
+        USING ERRCODE = 'check_violation',
+              CONSTRAINT = TG_ARGV[0],
+              TABLE = TG_TABLE_NAME,
+              SCHEMA = TG_TABLE_SCHEMA;
 END;
 $$;
 
@@ -42,32 +27,37 @@ CREATE TRIGGER trg_documentos_a_publicar_retencao_delete
     BEFORE DELETE ON selecao.documentos_a_publicar
     FOR EACH ROW
     WHEN (OLD.situacao = 'CONFIRMADO')
-    EXECUTE FUNCTION selecao.fn_documentos_a_publicar_retencao_delete();
+    EXECUTE FUNCTION selecao.fn_retencao_do_documento_confirmado('ck_documentos_a_publicar_confirmado_retido');
 
 DROP TRIGGER IF EXISTS trg_documentos_a_publicar_retencao_update ON selecao.documentos_a_publicar;
 CREATE TRIGGER trg_documentos_a_publicar_retencao_update
     BEFORE UPDATE ON selecao.documentos_a_publicar
     FOR EACH ROW
-    WHEN (OLD.situacao = 'CONFIRMADO' AND NEW.situacao <> 'CONFIRMADO')
-    EXECUTE FUNCTION selecao.fn_documentos_a_publicar_retencao();
-
--- TRUNCATE não dispara gatilho de linha.
-CREATE OR REPLACE FUNCTION selecao.fn_documentos_a_publicar_bloqueia_truncate()
-RETURNS trigger
-LANGUAGE plpgsql
-AS $$
-BEGIN
-    RAISE EXCEPTION
-        'TRUNCATE apagaria os documentos confirmados, que são evidência do publicado.'
-        USING ERRCODE = 'check_violation',
-              CONSTRAINT = 'ck_documentos_a_publicar_confirmado_retido',
-              TABLE = 'documentos_a_publicar',
-              SCHEMA = 'selecao';
-END;
-$$;
+    WHEN (OLD.situacao = 'CONFIRMADO' AND (NEW.situacao IS DISTINCT FROM 'CONFIRMADO' OR NEW.processo_seletivo_id IS DISTINCT FROM OLD.processo_seletivo_id))
+    EXECUTE FUNCTION selecao.fn_retencao_do_documento_confirmado('ck_documentos_a_publicar_confirmado_retido');
 
 DROP TRIGGER IF EXISTS trg_documentos_a_publicar_bloqueia_truncate ON selecao.documentos_a_publicar;
 CREATE TRIGGER trg_documentos_a_publicar_bloqueia_truncate
     BEFORE TRUNCATE ON selecao.documentos_a_publicar
     FOR EACH STATEMENT
-    EXECUTE FUNCTION selecao.fn_documentos_a_publicar_bloqueia_truncate();
+    EXECUTE FUNCTION selecao.fn_retencao_do_documento_confirmado('ck_documentos_a_publicar_confirmado_retido');
+
+DROP TRIGGER IF EXISTS trg_modelos_de_documento_retencao_delete ON selecao.modelos_de_documento;
+CREATE TRIGGER trg_modelos_de_documento_retencao_delete
+    BEFORE DELETE ON selecao.modelos_de_documento
+    FOR EACH ROW
+    WHEN (OLD.situacao = 'CONFIRMADO')
+    EXECUTE FUNCTION selecao.fn_retencao_do_documento_confirmado('ck_modelos_de_documento_confirmado_retido');
+
+DROP TRIGGER IF EXISTS trg_modelos_de_documento_retencao_update ON selecao.modelos_de_documento;
+CREATE TRIGGER trg_modelos_de_documento_retencao_update
+    BEFORE UPDATE ON selecao.modelos_de_documento
+    FOR EACH ROW
+    WHEN (OLD.situacao = 'CONFIRMADO' AND (NEW.situacao IS DISTINCT FROM 'CONFIRMADO' OR NEW.processo_seletivo_id IS DISTINCT FROM OLD.processo_seletivo_id))
+    EXECUTE FUNCTION selecao.fn_retencao_do_documento_confirmado('ck_modelos_de_documento_confirmado_retido');
+
+DROP TRIGGER IF EXISTS trg_modelos_de_documento_bloqueia_truncate ON selecao.modelos_de_documento;
+CREATE TRIGGER trg_modelos_de_documento_bloqueia_truncate
+    BEFORE TRUNCATE ON selecao.modelos_de_documento
+    FOR EACH STATEMENT
+    EXECUTE FUNCTION selecao.fn_retencao_do_documento_confirmado('ck_modelos_de_documento_confirmado_retido');

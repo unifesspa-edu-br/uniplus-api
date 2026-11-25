@@ -39,7 +39,7 @@ public sealed class DocumentoAPublicar : EntityBase, IArquivoEnviado
     /// <summary>
     /// A identidade do processo a que o documento serve. Antes da primeira publicação o processo não tem linha e esta é a
     /// identidade do rascunho, que a publicação mantém como a do processo; por isso não há chave estrangeira, e a
-    /// integridade com o dono é coordenada pelo bloqueio do rascunho.
+    /// aplicação confere que o rascunho ou o processo existe.
     /// </summary>
     public Guid ProcessoSeletivoId { get; private set; }
 

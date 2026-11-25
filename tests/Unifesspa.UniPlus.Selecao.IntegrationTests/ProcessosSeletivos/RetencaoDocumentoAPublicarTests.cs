@@ -60,6 +60,17 @@ public sealed class RetencaoDocumentoAPublicarTests : IClassFixture<ProcessoSele
         await ConferirDocumentoConfirmadoAsync(documentoId);
     }
 
+    [Fact]
+    public async Task UpdateCru_TrocarProcessoDeDocumentoConfirmado_Recusado()
+    {
+        Guid documentoId = await SemearDocumentoAsync(confirmado: true);
+        await using NpgsqlConnection conexao = await AbrirConexaoAsync();
+        Func<Task> trocar = () => ExecutarAsync(conexao, "UPDATE selecao.documentos_a_publicar SET processo_seletivo_id = gen_random_uuid() WHERE id = @id", documentoId);
+        (await trocar.Should().ThrowAsync<PostgresException>())
+            .Which.ConstraintName.Should().Be("ck_documentos_a_publicar_confirmado_retido");
+        await ConferirDocumentoConfirmadoAsync(documentoId);
+    }
+
     [Fact(DisplayName = "TRUNCATE da tabela de documentos é recusado — não dispara trigger de linha, e levaria os confirmados junto")]
     public async Task TruncateCru_Recusado()
     {
@@ -98,7 +109,7 @@ public sealed class RetencaoDocumentoAPublicarTests : IClassFixture<ProcessoSele
 
         await using NpgsqlConnection conexao = await AbrirConexaoAsync();
 
-        // O trigger de UPDATE dispara só quando a situação SAI de Confirmado. A transição
+        // O trigger de UPDATE protege os documentos já confirmados. A transição
         // normal do ciclo de vida (Pendente → Confirmado) não pode ser afetada — se fosse, o
         // próprio upload deixaria de funcionar.
         await ExecutarAsync(conexao, "UPDATE selecao.documentos_a_publicar SET situacao = @situacao WHERE id = @id", documentoId, StatusArquivoEnviado.Confirmado);

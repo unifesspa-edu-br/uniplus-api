@@ -17,7 +17,8 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// O modelo de documento que uma exigência oferece ao candidato — a autodeclaração ou a declaração
 /// de pertencimento que ele baixa, preenche, assina e devolve (UNI-REQ-0016). Arquivo editável
 /// (DOCX ou ODT) guardado no MinIO por envio direto do cliente (URL pré-assinada
-/// de PUT); a API nunca recebe os bytes. Vinculado ao processo, mas não é filho do agregado: nasce
+/// de PUT); a API nunca recebe os bytes. Ligado à identidade do rascunho ou do processo por
+/// <see cref="ProcessoSeletivoId"/>, mas não é filho do agregado: nasce
 /// <see cref="StatusArquivoEnviado.Pendente"/> e só vira dado de negócio ao ser
 /// <see cref="StatusArquivoEnviado.Confirmado"/> — conteúdo lido, validado e hasheado no servidor.
 /// O confirmado é imutável; um novo envio cria outro registro.
@@ -30,6 +31,10 @@ public sealed class ModeloDeDocumento : EntityBase, IArquivoEnviado
     /// <summary>Tamanho máximo do nome do arquivo, com a extensão.</summary>
     public const int NomeArquivoMaxLength = NomeDeArquivoEnviado.TamanhoMaximo;
 
+    /// <summary>
+    /// A identidade do processo que oferece o modelo. Antes da primeira publicação é a identidade do rascunho,
+    /// que a publicação mantém como a do processo; não há chave estrangeira, e a aplicação confere o dono.
+    /// </summary>
     public Guid ProcessoSeletivoId { get; private set; }
     public string NomeArquivo { get; private set; } = string.Empty;
     public FormatoDeDocumento Formato { get; private set; }
