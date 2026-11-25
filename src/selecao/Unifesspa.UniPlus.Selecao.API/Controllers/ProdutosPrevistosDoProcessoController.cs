@@ -2,7 +2,6 @@ namespace Unifesspa.UniPlus.Selecao.API.Controllers;
 
 using System.Diagnostics.CodeAnalysis;
 
-using Application.Commands.AtosDoProcesso;
 using Application.DTOs;
 using Application.Queries.ProdutosPrevistos;
 
@@ -98,19 +97,7 @@ public sealed class ProdutosPrevistosDoProcessoController : ControllerBase
         ArgumentNullException.ThrowIfNull(request);
 
         Result<AtoPublicadoDto> resultado = await _commandBus
-            .Send(
-                new PublicarProdutoDoEditalCommand(
-                    processoSeletivoId,
-                    produtoId,
-                    request.Numero,
-                    request.DataDoAto,
-                    request.Assinante,
-                    request.DocumentoPrincipalId,
-                    AnexoDoAtoRequest.ParaComando(request.Anexos),
-                    request.PoliticaDeDivulgacaoConfirmada,
-                    request.AtoCorrigidoId,
-                    request.MotivoDaCorrecao),
-                cancellationToken)
+            .Send(request.ParaComando(processoSeletivoId, produtoId), cancellationToken)
             .ConfigureAwait(false);
 
         return resultado.IsSuccess

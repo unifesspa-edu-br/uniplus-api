@@ -2,7 +2,6 @@ namespace Unifesspa.UniPlus.Selecao.API.Controllers;
 
 using System.Diagnostics.CodeAnalysis;
 
-using Application.Commands.ProcessosSeletivos;
 using Application.DTOs;
 using Application.Queries.ProcessosSeletivos;
 
@@ -21,7 +20,6 @@ using Unifesspa.UniPlus.Infrastructure.Core.OpenApi;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.API.Authorization;
 using Unifesspa.UniPlus.Selecao.Application.Permissoes;
-using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 /// <summary>
 /// Retificação do processo já publicado, em um ato só.
@@ -78,17 +76,9 @@ public sealed class ProcessoSeletivoRetificacaoController : ControllerBase
     {
         ArgumentNullException.ThrowIfNull(request);
 
-        Result resultado = await _commandBus.Send(
-            new RetificarProcessoSeletivoCommand(
-                id,
-                request.Motivo,
-                request.Numero,
-                request.PeriodoInscricaoInicio,
-                request.PeriodoInscricaoFim,
-                request.DocumentoEditalId,
-                MapeamentoDoAto.ParaDados(request.Ato),
-                Anexos: MapeamentoDoAto.ParaAnexos(request.Anexos)),
-            cancellationToken);
+        Result resultado = await _commandBus
+            .Send(request.ParaComando(id), cancellationToken)
+            .ConfigureAwait(false);
 
         if (resultado.IsSuccess)
         {
