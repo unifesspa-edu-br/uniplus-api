@@ -94,6 +94,14 @@ Extensions condicionais:
 > **Decisão.** O membro `identificadores` passa a valer também para a banca da fase e para a da etapa. Cada item de `errors[]` cujo `field` passa por uma banca traz, depois dos itens da fase ou da etapa, mais um objeto `{ "lista": ..., "identificador": ... }`, na ordem em que a banca aparece no `field`. `lista` é o nome da lista como aparece no `field`: `bancasRequeridas` na fase e `bancas` na etapa. `identificador` é o identificador opaco da banca; nenhum identificador é reaproveitado para outra banca. Exemplos: `[{"lista":"fases","identificador":"INSCRICAO"},{"lista":"bancasRequeridas","identificador":"<id da banca>"}]` e `[{"lista":"etapas","identificador":"<id da etapa>"},{"lista":"bancas","identificador":"<id da banca>"}]`. O `p` do `field` (`bancasRequeridas[p]`, `bancas[p]`) é a posição da banca na ordem canônica do envelope, e o identificador sai da banca nessa mesma posição. O identificador nunca é dado pessoal. O `field` continua sendo o ponteiro com a posição e sem chave de negócio. A causa que se refere à fase ou à etapa inteira, e não a uma banca, continua sem o identificador da banca. O membro continua omitido, nunca `null` nem lista vazia, no item cujo `field` não passa por fase, etapa ou banca, na raiz da resposta e nos demais endpoints. A gravação do cronograma e das etapas continua sem o membro. O componente `ProblemDetails` do OpenAPI não muda: `lista` já é texto livre.
 >
 > **Consequências.** O cliente localiza a banca mesmo depois de outra gravação. A banca que não existe mais não aponta outra, porque nenhum identificador é reaproveitado: a recusa fica com a fase ou a etapa.
+>
+> **Emenda (2026-11-25) — o campo da causa na leitura da configuração publicada.**
+>
+> **Contexto.** As regras do domínio dão às causas o nome do campo do pedido de gravação, mas o documento publicado usa outras chaves: por exemplo, `fatoElegibilidadeCodigo` no pedido e `codigoDoDadoDeElegibilidade` no documento.
+>
+> **Decisão.** Na leitura do documento publicado, cada causa vem sob o caminho do item no documento. O campo indicado pela regra do domínio só acompanha esse caminho quando é uma chave do documento; caso contrário, a causa aponta o próprio item. A causa que não pertence a um único item, como uma incoerência entre blocos, sai sem campo. A leitura devolve todas as causas do item, cada uma com seu campo, e para no primeiro item recusado. Um campo que começa por índice entre colchetes se junta ao caminho sem ponto, como em `exibicao[0][1].valor`.
+>
+> **Consequências.** Nenhum caminho aponta uma chave ausente do documento. Não se constrói uma tabela de correspondência entre o nome do pedido e a chave do documento: não há quem a use; se um dia houver, será outra decisão. As mensagens e os códigos de erro não mudam.
 
 Extensions adicionais não definidas aqui são proibidas em V1 sem ADR de extensão. Extensions que carregam dado pessoal são proibidas por princípio (umbrella, princípio 3).
 
