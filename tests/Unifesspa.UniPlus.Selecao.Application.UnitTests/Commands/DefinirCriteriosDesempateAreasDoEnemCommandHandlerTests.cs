@@ -15,7 +15,7 @@ using Unifesspa.UniPlus.Testes.Compartilhado;
 using static Unifesspa.UniPlus.Selecao.Application.UnitTests.Commands.CenarioDosCriteriosDeDesempate;
 
 /// <summary>
-/// A ordem de áreas do ENEM do critério de desempate: guarda os códigos aparados na ordem declarada e recusa,
+/// A ordem de áreas do ENEM do critério de desempate: recusa,
 /// cada uma no campo do item e sem ecoar o texto recebido, a área que falta, a de forma inválida, a repetida,
 /// a acima do teto e a fora do quadro de pesos da classificação.
 /// </summary>
@@ -33,17 +33,46 @@ public sealed class DefinirCriteriosDesempateAreasDoEnemCommandHandlerTests
         return processo;
     }
 
-    [Fact(DisplayName = "Handle com DESEMPATE_MAIOR_NOTA_AREA_ENEM guarda os códigos aparados, na ordem declarada")]
-    public async Task Handle_MaiorNotaAreaEnem_Persiste()
+    [Theory(DisplayName = "Área com espaços ou letras minúsculas é recusada junto com outra causa, sem gravar")]
+    [InlineData(" REDACAO ")]
+    [InlineData("redacao")]
+    public async Task Handle_AreaForaDoFormato_AcumulaRecusasSemGravar(string area)
     {
-        ProcessoSeletivo processo = NovoProcesso("PS ENEM 2027", TiposDeProcessoDeTeste.PSIQ);
+        ProcessoSeletivo processo = ProcessoComClassificacaoEnem();
         CenarioDosCriteriosDeDesempate cenario = Com(processo).ComRegra(RegraDeDesempate.MaiorNotaPorAreaDoEnem.Codigo());
 
-        Result result = await cenario.DefinirAsync(Comando(processo.Id, CriterioDeAreas(1, " REDACAO ", "MATEMATICA")));
+        Result result = await cenario.DefinirAsync(Comando(processo.Id, CriterioDeAreas(1, area, "REDACAO"), CriterioDeAreas(2, "FISICA")));
 
-        result.IsSuccess.Should().BeTrue(result.Error?.Message);
-        ((ParametrosDesempateMaiorNotaAreaEnem)processo.CriteriosDesempate.Single().Parametros).Areas.Should().Equal("REDACAO", "MATEMATICA");
-        await cenario.UnitOfWork.Received(1).SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
+        result.Errors.Select(static e => (e.Field, e.Error.Code)).Should().Equal(
+            ("criterios[0].parametros.areas[0]", "CriterioDesempate.AreaInvalida"),
+            ("criterios[1].parametros.areas[0]", "ProcessoSeletivo.DesempateAreaEnemForaDoQuadro"));
+        processo.CriteriosDesempate.Should().BeEmpty();
+        await cenario.UnitOfWork.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
+    }
+
+    [Fact(DisplayName = "Área em minúsculas é recusada sem repetir o texto recebido na mensagem")]
+    public async Task Handle_AreaEmMinusculas_RecusaSemRepetirOTexto()
+    {
+        ProcessoSeletivo processo = ProcessoComClassificacaoEnem();
+        CenarioDosCriteriosDeDesempate cenario = Com(processo).ComRegra(RegraDeDesempate.MaiorNotaPorAreaDoEnem.Codigo());
+
+        Result result = await cenario.DefinirAsync(Comando(processo.Id, CriterioDeAreas(1, "redacao")));
+
+        result.Errors.Should().ContainSingle().Subject.Error.Message.Should().NotContain("redacao");
+    }
+
+    [Fact(DisplayName = "Área com espaços antes da mesma área válida é recusada pela forma, sem recusa de repetição")]
+    public async Task Handle_AreaComEspacosAntesDaMesmaArea_RecusaFormaSemRepeticao()
+    {
+        ProcessoSeletivo processo = ProcessoComClassificacaoEnem();
+        CenarioDosCriteriosDeDesempate cenario = Com(processo).ComRegra(RegraDeDesempate.MaiorNotaPorAreaDoEnem.Codigo());
+
+        Result result = await cenario.DefinirAsync(Comando(processo.Id, CriterioDeAreas(1, " REDACAO ", "REDACAO")));
+
+        FieldError erro = result.Errors.Should().ContainSingle().Subject;
+        (erro.Field, erro.Error.Code).Should().Be(("criterios[0].parametros.areas[0]", "CriterioDesempate.AreaInvalida"));
+        processo.CriteriosDesempate.Should().BeEmpty();
+        await cenario.UnitOfWork.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
     }
 
     [Fact(DisplayName = "Handle com DESEMPATE_MAIOR_NOTA_AREA_ENEM sem áreas recusa no campo do critério")]
