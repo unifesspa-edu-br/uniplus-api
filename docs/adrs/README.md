@@ -41,7 +41,7 @@ npx markdownlint-cli2 'docs/adrs/**/*.md'
 | [0010](0010-audience-unica-uniplus-em-tokens-oidc.md) | Audience única `uniplus` em tokens OIDC | accepted | 2026-04-28 |
 | [0011](0011-mascaramento-de-cpf-em-logs.md) | Mascaramento de CPF em logs via enricher Serilog | accepted | 2026-04-28 |
 | [0012](0012-archunitnet-como-fitness-tests-arquiteturais.md) | ArchUnitNET como biblioteca de fitness tests arquiteturais | accepted | 2026-04-28 |
-| [0013](0013-motor-de-classificacao-como-servicos-de-dominio-puros.md) | Classificação dos candidatos como serviços de domínio puros | accepted | 2026-04-28 |
+| [0013](0013-classificacao-dos-candidatos-como-servicos-de-dominio-puros.md) | Classificação dos candidatos como serviços de domínio puros | accepted | 2026-04-28 |
 | [0014](0014-kafka-como-bus-assincrono-inter-modulos.md) | Kafka como bus assíncrono inter-módulos e para integrações externas | accepted | 2026-04-28 |
 | [0015](0015-rest-contract-first-com-openapi.md) | REST contract-first com OpenAPI 3.0 e versionamento de API | accepted | 2026-04-28 |
 | [0016](0016-keycloak-como-identity-provider.md) | Keycloak como identity provider OIDC do `uniplus-api` | accepted | 2026-04-28 |

@@ -11,7 +11,7 @@ informed: []
 
 ## Contexto e enunciado do problema
 
-Qualquer processo seletivo pode oferecer o Fator de Atenuação das Desigualdades de Acesso, até aqui chamado de bônus regional, conforme o edital e a necessidade da Unifesspa. O administrador configura o acréscimo no processo, sem amarra a tipo de processo (UNI-REQ-0015). A classificação dos candidatos aplica ou não o acréscimo a cada candidato observando o que foi configurado e os fatos dele (UNI-REQ-0046, [ADR-0013](0013-motor-de-classificacao-como-servicos-de-dominio-puros.md)).
+Qualquer processo seletivo pode oferecer o Fator de Atenuação das Desigualdades de Acesso, até aqui chamado de bônus regional, conforme o edital e a necessidade da Unifesspa. O administrador configura o acréscimo no processo, sem amarra a tipo de processo (UNI-REQ-0015). A classificação dos candidatos aplica ou não o acréscimo a cada candidato observando o que foi configurado e os fatos dele (UNI-REQ-0046, [ADR-0013](0013-classificacao-dos-candidatos-como-servicos-de-dominio-puros.md)).
 
 A configuração do acréscimo tinha a regra, o fator, o teto e o retrato da base legal com os municípios. Não dizia quem recebe o acréscimo. O critério muda de edital para edital: no de Medicina 2027, o acréscimo é de quem o pede no formulário e reside num município da área de abrangência (UNI-REQ-0150). Fixar o critério no código amarraria o sistema a um edital. Ler um fato de código conhecido amarraria o cálculo dos dados do candidato a um cadastro.
 
@@ -61,5 +61,5 @@ A renomeação do bônus regional para o termo do PO nos nomes técnicos é trab
 ## Mais informações
 
 - Issue #1878.
-- [ADR-0013](0013-motor-de-classificacao-como-servicos-de-dominio-puros.md): a classificação dos candidatos como serviços de domínio puros.
+- [ADR-0013](0013-classificacao-dos-candidatos-como-servicos-de-dominio-puros.md): a classificação dos candidatos como serviços de domínio puros.
 - [ADR-0136](0136-catalogo-de-fatos-do-candidato-administravel.md): os fatos do administrador e os derivados por regra.

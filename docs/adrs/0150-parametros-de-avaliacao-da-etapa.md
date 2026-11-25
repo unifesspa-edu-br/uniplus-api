@@ -85,7 +85,7 @@ Os **itens de avaliação** da etapa (critérios, blocos) são componentes de no
 ## Mais informações
 
 - [ADR-0149](0149-nota-da-etapa-por-inscricao.md): lançamentos e avaliação apurada.
-- [ADR-0123](0123-tipos-etapa-configuraveis.md), [ADR-0113](0113-fase-x-etapa-eixo-temporal-e-eixo-de-pontuacao.md), [ADR-0110](0110-retificacao-como-sessao-editorial.md) e [ADR-0013](0013-motor-de-classificacao-como-servicos-de-dominio-puros.md).
+- [ADR-0123](0123-tipos-etapa-configuraveis.md), [ADR-0113](0113-fase-x-etapa-eixo-temporal-e-eixo-de-pontuacao.md), [ADR-0110](0110-retificacao-como-sessao-editorial.md) e [ADR-0013](0013-classificacao-dos-candidatos-como-servicos-de-dominio-puros.md).
 - Issues #1622 (itens de avaliação da etapa) e #1046 (dupla correção).
 
 ## Emenda 1 (2026-11-12) — correção independente obrigatória, procedimento de recurso e corretores da regra

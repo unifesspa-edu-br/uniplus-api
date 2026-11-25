@@ -53,7 +53,7 @@ Em uma frase: **decisão de correspondência compara identidade; texto dirigido 
 2. `{Catalogo}OrigemId` é **obrigatório e não-anulável** em toda entidade cujo snapshot participe de decisão. A factory recusa o `Guid` vazio — a entidade não aceita uma identidade que não identifica.
 3. O código congelado continua sendo persistido, exibido e publicado no envelope. É o que aparece em mensagem de erro, tela e documento oficial.
 4. Quando o código casa e a identidade não, a recusa tem **motivo próprio**, que nomeia o que aconteceu: o código foi reatribuído depois que a regra foi escrita. Dizer "não encontrei" seria mandar procurar algo que está visível.
-5. A resolução de código para identidade é feita pela camada de aplicação e entregue ao domínio como dado. O serviço de domínio não ganha leitor ([ADR-0013](0013-motor-de-classificacao-como-servicos-de-dominio-puros.md)).
+5. A resolução de código para identidade é feita pela camada de aplicação e entregue ao domínio como dado. O serviço de domínio não ganha leitor ([ADR-0013](0013-classificacao-dos-candidatos-como-servicos-de-dominio-puros.md)).
 6. Quando gate de escrita e consulta de leitura precisam do mesmo veredicto, ambos consomem **a mesma resolução**, não duas leituras independentes do catálogo — duas leituras podem divergir, e o invariante é que a regra mostrada como reprovada seja a que bloqueia a transição.
 
 ### Emenda ao ADR-0061
@@ -122,7 +122,7 @@ Os testes que acompanham cada ponto de decisão vêm em par, e ambos falham sem 
 - **Aplicação na ADR-0136:** o fato do candidato é referenciado pelo código, e não por identidade de origem, porque o código do fato é imutável por invariante e nunca reutilizado — o caso que esta ADR admite, como o `AreaCodigo`.
 - [ADR-0061](0061-referencia-cross-modulo-via-snapshot-copy.md) — pattern de snapshot-copy, emendado nas regras 2 e 5 por esta decisão.
 - [ADR-0055](0055-organizacao-institucional-bounded-context.md) — código imutável por invariante, mecanismo alternativo (opção B).
-- [ADR-0013](0013-motor-de-classificacao-como-servicos-de-dominio-puros.md) — por que a resolução chega ao domínio como dado, e não como leitor.
+- [ADR-0013](0013-classificacao-dos-candidatos-como-servicos-de-dominio-puros.md) — por que a resolução chega ao domínio como dado, e não como leitor.
 - `unifesspa-edu-br/uniplus-api#1372` — a correção que originou o princípio, no predicado de documento por modalidade.
 - `unifesspa-edu-br/uniplus-api#1375` — extensão aos demais predicados.
 - `unifesspa-edu-br/uniplus-api#1335` — epic de integridade do código de cadastro.
