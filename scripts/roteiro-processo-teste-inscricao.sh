@@ -61,13 +61,15 @@
 #   NOME_PROCESSO (default: o nome do processo da Medicina 2027)
 #   IDENTIFICADOR_PROCESSO (default: psm-2027) — o identificador legível é único:
 #                 outro processo na mesma base precisa de outro valor
-#   INICIO_INSCRICAO, FIM_INSCRICAO (default: a inscrição abre ontem e termina 31 dias depois) —
-#                 início e fim do período de inscrição, com data, hora e fuso de Belém,
-#                 como 2026-11-08T00:00:00-03:00
+#   INICIO_INSCRICAO, FIM_INSCRICAO — início e fim do período de inscrição,
+#                 em ISO 8601 com fuso Z ou ±HH:MM e fração de segundo opcional.
+#                 Por padrão, o início é ontem à meia-noite e o fim é o do
+#                 Anexo I deslocado (31 dias após a data do início, às 23h59min59s).
+#                 As demais fases acompanham a data do início no fuso de Belém.
 #
 # O arquivo também pode ser lido com `source` por um roteiro irmão (ver
 # roteiro-processo-teste-notas-do-enem.sh): as funções ficam disponíveis e o
-# `main` só roda quando o arquivo é executado.
+# `main` só roda quando o arquivo é executado; ao carregar, o período é conferido.
 
 set -euo pipefail
 
@@ -538,8 +540,6 @@ JSON
     ok "fase_inscricao=$FASE_INSCRICAO_ID fase_resultado=$FASE_RESULTADO_ID reserva_demografica=$RESERVA_DEMOGRAFICA_ID tipo_processo=$TIPO_PROCESSO_ID condicoes_atendimento=$CONDICAO_ATENDIMENTO_IDS recursos_acessibilidade=$RECURSO_ACESSIBILIDADE_IDS tipos_deficiencia=$TIPO_DEFICIENCIA_IDS base_legal_fada=$BASE_LEGAL_FADA_ID calendario_dias_uteis=$calendario_id"
 }
 
-criar_processo() {
-    log "Criar ProcessoSeletivo"
 # A Seleção reconhece cidade de prova pela fonte dos valores do fato, tanto
 # nos itens quanto nos subitens dos grupos, independentemente do código do fato.
 conferir_modelo_inscricao() {
@@ -647,6 +647,8 @@ conferir_processo_publicado() {
     fi
 }
 
+criar_processo() {
+    log "Criar ProcessoSeletivo"
     local resp existente status
     PROCESSO_JA_PUBLICADO="false"
     existente=$(buscar_processo_por_identificador)
@@ -855,23 +857,74 @@ banca_requerida() {
         desempate: "VOTO_DA_PRESIDENCIA", encerramento: "PRESIDENCIA_NO_QUORUM", semUnanimidade: null}}'
 }
 
-definir_cronograma_fases() {
-    log "Definir Cronograma de Fases (Anexo I deslocado, fuso America/Belem)"
-    # As datas são deslocadas juntas a partir do início da inscrição.
-    local hoje deslocamento inicio_inscricao fim_inscricao inicio_resultado fim_resultado inicio_habilitacao fim_habilitacao data_inicio
+# Calcula e confere o período antes de qualquer chamada à API. Os valores
+# informados são preservados, inclusive o fuso e a precisão da fração.
+conferir_periodo_da_inscricao() {
+    local hoje nome valor sem_fracao instante fracao fuso inicio_epoch fim_epoch inicio_fracao fim_fracao
     hoje=$(TZ=America/Belem date +%Y-%m-%d)
     inicio_inscricao="${INICIO_INSCRICAO:-$(TZ=America/Belem date -d "$hoje -1 day" +%Y-%m-%dT00:00:00-03:00)}"
-    [[ "$inicio_inscricao" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}T00:00:00-03:00$ ]] \
-        || fail "INICIO_INSCRICAO deve ter o formato AAAA-MM-DDT00:00:00-03:00."
-    data_inicio=${inicio_inscricao%%T*}
-    date -u -d "$data_inicio" +%F >/dev/null 2>&1 || fail "INICIO_INSCRICAO contém uma data inválida."
+    for nome in INICIO_INSCRICAO FIM_INSCRICAO; do
+        if [ "$nome" = INICIO_INSCRICAO ]; then
+            valor="$inicio_inscricao"
+        else
+            valor="${FIM_INSCRICAO:-}"
+            [ -n "$valor" ] || continue
+        fi
+        [[ "$valor" =~ ^([0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2})(\.([0-9]+))?(Z|[+-][0-9]{2}:[0-9]{2})$ ]] \
+            || fail "$nome deve estar em ISO 8601 com fuso Z ou ±HH:MM."
+        [[ "$valor" != 0000-* ]] || fail "$nome contém uma data ou hora inválida."
+        sem_fracao="${BASH_REMATCH[1]}${BASH_REMATCH[4]}"
+        fracao="${BASH_REMATCH[3]}"
+        fuso="${BASH_REMATCH[4]}"
+        if [ "$fuso" != Z ]; then
+            [ "${fuso:1:2}" -le 23 ] && [ "${fuso:4:2}" -le 59 ] \
+                || fail "$nome contém um fuso inválido."
+        fi
+        instante=$(date -d "$sem_fracao" +%s 2>/dev/null) \
+            || fail "$nome contém uma data, hora ou fuso inválido."
+        if [ "$nome" = INICIO_INSCRICAO ]; then
+            inicio_epoch="$instante"
+            inicio_fracao="$fracao"
+        else
+            fim_epoch="$instante"
+            fim_fracao="$fracao"
+        fi
+    done
+    data_inicio=$(TZ=America/Belem date -d "@$inicio_epoch" +%Y-%m-%d)
     deslocamento=$(( ($(date -u -d "$data_inicio" +%s) - $(date -u -d 2026-12-16 +%s)) / 86400 ))
+    if [ -z "${FIM_INSCRICAO:-}" ]; then
+        fim_inscricao=$(TZ=America/Belem date -d "2027-01-16 $deslocamento days" +%Y-%m-%dT23:59:59-03:00)
+        fim_epoch=$(date -d "$fim_inscricao" +%s)
+        fim_fracao=""
+    else
+        fim_inscricao="$FIM_INSCRICAO"
+    fi
+    # Frações sem zeros à direita podem ser comparadas lexicograficamente,
+    # sem perder precisão mesmo quando têm mais de nove casas.
+    inicio_fracao="${inicio_fracao%%"${inicio_fracao##*[!0]}"}"
+    fim_fracao="${fim_fracao%%"${fim_fracao##*[!0]}"}"
+    local periodo_completo=false
+    if [ "${1:-}" != parcial ] || { [ -n "${INICIO_INSCRICAO:-}" ] && [ -n "${FIM_INSCRICAO:-}" ]; } || \
+        { [ -z "${INICIO_INSCRICAO:-}" ] && [ -z "${FIM_INSCRICAO:-}" ]; }; then
+        periodo_completo=true
+    fi
+    if [ "$periodo_completo" = true ] && \
+        { [ "$fim_epoch" -lt "$inicio_epoch" ] || \
+        { [ "$fim_epoch" -eq "$inicio_epoch" ] && [[ ! "$fim_fracao" > "$inicio_fracao" ]]; }; }; then
+        fail "FIM_INSCRICAO deve ser posterior a INICIO_INSCRICAO."
+    fi
+    local agora_epoch
+    agora_epoch=$(date +%s)
+    if [ "$periodo_completo" = true ] && \
+        { [ "$agora_epoch" -lt "$inicio_epoch" ] || [ "$agora_epoch" -gt "$fim_epoch" ]; }; then
+        warn "A inscrição não está aberta agora; a API só aceita inscrições durante o período informado."
+    fi
+}
+
+definir_cronograma_fases() {
+    log "Definir Cronograma de Fases (Anexo I deslocado, fuso America/Belem)"
+    local inicio_resultado fim_resultado inicio_habilitacao fim_habilitacao
     na_data() { TZ=America/Belem date -d "$1 $deslocamento days" +%Y-%m-%dT"$2"-03:00; }
-    fim_inscricao=$(na_data 2027-01-16 23:59:59)
-    [ "${FIM_INSCRICAO:-$fim_inscricao}" = "$fim_inscricao" ] \
-        || fail "FIM_INSCRICAO deve ser $fim_inscricao para manter a duração da inscrição do Anexo I."
-    [[ "$hoje" > "$data_inicio" || "$hoje" = "$data_inicio" ]] && [[ "$hoje" < "${fim_inscricao%%T*}" || "$hoje" = "${fim_inscricao%%T*}" ]] \
-        || fail "A inscrição deve estar aberta hoje ($hoje). Ajuste INICIO_INSCRICAO e FIM_INSCRICAO."
     inicio_resultado=$(na_data 2027-01-26 00:00:00)
     fim_resultado=$(na_data 2027-01-29 00:00:00)
     inicio_habilitacao=$(na_data 2027-01-29 00:00:00)
@@ -1246,7 +1299,7 @@ conferir_resultado() {
         fail "processo ainda não aparece na vitrine (tentativa $tentativa)"
     fi
 
-    ok "PROCESSO_ID=$PROCESSO_ID — roteiro concluído"
+    ok "configuração publicada conferida"
 }
 
 main() {
@@ -1255,6 +1308,7 @@ main() {
     # roda em Linux; não há suporte a macOS/BSD.
     date --version >/dev/null 2>&1 || fail "precisa do GNU date (-d), não do date do BSD/macOS"
     [ -r /proc/sys/kernel/random/uuid ] || fail "precisa de /proc/sys/kernel/random/uuid (Linux)"
+    conferir_periodo_da_inscricao parcial
     obter_token
     garantir_acesso_institucional
     garantir_representantes
@@ -1263,7 +1317,14 @@ main() {
     setup_organizacao
     garantir_acesso_na_unidade "$UNIDADE_ID"
     setup_configuracao
+    conferir_modelo_inscricao
     criar_processo
+    if [ "$PROCESSO_JA_PUBLICADO" = "true" ]; then
+        conferir_resultado
+        ok "PROCESSO_ID=$PROCESSO_ID — roteiro concluído"
+        return
+    fi
+    conferir_periodo_da_inscricao
     definir_algoritmo_contagem_prazo
     definir_atendimento_especializado
     definir_distribuicao_vagas
@@ -1280,19 +1341,18 @@ main() {
     vincular_fase_do_formulario
     aplicar_modelo_habilitacao
     definir_documentos_exigidos
-    conferir_modelo_inscricao
     documento_do_edital
-    if [ "$PROCESSO_JA_PUBLICADO" = "true" ]; then
-        conferir_resultado
-        return
-    fi
     divulgar
     declarar_prova_presencial
     publicar
     conferir_resultado
+    ok "PROCESSO_ID=$PROCESSO_ID — roteiro concluído"
 }
 
 # Executado direto, roda o roteiro; lido com `source`, só expõe as funções.
 if [[ "${BASH_SOURCE[0]}" == "$0" ]]; then
     main "$@"
+else
+    # O roteiro irmão chama definir_cronograma_fases sem passar pelo main acima.
+    conferir_periodo_da_inscricao parcial
 fi
