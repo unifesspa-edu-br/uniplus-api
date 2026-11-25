@@ -4,6 +4,7 @@ using Unifesspa.UniPlus.Application.Abstractions.Email;
 using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 using Unifesspa.UniPlus.Autorizacao.Application.DTOs;
 using Unifesspa.UniPlus.Autorizacao.Application.Mappings;
+using Unifesspa.UniPlus.Autorizacao.Domain.Entities;
 using Unifesspa.UniPlus.Autorizacao.Domain.Errors;
 using Unifesspa.UniPlus.Autorizacao.Domain.Interfaces;
 using Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects;
@@ -20,8 +21,6 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// </remarks>
 public sealed class GravacaoDaProvidencia
 {
-    private const string AbertaUnicaPorConcessao = "ux_providencias_concessao_aberta";
-
     private readonly IUnitOfWork _unitOfWork;
     private readonly AvisosDaProvidencia _avisos;
 
@@ -80,6 +79,6 @@ public sealed class GravacaoDaProvidencia
             return ProvidenciaHandlerErros.ConflitoDeConcorrencia();
         }
 
-        return ViolacoesDeGravacao.ViolaIndiceUnico(ex, AbertaUnicaPorConcessao) ? ProvidenciaErros.JaHaAberta() : null;
+        return ViolacoesDeGravacao.ViolaIndiceUnico(ex, Providencia.AbertaUnicaPorConcessao) ? ProvidenciaErros.JaHaAberta() : null;
     }
 }

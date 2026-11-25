@@ -3,11 +3,11 @@ namespace Unifesspa.UniPlus.Autorizacao.Infrastructure.Persistence.Configuration
 
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
-using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 using Unifesspa.UniPlus.Autorizacao.Domain.Entities;
 using Unifesspa.UniPlus.Autorizacao.Domain.Enums;
 using Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects;
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence.CodigosDeContrato;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Protecao;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
 
@@ -16,10 +16,6 @@ internal sealed class RevisaoDasConcessoesConfiguration : IEntityTypeConfigurati
 {
     private const int IdentidadeMaxLength = 255;
     private const int FormaMaxLength = 20;
-
-    private static readonly ValueConverter<FormaDoEncerramento, string> FormaConverter = new(
-        forma => forma.ToCodigo(),
-        codigo => FormaDoEncerramentoCodigo.FromCodigo(codigo));
 
     public void Configure(EntityTypeBuilder<RevisaoDasConcessoesDoPerfil> builder)
     {
@@ -45,10 +41,10 @@ internal sealed class RevisaoDasConcessoesConfiguration : IEntityTypeConfigurati
             "(encerrada_em IS NULL) = (forma_do_encerramento IS NULL)");
         tabela.HasCheckConstraint(
             "ck_revisoes_das_concessoes_forma",
-            $"forma_do_encerramento IS NULL OR forma_do_encerramento IN ('{FormaDoEncerramentoCodigo.Concluida}', '{FormaDoEncerramentoCodigo.Prazo}', '{FormaDoEncerramentoCodigo.Manual}')");
+            $"forma_do_encerramento IS NULL OR forma_do_encerramento IN ({SqlDosCodigosDeContrato.Lista<FormaDoEncerramento>()})");
         tabela.HasCheckConstraint(
             "ck_revisoes_das_concessoes_manual",
-            $"COALESCE(forma_do_encerramento = '{FormaDoEncerramentoCodigo.Manual}', false) = (motivo_do_encerramento IS NOT NULL AND encerrada_por_conta_id IS NOT NULL)");
+            $"COALESCE(forma_do_encerramento = {SqlDosCodigosDeContrato.Literal(FormaDoEncerramento.Manual)}, false) = (motivo_do_encerramento IS NOT NULL AND encerrada_por_conta_id IS NOT NULL)");
         tabela.HasCheckConstraint(
             "ck_revisoes_das_concessoes_termino",
             "termina_em = aberta_em + interval '72 hours'");
@@ -61,7 +57,7 @@ internal sealed class RevisaoDasConcessoesConfiguration : IEntityTypeConfigurati
         builder.Property(j => j.OrdemDeRegistro).UseIdentityAlwaysColumn().ValueGeneratedOnAdd();
         builder.HasIndex(j => j.OrdemDeRegistro).IsUnique().HasDatabaseName("ux_revisoes_das_concessoes_ordem_de_registro");
         builder.Property(j => j.TerminaEm).IsRequired();
-        builder.Property(j => j.Forma).HasColumnName("forma_do_encerramento").HasConversion(FormaConverter).HasMaxLength(FormaMaxLength);
+        builder.Property(j => j.Forma).HasColumnName("forma_do_encerramento").HasMaxLength(FormaMaxLength);
         builder.Property(j => j.MotivoDoEncerramento).HasMaxLength(MotivoInformado.MaximoDeCaracteres);
         builder.Property(j => j.EncerradaPorEmissor).HasMaxLength(IdentidadeMaxLength);
         builder.Property(j => j.EncerradaPorContaId).HasMaxLength(IdentidadeMaxLength);

@@ -17,6 +17,7 @@ using Unifesspa.UniPlus.Infrastructure.Core.Errors;
 using Unifesspa.UniPlus.Infrastructure.Core.Formatting;
 using Unifesspa.UniPlus.Infrastructure.Core.Idempotency;
 using Unifesspa.UniPlus.Infrastructure.Core.Pagination;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Pagination;
 using Unifesspa.UniPlus.Kernel.Results;
 
@@ -185,7 +186,7 @@ public sealed class ProvidenciasController : ControllerBase
         {
             null or "" => new(SituacaoDaProvidencia.Aberta, concessao, page.AfterSortKey, page.AfterId, page.Limit, page.Direction),
             "todas" => new(null, concessao, page.AfterSortKey, page.AfterId, page.Limit, page.Direction),
-            var codigo when SituacaoDaProvidenciaCodigo.DoCodigo(codigo) is { } lida => new(lida, concessao, page.AfterSortKey, page.AfterId, page.Limit, page.Direction),
+            var codigo when (CatalogoDe<SituacaoDaProvidencia>.TentarObter(codigo?.Trim().ToUpperInvariant(), out SituacaoDaProvidencia valorLido) ? valorLido : (SituacaoDaProvidencia?)null) is { } lida => new(lida, concessao, page.AfterSortKey, page.AfterId, page.Limit, page.Direction),
             _ => null,
         };
 

@@ -11,6 +11,7 @@ using Unifesspa.UniPlus.Autorizacao.Domain.Entities;
 using Unifesspa.UniPlus.Autorizacao.Domain.Enums;
 using Unifesspa.UniPlus.Autorizacao.Domain.Interfaces;
 using Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Pagination;
 
 using static Unifesspa.UniPlus.Autorizacao.Application.UnitTests.DoublesDaInstalacao;
@@ -57,7 +58,7 @@ public sealed class RevisoesDoLeitorEFiltroTests
     [InlineData("PENDENTE", null)]
     [InlineData(null, null)]
     public void DoCodigo_LeOsCodigosPublicados(string? codigo, SituacaoDaRevisao? esperada) =>
-        SituacaoDaRevisaoCodigo.DoCodigo(codigo).Should().Be(esperada);
+        (CatalogoDe<SituacaoDaRevisao>.TentarObter(codigo?.Trim().ToUpperInvariant(), out SituacaoDaRevisao lida) ? lida : (SituacaoDaRevisao?)null).Should().Be(esperada);
 
     private static RevisaoDetalhada ComUmItemDe(Identidade beneficiario)
     {

@@ -4,7 +4,6 @@ using System.Diagnostics.CodeAnalysis;
 
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
-using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 using Unifesspa.UniPlus.Autorizacao.Domain.Entities;
 using Unifesspa.UniPlus.Autorizacao.Domain.Enums;
@@ -21,10 +20,6 @@ internal sealed class RevisaoDeAcessosConfiguration : IEntityTypeConfiguration<R
 {
     private const int IdentidadeMaxLength = 255;
     private const int CodigoMaxLength = 40;
-
-    private static readonly ValueConverter<ResultadoDoItemDaRevisao, string> ResultadoConverter = new(
-        resultado => resultado.ToCodigo(),
-        codigo => ResultadoDoItemDaRevisaoCodigo.FromCodigo(codigo));
 
     public void Configure(EntityTypeBuilder<RevisaoDeAcessos> builder)
     {
@@ -68,7 +63,7 @@ internal sealed class RevisaoDeAcessosConfiguration : IEntityTypeConfiguration<R
         builder.Property(i => i.Id).ValueGeneratedNever();
 
         builder.Property(i => i.DecididoComo).HasMaxLength(CodigoMaxLength);
-        builder.Property(i => i.Resultado).HasConversion(ResultadoConverter).HasMaxLength(CodigoMaxLength);
+        builder.Property(i => i.Resultado).HasMaxLength(CodigoMaxLength);
         builder.Property(i => i.DecididoPorEmissor).HasMaxLength(IdentidadeMaxLength);
         builder.Property(i => i.DecididoPorContaId).HasMaxLength(IdentidadeMaxLength);
         builder.Property(i => i.DecididoPorNome).HasMaxLength(NomeDeExibicao.MaxLength);

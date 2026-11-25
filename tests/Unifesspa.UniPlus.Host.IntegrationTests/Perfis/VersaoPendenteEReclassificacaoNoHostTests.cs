@@ -143,7 +143,7 @@ public sealed class VersaoPendenteEReclassificacaoNoHostTests : ReclassificacaoN
         ContarAsync(
             """SELECT count(*) AS "Value" FROM autorizacao.divergencias_da_governanca WHERE codigo = {0} AND tipo = {1}""",
             codigo,
-            TipoDeDivergenciaCodigo.Classificacao);
+            TipoDeDivergencia.Classificacao.Codigo());
 
     private Task<long> DivergenciasAsync() =>
         ContarAsync("""SELECT count(*) AS "Value" FROM autorizacao.divergencias_da_governanca""");

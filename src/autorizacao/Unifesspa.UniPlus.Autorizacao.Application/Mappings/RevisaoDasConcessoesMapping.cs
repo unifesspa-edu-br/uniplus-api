@@ -31,7 +31,7 @@ public static class RevisaoDasConcessoesMapping
             perfil.Versoes.First(v => v.Id == revisao.VersaoAlvoId).Numero,
             revisao.AbertaEm, revisao.TerminaEm, revisao.EncerradaEm,
             Situacao(revisao, contexto.Agora, revisao.Pendencias(contexto.Concessoes, contexto.Agora)),
-            revisao.Forma?.ToCodigo(),
+            revisao.Forma?.Codigo(),
             revisao.EnvioDaGestao is not null,
             Itens(revisao, perfil, contexto, leitor));
     }

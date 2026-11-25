@@ -4,7 +4,6 @@ using System.Diagnostics.CodeAnalysis;
 
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
-using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 using Unifesspa.UniPlus.Autorizacao.Domain.Entities;
 using Unifesspa.UniPlus.Autorizacao.Domain.Enums;
@@ -23,10 +22,6 @@ internal sealed class AvisoDaReclassificacaoConfiguration : IEntityTypeConfigura
 {
     private const int OrigemMaxLength = 40;
 
-    private static readonly ValueConverter<OrigemDoAviso, string> OrigemConverter = new(
-        origem => origem.ToCodigo(),
-        codigo => OrigemDoAvisoCodigo.FromCodigo(codigo));
-
     public void Configure(EntityTypeBuilder<AvisoDaReclassificacao> builder)
     {
         ArgumentNullException.ThrowIfNull(builder);
@@ -37,7 +32,7 @@ internal sealed class AvisoDaReclassificacaoConfiguration : IEntityTypeConfigura
         builder.HasKey(a => a.Id);
         builder.Property(a => a.Id).ValueGeneratedNever();
 
-        builder.Property(a => a.Origem).HasConversion(OrigemConverter).HasMaxLength(OrigemMaxLength).IsRequired();
+        builder.Property(a => a.Origem).HasMaxLength(OrigemMaxLength).IsRequired();
         builder.Property(a => a.OrigemId).IsRequired();
         builder.Property(a => a.EnviadoEm).IsRequired();
 

@@ -23,7 +23,7 @@ public static class ProvidenciaMapping
         SituacaoDaProvidencia situacao = p.SituacaoEm(c, agora);
 
         return new(
-            p.Id, p.Tipo.ToCodigo(), p.Fundamento, situacao.ToCodigo(), p.AbertaEm, Pessoa(p.SolicitadaPor), Alvo(item.Alvo, agora),
+            p.Id, p.Tipo.Codigo(), p.Fundamento, situacao.Codigo(), p.AbertaEm, Pessoa(p.SolicitadaPor), Alvo(item.Alvo, agora),
             Encerramento(situacao, c, agora), Desfecho(p), Impedido(p, c, leitor));
     }
 
@@ -36,7 +36,7 @@ public static class ProvidenciaMapping
         SituacaoDaProvidencia situacao = p.SituacaoEm(c, agora);
 
         return new(
-            p.Id, p.Tipo.ToCodigo(), situacao.ToCodigo(), p.AbertaEm, Pessoa(p.SolicitadaPor), Alvo(item.Alvo, agora),
+            p.Id, p.Tipo.Codigo(), situacao.Codigo(), p.AbertaEm, Pessoa(p.SolicitadaPor), Alvo(item.Alvo, agora),
             Encerramento(situacao, c, agora), AtoDoDesfecho(p), Impedido(p, c, leitor));
     }
 

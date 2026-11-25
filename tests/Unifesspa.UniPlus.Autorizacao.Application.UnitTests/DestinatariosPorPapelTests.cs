@@ -15,6 +15,7 @@ using Unifesspa.UniPlus.Autorizacao.Application.Monitoramento;
 using Unifesspa.UniPlus.Autorizacao.Domain.Entities;
 using Unifesspa.UniPlus.Autorizacao.Domain.Enums;
 using Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 
 using static Unifesspa.UniPlus.Autorizacao.Application.UnitTests.DoublesDeAvisos;
 using static Unifesspa.UniPlus.Autorizacao.Application.UnitTests.DoublesDePerfis;
@@ -109,7 +110,7 @@ public sealed class DestinatariosPorPapelTests
         IReadOnlyList<EnviarEmail> avisos = await aviso.EmitirAsync(perfil, CancellationToken.None);
 
         avisos.Should().BeEmpty();
-        ausencias.Por(TipoDeAviso.VersaoPendenteApta.ToCodigo()).Should().Be(1);
+        ausencias.Por(TipoDeAviso.VersaoPendenteApta.Codigo()).Should().Be(1);
     }
 
     // Versão pendente com dado pessoal, documento verificado e aprovada pela gestão: falta só a etapa protegida.
