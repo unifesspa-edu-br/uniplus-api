@@ -2,7 +2,7 @@
 
 Complementa o [`CONTRIBUTING.md`](CONTRIBUTING.md). Vale para toda revisão de PR deste repositório.
 
-Atualizado em 13/11/2026.
+Atualizado em 25/11/2026.
 
 ## Regra
 
@@ -32,14 +32,7 @@ Os detectores que liam C# como texto, filtravam tipos com `Regex.IsMatch` ou lia
 
 Continuam válidos os testes que leem **dados** versionados (JSON e referências aprovadas), inspecionam o modelo efetivo do EF Core ou consultam os registros e ações do host. O deslocamento dos testes de dados para projetos apropriados também está na issue #2423.
 
-Substitutos já escritos nesta worktree:
-
-- `DominioNaoUsaGuidNewGuidTests`: regra de chamada do ArchUnitNET, com canário que chama `Guid.NewGuid`.
-- `DecisaoPeloPontoUnicoTests`: regra de chamada de `RequireRole` com a exceção da política técnica de instalação.
-- `AcervoPublicoCaminhoUnicoDeEscritaTests`: regra de chamada de `CopiarComoObjetoPublicoAsync`, com a implementação permitida como controle positivo.
-- `InstanteEmBelemTests`: comportamento do offset resolvido pela zona em 1985 e 2026.
-
-A compilação dos projetos afetados passou. Na sessão TEST, os projetos `Unifesspa.UniPlus.ArchTests` e `Unifesspa.UniPlus.Selecao.ArchTests` executaram, respectivamente, 124 e 48 testes sem falhas; `InstanteEmBelemTests` passou nos dois casos. Os controles positivos de `Guid.NewGuid`, `RequireRole` e `CopiarComoObjetoPublicoAsync` também passaram. A suíte geral de arquitetura levou cerca de 8,2 minutos; o custo das regras de chamada de membro deve ser observado em mudanças futuras.
+As regras de chamadas do ArchUnitNET verificam usos de `Guid.NewGuid`, `RequireRole` e `CopiarComoObjetoPublicoAsync`, com contraprovas. O comportamento do fuso de Belém é coberto por `InstanteEmBelemTests`. As demais garantias sem substituto permanecem na revisão.
 
 ## Garantias a recompor
 
@@ -69,7 +62,9 @@ Até que a issue #2423 esteja concluída, o revisor confere no diff:
 8. Códigos de `DomainError` novos são estáveis, registrados no mapeamento HTTP quando necessário e coerentes com os consumidores; não são montados por interpolação.
 9. `Program.cs` não registra rota de negócio fora de controller ou de endpoint técnico autorizado pela ADR-0036.
 10. Chamadas novas a relógio estático, `AsSingleQuery()` e carregamento de leitura em comando são revisadas até haver os substitutos da issue #2423.
-11. Mudanças em migrations, restauração, publicação, autorização, fixture de container e layout INEP mantêm as garantias descritas na issue #2423.
+11. O sujeito da decisão de acesso mantém somente seus oito campos previstos, e `IUnitOfWork` mantém seus três métodos.
+12. O contrato de autorização não inclui nome de provedor de identidade, conforme a ADR-0078, nem expõe coleções mutáveis em seus registros.
+13. Mudanças em migrations, restauração, publicação, autorização, fixture de container e layout INEP mantêm as garantias descritas na issue #2423.
 
 O limite de linhas dos métodos é medido pela MA0051 (ADR-0161).
 
