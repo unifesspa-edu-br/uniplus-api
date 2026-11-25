@@ -36,19 +36,21 @@ internal sealed record AcessoDasEtapas(DecisaoDeAcesso DecisaoDaGestao, DecisaoD
 
     /// <summary>
     /// A recusa de quem não pode decidir a etapa pedida, registrando a decisão que governou: sem nenhuma das permissões é
-    /// 403; com a da outra etapa, ou com etapa inexistente, a etapa pedida não é a da pessoa. Nulo quando pode.
+    /// 403; com a da outra etapa, ou com etapa inexistente, a etapa pedida não é a da pessoa.
     /// </summary>
-    public async Task<DomainError?> RecusaDaEtapaAsync(EtapaDaVersao? etapa, IVerificadorDeAcesso verificador, CancellationToken cancellationToken)
+    public async Task<Result<EtapaDaVersao>> EtapaPermitidaAsync(EtapaDaVersao? etapa, IVerificadorDeAcesso verificador, CancellationToken cancellationToken)
     {
         if (!Habilitado || etapa is null)
         {
             await RegistrarDoDesfechoAsync(verificador, cancellationToken).ConfigureAwait(false);
-            return Habilitado ? PerfilErros.EtapaInvalida() : PerfilErros.SemPermissaoNaEtapa();
+            return Result<EtapaDaVersao>.Failure(Habilitado ? PerfilErros.EtapaInvalida() : PerfilErros.SemPermissaoNaEtapa());
         }
 
         await AcessoDaVersao.RegistrarAsync(verificador, DecisaoDa(etapa.Value), cancellationToken).ConfigureAwait(false);
 
-        return Decide(etapa.Value) ? null : PerfilErros.EtapaInvalida();
+        return Decide(etapa.Value)
+            ? Result<EtapaDaVersao>.Success(etapa.Value)
+            : Result<EtapaDaVersao>.Failure(PerfilErros.EtapaInvalida());
     }
 
     /// <summary>

@@ -112,6 +112,7 @@ public sealed class AcessoDasEtapasTests
     {
         AcessoDasEtapas acesso = (await AcessoDaVersao.ConsultarAsync(verificador, PerfilId, CancellationToken.None))!;
 
-        return await acesso.RecusaDaEtapaAsync(etapa, verificador, CancellationToken.None);
+        Result<EtapaDaVersao> resultado = await acesso.EtapaPermitidaAsync(etapa, verificador, CancellationToken.None);
+        return resultado.Error;
     }
 }

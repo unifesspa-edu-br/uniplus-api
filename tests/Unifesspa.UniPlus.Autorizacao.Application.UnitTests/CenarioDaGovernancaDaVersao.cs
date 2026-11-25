@@ -23,6 +23,9 @@ using static Unifesspa.UniPlus.Autorizacao.Application.UnitTests.DoublesDePerfis
 /// <summary>Monta, com dublês em memória, os casos de uso da governança de versões que atuam em nome de uma pessoa.</summary>
 internal sealed class CenarioDaGovernancaDaVersao
 {
+    public const string A = "selecao:processos:consultar";
+    public const string EtapaGestao = "GESTAO_DE_ACESSOS";
+    public const string EtapaProtecao = "PROTECAO_DE_DADOS";
     public const string Gestao = "autorizacao:perfis:aprovar-funcional";
     public const string Protecao = "autorizacao:perfis:aprovar-protecao-de-dados";
     public const string Manter = "autorizacao:perfis:manter";

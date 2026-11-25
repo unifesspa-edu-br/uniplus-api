@@ -64,14 +64,14 @@ public sealed class ContencaoPorSuspensao
         ArgumentNullException.ThrowIfNull(verificador);
 
         EtapaDaVersao? pedida = (CatalogoDe<EtapaDaVersao>.TentarObter(etapa, out EtapaDaVersao valorEtapaDaVersao) ? valorEtapaDaVersao : (EtapaDaVersao?)null);
-        DomainError? recusa = await RecusaDaRetomadaAsync(perfilId, pedida, verificador, cancellationToken).ConfigureAwait(false);
+        Result<EtapaDaVersao> permitida = await EtapaDaRetomadaAsync(perfilId, pedida, verificador, cancellationToken).ConfigureAwait(false);
 
-        return recusa is not null
-            ? Result<RetomadaDaSuspensaoDto>.Failure(recusa)
+        return permitida.IsFailure
+            ? Result<RetomadaDaSuspensaoDto>.Failure(permitida.Error!)
             : await _operacao
                 .ExecutarAsync(
                     perfilId,
-                    (perfil, contexto) => RetomarNoPerfilAsync(perfil, pedida!.Value, motivo, contexto.Agora, cancellationToken),
+                    (perfil, contexto) => RetomarNoPerfilAsync(perfil, permitida.Value, motivo, contexto.Agora, cancellationToken),
                     cancellationToken)
                 .ConfigureAwait(false);
     }
@@ -88,14 +88,14 @@ public sealed class ContencaoPorSuspensao
             : Result<PedidoDeSuspensao>.Failure(recusa ?? PerfilHandlerErros.AutorNaoIdentificado());
     }
 
-    private static async Task<DomainError?> RecusaDaRetomadaAsync(
+    private static async Task<Result<EtapaDaVersao>> EtapaDaRetomadaAsync(
         Guid perfilId, EtapaDaVersao? pedida, IVerificadorDeAcesso verificador, CancellationToken cancellationToken)
     {
         AcessoDasEtapas? acesso = await AcessoDaVersao.ConsultarParaContencaoAsync(verificador, perfilId, cancellationToken).ConfigureAwait(false);
 
         return acesso is null
-            ? PerfilHandlerErros.AutorNaoIdentificado()
-            : await acesso.RecusaDaEtapaAsync(pedida, verificador, cancellationToken).ConfigureAwait(false);
+            ? Result<EtapaDaVersao>.Failure(PerfilHandlerErros.AutorNaoIdentificado())
+            : await acesso.EtapaPermitidaAsync(pedida, verificador, cancellationToken).ConfigureAwait(false);
     }
 
     private static async Task<DomainError?> RecusaDeSuspenderAsync(
