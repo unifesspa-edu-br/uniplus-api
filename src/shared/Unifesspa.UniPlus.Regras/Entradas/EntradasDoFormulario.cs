@@ -25,7 +25,7 @@ public sealed record CondicaoPrecondicaoInput(string Fato, [AceitaCodigosDe<Oper
 /// <see cref="DataMaxima"/> (ao menos um).
 /// </summary>
 public sealed record RestricaoValorInput(
-    string Tipo,
+    [property: AceitaCodigosDe<TipoRestricaoValor>] string Tipo,
     decimal? Minimo = null,
     decimal? Maximo = null,
     IReadOnlyList<OpcoesCondicionadasInput>? Entradas = null,

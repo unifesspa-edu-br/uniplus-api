@@ -329,12 +329,12 @@ public sealed class ConteudoLidoTests
 
     private static DocumentoExigidoDoModeloInput DocumentoValido() =>
         new("INSCRICAO", "LAUDO_MEDICO", Quando("CERTIFICADO"),
-            new IndeferimentoDoDocumentoDoModeloInput(true, "REMOVE_VANTAGEM", [new BaseLegalDoModeloInput("Lei 12.711/2012", "TODOS", "VIGENTE", null)]),
+            new IndeferimentoDoDocumentoDoModeloInput(true, "REMOVE_VANTAGEM", [new BaseLegalDoModeloInput("Lei 12.711/2012", "FEDERAL", "RESOLVIDO", null)]),
             PorOpcao: new ExigenciaPorOpcaoInput("CONDICAO", ["OUTRA", "TERCEIRA"]));
 
     private static DocumentoExigidoDoModelo DocumentoEsperado() =>
         new("INSCRICAO", "LAUDO_MEDICO", Predicado("CERTIFICADO"),
-            new IndeferimentoDoDocumentoDoModelo(true, "REMOVE_VANTAGEM", [new BaseLegalDoModelo("Lei 12.711/2012", "TODOS", "VIGENTE", null)]),
+            new IndeferimentoDoDocumentoDoModelo(true, "REMOVE_VANTAGEM", [new BaseLegalDoModelo("Lei 12.711/2012", "FEDERAL", "RESOLVIDO", null)]),
             RequisitosDoDocumentoDoModelo.AindaNaoEscolhidos,
             new ExigenciaPorOpcao("CONDICAO", ["OUTRA", "TERCEIRA"]));
 

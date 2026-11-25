@@ -119,7 +119,7 @@ public sealed class ModeloFormularioDocumentosExigidosEndpointTests
         JsonNode devolvido = (await ObterAsync(client, id))["conteudo"]!["conjuntoDeDocumentos"]!["gruposDeDocumentos"]![0]!;
 
         devolvido["quantidadeMinima"]!.GetValue<int>().Should().Be(1);
-        devolvido["indeferimento"]!["consequencia"]!.GetValue<string>().Should().Be("INDEFERE");
+        devolvido["indeferimento"]!["consequencia"]!.GetValue<string>().Should().Be("ELIMINA");
         devolvido["documentos"]!.AsArray().Should().ContainSingle();
     }
 
@@ -173,7 +173,7 @@ public sealed class ModeloFormularioDocumentosExigidosEndpointTests
     private static JsonObject GrupoDeDocumentos() => new()
     {
         ["quantidadeMinima"] = 1,
-        ["indeferimento"] = new JsonObject { ["consequencia"] = "INDEFERE", ["basesLegais"] = new JsonArray() },
+        ["indeferimento"] = new JsonObject { ["consequencia"] = "ELIMINA", ["basesLegais"] = new JsonArray() },
         ["documentos"] = new JsonArray(Documento()),
     };
 
@@ -185,7 +185,7 @@ public sealed class ModeloFormularioDocumentosExigidosEndpointTests
         ["faseCodigo"] = faseCodigo,
         ["tipoDocumentoCodigo"] = "COMPROVANTE_RESIDENCIA",
         ["quando"] = quando,
-        ["indeferimento"] = new JsonObject { ["obrigatorio"] = true, ["consequencia"] = "INDEFERE", ["basesLegais"] = new JsonArray() },
+        ["indeferimento"] = new JsonObject { ["obrigatorio"] = true, ["consequencia"] = "ELIMINA", ["basesLegais"] = new JsonArray() },
         ["porOpcao"] = porOpcaoDoFato is null ? null : new JsonObject { ["fatoCodigo"] = porOpcaoDoFato, ["exceto"] = new JsonArray() },
     };
 

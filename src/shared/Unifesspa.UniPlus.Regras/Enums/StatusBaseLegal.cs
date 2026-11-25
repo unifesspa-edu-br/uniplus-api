@@ -1,8 +1,8 @@
-namespace Unifesspa.UniPlus.Selecao.Domain.Enums;
+namespace Unifesspa.UniPlus.Regras.Enums;
 
 using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 
-/// <summary>Valores de StatusBaseLegal.</summary>
+/// <summary>Situação da análise da base legal.</summary>
 public enum StatusBaseLegal
 {
     [CodigoDeContrato("PENDENTE", "Pendente", Descricao = "A base legal ainda está pendente.")]

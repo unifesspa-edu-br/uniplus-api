@@ -1,8 +1,8 @@
-namespace Unifesspa.UniPlus.Selecao.Domain.Enums;
+namespace Unifesspa.UniPlus.Regras.Enums;
 
 using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 
-/// <summary>Valores de TipoAbrangencia.</summary>
+/// <summary>Âmbito de aplicação da base legal.</summary>
 public enum TipoAbrangencia
 {
     [CodigoDeContrato("FEDERAL", "Federal", Descricao = "Aplica-se a norma federal.")]

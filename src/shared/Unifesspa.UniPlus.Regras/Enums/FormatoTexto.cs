@@ -1,11 +1,9 @@
-namespace Unifesspa.UniPlus.Configuracao.Domain.Enums;
+namespace Unifesspa.UniPlus.Regras.Enums;
 
 using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 
 /// <summary>
-/// Formato de um <see cref="Entities.FatoCandidato"/> de domínio texto (ADR-0136). A validação e a
-/// máscara de cada formato vivem num tipo de valor do Kernel; <see cref="FormatosTexto"/> despacha
-/// para ele.
+/// Formato de um dado do candidato de domínio texto.
 /// </summary>
 [DescricaoDoContrato("O formato que o texto de um dado do candidato precisa ter.")]
 public enum FormatoTexto

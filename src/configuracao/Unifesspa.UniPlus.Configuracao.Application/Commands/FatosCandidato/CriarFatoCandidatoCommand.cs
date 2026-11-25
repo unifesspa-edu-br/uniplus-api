@@ -1,7 +1,9 @@
 namespace Unifesspa.UniPlus.Configuracao.Application.Commands.FatosCandidato;
 
 using Unifesspa.UniPlus.Application.Abstractions.Messaging;
+using Unifesspa.UniPlus.Configuracao.Domain.Enums;
 using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
+using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Enums;
 
@@ -16,10 +18,10 @@ public sealed record CriarFatoCandidatoCommand(
     [property: AceitaCodigosDe<TipoDoDado>] string Dominio,
     [property: AceitaCodigosDe<QuantidadeDeValores>] string Cardinalidade,
     [property: AceitaCodigosDe<FonteValoresFato>] string? FonteValores,
-    string? Formato,
+    [property: AceitaCodigosDe<FormatoTexto>] string? Formato,
     string PontoResolucao,
-    string Escopo,
-    string ClassificacaoProtecao,
+    [property: AceitaCodigosDe<EscopoFato>] string Escopo,
+    [property: AceitaCodigosDe<ClassificacaoDeProtecao>] string ClassificacaoProtecao,
     string FinalidadeTratamento,
-    string HipoteseLegal,
-    string? ComponenteExibicao = null) : ICommand<Result<Guid>>;
+    [property: AceitaCodigosDe<HipoteseLegalTratamento>] string HipoteseLegal,
+    [property: AceitaCodigosDe<ComponenteDeExibicao>] string? ComponenteExibicao = null) : ICommand<Result<Guid>>;

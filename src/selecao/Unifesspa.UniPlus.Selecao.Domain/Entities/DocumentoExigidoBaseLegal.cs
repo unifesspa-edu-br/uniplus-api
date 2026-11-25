@@ -4,6 +4,7 @@ using Enums;
 
 using Unifesspa.UniPlus.Kernel.Domain.Entities;
 using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Regras.Enums;
 
 /// <summary>
 /// Base legal de um <see cref="DocumentoExigido"/> (ADR-0074) — relação 1:N: uma exigência pode ter mais de uma fonte de embasamento ao

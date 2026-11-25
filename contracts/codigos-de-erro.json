@@ -1832,6 +1832,11 @@
       "titulo": "Não é possível remover uma modalidade referenciada por outra modalidade ativa"
     },
     {
+      "codigo": "uniplus.configuracao.modelo_formulario.abrangencia_desconhecida",
+      "status": 422,
+      "titulo": "Abrangência da base legal desconhecida"
+    },
+    {
       "codigo": "uniplus.configuracao.modelo_formulario.codigo_ja_existe",
       "status": 409,
       "titulo": "Já existe modelo de formulário com este código"
@@ -1850,6 +1855,11 @@
       "codigo": "uniplus.configuracao.modelo_formulario.conflito_de_concorrencia",
       "status": 409,
       "titulo": "Modelo de formulário alterado concorrentemente"
+    },
+    {
+      "codigo": "uniplus.configuracao.modelo_formulario.consequencia_desconhecida",
+      "status": 422,
+      "titulo": "Consequência do indeferimento desconhecida"
     },
     {
       "codigo": "uniplus.configuracao.modelo_formulario.descricao_tamanho",
@@ -1925,6 +1935,11 @@
       "codigo": "uniplus.configuracao.modelo_formulario.pressuposto_tambem_item",
       "status": 422,
       "titulo": "O fato é item e pressuposto do mesmo modelo"
+    },
+    {
+      "codigo": "uniplus.configuracao.modelo_formulario.situacao_da_base_legal_desconhecida",
+      "status": 422,
+      "titulo": "Situação da base legal desconhecida"
     },
     {
       "codigo": "uniplus.configuracao.modelo_formulario.termo_versao_nao_encontrada",

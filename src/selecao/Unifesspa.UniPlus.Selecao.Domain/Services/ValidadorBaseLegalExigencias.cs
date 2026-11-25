@@ -4,6 +4,8 @@ using Entities;
 
 using Enums;
 
+using Unifesspa.UniPlus.Regras.Enums;
+
 /// <summary>
 /// Domain service estático (Story #554, PR #898, issue #549, ADR-0074) — 5º item de
 /// <see cref="ProcessoSeletivo.AvaliarConformidade"/>: para toda exigência que

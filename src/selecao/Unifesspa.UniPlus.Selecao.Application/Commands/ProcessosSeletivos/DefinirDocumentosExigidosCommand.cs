@@ -24,12 +24,12 @@ public sealed record CondicaoGatilhoInput(int Clausula, string Fato, [AceitaCodi
 /// <summary>
 /// Entrada de uma base legal (ADR-0074), usada por <see cref="IndeferimentoDoDocumentoInput"/> e por
 /// <see cref="IndeferimentoDoGrupoInput"/>. <see cref="Abrangencia"/>/<see cref="Status"/>
-/// são códigos canônicos (<see cref="Domain.Enums.TipoAbrangencia"/>/
-/// <see cref="Domain.Enums.StatusBaseLegal"/>). A validação de <b>gate</b> (≥1
+/// são códigos canônicos (<see cref="TipoAbrangencia"/>/
+/// <see cref="StatusBaseLegal"/>). A validação para prosseguir (≥1
 /// RESOLVIDO por exigência que determina resultado) é da publicação, não deste PUT —
 /// aqui só a forma de cada item é validada. No pedido, use os códigos de abrangência e situação lidos no GET.
 /// </summary>
-public sealed record BaseLegalInput(string Referencia, string Abrangencia, string Situacao, string? Observacao)
+public sealed record BaseLegalInput(string Referencia, [property: AceitaCodigosDe<TipoAbrangencia>] string Abrangencia, [property: AceitaCodigosDe<StatusBaseLegal>] string Situacao, string? Observacao)
 {
     /// <summary>O caminho da lista de bases legais no pedido, igual na exigência de documento e no grupo.</summary>
     public const string CaminhoDaLista = "indeferimento.basesLegais";
@@ -79,7 +79,7 @@ public sealed record AplicabilidadeDaExigenciaInput([property: AceitaCodigosDe<A
 /// <param name="Obrigatorio">Se a falta do documento impede a inscrição de seguir.</param>
 /// <param name="Consequencia">Código da consequência do indeferimento, lido no GET; ausente, a exigência não determina resultado.</param>
 /// <param name="BasesLegais">As bases legais da exigência; ausentes valem lista vazia, válida na escrita e pendente na publicação quando exigida.</param>
-public sealed record IndeferimentoDoDocumentoInput(bool Obrigatorio, string? Consequencia, IReadOnlyList<BaseLegalInput>? BasesLegais)
+public sealed record IndeferimentoDoDocumentoInput(bool Obrigatorio, [property: AceitaCodigosDe<ConsequenciaDoIndeferimento>] string? Consequencia, IReadOnlyList<BaseLegalInput>? BasesLegais)
 {
     /// <summary>O caminho da consequência no pedido.</summary>
     public const string CaminhoDaConsequencia = "indeferimento.consequencia";
@@ -150,7 +150,7 @@ public sealed record ItemDocumentoExigidoInput(
 /// <param name="CriterioDeDistincao">Código do critério de distinção lido no GET (<see cref="Domain.Enums.CriterioDeDistincaoDasApresentacoes"/>).</param>
 /// <param name="DataReferencia">Data a partir da qual o calendário é derivado.</param>
 /// <param name="OcorrenciasEsperadas">Identificadores das ocorrências esperadas.</param>
-public sealed record DistincaoDasApresentacoesInput(string? CriterioDeDistincao, DateOnly? DataReferencia, IReadOnlyList<string>? OcorrenciasEsperadas)
+public sealed record DistincaoDasApresentacoesInput([property: AceitaCodigosDe<CriterioDeDistincaoDasApresentacoes>] string? CriterioDeDistincao, DateOnly? DataReferencia, IReadOnlyList<string>? OcorrenciasEsperadas)
 {
     /// <summary>O caminho da distinção no pedido.</summary>
     public const string Caminho = "cardinalidade.distincao";
@@ -167,7 +167,7 @@ public sealed record CardinalidadeQualificadaInput(int? QuantidadeMinima = null,
 /// <summary>A consequência do indeferimento de um grupo com quantidade mínima de itens e as bases legais dela.</summary>
 /// <param name="Consequencia">Código da consequência lido no GET; só o grupo com quantidade mínima de itens a declara.</param>
 /// <param name="BasesLegais">As bases legais, só quando a consequência está declarada.</param>
-public sealed record IndeferimentoDoGrupoInput(string? Consequencia = null, IReadOnlyList<BaseLegalInput>? BasesLegais = null);
+public sealed record IndeferimentoDoGrupoInput([property: AceitaCodigosDe<ConsequenciaDoIndeferimento>] string? Consequencia = null, IReadOnlyList<BaseLegalInput>? BasesLegais = null);
 
 /// <summary>Regra informada para comprovar uma exigência documental.</summary>
 public sealed record RegraDeComprovacaoInformada(

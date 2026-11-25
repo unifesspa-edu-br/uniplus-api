@@ -24,6 +24,9 @@ public static class ModeloFormularioErrorCodes
     public const string TipoProcessoInexistente = "ModeloFormulario.TipoProcessoInexistente";
     public const string TermoVersaoNaoEncontrada = "ModeloFormulario.TermoVersaoNaoEncontrada";
     public const string ObrigatoriedadeInvalida = "ModeloFormulario.ObrigatoriedadeInvalida";
+    public const string ConsequenciaDesconhecida = "ModeloFormulario.ConsequenciaDesconhecida";
+    public const string AbrangenciaDesconhecida = "ModeloFormulario.AbrangenciaDesconhecida";
+    public const string SituacaoDaBaseLegalDesconhecida = "ModeloFormulario.SituacaoDaBaseLegalDesconhecida";
     public const string EntradaMalformada = "ModeloFormulario.EntradaMalformada";
 
     /// <summary>Ocorrência de grupo simulada sem identidade própria no grupo.</summary>

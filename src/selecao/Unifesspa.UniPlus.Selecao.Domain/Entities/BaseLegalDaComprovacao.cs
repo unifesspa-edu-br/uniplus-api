@@ -4,6 +4,7 @@ using Enums;
 
 using Unifesspa.UniPlus.Kernel.Domain.Entities;
 using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Regras.Enums;
 
 /// <summary>Base legal da consequência de uma regra de comprovação.</summary>
 public sealed class BaseLegalDaComprovacao : EntityBase

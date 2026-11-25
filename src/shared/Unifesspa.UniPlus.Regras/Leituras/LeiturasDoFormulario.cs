@@ -47,7 +47,7 @@ public sealed record OpcoesCondicionadasDto(
 /// fato da UF e <c>FAIXA_DE_DATA</c> com a data mínima e a máxima.
 /// </summary>
 public sealed record RestricaoValorDto(
-    string Tipo,
+    [property: AceitaCodigosDe<TipoRestricaoValor>] string Tipo,
     decimal? Minimo,
     decimal? Maximo,
     IReadOnlyList<OpcoesCondicionadasDto>? Entradas,

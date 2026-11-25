@@ -33,7 +33,7 @@ public sealed class ConjuntoLidoDeDocumentosTests
             new IndeferimentoDoDocumentoDoModeloInput(true, "REMOVE_VANTAGEM", []));
 
     private static Grupo GrupoQueIndefere(string consequencia, params DocumentoExigidoDoModeloInput[] documentos) =>
-        new(2, new IndeferimentoDoGrupoDeDocumentosDoModeloInput(consequencia, [new BaseLegalDoModeloInput("Lei 12.711/2012", "TODOS", "VIGENTE", null)]), documentos);
+        new(2, new IndeferimentoDoGrupoDeDocumentosDoModeloInput(consequencia, [new BaseLegalDoModeloInput("Lei 12.711/2012", "FEDERAL", "RESOLVIDO", null)]), documentos);
 
     [Fact(DisplayName = "O grupo lido guarda a quantidade mínima como veio, o indeferimento e os documentos, sem recusa")]
     public void Ler_GrupoValido_GuardaQuantidadeIndeferimentoEDocumentos()

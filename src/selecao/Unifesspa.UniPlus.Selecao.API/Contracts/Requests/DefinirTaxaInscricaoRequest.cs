@@ -4,7 +4,7 @@ using System.Text.Json.Serialization;
 
 using Controllers;
 
-using Unifesspa.UniPlus.Infrastructure.Core.OpenApi;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 
 /// <summary>
@@ -23,8 +23,5 @@ using Unifesspa.UniPlus.Selecao.Domain.Enums;
 public sealed record DefinirTaxaInscricaoRequest(
     [property: JsonRequired] bool? Cobra,
     decimal? Valor,
-    [property: VocabularioFechado(
-        "CADASTRO_UNICO",
-        "DOACAO_MEDULA_OSSEA",
-        "CARENCIA_SOCIOECONOMICA")]
+    [property: AceitaCodigosDe<FundamentoIsencao>]
     IReadOnlyList<string>? Fundamentos);

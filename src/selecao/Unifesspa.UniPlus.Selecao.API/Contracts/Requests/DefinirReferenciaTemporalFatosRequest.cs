@@ -2,6 +2,9 @@ namespace Unifesspa.UniPlus.Selecao.API.Contracts.Requests;
 
 using Controllers;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
+using Unifesspa.UniPlus.Selecao.Domain.Enums;
+
 /// <summary>
 /// Corpo de <see cref="ProcessoSeletivoPrazosEExigenciasController.DefinirReferenciaTemporalFatos"/> —
 /// omite <c>ProcessoSeletivoId</c> (vem da rota).
@@ -22,6 +25,6 @@ using Controllers;
 /// MESMO processo (<c>ReferenciaTemporalFatos.FaseNaoPertenceAoProcesso</c>).
 /// </remarks>
 public sealed record DefinirReferenciaTemporalFatosRequest(
-    string? Tipo,
+    [property: AceitaCodigosDe<ReferenciaTipo>] string? Tipo,
     DateOnly? Data,
     Guid? FaseId);
