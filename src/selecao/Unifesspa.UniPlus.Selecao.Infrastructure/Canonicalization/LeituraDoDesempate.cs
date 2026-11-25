@@ -122,9 +122,9 @@ internal static class LeituraDoDesempate
             return null;
         }
 
-        Result<CondicaoDnf> condicao = CondicaoDnf.Criar(fato, operador, valor);
+        Result<CondicaoDnf> condicao = CondicaoDnf.CriarInformada(fato, operador.Codigo(), valor);
         return condicao.IsFailure
-            ? leitor.Propagar<ParametrosCriterioDesempate>(condicao.Error!)
+            ? leitor.Propagar<ParametrosCriterioDesempate>(condicao.Errors, path)
             : new ParametrosDesempatePredicadoFato(condicao.Value!);
     }
 
