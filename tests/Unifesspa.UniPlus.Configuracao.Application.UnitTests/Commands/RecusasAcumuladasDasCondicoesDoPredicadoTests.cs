@@ -93,6 +93,18 @@ public sealed class RecusasAcumuladasDasCondicoesDoPredicadoTests
         ]);
     }
 
+    [Fact(DisplayName = "Regra padrão sem contribuição aponta o próprio item")]
+    public async Task DefinirRegrasPadrao_ContribuicaoEmBranco_RecusaNoItem()
+    {
+        DefinirRegrasPadraoCommand comando = new(Guid.CreateVersion7(), [new RegraPadraoInput(" ", [])]);
+        Result resultado = await DefinirRegrasPadraoCommandHandler.Handle(
+            comando, Substitute.For<IFatoCandidatoRepository>(), Substitute.For<IPrecedenciaFaseRepository>(),
+            Substitute.For<IUnitOfWork>(), CancellationToken.None);
+
+        resultado.Errors.Should().ContainSingle().Which.Should().Match<FieldError>(static e =>
+            e.Field == "regras[0]" && e.Error.Code == "RegraDerivacao.ContribuiObrigatorio");
+    }
+
     [Fact(DisplayName = "Regra padrão com condição nula mantém o código próprio do módulo")]
     public async Task DefinirRegrasPadrao_CondicaoNula_MantemOCodigoDoModulo()
     {

@@ -119,7 +119,7 @@ public static class ConferenciaDoConteudoDoModelo
             caminho);
 
     private static IEnumerable<FieldError> NoCaminho(IEnumerable<FieldError> erros, string caminho) =>
-        erros.Select(e => e with { Field = $"{caminho}.{e.Field}" });
+        erros.Select(e => e.NoCaminhoDoItem(caminho));
 
     /// <summary>
     /// Pressuposto é fato coletado pela inscrição (UNI-REQ-0144): o modelo de inscrição não tem, e o
