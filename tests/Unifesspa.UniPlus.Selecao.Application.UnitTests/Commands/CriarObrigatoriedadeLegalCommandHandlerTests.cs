@@ -109,6 +109,7 @@ public sealed class CriarObrigatoriedadeLegalCommandHandlerTests
         Result<Guid> resultado = await _cenario.CriarAsync(ComandoDeCriar());
 
         resultado.Error!.Code.Should().Be("ObrigatoriedadeLegal.RegraCodigoDuplicada");
+        resultado.Error.Message.Should().NotContain("REGRA_NOVA");
         await _cenario.UnitOfWork.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
     }
 

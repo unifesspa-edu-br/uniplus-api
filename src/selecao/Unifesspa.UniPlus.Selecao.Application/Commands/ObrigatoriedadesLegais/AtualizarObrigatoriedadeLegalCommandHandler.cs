@@ -73,7 +73,7 @@ public static class AtualizarObrigatoriedadeLegalCommandHandler
         repository.Atualizar(regra);
 
         return await GravacaoDaObrigatoriedadeLegal
-            .SalvarAsync(unitOfWork, command.RegraCodigo, cancellationToken).ConfigureAwait(false);
+            .SalvarAsync(unitOfWork, cancellationToken).ConfigureAwait(false);
     }
 
     // Os campos já passaram pela conferência do domínio, então a atualização não falha.

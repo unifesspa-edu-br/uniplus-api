@@ -28,13 +28,12 @@ internal static class GravacaoDaObrigatoriedadeLegal
             .ExisteRegraCodigoAtivoAsync(regraCodigo!.Trim(), excluirId, cancellationToken).ConfigureAwait(false);
 
         return duplicada
-            ? Result.Failure(RecusasDaObrigatoriedadeLegal.RegraCodigoDuplicada(regraCodigo))
+            ? Result.Failure(RecusasDaObrigatoriedadeLegal.RegraCodigoDuplicada())
             : Result.Success();
     }
 
     internal static async Task<Result> SalvarAsync(
         IUnitOfWork unitOfWork,
-        string? regraCodigo,
         CancellationToken cancellationToken)
     {
         try
@@ -46,12 +45,12 @@ internal static class GravacaoDaObrigatoriedadeLegal
             && ConstraintsDaRegraAtiva.EhDeUnicidadeDaRegra(constraint))
         {
             unitOfWork.DescartarAlteracoesNaoSalvas();
-            return Result.Failure(RecusaDaConstraint(constraint, regraCodigo));
+            return Result.Failure(RecusaDaConstraint(constraint));
         }
     }
 
-    private static DomainError RecusaDaConstraint(string constraint, string? regraCodigo) =>
+    private static DomainError RecusaDaConstraint(string constraint) =>
         ConstraintsDaRegraAtiva.EhConflitoDoCodigoDaRegra(constraint)
-            ? RecusasDaObrigatoriedadeLegal.RegraCodigoDuplicada(regraCodigo)
+            ? RecusasDaObrigatoriedadeLegal.RegraCodigoDuplicada()
             : RecusasDaObrigatoriedadeLegal.ConteudoCanonicoDuplicado();
 }

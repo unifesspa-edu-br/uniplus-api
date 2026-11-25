@@ -65,7 +65,7 @@ public static class CriarObrigatoriedadeLegalCommandHandler
         ObrigatoriedadeLegal regra = NovaRegra(command, predicado);
         await repository.AdicionarAsync(regra, cancellationToken).ConfigureAwait(false);
         Result gravado = await GravacaoDaObrigatoriedadeLegal
-            .SalvarAsync(unitOfWork, command.RegraCodigo, cancellationToken).ConfigureAwait(false);
+            .SalvarAsync(unitOfWork, cancellationToken).ConfigureAwait(false);
 
         return gravado.IsFailure ? Result<Guid>.Failure(gravado.Error!) : Result<Guid>.Success(regra.Id);
     }
