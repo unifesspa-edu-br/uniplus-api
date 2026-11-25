@@ -117,3 +117,11 @@ Decisões do líder técnico (24/11/2026).
 3. **Categoria da obrigatoriedade legal.** Os códigos de `CategoriaObrigatoriedade` seguem o formato do item 1: `ETAPA`, `MODALIDADE`, `DESEMPATE`, `DOCUMENTO`, `FADA`, `ATENDIMENTO` e `OUTROS`; a categoria antes chamada `Bonus` tem o código `FADA`.
 4. **Ficam fora do formato:** código de permissão (ADR-0151); código de erro (ADR-0023 e ADR-0102); o discriminador `$tipo` e os nomes de campo do JSON; valores de padrão externo, como INEP, UF e `utf-8`.
 5. **Nenhuma coluna grava número.** Isso vale também para as colunas que hoje gravam o número do membro (idempotência, chamadas, convocações, matrículas e sincronização com o SIGAA), que passam a gravar o código.
+
+## Emenda 5 (2026-11-25) — códigos de cadastro e de formulário
+
+1. **O mesmo formato.** O formato do item 1 da emenda 4 vale também para o código que identifica um registro de cadastro ou um formulário do processo: na gravação, na leitura do banco, no documento da configuração e no documento congelado. O formato é definido uma vez e é o mesmo usado pela conferência dos códigos de enum.
+2. **Tamanho.** O máximo é 80 caracteres. Um cadastro pode fixar um limite menor, nunca maior. Não há tamanho mínimo além da letra inicial.
+3. **Conferência e comparação.** O código é conferido e comparado como chegou, sem aparar espaços, trocar maiúsculas e minúsculas ou normalizar. Fora do formato, é recusado com o código de erro de formato do próprio campo, junto das demais recusas ([ADR-0125](0125-dominio-fonte-unica-validacao-sem-fluentvalidation-duplicado.md)) e sem repetir o valor recebido ([ADR-0023](0023-wire-formato-erro-rfc-9457.md)). Uma linha do banco com código fora do formato é defeito de leitura.
+4. **Código formado a partir de texto.** O código formado a partir de um nome ou de uma identificação segue o mesmo formato. Se ultrapassar o tamanho permitido, é recusado e se pede um texto mais curto.
+5. **Adoção.** Os cadastros de texto livre que ainda não têm formato o adotam em trabalho próprio; até lá, não emitem recusa de formato.
