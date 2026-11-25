@@ -67,6 +67,7 @@ public sealed class UnidadesController : ControllerBase
     /// reanexa-os a cada página ao seguir o <c>cursor</c> do header <c>Link</c>.
     /// </summary>
     [HttpGet("unidades")]
+    [EndpointName("ListarUnidadesInstitucionais")]
     [AllowAnonymous]
     [VendorMediaType(Resource = "unidade", Versions = [1])]
     [ProducesResponseType(typeof(IEnumerable<UnidadeDto>), StatusCodes.Status200OK)]
@@ -109,6 +110,7 @@ public sealed class UnidadesController : ControllerBase
     /// Obtém uma unidade pelo Id. Retorna 404 quando inexistente.
     /// </summary>
     [HttpGet("unidades/{id:guid}")]
+    [EndpointName("ObterUnidadeInstitucional")]
     [AllowAnonymous]
     [VendorMediaType(Resource = "unidade", Versions = [1])]
     [ProducesResponseType(typeof(UnidadeDto), StatusCodes.Status200OK)]
@@ -134,6 +136,7 @@ public sealed class UnidadesController : ControllerBase
     /// Idempotency-Key obrigatório (ADR-0027).
     /// </summary>
     [HttpPost("admin/unidades")]
+    [EndpointName("CadastrarUnidadeInstitucional")]
     [ExigePermissao<PermissaoOrganizacao>(PermissaoOrganizacao.UnidadesManter, ResourceTipo = ResourceTiposOrganizacao.Unidade)]
     [RequiresIdempotencyKey]
     [ProducesResponseType(typeof(Guid), StatusCodes.Status201Created)]
@@ -168,6 +171,7 @@ public sealed class UnidadesController : ControllerBase
     /// manutenção.
     /// </summary>
     [HttpPut("admin/unidades/{id:guid}")]
+    [EndpointName("AlterarUnidadeInstitucional")]
     [ExigePermissao<PermissaoOrganizacao>(PermissaoOrganizacao.UnidadesManter, ResourceTipo = ResourceTiposOrganizacao.Unidade)]
     [RequiresIdempotencyKey]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
@@ -201,6 +205,7 @@ public sealed class UnidadesController : ControllerBase
     /// manutenção.
     /// </summary>
     [HttpDelete("admin/unidades/{id:guid}")]
+    [EndpointName("ExcluirUnidadeInstitucional")]
     [ExigePermissao<PermissaoOrganizacao>(PermissaoOrganizacao.UnidadesManter, ResourceTipo = ResourceTiposOrganizacao.Unidade)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]

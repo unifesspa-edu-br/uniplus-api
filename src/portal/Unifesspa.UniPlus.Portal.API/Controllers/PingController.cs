@@ -29,6 +29,7 @@ public sealed class PingController : ControllerBase
     }
 
     [HttpGet]
+    [EndpointName("VerificarDisponibilidade")]
     [ProducesResponseType(typeof(PingResponse), StatusCodes.Status200OK)]
     public IActionResult Pong()
     {

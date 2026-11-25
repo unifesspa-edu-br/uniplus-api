@@ -30,6 +30,7 @@
         "tags": [
           "CertamePublico"
         ],
+        "operationId": "ObterCertamePublico",
         "parameters": [
           {
             "name": "identificador",
@@ -124,6 +125,7 @@
         "tags": [
           "Ping"
         ],
+        "operationId": "VerificarDisponibilidade",
         "responses": {
           "200": {
             "description": "OK",

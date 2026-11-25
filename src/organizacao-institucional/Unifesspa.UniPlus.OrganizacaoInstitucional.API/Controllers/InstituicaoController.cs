@@ -54,6 +54,7 @@ public sealed class InstituicaoController : ControllerBase
     /// foi cadastrada ainda.
     /// </summary>
     [HttpGet("instituicao")]
+    [EndpointName("ObterInstituicao")]
     [AllowAnonymous]
     [VendorMediaType(Resource = "instituicao", Versions = [1])]
     [ProducesResponseType(typeof(InstituicaoDto), StatusCodes.Status200OK)]
@@ -80,6 +81,7 @@ public sealed class InstituicaoController : ControllerBase
     /// a plataforma atende uma única instituição por deployment (ADR-0055).
     /// </summary>
     [HttpPost("admin/instituicao")]
+    [EndpointName("CadastrarInstituicao")]
     [ExigePermissao<PermissaoOrganizacao>(PermissaoOrganizacao.InstituicaoManter, ResourceTipo = ResourceTiposOrganizacao.Instituicao)]
     [RequiresIdempotencyKey]
     [ProducesResponseType(typeof(Guid), StatusCodes.Status201Created)]
@@ -110,6 +112,7 @@ public sealed class InstituicaoController : ControllerBase
     /// Atualiza a Instituição existente. Exige a permissão de manutenção.
     /// </summary>
     [HttpPut("admin/instituicao/{id:guid}")]
+    [EndpointName("AlterarInstituicao")]
     [ExigePermissao<PermissaoOrganizacao>(PermissaoOrganizacao.InstituicaoManter, ResourceTipo = ResourceTiposOrganizacao.Instituicao)]
     [RequiresIdempotencyKey]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
@@ -141,6 +144,7 @@ public sealed class InstituicaoController : ControllerBase
     /// Remove (soft-delete) a Instituição. Exige a permissão de manutenção.
     /// </summary>
     [HttpDelete("admin/instituicao/{id:guid}")]
+    [EndpointName("ExcluirInstituicao")]
     [ExigePermissao<PermissaoOrganizacao>(PermissaoOrganizacao.InstituicaoManter, ResourceTipo = ResourceTiposOrganizacao.Instituicao)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
