@@ -13,7 +13,7 @@ informed: []
 
 ## Contexto e enunciado do problema
 
-Hoje só o módulo Seleção avalia regras sobre fatos do candidato. O predicado em forma normal disjuntiva, com operadores, cláusulas, validador e códigos de erro, sustenta a pré-condição de campo, o gatilho de exigência documental, a regra de derivação e o desempate por predicado. A avaliação ternária e o cálculo dos dados do candidato também moram em `Selecao.Domain`.
+Hoje só o módulo Seleção avalia regras sobre fatos do candidato. O predicado em forma normal disjuntiva, com operadores, cláusulas, validador e códigos de erro, sustenta a pré-condição de campo, o gatilho de exigência documental, a regra de derivação e o desempate por predicado. A avaliação ternária e o cálculo dos fatos derivados também moram em `Selecao.Domain`.
 
 O módulo Configuração passa a precisar da mesma lógica. O modelo de formulário por tipo de processo, cadastro novo da Configuração, valida exibição e obrigatoriedade condicionadas a fatos e oferece pré-visualização com respostas simuladas. Essa validação não pode esperar a Seleção: a recusa precisa sair no momento em que o administrador grava o modelo.
 
@@ -50,7 +50,7 @@ Três restrições delimitam onde esse código pode morar:
 
 - o predicado e suas partes (`PredicadoDnf`, `ClausulaDnf`, `CondicaoDnf`, `Operador`, `EstadoAtomo`), com o código de contrato do operador declarado no próprio enum, como manda a ADR-0176. A Configuração recebe condições com o operador em texto e lê esse mesmo código;
 - a validação do predicado (`PredicadoDnfValidador`, `PredicadoDnfErrorCodes`) e a descrição do fato de que ela depende (`DescritorFatoCandidato`, `TipoDominioFato`);
-- a derivação (`MotorDerivacao`, `RegraDerivacao`, `DerivacaoDoFato`, `ResultadoDerivacao`), com os códigos de erro declarados nos mesmos arquivos (`RegraDerivacaoErrorCodes`, `DerivacaoDoFatoErrorCodes`);
+- a derivação (`CalculoDosFatosDerivados`, `RegraDerivacao`, `DerivacaoDoFato`, `ResultadoDerivacao`), com os códigos de erro declarados nos mesmos arquivos (`RegraDerivacaoErrorCodes`, `DerivacaoDoFatoErrorCodes`);
 - o estado resolvido do fato (`FatoResolvido`, `EstadoFato`, `Ternario`).
 
 **É extraída para o projeto** a detecção de ciclo entre dependências de fatos, como função sobre códigos de fato. Hoje ela é um método privado do agregado do processo seletivo, sobre `FatoColetado`. **É criada no projeto** a ordenação topológica de que o avaliador de formulário precisa. A única ordenação que existe hoje é a do grafo conjunto do congelamento (`GrafoDependenciaConjunta`), que continua na Seleção, porque inclui exigências e arestas que só existem ali.

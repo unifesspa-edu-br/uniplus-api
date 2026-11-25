@@ -12,7 +12,7 @@ using Unifesspa.UniPlus.Regras.ValueObjects;
 /// Derivado booleano por regra (ADR-0136): verdadeiro se alguma regra ativa, falso se nenhuma, e
 /// indeterminado enquanto uma dependência não se sabe — nunca falso por falta de informação.
 /// </summary>
-public sealed class MotorDerivacaoBooleanoTests
+public sealed class CalculoDosFatosDerivadosBooleanoTests
 {
     private static readonly DerivacaoDoFato EgressoDeEscolaPublica = DerivacaoDoFato.CriarBooleana(
         "EGRESSO_ESCOLA_PUBLICA",
@@ -24,7 +24,7 @@ public sealed class MotorDerivacaoBooleanoTests
     [InlineData("PRIVADA_BOLSA_INTEGRAL", false)]
     public void Derivar_Booleano(string tipoEscola, bool esperado)
     {
-        ResultadoDerivacao resultado = MotorDerivacao.Derivar(
+        ResultadoDerivacao resultado = CalculoDosFatosDerivados.Derivar(
             EgressoDeEscolaPublica,
             new Dictionary<string, FatoResolvido>(StringComparer.Ordinal)
             {
@@ -37,7 +37,7 @@ public sealed class MotorDerivacaoBooleanoTests
 
     [Fact(DisplayName = "Com a dependência indeterminada, o derivado booleano é indeterminado, não falso")]
     public void Derivar_DependenciaIndeterminada_Indeterminado() =>
-        MotorDerivacao.Derivar(
+        CalculoDosFatosDerivados.Derivar(
             EgressoDeEscolaPublica,
             new Dictionary<string, FatoResolvido>(StringComparer.Ordinal) { ["TIPO_ESCOLA"] = FatoResolvido.Indeterminado() })
             .Estado.Should().Be(EstadoFato.Indeterminado);

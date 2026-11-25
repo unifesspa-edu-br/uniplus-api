@@ -55,7 +55,7 @@ public static class AvaliadorFormulario
 
     internal static FatoResolvido Derivar(DerivacaoDoFato derivacao, IReadOnlyDictionary<string, FatoResolvido> fatos)
     {
-        ResultadoDerivacao resultado = MotorDerivacao.Derivar(derivacao, fatos);
+        ResultadoDerivacao resultado = CalculoDosFatosDerivados.Derivar(derivacao, fatos);
         if (resultado.Estado != EstadoFato.Resolvido)
         {
             return FatoResolvido.Indeterminado();
