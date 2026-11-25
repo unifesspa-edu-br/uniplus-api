@@ -2,7 +2,7 @@
 
 - **Issue:** uniplus-api#540
 - **ADR:** [ADR-0069 — Event Sourcing seletivo com Marten](../adrs/0069-event-sourcing-seletivo-marten-contextos-criticos.md) (status **`accepted`** — gate cumprido)
-- **Código do spike:** `spikes/EventSourcingSpike.slnx` (ilha isolada, fora do `UniPlus.slnx`)
+- **Código do spike:** [`spikes/EventSourcingSpike.slnx`](https://github.com/unifesspa-edu-br/uniplus-api/blob/spike-event-sourcing-final/spikes/EventSourcingSpike.slnx), na tag `spike-event-sourcing-final` (ilha isolada, fora do `UniPlus.slnx`)
 - **Contexto de teste:** ciclo de vida do *Edital* event-sourced (`EditalEs`), como cobaia descartável — não toca o módulo Seleção de produção.
 
 ## Resumo executivo
