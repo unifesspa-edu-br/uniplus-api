@@ -231,9 +231,8 @@ public sealed class CalendarioCongeladoRecusaTests
     }
 
     [Theory(DisplayName = "Texto fora da forma canônica é recusado em vez de normalizado")]
-    // A factory do domínio apara espaço e sobe a UF para caixa alta, porque é o caminho de
-    // escrita. No decoder isso aceitaria um artefato que este encoder nunca emitiu, e o objeto
-    // reidratado passaria a divergir dos bytes que o originaram.
+    // Os campos territoriais aceitam normalização na escrita; no decoder, isso faria o objeto
+    // reidratado divergir dos bytes que o originaram.
     [InlineData("abrangencia", " MUNICIPAL ")]
     [InlineData("municipioIbge", " 1504208 ")]
     [InlineData("municipioNome", " Marabá ")]

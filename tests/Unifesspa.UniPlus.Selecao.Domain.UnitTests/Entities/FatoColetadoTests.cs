@@ -95,6 +95,9 @@ public sealed class FatoColetadoTests
     [InlineData("SITUACAO", true)]
     [InlineData(null, true)]
     [InlineData("REAIS", false)]
+    [InlineData(" MOEDA", false)]
+    [InlineData("MOEDA ", false)]
+    [InlineData("moeda", false)]
     public void Criar_ComponenteDeExibicao_SoDoVocabularioFechado(string? componente, bool aceito)
     {
         CopiaDoItemNoCatalogo copia = ProtecaoDoFatoDeTeste.Copia(componenteExibicao: componente);
