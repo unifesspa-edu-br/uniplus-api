@@ -26,12 +26,12 @@ internal static class LeituraDaReferenciaDemografica
         decimal pcd = LerPercentual(leitor, item, "pcdPercentual", path);
         string baseLegal = leitor.TextoNaoVazio(item, "baseLegal", path, LimitesDoEnvelope.BaseLegal);
 
-        return leitor.Falhou ? null : Congelar(leitor, ReferenciaReservaDemograficaSnapshot.Criar(origemId, censo, ppi, quilombola, pcd, baseLegal));
+        return leitor.Falhou ? null : Congelar(leitor, path, ReferenciaReservaDemograficaSnapshot.Criar(origemId, censo, ppi, quilombola, pcd, baseLegal));
     }
 
     private static decimal LerPercentual(LeitorEnvelope leitor, JsonObject item, string chave, string path) =>
         leitor.Decimal(item, chave, EscritaCanonica.EscalaPercentual, path, LimitesDoEnvelope.PrecisaoPercentual);
 
-    private static ReferenciaReservaDemograficaSnapshot? Congelar(LeitorEnvelope leitor, Result<ReferenciaReservaDemograficaSnapshot> referencia) =>
-        referencia.IsFailure ? leitor.Propagar<ReferenciaReservaDemograficaSnapshot>(referencia.Error!) : referencia.Value;
+    private static ReferenciaReservaDemograficaSnapshot? Congelar(LeitorEnvelope leitor, string caminho, Result<ReferenciaReservaDemograficaSnapshot> referencia) =>
+        referencia.IsFailure ? leitor.Propagar<ReferenciaReservaDemograficaSnapshot>(referencia.Errors, caminho) : referencia.Value;
 }

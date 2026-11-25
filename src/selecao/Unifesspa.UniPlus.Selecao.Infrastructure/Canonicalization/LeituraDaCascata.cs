@@ -60,7 +60,7 @@ internal static class LeituraDaCascata
         }
 
         Result<ConfiguracaoCascataRemanejamento> cascata = ConfiguracaoCascataRemanejamento.Criar(regra, fallbackCodigo, destinos);
-        return cascata.IsFailure ? leitor.Propagar<ConfiguracaoCascataRemanejamento>(cascata.Error!) : cascata.Value;
+        return cascata.IsFailure ? leitor.Propagar<ConfiguracaoCascataRemanejamento>(LeitorEnvelope.NoProprioItem(cascata.Errors), "ordemDeRemanejamento") : cascata.Value;
     }
 
     private static List<DestinoRemanejamento>? LerDestinos(LeitorEnvelope leitor, JsonArray ordens)
@@ -84,17 +84,17 @@ internal static class LeituraDaCascata
         leitor.ExigirChaves(item, path, "origem", "destinos");
         string origem = leitor.Texto(item, "origem", path, LimitesDoEnvelope.ModalidadeCodigo);
         IReadOnlyList<string> codigos = leitor.Textos(item, "destinos", path);
-        return !leitor.Falhou && AdicionarCodigos(leitor, origem, codigos, destinos);
+        return !leitor.Falhou && AdicionarCodigos(leitor, origem, codigos, destinos, path);
     }
 
-    private static bool AdicionarCodigos(LeitorEnvelope leitor, string origem, IReadOnlyList<string> codigos, List<DestinoRemanejamento> destinos)
+    private static bool AdicionarCodigos(LeitorEnvelope leitor, string origem, IReadOnlyList<string> codigos, List<DestinoRemanejamento> destinos, string caminho)
     {
         for (int i = 0; i < codigos.Count; i++)
         {
             Result<DestinoRemanejamento> destino = DestinoRemanejamento.Criar(origem, i + 1, codigos[i]);
             if (destino.IsFailure)
             {
-                leitor.Propagar<DestinoRemanejamento>(destino.Error!);
+                leitor.Propagar<DestinoRemanejamento>(LeitorEnvelope.NoProprioItem(destino.Errors), caminho);
                 return false;
             }
 

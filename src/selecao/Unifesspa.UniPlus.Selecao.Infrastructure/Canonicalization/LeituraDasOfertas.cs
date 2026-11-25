@@ -41,14 +41,14 @@ internal static class LeituraDasOfertas
         string unidade = leitor.TextoNaoVazio(item, "unidadeOfertanteNome", path, OfertaCursoSnapshot.UnidadeOfertanteNomeMaxLength);
         IReadOnlyList<string> turnos = leitor.Textos(item, "turnos", path);
 
-        return leitor.Falhou ? null : Congelar(leitor, id, OfertaCursoSnapshot.Criar(codigo, cursoNome, cursoGrau, unidade, turnos));
+        return leitor.Falhou ? null : Congelar(leitor, id, path, OfertaCursoSnapshot.Criar(codigo, cursoNome, cursoGrau, unidade, turnos));
     }
 
-    private static (Guid, OfertaCursoSnapshot)? Congelar(LeitorEnvelope leitor, Guid id, Result<OfertaCursoSnapshot> oferta)
+    private static (Guid, OfertaCursoSnapshot)? Congelar(LeitorEnvelope leitor, Guid id, string caminho, Result<OfertaCursoSnapshot> oferta)
     {
         if (oferta.IsFailure)
         {
-            leitor.Propagar<OfertaCursoSnapshot>(oferta.Error!);
+            leitor.Propagar<OfertaCursoSnapshot>(oferta.Errors, caminho);
             return null;
         }
 

@@ -36,7 +36,7 @@ internal static class LeituraDaProvaPresencial
         }
 
         Result<DeclaracaoDaProvaPresencial> resultado = DeclaracaoDaProvaPresencial.Declarar(temProva, informados, int.MaxValue);
-        return resultado.IsFailure ? leitor.Propagar<DeclaracaoDaProvaPresencial>(resultado.Error!) : resultado.Value!.ComNomesDoGeo(MunicipiosConferidosNoGeo.De(nomes));
+        return resultado.IsFailure ? leitor.Propagar<DeclaracaoDaProvaPresencial>(resultado.Errors, "") : resultado.Value!.ComNomesDoGeo(MunicipiosConferidosNoGeo.De(nomes));
     }
 
     private static void LerMunicipio(LeitorEnvelope leitor, JsonArray municipios, int indice,
