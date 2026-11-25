@@ -7,6 +7,7 @@ using Application.Queries.ProcessosSeletivos;
 
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Routing;
 
 using Unifesspa.UniPlus.Application.Abstractions.Messaging;
 using Unifesspa.UniPlus.Infrastructure.Core.Errors;
@@ -53,6 +54,7 @@ public sealed class ProcessoSeletivoVersaoController : ControllerBase
     [AllowAnonymous]
     [ExigeLeituraDoProcesso]
     [HttpGet("{id:guid}/snapshot-vigente")]
+    [EndpointName("ObterConfiguracaoVigente")]
     [VendorMediaType(Resource = "snapshot-vigente-processo-seletivo", Versions = [1])]
     [ProducesResponseType(typeof(SnapshotVigenteDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
@@ -72,6 +74,7 @@ public sealed class ProcessoSeletivoVersaoController : ControllerBase
     }
     /// <summary>Exporta a configuração de uma versão publicada do processo seletivo.</summary>
     [HttpGet("{id:guid}/configuracao")]
+    [EndpointName("ExportarConfiguracaoDoProcesso")]
     [ExigePermissaoNoProcesso(PermissaoSelecao.ProcessosConfigurar)]
     [VendorMediaType(Resource = "configuracao-de-processo-seletivo", Versions = [1])]
     [RespostaJson(EsquemaPublicadoDoDocumento.Componente)]

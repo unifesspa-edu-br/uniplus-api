@@ -9,6 +9,7 @@ using Application.Queries.ProcessosSeletivos;
 
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Routing;
 
 using Unifesspa.UniPlus.Application.Abstractions.Messaging;
 using Unifesspa.UniPlus.Infrastructure.Core.Errors;
@@ -114,6 +115,7 @@ public sealed class CertamePublicadoController : ControllerBase
     /// </para>
     /// </remarks>
     [HttpGet("certames")]
+    [EndpointName("ListarProcessosSeletivosPublicados")]
     [AllowAnonymous]
     [VendorMediaType(Resource = "certame", Versions = [1])]
     [ProducesResponseType(typeof(IEnumerable<CertameNaVitrineDto>), StatusCodes.Status200OK)]
@@ -211,6 +213,7 @@ public sealed class CertamePublicadoController : ControllerBase
     /// </para>
     /// </remarks>
     [HttpGet("certames/{id}")]
+    [EndpointName("ObterProcessoSeletivoPublicado")]
     [AllowAnonymous]
     [VendorMediaType(Resource = "certame", Versions = [1])]
     [ProducesResponseType(typeof(CertamePublicadoDto), StatusCodes.Status200OK)]

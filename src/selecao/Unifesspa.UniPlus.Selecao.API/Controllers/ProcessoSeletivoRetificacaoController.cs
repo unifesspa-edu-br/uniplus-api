@@ -11,6 +11,7 @@ using Http;
 
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Routing;
 
 using Unifesspa.UniPlus.Application.Abstractions.Messaging;
 using Unifesspa.UniPlus.Infrastructure.Core.Errors;
@@ -62,6 +63,7 @@ public sealed class ProcessoSeletivoRetificacaoController : ControllerBase
     /// </summary>
     [ExigePermissaoNoProcesso(PermissaoSelecao.ProcessosPublicar)]
     [HttpPost("{id:guid}/retificacoes")]
+    [EndpointName("RetificarProcessoSeletivo")]
     [RequiresIdempotencyKey]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]

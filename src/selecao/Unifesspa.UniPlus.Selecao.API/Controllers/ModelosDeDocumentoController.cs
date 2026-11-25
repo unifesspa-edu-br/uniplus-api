@@ -11,6 +11,7 @@ using Contracts.Requests;
 
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Routing;
 
 using Unifesspa.UniPlus.Application.Abstractions.Messaging;
 using Unifesspa.UniPlus.Infrastructure.Core.Errors;
@@ -51,6 +52,7 @@ public sealed class ModelosDeDocumentoController : ControllerBase
     /// o content-type do envio e o id do modelo.
     /// </summary>
     [HttpPost]
+    [EndpointName("IniciarEnvioDeModeloDeDocumento")]
     [RequiresIdempotencyKey(TtlSeconds = PrazosDoArquivoEnviado.EnvioSegundos)]
     [ProducesResponseType(typeof(IniciarEnvioDoModeloDeDocumentoDto), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
@@ -71,6 +73,7 @@ public sealed class ModelosDeDocumentoController : ControllerBase
     /// servidor e finaliza o modelo como imutável.
     /// </summary>
     [HttpPost("{modeloDeDocumentoId:guid}/confirmacao")]
+    [EndpointName("ConfirmarEnvioDeModeloDeDocumento")]
     [RequiresIdempotencyKey]
     [ProducesResponseType(typeof(ModeloDeDocumentoDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
@@ -88,6 +91,7 @@ public sealed class ModelosDeDocumentoController : ControllerBase
     /// A resposta carrega uma credencial de acesso ao objeto e por isso vai com <c>no-store</c>.
     /// </summary>
     [HttpGet("{modeloDeDocumentoId:guid}/acesso")]
+    [EndpointName("ObterAcessoAoModeloDeDocumento")]
     [VendorMediaType(Resource = "acesso-modelo-de-documento", Versions = [1])]
     [ProducesResponseType(typeof(AcessoModeloDeDocumentoDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]

@@ -13,6 +13,7 @@ using Domain.Enums;
 
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Routing;
 
 using Unifesspa.UniPlus.Application.Abstractions.Messaging;
 using Unifesspa.UniPlus.Infrastructure.Core.Errors;
@@ -59,6 +60,7 @@ public sealed class DocumentosAPublicarController : ControllerBase
     /// para ela — quem escolhe o edital lista só os de finalidade <c>DOCUMENTO_DO_EDITAL</c>.
     /// </summary>
     [HttpGet]
+    [EndpointName("ListarDocumentosAPublicar")]
     [VendorMediaType(Resource = "documento-a-publicar", Versions = [1])]
     [ProducesResponseType(typeof(IEnumerable<DocumentoAPublicarDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
@@ -85,6 +87,7 @@ public sealed class DocumentosAPublicarController : ControllerBase
     /// de PUT (validade curta), o <c>Content-Type</c> que o PUT envia e o id do documento.
     /// </summary>
     [HttpPost]
+    [EndpointName("IniciarEnvioDeDocumentoAPublicar")]
     // TTL alinhado ao da URL pré-assinada devolvida (não ao teto default de 24h, ADR-0027) — sem
     // isso, um replay depois da URL expirar devolveria uma URL inutilizável ao cliente.
     [RequiresIdempotencyKey(TtlSeconds = PrazosDoArquivoEnviado.EnvioSegundos)]
@@ -107,6 +110,7 @@ public sealed class DocumentosAPublicarController : ControllerBase
     /// o SHA-256 no servidor e finaliza o documento como imutável.
     /// </summary>
     [HttpPost("{documentoAPublicarId:guid}/confirmacao")]
+    [EndpointName("ConfirmarEnvioDeDocumentoAPublicar")]
     [RequiresIdempotencyKey]
     [ProducesResponseType(typeof(DocumentoAPublicarDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
@@ -131,6 +135,7 @@ public sealed class DocumentosAPublicarController : ControllerBase
     /// cache, sem passar por autorização de novo.
     /// </remarks>
     [HttpGet("{documentoAPublicarId:guid}/acesso")]
+    [EndpointName("ObterAcessoAoDocumentoAPublicar")]
     [VendorMediaType(Resource = "acesso-documento-a-publicar", Versions = [1])]
     [ProducesResponseType(typeof(AcessoDocumentoAPublicarDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]

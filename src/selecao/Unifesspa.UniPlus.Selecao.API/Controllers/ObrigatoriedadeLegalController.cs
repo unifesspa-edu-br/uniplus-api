@@ -4,6 +4,7 @@ using System.Diagnostics.CodeAnalysis;
 
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Routing;
 
 using Unifesspa.UniPlus.Application.Abstractions.Messaging;
 using Unifesspa.UniPlus.Infrastructure.Core.Authorization;
@@ -61,6 +62,7 @@ public sealed class ObrigatoriedadeLegalController : ControllerBase
     /// <c>vigentes=true</c> por default.
     /// </summary>
     [HttpGet("obrigatoriedades-legais")]
+    [EndpointName("ListarObrigatoriedadesLegais")]
     [AllowAnonymous]
     [VendorMediaType(Resource = "obrigatoriedade-legal", Versions = [1])]
     [ProducesResponseType(typeof(IEnumerable<ObrigatoriedadeLegalDto>), StatusCodes.Status200OK)]
@@ -106,6 +108,7 @@ public sealed class ObrigatoriedadeLegalController : ControllerBase
     /// Obtém uma regra pelo Id. HATEOAS Level 1 com <c>_links.self/collection</c>.
     /// </summary>
     [HttpGet("obrigatoriedades-legais/{id:guid}")]
+    [EndpointName("ObterObrigatoriedadeLegal")]
     [AllowAnonymous]
     [VendorMediaType(Resource = "obrigatoriedade-legal", Versions = [1])]
     [ProducesResponseType(typeof(ObrigatoriedadeLegalDto), StatusCodes.Status200OK)]
@@ -130,6 +133,7 @@ public sealed class ObrigatoriedadeLegalController : ControllerBase
     /// manutenção. <c>Idempotency-Key</c> obrigatório (ADR-0027).
     /// </summary>
     [HttpPost("admin/obrigatoriedades-legais")]
+    [EndpointName("CadastrarObrigatoriedadeLegal")]
     [ExigePermissao<PermissaoSelecao>(PermissaoSelecao.ObrigatoriedadesLegaisManter, ResourceTipo = ResourceTiposSelecao.ObrigatoriedadeLegal)]
     [RequiresIdempotencyKey]
     [ProducesResponseType(typeof(Guid), StatusCodes.Status201Created)]
@@ -161,6 +165,7 @@ public sealed class ObrigatoriedadeLegalController : ControllerBase
     /// repassar todos os campos. <c>Idempotency-Key</c> obrigatório.
     /// </summary>
     [HttpPut("admin/obrigatoriedades-legais/{id:guid}")]
+    [EndpointName("AlterarObrigatoriedadeLegal")]
     [ExigePermissao<PermissaoSelecao>(PermissaoSelecao.ObrigatoriedadesLegaisManter, ResourceTipo = ResourceTiposSelecao.ObrigatoriedadeLegal)]
     [RequiresIdempotencyKey]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
@@ -196,6 +201,7 @@ public sealed class ObrigatoriedadeLegalController : ControllerBase
     /// e libera o slot do <c>UNIQUE</c> parcial sobre <c>Hash</c> (ADR-0063).
     /// </summary>
     [HttpDelete("admin/obrigatoriedades-legais/{id:guid}")]
+    [EndpointName("DesativarObrigatoriedadeLegal")]
     [ExigePermissao<PermissaoSelecao>(PermissaoSelecao.ObrigatoriedadesLegaisManter, ResourceTipo = ResourceTiposSelecao.ObrigatoriedadeLegal)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]

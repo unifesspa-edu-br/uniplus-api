@@ -4,6 +4,7 @@ using System.Diagnostics.CodeAnalysis;
 
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Routing;
 
 using Unifesspa.UniPlus.Application.Abstractions.Messaging;
 using Unifesspa.UniPlus.Infrastructure.Core.Authorization;
@@ -77,6 +78,7 @@ public sealed class MotivosDeDecisaoController : ControllerBase
     /// os motivos ativos — a visão de quem monta uma publicação.
     /// </summary>
     [HttpGet("motivos-de-decisao")]
+    [EndpointName("ListarMotivosDeDecisao")]
     [AllowAnonymous]
     [VendorMediaType(Resource = "motivo-de-decisao", Versions = [1])]
     [ProducesResponseType(typeof(IEnumerable<MotivoDeDecisaoDto>), StatusCodes.Status200OK)]
@@ -112,6 +114,7 @@ public sealed class MotivosDeDecisaoController : ControllerBase
 
     /// <summary>Obtém um motivo pelo Id. Retorna 404 quando inexistente.</summary>
     [HttpGet("motivos-de-decisao/{id:guid}")]
+    [EndpointName("ObterMotivoDeDecisao")]
     [AllowAnonymous]
     [VendorMediaType(Resource = "motivo-de-decisao", Versions = [1])]
     [ProducesResponseType(typeof(MotivoDeDecisaoDto), StatusCodes.Status200OK)]
@@ -136,6 +139,7 @@ public sealed class MotivosDeDecisaoController : ControllerBase
     /// <c>Idempotency-Key</c> obrigatório (ADR-0027).
     /// </summary>
     [HttpPost("admin/motivos-de-decisao")]
+    [EndpointName("CadastrarMotivoDeDecisao")]
     [ExigePermissao<PermissaoSelecao>(PermissaoSelecao.MotivosDeDecisaoManter, ResourceTipo = ResourceTiposSelecao.MotivoDeDecisao)]
     [RequiresIdempotencyKey]
     [ProducesResponseType(typeof(Guid), StatusCodes.Status201Created)]
@@ -162,6 +166,7 @@ public sealed class MotivosDeDecisaoController : ControllerBase
     /// sentido não são editáveis (UNI-REQ-0121, UNI-REQ-0283). <c>Idempotency-Key</c> obrigatório.
     /// </summary>
     [HttpPut("admin/motivos-de-decisao/{id:guid}")]
+    [EndpointName("AlterarMotivoDeDecisao")]
     [ExigePermissao<PermissaoSelecao>(PermissaoSelecao.MotivosDeDecisaoManter, ResourceTipo = ResourceTiposSelecao.MotivoDeDecisao)]
     [RequiresIdempotencyKey]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
@@ -189,6 +194,7 @@ public sealed class MotivosDeDecisaoController : ControllerBase
 
     /// <summary>Reativa um motivo, devolvendo-o às novas publicações.</summary>
     [HttpPost("admin/motivos-de-decisao/{id:guid}/ativacao")]
+    [EndpointName("ReativarMotivoDeDecisao")]
     [ExigePermissao<PermissaoSelecao>(PermissaoSelecao.MotivosDeDecisaoManter, ResourceTipo = ResourceTiposSelecao.MotivoDeDecisao)]
     [RequiresIdempotencyKey]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
@@ -211,6 +217,7 @@ public sealed class MotivosDeDecisaoController : ControllerBase
     /// inclusive nas decisões já proferidas.
     /// </summary>
     [HttpDelete("admin/motivos-de-decisao/{id:guid}/ativacao")]
+    [EndpointName("DesativarMotivoDeDecisao")]
     [ExigePermissao<PermissaoSelecao>(PermissaoSelecao.MotivosDeDecisaoManter, ResourceTipo = ResourceTiposSelecao.MotivoDeDecisao)]
     [RequiresIdempotencyKey]
     [ProducesResponseType(StatusCodes.Status204NoContent)]

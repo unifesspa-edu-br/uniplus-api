@@ -8,6 +8,7 @@ using Http;
 
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Routing;
 
 using Unifesspa.UniPlus.Application.Abstractions.Messaging;
 using Unifesspa.UniPlus.Infrastructure.Core.Errors;
@@ -56,6 +57,7 @@ public sealed class ProcessoSeletivoPrazosEExigenciasController : ControllerBase
     /// </summary>
     [ExigePermissaoNoProcesso(PermissaoSelecao.ProcessosConfigurar)]
     [HttpPut("{id:guid}/cronograma-fases")]
+    [EndpointName("DefinirCronogramaDeFases")]
     [EndpointDescription("Para preservar as chaves, devolva o tipo de cada fase e o id de cada banca que permanece. As chaves da fase e da banca novas vêm na releitura pelo GET.")]
     [RequiresIdempotencyKey]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
@@ -76,6 +78,7 @@ public sealed class ProcessoSeletivoPrazosEExigenciasController : ControllerBase
     /// <remarks>Devolva a chave da exigência que permanece; a chave da exigência nova vem na releitura pelo GET. Omitir prazoDeEmissao ou validade apaga a respectiva escolha. Para cada opção, informe o código devolvido pela API.</remarks>
     [ExigePermissaoNoProcesso(PermissaoSelecao.ProcessosConfigurar)]
     [HttpPut("{id:guid}/documentos-exigidos")]
+    [EndpointName("DefinirDocumentosExigidos")]
     [RequiresIdempotencyKey]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
@@ -97,6 +100,7 @@ public sealed class ProcessoSeletivoPrazosEExigenciasController : ControllerBase
     /// </summary>
     [ExigePermissaoNoProcesso(PermissaoSelecao.ProcessosConfigurar)]
     [HttpPut("{id:guid}/identificador-legivel")]
+    [EndpointName("DefinirIdentificadorLegivel")]
     [RequiresIdempotencyKey]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
@@ -122,6 +126,7 @@ public sealed class ProcessoSeletivoPrazosEExigenciasController : ControllerBase
     /// </summary>
     [ExigePermissaoNoProcesso(PermissaoSelecao.ProcessosConfigurar)]
     [HttpPut("{id:guid}/localidade")]
+    [EndpointName("DefinirLocalidadeDoProcesso")]
     [RequiresIdempotencyKey]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
@@ -146,6 +151,7 @@ public sealed class ProcessoSeletivoPrazosEExigenciasController : ControllerBase
     /// </summary>
     [ExigePermissaoNoProcesso(PermissaoSelecao.ProcessosConfigurar)]
     [HttpPut("{id:guid}/algoritmo-contagem-prazo")]
+    [EndpointName("DefinirRegraDeContagemDePrazo")]
     [RequiresIdempotencyKey]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
@@ -169,6 +175,7 @@ public sealed class ProcessoSeletivoPrazosEExigenciasController : ControllerBase
     /// </summary>
     [ExigePermissaoNoProcesso(PermissaoSelecao.ProcessosConfigurar)]
     [HttpPut("{id:guid}/referencia-temporal-fatos")]
+    [EndpointName("DefinirDataDeReferenciaDosDados")]
     [RequiresIdempotencyKey]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
@@ -197,6 +204,7 @@ public sealed class ProcessoSeletivoPrazosEExigenciasController : ControllerBase
     /// </summary>
     [ExigePermissaoNoProcesso(PermissaoSelecao.ProcessosConfigurar)]
     [HttpPut("{id:guid}/regras-derivacao")]
+    [EndpointName("DefinirRegrasDeCalculoDosDados")]
     [RequiresIdempotencyKey]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]

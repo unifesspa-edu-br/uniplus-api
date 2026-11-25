@@ -12,6 +12,7 @@ using Http;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.ModelBinding;
+using Microsoft.AspNetCore.Routing;
 
 using Unifesspa.UniPlus.Application.Abstractions.Messaging;
 using Unifesspa.UniPlus.Infrastructure.Core.Errors;
@@ -45,6 +46,7 @@ public sealed class InscricoesController : ControllerBase
 
     /// <summary>A inscrição do dono do token, com o <c>ETag</c> também no header, para o <c>If-Match</c> seguinte.</summary>
     [HttpGet("processos-seletivos/{id:guid}/inscricao")]
+    [EndpointName("ObterInscricaoDoCandidato")]
     [VendorMediaType(Resource = "inscricao", Versions = [1])]
     [ProducesResponseType(typeof(InscricaoDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
@@ -66,6 +68,7 @@ public sealed class InscricoesController : ControllerBase
 
     /// <summary>O formulário apresentado da versão em que está a inscrição do dono do token: a divulgada, no rascunho, e a congelada no primeiro envio, depois dele.</summary>
     [HttpGet("processos-seletivos/{id:guid}/inscricao/formulario")]
+    [EndpointName("ObterFormularioDaInscricao")]
     [VendorMediaType(Resource = "formulario-inscricao", Versions = [1])]
     [ProducesResponseType(typeof(FormularioApresentadoDoProcessoDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
@@ -88,6 +91,7 @@ public sealed class InscricoesController : ControllerBase
     /// do corpo.
     /// </summary>
     [HttpPost("processos-seletivos/{id:guid}/inscricao/avaliacoes")]
+    [EndpointName("AvaliarRespostasDaInscricao")]
     [VendorMediaType(Resource = "avaliacao-da-inscricao", Versions = [1])]
     [ProducesResponseType(typeof(AvaliacaoDaInscricaoDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
@@ -111,6 +115,7 @@ public sealed class InscricoesController : ControllerBase
     /// por <c>Idempotency-Key</c>.
     /// </summary>
     [HttpPost("processos-seletivos/{id:guid}/inscricao")]
+    [EndpointName("IniciarInscricao")]
     [VendorMediaType(Resource = "inscricao", Versions = [1])]
     [ProducesResponseType(typeof(InscricaoDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
@@ -129,6 +134,7 @@ public sealed class InscricoesController : ControllerBase
     /// da submissão. Exige <c>If-Match</c> com o <see cref="InscricaoDto.ETag"/> corrente.
     /// </summary>
     [HttpPut("processos-seletivos/{id:guid}/inscricao")]
+    [EndpointName("SalvarRascunhoDaInscricao")]
     [VendorMediaType(Resource = "inscricao", Versions = [1])]
     [ProducesResponseType(typeof(InscricaoDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
@@ -164,6 +170,7 @@ public sealed class InscricoesController : ControllerBase
     /// cria um rascunho novo na versão vigente.
     /// </summary>
     [HttpDelete("processos-seletivos/{id:guid}/inscricao")]
+    [EndpointName("DescartarInscricao")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
@@ -196,6 +203,7 @@ public sealed class InscricoesController : ControllerBase
     /// Depois do cancelamento, iniciar a inscrição cria outra, que recebe outro número no envio.
     /// </summary>
     [HttpPost("processos-seletivos/{id:guid}/inscricao/cancelamento")]
+    [EndpointName("CancelarInscricao")]
     [RequiresIdempotencyKey]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
@@ -231,6 +239,7 @@ public sealed class InscricoesController : ControllerBase
     /// diz qual comprovante abrir, em <c>GET /inscricoes/{inscricaoId}/comprovantes/{numeroDoComprovante}</c>.
     /// </summary>
     [HttpPost("processos-seletivos/{id:guid}/inscricao/submissao")]
+    [EndpointName("SubmeterInscricao")]
     [RequiresIdempotencyKey]
     [VendorMediaType(Resource = "recibo-da-inscricao", Versions = [1])]
     [ProducesResponseType(typeof(ReciboDaInscricaoDto), StatusCodes.Status200OK)]
@@ -268,6 +277,7 @@ public sealed class InscricoesController : ControllerBase
     /// <see cref="MinhaInscricaoDto.InscricaoId"/>.
     /// </summary>
     [HttpGet("inscricoes/{inscricaoId:guid}/comprovantes/{numero:int}")]
+    [EndpointName("ObterComprovanteDaInscricao")]
     [VendorMediaType(Resource = "comprovante-inscricao", Versions = [1])]
     [ProducesResponseType(typeof(ComprovanteDaInscricaoDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
@@ -284,6 +294,7 @@ public sealed class InscricoesController : ControllerBase
 
     /// <summary>As inscrições do dono do token em qualquer processo seletivo, com os cursos que escolheram.</summary>
     [HttpGet("minhas-inscricoes")]
+    [EndpointName("ListarInscricoesDoCandidato")]
     [VendorMediaType(Resource = "minhas-inscricoes", Versions = [1])]
     [ProducesResponseType(typeof(IReadOnlyList<MinhaInscricaoDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]

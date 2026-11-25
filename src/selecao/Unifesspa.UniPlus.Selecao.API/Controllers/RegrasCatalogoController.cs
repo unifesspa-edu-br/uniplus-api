@@ -5,6 +5,7 @@ using System.Diagnostics.CodeAnalysis;
 
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Routing;
 
 using Unifesspa.UniPlus.Application.Abstractions.Messaging;
 using Unifesspa.UniPlus.Infrastructure.Core.Authorization;
@@ -86,6 +87,7 @@ public sealed class RegrasCatalogoController : ControllerBase
     /// lexicalmente responderia errado, e é justamente por isso que a API não responde.
     /// </remarks>
     [HttpGet("regras-catalogo")]
+    [EndpointName("ListarRegrasDoCatalogo")]
     [VendorMediaType(Resource = "regra-catalogo", Versions = [1])]
     [ProducesResponseType(typeof(IEnumerable<RegraCatalogoDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
@@ -125,6 +127,7 @@ public sealed class RegrasCatalogoController : ControllerBase
     /// referencia, o que permite reler a definição exata que ele aponta após um refresh.
     /// </summary>
     [HttpGet("regras-catalogo/{codigo}/versoes/{versao}")]
+    [EndpointName("ObterRegraDoCatalogo")]
     [VendorMediaType(Resource = "regra-catalogo", Versions = [1])]
     [ProducesResponseType(typeof(RegraCatalogoDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
