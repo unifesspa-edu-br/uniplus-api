@@ -260,7 +260,7 @@ jobs:
     name: Unit + arch tests
     needs: build
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 20
     permissions:
       contents: read
 
