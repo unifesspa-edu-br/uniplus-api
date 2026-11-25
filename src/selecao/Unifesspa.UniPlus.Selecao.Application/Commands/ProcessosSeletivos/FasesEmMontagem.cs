@@ -250,10 +250,7 @@ internal sealed class FasesEmMontagem
         _recusas.AddRange(fase.Errors.Select(erro => ComIndice(erro, indice)));
     }
 
-    private static FieldError ComIndice(FieldError erro, int indice) => erro with
-    {
-        Field = erro.Field is null ? $"fases[{indice}]" : $"fases[{indice}].{erro.Field}",
-    };
+    private static FieldError ComIndice(FieldError erro, int indice) => erro.NoCaminhoDoItem($"fases[{indice}]");
 }
 
 /// <summary>O que a fase precisa do cadastro antes de seus produtos: a fase canônica, a unidade e as bancas.</summary>

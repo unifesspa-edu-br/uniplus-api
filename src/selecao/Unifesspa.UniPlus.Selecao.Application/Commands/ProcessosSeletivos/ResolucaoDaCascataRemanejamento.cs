@@ -84,7 +84,7 @@ internal static class ResolucaoDaCascataRemanejamento
         Result<DestinoRemanejamento> destino = DestinoRemanejamento.Criar(item.ModalidadeOrigemCodigo, item.Ordem, item.ModalidadeDestinoCodigo);
         if (destino.IsFailure)
         {
-            erros.AddRange(destino.Errors.Select(erro => erro with { Field = $"destinos[{indice}].{erro.Field}" }));
+            erros.AddRange(destino.Errors.Select(erro => erro.NoCaminhoDoItem($"destinos[{indice}]")));
             return;
         }
 

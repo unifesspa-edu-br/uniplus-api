@@ -103,7 +103,7 @@ internal static class EscritaDosItens
         Result<Impedimento?> impedimento = EntradaDeRegras.Impedimento(regras?.Impedimento);
         if (impedimento.IsFailure)
         {
-            erros.AddRange(impedimento.Errors.Select(e => new FieldError($"{campo}.impedimento.quando{e.Field}", e.Error)));
+            erros.AddRange(impedimento.Errors.Select(e => e.NoCaminhoDoItem($"{campo}.impedimento.quando")));
         }
 
         return (obrigatoriedade, restricoes, impedimento.Value);
@@ -157,7 +157,7 @@ internal static class EscritaDosItens
         List<FieldError> erros = [];
         if (exibicao.IsFailure)
         {
-            erros.AddRange(exibicao.Errors.Select(e => new FieldError($"{caminhoDasRegras}.exibicao{e.Field}", e.Error)));
+            erros.AddRange(exibicao.Errors.Select(e => e.NoCaminhoDoItem($"{caminhoDasRegras}.exibicao")));
         }
 
         Obrigatoriedade? obrigatoriedade = ConferirObrigatoriedade(
@@ -176,7 +176,7 @@ internal static class EscritaDosItens
             caminho);
 
     private static IEnumerable<FieldError> NoCaminho(IEnumerable<FieldError> erros, string caminho) =>
-        erros.Select(erro => erro with { Field = $"{caminho}.{erro.Field}" });
+        erros.Select(erro => erro.NoCaminhoDoItem(caminho));
 
     /// <summary>
     /// O candidato como membro pela forma lida dos campos. O campo de forma recusada já tem a
@@ -256,7 +256,7 @@ internal static class EscritaDosItens
         Result<PredicadoDnf?> predicado = EntradaDeRegras.Predicado(predicadoInput);
         Obrigatoriedade? obrigatoriedade = predicado.IsSuccess ? EntradaDeRegras.Obrigatoriedade(token, predicado.Value) : null;
         erros.AddRange(predicado.IsFailure
-            ? [.. predicado.Errors.Select(e => new FieldError($"{caminhoDoPredicado}{e.Field}", e.Error))]
+            ? [.. predicado.Errors.Select(e => e.NoCaminhoDoItem(caminhoDoPredicado))]
             : obrigatoriedade is null ? [new FieldError(caminhoDoToken, ObrigatoriedadeInvalida)] : []);
         return obrigatoriedade;
     }
@@ -325,7 +325,7 @@ internal static class EscritaDosItens
         IEnumerable<string> fatosDaExibicao = (input.Regras?.Exibicao ?? []).SelectMany(static c => c).Where(static c => c is not null).Select(static c => c.Fato);
         List<FieldError> erros =
         [
-            .. exibicao.Errors.Select(static e => new FieldError($"{ConferenciaDoItemNoCatalogo.CaminhoDaExibicao}{e.Field}", e.Error)),
+            .. exibicao.Errors.Select(static e => e.NoCaminhoDoItem(ConferenciaDoItemNoCatalogo.CaminhoDaExibicao)),
             .. ConferenciaDoItemNoCatalogo.Semantica(fato, configuracao.TipoDeCampo, lidas, fatosDaExibicao, contexto),
         ];
         bool exibicaoRecusada = erros.Any(static e => e.Field is { } campo && campo.StartsWith(ConferenciaDoItemNoCatalogo.CaminhoDaExibicao, StringComparison.Ordinal));

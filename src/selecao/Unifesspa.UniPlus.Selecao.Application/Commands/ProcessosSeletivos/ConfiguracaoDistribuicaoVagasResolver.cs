@@ -106,5 +106,6 @@ public sealed class ConfiguracaoDistribuicaoVagasResolver(
     }
 
     private static FieldError ComIndice(FieldError erro, int indice) =>
-        erro.Field is null ? erro : erro with { Field = $"distribuicaoVagas[{indice}].{TraduzirFieldDoDominio(erro.Field)}" };
+        (erro with { Field = erro.Field is { } campo ? TraduzirFieldDoDominio(campo) : null })
+            .NoCaminhoDe($"distribuicaoVagas[{indice}]");
 }

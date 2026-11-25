@@ -79,5 +79,5 @@ internal sealed class RegraDeDerivacaoInformada
         return RegraDerivacaoConfigurada.Criar(_entrada.Ordem, _entrada.Contribui, condicoes);
     }
 
-    private static FieldError NoPredicado(FieldError recusa) => recusa with { Field = $"quando{recusa.Field}" };
+    private static FieldError NoPredicado(FieldError recusa) => recusa.NoCaminhoDoItem("quando");
 }

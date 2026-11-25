@@ -121,7 +121,7 @@ internal static class ReconferenciaDasCopiasDoItem
     }
 
     private static FieldError Decorar(FieldError erro, string caminho, string quem, string orientacao) =>
-        new(erro.NoCaminhoDe(caminho).Field, new DomainError(erro.Error.Code, $"{erro.Error.Message} {quem}. {orientacao}"));
+        erro.NoCaminhoDe(caminho) with { Error = erro.Error with { Message = $"{erro.Error.Message} {quem}. {orientacao}" } };
 }
 
 /// <summary>As cópias do catálogo conferidas e os fatos já coletados que o agregado usa para refazê-las.</summary>

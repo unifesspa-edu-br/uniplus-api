@@ -32,5 +32,5 @@ internal static class EscritaDasBasesLegais
         CatalogoDe<StatusBaseLegal>.TentarObter(declarada.Situacao, out StatusBaseLegal valor) ? valor : null;
 
     public static IEnumerable<FieldError> ComIndice(IEnumerable<FieldError> erros, int indice) =>
-        erros.Select(erro => erro with { Field = $"{BaseLegalInput.CaminhoDaLista}[{indice}].{erro.Field}" });
+        erros.Select(erro => erro.NoCaminhoDoItem($"{BaseLegalInput.CaminhoDaLista}[{indice}]"));
 }
