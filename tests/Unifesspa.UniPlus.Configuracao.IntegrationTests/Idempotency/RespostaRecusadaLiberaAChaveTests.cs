@@ -1,7 +1,6 @@
 namespace Unifesspa.UniPlus.Configuracao.IntegrationTests.Idempotency;
 
 using System.Diagnostics.CodeAnalysis;
-using System.Reflection;
 using System.Text;
 using System.Text.Json;
 
@@ -9,22 +8,14 @@ using AwesomeAssertions;
 
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.Controllers;
 using Microsoft.AspNetCore.Mvc.Filters;
-using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 
-using NSubstitute;
-
-using Unifesspa.UniPlus.Application.Abstractions.Authentication;
-using Unifesspa.UniPlus.Configuracao.API.Controllers;
 using Unifesspa.UniPlus.Configuracao.Domain.Errors;
 using Unifesspa.UniPlus.Configuracao.IntegrationTests.Infrastructure;
-using Unifesspa.UniPlus.Infrastructure.Core.Cryptography;
 using Unifesspa.UniPlus.Infrastructure.Core.Errors;
 using Unifesspa.UniPlus.Infrastructure.Core.Idempotency;
-using Unifesspa.UniPlus.IntegrationTests.Fixtures.Hosting;
 using Unifesspa.UniPlus.Kernel.Results;
 
 /// <summary>
@@ -44,11 +35,6 @@ using Unifesspa.UniPlus.Kernel.Results;
     Justification = "xUnit exige tipo de teste público.")]
 public sealed class RespostaRecusadaLiberaAChaveTests
 {
-    private const string Rota =
-        "/api/configuracao/admin/termos-consentimento/00000000-0000-0000-0000-000000000001/revisar";
-
-    private const string Endpoint = "POST " + Rota;
-
     private const string CorpoSemADeclaracao = """{"status":409,"code":"uniplus.qualquer"}""";
 
     private readonly ConfiguracaoEndpointFixture _fixture;
@@ -103,20 +89,17 @@ public sealed class RespostaRecusadaLiberaAChaveTests
     [Fact(DisplayName = "A declaração sobrevive à serialização que o host configura")]
     public async Task Declaracao_AoSerializarComAsOpcoesDoHost_DeveSairNaRaizDoCorpo()
     {
-        // A declaração é contrato público lido pelo cliente, e a página do catálogo manda tratar
-        // a ausência como "não conte com repetir". Uma política de nome aplicada às chaves do
-        // dicionário de extensões, ou um invólucro novo, renomeariam o campo no corpo sem que
-        // nada mais notasse, e o cliente deixaria de retentar.
         ObjectResult resposta = await RespostaDeDominioAsync(
             CalendarioDiasUteisErrorCodes.ConflitoDeConcorrencia);
-
         await using AsyncServiceScope scope = _fixture.Factory.Services.CreateAsyncScope();
         JsonSerializerOptions opcoesDoHost = scope.ServiceProvider
             .GetRequiredService<IOptions<JsonOptions>>().Value.JsonSerializerOptions;
+        using JsonDocument corpo = JsonDocument.Parse(JsonSerializer.Serialize(resposta.Value, opcoesDoHost));
+        VerificarDeclaracaoRetentavel(corpo);
+    }
 
-        using JsonDocument corpo = JsonDocument.Parse(
-            JsonSerializer.Serialize(resposta.Value, opcoesDoHost));
-
+    private static void VerificarDeclaracaoRetentavel(JsonDocument corpo)
+    {
         corpo.RootElement.TryGetProperty(ResultExtensions.RetryableExtensionName, out JsonElement declarado)
             .Should().BeTrue("é por este nome, na raiz, que o cliente lê a declaração");
         declarado.ValueKind.Should().Be(
@@ -154,78 +137,25 @@ public sealed class RespostaRecusadaLiberaAChaveTests
         IActionResult? resultadoTipado = null,
         Exception? excecaoPendente = null)
     {
-        MonolitoApiFactory api = _fixture.Factory;
-        string idempotencyKey = Guid.NewGuid().ToString();
-
-        await using AsyncServiceScope scope = api.Services.CreateAsyncScope();
-        IServiceProvider services = scope.ServiceProvider;
-
-        EfCoreIdempotencyStore store = ActivatorUtilities
-            .CreateInstance<EfCoreIdempotencyStore>(services);
-
-        IUserContext userContext = Substitute.For<IUserContext>();
-        userContext.IsAuthenticated.Returns(true);
-        userContext.UserId.Returns("conflito-retentavel-test-user");
-
-        IdempotencyFilter filter = new(
-            store,
-            services.GetRequiredService<IUniPlusEncryptionService>(),
-            services.GetRequiredService<IDomainErrorMapper>(),
-            services.GetRequiredService<TimeProvider>(),
-            userContext,
-            services.GetRequiredService<IOptions<IdempotencyOptions>>(),
-            services.GetRequiredService<IProblemTypeUriFactory>());
-
-        ControllerActionDescriptor actionDescriptor = new()
-        {
-            MethodInfo = typeof(TermosConsentimentoController)
-                .GetMethod(nameof(TermosConsentimentoController.MarcarRevisado))!,
-            ControllerTypeInfo = typeof(TermosConsentimentoController).GetTypeInfo(),
-        };
-
-        byte[] corpoDaRequisicao = Encoding.UTF8.GetBytes("""{"texto":"corpo de teste"}""");
-
-        DefaultHttpContext httpContext = new() { RequestServices = services };
-        httpContext.Request.Method = "POST";
-        httpContext.Request.Path = Rota;
-        httpContext.Request.Headers["Idempotency-Key"] = idempotencyKey;
-        httpContext.Request.Body = new MemoryStream(corpoDaRequisicao);
-        httpContext.Request.ContentLength = corpoDaRequisicao.Length;
-        httpContext.Response.Body = new MemoryStream();
-
-        ActionContext actionContext = new(httpContext, new RouteData(), actionDescriptor);
-        List<IFilterMetadata> filters = [];
-        ResourceExecutingContext executingContext = new(actionContext, filters, []);
-
-        await filter.OnResourceExecutionAsync(executingContext, async () =>
-        {
-            // Neste ponto Response.Body JÁ É o stream de captura que o filtro instalou — é assim
-            // que a resposta chega ao bloco de decisão, do mesmo jeito que chegaria numa
-            // requisição real.
-            httpContext.Response.StatusCode = status;
-            await httpContext.Response.Body
-                .WriteAsync(Encoding.UTF8.GetBytes(corpoDaResposta), CancellationToken.None);
-
-            // O pipeline real popula o Result com o IActionResult que a action devolveu; o
-            // harness o reproduz quando o teste quer exercitar esse caminho.
-            return new ResourceExecutedContext(actionContext, filters)
-            {
-                Result = resultadoTipado,
-                Exception = excecaoPendente,
-            };
-        });
-
-        IdempotencyLookupResult lookup = await store.LookupAsync(
-            $"user:{userContext.UserId}", Endpoint, idempotencyKey,
-            ComputeBodyHash(corpoDaRequisicao), CancellationToken.None);
-
-        return lookup.Outcome;
+        await using AsyncServiceScope scope = _fixture.Factory.Services.CreateAsyncScope();
+        CenarioDeIdempotencia cenario = new(scope.ServiceProvider, "conflito-retentavel-test-user");
+        ResourceExecutingContext requisicao = cenario.CriarRequisicao();
+        RespostaDoMvc resposta = new(status, corpoDaResposta, resultadoTipado, excecaoPendente);
+        await cenario.Filter.OnResourceExecutionAsync(requisicao, () => resposta.ExecutarAsync(requisicao));
+        return (await cenario.ConsultarReservaAsync()).Outcome;
     }
 
-    private static string ComputeBodyHash(byte[] bytes)
+    private sealed record RespostaDoMvc(int Status, string Corpo, IActionResult? Resultado, Exception? Excecao)
     {
-        Span<byte> hash = stackalloc byte[32];
-        System.Security.Cryptography.SHA256.HashData(bytes, hash);
-        return Convert.ToHexStringLower(hash);
+        public async Task<ResourceExecutedContext> ExecutarAsync(ResourceExecutingContext requisicao)
+        {
+            requisicao.HttpContext.Response.StatusCode = Status;
+            await requisicao.HttpContext.Response.Body.WriteAsync(Encoding.UTF8.GetBytes(Corpo), CancellationToken.None);
+            return new ResourceExecutedContext(requisicao, requisicao.Filters)
+            {
+                Result = Resultado,
+                Exception = Excecao,
+            };
+        }
     }
 }
