@@ -79,24 +79,24 @@ A consulta de preflight passou a aceitar a data como opcional e derivá-la da me
 forma que o gate. Informá-la continua possível para processo em rascunho, que pode
 ainda não ter cronograma que a resolva.
 
-O ruleset aplicável é a união das regras com `TipoProcessoCodigo = "*"` e das
-regras cujo código é exatamente o código congelado em `ProcessoSeletivo.TipoProcesso`.
+O ruleset aplicável é a união das regras com
+`TipoProcessoCodigo = "TODOS_OS_TIPOS"` e das regras cujo código é exatamente o código congelado em `ProcessoSeletivo.TipoProcesso`.
 As duas partes obedecem a `VigenciaInicio <= dataReferencia < VigenciaFim`,
 sendo `VigenciaFim` nula uma vigência aberta. Regras de outro tipo não entram;
 não há fallback, comparação parcial ou comparação case-insensitive.
 
 `TipoProcessoCodigo` substitui diretamente `TipoEditalCodigo` em domínio,
 aplicação, API, persistência, payload de hash e histórico forense. Por emenda
-da ADR-0122, aceita `"*"` ou o código de um tipo ativo em Configuração,
-validado no handler; não há vocabulário enum compilado. A avaliação posterior
+da ADR-0122, Emenda 1, aceita `TODOS_OS_TIPOS` ou o código de um tipo ativo em
+Configuração, validado no handler; não há vocabulário enum compilado. A avaliação posterior
 lê a cópia congelada no processo, não a configuração atual.
 
 `EtapaObrigatoria.TipoEtapaCodigo`, por emenda da ADR-0123, deixa de casar com
 `EtapaProcesso.Nome` (rótulo editorial, ordinal case-insensitive) e passa a
 comparar contra `EtapaProcesso.TipoEtapa.Codigo` — a cópia congelada do
 cadastro `TipoEtapa` de Configuração, `StringComparison.Ordinal`. Diferente de
-`TipoProcessoCodigo`, não há sentinela `"*"`: todo predicado referencia um tipo
-de etapa específico. O handler de `ObrigatoriedadeLegal` valida pertença a um
+`TipoProcessoCodigo`, não há código reservado `TODOS_OS_TIPOS`: todo predicado
+referencia um tipo de etapa específico. O handler de `ObrigatoriedadeLegal` valida pertença a um
 tipo ativo na criação e na atualização; a avaliação posterior lê o snapshot
 congelado na etapa, não a configuração atual.
 

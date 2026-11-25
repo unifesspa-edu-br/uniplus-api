@@ -26,7 +26,7 @@ relê-lo do cadastro mutável.
 - Permitir manutenção administrativa com código estável e rastreável.
 - Impedir que desativação ou edição altere processos e publicações existentes.
 - Manter a dependência cross-módulo como leitura por contrato, sem FK entre schemas.
-- Preservar `*` como aplicabilidade legal universal.
+- Preservar `TODOS_OS_TIPOS` como código de aplicabilidade a todos os tipos.
 
 ## Opções consideradas
 
@@ -43,7 +43,7 @@ acoplamento de banco e mantém a evidência histórica autocontida.
 `TipoProcesso` passa a ser cadastro de Configuração, com `Codigo`, `Nome`,
 descrição opcional e `Ativo`. Apenas `plataforma-admin` pode criar, atualizar,
 desativar ou reativar. O código é imutável, único inclusive entre itens desativados
-e `*` é reservado. A leitura pública lista e obtém somente itens ativos.
+e `TODOS_OS_TIPOS` é reservado. A leitura pública lista e obtém somente itens ativos.
 
 A desativação é prospectiva, não terminal: `plataforma-admin` pode reativar um tipo
 desativado, que volta à leitura pública com o mesmo código. Sem essa operação a
@@ -60,8 +60,8 @@ Na criação, Seleção recebe `tipoProcessoOrigemId`, resolve um item ativo por
 o valor enum `Nenhum` ou outro valor sem mapa interrompe a migration.
 
 `ObrigatoriedadeLegal.TipoProcessoCodigo` tem validação estrutural no domínio e
-validação de pertença a um tipo ativo no handler. `*` não consulta os tipos ativos.
-Depois de gravada, a regra guarda seu código; a avaliação usa exclusivamente o
+validação de pertença a um tipo ativo no handler. `TODOS_OS_TIPOS` não consulta
+os tipos ativos. Depois de gravada, a regra guarda seu código; a avaliação usa exclusivamente o
 snapshot do processo, e não a configuração atual. O envelope canônico inclui o bloco
 `tipoProcesso` com id de origem, código e nome.
 
@@ -96,8 +96,26 @@ ruleset desta última.
   que a listagem de manutenção enxerga o desativado que a pública oculta, e que reativar
   o que já está ativo é recusado.
 - Testes de handler recusam tipo inexistente ou inativo e congelam a cópia recebida.
-- Testes de ruleset aceitam `*`, exigem tipo ativo específico e usam o código do snapshot.
+- Testes de ruleset aceitam `TODOS_OS_TIPOS`, exigem tipo ativo específico e
+  usam o código do snapshot.
 - Round-trip do envelope exige e preserva o bloco `tipoProcesso`.
+
+## Emenda 1 (2026-11-25) — código para todos os tipos de processo
+
+A Emenda 5 da ADR-0176 estabelece um formato único para códigos de cadastro:
+letras maiúsculas sem acento, algarismos e sublinhado entre palavras, até 80
+caracteres. O código anterior, `*`, não segue esse formato.
+
+A obrigatoriedade legal que vale para todos os tipos de processo cita o código
+reservado `TODOS_OS_TIPOS`; o campo continua obrigatório. O cadastro de tipos
+de processo recusa esse código com erro próprio. Para um processo, as regras
+aplicáveis são a união das regras de `TODOS_OS_TIPOS` com as do tipo congelado
+no processo.
+
+Na listagem, o filtro trata `TODOS_OS_TIPOS` como qualquer outro código, com
+comparação exata. A resposta da API devolve o código junto do rótulo
+"Todos os tipos de processo" para exibição nas telas. O `*` deixa de existir no
+contrato e no banco.
 
 ## Mais informações
 

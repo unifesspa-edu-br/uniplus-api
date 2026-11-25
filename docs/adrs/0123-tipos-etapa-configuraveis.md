@@ -54,8 +54,8 @@ componente **pontuável** (peso, caráter, nota mínima) — grandezas distintas
 opcional e `Ativo`. Apenas `plataforma-admin` pode criar, atualizar ou desativar.
 O código é imutável e único inclusive entre itens desativados, comparado com
 `StringComparison.Ordinal`. Diferente de `TipoProcesso`, não há token reservado
-equivalente a `*`: todo predicado `EtapaObrigatoria` referencia um tipo
-específico, nunca uma aplicabilidade universal. A leitura pública lista e obtém
+equivalente a `TODOS_OS_TIPOS` (ADR-0122, Emenda 1): todo predicado
+`EtapaObrigatoria` referencia um tipo específico, nunca uma aplicabilidade universal. A leitura pública lista e obtém
 somente itens ativos.
 
 Toda definição de etapa (`DefinirEtapasCommand`) passa a exigir
