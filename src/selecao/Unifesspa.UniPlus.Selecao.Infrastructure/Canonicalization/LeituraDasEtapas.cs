@@ -203,7 +203,7 @@ internal static class LeituraDasEtapas
 
         Result declaracao = etapa.DefinirTiposDeDecisao(tipos);
 
-        return declaracao.IsFailure ? leitor.Propagar<EtapaProcesso?>(declaracao.Error!) : etapa;
+        return declaracao.IsFailure ? leitor.Propagar<EtapaProcesso?>(declaracao.Errors, caminho) : etapa;
     }
 
     private static EtapaProcesso? DeclararFilhas(

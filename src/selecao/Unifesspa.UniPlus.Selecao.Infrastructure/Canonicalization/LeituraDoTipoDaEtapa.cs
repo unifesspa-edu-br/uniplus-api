@@ -40,15 +40,15 @@ internal static class LeituraDoTipoDaEtapa
             leitor.Booleano(tipo, "admiteEliminacao", tipoPath),
             leitor.Booleano(tipo, "notaDeOrigemNoEnem", tipoPath),
             leitor.Booleano(tipo, "exigeCorrecaoIndependente", tipoPath));
-        return leitor.Falhou ? null : Criar(leitor, origemId, codigo, nome, sinalizadores);
+        return leitor.Falhou ? null : Criar(leitor, origemId, codigo, nome, sinalizadores, tipoPath);
     }
 
-    private static TipoEtapaSnapshot? Criar(LeitorEnvelope leitor, Guid origemId, string codigo, string nome, Sinalizadores sinalizadores)
+    private static TipoEtapaSnapshot? Criar(LeitorEnvelope leitor, Guid origemId, string codigo, string nome, Sinalizadores sinalizadores, string tipoPath)
     {
         Result<TipoEtapaSnapshot> resultado = TipoEtapaSnapshot.Criar(
             origemId, codigo, nome, sinalizadores.AdmitePontuacao, sinalizadores.AdmiteEliminacao,
             sinalizadores.NotaDeOrigemNoEnem, sinalizadores.ExigeCorrecaoIndependente);
-        return resultado.IsFailure ? leitor.Propagar<TipoEtapaSnapshot>(resultado.Error!) : resultado.Value;
+        return resultado.IsFailure ? leitor.Propagar<TipoEtapaSnapshot>(resultado.Errors, tipoPath) : resultado.Value;
     }
 
     private readonly record struct Sinalizadores(

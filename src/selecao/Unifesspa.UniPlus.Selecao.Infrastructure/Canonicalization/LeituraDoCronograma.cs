@@ -115,7 +115,7 @@ internal static class LeituraDoCronograma
             ? null
             : Montar(
                 leitor, identidade, origem, decisoes with { UnidadeResponsavel = unidade },
-                new(produtos, emiteParecerIndividual, regraRecurso, tipos, regraDeHomologacao), bancas);
+                new(produtos, emiteParecerIndividual, regraRecurso, tipos, regraDeHomologacao), bancas, path);
     }
 
     private static FaseCronograma? Montar(
@@ -124,12 +124,13 @@ internal static class LeituraDoCronograma
         OrigemCanonicaDaFase origem,
         DecisoesDeCronogramaDaFase decisoes,
         PublicacoesDaFase publicacoes,
-        BancasLidas<BancaRequerida> bancas)
+        BancasLidas<BancaRequerida> bancas,
+        string caminho)
     {
         Result<FaseCronograma> fase = ConferirEReidratar(identidade, origem, decisoes, publicacoes, bancas.Bancas);
         if (fase.IsFailure)
         {
-            return leitor.Propagar<FaseCronograma?>(fase.Error!);
+            return leitor.Propagar<FaseCronograma?>(LeitorEnvelope.NoProprioItem(fase.Errors), caminho);
         }
 
         bancas.ExigirQueSeguemARaiz(leitor, fase.Value!.BancasRequeridas.ToDictionary(static banca => banca.Id, static banca => banca.PosicaoNoTipo));
@@ -152,8 +153,9 @@ internal static class LeituraDoCronograma
             return Result<FaseCronograma>.Failure(violacaoDaAncora.Error);
         }
 
-        return CandidatosAtendidosPelasBancas.Violacoes(bancas) is [{ } violacaoDosCandidatosAtendidos, ..]
-            ? Result<FaseCronograma>.Failure(violacaoDosCandidatosAtendidos.Error)
+        IReadOnlyList<FieldError> violacoes = CandidatosAtendidosPelasBancas.Violacoes(bancas);
+        return violacoes.Count > 0
+            ? Result<FaseCronograma>.ValidationFailure(violacoes)
             : Reidratar(identidade, origem, decisoes, publicacoes, bancas);
     }
 

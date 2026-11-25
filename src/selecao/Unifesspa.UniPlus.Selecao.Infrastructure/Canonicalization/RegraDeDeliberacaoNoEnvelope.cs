@@ -57,7 +57,7 @@ internal static class RegraDeDeliberacaoNoEnvelope
         }
 
         Result<RegraDeDeliberacao> regra = RegraDeDeliberacao.Criar(declaracao);
-        return regra.IsFailure ? leitor.Propagar<RegraDeDeliberacao>(regra.Error!) : regra.Value;
+        return regra.IsFailure ? leitor.Propagar<RegraDeDeliberacao>(regra.Errors, $"{pathDaBanca}.regraDeDeliberacao") : regra.Value;
     }
 
     private static DeclaracaoDaDeliberacao? LerDeclaracao(LeitorEnvelope leitor, JsonObject bloco, string path)
