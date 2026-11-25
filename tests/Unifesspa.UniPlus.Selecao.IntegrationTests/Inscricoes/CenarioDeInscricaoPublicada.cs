@@ -136,12 +136,16 @@ internal sealed class CenarioDeInscricaoPublicada
     {
         IInscricaoRepository inscricoes = NovoRepositorioDeInscricao(db);
         IConferenciaEnderecoGeo geoDoSalvar = geo ?? GeoQueConfirma();
+        IProcessoSeletivoRepository processos = ProcessoSeletivoRepositoryDeTeste.Criar(db);
+        ICertameDivulgadoRepository certames = new CertameDivulgadoRepository(db);
+        IResolvedorFusoInstitucional fuso = Fuso();
         return await SalvarInscricaoCommandHandler.Handle(
             new SalvarInscricaoCommand(processoId, pedido, PrecondicaoIfMatch.DeTags([etag])),
             new RascunhoDoCandidato(
-                new InscricaoAtivaDoCandidato(inscricoes), new CertameDivulgadoRepository(db), ProcessoSeletivoRepositoryDeTeste.Criar(db), RegistroCodecs, Fuso(), DentroDoPeriodo),
-            new SalvamentoDoRascunho(geoDoSalvar, inscricoes, db),
-            new RespostaDoRascunho(Substitute.For<IDocumentoDaInscricaoRepository>(), geoDoSalvar, EnderecosSemCopia()),
+                new InscricaoAtivaDoCandidato(inscricoes), new PeriodoDaInscricaoResolver(certames, processos, RegistroCodecs, fuso),
+                new VersaoDaInscricaoResolver(certames, processos, RegistroCodecs), new ContextoDaVersaoFixadaResolver(processos, RegistroCodecs), fuso, DentroDoPeriodo),
+            new SalvamentoDoRascunho(new ConferenciaDoEnderecoDaInscricao(geoDoSalvar), inscricoes, db),
+            new RespostaDoRascunho(new DocumentosEnviadosDaInscricao(Substitute.For<IDocumentoDaInscricaoRepository>()), new PreparacaoDaAvaliacaoDaInscricao(geoDoSalvar), EnderecosSemCopia()),
             UsuarioComCpf(PersonasDeTeste.FernandaDrumond),
             CancellationToken.None);
     }

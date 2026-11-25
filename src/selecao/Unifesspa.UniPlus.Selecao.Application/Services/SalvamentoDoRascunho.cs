@@ -27,7 +27,7 @@ using Unifesspa.UniPlus.Regras.ValueObjects;
 /// só recusa por campo a resposta que viola uma restrição do formulário; nunca por obrigatoriedade, que é exigida somente na
 /// submissão.
 /// </summary>
-public sealed class SalvamentoDoRascunho(IConferenciaEnderecoGeo geo, IInscricaoRepository inscricoes, IUnitOfWork unitOfWork)
+public sealed class SalvamentoDoRascunho(ConferenciaDoEnderecoDaInscricao conferenciaDoEndereco, IInscricaoRepository inscricoes, IUnitOfWork unitOfWork)
 {
     public async Task<Result> SalvarAsync(
         PedidoDoRascunho pedido, InscricaoRequest request, PrecondicaoIfMatch precondicao, IUserContext userContext, CancellationToken cancellationToken)
@@ -66,7 +66,7 @@ public sealed class SalvamentoDoRascunho(IConferenciaEnderecoGeo geo, IInscricao
             return doFormulario;
         }
 
-        ConferenciaDosEnderecos doEndereco = await new ConferenciaDoEnderecoDaInscricao(geo).ConferirAsync(pedido.Corpo.Respostas, pedido.Contexto.Admitidas, aoEnviar: false, cancellationToken)
+        ConferenciaDosEnderecos doEndereco = await conferenciaDoEndereco.ConferirAsync(pedido.Corpo.Respostas, pedido.Contexto.Admitidas, aoEnviar: false, cancellationToken)
             .ConfigureAwait(false);
         return doEndereco.Recusas;
     }

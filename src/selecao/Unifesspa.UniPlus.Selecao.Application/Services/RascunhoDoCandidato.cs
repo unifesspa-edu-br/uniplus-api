@@ -28,9 +28,9 @@ using Unifesspa.UniPlus.Regras.ValueObjects;
 /// </summary>
 public sealed class RascunhoDoCandidato(
     InscricaoAtivaDoCandidato inscricaoAtiva,
-    ICertameDivulgadoRepository certames,
-    IProcessoSeletivoRepository processos,
-    IRegistroCodecsEnvelope codecs,
+    PeriodoDaInscricaoResolver periodo,
+    VersaoDaInscricaoResolver versao,
+    ContextoDaVersaoFixadaResolver contexto,
     IResolvedorFusoInstitucional fuso,
     TimeProvider relogio)
 {
@@ -67,7 +67,7 @@ public sealed class RascunhoDoCandidato(
         }
 
         DateTimeOffset instante = relogio.GetUtcNow();
-        DomainError? recusa = await new PeriodoDaInscricaoResolver(certames, processos, codecs, fuso).ConferirAsync(processoSeletivoId, instante, cancellationToken).ConfigureAwait(false);
+        DomainError? recusa = await periodo.ConferirAsync(processoSeletivoId, instante, cancellationToken).ConfigureAwait(false);
         recusa ??= inscricao.Value!.ConferirAindaEmRascunho();
         return recusa is null ? Result<InscricaoNoPeriodo>.Success(new InscricaoNoPeriodo(inscricao.Value!, instante)) : Result<InscricaoNoPeriodo>.Failure(recusa);
     }
@@ -75,10 +75,10 @@ public sealed class RascunhoDoCandidato(
     private async Task<Result<ContextoDaVersaoFixada>> ContextoDaVersaoAsync(
         Guid processoSeletivoId, InscricaoRequest request, Inscricao inscricao, CancellationToken cancellationToken)
     {
-        Result adotada = await new VersaoDaInscricaoResolver(certames, processos, codecs).AdotarAsync(inscricao, cancellationToken).ConfigureAwait(false);
+        Result adotada = await versao.AdotarAsync(inscricao, cancellationToken).ConfigureAwait(false);
         return adotada.IsFailure
             ? Result<ContextoDaVersaoFixada>.ValidationFailure(adotada.Errors)
-            : await new ContextoDaVersaoFixadaResolver(processos, codecs).ResolverAsync(inscricao.Formulario.VersaoFormularioId, processoSeletivoId, request.OfertaCursoId, request.OfertaCursoSegundaOpcaoId, cancellationToken).ConfigureAwait(false);
+            : await contexto.ResolverAsync(inscricao.Formulario.VersaoFormularioId, processoSeletivoId, request.OfertaCursoId, request.OfertaCursoSegundaOpcaoId, cancellationToken).ConfigureAwait(false);
     }
 
     private Result<PedidoDoRascunho> PedidoDoCorpo(InscricaoRequest request, InscricaoNoPeriodo inscricao, ContextoDaVersaoFixada contexto)

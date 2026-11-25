@@ -48,14 +48,24 @@ internal static class SalvarDeTeste
         return (DivulgacaoDeTeste.VersaoSemReferenciaTemporal(ProcessoId), DivulgacaoDeTeste.ConfiguracaoDe(processoBase));
     }
 
+    internal static RascunhoDoCandidato Rascunho(
+        IInscricaoRepository inscricoes, IProcessoSeletivoRepository processos, IRegistroCodecsEnvelope codecs, TimeProvider relogio)
+    {
+        ICertameDivulgadoRepository certames = DivulgacaoDeTeste.Certame(ProcessoId);
+        IResolvedorFusoInstitucional fuso = DivulgacaoDeTeste.Fuso();
+        return new RascunhoDoCandidato(
+            new InscricaoAtivaDoCandidato(inscricoes), new PeriodoDaInscricaoResolver(certames, processos, codecs, fuso),
+            new VersaoDaInscricaoResolver(certames, processos, codecs), new ContextoDaVersaoFixadaResolver(processos, codecs), fuso, relogio);
+    }
+
     internal static Task<Result<InscricaoDto>> Handle(
         SalvarInscricaoCommand command, RascunhoDoCandidato rascunho, IInscricaoRepository inscricoes,
         IUnitOfWork unitOfWork, IUserContext usuario, IConferenciaEnderecoGeo? conferencia = null)
     {
         IConferenciaEnderecoGeo geo = conferencia ?? Substitute.For<IConferenciaEnderecoGeo>();
         return SalvarInscricaoCommandHandler.Handle(
-            command, rascunho, new SalvamentoDoRascunho(geo, inscricoes, unitOfWork),
-            new RespostaDoRascunho(Substitute.For<IDocumentoDaInscricaoRepository>(), geo, DivulgacaoDeTeste.Enderecos()),
+            command, rascunho, new SalvamentoDoRascunho(new ConferenciaDoEnderecoDaInscricao(geo), inscricoes, unitOfWork),
+            new RespostaDoRascunho(new DocumentosEnviadosDaInscricao(Substitute.For<IDocumentoDaInscricaoRepository>()), new PreparacaoDaAvaliacaoDaInscricao(geo), DivulgacaoDeTeste.Enderecos()),
             usuario, CancellationToken.None);
     }
 }

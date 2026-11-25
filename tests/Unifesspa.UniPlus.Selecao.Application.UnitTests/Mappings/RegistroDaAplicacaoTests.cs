@@ -23,7 +23,7 @@ public sealed class RegistroDaAplicacaoTests
         typeof(CancelamentoDaInscricaoPeloTitular), typeof(ConferenciaDoEnderecoDaInscricao),
         typeof(ConferenciaDosMunicipiosDaInscricao), typeof(PreparacaoDoEnvioDaInscricao),
         typeof(ConferenciaDoEnvioDaInscricao), typeof(RegistroDoEnvioDaInscricao), typeof(SubmissaoDaInscricao),
-        typeof(LeituraDaInscricao), typeof(ConsultaDaAvaliacaoDaInscricao), typeof(PreparacaoDaAvaliacaoDaInscricao),
+        typeof(RascunhoDoCandidato), typeof(SalvamentoDoRascunho), typeof(RespostaDoRascunho), typeof(LeituraDaInscricao), typeof(ConsultaDaAvaliacaoDaInscricao), typeof(PreparacaoDaAvaliacaoDaInscricao),
         typeof(ProcessosDasInscricoes), typeof(DocumentosEnviadosDaInscricao), typeof(AcessoAoDocumentoDaInscricao), typeof(EmissaoDoAcessoAoArquivo),
         typeof(ClassificacaoDaExigenciaDoArquivo), typeof(InicioDoEnvioDeDocumento), typeof(ConfirmacaoDoEnvioDeDocumento), typeof(RemocaoDoArquivoDaInscricao),
         typeof(PrazoDaCorrecaoDoComprovante), typeof(CancelamentoDoComprovante), typeof(MontadorDoComprovante),
