@@ -96,24 +96,30 @@ internal static partial class AdministradorDeProcessosDeTeste
 
             if (rota.Groups["id"].Success)
             {
-                Guid processoId = Guid.Parse(rota.Groups["id"].Value);
-                await using AsyncServiceScope escopo = contexto.RequestServices.CreateAsyncScope();
-                return await escopo.ServiceProvider.GetRequiredService<UniPlusDbContext>().ProcessosSeletivos
-                    .AsNoTracking()
-                    .Where(p => p.Id == processoId)
-                    .Select(p => (Guid?)p.UnidadeAdministradoraOrigemId)
-                    .FirstOrDefaultAsync();
+                return await UnidadeDoProcessoAsync(contexto, Guid.Parse(rota.Groups["id"].Value));
             }
 
-            // A criação nomeia a unidade no corpo, que o endpoint ainda vai ler.
-            if (!HttpMethods.IsPost(contexto.Request.Method))
-            {
-                return null;
-            }
+            return HttpMethods.IsPost(contexto.Request.Method)
+                ? await UnidadeDaCriacaoAsync(contexto.Request)
+                : null;
+        }
 
-            contexto.Request.EnableBuffering();
-            using JsonDocument corpo = await JsonDocument.ParseAsync(contexto.Request.Body);
-            contexto.Request.Body.Position = 0;
+        private static async Task<Guid?> UnidadeDoProcessoAsync(HttpContext contexto, Guid processoId)
+        {
+            await using AsyncServiceScope escopo = contexto.RequestServices.CreateAsyncScope();
+            return await escopo.ServiceProvider.GetRequiredService<UniPlusDbContext>().ProcessosSeletivos
+                .AsNoTracking()
+                .Where(p => p.Id == processoId)
+                .Select(p => (Guid?)p.UnidadeAdministradoraOrigemId)
+                .FirstOrDefaultAsync();
+        }
+
+        private static async Task<Guid?> UnidadeDaCriacaoAsync(HttpRequest requisicao)
+        {
+            // O endpoint ainda vai ler o corpo depois da concessão.
+            requisicao.EnableBuffering();
+            using JsonDocument corpo = await JsonDocument.ParseAsync(requisicao.Body);
+            requisicao.Body.Position = 0;
             return corpo.RootElement.ValueKind == JsonValueKind.Object
                 && corpo.RootElement.TryGetProperty("unidadeAdministradoraOrigemId", out JsonElement unidade)
                 && unidade.TryGetGuid(out Guid unidadeId)

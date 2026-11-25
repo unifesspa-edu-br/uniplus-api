@@ -56,11 +56,7 @@ public sealed class ConferenciaEnderecoGeoTests
     public async Task Conferir_RespostaSemStatusComErro_RegistraACausa()
     {
         InvalidOperationException causa = new("OAuth do Geo não configurado");
-        ApiResponse<CepResolvidoResponse> respostaCep = SemStatusComErro<CepResolvidoResponse>(causa);
-        ApiResponse<CidadeDetalheResponse> respostaCidade = SemStatusComErro<CidadeDetalheResponse>(causa);
-        IGeoApi geo = Substitute.For<IGeoApi>();
-        geo.ResolverCepAsync("68500000", Arg.Any<CancellationToken>()).Returns(respostaCep);
-        geo.ObterCidadeAsync("1504208", Arg.Any<CancellationToken>()).Returns(respostaCidade);
+        IGeoApi geo = GeoSemStatusComErro(causa);
         RegistroDeLog registro = new();
         ConferenciaEnderecoGeo conferencia = new(geo, registro);
 
@@ -69,6 +65,19 @@ public sealed class ConferenciaEnderecoGeoTests
 
         cep.Error!.Code.Should().Be(ConferenciaEnderecoGeoErrorCodes.GeoIndisponivel);
         municipio.Error!.Code.Should().Be(ConferenciaEnderecoGeoErrorCodes.GeoIndisponivel);
+        VerificarRegistroDeIndisponibilidade(registro, causa);
+    }
+
+    private static IGeoApi GeoSemStatusComErro(Exception causa)
+    {
+        IGeoApi geo = Substitute.For<IGeoApi>();
+        geo.ResolverCepAsync("68500000", Arg.Any<CancellationToken>()).Returns(SemStatusComErro<CepResolvidoResponse>(causa));
+        geo.ObterCidadeAsync("1504208", Arg.Any<CancellationToken>()).Returns(SemStatusComErro<CidadeDetalheResponse>(causa));
+        return geo;
+    }
+
+    private static void VerificarRegistroDeIndisponibilidade(RegistroDeLog registro, Exception causa)
+    {
         registro.Entradas.Should().HaveCount(2);
         registro.Entradas.Should().OnlyContain(e => e.Excecao != null && e.Mensagem.Contains("não respondeu", StringComparison.Ordinal));
         registro.Entradas.Select(e => e.Mensagem).Should().NotContain(m => m.Contains("68500000", StringComparison.Ordinal) || m.Contains("1504208", StringComparison.Ordinal));
