@@ -78,6 +78,17 @@ public sealed class ConferenciaDosProcedimentosDeRecursoTests
         Faltas(Contexto(processoTemNotaDoEnem: true), Procedimento(alvo: AlvoArea("GEOGRAFIA"))).Should().ContainSingle()
             .Which.Error.Code.Should().Be(Codigos.AlvoInexistente);
 
+    [Theory]
+    [InlineData(" MATEMATICA ")]
+    [InlineData("matematica")]
+    public void AlvoDeArea_CodigoInexato_Recusa(string codigo)
+    {
+        FieldError recusa = Faltas(Contexto(processoTemNotaDoEnem: true), Procedimento(alvo: AlvoArea(codigo))).Single();
+
+        recusa.Error.Code.Should().Be(Codigos.AlvoInexistente);
+        recusa.Error.Message.Should().NotContain(codigo);
+    }
+
     [Fact(DisplayName = "A mesma matéria declarada duas vezes é recusada na segunda posição, mesmo com regras diferentes")]
     public void MesmaMateria_Duplicada_RecusaNaSegunda()
     {

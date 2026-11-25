@@ -78,7 +78,7 @@ public sealed class EtapaDeclaradaTests
     [Fact(DisplayName = "Etapa conforme é declarada sem recusas e com os dados normalizados")]
     public void Declarar_EtapaConforme_SemRecusas()
     {
-        EtapaDeclarada etapa = new ModeloDeEtapa("  Prova objetiva  ") { Ordem = 1, FaseCodigo = " AVALIACAO " }.Declarar();
+        EtapaDeclarada etapa = new ModeloDeEtapa("  Prova objetiva  ") { Ordem = 1, FaseCodigo = "AVALIACAO" }.Declarar();
 
         etapa.Recusas.Should().BeEmpty();
         etapa.Nome.Should().Be("Prova objetiva");

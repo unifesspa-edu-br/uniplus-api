@@ -23,7 +23,7 @@ public static class EtapasNoCronograma
             .. etapas.Etapas
                 .Select(static (etapa, posicao) => (etapa, posicao))
                 .Where(par => par.etapa.FaseCodigo is { } codigo && !cronograma.TemFaseDeCodigo(codigo))
-                .Select(static par => EtapasDoProcesso.NaEtapa(par.posicao, "faseCodigo", EtapaSemFaseNoCronograma(par.etapa.Nome, par.etapa.FaseCodigo!))),
+                .Select(static par => EtapasDoProcesso.NaEtapa(par.posicao, "faseCodigo", EtapaSemFaseNoCronograma(par.etapa.Nome))),
         ];
     }
 
@@ -71,9 +71,9 @@ public static class EtapasNoCronograma
         "Cronograma: a etapa acontece dentro do período da fase que a abriga",
         ConferirJanelaDasEtapas(cronograma, etapas).Count == 0 && !etapas.Etapas.Any(etapa => JanelaSemComoConferir(cronograma, etapa)));
 
-    internal static DomainError EtapaSemFaseNoCronograma(string nomeDaEtapa, string codigoDaFase) => new(
+    internal static DomainError EtapaSemFaseNoCronograma(string nomeDaEtapa) => new(
         "ProcessoSeletivo.EtapaSemFaseNoCronograma",
-        $"A etapa \"{nomeDaEtapa}\" declara a fase {codigoDaFase}, que não está no cronograma deste processo.");
+        $"A etapa \"{nomeDaEtapa}\" declara uma fase que não está no cronograma deste processo.");
 
     private static DomainError AvaliacaoSemEtapa(string codigoDaFase) => new(
         "ProcessoSeletivo.AvaliacaoSemEtapa",

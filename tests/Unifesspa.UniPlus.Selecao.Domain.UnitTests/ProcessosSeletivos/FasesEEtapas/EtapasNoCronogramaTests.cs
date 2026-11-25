@@ -154,7 +154,7 @@ public sealed class EtapasNoCronogramaTests
         EtapasDoProcesso etapas = Etapas(EtapaNaFase("ENTREVISTA") with { Inicio = Abertura.AddDays(-30) });
 
         Causas(EtapasNoCronograma.ConferirFaseDasEtapas(cronograma, etapas)).Should().Equal(("etapas[0].faseCodigo", "ProcessoSeletivo.EtapaSemFaseNoCronograma"));
-        EtapasNoCronograma.ConferirFaseDasEtapas(cronograma, etapas).Single().Error.Message.Should().Be("A etapa \"Prova\" declara a fase ENTREVISTA, que não está no cronograma deste processo.");
+        EtapasNoCronograma.ConferirFaseDasEtapas(cronograma, etapas).Single().Error.Message.Should().Be("A etapa \"Prova\" declara uma fase que não está no cronograma deste processo.");
         EtapasNoCronograma.ConferirJanelaDasEtapas(cronograma, etapas).Should().BeEmpty();
         EtapasNoCronograma.ItemDaFaseDeclaradaPelaEtapa(cronograma, etapas).Ok.Should().BeFalse();
     }

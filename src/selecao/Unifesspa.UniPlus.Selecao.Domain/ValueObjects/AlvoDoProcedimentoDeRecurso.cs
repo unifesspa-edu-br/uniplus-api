@@ -40,6 +40,6 @@ public sealed record AlvoDoProcedimentoDeRecurso
     public static AlvoDoProcedimentoDeRecurso DaArea(string codigoDaArea)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(codigoDaArea);
-        return new(TipoDeAlvoDoProcedimentoDeRecurso.AreaDoEnem, codigoDaArea.Trim());
+        return new(TipoDeAlvoDoProcedimentoDeRecurso.AreaDoEnem, codigoDaArea);
     }
 }

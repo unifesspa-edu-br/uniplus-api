@@ -64,7 +64,7 @@ public sealed class ConferenciaDoCronogramaNaPublicacaoTests
         DomainError? pendencia = Pendencia(processo);
 
         pendencia!.Code.Should().Be("ProcessoSeletivo.EtapaSemFaseNoCronograma");
-        pendencia.Message.Should().Contain("\"Prova\"").And.Contain("RESULTADO_FINAL");
+        pendencia.Message.Should().Contain("\"Prova\"").And.NotContain("RESULTADO_FINAL");
     }
 
     [Fact(DisplayName = "Com várias etapas sem fase declarada, a recusa é a da etapa de menor posição")]

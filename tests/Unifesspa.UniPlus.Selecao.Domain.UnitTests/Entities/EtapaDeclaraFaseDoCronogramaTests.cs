@@ -50,7 +50,7 @@ public sealed class EtapaDeclaraFaseDoCronogramaTests
         processo.Etapas.Single().FaseCodigo.Should().Be(habilitacao.Codigo);
     }
 
-    [Fact(DisplayName = "Etapa que declara fase fora do cronograma é recusada, nomeando a fase")]
+    [Fact(DisplayName = "Etapa que declara fase fora do cronograma é recusada sem repetir o código")]
     public void EtapaComFaseAusente_Recusada()
     {
         ProcessoSeletivo processo = Processo();
@@ -62,7 +62,21 @@ public sealed class EtapaDeclaraFaseDoCronogramaTests
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("ProcessoSeletivo.EtapaSemFaseNoCronograma");
-        resultado.Error!.Message.Should().Contain("HABILITACAO");
+        resultado.Error!.Message.Should().NotContain("HABILITACAO");
+    }
+
+    [Theory]
+    [InlineData(" INSCRICAO ")]
+    [InlineData("inscricao")]
+    public void DefinirEtapas_CodigoDeFaseInexato_Recusa(string codigo)
+    {
+        ProcessoSeletivo processo = Processo();
+        processo.DefinirCronogramaFases([Fase(1, "INSCRICAO")], []).IsSuccess.Should().BeTrue();
+
+        Result resultado = processo.DefinirEtapas([Etapa("Prova", codigo)]);
+
+        resultado.Error!.Code.Should().Be("ProcessoSeletivo.EtapaSemFaseNoCronograma");
+        resultado.Error.Message.Should().NotContain(codigo);
     }
 
     [Fact(DisplayName = "Qualquer fase subdivide-se: habilitação com várias etapas é aceita")]
