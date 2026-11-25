@@ -82,12 +82,12 @@ public sealed class TermosConsentimentoController : ControllerBase
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status406NotAcceptable)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status410Gone)]
-    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status422UnprocessableEntity)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status422UnprocessableEntity, Description = "Texto pesquisado com mais de 200 caracteres, sem contar os espaços das pontas (uniplus.consulta.busca_muito_longa), ou outro parâmetro de consulta inválido.")]
     public async Task<IActionResult> Listar(
         [FromCursor(ResourceTag)] PageRequest page,
         [FromQuery(Name = "q")] [Description(
             "Termo de busca livre (caixa-insensível) sobre o Nome do termo de consentimento; " +
-            "ausente/vazio = sem filtro. Mantenha fixo ao navegar prev/next (o cursor não vincula o filtro).")]
+            "ausente/vazio = sem filtro. Até 200 caracteres, sem contar os espaços das pontas. Mantenha fixo ao navegar prev/next (o cursor não vincula o filtro).")]
         string? q,
         CancellationToken cancellationToken)
     {

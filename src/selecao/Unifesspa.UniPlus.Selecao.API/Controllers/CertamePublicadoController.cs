@@ -129,7 +129,7 @@ public sealed class CertamePublicadoController : ControllerBase
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status406NotAcceptable)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status410Gone)]
-    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status422UnprocessableEntity)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status422UnprocessableEntity, Description = "O texto pesquisado excede 200 caracteres, sem contar os espaços das pontas (uniplus.consulta.busca_muito_longa).")]
     public async Task<IActionResult> ListarVitrine(
         // RequireSortKey: a âncora é o par (SortKey, Id). Sem a exigência, cursor sem a chave
         // degrada em silêncio para primeira página em vez de ser recusado.
@@ -139,7 +139,7 @@ public sealed class CertamePublicadoController : ControllerBase
         [Description("Código da modalidade que o certame precisa ofertar. Sem o parâmetro, não recorta.")]
         string? modalidade,
         [FromQuery(Name = "q")]
-        [Description("Texto pesquisado no título do certame e no número do edital. Insensível a caixa e a acentuação.")]
+        [Description("Texto pesquisado no título do certame e no número do edital. Insensível a caixa e a acentuação. Até 200 caracteres, sem contar os espaços das pontas.")]
         string? q,
         [FromQuery(Name = "sort")][Description(DescricaoDoSort)] string? sort,
         [FromQuery(Name = "incluir_contadores")] bool incluirContadores,

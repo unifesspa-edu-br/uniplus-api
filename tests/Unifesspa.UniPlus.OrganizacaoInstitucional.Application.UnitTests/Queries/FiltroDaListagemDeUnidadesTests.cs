@@ -62,11 +62,11 @@ public sealed class FiltroDaListagemDeUnidadesTests
         resultado.Value.Tipos.Should().BeEmpty();
     }
 
-    [Fact(DisplayName = "A busca só de espaços acima de 200 caracteres é recusada: o comprimento é o bruto")]
-    public void BuscaSoDeEspacosAcimaDoLimite_EhRecusada()
+    [Fact(DisplayName = "A busca só de espaços acima de 200 caracteres não filtra por texto")]
+    public void BuscaSoDeEspacosAcimaDoLimite_NaoFiltraPorTexto()
     {
         Result<FiltroListagemUnidades> resultado = FiltroDaListagemDeUnidades.Resolver(new string(' ', BuscaPedida.ComprimentoMaximo + 1), null);
 
-        resultado.Error!.Code.Should().Be(ConsultaErrorCodes.BuscaMuitoLonga);
+        resultado.Value!.Termo.Should().BeNull();
     }
 }

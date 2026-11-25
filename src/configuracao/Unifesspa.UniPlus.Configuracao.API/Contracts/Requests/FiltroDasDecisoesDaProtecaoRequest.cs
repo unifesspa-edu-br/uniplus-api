@@ -30,7 +30,7 @@ public sealed record FiltroDasDecisoesDaProtecaoRequest
     public DateOnly? Ate { get; init; }
 
     [FromQuery(Name = "busca")]
-    [Description("Trecho do nome ou do código do item. Insensível a caixa e a acentuação. Até 200 caracteres.")]
+    [Description("Trecho do nome ou do código do item. Insensível a caixa e a acentuação. Até 200 caracteres, sem contar os espaços das pontas.")]
     public string? Busca { get; init; }
 
     [FromQuery(Name = "minhas")]
