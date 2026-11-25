@@ -231,7 +231,7 @@ public sealed record CronogramaDoProcesso
 
     /// <summary>Localiza a recusa na fase da posição; sem campo, o lugar é a própria fase.</summary>
     internal static FieldError NaFase(int posicao, string? campo, DomainError erro) =>
-        new(string.IsNullOrEmpty(campo) ? $"fases[{posicao}]" : $"fases[{posicao}].{campo}", erro);
+        new FieldError(campo, erro).NoCaminhoDoItem($"fases[{posicao}]");
 
     // O piso mínimo vem da origem dos candidatos, nunca do tipo do processo.
     private bool InscricaoPropriaSemFaseDeColeta(OrigemCandidatos? origem) =>

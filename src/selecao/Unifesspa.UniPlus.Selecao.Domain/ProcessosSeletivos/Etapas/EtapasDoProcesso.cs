@@ -154,5 +154,5 @@ public sealed record EtapasDoProcesso
 
     /// <summary>Localiza a recusa na etapa da posição; sem campo, o lugar é a própria etapa.</summary>
     internal static FieldError NaEtapa(int posicao, string? campo, DomainError erro) =>
-        new(string.IsNullOrEmpty(campo) ? $"etapas[{posicao}]" : $"etapas[{posicao}].{campo}", erro);
+        new FieldError(campo, erro).NoCaminhoDoItem($"etapas[{posicao}]");
 }

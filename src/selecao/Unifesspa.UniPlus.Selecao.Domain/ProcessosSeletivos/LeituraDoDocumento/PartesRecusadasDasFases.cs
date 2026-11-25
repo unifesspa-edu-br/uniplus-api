@@ -32,14 +32,14 @@ internal static class PartesRecusadasDasFases
         CronogramaDoProcesso.ListaDasFases,
         lida.Chave,
         lida.PosicaoNoDocumento,
-        Causa($"fases[{lida.PosicaoNoDocumento}].{recusa.Campo}", recusa.Erro, OrigemNoDocumento.Identidade));
+        Causa(new FieldError(recusa.Campo, recusa.Erro).NoCaminhoDe($"fases[{lida.PosicaoNoDocumento}]"), OrigemNoDocumento.Identidade));
 
     private static ParteRecusada DaParteDaFase(RecusaDaParte recusa, int posicaoCanonica, OrigemNoDocumento posicoes) => new(
         $"fases[{posicaoCanonica}].{recusa.Parte}",
         recusa.Chave,
         recusa.PosicaoNoDocumento,
-        Causa($"fases[{posicaoCanonica}].{recusa.Campo}", recusa.Erro, posicoes));
+        Causa(new FieldError(recusa.Campo, recusa.Erro).NoCaminhoDe($"fases[{posicaoCanonica}]"), posicoes));
 
-    private static FieldError Causa(string campo, DomainError erro, OrigemNoDocumento origem) =>
-        new(PonteiroNoDocumento.Converter(campo, origem), erro);
+    private static FieldError Causa(FieldError causa, OrigemNoDocumento origem) =>
+        causa with { Field = PonteiroNoDocumento.Converter(causa.Field, origem) };
 }

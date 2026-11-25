@@ -149,9 +149,6 @@ internal sealed class CriteriosResolvidos
             return;
         }
 
-        _recusas.AddRange(resultado.Errors.Select(erro => erro with
-        {
-            Field = RegrasDoDesempate.CampoDoCriterioDesempate(indice, erro.Field),
-        }));
+        _recusas.AddRange(resultado.Errors.Select(erro => RegrasDoDesempate.CampoDoCriterioDesempate(indice, erro)));
     }
 }

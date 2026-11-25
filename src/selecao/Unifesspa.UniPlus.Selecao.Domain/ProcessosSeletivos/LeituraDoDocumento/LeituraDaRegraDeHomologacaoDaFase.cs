@@ -84,5 +84,5 @@ internal static class LeituraDaRegraDeHomologacaoDaFase
     };
 
     private static RecusaDaParte[] Recusas(FaseNoDocumento fase, string campo, IReadOnlyList<FieldError> erros) =>
-        [.. erros.Select(erro => new RecusaDaParte(FaseDeclarada.CampoDaRegraDeHomologacao, erro.NoCaminhoDoItem(campo).Field ?? campo, fase.PosicaoNoDocumento, null, erro.Error))];
+        [.. erros.Select(erro => new RecusaDaParte(FaseDeclarada.CampoDaRegraDeHomologacao, erro.NoCaminhoDoItem(campo).Field!, fase.PosicaoNoDocumento, null, erro.Error))];
 }

@@ -57,6 +57,6 @@ internal sealed class AplicacaoDoModeloDeFormulario(
     {
         unitOfWork.DescartarAlteracoesNaoSalvas();
         return Result<AplicacaoDeModeloDto>.ValidationFailure([.. documentos.Errors.Select(static e =>
-            PosicaoNoModelo.NoModelo(e with { Field = SelecaoDosDocumentosDoModelo.NoConjuntoDeDocumentos(e.Field) }))]);
+            PosicaoNoModelo.NoModelo(SelecaoDosDocumentosDoModelo.NoConjuntoDeDocumentos(e)))]);
     }
 }

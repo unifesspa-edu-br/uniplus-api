@@ -7,6 +7,7 @@ using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Errors;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Bancas;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Cronograma;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.LeituraDoDocumento;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
@@ -68,7 +69,7 @@ public sealed class LeituraDasBancasDaFaseTests
         IdentificacaoECronogramaLidos lidos = Ler(Documento(ComBancas(Banca(0, "banca_recursos", "ANALISE_RECURSOS", [], invalida))));
 
         lidos.Cronograma.CronogramaFases.Single().BancasRequeridas.Should().BeEmpty();
-        PartesRecusadas(lidos).Should().NotBeEmpty().And.OnlyContain(parte => parte.Ponteiro!.StartsWith("/cronograma/fases/0/bancasRequeridas/0/regraDeDeliberacao", StringComparison.Ordinal));
+        PartesRecusadas(lidos).Should().Contain(("/cronograma/fases/0/bancasRequeridas/0/regraDeDeliberacao/integrantes", BancaErrorCodes.IntegrantesInvalidos));
     }
 
     [Fact(DisplayName = "A banca recusada suspende a lista de bancas da fase, e a banca vizinha que o domínio aceita continua na fase")]

@@ -71,10 +71,10 @@ internal sealed class SelecaoDosDocumentosDoModelo(
     /// O campo da recusa no conjunto de documentos do modelo: o da fase, o do tipo e o que o processo
     /// recusa na cópia já trazem a posição; o que não a traz fica sob o conjunto.
     /// </summary>
-    public static string NoConjuntoDeDocumentos(string? campo) =>
-        string.IsNullOrEmpty(campo) ? ConjuntoDeDocumentosDoModeloInput.Caminho
-        : campo.StartsWith(ConjuntoDeDocumentosDoModeloInput.Caminho, StringComparison.Ordinal) ? campo
-        : $"{ConjuntoDeDocumentosDoModeloInput.Caminho}.{campo}";
+    public static FieldError NoConjuntoDeDocumentos(FieldError causa) =>
+        causa.Field?.StartsWith(ConjuntoDeDocumentosDoModeloInput.Caminho, StringComparison.Ordinal) == true
+            ? causa
+            : causa.NoCaminhoDoItem(ConjuntoDeDocumentosDoModeloInput.Caminho);
 
     /// <summary>
     /// O documento uma vez por opção que o processo oferece para o fato, salvo as excetuadas: cada cópia
