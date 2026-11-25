@@ -14,6 +14,8 @@ using Unifesspa.UniPlus.Configuracao.Infrastructure.Readers;
 using Unifesspa.UniPlus.Configuracao.IntegrationTests.Infrastructure;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 
+using static Unifesspa.UniPlus.Configuracao.IntegrationTests.TiposDeficiencia.DadosDeTipoDeficiencia;
+
 /// <summary>
 /// Integração ponta-a-ponta do TipoDeficiencia contra Postgres real (UNI-REQ-0012,
 /// UNI-REQ-0061): persistência, UNIQUE parcial do código e do nome vivos,
@@ -40,63 +42,41 @@ public sealed class TipoDeficienciaPersistenceTests
     public async Task Insert_PersisteEFicaVisivelPeloReader()
     {
         string codigo = CodigoUnico();
-        string nome = NomeUnico();
+        string nome = NomeDePersistenciaUnico();
         TipoDeficiencia tipo = Novo(codigo, nome);
 
-        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(AdminA))
-        {
-            ctx.TiposDeficiencia.Add(tipo);
-            await ctx.SaveChangesAsync();
-        }
+        await PersistirAsync(tipo);
 
         await using UniPlusDbContext readCtx = _fixture.CreateDbContext(userId: null);
         TipoDeficiencia persistido = await readCtx.TiposDeficiencia.SingleAsync(t => t.Id == tipo.Id);
 
-        persistido.Codigo.Valor.Should().Be(codigo);
-        persistido.Nome.Should().Be(nome);
-        persistido.CreatedBy.Should().Be(AdminA);
-        persistido.IsDeleted.Should().BeFalse();
+        VerificarTipoPersistido(persistido, codigo, nome);
 
-        var reader = new TipoDeficienciaReader(readCtx);
-        TipoDeficienciaView? view = await reader.ObterPorIdAsync(tipo.Id);
-        view.Should().NotBeNull();
-        view!.Codigo.Should().Be(codigo, "o módulo Seleção congela código + origem (UNI-REQ-0061)");
-        view.Nome.Should().Be(nome);
+        await VerificarLeituraPorIdAsync(readCtx, tipo.Id, codigo, nome);
     }
 
     [Fact(DisplayName = "UNIQUE parcial do código rejeita segundo tipo vivo com mesmo código")]
     public async Task UniquePartial_Codigo_RejeitaDuplicataAtiva()
     {
         string codigo = CodigoUnico();
-        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(AdminA))
-        {
-            ctx.TiposDeficiencia.Add(Novo(codigo, NomeUnico()));
-            await ctx.SaveChangesAsync();
-        }
+        await PersistirAsync(Novo(codigo, NomeDePersistenciaUnico()));
 
         await using UniPlusDbContext ctx2 = _fixture.CreateDbContext(AdminA);
-        ctx2.TiposDeficiencia.Add(Novo(codigo, NomeUnico()));
+        ctx2.TiposDeficiencia.Add(Novo(codigo, NomeDePersistenciaUnico()));
 
         Func<Task> act = async () => await ctx2.SaveChangesAsync();
 
         // Trava as constantes que o handler usa para traduzir a corrida concorrente
         // (UniqueConstraintViolation.GetViolatedConstraint/IsCodigoConflict) em
         // CodigoJaExiste/409: SqlState 23505 + nome do índice único parcial.
-        DbUpdateException ex = (await act.Should().ThrowAsync<DbUpdateException>()).Which;
-        Npgsql.PostgresException pg = ex.InnerException.Should().BeOfType<Npgsql.PostgresException>().Which;
-        pg.SqlState.Should().Be("23505");
-        pg.ConstraintName.Should().Be(RestricoesDoBanco.TipoDeDeficienciaCodigoAtivos);
+        await VerificarViolacaoDeUnicidadeAsync(act, RestricoesDoBanco.TipoDeDeficienciaCodigoAtivos);
     }
 
     [Fact(DisplayName = "UNIQUE parcial do nome rejeita segundo tipo vivo com mesmo nome")]
     public async Task UniquePartial_Nome_RejeitaDuplicataAtiva()
     {
-        string nome = NomeUnico();
-        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(AdminA))
-        {
-            ctx.TiposDeficiencia.Add(Novo(CodigoUnico(), nome));
-            await ctx.SaveChangesAsync();
-        }
+        string nome = NomeDePersistenciaUnico();
+        await PersistirAsync(Novo(CodigoUnico(), nome));
 
         await using UniPlusDbContext ctx2 = _fixture.CreateDbContext(AdminA);
         ctx2.TiposDeficiencia.Add(Novo(CodigoUnico(), nome));
@@ -106,18 +86,15 @@ public sealed class TipoDeficienciaPersistenceTests
         // Mesma trava, agora para IsNomeConflict → NomeJaExiste/409: como a tabela
         // tem dois índices únicos parciais, o handler precisa distinguir qual foi
         // violado — devolver CodigoJaExiste aqui mentiria sobre a causa.
-        DbUpdateException ex = (await act.Should().ThrowAsync<DbUpdateException>()).Which;
-        Npgsql.PostgresException pg = ex.InnerException.Should().BeOfType<Npgsql.PostgresException>().Which;
-        pg.SqlState.Should().Be("23505");
-        pg.ConstraintName.Should().Be(RestricoesDoBanco.TipoDeDeficienciaNomeAtivos);
+        await VerificarViolacaoDeUnicidadeAsync(act, RestricoesDoBanco.TipoDeDeficienciaNomeAtivos);
     }
 
     [Fact(DisplayName = "Código e nome distintos são aceitos")]
     public async Task CodigoENomeDistintos_Aceita()
     {
         await using UniPlusDbContext ctx = _fixture.CreateDbContext(AdminA);
-        ctx.TiposDeficiencia.Add(Novo(CodigoUnico(), NomeUnico()));
-        ctx.TiposDeficiencia.Add(Novo(CodigoUnico(), NomeUnico()));
+        ctx.TiposDeficiencia.Add(Novo(CodigoUnico(), NomeDePersistenciaUnico()));
+        ctx.TiposDeficiencia.Add(Novo(CodigoUnico(), NomeDePersistenciaUnico()));
 
         Func<Task> act = async () => await ctx.SaveChangesAsync();
         await act.Should().NotThrowAsync("código e nome são distintos");
@@ -130,14 +107,7 @@ public sealed class TipoDeficienciaPersistenceTests
 
         // Bypassa o value object de propósito: o CHECK é defesa em profundidade
         // contra escrita fora do fluxo da aplicação.
-        Func<Task> act = async () => await ctx.Database.ExecuteSqlRawAsync(
-            """
-            INSERT INTO configuracao.tipos_de_deficiencia
-                (id, codigo, nome, descricao, created_at, is_deleted)
-            VALUES ({0}, 'codigo_minusculo', {1}, 'Descrição de teste', now(), false)
-            """,
-            Guid.CreateVersion7(),
-            NomeUnico());
+        Func<Task> act = () => InserirCodigoInvalidoAsync(ctx);
 
         Npgsql.PostgresException pg = (await act.Should().ThrowAsync<Npgsql.PostgresException>()).Which;
         pg.SqlState.Should().Be("23514", "violação de CHECK constraint");
@@ -148,29 +118,12 @@ public sealed class TipoDeficienciaPersistenceTests
     public async Task SoftDelete_PreservaTrilhaELibertaSlots()
     {
         string codigo = CodigoUnico();
-        string nome = NomeUnico();
+        string nome = NomeDePersistenciaUnico();
         TipoDeficiencia tipo = Novo(codigo, nome);
-        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(AdminA))
-        {
-            ctx.TiposDeficiencia.Add(tipo);
-            await ctx.SaveChangesAsync();
-        }
+        await PersistirAsync(tipo);
 
-        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(AdminB))
-        {
-            TipoDeficiencia tracked = await ctx.TiposDeficiencia.SingleAsync(t => t.Id == tipo.Id);
-            ctx.TiposDeficiencia.Remove(tracked);
-            await ctx.SaveChangesAsync();
-        }
-
-        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null))
-        {
-            TipoDeficiencia excluido = await ctx.TiposDeficiencia
-                .IgnoreQueryFilters().SingleAsync(t => t.Id == tipo.Id);
-            excluido.IsDeleted.Should().BeTrue();
-            excluido.DeletedBy.Should().Be(AdminB);
-            excluido.Codigo.Valor.Should().Be(codigo, "a trilha preserva o código do tipo removido");
-        }
+        await RemoverAsync(tipo.Id);
+        await VerificarTrilhaDeExclusaoAsync(tipo.Id, codigo);
 
         await using UniPlusDbContext ctx3 = _fixture.CreateDbContext(AdminA);
         ctx3.TiposDeficiencia.Add(Novo(codigo, nome));
@@ -188,6 +141,68 @@ public sealed class TipoDeficienciaPersistenceTests
         string nomeExcluido = $"{prefixo}_D";
         string codigoA = CodigoUnico();
 
+        await PrepararListagemAsync(nomeA, nomeB, nomeExcluido, codigoA);
+
+        await using UniPlusDbContext readCtx = _fixture.CreateDbContext(userId: null);
+        var reader = new TipoDeficienciaReader(readCtx);
+        IReadOnlyList<TipoDeficienciaView> todos = await reader.ListarVivosAsync();
+
+        VerificarTiposListados(todos, prefixo, nomeA, nomeB, codigoA);
+    }
+
+    private static void VerificarTipoPersistido(TipoDeficiencia tipo, string codigo, string nome)
+    {
+        tipo.Codigo.Valor.Should().Be(codigo);
+        tipo.Nome.Should().Be(nome);
+        tipo.CreatedBy.Should().Be(AdminA);
+        tipo.IsDeleted.Should().BeFalse();
+    }
+
+    private static void VerificarTiposListados(
+        IReadOnlyList<TipoDeficienciaView> todos, string prefixo, string nomeA, string nomeB, string codigoA)
+    {
+        TipoDeficienciaView[] meus = [.. todos
+            .Where(v => v.Nome.StartsWith(prefixo, StringComparison.Ordinal))];
+        meus.Select(v => v.Nome).Should().Equal([nomeA, nomeB]);
+        meus[0].Codigo.Should().Be(codigoA);
+    }
+
+    private static async Task InserirCodigoInvalidoAsync(UniPlusDbContext ctx) =>
+        await ctx.Database.ExecuteSqlRawAsync(
+            """
+            INSERT INTO configuracao.tipos_de_deficiencia
+                (id, codigo, nome, descricao, created_at, is_deleted)
+            VALUES ({0}, 'codigo_minusculo', {1}, 'Descrição de teste', now(), false)
+            """,
+            Guid.CreateVersion7(),
+            NomeDePersistenciaUnico());
+
+    private async Task PersistirAsync(TipoDeficiencia tipo)
+    {
+        await using UniPlusDbContext ctx = _fixture.CreateDbContext(AdminA);
+        ctx.TiposDeficiencia.Add(tipo);
+        await ctx.SaveChangesAsync();
+    }
+
+    private async Task RemoverAsync(Guid id)
+    {
+        await using UniPlusDbContext ctx = _fixture.CreateDbContext(AdminB);
+        TipoDeficiencia tracked = await ctx.TiposDeficiencia.SingleAsync(t => t.Id == id);
+        ctx.TiposDeficiencia.Remove(tracked);
+        await ctx.SaveChangesAsync();
+    }
+
+    private async Task VerificarTrilhaDeExclusaoAsync(Guid id, string codigo)
+    {
+        await using UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null);
+        TipoDeficiencia excluido = await ctx.TiposDeficiencia.IgnoreQueryFilters().SingleAsync(t => t.Id == id);
+        excluido.IsDeleted.Should().BeTrue();
+        excluido.DeletedBy.Should().Be(AdminB);
+        excluido.Codigo.Valor.Should().Be(codigo, "a trilha preserva o código do tipo removido");
+    }
+
+    private async Task PrepararListagemAsync(string nomeA, string nomeB, string nomeExcluido, string codigoA)
+    {
         await using (UniPlusDbContext ctx = _fixture.CreateDbContext(AdminA))
         {
             ctx.TiposDeficiencia.Add(Novo(CodigoUnico(), nomeB));
@@ -196,28 +211,34 @@ public sealed class TipoDeficienciaPersistenceTests
             await ctx.SaveChangesAsync();
         }
 
-        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(AdminB))
-        {
-            TipoDeficiencia aExcluir = await ctx.TiposDeficiencia.SingleAsync(t => t.Nome == nomeExcluido);
-            ctx.TiposDeficiencia.Remove(aExcluir);
-            await ctx.SaveChangesAsync();
-        }
+        await RemoverPorNomeAsync(nomeExcluido);
+    }
 
-        await using UniPlusDbContext readCtx = _fixture.CreateDbContext(userId: null);
-        var reader = new TipoDeficienciaReader(readCtx);
-        IReadOnlyList<TipoDeficienciaView> todos = await reader.ListarVivosAsync();
+    private async Task RemoverPorNomeAsync(string nome)
+    {
+        await using UniPlusDbContext ctx = _fixture.CreateDbContext(AdminB);
+        TipoDeficiencia aExcluir = await ctx.TiposDeficiencia.SingleAsync(t => t.Nome == nome);
+        ctx.TiposDeficiencia.Remove(aExcluir);
+        await ctx.SaveChangesAsync();
+    }
 
-        TipoDeficienciaView[] meus = [.. todos
-            .Where(v => v.Nome.StartsWith(prefixo, StringComparison.Ordinal))];
+    private static async Task VerificarLeituraPorIdAsync(UniPlusDbContext ctx, Guid id, string codigo, string nome)
+    {
+        var reader = new TipoDeficienciaReader(ctx);
+        TipoDeficienciaView? view = await reader.ObterPorIdAsync(id);
+        view.Should().NotBeNull();
+        view!.Codigo.Should().Be(codigo, "o módulo Seleção congela código + origem (UNI-REQ-0061)");
+        view.Nome.Should().Be(nome);
+    }
 
-        meus.Select(v => v.Nome).Should().Equal([nomeA, nomeB]);
-        meus[0].Codigo.Should().Be(codigoA);
+    private static async Task VerificarViolacaoDeUnicidadeAsync(Func<Task> act, string restricao)
+    {
+        DbUpdateException ex = (await act.Should().ThrowAsync<DbUpdateException>()).Which;
+        Npgsql.PostgresException pg = ex.InnerException.Should().BeOfType<Npgsql.PostgresException>().Which;
+        pg.SqlState.Should().Be("23505");
+        pg.ConstraintName.Should().Be(restricao);
     }
 
     private static TipoDeficiencia Novo(string codigo, string nome) =>
         TipoDeficiencia.Criar(codigo, nome, "Descrição de teste").Value!;
-
-    private static string CodigoUnico() => $"DEF_{Guid.NewGuid().ToString("N")[..12].ToUpperInvariant()}";
-
-    private static string NomeUnico() => $"DEF_{Guid.NewGuid().ToString("N")[..12].ToUpperInvariant()}";
 }

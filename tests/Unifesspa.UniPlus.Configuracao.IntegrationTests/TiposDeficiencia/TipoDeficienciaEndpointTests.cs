@@ -11,6 +11,9 @@ using AwesomeAssertions;
 using Unifesspa.UniPlus.Configuracao.IntegrationTests.Infrastructure;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Authentication;
 
+using static Unifesspa.UniPlus.Configuracao.IntegrationTests.TiposDeficiencia.DadosDeTipoDeficiencia;
+using static Unifesspa.UniPlus.Configuracao.IntegrationTests.TiposDeficiencia.RequisicoesDeTipoDeficiencia;
+
 /// <summary>
 /// Smoke + caminho de escrita dos endpoints de <c>TipoDeficiencia</c>
 /// (UNI-REQ-0012, UNI-REQ-0061): routing, vendor media type, HATEOAS,
@@ -99,16 +102,7 @@ public sealed class TipoDeficienciaEndpointTests
         Guid id = await criar.Content.ReadFromJsonAsync<Guid>();
         id.Should().NotBe(Guid.Empty);
 
-        HttpResponseMessage obter = await client.GetAsync(
-            new Uri($"/api/configuracao/tipos-deficiencia/{id}", UriKind.Relative));
-        obter.StatusCode.Should().Be(HttpStatusCode.OK);
-
-        using JsonDocument doc = JsonDocument.Parse(await obter.Content.ReadAsStringAsync());
-        JsonElement root = doc.RootElement;
-        root.GetProperty("codigo").GetString().Should().Be(codigo, "o código é persistido como informado");
-        root.GetProperty("nome").GetString().Should().Be(nome);
-        root.GetProperty("descricao").GetString().Should().Be(DescricaoValida);
-        root.TryGetProperty("_links", out _).Should().BeTrue("HATEOAS Level 1 expõe _links.self (ADR-0029)");
+        await VerificarTipoCriadoAsync(client, id, codigo, nome);
     }
 
     [Fact(DisplayName = "POST sem código no JSON retorna 422 com codigo_obrigatorio")]
@@ -198,13 +192,7 @@ public sealed class TipoDeficienciaEndpointTests
         string codigo = CodigoUnico();
 
         using HttpClient client = _fixture.Factory.CreateClient();
-        HttpResponseMessage criar = await EnviarPostAdmin(
-            client, new { codigo, nome = NomeUnico(), descricao = DescricaoValida });
-        criar.StatusCode.Should().Be(HttpStatusCode.Created);
-        Guid id = await criar.Content.ReadFromJsonAsync<Guid>();
-
-        HttpResponseMessage remover = await EnviarDeleteAdmin(client, id);
-        remover.StatusCode.Should().Be(HttpStatusCode.NoContent);
+        await CriarERemoverAsync(client, codigo);
 
         HttpResponseMessage recriar = await EnviarPostAdmin(
             client, new { codigo, nome = NomeUnico(), descricao = DescricaoValida });
@@ -263,9 +251,7 @@ public sealed class TipoDeficienciaEndpointTests
         string codigo = CodigoUnico();
 
         using HttpClient client = _fixture.Factory.CreateClient();
-        HttpResponseMessage criar = await EnviarPostAdmin(
-            client, new { codigo, nome = NomeUnico(), descricao = DescricaoValida });
-        Guid id = await criar.Content.ReadFromJsonAsync<Guid>();
+        Guid id = await CriarTipoAsync(client, new { codigo, nome = NomeUnico(), descricao = DescricaoValida });
 
         string novoNome = NomeUnico();
         HttpResponseMessage atualizar = await EnviarPutAdmin(
@@ -283,9 +269,7 @@ public sealed class TipoDeficienciaEndpointTests
     {
         using HttpClient client = _fixture.Factory.CreateClient();
         string nome = NomeUnico();
-        HttpResponseMessage criar = await EnviarPostAdmin(
-            client, new { codigo = CodigoUnico(), nome, descricao = DescricaoValida });
-        Guid id = await criar.Content.ReadFromJsonAsync<Guid>();
+        Guid id = await CriarTipoAsync(client, new { codigo = CodigoUnico(), nome, descricao = DescricaoValida });
 
         string novoCodigo = CodigoUnico();
         HttpResponseMessage atualizar = await EnviarPutAdmin(
@@ -320,14 +304,10 @@ public sealed class TipoDeficienciaEndpointTests
         using HttpClient client = _fixture.Factory.CreateClient();
 
         string codigoOcupado = CodigoUnico();
-        HttpResponseMessage ocupante = await EnviarPostAdmin(
-            client, new { codigo = codigoOcupado, nome = NomeUnico(), descricao = DescricaoValida });
-        ocupante.StatusCode.Should().Be(HttpStatusCode.Created);
+        await CriarTipoComCodigoOcupadoAsync(client, codigoOcupado);
 
         string nome = NomeUnico();
-        HttpResponseMessage criar = await EnviarPostAdmin(
-            client, new { codigo = CodigoUnico(), nome, descricao = DescricaoValida });
-        Guid id = await criar.Content.ReadFromJsonAsync<Guid>();
+        Guid id = await CriarTipoAsync(client, new { codigo = CodigoUnico(), nome, descricao = DescricaoValida });
 
         HttpResponseMessage atualizar = await EnviarPutAdmin(
             client, id, new { id, codigo = codigoOcupado, nome, descricao = DescricaoValida });
@@ -337,53 +317,38 @@ public sealed class TipoDeficienciaEndpointTests
             .Be("uniplus.configuracao.tipo_deficiencia.codigo_ja_existe");
     }
 
-    private static string CodigoUnico() => $"DEF_{Guid.NewGuid().ToString("N")[..12].ToUpperInvariant()}";
+    private static async Task CriarTipoComCodigoOcupadoAsync(HttpClient client, string codigo)
+    {
+        HttpResponseMessage ocupante = await EnviarPostAdmin(
+            client, new { codigo, nome = NomeUnico(), descricao = DescricaoValida });
+        ocupante.StatusCode.Should().Be(HttpStatusCode.Created);
+    }
+
+    private static async Task<Guid> CriarTipoAsync(HttpClient client, object body)
+    {
+        HttpResponseMessage criar = await EnviarPostAdmin(client, body);
+        return await criar.Content.ReadFromJsonAsync<Guid>();
+    }
+
+    private static async Task CriarERemoverAsync(HttpClient client, string codigo)
+    {
+        HttpResponseMessage criar = await EnviarPostAdmin(
+            client, new { codigo, nome = NomeUnico(), descricao = DescricaoValida });
+        criar.StatusCode.Should().Be(HttpStatusCode.Created);
+        Guid id = await criar.Content.ReadFromJsonAsync<Guid>();
+        HttpResponseMessage remover = await EnviarDeleteAdmin(client, id);
+        remover.StatusCode.Should().Be(HttpStatusCode.NoContent);
+    }
+
+    private static async Task VerificarTipoCriadoAsync(HttpClient client, Guid id, string codigo, string nome)
+    {
+        using JsonDocument doc = await ObterAsync(client, id);
+        JsonElement root = doc.RootElement;
+        root.GetProperty("codigo").GetString().Should().Be(codigo, "o código é persistido como informado");
+        root.GetProperty("nome").GetString().Should().Be(nome);
+        root.GetProperty("descricao").GetString().Should().Be(DescricaoValida);
+        root.TryGetProperty("_links", out _).Should().BeTrue("HATEOAS Level 1 expõe _links.self (ADR-0029)");
+    }
 
     private static string NomeUnico() => $"Deficiência {Guid.NewGuid().ToString("N")[..10].ToUpperInvariant()}";
-
-    private static async Task<string?> VendorCodeAsync(HttpResponseMessage response)
-    {
-        using JsonDocument doc = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
-        return doc.RootElement.TryGetProperty("code", out JsonElement code)
-            ? code.GetString()
-            : doc.RootElement.GetProperty("errors")[0].GetProperty("code").GetString();
-    }
-
-    private static async Task<JsonDocument> ObterAsync(HttpClient client, Guid id)
-    {
-        HttpResponseMessage obter = await client.GetAsync(
-            new Uri($"/api/configuracao/tipos-deficiencia/{id}", UriKind.Relative));
-        obter.StatusCode.Should().Be(HttpStatusCode.OK);
-        return JsonDocument.Parse(await obter.Content.ReadAsStringAsync());
-    }
-
-    private static async Task<HttpResponseMessage> EnviarPostAdmin(HttpClient client, object body)
-    {
-        using HttpRequestMessage request = new(HttpMethod.Post, new Uri("/api/configuracao/admin/tipos-deficiencia", UriKind.Relative));
-        AplicarCabecalhosAdmin(request);
-        request.Content = JsonContent.Create(body);
-        return await client.SendAsync(request);
-    }
-
-    private static async Task<HttpResponseMessage> EnviarPutAdmin(HttpClient client, Guid id, object body)
-    {
-        using HttpRequestMessage request = new(HttpMethod.Put, new Uri($"/api/configuracao/admin/tipos-deficiencia/{id}", UriKind.Relative));
-        AplicarCabecalhosAdmin(request);
-        request.Content = JsonContent.Create(body);
-        return await client.SendAsync(request);
-    }
-
-    private static async Task<HttpResponseMessage> EnviarDeleteAdmin(HttpClient client, Guid id)
-    {
-        using HttpRequestMessage request = new(HttpMethod.Delete, new Uri($"/api/configuracao/admin/tipos-deficiencia/{id}", UriKind.Relative));
-        AplicarCabecalhosAdmin(request);
-        return await client.SendAsync(request);
-    }
-
-    private static void AplicarCabecalhosAdmin(HttpRequestMessage request)
-    {
-        request.Headers.Add("Authorization", $"{TestAuthHandler.AuthorizationScheme} {TestAuthHandler.TokenValue}");
-        request.Headers.Add(TestAuthHandler.RolesHeader, "plataforma-admin");
-        request.Headers.Add("Idempotency-Key", Guid.NewGuid().ToString());
-    }
 }
