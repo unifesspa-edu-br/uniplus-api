@@ -1,5 +1,6 @@
 namespace Unifesspa.UniPlus.Application.Abstractions.Consultas;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Domain.ValueObjects;
 using Unifesspa.UniPlus.Kernel.Pagination;
 using Unifesspa.UniPlus.Kernel.Results;
@@ -35,6 +36,24 @@ public static class BuscaPedida
         TermoDeBusca.ConferirComprimento(termo) is { } recusa
             ? Result<string?>.Failure(recusa)
             : Result<string?>.Success(termo);
+}
+
+/// <summary>Traduz o código exato de um filtro opcional, usando a recusa escolhida pela consulta.</summary>
+public static class FiltroPorCodigoPedido
+{
+    /// <summary>Uma entrada nula ou vazia significa ausência de filtro; espaços não são ignorados.</summary>
+    public static Result<TEnum?> Ler<TEnum>(string? codigo, DomainError recusa)
+        where TEnum : struct, Enum
+    {
+        if (string.IsNullOrEmpty(codigo))
+        {
+            return Result<TEnum?>.Success(null);
+        }
+
+        return CatalogoDe<TEnum>.TentarObter(codigo, out TEnum valor)
+            ? Result<TEnum?>.Success(valor)
+            : Result<TEnum?>.Failure(recusa);
+    }
 }
 
 /// <summary>
