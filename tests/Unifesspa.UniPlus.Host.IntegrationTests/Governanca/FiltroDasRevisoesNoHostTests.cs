@@ -35,7 +35,7 @@ public sealed class FiltroDasRevisoesNoHostTests : PedidosDeConcessaoTestBase
         (Guid[] concluidas, Guid emAndamento) = await SemearRevisoesAsync();
         using HttpClient marlene = await ClienteComPermissoesAsync(Marlene, AprovarProtecaoDeDados);
 
-        (Guid Id, string Situacao)[] lidas = [.. (await PaginasAsync(marlene, $"{Revisoes}?situacao=concluida&limit=2")).SelectMany(static p => p)];
+        (Guid Id, string Situacao)[] lidas = [.. (await PaginasAsync(marlene, $"{Revisoes}?situacao=CONCLUIDA&limit=2")).SelectMany(static p => p)];
 
         lidas.Select(static r => r.Id).Should().BeEquivalentTo(concluidas).And.NotContain(emAndamento);
         lidas.Should().OnlyContain(static r => r.Situacao == "CONCLUIDA");
@@ -47,9 +47,22 @@ public sealed class FiltroDasRevisoesNoHostTests : PedidosDeConcessaoTestBase
         (_, Guid emAndamento) = await SemearRevisoesAsync();
         using HttpClient marlene = await ClienteComPermissoesAsync(Marlene, AprovarProtecaoDeDados);
 
-        (Guid Id, string Situacao)[] lidas = [.. (await PaginasAsync(marlene, $"{Revisoes}?situacao=em_andamento&limit=2")).SelectMany(static p => p)];
+        (Guid Id, string Situacao)[] lidas = [.. (await PaginasAsync(marlene, $"{Revisoes}?situacao=EM_ANDAMENTO&limit=2")).SelectMany(static p => p)];
 
         lidas.Should().Equal((emAndamento, "EM_ANDAMENTO"));
+    }
+
+    [Theory]
+    [InlineData("?limit=2")]
+    [InlineData("?limit=2&situacao=%20%20")]
+    public async Task Listar_SemSituacao_NaoFiltra(string filtro)
+    {
+        (Guid[] concluidas, Guid emAndamento) = await SemearRevisoesAsync();
+        using HttpClient marlene = await ClienteComPermissoesAsync(Marlene, AprovarProtecaoDeDados);
+
+        (Guid Id, string Situacao)[] lidas = [.. (await PaginasAsync(marlene, $"{Revisoes}{filtro}")).SelectMany(static p => p)];
+
+        lidas.Select(static r => r.Id).Should().BeEquivalentTo(concluidas.Append(emAndamento));
     }
 
     [Fact(DisplayName = "Com a revisão em andamento entre as concluídas, as páginas do filtro saem cheias: o filtro vem antes da paginação")]
@@ -58,22 +71,31 @@ public sealed class FiltroDasRevisoesNoHostTests : PedidosDeConcessaoTestBase
         Guid[] concluidas = await SemearIntercaladasAsync();
         using HttpClient marlene = await ClienteComPermissoesAsync(Marlene, AprovarProtecaoDeDados);
 
-        (Guid Id, string Situacao)[][] paginas = await PaginasAsync(marlene, $"{Revisoes}?situacao=concluida&limit=2");
+        (Guid Id, string Situacao)[][] paginas = await PaginasAsync(marlene, $"{Revisoes}?situacao=CONCLUIDA&limit=2");
 
         paginas.Select(static p => p.Length).Should().Equal(2, 1);
         paginas.SelectMany(static p => p).Select(static r => r.Id).Should().BeEquivalentTo(concluidas);
-        (await PaginasAsync(marlene, $"{Revisoes}?situacao=em_andamento&limit=1")).Should().ContainSingle();
+        (await PaginasAsync(marlene, $"{Revisoes}?situacao=EM_ANDAMENTO&limit=1")).Should().ContainSingle();
     }
 
-    [Fact(DisplayName = "A situação desconhecida no filtro recebe 400")]
-    public async Task SituacaoDesconhecida_400()
+    [Theory]
+    [InlineData("concluida")]
+    [InlineData("%20CONCLUIDA%20")]
+    [InlineData("pendente")]
+    [InlineData("todas")]
+    public async Task SituacaoDesconhecida_RecebeRecusaSemValor(string situacao)
     {
         using HttpClient marlene = await ClienteComPermissoesAsync(Marlene, AprovarProtecaoDeDados);
 
-        using HttpResponseMessage resposta = await marlene.GetAsync(new Uri($"{Revisoes}?situacao=pendente", UriKind.Relative));
+        using HttpResponseMessage resposta = await marlene.GetAsync(new Uri($"{Revisoes}?situacao={situacao}", UriKind.Relative));
 
         resposta.StatusCode.Should().Be(HttpStatusCode.BadRequest);
-        (await resposta.Content.ReadAsStringAsync()).Should().Contain("uniplus.autorizacao.revisao.filtro_de_situacao_invalido");
+        string corpo = await resposta.Content.ReadAsStringAsync();
+        corpo.Should().Contain("uniplus.autorizacao.revisao.filtro_de_situacao_invalido");
+        using JsonDocument problema = JsonDocument.Parse(corpo);
+        problema.RootElement.GetProperty("detail").GetString().Should()
+            .Be("Situação inválida. Use um dos códigos publicados para a situação da revisão.")
+            .And.NotContain(situacao).And.NotContain("EM_ANDAMENTO").And.NotContain("CONCLUIDA");
     }
 
     private async Task<(Guid[] Concluidas, Guid EmAndamento)> SemearRevisoesAsync()

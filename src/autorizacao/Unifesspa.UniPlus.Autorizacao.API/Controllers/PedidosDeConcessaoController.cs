@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.ModelBinding;
 
 using Unifesspa.UniPlus.Application.Abstractions.Messaging;
+using Unifesspa.UniPlus.Autorizacao.API.Filtros;
 using Unifesspa.UniPlus.Autorizacao.Application.Commands.Pedidos;
 using Unifesspa.UniPlus.Autorizacao.Application.DTOs;
 using Unifesspa.UniPlus.Autorizacao.Application.Queries.Pedidos;
@@ -38,9 +39,6 @@ public sealed class PedidosDeConcessaoController : ControllerBase
 {
     private const string ResourceTag = "pedidos-de-concessao";
     private const string PerfisParaPedidoTag = "perfis-para-pedido";
-
-    private static readonly Dictionary<string, SituacaoDoPedido> Situacoes =
-        Enum.GetValues<SituacaoDoPedido>().ToDictionary(static s => s.Codigo(), StringComparer.Ordinal);
 
     private readonly ICommandBus _commandBus;
     private readonly IQueryBus _queryBus;
@@ -102,7 +100,7 @@ public sealed class PedidosDeConcessaoController : ControllerBase
     public async Task<IActionResult> Listar(
         [FromCursor(ResourceTag, RequireSortKey = true)] PageRequest page,
         [FromQuery] string? fila = null,
-        [FromQuery] string? situacao = null,
+        [FromQuery, AceitaCodigosDe<SituacaoDoPedido>] string? situacao = null,
         CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(page);
@@ -307,25 +305,15 @@ public sealed class PedidosDeConcessaoController : ControllerBase
             return Recusa(PedidoErrorCodes.CursorInvalido, "O cursor informado é inválido.");
         }
 
-        return TentarLerSituacao(situacao, out SituacaoDoPedido? lida)
-            ? Result<ListarPedidosDeConcessaoQuery>.Success(new(filaLida, lida, page.AfterSortKey, page.AfterId, page.Limit, page.Direction))
-            : Recusa(PedidoErrorCodes.FiltroDeSituacaoInvalido, "Situação inválida. Use aguardando_documento, aguardando_beneficiario, aguardando_gestor, aguardando_protecao_de_dados, aprovado, recusado ou cancelado.");
+        Result<SituacaoDoPedido?> filtro = LerSituacao(situacao);
+        return filtro.IsFailure
+            ? Result<ListarPedidosDeConcessaoQuery>.ValidationFailure(filtro.Errors)
+            : Result<ListarPedidosDeConcessaoQuery>.Success(new(filaLida, filtro.Value, page.AfterSortKey, page.AfterId, page.Limit, page.Direction));
     }
 
-    // Só o vocabulário publicado vale: o nome do membro do enum não é contrato. Sem situação, a lista não filtra.
-    private static bool TentarLerSituacao(string? texto, out SituacaoDoPedido? situacao)
-    {
-        situacao = null;
-        if (string.IsNullOrWhiteSpace(texto))
-        {
-            return true;
-        }
-
-        bool conhecida = Situacoes.TryGetValue(texto.Trim().ToUpperInvariant(), out SituacaoDoPedido lida);
-        situacao = conhecida ? lida : null;
-
-        return conhecida;
-    }
+    private static Result<SituacaoDoPedido?> LerSituacao(string? situacao) =>
+        FiltroDeSituacao.Ler<SituacaoDoPedido>(situacao,
+            new DomainError(PedidoErrorCodes.FiltroDeSituacaoInvalido, "Situação inválida. Use um dos códigos publicados para a situação do pedido."));
 
     private static Result<ListarPedidosDeConcessaoQuery> Recusa(string codigo, string mensagem) =>
         Result<ListarPedidosDeConcessaoQuery>.Failure(new DomainError(codigo, mensagem));

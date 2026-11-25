@@ -607,10 +607,10 @@
       "codigo": "uniplus.autorizacao.pedido.filtro_de_situacao_invalido",
       "requisitos": [],
       "oQueAconteceu": [
-        "O filtro por situação da lista de pedidos recebeu um valor que nenhum pedido pode ter. As situações possíveis são: aguardando_beneficiario, aguardando_gestor, aguardando_protecao_de_dados, aprovado, recusado e cancelado. Nenhum pedido foi listado."
+        "O filtro por situação da lista de pedidos recebeu um código desconhecido. Nenhum pedido foi listado."
       ],
       "comoResolver": [
-        "Escolha uma das situações acima ou retire o filtro para ver os pedidos de todas as situações. Para consultar o histórico dos pedidos já decididos, filtre por aprovado, recusado ou cancelado: eles aparecem do mais recente ao mais antigo."
+        "Use um dos códigos publicados para a situação do pedido ou omita o parâmetro para não filtrar por situação. Para consultar pedidos já decididos, use APROVADO, RECUSADO, CANCELADO ou DEVOLVIDO."
       ],
       "ondeAparece": [
         "Listagem de pedidos de concessão de acesso"
@@ -2053,10 +2053,10 @@
         "UNI-REQ-0372"
       ],
       "oQueAconteceu": [
-        "A lista de revisões foi pedida com o parâmetro `situacao` num valor que o sistema não conhece. Os valores aceitos são `em_andamento` e `concluida`. O filtro é aplicado no servidor, antes da paginação, e por isso o valor inválido é recusado em vez de devolver uma página vazia. Nenhuma revisão foi listada."
+        "A lista de revisões foi pedida com um código de situação desconhecido. O filtro é aplicado antes da paginação. Nenhuma revisão foi listada."
       ],
       "comoResolver": [
-        "Envie `situacao=em_andamento` ou `situacao=concluida`, ou omita o parâmetro para listar todas as revisões."
+        "Envie `situacao=EM_ANDAMENTO` ou `situacao=CONCLUIDA`, ou omita o parâmetro para não filtrar por situação."
       ],
       "ondeAparece": [
         "Listagem das revisões periódicas dos acessos (`GET /api/revisoes`)"

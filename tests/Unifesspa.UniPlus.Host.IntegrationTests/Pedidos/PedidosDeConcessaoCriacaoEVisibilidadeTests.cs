@@ -127,6 +127,37 @@ public sealed class PedidosDeConcessaoCriacaoEVisibilidadeTests : PedidosDeConce
         (await ListarFilaAsync(betina, "meus")).Should().Equal(esperando);
         (await ListarFilaAsync(leandro, "meus")).Should().BeEquivalentTo([esperando, noGestor]);
         (await ListarFilaAsync(leandro, "meus", "AGUARDANDO_GESTOR")).Should().Equal(noGestor);
+        (await ListarFilaAsync(leandro, "meus", "%20%20")).Should().BeEquivalentTo([esperando, noGestor]);
+    }
+
+    [Theory]
+    [InlineData("aguardando_gestor")]
+    [InlineData("%20AGUARDANDO_GESTOR%20")]
+    [InlineData("desconhecida")]
+    [InlineData("todas")]
+    public async Task Listar_SituacaoDesconhecida_RecebeRecusaSemValor(string situacao)
+    {
+        using HttpClient leandro = Cliente(Leandro);
+        using HttpResponseMessage resposta = await EnviarAsync(leandro, HttpMethod.Get, $"{Rota}?situacao={situacao}");
+
+        resposta.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        string corpo = await resposta.Content.ReadAsStringAsync();
+        corpo.Should().Contain("uniplus.autorizacao.pedido.filtro_de_situacao_invalido");
+        using JsonDocument problema = JsonDocument.Parse(corpo);
+        problema.RootElement.GetProperty("detail").GetString().Should()
+            .Be("Situação inválida. Use um dos códigos publicados para a situação do pedido.")
+            .And.NotContain(situacao).And.NotContain("AGUARDANDO_GESTOR").And.NotContain("APROVADO");
+    }
+
+    [Fact]
+    public async Task Listar_FilaESituacaoInvalidas_RecusaFilaPrimeiro()
+    {
+        using HttpClient leandro = Cliente(Leandro);
+        using HttpResponseMessage resposta = await EnviarAsync(leandro, HttpMethod.Get, $"{Rota}?fila=outra&situacao=desconhecida");
+
+        resposta.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        (await resposta.Content.ReadAsStringAsync()).Should().Contain("uniplus.autorizacao.pedido.fila_invalida")
+            .And.NotContain("filtro_de_situacao_invalido");
     }
 
     [Fact(DisplayName = "Depois do aceite a lista e o detalhe seguem a identidade, e não mais o e-mail: quem herda o e-mail não vê o pedido")]
