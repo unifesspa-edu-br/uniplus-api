@@ -16050,7 +16050,7 @@
       "ApresentacaoDoCampoDto": {
         "required": [
           "rotulo",
-          "tipoRenderizacao",
+          "tipoDeCampo",
           "ajuda",
           "pedirConfirmacao"
         ],
@@ -16059,8 +16059,8 @@
           "rotulo": {
             "type": "string"
           },
-          "tipoRenderizacao": {
-            "$ref": "#/components/schemas/TipoRenderizacaoCodigo"
+          "tipoDeCampo": {
+            "$ref": "#/components/schemas/TipoDeCampoCodigo"
           },
           "ajuda": {
             "type": [
@@ -16076,7 +16076,7 @@
       "ApresentacaoDoCampoInput": {
         "required": [
           "rotulo",
-          "tipoRenderizacao"
+          "tipoDeCampo"
         ],
         "type": "object",
         "properties": {
@@ -16086,13 +16086,13 @@
               "string"
             ]
           },
-          "tipoRenderizacao": {
+          "tipoDeCampo": {
             "oneOf": [
               {
                 "type": "null"
               },
               {
-                "$ref": "#/components/schemas/TipoRenderizacaoCodigo"
+                "$ref": "#/components/schemas/TipoDeCampoCodigo"
               }
             ]
           },
@@ -16766,13 +16766,13 @@
               }
             ]
           },
-          "eMecCodigo": {
+          "codigoEmec": {
             "type": [
               "null",
               "string"
             ]
           },
-          "codigoSga": {
+          "codigoNoSistemaAcademico": {
             "type": [
               "null",
               "string"
@@ -17466,7 +17466,7 @@
       "CalendarioDiasUteisDto": {
         "required": [
           "id",
-          "versaoDataset",
+          "versaoDoCalendario",
           "vigente",
           "diasNaoUteis",
           "criadoEm"
@@ -17477,7 +17477,7 @@
             "type": "string",
             "format": "uuid"
           },
-          "versaoDataset": {
+          "versaoDoCalendario": {
             "type": "string"
           },
           "vigente": {
@@ -17507,7 +17507,7 @@
       "CalendarioDiasUteisResumoDto": {
         "required": [
           "id",
-          "versaoDataset",
+          "versaoDoCalendario",
           "vigente",
           "criadoEm"
         ],
@@ -17517,7 +17517,7 @@
             "type": "string",
             "format": "uuid"
           },
-          "versaoDataset": {
+          "versaoDoCalendario": {
             "type": "string"
           },
           "vigente": {
@@ -18269,12 +18269,12 @@
       },
       "CriarCalendarioDiasUteisCommand": {
         "required": [
-          "versaoDataset",
+          "versaoDoCalendario",
           "diasNaoUteis"
         ],
         "type": "object",
         "properties": {
-          "versaoDataset": {
+          "versaoDoCalendario": {
             "type": [
               "null",
               "string"
@@ -18958,13 +18958,13 @@
               }
             ]
           },
-          "eMecCodigo": {
+          "codigoEmec": {
             "type": [
               "null",
               "string"
             ]
           },
-          "codigoSga": {
+          "codigoNoSistemaAcademico": {
             "type": [
               "null",
               "string"
@@ -22810,8 +22810,8 @@
           "regimeDeFuncionamento",
           "regimeDeTurno",
           "turnos",
-          "eMecCodigo",
-          "codigoSga",
+          "codigoEmec",
+          "codigoNoSistemaAcademico",
           "vagasAnuaisAutorizadas",
           "baseLegal",
           "atoAutorizacaoMec",
@@ -22855,13 +22855,13 @@
               "$ref": "#/components/schemas/TurnoOferta"
             }
           },
-          "eMecCodigo": {
+          "codigoEmec": {
             "type": [
               "null",
               "string"
             ]
           },
-          "codigoSga": {
+          "codigoNoSistemaAcademico": {
             "type": [
               "null",
               "string"
@@ -23425,7 +23425,7 @@
         "required": [
           "fatoCodigo",
           "rotulo",
-          "tipoRenderizacao",
+          "tipoDeCampo",
           "formato",
           "valoresSelecionaveis",
           "calculadoDe"
@@ -23441,13 +23441,13 @@
               "string"
             ]
           },
-          "tipoRenderizacao": {
+          "tipoDeCampo": {
             "oneOf": [
               {
                 "type": "null"
               },
               {
-                "$ref": "#/components/schemas/TipoRenderizacaoCodigo"
+                "$ref": "#/components/schemas/TipoDeCampoCodigo"
               }
             ]
           },
@@ -25011,6 +25011,20 @@
         "type": "string",
         "description": "O tipo de banca que a sele\u00E7\u00E3o pode prever em uma fase ou em uma etapa. O c\u00F3digo e o r\u00F3tulo do tipo s\u00E3o fixos; o nome do cadastro de tipos de banca pode ser editado.\n\n- \u0060BANCA_ANALISE_DOCUMENTAL\u0060: Banca de an\u00E1lise documental\n- \u0060BANCA_ENTREVISTA\u0060: Banca de entrevista\n- \u0060BANCA_CORRECAO_REDACOES\u0060: Banca de corre\u00E7\u00E3o de reda\u00E7\u00F5es\n- \u0060BANCA_ANALISE_RECURSOS\u0060: Banca de an\u00E1lise de recursos\n- \u0060BANCA_HETEROIDENTIFICACAO\u0060: Banca de heteroidentifica\u00E7\u00E3o\n- \u0060BANCA_BIOPSICOSSOCIAL\u0060: Banca de avalia\u00E7\u00E3o biopsicossocial\n- \u0060BANCA_HOMOLOGACAO_INSCRICOES\u0060: Banca de homologa\u00E7\u00E3o das inscri\u00E7\u00F5es\n- \u0060BANCA_IMPORTACAO_NOTAS_INEP\u0060: Banca de importa\u00E7\u00E3o das notas do INEP\n- \u0060BANCA_IMPORTACAO_CANDIDATOS\u0060: Banca de importa\u00E7\u00E3o de candidatos\n- \u0060BANCA_ANALISE_RECURSOS_SEGUNDA_INSTANCIA\u0060: Banca de an\u00E1lise de recursos de 2\u00AA inst\u00E2ncia"
       },
+      "TipoDeCampoCodigo": {
+        "enum": [
+          "NUMERO",
+          "SIM_OU_NAO",
+          "ESCOLHA_UNICA",
+          "ESCOLHA_MULTIPLA",
+          "TEXTO",
+          "DATA",
+          "ENDERECO",
+          "MUNICIPIO"
+        ],
+        "type": "string",
+        "description": "Como o campo do formul\u00E1rio \u00E9 apresentado e respondido pelo candidato.\n\n- \u0060NUMERO\u0060: N\u00FAmero \u2014 Campo em que o candidato digita um n\u00FAmero inteiro.\n- \u0060SIM_OU_NAO\u0060: Sim ou n\u00E3o \u2014 Campo em que o candidato responde sim ou n\u00E3o.\n- \u0060ESCOLHA_UNICA\u0060: Escolha de um valor \u2014 Campo em que o candidato escolhe uma op\u00E7\u00E3o entre as oferecidas.\n- \u0060ESCOLHA_MULTIPLA\u0060: Escolha de v\u00E1rios valores \u2014 Campo em que o candidato escolhe uma ou mais op\u00E7\u00F5es entre as oferecidas.\n- \u0060TEXTO\u0060: Texto \u2014 Campo em que o candidato digita um texto, conferido pelo formato do dado.\n- \u0060DATA\u0060: Data \u2014 Campo em que o candidato informa uma data do calend\u00E1rio.\n- \u0060ENDERECO\u0060: Endere\u00E7o \u2014 Campo de endere\u00E7o completo, preenchido a partir da busca do CEP.\n- \u0060MUNICIPIO\u0060: Munic\u00EDpio \u2014 Campo em que o candidato escolhe o munic\u00EDpio entre os da unidade federativa j\u00E1 respondida."
+      },
       "TipoDeficienciaDto": {
         "required": [
           "id",
@@ -25379,20 +25393,6 @@
             }
           }
         }
-      },
-      "TipoRenderizacaoCodigo": {
-        "enum": [
-          "NUMERO",
-          "SIM_OU_NAO",
-          "ESCOLHA_UNICA",
-          "ESCOLHA_MULTIPLA",
-          "TEXTO",
-          "DATA",
-          "ENDERECO",
-          "MUNICIPIO"
-        ],
-        "type": "string",
-        "description": "Como o campo do formul\u00E1rio \u00E9 apresentado e respondido pelo candidato.\n\n- \u0060NUMERO\u0060: N\u00FAmero \u2014 Campo em que o candidato digita um n\u00FAmero inteiro.\n- \u0060SIM_OU_NAO\u0060: Sim ou n\u00E3o \u2014 Campo em que o candidato responde sim ou n\u00E3o.\n- \u0060ESCOLHA_UNICA\u0060: Escolha de um valor \u2014 Campo em que o candidato escolhe uma op\u00E7\u00E3o entre as oferecidas.\n- \u0060ESCOLHA_MULTIPLA\u0060: Escolha de v\u00E1rios valores \u2014 Campo em que o candidato escolhe uma ou mais op\u00E7\u00F5es entre as oferecidas.\n- \u0060TEXTO\u0060: Texto \u2014 Campo em que o candidato digita um texto, conferido pelo formato do dado.\n- \u0060DATA\u0060: Data \u2014 Campo em que o candidato informa uma data do calend\u00E1rio.\n- \u0060ENDERECO\u0060: Endere\u00E7o \u2014 Campo de endere\u00E7o completo, preenchido a partir da busca do CEP.\n- \u0060MUNICIPIO\u0060: Munic\u00EDpio \u2014 Campo em que o candidato escolhe o munic\u00EDpio entre os da unidade federativa j\u00E1 respondida."
       },
       "TurnoOferta": {
         "required": [

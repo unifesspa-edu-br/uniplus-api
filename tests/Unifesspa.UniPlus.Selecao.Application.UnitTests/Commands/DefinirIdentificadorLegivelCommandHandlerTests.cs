@@ -65,7 +65,7 @@ public sealed class DefinirIdentificadorLegivelCommandHandlerTests
     public async Task Handle_Publicado_FormatoInvalido_RecusaAMutacao()
     {
         ProcessoSeletivo processo = NovoProcesso();
-        typeof(ProcessoSeletivo).GetProperty(nameof(ProcessoSeletivo.Status))!.SetValue(processo, StatusProcesso.Publicado);
+        typeof(ProcessoSeletivo).GetProperty(nameof(ProcessoSeletivo.Situacao))!.SetValue(processo, SituacaoDoProcessoSeletivo.Publicado);
         Mocks mocks = NovosMocks(processo, processo.Id);
 
         Result result = await DefinirIdentificadorLegivelCommandHandler.Handle(
@@ -98,7 +98,7 @@ public sealed class DefinirIdentificadorLegivelCommandHandlerTests
     public async Task Handle_Publicado_RecusaAntesDaUnicidade()
     {
         ProcessoSeletivo processo = NovoProcesso();
-        typeof(ProcessoSeletivo).GetProperty(nameof(ProcessoSeletivo.Status))!.SetValue(processo, StatusProcesso.Publicado);
+        typeof(ProcessoSeletivo).GetProperty(nameof(ProcessoSeletivo.Situacao))!.SetValue(processo, SituacaoDoProcessoSeletivo.Publicado);
         Mocks mocks = NovosMocks(processo, processo.Id);
 
         Result result = await DefinirIdentificadorLegivelCommandHandler.Handle(

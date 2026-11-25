@@ -101,14 +101,14 @@ public sealed class RecusasDasOpcoesDasRespostasNoCongelamentoTests
 
     private static FatoColetado CampoDoProcesso(string codigo, int ordem, string[] formadoPor) =>
         FatoColetadoDeTeste.Coletando(codigo, ordem)
-            .DoTipo(TipoRenderizacao.EscolhaUnica)
+            .DoTipo(TipoDeCampo.EscolhaUnica)
             .ComObrigatoriedade(Obrigatoriedade.Sempre)
             .ComOrigem(OrigemValoresColeta.OpcoesDoProcesso)
             .ComRestricoes(formadoPor.Length > 0 ? [new OpcoesDasRespostas(formadoPor)] : [])
             .Construir();
 
     private static FatoColetado CampoDoCatalogo(string codigo, int ordem) =>
-        FatoColetadoDeTeste.Coletando(codigo, ordem).DoTipo(TipoRenderizacao.EscolhaUnica).ComObrigatoriedade(Obrigatoriedade.Sempre).Construir();
+        FatoColetadoDeTeste.Coletando(codigo, ordem).DoTipo(TipoDeCampo.EscolhaUnica).ComObrigatoriedade(Obrigatoriedade.Sempre).Construir();
 
     private static Dictionary<string, FatoCandidatoView> Catalogo(params string[] codigos) =>
         codigos.ToDictionary(static c => c, static c => c == "TIPO_DEFICIENCIA" ? TipoDeDeficienciaSemTipoVivo() : FatoDoProcesso(c), StringComparer.Ordinal);

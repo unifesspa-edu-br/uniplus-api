@@ -39,7 +39,7 @@ internal sealed class CalendarioVigenteReader : ICalendarioVigenteReader
         }
 
         DiaNaoUtilView[] dias = [.. calendario.DiasNaoUteis.Select(ParaView)];
-        return new CalendarioVigenteView(calendario.Id, calendario.VersaoDataset, dias);
+        return new CalendarioVigenteView(calendario.Id, calendario.VersaoDoCalendario, dias);
     }
 
     private static DiaNaoUtilView ParaView(DiaNaoUtil dia) =>

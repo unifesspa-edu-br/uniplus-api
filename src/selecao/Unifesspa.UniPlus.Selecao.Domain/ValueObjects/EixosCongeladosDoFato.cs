@@ -12,7 +12,7 @@ using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Retificacao;
 /// de onde vêm as opções, o formato do texto e a proteção do dado.
 /// </summary>
 public sealed record EixosDoItemCongelado(
-    string TipoRenderizacao,
+    string TipoDeCampo,
     string OrigemValores,
     string? Formato,
     string ClassificacaoProtecao,
@@ -22,7 +22,7 @@ public sealed record EixosDoItemCongelado(
     public static EixosDoItemCongelado De(FatoColetado item)
     {
         ArgumentNullException.ThrowIfNull(item);
-        return new(item.TipoRenderizacao.Codigo(), item.OrigemValores.Codigo(), item.Formato, item.ClassificacaoProtecao, item.HipoteseLegal, item.FinalidadeTratamento);
+        return new(item.TipoDeCampo.Codigo(), item.OrigemValores.Codigo(), item.Formato, item.ClassificacaoProtecao, item.HipoteseLegal, item.FinalidadeTratamento);
     }
 
     /// <summary>A primeira diferença entre o publicado e o item que a retificação congelaria, na ordem dos seis eixos.</summary>
@@ -36,7 +36,7 @@ public sealed record EixosDoItemCongelado(
 
     internal IEnumerable<(string Eixo, string? Valor)> Eixos() =>
     [
-        ("tipo de renderização", TipoRenderizacao),
+        ("tipo de campo", TipoDeCampo),
         ("origem dos valores", OrigemValores),
         ("formato", Formato),
         ("classificação de proteção", ClassificacaoProtecao),

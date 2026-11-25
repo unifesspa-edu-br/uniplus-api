@@ -11,7 +11,7 @@ using Unifesspa.UniPlus.Infrastructure.Core.Hateoas;
 
 /// <summary>
 /// Builder de <c>_links</c> hypermedia (HATEOAS Level 1, ADR-0029) para
-/// <see cref="CalendarioDiasUteisDto"/> (dataset completo, endpoint
+/// <see cref="CalendarioDiasUteisDto"/> (calendário completo, endpoint
 /// <c>ObterPorId</c>). Relações em V1: <c>self</c> e <c>collection</c>.
 /// </summary>
 [SuppressMessage(

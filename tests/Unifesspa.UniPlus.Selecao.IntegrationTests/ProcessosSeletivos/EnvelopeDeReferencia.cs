@@ -218,14 +218,14 @@ internal static class EnvelopeDeReferencia
     private static FatoColetado FatoCorRaca() =>
         FatoColetadoDeTeste.Coletando("COR_RACA", 0)
             .ComRotulo("Cor ou raça")
-            .DoTipo(TipoRenderizacao.EscolhaUnica)
+            .DoTipo(TipoDeCampo.EscolhaUnica)
             .ComObrigatoriedade(Obrigatoriedade.Sempre)
             .Construir();
 
     private static FatoColetado FatoRendaGatadoPelaCorRaca() =>
         FatoColetadoDeTeste.Coletando("RENDA", 1)
             .ComRotulo("Faixa de renda familiar")
-            .DoTipo(TipoRenderizacao.EscolhaUnica)
+            .DoTipo(TipoDeCampo.EscolhaUnica)
             .ComObrigatoriedade(Obrigatoriedade.Sempre)
             .ExibidoQuando(ExibicaoDeTeste.Quando("COR_RACA", Operador.Igual, "PRETA"))
             .Construir();

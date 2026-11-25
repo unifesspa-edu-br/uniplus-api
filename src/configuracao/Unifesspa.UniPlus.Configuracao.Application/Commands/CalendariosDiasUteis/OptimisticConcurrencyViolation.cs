@@ -10,7 +10,7 @@ namespace Unifesspa.UniPlus.Configuracao.Application.Commands.CalendariosDiasUte
 /// <c>CalendarioDiasUteisConfiguration</c>) detecta a corrida entre
 /// <c>MarcarVigenteCalendarioDiasUteisCommandHandler</c> e
 /// <c>RemoverCalendarioDiasUteisCommandHandler</c> quando os dois mutam o MESMO
-/// registro (ex.: ativar um dataset enquanto ele é removido) — corrida que a
+/// registro (ex.: ativar um calendário enquanto ele é removido) — corrida que a
 /// exclusion constraint de vigência não cobre, por só comparar registros diferentes.
 /// </remarks>
 internal static class OptimisticConcurrencyViolation

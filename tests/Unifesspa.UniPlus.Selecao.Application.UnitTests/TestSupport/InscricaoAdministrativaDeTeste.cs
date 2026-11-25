@@ -62,12 +62,12 @@ internal sealed class InscricaoAdministrativaDeTeste
     public SituacaoInscricao Situacao { get; }
 
     public InscricaoAdministrativaDeTeste Fato(
-        string codigo, string classificacao, TipoRenderizacao tipo, JsonElement? resposta,
+        string codigo, string classificacao, TipoDeCampo tipo, JsonElement? resposta,
         string? secao = "DADOS", int ordem = 0, string? formato = null) =>
         Fato(codigo, classificacao, tipo, resposta, new MetadadosDoFatoDeTeste { Secao = secao, Ordem = ordem, Formato = formato });
 
     public InscricaoAdministrativaDeTeste Fato(
-        string codigo, string classificacao, TipoRenderizacao tipo, JsonElement? resposta, MetadadosDoFatoDeTeste metadados)
+        string codigo, string classificacao, TipoDeCampo tipo, JsonElement? resposta, MetadadosDoFatoDeTeste metadados)
     {
         _fatos.Add(CriarFato(codigo, classificacao, tipo, metadados));
         if (resposta is { } valor)
@@ -77,10 +77,10 @@ internal sealed class InscricaoAdministrativaDeTeste
         return this;
     }
 
-    private static FatoColetado CriarFato(string codigo, string classificacao, TipoRenderizacao tipo, MetadadosDoFatoDeTeste metadados)
+    private static FatoColetado CriarFato(string codigo, string classificacao, TipoDeCampo tipo, MetadadosDoFatoDeTeste metadados)
     {
         CopiaDoItemNoCatalogo copia = new(
-            metadados.OrigemValores, metadados.Formato ?? (tipo == TipoRenderizacao.Texto ? "LIVRE" : null), classificacao, metadados.HipoteseLegal,
+            metadados.OrigemValores, metadados.Formato ?? (tipo == TipoDeCampo.Texto ? "LIVRE" : null), classificacao, metadados.HipoteseLegal,
             ProtecaoDoFatoDeTeste.Finalidade, metadados.Descricao ?? $"Descrição de {codigo}", metadados.Componente);
         Result<FatoColetado> fato = FatoColetadoDeTeste.Coletando(codigo, metadados.Ordem)
             .ComRotulo($"Rótulo de {codigo}")

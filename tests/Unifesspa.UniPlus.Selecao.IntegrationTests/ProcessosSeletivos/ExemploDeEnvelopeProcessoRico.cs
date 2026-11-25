@@ -225,7 +225,7 @@ internal static class ExemploDeEnvelopeProcessoRico
     internal static FatoColetado FatoDeRenda() =>
         FatoColetadoDeTeste.Coletando("RENDA", 1)
             .ComRotulo("Faixa de renda familiar")
-            .DoTipo(TipoRenderizacao.EscolhaUnica)
+            .DoTipo(TipoDeCampo.EscolhaUnica)
             .ComObrigatoriedade(Obrigatoriedade.Sempre)
             .ExibidoQuando(ExibicaoDeTeste.Quando("COR_RACA", Operador.Igual, "PRETA"))
             .ComImpedimento(new Impedimento(
@@ -241,7 +241,7 @@ internal static class ExemploDeEnvelopeProcessoRico
     internal static FatoColetado FatoDeConclusaoDoEnsinoMedio() =>
         FatoColetadoDeTeste.Coletando("CONCLUSAO_ENSINO_MEDIO", 4)
             .ComRotulo("Data de conclusão do ensino médio")
-            .DoTipo(TipoRenderizacao.Data)
+            .DoTipo(TipoDeCampo.Data)
             .ComObrigatoriedade(Obrigatoriedade.Sempre)
             .ComRestricoes(new FaixaDeData(LimiteDeData.Fixo(new DateOnly(1950, 1, 1)), LimiteDeData.NoEnvio(anos: 0, dias: -1)))
             .Construir();

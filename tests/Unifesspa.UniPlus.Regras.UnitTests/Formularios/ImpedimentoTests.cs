@@ -54,7 +54,7 @@ public class ImpedimentoTests : TestesDeAvaliacao
             (1, Condicao("LICENCIATURA", true)),
         ]).Value!;
 
-        List<FieldError> erros = ConferirCampo("NOME", TipoRenderizacao.Texto, "NOME_PESSOA", new Impedimento(semOProprioCampo, "  "));
+        List<FieldError> erros = ConferirCampo("NOME", TipoDeCampo.Texto, "NOME_PESSOA", new Impedimento(semOProprioCampo, "  "));
 
         erros.Select(static e => (e.Field, e.Error.Code)).Should().BeEquivalentTo(
         [
@@ -68,7 +68,7 @@ public class ImpedimentoTests : TestesDeAvaliacao
     public void Conferir_ImpedimentoSemClausula_Recusa()
     {
         List<FieldError> erros = ConferirCampo(
-            "VINCULO_PARFOR", TipoRenderizacao.SimOuNao, formato: null, new Impedimento(PredicadoDnf.CriarDeCondicoesAgrupadas([]).Value!, Mensagem));
+            "VINCULO_PARFOR", TipoDeCampo.SimOuNao, formato: null, new Impedimento(PredicadoDnf.CriarDeCondicoesAgrupadas([]).Value!, Mensagem));
 
         erros.Should().ContainSingle().Which.Should().BeEquivalentTo(new
         {
@@ -83,7 +83,7 @@ public class ImpedimentoTests : TestesDeAvaliacao
     public void Conferir_TamanhoDaMensagem(int tamanho, bool aceita)
     {
         List<FieldError> erros = ConferirCampo(
-            "VINCULO_PARFOR", TipoRenderizacao.SimOuNao, formato: null, new Impedimento(Predicado(("VINCULO_PARFOR", true)), new string('a', tamanho)));
+            "VINCULO_PARFOR", TipoDeCampo.SimOuNao, formato: null, new Impedimento(Predicado(("VINCULO_PARFOR", true)), new string('a', tamanho)));
 
         erros.Should().HaveCount(aceita ? 0 : 1);
     }
@@ -130,7 +130,7 @@ public class ImpedimentoTests : TestesDeAvaliacao
         return respostas;
     }
 
-    private static List<FieldError> ConferirCampo(string fato, TipoRenderizacao tipo, string? formato, Impedimento impedimento) =>
+    private static List<FieldError> ConferirCampo(string fato, TipoDeCampo tipo, string? formato, Impedimento impedimento) =>
         FormaDoItem.Conferir(
             fato,
             0,

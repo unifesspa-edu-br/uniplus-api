@@ -75,7 +75,7 @@ internal sealed record PrimeiraPublicacao : OrigemDoCongelamento
     public override string DescricaoDaOperacao => "na publicação";
 
     public override Result ConferirEstado(ProcessoSeletivo processo) =>
-        TransicoesDaVersao.ConferirEstadoParaPublicar(processo.Status);
+        TransicoesDaVersao.ConferirEstadoParaPublicar(processo.Situacao);
 
     public override Result<InstanteDoComando> LerOInstante(LeituraDoInstanteDoComando instantes) =>
         instantes.Ler();
@@ -108,7 +108,7 @@ internal sealed record RetificacaoDeAtoUnico(BaseDaRetificacao Base) : OrigemDoC
     public override string DescricaoDaOperacao => "na retificação";
 
     public override Result ConferirEstado(ProcessoSeletivo processo) =>
-        TransicoesDaVersao.ConferirEstadoParaRetificar(processo.Id, processo.Status, Base.VersaoVigente, Base.Motivo);
+        TransicoesDaVersao.ConferirEstadoParaRetificar(processo.Id, processo.Situacao, Base.VersaoVigente, Base.Motivo);
 
     public override Result<InstanteDoComando> LerOInstante(LeituraDoInstanteDoComando instantes) =>
         instantes.LerNaSucessaoDe(Base.VersaoVigente);

@@ -13,7 +13,7 @@ using Unifesspa.UniPlus.Kernel.Domain.Enums;
     Justification = "Instanciada via EF Core ModelBuilder.ApplyConfigurationsFromAssembly por reflection.")]
 internal sealed class CalendarioDiasUteisConfiguration : IEntityTypeConfiguration<CalendarioDiasUteis>
 {
-    private const int VersaoDatasetMaxLength = 60;
+    private const int VersaoDoCalendarioMaxLength = 60;
 
     public void Configure(EntityTypeBuilder<CalendarioDiasUteis> builder)
     {
@@ -24,14 +24,14 @@ internal sealed class CalendarioDiasUteisConfiguration : IEntityTypeConfiguratio
         builder.ToTable("calendarios_de_dias_uteis");
         builder.HasKey(c => c.Id);
 
-        builder.Property(c => c.VersaoDataset).HasColumnName("versao_do_calendario").HasMaxLength(VersaoDatasetMaxLength).IsRequired();
+        builder.Property(c => c.VersaoDoCalendario).HasColumnName("versao_do_calendario").HasMaxLength(VersaoDoCalendarioMaxLength).IsRequired();
         builder.Property(c => c.Vigente).IsRequired();
 
         // Token de concorrência otimista mapeado para a coluna de sistema `xmin` do
         // Postgres (shadow property `uint` + IsRowVersion — convenção do provider
         // Npgsql, sem coluna/migration própria): MarcarVigenteCalendarioDiasUteisCommandHandler
         // e RemoverCalendarioDiasUteisCommandHandler podem, em corrida, ler e mutar o
-        // MESMO registro (ex.: ativar um dataset enquanto ele é removido) sem colidir
+        // MESMO registro (ex.: ativar um calendário enquanto ele é removido) sem colidir
         // com a exclusion constraint de vigência, que só cobre a unicidade entre
         // registros DIFERENTES. Com xmin, quem confirma por último recebe
         // DbUpdateConcurrencyException em vez de sobrescrever silenciosamente o
@@ -44,7 +44,7 @@ internal sealed class CalendarioDiasUteisConfiguration : IEntityTypeConfiguratio
         builder.Property(c => c.CreatedBy).HasMaxLength(255);
         builder.Property(c => c.UpdatedBy).HasMaxLength(255);
 
-        // Dias não úteis do dataset: append-only pela vida do dataset — a lista nasce
+        // Dias não úteis do calendário: append-only pela vida do calendário — a lista nasce
         // no Criar e só cresce depois, via IncluirDiaNaoUtil (api#1458); nunca edita
         // ou remove linha existente.
         // ClientNoAction (não Restrict/Cascade): com a coleção já rastreada,
@@ -60,7 +60,7 @@ internal sealed class CalendarioDiasUteisConfiguration : IEntityTypeConfiguratio
         builder.Navigation(c => c.DiasNaoUteis)
             .UsePropertyAccessMode(PropertyAccessMode.Field);
 
-        // No máximo um dataset vivo é vigente: EXCLUDE constraint GiST DEFERRABLE
+        // No máximo um calendário vivo é vigente: EXCLUDE constraint GiST DEFERRABLE
         // INITIALLY DEFERRED (ex_calendarios_de_dias_uteis_vigente_unico), criada pelo
         // script 001_vigencia_unica_do_calendario.sql — de propósito AUSENTE daqui como HasIndex().IsUnique(),
         // mesmo padrão de ex_regras_de_comprovacao_irmaos_ordem (RegraDeComprovacaoConfiguration.cs) e
@@ -76,7 +76,7 @@ internal sealed class CalendarioDiasUteisConfiguration : IEntityTypeConfiguratio
         // localiza e desmarca o vigente anterior na mesma transação — a constraint de
         // banco é defesa de última linha.
 
-        builder.HasIndex(c => c.VersaoDataset)
+        builder.HasIndex(c => c.VersaoDoCalendario)
             .HasFilter("is_deleted = false")
             .HasDatabaseName("ix_calendarios_de_dias_uteis_versao_do_calendario");
     }

@@ -40,8 +40,8 @@ public sealed class OfertaCursoTests
         oferta.RegimeDeFuncionamento.Should().Be(RegimeDeFuncionamento.Extensivo);
         oferta.RegimeDeTurno.Should().Be(RegimeDeTurno.Regular);
         oferta.Turnos.Should().Equal(TurnoOferta.Matutino);
-        oferta.EMecCodigo.Should().Be("123456");
-        oferta.CodigoSga.Should().Be("ENG-01");
+        oferta.CodigoEmec.Should().Be("123456");
+        oferta.CodigoNoSistemaAcademico.Should().Be("ENG-01");
         oferta.VagasAnuaisAutorizadas.Should().Be(40);
         oferta.BaseLegal.Should().BeNull();
         oferta.AtoAutorizacaoMec.Should().Be("Portaria MEC 123/2020");
@@ -203,8 +203,8 @@ public sealed class OfertaCursoTests
         oferta.ProgramaDeOferta.Should().Be(ProgramaDeOferta.Parfor);
         oferta.FormatoPedagogico.Should().Be(FormatoPedagogico.Semipresencial);
         oferta.Turnos.Should().Equal(TurnoOferta.Noturno);
-        oferta.EMecCodigo.Should().Be("654321");
-        oferta.CodigoSga.Should().Be("PED-02");
+        oferta.CodigoEmec.Should().Be("654321");
+        oferta.CodigoNoSistemaAcademico.Should().Be("PED-02");
         oferta.VagasAnuaisAutorizadas.Should().Be(50);
         oferta.BaseLegal.Should().Be("Decreto 6.755/2009");
         oferta.AtoAutorizacaoMec.Should().Be("Portaria MEC 9/2009");

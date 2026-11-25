@@ -50,7 +50,7 @@ public sealed class ConjuntoBasicoNoFormularioDeInscricaoTests
         FatoColetado nome = FormularioDeTeste.DadosBasicos()[0];
         FatoColetado nomeEmDados = FatoColetadoDeTeste.Coletando(nome.FatoCodigo, FormularioDeTeste.PrimeiraOrdemDeInscricao)
             .ComRotulo(nome.Rotulo)
-            .DoTipo(nome.TipoRenderizacao)
+            .DoTipo(nome.TipoDeCampo)
             .ComFormato(nome.Formato)
             .ComObrigatoriedade(nome.Obrigatoriedade)
             .NaSecao(FormularioDeTeste.Secao)

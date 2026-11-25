@@ -8,7 +8,7 @@ using Unifesspa.UniPlus.Regras.Enums;
 /// catálogo e o tipo de campo que o domínio dele admite. Nulo o tipo quando o catálogo não admite
 /// nenhum (<see cref="CoerenciaDoCampo.TipoDoFato"/>).
 /// </summary>
-public sealed record ApresentacaoDoFato(string FatoCodigo, string Rotulo, string? TipoRenderizacao)
+public sealed record ApresentacaoDoFato(string FatoCodigo, string Rotulo, string? TipoDeCampo)
 {
     /// <summary>A apresentação a partir do tipo do dado, da quantidade de valores e da fonte do catálogo.</summary>
     public static ApresentacaoDoFato DoCatalogo(string fatoCodigo, string nome, TipoDoDado tipo, QuantidadeDeValores quantidade, FonteValoresFato? fonteValores) =>

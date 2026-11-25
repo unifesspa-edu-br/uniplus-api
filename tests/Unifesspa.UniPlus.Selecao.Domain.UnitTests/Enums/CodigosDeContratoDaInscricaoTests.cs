@@ -27,13 +27,13 @@ public sealed class CodigosDeContratoDaInscricaoTests
                 (SituacaoInscricao.Cancelada, "CANCELADA", "Cancelada"));
 
     [Fact]
-    public void StatusProcesso_Valores_TemCodigoERotuloDeclarados() =>
-        Enum.GetValues<StatusProcesso>().Select(static valor => (valor, valor.Codigo(), valor.Rotulo()))
+    public void SituacaoDoProcessoSeletivo_Valores_TemCodigoERotuloDeclarados() =>
+        Enum.GetValues<SituacaoDoProcessoSeletivo>().Select(static valor => (valor, valor.Codigo(), valor.Rotulo()))
             .Should().Equal(
-                (StatusProcesso.Rascunho, "RASCUNHO", "Rascunho"),
-                (StatusProcesso.Publicado, "PUBLICADO", "Publicado"),
-                (StatusProcesso.Encerrado, "ENCERRADO", "Encerrado"),
-                (StatusProcesso.Cancelado, "CANCELADO", "Cancelado"));
+                (SituacaoDoProcessoSeletivo.Rascunho, "RASCUNHO", "Rascunho"),
+                (SituacaoDoProcessoSeletivo.Publicado, "PUBLICADO", "Publicado"),
+                (SituacaoDoProcessoSeletivo.Encerrado, "ENCERRADO", "Encerrado"),
+                (SituacaoDoProcessoSeletivo.Cancelado, "CANCELADO", "Cancelado"));
 
     [Fact]
     public void OrigemDaResposta_Valores_TemCodigoERotuloDeclarados() =>

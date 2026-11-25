@@ -20,7 +20,7 @@ public sealed class TipoDeCampoDoItemDoModeloTests
         ConteudoLido lido = leitura.Ler(Conteudo(Item("ESCOLHA_MULTIPLA")));
 
         leitura.Recusas.Should().BeEmpty();
-        lido.Itens.Single().Item.Apresentacao.TipoRenderizacao.Should().Be(TipoRenderizacao.EscolhaMultipla);
+        lido.Itens.Single().Item.Apresentacao.TipoDeCampo.Should().Be(TipoDeCampo.EscolhaMultipla);
     }
 
     [Fact(DisplayName = "Tipo de campo ausente é recusado como obrigatório e o item não é lido")]
@@ -30,7 +30,7 @@ public sealed class TipoDeCampoDoItemDoModeloTests
         ConteudoLido lido = leitura.Ler(Conteudo(Item(null)));
 
         leitura.Recusas.Select(static e => (e.Field, e.Error.Code)).Should().Equal(
-            ("itens[0].apresentacao.tipoRenderizacao", "ItemFormulario.TipoRenderizacaoObrigatorio"));
+            ("itens[0].apresentacao.tipoDeCampo", "ItemFormulario.TipoDeCampoObrigatorio"));
         lido.Itens.Should().BeEmpty();
     }
 
@@ -43,8 +43,8 @@ public sealed class TipoDeCampoDoItemDoModeloTests
         leitura.Ler(new ConteudoDoModeloInput("Habilitação", null, [Item("NENHUMA")], null, null, [grupo]));
 
         leitura.Recusas.Select(static e => (e.Field, e.Error.Code)).Should().Equal(
-            ("itens[0].apresentacao.tipoRenderizacao", "ItemFormulario.TipoRenderizacaoInvalido"),
-            ("grupos[0].subitens[0].apresentacao.tipoRenderizacao", "ItemFormulario.TipoRenderizacaoInvalido"));
+            ("itens[0].apresentacao.tipoDeCampo", "ItemFormulario.TipoDeCampoInvalido"),
+            ("grupos[0].subitens[0].apresentacao.tipoDeCampo", "ItemFormulario.TipoDeCampoInvalido"));
     }
 
     [Fact(DisplayName = "Tipo de campo desconhecido acumula com a recusa da obrigatoriedade do mesmo item")]
@@ -55,7 +55,7 @@ public sealed class TipoDeCampoDoItemDoModeloTests
         LeituraDoConteudo leitura = new(SemFormatos);
         leitura.Ler(Conteudo(item));
 
-        leitura.Recusas.Select(static e => e.Field).Should().Equal("itens[0].apresentacao.tipoRenderizacao", "itens[0].regras.obrigatoriedade");
+        leitura.Recusas.Select(static e => e.Field).Should().Equal("itens[0].apresentacao.tipoDeCampo", "itens[0].regras.obrigatoriedade");
     }
 
     [Fact(DisplayName = "A apresentação ausente é recusada pelo tipo de campo obrigatório, no caminho dela")]
@@ -65,7 +65,7 @@ public sealed class TipoDeCampoDoItemDoModeloTests
         ConteudoLido lido = leitura.Ler(Conteudo(Campo("SIM_OU_NAO").SemApresentacao().Construir()));
 
         leitura.Recusas.Select(static e => (e.Field, e.Error.Code)).Should().Equal(
-            ("itens[0].apresentacao.tipoRenderizacao", "ItemFormulario.TipoRenderizacaoObrigatorio"));
+            ("itens[0].apresentacao.tipoDeCampo", "ItemFormulario.TipoDeCampoObrigatorio"));
         lido.Itens.Should().BeEmpty();
     }
 
@@ -83,8 +83,8 @@ public sealed class TipoDeCampoDoItemDoModeloTests
     private static ConteudoDoModeloInput Conteudo(FatoColetadoInput item) =>
         new("Habilitação", null, [item], null, null);
 
-    private static FatoColetadoInput Item(string? tipoRenderizacao) => Campo(tipoRenderizacao).Construir();
+    private static FatoColetadoInput Item(string? tipoDeCampo) => Campo(tipoDeCampo).Construir();
 
-    private static EntradaDoFatoColetadoDeTeste Campo(string? tipoRenderizacao) =>
-        EntradaDoFatoColetadoDeTeste.Coletando("CERTIFICADO").ComRotulo("Certificado").DoTipo(tipoRenderizacao);
+    private static EntradaDoFatoColetadoDeTeste Campo(string? tipoDeCampo) =>
+        EntradaDoFatoColetadoDeTeste.Coletando("CERTIFICADO").ComRotulo("Certificado").DoTipo(tipoDeCampo);
 }

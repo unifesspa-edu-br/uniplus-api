@@ -48,7 +48,7 @@ public sealed class ObterProcessoSeletivoQueryHandlerColetaDeFatosTests
 
         fatos.Select(f => f.FatoCodigo).Should().ContainInOrder("BAIXA_RENDA", "COR_RACA");
         fatos[0].Apresentacao.Rotulo.Should().Be("Baixa renda");
-        fatos[0].Apresentacao.TipoRenderizacao.Should().Be("SIM_OU_NAO", "o wire de leitura usa o mesmo código canônico do wire de escrita");
+        fatos[0].Apresentacao.TipoDeCampo.Should().Be("SIM_OU_NAO", "o wire de leitura usa o mesmo código canônico do wire de escrita");
         fatos[0].Regras.Obrigatoriedade.Tipo.Should().Be("SEMPRE");
     }
 
@@ -83,7 +83,7 @@ public sealed class ObterProcessoSeletivoQueryHandlerColetaDeFatosTests
     {
         ProcessoSeletivo processo = NovoProcesso();
         FatoColetado baixaRenda = FatoColetadoDeTeste.Coletando("BAIXA_RENDA", 0).ComRotulo("Baixa renda").ComObrigatoriedade(Obrigatoriedade.Sempre).Construir();
-        FatoColetado corRaca = FatoColetadoDeTeste.Coletando("COR_RACA", 1).ComRotulo("Cor ou raça").DoTipo(TipoRenderizacao.EscolhaUnica)
+        FatoColetado corRaca = FatoColetadoDeTeste.Coletando("COR_RACA", 1).ComRotulo("Cor ou raça").DoTipo(TipoDeCampo.EscolhaUnica)
             .ExibidoQuando(ExibicaoDeTeste.Quando("BAIXA_RENDA", Operador.Igual, true)).Construir();
         processo.DefinirItens([corRaca, baixaRenda], finalidade: FinalidadeFormulario.Habilitacao).IsSuccess.Should().BeTrue();
         return processo;

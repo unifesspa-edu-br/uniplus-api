@@ -75,7 +75,7 @@ internal static class ProjecaoDaColeta
         fato.FatoCodigo,
         fato.Ordem,
         fato.EtapaCodigo,
-        new ApresentacaoDoCampoDto(fato.Rotulo, fato.TipoRenderizacao.Codigo(), fato.Ajuda, fato.PedirConfirmacao),
+        new ApresentacaoDoCampoDto(fato.Rotulo, fato.TipoDeCampo.Codigo(), fato.Ajuda, fato.PedirConfirmacao),
         ProjetarRegras(fato),
         fato.Formato,
         ProjetarOpcoesDoFato(processo, fato));

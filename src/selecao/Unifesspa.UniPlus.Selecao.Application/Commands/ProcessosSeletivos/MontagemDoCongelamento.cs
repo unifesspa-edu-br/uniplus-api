@@ -8,7 +8,7 @@ using Unifesspa.UniPlus.Application.Abstractions.Authentication;
 
 /// <summary>
 /// Canonicaliza a configuração conferida, com o calendário que a conferência já leu, e monta o pedido que o agregado
-/// congela. Não lê nada: o dataset de calendário incoerente não aborta aqui, porque só importa para o processo cuja
+/// congela. Não lê nada: o calendário incoerente não aborta aqui, porque só importa para o processo cuja
 /// contagem distingue dia útil, e quem decide isso é a conferência da configuração.
 /// </summary>
 public sealed class MontagemDoCongelamento(ISnapshotPublicacaoCanonicalizer canonicalizer, IUserContext userContext)

@@ -21,7 +21,7 @@ public sealed class CriarCalendarioDiasUteisTests
         resultado.IsSuccess.Should().BeTrue();
         CalendarioDiasUteis calendario = resultado.Value!;
         calendario.Id.Should().NotBe(Guid.Empty);
-        calendario.VersaoDataset.Should().Be("2027.1");
+        calendario.VersaoDoCalendario.Should().Be("2027.1");
         calendario.Vigente.Should().BeFalse();
         calendario.IsDeleted.Should().BeFalse();
     }
@@ -72,24 +72,24 @@ public sealed class CriarCalendarioDiasUteisTests
             && d.MunicipioUf == "PA");
     }
 
-    [Theory(DisplayName = "Criar com versão do dataset ausente ou em branco falha")]
+    [Theory(DisplayName = "Criar com versão do calendário ausente ou em branco falha")]
     [InlineData("")]
     [InlineData("   ")]
-    public void Criar_VersaoDatasetVazia_Falha(string versaoDataset)
+    public void Criar_VersaoDoCalendarioVazia_Falha(string versaoDoCalendario)
     {
-        Result<CalendarioDiasUteis> resultado = CalendarioDiasUteis.Criar(versaoDataset, [Nacional()]);
+        Result<CalendarioDiasUteis> resultado = CalendarioDiasUteis.Criar(versaoDoCalendario, [Nacional()]);
 
         resultado.IsFailure.Should().BeTrue();
-        resultado.Error!.Code.Should().Be(CalendarioDiasUteisErrorCodes.VersaoDatasetObrigatoria);
+        resultado.Error!.Code.Should().Be(CalendarioDiasUteisErrorCodes.VersaoDoCalendarioObrigatoria);
     }
 
-    [Fact(DisplayName = "Criar com versão do dataset acima de 60 caracteres falha")]
-    public void Criar_VersaoDatasetMuitoLonga_Falha()
+    [Fact(DisplayName = "Criar com versão do calendário acima de 60 caracteres falha")]
+    public void Criar_VersaoDoCalendarioMuitoLonga_Falha()
     {
         Result<CalendarioDiasUteis> resultado = CalendarioDiasUteis.Criar(new string('A', 61), [Nacional()]);
 
         resultado.IsFailure.Should().BeTrue();
-        resultado.Error!.Code.Should().Be(CalendarioDiasUteisErrorCodes.VersaoDatasetTamanho);
+        resultado.Error!.Code.Should().Be(CalendarioDiasUteisErrorCodes.VersaoDoCalendarioTamanho);
     }
 
     [Fact(DisplayName = "Criar sem nenhum dia não útil falha")]
@@ -281,7 +281,7 @@ public sealed class CriarCalendarioDiasUteisTests
             ]);
 
         resultado.IsFailure.Should().BeTrue();
-        resultado.Error!.Code.Should().Be(CalendarioDiasUteisErrorCodes.DataDuplicadaNoDataset);
+        resultado.Error!.Code.Should().Be(CalendarioDiasUteisErrorCodes.DataDuplicadaNoCalendario);
     }
 
     [Fact(DisplayName = "Criar com mesma data e abrangências diferentes não é duplicata")]
@@ -312,15 +312,15 @@ public sealed class CriarCalendarioDiasUteisTests
         resultado.Value!.DiasNaoUteis.Should().HaveCount(2);
     }
 
-    [Fact(DisplayName = "Versão do dataset e lista de dias nulas não lançam — devolvem as duas violações rotuladas")]
+    [Fact(DisplayName = "Versão do calendário e lista de dias nulas não lançam — devolvem as duas violações rotuladas")]
     public void Criar_VersaoEListaNulas_NaoLancaEDevolveAsDuasViolacoesRotuladas()
     {
         Result<CalendarioDiasUteis> resultado = CalendarioDiasUteis.Criar(null, null);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Errors.Should().HaveCount(2);
-        resultado.Errors[0].Field.Should().Be("versaoDataset");
-        resultado.Errors[0].Error.Code.Should().Be(CalendarioDiasUteisErrorCodes.VersaoDatasetObrigatoria);
+        resultado.Errors[0].Field.Should().Be("versaoDoCalendario");
+        resultado.Errors[0].Error.Code.Should().Be(CalendarioDiasUteisErrorCodes.VersaoDoCalendarioObrigatoria);
         resultado.Errors[1].Field.Should().Be("diasNaoUteis");
         resultado.Errors[1].Error.Code.Should().Be(CalendarioDiasUteisErrorCodes.SemDiaNaoUtil);
     }

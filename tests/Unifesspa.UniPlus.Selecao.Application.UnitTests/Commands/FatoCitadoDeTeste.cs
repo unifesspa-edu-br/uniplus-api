@@ -27,12 +27,12 @@ internal static class FatoCitadoDeTeste
     public const string FatoAusenteDoCatalogo = "TEM_FILHOS";
     public const string CodigoDaRecusaDoEixoAlterado = "Retificacao.EixoDoFatoJaColetadoAlterado";
 
-    public static FatoColetado Item(TipoRenderizacao tipo) =>
+    public static FatoColetado Item(TipoDeCampo tipo) =>
         ItemColetado(Fato, 0, "Tem renda?", tipo, Obrigatoriedade.Sempre);
 
     // Um fato que nenhuma versão publicada coletou, com a cópia velha do catálogo (PESSOAL).
     public static FatoColetado ItemNovo() =>
-        ItemColetado(FatoNovo, 100, "Tem endereço próprio?", TipoRenderizacao.SimOuNao, Obrigatoriedade.Nunca);
+        ItemColetado(FatoNovo, 100, "Tem endereço próprio?", TipoDeCampo.SimOuNao, Obrigatoriedade.Nunca);
 
     public static DocumentoExigido ExigenciaComGatilho(Guid faseId, bool citaFatoAusenteDoCatalogo = false) =>
         DocumentoExigidoDeTeste.Novo()
@@ -48,7 +48,7 @@ internal static class FatoCitadoDeTeste
     public static ProcessoSeletivo ProcessoQueColetaOFato(bool comItemNovo, bool citaFatoAusenteDoCatalogo = false)
     {
         ProcessoSeletivo processo = ProcessoSeletivoConformeBuilder.Criar("PS Eixos nos handlers", out Guid faseId);
-        processo.DefinirItens(comItemNovo ? [Item(TipoRenderizacao.SimOuNao), ItemNovo()] : [Item(TipoRenderizacao.SimOuNao)])
+        processo.DefinirItens(comItemNovo ? [Item(TipoDeCampo.SimOuNao), ItemNovo()] : [Item(TipoDeCampo.SimOuNao)])
             .IsSuccess.Should().BeTrue();
         processo.DefinirDocumentosExigidos([RegraDeComprovacao.CriarRegraDeDocumento(ExigenciaComGatilho(faseId, citaFatoAusenteDoCatalogo), 0).Value!])
             .IsSuccess.Should().BeTrue();
@@ -57,7 +57,7 @@ internal static class FatoCitadoDeTeste
     }
 
     // O que a versão publicada congelou do item vem de um processo que só coleta o fato com esse tipo.
-    public static ProcessoSeletivo ProcessoSoComOItemPublicado(TipoRenderizacao tipo)
+    public static ProcessoSeletivo ProcessoSoComOItemPublicado(TipoDeCampo tipo)
     {
         ProcessoSeletivo outro = ProcessoSeletivoConformeBuilder.Criar("PS Item publicado");
         outro.DefinirItens([Item(tipo)]).IsSuccess.Should().BeTrue();
@@ -86,6 +86,6 @@ internal static class FatoCitadoDeTeste
         .. citaFatoAusenteDoCatalogo ? [CondicaoGatilho.Criar(1, FatoAusenteDoCatalogo, Operador.Igual, JsonSerializer.SerializeToElement(true)).Value!] : Array.Empty<CondicaoGatilho>(),
     ];
 
-    private static FatoColetado ItemColetado(string fato, int ordem, string rotulo, TipoRenderizacao tipo, Obrigatoriedade obrigatoriedade) =>
+    private static FatoColetado ItemColetado(string fato, int ordem, string rotulo, TipoDeCampo tipo, Obrigatoriedade obrigatoriedade) =>
         FatoColetadoDeTeste.Coletando(fato, ordem).ComRotulo(rotulo).DoTipo(tipo).ComObrigatoriedade(obrigatoriedade).Construir();
 }

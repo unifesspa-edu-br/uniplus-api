@@ -279,7 +279,7 @@ public sealed class PreVisualizarProcessoSeletivoQueryHandlerTests
         .ComCampos(
             FatoColetadoDeTeste.Coletando("CATEGORIA_RENDA", 0)
                 .ComRotulo("Categoria de renda")
-                .DoTipo(TipoRenderizacao.EscolhaUnica)
+                .DoTipo(TipoDeCampo.EscolhaUnica)
                 .ComObrigatoriedade(Obrigatoriedade.Sempre)
                 .Construir(),
             FatoColetadoDeTeste.Coletando("MENOR_SOB_GUARDA", 1)

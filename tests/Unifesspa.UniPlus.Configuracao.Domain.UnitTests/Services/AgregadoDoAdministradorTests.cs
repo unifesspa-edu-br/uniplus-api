@@ -206,7 +206,7 @@ public sealed class AgregadoDoAdministradorTests
             "MENOR_SOB_GUARDA",
             0,
             null,
-            new Regras.Formularios.ApresentacaoDoCampo("Menor sob guarda", TipoRenderizacao.SimOuNao),
+            new Regras.Formularios.ApresentacaoDoCampo("Menor sob guarda", TipoDeCampo.SimOuNao),
             null,
             new Regras.Formularios.RegrasDoCampo(null, Regras.Formularios.Obrigatoriedade.Sempre, []))]);
 

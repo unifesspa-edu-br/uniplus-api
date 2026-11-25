@@ -10,8 +10,8 @@ using static Unifesspa.UniPlus.Configuracao.Domain.UnitTests.Entities.DiaNaoUtil
 
 public sealed class VigenciaDoCalendarioDiasUteisTests
 {
-    [Fact(DisplayName = "MarcarVigente em dataset recém-criado tem sucesso")]
-    public void MarcarVigente_DatasetRecemCriado_Sucesso()
+    [Fact(DisplayName = "MarcarVigente em calendário recém-criado tem sucesso")]
+    public void MarcarVigente_CalendarioRecemCriado_Sucesso()
     {
         CalendarioDiasUteis calendario = CalendarioDiasUteis.Criar("2027.1", [Nacional()]).Value!;
 

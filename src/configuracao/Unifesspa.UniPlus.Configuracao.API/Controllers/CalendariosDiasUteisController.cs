@@ -55,9 +55,9 @@ public sealed class CalendariosDiasUteisController : ControllerBase
     }
 
     /// <summary>
-    /// Lista os datasets de calendário de dias úteis vivos, paginados por cursor
+    /// Lista os calendários de dias úteis vivos, paginados por cursor
     /// opaco bidirecional (ADR-0026 + ADR-0089). Não inclui os dias não úteis —
-    /// use <see cref="ObterPorId"/> para o dataset completo.
+    /// use <see cref="ObterPorId"/> para o calendário completo.
     /// </summary>
     [HttpGet("calendarios-dias-uteis")]
     [AllowAnonymous]
@@ -85,7 +85,7 @@ public sealed class CalendariosDiasUteisController : ControllerBase
             cancellationToken: cancellationToken).ConfigureAwait(false);
     }
 
-    /// <summary>Obtém um dataset pelo Id, com a lista completa de dias não úteis. Retorna 404 quando inexistente.</summary>
+    /// <summary>Obtém um calendário pelo Id, com a lista completa de dias não úteis. Retorna 404 quando inexistente.</summary>
     [HttpGet("calendarios-dias-uteis/{id:guid}")]
     [AllowAnonymous]
     [VendorMediaType(Resource = "calendario-dias-uteis", Versions = [1])]
@@ -107,7 +107,7 @@ public sealed class CalendariosDiasUteisController : ControllerBase
         return Ok(comLinks);
     }
 
-    /// <summary>Cria um novo dataset (nasce não vigente). Exige a permissão de manutenção. Idempotency-Key obrigatório (ADR-0027).</summary>
+    /// <summary>Cria um novo calendário (nasce não vigente). Exige a permissão de manutenção. Idempotency-Key obrigatório (ADR-0027).</summary>
     [HttpPost("admin/calendarios-dias-uteis")]
     [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.CalendariosDiasUteisManter, ResourceTipo = ResourceTiposConfiguracao.CalendarioDiasUteis)]
     [RequiresIdempotencyKey]
@@ -137,7 +137,7 @@ public sealed class CalendariosDiasUteisController : ControllerBase
         return resultado.ToActionResult(_mapper);
     }
 
-    /// <summary>Torna o dataset o vigente, desmarcando o anterior. Exige a permissão de manutenção.</summary>
+    /// <summary>Torna o calendário o vigente, desmarcando o anterior. Exige a permissão de manutenção.</summary>
     [HttpPost("admin/calendarios-dias-uteis/{id:guid}/vigente")]
     [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.CalendariosDiasUteisManter, ResourceTipo = ResourceTiposConfiguracao.CalendarioDiasUteis)]
     [RequiresIdempotencyKey]
@@ -156,9 +156,9 @@ public sealed class CalendariosDiasUteisController : ControllerBase
     }
 
     /// <summary>
-    /// Inclui uma data não útil num dataset já existente (vigente ou rascunho),
-    /// preservando id, versão e as datas já cadastradas — sem criar um novo dataset
-    /// (api#1458). Exige a permissão de manutenção. Idempotency-Key obrigatório
+    /// Inclui uma data não útil num calendário já existente (vigente ou rascunho),
+    /// preservando id, versão e as datas já cadastradas — sem criar um novo calendário.
+    /// Exige a permissão de manutenção. Idempotency-Key obrigatório
     /// (ADR-0027).
     /// </summary>
     [HttpPost("admin/calendarios-dias-uteis/{id:guid}/dias-nao-uteis")]
@@ -189,7 +189,7 @@ public sealed class CalendariosDiasUteisController : ControllerBase
         return resultado.ToActionResult(_mapper);
     }
 
-    /// <summary>Remove (soft-delete) um dataset não vigente. Exige a permissão de manutenção.</summary>
+    /// <summary>Remove (soft-delete) um calendário não vigente. Exige a permissão de manutenção.</summary>
     [HttpDelete("admin/calendarios-dias-uteis/{id:guid}")]
     [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.CalendariosDiasUteisManter, ResourceTipo = ResourceTiposConfiguracao.CalendarioDiasUteis)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]

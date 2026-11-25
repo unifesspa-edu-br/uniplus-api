@@ -22,7 +22,7 @@ public sealed class ProcessoSeletivoTests
     {
         ProcessoSeletivo processo = NovoProcesso();
 
-        processo.Status.Should().Be(StatusProcesso.Rascunho);
+        processo.Situacao.Should().Be(SituacaoDoProcessoSeletivo.Rascunho);
         processo.Nome.Should().Be("PS 2026 — SiSU");
         processo.TipoProcesso.Should().Be(TiposDeProcessoDeTeste.SiSU);
         processo.Etapas.Should().BeEmpty();

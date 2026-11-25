@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://uniplus.unifesspa.edu.br/contracts/selecao/configuracao/v1/item-do-formulario.schema.json",
   "title": "Item do formulário",
-  "description": "Um fato do catálogo coletado pelo formulário. O item aponta o fato pelo código; tipo de renderização, formato, classificação de proteção e demais propriedades do fato vêm do catálogo e não se declaram aqui.",
+  "description": "Um fato do catálogo coletado pelo formulário. O item aponta o fato pelo código; tipo de campo, formato, classificação de proteção e demais propriedades do fato vêm do catálogo e não se declaram aqui.",
   "type": "object",
   "additionalProperties": false,
   "required": [

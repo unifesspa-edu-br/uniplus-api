@@ -197,7 +197,7 @@ internal static class ConferenciaDoModelo
             .. ConferirTipoDoCampo(item, fato, codigo, caminho),
             .. ConferirPredicados(caminho, item.Predicados(), catalogo),
             .. ConferenciaNoCatalogo.SemanticaDasRestricoes(
-                fato, item.Apresentacao.TipoRenderizacao, item.Regras.Restricoes, catalogo.Fatos, catalogo.Vocabulario, catalogo.DominiosDinamicos)
+                fato, item.Apresentacao.TipoDeCampo, item.Regras.Restricoes, catalogo.Fatos, catalogo.Vocabulario, catalogo.DominiosDinamicos)
                 .Select(restricao => restricao.NoCaminhoDe($"{caminho}.{FatoColetadoInput.CaminhoDasRegras}")),
             .. ConferirImpedimentoDoItem(item, caminho, catalogo),
         ];
@@ -207,8 +207,8 @@ internal static class ConferenciaDoModelo
         ConferirPredicado($"{caminho}.{FatoColetadoInput.CaminhoDasRegras}.impedimento.quando", item.Regras.Impedimento?.Quando, catalogo) is { } recusa ? [recusa] : [];
 
     private static IEnumerable<FieldError> ConferirTipoDoCampo(ItemDoModelo item, FatoDoCatalogo fato, string codigo, string caminho) =>
-        CoerenciaDoCampo.Validar(codigo, item.Apresentacao.TipoRenderizacao, fato.Dominio, fato.Cardinalidade, fato.FonteValores) is { } incoerencia
-            ? [new FieldError($"{caminho}.{FatoColetadoInput.CaminhoDaApresentacao}.tipoRenderizacao", incoerencia, codigo)]
+        CoerenciaDoCampo.Validar(codigo, item.Apresentacao.TipoDeCampo, fato.Dominio, fato.Cardinalidade, fato.FonteValores) is { } incoerencia
+            ? [new FieldError($"{caminho}.{FatoColetadoInput.CaminhoDaApresentacao}.tipoDeCampo", incoerencia, codigo)]
             : [];
 
     private static IEnumerable<FieldError> ConferirVersaoDoTermo(

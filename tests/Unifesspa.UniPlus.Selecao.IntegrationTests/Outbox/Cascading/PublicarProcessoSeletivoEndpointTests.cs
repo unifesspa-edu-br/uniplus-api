@@ -77,7 +77,7 @@ public sealed class PublicarProcessoSeletivoEndpointTests
         ProcessoSeletivo? persistido = await db.ProcessosSeletivos.AsNoTracking()
             .FirstOrDefaultAsync(p => p.Id == processoId);
         persistido.Should().NotBeNull();
-        persistido!.Status.Should().Be(StatusProcesso.Publicado);
+        persistido!.Situacao.Should().Be(SituacaoDoProcessoSeletivo.Publicado);
     }
 
     [Fact(DisplayName =

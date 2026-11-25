@@ -134,7 +134,7 @@ public static class ObterFormularioRenderizavelDoModeloQueryHandler
         item.EtapaCodigo,
         new ApresentacaoDoCampoDto(
             item.Apresentacao.Rotulo,
-            item.Apresentacao.TipoRenderizacao.Codigo(),
+            item.Apresentacao.TipoDeCampo.Codigo(),
             ConjuntoBasicoDaInscricao.AjudaDoCampo(finalidade, item.FatoCodigo, item.Apresentacao.Ajuda),
             item.Apresentacao.PedirConfirmacao),
         item.Formato,

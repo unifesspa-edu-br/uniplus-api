@@ -33,7 +33,7 @@ internal static class ProcessoEmEdicaoDeTeste
     internal static ProcessoSeletivo Encerrado(Action<ProcessoSeletivo>? prepararAntesDePublicar = null)
     {
         ProcessoSeletivo processo = Publicado(out _, prepararAntesDePublicar);
-        typeof(ProcessoSeletivo).GetProperty(nameof(ProcessoSeletivo.Status))!.SetValue(processo, StatusProcesso.Encerrado);
+        typeof(ProcessoSeletivo).GetProperty(nameof(ProcessoSeletivo.Situacao))!.SetValue(processo, SituacaoDoProcessoSeletivo.Encerrado);
         return processo;
     }
 

@@ -25,7 +25,7 @@ public sealed class GrafoDependenciaConjuntaTests
 
     private static FatoColetado Declarado(string codigo, int ordem, params string[] citados) =>
         FatoColetadoDeTeste.Coletando(codigo, ordem)
-            .DoTipo(TipoRenderizacao.EscolhaUnica)
+            .DoTipo(TipoDeCampo.EscolhaUnica)
             .ExibidoQuando(ExibicaoDeTeste.QuandoTodas([.. citados.Select(static c => (c, Operador.Igual, (object)true))]))
             .Construir();
 

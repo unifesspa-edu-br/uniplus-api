@@ -34,7 +34,7 @@ public sealed class FatoColetavelDeEscopoGateTests
 
     private static FatoColetado FatoCondicaoAtendimentoSemOferta() => FatoColetadoDeTeste.Coletando("CONDICAO_ATENDIMENTO", 0)
         .ComRotulo("Você se enquadra em alguma condição de atendimento?")
-        .DoTipo(TipoRenderizacao.EscolhaMultipla)
+        .DoTipo(TipoDeCampo.EscolhaMultipla)
         .Construir();
 
     [Fact(DisplayName = "Publicar_ComFatoColetavelSemOferta_RecusaSemCanonicalizar — o gate precede a canonicalização")]
@@ -49,7 +49,7 @@ public sealed class FatoColetavelDeEscopoGateTests
         (Result resposta, IEnumerable<object> eventos) = await ServicosSemOferta(processo, canonicalizer).PublicarAsync(processo.Id);
 
         AfirmarRecusaDoFatoSemOferta(resposta, eventos, canonicalizer);
-        processo.Status.Should().Be(StatusProcesso.Rascunho, "a publicação recusada não transita o processo");
+        processo.Situacao.Should().Be(SituacaoDoProcessoSeletivo.Rascunho, "a publicação recusada não transita o processo");
     }
 
     private static ServicosDoCongelamentoDeTeste ServicosSemOferta(ProcessoSeletivo processo, ISnapshotPublicacaoCanonicalizer canonicalizer) =>

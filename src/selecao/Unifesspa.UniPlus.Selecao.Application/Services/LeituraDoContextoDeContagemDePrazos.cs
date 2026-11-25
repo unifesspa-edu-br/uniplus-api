@@ -19,7 +19,7 @@ using Unifesspa.UniPlus.Configuracao.Contracts;
 /// precisa reportar exatamente o que a publicação recusaria. Convertê-las em "sem calendário" ou "sem fuso" deixaria o
 /// checklist verde para um processo sem contagem sobre dia útil, que de fato não usa o dado, enquanto a publicação
 /// recusava por causa dele. O calendário é lido uma só vez por operação: a mesma resposta alimenta o portão da raiz e o
-/// bloco congelado do envelope, e ler duas vezes abriria a janela em que o dataset muda entre validar e congelar.
+/// bloco congelado do envelope, e ler duas vezes abriria a janela em que o calendário muda entre validar e congelar.
 /// </remarks>
 public sealed class LeituraDoContextoDeContagemDePrazos(ICalendarioVigenteReader calendarios, IResolvedorFusoInstitucional resolvedorFuso)
 {

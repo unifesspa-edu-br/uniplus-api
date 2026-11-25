@@ -168,9 +168,9 @@ internal static class PayloadsDoEnvelopeFechado
     internal static object[] FatosColetados() =>
     [
         FormularioDeInscricaoHttp.Item(
-            "BAIXA_RENDA", 0, "Baixa renda", TipoRenderizacao.SimOuNao.Codigo(),
+            "BAIXA_RENDA", 0, "Baixa renda", TipoDeCampo.SimOuNao.Codigo(),
             exibicao: new[] { new[] { new { fato = "COR_RACA", @operador = Operador.Igual.Codigo(), valor = "PRETA" } } }),
-        FormularioDeInscricaoHttp.Item("EDICAO_ENEM", 1, "Qual edição do ENEM você vai usar?", TipoRenderizacao.EscolhaUnica.Codigo()),
+        FormularioDeInscricaoHttp.Item("EDICAO_ENEM", 1, "Qual edição do ENEM você vai usar?", TipoDeCampo.EscolhaUnica.Codigo()),
         .. PerguntasDaReserva(),
     ];
 
@@ -179,7 +179,7 @@ internal static class PayloadsDoEnvelopeFechado
         string[] perguntas =
             ["CONCORRER_EP", "PCD", "CONCORRER_PCD", "INDIGENA", "QUILOMBOLA", "CONCORRER_PPI", "CONCORRER_Q", "CONCORRER_RENDA"];
         return perguntas.Select(static (fato, indice) =>
-            FormularioDeInscricaoHttp.Item(fato, indice + 2, fato, TipoRenderizacao.SimOuNao.Codigo()));
+            FormularioDeInscricaoHttp.Item(fato, indice + 2, fato, TipoDeCampo.SimOuNao.Codigo()));
     }
 
     internal static object[] RegrasDeDerivacao() =>

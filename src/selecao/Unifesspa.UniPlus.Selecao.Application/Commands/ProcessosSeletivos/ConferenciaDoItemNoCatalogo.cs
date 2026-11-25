@@ -33,10 +33,10 @@ internal static class ConferenciaDoItemNoCatalogo
         [("exibicao", "exibicao"), ("obrigatoriedade.predicado", "predicadoObrigatoriedade")];
 
     /// <summary>A coerência do tipo de campo com domínio, cardinalidade e fonte de valores do fato.</summary>
-    public static DomainError? Coerencia(FatoCandidatoView fato, TipoRenderizacao tipoRenderizacao)
+    public static DomainError? Coerencia(FatoCandidatoView fato, TipoDeCampo tipoDeCampo)
     {
         ArgumentNullException.ThrowIfNull(fato);
-        return CoerenciaDoCampo.Validar(fato.Codigo, tipoRenderizacao, fato.DominioValor, fato.CardinalidadeValor, fato.FonteValoresValor);
+        return CoerenciaDoCampo.Validar(fato.Codigo, tipoDeCampo, fato.DominioValor, fato.CardinalidadeValor, fato.FonteValoresValor);
     }
 
     /// <summary>
@@ -44,7 +44,7 @@ internal static class ConferenciaDoItemNoCatalogo
     /// fatos que a pré-condição cita, inclusive quando a forma dela foi recusada e não há predicado.
     /// </summary>
     public static List<FieldError> Semantica(
-        FatoCandidatoView fato, TipoRenderizacao tipoRenderizacao, RegrasDoCampo regras, IEnumerable<string> fatosDaPrecondicao, ContextoDoCatalogo contexto)
+        FatoCandidatoView fato, TipoDeCampo tipoDeCampo, RegrasDoCampo regras, IEnumerable<string> fatosDaPrecondicao, ContextoDoCatalogo contexto)
     {
         ArgumentNullException.ThrowIfNull(fato);
         ArgumentNullException.ThrowIfNull(regras);
@@ -52,17 +52,17 @@ internal static class ConferenciaDoItemNoCatalogo
         ArgumentNullException.ThrowIfNull(contexto);
         return
         [
-            .. SemanticaDasRegras(fato, tipoRenderizacao, regras, contexto).Select(static erro => erro.NoCaminhoDe(FatoColetadoInput.CaminhoDasRegras)),
+            .. SemanticaDasRegras(fato, tipoDeCampo, regras, contexto).Select(static erro => erro.NoCaminhoDe(FatoColetadoInput.CaminhoDasRegras)),
             .. RecusaDeAtributoDoCandidato(fatosDaPrecondicao.Concat(FatosDasRegrasSemExibicao(regras)), contexto),
         ];
     }
 
-    private static IEnumerable<FieldError> SemanticaDasRegras(FatoCandidatoView fato, TipoRenderizacao tipoRenderizacao, RegrasDoCampo regras, ContextoDoCatalogo contexto) =>
+    private static IEnumerable<FieldError> SemanticaDasRegras(FatoCandidatoView fato, TipoDeCampo tipoDeCampo, RegrasDoCampo regras, ContextoDoCatalogo contexto) =>
     [
         .. SemanticaDoPredicado("exibicao", regras.Exibicao, contexto),
         .. SemanticaDoPredicado("obrigatoriedade.predicado", regras.Obrigatoriedade.Predicado, contexto),
         .. ConferenciaNoCatalogo.SemanticaDasRestricoes(
-            contexto.FatosDasRegras[fato.Codigo], tipoRenderizacao, regras.Restricoes, contexto.FatosDasRegras, contexto.Vocabulario, contexto.DominiosDinamicos),
+            contexto.FatosDasRegras[fato.Codigo], tipoDeCampo, regras.Restricoes, contexto.FatosDasRegras, contexto.Vocabulario, contexto.DominiosDinamicos),
         .. SemanticaDoPredicado("impedimento.quando", regras.Impedimento?.Quando, contexto),
     ];
 
@@ -119,15 +119,15 @@ internal static class ConferenciaDoItemNoCatalogo
     /// Confere o item já gravado contra o catálogo de hoje. O fato que alguma versão publicada já
     /// coletou só tem o campo conferido: os valores de domínio nunca saem do catálogo, então as
     /// regras dele não são reconferidas. O item gravado e o envelope guardam o item plano, e a
-    /// recusa aponta o campo plano: <c>tipoRenderizacao</c>, <c>precondicao</c>,
+    /// recusa aponta o campo plano: <c>tipoDeCampo</c>, <c>precondicao</c>,
     /// <c>predicadoObrigatoriedade</c>, <c>restricoes</c> e <c>impedimento</c>.
     /// </summary>
     public static List<FieldError> DoItemGravado(FatoColetado item, FatoCandidatoView fato, bool jaColetado, ContextoDoCatalogo contexto)
     {
         ArgumentNullException.ThrowIfNull(item);
-        if (Coerencia(fato, item.TipoRenderizacao) is { } incoerencia)
+        if (Coerencia(fato, item.TipoDeCampo) is { } incoerencia)
         {
-            return [new("tipoRenderizacao", incoerencia)];
+            return [new("tipoDeCampo", incoerencia)];
         }
 
         // O fato que a regra cita e o catálogo não tem é recusado adiante pelo gate dos pressupostos,
@@ -137,6 +137,6 @@ internal static class ConferenciaDoItemNoCatalogo
             return [];
         }
 
-        return [.. Semantica(fato, item.TipoRenderizacao, item.Regras, item.Precondicoes.Select(static c => c.Fato), contexto).Select(static erro => NoPlano(erro, RegrasNoItem, CamposPlanosDoItem))];
+        return [.. Semantica(fato, item.TipoDeCampo, item.Regras, item.Precondicoes.Select(static c => c.Fato), contexto).Select(static erro => NoPlano(erro, RegrasNoItem, CamposPlanosDoItem))];
     }
 }

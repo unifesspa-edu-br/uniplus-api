@@ -18,36 +18,36 @@ public static class CoerenciaDoCampo
     /// <see langword="null"/> quando nenhum admite — o campo de texto, de data e de endereço recolhe uma resposta só, e o
     /// município do Geo também.
     /// </summary>
-    public static TipoRenderizacao? TipoDoFato(TipoDoDado tipo, QuantidadeDeValores quantidade, FonteValoresFato? fonteValores)
+    public static TipoDeCampo? TipoDoFato(TipoDoDado tipo, QuantidadeDeValores quantidade, FonteValoresFato? fonteValores)
     {
         bool variosValores = quantidade == QuantidadeDeValores.VariosValores;
         bool municipio = fonteValores == FonteValoresFato.Municipios;
         return tipo switch
         {
-            TipoDoDado.SimOuNao => TipoRenderizacao.SimOuNao,
-            TipoDoDado.Numerico => TipoRenderizacao.Numero,
-            TipoDoDado.Texto when !variosValores => TipoRenderizacao.Texto,
-            TipoDoDado.Data when !variosValores => TipoRenderizacao.Data,
-            TipoDoDado.Endereco when !variosValores => TipoRenderizacao.Endereco,
+            TipoDoDado.SimOuNao => TipoDeCampo.SimOuNao,
+            TipoDoDado.Numerico => TipoDeCampo.Numero,
+            TipoDoDado.Texto when !variosValores => TipoDeCampo.Texto,
+            TipoDoDado.Data when !variosValores => TipoDeCampo.Data,
+            TipoDoDado.Endereco when !variosValores => TipoDeCampo.Endereco,
             TipoDoDado.Opcao => TipoDaOpcao(municipio, variosValores),
             _ => null,
         };
     }
 
-    private static TipoRenderizacao? TipoDaOpcao(bool municipio, bool variosValores) => (municipio, variosValores) switch
+    private static TipoDeCampo? TipoDaOpcao(bool municipio, bool variosValores) => (municipio, variosValores) switch
     {
         (true, true) => null,
-        (true, false) => TipoRenderizacao.Municipio,
-        (false, true) => TipoRenderizacao.EscolhaMultipla,
-        (false, false) => TipoRenderizacao.EscolhaUnica,
+        (true, false) => TipoDeCampo.Municipio,
+        (false, true) => TipoDeCampo.EscolhaMultipla,
+        (false, false) => TipoDeCampo.EscolhaUnica,
     };
 
     /// <summary>Recusa o tipo de campo diferente do que o fato admite (<see cref="TipoDoFato"/>).</summary>
     public static DomainError? Validar(
-        string fatoCodigo, TipoRenderizacao tipoRenderizacao, TipoDoDado tipo, QuantidadeDeValores quantidade, FonteValoresFato? fonteValores) =>
-        TipoDoFato(tipo, quantidade, fonteValores) == tipoRenderizacao
+        string fatoCodigo, TipoDeCampo tipoDeCampo, TipoDoDado tipo, QuantidadeDeValores quantidade, FonteValoresFato? fonteValores) =>
+        TipoDoFato(tipo, quantidade, fonteValores) == tipoDeCampo
             ? null
             : new DomainError(
-                ItemFormularioErrorCodes.TipoRenderizacaoIncoerenteComDominio,
-                $"O tipo de campo '{tipoRenderizacao.Codigo()}' não é coerente com o tipo do dado '{tipo.Codigo()}', a quantidade de valores '{quantidade.Codigo()}' e a fonte de valores '{fonteValores?.Codigo() ?? "nenhuma"}' do fato '{fatoCodigo}'.");
+                ItemFormularioErrorCodes.TipoDeCampoIncoerenteComDominio,
+                $"O tipo de campo '{tipoDeCampo.Codigo()}' não é coerente com o tipo do dado '{tipo.Codigo()}', a quantidade de valores '{quantidade.Codigo()}' e a fonte de valores '{fonteValores?.Codigo() ?? "nenhuma"}' do dado '{fatoCodigo}'.");
 }

@@ -53,7 +53,7 @@ public sealed class ListarInscricoesDoProcessoQueryHandlerTests
     private static (IProcessoSeletivoRepository Processos, IRegistroCodecsEnvelope Codecs) ProcessoComNome(string classificacaoDoNome)
     {
         InscricaoAdministrativaDeTeste.Mundo mundo = new InscricaoAdministrativaDeTeste(PersonasDeTeste.FernandaDrumond, processoId: ProcessoId)
-            .Fato("NOME", classificacaoDoNome, TipoRenderizacao.Texto, null)
+            .Fato("NOME", classificacaoDoNome, TipoDeCampo.Texto, null)
             .Montar();
 
         return (mundo.Processos, mundo.Codecs);
@@ -398,7 +398,7 @@ public sealed class ListarInscricoesDoProcessoQueryHandlerTests
         InscricaoAdministrativaDeTeste cenario = new(PersonasDeTeste.FernandaDrumond, processoId: ProcessoId);
         foreach ((string codigo, string classificacao) in fatos)
         {
-            cenario.Fato(codigo, classificacao, TipoRenderizacao.Texto, null);
+            cenario.Fato(codigo, classificacao, TipoDeCampo.Texto, null);
         }
 
         InscricaoAdministrativaDeTeste.Mundo mundo = cenario.Montar();

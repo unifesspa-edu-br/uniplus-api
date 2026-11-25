@@ -18,7 +18,7 @@ public sealed class TipoDeCampoDosItensDaColetaDeFatosTests
             ProcessoEmRascunho(), [EntradaDoFatoColetadoDeTeste.Coletando("BAIXA_RENDA").ComRotulo("Baixa renda").DoTipo(null).Construir()]);
 
         resultado.Errors.Select(static e => (e.Field, e.Error.Code)).Should().Equal(
-            ("itens[0].apresentacao.tipoRenderizacao", "ItemFormulario.TipoRenderizacaoObrigatorio"));
+            ("itens[0].apresentacao.tipoDeCampo", "ItemFormulario.TipoDeCampoObrigatorio"));
     }
 
     [Fact(DisplayName = "Tipo de campo desconhecido é recusado como inválido e a coerência com o fato não roda")]
@@ -28,7 +28,7 @@ public sealed class TipoDeCampoDosItensDaColetaDeFatosTests
             ProcessoEmRascunho(), [EntradaDoFatoColetadoDeTeste.Coletando("BAIXA_RENDA").ComRotulo("Baixa renda").DoTipo("NENHUMA").Construir()]);
 
         resultado.Errors.Select(static e => (e.Field, e.Error.Code)).Should().Equal(
-            ("itens[0].apresentacao.tipoRenderizacao", "ItemFormulario.TipoRenderizacaoInvalido"));
+            ("itens[0].apresentacao.tipoDeCampo", "ItemFormulario.TipoDeCampoInvalido"));
     }
 
     [Fact(DisplayName = "Tipo de campo desconhecido acumula com a outra recusa do mesmo item")]
@@ -40,7 +40,7 @@ public sealed class TipoDeCampoDosItensDaColetaDeFatosTests
         resultado.Errors.Select(static e => (e.Field, e.Error.Code)).Should().BeEquivalentTo(
         [
             ("itens[0].ordem", "ItemFormulario.OrdemInvalida"),
-            ("itens[0].apresentacao.tipoRenderizacao", "ItemFormulario.TipoRenderizacaoInvalido"),
+            ("itens[0].apresentacao.tipoDeCampo", "ItemFormulario.TipoDeCampoInvalido"),
         ]);
     }
 
@@ -56,8 +56,8 @@ public sealed class TipoDeCampoDosItensDaColetaDeFatosTests
 
         resultado.Errors.Select(static e => (e.Field, e.Error.Code)).Should().BeEquivalentTo(
         [
-            ("itens[0].apresentacao.tipoRenderizacao", "ItemFormulario.TipoRenderizacaoInvalido"),
-            ("itens[1].apresentacao.tipoRenderizacao", "ItemFormulario.TipoRenderizacaoIncoerenteComDominio"),
+            ("itens[0].apresentacao.tipoDeCampo", "ItemFormulario.TipoDeCampoInvalido"),
+            ("itens[1].apresentacao.tipoDeCampo", "ItemFormulario.TipoDeCampoIncoerenteComDominio"),
         ]);
     }
 
@@ -70,7 +70,7 @@ public sealed class TipoDeCampoDosItensDaColetaDeFatosTests
         resultado.Errors.Select(static e => (e.Field, e.Error.Code)).Should().BeEquivalentTo(
         [
             ("itens[0].apresentacao.rotulo", "ItemFormulario.RotuloObrigatorio"),
-            ("itens[0].apresentacao.tipoRenderizacao", "ItemFormulario.TipoRenderizacaoObrigatorio"),
+            ("itens[0].apresentacao.tipoDeCampo", "ItemFormulario.TipoDeCampoObrigatorio"),
         ]);
     }
 }

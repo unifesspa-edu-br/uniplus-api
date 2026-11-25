@@ -160,7 +160,7 @@ internal static class FormularioDoEnvioDeTeste
         .ComOcorrencias(0, null)
         .ComCampos(FatoColetadoDeTeste.Coletando("LOCAL_MUNICIPIO", 0)
             .ComRotulo("Município")
-            .DoTipo(TipoRenderizacao.Municipio)
+            .DoTipo(TipoDeCampo.Municipio)
             .ComObrigatoriedade(Obrigatoriedade.Sempre)
             .ComRestricoes(new MunicipiosDaUf("NATURALIDADE_UF"))
             .Construir())

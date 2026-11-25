@@ -12,12 +12,12 @@ using Unifesspa.UniPlus.Regras.ValueObjects;
 internal static class ItemDoModeloDeTeste
 {
     public static ItemDoModelo ComRotulo(this ItemDoModelo item, string rotulo) =>
-        item.ComApresentacao(a => new ApresentacaoDoCampo(rotulo, a.TipoRenderizacao, a.Ajuda, a.PedirConfirmacao));
+        item.ComApresentacao(a => new ApresentacaoDoCampo(rotulo, a.TipoDeCampo, a.Ajuda, a.PedirConfirmacao));
 
     public static ItemDoModelo ComAjuda(this ItemDoModelo item, string? ajuda) =>
-        item.ComApresentacao(a => new ApresentacaoDoCampo(a.Rotulo, a.TipoRenderizacao, ajuda, a.PedirConfirmacao));
+        item.ComApresentacao(a => new ApresentacaoDoCampo(a.Rotulo, a.TipoDeCampo, ajuda, a.PedirConfirmacao));
 
-    public static ItemDoModelo ComTipoDeCampo(this ItemDoModelo item, TipoRenderizacao tipo) =>
+    public static ItemDoModelo ComTipoDeCampo(this ItemDoModelo item, TipoDeCampo tipo) =>
         item.ComApresentacao(a => new ApresentacaoDoCampo(a.Rotulo, tipo, a.Ajuda, a.PedirConfirmacao));
 
     public static ItemDoModelo ComExibicao(this ItemDoModelo item, PredicadoDnf? exibicao) =>

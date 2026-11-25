@@ -39,7 +39,7 @@ public sealed class IncluirDiaNaoUtilEndpointTests
     public async Task Incluir_ItemValido_IncluiEPreservaIdentidade()
     {
         using HttpClient client = _fixture.Factory.CreateClient();
-        Guid id = await CriarDataset(client, VersaoUnica());
+        Guid id = await CriarCalendario(client, VersaoUnica());
 
         HttpResponseMessage incluir = await EnviarPostAdmin(client, $"{AdminPath}/{id}/dias-nao-uteis", ItemValido());
 
@@ -54,18 +54,18 @@ public sealed class IncluirDiaNaoUtilEndpointTests
         docObter.RootElement.GetProperty("diasNaoUteis").GetArrayLength().Should().Be(2);
     }
 
-    // CA03: não cria outro dataset nem outra versão.
+    // CA03: não cria outro calendário nem outra versão.
     [Fact(DisplayName = "POST .../dias-nao-uteis não cria um novo calendário — a coleção continua com o mesmo total")]
     public async Task Incluir_ItemValido_NaoCriaNovoCalendario()
     {
         using HttpClient client = _fixture.Factory.CreateClient();
-        Guid id = await CriarDataset(client, VersaoUnica());
+        Guid id = await CriarCalendario(client, VersaoUnica());
         int totalAntes = await ContarCalendarios();
 
         HttpResponseMessage incluir = await EnviarPostAdmin(client, $"{AdminPath}/{id}/dias-nao-uteis", ItemValido());
         incluir.StatusCode.Should().Be(HttpStatusCode.OK);
 
-        (await ContarCalendarios()).Should().Be(totalAntes, "a inclusão não deve criar nenhum dataset novo");
+        (await ContarCalendarios()).Should().Be(totalAntes, "a inclusão não deve criar nenhum calendário novo");
     }
 
     // CA05: recusa dado inválido com erro de domínio, nada persistido.
@@ -73,7 +73,7 @@ public sealed class IncluirDiaNaoUtilEndpointTests
     public async Task Incluir_AbrangenciaInvalida_Retorna422SemPersistir()
     {
         using HttpClient client = _fixture.Factory.CreateClient();
-        Guid id = await CriarDataset(client, VersaoUnica());
+        Guid id = await CriarCalendario(client, VersaoUnica());
         HttpResponseMessage incluir = await EnviarPostAdmin(
             client,
             $"{AdminPath}/{id}/dias-nao-uteis",
@@ -84,7 +84,7 @@ public sealed class IncluirDiaNaoUtilEndpointTests
         HttpResponseMessage obter = await client.GetAsync(new Uri($"{ColecaoPath}/{id}", UriKind.Relative));
         using JsonDocument doc = JsonDocument.Parse(await obter.Content.ReadAsStringAsync());
         doc.RootElement.GetProperty("diasNaoUteis").GetArrayLength().Should().Be(
-            1, "a data original de CriarDataset é a única — nada foi incluído");
+            1, "a data original de CriarCalendario é a única — nada foi incluído");
     }
 
     // CA06: recusa duplicidade contra data já cadastrada, nada persistido a mais.
@@ -92,14 +92,14 @@ public sealed class IncluirDiaNaoUtilEndpointTests
     public async Task Incluir_CombinacaoJaCadastrada_Retorna422SemDuplicar()
     {
         using HttpClient client = _fixture.Factory.CreateClient();
-        Guid id = await CriarDataset(client, VersaoUnica());
+        Guid id = await CriarCalendario(client, VersaoUnica());
         HttpResponseMessage incluir = await EnviarPostAdmin(
             client,
             $"{AdminPath}/{id}/dias-nao-uteis",
             Item("NACIONAL", "2028-01-01", "Confraternização Universal (duplicata)"));
         incluir.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
         (await LerCodigoDeErro(incluir)).Should().Be(
-            "uniplus.configuracao.calendario_dias_uteis.data_duplicada_no_dataset");
+            "uniplus.configuracao.calendario_dias_uteis.data_duplicada_no_calendario");
         HttpResponseMessage obter = await client.GetAsync(new Uri($"{ColecaoPath}/{id}", UriKind.Relative));
         using JsonDocument doc = JsonDocument.Parse(await obter.Content.ReadAsStringAsync());
         doc.RootElement.GetProperty("diasNaoUteis").GetArrayLength().Should().Be(1);
@@ -139,7 +139,7 @@ public sealed class IncluirDiaNaoUtilEndpointTests
     public async Task Incluir_CalendarioVigente_MantemVigencia()
     {
         using HttpClient client = _fixture.Factory.CreateClient();
-        Guid id = await CriarDataset(client, VersaoUnica());
+        Guid id = await CriarCalendario(client, VersaoUnica());
         HttpResponseMessage marcarVigente = await EnviarPostAdmin(client, $"{AdminPath}/{id}/vigente", null);
         marcarVigente.StatusCode.Should().Be(HttpStatusCode.NoContent);
 
@@ -154,7 +154,7 @@ public sealed class IncluirDiaNaoUtilEndpointTests
     {
         root.GetProperty("id").GetGuid().Should().Be(id);
         JsonElement dias = root.GetProperty("diasNaoUteis");
-        dias.GetArrayLength().Should().Be(2, "a data original de CriarDataset permanece, e a nova se soma a ela");
+        dias.GetArrayLength().Should().Be(2, "a data original de CriarCalendario permanece, e a nova se soma a ela");
         dias.EnumerateArray().Should().Contain(d => d.GetProperty("abrangencia").GetProperty("codigo").GetString() == "NACIONAL");
         dias.EnumerateArray().Should().Contain(d =>
             d.GetProperty("abrangencia").GetProperty("codigo").GetString() == "ESTADUAL" && d.GetProperty("uf").GetString() == "PA");
@@ -183,9 +183,9 @@ public sealed class IncluirDiaNaoUtilEndpointTests
         descricao = "Adesão do Pará à Independência",
     };
 
-    private static object CorpoValido(string versaoDataset) => new
+    private static object CorpoValido(string versaoDoCalendario) => new
     {
-        versaoDataset,
+        versaoDoCalendario,
         diasNaoUteis = new object[]
         {
             new
@@ -202,9 +202,9 @@ public sealed class IncluirDiaNaoUtilEndpointTests
 
     private static string VersaoUnica() => $"inc-{Guid.NewGuid():N}"[..20];
 
-    private static async Task<Guid> CriarDataset(HttpClient client, string versaoDataset)
+    private static async Task<Guid> CriarCalendario(HttpClient client, string versaoDoCalendario)
     {
-        HttpResponseMessage criar = await EnviarPostAdmin(client, AdminPath, CorpoValido(versaoDataset));
+        HttpResponseMessage criar = await EnviarPostAdmin(client, AdminPath, CorpoValido(versaoDoCalendario));
         criar.StatusCode.Should().Be(HttpStatusCode.Created);
         return await criar.Content.ReadFromJsonAsync<Guid>();
     }

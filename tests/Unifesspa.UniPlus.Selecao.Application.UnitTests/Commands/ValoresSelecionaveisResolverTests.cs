@@ -157,7 +157,7 @@ public sealed class ValoresSelecionaveisResolverTests
     {
         FatoColetado condicaoAtendimento = FatoColetadoDeTeste.Coletando("CONDICAO_ATENDIMENTO", 0)
             .ComRotulo("Condição de atendimento")
-            .DoTipo(TipoRenderizacao.EscolhaMultipla)
+            .DoTipo(TipoDeCampo.EscolhaMultipla)
             .Construir();
         processo.DefinirItens([condicaoAtendimento]).IsSuccess.Should().BeTrue();
 

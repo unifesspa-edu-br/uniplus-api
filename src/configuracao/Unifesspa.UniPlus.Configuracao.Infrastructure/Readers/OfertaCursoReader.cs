@@ -112,7 +112,7 @@ internal sealed class OfertaCursoReader : IOfertaCursoReader
             o.ProgramaDeOferta.Codigo(), o.FormatoPedagogico.Codigo(),
             o.RegimeDeFuncionamento.Codigo(), o.RegimeDeTurno.Codigo(),
             [.. TurnosOferta.OrdenarCanonicamente(o.Turnos).Select(static turno => turno.Codigo())],
-            o.EMecCodigo, o.CodigoSga, o.VagasAnuaisAutorizadas, o.BaseLegal, o.AtoAutorizacaoMec,
+            o.CodigoEmec, o.CodigoNoSistemaAcademico, o.VagasAnuaisAutorizadas, o.BaseLegal, o.AtoAutorizacaoMec,
             grupoAreaEnem is null ? null : new GrupoAreaEnemView(grupoAreaEnem.Codigo, grupoAreaEnem.Rotulo),
             curso?.Nome ?? string.Empty, curso?.Grau ?? string.Empty);
     }

@@ -70,7 +70,7 @@ public static class LeituraDeRegras
     public static ApresentacaoDoCampoDto ToDto(this ApresentacaoDoCampo apresentacao)
     {
         ArgumentNullException.ThrowIfNull(apresentacao);
-        return new(apresentacao.Rotulo, apresentacao.TipoRenderizacao.Codigo(), apresentacao.Ajuda, apresentacao.PedirConfirmacao);
+        return new(apresentacao.Rotulo, apresentacao.TipoDeCampo.Codigo(), apresentacao.Ajuda, apresentacao.PedirConfirmacao);
     }
 
     public static RegrasDoCampoDto ToDto(this RegrasDoCampo regras)

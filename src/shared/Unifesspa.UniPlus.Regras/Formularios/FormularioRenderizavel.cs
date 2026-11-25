@@ -39,7 +39,7 @@ public sealed record GrupoRenderizavel(
 
 /// <summary>
 /// Um fato que as regras do formulário citam e ele não pergunta. Quando outro formulário o pergunta,
-/// vem com a apresentação dele — rótulo, tipo de renderização, formato e valores —, e a simulação o
+/// vem com a apresentação dele — rótulo, tipo de campo, formato e valores —, e a simulação o
 /// pergunta como dado anterior. Quando nenhum formulário o pergunta, vem com o rótulo e o tipo do
 /// catálogo; se é calculado, <see cref="CalculadoDe"/> diz de quais fatos: o sistema calcula a faixa
 /// etária da data de nascimento, e o agregado sobre o grupo repetível de outro formulário, do fato de
@@ -48,7 +48,7 @@ public sealed record GrupoRenderizavel(
 public sealed record PressupostoRenderizavel(
     string FatoCodigo,
     string? Rotulo,
-    [property: AceitaCodigosDe<TipoRenderizacao>] string? TipoRenderizacao,
+    [property: AceitaCodigosDe<TipoDeCampo>] string? TipoDeCampo,
     string? Formato,
     IReadOnlyList<ValorSelecionavel>? ValoresSelecionaveis,
     IReadOnlyList<string>? CalculadoDe);

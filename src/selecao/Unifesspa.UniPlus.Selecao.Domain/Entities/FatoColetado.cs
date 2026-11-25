@@ -16,7 +16,7 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 /// Um fato do vocabulário que <b>este</b> processo seletivo coleta do candidato, com a sua
 /// posição na ordem de coleta, a pré-condição que decide se o campo produtor é apresentado
 /// e a apresentação do campo no formulário de inscrição — rótulo, tipo de
-/// renderização e obrigatoriedade.
+/// tipo de campo e obrigatoriedade.
 /// </summary>
 /// <remarks>
 /// <para>
@@ -56,11 +56,11 @@ public sealed class FatoColetado : EntityBase, IParteDoProcesso
     public string Rotulo { get; private set; } = string.Empty;
 
     /// <summary>
-    /// Como o campo é renderizado. A coerência contra o <c>Dominio</c> do fato no catálogo (ex.:
-    /// tipo do dado <c>SIM_OU_NAO</c> só aceita <see cref="TipoRenderizacao.SimOuNao"/>) é validada na
+    /// Tipo de campo: como a pessoa responde à pergunta. A coerência contra o <c>Dominio</c> do fato no catálogo (ex.:
+    /// tipo do dado <c>SIM_OU_NAO</c> só aceita <see cref="TipoDeCampo.SimOuNao"/>) é validada na
     /// Application, que tem acesso ao vocabulário cross-módulo — o Domain não alcança o catálogo.
     /// </summary>
-    public TipoRenderizacao TipoRenderizacao { get; private set; }
+    public TipoDeCampo TipoDeCampo { get; private set; }
 
     /// <summary>
     /// Quando o candidato é obrigado a responder: sempre, nunca ou quando o predicado sobre fatos
@@ -219,7 +219,7 @@ public sealed class FatoColetado : EntityBase, IParteDoProcesso
     private void AdotarApresentacao(ApresentacaoDoCampo apresentacao)
     {
         Rotulo = apresentacao.Rotulo;
-        TipoRenderizacao = apresentacao.TipoRenderizacao;
+        TipoDeCampo = apresentacao.TipoDeCampo;
         Ajuda = apresentacao.Ajuda;
         PedirConfirmacao = apresentacao.PedirConfirmacao;
     }
@@ -275,7 +275,7 @@ public sealed class FatoColetado : EntityBase, IParteDoProcesso
     public IReadOnlyCollection<string> FatosCitados => Regras.FatosCitadosPor(FatoCodigo);
 
     /// <summary>Como o campo se apresenta ao candidato, pelo rótulo, tipo de campo, ajuda e pedido de confirmação que o item guarda.</summary>
-    public ApresentacaoDoCampo Apresentacao => new(Rotulo, TipoRenderizacao, Ajuda, PedirConfirmacao);
+    public ApresentacaoDoCampo Apresentacao => new(Rotulo, TipoDeCampo, Ajuda, PedirConfirmacao);
 
     /// <summary>As regras do campo, pela exibição, obrigatoriedade, restrições e impedimento que o item guarda.</summary>
     public RegrasDoCampo Regras => new(Exibicao, Obrigatoriedade, Restricoes, Impedimento);

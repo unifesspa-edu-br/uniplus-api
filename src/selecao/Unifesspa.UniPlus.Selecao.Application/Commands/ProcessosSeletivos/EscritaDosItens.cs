@@ -22,7 +22,7 @@ using Unifesspa.UniPlus.Regras.ValueObjects;
 internal sealed record ItensLidos(IReadOnlyList<FatoColetadoInput> Entradas, IReadOnlyList<ConfiguracaoDoItem?> Configuracoes, IReadOnlyList<FieldError> Erros);
 
 /// <summary>O tipo de campo, a obrigatoriedade, as restrições e o impedimento de um item cuja forma foi aceita.</summary>
-internal sealed record ConfiguracaoDoItem(TipoRenderizacao TipoRenderizacao, Obrigatoriedade Obrigatoriedade, IReadOnlyList<RestricaoValor> Restricoes, Impedimento? Impedimento = null)
+internal sealed record ConfiguracaoDoItem(TipoDeCampo TipoDeCampo, Obrigatoriedade Obrigatoriedade, IReadOnlyList<RestricaoValor> Restricoes, Impedimento? Impedimento = null)
 {
     /// <summary>As regras do item com a exibição dada, que a leitura da exibição devolve à parte.</summary>
     public RegrasDoCampo RegrasComExibicao(PredicadoDnf? exibicao) => new(exibicao, Obrigatoriedade, Restricoes, Impedimento);
@@ -84,7 +84,7 @@ internal static class EscritaDosItens
     {
         int recusasAntes = erros.Count;
         erros.AddRange(FormaDoItem.ValidarFormaBasica(input.FatoCodigo, input.Ordem, input.Apresentacao?.Rotulo).Select(erro => erro.NoCaminhoDe(campo)));
-        TipoRenderizacao? tipo = LerTipoRenderizacao(input.Apresentacao?.TipoRenderizacao, $"{campo}.{FatoColetadoInput.CaminhoDaApresentacao}", erros);
+        TipoDeCampo? tipo = LerTipoDeCampo(input.Apresentacao?.TipoDeCampo, $"{campo}.{FatoColetadoInput.CaminhoDaApresentacao}", erros);
         (Obrigatoriedade? obrigatoriedade, IReadOnlyList<RestricaoValor> restricoes, Impedimento? impedimento) =
             LerRegras(input.Regras, $"{campo}.{FatoColetadoInput.CaminhoDasRegras}", erros);
         return erros.Count == recusasAntes ? new ConfiguracaoDoItem(tipo!.Value, obrigatoriedade!, restricoes, impedimento) : null;
@@ -109,12 +109,12 @@ internal static class EscritaDosItens
         return (obrigatoriedade, restricoes, impedimento.Value);
     }
 
-    private static TipoRenderizacao? LerTipoRenderizacao(string? codigo, string campo, List<FieldError> erros)
+    private static TipoDeCampo? LerTipoDeCampo(string? codigo, string campo, List<FieldError> erros)
     {
-        Result<TipoRenderizacao> tipo = TipoRenderizacaoDaEntrada.Ler(codigo);
+        Result<TipoDeCampo> tipo = TipoDeCampoDaEntrada.Ler(codigo);
         if (tipo.IsFailure)
         {
-            erros.Add(new($"{campo}.tipoRenderizacao", tipo.Error!));
+            erros.Add(new($"{campo}.tipoDeCampo", tipo.Error!));
         }
 
         return tipo.IsSuccess ? tipo.Value : null;
@@ -280,14 +280,14 @@ internal static class EscritaDosItens
 
     private static Result<FatoColetado> ResolverFato(FatoColetadoInput input, ConfiguracaoDoItem configuracao, ContextoDoCatalogo contexto, bool campoDeGrupo)
     {
-        Result<FatoCandidatoView> fato = FatoColetavelNoCampo(input, configuracao.TipoRenderizacao, contexto, campoDeGrupo);
+        Result<FatoCandidatoView> fato = FatoColetavelNoCampo(input, configuracao.TipoDeCampo, contexto, campoDeGrupo);
         if (fato.IsFailure)
         {
             return Result<FatoColetado>.ValidationFailure(fato.Errors);
         }
 
         (RegrasDoCampo regras, List<FieldError> erros) = ConferirSemanticaDasRegras(input, fato.Value!, configuracao, contexto);
-        return CriarComAsCopiasDoCatalogo(input, configuracao.TipoRenderizacao, regras, fato.Value!, erros);
+        return CriarComAsCopiasDoCatalogo(input, configuracao.TipoDeCampo, regras, fato.Value!, erros);
     }
 
     /// <summary>
@@ -296,7 +296,7 @@ internal static class EscritaDosItens
     /// de campo tem de ser coerente com o fato.
     /// </summary>
     private static Result<FatoCandidatoView> FatoColetavelNoCampo(
-        FatoColetadoInput input, TipoRenderizacao tipoRenderizacao, ContextoDoCatalogo contexto, bool campoDeGrupo)
+        FatoColetadoInput input, TipoDeCampo tipoDeCampo, ContextoDoCatalogo contexto, bool campoDeGrupo)
     {
         DomainError? naoColetavel = campoDeGrupo
             ? ConferenciaNoCatalogo.FatoDoSubitem(input.FatoCodigo, contexto.FatosDasRegras)
@@ -307,8 +307,8 @@ internal static class EscritaDosItens
         }
 
         FatoCandidatoView fato = contexto.Fatos[input.FatoCodigo];
-        return ConferenciaDoItemNoCatalogo.Coerencia(fato, tipoRenderizacao) is { } incoerencia
-            ? Result<FatoCandidatoView>.ValidationFailure([new($"{FatoColetadoInput.CaminhoDaApresentacao}.tipoRenderizacao", incoerencia)])
+        return ConferenciaDoItemNoCatalogo.Coerencia(fato, tipoDeCampo) is { } incoerencia
+            ? Result<FatoCandidatoView>.ValidationFailure([new($"{FatoColetadoInput.CaminhoDaApresentacao}.tipoDeCampo", incoerencia)])
             : Result<FatoCandidatoView>.Success(fato);
     }
 
@@ -326,7 +326,7 @@ internal static class EscritaDosItens
         List<FieldError> erros =
         [
             .. exibicao.Errors.Select(static e => new FieldError($"{ConferenciaDoItemNoCatalogo.CaminhoDaExibicao}{e.Field}", e.Error)),
-            .. ConferenciaDoItemNoCatalogo.Semantica(fato, configuracao.TipoRenderizacao, lidas, fatosDaExibicao, contexto),
+            .. ConferenciaDoItemNoCatalogo.Semantica(fato, configuracao.TipoDeCampo, lidas, fatosDaExibicao, contexto),
         ];
         bool exibicaoRecusada = erros.Any(static e => e.Field is { } campo && campo.StartsWith(ConferenciaDoItemNoCatalogo.CaminhoDaExibicao, StringComparison.Ordinal));
         return (exibicaoRecusada ? configuracao.RegrasComExibicao(null) : lidas, erros);
@@ -337,13 +337,13 @@ internal static class EscritaDosItens
     /// restrições com o campo, autorreferência, ajuda) são acumuladas na mesma resposta que as semânticas.
     /// </summary>
     private static Result<FatoColetado> CriarComAsCopiasDoCatalogo(
-        FatoColetadoInput input, TipoRenderizacao tipoRenderizacao, RegrasDoCampo regras, FatoCandidatoView fato, List<FieldError> erros)
+        FatoColetadoInput input, TipoDeCampo tipoDeCampo, RegrasDoCampo regras, FatoCandidatoView fato, List<FieldError> erros)
     {
         Result<FatoColetado> item = FatoColetado.Criar(
             input.FatoCodigo,
             input.Ordem,
             input.EtapaCodigo,
-            EntradaDeRegras.Apresentacao(input.Apresentacao, tipoRenderizacao),
+            EntradaDeRegras.Apresentacao(input.Apresentacao, tipoDeCampo),
             regras,
             VocabularioDeFatos.CopiaNoCatalogo(fato));
         return erros.Count == 0

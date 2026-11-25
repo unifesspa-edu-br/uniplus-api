@@ -40,7 +40,7 @@ public sealed class ContextoDaColetaNoEnvelopeTests
         foreach (JsonNode? dado in dados)
         {
             Conferir<FinalidadeFormulario>(dado!, "finalidade");
-            Conferir<TipoRenderizacao>(dado!, "tipoDeCampo");
+            Conferir<TipoDeCampo>(dado!, "tipoDeCampo");
             Conferir<OrigemValoresColeta>(dado!, "origemValores");
         }
     }

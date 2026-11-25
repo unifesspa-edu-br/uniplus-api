@@ -24,7 +24,7 @@ public sealed class DefinirFormularioCommandHandlerTests
     public async Task Handle_Publicado_EtapaInvalida_RecusaAMutacao()
     {
         ProcessoSeletivo processo = ProcessoSemEtapas();
-        typeof(ProcessoSeletivo).GetProperty(nameof(ProcessoSeletivo.Status))!.SetValue(processo, StatusProcesso.Publicado);
+        typeof(ProcessoSeletivo).GetProperty(nameof(ProcessoSeletivo.Situacao))!.SetValue(processo, SituacaoDoProcessoSeletivo.Publicado);
 
         Result result = await DefinirAsync(
             processo, FinalidadeFormulario.Inscricao, faseId: null, titulo: null, EntradaDaEtapaFormularioDeTeste.Secao("DADOS").ComTitulo("").Construir());

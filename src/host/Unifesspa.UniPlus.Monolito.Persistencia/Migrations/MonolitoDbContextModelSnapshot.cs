@@ -3183,7 +3183,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasColumnName("updated_by")
                         .HasComment("Identificador do responsável pela última alteração, quando disponível.");
 
-                    b.Property<string>("VersaoDataset")
+                    b.Property<string>("VersaoDoCalendario")
                         .IsRequired()
                         .HasMaxLength(60)
                         .HasColumnType("character varying(60)")
@@ -3203,7 +3203,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     b.HasKey("Id")
                         .HasName("pk_calendarios_de_dias_uteis");
 
-                    b.HasIndex("VersaoDataset")
+                    b.HasIndex("VersaoDoCalendario")
                         .HasDatabaseName("ix_calendarios_de_dias_uteis_versao_do_calendario")
                         .HasFilter("is_deleted = false");
 
@@ -7005,7 +7005,12 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasColumnType("character varying(50)")
                         .HasColumnName("codigo");
 
-                    b.Property<string>("CodigoSga")
+                    b.Property<string>("CodigoEmec")
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("codigo_emec");
+
+                    b.Property<string>("CodigoNoSistemaAcademico")
                         .HasMaxLength(30)
                         .HasColumnType("character varying(30)")
                         .HasColumnName("codigo_no_sistema_academico");
@@ -7034,11 +7039,6 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasColumnType("text")
                         .HasColumnName("deleted_by")
                         .HasComment("Identificador do responsável pela exclusão lógica, quando disponível.");
-
-                    b.Property<string>("EMecCodigo")
-                        .HasMaxLength(20)
-                        .HasColumnType("character varying(20)")
-                        .HasColumnName("codigo_emec");
 
                     b.Property<string>("FormatoPedagogico")
                         .IsRequired()
@@ -13410,12 +13410,12 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasColumnName("rotulo")
                         .HasComment("Texto apresentado à pessoa candidata.");
 
-                    b.Property<string>("TipoRenderizacao")
+                    b.Property<string>("TipoDeCampo")
                         .IsRequired()
                         .HasMaxLength(30)
                         .HasColumnType("character varying(30)")
                         .HasColumnName("tipo_de_campo")
-                        .HasComment("Tipo de campo. Códigos: NUMERO, SIM_OU_NAO, ESCOLHA_UNICA, ESCOLHA_MULTIPLA, TEXTO, DATA, ENDERECO, MUNICIPIO.");
+                        .HasComment("Tipo de campo: NUMERO, SIM_OU_NAO, ESCOLHA_UNICA, ESCOLHA_MULTIPLA, TEXTO, DATA, ENDERECO ou MUNICIPIO. Códigos: NUMERO, SIM_OU_NAO, ESCOLHA_UNICA, ESCOLHA_MULTIPLA, TEXTO, DATA, ENDERECO, MUNICIPIO.");
 
                     b.Property<DateTimeOffset?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
@@ -14795,7 +14795,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasColumnName("origem_candidatos")
                         .HasComment("Como os candidatos chegam ao processo. Códigos: INSCRICAO_PROPRIA, IMPORTACAO_EXTERNA.");
 
-                    b.Property<string>("Status")
+                    b.Property<string>("Situacao")
                         .IsRequired()
                         .HasMaxLength(30)
                         .HasColumnType("character varying(30)")

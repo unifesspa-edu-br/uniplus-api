@@ -63,13 +63,13 @@ public sealed record ObrigatoriedadeInput([AceitaCodigosDe<TipoObrigatoriedade>]
 
 /// <summary>
 /// Como o campo se apresenta ao candidato: o rótulo, o tipo de campo, a ajuda e o pedido de
-/// confirmação da resposta. <see cref="TipoRenderizacao"/> é o código de
-/// <see cref="Enums.TipoRenderizacao"/>; a leitura dele, que recusa o código ausente e o desconhecido,
-/// é de <see cref="TipoRenderizacaoDaEntrada"/>.
+/// confirmação da resposta. <see cref="TipoDeCampo"/> é o código de
+/// <see cref="Enums.TipoDeCampo"/>; a leitura dele, que recusa o código ausente e o desconhecido,
+/// é de <see cref="TipoDeCampoDaEntrada"/>.
 /// </summary>
 public sealed record ApresentacaoDoCampoInput(
     string? Rotulo,
-    [AceitaCodigosDe<TipoRenderizacao>] string? TipoRenderizacao,
+    [AceitaCodigosDe<TipoDeCampo>] string? TipoDeCampo,
     string? Ajuda = null,
     bool PedirConfirmacao = false);
 

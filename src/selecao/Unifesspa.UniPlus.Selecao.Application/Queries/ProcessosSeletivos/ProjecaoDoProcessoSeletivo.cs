@@ -17,7 +17,7 @@ using Unifesspa.UniPlus.Application.Abstractions.Respostas;
 internal static class ProjecaoDoProcessoSeletivo
 {
     internal static ProcessoSeletivoDto Projetar(ProcessoSeletivo processo) => new(
-        processo.Id, processo.Nome, processo.IdentificadorLegivel?.Valor, ProjetarTipoDoProcesso(processo), CodigoComRotulo<StatusProcesso>.De(processo.Status), CodigoComRotulo<OrigemCandidatos>.De(processo.OrigemCandidatos),
+        processo.Id, processo.Nome, processo.IdentificadorLegivel?.Valor, ProjetarTipoDoProcesso(processo), CodigoComRotulo<SituacaoDoProcessoSeletivo>.De(processo.Situacao), CodigoComRotulo<OrigemCandidatos>.De(processo.OrigemCandidatos),
         ProjetarUnidadeAdministradora(processo), ProjetarLocalidade(processo),
         ProjecaoDaEtapaDoProcesso.ProjetarEtapas(processo),
         ProjecaoDasVagas.ProjetarAtendimento(processo.AtendimentoEspecializado), ProjecaoDasVagas.ProjetarDistribuicoes(processo),

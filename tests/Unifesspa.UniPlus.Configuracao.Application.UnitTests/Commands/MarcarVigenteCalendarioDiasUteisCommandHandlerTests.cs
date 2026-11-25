@@ -21,9 +21,9 @@ public sealed class MarcarVigenteCalendarioDiasUteisCommandHandlerTests
     private readonly ICalendarioDiasUteisRepository _repository = Substitute.For<ICalendarioDiasUteisRepository>();
     private readonly IUnitOfWork _unitOfWork = Substitute.For<IUnitOfWork>();
 
-    private static CalendarioDiasUteis Novo(string versaoDataset = "2027.1") =>
+    private static CalendarioDiasUteis Novo(string versaoDoCalendario = "2027.1") =>
         CalendarioDiasUteis.Criar(
-            versaoDataset,
+            versaoDoCalendario,
             [new DiaNaoUtilCriacao("NACIONAL", null, null, null, new DateOnly(2027, 1, 1), "Confraternização Universal")]).Value!;
 
     [Fact(DisplayName = "Id inexistente retorna NaoEncontrado")]
@@ -40,7 +40,7 @@ public sealed class MarcarVigenteCalendarioDiasUteisCommandHandlerTests
         await _unitOfWork.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
     }
 
-    [Fact(DisplayName = "Dataset já vigente falha (JaVigente)")]
+    [Fact(DisplayName = "Calendario já vigente falha (JaVigente)")]
     public async Task Handle_JaVigente_RetornaErro()
     {
         CalendarioDiasUteis calendario = Novo();
@@ -55,7 +55,7 @@ public sealed class MarcarVigenteCalendarioDiasUteisCommandHandlerTests
         await _unitOfWork.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
     }
 
-    [Fact(DisplayName = "Dataset não vigente sem vigente anterior fica vigente e persiste")]
+    [Fact(DisplayName = "Calendario não vigente sem vigente anterior fica vigente e persiste")]
     public async Task Handle_SemVigenteAnterior_MarcaVigenteEPersiste()
     {
         CalendarioDiasUteis calendario = Novo();
@@ -70,7 +70,7 @@ public sealed class MarcarVigenteCalendarioDiasUteisCommandHandlerTests
         await _unitOfWork.Received(1).SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
     }
 
-    [Fact(DisplayName = "Dataset não vigente com vigente anterior desmarca o anterior e marca o novo")]
+    [Fact(DisplayName = "Calendario não vigente com vigente anterior desmarca o anterior e marca o novo")]
     public async Task Handle_ComVigenteAnterior_DesmarcaAnteriorEMarcaNovo()
     {
         CalendarioDiasUteis novo = Novo("2027.1");

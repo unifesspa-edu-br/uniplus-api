@@ -127,11 +127,11 @@ public sealed class FaixaDeDataTests
     {
         RestricaoValor[] faixa = [new FaixaDeData(minima: null, LimiteDeData.NoEnvio(anos: 0, dias: 0))];
 
-        ConferirCampoDeData(TipoRenderizacao.Numero, faixa).Select(static e => e.Error.Code).Should().Equal(ItemFormularioErrorCodes.RestricaoIncoerente);
-        ConferirCampoDeData(TipoRenderizacao.Data, faixa).Should().BeEmpty();
+        ConferirCampoDeData(TipoDeCampo.Numero, faixa).Select(static e => e.Error.Code).Should().Equal(ItemFormularioErrorCodes.RestricaoIncoerente);
+        ConferirCampoDeData(TipoDeCampo.Data, faixa).Should().BeEmpty();
     }
 
-    private static List<FieldError> ConferirCampoDeData(TipoRenderizacao tipo, RestricaoValor[] restricoes) =>
+    private static List<FieldError> ConferirCampoDeData(TipoDeCampo tipo, RestricaoValor[] restricoes) =>
         FormaDoItem.Conferir(
             "DATA_NASCIMENTO",
             1,

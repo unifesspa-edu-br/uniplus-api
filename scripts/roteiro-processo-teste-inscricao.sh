@@ -295,7 +295,7 @@ setup_configuracao() {
             \"programaDeOferta\": \"REGULAR\",
             \"regimeDeFuncionamento\": \"EXTENSIVO\", \"formatoPedagogico\": \"PRESENCIAL\",
             \"regimeDeTurno\": \"INTEGRAL\", \"turnos\": [\"MATUTINO\", \"VESPERTINO\"],
-            \"eMecCodigo\": null, \"codigoSga\": null, \"vagasAnuaisAutorizadas\": null,
+            \"codigoEmec\": null, \"codigoNoSistemaAcademico\": null, \"vagasAnuaisAutorizadas\": null,
             \"baseLegal\": null, \"atoAutorizacaoMec\": null
         }")
         [ -z "$OFERTA_CURSO_ID" ] && OFERTA_CURSO_ID=$(api_get "/api/configuracao/ofertas-curso?limit=100" | jq -r --arg c "$CURSO_ID" --arg l "$LOCAL_OFERTA_ID" --arg u "$UNIDADE_OFERTANTE_ID" '.[] | select(.cursoId==$c and .localOfertaId==$l and .unidadeOfertante.origemId==$u) | .id' | head -1)
@@ -311,7 +311,7 @@ setup_configuracao() {
             regimeDeFuncionamento: .regimeDeFuncionamento.codigo,
             regimeDeTurno: "INTEGRAL", turnos: ["MATUTINO", "VESPERTINO"],
             formatoPedagogico: .formatoPedagogico.codigo,
-            eMecCodigo, codigoSga, vagasAnuaisAutorizadas, baseLegal, atoAutorizacaoMec
+            codigoEmec, codigoNoSistemaAcademico, vagasAnuaisAutorizadas, baseLegal, atoAutorizacaoMec
         }' <<< "$oferta")" >/dev/null
         oferta=$(api_get "/api/configuracao/ofertas-curso/$OFERTA_CURSO_ID")
     fi
@@ -526,13 +526,13 @@ JSON
     calendario_id=$(api_get "/api/configuracao/calendarios-dias-uteis?limit=100" | jq -r '.[] | select(.vigente==true) | .id' | head -1)
     if [ -z "$calendario_id" ]; then
         calendario_id=$(post_tolerante "/api/configuracao/admin/calendarios-dias-uteis" '{
-            "versaoDataset": "roteiro-base",
+            "versaoDoCalendario": "roteiro-base",
             "diasNaoUteis": [
                 {"abrangencia": "NACIONAL", "municipioIbge": null, "municipioNome": null,
                  "municipioUf": null, "data": "2026-12-25", "descricao": "Natal", "uf": null}
             ]
         }')
-        [ -z "$calendario_id" ] && calendario_id=$(api_get "/api/configuracao/calendarios-dias-uteis?limit=100" | jq -r '.[] | select(.versaoDataset=="roteiro-base") | .id' | head -1)
+        [ -z "$calendario_id" ] && calendario_id=$(api_get "/api/configuracao/calendarios-dias-uteis?limit=100" | jq -r '.[] | select(.versaoDoCalendario=="roteiro-base") | .id' | head -1)
         [ -n "$calendario_id" ] || fail "não consegui criar nem localizar o calendário 'roteiro-base' — pré-requisito explícito do roteiro"
         api POST "/api/configuracao/admin/calendarios-dias-uteis/$calendario_id/vigente" "" >/dev/null
     fi
@@ -649,18 +649,18 @@ conferir_processo_publicado() {
 
 criar_processo() {
     log "Criar ProcessoSeletivo"
-    local resp existente status
+    local resp existente situacao
     PROCESSO_JA_PUBLICADO="false"
     existente=$(buscar_processo_por_identificador)
     if [ -n "$existente" ]; then
         PROCESSO_ID=$(jq -r '.id' <<< "$existente")
-        status=$(jq -r '.status.codigo' <<< "$existente")
-        case "$status" in
+        situacao=$(jq -r '.situacao.codigo' <<< "$existente")
+        case "$situacao" in
             PUBLICADO) conferir_processo_publicado "$existente"; PROCESSO_JA_PUBLICADO="true" ;;
             RASCUNHO) ;;
-            *) fail "o identificador já pertence a um processo com status $status" ;;
+            *) fail "o identificador já pertence a um processo com situação $situacao" ;;
         esac
-        ok "processo reaproveitado ($PROCESSO_ID; $status)"
+        ok "processo reaproveitado ($PROCESSO_ID; $situacao)"
         return
     fi
     resp=$(api POST "/api/selecao/processos-seletivos" "$(jq -n \

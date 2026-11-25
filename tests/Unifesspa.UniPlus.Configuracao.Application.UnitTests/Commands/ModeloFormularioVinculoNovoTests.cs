@@ -36,7 +36,7 @@ public sealed class ModeloFormularioVinculoNovoTests : ModeloFormularioHandlerTe
     private static ModeloFormulario ExistenteComOTermo(TermoDoModelo termo)
     {
         ItemDoModelo item = new(
-            "CERTIFICADO", 0, "DADOS", new ApresentacaoDoCampo("Certificado", TipoRenderizacao.SimOuNao), null, new RegrasDoCampo(null, Obrigatoriedade.Sempre, []));
+            "CERTIFICADO", 0, "DADOS", new ApresentacaoDoCampo("Certificado", TipoDeCampo.SimOuNao), null, new RegrasDoCampo(null, Obrigatoriedade.Sempre, []));
         return ModeloFormulario.Criar(
             "HABILITACAO_MEDICINA", "Habilitação Medicina", null, FinalidadeFormulario.Habilitacao, null,
             new ConteudoDoModelo("Habilitação", [Secao, Revisao], [item], [termo], [], []),

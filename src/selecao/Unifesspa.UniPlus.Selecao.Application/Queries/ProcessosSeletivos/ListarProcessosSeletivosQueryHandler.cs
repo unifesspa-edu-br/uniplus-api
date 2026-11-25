@@ -58,7 +58,7 @@ public static class ListarProcessosSeletivosQueryHandler
             processo.TipoProcessoOrigemId,
             processo.TipoProcesso.Codigo,
             processo.TipoProcesso.Nome),
-        CodigoComRotulo<StatusProcesso>.De(processo.Status),
+        CodigoComRotulo<SituacaoDoProcessoSeletivo>.De(processo.Situacao),
         processo.CreatedAt);
 
     /// <summary>

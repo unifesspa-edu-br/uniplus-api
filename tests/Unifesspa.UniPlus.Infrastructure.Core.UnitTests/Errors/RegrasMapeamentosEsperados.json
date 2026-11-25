@@ -294,15 +294,15 @@
     "titulo": "O rótulo do item excede o tamanho máximo"
   },
   {
-    "chave": "ItemFormulario.TipoRenderizacaoObrigatorio",
+    "chave": "ItemFormulario.TipoDeCampoObrigatorio",
     "status": 422,
-    "codigo": "uniplus.item_formulario.tipo_renderizacao_obrigatorio",
+    "codigo": "uniplus.item_formulario.tipo_de_campo_obrigatorio",
     "titulo": "O tipo de campo do item é obrigatório"
   },
   {
-    "chave": "ItemFormulario.TipoRenderizacaoInvalido",
+    "chave": "ItemFormulario.TipoDeCampoInvalido",
     "status": 422,
-    "codigo": "uniplus.item_formulario.tipo_renderizacao_invalido",
+    "codigo": "uniplus.item_formulario.tipo_de_campo_invalido",
     "titulo": "O tipo de campo do item não é reconhecido"
   },
   {
@@ -336,10 +336,10 @@
     "titulo": "Campo que alimenta derivação, agregado ou negação precisa ser obrigatório sempre que exibido"
   },
   {
-    "chave": "ItemFormulario.TipoRenderizacaoIncoerenteComDominio",
+    "chave": "ItemFormulario.TipoDeCampoIncoerenteComDominio",
     "status": 422,
-    "codigo": "uniplus.item_formulario.tipo_renderizacao_incoerente_com_dominio",
-    "titulo": "O tipo de campo não é coerente com o domínio do fato"
+    "codigo": "uniplus.item_formulario.tipo_de_campo_incoerente_com_dominio",
+    "titulo": "O tipo de campo não é coerente com o domínio do dado"
   },
   {
     "chave": "ItemFormulario.FatoDesconhecido",

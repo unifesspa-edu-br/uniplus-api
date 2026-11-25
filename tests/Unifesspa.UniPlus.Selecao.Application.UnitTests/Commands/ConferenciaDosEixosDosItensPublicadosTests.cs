@@ -15,14 +15,14 @@ using static Unifesspa.UniPlus.Selecao.Application.UnitTests.Commands.FatoCitado
 public sealed class ConferenciaDosEixosDosItensPublicadosTests
 {
     [Theory(DisplayName = "Item e campo já coletados recusam a troca do tipo ou da proteção, identificando fato, eixo e saída")]
-    [InlineData(false, "tipo de renderização")]
+    [InlineData(false, "tipo de campo")]
     [InlineData(false, "classificação de proteção")]
-    [InlineData(true, "tipo de renderização")]
+    [InlineData(true, "tipo de campo")]
     [InlineData(true, "classificação de proteção")]
     public void Conferir_ItemOuCampoComEixoTrocado_Recusa(bool campo, string eixo)
     {
         FatosDasVersoesPublicadas publicadas = PublicadasNoLugar(campo, Coletado());
-        FatoColetado trocado = eixo == "tipo de renderização" ? Coletado(TipoRenderizacao.Numero) : Coletado(classificacao: "IDENTIFICADOR");
+        FatoColetado trocado = eixo == "tipo de campo" ? Coletado(TipoDeCampo.Numero) : Coletado(classificacao: "IDENTIFICADOR");
         string caminho = campo ? "formularios[0].grupos[0].subitens[0]" : "formularios[0].itens[0]";
 
         IReadOnlyList<FieldError> causas = Conferir(publicadas, [new(trocado, caminho)]);
@@ -50,7 +50,7 @@ public sealed class ConferenciaDosEixosDosItensPublicadosTests
     public void Conferir_FatoNovoComOutrosEixos_NaoRecusa()
     {
         FatosDasVersoesPublicadas publicadas = Publicadas([Coletado()]);
-        FatoColetado novo = Coletado(TipoRenderizacao.Numero, "IDENTIFICADOR", fato: FatoNovo);
+        FatoColetado novo = Coletado(TipoDeCampo.Numero, "IDENTIFICADOR", fato: FatoNovo);
 
         publicadas.EixosDosItens.Should().NotContainKey(novo.FatoCodigo);
         Conferir(publicadas, [new(Coletado(), "formularios[0].itens[0]"), new(novo, "formularios[0].itens[1]")]).Should().BeEmpty();
@@ -59,22 +59,22 @@ public sealed class ConferenciaDosEixosDosItensPublicadosTests
     [Fact(DisplayName = "A comparação com o envelope publicado identifica o item e o tipo trocado")]
     public void Conferir_ItemDivergenteDoEnvelope_RecusaComCodigoECaminho()
     {
-        FatosDasVersoesPublicadas publicadas = Publicadas([Item(TipoRenderizacao.Data)]);
+        FatosDasVersoesPublicadas publicadas = Publicadas([Item(TipoDeCampo.Data)]);
 
-        IReadOnlyList<FieldError> causas = Conferir(publicadas, [new(Item(TipoRenderizacao.SimOuNao), "formularios[0].itens[3]")]);
+        IReadOnlyList<FieldError> causas = Conferir(publicadas, [new(Item(TipoDeCampo.SimOuNao), "formularios[0].itens[3]")]);
 
         FieldError causa = causas.Should().ContainSingle().Subject;
         causa.Error.Code.Should().Be(CodigoDaRecusaDoEixoAlterado);
-        causa.Error.Message.Should().Contain(Fato).And.Contain("tipo de renderização");
+        causa.Error.Message.Should().Contain(Fato).And.Contain("tipo de campo");
         causa.Field.Should().Be("formularios[0].itens[3]");
     }
 
     [Fact(DisplayName = "A comparação aceita os mesmos eixos e um fato novo")]
     public void Conferir_MesmosEixosEFatoNovo_NaoRecusa()
     {
-        FatosDasVersoesPublicadas publicadas = Publicadas([Item(TipoRenderizacao.SimOuNao)]);
+        FatosDasVersoesPublicadas publicadas = Publicadas([Item(TipoDeCampo.SimOuNao)]);
 
-        Conferir(publicadas, [new(Item(TipoRenderizacao.SimOuNao), "formularios[0].itens[0]"), new(ItemNovo(), "formularios[0].itens[1]")])
+        Conferir(publicadas, [new(Item(TipoDeCampo.SimOuNao), "formularios[0].itens[0]"), new(ItemNovo(), "formularios[0].itens[1]")])
             .Should().BeEmpty();
     }
 
@@ -84,12 +84,12 @@ public sealed class ConferenciaDosEixosDosItensPublicadosTests
         GrupoColetado grupo = GrupoColetadoDeTeste.Agrupando("GRUPO", 0)
             .ComRotulo("Grupo")
             .ComObrigatoriedade(Obrigatoriedade.Sempre)
-            .ComCampos(Item(TipoRenderizacao.Data))
+            .ComCampos(Item(TipoDeCampo.Data))
             .DaFinalidade(FinalidadeFormulario.Inscricao)
             .Construir();
         FatosDasVersoesPublicadas publicadas = VersoesPublicadasDeTeste.SemEixosCongelados([VersoesPublicadasDeTeste.Versao([], [], [grupo])]);
 
-        IReadOnlyList<FieldError> causas = Conferir(publicadas, [new(Item(TipoRenderizacao.SimOuNao), "formularios[0].grupos[0].subitens[2]")]);
+        IReadOnlyList<FieldError> causas = Conferir(publicadas, [new(Item(TipoDeCampo.SimOuNao), "formularios[0].grupos[0].subitens[2]")]);
 
         causas.Should().ContainSingle().Which.Field.Should().Be("formularios[0].grupos[0].subitens[2]");
         causas[0].Error.Code.Should().Be(CodigoDaRecusaDoEixoAlterado);
@@ -98,10 +98,10 @@ public sealed class ConferenciaDosEixosDosItensPublicadosTests
     [Fact(DisplayName = "Versões distintas geram uma recusa por ocorrência na ordem recebida de cada formulário")]
     public void Conferir_VariasOcorrenciasEVersoes_ConservaOrdemECaminhos()
     {
-        FatosDasVersoesPublicadas publicadas = Publicadas([Item(TipoRenderizacao.Data)], [Item(TipoRenderizacao.SimOuNao)]);
+        FatosDasVersoesPublicadas publicadas = Publicadas([Item(TipoDeCampo.Data)], [Item(TipoDeCampo.SimOuNao)]);
         string[] caminhos = ["formularios[2].itens[9]", "formularios[2].grupos[1].subitens[4]", "formularios[0].itens[3]"];
 
-        IReadOnlyList<FieldError> causas = Conferir(publicadas, caminhos.Select(caminho => new ItemNoDocumento(Item(TipoRenderizacao.SimOuNao), caminho)));
+        IReadOnlyList<FieldError> causas = Conferir(publicadas, caminhos.Select(caminho => new ItemNoDocumento(Item(TipoDeCampo.SimOuNao), caminho)));
 
         causas.Select(static c => c.Field).Should().Equal(caminhos);
         causas.Select(static c => c.Error.Code).Should().AllBe(CodigoDaRecusaDoEixoAlterado);
@@ -131,7 +131,7 @@ public sealed class ConferenciaDosEixosDosItensPublicadosTests
     }
 
     private static FatoColetado Coletado(
-        TipoRenderizacao tipo = TipoRenderizacao.SimOuNao, string classificacao = "PESSOAL", string rotulo = "Tem renda?", string? ajuda = null, string fato = Fato) =>
+        TipoDeCampo tipo = TipoDeCampo.SimOuNao, string classificacao = "PESSOAL", string rotulo = "Tem renda?", string? ajuda = null, string fato = Fato) =>
         FatoColetadoDeTeste.Coletando(fato, 0)
             .ComRotulo(rotulo)
             .DoTipo(tipo)

@@ -9,7 +9,7 @@ using static Unifesspa.UniPlus.Selecao.Application.UnitTests.Commands.FatoCitado
 
 /// <summary>
 /// A retificação confere os eixos do fato já coletado contra o que as versões publicadas congelaram
-/// (UNI-REQ-0144): o domínio e o tipo de renderização não mudam sob o fato citado, e o fato novo é copiado do
+/// (UNI-REQ-0144): o domínio e o tipo de campo não mudam sob o fato citado, e o fato novo é copiado do
 /// catálogo vivo.
 /// </summary>
 public sealed class EixosDoFatoColetadoNaRetificacaoTests
@@ -114,7 +114,7 @@ public sealed class EixosDoFatoColetadoNaRetificacaoTests
     private static void ConferirRecusaPorCampoIncoerenteComOCatalogo(Result resposta, IEnumerable<object> eventos)
     {
         resposta.IsFailure.Should().BeTrue();
-        resposta.Errors.Should().ContainSingle().Which.Field.Should().MatchRegex(@"^/formularios/\d+/itens/\d+/tipoRenderizacao$");
+        resposta.Errors.Should().ContainSingle().Which.Field.Should().MatchRegex(@"^/formularios/\d+/itens/\d+/tipoDeCampo$");
         resposta.Error!.Message.Should().Contain("desfaça a correção no catálogo");
         eventos.Should().BeEmpty();
     }

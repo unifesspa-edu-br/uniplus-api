@@ -59,11 +59,11 @@ public sealed class ModeloFormularioPersistenceTests
     private static ItemDoModelo[] ItensDaHabilitacao() =>
     [
         new("CERTIFICADO_EMITIDO", 0, "ESCOLA",
-            new ApresentacaoDoCampo("Certificado emitido?", TipoRenderizacao.SimOuNao, "Responda pelo histórico", pedirConfirmacao: true),
+            new ApresentacaoDoCampo("Certificado emitido?", TipoDeCampo.SimOuNao, "Responda pelo histórico", pedirConfirmacao: true),
             null,
             new RegrasDoCampo(null, Obrigatoriedade.Sempre, [])),
         new("TIPO_DOCUMENTO", 1, "ESCOLA",
-            new ApresentacaoDoCampo("Tipo de documento", TipoRenderizacao.EscolhaUnica),
+            new ApresentacaoDoCampo("Tipo de documento", TipoDeCampo.EscolhaUnica),
             null,
             new RegrasDoCampo(
                 null,
@@ -80,11 +80,11 @@ public sealed class ModeloFormularioPersistenceTests
             new ExibicaoEObrigatoriedade(Quando("FORMA_CONCLUSAO", "REGULAR"), Obrigatoriedade.Sempre),
         [
             new("PARENTESCO", 0, null,
-                new ApresentacaoDoCampo("Parentesco", TipoRenderizacao.EscolhaUnica, "Em relação ao candidato"),
+                new ApresentacaoDoCampo("Parentesco", TipoDeCampo.EscolhaUnica, "Em relação ao candidato"),
                 null,
                 new RegrasDoCampo(null, Obrigatoriedade.Sempre, [])),
             new("RENDA_MEMBRO", 1, null,
-                new ApresentacaoDoCampo("Renda", TipoRenderizacao.SimOuNao),
+                new ApresentacaoDoCampo("Renda", TipoDeCampo.SimOuNao),
                 null,
                 new RegrasDoCampo(Quando("PARENTESCO", "CONJUGE"), Obrigatoriedade.Quando(Quando("PARENTESCO", "CONJUGE")), [])),
         ]);
@@ -107,7 +107,7 @@ public sealed class ModeloFormularioPersistenceTests
                 new("REVISAO", 1, TipoEtapaFormulario.Bloco, BlocoSistema.RevisaoEAceite, "Revisão", null, null, null),
             ],
             [new("VINCULO_PARFOR", 0, "DADOS",
-                new ApresentacaoDoCampo("Vínculo com o PARFOR", TipoRenderizacao.SimOuNao),
+                new ApresentacaoDoCampo("Vínculo com o PARFOR", TipoDeCampo.SimOuNao),
                 null,
                 new RegrasDoCampo(null, Obrigatoriedade.Sempre, [], impedimento))],
             [], [], []);

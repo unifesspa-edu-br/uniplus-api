@@ -55,7 +55,7 @@ public static class RegrasDosFatos
             return RecusaDoFatoForaDoProcesso(configuracao, fato);
         }
 
-        return coletado is { TipoRenderizacao: not TipoRenderizacao.SimOuNao } || derivado is { Booleano: false }
+        return coletado is { TipoDeCampo: not TipoDeCampo.SimOuNao } || derivado is { Booleano: false }
             ? new DomainError(
                 ProcessoSeletivoErrorCodes.FatoElegibilidadeNaoBooleano,
                 $"O fato '{fato}', que decide quem recebe o acréscimo, precisa ser booleano.")

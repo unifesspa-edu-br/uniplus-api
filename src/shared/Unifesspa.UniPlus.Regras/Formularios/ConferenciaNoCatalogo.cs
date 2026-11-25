@@ -128,7 +128,7 @@ public static class ConferenciaNoCatalogo
     /// </summary>
     public static IEnumerable<FieldError> SemanticaDasRestricoes(
         FatoDoCatalogo alvo,
-        TipoRenderizacao tipoRenderizacao,
+        TipoDeCampo tipoDeCampo,
         IReadOnlyList<RestricaoValor> restricoes,
         IReadOnlyDictionary<string, FatoDoCatalogo> catalogo,
         IReadOnlyDictionary<string, DescritorFatoCandidato> vocabulario,
@@ -139,7 +139,7 @@ public static class ConferenciaNoCatalogo
         ArgumentNullException.ThrowIfNull(catalogo);
         ArgumentNullException.ThrowIfNull(vocabulario);
         ArgumentNullException.ThrowIfNull(dominiosDinamicos);
-        return Semantica(alvo, tipoRenderizacao, restricoes, catalogo, vocabulario, dominiosDinamicos);
+        return Semantica(alvo, tipoDeCampo, restricoes, catalogo, vocabulario, dominiosDinamicos);
     }
 
     /// <summary>
@@ -183,7 +183,7 @@ public static class ConferenciaNoCatalogo
 
     private static IEnumerable<FieldError> Semantica(
         FatoDoCatalogo alvo,
-        TipoRenderizacao tipoRenderizacao,
+        TipoDeCampo tipoDeCampo,
         IReadOnlyList<RestricaoValor> restricoes,
         IReadOnlyDictionary<string, FatoDoCatalogo> catalogo,
         IReadOnlyDictionary<string, DescritorFatoCandidato> vocabulario,
@@ -191,7 +191,7 @@ public static class ConferenciaNoCatalogo
     {
         for (int indice = 0; indice < restricoes.Count; indice++)
         {
-            if (!FormaDoItem.RestricaoCabeNoCampo(restricoes[indice].Tipo, tipoRenderizacao))
+            if (!FormaDoItem.RestricaoCabeNoCampo(restricoes[indice].Tipo, tipoDeCampo))
             {
                 continue;
             }

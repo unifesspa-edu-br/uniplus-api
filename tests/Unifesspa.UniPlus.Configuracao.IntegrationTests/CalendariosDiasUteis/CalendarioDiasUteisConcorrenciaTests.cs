@@ -61,7 +61,7 @@ public sealed class CalendarioDiasUteisConcorrenciaTests
     }
 
     [Fact(DisplayName =
-        "Remoção colidindo com uma escrita concorrente do mesmo dataset propaga DbUpdateConcurrencyException limpa (sem segunda tentativa do outbox)")]
+        "Remoção colidindo com uma escrita concorrente do mesmo calendário propaga DbUpdateConcurrencyException limpa (sem segunda tentativa do outbox)")]
     public async Task Remocao_ColideComEscritaConcorrente_PropagaExcecaoLimpa()
     {
         MonolitoApiFactory api = _fixture.Factory;
@@ -118,13 +118,13 @@ public sealed class CalendarioDiasUteisConcorrenciaTests
     /// Prova de ponta a ponta do achado de revisão do PR #1460 (api#1458): sem
     /// <c>RegistrarInclusaoDeDiaNaoUtil</c> marcar o pai como alterado, inserir só
     /// o filho nunca compararia o <c>xmin</c> do <see cref="CalendarioDiasUteis"/>
-    /// — uma remoção (soft-delete) concorrente do MESMO dataset não viraria
+    /// — uma remoção (soft-delete) concorrente do MESMO calendário não viraria
     /// conflito, porque a FK só exige que a linha física do pai exista, não que
     /// ela esteja viva. O resultado seria uma linha <c>dias_nao_uteis</c>
     /// inalcançável sob um calendário já escondido.
     /// </summary>
     [Fact(DisplayName =
-        "Inclusão colidindo com remoção concorrente do mesmo dataset propaga ConflitoDeConcorrencia sem inserir a data")]
+        "Inclusão colidindo com remoção concorrente do mesmo calendário propaga ConflitoDeConcorrencia sem inserir a data")]
     public async Task IncluirDiaNaoUtil_ColideComRemocaoConcorrente_RetornaConflitoSemInserir()
     {
         MonolitoApiFactory api = _fixture.Factory;
@@ -190,7 +190,7 @@ public sealed class CalendarioDiasUteisConcorrenciaTests
     /// — ver <see cref="IncluirDiaNaoUtilCommandHandler"/>).
     /// </summary>
     [Fact(DisplayName =
-        "Duas inclusões concorrentes da mesma combinação: uma persiste, a outra recebe DataDuplicadaNoDataset sem duplicar")]
+        "Duas inclusões concorrentes da mesma combinação: uma persiste, a outra recebe DataDuplicadaNoCalendario sem duplicar")]
     public async Task IncluirDiaNaoUtil_DuasInclusoesConcorrentesDaMesmaCombinacao_UmaFalhaSemDuplicar()
     {
         MonolitoApiFactory api = _fixture.Factory;
@@ -239,7 +239,7 @@ public sealed class CalendarioDiasUteisConcorrenciaTests
 
         resultadoA.IsFailure.Should().BeTrue(
             "busA só descobre o conflito no INSERT, depois que txB já commitou a mesma combinação");
-        resultadoA.Error!.Code.Should().Be(CalendarioDiasUteisErrorCodes.DataDuplicadaNoDataset);
+        resultadoA.Error!.Code.Should().Be(CalendarioDiasUteisErrorCodes.DataDuplicadaNoCalendario);
 
         await using AsyncServiceScope readScope = api.Services.CreateAsyncScope();
         UniPlusDbContext readDb = readScope.ServiceProvider.GetRequiredService<UniPlusDbContext>();

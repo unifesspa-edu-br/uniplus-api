@@ -208,7 +208,7 @@ public sealed class ObterFormularioRenderizavelDoModeloQueryHandlerTests
     }
 
     private static ItemDoModelo Item(string fato, int ordem) =>
-        new(fato, ordem, "DADOS", new ApresentacaoDoCampo(fato, TipoRenderizacao.EscolhaUnica), null, new RegrasDoCampo(null, Obrigatoriedade.Sempre, []));
+        new(fato, ordem, "DADOS", new ApresentacaoDoCampo(fato, TipoDeCampo.EscolhaUnica), null, new RegrasDoCampo(null, Obrigatoriedade.Sempre, []));
 
     private static ItemDoModelo Subitem(string fato, int ordem) => Item(fato, ordem) with { EtapaCodigo = null };
 

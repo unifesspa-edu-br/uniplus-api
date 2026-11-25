@@ -39,9 +39,9 @@ internal static class ConsultaAdministrativaDeTeste
 
     public static InscricaoAdministrativaDeTeste DeFernanda(SituacaoInscricao situacao = SituacaoInscricao.Submetida) =>
         new InscricaoAdministrativaDeTeste(PersonasDeTeste.FernandaDrumond, situacao)
-            .Fato("CPF", "IDENTIFICADOR", TipoRenderizacao.Texto, Texto(PersonasDeTeste.FernandaDrumond.Valor), ordem: 0, formato: "CPF")
-            .Fato("NOME", "PESSOAL", TipoRenderizacao.Texto, Texto(PersonasDeTeste.NomeFernandaDrumond), ordem: 1)
-            .Fato("TIPO_DEFICIENCIA", "SENSIVEL", TipoRenderizacao.Texto, Texto("BAIXA_VISAO"), ordem: 2)
+            .Fato("CPF", "IDENTIFICADOR", TipoDeCampo.Texto, Texto(PersonasDeTeste.FernandaDrumond.Valor), ordem: 0, formato: "CPF")
+            .Fato("NOME", "PESSOAL", TipoDeCampo.Texto, Texto(PersonasDeTeste.NomeFernandaDrumond), ordem: 1)
+            .Fato("TIPO_DEFICIENCIA", "SENSIVEL", TipoDeCampo.Texto, Texto("BAIXA_VISAO"), ordem: 2)
             .Exigencia("LAUDO_MEDICO", ClassificacaoDeProtecao.Sensivel)
             .Exigencia("COMPROVANTE_RESIDENCIA", ClassificacaoDeProtecao.Pessoal);
 

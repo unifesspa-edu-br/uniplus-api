@@ -16,5 +16,5 @@ public sealed record ProcessoSeletivoResumoDto(
     Guid Id,
     string Nome,
     TipoProcessoSnapshotDto TipoProcesso,
-    CodigoComRotulo<StatusProcesso> Status,
+    CodigoComRotulo<SituacaoDoProcessoSeletivo> Situacao,
     DateTimeOffset CriadoEm);

@@ -71,7 +71,7 @@ public sealed class VocabularioIdaEVoltaEndpointTests
     {
         string origemLida = lido.GetProperty("origemCandidatos").GetProperty("codigo").GetString()!;
         origemLida.Should().Be("INSCRICAO_PROPRIA", "a leitura devolve o vocabulário da escrita");
-        lido.GetProperty("status").GetProperty("codigo").GetString().Should().Be("RASCUNHO");
+        lido.GetProperty("situacao").GetProperty("codigo").GetString().Should().Be("RASCUNHO");
         return origemLida;
     }
 

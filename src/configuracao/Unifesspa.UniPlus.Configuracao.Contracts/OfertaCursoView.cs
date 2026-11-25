@@ -22,8 +22,8 @@ namespace Unifesspa.UniPlus.Configuracao.Contracts;
 /// <param name="RegimeDeFuncionamento">Regime de funcionamento (token; INTENSIVO, EXTENSIVO ou ALTERNANCIA_PEDAGOGICA) — dimensão própria, independente do regime de turno.</param>
 /// <param name="RegimeDeTurno">Regime de turno (token; REGULAR ou INTEGRAL).</param>
 /// <param name="Turnos">Turnos ocupados (tokens), em ordem canônica: um sob REGULAR, dois sob INTEGRAL.</param>
-/// <param name="EMecCodigo">Código e-MEC por campus-sede, ou null.</param>
-/// <param name="CodigoSga">Código no sistema de gestão acadêmica, ou null.</param>
+/// <param name="CodigoEmec">Código e-MEC por campus-sede, ou null.</param>
+/// <param name="CodigoNoSistemaAcademico">Código no sistema acadêmico, ou null.</param>
 /// <param name="VagasAnuaisAutorizadas">Teto de vagas autorizadas no e-MEC (não são vagas de certame), ou null.</param>
 /// <param name="BaseLegal">Base legal (obrigatória quando o programa não é Regular), ou null.</param>
 /// <param name="AtoAutorizacaoMec">Ato de autorização específico da oferta, ou null.</param>
@@ -44,8 +44,8 @@ public sealed record OfertaCursoView(
     string RegimeDeFuncionamento,
     string RegimeDeTurno,
     IReadOnlyList<string> Turnos,
-    string? EMecCodigo,
-    string? CodigoSga,
+    string? CodigoEmec,
+    string? CodigoNoSistemaAcademico,
     int? VagasAnuaisAutorizadas,
     string? BaseLegal,
     string? AtoAutorizacaoMec,

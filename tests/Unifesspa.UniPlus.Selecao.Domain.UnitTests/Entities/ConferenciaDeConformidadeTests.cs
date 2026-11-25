@@ -64,7 +64,7 @@ public sealed class ConferenciaDeConformidadeTests
         publicar.IsFailure.Should().BeTrue();
         publicar.Error!.Code.Should().Be("ProcessoSeletivo.FaseSemUnidadeResponsavel");
         publicar.Error.Message.Should().Contain("RESULTADO_FINAL");
-        processo.Status.Should().Be(StatusProcesso.Rascunho, "a recusa não congela nada");
+        processo.Situacao.Should().Be(SituacaoDoProcessoSeletivo.Rascunho, "a recusa não congela nada");
     }
 
     [Fact(DisplayName = "Publicar_ProcessoNaoConforme_Recusa — a conferência da publicação continua valendo")]

@@ -45,16 +45,16 @@ public sealed class FormaDosItensDaColetaDeFatosTests
     [Theory(DisplayName = "Data e endereço são coletados no campo do domínio deles")]
     [InlineData("DATA_NASCIMENTO", "DATA")]
     [InlineData("ENDERECO_RESIDENCIAL", "ENDERECO")]
-    public async Task Handle_DataEEndereco_ColetaNoCampoDoDominio(string fatoCodigo, string tipoRenderizacao)
+    public async Task Handle_DataEEndereco_ColetaNoCampoDoDominio(string fatoCodigo, string tipoDeCampo)
     {
         ProcessoSeletivo processo = ProcessoEmRascunho();
         Mocks mocks = NovosMocks(processo, processo.Id);
 
         Result resultado = await HandleAsync(mocks, new DefinirFatosColetadosCommand(
-            processo.Id, FinalidadeFormulario.Habilitacao, [EntradaDoFatoColetadoDeTeste.Coletando(fatoCodigo).ComRotulo("Rótulo").DoTipo(tipoRenderizacao).Construir()]));
+            processo.Id, FinalidadeFormulario.Habilitacao, [EntradaDoFatoColetadoDeTeste.Coletando(fatoCodigo).ComRotulo("Rótulo").DoTipo(tipoDeCampo).Construir()]));
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
-        processo.FatosColetados.Single().TipoRenderizacao.Should().Be(CatalogoDe<TipoRenderizacao>.Obter(tipoRenderizacao));
+        processo.FatosColetados.Single().TipoDeCampo.Should().Be(CatalogoDe<TipoDeCampo>.Obter(tipoDeCampo));
     }
 
     [Fact(DisplayName = "Fato de texto multivalorado não é coletável como campo de texto")]
@@ -67,7 +67,7 @@ public sealed class FormaDosItensDaColetaDeFatosTests
         DefinirFatosColetadosCommand command = new(processo.Id, FinalidadeFormulario.Habilitacao,
             [EntradaDoFatoColetadoDeTeste.Coletando("NOME_SOCIAL").ComRotulo("Nome social").DoTipo("TEXTO").ComObrigatoriedade("NUNCA").Construir()]);
 
-        (await HandleAsync(mocks, command)).Error!.Code.Should().Be("ItemFormulario.TipoRenderizacaoIncoerenteComDominio");
+        (await HandleAsync(mocks, command)).Error!.Code.Should().Be("ItemFormulario.TipoDeCampoIncoerenteComDominio");
     }
 
     [Fact(DisplayName = "Campo de texto é aceito e congela o formato do fato no catálogo")]
@@ -140,13 +140,13 @@ public sealed class FormaDosItensDaColetaDeFatosTests
         ]);
     }
 
-    [Fact(DisplayName = "TipoRenderizacao coerente para fato de opção com vários valores (MODALIDADE) — mesmo não-coletável, a coerência é checada antes")]
-    public async Task Handle_TipoRenderizacaoCoerenteComCategoricoMultivalorado_NaoFalhaPorCoerencia()
+    [Fact(DisplayName = "TipoDeCampo coerente para fato de opção com vários valores (MODALIDADE) — mesmo não-coletável, a coerência é checada antes")]
+    public async Task Handle_TipoDeCampoCoerenteComCategoricoMultivalorado_NaoFalhaPorCoerencia()
     {
         // MODALIDADE é OPCAO com VARIOS_VALORES no vocabulário-seed, mas é CALCULADO — a
-        // coletabilidade recusa antes da coerência de renderização ser sequer checada. Este
+        // coletabilidade recusa antes da coerência do tipo de campo ser sequer checada. Este
         // teste prova que o erro devolvido continua sendo o de coletabilidade, não o de
-        // coerência, quando o TipoRenderizacao informado é o coerente com o domínio.
+        // coerência, quando o TipoDeCampo informado é o coerente com o domínio.
         Result resultado = await DefinirNaHabilitacaoAsync(
             ProcessoEmRascunho(),
             [EntradaDoFatoColetadoDeTeste.Coletando("MODALIDADE").ComRotulo("Modalidade").DoTipo("ESCOLHA_MULTIPLA").ComObrigatoriedade("NUNCA").Construir()]);

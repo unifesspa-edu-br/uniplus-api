@@ -27,7 +27,7 @@ internal static class ApoioDoModeloDeFormulario
             fato,
             ordem,
             etapa,
-            new ApresentacaoDoCampo(fato, TipoRenderizacao.SimOuNao),
+            new ApresentacaoDoCampo(fato, TipoDeCampo.SimOuNao),
             null,
             new RegrasDoCampo(exibicao, obrigatoriedade ?? Obrigatoriedade.Sempre, []));
 

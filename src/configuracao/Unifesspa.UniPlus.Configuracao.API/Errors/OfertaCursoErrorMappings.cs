@@ -148,17 +148,17 @@ internal static class OfertaCursoErrorMappings
                 "uniplus.configuracao.oferta_curso.vagas_anuais_negativas",
                 "Vagas anuais autorizadas não pode ser negativo")),
 
-        new(OfertaCursoErrorCodes.EMecCodigoTamanho,
+        new(OfertaCursoErrorCodes.CodigoEmecTamanho,
             new DomainErrorMapping(
                 StatusCodes.Status422UnprocessableEntity,
-                "uniplus.configuracao.oferta_curso.e_mec_codigo_tamanho",
-                "Tamanho do código e-MEC inválido")),
+                "uniplus.configuracao.oferta_curso.codigo_emec_tamanho",
+                "Tamanho do código do e-MEC inválido")),
 
-        new(OfertaCursoErrorCodes.CodigoSgaTamanho,
+        new(OfertaCursoErrorCodes.CodigoNoSistemaAcademicoTamanho,
             new DomainErrorMapping(
                 StatusCodes.Status422UnprocessableEntity,
-                "uniplus.configuracao.oferta_curso.codigo_sga_tamanho",
-                "Tamanho do código SGA inválido")),
+                "uniplus.configuracao.oferta_curso.codigo_no_sistema_academico_tamanho",
+                "Tamanho do código no sistema acadêmico inválido")),
 
         new(OfertaCursoErrorCodes.BaseLegalTamanho,
             new DomainErrorMapping(

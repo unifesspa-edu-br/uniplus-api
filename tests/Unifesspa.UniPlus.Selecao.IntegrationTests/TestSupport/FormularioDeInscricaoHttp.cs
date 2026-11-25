@@ -25,7 +25,7 @@ internal static class FormularioDeInscricaoHttp
         string fatoCodigo,
         int ordem,
         string rotulo,
-        string tipoRenderizacao,
+        string tipoDeCampo,
         string obrigatoriedade = "SEMPRE",
         object? exibicao = null,
         string? etapaCodigo = null)
@@ -34,7 +34,7 @@ internal static class FormularioDeInscricaoHttp
         {
             ["fatoCodigo"] = fatoCodigo,
             ["ordem"] = ordem,
-            ["apresentacao"] = new { rotulo, tipoRenderizacao },
+            ["apresentacao"] = new { rotulo, tipoDeCampo },
             ["regras"] = new { exibicao, obrigatoriedade = new { tipo = obrigatoriedade } },
         };
         if (etapaCodigo is not null)

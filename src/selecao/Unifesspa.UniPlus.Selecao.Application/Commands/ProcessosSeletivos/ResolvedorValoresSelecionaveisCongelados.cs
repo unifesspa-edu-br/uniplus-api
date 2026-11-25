@@ -21,7 +21,7 @@ using ValoresDoCampo = System.Collections.Generic.IReadOnlyList<Unifesspa.UniPlu
 /// <summary>
 /// Resolve, para cada <see cref="FatoColetado"/> do processo, os valores que o candidato pode
 /// escolher (UNI-REQ-0072) — a chave que falta hoje no envelope público: <c>fatosColetados[]</c>
-/// carrega rótulo/tipo de renderização/obrigatoriedade, mas nada sobre QUAIS
+/// carrega rótulo/tipo de campo/obrigatoriedade, mas nada sobre QUAIS
 /// valores o seletor oferece.
 /// </summary>
 /// <remarks>
@@ -136,7 +136,7 @@ internal static class ResolvedorValoresSelecionaveisCongelados
 
         private Result<ValoresDoCampo?> ResolverCampo(FatoColetado fato)
         {
-            if (!fato.TipoRenderizacao.EhEscolha())
+            if (!fato.TipoDeCampo.EhEscolha())
             {
                 return Result<ValoresDoCampo?>.Success(null);
             }

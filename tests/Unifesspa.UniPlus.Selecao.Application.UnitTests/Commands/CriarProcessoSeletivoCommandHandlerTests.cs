@@ -59,7 +59,7 @@ public sealed class CriarProcessoSeletivoCommandHandlerTests
         _persistido.Should().NotBeNull();
         resultado.Value.Should().Be(_persistido!.Id);
         _persistido.Nome.Should().Be("PS 2026 — SiSU");
-        _persistido.Status.Should().Be(StatusProcesso.Rascunho);
+        _persistido.Situacao.Should().Be(SituacaoDoProcessoSeletivo.Rascunho);
         await _repository.Received(1).AdicionarAsync(Arg.Any<ProcessoSeletivo>(), Arg.Any<CancellationToken>());
         await _unitOfWork.Received(1).SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
     }

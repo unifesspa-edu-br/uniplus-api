@@ -32,7 +32,7 @@ public sealed class DefinirDocumentosExigidosGatilhoPorFatoCommandHandlerTests
     public async Task Handle_GatilhoValidoEscalar_PersisteCondicao()
     {
         CenarioDaExigencia cenario = ProcessoComUmaFase([FatoSexo()]);
-        ColetarFato(cenario.Processo, "SEXO", TipoRenderizacao.EscolhaUnica);
+        ColetarFato(cenario.Processo, "SEXO", TipoDeCampo.EscolhaUnica);
 
         Result resultado = await cenario.DefinirAsync(cenario.ItemCondicional(new(0, "SEXO", "IGUAL", "\"MASCULINO\"")));
 
@@ -112,7 +112,7 @@ public sealed class DefinirDocumentosExigidosGatilhoPorFatoCommandHandlerTests
     public async Task Handle_GatilhoTipoDeficienciaDoCadastroSemOferta_PersisteCondicao()
     {
         CenarioDaExigencia cenario = ProcessoComUmaFase([FatoTipoDeficiencia()]);
-        ColetarFato(cenario.Processo, "TIPO_DEFICIENCIA", TipoRenderizacao.EscolhaUnica);
+        ColetarFato(cenario.Processo, "TIPO_DEFICIENCIA", TipoDeCampo.EscolhaUnica);
 
         Result resultado = await cenario.DefinirAsync(cenario.ItemCondicional(new(0, "TIPO_DEFICIENCIA", "IGUAL", "\"TEA\"")));
 
@@ -129,7 +129,7 @@ public sealed class DefinirDocumentosExigidosGatilhoPorFatoCommandHandlerTests
     public async Task Handle_GatilhoTipoDeficiencia_UsaCodigoNaoNome()
     {
         CenarioDaExigencia cenario = ProcessoComUmaFase([FatoTipoDeficiencia()]);
-        ColetarFato(cenario.Processo, "TIPO_DEFICIENCIA", TipoRenderizacao.EscolhaUnica);
+        ColetarFato(cenario.Processo, "TIPO_DEFICIENCIA", TipoDeCampo.EscolhaUnica);
 
         Result resultado = await cenario.DefinirAsync(cenario.ItemCondicional(new(0, "TIPO_DEFICIENCIA", "IGUAL", "\"DEFICIENCIA_VISUAL\"")));
 
@@ -152,7 +152,7 @@ public sealed class DefinirDocumentosExigidosGatilhoPorFatoCommandHandlerTests
     public async Task Handle_GatilhoTipoDeficienciaForaDoCadastro_RetornaErroNomeado()
     {
         CenarioDaExigencia cenario = ProcessoComUmaFase([FatoTipoDeficiencia()]);
-        ColetarFato(cenario.Processo, "TIPO_DEFICIENCIA", TipoRenderizacao.EscolhaUnica);
+        ColetarFato(cenario.Processo, "TIPO_DEFICIENCIA", TipoDeCampo.EscolhaUnica);
 
         Result resultado = await cenario.DefinirAsync(cenario.ItemCondicional(new(0, "TIPO_DEFICIENCIA", "IGUAL", "\"NANISMO\"")));
 
@@ -164,7 +164,7 @@ public sealed class DefinirDocumentosExigidosGatilhoPorFatoCommandHandlerTests
         processo.DefinirItens(
             [FatoColetadoDeTeste.Coletando("DATA_NASCIMENTO", 0)
                 .ComRotulo("Data de nascimento")
-                .DoTipo(TipoRenderizacao.Data)
+                .DoTipo(TipoDeCampo.Data)
                 .ComObrigatoriedade(Obrigatoriedade.Sempre)
                 .Construir()])
             .IsSuccess.Should().BeTrue();

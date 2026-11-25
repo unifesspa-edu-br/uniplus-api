@@ -82,7 +82,7 @@ internal static class ApoioDaConcorrenciaDaPublicacao
     private static bool ConferirResultadoDasEtapas(ProcessoSeletivo processo, Result definir, Result publicar)
     {
         publicar.IsSuccess.Should().BeTrue(publicar.Error?.Message);
-        processo.Status.Should().Be(StatusProcesso.Publicado);
+        processo.Situacao.Should().Be(SituacaoDoProcessoSeletivo.Publicado);
         if (definir.IsFailure)
         {
             definir.Error!.Code.Should().Be("ProcessoSeletivo.MutacaoPosPublicacaoBloqueada");
@@ -114,7 +114,7 @@ internal static class ApoioDaConcorrenciaDaPublicacao
         }
         else
         {
-            processo.Status.Should().Be(StatusProcesso.Publicado);
+            processo.Situacao.Should().Be(SituacaoDoProcessoSeletivo.Publicado);
             await ConferirCascataCongeladaAsync(db, id);
         }
     }
@@ -129,7 +129,7 @@ internal static class ApoioDaConcorrenciaDaPublicacao
     private static async Task ConferirPublicacaoRecusadaAsync(UniPlusDbContext db, Guid id, ProcessoSeletivo processo, Result publicar)
     {
         publicar.Error!.Code.Should().Be("ProcessoSeletivo.CascataOrigemAusente");
-        processo.Status.Should().Be(StatusProcesso.Rascunho);
+        processo.Situacao.Should().Be(SituacaoDoProcessoSeletivo.Rascunho);
         bool existe = await db.VersoesConfiguracao.AsNoTracking().AnyAsync(v => v.ProcessoSeletivoId == id);
         existe.Should().BeFalse();
     }

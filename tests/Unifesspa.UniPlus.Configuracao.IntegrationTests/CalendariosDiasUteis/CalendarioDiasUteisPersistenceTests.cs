@@ -17,7 +17,7 @@ using Unifesspa.UniPlus.Testes.Compartilhado;
 
 /// <summary>
 /// Integração ponta-a-ponta do calendário de dias úteis contra Postgres real
-/// (UNI-REQ-0116): persistência do dataset e dos dias não úteis (código de contrato
+/// (UNI-REQ-0116): persistência do calendário e dos dias não úteis (código de contrato
 /// da <c>Abrangencia</c> na coluna), índice único
 /// parcial de vigência, CHECK de coerência de município e soft-delete
 /// preservando os dias não úteis filhos (<c>ClientNoAction</c>).
@@ -70,7 +70,7 @@ public sealed class CalendarioDiasUteisPersistenceTests
         gravados.Should().Equal("NACIONAL", "INSTITUCIONAL");
     }
 
-    [Fact(DisplayName = "Exclusion constraint (vigente) rejeita um segundo dataset vigente")]
+    [Fact(DisplayName = "Exclusion constraint (vigente) rejeita um segundo calendário vigente")]
     public async Task ExclusionConstraint_Vigente_RejeitaSegundoVigenteAtivo()
     {
         CalendarioDiasUteis primeiro = Nova(VersaoUnica());
@@ -140,7 +140,7 @@ public sealed class CalendarioDiasUteisPersistenceTests
             "o CHECK ck_dias_nao_uteis_municipio_coerente proíbe cada campo municipal nas demais abrangências");
     }
 
-    [Fact(DisplayName = "Soft-delete de dataset não vigente preserva os dias não úteis filhos (ClientNoAction)")]
+    [Fact(DisplayName = "Soft-delete de calendário não vigente preserva os dias não úteis filhos (ClientNoAction)")]
     public async Task SoftDelete_PreservaDiasNaoUteisFilhos()
     {
         CalendarioDiasUteis calendario = Nova(
@@ -187,7 +187,7 @@ public sealed class CalendarioDiasUteisPersistenceTests
 
         reidratado.IncluirDiaNaoUtil(
             new DiaNaoUtilCriacao("NACIONAL", null, null, null, new DateOnly(2027, 1, 1), "Repetido")).Error?.Code
-            .Should().Be(CalendarioDiasUteisErrorCodes.DataDuplicadaNoDataset);
+            .Should().Be(CalendarioDiasUteisErrorCodes.DataDuplicadaNoCalendario);
         reidratado.IncluirDiaNaoUtil(
             new DiaNaoUtilCriacao("NACIONAL", null, null, null, new DateOnly(2027, 1, 2), "Outro dia")).IsSuccess
             .Should().BeTrue();
@@ -262,11 +262,11 @@ public sealed class CalendarioDiasUteisPersistenceTests
 
     private static string VersaoUnica() => $"cal-{Guid.NewGuid():N}"[..20];
 
-    private static CalendarioDiasUteis Nova(string versaoDataset, params DiaNaoUtilCriacao[] dias)
+    private static CalendarioDiasUteis Nova(string versaoDoCalendario, params DiaNaoUtilCriacao[] dias)
     {
         DiaNaoUtilCriacao[] diasNaoUteis = dias.Length == 0
             ? [new DiaNaoUtilCriacao("NACIONAL", null, null, null, new DateOnly(2027, 1, 1), "Confraternização Universal")]
             : dias;
-        return CalendarioDiasUteis.Criar(versaoDataset, diasNaoUteis).ValorEsperado();
+        return CalendarioDiasUteis.Criar(versaoDoCalendario, diasNaoUteis).ValorEsperado();
     }
 }

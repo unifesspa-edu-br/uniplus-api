@@ -112,7 +112,7 @@ internal static class SerializacaoDosFatos
         FatoColetado fato,
         IReadOnlyDictionary<string, IReadOnlyList<ValorDominioDeclaradoCongelado>?>? valoresSelecionaveisCongelados)
     {
-        bool ehFatoDeSelecao = fato.TipoRenderizacao.EhEscolha();
+        bool ehFatoDeSelecao = fato.TipoDeCampo.EhEscolha();
         IReadOnlyList<ValorDominioDeclaradoCongelado>? valoresDoFato = null;
         bool temEntrada = valoresSelecionaveisCongelados?.TryGetValue(fato.FatoCodigo, out valoresDoFato) ?? false;
 
@@ -126,7 +126,7 @@ internal static class SerializacaoDosFatos
 
     private static InvalidOperationException ErroNosValoresSelecionaveis(FatoColetado fato, bool ehFatoDeSelecao, string defeito) =>
         new($"O fato coletado '{fato.FatoCodigo}' {(ehFatoDeSelecao ? "é" : "não é")} de seleção " +
-            $"({fato.TipoRenderizacao}), mas o dicionário de valores selecionáveis {defeito}");
+            $"({fato.TipoDeCampo}), mas o dicionário de valores selecionáveis {defeito}");
 
     private static string? DefeitoDoDicionarioDeValores(
         bool ehFatoDeSelecao,
@@ -152,7 +152,7 @@ internal static class SerializacaoDosFatos
         AdicionarTratamentoDoDado(objeto, fato);
         AdicionarApresentacaoEOpcoes(objeto, fato, valoresDoFato);
         ContextoDosRotulos.Acrescentar(objeto, "finalidade", fato.Finalidade);
-        ContextoDosRotulos.Acrescentar(objeto, "tipoDeCampo", (TipoRenderizacao?)fato.TipoRenderizacao);
+        ContextoDosRotulos.Acrescentar(objeto, "tipoDeCampo", (TipoDeCampo?)fato.TipoDeCampo);
         return objeto;
     }
 
@@ -163,7 +163,7 @@ internal static class SerializacaoDosFatos
         ["paginaCodigo"] = fato.EtapaCodigo is { } etapa ? HashCanonicalComputer.NormalizeNfc(etapa) : null,
         ["ordem"] = fato.Ordem,
         ["rotulo"] = HashCanonicalComputer.NormalizeNfc(fato.Rotulo),
-        ["tipoDeCampo"] = fato.TipoRenderizacao.Codigo(),
+        ["tipoDeCampo"] = fato.TipoDeCampo.Codigo(),
     };
 
     private static void AdicionarRegrasDaResposta(JsonObject objeto, FatoColetado fato)

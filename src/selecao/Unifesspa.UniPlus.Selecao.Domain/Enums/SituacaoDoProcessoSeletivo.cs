@@ -7,7 +7,7 @@ using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 /// Todo processo nasce em <see cref="Rascunho"/>. A publicação congela os parâmetros
 /// do processo (UNI-REQ-0019); encerramento e cancelamento são as demais transições.
 /// </summary>
-public enum StatusProcesso
+public enum SituacaoDoProcessoSeletivo
 {
     [CodigoDeContrato("RASCUNHO", "Rascunho", Descricao = "O processo está em preparação.")]
     Rascunho = 1,

@@ -51,7 +51,7 @@ public sealed class LeituraDaProvaPresencialEndpointTests(CascadingFixture fixtu
     {
         FatoColetado cidade = FatoColetadoDeTeste.Coletando("CIDADE_DE_PROVA", FormularioDeTeste.PrimeiraOrdemDeInscricao)
             .ComRotulo("Cidade de prova")
-            .DoTipo(TipoRenderizacao.EscolhaUnica)
+            .DoTipo(TipoDeCampo.EscolhaUnica)
             .ComObrigatoriedade(Obrigatoriedade.Sempre)
             .ComOrigem(OrigemValoresColeta.MunicipiosDaProvaPresencial)
             .NaSecao(FormularioDeTeste.Secao)

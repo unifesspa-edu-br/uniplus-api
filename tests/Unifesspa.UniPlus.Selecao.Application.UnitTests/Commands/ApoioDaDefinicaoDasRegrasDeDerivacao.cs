@@ -94,7 +94,7 @@ internal static class ApoioDaDefinicaoDasRegrasDeDerivacao
     private static ProcessoSeletivo ProcessoComCorRacaColetada()
     {
         ProcessoSeletivo processo = ProcessoBase();
-        processo.DefinirItens([FatoColetadoDeTeste.Coletando("COR_RACA", 0).ComRotulo("Cor ou raça").DoTipo(TipoRenderizacao.EscolhaUnica).Construir()])
+        processo.DefinirItens([FatoColetadoDeTeste.Coletando("COR_RACA", 0).ComRotulo("Cor ou raça").DoTipo(TipoDeCampo.EscolhaUnica).Construir()])
             .IsSuccess.Should().BeTrue();
 
         return processo;

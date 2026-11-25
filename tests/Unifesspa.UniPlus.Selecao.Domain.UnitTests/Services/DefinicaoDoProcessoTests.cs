@@ -36,7 +36,7 @@ public sealed class DefinicaoDoProcessoTests
         .ComObrigatoriedade(Obrigatoriedade.Sempre)
         .ComCampos(FatoColetadoDeTeste.Coletando("PARENTESCO", 0)
             .ComRotulo("Parentesco")
-            .DoTipo(TipoRenderizacao.EscolhaUnica)
+            .DoTipo(TipoDeCampo.EscolhaUnica)
             .ComObrigatoriedade(Obrigatoriedade.Sempre)
             .Construir())
         .DaFinalidade(FinalidadeFormulario.Habilitacao)

@@ -102,7 +102,7 @@ public sealed class ReconferenciaDasCopiasDoItemTests
         Result resposta = ReconferenciaDeTeste.Aplicar(ProcessoConforme(), catalogo, Coletados("DESEJA_NOME_SOCIAL"));
 
         resposta.IsFailure.Should().BeTrue();
-        resposta.Error!.Code.Should().Be("ItemFormulario.TipoRenderizacaoIncoerenteComDominio");
+        resposta.Error!.Code.Should().Be("ItemFormulario.TipoDeCampoIncoerenteComDominio");
         resposta.Error.Message.Should().Contain("desfaça a correção no catálogo").And.Contain("processos novos e rascunhos");
     }
 
@@ -123,7 +123,7 @@ public sealed class ReconferenciaDasCopiasDoItemTests
         ProcessoSeletivo processo = ProcessoConforme();
         FatoColetado corRaca = FatoColetadoDeTeste.Coletando("COR_RACA", 0)
             .ComRotulo("Cor ou raça")
-            .DoTipo(TipoRenderizacao.EscolhaUnica)
+            .DoTipo(TipoDeCampo.EscolhaUnica)
             .ComRestricoes(new OpcoesPermitidas([new OpcoesCondicionadas(null, ["BRANCA", "PRETA"])]))
             .Construir();
         processo.DefinirItens([corRaca]).IsSuccess.Should().BeTrue();
@@ -228,7 +228,7 @@ public sealed class ReconferenciaDasCopiasDoItemTests
 
         resposta.IsFailure.Should().BeTrue();
         resposta.Errors.Select(static e => e.Field).Should().Contain([
-            "formularios[1].itens[0].tipoRenderizacao",
+            "formularios[1].itens[0].tipoDeCampo",
         ]).And.Contain(static campo => campo.StartsWith("formularios[0].itens[", StringComparison.Ordinal));
     }
 

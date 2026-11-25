@@ -71,7 +71,7 @@ internal static class ApoioFormulariosPorFinalidade
     /// <summary>A data de nascimento na seção dos dados básicos, com a obrigatoriedade do caso.</summary>
     internal static FatoColetado DataDeNascimento(Obrigatoriedade obrigatoriedade) => FatoColetadoDeTeste.Coletando("DATA_NASCIMENTO", ConjuntoBasicoDaInscricao.Itens.Single(static i => i.FatoCodigo == "DATA_NASCIMENTO").Ordem)
         .ComRotulo("Data de nascimento")
-        .DoTipo(TipoRenderizacao.Data)
+        .DoTipo(TipoDeCampo.Data)
         .ComObrigatoriedade(obrigatoriedade)
         .NaSecao(ConjuntoBasicoDaInscricao.CodigoDaSecao)
         .Construir();

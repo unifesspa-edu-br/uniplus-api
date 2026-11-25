@@ -10,7 +10,7 @@ public sealed class EixosDoItemCongeladoTests
 
     public static TheoryData<EixosDoItemCongelado, string> Diferencas => new()
     {
-        { Publicado with { TipoRenderizacao = "DATA" }, "tipo de renderização" },
+        { Publicado with { TipoDeCampo = "DATA" }, "tipo de campo" },
         { Publicado with { OrigemValores = "OPCOES_DO_PROCESSO" }, "origem dos valores" },
         { Publicado with { Formato = "FORMATO" }, "formato" },
         { Publicado with { ClassificacaoProtecao = "SENSIVEL" }, "classificação de proteção" },
@@ -52,5 +52,5 @@ public sealed class EixosDoItemCongeladoTests
 
     [Fact(DisplayName = "A comparação dos eixos usa igualdade ordinal")]
     public void PrimeiraTroca_MaiusculasDiferentes_Recusa() =>
-        Publicado.PrimeiraTroca("FATO", Publicado with { TipoRenderizacao = "texto" })!.Eixo.Should().Be("tipo de renderização");
+        Publicado.PrimeiraTroca("FATO", Publicado with { TipoDeCampo = "texto" })!.Eixo.Should().Be("tipo de campo");
 }

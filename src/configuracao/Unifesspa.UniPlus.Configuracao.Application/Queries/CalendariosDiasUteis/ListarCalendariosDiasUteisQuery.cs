@@ -4,9 +4,9 @@ using Unifesspa.UniPlus.Application.Abstractions.Messaging;
 using Unifesspa.UniPlus.Kernel.Pagination;
 
 /// <summary>
-/// Lista datasets de calendário de dias úteis vivos, paginados por cursor
+/// Lista calendários de dias úteis vivos, paginados por cursor
 /// bidirecional (ADR-0026 + ADR-0089). Sem os dias não úteis — use
-/// <c>ObterCalendarioDiasUteisPorIdQuery</c> para o dataset completo.
+/// <c>ObterCalendarioDiasUteisPorIdQuery</c> para o calendário completo.
 /// </summary>
 public sealed record ListarCalendariosDiasUteisQuery(
     Guid? AfterId,

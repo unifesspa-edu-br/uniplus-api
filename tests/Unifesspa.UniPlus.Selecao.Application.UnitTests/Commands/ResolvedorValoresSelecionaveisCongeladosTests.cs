@@ -54,7 +54,7 @@ public sealed class ResolvedorValoresSelecionaveisCongeladosTests
     private static FatoColetado CampoDeSelecaoComOpcoesDoProcesso(string codigo, int ordem, string rotulo) =>
         FatoColetadoDeTeste.Coletando(codigo, ordem)
             .ComRotulo(rotulo)
-            .DoTipo(TipoRenderizacao.EscolhaUnica)
+            .DoTipo(TipoDeCampo.EscolhaUnica)
             .ComObrigatoriedade(Obrigatoriedade.Sempre)
             .ComOrigem(OrigemValoresColeta.OpcoesDoProcesso)
             .Construir();
@@ -80,7 +80,7 @@ public sealed class ResolvedorValoresSelecionaveisCongeladosTests
         ProcessoSeletivo processo = NovoProcesso();
         FatoColetado listaDeEspera = FatoColetadoDeTeste.Coletando("OPCAO_LISTA_ESPERA", 1)
             .ComRotulo("Lista de espera")
-            .DoTipo(TipoRenderizacao.EscolhaUnica)
+            .DoTipo(TipoDeCampo.EscolhaUnica)
             .ComOrigem(OrigemValoresColeta.OpcoesDoProcesso)
             .ComRestricoes(new OpcoesDasRespostas(["OPCAO_CURSO_1"]))
             .Construir();
@@ -128,7 +128,7 @@ public sealed class ResolvedorValoresSelecionaveisCongeladosTests
         processo.DefinirBonusRegional(aplica: true, bonus: ConfiguracaoBonusRegional.Criar(ReferenciaRegra.De(RegraDeBonus.Multiplicativo.Codigo(), "v1", new string('a', 64)), 1.20m, null, null, new BaseLegalCongelada(Guid.NewGuid(), "PORTARIA_UNIFESSPA_NO_2514_2023", "PORTARIA", "Portaria Unifesspa nº 2514/2023", "Institui inclusão regional", [("1505536", "Parauapebas", "PA"), ("1504208", "Marabá", "PA"), ("1500131", "Água Azul do Norte", "PA")])).Value!).IsSuccess.Should().BeTrue();
         ColetarNaHabilitacao(processo, FatoColetadoDeTeste.Coletando("MUNICIPIO_EM_AREA_BONUS", 0)
             .ComRotulo("Município")
-            .DoTipo(TipoRenderizacao.EscolhaUnica)
+            .DoTipo(TipoDeCampo.EscolhaUnica)
             .ComObrigatoriedade(Obrigatoriedade.Sempre)
             .ComOrigem(OrigemValoresColeta.MunicipiosDoFada)
             .Construir());
@@ -162,7 +162,7 @@ public sealed class ResolvedorValoresSelecionaveisCongeladosTests
         processo.DefinirItens(
             [FatoColetadoDeTeste.Coletando("TIPO_DEFICIENCIA", 0)
                 .ComRotulo("Tipo de deficiência")
-                .DoTipo(TipoRenderizacao.EscolhaMultipla)
+                .DoTipo(TipoDeCampo.EscolhaMultipla)
                 .ComClassificacao("SENSIVEL")
                 .Construir()], finalidade: FinalidadeFormulario.Habilitacao).IsSuccess.Should().BeTrue();
 
@@ -220,7 +220,7 @@ public sealed class ResolvedorValoresSelecionaveisCongeladosTests
     }
 
     private static FatoColetado CampoDeSelecao(string codigo, int ordem) => FatoColetadoDeTeste.Coletando(codigo, ordem)
-        .DoTipo(TipoRenderizacao.EscolhaUnica)
+        .DoTipo(TipoDeCampo.EscolhaUnica)
         .Construir();
 
     private static Dictionary<string, FatoCandidatoView> CatalogoSemValores(params string[] fatos) =>
@@ -257,13 +257,13 @@ public sealed class ResolvedorValoresSelecionaveisCongeladosTests
 
     private static FatoColetado CampoDeUfDeNascimento() => FatoColetadoDeTeste.Coletando("NATURALIDADE_UF", 0)
         .ComRotulo("UF de nascimento")
-        .DoTipo(TipoRenderizacao.EscolhaUnica)
+        .DoTipo(TipoDeCampo.EscolhaUnica)
         .ComObrigatoriedade(Obrigatoriedade.Sempre)
         .ComOrigem(OrigemValoresColeta.UnidadesFederativas)
         .Construir();
 
     private static FatoColetado CampoDeCondicaoDeAtendimento() => FatoColetadoDeTeste.Coletando("CONDICAO_ATENDIMENTO", 0)
         .ComRotulo("Condição de atendimento")
-        .DoTipo(TipoRenderizacao.EscolhaMultipla)
+        .DoTipo(TipoDeCampo.EscolhaMultipla)
         .Construir();
 }

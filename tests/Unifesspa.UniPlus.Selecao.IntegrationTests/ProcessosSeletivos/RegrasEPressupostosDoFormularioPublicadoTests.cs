@@ -112,7 +112,7 @@ public sealed class RegrasEPressupostosDoFormularioPublicadoTests
         await PublicarComMunicipioAsync(processo);
 
         PressupostoRenderizavel publicado = Municipio(await _cenario.LerPublicadoAsync(processo.Id));
-        (publicado.Rotulo, publicado.TipoRenderizacao).Should().Be(("Município de residência", "MUNICIPIO"));
+        (publicado.Rotulo, publicado.TipoDeCampo).Should().Be(("Município de residência", "MUNICIPIO"));
         publicado.CalculadoDe.Should().Equal(["ENDERECO_RESIDENCIAL"]);
 
         FormularioRenderizavelDto rascunho = await _cenario.LerRascunhoAsync(processo.Id, CatalogoComOMunicipio("Cidade onde mora"));
@@ -136,7 +136,7 @@ public sealed class RegrasEPressupostosDoFormularioPublicadoTests
         [
             FatoColetadoDeTeste.Coletando("COR_RACA", 0)
                 .ComRotulo("Cor ou raça")
-                .DoTipo(TipoRenderizacao.EscolhaUnica)
+                .DoTipo(TipoDeCampo.EscolhaUnica)
                 .ComObrigatoriedade(Obrigatoriedade.Sempre)
                 .Construir(),
             FatoColetadoDeTeste.Coletando("ATENDIMENTO_NO_MUNICIPIO", 1)
@@ -179,11 +179,11 @@ public sealed class RegrasEPressupostosDoFormularioPublicadoTests
         lido.Formulario.Pressupostos.Fatos.Select(static p => p.FatoCodigo).Should().Equal("COR_RACA", "FAIXA_ETARIA");
         PressupostoRenderizavel corRaca = lido.Formulario.Pressupostos.Fatos[0];
         corRaca.Rotulo.Should().Be("Cor ou raça");
-        corRaca.TipoRenderizacao.Should().Be("ESCOLHA_UNICA");
+        corRaca.TipoDeCampo.Should().Be("ESCOLHA_UNICA");
         corRaca.ValoresSelecionaveis!.Select(static v => v.Codigo).Should().Equal(["BRANCA", "PRETA", "PARDA"], "a simulação pergunta o dado anterior com os valores congelados");
         PressupostoRenderizavel faixaEtaria = lido.Formulario.Pressupostos.Fatos[1];
         faixaEtaria.Rotulo.Should().Be("Faixa etária", "nenhum formulário a pergunta, e o rótulo é o do catálogo congelado na versão");
-        faixaEtaria.TipoRenderizacao.Should().Be("NUMERO");
+        faixaEtaria.TipoDeCampo.Should().Be("NUMERO");
         faixaEtaria.CalculadoDe.Should().Equal(["DATA_NASCIMENTO"]);
         lido.Formulario.Pressupostos.DataReferenciaFatos.Should().Be(new DateOnly(2026, 1, 31), "a data de referência da faixa etária é a congelada na publicação");
     }

@@ -11,7 +11,7 @@ public static class CodigosDeEnumNoContrato
     private static readonly Dictionary<string, string> ComponentePorCampo = new(StringComparer.Ordinal)
     {
         ["operador"] = "OperadorCodigo",
-        ["tipoRenderizacao"] = "TipoRenderizacaoCodigo",
+        ["tipoDeCampo"] = "TipoDeCampoCodigo",
         ["visivel"] = "TernarioCodigo",
         ["obrigatorio"] = "TernarioCodigo",
         ["impedido"] = "TernarioCodigo",

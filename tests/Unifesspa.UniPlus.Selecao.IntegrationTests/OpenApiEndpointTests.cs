@@ -214,8 +214,28 @@ public sealed class OpenApiEndpointTests
 
         CodigosDeEnumNoContrato.CamposComTextoCru(spec.RootElement).Should().BeEmpty(
             "o campo que leva código de enum de contrato publica o componente dos códigos do enum (ADR-0176)");
-        CodigosDeEnumNoContrato.ReferenciaOsCodigos(spec.RootElement, "ApresentacaoDoCampoDto", "tipoRenderizacao").Should().BeTrue();
+        CodigosDeEnumNoContrato.ReferenciaOsCodigos(spec.RootElement, "ApresentacaoDoCampoDto", "tipoDeCampo").Should().BeTrue();
         CodigosDeEnumNoContrato.ReferenciaOsCodigos(spec.RootElement, "CondicaoPrecondicaoDto", "operador").Should().BeTrue();
+    }
+
+    [Fact(DisplayName = "A situação do processo referencia os componentes e códigos próprios")]
+    public async Task SituacaoDoProcesso_NoContrato_ReferenciaOsCodigos()
+    {
+        using JsonDocument spec = await LerSpecAsync();
+        JsonElement schemas = spec.RootElement.GetProperty("components").GetProperty("schemas");
+
+        foreach (string nome in new[] { "ProcessoSeletivoDto", "ProcessoSeletivoResumoDto" })
+        {
+            JsonElement propriedades = schemas.GetProperty(nome).GetProperty("properties");
+            propriedades.TryGetProperty("status", out _).Should().BeFalse();
+            propriedades.GetProperty("situacao").GetProperty("$ref").GetString()
+                .Should().Be("#/components/schemas/SituacaoDoProcessoSeletivo");
+        }
+
+        schemas.GetProperty("SituacaoDoProcessoSeletivo").GetProperty("properties").GetProperty("codigo").GetProperty("$ref").GetString()
+            .Should().Be("#/components/schemas/SituacaoDoProcessoSeletivoCodigo");
+        schemas.GetProperty("SituacaoDoProcessoSeletivoCodigo").GetProperty("enum").EnumerateArray().Select(static valor => valor.GetString())
+            .Should().Equal("RASCUNHO", "PUBLICADO", "ENCERRADO", "CANCELADO");
     }
 
     private static void ExigirUrlDownload(JsonElement schemas, string schema, bool nulo)

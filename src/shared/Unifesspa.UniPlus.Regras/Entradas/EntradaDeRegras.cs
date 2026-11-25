@@ -280,8 +280,8 @@ public static class EntradaDeRegras
     /// A apresentação da entrada com o tipo de campo já lido. A entrada ausente e o rótulo ausente ficam sem
     /// texto, e a recusa deles é da forma do item.
     /// </summary>
-    public static ApresentacaoDoCampo Apresentacao(ApresentacaoDoCampoInput? entrada, TipoRenderizacao tipoRenderizacao) =>
-        new(entrada?.Rotulo ?? string.Empty, tipoRenderizacao, entrada?.Ajuda, entrada?.PedirConfirmacao ?? false);
+    public static ApresentacaoDoCampo Apresentacao(ApresentacaoDoCampoInput? entrada, TipoDeCampo tipoDeCampo) =>
+        new(entrada?.Rotulo ?? string.Empty, tipoDeCampo, entrada?.Ajuda, entrada?.PedirConfirmacao ?? false);
 
     /// <summary>A obrigatoriedade na forma da entrada: o token e, quando há, o predicado.</summary>
     public static ObrigatoriedadeInput ObrigatoriedadeNaEntrada(Formularios.Obrigatoriedade obrigatoriedade)
@@ -308,7 +308,7 @@ public static class EntradaDeRegras
     public static ApresentacaoDoCampoInput ParaEntrada(ApresentacaoDoCampo apresentacao)
     {
         ArgumentNullException.ThrowIfNull(apresentacao);
-        return new(apresentacao.Rotulo, apresentacao.TipoRenderizacao.Codigo(), apresentacao.Ajuda, apresentacao.PedirConfirmacao);
+        return new(apresentacao.Rotulo, apresentacao.TipoDeCampo.Codigo(), apresentacao.Ajuda, apresentacao.PedirConfirmacao);
     }
 
     /// <summary>As regras do campo na forma da entrada: a obrigatoriedade leva o token e, quando há, o predicado.</summary>

@@ -919,7 +919,7 @@
     {
       "codigo": "uniplus.configuracao.calendario_dias_uteis.conflito_de_concorrencia",
       "status": 409,
-      "titulo": "Outra alteração concorrente modificou o mesmo dataset ou o dataset vigente"
+      "titulo": "Outra alteração concorrente modificou o mesmo calendário ou o calendário vigente"
     },
     {
       "codigo": "uniplus.configuracao.calendario_dias_uteis.data_ausente",
@@ -927,9 +927,9 @@
       "titulo": "A data do dia não útil não pode ser o valor default"
     },
     {
-      "codigo": "uniplus.configuracao.calendario_dias_uteis.data_duplicada_no_dataset",
+      "codigo": "uniplus.configuracao.calendario_dias_uteis.data_duplicada_no_calendario",
       "status": 422,
-      "titulo": "Data duplicada no dataset (mesma abrangência e município)"
+      "titulo": "Data duplicada no calendário (mesma abrangência, município e UF)"
     },
     {
       "codigo": "uniplus.configuracao.calendario_dias_uteis.descricao_obrigatoria",
@@ -949,7 +949,7 @@
     {
       "codigo": "uniplus.configuracao.calendario_dias_uteis.ja_vigente",
       "status": 409,
-      "titulo": "Este dataset já é o vigente"
+      "titulo": "Este calendário já é o vigente"
     },
     {
       "codigo": "uniplus.configuracao.calendario_dias_uteis.nao_encontrado",
@@ -959,12 +959,12 @@
     {
       "codigo": "uniplus.configuracao.calendario_dias_uteis.nao_remove_vigente",
       "status": 409,
-      "titulo": "O dataset vigente não pode ser removido"
+      "titulo": "O calendário vigente não pode ser removido"
     },
     {
       "codigo": "uniplus.configuracao.calendario_dias_uteis.sem_dia_nao_util",
       "status": 422,
-      "titulo": "O dataset precisa de ao menos um dia não útil"
+      "titulo": "O calendário precisa de ao menos um dia não útil"
     },
     {
       "codigo": "uniplus.configuracao.calendario_dias_uteis.snapshot_municipal_apenas_para_municipal",
@@ -987,14 +987,14 @@
       "titulo": "UF é obrigatória para abrangência estadual"
     },
     {
-      "codigo": "uniplus.configuracao.calendario_dias_uteis.versao_dataset_obrigatoria",
+      "codigo": "uniplus.configuracao.calendario_dias_uteis.versao_do_calendario_obrigatoria",
       "status": 422,
-      "titulo": "Versão do dataset é obrigatória"
+      "titulo": "Versão do calendário é obrigatória"
     },
     {
-      "codigo": "uniplus.configuracao.calendario_dias_uteis.versao_dataset_tamanho",
+      "codigo": "uniplus.configuracao.calendario_dias_uteis.versao_do_calendario_tamanho",
       "status": 422,
-      "titulo": "Tamanho da versão do dataset inválido"
+      "titulo": "Tamanho da versão do calendário inválido"
     },
     {
       "codigo": "uniplus.configuracao.campus.codigo_emec_tamanho",
@@ -1962,6 +1962,11 @@
       "titulo": "Quantidade de turnos incompatível com o regime declarado"
     },
     {
+      "codigo": "uniplus.configuracao.oferta_curso.codigo_emec_tamanho",
+      "status": 422,
+      "titulo": "Tamanho do código do e-MEC inválido"
+    },
+    {
       "codigo": "uniplus.configuracao.oferta_curso.codigo_formato_invalido",
       "status": 422,
       "titulo": "O código da oferta de curso está fora do formato"
@@ -1972,24 +1977,19 @@
       "titulo": "Já existe uma oferta de curso ativa com este código"
     },
     {
+      "codigo": "uniplus.configuracao.oferta_curso.codigo_no_sistema_academico_tamanho",
+      "status": 422,
+      "titulo": "Tamanho do código no sistema acadêmico inválido"
+    },
+    {
       "codigo": "uniplus.configuracao.oferta_curso.codigo_obrigatorio",
       "status": 422,
       "titulo": "O código da oferta de curso é obrigatório"
     },
     {
-      "codigo": "uniplus.configuracao.oferta_curso.codigo_sga_tamanho",
-      "status": 422,
-      "titulo": "Tamanho do código SGA inválido"
-    },
-    {
       "codigo": "uniplus.configuracao.oferta_curso.curso_inexistente_ou_removido",
       "status": 422,
       "titulo": "Curso informado não existe ou foi removido"
-    },
-    {
-      "codigo": "uniplus.configuracao.oferta_curso.e_mec_codigo_tamanho",
-      "status": 422,
-      "titulo": "Tamanho do código e-MEC inválido"
     },
     {
       "codigo": "uniplus.configuracao.oferta_curso.formato_pedagogico_invalido",
@@ -3547,17 +3547,17 @@
       "titulo": "O rótulo do item excede o tamanho máximo"
     },
     {
-      "codigo": "uniplus.item_formulario.tipo_renderizacao_incoerente_com_dominio",
+      "codigo": "uniplus.item_formulario.tipo_de_campo_incoerente_com_dominio",
       "status": 422,
-      "titulo": "O tipo de campo não é coerente com o domínio do fato"
+      "titulo": "O tipo de campo não é coerente com o domínio do dado"
     },
     {
-      "codigo": "uniplus.item_formulario.tipo_renderizacao_invalido",
+      "codigo": "uniplus.item_formulario.tipo_de_campo_invalido",
       "status": 422,
       "titulo": "O tipo de campo do item não é reconhecido"
     },
     {
-      "codigo": "uniplus.item_formulario.tipo_renderizacao_obrigatorio",
+      "codigo": "uniplus.item_formulario.tipo_de_campo_obrigatorio",
       "status": 422,
       "titulo": "O tipo de campo do item é obrigatório"
     },
@@ -4452,14 +4452,14 @@
       "titulo": "O calendário congelado precisa ter ao menos um dia não útil"
     },
     {
-      "codigo": "uniplus.selecao.calendario_dias_uteis_congelado.versao_dataset_obrigatoria",
+      "codigo": "uniplus.selecao.calendario_dias_uteis_congelado.versao_do_calendario_obrigatoria",
       "status": 422,
-      "titulo": "Versão do dataset do calendário é obrigatória"
+      "titulo": "Versão do calendário é obrigatória"
     },
     {
-      "codigo": "uniplus.selecao.calendario_dias_uteis_congelado.versao_dataset_tamanho",
+      "codigo": "uniplus.selecao.calendario_dias_uteis_congelado.versao_do_calendario_tamanho",
       "status": 422,
-      "titulo": "Versão do dataset do calendário excede o tamanho permitido"
+      "titulo": "Versão do calendário excede o tamanho permitido"
     },
     {
       "codigo": "uniplus.selecao.calendario_vigente.forma_territorial_invalida",

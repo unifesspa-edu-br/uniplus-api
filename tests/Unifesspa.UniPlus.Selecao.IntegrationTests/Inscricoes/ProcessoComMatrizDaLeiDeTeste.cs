@@ -51,7 +51,7 @@ internal static class ProcessoComMatrizDaLeiDeTeste
 
     private static FatoColetado Selecao(string codigo, int ordem) => FatoColetadoDeTeste.Coletando(codigo, ordem)
         .ComRotulo($"Rótulo de {codigo}")
-        .DoTipo(TipoRenderizacao.EscolhaUnica)
+        .DoTipo(TipoDeCampo.EscolhaUnica)
         .ComObrigatoriedade(Obrigatoriedade.Sempre)
         .NaSecao(FormularioDeTeste.Secao)
         .DaFinalidade(FinalidadeFormulario.Inscricao)

@@ -77,8 +77,8 @@ public sealed class OrdemDasRecusasDaConferenciaTests
         Array.IndexOf(codigos, CodigoDaJanelaInvertida).Should().BeLessThan(Array.IndexOf(codigos, "ProcessoSeletivo.OrdemEtapaDuplicada"));
     }
 
-    [Fact(DisplayName = "Publicar um processo já publicado devolve a recusa do status, mesmo com a configuração inválida")]
-    public void Publicar_JaPublicadoComConfiguracaoInvalida_RecusaPeloStatus()
+    [Fact(DisplayName = "Publicar um processo já publicado devolve a recusa da situação, mesmo com a configuração inválida")]
+    public void Publicar_JaPublicadoComConfiguracaoInvalida_RecusaPelaSituacao()
     {
         ProcessoSeletivo publicado = ProcessoEmEdicaoDeTeste.Publicado(out _);
         LimparIdentificador(publicado);

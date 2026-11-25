@@ -64,7 +64,7 @@ internal static class LeituraDoCalendario
         leitor.ExigirChaves(bloco, "calendarioDiasUteis", "presente", "origemId", "versaoDoCalendario", "diasNaoUteis");
 
         Guid origemId = leitor.Identificador(bloco, "origemId", "calendarioDiasUteis");
-        string versaoDataset = leitor.TextoNaoVazio(bloco, "versaoDoCalendario", "calendarioDiasUteis");
+        string versaoDoCalendario = leitor.TextoNaoVazio(bloco, "versaoDoCalendario", "calendarioDiasUteis");
         JsonArray dias = leitor.Array(bloco, "diasNaoUteis", "calendarioDiasUteis");
         if (leitor.Falhou)
         {
@@ -72,7 +72,7 @@ internal static class LeituraDoCalendario
         }
 
         List<DiaNaoUtilCongelado>? congelados = LerDiasNaoUteis(leitor, dias);
-        return congelados is null ? null : CriarCalendario(leitor, origemId, versaoDataset, congelados);
+        return congelados is null ? null : CriarCalendario(leitor, origemId, versaoDoCalendario, congelados);
     }
 
     // Nenhuma transição que gera versão publica processo com fase ou etapa que aceita recurso e sem
@@ -148,7 +148,7 @@ internal static class LeituraDoCalendario
     }
 
     private static CalendarioDiasUteisCongelado? CriarCalendario(
-        LeitorEnvelope leitor, Guid origemId, string versaoDataset, List<DiaNaoUtilCongelado> congelados)
+        LeitorEnvelope leitor, Guid origemId, string versaoDoCalendario, List<DiaNaoUtilCongelado> congelados)
     {
         // A ordem do artefato tem de ser a canônica. Criar reordena; comparar antes distingue o envelope
         // emitido por este encoder do montado à mão.
@@ -158,21 +158,21 @@ internal static class LeituraDoCalendario
                 "'calendarioDiasUteis.diasNaoUteis' não está na ordem canônica (data, abrangência, município, UF).");
         }
 
-        return CriarCalendarioOrdenado(leitor, origemId, versaoDataset, congelados);
+        return CriarCalendarioOrdenado(leitor, origemId, versaoDoCalendario, congelados);
     }
 
     private static CalendarioDiasUteisCongelado? CriarCalendarioOrdenado(
-        LeitorEnvelope leitor, Guid origemId, string versaoDataset, List<DiaNaoUtilCongelado> congelados)
+        LeitorEnvelope leitor, Guid origemId, string versaoDoCalendario, List<DiaNaoUtilCongelado> congelados)
     {
-        Result<CalendarioDiasUteisCongelado> calendario = CalendarioDiasUteisCongelado.Criar(origemId, versaoDataset, congelados);
+        Result<CalendarioDiasUteisCongelado> calendario = CalendarioDiasUteisCongelado.Criar(origemId, versaoDoCalendario, congelados);
         if (calendario.IsFailure)
         {
             return leitor.Recusar<CalendarioDiasUteisCongelado?>($"'calendarioDiasUteis' congelado é inválido: {calendario.Error!.Message}");
         }
 
         // Mesma razão da conferência por dia: a factory apara espaço da versão.
-        return string.Equals(calendario.Value!.VersaoDataset, versaoDataset, StringComparison.Ordinal)
-            && string.Equals(HashCanonicalComputer.NormalizeNfc(versaoDataset), versaoDataset, StringComparison.Ordinal)
+        return string.Equals(calendario.Value!.VersaoDoCalendario, versaoDoCalendario, StringComparison.Ordinal)
+            && string.Equals(HashCanonicalComputer.NormalizeNfc(versaoDoCalendario), versaoDoCalendario, StringComparison.Ordinal)
             ? calendario.Value
             : leitor.Recusar<CalendarioDiasUteisCongelado?>(
                 "'calendarioDiasUteis.versaoDoCalendario' não está na forma canônica — espaço em volta do valor "

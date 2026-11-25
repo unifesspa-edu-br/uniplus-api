@@ -336,7 +336,7 @@ public sealed class AlterarDefinicaoDoFatoCandidatoCommandHandlerTests
             fato,
             ordem,
             "DADOS",
-            new ApresentacaoDoCampo(rotulo ?? fato, TipoRenderizacao.SimOuNao),
+            new ApresentacaoDoCampo(rotulo ?? fato, TipoDeCampo.SimOuNao),
             null,
             new RegrasDoCampo(precondicao, Obrigatoriedade.Sempre, []));
 

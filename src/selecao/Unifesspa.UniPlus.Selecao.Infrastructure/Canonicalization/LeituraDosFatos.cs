@@ -111,7 +111,7 @@ internal static class LeituraDosFatos
         Dictionary<string, IReadOnlyList<ValorDominioDeclaradoCongelado>?> valoresSelecionaveis)
     {
         if (LerDeclaracaoNoVocabulario(leitor, item, path) is not { } d
-            || LerComponentes(leitor, item, path, d.TipoRenderizacao!.Value, d.Finalidade) is not { } c)
+            || LerComponentes(leitor, item, path, d.TipoDeCampo!.Value, d.Finalidade) is not { } c)
         {
             return null;
         }
@@ -140,18 +140,18 @@ internal static class LeituraDosFatos
             d.FatoCodigo,
             d.Ordem,
             d.EtapaCodigo,
-            new ApresentacaoDoCampo(d.Rotulo, d.TipoRenderizacao!.Value, d.Ajuda, d.PedirConfirmacao),
+            new ApresentacaoDoCampo(d.Rotulo, d.TipoDeCampo!.Value, d.Ajuda, d.PedirConfirmacao),
             c.Regras,
             d.Copia,
             d.Finalidade);
 
     private static ComponentesDoFato? LerComponentes(
-        LeitorEnvelope leitor, JsonObject item, string path, TipoRenderizacao tipoRenderizacao, FinalidadeFormulario? finalidade)
+        LeitorEnvelope leitor, JsonObject item, string path, TipoDeCampo tipoDeCampo, FinalidadeFormulario? finalidade)
     {
         PredicadoDnf? exibicao = LerPrecondicoes(leitor, item, path);
         IReadOnlyList<ValorDominioDeclaradoCongelado>? valoresDoFato = leitor.Falhou
             ? null
-            : LeituraDosValoresDeDominio.LerValoresSelecionaveis(leitor, item, path, tipoRenderizacao);
+            : LeituraDosValoresDeDominio.LerValoresSelecionaveis(leitor, item, path, tipoDeCampo);
         return leitor.Falhou || LerRegrasDoItem(leitor, item, path, exibicao, finalidade) is not { } regras
             ? null
             : new ComponentesDoFato(regras, valoresDoFato);
@@ -184,8 +184,8 @@ internal static class LeituraDosFatos
             ? $"'{path}.componenteExibicao' não está na forma canônica: sem espaço nas pontas e não vazio."
         : d.Finalidade is null
             ? $"'{path}.finalidade' fora do vocabulário de finalidades."
-        : d.TipoRenderizacao is null
-            ? $"'{path}.tipoDeCampo' fora dos tipos de campo aceitos: {string.Join(", ", CatalogoDe<TipoRenderizacao>.Todos().Select(static c => c.Codigo))}."
+        : d.TipoDeCampo is null
+            ? $"'{path}.tipoDeCampo' fora dos tipos de campo aceitos: {string.Join(", ", CatalogoDe<TipoDeCampo>.Todos().Select(static c => c.Codigo))}."
             : null;
 
     private static PredicadoDnf? LerPrecondicoes(LeitorEnvelope leitor, JsonObject item, string path)
@@ -207,7 +207,7 @@ internal static class LeituraDosFatos
         EtapaCodigo = leitor.TextoOpcional(item, "paginaCodigo", path, LimitesDoEnvelope.CodigoEtapaFormulario),
         Ordem = leitor.Inteiro(item, "ordem", path),
         Rotulo = leitor.TextoNaoVazio(item, "rotulo", path, LimitesDoEnvelope.NomeDeCadastro),
-        TipoRenderizacao = TipoDoCodigo(leitor.TextoNaoVazio(item, "tipoDeCampo", path)),
+        TipoDeCampo = TipoDoCodigo(leitor.TextoNaoVazio(item, "tipoDeCampo", path)),
         Ajuda = leitor.TextoOpcional(item, "ajuda", path, LimitesDoEnvelope.AjudaDoCampo),
         PedirConfirmacao = leitor.Booleano(item, "pedirConfirmacao", path),
         Copia = LerCopiaDoCatalogo(leitor, item, path),
@@ -222,8 +222,8 @@ internal static class LeituraDosFatos
         leitor.TextoNaoVazio(item, "descricao", path, LimitesDoEnvelope.DescricaoDoFato),
         leitor.TextoOpcional(item, "componenteExibicao", path, LimitesDoEnvelope.ComponenteExibicao));
 
-    private static TipoRenderizacao? TipoDoCodigo(string codigo) =>
-        CatalogoDe<TipoRenderizacao>.TentarObter(codigo, out TipoRenderizacao tipo) ? tipo : null;
+    private static TipoDeCampo? TipoDoCodigo(string codigo) =>
+        CatalogoDe<TipoDeCampo>.TentarObter(codigo, out TipoDeCampo tipo) ? tipo : null;
 
     private sealed class DeclaracaoDoFato
     {
@@ -237,7 +237,7 @@ internal static class LeituraDosFatos
 
         public string Rotulo { get; init; } = string.Empty;
 
-        public TipoRenderizacao? TipoRenderizacao { get; init; }
+        public TipoDeCampo? TipoDeCampo { get; init; }
 
         public string? Ajuda { get; init; }
 

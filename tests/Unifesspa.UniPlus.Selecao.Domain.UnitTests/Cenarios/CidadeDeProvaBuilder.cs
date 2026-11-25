@@ -36,7 +36,7 @@ internal sealed class CidadeDeProvaBuilder
     {
         FatoColetado campo = FatoColetadoDeTeste.Coletando("CIDADE_DE_PROVA", FormularioDeTeste.PrimeiraOrdemDeInscricao)
             .ComRotulo("Cidade de prova")
-            .DoTipo(TipoRenderizacao.EscolhaUnica)
+            .DoTipo(TipoDeCampo.EscolhaUnica)
             .ComObrigatoriedade(obrigatoriedade)
             .ExibidoQuando(exibicao)
             .ComOrigem(OrigemValoresColeta.MunicipiosDaProvaPresencial)

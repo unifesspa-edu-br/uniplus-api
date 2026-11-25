@@ -21,7 +21,7 @@ internal static class ConteudosDoModeloDeTeste
         new(codigo, ordem, TipoEtapaFormulario.Secao, null, "Dados", null, null, exibicao);
 
     public static ItemDoModelo Item(string fato, int ordem = 0, PredicadoDnf? exibicao = null) =>
-        new(fato, ordem, "DADOS", new ApresentacaoDoCampo(fato, TipoRenderizacao.SimOuNao), null, new RegrasDoCampo(exibicao, Obrigatoriedade.Sempre, []));
+        new(fato, ordem, "DADOS", new ApresentacaoDoCampo(fato, TipoDeCampo.SimOuNao), null, new RegrasDoCampo(exibicao, Obrigatoriedade.Sempre, []));
 
     public static GrupoDoModelo Grupo(string codigo, int ordem = 0, PredicadoDnf? exibicao = null, params ItemDoModelo[] campos) =>
         new(codigo, ordem, "DADOS", "Grupo", new OcorrenciasDoGrupo(1, 10, IncluiCandidato: false), new ExibicaoEObrigatoriedade(exibicao, Obrigatoriedade.Sempre), campos);

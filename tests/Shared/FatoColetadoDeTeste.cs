@@ -21,7 +21,7 @@ internal sealed record FatoColetadoDeTeste
 
     private string? Rotulo { get; init; }
 
-    private TipoRenderizacao Tipo { get; init; } = TipoRenderizacao.SimOuNao;
+    private TipoDeCampo Tipo { get; init; } = TipoDeCampo.SimOuNao;
 
     private Obrigatoriedade Obrigatoriedade { get; init; } = Obrigatoriedade.Nunca;
 
@@ -49,7 +49,7 @@ internal sealed record FatoColetadoDeTeste
         Coletando(fato.FatoCodigo, fato.Ordem) with
         {
             Rotulo = fato.Rotulo,
-            Tipo = fato.TipoRenderizacao,
+            Tipo = fato.TipoDeCampo,
             Obrigatoriedade = fato.Obrigatoriedade,
             Exibicao = fato.Exibicao,
             Restricoes = fato.Restricoes,
@@ -63,10 +63,10 @@ internal sealed record FatoColetadoDeTeste
 
     public FatoColetadoDeTeste ComRotulo(string rotulo) => this with { Rotulo = rotulo };
 
-    public FatoColetadoDeTeste DoTipo(TipoRenderizacao tipo) => this with { Tipo = tipo };
+    public FatoColetadoDeTeste DoTipo(TipoDeCampo tipo) => this with { Tipo = tipo };
 
     /// <summary>Campo de texto com o formato que o catálogo dá ao fato.</summary>
-    public FatoColetadoDeTeste DeTexto(string? formato) => DoTipo(TipoRenderizacao.Texto).ComFormato(formato);
+    public FatoColetadoDeTeste DeTexto(string? formato) => DoTipo(TipoDeCampo.Texto).ComFormato(formato);
 
     /// <summary>O formato da cópia do catálogo, para o teste em que o tipo do campo vem de fora.</summary>
     public FatoColetadoDeTeste ComFormato(string? formato) => this with { Copia = Copia with { Formato = formato } };

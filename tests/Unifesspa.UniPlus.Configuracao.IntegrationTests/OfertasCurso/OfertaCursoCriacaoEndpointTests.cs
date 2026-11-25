@@ -45,7 +45,7 @@ public sealed class OfertaCursoCriacaoEndpointTests
         DependenciasDaOferta dependencias = await _apoio.SemearDependenciasAsync("faceel-oferta", "FACEEL", "OFC001");
         object corpo = CorpoOfertaCom(
             dependencias, ("regimeDeTurno", "INTEGRAL"), ("turnos", new[] { "VESPERTINO", "MATUTINO" }),
-            ("eMecCodigo", "123456"), ("codigoSga", "ENG-01"), ("vagasAnuaisAutorizadas", 40));
+            ("codigoEmec", "123456"), ("codigoNoSistemaAcademico", "ENG-01"), ("vagasAnuaisAutorizadas", 40));
 
         using HttpClient client = _fixture.Factory.CreateClient();
         Guid id = await CriarOfertaAsync(client, corpo);
@@ -174,8 +174,8 @@ public sealed class OfertaCursoCriacaoEndpointTests
         root.GetProperty("turnos").EnumerateArray().Select(t => t.GetProperty("codigo").GetString())
             .Should().Equal(["MATUTINO", "VESPERTINO"],
                 "a leitura devolve os turnos em ordem canônica, não na ordem enviada");
-        root.GetProperty("eMecCodigo").GetString().Should().Be("123456");
-        root.GetProperty("codigoSga").GetString().Should().Be("ENG-01");
+        root.GetProperty("codigoEmec").GetString().Should().Be("123456");
+        root.GetProperty("codigoNoSistemaAcademico").GetString().Should().Be("ENG-01");
         root.GetProperty("vagasAnuaisAutorizadas").GetInt32().Should().Be(40);
     }
 

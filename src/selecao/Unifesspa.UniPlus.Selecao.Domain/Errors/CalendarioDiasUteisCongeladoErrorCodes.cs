@@ -8,8 +8,8 @@ namespace Unifesspa.UniPlus.Selecao.Domain.Errors;
 public static class CalendarioDiasUteisCongeladoErrorCodes
 {
     public const string OrigemObrigatoria = "CalendarioDiasUteisCongelado.OrigemObrigatoria";
-    public const string VersaoDatasetObrigatoria = "CalendarioDiasUteisCongelado.VersaoDatasetObrigatoria";
-    public const string VersaoDatasetTamanho = "CalendarioDiasUteisCongelado.VersaoDatasetTamanho";
+    public const string VersaoDoCalendarioObrigatoria = "CalendarioDiasUteisCongelado.VersaoDoCalendarioObrigatoria";
+    public const string VersaoDoCalendarioTamanho = "CalendarioDiasUteisCongelado.VersaoDoCalendarioTamanho";
     public const string DiasObrigatorios = "CalendarioDiasUteisCongelado.DiasObrigatorios";
     public const string SemDiaNaoUtil = "CalendarioDiasUteisCongelado.SemDiaNaoUtil";
     public const string DiaDuplicado = "CalendarioDiasUteisCongelado.DiaDuplicado";

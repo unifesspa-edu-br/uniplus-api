@@ -35,29 +35,29 @@ public sealed class OfertaCursoNormalizacaoEVagasTests
     [Fact(DisplayName = "Campos textuais opcionais são normalizados por Trim; em branco viram nulos")]
     public void Criar_CamposOpcionais_Normaliza()
     {
-        OfertaCurso oferta = Criar(d => d with { EMecCodigo = "  123456  ", CodigoSga = "   ", AtoAutorizacaoMec = "  Portaria MEC 123/2020  " }).Value!;
+        OfertaCurso oferta = Criar(d => d with { CodigoEmec = "  123456  ", CodigoNoSistemaAcademico = "   ", AtoAutorizacaoMec = "  Portaria MEC 123/2020  " }).Value!;
 
-        oferta.EMecCodigo.Should().Be("123456");
-        oferta.CodigoSga.Should().BeNull();
+        oferta.CodigoEmec.Should().Be("123456");
+        oferta.CodigoNoSistemaAcademico.Should().BeNull();
         oferta.AtoAutorizacaoMec.Should().Be("Portaria MEC 123/2020");
     }
 
     [Fact(DisplayName = "Código e-MEC acima do tamanho máximo é rejeitado")]
-    public void Criar_EMecCodigoLongo_Falha()
+    public void Criar_CodigoEmecLongo_Falha()
     {
-        Result<OfertaCurso> resultado = Criar(d => d with { EMecCodigo = new string('1', 21) });
+        Result<OfertaCurso> resultado = Criar(d => d with { CodigoEmec = new string('1', 21) });
 
         resultado.IsFailure.Should().BeTrue();
-        resultado.Error!.Code.Should().Be(OfertaCursoErrorCodes.EMecCodigoTamanho);
+        resultado.Error!.Code.Should().Be(OfertaCursoErrorCodes.CodigoEmecTamanho);
     }
 
-    [Fact(DisplayName = "Código SGA acima do tamanho máximo é rejeitado")]
-    public void Criar_CodigoSgaLongo_Falha()
+    [Fact(DisplayName = "Código no sistema acadêmico acima do tamanho máximo é rejeitado")]
+    public void Criar_CodigoNoSistemaAcademicoLongo_Falha()
     {
-        Result<OfertaCurso> resultado = Criar(d => d with { CodigoSga = new string('S', 31) });
+        Result<OfertaCurso> resultado = Criar(d => d with { CodigoNoSistemaAcademico = new string('S', 31) });
 
         resultado.IsFailure.Should().BeTrue();
-        resultado.Error!.Code.Should().Be(OfertaCursoErrorCodes.CodigoSgaTamanho);
+        resultado.Error!.Code.Should().Be(OfertaCursoErrorCodes.CodigoNoSistemaAcademicoTamanho);
     }
 
     [Fact(DisplayName = "Base legal acima do tamanho máximo é rejeitada")]

@@ -24,7 +24,7 @@ public sealed class LeituraDoCalendarioVigenteTests
 
     private static CalendarioVigenteView View(params DiaNaoUtilView[] dias) => new(OrigemId, "2026", dias);
 
-    [Fact(DisplayName = "Sem dataset vigente, a tradução devolve ausência — não é falha")]
+    [Fact(DisplayName = "Sem calendário vigente, a tradução devolve ausência — não é falha")]
     public void SemVigente_DevolveNulo()
     {
         Result<CalendarioDiasUteisCongelado?> resultado = LeituraDoCalendarioVigente.Traduzir(null);
@@ -150,21 +150,21 @@ public sealed class LeituraDoCalendarioVigenteTests
         resultado.Error!.Code.Should().Be("DiaNaoUtilCongelado.DataAusente");
     }
 
-    [Fact(DisplayName = "Dataset vigente sem nenhum dia não útil é recusado — um calendário vazio não conta nada")]
-    public void DatasetVazio_Recusado()
+    [Fact(DisplayName = "Calendario vigente sem nenhum dia não útil é recusado — um calendário vazio não conta nada")]
+    public void CalendarioVazio_Recusado()
     {
         Result<CalendarioDiasUteisCongelado?> resultado = LeituraDoCalendarioVigente.Traduzir(View());
 
         resultado.IsFailure.Should().BeTrue(
             "congelar a lista vazia faria a versão publicada afirmar que todo dia é útil, de forma imutável");
         resultado.Error!.Code.Should().Be("CalendarioDiasUteisCongelado.SemDiaNaoUtil",
-            "é a mesma cardinalidade que o cadastro de origem exige na criação do dataset");
+            "é a mesma cardinalidade que o cadastro de origem exige na criação do calendário");
     }
 
-    [Theory(DisplayName = "A versão do dataset respeita o limite do cadastro de origem")]
+    [Theory(DisplayName = "A versão do calendário respeita o limite do cadastro de origem")]
     [InlineData(60, true)]
     [InlineData(61, false)]
-    public void VersaoDataset_RespeitaLimiteDoCadastro(int comprimento, bool aceita)
+    public void VersaoDoCalendario_RespeitaLimiteDoCadastro(int comprimento, bool aceita)
     {
         var vigente = new CalendarioVigenteView(
             OrigemId,

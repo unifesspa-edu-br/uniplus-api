@@ -29,7 +29,7 @@ public sealed class LeituraDasRegrasCitadasNaConfiguracaoTests(ProcessoSeletivoD
         RegraCatalogo regra = (await leitor.ObterAsync(ConvencaoDeContagemDoPrazo.ExcluiDiaInicial.Codigo(), "v1"))!;
         ReferenciaRegra referencia = Referencia(regra, "hash diferente");
         ProcessoSeletivo salvo = await GravarERecarregarAsync(db, referencia);
-        salvo.Status.Should().Be(StatusProcesso.Rascunho);
+        salvo.Situacao.Should().Be(SituacaoDoProcessoSeletivo.Rascunho);
         salvo.AlgoritmoContagemPrazo.Should().Be(referencia);
         RegrasCitadasNaConfiguracao lidas = await new LeituraDasRegrasCitadasNaConfiguracao(leitor).LerAsync(salvo, CancellationToken.None);
         ChecklistDeConformidade.AvaliarConformidade(salvo.Declaracao(), ComRegras(lidas))

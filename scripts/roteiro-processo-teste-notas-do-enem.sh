@@ -84,7 +84,7 @@ setup_ofertas_por_grupo() {
             \"programaDeOferta\": \"REGULAR\",
             \"regimeDeFuncionamento\": \"EXTENSIVO\", \"formatoPedagogico\": \"PRESENCIAL\",
             \"regimeDeTurno\": \"REGULAR\", \"turnos\": [\"NOTURNO\"],
-            \"eMecCodigo\": null, \"codigoSga\": null, \"vagasAnuaisAutorizadas\": null,
+            \"codigoEmec\": null, \"codigoNoSistemaAcademico\": null, \"vagasAnuaisAutorizadas\": null,
             \"baseLegal\": null, \"atoAutorizacaoMec\": null
         }")
     fi

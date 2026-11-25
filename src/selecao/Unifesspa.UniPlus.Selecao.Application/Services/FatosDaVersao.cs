@@ -59,7 +59,7 @@ internal sealed record FatosDaVersao(
         fato.FatoCodigo,
         fato.Rotulo,
         fato.Descricao,
-        TiposDeItem.De(fato.TipoRenderizacao),
+        TiposDeItem.De(fato.TipoDeCampo),
         ComponentesDeItem.De(
             fato.ComponenteExibicao,
             EhCpf(fato.FatoCodigo, fato.Formato),

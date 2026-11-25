@@ -12,7 +12,7 @@ public static class CalendarioDiasUteisMapping
         ArgumentNullException.ThrowIfNull(calendario);
         return new CalendarioDiasUteisDto(
             calendario.Id,
-            calendario.VersaoDataset,
+            calendario.VersaoDoCalendario,
             calendario.Vigente,
             [.. calendario.DiasNaoUteis.Select(ToDto)],
             calendario.CreatedAt);
@@ -23,7 +23,7 @@ public static class CalendarioDiasUteisMapping
         ArgumentNullException.ThrowIfNull(calendario);
         return new CalendarioDiasUteisResumoDto(
             calendario.Id,
-            calendario.VersaoDataset,
+            calendario.VersaoDoCalendario,
             calendario.Vigente,
             calendario.CreatedAt);
     }

@@ -170,7 +170,7 @@ public sealed class ModeloFormularioMappingTests
         "RENDA",
         1,
         "DADOS",
-        new ApresentacaoDoCampo("Renda familiar", TipoRenderizacao.Numero, "Some a renda de todos", pedirConfirmacao: true),
+        new ApresentacaoDoCampo("Renda familiar", TipoDeCampo.Numero, "Some a renda de todos", pedirConfirmacao: true),
         "LIVRE",
         new RegrasDoCampo(
             Quando("QUILOMBOLA", true),
@@ -179,7 +179,7 @@ public sealed class ModeloFormularioMappingTests
             new Impedimento(Quando("BAIXA_RENDA", false), "Renda acima do limite")));
 
     private static ItemDoModelo ItemMinimo(string fatoCodigo, int ordem) =>
-        new(fatoCodigo, ordem, null, new ApresentacaoDoCampo("Pergunta", TipoRenderizacao.SimOuNao), null, new RegrasDoCampo(null, Obrigatoriedade.Sempre, []));
+        new(fatoCodigo, ordem, null, new ApresentacaoDoCampo("Pergunta", TipoDeCampo.SimOuNao), null, new RegrasDoCampo(null, Obrigatoriedade.Sempre, []));
 
     private static GrupoDoModelo GrupoCompleto() => new(
         "FAMILIA", 2, "DADOS", "Composição familiar", new OcorrenciasDoGrupo(1, 5, true),

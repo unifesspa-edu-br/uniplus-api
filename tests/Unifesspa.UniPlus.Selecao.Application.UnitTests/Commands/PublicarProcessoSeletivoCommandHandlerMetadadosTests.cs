@@ -39,7 +39,7 @@ public sealed partial class PublicarProcessoSeletivoCommandHandlerTests
 
         resposta.IsSuccess.Should().BeTrue(resposta.Error?.Message);
         cpf.ClassificacaoProtecao.Should().Be("IDENTIFICADOR");
-        DefinicaoDaResposta.De(cpf.TipoRenderizacao, cpf.ClassificacaoProtecao, fatoCodigo: "CPF").Cifrada.Should().BeTrue();
+        DefinicaoDaResposta.De(cpf.TipoDeCampo, cpf.ClassificacaoProtecao, fatoCodigo: "CPF").Cifrada.Should().BeTrue();
     }
 
     private static FatoColetado ReclassificarCpfComoPessoal(ProcessoSeletivo processo)
@@ -47,14 +47,14 @@ public sealed partial class PublicarProcessoSeletivoCommandHandlerTests
         FatoColetado cpfDoCatalogoAntigo = processo.FatosColetados.Single(static f => f.FatoCodigo == "CPF");
         FatoColetado cpf = FatoColetadoDeTeste.Coletando("CPF", cpfDoCatalogoAntigo.Ordem)
             .ComRotulo(cpfDoCatalogoAntigo.Rotulo)
-            .DoTipo(cpfDoCatalogoAntigo.TipoRenderizacao)
+            .DoTipo(cpfDoCatalogoAntigo.TipoDeCampo)
             .ComFormato(cpfDoCatalogoAntigo.Formato)
             .ComObrigatoriedade(cpfDoCatalogoAntigo.Obrigatoriedade)
             .ComOrigem(cpfDoCatalogoAntigo.OrigemValores)
             .NaSecao(cpfDoCatalogoAntigo.EtapaCodigo)
             .Construir();
         processo.DefinirItens([.. processo.FatosColetados.Select(f => f.FatoCodigo == "CPF" ? cpf : f)]).IsSuccess.Should().BeTrue();
-        DefinicaoDaResposta.De(cpf.TipoRenderizacao, cpf.ClassificacaoProtecao, fatoCodigo: "CPF").Cifrada.Should().BeFalse("a cópia velha não cifra");
+        DefinicaoDaResposta.De(cpf.TipoDeCampo, cpf.ClassificacaoProtecao, fatoCodigo: "CPF").Cifrada.Should().BeFalse("a cópia velha não cifra");
         return cpf;
     }
 
@@ -99,14 +99,14 @@ public sealed partial class PublicarProcessoSeletivoCommandHandlerTests
     {
         ProcessoSeletivo processo = NovoProcessoConforme(out _);
         FatoColetado item = processo.FatosColetados.Single(static f => f.FatoCodigo == "DESEJA_NOME_SOCIAL");
-        item.TipoRenderizacao.Should().Be(TipoRenderizacao.SimOuNao);
+        item.TipoDeCampo.Should().Be(TipoDeCampo.SimOuNao);
         (Mocks mocks, DocumentoAPublicar documento) = NovosMocks(processo);
         CatalogoComNomeSocialCategorico(mocks);
 
         (Result resposta, IEnumerable<object> _) = await HandleAsync(mocks, processo, documento);
 
         resposta.IsFailure.Should().BeTrue();
-        resposta.Error!.Code.Should().Be("ItemFormulario.TipoRenderizacaoIncoerenteComDominio");
+        resposta.Error!.Code.Should().Be("ItemFormulario.TipoDeCampoIncoerenteComDominio");
         resposta.Error.Message.Should().Contain(item.Rotulo).And.Contain("Regrave o item");
         mocks.Canonicalizer.DidNotReceiveWithAnyArgs().Canonicalizar(default!);
     }
@@ -215,7 +215,7 @@ public sealed partial class PublicarProcessoSeletivoCommandHandlerTests
         (Result resposta, IEnumerable<object> _) = await HandleAsync(mocks, processo, documento);
 
         resposta.Error!.Code.Should().Be("PredicadoDnf.FatoNaoColetadoPeloProcesso");
-        processo.Status.Should().Be(StatusProcesso.Rascunho);
+        processo.Situacao.Should().Be(SituacaoDoProcessoSeletivo.Rascunho);
     }
 
     private static void RemoverDerivacaoReferenciada(ProcessoSeletivo processo, Guid faseId, string derivado)
@@ -289,6 +289,6 @@ public sealed partial class PublicarProcessoSeletivoCommandHandlerTests
         resposta.Error!.Code.Should().Be("ProcessoSeletivo.FatoCongeladoNaoEncontrado");
         _ = mocks.Canonicalizer.DidNotReceive().Canonicalizar(Arg.Any<EntradaCanonicalizacao>());
         eventos.Should().BeEmpty();
-        processo.Status.Should().Be(StatusProcesso.Rascunho, "a publicação recusada não transita o processo");
+        processo.Situacao.Should().Be(SituacaoDoProcessoSeletivo.Rascunho, "a publicação recusada não transita o processo");
     }
 }

@@ -17,7 +17,7 @@ public sealed record ProcessoSeletivoDto(
     // declarado, o que bloqueia a publicação.
     string? IdentificadorLegivel,
     TipoProcessoSnapshotDto TipoProcesso,
-    CodigoComRotulo<StatusProcesso> Status,
+    CodigoComRotulo<SituacaoDoProcessoSeletivo> Situacao,
     CodigoComRotulo<OrigemCandidatos> OrigemCandidatos,
     UnidadeAdministradoraSnapshotDto UnidadeAdministradora,
     // Localidade que rege a contagem dos prazos (UNI-REQ-0111): read-back administrativo,

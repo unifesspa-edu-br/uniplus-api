@@ -220,21 +220,21 @@ public sealed class ConteudoDoModeloJsonTests
         ItemDoModelo item = ConteudoDoModeloJson.Desserializar(json).Itens.Single();
 
         json.Should().Contain("\"tipoDeCampo\":\"SIM_OU_NAO\"").And.Contain("\"codigoDoDado\":\"QUILOMBOLA\"");
-        json.Should().NotContain("\"tipoRenderizacao\"").And.NotContain("\"fatoCodigo\"");
-        item.Apresentacao.TipoRenderizacao.Should().Be(TipoRenderizacao.SimOuNao);
+        json.Should().NotContain("\"fatoCodigo\"");
+        item.Apresentacao.TipoDeCampo.Should().Be(TipoDeCampo.SimOuNao);
         item.FatoCodigo.Should().Be("QUILOMBOLA");
     }
 
     [Theory(DisplayName = "O tipo de campo do item é gravado no documento pelo código")]
-    [InlineData(TipoRenderizacao.Numero, "NUMERO")]
-    [InlineData(TipoRenderizacao.SimOuNao, "SIM_OU_NAO")]
-    [InlineData(TipoRenderizacao.EscolhaUnica, "ESCOLHA_UNICA")]
-    [InlineData(TipoRenderizacao.EscolhaMultipla, "ESCOLHA_MULTIPLA")]
-    [InlineData(TipoRenderizacao.Texto, "TEXTO")]
-    [InlineData(TipoRenderizacao.Data, "DATA")]
-    [InlineData(TipoRenderizacao.Endereco, "ENDERECO")]
-    [InlineData(TipoRenderizacao.Municipio, "MUNICIPIO")]
-    public void Serializar_TipoDeCampoDoItem_GravaOCodigo(TipoRenderizacao tipo, string codigo)
+    [InlineData(TipoDeCampo.Numero, "NUMERO")]
+    [InlineData(TipoDeCampo.SimOuNao, "SIM_OU_NAO")]
+    [InlineData(TipoDeCampo.EscolhaUnica, "ESCOLHA_UNICA")]
+    [InlineData(TipoDeCampo.EscolhaMultipla, "ESCOLHA_MULTIPLA")]
+    [InlineData(TipoDeCampo.Texto, "TEXTO")]
+    [InlineData(TipoDeCampo.Data, "DATA")]
+    [InlineData(TipoDeCampo.Endereco, "ENDERECO")]
+    [InlineData(TipoDeCampo.Municipio, "MUNICIPIO")]
+    public void Serializar_TipoDeCampoDoItem_GravaOCodigo(TipoDeCampo tipo, string codigo)
     {
         ConteudoDoModelo conteudo = ConteudoMinimo() with { Itens = [ItemMinimo("QUILOMBOLA", 0).ComTipoDeCampo(tipo)] };
 
@@ -366,7 +366,7 @@ public sealed class ConteudoDoModeloJsonTests
         "RENDA",
         1,
         "DADOS",
-        new ApresentacaoDoCampo("Renda familiar", TipoRenderizacao.Numero, "Some a renda de todos", pedirConfirmacao: true),
+        new ApresentacaoDoCampo("Renda familiar", TipoDeCampo.Numero, "Some a renda de todos", pedirConfirmacao: true),
         "LIVRE",
         new RegrasDoCampo(
             Quando("QUILOMBOLA", true),
@@ -375,7 +375,7 @@ public sealed class ConteudoDoModeloJsonTests
             new Impedimento(Quando("BAIXA_RENDA", false), "Renda acima do limite")));
 
     private static ItemDoModelo ItemMinimo(string fatoCodigo, int ordem) =>
-        new(fatoCodigo, ordem, null, new ApresentacaoDoCampo("Pergunta", TipoRenderizacao.SimOuNao), null, new RegrasDoCampo(null, Obrigatoriedade.Sempre, []));
+        new(fatoCodigo, ordem, null, new ApresentacaoDoCampo("Pergunta", TipoDeCampo.SimOuNao), null, new RegrasDoCampo(null, Obrigatoriedade.Sempre, []));
 
     private static GrupoDoModelo GrupoCompleto() => new(
         "FAMILIA", 2, "DADOS", "Composição familiar", new OcorrenciasDoGrupo(1, 5, true),

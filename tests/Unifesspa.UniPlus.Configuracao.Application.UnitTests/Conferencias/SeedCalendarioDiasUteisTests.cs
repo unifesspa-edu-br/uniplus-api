@@ -26,7 +26,7 @@ public sealed class SeedCalendarioDiasUteisTests
     private static readonly string[] AbrangenciasValidas = ["NACIONAL", "ESTADUAL", "MUNICIPAL", "INSTITUCIONAL"];
     private static readonly JsonSerializerOptions Opcoes = new(JsonSerializerDefaults.Web);
 
-    [Fact(DisplayName = "O arquivo de seed existe e traz os vinte dias não úteis do dataset de referência")]
+    [Fact(DisplayName = "O arquivo de seed existe e traz os vinte dias não úteis do calendário de referência")]
     public void Seed_TrazOsVinteDias()
     {
         Carregar().DiasNaoUteis.Should().HaveCount(20);
@@ -83,14 +83,14 @@ public sealed class SeedCalendarioDiasUteisTests
     [Fact(DisplayName = "Só o aniversário de Marabá e o padroeiro São Félix de Valois são feriado municipal")]
     public void Seed_ApenasAsDatasDecididasSaoMunicipais()
     {
-        DatasetSeed dataset = Carregar();
+        CalendarioSeed calendario = Carregar();
 
         IReadOnlyList<string> municipais =
-            [.. dataset.DiasNaoUteis.Where(d => d.Abrangencia == "MUNICIPAL").Select(d => d.Data).Order(StringComparer.Ordinal)];
+            [.. calendario.DiasNaoUteis.Where(d => d.Abrangencia == "MUNICIPAL").Select(d => d.Data).Order(StringComparer.Ordinal)];
         municipais.Should().BeEquivalentTo(["2026-04-05", "2026-11-20"]);
 
         IReadOnlyList<string> estaduais =
-            [.. dataset.DiasNaoUteis.Where(d => d.Abrangencia == "ESTADUAL").Select(d => d.Data).Order(StringComparer.Ordinal)];
+            [.. calendario.DiasNaoUteis.Where(d => d.Abrangencia == "ESTADUAL").Select(d => d.Data).Order(StringComparer.Ordinal)];
         estaduais.Should().BeEquivalentTo(["2026-08-15"]);
     }
 
@@ -114,30 +114,30 @@ public sealed class SeedCalendarioDiasUteisTests
         }
     }
 
-    [Fact(DisplayName = "Toda data do dataset pertence ao ano de referência (2026)")]
+    [Fact(DisplayName = "Toda data do calendário pertence ao ano de referência (2026)")]
     public void Seed_TodaDataEmDoisMilESeis()
     {
         foreach (DiaSeed dia in Carregar().DiasNaoUteis)
         {
             DateOnly.Parse(dia.Data, CultureInfo.InvariantCulture).Year.Should().Be(
-                2026, $"{dia.Data} deveria pertencer ao dataset de referência 2026");
+                2026, $"{dia.Data} deveria pertencer ao calendário de referência 2026");
         }
     }
 
-    private static DatasetSeed Carregar()
+    private static CalendarioSeed Carregar()
     {
         string caminho = Path.Join(AppContext.BaseDirectory, CaminhoRelativo);
 
         File.Exists(caminho).Should().BeTrue($"o seed do calendário de dias úteis precisa existir em {CaminhoRelativo}");
 
-        DatasetSeed[]? datasets = JsonSerializer.Deserialize<DatasetSeed[]>(File.ReadAllText(caminho), Opcoes);
+        CalendarioSeed[]? calendarios = JsonSerializer.Deserialize<CalendarioSeed[]>(File.ReadAllText(caminho), Opcoes);
 
-        datasets.Should().NotBeNull();
-        datasets!.Should().ContainSingle("o arquivo semeia um único dataset de calendário de referência");
-        return datasets[0];
+        calendarios.Should().NotBeNull();
+        calendarios!.Should().ContainSingle("o arquivo semeia um único calendário de referência");
+        return calendarios[0];
     }
 
-    public sealed record DatasetSeed(string VersaoDataset, DiaSeed[] DiasNaoUteis);
+    public sealed record CalendarioSeed(string VersaoDoCalendario, DiaSeed[] DiasNaoUteis);
 
     public sealed record DiaSeed(
         string Abrangencia,

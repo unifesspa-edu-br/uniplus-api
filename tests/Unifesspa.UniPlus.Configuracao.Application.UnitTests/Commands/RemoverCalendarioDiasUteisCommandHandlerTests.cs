@@ -38,8 +38,8 @@ public sealed class RemoverCalendarioDiasUteisCommandHandlerTests
         _repository.DidNotReceive().Remover(Arg.Any<CalendarioDiasUteis>());
     }
 
-    [Fact(DisplayName = "Dataset vigente não pode ser removido (NaoRemoveVigente)")]
-    public async Task Handle_DatasetVigente_RetornaErroSemRemover()
+    [Fact(DisplayName = "Calendário vigente não pode ser removido (NaoRemoveVigente)")]
+    public async Task Handle_CalendarioVigente_RetornaErroSemRemover()
     {
         CalendarioDiasUteis calendario = Novo();
         calendario.MarcarVigente();
@@ -54,8 +54,8 @@ public sealed class RemoverCalendarioDiasUteisCommandHandlerTests
         await _unitOfWork.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
     }
 
-    [Fact(DisplayName = "Dataset não vigente é removido e persistido")]
-    public async Task Handle_DatasetNaoVigente_RemoveEPersiste()
+    [Fact(DisplayName = "Calendário não vigente é removido e persistido")]
+    public async Task Handle_CalendarioNaoVigente_RemoveEPersiste()
     {
         CalendarioDiasUteis calendario = Novo();
         _repository.ObterPorIdAsync(calendario.Id, Arg.Any<CancellationToken>()).Returns(calendario);
@@ -68,7 +68,7 @@ public sealed class RemoverCalendarioDiasUteisCommandHandlerTests
         await _unitOfWork.Received(1).SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
     }
 
-    [Fact(DisplayName = "Remoção colidindo com ativação concorrente do mesmo dataset (xmin) propaga sem catch local (ADR-0119)")]
+    [Fact(DisplayName = "Remoção colidindo com ativação concorrente do mesmo calendário (xmin) propaga sem catch local (ADR-0119)")]
     public async Task Handle_ConcorrenciaOtimista_PropagaSemCatchLocal()
     {
         CalendarioDiasUteis calendario = Novo();

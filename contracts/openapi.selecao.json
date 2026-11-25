@@ -13056,7 +13056,7 @@
       "ApresentacaoDoCampoDto": {
         "required": [
           "rotulo",
-          "tipoRenderizacao",
+          "tipoDeCampo",
           "ajuda",
           "pedirConfirmacao"
         ],
@@ -13065,8 +13065,8 @@
           "rotulo": {
             "type": "string"
           },
-          "tipoRenderizacao": {
-            "$ref": "#/components/schemas/TipoRenderizacaoCodigo"
+          "tipoDeCampo": {
+            "$ref": "#/components/schemas/TipoDeCampoCodigo"
           },
           "ajuda": {
             "type": [
@@ -13082,7 +13082,7 @@
       "ApresentacaoDoCampoInput": {
         "required": [
           "rotulo",
-          "tipoRenderizacao"
+          "tipoDeCampo"
         ],
         "type": "object",
         "properties": {
@@ -13092,13 +13092,13 @@
               "string"
             ]
           },
-          "tipoRenderizacao": {
+          "tipoDeCampo": {
             "oneOf": [
               {
                 "type": "null"
               },
               {
-                "$ref": "#/components/schemas/TipoRenderizacaoCodigo"
+                "$ref": "#/components/schemas/TipoDeCampoCodigo"
               }
             ]
           },
@@ -19840,7 +19840,7 @@
       },
       "DocumentoDaConfiguracaoItemDoFormulario": {
         "title": "Item do formul\u00E1rio",
-        "description": "Um fato do cat\u00E1logo coletado pelo formul\u00E1rio. O item aponta o fato pelo c\u00F3digo; tipo de renderiza\u00E7\u00E3o, formato, classifica\u00E7\u00E3o de prote\u00E7\u00E3o e demais propriedades do fato v\u00EAm do cat\u00E1logo e n\u00E3o se declaram aqui.",
+        "description": "Um fato do cat\u00E1logo coletado pelo formul\u00E1rio. O item aponta o fato pelo c\u00F3digo; tipo de campo, formato, classifica\u00E7\u00E3o de prote\u00E7\u00E3o e demais propriedades do fato v\u00EAm do cat\u00E1logo e n\u00E3o se declaram aqui.",
         "type": "object",
         "additionalProperties": false,
         "required": [
@@ -20387,7 +20387,7 @@
       },
       "DocumentoDaConfiguracaoRestricaoDeValor": {
         "title": "Restri\u00E7\u00E3o de valor",
-        "description": "Limite que o formul\u00E1rio imp\u00F5e \u00E0 resposta de um campo. O tipo escolhe quais outras propriedades valem; a coer\u00EAncia com o tipo de renderiza\u00E7\u00E3o do fato \u00E9 regra do dom\u00EDnio, n\u00E3o do esquema.",
+        "description": "Limite que o formul\u00E1rio imp\u00F5e \u00E0 resposta de um campo. O tipo escolhe quais outras propriedades valem; a coer\u00EAncia com o tipo de campo do fato \u00E9 regra do dom\u00EDnio, n\u00E3o do esquema.",
         "type": "object",
         "additionalProperties": false,
         "required": [
@@ -26657,7 +26657,7 @@
         "required": [
           "fatoCodigo",
           "rotulo",
-          "tipoRenderizacao",
+          "tipoDeCampo",
           "formato",
           "valoresSelecionaveis",
           "calculadoDe"
@@ -26673,13 +26673,13 @@
               "string"
             ]
           },
-          "tipoRenderizacao": {
+          "tipoDeCampo": {
             "oneOf": [
               {
                 "type": "null"
               },
               {
-                "$ref": "#/components/schemas/TipoRenderizacaoCodigo"
+                "$ref": "#/components/schemas/TipoDeCampoCodigo"
               }
             ]
           },
@@ -27010,7 +27010,7 @@
           "nome",
           "identificadorLegivel",
           "tipoProcesso",
-          "status",
+          "situacao",
           "origemCandidatos",
           "unidadeAdministradora",
           "localidade",
@@ -27054,8 +27054,8 @@
           "tipoProcesso": {
             "$ref": "#/components/schemas/TipoProcessoSnapshotDto"
           },
-          "status": {
-            "$ref": "#/components/schemas/StatusProcesso"
+          "situacao": {
+            "$ref": "#/components/schemas/SituacaoDoProcessoSeletivo"
           },
           "origemCandidatos": {
             "$ref": "#/components/schemas/OrigemCandidatos"
@@ -27246,7 +27246,7 @@
           "id",
           "nome",
           "tipoProcesso",
-          "status",
+          "situacao",
           "criadoEm"
         ],
         "type": "object",
@@ -27261,8 +27261,8 @@
           "tipoProcesso": {
             "$ref": "#/components/schemas/TipoProcessoSnapshotDto"
           },
-          "status": {
-            "$ref": "#/components/schemas/StatusProcesso"
+          "situacao": {
+            "$ref": "#/components/schemas/SituacaoDoProcessoSeletivo"
           },
           "criadoEm": {
             "type": "string",
@@ -29643,6 +29643,31 @@
         "type": "string",
         "description": "- \u0060NAO_EXIGIDO\u0060: N\u00E3o exigido \u2014 A exig\u00EAncia n\u00E3o se aplica.\n- \u0060PENDENTE\u0060: Pendente \u2014 A exig\u00EAncia ainda n\u00E3o foi atendida.\n- \u0060PODE_SER_EXIGIDO\u0060: Pode ser exigido \u2014 Uma resposta pendente decide a exig\u00EAncia.\n- \u0060DEPENDE_DE_FASE_POSTERIOR\u0060: Depende de fase posterior \u2014 A exig\u00EAncia depende de uma fase posterior.\n- \u0060SATISFEITA\u0060: Satisfeita \u2014 A exig\u00EAncia foi atendida."
       },
+      "SituacaoDoProcessoSeletivo": {
+        "required": [
+          "codigo",
+          "rotulo"
+        ],
+        "type": "object",
+        "properties": {
+          "codigo": {
+            "$ref": "#/components/schemas/SituacaoDoProcessoSeletivoCodigo"
+          },
+          "rotulo": {
+            "type": "string"
+          }
+        }
+      },
+      "SituacaoDoProcessoSeletivoCodigo": {
+        "enum": [
+          "RASCUNHO",
+          "PUBLICADO",
+          "ENCERRADO",
+          "CANCELADO"
+        ],
+        "type": "string",
+        "description": "- \u0060RASCUNHO\u0060: Rascunho \u2014 O processo est\u00E1 em prepara\u00E7\u00E3o.\n- \u0060PUBLICADO\u0060: Publicado \u2014 O processo foi publicado.\n- \u0060ENCERRADO\u0060: Encerrado \u2014 O processo foi encerrado.\n- \u0060CANCELADO\u0060: Cancelado \u2014 O processo foi cancelado."
+      },
       "SituacaoDoProdutoPrevisto": {
         "required": [
           "codigo",
@@ -29772,31 +29797,6 @@
         ],
         "type": "string",
         "description": "- \u0060PENDENTE\u0060: Pendente \u2014 A base legal ainda est\u00E1 pendente.\n- \u0060RESOLVIDO\u0060: Resolvido \u2014 A base legal est\u00E1 resolvida."
-      },
-      "StatusProcesso": {
-        "required": [
-          "codigo",
-          "rotulo"
-        ],
-        "type": "object",
-        "properties": {
-          "codigo": {
-            "$ref": "#/components/schemas/StatusProcessoCodigo"
-          },
-          "rotulo": {
-            "type": "string"
-          }
-        }
-      },
-      "StatusProcessoCodigo": {
-        "enum": [
-          "RASCUNHO",
-          "PUBLICADO",
-          "ENCERRADO",
-          "CANCELADO"
-        ],
-        "type": "string",
-        "description": "- \u0060RASCUNHO\u0060: Rascunho \u2014 O processo est\u00E1 em prepara\u00E7\u00E3o.\n- \u0060PUBLICADO\u0060: Publicado \u2014 O processo foi publicado.\n- \u0060ENCERRADO\u0060: Encerrado \u2014 O processo foi encerrado.\n- \u0060CANCELADO\u0060: Cancelado \u2014 O processo foi cancelado."
       },
       "TaxaInscricaoCertameDto": {
         "required": [
@@ -30099,6 +30099,20 @@
         "type": "string",
         "description": "O tipo de banca que a sele\u00E7\u00E3o pode prever em uma fase ou em uma etapa. O c\u00F3digo e o r\u00F3tulo do tipo s\u00E3o fixos; o nome do cadastro de tipos de banca pode ser editado.\n\n- \u0060BANCA_ANALISE_DOCUMENTAL\u0060: Banca de an\u00E1lise documental\n- \u0060BANCA_ENTREVISTA\u0060: Banca de entrevista\n- \u0060BANCA_CORRECAO_REDACOES\u0060: Banca de corre\u00E7\u00E3o de reda\u00E7\u00F5es\n- \u0060BANCA_ANALISE_RECURSOS\u0060: Banca de an\u00E1lise de recursos\n- \u0060BANCA_HETEROIDENTIFICACAO\u0060: Banca de heteroidentifica\u00E7\u00E3o\n- \u0060BANCA_BIOPSICOSSOCIAL\u0060: Banca de avalia\u00E7\u00E3o biopsicossocial\n- \u0060BANCA_HOMOLOGACAO_INSCRICOES\u0060: Banca de homologa\u00E7\u00E3o das inscri\u00E7\u00F5es\n- \u0060BANCA_IMPORTACAO_NOTAS_INEP\u0060: Banca de importa\u00E7\u00E3o das notas do INEP\n- \u0060BANCA_IMPORTACAO_CANDIDATOS\u0060: Banca de importa\u00E7\u00E3o de candidatos\n- \u0060BANCA_ANALISE_RECURSOS_SEGUNDA_INSTANCIA\u0060: Banca de an\u00E1lise de recursos de 2\u00AA inst\u00E2ncia"
       },
+      "TipoDeCampoCodigo": {
+        "enum": [
+          "NUMERO",
+          "SIM_OU_NAO",
+          "ESCOLHA_UNICA",
+          "ESCOLHA_MULTIPLA",
+          "TEXTO",
+          "DATA",
+          "ENDERECO",
+          "MUNICIPIO"
+        ],
+        "type": "string",
+        "description": "Como o campo do formul\u00E1rio \u00E9 apresentado e respondido pelo candidato.\n\n- \u0060NUMERO\u0060: N\u00FAmero \u2014 Campo em que o candidato digita um n\u00FAmero inteiro.\n- \u0060SIM_OU_NAO\u0060: Sim ou n\u00E3o \u2014 Campo em que o candidato responde sim ou n\u00E3o.\n- \u0060ESCOLHA_UNICA\u0060: Escolha de um valor \u2014 Campo em que o candidato escolhe uma op\u00E7\u00E3o entre as oferecidas.\n- \u0060ESCOLHA_MULTIPLA\u0060: Escolha de v\u00E1rios valores \u2014 Campo em que o candidato escolhe uma ou mais op\u00E7\u00F5es entre as oferecidas.\n- \u0060TEXTO\u0060: Texto \u2014 Campo em que o candidato digita um texto, conferido pelo formato do dado.\n- \u0060DATA\u0060: Data \u2014 Campo em que o candidato informa uma data do calend\u00E1rio.\n- \u0060ENDERECO\u0060: Endere\u00E7o \u2014 Campo de endere\u00E7o completo, preenchido a partir da busca do CEP.\n- \u0060MUNICIPIO\u0060: Munic\u00EDpio \u2014 Campo em que o candidato escolhe o munic\u00EDpio entre os da unidade federativa j\u00E1 respondida."
+      },
       "TipoDeLeiauteDoInep": {
         "required": [
           "codigo",
@@ -30314,20 +30328,6 @@
         ],
         "type": "string",
         "description": "- \u0060REGRA_CALCULO\u0060: C\u00E1lculo da nota \u2014 C\u00E1lculo da nota.\n- \u0060REGRA_ARREDONDAMENTO\u0060: Arredondamento da nota \u2014 Arredondamento da nota.\n- \u0060REGRA_ELIMINACAO\u0060: Elimina\u00E7\u00E3o \u2014 Elimina\u00E7\u00E3o.\n- \u0060REGRA_FADA\u0060: Fator de Atenua\u00E7\u00E3o das Desigualdades de Acesso (FADA) \u2014 Regra do Fator de Atenua\u00E7\u00E3o das Desigualdades de Acesso (FADA).\n- \u0060CRITERIO_DESEMPATE\u0060: Crit\u00E9rio de desempate \u2014 Crit\u00E9rio de desempate.\n- \u0060CRITERIO_REMANEJAMENTO\u0060: Crit\u00E9rio de remanejamento \u2014 Crit\u00E9rio de remanejamento.\n- \u0060REGRA_ORDEM_ALOCACAO\u0060: Ordem de aloca\u00E7\u00E3o \u2014 Ordem de aloca\u00E7\u00E3o.\n- \u0060REGRA_ELEGIBILIDADE\u0060: Elegibilidade \u2014 Elegibilidade.\n- \u0060REGRA_DISTRIBUICAO_VAGAS\u0060: Distribui\u00E7\u00E3o de vagas \u2014 Distribui\u00E7\u00E3o de vagas.\n- \u0060REGRA_AJUSTE_DISTRIBUICAO_VAGAS\u0060: Ajuste da distribui\u00E7\u00E3o de vagas \u2014 Ajuste da distribui\u00E7\u00E3o de vagas.\n- \u0060REGRA_PRAZO_RECURSO\u0060: Prazo de recurso \u2014 Prazo de recurso.\n- \u0060CONVENCAO_CONTAGEM_PRAZO\u0060: Conven\u00E7\u00E3o de contagem do prazo \u2014 Conven\u00E7\u00E3o de contagem do prazo.\n- \u0060REGRA_APURACAO_AVALIACAO\u0060: Apura\u00E7\u00E3o da avalia\u00E7\u00E3o \u2014 Apura\u00E7\u00E3o da avalia\u00E7\u00E3o.\n- \u0060REGRA_PROCEDIMENTO_RECURSO\u0060: Procedimento de recurso \u2014 Procedimento de recurso."
-      },
-      "TipoRenderizacaoCodigo": {
-        "enum": [
-          "NUMERO",
-          "SIM_OU_NAO",
-          "ESCOLHA_UNICA",
-          "ESCOLHA_MULTIPLA",
-          "TEXTO",
-          "DATA",
-          "ENDERECO",
-          "MUNICIPIO"
-        ],
-        "type": "string",
-        "description": "Como o campo do formul\u00E1rio \u00E9 apresentado e respondido pelo candidato.\n\n- \u0060NUMERO\u0060: N\u00FAmero \u2014 Campo em que o candidato digita um n\u00FAmero inteiro.\n- \u0060SIM_OU_NAO\u0060: Sim ou n\u00E3o \u2014 Campo em que o candidato responde sim ou n\u00E3o.\n- \u0060ESCOLHA_UNICA\u0060: Escolha de um valor \u2014 Campo em que o candidato escolhe uma op\u00E7\u00E3o entre as oferecidas.\n- \u0060ESCOLHA_MULTIPLA\u0060: Escolha de v\u00E1rios valores \u2014 Campo em que o candidato escolhe uma ou mais op\u00E7\u00F5es entre as oferecidas.\n- \u0060TEXTO\u0060: Texto \u2014 Campo em que o candidato digita um texto, conferido pelo formato do dado.\n- \u0060DATA\u0060: Data \u2014 Campo em que o candidato informa uma data do calend\u00E1rio.\n- \u0060ENDERECO\u0060: Endere\u00E7o \u2014 Campo de endere\u00E7o completo, preenchido a partir da busca do CEP.\n- \u0060MUNICIPIO\u0060: Munic\u00EDpio \u2014 Campo em que o candidato escolhe o munic\u00EDpio entre os da unidade federativa j\u00E1 respondida."
       },
       "UnidadeAdministradoraCertameDto": {
         "required": [

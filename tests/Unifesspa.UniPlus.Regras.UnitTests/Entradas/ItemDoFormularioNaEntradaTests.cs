@@ -17,7 +17,7 @@ public sealed class ItemDoFormularioNaEntradaTests
     [Fact(DisplayName = "A apresentação do domínio vai à entrada com o tipo de campo no código canônico")]
     public void ParaEntrada_Apresentacao_LevaOCodigoDoTipo()
     {
-        ApresentacaoDoCampoInput entrada = EntradaDeRegras.ParaEntrada(new ApresentacaoDoCampo("Nome", TipoRenderizacao.Texto, "Como no documento.", pedirConfirmacao: true));
+        ApresentacaoDoCampoInput entrada = EntradaDeRegras.ParaEntrada(new ApresentacaoDoCampo("Nome", TipoDeCampo.Texto, "Como no documento.", pedirConfirmacao: true));
 
         entrada.Should().Be(new ApresentacaoDoCampoInput("Nome", "TEXTO", "Como no documento.", PedirConfirmacao: true));
     }
@@ -25,9 +25,9 @@ public sealed class ItemDoFormularioNaEntradaTests
     [Fact(DisplayName = "A apresentação ausente na entrada fica sem texto: a recusa do rótulo é da forma do item")]
     public void Apresentacao_EntradaAusente_FicaSemTexto()
     {
-        ApresentacaoDoCampo apresentacao = EntradaDeRegras.Apresentacao(null, TipoRenderizacao.SimOuNao);
+        ApresentacaoDoCampo apresentacao = EntradaDeRegras.Apresentacao(null, TipoDeCampo.SimOuNao);
 
-        apresentacao.Should().Be(new ApresentacaoDoCampo(string.Empty, TipoRenderizacao.SimOuNao));
+        apresentacao.Should().Be(new ApresentacaoDoCampo(string.Empty, TipoDeCampo.SimOuNao));
     }
 
     [Fact(DisplayName = "As regras do domínio vão à entrada com o token da obrigatoriedade e o predicado dela")]

@@ -196,21 +196,21 @@
       "name": "Calendário de dias úteis",
       "item": [
         {
-          "name": "Preflight — o dataset já existe?",
+          "name": "Preflight — o calendário já existe?",
           "event": [
             {
               "listen": "test",
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "// Não há endpoint de leitura por versaoDataset — lista os datasets vivos e",
+                  "// Não há endpoint de leitura por versaoDoCalendario — lista os calendários vivos e",
                   "// procura pelo nome. A lista não traz diasNaoUteis (é o resumo); achado o",
-                  "// dataset, relê por id para comparar o conteúdo completo.",
+                  "// calendário, relê por id para comparar o conteúdo completo.",
                   "pm.test('listagem devolve 200', () => pm.response.to.have.status(200));",
                   "",
-                  "const versaoDataset = pm.iterationData.get('versaoDataset');",
+                  "const versaoDoCalendario = pm.iterationData.get('versaoDoCalendario');",
                   "const lista = pm.response.json();",
-                  "const existente = lista.find((c) => c.versaoDataset === versaoDataset);",
+                  "const existente = lista.find((c) => c.versaoDoCalendario === versaoDoCalendario);",
                   "",
                   "if (!existente) {",
                   "  pm.environment.set('deve_criar', 'true');",
@@ -227,8 +227,8 @@
                   "  method: 'GET',",
                   "  header: { Authorization: `Bearer ${pm.environment.get('access_token')}` },",
                   "}, (err, res) => {",
-                  "  pm.test(`${versaoDataset} já cadastrado bate com o seed`, () => {",
-                  "    pm.expect(err, 'erro ao reler o dataset existente').to.be.null;",
+                  "  pm.test(`${versaoDoCalendario} já cadastrado bate com o seed`, () => {",
+                  "    pm.expect(err, 'erro ao reler o calendário existente').to.be.null;",
                   "    pm.expect(res.code, 'status da releitura').to.eql(200);",
                   "    const gravado = res.json();",
                   "    const esperados = pm.iterationData.get('diasNaoUteis');",
@@ -263,16 +263,16 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "// Pula a escrita quando o preflight encontrou o dataset íntegro.",
+                  "// Pula a escrita quando o preflight encontrou o calendário íntegro.",
                   "if (pm.environment.get('deve_criar') !== 'true') {",
-                  "  console.log(`${pm.iterationData.get('versaoDataset')}: já cadastrado, nada a fazer`);",
+                  "  console.log(`${pm.iterationData.get('versaoDoCalendario')}: já cadastrado, nada a fazer`);",
                   "  pm.execution.skipRequest();",
                   "}",
                   "",
                   "// diasNaoUteis chega do arquivo de seed já como array de objetos (iteration",
                   "// data em JSON, não CSV) — repassado como está, sem remontar campo a campo.",
                   "const corpo = {",
-                  "  versaoDataset: pm.iterationData.get('versaoDataset'),",
+                  "  versaoDoCalendario: pm.iterationData.get('versaoDoCalendario'),",
                   "  diasNaoUteis: pm.iterationData.get('diasNaoUteis'),",
                   "};",
                   "pm.variables.set('corpo_json', JSON.stringify(corpo));"
@@ -284,8 +284,8 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "const versaoDataset = pm.iterationData.get('versaoDataset');",
-                  "pm.test(`${versaoDataset} registrado (201)`, () => pm.response.to.have.status(201));",
+                  "const versaoDoCalendario = pm.iterationData.get('versaoDoCalendario');",
+                  "pm.test(`${versaoDoCalendario} registrado (201)`, () => pm.response.to.have.status(201));",
                   "",
                   "const local = pm.response.headers.get('Location');",
                   "pm.test('Location aponta para o recurso', () => pm.expect(local).to.include('/api/configuracao/calendarios-dias-uteis/'));",
@@ -302,12 +302,12 @@
                   "  pm.environment.set('calendario_vigente', 'false');",
                   "",
                   "  pm.sendRequest({ url: local, method: 'GET', header: { Authorization: `Bearer ${pm.environment.get('access_token')}` } }, (err, res) => {",
-                  "    pm.test(`${versaoDataset} foi gravado como o arquivo de seed declara`, () => {",
+                  "    pm.test(`${versaoDoCalendario} foi gravado como o arquivo de seed declara`, () => {",
                   "      pm.expect(err, 'erro ao reler o recurso criado').to.be.null;",
                   "      pm.expect(res.code, 'status da releitura').to.eql(200);",
                   "      const gravado = res.json();",
                   "      const esperados = pm.iterationData.get('diasNaoUteis');",
-                  "      pm.expect(gravado.versaoDataset).to.eql(versaoDataset);",
+                  "      pm.expect(gravado.versaoDoCalendario).to.eql(versaoDoCalendario);",
                   "      pm.expect(gravado.vigente, 'nasce não vigente').to.eql(false);",
                   "      pm.expect(gravado.diasNaoUteis.length, 'quantidade de dias não úteis').to.eql(esperados.length);",
                   "    });",
@@ -348,12 +348,12 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "// Idempotente por leitura de estado, não por Idempotency-Key: se o dataset",
+                  "// Idempotente por leitura de estado, não por Idempotency-Key: se o calendário",
                   "// (achado no preflight ou recém-criado) já é o vigente, repetir a chamada é",
-                  "// um no-op — o domínio recusa marcar vigente um dataset que já é (409), e",
+                  "// um no-op — o domínio recusa marcar vigente um calendário que já é (409), e",
                   "// isso não é falha do seed, é o resultado que já queríamos.",
                   "if (pm.environment.get('calendario_vigente') === 'true') {",
-                  "  console.log(`${pm.iterationData.get('versaoDataset')}: já é o vigente, nada a fazer`);",
+                  "  console.log(`${pm.iterationData.get('versaoDoCalendario')}: já é o vigente, nada a fazer`);",
                   "  pm.execution.skipRequest();",
                   "}"
                 ]
@@ -364,8 +364,8 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "const versaoDataset = pm.iterationData.get('versaoDataset');",
-                  "pm.test(`${versaoDataset} marcado vigente (204)`, () => pm.response.to.have.status(204));"
+                  "const versaoDoCalendario = pm.iterationData.get('versaoDoCalendario');",
+                  "pm.test(`${versaoDoCalendario} marcado vigente (204)`, () => pm.response.to.have.status(204));"
                 ]
               }
             }

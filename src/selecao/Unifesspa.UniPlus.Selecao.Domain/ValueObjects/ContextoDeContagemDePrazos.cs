@@ -9,9 +9,9 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// </summary>
 /// <param name="CalendarioVigente">
 /// O calendário de dias úteis vigente no momento da operação, já copiado por valor, ou
-/// <see langword="null"/> quando não há dataset marcado vigente. É a mesma leitura que alimenta
+/// <see langword="null"/> quando não há calendário marcado vigente. É a mesma leitura que alimenta
 /// o gate e o congelamento — nunca uma para validar e outra para congelar, senão a versão
-/// publicada poderia carregar um dataset que o gate não aprovou.
+/// publicada poderia carregar um calendário que o gate não aprovou.
 /// </param>
 /// <param name="FusoInstitucionalReconhecido">
 /// Se a base de fusos do runtime reconhece a zona institucional. Vem resolvido de fora porque o
@@ -19,7 +19,7 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// fuso, o sistema o aplica.
 /// </param>
 /// <param name="FalhaDoCalendarioVigente">
-/// A recusa, quando existe dataset vigente mas ele não pôde ser convertido em snapshot — dado
+/// A recusa, quando existe calendário vigente mas ele não pôde ser convertido em snapshot — dado
 /// incoerente no cadastro de origem. Distinta de <see cref="CalendarioVigente"/> nulo, que é
 /// ausência: só quem <b>precisa</b> do calendário é barrado por ela, e um processo sem contagem
 /// sobre dia útil publica normalmente, porque não usa o dado que está quebrado.

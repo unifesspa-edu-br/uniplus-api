@@ -53,7 +53,7 @@ public sealed record DescricaoDosPressupostos(
         new(
             campo.FatoCodigo,
             campo.Apresentacao.Rotulo,
-            campo.Apresentacao.TipoRenderizacao,
+            campo.Apresentacao.TipoDeCampo,
             campo.Formato,
             campo.ValoresSelecionaveis,
             null);
@@ -61,6 +61,6 @@ public sealed record DescricaoDosPressupostos(
     private PressupostoRenderizavel DoCatalogo(string codigo, Dictionary<string, IReadOnlyList<string>> calculadosDe)
     {
         ApresentacaoDoFato? apresentacao = ApresentacaoDosNaoPerguntados.GetValueOrDefault(codigo);
-        return new(codigo, apresentacao?.Rotulo, apresentacao?.TipoRenderizacao, null, null, calculadosDe.GetValueOrDefault(codigo));
+        return new(codigo, apresentacao?.Rotulo, apresentacao?.TipoDeCampo, null, null, calculadosDe.GetValueOrDefault(codigo));
     }
 }

@@ -2984,14 +2984,14 @@
       "requisitos": [],
       "oQueAconteceu": [
         "A **abrangência** informada para um dia não útil não é um dos quatro códigos aceitos: `NACIONAL`, `ESTADUAL`, `MUNICIPAL` ou `INSTITUCIONAL`.",
-        "A mesma validação vale na criação de um dataset (um erro por item da lista,\napontado em `diasNaoUteis[i].abrangencia`) e na inclusão de um dia não útil\navulso num dataset existente (apontado em `item.abrangencia`).",
+        "A mesma validação vale na criação de um calendário (um erro por item da lista,\napontado em `diasNaoUteis[i].abrangencia`) e na inclusão de um dia não útil\navulso num calendário existente (apontado em `item.abrangencia`).",
         "A comparação considera a grafia exata, inclusive maiúsculas e minúsculas. Um valor diferente dos quatro aceitos é recusado."
       ],
       "comoResolver": [
         "Use exatamente um dos quatro códigos válidos: `NACIONAL`, `ESTADUAL`,\n`MUNICIPAL` ou `INSTITUCIONAL`, e repita a operação."
       ],
       "ondeAparece": [
-        "Criação de um dataset de calendário de dias úteis",
+        "Criação de um calendário de dias úteis",
         "Inclusão de um dia não útil avulso"
       ]
     },
@@ -2999,20 +2999,20 @@
       "codigo": "uniplus.configuracao.calendario_dias_uteis.conflito_de_concorrencia",
       "requisitos": [],
       "oQueAconteceu": [
-        "Duas operações sobre o calendário de dias úteis esbarraram numa disputa\nconcorrente: marcar um dataset como vigente e incluir um dia não útil avulso\nnum dataset existente.",
+        "Duas operações sobre o calendário de dias úteis esbarraram numa disputa\nconcorrente: marcar um calendário como vigente e incluir um dia não útil avulso\nnum calendário existente.",
         "Ao **marcar como vigente**, o conflito cobre dois cenários distintos:",
-        "- **duas ativações concorrentes** disputando o mesmo \"vigente = true\" ao\n  mesmo tempo (reforçado por uma exclusion constraint de banco: no máximo um\n  dataset vigente por vez); ou\n- **este mesmo dataset foi modificado concorrentemente** — por exemplo,\n  removido — entre a leitura e a gravação desta operação.",
-        "Ao **incluir um dia não útil avulso**, o conflito acontece quando o mesmo\ndataset foi removido, teve a vigência alterada ou recebeu **outra inclusão\nconcorrente** entre a leitura e a gravação desta inclusão (cada inclusão marca\no dataset como alterado). A inclusão que conflita não grava o dia.",
-        "A remoção de um dataset **não** emite este código: a disputa dela com outra\nalteração recebe o tratamento genérico de conflito de concorrência (409).",
+        "- **duas ativações concorrentes** disputando o mesmo \"vigente = true\" ao\n  mesmo tempo (reforçado por uma exclusion constraint de banco: no máximo um\n  calendário vigente por vez); ou\n- **este mesmo calendário foi modificado concorrentemente** — por exemplo,\n  removido — entre a leitura e a gravação desta operação.",
+        "Ao **incluir um dia não útil avulso**, o conflito acontece quando o mesmo\ncalendário foi removido, teve a vigência alterada ou recebeu **outra inclusão\nconcorrente** entre a leitura e a gravação desta inclusão (cada inclusão marca\no calendário como alterado). A inclusão que conflita não grava o dia.",
+        "A remoção de um calendário **não** emite este código: a disputa dela com outra\nalteração recebe o tratamento genérico de conflito de concorrência (409).",
         "Nos casos que emitem este código a operação não decide sozinha qual das duas\nalterações concorrentes prevalece: ela recusa, e quem chamou tenta de novo com\no estado atualizado."
       ],
       "comoResolver": [
-        "Tente a operação novamente. Se o conflito persistir, confira o estado atual\ndo dataset e de qual é o vigente antes de repetir a chamada — outra alteração\npode ter chegado primeiro.",
-        "Na inclusão de um dia não útil, se o dataset foi removido pela outra operação,\na nova tentativa responde [calendário não encontrado](/erros/uniplus.configuracao.calendario_dias_uteis.nao_encontrado):\nescolha outro dataset ou cadastre um novo."
+        "Tente a operação novamente. Se o conflito persistir, confira o estado atual\ndo calendário e de qual é o vigente antes de repetir a chamada — outra alteração\npode ter chegado primeiro.",
+        "Na inclusão de um dia não útil, se o calendário foi removido pela outra operação,\na nova tentativa responde [calendário não encontrado](/erros/uniplus.configuracao.calendario_dias_uteis.nao_encontrado):\nescolha outro calendário ou cadastre um novo."
       ],
       "ondeAparece": [
-        "Marcar um dataset de calendário de dias úteis como vigente, quando outra ativação concorrente disputa o mesmo instante",
-        "Inclusão de um dia não útil avulso, quando o mesmo dataset foi removido, teve a vigência alterada ou recebeu outra inclusão concorrente"
+        "Marcar um calendário de dias úteis como vigente, quando outra ativação concorrente disputa o mesmo instante",
+        "Inclusão de um dia não útil avulso, quando o mesmo calendário foi removido, teve a vigência alterada ou recebeu outra inclusão concorrente"
       ]
     },
     {
@@ -3021,30 +3021,30 @@
       "oQueAconteceu": [
         "Um dos dias não úteis enviados no calendário não traz a data: o campo `data` foi omitido ou veio com o valor zerado (`0001-01-01`), que equivale a \"sem data\". A resposta aponta o item em `errors[]`, por exemplo `diasNaoUteis[3].data`, ou `item.data` quando se inclui um dia avulso.",
         "Sem a data não há como dizer qual dia do calendário deixa de contar como útil. Nada foi gravado.",
-        "Na inclusão avulsa, o calendário é procurado antes de a data ser conferida: com um identificador inexistente a resposta é [calendário não encontrado](/erros/uniplus.configuracao.calendario_dias_uteis.nao_encontrado), mesmo que a data também estivesse ausente. Na criação do dataset não há essa busca."
+        "Na inclusão avulsa, o calendário é procurado antes de a data ser conferida: com um identificador inexistente a resposta é [calendário não encontrado](/erros/uniplus.configuracao.calendario_dias_uteis.nao_encontrado), mesmo que a data também estivesse ausente. Na criação do calendário não há essa busca."
       ],
       "comoResolver": [
         "Informe a data do dia não útil no formato `AAAA-MM-DD`. Se o dia veio de uma planilha ou de uma integração, confira se a coluna da data foi lida e se não chegou vazia."
       ],
       "ondeAparece": [
-        "Criação de um dataset de calendário de dias não úteis (POST /api/configuracao/admin/calendarios-dias-uteis)",
-        "Inclusão de um dia não útil em um dataset existente (POST /api/configuracao/admin/calendarios-dias-uteis/`{id}`/dias-nao-uteis), depois de o calendário ser encontrado"
+        "Criação de um calendário de dias não úteis (POST /api/configuracao/admin/calendarios-dias-uteis)",
+        "Inclusão de um dia não útil em um calendário existente (POST /api/configuracao/admin/calendarios-dias-uteis/`{id}`/dias-nao-uteis), depois de o calendário ser encontrado"
       ]
     },
     {
-      "codigo": "uniplus.configuracao.calendario_dias_uteis.data_duplicada_no_dataset",
+      "codigo": "uniplus.configuracao.calendario_dias_uteis.data_duplicada_no_calendario",
       "requisitos": [],
       "oQueAconteceu": [
-        "Um dia não útil repete a **mesma data, abrangência, município e UF** de outro\ndia do mesmo dataset. A comparação depende da operação:",
-        "- na **criação de um dataset**, as entradas do próprio envio são comparadas\n  entre si, e a repetição é apontada no item repetido (`diasNaoUteis[i]`);\n- na **inclusão de um dia não útil avulso**, o dia enviado é comparado com as\n  datas **já cadastradas** no dataset. Se duas inclusões simultâneas trazem a mesma\n  combinação, a que grava por último pode receber este erro (duplicidade) ou\n  o [conflito de concorrência](/erros/uniplus.configuracao.calendario_dias_uteis.conflito_de_concorrencia),\n  conforme o momento em que cada uma grava.",
-        "A conferência de duplicidade é sobre a combinação dos quatro campos, não só a\ndata isolada: a mesma data pode aparecer mais de uma vez no dataset desde que\nrepresente abrangências diferentes (por exemplo, um feriado nacional e, na\nmesma data, um recesso institucional local) — o que não pode é repetir a\nexata mesma combinação duas vezes."
+        "A mensagem é \"Data duplicada no calendário (mesma abrangência, município e UF).\" Um dia não útil repete a **mesma data, abrangência, município e UF** de outro\ndia do mesmo calendário. A comparação depende da operação:",
+        "- na **criação de um calendário**, as entradas do próprio envio são comparadas\n  entre si, e a repetição é apontada no item repetido (`diasNaoUteis[i]`);\n- na **inclusão de um dia não útil avulso**, o dia enviado é comparado com as\n  datas **já cadastradas** no calendário. Se duas inclusões simultâneas trazem a mesma\n  combinação, a que grava por último pode receber este erro (duplicidade) ou\n  o [conflito de concorrência](/erros/uniplus.configuracao.calendario_dias_uteis.conflito_de_concorrencia),\n  conforme o momento em que cada uma grava.",
+        "A conferência de duplicidade é sobre a combinação dos quatro campos, não só a\ndata isolada: a mesma data pode aparecer mais de uma vez no calendário desde que\nrepresente abrangências diferentes (por exemplo, um feriado nacional e, na\nmesma data, um recesso institucional local) — o que não pode é repetir a\nexata mesma combinação duas vezes."
       ],
       "comoResolver": [
         "Na criação, revise a lista de dias não úteis e remova a entrada duplicada,\nmantendo apenas uma ocorrência de cada combinação de data, abrangência,\nmunicípio e UF.",
-        "Na inclusão avulsa, o dia já consta no dataset: consulte as datas cadastradas e,\nse for o caso, inclua apenas um dia que ainda não esteja lá (por exemplo, com\noutra abrangência, município ou UF)."
+        "Na inclusão avulsa, o dia já consta no calendário: consulte as datas cadastradas e,\nse for o caso, inclua apenas um dia que ainda não esteja lá (por exemplo, com\noutra abrangência, município ou UF)."
       ],
       "ondeAparece": [
-        "Criação de um dataset de calendário de dias úteis",
+        "Criação de um calendário de dias úteis",
         "Inclusão de um dia não útil avulso"
       ]
     },
@@ -3053,13 +3053,13 @@
       "requisitos": [],
       "oQueAconteceu": [
         "A operação foi recusada porque um dia não útil não trouxe **descrição** — o\nrótulo que identifica o que aquele dia é (por exemplo, \"Independência do\nBrasil\" ou \"Recesso institucional de fim de ano\").",
-        "A mesma validação vale na criação de um dataset (um erro por item da lista,\napontado em `diasNaoUteis[i].descricao`) e na inclusão de um dia não útil\navulso num dataset existente (apontado em `item.descricao`)."
+        "A mesma validação vale na criação de um calendário (um erro por item da lista,\napontado em `diasNaoUteis[i].descricao`) e na inclusão de um dia não útil\navulso num calendário existente (apontado em `item.descricao`)."
       ],
       "comoResolver": [
         "Informe uma descrição para cada dia não útil enviado — todos os itens da lista,\nna criação, ou o dia avulso, na inclusão."
       ],
       "ondeAparece": [
-        "Criação de um dataset de calendário de dias úteis",
+        "Criação de um calendário de dias úteis",
         "Inclusão de um dia não útil avulso"
       ]
     },
@@ -3068,13 +3068,13 @@
       "requisitos": [],
       "oQueAconteceu": [
         "A **descrição** de um dia não útil excede o tamanho máximo aceito: 200\ncaracteres.",
-        "A mesma validação vale na criação de um dataset (um erro por item da lista,\napontado em `diasNaoUteis[i].descricao`) e na inclusão de um dia não útil\navulso num dataset existente (apontado em `item.descricao`)."
+        "A mesma validação vale na criação de um calendário (um erro por item da lista,\napontado em `diasNaoUteis[i].descricao`) e na inclusão de um dia não útil\navulso num calendário existente (apontado em `item.descricao`)."
       ],
       "comoResolver": [
         "Reduza a descrição desse dia não útil para até 200 caracteres e repita a\noperação."
       ],
       "ondeAparece": [
-        "Criação de um dataset de calendário de dias úteis",
+        "Criação de um calendário de dias úteis",
         "Inclusão de um dia não útil avulso"
       ]
     },
@@ -3084,14 +3084,14 @@
       "oQueAconteceu": [
         "A operação foi recusada porque um dos itens da lista de dias não úteis veio\n**nulo** — a lista em si foi enviada, mas um de seus elementos não é um dia\nnão útil válido. O erro aponta o item em `diasNaoUteis[i]`.",
         "A validação percorre a lista inteira: cada item nulo gera o seu erro, e os\ndemais itens continuam sendo conferidos.",
-        "Na inclusão de um dia não útil avulso, o dia é o próprio corpo da requisição\n(`item`). Um corpo **ausente** (sem conteúdo) ou o documento JSON `null` chegam\nà API como dia nulo: o parâmetro do corpo é opcional, então a leitura da\nrequisição não os recusa e esta é a resposta (422), com o erro apontando\n`item`. A recusa vem depois da busca do dataset: com um identificador que não\nresolve, a resposta é [a de calendário não encontrado](/erros/uniplus.configuracao.calendario_dias_uteis.nao_encontrado).",
+        "Na inclusão de um dia não útil avulso, o dia é o próprio corpo da requisição\n(`item`). Um corpo **ausente** (sem conteúdo) ou o documento JSON `null` chegam\nà API como dia nulo: o parâmetro do corpo é opcional, então a leitura da\nrequisição não os recusa e esta é a resposta (422), com o erro apontando\n`item`. A recusa vem depois da busca do calendário: com um identificador que não\nresolve, a resposta é [a de calendário não encontrado](/erros/uniplus.configuracao.calendario_dias_uteis.nao_encontrado).",
         "Um corpo que chega malformado ou em formato incompatível é outro caso: recebe\n[a recusa de requisição malformada](/erros/uniplus.requisicao.malformada) (400)."
       ],
       "comoResolver": [
         "Na criação, revise a lista enviada e remova ou preencha o item nulo. Na\ninclusão avulsa, envie no corpo o dia não útil. Cada dia precisa trazer\nabrangência, data e descrição."
       ],
       "ondeAparece": [
-        "Criação de um dataset de calendário de dias úteis",
+        "Criação de um calendário de dias úteis",
         "Inclusão de um dia não útil avulso"
       ]
     },
@@ -3099,58 +3099,58 @@
       "codigo": "uniplus.configuracao.calendario_dias_uteis.ja_vigente",
       "requisitos": [],
       "oQueAconteceu": [
-        "A operação tentou marcar como vigente um dataset de calendário de dias úteis\nque **já é o vigente**.",
-        "Marcar vigente é a operação que torna um dataset o calendário corrente — é\npor ela que a recusa\n[calendário vigente ausente](/erros/uniplus.selecao.processo_seletivo.calendario_vigente_ausente),\nna Seleção, deixa de acontecer. Chamá-la de novo sobre o dataset que já está\nvigente não é tratado como repetição inofensiva: é sinal de que o chamador\nperdeu o estado atual, e a operação recusa em vez de responder sucesso sem\nter mudado nada."
+        "A operação tentou marcar como vigente um calendário de dias úteis\nque **já é o vigente**.",
+        "Marcar vigente é a operação que torna um calendário o calendário corrente — é\npor ela que a recusa\n[calendário vigente ausente](/erros/uniplus.selecao.processo_seletivo.calendario_vigente_ausente),\nna Seleção, deixa de acontecer. Chamá-la de novo sobre o calendário que já está\nvigente não é tratado como repetição inofensiva: é sinal de que o chamador\nperdeu o estado atual, e a operação recusa em vez de responder sucesso sem\nter mudado nada."
       ],
       "comoResolver": [
-        "Confira qual dataset está vigente antes de chamar a operação — não há\nnecessidade de marcá-lo de novo. Se a intenção é trocar de dataset vigente,\nmarque o dataset novo diretamente: a troca desmarca o anterior na mesma\noperação."
+        "Confira qual calendário está vigente antes de chamar a operação — não há\nnecessidade de marcá-lo de novo. Se a intenção é trocar de calendário vigente,\nmarque o calendário novo diretamente: a troca desmarca o anterior na mesma\noperação."
       ],
       "ondeAparece": [
-        "Marcar um dataset de calendário de dias úteis como vigente"
+        "Marcar um calendário de dias úteis como vigente"
       ]
     },
     {
       "codigo": "uniplus.configuracao.calendario_dias_uteis.nao_encontrado",
       "requisitos": [],
       "oQueAconteceu": [
-        "O identificador informado não corresponde a nenhum dataset de calendário de\ndias úteis existente — ou porque nunca existiu, ou porque já foi removido\n(soft delete)."
+        "O identificador informado não corresponde a nenhum calendário de\ndias úteis existente — ou porque nunca existiu, ou porque já foi removido\n(soft delete)."
       ],
       "comoResolver": [
-        "Confira o identificador do dataset. Se ele foi removido, cadastre um novo ou\nuse outro já existente.",
-        "Na inclusão de um dia não útil avulso, o dataset é procurado antes de o dia ser\nvalidado: com um identificador que não resolve, esta é a resposta, mesmo que os\ncampos do dia também tivessem erros de validação. Isso vale só para a validação\nfeita depois da leitura da requisição: um corpo malformado ou\nincompatível com o formato esperado é recusado antes (400), sem que o dataset\nchegue a ser procurado. Corpo ausente ou `null` não é recusado nessa leitura:\no dataset é procurado primeiro e, se existir, o item nulo recebe\n[a recusa de item nulo](/erros/uniplus.configuracao.calendario_dias_uteis.dia_nao_util_nulo)."
+        "Confira o identificador do calendário. Se ele foi removido, cadastre um novo ou\nuse outro já existente.",
+        "Na inclusão de um dia não útil avulso, o calendário é procurado antes de o dia ser\nvalidado: com um identificador que não resolve, esta é a resposta, mesmo que os\ncampos do dia também tivessem erros de validação. Isso vale só para a validação\nfeita depois da leitura da requisição: um corpo malformado ou\nincompatível com o formato esperado é recusado antes (400), sem que o calendário\nchegue a ser procurado. Corpo ausente ou `null` não é recusado nessa leitura:\no calendário é procurado primeiro e, se existir, o item nulo recebe\n[a recusa de item nulo](/erros/uniplus.configuracao.calendario_dias_uteis.dia_nao_util_nulo)."
       ],
       "ondeAparece": [
-        "Marcar um dataset de calendário de dias úteis como vigente, com identificador que não resolve",
-        "Remoção de um dataset de calendário de dias úteis, com identificador que não resolve",
-        "Inclusão de um dia não útil avulso, com identificador de dataset que não resolve"
+        "Marcar um calendário de dias úteis como vigente, com identificador que não resolve",
+        "Remoção de um calendário de dias úteis, com identificador que não resolve",
+        "Inclusão de um dia não útil avulso, com identificador de calendário que não resolve"
       ]
     },
     {
       "codigo": "uniplus.configuracao.calendario_dias_uteis.nao_remove_vigente",
       "requisitos": [],
       "oQueAconteceu": [
-        "A operação tentou remover um dataset de calendário de dias úteis que está\n**vigente**.",
-        "Remover o vigente deixaria, no instante seguinte, nenhum calendário corrente\n— o que reabriria a mesma recusa de\n[calendário vigente ausente](/erros/uniplus.selecao.processo_seletivo.calendario_vigente_ausente)\npara qualquer publicação de processo seletivo que dependa de contagem em dia\nútil. Trocar de dataset vigente é uma operação explícita e distinta (marcar\noutro dataset como vigente), nunca um efeito colateral automático de remover\no atual."
+        "A operação tentou remover um calendário de dias úteis que está\n**vigente**.",
+        "Remover o vigente deixaria, no instante seguinte, nenhum calendário corrente\n— o que reabriria a mesma recusa de\n[calendário vigente ausente](/erros/uniplus.selecao.processo_seletivo.calendario_vigente_ausente)\npara qualquer publicação de processo seletivo que dependa de contagem em dia\nútil. Trocar de calendário vigente é uma operação explícita e distinta (marcar\noutro calendário como vigente), nunca um efeito colateral automático de remover\no atual."
       ],
       "comoResolver": [
-        "Marque outro dataset como vigente antes de remover este. Se não há outro\ndataset pronto, crie um novo e marque-o vigente primeiro."
+        "Marque outro calendário como vigente antes de remover este. Se não há outro\ncalendário pronto, crie um novo e marque-o vigente primeiro."
       ],
       "ondeAparece": [
-        "Remoção de um dataset de calendário de dias úteis"
+        "Remoção de um calendário de dias úteis"
       ]
     },
     {
       "codigo": "uniplus.configuracao.calendario_dias_uteis.sem_dia_nao_util",
       "requisitos": [],
       "oQueAconteceu": [
-        "A operação foi recusada porque o dataset foi enviado **sem nenhum dia não\nútil** na lista.",
-        "Um calendário de dias úteis existe para responder \"este dia é útil?\" — um\ndataset sem um único feriado ou recesso declarado não distingue nada, e\npublicá-lo como vigente equivaleria a fingir que todo dia é útil sem dizer\nisso explicitamente. O cadastro recusa o dataset vazio em vez de aceitar essa\nambiguidade."
+        "A operação foi recusada porque o calendário foi enviado **sem nenhum dia não\nútil** na lista.",
+        "Um calendário de dias úteis existe para responder \"este dia é útil?\" — um\ncalendário sem um único feriado ou recesso declarado não distingue nada, e\npublicá-lo como vigente equivaleria a fingir que todo dia é útil sem dizer\nisso explicitamente. O cadastro recusa o calendário vazio em vez de aceitar essa\nambiguidade."
       ],
       "comoResolver": [
         "Inclua ao menos um dia não útil na lista antes de enviar a criação. Um\ncalendário nacional típico tem os feriados nacionais do ano coberto, no\nmínimo."
       ],
       "ondeAparece": [
-        "Criação de um dataset de calendário de dias úteis"
+        "Criação de um calendário de dias úteis"
       ]
     },
     {
@@ -3159,13 +3159,13 @@
       "oQueAconteceu": [
         "Um dia não útil trouxe código IBGE, nome ou UF de município mesmo com\nabrangência diferente de `MUNICIPAL`.",
         "Os dados do município (código IBGE, nome e UF) associam um feriado municipal a uma cidade específica. Eles só se aplicam quando a abrangência é `MUNICIPAL`: em `NACIONAL`, `ESTADUAL` ou `INSTITUCIONAL`, informar qualquer um dos três campos é recusado, mesmo que os outros dois estejam ausentes.",
-        "A mesma validação vale na criação de um dataset (um erro por item da lista,\napontado em `diasNaoUteis[i]`) e na inclusão de um dia não útil avulso num\ndataset existente (apontado em `item`)."
+        "A mesma validação vale na criação de um calendário (um erro por item da lista,\napontado em `diasNaoUteis[i]`) e na inclusão de um dia não útil avulso num\ncalendário existente (apontado em `item`)."
       ],
       "comoResolver": [
         "Se a abrangência do dia é `MUNICIPAL`, mantenha os dados do município. Caso contrário, remova código IBGE, nome e UF do município desse item: nenhum dos três se aplica."
       ],
       "ondeAparece": [
-        "Criação de um dataset de calendário de dias úteis",
+        "Criação de um calendário de dias úteis",
         "Inclusão de um dia não útil avulso"
       ]
     },
@@ -3175,13 +3175,13 @@
       "oQueAconteceu": [
         "Um dia não útil trouxe **UF** mesmo com abrangência diferente de `ESTADUAL`.",
         "A UF associa um feriado a um estado; em `NACIONAL`, `MUNICIPAL` ou `INSTITUCIONAL`, informá-la neste campo é recusado. Em `MUNICIPAL`, a UF já faz parte dos dados do município.",
-        "A mesma validação vale na criação de um dataset (um erro por item da lista,\napontado em `diasNaoUteis[i].uf`) e na inclusão de um dia não útil avulso num\ndataset existente (apontado em `item.uf`)."
+        "A mesma validação vale na criação de um calendário (um erro por item da lista,\napontado em `diasNaoUteis[i].uf`) e na inclusão de um dia não útil avulso num\ncalendário existente (apontado em `item.uf`)."
       ],
       "comoResolver": [
         "Se a abrangência do dia é `ESTADUAL`, mantenha a UF. Caso contrário, remova o\ncampo — nenhuma outra abrangência o aceita."
       ],
       "ondeAparece": [
-        "Criação de um dataset de calendário de dias úteis",
+        "Criação de um calendário de dias úteis",
         "Inclusão de um dia não útil avulso"
       ]
     },
@@ -3190,13 +3190,13 @@
       "requisitos": [],
       "oQueAconteceu": [
         "A **UF** de um dia não útil de abrangência estadual não é uma das 27 siglas\nde unidade federativa válidas.",
-        "A mesma validação vale na criação de um dataset (um erro por item da lista,\napontado em `diasNaoUteis[i].uf`) e na inclusão de um dia não útil avulso num\ndataset existente (apontado em `item.uf`)."
+        "A mesma validação vale na criação de um calendário (um erro por item da lista,\napontado em `diasNaoUteis[i].uf`) e na inclusão de um dia não útil avulso num\ncalendário existente (apontado em `item.uf`)."
       ],
       "comoResolver": [
         "Informe uma das 27 siglas de UF válidas (por exemplo, `PA`, `SP`, `RJ`)."
       ],
       "ondeAparece": [
-        "Criação de um dataset de calendário de dias úteis",
+        "Criação de um calendário de dias úteis",
         "Inclusão de um dia não útil avulso"
       ]
     },
@@ -3206,41 +3206,41 @@
       "oQueAconteceu": [
         "Um dia não útil tem abrangência `ESTADUAL`, mas não trouxe a **UF**.",
         "Um feriado estadual só identifica a que estado pertence pela UF declarada —\nsem ela, o mesmo dia não útil não teria como ser distinguido do feriado\nestadual de um estado diferente.",
-        "A mesma validação vale na criação de um dataset (um erro por item da lista,\napontado em `diasNaoUteis[i].uf`) e na inclusão de um dia não útil avulso num\ndataset existente (apontado em `item.uf`)."
+        "A mesma validação vale na criação de um calendário (um erro por item da lista,\napontado em `diasNaoUteis[i].uf`) e na inclusão de um dia não útil avulso num\ncalendário existente (apontado em `item.uf`)."
       ],
       "comoResolver": [
         "Informe a UF do dia não útil de abrangência estadual."
       ],
       "ondeAparece": [
-        "Criação de um dataset de calendário de dias úteis",
+        "Criação de um calendário de dias úteis",
         "Inclusão de um dia não útil avulso"
       ]
     },
     {
-      "codigo": "uniplus.configuracao.calendario_dias_uteis.versao_dataset_obrigatoria",
+      "codigo": "uniplus.configuracao.calendario_dias_uteis.versao_do_calendario_obrigatoria",
       "requisitos": [],
       "oQueAconteceu": [
-        "A operação foi recusada porque a **versão do dataset** não foi preenchida ao\ncriar um calendário de dias úteis.",
-        "O calendário de dias úteis é reference data versionada por dataset inteiro,\nnão por linha: uma correção nos feriados publica um dataset novo, com a lista\ncompleta de dias não úteis. A única alteração de um dataset existente é a\ninclusão de um dia não útil avulso, que acrescenta o dia preservando o\nidentificador, a versão e as datas já cadastradas. A versão é o que identifica a remessa e a distingue das anteriores:\nsem ela, dois datasets do mesmo calendário ficariam indistinguíveis, e nenhum\nregistro que aponte para um deles diria de qual remessa de feriados se trata."
+        "A operação foi recusada porque a **versão do calendário** não foi preenchida ao\ncriar um calendário de dias úteis.",
+        "Uma correção nos feriados publica um calendário novo, com a lista completa de dias não úteis. A inclusão de um dia não útil avulso acrescenta o dia a um calendário existente, preservando o identificador, a versão e as datas já cadastradas. A versão identifica o calendário e o distingue dos anteriores."
       ],
       "comoResolver": [
-        "Informe a versão do dataset ao criar o calendário — um rótulo que identifique\nessa remessa de feriados (por exemplo, o ano ou o ciclo a que se refere)."
+        "Informe a versão do calendário ao criar o calendário — um rótulo que identifique\nessa remessa de feriados (por exemplo, o ano ou o ciclo a que se refere)."
       ],
       "ondeAparece": [
-        "Criação de um dataset de calendário de dias úteis"
+        "Criação de um calendário de dias úteis"
       ]
     },
     {
-      "codigo": "uniplus.configuracao.calendario_dias_uteis.versao_dataset_tamanho",
+      "codigo": "uniplus.configuracao.calendario_dias_uteis.versao_do_calendario_tamanho",
       "requisitos": [],
       "oQueAconteceu": [
-        "A **versão do dataset** informada está fora do tamanho aceito: entre 1 e 60\ncaracteres, contados após remover espaços nas pontas."
+        "A **versão do calendário** informada está fora do tamanho aceito: entre 1 e 60\ncaracteres, contados após remover espaços nas pontas."
       ],
       "comoResolver": [
         "Informe uma versão com até 60 caracteres."
       ],
       "ondeAparece": [
-        "Criação de um dataset de calendário de dias úteis"
+        "Criação de um calendário de dias úteis"
       ]
     },
     {
@@ -6324,6 +6324,21 @@
       ]
     },
     {
+      "codigo": "uniplus.configuracao.oferta_curso.codigo_emec_tamanho",
+      "requisitos": [],
+      "oQueAconteceu": [
+        "O **código e-MEC** da oferta excede o tamanho máximo aceito: 20 caracteres.",
+        "Este é o código e-MEC por campus-sede da oferta — o mesmo curso tem ofertas\ndistintas por campus, cada uma com seu próprio código e-MEC."
+      ],
+      "comoResolver": [
+        "Informe um código e-MEC com até 20 caracteres."
+      ],
+      "ondeAparece": [
+        "Criação de uma oferta de curso",
+        "Atualização de uma oferta de curso"
+      ]
+    },
+    {
       "codigo": "uniplus.configuracao.oferta_curso.codigo_formato_invalido",
       "requisitos": [],
       "oQueAconteceu": [
@@ -6352,6 +6367,21 @@
       ]
     },
     {
+      "codigo": "uniplus.configuracao.oferta_curso.codigo_no_sistema_academico_tamanho",
+      "requisitos": [],
+      "oQueAconteceu": [
+        "O **código no sistema acadêmico** da oferta excede o tamanho\nmáximo aceito: 30 caracteres.",
+        "O nome do campo é vendor-neutral por convenção — não amarra o contrato ao\nnome de um sistema acadêmico específico."
+      ],
+      "comoResolver": [
+        "Informe um código com até 30 caracteres."
+      ],
+      "ondeAparece": [
+        "Criação de uma oferta de curso",
+        "Atualização de uma oferta de curso"
+      ]
+    },
+    {
       "codigo": "uniplus.configuracao.oferta_curso.codigo_obrigatorio",
       "requisitos": [],
       "oQueAconteceu": [
@@ -6366,21 +6396,6 @@
       ]
     },
     {
-      "codigo": "uniplus.configuracao.oferta_curso.codigo_sga_tamanho",
-      "requisitos": [],
-      "oQueAconteceu": [
-        "O **código no sistema de gestão acadêmica** da oferta excede o tamanho\nmáximo aceito: 30 caracteres.",
-        "O nome do campo é vendor-neutral por convenção — não amarra o contrato ao\nnome de um sistema de gestão acadêmica específico."
-      ],
-      "comoResolver": [
-        "Informe um código com até 30 caracteres."
-      ],
-      "ondeAparece": [
-        "Criação de uma oferta de curso",
-        "Atualização de uma oferta de curso"
-      ]
-    },
-    {
       "codigo": "uniplus.configuracao.oferta_curso.curso_inexistente_ou_removido",
       "requisitos": [],
       "oQueAconteceu": [
@@ -6392,21 +6407,6 @@
       ],
       "ondeAparece": [
         "Criação de uma oferta de curso"
-      ]
-    },
-    {
-      "codigo": "uniplus.configuracao.oferta_curso.e_mec_codigo_tamanho",
-      "requisitos": [],
-      "oQueAconteceu": [
-        "O **código e-MEC** da oferta excede o tamanho máximo aceito: 20 caracteres.",
-        "Este é o código e-MEC por campus-sede da oferta — o mesmo curso tem ofertas\ndistintas por campus, cada uma com seu próprio código e-MEC."
-      ],
-      "comoResolver": [
-        "Informe um código e-MEC com até 20 caracteres."
-      ],
-      "ondeAparece": [
-        "Criação de uma oferta de curso",
-        "Atualização de uma oferta de curso"
       ]
     },
     {
@@ -11078,7 +11078,7 @@
       "oQueAconteceu": [
         "A `ajuda` de um item do formulário, ou de um campo de grupo, tem mais de 1000 caracteres depois de aparada. A ajuda é o texto que orienta o candidato no campo, e é opcional. A mensagem é \"A ajuda do campo tem no máximo 1000 caracteres.\"",
         "A recusa vem na lista `errors` da resposta, com `field` igual a `itens[i].ajuda` ou, no campo de um grupo, `grupos[g].subitens[j].ajuda`; nos modelos de formulário o `field` começa por `conteudo.`. Nada é gravado.",
-        "Nos modelos, a forma do item é conferida sem consultar o catálogo, e a recusa sai junto com as demais recusas da forma do item. Na gravação dos itens do formulário, a recusa só sai para o item cujo fato existe, é coletável e combina com o tipo de campo: o item com fato desconhecido, [não coletável](/erros/uniplus.item_formulario.fato_nao_coletavel) ou com tipo de campo [incoerente](/erros/uniplus.item_formulario.tipo_renderizacao_incoerente_com_dominio) é recusado por essa causa, e a ajuda dele só é conferida depois que ela for corrigida. Nos modelos, a conferência só ocorre quando o conteúdo foi lido sem recusa de leitura (como a de [conteúdo malformado](/erros/uniplus.configuracao.modelo_formulario.entrada_malformada)), e na atualização um `{id}` que não existe é recusado antes, como [modelo de formulário não encontrado](/erros/uniplus.configuracao.modelo_formulario.nao_encontrado)."
+        "Nos modelos, a forma do item é conferida sem consultar o catálogo, e a recusa sai junto com as demais recusas da forma do item. Na gravação dos itens do formulário, a recusa só sai para o item cujo fato existe, é coletável e combina com o tipo de campo: o item com fato desconhecido, [não coletável](/erros/uniplus.item_formulario.fato_nao_coletavel) ou com tipo de campo [incoerente](/erros/uniplus.item_formulario.tipo_de_campo_incoerente_com_dominio) é recusado por essa causa, e a ajuda dele só é conferida depois que ela for corrigida. Nos modelos, a conferência só ocorre quando o conteúdo foi lido sem recusa de leitura (como a de [conteúdo malformado](/erros/uniplus.configuracao.modelo_formulario.entrada_malformada)), e na atualização um `{id}` que não existe é recusado antes, como [modelo de formulário não encontrado](/erros/uniplus.configuracao.modelo_formulario.nao_encontrado)."
       ],
       "comoResolver": [
         "Encurte a `ajuda` para até 1000 caracteres, ou retire-a: o campo funciona sem ajuda."
@@ -11171,7 +11171,7 @@
       "oQueAconteceu": [
         "O item do formulário não informa o formato: ele é copiado do fato no catálogo, e só o fato de domínio texto tem formato. O campo de texto (`TEXTO`) leva o formato do fato, os demais campos não têm formato, e o formato tem no máximo 30 caracteres. A mensagem é \"O campo de texto tem o formato do fato no catálogo, com no máximo 30 caracteres; os demais campos não têm formato.\" A recusa vem na lista `errors` da resposta, uma entrada por campo, com `field` terminado em `formato`, e nada é gravado. Onde ela ocorre depende da operação.",
         "**Modelos de formulário (criação e atualização).** O formato é o do fato com o código do item, e a recusa sai quando:",
-        "- o campo é de texto e o fato não existe no catálogo, caso em que não há formato a copiar e a mesma resposta traz a recusa de [fato desconhecido](/erros/uniplus.item_formulario.fato_desconhecido);\n- o campo é de texto e o fato existe, mas não é de domínio texto, o que acompanha a recusa de [tipo de campo incoerente com o domínio do fato](/erros/uniplus.item_formulario.tipo_renderizacao_incoerente_com_dominio);\n- o campo não é de texto e o fato é de texto e tem formato, o que também acompanha a recusa de tipo de campo incoerente.",
+        "- o campo é de texto e o fato não existe no catálogo, caso em que não há formato a copiar e a mesma resposta traz a recusa de [fato desconhecido](/erros/uniplus.item_formulario.fato_desconhecido);\n- o campo é de texto e o fato existe, mas não é de domínio texto, o que acompanha a recusa de [tipo de campo incoerente com o domínio do dado](/erros/uniplus.item_formulario.tipo_de_campo_incoerente_com_dominio);\n- o campo não é de texto e o fato é de texto e tem formato, o que também acompanha a recusa de tipo de campo incoerente.",
         "O `field` é `conteudo.itens[i].formato` ou, no campo de um grupo, `conteudo.grupos[g].subitens[j].formato`. A conferência só ocorre quando o conteúdo foi lido sem recusa de leitura (como a de [conteúdo malformado](/erros/uniplus.configuracao.modelo_formulario.entrada_malformada)), e na atualização um `{id}` que não existe é recusado antes, como [modelo de formulário não encontrado](/erros/uniplus.configuracao.modelo_formulario.nao_encontrado). O limite de 30 caracteres não é alcançado, porque os formatos do catálogo são um vocabulário fechado de códigos curtos.",
         "**Publicação inicial e retificação em ato único.** Cada item e campo de grupo gravados é reconferido contra o catálogo de hoje (UNI-REQ-0159), e a recusa sai quando a definição do fato mudou depois de o campo ser gravado, de modo que o campo de texto deixou de ter formato ou o campo de outro tipo passou a ter. O `field` é `formularios[FINALIDADE].itens[i].formato`, como em `formularios[INSCRICAO].itens[0].formato`, ou `formularios[FINALIDADE].grupos[g].subitens[j].formato`, e a mensagem ganha o final \"Item '`{rótulo\\}`' (fato '`{código\\}`'). Regrave o item no formulário do processo.\". A reconferência do formato vale só para o fato que nenhuma versão publicada coletou. Para o fato que alguma versão já coletou, o formato não é reconferido, e só a recusa de tipo de campo incoerente, que essa reconferência mantém, pede desfazer a correção no catálogo.",
         "**Gravação dos itens do formulário e aplicação de modelo.** Estas operações não emitem esta recusa. O formato vem do fato no catálogo, e o item com fato desconhecido, não coletável ou com tipo de campo incoerente é recusado antes por essas causas; o item com tipo de campo coerente tem formato coerente."
@@ -11209,7 +11209,7 @@
       "oQueAconteceu": [
         "O impedimento de um item declara a mensagem que o candidato lê quando a resposta dele impede a inscrição. A `mensagem` do `impedimento` está ausente, vazia, só com espaços, tem mais de 500 caracteres depois de aparada ou contém o caractere nulo. A mensagem é \"A mensagem que explica o impedimento ao candidato é obrigatória e tem no máximo 500 caracteres.\"",
         "A recusa vem na lista `errors` da resposta, com `field` igual a `itens[i].impedimento.mensagem` ou, no campo de um grupo, `grupos[g].subitens[j].impedimento.mensagem`; nos modelos de formulário começa por `conteudo.`. Nada é gravado. No campo de um grupo repetível a causa é a mesma e vem no caminho do campo; como o campo de grupo não admite impedimento, ele é recusado também como [campo de grupo com impedimento](/erros/uniplus.grupo_formulario.campo_com_impedimento), na conferência da forma do grupo. A mensagem é mostrada ao candidato: escreva o motivo da recusa sem dados pessoais.",
-        "Na gravação dos itens do formulário, esta recusa só sai para o item cujo fato existe, é coletável e combina com o tipo de campo: o item com fato [desconhecido](/erros/uniplus.item_formulario.fato_desconhecido), [não coletável](/erros/uniplus.item_formulario.fato_nao_coletavel) ou com tipo de campo [incoerente](/erros/uniplus.item_formulario.tipo_renderizacao_incoerente_com_dominio) é recusado por essa causa, e o resto da forma dele só é conferido depois que ela for corrigida. Nos modelos, a conferência só ocorre quando o conteúdo foi lido sem recusa de leitura (como a de [conteúdo malformado](/erros/uniplus.configuracao.modelo_formulario.entrada_malformada)), e na atualização um `{id}` que não existe é recusado antes, como [modelo de formulário não encontrado](/erros/uniplus.configuracao.modelo_formulario.nao_encontrado)."
+        "Na gravação dos itens do formulário, esta recusa só sai para o item cujo fato existe, é coletável e combina com o tipo de campo: o item com fato [desconhecido](/erros/uniplus.item_formulario.fato_desconhecido), [não coletável](/erros/uniplus.item_formulario.fato_nao_coletavel) ou com tipo de campo [incoerente](/erros/uniplus.item_formulario.tipo_de_campo_incoerente_com_dominio) é recusado por essa causa, e o resto da forma dele só é conferido depois que ela for corrigida. Nos modelos, a conferência só ocorre quando o conteúdo foi lido sem recusa de leitura (como a de [conteúdo malformado](/erros/uniplus.configuracao.modelo_formulario.entrada_malformada)), e na atualização um `{id}` que não existe é recusado antes, como [modelo de formulário não encontrado](/erros/uniplus.configuracao.modelo_formulario.nao_encontrado)."
       ],
       "comoResolver": [
         "Informe em `impedimento.mensagem` o texto que explica ao candidato por que a resposta impede a inscrição, com até 500 caracteres."
@@ -11226,7 +11226,7 @@
       "oQueAconteceu": [
         "O impedimento é uma condição sobre a resposta do campo, e só os campos que entram em regra têm resposta que se compare: `SIM_OU_NAO`, `NUMERO`, `ESCOLHA_UNICA`, `ESCOLHA_MULTIPLA` e `MUNICIPIO`. O item enviado com `impedimento` é de tipo `TEXTO`, `DATA` ou `ENDERECO`. A mensagem é \"O impedimento só cabe em campo booleano, numérico, de seleção ou de município: texto, data e endereço não entram em regra.\"",
         "A recusa vem na lista `errors` da resposta, com `field` igual a `itens[i].impedimento` ou, no campo de um grupo, `grupos[g].subitens[j].impedimento`; nos modelos de formulário começa por `conteudo.`. Nada é gravado. No campo de um grupo repetível a causa é a mesma e vem no caminho do campo; como o campo de grupo não admite impedimento, ele é recusado também como [campo de grupo com impedimento](/erros/uniplus.grupo_formulario.campo_com_impedimento), na conferência da forma do grupo.",
-        "Na gravação dos itens do formulário, esta recusa só sai para o item cujo fato existe, é coletável e combina com o tipo de campo: o item com fato [desconhecido](/erros/uniplus.item_formulario.fato_desconhecido), [não coletável](/erros/uniplus.item_formulario.fato_nao_coletavel) ou com tipo de campo [incoerente](/erros/uniplus.item_formulario.tipo_renderizacao_incoerente_com_dominio) é recusado por essa causa, e o resto da forma dele só é conferido depois que ela for corrigida. Nos modelos, a conferência só ocorre quando o conteúdo foi lido sem recusa de leitura (como a de [conteúdo malformado](/erros/uniplus.configuracao.modelo_formulario.entrada_malformada)), e na atualização um `{id}` que não existe é recusado antes, como [modelo de formulário não encontrado](/erros/uniplus.configuracao.modelo_formulario.nao_encontrado)."
+        "Na gravação dos itens do formulário, esta recusa só sai para o item cujo fato existe, é coletável e combina com o tipo de campo: o item com fato [desconhecido](/erros/uniplus.item_formulario.fato_desconhecido), [não coletável](/erros/uniplus.item_formulario.fato_nao_coletavel) ou com tipo de campo [incoerente](/erros/uniplus.item_formulario.tipo_de_campo_incoerente_com_dominio) é recusado por essa causa, e o resto da forma dele só é conferido depois que ela for corrigida. Nos modelos, a conferência só ocorre quando o conteúdo foi lido sem recusa de leitura (como a de [conteúdo malformado](/erros/uniplus.configuracao.modelo_formulario.entrada_malformada)), e na atualização um `{id}` que não existe é recusado antes, como [modelo de formulário não encontrado](/erros/uniplus.configuracao.modelo_formulario.nao_encontrado)."
       ],
       "comoResolver": [
         "Retire o `impedimento` do item, ou use um fato cujo tipo de campo seja booleano, numérico, de seleção ou de município."
@@ -11260,7 +11260,7 @@
       "oQueAconteceu": [
         "O impedimento barra a inscrição por causa da resposta do campo, que pode ser combinada com respostas anteriores. Uma cláusula de `impedimento.quando` não tem nenhuma condição sobre o fato do próprio item. A mensagem é \"Cada cláusula do impedimento cita a resposta do próprio campo; o bloqueio só por resposta anterior é da exibição.\"",
         "A recusa vem na lista `errors` da resposta, com `field` igual a `itens[i].impedimento.quando` ou, no campo de um grupo, `grupos[g].subitens[j].impedimento.quando`; nos modelos de formulário começa por `conteudo.`. É uma entrada por item, e nada é gravado. No campo de um grupo repetível a causa é a mesma e vem no caminho do campo; como o campo de grupo não admite impedimento, ele é recusado também como [campo de grupo com impedimento](/erros/uniplus.grupo_formulario.campo_com_impedimento), na conferência da forma do grupo.",
-        "Na gravação dos itens do formulário, esta recusa só sai para o item cujo fato existe, é coletável e combina com o tipo de campo: o item com fato [desconhecido](/erros/uniplus.item_formulario.fato_desconhecido), [não coletável](/erros/uniplus.item_formulario.fato_nao_coletavel) ou com tipo de campo [incoerente](/erros/uniplus.item_formulario.tipo_renderizacao_incoerente_com_dominio) é recusado por essa causa, e o resto da forma dele só é conferido depois que ela for corrigida. Nos modelos, a conferência só ocorre quando o conteúdo foi lido sem recusa de leitura (como a de [conteúdo malformado](/erros/uniplus.configuracao.modelo_formulario.entrada_malformada)), e na atualização um `{id}` que não existe é recusado antes, como [modelo de formulário não encontrado](/erros/uniplus.configuracao.modelo_formulario.nao_encontrado)."
+        "Na gravação dos itens do formulário, esta recusa só sai para o item cujo fato existe, é coletável e combina com o tipo de campo: o item com fato [desconhecido](/erros/uniplus.item_formulario.fato_desconhecido), [não coletável](/erros/uniplus.item_formulario.fato_nao_coletavel) ou com tipo de campo [incoerente](/erros/uniplus.item_formulario.tipo_de_campo_incoerente_com_dominio) é recusado por essa causa, e o resto da forma dele só é conferido depois que ela for corrigida. Nos modelos, a conferência só ocorre quando o conteúdo foi lido sem recusa de leitura (como a de [conteúdo malformado](/erros/uniplus.configuracao.modelo_formulario.entrada_malformada)), e na atualização um `{id}` que não existe é recusado antes, como [modelo de formulário não encontrado](/erros/uniplus.configuracao.modelo_formulario.nao_encontrado)."
       ],
       "comoResolver": [
         "Inclua em cada cláusula do impedimento uma condição sobre o fato que o item coleta, combinada, se for o caso, com condições sobre respostas anteriores. Para esconder o campo conforme respostas anteriores, use a exibição, e não o impedimento."
@@ -11296,7 +11296,7 @@
       "oQueAconteceu": [
         "As opções do campo de município são filtradas pela UF respondida antes (UNI-REQ-0145), e a restrição `MUNICIPIOS_DA_UF`, que cita o fato da UF, é obrigatória no campo de tipo `MUNICIPIO`. O item enviado é de tipo `MUNICIPIO` e não traz essa restrição. A mensagem é \"O campo de município cita a UF respondida antes, pelos municípios da UF.\"",
         "A recusa vem na lista `errors` da resposta, com `field` igual a `itens[i].restricoes` ou `grupos[g].subitens[j].restricoes`; nos modelos de formulário começa por `conteudo.`. É uma entrada por item, junto das demais recusas da forma do item, e nada é gravado.",
-        "Na gravação dos itens do formulário, esta recusa só sai para o item cujo fato existe, é coletável e combina com o tipo de campo: o item com fato [desconhecido](/erros/uniplus.item_formulario.fato_desconhecido), [não coletável](/erros/uniplus.item_formulario.fato_nao_coletavel) ou com tipo de campo [incoerente](/erros/uniplus.item_formulario.tipo_renderizacao_incoerente_com_dominio) é recusado por essa causa, e o resto da forma dele só é conferido depois que ela for corrigida. Nos modelos, a conferência só ocorre quando o conteúdo foi lido sem recusa de leitura (como a de [conteúdo malformado](/erros/uniplus.configuracao.modelo_formulario.entrada_malformada)), e na atualização um `{id}` que não existe é recusado antes, como [modelo de formulário não encontrado](/erros/uniplus.configuracao.modelo_formulario.nao_encontrado)."
+        "Na gravação dos itens do formulário, esta recusa só sai para o item cujo fato existe, é coletável e combina com o tipo de campo: o item com fato [desconhecido](/erros/uniplus.item_formulario.fato_desconhecido), [não coletável](/erros/uniplus.item_formulario.fato_nao_coletavel) ou com tipo de campo [incoerente](/erros/uniplus.item_formulario.tipo_de_campo_incoerente_com_dominio) é recusado por essa causa, e o resto da forma dele só é conferido depois que ela for corrigida. Nos modelos, a conferência só ocorre quando o conteúdo foi lido sem recusa de leitura (como a de [conteúdo malformado](/erros/uniplus.configuracao.modelo_formulario.entrada_malformada)), e na atualização um `{id}` que não existe é recusado antes, como [modelo de formulário não encontrado](/erros/uniplus.configuracao.modelo_formulario.nao_encontrado)."
       ],
       "comoResolver": [
         "Acrescente ao item a restrição `MUNICIPIOS_DA_UF`, com o código do fato da UF em `fatos`. O fato da UF deve estar em um campo anterior do formulário, de resposta única e com as UFs do Geo; caso contrário, a recusa é a de [UF do município inválida](/erros/uniplus.item_formulario.uf_do_municipio_invalida)."
@@ -11336,7 +11336,7 @@
         "Um campo pode formar as próprias opções com as respostas de outros campos, como a opção de lista de espera escolhida entre as opções de curso que o candidato marcou (UNI-REQ-0145). Toda resposta possível do campo de origem precisa ser opção do campo que as recebe. Isso não vale quando a origem tem outro domínio, outra fonte de valores ou valores que não cabem nos do alvo. Há duas formas da recusa.",
         "**Na escrita do item.** A restrição `OPCOES_DAS_RESPOSTAS` de `restricoes[k]` cita em `fatos` um fato que não existe no catálogo, ou cujo domínio ou valores não cabem nos do fato do item. A mensagem é \"As opções formadas pelas respostas vêm de campos de seleção cujas opções são todas opções do campo.\", com `field` igual a `restricoes[k].fatos`, precedido de `itens[i].` ou `grupos[g].subitens[j].`, e a recusa leva os códigos dos fatos citados. Vale na gravação dos itens do formulário, nos modelos de formulário (`field` precedido de `conteudo.`) e na aplicação de modelo (`modelo.`). Na publicação inicial e na retificação em ato único, a mesma conferência é refeita contra o catálogo de hoje nos itens gravados, com `field` iniciado por `formularios[FINALIDADE]` e o final \"Item '`{rótulo\\}`' (fato '`{código\\}`'). Regrave o item no formulário do processo.\".",
         "**Na oferta do processo.** Quando as opções de cada campo vêm do que o próprio processo declara, as ofertas dos dois campos só congelam juntas. A recusa é única, sem `field`, com a mensagem \"As opções do campo '`{origem\\}`' formam as opções do campo '`{alvo\\}`', mas nem todas são opções dele.\" Sai na publicação inicial, na retificação em ato único, na pré-visualização do processo seletivo e na montagem do formulário renderizável do rascunho, porque as opções que o processo declara podem mudar depois de os campos serem gravados.",
-        "Nada é gravado. O item que o catálogo não reconhece é recusado antes, por [fato desconhecido](/erros/uniplus.item_formulario.fato_desconhecido), [fato não coletável](/erros/uniplus.item_formulario.fato_nao_coletavel) ou [tipo de campo incoerente](/erros/uniplus.item_formulario.tipo_renderizacao_incoerente_com_dominio). Na atualização de um modelo, um `{id}` que não existe é recusado antes, como [modelo de formulário não encontrado](/erros/uniplus.configuracao.modelo_formulario.nao_encontrado)."
+        "Nada é gravado. O item que o catálogo não reconhece é recusado antes, por [fato desconhecido](/erros/uniplus.item_formulario.fato_desconhecido), [fato não coletável](/erros/uniplus.item_formulario.fato_nao_coletavel) ou [tipo de campo incoerente](/erros/uniplus.item_formulario.tipo_de_campo_incoerente_com_dominio). Na atualização de um modelo, um `{id}` que não existe é recusado antes, como [modelo de formulário não encontrado](/erros/uniplus.configuracao.modelo_formulario.nao_encontrado)."
       ],
       "comoResolver": [
         "Na escrita do item, cite em `fatos` só campos de seleção do mesmo domínio e da mesma fonte de valores, com opções contidas nas do campo que as recebe. Na oferta do processo, ajuste a oferta declarada para que todas as opções do campo de origem existam no campo que as recebe, ou retire a restrição `OPCOES_DAS_RESPOSTAS` do campo. Em processo já publicado, a correção é feita numa retificação."
@@ -11378,7 +11378,7 @@
         "As regras de um campo dependem das respostas a campos anteriores do formulário (UNI-REQ-0145), e uma regra que cita o fato do próprio campo seria um ciclo de tamanho um. Uma regra do item enviado cita o fato que o item coleta. A mensagem diz qual regra:",
         "- \"A exibição cita o próprio fato.\", com `field` igual a `precondicao`;\n- \"A obrigatoriedade cita o próprio fato.\", com `field` igual a `predicadoObrigatoriedade`;\n- \"A restrição cita o próprio fato.\", com `field` igual a `restricoes[k]`, para a restrição de opções formadas pelas respostas ou de municípios da UF que cita o próprio fato.",
         "O `field` completo é `itens[i].precondicao`, `itens[i].predicadoObrigatoriedade` ou `itens[i].restricoes[k]` e, no campo de um grupo, `grupos[g].subitens[j]` com o mesmo final; nos modelos de formulário começa por `conteudo.`. A recusa vem na lista `errors`, uma entrada por regra, junto das demais recusas da forma do item, e nada é gravado. O impedimento é a exceção: ele cita a resposta do próprio campo por definição.",
-        "Na gravação dos itens do formulário, esta recusa só sai para o item cujo fato existe, é coletável e combina com o tipo de campo: o item com fato [desconhecido](/erros/uniplus.item_formulario.fato_desconhecido), [não coletável](/erros/uniplus.item_formulario.fato_nao_coletavel) ou com tipo de campo [incoerente](/erros/uniplus.item_formulario.tipo_renderizacao_incoerente_com_dominio) é recusado por essa causa, e o resto da forma dele só é conferido depois que ela for corrigida. Na atualização de um modelo, um `{id}` que não existe é recusado antes, como [modelo de formulário não encontrado](/erros/uniplus.configuracao.modelo_formulario.nao_encontrado). Nos modelos, a forma do item é conferida sem consultar o catálogo, desde que o conteúdo tenha sido lido sem recusa de leitura (como a de [conteúdo malformado](/erros/uniplus.configuracao.modelo_formulario.entrada_malformada))."
+        "Na gravação dos itens do formulário, esta recusa só sai para o item cujo fato existe, é coletável e combina com o tipo de campo: o item com fato [desconhecido](/erros/uniplus.item_formulario.fato_desconhecido), [não coletável](/erros/uniplus.item_formulario.fato_nao_coletavel) ou com tipo de campo [incoerente](/erros/uniplus.item_formulario.tipo_de_campo_incoerente_com_dominio) é recusado por essa causa, e o resto da forma dele só é conferido depois que ela for corrigida. Na atualização de um modelo, um `{id}` que não existe é recusado antes, como [modelo de formulário não encontrado](/erros/uniplus.configuracao.modelo_formulario.nao_encontrado). Nos modelos, a forma do item é conferida sem consultar o catálogo, desde que o conteúdo tenha sido lido sem recusa de leitura (como a de [conteúdo malformado](/erros/uniplus.configuracao.modelo_formulario.entrada_malformada))."
       ],
       "comoResolver": [
         "Retire do item a regra que cita o próprio fato. A condição de um campo se refere a respostas de campos anteriores do formulário."
@@ -11395,10 +11395,10 @@
         "UNI-REQ-0145"
       ],
       "oQueAconteceu": [
-        "Cada campo declara as restrições de valor e as opções que oferece (UNI-REQ-0145), e cada restrição só cabe em um tipo de campo. Uma restrição de `restricoes` do item não cabe no `tipoRenderizacao` dele:",
+        "Cada campo declara as restrições de valor e as opções que oferece (UNI-REQ-0145), e cada restrição só cabe em um tipo de campo. Uma restrição de `restricoes` do item não cabe no `tipoDeCampo` dele:",
         "| Restrição | Tipo de campo |\n| --- | --- |\n| `FAIXA_NUMERICA` | `NUMERO` |\n| `TAMANHO_TEXTO` | `TEXTO` |\n| `OPCOES_PERMITIDAS` e `OPCOES_DAS_RESPOSTAS` | `ESCOLHA_UNICA` e `ESCOLHA_MULTIPLA` |\n| `MUNICIPIOS_DA_UF` | `MUNICIPIO` |\n| `FAIXA_DE_DATA` | `DATA` |",
         "A mensagem é \"A faixa numérica só se aplica ao campo numérico, o tamanho só ao de texto, as opções só ao de seleção, os municípios da UF só ao de município e a faixa de data só ao de data.\" A recusa vem na lista `errors`, com `field` igual a `itens[i].restricoes[k]` ou `grupos[g].subitens[j].restricoes[k]`; nos modelos de formulário começa por `conteudo.`. Há uma entrada por restrição que não cabe, junto das demais recusas da forma do item, e nada é gravado. A semântica de cada restrição contra o catálogo só é conferida para a que cabe no tipo do campo.",
-        "Na gravação dos itens do formulário, esta recusa só sai para o item cujo fato existe, é coletável e combina com o tipo de campo: o item com fato [desconhecido](/erros/uniplus.item_formulario.fato_desconhecido), [não coletável](/erros/uniplus.item_formulario.fato_nao_coletavel) ou com tipo de campo [incoerente](/erros/uniplus.item_formulario.tipo_renderizacao_incoerente_com_dominio) é recusado por essa causa, e o resto da forma dele só é conferido depois que ela for corrigida. Nos modelos, a conferência só ocorre quando o conteúdo foi lido sem recusa de leitura (como a de [conteúdo malformado](/erros/uniplus.configuracao.modelo_formulario.entrada_malformada)), e na atualização um `{id}` que não existe é recusado antes, como [modelo de formulário não encontrado](/erros/uniplus.configuracao.modelo_formulario.nao_encontrado)."
+        "Na gravação dos itens do formulário, esta recusa só sai para o item cujo fato existe, é coletável e combina com o tipo de campo: o item com fato [desconhecido](/erros/uniplus.item_formulario.fato_desconhecido), [não coletável](/erros/uniplus.item_formulario.fato_nao_coletavel) ou com tipo de campo [incoerente](/erros/uniplus.item_formulario.tipo_de_campo_incoerente_com_dominio) é recusado por essa causa, e o resto da forma dele só é conferido depois que ela for corrigida. Nos modelos, a conferência só ocorre quando o conteúdo foi lido sem recusa de leitura (como a de [conteúdo malformado](/erros/uniplus.configuracao.modelo_formulario.entrada_malformada)), e na atualização um `{id}` que não existe é recusado antes, como [modelo de formulário não encontrado](/erros/uniplus.configuracao.modelo_formulario.nao_encontrado)."
       ],
       "comoResolver": [
         "Retire a restrição que não cabe, ou troque o tipo de campo do item por um que a aceite, desde que o tipo combine com o fato."
@@ -11444,21 +11444,21 @@
       ]
     },
     {
-      "codigo": "uniplus.item_formulario.tipo_renderizacao_incoerente_com_dominio",
+      "codigo": "uniplus.item_formulario.tipo_de_campo_incoerente_com_dominio",
       "requisitos": [
         "UNI-REQ-0143",
         "UNI-REQ-0159"
       ],
       "oQueAconteceu": [
-        "O `tipoRenderizacao` do item, ou do campo de um grupo, não é o tipo que o fato admite no catálogo (UNI-REQ-0143). O único tipo admitido sai do domínio, da cardinalidade e da fonte de valores do fato:",
-        "| Fato no catálogo | Tipo de campo |\n| --- | --- |\n| Domínio booleano | `SIM_OU_NAO` |\n| Domínio numérico | `NUMERO` |\n| Texto, data ou endereço, de resposta única | `TEXTO`, `DATA` ou `ENDERECO`, nessa ordem |\n| Categórico de resposta única | `ESCOLHA_UNICA` |\n| Categórico de resposta múltipla | `ESCOLHA_MULTIPLA` |\n| Categórico de resposta única, de fonte município do Geo | `MUNICIPIO` |",
-        "O fato de texto, data ou endereço de resposta múltipla, e o município do Geo de resposta múltipla, não admitem nenhum tipo de campo. A mensagem é \"O tipo de campo '`{tipo\\}`' não é coerente com o domínio '`{domínio\\}`', a cardinalidade '`{cardinalidade\\}`' e a fonte de valores '`{fonte\\}`' do fato '`{código\\}`'.\", com o nome interno do tipo enviado, os dados do fato e `nenhuma` quando o fato não tem fonte de valores.",
+        "O `tipoDeCampo` do item, ou do campo de um grupo, não é o tipo que o dado admite no catálogo (UNI-REQ-0143). O único tipo admitido sai do domínio, da cardinalidade e da fonte de valores do dado:",
+        "| Dado no catálogo | Tipo de campo |\n| --- | --- |\n| Domínio booleano | `SIM_OU_NAO` |\n| Domínio numérico | `NUMERO` |\n| Texto, data ou endereço, de resposta única | `TEXTO`, `DATA` ou `ENDERECO`, nessa ordem |\n| Categórico de resposta única | `ESCOLHA_UNICA` |\n| Categórico de resposta múltipla | `ESCOLHA_MULTIPLA` |\n| Categórico de resposta única, de fonte município do Geo | `MUNICIPIO` |",
+        "O dado de texto, data ou endereço de resposta múltipla, e o município do Geo de resposta múltipla, não admitem nenhum tipo de campo. A mensagem explica a incompatibilidade entre o tipo de campo, o tipo do dado, a quantidade de valores e a fonte de valores.",
         "A recusa vem na lista `errors` da resposta:",
-        "- na gravação dos itens do formulário, `field` igual a `itens[i].tipoRenderizacao` ou `grupos[g].subitens[j].tipoRenderizacao`, depois da conferência de que o fato existe e é coletável;\n- nos modelos de formulário, o mesmo caminho precedido de `conteudo.`;\n- na aplicação de modelo, `field` igual a `modelo.itens[i].tipoRenderizacao`, com a posição do item no modelo;\n- na publicação inicial e na retificação em ato único, em que cada item e campo de grupo gravados é reconferido contra o catálogo de hoje, porque a definição do fato pode ter sido corrigida depois de o campo ser gravado (UNI-REQ-0159). O `field` começa por `formularios[FINALIDADE]`, como em `formularios[INSCRICAO].itens[0].tipoRenderizacao`, e a mensagem ganha o final \"Item '`{rótulo\\}`' (fato '`{código\\}`'). Regrave o item no formulário do processo.\". Para o fato que alguma versão publicada já coletou, em vez da orientação de regravar, a mensagem pede desfazer a correção no catálogo enquanto o processo precisar ser retificado, porque o campo dele não pode mudar.",
+        "- na gravação dos itens do formulário, `field` igual a `itens[i].apresentacao.tipoDeCampo` ou `grupos[g].subitens[j].apresentacao.tipoDeCampo`, depois da conferência de que o dado existe e é coletável;\n- nos modelos de formulário, o mesmo caminho precedido de `conteudo.`;\n- na aplicação de modelo, `field` igual a `modelo.itens[i].apresentacao.tipoDeCampo`, com a posição do item no modelo;\n- na publicação inicial e na retificação em ato único, em que cada item e campo de grupo gravados é reconferido contra o catálogo de hoje, porque a definição do dado pode ter sido corrigida depois de o campo ser gravado (UNI-REQ-0159). O `field` começa por `formularios[FINALIDADE]`, como em `formularios[INSCRICAO].itens[0].apresentacao.tipoDeCampo`, e a mensagem identifica o item e orienta a regravá-lo no formulário do processo. Para o dado que alguma versão publicada já coletou, em vez da orientação de regravar, a mensagem pede desfazer a correção no catálogo enquanto o processo precisar ser retificado, porque o campo dele não pode mudar.",
         "Todas as recusas dos itens saem no mesmo lote, e nada é gravado. Na atualização de um modelo, um `{id}` que não existe é recusado antes, como [modelo de formulário não encontrado](/erros/uniplus.configuracao.modelo_formulario.nao_encontrado)."
       ],
       "comoResolver": [
-        "Troque o `tipoRenderizacao` do item pelo tipo da tabela que corresponde ao fato, ou escolha outro fato. Se a correção do fato no catálogo é a causa, no rascunho regrave o item com o novo tipo; em processo com versão publicada que já coletou o fato, a correção do catálogo precisa ser desfeita enquanto a retificação for necessária."
+        "Troque o `tipoDeCampo` do item pelo tipo da tabela que corresponde ao dado, ou escolha outro dado. Se a correção do dado no catálogo é a causa, no rascunho regrave o item com o novo tipo; em processo com versão publicada que já coletou o dado, a correção do catálogo precisa ser desfeita enquanto a retificação for necessária."
       ],
       "ondeAparece": [
         "Criação de um modelo de formulário",
@@ -11470,16 +11470,16 @@
       ]
     },
     {
-      "codigo": "uniplus.item_formulario.tipo_renderizacao_invalido",
+      "codigo": "uniplus.item_formulario.tipo_de_campo_invalido",
       "requisitos": [
         "UNI-REQ-0145"
       ],
       "oQueAconteceu": [
-        "O item do formulário declara o tipo de campo em `apresentacao.tipoRenderizacao` com um código que a API não reconhece. A lista dos códigos aceitos está no componente `TipoRenderizacaoCodigo` do contrato da API; a mensagem lista os códigos e não repete o valor enviado.",
-        "A recusa vem na lista `errors`, com `field` igual a `itens[i].apresentacao.tipoRenderizacao` (ou `grupos[g].subitens[j].apresentacao.tipoRenderizacao`, no campo de um grupo). Na criação e na atualização de um modelo de formulário o `field` começa por `conteudo.`. Nada é gravado."
+        "O item do formulário declara o tipo de campo em `apresentacao.tipoDeCampo` com um código que a API não reconhece. A lista dos códigos aceitos consta do contrato da API; a mensagem lista os códigos e não repete o valor enviado.",
+        "A recusa vem na lista `errors`, com `field` igual a `itens[i].apresentacao.tipoDeCampo` (ou `grupos[g].subitens[j].apresentacao.tipoDeCampo`, no campo de um grupo). Na criação e na atualização de um modelo de formulário o `field` começa por `conteudo.`. Nada é gravado."
       ],
       "comoResolver": [
-        "Troque `apresentacao.tipoRenderizacao` por um dos códigos listados na mensagem, com letras maiúsculas e sublinhado, como na lista do contrato."
+        "Troque `apresentacao.tipoDeCampo` por um dos códigos listados na mensagem, com letras maiúsculas e sublinhado, como na lista do contrato."
       ],
       "ondeAparece": [
         "Criação de um modelo de formulário",
@@ -11488,15 +11488,15 @@
       ]
     },
     {
-      "codigo": "uniplus.item_formulario.tipo_renderizacao_obrigatorio",
+      "codigo": "uniplus.item_formulario.tipo_de_campo_obrigatorio",
       "requisitos": [],
       "oQueAconteceu": [
-        "O `tipoRenderizacao` de um item do formulário, ou de um campo de grupo, está vazio, só com espaços ou não é um dos códigos aceitos: `NUMERO`, `SIM_OU_NAO`, `ESCOLHA_UNICA`, `ESCOLHA_MULTIPLA`, `TEXTO`, `DATA`, `ENDERECO` e `MUNICIPIO`. O código é conferido letra a letra, e `texto` em minúsculas não é `TEXTO`. A mensagem é \"O tipo de campo do item é obrigatório.\"",
-        "A recusa vem na lista `errors` da resposta, com `field` igual a `itens[i].tipoRenderizacao` ou, no campo de um grupo, `grupos[g].subitens[j].tipoRenderizacao`; nos modelos de formulário o `field` começa por `conteudo.`. Cada item recusado tem a própria entrada, junto das demais recusas da forma do item, e o item de forma recusada não segue para a conferência contra o catálogo de fatos. Nada é gravado.",
-        "A propriedade `tipoRenderizacao` ausente ou nula é recusada antes, com 400 e sem código deste catálogo, pela leitura do corpo. O tipo que existe mas não combina com o fato é outra recusa, a de [tipo de campo incoerente com o domínio do fato](/erros/uniplus.item_formulario.tipo_renderizacao_incoerente_com_dominio). Nos modelos, a conferência só ocorre quando o conteúdo foi lido sem recusa de leitura (como a de [conteúdo malformado](/erros/uniplus.configuracao.modelo_formulario.entrada_malformada)), e na atualização um `{id}` que não existe é recusado antes, como [modelo de formulário não encontrado](/erros/uniplus.configuracao.modelo_formulario.nao_encontrado)."
+        "O `tipoDeCampo` de um item do formulário, ou de um campo de grupo, está vazio ou só com espaços. Os códigos aceitos são: `NUMERO`, `SIM_OU_NAO`, `ESCOLHA_UNICA`, `ESCOLHA_MULTIPLA`, `TEXTO`, `DATA`, `ENDERECO` e `MUNICIPIO`. O código é conferido letra a letra, e `texto` em minúsculas não é `TEXTO`. Um código desconhecido recebe a recusa de [tipo de campo não reconhecido](/erros/uniplus.item_formulario.tipo_de_campo_invalido). A mensagem é \"O tipo de campo do item é obrigatório.\"",
+        "A recusa vem na lista `errors` da resposta, com `field` igual a `itens[i].apresentacao.tipoDeCampo` ou, no campo de um grupo, `grupos[g].subitens[j].apresentacao.tipoDeCampo`; nos modelos de formulário o `field` começa por `conteudo.`. Cada item recusado tem a própria entrada, junto das demais recusas da forma do item, e o item de forma recusada não segue para a conferência contra o catálogo de fatos. Nada é gravado.",
+        "A propriedade `tipoDeCampo` ausente ou nula é recusada antes, com 400 e sem código deste catálogo, pela leitura do corpo. O tipo que existe mas não combina com o fato é outra recusa, a de [tipo de campo incoerente com o domínio do dado](/erros/uniplus.item_formulario.tipo_de_campo_incoerente_com_dominio). Nos modelos, a conferência só ocorre quando o conteúdo foi lido sem recusa de leitura (como a de [conteúdo malformado](/erros/uniplus.configuracao.modelo_formulario.entrada_malformada)), e na atualização um `{id}` que não existe é recusado antes, como [modelo de formulário não encontrado](/erros/uniplus.configuracao.modelo_formulario.nao_encontrado)."
       ],
       "comoResolver": [
-        "Informe em `tipoRenderizacao` um dos oito códigos, em maiúsculas, o que combina com o domínio do fato no catálogo."
+        "Informe em `tipoDeCampo` um dos oito códigos, em maiúsculas, o que combina com o domínio do fato no catálogo."
       ],
       "ondeAparece": [
         "Criação de um modelo de formulário",
@@ -14481,8 +14481,8 @@
         "Esta é a última conferência da cópia, depois das do identificador e da versão do calendário, e\nde a lista não estar vazia ([`sem_dia_nao_util`](/erros/uniplus.selecao.calendario_dias_uteis_congelado.sem_dia_nao_util))."
       ],
       "comoResolver": [
-        "A causa não está na configuração do processo, e nada nela corrige a recusa: o dado vem do\ncalendário de dias úteis vigente, cadastrado no módulo Configuração. Como a versão publicada\ncongela o calendário por valor, a correção é na origem, antes de publicar ou retificar:\ncadastre um calendário (dataset) corrigido, que o cadastro confere ao criar, coloque-o em vigência\ne repita a operação.",
-        "O cadastro recusa a repetição ao criar o calendário ([`data_duplicada_no_dataset`](/erros/uniplus.configuracao.calendario_dias_uteis.data_duplicada_no_dataset)).\nUm calendário vigente nessa condição indica dado gravado por caminho que não passou por essa\nconferência, e a causa é investigada pela equipe técnica do Uni+."
+        "A causa não está na configuração do processo, e nada nela corrige a recusa: o dado vem do\ncalendário de dias úteis vigente, cadastrado no módulo Configuração. Como a versão publicada\ncongela o calendário por valor, a correção é na origem, antes de publicar ou retificar:\ncadastre um calendário corrigido, que o cadastro confere ao criar, coloque-o em vigência\ne repita a operação.",
+        "O cadastro recusa a repetição ao criar o calendário ([`data_duplicada_no_calendario`](/erros/uniplus.configuracao.calendario_dias_uteis.data_duplicada_no_calendario)).\nUm calendário vigente nessa condição indica dado gravado por caminho que não passou por essa\nconferência, e a causa é investigada pela equipe técnica do Uni+."
       ],
       "ondeAparece": [
         "Publicação inicial do processo seletivo",
@@ -14507,13 +14507,13 @@
         "UNI-REQ-0080"
       ],
       "oQueAconteceu": [
-        "O calendário de dias úteis vigente chegou sem o identificador do calendário de origem. A versão\ncongelada guarda, ao lado da lista de dias não úteis, o identificador e a versão do calendário de\nonde ela veio, só como rastreio: nada no cálculo os consulta de novo. Sem o identificador, a cópia\nnão teria de onde dizer que veio.",
+        "O calendário de dias úteis vigente chegou sem o identificador do calendário de origem. A mensagem é \"O identificador do calendário de origem é obrigatório.\" A versão\ncongelada guarda, ao lado da lista de dias não úteis, o identificador e a versão do calendário de\nonde ela veio, só como rastreio: nada no cálculo os consulta de novo. Sem o identificador, a cópia\nnão teria de onde dizer que veio.",
         "O calendário de dias úteis vigente é cadastrado no módulo Configuração, e a versão do processo\ncongela uma cópia dele por valor, com a lista dos dias não úteis (UNI-REQ-0080). Ao copiá-lo, o\nsistema confere de novo cada dia e o conjunto, e recusa o que o cadastro não aceitaria. A recusa\nsó vale para o processo que depende do calendário, isto é, o que tem prazo de recurso (ver\n[calendário vigente ausente](/erros/uniplus.selecao.processo_seletivo.calendario_vigente_ausente)); um processo sem contagem sobre dia útil segue normalmente, porque não usa o dado.",
         "A conferência vem depois das da localidade ([`localidade_ausente`](/erros/uniplus.selecao.processo_seletivo.localidade_ausente)) e da convenção de contagem\n([`algoritmo_contagem_prazo_nao_declarado`](/erros/uniplus.selecao.processo_seletivo.algoritmo_contagem_prazo_nao_declarado)), e antes das demais conferências de conformidade e do cronograma. A consulta de\nconformidade do processo mostra o item \"Calendário de dias úteis vigente\" como pendente enquanto o\ncalendário vigente estiver nessa condição. Nada é gravado.",
-        "Os dias são conferidos um a um, na ordem em que o calendário os lista, e o primeiro dia com\ndefeito interrompe a cópia. As conferências do calendário como um todo (identificador, versão,\nlista vazia e dia repetido) vêm depois das de todos os dias. Esta é a primeira das conferências do calendário como um todo, antes da versão\n([`versao_dataset_obrigatoria`](/erros/uniplus.selecao.calendario_dias_uteis_congelado.versao_dataset_obrigatoria))."
+        "Os dias são conferidos um a um, na ordem em que o calendário os lista, e o primeiro dia com\ndefeito interrompe a cópia. As conferências do calendário como um todo (identificador, versão,\nlista vazia e dia repetido) vêm depois das de todos os dias. Esta é a primeira das conferências do calendário como um todo, antes da versão\n([`versao_do_calendario_obrigatoria`](/erros/uniplus.selecao.calendario_dias_uteis_congelado.versao_do_calendario_obrigatoria))."
       ],
       "comoResolver": [
-        "A causa não está na configuração do processo, e nada nela corrige a recusa: o dado vem do\ncalendário de dias úteis vigente, cadastrado no módulo Configuração. Como a versão publicada\ncongela o calendário por valor, a correção é na origem, antes de publicar ou retificar:\ncadastre um calendário (dataset) corrigido, que o cadastro confere ao criar, coloque-o em vigência\ne repita a operação.",
+        "A causa não está na configuração do processo, e nada nela corrige a recusa: o dado vem do\ncalendário de dias úteis vigente, cadastrado no módulo Configuração. Como a versão publicada\ncongela o calendário por valor, a correção é na origem, antes de publicar ou retificar:\ncadastre um calendário corrigido, que o cadastro confere ao criar, coloque-o em vigência\ne repita a operação.",
         "O identificador é gerado pelo sistema quando o calendário é cadastrado, e um calendário vigente sem ele\nnão é estado esperado. A causa é investigada pela equipe técnica do Uni+."
       ],
       "ondeAparece": [
@@ -14533,7 +14533,7 @@
         "Esta conferência vem depois das do identificador e da versão do calendário e antes da do dia\nrepetido ([`dia_duplicado`](/erros/uniplus.selecao.calendario_dias_uteis_congelado.dia_duplicado))."
       ],
       "comoResolver": [
-        "A causa não está na configuração do processo, e nada nela corrige a recusa: o dado vem do\ncalendário de dias úteis vigente, cadastrado no módulo Configuração. Como a versão publicada\ncongela o calendário por valor, a correção é na origem, antes de publicar ou retificar:\ncadastre um calendário (dataset) corrigido, que o cadastro confere ao criar, coloque-o em vigência\ne repita a operação.",
+        "A causa não está na configuração do processo, e nada nela corrige a recusa: o dado vem do\ncalendário de dias úteis vigente, cadastrado no módulo Configuração. Como a versão publicada\ncongela o calendário por valor, a correção é na origem, antes de publicar ou retificar:\ncadastre um calendário corrigido, que o cadastro confere ao criar, coloque-o em vigência\ne repita a operação.",
         "O cadastro recusa o calendário sem dia não útil ao criá-lo ([`sem_dia_nao_util`](/erros/uniplus.configuracao.calendario_dias_uteis.sem_dia_nao_util)). Um\ncalendário vigente nessa condição indica dado gravado por caminho que não passou por essa\nconferência, e a causa é investigada pela equipe técnica do Uni+."
       ],
       "ondeAparece": [
@@ -14542,7 +14542,7 @@
       ]
     },
     {
-      "codigo": "uniplus.selecao.calendario_dias_uteis_congelado.versao_dataset_obrigatoria",
+      "codigo": "uniplus.selecao.calendario_dias_uteis_congelado.versao_do_calendario_obrigatoria",
       "requisitos": [
         "UNI-REQ-0080"
       ],
@@ -14550,11 +14550,11 @@
         "O calendário de dias úteis vigente chegou sem a versão do calendário de origem, ou com a versão em\nbranco. A versão congelada guarda, ao lado da lista de dias não úteis, o identificador e a versão do\ncalendário de onde ela veio, só como rastreio.",
         "O calendário de dias úteis vigente é cadastrado no módulo Configuração, e a versão do processo\ncongela uma cópia dele por valor, com a lista dos dias não úteis (UNI-REQ-0080). Ao copiá-lo, o\nsistema confere de novo cada dia e o conjunto, e recusa o que o cadastro não aceitaria. A recusa\nsó vale para o processo que depende do calendário, isto é, o que tem prazo de recurso (ver\n[calendário vigente ausente](/erros/uniplus.selecao.processo_seletivo.calendario_vigente_ausente)); um processo sem contagem sobre dia útil segue normalmente, porque não usa o dado.",
         "A conferência vem depois das da localidade ([`localidade_ausente`](/erros/uniplus.selecao.processo_seletivo.localidade_ausente)) e da convenção de contagem\n([`algoritmo_contagem_prazo_nao_declarado`](/erros/uniplus.selecao.processo_seletivo.algoritmo_contagem_prazo_nao_declarado)), e antes das demais conferências de conformidade e do cronograma. A consulta de\nconformidade do processo mostra o item \"Calendário de dias úteis vigente\" como pendente enquanto o\ncalendário vigente estiver nessa condição. Nada é gravado.",
-        "Os dias são conferidos um a um, na ordem em que o calendário os lista, e o primeiro dia com\ndefeito interrompe a cópia. As conferências do calendário como um todo (identificador, versão,\nlista vazia e dia repetido) vêm depois das de todos os dias. Esta conferência vem depois da do identificador\n([`origem_obrigatoria`](/erros/uniplus.selecao.calendario_dias_uteis_congelado.origem_obrigatoria)) e antes da do\ntamanho da versão ([`versao_dataset_tamanho`](/erros/uniplus.selecao.calendario_dias_uteis_congelado.versao_dataset_tamanho))."
+        "Os dias são conferidos um a um, na ordem em que o calendário os lista, e o primeiro dia com\ndefeito interrompe a cópia. As conferências do calendário como um todo (identificador, versão,\nlista vazia e dia repetido) vêm depois das de todos os dias. Esta conferência vem depois da do identificador\n([`origem_obrigatoria`](/erros/uniplus.selecao.calendario_dias_uteis_congelado.origem_obrigatoria)) e antes da do\ntamanho da versão ([`versao_do_calendario_tamanho`](/erros/uniplus.selecao.calendario_dias_uteis_congelado.versao_do_calendario_tamanho))."
       ],
       "comoResolver": [
-        "A causa não está na configuração do processo, e nada nela corrige a recusa: o dado vem do\ncalendário de dias úteis vigente, cadastrado no módulo Configuração. Como a versão publicada\ncongela o calendário por valor, a correção é na origem, antes de publicar ou retificar:\ncadastre um calendário (dataset) corrigido, que o cadastro confere ao criar, coloque-o em vigência\ne repita a operação.",
-        "O cadastro exige a versão ao criar o calendário ([`versao_dataset_obrigatoria`](/erros/uniplus.configuracao.calendario_dias_uteis.versao_dataset_obrigatoria)). Um calendário\nvigente nessa condição indica dado gravado por caminho que não passou por essa conferência, e a\ncausa é investigada pela equipe técnica do Uni+."
+        "A causa não está na configuração do processo, e nada nela corrige a recusa: o dado vem do\ncalendário de dias úteis vigente, cadastrado no módulo Configuração. Como a versão publicada\ncongela o calendário por valor, a correção é na origem, antes de publicar ou retificar:\ncadastre um calendário corrigido, que o cadastro confere ao criar, coloque-o em vigência\ne repita a operação.",
+        "O cadastro exige a versão ao criar o calendário ([`versao_do_calendario_obrigatoria`](/erros/uniplus.configuracao.calendario_dias_uteis.versao_do_calendario_obrigatoria)). Um calendário\nvigente nessa condição indica dado gravado por caminho que não passou por essa conferência, e a\ncausa é investigada pela equipe técnica do Uni+."
       ],
       "ondeAparece": [
         "Publicação inicial do processo seletivo",
@@ -14562,7 +14562,7 @@
       ]
     },
     {
-      "codigo": "uniplus.selecao.calendario_dias_uteis_congelado.versao_dataset_tamanho",
+      "codigo": "uniplus.selecao.calendario_dias_uteis_congelado.versao_do_calendario_tamanho",
       "requisitos": [
         "UNI-REQ-0080"
       ],
@@ -14570,11 +14570,11 @@
         "A versão do calendário de dias úteis vigente tem mais de 60 caracteres, contados depois de\nretirar os espaços das pontas. É o mesmo limite do cadastro e da coluna que guarda a versão: a\ncópia não aceita o que o cadastro de origem não gravaria, porque um calendário assim não poderia\nser relido depois.",
         "O calendário de dias úteis vigente é cadastrado no módulo Configuração, e a versão do processo\ncongela uma cópia dele por valor, com a lista dos dias não úteis (UNI-REQ-0080). Ao copiá-lo, o\nsistema confere de novo cada dia e o conjunto, e recusa o que o cadastro não aceitaria. A recusa\nsó vale para o processo que depende do calendário, isto é, o que tem prazo de recurso (ver\n[calendário vigente ausente](/erros/uniplus.selecao.processo_seletivo.calendario_vigente_ausente)); um processo sem contagem sobre dia útil segue normalmente, porque não usa o dado.",
         "A conferência vem depois das da localidade ([`localidade_ausente`](/erros/uniplus.selecao.processo_seletivo.localidade_ausente)) e da convenção de contagem\n([`algoritmo_contagem_prazo_nao_declarado`](/erros/uniplus.selecao.processo_seletivo.algoritmo_contagem_prazo_nao_declarado)), e antes das demais conferências de conformidade e do cronograma. A consulta de\nconformidade do processo mostra o item \"Calendário de dias úteis vigente\" como pendente enquanto o\ncalendário vigente estiver nessa condição. Nada é gravado.",
-        "Os dias são conferidos um a um, na ordem em que o calendário os lista, e o primeiro dia com\ndefeito interrompe a cópia. As conferências do calendário como um todo (identificador, versão,\nlista vazia e dia repetido) vêm depois das de todos os dias. Esta conferência vem depois da versão em branco\n([`versao_dataset_obrigatoria`](/erros/uniplus.selecao.calendario_dias_uteis_congelado.versao_dataset_obrigatoria))."
+        "Os dias são conferidos um a um, na ordem em que o calendário os lista, e o primeiro dia com\ndefeito interrompe a cópia. As conferências do calendário como um todo (identificador, versão,\nlista vazia e dia repetido) vêm depois das de todos os dias. Esta conferência vem depois da versão em branco\n([`versao_do_calendario_obrigatoria`](/erros/uniplus.selecao.calendario_dias_uteis_congelado.versao_do_calendario_obrigatoria))."
       ],
       "comoResolver": [
-        "A causa não está na configuração do processo, e nada nela corrige a recusa: o dado vem do\ncalendário de dias úteis vigente, cadastrado no módulo Configuração. Como a versão publicada\ncongela o calendário por valor, a correção é na origem, antes de publicar ou retificar:\ncadastre um calendário (dataset) corrigido, que o cadastro confere ao criar, coloque-o em vigência\ne repita a operação.",
-        "O cadastro recusa a versão fora do limite ao criar o calendário ([`versao_dataset_tamanho`](/erros/uniplus.configuracao.calendario_dias_uteis.versao_dataset_tamanho)). Um\ncalendário vigente nessa condição indica dado gravado por caminho que não passou por essa\nconferência, e a causa é investigada pela equipe técnica do Uni+."
+        "A causa não está na configuração do processo, e nada nela corrige a recusa: o dado vem do\ncalendário de dias úteis vigente, cadastrado no módulo Configuração. Como a versão publicada\ncongela o calendário por valor, a correção é na origem, antes de publicar ou retificar:\ncadastre um calendário corrigido, que o cadastro confere ao criar, coloque-o em vigência\ne repita a operação.",
+        "O cadastro recusa a versão fora do limite ao criar o calendário ([`versao_do_calendario_tamanho`](/erros/uniplus.configuracao.calendario_dias_uteis.versao_do_calendario_tamanho)). Um\ncalendário vigente nessa condição indica dado gravado por caminho que não passou por essa\nconferência, e a causa é investigada pela equipe técnica do Uni+."
       ],
       "ondeAparece": [
         "Publicação inicial do processo seletivo",
@@ -14596,7 +14596,7 @@
       "comoResolver": [
         "O dado vem do cadastro de calendários de dias úteis, no módulo Configuração, não da\nconfiguração do processo seletivo. Quem publica não tem campo a corrigir aqui.",
         "Corrija os dados na origem e publique-os novamente. O cadastro recusa cada uma dessas combinações na criação, com erro próprio: [dados municipais apenas para abrangência municipal](/erros/uniplus.configuracao.calendario_dias_uteis.snapshot_municipal_apenas_para_municipal), [UF apenas para estadual](/erros/uniplus.configuracao.calendario_dias_uteis.uf_apenas_para_estadual) e [UF obrigatória para estadual](/erros/uniplus.configuracao.calendario_dias_uteis.uf_obrigatoria_para_estadual).",
-        "Um dataset vigente que chegue nessa forma indica que ele foi gravado por caminho que não\npassou por essas verificações."
+        "Um calendário vigente que chegue nessa forma indica que ele foi gravado por caminho que não\npassou por essas verificações."
       ],
       "ondeAparece": [
         "Publicação inicial do processo seletivo",
@@ -17237,7 +17237,7 @@
         "Os dias são conferidos um a um, na ordem em que o calendário os lista, e o primeiro dia com\ndefeito interrompe a cópia. As conferências do calendário como um todo (identificador, versão,\nlista vazia e dia repetido) vêm depois das de todos os dias. Dentro de um dia, vem primeiro a conferência da forma bruta ([`forma_territorial_invalida`](/erros/uniplus.selecao.calendario_vigente.forma_territorial_invalida)), depois a data, a\nabrangência e o recorte territorial."
       ],
       "comoResolver": [
-        "A causa não está na configuração do processo, e nada nela corrige a recusa: o dado vem do\ncalendário de dias úteis vigente, cadastrado no módulo Configuração. Como a versão publicada\ncongela o calendário por valor, a correção é na origem, antes de publicar ou retificar:\ncadastre um calendário (dataset) corrigido, que o cadastro confere ao criar, coloque-o em vigência\ne repita a operação.",
+        "A causa não está na configuração do processo, e nada nela corrige a recusa: o dado vem do\ncalendário de dias úteis vigente, cadastrado no módulo Configuração. Como a versão publicada\ncongela o calendário por valor, a correção é na origem, antes de publicar ou retificar:\ncadastre um calendário corrigido, que o cadastro confere ao criar, coloque-o em vigência\ne repita a operação.",
         "O cadastro recusa a abrangência fora do vocabulário ao criar o calendário ([`abrangencia_invalida`](/erros/uniplus.configuracao.calendario_dias_uteis.abrangencia_invalida)).\nUm calendário vigente nessa condição indica dado gravado por caminho que não passou por essa\nconferência, e a causa é investigada pela equipe técnica do Uni+."
       ],
       "ondeAparece": [
@@ -17257,7 +17257,7 @@
         "Os dias são conferidos um a um, na ordem em que o calendário os lista, e o primeiro dia com\ndefeito interrompe a cópia. As conferências do calendário como um todo (identificador, versão,\nlista vazia e dia repetido) vêm depois das de todos os dias. Dentro de um dia, vem primeiro a conferência da forma bruta ([`forma_territorial_invalida`](/erros/uniplus.selecao.calendario_vigente.forma_territorial_invalida)), depois a data, a\nabrangência e o recorte territorial."
       ],
       "comoResolver": [
-        "A causa não está na configuração do processo, e nada nela corrige a recusa: o dado vem do\ncalendário de dias úteis vigente, cadastrado no módulo Configuração. Como a versão publicada\ncongela o calendário por valor, a correção é na origem, antes de publicar ou retificar:\ncadastre um calendário (dataset) corrigido, que o cadastro confere ao criar, coloque-o em vigência\ne repita a operação.",
+        "A causa não está na configuração do processo, e nada nela corrige a recusa: o dado vem do\ncalendário de dias úteis vigente, cadastrado no módulo Configuração. Como a versão publicada\ncongela o calendário por valor, a correção é na origem, antes de publicar ou retificar:\ncadastre um calendário corrigido, que o cadastro confere ao criar, coloque-o em vigência\ne repita a operação.",
         "O cadastro recusa o dia sem data ao criar o calendário. Um calendário vigente nessa condição\nindica dado gravado por caminho que não passou por essa conferência, e a causa é investigada\npela equipe técnica do Uni+."
       ],
       "ondeAparece": [
@@ -17278,7 +17278,7 @@
         "Os dias são conferidos um a um, na ordem em que o calendário os lista, e o primeiro dia com\ndefeito interrompe a cópia. As conferências do calendário como um todo (identificador, versão,\nlista vazia e dia repetido) vêm depois das de todos os dias. Dentro de um dia, vem primeiro a conferência da forma bruta ([`forma_territorial_invalida`](/erros/uniplus.selecao.calendario_vigente.forma_territorial_invalida)), depois a data, a\nabrangência e o recorte territorial."
       ],
       "comoResolver": [
-        "A causa não está na configuração do processo, e nada nela corrige a recusa: o dado vem do\ncalendário de dias úteis vigente, cadastrado no módulo Configuração. Como a versão publicada\ncongela o calendário por valor, a correção é na origem, antes de publicar ou retificar:\ncadastre um calendário (dataset) corrigido, que o cadastro confere ao criar, coloque-o em vigência\ne repita a operação.",
+        "A causa não está na configuração do processo, e nada nela corrige a recusa: o dado vem do\ncalendário de dias úteis vigente, cadastrado no módulo Configuração. Como a versão publicada\ncongela o calendário por valor, a correção é na origem, antes de publicar ou retificar:\ncadastre um calendário corrigido, que o cadastro confere ao criar, coloque-o em vigência\ne repita a operação.",
         "O cadastro recusa o município em dia estadual ao criar o calendário ([`snapshot_municipal_apenas_para_municipal`](/erros/uniplus.configuracao.calendario_dias_uteis.snapshot_municipal_apenas_para_municipal)).\nUm calendário vigente nessa condição indica dado gravado por caminho que não passou por essa\nconferência, e a causa é investigada pela equipe técnica do Uni+."
       ],
       "ondeAparece": [
@@ -17299,7 +17299,7 @@
         "Os dias são conferidos um a um, na ordem em que o calendário os lista, e o primeiro dia com\ndefeito interrompe a cópia. As conferências do calendário como um todo (identificador, versão,\nlista vazia e dia repetido) vêm depois das de todos os dias. Dentro de um dia, vem primeiro a conferência da forma bruta ([`forma_territorial_invalida`](/erros/uniplus.selecao.calendario_vigente.forma_territorial_invalida)), depois a data, a\nabrangência e o recorte territorial."
       ],
       "comoResolver": [
-        "A causa não está na configuração do processo, e nada nela corrige a recusa: o dado vem do\ncalendário de dias úteis vigente, cadastrado no módulo Configuração. Como a versão publicada\ncongela o calendário por valor, a correção é na origem, antes de publicar ou retificar:\ncadastre um calendário (dataset) corrigido, que o cadastro confere ao criar, coloque-o em vigência\ne repita a operação.",
+        "A causa não está na configuração do processo, e nada nela corrige a recusa: o dado vem do\ncalendário de dias úteis vigente, cadastrado no módulo Configuração. Como a versão publicada\ncongela o calendário por valor, a correção é na origem, antes de publicar ou retificar:\ncadastre um calendário corrigido, que o cadastro confere ao criar, coloque-o em vigência\ne repita a operação.",
         "O cadastro recusa o recorte territorial em dia nacional ou institucional ao criar o calendário\n([`snapshot_municipal_apenas_para_municipal`](/erros/uniplus.configuracao.calendario_dias_uteis.snapshot_municipal_apenas_para_municipal) e [`uf_apenas_para_estadual`](/erros/uniplus.configuracao.calendario_dias_uteis.uf_apenas_para_estadual)). Um calendário\nvigente nessa condição indica dado gravado por caminho que não passou por essas conferências, e a\ncausa é investigada pela equipe técnica do Uni+."
       ],
       "ondeAparece": [
@@ -17320,7 +17320,7 @@
         "Esta conferência vem depois da do município ([`municipio_em_dia_estadual`](/erros/uniplus.selecao.dia_nao_util_congelado.municipio_em_dia_estadual)) e antes da da\nUF reconhecida ([`uf_invalida`](/erros/uniplus.selecao.dia_nao_util_congelado.uf_invalida))."
       ],
       "comoResolver": [
-        "A causa não está na configuração do processo, e nada nela corrige a recusa: o dado vem do\ncalendário de dias úteis vigente, cadastrado no módulo Configuração. Como a versão publicada\ncongela o calendário por valor, a correção é na origem, antes de publicar ou retificar:\ncadastre um calendário (dataset) corrigido, que o cadastro confere ao criar, coloque-o em vigência\ne repita a operação.",
+        "A causa não está na configuração do processo, e nada nela corrige a recusa: o dado vem do\ncalendário de dias úteis vigente, cadastrado no módulo Configuração. Como a versão publicada\ncongela o calendário por valor, a correção é na origem, antes de publicar ou retificar:\ncadastre um calendário corrigido, que o cadastro confere ao criar, coloque-o em vigência\ne repita a operação.",
         "O cadastro exige a UF no dia estadual ao criar o calendário ([`uf_obrigatoria_para_estadual`](/erros/uniplus.configuracao.calendario_dias_uteis.uf_obrigatoria_para_estadual)).\nUm calendário vigente nessa condição indica dado gravado por caminho que não passou por essa\nconferência, e a causa é investigada pela equipe técnica do Uni+."
       ],
       "ondeAparece": [
@@ -17341,7 +17341,7 @@
         "Esta conferência vem depois da UF ausente ([`uf_ausente_em_dia_estadual`](/erros/uniplus.selecao.dia_nao_util_congelado.uf_ausente_em_dia_estadual))."
       ],
       "comoResolver": [
-        "A causa não está na configuração do processo, e nada nela corrige a recusa: o dado vem do\ncalendário de dias úteis vigente, cadastrado no módulo Configuração. Como a versão publicada\ncongela o calendário por valor, a correção é na origem, antes de publicar ou retificar:\ncadastre um calendário (dataset) corrigido, que o cadastro confere ao criar, coloque-o em vigência\ne repita a operação.",
+        "A causa não está na configuração do processo, e nada nela corrige a recusa: o dado vem do\ncalendário de dias úteis vigente, cadastrado no módulo Configuração. Como a versão publicada\ncongela o calendário por valor, a correção é na origem, antes de publicar ou retificar:\ncadastre um calendário corrigido, que o cadastro confere ao criar, coloque-o em vigência\ne repita a operação.",
         "O cadastro recusa a UF fora das 27 siglas válidas ao criar o calendário ([`uf_formato_invalido`](/erros/uniplus.configuracao.calendario_dias_uteis.uf_formato_invalido)).\nUm calendário vigente nessa condição indica dado gravado por caminho que não passou por essa\nconferência, e a causa é investigada pela equipe técnica do Uni+."
       ],
       "ondeAparece": [
@@ -22919,8 +22919,8 @@
       "oQueAconteceu": [
         "O processo tem prazo cuja contagem distingue dia útil de dia não útil, e não há\n**calendário de dias úteis vigente** cadastrado.",
         "Contar em dia útil exige saber quais dias são úteis. Quem responde isso é o\ncalendário: os feriados nacionais, mais os estaduais e municipais da localidade\nque o processo declara. Sem ele, não há como determinar o instante em que o\nprazo termina, e a publicação para em vez de aproximar em silêncio.",
-        "A versão publicada congela o **conteúdo** do calendário — a lista de dias não\núteis vigente no momento da publicação —, e não apenas a constatação de que\nhavia um. O identificador e a versão do dataset de origem ficam guardados ao\nlado, como rastreio, e nunca são relidos para recontar.",
-        "Guardar só a referência não reproduz contagem nenhuma. O calendário pode ganhar\nversão nova depois da publicação, e o dataset que deixa de ser vigente pode ser\nremovido do cadastro; nos dois casos, um recurso já em curso fecharia num\ninstante diferente do que a versão prometeu, ou não teria como ser recontado.\nA versão publicada é imutável e não admite completar depois o dado que sumiu.",
+        "A versão publicada congela o **conteúdo** do calendário — a lista de dias não\núteis vigente no momento da publicação —, e não apenas a constatação de que\nhavia um. O identificador e a versão do calendário de origem ficam guardados ao\nlado, como rastreio, e nunca são relidos para recontar.",
+        "Guardar só a referência não reproduz contagem nenhuma. O calendário pode ganhar\nversão nova depois da publicação, e o calendário que deixa de ser vigente pode ser\nremovido do cadastro; nos dois casos, um recurso já em curso fecharia num\ninstante diferente do que a versão prometeu, ou não teria como ser recontado.\nA versão publicada é imutável e não admite completar depois o dado que sumiu.",
         "Dependem do calendário:",
         "- **todo prazo de interposição**, seja em dias úteis, seja em horas;\n- o **prazo da 2ª instância**, quando o recurso admite instância superior, com as\n  mesmas unidades e a mesma contagem do prazo de interposição.",
         "Um prazo que não é de recurso, como o do período de solicitação de isenção, não\ndepende do calendário."
@@ -25138,12 +25138,12 @@
         "UNI-REQ-0021"
       ],
       "oQueAconteceu": [
-        "O comando pedido exige que o processo seletivo esteja num status que ele não\ntem agora. A mesma causa cobre as duas transições do ciclo de vida:",
+        "O comando pedido exige que o processo seletivo esteja numa situação que ele não\ntem agora. A mesma causa cobre as duas transições do ciclo de vida:",
         "- **Publicar** só é permitido com o processo em **rascunho**. Um processo já\n  publicado, encerrado ou cancelado recusa uma nova publicação.\n- **Retificar** só é permitido com o processo **publicado**. Um processo ainda\n  em rascunho não tem o que retificar.",
-        "O título emitido no corpo de erro (\"Só é possível publicar um processo em\nrascunho\") é fixo por `code` e não muda conforme a transição — mesmo numa\nfalha de retificação, o título é esse. É o campo `detail` que distingue as\nduas: ele sempre inclui o status atual do processo e a transição que foi de\nfato tentada, e é onde a causa real fica clara."
+        "O título emitido no corpo de erro (\"Só é possível publicar um processo em\nrascunho\") é fixo por `code` e não muda conforme a transição — mesmo numa\nfalha de retificação, o título é esse. É o campo `detail` que distingue as\nduas: ele sempre inclui a situação atual do processo e a transição que foi de\nfato tentada, e é onde a causa real fica clara."
       ],
       "comoResolver": [
-        "Confirme o status atual do processo (`GET /api/selecao/processos-seletivos/{id}`)\nantes de tentar a transição:",
+        "Confirme a situação atual do processo (`GET /api/selecao/processos-seletivos/{id}`)\nantes de tentar a transição:",
         "- Para publicar, o processo precisa estar em rascunho — sem publicação\n  anterior.\n- Para retificar, o processo precisa já estar publicado — a retificação altera\n  uma configuração que já existe, não substitui um rascunho."
       ],
       "ondeAparece": [
@@ -26746,7 +26746,7 @@
       "oQueAconteceu": [
         "Ao retificar um processo já publicado, a versão nova congelaria um fato com\ndefinição diferente da que alguma versão publicada já coletou. A retificação é\nrecusada com **422**. A mensagem vem no campo `detail` da resposta (não em\n`errors`) e cita o fato (ou o resumo de grupo), o eixo que mudou e os dois\nvalores, o publicado e o novo.",
         "A recusa sai ao congelar a versão nova, e os eixos são de dois tipos:",
-        "- **eixos do campo que coleta o fato**: são conferidos nos itens de qualquer formulário do processo (inscrição, isenção ou habilitação) que a nova versão publicaria. São quatro: o **tipo de renderização** (como o campo é apresentado), a **origem dos valores**, o **formato** do texto e a **classificação de proteção** do dado;\n- **eixos do fato citado em condição de documento exigido**: vêm do catálogo atual no momento da publicação. São três: o **domínio** (tipo de dado), a **cardinalidade** (um valor ou vários) e o **ponto de resolução** (a fase em que o fato é resolvido);\n- **operação do resumo de grupo**: a operação aplicada aos campos do grupo também vem do catálogo no momento da publicação.",
+        "- **eixos do campo que coleta o fato**: são conferidos nos itens de qualquer formulário do processo (inscrição, isenção ou habilitação) que a nova versão publicaria. São quatro: o **tipo de campo** (como a pessoa responde à pergunta), a **origem dos valores**, o **formato** do texto e a **classificação de proteção** do dado;\n- **eixos do fato citado em condição de documento exigido**: vêm do catálogo atual no momento da publicação. São três: o **domínio** (tipo de dado), a **cardinalidade** (um valor ou vários) e o **ponto de resolução** (a fase em que o fato é resolvido);\n- **operação do resumo de grupo**: a operação aplicada aos campos do grupo também vem do catálogo no momento da publicação.",
         "Os eixos do catálogo são conferidos no congelamento da retificação em ato único.\nPor isso a recusa sai mesmo sem alterar nenhum campo, se o catálogo mudou depois\nda publicação.",
         "A recusa da operação vale para qualquer resumo de grupo cuja operação alguma\nversão publicada tenha congelado; a API não exige que o campo de membro tenha\nsido coletado.",
         "A lista protegida é a do que a versão publicada congela do fato. Pela versão do\nUNI-REQ-0159 anterior a 19/10/2026, a finalidade e a base legal ficavam fora da\nrecusa. Quem\nresponde o fato (candidato ou membro de grupo) já é recusado por outra regra de\ncoletabilidade, e não por este código.",
@@ -26755,7 +26755,7 @@
         "A definição corrigida no catálogo vale para os processos ainda em rascunho,\nquando forem publicados, e para os processos novos (UNI-REQ-0159)."
       ],
       "comoResolver": [
-        "**Eixo do campo.** Se o que mudou foi o tipo de renderização escolhido para o\ncampo, volte a enviá-lo como estava na versão publicada. A origem dos valores, o\nformato e a classificação de proteção não vêm do pedido: o campo é montado a\npartir do catálogo atual. Se eles mudaram no catálogo, a saída\né a mesma do caso abaixo — desfazer a correção daquele fato no catálogo enquanto\no processo precisar ser retificado. O fato que o formulário de inscrição já\ncoleta não pode ser retirado dele, então lá trocá-lo por outro fato não resolve.",
+        "**Eixo do campo.** Se o que mudou foi o tipo de campo, volte a enviá-lo como estava na versão publicada. A origem dos valores, o\nformato e a classificação de proteção não vêm do pedido: o campo é montado a\npartir do catálogo atual. Se eles mudaram no catálogo, a saída\né a mesma do caso abaixo — desfazer a correção daquele fato no catálogo enquanto\no processo precisar ser retificado. O fato que o formulário de inscrição já\ncoleta não pode ser retirado dele, então lá trocá-lo por outro fato não resolve.",
         "**Eixo vindo do catálogo (condição de documento ou resumo de grupo).** Não há\ncampo a manter: a recusa decorre da mudança feita no catálogo. Enquanto o\nprocesso precisar ser retificado, desfaça a correção daquele fato no catálogo;\nela pode ser refeita quando o processo não precisar mais ser retificado\n(encerrado ou cancelado), e então vale para os processos em rascunho e os novos. No caso do\nfato citado em condição de documento, outra saída é retirar da versão nova a\ncondição de documento que cita o fato; a retificação permite reescrever os\ndocumentos exigidos, e o fato que a versão nova não cita numa condição não é\ncomparado. Atenção: retirar a condição muda a exigência de documento para quem\npreencher a finalidade depois da retificação (UNI-REQ-0144), então só faça isso\nse a mudança for intencional."
       ],
       "ondeAparece": [

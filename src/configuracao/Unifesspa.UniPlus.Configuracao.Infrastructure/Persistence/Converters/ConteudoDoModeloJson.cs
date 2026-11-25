@@ -60,7 +60,7 @@ internal static class ConteudoDoModeloJson
         ["ordem"] = campo.Ordem,
         ["paginaCodigo"] = campo.EtapaCodigo,
         ["rotulo"] = campo.Apresentacao.Rotulo,
-        ["tipoDeCampo"] = campo.Apresentacao.TipoRenderizacao.Codigo(),
+        ["tipoDeCampo"] = campo.Apresentacao.TipoDeCampo.Codigo(),
         ["formato"] = campo.Formato,
         ["ajuda"] = campo.Apresentacao.Ajuda,
         ["obrigatoriedade"] = PredicadoDnfJson.ParaJson(campo.Regras.Obrigatoriedade),
@@ -196,7 +196,7 @@ internal static class ConteudoDoModeloJson
 
     private static ApresentacaoDoCampo ApresentacaoDeJson(JsonElement campo) => new(
         campo.GetProperty("rotulo").GetString()!,
-        CatalogoDe<TipoRenderizacao>.Obter(campo.GetProperty("tipoDeCampo").GetString()!),
+        CatalogoDe<TipoDeCampo>.Obter(campo.GetProperty("tipoDeCampo").GetString()!),
         Texto(campo, "ajuda"),
         campo.GetProperty("pedirConfirmacao").GetBoolean());
 

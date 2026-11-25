@@ -74,7 +74,7 @@ public sealed class ProcessoSeletivoRepository : IProcessoSeletivoRepository
     {
         // Lock pessimista da linha raiz do agregado: serializa handlers concorrentes
         // (os Definir*, Publicar e Retificar) que carregam o MESMO processo — sem
-        // isso, um Definir* que leu Status=Rascunho antes de uma publicação concorrente
+        // isso, um Definir* que leu Situacao=Rascunho antes de uma publicação concorrente
         // pode persistir mutação DEPOIS de a versão já ter sido congelada, furando o congelamento dos parâmetros na publicação (UNI-REQ-0019)
         // sem que o guard em memória tenha visibilidade da publicação alheia. O
         // SELECT ... FOR UPDATE roda na MESMA transação ambiente do Wolverine
@@ -300,7 +300,7 @@ public sealed class ProcessoSeletivoRepository : IProcessoSeletivoRepository
             .Where(p => p.Id == processoSeletivoId)
             .Select(p => new EstadoDoProcesso(
                 p.UnidadeAdministradoraOrigemId,
-                p.Status,
+                p.Situacao,
                 _context.Set<VersaoConfiguracao>().Any(v => v.ProcessoSeletivoId == p.Id)))
             .FirstOrDefaultAsync(cancellationToken);
 
@@ -337,8 +337,8 @@ public sealed class ProcessoSeletivoRepository : IProcessoSeletivoRepository
 
         // Keyset bidirecional (ADR-0089); com Guid v7 (ADR-0032) a ordem por Id é cronológica.
         IQueryable<ProcessoSeletivo> query = _context.ProcessosSeletivos.AsNoTracking()
-            .Where(p => EstadoDoProcesso.SituacoesDeLeituraAberta.Contains(p.Status)
-                || (p.Status == StatusProcesso.Cancelado
+            .Where(p => EstadoDoProcesso.SituacoesDeLeituraAberta.Contains(p.Situacao)
+                || (p.Situacao == SituacaoDoProcessoSeletivo.Cancelado
                     && _context.Set<VersaoConfiguracao>().Any(v => v.ProcessoSeletivoId == p.Id))
                 || unidadesDoRascunho.Contains(p.UnidadeAdministradoraOrigemId));
 

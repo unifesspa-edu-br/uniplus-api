@@ -25,8 +25,8 @@ using static Unifesspa.UniPlus.Selecao.Domain.UnitTests.Entities.ApoioDaPublicac
 
 public sealed class ProcessoSeletivoPublicarTests
 {
-    [Fact(DisplayName = "Publicacao_AtomicaStatusESnapshot — processo conforme publica, congela a versão 1 e transita status")]
-    public void Publicar_ProcessoConforme_TransitaStatusECongelaVersao()
+    [Fact(DisplayName = "Publicacao_AtomicaSituacaoESnapshot — processo conforme publica, congela a versão 1 e transita a situação")]
+    public void Publicar_ProcessoConforme_TransitaSituacaoECongelaVersao()
     {
         ProcessoSeletivo processo = NovoProcessoConforme();
         DadosEdital dados = NovosDados();
@@ -34,7 +34,7 @@ public sealed class ProcessoSeletivoPublicarTests
         Result<VersaoConfiguracao> resultado = processo.Publicar(CenarioDoEdital(dados));
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
-        processo.Status.Should().Be(StatusProcesso.Publicado);
+        processo.Situacao.Should().Be(SituacaoDoProcessoSeletivo.Publicado);
 
         VersaoConfiguracao versao = resultado.Value!;
         versao.NumeroVersao.Should().Be(1, "a abertura abre a cadeia de configuração");
@@ -72,7 +72,7 @@ public sealed class ProcessoSeletivoPublicarTests
             "uma leitura do relógio por operação atômica — o ato e a versão que ele cria nascem do mesmo instante");
     }
 
-    [Fact(DisplayName = "Publicacao_AtomicaStatusESnapshot — evento carrega os identificadores forenses completos")]
+    [Fact(DisplayName = "Publicacao_AtomicaSituacaoESnapshot — evento carrega os identificadores forenses completos")]
     public void Publicar_ProcessoConforme_EmiteEventoComIdentificadoresCompletos()
     {
         ProcessoSeletivo processo = NovoProcessoConforme();
@@ -111,7 +111,7 @@ public sealed class ProcessoSeletivoPublicarTests
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("ProcessoSeletivo.ConformidadeInsuficiente");
-        processo.Status.Should().Be(StatusProcesso.Rascunho, "publicação recusada não transita o status");
+        processo.Situacao.Should().Be(SituacaoDoProcessoSeletivo.Rascunho, "publicação recusada não transita a situação");
         processo.DequeueDomainEvents().Should().BeEmpty("nada é enfileirado numa publicação recusada");
     }
 

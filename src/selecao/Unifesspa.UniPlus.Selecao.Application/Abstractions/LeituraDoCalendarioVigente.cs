@@ -12,7 +12,7 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 /// <para>
 /// <b>Uma leitura por operação.</b> O chamador lê o reader <b>uma vez</b> e passa a resposta
 /// adiante: a mesma serve ao gate e ao congelamento. Duas leituras abririam a janela em que o
-/// dataset muda entre validar e congelar, e a versão publicada carregaria um calendário que o
+/// calendário muda entre validar e congelar, e a versão publicada carregaria um calendário que o
 /// gate não aprovou.
 /// </para>
 /// <para>
@@ -22,9 +22,9 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 /// fronteira do agregado é o valor já traduzido.
 /// </para>
 /// <para>
-/// <b>Sobre a recusa.</b> Os dias vêm de um dataset que o cadastro de Configuração já validou
+/// <b>Sobre a recusa.</b> Os dias vêm de um calendário que o cadastro de Configuração já validou
 /// na criação — abrangência, coerência territorial, duplicata e versão têm recusa nomeada lá,
-/// e um dataset vigente incoerente não é estado alcançável pelo fluxo público. A tradução
+/// e um calendário vigente incoerente não é estado alcançável pelo fluxo público. A tradução
 /// revalida assim mesmo, como defesa em profundidade: o VO é o mesmo que o decoder do envelope
 /// reconstrói, e afrouxar aqui abriria caminho para congelar o que a decodificação recusaria.
 /// A falha, se acontecer, é defeito de dado — não tem código público próprio e sobe como erro
@@ -35,7 +35,7 @@ public static class LeituraDoCalendarioVigente
 {
     /// <summary>
     /// Converte a view lida do módulo Configuração, ou devolve <see langword="null"/> quando
-    /// não há dataset vigente — ausência não é falha aqui: quem decide se ela impede a operação
+    /// não há calendário vigente — ausência não é falha aqui: quem decide se ela impede a operação
     /// é o gate da raiz, que só a recusa quando o certame tem contagem sobre dia útil.
     /// </summary>
     public static Result<CalendarioDiasUteisCongelado?> Traduzir(CalendarioVigenteView? vigente)
@@ -56,7 +56,7 @@ public static class LeituraDoCalendarioVigente
 
     private static Result<CalendarioDiasUteisCongelado?> CriarCalendario(CalendarioVigenteView vigente, IReadOnlyList<DiaNaoUtilCongelado> dias)
     {
-        Result<CalendarioDiasUteisCongelado> calendario = CalendarioDiasUteisCongelado.Criar(vigente.Id, vigente.VersaoDataset, dias);
+        Result<CalendarioDiasUteisCongelado> calendario = CalendarioDiasUteisCongelado.Criar(vigente.Id, vigente.VersaoDoCalendario, dias);
         return calendario.IsFailure
             ? Result<CalendarioDiasUteisCongelado?>.Failure(calendario.Error!)
             : Result<CalendarioDiasUteisCongelado?>.Success(calendario.Value);
@@ -101,7 +101,7 @@ public static class LeituraDoCalendarioVigente
     /// admite, antes de a UF colapsar num campo só.
     /// </summary>
     /// <remarks>
-    /// Cada uma destas combinações tem recusa nomeada no cadastro de origem, e um dataset
+    /// Cada uma destas combinações tem recusa nomeada no cadastro de origem, e um calendário
     /// vigente que as viole não é estado alcançável pelo fluxo público. A conferência existe
     /// porque o descarte silencioso seria pior que a falha: o campo proibido sumiria sem
     /// registro, e a versão publicada afirmaria um território que o cadastro não declarou.

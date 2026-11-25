@@ -13,7 +13,7 @@ using static Unifesspa.UniPlus.Selecao.Domain.UnitTests.Entities.ApoioDaRetifica
 /// Cobertura de <see cref="ProcessoSeletivo.Retificar"/> (congelamento dos parâmetros na publicação, UNI-REQ-0019, ADR-0101/0103/0104):
 /// a retificação é uma <b>relação entre atos</b>, não um tipo — o novo ato emenda o
 /// ato criador da versão corrente, sucede-a na cadeia linear e exige motivo; a versão
-/// anterior fica intocada e o status permanece Publicado.
+/// anterior fica intocada e a situação permanece Publicado.
 /// </summary>
 /// <remarks>
 /// Não há mais entidade <c>Edital</c> a inspecionar: o documento é o ato publicado, e
@@ -30,7 +30,7 @@ public sealed class ProcessoSeletivoRetificarTests
 
         VersaoConfiguracao versao = RetificarComSucesso(processo, versaoAbertura, "Correção do prazo de inscrição", clock);
 
-        processo.Status.Should().Be(StatusProcesso.Publicado, "retificar não altera o status Publicado");
+        processo.Situacao.Should().Be(SituacaoDoProcessoSeletivo.Publicado, "retificar não altera a situação Publicado");
         versao.NumeroVersao.Should().Be(2);
         versao.AtoCriadorId.Should().NotBe(versaoAbertura.AtoCriadorId, "a retificação é um ato NOVO — o passado não se muta");
         versao.AtoCriadorRetificaId.Should().Be(

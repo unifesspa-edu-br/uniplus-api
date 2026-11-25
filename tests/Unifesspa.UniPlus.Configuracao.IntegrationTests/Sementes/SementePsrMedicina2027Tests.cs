@@ -67,7 +67,7 @@ public sealed class SementePsrMedicina2027Tests
         List<ItemDoModelo> itens = [.. modelos.SelectMany(static m => m.Conteudo.Itens.Concat(m.Conteudo.Grupos.SelectMany(static g => g.Subitens)))];
 
         modelos.Should().HaveCount(3);
-        itens.Where(static i => i.Apresentacao.TipoRenderizacao == TipoRenderizacao.SimOuNao)
+        itens.Where(static i => i.Apresentacao.TipoDeCampo == TipoDeCampo.SimOuNao)
             .Should().OnlyContain(static i => i.Apresentacao.Rotulo.EndsWith('?'), "o sim ou não responde a uma pergunta");
         ConferirAjudasSemRepeticao(itens);
     }

@@ -76,9 +76,9 @@ public static class ConjuntoBasicoDaInscricao
     /// <summary>Os tipos de localidade em que se pede o nome da aldeia, da comunidade ou do quilombo.</summary>
     private static readonly string[] LocalidadesComComunidade = ["ALDEIA", "COMUNIDADE", "QUILOMBO"];
 
-    private static readonly string CampoDeSelecao = TipoRenderizacao.EscolhaUnica.Codigo();
-    private static readonly string CampoDeTexto = TipoRenderizacao.Texto.Codigo();
-    private static readonly string CampoDeData = TipoRenderizacao.Data.Codigo();
+    private static readonly string CampoDeSelecao = TipoDeCampo.EscolhaUnica.Codigo();
+    private static readonly string CampoDeTexto = TipoDeCampo.Texto.Codigo();
+    private static readonly string CampoDeData = TipoDeCampo.Data.Codigo();
     private static readonly string Sempre = TipoObrigatoriedade.Sempre.Codigo();
     private static readonly IReadOnlyList<IReadOnlyList<CondicaoPrecondicaoInput>> QuandoNaoEstrangeiro = Quando(Nacionalidade, Operador.Diferente.Codigo(), Estrangeiro);
     private static readonly IReadOnlyList<IReadOnlyList<CondicaoPrecondicaoInput>> QuandoEstrangeiro = Quando(Nacionalidade, Operador.Igual.Codigo(), Estrangeiro);
@@ -284,7 +284,7 @@ public static class ConjuntoBasicoDaInscricao
     private static FatoColetadoInput[] Identificacao() =>
     [
         Item(Nome, "Nome completo", CampoDeTexto),
-        Item(DesejaNomeSocial, "Deseja usar nome social?", TipoRenderizacao.SimOuNao.Codigo()),
+        Item(DesejaNomeSocial, "Deseja usar nome social?", TipoDeCampo.SimOuNao.Codigo()),
         Item(NomeSocial, "Nome social", CampoDeTexto, Quando(DesejaNomeSocial, Operador.Igual.Codigo(), true), ajuda: AjudaDoNomeSocial),
         Item(Nacionalidade, "Nacionalidade", CampoDeSelecao),
         Item(Cpf, "CPF", CampoDeTexto),
@@ -306,7 +306,7 @@ public static class ConjuntoBasicoDaInscricao
     [
         Item("DATA_NASCIMENTO", "Data de nascimento", CampoDeData, restricoes: DataPlausivel),
         Item("NATURALIDADE_UF", "UF de nascimento", CampoDeSelecao, QuandoNaoEstrangeiro),
-        Item("NATURALIDADE_MUNICIPIO", "Município de nascimento", TipoRenderizacao.Municipio.Codigo(), QuandoNaoEstrangeiro,
+        Item("NATURALIDADE_MUNICIPIO", "Município de nascimento", TipoDeCampo.Municipio.Codigo(), QuandoNaoEstrangeiro,
             [new RestricaoValorInput(TipoRestricaoValor.MunicipiosDaUf.Codigo(), Fatos: ["NATURALIDADE_UF"])]),
     ];
 
@@ -332,14 +332,14 @@ public static class ConjuntoBasicoDaInscricao
         Item("TELEFONE", "Telefone", CampoDeTexto),
         Item(TipoDeLocalidade, "Tipo de localidade", CampoDeSelecao),
         Item("NOME_COMUNIDADE", "Nome da aldeia, comunidade ou quilombo", CampoDeTexto, Quando(TipoDeLocalidade, Operador.AlgumDe.Codigo(), LocalidadesComComunidade)),
-        Item("ENDERECO_RESIDENCIAL", "Endereço residencial", TipoRenderizacao.Endereco.Codigo()),
+        Item("ENDERECO_RESIDENCIAL", "Endereço residencial", TipoDeCampo.Endereco.Codigo()),
     ];
 
     /// <summary>O item na forma de entrada: sempre obrigatório, salvo a obrigatoriedade dada, e sem ordem nem seção, que o conjunto dá depois.</summary>
     private static FatoColetadoInput Item(
         string fatoCodigo,
         string rotulo,
-        string tipoRenderizacao,
+        string tipoDeCampo,
         IReadOnlyList<IReadOnlyList<CondicaoPrecondicaoInput>>? exibicao = null,
         IReadOnlyList<RestricaoValorInput>? restricoes = null,
         string? ajuda = null,
@@ -347,7 +347,7 @@ public static class ConjuntoBasicoDaInscricao
         new(
             fatoCodigo,
             0,
-            new ApresentacaoDoCampoInput(rotulo, tipoRenderizacao, ajuda),
+            new ApresentacaoDoCampoInput(rotulo, tipoDeCampo, ajuda),
             new RegrasDoCampoInput(exibicao, new ObrigatoriedadeInput(obrigatoriedade ?? Sempre), restricoes));
 
     private static IReadOnlyList<IReadOnlyList<CondicaoPrecondicaoInput>> Quando(string fato, string operador, object valor) =>

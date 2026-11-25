@@ -118,7 +118,7 @@ public sealed class VocabularioDeFatosTests
             .ComObrigatoriedade(Obrigatoriedade.Sempre)
             .ComCampos(FatoColetadoDeTeste.Coletando("CATEGORIA_RENDA", 0)
                 .ComRotulo("Categoria de renda")
-                .DoTipo(TipoRenderizacao.EscolhaUnica)
+                .DoTipo(TipoDeCampo.EscolhaUnica)
                 .ComObrigatoriedade(Obrigatoriedade.Sempre)
                 .Construir())
             .Construir();

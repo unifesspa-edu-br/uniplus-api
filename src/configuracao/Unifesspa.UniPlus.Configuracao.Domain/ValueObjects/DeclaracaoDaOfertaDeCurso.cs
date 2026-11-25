@@ -11,8 +11,8 @@ namespace Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
 /// <param name="RegimeDeFuncionamento">Regime de funcionamento, obrigatório.</param>
 /// <param name="RegimeDeTurno">Regime de turno, obrigatório.</param>
 /// <param name="Turnos">Turnos ocupados, obrigatórios e conferidos contra o regime de turno.</param>
-/// <param name="EMecCodigo">Código e-MEC da oferta, opcional.</param>
-/// <param name="CodigoSga">Código no sistema de gestão acadêmica, opcional.</param>
+/// <param name="CodigoEmec">Código e-MEC da oferta, opcional.</param>
+/// <param name="CodigoNoSistemaAcademico">Código no sistema acadêmico, opcional.</param>
 /// <param name="VagasAnuaisAutorizadas">Teto de vagas autorizadas no e-MEC, opcional.</param>
 /// <param name="BaseLegal">Base legal, obrigatória quando o programa não é regular.</param>
 /// <param name="AtoAutorizacaoMec">Ato de autorização do MEC, opcional.</param>
@@ -23,8 +23,8 @@ public sealed record DeclaracaoDaOfertaDeCurso(
     string? RegimeDeFuncionamento,
     string? RegimeDeTurno,
     IReadOnlyList<string?>? Turnos,
-    string? EMecCodigo = null,
-    string? CodigoSga = null,
+    string? CodigoEmec = null,
+    string? CodigoNoSistemaAcademico = null,
     int? VagasAnuaisAutorizadas = null,
     string? BaseLegal = null,
     string? AtoAutorizacaoMec = null);

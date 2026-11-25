@@ -14,8 +14,8 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// </summary>
 internal sealed class ValidacaoDaOfertaDeCurso(DeclaracaoDaOfertaDeCurso declaracao)
 {
-    private const int EMecCodigoMaxLength = 20;
-    private const int CodigoSgaMaxLength = 30;
+    private const int CodigoEmecMaxLength = 20;
+    private const int CodigoNoSistemaAcademicoMaxLength = 30;
     private const int BaseLegalMaxLength = 500;
     private const int AtoAutorizacaoMecMaxLength = 300;
 
@@ -56,8 +56,8 @@ internal sealed class ValidacaoDaOfertaDeCurso(DeclaracaoDaOfertaDeCurso declara
     private TextosDaOferta ConferirTextos()
     {
         TextosDaOferta textos = new(
-            ConferirTamanho(declaracao.EMecCodigo, EMecCodigoMaxLength, "eMecCodigo", OfertaCursoErrorCodes.EMecCodigoTamanho, "Código e-MEC da oferta"),
-            ConferirTamanho(declaracao.CodigoSga, CodigoSgaMaxLength, "codigoSga", OfertaCursoErrorCodes.CodigoSgaTamanho, "Código no sistema de gestão acadêmica"),
+            ConferirTamanho(declaracao.CodigoEmec, CodigoEmecMaxLength, "codigoEmec", OfertaCursoErrorCodes.CodigoEmecTamanho, "Código do e-MEC da oferta"),
+            ConferirTamanho(declaracao.CodigoNoSistemaAcademico, CodigoNoSistemaAcademicoMaxLength, "codigoNoSistemaAcademico", OfertaCursoErrorCodes.CodigoNoSistemaAcademicoTamanho, "Código no sistema acadêmico"),
             ConferirTamanho(declaracao.BaseLegal, BaseLegalMaxLength, "baseLegal", OfertaCursoErrorCodes.BaseLegalTamanho, "Base legal da oferta"),
             ConferirTamanho(declaracao.AtoAutorizacaoMec, AtoAutorizacaoMecMaxLength, "atoAutorizacaoMec", OfertaCursoErrorCodes.AtoAutorizacaoMecTamanho, "Ato de autorização MEC"));
         ConferirBaseLegalDoPrograma(textos.BaseLegal);
@@ -69,10 +69,10 @@ internal sealed class ValidacaoDaOfertaDeCurso(DeclaracaoDaOfertaDeCurso declara
         _erros.Count == 0 && (_codigo, _programa, _funcionamento, _regime, _turnos) is ({ } codigo, { } programa, { } funcionamento, { } regime, { } turnos)
             ? Result<CamposDaOfertaDeCurso>.Success(new(
                 codigo.Valor, programa, _formato, funcionamento, regime, TurnosOferta.OrdenarCanonicamente(turnos),
-                textos.EMecCodigo, textos.CodigoSga, declaracao.VagasAnuaisAutorizadas, textos.BaseLegal, textos.AtoAutorizacaoMec))
+                textos.CodigoEmec, textos.CodigoNoSistemaAcademico, declaracao.VagasAnuaisAutorizadas, textos.BaseLegal, textos.AtoAutorizacaoMec))
             : Result<CamposDaOfertaDeCurso>.ValidationFailure(_erros);
 
-    private sealed record TextosDaOferta(string? EMecCodigo, string? CodigoSga, string? BaseLegal, string? AtoAutorizacaoMec);
+    private sealed record TextosDaOferta(string? CodigoEmec, string? CodigoNoSistemaAcademico, string? BaseLegal, string? AtoAutorizacaoMec);
 
     private void ResolverCodigo()
     {

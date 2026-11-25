@@ -228,7 +228,7 @@ internal static class LeituraDoEdital
 
     /// <summary>
     /// O rótulo e o tipo de campo de cada fato que as regras citam e nenhum formulário pergunta. O tipo é
-    /// um dos que o formulário renderiza, ou nulo; o código, um só por item.
+    /// um dos que o formulário apresenta, ou nulo; o código, um só por item.
     /// </summary>
     internal static Dictionary<string, ApresentacaoDoFato> LerApresentacaoDosPressupostos(LeitorEnvelope leitor, JsonObject payload)
     {
@@ -275,12 +275,12 @@ internal static class LeituraDoEdital
             return null;
         }
 
-        return tipo is not null && !CatalogoDe<TipoRenderizacao>.TentarObter(tipo, out _)
+        return tipo is not null && !CatalogoDe<TipoDeCampo>.TentarObter(tipo, out _)
             ? leitor.Recusar<ApresentacaoDoFato?>(TipoDeCampoForaDoCatalogo(path))
             : new ApresentacaoDoFato(fatoCodigo, rotulo, tipo);
     }
 
     private static string TipoDeCampoForaDoCatalogo(string path) =>
         $"Envelope malformado em '{path}.tipoDeCampo': o tipo de campo não é um dos códigos aceitos: "
-        + $"{string.Join(", ", CatalogoDe<TipoRenderizacao>.Todos().Select(static d => d.Codigo))}.";
+        + $"{string.Join(", ", CatalogoDe<TipoDeCampo>.Todos().Select(static d => d.Codigo))}.";
 }

@@ -80,7 +80,7 @@ public sealed class RetificacaoConcorrenciaTests
 
         Result[] resultados = [await taskA, await taskB];
 
-        // Exatamente UMA vence. A segunda é barrada pelo lock pessimista (relê Status =
+        // Exatamente UMA vence. A segunda é barrada pelo lock pessimista (relê Situacao =
         // Publicado → TransicaoInvalida) ou, se a janela escapar, pelo índice de numeração
         // das versões. Antes da #804 quem barrava era ux_editais_processo_abertura_unica —
         // e ele carregava `natureza = 1` no filtro, o literal que esta story eliminou.

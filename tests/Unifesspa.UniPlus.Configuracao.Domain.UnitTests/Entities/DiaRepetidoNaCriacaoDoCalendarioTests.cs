@@ -8,7 +8,7 @@ using Unifesspa.UniPlus.Kernel.Results;
 
 public sealed class DiaRepetidoNaCriacaoDoCalendarioTests
 {
-    private const string MensagemDeRepeticao = "Data duplicada no dataset (mesma abrangência, município e UF).";
+    private const string MensagemDeRepeticao = "Data duplicada no calendário (mesma abrangência, município e UF).";
     private static readonly DateOnly Data = new(2027, 1, 1);
 
     private static DiaNaoUtilCriacao Nacional() => new("NACIONAL", null, null, null, Data, "Confraternização Universal");
@@ -18,7 +18,7 @@ public sealed class DiaRepetidoNaCriacaoDoCalendarioTests
     private static void DeveRecusarRepeticaoEm(FieldError recusa, string campo)
     {
         recusa.Field.Should().Be(campo);
-        recusa.Error.Code.Should().Be(CalendarioDiasUteisErrorCodes.DataDuplicadaNoDataset);
+        recusa.Error.Code.Should().Be(CalendarioDiasUteisErrorCodes.DataDuplicadaNoCalendario);
         recusa.Error.Message.Should().Be(MensagemDeRepeticao);
     }
 
@@ -58,8 +58,8 @@ public sealed class DiaRepetidoNaCriacaoDoCalendarioTests
         Result<CalendarioDiasUteis> resultado = CalendarioDiasUteis.Criar(" ", [Nacional(), Nacional()]);
 
         resultado.Errors.Should().HaveCount(2);
-        resultado.Errors[0].Field.Should().Be("versaoDataset");
-        resultado.Errors[0].Error.Code.Should().Be(CalendarioDiasUteisErrorCodes.VersaoDatasetObrigatoria);
+        resultado.Errors[0].Field.Should().Be("versaoDoCalendario");
+        resultado.Errors[0].Error.Code.Should().Be(CalendarioDiasUteisErrorCodes.VersaoDoCalendarioObrigatoria);
         DeveRecusarRepeticaoEm(resultado.Errors[1], "diasNaoUteis[1]");
     }
 }
