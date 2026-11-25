@@ -29,7 +29,7 @@ public sealed class PageRequestModelBinderVinculoDeUsuarioTests
         string cursor = await EncodeAsync(services, ValidPayload("inscricoes") with { UserId = cursorUser });
 
         ModelBindingContext context = await BindAsync(
-            QueryWithCursor(cursor), nameof(BinderActions.UserInscricoes), services);
+            QueryWithCursor(cursor), BinderActions.UserInscricoes, services);
 
         AssertInvalidCursor(context);
     }
@@ -43,7 +43,7 @@ public sealed class PageRequestModelBinderVinculoDeUsuarioTests
         string cursor = await EncodeAsync(services, payload);
 
         ModelBindingContext context = await BindAsync(
-            QueryWithCursor(cursor), nameof(BinderActions.UserInscricoes), services);
+            QueryWithCursor(cursor), BinderActions.UserInscricoes, services);
 
         AssertPage(context).AfterId.Should().Be(Guid.Parse(payload.After));
     }
@@ -62,12 +62,24 @@ public sealed class PageRequestModelBinderVinculoDeUsuarioTests
     }
 
     [Fact]
+    public async Task BindModelAsync_EndpointPublicoComOutroUsuario_AceitaOCursor()
+    {
+        ResolutionCounter counter = new();
+        ServiceProvider services = CreateCursorServices().WithUser(true, "user-anyone", counter).BuildServiceProvider();
+        string cursor = await EncodeAsync(services, ValidPayload() with { UserId = "user-someoneelse" });
+
+        ModelBindingContext context = await BindAsync(QueryWithCursor(cursor), services: services);
+
+        AssertPage(context);
+    }
+
+    [Fact]
     public async Task BindModelAsync_CursorInvalidoEmEndpointComVinculo_NaoResolveOUsuario()
     {
         ResolutionCounter counter = new();
         ServiceProvider services = CreateCursorServices().WithUser(true, "alice", counter).BuildServiceProvider();
 
-        await BindAsync("?cursor=@@@@", nameof(BinderActions.UserInscricoes), services);
+        await BindAsync("?cursor=@@@@", BinderActions.UserInscricoes, services);
 
         counter.Total.Should().Be(0);
     }
@@ -77,7 +89,7 @@ public sealed class PageRequestModelBinderVinculoDeUsuarioTests
     {
         CursorPayload payload = ValidPayload("inscricoes") with
         {
-            ExpiresAt = DateTimeOffset.UtcNow.AddMinutes(-1),
+            ExpiresAt = InstanteDaConsulta.AddMinutes(-1),
             UserId = "alice",
         };
 
@@ -126,7 +138,7 @@ public sealed class PageRequestModelBinderVinculoDeUsuarioTests
         string cursor = await EncodeAsync(services, payload);
 
         ModelBindingContext context = await BindAsync(
-            QueryWithCursor(cursor), nameof(BinderActions.UserSortedCidades), services);
+            QueryWithCursor(cursor), BinderActions.UserSortedCidades, services);
 
         AssertInvalidCursor(context);
         counter.Total.Should().Be(1);
@@ -139,7 +151,7 @@ public sealed class PageRequestModelBinderVinculoDeUsuarioTests
         string cursor = await EncodeAsync(services, payload);
 
         await BindAsync(
-            QueryWithCursor(cursor, querySuffix), nameof(BinderActions.UserInscricoes), services);
+            QueryWithCursor(cursor, querySuffix), BinderActions.UserInscricoes, services);
 
         return counter.Total;
     }
