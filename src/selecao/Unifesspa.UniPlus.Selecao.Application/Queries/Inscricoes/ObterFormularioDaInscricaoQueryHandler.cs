@@ -28,15 +28,14 @@ public static class ObterFormularioDaInscricaoQueryHandler
     public static async Task<Result<FormularioApresentadoDoProcessoDto>> Handle(
         ObterFormularioDaInscricaoQuery query,
         IInscricaoRepository inscricaoRepository,
-        ICertameDivulgadoRepository certameDivulgadoRepository,
-        IProcessoSeletivoRepository processoSeletivoRepository,
+        VersaoDaInscricaoResolver versao,
         IRegistroCodecsEnvelope registroCodecs,
         IUserContext userContext,
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(query);
         ArgumentNullException.ThrowIfNull(inscricaoRepository);
-        ArgumentNullException.ThrowIfNull(processoSeletivoRepository);
+        ArgumentNullException.ThrowIfNull(versao);
         ArgumentNullException.ThrowIfNull(registroCodecs);
         ArgumentNullException.ThrowIfNull(userContext);
 
@@ -45,7 +44,7 @@ public static class ObterFormularioDaInscricaoQueryHandler
         return doCandidato.IsFailure
             ? Result<FormularioApresentadoDoProcessoDto>.Failure(doCandidato.Error!)
             : await FormularioDaVersaoDaInscricaoAsync(
-                query, doCandidato.Value!, certameDivulgadoRepository, processoSeletivoRepository, registroCodecs, cancellationToken)
+                query, doCandidato.Value!, versao, registroCodecs, cancellationToken)
                 .ConfigureAwait(false);
     }
 
@@ -92,12 +91,11 @@ public static class ObterFormularioDaInscricaoQueryHandler
     private static async Task<Result<FormularioApresentadoDoProcessoDto>> FormularioDaVersaoDaInscricaoAsync(
         ObterFormularioDaInscricaoQuery query,
         Inscricao inscricao,
-        ICertameDivulgadoRepository certameDivulgadoRepository,
-        IProcessoSeletivoRepository processoSeletivoRepository,
+        VersaoDaInscricaoResolver versao,
         IRegistroCodecsEnvelope registroCodecs,
         CancellationToken cancellationToken)
     {
-        Result<VersaoConfiguracao> resolvida = await new VersaoDaInscricaoResolver(certameDivulgadoRepository, processoSeletivoRepository, registroCodecs).ResolverAsync(inscricao, cancellationToken)
+        Result<VersaoConfiguracao> resolvida = await versao.ResolverAsync(inscricao, cancellationToken)
             .ConfigureAwait(false);
         if (resolvida.IsFailure)
         {

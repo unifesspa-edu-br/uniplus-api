@@ -93,8 +93,9 @@ public sealed class ObterFormularioDaInscricaoQueryHandlerTests
 
     private static Task<Result<FormularioApresentadoDoProcessoDto>> Obter(PortasDaInscricaoDeTeste portas, IUserContext usuario) =>
         ObterFormularioDaInscricaoQueryHandler.Handle(
-            new ObterFormularioDaInscricaoQuery(ProcessoId), portas.Inscricoes, DivulgacaoDeTeste.Certame(ProcessoId),
-            portas.Processos, portas.Codecs, usuario, CancellationToken.None);
+            new ObterFormularioDaInscricaoQuery(ProcessoId), portas.Inscricoes,
+            new VersaoDaInscricaoResolver(DivulgacaoDeTeste.Certame(ProcessoId), portas.Processos, portas.Codecs),
+            portas.Codecs, usuario, CancellationToken.None);
 
     private static Inscricao Rascunho(Cpf cpf, VersaoConfiguracao versao) =>
         Inscricao.Iniciar(ProcessoId, cpf, "conta-1", "https://issuer", versao.Id).Value!;
@@ -208,9 +209,11 @@ public sealed class ObterFormularioDaInscricaoQueryHandlerTests
         IInscricaoRepository inscricoes = Substitute.For<IInscricaoRepository>();
         inscricoes.ObterAtivaPorProcessoECpfAsync(ProcessoId, cpf, Arg.Any<CancellationToken>())
             .Returns(Inscricao.Iniciar(ProcessoId, cpf, "conta-1", "https://issuer", versao.Id).Value!);
+        IRegistroCodecsEnvelope codecs = RegistroReidratando(envelope);
         return ObterFormularioDaInscricaoQueryHandler.Handle(
-            new ObterFormularioDaInscricaoQuery(ProcessoId), inscricoes, DivulgacaoDeTeste.Certame(ProcessoId),
-            ProcessosComVersao(versao), RegistroReidratando(envelope), UsuarioComCpf(cpf), CancellationToken.None);
+            new ObterFormularioDaInscricaoQuery(ProcessoId), inscricoes,
+            new VersaoDaInscricaoResolver(DivulgacaoDeTeste.Certame(ProcessoId), ProcessosComVersao(versao), codecs),
+            codecs, UsuarioComCpf(cpf), CancellationToken.None);
     }
 
     private static IProcessoSeletivoRepository ProcessosComVersao(VersaoConfiguracao versao)
