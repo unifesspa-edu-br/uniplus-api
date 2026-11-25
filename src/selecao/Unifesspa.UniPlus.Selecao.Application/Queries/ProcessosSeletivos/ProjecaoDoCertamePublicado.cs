@@ -2,6 +2,7 @@ namespace Unifesspa.UniPlus.Selecao.Application.Queries.ProcessosSeletivos;
 
 using System.Text.Json;
 using System.Text.Json.Nodes;
+using System.Text.Json.Serialization;
 
 using DTOs;
 
@@ -58,6 +59,8 @@ internal static class ProjecaoDoCertamePublicado
     /// </remarks>
     public static readonly JsonSerializerOptions OpcoesDoDocumento = OpcoesJsonDeDocumento.Criar(new(JsonSerializerDefaults.Web)
     {
+        NumberHandling = JsonNumberHandling.Strict,
+        PropertyNameCaseInsensitive = false,
         RespectRequiredConstructorParameters = true,
         RespectNullableAnnotations = true,
         Converters = { new ArranjoSemElementoNulo() },
