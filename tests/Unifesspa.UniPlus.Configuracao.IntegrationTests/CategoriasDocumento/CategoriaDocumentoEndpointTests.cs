@@ -75,14 +75,9 @@ public sealed class CategoriaDocumentoEndpointTests
         criar.StatusCode.Should().Be(HttpStatusCode.Created);
         Guid id = await criar.Content.ReadFromJsonAsync<Guid>();
 
-        string[] comACategoria = await LerCodigos(await client.GetAsync(
-            new Uri("/api/configuracao/categorias-documento", UriKind.Relative)));
-        comACategoria.Should().Contain(codigo, "o catálogo é cadastro, não roster fixo em código");
+        await ConferirCategoriaNaColecaoAsync(client, codigo);
 
-        using HttpRequestMessage remover = new(
-            HttpMethod.Delete, new Uri($"/api/configuracao/admin/categorias-documento/{id}", UriKind.Relative));
-        AutenticarComoAdmin(remover);
-        (await client.SendAsync(remover)).StatusCode.Should().Be(HttpStatusCode.NoContent);
+        (await RemoverCategoriaAsync(client, id)).StatusCode.Should().Be(HttpStatusCode.NoContent);
 
         string[] semACategoria = await LerCodigos(await client.GetAsync(
             new Uri("/api/configuracao/categorias-documento", UriKind.Relative)));
@@ -146,13 +141,7 @@ public sealed class CategoriaDocumentoEndpointTests
     public async Task Criar_ComAuthEIdempotency_Retorna201EPersiste()
     {
         string codigo = CodigoUnico();
-        var body = new
-        {
-            codigo,
-            nome = "Documento processual",
-            descricao = "Instrui o processo administrativo",
-            ordem = 30,
-        };
+        object body = DadosDocumentoProcessual(codigo);
 
         using HttpClient client = _fixture.Factory.CreateClient();
         HttpResponseMessage criar = await EnviarPostAdmin(client, body);
@@ -161,18 +150,7 @@ public sealed class CategoriaDocumentoEndpointTests
         Guid id = await criar.Content.ReadFromJsonAsync<Guid>();
         id.Should().NotBe(Guid.Empty);
 
-        HttpResponseMessage obter = await client.GetAsync(
-            new Uri($"/api/configuracao/categorias-documento/{id}", UriKind.Relative));
-        obter.StatusCode.Should().Be(HttpStatusCode.OK);
-        obter.Content.Headers.ContentType?.MediaType
-            .Should().Be("application/vnd.uniplus.categoria-documento.v1+json");
-
-        using JsonDocument doc = JsonDocument.Parse(await obter.Content.ReadAsStringAsync());
-        JsonElement root = doc.RootElement;
-        root.GetProperty("codigo").GetString().Should().Be(codigo);
-        root.GetProperty("nome").GetString().Should().Be("Documento processual");
-        root.GetProperty("ordem").GetInt32().Should().Be(30);
-        root.TryGetProperty("_links", out _).Should().BeTrue("HATEOAS Level 1 expõe _links.self (ADR-0029)");
+        await ConferirCategoriaCriadaAsync(client, id, codigo);
     }
 
     [Fact(DisplayName = "POST sem ordem informada é aceito e grava ordem zero, em vez de 400 de model binding")]
@@ -246,13 +224,7 @@ public sealed class CategoriaDocumentoEndpointTests
         HttpResponseMessage criar = await EnviarPostAdmin(client, new { codigo, nome = "Nome original", ordem = 10 });
         Guid id = await criar.Content.ReadFromJsonAsync<Guid>();
 
-        using HttpRequestMessage request = new(
-            HttpMethod.Put, new Uri($"/api/configuracao/admin/categorias-documento/{id}", UriKind.Relative));
-        AutenticarComoAdmin(request);
-        request.Headers.Add("Idempotency-Key", Guid.NewGuid().ToString());
-        request.Content = JsonContent.Create(new { id, codigo, nome = "Nome revisado", ordem = 55 });
-
-        HttpResponseMessage atualizar = await client.SendAsync(request);
+        HttpResponseMessage atualizar = await AtualizarCategoriaAsync(client, id, codigo);
         atualizar.StatusCode.Should().Be(HttpStatusCode.NoContent);
 
         HttpResponseMessage obter = await client.GetAsync(
@@ -271,20 +243,10 @@ public sealed class CategoriaDocumentoEndpointTests
         HttpResponseMessage criar = await EnviarPostAdmin(client, new { codigo, nome = "Obsoleta" });
         Guid id = await criar.Content.ReadFromJsonAsync<Guid>();
 
-        using HttpRequestMessage request = new(
-            HttpMethod.Delete, new Uri($"/api/configuracao/admin/categorias-documento/{id}", UriKind.Relative));
-        AutenticarComoAdmin(request);
-
-        HttpResponseMessage remover = await client.SendAsync(request);
+        HttpResponseMessage remover = await RemoverCategoriaAsync(client, id);
         remover.StatusCode.Should().Be(HttpStatusCode.NoContent);
 
-        HttpResponseMessage obterRemovida = await client.GetAsync(
-            new Uri($"/api/configuracao/categorias-documento/{id}", UriKind.Relative));
-        obterRemovida.StatusCode.Should().Be(HttpStatusCode.NotFound);
-
-        HttpResponseMessage recriar = await EnviarPostAdmin(client, new { codigo, nome = "Recriada" });
-        recriar.StatusCode.Should().Be(HttpStatusCode.Created,
-            "o soft-delete libera o slot do índice único parcial");
+        await ConferirRemocaoERecriacaoAsync(client, id, codigo);
     }
 
     [Fact(DisplayName = "DELETE de id inexistente retorna 404")]
@@ -326,6 +288,66 @@ public sealed class CategoriaDocumentoEndpointTests
 
         response.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity,
             "sem validator FluentValidation a montante, o campo ausente precisa chegar ao domínio (ADR-0125), não virar 400 de model binding");
+    }
+
+    private static object DadosDocumentoProcessual(string codigo) => new
+    {
+        codigo,
+        nome = "Documento processual",
+        descricao = "Instrui o processo administrativo",
+        ordem = 30,
+    };
+
+    private static async Task ConferirCategoriaNaColecaoAsync(HttpClient client, string codigo)
+    {
+        string[] comACategoria = await LerCodigos(await client.GetAsync(
+            new Uri("/api/configuracao/categorias-documento", UriKind.Relative)));
+        comACategoria.Should().Contain(codigo, "o catálogo é cadastro, não roster fixo em código");
+    }
+
+    private static async Task ConferirRemocaoERecriacaoAsync(HttpClient client, Guid id, string codigo)
+    {
+        HttpResponseMessage obterRemovida = await client.GetAsync(
+            new Uri($"/api/configuracao/categorias-documento/{id}", UriKind.Relative));
+        obterRemovida.StatusCode.Should().Be(HttpStatusCode.NotFound);
+        HttpResponseMessage recriar = await EnviarPostAdmin(client, new { codigo, nome = "Recriada" });
+        recriar.StatusCode.Should().Be(HttpStatusCode.Created,
+            "o soft-delete libera o slot do índice único parcial");
+    }
+
+    private static async Task ConferirCategoriaCriadaAsync(HttpClient client, Guid id, string codigo)
+    {
+        HttpResponseMessage obter = await client.GetAsync(
+            new Uri($"/api/configuracao/categorias-documento/{id}", UriKind.Relative));
+        obter.StatusCode.Should().Be(HttpStatusCode.OK);
+        obter.Content.Headers.ContentType?.MediaType
+            .Should().Be("application/vnd.uniplus.categoria-documento.v1+json");
+
+        using JsonDocument doc = JsonDocument.Parse(await obter.Content.ReadAsStringAsync());
+        JsonElement root = doc.RootElement;
+        root.GetProperty("codigo").GetString().Should().Be(codigo);
+        root.GetProperty("nome").GetString().Should().Be("Documento processual");
+        root.GetProperty("ordem").GetInt32().Should().Be(30);
+        root.TryGetProperty("_links", out _).Should().BeTrue("HATEOAS Level 1 expõe _links.self (ADR-0029)");
+    }
+
+    private static async Task<HttpResponseMessage> AtualizarCategoriaAsync(HttpClient client, Guid id, string codigo)
+    {
+        using HttpRequestMessage request = new(
+            HttpMethod.Put, new Uri($"/api/configuracao/admin/categorias-documento/{id}", UriKind.Relative));
+        AutenticarComoAdmin(request);
+        request.Headers.Add("Idempotency-Key", Guid.NewGuid().ToString());
+        request.Content = JsonContent.Create(new { id, codigo, nome = "Nome revisado", ordem = 55 });
+
+        return await client.SendAsync(request);
+    }
+
+    private static async Task<HttpResponseMessage> RemoverCategoriaAsync(HttpClient client, Guid id)
+    {
+        using HttpRequestMessage request = new(
+            HttpMethod.Delete, new Uri($"/api/configuracao/admin/categorias-documento/{id}", UriKind.Relative));
+        AutenticarComoAdmin(request);
+        return await client.SendAsync(request);
     }
 
     private static async Task<string[]> LerCodigos(HttpResponseMessage response)

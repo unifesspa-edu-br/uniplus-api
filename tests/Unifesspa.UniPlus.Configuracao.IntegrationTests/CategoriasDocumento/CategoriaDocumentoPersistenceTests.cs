@@ -41,11 +41,7 @@ public sealed class CategoriaDocumentoPersistenceTests
         string codigo = CodigoUnico();
         CategoriaDocumento categoria = Nova(codigo, ordem: 30);
 
-        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(AdminA))
-        {
-            ctx.CategoriasDocumento.Add(categoria);
-            await ctx.SaveChangesAsync();
-        }
+        await PersistirAsync(categoria);
 
         await using UniPlusDbContext readCtx = _fixture.CreateDbContext(userId: null);
         CategoriaDocumento persistida = await readCtx.CategoriasDocumento.SingleAsync(c => c.Id == categoria.Id);
@@ -61,24 +57,14 @@ public sealed class CategoriaDocumentoPersistenceTests
     public async Task UniquePartial_Codigo_RejeitaDuplicataAtiva()
     {
         string codigo = CodigoUnico();
-        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(AdminA))
-        {
-            ctx.CategoriasDocumento.Add(Nova(codigo));
-            await ctx.SaveChangesAsync();
-        }
+        await PersistirAsync(Nova(codigo));
 
         await using UniPlusDbContext ctx2 = _fixture.CreateDbContext(AdminA);
         ctx2.CategoriasDocumento.Add(Nova(codigo));
 
         Func<Task> act = async () => await ctx2.SaveChangesAsync();
 
-        // Trava as constantes que o handler usa para traduzir a corrida concorrente
-        // (UniqueConstraintViolation.GetViolatedConstraint/IsCodigoConflict) em
-        // CodigoJaExiste/409: SqlState 23505 + nome do índice único parcial.
-        DbUpdateException ex = (await act.Should().ThrowAsync<DbUpdateException>()).Which;
-        Npgsql.PostgresException pg = ex.InnerException.Should().BeOfType<Npgsql.PostgresException>().Which;
-        pg.SqlState.Should().Be("23505");
-        pg.ConstraintName.Should().Be(RestricoesDoBanco.CategoriaDeDocumentoCodigoAtivos);
+        await ConferirRestricaoDeCodigoAsync(act);
     }
 
     [Fact(DisplayName = "Código distinto é aceito")]
@@ -97,26 +83,9 @@ public sealed class CategoriaDocumentoPersistenceTests
     {
         string codigo = CodigoUnico();
         CategoriaDocumento categoria = Nova(codigo);
-        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(AdminA))
-        {
-            ctx.CategoriasDocumento.Add(categoria);
-            await ctx.SaveChangesAsync();
-        }
+        await PersistirAsync(categoria);
 
-        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(AdminB))
-        {
-            CategoriaDocumento tracked = await ctx.CategoriasDocumento.SingleAsync(c => c.Id == categoria.Id);
-            ctx.CategoriasDocumento.Remove(tracked);
-            await ctx.SaveChangesAsync();
-        }
-
-        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null))
-        {
-            CategoriaDocumento excluida = await ctx.CategoriasDocumento
-                .IgnoreQueryFilters().SingleAsync(c => c.Id == categoria.Id);
-            excluida.IsDeleted.Should().BeTrue();
-            excluida.DeletedBy.Should().Be(AdminB);
-        }
+        await RemoverEConferirAuditoriaAsync(categoria.Id);
 
         await using UniPlusDbContext ctx3 = _fixture.CreateDbContext(AdminA);
         ctx3.CategoriasDocumento.Add(Nova(codigo));
@@ -147,6 +116,42 @@ public sealed class CategoriaDocumentoPersistenceTests
 
         await act.Should().ThrowAsync<Npgsql.PostgresException>(
             "a ordem de exibição é posição no catálogo e não admite valor negativo");
+    }
+
+    private static async Task ConferirRestricaoDeCodigoAsync(Func<Task> act)
+    {
+        // Trava as constantes que o handler usa para traduzir a corrida concorrente
+        // (UniqueConstraintViolation.GetViolatedConstraint/IsCodigoConflict) em
+        // CodigoJaExiste/409: SqlState 23505 + nome do índice único parcial.
+        DbUpdateException ex = (await act.Should().ThrowAsync<DbUpdateException>()).Which;
+        Npgsql.PostgresException pg = ex.InnerException.Should().BeOfType<Npgsql.PostgresException>().Which;
+        pg.SqlState.Should().Be("23505");
+        pg.ConstraintName.Should().Be(RestricoesDoBanco.CategoriaDeDocumentoCodigoAtivos);
+    }
+
+    private async Task PersistirAsync(CategoriaDocumento categoria)
+    {
+        await using UniPlusDbContext ctx = _fixture.CreateDbContext(AdminA);
+        ctx.CategoriasDocumento.Add(categoria);
+        await ctx.SaveChangesAsync();
+    }
+
+    private async Task RemoverEConferirAuditoriaAsync(Guid id)
+    {
+        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(AdminB))
+        {
+            CategoriaDocumento tracked = await ctx.CategoriasDocumento.SingleAsync(c => c.Id == id);
+            ctx.CategoriasDocumento.Remove(tracked);
+            await ctx.SaveChangesAsync();
+        }
+
+        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null))
+        {
+            CategoriaDocumento excluida = await ctx.CategoriasDocumento
+                .IgnoreQueryFilters().SingleAsync(c => c.Id == id);
+            excluida.IsDeleted.Should().BeTrue();
+            excluida.DeletedBy.Should().Be(AdminB);
+        }
     }
 
     private static CategoriaDocumento Nova(string codigo, string nome = "Documento processual", int ordem = 0) =>
