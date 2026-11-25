@@ -1,7 +1,5 @@
 namespace Unifesspa.UniPlus.Configuracao.IntegrationTests.CondicoesAtendimento;
 
-using System.Diagnostics.CodeAnalysis;
-
 using AwesomeAssertions;
 
 using Microsoft.EntityFrameworkCore;
@@ -26,10 +24,6 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// reservado PCD (via handler) e leitura cross-módulo ordenada.
 /// </summary>
 [Collection(ConfiguracaoDbCollection.Name)]
-[SuppressMessage(
-    "Performance",
-    "CA1515:Consider making public types internal",
-    Justification = "xUnit collection fixture exige tipo de teste público.")]
 public sealed class CondicaoAtendimentoPersistenceTests
 {
     private const string AdminA = "admin-a";
@@ -48,11 +42,7 @@ public sealed class CondicaoAtendimentoPersistenceTests
         string codigo = CodigoUnico();
         CondicaoAtendimentoEspecializado condicao = Nova(codigo);
 
-        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(AdminA))
-        {
-            ctx.CondicoesAtendimento.Add(condicao);
-            await ctx.SaveChangesAsync();
-        }
+        await SalvarCondicoes(condicao);
 
         await using UniPlusDbContext readCtx = _fixture.CreateDbContext(userId: null);
         CondicaoAtendimentoEspecializado persistida = await readCtx.CondicoesAtendimento.SingleAsync(c => c.Id == condicao.Id);
@@ -62,21 +52,14 @@ public sealed class CondicaoAtendimentoPersistenceTests
         persistida.CreatedBy.Should().Be(AdminA);
         persistida.IsDeleted.Should().BeFalse();
 
-        var reader = new CondicaoAtendimentoReader(readCtx);
-        CondicaoAtendimentoView? view = await reader.ObterPorIdAsync(condicao.Id);
-        view.Should().NotBeNull();
-        view!.Codigo.Should().Be(codigo);
+        await ConferirLeituraPorId(readCtx, condicao.Id, codigo);
     }
 
     [Fact(DisplayName = "UNIQUE parcial do código rejeita segunda condição viva com mesmo código")]
     public async Task UniquePartial_Codigo_RejeitaDuplicataAtiva()
     {
         string codigo = CodigoUnico();
-        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(AdminA))
-        {
-            ctx.CondicoesAtendimento.Add(Nova(codigo));
-            await ctx.SaveChangesAsync();
-        }
+        await SalvarCondicoes(Nova(codigo));
 
         await using UniPlusDbContext ctx2 = _fixture.CreateDbContext(AdminA);
         ctx2.CondicoesAtendimento.Add(Nova(codigo));
@@ -86,10 +69,7 @@ public sealed class CondicaoAtendimentoPersistenceTests
         // Trava as constantes que o handler usa para traduzir a corrida concorrente
         // (UniqueConstraintViolation.GetViolatedConstraint/IsCodigoConflict) em
         // CodigoJaExiste/409: SqlState 23505 + nome do índice único parcial.
-        DbUpdateException ex = (await act.Should().ThrowAsync<DbUpdateException>()).Which;
-        Npgsql.PostgresException pg = ex.InnerException.Should().BeOfType<Npgsql.PostgresException>().Which;
-        pg.SqlState.Should().Be("23505");
-        pg.ConstraintName.Should().Be(RestricoesDoBanco.CondicaoDeAtendimentoCodigoAtivos);
+        await ConferirViolacaoDeUnicidade(act);
     }
 
     [Fact(DisplayName = "Código distinto é aceito")]
@@ -108,26 +88,10 @@ public sealed class CondicaoAtendimentoPersistenceTests
     {
         string codigo = CodigoUnico();
         CondicaoAtendimentoEspecializado condicao = Nova(codigo);
-        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(AdminA))
-        {
-            ctx.CondicoesAtendimento.Add(condicao);
-            await ctx.SaveChangesAsync();
-        }
+        await SalvarCondicoes(condicao);
 
-        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(AdminB))
-        {
-            CondicaoAtendimentoEspecializado tracked = await ctx.CondicoesAtendimento.SingleAsync(c => c.Id == condicao.Id);
-            ctx.CondicoesAtendimento.Remove(tracked);
-            await ctx.SaveChangesAsync();
-        }
-
-        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null))
-        {
-            CondicaoAtendimentoEspecializado excluida = await ctx.CondicoesAtendimento
-                .IgnoreQueryFilters().SingleAsync(c => c.Id == condicao.Id);
-            excluida.IsDeleted.Should().BeTrue();
-            excluida.DeletedBy.Should().Be(AdminB);
-        }
+        await ExcluirCondicao(condicao.Id);
+        await ConferirTrilhaDeExclusao(condicao.Id);
 
         await using UniPlusDbContext ctx3 = _fixture.CreateDbContext(AdminA);
         ctx3.CondicoesAtendimento.Add(Nova(codigo));
@@ -152,21 +116,9 @@ public sealed class CondicaoAtendimentoPersistenceTests
     public async Task Remover_Pcd_ViaHandler_Bloqueia()
     {
         CondicaoAtendimentoEspecializado pcd = Nova(CodigoCondicao.Pcd, nome: "Pessoa com deficiência");
-        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(AdminA))
-        {
-            ctx.CondicoesAtendimento.Add(pcd);
-            await ctx.SaveChangesAsync();
-        }
+        await SalvarCondicoes(pcd);
 
-        await using (UniPlusDbContext handlerCtx = _fixture.CreateDbContext(AdminB))
-        {
-            var repository = new CondicaoAtendimentoRepository(handlerCtx);
-            Result resultado = await RemoverCondicaoAtendimentoCommandHandler.Handle(
-                new RemoverCondicaoAtendimentoCommand(pcd.Id), repository, handlerCtx, CancellationToken.None);
-
-            resultado.IsFailure.Should().BeTrue();
-            resultado.Error!.Code.Should().Be(CondicaoAtendimentoErrorCodes.RemocaoBloqueadaCodigoProtegido);
-        }
+        await ConferirBloqueioDeRemocao(pcd.Id);
 
         await using UniPlusDbContext readCtx = _fixture.CreateDbContext(userId: null);
         bool aindaVivo = await readCtx.CondicoesAtendimento.AnyAsync(c => c.Id == pcd.Id);
@@ -181,31 +133,81 @@ public sealed class CondicaoAtendimentoPersistenceTests
         string codB = $"{prefixo}_B";
         string codExcluido = $"{prefixo}_D";
 
-        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(AdminA))
-        {
-            ctx.CondicoesAtendimento.Add(Nova(codB));
-            ctx.CondicoesAtendimento.Add(Nova(codA));
-            ctx.CondicoesAtendimento.Add(Nova(codExcluido));
-            await ctx.SaveChangesAsync();
-        }
+        await SalvarCondicoes(Nova(codB), Nova(codA), Nova(codExcluido));
 
-        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(AdminB))
-        {
-            CodigoCondicao codigoExcluidoVo = CodigoCondicao.Criar(codExcluido).Value!;
-            CondicaoAtendimentoEspecializado aExcluir = await ctx.CondicoesAtendimento.SingleAsync(c => c.Codigo == codigoExcluidoVo);
-            ctx.CondicoesAtendimento.Remove(aExcluir);
-            await ctx.SaveChangesAsync();
-        }
+        await ExcluirCondicaoPorCodigo(codExcluido);
 
+        await ConferirCondicoesVivasOrdenadas(prefixo, codA, codB);
+    }
+
+    private static async Task ConferirViolacaoDeUnicidade(Func<Task> act)
+    {
+        DbUpdateException ex = (await act.Should().ThrowAsync<DbUpdateException>()).Which;
+        Npgsql.PostgresException pg = ex.InnerException.Should().BeOfType<Npgsql.PostgresException>().Which;
+        pg.SqlState.Should().Be("23505");
+        pg.ConstraintName.Should().Be(RestricoesDoBanco.CondicaoDeAtendimentoCodigoAtivos);
+    }
+
+    private async Task ConferirCondicoesVivasOrdenadas(string prefixo, string codA, string codB)
+    {
         await using UniPlusDbContext readCtx = _fixture.CreateDbContext(userId: null);
         var reader = new CondicaoAtendimentoReader(readCtx);
         IReadOnlyList<CondicaoAtendimentoView> todos = await reader.ListarVivosAsync();
-
         string[] meus = [.. todos
             .Select(v => v.Codigo)
             .Where(c => c.StartsWith(prefixo, StringComparison.Ordinal))];
-
         meus.Should().Equal([codA, codB]);
+    }
+
+    private async Task SalvarCondicoes(params CondicaoAtendimentoEspecializado[] condicoes)
+    {
+        await using UniPlusDbContext ctx = _fixture.CreateDbContext(AdminA);
+        ctx.CondicoesAtendimento.AddRange(condicoes);
+        await ctx.SaveChangesAsync();
+    }
+
+    private static async Task ConferirLeituraPorId(UniPlusDbContext ctx, Guid id, string codigo)
+    {
+        var reader = new CondicaoAtendimentoReader(ctx);
+        CondicaoAtendimentoView? view = await reader.ObterPorIdAsync(id);
+        view.Should().NotBeNull();
+        view!.Codigo.Should().Be(codigo);
+    }
+
+    private async Task ExcluirCondicao(Guid id)
+    {
+        await using UniPlusDbContext ctx = _fixture.CreateDbContext(AdminB);
+        CondicaoAtendimentoEspecializado condicao = await ctx.CondicoesAtendimento.SingleAsync(c => c.Id == id);
+        ctx.CondicoesAtendimento.Remove(condicao);
+        await ctx.SaveChangesAsync();
+    }
+
+    private async Task ConferirTrilhaDeExclusao(Guid id)
+    {
+        await using UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null);
+        CondicaoAtendimentoEspecializado excluida = await ctx.CondicoesAtendimento
+            .IgnoreQueryFilters().SingleAsync(c => c.Id == id);
+        excluida.IsDeleted.Should().BeTrue();
+        excluida.DeletedBy.Should().Be(AdminB);
+    }
+
+    private async Task ConferirBloqueioDeRemocao(Guid id)
+    {
+        await using UniPlusDbContext ctx = _fixture.CreateDbContext(AdminB);
+        var repository = new CondicaoAtendimentoRepository(ctx);
+        Result resultado = await RemoverCondicaoAtendimentoCommandHandler.Handle(
+            new RemoverCondicaoAtendimentoCommand(id), repository, ctx, CancellationToken.None);
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be(CondicaoAtendimentoErrorCodes.RemocaoBloqueadaCodigoProtegido);
+    }
+
+    private async Task ExcluirCondicaoPorCodigo(string codigo)
+    {
+        await using UniPlusDbContext ctx = _fixture.CreateDbContext(AdminB);
+        CodigoCondicao codigoVo = CodigoCondicao.Criar(codigo).Value!;
+        CondicaoAtendimentoEspecializado condicao = await ctx.CondicoesAtendimento.SingleAsync(c => c.Codigo == codigoVo);
+        ctx.CondicoesAtendimento.Remove(condicao);
+        await ctx.SaveChangesAsync();
     }
 
     private static CondicaoAtendimentoEspecializado Nova(string codigo, string nome = "Dislexia") =>

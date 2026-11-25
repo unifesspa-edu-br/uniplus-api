@@ -1,6 +1,5 @@
 namespace Unifesspa.UniPlus.Configuracao.IntegrationTests.CondicoesAtendimento;
 
-using System.Diagnostics.CodeAnalysis;
 using System.Net;
 using System.Net.Http.Json;
 using System.Text;
@@ -19,10 +18,6 @@ using Unifesspa.UniPlus.IntegrationTests.Fixtures.Authentication;
 /// Postgres efêmero.
 /// </summary>
 [Collection(ConfiguracaoEndpointCollection.Name)]
-[SuppressMessage(
-    "Performance",
-    "CA1515:Consider making public types internal",
-    Justification = "xUnit collection fixture exige tipo de teste público.")]
 public sealed class CondicaoAtendimentoEndpointTests
 {
     private readonly ConfiguracaoEndpointFixture _fixture;
@@ -87,12 +82,7 @@ public sealed class CondicaoAtendimentoEndpointTests
     public async Task Criar_ComAuthEIdempotency_Retorna201EPersiste()
     {
         string codigo = CodigoUnico();
-        var body = new
-        {
-            codigo,
-            nome = "Dislexia",
-            descricao = "Transtorno específico de aprendizagem",
-        };
+        var body = new { codigo, nome = "Dislexia", descricao = "Transtorno específico de aprendizagem" };
 
         using HttpClient client = _fixture.Factory.CreateClient();
         HttpResponseMessage criar = await EnviarPostAdmin(client, body);
@@ -101,15 +91,7 @@ public sealed class CondicaoAtendimentoEndpointTests
         Guid id = await criar.Content.ReadFromJsonAsync<Guid>();
         id.Should().NotBe(Guid.Empty);
 
-        HttpResponseMessage obter = await client.GetAsync(
-            new Uri($"/api/configuracao/condicoes-atendimento/{id}", UriKind.Relative));
-        obter.StatusCode.Should().Be(HttpStatusCode.OK);
-
-        using JsonDocument doc = JsonDocument.Parse(await obter.Content.ReadAsStringAsync());
-        JsonElement root = doc.RootElement;
-        root.GetProperty("codigo").GetString().Should().Be(codigo);
-        root.GetProperty("nome").GetString().Should().Be("Dislexia");
-        root.TryGetProperty("_links", out _).Should().BeTrue("HATEOAS Level 1 expõe _links.self (ADR-0029)");
+        await ConferirCondicaoCriada(client, id, codigo);
     }
 
     [Fact(DisplayName = "POST com código fora do formato fechado retorna 422")]
@@ -147,12 +129,7 @@ public sealed class CondicaoAtendimentoEndpointTests
         criar.StatusCode.Should().Be(HttpStatusCode.Created);
         Guid id = await criar.Content.ReadFromJsonAsync<Guid>();
 
-        using HttpRequestMessage request = new(
-            HttpMethod.Delete, new Uri($"/api/configuracao/admin/condicoes-atendimento/{id}", UriKind.Relative));
-        request.Headers.Add("Authorization", $"{TestAuthHandler.AuthorizationScheme} {TestAuthHandler.TokenValue}");
-        request.Headers.Add(TestAuthHandler.RolesHeader, "plataforma-admin");
-
-        HttpResponseMessage response = await client.SendAsync(request);
+        HttpResponseMessage response = await RemoverComoAdmin(client, id);
 
         response.StatusCode.Should().Be(HttpStatusCode.Conflict,
             "a condição reservada PCD não pode ser removida (ADR-0067)");
@@ -184,6 +161,27 @@ public sealed class CondicaoAtendimentoEndpointTests
 
         response.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity,
             "sem validator FluentValidation a montante, o campo ausente precisa chegar ao domínio (ADR-0125), não virar 400 de model binding");
+    }
+
+    private static async Task ConferirCondicaoCriada(HttpClient client, Guid id, string codigo)
+    {
+        HttpResponseMessage resposta = await client.GetAsync(
+            new Uri($"/api/configuracao/condicoes-atendimento/{id}", UriKind.Relative));
+        resposta.StatusCode.Should().Be(HttpStatusCode.OK);
+        using JsonDocument doc = JsonDocument.Parse(await resposta.Content.ReadAsStringAsync());
+        JsonElement root = doc.RootElement;
+        root.GetProperty("codigo").GetString().Should().Be(codigo);
+        root.GetProperty("nome").GetString().Should().Be("Dislexia");
+        root.TryGetProperty("_links", out _).Should().BeTrue("HATEOAS Level 1 expõe _links.self (ADR-0029)");
+    }
+
+    private static async Task<HttpResponseMessage> RemoverComoAdmin(HttpClient client, Guid id)
+    {
+        using HttpRequestMessage request = new(
+            HttpMethod.Delete, new Uri($"/api/configuracao/admin/condicoes-atendimento/{id}", UriKind.Relative));
+        request.Headers.Add("Authorization", $"{TestAuthHandler.AuthorizationScheme} {TestAuthHandler.TokenValue}");
+        request.Headers.Add(TestAuthHandler.RolesHeader, "plataforma-admin");
+        return await client.SendAsync(request);
     }
 
     private static string CodigoUnico() => $"COND_{Guid.NewGuid().ToString("N")[..10].ToUpperInvariant()}";
