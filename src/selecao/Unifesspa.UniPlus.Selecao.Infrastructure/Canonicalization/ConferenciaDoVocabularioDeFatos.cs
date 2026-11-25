@@ -153,7 +153,7 @@ internal static class ConferenciaDoVocabularioDeFatos
 
     private static DomainError? ConferirColisaoDoDerivado(string codigo, HashSet<string> coletados, HashSet<string> codigosDeGrupo) =>
         coletados.Contains(codigo) || codigosDeGrupo.Contains(codigo)
-            ? Malformado($"'calculosDosDados': o código '{codigo}' já é de fato coletado ou de grupo.")
+            ? Malformado("'calculosDosDados': o código já é de fato coletado ou de grupo.")
             : null;
 
     // Toda citação de regra de derivação gravada existe em coletados e derivados, inclusive os que a

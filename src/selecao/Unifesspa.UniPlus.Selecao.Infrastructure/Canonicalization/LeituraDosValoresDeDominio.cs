@@ -70,7 +70,7 @@ internal static class LeituraDosValoresDeDominio
             return true;
         }
 
-        leitor.Recusar<object>($"'{path}': o valor '{codigo}' aparece mais de uma vez.");
+        leitor.Recusar<object>($"'{path}': um valor aparece mais de uma vez.");
         return false;
     }
 

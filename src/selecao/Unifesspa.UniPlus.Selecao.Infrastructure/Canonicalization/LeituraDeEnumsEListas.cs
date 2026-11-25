@@ -106,7 +106,7 @@ internal static class LeituraDeEnumsEListas
 
         return string.Equals(valor, valor.Trim(), StringComparison.Ordinal)
             ? null
-            : $"esperado um texto já normalizado (sem espaços nas pontas), encontrado '{valor}'.";
+            : "esperado um texto já normalizado (sem espaços nas pontas).";
     }
 
     /// <summary>

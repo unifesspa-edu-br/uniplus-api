@@ -120,7 +120,7 @@ internal static class LeituraDeTextoEIdentificadores
     {
         if (!Guid.TryParseExact(texto, "D", out Guid valor) || !string.Equals(valor.ToString(), texto, StringComparison.Ordinal))
         {
-            return leitor.Malformado<Guid>(caminho, $"esperado um Guid canônico (minúsculo, formato D), encontrado '{texto}'.");
+            return leitor.Malformado<Guid>(caminho, "esperado um Guid canônico (minúsculo, formato D).");
         }
 
         return valor == Guid.Empty ? leitor.Malformado<Guid>(caminho, "o identificador não pode ser o Guid vazio.") : valor;
