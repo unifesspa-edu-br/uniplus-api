@@ -67,6 +67,7 @@
         "tags": [
           "BaseLegalBonusRegional"
         ],
+        "operationId": "ListarBasesLegaisDaFada",
         "parameters": [
           {
             "name": "cursor",
@@ -177,6 +178,7 @@
         "tags": [
           "BaseLegalBonusRegional"
         ],
+        "operationId": "ObterBaseLegalDaFada",
         "parameters": [
           {
             "name": "id",
@@ -227,6 +229,7 @@
         "tags": [
           "BaseLegalBonusRegional"
         ],
+        "operationId": "CadastrarBaseLegalDaFada",
         "parameters": [
           {
             "name": "Idempotency-Key",
@@ -359,6 +362,7 @@
         "tags": [
           "BaseLegalBonusRegional"
         ],
+        "operationId": "AlterarBaseLegalDaFada",
         "parameters": [
           {
             "name": "id",
@@ -488,6 +492,7 @@
         "tags": [
           "BaseLegalBonusRegional"
         ],
+        "operationId": "ExcluirBaseLegalDaFada",
         "parameters": [
           {
             "name": "id",
@@ -546,6 +551,7 @@
         "tags": [
           "CalendariosDiasUteis"
         ],
+        "operationId": "ListarCalendariosDeDiasUteis",
         "parameters": [
           {
             "name": "cursor",
@@ -656,6 +662,7 @@
         "tags": [
           "CalendariosDiasUteis"
         ],
+        "operationId": "ObterCalendarioDeDiasUteis",
         "parameters": [
           {
             "name": "id",
@@ -706,6 +713,7 @@
         "tags": [
           "CalendariosDiasUteis"
         ],
+        "operationId": "CadastrarCalendarioDeDiasUteis",
         "parameters": [
           {
             "name": "Idempotency-Key",
@@ -838,6 +846,7 @@
         "tags": [
           "CalendariosDiasUteis"
         ],
+        "operationId": "MarcarCalendarioDeDiasUteisComoVigente",
         "parameters": [
           {
             "name": "id",
@@ -935,6 +944,7 @@
         "tags": [
           "CalendariosDiasUteis"
         ],
+        "operationId": "IncluirDiaNaoUtilNoCalendario",
         "parameters": [
           {
             "name": "id",
@@ -1103,6 +1113,7 @@
         "tags": [
           "CalendariosDiasUteis"
         ],
+        "operationId": "ExcluirCalendarioDeDiasUteis",
         "parameters": [
           {
             "name": "id",
@@ -1171,6 +1182,7 @@
         "tags": [
           "Campi"
         ],
+        "operationId": "ListarCampi",
         "parameters": [
           {
             "name": "cursor",
@@ -1281,6 +1293,7 @@
         "tags": [
           "Campi"
         ],
+        "operationId": "ObterCampus",
         "parameters": [
           {
             "name": "id",
@@ -1331,6 +1344,7 @@
         "tags": [
           "Campi"
         ],
+        "operationId": "CadastrarCampus",
         "parameters": [
           {
             "name": "Idempotency-Key",
@@ -1463,6 +1477,7 @@
         "tags": [
           "Campi"
         ],
+        "operationId": "AlterarCampus",
         "parameters": [
           {
             "name": "id",
@@ -1592,6 +1607,7 @@
         "tags": [
           "Campi"
         ],
+        "operationId": "ExcluirCampus",
         "parameters": [
           {
             "name": "id",
@@ -1660,6 +1676,7 @@
         "tags": [
           "CategoriasDocumento"
         ],
+        "operationId": "ListarCategoriasDeDocumento",
         "responses": {
           "200": {
             "description": "OK",
@@ -1692,6 +1709,7 @@
         "tags": [
           "CategoriasDocumento"
         ],
+        "operationId": "ObterCategoriaDeDocumento",
         "parameters": [
           {
             "name": "id",
@@ -1742,6 +1760,7 @@
         "tags": [
           "CategoriasDocumento"
         ],
+        "operationId": "CadastrarCategoriaDeDocumento",
         "parameters": [
           {
             "name": "Idempotency-Key",
@@ -1874,6 +1893,7 @@
         "tags": [
           "CategoriasDocumento"
         ],
+        "operationId": "AlterarCategoriaDeDocumento",
         "parameters": [
           {
             "name": "id",
@@ -2003,6 +2023,7 @@
         "tags": [
           "CategoriasDocumento"
         ],
+        "operationId": "ExcluirCategoriaDeDocumento",
         "parameters": [
           {
             "name": "id",
@@ -2061,6 +2082,7 @@
         "tags": [
           "CondicoesAtendimento"
         ],
+        "operationId": "ListarCondicoesDeAtendimento",
         "parameters": [
           {
             "name": "cursor",
@@ -2171,6 +2193,7 @@
         "tags": [
           "CondicoesAtendimento"
         ],
+        "operationId": "ObterCondicaoDeAtendimento",
         "parameters": [
           {
             "name": "id",
@@ -2221,6 +2244,7 @@
         "tags": [
           "CondicoesAtendimento"
         ],
+        "operationId": "CadastrarCondicaoDeAtendimento",
         "parameters": [
           {
             "name": "Idempotency-Key",
@@ -2353,6 +2377,7 @@
         "tags": [
           "CondicoesAtendimento"
         ],
+        "operationId": "AlterarCondicaoDeAtendimento",
         "parameters": [
           {
             "name": "id",
@@ -2482,6 +2507,7 @@
         "tags": [
           "CondicoesAtendimento"
         ],
+        "operationId": "ExcluirCondicaoDeAtendimento",
         "parameters": [
           {
             "name": "id",
@@ -2550,6 +2576,7 @@
         "tags": [
           "Cursos"
         ],
+        "operationId": "ListarCursos",
         "parameters": [
           {
             "name": "q",
@@ -2676,6 +2703,7 @@
         "tags": [
           "Cursos"
         ],
+        "operationId": "ObterCurso",
         "parameters": [
           {
             "name": "id",
@@ -2726,6 +2754,7 @@
         "tags": [
           "Cursos"
         ],
+        "operationId": "CadastrarCurso",
         "parameters": [
           {
             "name": "Idempotency-Key",
@@ -2858,6 +2887,7 @@
         "tags": [
           "Cursos"
         ],
+        "operationId": "AlterarCurso",
         "parameters": [
           {
             "name": "id",
@@ -2987,6 +3017,7 @@
         "tags": [
           "Cursos"
         ],
+        "operationId": "ExcluirCurso",
         "parameters": [
           {
             "name": "id",
@@ -3055,6 +3086,7 @@
         "tags": [
           "FasesCanonicas"
         ],
+        "operationId": "ListarTiposDeFase",
         "parameters": [
           {
             "name": "cursor",
@@ -3165,6 +3197,7 @@
         "tags": [
           "FasesCanonicas"
         ],
+        "operationId": "ObterTipoDeFase",
         "parameters": [
           {
             "name": "id",
@@ -3215,6 +3248,7 @@
         "tags": [
           "FasesCanonicas"
         ],
+        "operationId": "CadastrarTipoDeFase",
         "parameters": [
           {
             "name": "Idempotency-Key",
@@ -3347,6 +3381,7 @@
         "tags": [
           "FasesCanonicas"
         ],
+        "operationId": "AlterarTipoDeFase",
         "parameters": [
           {
             "name": "id",
@@ -3476,6 +3511,7 @@
         "tags": [
           "FasesCanonicas"
         ],
+        "operationId": "ExcluirTipoDeFase",
         "parameters": [
           {
             "name": "id",
@@ -3534,6 +3570,7 @@
         "tags": [
           "FatosCandidato"
         ],
+        "operationId": "ListarDadosDoCandidato",
         "responses": {
           "200": {
             "description": "OK",
@@ -3566,6 +3603,7 @@
         "tags": [
           "FatosCandidato"
         ],
+        "operationId": "ObterDadoDoCandidato",
         "parameters": [
           {
             "name": "codigo",
@@ -3615,12 +3653,13 @@
         "tags": [
           "FatosCandidato"
         ],
+        "operationId": "ListarDadosDoCandidatoParaManutencao",
         "parameters": [
           {
             "name": "origem",
             "in": "query",
             "schema": {
-              "type": "string"
+              "$ref": "#/components/schemas/OrigemFatoCodigo"
             }
           },
           {
@@ -3762,6 +3801,7 @@
         "tags": [
           "FatosCandidato"
         ],
+        "operationId": "CadastrarDadoDoCandidato",
         "parameters": [
           {
             "name": "Idempotency-Key",
@@ -3894,6 +3934,7 @@
         "tags": [
           "FatosCandidato"
         ],
+        "operationId": "ObterDadoDoCandidatoParaManutencao",
         "parameters": [
           {
             "name": "id",
@@ -3967,6 +4008,7 @@
         "tags": [
           "FatosCandidato"
         ],
+        "operationId": "AlterarDadoDoCandidato",
         "parameters": [
           {
             "name": "id",
@@ -4096,6 +4138,7 @@
         "tags": [
           "FatosCandidato"
         ],
+        "operationId": "DesativarDadoDoCandidato",
         "parameters": [
           {
             "name": "id",
@@ -4174,6 +4217,7 @@
         "tags": [
           "FatosCandidato"
         ],
+        "operationId": "CadastrarDadoCalculado",
         "parameters": [
           {
             "name": "Idempotency-Key",
@@ -4306,6 +4350,7 @@
         "tags": [
           "FatosCandidato"
         ],
+        "operationId": "CadastrarResumoDoGrupo",
         "parameters": [
           {
             "name": "Idempotency-Key",
@@ -4438,6 +4483,7 @@
         "tags": [
           "FatosCandidato"
         ],
+        "operationId": "DefinirRegrasPadraoDoDadoCalculado",
         "parameters": [
           {
             "name": "id",
@@ -4569,6 +4615,7 @@
         "tags": [
           "FatosCandidato"
         ],
+        "operationId": "AlterarDefinicaoDoDadoDoCandidato",
         "parameters": [
           {
             "name": "id",
@@ -4700,6 +4747,7 @@
         "tags": [
           "FatosCandidato"
         ],
+        "operationId": "ReativarDadoDoCandidato",
         "parameters": [
           {
             "name": "id",
@@ -4804,6 +4852,7 @@
         "tags": [
           "FatosCandidato"
         ],
+        "operationId": "AceitarRecomendacaoDaProtecaoDoDadoDoCandidato",
         "parameters": [
           {
             "name": "id",
@@ -4908,6 +4957,7 @@
         "tags": [
           "FatosCandidato"
         ],
+        "operationId": "ListarAtosDaProtecaoDoDadoDoCandidato",
         "parameters": [
           {
             "name": "id",
@@ -4996,6 +5046,7 @@
         "tags": [
           "FatosCandidato"
         ],
+        "operationId": "ListarManifestacoesDaProtecaoDoDadoDoCandidato",
         "parameters": [
           {
             "name": "id",
@@ -5084,6 +5135,7 @@
         "tags": [
           "FatosCandidato"
         ],
+        "operationId": "IncluirOpcaoDoDadoDoCandidato",
         "parameters": [
           {
             "name": "id",
@@ -5215,6 +5267,7 @@
         "tags": [
           "FatosCandidato"
         ],
+        "operationId": "CorrigirOpcaoDoDadoDoCandidato",
         "parameters": [
           {
             "name": "id",
@@ -5352,6 +5405,7 @@
         "tags": [
           "FatosCandidato"
         ],
+        "operationId": "DesativarOpcaoDoDadoDoCandidato",
         "parameters": [
           {
             "name": "id",
@@ -5438,6 +5492,7 @@
         "tags": [
           "FatosCandidato"
         ],
+        "operationId": "ReordenarOpcoesDoDadoDoCandidato",
         "parameters": [
           {
             "name": "id",
@@ -5569,6 +5624,7 @@
         "tags": [
           "FatosCandidato"
         ],
+        "operationId": "ReativarOpcaoDoDadoDoCandidato",
         "parameters": [
           {
             "name": "id",
@@ -5681,6 +5737,7 @@
         "tags": [
           "LocaisOferta"
         ],
+        "operationId": "ListarLocaisDeOferta",
         "parameters": [
           {
             "name": "cursor",
@@ -5791,6 +5848,7 @@
         "tags": [
           "LocaisOferta"
         ],
+        "operationId": "ObterLocalDeOferta",
         "parameters": [
           {
             "name": "id",
@@ -5841,6 +5899,7 @@
         "tags": [
           "LocaisOferta"
         ],
+        "operationId": "CadastrarLocalDeOferta",
         "parameters": [
           {
             "name": "Idempotency-Key",
@@ -5973,6 +6032,7 @@
         "tags": [
           "LocaisOferta"
         ],
+        "operationId": "AlterarLocalDeOferta",
         "parameters": [
           {
             "name": "id",
@@ -6102,6 +6162,7 @@
         "tags": [
           "LocaisOferta"
         ],
+        "operationId": "ExcluirLocalDeOferta",
         "parameters": [
           {
             "name": "id",
@@ -6170,6 +6231,7 @@
         "tags": [
           "Modalidades"
         ],
+        "operationId": "ListarModalidades",
         "parameters": [
           {
             "name": "cursor",
@@ -6280,6 +6342,7 @@
         "tags": [
           "Modalidades"
         ],
+        "operationId": "ObterModalidade",
         "parameters": [
           {
             "name": "id",
@@ -6330,6 +6393,7 @@
         "tags": [
           "Modalidades"
         ],
+        "operationId": "CadastrarModalidade",
         "parameters": [
           {
             "name": "Idempotency-Key",
@@ -6462,6 +6526,7 @@
         "tags": [
           "Modalidades"
         ],
+        "operationId": "AlterarModalidade",
         "parameters": [
           {
             "name": "id",
@@ -6591,6 +6656,7 @@
         "tags": [
           "Modalidades"
         ],
+        "operationId": "ExcluirModalidade",
         "parameters": [
           {
             "name": "id",
@@ -6659,6 +6725,7 @@
         "tags": [
           "ModelosFormulario"
         ],
+        "operationId": "ListarModelosDeFormulario",
         "parameters": [
           {
             "name": "tipoProcesso",
@@ -6813,6 +6880,7 @@
         "tags": [
           "ModelosFormulario"
         ],
+        "operationId": "CadastrarModeloDeFormulario",
         "parameters": [
           {
             "name": "Idempotency-Key",
@@ -6945,6 +7013,7 @@
         "tags": [
           "ModelosFormulario"
         ],
+        "operationId": "ObterModeloDeFormulario",
         "parameters": [
           {
             "name": "id",
@@ -7018,6 +7087,7 @@
         "tags": [
           "ModelosFormulario"
         ],
+        "operationId": "AlterarModeloDeFormulario",
         "parameters": [
           {
             "name": "id",
@@ -7147,6 +7217,7 @@
         "tags": [
           "ModelosFormulario"
         ],
+        "operationId": "DesativarModeloDeFormulario",
         "parameters": [
           {
             "name": "id",
@@ -7225,6 +7296,7 @@
         "tags": [
           "ModelosFormulario"
         ],
+        "operationId": "ObterApresentacaoDoModeloDeFormulario",
         "parameters": [
           {
             "name": "id",
@@ -7300,6 +7372,7 @@
         "tags": [
           "ModelosFormulario"
         ],
+        "operationId": "AvaliarFormularioSemCadastro",
         "requestBody": {
           "content": {
             "application/json": {
@@ -7394,6 +7467,7 @@
         "tags": [
           "ModelosFormulario"
         ],
+        "operationId": "PreVisualizarModeloDeFormulario",
         "parameters": [
           {
             "name": "id",
@@ -7509,6 +7583,7 @@
         "tags": [
           "ModelosFormulario"
         ],
+        "operationId": "ReativarModeloDeFormulario",
         "parameters": [
           {
             "name": "id",
@@ -7613,6 +7688,7 @@
         "tags": [
           "OfertasCurso"
         ],
+        "operationId": "ListarOfertasDeCurso",
         "parameters": [
           {
             "name": "cursoId",
@@ -7763,6 +7839,7 @@
         "tags": [
           "OfertasCurso"
         ],
+        "operationId": "ObterOfertaDeCurso",
         "parameters": [
           {
             "name": "id",
@@ -7813,6 +7890,7 @@
         "tags": [
           "OfertasCurso"
         ],
+        "operationId": "CadastrarOfertaDeCurso",
         "parameters": [
           {
             "name": "Idempotency-Key",
@@ -7945,6 +8023,7 @@
         "tags": [
           "OfertasCurso"
         ],
+        "operationId": "AlterarOfertaDeCurso",
         "parameters": [
           {
             "name": "id",
@@ -8074,6 +8153,7 @@
         "tags": [
           "OfertasCurso"
         ],
+        "operationId": "ExcluirOfertaDeCurso",
         "parameters": [
           {
             "name": "id",
@@ -8132,6 +8212,7 @@
         "tags": [
           "PesosAreaEnem"
         ],
+        "operationId": "ListarPesosPorAreaDoEnem",
         "parameters": [
           {
             "name": "cursor",
@@ -8242,6 +8323,7 @@
         "tags": [
           "PesosAreaEnem"
         ],
+        "operationId": "ListarAreasDoEnem",
         "responses": {
           "200": {
             "description": "OK",
@@ -8274,6 +8356,7 @@
         "tags": [
           "PesosAreaEnem"
         ],
+        "operationId": "ObterPesosPorAreaDoEnem",
         "parameters": [
           {
             "name": "id",
@@ -8324,6 +8407,7 @@
         "tags": [
           "PesosAreaEnem"
         ],
+        "operationId": "CadastrarPesosPorAreaDoEnem",
         "parameters": [
           {
             "name": "Idempotency-Key",
@@ -8456,6 +8540,7 @@
         "tags": [
           "PesosAreaEnem"
         ],
+        "operationId": "AlterarPesosPorAreaDoEnem",
         "parameters": [
           {
             "name": "id",
@@ -8585,6 +8670,7 @@
         "tags": [
           "PesosAreaEnem"
         ],
+        "operationId": "ExcluirPesosPorAreaDoEnem",
         "parameters": [
           {
             "name": "id",
@@ -8643,6 +8729,7 @@
         "tags": [
           "PrecedenciasFase"
         ],
+        "operationId": "ListarPrecedenciasEntreFases",
         "parameters": [
           {
             "name": "cursor",
@@ -8753,6 +8840,7 @@
         "tags": [
           "PrecedenciasFase"
         ],
+        "operationId": "ObterPrecedenciaEntreFases",
         "parameters": [
           {
             "name": "id",
@@ -8803,6 +8891,7 @@
         "tags": [
           "PrecedenciasFase"
         ],
+        "operationId": "CadastrarPrecedenciaEntreFases",
         "parameters": [
           {
             "name": "Idempotency-Key",
@@ -8935,6 +9024,7 @@
         "tags": [
           "PrecedenciasFase"
         ],
+        "operationId": "AlterarPrecedenciaEntreFases",
         "parameters": [
           {
             "name": "id",
@@ -9064,6 +9154,7 @@
         "tags": [
           "PrecedenciasFase"
         ],
+        "operationId": "ExcluirPrecedenciaEntreFases",
         "parameters": [
           {
             "name": "id",
@@ -9122,6 +9213,7 @@
         "tags": [
           "ProtecaoDoCatalogo"
         ],
+        "operationId": "ListarItensDaProtecaoDoCatalogo",
         "parameters": [
           {
             "name": "situacao",
@@ -9206,6 +9298,7 @@
         "tags": [
           "ProtecaoDoCatalogo"
         ],
+        "operationId": "DecidirProtecaoDoCatalogo",
         "parameters": [
           {
             "name": "Idempotency-Key",
@@ -9328,6 +9421,7 @@
         "tags": [
           "ProtecaoDoCatalogo"
         ],
+        "operationId": "ListarDecisoesDaProtecaoDoCatalogo",
         "parameters": [
           {
             "name": "ato",
@@ -9527,6 +9621,7 @@
         "tags": [
           "ProtecaoDoCatalogo"
         ],
+        "operationId": "ObterProtecaoDoItemDoCatalogo",
         "parameters": [
           {
             "name": "cadastro",
@@ -9621,6 +9716,7 @@
         "tags": [
           "ProtecaoDoCatalogo"
         ],
+        "operationId": "ListarManifestacoesDaProtecaoDoItemDoCatalogo",
         "parameters": [
           {
             "name": "cadastro",
@@ -9718,6 +9814,7 @@
         "tags": [
           "ProtecaoDoCatalogo"
         ],
+        "operationId": "SolicitarAprovacaoDaProtecao",
         "parameters": [
           {
             "name": "Idempotency-Key",
@@ -9867,6 +9964,7 @@
         "tags": [
           "ProtecaoDoCatalogo"
         ],
+        "operationId": "RegistrarManifestacaoDaProtecao",
         "parameters": [
           {
             "name": "Idempotency-Key",
@@ -9989,6 +10087,7 @@
         "tags": [
           "RecursosAcessibilidade"
         ],
+        "operationId": "ListarRecursosDeAcessibilidade",
         "parameters": [
           {
             "name": "cursor",
@@ -10099,6 +10198,7 @@
         "tags": [
           "RecursosAcessibilidade"
         ],
+        "operationId": "ObterRecursoDeAcessibilidade",
         "parameters": [
           {
             "name": "id",
@@ -10149,6 +10249,7 @@
         "tags": [
           "RecursosAcessibilidade"
         ],
+        "operationId": "CadastrarRecursoDeAcessibilidade",
         "parameters": [
           {
             "name": "Idempotency-Key",
@@ -10281,6 +10382,7 @@
         "tags": [
           "RecursosAcessibilidade"
         ],
+        "operationId": "AlterarRecursoDeAcessibilidade",
         "parameters": [
           {
             "name": "id",
@@ -10410,6 +10512,7 @@
         "tags": [
           "RecursosAcessibilidade"
         ],
+        "operationId": "ExcluirRecursoDeAcessibilidade",
         "parameters": [
           {
             "name": "id",
@@ -10468,6 +10571,7 @@
         "tags": [
           "ReferenciasReservaDemografica"
         ],
+        "operationId": "ListarReferenciasDaReservaDemografica",
         "parameters": [
           {
             "name": "cursor",
@@ -10578,6 +10682,7 @@
         "tags": [
           "ReferenciasReservaDemografica"
         ],
+        "operationId": "ObterReferenciaDaReservaDemografica",
         "parameters": [
           {
             "name": "id",
@@ -10628,6 +10733,7 @@
         "tags": [
           "ReferenciasReservaDemografica"
         ],
+        "operationId": "CadastrarReferenciaDaReservaDemografica",
         "parameters": [
           {
             "name": "Idempotency-Key",
@@ -10760,6 +10866,7 @@
         "tags": [
           "ReferenciasReservaDemografica"
         ],
+        "operationId": "AlterarReferenciaDaReservaDemografica",
         "parameters": [
           {
             "name": "id",
@@ -10889,6 +10996,7 @@
         "tags": [
           "ReferenciasReservaDemografica"
         ],
+        "operationId": "ExcluirReferenciaDaReservaDemografica",
         "parameters": [
           {
             "name": "id",
@@ -10947,6 +11055,7 @@
         "tags": [
           "TermosConsentimento"
         ],
+        "operationId": "ListarTermosDeConsentimento",
         "parameters": [
           {
             "name": "q",
@@ -11065,6 +11174,7 @@
         "tags": [
           "TermosConsentimento"
         ],
+        "operationId": "ObterTermoDeConsentimento",
         "parameters": [
           {
             "name": "id",
@@ -11115,6 +11225,7 @@
         "tags": [
           "TermosConsentimento"
         ],
+        "operationId": "CadastrarTermoDeConsentimento",
         "parameters": [
           {
             "name": "Idempotency-Key",
@@ -11247,6 +11358,7 @@
         "tags": [
           "TermosConsentimento"
         ],
+        "operationId": "AlterarRascunhoDoTermoDeConsentimento",
         "parameters": [
           {
             "name": "id",
@@ -11378,6 +11490,7 @@
         "tags": [
           "TermosConsentimento"
         ],
+        "operationId": "MarcarRascunhoDoTermoDeConsentimentoComoRevisado",
         "parameters": [
           {
             "name": "id",
@@ -11482,6 +11595,7 @@
         "tags": [
           "TermosConsentimento"
         ],
+        "operationId": "GerarVersaoDoTermoDeConsentimento",
         "parameters": [
           {
             "name": "id",
@@ -11586,6 +11700,7 @@
         "tags": [
           "TermosConsentimento"
         ],
+        "operationId": "ExcluirTermoDeConsentimento",
         "parameters": [
           {
             "name": "id",
@@ -11654,6 +11769,7 @@
         "tags": [
           "TiposBanca"
         ],
+        "operationId": "ListarTiposDeBanca",
         "parameters": [
           {
             "name": "cursor",
@@ -11764,6 +11880,7 @@
         "tags": [
           "TiposBanca"
         ],
+        "operationId": "ObterTipoDeBanca",
         "parameters": [
           {
             "name": "id",
@@ -11814,6 +11931,7 @@
         "tags": [
           "TiposBanca"
         ],
+        "operationId": "CadastrarTipoDeBanca",
         "parameters": [
           {
             "name": "Idempotency-Key",
@@ -11946,6 +12064,7 @@
         "tags": [
           "TiposBanca"
         ],
+        "operationId": "AlterarTipoDeBanca",
         "parameters": [
           {
             "name": "id",
@@ -12075,6 +12194,7 @@
         "tags": [
           "TiposBanca"
         ],
+        "operationId": "ExcluirTipoDeBanca",
         "parameters": [
           {
             "name": "id",
@@ -12133,6 +12253,7 @@
         "tags": [
           "TiposConceito"
         ],
+        "operationId": "ListarTiposDeConceito",
         "parameters": [
           {
             "name": "cursor",
@@ -12243,6 +12364,7 @@
         "tags": [
           "TiposConceito"
         ],
+        "operationId": "ObterTipoDeConceito",
         "parameters": [
           {
             "name": "id",
@@ -12293,6 +12415,7 @@
         "tags": [
           "TiposConceito"
         ],
+        "operationId": "CadastrarTipoDeConceito",
         "parameters": [
           {
             "name": "Idempotency-Key",
@@ -12425,6 +12548,7 @@
         "tags": [
           "TiposConceito"
         ],
+        "operationId": "AlterarTipoDeConceito",
         "parameters": [
           {
             "name": "id",
@@ -12554,6 +12678,7 @@
         "tags": [
           "TiposConceito"
         ],
+        "operationId": "DesativarTipoDeConceito",
         "parameters": [
           {
             "name": "id",
@@ -12612,6 +12737,7 @@
         "tags": [
           "TiposDeficiencia"
         ],
+        "operationId": "ListarTiposDeDeficiencia",
         "parameters": [
           {
             "name": "cursor",
@@ -12722,6 +12848,7 @@
         "tags": [
           "TiposDeficiencia"
         ],
+        "operationId": "ObterTipoDeDeficiencia",
         "parameters": [
           {
             "name": "id",
@@ -12772,6 +12899,7 @@
         "tags": [
           "TiposDeficiencia"
         ],
+        "operationId": "CadastrarTipoDeDeficiencia",
         "parameters": [
           {
             "name": "Idempotency-Key",
@@ -12904,6 +13032,7 @@
         "tags": [
           "TiposDeficiencia"
         ],
+        "operationId": "AlterarTipoDeDeficiencia",
         "parameters": [
           {
             "name": "id",
@@ -13033,6 +13162,7 @@
         "tags": [
           "TiposDeficiencia"
         ],
+        "operationId": "ExcluirTipoDeDeficiencia",
         "parameters": [
           {
             "name": "id",
@@ -13091,6 +13221,7 @@
         "tags": [
           "TiposDocumento"
         ],
+        "operationId": "ListarTiposDeDocumento",
         "parameters": [
           {
             "name": "cursor",
@@ -13201,6 +13332,7 @@
         "tags": [
           "TiposDocumento"
         ],
+        "operationId": "ObterTipoDeDocumento",
         "parameters": [
           {
             "name": "id",
@@ -13251,6 +13383,7 @@
         "tags": [
           "TiposDocumento"
         ],
+        "operationId": "CadastrarTipoDeDocumento",
         "parameters": [
           {
             "name": "Idempotency-Key",
@@ -13383,6 +13516,7 @@
         "tags": [
           "TiposDocumento"
         ],
+        "operationId": "AlterarTipoDeDocumento",
         "parameters": [
           {
             "name": "id",
@@ -13512,6 +13646,7 @@
         "tags": [
           "TiposDocumento"
         ],
+        "operationId": "ExcluirTipoDeDocumento",
         "parameters": [
           {
             "name": "id",
@@ -13570,6 +13705,7 @@
         "tags": [
           "TiposDocumento"
         ],
+        "operationId": "AceitarRecomendacaoDaProtecaoDoTipoDeDocumento",
         "parameters": [
           {
             "name": "id",
@@ -13674,6 +13810,7 @@
         "tags": [
           "TiposDocumento"
         ],
+        "operationId": "ListarAtosDaProtecaoDoTipoDeDocumento",
         "parameters": [
           {
             "name": "id",
@@ -13762,6 +13899,7 @@
         "tags": [
           "TiposDocumento"
         ],
+        "operationId": "ListarManifestacoesDaProtecaoDoTipoDeDocumento",
         "parameters": [
           {
             "name": "id",
@@ -13850,6 +13988,7 @@
         "tags": [
           "TiposEtapa"
         ],
+        "operationId": "ListarTiposDeEtapa",
         "parameters": [
           {
             "name": "cursor",
@@ -13960,6 +14099,7 @@
         "tags": [
           "TiposEtapa"
         ],
+        "operationId": "ObterTipoDeEtapa",
         "parameters": [
           {
             "name": "id",
@@ -14010,6 +14150,7 @@
         "tags": [
           "TiposEtapa"
         ],
+        "operationId": "CadastrarTipoDeEtapa",
         "parameters": [
           {
             "name": "Idempotency-Key",
@@ -14142,6 +14283,7 @@
         "tags": [
           "TiposEtapa"
         ],
+        "operationId": "AlterarTipoDeEtapa",
         "parameters": [
           {
             "name": "id",
@@ -14271,6 +14413,7 @@
         "tags": [
           "TiposEtapa"
         ],
+        "operationId": "DesativarTipoDeEtapa",
         "parameters": [
           {
             "name": "id",
@@ -14339,6 +14482,7 @@
         "tags": [
           "TiposProcesso"
         ],
+        "operationId": "ListarTiposDeProcesso",
         "parameters": [
           {
             "name": "cursor",
@@ -14449,6 +14593,7 @@
         "tags": [
           "TiposProcesso"
         ],
+        "operationId": "ObterTipoDeProcesso",
         "parameters": [
           {
             "name": "id",
@@ -14499,6 +14644,7 @@
         "tags": [
           "TiposProcesso"
         ],
+        "operationId": "ListarTiposDeProcessoParaManutencao",
         "parameters": [
           {
             "name": "apenasAtivos",
@@ -14640,6 +14786,7 @@
         "tags": [
           "TiposProcesso"
         ],
+        "operationId": "CadastrarTipoDeProcesso",
         "parameters": [
           {
             "name": "Idempotency-Key",
@@ -14772,7 +14919,7 @@
         "tags": [
           "TiposProcesso"
         ],
-        "operationId": "ObterTipoProcessoParaManutencao",
+        "operationId": "ObterTipoDeProcessoParaManutencao",
         "parameters": [
           {
             "name": "id",
@@ -14846,6 +14993,7 @@
         "tags": [
           "TiposProcesso"
         ],
+        "operationId": "AlterarTipoDeProcesso",
         "parameters": [
           {
             "name": "id",
@@ -14975,6 +15123,7 @@
         "tags": [
           "TiposProcesso"
         ],
+        "operationId": "DesativarTipoDeProcesso",
         "parameters": [
           {
             "name": "id",
@@ -15053,6 +15202,7 @@
         "tags": [
           "TiposProcesso"
         ],
+        "operationId": "ReativarTipoDeProcesso",
         "parameters": [
           {
             "name": "id",
@@ -15157,6 +15307,7 @@
         "tags": [
           "Vocabularios"
         ],
+        "operationId": "ListarResultadosDeCondicao",
         "responses": {
           "200": {
             "description": "OK",
@@ -15189,6 +15340,7 @@
         "tags": [
           "Vocabularios"
         ],
+        "operationId": "ListarSituacoesDoDadoDoCandidato",
         "responses": {
           "200": {
             "description": "OK",
@@ -15221,6 +15373,7 @@
         "tags": [
           "Vocabularios"
         ],
+        "operationId": "ListarCodigosDeTipoDeBanca",
         "responses": {
           "200": {
             "description": "OK",
@@ -15253,6 +15406,7 @@
         "tags": [
           "Vocabularios"
         ],
+        "operationId": "ListarPapeisDeBanca",
         "responses": {
           "200": {
             "description": "OK",
@@ -15285,6 +15439,7 @@
         "tags": [
           "Vocabularios"
         ],
+        "operationId": "ListarTiposDeDecisao",
         "responses": {
           "200": {
             "description": "OK",
@@ -15317,6 +15472,7 @@
         "tags": [
           "Vocabularios"
         ],
+        "operationId": "ListarTiposDeInstrumentoNormativo",
         "responses": {
           "200": {
             "description": "OK",
@@ -15349,6 +15505,7 @@
         "tags": [
           "Vocabularios"
         ],
+        "operationId": "ListarCodigosDeTipoDeFase",
         "responses": {
           "200": {
             "description": "OK",
@@ -15381,6 +15538,7 @@
         "tags": [
           "Vocabularios"
         ],
+        "operationId": "ListarOrigensDaDataDaFase",
         "responses": {
           "200": {
             "description": "OK",
@@ -15413,6 +15571,7 @@
         "tags": [
           "Vocabularios"
         ],
+        "operationId": "ListarNaturezasLegais",
         "responses": {
           "200": {
             "description": "OK",
@@ -15445,6 +15604,7 @@
         "tags": [
           "Vocabularios"
         ],
+        "operationId": "ListarAcoesQuandoIndeferido",
         "responses": {
           "200": {
             "description": "OK",
@@ -15477,6 +15637,7 @@
         "tags": [
           "Vocabularios"
         ],
+        "operationId": "ListarComposicoesDasVagas",
         "responses": {
           "200": {
             "description": "OK",
@@ -15509,6 +15670,7 @@
         "tags": [
           "Vocabularios"
         ],
+        "operationId": "ListarRegrasDeRemanejamento",
         "responses": {
           "200": {
             "description": "OK",
@@ -15541,6 +15703,7 @@
         "tags": [
           "Vocabularios"
         ],
+        "operationId": "ListarProgramasDeOferta",
         "responses": {
           "200": {
             "description": "OK",
@@ -15573,6 +15736,7 @@
         "tags": [
           "Vocabularios"
         ],
+        "operationId": "ListarFormatosPedagogicos",
         "responses": {
           "200": {
             "description": "OK",
@@ -15605,6 +15769,7 @@
         "tags": [
           "Vocabularios"
         ],
+        "operationId": "ListarRegimesDeFuncionamento",
         "responses": {
           "200": {
             "description": "OK",
@@ -15637,6 +15802,7 @@
         "tags": [
           "Vocabularios"
         ],
+        "operationId": "ListarRegimesDeTurno",
         "responses": {
           "200": {
             "description": "OK",
@@ -15669,6 +15835,7 @@
         "tags": [
           "Vocabularios"
         ],
+        "operationId": "ListarTurnosDeOferta",
         "responses": {
           "200": {
             "description": "OK",
@@ -15701,6 +15868,7 @@
         "tags": [
           "Vocabularios"
         ],
+        "operationId": "ListarAbrangenciasDoDiaNaoUtil",
         "responses": {
           "200": {
             "description": "OK",
@@ -15733,6 +15901,7 @@
         "tags": [
           "Vocabularios"
         ],
+        "operationId": "ListarGruposDeAreaDoEnem",
         "responses": {
           "200": {
             "description": "OK",
@@ -15765,6 +15934,7 @@
         "tags": [
           "Vocabularios"
         ],
+        "operationId": "ListarTiposDoDado",
         "responses": {
           "200": {
             "description": "OK",
@@ -15797,6 +15967,7 @@
         "tags": [
           "Vocabularios"
         ],
+        "operationId": "ListarQuantidadesDeValores",
         "responses": {
           "200": {
             "description": "OK",
@@ -15829,6 +16000,7 @@
         "tags": [
           "Vocabularios"
         ],
+        "operationId": "ListarTiposDeLocalDeOferta",
         "responses": {
           "200": {
             "description": "OK",
@@ -15861,6 +16033,7 @@
         "tags": [
           "Vocabularios"
         ],
+        "operationId": "ListarFormasDeAceite",
         "responses": {
           "200": {
             "description": "OK",
@@ -15893,6 +16066,7 @@
         "tags": [
           "Vocabularios"
         ],
+        "operationId": "ListarNaturezasDoConceito",
         "responses": {
           "200": {
             "description": "OK",
@@ -17093,9 +17267,13 @@
             ]
           },
           "classificacaoProtecao": {
-            "type": [
-              "null",
-              "string"
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/ClassificacaoDeProtecaoCodigo"
+              }
             ]
           },
           "finalidadeTratamento": {
@@ -17105,9 +17283,13 @@
             ]
           },
           "hipoteseLegal": {
-            "type": [
-              "null",
-              "string"
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/HipoteseLegalTratamentoCodigo"
+              }
             ]
           }
         }
@@ -17441,10 +17623,10 @@
             "type": "string"
           },
           "abrangencia": {
-            "type": "string"
+            "$ref": "#/components/schemas/TipoAbrangenciaCodigo"
           },
           "situacao": {
-            "type": "string"
+            "$ref": "#/components/schemas/StatusBaseLegalCodigo"
           },
           "observacao": {
             "type": [
@@ -17779,6 +17961,17 @@
           }
         }
       },
+      "ClassificacaoDeProtecaoCodigo": {
+        "enum": [
+          "PUBLICO",
+          "INTERNO",
+          "PESSOAL",
+          "IDENTIFICADOR",
+          "SENSIVEL"
+        ],
+        "type": "string",
+        "description": "Classifica\u00E7\u00E3o da prote\u00E7\u00E3o exigida para o tratamento de dados.\n\n- \u0060PUBLICO\u0060: P\u00FAblico \u2014 Dado que pode ser divulgado sem restri\u00E7\u00E3o.\n- \u0060INTERNO\u0060: Interno \u2014 Dado de acesso restrito \u00E0 institui\u00E7\u00E3o.\n- \u0060PESSOAL\u0060: Pessoal \u2014 Dado pessoal relacionado a uma pessoa identificada ou identific\u00E1vel.\n- \u0060IDENTIFICADOR\u0060: Identificador \u2014 Dado pessoal que identifica diretamente uma pessoa.\n- \u0060SENSIVEL\u0060: Sens\u00EDvel \u2014 Dado pessoal sens\u00EDvel, como informa\u00E7\u00E3o sobre sa\u00FAde."
+      },
       "ColetaApresentada": {
         "required": [
           "itens",
@@ -17799,6 +17992,14 @@
             }
           }
         }
+      },
+      "ComponenteDeExibicaoCodigo": {
+        "enum": [
+          "MOEDA",
+          "SITUACAO"
+        ],
+        "type": "string",
+        "description": "Como a tela mostra o valor de um dado do candidato quando o modo de exibi\u00E7\u00E3o n\u00E3o se deduz do tipo, do formato nem da prote\u00E7\u00E3o.\n\n- \u0060MOEDA\u0060: Valor em reais \u2014 O valor aparece em reais, como R$ 1.234,56.\n- \u0060SITUACAO\u0060: Situa\u00E7\u00E3o \u2014 O valor aparece como a situa\u00E7\u00E3o de um processo ou de um pedido, numa etiqueta."
       },
       "ComposicaoVagas": {
         "required": [
@@ -18022,6 +18223,16 @@
             }
           }
         }
+      },
+      "ConsequenciaDoIndeferimentoCodigo": {
+        "enum": [
+          "ELIMINA",
+          "RECLASSIFICA_AC",
+          "REMOVE_VANTAGEM",
+          "ABRE_PRAZO_PARA_REENVIO"
+        ],
+        "type": "string",
+        "description": "- \u0060ELIMINA\u0060: Elimina\u00E7\u00E3o \u2014 Retira a pessoa do processo seletivo.\n- \u0060RECLASSIFICA_AC\u0060: Ampla concorr\u00EAncia \u2014 Passa a pessoa para a ampla concorr\u00EAncia.\n- \u0060REMOVE_VANTAGEM\u0060: Perda da vantagem \u2014 Retira a vantagem solicitada.\n- \u0060ABRE_PRAZO_PARA_REENVIO\u0060: Prazo para reenvio \u2014 Abre prazo para reenviar o documento."
       },
       "ConteudoDoModeloDto": {
         "required": [
@@ -18550,18 +18761,22 @@
             "type": "string"
           },
           "classificacaoProtecao": {
-            "type": "string"
+            "$ref": "#/components/schemas/ClassificacaoDeProtecaoCodigo"
           },
           "finalidadeTratamento": {
             "type": "string"
           },
           "hipoteseLegal": {
-            "type": "string"
+            "$ref": "#/components/schemas/HipoteseLegalTratamentoCodigo"
           },
           "componenteExibicao": {
-            "type": [
-              "null",
-              "string"
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/ComponenteDeExibicaoCodigo"
+              }
             ]
           }
         }
@@ -18612,30 +18827,38 @@
             ]
           },
           "formato": {
-            "type": [
-              "null",
-              "string"
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/FormatoTextoCodigo"
+              }
             ]
           },
           "pontoResolucao": {
             "type": "string"
           },
           "escopo": {
-            "type": "string"
+            "$ref": "#/components/schemas/EscopoFatoCodigo"
           },
           "classificacaoProtecao": {
-            "type": "string"
+            "$ref": "#/components/schemas/ClassificacaoDeProtecaoCodigo"
           },
           "finalidadeTratamento": {
             "type": "string"
           },
           "hipoteseLegal": {
-            "type": "string"
+            "$ref": "#/components/schemas/HipoteseLegalTratamentoCodigo"
           },
           "componenteExibicao": {
-            "type": [
-              "null",
-              "string"
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/ComponenteDeExibicaoCodigo"
+              }
             ]
           }
         }
@@ -18673,21 +18896,25 @@
             "type": "string"
           },
           "escopo": {
-            "type": "string"
+            "$ref": "#/components/schemas/EscopoFatoCodigo"
           },
           "classificacaoProtecao": {
-            "type": "string"
+            "$ref": "#/components/schemas/ClassificacaoDeProtecaoCodigo"
           },
           "finalidadeTratamento": {
             "type": "string"
           },
           "hipoteseLegal": {
-            "type": "string"
+            "$ref": "#/components/schemas/HipoteseLegalTratamentoCodigo"
           },
           "componenteExibicao": {
-            "type": [
-              "null",
-              "string"
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/ComponenteDeExibicaoCodigo"
+              }
             ]
           }
         }
@@ -19330,9 +19557,13 @@
             ]
           },
           "classificacaoProtecao": {
-            "type": [
-              "null",
-              "string"
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/ClassificacaoDeProtecaoCodigo"
+              }
             ]
           },
           "finalidadeTratamento": {
@@ -19342,9 +19573,13 @@
             ]
           },
           "hipoteseLegal": {
-            "type": [
-              "null",
-              "string"
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/HipoteseLegalTratamentoCodigo"
+              }
             ]
           }
         }
@@ -19565,15 +19800,23 @@
             ]
           },
           "classificacaoProtecao": {
-            "type": [
-              "null",
-              "string"
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/ClassificacaoDeProtecaoCodigo"
+              }
             ]
           },
           "hipoteseLegal": {
-            "type": [
-              "null",
-              "string"
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/HipoteseLegalTratamentoCodigo"
+              }
             ]
           },
           "finalidadeTratamento": {
@@ -19597,9 +19840,13 @@
             "format": "int32"
           },
           "classificacaoRecomendada": {
-            "type": [
-              "null",
-              "string"
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/ClassificacaoDeProtecaoCodigo"
+              }
             ]
           },
           "justificativa": {
@@ -19736,13 +19983,13 @@
             "type": "string"
           },
           "classificacaoProtecao": {
-            "type": "string"
+            "$ref": "#/components/schemas/ClassificacaoDeProtecaoCodigo"
           },
           "finalidadeTratamento": {
             "type": "string"
           },
           "hipoteseLegal": {
-            "type": "string"
+            "$ref": "#/components/schemas/HipoteseLegalTratamentoCodigo"
           },
           "dominio": {
             "oneOf": [
@@ -19775,15 +20022,23 @@
             ]
           },
           "formato": {
-            "type": [
-              "null",
-              "string"
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/FormatoTextoCodigo"
+              }
             ]
           },
           "escopo": {
-            "type": [
-              "null",
-              "string"
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/EscopoFatoCodigo"
+              }
             ]
           }
         }
@@ -19945,9 +20200,13 @@
             ]
           },
           "componenteExibicao": {
-            "type": [
-              "null",
-              "string"
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/ComponenteDeExibicaoCodigo"
+              }
             ]
           }
         }
@@ -20764,6 +21023,14 @@
         "type": "string",
         "description": "Escolha sobre o prazo de emiss\u00E3o do documento.\n\n- \u0060SEM_PRAZO\u0060: Sem prazo\n- \u0060COM_PRAZO\u0060: Com prazo"
       },
+      "EscopoFatoCodigo": {
+        "enum": [
+          "CANDIDATO",
+          "MEMBRO_GRUPO"
+        ],
+        "type": "string",
+        "description": "Sobre quem o dado do candidato \u00E9 respondido: o pr\u00F3prio candidato ou cada membro de uma lista do formul\u00E1rio.\n\n- \u0060CANDIDATO\u0060: Candidato \u2014 O dado \u00E9 respondido sobre o pr\u00F3prio candidato.\n- \u0060MEMBRO_GRUPO\u0060: Membro do grupo \u2014 O dado \u00E9 respondido sobre cada membro de uma lista do formul\u00E1rio, como a composi\u00E7\u00E3o familiar."
+      },
       "EstadoFato": {
         "required": [
           "codigo",
@@ -21478,6 +21745,18 @@
         "type": "string",
         "description": "- \u0060PRESENCIAL\u0060: Presencial\n- \u0060SEMIPRESENCIAL\u0060: Semipresencial\n- \u0060EAD\u0060: A dist\u00E2ncia"
       },
+      "FormatoTextoCodigo": {
+        "enum": [
+          "LIVRE",
+          "CPF",
+          "EMAIL",
+          "TELEFONE",
+          "CEP",
+          "NOME_PESSOA"
+        ],
+        "type": "string",
+        "description": "O formato que o texto de um dado do candidato precisa ter.\n\n- \u0060LIVRE\u0060: Texto livre \u2014 Texto sem formato, que pode conter qualquer coisa.\n- \u0060CPF\u0060: CPF \u2014 N\u00FAmero de CPF com os d\u00EDgitos verificadores corretos.\n- \u0060EMAIL\u0060: E-mail \u2014 Endere\u00E7o de e-mail.\n- \u0060TELEFONE\u0060: Telefone \u2014 Telefone brasileiro com DDD.\n- \u0060CEP\u0060: CEP \u2014 CEP de oito d\u00EDgitos.\n- \u0060NOME_PESSOA\u0060: Nome de pessoa \u2014 Nome de pessoa, com nome e sobrenome."
+      },
       "FormularioApresentado": {
         "required": [
           "finalidade",
@@ -21867,6 +22146,23 @@
           }
         }
       },
+      "HipoteseLegalTratamentoCodigo": {
+        "enum": [
+          "CONSENTIMENTO",
+          "CUMPRIMENTO_OBRIGACAO_LEGAL",
+          "EXECUCAO_POLITICAS_PUBLICAS",
+          "ESTUDOS_POR_ORGAO_DE_PESQUISA",
+          "EXECUCAO_CONTRATO",
+          "EXERCICIO_REGULAR_DE_DIREITOS",
+          "PROTECAO_DA_VIDA",
+          "TUTELA_DA_SAUDE",
+          "INTERESSE_LEGITIMO",
+          "PROTECAO_DO_CREDITO",
+          "PREVENCAO_A_FRAUDE"
+        ],
+        "type": "string",
+        "description": "Fundamento legal para o tratamento de dados pessoais.\n\n- \u0060CONSENTIMENTO\u0060: Consentimento \u2014 Consentimento da pessoa titular dos dados.\n- \u0060CUMPRIMENTO_OBRIGACAO_LEGAL\u0060: Cumprimento de obriga\u00E7\u00E3o legal \u2014 Cumprimento de obriga\u00E7\u00E3o legal ou regulat\u00F3ria.\n- \u0060EXECUCAO_POLITICAS_PUBLICAS\u0060: Execu\u00E7\u00E3o de pol\u00EDticas p\u00FAblicas \u2014 Execu\u00E7\u00E3o de pol\u00EDticas p\u00FAblicas pela administra\u00E7\u00E3o p\u00FAblica.\n- \u0060ESTUDOS_POR_ORGAO_DE_PESQUISA\u0060: Estudos por \u00F3rg\u00E3o de pesquisa \u2014 Realiza\u00E7\u00E3o de estudos por \u00F3rg\u00E3o de pesquisa.\n- \u0060EXECUCAO_CONTRATO\u0060: Execu\u00E7\u00E3o de contrato \u2014 Execu\u00E7\u00E3o de contrato do qual a pessoa titular \u00E9 parte.\n- \u0060EXERCICIO_REGULAR_DE_DIREITOS\u0060: Exerc\u00EDcio regular de direitos \u2014 Exerc\u00EDcio regular de direitos em processo.\n- \u0060PROTECAO_DA_VIDA\u0060: Prote\u00E7\u00E3o da vida \u2014 Prote\u00E7\u00E3o da vida ou da integridade f\u00EDsica.\n- \u0060TUTELA_DA_SAUDE\u0060: Tutela da sa\u00FAde \u2014 Prote\u00E7\u00E3o da sa\u00FAde da pessoa titular.\n- \u0060INTERESSE_LEGITIMO\u0060: Interesse leg\u00EDtimo \u2014 Atendimento a interesse leg\u00EDtimo do controlador ou de terceiro.\n- \u0060PROTECAO_DO_CREDITO\u0060: Prote\u00E7\u00E3o do cr\u00E9dito \u2014 Prote\u00E7\u00E3o do cr\u00E9dito.\n- \u0060PREVENCAO_A_FRAUDE\u0060: Preven\u00E7\u00E3o \u00E0 fraude \u2014 Preven\u00E7\u00E3o \u00E0 fraude e seguran\u00E7a da pessoa titular."
+      },
       "ImpedimentoDto": {
         "required": [
           "quando",
@@ -21949,7 +22245,7 @@
             "type": "boolean"
           },
           "consequencia": {
-            "type": "string"
+            "$ref": "#/components/schemas/ConsequenciaDoIndeferimentoCodigo"
           },
           "basesLegais": {
             "type": [
@@ -21988,7 +22284,7 @@
         "type": "object",
         "properties": {
           "consequencia": {
-            "type": "string"
+            "$ref": "#/components/schemas/ConsequenciaDoIndeferimentoCodigo"
           },
           "basesLegais": {
             "type": [
@@ -22120,9 +22416,13 @@
             }
           },
           "formato": {
-            "type": [
-              "null",
-              "string"
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/FormatoTextoCodigo"
+              }
             ]
           }
         }
@@ -24362,7 +24662,7 @@
         "type": "object",
         "properties": {
           "tipo": {
-            "type": "string"
+            "$ref": "#/components/schemas/TipoRestricaoValorCodigo"
           },
           "minimo": {
             "type": [
@@ -24425,7 +24725,7 @@
         "type": "object",
         "properties": {
           "tipo": {
-            "type": "string"
+            "$ref": "#/components/schemas/TipoRestricaoValorCodigo"
           },
           "minimo": {
             "type": [
@@ -24529,6 +24829,14 @@
             }
           }
         }
+      },
+      "StatusBaseLegalCodigo": {
+        "enum": [
+          "PENDENTE",
+          "RESOLVIDO"
+        ],
+        "type": "string",
+        "description": "- \u0060PENDENTE\u0060: Pendente \u2014 A base legal ainda est\u00E1 pendente.\n- \u0060RESOLVIDO\u0060: Resolvido \u2014 A base legal est\u00E1 resolvida."
       },
       "TermoApresentado": {
         "required": [
@@ -24853,6 +25161,17 @@
         ],
         "type": "string",
         "description": "Resultado da avalia\u00E7\u00E3o de uma condi\u00E7\u00E3o: verdadeiro, falso ou indeterminado, que \u00E9 estado pr\u00F3prio e n\u00E3o equivale a falso nem a aus\u00EAncia.\n\n- \u0060INDETERMINADO\u0060: Indeterminado \u2014 N\u00E3o h\u00E1 como decidir ainda: nunca \u00E9 lido como verdadeiro nem como falso.\n- \u0060VERDADEIRO\u0060: Verdadeiro\n- \u0060FALSO\u0060: Falso"
+      },
+      "TipoAbrangenciaCodigo": {
+        "enum": [
+          "FEDERAL",
+          "ESTADUAL",
+          "MUNICIPAL",
+          "INTERNA_NORMA",
+          "INTERNA_EDITAL"
+        ],
+        "type": "string",
+        "description": "- \u0060FEDERAL\u0060: Federal \u2014 Aplica-se a norma federal.\n- \u0060ESTADUAL\u0060: Estadual \u2014 Aplica-se a norma estadual.\n- \u0060MUNICIPAL\u0060: Municipal \u2014 Aplica-se a norma municipal.\n- \u0060INTERNA_NORMA\u0060: Norma interna \u2014 Aplica-se a norma da institui\u00E7\u00E3o.\n- \u0060INTERNA_EDITAL\u0060: Edital \u2014 Aplica-se o pr\u00F3prio edital."
       },
       "TipoBancaDto": {
         "required": [
@@ -25393,6 +25712,19 @@
             }
           }
         }
+      },
+      "TipoRestricaoValorCodigo": {
+        "enum": [
+          "FAIXA_NUMERICA",
+          "TAMANHO_TEXTO",
+          "OPCOES_PERMITIDAS",
+          "OPCOES_DAS_RESPOSTAS",
+          "MUNICIPIOS_DA_UF",
+          "FORMATO_TEXTO",
+          "FAIXA_DE_DATA"
+        ],
+        "type": "string",
+        "description": "O que a restri\u00E7\u00E3o limita na resposta do candidato a um item do formul\u00E1rio.\n\n- \u0060FAIXA_NUMERICA\u0060: Faixa num\u00E9rica \u2014 A resposta num\u00E9rica fica entre um m\u00EDnimo e um m\u00E1ximo.\n- \u0060TAMANHO_TEXTO\u0060: Tamanho do texto \u2014 A resposta de texto tem de um m\u00EDnimo a um m\u00E1ximo de caracteres.\n- \u0060OPCOES_PERMITIDAS\u0060: Op\u00E7\u00F5es permitidas \u2014 A resposta escolhe entre op\u00E7\u00F5es fixas ou condicionadas a respostas anteriores.\n- \u0060OPCOES_DAS_RESPOSTAS\u0060: Op\u00E7\u00F5es formadas pelas respostas \u2014 A resposta escolhe entre as respostas dadas a itens anteriores.\n- \u0060MUNICIPIOS_DA_UF\u0060: Munic\u00EDpios do estado \u2014 A resposta \u00E9 um munic\u00EDpio do estado respondido num item anterior.\n- \u0060FORMATO_TEXTO\u0060: Formato do texto \u2014 A resposta de texto est\u00E1 no formato do fato no cat\u00E1logo, como CPF ou e-mail. Vem do cat\u00E1logo e n\u00E3o se declara no item.\n- \u0060FAIXA_DE_DATA\u0060: Faixa de data \u2014 A resposta de data fica entre uma data m\u00EDnima e uma m\u00E1xima, fixas ou contadas do dia do envio."
       },
       "TurnoOferta": {
         "required": [
