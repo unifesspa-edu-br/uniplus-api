@@ -61,15 +61,20 @@ public sealed class LeiautesDoInepEndpointTests : IAsyncLifetime
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         using JsonDocument doc = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        ConferirLeiaute(doc, codigo, campos);
+
+        using HttpRequestMessage todos = Requisicao(Rota, autenticado: true);
+        using JsonDocument ambos = JsonDocument.Parse(await (await client.SendAsync(todos)).Content.ReadAsStringAsync());
+        ambos.RootElement.GetArrayLength().Should().Be(2);
+    }
+
+    private static void ConferirLeiaute(JsonDocument doc, string codigo, int campos)
+    {
         JsonElement leiaute = doc.RootElement.EnumerateArray().Should().ContainSingle().Subject;
         leiaute.GetProperty("codigo").GetString().Should().Be(codigo);
         leiaute.GetProperty("versao").GetString().Should().Be("v1");
         leiaute.GetProperty("quantidadeDeCampos").GetInt32().Should().Be(campos);
         leiaute.GetProperty("hash").GetString().Should().HaveLength(64);
-
-        using HttpRequestMessage todos = Requisicao(Rota, autenticado: true);
-        using JsonDocument ambos = JsonDocument.Parse(await (await client.SendAsync(todos)).Content.ReadAsStringAsync());
-        ambos.RootElement.GetArrayLength().Should().Be(2);
     }
 
     [Fact(DisplayName = "tipo desconhecido é 400")]

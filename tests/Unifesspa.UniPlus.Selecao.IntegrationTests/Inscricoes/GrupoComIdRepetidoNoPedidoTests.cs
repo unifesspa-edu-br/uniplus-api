@@ -74,18 +74,21 @@ public sealed class GrupoComIdRepetidoNoPedidoTests
         ProcessoSeletivo processo = ProcessoComAMatrizNormativa(nameof(Salvar_ComGrupoForaDoFormularioEEtagDesatualizado_RecusaAPrecondicao));
         (Guid processoId, _) = await PublicarEDivulgarAsync(db, processo, OpcoesDaOrigemEscolar());
         await _cenario.IniciarComoFernandaAsync(db, processoId);
-        InscricaoRequest pedido = PedidoDeEnvio(processo, RespostasDaOrigemEDasCotas(OrigemEscolar.SomentePublica, ep: true, ppi: true, renda: true)) with
+        InscricaoRequest pedido = ComGrupoForaDoFormulario(processo);
+
+        Result<InscricaoDto> salvar = await _cenario.SalvarAsync(db, processoId, pedido, "\"desatualizado\"");
+
+        salvar.Error!.Code.Should().Be(InscricaoErrorCodes.PrecondicaoFalhou);
+    }
+
+    private static InscricaoRequest ComGrupoForaDoFormulario(ProcessoSeletivo processo) =>
+        PedidoDeEnvio(processo, RespostasDaOrigemEDasCotas(OrigemEscolar.SomentePublica, ep: true, ppi: true, renda: true)) with
         {
             Grupos = new Dictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricaoInput>>(StringComparer.Ordinal)
             {
                 ["GRUPO_QUE_NAO_EXISTE"] = [new OcorrenciaDeGrupoInscricaoInput("a", null)],
             },
         };
-
-        Result<InscricaoDto> salvar = await _cenario.SalvarAsync(db, processoId, pedido, "\"desatualizado\"");
-
-        salvar.Error!.Code.Should().Be(InscricaoErrorCodes.PrecondicaoFalhou);
-    }
 
     private static InscricaoRequest ComOcorrenciasRepetidas(ProcessoSeletivo processo) => ComOcorrencias(processo, "mesma", "mesma");
 
