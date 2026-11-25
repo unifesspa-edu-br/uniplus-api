@@ -9,6 +9,9 @@ using Microsoft.Extensions.Hosting.Internal;
 using Microsoft.Extensions.Options;
 
 using Minio;
+using Minio.DataModel.Args;
+
+using NSubstitute;
 
 using Unifesspa.UniPlus.Infrastructure.Core.DependencyInjection;
 using Unifesspa.UniPlus.Infrastructure.Core.Storage;
@@ -54,11 +57,6 @@ public sealed class StorageServiceCollectionExtensionsTests
     {
         ["Storage:PublicEndpoint"] = "localhost:9000",
     };
-
-    private static object? CampoDoArmazenamento(MinioStorageService storage, string nome) =>
-        typeof(MinioStorageService)
-            .GetField(nome, System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)!
-            .GetValue(storage);
 
     private static IStorageService ArmazenamentoDeUmEscopo(ServiceProvider sp)
     {
@@ -130,20 +128,6 @@ public sealed class StorageServiceCollectionExtensionsTests
         second.Should().BeSameAs(first);
     }
 
-    /// <summary>
-    /// Achado de revisão (smoke test manual via Newman, Story #554): quando
-    /// <c>Storage:Endpoint</c> ≠ <c>Storage:PublicEndpoint</c>, <see cref="MinioStorageService"/>
-    /// tinha DOIS parâmetros de construtor do tipo <see cref="IMinioClient"/> — um "ambient"
-    /// (sem chave, resolvido pelo registro <c>AddSingleton</c> não-keyed) e um explicitamente
-    /// keyed via <c>[FromKeyedServices]</c>. O container de DI injetava a instância KEYED nos
-    /// DOIS parâmetros — reproduzido de forma determinística contra o stack real (upload de
-    /// documento do Edital falhava com <c>Connection refused</c> porque o cliente "interno"
-    /// acabava usando o endpoint público). Registrar os dois clientes como keyed (nenhum
-    /// consumidor injeta mais um <see cref="IMinioClient"/> "sem chave") elimina a ambiguidade.
-    /// Este teste prova que os dois clientes resolvidos por chave são instâncias DISTINTAS,
-    /// cada uma com o endpoint correto — a regressão apareceria como as duas instâncias
-    /// colapsando na mesma (<c>BeSameAs</c>) ou com o endpoint interno errado.
-    /// </summary>
     [Fact]
     public void AddUniPlusStorage_EndpointDiferenteDePublicEndpoint_ClientesInternoEPublicoSaoDistintosComEndpointCorreto()
     {
@@ -159,22 +143,52 @@ public sealed class StorageServiceCollectionExtensionsTests
         publico.Config.BaseUrl.Should().Be("localhost:9000");
     }
 
-    /// <summary>
-    /// Regressão direta do bug: resolve <see cref="MinioStorageService"/> por inteiro (o
-    /// consumidor real com os dois parâmetros <see cref="IMinioClient"/> no construtor) e prova
-    /// que cada campo interno aponta para o cliente com o endpoint certo — não apenas que os
-    /// dois registros keyed, isolados, estão corretos.
-    /// </summary>
     [Fact]
-    public void AddUniPlusStorage_MinioStorageService_RecebeClienteInternoEPublicoCorretos()
+    public async Task AddUniPlusStorage_ClientesDistintos_UsaCadaClienteNaOperacaoCorreta()
     {
-        using ServiceProvider sp = Provedor(ConfigComEnderecoPublico());
-        MinioStorageService storage = (MinioStorageService)ArmazenamentoDeUmEscopo(sp);
+        IMinioClient interno = Substitute.For<IMinioClient>();
+        IMinioClient publico = Substitute.For<IMinioClient>();
+        using ServiceProvider sp = ProvedorComClientes(interno, publico);
+        using IServiceScope escopo = sp.CreateScope();
+        IStorageService storage = escopo.ServiceProvider.GetRequiredService<IStorageService>();
 
-        CampoDoArmazenamento(storage, "_minioClient").Should().BeSameAs(
-            sp.GetRequiredKeyedService<IMinioClient>(StorageServiceCollectionExtensions.StorageInternalClientKey));
-        CampoDoArmazenamento(storage, "_presignClient").Should().BeSameAs(
-            sp.GetRequiredKeyedService<IMinioClient>(StorageServiceCollectionExtensions.StoragePublicClientKey));
+        await storage.RemoverAsync("bucket", "objeto");
+        await storage.GerarUrlTemporariaAsync("bucket", "objeto", TimeSpan.FromMinutes(5));
+
+        await interno.Received(1).RemoveObjectAsync(Arg.Any<RemoveObjectArgs>(), Arg.Any<CancellationToken>());
+        await publico.DidNotReceive().RemoveObjectAsync(Arg.Any<RemoveObjectArgs>(), Arg.Any<CancellationToken>());
+        await publico.Received(1).PresignedGetObjectAsync(Arg.Any<PresignedGetObjectArgs>());
+        await interno.DidNotReceive().PresignedGetObjectAsync(Arg.Any<PresignedGetObjectArgs>());
+    }
+
+    [Fact]
+    public async Task AddUniPlusStorage_SemEnderecoPublico_UsaClienteInternoNasDuasOperacoes()
+    {
+        IMinioClient interno = Substitute.For<IMinioClient>();
+        using ServiceProvider sp = ProvedorComClientes(interno);
+        using IServiceScope escopo = sp.CreateScope();
+        IStorageService storage = escopo.ServiceProvider.GetRequiredService<IStorageService>();
+
+        await storage.RemoverAsync("bucket", "objeto");
+        await storage.GerarUrlTemporariaAsync("bucket", "objeto", TimeSpan.FromMinutes(5));
+
+        sp.GetRequiredKeyedService<IMinioClient>(StorageServiceCollectionExtensions.StoragePublicClientKey).Should().BeSameAs(interno);
+        await interno.Received(1).RemoveObjectAsync(Arg.Any<RemoveObjectArgs>(), Arg.Any<CancellationToken>());
+        await interno.Received(1).PresignedGetObjectAsync(Arg.Any<PresignedGetObjectArgs>());
+    }
+
+    private static ServiceProvider ProvedorComClientes(IMinioClient interno, IMinioClient? publico = null)
+    {
+        ServiceCollection services = new();
+        services.AddSingleton(Relogio);
+        services.AddUniPlusStorage(BuildConfig(publico is null ? CompleteConfig() : ConfigComEnderecoPublico()), Env(Environments.Production));
+        services.AddKeyedSingleton(StorageServiceCollectionExtensions.StorageInternalClientKey, interno);
+        if (publico is not null)
+        {
+            services.AddKeyedSingleton(StorageServiceCollectionExtensions.StoragePublicClientKey, publico);
+        }
+
+        return services.BuildServiceProvider();
     }
 
     [Fact]

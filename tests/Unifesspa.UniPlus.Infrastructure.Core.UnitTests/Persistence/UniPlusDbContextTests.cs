@@ -35,10 +35,12 @@ public sealed class UniPlusDbContextTests
         using ContextoDeTeste contexto = ContextoDeTeste.Criar(new ModuloDeTeste<EntidadeDoModuloA>("modulo_a"));
 
         IDbFunction funcao = contexto.GetService<IDesignTimeModel>().Model
-            .FindDbFunction(typeof(FuncoesDaPlataforma).GetMethod(nameof(FuncoesDaPlataforma.NormalizarParaComparacao))!)!;
+            .GetDbFunctions().Single(f => f.Name == "normalizar_para_comparacao");
 
         funcao.Schema.Should().Be(UniPlusDbContext.EsquemaDaPlataforma);
         funcao.Name.Should().Be("normalizar_para_comparacao");
+        (funcao.MethodInfo?.Name).Should().Be(nameof(FuncoesDaPlataforma.NormalizarParaComparacao));
+        (funcao.MethodInfo?.DeclaringType).Should().Be(typeof(FuncoesDaPlataforma));
     }
 
     [Fact(DisplayName = "Dois módulos com o mesmo esquema são recusados")]
