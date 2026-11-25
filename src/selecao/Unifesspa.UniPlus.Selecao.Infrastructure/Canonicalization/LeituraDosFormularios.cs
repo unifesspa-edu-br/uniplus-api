@@ -223,6 +223,11 @@ internal static class LeituraDosFormularios
 
     private static PaginaDoFormulario? LerPaginaDoFormulario(LeitorEnvelope leitor, JsonObject item, string pathPagina, int? ordemAnterior)
     {
+        if (leitor.Falhou)
+        {
+            return null;
+        }
+
         leitor.ExigirChaves(item, pathPagina, "codigo", "ordem", "tipo", "bloco", "titulo", "descricao", "aviso", "exibicao");
         DeclaracaoPagina d = LerDeclaracaoDaPagina(leitor, item, pathPagina);
         if (leitor.Falhou)
@@ -276,6 +281,11 @@ internal static class LeituraDosFormularios
     internal static TermoExigidoFormulario? LerTermoExigido(
         LeitorEnvelope leitor, JsonObject item, string path, FinalidadeFormulario finalidade)
     {
+        if (leitor.Falhou)
+        {
+            return null;
+        }
+
         leitor.ExigirChaves(item, path, "codigo", "ordem", "termoId", "versaoId", "termoCodigo", "versaoNumero", "nome", "texto", "baseLegal",
             "formaAceite", "hashVersao", "exibicao", "obrigatoriedade");
 
