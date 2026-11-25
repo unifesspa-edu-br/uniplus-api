@@ -14,14 +14,14 @@ public sealed class VaultTransitEncryptionServiceTests(VaultContainerFixture vau
 {
     private const string KeyName = "uniplus-test";
 
-    private IUniPlusEncryptionService CriarServico() =>
+    private IUniPlusEncryptionService CriarServico(string token = VaultContainerFixture.RootToken) =>
         new ServiceCollection()
             .AddLogging()
             .AddUniPlusEncryption(configure: opts =>
             {
                 opts.Provider = "vault";
                 opts.VaultAddress = vault.VaultAddress;
-                opts.VaultToken = VaultContainerFixture.RootToken;
+                opts.VaultToken = token;
                 opts.VaultTransitMount = VaultContainerFixture.TransitMount;
             })
             .BuildServiceProvider()
@@ -84,17 +84,7 @@ public sealed class VaultTransitEncryptionServiceTests(VaultContainerFixture vau
     {
         await vault.EnsureKeyExistsAsync(KeyName);
 
-        IUniPlusEncryptionService sut = new ServiceCollection()
-            .AddLogging()
-            .AddUniPlusEncryption(configure: opts =>
-            {
-                opts.Provider = "vault";
-                opts.VaultAddress = vault.VaultAddress;
-                opts.VaultToken = "token-invalido";
-                opts.VaultTransitMount = VaultContainerFixture.TransitMount;
-            })
-            .BuildServiceProvider()
-            .GetRequiredService<IUniPlusEncryptionService>();
+        IUniPlusEncryptionService sut = CriarServico("token-invalido");
 
         Func<Task> ato = () => sut.EncryptAsync(KeyName, "payload"u8.ToArray());
 

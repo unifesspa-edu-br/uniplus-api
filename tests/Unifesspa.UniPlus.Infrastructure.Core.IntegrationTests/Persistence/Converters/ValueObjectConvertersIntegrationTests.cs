@@ -15,10 +15,6 @@ using Unifesspa.UniPlus.Kernel.Domain.ValueObjects;
 // Container Postgres real (não in-memory) para garantir que tipos de
 // coluna definidos pela convenção (varchar(11), jsonb, numeric(9,4))
 // sejam aceitos pelo provider Npgsql.
-[System.Diagnostics.CodeAnalysis.SuppressMessage(
-    "Naming",
-    "CA1711:Identifiers should not have incorrect suffix",
-    Justification = "Convenção xUnit para classes de teste.")]
 public sealed class ValueObjectConvertersIntegrationTests : IAsyncLifetime
 {
     private readonly PostgreSqlContainer _postgres = new PostgreSqlBuilder("postgres:18-alpine")
@@ -34,8 +30,7 @@ public sealed class ValueObjectConvertersIntegrationTests : IAsyncLifetime
     [Fact(DisplayName = "Round-trip — Cpf é persistido como 11 dígitos e recuperado idêntico")]
     public async Task RoundTrip_Cpf()
     {
-        await using TestDbContext context = CriarContext();
-        await context.Database.EnsureCreatedAsync();
+        await using TestDbContext context = await CriarContextPreparadoAsync();
 
         Cpf cpf = Cpf.Criar("529.982.247-25").Value!;
         EntidadeComVOs entidade = EntidadeComVOs.Criar(
@@ -44,24 +39,19 @@ public sealed class ValueObjectConvertersIntegrationTests : IAsyncLifetime
             nomeSocial: NomeSocial.Criar("Maria das Dores").Value!,
             nota: NotaFinal.Criar(7.5m).Value!);
 
-        context.Entidades.Add(entidade);
-        await context.SaveChangesAsync();
-        context.ChangeTracker.Clear();
-
-        EntidadeComVOs lida = await context.Entidades.AsNoTracking().SingleAsync();
+        EntidadeComVOs lida = await PersistirELerAsync(context, entidade);
 
         lida.Cpf.Valor.Should().Be("52998224725");
         lida.Cpf.Should().Be(cpf, "Cpf é record — igualdade por valor (campo Valor)");
     }
 
+    // VO normaliza para lowercase antes de persistir; o converter
+    // apenas extrai o `.Valor` já normalizado.
     [Fact(DisplayName = "Round-trip — Email é persistido normalizado em lowercase")]
     public async Task RoundTrip_Email_NormalizadoEmLowercase()
     {
-        await using TestDbContext context = CriarContext();
-        await context.Database.EnsureCreatedAsync();
+        await using TestDbContext context = await CriarContextPreparadoAsync();
 
-        // VO normaliza para lowercase antes de persistir; o converter
-        // apenas extrai o `.Valor` já normalizado.
         Email email = Email.Criar("Teste.Mixed@Unifesspa.EDU.BR").Value!;
         EntidadeComVOs entidade = EntidadeComVOs.Criar(
             cpf: Cpf.Criar("52998224725").Value!,
@@ -69,11 +59,7 @@ public sealed class ValueObjectConvertersIntegrationTests : IAsyncLifetime
             nomeSocial: NomeSocial.Criar("Fulano").Value!,
             nota: NotaFinal.Criar(0m).Value!);
 
-        context.Entidades.Add(entidade);
-        await context.SaveChangesAsync();
-        context.ChangeTracker.Clear();
-
-        EntidadeComVOs lida = await context.Entidades.AsNoTracking().SingleAsync();
+        EntidadeComVOs lida = await PersistirELerAsync(context, entidade);
 
         lida.Email.Valor.Should().Be("teste.mixed@unifesspa.edu.br");
     }
@@ -81,21 +67,12 @@ public sealed class ValueObjectConvertersIntegrationTests : IAsyncLifetime
     [Fact(DisplayName = "Round-trip — NomeSocial com nome social preenchido preserva nome civil + nome")]
     public async Task RoundTrip_NomeSocial_ComNomeSocial()
     {
-        await using TestDbContext context = CriarContext();
-        await context.Database.EnsureCreatedAsync();
+        await using TestDbContext context = await CriarContextPreparadoAsync();
 
         NomeSocial nomeSocial = NomeSocial.Criar("João Silva", "Joana Silva").Value!;
-        EntidadeComVOs entidade = EntidadeComVOs.Criar(
-            cpf: Cpf.Criar("52998224725").Value!,
-            email: Email.Criar("a@b.com").Value!,
-            nomeSocial: nomeSocial,
-            nota: NotaFinal.Criar(5m).Value!);
+        EntidadeComVOs entidade = CriarEntidadeComNomeSocial(nomeSocial, 5m);
 
-        context.Entidades.Add(entidade);
-        await context.SaveChangesAsync();
-        context.ChangeTracker.Clear();
-
-        EntidadeComVOs lida = await context.Entidades.AsNoTracking().SingleAsync();
+        EntidadeComVOs lida = await PersistirELerAsync(context, entidade);
 
         lida.NomeSocial.NomeCivil.Should().Be("João Silva");
         lida.NomeSocial.Nome.Should().Be("Joana Silva");
@@ -106,21 +83,12 @@ public sealed class ValueObjectConvertersIntegrationTests : IAsyncLifetime
     [Fact(DisplayName = "Round-trip — NomeSocial sem nome social preserva null no campo Nome")]
     public async Task RoundTrip_NomeSocial_SemNomeSocial()
     {
-        await using TestDbContext context = CriarContext();
-        await context.Database.EnsureCreatedAsync();
+        await using TestDbContext context = await CriarContextPreparadoAsync();
 
         NomeSocial nomeSocial = NomeSocial.Criar("Carlos Pereira").Value!;
-        EntidadeComVOs entidade = EntidadeComVOs.Criar(
-            cpf: Cpf.Criar("52998224725").Value!,
-            email: Email.Criar("a@b.com").Value!,
-            nomeSocial: nomeSocial,
-            nota: NotaFinal.Criar(0m).Value!);
+        EntidadeComVOs entidade = CriarEntidadeComNomeSocial(nomeSocial, 0m);
 
-        context.Entidades.Add(entidade);
-        await context.SaveChangesAsync();
-        context.ChangeTracker.Clear();
-
-        EntidadeComVOs lida = await context.Entidades.AsNoTracking().SingleAsync();
+        EntidadeComVOs lida = await PersistirELerAsync(context, entidade);
 
         lida.NomeSocial.NomeCivil.Should().Be("Carlos Pereira");
         lida.NomeSocial.Nome.Should().BeNull();
@@ -131,8 +99,7 @@ public sealed class ValueObjectConvertersIntegrationTests : IAsyncLifetime
     [Fact(DisplayName = "Round-trip — NotaFinal preserva precisão decimal 4 casas após round-trip Postgres")]
     public async Task RoundTrip_NotaFinal()
     {
-        await using TestDbContext context = CriarContext();
-        await context.Database.EnsureCreatedAsync();
+        await using TestDbContext context = await CriarContextPreparadoAsync();
 
         NotaFinal nota = NotaFinal.Criar(8.7654m).Value!;
         EntidadeComVOs entidade = EntidadeComVOs.Criar(
@@ -141,43 +108,24 @@ public sealed class ValueObjectConvertersIntegrationTests : IAsyncLifetime
             nomeSocial: NomeSocial.Criar("Teste").Value!,
             nota: nota);
 
-        context.Entidades.Add(entidade);
-        await context.SaveChangesAsync();
-        context.ChangeTracker.Clear();
-
-        EntidadeComVOs lida = await context.Entidades.AsNoTracking().SingleAsync();
+        EntidadeComVOs lida = await PersistirELerAsync(context, entidade);
 
         lida.NotaFinal.Valor.Should().Be(8.7654m);
         lida.NotaFinal.Should().Be(nota);
     }
 
+    // Simula corrupção: insere bytes válidos para o schema (varchar(11))
+    // mas inválidos para o VO (dígitos verificadores errados). A leitura
+    // via converter deve falhar alto com InvalidOperationException
+    // citando o VO e o código do erro do Result — não NRE silenciosa.
     [Fact(DisplayName = "Materialização — dado corrompido no banco (CPF inválido) lança InvalidOperationException com contexto")]
     public async Task Materializacao_CpfCorrompido_LancaComContexto()
     {
-        // Simula corrupção: insere bytes válidos para o schema (varchar(11))
-        // mas inválidos para o VO (dígitos verificadores errados). A leitura
-        // via converter deve falhar alto com InvalidOperationException
-        // citando o VO e o código do erro do Result — não NRE silenciosa.
+        await using TestDbContext context = await CriarContextPreparadoAsync();
 
-        await using TestDbContext context = CriarContext();
-        await context.Database.EnsureCreatedAsync();
-
-        // Inserção legítima primeiro para garantir que existe um registro.
-        EntidadeComVOs entidade = EntidadeComVOs.Criar(
-            cpf: Cpf.Criar("52998224725").Value!,
-            email: Email.Criar("a@b.com").Value!,
-            nomeSocial: NomeSocial.Criar("Teste").Value!,
-            nota: NotaFinal.Criar(0m).Value!);
-        context.Entidades.Add(entidade);
-        await context.SaveChangesAsync();
-        context.ChangeTracker.Clear();
-
-        // Corrompe a coluna CPF via SQL direto — bypass do converter.
-        await using Npgsql.NpgsqlConnection conexao = new(_postgres.GetConnectionString());
-        await conexao.OpenAsync();
-        await using Npgsql.NpgsqlCommand corromper = new(
-            "UPDATE entidades_com_vos SET cpf = '00000000000'", conexao);
-        await corromper.ExecuteNonQueryAsync();
+        EntidadeComVOs entidade = CriarEntidadeComNomeSocial(NomeSocial.Criar("Teste").Value!, 0m);
+        await PersistirAsync(context, entidade);
+        await CorromperCpfAsync();
 
         Func<Task> leitura = async () => await context.Entidades.AsNoTracking().SingleAsync();
 
@@ -189,18 +137,9 @@ public sealed class ValueObjectConvertersIntegrationTests : IAsyncLifetime
     [Fact(DisplayName = "Schema gerado — Cpf é varchar(11), Email max=254, NomeSocial é jsonb, NotaFinal é numeric(9,4)")]
     public async Task Schema_RespeitaConvencoes()
     {
-        await using TestDbContext context = CriarContext();
-        await context.Database.EnsureCreatedAsync();
+        await using TestDbContext context = await CriarContextPreparadoAsync();
 
-        // Consulta information_schema para confirmar que as convenções foram
-        // aplicadas ao DDL gerado pelo EF Core. Falhas aqui indicam que o
-        // ValueObjectConventions não está sendo invocado pelo DbContext de
-        // produção — sinal direto para os módulos.
-        await using Npgsql.NpgsqlConnection conexao =
-            new(_postgres.GetConnectionString());
-        await conexao.OpenAsync();
-
-        Dictionary<string, (string TipoUdt, int? CharMax, int? NumPrec, int? NumScale)> colunas = await ListarColunasAsync(conexao);
+        Dictionary<string, (string TipoUdt, int? CharMax, int? NumPrec, int? NumScale)> colunas = await ListarColunasAsync();
 
         colunas["cpf"].TipoUdt.Should().Be("varchar");
         colunas["cpf"].CharMax.Should().Be(11);
@@ -213,18 +152,53 @@ public sealed class ValueObjectConvertersIntegrationTests : IAsyncLifetime
         colunas["nota_final"].NumScale.Should().Be(4);
     }
 
-    private static async Task<Dictionary<string, (string TipoUdt, int? CharMax, int? NumPrec, int? NumScale)>> ListarColunasAsync(
-        Npgsql.NpgsqlConnection conexao)
+    private static EntidadeComVOs CriarEntidadeComNomeSocial(NomeSocial nomeSocial, decimal nota) =>
+        EntidadeComVOs.Criar(
+            cpf: Cpf.Criar("52998224725").Value!,
+            email: Email.Criar("a@b.com").Value!,
+            nomeSocial: nomeSocial,
+            nota: NotaFinal.Criar(nota).Value!);
+
+    private static async Task PersistirAsync(TestDbContext context, EntidadeComVOs entidade)
     {
+        context.Entidades.Add(entidade);
+        await context.SaveChangesAsync();
+        context.ChangeTracker.Clear();
+    }
+
+    private static async Task<EntidadeComVOs> PersistirELerAsync(TestDbContext context, EntidadeComVOs entidade)
+    {
+        await PersistirAsync(context, entidade);
+        return await context.Entidades.AsNoTracking().SingleAsync();
+    }
+
+    private async Task CorromperCpfAsync()
+    {
+        await using Npgsql.NpgsqlConnection conexao = new(_postgres.GetConnectionString());
+        await conexao.OpenAsync();
+        await using Npgsql.NpgsqlCommand corromper = new(
+            "UPDATE entidades_com_vos SET cpf = '00000000000'", conexao);
+        await corromper.ExecuteNonQueryAsync();
+    }
+
+    private async Task<Dictionary<string, (string TipoUdt, int? CharMax, int? NumPrec, int? NumScale)>> ListarColunasAsync()
+    {
+        await using Npgsql.NpgsqlConnection conexao = new(_postgres.GetConnectionString());
+        await conexao.OpenAsync();
         const string sql = """
             SELECT column_name, udt_name, character_maximum_length, numeric_precision, numeric_scale
               FROM information_schema.columns
              WHERE table_name = 'entidades_com_vos'
         """;
 
-        Dictionary<string, (string, int?, int?, int?)> resultado = [];
         await using Npgsql.NpgsqlCommand cmd = new(sql, conexao);
         await using Npgsql.NpgsqlDataReader reader = await cmd.ExecuteReaderAsync();
+        return await LerColunasAsync(reader);
+    }
+
+    private static async Task<Dictionary<string, (string, int?, int?, int?)>> LerColunasAsync(Npgsql.NpgsqlDataReader reader)
+    {
+        Dictionary<string, (string, int?, int?, int?)> resultado = [];
         while (await reader.ReadAsync())
         {
             string nome = reader.GetString(0);
@@ -237,17 +211,19 @@ public sealed class ValueObjectConvertersIntegrationTests : IAsyncLifetime
         return resultado;
     }
 
+    private async Task<TestDbContext> CriarContextPreparadoAsync()
+    {
+        TestDbContext context = CriarContext();
+        await context.Database.EnsureCreatedAsync();
+        return context;
+    }
+
     private TestDbContext CriarContext()
     {
         DbContextOptionsBuilder<TestDbContext> options = new();
         options.UseNpgsql(_postgres.GetConnectionString());
         return new TestDbContext(options.Options);
     }
-
-    [System.Diagnostics.CodeAnalysis.SuppressMessage(
-        "Performance",
-        "CA1812:Avoid uninstantiated internal classes",
-        Justification = "Instanciada pelo EF Core.")]
     private sealed class TestDbContext(DbContextOptions<TestDbContext> options) : DbContext(options)
     {
         public DbSet<EntidadeComVOs> Entidades => Set<EntidadeComVOs>();
