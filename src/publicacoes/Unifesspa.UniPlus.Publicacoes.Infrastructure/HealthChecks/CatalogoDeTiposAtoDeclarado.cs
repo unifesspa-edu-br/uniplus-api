@@ -29,7 +29,7 @@ internal static partial class CatalogoDeTiposAtoDeclarado
     /// <remarks>
     /// O catálogo é versionado por vigência, e o mesmo código pode ter mais de uma versão
     /// declarada — uma valendo hoje e a sucessora começando adiante. Achatar o arquivo num valor
-    /// por código perderia a janela e compararia o cadastro de hoje com uma declaração que ainda
+    /// por código perderia o período e compararia o cadastro de hoje com uma declaração que ainda
     /// não vale.
     /// </remarks>
     internal static LinhaDeclarada[] VigentesEm(DateOnly data) =>
@@ -42,14 +42,17 @@ internal static partial class CatalogoDeTiposAtoDeclarado
     /// </summary>
     private static LinhaDeclarada[] Load()
     {
+        using Stream? stream = typeof(CatalogoDeTiposAtoDeclarado).Assembly
+            .GetManifestResourceStream(EmbeddedResourceName);
+
+        return stream is null ? [] : Ler(stream);
+    }
+
+    internal static LinhaDeclarada[] Ler(Stream stream)
+    {
         try
         {
-            using Stream? stream = typeof(CatalogoDeTiposAtoDeclarado).Assembly
-                .GetManifestResourceStream(EmbeddedResourceName);
-
-            return stream is null
-                ? []
-                : JsonSerializer.Deserialize(stream, LinhaDeclaradaContext.Default.LinhaDeclaradaArray) ?? [];
+            return JsonSerializer.Deserialize(stream, LinhaDeclaradaContext.Default.LinhaDeclaradaArray) ?? [];
         }
         catch (JsonException)
         {
@@ -57,23 +60,30 @@ internal static partial class CatalogoDeTiposAtoDeclarado
         }
     }
 
-    internal sealed record LinhaDeclarada(
-        string Codigo,
-        bool CongelaConfiguracao,
-        bool UnicoPorObjeto,
-        bool EfeitoIrreversivel,
-        bool EhResultado,
-        bool PublicavelComoAvulso,
-        bool ExigeAtoCorrigido,
-        DateOnly VigenciaInicio,
-        DateOnly? VigenciaFim)
+    internal sealed record LinhaDeclarada
     {
-        /// <summary>A mesma janela semiaberta que o agregado aplica: <c>[início, fim)</c>.</summary>
+        public required string Codigo { get; init; }
+        public required string Nome { get; init; }
+        public required bool CongelaConfiguracao { get; init; }
+        public required bool UnicoPorObjeto { get; init; }
+        public required bool EfeitoIrreversivel { get; init; }
+        public required bool EhResultado { get; init; }
+        public required bool PublicavelComoAvulso { get; init; }
+        public required bool ExigeAtoCorrigido { get; init; }
+        public required DateOnly VigenciaInicio { get; init; }
+        public required DateOnly? VigenciaFim { get; init; }
+        public required string? BaseLegal { get; init; }
+
+        /// <summary>O mesmo intervalo que o agregado aplica: <c>[início, fim)</c>.</summary>
         internal bool VigenteEm(DateOnly data) =>
             VigenciaInicio <= data && (VigenciaFim is null || VigenciaFim > data);
     }
 
-    [JsonSourceGenerationOptions(PropertyNameCaseInsensitive = true)]
+    [JsonSourceGenerationOptions(
+        PropertyNamingPolicy = JsonKnownNamingPolicy.CamelCase,
+        UnmappedMemberHandling = JsonUnmappedMemberHandling.Disallow,
+        RespectRequiredConstructorParameters = true,
+        RespectNullableAnnotations = true)]
     [JsonSerializable(typeof(LinhaDeclarada[]))]
     private sealed partial class LinhaDeclaradaContext : JsonSerializerContext;
 }
