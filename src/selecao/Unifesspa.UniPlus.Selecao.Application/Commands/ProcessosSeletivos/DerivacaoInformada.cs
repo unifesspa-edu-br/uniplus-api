@@ -30,10 +30,10 @@ internal sealed class DerivacaoInformada
         _entrada = entrada;
         _regras = [.. entrada.Regras.Select(RegraDeDerivacaoInformada.De)];
         _recusasDeForma = [.. ConfiguracaoDerivacaoFato.ValidarFormaBasica(entrada.CodigoFato, [.. entrada.Regras.Select(static r => (r.Ordem, r.Contribui))])];
-        bool daOferta = entrada.CodigoFato is { } codigo && DerivacoesDaOferta.Deriva(codigo.Trim());
+        bool daOferta = entrada.CodigoFato is { } codigo && DerivacoesDaOferta.Deriva(codigo);
         if (daOferta)
         {
-            _recusasDeForma.Add(new("codigoFato", DerivacoesDaOferta.RecusaDeConfiguracao(entrada.CodigoFato.Trim())));
+            _recusasDeForma.Add(new("codigoFato", DerivacoesDaOferta.RecusaDeConfiguracao(entrada.CodigoFato)));
         }
 
         _fatoAlvoBemFormado = !string.IsNullOrWhiteSpace(entrada.CodigoFato) && !daOferta;
@@ -77,16 +77,16 @@ internal sealed class DerivacaoInformada
         return !catalogo.TryGetValue(_entrada.CodigoFato, out FatoCandidatoView? alvo)
             ? [new FieldError("codigoFato", new DomainError(
                 DerivabilidadeDeFato.FatoDesconhecido,
-                $"O fato '{_entrada.CodigoFato}' não pertence ao vocabulário de fatos do candidato."))]
+                "O fato não pertence ao vocabulário de fatos do candidato."))]
             : RecusaDeAlvoNaoDerivavel(alvo);
     }
 
-    private IEnumerable<FieldError> RecusaDeAlvoNaoDerivavel(FatoCandidatoView alvo) =>
+    private static IEnumerable<FieldError> RecusaDeAlvoNaoDerivavel(FatoCandidatoView alvo) =>
         DerivabilidadeDeFato.EhAlvoDeDerivacao(alvo)
             ? []
             : [new FieldError("codigoFato", new DomainError(
                 DerivabilidadeDeFato.FatoNaoDerivavel,
-                $"O fato '{_entrada.CodigoFato}' não é um alvo de derivação — só um fato categórico ou booleano "
+                "O fato não é um alvo de derivação — só um fato categórico ou booleano "
                 + "derivado com binding de regra de derivação pode ter regras configuradas."))];
 
     private IEnumerable<FieldError> RecusasDoPredicadoDasRegras(ContextoDoCatalogo contexto, IReadOnlySet<string> universo) =>
@@ -115,7 +115,7 @@ internal sealed class DerivacaoInformada
     // o booleano só das regras deixaria um categórico sem código virar booleano. Todo código contribuído pertence aos
     // valores que o fato tem no processo, pela fonte (ADR-0136); o valor desativado do catálogo pertence ao domínio e
     // é recusado adiante, como vínculo novo, e a fonte que o servidor não enumera (Geo) não tem conferência aqui.
-    private Result<ConfiguracaoDerivacaoFato> ConferirComODominioDoFato(
+    private static Result<ConfiguracaoDerivacaoFato> ConferirComODominioDoFato(
         ConfiguracaoDerivacaoFato configuracao, FatoCandidatoView alvo, IReadOnlyDictionary<string, DominioDeValores> dominiosDinamicos)
     {
         bool alvoBooleano = alvo.DominioValor == TipoDoDado.SimOuNao;
@@ -132,11 +132,11 @@ internal sealed class DerivacaoInformada
             : Result<ConfiguracaoDerivacaoFato>.Success(configuracao);
     }
 
-    private DomainError RecusaDeContribuicaoIncoerente(bool alvoBooleano) => new(
+    private static DomainError RecusaDeContribuicaoIncoerente(bool alvoBooleano) => new(
         DerivabilidadeDeFato.ContribuicaoIncoerenteComODominio,
         alvoBooleano
-            ? $"O fato '{_entrada.CodigoFato}' é booleano: as regras não contribuem código, e a ativa torna o derivado verdadeiro."
-            : $"O fato '{_entrada.CodigoFato}' é categórico: toda regra contribui um código do domínio do fato.");
+            ? "O fato é booleano: as regras não contribuem código, e a ativa torna o derivado verdadeiro."
+            : "O fato é categórico: toda regra contribui um código do domínio do fato.");
 }
 
 /// <summary>

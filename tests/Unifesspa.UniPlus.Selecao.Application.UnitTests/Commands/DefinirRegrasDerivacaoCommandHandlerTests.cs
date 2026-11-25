@@ -32,6 +32,21 @@ using static ApoioDaDefinicaoDasRegrasDeDerivacao;
 /// </summary>
 public sealed class DefinirRegrasDerivacaoCommandHandlerTests
 {
+    [Theory]
+    [InlineData(" MODALIDADE")]
+    [InlineData("MODALIDADE ")]
+    [InlineData("modalidade")]
+    public async Task Handle_CodigoDeFatoDiferenteDoCatalogo_Recusa(string codigo)
+    {
+        ProcessoSeletivo processo = ProcessoBase();
+        Mocks mocks = NovosMocks(processo, processo.Id);
+        Result resultado = await HandleAsync(mocks, new DefinirRegrasDerivacaoCommand(processo.Id,
+            [new ConfiguracaoDerivacaoInput(codigo, [new RegraDerivacaoInput(0, "AC", null)])]));
+
+        resultado.Error!.Code.Should().Be("ConfiguracaoDerivacaoFato.FatoDesconhecido");
+        resultado.Error.Message.Should().NotContain(codigo);
+        processo.RegrasDerivacao.Should().BeEmpty();
+    }
 
     [Fact(DisplayName = "Processo inexistente retorna ProcessoSeletivo.NaoEncontrado")]
     public async Task Handle_ProcessoInexistente_RetornaNaoEncontrado()
@@ -90,6 +105,7 @@ public sealed class DefinirRegrasDerivacaoCommandHandlerTests
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("ConfiguracaoDerivacaoFato.FatoNaoDerivavel");
+        resultado.Error.Message.Should().NotContain("COR_RACA");
     }
 
     [Theory(DisplayName = "O domínio do fato no catálogo decide a forma das regras: o booleano não contribui código e o categórico, mesmo de fonte não enumerável, contribui")]
@@ -100,11 +116,7 @@ public sealed class DefinirRegrasDerivacaoCommandHandlerTests
     {
         ProcessoSeletivo processo = ProcessoComModalidadeAcEColeta();
         Mocks mocks = NovosMocks(processo, processo.Id);
-        mocks.FatoCandidatoReader.ListarAsync(Arg.Any<CancellationToken>()).Returns(CatalogoDoConjuntoBasico.Com(
-        [
-            .. VocabularioSeed(),
-            FatoDerivadoDoCatalogo("INDIGENA_DECLARADO", "Indígena declarado", dominio, QuantidadeDeValores.ValorUnico, null, [], dominio == TipoDoDado.SimOuNao ? null : FonteValoresFato.UnidadesFederativas),
-        ]));
+        PrepararFatoDerivado(mocks, dominio);
         DefinirRegrasDerivacaoCommand command = new(processo.Id,
             [new ConfiguracaoDerivacaoInput("INDIGENA_DECLARADO",
                 [new RegraDerivacaoInput(0, contribui, [[Condicao("COR_RACA", "IGUAL", "INDIGENA")]])])]);
@@ -112,6 +124,16 @@ public sealed class DefinirRegrasDerivacaoCommandHandlerTests
         Result resultado = await HandleAsync(mocks, command);
 
         (resultado.Error?.Code).Should().Be(recusa);
+        resultado.Error?.Message.Should().NotContain("INDIGENA_DECLARADO");
+    }
+
+    private static void PrepararFatoDerivado(Mocks mocks, TipoDoDado dominio)
+    {
+        mocks.FatoCandidatoReader.ListarAsync(Arg.Any<CancellationToken>()).Returns(CatalogoDoConjuntoBasico.Com(
+        [
+            .. VocabularioSeed(),
+            FatoDerivadoDoCatalogo("INDIGENA_DECLARADO", "Indígena declarado", dominio, QuantidadeDeValores.ValorUnico, null, [], dominio == TipoDoDado.SimOuNao ? null : FonteValoresFato.UnidadesFederativas),
+        ]));
     }
 
     [Theory(DisplayName = "Derivado de fonte global contribui valor do catálogo; o desativado é recusado como desativado e o desconhecido como fora do domínio")]
