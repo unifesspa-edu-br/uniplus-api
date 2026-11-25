@@ -3,11 +3,11 @@ namespace Unifesspa.UniPlus.Autorizacao.Infrastructure.Persistence.Configuration
 
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
-using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 using Unifesspa.UniPlus.Autorizacao.Domain.Entities;
 using Unifesspa.UniPlus.Autorizacao.Domain.Enums;
 using Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects;
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence.CodigosDeContrato;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Protecao;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
 
@@ -17,10 +17,6 @@ internal sealed class EnvioDeDecisoesDaRevisaoConfiguration : IEntityTypeConfigu
     private const int IdentidadeMaxLength = 255;
     private const int EtapaMaxLength = 40;
 
-    private static readonly ValueConverter<EtapaDaMigracao, string> EtapaConverter = new(
-        etapa => etapa.ToCodigo(),
-        codigo => EtapaDaMigracaoCodigo.FromCodigo(codigo));
-
     public void Configure(EntityTypeBuilder<EnvioDeDecisoesDaRevisao> builder)
     {
         ArgumentNullException.ThrowIfNull(builder);
@@ -29,11 +25,11 @@ internal sealed class EnvioDeDecisoesDaRevisaoConfiguration : IEntityTypeConfigu
         builder.ToTable("envios_de_decisoes", tabela =>
             tabela.HasCheckConstraint(
                 "ck_envios_de_decisoes_etapa",
-                $"etapa IN ('{EtapaDaMigracaoCodigo.GestaoDeAcessos}', '{EtapaDaMigracaoCodigo.ProtecaoDeDados}')"));
+                $"etapa IN ({SqlDosCodigosDeContrato.Literal(EtapaDaMigracao.GestaoDeAcessos)}, {SqlDosCodigosDeContrato.Literal(EtapaDaMigracao.ProtecaoDeDados)})"));
         builder.HasKey(l => l.Id);
         builder.Property(l => l.Id).ValueGeneratedNever();
 
-        builder.Property(l => l.Etapa).HasConversion(EtapaConverter).HasMaxLength(EtapaMaxLength).IsRequired();
+        builder.Property(l => l.Etapa).HasMaxLength(EtapaMaxLength).IsRequired();
         builder.Property(l => l.EnviadoPorEmissor).HasMaxLength(IdentidadeMaxLength).IsRequired();
         builder.Property(l => l.EnviadoPorContaId).HasMaxLength(IdentidadeMaxLength).IsRequired();
         builder.Property(l => l.EnviadoPorNome).HasMaxLength(NomeDeExibicao.MaxLength);
@@ -47,7 +43,7 @@ internal sealed class EnvioDeDecisoesDaRevisaoConfiguration : IEntityTypeConfigu
         // A gestão envia as decisões uma vez por revisão; a proteção de dados pode enviá-las mais de uma vez.
         builder.HasIndex(l => l.RevisaoId)
             .IsUnique()
-            .HasFilter($"etapa = '{EtapaDaMigracaoCodigo.GestaoDeAcessos}'")
+            .HasFilter($"etapa = {SqlDosCodigosDeContrato.Literal(EtapaDaMigracao.GestaoDeAcessos)}")
             .HasDatabaseName("ux_envios_de_decisoes_gestao");
     }
 }

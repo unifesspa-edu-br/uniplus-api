@@ -1,29 +1,12 @@
 namespace Unifesspa.UniPlus.Autorizacao.Domain.Enums;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
+
 /// <summary>Quem tomou a decisão da revisão: uma pessoa ou o sistema.</summary>
 public enum AtorDaMigracao
 {
+    [CodigoDeContrato("HUMANO", "Humano")]
     Humano = 1,
+    [CodigoDeContrato("SISTEMA", "Sistema")]
     Sistema = 2,
-}
-
-/// <summary>Código textual canônico de <see cref="AtorDaMigracao"/>, o valor gravado e exposto.</summary>
-public static class AtorDaMigracaoCodigo
-{
-    public const string Humano = "HUMANO";
-    public const string Sistema = "SISTEMA";
-
-    public static string ToCodigo(this AtorDaMigracao ator) => ator switch
-    {
-        AtorDaMigracao.Humano => Humano,
-        AtorDaMigracao.Sistema => Sistema,
-        _ => throw new ArgumentOutOfRangeException(nameof(ator), ator, null),
-    };
-
-    public static AtorDaMigracao FromCodigo(string codigo) => codigo switch
-    {
-        Humano => AtorDaMigracao.Humano,
-        Sistema => AtorDaMigracao.Sistema,
-        _ => throw new ArgumentOutOfRangeException(nameof(codigo), codigo, null),
-    };
 }

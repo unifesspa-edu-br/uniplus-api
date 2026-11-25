@@ -8,6 +8,7 @@ using Unifesspa.UniPlus.Autorizacao.Application.Mappings;
 using Unifesspa.UniPlus.Autorizacao.Domain.Entities;
 using Unifesspa.UniPlus.Autorizacao.Domain.Enums;
 using Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
 
 /// <summary>
@@ -57,7 +58,7 @@ public sealed class DecisoesDaRevisao
     {
         ArgumentNullException.ThrowIfNull(dados);
 
-        PedidoDaRetida pedido = new(concessaoId, ResultadoDaMigracaoCodigo.TentarLerDaPessoa(dados.Decisao), dados.ConfirmacaoDeExclusao);
+        PedidoDaRetida pedido = new(concessaoId, LerDecisaoDaPessoa(dados.Decisao), dados.ConfirmacaoDeExclusao);
 
         return ExecutarAsync(
             perfilId,
@@ -99,7 +100,7 @@ public sealed class DecisoesDaRevisao
     }
 
     private static List<ItemDoEnvio> Itens(IReadOnlyList<DecisaoDaMigracaoRequest>? decisoes) =>
-        [.. (decisoes ?? []).Select(static d => new ItemDoEnvio(d.ConcessaoId, ResultadoDaMigracaoCodigo.TentarLerDaPessoa(d.Decisao)))];
+        [.. (decisoes ?? []).Select(static d => new ItemDoEnvio(d.ConcessaoId, LerDecisaoDaPessoa(d.Decisao)))];
 
     // A decisão avisa quem migrou, quem foi recusado e quem decide o que vem depois; o envio de decisões retém as concessões do gestor
     // que o enviou, e quem pode decidi-las precisa saber que o prazo corre; o encerramento da revisão avisa o fim.
@@ -169,4 +170,8 @@ public sealed class DecisoesDaRevisao
 
         return new DesfechoDaOperacao<RevisaoDasConcessoesDto>(Result<RevisaoDasConcessoesDto>.Success(dto), Avisos: avisos);
     }
+    private static ResultadoDaMigracao? LerDecisaoDaPessoa(string? codigo) =>
+        CatalogoDe<ResultadoDaMigracao>.TentarObter(codigo, out ResultadoDaMigracao resultado)
+            && resultado is ResultadoDaMigracao.Migrar or ResultadoDaMigracao.Recusar ? resultado : null;
+
 }

@@ -3,18 +3,23 @@ namespace Unifesspa.UniPlus.Autorizacao.Domain.Interfaces;
 using Unifesspa.UniPlus.Autorizacao.Domain.Entities;
 using Unifesspa.UniPlus.Autorizacao.Domain.Enums;
 using Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Domain.Interfaces;
 using Unifesspa.UniPlus.Kernel.Pagination;
 
 /// <summary>Situação da concessão pedida como filtro da lista.</summary>
 public enum SituacaoDaConcessao
 {
+    [CodigoDeContrato("ATIVA", "Ativa")]
     Ativa = 1,
+    [CodigoDeContrato("REVOGADA", "Revogada")]
     Revogada = 2,
 
     /// <summary>Não revogada, com a vigência já vencida.</summary>
+    [CodigoDeContrato("VENCIDA", "Vencida")]
     Vencida = 3,
 
+    [CodigoDeContrato("TODAS", "Todas")]
     Todas = 4,
 }
 

@@ -8,6 +8,7 @@ using Unifesspa.UniPlus.Autorizacao.Domain.Enums;
 using Unifesspa.UniPlus.Autorizacao.Domain.Errors;
 using Unifesspa.UniPlus.Autorizacao.Domain.Interfaces;
 using Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Kernel.Results;
 
@@ -94,7 +95,7 @@ public sealed class DecisoesDaReclassificacao
     private static Result<PedidoLido> Ler(DecidirReclassificacaoRequest dados)
     {
         EtapaDaVersao? etapa = EtapaDaVersaoCodigo.TentarLer(dados.Etapa);
-        ResultadoDaLiberacao? resultado = ResultadoDaLiberacaoCodigo.TentarLer(dados.Resultado);
+        ResultadoDaLiberacao? resultado = CatalogoDe<ResultadoDaLiberacao>.TentarObter(dados.Resultado, out ResultadoDaLiberacao valor) ? valor : null;
         bool alvoValido = dados.Todas ? dados.Concessoes is null or { Count: 0 } : dados.Concessoes is { Count: > 0 };
 
         DomainError? erro = etapa is null ? ReclassificacaoErros.EtapaInvalida()

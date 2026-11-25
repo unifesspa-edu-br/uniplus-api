@@ -12,6 +12,7 @@ using Unifesspa.UniPlus.Autorizacao.Domain.Enums;
 using Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Host.IntegrationTests.Instalacao;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Hosting;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
 
 /// <summary>
@@ -114,7 +115,7 @@ public sealed class VersaoPendenteEReclassificacaoNoHostTests : ReclassificacaoN
 
         await ImplantarAsync(Sensivel, ClassificacaoDeProtecao.Interno);
 
-        (await OrigemDaRetomadaAsync(perfil.Perfil)).Should().Be(OrigemDaRetomadaCodigo.Reclassificacao);
+        (await OrigemDaRetomadaAsync(perfil.Perfil)).Should().Be(OrigemDaRetomada.Reclassificacao.Codigo());
     }
 
     private static async Task ConferirAsync(HttpResponseMessage resposta, HttpStatusCode esperado)

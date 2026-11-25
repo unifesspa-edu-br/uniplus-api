@@ -51,6 +51,17 @@ public sealed class ChecksDoModeloDoMonolitoTests
         new("areas_dos_pesos_do_enem", "ck_areas_dos_pesos_do_enem_codigo", "codigo IN ('REDACAO', 'CIENCIAS_DA_NATUREZA', 'CIENCIAS_HUMANAS', 'LINGUAGENS', 'MATEMATICA')"),
         new("cursos", "ck_cursos_grupo_area_enem", "grupo_area_enem IS NULL OR grupo_area_enem IN ('TECNOLOGICA', 'HUMANISTICA_I', 'HUMANISTICA_II', 'SAUDE_E_BIOLOGICAS')"),
         new("pesos_por_area_do_enem", "ck_pesos_por_area_do_enem_grupo_curso", "grupo_curso IN ('TECNOLOGICA', 'HUMANISTICA_I', 'HUMANISTICA_II', 'SAUDE_E_BIOLOGICAS')"),
+        new("decisoes_da_migracao", "ck_decisoes_da_migracao_envio", "(envio_id IS NULL) = (envio_etapa IS NULL) AND (envio_etapa IS NULL OR envio_etapa IN ('GESTAO_DE_ACESSOS', 'PROTECAO_DE_DADOS'))"),
+        new("decisoes_da_migracao", "ck_decisoes_da_migracao_envio_de_origem", "(envio_de_origem_id IS NULL) = (envio_de_origem_etapa IS NULL) AND (envio_de_origem_etapa IS NULL OR envio_de_origem_etapa = 'GESTAO_DE_ACESSOS')"),
+        new("decisoes_da_migracao", "ck_decisoes_da_migracao_ramo", "(ator = 'HUMANO' AND etapa IN ('GESTAO_DE_ACESSOS', 'PROTECAO_DE_DADOS') AND decisao IN ('MIGRAR', 'RECUSAR') AND decisor_emissor IS NOT NULL AND decisor_conta_id IS NOT NULL AND decisor_tem_concessao IS NOT NULL AND envio_de_origem_id IS NOT NULL AND (envio_etapa IS NULL OR envio_etapa = etapa) AND (etapa <> 'PROTECAO_DE_DADOS' OR envio_id IS NOT NULL) AND (etapa <> 'GESTAO_DE_ACESSOS' OR envio_id IS NULL OR envio_id = envio_de_origem_id)) OR (ator = 'SISTEMA' AND decisor_emissor IS NULL AND decisor_conta_id IS NULL AND decisor_nome IS NULL AND decisor_tem_concessao IS NULL AND envio_id IS NULL AND ((etapa = 'GESTAO_DE_ACESSOS' AND decisao = 'RETER' AND envio_de_origem_id IS NOT NULL) OR (etapa = 'SISTEMA' AND decisao IN ('NAO_MIGRADA', 'FORA_DA_LISTA'))))"),
+        new("envios_de_decisoes", "ck_envios_de_decisoes_etapa", "etapa IN ('GESTAO_DE_ACESSOS', 'PROTECAO_DE_DADOS')"),
+        new("eventos_de_bloqueio_do_perfil", "ck_eventos_de_bloqueio_do_perfil_desativacao", "tipo <> 'DESATIVACAO' OR (ator = 'HUMANO' AND ator_emissor IS NOT NULL AND ator_conta_id IS NOT NULL AND motivo IS NOT NULL AND desativacao_id IS NOT NULL AND suspensao_id IS NULL AND papel IS NULL AND origem IS NULL AND decisao_id IS NULL AND versao_que_entrou_id IS NULL AND permissao_codigo IS NULL)"),
+        new("eventos_de_bloqueio_do_perfil", "ck_eventos_de_bloqueio_do_perfil_reativacao", "tipo <> 'REATIVACAO' OR (ator = 'HUMANO' AND ator_emissor IS NOT NULL AND ator_conta_id IS NOT NULL AND motivo IS NOT NULL AND desativacao_id IS NOT NULL AND suspensao_id IS NULL AND papel IS NULL AND origem IS NULL AND decisao_id IS NULL AND versao_que_entrou_id IS NULL AND permissao_codigo IS NULL)"),
+        new("eventos_de_bloqueio_do_perfil", "ck_eventos_de_bloqueio_do_perfil_retomada", "tipo <> 'RETOMADA' OR (ator = 'SISTEMA' AND suspensao_id IS NOT NULL AND desativacao_id IS NULL AND ator_emissor IS NULL AND ator_conta_id IS NULL AND ator_nome IS NULL AND papel IS NULL AND motivo IS NULL AND origem IS NOT NULL AND ((origem = 'DECISAO_DA_ETAPA' AND decisao_id IS NOT NULL AND versao_que_entrou_id IS NULL AND permissao_codigo IS NULL) OR (origem = 'TROCA_DE_VIGENCIA' AND versao_que_entrou_id IS NOT NULL AND decisao_id IS NULL AND permissao_codigo IS NULL) OR (origem = 'RECLASSIFICACAO' AND permissao_codigo IS NOT NULL AND decisao_id IS NULL AND versao_que_entrou_id IS NULL)))"),
+        new("eventos_de_bloqueio_do_perfil", "ck_eventos_de_bloqueio_do_perfil_suspensao", "tipo <> 'SUSPENSAO' OR (ator = 'HUMANO' AND ator_emissor IS NOT NULL AND ator_conta_id IS NOT NULL AND motivo IS NOT NULL AND suspensao_id IS NOT NULL AND desativacao_id IS NULL AND papel IS NOT NULL AND origem IS NULL AND decisao_id IS NULL AND versao_que_entrou_id IS NULL AND permissao_codigo IS NULL)"),
+        new("eventos_de_bloqueio_do_perfil", "ck_eventos_de_bloqueio_do_perfil_tipo", "tipo IN ('SUSPENSAO', 'RETOMADA', 'DESATIVACAO', 'REATIVACAO')"),
+        new("liberacoes_da_reclassificacao", "ck_liberacoes_da_reclassificacao_motivo", "(resultado = 'MANTIDA') = (motivo IS NOT NULL) AND resultado IN ('LIBERADA', 'MANTIDA')"),
+        new("migracoes_da_concessao", "ck_migracoes_da_concessao_situacao", "situacao IN ('RETIDA', 'AGUARDANDO_PROTECAO_DE_DADOS', 'MIGRADA', 'RECUSADA', 'NAO_MIGRADA', 'FORA_DA_LISTA')"),
     ];
 
     public static TheoryData<string, string, string> RestricoesEsperadas()
@@ -64,9 +75,9 @@ public sealed class ChecksDoModeloDoMonolitoTests
         return dados;
     }
 
-    [Fact(DisplayName = "A lista esperada tem as 35 restrições de enum com código de contrato")]
+    [Fact(DisplayName = "A lista esperada tem as 46 restrições de enum com código de contrato")]
     public void ListaEsperada_TemAsRestricoes() =>
-        Esperadas.Select(esperada => esperada.Nome).Should().OnlyHaveUniqueItems().And.HaveCount(35);
+        Esperadas.Select(esperada => esperada.Nome).Should().OnlyHaveUniqueItems().And.HaveCount(46);
 
     [Theory(DisplayName = "O modelo de design-time guarda a restrição com o nome e o texto literais")]
     [MemberData(nameof(RestricoesEsperadas))]

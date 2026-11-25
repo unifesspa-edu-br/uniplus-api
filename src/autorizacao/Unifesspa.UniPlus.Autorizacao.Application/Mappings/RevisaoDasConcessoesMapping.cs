@@ -4,6 +4,7 @@ using Unifesspa.UniPlus.Autorizacao.Application.DTOs;
 using Unifesspa.UniPlus.Autorizacao.Domain.Entities;
 using Unifesspa.UniPlus.Autorizacao.Domain.Enums;
 using Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 
 /// <summary>Mapeamento da <see cref="RevisaoDasConcessoesDoPerfil"/> para a resposta: o resumo do perfil e a revisão com a lista.</summary>
 public static class RevisaoDasConcessoesMapping
@@ -61,7 +62,7 @@ public static class RevisaoDasConcessoesMapping
             perfil.Versoes.FirstOrDefault(v => v.Id == concessao.VersaoId)?.Numero,
             composicao.Acrescimo,
             linha?.ExigeProtecaoDeDados ?? composicao.ExigeProtecaoDeDados,
-            linha?.Situacao.ToCodigo() ?? AguardandoDecisoes,
+            linha?.Situacao.Codigo() ?? AguardandoDecisoes,
             leitor is not null && concessao.Beneficiario == leitor);
     }
 }

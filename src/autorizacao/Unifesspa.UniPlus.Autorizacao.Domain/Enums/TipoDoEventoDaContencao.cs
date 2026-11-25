@@ -1,44 +1,23 @@
 namespace Unifesspa.UniPlus.Autorizacao.Domain.Enums;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
+
 /// <summary>O que a trilha da contenção registra do perfil.</summary>
 public enum TipoDoEventoDaContencao
 {
     /// <summary>Uma pessoa suspendeu o perfil.</summary>
+    [CodigoDeContrato("SUSPENSAO", "Suspensão")]
     Suspensao = 1,
 
     /// <summary>A suspensão se fechou: as etapas exigidas foram decididas.</summary>
+    [CodigoDeContrato("RETOMADA", "Retomada")]
     Retomada = 2,
 
     /// <summary>Uma pessoa desativou o perfil.</summary>
+    [CodigoDeContrato("DESATIVACAO", "Desativação")]
     Desativacao = 3,
 
     /// <summary>Outra pessoa reativou o perfil desativado.</summary>
+    [CodigoDeContrato("REATIVACAO", "Reativação")]
     Reativacao = 4,
-}
-
-/// <summary>Código textual canônico de <see cref="TipoDoEventoDaContencao"/>, o valor gravado e exposto.</summary>
-public static class TipoDoEventoDaContencaoCodigo
-{
-    public const string Suspensao = "SUSPENSAO";
-    public const string Retomada = "RETOMADA";
-    public const string Desativacao = "DESATIVACAO";
-    public const string Reativacao = "REATIVACAO";
-
-    public static string ToCodigo(this TipoDoEventoDaContencao tipo) => tipo switch
-    {
-        TipoDoEventoDaContencao.Suspensao => Suspensao,
-        TipoDoEventoDaContencao.Retomada => Retomada,
-        TipoDoEventoDaContencao.Desativacao => Desativacao,
-        TipoDoEventoDaContencao.Reativacao => Reativacao,
-        _ => throw new ArgumentOutOfRangeException(nameof(tipo), tipo, null),
-    };
-
-    public static TipoDoEventoDaContencao FromCodigo(string codigo) => codigo switch
-    {
-        Suspensao => TipoDoEventoDaContencao.Suspensao,
-        Retomada => TipoDoEventoDaContencao.Retomada,
-        Desativacao => TipoDoEventoDaContencao.Desativacao,
-        Reativacao => TipoDoEventoDaContencao.Reativacao,
-        _ => throw new ArgumentOutOfRangeException(nameof(codigo), codigo, null),
-    };
 }
