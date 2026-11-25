@@ -55,13 +55,16 @@ internal sealed class ConfiguracaoDivulgacaoConfiguration : IEntityTypeConfigura
         new(
             (a, b) => SerializeCampos(a) == SerializeCampos(b),
             v => v == null ? 0 : SerializeCampos(v).GetHashCode(StringComparison.Ordinal),
-            v => (IReadOnlyList<string>)DeserializeCampos(SerializeCampos(v)));
+            v => (IReadOnlyList<string>)v.ToList());
 
     private static string SerializeCampos(IReadOnlyList<string>? v) =>
         v is null ? "[]" : JsonSerializer.Serialize(v, JsonOptions);
 
-    private static List<string> DeserializeCampos(string json) =>
-        string.IsNullOrEmpty(json)
-            ? []
-            : JsonSerializer.Deserialize<List<string>>(json, JsonOptions) ?? [];
+    private static List<string> DeserializeCampos(string json)
+    {
+        List<string>? campos = JsonSerializer.Deserialize<List<string>>(json, JsonOptions);
+        return campos is { Count: > 0 }
+            ? campos
+            : throw new InvalidOperationException("Dado gravado inválido na coluna campos_publicos.");
+    }
 }

@@ -55,6 +55,22 @@ public sealed class ConfiguracaoDivulgacaoPersistenciaTests : IClassFixture<Proc
         ConferirConfiguracaoRelida(relido, processo.Id);
     }
 
+    [Fact(DisplayName = "Campos públicos com JSON nulo são recusados ao carregar")]
+    public async Task Divulgacao_CamposPublicosComJsonNulo_RecusaLeitura()
+    {
+        ProcessoSeletivo processo = NovoProcesso(nameof(Divulgacao_CamposPublicosComJsonNulo_RecusaLeitura));
+        processo.DefinirConfiguracaoDivulgacao(ConfiguracaoDivulgacao.Criar(["NUMERO_INSCRICAO"], null).Value!).IsSuccess.Should().BeTrue();
+        await GravarProcessoAsync(processo);
+        await using (UniPlusDbContext escrita = _fixture.CreateDbContext())
+        {
+            await escrita.Database.ExecuteSqlInterpolatedAsync($"UPDATE selecao.configuracoes_divulgacao SET campos_publicos = 'null'::jsonb WHERE processo_seletivo_id = {processo.Id}");
+        }
+
+        await using UniPlusDbContext leitura = _fixture.CreateDbContext();
+        Func<Task> carregar = async () => await ProcessoSeletivoRepositoryDeTeste.Criar(leitura).ObterComConfiguracaoAsync(processo.Id, CancellationToken.None);
+        await carregar.Should().ThrowAsync<InvalidOperationException>().WithMessage("*campos_publicos*");
+    }
+
     [Fact(DisplayName = "CA-05: DefinirConfiguracaoDivulgacao duas vezes deixa UMA linha em configuracoes_divulgacao, com os valores da segunda")]
     public async Task Divulgacao_SubstituidaDuasVezes_UmaLinhaComOsValoresDaSegunda()
     {
