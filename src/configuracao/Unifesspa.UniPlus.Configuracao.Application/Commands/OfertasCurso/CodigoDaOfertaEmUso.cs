@@ -11,9 +11,9 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// </summary>
 internal static class CodigoDaOfertaEmUso
 {
-    public static DomainError Recusa(string? codigo) => new(
+    public static DomainError Recusa() => new(
         OfertaCursoErrorCodes.CodigoJaEmUso,
-        $"Já existe uma oferta de curso viva com o código {codigo?.Trim()}.");
+        "Já existe uma oferta de curso viva com este código.");
 
     public static bool ViolaOIndice(Exception exception) =>
         ConstraintVioladaNaGravacao.NomeDaConstraintViolada(exception) == RestricoesDoBanco.OfertaDeCursoCodigoAtivos;

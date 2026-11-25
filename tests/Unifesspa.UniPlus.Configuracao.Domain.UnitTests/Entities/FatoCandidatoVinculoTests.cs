@@ -86,6 +86,17 @@ public sealed class FatoCandidatoVinculoTests
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be(FatoCandidatoErrorCodes.BindingPrefixoIncoerenteComOrigem);
+        resultado.Errors.Single(e => e.Error.Code == FatoCandidatoErrorCodes.BindingPrefixoIncoerenteComOrigem).Field.Should().Be("binding");
+    }
+
+    [Fact(DisplayName = "A recusa de prefixo não repete o prefixo enviado")]
+    public void Criar_BindingPrefixoIncoerente_NaoEcoa()
+    {
+        Result<FatoCandidato> resultado = Criar(origem: OrigemFato.Declarado, binding: "PREFIXO_TESTE:VALOR");
+
+        FieldError erro = resultado.Errors.Single(e => e.Error.Code == FatoCandidatoErrorCodes.BindingPrefixoIncoerenteComOrigem);
+        erro.Field.Should().Be("binding");
+        erro.Error.Message.Should().NotContain("PREFIXO_TESTE").And.Contain("CAMPO_FORMULARIO");
     }
 
     [Fact(DisplayName = "REGRA_DE_CALCULO cuja referência não é o código do próprio fato é recusado")]
@@ -99,6 +110,8 @@ public sealed class FatoCandidatoVinculoTests
         resultado.IsFailure.Should().BeTrue(
             "a regra de derivação referenciada é a do próprio fato — apontar para outro congelaria metadado de derivação alheio");
         resultado.Error!.Code.Should().Be(FatoCandidatoErrorCodes.BindingReferenciaRegraIncoerente);
+        resultado.Errors.Single(e => e.Error.Code == FatoCandidatoErrorCodes.BindingReferenciaRegraIncoerente).Field.Should().Be("binding");
+        resultado.Error.Message.Should().NotContain("MODALIDADE").And.NotContain("FAIXA_ETARIA");
     }
 
     [Fact(DisplayName = "REGRA_DE_CALCULO cuja referência é o código do próprio fato é aceito")]

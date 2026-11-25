@@ -53,7 +53,7 @@ public static class CriarOfertaCursoCommandHandler
     {
         if (await repository.CodigoExisteEntreVivosAsync(oferta.Codigo, null, cancellationToken).ConfigureAwait(false))
         {
-            return Result<Guid>.Failure(CodigoDaOfertaEmUso.Recusa(oferta.Codigo));
+            return Result<Guid>.Failure(CodigoDaOfertaEmUso.Recusa());
         }
 
         await repository.AdicionarAsync(oferta, cancellationToken).ConfigureAwait(false);
@@ -72,7 +72,7 @@ public static class CriarOfertaCursoCommandHandler
         {
             // Sem descartar, a inserção continua rastreada e o SaveChanges do outbox a repete fora deste catch (500 em vez de 409).
             unitOfWork.DescartarAlteracoesNaoSalvas();
-            return Result<Guid>.Failure(CodigoDaOfertaEmUso.Recusa(oferta.Codigo));
+            return Result<Guid>.Failure(CodigoDaOfertaEmUso.Recusa());
         }
     }
 }

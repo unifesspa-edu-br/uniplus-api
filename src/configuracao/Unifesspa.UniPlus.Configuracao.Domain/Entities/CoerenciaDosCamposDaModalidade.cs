@@ -37,7 +37,7 @@ internal static class CoerenciaDosCamposDaModalidade
             {
                 yield return new(field, new DomainError(
                     code,
-                    $"A modalidade {codigo.Valor} não pode ser o {rotulo} de si mesma."));
+                    $"A modalidade não pode ser o {rotulo} de si mesma."));
             }
         }
     }
@@ -181,7 +181,7 @@ internal static class CoerenciaDosCamposDaModalidade
         }
 
         string detalhe = OpcaoPelasCotasDaLei.SeSomaAsCotas(codigo.Valor)
-            ? $"A regra da reserva de vagas para pessoa com deficiência ({codigo.Valor}) não cita {OpcaoPelasCotasDaLei.Fato}: "
+            ? $"A regra da reserva de vagas para pessoa com deficiência não cita {OpcaoPelasCotasDaLei.Fato}: "
                 + "ela vale para quem optou pelas cotas da lei e para quem não optou."
             : $"Toda cláusula da regra de uma ação afirmativa exige {OpcaoPelasCotasDaLei.Fato} falso: quem optou pelas cotas da lei não concorre a ela.";
         return new("regraDeAplicabilidade", new DomainError(ModalidadeErrorCodes.AcaoAfirmativaComOpcaoPelasCotasDaLei, detalhe));

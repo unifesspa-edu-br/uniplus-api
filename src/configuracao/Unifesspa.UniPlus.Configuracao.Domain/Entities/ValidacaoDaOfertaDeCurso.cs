@@ -190,7 +190,7 @@ internal sealed class ValidacaoDaOfertaDeCurso(DeclaracaoDaOfertaDeCurso declara
         {
             AdicionarErroDeTurnos(
                 OfertaCursoErrorCodes.CardinalidadeTurnosIncompativelComRegime,
-                $"O regime {regime.Codigo()} exige exatamente {exigidos} turno(s); foram informados {turnos.Count}.");
+                $"O regime de turno exige exatamente {exigidos} turno(s).");
         }
     }
 
@@ -205,7 +205,7 @@ internal sealed class ValidacaoDaOfertaDeCurso(DeclaracaoDaOfertaDeCurso declara
             AdicionarErro(
                 "regimeDeFuncionamento",
                 OfertaCursoErrorCodes.RegimeDeFuncionamentoIncompativelComRegimeDeTurno,
-                $"A oferta {funcionamento.Codigo()} exige regime de turno {exigido.Codigo()}; foi declarado {regime.Codigo()}.");
+                $"O regime de funcionamento exige regime de turno {exigido.Codigo()}.");
         }
     }
 
