@@ -162,12 +162,11 @@ public sealed class AtoNormativoRepository : IAtoNormativoRepository
         ArgumentException.ThrowIfNullOrWhiteSpace(entidade.Tipo, nameof(entidade));
         ArgumentException.ThrowIfNullOrWhiteSpace(tipoCodigo);
 
-        string codigoNorm = tipoCodigo.Trim();
 
         return _dbContext.VagasDeLinhagem
             .AsNoTracking()
             .FirstOrDefaultAsync(
-                l => l.EntidadeTipo == entidade.Tipo && l.EntidadeId == entidade.Id && l.TipoCodigo == codigoNorm,
+                l => l.EntidadeTipo == entidade.Tipo && l.EntidadeId == entidade.Id && l.TipoCodigo == tipoCodigo,
                 cancellationToken);
     }
 
@@ -201,11 +200,10 @@ public sealed class AtoNormativoRepository : IAtoNormativoRepository
         ArgumentException.ThrowIfNullOrWhiteSpace(tipoCodigo);
         ArgumentNullException.ThrowIfNull(idsDaPropriaCadeia);
 
-        string codigoNorm = tipoCodigo.Trim();
         Guid[] daPropriaCadeia = [.. idsDaPropriaCadeia];
 
         return VinculadosA(entidade)
-            .Where(a => a.TipoCodigo == codigoNorm && !daPropriaCadeia.Contains(a.Id))
+            .Where(a => a.TipoCodigo == tipoCodigo && !daPropriaCadeia.Contains(a.Id))
             .OrderBy(a => a.Id)
             .FirstOrDefaultAsync(cancellationToken);
     }

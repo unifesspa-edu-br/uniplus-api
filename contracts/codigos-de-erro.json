@@ -3927,11 +3927,6 @@
       "titulo": "Código do tipo de ato é obrigatório"
     },
     {
-      "codigo": "uniplus.publicacoes.tipo_ato.codigo_tamanho",
-      "status": 422,
-      "titulo": "Tamanho do código do tipo de ato inválido"
-    },
-    {
       "codigo": "uniplus.publicacoes.tipo_ato.nao_encontrado",
       "status": 404,
       "titulo": "Tipo de ato não encontrado"

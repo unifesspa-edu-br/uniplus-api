@@ -666,7 +666,7 @@
             "schema": {
               "maxLength": 60,
               "minLength": 1,
-              "pattern": "^[A-Z]\u002B(_[A-Z]\u002B)*$",
+              "pattern": "^[A-Z][A-Z0-9]*(_[A-Z0-9]\u002B)*$",
               "type": "string"
             }
           },

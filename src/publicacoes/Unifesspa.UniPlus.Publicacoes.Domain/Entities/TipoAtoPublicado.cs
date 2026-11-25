@@ -1,12 +1,12 @@
 namespace Unifesspa.UniPlus.Publicacoes.Domain.Entities;
 
 using System.Linq.Expressions;
-using System.Text.RegularExpressions;
 
 using Unifesspa.UniPlus.Kernel.Domain.Entities;
 using Unifesspa.UniPlus.Kernel.Domain.Interfaces;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Publicacoes.Domain.Errors;
+using Unifesspa.UniPlus.Publicacoes.Domain.ValueObjects;
 
 /// <summary>
 /// Tipo de ato publicado — cadastro do módulo Publicações (ADR-0105). Diz
@@ -39,13 +39,8 @@ using Unifesspa.UniPlus.Publicacoes.Domain.Errors;
 /// <para>Dado institucional sem PII (LGPD inaplicável). A remoção é sempre
 /// soft-delete, e libera a janela para uma nova versão do mesmo código.</para>
 /// </remarks>
-public sealed partial class TipoAtoPublicado : SoftDeletableEntity, IAuditableEntity
+public sealed class TipoAtoPublicado : SoftDeletableEntity, IAuditableEntity
 {
-    private const int CodigoMaxLength = 60;
-    private const int NomeMinLength = 2;
-    private const int NomeMaxLength = 200;
-    private const int BaseLegalMaxLength = 500;
-
     public string Codigo { get; private set; } = string.Empty;
     public string Nome { get; private set; } = string.Empty;
 
@@ -96,94 +91,55 @@ public sealed partial class TipoAtoPublicado : SoftDeletableEntity, IAuditableEn
     {
     }
 
-    /// <summary>
-    /// Cria uma versão do tipo de ato. Valida formato e coerência da janela de
-    /// vigência. A não-sobreposição com outras versões vivas do mesmo código é
-    /// verificada pelo banco, na gravação.
-    /// </summary>
-    public static Result<TipoAtoPublicado> Criar(
-        string? codigo,
-        string? nome,
-        bool congelaConfiguracao,
-        bool unicoPorObjeto,
-        bool efeitoIrreversivel,
-        bool ehResultado,
-        DateOnly vigenciaInicio,
-        DateOnly? vigenciaFim,
-        string? baseLegal,
-        bool publicavelComoAvulso = false,
-        bool exigeAtoCorrigido = false)
+    /// <summary>Confere a declaração sem alterar o agregado.</summary>
+    public static Result<CamposDoTipoAtoPublicado> ValidarDeclaracao(DeclaracaoDoTipoAtoPublicado declaracao)
     {
-        Result validacao = ValidarCampos(
-            codigo, nome, vigenciaInicio, vigenciaFim, baseLegal, efeitoIrreversivel, ehResultado);
-        if (validacao.IsFailure)
+        ArgumentNullException.ThrowIfNull(declaracao);
+        return new ValidacaoDoTipoAtoPublicado(declaracao).Resolver();
+    }
+
+    /// <summary>Cria uma versão após conferir a declaração.</summary>
+    public static Result<TipoAtoPublicado> Criar(DeclaracaoDoTipoAtoPublicado declaracao)
+    {
+        Result<CamposDoTipoAtoPublicado> campos = ValidarDeclaracao(declaracao);
+        if (campos.IsFailure)
         {
-            return Result<TipoAtoPublicado>.ValidationFailure(validacao.Errors);
+            return Result<TipoAtoPublicado>.ValidationFailure(campos.Errors);
         }
 
         var tipo = new TipoAtoPublicado();
-        tipo.AplicarCampos(
-            codigo!, nome!, congelaConfiguracao, unicoPorObjeto, efeitoIrreversivel, ehResultado,
-            vigenciaInicio, vigenciaFim, baseLegal, publicavelComoAvulso, exigeAtoCorrigido);
-
+        tipo.AplicarCampos(campos.Value!);
         return Result<TipoAtoPublicado>.Success(tipo);
     }
 
-    /// <summary>
-    /// Atualiza os atributos da versão. O <c>Codigo</c> é <b>imutável</b>: ele é a
-    /// identidade do tipo, não um rótulo dele.
-    /// </summary>
-    /// <remarks>
-    /// Duas coisas dependem de o código não mudar. A série de vigências agrupa-se por
-    /// ele — é o <c>codigo</c> que a exclusion constraint compara para impedir duas
-    /// versões vivas no mesmo dia —, de modo que renomear uma versão a desgarraria das
-    /// demais, e o tipo se partiria em dois sem que ninguém o pedisse. E a vaga que um
-    /// objeto reserva para uma linhagem de atos únicos por objeto é chaveada pelo código
-    /// (ADR-0107): renomeá-lo abriria uma vaga nova no mesmo objeto, e o certame acabaria
-    /// com dois editais de abertura vivos. Renomear é criar outro tipo — não editar este.
-    /// Nome, atributos de consequência, vigência e base legal seguem editáveis.
-    /// </remarks>
-    /// <remarks>
-    /// A checagem de imutabilidade do código depende do <see cref="Codigo"/> já
-    /// persistido — só faz sentido rodar depois que os campos independentes já
-    /// passaram, senão um código malformado seria relatado como "imutável" em vez
-    /// do erro de formato real.
-    /// </remarks>
-    public Result Atualizar(
-        string? codigo,
-        string? nome,
-        bool congelaConfiguracao,
-        bool unicoPorObjeto,
-        bool efeitoIrreversivel,
-        bool ehResultado,
-        DateOnly vigenciaInicio,
-        DateOnly? vigenciaFim,
-        string? baseLegal,
-        bool publicavelComoAvulso = false,
-        bool exigeAtoCorrigido = false)
+    /// <summary>Atualiza os campos, preservando a identidade do tipo.</summary>
+    public Result Atualizar(DeclaracaoDoTipoAtoPublicado declaracao)
     {
-        Result validacao = ValidarCampos(
-            codigo, nome, vigenciaInicio, vigenciaFim, baseLegal, efeitoIrreversivel, ehResultado);
-        if (validacao.IsFailure)
+        Result<CamposDoTipoAtoPublicado> campos = ValidarDeclaracao(declaracao);
+        if (campos.IsFailure)
         {
-            return Result.ValidationFailure(validacao.Errors);
+            return Result.ValidationFailure(campos.Errors);
         }
 
-        if (!string.Equals(codigo!.Trim(), Codigo, StringComparison.Ordinal))
+        Result codigo = ConferirCodigoInalterado(campos.Value!.Codigo);
+        if (codigo.IsFailure)
         {
-            return Result.Failure(new DomainError(
+            return codigo;
+        }
+
+        AplicarCampos(campos.Value!);
+        return Result.Success();
+    }
+
+    /// <summary>Confere a identidade após a validação do formato.</summary>
+    public Result ConferirCodigoInalterado(string? codigo) =>
+        string.Equals(codigo, Codigo, StringComparison.Ordinal)
+            ? Result.Success()
+            : Result.Failure(new DomainError(
                 TipoAtoPublicadoErrorCodes.CodigoImutavel,
                 "O código do tipo de ato é a sua identidade e não muda: a série de vigências "
                 + "agrupa-se por ele, e é por ele que um objeto reserva a vaga de um ato único. "
                 + "Para um tipo diferente, cadastre um tipo novo."));
-        }
-
-        AplicarCampos(
-            codigo, nome!, congelaConfiguracao, unicoPorObjeto, efeitoIrreversivel, ehResultado,
-            vigenciaInicio, vigenciaFim, baseLegal, publicavelComoAvulso, exigeAtoCorrigido);
-
-        return Result.Success();
-    }
 
     /// <summary>
     /// A janela semiaberta <c>[inicio, fim)</c> como expressão: fonte única da regra, composta pelas
@@ -219,116 +175,18 @@ public sealed partial class TipoAtoPublicado : SoftDeletableEntity, IAuditableEn
     public bool EstaVigenteEm(DateOnly data) =>
         VigenciaInicio <= data && (VigenciaFim is null || VigenciaFim > data);
 
-    private void AplicarCampos(
-        string codigo,
-        string nome,
-        bool congelaConfiguracao,
-        bool unicoPorObjeto,
-        bool efeitoIrreversivel,
-        bool ehResultado,
-        DateOnly vigenciaInicio,
-        DateOnly? vigenciaFim,
-        string? baseLegal,
-        bool publicavelComoAvulso,
-        bool exigeAtoCorrigido)
+    private void AplicarCampos(CamposDoTipoAtoPublicado campos)
     {
-        Codigo = codigo.Trim();
-        Nome = nome.Trim();
-        CongelaConfiguracao = congelaConfiguracao;
-        UnicoPorObjeto = unicoPorObjeto;
-        EfeitoIrreversivel = efeitoIrreversivel;
-        EhResultado = ehResultado;
-        PublicavelComoAvulso = publicavelComoAvulso;
-        ExigeAtoCorrigido = exigeAtoCorrigido;
-        VigenciaInicio = vigenciaInicio;
-        VigenciaFim = vigenciaFim;
-        BaseLegal = string.IsNullOrWhiteSpace(baseLegal) ? null : baseLegal.Trim();
+        Codigo = campos.Codigo;
+        Nome = campos.Nome;
+        CongelaConfiguracao = campos.CongelaConfiguracao;
+        UnicoPorObjeto = campos.UnicoPorObjeto;
+        EfeitoIrreversivel = campos.EfeitoIrreversivel;
+        EhResultado = campos.EhResultado;
+        PublicavelComoAvulso = campos.PublicavelComoAvulso;
+        ExigeAtoCorrigido = campos.ExigeAtoCorrigido;
+        VigenciaInicio = campos.VigenciaInicio;
+        VigenciaFim = campos.VigenciaFim;
+        BaseLegal = campos.BaseLegal;
     }
-
-    /// <summary>
-    /// Valida os campos independentes do tipo de ato, acumulando cada violação em
-    /// vez de retornar na primeira (ADR-0125) — o array <c>errors[]</c> do contrato
-    /// público (ADR-0023) precisa de todas as regras de campo violadas no mesmo
-    /// lote, não só a primeira. Não inclui a imutabilidade do código (depende do
-    /// valor persistido — só faz sentido conferir depois que o formato do próprio
-    /// código já passou, e só o handler de atualização tem o registro fetched).
-    /// Público para o handler de atualização poder validar o payload inteiro antes
-    /// de buscar o registro por Id (validação sempre vence 404).
-    /// </summary>
-    public static Result ValidarCampos(
-        string? codigo,
-        string? nome,
-        DateOnly vigenciaInicio,
-        DateOnly? vigenciaFim,
-        string? baseLegal,
-        bool efeitoIrreversivel,
-        bool ehResultado)
-    {
-        List<FieldError> erros = [];
-
-        if (string.IsNullOrWhiteSpace(codigo))
-        {
-            erros.Add(new("codigo", new DomainError(
-                TipoAtoPublicadoErrorCodes.CodigoObrigatorio, "Código do tipo de ato é obrigatório.")));
-        }
-        else if (codigo.Trim().Length > CodigoMaxLength)
-        {
-            erros.Add(new("codigo", new DomainError(
-                TipoAtoPublicadoErrorCodes.CodigoTamanho,
-                $"Código do tipo de ato deve ter no máximo {CodigoMaxLength} caracteres.")));
-        }
-        // Caixa alta é exigida, não imposta: `convocacao` é recusado em vez de
-        // convertido em silêncio. A coluna é `text` e o Postgres compara
-        // case-sensitive — normalizar a caixa esconderia do usuário que dois
-        // códigos que ele julgava distintos são o mesmo.
-        else if (!FormatoCodigo().IsMatch(codigo.Trim()))
-        {
-            erros.Add(new("codigo", new DomainError(
-                TipoAtoPublicadoErrorCodes.CodigoFormato,
-                "Código do tipo de ato deve usar apenas letras maiúsculas sem acento, separadas por underscore (ex.: EDITAL_ABERTURA).")));
-        }
-
-        if (string.IsNullOrWhiteSpace(nome))
-        {
-            erros.Add(new("nome", new DomainError(
-                TipoAtoPublicadoErrorCodes.NomeObrigatorio, "Nome do tipo de ato é obrigatório.")));
-        }
-        else if (nome.Trim().Length is < NomeMinLength or > NomeMaxLength)
-        {
-            erros.Add(new("nome", new DomainError(
-                TipoAtoPublicadoErrorCodes.NomeTamanho,
-                $"Nome do tipo de ato deve ter entre {NomeMinLength} e {NomeMaxLength} caracteres.")));
-        }
-
-        if (baseLegal is not null && baseLegal.Trim().Length > BaseLegalMaxLength)
-        {
-            erros.Add(new("baseLegal", new DomainError(
-                TipoAtoPublicadoErrorCodes.BaseLegalTamanho,
-                $"Base legal deve ter no máximo {BaseLegalMaxLength} caracteres.")));
-        }
-
-        // Fim exclusivo: uma janela cujo fim iguala o início não contém dia algum.
-        if (vigenciaFim is { } fim && fim <= vigenciaInicio)
-        {
-            erros.Add(new("vigenciaFim", new DomainError(
-                TipoAtoPublicadoErrorCodes.VigenciaFimAnteriorAoInicio,
-                "Fim da vigência é exclusivo e deve ser posterior ao início.")));
-        }
-
-        // O resultado preliminar é o ato em que se abre o prazo de recurso, e não cabe recurso contra
-        // ato irreversível: a combinação inviabiliza o cronograma de quem ancora a janela nesse tipo.
-        if (ehResultado && efeitoIrreversivel)
-        {
-            erros.Add(new("efeitoIrreversivel", new DomainError(
-                TipoAtoPublicadoErrorCodes.ResultadoComEfeitoIrreversivel,
-                "Um tipo de ato de resultado não pode ter efeito irreversível: é no resultado preliminar "
-                + "que se abre o prazo de recurso, e não cabe recurso contra ato irreversível. O efeito "
-                + "irreversível fica com o ato que decorre do resultado, como a convocação. Desmarque uma das duas opções.")));
-        }
-
-        return erros.Count == 0 ? Result.Success() : Result.ValidationFailure(erros);
-    }
-
-    [GeneratedRegex(@"^[A-Z]+(_[A-Z]+)*$", RegexOptions.CultureInvariant)]
-    private static partial Regex FormatoCodigo();
 }

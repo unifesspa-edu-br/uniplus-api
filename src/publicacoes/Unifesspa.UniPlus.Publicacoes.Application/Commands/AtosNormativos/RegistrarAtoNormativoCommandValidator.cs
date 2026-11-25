@@ -2,16 +2,32 @@ namespace Unifesspa.UniPlus.Publicacoes.Application.Commands.AtosNormativos;
 
 using FluentValidation;
 
+using Unifesspa.UniPlus.Kernel.Domain.ValueObjects;
+using Unifesspa.UniPlus.Kernel.Results;
+
 /// <summary>
-/// Antecipa a recusa de shape que o agregado faria, devolvendo 400 antes de o
-/// handler tocar o repositório. As regras de texto avaliam o valor
-/// <b>normalizado</b> (trim), como a factory; por isso o nome da propriedade no
+/// Antecipa a recusa de shape que o agregado faria, devolvendo 422 antes de o
+/// handler tocar o repositório. Os códigos são conferidos como recebidos; os outros textos são normalizados.
+/// O nome da propriedade no
 /// <c>ProblemDetails</c> vem de <c>OverridePropertyName</c>.
 /// </summary>
 public sealed class RegistrarAtoNormativoCommandValidator
     : AbstractValidator<RegistrarAtoNormativoCommand>
 {
     public RegistrarAtoNormativoCommandValidator()
+    {
+        ValidarOrgaoESerie();
+        ValidarAnoENumero();
+        ValidarTipoDoAto();
+        ValidarDocumento();
+        ValidarVersaoDoObjeto();
+        ValidarRetificacao();
+        ValidarMotivoDaRetificacao();
+        ValidarVinculos();
+        ValidarVinculosDuplicados();
+    }
+
+    private void ValidarOrgaoESerie()
     {
         RuleFor(x => AtoNormativoRegras.Normalizar(x.Orgao))
             .NotEmpty().WithMessage(AtoNormativoRegras.OrgaoObrigatorio)
@@ -22,7 +38,10 @@ public sealed class RegistrarAtoNormativoCommandValidator
             .NotEmpty().WithMessage(AtoNormativoRegras.SerieObrigatoria)
             .MaximumLength(AtoNormativoRegras.SerieMaxLength).WithMessage(AtoNormativoRegras.SerieTamanho)
             .OverridePropertyName(nameof(RegistrarAtoNormativoCommand.Serie));
+    }
 
+    private void ValidarAnoENumero()
+    {
         RuleFor(x => x.Ano)
             .GreaterThan(0).WithMessage(AtoNormativoRegras.AnoInvalido);
 
@@ -30,12 +49,19 @@ public sealed class RegistrarAtoNormativoCommandValidator
             .MaximumLength(AtoNormativoRegras.NumeroMaxLength).WithMessage(AtoNormativoRegras.NumeroTamanho)
             .OverridePropertyName(nameof(RegistrarAtoNormativoCommand.Numero))
             .When(x => x.Numero is not null);
+    }
 
-        RuleFor(x => AtoNormativoRegras.Normalizar(x.TipoCodigo))
+    private void ValidarTipoDoAto()
+    {
+        RuleFor(x => x.TipoCodigo)
             .NotEmpty().WithMessage(AtoNormativoRegras.TipoCodigoObrigatorio)
             .MaximumLength(AtoNormativoRegras.TipoCodigoMaxLength).WithMessage(AtoNormativoRegras.TipoCodigoTamanho)
             .OverridePropertyName(nameof(RegistrarAtoNormativoCommand.TipoCodigo));
 
+    }
+
+    private void ValidarDocumento()
+    {
         RuleFor(x => x.DocumentoHash)
             .NotEmpty().WithMessage(AtoNormativoRegras.DocumentoHashObrigatorio)
             .Matches(AtoNormativoRegras.HashPattern).WithMessage(AtoNormativoRegras.DocumentoHashFormato);
@@ -44,7 +70,10 @@ public sealed class RegistrarAtoNormativoCommandValidator
             .NotEmpty().WithMessage(AtoNormativoRegras.AssinanteObrigatorio)
             .MaximumLength(AtoNormativoRegras.AssinanteMaxLength).WithMessage(AtoNormativoRegras.AssinanteTamanho)
             .OverridePropertyName(nameof(RegistrarAtoNormativoCommand.Assinante));
+    }
 
+    private void ValidarVersaoDoObjeto()
+    {
         // O par {id, hash} é completo ou ausente: um lado só não identifica a versão do objeto.
         RuleFor(x => x)
             .Must(x => x.VersaoDoObjetoId.HasValue == (x.VersaoDoObjetoHash is not null))
@@ -59,7 +88,10 @@ public sealed class RegistrarAtoNormativoCommandValidator
         RuleFor(x => x.VersaoDoObjetoHash)
             .Matches(AtoNormativoRegras.HashPattern).WithMessage(AtoNormativoRegras.VersaoDoObjetoHashFormato)
             .When(x => x.VersaoDoObjetoHash is not null);
+    }
 
+    private void ValidarRetificacao()
+    {
         // A retificação é o par (ato retificado, motivo), completo ou ausente (ADR-0103).
         RuleFor(x => x)
             .Must(x => x.AtoRetificadoId.HasValue == (AtoNormativoRegras.Normalizar(x.MotivoRetificacao) is not null))
@@ -71,11 +103,18 @@ public sealed class RegistrarAtoNormativoCommandValidator
             .Must(id => id != Guid.Empty).WithMessage(AtoNormativoRegras.AtoRetificadoIdObrigatorio)
             .When(x => x.AtoRetificadoId.HasValue);
 
+    }
+
+    private void ValidarMotivoDaRetificacao()
+    {
         RuleFor(x => AtoNormativoRegras.Normalizar(x.MotivoRetificacao))
             .MaximumLength(AtoNormativoRegras.MotivoRetificacaoMaxLength).WithMessage(AtoNormativoRegras.MotivoRetificacaoTamanho)
             .OverridePropertyName(nameof(RegistrarAtoNormativoCommand.MotivoRetificacao))
             .When(x => AtoNormativoRegras.Normalizar(x.MotivoRetificacao) is not null);
+    }
 
+    private void ValidarVinculos()
+    {
         // Vínculos com entidades de outros domínios (ADR-0105). A forma do rótulo é
         // verificada; o valor, jamais — não há tipos permitidos, e não pode haver.
         //
@@ -87,24 +126,30 @@ public sealed class RegistrarAtoNormativoCommandValidator
             .When(x => x.Vinculos is not null);
 
         RuleForEach(x => x.Vinculos)
-            .ChildRules(vinculo =>
-            {
-                vinculo.RuleFor(v => AtoNormativoRegras.Normalizar(v.EntidadeTipo))
-                    .NotEmpty().WithMessage(AtoNormativoRegras.EntidadeTipoObrigatorio)
-                    .MaximumLength(AtoNormativoRegras.EntidadeTipoMaxLength).WithMessage(AtoNormativoRegras.EntidadeTipoTamanho)
-                    .Matches(AtoNormativoRegras.EntidadeTipoPattern).WithMessage(AtoNormativoRegras.EntidadeTipoFormato)
-                    .OverridePropertyName(nameof(VinculoEntidadeInput.EntidadeTipo));
-
-                vinculo.RuleFor(v => v.EntidadeId)
-                    .NotEmpty().WithMessage(AtoNormativoRegras.EntidadeIdObrigatorio);
-            })
+            .ChildRules(ValidarEntidade)
             .When(x => x.Vinculos is not null && x.Vinculos.All(v => v is not null));
 
+    }
+
+    private void ValidarVinculosDuplicados()
+    {
         // O vínculo é único por trio (ato, tipo, id): repetir a mesma entidade no mesmo
         // ato não acrescenta vínculo nenhum, e o payload está internamente incoerente.
         RuleFor(x => x.Vinculos)
             .Must(SemEntidadeRepetida).WithMessage(AtoNormativoRegras.VinculoDuplicado)
             .When(x => x.Vinculos is { Count: > 1 });
+    }
+
+    private static void ValidarEntidade(InlineValidator<VinculoEntidadeInput> vinculo)
+    {
+        vinculo.RuleFor(v => v.EntidadeTipo)
+            .NotEmpty().WithMessage(AtoNormativoRegras.EntidadeTipoObrigatorio)
+            .MaximumLength(AtoNormativoRegras.EntidadeTipoMaxLength).WithMessage(AtoNormativoRegras.EntidadeTipoTamanho)
+            .Must(tipo => tipo is null || FormatoDoCodigo.TemFormatoValido(tipo))
+            .WithMessage(AtoNormativoRegras.EntidadeTipoFormato).WithErrorCode(CodigosDeValidacao.Formato)
+            .OverridePropertyName(nameof(VinculoEntidadeInput.EntidadeTipo));
+        vinculo.RuleFor(v => v.EntidadeId)
+            .NotEmpty().WithMessage(AtoNormativoRegras.EntidadeIdObrigatorio);
     }
 
     private static bool SemEntidadeRepetida(IReadOnlyList<VinculoEntidadeInput>? vinculos)
@@ -118,6 +163,6 @@ public sealed class RegistrarAtoNormativoCommandValidator
         HashSet<(string, Guid)> vistos = new(vinculos.Count);
         return vinculos
             .Where(v => v is not null)
-            .All(v => vistos.Add((AtoNormativoRegras.Normalizar(v.EntidadeTipo) ?? string.Empty, v.EntidadeId)));
+            .All(v => vistos.Add((v.EntidadeTipo ?? string.Empty, v.EntidadeId)));
     }
 }

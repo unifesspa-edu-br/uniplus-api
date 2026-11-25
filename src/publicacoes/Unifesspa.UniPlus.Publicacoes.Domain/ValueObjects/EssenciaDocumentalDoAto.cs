@@ -1,5 +1,7 @@
 namespace Unifesspa.UniPlus.Publicacoes.Domain.ValueObjects;
 
+using Unifesspa.UniPlus.Kernel.Domain.ValueObjects;
+
 /// <summary>
 /// A essência documental e normativa do ato (ADR-0105): a numeração, o tipo copiado do catálogo, a data
 /// que o documento declara, o hash do documento, o assinante e a cadeia de retificação. É o que o gatilho
@@ -55,7 +57,7 @@ public readonly record struct EssenciaDocumentalDoAto(
                 Orgao = Exigido(Numeracao.Orgao, OrgaoMaxLength, "orgao"),
                 Serie = Exigido(Numeracao.Serie, SerieMaxLength, "serie"),
             },
-            Tipo = Tipo with { Codigo = Exigido(Tipo.Codigo, TipoCodigoMaxLength, "tipoCodigo") },
+            Tipo = Tipo with { Codigo = CodigoConferido(Tipo.Codigo) },
             Assinante = Exigido(Assinante, AssinanteMaxLength, "assinante"),
         };
 
@@ -70,6 +72,17 @@ public readonly record struct EssenciaDocumentalDoAto(
             Retificacao = Retificacao with { Motivo = Opcional(Retificacao.Motivo, MotivoRetificacaoMaxLength, "motivoRetificacao") },
             Tipo = Tipo with { Nome = Opcional(Tipo.Nome, TipoNomeMaxLength, "tipoNome") },
         };
+
+    private static string CodigoConferido(string tipoCodigo)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(tipoCodigo);
+        if (tipoCodigo.Length > TipoCodigoMaxLength || !FormatoDoCodigo.TemFormatoValido(tipoCodigo))
+        {
+            throw new ArgumentException("Código do tipo de ato fora do formato.", nameof(tipoCodigo));
+        }
+
+        return tipoCodigo;
+    }
 
     private static string Exigido(string valor, int maxLength, string paramName)
     {

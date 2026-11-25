@@ -2,6 +2,7 @@ namespace Unifesspa.UniPlus.Testes.Compartilhado;
 
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Publicacoes.Domain.Entities;
+using Unifesspa.UniPlus.Publicacoes.Domain.ValueObjects;
 
 /// <summary>
 /// Os dados de um tipo de ato de teste, com valores neutros (nenhuma consequência ligada,
@@ -32,17 +33,15 @@ internal sealed record TipoAtoPublicadoDeTeste
 
     public string? BaseLegal { get; init; }
 
-    public Result<TipoAtoPublicado> Criar() =>
-        TipoAtoPublicado.Criar(
-            Codigo, Nome, CongelaConfiguracao, UnicoPorObjeto, EfeitoIrreversivel, EhResultado,
-            VigenciaInicio, VigenciaFim, BaseLegal, PublicavelComoAvulso, ExigeAtoCorrigido);
+    public DeclaracaoDoTipoAtoPublicado Declaracao() => new(
+        Codigo, Nome, CongelaConfiguracao, UnicoPorObjeto, EfeitoIrreversivel, EhResultado,
+        PublicavelComoAvulso, ExigeAtoCorrigido, VigenciaInicio, VigenciaFim, BaseLegal);
+
+    public Result<TipoAtoPublicado> Criar() => TipoAtoPublicado.Criar(Declaracao());
 
     public Result Atualizar(TipoAtoPublicado tipo)
     {
         ArgumentNullException.ThrowIfNull(tipo);
-
-        return tipo.Atualizar(
-            Codigo, Nome, CongelaConfiguracao, UnicoPorObjeto, EfeitoIrreversivel, EhResultado,
-            VigenciaInicio, VigenciaFim, BaseLegal, PublicavelComoAvulso, ExigeAtoCorrigido);
+        return tipo.Atualizar(Declaracao());
     }
 }

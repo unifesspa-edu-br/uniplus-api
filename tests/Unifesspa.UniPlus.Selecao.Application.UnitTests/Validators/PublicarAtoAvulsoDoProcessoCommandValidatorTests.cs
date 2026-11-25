@@ -13,6 +13,10 @@ public sealed class PublicarAtoAvulsoDoProcessoCommandValidatorTests
         Guid.CreateVersion7(), "AVISO", "5/2026", new DateOnly(2026, 12, 10), "Diretor do CEPS", Guid.CreateVersion7(),
         Anexos: null, AtoCorrigidoId: atoCorrigidoId, MotivoDaCorrecao: motivo);
 
+    [Fact(DisplayName = "O catálogo confere o formato do tipo de ato e recusa tipo sem versão vigente")]
+    public void Validar_TipoForaDoFormato_Aceita() =>
+        _validator.Validate(Comando() with { TipoAtoCodigo = "aviso" }).IsValid.Should().BeTrue();
+
     [Fact(DisplayName = "O aviso sem correção é válido")]
     public void AvisoSemCorrecao_EValido() => _validator.Validate(Comando()).IsValid.Should().BeTrue();
 

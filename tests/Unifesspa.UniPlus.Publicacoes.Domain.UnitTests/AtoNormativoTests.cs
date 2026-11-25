@@ -1,7 +1,5 @@
 namespace Unifesspa.UniPlus.Publicacoes.Domain.UnitTests;
 
-using System.Diagnostics.CodeAnalysis;
-
 using AwesomeAssertions;
 
 using Unifesspa.UniPlus.Publicacoes.Domain.Entities;
@@ -14,10 +12,6 @@ using Unifesspa.UniPlus.Testes.Compartilhado;
 /// a simetria de shape do par de retificação (ADR-0103). A fábrica é o alvo, então cada teste a
 /// chama direto, com a essência à vista.
 /// </summary>
-[SuppressMessage(
-    "Performance",
-    "CA1515:Consider making public types internal",
-    Justification = "xUnit exige tipo de teste público.")]
 public sealed class AtoNormativoTests
 {
     private const string HashValido = "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef";
@@ -34,7 +28,7 @@ public sealed class AtoNormativoTests
         EssenciaDocumentalDoAto essencia = Valida with
         {
             Numeracao = new NumeracaoDoAto("  CEPS  ", "  EDITAL  ", 2026, "  13  "),
-            Tipo = Tipo with { Codigo = "  EDITAL_ABERTURA  " },
+            Tipo = Tipo with { Codigo = "EDITAL_ABERTURA" },
             Assinante = $"  {PersonasDeTeste.NomeKevinCarvalho}  ",
         };
 

@@ -26,61 +26,81 @@ public static class AtualizarTipoAtoPublicadoCommandHandler
         ArgumentNullException.ThrowIfNull(repository);
         ArgumentNullException.ThrowIfNull(unitOfWork);
 
-        Result validacaoPreCheck = TipoAtoPublicado.ValidarCampos(
-            command.Codigo, command.Nome, command.VigenciaInicio, command.VigenciaFim, command.BaseLegal,
-            efeitoIrreversivel: command.EfeitoIrreversivel, ehResultado: command.EhResultado);
-        if (validacaoPreCheck.IsFailure)
+        (TipoAtoPublicado? tipo, Result verificacao) = await PrepararAtualizacao(
+            command, repository, cancellationToken).ConfigureAwait(false);
+        if (verificacao.IsFailure)
         {
-            return Result.ValidationFailure(validacaoPreCheck.Errors);
+            return verificacao;
         }
 
-        TipoAtoPublicado? tipo = await repository
-            .ObterPorIdAsync(command.Id, cancellationToken)
-            .ConfigureAwait(false);
-        if (tipo is null)
-        {
-            return Result.Failure(NaoEncontradoErro());
-        }
+        return await Atualizar(command, tipo!, unitOfWork, cancellationToken).ConfigureAwait(false);
+    }
 
-        if (!string.Equals(tipo.Codigo, command.Codigo!.Trim(), StringComparison.Ordinal))
-        {
-            return Result.Failure(new DomainError(
-                TipoAtoPublicadoErrorCodes.CodigoImutavel,
-                "O código do tipo de ato é a sua identidade e não muda: a série de vigências "
-                + "agrupa-se por ele, e é por ele que um objeto reserva a vaga de um ato único. "
-                + "Para um tipo diferente, cadastre um tipo novo."));
-        }
-
-        // O código já foi confirmado inalterado acima — só a janela pode ter mudado.
-        if (JanelaMudou(tipo, command))
-        {
-            bool sobreposta = await repository.ExisteSobreposicaoDeVigenciaAsync(
-                command.Codigo, command.VigenciaInicio, command.VigenciaFim, command.Id, cancellationToken)
-                .ConfigureAwait(false);
-            if (sobreposta)
-            {
-                return Result.Failure(CriarTipoAtoPublicadoCommandHandler.VigenciaSobrepostaErro(command.Codigo));
-            }
-        }
-
-        Result atualizacao = tipo.Atualizar(
-            command.Codigo,
-            command.Nome,
-            command.CongelaConfiguracao,
-            command.UnicoPorObjeto,
-            command.EfeitoIrreversivel,
-            command.EhResultado,
-            command.VigenciaInicio,
-            command.VigenciaFim,
-            command.BaseLegal,
-            command.PublicavelComoAvulso,
-            command.ExigeAtoCorrigido);
-
+    private static async Task<Result> Atualizar(
+        AtualizarTipoAtoPublicadoCommand command, TipoAtoPublicado tipo,
+        IUnitOfWork unitOfWork, CancellationToken cancellationToken)
+    {
+        Result atualizacao = tipo.Atualizar(command.Declaracao());
         if (atualizacao.IsFailure)
         {
             return atualizacao;
         }
 
+        return await Salvar(unitOfWork, cancellationToken).ConfigureAwait(false);
+    }
+
+    private static async Task<(TipoAtoPublicado? Tipo, Result Verificacao)> PrepararAtualizacao(
+        AtualizarTipoAtoPublicadoCommand command, ITipoAtoPublicadoRepository repository,
+        CancellationToken cancellationToken)
+    {
+        Result<CamposDoTipoAtoPublicado> validacaoPreCheck = TipoAtoPublicado.ValidarDeclaracao(command.Declaracao());
+        if (validacaoPreCheck.IsFailure)
+        {
+            return (null, Result.ValidationFailure(validacaoPreCheck.Errors));
+        }
+
+        TipoAtoPublicado? tipo = await repository.ObterPorIdAsync(command.Id, cancellationToken).ConfigureAwait(false);
+        if (tipo is null)
+        {
+            return (null, Result.Failure(NaoEncontradoErro()));
+        }
+
+        Result verificacao = await VerificarAtualizacao(command, tipo, repository, cancellationToken).ConfigureAwait(false);
+        return verificacao.IsFailure ? (null, verificacao) : (tipo, Result.Success());
+    }
+
+    private static async Task<Result> VerificarAtualizacao(
+        AtualizarTipoAtoPublicadoCommand command, TipoAtoPublicado tipo,
+        ITipoAtoPublicadoRepository repository, CancellationToken cancellationToken)
+    {
+        Result codigo = tipo.ConferirCodigoInalterado(command.Codigo);
+        if (codigo.IsFailure)
+        {
+            return codigo;
+        }
+
+        return await VerificarSobreposicao(command, tipo, repository, cancellationToken).ConfigureAwait(false);
+    }
+
+    private static async Task<Result> VerificarSobreposicao(
+        AtualizarTipoAtoPublicadoCommand command, TipoAtoPublicado tipo,
+        ITipoAtoPublicadoRepository repository, CancellationToken cancellationToken)
+    {
+        if (!JanelaMudou(tipo, command))
+        {
+            return Result.Success();
+        }
+
+        bool sobreposta = await repository.ExisteSobreposicaoDeVigenciaAsync(
+            tipo.Codigo, command.VigenciaInicio, command.VigenciaFim, command.Id, cancellationToken)
+            .ConfigureAwait(false);
+        return sobreposta
+            ? Result.Failure(CriarTipoAtoPublicadoCommandHandler.VigenciaSobrepostaErro())
+            : Result.Success();
+    }
+
+    private static async Task<Result> Salvar(IUnitOfWork unitOfWork, CancellationToken cancellationToken)
+    {
         try
         {
             await unitOfWork.SalvarAlteracoesAsync(cancellationToken).ConfigureAwait(false);
@@ -88,19 +108,17 @@ public static class AtualizarTipoAtoPublicadoCommandHandler
         catch (Exception ex) when (ExclusionConstraintViolation.GetViolatedConstraint(ex) is { } constraint
             && ExclusionConstraintViolation.IsVigenciaConflict(constraint))
         {
-            // A exclusion constraint é DEFERRABLE INITIALLY IMMEDIATE — checada
-            // dentro do próprio SalvarAlteracoesAsync acima, não num commit
-            // externo (diferente de constraints INITIALLY DEFERRED). Descarta o
-            // rastreamento do agregado Modified ANTES de devolver a falha: o
-            // SaveChangesAsync automático do outbox do Wolverine
-            // (AutoApplyTransactions, ADR-0004) roda de novo depois que este
-            // handler retorna, e sem isso a mesma exceção estouraria de novo
-            // fora deste catch, virando 500 em vez do DomainError já traduzido.
-            unitOfWork.DescartarAlteracoesNaoSalvas();
-            return Result.Failure(CriarTipoAtoPublicadoCommandHandler.VigenciaSobrepostaErro(command.Codigo));
+            return DescartarAlteracoesComConflito(unitOfWork);
         }
 
         return Result.Success();
+    }
+
+    // O outbox salva novamente após o retorno; descartar evita repetir o conflito fora do catch.
+    private static Result DescartarAlteracoesComConflito(IUnitOfWork unitOfWork)
+    {
+        unitOfWork.DescartarAlteracoesNaoSalvas();
+        return Result.Failure(CriarTipoAtoPublicadoCommandHandler.VigenciaSobrepostaErro());
     }
 
     private static bool JanelaMudou(TipoAtoPublicado tipo, AtualizarTipoAtoPublicadoCommand command) =>

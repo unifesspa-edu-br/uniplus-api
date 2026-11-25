@@ -10,7 +10,7 @@ using Unifesspa.UniPlus.Publicacoes.Domain.ValueObjects;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
 /// <summary>
-/// Os vínculos do ato que emenda outro: os declarados, aparados, mais os herdados do ato retificado
+/// Os vínculos do ato que emenda outro: os declarados mais os herdados do ato retificado
 /// que o ato não repete, em ordem determinística.
 /// </summary>
 public sealed class CadeiaDeRetificacaoDoAtoVinculosTests
@@ -19,13 +19,13 @@ public sealed class CadeiaDeRetificacaoDoAtoVinculosTests
     private static readonly Guid Processo = Guid.CreateVersion7();
     private readonly IAtoNormativoRepository _atos = Substitute.For<IAtoNormativoRepository>();
 
-    [Fact(DisplayName = "O vínculo declarado com espaços nas pontas não se repete com o herdado")]
-    public async Task Resolver_DeclaradoComEspacos_NaoRepeteOHerdado()
+    [Fact(DisplayName = "O vínculo declarado não se repete com o herdado")]
+    public async Task Resolver_DeclaradoIgual_NaoRepeteOHerdado()
     {
         HerdaDoRetificado(new EntidadeVinculada("OBJETO_A", Processo));
 
         LinhagemDoAto linhagem = await Cadeia().ResolverAsync(
-            Retificando([new VinculoEntidadeInput("  OBJETO_A  ", Processo)]), CancellationToken.None);
+            Retificando([new VinculoEntidadeInput("OBJETO_A", Processo)]), CancellationToken.None);
 
         linhagem.Vinculos.Should().Equal(new EntidadeVinculada("OBJETO_A", Processo));
     }

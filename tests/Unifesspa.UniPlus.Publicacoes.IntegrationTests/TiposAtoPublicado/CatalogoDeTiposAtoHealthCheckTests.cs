@@ -345,18 +345,27 @@ public sealed class CatalogoDeTiposAtoHealthCheckTests : IAsyncLifetime
 
     private static TipoAtoPublicado Versao(LinhaDeclarada linha, DateOnly? vigenciaFim)
     {
-        Result<TipoAtoPublicado> criado = TipoAtoPublicado.Criar(
-            codigo: linha.Codigo, nome: NomeSintetico,
-            congelaConfiguracao: linha.CongelaConfiguracao, unicoPorObjeto: linha.UnicoPorObjeto,
-            efeitoIrreversivel: linha.EfeitoIrreversivel, ehResultado: linha.EhResultado,
-            vigenciaInicio: new DateOnly(2020, 1, 1), vigenciaFim: vigenciaFim,
-            baseLegal: null, publicavelComoAvulso: linha.PublicavelComoAvulso,
-            exigeAtoCorrigido: linha.ExigeAtoCorrigido);
+        Result<TipoAtoPublicado> criado = DeclaracaoDaVersao(linha, vigenciaFim).Criar();
 
         criado.IsSuccess.Should().BeTrue("o arranjo precisa dizer qual regra recusou, e não morrer numa referência nula");
 
         return criado.Value!;
     }
+
+    private static TipoAtoPublicadoDeTeste DeclaracaoDaVersao(LinhaDeclarada linha, DateOnly? vigenciaFim) =>
+        new()
+        {
+            Codigo = linha.Codigo,
+            Nome = NomeSintetico,
+            CongelaConfiguracao = linha.CongelaConfiguracao,
+            UnicoPorObjeto = linha.UnicoPorObjeto,
+            EfeitoIrreversivel = linha.EfeitoIrreversivel,
+            EhResultado = linha.EhResultado,
+            VigenciaInicio = new DateOnly(2020, 1, 1),
+            VigenciaFim = vigenciaFim,
+            PublicavelComoAvulso = linha.PublicavelComoAvulso,
+            ExigeAtoCorrigido = linha.ExigeAtoCorrigido
+        };
 
     private async Task RemoverAsync(string codigo)
     {

@@ -1,38 +1,23 @@
 namespace Unifesspa.UniPlus.Publicacoes.Domain.UnitTests;
 
-using System.Diagnostics.CodeAnalysis;
-
 using AwesomeAssertions;
 
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Publicacoes.Domain.Entities;
 using Unifesspa.UniPlus.Publicacoes.Domain.Errors;
+using Unifesspa.UniPlus.Testes.Compartilhado;
 
 /// <summary>
 /// Invariantes de domínio do cadastro de tipos de ato: formato do código,
 /// coerência da janela semiaberta de vigência e o predicado de vigência.
 /// </summary>
-[SuppressMessage(
-    "Performance",
-    "CA1515:Consider making public types internal",
-    Justification = "xUnit exige tipo de teste público.")]
 public sealed class TipoAtoPublicadoTests
 {
     private static readonly DateOnly Inicio = new(2026, 1, 1);
-
     [Fact(DisplayName = "Criar persiste os campos normalizados")]
     public void Criar_ComCamposValidos_NormalizaEPreenche()
     {
-        Result<TipoAtoPublicado> resultado = TipoAtoPublicado.Criar(
-            codigo: "  EDITAL_ABERTURA  ",
-            nome: "  Edital de abertura  ",
-            congelaConfiguracao: true,
-            unicoPorObjeto: true,
-            efeitoIrreversivel: false,
-            ehResultado: true,
-            vigenciaInicio: Inicio,
-            vigenciaFim: null,
-            baseLegal: "   ");
+        Result<TipoAtoPublicado> resultado = CriarComCamposNormalizados();
 
         resultado.IsSuccess.Should().BeTrue();
         TipoAtoPublicado tipo = resultado.Value!;
@@ -49,20 +34,27 @@ public sealed class TipoAtoPublicadoTests
     [Fact(DisplayName = "Criar e Atualizar gravam os atributos do documento avulso; sem eles o tipo nasce não publicável")]
     public void CriarEAtualizar_GravamOsAtributosDoDocumentoAvulso()
     {
-        TipoAtoPublicado padrao = TipoAtoPublicado.Criar("AVISO", "Aviso", false, false, false, false, Inicio, null, null).Value!;
+        TipoAtoPublicadoDeTeste aviso = new() { Codigo = "AVISO", Nome = "Aviso" };
+        TipoAtoPublicado padrao = aviso.Criar().Value!;
         padrao.PublicavelComoAvulso.Should().BeFalse();
         padrao.ExigeAtoCorrigido.Should().BeFalse();
 
-        TipoAtoPublicado errata = TipoAtoPublicado.Criar(
-            "ERRATA", "Errata", false, false, false, false, Inicio, null, null,
-            publicavelComoAvulso: true, exigeAtoCorrigido: true).Value!;
+        TipoAtoPublicadoDeTeste declaracao = DeclaracaoDeErrata();
+        TipoAtoPublicado errata = declaracao.Criar().Value!;
         errata.PublicavelComoAvulso.Should().BeTrue();
         errata.ExigeAtoCorrigido.Should().BeTrue();
-
-        errata.Atualizar("ERRATA", "Errata", false, false, false, false, Inicio, null, null,
-            publicavelComoAvulso: true, exigeAtoCorrigido: false).IsSuccess.Should().BeTrue();
+        (declaracao with { ExigeAtoCorrigido = false }).Atualizar(errata).IsSuccess.Should().BeTrue();
         errata.ExigeAtoCorrigido.Should().BeFalse();
     }
+
+    private static TipoAtoPublicadoDeTeste DeclaracaoDeErrata() =>
+        new()
+        {
+            Codigo = "ERRATA",
+            Nome = "Errata",
+            PublicavelComoAvulso = true,
+            ExigeAtoCorrigido = true
+        };
 
     [Theory(DisplayName = "Código fora do formato UPPER_SNAKE é recusado")]
     [InlineData("convocacao")]
@@ -145,20 +137,17 @@ public sealed class TipoAtoPublicadoTests
     {
         TipoAtoPublicado tipo = Novo().Value!;
 
-        Result resultado = tipo.Atualizar(
-            codigo: "invalido",
-            nome: "Outro nome",
-            congelaConfiguracao: true,
-            unicoPorObjeto: true,
-            efeitoIrreversivel: true,
-            ehResultado: false,
-            vigenciaInicio: Inicio,
-            vigenciaFim: null,
-            baseLegal: null);
+        Result resultado = (new TipoAtoPublicadoDeTeste
+        {
+            Codigo = "invalido",
+            Nome = "Outro nome",
+            CongelaConfiguracao = true,
+            UnicoPorObjeto = true,
+            EfeitoIrreversivel = true,
+            VigenciaInicio = Inicio
+        }).Atualizar(tipo);
 
-        resultado.IsFailure.Should().BeTrue();
-        tipo.Codigo.Should().Be("EDITAL_ABERTURA");
-        tipo.Nome.Should().Be("Edital de abertura");
+        ConferirRecusaSemAlterarTipo(resultado, tipo);
     }
 
     [Fact(DisplayName = "Atualizar edita nome e atributos, mantendo o código")]
@@ -166,46 +155,32 @@ public sealed class TipoAtoPublicadoTests
     {
         TipoAtoPublicado tipo = Novo().Value!;
 
-        Result resultado = tipo.Atualizar(
-            codigo: "EDITAL_ABERTURA",
-            nome: "Edital de abertura de processo seletivo",
-            congelaConfiguracao: true,
-            unicoPorObjeto: false,
-            efeitoIrreversivel: false,
-            ehResultado: true,
-            vigenciaInicio: Inicio,
-            vigenciaFim: null,
-            baseLegal: null);
+        Result resultado = (new TipoAtoPublicadoDeTeste
+        {
+            Codigo = "EDITAL_ABERTURA",
+            Nome = "Edital de abertura de processo seletivo",
+            CongelaConfiguracao = true,
+            EhResultado = true,
+            VigenciaInicio = Inicio
+        }).Atualizar(tipo);
 
-        resultado.IsSuccess.Should().BeTrue();
-        tipo.Nome.Should().Be("Edital de abertura de processo seletivo");
-        tipo.UnicoPorObjeto.Should().BeFalse();
-        tipo.EhResultado.Should().BeTrue();
+        ConferirAtributosAtualizados(resultado, tipo);
     }
 
     [Fact(DisplayName = "Atualizar recusa novo código — o código é a identidade do tipo")]
     public void Atualizar_ComOutroCodigo_Recusa()
     {
-        // A série de vigências agrupa-se pelo código (exclusion constraint), e a vaga que
-        // um objeto reserva para uma linhagem de atos únicos é chaveada por ele
-        // (ADR-0107). Renomear partiria o tipo em dois — e abriria uma segunda vaga no
-        // mesmo objeto. Renomear é criar outro tipo.
         TipoAtoPublicado tipo = Novo().Value!;
 
-        Result resultado = tipo.Atualizar(
-            codigo: "EDITAL_RETIFICACAO",
-            nome: "Edital de retificação",
-            congelaConfiguracao: true,
-            unicoPorObjeto: false,
-            efeitoIrreversivel: false,
-            ehResultado: false,
-            vigenciaInicio: Inicio,
-            vigenciaFim: null,
-            baseLegal: null);
+        Result resultado = (new TipoAtoPublicadoDeTeste
+        {
+            Codigo = "EDITAL_RETIFICACAO",
+            Nome = "Edital de retificação",
+            CongelaConfiguracao = true,
+            VigenciaInicio = Inicio
+        }).Atualizar(tipo);
 
-        resultado.IsFailure.Should().BeTrue();
-        resultado.Error!.Code.Should().Be(TipoAtoPublicadoErrorCodes.CodigoImutavel);
-        tipo.Codigo.Should().Be("EDITAL_ABERTURA");
+        ConferirCodigoImutavel(resultado, tipo);
     }
 
     [Theory(DisplayName = "A janela é semiaberta: o início entra, o fim não")]
@@ -233,16 +208,7 @@ public sealed class TipoAtoPublicadoTests
     [Fact(DisplayName = "Criar com três violações independentes acumula as três no mesmo lote")]
     public void Criar_TresViolacoesIndependentes_AcumulaAsTres()
     {
-        Result<TipoAtoPublicado> resultado = TipoAtoPublicado.Criar(
-            codigo: "edital abertura",
-            nome: "E",
-            congelaConfiguracao: true,
-            unicoPorObjeto: true,
-            efeitoIrreversivel: false,
-            ehResultado: false,
-            vigenciaInicio: Inicio,
-            vigenciaFim: Inicio.AddDays(-1),
-            baseLegal: null);
+        Result<TipoAtoPublicado> resultado = CriarComTresViolacoes();
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Errors.Should().HaveCount(3);
@@ -254,16 +220,7 @@ public sealed class TipoAtoPublicadoTests
     [Fact(DisplayName = "Criar recusa o tipo que é resultado e de efeito irreversível, acumulando com as demais violações")]
     public void Criar_ResultadoComEfeitoIrreversivel_RecusaEAcumula()
     {
-        Result<TipoAtoPublicado> resultado = TipoAtoPublicado.Criar(
-            codigo: "resultado final",
-            nome: "Resultado final",
-            congelaConfiguracao: false,
-            unicoPorObjeto: false,
-            efeitoIrreversivel: true,
-            ehResultado: true,
-            vigenciaInicio: Inicio,
-            vigenciaFim: null,
-            baseLegal: null);
+        Result<TipoAtoPublicado> resultado = CriarResultadoIrreversivel();
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Errors.Should().HaveCount(2);
@@ -274,27 +231,83 @@ public sealed class TipoAtoPublicadoTests
     [Fact(DisplayName = "Atualizar recusa tornar irreversível o tipo que é resultado e não muta a entidade")]
     public void Atualizar_ResultadoComEfeitoIrreversivel_RecusaENaoMuta()
     {
-        TipoAtoPublicado tipo = TipoAtoPublicado.Criar(
-            "RESULTADO_FINAL", "Resultado final", false, false, false, true, Inicio, null, null).Value!;
-
-        Result resultado = tipo.Atualizar(
-            "RESULTADO_FINAL", "Resultado final", false, false, efeitoIrreversivel: true, ehResultado: true, Inicio, null, null);
+        TipoAtoPublicadoDeTeste declaracao = new() { Codigo = "RESULTADO_FINAL", Nome = "Resultado final", EhResultado = true };
+        TipoAtoPublicado tipo = declaracao.Criar().Value!;
+        Result resultado = (declaracao with { EfeitoIrreversivel = true }).Atualizar(tipo);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Errors.Should().ContainSingle(e => e.Error.Code == TipoAtoPublicadoErrorCodes.ResultadoComEfeitoIrreversivel);
         tipo.EfeitoIrreversivel.Should().BeFalse();
     }
 
-    [Fact(DisplayName = "ValidarCampos replica o resultado de Criar sem instanciar o agregado")]
-    public void ValidarCampos_MesmoPayloadDeCriarComFalha_RetornaMesmosErros()
+    [Fact(DisplayName = "ValidarDeclaracao replica o resultado de Criar sem instanciar o agregado")]
+    public void ValidarDeclaracao_MesmoPayloadDeCriarComFalha_RetornaMesmosErros()
     {
-        Result validacao = TipoAtoPublicado.ValidarCampos(
-            codigo: null, nome: null, vigenciaInicio: Inicio, vigenciaFim: null, baseLegal: null,
-            efeitoIrreversivel: false, ehResultado: false);
+        Result<CamposDoTipoAtoPublicado> validacao = TipoAtoPublicado.ValidarDeclaracao((new TipoAtoPublicadoDeTeste
+        {
+            Codigo = null,
+            Nome = null,
+            VigenciaInicio = Inicio
+        }).Declaracao());
 
         validacao.IsFailure.Should().BeTrue();
         validacao.Errors.Should().ContainSingle(e => e.Field == "codigo" && e.Error.Code == TipoAtoPublicadoErrorCodes.CodigoObrigatorio);
         validacao.Errors.Should().ContainSingle(e => e.Field == "nome" && e.Error.Code == TipoAtoPublicadoErrorCodes.NomeObrigatorio);
+    }
+
+    private static Result<TipoAtoPublicado> CriarComCamposNormalizados() =>
+        (new TipoAtoPublicadoDeTeste
+        {
+            Codigo = "EDITAL_ABERTURA",
+            Nome = "  Edital de abertura  ",
+            CongelaConfiguracao = true,
+            UnicoPorObjeto = true,
+            EhResultado = true,
+            VigenciaInicio = Inicio,
+            BaseLegal = "   "
+        }).Criar();
+
+    private static Result<TipoAtoPublicado> CriarComTresViolacoes() =>
+        (new TipoAtoPublicadoDeTeste
+        {
+            Codigo = "edital abertura",
+            Nome = "E",
+            CongelaConfiguracao = true,
+            UnicoPorObjeto = true,
+            VigenciaInicio = Inicio,
+            VigenciaFim = Inicio.AddDays(-1)
+        }).Criar();
+
+    private static Result<TipoAtoPublicado> CriarResultadoIrreversivel() =>
+        (new TipoAtoPublicadoDeTeste
+        {
+            Codigo = "resultado final",
+            Nome = "Resultado final",
+            EfeitoIrreversivel = true,
+            EhResultado = true,
+            VigenciaInicio = Inicio
+        }).Criar();
+
+    private static void ConferirRecusaSemAlterarTipo(Result resultado, TipoAtoPublicado tipo)
+    {
+        resultado.IsFailure.Should().BeTrue();
+        tipo.Codigo.Should().Be("EDITAL_ABERTURA");
+        tipo.Nome.Should().Be("Edital de abertura");
+    }
+
+    private static void ConferirAtributosAtualizados(Result resultado, TipoAtoPublicado tipo)
+    {
+        resultado.IsSuccess.Should().BeTrue();
+        tipo.Nome.Should().Be("Edital de abertura de processo seletivo");
+        tipo.UnicoPorObjeto.Should().BeFalse();
+        tipo.EhResultado.Should().BeTrue();
+    }
+
+    private static void ConferirCodigoImutavel(Result resultado, TipoAtoPublicado tipo)
+    {
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be(TipoAtoPublicadoErrorCodes.CodigoImutavel);
+        tipo.Codigo.Should().Be("EDITAL_ABERTURA");
     }
 
     private static Result<TipoAtoPublicado> Novo(
@@ -302,14 +315,14 @@ public sealed class TipoAtoPublicadoTests
         string nome = "Edital de abertura",
         DateOnly? vigenciaFim = null,
         string? baseLegal = null) =>
-        TipoAtoPublicado.Criar(
-            codigo,
-            nome,
-            congelaConfiguracao: true,
-            unicoPorObjeto: true,
-            efeitoIrreversivel: false,
-            ehResultado: false,
-            vigenciaInicio: Inicio,
-            vigenciaFim: vigenciaFim,
-            baseLegal: baseLegal);
+        (new TipoAtoPublicadoDeTeste
+        {
+            Codigo = codigo,
+            Nome = nome,
+            CongelaConfiguracao = true,
+            UnicoPorObjeto = true,
+            VigenciaInicio = Inicio,
+            VigenciaFim = vigenciaFim,
+            BaseLegal = baseLegal
+        }).Criar();
 }

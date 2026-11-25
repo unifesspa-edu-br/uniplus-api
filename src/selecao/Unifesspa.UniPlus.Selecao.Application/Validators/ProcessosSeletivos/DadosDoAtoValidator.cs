@@ -27,6 +27,14 @@ public sealed class DadosDoAtoValidator : AbstractValidator<DadosDoAto>
 
     public DadosDoAtoValidator()
     {
+        ValidarOrgaoESerie();
+        ValidarAnoEData();
+        ValidarAssinante();
+        ValidarTipoDoAto();
+    }
+
+    private void ValidarOrgaoESerie()
+    {
         RuleFor(x => x.Orgao)
             .NotEmpty()
             .WithMessage("Órgão publicador do ato é obrigatório.")
@@ -38,7 +46,10 @@ public sealed class DadosDoAtoValidator : AbstractValidator<DadosDoAto>
             .WithMessage("Série do ato é obrigatória.")
             .MaximumLength(SerieMaxLength)
             .WithMessage($"Série do ato deve ter no máximo {SerieMaxLength} caracteres.");
+    }
 
+    private void ValidarAnoEData()
+    {
         // Campo omitido do corpo binda para 0 (int não-nullable) — sem esta regra, o ano
         // ausente passaria trivialmente e só seria recusado ao registrar o ato.
         RuleFor(x => x.Ano)
@@ -49,22 +60,23 @@ public sealed class DadosDoAtoValidator : AbstractValidator<DadosDoAto>
         RuleFor(x => x.DataDoAto)
             .NotEqual(default(DateOnly))
             .WithMessage("Data do ato declarada pelo documento é obrigatória.");
+    }
 
+    private void ValidarAssinante()
+    {
         RuleFor(x => x.Assinante)
             .NotEmpty()
             .WithMessage("Assinante do ato é obrigatório.")
             .MaximumLength(AssinanteMaxLength)
             .WithMessage($"Assinante deve ter no máximo {AssinanteMaxLength} caracteres.");
+    }
 
+    private void ValidarTipoDoAto()
+    {
         RuleFor(x => x.TipoAtoCodigo)
             .NotEmpty()
             .WithMessage("Tipo do ato é obrigatório.")
             .MaximumLength(TipoCodigoMaxLength)
-            .WithMessage($"Tipo do ato deve ter no máximo {TipoCodigoMaxLength} caracteres.")
-            // Forma canônica do catálogo de Publicações (UPPER_SNAKE). Não se valida o VALOR
-            // aqui — a lista de tipos é cadastro, e conhecê-la seria ramificar por tipo, o
-            // que a ADR-0103 proíbe. Valida-se só a forma.
-            .Matches("^[A-Z]+(_[A-Z]+)*$")
-            .WithMessage("Tipo do ato deve estar em forma canônica (ex.: EDITAL_ABERTURA).");
+            .WithMessage($"Tipo do ato deve ter no máximo {TipoCodigoMaxLength} caracteres.");
     }
 }

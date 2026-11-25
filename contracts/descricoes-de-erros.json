@@ -12601,10 +12601,10 @@
       "codigo": "uniplus.publicacoes.ato_normativo.tipo_de_entidade_invalido",
       "requisitos": [],
       "oQueAconteceu": [
-        "O tipo da entidade informado na rota (`GET /entidades/{entidadeTipo}/{entidadeId}/atos`) não é um rótulo em maiúsculas, com letras e dígitos em grupos separados por sublinhado (por exemplo, `PROCESSO_SELETIVO`). O módulo confere só a forma do rótulo, nunca o seu valor: sem esta recusa, um rótulo escrito de outro jeito devolveria a mesma coleção vazia de uma entidade sem atos, e o erro de digitação passaria por resultado legítimo. Nenhum ato foi consultado."
+        "O tipo da entidade informado na rota não segue o formato exigido ou ultrapassa 60 caracteres. Nenhum ato foi consultado."
       ],
       "comoResolver": [
-        "Escreva o tipo da entidade em maiúsculas, sem acento, hífen ou espaço, separando as palavras por sublinhado. Use o mesmo rótulo com que o ato foi vinculado à entidade."
+        "Informe o mesmo tipo usado no vínculo: até 60 caracteres, começando por letra maiúscula, com letras maiúsculas sem acento, algarismos e sublinhado entre palavras."
       ],
       "ondeAparece": [
         "Consulta dos atos publicados de uma entidade (`GET /entidades/{entidadeTipo}/{entidadeId}/atos`)"
@@ -12689,11 +12689,10 @@
       "codigo": "uniplus.publicacoes.tipo_ato.codigo_formato",
       "requisitos": [],
       "oQueAconteceu": [
-        "O **código** do tipo de ato não segue o formato exigido: letras maiúsculas\nsem acento, separadas por underscore (ex.: `EDITAL_ABERTURA`).",
-        "A caixa alta é **exigida, não imposta**: um código enviado em minúsculas\n(`edital_abertura`) é recusado em vez de convertido em silêncio para\nmaiúsculas. Isso é deliberado — a coluna que guarda o código é comparada de\nforma sensível a caixa pelo banco, e normalizar a caixa silenciosamente\nesconderia do cliente que dois códigos que ele considerava distintos são,\nna prática, o mesmo."
+        "O código do tipo de ato não segue o formato exigido ou ultrapassa 60 caracteres."
       ],
       "comoResolver": [
-        "Reescreva o código só com letras maiúsculas de A a Z (sem acento, sem\noutro caractere), com palavras separadas por um único underscore — nunca\ncomeçando, terminando ou duplicando o separador. Se o código está em\nminúsculas, converta antes de enviar; o servidor não faz essa conversão\npor você."
+        "Informe um código de até 60 caracteres, iniciado por letra maiúscula, com letras maiúsculas sem acento, algarismos e sublinhado entre palavras. Não envie espaços nas pontas."
       ],
       "ondeAparece": [
         "Criação de tipo de ato",
@@ -12722,22 +12721,7 @@
         "O código é a identidade do tipo — não um rótulo. É por ele que a série de\nvigências se agrupa (a exclusion constraint do banco compara pelo código\npara impedir duas versões vivas no mesmo dia) e é por ele que um objeto\nreserva a vaga de uma linhagem de atos únicos por objeto. Sem código, não\nhá como o cadastro saber a que série esta versão pertence."
       ],
       "comoResolver": [
-        "Informe o código do tipo de ato — letras maiúsculas sem acento, separadas\npor underscore (ex.: `EDITAL_ABERTURA`). Se o código estiver presente mas\nfora desse formato, a causa é outra: veja\n[formato do código inválido](/erros/uniplus.publicacoes.tipo_ato.codigo_formato)."
-      ],
-      "ondeAparece": [
-        "Criação de tipo de ato",
-        "Atualização de tipo de ato"
-      ]
-    },
-    {
-      "codigo": "uniplus.publicacoes.tipo_ato.codigo_tamanho",
-      "requisitos": [],
-      "oQueAconteceu": [
-        "O **código** do tipo de ato excede 60 caracteres, o tamanho máximo aceito.",
-        "O código é composto de palavras em maiúsculas separadas por underscore\n(ex.: `EDITAL_ABERTURA`, `CONVOCACAO_MATRICULA`) — um rótulo curto e\nestável, pensado para aparecer em código de integração e em consulta, não\numa descrição. Um valor que ultrapassa 60 caracteres normalmente indica que\no campo recebeu a descrição do tipo em vez do código propriamente dito."
-      ],
-      "comoResolver": [
-        "Informe um código dentro do limite de 60 caracteres. Se o que você quer\nregistrar é uma descrição mais longa do tipo de ato, use o campo **nome**\n— o código é só o identificador estável, curto, no vocabulário\n`MAIUSCULO_COM_UNDERSCORE`."
+        "Informe o código do tipo de ato. Ele deve começar com letra maiúscula e ter até 60 caracteres, com letras maiúsculas sem acento, algarismos e sublinhado entre palavras."
       ],
       "ondeAparece": [
         "Criação de tipo de ato",

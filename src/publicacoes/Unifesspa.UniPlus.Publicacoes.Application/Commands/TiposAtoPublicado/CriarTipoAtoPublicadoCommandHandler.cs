@@ -30,37 +30,36 @@ public static class CriarTipoAtoPublicadoCommandHandler
         ArgumentNullException.ThrowIfNull(repository);
         ArgumentNullException.ThrowIfNull(unitOfWork);
 
-        Result validacao = TipoAtoPublicado.ValidarCampos(
-            command.Codigo, command.Nome, command.VigenciaInicio, command.VigenciaFim, command.BaseLegal,
-            efeitoIrreversivel: command.EfeitoIrreversivel, ehResultado: command.EhResultado);
+        Result<CamposDoTipoAtoPublicado> validacao = TipoAtoPublicado.ValidarDeclaracao(command.Declaracao());
         if (validacao.IsFailure)
         {
             return Result<Guid>.ValidationFailure(validacao.Errors);
         }
 
+        return await Criar(command, repository, unitOfWork, cancellationToken).ConfigureAwait(false);
+    }
+
+    private static async Task<Result<Guid>> Criar(
+        CriarTipoAtoPublicadoCommand command, ITipoAtoPublicadoRepository repository,
+        IUnitOfWork unitOfWork, CancellationToken cancellationToken)
+    {
         bool sobreposta = await repository.ExisteSobreposicaoDeVigenciaAsync(
             command.Codigo!, command.VigenciaInicio, command.VigenciaFim, null, cancellationToken)
             .ConfigureAwait(false);
         if (sobreposta)
         {
-            return Result<Guid>.Failure(VigenciaSobrepostaErro(command.Codigo!));
+            return Result<Guid>.Failure(VigenciaSobrepostaErro());
         }
 
-        TipoAtoPublicado tipo = TipoAtoPublicado.Criar(
-            command.Codigo,
-            command.Nome,
-            command.CongelaConfiguracao,
-            command.UnicoPorObjeto,
-            command.EfeitoIrreversivel,
-            command.EhResultado,
-            command.VigenciaInicio,
-            command.VigenciaFim,
-            command.BaseLegal,
-            command.PublicavelComoAvulso,
-            command.ExigeAtoCorrigido).Value!;
-
+        TipoAtoPublicado tipo = TipoAtoPublicado.Criar(command.Declaracao()).Value!;
         await repository.AdicionarAsync(tipo, cancellationToken).ConfigureAwait(false);
 
+        return await Salvar(unitOfWork, tipo, cancellationToken).ConfigureAwait(false);
+    }
+
+    private static async Task<Result<Guid>> Salvar(
+        IUnitOfWork unitOfWork, TipoAtoPublicado tipo, CancellationToken cancellationToken)
+    {
         try
         {
             await unitOfWork.SalvarAlteracoesAsync(cancellationToken).ConfigureAwait(false);
@@ -68,22 +67,19 @@ public static class CriarTipoAtoPublicadoCommandHandler
         catch (Exception ex) when (ExclusionConstraintViolation.GetViolatedConstraint(ex) is { } constraint
             && ExclusionConstraintViolation.IsVigenciaConflict(constraint))
         {
-            // A exclusion constraint é DEFERRABLE INITIALLY IMMEDIATE — checada
-            // dentro do próprio SalvarAlteracoesAsync acima, não num commit
-            // externo (diferente de constraints INITIALLY DEFERRED). Descarta o
-            // rastreamento do agregado Added ANTES de devolver a falha: o
-            // SaveChangesAsync automático do outbox do Wolverine
-            // (AutoApplyTransactions, ADR-0004) roda de novo depois que este
-            // handler retorna, e sem isso a mesma exceção estouraria de novo
-            // fora deste catch, virando 500 em vez do DomainError já traduzido.
-            unitOfWork.DescartarAlteracoesNaoSalvas();
-            return Result<Guid>.Failure(VigenciaSobrepostaErro(command.Codigo!));
+            return DescartarAlteracoesComConflito(unitOfWork);
         }
 
         return Result<Guid>.Success(tipo.Id);
     }
 
-    internal static DomainError VigenciaSobrepostaErro(string codigo) =>
+    private static Result<Guid> DescartarAlteracoesComConflito(IUnitOfWork unitOfWork)
+    {
+        unitOfWork.DescartarAlteracoesNaoSalvas();
+        return Result<Guid>.Failure(VigenciaSobrepostaErro());
+    }
+
+    internal static DomainError VigenciaSobrepostaErro() =>
         new(TipoAtoPublicadoErrorCodes.VigenciaSobreposta,
-            $"Já existe uma versão viva do tipo de ato '{codigo}' vigente em parte do período informado.");
+            $"Já existe uma versão viva do tipo de ato vigente em parte do período informado.");
 }

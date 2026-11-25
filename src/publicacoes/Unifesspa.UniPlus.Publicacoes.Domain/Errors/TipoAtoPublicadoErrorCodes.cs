@@ -3,7 +3,6 @@ namespace Unifesspa.UniPlus.Publicacoes.Domain.Errors;
 public static class TipoAtoPublicadoErrorCodes
 {
     public const string CodigoObrigatorio = "TipoAtoPublicado.CodigoObrigatorio";
-    public const string CodigoTamanho = "TipoAtoPublicado.CodigoTamanho";
     public const string CodigoFormato = "TipoAtoPublicado.CodigoFormato";
 
     /// <summary>

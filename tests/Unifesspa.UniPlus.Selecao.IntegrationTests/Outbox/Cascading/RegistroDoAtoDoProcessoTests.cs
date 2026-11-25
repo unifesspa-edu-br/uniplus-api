@@ -14,6 +14,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.Publicacoes.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
+using Unifesspa.UniPlus.Testes.Compartilhado;
 
 /// <summary>
 /// O registro do ato do processo contra o host real: a publicação o grava com o ato normativo na mesma
@@ -178,11 +179,18 @@ public sealed class RegistroDoAtoDoProcessoTests
             return;
         }
 
-        db.Set<TipoAtoPublicado>().Add(TipoAtoPublicado.Criar(
-            codigo, "Resultado final", congelaConfiguracao: false, unicoPorObjeto: false, efeitoIrreversivel: false, ehResultado: true,
-            new DateOnly(2020, 1, 1), vigenciaFim: null, baseLegal: null).Value!);
+        db.Set<TipoAtoPublicado>().Add(DeclaracaoDeResultadoFinal(codigo).Criar().Value!);
         await db.SaveChangesAsync();
     }
+
+    private static TipoAtoPublicadoDeTeste DeclaracaoDeResultadoFinal(string codigo) =>
+        new()
+        {
+            Codigo = codigo,
+            Nome = "Resultado final",
+            EhResultado = true,
+            VigenciaInicio = new DateOnly(2020, 1, 1)
+        };
 
     private static async Task PublicarEditalAsync(HttpClient client, Guid processoId, Guid documentoId, string numero, int ano)
     {

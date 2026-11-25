@@ -12,6 +12,7 @@ using Unifesspa.UniPlus.Infrastructure.Core.Formatting;
 using Unifesspa.UniPlus.Infrastructure.Core.Hateoas;
 using Unifesspa.UniPlus.Infrastructure.Core.Idempotency;
 using Unifesspa.UniPlus.Infrastructure.Core.Pagination;
+using Unifesspa.UniPlus.Kernel.Domain.ValueObjects;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Publicacoes.Application.Commands.TiposAtoPublicado;
 using Unifesspa.UniPlus.Publicacoes.Application.DTOs;
@@ -36,7 +37,7 @@ public sealed class TiposAtoController : ControllerBase
     private const string ResourceTag = "tipos-ato";
 
     /// <summary>Mesmo formato exigido pelo agregado: caixa alta, palavras separadas por underscore.</summary>
-    private const string CodigoPattern = "^[A-Z]+(_[A-Z]+)*$";
+    private const string CodigoPattern = FormatoDoCodigo.ExpressaoNoBanco;
 
     private readonly ICommandBus _commandBus;
     private readonly IQueryBus _queryBus;
@@ -129,7 +130,7 @@ public sealed class TiposAtoController : ControllerBase
     public async Task<IActionResult> ObterVigente(
         [FromRoute]
         [StringLength(60, MinimumLength = 1)]
-        [RegularExpression(CodigoPattern, ErrorMessage = "Código do tipo de ato deve usar apenas letras maiúsculas sem acento, separadas por underscore (ex.: EDITAL_ABERTURA).")]
+        [RegularExpression(CodigoPattern, ErrorMessage = "Código do tipo de ato deve começar com letra maiúscula e conter letras maiúsculas sem acento, algarismos e sublinhado entre palavras.")]
         string codigo,
         [FromQuery] DateOnly? data,
         CancellationToken cancellationToken)

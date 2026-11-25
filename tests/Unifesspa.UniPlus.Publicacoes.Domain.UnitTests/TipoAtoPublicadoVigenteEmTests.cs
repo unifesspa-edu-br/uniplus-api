@@ -3,6 +3,7 @@ namespace Unifesspa.UniPlus.Publicacoes.Domain.UnitTests;
 using AwesomeAssertions;
 
 using Unifesspa.UniPlus.Publicacoes.Domain.Entities;
+using Unifesspa.UniPlus.Testes.Compartilhado;
 
 /// <summary>
 /// A janela de vigência de uma versão do tipo de ato é semiaberta, <c>[início, fim)</c>: o início
@@ -56,14 +57,11 @@ public sealed class TipoAtoPublicadoVigenteEmTests
     }
 
     private static TipoAtoPublicado Versao(DateOnly? vigenciaFim) =>
-        TipoAtoPublicado.Criar(
-            codigo: "AVISO",
-            nome: "Aviso",
-            congelaConfiguracao: false,
-            unicoPorObjeto: false,
-            efeitoIrreversivel: false,
-            ehResultado: false,
-            vigenciaInicio: Inicio,
-            vigenciaFim: vigenciaFim,
-            baseLegal: null).Value!;
+        (new TipoAtoPublicadoDeTeste
+        {
+            Codigo = "AVISO",
+            Nome = "Aviso",
+            VigenciaInicio = Inicio,
+            VigenciaFim = vigenciaFim
+        }).Criar().Value!;
 }

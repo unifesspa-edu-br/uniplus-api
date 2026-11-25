@@ -5,13 +5,10 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Protecao;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
+using Unifesspa.UniPlus.Kernel.Domain.ValueObjects;
 using Unifesspa.UniPlus.Publicacoes.Domain.Entities;
 
-[System.Diagnostics.CodeAnalysis.SuppressMessage(
-    "Performance",
-    "CA1812:Avoid uninstantiated internal classes",
-    Justification = "Instanciada via EF Core ModelBuilder.ApplyConfigurationsFromAssembly por reflection.")]
-internal sealed class TipoAtoPublicadoConfiguration : IEntityTypeConfiguration<TipoAtoPublicado>
+public sealed class TipoAtoPublicadoConfiguration : IEntityTypeConfiguration<TipoAtoPublicado>
 {
     private const int CodigoMaxLength = 60;
     private const int NomeMaxLength = 200;
@@ -34,11 +31,10 @@ internal sealed class TipoAtoPublicadoConfiguration : IEntityTypeConfiguration<T
                     "ck_tipos_de_ato_publicado_vigencia",
                     "vigencia_fim IS NULL OR vigencia_fim > vigencia_inicio");
 
-                // Defesa em profundidade do formato do código contra inserts crus
-                // (o guard de domínio já recusa). Caixa alta e underscore interno.
+                // O código segue o formato compartilhado pelo domínio.
                 t.HasCheckConstraint(
                     "ck_tipos_de_ato_publicado_codigo_formato",
-                    "codigo ~ '^[A-Z]+(_[A-Z]+)*$'");
+                    $"codigo ~ '{FormatoDoCodigo.ExpressaoNoBanco}'");
             });
 
         builder.HasKey(t => t.Id);

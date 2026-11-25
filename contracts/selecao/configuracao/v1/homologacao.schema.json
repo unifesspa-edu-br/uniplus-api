@@ -10,7 +10,7 @@
       "title": "Resultado que publica a lista",
       "description": "Código do tipo de ato que publica a lista de homologadas: produto da própria fase. Se a fase publica o preliminar, o definitivo do mesmo tipo sai na própria fase.",
       "type": "string",
-      "pattern": "^[A-Z]+(_[A-Z]+)*$",
+      "pattern": "^[A-Z][A-Z0-9]*(_[A-Z0-9]+)*$",
       "minLength": 1,
       "maxLength": 60
     },

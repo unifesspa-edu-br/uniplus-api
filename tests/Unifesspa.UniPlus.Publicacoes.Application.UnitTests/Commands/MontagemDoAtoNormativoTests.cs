@@ -49,6 +49,15 @@ public sealed class MontagemDoAtoNormativoTests
         montado.Error!.Code.Should().Be(AtoNormativoErrorCodes.TipoSemVersaoVigente);
     }
 
+    [Fact(DisplayName = "Código fora do formato sem versão vigente é recusado pelo catálogo")]
+    public async Task Montar_TipoForaDoFormatoSemVersaoVigente_Recusa()
+    {
+        Result<AtoMontado> montado = await Montar(Comando() with { TipoCodigo = "aviso" });
+
+        montado.Error!.Code.Should().Be(AtoNormativoErrorCodes.TipoSemVersaoVigente);
+        await _tipos.Received().ObterVigenteAsync("aviso", Arg.Any<DateOnly>(), Arg.Any<CancellationToken>());
+    }
+
     [Fact(DisplayName = "Recusa o ato de processo seletivo fora do registro pelo domínio")]
     public async Task Montar_VinculoComProcessoSeletivo_RecusaForaDoRegistroPeloDominio()
     {

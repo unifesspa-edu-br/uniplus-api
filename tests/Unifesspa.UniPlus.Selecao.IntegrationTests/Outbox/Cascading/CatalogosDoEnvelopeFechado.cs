@@ -242,13 +242,20 @@ internal static class CatalogosDoEnvelopeFechado
             return;
         }
 
-        Result<TipoAtoPublicado> tipoResult = TipoAtoPublicado.Criar(
-            codigo, nome, congelaConfiguracao: false, unicoPorObjeto: false, efeitoIrreversivel: false, ehResultado: true,
-            new DateOnly(2020, 1, 1), vigenciaFim: null, baseLegal: null);
+        Result<TipoAtoPublicado> tipoResult = DeclaracaoDeTipoDeResultado(codigo, nome).Criar();
         tipoResult.IsSuccess.Should().BeTrue(tipoResult.Error?.Message);
 
         await db.Set<TipoAtoPublicado>().AddAsync(tipoResult.Value!).ConfigureAwait(false);
     }
+
+    private static TipoAtoPublicadoDeTeste DeclaracaoDeTipoDeResultado(string codigo, string nome) =>
+        new()
+        {
+            Codigo = codigo,
+            Nome = nome,
+            EhResultado = true,
+            VigenciaInicio = new DateOnly(2020, 1, 1)
+        };
 
     /// <summary>
     /// Semeia uma Base Legal de Bônus Regional (Configuração) direto no

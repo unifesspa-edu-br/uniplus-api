@@ -5,6 +5,7 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Protecao;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
+using Unifesspa.UniPlus.Kernel.Domain.ValueObjects;
 using Unifesspa.UniPlus.Publicacoes.Application.Persistence;
 using Unifesspa.UniPlus.Publicacoes.Domain.Entities;
 using Unifesspa.UniPlus.Publicacoes.Domain.ValueObjects;
@@ -14,11 +15,7 @@ using Unifesspa.UniPlus.Publicacoes.Domain.ValueObjects;
 /// atos de um tipo <c>unico_por_objeto</c> (ADR-0107). O índice único é a garantia dura;
 /// a consulta prévia do handler só existe para dar mensagem legível.
 /// </summary>
-[System.Diagnostics.CodeAnalysis.SuppressMessage(
-    "Performance",
-    "CA1812:Avoid uninstantiated internal classes",
-    Justification = "Instanciada via EF Core ModelBuilder.ApplyConfigurationsFromAssembly por reflection.")]
-internal sealed class ExclusividadeDeAtosConfiguration : IEntityTypeConfiguration<VagaDeLinhagem>
+public sealed class ExclusividadeDeAtosConfiguration : IEntityTypeConfiguration<VagaDeLinhagem>
 {
     private const int EntidadeTipoMaxLength = TipoDaEntidadeVinculada.TamanhoMaximo;
     private const int TipoCodigoMaxLength = 60;
@@ -35,6 +32,7 @@ internal sealed class ExclusividadeDeAtosConfiguration : IEntityTypeConfiguratio
             {
                 t.HasComment("Exclusividade de atos: reserva que um objeto faz para uma única cadeia de retificação de atos de um tipo único por objeto.");
 
+                t.HasCheckConstraint("ck_exclusividades_de_atos_tipo_codigo_formato", $"tipo_codigo ~ '{FormatoDoCodigo.ExpressaoNoBanco}'");
                 t.HasCheckConstraint(
                     "ck_exclusividades_de_atos_entidade_tipo_formato",
                     $"entidade_tipo ~ '{TipoDaEntidadeVinculada.Padrao}'");

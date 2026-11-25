@@ -5,14 +5,11 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Protecao;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
+using Unifesspa.UniPlus.Kernel.Domain.ValueObjects;
 using Unifesspa.UniPlus.Publicacoes.Application.Persistence;
 using Unifesspa.UniPlus.Publicacoes.Domain.Entities;
 
-[System.Diagnostics.CodeAnalysis.SuppressMessage(
-    "Performance",
-    "CA1812:Avoid uninstantiated internal classes",
-    Justification = "Instanciada via EF Core ModelBuilder.ApplyConfigurationsFromAssembly por reflection.")]
-internal sealed class AtoNormativoConfiguration : IEntityTypeConfiguration<AtoNormativo>
+public sealed class AtoNormativoConfiguration : IEntityTypeConfiguration<AtoNormativo>
 {
     private const int OrgaoMaxLength = 200;
     private const int SerieMaxLength = 100;
@@ -33,6 +30,7 @@ internal sealed class AtoNormativoConfiguration : IEntityTypeConfiguration<AtoNo
             "atos_normativos",
             t =>
             {
+                t.HasCheckConstraint("ck_atos_normativos_tipo_codigo_formato", $"tipo_codigo ~ '{FormatoDoCodigo.ExpressaoNoBanco}'");
                 // Defesa em profundidade do formato do hash do documento contra
                 // inserts crus (o guard de domínio já recusa). SHA-256 hex minúsculo.
                 t.HasCheckConstraint(

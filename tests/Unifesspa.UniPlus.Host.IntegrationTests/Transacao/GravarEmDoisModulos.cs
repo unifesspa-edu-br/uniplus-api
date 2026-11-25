@@ -11,6 +11,7 @@ using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
 using Unifesspa.UniPlus.Selecao.Domain.MotivosDeDecisao;
+using Unifesspa.UniPlus.Testes.Compartilhado;
 
 /// <summary>Como a gravação nos dois módulos termina: o que o handler de teste faz depois de ter gravado nos dois.</summary>
 public enum DesfechoDaGravacao
@@ -55,9 +56,12 @@ public static class GravarEmDoisModulosHandler
     }
 
     internal static TipoAtoPublicado NovoTipo(string codigo) =>
-        TipoAtoPublicado.Criar(
-            codigo, "Tipo de ato de teste da transação", congelaConfiguracao: false, unicoPorObjeto: false,
-            efeitoIrreversivel: false, ehResultado: false, new DateOnly(2026, 1, 1), vigenciaFim: null, baseLegal: null).Value!;
+        (new TipoAtoPublicadoDeTeste
+        {
+            Codigo = codigo,
+            Nome = "Tipo de ato de teste da transação",
+            VigenciaInicio = new DateOnly(2026, 1, 1)
+        }).Criar().Value!;
 
     internal static MotivoDeDecisao NovoMotivo(string codigo) =>
         MotivoDeDecisao.Criar(new CamposDoMotivo(

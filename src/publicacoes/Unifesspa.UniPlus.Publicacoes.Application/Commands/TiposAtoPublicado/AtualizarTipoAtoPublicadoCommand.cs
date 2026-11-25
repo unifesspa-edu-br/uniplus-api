@@ -4,6 +4,7 @@ using System.Text.Json.Serialization;
 
 using Unifesspa.UniPlus.Application.Abstractions.Messaging;
 using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Publicacoes.Domain.ValueObjects;
 
 /// <summary>
 /// Atualiza uma versão de tipo de ato. O <c>Codigo</c> é <b>imutável</b> — é a
@@ -32,4 +33,9 @@ public sealed record AtualizarTipoAtoPublicadoCommand(
     [property: JsonRequired] bool ExigeAtoCorrigido,
     DateOnly VigenciaInicio,
     DateOnly? VigenciaFim = null,
-    string? BaseLegal = null) : ICommand<Result>;
+    string? BaseLegal = null) : ICommand<Result>
+{
+    public DeclaracaoDoTipoAtoPublicado Declaracao() => new(
+        Codigo, Nome, CongelaConfiguracao, UnicoPorObjeto, EfeitoIrreversivel, EhResultado,
+        PublicavelComoAvulso, ExigeAtoCorrigido, VigenciaInicio, VigenciaFim, BaseLegal);
+}

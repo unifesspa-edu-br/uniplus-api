@@ -4,6 +4,7 @@ using System.Text.Json.Serialization;
 
 using Unifesspa.UniPlus.Application.Abstractions.Messaging;
 using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Publicacoes.Domain.ValueObjects;
 
 /// <summary>
 /// Cria uma versão de tipo de ato: código (UPPER_SNAKE), nome, os três atributos de
@@ -33,4 +34,9 @@ public sealed record CriarTipoAtoPublicadoCommand(
     [property: JsonRequired] bool ExigeAtoCorrigido,
     DateOnly VigenciaInicio,
     DateOnly? VigenciaFim = null,
-    string? BaseLegal = null) : ICommand<Result<Guid>>;
+    string? BaseLegal = null) : ICommand<Result<Guid>>
+{
+    public DeclaracaoDoTipoAtoPublicado Declaracao() => new(
+        Codigo, Nome, CongelaConfiguracao, UnicoPorObjeto, EfeitoIrreversivel, EhResultado,
+        PublicavelComoAvulso, ExigeAtoCorrigido, VigenciaInicio, VigenciaFim, BaseLegal);
+}

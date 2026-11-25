@@ -5,7 +5,7 @@ using Unifesspa.UniPlus.Publicacoes.Domain.ValueObjects;
 /// <summary>
 /// Limites, padrões e mensagens do registro de ato normativo, compartilhados
 /// entre o validator e (por espelhamento) as invariantes do agregado. As regras
-/// avaliam o valor <b>normalizado</b> (trim), como a factory faz.
+/// avaliam os códigos como recebidos e normalizam os demais textos.
 /// </summary>
 internal static class AtoNormativoRegras
 {
@@ -22,14 +22,6 @@ internal static class AtoNormativoRegras
     /// <c>$</c> aceita um <c>\n</c> final, e um hash com quebra de linha não é um SHA-256.
     /// </summary>
     public const string HashPattern = @"^[0-9a-f]{64}\z";
-
-    /// <summary>
-    /// Forma canônica do rótulo da entidade vinculada. Verifica a <b>forma</b>, jamais o
-    /// valor: não há lista de tipos permitidos, e não pode haver — o rótulo é opaco
-    /// (ADR-0105). O que se exige é grafia única, sem a qual a mesma entidade se
-    /// partiria em duas na consulta unificada.
-    /// </summary>
-    public const string EntidadeTipoPattern = TipoDaEntidadeVinculada.Padrao;
 
     public const string OrgaoObrigatorio = "Órgão publicador é obrigatório.";
     public const string OrgaoTamanho = "Órgão publicador deve ter no máximo 200 caracteres.";
@@ -52,7 +44,7 @@ internal static class AtoNormativoRegras
 
     public const string EntidadeTipoObrigatorio = "Tipo da entidade vinculada é obrigatório.";
     public const string EntidadeTipoTamanho = "Tipo da entidade vinculada deve ter no máximo 60 caracteres.";
-    public const string EntidadeTipoFormato = "Tipo da entidade vinculada deve ser um rótulo em maiúsculas, com grupos separados por sublinhado.";
+    public const string EntidadeTipoFormato = "Tipo da entidade vinculada deve começar com letra maiúscula e conter letras maiúsculas sem acento, algarismos e sublinhado entre palavras.";
     public const string EntidadeIdObrigatorio = "Identificador da entidade vinculada não pode ser vazio.";
     public const string VinculoDuplicado = "A mesma entidade não pode ser vinculada duas vezes ao mesmo ato.";
     public const string VinculoNulo = "A lista de vínculos não admite elemento nulo.";

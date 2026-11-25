@@ -54,7 +54,7 @@
           "title": "Tipo de ato",
           "description": "Código do tipo de ato no catálogo de publicações.",
           "type": "string",
-          "pattern": "^[A-Z]+(_[A-Z]+)*$",
+          "pattern": "^[A-Z][A-Z0-9]*(_[A-Z0-9]+)*$",
           "minLength": 1,
           "maxLength": 60
         },
@@ -116,7 +116,7 @@
           "title": "Ato âncora do prazo",
           "description": "Código do tipo de ato, entre os atos preliminares da própria fase, a partir de cujo instante o prazo corre.",
           "type": "string",
-          "pattern": "^[A-Z]+(_[A-Z]+)*$",
+          "pattern": "^[A-Z][A-Z0-9]*(_[A-Z0-9]+)*$",
           "minLength": 1,
           "maxLength": 60
         },
