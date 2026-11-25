@@ -113,15 +113,7 @@ public sealed class CategoriasDocumentoController : ControllerBase
             .Send(command, cancellationToken)
             .ConfigureAwait(false);
 
-        if (resultado.IsSuccess)
-        {
-            return CreatedAtAction(
-                nameof(ObterPorId),
-                new { id = resultado.Value },
-                resultado.Value);
-        }
-
-        return resultado.ToActionResult(_mapper);
+        return resultado.ToCreatedResult(this, nameof(ObterPorId), _mapper);
     }
 
     /// <summary>Atualiza uma categoria existente. Exige a permissão de manutenção.</summary>
