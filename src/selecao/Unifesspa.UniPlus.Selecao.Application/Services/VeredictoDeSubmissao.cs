@@ -137,8 +137,7 @@ public static class VeredictoDeSubmissao
     private static bool AceitoNaVersaoFixada(TermoExigidoFormulario exigido, IReadOnlyList<AceiteDeTermo> aceites)
     {
         AceiteDeTermo? aceite = aceites.FirstOrDefault(a => string.Equals(a.Codigo, exigido.Codigo, StringComparison.Ordinal));
-        return aceite is not null && aceite.VersaoId == exigido.VersaoId
-            && string.Equals(aceite.HashVersao, exigido.HashVersao, StringComparison.Ordinal);
+        return aceite is not null && aceite.ValeParaAVersao(exigido.ParaAceite());
     }
 
     /// <summary>

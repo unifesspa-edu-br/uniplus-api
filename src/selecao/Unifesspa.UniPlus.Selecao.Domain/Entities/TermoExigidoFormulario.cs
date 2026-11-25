@@ -5,6 +5,7 @@ using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Regras.ValueObjects;
+using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 /// <summary>
 /// Um termo de consentimento ou declaração que o formulário exige (UNI-REQ-0086): escolhido no
@@ -98,6 +99,9 @@ public sealed class TermoExigidoFormulario : EntityBase, IParteDoProcesso
 
     /// <summary>O termo utilizado na conferência das dependências do formulário.</summary>
     public TermoDoGrafo ParaGrafo() => new(Codigo, FatosCitados);
+
+    /// <summary>A versão e o conteúdo fixados para conferir o aceite.</summary>
+    public TermoAdmitido ParaAceite() => new(VersaoId, HashVersao);
 
     /// <summary>As condições do termo, para os vínculos e as referências a valor do processo.</summary>
     public IEnumerable<CondicaoDnf> Condicoes =>

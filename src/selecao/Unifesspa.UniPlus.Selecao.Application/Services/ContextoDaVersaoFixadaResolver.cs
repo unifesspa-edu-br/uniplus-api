@@ -210,7 +210,7 @@ public sealed class ContextoDaVersaoFixadaResolver(
         Dictionary<string, TermoAdmitido> termos = new(StringComparer.Ordinal);
         foreach (TermoExigidoFormulario termo in configuracaoPublicada.Coleta.TermosExigidos.Where(static t => t.Finalidade == FinalidadeFormulario.Inscricao))
         {
-            termos.TryAdd(termo.Codigo, new TermoAdmitido(termo.VersaoId, termo.HashVersao));
+            termos.TryAdd(termo.Codigo, termo.ParaAceite());
         }
 
         return termos;

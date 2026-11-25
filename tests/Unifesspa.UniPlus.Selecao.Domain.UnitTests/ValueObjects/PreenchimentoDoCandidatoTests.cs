@@ -4,6 +4,7 @@ using System.Text.Json;
 
 using AwesomeAssertions;
 
+using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Errors;
@@ -129,6 +130,53 @@ public sealed class PreenchimentoDoCandidatoTests
             ("aceites[0]", InscricaoErrorCodes.AceiteDeOutraVersao, "O aceite do termo 'A' não é da versão que o formulário apresenta. Recarregue a página e aceite o termo exibido."),
             ("aceites[1]", InscricaoErrorCodes.AceiteRepetido, "O termo 'A' foi aceito mais de uma vez. Envie um único aceite para cada termo."),
             ("aceites[2]", InscricaoErrorCodes.AceiteForaDoFormulario, "O termo 'B' não faz parte do formulário. Recarregue a página e aceite os termos exibidos."));
+    }
+
+    [Fact]
+    public void ComAceitesAdmitidos_VersaoFixadaOutraVersaoETermoFora_MantemApenasVersaoFixada()
+    {
+        AceiteDeTermo valido = new("A", Guid.Empty, "abc");
+        PreenchimentoDoCandidato valor = Criar(aceites: [valido, new("B", Guid.NewGuid(), "abc"), new("FORA", Guid.Empty, "abc")]);
+        RespostasAdmitidas admitidas = Admitidas with
+        {
+            Termos = new Dictionary<string, TermoAdmitido>
+            { ["A"] = new(Guid.Empty, "abc"), ["B"] = new(Guid.Empty, "abc") }
+        };
+
+        valor.ComAceitesAdmitidos(admitidas).Aceites.Should().Equal(valido);
+    }
+
+    [Fact]
+    public void ComAceitesAdmitidos_RecusasDeVersao_DescartaRecusadosEMantemApenasNaoRecusados()
+    {
+        PreenchimentoDoCandidato valor = Criar(aceites: [new("A", Guid.Empty, "abc"), new("B", Guid.NewGuid(), "abc"),
+            new("C", Guid.Empty, "ABC"), new("FORA", Guid.Empty, "abc")]);
+        Dictionary<string, TermoAdmitido> termos = new()
+        {
+            ["A"] = new(Guid.Empty, "abc"),
+            ["B"] = new(Guid.Empty, "abc"),
+            ["C"] = new(Guid.Empty, "abc")
+        };
+        IReadOnlyList<AceiteDeTermo> mantidos = valor.ComAceitesAdmitidos(Admitidas with { Termos = termos }).Aceites;
+        List<FieldError> recusas = valor.RecusasDosAceites(termos).ToList();
+
+        recusas.Where(r => r.Error.Code == InscricaoErrorCodes.AceiteDeOutraVersao).Select(r => r.Field)
+            .Should().Equal("aceites[1]", "aceites[2]");
+        mantidos.Should().Equal(valor.Aceites[0]);
+        recusas.Select(r => r.Field).Should().NotContain("aceites[0]");
+    }
+
+    [Fact]
+    public void RecusasDosAceites_RepetidoForaEDaOutraVersao_PreservaPrecedenciaEOrdemDoEnvio()
+    {
+        PreenchimentoDoCandidato valor = Criar(aceites: [new("A", Guid.Empty, "abc"), new("A", Guid.NewGuid(), "errado"),
+            new("FORA", Guid.Empty, "abc"), new("B", Guid.NewGuid(), "abc")]);
+        Dictionary<string, TermoAdmitido> termos = new() { ["A"] = new(Guid.Empty, "abc"), ["B"] = new(Guid.Empty, "abc") };
+
+        valor.RecusasDosAceites(termos).Select(static r => (r.Field, r.Error.Code)).Should().Equal(
+            ("aceites[1]", InscricaoErrorCodes.AceiteRepetido),
+            ("aceites[2]", InscricaoErrorCodes.AceiteForaDoFormulario),
+            ("aceites[3]", InscricaoErrorCodes.AceiteDeOutraVersao));
     }
 
     [Fact]
