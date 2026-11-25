@@ -1,6 +1,7 @@
 namespace Unifesspa.UniPlus.Configuracao.Domain.Interfaces;
 
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
+using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Kernel.Pagination;
 
 /// <summary>
@@ -33,28 +34,21 @@ public interface IOfertaCursoRepository
     /// Campos de ordenação já validados contra o catálogo do recurso, na ordem de
     /// prioridade. Nunca vazio: sem escolha do cliente, vale a ordem padrão.
     /// </param>
-    /// <param name="busca">
-    /// Texto pesquisado sobre nome e código do curso ofertado e sigla da unidade
-    /// ofertante, insensível a caixa e acento; <c>null</c> ou em branco lista tudo.
-    /// </param>
     /// <param name="afterSortKey">
     /// Chave de ordenação da âncora de continuação; <c>null</c> na primeira página.
     /// </param>
-    /// <param name="cursoId">
-    /// Filtro opcional (issue #755): restringe às ofertas do curso informado antes
-    /// do keyset — itens e âncoras respeitam o recorte; <c>null</c> lista todas.
-    /// </param>
-    Task<(IReadOnlyList<OfertaCurso> Itens, (string SortKey, Guid Id)? Anterior, (string SortKey, Guid Id)? Proximo, int? Total)>
+    Task<(IReadOnlyList<OfertaCurso> Itens, (string SortKey, Guid Id)? Anterior, (string SortKey, Guid Id)? Proximo)>
         ListarPaginadoAsync(
             IReadOnlyList<SortField> ordenacao,
-            string? busca,
+            FiltroDasOfertasDeCurso filtro,
             string? afterSortKey,
             Guid? afterId,
             int limit,
             PaginationDirection direction,
-            Guid? cursoId,
-            bool includeTotal,
             CancellationToken cancellationToken);
+
+    /// <summary>Conta as ofertas do mesmo filtro usado na paginação.</summary>
+    Task<int> ContarAsync(FiltroDasOfertasDeCurso filtro, CancellationToken cancellationToken);
 
     Task AdicionarAsync(OfertaCurso ofertaCurso, CancellationToken cancellationToken);
 

@@ -6,6 +6,7 @@ using Microsoft.EntityFrameworkCore;
 
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Domain.Interfaces;
+using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Configurations;
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Repositories.Ordenacao;
 using Unifesspa.UniPlus.Infrastructure.Core.Pagination;
@@ -57,45 +58,44 @@ public sealed class OfertaCursoRepository : IOfertaCursoRepository
             .FirstOrDefaultAsync(o => o.Id == id, cancellationToken);
     }
 
-    public async Task<(IReadOnlyList<OfertaCurso> Itens, (string SortKey, Guid Id)? Anterior, (string SortKey, Guid Id)? Proximo, int? Total)>
+    public async Task<(IReadOnlyList<OfertaCurso> Itens, (string SortKey, Guid Id)? Anterior, (string SortKey, Guid Id)? Proximo)>
         ListarPaginadoAsync(
             IReadOnlyList<SortField> ordenacao,
-            string? busca,
+            FiltroDasOfertasDeCurso filtro,
             string? afterSortKey,
             Guid? afterId,
             int limit,
             PaginationDirection direction,
-            Guid? cursoId,
-            bool includeTotal,
             CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(ordenacao);
+        ArgumentNullException.ThrowIfNull(filtro);
 
-        string? termo = NormalizacaoTextual.PrepararTermoDeBusca(busca);
-        IQueryable<OfertaCursoOrdenada> query = OfertasDoRecorte(cursoId, termo);
-        int? total = await ContarSeSolicitadoAsync(query, includeTotal, cancellationToken).ConfigureAwait(false);
+        string? termo = NormalizacaoTextual.PrepararTermoDeBusca(filtro.Busca);
+        IQueryable<OfertaCursoOrdenada> query = OfertasFiltradas(filtro);
 
         OrderedKeysetPage<OfertaCursoOrdenada> page = await OrderedKeysetCursor
-            .ApplyAsync(query, OrdenacaoDeCursos.DeOfertas(ordenacao, RecorteDeOferta(termo, cursoId)), afterSortKey, afterId, limit, direction, cancellationToken)
+            .ApplyAsync(query, OrdenacaoDeCursos.DeOfertas(ordenacao, CondicoesDoFiltroDeOfertas(termo, filtro.CursoId)), afterSortKey, afterId, limit, direction, cancellationToken)
             .ConfigureAwait(false);
 
-        return ([.. page.Items.Select(static linha => linha.Entidade)], page.Previous, page.Next, total);
+        return ([.. page.Items.Select(static linha => linha.Entidade)], page.Previous, page.Next);
     }
 
     /// <summary>
-    /// O recorte opcional por curso (issue #755) é aplicado ANTES do keyset para que os EXISTS de prev/next o herdem; é
+    /// O filtro opcional por curso é aplicado antes do keyset para que os EXISTS de prev/next o herdem; é
     /// apoiado por ix_ofertas_de_curso_curso_id. A busca alcança o curso ofertado pela coluna já normalizada, o código do
     /// curso, o código da oferta e a sigla da unidade — todos disponíveis sem junção adicional.
     /// </summary>
-    private IQueryable<OfertaCursoOrdenada> OfertasDoRecorte(Guid? cursoId, string? termo)
+    private IQueryable<OfertaCursoOrdenada> OfertasFiltradas(FiltroDasOfertasDeCurso filtro)
     {
         IQueryable<OfertaCurso> ofertas = _dbContext.OfertasCurso.AsNoTracking();
-        if (cursoId is { } curso)
+        if (filtro.CursoId is { } curso)
         {
             ofertas = ofertas.Where(o => o.CursoId == curso);
         }
 
         IQueryable<OfertaCursoOrdenada> query = ComOrdenacaoDoCurso(ofertas);
+        string? termo = NormalizacaoTextual.PrepararTermoDeBusca(filtro.Busca);
         return termo is null ? query : ComBusca(query, termo);
     }
 
@@ -132,21 +132,19 @@ public sealed class OfertaCursoRepository : IOfertaCursoRepository
             || EF.Functions.ILike(FuncoesDaPlataforma.NormalizarParaComparacao(o.UnidadeSigla), padrao, EscapeDoLike));
     }
 
-    /// <summary>
-    /// A contagem sai da MESMA consulta que produziu a página (ADR-0026): o recorte por curso, a busca e o filtro de exclusão
-    /// lógica já estão aplicados, e o keyset ainda não — um total que prometesse lista diferente da que o filtro traz seria
-    /// rótulo que mente. Sem include_total nenhuma contagem é disparada: quem não pede não paga.
-    /// </summary>
-    private static async Task<int?> ContarSeSolicitadoAsync(IQueryable<OfertaCursoOrdenada> query, bool incluirTotal, CancellationToken cancellationToken) =>
-        incluirTotal ? await query.CountAsync(cancellationToken).ConfigureAwait(false) : null;
+    public Task<int> ContarAsync(FiltroDasOfertasDeCurso filtro, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(filtro);
+        return OfertasFiltradas(filtro).CountAsync(cancellationToken);
+    }
 
     /// <summary>
     /// O que reduziu a coleção antes da paginação — termo pesquisado e curso
-    /// filtrado. Entra na assinatura do cursor para que a continuação de um recorte
+    /// filtrado. Entra na assinatura do cursor para que a continuação de um filtro
     /// não retome dentro de outro: sem isso, o cursor emitido para um curso
     /// retomaria na listagem de outro, a partir de uma posição que lá não existe.
     /// </summary>
-    private static IReadOnlyList<string> RecorteDeOferta(string? termo, Guid? cursoId) =>
+    private static IReadOnlyList<string> CondicoesDoFiltroDeOfertas(string? termo, Guid? cursoId) =>
         [termo ?? string.Empty, cursoId?.ToString() ?? string.Empty];
 
     public async Task AdicionarAsync(OfertaCurso ofertaCurso, CancellationToken cancellationToken)
