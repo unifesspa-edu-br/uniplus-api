@@ -63,7 +63,7 @@ public sealed class PageRequestModelBinderPrecedenciaTests
     public async Task BindModelAsync_CursorExpiradoComEtiquetaDeOutroRecurso_RecusaComoExpirado()
     {
         ServiceProvider services = CreateCursorServices().BuildServiceProvider();
-        CursorPayload payload = ValidPayload("inscricoes") with { ExpiresAt = DateTimeOffset.UtcNow.AddMinutes(-1) };
+        CursorPayload payload = ValidPayload("inscricoes") with { ExpiresAt = InstanteDaConsulta.AddMinutes(-1) };
         string cursor = await EncodeAsync(services, payload);
 
         ModelBindingContext context = await BindAsync(QueryWithCursor(cursor), services: services);
@@ -91,6 +91,16 @@ public sealed class PageRequestModelBinderPrecedenciaTests
         ModelBindingContext context = await BindAsync(QueryWithCursor(cursor, "&direction=PREV"), services: services);
 
         AssertPage(context).Direction.Should().Be(PaginationDirection.Prev);
+    }
+
+    [Fact]
+    public async Task BindModelAsync_PrevSemCursor_CoageParaNext()
+    {
+        ModelBindingContext context = await BindAsync("?direction=prev");
+
+        PageRequest page = context.Result.Model.Should().BeOfType<PageRequest>().Subject;
+        page.AfterId.Should().BeNull();
+        page.Direction.Should().Be(PaginationDirection.Next);
     }
 
     [Fact]
@@ -146,7 +156,7 @@ public sealed class PageRequestModelBinderPrecedenciaTests
         string cursor = await EncodeAsync(services, ValidPayload("cidades") with { SortKey = "maraba" });
 
         ModelBindingContext context = await BindAsync(
-            QueryWithCursor(cursor), nameof(BinderActions.SortedCidades), services);
+            QueryWithCursor(cursor), BinderActions.SortedCidades, services);
 
         AssertPage(context).AfterSortKey.Should().Be("maraba");
     }

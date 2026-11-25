@@ -14,6 +14,7 @@ using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
+using Microsoft.Extensions.Time.Testing;
 
 using NSubstitute;
 
@@ -24,12 +25,14 @@ using Unifesspa.UniPlus.Kernel.Pagination;
 
 internal static class CursorBinderTestSupport
 {
+    public static readonly DateTimeOffset InstanteDaConsulta = new(2026, 1, 1, 12, 0, 0, TimeSpan.Zero);
+
     public const string InvalidCursorMessage = "O cursor informado é inválido.";
 
     public static ServiceCollection CreateCursorServices()
     {
         ServiceCollection services = new();
-        services.AddSingleton(TimeProvider.System);
+        services.AddSingleton<TimeProvider>(new FakeTimeProvider(InstanteDaConsulta));
         services.AddSingleton(Options.Create(new CursorPaginationOptions()));
         services.AddSingleton<IUniPlusEncryptionService>(_ => CreateCipher());
         services.AddSingleton<CursorEncoder>();
@@ -37,7 +40,7 @@ internal static class CursorBinderTestSupport
     }
 
     public static CursorEncoder CreateEncoder() =>
-        new(CreateCipher(), Options.Create(new CursorPaginationOptions()), TimeProvider.System);
+        new(CreateCipher(), Options.Create(new CursorPaginationOptions()), new FakeTimeProvider(InstanteDaConsulta));
 
     public static ServiceCollection WithUser(
         this ServiceCollection services,
@@ -57,10 +60,10 @@ internal static class CursorBinderTestSupport
     }
 
     public static CursorPayload ValidPayload(string resource = "editais") => new(
-        After: Guid.CreateVersion7().ToString(),
+        After: Guid.NewGuid().ToString(),
         Limit: 10,
         ResourceTag: resource,
-        ExpiresAt: DateTimeOffset.UtcNow.AddMinutes(10),
+        ExpiresAt: InstanteDaConsulta.AddMinutes(10),
         Direction: PaginationDirection.Next);
 
     public static async Task<string> EncodeAsync(IServiceProvider services, CursorPayload payload)
@@ -74,7 +77,7 @@ internal static class CursorBinderTestSupport
 
     public static async Task<DefaultModelBindingContext> BindAsync(
         string query,
-        string action = nameof(BinderActions.PublicEditais),
+        Action<PageRequest>? action = null,
         IServiceProvider? services = null)
     {
         DefaultModelBindingContext context = CreateContext(
@@ -86,7 +89,7 @@ internal static class CursorBinderTestSupport
     public static DefaultModelBindingContext CreateContext(
         IServiceProvider services,
         string query,
-        string action,
+        Action<PageRequest>? action = null,
         IDictionary<string, object?>? routeValues = null)
     {
         DefaultHttpContext httpContext = new() { RequestServices = services };
@@ -124,16 +127,15 @@ internal static class CursorBinderTestSupport
         return context.Result.Model.Should().BeOfType<PageRequest>().Subject;
     }
 
-    private static ControllerActionDescriptor DescribeAction(string action)
+    private static ControllerActionDescriptor DescribeAction(Action<PageRequest>? action = null)
     {
-        ParameterInfo parameter = typeof(BinderActions)
-            .GetMethod(action, BindingFlags.Static | BindingFlags.NonPublic)!
-            .GetParameters()[0];
+        action ??= BinderActions.PublicEditais;
+        ParameterInfo parameter = action.Method.GetParameters()[0];
 
         return new ControllerActionDescriptor
         {
             Parameters = new List<ParameterDescriptor> { DescribeParameter(parameter) },
-            ActionName = action,
+            ActionName = action.Method.Name,
         };
     }
 

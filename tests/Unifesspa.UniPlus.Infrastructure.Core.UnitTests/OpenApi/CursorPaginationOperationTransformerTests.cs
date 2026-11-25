@@ -46,14 +46,8 @@ public sealed class CursorPaginationOperationTransformerTests
         OpenApiResponse okResponse = response200.Should().BeOfType<OpenApiResponse>().Subject;
         okResponse.Headers.Should().NotBeNull();
 
-        IOpenApiHeader linkHeader = okResponse.Headers!["Link"];
-        linkHeader.Description.Should().Contain("RFC 5988/8288").And.Contain("rel=\"next\"");
-        linkHeader.Schema.Should().NotBeNull();
-        linkHeader.Schema!.Type!.Value.HasFlag(JsonSchemaType.String).Should().BeTrue();
-
-        IOpenApiHeader pageSizeHeader = okResponse.Headers["X-Page-Size"];
-        pageSizeHeader.Schema.Should().NotBeNull();
-        pageSizeHeader.Schema!.Type!.Value.HasFlag(JsonSchemaType.Integer).Should().BeTrue();
+        AssertLinkHeader(okResponse);
+        AssertPageSizeHeader(okResponse);
     }
 
     [Fact(DisplayName = "Operação que aceita include_total declara X-Total-Count em response 200")]
@@ -108,20 +102,14 @@ public sealed class CursorPaginationOperationTransformerTests
     public async Task TransformAsync_Should_NotMutate_WhenActionLacksFromCursor()
     {
         CursorPaginationOperationTransformer transformer = new();
-        OpenApiOperation operation = new()
-        {
-            Responses = new OpenApiResponses
-            {
-                ["200"] = new OpenApiResponse(),
-            },
-        };
+        OpenApiOperation operation = OperationWith200Response();
         OpenApiOperationTransformerContext context = ContextForActionWithoutCursor();
 
         await transformer.TransformAsync(operation, context, CancellationToken.None);
 
         operation.Parameters.Should().BeNull();
         operation.Extensions.Should().BeNull();
-        OpenApiResponse response200 = operation.Responses["200"].Should().BeOfType<OpenApiResponse>().Subject;
+        OpenApiResponse response200 = operation.Responses!["200"].Should().BeOfType<OpenApiResponse>().Subject;
         response200.Headers.Should().BeNull(
             "transformer só declara Link/X-Page-Size em endpoints com [FromCursor]");
     }
@@ -148,15 +136,7 @@ public sealed class CursorPaginationOperationTransformerTests
     public async Task TransformAsync_Should_PreserveOtherQueryParameters()
     {
         CursorPaginationOperationTransformer transformer = new();
-        OpenApiOperation operation = new()
-        {
-            Parameters =
-            [
-                new OpenApiParameter { Name = "AfterId", In = ParameterLocation.Query },
-                new OpenApiParameter { Name = "Limit", In = ParameterLocation.Query },
-                new OpenApiParameter { Name = "status", In = ParameterLocation.Query },
-            ],
-        };
+        OpenApiOperation operation = OperationWithOtherQueryParameter();
         OpenApiOperationTransformerContext context = ContextForActionWithCursor();
 
         await transformer.TransformAsync(operation, context, CancellationToken.None);
@@ -203,27 +183,14 @@ public sealed class CursorPaginationOperationTransformerTests
         };
 
     private static OpenApiOperationTransformerContext ContextForActionWithCursor() =>
-        ContextForAction(typeof(FixtureController).GetMethod(nameof(FixtureController.Listar))!);
+        ContextForAction(new Action<PageRequest>(FixtureController.Listar).Method);
 
     private static OpenApiOperationTransformerContext ContextForActionWithoutCursor() =>
-        ContextForAction(typeof(FixtureController).GetMethod(nameof(FixtureController.SemCursor))!);
+        ContextForAction(new Action<int>(FixtureController.SemCursor).Method);
 
     private static OpenApiOperationTransformerContext ContextForAction(MethodInfo methodInfo)
     {
-        ControllerActionDescriptor descriptor = new()
-        {
-            EndpointMetadata = [],
-            MethodInfo = methodInfo,
-            Parameters = methodInfo.GetParameters()
-                .Select(parameter => (Microsoft.AspNetCore.Mvc.Abstractions.ParameterDescriptor)
-                    new ControllerParameterDescriptor
-                    {
-                        Name = parameter.Name!,
-                        ParameterType = parameter.ParameterType,
-                        ParameterInfo = parameter,
-                    })
-                .ToList(),
-        };
+        ControllerActionDescriptor descriptor = DescribeAction(methodInfo);
 
         ApiDescription description = new()
         {
@@ -238,12 +205,50 @@ public sealed class CursorPaginationOperationTransformerTests
         };
     }
 
+    private static void AssertLinkHeader(OpenApiResponse response)
+    {
+        IOpenApiHeader linkHeader = response.Headers!["Link"];
+        linkHeader.Description.Should().Contain("RFC 5988/8288").And.Contain("rel=\"next\"");
+        linkHeader.Schema.Should().NotBeNull();
+        linkHeader.Schema!.Type!.Value.HasFlag(JsonSchemaType.String).Should().BeTrue();
+    }
+
+    private static void AssertPageSizeHeader(OpenApiResponse response)
+    {
+        IOpenApiHeader pageSizeHeader = response.Headers!["X-Page-Size"];
+        pageSizeHeader.Schema.Should().NotBeNull();
+        pageSizeHeader.Schema!.Type!.Value.HasFlag(JsonSchemaType.Integer).Should().BeTrue();
+    }
+
+    private static OpenApiOperation OperationWithOtherQueryParameter() => new()
+    {
+        Parameters =
+        [
+            new OpenApiParameter { Name = "AfterId", In = ParameterLocation.Query },
+            new OpenApiParameter { Name = "Limit", In = ParameterLocation.Query },
+            new OpenApiParameter { Name = "status", In = ParameterLocation.Query },
+        ],
+    };
+
+    private static ControllerActionDescriptor DescribeAction(MethodInfo methodInfo) => new()
+    {
+        EndpointMetadata = [],
+        MethodInfo = methodInfo,
+        Parameters = methodInfo.GetParameters()
+            .Select(parameter => (Microsoft.AspNetCore.Mvc.Abstractions.ParameterDescriptor)
+                new ControllerParameterDescriptor
+                {
+                    Name = parameter.Name!,
+                    ParameterType = parameter.ParameterType,
+                    ParameterInfo = parameter,
+                })
+            .ToList(),
+    };
+
     private static class FixtureController
     {
-#pragma warning disable IDE0060 // métodos fixture só servem para reflection
-        public static Task Listar([FromCursor(FixtureResource)] PageRequest page) => Task.CompletedTask;
+        public static void Listar([FromCursor(FixtureResource)] PageRequest page) => _ = page;
 
-        public static Task SemCursor(int id) => Task.CompletedTask;
-#pragma warning restore IDE0060
+        public static void SemCursor(int id) => _ = id;
     }
 }

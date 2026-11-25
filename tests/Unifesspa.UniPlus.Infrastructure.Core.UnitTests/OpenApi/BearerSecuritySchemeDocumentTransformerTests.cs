@@ -31,7 +31,18 @@ public sealed class BearerSecuritySchemeDocumentTransformerTests
     {
         // O transformer roda depois dos que povoam schemas (ProblemDetails e os DTOs). Substituir
         // Components em vez de completá-lo apagaria todos eles e deixaria as referências órfãs.
-        OpenApiDocument document = new()
+        OpenApiDocument document = DocumentWithProblemDetails();
+
+        await new BearerSecuritySchemeDocumentTransformer().TransformAsync(
+            document, Context(), CancellationToken.None);
+
+        document.Components!.Schemas.Should().ContainKey("ProblemDetails");
+        document.Components.SecuritySchemes.Should()
+            .ContainKey(BearerSecuritySchemeDocumentTransformer.SchemeName);
+    }
+
+    private static OpenApiDocument DocumentWithProblemDetails() =>
+        new()
         {
             Components = new OpenApiComponents
             {
@@ -41,14 +52,6 @@ public sealed class BearerSecuritySchemeDocumentTransformerTests
                 },
             },
         };
-
-        await new BearerSecuritySchemeDocumentTransformer().TransformAsync(
-            document, Context(), CancellationToken.None);
-
-        document.Components!.Schemas.Should().ContainKey("ProblemDetails");
-        document.Components.SecuritySchemes.Should()
-            .ContainKey(BearerSecuritySchemeDocumentTransformer.SchemeName);
-    }
 
     private static OpenApiDocumentTransformerContext Context() =>
         new()
