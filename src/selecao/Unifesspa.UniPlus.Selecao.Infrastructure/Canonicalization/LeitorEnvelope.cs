@@ -237,12 +237,13 @@ internal sealed class LeitorEnvelope
         return default!;
     }
 
-    public T Propagar<T>(IReadOnlyList<FieldError> erros)
+    /// <summary>Preserva todas as causas do domínio para situá-las no item do envelope.</summary>
+    public T Propagar<T>(IReadOnlyList<FieldError> causas, string caminhoDoItem)
     {
         if (!Falhou)
         {
-            _erros = erros;
-            _erro = erros[0].Error;
+            _erros = [.. causas.Select(causa => (causa with { Field = causa.Field ?? string.Empty }).NoCaminhoDe(caminhoDoItem))];
+            _erro = _erros[0].Error;
         }
 
         return default!;

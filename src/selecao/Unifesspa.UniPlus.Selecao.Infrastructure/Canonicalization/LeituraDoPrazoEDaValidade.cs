@@ -29,7 +29,7 @@ internal static class LeituraDoPrazoEDaValidade
         UnidadeDoPrazoDeEmissao? unidade = CodigoOpcional<UnidadeDoPrazoDeEmissao>(leitor, bloco, "unidade", path);
         DataDeReferenciaDoDocumento? referencia = LerReferencia(leitor, bloco, path);
         EfeitoNaAnaliseDoDocumento? efeito = CodigoOpcional<EfeitoNaAnaliseDoDocumento>(leitor, bloco, "efeitoForaDoPrazo", path);
-        return leitor.Falhou ? null : Declarado(leitor, PrazoDeEmissao.Criar(escolha, valor, unidade, referencia, efeito));
+        return leitor.Falhou ? null : Declarado(leitor, PrazoDeEmissao.Criar(escolha, valor, unidade, referencia, efeito), path);
     }
 
     internal static ValidadeDoDocumento? LerValidade(LeitorEnvelope leitor, JsonObject item, string pathPai)
@@ -45,7 +45,7 @@ internal static class LeituraDoPrazoEDaValidade
         EscolhaDaValidade escolha = leitor.CodigoDeContrato<EscolhaDaValidade>(bloco, "escolha", path);
         DataDeReferenciaDoDocumento? referencia = LerReferencia(leitor, bloco, path);
         EfeitoNaAnaliseDoDocumento? efeito = CodigoOpcional<EfeitoNaAnaliseDoDocumento>(leitor, bloco, "efeitoDoVencimento", path);
-        return leitor.Falhou ? null : Declarado(leitor, ValidadeDoDocumento.Criar(escolha, referencia, efeito));
+        return leitor.Falhou ? null : Declarado(leitor, ValidadeDoDocumento.Criar(escolha, referencia, efeito), path);
     }
 
     private static DataDeReferenciaDoDocumento? LerReferencia(LeitorEnvelope leitor, JsonObject pai, string pathPai)
@@ -61,14 +61,14 @@ internal static class LeituraDoPrazoEDaValidade
         TipoDaDataDeReferencia tipo = leitor.CodigoDeContrato<TipoDaDataDeReferencia>(bloco, "tipo", path);
         DateOnly? data = leitor.DataOpcional(bloco, "data", path);
         Guid? faseId = leitor.IdentificadorOpcional(bloco, "faseId", path);
-        return leitor.Falhou ? null : Declarado(leitor, DataDeReferenciaDoDocumento.Criar(tipo, data, faseId));
+        return leitor.Falhou ? null : Declarado(leitor, DataDeReferenciaDoDocumento.Criar(tipo, data, faseId), path);
     }
 
     private static TEnum? CodigoOpcional<TEnum>(LeitorEnvelope leitor, JsonObject pai, string chave, string path)
         where TEnum : struct, Enum =>
         leitor.Falhou || pai[chave] is null ? null : leitor.CodigoDeContrato<TEnum>(pai, chave, path);
 
-    private static T? Declarado<T>(LeitorEnvelope leitor, Result<T> criado)
+    private static T? Declarado<T>(LeitorEnvelope leitor, Result<T> criado, string caminhoDoBloco)
         where T : class =>
-        criado.IsFailure ? leitor.Propagar<T?>(criado.Errors) : criado.Value;
+        criado.IsFailure ? leitor.Propagar<T?>(criado.Errors, caminhoDoBloco) : criado.Value;
 }

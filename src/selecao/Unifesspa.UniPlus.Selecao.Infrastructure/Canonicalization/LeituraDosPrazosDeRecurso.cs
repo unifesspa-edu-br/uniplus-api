@@ -116,7 +116,7 @@ internal static class LeituraDosPrazosDeRecurso
 
     private static RegraRecursoFase? Reidratar(LeitorEnvelope leitor, string path, Result<RegraRecursoFase> resultado) =>
         resultado.IsFailure
-            ? leitor.Propagar<RegraRecursoFase>([.. resultado.Errors.Select(erro => erro.NoCaminhoDe(path))])
+            ? leitor.Propagar<RegraRecursoFase>(resultado.Errors, path)
             : resultado.Value;
 
     /// <summary>
