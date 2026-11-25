@@ -93,3 +93,7 @@ Inscrição e isenção podem dividir a mesma fase do cronograma, e a fase sozin
 
 - UNI-REQ-0017, UNI-REQ-0086, UNI-REQ-0144 e UNI-REQ-0145.
 - ADR-0028 (versionamento por media type), ADR-0061 (cópia por valor), ADR-0109 (envelope do congelamento), ADR-0110 (retificação), ADR-0131 (portal como BFF público), ADR-0135 (projeto compartilhado de regras) e ADR-0136 (catálogo de fatos administrável).
+
+## Emenda 1 (2026-11-24) — página do formulário
+
+Em "Etapas são seções ou blocos de sistema" e "ordem é a de etapa e item", o nome da parte do formulário é página. Etapa fica só para a etapa de avaliação do processo. A decisão não muda.
