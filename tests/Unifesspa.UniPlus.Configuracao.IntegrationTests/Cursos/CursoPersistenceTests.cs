@@ -45,25 +45,12 @@ public sealed class CursoPersistenceTests
         string codigo = CodigoUnico();
         Curso curso = Novo(codigo, grupoAreaEnem: GrupoCurso.Tecnologica);
 
-        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(AdminA))
-        {
-            ctx.Cursos.Add(curso);
-            await ctx.SaveChangesAsync();
-        }
+        await GravarCursoAsync(curso);
 
         await using UniPlusDbContext readCtx = _fixture.CreateDbContext(userId: null);
         Curso persistido = await readCtx.Cursos.SingleAsync(c => c.Id == curso.Id);
 
-        persistido.Codigo.Should().Be(codigo);
-        persistido.Nome.Should().Be("Engenharia Civil");
-        persistido.Grau.Should().Be("Bacharelado");
-        persistido.NivelEnsino.Should().Be("Graduação");
-        persistido.GrupoAreaEnem!.Codigo.Should().Be(GrupoCurso.Tecnologica);
-        persistido.GrupoAreaEnem.Rotulo.Should().Be("Tecnológica");
-        (await GrupoGravadoAsync(readCtx, curso.Id)).Should().Be(new GrupoGravado("TECNOLOGICA", "Tecnológica"),
-            "a linha grava o código do grupo e, ao lado, o rótulo posto pelo sistema");
-        persistido.CreatedBy.Should().Be(AdminA);
-        persistido.IsDeleted.Should().BeFalse();
+        await VerificarCursoComGrupoAsync(readCtx, persistido, codigo);
     }
 
     [Fact(DisplayName = "Criar sem grupo de área do ENEM persiste a coluna nula e reidrata como nulo")]
@@ -71,11 +58,7 @@ public sealed class CursoPersistenceTests
     {
         Curso curso = Novo(CodigoUnico(), grupoAreaEnem: null);
 
-        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(AdminA))
-        {
-            ctx.Cursos.Add(curso);
-            await ctx.SaveChangesAsync();
-        }
+        await GravarCursoAsync(curso);
 
         await using UniPlusDbContext readCtx = _fixture.CreateDbContext(userId: null);
         Curso persistido = await readCtx.Cursos.SingleAsync(c => c.Id == curso.Id);
@@ -87,24 +70,14 @@ public sealed class CursoPersistenceTests
     public async Task UniquePartial_Codigo_RejeitaDuplicataAtiva()
     {
         string codigo = CodigoUnico();
-        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(AdminA))
-        {
-            ctx.Cursos.Add(Novo(codigo));
-            await ctx.SaveChangesAsync();
-        }
+        await GravarCursoAsync(Novo(codigo));
 
         await using UniPlusDbContext ctx2 = _fixture.CreateDbContext(AdminA);
         ctx2.Cursos.Add(Novo(codigo));
 
         Func<Task> act = async () => await ctx2.SaveChangesAsync();
 
-        // Trava as constantes que o handler usa para traduzir a corrida concorrente
-        // (UniqueConstraintViolation.GetViolatedConstraint/IsCodigoConflict) em
-        // CodigoJaExiste/409: SqlState 23505 + nome do índice único parcial.
-        DbUpdateException ex = (await act.Should().ThrowAsync<DbUpdateException>()).Which;
-        Npgsql.PostgresException pg = ex.InnerException.Should().BeOfType<Npgsql.PostgresException>().Which;
-        pg.SqlState.Should().Be("23505");
-        pg.ConstraintName.Should().Be(RestricoesDoBanco.CursoCodigoAtivos);
+        await VerificarViolacaoDeCodigoAsync(act);
     }
 
     [Fact(DisplayName = "Código distinto é aceito")]
@@ -123,26 +96,10 @@ public sealed class CursoPersistenceTests
     {
         string codigo = CodigoUnico();
         Curso curso = Novo(codigo);
-        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(AdminA))
-        {
-            ctx.Cursos.Add(curso);
-            await ctx.SaveChangesAsync();
-        }
+        await GravarCursoAsync(curso);
 
-        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(AdminB))
-        {
-            Curso tracked = await ctx.Cursos.SingleAsync(c => c.Id == curso.Id);
-            ctx.Cursos.Remove(tracked);
-            await ctx.SaveChangesAsync();
-        }
-
-        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null))
-        {
-            Curso excluido = await ctx.Cursos
-                .IgnoreQueryFilters().SingleAsync(c => c.Id == curso.Id);
-            excluido.IsDeleted.Should().BeTrue();
-            excluido.DeletedBy.Should().Be(AdminB);
-        }
+        await RemoverCursoAsync(curso.Id);
+        await VerificarExclusaoAsync(curso.Id);
 
         await using UniPlusDbContext ctx3 = _fixture.CreateDbContext(AdminA);
         ctx3.Cursos.Add(Novo(codigo));
@@ -169,19 +126,9 @@ public sealed class CursoPersistenceTests
     public async Task Atualizar_SemGrupo_ZeraCodigoERotulo()
     {
         Curso curso = Novo(CodigoUnico(), grupoAreaEnem: GrupoCurso.SaudeEBiologicas);
-        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(AdminA))
-        {
-            ctx.Cursos.Add(curso);
-            await ctx.SaveChangesAsync();
-        }
+        await GravarCursoAsync(curso);
 
-        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(AdminA))
-        {
-            Curso tracked = await ctx.Cursos.SingleAsync(c => c.Id == curso.Id);
-            tracked.Atualizar(tracked.Codigo, tracked.Nome, tracked.Grau, tracked.NivelEnsino, grupoAreaEnem: null)
-                .IsSuccess.Should().BeTrue();
-            await ctx.SaveChangesAsync();
-        }
+        await RemoverGrupoAsync(curso.Id);
 
         await using UniPlusDbContext readCtx = _fixture.CreateDbContext(userId: null);
         (await GrupoGravadoAsync(readCtx, curso.Id)).Should().Be(new GrupoGravado(null, null));
@@ -203,39 +150,33 @@ public sealed class CursoPersistenceTests
     [Fact(DisplayName = "Navegação bidirecional do cursor: prev volta exatamente à página anterior, com flags coerentes")]
     public async Task Navegacao_Bidirecional_PrevVoltaPaginaAnterior()
     {
-        // Os cinco nomes compartilham um prefixo que os põe no fim da ordem
-        // alfabética, formando um bloco contíguo: a tabela é estática dentro da
-        // collection e acumula cursos de outros testes, cujos nomes começam por
-        // "Engenharia". Sem isso, as linhas alheias se intercalariam ao bloco e as
-        // âncoras deixariam de ser determinísticas.
         string marca = MarcaDeBloco();
-        Curso[] cursos =
-        [
-            Novo(CodigoUnico(), nome: $"{marca} A"),
-            Novo(CodigoUnico(), nome: $"{marca} B"),
-            Novo(CodigoUnico(), nome: $"{marca} C"),
-            Novo(CodigoUnico(), nome: $"{marca} D"),
-            Novo(CodigoUnico(), nome: $"{marca} E"),
-        ];
-
-        // Inseridos fora de ordem, para a ordem de leitura não poder vir da ordem
-        // de gravação.
-        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(AdminA))
-        {
-            ctx.Cursos.AddRange([cursos[3], cursos[0], cursos[4], cursos[1], cursos[2]]);
-            await ctx.SaveChangesAsync();
-        }
-
+        Curso[] cursos = CursosDoBloco(marca);
+        await GravarForaDeOrdemAsync(cursos);
         Guid[] ids = [.. cursos.Select(c => c.Id)];
-
-        // A travessia parte das âncoras que a própria paginação emite, como faz um
-        // cliente ao seguir o header Link — o teste não remonta a chave de
-        // ordenação, cujo formato é interno ao cursor.
         List<Pagina> percorridas = await PercorrerTudoAsync();
+        VerificarOrdemDoBloco(percorridas, marca, ids);
+        await VerificarVoltaAsync(percorridas, ids);
+    }
 
-        // A sequência global preserva a ordem alfabética do bloco, sem repetir nem
-        // omitir, independentemente de onde ele caia entre as linhas das outras
-        // baterias de teste desta collection.
+    private static Curso[] CursosDoBloco(string marca) =>
+    [
+        Novo(CodigoUnico(), nome: $"{marca} A"),
+        Novo(CodigoUnico(), nome: $"{marca} B"),
+        Novo(CodigoUnico(), nome: $"{marca} C"),
+        Novo(CodigoUnico(), nome: $"{marca} D"),
+        Novo(CodigoUnico(), nome: $"{marca} E"),
+    ];
+
+    private async Task GravarForaDeOrdemAsync(Curso[] cursos)
+    {
+        await using UniPlusDbContext ctx = _fixture.CreateDbContext(AdminA);
+        ctx.Cursos.AddRange([cursos[3], cursos[0], cursos[4], cursos[1], cursos[2]]);
+        await ctx.SaveChangesAsync();
+    }
+
+    private static void VerificarOrdemDoBloco(List<Pagina> percorridas, string marca, Guid[] ids)
+    {
         Guid[] doBloco =
         [
             .. percorridas
@@ -244,20 +185,75 @@ public sealed class CursoPersistenceTests
                 .Select(c => c.Id),
         ];
         doBloco.Should().Equal(ids);
+    }
 
-        // A volta por prev devolve exatamente a página anterior — mesma ordem
-        // ascendente, mesmos itens.
+    private async Task VerificarVoltaAsync(List<Pagina> percorridas, Guid[] ids)
+    {
         int indice = percorridas.FindIndex(p => p.Itens.Any(c => c.Id == ids[2]));
         indice.Should().BeGreaterThan(0, "o bloco fica no fim da ordem, então há páginas antes dele");
-
         Pagina comItemDoBloco = percorridas[indice];
         comItemDoBloco.Anterior.Should().NotBeNull("não é a primeira página da coleção");
-
         (IReadOnlyList<Curso> volta, _, (string SortKey, Guid Id)? voltaProx) =
             await PaginarAsync(comItemDoBloco.Anterior, PaginationDirection.Prev);
-
         volta.Select(c => c.Id).Should().Equal(percorridas[indice - 1].Itens.Select(c => c.Id));
         voltaProx!.Value.Id.Should().Be(volta[^1].Id, "a âncora de próximo é o último item da página");
+    }
+
+    private static async Task VerificarViolacaoDeCodigoAsync(Func<Task> act)
+    {
+        // Trava as constantes que o handler usa para traduzir a corrida concorrente
+        // (UniqueConstraintViolation.GetViolatedConstraint/IsCodigoConflict) em
+        // CodigoJaExiste/409: SqlState 23505 + nome do índice único parcial.
+        DbUpdateException ex = (await act.Should().ThrowAsync<DbUpdateException>()).Which;
+        Npgsql.PostgresException pg = ex.InnerException.Should().BeOfType<Npgsql.PostgresException>().Which;
+        pg.SqlState.Should().Be("23505");
+        pg.ConstraintName.Should().Be(RestricoesDoBanco.CursoCodigoAtivos);
+    }
+
+    private static async Task VerificarCursoComGrupoAsync(UniPlusDbContext readCtx, Curso persistido, string codigo)
+    {
+        persistido.Codigo.Should().Be(codigo);
+        persistido.Nome.Should().Be("Engenharia Civil");
+        persistido.Grau.Should().Be("Bacharelado");
+        persistido.NivelEnsino.Should().Be("Graduação");
+        persistido.GrupoAreaEnem!.Codigo.Should().Be(GrupoCurso.Tecnologica);
+        persistido.GrupoAreaEnem.Rotulo.Should().Be("Tecnológica");
+        (await GrupoGravadoAsync(readCtx, persistido.Id)).Should().Be(new GrupoGravado("TECNOLOGICA", "Tecnológica"),
+            "a linha grava o código do grupo e, ao lado, o rótulo posto pelo sistema");
+        persistido.CreatedBy.Should().Be(AdminA);
+        persistido.IsDeleted.Should().BeFalse();
+    }
+
+    private async Task GravarCursoAsync(Curso curso)
+    {
+        await using UniPlusDbContext ctx = _fixture.CreateDbContext(AdminA);
+        ctx.Cursos.Add(curso);
+        await ctx.SaveChangesAsync();
+    }
+
+    private async Task RemoverCursoAsync(Guid id)
+    {
+        await using UniPlusDbContext ctx = _fixture.CreateDbContext(AdminB);
+        Curso tracked = await ctx.Cursos.SingleAsync(c => c.Id == id);
+        ctx.Cursos.Remove(tracked);
+        await ctx.SaveChangesAsync();
+    }
+
+    private async Task VerificarExclusaoAsync(Guid id)
+    {
+        await using UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null);
+        Curso excluido = await ctx.Cursos.IgnoreQueryFilters().SingleAsync(c => c.Id == id);
+        excluido.IsDeleted.Should().BeTrue();
+        excluido.DeletedBy.Should().Be(AdminB);
+    }
+
+    private async Task RemoverGrupoAsync(Guid id)
+    {
+        await using UniPlusDbContext ctx = _fixture.CreateDbContext(AdminA);
+        Curso tracked = await ctx.Cursos.SingleAsync(c => c.Id == id);
+        tracked.Atualizar(tracked.Codigo, tracked.Nome, tracked.Grau, tracked.NivelEnsino, grupoAreaEnem: null)
+            .IsSuccess.Should().BeTrue();
+        await ctx.SaveChangesAsync();
     }
 
     private sealed record Pagina(
@@ -271,20 +267,15 @@ public sealed class CursoPersistenceTests
         List<Pagina> paginas = [];
         (string SortKey, Guid Id)? ancora = null;
 
-        while (true)
+        do
         {
             (IReadOnlyList<Curso> itens, (string SortKey, Guid Id)? anterior, (string SortKey, Guid Id)? proximo) =
                 await PaginarAsync(ancora, PaginationDirection.Next);
-
             paginas.Add(new Pagina(itens, anterior, proximo));
-
-            if (proximo is null)
-            {
-                return paginas;
-            }
-
             ancora = proximo;
         }
+        while (ancora is not null);
+        return paginas;
     }
 
     private async Task<(IReadOnlyList<Curso> Itens, (string SortKey, Guid Id)? Anterior, (string SortKey, Guid Id)? Proximo)>

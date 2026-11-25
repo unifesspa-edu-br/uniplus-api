@@ -90,39 +90,34 @@ public sealed class OrdenacaoAlfabeticaPersistenceTests
     {
         string codigo = $"CUR_{Guid.NewGuid().ToString("N")[..12].ToUpperInvariant()}";
 
-        // Acento decomposto de propósito: "e" seguido do acento agudo combinante
-        // (U+0301), em vez do "é" pré-composto. É a forma que chega de fonte que não
-        // normaliza o texto, e a substituição de acentos só a alcança porque a
-        // expressão da coluna normaliza antes de substituir.
         const string NomeDecomposto = "Cie\u0301ncias Conta\u0301beis";
-
-        await using (UniPlusDbContext escrita = _fixture.CreateDbContext("admin"))
-        {
-            escrita.Cursos.Add(
-                Curso.Criar(codigo, NomeDecomposto, "Bacharelado", "Graduação", null).Value!);
-            await escrita.SaveChangesAsync();
-        }
+        await GravarCursoAsync(codigo, NomeDecomposto);
 
         await using UniPlusDbContext leitura = _fixture.CreateDbContext(userId: null);
-        string? chave = await leitura.Database
-            .SqlQuery<string?>($@"
-                SELECT nome_ordenacao AS ""Value""
-                FROM configuracao.cursos
-                WHERE codigo = {codigo}")
-            .SingleOrDefaultAsync();
-
+        string? chave = await ChaveDeOrdenacaoAsync(leitura, codigo);
         chave.Should().Be("ciencias contabeis");
 
-        // A forma gravada continua sendo a que chegou — a normalização vive na
-        // chave de ordenação, não no dado do cadastro.
-        string? nomeGravado = await leitura.Database
-            .SqlQuery<string?>($@"
-                SELECT nome AS ""Value""
-                FROM configuracao.cursos
-                WHERE codigo = {codigo}")
-            .SingleOrDefaultAsync();
-
+        string? nomeGravado = await NomeGravadoAsync(leitura, codigo);
         nomeGravado.Should().Be(NomeDecomposto);
         nomeGravado.Should().NotBe(NomeDecomposto.Normalize(NormalizationForm.FormC));
     }
+    private async Task GravarCursoAsync(string codigo, string nome)
+    {
+        await using UniPlusDbContext escrita = _fixture.CreateDbContext("admin");
+        escrita.Cursos.Add(Curso.Criar(codigo, nome, "Bacharelado", "Graduação", null).Value!);
+        await escrita.SaveChangesAsync();
+    }
+
+    private static Task<string?> ChaveDeOrdenacaoAsync(UniPlusDbContext leitura, string codigo) =>
+        leitura.Database.SqlQuery<string?>($@"
+            SELECT nome_ordenacao AS ""Value""
+            FROM configuracao.cursos
+            WHERE codigo = {codigo}").SingleOrDefaultAsync();
+
+    private static Task<string?> NomeGravadoAsync(UniPlusDbContext leitura, string codigo) =>
+        leitura.Database.SqlQuery<string?>($@"
+            SELECT nome AS ""Value""
+            FROM configuracao.cursos
+            WHERE codigo = {codigo}").SingleOrDefaultAsync();
+
 }

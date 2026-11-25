@@ -2,13 +2,13 @@ namespace Unifesspa.UniPlus.Configuracao.IntegrationTests.Cursos;
 
 using System.Diagnostics.CodeAnalysis;
 using System.Net;
-using System.Net.Http.Json;
 using System.Text.Json;
 
 using AwesomeAssertions;
 
 using Unifesspa.UniPlus.Configuracao.IntegrationTests.Infrastructure;
-using Unifesspa.UniPlus.IntegrationTests.Fixtures.Authentication;
+
+using static Unifesspa.UniPlus.Configuracao.IntegrationTests.Cursos.ConsultaDeCursos;
 
 /// <summary>
 /// A busca e a ordenação escolhidas por quem consulta, exercitadas por HTTP: o
@@ -61,10 +61,7 @@ public sealed class BuscaEOrdenacaoEndpointTests
         string bloco = Bloco();
         using HttpClient client = _fixture.Factory.CreateClient();
 
-        foreach (string sufixo in new[] { "Alfa", "Beta", "Gama" })
-        {
-            await CriarCursoAsync(client, $"{bloco} {sufixo}");
-        }
+        await ApoioDaOrdenacaoAlfabetica.CriarCursosAsync(client, bloco, ["Alfa", "Beta", "Gama"]);
 
         IReadOnlyList<string> decrescente = await NomesDoBlocoAsync(client, bloco, "sort=-nome");
 
@@ -300,33 +297,14 @@ public sealed class BuscaEOrdenacaoEndpointTests
         string bloco = Bloco();
         using HttpClient client = _fixture.Factory.CreateClient();
 
-        foreach (string sufixo in new[] { "Eco", "Bio", "Geo", "Neo", "Duo" })
-        {
-            await CriarCursoAsync(client, $"{bloco} {sufixo}");
-        }
+        await ApoioDaOrdenacaoAlfabetica.CriarCursosAsync(client, bloco, ["Eco", "Bio", "Geo", "Neo", "Duo"]);
 
         await CriarCursoAsync(client, $"{bloco} Fora do filtro");
 
-        List<string> percorridos = [];
-        string? url = $"{Cursos}?q={bloco}%20&sort=-nome&limit=2";
-        int paginas = 0;
+        (List<string> percorridos, int paginas) = await PercorrerNomesAsync(
+            client, $"{Cursos}?q={bloco}%20&sort=-nome&limit=2");
 
-        while (url is not null)
-        {
-            HttpResponseMessage resposta = await client.GetAsync(new Uri(url, UriKind.RelativeOrAbsolute));
-            resposta.StatusCode.Should().Be(HttpStatusCode.OK);
-            percorridos.AddRange(await LerNomesAsync(resposta));
-            paginas++;
-            url = LinkRel(resposta, "next");
-        }
-
-        percorridos.Should().Equal(
-            $"{bloco} Neo",
-            $"{bloco} Geo",
-            $"{bloco} Fora do filtro",
-            $"{bloco} Eco",
-            $"{bloco} Duo",
-            $"{bloco} Bio");
+        VerificarOrdemDaBusca(percorridos, bloco);
         percorridos.Should().OnlyHaveUniqueItems();
         paginas.Should().BeGreaterThan(1, "seis registros não cabem numa página de dois");
     }
@@ -337,17 +315,9 @@ public sealed class BuscaEOrdenacaoEndpointTests
         string bloco = Bloco();
         using HttpClient client = _fixture.Factory.CreateClient();
 
-        foreach (string sufixo in new[] { "Alfa", "Beta", "Gama" })
-        {
-            await CriarCursoAsync(client, $"{bloco} {sufixo}");
-        }
+        await ApoioDaOrdenacaoAlfabetica.CriarCursosAsync(client, bloco, ["Alfa", "Beta", "Gama"]);
 
-        HttpResponseMessage primeira = await client.GetAsync(
-            new Uri($"{Cursos}?q={bloco}%20&limit=1", UriKind.Relative));
-        string proxima = LinkRel(primeira, "next").Should().NotBeNull().And.Subject.ToString()!;
-
-        // O mesmo cursor, com o termo de busca trocado.
-        string cursorDeOutraBusca = ParametroCursor(proxima);
+        string cursorDeOutraBusca = await CursorDaPrimeiraPaginaAsync(client, $"{Cursos}?q={bloco}%20&limit=1");
 
         HttpResponseMessage resposta = await client.GetAsync(
             new Uri($"{Cursos}?q=outracoisa&{cursorDeOutraBusca}&direction=next", UriKind.Relative));
@@ -361,16 +331,9 @@ public sealed class BuscaEOrdenacaoEndpointTests
         string bloco = Bloco();
         using HttpClient client = _fixture.Factory.CreateClient();
 
-        foreach (string sufixo in new[] { "Alfa", "Beta", "Gama" })
-        {
-            await CriarCursoAsync(client, $"{bloco} {sufixo}");
-        }
+        await ApoioDaOrdenacaoAlfabetica.CriarCursosAsync(client, bloco, ["Alfa", "Beta", "Gama"]);
 
-        HttpResponseMessage primeira = await client.GetAsync(
-            new Uri($"{Cursos}?q={bloco}%20&sort=nome&limit=1", UriKind.Relative));
-        string proxima = LinkRel(primeira, "next").Should().NotBeNull().And.Subject.ToString()!;
-
-        string cursor = ParametroCursor(proxima);
+        string cursor = await CursorDaPrimeiraPaginaAsync(client, $"{Cursos}?q={bloco}%20&sort=nome&limit=1");
 
         HttpResponseMessage resposta = await client.GetAsync(
             new Uri($"{Cursos}?q={bloco}%20&sort=-nome&{cursor}&direction=next", UriKind.Relative));
@@ -384,24 +347,9 @@ public sealed class BuscaEOrdenacaoEndpointTests
         string bloco = Bloco();
         using HttpClient client = _fixture.Factory.CreateClient();
 
-        // Cinco cursos com o MESMO grau: a coluna de ordenação empata em todos, e só
-        // o Id que o motor acrescenta separa um do outro. É o caso que mostra se a
-        // âncora carrega o suficiente para retomar de onde parou.
-        foreach (string sufixo in new[] { "Alfa", "Beta", "Gama", "Delta", "Epsilon" })
-        {
-            await CriarCursoAsync(client, $"{bloco} {sufixo}", grau: "Bacharelado");
-        }
-
-        List<string> percorridos = [];
-        string? url = $"{Cursos}?q={bloco}%20&sort=grau&limit=2";
-
-        while (url is not null)
-        {
-            HttpResponseMessage resposta = await client.GetAsync(new Uri(url, UriKind.RelativeOrAbsolute));
-            resposta.StatusCode.Should().Be(HttpStatusCode.OK);
-            percorridos.AddRange(await LerNomesAsync(resposta));
-            url = LinkRel(resposta, "next");
-        }
+        await ApoioDaOrdenacaoAlfabetica.CriarCursosAsync(client, bloco, ["Alfa", "Beta", "Gama", "Delta", "Epsilon"]);
+        (List<string> percorridos, _) = await PercorrerNomesAsync(
+            client, $"{Cursos}?q={bloco}%20&sort=grau&limit=2");
 
         percorridos.Should().HaveCount(5).And.OnlyHaveUniqueItems();
     }
@@ -412,123 +360,25 @@ public sealed class BuscaEOrdenacaoEndpointTests
         string bloco = Bloco();
         using HttpClient client = _fixture.Factory.CreateClient();
 
-        foreach (string sufixo in new[] { "Alfa", "Beta", "Gama", "Delta" })
-        {
-            await CriarCursoAsync(client, $"{bloco} {sufixo}");
-        }
+        await ApoioDaOrdenacaoAlfabetica.CriarCursosAsync(client, bloco, ["Alfa", "Beta", "Gama", "Delta"]);
 
         HttpResponseMessage primeira = await client.GetAsync(
             new Uri($"{Cursos}?q={bloco}%20&sort=-nome&limit=2", UriKind.Relative));
         IReadOnlyList<string> nomesPrimeira = await LerNomesAsync(primeira);
 
-        string proxima = LinkRel(primeira, "next").Should().NotBeNull().And.Subject.ToString()!;
-        HttpResponseMessage segunda = await client.GetAsync(new Uri(proxima, UriKind.RelativeOrAbsolute));
-
-        string anterior = LinkRel(segunda, "prev").Should().NotBeNull().And.Subject.ToString()!;
-        HttpResponseMessage volta = await client.GetAsync(new Uri(anterior, UriKind.RelativeOrAbsolute));
+        HttpResponseMessage volta = await VoltarPaginaAsync(client, primeira);
 
         (await LerNomesAsync(volta)).Should().Equal(nomesPrimeira);
     }
-
-    // ── Helpers ───────────────────────────────────────────────────────────
-
-    /// <summary>
-    /// Extrai o par <c>cursor=...</c> de um link de navegação. O <c>?</c> inicial
-    /// da query string sai junto: remontar a consulta com ele produziria uma URL
-    /// malformada, em que o cursor é ignorado sem erro — e o teste passaria a
-    /// afirmar o contrário do que pretende.
-    /// </summary>
-    private static string ParametroCursor(string url) =>
-        new Uri(url, UriKind.RelativeOrAbsolute).Query
-            .TrimStart('?')
-            .Split('&')
-            .Single(p => p.StartsWith("cursor=", StringComparison.Ordinal));
-
-    private static string Bloco() => $"ZZ{Guid.NewGuid().ToString("N")[..8].ToUpperInvariant()}";
-
-    private static async Task<IReadOnlyList<string>> NomesDoBlocoAsync(
-        HttpClient client, string bloco, string? consulta)
+    private static void VerificarOrdemDaBusca(List<string> percorridos, string bloco)
     {
-        IReadOnlyList<JsonElement> itens = await ItensDoBlocoAsync(client, bloco, consulta);
-        return [.. itens.Select(i => i.GetProperty("nome").GetString()!)];
+        percorridos.Should().Equal(
+            $"{bloco} Neo",
+            $"{bloco} Geo",
+            $"{bloco} Fora do filtro",
+            $"{bloco} Eco",
+            $"{bloco} Duo",
+            $"{bloco} Bio");
     }
 
-    private static async Task<IReadOnlyList<JsonElement>> ItensDoBlocoAsync(
-        HttpClient client, string bloco, string? consulta)
-    {
-        List<JsonElement> itens = [];
-        string? url = consulta is null ? $"{Cursos}?limit=100" : $"{Cursos}?limit=100&{consulta}";
-
-        while (url is not null)
-        {
-            HttpResponseMessage resposta = await client.GetAsync(new Uri(url, UriKind.RelativeOrAbsolute));
-            resposta.StatusCode.Should().Be(HttpStatusCode.OK);
-
-            JsonDocument documento = JsonDocument.Parse(await resposta.Content.ReadAsStringAsync());
-            itens.AddRange(documento.RootElement.EnumerateArray());
-            url = LinkRel(resposta, "next");
-        }
-
-        return
-        [
-            .. itens.Where(i => i.GetProperty("nome").GetString()!
-                .StartsWith(bloco, StringComparison.Ordinal)),
-        ];
-    }
-
-    private static async Task<IReadOnlyList<string>> LerNomesAsync(HttpResponseMessage resposta)
-    {
-        JsonDocument documento = JsonDocument.Parse(await resposta.Content.ReadAsStringAsync());
-        return [.. documento.RootElement.EnumerateArray().Select(i => i.GetProperty("nome").GetString()!)];
-    }
-
-    private static string? LinkRel(HttpResponseMessage resposta, string rel)
-    {
-        if (!resposta.Headers.TryGetValues("Link", out IEnumerable<string>? links))
-        {
-            return null;
-        }
-
-        foreach (string parte in links.Single().Split(", ", StringSplitOptions.RemoveEmptyEntries))
-        {
-            if (!parte.Contains($"rel=\"{rel}\"", StringComparison.Ordinal))
-            {
-                continue;
-            }
-
-            int inicio = parte.IndexOf('<', StringComparison.Ordinal) + 1;
-            int fim = parte.IndexOf('>', StringComparison.Ordinal);
-            if (inicio > 0 && fim > inicio)
-            {
-                return parte[inicio..fim];
-            }
-        }
-
-        return null;
-    }
-
-    private static async Task<Guid> CriarCursoAsync(
-        HttpClient client,
-        string nome,
-        string? codigo = null,
-        string grau = "Bacharelado",
-        string nivel = "Graduação")
-    {
-        using HttpRequestMessage request = new(
-            HttpMethod.Post, new Uri("/api/configuracao/admin/cursos", UriKind.Relative));
-        request.Headers.Add("Authorization", $"{TestAuthHandler.AuthorizationScheme} {TestAuthHandler.TokenValue}");
-        request.Headers.Add(TestAuthHandler.RolesHeader, "plataforma-admin");
-        request.Headers.Add("Idempotency-Key", Guid.NewGuid().ToString());
-        request.Content = JsonContent.Create(new
-        {
-            codigo = codigo ?? $"CUR_{Guid.NewGuid().ToString("N")[..10].ToUpperInvariant()}",
-            nome,
-            grau,
-            nivelEnsino = nivel,
-        });
-
-        HttpResponseMessage resposta = await client.SendAsync(request);
-        resposta.StatusCode.Should().Be(HttpStatusCode.Created);
-        return await resposta.Content.ReadFromJsonAsync<Guid>();
-    }
 }
