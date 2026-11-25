@@ -6,8 +6,9 @@ using Unifesspa.UniPlus.Configuracao.Contracts;
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
+using Unifesspa.UniPlus.Kernel.Domain;
 
-/// <summary>Reader cross-módulo dos tipos ativos; não expõe itens desativados.</summary>
+/// <summary>Reader cross-módulo dos tipos de processo.</summary>
 internal sealed class TipoProcessoReader : ITipoProcessoReader
 {
     private readonly UniPlusDbContext _dbContext;
@@ -40,6 +41,20 @@ internal sealed class TipoProcessoReader : ITipoProcessoReader
         TipoProcesso? tipo = await _dbContext.TiposProcesso.AsNoTracking()
             .FirstOrDefaultAsync(tipo => tipo.Codigo == codigo && tipo.Ativo, cancellationToken).ConfigureAwait(false);
         return tipo is null ? null : ParaView(tipo);
+    }
+
+    public async Task<IReadOnlyDictionary<string, string>> ObterNomesPorCodigosAsync(
+        IReadOnlyCollection<string> codigos, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(codigos);
+        string[] procurados = [.. codigos.Where(codigo => codigo != TodosOsTiposDeProcesso.Codigo).Distinct()];
+        if (procurados.Length == 0)
+        {
+            return new Dictionary<string, string>();
+        }
+
+        return await _dbContext.TiposProcesso.AsNoTracking().Where(tipo => procurados.Contains(tipo.Codigo))
+            .ToDictionaryAsync(tipo => tipo.Codigo, tipo => tipo.Nome, cancellationToken).ConfigureAwait(false);
     }
 
     private static TipoProcessoView ParaView(TipoProcesso tipo) =>

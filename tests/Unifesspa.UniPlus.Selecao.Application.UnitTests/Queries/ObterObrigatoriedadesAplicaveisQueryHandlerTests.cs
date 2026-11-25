@@ -1,11 +1,10 @@
 namespace Unifesspa.UniPlus.Selecao.Application.UnitTests.Queries;
 
-using Unifesspa.UniPlus.Kernel.Domain;
-
 using AwesomeAssertions;
 
 using NSubstitute;
 
+using Unifesspa.UniPlus.Kernel.Domain;
 using Unifesspa.UniPlus.Selecao.Application.DTOs;
 using Unifesspa.UniPlus.Selecao.Application.Queries.ObrigatoriedadesLegais;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
@@ -32,6 +31,20 @@ public sealed class ObterObrigatoriedadesAplicaveisQueryHandlerTests
         resultado.Select(static regra => regra.RegraCodigo).Should().BeEquivalentTo(["UNIVERSAL", "PSIQ"]);
         await regraRepository.Received(1).ObterVigentesParaTipoProcessoAsync(
             "INDIGENA_E_QUILOMBOLA", dataReferencia, Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task Handle_TipoDoProcesso_UsaNomeDaCopia()
+    {
+        ProcessoSeletivo processo = NovoProcesso();
+        IObrigatoriedadeLegalRepository regras = Substitute.For<IObrigatoriedadeLegalRepository>();
+        regras.ObterVigentesParaTipoProcessoAsync(processo.TipoProcesso.Codigo, default, default)
+            .Returns([NovaRegra(processo.TipoProcesso.Codigo, "PSIQ"), NovaRegra(TodosOsTiposDeProcesso.Codigo, "UNIVERSAL")]);
+
+        IReadOnlyList<ObrigatoriedadeLegalDto> resultado = await Consultar(processo.Id, default, RepositorioDoProcesso(processo), regras);
+
+        resultado.Single(regra => regra.RegraCodigo == "PSIQ").TipoProcesso.Rotulo.Should().Be(processo.TipoProcesso.Nome);
+        resultado.Single(regra => regra.RegraCodigo == "UNIVERSAL").TipoProcesso.Rotulo.Should().Be(TodosOsTiposDeProcesso.Rotulo);
     }
 
     [Fact(DisplayName = "Handle não consulta ruleset quando o processo não existe")]

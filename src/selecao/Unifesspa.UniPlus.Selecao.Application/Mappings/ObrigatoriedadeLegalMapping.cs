@@ -1,6 +1,7 @@
 namespace Unifesspa.UniPlus.Selecao.Application.Mappings;
 
 using Unifesspa.UniPlus.Application.Abstractions.Respostas;
+using Unifesspa.UniPlus.Kernel.Domain;
 using Unifesspa.UniPlus.Selecao.Application.DTOs;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
@@ -12,13 +13,11 @@ using Unifesspa.UniPlus.Selecao.Domain.Enums;
 /// </summary>
 public static class ObrigatoriedadeLegalMapping
 {
-    public static ObrigatoriedadeLegalDto ToDto(ObrigatoriedadeLegal regra)
-    {
-        ArgumentNullException.ThrowIfNull(regra);
-
-        return new ObrigatoriedadeLegalDto(
-            Id: regra.Id,
-            TipoProcessoCodigo: regra.TipoProcessoCodigo,
+    public static ObrigatoriedadeLegalDto ToDto(ObrigatoriedadeLegal regra, IReadOnlyDictionary<string, string> nomesDosTipos) =>
+        new(
+            Id: (regra ?? throw new ArgumentNullException(nameof(regra))).Id,
+            TipoProcesso: new(regra.TipoProcessoCodigo, regra.TipoProcessoCodigo == TodosOsTiposDeProcesso.Codigo
+                ? TodosOsTiposDeProcesso.Rotulo : (nomesDosTipos ?? throw new ArgumentNullException(nameof(nomesDosTipos)))[regra.TipoProcessoCodigo]),
             Categoria: CodigoComRotulo<CategoriaObrigatoriedade>.De(regra.Categoria),
             RegraCodigo: regra.RegraCodigo,
             Predicado: regra.Predicado,
@@ -30,5 +29,4 @@ public static class ObrigatoriedadeLegalMapping
             VigenciaFim: regra.VigenciaFim,
             Hash: regra.Hash,
             IsDeleted: regra.IsDeleted);
-    }
 }

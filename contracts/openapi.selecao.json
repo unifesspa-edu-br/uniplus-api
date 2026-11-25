@@ -17523,7 +17523,7 @@
             "title": "Ato \u00E2ncora do prazo",
             "description": "C\u00F3digo do tipo de ato, entre os atos preliminares da pr\u00F3pria fase, a partir de cujo instante o prazo corre.",
             "type": "string",
-            "pattern": "^[A-Z]\u002B(_[A-Z]\u002B)*$",
+            "pattern": "^[A-Z][A-Z0-9]*(_[A-Z0-9]\u002B)*$",
             "minLength": 1,
             "maxLength": 60
           },
@@ -17583,7 +17583,7 @@
             "title": "Tipo de ato",
             "description": "C\u00F3digo do tipo de ato no cat\u00E1logo de publica\u00E7\u00F5es.",
             "type": "string",
-            "pattern": "^[A-Z]\u002B(_[A-Z]\u002B)*$",
+            "pattern": "^[A-Z][A-Z0-9]*(_[A-Z0-9]\u002B)*$",
             "minLength": 1,
             "maxLength": 60
           },
@@ -19767,7 +19767,7 @@
             "title": "Resultado que publica a lista",
             "description": "C\u00F3digo do tipo de ato que publica a lista de homologadas: produto da pr\u00F3pria fase. Se a fase publica o preliminar, o definitivo do mesmo tipo sai na pr\u00F3pria fase.",
             "type": "string",
-            "pattern": "^[A-Z]\u002B(_[A-Z]\u002B)*$",
+            "pattern": "^[A-Z][A-Z0-9]*(_[A-Z0-9]\u002B)*$",
             "minLength": 1,
             "maxLength": 60
           },
@@ -25392,7 +25392,7 @@
       "ObrigatoriedadeLegalDto": {
         "required": [
           "id",
-          "tipoProcessoCodigo",
+          "tipoProcesso",
           "categoria",
           "regraCodigo",
           "predicado",
@@ -25411,8 +25411,8 @@
             "type": "string",
             "format": "uuid"
           },
-          "tipoProcessoCodigo": {
-            "type": "string"
+          "tipoProcesso": {
+            "$ref": "#/components/schemas/TipoProcessoDaObrigatoriedadeDto"
           },
           "categoria": {
             "$ref": "#/components/schemas/CategoriaObrigatoriedade"
@@ -30439,6 +30439,21 @@
         ],
         "type": "string",
         "description": "O que a p\u00E1gina do formul\u00E1rio \u00E9: uma se\u00E7\u00E3o com itens de resposta ou um bloco que o sistema monta.\n\n- \u0060SECAO\u0060: Se\u00E7\u00E3o \u2014 P\u00E1gina com os itens que o candidato responde.\n- \u0060BLOCO\u0060: Bloco do sistema \u2014 P\u00E1gina que o sistema monta a partir da configura\u00E7\u00E3o do processo; o bloco diz qual."
+      },
+      "TipoProcessoDaObrigatoriedadeDto": {
+        "required": [
+          "codigo",
+          "rotulo"
+        ],
+        "type": "object",
+        "properties": {
+          "codigo": {
+            "type": "string"
+          },
+          "rotulo": {
+            "type": "string"
+          }
+        }
       },
       "TipoProcessoSnapshotDto": {
         "required": [
