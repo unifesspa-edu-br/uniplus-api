@@ -91,7 +91,7 @@ Os primeiros leiautes são o de envio e o de retorno do ENEM, conferidos com o r
 
 ## Mais informações
 
-- [ADR-0013](0013-motor-de-classificacao-como-servicos-de-dominio-puros.md) deixa ao administrador a composição de primitivas existentes, sem código. Esta ADR se afasta disso de propósito: até a composição de leitores é código, porque um erro de posição é silencioso e precisa de teste antes do uso.
+- [ADR-0013](0013-classificacao-dos-candidatos-como-servicos-de-dominio-puros.md) deixa ao administrador a composição de primitivas existentes, sem código. Esta ADR se afasta disso de propósito: até a composição de leitores é código, porque um erro de posição é silencioso e precisa de teste antes do uso.
 - [ADR-0129](0129-identidade-da-origem-decide-conformidade.md) admite identificar pelo código um catálogo governado no código e sem edição, que é o caso do leiaute.
 - [ADR-0149](0149-nota-da-etapa-por-inscricao.md) define onde as notas importadas são gravadas.
 - Issues #1602 (importação das notas do ENEM) e unifesspa-edu-br/uniplus-web#848 (tela de importação).
