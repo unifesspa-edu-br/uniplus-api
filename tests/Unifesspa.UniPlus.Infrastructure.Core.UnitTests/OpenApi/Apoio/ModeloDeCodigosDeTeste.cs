@@ -115,6 +115,9 @@ public static class ModeloDeCodigosDeTeste
         public string? Livre { get; init; }
     }
 
+    public sealed record FiltroPosicional(
+        [AceitaCodigosDe<Fase>][property: FromQuery(Name = "fasePosicional")] string? Fase);
+
     public sealed class PedidoComNumeroMarcado
     {
         [AceitaCodigosDe<Fase>]
