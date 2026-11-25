@@ -67,6 +67,13 @@ public sealed class TravessiaDaVitrineComVolumeTests : IClassFixture<ProcessoSel
         await using UniPlusDbContext context = _fixture.CreateDbContext();
         await context.Database.ExecuteSqlRawAsync("TRUNCATE TABLE selecao.certames_divulgados");
 
+        List<CertameDivulgado> linhas = CriarCertames();
+        context.CertamesDivulgados.AddRange(linhas);
+        await context.SaveChangesAsync();
+    }
+
+    private List<CertameDivulgado> CriarCertames()
+    {
         List<CertameDivulgado> linhas = [];
         for (int i = 0; i < Volume; i++)
         {
@@ -76,13 +83,11 @@ public sealed class TravessiaDaVitrineComVolumeTests : IClassFixture<ProcessoSel
                 nome: string.Create(CultureInfo.InvariantCulture, $"Certame {(char)('A' + (i % 12))}"),
                 numero: string.Create(CultureInfo.InvariantCulture, $"{i:D3}/2026"),
                 inscricoesAte: Agora.AddDays(diasAtePrazo));
-
             linhas.Add(linha);
             _semeados.Add(linha.Id);
         }
 
-        context.CertamesDivulgados.AddRange(linhas);
-        await context.SaveChangesAsync();
+        return linhas;
     }
 
     public Task DisposeAsync() => Task.CompletedTask;
@@ -170,26 +175,29 @@ public sealed class TravessiaDaVitrineComVolumeTests : IClassFixture<ProcessoSel
 
         for (int tentativa = 0; tentativa < TetoDePaginas; tentativa++)
         {
-            (IReadOnlyList<CertameDivulgado> itens, _, (string SortKey, Guid Id)? proximo) =
-                await PaginaAsync(ordenacao, cursor, PaginationDirection.Next);
-
-            if (itens.Count == 0)
+            cursor = await AcrescentarProximaPaginaAsync(ordenacao, cursor, acumulados);
+            if (cursor is null)
             {
                 return acumulados;
             }
-
-            acumulados.AddRange(itens);
-
-            if (proximo is null)
-            {
-                return acumulados;
-            }
-
-            cursor = proximo;
         }
 
         throw new InvalidOperationException(
             $"A travessia não terminou em {TetoDePaginas} páginas — o cursor não converge.");
+    }
+
+    private async Task<(string SortKey, Guid Id)?> AcrescentarProximaPaginaAsync(
+        IReadOnlyList<SortField> ordenacao, (string SortKey, Guid Id)? cursor, List<CertameDivulgado> acumulados)
+    {
+        (IReadOnlyList<CertameDivulgado> itens, _, (string SortKey, Guid Id)? proximo) =
+            await PaginaAsync(ordenacao, cursor, PaginationDirection.Next);
+        if (itens.Count == 0)
+        {
+            return null;
+        }
+
+        acumulados.AddRange(itens);
+        return proximo;
     }
 
     /// <summary>
@@ -206,30 +214,42 @@ public sealed class TravessiaDaVitrineComVolumeTests : IClassFixture<ProcessoSel
         (IReadOnlyList<CertameDivulgado> ultimaPagina, (string SortKey, Guid Id)? anteriorDaUltima) =
             await UltimaPaginaAsync(ordenacao);
 
-        List<CertameDivulgado> acumulados = [.. ultimaPagina];
-        (string SortKey, Guid Id)? cursor = anteriorDaUltima;
+        return await PercorrerPaginasAnterioresAsync(ordenacao, anteriorDaUltima, [.. ultimaPagina]);
+    }
 
+    private async Task<IReadOnlyList<CertameDivulgado>> PercorrerPaginasAnterioresAsync(
+        IReadOnlyList<SortField> ordenacao, (string SortKey, Guid Id)? cursor, List<CertameDivulgado> acumulados)
+    {
         for (int tentativa = 0; tentativa < TetoDePaginas; tentativa++)
         {
-            if (cursor is null)
+            (cursor, bool terminou) = await AcrescentarPaginaAnteriorAsync(ordenacao, cursor, acumulados);
+            if (terminou)
             {
                 return acumulados;
             }
-
-            (IReadOnlyList<CertameDivulgado> itens, (string SortKey, Guid Id)? anterior, _) =
-                await PaginaAsync(ordenacao, cursor, PaginationDirection.Prev);
-
-            if (itens.Count == 0)
-            {
-                return acumulados;
-            }
-
-            acumulados.InsertRange(0, itens);
-            cursor = anterior;
         }
 
         throw new InvalidOperationException(
             $"A volta não terminou em {TetoDePaginas} páginas — o cursor não converge.");
+    }
+
+    private async Task<((string SortKey, Guid Id)? Anterior, bool Terminou)> AcrescentarPaginaAnteriorAsync(
+        IReadOnlyList<SortField> ordenacao, (string SortKey, Guid Id)? cursor, List<CertameDivulgado> acumulados)
+    {
+        if (cursor is null)
+        {
+            return (null, true);
+        }
+
+        (IReadOnlyList<CertameDivulgado> itens, (string SortKey, Guid Id)? anterior, _) =
+            await PaginaAsync(ordenacao, cursor, PaginationDirection.Prev);
+        if (itens.Count == 0)
+        {
+            return (null, true);
+        }
+
+        acumulados.InsertRange(0, itens);
+        return (anterior, false);
     }
 
     /// <summary>A última página da coleção e a âncora que leva dela para a anterior.</summary>
@@ -240,15 +260,13 @@ public sealed class TravessiaDaVitrineComVolumeTests : IClassFixture<ProcessoSel
 
         for (int tentativa = 0; tentativa < TetoDePaginas; tentativa++)
         {
-            (IReadOnlyList<CertameDivulgado> itens, (string SortKey, Guid Id)? anterior, (string SortKey, Guid Id)? proximo) =
+            (IReadOnlyList<CertameDivulgado> Itens, (string SortKey, Guid Id)? Anterior, (string SortKey, Guid Id)? Proximo) pagina =
                 await PaginaAsync(ordenacao, cursor, PaginationDirection.Next);
-
-            if (proximo is null)
+            cursor = pagina.Proximo;
+            if (cursor is null)
             {
-                return (itens, anterior);
+                return (pagina.Itens, pagina.Anterior);
             }
-
-            cursor = proximo;
         }
 
         throw new InvalidOperationException("Não foi possível alcançar a última página.");

@@ -41,25 +41,7 @@ public sealed class PlanoDeExecucaoDaVitrineTests : IClassFixture<ProcessoSeleti
         await using UniPlusDbContext context = _fixture.CreateDbContext();
         await context.Database.ExecuteSqlRawAsync("TRUNCATE TABLE selecao.certames_divulgados");
 
-        List<CertameDivulgado> linhas = [];
-        for (int i = 0; i < Volume; i++)
-        {
-            linhas.Add(CertameDivulgado.Criar(
-                Guid.CreateVersion7(),
-                numeroVersao: 1,
-                Guid.CreateVersion7(),
-                new string('a', 64),
-                versaoProjecao: "1",
-                new FacetasDoCertameDivulgado(
-                    string.Create(CultureInfo.InvariantCulture, $"certame-{i:D5}"),
-                    string.Create(CultureInfo.InvariantCulture, $"Certame {i:D5}"),
-                    string.Create(CultureInfo.InvariantCulture, $"{i:D5}/2026"),
-                    ModalidadesDe(i),
-                    Agora.AddDays(-60),
-                    Agora.AddDays((i % 400) - 200)),
-                """{"nome":"documento"}""",
-                Agora));
-        }
+        List<CertameDivulgado> linhas = [.. Enumerable.Range(0, Volume).Select(DivulgadoDaAmostra)];
 
         context.CertamesDivulgados.AddRange(linhas);
         await context.SaveChangesAsync();
@@ -67,6 +49,22 @@ public sealed class PlanoDeExecucaoDaVitrineTests : IClassFixture<ProcessoSeleti
         // O planejador decide pelas estatísticas, que sem isto refletem a tabela vazia.
         await context.Database.ExecuteSqlRawAsync("ANALYZE selecao.certames_divulgados");
     }
+
+    private static CertameDivulgado DivulgadoDaAmostra(int indice) => CertameDivulgado.Criar(
+        Guid.CreateVersion7(),
+        numeroVersao: 1,
+        Guid.CreateVersion7(),
+        new string('a', 64),
+        versaoProjecao: "1",
+        new FacetasDoCertameDivulgado(
+            string.Create(CultureInfo.InvariantCulture, $"certame-{indice:D5}"),
+            string.Create(CultureInfo.InvariantCulture, $"Certame {indice:D5}"),
+            string.Create(CultureInfo.InvariantCulture, $"{indice:D5}/2026"),
+            ModalidadesDe(indice),
+            Agora.AddDays(-60),
+            Agora.AddDays((indice % 400) - 200)),
+        """{"nome":"documento"}""",
+        Agora);
 
     public Task DisposeAsync() => Task.CompletedTask;
 
@@ -143,6 +141,13 @@ public sealed class PlanoDeExecucaoDaVitrineTests : IClassFixture<ProcessoSeleti
             comando.Parameters.AddWithValue(parametro);
         }
 
+        List<string> linhas = await LerLinhasDoPlanoAsync(comando);
+
+        return string.Join('\n', linhas);
+    }
+
+    private static async Task<List<string>> LerLinhasDoPlanoAsync(NpgsqlCommand comando)
+    {
         List<string> linhas = [];
         await using (NpgsqlDataReader leitor = await comando.ExecuteReaderAsync(CancellationToken.None))
         {
@@ -152,6 +157,6 @@ public sealed class PlanoDeExecucaoDaVitrineTests : IClassFixture<ProcessoSeleti
             }
         }
 
-        return string.Join('\n', linhas);
+        return linhas;
     }
 }

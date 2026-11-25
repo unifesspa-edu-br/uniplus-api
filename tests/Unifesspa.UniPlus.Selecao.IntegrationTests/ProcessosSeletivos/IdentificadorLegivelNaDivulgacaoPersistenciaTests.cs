@@ -60,10 +60,7 @@ public sealed class IdentificadorLegivelNaDivulgacaoPersistenciaTests : IClassFi
         CertameDivulgado primeiro = Divulgado(IdentificadoresDeTeste.Novo().Valor);
         await PersistirAsync(primeiro);
 
-        // Mesmo ato criador, identificador distinto: viola o índice do ato, não o do identificador.
-        CertameDivulgado mesmoAto = CertameDivulgado.Criar(
-            Guid.CreateVersion7(), 1, primeiro.AtoCriadorId, new string('a', 64), "2",
-            Facetas(IdentificadoresDeTeste.Novo().Valor), """{"nome":"documento"}""", Agora);
+        CertameDivulgado mesmoAto = DivulgadoComMesmoAto(primeiro);
 
         await using UniPlusDbContext ctx = _fixture.CreateDbContext();
         await ctx.CertamesDivulgados.AddAsync(mesmoAto);
@@ -72,6 +69,14 @@ public sealed class IdentificadorLegivelNaDivulgacaoPersistenciaTests : IClassFi
         DbUpdateException falha = (await gravar.Should().ThrowAsync<DbUpdateException>()).Which;
 
         ConstraintVioladaNaGravacao.NomeDaConstraintViolada(falha).Should().NotBe("ux_certames_divulgados_identificador_legivel");
+    }
+
+    private static CertameDivulgado DivulgadoComMesmoAto(CertameDivulgado primeiro)
+    {
+        // Mesmo ato criador, identificador distinto: viola o índice do ato, não o do identificador.
+        return CertameDivulgado.Criar(
+            Guid.CreateVersion7(), 1, primeiro.AtoCriadorId, new string('a', 64), "2",
+            Facetas(IdentificadoresDeTeste.Novo().Valor), """{"nome":"documento"}""", Agora);
     }
 
     private static CertameDivulgado Divulgado(string identificador) => CertameDivulgado.Criar(

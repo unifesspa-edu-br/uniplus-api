@@ -40,6 +40,12 @@ public sealed class VersaoDeRetificacaoPersistidaTests
             .OrderBy(v => v.NumeroVersao)
             .ToListAsync(CancellationToken.None);
 
+        ConferirLinhagemDaRetificacao(versoes, abertura, retificacao);
+    }
+
+    private static void ConferirLinhagemDaRetificacao(
+        List<VersaoConfiguracao> versoes, VersaoConfiguracao abertura, VersaoConfiguracao retificacao)
+    {
         versoes.Should().HaveCount(2);
         versoes[0].AtoCriadorId.Should().Be(abertura.AtoCriadorId);
         versoes[0].AtoCriadorRetificaId.Should().BeNull("a raiz da cadeia não emenda ninguém");
@@ -69,6 +75,12 @@ public sealed class VersaoDeRetificacaoPersistidaTests
         VersaoConfiguracao retificacaoLida = await CenarioDeRetificacaoPersistida.LerVersaoAsync(readContext, versaoRetificacao.Id);
         JsonObject payloadRetificacao = JsonNode.Parse(retificacaoLida.ConfiguracaoCongelada)!.AsObject();
 
+        ConferirBlocosDaRetificacao(payloadAbertura, payloadRetificacao);
+        ConferirAberturaImutavel(aberturaLida, versaoAbertura, payloadAbertura);
+    }
+
+    private static void ConferirBlocosDaRetificacao(JsonObject payloadAbertura, JsonObject payloadRetificacao)
+    {
         // Os blocos esperados na retificação são DERIVADOS do snapshot da abertura, não uma
         // lista literal escrita à mão: são exatamente os blocos da abertura mais o bloco
         // `retificacao` (ADR-0101). Assim, se a abertura ganhar um bloco novo e a retificação
@@ -79,7 +91,11 @@ public sealed class VersaoDeRetificacaoPersistidaTests
             "a retificação preserva integralmente os blocos da abertura e acrescenta o bloco retificacao");
 
         payloadRetificacao["retificacao"]!["motivo"]!.GetValue<string>().Should().Be("Correção do prazo de inscrição");
+    }
 
+    private static void ConferirAberturaImutavel(
+        VersaoConfiguracao aberturaLida, VersaoConfiguracao versaoAbertura, JsonObject payloadAbertura)
+    {
         // O snapshot da abertura permanece byte-a-byte idêntico (append-only).
         aberturaLida.HashConfiguracao.Should().Be(versaoAbertura.HashConfiguracao);
         aberturaLida.ConfiguracaoCongeladaCanonica.Should().Equal(versaoAbertura.ConfiguracaoCongeladaCanonica);

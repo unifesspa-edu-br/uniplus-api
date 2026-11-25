@@ -121,6 +121,13 @@ public sealed class RevisaoDoRecortePersistenciaTests : IClassFixture<ProcessoSe
         // exatamente o caso que a contagem mais o instante máximo não alcançavam.
         string antes = (await ListarAsync(new RecorteDaVitrine(), Agora)).Revisao;
 
+        await RetificarUltimoCertameAsync();
+
+        (await ListarAsync(new RecorteDaVitrine(), Agora)).Revisao.Should().NotBe(antes);
+    }
+
+    private async Task RetificarUltimoCertameAsync()
+    {
         await using (UniPlusDbContext context = _fixture.CreateDbContext())
         {
             CertameDivulgado ultimo = await context.CertamesDivulgados.SingleAsync(c => c.Id == _semeados[2].Id);
@@ -135,8 +142,6 @@ public sealed class RevisaoDoRecortePersistenciaTests : IClassFixture<ProcessoSe
                 Agora.AddDays(-30));
             await context.SaveChangesAsync();
         }
-
-        (await ListarAsync(new RecorteDaVitrine(), Agora)).Revisao.Should().NotBe(antes);
     }
 
     private async Task<PaginaDaVitrine> ListarAsync(RecorteDaVitrine recorte, DateTimeOffset instante, int limite = 50)

@@ -79,7 +79,17 @@ public sealed class PerfilCanonicoV1GoldenTests
     [Fact(DisplayName = "Perfil v1 — aspa, contrabarra e os cinco controles em forma curta")]
     public void Escapes_FormasCurtas()
     {
-        JsonObject payload = new()
+        JsonObject payload = CaracteresComEscapeCurto();
+
+        Serializar(payload).Should().Be(
+            $$"""
+            {"aspas":"a{{Barra}}"b","backspace":"a{{Barra}}bb","contrabarra":"a{{Barra}}{{Barra}}b","formFeed":"a{{Barra}}fb","novaLinha":"a{{Barra}}nb","retorno":"a{{Barra}}rb","tab":"a{{Barra}}tb"}
+            """);
+    }
+
+    private static JsonObject CaracteresComEscapeCurto()
+    {
+        return new JsonObject()
         {
             ["aspas"] = "a\"b",
             ["contrabarra"] = "a\\b",
@@ -89,11 +99,6 @@ public sealed class PerfilCanonicoV1GoldenTests
             ["formFeed"] = "a\fb",
             ["retorno"] = "a\rb",
         };
-
-        Serializar(payload).Should().Be(
-            $$"""
-            {"aspas":"a{{Barra}}"b","backspace":"a{{Barra}}bb","contrabarra":"a{{Barra}}{{Barra}}b","formFeed":"a{{Barra}}fb","novaLinha":"a{{Barra}}nb","retorno":"a{{Barra}}rb","tab":"a{{Barra}}tb"}
-            """);
     }
 
     [Fact(DisplayName = "Perfil v1 — os demais controles saem em \\u00XX maiúsculo")]

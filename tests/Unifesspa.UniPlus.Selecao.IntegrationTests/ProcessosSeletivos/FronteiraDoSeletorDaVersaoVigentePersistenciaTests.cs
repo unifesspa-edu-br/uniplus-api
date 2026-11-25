@@ -49,6 +49,11 @@ public sealed class FronteiraDoSeletorDaVersaoVigentePersistenciaTests
 
         (await repository.ObterVersaoVigenteAsync(processoId, T0.AddDays(2), CancellationToken.None)).Should().NotBeNull();
 
+        ConferirSqlDaVersaoVigente(capturador);
+    }
+
+    private static void ConferirSqlDaVersaoVigente(CapturadorDeSql capturador)
+    {
         capturador.Comandos.Should().ContainSingle("a resolução do vigente é UMA leitura — não há hidratação do documento a fazer");
         string sql = capturador.Comandos[0];
         sql.Should().Contain("versoes_configuracao");
@@ -106,17 +111,16 @@ public sealed class FronteiraDoSeletorDaVersaoVigentePersistenciaTests
         (Guid processoId, _, _) = await _cenario.PublicarERetificarAsync(
             nameof(ObterVersaoVigente_ProcessoInexistenteOuExcluido_RetornaNull), clock, TimeSpan.FromDays(1));
 
-        await using (UniPlusDbContext deleteContext = _cenario.CriarDbContext())
-        {
-            ProcessoSeletivo processo = await deleteContext.ProcessosSeletivos
-                .SingleAsync(p => p.Id == processoId, CancellationToken.None);
-            processo.MarkAsDeleted("integration-test-user", T0.AddDays(3));
-            await deleteContext.SaveChangesAsync(CancellationToken.None);
-        }
+        await ExcluirProcessoAsync(processoId);
 
         await using UniPlusDbContext context = _cenario.CriarDbContext();
         ProcessoSeletivoRepository repository = ProcessoSeletivoRepositoryDeTeste.Criar(context);
 
+        await ConferirAusenciaDeVersaoAsync(repository, processoId);
+    }
+
+    private static async Task ConferirAusenciaDeVersaoAsync(ProcessoSeletivoRepository repository, Guid processoId)
+    {
         // VersaoConfiguracao é forense (sem exclusão lógica própria), mas o EXISTS
         // através de ProcessosSeletivos herda o filtro global: um processo excluído
         // não vaza a configuração congelada.
@@ -126,6 +130,17 @@ public sealed class FronteiraDoSeletorDaVersaoVigentePersistenciaTests
 
         (await repository.ObterVersaoVigenteAsync(Guid.CreateVersion7(), T0.AddDays(5), CancellationToken.None))
             .Should().BeNull();
+    }
+
+    private async Task ExcluirProcessoAsync(Guid processoId)
+    {
+        await using (UniPlusDbContext deleteContext = _cenario.CriarDbContext())
+        {
+            ProcessoSeletivo processo = await deleteContext.ProcessosSeletivos
+                .SingleAsync(p => p.Id == processoId, CancellationToken.None);
+            processo.MarkAsDeleted("integration-test-user", T0.AddDays(3));
+            await deleteContext.SaveChangesAsync(CancellationToken.None);
+        }
     }
 
     private MonolitoDbContext CriarContextoQueCapturaSql(CapturadorDeSql capturador)

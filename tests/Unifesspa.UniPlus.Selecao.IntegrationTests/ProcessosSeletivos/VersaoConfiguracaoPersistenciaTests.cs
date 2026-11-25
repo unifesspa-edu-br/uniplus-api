@@ -1,8 +1,5 @@
 namespace Unifesspa.UniPlus.Selecao.IntegrationTests.ProcessosSeletivos;
 
-using System.Diagnostics.CodeAnalysis;
-using System.Globalization;
-
 using AwesomeAssertions;
 
 using Microsoft.EntityFrameworkCore;
@@ -25,17 +22,11 @@ using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
 /// nunca produziriam. Um teste que só exercitasse o caminho feliz do EF Core
 /// provaria o domínio de novo — não o banco.
 /// </remarks>
-[SuppressMessage(
-    "Security",
-    "CA2100:Review SQL queries for security vulnerabilities",
-    Justification = "SQL fixo, escrito no próprio teste — os inserts crus não recebem entrada externa.")]
 public sealed class VersaoConfiguracaoPersistenciaTests : IClassFixture<ProcessoSeletivoDbFixture>
 {
     private const string UniqueViolation = "23505";
     private const string CheckViolation = "23514";
     private const string RestrictViolation = "23001";
-
-    private static readonly string HashValido = string.Concat(Enumerable.Repeat("ab01234567", 7))[..64];
 
     private readonly ProcessoSeletivoDbFixture _fixture;
 
@@ -90,16 +81,7 @@ public sealed class VersaoConfiguracaoPersistenciaTests : IClassFixture<Processo
     [Fact(DisplayName = "Os três triggers da tabela existem no catálogo do banco")]
     public async Task Triggers_ExistemNoCatalogo()
     {
-        IReadOnlyList<string> triggers = await ListarAsync("""
-            SELECT tgname::text
-            FROM pg_trigger t
-            JOIN pg_class c ON c.oid = t.tgrelid
-            JOIN pg_namespace n ON n.oid = c.relnamespace
-            WHERE n.nspname = 'selecao'
-              AND c.relname = 'versoes_configuracao'
-              AND NOT t.tgisinternal
-            ORDER BY tgname
-            """);
+        IReadOnlyList<string> triggers = await ListarTriggersAsync();
 
         triggers.Should().BeEquivalentTo(
         [
@@ -109,18 +91,18 @@ public sealed class VersaoConfiguracaoPersistenciaTests : IClassFixture<Processo
         ]);
     }
 
+    // O ato que abriu o certame acima tentando também abrir a configuração de
+    // um segundo certame. É por isso que o índice é único GLOBALMENTE, e não
+    // por processo: dentro da mesma cadeia, um ato repetido já seria barrado
+    // antes (ele teria de retificar a si mesmo, o que
+    // ck_versoes_configuracao_nao_autorretifica recusa).
     [Fact(DisplayName = "Um ato cria no máximo uma versão — nem sequer em OUTRO certame: o índice único do ato criador é global")]
     public async Task Insert_MesmoAtoCriador_Colide()
     {
         Publicacao publicada = await PublicarAsync(nameof(Insert_MesmoAtoCriador_Colide));
         Guid outroProcesso = await SemearProcessoEmRascunhoAsync(nameof(Insert_MesmoAtoCriador_Colide) + "-outro");
 
-        // O ato que abriu o certame acima tentando também abrir a configuração de
-        // um segundo certame. É por isso que o índice é único GLOBALMENTE, e não
-        // por processo: dentro da mesma cadeia, um ato repetido já seria barrado
-        // antes (ele teria de retificar a si mesmo, o que
-        // ck_versoes_configuracao_nao_autorretifica recusa).
-        PostgresException erro = await CapturarErroAsync(InsertVersaoCru(
+        PostgresException erro = await CapturarErroAsync(InsercaoDeVersaoConfiguracao.Criar(
             outroProcesso,
             numeroVersao: 1,
             atoCriadorId: publicada.AtoCriadorId,
@@ -135,7 +117,7 @@ public sealed class VersaoConfiguracaoPersistenciaTests : IClassFixture<Processo
     {
         Publicacao publicada = await PublicarAsync(nameof(Insert_AtoRetificandoASiMesmo_Recusado));
 
-        PostgresException erro = await CapturarErroAsync(InsertVersaoCru(
+        PostgresException erro = await CapturarErroAsync(InsercaoDeVersaoConfiguracao.Criar(
             publicada.ProcessoId,
             numeroVersao: 2,
             atoCriadorId: publicada.AtoCriadorId,
@@ -150,7 +132,7 @@ public sealed class VersaoConfiguracaoPersistenciaTests : IClassFixture<Processo
     {
         Publicacao publicada = await PublicarAsync(nameof(Insert_NumeracaoComBuraco_Recusada));
 
-        PostgresException erro = await CapturarErroAsync(InsertVersaoCru(
+        PostgresException erro = await CapturarErroAsync(InsercaoDeVersaoConfiguracao.Criar(
             publicada.ProcessoId,
             numeroVersao: 3,
             atoCriadorId: Guid.CreateVersion7(),
@@ -165,7 +147,7 @@ public sealed class VersaoConfiguracaoPersistenciaTests : IClassFixture<Processo
     {
         Guid processoId = await SemearProcessoEmRascunhoAsync(nameof(Insert_PrimeiraVersaoNaoEUm_Recusada));
 
-        PostgresException erro = await CapturarErroAsync(InsertVersaoCru(
+        PostgresException erro = await CapturarErroAsync(InsercaoDeVersaoConfiguracao.Criar(
             processoId,
             numeroVersao: 2,
             atoCriadorId: Guid.CreateVersion7(),
@@ -182,7 +164,7 @@ public sealed class VersaoConfiguracaoPersistenciaTests : IClassFixture<Processo
 
         // O ato criador retifica um ato QUALQUER — não o criador da versão 1.
         // É a tentativa de abrir uma segunda cadeia de configuração no certame.
-        PostgresException erro = await CapturarErroAsync(InsertVersaoCru(
+        PostgresException erro = await CapturarErroAsync(InsercaoDeVersaoConfiguracao.Criar(
             publicada.ProcessoId,
             numeroVersao: 2,
             atoCriadorId: Guid.CreateVersion7(),
@@ -201,7 +183,7 @@ public sealed class VersaoConfiguracaoPersistenciaTests : IClassFixture<Processo
         // trigger de sucessão deixa passar (ambas leem o mesmo estado) e quem
         // recusa a segunda é o índice único — com erro de DUPLICIDADE, não de
         // buraco na numeração.
-        PostgresException erro = await CapturarErroAsync(InsertVersaoCru(
+        PostgresException erro = await CapturarErroAsync(InsercaoDeVersaoConfiguracao.Criar(
             publicada.ProcessoId,
             numeroVersao: 1,
             atoCriadorId: Guid.CreateVersion7(),
@@ -216,7 +198,7 @@ public sealed class VersaoConfiguracaoPersistenciaTests : IClassFixture<Processo
     {
         Guid processoId = await SemearProcessoEmRascunhoAsync(nameof(Insert_VersaoUmRetificando_Recusada));
 
-        PostgresException erro = await CapturarErroAsync(InsertVersaoCru(
+        PostgresException erro = await CapturarErroAsync(InsercaoDeVersaoConfiguracao.Criar(
             processoId,
             numeroVersao: 1,
             atoCriadorId: Guid.CreateVersion7(),
@@ -226,48 +208,39 @@ public sealed class VersaoConfiguracaoPersistenciaTests : IClassFixture<Processo
         erro.ConstraintName.Should().Be("ck_versoes_configuracao_contrato_abertura");
     }
 
+    // Dois guard rails cobrem esta linha — ck_versoes_configuracao_contrato_abertura
+    // (sucessora exige ato retificado) e o trigger de sucessão (o ato retificado
+    // tem de ser o criador da versão anterior). Quem fala é o trigger: no
+    // Postgres, o BEFORE INSERT roda ANTES da avaliação dos CHECK constraints,
+    // e um retifica_id nulo já é "distinto" do criador da versão 1. O
+    // diagnóstico é o mais informativo dos dois, e é o que o handler traduz.
     [Fact(DisplayName = "Contrato simétrico: uma versão N > 1 sem ato retificado é recusada — sucessora órfã não entra")]
     public async Task Insert_SucessoraSemRetificacao_Recusada()
     {
         Publicacao publicada = await PublicarAsync(nameof(Insert_SucessoraSemRetificacao_Recusada));
 
-        PostgresException erro = await CapturarErroAsync(InsertVersaoCru(
+        PostgresException erro = await CapturarErroAsync(InsercaoDeVersaoConfiguracao.Criar(
             publicada.ProcessoId,
             numeroVersao: 2,
             atoCriadorId: Guid.CreateVersion7(),
             atoCriadorRetificaId: null));
 
-        // Dois guard rails cobrem esta linha — ck_versoes_configuracao_contrato_abertura
-        // (sucessora exige ato retificado) e o trigger de sucessão (o ato retificado
-        // tem de ser o criador da versão anterior). Quem fala é o trigger: no
-        // Postgres, o BEFORE INSERT roda ANTES da avaliação dos CHECK constraints,
-        // e um retifica_id nulo já é "distinto" do criador da versão 1. O
-        // diagnóstico é o mais informativo dos dois, e é o que o handler traduz.
         erro.SqlState.Should().Be(CheckViolation);
         erro.ConstraintName.Should().Be("ck_versoes_configuracao_cadeia");
     }
 
+    // É o ponto da ADR-0104: a data documental deixa de ordenar, e o
+    // instante da vigência não precisa ser único — quem desempata é o
+    // número da versão.
     [Fact(DisplayName = "Duas versões no MESMO instante de vigência são aceitas — o empate de instante deixa de ser impossível por construção")]
     public async Task Insert_MesmoInstanteDeVigencia_Aceito()
     {
         Publicacao publicada = await PublicarAsync(nameof(Insert_MesmoInstanteDeVigencia_Aceito));
 
         await using UniPlusDbContext readContext = _fixture.CreateDbContext();
-        DateTimeOffset instanteDaAbertura = await readContext.VersoesConfiguracao
-            .AsNoTracking()
-            .Where(v => v.Id == publicada.VersaoId)
-            .Select(v => v.VigenteAPartirDe)
-            .FirstAsync(CancellationToken.None);
+        DateTimeOffset instanteDaAbertura = await ObterInstanteDeVigenciaAsync(readContext, publicada.VersaoId);
 
-        // É o ponto da ADR-0104: a data documental deixa de ordenar, e o
-        // instante da vigência não precisa ser único — quem desempata é o
-        // número da versão.
-        await ExecutarAsync(InsertVersaoCru(
-            publicada.ProcessoId,
-            numeroVersao: 2,
-            atoCriadorId: Guid.CreateVersion7(),
-            atoCriadorRetificaId: publicada.AtoCriadorId,
-            vigenteAPartirDe: instanteDaAbertura));
+        await ExecutarAsync(CriarSucessoraComVigencia(publicada, instanteDaAbertura));
 
         int versoesNoMesmoInstante = await readContext.VersoesConfiguracao
             .AsNoTracking()
@@ -277,28 +250,19 @@ public sealed class VersaoConfiguracaoPersistenciaTests : IClassFixture<Processo
         versoesNoMesmoInstante.Should().Be(2, "duas versões podem partilhar o instante de vigência sem colidir");
     }
 
+    // É a vigência que ordena as versões: uma sucessora nascida no passado
+    // faria o seletor continuar elegendo a versão VELHA depois de a nova
+    // existir. O domínio empata (nunca regride) quando o relógio do host
+    // recua; o banco recusa o retrocesso vindo por fora.
     [Fact(DisplayName = "Vigência não regride: uma sucessora com vigência anterior à da versão que sucede é recusada")]
     public async Task Insert_VigenciaRegressiva_Recusada()
     {
         Publicacao publicada = await PublicarAsync(nameof(Insert_VigenciaRegressiva_Recusada));
 
         await using UniPlusDbContext readContext = _fixture.CreateDbContext();
-        DateTimeOffset instanteDaAbertura = await readContext.VersoesConfiguracao
-            .AsNoTracking()
-            .Where(v => v.Id == publicada.VersaoId)
-            .Select(v => v.VigenteAPartirDe)
-            .FirstAsync(CancellationToken.None);
+        DateTimeOffset instanteDaAbertura = await ObterInstanteDeVigenciaAsync(readContext, publicada.VersaoId);
 
-        // É a vigência que ordena as versões: uma sucessora nascida no passado
-        // faria o seletor continuar elegendo a versão VELHA depois de a nova
-        // existir. O domínio empata (nunca regride) quando o relógio do host
-        // recua; o banco recusa o retrocesso vindo por fora.
-        PostgresException erro = await CapturarErroAsync(InsertVersaoCru(
-            publicada.ProcessoId,
-            numeroVersao: 2,
-            atoCriadorId: Guid.CreateVersion7(),
-            atoCriadorRetificaId: publicada.AtoCriadorId,
-            vigenteAPartirDe: instanteDaAbertura.AddMinutes(-10)));
+        PostgresException erro = await CapturarErroAsync(CriarSucessoraComVigencia(publicada, instanteDaAbertura.AddMinutes(-10)));
 
         erro.SqlState.Should().Be(CheckViolation);
         erro.ConstraintName.Should().Be("ck_versoes_configuracao_vigencia_monotonica");
@@ -343,41 +307,28 @@ public sealed class VersaoConfiguracaoPersistenciaTests : IClassFixture<Processo
         return processo.Id;
     }
 
-    /// <summary>
-    /// INSERT cru na tabela de versões — o caminho que o agregado nunca toma, e
-    /// que os guard rails do banco precisam recusar sozinhos.
-    /// </summary>
-    private static string InsertVersaoCru(
-        Guid processoId,
-        int numeroVersao,
-        Guid atoCriadorId,
-        Guid? atoCriadorRetificaId,
-        DateTimeOffset? vigenteAPartirDe = null)
-    {
-        string retifica = atoCriadorRetificaId is { } alvo
-            ? $"'{alvo}'"
-            : "NULL";
-        string vigencia = vigenteAPartirDe is { } instante
-            ? $"'{instante.ToUniversalTime().ToString("O", CultureInfo.InvariantCulture)}'::timestamptz"
-            : "now()";
+    private async Task<IReadOnlyList<string>> ListarTriggersAsync() =>
+        await ListarAsync("""
+            SELECT tgname::text
+            FROM pg_trigger t
+            JOIN pg_class c ON c.oid = t.tgrelid
+            JOIN pg_namespace n ON n.oid = c.relnamespace
+            WHERE n.nspname = 'selecao'
+              AND c.relname = 'versoes_configuracao'
+              AND NOT t.tgisinternal
+            ORDER BY tgname
+            """);
 
-        // Bytes canônicos e jsonb mínimos e coerentes entre si ('{}' em UTF-8 é
-        // 0x7b7d): o que estes testes atacam é a cadeia de versões, não o
-        // conteúdo congelado — mas gravar bytes que não correspondem ao jsonb
-        // plantaria uma evidência incoerente na tabela de prova.
-        return $$"""
-            INSERT INTO selecao.versoes_configuracao (
-                id, processo_seletivo_id, numero_versao, vigente_a_partir_de,
-                versao_do_formato, algoritmo_hash,
-                bytes_da_configuracao, conteudo_da_configuracao, hash_configuracao,
-                ato_criador_id, ato_criador_hash, ato_criador_retifica_id, ator_usuario_conta_id)
-            VALUES (
-                '{{Guid.CreateVersion7()}}', '{{processoId}}', {{numeroVersao.ToString(CultureInfo.InvariantCulture)}}, {{vigencia}},
-                '1.0', 'canonical-json/sha256@v1',
-                '\x7b7d'::bytea, '{}'::jsonb, '{{HashValido}}',
-                '{{atoCriadorId}}', '{{HashValido}}', {{retifica}}, 'insert-cru')
-            """;
-    }
+    private static string CriarSucessoraComVigencia(Publicacao publicada, DateTimeOffset vigencia) =>
+        InsercaoDeVersaoConfiguracao.Criar(
+            publicada.ProcessoId, 2, Guid.CreateVersion7(), publicada.AtoCriadorId, vigencia);
+
+    private static async Task<DateTimeOffset> ObterInstanteDeVigenciaAsync(UniPlusDbContext context, Guid versaoId) =>
+        await context.VersoesConfiguracao
+            .AsNoTracking()
+            .Where(v => v.Id == versaoId)
+            .Select(v => v.VigenteAPartirDe)
+            .FirstAsync(CancellationToken.None);
 
     private async Task<PostgresException> CapturarErroAsync(string sql) =>
         await Assert.ThrowsAsync<PostgresException>(() => ExecutarAsync(sql));

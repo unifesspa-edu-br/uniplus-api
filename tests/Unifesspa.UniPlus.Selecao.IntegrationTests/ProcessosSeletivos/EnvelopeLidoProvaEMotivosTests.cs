@@ -21,10 +21,7 @@ public sealed class EnvelopeLidoProvaEMotivosTests
         JsonObject payload = ApoioDoEnvelopeCodec.Envelope(original);
         payload["provaPresencial"] = JsonNode.Parse("""{"temProvaPresencial":true,"municipios":[{"codigoIbge":"1504208","uf":"PA","nome":"Marabá"}]}""");
         payload["motivosDeDecisao"] = JsonNode.Parse("""[{"tipoDeDecisaoCodigo":"ANALISE_DOCUMENTAL","codigo":"A","lugar":{"tipo":"FASE","id":"11111111-1111-1111-1111-111111111111"},"descricao":"Primeiro","subclassificacao":null,"sentido":"FAVORAVEL","versaoDoEditalDeEntrada":1,"justificativaDaInclusao":null},{"tipoDeDecisaoCodigo":"ANALISE_DOCUMENTAL","codigo":"B","lugar":{"tipo":"ETAPA","id":"22222222-2222-2222-2222-222222222222"},"descricao":"Segundo","subclassificacao":null,"sentido":"FAVORAVEL","versaoDoEditalDeEntrada":1,"justificativaDaInclusao":null}]""");
-        foreach (JsonNode? motivo in payload["motivosDeDecisao"]!.AsArray())
-        {
-            motivo!["contexto"] = RotulosDoMotivo(motivo);
-        }
+        AcrescentarRotulosDosMotivos(payload);
 
         byte[] bytes = PerfilCanonicoV1.Instancia.Serializar(payload);
         EnvelopeReidratado lido = ApoioDoEnvelopeCodec.Reidratado(ExemploDeEnvelopeEntrada.VersaoDeAbertura(processo, bytes));
@@ -32,6 +29,14 @@ public sealed class EnvelopeLidoProvaEMotivosTests
         lido.Configuracao.MotivosDeDecisao.Should().HaveCount(2);
         ProcessoSeletivo reconstruido = ProcessoDoGrafoLidoDeTeste.Criar(processo, lido.Configuracao);
         FidelidadeDoEnvelopeDeTeste.Recodificar(reconstruido, lido).Bytes.Should().Equal(bytes);
+    }
+
+    private static void AcrescentarRotulosDosMotivos(JsonObject payload)
+    {
+        foreach (JsonNode? motivo in payload["motivosDeDecisao"]!.AsArray())
+        {
+            motivo!["contexto"] = RotulosDoMotivo(motivo);
+        }
     }
 
     // O congelado registra o rótulo de cada enum ao lado do código gravado.
