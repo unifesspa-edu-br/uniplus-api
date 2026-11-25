@@ -4,6 +4,7 @@ using AwesomeAssertions;
 
 using Microsoft.Extensions.DependencyInjection;
 
+using Unifesspa.UniPlus.Autorizacao.Domain.Enums;
 using Unifesspa.UniPlus.Autorizacao.Domain.Interfaces;
 using Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Autorizacao.IntegrationTests.Infrastructure;
@@ -21,13 +22,12 @@ public sealed class ListagemDasConcessoesTests : ConcessoesEmVigenciaTestBase
     {
     }
 
-    [Theory(DisplayName = "A situação recorta a listagem; todas, e o valor que o recorte não conhece, não recortam")]
+    [Theory(DisplayName = "A situação recorta a listagem; a ausência não recorta")]
     [InlineData(SituacaoDaConcessao.Ativa, new[] { SemPrazo, PrazoFuturo })]
     [InlineData(SituacaoDaConcessao.Revogada, new[] { Revogada })]
     [InlineData(SituacaoDaConcessao.Vencida, new[] { Vencida, NoLimite })]
-    [InlineData(SituacaoDaConcessao.Todas, new[] { SemPrazo, PrazoFuturo, Revogada, Vencida, NoLimite })]
-    [InlineData((SituacaoDaConcessao)99, new[] { SemPrazo, PrazoFuturo, Revogada, Vencida, NoLimite })]
-    public async Task Listar_PorSituacao_Recorta(SituacaoDaConcessao situacao, string[] esperados)
+    [InlineData(null, new[] { SemPrazo, PrazoFuturo, Revogada, Vencida, NoLimite })]
+    public async Task Listar_PorSituacao_Recorta(SituacaoDaConcessao? situacao, string[] esperados)
     {
         (Guid perfil, Dictionary<string, Guid> ids) = await MontarAsync();
 
@@ -36,12 +36,22 @@ public sealed class ListagemDasConcessoesTests : ConcessoesEmVigenciaTestBase
         listados.Should().BeEquivalentTo(esperados.Select(e => ids[e]));
     }
 
+    [Fact]
+    public async Task Listar_SituacaoDesconhecida_LancaExcecao()
+    {
+        FiltroDeConcessoes filtro = Filtro((SituacaoDaConcessao)99);
+
+        Func<Task> listar = async () => await ListarIdsAsync(filtro);
+
+        await listar.Should().ThrowAsync<ArgumentOutOfRangeException>();
+    }
+
     [Fact(DisplayName = "A unidade recorta a listagem para as concessões dela")]
     public async Task Listar_PorUnidade_SoDaUnidade()
     {
         (_, Dictionary<string, Guid> ids) = await MontarAsync();
 
-        Guid[] listados = await ListarIdsAsync(Filtro(SituacaoDaConcessao.Todas) with { UnidadeId = Unidade });
+        Guid[] listados = await ListarIdsAsync(Filtro(null) with { UnidadeId = Unidade });
 
         listados.Should().Equal(ids[NaUnidade]);
     }
@@ -52,7 +62,7 @@ public sealed class ListagemDasConcessoesTests : ConcessoesEmVigenciaTestBase
         (Guid perfil, Dictionary<string, Guid> ids) = await MontarAsync();
         Identidade pessoa = Pessoa(Titular(PrazoFuturo));
 
-        Guid[] listados = await ListarIdsAsync(Filtro(SituacaoDaConcessao.Todas, pessoa.Emissor, pessoa.ContaId) with { PerfilId = perfil });
+        Guid[] listados = await ListarIdsAsync(Filtro(null, pessoa.Emissor, pessoa.ContaId) with { PerfilId = perfil });
 
         listados.Should().Equal(ids[PrazoFuturo]);
     }
@@ -66,7 +76,7 @@ public sealed class ListagemDasConcessoesTests : ConcessoesEmVigenciaTestBase
     {
         (Guid perfil, _) = await MontarAsync();
 
-        Guid[] listados = await ListarIdsAsync(Filtro(SituacaoDaConcessao.Todas, emissor, contaId) with { PerfilId = perfil });
+        Guid[] listados = await ListarIdsAsync(Filtro(null, emissor, contaId) with { PerfilId = perfil });
 
         listados.Should().HaveCount(esperado);
     }
@@ -76,7 +86,7 @@ public sealed class ListagemDasConcessoesTests : ConcessoesEmVigenciaTestBase
     {
         (Guid perfil, Dictionary<string, Guid> ids) = await MontarAsync();
 
-        List<Pagina> paginas = await PercorrerAsync(Filtro(SituacaoDaConcessao.Todas) with { PerfilId = perfil });
+        List<Pagina> paginas = await PercorrerAsync(Filtro(null) with { PerfilId = perfil });
 
         paginas.Select(p => p.Ids.Length).Should().Equal(2, 2, 1);
         paginas.SelectMany(p => p.Ids).Should().Equal(ids.Where(c => c.Key != NaUnidade).Select(c => c.Value).Order());
@@ -87,7 +97,7 @@ public sealed class ListagemDasConcessoesTests : ConcessoesEmVigenciaTestBase
     public async Task Listar_ComCursor_VoltaAteAPrimeira()
     {
         (Guid perfil, _) = await MontarAsync();
-        FiltroDeConcessoes filtro = Filtro(SituacaoDaConcessao.Todas) with { PerfilId = perfil };
+        FiltroDeConcessoes filtro = Filtro(null) with { PerfilId = perfil };
         List<Pagina> ida = await PercorrerAsync(filtro);
 
         Pagina penultima = await PaginaAsync(filtro, ida[^1].Anterior, PaginationDirection.Prev);
@@ -97,7 +107,7 @@ public sealed class ListagemDasConcessoesTests : ConcessoesEmVigenciaTestBase
         inicio.Ids.Should().Equal(ida[0].Ids);
     }
 
-    private FiltroDeConcessoes Filtro(SituacaoDaConcessao situacao, string? emissor = null, string? contaId = null) =>
+    private FiltroDeConcessoes Filtro(SituacaoDaConcessao? situacao, string? emissor = null, string? contaId = null) =>
         new(emissor, contaId, null, null, situacao, Agora);
 
     private async Task<Guid[]> ListarIdsAsync(FiltroDeConcessoes filtro)

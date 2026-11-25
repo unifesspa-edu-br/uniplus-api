@@ -2,7 +2,7 @@ namespace Unifesspa.UniPlus.Autorizacao.Domain.UnitTests;
 
 using AwesomeAssertions;
 
-using Unifesspa.UniPlus.Autorizacao.Domain.Interfaces;
+using Unifesspa.UniPlus.Autorizacao.Domain.Enums;
 using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 
 public sealed class SituacaoDaConcessaoCodigosTests
@@ -15,6 +15,5 @@ public sealed class SituacaoDaConcessaoCodigosTests
                 [SituacaoDaConcessao.Ativa] = "ATIVA",
                 [SituacaoDaConcessao.Revogada] = "REVOGADA",
                 [SituacaoDaConcessao.Vencida] = "VENCIDA",
-                [SituacaoDaConcessao.Todas] = "TODAS",
             });
 }

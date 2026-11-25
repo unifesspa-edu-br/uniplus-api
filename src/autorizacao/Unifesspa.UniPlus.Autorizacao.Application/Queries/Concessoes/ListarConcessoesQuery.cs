@@ -2,7 +2,7 @@ namespace Unifesspa.UniPlus.Autorizacao.Application.Queries.Concessoes;
 
 using Unifesspa.UniPlus.Application.Abstractions.Messaging;
 using Unifesspa.UniPlus.Autorizacao.Application.DTOs;
-using Unifesspa.UniPlus.Autorizacao.Domain.Interfaces;
+using Unifesspa.UniPlus.Autorizacao.Domain.Enums;
 using Unifesspa.UniPlus.Kernel.Pagination;
 
 /// <summary>Lista as concessões paginadas por cursor opaco bidirecional (ADR-0026 + ADR-0089).</summary>
@@ -11,7 +11,7 @@ public sealed record ListarConcessoesQuery(
     string? PessoaContaId,
     Guid? UnidadeId,
     Guid? PerfilId,
-    SituacaoDaConcessao Situacao,
+    SituacaoDaConcessao? Situacao,
     Guid? AfterId,
     int Limit,
     PaginationDirection Direction) : IQuery<ListarConcessoesResult>;

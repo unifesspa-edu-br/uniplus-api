@@ -7,12 +7,13 @@ using Microsoft.AspNetCore.Mvc;
 
 using Unifesspa.UniPlus.Application.Abstractions.Messaging;
 using Unifesspa.UniPlus.Authorization.Catalogo;
+using Unifesspa.UniPlus.Autorizacao.API.Filtros;
 using Unifesspa.UniPlus.Autorizacao.Application.Commands.Concessoes;
 using Unifesspa.UniPlus.Autorizacao.Application.DTOs;
 using Unifesspa.UniPlus.Autorizacao.Application.Permissoes;
 using Unifesspa.UniPlus.Autorizacao.Application.Queries.Concessoes;
+using Unifesspa.UniPlus.Autorizacao.Domain.Enums;
 using Unifesspa.UniPlus.Autorizacao.Domain.Errors;
-using Unifesspa.UniPlus.Autorizacao.Domain.Interfaces;
 using Unifesspa.UniPlus.Infrastructure.Core.Authorization;
 using Unifesspa.UniPlus.Infrastructure.Core.Errors;
 using Unifesspa.UniPlus.Infrastructure.Core.Formatting;
@@ -79,7 +80,7 @@ public sealed class ConcessoesController : ControllerBase
         [FromQuery] string? emissor = null,
         [FromQuery] Guid? unidade = null,
         [FromQuery] Guid? perfil = null,
-        [FromQuery] string? situacao = null,
+        [FromQuery, AceitaCodigosDe<SituacaoDaConcessao>] string? situacao = null,
         CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(page);
@@ -168,7 +169,7 @@ public sealed class ConcessoesController : ControllerBase
         return resultado.IsSuccess ? NoContent() : resultado.ToActionResult(_mapper);
     }
 
-    // A pessoa é o par emissor e contaId, nunca CPF, e um sem o outro é recusado; a situação é uma das quatro conhecidas.
+    // A pessoa é o par emissor e contaId, nunca CPF, e um sem o outro é recusado.
     private static Result<ListarConcessoesQuery> Consulta(
         PageRequest page, string? contaId, string? emissor, Guid? unidade, Guid? perfil, string? situacao)
     {
@@ -178,26 +179,15 @@ public sealed class ConcessoesController : ControllerBase
             return Recusa(ConcessaoErrorCodes.FiltroDePessoaInvalido, "A pessoa é identificada pelo par emissor e contaId; informe os dois.");
         }
 
-        return LerSituacao(situacao) is { } lida
-            ? Result<ListarConcessoesQuery>.Success(new(emissor, contaId, unidade, perfil, lida, page.AfterId, page.Limit, page.Direction))
-            : Recusa(ConcessaoErrorCodes.FiltroDeSituacaoInvalido, "Situação inválida. Use ativa, revogada, vencida ou todas.");
+        Result<SituacaoDaConcessao?> filtro = FiltroDeSituacao.Ler<SituacaoDaConcessao>(
+            situacao, new DomainError(ConcessaoErrorCodes.FiltroDeSituacaoInvalido,
+                "Situação inválida. Use um dos códigos publicados para a situação da concessão."));
+        return filtro.IsFailure
+            ? Result<ListarConcessoesQuery>.Failure(filtro.Error!)
+            : Result<ListarConcessoesQuery>.Success(new(emissor, contaId, unidade, perfil, filtro.Value, page.AfterId, page.Limit, page.Direction));
     }
 
     private static string? Aparado(string? texto) => string.IsNullOrWhiteSpace(texto) ? null : texto.Trim();
-
-    private static SituacaoDaConcessao? LerSituacao(string? texto)
-    {
-        if (string.IsNullOrWhiteSpace(texto))
-        {
-            return SituacaoDaConcessao.Ativa;
-        }
-
-        string normalizado = texto.Trim().ToLowerInvariant();
-        return CatalogoDe<SituacaoDaConcessao>.TentarObter(normalizado.ToUpperInvariant(), out SituacaoDaConcessao situacao)
-            && StringComparer.Ordinal.Equals(normalizado, situacao.Codigo().ToLowerInvariant())
-                ? situacao
-                : null;
-    }
 
     private static Result<ListarConcessoesQuery> Recusa(string codigo, string mensagem) =>
         Result<ListarConcessoesQuery>.Failure(new DomainError(codigo, mensagem));
