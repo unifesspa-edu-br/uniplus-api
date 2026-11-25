@@ -10,12 +10,12 @@ public enum ParecerDaManifestacao
     /// <summary>Sentinela — parecer não informado.</summary>
     Nenhum = 0,
 
-    /// <summary>A proteção declarada está adequada.</summary>
-    Adequada,
+    /// <summary>Recomenda a aprovação da proteção declarada.</summary>
+    RecomendaAprovacao,
 
     /// <summary>A proteção precisa de ajuste; o texto diz qual.</summary>
     RecomendaAjuste,
 
-    /// <summary>A proteção está inadequada; o texto diz por quê.</summary>
-    Inadequada,
+    /// <summary>Recomenda não usar o item; o texto diz por quê.</summary>
+    RecomendaNaoUso,
 }

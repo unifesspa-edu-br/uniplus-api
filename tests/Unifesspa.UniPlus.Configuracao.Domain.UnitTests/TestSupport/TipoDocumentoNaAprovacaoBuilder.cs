@@ -26,7 +26,7 @@ internal sealed class TipoDocumentoNaAprovacaoBuilder
 
     public TipoDocumentoNaAprovacaoBuilder ComAjusteRecomendado() => Em(SituacaoDaAprovacao.AjusteRecomendado);
 
-    public TipoDocumentoNaAprovacaoBuilder Reprovado() => Em(SituacaoDaAprovacao.Reprovada);
+    public TipoDocumentoNaAprovacaoBuilder Devolvido() => Em(SituacaoDaAprovacao.Devolvida);
 
     public TipoDocumento Build()
     {
@@ -67,7 +67,7 @@ internal sealed class TipoDocumentoNaAprovacaoBuilder
         {
             SituacaoDaAprovacao.Aprovada => tipo.AprovarProtecao(Helena, terca),
             SituacaoDaAprovacao.AjusteRecomendado => tipo.RecomendarAjusteDaProtecao(ClassificacaoDeProtecao.Sensivel, null, Helena, terca),
-            SituacaoDaAprovacao.Reprovada => tipo.ReprovarProtecao("O laudo não é necessário para a finalidade.", Helena, terca),
+            SituacaoDaAprovacao.Devolvida => tipo.DevolverProtecao("O laudo não é necessário para a finalidade.", Helena, terca),
             _ => null,
         };
     }

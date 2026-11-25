@@ -34,18 +34,18 @@ public abstract class HistoricoDaProtecaoTestBase
 
     private protected static string Marca() => $"Hz{Guid.NewGuid().ToString("N")[..8]}";
 
-    // Um tipo aprovado por Betina, um fato reprovado por Betina e um tipo com ajuste recomendado por Caroline, nessa ordem.
-    private protected async Task<(string Marca, Guid Aprovado, Guid Reprovado, Guid Ajustado)> RegistrarTresDecisoesAsync()
+    // Um tipo aprovado por Betina, um fato devolvido por Betina e um tipo com ajuste recomendado por Caroline, nessa ordem.
+    private protected async Task<(string Marca, Guid Aprovado, Guid Devolvido, Guid Ajustado)> RegistrarTresDecisoesAsync()
     {
-        (string marca, Guid aprovado, Guid reprovado, Guid ajustado) = await SolicitarTresAsync();
+        (string marca, Guid aprovado, Guid devolvido, Guid ajustado) = await SolicitarTresAsync();
         using HttpClient client = Fixture.Factory.CreateClient();
 
-        (await DecidirAsync(client, Betina, new("TIPO_DOCUMENTO", aprovado, "APROVAR", "INTERNO"))).StatusCode.Should().Be(HttpStatusCode.NoContent);
+        (await DecidirAsync(client, Betina, new("TIPO_DOCUMENTO", aprovado, "APROVACAO", "INTERNO"))).StatusCode.Should().Be(HttpStatusCode.NoContent);
         await Task.Delay(20);
-        (await DecidirAsync(client, Betina, new("DADO_DO_CANDIDATO", reprovado, "REPROVAR", "PESSOAL", Justificativa: "Dado desnecessário."))).StatusCode.Should().Be(HttpStatusCode.NoContent);
+        (await DecidirAsync(client, Betina, new("DADO_DO_CANDIDATO", devolvido, "DEVOLUCAO", "PESSOAL", Justificativa: "Dado desnecessário."))).StatusCode.Should().Be(HttpStatusCode.NoContent);
         await Task.Delay(20);
-        (await DecidirAsync(client, Caroline, new("TIPO_DOCUMENTO", ajustado, "RECOMENDAR_AJUSTE", "INTERNO", "SENSIVEL"))).StatusCode.Should().Be(HttpStatusCode.NoContent);
-        return (marca, aprovado, reprovado, ajustado);
+        (await DecidirAsync(client, Caroline, new("TIPO_DOCUMENTO", ajustado, "AJUSTE_RECOMENDADO", "INTERNO", "SENSIVEL"))).StatusCode.Should().Be(HttpStatusCode.NoContent);
+        return (marca, aprovado, devolvido, ajustado);
     }
 
     private protected async Task PrepararPersonasAsync()
@@ -156,18 +156,18 @@ public abstract class HistoricoDaProtecaoTestBase
         return await client.SendAsync(request);
     }
 
-    private async Task<(string Marca, Guid Aprovado, Guid Reprovado, Guid Ajustado)> SolicitarTresAsync()
+    private async Task<(string Marca, Guid Aprovado, Guid Devolvido, Guid Ajustado)> SolicitarTresAsync()
     {
         await PrepararPersonasAsync();
         using HttpClient client = Fixture.Factory.CreateClient();
         string marca = Marca();
         Guid aprovado = await CadastrarTipoAsync(client, $"{marca} Certidão de nascimento");
-        Guid reprovado = await CadastrarFatoAsync(client, $"{marca} Renda familiar bruta");
+        Guid devolvido = await CadastrarFatoAsync(client, $"{marca} Renda familiar bruta");
         Guid ajustado = await CadastrarTipoAsync(client, $"{marca} Laudo médico complementar");
-        (await SolicitarAsync(client, Isabella, ("TIPO_DOCUMENTO", aprovado), ("DADO_DO_CANDIDATO", reprovado), ("TIPO_DOCUMENTO", ajustado)))
+        (await SolicitarAsync(client, Isabella, ("TIPO_DOCUMENTO", aprovado), ("DADO_DO_CANDIDATO", devolvido), ("TIPO_DOCUMENTO", ajustado)))
             .StatusCode.Should().Be(HttpStatusCode.OK);
 
-        return (marca, aprovado, reprovado, ajustado);
+        return (marca, aprovado, devolvido, ajustado);
     }
 
     private static object NovoFato(string nome) => new

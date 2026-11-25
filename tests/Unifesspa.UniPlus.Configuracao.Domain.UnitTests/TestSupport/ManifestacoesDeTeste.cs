@@ -16,10 +16,10 @@ internal static class ManifestacoesDeTeste
     public static readonly AtorDoAto Kevin = new(Emissor, "kevin.carvalho", "Kevin Anderson Carvalho");
     public static readonly AtorDoAto Lucia = new(Emissor, "lucia.almeida", "Lúcia Bruna Maya Almeida");
 
-    public static ConteudoDaManifestacao Adequada() => Conteudo("ADEQUADA", null);
+    public static ConteudoDaManifestacao RecomendaAprovacao() => Conteudo("RECOMENDA_APROVACAO", null);
 
-    public static ConteudoDaManifestacao Inadequada(string texto = "O laudo revela condição de saúde: a classificação deve ser sensível.") =>
-        Conteudo("INADEQUADA", texto);
+    public static ConteudoDaManifestacao RecomendaNaoUso(string texto = "O laudo revela condição de saúde: a classificação deve ser sensível.") =>
+        Conteudo("RECOMENDA_NAO_USO", texto);
 
     public static ConteudoDaManifestacao RecomendaAjuste(string texto = "Recomendo a classificação sensível.") =>
         Conteudo("RECOMENDA_AJUSTE", texto);

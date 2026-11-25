@@ -25,7 +25,7 @@ internal static class AvisosDaProtecaoDoCatalogo
         string abertura =
             $"Há itens do catálogo de tipos de documento e de fatos do candidato aguardando a decisão do Representante do controlador sobre a proteção de dados: {Itens(tiposDeDocumento, fatos)}.";
         const string chamada =
-            "Abra no Uni+ a área de proteção de dados do catálogo de tipos de documento e de fatos do candidato para aprovar, recomendar ajuste ou reprovar cada um.";
+            "Abra no Uni+ a área de proteção de dados do catálogo de tipos de documento e de fatos do candidato para aprovar, recomendar ajuste ou devolver cada um.";
 
         return Montar(
             destinatarios,

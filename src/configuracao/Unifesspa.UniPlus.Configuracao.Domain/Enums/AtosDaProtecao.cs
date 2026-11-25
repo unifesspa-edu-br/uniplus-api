@@ -6,21 +6,25 @@ namespace Unifesspa.UniPlus.Configuracao.Domain.Enums;
 /// </summary>
 public static class AtosDaProtecao
 {
+    public const string TokenAprovacao = "APROVACAO";
+    public const string TokenAjusteRecomendado = "AJUSTE_RECOMENDADO";
+    public const string TokenDevolucao = "DEVOLUCAO";
+
     private static readonly Dictionary<AtoDaProtecao, string> ParaToken = new()
     {
         [AtoDaProtecao.Solicitacao] = "SOLICITACAO",
-        [AtoDaProtecao.Aprovacao] = "APROVACAO",
-        [AtoDaProtecao.AjusteRecomendado] = "AJUSTE_RECOMENDADO",
-        [AtoDaProtecao.Reprovacao] = "REPROVACAO",
+        [AtoDaProtecao.Aprovacao] = TokenAprovacao,
+        [AtoDaProtecao.AjusteRecomendado] = TokenAjusteRecomendado,
+        [AtoDaProtecao.Devolucao] = TokenDevolucao,
         [AtoDaProtecao.Aceite] = "ACEITE",
     };
 
     private static readonly Dictionary<string, AtoDaProtecao> DeToken =
         ParaToken.ToDictionary(kv => kv.Value, kv => kv.Key, StringComparer.Ordinal);
 
-    /// <summary>Os atos que são decisões da proteção de dados: aprovação, ajuste recomendado e reprovação.</summary>
+    /// <summary>Os atos que são decisões da proteção de dados: aprovação, ajuste recomendado e devolução.</summary>
     public static readonly IReadOnlyList<AtoDaProtecao> Decisoes =
-        [AtoDaProtecao.Aprovacao, AtoDaProtecao.AjusteRecomendado, AtoDaProtecao.Reprovacao];
+        [AtoDaProtecao.Aprovacao, AtoDaProtecao.AjusteRecomendado, AtoDaProtecao.Devolucao];
 
     /// <summary>Os tokens canônicos (UPPER_SNAKE), para o CHECK de domínio e mensagens.</summary>
     public static readonly IReadOnlyList<string> TokensCanonicos = [.. ParaToken.Values];

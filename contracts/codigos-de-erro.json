@@ -2242,9 +2242,9 @@
       "titulo": "Código da fase sucessora fora do conjunto canônico"
     },
     {
-      "codigo": "uniplus.configuracao.protecao_do_catalogo.aceite_de_item_reprovado",
+      "codigo": "uniplus.configuracao.protecao_do_catalogo.aceite_de_item_devolvido",
       "status": 422,
-      "titulo": "O item reprovado não tem recomendação a aceitar"
+      "titulo": "O item devolvido não tem recomendação a aceitar"
     },
     {
       "codigo": "uniplus.configuracao.protecao_do_catalogo.ato_invalido",
@@ -2314,7 +2314,7 @@
     {
       "codigo": "uniplus.configuracao.protecao_do_catalogo.justificativa_obrigatoria",
       "status": 422,
-      "titulo": "A reprovação exige a justificativa"
+      "titulo": "A devolução exige a justificativa"
     },
     {
       "codigo": "uniplus.configuracao.protecao_do_catalogo.manifestacao_nao_lida",
@@ -2394,7 +2394,7 @@
     {
       "codigo": "uniplus.configuracao.protecao_do_catalogo.texto_da_manifestacao_obrigatorio",
       "status": 422,
-      "titulo": "Os pareceres recomenda ajuste e inadequada exigem o texto"
+      "titulo": "Os pareceres recomenda ajuste e recomenda não uso exigem o texto"
     },
     {
       "codigo": "uniplus.configuracao.recurso_acessibilidade.codigo_formato_invalido",

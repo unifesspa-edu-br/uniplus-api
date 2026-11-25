@@ -43,7 +43,7 @@ public sealed class AprovacaoDaProtecaoCicloTests
     public void Solicitado_MudarAProtecao_AbreOCicloSeguinte()
     {
         TipoDocumento tipo = new TipoDocumentoNaAprovacaoBuilder().Solicitado().Build();
-        Do(tipo).Registrar(tipo.Aprovacao, tipo.Aprovacao.Ciclo, Inadequada(), Kevin, Instante);
+        Do(tipo).Registrar(tipo.Aprovacao, tipo.Aprovacao.Ciclo, RecomendaNaoUso(), Kevin, Instante);
 
         TipoDocumentoNaAprovacaoBuilder.EditarAProtecao(tipo);
 
@@ -57,8 +57,8 @@ public sealed class AprovacaoDaProtecaoCicloTests
         });
     }
 
-    [Theory(DisplayName = "Editar qualquer campo do item reprovado ou com ajuste recomendado abre o ciclo seguinte")]
-    [InlineData(SituacaoDaAprovacao.Reprovada)]
+    [Theory(DisplayName = "Editar qualquer campo do item devolvido ou com ajuste recomendado abre o ciclo seguinte")]
+    [InlineData(SituacaoDaAprovacao.Devolvida)]
     [InlineData(SituacaoDaAprovacao.AjusteRecomendado)]
     public void DecididoSemAprovar_EditarONome_AbreOCicloSeguinte(SituacaoDaAprovacao situacao)
     {
@@ -86,7 +86,7 @@ public sealed class AprovacaoDaProtecaoCicloTests
     public void Solicitado_EditarONome_MantemAsManifestacoes()
     {
         TipoDocumento tipo = new TipoDocumentoNaAprovacaoBuilder().Solicitado().Build();
-        Do(tipo).Registrar(tipo.Aprovacao, tipo.Aprovacao.Ciclo, Inadequada(), Kevin, Instante);
+        Do(tipo).Registrar(tipo.Aprovacao, tipo.Aprovacao.Ciclo, RecomendaNaoUso(), Kevin, Instante);
 
         TipoDocumentoNaAprovacaoBuilder.EditarONome(tipo);
 
@@ -113,29 +113,29 @@ public sealed class AprovacaoDaProtecaoCicloTests
     [Fact(DisplayName = "Cada reinício de item já solicitado avança um ciclo")]
     public void ReiniciosSucessivos_AvancamUmCicloCada()
     {
-        TipoDocumento tipo = new TipoDocumentoNaAprovacaoBuilder().Reprovado().Build();
+        TipoDocumento tipo = new TipoDocumentoNaAprovacaoBuilder().Devolvido().Build();
 
         TipoDocumentoNaAprovacaoBuilder.EditarONome(tipo);
         tipo.SolicitarAprovacaoDaProtecao(TipoDocumentoNaAprovacaoBuilder.Isabella, Instante);
-        tipo.ReprovarProtecao("Ainda desnecessário.", TipoDocumentoNaAprovacaoBuilder.Helena, Instante.AddHours(1));
+        tipo.DevolverProtecao("Ainda desnecessário.", TipoDocumentoNaAprovacaoBuilder.Helena, Instante.AddHours(1));
         TipoDocumentoNaAprovacaoBuilder.EditarONome(tipo);
 
         tipo.Aprovacao.Ciclo.Should().Be(new CicloDaAprovacao(3));
     }
 
-    [Fact(DisplayName = "No fato, editar o descritivo do item reprovado abre o ciclo seguinte e encerra a manifestação; no solicitado, não")]
+    [Fact(DisplayName = "No fato, editar o descritivo do item devolvido abre o ciclo seguinte e encerra a manifestação; no solicitado, não")]
     public void Fato_EditarODescritivo()
     {
-        FatoCandidato reprovado = FatoSolicitado();
-        reprovado.ReprovarProtecao("Dado desnecessário.", TipoDocumentoNaAprovacaoBuilder.Helena, Instante);
+        FatoCandidato devolvido = FatoSolicitado();
+        devolvido.DevolverProtecao("Dado desnecessário.", TipoDocumentoNaAprovacaoBuilder.Helena, Instante);
         FatoCandidato solicitado = FatoSolicitado();
         ManifestacoesDoCiclo.De(new ItemDaProtecao(CadastroDoCatalogo.Fato, solicitado.Id), CicloDaAprovacao.Primeiro, [])
             .Registrar(solicitado.Aprovacao, CicloDaAprovacao.Primeiro, RecomendaAjuste(), Kevin, Instante);
 
-        reprovado.AlterarDescritivo("Renda familiar", "Renda bruta declarada.", null).IsSuccess.Should().BeTrue();
+        devolvido.AlterarDescritivo("Renda familiar", "Renda bruta declarada.", null).IsSuccess.Should().BeTrue();
         solicitado.AlterarDescritivo("Renda familiar", "Renda bruta declarada.", null).IsSuccess.Should().BeTrue();
 
-        reprovado.Aprovacao.Ciclo.Should().Be(new CicloDaAprovacao(2));
+        devolvido.Aprovacao.Ciclo.Should().Be(new CicloDaAprovacao(2));
         (solicitado.Aprovacao.Ciclo, solicitado.Aprovacao.ManifestacaoDesfavoravelVigente).Should().Be((CicloDaAprovacao.Primeiro, true));
     }
 
@@ -148,7 +148,7 @@ public sealed class AprovacaoDaProtecaoCicloTests
         return fato;
     }
 
-    private static TipoDocumento Construir(SituacaoDaAprovacao situacao) => situacao == SituacaoDaAprovacao.Reprovada
-        ? new TipoDocumentoNaAprovacaoBuilder().Reprovado().Build()
+    private static TipoDocumento Construir(SituacaoDaAprovacao situacao) => situacao == SituacaoDaAprovacao.Devolvida
+        ? new TipoDocumentoNaAprovacaoBuilder().Devolvido().Build()
         : new TipoDocumentoNaAprovacaoBuilder().ComAjusteRecomendado().Build();
 }

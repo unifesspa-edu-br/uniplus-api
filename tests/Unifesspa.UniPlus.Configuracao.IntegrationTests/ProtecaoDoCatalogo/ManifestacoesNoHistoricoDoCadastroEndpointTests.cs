@@ -100,9 +100,9 @@ public sealed class ManifestacoesNoHistoricoDoCadastroEndpointTests : Manifestac
         await ConcederAsync(Marlene, PermissaoConfiguracao.TiposDocumentoManter);
         await ConcederAsync(Sergio, PermissaoConfiguracao.FatosCandidatoConsultar);
         (Guid tipo, Guid fato) = (await SolicitadoAsync(client, "TIPO_DOCUMENTO"), await SolicitadoAsync(client, "DADO_DO_CANDIDATO"));
-        (await ManifestarAsync(client, Kevin, "TIPO_DOCUMENTO", tipo, "INADEQUADA", "O laudo revela condição de saúde.")).StatusCode.Should().Be(HttpStatusCode.NoContent);
-        (await ManifestarAsync(client, Kevin, "TIPO_DOCUMENTO", tipo, "INADEQUADA", "Reitero: o dado é sensível.")).StatusCode.Should().Be(HttpStatusCode.NoContent);
-        (await ManifestarAsync(client, Kevin, "DADO_DO_CANDIDATO", fato, "ADEQUADA", texto: null)).StatusCode.Should().Be(HttpStatusCode.NoContent);
+        (await ManifestarAsync(client, Kevin, "TIPO_DOCUMENTO", tipo, "RECOMENDA_NAO_USO", "O laudo revela condição de saúde.")).StatusCode.Should().Be(HttpStatusCode.NoContent);
+        (await ManifestarAsync(client, Kevin, "TIPO_DOCUMENTO", tipo, "RECOMENDA_NAO_USO", "Reitero: o dado é sensível.")).StatusCode.Should().Be(HttpStatusCode.NoContent);
+        (await ManifestarAsync(client, Kevin, "DADO_DO_CANDIDATO", fato, "RECOMENDA_APROVACAO", texto: null)).StatusCode.Should().Be(HttpStatusCode.NoContent);
         return (tipo, fato);
     }
 

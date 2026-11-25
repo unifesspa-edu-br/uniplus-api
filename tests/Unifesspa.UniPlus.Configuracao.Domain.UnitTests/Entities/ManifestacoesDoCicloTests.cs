@@ -24,13 +24,13 @@ public sealed class ManifestacoesDoCicloTests
     {
         TipoDocumento tipo = new TipoDocumentoNaAprovacaoBuilder().Solicitado().Build();
 
-        Result<ManifestacaoDaProtecaoDoCatalogo> registrada = Do(tipo).Registrar(tipo.Aprovacao, CicloDaAprovacao.Primeiro, Inadequada(), Kevin, Instante);
+        Result<ManifestacaoDaProtecaoDoCatalogo> registrada = Do(tipo).Registrar(tipo.Aprovacao, CicloDaAprovacao.Primeiro, RecomendaNaoUso(), Kevin, Instante);
 
         registrada.Value!.Should().BeEquivalentTo(new
         {
             Item = ItemDe(tipo),
             Ciclo = CicloDaAprovacao.Primeiro,
-            Parecer = ParecerDaManifestacao.Inadequada,
+            Parecer = ParecerDaManifestacao.RecomendaNaoUso,
             SubstituiId = (Guid?)null,
             Instante,
         });
@@ -42,13 +42,13 @@ public sealed class ManifestacoesDoCicloTests
     public void Registrar_MesmaPessoa_Substitui()
     {
         TipoDocumento tipo = new TipoDocumentoNaAprovacaoBuilder().Solicitado().Build();
-        ManifestacaoDaProtecaoDoCatalogo primeira = Do(tipo).Registrar(tipo.Aprovacao, CicloDaAprovacao.Primeiro, Inadequada(), Kevin, Instante).Value!;
+        ManifestacaoDaProtecaoDoCatalogo primeira = Do(tipo).Registrar(tipo.Aprovacao, CicloDaAprovacao.Primeiro, RecomendaNaoUso(), Kevin, Instante).Value!;
 
         ManifestacaoDaProtecaoDoCatalogo segunda = Do(tipo, primeira)
-            .Registrar(tipo.Aprovacao, CicloDaAprovacao.Primeiro, Adequada(), Kevin, Instante.AddMinutes(5)).Value!;
+            .Registrar(tipo.Aprovacao, CicloDaAprovacao.Primeiro, RecomendaAprovacao(), Kevin, Instante.AddMinutes(5)).Value!;
 
         segunda.SubstituiId.Should().Be(primeira.Id);
-        primeira.Parecer.Should().Be(ParecerDaManifestacao.Inadequada, "o evento anterior não muda");
+        primeira.Parecer.Should().Be(ParecerDaManifestacao.RecomendaNaoUso, "o evento anterior não muda");
         Do(tipo, primeira, segunda).Vigentes.Should().ContainSingle().Which.Should().BeSameAs(segunda);
         (tipo.Aprovacao.ManifestadaEm, tipo.Aprovacao.ManifestacaoDesfavoravelVigente).Should().Be((Instante.AddMinutes(5), false));
     }
@@ -57,9 +57,9 @@ public sealed class ManifestacoesDoCicloTests
     public void Registrar_Identica_EntraComoSubstituicao()
     {
         TipoDocumento tipo = new TipoDocumentoNaAprovacaoBuilder().Solicitado().Build();
-        ManifestacaoDaProtecaoDoCatalogo primeira = Do(tipo).Registrar(tipo.Aprovacao, CicloDaAprovacao.Primeiro, Adequada(), Kevin, Instante).Value!;
+        ManifestacaoDaProtecaoDoCatalogo primeira = Do(tipo).Registrar(tipo.Aprovacao, CicloDaAprovacao.Primeiro, RecomendaAprovacao(), Kevin, Instante).Value!;
 
-        ManifestacaoDaProtecaoDoCatalogo repetida = Do(tipo, primeira).Registrar(tipo.Aprovacao, CicloDaAprovacao.Primeiro, Adequada(), Kevin, Instante.AddMinutes(1)).Value!;
+        ManifestacaoDaProtecaoDoCatalogo repetida = Do(tipo, primeira).Registrar(tipo.Aprovacao, CicloDaAprovacao.Primeiro, RecomendaAprovacao(), Kevin, Instante.AddMinutes(1)).Value!;
 
         repetida.SubstituiId.Should().Be(primeira.Id);
         tipo.Aprovacao.ManifestadaEm.Should().Be(Instante.AddMinutes(1));
@@ -69,10 +69,10 @@ public sealed class ManifestacoesDoCicloTests
     public void Registrar_MesmoInstanteEMesmoIndicador_AindaMudaOCircuito()
     {
         TipoDocumento tipo = new TipoDocumentoNaAprovacaoBuilder().Solicitado().Build();
-        ManifestacaoDaProtecaoDoCatalogo primeira = Do(tipo).Registrar(tipo.Aprovacao, CicloDaAprovacao.Primeiro, Adequada(), Kevin, Instante).Value!;
+        ManifestacaoDaProtecaoDoCatalogo primeira = Do(tipo).Registrar(tipo.Aprovacao, CicloDaAprovacao.Primeiro, RecomendaAprovacao(), Kevin, Instante).Value!;
         (DateTimeOffset?, bool, int) depoisDaPrimeira = (tipo.Aprovacao.ManifestadaEm, tipo.Aprovacao.ManifestacaoDesfavoravelVigente, tipo.Aprovacao.ManifestacoesNoCiclo);
 
-        Do(tipo, primeira).Registrar(tipo.Aprovacao, CicloDaAprovacao.Primeiro, Adequada(), Lucia, Instante);
+        Do(tipo, primeira).Registrar(tipo.Aprovacao, CicloDaAprovacao.Primeiro, RecomendaAprovacao(), Lucia, Instante);
 
         (tipo.Aprovacao.ManifestadaEm, tipo.Aprovacao.ManifestacaoDesfavoravelVigente, tipo.Aprovacao.ManifestacoesNoCiclo)
             .Should().NotBe(depoisDaPrimeira).And.Be((Instante, false, 2));
@@ -84,7 +84,7 @@ public sealed class ManifestacoesDoCicloTests
         TipoDocumento tipo = new TipoDocumentoNaAprovacaoBuilder().Solicitado().Build();
         ManifestacaoDaProtecaoDoCatalogo doKevin = Do(tipo).Registrar(tipo.Aprovacao, CicloDaAprovacao.Primeiro, RecomendaAjuste(), Kevin, Instante).Value!;
 
-        ManifestacaoDaProtecaoDoCatalogo daLucia = Do(tipo, doKevin).Registrar(tipo.Aprovacao, CicloDaAprovacao.Primeiro, Adequada(), Lucia, Instante.AddMinutes(1)).Value!;
+        ManifestacaoDaProtecaoDoCatalogo daLucia = Do(tipo, doKevin).Registrar(tipo.Aprovacao, CicloDaAprovacao.Primeiro, RecomendaAprovacao(), Lucia, Instante.AddMinutes(1)).Value!;
 
         daLucia.SubstituiId.Should().BeNull();
         Do(tipo, doKevin, daLucia).Vigentes.Should().Equal(doKevin, daLucia);
@@ -97,7 +97,7 @@ public sealed class ManifestacoesDoCicloTests
     {
         TipoDocumento tipo = new TipoDocumentoNaAprovacaoBuilder().Solicitado().Build();
 
-        Result<ManifestacaoDaProtecaoDoCatalogo> registrada = Do(tipo).Registrar(tipo.Aprovacao, new CicloDaAprovacao(2), Inadequada(), Kevin, Instante);
+        Result<ManifestacaoDaProtecaoDoCatalogo> registrada = Do(tipo).Registrar(tipo.Aprovacao, new CicloDaAprovacao(2), RecomendaNaoUso(), Kevin, Instante);
 
         registrada.Error!.Code.Should().Be(ProtecaoDoCatalogoErrorCodes.CicloMudou);
         tipo.Aprovacao.ManifestadaEm.Should().BeNull();
@@ -108,12 +108,12 @@ public sealed class ManifestacoesDoCicloTests
     [InlineData(SituacaoDaAprovacao.Pendente, ProtecaoDoCatalogoErrorCodes.ItemForaDeSolicitacao)]
     [InlineData(SituacaoDaAprovacao.Aprovada, ProtecaoDoCatalogoErrorCodes.DecisaoJaTomada)]
     [InlineData(SituacaoDaAprovacao.AjusteRecomendado, ProtecaoDoCatalogoErrorCodes.DecisaoJaTomada)]
-    [InlineData(SituacaoDaAprovacao.Reprovada, ProtecaoDoCatalogoErrorCodes.DecisaoJaTomada)]
+    [InlineData(SituacaoDaAprovacao.Devolvida, ProtecaoDoCatalogoErrorCodes.DecisaoJaTomada)]
     public void Registrar_ForaDeSolicitacao_RecusaSemMudar(SituacaoDaAprovacao situacao, string codigo)
     {
         TipoDocumento tipo = Construir(situacao);
 
-        Result<ManifestacaoDaProtecaoDoCatalogo> registrada = Do(tipo).Registrar(tipo.Aprovacao, CicloDaAprovacao.Primeiro, Inadequada(), Kevin, Instante);
+        Result<ManifestacaoDaProtecaoDoCatalogo> registrada = Do(tipo).Registrar(tipo.Aprovacao, CicloDaAprovacao.Primeiro, RecomendaNaoUso(), Kevin, Instante);
 
         registrada.Error!.Code.Should().Be(codigo);
         (tipo.Aprovacao.ManifestadaEm, tipo.Aprovacao.ManifestacoesNoCiclo).Should().Be(((DateTimeOffset?)null, 0));
@@ -123,11 +123,11 @@ public sealed class ManifestacoesDoCicloTests
     public void De_EventosOuCircuitoDeOutroCiclo_Falham()
     {
         TipoDocumento tipo = new TipoDocumentoNaAprovacaoBuilder().Solicitado().Build();
-        ManifestacaoDaProtecaoDoCatalogo evento = Do(tipo).Registrar(tipo.Aprovacao, CicloDaAprovacao.Primeiro, Adequada(), Kevin, Instante).Value!;
+        ManifestacaoDaProtecaoDoCatalogo evento = Do(tipo).Registrar(tipo.Aprovacao, CicloDaAprovacao.Primeiro, RecomendaAprovacao(), Kevin, Instante).Value!;
 
         Action deOutroCiclo = () => ManifestacoesDoCiclo.De(ItemDe(tipo), new CicloDaAprovacao(2), [evento]);
         Action circuitoEmOutroCiclo = () => ManifestacoesDoCiclo.De(ItemDe(tipo), new CicloDaAprovacao(2), [])
-            .Registrar(tipo.Aprovacao, new CicloDaAprovacao(2), Adequada(), Kevin, Instante);
+            .Registrar(tipo.Aprovacao, new CicloDaAprovacao(2), RecomendaAprovacao(), Kevin, Instante);
 
         deOutroCiclo.Should().Throw<ArgumentException>();
         circuitoEmOutroCiclo.Should().Throw<InvalidOperationException>();
@@ -137,7 +137,7 @@ public sealed class ManifestacoesDoCicloTests
     {
         SituacaoDaAprovacao.Aprovada => new TipoDocumentoNaAprovacaoBuilder().Aprovado().Build(),
         SituacaoDaAprovacao.AjusteRecomendado => new TipoDocumentoNaAprovacaoBuilder().ComAjusteRecomendado().Build(),
-        SituacaoDaAprovacao.Reprovada => new TipoDocumentoNaAprovacaoBuilder().Reprovado().Build(),
+        SituacaoDaAprovacao.Devolvida => new TipoDocumentoNaAprovacaoBuilder().Devolvido().Build(),
         _ => new TipoDocumentoNaAprovacaoBuilder().Build(),
     };
 }

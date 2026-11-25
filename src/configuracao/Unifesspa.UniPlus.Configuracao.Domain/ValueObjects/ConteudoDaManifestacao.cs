@@ -16,13 +16,13 @@ public sealed record ConteudoDaManifestacao
         Texto = texto;
     }
 
-    /// <summary>Adequada, recomenda ajuste ou inadequada.</summary>
+    /// <summary>Recomenda aprovação, recomenda ajuste ou recomenda não uso.</summary>
     public ParecerDaManifestacao Parecer { get; }
 
-    /// <summary>O texto da manifestação; opcional só no parecer adequada.</summary>
+    /// <summary>O texto da manifestação; opcional só no parecer recomenda aprovação.</summary>
     public Fundamentacao? Texto { get; }
 
-    /// <summary>Recomenda ajuste ou inadequada: vigente, exige a justificativa de quem aprova ou recomenda ajuste.</summary>
+    /// <summary>Recomenda ajuste ou recomenda não uso: vigente, exige a justificativa de quem aprova ou recomenda ajuste.</summary>
     public bool Desfavoravel => PareceresDaManifestacao.EhDesfavoravel(Parecer);
 
     /// <summary>

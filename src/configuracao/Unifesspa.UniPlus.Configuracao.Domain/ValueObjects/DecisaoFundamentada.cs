@@ -8,12 +8,12 @@ using Unifesspa.UniPlus.Kernel.Results;
 
 /// <summary>
 /// A decisão do Representante do controlador sobre um item com os seus fundamentos: o ato (aprovação, ajuste
-/// recomendado ou reprovação), a classificação recomendada no ajuste e a justificativa.
+/// recomendado ou devolução), a classificação recomendada no ajuste e a justificativa.
 /// </summary>
-/// <param name="Ato">Aprovação, ajuste recomendado ou reprovação.</param>
+/// <param name="Ato">Aprovação, ajuste recomendado ou devolução.</param>
 /// <param name="ClassificacaoRecomendada">A classificação que o ajuste recomenda; nula nas demais decisões.</param>
 /// <param name="Justificativa">
-/// Obrigatória na reprovação; na aprovação e no ajuste, opcional, salvo diante de manifestação desfavorável vigente.
+/// Obrigatória na devolução; na aprovação e no ajuste, opcional, salvo diante de manifestação desfavorável vigente.
 /// </param>
 public sealed record DecisaoFundamentada(
     AtoDaProtecao Ato, ClassificacaoDeProtecao? ClassificacaoRecomendada, Fundamentacao? Justificativa)

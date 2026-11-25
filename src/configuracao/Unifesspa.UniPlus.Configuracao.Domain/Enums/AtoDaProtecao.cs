@@ -18,8 +18,8 @@ public enum AtoDaProtecao
     /// <summary>A proteção de dados recomendou a classificação correta.</summary>
     AjusteRecomendado,
 
-    /// <summary>A proteção de dados reprovou a proteção, com a justificativa.</summary>
-    Reprovacao,
+    /// <summary>O Representante do controlador devolveu o item ao administrador para editar e pedir de novo, com justificativa.</summary>
+    Devolucao,
 
     /// <summary>O administrador aceitou a classificação recomendada.</summary>
     Aceite,

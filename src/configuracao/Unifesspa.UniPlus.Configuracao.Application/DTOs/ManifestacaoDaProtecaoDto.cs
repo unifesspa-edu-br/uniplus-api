@@ -6,8 +6,8 @@ namespace Unifesspa.UniPlus.Configuracao.Application.DTOs;
 /// na resposta.
 /// </summary>
 /// <param name="Ciclo">O ciclo de aprovação a que a manifestação pertence.</param>
-/// <param name="Parecer">Token canônico: <c>ADEQUADA</c>, <c>RECOMENDA_AJUSTE</c> ou <c>INADEQUADA</c>.</param>
-/// <param name="Texto">O texto da manifestação; sempre presente nos pareceres recomenda ajuste e inadequada.</param>
+/// <param name="Parecer">Token canônico: <c>RECOMENDA_APROVACAO</c>, <c>RECOMENDA_AJUSTE</c> ou <c>RECOMENDA_NAO_USO</c>.</param>
+/// <param name="Texto">O texto da manifestação; sempre presente nos pareceres recomenda ajuste e recomenda não uso.</param>
 /// <param name="AutorNome">Nome de quem se manifestou; nulo quando o token não trazia nome.</param>
 /// <param name="SubstituiId">A manifestação que esta substituiu; nulo no registro inicial.</param>
 /// <param name="Situacao">

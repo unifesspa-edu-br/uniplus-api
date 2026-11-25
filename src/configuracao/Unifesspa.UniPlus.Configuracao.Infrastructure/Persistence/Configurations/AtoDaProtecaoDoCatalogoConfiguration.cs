@@ -85,12 +85,12 @@ public sealed class AtoDaProtecaoDoCatalogoConfiguration : IEntityTypeConfigurat
             "ck_atos_da_protecao_do_catalogo_ajuste_com_recomendacao",
             "ato <> 'AJUSTE_RECOMENDADO' OR classificacao_recomendada IS NOT NULL");
         tabela.HasCheckConstraint(
-            "ck_atos_da_protecao_do_catalogo_reprovacao_com_justificativa",
-            "ato <> 'REPROVACAO' OR justificativa IS NOT NULL");
+            "ck_atos_da_protecao_do_catalogo_devolucao_com_justificativa",
+            "ato <> 'DEVOLUCAO' OR justificativa IS NOT NULL");
         tabela.HasCheckConstraint("ck_atos_da_protecao_do_catalogo_ciclo_positivo", "ciclo >= 1");
         tabela.HasCheckConstraint(
             "ck_atos_da_protecao_do_catalogo_diante_so_na_decisao",
-            "ato IN ('APROVACAO', 'AJUSTE_RECOMENDADO', 'REPROVACAO') OR NOT diante_de_manifestacao_desfavoravel");
+            "ato IN ('APROVACAO', 'AJUSTE_RECOMENDADO', 'DEVOLUCAO') OR NOT diante_de_manifestacao_desfavoravel");
         tabela.HasCheckConstraint(
             "ck_atos_da_protecao_do_catalogo_justificativa_se_desfavoravel",
             "ato NOT IN ('APROVACAO', 'AJUSTE_RECOMENDADO') OR NOT diante_de_manifestacao_desfavoravel OR justificativa IS NOT NULL");

@@ -162,16 +162,16 @@ public sealed class AprovacaoDaProtecaoTests
         tipo.Aprovacao.ClassificacaoRecomendada.Should().BeNull();
     }
 
-    [Fact(DisplayName = "A reprovação registra a justificativa e quem reprovou, sem classificação recomendada")]
-    public void Tipo_Reprovar_RegistraAJustificativa()
+    [Fact(DisplayName = "A devolução registra a justificativa e quem devolveu, sem classificação recomendada")]
+    public void Tipo_Devolver_RegistraAJustificativa()
     {
         TipoDocumento tipo = TipoSolicitado();
 
-        tipo.ReprovarProtecao("A finalidade não justifica o dado pedido.", Caroline, Terca).IsSuccess.Should().BeTrue();
+        tipo.DevolverProtecao("A finalidade não justifica o dado pedido.", Caroline, Terca).IsSuccess.Should().BeTrue();
 
         tipo.Aprovacao.Should().BeEquivalentTo(new
         {
-            Situacao = SituacaoDaAprovacao.Reprovada,
+            Situacao = SituacaoDaAprovacao.Devolvida,
             Justificativa = "A finalidade não justifica o dado pedido.",
             ClassificacaoRecomendada = (ClassificacaoDeProtecao?)null,
             DecididaPor = Caroline,
@@ -180,21 +180,21 @@ public sealed class AprovacaoDaProtecaoTests
         tipo.Aprovacao.EstaAprovada.Should().BeFalse();
     }
 
-    [Fact(DisplayName = "Aceitar a recomendação do item reprovado é recusado com código próprio")]
-    public void Tipo_AceitarItemReprovado_Recusado()
+    [Fact(DisplayName = "Aceitar a recomendação do item devolvido é recusado com código próprio")]
+    public void Tipo_AceitarItemDevolvido_Recusado()
     {
         TipoDocumento tipo = TipoSolicitado();
-        tipo.ReprovarProtecao("Dado desnecessário.", Caroline, Terca);
+        tipo.DevolverProtecao("Dado desnecessário.", Caroline, Terca);
 
-        tipo.AceitarRecomendacaoDaProtecao(Isabella, Quarta).Error!.Code.Should().Be(ProtecaoDoCatalogoErrorCodes.AceiteDeItemReprovado);
-        tipo.Aprovacao.Situacao.Should().Be(SituacaoDaAprovacao.Reprovada);
+        tipo.AceitarRecomendacaoDaProtecao(Isabella, Quarta).Error!.Code.Should().Be(ProtecaoDoCatalogoErrorCodes.AceiteDeItemDevolvido);
+        tipo.Aprovacao.Situacao.Should().Be(SituacaoDaAprovacao.Devolvida);
     }
 
-    [Fact(DisplayName = "Editar a proteção do tipo reprovado o devolve a pendente e apaga a justificativa")]
-    public void Tipo_EditarOTipoReprovado_VoltaAPendente()
+    [Fact(DisplayName = "Editar a proteção do tipo devolvido o devolve a pendente e apaga a justificativa")]
+    public void Tipo_EditarOTipoDevolvido_VoltaAPendente()
     {
         TipoDocumento tipo = TipoSolicitado();
-        tipo.ReprovarProtecao("Dado desnecessário.", Caroline, Terca);
+        tipo.DevolverProtecao("Dado desnecessário.", Caroline, Terca);
 
         Atualizar(tipo, classificacao: ClassificacaoDeProtecao.Sensivel, hipotese: HipoteseLegalTratamento.TutelaDaSaude).IsSuccess.Should().BeTrue();
 
@@ -202,43 +202,43 @@ public sealed class AprovacaoDaProtecaoTests
         tipo.Aprovacao.Justificativa.Should().BeNull();
     }
 
-    [Fact(DisplayName = "Salvar o tipo com ajuste recomendado ou reprovado o devolve a pendente mesmo sem mudar a proteção")]
-    public void Tipo_QualquerEdicaoDevolveAjusteEReprovadoAPendente()
+    [Fact(DisplayName = "Salvar o tipo com ajuste recomendado ou devolvido o devolve a pendente mesmo sem mudar a proteção")]
+    public void Tipo_QualquerEdicaoDevolveAjusteEDevolvidoAPendente()
     {
         TipoDocumento ajustado = TipoComAjusteRecomendado();
-        TipoDocumento reprovado = TipoSolicitado();
-        reprovado.ReprovarProtecao("Dado desnecessário.", Caroline, Terca);
+        TipoDocumento devolvido = TipoSolicitado();
+        devolvido.DevolverProtecao("Dado desnecessário.", Caroline, Terca);
 
         Atualizar(ajustado, nome: "Outro nome").IsSuccess.Should().BeTrue();
-        Atualizar(reprovado, nome: "Outro nome").IsSuccess.Should().BeTrue();
+        Atualizar(devolvido, nome: "Outro nome").IsSuccess.Should().BeTrue();
 
         ajustado.Aprovacao.Situacao.Should().Be(SituacaoDaAprovacao.Pendente);
         ajustado.Aprovacao.Justificativa.Should().BeNull();
-        reprovado.Aprovacao.Situacao.Should().Be(SituacaoDaAprovacao.Pendente);
-        reprovado.Aprovacao.Justificativa.Should().BeNull();
+        devolvido.Aprovacao.Situacao.Should().Be(SituacaoDaAprovacao.Pendente);
+        devolvido.Aprovacao.Justificativa.Should().BeNull();
     }
 
-    [Fact(DisplayName = "A edição recusada não devolve o tipo reprovado a pendente")]
-    public void Tipo_EdicaoRecusada_MantemOReprovado()
+    [Fact(DisplayName = "A edição recusada não devolve o tipo devolvido a pendente")]
+    public void Tipo_EdicaoRecusada_MantemODevolvido()
     {
-        TipoDocumento reprovado = TipoSolicitado();
-        reprovado.ReprovarProtecao("Dado desnecessário.", Caroline, Terca);
+        TipoDocumento devolvido = TipoSolicitado();
+        devolvido.DevolverProtecao("Dado desnecessário.", Caroline, Terca);
 
-        Atualizar(reprovado, nome: " ").IsFailure.Should().BeTrue();
+        Atualizar(devolvido, nome: " ").IsFailure.Should().BeTrue();
 
-        reprovado.Aprovacao.Situacao.Should().Be(SituacaoDaAprovacao.Reprovada);
+        devolvido.Aprovacao.Situacao.Should().Be(SituacaoDaAprovacao.Devolvida);
     }
 
-    [Theory(DisplayName = "A reprovação sem justificativa, em branco ou com mais de 2.000 caracteres é recusada no campo")]
+    [Theory(DisplayName = "A devolução sem justificativa, em branco ou com mais de 2.000 caracteres é recusada no campo")]
     [InlineData(null, "ProtecaoDoCatalogo.JustificativaObrigatoria")]
     [InlineData("   ", "ProtecaoDoCatalogo.JustificativaObrigatoria")]
     [InlineData("TAMANHO", "ProtecaoDoCatalogo.JustificativaMuitoLonga")]
-    public void Tipo_ReprovarComJustificativaInvalida_Recusa(string? justificativa, string codigo)
+    public void Tipo_DevolverComJustificativaInvalida_Recusa(string? justificativa, string codigo)
     {
         TipoDocumento tipo = TipoSolicitado();
         string? enviada = justificativa == "TAMANHO" ? new string('a', 2001) : justificativa;
 
-        Result resultado = tipo.ReprovarProtecao(enviada, Caroline, Terca);
+        Result resultado = tipo.DevolverProtecao(enviada, Caroline, Terca);
 
         resultado.Errors.Should().ContainSingle(e => e.Field == "justificativa").Which.Error.Code.Should().Be(codigo);
         tipo.Aprovacao.Situacao.Should().Be(SituacaoDaAprovacao.Solicitada);

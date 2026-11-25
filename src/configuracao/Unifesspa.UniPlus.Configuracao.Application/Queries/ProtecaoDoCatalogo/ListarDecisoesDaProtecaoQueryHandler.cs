@@ -83,7 +83,7 @@ public static class ListarDecisoesDaProtecaoQueryHandler
     }
 
     private static FieldError AtoInvalido() => new("ato", new DomainError(
-        ProtecaoDoCatalogoErrorCodes.AtoInvalido, "A decisão deve ser APROVACAO, AJUSTE_RECOMENDADO ou REPROVACAO."));
+        ProtecaoDoCatalogoErrorCodes.AtoInvalido, "A decisão deve ser APROVACAO, AJUSTE_RECOMENDADO ou DEVOLUCAO."));
 
     private static CadastroDoCatalogo? Cadastro(string? pedido, List<FieldError> erros)
     {

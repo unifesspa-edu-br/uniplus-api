@@ -47,7 +47,7 @@ public sealed class ManifestacaoDaProtecaoDoCatalogo : IForensicEntity
 
     public ParecerDaManifestacao Parecer { get; private init; }
 
-    /// <summary>Obrigatório nos pareceres recomenda ajuste e inadequada; opcional no adequada.</summary>
+    /// <summary>Obrigatório nos pareceres recomenda ajuste e recomenda não uso; opcional no recomenda aprovação.</summary>
     public Fundamentacao? Texto { get; private init; }
 
     /// <summary>A manifestação vigente da mesma pessoa, no mesmo ciclo, que esta substitui; nulo no registro inicial.</summary>
@@ -71,7 +71,7 @@ public sealed class ManifestacaoDaProtecaoDoCatalogo : IForensicEntity
     /// </summary>
     internal long PosicaoNoInstante => OrdemDeRegistro == 0 ? long.MaxValue : OrdemDeRegistro;
 
-    /// <summary>Recomenda ajuste ou inadequada.</summary>
+    /// <summary>Recomenda ajuste ou recomenda não uso.</summary>
     public bool Desfavoravel => PareceresDaManifestacao.EhDesfavoravel(Parecer);
 
     /// <summary>Se a manifestação é da pessoa que <paramref name="outro"/> identifica, pelo emissor e pelo <c>contaId</c>.</summary>

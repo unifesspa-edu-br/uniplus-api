@@ -197,7 +197,7 @@ public sealed class FatoCandidato : EntityBase, IAuditableEntity
     /// <summary>
     /// Altera o nome, a descrição e o componente de exibição, que são a apresentação do fato e valem
     /// também no fato de sistema. Não tocam a proteção de dados, então não reiniciam o fato aprovado; o fato com
-    /// ajuste recomendado ou reprovado volta a pendente, porque a decisão pode ter sido sobre qualquer campo. Os
+    /// ajuste recomendado ou devolvido volta a pendente, porque a decisão pode ter sido sobre qualquer campo. Os
     /// eixos têm a alteração própria, <see cref="AlterarDefinicao"/>.
     /// </summary>
     public Result AlterarDescritivo(string nome, string? descricao, CodigoInformado<ComponenteDeExibicao> componenteExibicao)
@@ -255,8 +255,8 @@ public sealed class FatoCandidato : EntityBase, IAuditableEntity
     public Result RecomendarAjusteDaProtecao(ClassificacaoDeProtecao? recomendada, string? justificativa, string ator, DateTimeOffset em) =>
         TrocaDaProtecaoDoFato.Recomendar(this, recomendada, justificativa, ator, em);
 
-    /// <summary>A proteção de dados reprova a proteção do fato, sem recomendar classificação, e explica o motivo.</summary>
-    public Result ReprovarProtecao(string? justificativa, string ator, DateTimeOffset em) => Aprovacao.Reprovar(justificativa, ator, em);
+    /// <summary>O Representante do controlador devolve o fato ao administrador para editar e pedir de novo, sem recomendar classificação, e explica o motivo.</summary>
+    public Result DevolverProtecao(string? justificativa, string ator, DateTimeOffset em) => Aprovacao.Devolver(justificativa, ator, em);
 
     /// <summary>
     /// O administrador aceita a recomendação da proteção de dados: o fato passa à classificação

@@ -32,13 +32,13 @@ public sealed class LeituraDoCircuitoEndpointTests : ManifestacaoDaProtecaoTestB
         using HttpClient client = Fixture.Factory.CreateClient();
         Guid id = await SolicitadoAsync(client, cadastro);
         LeituraDoCircuitoLida lida = await LerOCircuitoAsync(client, Betina, cadastro, id);
-        (await ManifestarAsync(client, Kevin, cadastro, id, "ADEQUADA", texto: null)).StatusCode.Should().Be(HttpStatusCode.NoContent);
+        (await ManifestarAsync(client, Kevin, cadastro, id, "RECOMENDA_APROVACAO", texto: null)).StatusCode.Should().Be(HttpStatusCode.NoContent);
 
         HttpResponseMessage decisao = await DecidirSobreALeituraAsync(
-            client, new(cadastro, id, "APROVAR", Classificacao(cadastro), Justificativa: Justificativa), lida);
+            client, new(cadastro, id, "APROVACAO", Classificacao(cadastro), Justificativa: Justificativa), lida);
 
         await DeveSerConflitoSemNovaTentativaAsync(decisao, "manifestacao_nao_lida");
-        (await DecidirComoAsync(client, Betina, cadastro, id, "APROVAR")).StatusCode.Should().Be(HttpStatusCode.NoContent);
+        (await DecidirComoAsync(client, Betina, cadastro, id, "APROVACAO")).StatusCode.Should().Be(HttpStatusCode.NoContent);
     }
 
     [Theory(DisplayName = "A decisão tomada depois da leitura recusa a manifestação com 409 sem nova tentativa")]
@@ -50,9 +50,9 @@ public sealed class LeituraDoCircuitoEndpointTests : ManifestacaoDaProtecaoTestB
         using HttpClient client = Fixture.Factory.CreateClient();
         Guid id = await SolicitadoAsync(client, cadastro);
         LeituraDoCircuitoLida lida = await LerOCircuitoAsync(client, Kevin, cadastro, id);
-        (await DecidirComoAsync(client, Betina, cadastro, id, "REPROVAR", "O dado é desnecessário.")).StatusCode.Should().Be(HttpStatusCode.NoContent);
+        (await DecidirComoAsync(client, Betina, cadastro, id, "DEVOLUCAO", "O dado é desnecessário.")).StatusCode.Should().Be(HttpStatusCode.NoContent);
 
-        HttpResponseMessage manifestacao = await ManifestarAsync(client, Kevin, cadastro, id, "INADEQUADA", ciclo: lida.Ciclo);
+        HttpResponseMessage manifestacao = await ManifestarAsync(client, Kevin, cadastro, id, "RECOMENDA_NAO_USO", ciclo: lida.Ciclo);
 
         await DeveSerConflitoSemNovaTentativaAsync(manifestacao, "decisao_ja_tomada");
     }
@@ -64,9 +64,9 @@ public sealed class LeituraDoCircuitoEndpointTests : ManifestacaoDaProtecaoTestB
         using HttpClient client = Fixture.Factory.CreateClient();
         Guid id = await SolicitadoAsync(client, "TIPO_DOCUMENTO");
         LeituraDoCircuitoLida lida = await LerOCircuitoAsync(client, Betina, "TIPO_DOCUMENTO", id);
-        (await ManifestarAsync(client, Kevin, "TIPO_DOCUMENTO", id, "ADEQUADA", texto: null)).StatusCode.Should().Be(HttpStatusCode.NoContent);
+        (await ManifestarAsync(client, Kevin, "TIPO_DOCUMENTO", id, "RECOMENDA_APROVACAO", texto: null)).StatusCode.Should().Be(HttpStatusCode.NoContent);
 
-        HttpResponseMessage resposta = await DecidirSobreALeituraAsync(client, new("TIPO_DOCUMENTO", id, "APROVAR", "SENSIVEL"), lida);
+        HttpResponseMessage resposta = await DecidirSobreALeituraAsync(client, new("TIPO_DOCUMENTO", id, "APROVACAO", "SENSIVEL"), lida);
 
         JsonElement problema = await resposta.Content.ReadFromJsonAsync<JsonElement>();
         (resposta.StatusCode, problema.GetProperty("code").GetString()).Should().Be(
@@ -98,8 +98,8 @@ public sealed class LeituraDoCircuitoEndpointTests : ManifestacaoDaProtecaoTestB
         Guid id = await SolicitadoAsync(client, "DADO_DO_CANDIDATO");
         string noLimite = string.Concat(Enumerable.Repeat("\U0001F512", 2000));
 
-        HttpResponseMessage acima = await ManifestarAsync(client, Kevin, "DADO_DO_CANDIDATO", id, "INADEQUADA", noLimite + "\U0001F512");
-        HttpResponseMessage noLimiteResposta = await ManifestarAsync(client, Kevin, "DADO_DO_CANDIDATO", id, "INADEQUADA", noLimite);
+        HttpResponseMessage acima = await ManifestarAsync(client, Kevin, "DADO_DO_CANDIDATO", id, "RECOMENDA_NAO_USO", noLimite + "\U0001F512");
+        HttpResponseMessage noLimiteResposta = await ManifestarAsync(client, Kevin, "DADO_DO_CANDIDATO", id, "RECOMENDA_NAO_USO", noLimite);
 
         (await CodigoAsync(acima)).Should().Be("uniplus.configuracao.protecao_do_catalogo.texto_da_manifestacao_muito_longo");
         noLimiteResposta.StatusCode.Should().Be(HttpStatusCode.NoContent);
@@ -114,7 +114,7 @@ public sealed class LeituraDoCircuitoEndpointTests : ManifestacaoDaProtecaoTestB
         Guid id = await SolicitadoAsync(client, "TIPO_DOCUMENTO");
         string noLimite = string.Concat(Enumerable.Repeat("\U0001F512", 2000));
 
-        (await DecidirComoAsync(client, Betina, "TIPO_DOCUMENTO", id, "APROVAR", noLimite)).StatusCode.Should().Be(HttpStatusCode.NoContent);
+        (await DecidirComoAsync(client, Betina, "TIPO_DOCUMENTO", id, "APROVACAO", noLimite)).StatusCode.Should().Be(HttpStatusCode.NoContent);
 
         (await UltimoAtoAsync(client, "TIPO_DOCUMENTO", id)).GetProperty("justificativa").GetString().Should().Be(noLimite);
     }
@@ -123,7 +123,7 @@ public sealed class LeituraDoCircuitoEndpointTests : ManifestacaoDaProtecaoTestB
     {
         cadastro = "TIPO_DOCUMENTO",
         itemId = id,
-        decisao = "APROVAR",
+        decisao = "APROVACAO",
         classificacaoProtecao = "INTERNO",
         hipoteseLegal = "CUMPRIMENTO_OBRIGACAO_LEGAL",
         finalidadeTratamento = Finalidade,

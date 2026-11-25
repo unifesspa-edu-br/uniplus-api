@@ -8,15 +8,15 @@ using Unifesspa.UniPlus.Regras.Enums;
 /// situação, os instantes de cada passo, a classificação que o Representante do controlador recomendou no ajuste e a
 /// justificativa da decisão. Quem agiu fica registrado e não sai na resposta.
 /// </summary>
-/// <param name="Situacao">Token canônico: <c>PENDENTE</c>, <c>SOLICITADA</c>, <c>APROVADA</c>, <c>AJUSTE_RECOMENDADO</c> ou <c>REPROVADA</c>.</param>
+/// <param name="Situacao">Token canônico: <c>PENDENTE</c>, <c>SOLICITADA</c>, <c>APROVADA</c>, <c>AJUSTE_RECOMENDADO</c> ou <c>DEVOLVIDA</c>.</param>
 /// <param name="Ciclo">O ciclo de aprovação corrente, que a manifestação e a decisão informam ao se registrar.</param>
 /// <param name="ClassificacaoRecomendada">Token canônico da classificação, quando o ajuste foi recomendado.</param>
 /// <param name="Justificativa">
-/// Motivo do ajuste ou da reprovação, quando o Representante do controlador o escreveu; sempre presente na
-/// reprovação. A justificativa da aprovação sai no ato da decisão.
+/// Motivo do ajuste ou da devolução, quando o Representante do controlador o escreveu; sempre presente na
+/// devolução. A justificativa da aprovação sai no ato da decisão.
 /// </param>
 /// <param name="ManifestadaEm">Instante da última manifestação técnica do ciclo; nulo sem manifestação.</param>
-/// <param name="ManifestacaoDesfavoravel">Se há manifestação vigente recomenda ajuste ou inadequada no ciclo.</param>
+/// <param name="ManifestacaoDesfavoravel">Se há manifestação vigente recomenda ajuste ou recomenda não uso no ciclo.</param>
 /// <param name="ManifestacoesNoCiclo">
 /// Quantas manifestações técnicas (registros e substituições) o ciclo recebeu; a decisão a informa como foi lida.
 /// </param>
@@ -107,12 +107,12 @@ public sealed record DetalheDoTipoDeDocumentoDto(string Categoria, string? Forma
 /// forma permanente (ADR-0153). O nome de quem agiu é o que o token trazia no instante do ato; o identificador de quem
 /// agiu fica registrado e não sai na resposta.
 /// </summary>
-/// <param name="Ato">Token canônico: <c>SOLICITACAO</c>, <c>APROVACAO</c>, <c>AJUSTE_RECOMENDADO</c>, <c>REPROVACAO</c> ou <c>ACEITE</c>.</param>
+/// <param name="Ato">Token canônico: <c>SOLICITACAO</c>, <c>APROVACAO</c>, <c>AJUSTE_RECOMENDADO</c>, <c>DEVOLUCAO</c> ou <c>ACEITE</c>.</param>
 /// <param name="AtorNome">Nome de quem agiu; nulo quando o token não trazia nome.</param>
 /// <param name="ClassificacaoProtecao">Classificação do item no instante do ato; na decisão, a que o Representante do controlador conferiu.</param>
 /// <param name="Ciclo">O ciclo de aprovação em que o ato aconteceu.</param>
 /// <param name="ClassificacaoRecomendada">Token canônico da classificação recomendada, só no ajuste recomendado.</param>
-/// <param name="Justificativa">Motivo da decisão: na reprovação, sempre; na aprovação e no ajuste, se escrito.</param>
+/// <param name="Justificativa">Motivo da decisão: na devolução, sempre; na aprovação e no ajuste, se escrito.</param>
 /// <param name="DianteDeManifestacaoDesfavoravel">Se a decisão foi tomada com manifestação desfavorável vigente.</param>
 public sealed record AtoDaProtecaoDto(
     string Ato,
@@ -127,7 +127,7 @@ public sealed record AtoDaProtecaoDto(
     bool DianteDeManifestacaoDesfavoravel);
 
 /// <summary>
-/// Uma decisão do Representante do controlador (aprovação, ajuste recomendado ou reprovação) com o item a que se
+/// Uma decisão do Representante do controlador (aprovação, ajuste recomendado ou devolução) com o item a que se
 /// refere. O código e o nome são os do item no instante da decisão.
 /// </summary>
 /// <param name="Cadastro"><c>TIPO_DOCUMENTO</c> ou <c>DADO_DO_CANDIDATO</c>.</param>

@@ -24,6 +24,6 @@ public enum SituacaoDaAprovacao
     /// <summary>A proteção de dados recomendou a classificação correta; o administrador a aceita ou edita o item.</summary>
     AjusteRecomendado,
 
-    /// <summary>Reprovada pela proteção de dados, com a justificativa; o administrador só pode editar o item.</summary>
-    Reprovada,
+    /// <summary>Devolvida pelo Representante do controlador ao administrador para editar e pedir de novo, com justificativa.</summary>
+    Devolvida,
 }

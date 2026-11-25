@@ -138,8 +138,8 @@ public sealed class TipoDocumento : SoftDeletableEntity, IAuditableEntity
         return recusa.IsFailure ? recusa : Aprovacao.RecomendarAjuste(recomendada, justificativa, ator, em);
     }
 
-    /// <summary>A proteção de dados reprova a proteção do tipo, sem recomendar classificação, e explica o motivo.</summary>
-    public Result ReprovarProtecao(string? justificativa, string ator, DateTimeOffset em) => Aprovacao.Reprovar(justificativa, ator, em);
+    /// <summary>O Representante do controlador devolve o tipo ao administrador para editar e pedir de novo, sem recomendar classificação, e explica o motivo.</summary>
+    public Result DevolverProtecao(string? justificativa, string ator, DateTimeOffset em) => Aprovacao.Devolver(justificativa, ator, em);
 
     /// <summary>
     /// O administrador aceita a recomendação da proteção de dados: o tipo passa à classificação
@@ -163,7 +163,7 @@ public sealed class TipoDocumento : SoftDeletableEntity, IAuditableEntity
     }
 
     /// <summary>
-    /// A mudança da proteção reinicia o circuito de aprovação; o item com ajuste recomendado ou reprovado também
+    /// A mudança da proteção reinicia o circuito de aprovação; o item com ajuste recomendado ou devolvido também
     /// recomeça por qualquer edição, e o nome e a descrição de um item aprovado não o reiniciam.
     /// </summary>
     private void AplicarCampos(CamposDoTipoDocumento campos)

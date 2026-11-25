@@ -6,20 +6,20 @@ namespace Unifesspa.UniPlus.Configuracao.Domain.Enums;
 /// </summary>
 public static class PareceresDaManifestacao
 {
-    /// <summary>Token de <see cref="ParecerDaManifestacao.Adequada"/>.</summary>
-    public const string Adequada = "ADEQUADA";
+    /// <summary>Token de <see cref="ParecerDaManifestacao.RecomendaAprovacao"/>.</summary>
+    public const string RecomendaAprovacao = "RECOMENDA_APROVACAO";
 
     /// <summary>Token de <see cref="ParecerDaManifestacao.RecomendaAjuste"/>.</summary>
     public const string RecomendaAjuste = "RECOMENDA_AJUSTE";
 
-    /// <summary>Token de <see cref="ParecerDaManifestacao.Inadequada"/>.</summary>
-    public const string Inadequada = "INADEQUADA";
+    /// <summary>Token de <see cref="ParecerDaManifestacao.RecomendaNaoUso"/>.</summary>
+    public const string RecomendaNaoUso = "RECOMENDA_NAO_USO";
 
     private static readonly Dictionary<ParecerDaManifestacao, string> ParaToken = new()
     {
-        [ParecerDaManifestacao.Adequada] = Adequada,
+        [ParecerDaManifestacao.RecomendaAprovacao] = RecomendaAprovacao,
         [ParecerDaManifestacao.RecomendaAjuste] = RecomendaAjuste,
-        [ParecerDaManifestacao.Inadequada] = Inadequada,
+        [ParecerDaManifestacao.RecomendaNaoUso] = RecomendaNaoUso,
     };
 
     private static readonly Dictionary<string, ParecerDaManifestacao> DeToken =
@@ -29,11 +29,11 @@ public static class PareceresDaManifestacao
     public static readonly IReadOnlyList<string> TokensCanonicos = [.. ParaToken.Values];
 
     /// <summary>
-    /// Recomenda ajuste e inadequada: os pareceres que exigem o texto e que, vigentes, exigem a justificativa de quem
+    /// Recomenda ajuste e recomenda não uso: os pareceres que exigem o texto e que, vigentes, exigem a justificativa de quem
     /// aprova ou recomenda ajuste (UNI-REQ-0374).
     /// </summary>
     public static bool EhDesfavoravel(ParecerDaManifestacao parecer) =>
-        parecer is ParecerDaManifestacao.RecomendaAjuste or ParecerDaManifestacao.Inadequada;
+        parecer is ParecerDaManifestacao.RecomendaAjuste or ParecerDaManifestacao.RecomendaNaoUso;
 
     /// <summary>Token textual de contrato/banco de um parecer válido.</summary>
     /// <exception cref="ArgumentOutOfRangeException">Se <paramref name="parecer"/> é o sentinela ou está fora do roster.</exception>

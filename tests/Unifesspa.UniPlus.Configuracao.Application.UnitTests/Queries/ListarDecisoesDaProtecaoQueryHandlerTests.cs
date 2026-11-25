@@ -39,11 +39,11 @@ public sealed class ListarDecisoesDaProtecaoQueryHandlerTests
     [Fact(DisplayName = "Os critérios chegam ao repositório já analisados")]
     public async Task Handle_RepassaOFiltroAnalisado()
     {
-        await ListarAsync(Consulta(["REPROVACAO", "AJUSTE_RECOMENDADO"], "DADO_DO_CANDIDATO", new DateOnly(2026, 11, 1), new DateOnly(2026, 11, 2), "renda"));
+        await ListarAsync(Consulta(["DEVOLUCAO", "AJUSTE_RECOMENDADO"], "DADO_DO_CANDIDATO", new DateOnly(2026, 11, 1), new DateOnly(2026, 11, 2), "renda"));
 
         await _atos.Received(1).ListarDecisoesAsync(
             Arg.Is<FiltroDasDecisoesDaProtecao>(f =>
-                f.Atos.SequenceEqual(new[] { AtoDaProtecao.Reprovacao, AtoDaProtecao.AjusteRecomendado })
+                f.Atos.SequenceEqual(new[] { AtoDaProtecao.Devolucao, AtoDaProtecao.AjusteRecomendado })
                 && f.Cadastro == CadastroDoCatalogo.Fato
                 && f.De == new DateOnly(2026, 11, 1)
                 && f.Ate == new DateOnly(2026, 11, 2)
@@ -66,6 +66,7 @@ public sealed class ListarDecisoesDaProtecaoQueryHandlerTests
     [InlineData("SOLICITACAO")]
     [InlineData("ACEITE")]
     [InlineData("TALVEZ")]
+    [InlineData("REPROVACAO")]
     public async Task Handle_AtoQueNaoEDecisao_Recusa(string ato)
     {
         Result<ListarDecisoesDaProtecaoResult> resultado = await ListarAsync(Consulta([ato]));
@@ -90,7 +91,7 @@ public sealed class ListarDecisoesDaProtecaoQueryHandlerTests
     {
         TipoDocumento tipo = NovoTipo();
         AtoDaProtecaoDoCatalogo ato = AtoDaProtecaoDoCatalogo.RegistrarDecisao(
-            Retrato(tipo), new DecisaoFundamentada(AtoDaProtecao.Reprovacao, null, Fundamentacao.Analisar("Dado desnecessário.")),
+            Retrato(tipo), new DecisaoFundamentada(AtoDaProtecao.Devolucao, null, Fundamentacao.Analisar("Dado desnecessário.")),
             new AtorDoAto(Emissor, "betina.neves", "Betina Marina Valentina das Neves"), Agora);
         _atos.ListarDecisoesAsync(default!, default, default, default, default, default).ReturnsForAnyArgs(
             ([ato], ((string, Guid)?)null, ((string, Guid)?)("proximo", ato.Id)));
@@ -98,7 +99,7 @@ public sealed class ListarDecisoesDaProtecaoQueryHandlerTests
         Result<ListarDecisoesDaProtecaoResult> resultado = await ListarAsync(Consulta());
 
         resultado.Value!.Items.Should().ContainSingle().Which.Should().Be(new DecisaoDaProtecaoDto(
-            "TIPO_DOCUMENTO", tipo.Id, "LAUDO_MEDICO_COMPLEMENTAR", "Laudo médico complementar", "REPROVACAO", Agora, "Betina Marina Valentina das Neves", 1,
+            "TIPO_DOCUMENTO", tipo.Id, "LAUDO_MEDICO_COMPLEMENTAR", "Laudo médico complementar", "DEVOLUCAO", Agora, "Betina Marina Valentina das Neves", 1,
             "INTERNO", "CUMPRIMENTO_OBRIGACAO_LEGAL", Finalidade, null, "Dado desnecessário.", false));
         resultado.Value.Proximo.Should().Be(("proximo", ato.Id));
         typeof(DecisaoDaProtecaoDto).GetProperties().Select(p => p.Name).Should().NotContain(["AtorContaId", "AtorEmissor", "ContaId", "Emissor"]);

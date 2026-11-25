@@ -9332,7 +9332,7 @@
           {
             "name": "ato",
             "in": "query",
-            "description": "Decis\u00E3o: APROVACAO, AJUSTE_RECOMENDADO ou REPROVACAO. Repet\u00EDvel; sem o par\u00E2metro, as tr\u00EAs.",
+            "description": "Decis\u00E3o: APROVACAO, AJUSTE_RECOMENDADO ou DEVOLUCAO. Repet\u00EDvel; sem o par\u00E2metro, as tr\u00EAs.",
             "schema": {
               "type": "array",
               "items": {
@@ -19555,9 +19555,9 @@
           },
           "decisao": {
             "enum": [
-              "APROVAR",
-              "RECOMENDAR_AJUSTE",
-              "REPROVAR"
+              "APROVACAO",
+              "AJUSTE_RECOMENDADO",
+              "DEVOLUCAO"
             ],
             "type": [
               "null",
@@ -23914,9 +23914,9 @@
           },
           "parecer": {
             "enum": [
-              "ADEQUADA",
+              "RECOMENDA_APROVACAO",
               "RECOMENDA_AJUSTE",
-              "INADEQUADA"
+              "RECOMENDA_NAO_USO"
             ],
             "type": [
               "null",

@@ -12,7 +12,7 @@ using Unifesspa.UniPlus.Monolito.Persistencia;
 namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 {
     [DbContext(typeof(MonolitoDbContext))]
-    [Migration("20261125011447_Inicial")]
+    [Migration("20261125025332_Inicial")]
     partial class Inicial
     {
         /// <inheritdoc />
@@ -3036,17 +3036,17 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         {
                             t.HasCheckConstraint("ck_atos_da_protecao_do_catalogo_ajuste_com_recomendacao", "ato <> 'AJUSTE_RECOMENDADO' OR classificacao_recomendada IS NOT NULL");
 
-                            t.HasCheckConstraint("ck_atos_da_protecao_do_catalogo_ato", "ato IN ('SOLICITACAO', 'APROVACAO', 'AJUSTE_RECOMENDADO', 'REPROVACAO', 'ACEITE')");
+                            t.HasCheckConstraint("ck_atos_da_protecao_do_catalogo_ato", "ato IN ('SOLICITACAO', 'APROVACAO', 'AJUSTE_RECOMENDADO', 'DEVOLUCAO', 'ACEITE')");
 
                             t.HasCheckConstraint("ck_atos_da_protecao_do_catalogo_cadastro", "cadastro IN ('TIPO_DOCUMENTO', 'DADO_DO_CANDIDATO')");
 
                             t.HasCheckConstraint("ck_atos_da_protecao_do_catalogo_ciclo_positivo", "ciclo >= 1");
 
-                            t.HasCheckConstraint("ck_atos_da_protecao_do_catalogo_diante_so_na_decisao", "ato IN ('APROVACAO', 'AJUSTE_RECOMENDADO', 'REPROVACAO') OR NOT diante_de_manifestacao_desfavoravel");
+                            t.HasCheckConstraint("ck_atos_da_protecao_do_catalogo_devolucao_com_justificativa", "ato <> 'DEVOLUCAO' OR justificativa IS NOT NULL");
+
+                            t.HasCheckConstraint("ck_atos_da_protecao_do_catalogo_diante_so_na_decisao", "ato IN ('APROVACAO', 'AJUSTE_RECOMENDADO', 'DEVOLUCAO') OR NOT diante_de_manifestacao_desfavoravel");
 
                             t.HasCheckConstraint("ck_atos_da_protecao_do_catalogo_justificativa_se_desfavoravel", "ato NOT IN ('APROVACAO', 'AJUSTE_RECOMENDADO') OR NOT diante_de_manifestacao_desfavoravel OR justificativa IS NOT NULL");
-
-                            t.HasCheckConstraint("ck_atos_da_protecao_do_catalogo_reprovacao_com_justificativa", "ato <> 'REPROVACAO' OR justificativa IS NOT NULL");
                         });
                 });
 
@@ -4219,11 +4219,11 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                             t.HasCheckConstraint("ck_dados_do_candidato_protecao_desfavoravel_manifestada", "NOT protecao_manifestacao_desfavoravel OR protecao_manifestada_em IS NOT NULL");
 
+                            t.HasCheckConstraint("ck_dados_do_candidato_protecao_devolvida_com_justificativa", "protecao_situacao <> 'DEVOLVIDA' OR protecao_justificativa IS NOT NULL");
+
                             t.HasCheckConstraint("ck_dados_do_candidato_protecao_manifestacoes_contadas", "protecao_manifestacoes_no_ciclo >= 0 AND (protecao_manifestacoes_no_ciclo = 0) = (protecao_manifestada_em IS NULL)");
 
-                            t.HasCheckConstraint("ck_dados_do_candidato_protecao_reprovada_com_justificativa", "protecao_situacao <> 'REPROVADA' OR protecao_justificativa IS NOT NULL");
-
-                            t.HasCheckConstraint("ck_dados_do_candidato_protecao_situacao", "protecao_situacao IN ('PENDENTE', 'SOLICITADA', 'APROVADA', 'AJUSTE_RECOMENDADO', 'REPROVADA')");
+                            t.HasCheckConstraint("ck_dados_do_candidato_protecao_situacao", "protecao_situacao IN ('PENDENTE', 'SOLICITADA', 'APROVADA', 'AJUSTE_RECOMENDADO', 'DEVOLVIDA')");
 
                             t.HasCheckConstraint("ck_dados_do_candidato_quantidade_de_valores", "quantidade_de_valores IN ('VALOR_UNICO', 'VARIOS_VALORES')");
 
@@ -6587,11 +6587,11 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                             t.HasCheckConstraint("ck_manifestacoes_da_protecao_ciclo_positivo", "ciclo >= 1");
 
-                            t.HasCheckConstraint("ck_manifestacoes_da_protecao_parecer", "parecer IN ('ADEQUADA', 'RECOMENDA_AJUSTE', 'INADEQUADA')");
+                            t.HasCheckConstraint("ck_manifestacoes_da_protecao_parecer", "parecer IN ('RECOMENDA_APROVACAO', 'RECOMENDA_AJUSTE', 'RECOMENDA_NAO_USO')");
 
                             t.HasCheckConstraint("ck_manifestacoes_da_protecao_substitui_outra", "substitui_id IS NULL OR substitui_id <> id");
 
-                            t.HasCheckConstraint("ck_manifestacoes_da_protecao_texto_no_desfavoravel", "parecer = 'ADEQUADA' OR texto IS NOT NULL");
+                            t.HasCheckConstraint("ck_manifestacoes_da_protecao_texto_no_desfavoravel", "parecer = 'RECOMENDA_APROVACAO' OR texto IS NOT NULL");
                         });
                 });
 
@@ -8098,11 +8098,11 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                             t.HasCheckConstraint("ck_tipos_de_documento_protecao_desfavoravel_manifestada", "NOT protecao_manifestacao_desfavoravel OR protecao_manifestada_em IS NOT NULL");
 
+                            t.HasCheckConstraint("ck_tipos_de_documento_protecao_devolvida_com_justificativa", "protecao_situacao <> 'DEVOLVIDA' OR protecao_justificativa IS NOT NULL");
+
                             t.HasCheckConstraint("ck_tipos_de_documento_protecao_manifestacoes_contadas", "protecao_manifestacoes_no_ciclo >= 0 AND (protecao_manifestacoes_no_ciclo = 0) = (protecao_manifestada_em IS NULL)");
 
-                            t.HasCheckConstraint("ck_tipos_de_documento_protecao_reprovada_com_justificativa", "protecao_situacao <> 'REPROVADA' OR protecao_justificativa IS NOT NULL");
-
-                            t.HasCheckConstraint("ck_tipos_de_documento_protecao_situacao", "protecao_situacao IN ('PENDENTE', 'SOLICITADA', 'APROVADA', 'AJUSTE_RECOMENDADO', 'REPROVADA')");
+                            t.HasCheckConstraint("ck_tipos_de_documento_protecao_situacao", "protecao_situacao IN ('PENDENTE', 'SOLICITADA', 'APROVADA', 'AJUSTE_RECOMENDADO', 'DEVOLVIDA')");
 
                             t.HasCheckConstraint("ck_tipos_de_documento_tamanho_maximo_mb_positivo", "tamanho_maximo_mb IS NULL OR tamanho_maximo_mb > 0");
                         });

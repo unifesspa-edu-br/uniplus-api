@@ -52,7 +52,7 @@ public sealed class LeituraDoCircuitoTests
         LeituraDoCircuito lida = new(tipo.Aprovacao.Ciclo, tipo.Aprovacao.ManifestacoesNoCiclo);
         lida.ConferirCom(tipo.Aprovacao).IsSuccess.Should().BeTrue();
 
-        Do(tipo).Registrar(tipo.Aprovacao, tipo.Aprovacao.Ciclo, Adequada(), Kevin, TipoDocumentoNaAprovacaoBuilder.Segunda);
+        Do(tipo).Registrar(tipo.Aprovacao, tipo.Aprovacao.Ciclo, RecomendaAprovacao(), Kevin, TipoDocumentoNaAprovacaoBuilder.Segunda);
 
         lida.ConferirCom(tipo.Aprovacao).Errors.Should().ContainSingle().Which.Should().Match<FieldError>(e =>
             e.Field == "manifestacoesNoCiclo" && e.Error.Code == ProtecaoDoCatalogoErrorCodes.ManifestacaoNaoLida);

@@ -20,12 +20,9 @@ using Unifesspa.UniPlus.Regras.Enums;
 /// <param name="Lida">O ciclo e a contagem de manifestações lidos; a decisão sobre outro estado responde conflito.</param>
 public sealed record PedidoDeDecisao(ItemDaProtecao Item, DecisaoFundamentada Decisao, ProtecaoDeDados ProtecaoConferida, LeituraDoCircuito Lida)
 {
-    private const string Aprovar = DecisoesDaProtecaoDoCatalogo.Aprovar;
-    private const string RecomendarAjuste = DecisoesDaProtecaoDoCatalogo.RecomendarAjuste;
-    private const string Reprovar = DecisoesDaProtecaoDoCatalogo.Reprovar;
-
     private static readonly FieldError DecisaoInvalida = new("decisao", new DomainError(
-        ProtecaoDoCatalogoErrorCodes.DecisaoInvalida, $"A decisão deve ser {Aprovar}, {RecomendarAjuste} ou {Reprovar}."));
+        ProtecaoDoCatalogoErrorCodes.DecisaoInvalida,
+        $"A decisão deve ser {string.Join(", ", AtosDaProtecao.Decisoes.Select(AtosDaProtecao.ParaTokenCanonico))}."));
 
     private static readonly FieldError RecomendacaoNaoCabe = new("classificacaoRecomendada", new DomainError(
         ProtecaoDoCatalogoErrorCodes.DadoDaDecisaoNaoCabe,
@@ -33,7 +30,7 @@ public sealed record PedidoDeDecisao(ItemDaProtecao Item, DecisaoFundamentada De
 
     /// <summary>
     /// O pedido conferido, ou o lote das recusas: cadastro e decisão fora do vocabulário, classificação recomendada
-    /// ausente no ajuste ou presente nas demais decisões, justificativa ausente na reprovação ou longa demais, proteção
+    /// ausente no ajuste ou presente nas demais decisões, justificativa ausente na devolução ou longa demais, proteção
     /// conferida ausente ou fora do vocabulário, e ciclo ou contagem de manifestações lidos ausentes ou inválidos.
     /// </summary>
     public static Result<PedidoDeDecisao> Ler(DecidirProtecaoDoCatalogoCommand command)
@@ -56,27 +53,20 @@ public sealed record PedidoDeDecisao(ItemDaProtecao Item, DecisaoFundamentada De
         AtoDaProtecao? ato = LerAto(informada.Decisao, erros);
         ClassificacaoDeProtecao? recomendada = LerRecomendacao(ato, informada.ClassificacaoRecomendada, erros);
         Fundamentacao? justificativa = Fundamentacao.Ler(
-            informada.Justificativa, obrigatoria: ato == AtoDaProtecao.Reprovacao, RecusasDaFundamentacao.DaJustificativa, erros);
+            informada.Justificativa, obrigatoria: ato == AtoDaProtecao.Devolucao, RecusasDaFundamentacao.DaJustificativa, erros);
 
         return ato is null ? null : new DecisaoFundamentada(ato.Value, recomendada, justificativa);
     }
 
     private static AtoDaProtecao? LerAto(string? decisao, List<FieldError> erros)
     {
-        AtoDaProtecao? ato = decisao?.Trim() switch
+        if (AtosDaProtecao.TryAnalisar(decisao, out AtoDaProtecao ato) && AtosDaProtecao.Decisoes.Contains(ato))
         {
-            Aprovar => AtoDaProtecao.Aprovacao,
-            RecomendarAjuste => AtoDaProtecao.AjusteRecomendado,
-            Reprovar => AtoDaProtecao.Reprovacao,
-            _ => null,
-        };
-
-        if (ato is null)
-        {
-            erros.Add(DecisaoInvalida);
+            return ato;
         }
 
-        return ato;
+        erros.Add(DecisaoInvalida);
+        return null;
     }
 
     // Aqui só se converte o token. A regra da classificação recomendada é do domínio: no ajuste, obrigatória e da escala
@@ -91,7 +81,7 @@ public sealed record PedidoDeDecisao(ItemDaProtecao Item, DecisaoFundamentada De
             return conferida.IsSuccess ? lida.Valor : null;
         }
 
-        if (ato is AtoDaProtecao.Aprovacao or AtoDaProtecao.Reprovacao && lida.Informado)
+        if (ato is AtoDaProtecao.Aprovacao or AtoDaProtecao.Devolucao && lida.Informado)
         {
             erros.Add(RecomendacaoNaoCabe);
         }

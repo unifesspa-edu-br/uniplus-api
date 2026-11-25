@@ -1,6 +1,7 @@
 namespace Unifesspa.UniPlus.Configuracao.API.Contracts.Requests;
 
 using Unifesspa.UniPlus.Configuracao.Application.Commands.ProtecaoDoCatalogo;
+using Unifesspa.UniPlus.Configuracao.Domain.Enums;
 using Unifesspa.UniPlus.Infrastructure.Core.OpenApi;
 
 /// <summary>
@@ -8,13 +9,14 @@ using Unifesspa.UniPlus.Infrastructure.Core.OpenApi;
 /// candidato. Declara no contrato o vocabulário do cadastro e da decisão; a recusa do valor fora dele continua sendo do
 /// handler.
 /// </summary>
+/// <param name="Decisao"><c>APROVACAO</c>, <c>AJUSTE_RECOMENDADO</c> ou <c>DEVOLUCAO</c>.</param>
 /// <param name="Ciclo">O <c>aprovacao.ciclo</c> lido no item.</param>
 /// <param name="ManifestacoesNoCiclo">
 /// O <c>aprovacao.manifestacoesNoCiclo</c> lido no item: se outra manifestação técnica foi registrada depois da leitura,
 /// a decisão responde 409 e precisa ser refeita depois de reler o item.
 /// </param>
 /// <param name="Justificativa">
-/// Obrigatória em <c>REPROVAR</c>; em <c>APROVAR</c> e <c>RECOMENDAR_AJUSTE</c>, opcional, salvo diante de manifestação
+/// Obrigatória em <c>DEVOLUCAO</c>; em <c>APROVACAO</c> e <c>AJUSTE_RECOMENDADO</c>, opcional, salvo diante de manifestação
 /// técnica desfavorável vigente, que a exige. Fica registrada no ato da decisão.
 /// </param>
 public sealed record DecidirProtecaoDoCatalogoRequest(
@@ -22,9 +24,9 @@ public sealed record DecidirProtecaoDoCatalogoRequest(
     string? Cadastro,
     Guid ItemId,
     [property: VocabularioFechado(
-        DecisoesDaProtecaoDoCatalogo.Aprovar,
-        DecisoesDaProtecaoDoCatalogo.RecomendarAjuste,
-        DecisoesDaProtecaoDoCatalogo.Reprovar)]
+        AtosDaProtecao.TokenAprovacao,
+        AtosDaProtecao.TokenAjusteRecomendado,
+        AtosDaProtecao.TokenDevolucao)]
     string? Decisao,
     string? ClassificacaoProtecao,
     string? HipoteseLegal,

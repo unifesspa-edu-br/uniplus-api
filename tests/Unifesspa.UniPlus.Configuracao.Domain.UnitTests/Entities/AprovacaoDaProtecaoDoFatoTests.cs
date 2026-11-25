@@ -64,18 +64,18 @@ public sealed class AprovacaoDaProtecaoDoFatoTests
         outroPonto.Error!.Code.Should().Be(FatoCandidatoErrorCodes.DefinicaoDoFatoDeSistemaTravada);
     }
 
-    [Fact(DisplayName = "O fato fora de solicitação não é reprovado")]
-    public void Fato_ReprovarSemSolicitacao_Recusado()
+    [Fact(DisplayName = "O fato fora de solicitação não é devolvido")]
+    public void Fato_DevolverSemSolicitacao_Recusado()
     {
-        NovoFato().ReprovarProtecao("Dado desnecessário.", Caroline, Terca).Error!.Code
+        NovoFato().DevolverProtecao("Dado desnecessário.", Caroline, Terca).Error!.Code
             .Should().Be(ProtecaoDoCatalogoErrorCodes.ItemForaDeSolicitacao);
     }
 
-    [Fact(DisplayName = "Salvar o descritivo do fato reprovado o devolve a pendente")]
-    public void Fato_AlterarDescritivoDoReprovado_VoltaAPendente()
+    [Fact(DisplayName = "Salvar o descritivo do fato devolvido o devolve a pendente")]
+    public void Fato_AlterarDescritivoDoDevolvido_VoltaAPendente()
     {
         FatoCandidato fato = Categorico();
-        fato.ReprovarProtecao("Dado desnecessário.", Caroline, Terca);
+        fato.DevolverProtecao("Dado desnecessário.", Caroline, Terca);
 
         fato.AlterarDescritivo("Outro nome", "Escolaridade do candidato.", null).IsSuccess.Should().BeTrue();
 
@@ -93,25 +93,25 @@ public sealed class AprovacaoDaProtecaoDoFatoTests
         fato.Aprovacao.Situacao.Should().Be(SituacaoDaAprovacao.Pendente);
     }
 
-    [Fact(DisplayName = "Salvar a definição do fato reprovado o devolve a pendente")]
-    public void Fato_AlterarDefinicaoDoReprovado_VoltaAPendente()
+    [Fact(DisplayName = "Salvar a definição do fato devolvido o devolve a pendente")]
+    public void Fato_AlterarDefinicaoDoDevolvido_VoltaAPendente()
     {
         FatoCandidato fato = Categorico();
-        fato.ReprovarProtecao("Dado desnecessário.", Caroline, Terca);
+        fato.DevolverProtecao("Dado desnecessário.", Caroline, Terca);
 
         fato.AlterarDefinicao(Definicao(fato), Catalogo(fato)).IsSuccess.Should().BeTrue();
 
         fato.Aprovacao.Situacao.Should().Be(SituacaoDaAprovacao.Pendente);
     }
 
-    [Fact(DisplayName = "Salvar as regras padrão do derivado reprovado o devolve a pendente")]
-    public void Fato_DefinirRegrasDoReprovado_VoltaAPendente()
+    [Fact(DisplayName = "Salvar as regras padrão do derivado devolvido o devolve a pendente")]
+    public void Fato_DefinirRegrasDoDevolvido_VoltaAPendente()
     {
         FatoCandidato fato = CriacaoDoFato.CriarDerivadoDoAdministrador(
             new DescritivoDoFato("TEM_RENDA_DERIVADA", "Tem renda derivada", "Se o candidato tem renda."),
             new DefinicaoDoFato(TipoDoDado.SimOuNao, null, null, null, "INSCRICAO", EscopoFato.Candidato, ClassificacaoDeProtecao.Pessoal, Finalidade, HipoteseLegalTratamento.CumprimentoObrigacaoLegal)).Value!;
         fato.SolicitarAprovacaoDaProtecao(Isabella, Segunda);
-        fato.ReprovarProtecao("Dado desnecessário.", Caroline, Terca);
+        fato.DevolverProtecao("Dado desnecessário.", Caroline, Terca);
 
         fato.DefinirRegrasPadrao([], Catalogo(fato)).IsSuccess.Should().BeTrue();
 

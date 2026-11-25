@@ -30,10 +30,10 @@ public sealed class JustificativaDianteDaManifestacaoEndpointTests : Manifestaca
         await PrepararTodosAsync();
         using HttpClient client = Fixture.Factory.CreateClient();
         Guid id = await SolicitadoAsync(client, cadastro);
-        (await ManifestarAsync(client, Kevin, cadastro, id, "INADEQUADA")).StatusCode.Should().Be(HttpStatusCode.NoContent);
+        (await ManifestarAsync(client, Kevin, cadastro, id, "RECOMENDA_NAO_USO")).StatusCode.Should().Be(HttpStatusCode.NoContent);
 
-        HttpResponseMessage semJustificativa = await DecidirComoAsync(client, Betina, cadastro, id, "APROVAR");
-        HttpResponseMessage comJustificativa = await DecidirComoAsync(client, Betina, cadastro, id, "APROVAR", Justificativa);
+        HttpResponseMessage semJustificativa = await DecidirComoAsync(client, Betina, cadastro, id, "APROVACAO");
+        HttpResponseMessage comJustificativa = await DecidirComoAsync(client, Betina, cadastro, id, "APROVACAO", Justificativa);
 
         (await CodigoAsync(semJustificativa)).Should().Be("uniplus.configuracao.protecao_do_catalogo.justificativa_exigida_pela_manifestacao");
         comJustificativa.StatusCode.Should().Be(HttpStatusCode.NoContent);
@@ -52,8 +52,8 @@ public sealed class JustificativaDianteDaManifestacaoEndpointTests : Manifestaca
         Guid id = await SolicitadoAsync(client, cadastro);
         (await ManifestarAsync(client, Kevin, cadastro, id, "RECOMENDA_AJUSTE")).StatusCode.Should().Be(HttpStatusCode.NoContent);
 
-        HttpResponseMessage semJustificativa = await DecidirComoAsync(client, Betina, cadastro, id, "RECOMENDAR_AJUSTE", recomendada: "SENSIVEL");
-        HttpResponseMessage comJustificativa = await DecidirComoAsync(client, Betina, cadastro, id, "RECOMENDAR_AJUSTE", Justificativa, "SENSIVEL");
+        HttpResponseMessage semJustificativa = await DecidirComoAsync(client, Betina, cadastro, id, "AJUSTE_RECOMENDADO", recomendada: "SENSIVEL");
+        HttpResponseMessage comJustificativa = await DecidirComoAsync(client, Betina, cadastro, id, "AJUSTE_RECOMENDADO", Justificativa, "SENSIVEL");
 
         (await CodigoAsync(semJustificativa)).Should().Be("uniplus.configuracao.protecao_do_catalogo.justificativa_exigida_pela_manifestacao");
         comJustificativa.StatusCode.Should().Be(HttpStatusCode.NoContent);
@@ -70,8 +70,8 @@ public sealed class JustificativaDianteDaManifestacaoEndpointTests : Manifestaca
         Guid semJustificativa = await SolicitadoAsync(client, "TIPO_DOCUMENTO");
         Guid comJustificativa = await SolicitadoAsync(client, "TIPO_DOCUMENTO");
 
-        (await DecidirComoAsync(client, Betina, "TIPO_DOCUMENTO", semJustificativa, "APROVAR")).StatusCode.Should().Be(HttpStatusCode.NoContent);
-        (await DecidirComoAsync(client, Betina, "TIPO_DOCUMENTO", comJustificativa, "APROVAR", Justificativa)).StatusCode.Should().Be(HttpStatusCode.NoContent);
+        (await DecidirComoAsync(client, Betina, "TIPO_DOCUMENTO", semJustificativa, "APROVACAO")).StatusCode.Should().Be(HttpStatusCode.NoContent);
+        (await DecidirComoAsync(client, Betina, "TIPO_DOCUMENTO", comJustificativa, "APROVACAO", Justificativa)).StatusCode.Should().Be(HttpStatusCode.NoContent);
 
         JsonElement ato = await UltimoAtoAsync(client, "TIPO_DOCUMENTO", comJustificativa);
         (ato.GetProperty("justificativa").GetString(), ato.GetProperty("dianteDeManifestacaoDesfavoravel").GetBoolean()).Should().Be((Justificativa, false));
