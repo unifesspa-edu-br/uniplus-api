@@ -13,6 +13,7 @@ using Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Host.IntegrationTests.Instalacao;
 using Unifesspa.UniPlus.Host.IntegrationTests.Pedidos;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
+using Unifesspa.UniPlus.IntegrationTests.Fixtures.Assertions;
 
 /// <summary>
 /// O filtro da situação na listagem das revisões, pelo host real: filtra no servidor antes da paginação, e cada página
@@ -54,7 +55,7 @@ public sealed class FiltroDasRevisoesNoHostTests : PedidosDeConcessaoTestBase
 
     [Theory]
     [InlineData("?limit=2")]
-    [InlineData("?limit=2&situacao=%20%20")]
+    [InlineData("?limit=2&situacao=")]
     public async Task Listar_SemSituacao_NaoFiltra(string filtro)
     {
         (Guid[] concluidas, Guid emAndamento) = await SemearRevisoesAsync();
@@ -63,6 +64,18 @@ public sealed class FiltroDasRevisoesNoHostTests : PedidosDeConcessaoTestBase
         (Guid Id, string Situacao)[] lidas = [.. (await PaginasAsync(marlene, $"{Revisoes}{filtro}")).SelectMany(static p => p)];
 
         lidas.Select(static r => r.Id).Should().BeEquivalentTo(concluidas.Append(emAndamento));
+    }
+
+    [Fact(DisplayName = "Situação composta só por espaços no filtro de revisões é recusada com 400")]
+    public async Task Listar_SituacaoComEspacos_RecusaCom400()
+    {
+        using HttpClient marlene = await ClienteComPermissoesAsync(Marlene, AprovarProtecaoDeDados);
+        using HttpResponseMessage resposta = await marlene.GetAsync(new Uri($"{Revisoes}?limit=2&situacao=%20%20", UriKind.Relative));
+
+        await ProblemaRegistrado.ConferirAsync(resposta, HttpStatusCode.BadRequest,
+            "uniplus.autorizacao.revisao.filtro_de_situacao_invalido",
+            "Situação do filtro de revisões inválida",
+            "Situação inválida. Use um dos códigos publicados para a situação da revisão.");
     }
 
     [Fact(DisplayName = "Com a revisão em andamento entre as concluídas, as páginas do filtro saem cheias: o filtro vem antes da paginação")]

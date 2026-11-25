@@ -129,3 +129,9 @@ Decisões do líder técnico (24/11/2026).
 ## Emenda 6 (2026-11-25) — códigos das partes do formulário
 
 O formato e as regras da emenda 5 valem também para o código da página, do grupo e do termo exigido do formulário, no processo e no modelo, e para a citação da página pelo item e pelo grupo; o limite de cada um continua 60. O código do dado que o item coleta é o código do fato do catálogo: tem o limite dele, 50, definido uma vez, e é conferido pela existência no catálogo, como chegou.
+
+## Emenda 7 (2026-11-25) — leitura de filtros por código
+
+**Decisão.** O texto marcado com `AceitaCodigosDe<T>` chega à consulta como foi enviado. Nulo ou vazio significa ausência de filtro; qualquer outro texto é lido exatamente e recusado se não estiver cadastrado. Texto não marcado continua como está.
+
+**Consequência.** Todo filtro marcado é lido pelo leitor único de código de pedido.

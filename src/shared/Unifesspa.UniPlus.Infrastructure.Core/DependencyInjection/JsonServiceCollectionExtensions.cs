@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.ModelBinding.Binders;
 using Microsoft.Extensions.DependencyInjection;
 
+using Unifesspa.UniPlus.Infrastructure.Core.CodigosDeContrato;
 using Unifesspa.UniPlus.Infrastructure.Core.Instantes;
 using Unifesspa.UniPlus.Kernel.Tempo;
 
@@ -18,6 +19,7 @@ public static class JsonServiceCollectionExtensions
     /// como texto e faz o gerador de OpenAPI publicar o campo numérico só como número,
     /// sem a variante <c>string</c> com <c>pattern</c>. O instante que chega no corpo, na rota, na query
     /// ou no cabeçalho é truncado em microssegundos, a precisão que o banco persiste.
+    /// O texto marcado como código chega à consulta como foi enviado.
     /// </summary>
     public static IServiceCollection AddUniPlusJsonOptions(this IServiceCollection services)
     {
@@ -39,6 +41,7 @@ public static class JsonServiceCollectionExtensions
         options.ModelBinderProviders.Insert(
             options.ModelBinderProviders.IndexOf(simples),
             new InstanteEmMicrossegundosModelBinderProvider());
+        options.ModelMetadataDetailsProviders.Add(new CodigoPedidoSemConversaoEmNulo());
     }
 
     private static void Aplicar(JsonSerializerOptions options)
