@@ -7,8 +7,8 @@ using Unifesspa.UniPlus.Configuracao.Application.Persistence;
 
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Domain.Enums;
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence.CodigosDeContrato;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Protecao;
-using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Regras.Enums;
 
@@ -40,20 +40,18 @@ internal sealed class TipoConceitoConfiguration : IEntityTypeConfiguration<TipoC
     private static void ConfigurarTabela(TableBuilder<TipoConceito> tabela)
     {
         tabela.HasComment("Tipos de conceito com que uma etapa avalia: numéricos, medidos numa escala, ou categóricos, escolhidos entre valores ordenados.");
-        string codigos = string.Join(", ", CatalogoDe<FormaDoConceito>.Valores().Select(static natureza => EmSql(natureza)));
+        string codigos = SqlDosCodigosDeContrato.Lista<FormaDoConceito>();
         tabela.HasCheckConstraint("ck_tipos_conceito_forma", $"forma IN ({codigos})");
 
         // O numérico traz a escala inteira e o categórico não traz nenhum dos três campos da escala.
-        string numerico = EmSql(FormaDoConceito.Numerico);
-        string categorico = EmSql(FormaDoConceito.PorOpcoes);
+        string numerico = SqlDosCodigosDeContrato.Literal(FormaDoConceito.Numerico);
+        string categorico = SqlDosCodigosDeContrato.Literal(FormaDoConceito.PorOpcoes);
         tabela.HasCheckConstraint(
             "ck_tipos_conceito_parametros_da_forma",
             $"(forma = {numerico} AND escala_minima IS NOT NULL AND escala_maxima IS NOT NULL AND casas_decimais IS NOT NULL "
             + "AND escala_minima < escala_maxima AND casas_decimais BETWEEN 0 AND 4) "
             + $"OR (forma = {categorico} AND escala_minima IS NULL AND escala_maxima IS NULL AND casas_decimais IS NULL)");
     }
-
-    private static string EmSql(FormaDoConceito natureza) => $"'{natureza.Codigo()}'";
 
     private static void ConfigurarIdentificacao(EntityTypeBuilder<TipoConceito> builder)
     {
