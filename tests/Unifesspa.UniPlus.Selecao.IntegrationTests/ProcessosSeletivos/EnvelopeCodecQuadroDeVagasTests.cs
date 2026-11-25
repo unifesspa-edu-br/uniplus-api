@@ -37,13 +37,13 @@ public sealed class EnvelopeCodecQuadroDeVagasTests
         vagas["totalDeVagasDoEdital"]!.GetValue<int>().Should().Be(VagasOfertadasBaseDoQuadroFixado);
     }
 
-    [Fact(DisplayName = "A distribuição reduzida pelo motor de ajuste é gravada no envelope e, relida, é aceita e volta com o mesmo quadro")]
+    [Fact(DisplayName = "A distribuição reduzida pela regra de ajuste do quadro é gravada no envelope e, relida, é aceita e volta com o mesmo quadro")]
     public void Reidratar_QuadroFixadoReduzido_VoltaIgualAoPublicado()
     {
         ProcessoSeletivo processo = ProcessoComQuadroFixadoReduzido(new ParametrosReduzirDe("AC"));
         ConfiguracaoDistribuicaoVagas publicada = processo.DistribuicaoVagas.Single();
         publicada.Quadro.TotalDeVagasDoEdital.Should().Be(VagasOfertadasBaseDoQuadroFixado);
-        publicada.Quadro.QuantidadeDe("AC").Should().Be(21, "o motor retirou da ampla as 4 vagas que passavam do total");
+        publicada.Quadro.QuantidadeDe("AC").Should().Be(21, "a regra de ajuste do quadro retirou da ampla as 4 vagas que passavam do total");
         SnapshotCanonico congelado = ExemploDeEnvelope.Canonicalizador.Canonicalizar(ExemploDeEnvelopeEntrada.Entrada(processo));
         ExemploDeEnvelopeEntrada.Publicar(processo);
 

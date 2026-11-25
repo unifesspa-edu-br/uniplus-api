@@ -6,7 +6,7 @@ using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Vagas;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
-/// <summary>As regras que a distribuição de uma oferta aplica: a da distribuição, a do ajuste e o motor do ajuste declarado.</summary>
+/// <summary>As regras que a distribuição de uma oferta aplica: a da distribuição, a do ajuste e os parâmetros de ajuste do quadro declarados.</summary>
 internal readonly record struct RegrasDaDistribuicao(
     ReferenciaRegra Distribuicao,
     ReferenciaRegra? Ajuste,

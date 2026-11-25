@@ -13,7 +13,7 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 /// </summary>
 public static class MontagemDoQuadroDeVagas
 {
-    /// <summary>Motor inerte: sem excesso a reduzir, o reconciliador devolve o quadro intacto.</summary>
+    /// <summary>Sem excesso a reduzir, o reconciliador devolve o quadro intacto.</summary>
     private static readonly ParametrosReduzirDe SemAjuste = new(string.Empty);
 
     /// <exception cref="ArgumentException">
@@ -76,8 +76,8 @@ public static class MontagemDoQuadroDeVagas
                 Vagas = [.. modalidades.Select(m => new VagasDaModalidade(m.Codigo, calculado.QuantidadeDe(m.Codigo)))],
             });
 
-    // As quantidades dividem o total da oferta; não o ampliam nem o deixam incompleto. Faltar não tem
-    // motor: acrescer seria o sistema criar vaga que ninguém autorizou, e a quantidade de vagas do
+    // As quantidades dividem o total da oferta; não o ampliam nem o deixam incompleto. A regra de ajuste só reduz:
+    // acrescer seria o sistema criar vaga que ninguém autorizou, e a quantidade de vagas do
     // certame é ato administrativo.
     private static Result<QuadroDeVagas> MontarFixadoNoEdital(DistribuicaoDeVagasDeclarada declarada)
     {

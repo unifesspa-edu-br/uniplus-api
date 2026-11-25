@@ -4,15 +4,15 @@ using System.Text.Json.Serialization;
 
 /// <summary>
 /// Parâmetros aplicados de uma regra do <c>regras_do_catalogo</c>
-/// (<c>tipo=regra_ajuste_distribuicao_vagas</c>) — os motores que reconciliam um quadro
+/// (<c>tipo=regra_ajuste_distribuicao_vagas</c>) — as regras de ajuste do quadro que reconciliam um quadro
 /// fixado pelo edital cuja soma passa das vagas ofertadas base. Discriminated union no molde de
 /// <c>PredicadoObrigatoriedade</c> (ADR-0058) e de <see cref="ParametrosRegraEliminacao"/>.
 /// </summary>
 /// <remarks>
 /// <para>
-/// As variantes espelham os motores que <c>AJUSTE_VAGAS_ARTIGO_11_PARAGRAFO_UNICO</c> declara em
-/// <c>declaracao_da_regra.motores_nao_art10</c>, e a vedação que ela também declara vale aqui: são
-/// motores de distribuição institucional, nunca da Lei 12.711 — lá a reconciliação está
+/// As variantes espelham as regras de ajuste do quadro declaradas por
+/// <c>AJUSTE_VAGAS_ARTIGO_11_PARAGRAFO_UNICO</c>, e a vedação que ela também declara vale aqui: são
+/// regras de ajuste do quadro da distribuição institucional, nunca da Lei 12.711 — lá a reconciliação está
 /// embutida na calculadora, com teto nas vagas ofertadas base e prioridade da reserva de baixa renda.
 /// </para>
 /// <para>

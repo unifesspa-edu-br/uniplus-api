@@ -59,7 +59,7 @@ internal static class LeituraDosInsumosDaDistribuicao
         LerAjusteDoQuadro(leitor, item, path));
 
     /// <summary>
-    /// O motor de ajuste que o edital declarou — <see langword="null"/> quando a distribuição não declara
+    /// Os parâmetros da regra de ajuste do quadro que o edital declarou — <see langword="null"/> quando a distribuição não declara
     /// nenhum. A variante vem do discriminador <c>$tipo</c>, e a que o envelope não conhece é malformada.
     /// </summary>
     private static ParametrosRegraAjusteDistribuicao? LerAjusteDoQuadro(LeitorEnvelope leitor, JsonObject item, string pathPai)
