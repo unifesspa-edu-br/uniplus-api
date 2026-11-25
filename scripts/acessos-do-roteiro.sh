@@ -49,7 +49,8 @@ PERMISSOES_INSTITUCIONAIS='[
     "configuracao:condicoes-atendimento:manter", "configuracao:recursos-acessibilidade:manter",
     "configuracao:tipos-deficiencia:manter", "configuracao:base-legal-do-fada:manter",
     "configuracao:calendarios-dias-uteis:manter", "configuracao:pesos-area-enem:manter",
-    "configuracao:fatos-candidato:manter", "configuracao:tipos-documento:manter"
+    "configuracao:fatos-candidato:manter", "configuracao:tipos-documento:manter",
+    "configuracao:modelos-formulario:consultar"
 ]'
 PERFIL_DA_UNIDADE="Roteiro de teste — processo seletivo da unidade"
 PERMISSOES_DA_UNIDADE='["selecao:processos:configurar", "selecao:processos:publicar"]'
@@ -73,7 +74,7 @@ token_de() {
 # As esperas pelo verificador de arquivos podem passar da validade do token do executor (300 s no realm local):
 # quem chama depois de uma espera renova antes.
 renovar_token_do_executor() {
-    TOKEN=$(token_de "$ADMIN_USER" "$ADMIN_PASS")
+    TOKEN=$(token_de "$ADMIN_USER" "$ADMIN_PASS") || fail "não foi possível renovar o token do executor."
 }
 
 # Chamada como uma pessoa; falha com o corpo da recusa. $1=passo $2=token $3=método $4=caminho $5=corpo
@@ -130,18 +131,18 @@ etapa_pendente_do_perfil() {
 # ainda espera decisão, para que uma execução interrompida entre as duas possa continuar. $1=perfil $2=versão $3=nome
 aprovar_versao_do_perfil() {
     local etapa
-    aguardar_documento_do_perfil "$1" "$(token_de "${LISTA_DE_GESTORES[0]}" "$SENHA_GESTORES")"
-    etapa=$(etapa_pendente_do_perfil "$1")
+    aguardar_documento_do_perfil "$1" "$(token_de "${LISTA_DE_GESTORES[0]}" "$SENHA_GESTORES")" || return 1
+    etapa=$(etapa_pendente_do_perfil "$1") || fail "não foi possível consultar a etapa pendente do perfil $1."
     if [ "$etapa" = GESTAO_DE_ACESSOS ]; then
         como "a aprovação da versão do perfil '$3' por ${LISTA_DE_GESTORES[1]}" "$(token_de "${LISTA_DE_GESTORES[1]}" "$SENHA_GESTORES")" POST \
-            "/api/autorizacao/perfis/$1/versoes/$2/aprovacao" '{"etapa": "GESTAO_DE_ACESSOS"}' >/dev/null
-        etapa=$(etapa_pendente_do_perfil "$1")
+            "/api/autorizacao/perfis/$1/versoes/$2/aprovacao" '{"etapa": "GESTAO_DE_ACESSOS"}' >/dev/null || return 1
+        etapa=$(etapa_pendente_do_perfil "$1") || fail "não foi possível consultar a etapa pendente do perfil $1."
     fi
     if [ "$etapa" = PROTECAO_DE_DADOS ]; then
         [ "${#LISTA_DE_REPRESENTANTES[@]}" -gt 0 ] || fail "a versão do perfil '$3' espera a proteção de dados, e não há Representante do controlador designado."
         como "a aprovação da proteção de dados da versão do perfil '$3' por ${LISTA_DE_REPRESENTANTES[0]}" \
             "$(token_de "${LISTA_DE_REPRESENTANTES[0]}" "$SENHA_REPRESENTANTES")" POST \
-            "/api/autorizacao/perfis/$1/versoes/$2/aprovacao" '{"etapa": "PROTECAO_DE_DADOS"}' >/dev/null
+            "/api/autorizacao/perfis/$1/versoes/$2/aprovacao" '{"etapa": "PROTECAO_DE_DADOS"}' >/dev/null || return 1
     fi
 }
 
@@ -170,21 +171,60 @@ retomar_versao_pendente() {
 # Cria o perfil e o põe em vigor; devolve o id. $1=nome $2=permissões (JSON)
 criar_perfil_do_roteiro() {
     local nome="$1" permissoes="$2" criador envio perfil
-    criador=$(token_de "${LISTA_DE_GESTORES[0]}" "$SENHA_GESTORES")
+    criador=$(token_de "${LISTA_DE_GESTORES[0]}" "$SENHA_GESTORES") || return 1
     envio=$(como "a criação do perfil '$nome' por ${LISTA_DE_GESTORES[0]}" "$criador" POST "/api/autorizacao/perfis" \
         "$(jq -nc --arg n "$nome" --arg d "$DESCRICAO_DO_PERFIL" --argjson p "$permissoes" --argjson t "$(stat -c%s "$PDF_DO_PERFIL")" \
-            '{nome: $n, descricao: $d, permissoes: $p, protocolo: "ROTEIRO-LOCAL-0001/2026", tamanhoDoDocumento: $t}')")
-    enviar_documento_do_perfil "$envio" "$criador"
+            '{nome: $n, descricao: $d, permissoes: $p, protocolo: "ROTEIRO-LOCAL-0001/2026", tamanhoDoDocumento: $t}')") || return 1
+    enviar_documento_do_perfil "$envio" "$criador" || return 1
     perfil=$(jq -r '.perfilId' <<< "$envio")
-    aprovar_versao_do_perfil "$perfil" "$(jq -r '.versaoId' <<< "$envio")" "$nome"
+    aprovar_versao_do_perfil "$perfil" "$(jq -r '.versaoId' <<< "$envio")" "$nome" || return 1
     printf '%s\n' "$perfil"
+}
+
+# Confere a composição e acrescenta as permissões ausentes sem retirar as existentes.
+# $1=perfil $2=nome $3=permissões pedidas $4=detalhe
+atualizar_permissoes_do_perfil() {
+    local id="$1" nome="$2" pedidas="$3" detalhe="$4" permissoes criador envio
+    permissoes=$(jq -ce --argjson pedidas "$pedidas" \
+        '(.composicaoEmVigor.permissoes | map(.codigo)) as $atuais | ($atuais + $pedidas | unique)' <<< "$detalhe") \
+        || fail "não foi possível ler as permissões do perfil '$nome'."
+    if ! jq -e --argjson p "$pedidas" '(.composicaoEmVigor.permissoes | map(.codigo)) as $atuais | ($p - $atuais | length) == 0' \
+        <<< "$detalhe" >/dev/null; then
+        if jq -e '.versaoPendente != null' <<< "$detalhe" >/dev/null; then
+            jq -e --argjson p "$permissoes" \
+                '(.versaoPendente.permissoes | map(.codigo)) as $pendentes | .versaoPendente.propostaPorQuemLe and (($p - $pendentes | length) == 0)' \
+                <<< "$detalhe" >/dev/null \
+                || fail "o perfil '$nome' tem uma versão pendente de outra proposta ou sem todas as permissões necessárias; resolva-a na tela de perfis."
+            retomar_versao_pendente "$id" "$nome" "$detalhe" || return 1
+        else
+            criador=$(token_de "${LISTA_DE_GESTORES[0]}" "$SENHA_GESTORES") || return 1
+            envio=$(como "a nova versão do perfil '$nome'" "$criador" POST "/api/autorizacao/perfis/$id/versoes" \
+                "$(jq -nc --arg n "$nome" --arg d "$(jq -r '.descricao' <<< "$detalhe")" --argjson p "$permissoes" --argjson t "$(stat -c%s "$PDF_DO_PERFIL")" \
+                    '{nome: $n, descricao: $d, permissoes: $p, protocolo: "ROTEIRO-LOCAL-0001/2026", tamanhoDoDocumento: $t}')") || return 1
+            enviar_documento_do_perfil "$envio" "$criador" || return 1
+            aprovar_versao_do_perfil "$id" "$(jq -r '.versaoId' <<< "$envio")" "$nome" || return 1
+        fi
+        detalhe=$(detalhe_do_perfil "$id") || return 1
+        jq -e --argjson p "$pedidas" '(.composicaoEmVigor.permissoes | map(.codigo)) as $atuais | ($p - $atuais | length) == 0' \
+            <<< "$detalhe" >/dev/null || fail "a versão em vigor do perfil '$nome' ainda não contém as permissões necessárias."
+    fi
+    # O acréscimo abre revisão e bloqueia novos pedidos. Encerra-a, revogando as concessões não migradas;
+    # o executor solicita a versão atual logo depois. Também permite retomar uma execução interrompida.
+    if jq -e '.revisaoDasConcessoes.situacao == "aberta"' <<< "$detalhe" >/dev/null; then
+        como "o encerramento da revisão das concessões do perfil '$nome'" \
+            "$(token_de "${LISTA_DE_GESTORES[0]}" "$SENHA_GESTORES")" POST \
+            "/api/autorizacao/perfis/$id/revisao-das-concessoes/encerramento" \
+            '{"motivo":"Atualização do perfil do roteiro local de teste.","confirmacaoDeExclusao":true}' >/dev/null \
+            || fail "não foi possível encerrar a revisão das concessões do perfil '$nome'."
+    fi
 }
 
 # O id do perfil do roteiro em vigor, criado se não existe. $1=nome $2=permissões (JSON)
 perfil_do_roteiro() {
     local nome="$1" listado
     listado=$(como "a lista de perfis" "$(token_de "${LISTA_DE_GESTORES[0]}" "$SENHA_GESTORES")" GET "/api/autorizacao/perfis?limit=100" \
-        | jq -c --arg n "$nome" 'first(.[] | select(.nome == $n)) // empty')
+        | jq -c --arg n "$nome" 'first(.[] | select(.nome == $n)) // empty') \
+        || fail "não foi possível consultar a lista de perfis para o roteiro."
     if [ -z "$listado" ]; then
         criar_perfil_do_roteiro "$nome" "$2"
     elif ! jq -e '.ativo' <<< "$listado" >/dev/null; then
@@ -192,10 +232,12 @@ perfil_do_roteiro() {
     else
         local id detalhe
         id=$(jq -r '.id' <<< "$listado")
-        detalhe=$(detalhe_do_perfil "$id") || exit 1
+        detalhe=$(detalhe_do_perfil "$id") || return 1
         if jq -e '.composicaoEmVigor == null' <<< "$detalhe" >/dev/null; then
-            retomar_versao_pendente "$id" "$nome" "$detalhe"
+            retomar_versao_pendente "$id" "$nome" "$detalhe" || return 1
+            detalhe=$(detalhe_do_perfil "$id") || return 1
         fi
+        atualizar_permissoes_do_perfil "$id" "$nome" "$2" "$detalhe" || return 1
         printf '%s\n' "$id"
     fi
 }
@@ -216,7 +258,7 @@ pedir_e_aprovar() {
         '{beneficiarioEmail: null, perfilId: $p, unidadeId: (if $u == "" then null else $u end),
           justificativa: "Executar o roteiro local do processo de teste."}')
     pedido=$(como "o pedido do perfil '$nome' por $ADMIN_USER" "$TOKEN" POST "/api/autorizacao/pedidos-de-concessao" "$corpo" | jq -r '.id')
-    gestor=$(gestor_que_decide)
+    gestor=$(gestor_que_decide) || fail "não foi possível escolher um gestor para aprovar o perfil '$nome'."
     situacao=$(como "a aprovação do pedido do perfil '$nome' por $gestor" "$(token_de "$gestor" "$SENHA_GESTORES")" POST \
         "/api/autorizacao/pedidos-de-concessao/$pedido/aprovacoes" "" | jq -r '.situacao')
     [ "$situacao" = "APROVADO" ] || fail "o pedido $pedido do perfil '$nome' ficou em '$situacao', não em 'aprovado'."
@@ -227,15 +269,16 @@ garantir_perfil() {
     local nome="$1" permissoes="$2" unidade="${3:-}" escopo perfil
     escopo=${unidade:+"na unidade $unidade"}
     escopo=${escopo:-"na instituição"}
+    read -r -a LISTA_DE_GESTORES <<< "$GESTORES"
+    [ "${#LISTA_DE_GESTORES[@]}" -eq 2 ] || fail "GESTORES deve ter exatamente dois gestores de acessos (recebido: '$GESTORES')."
+    log "Concedendo a $ADMIN_USER o perfil '$nome' $escopo"
+    perfil=$(perfil_do_roteiro "$nome" "$permissoes") \
+        || fail "não foi possível preparar o perfil '$nome' para o roteiro."
+    renovar_token_do_executor
     if executor_tem_perfil "$nome" "$unidade"; then
         ok "$ADMIN_USER já tem o perfil '$nome' $escopo"
         return 0
     fi
-    read -r -a LISTA_DE_GESTORES <<< "$GESTORES"
-    [ "${#LISTA_DE_GESTORES[@]}" -eq 2 ] || fail "GESTORES deve ter exatamente dois gestores de acessos (recebido: '$GESTORES')."
-    log "Concedendo a $ADMIN_USER o perfil '$nome' $escopo"
-    perfil=$(perfil_do_roteiro "$nome" "$permissoes")
-    renovar_token_do_executor
     pedir_e_aprovar "$perfil" "$unidade" "$nome"
     renovar_token_do_executor
     executor_tem_perfil "$nome" "$unidade" || fail "o pedido foi aprovado, mas GET /api/profile/me de $ADMIN_USER não mostra o perfil '$nome' $escopo."

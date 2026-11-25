@@ -7,13 +7,13 @@
 # municípios do Anexo V.
 #
 # Os cadastros (unidades, campus, curso, oferta) têm os códigos da minuta e são
-# reaproveitados numa segunda execução. O processo é um só: com o identificador
-# legível já em uso, a criação recusa e o roteiro para — limpe a base antes.
+# reaproveitados numa segunda execução, assim como o processo identificado pelo
+# mesmo identificador legível.
 #
 # A minuta remete os pesos à Resolução nº 966/2026 e não os traz; a nota do
 # ENEM entra importada. O cronograma usa datas deslocadas do Anexo I para
-# inscrição, resultado, habilitação, chamada e matrícula, com a inscrição
-# aberta no dia da execução. Na habilitação, o roteiro define documentos
+# inscrição, resultado, habilitação, chamada e matrícula; por padrão, a inscrição
+# está aberta no dia da execução. Na habilitação, o roteiro define documentos
 # comuns e documentos para comprovar o FADA, preservando os do modelo.
 #
 # Sequência:
@@ -53,6 +53,9 @@
 #                 PSR_INSCRICAO_SEM_PROVA, SementePsrMedicina2027; para
 #                 simular processo com prova, 5e3d0006-0000-7000-8000-000000000003,
 #                 PSR_INSCRICAO_COM_PROVA)
+#   GEO_URL       (default: http://localhost:5400) — cadastro geográfico local
+#   MUNICIPIOS_DE_PROVA (JSON, na ordem desejada; padrão: Marabá/PA):
+#                 [{"codigoIbge":"1504208","uf":"PA"}]
 #   EDITAL_PDF    (default: scripts/edital-de-teste.pdf) — PDF enviado como
 #                 documento do edital, por exemplo a minuta
 #   NOME_PROCESSO (default: o nome do processo da Medicina 2027)
@@ -76,7 +79,12 @@ ADMIN_USER="${ADMIN_USER:-admin}"
 # diferente, o admin está com esse valor, não com Uni+Teste26.
 ADMIN_PASS="${ADMIN_PASS:-${TEST_PASSWORD:-Uni+Teste26}}"
 MODELO_INSCRICAO_ID="${MODELO_INSCRICAO_ID:-5e3d0006-0000-7000-8000-000000000004}"
-MODELO_COM_PROVA_ID="5e3d0006-0000-7000-8000-000000000003"
+GEO_URL="${GEO_URL:-http://localhost:5400}"
+if [ -z "${MUNICIPIOS_DE_PROVA:-}" ]; then
+    MUNICIPIOS_DE_PROVA='[{"codigoIbge":"1504208","uf":"PA"}]'
+fi
+MODELO_PEDE_CIDADE_DE_PROVA="false"
+FATO_CIDADE_DE_PROVA=""
 # Um PDF de verdade: o portal abre o edital no navegador, e bytes que só começam
 # com %PDF- abririam uma aba em branco.
 EDITAL_PDF="${EDITAL_PDF:-$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/edital-de-teste.pdf}"
@@ -532,7 +540,127 @@ JSON
 
 criar_processo() {
     log "Criar ProcessoSeletivo"
-    local resp
+# A Seleção reconhece cidade de prova pela fonte dos valores do fato, tanto
+# nos itens quanto nos subitens dos grupos, independentemente do código do fato.
+conferir_modelo_inscricao() {
+    log "Conferir os fatos do modelo de inscrição"
+    local modelo codigos codigo fato
+    modelo=$(api_get "/api/configuracao/admin/modelos-formulario/$MODELO_INSCRICAO_ID")
+    jq -e '(.conteudo.itens | type == "array") and (.conteudo.grupos | type == "array") and
+        all(.conteudo.grupos[]; .subitens | type == "array") and
+        all(.conteudo.itens[], .conteudo.grupos[].subitens[]; .fatoCodigo | type == "string" and length > 0)' \
+        <<< "$modelo" >/dev/null || fail "modelo de inscrição sem itens ou grupos válidos"
+    codigos=$(jq -r '[.conteudo.itens[], .conteudo.grupos[].subitens[] | .fatoCodigo] | unique | .[]' <<< "$modelo")
+    MODELO_PEDE_CIDADE_DE_PROVA="false"
+    FATO_CIDADE_DE_PROVA=""
+    while IFS= read -r codigo; do
+        [ -n "$codigo" ] || continue
+        fato=$(api_get "/api/configuracao/fatos-candidato/$codigo")
+        jq -e '.fato.dominio.codigo != null' <<< "$fato" >/dev/null || fail "não foi possível ler o fato $codigo do modelo"
+        if jq -e '.fato.dominio.codigo == "OPCAO" and .fato.fonteValores.codigo == "MUNICIPIOS_PROVA_PRESENCIAL"' <<< "$fato" >/dev/null; then
+            MODELO_PEDE_CIDADE_DE_PROVA="true"
+            # Usado pelo roteiro irmão ao preencher as inscrições.
+            # shellcheck disable=SC2034
+            FATO_CIDADE_DE_PROVA="$codigo"
+            break
+        fi
+    done <<< "$codigos"
+    ok "modelo pede cidade de prova: $MODELO_PEDE_CIDADE_DE_PROVA"
+}
+
+# A listagem é paginada e seu resumo não traz o identificador; é preciso ler
+# cada processo para encontrar o identificador exato, inclusive em rascunho.
+buscar_processo_por_identificador() {
+    local caminho='/api/selecao/processos-seletivos?limit=100' cabecalhos resposta codigo corpo id detalhe proxima
+    cabecalhos=$(mktemp)
+    while [ -n "$caminho" ]; do
+        resposta=$(curl -sS -D "$cabecalhos" -w '\n%{http_code}' "$API_URL$caminho" -H "Authorization: Bearer $TOKEN") || { rm -f "$cabecalhos"; return 1; }
+        codigo=$(tail -n1 <<< "$resposta")
+        corpo=$(sed '$d' <<< "$resposta")
+        [ "$codigo" = "200" ] || { rm -f "$cabecalhos"; fail "não foi possível listar os processos (HTTP $codigo)"; }
+        while IFS= read -r id; do
+            [ -n "$id" ] || continue
+            detalhe=$(api_get "/api/selecao/processos-seletivos/$id")
+            if jq -e --arg identificador "$IDENTIFICADOR_PROCESSO" '.identificadorLegivel == $identificador' <<< "$detalhe" >/dev/null; then
+                rm -f "$cabecalhos"
+                printf '%s\n' "$detalhe"
+                return
+            fi
+        done < <(jq -r '.[].id' <<< "$corpo")
+        proxima=$(tr -d '\r' < "$cabecalhos" | grep -i '^link:' | tr ',' '\n' | grep 'rel="next"' | sed -n 's/.*<[^>?]*?\([^>]*\)>.*/\1/p' || true)
+        caminho="${proxima:+/api/selecao/processos-seletivos?$proxima}"
+    done
+    rm -f "$cabecalhos"
+}
+
+validar_municipios_de_prova() {
+    jq -e 'type == "array" and length > 0 and all(.[]; type == "object" and (.codigoIbge | type == "string" and test("^[0-9]{7}$")) and (.uf | type == "string" and test("^[A-Z]{2}$")))' <<< "$MUNICIPIOS_DE_PROVA" >/dev/null 2>&1 \
+        || fail "MUNICIPIOS_DE_PROVA deve ser uma lista JSON não vazia de código IBGE e UF"
+}
+
+# Normaliza o instante sem limitar a precisão da fração ao nanossegundo do date.
+normalizar_instante() {
+    local valor="$1" segundos fracao
+    [[ "$valor" =~ ^([0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2})(\.([0-9]+))?(Z|[+-][0-9]{2}:[0-9]{2})$ ]] || return 1
+    fracao="${BASH_REMATCH[3]}"
+    segundos=$(date -d "${BASH_REMATCH[1]}${BASH_REMATCH[4]}" +%s 2>/dev/null) || return 1
+    fracao="${fracao%%"${fracao##*[!0]}"}"
+    printf '%s.%s\n' "$segundos" "$fracao"
+}
+
+conferir_processo_publicado() {
+    log "Conferir a configuração do processo publicado"
+    local processo="$1" municipios='[]'
+    if [ "$MODELO_PEDE_CIDADE_DE_PROVA" = "true" ]; then
+        validar_municipios_de_prova
+        municipios="$MUNICIPIOS_DE_PROVA"
+    fi
+    # O GET do processo traz o modelo de origem e a declaração de prova;
+    # a ordem dos municípios é significativa, como na declaração enviada.
+    jq -e --arg modelo "$MODELO_INSCRICAO_ID" --argjson tem_prova "$MODELO_PEDE_CIDADE_DE_PROVA" \
+        --argjson municipios "$municipios" '
+        ([.formularios[] | select(.finalidade.codigo == "INSCRICAO")] | length == 1 and
+            (.[0].modeloOrigem.id | type == "string" and ascii_downcase == ($modelo | ascii_downcase))) and
+        (.provaPresencial.temProvaPresencial == $tem_prova) and
+        ((.provaPresencial.municipios | type) == "array") and
+        ([.provaPresencial.municipios[] | {codigoIbge, uf}] == [$municipios[] | {codigoIbge, uf}])' \
+        <<< "$processo" >/dev/null 2>&1 \
+        || fail "o processo já publicado com este identificador tem outra configuração de modelo de inscrição ou de prova presencial, ou ela não pôde ser conferida; use outro IDENTIFICADOR_PROCESSO"
+    ok "modelo de inscrição e declaração de prova presencial conferem"
+    if [ -n "${INICIO_INSCRICAO:-}" ] || [ -n "${FIM_INSCRICAO:-}" ]; then
+        local snapshot campo nome informado gravado instante_informado instante_gravado
+        snapshot=$(api_get "/api/selecao/processos-seletivos/$(jq -r '.id' <<< "$processo")/snapshot-vigente")
+        for nome in INICIO_INSCRICAO FIM_INSCRICAO; do
+            if [ "$nome" = INICIO_INSCRICAO ]; then
+                informado="${INICIO_INSCRICAO:-}"; campo=inicio
+            else
+                informado="${FIM_INSCRICAO:-}"; campo=fim
+            fi
+            [ -n "$informado" ] || continue
+            gravado=$(jq -r --arg campo "$campo" '.configuracao.periodo[$campo] // empty' <<< "$snapshot")
+            instante_informado=$(normalizar_instante "$informado") \
+                && instante_gravado=$(normalizar_instante "$gravado") \
+                && [ "$instante_informado" = "$instante_gravado" ] \
+                || fail "$nome difere do período gravado ou não pôde ser conferido; processo publicado não muda de período pelo roteiro; use outro IDENTIFICADOR_PROCESSO"
+        done
+        ok "período de inscrição informado confere"
+    fi
+}
+
+    local resp existente status
+    PROCESSO_JA_PUBLICADO="false"
+    existente=$(buscar_processo_por_identificador)
+    if [ -n "$existente" ]; then
+        PROCESSO_ID=$(jq -r '.id' <<< "$existente")
+        status=$(jq -r '.status.codigo' <<< "$existente")
+        case "$status" in
+            PUBLICADO) conferir_processo_publicado "$existente"; PROCESSO_JA_PUBLICADO="true" ;;
+            RASCUNHO) ;;
+            *) fail "o identificador já pertence a um processo com status $status" ;;
+        esac
+        ok "processo reaproveitado ($PROCESSO_ID; $status)"
+        return
+    fi
     resp=$(api POST "/api/selecao/processos-seletivos" "$(jq -n \
         --arg nome "$NOME_PROCESSO" --arg tipo "$TIPO_PROCESSO_ID" \
         --arg unidade "$UNIDADE_ID" --arg identificador "$IDENTIFICADOR_PROCESSO" \
@@ -557,7 +685,7 @@ definir_atendimento_especializado() {
     # Sem prova não há atendimento especializado a ofertar (UNI-REQ-0012), mas a
     # publicação cobra a oferta declarada: o processo sem prova a declara vazia.
     local condicoes="$CONDICAO_ATENDIMENTO_IDS" recursos="$RECURSO_ACESSIBILIDADE_IDS" tipos="$TIPO_DEFICIENCIA_IDS"
-    if [ "$MODELO_INSCRICAO_ID" != "$MODELO_COM_PROVA_ID" ]; then
+    if [ "$MODELO_PEDE_CIDADE_DE_PROVA" != "true" ]; then
         condicoes="[]" recursos="[]" tipos="[]"
     fi
     api PUT "/api/selecao/processos-seletivos/$PROCESSO_ID/atendimento-especializado" "{
@@ -1002,7 +1130,7 @@ definir_documentos_exigidos() {
     }]' <<< "$processo")
     # O modelo com prova sempre traz os documentos do atendimento especializado; sem eles, a
     # aplicação regrediu e o processo sairia publicado sem exigir o laudo.
-    if [ "$MODELO_INSCRICAO_ID" = "$MODELO_COM_PROVA_ID" ] && [ "$(jq length <<< "$documentos_do_modelo")" -eq 0 ]; then
+    if [ "$MODELO_PEDE_CIDADE_DE_PROVA" = "true" ] && [ "$(jq length <<< "$documentos_do_modelo")" -eq 0 ]; then
         fail "o modelo com prova não trouxe os documentos do atendimento especializado"
     fi
 
@@ -1036,12 +1164,28 @@ documento_do_edital() {
     ok "documento do edital confirmado ($DOCUMENTO_EDITAL_ID)"
 }
 
-definir_sem_prova_presencial() {
-    log "Declarar que o processo não tem prova presencial"
-    # A publicação recusa o processo que ainda não declarou se aplica prova
-    # presencial (prova_presencial.por_declarar). O processo de teste não aplica.
-    api PUT "/api/selecao/processos-seletivos/$PROCESSO_ID/prova-presencial" '{"temProvaPresencial": false, "municipios": []}' >/dev/null
-    ok "prova presencial declarada: o processo não tem"
+declarar_prova_presencial() {
+    log "Declarar prova presencial"
+    local corpo municipio codigo uf resposta http_code
+    if [ "$MODELO_PEDE_CIDADE_DE_PROVA" = "true" ]; then
+        validar_municipios_de_prova
+        while IFS= read -r municipio; do
+            codigo=$(jq -r '.codigoIbge' <<< "$municipio")
+            uf=$(jq -r '.uf' <<< "$municipio")
+            resposta=$(curl -sS -w '\n%{http_code}' "$GEO_URL/api/cidades/$codigo" -H "Authorization: Bearer $TOKEN") \
+                || fail "não foi possível consultar o cadastro geográfico"
+            http_code=$(tail -n1 <<< "$resposta")
+            [ "$http_code" != "404" ] || fail "município de prova $codigo não encontrado no cadastro geográfico"
+            [ "$http_code" = "200" ] || fail "consulta do município de prova ao cadastro geográfico falhou (HTTP $http_code)"
+            jq -e --arg uf "$uf" '.uf == $uf and (.nome | type == "string" and length > 0)' <<< "$(sed '$d' <<< "$resposta")" >/dev/null \
+                || fail "município de prova $codigo não pertence à UF $uf ou não tem nome no cadastro geográfico"
+        done < <(jq -c '.[]' <<< "$MUNICIPIOS_DE_PROVA")
+        corpo=$(jq -nc --argjson municipios "$MUNICIPIOS_DE_PROVA" '{temProvaPresencial: true, municipios: [$municipios[] | {codigoIbge, uf}]}')
+    else
+        corpo='{"temProvaPresencial": false, "municipios": []}'
+    fi
+    api PUT "/api/selecao/processos-seletivos/$PROCESSO_ID/prova-presencial" "$corpo" >/dev/null
+    ok "prova presencial declarada: $MODELO_PEDE_CIDADE_DE_PROVA"
 }
 
 publicar() {
@@ -1096,9 +1240,11 @@ conferir_resultado() {
         [ "$(tail -n1 <<< "$certame")" = "200" ] && break
         sleep 5
     done
-    [ "$(tail -n1 <<< "$certame")" = "200" ] \
-        && ok "processo aparece na vitrine (GET /api/selecao/certames/{id})" \
-        || fail "processo ainda não aparece na vitrine (tentativa $tentativa)"
+    if [ "$(tail -n1 <<< "$certame")" = "200" ]; then
+        ok "processo aparece na vitrine (GET /api/selecao/certames/{id})"
+    else
+        fail "processo ainda não aparece na vitrine (tentativa $tentativa)"
+    fi
 
     ok "PROCESSO_ID=$PROCESSO_ID — roteiro concluído"
 }
@@ -1134,9 +1280,14 @@ main() {
     vincular_fase_do_formulario
     aplicar_modelo_habilitacao
     definir_documentos_exigidos
+    conferir_modelo_inscricao
     documento_do_edital
+    if [ "$PROCESSO_JA_PUBLICADO" = "true" ]; then
+        conferir_resultado
+        return
+    fi
     divulgar
-    definir_sem_prova_presencial
+    declarar_prova_presencial
     publicar
     conferir_resultado
 }
