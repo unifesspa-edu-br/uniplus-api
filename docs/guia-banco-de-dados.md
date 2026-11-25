@@ -192,7 +192,7 @@ builder.Property(r => r.PpiPercentual)
     .IsRequired();
 ```
 
-A leitura refaz o Value Object pelo `Criar` dele: dado gravado que não passa na regra falha na hora, com o nome do valor e o código do erro, sem o conteúdo gravado, em vez de virar um valor inválido. A regra vive em `ObjetoDeValorGravado.Reidratar`, usada por todo conversor de Value Object e por toda tradução de registro que refaz Value Object fora de conversor, inclusive o CPF decifrado.
+A leitura refaz o Value Object pelo `Criar` dele: dado gravado que não passa na regra falha na hora, com o nome do valor e o código do erro, sem o conteúdo gravado, em vez de virar um valor inválido. Para documentos JSON, também informa todos os códigos distintos na ordem das recusas, sem texto nem caminho. JSON inválido falha com motivo fixo, sem a exceção da biblioteca como causa. A regra vive em `ObjetoDeValorGravado`, usada por todo conversor de Value Object e por toda tradução de registro que refaz Value Object fora de conversor, inclusive o CPF decifrado.
 
 ## 7. Workflow de migration
 
