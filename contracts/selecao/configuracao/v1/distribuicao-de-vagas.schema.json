@@ -11,11 +11,9 @@
   "properties": {
     "ofertaCursoCodigo": {
       "title": "Oferta de curso",
-      "description": "Código da oferta de curso no cadastro, de letras maiúsculas, dígitos e sublinhado, de 2 a 50 caracteres. É a chave da distribuição.",
-      "type": "string",
-      "minLength": 2,
-      "maxLength": 50,
-      "pattern": "^[A-Z][A-Z0-9_]{1,49}$"
+      "description": "Código da oferta de curso no cadastro, de 1 a 50 caracteres. É a chave da distribuição.",
+      "$ref": "comuns.schema.json#/$defs/codigoDeCadastro",
+      "maxLength": 50
     },
     "vagasOfertadasBase": {
       "title": "Vagas ofertadas base",
@@ -141,11 +139,9 @@
       "properties": {
         "codigo": {
           "title": "Código da modalidade",
-          "description": "Código da modalidade no cadastro, de letras maiúsculas, dígitos e sublinhado, de 1 a 60 caracteres.",
-          "type": "string",
-          "minLength": 1,
-          "maxLength": 60,
-          "pattern": "^[A-Z0-9_]+$"
+          "description": "Código da modalidade no cadastro, de 1 a 60 caracteres.",
+          "$ref": "comuns.schema.json#/$defs/codigoDeCadastro",
+          "maxLength": 60
         },
         "quantidadeDeclarada": {
           "title": "Quantidade declarada",
@@ -177,10 +173,8 @@
         "modalidadeCodigo": {
           "title": "Código da modalidade",
           "description": "Código da modalidade no cadastro.",
-          "type": "string",
-          "minLength": 1,
-          "maxLength": 60,
-          "pattern": "^[A-Z0-9_]+$"
+          "$ref": "comuns.schema.json#/$defs/codigoDeCadastro",
+          "maxLength": 60
         },
         "quantidade": {
           "title": "Quantidade",
@@ -210,20 +204,16 @@
         "modalidadeCodigo": {
           "title": "Modalidade reduzida",
           "description": "Código da modalidade de onde se reduz. Usado em reduzirDe.",
-          "type": "string",
-          "minLength": 1,
-          "maxLength": 60,
-          "pattern": "^[A-Z0-9_]+$"
+          "$ref": "comuns.schema.json#/$defs/codigoDeCadastro",
+          "maxLength": 60
         },
         "modalidadeCodigos": {
           "title": "Modalidades reduzidas",
           "description": "Códigos das modalidades em que se reduz proporcionalmente. Usado em reduzirProporcionalEm.",
           "type": "array",
           "items": {
-            "type": "string",
-            "minLength": 1,
-            "maxLength": 60,
-            "pattern": "^[A-Z0-9_]+$"
+            "$ref": "comuns.schema.json#/$defs/codigoDeCadastro",
+            "maxLength": 60
           }
         }
       },

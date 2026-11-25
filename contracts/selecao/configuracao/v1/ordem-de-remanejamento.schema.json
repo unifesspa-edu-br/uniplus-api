@@ -14,10 +14,8 @@
     "destinoFinalCodigo": {
       "title": "Modalidade de destino final",
       "description": "Código da modalidade que recebe as vagas quando nenhum destino da ordem as absorve, em geral a ampla concorrência.",
-      "type": "string",
-      "minLength": 1,
-      "maxLength": 60,
-      "pattern": "^[A-Z0-9_]+$"
+      "$ref": "comuns.schema.json#/$defs/codigoDeCadastro",
+      "maxLength": 60
     },
     "destinos": {
       "title": "Destinos",
@@ -36,10 +34,8 @@
           "modalidadeOrigemCodigo": {
             "title": "Modalidade de origem",
             "description": "Código da modalidade que cede as vagas.",
-            "type": "string",
-            "minLength": 1,
-            "maxLength": 60,
-            "pattern": "^[A-Z0-9_]+$"
+            "$ref": "comuns.schema.json#/$defs/codigoDeCadastro",
+            "maxLength": 60
           },
           "ordem": {
             "title": "Ordem",
@@ -50,10 +46,8 @@
           "modalidadeDestinoCodigo": {
             "title": "Modalidade de destino",
             "description": "Código da modalidade que recebe as vagas.",
-            "type": "string",
-            "minLength": 1,
-            "maxLength": 60,
-            "pattern": "^[A-Z0-9_]+$"
+            "$ref": "comuns.schema.json#/$defs/codigoDeCadastro",
+            "maxLength": 60
           }
         }
       }

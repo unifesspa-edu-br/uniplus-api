@@ -234,7 +234,7 @@ risco desproporcional a um problema cosmético. Documentado como comentário em
 ### Bugs de contrato corrigidos durante a construção da coleção
 
 - `TipoDocumento.Codigo` passou a ter o mesmo formato fechado
-  (`^[A-Z][A-Z0-9_]{1,49}$`); a coleção usa `IDENTIDADE_SMK_{{run_suffix}}`. Com
+  (`^[A-Z][A-Z0-9]*(_[A-Z0-9]+)*$`); a coleção usa `IDENTIDADE_SMK_{{run_suffix}}`. Com
   hífen, o `POST` responde `422` e a coleção segue sem `tipo_documento_id`, o que
   derruba toda a cadeia de documentos exigidos adiante.
 - `FaseCanonica.AgrupaEtapas=true` só é aceito para o código canônico

@@ -38,14 +38,14 @@
     "codigoDoDadoDeElegibilidade": {
       "title": "Fato de elegibilidade",
       "description": "Código do fato que decide quem recebe o FADA, quando o processo o declara, de 1 a 60 caracteres.",
-      "$ref": "comuns.schema.json#/$defs/codigoDeCatalogo",
+      "$ref": "comuns.schema.json#/$defs/codigoDeCadastro",
       "maxLength": 60
     },
     "baseLegalCodigo": {
       "title": "Base legal",
-      "description": "Código estável da base legal do FADA no catálogo: maiúscula inicial, depois maiúsculas, dígitos e sublinhado, de 2 a 100 caracteres.",
-      "type": "string",
-      "pattern": "^[A-Z][A-Z0-9_]{1,99}$"
+      "description": "Código estável da base legal do FADA no catálogo: de 1 a 80 caracteres.",
+      "$ref": "comuns.schema.json#/$defs/codigoDeCadastro",
+      "maxLength": 80
     },
     "tipoInstrumento": {
       "title": "Tipo do instrumento",
