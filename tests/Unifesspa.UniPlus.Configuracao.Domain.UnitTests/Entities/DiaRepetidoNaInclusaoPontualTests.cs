@@ -7,11 +7,11 @@ using Unifesspa.UniPlus.Configuracao.Domain.Errors;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
+using static Unifesspa.UniPlus.Configuracao.Domain.UnitTests.Entities.DiaNaoUtilCriacaoDeTeste;
+
 public sealed class DiaRepetidoNaInclusaoPontualTests
 {
     private static readonly DateOnly Data = new(2027, 1, 1);
-
-    private static DiaNaoUtilCriacao Nacional() => new("NACIONAL", null, null, null, Data, "Confraternização Universal");
 
     private static DiaNaoUtilCriacao Estadual(string uf) => new("ESTADUAL", null, null, null, Data, "Data magna do estado", uf);
 
