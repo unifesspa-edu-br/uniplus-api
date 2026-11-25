@@ -1,5 +1,7 @@
 namespace Unifesspa.UniPlus.Testes.Compartilhado;
 
+using System.Text.Json;
+
 using Unifesspa.UniPlus.Selecao.Domain.Errors;
 
 internal static class CondicaoDeHomologacaoComDefeitoDeTeste
@@ -15,5 +17,15 @@ internal static class CondicaoDeHomologacaoComDefeitoDeTeste
         (HomologacaoDasInscricoesErrorCodes.EdicaoDoExameInvalida, "edicaoDoExame"),
         (MotivoDeDecisaoErrorCodes.CodigoFormatoInvalido, "motivoDesfavoravelCodigo"),
         (CodigoDaForma, "enquadramento[0][0].valor"),
+    ];
+    internal static JsonElement Enquadramento => JsonSerializer.SerializeToElement(new[]
+    {
+        new[] { new { codigoDoDado = Dado, operador = "ALGUM_DE", valor = Valor }, new { codigoDoDado = Dado, operador = "ALGUM_DE", valor = Valor } },
+    });
+
+    internal static (string Codigo, string Campo)[] CausasDoEnquadramento =>
+    [
+        (CodigoDaForma, "enquadramento[0][0].valor"),
+        (CodigoDaForma, "enquadramento[0][1].valor"),
     ];
 }

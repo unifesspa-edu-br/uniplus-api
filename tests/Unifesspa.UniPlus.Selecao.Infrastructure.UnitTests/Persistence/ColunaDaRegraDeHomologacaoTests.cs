@@ -145,4 +145,13 @@ public sealed class ColunaDaRegraDeHomologacaoTests
 
         leitura.Should().Throw<Exception>();
     }
+    [Fact]
+    public void Ler_DuasCondicoesInvalidas_IncluiAsDuasCausasNaMensagem()
+    {
+        const string documento = """{"alternativas":[{"condicoes":[{"tipo":"RESULTADO_NO_RETORNO_DO_INEP","edicaoDoExame":2025,"enquadramento":[[{"codigoDoDado":"DADO_A","operador":"ALGUM_DE","valor":true},{"codigoDoDado":"DADO_B","operador":"IGUAL","valor":[]}]]}]}]}""";
+        Action leitura = () => ColunaDaRegraDeHomologacao.Ler(documento);
+
+        leitura.Should().Throw<InvalidOperationException>().WithMessage(
+            "Regra de homologação gravada inválida: Os operadores ALGUM_DE e NENHUM_DE exigem um array JSON, sem itens de texto em branco (array vazio é aceito). Os operadores IGUAL, DIFERENTE, MAIOR_IGUAL e MENOR_IGUAL exigem um valor JSON escalar não branco..");
+    }
 }

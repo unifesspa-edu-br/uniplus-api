@@ -39,51 +39,34 @@ public static class PredicadoDnfJson
             return Falha("O predicado é uma lista de cláusulas.");
         }
 
-        return LerClausulas(json);
+        return LerClausulas(json).Predicado();
     }
 
-    private static Result<PredicadoDnf> LerClausulas(JsonElement json)
+    private static CondicoesLidasDoPredicado LerClausulas(JsonElement json)
     {
-        List<(int Clausula, CondicaoDnf Condicao)> linhas = [];
-        int c = 0;
-        foreach (JsonElement clausula in json.EnumerateArray())
+        CondicoesLidasDoPredicado lidas = new();
+        int clausula = 0;
+        foreach (JsonElement elemento in json.EnumerateArray())
         {
-            Result lida = LerClausula(clausula, c++, linhas);
-            if (lida.IsFailure)
-            {
-                return Result<PredicadoDnf>.ValidationFailure(lida.Errors);
-            }
+            LerClausula(elemento, clausula++, lidas);
         }
 
-        return PredicadoDnf.CriarDeCondicoesAgrupadas(linhas);
+        return lidas;
     }
 
-    private static Result LerClausula(JsonElement clausula, int c, List<(int Clausula, CondicaoDnf Condicao)> linhas)
+    private static void LerClausula(JsonElement elemento, int clausula, CondicoesLidasDoPredicado lidas)
     {
-        if (clausula.ValueKind != JsonValueKind.Array || clausula.GetArrayLength() == 0)
+        if (elemento.ValueKind != JsonValueKind.Array || elemento.GetArrayLength() == 0)
         {
-            return Result.ValidationFailure([new FieldError($"[{c}]", Erro("Cada cláusula é uma lista não vazia de condições."))]);
+            lidas.RecusarClausula(clausula, Erro("Cada cláusula é uma lista não vazia de condições."));
+            return;
         }
 
-        return LerCondicoes(clausula, c, linhas);
-    }
-
-    private static Result LerCondicoes(JsonElement clausula, int c, List<(int Clausula, CondicaoDnf Condicao)> linhas)
-    {
-        int i = 0;
-        foreach (JsonElement condicao in clausula.EnumerateArray())
+        int posicao = 0;
+        foreach (JsonElement condicao in elemento.EnumerateArray())
         {
-            Result<CondicaoDnf> criada = LerCondicao(condicao);
-            if (criada.IsFailure)
-            {
-                return Result.ValidationFailure([.. criada.Errors.Select(erro => erro.NoCaminhoDe($"[{c}][{i}]"))]);
-            }
-
-            linhas.Add((c, criada.Value!));
-            i++;
+            lidas.AcrescentarCondicao(clausula, posicao++, LerCondicao(condicao));
         }
-
-        return Result.Success();
     }
 
     private static Result<CondicaoDnf> LerCondicao(JsonElement condicao)

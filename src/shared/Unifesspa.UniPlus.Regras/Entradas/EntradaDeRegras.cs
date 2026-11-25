@@ -9,8 +9,6 @@ using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Regras.Serializacao;
 using Unifesspa.UniPlus.Regras.ValueObjects;
 
-using Linhas = System.Collections.Generic.List<(int Clausula, Unifesspa.UniPlus.Regras.ValueObjects.CondicaoDnf Condicao)>;
-
 /// <summary>
 /// A forma das regras do formulário vindas da escrita — predicado, obrigatoriedade e restrição de
 /// valor —, a mesma para item e termo, no processo e no modelo. A semântica (fatos citáveis, operador e valor do domínio) é conferida depois,
@@ -26,13 +24,14 @@ public static class EntradaDeRegras
             return Result<PredicadoDnf?>.Success(null);
         }
 
-        Result<List<(int Clausula, CondicaoDnf Condicao)>> linhas = Condicoes(clausulas);
+        CondicoesLidasDoPredicado lidas = LerClausulas(clausulas);
+        Result<List<(int Clausula, CondicaoDnf Condicao)>> linhas = lidas.Condicoes();
         if (linhas.IsFailure)
         {
             return Result<PredicadoDnf?>.ValidationFailure(linhas.Errors);
         }
 
-        Result<PredicadoDnf> predicado = PredicadoDnf.CriarDeCondicoesAgrupadas(linhas.Value!);
+        Result<PredicadoDnf> predicado = lidas.Predicado();
         return predicado.IsSuccess ? Result<PredicadoDnf?>.Success(predicado.Value) : Result<PredicadoDnf?>.Failure(predicado.Error!);
     }
 
@@ -43,40 +42,35 @@ public static class EntradaDeRegras
     /// </summary>
     public static Result<List<(int Clausula, CondicaoDnf Condicao)>> Condicoes(
         IReadOnlyList<IReadOnlyList<CondicaoPrecondicaoInput?>?>? clausulas)
+        => LerClausulas(clausulas).Condicoes();
+
+    private static CondicoesLidasDoPredicado LerClausulas(IReadOnlyList<IReadOnlyList<CondicaoPrecondicaoInput?>?>? clausulas)
     {
-        Linhas linhas = [];
-        List<FieldError> erros = [];
-        for (int c = 0; c < (clausulas?.Count ?? 0); c++)
+        CondicoesLidasDoPredicado lidas = new();
+        for (int clausula = 0; clausula < (clausulas?.Count ?? 0); clausula++)
         {
-            LerClausula(clausulas![c], c, linhas, erros);
+            LerClausula(clausulas![clausula], clausula, lidas);
         }
 
-        return erros.Count > 0
-            ? Result<List<(int Clausula, CondicaoDnf Condicao)>>.ValidationFailure(erros)
-            : Result<List<(int Clausula, CondicaoDnf Condicao)>>.Success(linhas);
+        return lidas;
     }
 
-    private static void LerClausula(IReadOnlyList<CondicaoPrecondicaoInput?>? condicoes, int clausula, Linhas linhas, List<FieldError> erros)
+    private static void LerClausula(IReadOnlyList<CondicaoPrecondicaoInput?>? condicoes, int clausula, CondicoesLidasDoPredicado lidas)
     {
         if (condicoes is not { Count: > 0 })
         {
-            erros.Add(new($"[{clausula}]", new DomainError("ClausulaDnf.ClausulaVazia", "Uma cláusula deve ter ao menos uma condição.")));
+            lidas.RecusarClausula(clausula, new DomainError("ClausulaDnf.ClausulaVazia", "Uma cláusula deve ter ao menos uma condição."));
             return;
         }
 
-        LerCondicoes(condicoes, clausula, linhas, erros);
+        LerCondicoes(condicoes, clausula, lidas);
     }
 
-    private static void LerCondicoes(IReadOnlyList<CondicaoPrecondicaoInput?> condicoes, int clausula, Linhas linhas, List<FieldError> erros)
+    private static void LerCondicoes(IReadOnlyList<CondicaoPrecondicaoInput?> condicoes, int clausula, CondicoesLidasDoPredicado lidas)
     {
-        for (int i = 0; i < condicoes.Count; i++)
+        for (int posicao = 0; posicao < condicoes.Count; posicao++)
         {
-            Result<CondicaoDnf> lida = LerCondicao(condicoes[i]);
-            erros.AddRange(lida.Errors.Select(erro => erro.NoCaminhoDe($"[{clausula}][{i}]")));
-            if (lida.IsSuccess)
-            {
-                linhas.Add((clausula, lida.Value!));
-            }
+            lidas.AcrescentarCondicao(clausula, posicao, LerCondicao(condicoes[posicao]));
         }
     }
 
