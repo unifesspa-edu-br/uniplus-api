@@ -54,6 +54,35 @@ public sealed class ColunaDosProcedimentosDeRecursoTests
         leitura.Should().Throw<JsonException>();
     }
 
+    [Fact(DisplayName = "Procedimentos nulos são recusados na leitura")]
+    public void Conversor_JsonNulo_RecusaDadoGravado()
+    {
+        Action leitura = () => ColunaDosProcedimentosDeRecurso.Conversor.ConvertFromProvider("null");
+        leitura.Should().Throw<InvalidOperationException>().WithMessage("*procedimentos_de_recurso*");
+    }
+
+    [Fact(DisplayName = "Lista vazia de procedimentos é aceita")]
+    public void Conversor_ListaVazia_RetornaColecaoVazia()
+    {
+        var lido = (ProcedimentosDeRecurso)ColunaDosProcedimentosDeRecurso.Conversor.ConvertFromProvider("[]")!;
+        lido.Itens.Should().BeEmpty();
+    }
+
+    [Fact(DisplayName = "Nome de propriedade com outra caixa é recusado")]
+    public void Conversor_PropriedadeComOutraCaixa_RecusaJson()
+    {
+        const string documento = """[{"TipoDeDecisao":"CLASSIFICACAO","alvoTipo":null,"alvoValor":null,"regraCodigo":"RECALCULO","regraVersao":"v1","regraHash":"abc"}]""";
+        Action leitura = () => ColunaDosProcedimentosDeRecurso.Conversor.ConvertFromProvider(documento);
+        leitura.Should().Throw<JsonException>();
+    }
+
+    [Fact(DisplayName = "JSON malformado de procedimentos é recusado")]
+    public void Conversor_JsonMalformado_RecusaJson()
+    {
+        Action leitura = () => ColunaDosProcedimentosDeRecurso.Conversor.ConvertFromProvider("[");
+        leitura.Should().Throw<JsonException>();
+    }
+
     internal static ProcedimentosDeRecurso Procedimentos() => ProcedimentosDeRecurso.De([
         Procedimento(AlvoDoProcedimentoDeRecurso.DoItem(Item)),
         Procedimento(AlvoDoProcedimentoDeRecurso.DaArea("MATEMATICA")),

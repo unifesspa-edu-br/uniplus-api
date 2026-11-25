@@ -2,6 +2,7 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Configurations;
 
 using System.Linq.Expressions;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
@@ -20,7 +21,13 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 /// </summary>
 internal static class ColunaDosProcedimentosDeRecurso
 {
-    private static readonly JsonSerializerOptions Opcoes = OpcoesJsonDeDocumento.Criar(new(JsonSerializerDefaults.Web));
+    private static readonly JsonSerializerOptions Opcoes = OpcoesJsonDeDocumento.Criar(new()
+    {
+        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+        UnmappedMemberHandling = JsonUnmappedMemberHandling.Disallow,
+        RespectRequiredConstructorParameters = true,
+        RespectNullableAnnotations = true,
+    });
 
     internal static readonly ValueConverter<ProcedimentosDeRecurso, string> Conversor = new(
         procedimentos => Escrever(procedimentos),
@@ -46,7 +53,8 @@ internal static class ColunaDosProcedimentosDeRecurso
         JsonSerializer.Serialize(procedimentos.Itens.Select(Persistido), Opcoes);
 
     private static ProcedimentosDeRecurso Ler(string documento) =>
-        ProcedimentosDeRecurso.De((JsonSerializer.Deserialize<List<ProcedimentoPersistido>>(documento, Opcoes) ?? []).Select(Declarado));
+        ProcedimentosDeRecurso.De((JsonSerializer.Deserialize<List<ProcedimentoPersistido>>(documento, Opcoes)
+            ?? throw new InvalidOperationException("Dado gravado inválido na coluna procedimentos_de_recurso.")).Select(Declarado));
 
     private static ProcedimentoPersistido Persistido(ProcedimentoDeRecursoDeclarado procedimento) => new(
         procedimento.TipoDeDecisao,
