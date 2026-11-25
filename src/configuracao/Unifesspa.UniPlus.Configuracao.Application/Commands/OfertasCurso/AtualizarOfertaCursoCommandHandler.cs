@@ -50,7 +50,7 @@ public static class AtualizarOfertaCursoCommandHandler
     {
         if (await repository.CodigoExisteEntreVivosAsync(declaracao.Codigo!, oferta.Id, cancellationToken).ConfigureAwait(false))
         {
-            return Result.Failure(CodigoDaOfertaEmUso.Recusa(declaracao.Codigo));
+            return Result.Failure(CodigoDaOfertaEmUso.Recusa());
         }
 
         Result atualizada = oferta.Atualizar(declaracao);
@@ -71,7 +71,7 @@ public static class AtualizarOfertaCursoCommandHandler
         {
             // Sem descartar, a atualização continua rastreada e o SaveChanges do outbox a repete fora deste catch (500 em vez de 409).
             unitOfWork.DescartarAlteracoesNaoSalvas();
-            return Result.Failure(CodigoDaOfertaEmUso.Recusa(declaracao.Codigo));
+            return Result.Failure(CodigoDaOfertaEmUso.Recusa());
         }
     }
 }

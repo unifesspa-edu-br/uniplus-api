@@ -113,6 +113,16 @@ public sealed class ModalidadeCoerenciaDosCamposTests
         resultado.Errors.Should().Contain(e => e.Error.Code == codeEsperado && e.Field == fieldEsperado);
     }
 
+    [Fact(DisplayName = "A recusa de autorreferência não repete o código enviado")]
+    public void Criar_Autorreferencia_NaoEcoaCodigo()
+    {
+        Result<Modalidade> resultado = Criar("AC_I", d => d.ComoAcaoAfirmativa("DESTINO_UNICO") with { RemanejamentoDestino = "AC_I" });
+
+        FieldError erro = resultado.Errors.Single(e => e.Error.Code == ModalidadeErrorCodes.RemanejamentoDestinoCircular);
+        erro.Field.Should().Be("remanejamento.destino");
+        erro.Error.Message.Should().NotContain("AC_I");
+    }
+
     [Fact(DisplayName = "Autorreferência é reportada junto de violação sem relação, na mesma resposta")]
     public void Criar_AutorreferenciaComOutraViolacao_AcumulaAsDuas()
     {
@@ -282,7 +292,9 @@ public sealed class ModalidadeCoerenciaDosCamposTests
         });
 
         r.Errors.Should().ContainSingle(e => e.Error.Code == ModalidadeErrorCodes.AcaoAfirmativaComOpcaoPelasCotasDaLei
-            && e.Error.Message.Contains("não cita OPTOU_PELAS_COTAS_DA_LEI", StringComparison.Ordinal));
+            && e.Field == "regraDeAplicabilidade"
+            && e.Error.Message.Contains("não cita OPTOU_PELAS_COTAS_DA_LEI", StringComparison.Ordinal)
+            && !e.Error.Message.Contains("AC_PCD", StringComparison.Ordinal));
     }
 
     [Fact(DisplayName = "A ação afirmativa institucional que não cita a opção pelas cotas da lei continua recusada")]

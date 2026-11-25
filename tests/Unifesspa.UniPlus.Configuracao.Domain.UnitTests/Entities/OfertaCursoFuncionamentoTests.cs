@@ -87,7 +87,7 @@ public sealed class OfertaCursoFuncionamentoTests
         resultado.Errors.Should().ContainSingle(
             e => e.Error.Code == OfertaCursoErrorCodes.RegimeDeFuncionamentoIncompativelComRegimeDeTurno
                  && e.Field == "regimeDeFuncionamento");
-        resultado.Error!.Message.Should().Contain("INTENSIVO").And.Contain("INTEGRAL");
+        resultado.Error!.Message.Should().Contain("INTEGRAL").And.NotContain("INTENSIVO").And.NotContain("REGULAR");
     }
 
     [Fact(DisplayName = "Regime de funcionamento inválido não deriva erro de incompatibilidade")]

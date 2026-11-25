@@ -176,6 +176,8 @@ public sealed class CriarOfertaCursoCommandHandlerTests
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be(OfertaCursoErrorCodes.CodigoJaEmUso);
+        resultado.Error.Message.Should().NotContain("ENF_BACHARELADO_MARABA");
+        resultado.Errors.Single().Field.Should().BeNull();
         await _repository.DidNotReceive().AdicionarAsync(Arg.Any<OfertaCurso>(), Arg.Any<CancellationToken>());
         await _unitOfWork.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
     }

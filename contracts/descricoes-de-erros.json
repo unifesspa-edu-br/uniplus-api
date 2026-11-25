@@ -5236,7 +5236,7 @@
         "A recusa vem na lista `errors` da resposta, com `field` igual a `codigos`, e a mensagem diz o que corrigir. A ordem dos valores do fato não é alterada. Se a lista tiver mais de um problema, cada um vem numa entrada própria da mesma resposta, e o mesmo código de erro pode aparecer em mais de uma entrada. Os espaços nas pontas de cada código são desconsiderados, mas maiúsculas e minúsculas contam: `eja` não é o mesmo valor que `EJA`."
       ],
       "comoResolver": [
-        "A mensagem desta recusa cita os códigos que o fato não tem; quando a lista tem código em branco, ela diz isso sem citar código. Troque cada código em branco ou desconhecido pelo código certo do valor, ou retire-o. Depois envie a lista completa, com todos os valores do fato, ativos e desativados, cada um uma vez. Para incluir uma opção nova, cadastre-a como valor do fato e reordene em seguida."
+        "A mensagem indica se a lista tem código desconhecido ou em branco, sem repetir o valor enviado. Troque cada código em branco ou desconhecido pelo código certo do valor, ou retire-o. Depois envie a lista completa, com todos os valores do fato, ativos e desativados, cada um uma vez. Para incluir uma opção nova, cadastre-a como valor do fato e reordene em seguida."
       ],
       "ondeAparece": [
         "Reordenação dos valores de um fato do catálogo"
@@ -5252,7 +5252,7 @@
         "A recusa vem na lista `errors` da resposta, com `field` igual a `codigos`, e a mensagem diz o que corrigir. A ordem dos valores do fato não é alterada. Se a lista tiver mais de um problema, cada um vem numa entrada própria da mesma resposta. Os espaços nas pontas de cada código são desconsiderados, mas maiúsculas e minúsculas contam: `eja` não é o mesmo valor que `EJA`."
       ],
       "comoResolver": [
-        "Deixe cada código uma única vez, na posição em que o valor deve aparecer, e envie a lista de novo. Os códigos repetidos vêm citados na mensagem desta recusa. A lista continua precisando trazer todos os valores do fato, ativos e desativados, e só códigos do fato."
+        "Deixe cada código uma única vez, na posição em que o valor deve aparecer, e envie a lista de novo. A mensagem não repete os códigos enviados. A lista continua precisando trazer todos os valores do fato, ativos e desativados, e só códigos do fato."
       ],
       "ondeAparece": [
         "Reordenação dos valores de um fato do catálogo"
@@ -5386,7 +5386,7 @@
       "oQueAconteceu": [
         "A modalidade tem natureza **ação afirmativa** (`ACAO_AFIRMATIVA`), mas a `regraDeAplicabilidade` dela não tem a forma que a natureza exige. Nada foi gravado. A forma depende da modalidade:",
         "- **Ação afirmativa em geral** (`AC_I`, `AC_Q` e as institucionais cadastradas): quem opta pelas cotas da lei não concorre a ela. Por isso toda cláusula da regra precisa conter a condição `{\"fato\":\"OPTOU_PELAS_COTAS_DA_LEI\",\"operador\":\"IGUAL\",\"valor\":false}`. Alguma cláusula não a tem.\n- **`AC_PCD`**, a reserva de vagas para pessoa com deficiência: é a única ação afirmativa que se soma às cotas da lei. A pessoa com deficiência que opta pelas cotas e responde que deseja concorrer como pessoa com deficiência concorre às vagas de pessoa com deficiência da lei e também à `AC_PCD`, ocupando uma única vaga (UNI-REQ-0142 e UNI-REQ-0266, definição do PO de 09/11/2026). Por isso a regra da `AC_PCD` tem condições e **não cita** `OPTOU_PELAS_COTAS_DA_LEI`: ela vale para quem optou pelas cotas e para quem não optou. A regra enviada cita essa opção ou não tem condição nenhuma.",
-        "Na recusa da `AC_PCD`, a mensagem diz: \"A regra da reserva de vagas para pessoa com deficiência (AC_PCD) não cita OPTOU_PELAS_COTAS_DA_LEI: ela vale para quem optou pelas cotas da lei e para quem não optou.\"",
+        "Na recusa da `AC_PCD`, a mensagem diz: \"A regra da reserva de vagas para pessoa com deficiência não cita OPTOU_PELAS_COTAS_DA_LEI: ela vale para quem optou pelas cotas da lei e para quem não optou.\"",
         "Na atualização, a modalidade é procurada antes desta conferência: com um identificador inexistente a resposta é [modalidade não encontrada](/erros/uniplus.configuracao.modalidade.nao_encontrada), mesmo que o conteúdo enviado também tivesse este problema. Numa modalidade do catálogo legal fixo esta recusa não é emitida: se o conteúdo altera algo além da descrição e da base legal, vale [estrutura protegida não editável](/erros/uniplus.configuracao.modalidade.estrutura_protegida_nao_editavel)."
       ],
       "comoResolver": [
@@ -6309,7 +6309,7 @@
         "A quantidade de turnos informada não é a que o `regimeDeTurno` declarado exige:",
         "| Regime declarado | Turnos exigidos |\n|---|---|\n| `REGULAR` | exatamente 1 |\n| `INTEGRAL` | exatamente 2, distintos |",
         "O regime é **declarado, nunca inferido**. Enviar dois turnos com\n`regimeDeTurno: \"REGULAR\"` é recusado — a oferta não é promovida a `INTEGRAL`\npor conta própria. Isso é proposital: inferir o regime pela contagem tornaria\nimpossível distinguir um turno informado por engano de uma oferta que\nrealmente funciona em dois períodos.",
-        "A mensagem do erro nomeia o regime declarado e quantos turnos ele exige."
+        "A mensagem do erro informa quantos turnos o regime exige, sem repetir o regime declarado nem a quantidade enviada."
       ],
       "comoResolver": [
         "Corrija **o lado que estava errado** — pode ser o regime ou a lista.",
@@ -6477,7 +6477,7 @@
         "São cinco as combinações válidas:",
         "| `regimeDeFuncionamento` | `regimeDeTurno` | Resultado |\n|---|---|---|\n| `EXTENSIVO` | `REGULAR` | válida |\n| `EXTENSIVO` | `INTEGRAL` | válida |\n| `ALTERNANCIA_PEDAGOGICA` | `REGULAR` | válida |\n| `ALTERNANCIA_PEDAGOGICA` | `INTEGRAL` | válida |\n| `INTENSIVO` | `INTEGRAL` | válida |\n| `INTENSIVO` | `REGULAR` | **recusada** — é esta página |",
         "A recusa **não converte nada**. Declarar `INTENSIVO` com `REGULAR` não promove\na oferta a `INTEGRAL` nem rebaixa o regime de funcionamento: a combinação é\ndevolvida como veio, e a correção é de quem declarou. Inferir uma dimensão a\npartir da outra apagaria a diferença entre um engano de digitação e uma oferta\nque realmente funciona daquele jeito.",
-        "A mensagem do erro nomeia o regime de funcionamento declarado, o regime de\nturno que ele exige e o que foi declarado no lugar.",
+        "A mensagem do erro informa o regime de turno exigido, sem repetir os regimes declarados.",
         "Esta causa só é avaliada quando os **dois** regimes são reconhecidos. Se um\ndeles está fora do vocabulário, a recusa é de valor inválido — veja\n[regime de funcionamento inválido](/erros/uniplus.configuracao.oferta_curso.regime_de_funcionamento_invalido)\ne\n[regime de turno inválido](/erros/uniplus.configuracao.oferta_curso.regime_de_turno_invalido)."
       ],
       "comoResolver": [

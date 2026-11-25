@@ -129,6 +129,22 @@ public sealed class FatoCandidatoValoresTests
         fato.ValoresDominioDeclarados.OrderBy(static v => v.Ordem).Select(static v => v.Codigo).Should().Equal("A", "B");
     }
 
+    [Fact(DisplayName = "Recusas de códigos na ordem não repetem os valores enviados")]
+    public void ReordenarValores_CodigosDesconhecidosERepetidos_NaoEcoa()
+    {
+        FatoCandidato fato = Criar().Value!;
+        fato.AdicionarValorDominio("VALOR_EXISTENTE", "Valor", 0, ativo: true).IsSuccess.Should().BeTrue();
+
+        Result resultado = fato.ReordenarValores(["VALOR_EXISTENTE", "VALOR_EXISTENTE", "VALOR_DESCONHECIDO"]);
+
+        FieldError desconhecido = resultado.Errors.Single(e => e.Error.Code == FatoValorDominioErrorCodes.OrdemComCodigoDesconhecido);
+        FieldError repetido = resultado.Errors.Single(e => e.Error.Code == FatoValorDominioErrorCodes.OrdemComCodigoRepetido);
+        desconhecido.Field.Should().Be("codigos");
+        desconhecido.Error.Message.Should().NotContain("VALOR_DESCONHECIDO");
+        repetido.Field.Should().Be("codigos");
+        repetido.Error.Message.Should().NotContain("VALOR_EXISTENTE");
+    }
+
     [Fact(DisplayName = "Reordenar com código nulo ou em branco recusa com mensagem própria")]
     public void ReordenarValores_CodigoEmBranco_RecusaComMensagemClara()
     {
@@ -182,6 +198,8 @@ public sealed class FatoCandidatoValoresTests
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be(FatoValorDominioErrorCodes.CodigoDuplicado);
+        resultado.Errors.Single().Field.Should().Be("codigo");
+        resultado.Error.Message.Should().NotContain("PRETA");
     }
 
     [Fact(DisplayName = "AdicionarValorDominio sem descrição quando a origem é Declarado é rejeitado")]

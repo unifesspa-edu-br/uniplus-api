@@ -93,7 +93,7 @@ internal static class ConferenciaDosValoresDoFato
         { Length: > FatoValorDominio.CodigoMaxLength } => Recusa("codigo", FatoValorDominioErrorCodes.CodigoTamanho,
             $"Código do valor de domínio deve ter no máximo {FatoValorDominio.CodigoMaxLength} caracteres."),
         _ when existentes.Contains(codigo, StringComparer.Ordinal) => Recusa("codigo", FatoValorDominioErrorCodes.CodigoDuplicado,
-            $"Já existe um valor de domínio com o código '{codigo}' neste fato."),
+            "Já existe um valor de domínio com este código neste fato."),
         _ => null,
     };
 
@@ -122,7 +122,7 @@ internal static class ConferenciaDosValoresDoFato
     {
         string[] estranhos = [.. informados.Where(c => c.Length > 0 && !existentes.Contains(c, StringComparer.Ordinal)).Distinct(StringComparer.Ordinal)];
         return estranhos.Length > 0
-            ? Recusa("codigos", FatoValorDominioErrorCodes.OrdemComCodigoDesconhecido, $"O fato não tem os valores: {string.Join(", ", estranhos)}.")
+            ? Recusa("codigos", FatoValorDominioErrorCodes.OrdemComCodigoDesconhecido, "A ordem contém códigos que não pertencem aos valores do fato.")
             : null;
     }
 
@@ -131,7 +131,7 @@ internal static class ConferenciaDosValoresDoFato
         string[] repetidos = [.. informados.Where(static c => c.Length > 0).GroupBy(static c => c, StringComparer.Ordinal)
             .Where(static g => g.Count() > 1).Select(static g => g.Key)];
         return repetidos.Length > 0
-            ? Recusa("codigos", FatoValorDominioErrorCodes.OrdemComCodigoRepetido, $"Valores repetidos na ordem: {string.Join(", ", repetidos)}.")
+            ? Recusa("codigos", FatoValorDominioErrorCodes.OrdemComCodigoRepetido, "A ordem não pode repetir códigos de valores.")
             : null;
     }
 

@@ -124,7 +124,8 @@ public sealed class OfertaCursoTurnosTests
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be(OfertaCursoErrorCodes.CardinalidadeTurnosIncompativelComRegime);
-        resultado.Error!.Message.Should().Contain("REGULAR").And.Contain("1 turno");
+        resultado.Errors.Single().Field.Should().Be("turnos");
+        resultado.Error!.Message.Should().Contain("1 turno").And.NotContain("REGULAR").And.NotContain("2");
     }
 
     [Fact(DisplayName = "Regime integral com um único turno é recusado")]
@@ -134,7 +135,8 @@ public sealed class OfertaCursoTurnosTests
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be(OfertaCursoErrorCodes.CardinalidadeTurnosIncompativelComRegime);
-        resultado.Error!.Message.Should().Contain("INTEGRAL").And.Contain("2 turno");
+        resultado.Errors.Single().Field.Should().Be("turnos");
+        resultado.Error!.Message.Should().Contain("2 turno").And.NotContain("INTEGRAL").And.NotContain("1");
     }
 
     [Fact(DisplayName = "Regime integral com três turnos é recusado")]

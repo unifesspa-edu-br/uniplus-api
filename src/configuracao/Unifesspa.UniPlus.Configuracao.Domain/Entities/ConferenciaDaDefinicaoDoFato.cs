@@ -291,7 +291,7 @@ internal static class ConferenciaDaDefinicaoDoFato
             : $"um de {string.Join(", ", prefixosAceitos.Select(p => $"\"{p}\""))}";
         return new DomainError(
             FatoCandidatoErrorCodes.BindingPrefixoIncoerenteComOrigem,
-            $"O prefixo do binding deve ser {esperado} para a origem {origem.Codigo()} (recebido \"{prefixo}\").");
+            $"O prefixo do binding deve ser {esperado} para a origem informada.");
     }
 
     // REGRA_DE_CALCULO deve apontar para o próprio dado, para que a cópia gravada
@@ -306,7 +306,7 @@ internal static class ConferenciaDaDefinicaoDoFato
             ? new DomainError(
                 FatoCandidatoErrorCodes.BindingReferenciaRegraIncoerente,
                 $"O binding \"{prefixoDaRegra}:\" referencia a regra de derivação do próprio fato — "
-                + $"a referência deve ser \"{codigo}\" (recebido \"{referencia}\").")
+                + "a referência deve ser o código do próprio fato.")
             : null;
     }
 
