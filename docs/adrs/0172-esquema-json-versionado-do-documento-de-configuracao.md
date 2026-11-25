@@ -223,3 +223,17 @@ Os caminhos dos erros dos motivos acompanham o nome novo (`motivosDeDecisao[i]`)
 
 - [ADR-0051](0051-apicurio-schema-registry-avro-wolverine.md), [ADR-0066](0066-ofertacurso-modelo-tres-niveis-emec-por-campus.md) e [ADR-0109](0109-envelope-canonico-v2-do-congelamento.md).
 - Identidade e proteção de dados: [ADR-0078](0078-modelo-de-autorizacao-pbac-abac.md), [ADR-0121](0121-criptografia-de-dados-sensiveis-em-repouso.md) e [ADR-0153](0153-projecao-por-protecao.md).
+
+## Emenda (2026-11-25) — a exigência cita o modelo de documento enviado pelo identificador
+
+O modelo de documento é um arquivo enviado ao próprio rascunho, confirmado e imutável. Sua integridade é conferida pelo resumo SHA-256. Ele não é um cadastro e não tem código estável para ser citado.
+
+A exigência cita o modelo pelo identificador devolvido no envio, na propriedade `modeloId` de `exigencias.schema.json`. Essa é a única referência gravável por identificador a um registro fora do documento. A citação vale somente no rascunho ou no processo dono do envio.
+
+Ao salvar, se a citação não resolve ou se o modelo ainda não foi confirmado, o rascunho é salvo com diagnóstico no ponteiro `/documentosExigidos/exigencias/{i}/modeloId`. A publicação é recusada enquanto a causa persistir. Ao importar em outro rascunho, o salvamento aponta o modelo como inexistente; o arquivo deve ser enviado novamente ao novo dono.
+
+A exportação descreve cada modelo resolvido com o nome do arquivo, o formato e o resumo. O identificador também se chama `modeloId` no documento congelado e na gravação por dimensão.
+
+**Confirmação:** o teste de contrato do esquema admite como referência por identificador somente o caminho `exigencias.schema.json/exigencia/modeloId`, exige igualdade com esse caminho e falha se a propriedade mudar de lugar.
+
+**Consequências:** qualquer outra referência por identificador continua proibida e exige nova emenda e mudança do teste.
