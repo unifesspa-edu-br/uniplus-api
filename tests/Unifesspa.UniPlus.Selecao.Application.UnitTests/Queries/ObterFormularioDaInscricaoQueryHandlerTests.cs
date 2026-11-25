@@ -93,9 +93,9 @@ public sealed class ObterFormularioDaInscricaoQueryHandlerTests
 
     private static Task<Result<FormularioApresentadoDoProcessoDto>> Obter(PortasDaInscricaoDeTeste portas, IUserContext usuario) =>
         ObterFormularioDaInscricaoQueryHandler.Handle(
-            new ObterFormularioDaInscricaoQuery(ProcessoId), portas.Inscricoes,
+            new ObterFormularioDaInscricaoQuery(ProcessoId), new InscricaoDoDono(portas.Inscricoes, usuario),
             new VersaoDaInscricaoResolver(DivulgacaoDeTeste.Certame(ProcessoId), portas.Processos, portas.Codecs),
-            portas.Codecs, usuario, CancellationToken.None);
+            portas.Codecs, CancellationToken.None);
 
     private static Inscricao Rascunho(Cpf cpf, VersaoConfiguracao versao) =>
         Inscricao.Iniciar(ProcessoId, cpf, "conta-1", "https://issuer", versao.Id).Value!;
@@ -211,9 +211,9 @@ public sealed class ObterFormularioDaInscricaoQueryHandlerTests
             .Returns(Inscricao.Iniciar(ProcessoId, cpf, "conta-1", "https://issuer", versao.Id).Value!);
         IRegistroCodecsEnvelope codecs = RegistroReidratando(envelope);
         return ObterFormularioDaInscricaoQueryHandler.Handle(
-            new ObterFormularioDaInscricaoQuery(ProcessoId), inscricoes,
+            new ObterFormularioDaInscricaoQuery(ProcessoId), new InscricaoDoDono(inscricoes, UsuarioComCpf(cpf)),
             new VersaoDaInscricaoResolver(DivulgacaoDeTeste.Certame(ProcessoId), ProcessosComVersao(versao), codecs),
-            codecs, UsuarioComCpf(cpf), CancellationToken.None);
+            codecs, CancellationToken.None);
     }
 
     private static IProcessoSeletivoRepository ProcessosComVersao(VersaoConfiguracao versao)
