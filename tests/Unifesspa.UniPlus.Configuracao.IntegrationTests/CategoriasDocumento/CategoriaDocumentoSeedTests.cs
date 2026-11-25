@@ -49,15 +49,7 @@ public sealed class CategoriaDocumentoSeedTests
 
         persistidas.Should().HaveCount(CategoriaDocumentoSeed.Itens.Count);
 
-        foreach (CategoriaDocumentoSeedItem item in CategoriaDocumentoSeed.Itens)
-        {
-            persistidas.Should().ContainKey(item.Id, "o identificador do seed é fixo e igual em todo ambiente");
-            CategoriaDocumento persistida = persistidas[item.Id];
-            persistida.Codigo.Valor.Should().Be(item.Codigo);
-            persistida.Nome.Should().Be(item.Nome);
-            persistida.Ordem.Should().Be(item.Ordem);
-            persistida.IsDeleted.Should().BeFalse();
-        }
+        ConferirItensDoSeed(persistidas);
     }
 
     [Fact(DisplayName = "A ordem de exibição vence a ordem de criação, e o código desempata a ordem repetida")]
@@ -72,25 +64,9 @@ public sealed class CategoriaDocumentoSeedTests
         CategoriaDocumento empateB = Nova($"{prefixo}_B", ordem: 800);
         CategoriaDocumento empateA = Nova($"{prefixo}_A", ordem: 800);
 
-        await using (UniPlusDbContext ctx = _fixture.CreateDbContext("admin-ordem"))
-        {
-            ctx.CategoriasDocumento.Add(ultima);
-            ctx.CategoriasDocumento.Add(empateB);
-            ctx.CategoriasDocumento.Add(empateA);
-            await ctx.SaveChangesAsync();
-        }
+        await PersistirCategoriasAsync(ultima, empateB, empateA);
 
-        await using UniPlusDbContext readCtx = _fixture.CreateDbContext(userId: null);
-        var repositorio = new CategoriaDocumentoRepository(readCtx);
-
-        IReadOnlyList<CategoriaDocumento> categorias = await repositorio.ListarVivasOrdenadasAsync(CancellationToken.None);
-
-        string[] meus = [.. categorias
-            .Select(c => c.Codigo.Valor)
-            .Where(codigo => codigo.StartsWith(prefixo, StringComparison.Ordinal))];
-
-        meus.Should().Equal([$"{prefixo}_A", $"{prefixo}_B", $"{prefixo}_D"],
-            "empate de ordem desempata pelo código, e a ordem 900 vem depois das 800 — ainda que o registro de ordem 900 tenha sido criado primeiro");
+        await ConferirOrdemDasCategoriasAsync(prefixo);
     }
 
     [Fact(DisplayName = "O catálogo semeado sai do repositório na ordem de exibição declarada")]
@@ -108,6 +84,45 @@ public sealed class CategoriaDocumentoSeedTests
             .Where(codigo => esperados.Contains(codigo))];
 
         doSeed.Should().Equal(esperados);
+    }
+
+    private async Task ConferirOrdemDasCategoriasAsync(string prefixo)
+    {
+        await using UniPlusDbContext readCtx = _fixture.CreateDbContext(userId: null);
+        var repositorio = new CategoriaDocumentoRepository(readCtx);
+
+        IReadOnlyList<CategoriaDocumento> categorias = await repositorio.ListarVivasOrdenadasAsync(CancellationToken.None);
+
+        string[] meus = [.. categorias
+            .Select(c => c.Codigo.Valor)
+            .Where(codigo => codigo.StartsWith(prefixo, StringComparison.Ordinal))];
+
+        meus.Should().Equal([$"{prefixo}_A", $"{prefixo}_B", $"{prefixo}_D"],
+            "empate de ordem desempata pelo código, e a ordem 900 vem depois das 800 — ainda que o registro de ordem 900 tenha sido criado primeiro");
+    }
+
+    private static void ConferirItensDoSeed(Dictionary<Guid, CategoriaDocumento> persistidas)
+    {
+        foreach (CategoriaDocumentoSeedItem item in CategoriaDocumentoSeed.Itens)
+        {
+            persistidas.Should().ContainKey(item.Id, "o identificador do seed é fixo e igual em todo ambiente");
+            CategoriaDocumento persistida = persistidas[item.Id];
+            persistida.Codigo.Valor.Should().Be(item.Codigo);
+            persistida.Nome.Should().Be(item.Nome);
+            persistida.Ordem.Should().Be(item.Ordem);
+            persistida.IsDeleted.Should().BeFalse();
+        }
+    }
+
+    private async Task PersistirCategoriasAsync(params CategoriaDocumento[] categorias)
+    {
+        await using UniPlusDbContext ctx = _fixture.CreateDbContext("admin-ordem");
+        foreach (CategoriaDocumento categoria in categorias)
+        {
+            ctx.CategoriasDocumento.Add(categoria);
+        }
+
+        await ctx.SaveChangesAsync();
     }
 
     private static CategoriaDocumento Nova(string codigo, int ordem) =>

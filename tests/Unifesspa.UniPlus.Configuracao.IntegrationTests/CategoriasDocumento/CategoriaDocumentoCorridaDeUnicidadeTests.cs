@@ -51,18 +51,11 @@ public sealed class CategoriaDocumentoCorridaDeUnicidadeTests
         await SemearAsync(codigo);
 
         await using UniPlusDbContext ctx = _fixture.CreateDbContext(Admin);
-        var repositorio = new RepositorioComUnicidadeCega(ctx);
-
-        Result<Guid> resultado = await CriarCategoriaDocumentoCommandHandler.Handle(
-            new CriarCategoriaDocumentoCommand(codigo, "Concorrente", null, 0),
-            repositorio,
-            ctx,
-            CancellationToken.None);
+        Result<Guid> resultado = await CriarEmCorridaAsync(ctx, codigo);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be(CategoriaDocumentoErrorCodes.CodigoJaExiste);
-        await SaveChangesPosterior(ctx).Should().NotThrowAsync(
-            "o handler descartou o rastreamento antes de devolver a falha");
+        await ConferirSavePosterior(ctx);
     }
 
     [Fact(DisplayName = "Atualizar em corrida no código devolve CodigoJaExiste (409), não 500")]
@@ -73,16 +66,25 @@ public sealed class CategoriaDocumentoCorridaDeUnicidadeTests
         Guid alvoId = await SemearAsync(CodigoUnico());
 
         await using UniPlusDbContext ctx = _fixture.CreateDbContext(Admin);
-        var repositorio = new RepositorioComUnicidadeCega(ctx);
-
-        Result resultado = await AtualizarCategoriaDocumentoCommandHandler.Handle(
-            new AtualizarCategoriaDocumentoCommand(alvoId, codigoOcupado, "Alvo renomeado", null, 0),
-            repositorio,
-            ctx,
-            CancellationToken.None);
+        Result resultado = await AtualizarEmCorridaAsync(ctx, alvoId, codigoOcupado);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be(CategoriaDocumentoErrorCodes.CodigoJaExiste);
+        await ConferirSavePosterior(ctx);
+    }
+
+    private static Task<Result<Guid>> CriarEmCorridaAsync(UniPlusDbContext ctx, string codigo) =>
+        CriarCategoriaDocumentoCommandHandler.Handle(
+            new CriarCategoriaDocumentoCommand(codigo, "Concorrente", null, 0),
+            new RepositorioComUnicidadeCega(ctx), ctx, CancellationToken.None);
+
+    private static Task<Result> AtualizarEmCorridaAsync(UniPlusDbContext ctx, Guid id, string codigo) =>
+        AtualizarCategoriaDocumentoCommandHandler.Handle(
+            new AtualizarCategoriaDocumentoCommand(id, codigo, "Alvo renomeado", null, 0),
+            new RepositorioComUnicidadeCega(ctx), ctx, CancellationToken.None);
+
+    private static async Task ConferirSavePosterior(UniPlusDbContext ctx)
+    {
         await SaveChangesPosterior(ctx).Should().NotThrowAsync(
             "o handler descartou o rastreamento antes de devolver a falha");
     }
