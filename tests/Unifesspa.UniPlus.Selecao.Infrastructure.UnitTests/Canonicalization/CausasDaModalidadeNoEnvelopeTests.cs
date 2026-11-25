@@ -60,7 +60,7 @@ public sealed class CausasDaModalidadeNoEnvelopeTests
         LeitorEnvelope leitor = new();
         LeituraDasModalidades.LerModalidade(leitor, modalidade, "modalidades[0]");
         FieldError causa = leitor.Falha<object>().Errors.Single();
-        causa.Field.Should().Be("modalidades[0]");
+        causa.Field.Should().Be("modalidades[0].codigo");
         causa.Error.Code.Should().Be(ErrosCodecEnvelope.EnvelopeMalformado);
         causa.Error.Message.Should().Be("Envelope malformado em 'modalidades': o código não tem o formato do cadastro (A-Z, 0-9 e underscore) — e códigos são chave de composição e de remanejamento dentro da oferta.");
         causa.Error.Message.Should().NotContain("invalido");
@@ -135,13 +135,13 @@ public sealed class CausasDaModalidadeNoEnvelopeTests
         LeitorEnvelope leitor = new();
         LeituraDasModalidades.LerModalidade(leitor, modalidade, "modalidades[0]");
         FieldError causa = leitor.Falha<object>().Errors.Single();
-        causa.Field.Should().Be("modalidades[0]");
+        causa.Field.Should().Be("modalidades[0].acaoQuandoIndeferido");
         causa.Error.Should().Be(new DomainError(ErrosCodecEnvelope.EnvelopeMalformado,
             "Envelope malformado em 'modalidades': a ação ao indeferir não pertence ao domínio fechado do cadastro " +
             "(RECLASSIFICA_AC, RECLASSIFICA_CONFORME_EDITAL) — restaurá-la daria à homologação das inscrições uma instrução que ela não sabe executar."));
     }
 
-    private static JsonObject Modalidade() => JsonNode.Parse("""
+    internal static JsonObject Modalidade() => JsonNode.Parse("""
         {"ofertaCursoOrigemId":"11111111-1111-1111-1111-111111111111","modalidadeOrigemId":"22222222-2222-2222-2222-222222222222",
         "codigo":"AC","descricao":null,"naturezaLegal":"AMPLA","composicaoVagas":"RESTANTE_DAS_VAGAS_OFERTADAS",
         "composicaoOrigemCodigo":null,"regraRemanejamento":null,"remanejamentoDestino":null,"remanejamentoPar":null,

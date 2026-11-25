@@ -80,6 +80,23 @@ public sealed class CausasDasVagasNoEnvelopeTests
         causa.Error.Code.Should().Be("EnvelopeCodec.EnvelopeMalformado");
     }
 
+    [Fact]
+    public void LerDistribuicao_PrimeiraModalidadeComVariasRecusas_ParaAntesDaSegunda()
+    {
+        JsonObject documento = Documento();
+        JsonArray modalidades = documento["modalidades"]!.AsArray();
+        modalidades.Add(modalidades[0]!.DeepClone());
+        modalidades[0]!["acaoQuandoIndeferido"] = "acao-invalida";
+        modalidades[0]!["regraRemanejamento"] = "SEGUE_ORDEM_DE_REMANEJAMENTO";
+        modalidades[1]!["regraRemanejamento"] = "SEGUE_ORDEM_DE_REMANEJAMENTO";
+        LeitorEnvelope leitor = new();
+        LeituraDasVagas.LerDistribuicao(leitor, documento);
+        IReadOnlyList<FieldError> causas = leitor.Falha<object>().Errors;
+        causas.Should().HaveCount(2);
+        ConferirCausaNoDocumento.Conferir(documento, causas[0], "modalidades[0].acaoQuandoIndeferido", "EnvelopeCodec.EnvelopeMalformado", "Envelope malformado em 'modalidades': a ação ao indeferir não pertence ao domínio fechado do cadastro (RECLASSIFICA_AC, RECLASSIFICA_CONFORME_EDITAL) — restaurá-la daria à homologação das inscrições uma instrução que ela não sabe executar.");
+        ConferirCausaNoDocumento.Conferir(documento, causas[1], "modalidades[0]", "EnvelopeCodec.EnvelopeMalformado", "Envelope malformado em 'modalidades': a regra de remanejamento não é a que a natureza da modalidade pede.");
+    }
+
     private static JsonObject Documento() => JsonNode.Parse("""
         {"distribuicao":[{"ofertaCursoOrigemId":"11111111-1111-1111-1111-111111111111","vagasOfertadasBase":40,
         "percentualDaReservaLegal":null,"regraDistribuicao":{"codigo":"DISTRIBUICAO_INSTITUCIONAL","versao":"v1","hash":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"},

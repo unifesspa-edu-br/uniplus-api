@@ -26,19 +26,7 @@ internal static class LeituraDasModalidades
         "remanejamentoDestinoFinal", "regraDeAplicabilidade", "acaoQuandoIndeferido", "baseLegal", "quantidadeDeclarada",
     ];
 
-    /// <summary>
-    /// As ações ao indeferir que o <b>cadastro</b> admite — domínio fechado
-    /// (<c>AcoesQuandoIndeferido</c>, módulo Configuração). O comando nunca produz outra
-    /// coisa: ele <b>copia</b> o token da view do cadastro.
-    /// </summary>
-    /// <remarks>
-    /// O envelope o congela por valor (ADR-0061), e o decoder não passa pelo cadastro — sem
-    /// esta lista, um token inventado faria round-trip perfeito e reidrataria uma
-    /// <b>instrução que a homologação das inscrições não sabe executar</b>. A lista está aqui, e
-    /// não numa referência ao módulo Configuração, porque ela é a do vocabulário
-    /// <b>congelado</b> nesta forma do envelope: um token novo no cadastro exige atualizar
-    /// esta lista.
-    /// </remarks>
+    // O envelope congela as ações aceitas para impedir a restauração de instruções desconhecidas.
     internal static readonly string[] AcoesQuandoIndeferido =
         ["RECLASSIFICA_AC", "RECLASSIFICA_CONFORME_EDITAL"];
 
@@ -51,11 +39,6 @@ internal static class LeituraDasModalidades
         if (leitor.Falhou)
         {
             return null;
-        }
-
-        if (declaracao.RecusaDoVocabulario() is { } vocabulario)
-        {
-            return leitor.Propagar<ModalidadeSelecionada>([new FieldError(null, vocabulario)], path);
         }
 
         return Reidratar(leitor, declaracao, path);
@@ -78,31 +61,22 @@ internal static class LeituraDasModalidades
         Descricao = leitor.TextoOpcional(item, "descricao", path, LimitesDoEnvelope.ModalidadeDescricao),
         Natureza = leitor.NaturezaLegal(item, "naturezaLegal", path),
         Composicao = leitor.ComposicaoDeVagas(item, "composicaoVagas", path),
-        ComposicaoOrigem = leitor.TextoOpcional(item, "composicaoOrigemCodigo", path, LimitesDoEnvelope.ModalidadeCodigo),
+        ComposicaoOrigem = leitor.TextoOpcionalNaoVazio(item, "composicaoOrigemCodigo", path, LimitesDoEnvelope.ModalidadeCodigo),
         Remanejamento = leitor.RegraDeRemanejamento(item, "regraRemanejamento", path),
-        Destino = leitor.TextoOpcional(item, "remanejamentoDestino", path, LimitesDoEnvelope.ModalidadeCodigo),
-        Par = leitor.TextoOpcional(item, "remanejamentoPar", path, LimitesDoEnvelope.ModalidadeCodigo),
-        Fallback = leitor.TextoOpcional(item, "remanejamentoDestinoFinal", path, LimitesDoEnvelope.ModalidadeCodigo),
+        Destino = leitor.TextoOpcionalNaoVazio(item, "remanejamentoDestino", path, LimitesDoEnvelope.ModalidadeCodigo),
+        Par = leitor.TextoOpcionalNaoVazio(item, "remanejamentoPar", path, LimitesDoEnvelope.ModalidadeCodigo),
+        DestinoFinal = leitor.TextoOpcionalNaoVazio(item, "remanejamentoDestinoFinal", path, LimitesDoEnvelope.ModalidadeCodigo),
     };
 
-    private static ModalidadeSelecionada? Reidratar(LeitorEnvelope leitor, ModalidadeLidaDoEnvelope d, string path)
+    private static ModalidadeSelecionada? Reidratar(LeitorEnvelope leitor, ModalidadeLidaDoEnvelope declaracao, string path)
     {
-        Result<PredicadoDnf?> regraLida = LeituraDasCondicoes.PredicadoOpcional(d.Regra);
-        if (regraLida.IsFailure)
-        {
-            return leitor.Propagar<ModalidadeSelecionada>(regraLida.Errors, $"{path}.regraDeAplicabilidade");
-        }
-
-        return CriarModalidade(leitor, d, regraLida.Value, path);
-    }
-
-    private static ModalidadeSelecionada? CriarModalidade(
-        LeitorEnvelope leitor, ModalidadeLidaDoEnvelope d, PredicadoDnf? regra, string path)
-    {
+        Result<PredicadoDnf?> regraLida = LeituraDasCondicoes.PredicadoOpcional(declaracao.Regra);
+        // A criação não depende da regra, e a modalidade é descartada se ela for recusada.
         Result<ModalidadeSelecionada> modalidade = ModalidadeSelecionada.Criar(
-            d.NoCadastro(regra ?? PredicadoDnf.SemClausula), d.QuantidadeDeclarada);
-        // O documento publicado não passa pelo cadastro; a coerência é a mesma exigida na publicação.
-        IReadOnlyList<FieldError> causas = [.. modalidade.Errors, .. d.RecusaDoRemanejamentoIncoerente()];
+            declaracao.NoCadastro(regraLida.Value ?? PredicadoDnf.SemClausula), declaracao.QuantidadeDeclarada);
+        IReadOnlyList<FieldError> causas = [.. declaracao.RecusasDoVocabulario(),
+            .. regraLida.Errors.Select(causa => causa.NoCaminhoDoItem("regraDeAplicabilidade")),
+            .. modalidade.Errors, .. declaracao.RecusaDoRemanejamentoIncoerente()];
         return causas.Count > 0 ? leitor.Propagar<ModalidadeSelecionada>(causas, path) : modalidade.Value;
     }
 
@@ -126,7 +100,7 @@ internal static class LeituraDasModalidades
 
         public string? Par { get; init; }
 
-        public string? Fallback { get; init; }
+        public string? DestinoFinal { get; init; }
 
         public IReadOnlyList<(int Clausula, string Fato, Operador Operador, JsonElement Valor)> Regra { get; init; } = [];
 
@@ -147,19 +121,25 @@ internal static class LeituraDasModalidades
             RegraRemanejamento = Remanejamento,
             RemanejamentoDestino = Destino,
             RemanejamentoPar = Par,
-            RemanejamentoFallback = Fallback,
+            RemanejamentoFallback = DestinoFinal,
             RegraDeAplicabilidade = regra,
             AcaoQuandoIndeferido = AcaoQuandoIndeferido,
             BaseLegal = BaseLegal,
         };
 
-        internal DomainError? RecusaDoVocabulario() =>
-            CodigoForaDoFormato() is not null ? RecusaDoFormatoDoCodigo()
-            : AcaoQuandoIndeferido is { } acao && !AcoesQuandoIndeferido.Contains(acao, StringComparer.Ordinal)
-                ? RecusaDaAcaoAoIndeferir() : null;
+        internal IEnumerable<FieldError> RecusasDoVocabulario()
+        {
+            (string Chave, string? Valor)[] codigos = [("codigo", Codigo), ("composicaoOrigemCodigo", ComposicaoOrigem),
+                ("remanejamentoDestino", Destino), ("remanejamentoPar", Par), ("remanejamentoDestinoFinal", DestinoFinal)];
+            foreach ((string chave, string? valor) in codigos)
+            {
+                if (valor is not null && !FormatoDoCodigo.TemFormatoValido(valor))
+                    yield return new FieldError(chave, RecusaDoFormatoDoCodigo());
+            }
 
-        private string? CodigoForaDoFormato() => new[] { Codigo, ComposicaoOrigem, Destino, Par, Fallback }
-            .FirstOrDefault(codigo => codigo is not null && !FormatoDoCodigo.TemFormatoValido(codigo));
+            if (AcaoQuandoIndeferido is { } acao && !AcoesQuandoIndeferido.Contains(acao, StringComparer.Ordinal))
+                yield return new FieldError("acaoQuandoIndeferido", RecusaDaAcaoAoIndeferir());
+        }
 
         internal IEnumerable<FieldError> RecusaDoRemanejamentoIncoerente() =>
             ModalidadeSelecionada.RemanejamentoCoerenteComANatureza(Natureza, Remanejamento) ? []
