@@ -114,8 +114,8 @@ internal sealed class CadastrosDoDesempate
         RegraCatalogo? regra = await _regraCatalogoReader.ObterAsync(codigo, versao, cancellationToken).ConfigureAwait(false);
         return regra switch
         {
-            null => Recusa($"Regra de desempate {codigo}/{versao} não encontrada no catálogo de regras.", "CriterioDesempate.RegraNaoEncontrada"),
-            { Tipo: not TipoRegra.CriterioDesempate } => Recusa($"A regra {codigo}/{versao} não é do tipo criterio_desempate.", "CriterioDesempate.RegraTipoInvalido"),
+            null => Recusa("Regra de desempate não encontrada no catálogo de regras.", "CriterioDesempate.RegraNaoEncontrada"),
+            { Tipo: not TipoRegra.CriterioDesempate } => Recusa("A regra não é do tipo criterio_desempate.", "CriterioDesempate.RegraTipoInvalido"),
             _ => Result<RegraCatalogo>.Success(regra),
         };
     }

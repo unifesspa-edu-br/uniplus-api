@@ -42,7 +42,7 @@ public sealed class ReferenciasDoPredicado(
     /// legitimamente não encontra — a recusa sairia como "código não existe" e esconderia
     /// de quem cadastra que o campo não foi preenchido.
     /// </remarks>
-    public async Task<Result<PredicadoObrigatoriedade>> NormalizarEValidarAsync(
+    public async Task<Result<PredicadoObrigatoriedade>> ConferirAsync(
         PredicadoObrigatoriedade predicado,
         CancellationToken cancellationToken)
     {
@@ -51,18 +51,18 @@ public sealed class ReferenciasDoPredicado(
 
         return forma.IsFailure
             ? Result<PredicadoObrigatoriedade>.Failure(forma.Error!)
-            : await NormalizarReferenciasAsync(predicado, cancellationToken).ConfigureAwait(false);
+            : await ConferirReferenciasAsync(predicado, cancellationToken).ConfigureAwait(false);
     }
 
-    private Task<Result<PredicadoObrigatoriedade>> NormalizarReferenciasAsync(
+    private Task<Result<PredicadoObrigatoriedade>> ConferirReferenciasAsync(
         PredicadoObrigatoriedade predicado,
         CancellationToken cancellationToken) => predicado switch
         {
-            EtapaObrigatoria etapa => NormalizarEtapaAsync(etapa, cancellationToken),
-            DocumentoObrigatorioParaModalidade documento => NormalizarDocumentoParaModalidadeAsync(documento, cancellationToken),
-            ModalidadesMinimas modalidades => NormalizarModalidadesMinimasAsync(modalidades, cancellationToken),
-            AtendimentoDisponivel atendimento => NormalizarAtendimentoDisponivelAsync(atendimento, cancellationToken),
-            DesempateDeveIncluir desempate => NormalizarDesempateDeveIncluirAsync(desempate, cancellationToken),
+            EtapaObrigatoria etapa => ConferirEtapaAsync(etapa, cancellationToken),
+            DocumentoObrigatorioParaModalidade documento => ConferirDocumentoParaModalidadeAsync(documento, cancellationToken),
+            ModalidadesMinimas modalidades => ConferirModalidadesMinimasAsync(modalidades, cancellationToken),
+            AtendimentoDisponivel atendimento => ConferirAtendimentoDisponivelAsync(atendimento, cancellationToken),
+            DesempateDeveIncluir desempate => ConferirDesempateDeveIncluirAsync(desempate, cancellationToken),
             _ => Task.FromResult(Result<PredicadoObrigatoriedade>.Success(predicado)),
         };
 
@@ -95,13 +95,13 @@ public sealed class ReferenciasDoPredicado(
     /// depois de uma renomeação cosmética — reprovando processos conformes sem que nada no
     /// cadastro sinalizasse o motivo.
     /// </remarks>
-    private async Task<Result<PredicadoObrigatoriedade>> NormalizarAtendimentoDisponivelAsync(
+    private async Task<Result<PredicadoObrigatoriedade>> ConferirAtendimentoDisponivelAsync(
         AtendimentoDisponivel predicado,
         CancellationToken cancellationToken)
     {
         IReadOnlyList<TipoDeficienciaView> vivos = await tipoDeficienciaReader
             .ListarVivosAsync(cancellationToken).ConfigureAwait(false);
-        List<string> necessidades = [.. predicado.Necessidades.Select(Normalizar)];
+        List<string> necessidades = [.. predicado.Necessidades.Select(CodigoOuVazio)];
 
         return necessidades.Any(codigo => vivos.All(v => !string.Equals(v.Codigo, codigo, StringComparison.Ordinal)))
             ? Result<PredicadoObrigatoriedade>.Failure(TipoDeficienciaNaoEncontrada())
@@ -116,7 +116,7 @@ public sealed class ReferenciasDoPredicado(
     /// mensagem "critério de desempate ausente" — que descreve o processo seletivo e
     /// manda o operador procurar o defeito no lugar errado, quando ele está na regra.</para>
     /// </remarks>
-    private async Task<Result<PredicadoObrigatoriedade>> NormalizarDesempateDeveIncluirAsync(
+    private async Task<Result<PredicadoObrigatoriedade>> ConferirDesempateDeveIncluirAsync(
         DesempateDeveIncluir predicado,
         CancellationToken cancellationToken)
     {
@@ -129,11 +129,11 @@ public sealed class ReferenciasDoPredicado(
             : Result<PredicadoObrigatoriedade>.Failure(CriterioDesempateNaoEncontrado());
     }
 
-    private async Task<Result<PredicadoObrigatoriedade>> NormalizarEtapaAsync(
+    private async Task<Result<PredicadoObrigatoriedade>> ConferirEtapaAsync(
         EtapaObrigatoria predicado,
         CancellationToken cancellationToken)
     {
-        string codigo = Normalizar(predicado.TipoEtapaCodigo);
+        string codigo = CodigoOuVazio(predicado.TipoEtapaCodigo);
         bool ativo = await tipoEtapaReader.ObterAtivoPorCodigoAsync(codigo, cancellationToken).ConfigureAwait(false) is not null;
 
         return ativo
@@ -141,11 +141,11 @@ public sealed class ReferenciasDoPredicado(
             : Result<PredicadoObrigatoriedade>.Failure(TipoEtapaNaoEncontradoOuInativo());
     }
 
-    private async Task<Result<PredicadoObrigatoriedade>> NormalizarDocumentoParaModalidadeAsync(
+    private async Task<Result<PredicadoObrigatoriedade>> ConferirDocumentoParaModalidadeAsync(
         DocumentoObrigatorioParaModalidade predicado,
         CancellationToken cancellationToken)
     {
-        string modalidade = Normalizar(predicado.Modalidade);
+        string modalidade = CodigoOuVazio(predicado.Modalidade);
         string tipoDocumento = predicado.TipoDocumento ?? string.Empty;
 
         if (!await ModalidadeEstaVivaAsync(modalidade, cancellationToken).ConfigureAwait(false))
@@ -162,11 +162,11 @@ public sealed class ReferenciasDoPredicado(
     /// A lista inteira é conferida item a item: basta um código órfão para a
     /// exigência mínima nunca ser satisfeita pelo edital que a deveria cumprir.
     /// </remarks>
-    private async Task<Result<PredicadoObrigatoriedade>> NormalizarModalidadesMinimasAsync(
+    private async Task<Result<PredicadoObrigatoriedade>> ConferirModalidadesMinimasAsync(
         ModalidadesMinimas predicado,
         CancellationToken cancellationToken)
     {
-        List<string> codigos = [.. predicado.Codigos.Select(Normalizar)];
+        List<string> codigos = [.. predicado.Codigos.Select(CodigoOuVazio)];
 
         foreach (string codigo in codigos)
         {
@@ -182,6 +182,6 @@ public sealed class ReferenciasDoPredicado(
     private async Task<bool> ModalidadeEstaVivaAsync(string codigo, CancellationToken cancellationToken) =>
         await modalidadeReader.ObterVivaPorCodigoAsync(codigo, cancellationToken).ConfigureAwait(false) is not null;
 
-    private static string Normalizar(string? codigo) => codigo ?? string.Empty;
+    private static string CodigoOuVazio(string? codigo) => codigo ?? string.Empty;
 
 }

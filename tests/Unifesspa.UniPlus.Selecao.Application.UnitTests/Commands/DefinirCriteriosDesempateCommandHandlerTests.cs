@@ -179,6 +179,7 @@ public sealed class DefinirCriteriosDesempateCommandHandlerTests
 
         result.IsFailure.Should().BeTrue();
         result.Error!.Code.Should().Be("CriterioDesempate.RegraNaoEncontrada");
+        result.Error.Message.Should().NotContain("INEXISTENTE").And.NotContain("v1");
     }
 
     [Fact(DisplayName = "Código fora do catálogo de critérios cai na consulta de reserva: regra de outro tipo recusa")]
