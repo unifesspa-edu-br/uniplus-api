@@ -100,6 +100,17 @@ public sealed class AuthenticationProblemDetailsWriterTests
 
     private static DefaultHttpContext CreateHttpContext(bool includeProblemDetailsService)
     {
+        ServiceProvider provider = CreateProblemDetailsServices(includeProblemDetailsService);
+        DefaultHttpContext context = new()
+        {
+            RequestServices = provider,
+        };
+        context.Response.Body = new MemoryStream();
+        return context;
+    }
+
+    private static ServiceProvider CreateProblemDetailsServices(bool includeProblemDetailsService)
+    {
         ServiceCollection services = new();
         services.AddOptions();
         services.AddLogging();
@@ -108,13 +119,7 @@ public sealed class AuthenticationProblemDetailsWriterTests
         if (includeProblemDetailsService)
             services.AddProblemDetails();
 
-        ServiceProvider provider = services.BuildServiceProvider();
-        DefaultHttpContext context = new()
-        {
-            RequestServices = provider,
-        };
-        context.Response.Body = new MemoryStream();
-        return context;
+        return services.BuildServiceProvider();
     }
 
     private static async Task AssertProblemDetailsAsync(
