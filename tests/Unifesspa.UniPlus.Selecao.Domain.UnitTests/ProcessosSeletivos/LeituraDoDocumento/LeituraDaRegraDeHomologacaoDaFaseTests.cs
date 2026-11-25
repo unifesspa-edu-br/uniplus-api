@@ -68,7 +68,7 @@ public sealed class LeituraDaRegraDeHomologacaoDaFaseTests
     [Theory(DisplayName = "O documento indica a posição e a propriedade recusada")]
     [InlineData("[[{\"fato\":\"X\",\"operador\":\"IGUAL\",\"valor\":true}]]", "/0/0/fato", "PredicadoDnf.FormaJsonInvalida", "chave 'fato' não é aceita; use 'codigoDoDado'")]
     [InlineData("[[]]", "/0", "PredicadoDnf.FormaJsonInvalida", "Cada cláusula é uma lista não vazia de condições.")]
-    [InlineData("[[null]]", "/0/0", "PredicadoDnf.FormaJsonInvalida", "Cada condição tem fato, operador e valor.")]
+    [InlineData("[[null]]", "/0/0", "PredicadoDnf.FormaJsonInvalida", "Cada condição tem codigoDoDado, operador e valor.")]
     [InlineData("[[{\"codigoDoDado\":\" \",\"operador\":\"IGUAL\",\"valor\":true}]]", "/0/0/codigoDoDado", "CondicaoDnf.FatoObrigatorio", "Informe o fato da condição.")]
     [InlineData("[[{\"codigoDoDado\":\"X\",\"operador\":\"IGUAL\",\"valor\":true}],[{\"codigoDoDado\":\"X\",\"operador\":\"IGUAL\",\"valor\":true},{\"codigoDoDado\":\"X\",\"operador\":\"INVALIDO\",\"valor\":true}]]", "/1/1/operador", "CondicaoDnf.OperadorInvalido", "O operador informado não é reconhecido.")]
     public void Enquadramento_Recusado_LocalizaNoDocumento(string json, string sufixo, string codigo, string mensagem)
