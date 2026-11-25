@@ -11,9 +11,11 @@ using Microsoft.EntityFrameworkCore.Storage;
 
 using Npgsql;
 
+using Unifesspa.UniPlus.Configuracao.Domain.Enums;
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Configuracao.IntegrationTests.Infrastructure;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 
 /// <summary>
 /// Integração ponta-a-ponta de <c>BaseLegalBonusRegional</c> contra Postgres real: prova, no
@@ -88,7 +90,9 @@ public sealed class BaseLegalBonusRegionalPersistenceTests
         ICheckConstraint restricao = ctx.GetService<IDesignTimeModel>().Model.FindEntityType(typeof(Domain.Entities.BaseLegalBonusRegional))!
             .GetCheckConstraints()
             .Single(static c => c.Name == "ck_bases_legais_do_fada_tipo_instrumento");
-        restricao.Sql.Should().Be("tipo_instrumento IN ('LEI','DECRETO','PORTARIA','RESOLUCAO','INSTRUCAO_NORMATIVA','PARECER','EDITAL')");
+        string[] esperados = [.. CatalogoDe<TipoInstrumentoNormativo>.Todos().Select(static declarado => declarado.Codigo)];
+        string[] encontrados = [.. restricao.Sql.Split('\'').Where(static (_, indice) => indice % 2 == 1)];
+        encontrados.Should().Equal(esperados);
     }
 
     [Fact(DisplayName = "O banco recusa tipo de instrumento fora dos códigos declarados")]
