@@ -141,7 +141,7 @@ internal static class ModelosDaSementePsrMedicina2027
                 [Condicao(SolicitaFator, Operador.Igual, true), Condicao(OrigemEscolar.FatoFormaDeConclusao, Operador.AlgumDe, ConclusoesPorCurso)],
                 [Condicao(SolicitaFator, Operador.Igual, true), Condicao(CaminhoFator, Operador.Igual, CaminhoPeloEnsinoMedio)])),
         Campo("MUNICIPIO_RESIDENCIA_FATOR_ATENUACAO", 106, Fator, "Em qual município da área de abrangência você residiu no período? Se foi em mais de um, informe aquele em que residiu mais tempo.", TipoRenderizacao.EscolhaUnica,
-            "Vale ter residido pelo menos um ano na área entre outubro de 2024 e outubro de 2026, conforme o edital.",
+            "Vale ter residido pelo menos um ano ininterrupto na área, no período de 20/11/2024 a 20/11/2026, conforme o edital.",
             exibicao: SeAlguma([Condicao(SolicitaFator, Operador.Igual, true), Condicao(CaminhoFator, Operador.Igual, CaminhoPelaResidencia)])),
     ];
 

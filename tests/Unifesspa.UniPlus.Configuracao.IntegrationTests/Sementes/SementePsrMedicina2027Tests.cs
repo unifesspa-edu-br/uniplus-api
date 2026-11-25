@@ -86,6 +86,35 @@ public sealed class SementePsrMedicina2027Tests
         (await LerEstadoAsync(ctx)).Should().Be(antes);
     }
 
+    [Fact(DisplayName = "Nos modelos de inscrição, a ajuda da residência para o Fator cita o período de 20/11/2024 a 20/11/2026 e a continuidade ininterrupta")]
+    public async Task ModelosDeInscricao_AjudaDaResidenciaParaOFator_InformaPeriodoEContinuidade()
+    {
+        await using UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null);
+        List<ModeloFormulario> modelos = await ModelosSemeadosAsync(ctx);
+        modelos.Should().HaveCount(3);
+        foreach (ModeloFormulario modelo in modelos.Where(static m => m.Codigo != SementePsrMedicina2027.ModeloDeHabilitacao))
+        {
+            string? ajuda = modelo.Conteudo.Itens.Single(static i => i.FatoCodigo == "MUNICIPIO_RESIDENCIA_FATOR_ATENUACAO").Apresentacao.Ajuda;
+            ajuda.Should().Contain("20/11/2024 a 20/11/2026").And.Contain("ininterrupto");
+        }
+    }
+
+    [Fact(DisplayName = "Nenhum texto dos modelos de inscrição e habilitação semeados cita outubro de 2024 ou outubro de 2026")]
+    public async Task ModelosDeInscricaoEHabilitacao_Textos_NaoCitamOutubroDe2024Ou2026()
+    {
+        await using UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null);
+        List<ModeloFormulario> modelos = await ModelosSemeadosAsync(ctx);
+        modelos.Should().HaveCount(3);
+        modelos.SelectMany(TextosDoModelo).Where(static t => t is not null)
+            .Should().OnlyContain(static t => !t!.Contains("outubro de 2024", StringComparison.Ordinal) && !t.Contains("outubro de 2026", StringComparison.Ordinal));
+    }
+
+    private static IEnumerable<string?> TextosDoModelo(ModeloFormulario modelo) =>
+        new[] { modelo.Nome, modelo.Descricao, modelo.Conteudo.Titulo }
+            .Concat(modelo.Conteudo.Etapas.SelectMany(static e => new[] { e.Titulo, e.Descricao, e.Aviso }))
+            .Concat(modelo.Conteudo.Grupos.Select(static g => g.Rotulo))
+            .Concat(modelo.Conteudo.Campos().SelectMany(static i => new[] { i.Apresentacao.Rotulo, i.Apresentacao.Ajuda }));
+
     [Fact(DisplayName = "O termo do Banco Central está só na habilitação, condicionado a CONCORRER_RENDA, e o Fator de Atenuação é pedido uma vez, com o município conforme a forma de conclusão do ensino médio")]
     public async Task Modelos_TermoDoBancoCentralNaHabilitacaoEFatorDeAtenuacaoNaInscricao()
     {

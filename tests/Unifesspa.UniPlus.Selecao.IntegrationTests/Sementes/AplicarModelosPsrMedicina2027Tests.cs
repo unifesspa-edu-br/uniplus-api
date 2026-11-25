@@ -81,11 +81,19 @@ public sealed class AplicarModelosPsrMedicina2027Tests
         processo.Campos.Select(static c => c.FatoCodigo).Should().Contain("TIPO_DEFICIENCIA");
     }
 
+    [Fact(DisplayName = "O formulário renderizado do processo sem prova traz a ajuda da residência do Fator com o período e a continuidade do edital")]
+    public async Task ModeloSemProva_FormularioRenderizado_TrazAjudaDaResidenciaDoFator() =>
+        await ComTiposDeDeficienciaSemeadosAsync(async (_, _) =>
+        {
+            ProcessoSeletivo processo = await AplicarInscricaoEHabilitacaoAsync(SementePsrMedicina2027.ModeloDeInscricaoSemProva, ofertarAtendimento: false);
+            JsonElement campo = await LerCampoDaInscricaoAsync(processo.Id, "MUNICIPIO_RESIDENCIA_FATOR_ATENUACAO");
+            campo.GetProperty("apresentacao").GetProperty("ajuda").GetString().Should()
+                .Be("Vale ter residido pelo menos um ano ininterrupto na área, no período de 20/11/2024 a 20/11/2026, conforme o edital.");
+        });
+
     [Fact(DisplayName = "No processo sem prova e sem atendimento especializado, o tipo de deficiência da inscrição oferece os tipos ativos do cadastro")]
-    public async Task ModeloSemProva_SemAtendimentoEspecializado_TipoDeficienciaOfereceOsTiposDoCadastro()
-    {
-        (TipoDeficiencia ativo, TipoDeficiencia removido) = await SemearUmTipoAtivoEUmRemovidoAsync();
-        try
+    public async Task ModeloSemProva_SemAtendimentoEspecializado_TipoDeficienciaOfereceOsTiposDoCadastro() =>
+        await ComTiposDeDeficienciaSemeadosAsync(async (ativo, removido) =>
         {
             ProcessoSeletivo processo = await AplicarInscricaoEHabilitacaoAsync(SementePsrMedicina2027.ModeloDeInscricaoSemProva, ofertarAtendimento: false);
             processo.AtendimentoEspecializado.Should().BeNull();
@@ -93,6 +101,14 @@ public sealed class AplicarModelosPsrMedicina2027Tests
             string[] opcoes = await ListarOpcoesDoTipoDeficienciaDaInscricaoAsync(processo.Id);
             opcoes.Should().Equal(tiposAtivos);
             opcoes.Should().Contain(ativo.Codigo.Valor).And.NotContain(removido.Codigo.Valor);
+        });
+
+    private async Task ComTiposDeDeficienciaSemeadosAsync(Func<TipoDeficiencia, TipoDeficiencia, Task> conferencia)
+    {
+        (TipoDeficiencia ativo, TipoDeficiencia removido) = await SemearUmTipoAtivoEUmRemovidoAsync();
+        try
+        {
+            await conferencia(ativo, removido);
         }
         finally
         {
@@ -148,6 +164,12 @@ public sealed class AplicarModelosPsrMedicina2027Tests
 
     private async Task<string[]> ListarOpcoesDoTipoDeficienciaDaInscricaoAsync(Guid processoId)
     {
+        JsonElement campo = await LerCampoDaInscricaoAsync(processoId, "TIPO_DEFICIENCIA");
+        return [.. campo.GetProperty("valoresSelecionaveis").EnumerateArray().Select(static v => v.GetProperty("codigo").GetString()!)];
+    }
+
+    private async Task<JsonElement> LerCampoDaInscricaoAsync(Guid processoId, string fatoCodigo)
+    {
         using HttpClient client = _fixture.Factory.CreateClient();
         using HttpRequestMessage request = new(
             HttpMethod.Get, new Uri($"/api/selecao/admin/processos-seletivos/{processoId}/formularios/INSCRICAO/renderizavel", UriKind.Relative));
@@ -155,10 +177,9 @@ public sealed class AplicarModelosPsrMedicina2027Tests
         HttpResponseMessage resposta = await client.SendAsync(request);
         resposta.StatusCode.Should().Be(HttpStatusCode.OK, await resposta.Content.ReadAsStringAsync());
 
-        JsonElement campo = (await resposta.Content.ReadFromJsonAsync<JsonElement>())
+        return (await resposta.Content.ReadFromJsonAsync<JsonElement>())
             .GetProperty("formulario").GetProperty("coleta").GetProperty("itens").EnumerateArray()
-            .Single(static c => c.GetProperty("fatoCodigo").GetString() == "TIPO_DEFICIENCIA");
-        return [.. campo.GetProperty("valoresSelecionaveis").EnumerateArray().Select(static v => v.GetProperty("codigo").GetString()!)];
+            .Single(c => c.GetProperty("fatoCodigo").GetString() == fatoCodigo);
     }
 
     private async Task ApagarTiposDeDeficienciaAsync(Guid ativoId, Guid removidoId)
