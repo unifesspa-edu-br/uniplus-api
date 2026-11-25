@@ -5,8 +5,8 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 using Unifesspa.UniPlus.Configuracao.Application.Persistence;
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence.CodigosDeContrato;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Protecao;
-using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Regras.Enums;
 
@@ -86,15 +86,12 @@ internal sealed class TipoBancaConfiguration : IEntityTypeConfiguration<TipoBanc
         // Domínio fechado do vocabulário de tipos de banca (defesa em profundidade).
         table.HasCheckConstraint(
             "ck_tipos_de_banca_codigo_canonico",
-            $"codigo IN ({TokensSql(CatalogoDe<TipoDeBanca>.Todos())})");
+            $"codigo IN ({SqlDosCodigosDeContrato.Lista<TipoDeBanca>()})");
         table.HasCheckConstraint(
             "ck_tipos_de_banca_papel",
-            $"papel IN ({TokensSql(CatalogoDe<PapelDaBanca>.Todos())})");
+            $"papel IN ({SqlDosCodigosDeContrato.Lista<PapelDaBanca>()})");
         table.HasCheckConstraint(
             "ck_tipos_de_banca_decisoes",
-            $"tipos_de_decisao_julgados <@ ARRAY[{TokensSql(CatalogoDe<TipoMotivoDeDecisao>.Todos())}]::text[]");
+            $"tipos_de_decisao_julgados <@ ARRAY[{SqlDosCodigosDeContrato.Lista<TipoMotivoDeDecisao>()}]::text[]");
     }
-
-    private static string TokensSql(IReadOnlyList<CodigoDeclarado> codigos) =>
-        string.Join(", ", codigos.Select(declarado => $"'{declarado.Codigo}'"));
 }

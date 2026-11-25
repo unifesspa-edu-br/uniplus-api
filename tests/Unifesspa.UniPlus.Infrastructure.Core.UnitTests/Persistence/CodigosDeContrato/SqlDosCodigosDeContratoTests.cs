@@ -15,6 +15,10 @@ public sealed class SqlDosCodigosDeContratoTests
     public void Lista_EnumDeclaradoForaDeOrdem_SegueAOrdemDeDeclaracao() =>
         SqlDosCodigosDeContrato.Lista<CodigoForaDeOrdem>().Should().Be("'ORDEM_Z', 'D_AGUA', 'ORDEM_A'");
 
+    [Fact]
+    public void Lista_CodigosEmTexto_EscapaAspasEMantemOrdem() =>
+        SqlDosCodigosDeContrato.Lista(["B", "D'AGUA"]).Should().Be("'B', 'D''AGUA'");
+
     [Fact(DisplayName = "O literal escreve o código do valor entre aspas simples")]
     public void Literal_ValorComCodigo_EscreveOCodigoEntreAspas() =>
         SqlDosCodigosDeContrato.Literal(FormatoDeAula.Remoto).Should().Be("'A_DISTANCIA'");

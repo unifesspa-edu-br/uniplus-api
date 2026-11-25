@@ -16,7 +16,10 @@ public static class SqlDosCodigosDeContrato
     /// <exception cref="CodigosDeContratoInvalidosException">O enum é inválido.</exception>
     public static string Lista<TEnum>()
         where TEnum : struct, Enum =>
-        string.Join(", ", CatalogoDe<TEnum>.Todos().Select(static declarado => Literal(declarado.Codigo)));
+        Lista(CatalogoDe<TEnum>.Todos().Select(static declarado => declarado.Codigo));
+
+    /// <summary>Os códigos informados como literais SQL, na ordem recebida.</summary>
+    public static string Lista(IEnumerable<string> codigos) => string.Join(", ", codigos.Select(Literal));
 
     /// <summary>O código do valor como literal de texto SQL (<c>'A'</c>), com a aspa simples dobrada.</summary>
     /// <typeparam name="TEnum">Enum cujos membros declaram o código.</typeparam>
