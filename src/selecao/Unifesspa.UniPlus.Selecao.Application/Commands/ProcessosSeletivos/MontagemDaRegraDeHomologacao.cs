@@ -18,6 +18,8 @@ using Unifesspa.UniPlus.Regras.ValueObjects;
 internal sealed class MontagemDaRegraDeHomologacao(
     LeituraMemoizada<ProcessoSeletivo, ContextoDoCatalogo> catalogos, ProcessoSeletivo processo)
 {
+    private const string CondicaoNaoConferida = "Não foi possível conferir a condição informada.";
+
     /// <summary>
     /// A regra da fase com as alternativas que passaram, e as recusas das demais; a fase que não a declara não homologa,
     /// e a regra é nula. A regra montada com recusas serve só para o domínio julgar o resto dela, como o resultado
@@ -112,13 +114,8 @@ internal sealed class MontagemDaRegraDeHomologacao(
     private static string MensagemDaRecusa(string codigo, TipoDeValorEsperado? tipoEsperado) => codigo.StartsWith("CondicaoDnf.", StringComparison.Ordinal)
         ? MensagemDaForma(codigo) : codigo == "PredicadoDnf.ValorIncompativelComTipo" ? MensagemDoTipo(tipoEsperado) : MensagemDoCatalogo(codigo);
 
-    private static string MensagemDaForma(string codigo) => codigo switch
-    {
-        "CondicaoDnf.FatoObrigatorio" => "Informe o fato da condição.",
-        "CondicaoDnf.OperadorInvalido" => "O operador informado não é reconhecido.",
-        "CondicaoDnf.FormaIncoerenteComOperador" => "O formato do valor não corresponde ao operador informado.",
-        _ => "Não foi possível conferir a condição informada.",
-    };
+    internal static string MensagemDaForma(string codigo) =>
+        MensagensDoEnquadramento.DoDefeitoDeForma(codigo) ?? CondicaoNaoConferida;
 
     private static string MensagemDoTipo(TipoDeValorEsperado? tipo) => tipo switch
     {
@@ -138,7 +135,7 @@ internal sealed class MontagemDaRegraDeHomologacao(
         "PredicadoDnf.OperadorIncompativelComDominio" => "O operador não é compatível com o fato informado.",
         "PredicadoDnf.ValorForaDoDominio" => "O valor informado não está entre os valores permitidos para o fato.",
         "PredicadoDnf.ValorIncompativelComTipo" => "O valor informado não tem o tipo esperado para o fato.",
-        _ => "Não foi possível conferir a condição informada.",
+        _ => CondicaoNaoConferida,
     };
 
     // A recusa do domínio fala o campo dentro do que ela declarou; a montagem o localiza no corpo do pedido.
