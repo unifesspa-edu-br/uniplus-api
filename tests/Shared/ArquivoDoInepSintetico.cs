@@ -34,14 +34,11 @@ internal static class ArquivoDoInepSintetico
                 nome ?? pessoa.Nome,
                 .. notas ?? NotasPadrao,
                 .. situacoes ?? SituacoesPadrao,
-                pessoa.DataDeNascimento,
-                pessoa.Sexo[..1],
-                pessoa.Uf,
-                pessoa.Cidade,
-                "N",
-                "Inglês",
-                string.Empty,
+                .. ColunasCadastrais(pessoa),
             ]);
+
+    private static string[] ColunasCadastrais(PersonasDeTeste.PessoaFicticia pessoa) =>
+        [pessoa.DataDeNascimento, pessoa.Sexo[..1], pessoa.Uf, pessoa.Cidade, "N", "Inglês", string.Empty];
 
     /// <summary>O leiaute anterior, com três campos a mais: não pode ser lido com o de 20.</summary>
     public static string LinhaDe23Campos(PersonasDeTeste.PessoaFicticia pessoa, int ordem) =>

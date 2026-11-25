@@ -54,13 +54,15 @@ public sealed class FakeConferenciaEnderecoGeo : IConferenciaEnderecoGeo
                 ConferenciaEnderecoGeoErrorCodes.CepNaoResolve, "CEP sem cobertura (dublê de teste).")));
         }
 
-        bool bate = string.Equals(resolvido.CodigoIbge, cidadeCodigoIbgeDeclarada, StringComparison.Ordinal)
-            && string.Equals(resolvido.Uf, ufDeclarada, StringComparison.OrdinalIgnoreCase);
-
-        return Task.FromResult(bate
-            ? Result<string>.Success(resolvido.Cidade)
-            : Result<string>.Failure(new DomainError(ConferenciaEnderecoGeoErrorCodes.CidadeDivergente, "Cidade divergente (dublê de teste).")));
+        return Task.FromResult(ConferirCepResolvido(resolvido, cidadeCodigoIbgeDeclarada, ufDeclarada));
     }
+
+    private static Result<string> ConferirCepResolvido(
+        (string CodigoIbge, string Cidade, string Uf, string Origem) resolvido, string cidadeCodigoIbgeDeclarada, string ufDeclarada) =>
+        string.Equals(resolvido.CodigoIbge, cidadeCodigoIbgeDeclarada, StringComparison.Ordinal)
+            && string.Equals(resolvido.Uf, ufDeclarada, StringComparison.OrdinalIgnoreCase)
+            ? Result<string>.Success(resolvido.Cidade)
+            : Result<string>.Failure(new DomainError(ConferenciaEnderecoGeoErrorCodes.CidadeDivergente, "Cidade divergente (dublê de teste)."));
 
     public Task<Result<CepResolvido>> ResolverCepAsync(string cep, CancellationToken cancellationToken = default)
     {
@@ -91,8 +93,11 @@ public sealed class FakeConferenciaEnderecoGeo : IConferenciaEnderecoGeo
                 ConferenciaEnderecoGeoErrorCodes.MunicipioNaoEncontrado, "Município inexistente (dublê de teste).")));
         }
 
-        return Task.FromResult(string.Equals(municipio.Uf, ufDeclarada, StringComparison.OrdinalIgnoreCase)
-            ? Result<string>.Success(municipio.Nome)
-            : Result<string>.Failure(new DomainError(ConferenciaEnderecoGeoErrorCodes.MunicipioDivergente, "Município fora da UF declarada (dublê de teste).")));
+        return Task.FromResult(ConferirMunicipioResolvido(municipio, ufDeclarada));
     }
+
+    private static Result<string> ConferirMunicipioResolvido((string Nome, string Uf) municipio, string ufDeclarada) =>
+        string.Equals(municipio.Uf, ufDeclarada, StringComparison.OrdinalIgnoreCase)
+            ? Result<string>.Success(municipio.Nome)
+            : Result<string>.Failure(new DomainError(ConferenciaEnderecoGeoErrorCodes.MunicipioDivergente, "Município fora da UF declarada (dublê de teste)."));
 }
