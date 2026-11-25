@@ -298,7 +298,7 @@ main() {
     definir_distribuicao_vagas
     definir_opcoes_de_curso
     definir_cascata_remanejamento
-    definir_bonus_regional
+    definir_fada
     definir_criterios_desempate
     definir_classificacao
     definir_edicoes_enem
