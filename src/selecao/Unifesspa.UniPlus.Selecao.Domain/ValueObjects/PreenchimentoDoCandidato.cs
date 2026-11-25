@@ -88,7 +88,7 @@ public sealed class PreenchimentoDoCandidato : IEquatable<PreenchimentoDoCandida
 
     public PreenchimentoDoCandidato ComAceitesAdmitidos(RespostasAdmitidas admitidas) =>
         ComAceites([.. Aceites.Where(a => admitidas.Termos.TryGetValue(a.Codigo, out TermoAdmitido? termo)
-            && a.VersaoId == termo.VersaoId && string.Equals(a.HashVersao, termo.HashVersao, StringComparison.Ordinal))]);
+            && a.ValeParaAVersao(termo))]);
 
     public bool Equals(PreenchimentoDoCandidato? outro) => outro is not null && Opcoes == outro.Opcoes
         && RespostasIguais(Respostas, outro.Respostas) && GruposIguais(outro.Grupos) && Aceites.SequenceEqual(outro.Aceites);
@@ -276,8 +276,7 @@ public sealed class PreenchimentoDoCandidato : IEquatable<PreenchimentoDoCandida
             $"O termo '{aceite.Codigo}' foi aceito mais de uma vez. Envie um único aceite para cada termo."));
         if (!termos.TryGetValue(aceite.Codigo, out TermoAdmitido? termo)) return new FieldError(campo, new DomainError(InscricaoErrorCodes.AceiteForaDoFormulario,
             $"O termo '{aceite.Codigo}' não faz parte do formulário. Recarregue a página e aceite os termos exibidos."));
-        return aceite.VersaoId != termo.VersaoId || !string.Equals(aceite.HashVersao, termo.HashVersao, StringComparison.Ordinal)
-            ? new FieldError(campo, new DomainError(InscricaoErrorCodes.AceiteDeOutraVersao,
-                $"O aceite do termo '{aceite.Codigo}' não é da versão que o formulário apresenta. Recarregue a página e aceite o termo exibido.")) : null;
+        return aceite.ValeParaAVersao(termo) ? null : new FieldError(campo, new DomainError(InscricaoErrorCodes.AceiteDeOutraVersao,
+            $"O aceite do termo '{aceite.Codigo}' não é da versão que o formulário apresenta. Recarregue a página e aceite o termo exibido."));
     }
 }
