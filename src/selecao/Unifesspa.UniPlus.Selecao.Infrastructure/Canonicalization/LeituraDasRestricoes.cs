@@ -117,7 +117,7 @@ internal static class LeituraDasRestricoes
     {
         if (limite is { IsFailure: true })
         {
-            causas.AddRange(limite.Errors.Select(causa => (causa with { Field = causa.Field ?? string.Empty }).NoCaminhoDe(caminho)));
+            causas.AddRange(limite.Errors.Select(causa => causa.NoCaminhoDoItem(caminho)));
         }
     }
 

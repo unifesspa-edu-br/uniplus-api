@@ -26,6 +26,10 @@ public sealed record IdentificadorDoItem(string Lista, string Identificador);
 public sealed record FieldError(
     string? Field, DomainError Error, string? Origem = null, IReadOnlyList<IdentificadorDoItem>? Identificadores = null)
 {
+    /// <summary>A causa no caminho do item: sem campo, aponta o próprio item; caminho vazio aponta a raiz.</summary>
+    public FieldError NoCaminhoDoItem(string caminhoDoItem) =>
+        (this with { Field = Field ?? string.Empty }).NoCaminhoDe(caminhoDoItem);
+
     /// <summary>
     /// A causa dentro de um contêiner. A causa sem campo (<see langword="null"/>) continua sem campo; a raiz
     /// relativa (<c>""</c>) passa a ser o caminho do contêiner; um campo interno vira filho dele, com índices

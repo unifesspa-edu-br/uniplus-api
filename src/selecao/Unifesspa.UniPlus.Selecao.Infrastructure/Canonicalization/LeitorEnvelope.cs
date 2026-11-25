@@ -246,7 +246,7 @@ internal sealed class LeitorEnvelope
     {
         if (!Falhou)
         {
-            _erros = [.. causas.Select(causa => (causa with { Field = causa.Field ?? string.Empty }).NoCaminhoDe(caminhoDoItem))];
+            _erros = [.. causas.Select(causa => causa.NoCaminhoDoItem(caminhoDoItem))];
             _erro = _erros[0].Error;
         }
 

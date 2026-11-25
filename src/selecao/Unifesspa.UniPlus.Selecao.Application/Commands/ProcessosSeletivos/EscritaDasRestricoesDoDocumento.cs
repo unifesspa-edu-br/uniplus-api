@@ -23,8 +23,8 @@ internal sealed record EscritaDasRestricoesDoDocumento(
         Result<FormatosPermitidos> formatos = EscritaDosFormatosPermitidos.Resolver(documento.FormatosPermitidos());
         Result<ModeloDaExigencia?> modelo = ModeloDaRegra(documento.ModeloId(), modelosDoProcesso);
         List<FieldError> recusa = [.. prazo.Errors, .. validade.Errors,
-            .. formatos.Errors.Select(erro => (erro with { Field = erro.Field ?? "" }).NoCaminhoDe("requisitos.formatosPermitidos")),
-            .. modelo.Errors.Select(erro => (erro with { Field = erro.Field ?? "" }).NoCaminhoDe("requisitos.modelo.modeloId"))];
+            .. formatos.Errors.Select(erro => erro.NoCaminhoDoItem("requisitos.formatosPermitidos")),
+            .. modelo.Errors.Select(erro => erro.NoCaminhoDoItem("requisitos.modelo.modeloId"))];
         return recusa.Count > 0
             ? Result<EscritaDasRestricoesDoDocumento>.ValidationFailure(recusa)
             : Result<EscritaDasRestricoesDoDocumento>.Success(new EscritaDasRestricoesDoDocumento(prazo.Value, validade.Value, formatos.Value!, modelo.Value));

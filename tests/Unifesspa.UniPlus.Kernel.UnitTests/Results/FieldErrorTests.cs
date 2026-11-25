@@ -8,6 +8,24 @@ public sealed class FieldErrorTests
 {
     private static readonly DomainError Erro = new("Item.Invalido", "O item é inválido.");
 
+    [Theory(DisplayName = "A causa aponta o campo dentro do item")]
+    [InlineData(null, "itens[0]", "itens[0]")]
+    [InlineData("", "itens[0]", "itens[0]")]
+    [InlineData("rotulo", "itens[0]", "itens[0].rotulo")]
+    [InlineData("[0].valor", "itens[0]", "itens[0][0].valor")]
+    [InlineData(null, "", "")]
+    [InlineData("rotulo", "", "rotulo")]
+    public void NoCaminhoDoItem_CamposECaminhos_ApontaOCampoEsperado(string? campo, string caminho, string esperado)
+    {
+        FieldError causa = new(campo, Erro, "FATO");
+
+        FieldError resultado = causa.NoCaminhoDoItem(caminho);
+
+        resultado.Field.Should().Be(esperado);
+        resultado.Error.Should().Be(Erro);
+        resultado.Origem.Should().Be("FATO");
+    }
+
     [Fact(DisplayName = "A causa sem campo continua sem campo dentro do contêiner")]
     public void NoCaminhoDe_CausaSemCampo_ContinuaSemCampo() =>
         new FieldError(null, Erro).NoCaminhoDe("itens[0]").Field.Should().BeNull();

@@ -76,5 +76,5 @@ internal static class LeituraDaRegraDeRecursoDaFase
         new(parte, campo, fase.PosicaoNoDocumento, null, erro);
 
     private static RecusaDaParte Recusa(FaseNoDocumento fase, string parte, FieldError erro) =>
-        Recusa(fase, parte, erro.NoCaminhoDe(parte).Field ?? parte, erro.Error);
+        Recusa(fase, parte, erro.NoCaminhoDoItem(parte).Field ?? parte, erro.Error);
 }

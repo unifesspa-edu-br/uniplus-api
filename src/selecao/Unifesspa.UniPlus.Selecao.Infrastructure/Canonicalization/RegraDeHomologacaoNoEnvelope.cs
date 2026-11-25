@@ -159,7 +159,7 @@ internal static class RegraDeHomologacaoNoEnvelope
     }
 
     private static FieldError NoEnquadramento(FieldError causa) =>
-        (causa with { Field = causa.Field ?? string.Empty }).NoCaminhoDe(ChaveDoEnquadramento);
+        causa.NoCaminhoDoItem(ChaveDoEnquadramento);
 
     private static string? TextoNuloOuNaoVazio(LeitorEnvelope leitor, JsonObject objeto, string chave, string path) =>
         !leitor.Falhou && objeto[chave] is not null ? leitor.TextoNaoVazio(objeto, chave, path) : null;
