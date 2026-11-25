@@ -110,7 +110,7 @@ public sealed class OfertaCursoCriacaoEndpointTests
     [Theory(DisplayName = "POST com código fora do formato devolve 422 em erro do campo codigo")]
     [InlineData("enf_maraba")]
     [InlineData("1ENF")]
-    [InlineData("E")]
+    [InlineData("E_")]
     [InlineData("ENF-MARABA")]
     public async Task Criar_CodigoForaDoFormato_Devolve422(string codigo)
     {

@@ -41,6 +41,15 @@ public sealed class CodigoTermoConsentimentoTests
         resultado.Error!.Code.Should().Be(TermoConsentimentoErrorCodes.CodigoFormatoInvalido);
     }
 
+    [Fact]
+    public void Gerar_NomeComecaPorDigito_ExplicaOFormatoSemRepetirONome()
+    {
+        Result<CodigoTermoConsentimento> resultado = CodigoTermoConsentimento.Gerar("123 Termo");
+
+        resultado.Error!.Message.Should().EndWith("o nome precisa começar por uma letra.");
+        resultado.Error.Message.Should().NotContain("123 Termo");
+    }
+
     [Fact(DisplayName = "Nome que forma código acima de 80 caracteres é recusado")]
     public void Gerar_AcimaDoLimite_Recusa()
     {

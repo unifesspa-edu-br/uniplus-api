@@ -6,11 +6,11 @@ using Unifesspa.UniPlus.Kernel.Results;
 
 /// <summary>
 /// Código do tipo de documento (UNI-REQ-0013, módulo Configuração) — chave
-/// natural classificatória (ex.: <c>RG</c>, <c>LAUDO_MEDICO</c>,
-/// <c>DECLARACAO_IRPF_2025</c>). Value object com formato fechado:
-/// <c>^[A-Z][A-Z0-9]*(_[A-Z0-9]+)*$</c> — inicia com letra maiúscula, segue com letras
+/// natural classificatória (por exemplo: <c>RG</c>, <c>LAUDO_MEDICO</c>,
+/// <c>DECLARACAO_IRPF_2025</c>). Código no formato de:
+/// <see cref="FormatoDoCodigo"/> — inicia com letra maiúscula, segue com letras
 /// maiúsculas, dígitos e sublinhado, total de no máximo 50 caracteres. Persistido como
-/// <c>varchar</c> via conversor de valor (fail-fast na reidratação).
+/// <c>varchar</c> via conversor de valor (falha imediata na reidratação).
 /// </summary>
 /// <remarks>
 /// <para>O dígito vale em qualquer posição <b>menos a primeira</b>. É essa
@@ -23,7 +23,7 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// valor no consumidor (ADR-0061), de modo que corrigir o cadastro depois não
 /// corrige o edital já publicado.</para>
 /// <para>O código continua <b>editável</b> no cadastro, ao contrário do da
-/// Modalidade: é justamente o congelamento por snapshot-copy que torna a edição
+/// Modalidade: é justamente o congelamento por cópia congelada que torna a edição
 /// inofensiva para quem já consumiu.</para>
 /// </remarks>
 public sealed record CodigoTipoDocumento
@@ -57,7 +57,7 @@ public sealed record CodigoTipoDocumento
                 + "caracteres (ex.: RG, LAUDO_MEDICO, DECLARACAO_IRPF_2025)."));
     }
 
-    /// <summary>Indica se <paramref name="valor"/> respeita o formato fechado, sem alocar o value object.</summary>
+    /// <summary>Indica se <paramref name="valor"/> respeita o formato fechado, sem criar o objeto.</summary>
     public static bool EhValido(string? valor) =>
         valor is not null && valor.Length <= TamanhoMaximo && FormatoDoCodigo.TemFormatoValido(valor);
 

@@ -4,8 +4,8 @@ using Enums;
 
 using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Domain.Entities;
+using Unifesspa.UniPlus.Kernel.Domain.ValueObjects;
 using Unifesspa.UniPlus.Kernel.Results;
-using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 /// <summary>
@@ -31,6 +31,8 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 /// </remarks>
 public sealed class ConfiguracaoBonusRegional : EntityBase, IParteDoProcesso
 {
+    public const int FatoElegibilidadeCodigoMaxLength = 50;
+
     private const int FatorPrecisao = 6;
     private const int FatorEscala = 4;
     private const int TetoPrecisao = 6;
@@ -119,10 +121,10 @@ public sealed class ConfiguracaoBonusRegional : EntityBase, IParteDoProcesso
             : null;
 
     private static FieldError? RecusaDoFato(string? fatoElegibilidade) =>
-        fatoElegibilidade is not null && string.IsNullOrWhiteSpace(fatoElegibilidade) || fatoElegibilidade?.Length > FormaDoItem.FatoCodigoMaxLength
+        fatoElegibilidade is not null && (fatoElegibilidade.Length > FatoElegibilidadeCodigoMaxLength || !FormatoDoCodigo.TemFormatoValido(fatoElegibilidade))
             ? new("fatoElegibilidadeCodigo", new DomainError(
                 "ConfiguracaoBonusRegional.FatoElegibilidadeInvalido",
-                $"O código do fato que decide quem recebe o acréscimo, quando citado, tem de 1 a {FormaDoItem.FatoCodigoMaxLength} caracteres."))
+                $"O código do fato que decide quem recebe o acréscimo deve começar com letra maiúscula, conter apenas letras maiúsculas, dígitos ou sublinhados separados e ter até {FatoElegibilidadeCodigoMaxLength} caracteres."))
             : null;
 
     // Defesa em profundidade: o handler já resolve os municípios a partir de um BaseLegalBonusRegionalView não-vazio, mas o

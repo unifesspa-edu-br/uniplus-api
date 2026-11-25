@@ -138,14 +138,16 @@ public sealed class FatoDeElegibilidadeDoAcrescimoTests
     [Theory]
     [InlineData(" PEDE_O_ACRESCIMO ")]
     [InlineData("pede_o_acrescimo")]
-    public void FatoDeElegibilidade_Inexato_Recusa(string codigo)
+    public void Criar_FatoDeElegibilidadeInexato_Recusa(string codigo)
     {
-        ProcessoSeletivo processo = Processo();
-        Aplicar(processo, codigo);
+        ReferenciaRegra regra = ReferenciaRegra.De(RegraDeBonus.Multiplicativo.Codigo(), "v1", new string('a', 64));
+        BaseLegalCongelada baseLegal = new(Guid.NewGuid(), "PORTARIA_UNIFESSPA_NO_2514_2023", "EDITAL", "Edital nº 1/2026", "Fator de Atenuação das Desigualdades de Acesso", [("1504208", "Marabá", "PA")]);
+        Result<ConfiguracaoBonusRegional> resultado = ConfiguracaoBonusRegional.Criar(regra, 1.20m, null, codigo, baseLegal);
 
-        DomainError recusa = RegrasDosFatos.ConferirFatoDeElegibilidade(processo.Declaracao(), SemCatalogo, SemCatalogo)!;
-        recusa.Code.Should().Be(ProcessoSeletivoErrorCodes.FatoElegibilidadeForaDoProcesso);
-        recusa.Message.Should().NotContain(codigo);
+        resultado.IsFailure.Should().BeTrue();
+        FieldError recusa = resultado.Errors.Should().ContainSingle().Which;
+        recusa.Error.Code.Should().Be("ConfiguracaoBonusRegional.FatoElegibilidadeInvalido");
+        recusa.Error.Message.Should().NotContain(codigo);
     }
 
     [Fact(DisplayName = "O campo de membro de grupo não decide o acréscimo, que é decidido por um fato do candidato")]

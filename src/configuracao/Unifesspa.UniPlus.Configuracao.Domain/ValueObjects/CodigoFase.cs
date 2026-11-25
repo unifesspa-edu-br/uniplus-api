@@ -6,16 +6,16 @@ using Unifesspa.UniPlus.Kernel.Results;
 
 /// <summary>
 /// Código de uma <see cref="Entities.FaseCanonica"/> (UNI-REQ-0064, módulo
-/// Configuração) — chave natural do vocabulário de cronograma (ex.: <c>INSCRICAO</c>,
-/// <c>AVALIACAO</c>, <c>CLASSIFICACAO</c>). Value object com formato fechado:
-/// <c>^[A-Z][A-Z0-9]*(_[A-Z0-9]+)*$</c> — letra maiúscula inicial, seguida de letras
+/// Configuração) — chave natural do vocabulário de cronograma (por exemplo: <c>INSCRICAO</c>,
+/// <c>AVALIACAO</c>, <c>CLASSIFICACAO</c>). Código no formato de:
+/// <see cref="FormatoDoCodigo"/> — letra maiúscula inicial, seguida de letras
 /// maiúsculas ou dígitos e sublinhados isolados. Persistido como <c>varchar</c>
-/// via conversor de valor (fail-fast na reidratação).
+/// via conversor de valor (falha imediata na reidratação).
 /// </summary>
 /// <remarks>
-/// O value object valida apenas o <b>formato</b>. A pertença ao conjunto canônico
-/// fechado de fases é guarda de domínio da entidade (factory
-/// <c>FaseCanonica.Criar</c>), não do value object — o mesmo código bem-formado
+/// O código valida apenas o <b>formato</b>. A pertença ao conjunto canônico
+/// fechado de fases é guarda de domínio da entidade (fábrica
+/// <c>FaseCanonica.Criar</c>), não do código — o mesmo código bem-formado
 /// pode ou não ser canônico. O código é <b>imutável</b>: o comando de atualização
 /// não o aceita como campo editável (vocabulário canônico fixo).
 /// </remarks>
@@ -49,7 +49,7 @@ public sealed record CodigoFase
             : Result<CodigoFase>.Success(new CodigoFase(valor!));
     }
 
-    /// <summary>Indica se <paramref name="valor"/> respeita o formato fechado, sem alocar value object.</summary>
+    /// <summary>Indica se <paramref name="valor"/> respeita o formato fechado, sem criar o objeto.</summary>
     public static bool EhValido(string? valor) =>
         valor is not null && valor.Length <= TamanhoMaximo && FormatoDoCodigo.TemFormatoValido(valor);
 

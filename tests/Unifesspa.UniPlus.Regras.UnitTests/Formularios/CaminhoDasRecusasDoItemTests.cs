@@ -52,6 +52,16 @@ public sealed class CaminhoDasRecusasDoItemTests
         erros.Select(static e => e.Field).Should().Equal("regras.restricoes[0]", "regras.impedimento");
     }
 
+    [Fact]
+    public void ValidarFormaBasica_CodigoComEspacosAcimaDoLimite_RecusaTamanho()
+    {
+        List<FieldError> erros = FormaDoItem.ValidarFormaBasica(
+            " AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA ", 0, "Campo");
+
+        erros.Select(static e => (e.Field, e.Error.Code)).Should().ContainSingle()
+            .Which.Should().Be(("fatoCodigo", ItemFormularioErrorCodes.FatoCodigoTamanho));
+    }
+
     private static PredicadoDnf Citando(string fato) =>
         PredicadoDnf.CriarDeCondicoesAgrupadas(
             [(0, CondicaoDnf.Criar(fato, Operador.Igual, JsonSerializer.SerializeToElement(true)).Value!)]).Value!;

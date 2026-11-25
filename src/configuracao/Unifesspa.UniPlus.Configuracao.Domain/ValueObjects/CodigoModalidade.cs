@@ -9,10 +9,10 @@ using Unifesspa.UniPlus.Regras.Services;
 
 /// <summary>
 /// Código de uma <see cref="Entities.Modalidade"/> de concorrência (UNI-REQ-0011,
-/// módulo Configuração) — chave natural classificatória (ex.: <c>AC</c>,
-/// <c>LB_PPI</c>, <c>LI_Q</c>). Value object com formato fechado:
-/// <c>^[A-Z][A-Z0-9]*(_[A-Z0-9]+)*$</c> — apenas letras maiúsculas, dígitos e sublinhado (sem
-/// hífen). Persistido como <c>varchar</c> via conversor de valor (fail-fast na
+/// módulo Configuração) — chave natural classificatória (por exemplo: <c>AC</c>,
+/// <c>LB_PPI</c>, <c>LI_Q</c>). Código no formato de:
+/// <see cref="FormatoDoCodigo"/> — apenas letras maiúsculas, dígitos e sublinhado (sem
+/// hífen). Persistido como <c>varchar</c> via conversor de valor (falha imediata na
 /// reidratação).
 /// </summary>
 /// <remarks>
@@ -101,7 +101,7 @@ public sealed record CodigoModalidade
 
     /// <summary>
     /// Indica se <paramref name="valor"/> é um código do catálogo legal fixo, sem alocar
-    /// value object. Compara o texto como recebido.
+    /// código. Compara o texto como recebido.
     /// </summary>
     public static bool EhCodigoLegalFixo(string? valor) =>
         !string.IsNullOrWhiteSpace(valor) && CodigosLegaisFixos.Contains(valor);
@@ -128,7 +128,7 @@ public sealed record CodigoModalidade
                 + $"(sem hífen), com no máximo {TamanhoMaximo} caracteres (ex.: AC, LB_PPI, LI_Q)."));
     }
 
-    /// <summary>Indica se <paramref name="valor"/> respeita o formato fechado, sem alocar value object.</summary>
+    /// <summary>Indica se <paramref name="valor"/> respeita o formato fechado, sem criar o objeto.</summary>
     public static bool EhValido(string? valor) =>
         valor is not null && valor.Length <= TamanhoMaximo && FormatoDoCodigo.TemFormatoValido(valor);
 

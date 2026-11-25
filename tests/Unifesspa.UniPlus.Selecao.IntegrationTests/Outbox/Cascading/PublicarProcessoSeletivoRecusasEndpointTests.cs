@@ -87,7 +87,7 @@ public sealed class PublicarProcessoSeletivoRecusasEndpointTests
     {
         await TiposDeAtoSeeder.SemearAsync(_fixture.Factory.Services);
         await TiposDeEtapaSeeder.SemearAsync(_fixture.Factory.Services, ObrigatoriedadeLegalNaoAtendidaSeeder.TipoEtapaNaoOfertada);
-        return await ObrigatoriedadeLegalNaoAtendidaSeeder.SemearAsync(db, $"TEST_GATE_{Guid.CreateVersion7():N}");
+        return await ObrigatoriedadeLegalNaoAtendidaSeeder.SemearAsync(db, $"TEST_GATE_{Guid.CreateVersion7():N}".ToUpperInvariant());
     }
 
     private static async Task<HttpResponseMessage> PublicarProcessoPublicavelAsync(HttpClient client, UniPlusDbContext db)

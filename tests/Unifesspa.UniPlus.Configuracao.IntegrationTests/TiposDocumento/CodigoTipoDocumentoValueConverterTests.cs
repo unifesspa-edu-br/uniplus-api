@@ -42,7 +42,7 @@ public sealed class CodigoTipoDocumentoValueConverterTests
     [InlineData("01")]
     [InlineData("laudo_medico")]
     [InlineData("LAUDO-MEDICO")]
-    [InlineData("L")]
+    [InlineData("L_")]
     public void Reidratar_ValorForaDoFormato_Lanca(string corrompido)
     {
         Action act = () => ConverterDeProvider(corrompido);

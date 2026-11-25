@@ -89,7 +89,7 @@ public static class FormaDoItem
         {
             yield return new("fatoCodigo", new DomainError(ItemFormularioErrorCodes.FatoCodigoObrigatorio, "O código do fato do item é obrigatório."));
         }
-        else if (fatoCodigo.Trim().Length > FatoCodigoMaxLength)
+        else if (fatoCodigo.Length > FatoCodigoMaxLength)
         {
             yield return new("fatoCodigo", new DomainError(
                 ItemFormularioErrorCodes.FatoCodigoTamanho, $"O código do fato do item deve ter no máximo {FatoCodigoMaxLength} caracteres."));

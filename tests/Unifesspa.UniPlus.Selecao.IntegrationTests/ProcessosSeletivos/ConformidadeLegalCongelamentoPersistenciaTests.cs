@@ -300,7 +300,7 @@ public sealed class ConformidadeLegalCongelamentoPersistenciaTests : IClassFixtu
             "pré-condição do teste — a desativação precisa ter efeito real no cadastro vivo");
     }
 
-    private static string UniqueRegraCodigo() => $"TEST_GATE_{Guid.CreateVersion7():N}";
+    private static string UniqueRegraCodigo() => $"TEST_GATE_{Guid.CreateVersion7():N}".ToUpperInvariant();
 
     /// <summary>Identidades derivadas das próprias exigências — estado sem renomeação nem reciclagem.</summary>
     /// <summary>

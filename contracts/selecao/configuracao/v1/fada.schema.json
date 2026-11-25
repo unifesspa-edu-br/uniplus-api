@@ -37,9 +37,9 @@
     },
     "codigoDoDadoDeElegibilidade": {
       "title": "Fato de elegibilidade",
-      "description": "Código do fato que decide quem recebe o FADA, quando o processo o declara, de 1 a 60 caracteres.",
+      "description": "Código do fato que decide quem recebe o FADA, quando o processo o declara, de 1 a 50 caracteres.",
       "$ref": "comuns.schema.json#/$defs/codigoDeCadastro",
-      "maxLength": 60
+      "maxLength": 50
     },
     "baseLegalCodigo": {
       "title": "Base legal",

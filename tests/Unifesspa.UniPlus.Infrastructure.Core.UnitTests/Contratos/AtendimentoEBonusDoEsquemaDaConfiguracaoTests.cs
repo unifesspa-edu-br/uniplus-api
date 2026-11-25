@@ -26,7 +26,7 @@ public sealed class AtendimentoEBonusDoEsquemaDaConfiguracaoTests
     [Theory(DisplayName = "O código fora do formato do cadastro ou o item sem código é recusado")]
     [InlineData("condicoes", "condicaoCodigo", "pcd")]
     [InlineData("recursos", "recursoCodigo", "1LEDOR")]
-    [InlineData("tiposDeficiencia", "tipoDeficienciaCodigo", "V")]
+    [InlineData("tiposDeficiencia", "tipoDeficienciaCodigo", "1V")]
     public void Atendimento_CodigoForaDoFormato_Recusa(string lista, string propriedade, string codigo)
     {
         ArgumentNullException.ThrowIfNull(lista);
@@ -37,6 +37,11 @@ public sealed class AtendimentoEBonusDoEsquemaDaConfiguracaoTests
         CaminhosComErro(atendimento, Atendimento).Should().Contain($"/{lista}/0/{propriedade}");
         CaminhosComErro(Documento($$"""{ "{{lista}}": [ { } ] }"""), Atendimento).Should().Contain($"/{lista}/0");
     }
+
+    [Fact]
+    public void Atendimento_CodigoDeUmaLetra_Aceita() =>
+        CaminhosComErro(Documento("""{ "tiposDeficiencia": [ { "tipoDeficienciaCodigo": "V" } ] }"""), Atendimento)
+            .Should().BeEmpty();
 
     [Fact(DisplayName = "O bônus que aplica exige regra, fator e base legal pelo código")]
     public void Bonus_Aplica_ExigeRegraFatorEBaseLegal()
@@ -50,6 +55,17 @@ public sealed class AtendimentoEBonusDoEsquemaDaConfiguracaoTests
 
         CaminhosComErro(completo, Bonus).Should().BeEmpty();
         CaminhosComErro(Documento("""{ "aplica": true }"""), Bonus).Should().NotBeEmpty();
+    }
+
+    [Theory]
+    [InlineData("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA", true)]
+    [InlineData("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA", false)]
+    public void Bonus_CodigoDoDadoDeElegibilidade_RespeitaLimite(string codigo, bool valido)
+    {
+        JsonNode bonus = Documento("""{ "aplica": true, "regra": { "codigo": "B" }, "fator": 1.2, "baseLegalCodigo": "LEI" }""");
+        bonus["codigoDoDadoDeElegibilidade"] = codigo;
+
+        CaminhosComErro(bonus, Bonus).Contains("/codigoDoDadoDeElegibilidade").Should().Be(!valido);
     }
 
     [Fact(DisplayName = "O bônus que não se aplica é só a declaração e recusa os parâmetros")]

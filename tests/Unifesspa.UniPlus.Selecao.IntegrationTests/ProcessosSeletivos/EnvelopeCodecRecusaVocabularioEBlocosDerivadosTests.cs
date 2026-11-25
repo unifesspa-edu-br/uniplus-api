@@ -28,7 +28,8 @@ public sealed class EnvelopeCodecRecusaVocabularioEBlocosDerivadosTests
             modalidade["acaoQuandoIndeferido"] = "INVALIDA";
         });
         resultado.Error!.Code.Should().Be(ErrosCodecEnvelope.EnvelopeMalformado);
-        resultado.Error.Message.Should().Contain("código 'codigo-invalido'");
+        resultado.Error.Message.Should().Contain("o código não tem o formato do cadastro");
+        resultado.Error.Message.Should().NotContain("codigo-invalido");
     }
 
     // ── Vocabulário fechado: as factories do domínio NÃO o fecham ──
@@ -176,7 +177,7 @@ public sealed class EnvelopeCodecRecusaVocabularioEBlocosDerivadosTests
     [InlineData("pcd")]
     [InlineData("P CD")]
     [InlineData("1PCD")]
-    [InlineData("P")]
+    [InlineData("P_")]
     public void CodigoDeCondicaoForaDoFormato_Recusa(string codigo)
     {
         Result<EnvelopeReidratado> resultado = ReidratarComEnvelopeAdulterado(envelope =>

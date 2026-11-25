@@ -219,11 +219,8 @@ public sealed class TipoDocumentoPersistenceTests
         removido.Should().BeNull("o filtro global de soft-delete tira o tipo removido do cadastro vivo");
     }
 
-    /// <summary>
-    /// Quem digita " CODIGO " no cadastro da regra precisa encontrar o mesmo registro, ou a validação recusa o que existe.
-    /// </summary>
-    [Fact(DisplayName = "Reader.ObterVivoPorCodigoAsync normaliza o código buscado")]
-    public async Task ObterVivoPorCodigo_NormalizaABusca()
+    [Fact(DisplayName = "Reader.ObterVivoPorCodigoAsync compara o código sem aparar")]
+    public async Task ObterVivoPorCodigo_ComEspaco_NaoEncontra()
     {
         string codigo = CodigoUnico();
         await PersistirAsync(AdminA, Novo(codigo));
@@ -232,8 +229,7 @@ public sealed class TipoDocumentoPersistenceTests
         TipoDocumentoView? exato = await reader.ObterVivoPorCodigoAsync(codigo);
         TipoDocumentoView? comEspaco = await reader.ObterVivoPorCodigoAsync($"  {codigo} ");
         exato.Should().NotBeNull();
-        comEspaco.Should().NotBeNull("o leitor apara o código antes de comparar");
-        comEspaco!.Id.Should().Be(exato!.Id);
+        comEspaco.Should().BeNull();
     }
 
     /// <summary>
