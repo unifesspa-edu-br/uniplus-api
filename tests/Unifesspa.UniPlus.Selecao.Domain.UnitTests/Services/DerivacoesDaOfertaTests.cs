@@ -164,7 +164,7 @@ public sealed class DerivacoesDaOfertaTests
     {
         ConfiguracaoDerivacaoFato modalidade = efetivas.Single(d => d.CodigoFato == ModalidadeDoCandidato.Fato);
         string[] codigos = [.. modalidade.Regras.Select(static r => r.Contribui!)];
-        ResultadoDerivacao resultado = MotorDerivacao.Derivar(
+        ResultadoDerivacao resultado = CalculoDosFatosDerivados.Derivar(
             modalidade.ParaDerivacaoDoFato(codigos).Value!,
             fatos.ToDictionary(static f => f.Fato, static f => f.Valor, StringComparer.Ordinal));
         resultado.Estado.Should().Be(EstadoFato.Resolvido);

@@ -13,7 +13,7 @@ using Unifesspa.UniPlus.Regras.ValueObjects;
 /// Derivado categórico por regra (Story #927): a união dos códigos que as regras ativas contribuem,
 /// indeterminado enquanto uma dependência não se sabe, e a forma que o cadastro da regra recusa.
 /// </summary>
-public sealed class MotorDerivacaoCategoricoTests
+public sealed class CalculoDosFatosDerivadosCategoricoTests
 {
     private static readonly string[] Dominio = ["AMPLA", "RESERVA", "RESERVA_COM_RENDA"];
 
@@ -37,17 +37,17 @@ public sealed class MotorDerivacaoCategoricoTests
 
     [Fact(DisplayName = "Dependência indeterminada torna o derivado indeterminado")]
     public void DependenciaIndeterminada_Indeterminado() =>
-        MotorDerivacao.Derivar(Regras, Fatos(("OPTOU", Sim), ("RENDA", FatoResolvido.Indeterminado()))).Estado
+        CalculoDosFatosDerivados.Derivar(Regras, Fatos(("OPTOU", Sim), ("RENDA", FatoResolvido.Indeterminado()))).Estado
             .Should().Be(EstadoFato.Indeterminado, "um dependente que não se sabe bloqueia o derivado inteiro");
 
     [Fact(DisplayName = "Dependência ausente torna o derivado indeterminado")]
     public void DependenciaAusente_Indeterminado() =>
-        MotorDerivacao.Derivar(Regras, Fatos(("OPTOU", Nao))).Estado.Should().Be(EstadoFato.Indeterminado);
+        CalculoDosFatosDerivados.Derivar(Regras, Fatos(("OPTOU", Nao))).Estado.Should().Be(EstadoFato.Indeterminado);
 
     [Fact(DisplayName = "Dependente resolvido com valor de tipo incoerente torna o derivado indeterminado")]
     public void TipoIncoerente_Indeterminado() =>
-        MotorDerivacao.Derivar(Regras, Fatos(("OPTOU", FatoResolvido.Resolvido(JsonSerializer.SerializeToElement("SIM"))), ("RENDA", Nao))).Estado
-            .Should().Be(EstadoFato.Indeterminado, "o valor que o motor não sabe comparar não é regra inativa");
+        CalculoDosFatosDerivados.Derivar(Regras, Fatos(("OPTOU", FatoResolvido.Resolvido(JsonSerializer.SerializeToElement("SIM"))), ("RENDA", Nao))).Estado
+            .Should().Be(EstadoFato.Indeterminado, "um valor de tipo incoerente não torna a regra inativa");
 
     [Fact(DisplayName = "Código contribuído fora do domínio é recusado no cadastro")]
     public void ContribuiForaDoDominio_Recusado()
@@ -90,7 +90,7 @@ public sealed class MotorDerivacaoCategoricoTests
 
     private static string[] Derivar(params (string Fato, FatoResolvido Estado)[] fatos)
     {
-        ResultadoDerivacao resultado = MotorDerivacao.Derivar(Regras, Fatos(fatos));
+        ResultadoDerivacao resultado = CalculoDosFatosDerivados.Derivar(Regras, Fatos(fatos));
         resultado.Estado.Should().Be(EstadoFato.Resolvido);
         return [.. resultado.Valores.Order(StringComparer.Ordinal)];
     }

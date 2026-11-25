@@ -13,7 +13,7 @@ informed: []
 
 Qualquer processo seletivo pode oferecer o Fator de Atenuação das Desigualdades de Acesso, até aqui chamado de bônus regional, conforme o edital e a necessidade da Unifesspa. O administrador configura o acréscimo no processo, sem amarra a tipo de processo (UNI-REQ-0015). A classificação dos candidatos aplica ou não o acréscimo a cada candidato observando o que foi configurado e os fatos dele (UNI-REQ-0046, [ADR-0013](0013-classificacao-dos-candidatos-como-servicos-de-dominio-puros.md)).
 
-A configuração do acréscimo tinha a regra, o fator, o teto e o retrato da base legal com os municípios. Não dizia quem recebe o acréscimo. O critério muda de edital para edital: no de Medicina 2027, o acréscimo é de quem o pede no formulário e reside num município da área de abrangência (UNI-REQ-0150). Fixar o critério no código amarraria o sistema a um edital. Ler um fato de código conhecido amarraria o cálculo dos dados do candidato a um cadastro.
+A configuração do acréscimo tinha a regra, o fator, o teto e o retrato da base legal com os municípios. Não dizia quem recebe o acréscimo. O critério muda de edital para edital: no de Medicina 2027, o acréscimo é de quem o pede no formulário e reside num município da área de abrangência (UNI-REQ-0150). Fixar o critério no código amarraria o sistema a um edital. Ler um fato de código conhecido amarraria o cálculo dos fatos derivados a um cadastro.
 
 ## Drivers da decisão
 
@@ -26,7 +26,7 @@ A configuração do acréscimo tinha a regra, o fator, o teto e o retrato da bas
 
 - A configuração do acréscimo cita um fato booleano do processo.
 - A configuração do acréscimo guarda um predicado próprio sobre fatos.
-- Um fato de sistema, de código fixo, que é lido no cálculo dos dados do candidato.
+- Um fato de sistema, de código fixo, que é lido no cálculo dos fatos derivados.
 
 ## Resultado da decisão
 

@@ -170,10 +170,10 @@ public sealed class MatrizDasRegrasDeAplicabilidadeTests
 
     private static IReadOnlySet<string> Derivar(Dictionary<string, FatoResolvido> candidato)
     {
-        ResultadoDerivacao opcao = MotorDerivacao.Derivar(Opcao, candidato);
+        ResultadoDerivacao opcao = CalculoDosFatosDerivados.Derivar(Opcao, candidato);
         candidato[OpcaoPelasCotasDaLei.Fato] = Valor(opcao.ValorBooleano!.Value);
 
-        ResultadoDerivacao modalidades = MotorDerivacao.Derivar(Modalidades, candidato);
+        ResultadoDerivacao modalidades = CalculoDosFatosDerivados.Derivar(Modalidades, candidato);
         modalidades.Estado.Should().Be(EstadoFato.Resolvido);
         return modalidades.Valores;
     }

@@ -152,7 +152,7 @@ public sealed class SnapshotPublicacaoCanonicalizer : ISnapshotPublicacaoCanonic
         payload["gruposDosFormularios"] = SerializacaoDosFatos.SerializarGruposColetados(processo.GruposColetados, entrada.DadosDeCatalogo.ValoresSelecionaveisCongelados, entrada.DadosDeCatalogo.AgregadosDosGrupos);
         payload["calculosDosDados"] = SerializacaoDosFatos.SerializarRegrasDerivacao(processo.RegrasDerivacao);
         payload["dependenciasEntreItens"] = SerializacaoDosFatos.SerializarGrafoDependencia(processo);
-        payload["versaoDasRegrasDeCalculo"] = MotorDerivacao.VersaoSemantica;
+        payload["versaoDasRegrasDeCalculo"] = CalculoDosFatosDerivados.VersaoSemantica;
         payload["dadosCalculados"] = SerializacaoDosFatos.SerializarFatosDerivados(entrada.DadosDeCatalogo.FatosDerivadosCongelados);
     }
 

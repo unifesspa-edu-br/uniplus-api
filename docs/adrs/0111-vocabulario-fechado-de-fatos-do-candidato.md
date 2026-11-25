@@ -118,7 +118,7 @@ imutáveis desde a semeadura:
 
 - **`Natureza`** (origem do dado): `BrutoInformado` (respondido pelo candidato),
   `DeVontade` (opção ou aceite manifestado, não afirmação de elegibilidade) ou
-  `Derivado` (computado pelo cálculo dos dados do candidato). Sustenta a invariante — feita cumprir pelo
+  `Derivado` (computado pelo cálculo dos fatos derivados). Sustenta a invariante — feita cumprir pelo
   avaliador — de que um fato `Derivado` não é insumo de si mesmo nem de um gatilho
   avaliado antes da etapa que o produz. Os nove fatos desta colheita são todos
   `BrutoInformado`; o eixo existe para fatos futuros de outra origem.

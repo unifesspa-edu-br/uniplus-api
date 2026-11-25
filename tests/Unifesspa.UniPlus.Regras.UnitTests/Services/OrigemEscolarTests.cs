@@ -33,7 +33,7 @@ public sealed class OrigemEscolarTests
     [InlineData(OrigemEscolar.Enem, OrigemEscolar.ConcluiuPorCertificacao, true)]
     public void Derivar_PerfilDeOrigemEscolar(string formaDeConclusao, string ondeCursou, bool egresso)
     {
-        ResultadoDerivacao resultado = MotorDerivacao.Derivar(
+        ResultadoDerivacao resultado = CalculoDosFatosDerivados.Derivar(
             OrigemEscolar.DerivacaoDoEgresso(),
             new Dictionary<string, FatoResolvido>(StringComparer.Ordinal)
             {

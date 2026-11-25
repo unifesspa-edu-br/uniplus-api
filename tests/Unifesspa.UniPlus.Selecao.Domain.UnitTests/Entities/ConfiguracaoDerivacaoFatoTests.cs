@@ -112,7 +112,7 @@ public sealed class ConfiguracaoDerivacaoFatoTests
             [RegraDerivacaoConfigurada.Criar(0, null, [CondicaoRegraDerivacao.Criar(0, "COR_RACA", Operador.Igual, JsonSerializer.SerializeToElement("INDIGENA")).Value!]).Value!]).Value!;
 
         DerivacaoDoFato derivacao = config.ParaDerivacaoDoFato([]).Value!;
-        ResultadoDerivacao resultado = MotorDerivacao.Derivar(
+        ResultadoDerivacao resultado = CalculoDosFatosDerivados.Derivar(
             derivacao, new Dictionary<string, FatoResolvido>(StringComparer.Ordinal) { ["COR_RACA"] = FatoResolvido.Resolvido(JsonSerializer.SerializeToElement("PRETA")) });
 
         resultado.ValorBooleano.Should().BeFalse();

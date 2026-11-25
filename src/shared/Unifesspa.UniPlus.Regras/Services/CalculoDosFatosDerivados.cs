@@ -23,12 +23,12 @@ using Unifesspa.UniPlus.Regras.ValueObjects;
 /// colapsa falso).
 /// </para>
 /// </remarks>
-public static class MotorDerivacao
+public static class CalculoDosFatosDerivados
 {
     /// <summary>
     /// Versão semântica do interpretador de derivação, congelada no envelope de publicação (congelamento dos parâmetros na publicação, UNI-REQ-0019).
     /// É a identidade da semântica com que um snapshot publicado foi resolvido — muda quando a
-    /// forma como o motor avalia as regras muda (não a cada deploy), para que um snapshot antigo
+    /// forma como as regras são avaliadas muda (não a cada deploy), para que um snapshot antigo
     /// continue reidratável com a semântica que o produziu. A "2" acrescenta o derivado booleano:
     /// verdadeiro se alguma regra ativa, falso se nenhuma (ADR-0136).
     /// </summary>
@@ -41,44 +41,39 @@ public static class MotorDerivacao
         ArgumentNullException.ThrowIfNull(derivacao);
         ArgumentNullException.ThrowIfNull(fatosResolvidos);
 
-        foreach (string dependencia in derivacao.DependenciasDeclaradas)
-        {
-            if (!fatosResolvidos.TryGetValue(dependencia, out FatoResolvido? fato)
-                || fato is null
-                || fato.Estado == EstadoFato.Indeterminado)
-            {
-                return ResultadoDerivacao.Indeterminado;
-            }
-        }
+        return derivacao.DependenciasDeclaradas.Any(dependencia =>
+            !fatosResolvidos.TryGetValue(dependencia, out FatoResolvido? fato)
+            || fato is null || fato.Estado == EstadoFato.Indeterminado)
+            ? ResultadoDerivacao.Indeterminado
+            : AvaliarRegras(derivacao, fatosResolvidos);
+    }
 
+    // Um valor de tipo incoerente ainda pode tornar a avaliação indeterminada, mesmo após o gate.
+    private static ResultadoDerivacao AvaliarRegras(DerivacaoDoFato derivacao, IReadOnlyDictionary<string, FatoResolvido> fatosResolvidos)
+    {
         HashSet<string> derivado = new(StringComparer.Ordinal);
         bool algumaAtiva = false;
         foreach (RegraDerivacao regra in derivacao.Regras)
         {
-            switch (regra.AvaliarQuando(fatosResolvidos))
+            Ternario avaliacao = regra.AvaliarQuando(fatosResolvidos);
+            if (avaliacao == Ternario.Indeterminado)
             {
-                case Ternario.Verdadeiro:
-                    algumaAtiva = true;
-                    if (regra.Contribui is { } contribui)
-                    {
-                        derivado.Add(contribui);
-                    }
+                return ResultadoDerivacao.Indeterminado;
+            }
+            AcrescentarContribuicao(regra, avaliacao, derivado, ref algumaAtiva);
+        }
+        return derivacao.Booleano ? ResultadoDerivacao.ResolvidoBooleano(algumaAtiva) : ResultadoDerivacao.Resolvido(derivado);
+    }
 
-                    break;
-
-                case Ternario.Indeterminado:
-                    // O gate garante que nenhum dependente está indeterminado por estado, mas um
-                    // fato resolvido com valor de tipo incoerente com o operador ainda avalia
-                    // indeterminado. Fail-closed: não se decide o derivado sobre uma regra que o
-                    // motor não sabe avaliar — trata-la como inativa esconderia o dado corrompido.
-                    return ResultadoDerivacao.Indeterminado;
-
-                case Ternario.Falso:
-                default:
-                    break;
+    private static void AcrescentarContribuicao(RegraDerivacao regra, Ternario avaliacao, HashSet<string> derivado, ref bool algumaAtiva)
+    {
+        if (avaliacao == Ternario.Verdadeiro)
+        {
+            algumaAtiva = true;
+            if (regra.Contribui is { } contribui)
+            {
+                derivado.Add(contribui);
             }
         }
-
-        return derivacao.Booleano ? ResultadoDerivacao.ResolvidoBooleano(algumaAtiva) : ResultadoDerivacao.Resolvido(derivado);
     }
 }

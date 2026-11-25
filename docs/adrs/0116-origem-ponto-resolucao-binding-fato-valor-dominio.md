@@ -71,7 +71,7 @@ Reclassificação real dos nove fatos (não uma renomeação mecânica):
 
 | Fato | Origem nova | Justificativa |
 |---|---|---|
-| `FAIXA_ETARIA` | `Derivado` | Computada a partir da data de nascimento — o cálculo dos dados do candidato deriva o valor, o candidato não a responde diretamente |
+| `FAIXA_ETARIA` | `Derivado` | Computada a partir da data de nascimento — o cálculo dos fatos derivados deriva o valor, o candidato não a responde diretamente |
 | `RENDA_PER_CAPITA` | `Derivado` | Computada como razão renda familiar ÷ integrantes — o fato em si é uma saída, não uma resposta direta |
 | `COR_RACA`, `QUILOMBOLA`, `PCD`, `EGRESSO_ESCOLA_PUBLICA`, `SEXO`, `MODALIDADE`, `CONDICAO_ATENDIMENTO` | `Declarado` | Resposta/seleção direta do candidato no cadastro de inscrição |
 | `NACIONALIDADE`, `TIPO_DEFICIENCIA` (novos) | `Declarado` | Seleção direta do candidato sobre o domínio do fato |
