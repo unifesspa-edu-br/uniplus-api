@@ -37,7 +37,7 @@ internal sealed class FatoValorDominioConfiguration : IEntityTypeConfiguration<F
 
         builder.ClassificaPorPadrao(ClassificacaoDeProtecao.Interno);
 
-        builder.ToTable("opcoes_dos_dados", tabela => tabela.HasComment("Opções declaradas para dados categóricos do candidato."));
+        builder.ToTable("opcoes_dos_dados", tabela => tabela.HasComment("Opções declaradas para os dados do candidato."));
 
         builder.HasKey(v => v.Id);
         builder.Property(v => v.Id).HasComment("Identificador da opção.");

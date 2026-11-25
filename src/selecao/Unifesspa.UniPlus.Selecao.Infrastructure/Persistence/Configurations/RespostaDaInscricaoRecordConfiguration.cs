@@ -27,7 +27,7 @@ internal sealed class RespostaDaInscricaoRecordConfiguration : IEntityTypeConfig
         builder.Property(r => r.OcorrenciaId).HasComment("Identificador da ocorrência de grupo, quando a resposta pertence a um grupo repetível.");
         builder.Property(r => r.Posicao).HasComment("Posição do valor em uma resposta com vários valores; nula para valor único.");
         builder.Property(r => r.FatoCodigo).HasComment("Código do dado do candidato. Exemplos: RENDA_PER_CAPITA, CONCORRER_RENDA.");
-        builder.Property(r => r.ValorBooleano).HasComment("Resposta booleana, quando aplicável.");
+        builder.Property(r => r.ValorBooleano).HasComment("Resposta de sim ou não, quando aplicável.");
         builder.Property(r => r.ValorNumero).HasComment("Resposta numérica, quando aplicável.");
         builder.Property(r => r.ValorCodigo).HasComment("Código da opção ou município respondido, quando aplicável.");
         builder.Property(r => r.ValorTexto).HasComment("Resposta em texto livre, quando aplicável.");
@@ -35,7 +35,7 @@ internal sealed class RespostaDaInscricaoRecordConfiguration : IEntityTypeConfig
 
         builder.ToTable("respostas_da_inscricao", t =>
         {
-            t.HasComment("Um valor respondido na inscrição, na coluna do tipo do fato, com a origem: informado pelo candidato ou calculado a partir de outra resposta.");
+            t.HasComment("Um valor respondido na inscrição, na coluna do tipo do dado, com a origem: informado pelo candidato ou calculado a partir de outra resposta.");
             t.HasCheckConstraint(
                 "ck_respostas_da_inscricao_valor_do_tipo",
                 $"num_nonnulls(valor_booleano, valor_numero, valor_codigo, valor_texto, valor_data, valor_cifrado) = 1 AND tipo IN ({SqlDosCodigosDeContrato.Literal(TipoDoValorDeResposta.SimOuNao)}, {SqlDosCodigosDeContrato.Literal(TipoDoValorDeResposta.Numero)}, {SqlDosCodigosDeContrato.Literal(TipoDoValorDeResposta.Opcao)}, {SqlDosCodigosDeContrato.Literal(TipoDoValorDeResposta.Texto)}, {SqlDosCodigosDeContrato.Literal(TipoDoValorDeResposta.Data)}, {SqlDosCodigosDeContrato.Literal(TipoDoValorDeResposta.Municipio)}) AND ("

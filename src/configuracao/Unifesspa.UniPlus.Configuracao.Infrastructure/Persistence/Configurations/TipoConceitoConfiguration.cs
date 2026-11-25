@@ -39,7 +39,7 @@ internal sealed class TipoConceitoConfiguration : IEntityTypeConfiguration<TipoC
 
     private static void ConfigurarTabela(TableBuilder<TipoConceito> tabela)
     {
-        tabela.HasComment("Tipos de conceito com que uma etapa avalia: numéricos, medidos numa escala, ou categóricos, escolhidos entre valores ordenados.");
+        tabela.HasComment("Tipos de conceito com que uma etapa avalia: numéricos, medidos numa escala, ou por opções, escolhidos entre valores ordenados.");
         string codigos = SqlDosCodigosDeContrato.Lista<FormaDoConceito>();
         tabela.HasCheckConstraint("ck_tipos_conceito_forma", $"forma IN ({codigos})");
 
@@ -101,7 +101,7 @@ internal sealed class TipoConceitoConfiguration : IEntityTypeConfiguration<TipoC
             valor.WithOwner().HasForeignKey("TipoConceitoId").HasConstraintName("fk_opcoes_do_tipo_de_conceito_tipos_conceito");
             valor.Property<int>("Id").ValueGeneratedOnAdd().HasComment("Identificador técnico da linha; os valores são substituídos em bloco a cada edição.");
             valor.HasKey("Id");
-            valor.Property<Guid>("TipoConceitoId").HasComment("Tipo de conceito categórico a que o valor pertence.");
+            valor.Property<Guid>("TipoConceitoId").HasComment("Tipo de conceito por opções a que o valor pertence.");
             valor.Property(v => v.Codigo).HasMaxLength(ValorCategorico.CodigoDoValorMaxLength).IsRequired()
                 .HasComment("Código do valor (maiúsculas, dígitos e sublinhado), único dentro do tipo.");
             valor.Property(v => v.Rotulo).HasMaxLength(100).IsRequired()
@@ -120,7 +120,7 @@ internal sealed class TipoConceitoConfiguration : IEntityTypeConfiguration<TipoC
 
     private static void ConfigurarTabelaDosValores(OwnedNavigationTableBuilder<TipoConceito, ValorCategorico> tabela)
     {
-        tabela.HasComment("Valores de um tipo de conceito categórico, na ordem em que foram informados.");
+        tabela.HasComment("Valores de um tipo de conceito por opções, na ordem em que foram informados.");
         tabela.HasCheckConstraint("ck_opcoes_do_tipo_de_conceito_codigo", $"codigo ~ '{FormatoDoCodigo.ExpressaoNoBanco}'");
         tabela.HasCheckConstraint("ck_opcoes_do_tipo_de_conceito_posicao", "posicao >= 1");
     }

@@ -55,7 +55,7 @@ public sealed class LoteDeNotasDoEnemConfiguration : IEntityTypeConfiguration<Lo
         builder.Property(l => l.EdicaoCodigo)
             .HasMaxLength(CodigoMaxLength)
             .IsRequired()
-            .HasComment("O código da opção do fato EDICAO_ENEM, como o processo a declara.");
+            .HasComment("O código da opção do dado EDICAO_ENEM, como o processo a declara.");
 
         builder.Property(l => l.LeiauteCodigo).HasMaxLength(CodigoMaxLength).IsRequired().HasComment("Código do leiaute usado para ler o arquivo.");
         builder.Property(l => l.LeiauteVersao).HasMaxLength(VersaoMaxLength).IsRequired().HasComment("Versão do leiaute usado para ler o arquivo.");
