@@ -52,7 +52,7 @@ public sealed class FatoCandidatoRepository : IFatoCandidatoRepository
     public Task<bool> CodigoExisteAsync(string codigo, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(codigo);
-        return _dbContext.FatosCandidato.AsNoTracking().AnyAsync(f => f.Codigo == codigo.Trim(), cancellationToken);
+        return _dbContext.FatosCandidato.AsNoTracking().AnyAsync(f => f.Codigo == codigo, cancellationToken);
     }
 
     public async Task<IReadOnlyList<FatoCandidato>> ListarTodosAsync(CancellationToken cancellationToken) =>

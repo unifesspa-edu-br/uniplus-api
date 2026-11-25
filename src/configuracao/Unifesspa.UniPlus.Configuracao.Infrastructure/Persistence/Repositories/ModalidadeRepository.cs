@@ -69,9 +69,7 @@ public sealed class ModalidadeRepository : IModalidadeRepository
     {
         ArgumentNullException.ThrowIfNull(codigo);
 
-        // Um código fora do formato nunca tem modalidade viva — evita query
-        // desnecessária e garante que a comparação use o valor canônico normalizado
-        // (Trim). Case-sensitive (default do Postgres) — alinhado ao índice único.
+        // Um código fora do formato não identifica modalidade viva.
         Result<CodigoModalidade> codigoResult = CodigoModalidade.Criar(codigo);
         if (codigoResult.IsFailure)
         {
@@ -93,8 +91,8 @@ public sealed class ModalidadeRepository : IModalidadeRepository
     {
         ArgumentNullException.ThrowIfNull(codigos);
 
-        List<string> normalizados = NormalizarCodigos(codigos);
-        if (!ConverterCodigos(normalizados, out List<CodigoModalidade> codigosVo))
+        List<string> distintos = CodigosDistintos(codigos);
+        if (!ConverterCodigos(distintos, out List<CodigoModalidade> codigosVo))
         {
             return false;
         }
@@ -102,9 +100,7 @@ public sealed class ModalidadeRepository : IModalidadeRepository
         return codigosVo.Count == 0 || await ContarCodigosVivosAsync(codigosVo, cancellationToken).ConfigureAwait(false) == codigosVo.Count;
     }
 
-    private static List<string> NormalizarCodigos(IReadOnlyCollection<string> codigos) => codigos
-            .Where(c => !string.IsNullOrWhiteSpace(c))
-            .Select(c => c.Trim())
+    private static List<string> CodigosDistintos(IReadOnlyCollection<string> codigos) => codigos
             .Distinct(StringComparer.Ordinal)
             .ToList();
 
@@ -140,7 +136,7 @@ public sealed class ModalidadeRepository : IModalidadeRepository
     {
         ArgumentNullException.ThrowIfNull(codigo);
 
-        IQueryable<Modalidade> consulta = ReferenciasAoCodigo(codigo.Trim());
+        IQueryable<Modalidade> consulta = ReferenciasAoCodigo(codigo);
         if (excluirId is { } id)
         {
             consulta = consulta.Where(m => m.Id != id);

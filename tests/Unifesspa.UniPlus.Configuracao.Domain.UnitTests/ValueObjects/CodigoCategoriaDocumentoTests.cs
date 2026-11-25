@@ -8,16 +8,17 @@ using Unifesspa.UniPlus.Kernel.Results;
 
 public sealed class CodigoCategoriaDocumentoTests
 {
-    [Theory(DisplayName = "Códigos no formato fechado são aceitos e normalizados por Trim")]
+    [Theory(DisplayName = "Códigos no formato fechado são aceitos")]
     [InlineData("RENDA")]
     [InlineData("DOCUMENTO_PROCESSUAL")]
     [InlineData("TITULACAO_EXPERIENCIA")]
     [InlineData("RACA_ETNIA")]
     [InlineData("LEI_12711")]
+    [InlineData("A")]
     [InlineData("AB")]
     public void Criar_FormatoValido_Aceita(string valor)
     {
-        Result<CodigoCategoriaDocumento> resultado = CodigoCategoriaDocumento.Criar($"  {valor}  ");
+        Result<CodigoCategoriaDocumento> resultado = CodigoCategoriaDocumento.Criar(valor);
 
         resultado.IsSuccess.Should().BeTrue();
         resultado.Value!.Valor.Should().Be(valor);
@@ -40,7 +41,8 @@ public sealed class CodigoCategoriaDocumentoTests
     [InlineData("01")]
     [InlineData("1RENDA")]
     [InlineData("_RENDA")]
-    [InlineData("R")]
+    [InlineData(" X ")]
+    [InlineData("A__B")]
     [InlineData("RACA-ETNIA")]
     [InlineData("RAÇA_ETNIA")]
     public void Criar_FormatoInvalido_Falha(string valor)
@@ -65,7 +67,7 @@ public sealed class CodigoCategoriaDocumentoTests
     [InlineData("RENDA", true)]
     [InlineData("renda", false)]
     [InlineData("", false)]
-    [InlineData("R", false)]
+    [InlineData("R", true)]
     public void EhValido_RefleteFormato(string valor, bool esperado)
     {
         CodigoCategoriaDocumento.EhValido(valor).Should().Be(esperado);

@@ -33,10 +33,9 @@ public sealed class FaseCanonicaTests
 
     // ── Formato do código ──────────────────────────────────────────────────────
 
-    [Theory(DisplayName = "Código com minúscula, hífen, dígito ou espaço é rejeitado (formato)")]
+    [Theory(DisplayName = "Código com minúscula, hífen ou espaço é rejeitado (formato)")]
     [InlineData("inscricao")]
     [InlineData("RESULTADO-FINAL")]
-    [InlineData("FASE2")]
     [InlineData("LISTA ESPERA")]
     public void Criar_CodigoForaDoFormato_Falha(string codigo)
     {
@@ -58,6 +57,10 @@ public sealed class FaseCanonicaTests
     }
 
     // ── Domínio canônico ───────────────────────────────────────────────────────
+
+    [Fact(DisplayName = "Código com dígito tem formato válido, mas pode estar fora do conjunto")]
+    public void Criar_CodigoComDigito_ForaDoConjunto() =>
+        Criar(codigo: "FASE2").Error!.Code.Should().Be(FaseCanonicaErrorCodes.CodigoForaDoConjuntoCanonico);
 
     [Fact(DisplayName = "Código bem-formado fora do conjunto canônico é rejeitado")]
     public void Criar_CodigoForaDoConjuntoCanonico_Falha()

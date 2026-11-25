@@ -12,6 +12,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence.CodigosDeContrato;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Protecao;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
+using Unifesspa.UniPlus.Kernel.Domain.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
@@ -35,7 +36,7 @@ internal sealed class ObrigatoriedadeLegalConfiguration
     : IEntityTypeConfiguration<ObrigatoriedadeLegal>
 {
     private const int TipoProcessoCodigoMaxLength = 64;
-    private const int RegraCodigoMaxLength = 128;
+    private const int RegraCodigoMaxLength = FormatoDoCodigo.ComprimentoMaximo;
     private const int CategoriaMaxLength = 32;
     private const int DescricaoHumanaMaxLength = 1000;
     private const int BaseLegalMaxLength = 500;
@@ -64,6 +65,7 @@ internal sealed class ObrigatoriedadeLegalConfiguration
 
         builder.ToTable("obrigatoriedades_legais", t =>
         {
+            t.HasCheckConstraint("ck_obrigatoriedades_legais_regra_codigo_formato", $"regra_codigo ~ '{FormatoDoCodigo.ExpressaoNoBanco}'");
             t.HasComment("Regras legais aplicáveis à configuração de processos seletivos.");
             t.HasCheckConstraint("ck_obrigatoriedades_legais_categoria", $"categoria IN ({SqlDosCodigosDeContrato.Lista<CategoriaObrigatoriedade>()})");
         });

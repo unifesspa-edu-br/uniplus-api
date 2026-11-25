@@ -4,12 +4,12 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 using Unifesspa.UniPlus.Configuracao.Application.Persistence;
-
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Domain.Enums;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence.CodigosDeContrato;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Protecao;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
+using Unifesspa.UniPlus.Kernel.Domain.ValueObjects;
 using Unifesspa.UniPlus.Regras.Enums;
 
 internal sealed class TipoConceitoConfiguration : IEntityTypeConfiguration<TipoConceito>
@@ -102,7 +102,7 @@ internal sealed class TipoConceitoConfiguration : IEntityTypeConfiguration<TipoC
             valor.Property<int>("Id").ValueGeneratedOnAdd().HasComment("Identificador técnico da linha; os valores são substituídos em bloco a cada edição.");
             valor.HasKey("Id");
             valor.Property<Guid>("TipoConceitoId").HasComment("Tipo de conceito categórico a que o valor pertence.");
-            valor.Property(v => v.Codigo).HasMaxLength(50).IsRequired()
+            valor.Property(v => v.Codigo).HasMaxLength(ValorCategorico.CodigoDoValorMaxLength).IsRequired()
                 .HasComment("Código do valor (maiúsculas, dígitos e sublinhado), único dentro do tipo.");
             valor.Property(v => v.Rotulo).HasMaxLength(100).IsRequired()
                 .HasComment("Rótulo exibido ao avaliador, único dentro do tipo.");
@@ -121,7 +121,7 @@ internal sealed class TipoConceitoConfiguration : IEntityTypeConfiguration<TipoC
     private static void ConfigurarTabelaDosValores(OwnedNavigationTableBuilder<TipoConceito, ValorCategorico> tabela)
     {
         tabela.HasComment("Valores de um tipo de conceito categórico, na ordem em que foram informados.");
-        tabela.HasCheckConstraint("ck_opcoes_do_tipo_de_conceito_codigo", "codigo ~ '^[A-Z][A-Z0-9_]*$'");
+        tabela.HasCheckConstraint("ck_opcoes_do_tipo_de_conceito_codigo", $"codigo ~ '{FormatoDoCodigo.ExpressaoNoBanco}'");
         tabela.HasCheckConstraint("ck_opcoes_do_tipo_de_conceito_posicao", "posicao >= 1");
     }
 }

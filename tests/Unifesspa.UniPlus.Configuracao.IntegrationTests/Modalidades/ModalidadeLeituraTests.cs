@@ -39,13 +39,13 @@ public sealed class ModalidadeLeituraTests(ConfiguracaoDbFixture fixture)
         await using UniPlusDbContext context = _fixture.CreateDbContext(userId: null);
         ModalidadeRepository repositorio = new(context);
 
-        (await repositorio.CodigoExisteEntreVivosAsync($" {modalidade.Codigo.Valor} ", null, default)).Should().BeTrue();
+        (await repositorio.CodigoExisteEntreVivosAsync($" {modalidade.Codigo.Valor} ", null, default)).Should().BeFalse();
         (await repositorio.CodigoExisteEntreVivosAsync(modalidade.Codigo.Valor, modalidade.Id, default)).Should().BeFalse();
         (await repositorio.CodigoExisteEntreVivosAsync("código inválido!", null, default)).Should().BeFalse();
     }
 
     [Fact]
-    public async Task CodigosVivos_ComEspacosERepeticao_ConfereCadaModalidadeUmaVez()
+    public async Task CodigosVivos_ComEspacos_Recusa()
     {
         Modalidade primeira = Ampla(CodigoUnico());
         Modalidade segunda = Ampla(CodigoUnico());
@@ -53,7 +53,7 @@ public sealed class ModalidadeLeituraTests(ConfiguracaoDbFixture fixture)
         await using UniPlusDbContext context = _fixture.CreateDbContext(userId: null);
         ModalidadeRepository repositorio = new(context);
 
-        (await repositorio.CodigosVivosExistemAsync([primeira.Codigo.Valor, $" {primeira.Codigo.Valor} ", segunda.Codigo.Valor, " "], default)).Should().BeTrue();
+        (await repositorio.CodigosVivosExistemAsync([primeira.Codigo.Valor, $" {primeira.Codigo.Valor} ", segunda.Codigo.Valor, " "], default)).Should().BeFalse();
         (await repositorio.CodigosVivosExistemAsync([primeira.Codigo.Valor, CodigoUnico()], default)).Should().BeFalse();
     }
 
@@ -67,7 +67,7 @@ public sealed class ModalidadeLeituraTests(ConfiguracaoDbFixture fixture)
         ModalidadeRepository repositorio = new(context);
 
         (await repositorio.CodigosVivosExistemAsync([], default)).Should().BeTrue();
-        (await repositorio.CodigosVivosExistemAsync([" ", ""], default)).Should().BeTrue();
+        (await repositorio.CodigosVivosExistemAsync([" ", ""], default)).Should().BeFalse();
         (await repositorio.CodigosVivosExistemAsync(["código inválido!"], default)).Should().BeFalse();
         (await repositorio.CodigosVivosExistemAsync([modalidade.Codigo.Valor], default)).Should().BeFalse();
         (await repositorio.CodigoExisteEntreVivosAsync(modalidade.Codigo.Valor, null, default)).Should().BeFalse();
@@ -86,8 +86,8 @@ public sealed class ModalidadeLeituraTests(ConfiguracaoDbFixture fixture)
         codigos.Should().Equal([$"{prefixo}_A", $"{prefixo}_B"]);
     }
 
-    [Fact(DisplayName = "A leitura encontra código vivo mesmo com espaços")]
-    public async Task ObterVivaPorCodigo_ComEspacos_EncontraModalidade()
+    [Fact(DisplayName = "A leitura recusa código com espaços")]
+    public async Task ObterVivaPorCodigo_ComEspacos_NaoEncontra()
     {
         Modalidade modalidade = Ampla(CodigoUnico());
         await GravarAsync(_fixture, modalidade);
@@ -97,8 +97,7 @@ public sealed class ModalidadeLeituraTests(ConfiguracaoDbFixture fixture)
         ModalidadeView? comEspaco = await reader.ObterVivaPorCodigoAsync($" {modalidade.Codigo.Valor}  ");
         viva.Should().NotBeNull();
         viva!.Codigo.Should().Be(modalidade.Codigo.Valor);
-        comEspaco.Should().NotBeNull();
-        comEspaco!.Id.Should().Be(viva.Id);
+        comEspaco.Should().BeNull();
     }
 
     [Fact(DisplayName = "A leitura não devolve modalidade removida")]

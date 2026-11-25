@@ -1,16 +1,15 @@
 namespace Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
 
-using System.Text.RegularExpressions;
-
 using Unifesspa.UniPlus.Configuracao.Domain.Errors;
+using Unifesspa.UniPlus.Kernel.Domain.ValueObjects;
 using Unifesspa.UniPlus.Kernel.Results;
 
 /// <summary>
 /// Código do recurso de acessibilidade (UNI-REQ-0012 e UNI-REQ-0061, módulo
 /// Configuração) — identidade semântica do apoio ofertado (ex.: <c>LEDOR</c>,
 /// <c>SALA_AMAMENTACAO</c>). Value object com formato fechado:
-/// <c>^[A-Z][A-Z0-9_]{1,49}$</c> — inicia com letra maiúscula, segue com letras
-/// maiúsculas, dígitos e sublinhado, total de 2 a 50 caracteres. Persistido como
+/// <c>^[A-Z][A-Z0-9]*(_[A-Z0-9]+)*$</c> — inicia com letra maiúscula, segue com letras
+/// maiúsculas, dígitos e sublinhado, total de no máximo 50 caracteres. Persistido como
 /// <c>varchar</c> via conversor de valor (fail-fast na reidratação).
 /// </summary>
 /// <remarks>
@@ -18,9 +17,8 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// código reservado: é o valor que o candidato escolhe no fato
 /// <c>RECURSO_ACESSIBILIDADE</c>, e nenhum recurso é citado literalmente por norma.
 /// </remarks>
-public sealed partial record CodigoRecursoAcessibilidade
+public sealed record CodigoRecursoAcessibilidade
 {
-    private const int TamanhoMinimo = 2;
     private const int TamanhoMaximo = 50;
 
     public string Valor { get; }
@@ -30,8 +28,7 @@ public sealed partial record CodigoRecursoAcessibilidade
     /// <summary>
     /// Cria um <see cref="CodigoRecursoAcessibilidade"/> validando o formato fechado.
     /// Valor nulo/em branco retorna <c>CodigoObrigatorio</c>; fora do formato
-    /// retorna <c>CodigoFormatoInvalido</c>. O valor é normalizado por <c>Trim</c>
-    /// antes da validação.
+    /// retorna <c>CodigoFormatoInvalido</c>. O valor é conferido como recebido.
     /// </summary>
     public static Result<CodigoRecursoAcessibilidade> Criar(string? valor)
     {
@@ -42,22 +39,17 @@ public sealed partial record CodigoRecursoAcessibilidade
                 "Código do recurso de acessibilidade é obrigatório."));
         }
 
-        string normalizado = valor.Trim();
-
-        if (!FormatoValido().IsMatch(normalizado))
-        {
-            return Result<CodigoRecursoAcessibilidade>.Failure(new DomainError(
+        return EhValido(valor)
+            ? Result<CodigoRecursoAcessibilidade>.Success(new CodigoRecursoAcessibilidade(valor!))
+            : Result<CodigoRecursoAcessibilidade>.Failure(new DomainError(
                 RecursoAcessibilidadeErrorCodes.CodigoFormatoInvalido,
                 "Código do recurso de acessibilidade deve iniciar com letra maiúscula e conter apenas "
-                + $"letras maiúsculas, dígitos e sublinhado, com {TamanhoMinimo} a {TamanhoMaximo} "
+                + $"letras maiúsculas, dígitos e sublinhado, com no máximo {TamanhoMaximo} "
                 + "caracteres (ex.: LEDOR, SALA_AMAMENTACAO)."));
-        }
-
-        return Result<CodigoRecursoAcessibilidade>.Success(new CodigoRecursoAcessibilidade(normalizado));
     }
 
-    public override string ToString() => Valor;
+    public static bool EhValido(string? valor) =>
+        valor is not null && valor.Length <= TamanhoMaximo && FormatoDoCodigo.TemFormatoValido(valor);
 
-    [GeneratedRegex("^[A-Z][A-Z0-9_]{1,49}$", RegexOptions.CultureInvariant)]
-    private static partial Regex FormatoValido();
+    public override string ToString() => Valor;
 }

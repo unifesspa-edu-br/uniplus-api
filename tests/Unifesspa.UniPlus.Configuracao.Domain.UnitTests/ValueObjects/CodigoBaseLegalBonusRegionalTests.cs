@@ -42,27 +42,27 @@ public sealed class CodigoBaseLegalBonusRegionalTests
         lei.Should().NotBe(decreto);
     }
 
-    [Fact(DisplayName = "Código com exatamente 100 caracteres é aceito")]
+    [Fact(DisplayName = "Código com exatamente 80 caracteres é aceito")]
     public void Gerar_NoLimite_Aceita()
     {
-        string identificacao = new('A', 100 - "LEI_".Length);
+        string identificacao = new('A', 80 - "LEI_".Length);
 
         Result<CodigoBaseLegalBonusRegional> resultado = CodigoBaseLegalBonusRegional.Gerar(TipoInstrumentoNormativo.Lei, identificacao);
 
         resultado.IsSuccess.Should().BeTrue();
-        resultado.Value!.Valor.Should().HaveLength(100);
+        resultado.Value!.Valor.Should().HaveLength(80);
     }
 
-    [Fact(DisplayName = "Código acima de 100 caracteres, contado com o prefixo do tipo, é recusado citando o limite")]
+    [Fact(DisplayName = "Código acima de 80 caracteres, contado com o prefixo do tipo, é recusado citando o limite")]
     public void Gerar_AcimaDoLimite_Falha()
     {
-        string identificacao = new('A', 100 - "LEI_".Length + 1);
+        string identificacao = new('A', 80 - "LEI_".Length + 1);
 
         Result<CodigoBaseLegalBonusRegional> resultado = CodigoBaseLegalBonusRegional.Gerar(TipoInstrumentoNormativo.Lei, identificacao);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be(BaseLegalBonusRegionalErrorCodes.CodigoTamanho);
-        resultado.Error.Message.Should().Contain("100");
+        resultado.Error.Message.Should().Contain("80");
     }
 
     [Theory(DisplayName = "Identificação sem nenhuma letra ou dígito não forma código")]
@@ -77,12 +77,13 @@ public sealed class CodigoBaseLegalBonusRegionalTests
         resultado.Error!.Code.Should().Be(BaseLegalBonusRegionalErrorCodes.CodigoFormatoInvalido);
     }
 
-    [Theory(DisplayName = "Referência por código no formato fechado é aceita, com Trim")]
+    [Theory(DisplayName = "Referência por código no formato fechado é aceita")]
     [InlineData("PORTARIA_UNIFESSPA_NO_2514_2023")]
     [InlineData("LEI_1")]
+    [InlineData("A")]
     public void Criar_FormatoValido_Aceita(string valor)
     {
-        Result<CodigoBaseLegalBonusRegional> resultado = CodigoBaseLegalBonusRegional.Criar($"  {valor} ");
+        Result<CodigoBaseLegalBonusRegional> resultado = CodigoBaseLegalBonusRegional.Criar(valor);
 
         resultado.IsSuccess.Should().BeTrue();
         resultado.Value!.Valor.Should().Be(valor);
@@ -102,7 +103,8 @@ public sealed class CodigoBaseLegalBonusRegionalTests
     [InlineData("portaria_1")]
     [InlineData("1_PORTARIA")]
     [InlineData("PORTARIA 1")]
-    [InlineData("A")]
+    [InlineData(" X ")]
+    [InlineData("A__B")]
     public void Criar_ForaDoFormato_Falha(string valor)
     {
         Result<CodigoBaseLegalBonusRegional> resultado = CodigoBaseLegalBonusRegional.Criar(valor);

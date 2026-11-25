@@ -71,8 +71,8 @@ public sealed class EnvelopeLidoConjuntosOrdenadosTests
     private static ResultadoConformidade ConformidadeComArgumentosEmOrdemNaoAlfabetica() =>
         new(
             [
-                RegraAprovada("REGRA-MODALIDADES-MINIMAS", new ModalidadesMinimas(["QUI", "AC", "LB_PPI"]), "Regra de modalidades mínimas", 'm'),
-                RegraAprovada("REGRA-ATENDIMENTO-DISPONIVEL", new AtendimentoDisponivel(["VISUAL", "AUDITIVA", "FISICA"]), "Regra de atendimento disponível", 'n'),
+                RegraAprovada("REGRA_MODALIDADES_MINIMAS", new ModalidadesMinimas(["QUI", "AC", "LB_PPI"]), "Regra de modalidades mínimas", 'm'),
+                RegraAprovada("REGRA_ATENDIMENTO_DISPONIVEL", new AtendimentoDisponivel(["VISUAL", "AUDITIVA", "FISICA"]), "Regra de atendimento disponível", 'n'),
             ],
             []);
 
@@ -115,8 +115,8 @@ public sealed class EnvelopeLidoConjuntosOrdenadosTests
             Formatos: Textos(envelope["documentosExigidos"]!["exigencias"]![0]!["formatosPermitidos"]!["lista"]!.AsArray(), static f => f["formato"]),
             RegraCodigos: Textos(obrigatoriedades, static r => r["regraCodigo"]),
             ValoresDominio: Textos(envelope["documentosExigidos"]!["definicoesDosDados"]![0]!["opcoes"]!.AsArray(), static v => v),
-            Codigos: Textos(ArgumentosDoPredicado(obrigatoriedades, "REGRA-MODALIDADES-MINIMAS")["codigos"]!.AsArray(), static c => c),
-            Necessidades: Textos(ArgumentosDoPredicado(obrigatoriedades, "REGRA-ATENDIMENTO-DISPONIVEL")["necessidades"]!.AsArray(), static n => n));
+            Codigos: Textos(ArgumentosDoPredicado(obrigatoriedades, "REGRA_MODALIDADES_MINIMAS")["codigos"]!.AsArray(), static c => c),
+            Necessidades: Textos(ArgumentosDoPredicado(obrigatoriedades, "REGRA_ATENDIMENTO_DISPONIVEL")["necessidades"]!.AsArray(), static n => n));
     }
 
     private static IReadOnlyList<string> Textos(JsonArray itens, Func<JsonNode, JsonNode?> selecao) =>
@@ -134,8 +134,8 @@ public sealed class EnvelopeLidoConjuntosOrdenadosTests
             .Select(static f => f.Formato.Codigo()).Should().Equal(noJson.Formatos);
         envelope.Conformidade!.Regras.Select(static r => r.RegraCodigo).Should().Equal(noJson.RegraCodigos);
         envelope.DadosDeCatalogo.MetadadosFatosCongelados!["COR_RACA"].ValoresDominio.Should().Equal(noJson.ValoresDominio);
-        ((ModalidadesMinimas)PredicadoDaRegra(envelope, "REGRA-MODALIDADES-MINIMAS")).Codigos.Should().Equal(noJson.Codigos);
-        ((AtendimentoDisponivel)PredicadoDaRegra(envelope, "REGRA-ATENDIMENTO-DISPONIVEL")).Necessidades.Should().Equal(noJson.Necessidades);
+        ((ModalidadesMinimas)PredicadoDaRegra(envelope, "REGRA_MODALIDADES_MINIMAS")).Codigos.Should().Equal(noJson.Codigos);
+        ((AtendimentoDisponivel)PredicadoDaRegra(envelope, "REGRA_ATENDIMENTO_DISPONIVEL")).Necessidades.Should().Equal(noJson.Necessidades);
     }
 
     private static PredicadoObrigatoriedade PredicadoDaRegra(EnvelopeReidratado envelope, string regraCodigo) =>

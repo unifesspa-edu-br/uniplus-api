@@ -1,9 +1,9 @@
 namespace Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
 
 using System.Collections.Frozen;
-using System.Text.RegularExpressions;
 
 using Unifesspa.UniPlus.Configuracao.Domain.Errors;
+using Unifesspa.UniPlus.Kernel.Domain.ValueObjects;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Services;
 
@@ -11,7 +11,7 @@ using Unifesspa.UniPlus.Regras.Services;
 /// Código de uma <see cref="Entities.Modalidade"/> de concorrência (UNI-REQ-0011,
 /// módulo Configuração) — chave natural classificatória (ex.: <c>AC</c>,
 /// <c>LB_PPI</c>, <c>LI_Q</c>). Value object com formato fechado:
-/// <c>^[A-Z0-9_]+$</c> — apenas letras maiúsculas, dígitos e sublinhado (sem
+/// <c>^[A-Z][A-Z0-9]*(_[A-Z0-9]+)*$</c> — apenas letras maiúsculas, dígitos e sublinhado (sem
 /// hífen). Persistido como <c>varchar</c> via conversor de valor (fail-fast na
 /// reidratação).
 /// </summary>
@@ -28,7 +28,7 @@ using Unifesspa.UniPlus.Regras.Services;
 /// <see cref="EhLegalFixa"/> e aplicada pelo agregado (atualização) e pelos handlers (criação
 /// e remoção), não pelo banco.</para>
 /// </remarks>
-public sealed partial record CodigoModalidade
+public sealed record CodigoModalidade
 {
     private const int TamanhoMaximo = 60;
 
@@ -101,17 +101,15 @@ public sealed partial record CodigoModalidade
 
     /// <summary>
     /// Indica se <paramref name="valor"/> é um código do catálogo legal fixo, sem alocar
-    /// value object. Apara o valor antes de comparar, como faz <see cref="Criar"/> — um
-    /// código com espaços à volta é o mesmo código.
+    /// value object. Compara o texto como recebido.
     /// </summary>
     public static bool EhCodigoLegalFixo(string? valor) =>
-        !string.IsNullOrWhiteSpace(valor) && CodigosLegaisFixos.Contains(valor.Trim());
+        !string.IsNullOrWhiteSpace(valor) && CodigosLegaisFixos.Contains(valor);
 
     /// <summary>
     /// Cria um <see cref="CodigoModalidade"/> validando o formato fechado. Valor
     /// nulo/em branco retorna <c>CodigoObrigatorio</c>; fora do formato (ou acima
-    /// do tamanho máximo) retorna <c>CodigoFormatoInvalido</c>. O valor é
-    /// normalizado por <c>Trim</c> antes da validação.
+    /// do tamanho máximo) retorna <c>CodigoFormatoInvalido</c>. O valor é conferido como recebido.
     /// </summary>
     public static Result<CodigoModalidade> Criar(string? valor)
     {
@@ -122,27 +120,17 @@ public sealed partial record CodigoModalidade
                 "Código da modalidade de concorrência é obrigatório."));
         }
 
-        string normalizado = valor.Trim();
-
-        if (normalizado.Length > TamanhoMaximo || !FormatoValido().IsMatch(normalizado))
-        {
-            return Result<CodigoModalidade>.Failure(new DomainError(
+        return EhValido(valor)
+            ? Result<CodigoModalidade>.Success(new CodigoModalidade(valor!))
+            : Result<CodigoModalidade>.Failure(new DomainError(
                 ModalidadeErrorCodes.CodigoFormatoInvalido,
                 "Código da modalidade deve conter apenas letras maiúsculas, dígitos e sublinhado "
                 + $"(sem hífen), com no máximo {TamanhoMaximo} caracteres (ex.: AC, LB_PPI, LI_Q)."));
-        }
-
-        return Result<CodigoModalidade>.Success(new CodigoModalidade(normalizado));
     }
 
     /// <summary>Indica se <paramref name="valor"/> respeita o formato fechado, sem alocar value object.</summary>
     public static bool EhValido(string? valor) =>
-        !string.IsNullOrWhiteSpace(valor)
-        && valor.Trim().Length <= TamanhoMaximo
-        && FormatoValido().IsMatch(valor.Trim());
+        valor is not null && valor.Length <= TamanhoMaximo && FormatoDoCodigo.TemFormatoValido(valor);
 
     public override string ToString() => Valor;
-
-    [GeneratedRegex("^[A-Z0-9_]+$", RegexOptions.CultureInvariant)]
-    private static partial Regex FormatoValido();
 }

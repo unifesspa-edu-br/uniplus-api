@@ -47,7 +47,7 @@ public sealed class TipoDeficienciaTests
     [InlineData("deficiencia_visual")]
     [InlineData("1_DEFICIENCIA")]
     [InlineData("DEFICIENCIA-VISUAL")]
-    [InlineData("D")]
+    [InlineData("D__A")]
     public void Criar_CodigoForaDoFormato_Falha(string codigo)
     {
         Result<TipoDeficiencia> resultado = Criar(codigo: codigo);

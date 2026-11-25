@@ -347,10 +347,10 @@ public sealed class TermoConsentimentoTests
         resultado.Errors.Should().ContainSingle(e => e.Field == "nome" && e.Error.Code == TermoConsentimentoErrorCodes.CodigoFormatoInvalido);
     }
 
-    [Fact(DisplayName = "Nome que forma código acima de 100 caracteres é recusado no campo nome")]
+    [Fact(DisplayName = "Nome que forma código acima de 80 caracteres é recusado no campo nome")]
     public void Criar_CodigoAcimaDoLimite_RecusaNoCampoNome()
     {
-        Result<TermoConsentimento> resultado = TermoConsentimento.Criar(new string('a', 150), null, null, null);
+        Result<TermoConsentimento> resultado = TermoConsentimento.Criar(new string('a', 81), null, null, null);
 
         resultado.Errors.Should().ContainSingle(e => e.Field == "nome" && e.Error.Code == TermoConsentimentoErrorCodes.CodigoTamanho);
     }

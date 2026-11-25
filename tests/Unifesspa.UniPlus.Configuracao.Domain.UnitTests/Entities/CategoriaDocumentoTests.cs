@@ -15,7 +15,7 @@ public sealed class CategoriaDocumentoTests
     public void Criar_CamposValidos_Preenche()
     {
         Result<CategoriaDocumento> resultado = CategoriaDocumento.Criar(
-            $"  {Codigo}  ", $"  {Nome}  ", "  Instrui o processo administrativo  ", 30);
+            Codigo, $"  {Nome}  ", "  Instrui o processo administrativo  ", 30);
 
         resultado.IsSuccess.Should().BeTrue();
         CategoriaDocumento categoria = resultado.Value!;

@@ -69,7 +69,6 @@ public sealed class CriarModalidadeCommandHandlerTests
     [InlineData("AC_PCD")]
     [InlineData("AC_I")]
     [InlineData("AC_Q")]
-    [InlineData(" LB_PPI ")]
     public async Task Handle_CodigoReservado_RetornaConflito(string codigo)
     {
         var comando = new CriarModalidadeCommand(codigo, NaturezaLegal: "AMPLA", RegraDeAplicabilidade: Incondicional);
@@ -78,6 +77,20 @@ public sealed class CriarModalidadeCommandHandlerTests
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be(ModalidadeErrorCodes.CriacaoBloqueadaCodigoProtegido);
+        await _repository.DidNotReceive().CodigoExisteEntreVivosAsync(
+            Arg.Any<string>(), Arg.Any<Guid?>(), Arg.Any<CancellationToken>());
+        await _repository.DidNotReceive().AdicionarAsync(Arg.Any<Modalidade>(), Arg.Any<CancellationToken>());
+        await _unitOfWork.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
+    }
+
+    [Fact(DisplayName = "Código reservado com espaços é recusado pelo formato")]
+    public async Task Handle_CodigoReservadoComEspacos_RecusaFormato()
+    {
+        var comando = new CriarModalidadeCommand(" LB_PPI ", NaturezaLegal: "AMPLA", RegraDeAplicabilidade: Incondicional);
+
+        Result<Guid> resultado = await Criar(comando);
+
+        resultado.Errors.Should().Contain(e => e.Error.Code == ModalidadeErrorCodes.CodigoFormatoInvalido);
         await _repository.DidNotReceive().CodigoExisteEntreVivosAsync(
             Arg.Any<string>(), Arg.Any<Guid?>(), Arg.Any<CancellationToken>());
         await _repository.DidNotReceive().AdicionarAsync(Arg.Any<Modalidade>(), Arg.Any<CancellationToken>());

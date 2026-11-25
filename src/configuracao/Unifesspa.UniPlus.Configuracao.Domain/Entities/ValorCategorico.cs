@@ -1,17 +1,18 @@
 namespace Unifesspa.UniPlus.Configuracao.Domain.Entities;
 
-using System.Text.RegularExpressions;
-
 using Unifesspa.UniPlus.Configuracao.Domain.Errors;
 using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
+using Unifesspa.UniPlus.Kernel.Domain.ValueObjects;
 using Unifesspa.UniPlus.Kernel.Results;
 
 /// <summary>
 /// Um valor que um <see cref="TipoConceito"/> categórico admite. A posição é o lugar do valor na lista
 /// informada e a única expressão da ordem; os valores de um tipo são sempre substituídos em bloco.
 /// </summary>
-public sealed partial class ValorCategorico
+public sealed class ValorCategorico
 {
+    public const int CodigoDoValorMaxLength = 50;
+
     public string Codigo { get; private set; } = string.Empty;
     public string Rotulo { get; private set; } = string.Empty;
     public bool ContaComoAprovacao { get; private set; }
@@ -63,11 +64,10 @@ public sealed partial class ValorCategorico
 
     private static string? ConferirCodigo(string? informado, string caminho, List<FieldError> erros)
     {
-        string? codigo = CamposDoTipoConceito.CodigoDoValor.Obrigatorio(
-            informado, caminho, TipoConceitoErrorCodes.ValorCategoricoCodigoInvalido, erros);
-        if (codigo is null || FormatoDoCodigo().IsMatch(codigo))
+        if (informado is not null && informado.Length <= CodigoDoValorMaxLength
+            && FormatoDoCodigo.TemFormatoValido(informado))
         {
-            return codigo;
+            return informado;
         }
 
         erros.Add(new(caminho, new DomainError(
@@ -76,6 +76,4 @@ public sealed partial class ValorCategorico
         return null;
     }
 
-    [GeneratedRegex("^[A-Z][A-Z0-9_]*$", RegexOptions.CultureInvariant)]
-    private static partial Regex FormatoDoCodigo();
 }

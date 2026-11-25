@@ -29,11 +29,10 @@ public sealed class CodigoTermoConsentimentoTests
         a.Should().Be(b);
     }
 
-    [Theory(DisplayName = "Nome que não forma código no formato (sem letra, começando por dígito ou com um só caractere) é recusado")]
+    [Theory(DisplayName = "Nome que não forma código no formato (sem letra, começando por dígito ) é recusado")]
     [InlineData("---")]
     [InlineData("§ §")]
     [InlineData("123 Termo")]
-    [InlineData("A")]
     [InlineData("2027")]
     public void Gerar_SemLetraNemDigito_Recusa(string nome)
     {
@@ -42,31 +41,33 @@ public sealed class CodigoTermoConsentimentoTests
         resultado.Error!.Code.Should().Be(TermoConsentimentoErrorCodes.CodigoFormatoInvalido);
     }
 
-    [Fact(DisplayName = "Nome que forma código acima de 100 caracteres é recusado")]
+    [Fact(DisplayName = "Nome que forma código acima de 80 caracteres é recusado")]
     public void Gerar_AcimaDoLimite_Recusa()
     {
-        Result<CodigoTermoConsentimento> resultado = CodigoTermoConsentimento.Gerar(new string('a', 101));
+        Result<CodigoTermoConsentimento> resultado = CodigoTermoConsentimento.Gerar(new string('a', 81));
 
         resultado.Error!.Code.Should().Be(TermoConsentimentoErrorCodes.CodigoTamanho);
     }
 
-    [Fact(DisplayName = "O nome que forma exatamente 100 caracteres é aceito")]
+    [Fact(DisplayName = "O nome que forma exatamente 80 caracteres é aceito")]
     public void Gerar_NoLimite_Aceita()
     {
-        CodigoTermoConsentimento.Gerar(new string('a', 100)).IsSuccess.Should().BeTrue();
+        CodigoTermoConsentimento.Gerar(new string('a', 80)).IsSuccess.Should().BeTrue();
     }
 
     [Fact(DisplayName = "Criar aceita o código no formato e recusa o vazio")]
     public void Criar_ValidaFormato()
     {
-        CodigoTermoConsentimento.Criar(" TERMO_LGPD ").Value!.Valor.Should().Be("TERMO_LGPD");
+        CodigoTermoConsentimento.Criar("TERMO_LGPD").Value!.Valor.Should().Be("TERMO_LGPD");
+        CodigoTermoConsentimento.Criar("A").IsSuccess.Should().BeTrue();
         CodigoTermoConsentimento.Criar(null).Error!.Code.Should().Be(TermoConsentimentoErrorCodes.CodigoFormatoInvalido);
     }
 
     [Theory(DisplayName = "Criar recusa código fora do formato")]
     [InlineData("termo_lgpd")]
     [InlineData("1TERMO")]
-    [InlineData("A")]
+    [InlineData(" X ")]
+    [InlineData("A__B")]
     [InlineData("TERMO-LGPD")]
     public void Criar_ForaDoFormato_Recusa(string codigo)
     {

@@ -100,13 +100,12 @@ internal sealed class ValidacaoDoTipoDocumento(DeclaracaoDoTipoDocumento declara
 
     // A categoria é o código de um cadastro, não um token de vocabulário fechado: aqui só a
     // forma é conhecida. Se existe categoria viva com este código é pergunta para a gravação,
-    // que consulta o cadastro (ADR-0125). Trim + NFC antes de validar: o valor normalizado é o
-    // que persiste e o que a comparação ordinal a jusante — inclusive contra o cadastro — usa.
+    // que consulta o cadastro (ADR-0125).
     private void ConferirCategoria()
     {
         string? categoria = string.IsNullOrWhiteSpace(declaracao.Categoria)
             ? null
-            : declaracao.Categoria.Trim().Normalize(NormalizationForm.FormC);
+            : declaracao.Categoria;
         _categoria = Conferido("categoria", categoria, RecusaDaCategoria(categoria));
     }
 
@@ -117,7 +116,7 @@ internal sealed class ValidacaoDoTipoDocumento(DeclaracaoDoTipoDocumento declara
                 ? new(
                     TipoDocumentoErrorCodes.CategoriaFormatoInvalido,
                     "Categoria do tipo de documento deve ser um código que inicia com letra maiúscula "
-                    + "e contém apenas letras maiúsculas, dígitos e sublinhado, com 2 a 50 caracteres "
+                    + "e contém apenas letras maiúsculas, dígitos e sublinhado, com no máximo 50 caracteres "
                     + "(ex.: RENDA, DOCUMENTO_PROCESSUAL).")
                 : null;
 

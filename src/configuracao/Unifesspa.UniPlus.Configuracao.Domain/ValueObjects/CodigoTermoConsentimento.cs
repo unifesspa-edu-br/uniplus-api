@@ -1,8 +1,7 @@
 namespace Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
 
-using System.Text.RegularExpressions;
-
 using Unifesspa.UniPlus.Configuracao.Domain.Errors;
+using Unifesspa.UniPlus.Kernel.Domain.ValueObjects;
 using Unifesspa.UniPlus.Kernel.Results;
 
 /// <summary>
@@ -15,9 +14,9 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// O código identifica o termo no momento do cadastro; a decisão de negócio usa sempre o <c>Id</c>. Nomes que só diferem em
 /// acento, caixa ou pontuação geram o mesmo código e são o mesmo termo.
 /// </remarks>
-public sealed partial record CodigoTermoConsentimento
+public sealed record CodigoTermoConsentimento
 {
-    public const int TamanhoMaximo = 100;
+    public const int TamanhoMaximo = 80;
 
     public string Valor { get; }
 
@@ -59,17 +58,15 @@ public sealed partial record CodigoTermoConsentimento
                 "O código do termo não pode ser vazio."));
         }
 
-        string normalizado = valor.Trim();
-
-        return FormatoValido().IsMatch(normalizado)
-            ? Result<CodigoTermoConsentimento>.Success(new CodigoTermoConsentimento(normalizado))
+        return EhValido(valor)
+            ? Result<CodigoTermoConsentimento>.Success(new CodigoTermoConsentimento(valor!))
             : Result<CodigoTermoConsentimento>.Failure(new DomainError(
                 TermoConsentimentoErrorCodes.CodigoFormatoInvalido,
-                $"O código do termo, formado pelo nome, deve iniciar com letra e conter apenas letras, dígitos e sublinhado, com 2 a {TamanhoMaximo} caracteres: o nome precisa começar por uma letra e ter ao menos dois caracteres entre letras e dígitos."));
+                $"O código do termo, formado pelo nome, deve iniciar com letra e conter apenas letras, dígitos e sublinhado, com no máximo {TamanhoMaximo} caracteres: o nome precisa começar por uma letra por uma letra."));
     }
 
-    public override string ToString() => Valor;
+    public static bool EhValido(string? valor) =>
+        valor is not null && valor.Length <= TamanhoMaximo && FormatoDoCodigo.TemFormatoValido(valor);
 
-    [GeneratedRegex("^[A-Z][A-Z0-9_]{1,99}$", RegexOptions.CultureInvariant)]
-    private static partial Regex FormatoValido();
+    public override string ToString() => Valor;
 }

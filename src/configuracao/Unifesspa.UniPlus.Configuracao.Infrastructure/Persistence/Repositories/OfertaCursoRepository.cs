@@ -44,13 +44,10 @@ public sealed class OfertaCursoRepository : IOfertaCursoRepository
     {
         ArgumentNullException.ThrowIfNull(codigo);
 
-        // Espelha a normalização do código (Trim) e compara com sensibilidade a caixa, como o índice único parcial.
-        string codigoNormalizado = codigo.Trim();
-
         return _dbContext.OfertasCurso
             .AsNoTracking()
             .Where(o => excluirId == null || o.Id != excluirId)
-            .AnyAsync(o => o.Codigo == codigoNormalizado, cancellationToken);
+            .AnyAsync(o => o.Codigo == codigo, cancellationToken);
     }
 
     public Task<OfertaCurso?> ObterPorIdParaLeituraAsync(Guid id, CancellationToken cancellationToken)

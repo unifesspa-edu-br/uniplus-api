@@ -10,6 +10,7 @@ using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Converters;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence.CodigosDeContrato;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Protecao;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
+using Unifesspa.UniPlus.Kernel.Domain.ValueObjects;
 using Unifesspa.UniPlus.Regras.Enums;
 
 internal sealed class TermoConsentimentoConfiguration : IEntityTypeConfiguration<TermoConsentimento>
@@ -41,7 +42,7 @@ internal sealed class TermoConsentimentoConfiguration : IEntityTypeConfiguration
         table.HasCheckConstraint(
             "ck_termos_de_consentimento_forma_aceite_rascunho",
             $"forma_aceite_rascunho IN ({SqlDosCodigosDeContrato.Lista<FormaAceite>()})");
-        table.HasCheckConstraint("ck_termos_de_consentimento_codigo_formato", "codigo ~ '^[A-Z][A-Z0-9_]{1,99}$'");
+        table.HasCheckConstraint("ck_termos_de_consentimento_codigo_formato", $"codigo ~ '{FormatoDoCodigo.ExpressaoNoBanco}'");
     }
 
     private static void ConfigurarIdentificacao(EntityTypeBuilder<TermoConsentimento> builder)
