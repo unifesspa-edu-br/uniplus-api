@@ -1,6 +1,5 @@
 namespace Unifesspa.UniPlus.Configuracao.IntegrationTests.TiposProcesso;
 
-using System.Diagnostics.CodeAnalysis;
 using System.Net;
 using System.Net.Http.Json;
 using System.Text;
@@ -9,17 +8,15 @@ using System.Text.Json;
 using AwesomeAssertions;
 
 using Unifesspa.UniPlus.Configuracao.IntegrationTests.Infrastructure;
-using Unifesspa.UniPlus.IntegrationTests.Fixtures.Authentication;
+
+using static Unifesspa.UniPlus.Configuracao.IntegrationTests.TiposProcesso.ConferenciaDeTiposProcesso;
+using static Unifesspa.UniPlus.Configuracao.IntegrationTests.TiposProcesso.RequisicoesDeTipoProcesso;
 
 /// <summary>
 /// Contrato HTTP do cadastro de tipos de processo (UNI-REQ-0098): leitura pública de
 /// ativos e manutenção exclusiva de quem tem a permissão de manter, com código permanentemente reservado.
 /// </summary>
 [Collection(ConfiguracaoEndpointCollection.Name)]
-[SuppressMessage(
-    "Performance",
-    "CA1515:Consider making public types internal",
-    Justification = "xUnit collection fixture exige tipo de teste público.")]
 public sealed class TipoProcessoEndpointTests
 {
     private readonly ConfiguracaoEndpointFixture _fixture;
@@ -45,11 +42,6 @@ public sealed class TipoProcessoEndpointTests
     [Fact(DisplayName = "Carga inicial usa UUIDv7 RFC 9562 nos oito tipos legados")]
     public async Task Listar_TiposLegadosSemeados_UsamUuidV7()
     {
-        HashSet<string> codigosLegados = new(StringComparer.Ordinal)
-        {
-            "SiSU", "PSIQ", "PSECampo", "PSVR", "TransferenciaInterna",
-            "TransferenciaExterna", "PortadorDiploma", "Reopcao",
-        };
         using HttpClient client = _fixture.Factory.CreateDefaultClient();
 
         HttpResponseMessage response = await client.GetAsync(
@@ -57,10 +49,7 @@ public sealed class TipoProcessoEndpointTests
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         using JsonDocument lista = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
-        Guid[] idsLegados = lista.RootElement.EnumerateArray()
-            .Where(item => codigosLegados.Contains(item.GetProperty("codigo").GetString()!))
-            .Select(item => item.GetProperty("id").GetGuid())
-            .ToArray();
+        Guid[] idsLegados = IdentificarTiposLegados(lista);
 
         idsLegados.Should().HaveCount(8);
         idsLegados.Should().OnlyHaveUniqueItems();
@@ -87,37 +76,10 @@ public sealed class TipoProcessoEndpointTests
         string codigo = CodigoUnico();
         using HttpClient client = _fixture.Factory.CreateClient();
 
-        HttpResponseMessage criar = await EnviarPostAdmin(client, new
-        {
-            codigo,
-            nome = "Seleção de teste",
-            descricao = "Descrição inicial",
-        });
+        Guid id = await CriarTipoInicial(client, codigo);
 
-        criar.StatusCode.Should().Be(HttpStatusCode.Created);
-        Guid id = await criar.Content.ReadFromJsonAsync<Guid>();
-        id.Should().NotBe(Guid.Empty);
-
-        HttpResponseMessage listar = await client.GetAsync(new Uri("/api/configuracao/tipos-processo", UriKind.Relative));
-        listar.StatusCode.Should().Be(HttpStatusCode.OK);
-        using JsonDocument lista = JsonDocument.Parse(await listar.Content.ReadAsStringAsync());
-        lista.RootElement.EnumerateArray()
-            .Single(item => item.GetProperty("id").GetGuid() == id)
-            .GetProperty("codigo").GetString().Should().Be(codigo);
-
-        HttpResponseMessage atualizar = await EnviarPutAdmin(client, id, new
-        {
-            id,
-            nome = "Seleção renomeada",
-            descricao = "Descrição atualizada",
-        });
-        atualizar.StatusCode.Should().Be(HttpStatusCode.NoContent);
-
-        HttpResponseMessage obter = await client.GetAsync(new Uri($"/api/configuracao/tipos-processo/{id}", UriKind.Relative));
-        using JsonDocument item = JsonDocument.Parse(await obter.Content.ReadAsStringAsync());
-        item.RootElement.GetProperty("codigo").GetString().Should().Be(codigo, "o código é a identidade imutável do tipo de processo");
-        item.RootElement.GetProperty("nome").GetString().Should().Be("Seleção renomeada");
-        item.RootElement.TryGetProperty("_links", out _).Should().BeTrue("a leitura pública expõe HATEOAS nível 1");
+        await ConferirTipoNaListagemPublica(client, id, codigo);
+        await AtualizarEConferirTipo(client, id, codigo);
     }
 
     [Theory(DisplayName = "POST recusa U+0000 nos campos textuais com 422")]
@@ -147,13 +109,7 @@ public sealed class TipoProcessoEndpointTests
     public async Task Atualizar_CampoTextualComCaractereNulo_Retorna422(string campo)
     {
         using HttpClient client = _fixture.Factory.CreateClient();
-        HttpResponseMessage criar = await EnviarPostAdmin(client, new
-        {
-            codigo = CodigoUnico(),
-            nome = "Nome válido",
-            descricao = "Descrição válida",
-        });
-        Guid id = await criar.Content.ReadFromJsonAsync<Guid>();
+        Guid id = await CriarTipoComCamposValidos(client);
         string invalido = $"valor{(char)0}invalido";
         object payload = campo switch
         {
@@ -269,13 +225,7 @@ public sealed class TipoProcessoEndpointTests
         HttpResponseMessage reativar = await EnviarAtivacaoAdmin(client, id);
 
         reativar.StatusCode.Should().Be(HttpStatusCode.NoContent);
-        HttpResponseMessage obter = await client.GetAsync(new Uri($"/api/configuracao/tipos-processo/{id}", UriKind.Relative));
-        obter.StatusCode.Should().Be(HttpStatusCode.OK);
-        using JsonDocument item = JsonDocument.Parse(await obter.Content.ReadAsStringAsync());
-        item.RootElement.GetProperty("codigo").GetString().Should().Be(codigo, "reativar não é caminho lateral para trocar a identidade");
-        item.RootElement.GetProperty("nome").GetString().Should().Be("Seleção reativável");
-        item.RootElement.GetProperty("descricao").GetString().Should().Be("Descrição preservada");
-        item.RootElement.GetProperty("ativo").GetBoolean().Should().BeTrue();
+        await ConferirTipoReativado(client, id, codigo);
     }
 
     [Fact(DisplayName = "POST .../ativacao sobre tipo já ativo retorna 422 com o código de erro específico")]
@@ -357,15 +307,76 @@ public sealed class TipoProcessoEndpointTests
 
         HttpResponseMessage listagem = await EnviarGetAdmin(client, "/api/configuracao/admin/tipos-processo?limit=100");
         listagem.StatusCode.Should().Be(HttpStatusCode.OK);
-        using JsonDocument lista = JsonDocument.Parse(await listagem.Content.ReadAsStringAsync());
-        string self = lista.RootElement.EnumerateArray()
-            .Single(item => item.GetProperty("id").GetGuid() == id)
-            .GetProperty("_links").GetProperty("self").GetString()!;
+        string self = await LerLinkProprioDoTipo(listagem, id);
 
         HttpResponseMessage seguindoOSelf = await EnviarGetAdmin(client, self);
 
         self.Should().Be($"/api/configuracao/admin/tipos-processo/{id}");
         seguindoOSelf.StatusCode.Should().Be(HttpStatusCode.OK, "o self de um item desativado precisa levar a uma representação que existe");
+    }
+
+    private static async Task<Guid> CriarTipoInicial(HttpClient client, string codigo)
+    {
+        HttpResponseMessage criar = await EnviarPostAdmin(client, new
+        {
+            codigo,
+            nome = "Seleção de teste",
+            descricao = "Descrição inicial",
+        });
+
+        criar.StatusCode.Should().Be(HttpStatusCode.Created);
+        Guid id = await criar.Content.ReadFromJsonAsync<Guid>();
+        id.Should().NotBe(Guid.Empty);
+        return id;
+    }
+
+    private static async Task AtualizarEConferirTipo(HttpClient client, Guid id, string codigo)
+    {
+        HttpResponseMessage atualizar = await EnviarPutAdmin(client, id, new
+        {
+            id,
+            nome = "Seleção renomeada",
+            descricao = "Descrição atualizada",
+        });
+        atualizar.StatusCode.Should().Be(HttpStatusCode.NoContent);
+
+        HttpResponseMessage obter = await client.GetAsync(new Uri($"/api/configuracao/tipos-processo/{id}", UriKind.Relative));
+        using JsonDocument item = JsonDocument.Parse(await obter.Content.ReadAsStringAsync());
+        item.RootElement.GetProperty("codigo").GetString().Should().Be(codigo, "o código é a identidade imutável do tipo de processo");
+        item.RootElement.GetProperty("nome").GetString().Should().Be("Seleção renomeada");
+        item.RootElement.TryGetProperty("_links", out _).Should().BeTrue("a leitura pública expõe HATEOAS nível 1");
+    }
+
+    private static async Task<Guid> CriarTipoComCamposValidos(HttpClient client)
+    {
+        HttpResponseMessage criar = await EnviarPostAdmin(client, new
+        {
+            codigo = CodigoUnico(),
+            nome = "Nome válido",
+            descricao = "Descrição válida",
+        });
+        return await criar.Content.ReadFromJsonAsync<Guid>();
+    }
+
+    private static async Task<string> LerLinkProprioDoTipo(HttpResponseMessage listagem, Guid id)
+    {
+        using JsonDocument lista = JsonDocument.Parse(await listagem.Content.ReadAsStringAsync());
+        return lista.RootElement.EnumerateArray()
+            .Single(item => item.GetProperty("id").GetGuid() == id)
+            .GetProperty("_links").GetProperty("self").GetString()!;
+    }
+
+    private static Guid[] IdentificarTiposLegados(JsonDocument lista)
+    {
+        HashSet<string> codigosLegados = new(StringComparer.Ordinal)
+        {
+            "SiSU", "PSIQ", "PSECampo", "PSVR", "TransferenciaInterna",
+            "TransferenciaExterna", "PortadorDiploma", "Reopcao",
+        };
+        return lista.RootElement.EnumerateArray()
+            .Where(item => codigosLegados.Contains(item.GetProperty("codigo").GetString()!))
+            .Select(item => item.GetProperty("id").GetGuid())
+            .ToArray();
     }
 
     private static async Task<Guid[]> LerIdsAsync(HttpClient client, HttpResponseMessage response)
@@ -375,57 +386,11 @@ public sealed class TipoProcessoEndpointTests
         return [.. lista.RootElement.EnumerateArray().Select(item => item.GetProperty("id").GetGuid())];
     }
 
-    private static async Task<HttpResponseMessage> EnviarGetAdmin(HttpClient client, string rota)
-    {
-        using HttpRequestMessage request = new(HttpMethod.Get, new Uri(rota, UriKind.Relative));
-        AutenticarComoAdmin(request);
-        return await client.SendAsync(request);
-    }
-
-    private static async Task<HttpResponseMessage> EnviarAtivacaoAdmin(HttpClient client, Guid id)
-    {
-        using HttpRequestMessage request = new(HttpMethod.Post, new Uri($"/api/configuracao/admin/tipos-processo/{id}/ativacao", UriKind.Relative));
-        AutenticarComoAdmin(request);
-        request.Headers.Add("Idempotency-Key", Guid.NewGuid().ToString());
-        return await client.SendAsync(request);
-    }
-
     private static string CodigoUnico() => $"PS_{Guid.NewGuid().ToString("N")[..12].ToUpperInvariant()}";
 
     private static bool EhUuidV7Rfc9562(Guid id)
     {
         string representacao = id.ToString("D");
         return id.Version == 7 && representacao[19] is '8' or '9' or 'a' or 'b';
-    }
-
-    private static async Task<HttpResponseMessage> EnviarPostAdmin(HttpClient client, object body)
-    {
-        using HttpRequestMessage request = new(HttpMethod.Post, new Uri("/api/configuracao/admin/tipos-processo", UriKind.Relative));
-        AutenticarComoAdmin(request);
-        request.Headers.Add("Idempotency-Key", Guid.NewGuid().ToString());
-        request.Content = JsonContent.Create(body);
-        return await client.SendAsync(request);
-    }
-
-    private static async Task<HttpResponseMessage> EnviarPutAdmin(HttpClient client, Guid id, object body)
-    {
-        using HttpRequestMessage request = new(HttpMethod.Put, new Uri($"/api/configuracao/admin/tipos-processo/{id}", UriKind.Relative));
-        AutenticarComoAdmin(request);
-        request.Headers.Add("Idempotency-Key", Guid.NewGuid().ToString());
-        request.Content = JsonContent.Create(body);
-        return await client.SendAsync(request);
-    }
-
-    private static async Task<HttpResponseMessage> EnviarDeleteAdmin(HttpClient client, Guid id)
-    {
-        using HttpRequestMessage request = new(HttpMethod.Delete, new Uri($"/api/configuracao/admin/tipos-processo/{id}", UriKind.Relative));
-        AutenticarComoAdmin(request);
-        return await client.SendAsync(request);
-    }
-
-    private static void AutenticarComoAdmin(HttpRequestMessage request)
-    {
-        request.Headers.Add("Authorization", $"{TestAuthHandler.AuthorizationScheme} {TestAuthHandler.TokenValue}");
-        request.Headers.Add(TestAuthHandler.RolesHeader, "plataforma-admin");
     }
 }
