@@ -32,8 +32,24 @@ public sealed class CausasDaModalidadeNoEnvelopeTests
         LeituraDasModalidades.LerModalidade(leitor, modalidade, "modalidades[0]");
         FieldError causa = leitor.Falha<object>().Errors.Single();
         causa.Should().Be(new FieldError("modalidades[0]", new DomainError("ModalidadeSelecionada.ComposicaoOrigemIndevida",
-            "Modalidade AC só declara código de origem quando a composição é RETIRADA_DE_OUTRA_MODALIDADE.")));
+            "A modalidade só declara código de origem quando a composição de vagas é RETIRADA_DE_OUTRA_MODALIDADE.")));
         CaminhoNoDocumento.Existe(new JsonObject { ["modalidades"] = new JsonArray(modalidade) }, causa.Field!).Should().BeTrue();
+    }
+
+    [Fact]
+    public void LerModalidade_OrigemEParIndevidos_PropagaCausasNoItem()
+    {
+        JsonObject modalidade = Modalidade();
+        modalidade["composicaoOrigemCodigo"] = "OUTRA";
+        modalidade["remanejamentoPar"] = "PAR";
+        LeitorEnvelope leitor = new();
+        LeituraDasModalidades.LerModalidade(leitor, modalidade, "modalidades[0]");
+        IReadOnlyList<FieldError> causas = leitor.Falha<object>().Errors;
+        causas.Select(c => (c.Field, c.Error.Code)).Should().Equal(
+            ("modalidades[0]", "ModalidadeSelecionada.ComposicaoOrigemIndevida"),
+            ("modalidades[0]", "ModalidadeSelecionada.RemanejamentoCruzadoIndevido"));
+        JsonObject documento = new() { ["modalidades"] = new JsonArray(modalidade) };
+        causas.Should().OnlyContain(c => CaminhoNoDocumento.Existe(documento, c.Field!));
     }
 
     [Fact]
