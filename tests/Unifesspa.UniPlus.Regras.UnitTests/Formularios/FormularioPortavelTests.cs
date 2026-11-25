@@ -238,11 +238,11 @@ public sealed class FormularioPortavelTests
         new(codigo, new OcorrenciasDoGrupoDto(0, null, false), Nunca(), [Item(subitem)]);
 
     private static FormularioPortavel ComGrupos(params GrupoPortavel[] grupos) =>
-        new([new PaginaPortavel("INSCRICAO:DADOS", null, [], grupos)], [], [], []);
+        new([new PaginaPortavel("INSCRICAO_DADOS", null, [], grupos)], [], [], []);
 
     private static FormularioPortavel ComGrupo(int minimo, int? maximo) =>
         new(
-            [new PaginaPortavel("INSCRICAO:DADOS", null, [], [new GrupoPortavel("FAMILIA", new OcorrenciasDoGrupoDto(minimo, maximo, false), Nunca(), [Item("NOME")])])],
+            [new PaginaPortavel("INSCRICAO_DADOS", null, [], [new GrupoPortavel("FAMILIA", new OcorrenciasDoGrupoDto(minimo, maximo, false), Nunca(), [Item("NOME")])])],
             [], [], []);
 
     private static ItemPortavel ItemComRestricao(RestricaoValorDto restricao)
@@ -303,7 +303,7 @@ public sealed class FormularioPortavelTests
     public void ParaDefinicao_GrupoSemOcorrencias_RecusaNoCaminho(bool explicito)
     {
         string ocorrencias = explicito ? "\"ocorrencias\":null," : "";
-        string json = "{\"paginas\":[{\"codigo\":\"INSCRICAO:DADOS\",\"itens\":[],\"grupos\":[{\"codigo\":\"FAMILIA\"," +
+        string json = "{\"paginas\":[{\"codigo\":\"INSCRICAO_DADOS\",\"itens\":[],\"grupos\":[{\"codigo\":\"FAMILIA\"," +
             ocorrencias + "\"regras\":{\"obrigatoriedade\":{\"tipo\":\"NUNCA\"}},\"subitens\":[]}]}],\"termos\":[],\"derivacoes\":[],\"agregados\":[]}";
         FormularioPortavel formulario = JsonSerializer.Deserialize<FormularioPortavel>(json, OpcoesDoFio)!;
 
@@ -350,7 +350,7 @@ public sealed class FormularioPortavelTests
     }
 
     private static FormularioPortavel Formulario(params ItemPortavel[] itens) =>
-        new([new PaginaPortavel("INSCRICAO:DADOS", null, itens, [])], [], [], []);
+        new([new PaginaPortavel("INSCRICAO_DADOS", null, itens, [])], [], [], []);
 
     private static ItemPortavel Item(
         string fato,

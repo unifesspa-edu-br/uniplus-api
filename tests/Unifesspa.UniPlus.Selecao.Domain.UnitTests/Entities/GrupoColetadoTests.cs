@@ -88,15 +88,15 @@ public sealed class GrupoColetadoTests
         grupo.Regras.Should().Be(new ExibicaoEObrigatoriedade(null, Obrigatoriedade.Sempre));
     }
 
-    [Fact(DisplayName = "O código e a seção saem normalizados e o rótulo aparado, e cada campo é ligado ao grupo")]
-    public void Criar_CodigoSecaoERotuloComSobras_NormalizaELigaOsCampos()
+    [Fact(DisplayName = "A seção fica como enviada e o rótulo é aparado, e cada campo é ligado ao grupo")]
+    public void Criar_SecaoERotuloComEspacos_GravaSecaoELigaOsCampos()
     {
         FatoColetado campo = FatoColetadoDeTeste.Coletando("RENDA", 0).Construir();
 
-        GrupoColetado grupo = GrupoColetado.Criar(" RENDAS ", 0, " DADOS ", " Rendas ", ZeroACinco, SempreNunca, [campo]).Value!;
+        GrupoColetado grupo = GrupoColetado.Criar("RENDAS", 0, " DADOS ", " Rendas ", ZeroACinco, SempreNunca, [campo]).Value!;
 
         grupo.Codigo.Should().Be("RENDAS");
-        grupo.PaginaCodigo.Should().Be("DADOS");
+        grupo.PaginaCodigo.Should().Be(" DADOS ");
         grupo.Rotulo.Should().Be("Rendas");
         campo.GrupoColetadoId.Should().Be(grupo.Id);
     }

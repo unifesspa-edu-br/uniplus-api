@@ -1,6 +1,5 @@
 namespace Unifesspa.UniPlus.Selecao.Domain.Entities;
 
-using System.Text;
 
 using Unifesspa.UniPlus.Kernel.Domain.Entities;
 using Unifesspa.UniPlus.Kernel.Results;
@@ -59,9 +58,9 @@ public sealed class GrupoColetado : EntityBase, IParteDoProcesso
     private GrupoColetado(
         string? codigo, int ordem, string? paginaCodigo, string? rotulo, OcorrenciasDoGrupo ocorrencias, ExibicaoEObrigatoriedade regras, IReadOnlyList<FatoColetado> subitens)
     {
-        Codigo = (codigo ?? string.Empty).Trim().Normalize(NormalizationForm.FormC);
+        Codigo = codigo ?? string.Empty;
         Ordem = ordem;
-        PaginaCodigo = string.IsNullOrWhiteSpace(paginaCodigo) ? null : paginaCodigo.Trim().Normalize(NormalizationForm.FormC);
+        PaginaCodigo = paginaCodigo;
         Rotulo = (rotulo ?? string.Empty).Trim();
         Minimo = ocorrencias.Minimo;
         Maximo = ocorrencias.Maximo;

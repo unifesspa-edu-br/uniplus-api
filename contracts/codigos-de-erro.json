@@ -8167,6 +8167,11 @@
       "titulo": "O código aparece em mais de um termo do formulário"
     },
     {
+      "codigo": "uniplus.termo_formulario.codigo_formato_invalido",
+      "status": 422,
+      "titulo": "O código do termo exigido está fora do formato"
+    },
+    {
       "codigo": "uniplus.termo_formulario.codigo_obrigatorio",
       "status": 422,
       "titulo": "O código do termo exigido é obrigatório"

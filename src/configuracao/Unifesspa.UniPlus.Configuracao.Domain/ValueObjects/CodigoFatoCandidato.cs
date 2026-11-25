@@ -3,6 +3,7 @@ namespace Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Configuracao.Domain.Errors;
 using Unifesspa.UniPlus.Kernel.Domain.ValueObjects;
 using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Regras.Formularios;
 
 /// <summary>
 /// Código de um <see cref="Entities.FatoCandidato"/> (UNI-REQ-0077) — chave natural
@@ -18,7 +19,7 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// </remarks>
 public sealed record CodigoFatoCandidato
 {
-    public const int TamanhoMaximo = 50;
+    public const int TamanhoMaximo = FatoDoCatalogo.CodigoMaxLength;
 
     public string Valor { get; }
 
@@ -43,7 +44,7 @@ public sealed record CodigoFatoCandidato
             : Result<CodigoFatoCandidato>.Failure(new DomainError(
                 FatoCandidatoErrorCodes.CodigoFormatoInvalido,
                 "Código do fato deve começar por letra maiúscula e conter apenas letras maiúsculas, "
-                + "dígitos e sublinhado, com no máximo 50 caracteres (ex.: COR_RACA, PCD, MODALIDADE)."));
+                + $"dígitos e sublinhado, com no máximo {TamanhoMaximo} caracteres (ex.: COR_RACA, PCD, MODALIDADE)."));
     }
 
     /// <summary>Indica se <paramref name="valor"/> respeita o formato fechado, sem criar o objeto.</summary>

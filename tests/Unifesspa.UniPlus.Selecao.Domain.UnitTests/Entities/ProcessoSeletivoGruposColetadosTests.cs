@@ -111,6 +111,21 @@ public sealed class ProcessoSeletivoGruposColetadosTests
         resultado.Errors.Should().ContainSingle().Which.Error.Code.Should().Be(EstruturaFormularioErrorCodes.ItemForaDeSecao);
     }
 
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void DefinirFatosColetados_CitacaoDePaginaComEspacos_Recusa(bool grupo)
+    {
+        FatoColetado item = FatoColetadoDeTeste.Coletando("DADO", 0).NaSecao(" DADOS ").Construir();
+        GrupoColetado grupoComPaginaInvalida = Grupo("GRUPO", 0, secao: " DADOS ", campos: Campo("MEMBRO", 0));
+
+        Result resultado = NovoProcesso().DefinirItens(grupo ? [] : [item], grupos: grupo ? [grupoComPaginaInvalida] : []);
+
+        FieldError erro = resultado.Errors.Should().ContainSingle().Subject;
+        erro.Error.Code.Should().Be(EstruturaFormularioErrorCodes.ItemForaDeSecao);
+        erro.Field.Should().Be(grupo ? "itens[28].paginaCodigo" : "itens[0].paginaCodigo");
+    }
+
     [Fact]
     public void DefinirFormulario_PaginasSemASecaoDoGrupo_Recusa()
     {

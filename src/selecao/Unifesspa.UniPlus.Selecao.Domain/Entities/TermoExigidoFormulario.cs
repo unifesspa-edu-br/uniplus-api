@@ -69,9 +69,7 @@ public sealed class TermoExigidoFormulario : EntityBase, IParteDoProcesso
         Obrigatoriedade obrigatoriedade,
         FinalidadeFormulario? finalidade)
     {
-        // O registro publicado guarda o código em NFC; normalizar aqui faz a unicidade do formulário e a
-        // do registro publicado compararem a mesma forma.
-        Codigo = (codigo ?? string.Empty).Trim().Normalize(System.Text.NormalizationForm.FormC);
+        Codigo = codigo ?? string.Empty;
         Ordem = ordem;
         CongelarVersao(versao);
         Exibicao = exibicao;

@@ -18,6 +18,13 @@ public sealed class CodigosDeCadastroTests
         CodigoTipoDocumento.EhValido(codigo).Should().BeTrue();
     }
 
+    [Fact]
+    public void EhValido_CodigoDoDado_RespeitaLimiteDeCinquenta()
+    {
+        CodigoFatoCandidato.EhValido(new string('A', 50)).Should().BeTrue();
+        CodigoFatoCandidato.EhValido(new string('A', 51)).Should().BeFalse();
+    }
+
     [Theory]
     [InlineData(" X ")]
     [InlineData("A__B")]

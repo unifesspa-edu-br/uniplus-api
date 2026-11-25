@@ -352,7 +352,7 @@ internal sealed class LeituraDoConteudo(IReadOnlyDictionary<string, string> form
     }
 
     private string? FormatoDoCatalogo(string? fatoCodigo) =>
-        fatoCodigo is { } codigo && formatos.TryGetValue(TextoGravavel.CodigoNaFormaGravada(codigo), out string? formato) ? formato : null;
+        fatoCodigo is { } codigo && formatos.TryGetValue(codigo, out string? formato) ? formato : null;
 
     private void RecusarEntradaMalformada(string campo, string mensagem) =>
         _recusas.Add(new(campo, new DomainError(ModeloFormularioErrorCodes.EntradaMalformada, mensagem)));

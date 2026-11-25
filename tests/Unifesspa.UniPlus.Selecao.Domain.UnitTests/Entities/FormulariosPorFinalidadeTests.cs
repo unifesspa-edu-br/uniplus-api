@@ -76,6 +76,7 @@ public sealed class FormulariosPorFinalidadeTests
     [Theory(DisplayName = "Item em bloco de sistema ou em pagina inexistente é recusado na definição")]
     [InlineData("REVISAO")]
     [InlineData("INEXISTENTE")]
+    [InlineData("")]
     public void Item_ForaDeSecao_RecusaNaDefinicao(string pagina) =>
         ProcessoConformeFactory.Criar().DefinirFatosColetados(FinalidadeFormulario.Inscricao, [Item("A", 0, pagina)])
             .Errors.Should().ContainSingle().Which.Error.Code.Should().Be(EstruturaFormularioErrorCodes.ItemForaDeSecao);

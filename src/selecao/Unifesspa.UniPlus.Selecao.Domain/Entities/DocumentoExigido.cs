@@ -25,7 +25,7 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 public sealed class DocumentoExigido : EntityBase, IParteDoProcesso
 {
     /// <summary>O tamanho de um código de fato (o mesmo do fato citado por uma condição de gatilho).</summary>
-    public const int FatoComprovadoMaxLength = 60;
+    public const int FatoComprovadoMaxLength = FatoDoCatalogo.CodigoMaxLength;
 
     public const string FatosComprovadosInvalidos = "DocumentoExigido.FatosComprovadosInvalidos";
 

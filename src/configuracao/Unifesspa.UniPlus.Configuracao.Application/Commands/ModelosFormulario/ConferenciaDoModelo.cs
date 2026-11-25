@@ -162,7 +162,6 @@ internal static class ConferenciaDoModelo
 
     private static IEnumerable<FieldError> ConferirVinculos(ConteudoLido conteudo, CatalogoDoModelo catalogo, VinculosDoModelo existentes)
     {
-        // Os vínculos são os do conteúdo como será gravado: um código com espaço é o mesmo fato.
         VinculosDeFatos propostos = Vinculos(conteudo.ParaConteudo().NaFormaGravada());
         return ConferenciaNoCatalogo.VinculoNovo(catalogo.Fatos, existentes.Fatos, propostos) is { IsFailure: true } vinculo ? vinculo.Errors : [];
     }
@@ -183,7 +182,7 @@ internal static class ConferenciaDoModelo
             return [];
         }
 
-        string codigo = TextoGravavel.CodigoNaFormaGravada(item.FatoCodigo);
+        string codigo = item.FatoCodigo;
         return recusaDeColetavel(codigo, catalogo.Fatos) is { } naoColetavel
             ? [new FieldError($"{caminho}.fatoCodigo", naoColetavel, codigo)]
             : ConferirCampoDeFatoColetavel(item, codigo, caminho, catalogo);

@@ -396,6 +396,12 @@
     "titulo": "O código do termo exigido excede o tamanho máximo"
   },
   {
+    "chave": "TermoFormulario.CodigoFormatoInvalido",
+    "status": 422,
+    "codigo": "uniplus.termo_formulario.codigo_formato_invalido",
+    "titulo": "O código do termo exigido está fora do formato"
+  },
+  {
     "chave": "TermoFormulario.OrdemInvalida",
     "status": 422,
     "codigo": "uniplus.termo_formulario.ordem_invalida",
