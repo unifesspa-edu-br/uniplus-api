@@ -17,6 +17,18 @@ public sealed class MigracaoDaConcessao : EntityBase
 
     public SituacaoDaMigracao Situacao { get; private set; }
 
+    /// <summary>A situação da linha apresentada na revisão.</summary>
+    public SituacaoDaConcessaoNaRevisao SituacaoNaRevisao => Situacao switch
+    {
+        SituacaoDaMigracao.Retida => SituacaoDaConcessaoNaRevisao.Retida,
+        SituacaoDaMigracao.AguardandoProtecaoDeDados => SituacaoDaConcessaoNaRevisao.AguardandoProtecaoDeDados,
+        SituacaoDaMigracao.Migrada => SituacaoDaConcessaoNaRevisao.Migrada,
+        SituacaoDaMigracao.Recusada => SituacaoDaConcessaoNaRevisao.Recusada,
+        SituacaoDaMigracao.NaoMigrada => SituacaoDaConcessaoNaRevisao.NaoMigrada,
+        SituacaoDaMigracao.ForaDaLista => SituacaoDaConcessaoNaRevisao.ForaDaLista,
+        _ => throw new InvalidOperationException("Situação da migração desconhecida."),
+    };
+
     /// <summary>O acréscimo que a migração traria para a concessão é pessoal, identificador ou sensível.</summary>
     public bool ExigeProtecaoDeDados { get; private set; }
 

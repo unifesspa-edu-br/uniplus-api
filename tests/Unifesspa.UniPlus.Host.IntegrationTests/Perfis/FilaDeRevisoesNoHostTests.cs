@@ -127,7 +127,7 @@ public sealed class FilaDeRevisoesNoHostTests : RevisaoDasConcessoesNoHostTestBa
         (await RevogarAsync(diogo, cenario.Concessoes[Betina], MotivoDaRevogacao, Betina.Email)).StatusCode.Should().Be(HttpStatusCode.NoContent);
 
         (await QuantidadeAsync(diogo, cenario.PerfilId)).Should().Be(1);
-        (await RevisaoAsync(diogo, cenario.PerfilId)).GetProperty("situacao").GetString().Should().Be("aberta");
+        (await RevisaoAsync(diogo, cenario.PerfilId)).GetProperty("situacao").GetProperty("codigo").GetString().Should().Be("ABERTA");
     }
 
     [Fact(DisplayName = "A fila recusa, antes de ler qualquer revisão, quem não tem a permissão da etapa")]

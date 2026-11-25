@@ -1,11 +1,14 @@
 namespace Unifesspa.UniPlus.Autorizacao.Application.DTOs;
 
+using Unifesspa.UniPlus.Application.Abstractions.Respostas;
+using Unifesspa.UniPlus.Autorizacao.Domain.Enums;
+
 /// <summary>A revisão das concessões do perfil, com a lista das concessões avaliadas.</summary>
 /// <param name="Situacao">
-/// <c>aberta</c> enquanto há pendência e o prazo não venceu; <c>encerrando</c> quando já não há o que decidir e a próxima
-/// operação ou a rotina a encerra; <c>encerrada</c> depois disso.
+/// <c>ABERTA</c> enquanto há pendência e o prazo não venceu; <c>ENCERRANDO</c> quando já não há o que decidir e a próxima
+/// operação ou a rotina a encerra; <c>ENCERRADA</c> depois disso.
 /// </param>
-/// <param name="Forma">Como a revisão terminou: <c>concluida</c>, <c>prazo</c> ou <c>manual</c>; nulo enquanto não terminou.</param>
+/// <param name="Forma">Como a revisão terminou: <c>CONCLUIDA</c>, <c>PRAZO</c> ou <c>MANUAL</c>; nulo enquanto não terminou.</param>
 /// <param name="DecisoesEnviadas">A gestão de acessos já enviou as decisões.</param>
 public sealed record RevisaoDasConcessoesDto(
     Guid Id,
@@ -15,14 +18,14 @@ public sealed record RevisaoDasConcessoesDto(
     DateTimeOffset AbertaEm,
     DateTimeOffset TerminaEm,
     DateTimeOffset? EncerradaEm,
-    string Situacao,
-    string? Forma,
+    CodigoComRotulo<SituacaoDaRevisaoDasConcessoes> Situacao,
+    CodigoComRotulo<FormaDoEncerramento>? Forma,
     bool DecisoesEnviadas,
     IReadOnlyList<ConcessaoDaRevisaoDto> Itens);
 
 /// <summary>
-/// Uma concessão da revisão. A situação é <c>aguardando_decisoes</c> para a elegível que ainda não tem linha, ou a da linha:
-/// <c>retida</c>, <c>aguardando_protecao_de_dados</c>, <c>migrada</c>, <c>recusada</c>, <c>nao_migrada</c> ou <c>fora_da_lista</c>.
+/// Uma concessão da revisão. A situação é <c>AGUARDANDO_DECISOES</c> para a elegível que ainda não tem linha, ou a da linha:
+/// <c>RETIDA</c>, <c>AGUARDANDO_PROTECAO_DE_DADOS</c>, <c>MIGRADA</c>, <c>RECUSADA</c>, <c>NAO_MIGRADA</c> ou <c>FORA_DA_LISTA</c>.
 /// </summary>
 /// <param name="Acrescimo">Os códigos que a versão-alvo acrescenta ao que a concessão dá hoje.</param>
 /// <param name="EhDoLeitor">A concessão é de quem lê, que não pode decidi-la.</param>
@@ -35,7 +38,7 @@ public sealed record ConcessaoDaRevisaoDto(
     int? VersaoAtual,
     IReadOnlyList<string> Acrescimo,
     bool ExigeProtecaoDeDados,
-    string Situacao,
+    CodigoComRotulo<SituacaoDaConcessaoNaRevisao> Situacao,
     bool EhDoLeitor);
 
 /// <summary>Uma revisão de concessões na lista de uma etapa, com o perfil a que pertence. Não traz nome de beneficiário.</summary>
@@ -52,7 +55,7 @@ public sealed record ItemDaListaDeRevisoesDto(
     int QuantidadeADecidir);
 
 /// <summary>A revisão resumida no perfil.</summary>
-public sealed record RevisaoDoPerfilDto(Guid Id, DateTimeOffset TerminaEm, string Situacao);
+public sealed record RevisaoDoPerfilDto(Guid Id, DateTimeOffset TerminaEm, CodigoComRotulo<SituacaoDaRevisaoDasConcessoes> Situacao);
 
 /// <summary>Uma decisão da gestão, sobre a concessão retida ou da proteção de dados: migrar ou recusar a concessão.</summary>
 public sealed record DecisaoDaMigracaoRequest(Guid ConcessaoId, string? Decisao);

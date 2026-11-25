@@ -27,12 +27,15 @@ public sealed class RevisaoDasConcessoesNoHostTests : RevisaoDasConcessoesNoHost
 
         JsonElement revisao = await RevisaoAsync(gestao, cenario.PerfilId);
 
-        revisao.GetProperty("situacao").GetString().Should().Be("aberta");
+        revisao.GetProperty("situacao").GetProperty("codigo").GetString().Should().Be("ABERTA");
+        revisao.GetProperty("situacao").GetProperty("rotulo").GetString().Should().Be("Aberta");
+        revisao.GetProperty("forma").ValueKind.Should().Be(JsonValueKind.Null);
+        ItemDe(revisao, cenario.Concessoes[Leandro]).GetProperty("situacao").GetProperty("rotulo").GetString().Should().Be("Aguardando decisão da gestão");
         revisao.GetProperty("decisoesEnviadas").GetBoolean().Should().BeFalse();
         (revisao.GetProperty("terminaEm").GetDateTimeOffset() - revisao.GetProperty("abertaEm").GetDateTimeOffset()).Should().Be(TimeSpan.FromHours(72));
         revisao.GetProperty("itens").GetArrayLength().Should().Be(2);
-        cenario.Concessoes.Values.Should().OnlyContain(id => SituacaoDe(revisao, id) == "aguardando_decisoes");
-        (await PerfilAsync(gestao, cenario.PerfilId)).GetProperty("revisaoDasConcessoes").GetProperty("situacao").GetString().Should().Be("aberta");
+        cenario.Concessoes.Values.Should().OnlyContain(id => SituacaoDe(revisao, id) == "AGUARDANDO_DECISOES");
+        (await PerfilAsync(gestao, cenario.PerfilId)).GetProperty("revisaoDasConcessoes").GetProperty("situacao").GetProperty("codigo").GetString().Should().Be("ABERTA");
     }
 
     [Fact(DisplayName = "O envio que migra tudo leva a concessão com acréscimo sensível à proteção de dados, que conclui a revisão")]
@@ -50,8 +53,8 @@ public sealed class RevisaoDasConcessoesNoHostTests : RevisaoDasConcessoesNoHost
             protecao, HttpMethod.Post, RotaDaRevisao(cenario.PerfilId, "/protecao-de-dados"), new { decisoes = new[] { Decisao(concessao, "MIGRAR") } });
         JsonElement revisao = await CorpoAsync(etapa, HttpStatusCode.OK);
         SituacaoDe(revisao, concessao).Should().Be("MIGRADA");
-        revisao.GetProperty("situacao").GetString().Should().Be("encerrada");
-        revisao.GetProperty("forma").GetString().Should().Be("CONCLUIDA");
+        revisao.GetProperty("situacao").GetProperty("codigo").GetString().Should().Be("ENCERRADA");
+        new[] { revisao.GetProperty("forma").GetProperty("codigo").GetString(), revisao.GetProperty("forma").GetProperty("rotulo").GetString() }.Should().Equal("CONCLUIDA", "Concluída");
     }
 
     [Fact(DisplayName = "O envio que recusa exige a confirmação da exclusão e, confirmado, revoga a concessão")]
@@ -152,7 +155,7 @@ public sealed class RevisaoDasConcessoesNoHostTests : RevisaoDasConcessoesNoHost
 
         await ConferirRecusaDaMigracaoAsync(semConfirmacao, HttpStatusCode.UnprocessableEntity, "exclusao_nao_confirmada");
         JsonElement revisao = await CorpoAsync(confirmado, HttpStatusCode.OK);
-        revisao.GetProperty("forma").GetString().Should().Be("MANUAL");
+        revisao.GetProperty("forma").GetProperty("codigo").GetString().Should().Be("MANUAL");
         SituacaoDe(revisao, cenario.Concessoes[Leandro]).Should().Be("NAO_MIGRADA");
         (await TemConcessaoAtivaAsync(Leandro, cenario.PerfilId)).Should().BeFalse();
     }

@@ -115,6 +115,15 @@ public sealed class ChecksDoModeloDoMonolitoTests
         RestricoesDa(ModelosDoMonolito.Valor.InstantaneoDaMigration, tabela).Should().ContainSingle(restricao => restricao.Nome == nome)
             .Which.Sql.Should().Be(sql);
 
+    [Fact(DisplayName = "A situação sem linha não é aceita na migração pelo modelo nem pelo instantâneo")]
+    public void SituacaoDaMigracao_AguardandoDecisoes_NaoEstaNaRestricao()
+    {
+        RestricoesDa(ModelosDoMonolito.Valor.Projeto, "migracoes_da_concessao").Single(r => r.Nome == "ck_migracoes_da_concessao_situacao")
+            .Sql.Should().NotContain("AGUARDANDO_DECISOES");
+        RestricoesDa(ModelosDoMonolito.Valor.InstantaneoDaMigration, "migracoes_da_concessao").Single(r => r.Nome == "ck_migracoes_da_concessao_situacao")
+            .Sql.Should().NotContain("AGUARDANDO_DECISOES");
+    }
+
     private static List<(string? Nome, string Sql)> RestricoesDa(IModel modelo, string tabela) =>
     [
         .. modelo.GetEntityTypes()

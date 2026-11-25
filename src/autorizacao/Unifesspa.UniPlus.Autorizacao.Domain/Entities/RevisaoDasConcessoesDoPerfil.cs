@@ -21,7 +21,6 @@ public sealed class RevisaoDasConcessoesDoPerfil : EntityBase
     private readonly List<DecisaoDaMigracao> _decisoes = [];
 
     public Guid PerfilId { get; private set; }
-
     /// <summary>A versão que abriu a revisão.</summary>
     public Guid VersaoNovaId { get; private set; }
 
@@ -39,7 +38,6 @@ public sealed class RevisaoDasConcessoesDoPerfil : EntityBase
     public long OrdemDeRegistro { get; private set; }
 
     public DateTimeOffset TerminaEm { get; private set; }
-
     public DateTimeOffset? EncerradaEm { get; private set; }
 
     public FormaDoEncerramento? Forma { get; private set; }
@@ -51,17 +49,12 @@ public sealed class RevisaoDasConcessoesDoPerfil : EntityBase
     public string? EncerradaPorContaId { get; private set; }
 
     public string? EncerradaPorNome { get; private set; }
-
     public DateTimeOffset? Aviso48hEm { get; private set; }
 
     public DateTimeOffset? Aviso24hEm { get; private set; }
-
     public IReadOnlyList<EnvioDeDecisoesDaRevisao> Envios => _envios;
-
     public IReadOnlyList<MigracaoDaConcessao> Migracoes => _migracoes;
-
     public IReadOnlyList<DecisaoDaMigracao> Decisoes => _decisoes;
-
     public bool Encerrada => EncerradaEm is not null;
 
     /// <summary>O envio de decisões da gestão de acessos, que decide a lista inteira; nulo enquanto não foi enviado.</summary>
@@ -91,6 +84,14 @@ public sealed class RevisaoDasConcessoesDoPerfil : EntityBase
     /// <summary>Não encerrada, com o prazo por vencer e ao menos uma pendência.</summary>
     public bool EstaAberta(DateTimeOffset agora, int pendencias) => !Encerrada && agora < TerminaEm && pendencias > 0;
 
+    /// <summary>A situação da revisão no instante informado.</summary>
+    public SituacaoDaRevisaoDasConcessoes SituacaoEm(DateTimeOffset agora, int pendencias) => Encerrada switch
+    {
+        true => SituacaoDaRevisaoDasConcessoes.Encerrada,
+        false when EstaAberta(agora, pendencias) => SituacaoDaRevisaoDasConcessoes.Aberta,
+        false => SituacaoDaRevisaoDasConcessoes.Encerrando,
+    };
+
     /// <summary>A concessão do perfil que não foi revogada, não venceu e ainda não está na versão-alvo.</summary>
     public bool Elegivel(Concessao concessao, DateTimeOffset agora)
     {
@@ -107,6 +108,10 @@ public sealed class RevisaoDasConcessoesDoPerfil : EntityBase
     }
 
     public MigracaoDaConcessao? LinhaDe(Guid concessaoId) => _migracoes.Find(m => m.ConcessaoId == concessaoId);
+
+    /// <summary>A situação da concessão, inclusive antes de haver linha.</summary>
+    public SituacaoDaConcessaoNaRevisao SituacaoDe(Guid concessaoId) =>
+        LinhaDe(concessaoId)?.SituacaoNaRevisao ?? SituacaoDaConcessaoNaRevisao.AguardandoDecisoes;
 
     /// <summary>Uma remoção na revisão põe em vigor uma versão reduzida, que passa a ser o destino das migrações.</summary>
     public void RedirecionarAlvo(Guid versaoReduzidaId) => VersaoAlvoId = versaoReduzidaId;

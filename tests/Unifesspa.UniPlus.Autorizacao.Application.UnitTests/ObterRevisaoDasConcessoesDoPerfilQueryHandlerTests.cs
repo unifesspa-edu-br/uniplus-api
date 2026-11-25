@@ -23,6 +23,7 @@ public sealed class ObterRevisaoDasConcessoesDoPerfilQueryHandlerTests
 {
     private const string ConsultarVersoes = "autorizacao:perfis:consultar-versoes";
 
+    private static readonly DateTimeOffset Agora = new(2026, 1, 15, 12, 0, 0, TimeSpan.Zero);
     private static readonly Guid PerfilId = Guid.CreateVersion7();
 
     [Fact(DisplayName = "A leitura da revisão recusa quem não pode ler o perfil sem consultá-lo e registra as negativas")]
@@ -82,12 +83,12 @@ public sealed class ObterRevisaoDasConcessoesDoPerfilQueryHandlerTests
     public async Task Obter_PerfilComRevisao_DevolveARevisaoERegistra()
     {
         Perfil perfil = PerfisDeTeste.Vigente("Análise de atendimento", "Analisa os pedidos.", ["a:b:c"], new CatalogoDeTeste());
-        RevisaoDasConcessoesDoPerfil revisao = RevisaoDasConcessoesDoPerfil.Abrir(perfil.Id, perfil.Versoes[^1], DateTimeOffset.UtcNow);
+        RevisaoDasConcessoesDoPerfil revisao = RevisaoDasConcessoesDoPerfil.Abrir(perfil.Id, perfil.Versoes[^1], Agora);
         VerificadorDeTeste verificador = new(PerfisDeTeste.Gestor.ContaId, [Gestao]);
 
         Result<RevisaoDasConcessoesDto> resultado = await Obter(verificador, new PerfisNaMemoria(perfil), perfil.Id, new RevisoesNaMemoria(ultima: revisao));
 
-        resultado.Value!.Should().Match<RevisaoDasConcessoesDto>(d => d.Id == revisao.Id && d.PerfilId == perfil.Id && d.TerminaEm == revisao.TerminaEm && d.Situacao == "encerrando");
+        resultado.Value!.Should().Match<RevisaoDasConcessoesDto>(d => d.Id == revisao.Id && d.PerfilId == perfil.Id && d.TerminaEm == revisao.TerminaEm && d.Situacao.Codigo == "ENCERRANDO");
         TrilhaDeAcesso.Do(verificador).Should().Equal(GestaoPermitidaSobre(perfil.Id));
     }
 
@@ -97,10 +98,12 @@ public sealed class ObterRevisaoDasConcessoesDoPerfilQueryHandlerTests
     private static Task<Result<RevisaoDasConcessoesDto>> Obter(IVerificadorDeAcesso verificador, IPerfilRepository perfis, Guid? perfilId = null, RevisoesNaMemoria? revisoesNaMemoria = null)
     {
         RevisoesNaMemoria revisoes = revisoesNaMemoria ?? new();
-        LeitorDaMigracao leitor = new(revisoes, Substitute.For<ICatalogoDePermissoesConsultavel>(), TimeProvider.System);
+        TimeProvider relogio = Substitute.For<TimeProvider>();
+        relogio.GetUtcNow().Returns(Agora);
+        LeitorDaMigracao leitor = new(revisoes, Substitute.For<ICatalogoDePermissoesConsultavel>(), relogio);
 
         return ObterRevisaoDasConcessoesDoPerfilQueryHandler.Handle(
             new ObterRevisaoDasConcessoesDoPerfilQuery(perfilId ?? PerfilId), verificador, perfis,
-            new LeituraDaRevisaoDasConcessoes(revisoes, leitor, TimeProvider.System), new Usuario(PerfisDeTeste.Gestor), CancellationToken.None);
+            new LeituraDaRevisaoDasConcessoes(revisoes, leitor, relogio), new Usuario(PerfisDeTeste.Gestor), CancellationToken.None);
     }
 }

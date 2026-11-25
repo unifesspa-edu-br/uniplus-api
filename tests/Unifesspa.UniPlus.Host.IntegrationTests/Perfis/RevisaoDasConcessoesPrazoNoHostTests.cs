@@ -67,8 +67,8 @@ public sealed class RevisaoDasConcessoesPrazoNoHostTests : RevisaoDasConcessoesN
         primeira.Should().BeGreaterThanOrEqualTo(1);
         segunda.Should().Be(0);
         JsonElement revisao = await RevisaoAsync(gestao, cenario.PerfilId);
-        revisao.GetProperty("situacao").GetString().Should().Be("encerrada");
-        revisao.GetProperty("forma").GetString().Should().Be("PRAZO");
+        revisao.GetProperty("situacao").GetProperty("codigo").GetString().Should().Be("ENCERRADA");
+        revisao.GetProperty("forma").GetProperty("codigo").GetString().Should().Be("PRAZO");
         SituacaoDe(revisao, cenario.Concessoes[Leandro]).Should().Be("NAO_MIGRADA");
     }
 
@@ -84,7 +84,7 @@ public sealed class RevisaoDasConcessoesPrazoNoHostTests : RevisaoDasConcessoesN
 
         JsonElement revisao = await RevisaoAsync(gestao, cenario.PerfilId);
 
-        revisao.GetProperty("situacao").GetString().Should().Be("encerrada");
+        revisao.GetProperty("situacao").GetProperty("codigo").GetString().Should().Be("ENCERRADA");
         revisao.GetProperty("itens").EnumerateArray().Select(i => i.GetProperty("concessaoId").GetGuid())
             .Should().BeEquivalentTo([cenario.Concessoes[Leandro]]).And.NotContain(posterior);
     }
@@ -103,7 +103,7 @@ public sealed class RevisaoDasConcessoesPrazoNoHostTests : RevisaoDasConcessoesN
         await ConferirRecusaDaMigracaoAsync(primeira, HttpStatusCode.UnprocessableEntity, "prazo_encerrado");
         await ConferirRecusaDaMigracaoAsync(repeticao, HttpStatusCode.UnprocessableEntity, "prazo_encerrado");
         JsonElement revisao = await RevisaoAsync(gestao, cenario.PerfilId);
-        revisao.GetProperty("situacao").GetString().Should().Be("encerrada");
+        revisao.GetProperty("situacao").GetProperty("codigo").GetString().Should().Be("ENCERRADA");
         SituacaoDe(revisao, cenario.Concessoes[Leandro]).Should().Be("NAO_MIGRADA");
     }
 
