@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Mvc.ModelBinding;
 using Microsoft.Extensions.DependencyInjection;
 
 using Unifesspa.UniPlus.Infrastructure.Core.Pagination;
+using Unifesspa.UniPlus.Infrastructure.Core.UnitTests.Apoio.ControllersDeTeste;
 using Unifesspa.UniPlus.Kernel.Pagination;
 
 using static CursorBinderTestSupport;
@@ -29,7 +30,7 @@ public sealed class PageRequestModelBinderVinculoDeUsuarioTests
         string cursor = await EncodeAsync(services, ValidPayload("inscricoes") with { UserId = cursorUser });
 
         ModelBindingContext context = await BindAsync(
-            QueryWithCursor(cursor), BinderActions.UserInscricoes, services);
+            QueryWithCursor(cursor), nameof(CursorDeTesteController.UserInscricoes), services);
 
         AssertInvalidCursor(context);
     }
@@ -43,7 +44,7 @@ public sealed class PageRequestModelBinderVinculoDeUsuarioTests
         string cursor = await EncodeAsync(services, payload);
 
         ModelBindingContext context = await BindAsync(
-            QueryWithCursor(cursor), BinderActions.UserInscricoes, services);
+            QueryWithCursor(cursor), nameof(CursorDeTesteController.UserInscricoes), services);
 
         AssertPage(context).AfterId.Should().Be(Guid.Parse(payload.After));
     }
@@ -79,7 +80,7 @@ public sealed class PageRequestModelBinderVinculoDeUsuarioTests
         ResolutionCounter counter = new();
         ServiceProvider services = CreateCursorServices().WithUser(true, "alice", counter).BuildServiceProvider();
 
-        await BindAsync("?cursor=@@@@", BinderActions.UserInscricoes, services);
+        await BindAsync("?cursor=@@@@", nameof(CursorDeTesteController.UserInscricoes), services);
 
         counter.Total.Should().Be(0);
     }
@@ -138,7 +139,7 @@ public sealed class PageRequestModelBinderVinculoDeUsuarioTests
         string cursor = await EncodeAsync(services, payload);
 
         ModelBindingContext context = await BindAsync(
-            QueryWithCursor(cursor), BinderActions.UserSortedCidades, services);
+            QueryWithCursor(cursor), nameof(CursorDeTesteController.UserSortedCidades), services);
 
         AssertInvalidCursor(context);
         counter.Total.Should().Be(1);
@@ -151,7 +152,7 @@ public sealed class PageRequestModelBinderVinculoDeUsuarioTests
         string cursor = await EncodeAsync(services, payload);
 
         await BindAsync(
-            QueryWithCursor(cursor, querySuffix), BinderActions.UserInscricoes, services);
+            QueryWithCursor(cursor, querySuffix), nameof(CursorDeTesteController.UserInscricoes), services);
 
         return counter.Total;
     }

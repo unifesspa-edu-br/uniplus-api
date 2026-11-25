@@ -1,16 +1,13 @@
 namespace Unifesspa.UniPlus.Infrastructure.Core.UnitTests.OpenApi;
 
-using System.Reflection;
-
 using AwesomeAssertions;
 
-using Microsoft.AspNetCore.Mvc.ApiExplorer;
-using Microsoft.AspNetCore.Mvc.Controllers;
 using Microsoft.AspNetCore.OpenApi;
 using Microsoft.OpenApi;
 
-using Unifesspa.UniPlus.Infrastructure.Core.Idempotency;
 using Unifesspa.UniPlus.Infrastructure.Core.OpenApi;
+using Unifesspa.UniPlus.Infrastructure.Core.UnitTests.Apoio;
+using Unifesspa.UniPlus.Infrastructure.Core.UnitTests.Apoio.ControllersDeTeste;
 
 public sealed class IdempotenciaOperationTransformerTests
 {
@@ -22,7 +19,7 @@ public sealed class IdempotenciaOperationTransformerTests
         OpenApiOperation operation = new();
 
         await new IdempotenciaOperationTransformer().TransformAsync(
-            operation, Context(nameof(IdempotentControllerFixture.IdempotentAction)), CancellationToken.None);
+            operation, Context(nameof(IdempotenciaDeTesteController.IdempotentAction)), CancellationToken.None);
 
         operation.Responses.Should().ContainKey(status);
         OpenApiMediaType media = operation.Responses[status].Content!["application/problem+json"];
@@ -38,7 +35,7 @@ public sealed class IdempotenciaOperationTransformerTests
         OpenApiOperation operation = new();
 
         await new IdempotenciaOperationTransformer().TransformAsync(
-            operation, Context(nameof(IdempotentControllerFixture.IdempotentAction)), CancellationToken.None);
+            operation, Context(nameof(IdempotenciaDeTesteController.IdempotentAction)), CancellationToken.None);
 
         operation.Responses.Should().ContainKey(status);
         operation.Responses[status].Content.Should().BeNullOrEmpty(
@@ -51,7 +48,7 @@ public sealed class IdempotenciaOperationTransformerTests
         OpenApiOperation operation = new();
 
         await new IdempotenciaOperationTransformer().TransformAsync(
-            operation, Context(nameof(IdempotentControllerFixture.NonIdempotentAction)), CancellationToken.None);
+            operation, Context(nameof(IdempotenciaDeTesteController.NonIdempotentAction)), CancellationToken.None);
 
         operation.Responses.Should().BeNullOrEmpty();
     }
@@ -63,7 +60,7 @@ public sealed class IdempotenciaOperationTransformerTests
         OpenApiOperation operation = new() { Responses = new OpenApiResponses { ["409"] = own } };
 
         await new IdempotenciaOperationTransformer().TransformAsync(
-            operation, Context(nameof(IdempotentControllerFixture.IdempotentAction)), CancellationToken.None);
+            operation, Context(nameof(IdempotenciaDeTesteController.IdempotentAction)), CancellationToken.None);
 
         operation.Responses["409"].Description.Should().Be("Conflito de domínio específico");
         operation.Responses["409"].Content.Should().BeNullOrEmpty("a declaração própria da action não é sobrescrita nem ganha corpo");
@@ -75,25 +72,8 @@ public sealed class IdempotenciaOperationTransformerTests
         {
             DocumentName = "selecao",
             ApplicationServices = NSubstitute.Substitute.For<IServiceProvider>(),
-            Description = new ApiDescription
-            {
-                ActionDescriptor = new ControllerActionDescriptor
-                {
-                    MethodInfo = typeof(IdempotentControllerFixture).GetMethod(actionName)!,
-                    ControllerTypeInfo = typeof(IdempotentControllerFixture).GetTypeInfo(),
-                },
-            },
+            Description = Mvc.Descricao(typeof(IdempotenciaDeTesteController), actionName, "POST"),
         };
 
-    private sealed class IdempotentControllerFixture
-    {
-        [RequiresIdempotencyKey]
-        public static void IdempotentAction()
-        {
-        }
-
-        public static void NonIdempotentAction()
-        {
-        }
-    }
+    private static readonly AcoesDoMvcDeTeste Mvc = new(typeof(IdempotenciaDeTesteController));
 }

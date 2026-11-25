@@ -7,6 +7,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 
 using Unifesspa.UniPlus.Infrastructure.Core.Pagination;
+using Unifesspa.UniPlus.Infrastructure.Core.UnitTests.Apoio.ControllersDeTeste;
 using Unifesspa.UniPlus.Kernel.Pagination;
 
 using static CursorBinderTestSupport;
@@ -156,7 +157,7 @@ public sealed class PageRequestModelBinderPrecedenciaTests
         string cursor = await EncodeAsync(services, ValidPayload("cidades") with { SortKey = "maraba" });
 
         ModelBindingContext context = await BindAsync(
-            QueryWithCursor(cursor), BinderActions.SortedCidades, services);
+            QueryWithCursor(cursor), nameof(CursorDeTesteController.SortedCidades), services);
 
         AssertPage(context).AfterSortKey.Should().Be("maraba");
     }

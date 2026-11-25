@@ -4,7 +4,7 @@ using AwesomeAssertions;
 
 using Microsoft.AspNetCore.Cors.Infrastructure;
 
-using Unifesspa.UniPlus.Infrastructure.Core.OpenApi;
+using Unifesspa.UniPlus.Infrastructure.Core.UnitTests.Apoio.ControllersDeTeste;
 
 public sealed class HeadersDoContratoExpostosTests
 {
@@ -84,35 +84,4 @@ public sealed class HeadersDoContratoExpostosTests
         policy.ExposedHeaders.Should().NotContain("Retry-After");
     }
 
-    private sealed class ControllerSujeitoATrava
-    {
-        [EmiteEsperaEsgotadaPelaTrava]
-        public static void Alterar()
-        {
-        }
-    }
-
-    private sealed class ControllerQueDeclaraLocation
-    {
-        [EmiteHeader("Location", "Endereço do recurso criado.", Status = "201")]
-        [EmiteETag(Descricao = "Selo da representação.")]
-        public static void Criar()
-        {
-        }
-    }
-
-    private sealed class OutroControllerQueDeclaraLocation
-    {
-        [EmiteHeader("location", "Endereço do recurso criado.", Status = "201")]
-        public static void Criar()
-        {
-        }
-    }
-
-    private sealed class ControllerQueNaoDeclaraNada
-    {
-        public static void Listar()
-        {
-        }
-    }
 }

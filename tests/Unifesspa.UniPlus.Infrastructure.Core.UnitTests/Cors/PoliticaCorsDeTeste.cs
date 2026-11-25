@@ -1,13 +1,8 @@
 namespace Unifesspa.UniPlus.Infrastructure.Core.UnitTests.Cors;
 
-using System.Reflection;
-
 using AwesomeAssertions;
 
 using Microsoft.AspNetCore.Cors.Infrastructure;
-using Microsoft.AspNetCore.Mvc.Abstractions;
-using Microsoft.AspNetCore.Mvc.Controllers;
-using Microsoft.AspNetCore.Mvc.Infrastructure;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -17,6 +12,7 @@ using Microsoft.Extensions.Options;
 using NSubstitute;
 
 using Unifesspa.UniPlus.Infrastructure.Core.Cors;
+using Unifesspa.UniPlus.Infrastructure.Core.UnitTests.Apoio;
 
 using FrameworkCorsOptions = Microsoft.AspNetCore.Cors.Infrastructure.CorsOptions;
 
@@ -30,7 +26,8 @@ internal static class PoliticaCorsDeTeste
     {
         ServiceCollection services = new();
         services.AddSingleton(NullLoggerFactory.Instance);
-        services.AddSingleton(AcoesDos(controllers));
+        using AcoesDoMvcDeTeste mvc = new(controllers);
+        services.AddSingleton(mvc.Acoes);
         services.AddCorsConfiguration(Configuracao(allowAnyHeader), EmProducao());
 
         using ServiceProvider provider = services.BuildServiceProvider();
@@ -57,21 +54,4 @@ internal static class PoliticaCorsDeTeste
         return environment;
     }
 
-    private static IActionDescriptorCollectionProvider AcoesDos(Type[] controllers)
-    {
-        ControllerActionDescriptor[] acoes =
-        [
-            .. controllers
-                .SelectMany(static controller => controller.GetMethods().Where(static m => m.DeclaringType != typeof(object)))
-                .Select(static metodo => new ControllerActionDescriptor
-                {
-                    MethodInfo = metodo,
-                    ControllerTypeInfo = metodo.DeclaringType!.GetTypeInfo(),
-                }),
-        ];
-
-        IActionDescriptorCollectionProvider provider = Substitute.For<IActionDescriptorCollectionProvider>();
-        provider.ActionDescriptors.Returns(new ActionDescriptorCollection([.. acoes.Cast<ActionDescriptor>()], version: 1));
-        return provider;
-    }
 }

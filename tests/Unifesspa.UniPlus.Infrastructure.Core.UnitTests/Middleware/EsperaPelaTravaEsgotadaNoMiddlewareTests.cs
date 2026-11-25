@@ -1,6 +1,5 @@
 namespace Unifesspa.UniPlus.Infrastructure.Core.UnitTests.Middleware;
 
-using System.Reflection;
 using System.Text.Json;
 
 using AwesomeAssertions;
@@ -10,10 +9,10 @@ using Microsoft.AspNetCore.Mvc.Controllers;
 
 using Npgsql;
 
-using Unifesspa.UniPlus.Infrastructure.Core.Idempotency;
 using Unifesspa.UniPlus.Infrastructure.Core.Middleware;
-using Unifesspa.UniPlus.Infrastructure.Core.OpenApi;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
+using Unifesspa.UniPlus.Infrastructure.Core.UnitTests.Apoio;
+using Unifesspa.UniPlus.Infrastructure.Core.UnitTests.Apoio.ControllersDeTeste;
 
 /// <summary>
 /// A espera esgotada pela trava de uma linha chega ao cliente como indisponibilidade temporária, sem prazo de nova
@@ -23,8 +22,8 @@ using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 public sealed class EsperaPelaTravaEsgotadaNoMiddlewareTests
 {
     [Theory(DisplayName = "Com Idempotency-Key exigida, responde 503 sem Retry-After, sem vazar a causa, e manda usar uma nova chave")]
-    [InlineData(nameof(Rota.ComChave))]
-    [InlineData(nameof(Rota.SemDeclaracaoComChave))]
+    [InlineData(nameof(RotaDeTravaDeTesteController.ComChave))]
+    [InlineData(nameof(RotaDeTravaDeTesteController.SemDeclaracaoComChave))]
     public async Task InvokeAsync_RotaComChave_MandaUsarNovaChave(string acao)
     {
         string detalhe = await Responde503SemRetryAfterAsync(acao);
@@ -34,8 +33,8 @@ public sealed class EsperaPelaTravaEsgotadaNoMiddlewareTests
     }
 
     [Theory(DisplayName = "Sem Idempotency-Key, responde 503 sem Retry-After e manda reler o estado, sem falar em chave")]
-    [InlineData(nameof(Rota.SemChave))]
-    [InlineData(nameof(Rota.SemDeclaracao))]
+    [InlineData(nameof(RotaDeTravaDeTesteController.SemChave))]
+    [InlineData(nameof(RotaDeTravaDeTesteController.SemDeclaracao))]
     public async Task InvokeAsync_RotaSemChave_MandaReenviarSemChave(string acao)
     {
         string detalhe = await Responde503SemRetryAfterAsync(acao);
@@ -58,7 +57,7 @@ public sealed class EsperaPelaTravaEsgotadaNoMiddlewareTests
     [Fact(DisplayName = "O erro 55P03 do banco fora da trava do processo não é convertido: segue como erro interno, sem Retry-After")]
     public async Task InvokeAsync_LockNotAvailableSemConversao_Responde500()
     {
-        DefaultHttpContext context = ContextoDaRota(nameof(Rota.SemChave));
+        DefaultHttpContext context = ContextoDaRota(nameof(RotaDeTravaDeTesteController.SemChave));
         PostgresException crua = new("ERROR", "ERROR", "canceling statement due to lock timeout", PostgresErrorCodes.LockNotAvailable);
         GlobalExceptionMiddleware middleware = MiddlewareDeErrosDeTeste.Criar(_ => throw crua);
 
@@ -92,35 +91,10 @@ public sealed class EsperaPelaTravaEsgotadaNoMiddlewareTests
     private static DefaultHttpContext ContextoDaRota(string acao)
     {
         DefaultHttpContext context = MiddlewareDeErrosDeTeste.CriarContexto();
-        ControllerActionDescriptor descritor = new()
-        {
-            MethodInfo = typeof(Rota).GetMethod(acao)!,
-            ControllerTypeInfo = typeof(Rota).GetTypeInfo(),
-        };
-        context.SetEndpoint(new Endpoint(null, new EndpointMetadataCollection(descritor), acao));
+        using AcoesDoMvcDeTeste mvc = new(typeof(RotaDeTravaDeTesteController));
+        ControllerActionDescriptor descritor = mvc.Acao(typeof(RotaDeTravaDeTesteController), acao);
+        context.SetEndpoint(new Endpoint(null, new EndpointMetadataCollection([.. descritor.EndpointMetadata, descritor]), acao));
         return context;
     }
 
-    private sealed class Rota
-    {
-        [EmiteEsperaEsgotadaPelaTrava]
-        [RequiresIdempotencyKey]
-        public static void ComChave()
-        {
-        }
-
-        [EmiteEsperaEsgotadaPelaTrava]
-        public static void SemChave()
-        {
-        }
-
-        [RequiresIdempotencyKey]
-        public static void SemDeclaracaoComChave()
-        {
-        }
-
-        public static void SemDeclaracao()
-        {
-        }
-    }
 }

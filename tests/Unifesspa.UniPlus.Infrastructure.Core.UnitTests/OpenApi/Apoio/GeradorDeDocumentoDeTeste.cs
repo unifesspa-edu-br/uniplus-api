@@ -7,6 +7,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.OpenApi;
 
 using Unifesspa.UniPlus.Infrastructure.Core.DependencyInjection;
+using Unifesspa.UniPlus.Infrastructure.Core.UnitTests.Apoio;
 
 /// <summary>Gera o documento OpenAPI pelo pipeline do Uni+, como o host o publica.</summary>
 internal static class GeradorDeDocumentoDeTeste
@@ -41,7 +42,7 @@ internal static class GeradorDeDocumentoDeTeste
     /// <summary>O documento das ações de <see cref="ControladorDeCodigosDeTeste"/>.</summary>
     public static async Task<DocumentoPublicado> GerarDosControladoresAsync()
     {
-        await using WebApplication app = NovoConstrutorComControladores(ControladorDeCodigosDeTeste.Documento).Build();
+        await using WebApplication app = NovoConstrutorComControladores(ControladorDeCodigosDeTeste.Documento, typeof(ControladorDeCodigosDeTeste)).Build();
         app.MapControllers();
         await app.StartAsync();
 
@@ -55,11 +56,15 @@ internal static class GeradorDeDocumentoDeTeste
     public static WebApplicationBuilder NovoConstrutor(string documento, Action<OpenApiOptions>? antes = null) =>
         Montar(WebApplication.CreateBuilder(), documento, antes);
 
-    /// <summary>Um construtor como <see cref="NovoConstrutor"/>, com os controladores deste assembly de teste.</summary>
-    public static WebApplicationBuilder NovoConstrutorComControladores(string documento)
+    /// <summary>Um construtor como <see cref="NovoConstrutor"/>, com os controladores informados.</summary>
+    public static WebApplicationBuilder NovoConstrutorComControladores(string documento, params Type[] controllers)
     {
         WebApplicationBuilder builder = WebApplication.CreateBuilder();
-        builder.Services.AddControllers().AddApplicationPart(typeof(ControladorDeCodigosDeTeste).Assembly);
+        builder.Services.AddControllers().ConfigureApplicationPartManager(manager =>
+        {
+            manager.ApplicationParts.Clear();
+            manager.ApplicationParts.Add(new AcoesDoMvcDeTeste.ControllersInformados(controllers));
+        });
 
         return Montar(builder, documento, antes: null);
     }

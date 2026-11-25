@@ -7,6 +7,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 
 using Unifesspa.UniPlus.Infrastructure.Core.Pagination;
+using Unifesspa.UniPlus.Infrastructure.Core.UnitTests.Apoio.ControllersDeTeste;
 
 using static CursorBinderTestSupport;
 
@@ -69,7 +70,7 @@ public sealed class PageRequestModelBinderEscopoEResolucaoTests
     public async Task BindModelAsync_ParametroSemFromCursor_LancaSemResolverServicos()
     {
         DefaultModelBindingContext context = CreateContext(
-            new ServiceCollection().BuildServiceProvider(), "?limit=0", BinderActions.WithoutAttribute);
+            new ServiceCollection().BuildServiceProvider(), "?limit=0", nameof(CursorDeTesteController.WithoutAttribute));
         PreventQueryRead(context);
 
         Func<Task> bind = () => new PageRequestModelBinder().BindModelAsync(context);
@@ -81,7 +82,7 @@ public sealed class PageRequestModelBinderEscopoEResolucaoTests
     public async Task BindModelAsync_EncoderEOpcoesAusentes_LancaPeloEncoderSemLerAConsulta()
     {
         DefaultModelBindingContext context = CreateContext(
-            new ServiceCollection().BuildServiceProvider(), "?limit=0", BinderActions.PublicEditais);
+            new ServiceCollection().BuildServiceProvider(), "?limit=0", nameof(CursorDeTesteController.PublicEditais));
         PreventQueryRead(context);
 
         Func<Task> bind = () => new PageRequestModelBinder().BindModelAsync(context);
@@ -95,7 +96,7 @@ public sealed class PageRequestModelBinderEscopoEResolucaoTests
         ServiceCollection services = new();
         services.AddSingleton(CreateEncoder());
         DefaultModelBindingContext context = CreateContext(
-            services.BuildServiceProvider(), "?limit=0", BinderActions.PublicEditais);
+            services.BuildServiceProvider(), "?limit=0", nameof(CursorDeTesteController.PublicEditais));
         PreventQueryRead(context);
 
         Func<Task> bind = () => new PageRequestModelBinder().BindModelAsync(context);
@@ -111,7 +112,7 @@ public sealed class PageRequestModelBinderEscopoEResolucaoTests
         services.AddSingleton<IOptions<CursorPaginationOptions>>(
             _ => throw new InvalidOperationException("falha simulada das opções"));
         DefaultModelBindingContext context = CreateContext(
-            services.BuildServiceProvider(), "?limit=0", BinderActions.PublicEditais);
+            services.BuildServiceProvider(), "?limit=0", nameof(CursorDeTesteController.PublicEditais));
         PreventQueryRead(context);
 
         Func<Task> bind = () => new PageRequestModelBinder().BindModelAsync(context);
@@ -127,7 +128,7 @@ public sealed class PageRequestModelBinderEscopoEResolucaoTests
         services.AddSingleton<IOptions<CursorPaginationOptions>>(
             _ => throw new InvalidOperationException("falha simulada das opções"));
         DefaultModelBindingContext context = CreateContext(
-            services.BuildServiceProvider(), "?limit=0", BinderActions.PublicEditais);
+            services.BuildServiceProvider(), "?limit=0", nameof(CursorDeTesteController.PublicEditais));
         PreventQueryRead(context);
 
         Func<Task> bind = () => new PageRequestModelBinder().BindModelAsync(context);
@@ -139,7 +140,7 @@ public sealed class PageRequestModelBinderEscopoEResolucaoTests
     public async Task BindModelAsync_ServicosResolvidosComConsultaIlegivel_PropagaAFalhaDaConsulta()
     {
         DefaultModelBindingContext context = CreateContext(
-            CreateCursorServices().BuildServiceProvider(), "?limit=0", BinderActions.PublicEditais);
+            CreateCursorServices().BuildServiceProvider(), "?limit=0", nameof(CursorDeTesteController.PublicEditais));
         PreventQueryRead(context);
 
         Func<Task> bind = () => new PageRequestModelBinder().BindModelAsync(context);
@@ -169,6 +170,6 @@ public sealed class PageRequestModelBinderEscopoEResolucaoTests
             route["entidadeId"] = entityId;
         }
 
-        return CreateContext(services, QueryWithCursor(cursor), BinderActions.ScopedByEntity, route);
+        return CreateContext(services, QueryWithCursor(cursor), nameof(CursorDeTesteController.ScopedByEntity), route);
     }
 }

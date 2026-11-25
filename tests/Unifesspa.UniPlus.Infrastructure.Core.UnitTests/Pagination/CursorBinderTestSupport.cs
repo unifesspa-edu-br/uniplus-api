@@ -1,12 +1,9 @@
 namespace Unifesspa.UniPlus.Infrastructure.Core.UnitTests.Pagination;
 
-using System.Reflection;
-
 using AwesomeAssertions;
 
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.Features;
-using Microsoft.AspNetCore.Mvc.Abstractions;
 using Microsoft.AspNetCore.Mvc.Controllers;
 using Microsoft.AspNetCore.Mvc.ModelBinding;
 using Microsoft.AspNetCore.Mvc.ModelBinding.Metadata;
@@ -21,10 +18,14 @@ using NSubstitute;
 using Unifesspa.UniPlus.Application.Abstractions.Authentication;
 using Unifesspa.UniPlus.Infrastructure.Core.Cryptography;
 using Unifesspa.UniPlus.Infrastructure.Core.Pagination;
+using Unifesspa.UniPlus.Infrastructure.Core.UnitTests.Apoio;
+using Unifesspa.UniPlus.Infrastructure.Core.UnitTests.Apoio.ControllersDeTeste;
 using Unifesspa.UniPlus.Kernel.Pagination;
 
 internal static class CursorBinderTestSupport
 {
+    private static readonly AcoesDoMvcDeTeste Mvc = new(typeof(CursorDeTesteController));
+
     public static readonly DateTimeOffset InstanteDaConsulta = new(2026, 1, 1, 12, 0, 0, TimeSpan.Zero);
 
     public const string InvalidCursorMessage = "O cursor informado é inválido.";
@@ -77,7 +78,7 @@ internal static class CursorBinderTestSupport
 
     public static async Task<DefaultModelBindingContext> BindAsync(
         string query,
-        Action<PageRequest>? action = null,
+        string? action = null,
         IServiceProvider? services = null)
     {
         DefaultModelBindingContext context = CreateContext(
@@ -89,7 +90,7 @@ internal static class CursorBinderTestSupport
     public static DefaultModelBindingContext CreateContext(
         IServiceProvider services,
         string query,
-        Action<PageRequest>? action = null,
+        string? action = null,
         IDictionary<string, object?>? routeValues = null)
     {
         DefaultHttpContext httpContext = new() { RequestServices = services };
@@ -127,24 +128,8 @@ internal static class CursorBinderTestSupport
         return context.Result.Model.Should().BeOfType<PageRequest>().Subject;
     }
 
-    private static ControllerActionDescriptor DescribeAction(Action<PageRequest>? action = null)
-    {
-        action ??= BinderActions.PublicEditais;
-        ParameterInfo parameter = action.Method.GetParameters()[0];
-
-        return new ControllerActionDescriptor
-        {
-            Parameters = new List<ParameterDescriptor> { DescribeParameter(parameter) },
-            ActionName = action.Method.Name,
-        };
-    }
-
-    private static ControllerParameterDescriptor DescribeParameter(ParameterInfo parameter) => new()
-    {
-        Name = parameter.Name!,
-        ParameterType = parameter.ParameterType,
-        ParameterInfo = parameter,
-    };
+    private static ControllerActionDescriptor DescribeAction(string? action = null) =>
+        Mvc.Acao(typeof(CursorDeTesteController), action ?? nameof(CursorDeTesteController.PublicEditais));
 
     private static LocalAesEncryptionService CreateCipher() => new(
         Options.Create(new EncryptionOptions { Provider = "local", LocalKey = Convert.ToBase64String(new byte[32]) }),
@@ -163,23 +148,4 @@ internal sealed class UnreadableQueryFeature : IQueryFeature
         get => throw new InvalidOperationException("A consulta não podia ser lida.");
         set => throw new InvalidOperationException("A consulta não podia ser lida.");
     }
-}
-
-internal static class BinderActions
-{
-    internal static void PublicEditais([FromCursor("editais")] PageRequest request) => _ = request;
-
-    internal static void UserInscricoes(
-        [FromCursor("inscricoes", RequireUserBinding = true)] PageRequest request) => _ = request;
-
-    internal static void SortedCidades(
-        [FromCursor("cidades", RequireSortKey = true)] PageRequest request) => _ = request;
-
-    internal static void UserSortedCidades(
-        [FromCursor("cidades", RequireUserBinding = true, RequireSortKey = true)] PageRequest request) => _ = request;
-
-    internal static void ScopedByEntity(
-        [FromCursor("atos", ScopeRouteValues = ["entidadeTipo", "entidadeId"])] PageRequest request) => _ = request;
-
-    internal static void WithoutAttribute(PageRequest request) => _ = request;
 }
