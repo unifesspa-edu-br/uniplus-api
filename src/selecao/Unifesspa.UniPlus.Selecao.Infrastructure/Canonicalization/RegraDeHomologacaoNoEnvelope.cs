@@ -153,13 +153,9 @@ internal static class RegraDeHomologacaoNoEnvelope
         LeitorEnvelope leitor, string tipo, int edicaoDoExame, string? motivo, IReadOnlyList<LinhaDoPredicado> enquadramento, string path)
     {
         Result<PredicadoDnf?> predicado = LeituraDasCondicoes.PredicadoOpcional(enquadramento);
-        Result<CondicaoDeHomologacao> condicao = CondicaoDeHomologacao.Declarar(tipo, edicaoDoExame, motivo, predicado.Value);
-        FieldError[] causas = [.. condicao.Errors, .. predicado.Errors.Select(NoEnquadramento)];
-        return causas.Length == 0 ? condicao.Value : leitor.Propagar<CondicaoDeHomologacao?>(causas, path);
+        Result<CondicaoDeHomologacao> condicao = CondicaoDeHomologacao.DeclararComOEnquadramentoRecebido(tipo, edicaoDoExame, motivo, predicado);
+        return condicao.IsSuccess ? condicao.Value : leitor.Propagar<CondicaoDeHomologacao?>(condicao.Errors, path);
     }
-
-    private static FieldError NoEnquadramento(FieldError causa) =>
-        causa.NoCaminhoDoItem(ChaveDoEnquadramento);
 
     private static string? TextoNuloOuNaoVazio(LeitorEnvelope leitor, JsonObject objeto, string chave, string path) =>
         !leitor.Falhou && objeto[chave] is not null ? leitor.TextoNaoVazio(objeto, chave, path) : null;
