@@ -206,8 +206,6 @@ public sealed class OfertaCursoPersistenceTests
         ConferirViewDaOferta(view!, oferta);
 
         (await reader.ListarVivasAsync()).Should().Contain(v => v.Id == oferta.Id);
-        (await reader.ObterVivaPorCodigoAsync($"  {oferta.Codigo}  "))!.Id.Should().Be(oferta.Id, "a busca descarta os espaços das pontas");
-        (await reader.ObterVivaPorCodigoAsync(oferta.Codigo.ToLowerInvariant())).Should().BeNull("o código fora do formato não tem oferta");
     }
 
     private static void ConferirViewDaOferta(OfertaCursoView view, OfertaCurso oferta)

@@ -86,8 +86,8 @@ internal static class CadastrosVivos
         string[] vivos = codigos.Length == 0 ? ModalidadesDaSuite : codigos;
         IModalidadeReader reader = Substitute.For<IModalidadeReader>();
         reader.ObterVivaPorCodigoAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
-            .Returns(call => Array.Exists(vivos, c => c == call.Arg<string>().Trim())
-                ? Modalidade(call.Arg<string>().Trim())
+            .Returns(call => Array.Exists(vivos, c => c == call.Arg<string>())
+                ? Modalidade(call.Arg<string>())
                 : null);
         reader.ListarVivosAsync(Arg.Any<CancellationToken>())
             .Returns(Array.ConvertAll(vivos, Modalidade));
@@ -118,8 +118,8 @@ internal static class CadastrosVivos
         string[] vivos = codigos.Length == 0 ? TiposDocumentoDaSuite : codigos;
         ITipoDocumentoReader reader = Substitute.For<ITipoDocumentoReader>();
         reader.ObterVivoPorCodigoAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
-            .Returns(call => Array.Exists(vivos, c => c == call.Arg<string>().Trim())
-                ? TipoDocumento(call.Arg<string>().Trim())
+            .Returns(call => Array.Exists(vivos, c => c == call.Arg<string>())
+                ? TipoDocumento(call.Arg<string>())
                 : null);
         reader.ListarVivosAsync(Arg.Any<CancellationToken>())
             .Returns(Array.ConvertAll(vivos, TipoDocumento));
@@ -131,8 +131,8 @@ internal static class CadastrosVivos
         string[] vivos = codigos.Length == 0 ? TiposEtapaDaSuite : codigos;
         ITipoEtapaReader reader = Substitute.For<ITipoEtapaReader>();
         reader.ObterAtivoPorCodigoAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
-            .Returns(call => Array.Exists(vivos, c => c == call.Arg<string>().Trim())
-                ? TipoEtapa(call.Arg<string>().Trim())
+            .Returns(call => Array.Exists(vivos, c => c == call.Arg<string>())
+                ? TipoEtapa(call.Arg<string>())
                 : null);
         reader.ListarAtivosAsync(Arg.Any<CancellationToken>())
             .Returns(Array.ConvertAll(vivos, TipoEtapa));

@@ -1,7 +1,5 @@
 namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Readers;
 
-using System.Text;
-
 using Microsoft.EntityFrameworkCore;
 
 using Unifesspa.UniPlus.Configuracao.Contracts;
@@ -41,13 +39,8 @@ internal sealed class TipoEtapaReader : ITipoEtapaReader
     {
         ArgumentNullException.ThrowIfNull(codigo);
 
-        // NFC calculado ANTES da query (não dentro do lambda, que o EF traduziria para SQL sem
-        // suporte a normalização Unicode): o cadastro persiste Codigo já em NFC
-        // (TipoEtapa.Criar), então um valor de busca em outra forma Unicode nunca bateria por
-        // igualdade ordinal sem essa normalização — mesmo comparando o "mesmo" texto.
-        string codigoNormalizado = codigo.Trim().Normalize(NormalizationForm.FormC);
         TipoEtapa? tipo = await _dbContext.TiposEtapa.AsNoTracking().Include(tipo => tipo.ConceitosAdmitidos)
-            .FirstOrDefaultAsync(tipo => tipo.Codigo == codigoNormalizado && tipo.Ativo, cancellationToken).ConfigureAwait(false);
+            .FirstOrDefaultAsync(tipo => tipo.Codigo == codigo && tipo.Ativo, cancellationToken).ConfigureAwait(false);
         return tipo is null ? null : ParaView(tipo);
     }
 
