@@ -69,7 +69,6 @@ internal static class LeituraDaRegraDeHomologacaoDaFase
 
         FieldError[] erros = [.. predicado.Errors.Select(static erro => erro with
         {
-            Field = erro.Field?.Replace(".fato", ".codigoDoDado", StringComparison.Ordinal),
             Error = new DomainError(erro.Error.Code, MensagemDoEnquadramento(erro.Error)),
         })];
         return new(predicado.Value, Recusas(fase, campo, erros));

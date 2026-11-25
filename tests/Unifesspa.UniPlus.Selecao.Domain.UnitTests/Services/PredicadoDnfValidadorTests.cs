@@ -68,6 +68,7 @@ public sealed class PredicadoDnfValidadorTests
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("PredicadoDnf.FatoDesconhecido");
         resultado.Error.Message.Should().Contain("FATO_INEXISTENTE");
+        resultado.Errors.Should().ContainSingle().Which.Field.Should().Be("[0][0].fato");
     }
 
     [Fact(DisplayName = "PredicadoDnfValidador_Aceita_Fato_Conhecido")]
@@ -87,6 +88,7 @@ public sealed class PredicadoDnfValidadorTests
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("PredicadoDnf.OperadorIncompativelComDominio");
+        resultado.Errors.Should().ContainSingle().Which.Field.Should().Be("[0][0].operador");
     }
 
     [Fact(DisplayName = "PredicadoDnfValidador_Rejeita_Numerico_Com_Em")]
@@ -138,6 +140,7 @@ public sealed class PredicadoDnfValidadorTests
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("PredicadoDnf.ValorIncompativelComTipo");
+        resultado.Errors.Should().ContainSingle().Which.Field.Should().Be("[0][0].valor");
     }
 
     [Fact(DisplayName = "PredicadoDnfValidador_Rejeita_Valor_Decimal_Em_Fato_Numerico")]
@@ -272,6 +275,7 @@ public sealed class PredicadoDnfValidadorTests
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("PredicadoDnf.DominioDinamicoNaoFornecido");
+        resultado.Errors.Should().ContainSingle().Which.Field.Should().Be("[0][0]");
     }
 
     [Fact(DisplayName = "Rejeita MAIOR_IGUAL/MENOR_IGUAL para categórico dinâmico (mesma matriz do estático)")]
