@@ -1,6 +1,7 @@
 namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Configurations;
 
 using System.Text.Json;
+using System.Text.Json.Serialization;
 
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
@@ -49,7 +50,9 @@ internal sealed class RegraEliminacaoConfiguration : IEntityTypeConfiguration<Re
     private static readonly JsonSerializerOptions JsonOptions = OpcoesJsonDeDocumento.Criar(new()
     {
         PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
-        PropertyNameCaseInsensitive = true,
+        UnmappedMemberHandling = JsonUnmappedMemberHandling.Disallow,
+        RespectRequiredConstructorParameters = true,
+        RespectNullableAnnotations = true,
         WriteIndented = false,
     });
 
