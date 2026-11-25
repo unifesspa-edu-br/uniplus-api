@@ -11,10 +11,10 @@ using Unifesspa.UniPlus.Selecao.Application.DTOs;
 using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Publicacao;
 
-using static Unifesspa.UniPlus.Selecao.Application.UnitTests.Queries.ApoioDoFormularioRenderizavel;
+using static Unifesspa.UniPlus.Selecao.Application.UnitTests.Queries.ApoioDoFormularioApresentado;
 
-/// <summary>O bloco de comprovação documental do formulário renderizável: as exigências da fase e da finalidade, o modelo editável e a recusa de versão com exigência malformada.</summary>
-public sealed class ObterFormularioRenderizavelComprovacaoDocumentalTests
+/// <summary>O bloco de comprovação documental do formulário apresentado: as exigências da fase e da finalidade, o modelo editável e a recusa de versão com exigência malformada.</summary>
+public sealed class ObterFormularioApresentadoComprovacaoDocumentalTests
 {
     /// <summary>Repositório cuja linha de divulgação existe e cujo ato ainda espera a cópia ao acervo.</summary>
     private static ICertameDivulgadoRepository RepositorioComDivulgacaoAindaNaoCopiada(Guid processoId) =>
@@ -31,14 +31,14 @@ public sealed class ObterFormularioRenderizavelComprovacaoDocumentalTests
             Formulario(FinalidadeFormulario.Inscricao, faseInscricao, comComprovacao: false));
         Guid processoId = Guid.CreateVersion7();
 
-        Result<FormularioRenderizavelDto> habilitacao = await HandleAsync(processoId, envelope, reidratado, FinalidadeFormulario.Habilitacao);
-        Result<FormularioRenderizavelDto> inscricao = await HandleAsync(processoId, envelope, reidratado, FinalidadeFormulario.Inscricao);
+        Result<FormularioApresentadoDoProcessoDto> habilitacao = await HandleAsync(processoId, envelope, reidratado, FinalidadeFormulario.Habilitacao);
+        Result<FormularioApresentadoDoProcessoDto> inscricao = await HandleAsync(processoId, envelope, reidratado, FinalidadeFormulario.Inscricao);
 
         ConferirComprovacaoDaHabilitacao(habilitacao.Value!, processoId);
         inscricao.Value!.ComprovacaoDocumental.Should().BeNull("o formulário de inscrição não tem o bloco");
     }
 
-    private static void ConferirComprovacaoDaHabilitacao(FormularioRenderizavelDto habilitacao, Guid processoId)
+    private static void ConferirComprovacaoDaHabilitacao(FormularioApresentadoDoProcessoDto habilitacao, Guid processoId)
     {
         habilitacao.ComprovacaoDocumental!.Select(static e => (e.Rotulo, e.Aplicabilidade.Codigo)).Should().Equal(
             [("Documento de identidade", "GERAL"), ("Autodeclaração étnico-racial", "CONDICIONAL")],
@@ -70,7 +70,7 @@ public sealed class ObterFormularioRenderizavelComprovacaoDocumentalTests
         Guid fase = Guid.Parse("0199a000-0000-7000-8000-0000000000f2");
         Guid processoId = Guid.CreateVersion7();
 
-        Result<FormularioRenderizavelDto> habilitacao = await HandleAsync(
+        Result<FormularioApresentadoDoProcessoDto> habilitacao = await HandleAsync(
             processoId, ExigenciaComModeloNaFase(fase), EnvelopeCom(Formulario(FinalidadeFormulario.Habilitacao, fase, comComprovacao: true)),
             FinalidadeFormulario.Habilitacao, RepositorioComDivulgacaoAindaNaoCopiada(processoId));
 
@@ -100,8 +100,8 @@ public sealed class ObterFormularioRenderizavelComprovacaoDocumentalTests
             Formulario(FinalidadeFormulario.IsencaoTaxa, fase, comComprovacao: true));
         Guid processoId = Guid.CreateVersion7();
 
-        Result<FormularioRenderizavelDto> inscricao = await HandleAsync(processoId, envelope, reidratado, FinalidadeFormulario.Inscricao);
-        Result<FormularioRenderizavelDto> isencao = await HandleAsync(processoId, envelope, reidratado, FinalidadeFormulario.IsencaoTaxa);
+        Result<FormularioApresentadoDoProcessoDto> inscricao = await HandleAsync(processoId, envelope, reidratado, FinalidadeFormulario.Inscricao);
+        Result<FormularioApresentadoDoProcessoDto> isencao = await HandleAsync(processoId, envelope, reidratado, FinalidadeFormulario.IsencaoTaxa);
 
         inscricao.Value!.ComprovacaoDocumental!.Select(static e => e.Rotulo).Should().Equal("Documento de identidade");
         isencao.Value!.ComprovacaoDocumental!.Select(static e => e.Rotulo).Should().Equal("Comprovante de renda");
@@ -131,7 +131,7 @@ public sealed class ObterFormularioRenderizavelComprovacaoDocumentalTests
             """;
         Guid? faseDoFormulario = formularioComFase ? Guid.Parse("0199a000-0000-7000-8000-0000000000f2") : null;
 
-        Result<FormularioRenderizavelDto> resultado = await HandleAsync(
+        Result<FormularioApresentadoDoProcessoDto> resultado = await HandleAsync(
             Guid.CreateVersion7(), envelope,
             EnvelopeCom(Formulario(FinalidadeFormulario.Habilitacao, faseDoFormulario, comComprovacao: true)), FinalidadeFormulario.Habilitacao);
 
@@ -150,7 +150,7 @@ public sealed class ObterFormularioRenderizavelComprovacaoDocumentalTests
             ] } }
             """;
 
-        Result<FormularioRenderizavelDto> habilitacao = await HandleAsync(Guid.CreateVersion7(), envelope, reidratado, FinalidadeFormulario.Habilitacao);
+        Result<FormularioApresentadoDoProcessoDto> habilitacao = await HandleAsync(Guid.CreateVersion7(), envelope, reidratado, FinalidadeFormulario.Habilitacao);
 
         PrazoDeEmissaoCertameDto prazo = habilitacao.Value!.ComprovacaoDocumental!.Single().PrazoDeEmissao!;
         prazo.Referencia.FaseId.Should().Be(faseDoCronograma);

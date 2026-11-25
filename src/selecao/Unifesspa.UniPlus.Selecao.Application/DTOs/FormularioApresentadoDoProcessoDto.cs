@@ -3,8 +3,8 @@ namespace Unifesspa.UniPlus.Selecao.Application.DTOs;
 using Unifesspa.UniPlus.Regras.Formularios;
 
 /// <summary>
-/// O formulário de uma finalidade do processo pronto para renderização (UNI-REQ-0144, ADR-0139): o
-/// renderizável comum ao certame, ao rascunho e ao modelo, mais a comprovação documental, que só o
+/// O formulário de uma finalidade do processo pronto para apresentação (UNI-REQ-0144, ADR-0139): o
+/// apresentado comum ao certame, ao rascunho e ao modelo, mais a comprovação documental, que só o
 /// processo tem. Posicional, como a base, para o contrato declarar todas as propriedades.
 /// </summary>
 /// <param name="ComprovacaoDocumental">
@@ -29,8 +29,8 @@ using Unifesspa.UniPlus.Regras.Formularios;
 /// É ela que diz quais documentos da avaliação da inscrição são desta fase, porque o processo pode ter
 /// mais de uma fase que coleta inscrição.
 /// </param>
-public sealed record FormularioRenderizavelDto(
-    FormularioRenderizavel Formulario,
+public sealed record FormularioApresentadoDoProcessoDto(
+    FormularioApresentado Formulario,
     Guid? FaseId,
     IReadOnlyList<ExigenciaDocumentalCertameDto>? ComprovacaoDocumental,
     DependenciasDaAvaliacaoDto? DependenciasDaAvaliacao,

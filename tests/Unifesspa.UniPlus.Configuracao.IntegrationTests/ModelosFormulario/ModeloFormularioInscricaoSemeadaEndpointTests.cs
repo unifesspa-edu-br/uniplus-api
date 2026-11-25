@@ -33,7 +33,7 @@ public sealed class ModeloFormularioInscricaoSemeadaEndpointTests
         using HttpClient client = _fixture.Factory.CreateClient();
         Guid id = await ModeloDaMedicinaAsync(client);
 
-        ConferirLocalidadeAntesDoEndereco(await RenderizavelAsync(client, id));
+        ConferirLocalidadeAntesDoEndereco(await ApresentacaoAsync(client, id));
 
         JsonArray itens = await PreVisualizarAsync(client, id, new Dictionary<string, object> { ["TIPO_ENDERECO"] = localidade });
         Item(itens, "NOME_COMUNIDADE")["visivel"]!.GetValue<string>().Should().Be(comunidadeVisivel);

@@ -249,8 +249,8 @@ Ocorrências por arquivo de teste, com as linhas e a ação. `Habilitacao` como 
 | `Selecao.Application.UnitTests/Queries/ObterConformidadeProcessoSeletivoQueryHandlerTests.cs` | fase-HABILITACAO | 325 | manter (ponto em aberto) |
 | `Selecao.Application.UnitTests/Queries/ListarProdutosPrevistosDoProcessoQueryHandlerTests.cs` | ato (cadastro) | 30 | manter |
 | `Selecao.Application.UnitTests/Queries/ListarProdutosPrevistosDoProcessoQueryHandlerTests.cs` | fase-HOMOLOGACAO | 152,156,187 | renomear |
-| `Selecao.Application.UnitTests/Queries/ObterFormularioRenderizavelQueryHandlerTests.cs` | fase-HABILITACAO | 290,292 | manter (ponto em aberto) |
-| `Selecao.Application.UnitTests/Queries/ObterFormularioRenderizavelQueryHandlerTests.cs` | finalidade-HABILITACAO | 350,351,352 | manter (ponto em aberto) |
+| `Selecao.Application.UnitTests/Queries/ObterFormularioApresentadoComprovacaoDocumentalTests.cs` | fase-HABILITACAO | 61,63,84 | manter (ponto em aberto) |
+| `Selecao.Application.UnitTests/Queries/ObterFormularioApresentadoComprovacaoDocumentalTests.cs` | finalidade-HABILITACAO | 119,120,121 | manter (ponto em aberto) |
 | `Selecao.Application.UnitTests/Queries/PreVisualizarProcessoSeletivoQueryHandlerTests.cs` | fase-HABILITACAO | 229,318 | manter (ponto em aberto) |
 | `Selecao.Application.UnitTests/Queries/PreVisualizarProcessoSeletivoQueryHandlerTests.cs` | finalidade-HABILITACAO | 312 | manter (ponto em aberto) |
 | `Selecao.Application.UnitTests/Commands/DefinirOpcoesDeclaradasCommandHandlerTests.cs` | finalidade-HABILITACAO | 70,77 | manter (ponto em aberto) |

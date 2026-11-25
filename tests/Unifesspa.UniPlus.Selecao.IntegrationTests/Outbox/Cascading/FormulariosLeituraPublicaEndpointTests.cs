@@ -25,7 +25,7 @@ public sealed class FormulariosLeituraPublicaEndpointTests
     [Fact(DisplayName = "GET público de processo em rascunho responde o MESMO que de processo inexistente")]
     public async Task Obter_ProcessoEmRascunho_RespondeIgualAoInexistente()
     {
-        // A renderização é anônima. Enquanto ela distinguia rascunho (422) de inexistente (404),
+        // A apresentação é anônima. Enquanto ela distinguia rascunho (422) de inexistente (404),
         // respondia a um estranho, numa requisição, se um identificador corresponde a um processo
         // que ainda não é público. Resolvendo pela divulgação, os dois deixam de ser distinguíveis
         // — nenhum dos dois tem linha.

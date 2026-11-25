@@ -10,17 +10,17 @@ using Unifesspa.UniPlus.Selecao.Application.DTOs;
 using Unifesspa.UniPlus.Selecao.Application.Queries.ProcessosSeletivos;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 
-using static Unifesspa.UniPlus.Selecao.Application.UnitTests.Queries.ApoioDoFormularioRenderizavel;
+using static Unifesspa.UniPlus.Selecao.Application.UnitTests.Queries.ApoioDoFormularioApresentado;
 
-/// <summary>O que o <see cref="ObterFormularioRenderizavelQueryHandler"/> serve do envelope congelado além do grafo: a finalidade pedida, a data de referência dos fatos e o fuso do envio.</summary>
-public sealed class ObterFormularioRenderizavelPressupostosTests
+/// <summary>O que o <see cref="ObterFormularioApresentadoQueryHandler"/> serve do envelope congelado além do grafo: a finalidade pedida, a data de referência dos fatos e o fuso do envio.</summary>
+public sealed class ObterFormularioApresentadoPressupostosTests
 {
     [Fact(DisplayName = "Processo sem formulário da finalidade não serve formulário")]
     public async Task Handle_SemFormularioDaFinalidade_NaoEncontrado()
     {
         Guid processoId = Guid.CreateVersion7();
 
-        Result<FormularioRenderizavelDto> resultado = await HandleAsync(
+        Result<FormularioApresentadoDoProcessoDto> resultado = await HandleAsync(
             processoId, """{"documentosExigidos": {"dataDeReferenciaDosDados": null}}""",
             EnvelopeCom(Formulario(FinalidadeFormulario.Inscricao, null, comComprovacao: false)), FinalidadeFormulario.Habilitacao);
 
@@ -35,7 +35,7 @@ public sealed class ObterFormularioRenderizavelPressupostosTests
     {
         Guid processoId = Guid.CreateVersion7();
 
-        Result<FormularioRenderizavelDto> resultado = await HandleAsync(
+        Result<FormularioApresentadoDoProcessoDto> resultado = await HandleAsync(
             processoId, $$"""{"documentosExigidos": {"dataDeReferenciaDosDados": {{data}} } }""",
             EnvelopeCom(Formulario(FinalidadeFormulario.Inscricao, null, comComprovacao: false)), FinalidadeFormulario.Inscricao);
 
@@ -54,7 +54,7 @@ public sealed class ObterFormularioRenderizavelPressupostosTests
     {
         Guid processoId = Guid.CreateVersion7();
 
-        Result<FormularioRenderizavelDto> resultado = await HandleAsync(
+        Result<FormularioApresentadoDoProcessoDto> resultado = await HandleAsync(
             processoId, """{"documentosExigidos": {"dataDeReferenciaDosDados": null}}""",
             EnvelopeCom(Formulario(FinalidadeFormulario.Inscricao, null, comComprovacao: false)), FinalidadeFormulario.Inscricao);
 

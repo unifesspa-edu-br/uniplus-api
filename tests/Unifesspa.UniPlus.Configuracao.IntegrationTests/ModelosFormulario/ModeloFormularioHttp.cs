@@ -66,8 +66,8 @@ internal static class ModeloFormularioHttp
     internal static async Task<JsonObject> ObterAsync(HttpClient client, Guid id) =>
         await LerAsync(await EnviarAsync(client, HttpMethod.Get, $"{Base}/{id}"));
 
-    internal static async Task<JsonObject> RenderizavelAsync(HttpClient client, Guid id) =>
-        await LerAsync(await EnviarAsync(client, HttpMethod.Get, $"{Base}/{id}/renderizavel"));
+    internal static async Task<JsonObject> ApresentacaoAsync(HttpClient client, Guid id) =>
+        await LerAsync(await EnviarAsync(client, HttpMethod.Get, $"{Base}/{id}/apresentacao"));
 
     internal static async Task<JsonDocument> ListarAsync(HttpClient client, string filtros)
     {

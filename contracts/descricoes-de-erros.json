@@ -6036,7 +6036,7 @@
       "codigo": "uniplus.configuracao.modelo_formulario.nao_encontrado",
       "requisitos": [],
       "oQueAconteceu": [
-        "O `{id}` da rota não corresponde a nenhum modelo de formulário. A resposta vale para a atualização (`PUT /api/configuracao/admin/modelos-formulario/{id}`), para a ativação (`POST .../{id}/ativacao`) e para a desativação (`DELETE .../{id}`). O modelo nunca é apagado, só desativado, e a busca encontra também o modelo desativado: esta causa é exclusivamente de identificador inexistente. A leitura (`GET .../{id}`), o formulário renderizável (`GET .../{id}/renderizavel`) e a pré-visualização (`POST .../{id}/pre-visualizacao`) também respondem 404 para um modelo inexistente, mas essas respostas não usam este código.",
+        "O `{id}` da rota não corresponde a nenhum modelo de formulário. A resposta vale para a atualização (`PUT /api/configuracao/admin/modelos-formulario/{id}`), para a ativação (`POST .../{id}/ativacao`) e para a desativação (`DELETE .../{id}`). O modelo nunca é apagado, só desativado, e a busca encontra também o modelo desativado: esta causa é exclusivamente de identificador inexistente. A leitura (`GET .../{id}`), o formulário apresentado (`GET .../{id}/apresentacao`) e a pré-visualização (`POST .../{id}/pre-visualizacao`) também respondem 404 para um modelo inexistente, mas essas respostas não usam este código.",
         "Nestas três operações a busca do modelo vem antes das validações de domínio do conteúdo: na atualização, com um `{id}` que não existe e um conteúdo inválido, a resposta é esta, e não a recusa do conteúdo. É o contrário do que ocorre em outros cadastros do módulo, em que o conteúdo do corpo é conferido primeiro. Só a leitura do corpo vem antes da busca: o campo não anulável ausente ou nulo (como o `nome`, ou o `fatoCodigo` de uma exigência por opção) é recusado com 400, sem código deste catálogo, antes de o pedido chegar às regras do Uni+."
       ],
       "comoResolver": [
@@ -10538,7 +10538,7 @@
       "codigo": "uniplus.formulario_portavel.derivacao_invalida",
       "requisitos": [],
       "oQueAconteceu": [
-        "A avaliação de um formulário sem cadastro confere as regras de um formulário renderizável contra respostas simuladas, sem gravar nada nem registrar o conteúdo enviado. Uma derivação de fato nas regras recebidas é recusada por um destes motivos, cada um com a própria mensagem: uma regra sem `quando`, como \"Uma regra de '`{fato\\}`' não diz quando ativa; a regra sempre ativa tem a lista vazia.\"; uma derivação sem nenhuma regra, como \"A derivação de '`{fato\\}`' precisa de ao menos uma regra.\"; ou uma regra que cita o próprio fato derivado, como \"A derivação de '`{fato\\}`' cita o próprio fato — um derivado não pode depender de si mesmo.\"",
+        "A avaliação de um formulário sem cadastro confere as regras de um formulário apresentado contra respostas simuladas, sem gravar nada nem registrar o conteúdo enviado. Uma derivação de fato nas regras recebidas é recusada por um destes motivos, cada um com a própria mensagem: uma regra sem `quando`, como \"Uma regra de '`{fato\\}`' não diz quando ativa; a regra sempre ativa tem a lista vazia.\"; uma derivação sem nenhuma regra, como \"A derivação de '`{fato\\}`' precisa de ao menos uma regra.\"; ou uma regra que cita o próprio fato derivado, como \"A derivação de '`{fato\\}`' cita o próprio fato — um derivado não pode depender de si mesmo.\"",
         "A recusa vem no corpo da resposta, com o código e o `detail` que traz a mensagem, sem lista `errors`. As regras recebidas são lidas por inteiro antes da avaliação, e a leitura para na primeira recusa, nesta ordem: o elemento nulo, as etapas (com os itens e os grupos de cada uma), os termos, as derivações, os resumos de grupo e, por fim, o conjunto. A regra de derivação categórica sem o código que contribui é recusada com outro código.",
         "As propriedades de texto que o corpo não pode omitir, como o código, a obrigatoriedade e a operação, ausentes ou nulas, são recusadas antes, com 400 e sem código deste catálogo, pela leitura do corpo."
       ],
@@ -10553,7 +10553,7 @@
       "codigo": "uniplus.formulario_portavel.estrutura_invalida",
       "requisitos": [],
       "oQueAconteceu": [
-        "A avaliação de um formulário sem cadastro confere as regras de um formulário renderizável contra respostas simuladas, sem gravar nada nem registrar o conteúdo enviado. As regras recebidas têm um defeito de estrutura que impede formar o formulário. Os casos são estes, cada um com a própria mensagem: um elemento nulo dentro de uma lista, como \"O elemento '`{caminho\\}`' das regras é nulo.\", com o caminho do elemento, por exemplo `etapas[0].itens[2]`; uma etapa, um grupo, um campo, um termo, um resumo de grupo ou uma derivação sem código; um código repetido, como \"O código '`{código\\}`' aparece mais de uma vez como etapa.\", e do mesmo modo entre termos e entre fatos produzidos ou grupos do formulário (campos, derivações, resumos de grupo e grupos dividem o mesmo conjunto de códigos); os limites de ocorrências de um grupo incoerentes, com mínimo negativo, ou máximo informado menor que 1 ou menor que o mínimo; um formato de texto que não é do vocabulário do catálogo; e um resumo sobre um grupo que o formulário não tem.",
+        "A avaliação de um formulário sem cadastro confere as regras de um formulário apresentado contra respostas simuladas, sem gravar nada nem registrar o conteúdo enviado. As regras recebidas têm um defeito de estrutura que impede formar o formulário. Os casos são estes, cada um com a própria mensagem: um elemento nulo dentro de uma lista, como \"O elemento '`{caminho\\}`' das regras é nulo.\", com o caminho do elemento, por exemplo `etapas[0].itens[2]`; uma etapa, um grupo, um campo, um termo, um resumo de grupo ou uma derivação sem código; um código repetido, como \"O código '`{código\\}`' aparece mais de uma vez como etapa.\", e do mesmo modo entre termos e entre fatos produzidos ou grupos do formulário (campos, derivações, resumos de grupo e grupos dividem o mesmo conjunto de códigos); os limites de ocorrências de um grupo incoerentes, com mínimo negativo, ou máximo informado menor que 1 ou menor que o mínimo; um formato de texto que não é do vocabulário do catálogo; e um resumo sobre um grupo que o formulário não tem.",
         "A recusa vem no corpo da resposta, com o código e o `detail` que traz a mensagem, sem lista `errors`. As regras recebidas são lidas por inteiro antes da avaliação, e a leitura para na primeira recusa, nesta ordem: o elemento nulo, as etapas (com os itens e os grupos de cada uma), os termos, as derivações, os resumos de grupo e, por fim, o conjunto.",
         "As propriedades de texto que o corpo não pode omitir, como o código, a obrigatoriedade e a operação, ausentes ou nulas, são recusadas antes, com 400 e sem código deste catálogo, pela leitura do corpo."
       ],
@@ -10568,12 +10568,12 @@
       "codigo": "uniplus.formulario_portavel.fuso_do_envio_desconhecido",
       "requisitos": [],
       "oQueAconteceu": [
-        "A avaliação de um formulário sem cadastro confere as regras de um formulário renderizável contra respostas simuladas, sem gravar nada nem registrar o conteúdo enviado. O envio simulado (`envio`) traz um `fuso` vazio, só com espaços, ou com uma zona horária que o ambiente não reconhece. O envio supõe o instante em que o candidato enviaria as respostas e o fuso em que o dia dele é contado, que é o da período de inscrição, e é dele que se contam os limites da faixa de data. A mensagem é \"A zona '`{zona\\}`' do envio não é reconhecida.\", com a zona informada.",
+        "A avaliação de um formulário sem cadastro confere as regras de um formulário apresentado contra respostas simuladas, sem gravar nada nem registrar o conteúdo enviado. O envio simulado (`envio`) traz um `fuso` vazio, só com espaços, ou com uma zona horária que o ambiente não reconhece. O envio supõe o instante em que o candidato enviaria as respostas e o fuso em que o dia dele é contado, que é o da período de inscrição, e é dele que se contam os limites da faixa de data. A mensagem é \"A zona '`{zona\\}`' do envio não é reconhecida.\", com a zona informada.",
         "A recusa vem na lista `errors` da resposta, com `field` igual a `envio.fuso`. Nada é gravado. A recusa vale para o texto presente: a propriedade `fuso` ausente ou nula, e a `instante` ausente, são recusadas antes, com 400 e sem código deste catálogo, pela leitura do corpo. O envio simulado é opcional: sem ele, os limites contados do envio ficam indeterminados.",
         "Esta recusa vem junto das demais do envio e das ocorrências, na mesma lista, e antes da avaliação das regras. Se o fuso é recusado, o instante não chega a ser conferido."
       ],
       "comoResolver": [
-        "Informe em `fuso` o identificador de uma zona horária que o ambiente reconheça, no mesmo formato que o formulário renderizável publica em `fusoDoEnvio`, ou omita o `envio` inteiro."
+        "Informe em `fuso` o identificador de uma zona horária que o ambiente reconheça, no mesmo formato que o formulário apresentado publica em `fusoDoEnvio`, ou omita o `envio` inteiro."
       ],
       "ondeAparece": [
         "Avaliação de formulário sem cadastro"
@@ -10583,7 +10583,7 @@
       "codigo": "uniplus.formulario_portavel.instante_do_envio_fora_do_calendario",
       "requisitos": [],
       "oQueAconteceu": [
-        "A avaliação de um formulário sem cadastro confere as regras de um formulário renderizável contra respostas simuladas, sem gravar nada nem registrar o conteúdo enviado. O envio simulado (`envio`) traz um `instante` cujo dia, no `fuso` informado, fica perto demais das pontas do calendário. Os limites da faixa de data de um campo podem ser contados do dia do envio, com deslocamento de até 150 anos ou 54.900 dias para mais ou para menos, e o dia do envio precisa comportar esse deslocamento nos dois lados: ficar a pelo menos esse intervalo de 01/01/0001 e de 31/12/9999. A mensagem é \"O instante do envio falta ou fica fora do calendário que os limites da faixa de data alcançam.\"",
+        "A avaliação de um formulário sem cadastro confere as regras de um formulário apresentado contra respostas simuladas, sem gravar nada nem registrar o conteúdo enviado. O envio simulado (`envio`) traz um `instante` cujo dia, no `fuso` informado, fica perto demais das pontas do calendário. Os limites da faixa de data de um campo podem ser contados do dia do envio, com deslocamento de até 150 anos ou 54.900 dias para mais ou para menos, e o dia do envio precisa comportar esse deslocamento nos dois lados: ficar a pelo menos esse intervalo de 01/01/0001 e de 31/12/9999. A mensagem é \"O instante do envio falta ou fica fora do calendário que os limites da faixa de data alcançam.\"",
         "A recusa vem na lista `errors` da resposta, com `field` igual a `envio.instante`. Nada é gravado. A propriedade `instante` ausente é recusada antes, com 400 e sem código deste catálogo, pela leitura do corpo. O fuso é conferido antes: com o fuso recusado, a recusa é a de [fuso do envio desconhecido](/erros/uniplus.formulario_portavel.fuso_do_envio_desconhecido)."
       ],
       "comoResolver": [
@@ -10597,7 +10597,7 @@
       "codigo": "uniplus.formulario_portavel.obrigatoriedade_invalida",
       "requisitos": [],
       "oQueAconteceu": [
-        "A avaliação de um formulário sem cadastro confere as regras de um formulário renderizável contra respostas simuladas, sem gravar nada nem registrar o conteúdo enviado. A obrigatoriedade de um campo, de um grupo ou de um termo nas regras recebidas não é coerente: o valor não é `SEMPRE`, `NUNCA` nem `QUANDO` (inclusive o texto vazio), ou `SEMPRE` e `NUNCA` vêm com o predicado `predicadoObrigatoriedade`, ou `QUANDO` vem sem ele. A mensagem diz de quem é a obrigatoriedade: \"A obrigatoriedade do campo '`{código\\}`' é SEMPRE ou NUNCA sem predicado, ou QUANDO com ele.\", e do mesmo modo para o grupo e para o termo.",
+        "A avaliação de um formulário sem cadastro confere as regras de um formulário apresentado contra respostas simuladas, sem gravar nada nem registrar o conteúdo enviado. A obrigatoriedade de um campo, de um grupo ou de um termo nas regras recebidas não é coerente: o valor não é `SEMPRE`, `NUNCA` nem `QUANDO` (inclusive o texto vazio), ou `SEMPRE` e `NUNCA` vêm com o predicado `predicadoObrigatoriedade`, ou `QUANDO` vem sem ele. A mensagem diz de quem é a obrigatoriedade: \"A obrigatoriedade do campo '`{código\\}`' é SEMPRE ou NUNCA sem predicado, ou QUANDO com ele.\", e do mesmo modo para o grupo e para o termo.",
         "A recusa vem no corpo da resposta, com o código e o `detail` que traz a mensagem, sem lista `errors`. As regras recebidas são lidas por inteiro antes da avaliação, e a leitura para na primeira recusa, nesta ordem: o elemento nulo, as etapas (com os itens e os grupos de cada uma), os termos, as derivações, os resumos de grupo e, por fim, o conjunto.",
         "As propriedades de texto que o corpo não pode omitir, como o código, a obrigatoriedade e a operação, ausentes ou nulas, são recusadas antes, com 400 e sem código deste catálogo, pela leitura do corpo."
       ],
@@ -10614,7 +10614,7 @@
         "UNI-REQ-0069"
       ],
       "oQueAconteceu": [
-        "A avaliação de um formulário sem cadastro confere as regras de um formulário renderizável contra respostas simuladas, sem gravar nada nem registrar o conteúdo enviado. Em `grupos`, um grupo repetível traz uma ocorrência sem `id`, com `id` vazio ou só com espaços, nula, ou com um `id` já usado por outra ocorrência do mesmo grupo. Cada ocorrência precisa de identidade própria, porque é por ela que o documento exigido por membro, como na composição familiar, se liga à ocorrência (UNI-REQ-0069). O `id` é opcional no JSON: a ausência chega à conferência e responde 422 com o código desta página. A mensagem é \"Cada ocorrência do grupo precisa de uma identidade própria, que não se repita no grupo.\"",
+        "A avaliação de um formulário sem cadastro confere as regras de um formulário apresentado contra respostas simuladas, sem gravar nada nem registrar o conteúdo enviado. Em `grupos`, um grupo repetível traz uma ocorrência sem `id`, com `id` vazio ou só com espaços, nula, ou com um `id` já usado por outra ocorrência do mesmo grupo. Cada ocorrência precisa de identidade própria, porque é por ela que o documento exigido por membro, como na composição familiar, se liga à ocorrência (UNI-REQ-0069). O `id` é opcional no JSON: a ausência chega à conferência e responde 422 com o código desta página. A mensagem é \"Cada ocorrência do grupo precisa de uma identidade própria, que não se repita no grupo.\"",
         "A recusa vem na lista `errors` da resposta, com `field` igual a `grupos.\\{código do grupo\\}[i].id`, em que `i` é a posição da ocorrência. Cada ocorrência com problema gera a própria entrada, e a recusa do envio simulado (fuso e instante) vem na mesma lista. Nada é gravado. As regras só são avaliadas quando a lista está vazia: as recusas das regras, como a de [estrutura inválida](/erros/uniplus.formulario_portavel.estrutura_invalida), só aparecem depois que as ocorrências estão corretas.",
         "O mesmo problema na pré-visualização de um modelo de formulário tem o código [ocorrência simulada sem identidade no modelo](/erros/uniplus.configuracao.modelo_formulario.ocorrencia_simulada_invalida)."
       ],
@@ -10629,7 +10629,7 @@
       "codigo": "uniplus.formulario_portavel.operacao_de_agregado_invalida",
       "requisitos": [],
       "oQueAconteceu": [
-        "A avaliação de um formulário sem cadastro confere as regras de um formulário renderizável contra respostas simuladas, sem gravar nada nem registrar o conteúdo enviado. Um resumo sobre um grupo repetível, como \"existe membro que...\" ou \"categorias presentes na lista\", traz uma `operacao` que não é `EXISTE` nem `VALORES_PRESENTES`, inclusive o texto vazio. A mensagem identifica o código `{código\\}` e informa as operações aceitas.",
+        "A avaliação de um formulário sem cadastro confere as regras de um formulário apresentado contra respostas simuladas, sem gravar nada nem registrar o conteúdo enviado. Um resumo sobre um grupo repetível, como \"existe membro que...\" ou \"categorias presentes na lista\", traz uma `operacao` que não é `EXISTE` nem `VALORES_PRESENTES`, inclusive o texto vazio. A mensagem identifica o código `{código\\}` e informa as operações aceitas.",
         "A recusa vem no corpo da resposta, com o código e o `detail` que traz a mensagem, sem lista `errors`. As regras recebidas são lidas por inteiro antes da avaliação, e a leitura para na primeira recusa, nesta ordem: o elemento nulo, as etapas (com os itens e os grupos de cada uma), os termos, as derivações, os resumos de grupo e, por fim, o conjunto.",
         "As propriedades de texto que o corpo não pode omitir, como o código, a obrigatoriedade e a operação, ausentes ou nulas, são recusadas antes, com 400 e sem código deste catálogo, pela leitura do corpo."
       ],
@@ -11335,7 +11335,7 @@
       "oQueAconteceu": [
         "Um campo pode formar as próprias opções com as respostas de outros campos, como a opção de lista de espera escolhida entre as opções de curso que o candidato marcou (UNI-REQ-0145). Toda resposta possível do campo de origem precisa ser opção do campo que as recebe. Isso não vale quando a origem tem outro domínio, outra fonte de valores ou valores que não cabem nos do alvo. Há duas formas da recusa.",
         "**Na escrita do item.** A restrição `OPCOES_DAS_RESPOSTAS` de `restricoes[k]` cita em `fatos` um fato que não existe no catálogo, ou cujo domínio ou valores não cabem nos do fato do item. A mensagem é \"As opções formadas pelas respostas vêm de campos de seleção cujas opções são todas opções do campo.\", com `field` igual a `restricoes[k].fatos`, precedido de `itens[i].` ou `grupos[g].subitens[j].`, e a recusa leva os códigos dos fatos citados. Vale na gravação dos itens do formulário, nos modelos de formulário (`field` precedido de `conteudo.`) e na aplicação de modelo (`modelo.`). Na publicação inicial e na retificação em ato único, a mesma conferência é refeita contra o catálogo de hoje nos itens gravados, com `field` iniciado por `formularios[FINALIDADE]` e o final \"Item '`{rótulo\\}`' (fato '`{código\\}`'). Regrave o item no formulário do processo.\".",
-        "**Na oferta do processo.** Quando as opções de cada campo vêm do que o próprio processo declara, as ofertas dos dois campos só congelam juntas. A recusa é única, sem `field`, com a mensagem \"As opções do campo '`{origem\\}`' formam as opções do campo '`{alvo\\}`', mas nem todas são opções dele.\" Sai na publicação inicial, na retificação em ato único, na pré-visualização do processo seletivo e na montagem do formulário renderizável do rascunho, porque as opções que o processo declara podem mudar depois de os campos serem gravados.",
+        "**Na oferta do processo.** Quando as opções de cada campo vêm do que o próprio processo declara, as ofertas dos dois campos só congelam juntas. A recusa é única, sem `field`, com a mensagem \"As opções do campo '`{origem\\}`' formam as opções do campo '`{alvo\\}`', mas nem todas são opções dele.\" Sai na publicação inicial, na retificação em ato único, na pré-visualização do processo seletivo e na montagem do formulário apresentado do rascunho, porque as opções que o processo declara podem mudar depois de os campos serem gravados.",
         "Nada é gravado. O item que o catálogo não reconhece é recusado antes, por [fato desconhecido](/erros/uniplus.item_formulario.fato_desconhecido), [fato não coletável](/erros/uniplus.item_formulario.fato_nao_coletavel) ou [tipo de campo incoerente](/erros/uniplus.item_formulario.tipo_de_campo_incoerente_com_dominio). Na atualização de um modelo, um `{id}` que não existe é recusado antes, como [modelo de formulário não encontrado](/erros/uniplus.configuracao.modelo_formulario.nao_encontrado)."
       ],
       "comoResolver": [
@@ -11349,7 +11349,7 @@
         "Publicação inicial do processo seletivo",
         "Retificação em ato único",
         "Pré-visualização do processo seletivo",
-        "Formulário renderizável do rascunho"
+        "Apresentação do formulário do rascunho"
       ]
     },
     {
@@ -12836,7 +12836,7 @@
         "Uma regra de derivação contribui para o fato derivado um código que não está entre os valores dele, ou contribui um código num fato derivado booleano, que não recebe código (UNI-REQ-0075). Há dois casos, e a mensagem diz qual ocorreu, com o código do fato no lugar de `{fato}` e o código enviado no lugar de `{codigo}`:",
         "- fato derivado categórico: `A regra que contribui '{codigo}' cita um código fora do domínio de '{fato}'.` Vale também para a regra sem `contribui`, caso em que a mensagem traz as aspas vazias;\n- fato derivado booleano: `A derivação booleana de '{fato}' não contribui código: a regra ativa torna o derivado verdadeiro.`",
         "As operações que a emitem são:",
-        "- Definição das regras padrão de um fato derivado por regra: a API confere todas as regras e devolve as recusas juntas em `errors`, cada uma com `field` igual a `regras[i]`. A mesma regra pode ter, na mesma resposta, recusas das suas condições (fato, operador ou valor) e esta, de contribuição. A conferência da estrutura de cada regra vem depois das conferências das condições e para na primeira recusa da regra: a contribuição fora dos valores do fato vem antes da de [derivação que cita o próprio fato](/erros/uniplus.regras_derivacao_fato.derivacao_autorreferente), e por isso uma regra que tem os dois problemas só mostra este até ser corrigida. O fato categórico é conferido contra os valores declarados dele.\n- Alteração da definição de um fato do catálogo: ao trocar o domínio de um fato derivado por regra de booleano para categórico, as regras padrão que ele já tem não contribuem código e deixam de valer. Só entra a recusa que a alteração causa, e o `field` é `dominio`.\n- Definição de regras de derivação de fatos do processo seletivo: vale para o fato derivado categórico, conferido contra os valores que o fato tem no processo, conforme a origem deles (as modalidades ofertadas, as opções declaradas, os municípios do bônus ou os valores do catálogo); a origem que o servidor não enumera (UFs e municípios do Geo) não é conferida. A API para na primeira configuração ou regra que falhar, e a resposta traz o código e a mensagem, sem apontar um campo. Dentro de uma configuração, esta conferência vem depois das conferências das condições de todas as suas regras. O fato derivado booleano que recebe regra com código é recusado antes, por outro código da própria configuração de derivação do processo.\n- Publicação inicial e retificação em ato único: antes de congelar a configuração, a API confere de novo cada derivação do processo contra os valores que o fato tem naquele momento, porque eles podem ter mudado depois que a regra foi definida (por exemplo, uma modalidade que saiu da oferta). O código que deixou de pertencer aos valores do fato é recusado, a resposta traz o código e a mensagem, sem apontar um campo, e nada é congelado. Esta é a última conferência da configuração, e só aparece depois que as anteriores passam.\n- Pré-visualização do processo seletivo e formulário renderizável do rascunho: montam a definição do formulário com a mesma conferência das derivações e devolvem a mesma recusa, com o código e a mensagem, sem apontar um campo.",
+        "- Definição das regras padrão de um fato derivado por regra: a API confere todas as regras e devolve as recusas juntas em `errors`, cada uma com `field` igual a `regras[i]`. A mesma regra pode ter, na mesma resposta, recusas das suas condições (fato, operador ou valor) e esta, de contribuição. A conferência da estrutura de cada regra vem depois das conferências das condições e para na primeira recusa da regra: a contribuição fora dos valores do fato vem antes da de [derivação que cita o próprio fato](/erros/uniplus.regras_derivacao_fato.derivacao_autorreferente), e por isso uma regra que tem os dois problemas só mostra este até ser corrigida. O fato categórico é conferido contra os valores declarados dele.\n- Alteração da definição de um fato do catálogo: ao trocar o domínio de um fato derivado por regra de booleano para categórico, as regras padrão que ele já tem não contribuem código e deixam de valer. Só entra a recusa que a alteração causa, e o `field` é `dominio`.\n- Definição de regras de derivação de fatos do processo seletivo: vale para o fato derivado categórico, conferido contra os valores que o fato tem no processo, conforme a origem deles (as modalidades ofertadas, as opções declaradas, os municípios do bônus ou os valores do catálogo); a origem que o servidor não enumera (UFs e municípios do Geo) não é conferida. A API para na primeira configuração ou regra que falhar, e a resposta traz o código e a mensagem, sem apontar um campo. Dentro de uma configuração, esta conferência vem depois das conferências das condições de todas as suas regras. O fato derivado booleano que recebe regra com código é recusado antes, por outro código da própria configuração de derivação do processo.\n- Publicação inicial e retificação em ato único: antes de congelar a configuração, a API confere de novo cada derivação do processo contra os valores que o fato tem naquele momento, porque eles podem ter mudado depois que a regra foi definida (por exemplo, uma modalidade que saiu da oferta). O código que deixou de pertencer aos valores do fato é recusado, a resposta traz o código e a mensagem, sem apontar um campo, e nada é congelado. Esta é a última conferência da configuração, e só aparece depois que as anteriores passam.\n- Pré-visualização do processo seletivo e formulário apresentado do rascunho: montam a definição do formulário com a mesma conferência das derivações e devolvem a mesma recusa, com o código e a mensagem, sem apontar um campo.",
         "Nada é gravado."
       ],
       "comoResolver": [
@@ -12850,7 +12850,7 @@
         "Publicação inicial do processo seletivo",
         "Retificação em ato único",
         "Pré-visualização do processo seletivo",
-        "Formulário renderizável do rascunho"
+        "Apresentação do formulário do rascunho"
       ]
     },
     {
@@ -15317,7 +15317,7 @@
       ],
       "ondeAparece": [
         "Retificação em ato único",
-        "Consulta do formulário renderizável do processo",
+        "Apresentação do formulário do processo",
         "Consulta do formulário da inscrição",
         "Início, salvamento, submissão, cancelamento e descarte do rascunho da inscrição",
         "Avaliação da inscrição",
@@ -15420,7 +15420,7 @@
       "ondeAparece": [
         "Definição de classificação do processo seletivo",
         "Retificação em ato único",
-        "Consulta do formulário renderizável do processo",
+        "Apresentação do formulário do processo",
         "Consulta do formulário da inscrição",
         "Início, salvamento, submissão, cancelamento e descarte do rascunho da inscrição",
         "Avaliação da inscrição",
@@ -15757,7 +15757,7 @@
         "Definição de distribuição de vagas (`PUT /api/selecao/processos-seletivos/{id}/distribuicao-vagas`)",
         "Simulação da distribuição de vagas (`POST /api/selecao/processos-seletivos/{id}/distribuicao-vagas/simulacao`)",
         "Retificação em ato único",
-        "Consulta do formulário renderizável do processo",
+        "Apresentação do formulário do processo",
         "Consulta do formulário da inscrição",
         "Consulta da inscrição do candidato (`GET /api/selecao/processos-seletivos/{id}/inscricao`)",
         "Início, salvamento, submissão, cancelamento e descarte do rascunho da inscrição",
@@ -15824,7 +15824,7 @@
         "Definição de distribuição de vagas (`PUT /api/selecao/processos-seletivos/{id}/distribuicao-vagas`)",
         "Simulação da distribuição de vagas (`POST /api/selecao/processos-seletivos/{id}/distribuicao-vagas/simulacao`)",
         "Retificação em ato único",
-        "Consulta do formulário renderizável do processo",
+        "Apresentação do formulário do processo",
         "Consulta do formulário da inscrição",
         "Consulta da inscrição do candidato (`GET /api/selecao/processos-seletivos/{id}/inscricao`)",
         "Início, salvamento, submissão, cancelamento e descarte do rascunho da inscrição",
@@ -15864,7 +15864,7 @@
         "Definição de distribuição de vagas (`PUT /api/selecao/processos-seletivos/{id}/distribuicao-vagas`)",
         "Simulação da distribuição de vagas (`POST /api/selecao/processos-seletivos/{id}/distribuicao-vagas/simulacao`)",
         "Retificação em ato único",
-        "Consulta do formulário renderizável do processo",
+        "Apresentação do formulário do processo",
         "Consulta do formulário da inscrição",
         "Consulta da inscrição do candidato (`GET /api/selecao/processos-seletivos/{id}/inscricao`)",
         "Início, salvamento, submissão, cancelamento e descarte do rascunho da inscrição",
@@ -15897,7 +15897,7 @@
         "Simulação da distribuição de vagas do processo seletivo",
         "Retificação em ato único",
         "Definição de etapas e do cronograma das fases de processo publicado, quando declaram atos",
-        "Consulta do formulário renderizável do processo",
+        "Apresentação do formulário do processo",
         "Consulta do formulário da inscrição",
         "Início, salvamento, submissão, cancelamento e descarte do rascunho da inscrição",
         "Avaliação da inscrição",
@@ -15936,7 +15936,7 @@
         "Definição de distribuição de vagas (`PUT /api/selecao/processos-seletivos/{id}/distribuicao-vagas`)",
         "Simulação da distribuição de vagas (`POST /api/selecao/processos-seletivos/{id}/distribuicao-vagas/simulacao`)",
         "Retificação em ato único",
-        "Consulta do formulário renderizável do processo",
+        "Apresentação do formulário do processo",
         "Consulta do formulário da inscrição",
         "Consulta da inscrição do candidato (`GET /api/selecao/processos-seletivos/{id}/inscricao`)",
         "Início, salvamento, submissão, cancelamento e descarte do rascunho da inscrição",
@@ -16212,7 +16212,7 @@
         "Definição de distribuição de vagas (`PUT /api/selecao/processos-seletivos/{id}/distribuicao-vagas`)",
         "Simulação da distribuição de vagas (`POST /api/selecao/processos-seletivos/{id}/distribuicao-vagas/simulacao`)",
         "Retificação em ato único",
-        "Consulta do formulário renderizável do processo",
+        "Apresentação do formulário do processo",
         "Consulta do formulário da inscrição",
         "Consulta da inscrição do candidato (`GET /api/selecao/processos-seletivos/{id}/inscricao`)",
         "Início, salvamento, submissão, cancelamento e descarte do rascunho da inscrição",
@@ -16240,7 +16240,7 @@
         "Definição da divulgação pública do processo seletivo",
         "Retificação em ato único",
         "Definição de etapas e do cronograma das fases de processo publicado, quando declaram atos",
-        "Consulta do formulário renderizável do processo",
+        "Apresentação do formulário do processo",
         "Consulta do formulário da inscrição",
         "Início, salvamento, submissão, cancelamento e descarte do rascunho da inscrição",
         "Avaliação da inscrição",
@@ -16266,7 +16266,7 @@
       "ondeAparece": [
         "Definição da divulgação pública do processo seletivo",
         "Retificação em ato único",
-        "Consulta do formulário renderizável do processo",
+        "Apresentação do formulário do processo",
         "Consulta do formulário da inscrição",
         "Início, salvamento, submissão, cancelamento e descarte do rascunho da inscrição",
         "Avaliação da inscrição",
@@ -16295,7 +16295,7 @@
         "Definição da divulgação pública do processo seletivo",
         "Retificação em ato único",
         "Definição de etapas e do cronograma das fases de processo publicado, quando declaram atos",
-        "Consulta do formulário renderizável do processo",
+        "Apresentação do formulário do processo",
         "Consulta do formulário da inscrição",
         "Início, salvamento, submissão, cancelamento e descarte do rascunho da inscrição",
         "Avaliação da inscrição",
@@ -16321,7 +16321,7 @@
       "ondeAparece": [
         "Definição da divulgação pública do processo seletivo",
         "Retificação em ato único",
-        "Consulta do formulário renderizável do processo",
+        "Apresentação do formulário do processo",
         "Consulta do formulário da inscrição",
         "Início, salvamento, submissão, cancelamento e descarte do rascunho da inscrição",
         "Avaliação da inscrição",
@@ -16366,7 +16366,7 @@
         "Definição da divulgação pública do processo seletivo",
         "Retificação em ato único",
         "Definição de etapas e do cronograma das fases de processo publicado, quando declaram atos",
-        "Consulta do formulário renderizável do processo",
+        "Apresentação do formulário do processo",
         "Consulta do formulário da inscrição",
         "Início, salvamento, submissão, cancelamento e descarte do rascunho da inscrição",
         "Avaliação da inscrição",
@@ -16392,7 +16392,7 @@
       "ondeAparece": [
         "Definição da divulgação pública do processo seletivo",
         "Retificação em ato único",
-        "Consulta do formulário renderizável do processo",
+        "Apresentação do formulário do processo",
         "Consulta do formulário da inscrição",
         "Início, salvamento, submissão, cancelamento e descarte do rascunho da inscrição",
         "Avaliação da inscrição",
@@ -16737,7 +16737,7 @@
         "Definição da taxa de inscrição do processo seletivo",
         "Retificação em ato único",
         "Definição de etapas e do cronograma das fases de processo publicado, quando declaram atos",
-        "Consulta do formulário renderizável do processo",
+        "Apresentação do formulário do processo",
         "Consulta do formulário da inscrição",
         "Início, salvamento, submissão, cancelamento e descarte do rascunho da inscrição",
         "Avaliação da inscrição",
@@ -16768,7 +16768,7 @@
         "Definição da taxa de inscrição do processo seletivo",
         "Retificação em ato único",
         "Definição de etapas e do cronograma das fases de processo publicado, quando declaram atos",
-        "Consulta do formulário renderizável do processo",
+        "Apresentação do formulário do processo",
         "Consulta do formulário da inscrição",
         "Início, salvamento, submissão, cancelamento e descarte do rascunho da inscrição",
         "Avaliação da inscrição",
@@ -16798,7 +16798,7 @@
       "ondeAparece": [
         "Definição da taxa de inscrição do processo seletivo",
         "Retificação em ato único",
-        "Consulta do formulário renderizável do processo",
+        "Apresentação do formulário do processo",
         "Consulta do formulário da inscrição",
         "Início, salvamento, submissão, cancelamento e descarte do rascunho da inscrição",
         "Avaliação da inscrição",
@@ -16826,7 +16826,7 @@
       "ondeAparece": [
         "Definição da taxa de inscrição do processo seletivo",
         "Retificação em ato único",
-        "Consulta do formulário renderizável do processo",
+        "Apresentação do formulário do processo",
         "Consulta do formulário da inscrição",
         "Início, salvamento, submissão, cancelamento e descarte do rascunho da inscrição",
         "Avaliação da inscrição",
@@ -16856,7 +16856,7 @@
       "ondeAparece": [
         "Definição da taxa de inscrição do processo seletivo",
         "Retificação em ato único",
-        "Consulta do formulário renderizável do processo",
+        "Apresentação do formulário do processo",
         "Consulta do formulário da inscrição",
         "Início, salvamento, submissão, cancelamento e descarte do rascunho da inscrição",
         "Avaliação da inscrição",
@@ -19301,7 +19301,7 @@
       "ondeAparece": [
         "Definição de documentos exigidos do processo seletivo",
         "Retificação em ato único",
-        "Consulta do formulário renderizável do processo",
+        "Apresentação do formulário do processo",
         "Consulta do formulário da inscrição",
         "Início, salvamento, submissão, cancelamento e descarte do rascunho da inscrição",
         "Avaliação da inscrição",
@@ -19327,7 +19327,7 @@
       "ondeAparece": [
         "Definição de documentos exigidos do processo seletivo",
         "Retificação em ato único",
-        "Consulta do formulário renderizável do processo",
+        "Apresentação do formulário do processo",
         "Consulta do formulário da inscrição",
         "Início, salvamento, submissão, cancelamento e descarte do rascunho da inscrição",
         "Avaliação da inscrição",
@@ -19357,7 +19357,7 @@
       "ondeAparece": [
         "Definição de documentos exigidos do processo seletivo",
         "Retificação em ato único",
-        "Consulta do formulário renderizável do processo",
+        "Apresentação do formulário do processo",
         "Consulta do formulário da inscrição",
         "Início, salvamento, submissão, cancelamento e descarte do rascunho da inscrição",
         "Avaliação da inscrição",
@@ -19396,7 +19396,7 @@
       "ondeAparece": [
         "Definição de documentos exigidos do processo seletivo",
         "Retificação em ato único",
-        "Consulta do formulário renderizável do processo",
+        "Apresentação do formulário do processo",
         "Consulta do formulário da inscrição",
         "Início, salvamento, submissão, cancelamento e descarte do rascunho da inscrição",
         "Avaliação da inscrição",
@@ -19520,7 +19520,7 @@
         "Definição de classificação do processo seletivo",
         "Retificação em ato único",
         "Definição de etapas e do cronograma das fases de processo publicado, quando declaram atos",
-        "Consulta do formulário renderizável do processo",
+        "Apresentação do formulário do processo",
         "Consulta do formulário da inscrição",
         "Início, salvamento, submissão, cancelamento e descarte do rascunho da inscrição",
         "Avaliação da inscrição",
@@ -19604,7 +19604,7 @@
       "ondeAparece": [
         "Definição de classificação do processo seletivo",
         "Retificação em ato único",
-        "Consulta do formulário renderizável do processo",
+        "Apresentação do formulário do processo",
         "Consulta do formulário da inscrição",
         "Início, salvamento, submissão, cancelamento e descarte do rascunho da inscrição",
         "Avaliação da inscrição",
@@ -19632,7 +19632,7 @@
       "ondeAparece": [
         "Definição de classificação do processo seletivo",
         "Retificação em ato único",
-        "Consulta do formulário renderizável do processo",
+        "Apresentação do formulário do processo",
         "Consulta do formulário da inscrição",
         "Início, salvamento, submissão, cancelamento e descarte do rascunho da inscrição",
         "Avaliação da inscrição",
@@ -19659,7 +19659,7 @@
       "ondeAparece": [
         "Definição de classificação do processo seletivo",
         "Retificação em ato único",
-        "Consulta do formulário renderizável do processo",
+        "Apresentação do formulário do processo",
         "Consulta do formulário da inscrição",
         "Início, salvamento, submissão, cancelamento e descarte do rascunho da inscrição",
         "Avaliação da inscrição",
@@ -19702,7 +19702,7 @@
       "ondeAparece": [
         "Definição de classificação do processo seletivo",
         "Retificação em ato único",
-        "Consulta do formulário renderizável do processo",
+        "Apresentação do formulário do processo",
         "Consulta do formulário da inscrição",
         "Início, salvamento, submissão, cancelamento e descarte do rascunho da inscrição",
         "Avaliação da inscrição",
@@ -19730,7 +19730,7 @@
       "ondeAparece": [
         "Definição de classificação do processo seletivo",
         "Retificação em ato único",
-        "Consulta do formulário renderizável do processo",
+        "Apresentação do formulário do processo",
         "Consulta do formulário da inscrição",
         "Início, salvamento, submissão, cancelamento e descarte do rascunho da inscrição",
         "Avaliação da inscrição",
@@ -19759,7 +19759,7 @@
         "Definição da classificação do processo seletivo",
         "Retificação em ato único",
         "Definição de etapas e do cronograma das fases de processo publicado, quando declaram atos",
-        "Consulta do formulário renderizável do processo",
+        "Apresentação do formulário do processo",
         "Consulta do formulário da inscrição",
         "Início, salvamento, submissão, cancelamento e descarte do rascunho da inscrição",
         "Avaliação da inscrição",
@@ -19787,7 +19787,7 @@
       "ondeAparece": [
         "Definição de classificação do processo seletivo",
         "Retificação em ato único",
-        "Consulta do formulário renderizável do processo",
+        "Apresentação do formulário do processo",
         "Consulta do formulário da inscrição",
         "Início, salvamento, submissão, cancelamento e descarte do rascunho da inscrição",
         "Avaliação da inscrição",
@@ -22522,7 +22522,7 @@
         "Simulação da distribuição de vagas do processo seletivo",
         "Retificação em ato único",
         "Definição de etapas e do cronograma das fases de processo publicado, quando declaram atos",
-        "Consulta do formulário renderizável do processo",
+        "Apresentação do formulário do processo",
         "Consulta do formulário da inscrição",
         "Início, salvamento, submissão, cancelamento e descarte do rascunho da inscrição",
         "Avaliação da inscrição",
@@ -24698,7 +24698,7 @@
         "Publicação inicial do processo seletivo",
         "Retificação em ato único",
         "Pré-visualização do processo seletivo",
-        "Formulário renderizável do rascunho"
+        "Apresentação do formulário do rascunho"
       ]
     },
     {
@@ -25620,7 +25620,7 @@
       "ondeAparece": [
         "Definição de etapas (`PUT /api/selecao/processos-seletivos/{id}/etapas`)",
         "Retificação (`POST /api/selecao/processos-seletivos/{id}/retificacoes`)",
-        "Consulta do formulário renderizável do processo",
+        "Apresentação do formulário do processo",
         "Consulta do formulário da inscrição",
         "Consulta da inscrição do candidato (`GET /api/selecao/processos-seletivos/{id}/inscricao`)",
         "Início, salvamento, submissão, cancelamento e descarte do rascunho da inscrição",
@@ -25661,7 +25661,7 @@
       "ondeAparece": [
         "Definição de etapas (`PUT /api/selecao/processos-seletivos/{id}/etapas`)",
         "Retificação (`POST /api/selecao/processos-seletivos/{id}/retificacoes`)",
-        "Consulta do formulário renderizável do processo",
+        "Apresentação do formulário do processo",
         "Consulta do formulário da inscrição",
         "Consulta da inscrição do candidato (`GET /api/selecao/processos-seletivos/{id}/inscricao`)",
         "Início, salvamento, submissão, cancelamento e descarte do rascunho da inscrição",
@@ -25759,7 +25759,7 @@
         "Definição da referência temporal dos fatos do processo seletivo",
         "Retificação em ato único",
         "Definição de etapas e do cronograma das fases de processo publicado, quando declaram atos",
-        "Consulta do formulário renderizável do processo",
+        "Apresentação do formulário do processo",
         "Consulta do formulário da inscrição",
         "Início, salvamento, submissão, cancelamento e descarte do rascunho da inscrição",
         "Avaliação da inscrição",
@@ -25786,7 +25786,7 @@
       "ondeAparece": [
         "Definição da referência temporal dos fatos do processo seletivo",
         "Retificação em ato único",
-        "Consulta do formulário renderizável do processo",
+        "Apresentação do formulário do processo",
         "Consulta do formulário da inscrição",
         "Início, salvamento, submissão, cancelamento e descarte do rascunho da inscrição",
         "Avaliação da inscrição",
@@ -25844,7 +25844,7 @@
         "Definição da referência temporal dos fatos do processo seletivo",
         "Retificação em ato único",
         "Definição de etapas e do cronograma das fases de processo publicado, quando declaram atos",
-        "Consulta do formulário renderizável do processo",
+        "Apresentação do formulário do processo",
         "Consulta do formulário da inscrição",
         "Início, salvamento, submissão, cancelamento e descarte do rascunho da inscrição",
         "Avaliação da inscrição",
@@ -26314,7 +26314,7 @@
         "Definição de regras de derivação de fatos do processo seletivo",
         "Retificação em ato único",
         "Definição de etapas e do cronograma das fases de processo publicado, quando declaram atos",
-        "Consulta do formulário renderizável do processo",
+        "Apresentação do formulário do processo",
         "Consulta do formulário da inscrição",
         "Início, salvamento, submissão, cancelamento e descarte do rascunho da inscrição",
         "Avaliação da inscrição",
@@ -26340,7 +26340,7 @@
       "ondeAparece": [
         "Definição de regras de derivação de fatos do processo seletivo",
         "Retificação em ato único",
-        "Consulta do formulário renderizável do processo",
+        "Apresentação do formulário do processo",
         "Consulta do formulário da inscrição",
         "Início, salvamento, submissão, cancelamento e descarte do rascunho da inscrição",
         "Avaliação da inscrição",
@@ -26625,7 +26625,7 @@
       "ondeAparece": [
         "Definição do cronograma (`PUT /api/selecao/processos-seletivos/{id}/cronograma-fases`)",
         "Retificação (`POST /api/selecao/processos-seletivos/{id}/retificacoes`)",
-        "Consulta do formulário renderizável do processo",
+        "Apresentação do formulário do processo",
         "Consulta do formulário da inscrição",
         "Consulta da inscrição do candidato (`GET /api/selecao/processos-seletivos/{id}/inscricao`)",
         "Início, salvamento, submissão, cancelamento e descarte do rascunho da inscrição",
@@ -26669,7 +26669,7 @@
         "Definição do cronograma (`PUT /api/selecao/processos-seletivos/{id}/cronograma-fases`)",
         "Definição de etapas de processo publicado, quando declara atos",
         "Retificação (`POST /api/selecao/processos-seletivos/{id}/retificacoes`)",
-        "Consulta do formulário renderizável do processo",
+        "Apresentação do formulário do processo",
         "Consulta do formulário da inscrição",
         "Consulta da inscrição do candidato (`GET /api/selecao/processos-seletivos/{id}/inscricao`)",
         "Início, salvamento, submissão, cancelamento e descarte do rascunho da inscrição",
@@ -26883,7 +26883,7 @@
       "ondeAparece": [
         "Retificação em ato único",
         "Definição de etapas e do cronograma das fases de processo publicado, quando declaram atos",
-        "Consulta do formulário renderizável do processo",
+        "Apresentação do formulário do processo",
         "Consulta do formulário da inscrição",
         "Início, salvamento, submissão, cancelamento e descarte do rascunho da inscrição",
         "Avaliação da inscrição",
@@ -26935,7 +26935,7 @@
       "ondeAparece": [
         "Retificação em ato único",
         "Definição de etapas e do cronograma das fases de processo publicado, quando declaram atos",
-        "Consulta do formulário renderizável do processo",
+        "Apresentação do formulário do processo",
         "Consulta do formulário da inscrição",
         "Início, salvamento, submissão, cancelamento e descarte do rascunho da inscrição",
         "Avaliação da inscrição",
@@ -26975,7 +26975,7 @@
       "ondeAparece": [
         "Retificação em ato único",
         "Definição de etapas e do cronograma das fases de processo publicado, quando declaram atos",
-        "Consulta do formulário renderizável do processo",
+        "Apresentação do formulário do processo",
         "Consulta do formulário da inscrição",
         "Início, salvamento, submissão, cancelamento e descarte do rascunho da inscrição",
         "Avaliação da inscrição",

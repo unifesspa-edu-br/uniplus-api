@@ -52,11 +52,11 @@ Essa forma não é preferência de estilo. Um contrato montado por filtro sobre 
 
 A leitura é anônima e **pode ser alcançada diretamente** — é um Open Host Service, e o seu propósito é servir consumidores, não apenas um.
 
-Justamente por isso, **o critério de visibilidade vive no contrato, e não no Portal**. Um gate aplicado apenas no backend do portal seria contornado por quem consultasse Seleção diretamente, que é o uso que esta decisão autoriza. Quem responde é quem confere. Isso alinha o certame publicado com o que o sistema já pratica: o registro de atos é anônimo por decisão da [ADR-0105](0105-modulo-publicacoes-registro-central-dos-atos.md), os catálogos de configuração são anônimos, e a renderização do formulário de inscrição já é pública. A proteção vem do contrato — tipos declarados e ausência de oráculo de existência —, não de obscuridade de rede.
+Justamente por isso, **o critério de visibilidade vive no contrato, e não no Portal**. Um gate aplicado apenas no backend do portal seria contornado por quem consultasse Seleção diretamente, que é o uso que esta decisão autoriza. Quem responde é quem confere. Isso alinha o certame publicado com o que o sistema já pratica: o registro de atos é anônimo por decisão da [ADR-0105](0105-modulo-publicacoes-registro-central-dos-atos.md), os catálogos de configuração são anônimos, e a apresentação do formulário de inscrição já é pública. A proteção vem do contrato — tipos declarados e ausência de oráculo de existência —, não de obscuridade de rede.
 
 Quanto ao controle de taxa: a [ADR-0093](0093-rate-limiting-na-borda-para-reference-data-publico.md) decidiu tratá-lo na borda, mas o seu alcance declarado são os catálogos de referência. **Esta ADR estende esse alcance** ao contrato público do certame e ao acervo de documentos publicados — que são, juntos, a primeira superfície anônima de alto valor do sistema, com pico previsível na abertura de inscrições.
 
-A escrita permanece administrativa, declarada na própria action, como já ocorre no contrato de renderização do formulário.
+A escrita permanece administrativa, declarada na própria action, como já ocorre no contrato de apresentação do formulário.
 
 ### O Portal é um Backend for Frontend, e só isso
 
@@ -212,9 +212,9 @@ A confirmação "Ausência de oráculo" lê-se com a distinção já registrada 
 
 ## Emenda 2 (2026-10-10) — a inscrição autenticada ainda não passa pelo Portal
 
-Esta decisão trata da superfície **pública e anônima** — a vitrine e o detalhe do certame publicado. A frente seguinte, antecipada no texto original como "estado do candidato e superfície autenticada", chegou com a inscrição (issue #1859, UNI-REQ-0084): o frontend do candidato consome os endpoints de inscrição (iniciar, consultar, salvar rascunho, obter o formulário renderizável, submeter) **diretamente do módulo Seleção**, autenticado, com o titular resolvido pelo CPF do token, não através do Portal.
+Esta decisão trata da superfície **pública e anônima** — a vitrine e o detalhe do certame publicado. A frente seguinte, antecipada no texto original como "estado do candidato e superfície autenticada", chegou com a inscrição (issue #1859, UNI-REQ-0084): o frontend do candidato consome os endpoints de inscrição (iniciar, consultar, salvar rascunho, obter o formulário apresentado, submeter) **diretamente do módulo Seleção**, autenticado, com o titular resolvido pelo CPF do token, não através do Portal.
 
-Isso não revoga nem contradiz a decisão: o que ela proíbe é o Portal — ou qualquer consumidor público e anônimo — lendo o envelope congelado ou recebendo privilégio administrativo. A inscrição é autenticada, por candidato, e o contrato que ela expõe já é desenhado campo a campo (`InscricaoRequest`/`InscricaoDto`/`FormularioRenderizavelDto`), não uma projeção do envelope. O que fica registrado é que o Portal **ainda não é o único ponto de entrada do candidato** — continua sendo até ele ganhar a responsabilidade de compor também essa frente.
+Isso não revoga nem contradiz a decisão: o que ela proíbe é o Portal — ou qualquer consumidor público e anônimo — lendo o envelope congelado ou recebendo privilégio administrativo. A inscrição é autenticada, por candidato, e o contrato que ela expõe já é desenhado campo a campo (`InscricaoRequest`/`InscricaoDto`/`FormularioApresentadoDoProcessoDto`), não uma projeção do envelope. O que fica registrado é que o Portal **ainda não é o único ponto de entrada do candidato** — continua sendo até ele ganhar a responsabilidade de compor também essa frente.
 
 Quando a Portal API passar a servir a inscrição, o movimento compatível com esta decisão é o mesmo já previsto para a reversão da opção B: o Portal compõe o contrato de Seleção, nunca o envelope. Até lá, o frontend atravessa a fronteira de módulo que esta ADR reserva ao Portal — uma excepcionalidade que decorre de o Portal não cobrir ainda esta frente, não de nova decisão arquitetural.
 

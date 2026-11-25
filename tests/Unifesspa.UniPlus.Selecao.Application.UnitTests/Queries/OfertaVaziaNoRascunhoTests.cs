@@ -45,8 +45,8 @@ public sealed class OfertaVaziaNoRascunhoTests
     {
         ProcessoSeletivo processo = ProcessoComOfertaVazia();
 
-        Result<FormularioRenderizavelDto> resultado = await ObterFormularioRenderizavelDoRascunhoQueryHandler.Handle(
-            new ObterFormularioRenderizavelDoRascunhoQuery(processo.Id, FinalidadeFormulario.Habilitacao),
+        Result<FormularioApresentadoDoProcessoDto> resultado = await ObterFormularioApresentadoDoRascunhoQueryHandler.Handle(
+            new ObterFormularioApresentadoDoRascunhoQuery(processo.Id, FinalidadeFormulario.Habilitacao),
             RepositorioDo(processo), CatalogoComOFato(), new ResolvedorFusoDeTeste(), CancellationToken.None);
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);

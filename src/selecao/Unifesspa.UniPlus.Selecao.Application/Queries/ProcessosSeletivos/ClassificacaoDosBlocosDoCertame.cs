@@ -82,7 +82,7 @@ public static class ClassificacaoDosBlocosDoCertame
     /// <summary>
     /// Blocos que são públicos, mas por outro contrato — não se projetam aqui para não criar duas
     /// fontes do mesmo conteúdo. Os formulários e a apresentação dos pressupostos deles já são
-    /// servidos, um por finalidade, pelo endpoint de renderização.
+    /// servidos, um por finalidade, pelo endpoint de apresentação.
     /// </summary>
     public static readonly IReadOnlySet<string> PublicosPorOutroContrato = new HashSet<string>(StringComparer.Ordinal)
     {

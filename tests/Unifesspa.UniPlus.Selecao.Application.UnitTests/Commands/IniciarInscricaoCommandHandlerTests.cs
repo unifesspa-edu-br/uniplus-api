@@ -27,7 +27,7 @@ using Unifesspa.UniPlus.Testes.Compartilhado;
 
 /// <summary>
 /// Início da inscrição (issue #1858): a resolução da versão divulgada (UNI-REQ-0084, mesmo
-/// caminho de <c>ObterFormularioRenderizavelQueryHandler</c>).
+/// caminho de <c>ObterFormularioApresentadoQueryHandler</c>).
 /// A tradução da colisão do índice único (duas requisições simultâneas) exige uma
 /// <c>DbUpdateException</c> real, compatível por reflection — provada contra Postgres real em
 /// <c>InscricaoAtivaDoCpfTests.IndiceUnico_RecusaDuasInscricoesDoMesmoCpfNoMesmoProcesso</c>, não

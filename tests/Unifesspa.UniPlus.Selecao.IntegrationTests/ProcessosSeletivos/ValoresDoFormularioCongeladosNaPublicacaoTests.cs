@@ -33,10 +33,10 @@ using Unifesspa.UniPlus.Testes.Compartilhado;
 /// </summary>
 /// <remarks>
 /// <para>
-/// <b>O que esta suíte prova</b>: <c>ObterFormularioRenderizavelQueryHandler.Handle</c> lê
+/// <b>O que esta suíte prova</b>: <c>ObterFormularioApresentadoQueryHandler.Handle</c> lê
 /// SOMENTE <c>VersaoConfiguracao.ConfiguracaoCongelada</c> — nenhum leitor de catálogo entra na
 /// sua assinatura (prova estrutural em
-/// <see cref="ObterFormularioRenderizavelQueryHandlerTests.Handle_NaoDependeDeLeitorDeCatalogo"/>).
+/// <c>ObterFormularioApresentadoVersaoEReidratacaoTests.Handle_NaoDependeDeLeitorDeCatalogo</c>).
 /// O que esta suíte acrescenta é a prova EMPÍRICA, com banco real: os mesmos bytes persistidos
 /// no ato de publicação são o que volta em leituras independentes e repetidas — sem cache, sem
 /// estado compartilhado entre chamadas, sem qualquer efeito de "o que aconteceu entre uma
@@ -53,7 +53,7 @@ using Unifesspa.UniPlus.Testes.Compartilhado;
 /// explícita, não como comportamento não verificado.
 /// </para>
 /// </remarks>
-[Collection(FormularioRenderizavelPersistenciaColecao.Nome)]
+[Collection(FormularioApresentadoPersistenciaColecao.Nome)]
 public sealed class ValoresDoFormularioCongeladosNaPublicacaoTests
 {
     private readonly CenarioDeFormularioPublicado _cenario;
@@ -71,8 +71,8 @@ public sealed class ValoresDoFormularioCongeladosNaPublicacaoTests
         await PublicarComValoresCongeladosAsync(processo);
 
         // Leituras independentes, sem catálogo, reproduzem os bytes persistidos.
-        FormularioRenderizavelDto primeira = await _cenario.LerPublicadoAsync(processo.Id);
-        FormularioRenderizavelDto segunda = await _cenario.LerPublicadoAsync(processo.Id);
+        FormularioApresentadoDoProcessoDto primeira = await _cenario.LerPublicadoAsync(processo.Id);
+        FormularioApresentadoDoProcessoDto segunda = await _cenario.LerPublicadoAsync(processo.Id);
 
         ConferirLeituras(primeira, segunda);
     }
@@ -102,9 +102,9 @@ public sealed class ValoresDoFormularioCongeladosNaPublicacaoTests
             ],
         };
 
-    private static void ConferirLeituras(FormularioRenderizavelDto primeira, FormularioRenderizavelDto segunda)
+    private static void ConferirLeituras(FormularioApresentadoDoProcessoDto primeira, FormularioApresentadoDoProcessoDto segunda)
     {
-        CampoRenderizavel corRaca = primeira.Formulario.Coleta.Itens.Single(f => f.FatoCodigo == "COR_RACA");
+        CampoApresentado corRaca = primeira.Formulario.Coleta.Itens.Single(f => f.FatoCodigo == "COR_RACA");
         corRaca.ValoresSelecionaveis.Should().NotBeNull();
         corRaca.ValoresSelecionaveis!.Select(v => v.Codigo).Should().Equal(
             ["BRANCA", "PRETA", "PARDA", "AMARELA", "INDIGENA", "NAO_DECLARADO"],
@@ -123,14 +123,14 @@ public sealed class ValoresDoFormularioCongeladosNaPublicacaoTests
     {
         (ProcessoSeletivo processo, _) = await PublicarComCorRacaAsync(nameof(Handle_ValorCorrigidoNoCatalogo_RascunhoLeOVivoEPublicadoOCongelado));
 
-        FormularioRenderizavelDto rascunho = await _cenario.LerRascunhoAsync(processo.Id, CatalogoComCorRaca([.. CorRacaCorrigida()]));
+        FormularioApresentadoDoProcessoDto rascunho = await _cenario.LerRascunhoAsync(processo.Id, CatalogoComCorRaca([.. CorRacaCorrigida()]));
 
         rascunho.Formulario.Coleta.Itens.Single(static f => f.FatoCodigo == "COR_RACA").ValoresSelecionaveis!
             .Select(static v => (v.Codigo, v.Descricao, v.Ordem, v.Orientacao)).Should().Equal(
                 ("PRETA", "Preta ou negra.", 0, "Escolha conforme a sua autodeclaração."),
                 ("BRANCA", "Branca (corrigida).", 1, null));
 
-        FormularioRenderizavelDto publicado = await _cenario.LerPublicadoAsync(processo.Id);
+        FormularioApresentadoDoProcessoDto publicado = await _cenario.LerPublicadoAsync(processo.Id);
         publicado.Formulario.Coleta.Itens.Single(static f => f.FatoCodigo == "COR_RACA").ValoresSelecionaveis!
             .Select(static v => (v.Codigo, v.Descricao, v.Ordem, v.Orientacao)).Should().Equal(
                 ("BRANCA", "Branca.", 0, null),

@@ -35,7 +35,7 @@ public sealed class ModeloFormularioAvaliacaoEndpointTests
     {
         using HttpClient client = _fixture.Factory.CreateClient();
         Guid id = await CriarAsync(client, InscricaoComOpcoes(CodigoUnico()));
-        JsonObject formulario = await RenderizavelAsync(client, id);
+        JsonObject formulario = await ApresentacaoAsync(client, id);
         Dictionary<string, object> respostas = new() { ["QUILOMBOLA"] = quilombola };
 
         JsonObject avaliacao = await AvaliarAsync(client, formulario["regras"], respostas);

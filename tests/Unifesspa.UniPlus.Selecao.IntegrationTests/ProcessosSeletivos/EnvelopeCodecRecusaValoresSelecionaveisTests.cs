@@ -83,8 +83,8 @@ public sealed class EnvelopeCodecRecusaValoresSelecionaveisTests
     /// <summary>
     /// Bicondicional D1-bis: um fato de <b>seleção</b> (ESCOLHA_UNICA/ESCOLHA_MULTIPLA) sem
     /// array de valores é um seletor <b>mudo</b> — o candidato veria o campo, mas nenhuma opção
-    /// para escolher. É o mesmo modo de falha que <see cref="ObterFormularioRenderizavelQueryHandlerTests"/>
-    /// exercita no handler de leitura pública; aqui a guarda é a do próprio DECODER.
+    /// para escolher. A recusa da reidratação também chega à leitura pública, como cobre
+    /// <c>ObterFormularioApresentadoVersaoEReidratacaoTests</c>; aqui a guarda é a do próprio decoder.
     /// </summary>
     [Fact(DisplayName = "Bicondicional: valoresSelecionaveis null num fato de SELEÇÃO é recusado — seletor mudo")]
     public void ValoresSelecionaveis_NuloEmFatoDeSelecao_Recusa()

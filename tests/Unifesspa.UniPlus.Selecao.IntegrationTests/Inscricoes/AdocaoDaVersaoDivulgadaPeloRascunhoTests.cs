@@ -95,7 +95,7 @@ public sealed class AdocaoDaVersaoDivulgadaPeloRascunhoTests
     private async Task ConferirFormularioEAvaliacaoAsync(Guid processoId)
     {
         await using UniPlusDbContext db = _cenario.CriarDbContext();
-        Result<FormularioRenderizavelDto> formulario = await _cenario.ObterFormularioAsync(db, processoId, UsuarioComCpf(PersonasDeTeste.FernandaDrumond));
+        Result<FormularioApresentadoDoProcessoDto> formulario = await _cenario.ObterFormularioAsync(db, processoId, UsuarioComCpf(PersonasDeTeste.FernandaDrumond));
         formulario.IsSuccess.Should().BeTrue(formulario.Error?.Message);
         formulario.Value!.Formulario.Coleta.Itens.Select(static c => c.FatoCodigo).Should().Contain("NOVA").And.NotContain("ANTIGA");
         Result<AvaliacaoDaInscricaoDto> avaliacao = await _cenario.AvaliarAsync(db, processoId, UsuarioComCpf(PersonasDeTeste.FernandaDrumond), null);

@@ -10,7 +10,7 @@ using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Regras.ValueObjects;
 
 /// <summary>
-/// As regras de um formulário renderizável — de um arquivo importado, de um caso do corpus, de um
+/// As regras de um formulário apresentado — de um arquivo importado, de um caso do corpus, de um
 /// modelo ou de um processo — e as respostas simuladas: as do formulário, por fato; as ocorrências de
 /// cada grupo, pela identidade de cada uma; as seções dadas como concluídas, pelo código delas nas
 /// regras; os pressupostos; e o envio suposto, de que se contam os limites da faixa de data — sem

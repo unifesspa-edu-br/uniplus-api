@@ -12,7 +12,7 @@ using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Regras.Leituras;
 
 /// <summary>
-/// A avaliação sem cadastro das regras de um formulário renderizável: a recusa da ocorrência sem
+/// A avaliação sem cadastro das regras de um formulário apresentado: a recusa da ocorrência sem
 /// identidade própria no grupo e a do envio simulado numa zona que o ambiente não reconhece ou no primeiro
 /// instante do calendário. O resultado da avaliação é conferido pelo corpus de casos.
 /// </summary>

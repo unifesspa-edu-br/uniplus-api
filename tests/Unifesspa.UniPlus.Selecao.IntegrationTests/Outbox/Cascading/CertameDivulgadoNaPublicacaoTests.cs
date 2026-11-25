@@ -31,7 +31,7 @@ public sealed class CertameDivulgadoNaPublicacaoTests
         _fixture = fixture;
     }
 
-    // A renderização do formulário é anônima. Resolvendo pela divulgação, e não pela versão vigente por relógio, deixa de
+    // A apresentação do formulário é anônima. Resolvendo pela divulgação, e não pela versão vigente por relógio, deixa de
     // ser possível distinguir rascunho de inexistente: nenhum dos dois tem linha, e a distinção respondia a um estranho,
     // numa requisição, se um identificador corresponde a um processo ainda não público.
     [Fact(DisplayName = "O formulário só é servido quando o certame é divulgado, e a recusa não distingue rascunho de inexistente")]

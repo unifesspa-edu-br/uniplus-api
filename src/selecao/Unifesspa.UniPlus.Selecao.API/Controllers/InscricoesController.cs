@@ -64,17 +64,17 @@ public sealed class InscricoesController : ControllerBase
         return Ok(resultado.Value);
     }
 
-    /// <summary>O formulário renderizável da versão em que está a inscrição do dono do token: a divulgada, no rascunho, e a congelada no primeiro envio, depois dele.</summary>
+    /// <summary>O formulário apresentado da versão em que está a inscrição do dono do token: a divulgada, no rascunho, e a congelada no primeiro envio, depois dele.</summary>
     [HttpGet("processos-seletivos/{id:guid}/inscricao/formulario")]
     [VendorMediaType(Resource = "formulario-inscricao", Versions = [1])]
-    [ProducesResponseType(typeof(FormularioRenderizavelDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(FormularioApresentadoDoProcessoDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status406NotAcceptable)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status422UnprocessableEntity)]
     public async Task<IActionResult> ObterFormulario(Guid id, CancellationToken cancellationToken)
     {
-        Result<FormularioRenderizavelDto> resultado = await _queryBus
+        Result<FormularioApresentadoDoProcessoDto> resultado = await _queryBus
             .Send(new ObterFormularioDaInscricaoQuery(id), cancellationToken)
             .ConfigureAwait(false);
         return resultado.IsSuccess ? Ok(resultado.Value) : resultado.ToActionResult(_mapper);

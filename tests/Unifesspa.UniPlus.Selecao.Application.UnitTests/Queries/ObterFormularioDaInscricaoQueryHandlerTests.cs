@@ -24,9 +24,9 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
 /// <summary>
-/// O formulário renderizável da versão que a inscrição fixou ao iniciar: resolve
+/// O formulário apresentado da versão que a inscrição fixou ao iniciar: resolve
 /// pelo <c>VersaoFormularioId</c> gravado, nunca pela divulgação atual — a mesma projeção de
-/// <see cref="ProcessosSeletivos.ObterFormularioRenderizavelQueryHandlerTests"/>, só a resolução
+/// <see cref="ObterFormularioApresentadoVersaoEReidratacaoTests"/>, só a resolução
 /// da versão é diferente.
 /// </summary>
 public sealed class ObterFormularioDaInscricaoQueryHandlerTests
@@ -91,7 +91,7 @@ public sealed class ObterFormularioDaInscricaoQueryHandlerTests
 
     private static readonly Guid FaseDoBloco = Guid.Parse("0199a000-0000-7000-8000-0000000000f1");
 
-    private static Task<Result<FormularioRenderizavelDto>> Obter(PortasDaInscricaoDeTeste portas, IUserContext usuario) =>
+    private static Task<Result<FormularioApresentadoDoProcessoDto>> Obter(PortasDaInscricaoDeTeste portas, IUserContext usuario) =>
         ObterFormularioDaInscricaoQueryHandler.Handle(
             new ObterFormularioDaInscricaoQuery(ProcessoId), portas.Inscricoes, DivulgacaoDeTeste.Certame(ProcessoId),
             portas.Processos, portas.Codecs, usuario, CancellationToken.None);
@@ -121,7 +121,7 @@ public sealed class ObterFormularioDaInscricaoQueryHandlerTests
         IUserContext userContext = Substitute.For<IUserContext>();
         userContext.Cpf.Returns((string?)null);
 
-        Result<FormularioRenderizavelDto> resultado = await Obter(portas, userContext);
+        Result<FormularioApresentadoDoProcessoDto> resultado = await Obter(portas, userContext);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("Inscricao.CpfAusenteNoToken");
@@ -135,7 +135,7 @@ public sealed class ObterFormularioDaInscricaoQueryHandlerTests
         PortasDaInscricaoDeTeste portas = new(ProcessoId);
         portas.ComInscricao(cpf, null);
 
-        Result<FormularioRenderizavelDto> resultado = await Obter(portas, UsuarioComCpf(cpf));
+        Result<FormularioApresentadoDoProcessoDto> resultado = await Obter(portas, UsuarioComCpf(cpf));
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("Inscricao.NaoEncontrada");
@@ -148,7 +148,7 @@ public sealed class ObterFormularioDaInscricaoQueryHandlerTests
         (VersaoConfiguracao versao, EnvelopeReidratado envelope) = MontarVersaoComFormularioDeInscricao();
         PortasDaInscricaoDeTeste portas = PortasNaVersao(cpf, Rascunho(cpf, versao), versao, envelope);
 
-        Result<FormularioRenderizavelDto> resultado = await Obter(portas, UsuarioComCpf(cpf));
+        Result<FormularioApresentadoDoProcessoDto> resultado = await Obter(portas, UsuarioComCpf(cpf));
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
         resultado.Value!.Formulario.Finalidade.Should().Be(FinalidadeFormulario.Inscricao.Codigo());
@@ -161,7 +161,7 @@ public sealed class ObterFormularioDaInscricaoQueryHandlerTests
         (VersaoConfiguracao versao, EnvelopeReidratado envelope) = MontarVersaoComFormularioDeInscricao(FaseDoBloco, ExigenciaCondicionalDeComprovante());
         PortasDaInscricaoDeTeste portas = PortasNaVersao(cpf, Rascunho(cpf, versao), versao, envelope);
 
-        Result<FormularioRenderizavelDto> resultado = await Obter(portas, UsuarioComCpf(cpf));
+        Result<FormularioApresentadoDoProcessoDto> resultado = await Obter(portas, UsuarioComCpf(cpf));
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
         resultado.Value!.ComprovacaoDocumental.Should().BeNull("a lista do certame não diz o que se aplica ao candidato");
@@ -184,7 +184,7 @@ public sealed class ObterFormularioDaInscricaoQueryHandlerTests
     {
         (VersaoConfiguracao versao, EnvelopeReidratado envelope) = MontarVersaoComFormularioDeInscricao(finalidade: FinalidadeFormulario.Habilitacao);
 
-        Result<FormularioRenderizavelDto?> projetado = ProjecaoDoFormularioDaVersao.Projetar(
+        Result<FormularioApresentadoDoProcessoDto?> projetado = ProjecaoDoFormularioDaVersao.Projetar(
             versao, FinalidadeFormulario.Inscricao, RegistroReidratando(envelope), acervoDaComprovacao: null);
 
         projetado.IsSuccess.Should().BeTrue(projetado.Error?.Message);
@@ -198,12 +198,12 @@ public sealed class ObterFormularioDaInscricaoQueryHandlerTests
         (VersaoConfiguracao versao, EnvelopeReidratado envelope) = MontarVersaoComFormularioDeInscricao(FaseDoBloco);
         PortasDaInscricaoDeTeste portas = PortasNaVersao(cpf, Rascunho(cpf, versao), versao, envelope);
 
-        Result<FormularioRenderizavelDto> resultado = await Obter(portas, UsuarioComCpf(cpf));
+        Result<FormularioApresentadoDoProcessoDto> resultado = await Obter(portas, UsuarioComCpf(cpf));
 
         resultado.Value!.FaseId.Should().Be(FaseDoBloco);
     }
 
-    private static Task<Result<FormularioRenderizavelDto>> Consultar(Cpf cpf, VersaoConfiguracao versao, EnvelopeReidratado envelope)
+    private static Task<Result<FormularioApresentadoDoProcessoDto>> Consultar(Cpf cpf, VersaoConfiguracao versao, EnvelopeReidratado envelope)
     {
         IInscricaoRepository inscricoes = Substitute.For<IInscricaoRepository>();
         inscricoes.ObterAtivaPorProcessoECpfAsync(ProcessoId, cpf, Arg.Any<CancellationToken>())

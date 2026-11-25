@@ -27,7 +27,7 @@ using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Fatos;
 /// </summary>
 /// <remarks>
 /// Distingue 404 (processo inexistente) de 422 (não há data de referência de onde partir) —
-/// mesmo contrato de erro de <see cref="ObterFormularioRenderizavelQueryHandler"/>. Traduzir a
+/// mesmo contrato de erro de <see cref="ObterFormularioApresentadoQueryHandler"/>. Traduzir a
 /// segunda condição em 404 diria que o processo não existe e esconderia a pendência que a
 /// consulta deveria justamente antecipar.
 /// <para>

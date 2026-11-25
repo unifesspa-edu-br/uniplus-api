@@ -9,28 +9,28 @@ using Unifesspa.UniPlus.Regras.Services;
 /// de que fatos cada fato calculado é calculado.
 /// </summary>
 public sealed record DescricaoDosPressupostos(
-    IReadOnlyList<CampoRenderizavel> CamposDosOutrosFormularios,
+    IReadOnlyList<CampoApresentado> CamposDosOutrosFormularios,
     IReadOnlyDictionary<string, ApresentacaoDoFato> ApresentacaoDosNaoPerguntados,
     IReadOnlyList<DefinicaoAgregado> Agregados)
 {
     /// <summary>Um pressuposto por código, na ordem dada.</summary>
-    public IReadOnlyList<PressupostoRenderizavel> Descrever(IReadOnlyList<string> codigos)
+    public IReadOnlyList<FatoPressuposto> Descrever(IReadOnlyList<string> codigos)
     {
         ArgumentNullException.ThrowIfNull(codigos);
 
-        Dictionary<string, CampoRenderizavel> perguntados = PerguntadosPorOutros();
+        Dictionary<string, CampoApresentado> perguntados = PerguntadosPorOutros();
         Dictionary<string, IReadOnlyList<string>> calculadosDe = CalculadosDe();
 
-        return [.. codigos.Select(codigo => perguntados.TryGetValue(codigo, out CampoRenderizavel? campo)
+        return [.. codigos.Select(codigo => perguntados.TryGetValue(codigo, out CampoApresentado? campo)
             ? PerguntadoPor(campo)
             : DoCatalogo(codigo, calculadosDe))];
     }
 
     /// <summary>O primeiro campo que pergunta o fato é o que vale.</summary>
-    private Dictionary<string, CampoRenderizavel> PerguntadosPorOutros()
+    private Dictionary<string, CampoApresentado> PerguntadosPorOutros()
     {
-        Dictionary<string, CampoRenderizavel> perguntados = new(StringComparer.Ordinal);
-        foreach (CampoRenderizavel campo in CamposDosOutrosFormularios)
+        Dictionary<string, CampoApresentado> perguntados = new(StringComparer.Ordinal);
+        foreach (CampoApresentado campo in CamposDosOutrosFormularios)
         {
             perguntados.TryAdd(campo.FatoCodigo, campo);
         }
@@ -49,7 +49,7 @@ public sealed record DescricaoDosPressupostos(
         return calculadosDe;
     }
 
-    private static PressupostoRenderizavel PerguntadoPor(CampoRenderizavel campo) =>
+    private static FatoPressuposto PerguntadoPor(CampoApresentado campo) =>
         new(
             campo.FatoCodigo,
             campo.Apresentacao.Rotulo,
@@ -58,7 +58,7 @@ public sealed record DescricaoDosPressupostos(
             campo.ValoresSelecionaveis,
             null);
 
-    private PressupostoRenderizavel DoCatalogo(string codigo, Dictionary<string, IReadOnlyList<string>> calculadosDe)
+    private FatoPressuposto DoCatalogo(string codigo, Dictionary<string, IReadOnlyList<string>> calculadosDe)
     {
         ApresentacaoDoFato? apresentacao = ApresentacaoDosNaoPerguntados.GetValueOrDefault(codigo);
         return new(codigo, apresentacao?.Rotulo, apresentacao?.TipoDeCampo, null, null, calculadosDe.GetValueOrDefault(codigo));

@@ -37,7 +37,7 @@ public sealed class FormularioDaInscricaoPublicadoTests
         IUserContext fernanda = UsuarioComCpf(PersonasDeTeste.FernandaDrumond);
         (await _cenario.IniciarRascunhoAsync(db, processoId, fernanda)).IsSuccess.Should().BeTrue();
 
-        Result<FormularioRenderizavelDto> formulario = await _cenario.ObterFormularioAsync(db, processoId, fernanda);
+        Result<FormularioApresentadoDoProcessoDto> formulario = await _cenario.ObterFormularioAsync(db, processoId, fernanda);
 
         formulario.IsSuccess.Should().BeTrue(formulario.Error?.Message);
         formulario.Value!.DependenciasDaAvaliacao.Should().BeEquivalentTo(new DependenciasDaAvaliacaoDto(["CONCORRER_PCD"], []));
@@ -46,13 +46,13 @@ public sealed class FormularioDaInscricaoPublicadoTests
             "a derivação da modalidade não vai ao navegador");
     }
 
-    private async Task<FormularioRenderizavelDto> FormularioDaInscricaoDeFernandaAsync(UniPlusDbContext db, ProcessoSeletivo processo)
+    private async Task<FormularioApresentadoDoProcessoDto> FormularioDaInscricaoDeFernandaAsync(UniPlusDbContext db, ProcessoSeletivo processo)
     {
         (Guid processoId, _) = await PublicarEDivulgarAsync(db, processo);
         IUserContext fernanda = UsuarioComCpf(PersonasDeTeste.FernandaDrumond);
         (await _cenario.IniciarRascunhoAsync(db, processoId, fernanda)).IsSuccess.Should().BeTrue();
 
-        Result<FormularioRenderizavelDto> formulario = await _cenario.ObterFormularioAsync(db, processoId, fernanda);
+        Result<FormularioApresentadoDoProcessoDto> formulario = await _cenario.ObterFormularioAsync(db, processoId, fernanda);
         formulario.IsSuccess.Should().BeTrue(formulario.Error?.Message);
         return formulario.Value!;
     }
@@ -62,7 +62,7 @@ public sealed class FormularioDaInscricaoPublicadoTests
     {
         await using UniPlusDbContext db = _cenario.CriarDbContext();
 
-        FormularioRenderizavelDto formulario = await FormularioDaInscricaoDeFernandaAsync(
+        FormularioApresentadoDoProcessoDto formulario = await FormularioDaInscricaoDeFernandaAsync(
             db, ProcessoComFator(nameof(FormularioDaInscricao_TrazAsDependenciasDoFatorPeloFatoQueOBonusCita)));
 
         formulario.DependenciasDoFator.Should().BeEquivalentTo(new DependenciasDaAvaliacaoDto(["PEDE_O_FATOR"], []));
@@ -73,7 +73,7 @@ public sealed class FormularioDaInscricaoPublicadoTests
     {
         await using UniPlusDbContext db = _cenario.CriarDbContext();
 
-        FormularioRenderizavelDto formulario = await FormularioDaInscricaoDeFernandaAsync(
+        FormularioApresentadoDoProcessoDto formulario = await FormularioDaInscricaoDeFernandaAsync(
             db, ProcessoQueDerivaAModalidade(nameof(FormularioDaInscricao_SemFator_TrazAsDependenciasDoFatorVazias)));
 
         formulario.DependenciasDoFator.Should().BeEquivalentTo(new DependenciasDaAvaliacaoDto([], []));
@@ -85,8 +85,8 @@ public sealed class FormularioDaInscricaoPublicadoTests
         await using UniPlusDbContext db = _cenario.CriarDbContext();
         (Guid processoId, _) = await PublicarEDivulgarAsync(db, ProcessoComFator(nameof(FormularioDaIsencao_NaoTrazAsDependenciasDoFator), comIsencao: true));
 
-        Result<FormularioRenderizavelDto> formulario = await ObterFormularioRenderizavelQueryHandler.Handle(
-            new ObterFormularioRenderizavelQuery(processoId, FinalidadeFormulario.IsencaoTaxa), ProcessoSeletivoRepositoryDeTeste.Criar(db),
+        Result<FormularioApresentadoDoProcessoDto> formulario = await ObterFormularioApresentadoQueryHandler.Handle(
+            new ObterFormularioApresentadoQuery(processoId, FinalidadeFormulario.IsencaoTaxa), ProcessoSeletivoRepositoryDeTeste.Criar(db),
             new CertameDivulgadoRepository(db), RegistroCodecs, EnderecosSemCopia(), CancellationToken.None);
 
         formulario.IsSuccess.Should().BeTrue(formulario.Error?.Message);

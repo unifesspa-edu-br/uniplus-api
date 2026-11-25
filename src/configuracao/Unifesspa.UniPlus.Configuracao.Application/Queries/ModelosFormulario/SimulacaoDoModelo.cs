@@ -11,7 +11,7 @@ using Unifesspa.UniPlus.Regras.Formularios;
 /// <summary>
 /// O modelo como a simulação do administrador o interpreta: o conteúdo do modelo aplicado — o de inscrição,
 /// com o conjunto básico —, com o catálogo vivo: as opções que o catálogo oferta a cada campo, completadas
-/// pelo cadastro institucional, e os agregados sobre os grupos. O renderizável que o front interpreta e a
+/// pelo cadastro institucional, e os agregados sobre os grupos. O formulário apresentado que o front interpreta e a
 /// pré-visualização partem dela, para darem o mesmo resultado à mesma simulação.
 /// </summary>
 internal sealed record SimulacaoDoModelo(
@@ -42,7 +42,7 @@ internal sealed record SimulacaoDoModelo(
     public DefinicaoFormulario Definicao() => Conteudo.ParaAvaliacao(VocabularioDoCatalogo.DerivacoesDosFatos(Fatos), Agregados);
 
     /// <summary>
-    /// A resposta fora das opções que o catálogo oferta não vale, como no renderizável que o front
+    /// A resposta fora das opções que o catálogo oferta não vale, como no formulário apresentado que o front
     /// interpreta.
     /// </summary>
     public Dictionary<string, JsonElement> RespostasDentroDaOferta(IReadOnlyDictionary<string, JsonElement> respostas) =>

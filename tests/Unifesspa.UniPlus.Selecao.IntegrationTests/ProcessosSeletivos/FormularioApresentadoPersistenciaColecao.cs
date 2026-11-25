@@ -6,7 +6,7 @@ namespace Unifesspa.UniPlus.Selecao.IntegrationTests.ProcessosSeletivos;
 /// que conhece pelo id.
 /// </summary>
 [CollectionDefinition(Nome)]
-public sealed class FormularioRenderizavelPersistenciaColecao : ICollectionFixture<ProcessoSeletivoDbFixture>
+public sealed class FormularioApresentadoPersistenciaColecao : ICollectionFixture<ProcessoSeletivoDbFixture>
 {
-    public const string Nome = "formulario-renderizavel-persistencia";
+    public const string Nome = "formulario-apresentado-persistencia";
 }

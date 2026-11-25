@@ -25,7 +25,7 @@ using Unifesspa.UniPlus.Testes.Compartilhado;
 /// configuração publicada, recortadas para a finalidade, e os pressupostos saem com a apresentação
 /// congelada na publicação, não com a do catálogo vivo.
 /// </summary>
-[Collection(FormularioRenderizavelPersistenciaColecao.Nome)]
+[Collection(FormularioApresentadoPersistenciaColecao.Nome)]
 public sealed class RegrasEPressupostosDoFormularioPublicadoTests
 {
     private readonly CenarioDeFormularioPublicado _cenario;
@@ -46,7 +46,7 @@ public sealed class RegrasEPressupostosDoFormularioPublicadoTests
         SnapshotCanonico congelado = CenarioDeFormularioPublicado.Canonicalizar(entrada);
         await _cenario.PublicarEPersistirAsync(processo, entrada.Dados, congelado, entrada.HashDocumento, ExemploDeEnvelope.Ator);
 
-        FormularioRenderizavelDto lido = await _cenario.LerPublicadoAsync(processo.Id);
+        FormularioApresentadoDoProcessoDto lido = await _cenario.LerPublicadoAsync(processo.Id);
 
         RecorteDaFinalidade esperado = RecorteEsperado(processo, entrada);
         ConferirRegras(lido, esperado);
@@ -77,7 +77,7 @@ public sealed class RegrasEPressupostosDoFormularioPublicadoTests
             entrada.Dados, entrada.HashDocumento, entrada.FusoHorario, retificacao: null, conformidade: null,
             dadosDeCatalogo: new DadosDeCatalogoDaConfiguracaoPublicada(ValoresSelecionaveisCongelados: entrada.DadosDeCatalogo.ValoresSelecionaveisCongelados, AgregadosDosGrupos: entrada.DadosDeCatalogo.AgregadosDosGrupos, ApresentacaoDosPressupostos: entrada.DadosDeCatalogo.ApresentacaoDosPressupostos));
 
-    private static void ConferirRegras(FormularioRenderizavelDto lido, RecorteDaFinalidade esperado)
+    private static void ConferirRegras(FormularioApresentadoDoProcessoDto lido, RecorteDaFinalidade esperado)
     {
         // O envelope guarda as condições na ordem canônica: a equivalência é a da avaliação, em cada
         // combinação das respostas que as regras da inscrição citam.
@@ -94,7 +94,7 @@ public sealed class RegrasEPressupostosDoFormularioPublicadoTests
         }
     }
 
-    private static void ConferirConteudo(FormularioRenderizavelDto lido, RecorteDaFinalidade esperado, ProcessoSeletivo processo)
+    private static void ConferirConteudo(FormularioApresentadoDoProcessoDto lido, RecorteDaFinalidade esperado, ProcessoSeletivo processo)
     {
         lido.Formulario.Pressupostos.Fatos.Select(static p => p.FatoCodigo).Should().Equal(esperado.Pressupostos);
         lido.Formulario.Regras.Agregados.Should().BeEmpty("nenhuma regra da inscrição cita os agregados da composição familiar");
@@ -111,11 +111,11 @@ public sealed class RegrasEPressupostosDoFormularioPublicadoTests
 
         await PublicarComMunicipioAsync(processo);
 
-        PressupostoRenderizavel publicado = Municipio(await _cenario.LerPublicadoAsync(processo.Id));
+        FatoPressuposto publicado = Municipio(await _cenario.LerPublicadoAsync(processo.Id));
         (publicado.Rotulo, publicado.TipoDeCampo).Should().Be(("Município de residência", "MUNICIPIO"));
         publicado.CalculadoDe.Should().Equal(["ENDERECO_RESIDENCIAL"]);
 
-        FormularioRenderizavelDto rascunho = await _cenario.LerRascunhoAsync(processo.Id, CatalogoComOMunicipio("Cidade onde mora"));
+        FormularioApresentadoDoProcessoDto rascunho = await _cenario.LerRascunhoAsync(processo.Id, CatalogoComOMunicipio("Cidade onde mora"));
 
         Municipio(rascunho).Rotulo.Should().Be("Cidade onde mora", "o rascunho lê o catálogo vivo");
         Municipio(await _cenario.LerPublicadoAsync(processo.Id)).Rotulo.Should().Be("Município de residência", "o publicado lê o rótulo congelado na versão");
@@ -169,19 +169,19 @@ public sealed class RegrasEPressupostosDoFormularioPublicadoTests
         SnapshotCanonico congelado = CenarioDeFormularioPublicado.Canonicalizar(entrada);
         await _cenario.PublicarEPersistirAsync(processo, entrada.Dados, congelado, entrada.HashDocumento, ExemploDeEnvelope.Ator);
 
-        FormularioRenderizavelDto lido = await _cenario.LerPublicadoAsync(processo.Id, FinalidadeFormulario.Habilitacao);
+        FormularioApresentadoDoProcessoDto lido = await _cenario.LerPublicadoAsync(processo.Id, FinalidadeFormulario.Habilitacao);
 
         ConferirPressupostosDaHabilitacao(lido);
     }
 
-    private static void ConferirPressupostosDaHabilitacao(FormularioRenderizavelDto lido)
+    private static void ConferirPressupostosDaHabilitacao(FormularioApresentadoDoProcessoDto lido)
     {
         lido.Formulario.Pressupostos.Fatos.Select(static p => p.FatoCodigo).Should().Equal("COR_RACA", "FAIXA_ETARIA");
-        PressupostoRenderizavel corRaca = lido.Formulario.Pressupostos.Fatos[0];
+        FatoPressuposto corRaca = lido.Formulario.Pressupostos.Fatos[0];
         corRaca.Rotulo.Should().Be("Cor ou raça");
         corRaca.TipoDeCampo.Should().Be("ESCOLHA_UNICA");
         corRaca.ValoresSelecionaveis!.Select(static v => v.Codigo).Should().Equal(["BRANCA", "PRETA", "PARDA"], "a simulação pergunta o dado anterior com os valores congelados");
-        PressupostoRenderizavel faixaEtaria = lido.Formulario.Pressupostos.Fatos[1];
+        FatoPressuposto faixaEtaria = lido.Formulario.Pressupostos.Fatos[1];
         faixaEtaria.Rotulo.Should().Be("Faixa etária", "nenhum formulário a pergunta, e o rótulo é o do catálogo congelado na versão");
         faixaEtaria.TipoDeCampo.Should().Be("NUMERO");
         faixaEtaria.CalculadoDe.Should().Equal(["DATA_NASCIMENTO"]);
@@ -218,7 +218,7 @@ public sealed class RegrasEPressupostosDoFormularioPublicadoTests
         itens.IsSuccess.Should().BeTrue(itens.Error?.Message);
     }
 
-    private static PressupostoRenderizavel Municipio(FormularioRenderizavelDto formulario) =>
+    private static FatoPressuposto Municipio(FormularioApresentadoDoProcessoDto formulario) =>
         formulario.Formulario.Pressupostos.Fatos.Single(static p => p.FatoCodigo == "MUNICIPIO_RESIDENCIA");
 
     private static IReadOnlyList<FatoCandidatoView> CatalogoComOMunicipio(string nomeDoMunicipio) => CatalogoDoConjuntoBasico.Com(

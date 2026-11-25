@@ -134,7 +134,7 @@ public sealed class PreVisualizarModeloFormularioQueryHandlerTests
             .Should().Equal(("m1", "VERDADEIRO"), ("m2", "FALSO"));
     }
 
-    [Fact(DisplayName = "A resposta fora das opções que o catálogo oferta não vale, como no renderizável que o front interpreta")]
+    [Fact(DisplayName = "A resposta fora das opções que o catálogo oferta não vale, como no formulário apresentado que o front interpreta")]
     public async Task Handle_RespostaForaDaOferta_NaoVale()
     {
         _fatos.ListarTodosAsync(Arg.Any<CancellationToken>()).Returns(_ => [_certificado, CorComAmarelaDesativada()]);

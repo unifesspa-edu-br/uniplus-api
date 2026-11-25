@@ -13,10 +13,10 @@ using Services;
 using Unifesspa.UniPlus.Kernel.Results;
 
 /// <summary>
-/// Handler do <see cref="ObterFormularioRenderizavelQuery"/> (congelamento dos parâmetros na publicação, UNI-REQ-0019, UNI-REQ-0072): projeta o
-/// formulário renderizável da finalidade a partir da versão que o certame <b>divulgado</b> serve —
+/// Handler do <see cref="ObterFormularioApresentadoQuery"/> (congelamento dos parâmetros na publicação, UNI-REQ-0019, UNI-REQ-0072): projeta o
+/// formulário apresentado da finalidade a partir da versão que o certame <b>divulgado</b> serve —
 /// a apresentação e as regras saem do grafo reidratado, pela mesma projeção do rascunho
-/// (<see cref="ProjecaoDoFormularioRenderizavel"/>).
+/// (<see cref="ProjecaoDoFormularioApresentado"/>).
 /// </summary>
 /// <remarks>
 /// <para>
@@ -41,10 +41,10 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// decodificador próprio, e bytes que coincidentemente têm a forma atual não a tornam reconhecida.
 /// </para>
 /// </remarks>
-public static class ObterFormularioRenderizavelQueryHandler
+public static class ObterFormularioApresentadoQueryHandler
 {
-    public static async Task<Result<FormularioRenderizavelDto>> Handle(
-        ObterFormularioRenderizavelQuery query,
+    public static async Task<Result<FormularioApresentadoDoProcessoDto>> Handle(
+        ObterFormularioApresentadoQuery query,
         IProcessoSeletivoRepository processoSeletivoRepository,
         ICertameDivulgadoRepository certameDivulgadoRepository,
         IRegistroCodecsEnvelope registroCodecs,
@@ -61,12 +61,12 @@ public static class ObterFormularioRenderizavelQueryHandler
             .ResolverAsync(query.ProcessoSeletivoId, certameDivulgadoRepository, processoSeletivoRepository, cancellationToken)
             .ConfigureAwait(false);
         return divulgada.IsFailure
-            ? Result<FormularioRenderizavelDto>.Failure(divulgada.Error!)
+            ? Result<FormularioApresentadoDoProcessoDto>.Failure(divulgada.Error!)
             : await ProjetarDaDivulgacaoAsync(query, divulgada.Value!, registroCodecs, enderecos, cancellationToken).ConfigureAwait(false);
     }
 
-    private static async Task<Result<FormularioRenderizavelDto>> ProjetarDaDivulgacaoAsync(
-        ObterFormularioRenderizavelQuery query,
+    private static async Task<Result<FormularioApresentadoDoProcessoDto>> ProjetarDaDivulgacaoAsync(
+        ObterFormularioApresentadoQuery query,
         Services.VersaoDivulgada divulgada,
         IRegistroCodecsEnvelope registroCodecs,
         EnderecosDosDocumentosDoAto enderecos,
@@ -81,16 +81,16 @@ public static class ObterFormularioRenderizavelQueryHandler
 
     // A ausência de formulário da finalidade colapsa no mesmo não encontrado dos demais casos sem
     // linha (ver remarks).
-    private static Result<FormularioRenderizavelDto> ComoLeituraPublica(
-        Result<FormularioRenderizavelDto?> projetado, Guid processoSeletivoId)
+    private static Result<FormularioApresentadoDoProcessoDto> ComoLeituraPublica(
+        Result<FormularioApresentadoDoProcessoDto?> projetado, Guid processoSeletivoId)
     {
         if (projetado.IsFailure)
         {
-            return Result<FormularioRenderizavelDto>.Failure(projetado.Error!);
+            return Result<FormularioApresentadoDoProcessoDto>.Failure(projetado.Error!);
         }
 
         return projetado.Value is { } formulario
-            ? Result<FormularioRenderizavelDto>.Success(formulario)
+            ? Result<FormularioApresentadoDoProcessoDto>.Success(formulario)
             : NaoEncontrado(processoSeletivoId);
     }
 
@@ -98,8 +98,8 @@ public static class ObterFormularioRenderizavelQueryHandler
     /// A recusa única da leitura pública: inexistente, rascunho, sem versão vigente e sem
     /// divulgação recebem a mesma resposta, porque nenhum deles tem linha.
     /// </summary>
-    private static Result<FormularioRenderizavelDto> NaoEncontrado(Guid processoSeletivoId) =>
-        Result<FormularioRenderizavelDto>.Failure(new DomainError(
+    private static Result<FormularioApresentadoDoProcessoDto> NaoEncontrado(Guid processoSeletivoId) =>
+        Result<FormularioApresentadoDoProcessoDto>.Failure(new DomainError(
             "ProcessoSeletivo.NaoEncontrado",
             $"Processo Seletivo {processoSeletivoId} não encontrado."));
 }

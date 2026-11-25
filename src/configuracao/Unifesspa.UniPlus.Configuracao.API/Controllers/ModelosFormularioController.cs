@@ -92,26 +92,26 @@ public sealed class ModelosFormularioController : ControllerBase
     }
 
     /// <summary>
-    /// O modelo no formato do formulário renderizável — o mesmo do certame divulgado e do rascunho do
+    /// O modelo no formato do formulário apresentado — o mesmo do certame divulgado e do rascunho do
     /// processo —, para a simulação interpretar o modelo antes de aplicá-lo. Não grava nada.
     /// </summary>
-    [HttpGet("admin/modelos-formulario/{id:guid}/renderizavel")]
+    [HttpGet("admin/modelos-formulario/{id:guid}/apresentacao")]
     [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.ModelosFormularioConsultar, ResourceTipo = ResourceTiposConfiguracao.ModeloFormulario)]
     [VendorMediaType(Resource = "formulario", Versions = [2])]
-    [ProducesResponseType(typeof(FormularioRenderizavel), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(FormularioApresentado), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status406NotAcceptable)]
-    public async Task<IActionResult> ObterRenderizavel(Guid id, CancellationToken cancellationToken)
+    public async Task<IActionResult> ObterFormularioApresentado(Guid id, CancellationToken cancellationToken)
     {
-        FormularioRenderizavel? formulario = await _queryBus
-            .Send(new ObterFormularioRenderizavelDoModeloQuery(id), cancellationToken).ConfigureAwait(false);
+        FormularioApresentado? formulario = await _queryBus
+            .Send(new ObterFormularioApresentadoDoModeloQuery(id), cancellationToken).ConfigureAwait(false);
         return formulario is null ? NotFound() : Ok(formulario);
     }
 
     /// <summary>
-    /// Avalia as regras de um formulário renderizável contra respostas simuladas, sem cadastro nenhum:
+    /// Avalia as regras de um formulário apresentado contra respostas simuladas, sem cadastro nenhum:
     /// é a conferência autoritativa da simulação de um arquivo importado, de um caso do corpus, de um
     /// modelo ou de um processo. Não grava nada nem registra o conteúdo.
     /// </summary>

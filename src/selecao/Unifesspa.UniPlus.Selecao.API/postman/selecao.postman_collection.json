@@ -3533,7 +3533,7 @@
           ]
         },
         {
-          "name": "Formulário renderizável do rascunho (v2, antes de publicar)",
+          "name": "Apresentação do formulário do rascunho (v2, antes de publicar)",
           "request": {
             "method": "GET",
             "header": [
@@ -3544,7 +3544,7 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/api/selecao/admin/processos-seletivos/{{processo_id}}/formularios/INSCRICAO/renderizavel",
+              "raw": "{{base_url}}/api/selecao/admin/processos-seletivos/{{processo_id}}/formularios/INSCRICAO/apresentacao",
               "host": [
                 "{{base_url}}"
               ],
@@ -3556,7 +3556,7 @@
                 "{{processo_id}}",
                 "formularios",
                 "INSCRICAO",
-                "renderizavel"
+                "apresentacao"
               ]
             },
             "auth": {

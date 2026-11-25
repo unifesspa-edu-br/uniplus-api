@@ -81,8 +81,8 @@ public sealed class AplicarModelosPsrMedicina2027Tests
         processo.Campos.Select(static c => c.FatoCodigo).Should().Contain("TIPO_DEFICIENCIA");
     }
 
-    [Fact(DisplayName = "O formulário renderizado do processo sem prova traz a ajuda da residência do Fator com o período e a continuidade do edital")]
-    public async Task ModeloSemProva_FormularioRenderizado_TrazAjudaDaResidenciaDoFator() =>
+    [Fact(DisplayName = "O formulário apresentado do processo sem prova traz a ajuda da residência do Fator com o período e a continuidade do edital")]
+    public async Task ModeloSemProva_FormularioApresentado_TrazAjudaDaResidenciaDoFator() =>
         await ComTiposDeDeficienciaSemeadosAsync(async (_, _) =>
         {
             ProcessoSeletivo processo = await AplicarInscricaoEHabilitacaoAsync(SementePsrMedicina2027.ModeloDeInscricaoSemProva, ofertarAtendimento: false);
@@ -172,7 +172,7 @@ public sealed class AplicarModelosPsrMedicina2027Tests
     {
         using HttpClient client = _fixture.Factory.CreateClient();
         using HttpRequestMessage request = new(
-            HttpMethod.Get, new Uri($"/api/selecao/admin/processos-seletivos/{processoId}/formularios/INSCRICAO/renderizavel", UriKind.Relative));
+            HttpMethod.Get, new Uri($"/api/selecao/admin/processos-seletivos/{processoId}/formularios/INSCRICAO/apresentacao", UriKind.Relative));
         Autenticar(request);
         HttpResponseMessage resposta = await client.SendAsync(request);
         resposta.StatusCode.Should().Be(HttpStatusCode.OK, await resposta.Content.ReadAsStringAsync());

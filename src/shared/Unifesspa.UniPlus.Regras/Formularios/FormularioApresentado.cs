@@ -11,12 +11,12 @@ using Unifesspa.UniPlus.Regras.Leituras;
 public sealed record ValorSelecionavel(string Codigo, string? Descricao, int Ordem, string? Orientacao = null);
 
 /// <summary>
-/// Um campo do formulário pronto para renderização (UNI-REQ-0144): a apresentação e, no campo de
+/// Um campo do formulário pronto para apresentação (UNI-REQ-0144): a apresentação e, no campo de
 /// seleção, os valores que o candidato pode escolher — ao menos um —; nulos nos demais. O formato diz
 /// como a resposta do campo de texto é conferida. As regras do campo estão nas regras do formulário,
 /// pelo código do fato, e só lá (ADR-0139).
 /// </summary>
-public sealed record CampoRenderizavel(
+public sealed record CampoApresentado(
     string FatoCodigo,
     int Ordem,
     string? EtapaCodigo,
@@ -25,17 +25,17 @@ public sealed record CampoRenderizavel(
     IReadOnlyList<ValorSelecionavel>? ValoresSelecionaveis);
 
 /// <summary>
-/// Um grupo repetível pronto para renderização (UNI-REQ-0146): a posição na ordem dos itens, a seção,
+/// Um grupo repetível pronto para apresentação (UNI-REQ-0146): a posição na ordem dos itens, a seção,
 /// o rótulo, as ocorrências que admite — mínimo, máximo e se o próprio candidato é um dos membros — e os
 /// campos que cada ocorrência responde. A exibição e a obrigatoriedade do grupo estão nas regras.
 /// </summary>
-public sealed record GrupoRenderizavel(
+public sealed record GrupoApresentado(
     string Codigo,
     int Ordem,
     string? EtapaCodigo,
     string Rotulo,
     OcorrenciasDoGrupoDto Ocorrencias,
-    IReadOnlyList<CampoRenderizavel> Subitens);
+    IReadOnlyList<CampoApresentado> Subitens);
 
 /// <summary>
 /// Um fato que as regras do formulário citam e ele não pergunta. Quando outro formulário o pergunta,
@@ -45,7 +45,7 @@ public sealed record GrupoRenderizavel(
 /// etária da data de nascimento, e o agregado sobre o grupo repetível de outro formulário, do fato de
 /// membro que ele agrega.
 /// </summary>
-public sealed record PressupostoRenderizavel(
+public sealed record FatoPressuposto(
     string FatoCodigo,
     string? Rotulo,
     [property: AceitaCodigosDe<TipoDeCampo>] string? TipoDeCampo,
@@ -54,7 +54,7 @@ public sealed record PressupostoRenderizavel(
     IReadOnlyList<string>? CalculadoDe);
 
 /// <summary>
-/// Uma seção ou um bloco do formulário pronto para renderização. <see cref="CodigoNasRegras"/> é o
+/// Uma seção ou um bloco do formulário pronto para apresentação. <see cref="CodigoNasRegras"/> é o
 /// código com que a seção aparece nas regras — nulo no bloco, que não tem regra própria.
 /// </summary>
 public sealed record SecaoRenderizavel(
@@ -66,11 +66,11 @@ public sealed record SecaoRenderizavel(
     ApresentacaoDaEtapaDto Apresentacao);
 
 /// <summary>
-/// Um termo exigido pronto para renderização (UNI-REQ-0086): a versão escolhida no catálogo, com o
+/// Um termo exigido pronto para apresentação (UNI-REQ-0086): a versão escolhida no catálogo, com o
 /// conteúdo. <see cref="CodigoNasRegras"/> é o código com que o termo aparece nas regras, que dizem
 /// quando ele aparece e quando é obrigatório.
 /// </summary>
-public sealed record TermoRenderizavel(
+public sealed record TermoApresentado(
     string Codigo,
     string CodigoNasRegras,
     int Ordem,
@@ -79,9 +79,9 @@ public sealed record TermoRenderizavel(
     ConteudoDoTermoDto Conteudo);
 
 /// <summary>Os campos e os grupos que o formulário pergunta ao candidato, na ordem de apresentação.</summary>
-public sealed record ColetaRenderizavel(
-    IReadOnlyList<CampoRenderizavel> Itens,
-    IReadOnlyList<GrupoRenderizavel> Grupos);
+public sealed record ColetaApresentada(
+    IReadOnlyList<CampoApresentado> Itens,
+    IReadOnlyList<GrupoApresentado> Grupos);
 
 /// <summary>
 /// O que o interpretador recebe como já conhecido: os fatos que as regras citam e o formulário não
@@ -91,7 +91,7 @@ public sealed record ColetaRenderizavel(
 /// que não tem período de inscrição.
 /// </summary>
 public sealed record PressupostosDoFormulario(
-    IReadOnlyList<PressupostoRenderizavel> Fatos,
+    IReadOnlyList<FatoPressuposto> Fatos,
     DateOnly? DataReferenciaFatos,
     string? FusoDoEnvio);
 
@@ -109,11 +109,11 @@ public sealed record PressupostosDoFormulario(
 /// <param name="Pressupostos">
 /// Os fatos que as regras citam e o formulário não pergunta, com a data de referência e o fuso do envio.
 /// </param>
-public sealed record FormularioRenderizavel(
+public sealed record FormularioApresentado(
     string Finalidade,
     string? Titulo,
     IReadOnlyList<SecaoRenderizavel> Etapas,
-    IReadOnlyList<TermoRenderizavel> Termos,
-    ColetaRenderizavel Coleta,
+    IReadOnlyList<TermoApresentado> Termos,
+    ColetaApresentada Coleta,
     FormularioPortavel Regras,
     PressupostosDoFormulario Pressupostos);
