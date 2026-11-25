@@ -22,7 +22,7 @@ internal static class ConversaoDoPortavel
         List<DefinicaoTermo> termos = [];
         List<DerivacaoDoFato> derivacoes = [];
         List<DefinicaoAgregado> agregados = [];
-        DomainError? erro = Ler(portavel.Paginas, Pagina, paginas) ?? Ler(portavel.Termos, Termo, termos)
+        IReadOnlyList<FieldError>? erro = Ler(portavel.Paginas, Pagina, paginas) ?? Ler(portavel.Termos, Termo, termos)
             ?? Ler(portavel.Derivacoes, Derivacao, derivacoes) ?? Ler(portavel.Agregados, Agregado, agregados)
             ?? Recusa(DefinicaoFormulario.Violacao(paginas, termos, derivacoes, agregados));
 
@@ -34,7 +34,7 @@ internal static class ConversaoDoPortavel
         Result<PredicadoDnf?> exibicao = DoFio(pagina.Exibicao);
         List<DefinicaoItem> itens = [];
         List<DefinicaoGrupo> grupos = [];
-        DomainError? erro = exibicao.Error ?? Ler(pagina.Itens, Item, itens) ?? Ler(pagina.Grupos, Grupo, grupos)
+        IReadOnlyList<FieldError>? erro = Falhas(exibicao) ?? Ler(pagina.Itens, Item, itens) ?? Ler(pagina.Grupos, Grupo, grupos)
             ?? Recusa(DefinicaoPagina.Violacao(pagina.Codigo));
 
         return Montado(erro, () => new DefinicaoPagina(pagina.Codigo, exibicao.Value, itens, grupos));
@@ -46,7 +46,7 @@ internal static class ConversaoDoPortavel
         Result<Obrigatoriedade> obrigatoriedade = Obrigatoriedade(grupo.Regras?.Obrigatoriedade, $"grupo '{grupo.Codigo}'");
         OcorrenciasDoGrupoDto ocorrencias = grupo.Ocorrencias;
         List<DefinicaoItem> subitens = [];
-        DomainError? erro = exibicao.Error ?? obrigatoriedade.Error ?? Ler(grupo.Subitens, Item, subitens)
+        IReadOnlyList<FieldError>? erro = Falhas(exibicao) ?? Falhas(obrigatoriedade) ?? Ler(grupo.Subitens, Item, subitens)
             ?? Recusa(DefinicaoGrupo.Violacao(grupo.Codigo, ocorrencias.Minimo, ocorrencias.Maximo));
 
         return Montado(erro, () => new DefinicaoGrupo(
@@ -60,7 +60,7 @@ internal static class ConversaoDoPortavel
         Result<Obrigatoriedade> obrigatoriedade = Obrigatoriedade(regras?.Obrigatoriedade, $"campo '{item.FatoCodigo}'");
         Result<Impedimento?> impedimento = EntradaDeRegras.Impedimento(LeituraDeRegras.ParaEntrada(regras?.Impedimento));
         List<RestricaoValor> restricoes = [];
-        DomainError? erro = exibicao.Error ?? obrigatoriedade.Error ?? impedimento.Error
+        IReadOnlyList<FieldError>? erro = Falhas(exibicao) ?? Falhas(obrigatoriedade) ?? Falhas(impedimento)
             ?? Ler(regras?.Restricoes, Restricao, restricoes) ?? Recusa(DefinicaoItem.Violacao(item.FatoCodigo, item.Formato));
 
         return Montado(erro, () => new DefinicaoItem(
@@ -74,7 +74,7 @@ internal static class ConversaoDoPortavel
     {
         Result<PredicadoDnf?> exibicao = DoFio(termo.Regras?.Exibicao);
         Result<Obrigatoriedade> obrigatoriedade = Obrigatoriedade(termo.Regras?.Obrigatoriedade, $"termo '{termo.Codigo}'");
-        DomainError? erro = exibicao.Error ?? obrigatoriedade.Error ?? Recusa(DefinicaoTermo.Violacao(termo.Codigo));
+        IReadOnlyList<FieldError>? erro = Falhas(exibicao) ?? Falhas(obrigatoriedade) ?? Recusa(DefinicaoTermo.Violacao(termo.Codigo));
 
         return Montado(erro, () => new DefinicaoTermo(termo.Codigo, exibicao.Value, obrigatoriedade.Value!));
     }
@@ -82,7 +82,7 @@ internal static class ConversaoDoPortavel
     private static Result<DefinicaoAgregado> Agregado(AgregadoPortavel agregado)
     {
         bool conhecida = CatalogoDe<OperacaoAgregado>.TentarObter(agregado.Operacao, out OperacaoAgregado operacao);
-        DomainError? erro = !conhecida
+        IReadOnlyList<FieldError>? erro = !conhecida
             ? Recusa(FormularioPortavelErrorCodes.OperacaoDeAgregadoInvalida, $"A operação do agregado '{agregado.Codigo}' é {string.Join(" ou ", CatalogoDe<OperacaoAgregado>.Todos().Select(static d => d.Codigo))}.")
             : Recusa(DefinicaoAgregado.Violacao(agregado.Codigo, agregado.GrupoCodigo, agregado.FatoDeMembro));
 
@@ -92,9 +92,9 @@ internal static class ConversaoDoPortavel
     private static Result<DerivacaoDoFato> Derivacao(DerivacaoPortavel derivacao)
     {
         List<RegraDerivacao> regras = [];
-        DomainError? erro = Ler(derivacao.Regras, regra => Regra(derivacao, regra), regras) ?? Recusa(DerivacaoDoFato.Violacao(derivacao.FatoCodigo));
+        IReadOnlyList<FieldError>? erro = Ler(derivacao.Regras, regra => Regra(derivacao, regra), regras) ?? Recusa(DerivacaoDoFato.Violacao(derivacao.FatoCodigo));
 
-        return erro is not null ? Result<DerivacaoDoFato>.Failure(erro) : DerivacaoDeRegras(derivacao, regras);
+        return erro is not null ? Result<DerivacaoDoFato>.ValidationFailure(erro) : DerivacaoDeRegras(derivacao, regras);
     }
 
     private static Result<RegraDerivacao> Regra(DerivacaoPortavel derivacao, RegraDerivacaoPortavel regra)
@@ -108,7 +108,7 @@ internal static class ConversaoDoPortavel
 
         Result<PredicadoDnf?> quando = DoFio(regra.Quando);
         return quando.IsFailure
-            ? Result<RegraDerivacao>.Failure(quando.Error!)
+            ? Result<RegraDerivacao>.ValidationFailure(quando.Errors)
             : derivacao.Booleano
                 ? Result<RegraDerivacao>.Success(RegraDerivacao.CriarBooleana(quando.Value!))
                 : RegraDerivacao.Criar(quando.Value!, regra.Contribui ?? string.Empty);
@@ -135,7 +135,7 @@ internal static class ConversaoDoPortavel
         Result<PredicadoDnf?> quando = DoFio(obrigatoriedade?.Predicado);
         if (quando.IsFailure)
         {
-            return Result<Obrigatoriedade>.Failure(quando.Error!);
+            return Result<Obrigatoriedade>.ValidationFailure(quando.Errors);
         }
 
         return EntradaDeRegras.Obrigatoriedade(obrigatoriedade?.Tipo, quando.Value) is { } valida
@@ -158,14 +158,14 @@ internal static class ConversaoDoPortavel
     }
 
     /// <summary>Converte cada elemento para o destino, na ordem, e devolve a primeira recusa; lista nula é lista vazia.</summary>
-    private static DomainError? Ler<TEntrada, TSaida>(IEnumerable<TEntrada>? origem, Func<TEntrada, Result<TSaida>> converter, List<TSaida> destino)
+    private static IReadOnlyList<FieldError>? Ler<TEntrada, TSaida>(IEnumerable<TEntrada>? origem, Func<TEntrada, Result<TSaida>> converter, List<TSaida> destino)
     {
         foreach (TEntrada elemento in origem ?? [])
         {
             Result<TSaida> lido = converter(elemento);
             if (lido.IsFailure)
             {
-                return lido.Error;
+                return lido.Errors;
             }
 
             destino.Add(lido.Value!);
@@ -174,11 +174,13 @@ internal static class ConversaoDoPortavel
         return null;
     }
 
-    private static Result<T> Montado<T>(DomainError? recusa, Func<T> criar) =>
-        recusa is null ? Result<T>.Success(criar()) : Result<T>.Failure(recusa);
+    private static Result<T> Montado<T>(IReadOnlyList<FieldError>? recusa, Func<T> criar) =>
+        recusa is null ? Result<T>.Success(criar()) : Result<T>.ValidationFailure(recusa);
 
-    private static DomainError? Recusa(string? violacao) =>
+    private static IReadOnlyList<FieldError>? Recusa(string? violacao) =>
         violacao is null ? null : Recusa(FormularioPortavelErrorCodes.EstruturaInvalida, violacao);
 
-    private static DomainError Recusa(string codigo, string mensagem) => new(codigo, mensagem);
+    private static IReadOnlyList<FieldError> Recusa(string codigo, string mensagem) => [new(null, new DomainError(codigo, mensagem))];
+
+    private static IReadOnlyList<FieldError>? Falhas<T>(Result<T> resultado) => resultado.IsFailure ? resultado.Errors : null;
 }
