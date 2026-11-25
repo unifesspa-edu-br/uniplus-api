@@ -37,22 +37,7 @@ using System.Text.Json.Serialization;
 [JsonDerivedType(typeof(AtendimentoDisponivel), "atendimentoDisponivel")]
 [JsonDerivedType(typeof(ConcorrenciaDuplaObrigatoria), "concorrenciaDuplaObrigatoria")]
 [JsonDerivedType(typeof(Customizado), "customizado")]
-public abstract record PredicadoObrigatoriedade
-{
-    /// <summary>
-    /// Opções canônicas de serialização para
-    /// <see cref="PredicadoObrigatoriedade"/>: camelCase + leitura
-    /// case-insensitive. Garante que serialização/round-trip em testes,
-    /// EF Core jsonb (via <c>ValueObjectConverter</c>) e endpoints HTTP
-    /// produzam representações comparáveis.
-    /// </summary>
-    public static JsonSerializerOptions JsonOptions { get; } = new()
-    {
-        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
-        PropertyNameCaseInsensitive = true,
-        WriteIndented = false,
-    };
-}
+public abstract record PredicadoObrigatoriedade;
 
 /// <summary>
 /// Regra: o processo DEVE incluir uma etapa cujo tipo congelado
