@@ -1572,14 +1572,14 @@
       "titulo": "Já existe um valor de domínio com este código neste fato"
     },
     {
+      "codigo": "uniplus.configuracao.fato_valor_dominio.codigo_formato_invalido",
+      "status": 422,
+      "titulo": "Código do valor do dado fora do formato"
+    },
+    {
       "codigo": "uniplus.configuracao.fato_valor_dominio.codigo_obrigatorio",
       "status": 422,
       "titulo": "Código do valor de domínio é obrigatório"
-    },
-    {
-      "codigo": "uniplus.configuracao.fato_valor_dominio.codigo_tamanho",
-      "status": 422,
-      "titulo": "Tamanho do código do valor de domínio inválido"
     },
     {
       "codigo": "uniplus.configuracao.fato_valor_dominio.descricao_obrigatoria",

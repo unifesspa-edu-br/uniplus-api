@@ -1,6 +1,5 @@
 namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Configurations;
 
-using System.Diagnostics.CodeAnalysis;
 
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
@@ -10,6 +9,7 @@ using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Seed;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Protecao;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
+using Unifesspa.UniPlus.Kernel.Domain.ValueObjects;
 
 /// <summary>
 /// Configuração EF Core de <see cref="FatoValorDominio"/> — a tabela
@@ -25,11 +25,7 @@ using Unifesspa.UniPlus.Kernel.Domain.Enums;
 /// fato de sistema nasce pelo seed, e o do fato do administrador, por
 /// <see cref="FatoCandidato.AdicionarValorDominio"/>.
 /// </remarks>
-[SuppressMessage(
-    "Performance",
-    "CA1812:Avoid uninstantiated internal classes",
-    Justification = "Instanciada via EF Core ModelBuilder.ApplyConfigurationsFromAssembly por reflection.")]
-internal sealed class FatoValorDominioConfiguration : IEntityTypeConfiguration<FatoValorDominio>
+public sealed class FatoValorDominioConfiguration : IEntityTypeConfiguration<FatoValorDominio>
 {
     public void Configure(EntityTypeBuilder<FatoValorDominio> builder)
     {
@@ -37,7 +33,11 @@ internal sealed class FatoValorDominioConfiguration : IEntityTypeConfiguration<F
 
         builder.ClassificaPorPadrao(ClassificacaoDeProtecao.Interno);
 
-        builder.ToTable("opcoes_dos_dados", tabela => tabela.HasComment("Opções declaradas para os dados do candidato."));
+        builder.ToTable("opcoes_dos_dados", tabela =>
+        {
+            tabela.HasComment("Opções declaradas para os dados do candidato.");
+            tabela.HasCheckConstraint("ck_opcoes_dos_dados_codigo_formato", $"codigo ~ '{FormatoDoCodigo.ExpressaoNoBanco}'");
+        });
 
         builder.HasKey(v => v.Id);
         builder.Property(v => v.Id).HasComment("Identificador da opção.");

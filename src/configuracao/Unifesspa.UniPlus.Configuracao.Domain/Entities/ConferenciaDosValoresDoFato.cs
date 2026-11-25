@@ -2,6 +2,7 @@ namespace Unifesspa.UniPlus.Configuracao.Domain.Entities;
 
 using Unifesspa.UniPlus.Configuracao.Domain.Enums;
 using Unifesspa.UniPlus.Configuracao.Domain.Errors;
+using Unifesspa.UniPlus.Kernel.Domain.ValueObjects;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Enums;
 
@@ -14,6 +15,10 @@ using static Unifesspa.UniPlus.Configuracao.Domain.Entities.ConferenciaDaDefinic
 /// </summary>
 internal static class ConferenciaDosValoresDoFato
 {
+    private static readonly CampoDeCodigo Codigo = new(
+        "Código do valor de domínio", FatoValorDominio.CodigoMaxLength,
+        FatoValorDominioErrorCodes.CodigoObrigatorio, FatoValorDominioErrorCodes.CodigoFormatoInvalido);
+
     /// <summary>
     /// As recusas de estado comuns a tudo que mexe nos valores: só o fato do administrador, categórico,
     /// de fonte global e que não seja agregado tem valores próprios.
@@ -28,12 +33,11 @@ internal static class ConferenciaDosValoresDoFato
     internal static Result<NovoValorDoFato> ConferirNovo(
         string codigo, string? descricao, string? orientacao, int ordem, OrigemFato origem, IReadOnlyCollection<string> existentes)
     {
-        string codigoAparado = codigo?.Trim() ?? string.Empty;
         Result<TextosDoValor> textos = ConferirTextos(origem, descricao, orientacao);
-        List<FieldError> erros = [.. Presentes(RecusaDoCodigo(codigoAparado, existentes)), .. textos.Errors, .. Presentes(RecusaDaOrdem(ordem))];
+        List<FieldError> erros = [.. Presentes(RecusaDoCodigo(codigo, existentes)), .. textos.Errors, .. Presentes(RecusaDaOrdem(ordem))];
         return erros.Count > 0
             ? Result<NovoValorDoFato>.ValidationFailure(erros)
-            : Result<NovoValorDoFato>.Success(new NovoValorDoFato(codigoAparado, textos.Value, ordem));
+            : Result<NovoValorDoFato>.Success(new NovoValorDoFato(codigo, textos.Value, ordem));
     }
 
     /// <summary>A descrição e a orientação aparadas; as recusas acumulam, cada uma no seu campo (ADR-0125).</summary>
@@ -50,11 +54,11 @@ internal static class ConferenciaDosValoresDoFato
     /// <summary>
     /// A ordem pela lista completa de códigos — ativos e desativados. A lista que deixa um valor de
     /// fora, repete um código ou cita um código que o fato não tem é recusada inteira, e as faltas
-    /// acumulam. Devolve os códigos aparados, na ordem informada.
+    /// acumulam. Devolve os códigos como informados, na ordem recebida.
     /// </summary>
     internal static Result<string[]> ConferirOrdem(IReadOnlyList<string> codigosEmOrdem, IReadOnlyCollection<string> existentes)
     {
-        string[] informados = [.. codigosEmOrdem.Select(static c => c?.Trim() ?? string.Empty)];
+        string[] informados = [.. codigosEmOrdem.Select(static c => c ?? string.Empty)];
         List<FieldError> erros =
         [
             .. Presentes(
@@ -87,15 +91,12 @@ internal static class ConferenciaDosValoresDoFato
         "Valores de domínio só são declarados no catálogo quando a fonte dos valores é global; "
         + "nas demais fontes, os valores vêm do processo.");
 
-    private static FieldError? RecusaDoCodigo(string codigo, IReadOnlyCollection<string> existentes) => codigo switch
-    {
-        { Length: 0 } => Recusa("codigo", FatoValorDominioErrorCodes.CodigoObrigatorio, "Código do valor de domínio é obrigatório."),
-        { Length: > FatoValorDominio.CodigoMaxLength } => Recusa("codigo", FatoValorDominioErrorCodes.CodigoTamanho,
-            $"Código do valor de domínio deve ter no máximo {FatoValorDominio.CodigoMaxLength} caracteres."),
-        _ when existentes.Contains(codigo, StringComparer.Ordinal) => Recusa("codigo", FatoValorDominioErrorCodes.CodigoDuplicado,
-            "Já existe um valor de domínio com este código neste fato."),
-        _ => null,
-    };
+    private static FieldError? RecusaDoCodigo(string codigo, IReadOnlyCollection<string> existentes) =>
+        Codigo.Recusa(codigo, "codigo")
+        ?? (existentes.Contains(codigo, StringComparer.Ordinal)
+            ? Recusa("codigo", FatoValorDominioErrorCodes.CodigoDuplicado,
+                "Já existe um valor de domínio com este código neste fato.")
+            : null);
 
     private static FieldError? RecusaDaDescricao(string? descricao, OrigemFato origem) => descricao switch
     {
@@ -113,14 +114,14 @@ internal static class ConferenciaDosValoresDoFato
             : null;
 
     private static FieldError? RecusaDeCodigoEmBranco(string[] informados) =>
-        informados.Any(static c => c.Length == 0)
+        informados.Any(string.IsNullOrWhiteSpace)
             ? Recusa("codigos", FatoValorDominioErrorCodes.OrdemComCodigoDesconhecido,
                 "A ordem tem um código em branco; informe o código de cada valor do fato.")
             : null;
 
     private static FieldError? RecusaDeCodigosDesconhecidos(string[] informados, IReadOnlyCollection<string> existentes)
     {
-        string[] estranhos = [.. informados.Where(c => c.Length > 0 && !existentes.Contains(c, StringComparer.Ordinal)).Distinct(StringComparer.Ordinal)];
+        string[] estranhos = [.. informados.Where(c => !string.IsNullOrWhiteSpace(c) && !existentes.Contains(c, StringComparer.Ordinal)).Distinct(StringComparer.Ordinal)];
         return estranhos.Length > 0
             ? Recusa("codigos", FatoValorDominioErrorCodes.OrdemComCodigoDesconhecido, "A ordem contém códigos que não pertencem aos valores do fato.")
             : null;
@@ -128,7 +129,7 @@ internal static class ConferenciaDosValoresDoFato
 
     private static FieldError? RecusaDeCodigosRepetidos(string[] informados)
     {
-        string[] repetidos = [.. informados.Where(static c => c.Length > 0).GroupBy(static c => c, StringComparer.Ordinal)
+        string[] repetidos = [.. informados.Where(static c => !string.IsNullOrWhiteSpace(c)).GroupBy(static c => c, StringComparer.Ordinal)
             .Where(static g => g.Count() > 1).Select(static g => g.Key)];
         return repetidos.Length > 0
             ? Recusa("codigos", FatoValorDominioErrorCodes.OrdemComCodigoRepetido, "A ordem não pode repetir códigos de valores.")

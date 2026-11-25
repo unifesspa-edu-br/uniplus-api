@@ -28,11 +28,11 @@ internal static class FatoValorDominioErrorMappings
                 "uniplus.configuracao.fato_valor_dominio.codigo_obrigatorio",
                 "Código do valor de domínio é obrigatório")),
 
-        new(FatoValorDominioErrorCodes.CodigoTamanho,
+        new(FatoValorDominioErrorCodes.CodigoFormatoInvalido,
             new DomainErrorMapping(
                 StatusCodes.Status422UnprocessableEntity,
-                "uniplus.configuracao.fato_valor_dominio.codigo_tamanho",
-                "Tamanho do código do valor de domínio inválido")),
+                "uniplus.configuracao.fato_valor_dominio.codigo_formato_invalido",
+                "Código do valor do dado fora do formato")),
 
         new(FatoValorDominioErrorCodes.CodigoDuplicado,
             new DomainErrorMapping(

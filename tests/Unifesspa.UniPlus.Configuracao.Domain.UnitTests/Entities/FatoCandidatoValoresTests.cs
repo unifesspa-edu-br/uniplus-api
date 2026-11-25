@@ -1,7 +1,5 @@
 namespace Unifesspa.UniPlus.Configuracao.Domain.UnitTests.Entities;
 
-using System.Reflection;
-
 using AwesomeAssertions;
 
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
@@ -60,7 +58,7 @@ public sealed class FatoCandidatoValoresTests
         fato.AdicionarValorDominio("EJA", "Educação de jovens", 3, ativo: true, "Texto antigo").IsSuccess.Should().BeTrue();
         fato.DesativarValor("EJA").IsSuccess.Should().BeTrue();
 
-        Result resultado = fato.CorrigirValor(" EJA ", "  Educação de jovens e adultos ", "  Cursou o supletivo. ");
+        Result resultado = fato.CorrigirValor("EJA", "  Educação de jovens e adultos ", "  Cursou o supletivo. ");
 
         resultado.IsSuccess.Should().BeTrue();
         FatoValorDominio valor = fato.ValoresDominioDeclarados.Single();
@@ -105,7 +103,7 @@ public sealed class FatoCandidatoValoresTests
 
         fato.DesativarValor("B").IsSuccess.Should().BeTrue();
 
-        fato.ReordenarValores(["C", " B ", "A"]).IsSuccess.Should().BeTrue();
+        fato.ReordenarValores(["C", "B", "A"]).IsSuccess.Should().BeTrue();
 
         fato.ValoresDominioDeclarados.OrderBy(static v => v.Ordem).Select(static v => v.Codigo).Should().Equal("C", "B", "A");
         fato.ValoresDominioDeclarados.Single(static v => v.Codigo == "B").Ativo.Should().BeFalse();
@@ -188,13 +186,13 @@ public sealed class FatoCandidatoValoresTests
         resultado.Error!.Code.Should().Be(FatoValorDominioErrorCodes.NaoPermitidoForaDeCategorico);
     }
 
-    [Fact(DisplayName = "AdicionarValorDominio com código duplicado (normalizado, ordinal) é rejeitado")]
+    [Fact(DisplayName = "AdicionarValorDominio com código duplicado (comparação ordinal) é rejeitado")]
     public void AdicionarValorDominio_CodigoDuplicado_Falha()
     {
         FatoCandidato fato = Criar().Value!;
         fato.AdicionarValorDominio("PRETA", "Descrição", 0, ativo: true).IsSuccess.Should().BeTrue();
 
-        Result resultado = fato.AdicionarValorDominio("  PRETA  ", "Outra descrição", 1, ativo: true);
+        Result resultado = fato.AdicionarValorDominio("PRETA", "Outra descrição", 1, ativo: true);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be(FatoValorDominioErrorCodes.CodigoDuplicado);
