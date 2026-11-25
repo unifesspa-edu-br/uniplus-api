@@ -100,21 +100,11 @@ public sealed class AuthE2ETests : IClassFixture<OidcRealApiFactoryWrapper>
     [Fact]
     public async Task GetProfileMe_ShouldReturnUnauthorized_WhenTokenIsExpired()
     {
-        // Solicita um token com vida curta (access.token.lifespan=5s no realm) e aguarda até passar
-        // do exp do PRÓPRIO token + ClockSkew configurado + buffer de drift. Calcular a partir do exp
-        // emitido pelo container — em vez de um delay fixo — torna o teste resiliente a (a) drift de
-        // relógio entre host e container e (b) eventuais bumps futuros do lifespan ou do ClockSkew
-        // sem precisar atualizar este caso.
         string accessToken = await _keycloak.RequestAccessTokenAsync(
             KeycloakTestUsers.Admin.Username,
             KeycloakTestUsers.SharedPassword);
 
-        DateTimeOffset waitUntil = ReadExpirationFromToken(accessToken) + ExpectedClockSkew + ClockDriftBuffer;
-        TimeSpan remaining = waitUntil - DateTimeOffset.UtcNow;
-        if (remaining > TimeSpan.Zero)
-        {
-            await Task.Delay(remaining);
-        }
+        await WaitForTokenExpirationAsync(accessToken);
 
         using HttpClient client = CreateClientWithToken(accessToken);
 
@@ -195,6 +185,17 @@ public sealed class AuthE2ETests : IClassFixture<OidcRealApiFactoryWrapper>
         return new DateTimeOffset(jwt.ValidTo, TimeSpan.Zero);
     }
 
+    private static async Task WaitForTokenExpirationAsync(string accessToken)
+    {
+        // Aguarda além do exp emitido pelo Keycloak, do ClockSkew e da margem de drift.
+        DateTimeOffset waitUntil = ReadExpirationFromToken(accessToken) + ExpectedClockSkew + ClockDriftBuffer;
+        TimeSpan remaining = waitUntil - DateTimeOffset.UtcNow;
+        if (remaining > TimeSpan.Zero)
+        {
+            await Task.Delay(remaining);
+        }
+    }
+
     private static string ForgeTokenSignedByExternalKey(string issuer)
     {
         using RSA rsa = RSA.Create(2048);
@@ -226,15 +227,17 @@ public sealed class AuthE2ETests : IClassFixture<OidcRealApiFactoryWrapper>
             NotBefore = now,
             Expires = now.AddMinutes(5),
             SigningCredentials = credentials,
-            Claims = new Dictionary<string, object>
-            {
-                ["sub"] = Guid.NewGuid().ToString(),
-                ["preferred_username"] = "intruder",
-                ["email"] = "intruder@example.com",
-            },
+            Claims = CreateIntruderClaims(),
         };
 
         JsonWebTokenHandler handler = new();
         return handler.CreateToken(descriptor);
     }
+
+    private static Dictionary<string, object> CreateIntruderClaims() => new()
+    {
+        ["sub"] = Guid.NewGuid().ToString(),
+        ["preferred_username"] = "intruder",
+        ["email"] = "intruder@example.com",
+    };
 }

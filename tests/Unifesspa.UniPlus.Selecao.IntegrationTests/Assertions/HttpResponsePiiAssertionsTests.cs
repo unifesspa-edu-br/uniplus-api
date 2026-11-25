@@ -14,17 +14,7 @@ public sealed class HttpResponsePiiAssertionsTests
     [Fact]
     public void AssertBodyNoPii_DadoResponseSemPii_NaoDeveGerarFalha()
     {
-        const string body = """
-            {
-              "type": "https://unifesspa-edu-br.github.io/uniplus-developers/erros/uniplus.selecao.edital.nao_encontrado",
-              "title": "Edital não encontrado",
-              "status": 404,
-              "detail": "Edital não encontrado.",
-              "instance": "urn:uuid:01960000-0000-7000-0000-000000000001",
-              "code": "uniplus.selecao.edital.nao_encontrado",
-              "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
-            }
-            """;
+        string body = RespostaEditalNaoEncontrado();
 
         Action acao = () => HttpResponsePiiAssertions.AssertBodyNoPii(body);
 
@@ -61,17 +51,7 @@ public sealed class HttpResponsePiiAssertionsTests
     {
         // "a12345678901b" — 11 dígitos adjacentes a letras hex: padrão antigo
         // (?<!\d)\d{11}(?!\d) produzia falso positivo; padrão novo bloqueia.
-        const string body = """
-            {
-              "type": "https://unifesspa-edu-br.github.io/uniplus-developers/erros/uniplus.selecao.edital.nao_encontrado",
-              "title": "Edital não encontrado",
-              "status": 404,
-              "detail": "Edital não encontrado.",
-              "instance": "urn:uuid:01960000-0000-7000-0000-0000000000a1",
-              "code": "uniplus.selecao.edital.nao_encontrado",
-              "traceId": "a12345678901bcdef0123456789abcde"
-            }
-            """;
+        string body = RespostaEditalNaoEncontradoComTraceIdAdjacenteALetras();
 
         Action acao = () => HttpResponsePiiAssertions.AssertBodyNoPii(body);
 
@@ -161,4 +141,28 @@ public sealed class HttpResponsePiiAssertionsTests
         excecao.Should().NotBeNull();
         excecao!.Message.Should().Contain("CPF não mascarado");
     }
+
+    private static string RespostaEditalNaoEncontrado() => """
+        {
+          "type": "https://unifesspa-edu-br.github.io/uniplus-developers/erros/uniplus.selecao.edital.nao_encontrado",
+          "title": "Edital não encontrado",
+          "status": 404,
+          "detail": "Edital não encontrado.",
+          "instance": "urn:uuid:01960000-0000-7000-0000-000000000001",
+          "code": "uniplus.selecao.edital.nao_encontrado",
+          "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+        }
+        """;
+
+    private static string RespostaEditalNaoEncontradoComTraceIdAdjacenteALetras() => """
+        {
+          "type": "https://unifesspa-edu-br.github.io/uniplus-developers/erros/uniplus.selecao.edital.nao_encontrado",
+          "title": "Edital não encontrado",
+          "status": 404,
+          "detail": "Edital não encontrado.",
+          "instance": "urn:uuid:01960000-0000-7000-0000-0000000000a1",
+          "code": "uniplus.selecao.edital.nao_encontrado",
+          "traceId": "a12345678901bcdef0123456789abcde"
+        }
+        """;
 }
