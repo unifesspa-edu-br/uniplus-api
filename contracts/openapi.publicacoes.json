@@ -67,6 +67,7 @@
         "tags": [
           "AtosNormativos"
         ],
+        "operationId": "ListarAtosNormativos",
         "parameters": [
           {
             "name": "cursor",
@@ -177,6 +178,7 @@
         "tags": [
           "AtosNormativos"
         ],
+        "operationId": "ListarAtosNormativosDaEntidade",
         "parameters": [
           {
             "name": "entidadeTipo",
@@ -304,6 +306,7 @@
         "tags": [
           "AtosNormativos"
         ],
+        "operationId": "ObterAtoNormativo",
         "parameters": [
           {
             "name": "id",
@@ -354,6 +357,7 @@
         "tags": [
           "AtosNormativos"
         ],
+        "operationId": "RegistrarAtoNormativo",
         "parameters": [
           {
             "name": "Idempotency-Key",
@@ -483,6 +487,7 @@
         "tags": [
           "TiposAto"
         ],
+        "operationId": "ListarTiposDeAto",
         "parameters": [
           {
             "name": "vigentes",
@@ -601,6 +606,7 @@
         "tags": [
           "TiposAto"
         ],
+        "operationId": "ObterTipoDeAto",
         "parameters": [
           {
             "name": "id",
@@ -651,6 +657,7 @@
         "tags": [
           "TiposAto"
         ],
+        "operationId": "ObterTipoDeAtoVigente",
         "parameters": [
           {
             "name": "codigo",
@@ -721,6 +728,7 @@
         "tags": [
           "TiposAto"
         ],
+        "operationId": "CadastrarTipoDeAto",
         "parameters": [
           {
             "name": "Idempotency-Key",
@@ -853,6 +861,7 @@
         "tags": [
           "TiposAto"
         ],
+        "operationId": "AlterarTipoDeAto",
         "parameters": [
           {
             "name": "id",
@@ -959,6 +968,7 @@
         "tags": [
           "TiposAto"
         ],
+        "operationId": "ExcluirTipoDeAto",
         "parameters": [
           {
             "name": "id",

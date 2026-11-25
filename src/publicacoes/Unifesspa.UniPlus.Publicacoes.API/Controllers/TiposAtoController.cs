@@ -67,6 +67,7 @@ public sealed class TiposAtoController : ControllerBase
     /// institui; <c>vigentes=false</c> devolve a série histórica completa.
     /// </remarks>
     [HttpGet("tipos-ato")]
+    [EndpointName("ListarTiposDeAto")]
     [AllowAnonymous]
     [VendorMediaType(Resource = "tipo-ato", Versions = [1])]
     [ProducesResponseType(typeof(IEnumerable<TipoAtoPublicadoDto>), StatusCodes.Status200OK)]
@@ -92,6 +93,7 @@ public sealed class TiposAtoController : ControllerBase
 
     /// <summary>Obtém uma versão de tipo de ato pelo Id. Retorna 404 quando inexistente ou removida.</summary>
     [HttpGet("tipos-ato/{id:guid}")]
+    [EndpointName("ObterTipoDeAto")]
     [AllowAnonymous]
     [VendorMediaType(Resource = "tipo-ato", Versions = [1])]
     [ProducesResponseType(typeof(TipoAtoPublicadoDto), StatusCodes.Status200OK)]
@@ -117,6 +119,7 @@ public sealed class TiposAtoController : ControllerBase
     /// errada para o cliente, que concluiria que o tipo foi removido.
     /// </remarks>
     [HttpGet("tipos-ato/{codigo}/vigente")]
+    [EndpointName("ObterTipoDeAtoVigente")]
     [AllowAnonymous]
     [VendorMediaType(Resource = "tipo-ato", Versions = [1])]
     [ProducesResponseType(typeof(TipoAtoPublicadoDto), StatusCodes.Status200OK)]
@@ -161,6 +164,7 @@ public sealed class TiposAtoController : ControllerBase
     /// <c>Idempotency-Key</c> obrigatório (ADR-0027).
     /// </summary>
     [HttpPost("admin/tipos-ato")]
+    [EndpointName("CadastrarTipoDeAto")]
     [ExigePermissao<PermissaoPublicacoes>(PermissaoPublicacoes.TiposAtoManter, ResourceTipo = ResourceTiposPublicacoes.TipoAto)]
     [RequiresIdempotencyKey]
     [ProducesResponseType(typeof(Guid), StatusCodes.Status201Created)]
@@ -195,6 +199,7 @@ public sealed class TiposAtoController : ControllerBase
     /// já é idempotente — repetir a mesma substituição não acumula efeito.
     /// </remarks>
     [HttpPut("admin/tipos-ato/{id:guid}")]
+    [EndpointName("AlterarTipoDeAto")]
     [ExigePermissao<PermissaoPublicacoes>(PermissaoPublicacoes.TiposAtoManter, ResourceTipo = ResourceTiposPublicacoes.TipoAto)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
@@ -225,6 +230,7 @@ public sealed class TiposAtoController : ControllerBase
     /// vigência. Exige a permissão de manutenção.
     /// </summary>
     [HttpDelete("admin/tipos-ato/{id:guid}")]
+    [EndpointName("ExcluirTipoDeAto")]
     [ExigePermissao<PermissaoPublicacoes>(PermissaoPublicacoes.TiposAtoManter, ResourceTipo = ResourceTiposPublicacoes.TipoAto)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]

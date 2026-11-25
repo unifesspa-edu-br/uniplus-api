@@ -85,6 +85,7 @@ public sealed class CertamePublicoController : ControllerBase
     /// </para>
     /// </remarks>
     [HttpGet("certames/{identificador}")]
+    [EndpointName("ObterCertamePublico")]
     [VendorMediaType(Resource = "certame-publico", Versions = [1])]
     [ProducesResponseType(typeof(CertamePublicoResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status304NotModified)]

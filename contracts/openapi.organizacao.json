@@ -67,6 +67,7 @@
         "tags": [
           "Instituicao"
         ],
+        "operationId": "ObterInstituicao",
         "responses": {
           "200": {
             "description": "OK",
@@ -106,6 +107,7 @@
         "tags": [
           "Instituicao"
         ],
+        "operationId": "CadastrarInstituicao",
         "parameters": [
           {
             "name": "Idempotency-Key",
@@ -238,6 +240,7 @@
         "tags": [
           "Instituicao"
         ],
+        "operationId": "AlterarInstituicao",
         "parameters": [
           {
             "name": "id",
@@ -367,6 +370,7 @@
         "tags": [
           "Instituicao"
         ],
+        "operationId": "ExcluirInstituicao",
         "parameters": [
           {
             "name": "id",
@@ -425,6 +429,7 @@
         "tags": [
           "Unidades"
         ],
+        "operationId": "ListarUnidadesInstitucionais",
         "parameters": [
           {
             "name": "q",
@@ -553,6 +558,7 @@
         "tags": [
           "Unidades"
         ],
+        "operationId": "ObterUnidadeInstitucional",
         "parameters": [
           {
             "name": "id",
@@ -603,6 +609,7 @@
         "tags": [
           "Unidades"
         ],
+        "operationId": "CadastrarUnidadeInstitucional",
         "parameters": [
           {
             "name": "Idempotency-Key",
@@ -735,6 +742,7 @@
         "tags": [
           "Unidades"
         ],
+        "operationId": "AlterarUnidadeInstitucional",
         "parameters": [
           {
             "name": "id",
@@ -864,6 +872,7 @@
         "tags": [
           "Unidades"
         ],
+        "operationId": "ExcluirUnidadeInstitucional",
         "parameters": [
           {
             "name": "id",

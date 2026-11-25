@@ -65,6 +65,7 @@ public sealed class AtosNormativosController : ControllerBase
     /// esses são recomputados só no detalhe do ato.
     /// </summary>
     [HttpGet("atos")]
+    [EndpointName("ListarAtosNormativos")]
     [AllowAnonymous]
     [VendorMediaType(Resource = "ato-normativo", Versions = [1])]
     [ProducesResponseType(typeof(IEnumerable<AtoNormativoDto>), StatusCodes.Status200OK)]
@@ -104,6 +105,7 @@ public sealed class AtosNormativosController : ControllerBase
     /// entidade.</para>
     /// </remarks>
     [HttpGet("entidades/{entidadeTipo}/{entidadeId:guid}/atos")]
+    [EndpointName("ListarAtosNormativosDaEntidade")]
     [AllowAnonymous]
     [VendorMediaType(Resource = "ato-normativo", Versions = [1])]
     [ProducesResponseType(typeof(IEnumerable<AtoNormativoDto>), StatusCodes.Status200OK)]
@@ -141,6 +143,7 @@ public sealed class AtosNormativosController : ControllerBase
     /// 404 quando inexistente.
     /// </summary>
     [HttpGet("atos/{id:guid}")]
+    [EndpointName("ObterAtoNormativo")]
     [AllowAnonymous]
     [VendorMediaType(Resource = "ato-normativo", Versions = [1])]
     [ProducesResponseType(typeof(AtoNormativoDto), StatusCodes.Status200OK)]
@@ -170,6 +173,7 @@ public sealed class AtosNormativosController : ControllerBase
     /// objeto é publicado pelo domínio dono.
     /// </summary>
     [HttpPost("admin/atos")]
+    [EndpointName("RegistrarAtoNormativo")]
     [ExigePermissao<PermissaoPublicacoes>(PermissaoPublicacoes.AtosNormativosRegistrar, ResourceTipo = ResourceTiposPublicacoes.AtoNormativo)]
     [RequiresIdempotencyKey]
     [ProducesResponseType(typeof(RegistrarAtoNormativoResult), StatusCodes.Status201Created)]
