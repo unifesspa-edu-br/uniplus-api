@@ -84,35 +84,33 @@ public sealed class ObrigatoriedadeLegalRepository : IObrigatoriedadeLegalReposi
         bool vigentes,
         CancellationToken cancellationToken = default)
     {
-        // Sem OrderBy aqui: o helper keyset (ADR-0089) ordena e fatia. Aplicamos
-        // só os filtros; os EXISTS de flag do helper herdam a mesma query base.
-        IQueryable<ObrigatoriedadeLegal> query = _context.ObrigatoriedadesLegais
-            .AsNoTracking();
-
-        if (!string.IsNullOrWhiteSpace(tipoProcessoCodigo))
-        {
-            string normalizado = tipoProcessoCodigo.Trim();
-            query = query.Where(o => o.TipoProcessoCodigo == normalizado);
-        }
-
-        if (categoria is { } cat)
-        {
-            query = query.Where(o => o.Categoria == cat);
-        }
-
-        if (vigentes)
-        {
-            DateOnly hoje = DateOnly.FromDateTime(_timeProvider.GetUtcNow().UtcDateTime.Date);
-            query = query.Where(o =>
-                o.VigenciaInicio <= hoje
-                && (o.VigenciaFim == null || o.VigenciaFim > hoje));
-        }
+        IQueryable<ObrigatoriedadeLegal> query = Filtrar(tipoProcessoCodigo, categoria, vigentes);
 
         CursorKeysetPage<ObrigatoriedadeLegal> page = await CursorKeyset
             .ApplyAsync(query, afterId, limit, direction, cancellationToken)
             .ConfigureAwait(false);
 
         return (page.Items, page.PrevAfterId, page.NextAfterId);
+    }
+
+    private IQueryable<ObrigatoriedadeLegal> Filtrar(string? tipoProcessoCodigo, CategoriaObrigatoriedade? categoria, bool vigentes)
+    {
+        IQueryable<ObrigatoriedadeLegal> query = _context.ObrigatoriedadesLegais.AsNoTracking();
+        if (!string.IsNullOrWhiteSpace(tipoProcessoCodigo))
+        {
+            query = query.Where(o => o.TipoProcessoCodigo == tipoProcessoCodigo);
+        }
+        if (categoria is { } valor)
+        {
+            query = query.Where(o => o.Categoria == valor);
+        }
+        return vigentes ? FiltrarVigentes(query) : query;
+    }
+
+    private IQueryable<ObrigatoriedadeLegal> FiltrarVigentes(IQueryable<ObrigatoriedadeLegal> query)
+    {
+        DateOnly hoje = DateOnly.FromDateTime(_timeProvider.GetUtcNow().UtcDateTime.Date);
+        return query.Where(o => o.VigenciaInicio <= hoje && (o.VigenciaFim == null || o.VigenciaFim > hoje));
     }
 
     public async Task<IReadOnlyList<ObrigatoriedadeLegal>> ObterVigentesParaTipoProcessoAsync(
@@ -122,9 +120,7 @@ public sealed class ObrigatoriedadeLegalRepository : IObrigatoriedadeLegalReposi
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(tipoProcessoCodigo);
 
-        // O normalizer fecha o vocabulário pela grafia do enum. A igualdade
-        // ordinal aqui preserva esse contrato e evita correspondência parcial
-        // ou case-insensitive entre regras cadastradas e o tipo do processo.
+        // A igualdade exata mantém a referência ao tipo de processo cadastrado.
         return await _context.ObrigatoriedadesLegais
             .AsNoTracking()
             .Where(o =>
@@ -143,10 +139,9 @@ public sealed class ObrigatoriedadeLegalRepository : IObrigatoriedadeLegalReposi
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(regraCodigo);
 
-        string normalizado = regraCodigo.Trim();
         IQueryable<ObrigatoriedadeLegal> query = _context.ObrigatoriedadesLegais
             .AsNoTracking()
-            .Where(o => o.RegraCodigo == normalizado);
+            .Where(o => o.RegraCodigo == regraCodigo);
 
         if (excluirId is { } id)
         {

@@ -53,14 +53,15 @@ public sealed class AtualizarObrigatoriedadeLegalCommandHandlerTests
         await _cenario.UnitOfWork.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
     }
 
-    [Fact(DisplayName = "Códigos com espaço supérfluo são gravados normalizados na atualização")]
-    public async Task Handle_CodigosComEspaco_AtualizaNormalizado()
+    [Fact(DisplayName = "Modalidade com espaço é recusada na atualização")]
+    public async Task Handle_ModalidadeComEspaco_Recusa()
     {
+        _cenario.Modalidades = ModalidadeReaderSem(" LB_PPI ");
         Result resultado = await _cenario.AtualizarAsync(
-            ComandoDeAtualizar(_regra.Id, new DocumentoObrigatorioParaModalidade(" LB_PPI ", " LAUDO_MEDICO ")));
+            ComandoDeAtualizar(_regra.Id, new DocumentoObrigatorioParaModalidade(" LB_PPI ", "LAUDO_MEDICO")));
 
-        resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
-        _regra.Predicado.Should().Be(new DocumentoObrigatorioParaModalidade("LB_PPI", "LAUDO_MEDICO"));
+        resultado.Error!.Code.Should().Be("ObrigatoriedadeLegal.ModalidadeNaoEncontrada");
+        resultado.Error.Message.Should().NotContain(" LB_PPI ");
     }
 
     [Fact(DisplayName = "Código de regra de outra regra ativa é recusado como duplicado, excluída a própria")]
