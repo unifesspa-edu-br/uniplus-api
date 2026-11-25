@@ -81,9 +81,9 @@ internal sealed class CadastrosDaClassificacao(IRegraCatalogoReader regraCatalog
         return regra switch
         {
             null => Result<ReferenciaRegra>.Failure(new DomainError("ConfiguracaoClassificacao.RegraNaoEncontrada",
-                $"Regra {codigo}/{versao} não encontrada no catálogo de regras.")),
+                "Regra não encontrada no catálogo de regras.")),
             { Tipo: var tipo } when tipo != tipoEsperado => Result<ReferenciaRegra>.Failure(new DomainError(
-                "ConfiguracaoClassificacao.RegraTipoInvalido", $"A regra {codigo}/{versao} não é do tipo esperado.")),
+                "ConfiguracaoClassificacao.RegraTipoInvalido", "A regra não é do tipo esperado.")),
             _ => Result<ReferenciaRegra>.Success(regra.Referencia()),
         };
     }
@@ -109,7 +109,7 @@ internal sealed class CadastrosDaClassificacao(IRegraCatalogoReader regraCatalog
     private async Task<Result<RegraEliminacao>> ResolverEliminacaoAsync(RegraEliminacaoInput input, CancellationToken cancellationToken)
     {
         RegraCatalogo? regra = await regraCatalogoReader.ObterAsync(input.RegraCodigo, input.RegraVersao, cancellationToken).ConfigureAwait(false);
-        if (RecusaDaRegraDeEliminacao(input, regra) is { } recusa)
+        if (RecusaDaRegraDeEliminacao(regra) is { } recusa)
         {
             return Result<RegraEliminacao>.Failure(recusa);
         }
@@ -119,12 +119,12 @@ internal sealed class CadastrosDaClassificacao(IRegraCatalogoReader regraCatalog
             : RegraEliminacao.Criar(regra!.Referencia(), parametros.Value!);
     }
 
-    private static DomainError? RecusaDaRegraDeEliminacao(RegraEliminacaoInput input, RegraCatalogo? regra) => regra switch
+    private static DomainError? RecusaDaRegraDeEliminacao(RegraCatalogo? regra) => regra switch
     {
         null => new DomainError("RegraEliminacao.RegraNaoEncontrada",
-            $"Regra de eliminação {input.RegraCodigo}/{input.RegraVersao} não encontrada no catálogo de regras."),
+            "Regra de eliminação não encontrada no catálogo de regras."),
         { Tipo: not TipoRegra.RegraEliminacao } => new DomainError("RegraEliminacao.RegraTipoInvalido",
-            $"A regra {input.RegraCodigo}/{input.RegraVersao} não é do tipo regra_eliminacao."),
+            "A regra não é do tipo regra_eliminacao."),
         _ => null,
     };
 
