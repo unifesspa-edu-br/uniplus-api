@@ -22,10 +22,6 @@ internal sealed class RevisaoDeAcessosConfiguration : IEntityTypeConfiguration<R
     private const int IdentidadeMaxLength = 255;
     private const int CodigoMaxLength = 40;
 
-    private static readonly ValueConverter<TipoDeGovernanca, string> GovernancaConverter = new(
-        governanca => governanca.ToCodigo(),
-        codigo => TipoDeGovernancaCodigo.FromCodigo(codigo));
-
     private static readonly ValueConverter<ResultadoDoItemDaRevisao, string> ResultadoConverter = new(
         resultado => resultado.ToCodigo(),
         codigo => ResultadoDoItemDaRevisaoCodigo.FromCodigo(codigo));
@@ -71,7 +67,7 @@ internal sealed class RevisaoDeAcessosConfiguration : IEntityTypeConfiguration<R
         builder.HasKey(i => i.Id);
         builder.Property(i => i.Id).ValueGeneratedNever();
 
-        builder.Property(i => i.DecididoComo).HasConversion(GovernancaConverter).HasMaxLength(CodigoMaxLength);
+        builder.Property(i => i.DecididoComo).HasMaxLength(CodigoMaxLength);
         builder.Property(i => i.Resultado).HasConversion(ResultadoConverter).HasMaxLength(CodigoMaxLength);
         builder.Property(i => i.DecididoPorEmissor).HasMaxLength(IdentidadeMaxLength);
         builder.Property(i => i.DecididoPorContaId).HasMaxLength(IdentidadeMaxLength);

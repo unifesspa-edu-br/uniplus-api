@@ -2,11 +2,11 @@ namespace Unifesspa.UniPlus.Autorizacao.Infrastructure.Persistence.Configuration
 
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
-using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 using Unifesspa.UniPlus.Autorizacao.Domain.Entities;
 using Unifesspa.UniPlus.Autorizacao.Domain.Enums;
 using Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects;
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence.CodigosDeContrato;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Protecao;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
 
@@ -21,26 +21,6 @@ public sealed class VersaoDoPerfilConfiguration : IEntityTypeConfiguration<Versa
     private const int CodigoMaxLength = 40;
     private const int ClassificacaoMaxLength = 20;
     private const int IdentidadeMaxLength = 255;
-
-    private static readonly ValueConverter<SituacaoDaVersao, string> SituacaoConverter = new(
-        situacao => situacao.ToCodigo(),
-        codigo => SituacaoDaVersaoCodigo.FromCodigo(codigo));
-
-    private static readonly ValueConverter<OrigemDaVersao, string> OrigemConverter = new(
-        origem => origem.ToCodigo(),
-        codigo => OrigemDaVersaoCodigo.FromCodigo(codigo));
-
-    private static readonly ValueConverter<TipoDeEscopo, string> AlcanceConverter = new(
-        alcance => alcance.ToCodigo(),
-        codigo => TipoDeEscopoCodigo.FromCodigo(codigo));
-
-    private static readonly ValueConverter<FormaDoCancelamento, string> FormaConverter = new(
-        forma => forma.ToCodigo(),
-        codigo => FormaDoCancelamentoCodigo.FromCodigo(codigo));
-
-    private static readonly ValueConverter<CategoriaDaRemocao, string> CategoriaConverter = new(
-        categoria => categoria.ToCodigo(),
-        codigo => CategoriaDaRemocaoCodigo.FromCodigo(codigo));
 
     public void Configure(EntityTypeBuilder<VersaoDoPerfil> builder)
     {
@@ -81,8 +61,8 @@ public sealed class VersaoDoPerfilConfiguration : IEntityTypeConfiguration<Versa
             .OnDelete(DeleteBehavior.Cascade);
         builder.Navigation(v => v.Documentos).UsePropertyAccessMode(PropertyAccessMode.Field);
 
-        builder.Property(v => v.Origem).HasConversion(OrigemConverter).HasMaxLength(SituacaoMaxLength).IsRequired();
-        builder.Property(v => v.Alcance).HasConversion(AlcanceConverter).HasMaxLength(SituacaoMaxLength).IsRequired();
+        builder.Property(v => v.Origem).HasMaxLength(SituacaoMaxLength).IsRequired();
+        builder.Property(v => v.Alcance).HasMaxLength(SituacaoMaxLength).IsRequired();
         builder.Property(v => v.ExpiraEm);
         builder.Property(v => v.ExigeProtecaoDeDados).IsRequired();
         builder.Property(v => v.CicloDeAprovacao).IsRequired();
@@ -95,11 +75,11 @@ public sealed class VersaoDoPerfilConfiguration : IEntityTypeConfiguration<Versa
     // gravação e recusaria a ordem inversa, mesmo com o estado final válido. A restrição adiada confere no commit.
     private static void ConfigurarSituacao(EntityTypeBuilder<VersaoDoPerfil> builder)
     {
-        builder.Property(v => v.Situacao).HasConversion(SituacaoConverter).HasMaxLength(SituacaoMaxLength).IsRequired();
+        builder.Property(v => v.Situacao).HasMaxLength(SituacaoMaxLength).IsRequired();
 
         builder.HasIndex(v => v.PerfilId, "ux_versoes_do_perfil_pendente")
             .IsUnique()
-            .HasFilter($"situacao = '{SituacaoDaVersaoCodigo.Pendente}'")
+            .HasFilter($"situacao = {SqlDosCodigosDeContrato.Literal(SituacaoDaVersao.Pendente)}")
             .HasDatabaseName("ux_versoes_do_perfil_pendente");
     }
 
@@ -118,7 +98,7 @@ public sealed class VersaoDoPerfilConfiguration : IEntityTypeConfiguration<Versa
 
     private static void ConfigurarCancelamentoEExpiracao(EntityTypeBuilder<VersaoDoPerfil> builder)
     {
-        builder.Property(v => v.FormaDoCancelamento).HasConversion(FormaConverter).HasMaxLength(CodigoMaxLength);
+        builder.Property(v => v.FormaDoCancelamento).HasMaxLength(CodigoMaxLength);
         builder.Property(v => v.MotivoDoCancelamento).HasMaxLength(MotivoInformado.MaximoDeCaracteres);
         builder.Property(v => v.ExpiradaEm);
     }
@@ -128,7 +108,7 @@ public sealed class VersaoDoPerfilConfiguration : IEntityTypeConfiguration<Versa
     private static void ConfigurarRemocao(EntityTypeBuilder<VersaoDoPerfil> builder)
     {
         builder.Property(v => v.MotivoDaRemocao).HasMaxLength(MotivoInformado.MaximoDeCaracteres);
-        builder.Property(v => v.CategoriaDaRemocao).HasConversion(CategoriaConverter).HasMaxLength(CodigoMaxLength);
+        builder.Property(v => v.CategoriaDaRemocao).HasMaxLength(CodigoMaxLength);
         builder.HasOne<VersaoDoPerfil>()
             .WithMany()
             .HasForeignKey(v => new { v.PerfilId, v.VersaoDoDocumento })
@@ -149,18 +129,18 @@ public sealed class VersaoDoPerfilConfiguration : IEntityTypeConfiguration<Versa
     {
         tabela.HasCheckConstraint(
             "ck_versoes_do_perfil_origem",
-            $"(origem = '{OrigemDaVersaoCodigo.Remocao}' AND motivo_da_remocao IS NOT NULL AND versao_do_documento IS NOT NULL AND expira_em IS NULL) "
-            + $"OR (origem = '{OrigemDaVersaoCodigo.Proposta}' AND expira_em IS NOT NULL AND motivo_da_remocao IS NULL AND versao_do_documento IS NULL)");
+            $"(origem = {SqlDosCodigosDeContrato.Literal(OrigemDaVersao.Remocao)} AND motivo_da_remocao IS NOT NULL AND versao_do_documento IS NOT NULL AND expira_em IS NULL) "
+            + $"OR (origem = {SqlDosCodigosDeContrato.Literal(OrigemDaVersao.Proposta)} AND expira_em IS NOT NULL AND motivo_da_remocao IS NULL AND versao_do_documento IS NULL)");
         tabela.HasCheckConstraint(
             "ck_versoes_do_perfil_cancelamento",
-            $"(situacao = '{SituacaoDaVersaoCodigo.Cancelada}') = (forma_do_cancelamento IS NOT NULL AND cancelada_em IS NOT NULL) "
+            $"(situacao = {SqlDosCodigosDeContrato.Literal(SituacaoDaVersao.Cancelada)}) = (forma_do_cancelamento IS NOT NULL AND cancelada_em IS NOT NULL) "
             + "AND (forma_do_cancelamento IS NULL) = (cancelada_em IS NULL)");
         tabela.HasCheckConstraint(
             "ck_versoes_do_perfil_motivo_do_cancelamento",
-            $"forma_do_cancelamento IS DISTINCT FROM '{FormaDoCancelamentoCodigo.Pessoa}' OR motivo_do_cancelamento IS NOT NULL");
+            $"forma_do_cancelamento IS DISTINCT FROM {SqlDosCodigosDeContrato.Literal(FormaDoCancelamento.Pessoa)} OR motivo_do_cancelamento IS NOT NULL");
         tabela.HasCheckConstraint(
             "ck_versoes_do_perfil_expiracao",
-            $"(situacao = '{SituacaoDaVersaoCodigo.Expirada}') = (expirada_em IS NOT NULL)");
+            $"(situacao = {SqlDosCodigosDeContrato.Literal(SituacaoDaVersao.Expirada)}) = (expirada_em IS NOT NULL)");
     }
 
     private static void ConfigurarPermissoes(EntityTypeBuilder<VersaoDoPerfil> builder)

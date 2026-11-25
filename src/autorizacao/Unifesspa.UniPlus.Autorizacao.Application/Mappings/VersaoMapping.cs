@@ -5,6 +5,7 @@ using Unifesspa.UniPlus.Autorizacao.Application.DTOs;
 using Unifesspa.UniPlus.Autorizacao.Domain.Entities;
 using Unifesspa.UniPlus.Autorizacao.Domain.Enums;
 using Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
 
 /// <summary>Mapeamento das versões do perfil e dos documentos que as instituem para os DTOs.</summary>
@@ -35,7 +36,7 @@ public static class VersaoMapping
     internal static UltimaVersaoEncerradaSemVigorDto? UltimaEncerradaSemVigorDe(Perfil perfil) =>
         perfil.UltimaVersaoEncerradaSemVigor is { } versao
             ? new UltimaVersaoEncerradaSemVigorDto(
-                versao.Numero, versao.Situacao.ToCodigo(), EtapaDeParada(versao).ToCodigo(), InstanteDoFim(versao))
+                versao.Numero, versao.Situacao.Codigo(), EtapaDeParada(versao).Codigo(), InstanteDoFim(versao))
             : null;
 
     private static VersaoPendenteDto Pendente(
@@ -46,7 +47,7 @@ public static class VersaoMapping
         return new VersaoPendenteDto(
             pendente.Id, pendente.Numero, pendente.Nome, pendente.Descricao, Descrever(pendente.Codigos(), catalogo), pendente.Protocolo,
             documento.Id, documento.Situacao.ToCodigo(), pendente.CriadaEm, pendente.ExpiraEm!.Value,
-            EtapaAtual(pendente, exige).ToCodigo(), exige, Descrever(acrescimo, catalogo),
+            EtapaAtual(pendente, exige).Codigo(), exige, Descrever(acrescimo, catalogo),
             Descrever((perfil.VersaoVigente?.Codigos() ?? []).Except(pendente.Codigos(), StringComparer.Ordinal), catalogo),
             [.. pendente.DecisoesDoCiclo().Select(DecisaoDe)],
             pendente.CriadorTemConcessao,
@@ -62,7 +63,7 @@ public static class VersaoMapping
     }
 
     private static DecisaoDaVersaoDto DecisaoDe(DecisaoDaVersao decisao) =>
-        new(decisao.Etapa.ToCodigo(), decisao.Resultado.ToCodigo(), decisao.DecisorNome, decisao.DecisorTemConcessao, decisao.Instante);
+        new(decisao.Etapa.Codigo(), decisao.Resultado.ToCodigo(), decisao.DecisorNome, decisao.DecisorTemConcessao, decisao.Instante);
 
     private static EtapaDaVersao EtapaAtual(VersaoDoPerfil versao, bool exigeProtecaoDeDados) =>
         versao.AprovadaPelaGestao && exigeProtecaoDeDados ? EtapaDaVersao.ProtecaoDeDados : EtapaDaVersao.GestaoDeAcessos;

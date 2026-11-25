@@ -5,6 +5,7 @@ using Unifesspa.UniPlus.Autorizacao.Domain.Entities;
 using Unifesspa.UniPlus.Autorizacao.Domain.Enums;
 using Unifesspa.UniPlus.Autorizacao.Domain.Interfaces;
 using Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 
 /// <summary>
 /// Mapeamento da <see cref="Providencia"/> para a resposta e para a trilha da concessão. A situação e o encerramento da
@@ -58,14 +59,14 @@ public static class ProvidenciaMapping
         Concessao c = alvo.Concessao;
 
         return new(
-            c.Id, Pessoa(c.Beneficiario), new PerfilResumoDto(c.PerfilId, alvo.PerfilNome.Valor), new EscopoDto(c.EscopoTipo.ToCodigo(), c.UnidadeId),
+            c.Id, Pessoa(c.Beneficiario), new PerfilResumoDto(c.PerfilId, alvo.PerfilNome.Valor), new EscopoDto(c.EscopoTipo.Codigo(), c.UnidadeId),
             c.ValidaAte, c.EstaAtiva(agora));
     }
 
     // Só a prejudicada diz o que encerrou a concessão: na atendida, o encerramento é o próprio atendimento.
     private static EncerramentoDaConcessaoDto? Encerramento(SituacaoDaProvidencia situacao, Concessao c, DateTimeOffset agora) =>
         situacao == SituacaoDaProvidencia.Prejudicada && EncerramentoDaConcessao.De(c, agora) is { } encerramento
-            ? new EncerramentoDaConcessaoDto(encerramento.Causa.ToCodigo(), encerramento.Em)
+            ? new EncerramentoDaConcessaoDto(encerramento.Causa.Codigo(), encerramento.Em)
             : null;
 
     private static DesfechoDaProvidenciaDto? Desfecho(Providencia p) =>

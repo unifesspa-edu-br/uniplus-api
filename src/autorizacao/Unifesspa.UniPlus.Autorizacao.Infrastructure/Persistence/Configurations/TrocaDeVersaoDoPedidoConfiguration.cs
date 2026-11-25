@@ -4,7 +4,6 @@ using System.Diagnostics.CodeAnalysis;
 
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
-using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 using Unifesspa.UniPlus.Autorizacao.Domain.Entities;
 using Unifesspa.UniPlus.Autorizacao.Domain.Enums;
@@ -20,10 +19,6 @@ internal sealed class TrocaDeVersaoDoPedidoConfiguration : IEntityTypeConfigurat
 {
     private const int DesfechoMaxLength = 40;
 
-    private static readonly ValueConverter<DesfechoDaTrocaDeVersao, string> DesfechoConverter = new(
-        desfecho => desfecho.ToCodigo(),
-        codigo => DesfechoDaTrocaDeVersaoCodigo.FromCodigo(codigo));
-
     public void Configure(EntityTypeBuilder<TrocaDeVersaoDoPedido> builder)
     {
         ArgumentNullException.ThrowIfNull(builder);
@@ -36,7 +31,7 @@ internal sealed class TrocaDeVersaoDoPedidoConfiguration : IEntityTypeConfigurat
 
         builder.Property(t => t.VersaoAnterior).IsRequired();
         builder.Property(t => t.VersaoNova).IsRequired();
-        builder.Property(t => t.Desfecho).HasConversion(DesfechoConverter).HasMaxLength(DesfechoMaxLength).IsRequired();
+        builder.Property(t => t.Desfecho).HasMaxLength(DesfechoMaxLength).IsRequired();
         builder.Property(t => t.Instante).IsRequired();
 
         builder.HasIndex(t => t.PedidoId).HasDatabaseName("ix_trocas_de_versao_do_pedido_pedido");

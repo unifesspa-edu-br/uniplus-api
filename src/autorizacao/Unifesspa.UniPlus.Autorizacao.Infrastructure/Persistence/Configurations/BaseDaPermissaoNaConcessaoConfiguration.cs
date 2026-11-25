@@ -4,11 +4,11 @@ using System.Diagnostics.CodeAnalysis;
 
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
-using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 using Unifesspa.UniPlus.Autorizacao.Domain.Entities;
 using Unifesspa.UniPlus.Autorizacao.Domain.Enums;
 using Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects;
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence.CodigosDeContrato;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Protecao;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
 
@@ -26,10 +26,6 @@ internal sealed class BaseDaPermissaoNaConcessaoConfiguration : IEntityTypeConfi
     private const int ClassificacaoMaxLength = 20;
     private const int OrigemMaxLength = 20;
 
-    private static readonly ValueConverter<OrigemDaBase, string> OrigemConverter = new(
-        origem => origem.ToCodigo(),
-        codigo => OrigemDaBaseCodigo.FromCodigo(codigo));
-
     public void Configure(EntityTypeBuilder<BaseDaPermissaoNaConcessao> builder)
     {
         ArgumentNullException.ThrowIfNull(builder);
@@ -43,7 +39,7 @@ internal sealed class BaseDaPermissaoNaConcessaoConfiguration : IEntityTypeConfi
         builder.Property(b => b.Codigo).HasConversion(ConversoresDoCatalogo.Codigo).HasMaxLength(CodigoMaxLength).IsRequired();
         builder.Property(b => b.Classificacao).HasMaxLength(ClassificacaoMaxLength);
         builder.Property(b => b.DeUnidade);
-        builder.Property(b => b.Origem).HasConversion(OrigemConverter).HasMaxLength(OrigemMaxLength).IsRequired();
+        builder.Property(b => b.Origem).HasMaxLength(OrigemMaxLength).IsRequired();
         builder.Property(b => b.ReferenciaId).IsRequired();
         builder.Property(b => b.OrdemNoHistorico).IsRequired();
         builder.Ignore(b => b.OrdinalLocal);
@@ -67,9 +63,9 @@ internal sealed class BaseDaPermissaoNaConcessaoConfiguration : IEntityTypeConfi
     {
         tabela.HasCheckConstraint(
             "ck_bases_da_permissao_concedida_origem",
-            $"origem IN ('{OrigemDaBaseCodigo.Migracao}', '{OrigemDaBaseCodigo.Saida}', '{OrigemDaBaseCodigo.Liberacao}', '{OrigemDaBaseCodigo.Conciliacao}')");
+            $"origem IN ({SqlDosCodigosDeContrato.Lista<OrigemDaBase>()})");
         tabela.HasCheckConstraint(
             "ck_bases_da_permissao_concedida_saida",
-            $"(origem = '{OrigemDaBaseCodigo.Saida}') = (classificacao IS NULL AND de_unidade IS NULL)");
+            $"(origem = {SqlDosCodigosDeContrato.Literal(OrigemDaBase.Saida)}) = (classificacao IS NULL AND de_unidade IS NULL)");
     }
 }

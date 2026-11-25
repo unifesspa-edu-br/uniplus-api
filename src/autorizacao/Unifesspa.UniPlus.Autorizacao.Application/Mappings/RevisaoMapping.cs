@@ -5,6 +5,7 @@ using Unifesspa.UniPlus.Autorizacao.Domain.Entities;
 using Unifesspa.UniPlus.Autorizacao.Domain.Enums;
 using Unifesspa.UniPlus.Autorizacao.Domain.Interfaces;
 using Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 
 /// <summary>Mapeamento da <see cref="RevisaoDeAcessos"/> para os DTOs e para os eventos da trilha da concessão.</summary>
 public static class RevisaoMapping
@@ -73,9 +74,9 @@ public static class RevisaoMapping
             c.Id,
             new IdentidadeDto(c.BeneficiarioEmissor, c.BeneficiarioContaId, c.BeneficiarioNome),
             new PerfilResumoDto(c.PerfilId, item.PerfilNome.Valor),
-            new EscopoDto(c.EscopoTipo.ToCodigo(), c.UnidadeId),
+            new EscopoDto(c.EscopoTipo.Codigo(), c.UnidadeId),
             c.ValidaAte,
-            QuemDecide(i, c, representantes).ToCodigo(),
+            QuemDecide(i, c, representantes).Codigo(),
             Situacao(item),
             i.DecididoPor is { } p ? new IdentidadeDto(p.Emissor, p.ContaId, p.Nome) : null,
             i.DecididoEm,

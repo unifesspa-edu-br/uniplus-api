@@ -6,6 +6,7 @@ using Unifesspa.UniPlus.Autorizacao.Domain.Enums;
 using Unifesspa.UniPlus.Autorizacao.Domain.Errors;
 using Unifesspa.UniPlus.Autorizacao.Domain.Interfaces;
 using Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
 
 /// <summary>
@@ -49,7 +50,7 @@ public sealed class RemocaoDePermissoes
     }
 
     private static bool CategoriaInvalida(RemoverPermissoesRequest dados) =>
-        dados.Categoria is not null && CategoriaDaRemocaoCodigo.TentarLer(dados.Categoria) is null;
+        dados.Categoria is not null && !CatalogoDe<CategoriaDaRemocao>.TentarObter(dados.Categoria, out _);
 
     private static GravacaoDaOperacao<PerfilDto> Recusada(DomainError erro) =>
         GravacaoDaOperacao<PerfilDto>.Sem(Result<PerfilDto>.Failure(erro));
@@ -65,7 +66,7 @@ public sealed class RemocaoDePermissoes
         new(
             [.. (dados.Permissoes ?? []).Distinct(StringComparer.Ordinal)],
             MotivoInformado.Normalizar(dados.Motivo),
-            CategoriaDaRemocaoCodigo.TentarLer(dados.Categoria),
+            (CatalogoDe<CategoriaDaRemocao>.TentarObter(dados.Categoria, out CategoriaDaRemocao valorCategoriaDaRemocao) ? valorCategoriaDaRemocao : (CategoriaDaRemocao?)null),
             autoria,
             agora);
 

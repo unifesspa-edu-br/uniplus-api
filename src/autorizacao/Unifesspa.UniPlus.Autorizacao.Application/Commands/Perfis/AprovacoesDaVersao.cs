@@ -8,6 +8,7 @@ using Unifesspa.UniPlus.Autorizacao.Domain.Enums;
 using Unifesspa.UniPlus.Autorizacao.Domain.Errors;
 using Unifesspa.UniPlus.Autorizacao.Domain.Interfaces;
 using Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
 
 /// <summary>
@@ -71,7 +72,7 @@ public sealed class AprovacoesDaVersao
         AcessoDasEtapas? acesso = await AcessoDaVersao.ConsultarAsync(verificador, solicitada.PerfilId, cancellationToken).ConfigureAwait(false);
         DomainError? recusa = acesso is null
             ? PerfilHandlerErros.AutorNaoIdentificado()
-            : await acesso.RecusaDaEtapaAsync(EtapaDaVersaoCodigo.TentarLer(solicitada.Etapa), verificador, cancellationToken)
+            : await acesso.RecusaDaEtapaAsync((CatalogoDe<EtapaDaVersao>.TentarObter(solicitada.Etapa, out EtapaDaVersao valorEtapaDaVersao) ? valorEtapaDaVersao : (EtapaDaVersao?)null), verificador, cancellationToken)
                 .ConfigureAwait(false);
 
         return recusa is null
@@ -82,7 +83,7 @@ public sealed class AprovacoesDaVersao
     private static PedidoDeDecisaoDaVersao Pedido(DecisaoSolicitada solicitada, AutoriaDaVersao autoria, DateTimeOffset agora) =>
         new(
             solicitada.VersaoId,
-            EtapaDaVersaoCodigo.FromCodigo(solicitada.Etapa!),
+            CatalogoDe<EtapaDaVersao>.Obter(solicitada.Etapa!),
             solicitada.Resultado,
             MotivoInformado.Normalizar(solicitada.Motivo),
             autoria,

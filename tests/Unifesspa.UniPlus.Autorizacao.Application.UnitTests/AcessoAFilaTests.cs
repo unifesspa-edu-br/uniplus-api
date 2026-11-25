@@ -9,6 +9,7 @@ using Unifesspa.UniPlus.Authorization.Contracts;
 using Unifesspa.UniPlus.Autorizacao.Application.Queries.Perfis;
 using Unifesspa.UniPlus.Autorizacao.Domain.Enums;
 using Unifesspa.UniPlus.Autorizacao.Domain.Errors;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
 
 using static Unifesspa.UniPlus.Autorizacao.Application.UnitTests.CenarioDaGovernancaDaVersao;
@@ -76,7 +77,7 @@ public sealed class AcessoAFilaTests
     {
         VerificadorDeTeste verificador = new(PerfisDeTeste.Gestor.ContaId, [permissao]);
 
-        Result<EtapaDaVersao> resultado = await AcessoAFila.AutorizarAsync(esperada.ToCodigo(), verificador, CancellationToken.None);
+        Result<EtapaDaVersao> resultado = await AcessoAFila.AutorizarAsync(esperada.Codigo(), verificador, CancellationToken.None);
 
         resultado.Value.Should().Be(esperada);
         TrilhaDeAcesso.Do(verificador).Should().Equal(NaOperacao(permissao, ResultadoDoAcesso.Permitido));
@@ -88,7 +89,7 @@ public sealed class AcessoAFilaTests
         VerificadorDeTeste verificador = new(PerfisDeTeste.Gestor.ContaId, [Protecao]);
 
         Result<EtapaDaVersao> resultado = await AcessoAFila.AutorizarAsync(
-            EtapaDaVersao.GestaoDeAcessos.ToCodigo(), verificador, CancellationToken.None);
+            EtapaDaVersao.GestaoDeAcessos.Codigo(), verificador, CancellationToken.None);
 
         resultado.Error!.Code.Should().Be(PerfilErrorCodes.SemPermissaoNaEtapa);
         TrilhaDeAcesso.Do(verificador).Should().Equal(NaOperacao(Gestao, ResultadoDoAcesso.Negado));

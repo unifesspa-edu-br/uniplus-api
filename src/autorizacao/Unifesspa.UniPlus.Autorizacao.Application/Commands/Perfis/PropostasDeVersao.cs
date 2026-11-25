@@ -6,6 +6,7 @@ using Unifesspa.UniPlus.Autorizacao.Domain.Enums;
 using Unifesspa.UniPlus.Autorizacao.Domain.Errors;
 using Unifesspa.UniPlus.Autorizacao.Domain.Interfaces;
 using Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
 
 /// <summary>
@@ -77,7 +78,7 @@ public sealed class PropostasDeVersao
             return Result<ResultadoDaPropostaDto>.ValidationFailure(conteudo.Errors);
         }
 
-        return categoriaDaRemocao is not null && CategoriaDaRemocaoCodigo.TentarLer(categoriaDaRemocao) is null
+        return categoriaDaRemocao is not null && !CatalogoDe<CategoriaDaRemocao>.TentarObter(categoriaDaRemocao, out _)
             ? Result<ResultadoDaPropostaDto>.Failure(PerfilErros.RemocaoInvalida())
             : null;
     }
@@ -86,7 +87,7 @@ public sealed class PropostasDeVersao
         new(
             conteudo,
             MotivoInformado.Normalizar(dados.MotivoDaRemocao),
-            CategoriaDaRemocaoCodigo.TentarLer(dados.CategoriaDaRemocao),
+            (CatalogoDe<CategoriaDaRemocao>.TentarObter(dados.CategoriaDaRemocao, out CategoriaDaRemocao valorCategoriaDaRemocao) ? valorCategoriaDaRemocao : (CategoriaDaRemocao?)null),
             autoria,
             agora);
 

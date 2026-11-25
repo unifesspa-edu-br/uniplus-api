@@ -7,6 +7,7 @@ using Unifesspa.UniPlus.Autorizacao.Domain.Enums;
 using Unifesspa.UniPlus.Autorizacao.Domain.Errors;
 using Unifesspa.UniPlus.Autorizacao.Domain.Interfaces;
 using Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Kernel.Results;
 
@@ -89,7 +90,7 @@ public sealed class DetalheDaReclassificacao
         return new VersaoEmUsoDto(
             versao.Id,
             versao.Numero,
-            versao.Situacao.ToCodigo(),
+            versao.Situacao.Codigo(),
             [.. versao.Permissoes.OrderBy(static p => p.Codigo.Valor, StringComparer.Ordinal)
                 .Select(static p => new PermissaoDaVersaoEmUsoDto(p.Codigo.Valor, Texto(p.Classificacao), p.DeUnidade))],
             temDocumento ? $"/api/autorizacao/perfis/{perfil.Id:D}/versoes/{portadora:D}/documento" : null);
@@ -102,11 +103,11 @@ public sealed class DetalheDaReclassificacao
         return new ConcessaoSuspensaDto(
             concessao.Id,
             concessao.BeneficiarioNome,
-            concessao.EscopoTipo.ToCodigo(),
+            concessao.EscopoTipo.Codigo(),
             concessao.UnidadeId,
             perfil.Versoes.FirstOrDefault(v => v.Id == concessao.VersaoId)?.Numero,
-            [.. reclassificacao.EtapasExigidas(suspensa.Item.Base).Select(static e => e.ToCodigo())],
-            [.. suspensa.Decisoes.Select(static d => d.Etapa.ToCodigo())],
+            [.. reclassificacao.EtapasExigidas(suspensa.Item.Base).Select(static e => e.Codigo())],
+            [.. suspensa.Decisoes.Select(static d => d.Etapa.Codigo())],
             leitor is not null && concessao.Beneficiario.Equals(leitor));
     }
 }

@@ -4,7 +4,6 @@ using System.Diagnostics.CodeAnalysis;
 
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
-using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 using Unifesspa.UniPlus.Autorizacao.Domain.Entities;
 using Unifesspa.UniPlus.Autorizacao.Domain.Enums;
@@ -26,10 +25,6 @@ internal sealed class LiberacaoDaReclassificacaoConfiguration : IEntityTypeConfi
     private const int IdentidadeMaxLength = 255;
     private const int CodigoMaxLength = 40;
 
-    private static readonly ValueConverter<EtapaDaVersao, string> EtapaConverter = new(
-        etapa => etapa.ToCodigo(),
-        codigo => EtapaDaVersaoCodigo.FromCodigo(codigo));
-
     public void Configure(EntityTypeBuilder<LiberacaoDaReclassificacao> builder)
     {
         ArgumentNullException.ThrowIfNull(builder);
@@ -40,7 +35,7 @@ internal sealed class LiberacaoDaReclassificacaoConfiguration : IEntityTypeConfi
         builder.HasKey(l => l.Id);
         builder.Property(l => l.Id).ValueGeneratedNever();
 
-        builder.Property(l => l.Etapa).HasConversion(EtapaConverter).HasMaxLength(CodigoMaxLength).IsRequired();
+        builder.Property(l => l.Etapa).HasMaxLength(CodigoMaxLength).IsRequired();
         builder.Property(l => l.Resultado).HasMaxLength(CodigoMaxLength).IsRequired();
         builder.Property(l => l.Motivo).HasMaxLength(MotivoInformado.MaximoDeCaracteres);
         builder.Property(l => l.DecisorEmissor).HasMaxLength(IdentidadeMaxLength).IsRequired();
@@ -72,7 +67,7 @@ internal sealed class LiberacaoDaReclassificacaoConfiguration : IEntityTypeConfi
     {
         tabela.HasCheckConstraint(
             "ck_liberacoes_da_reclassificacao_etapa",
-            $"etapa IN ('{EtapaDaVersaoCodigo.GestaoDeAcessos}', '{EtapaDaVersaoCodigo.ProtecaoDeDados}')");
+            $"etapa IN ({SqlDosCodigosDeContrato.Lista<EtapaDaVersao>()})");
         tabela.HasCheckConstraint(
             "ck_liberacoes_da_reclassificacao_motivo",
             $"(resultado = {SqlDosCodigosDeContrato.Literal(ResultadoDaLiberacao.Mantida)}) = (motivo IS NOT NULL) AND resultado IN ({SqlDosCodigosDeContrato.Literal(ResultadoDaLiberacao.Liberada)}, {SqlDosCodigosDeContrato.Literal(ResultadoDaLiberacao.Mantida)})");

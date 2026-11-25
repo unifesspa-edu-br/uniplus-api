@@ -7,6 +7,7 @@ using Unifesspa.UniPlus.Autorizacao.Application.DTOs;
 using Unifesspa.UniPlus.Autorizacao.Domain.Entities;
 using Unifesspa.UniPlus.Autorizacao.Domain.Enums;
 using Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
 
 /// <summary>Mapeamento <see cref="Perfil"/> para <see cref="PerfilDto"/> e para o perfil como o aprovador o avalia.</summary>
@@ -22,7 +23,7 @@ public static class PerfilMapping
             perfil.Nome,
             perfil.Descricao,
             perfil.Ativo,
-            perfil.Governanca?.ToCodigo(),
+            perfil.Governanca?.Codigo(),
             ValoresCanonicos.De(SensibilidadeDoPerfil(perfil, catalogo)),
             CodigoComRotulo<SituacaoDoAcessoDoPerfil>.De(perfil.SituacaoDoAcesso),
             ComposicaoDe(perfil, catalogo),
@@ -37,7 +38,7 @@ public static class PerfilMapping
             perfil.Nome,
             perfil.Descricao,
             perfil.Ativo,
-            perfil.Governanca?.ToCodigo(),
+            perfil.Governanca?.Codigo(),
             ValoresCanonicos.De(SensibilidadeDoPerfil(perfil, catalogo)),
             CodigoComRotulo<SituacaoDoAcessoDoPerfil>.De(perfil.SituacaoDoAcesso),
             perfil.VersaoPendente is not null,
@@ -68,9 +69,9 @@ public static class PerfilMapping
         perfil.SuspensaoAberta is { } suspensao
             ? new SuspensaoDoPerfilDto(
                 suspensao.SuspensaEm,
-                suspensao.Papel.ToCodigo(),
-                [.. SuspensaoDoPerfil.EtapasExigidas(Avaliar(perfil, catalogo).ExigeAprovacaoDeProtecaoDeDados).Select(static e => e.ToCodigo())],
-                [.. suspensao.Decisoes.Select(static d => d.Etapa.ToCodigo())])
+                suspensao.Papel.Codigo(),
+                [.. SuspensaoDoPerfil.EtapasExigidas(Avaliar(perfil, catalogo).ExigeAprovacaoDeProtecaoDeDados).Select(static e => e.Codigo())],
+                [.. suspensao.Decisoes.Select(static d => d.Etapa.Codigo())])
             : null;
 
     // Código que o catálogo não conhece (permissão retirada do código) conta como a mais restrita: o perfil não pode

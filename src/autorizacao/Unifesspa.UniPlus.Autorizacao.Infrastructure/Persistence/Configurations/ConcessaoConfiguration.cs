@@ -3,11 +3,11 @@ namespace Unifesspa.UniPlus.Autorizacao.Infrastructure.Persistence.Configuration
 
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
-using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 using Unifesspa.UniPlus.Autorizacao.Domain.Entities;
 using Unifesspa.UniPlus.Autorizacao.Domain.Enums;
 using Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects;
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence.CodigosDeContrato;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Protecao;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
 
@@ -16,14 +16,6 @@ internal sealed class ConcessaoConfiguration : IEntityTypeConfiguration<Concessa
 {
     private const int IdentidadeMaxLength = 255;
     private const int TipoMaxLength = 20;
-
-    private static readonly ValueConverter<TipoDeEscopo, string> EscopoConverter = new(
-        tipo => tipo.ToCodigo(),
-        codigo => TipoDeEscopoCodigo.FromCodigo(codigo));
-
-    private static readonly ValueConverter<TipoDeOrigem, string> OrigemConverter = new(
-        tipo => tipo.ToCodigo(),
-        codigo => TipoDeOrigemCodigo.FromCodigo(codigo));
 
     public void Configure(EntityTypeBuilder<Concessao> builder)
     {
@@ -53,7 +45,7 @@ internal sealed class ConcessaoConfiguration : IEntityTypeConfiguration<Concessa
                 + " OR (revogada_em IS NOT NULL AND revogada_por_emissor IS NULL AND revogada_por_conta_id IS NULL AND motivo_revogacao IS NOT NULL AND revogada_pela_revisao_id IS NOT NULL)");
             tabela.HasCheckConstraint(
                 "ck_concessoes_escopo_unidade",
-                "(escopo_tipo = 'UNIDADE') = (unidade_id IS NOT NULL)");
+                $"(escopo_tipo = {SqlDosCodigosDeContrato.Literal(TipoDeEscopo.Unidade)}) = (unidade_id IS NOT NULL)");
             tabela.HasCheckConstraint(
                 "ck_concessoes_validade_posterior",
                 "valida_ate IS NULL OR valida_ate > concedida_em");
@@ -72,8 +64,8 @@ internal sealed class ConcessaoConfiguration : IEntityTypeConfiguration<Concessa
         builder.Property(c => c.RevogadaPorEmissor).HasMaxLength(IdentidadeMaxLength);
         builder.Property(c => c.RevogadaPorContaId).HasMaxLength(IdentidadeMaxLength);
         builder.Property(c => c.MotivoRevogacao).HasMaxLength(MotivoInformado.MaximoDeCaracteres);
-        builder.Property(c => c.EscopoTipo).HasConversion(EscopoConverter).HasMaxLength(TipoMaxLength).IsRequired();
-        builder.Property(c => c.OrigemTipo).HasConversion(OrigemConverter).HasMaxLength(TipoMaxLength).IsRequired();
+        builder.Property(c => c.EscopoTipo).HasMaxLength(TipoMaxLength).IsRequired();
+        builder.Property(c => c.OrigemTipo).HasMaxLength(TipoMaxLength).IsRequired();
         // A unidade é de outro módulo (ADR-0087): sem chave estrangeira entre schemas.
         builder.Property(c => c.UnidadeId);
         builder.Property(c => c.OrigemId).IsRequired();

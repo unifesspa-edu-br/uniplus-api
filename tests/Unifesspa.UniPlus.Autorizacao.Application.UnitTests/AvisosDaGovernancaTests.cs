@@ -1,5 +1,7 @@
 namespace Unifesspa.UniPlus.Autorizacao.Application.UnitTests;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
+
 using AwesomeAssertions;
 
 using Microsoft.Extensions.Logging.Abstractions;
@@ -88,7 +90,7 @@ public sealed class AvisosDaGovernancaTests
 
         foreach (Action uso in usos)
         {
-            uso.Should().Throw<ArgumentOutOfRangeException>();
+            uso.Should().Throw<ArgumentException>();
         }
     }
 
@@ -141,8 +143,8 @@ public sealed class AvisosDaGovernancaTests
     {
         foreach (CategoriaDaRemocao categoria in Enum.GetValues<CategoriaDaRemocao>())
         {
-            CategoriaDaRemocaoCodigo.FromCodigo(categoria.ToCodigo()).Should().Be(categoria);
-            CategoriaDaRemocaoCodigo.TentarLer(categoria.ToCodigo()).Should().Be(categoria);
+            CatalogoDe<CategoriaDaRemocao>.Obter(categoria.Codigo()).Should().Be(categoria);
+            CatalogoDe<CategoriaDaRemocao>.TentarObter(categoria.Codigo(), out _).Should().BeTrue();
         }
     }
 
@@ -151,7 +153,7 @@ public sealed class AvisosDaGovernancaTests
     {
         foreach (EtapaDaVersao etapa in Enum.GetValues<EtapaDaVersao>())
         {
-            EtapaDaVersaoCodigo.FromCodigo(etapa.ToCodigo()).Should().Be(etapa);
+            CatalogoDe<EtapaDaVersao>.Obter(etapa.Codigo()).Should().Be(etapa);
         }
     }
 
@@ -160,7 +162,7 @@ public sealed class AvisosDaGovernancaTests
     {
         foreach (FormaDoCancelamento forma in Enum.GetValues<FormaDoCancelamento>())
         {
-            FormaDoCancelamentoCodigo.FromCodigo(forma.ToCodigo()).Should().Be(forma);
+            CatalogoDe<FormaDoCancelamento>.Obter(forma.Codigo()).Should().Be(forma);
         }
     }
 
@@ -169,25 +171,25 @@ public sealed class AvisosDaGovernancaTests
     {
         foreach (OrigemDaVersao origem in Enum.GetValues<OrigemDaVersao>())
         {
-            OrigemDaVersaoCodigo.FromCodigo(origem.ToCodigo()).Should().Be(origem);
+            CatalogoDe<OrigemDaVersao>.Obter(origem.Codigo()).Should().Be(origem);
         }
     }
 
     [Fact(DisplayName = "O código desconhecido das enumerações da versão é recusado")]
     public void Codigo_Desconhecido_Recusa()
     {
-        CategoriaDaRemocaoCodigo.TentarLer("inventada").Should().BeNull();
+        CatalogoDe<CategoriaDaRemocao>.TentarObter("inventada", out _).Should().BeFalse();
         Action[] recusas =
         [
-            () => CategoriaDaRemocaoCodigo.FromCodigo("x"),
-            () => EtapaDaVersaoCodigo.FromCodigo("x"),
-            () => FormaDoCancelamentoCodigo.FromCodigo("x"),
-            () => OrigemDaVersaoCodigo.FromCodigo("x"),
+            () => CatalogoDe<CategoriaDaRemocao>.Obter("x"),
+            () => CatalogoDe<EtapaDaVersao>.Obter("x"),
+            () => CatalogoDe<FormaDoCancelamento>.Obter("x"),
+            () => CatalogoDe<OrigemDaVersao>.Obter("x"),
         ];
 
         foreach (Action recusa in recusas)
         {
-            recusa.Should().Throw<ArgumentOutOfRangeException>();
+            recusa.Should().Throw<ArgumentException>();
         }
     }
 
@@ -196,10 +198,10 @@ public sealed class AvisosDaGovernancaTests
     {
         Action[] recusas =
         [
-            () => ((CategoriaDaRemocao)99).ToCodigo(),
-            () => ((EtapaDaVersao)99).ToCodigo(),
-            () => ((FormaDoCancelamento)99).ToCodigo(),
-            () => ((OrigemDaVersao)99).ToCodigo(),
+            () => ((CategoriaDaRemocao)99).Codigo(),
+            () => ((EtapaDaVersao)99).Codigo(),
+            () => ((FormaDoCancelamento)99).Codigo(),
+            () => ((OrigemDaVersao)99).Codigo(),
         ];
 
         foreach (Action recusa in recusas)

@@ -1,5 +1,7 @@
 namespace Unifesspa.UniPlus.Autorizacao.Domain.UnitTests;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
+
 using AwesomeAssertions;
 
 using Unifesspa.UniPlus.Autorizacao.Domain.Entities;
@@ -124,7 +126,7 @@ public sealed class ProvidenciaSituacaoTests
     {
         Enum.GetValues<EstadoDaProvidencia>().Should().OnlyContain(e => EstadoDaProvidenciaCodigo.FromCodigo(e.ToCodigo()) == e);
         Enum.GetValues<TipoDaProvidencia>().Should().OnlyContain(t => TipoDaProvidenciaCodigo.FromCodigo(t.ToCodigo()) == t);
-        (CausaDoEncerramento.Revogada.ToCodigo(), CausaDoEncerramento.Vencida.ToCodigo()).Should().Be(("REVOGADA", "VENCIDA"));
+        (CausaDoEncerramento.Revogada.Codigo(), CausaDoEncerramento.Vencida.Codigo()).Should().Be(("REVOGADA", "VENCIDA"));
         SituacaoDaProvidenciaCodigo.DoCodigo("todas").Should().BeNull();
         FluentActions.Invoking(() => TipoDaProvidenciaCodigo.FromCodigo("SUSPENSAO")).Should().Throw<ArgumentOutOfRangeException>();
         FluentActions.Invoking(() => EstadoDaProvidenciaCodigo.FromCodigo("PREJUDICADA")).Should().Throw<ArgumentOutOfRangeException>();
