@@ -110,7 +110,7 @@ public sealed class PublicarProcessoSeletivoRecusasEndpointTests
     }
 
     /// <summary>
-    /// A regra é universal (TipoProcessoUniversal) e sem vigenciaFim — sem esta limpeza, ela continuaria
+    /// A regra vale para todos os tipos de processo e sem vigenciaFim — sem esta limpeza, ela continuaria
     /// reprovando todo processo SiSU publicado depois dela neste mesmo container Postgres, compartilhado
     /// por toda a classe via CascadingFixture (afeta até os testes que esperam 204, como
     /// Publicar_FluxoCompleto_DispatchaCascadingMessages).

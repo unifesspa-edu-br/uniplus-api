@@ -38,7 +38,7 @@ internal static class ErrosDaObrigatoriedadeLegal
     private static IEnumerable<KeyValuePair<string, DomainErrorMapping>> DoTipoDeProcessoDaCategoriaEDaVigencia() =>
     [
         new("ObrigatoriedadeLegal.TipoProcessoCodigoObrigatorio", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.obrigatoriedade_legal.tipo_processo_codigo_obrigatorio", "TipoProcessoCodigo obrigatório")),
-        new("ObrigatoriedadeLegal.TipoProcessoCodigoInvalido", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.obrigatoriedade_legal.tipo_processo_codigo_invalido", "TipoProcessoCodigo inválido")),
+        new("ObrigatoriedadeLegal.TipoProcessoCodigoInvalido", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.obrigatoriedade_legal.tipo_processo_codigo_invalido", "Código do tipo de processo fora do formato")),
         new("ObrigatoriedadeLegal.CategoriaInvalida", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.obrigatoriedade_legal.categoria_invalida", "Categoria inválida")),
         new("ObrigatoriedadeLegal.VigenciaInicioObrigatorio", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.obrigatoriedade_legal.vigencia_inicio_obrigatorio", "VigenciaInicio obrigatório")),
         new("ObrigatoriedadeLegal.VigenciaInvalida", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.obrigatoriedade_legal.vigencia_invalida", "Vigência inválida")),

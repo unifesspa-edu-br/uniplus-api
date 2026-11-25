@@ -1,10 +1,12 @@
 namespace Unifesspa.UniPlus.Selecao.IntegrationTests.ObrigatoriedadesLegais;
 
+using Unifesspa.UniPlus.Kernel.Domain;
+
 internal static class CorposDeObrigatoriedadeLegal
 {
     internal static object RegraUniversal(string regraCodigo, object predicado) => new
     {
-        tipoProcessoCodigo = "*",
+        tipoProcessoCodigo = TodosOsTiposDeProcesso.Codigo,
         categoria = "ETAPA",
         regraCodigo,
         predicado,
@@ -17,19 +19,19 @@ internal static class CorposDeObrigatoriedadeLegal
     };
 
     internal static object RegraSemChave(string regraCodigo, object predicado) =>
-        RegraMinima(regraCodigo, predicado, "*", "x", "Lei", "2026-01-01");
+        RegraMinima(regraCodigo, predicado, TodosOsTiposDeProcesso.Codigo, "x", "Lei", "2026-01-01");
 
     internal static object RegraComTipoInvalido(string regraCodigo, object predicado) =>
         RegraMinima(regraCodigo, predicado, "SISU_ANTIGO", "Tipo inválido", "Lei", "2026-01-01");
 
     internal static object RegraIdempotente(string regraCodigo, object predicado) =>
-        RegraMinima(regraCodigo, predicado, "*", "Regra idempotente", "Lei", "2026-01-01");
+        RegraMinima(regraCodigo, predicado, TodosOsTiposDeProcesso.Codigo, "Regra idempotente", "Lei", "2026-01-01");
 
     internal static object RegraOriginal(string regraCodigo, object predicado) =>
-        RegraMinima(regraCodigo, predicado, "*", "Regra original", "Lei", "2026-01-01");
+        RegraMinima(regraCodigo, predicado, TodosOsTiposDeProcesso.Codigo, "Regra original", "Lei", "2026-01-01");
 
     internal static object RegraDuplicada(string regraCodigo, object predicado) =>
-        RegraMinima(regraCodigo, predicado, "*", "Regra duplicada com outro conteúdo", "Lei 14.723/2023", "2026-02-01");
+        RegraMinima(regraCodigo, predicado, TodosOsTiposDeProcesso.Codigo, "Regra duplicada com outro conteúdo", "Lei 14.723/2023", "2026-02-01");
 
     internal static object RegraAtualizada(Guid id, string regraCodigo, object predicado) =>
         Atualizacao(id, regraCodigo, predicado, "Regra atualizada", "Lei 14.723/2023 art.2º — nova");
@@ -67,7 +69,7 @@ internal static class CorposDeObrigatoriedadeLegal
     private static object Atualizacao(Guid id, string regraCodigo, object predicado, string descricaoHumana, string baseLegal) => new
     {
         id,
-        tipoProcessoCodigo = "*",
+        tipoProcessoCodigo = TodosOsTiposDeProcesso.Codigo,
         categoria = "OUTROS",
         regraCodigo,
         predicado,

@@ -1,5 +1,7 @@
 namespace Unifesspa.UniPlus.Selecao.Application.UnitTests.Queries;
 
+using Unifesspa.UniPlus.Kernel.Domain;
+
 using AwesomeAssertions;
 
 using NSubstitute;
@@ -23,7 +25,7 @@ public sealed class ObterObrigatoriedadesAplicaveisQueryHandlerTests
         IProcessoSeletivoRepository processoRepository = RepositorioDoProcesso(processo);
         IObrigatoriedadeLegalRepository regraRepository = Substitute.For<IObrigatoriedadeLegalRepository>();
         regraRepository.ObterVigentesParaTipoProcessoAsync("INDIGENA_E_QUILOMBOLA", dataReferencia, Arg.Any<CancellationToken>())
-            .Returns([NovaRegra("*", "UNIVERSAL"), NovaRegra("INDIGENA_E_QUILOMBOLA", "PSIQ")]);
+            .Returns([NovaRegra(TodosOsTiposDeProcesso.Codigo, "UNIVERSAL"), NovaRegra("INDIGENA_E_QUILOMBOLA", "PSIQ")]);
 
         IReadOnlyList<ObrigatoriedadeLegalDto> resultado = await Consultar(processo.Id, dataReferencia, processoRepository, regraRepository);
 

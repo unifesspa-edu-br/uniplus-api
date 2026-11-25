@@ -4,6 +4,7 @@ using System.Text.Json;
 
 using AwesomeAssertions;
 
+using Unifesspa.UniPlus.Kernel.Domain;
 using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.ValueObjects;
@@ -35,7 +36,7 @@ internal static class CenarioDeConformidadeLegal
 
     internal static ObrigatoriedadeLegal NovaRegra(string regraCodigo, PredicadoObrigatoriedade predicado) =>
         ObrigatoriedadeLegal.Criar(
-            ObrigatoriedadeLegal.TipoProcessoUniversal,
+            TodosOsTiposDeProcesso.Codigo,
             CategoriaObrigatoriedade.Outros,
             regraCodigo,
             predicado,

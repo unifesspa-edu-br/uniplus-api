@@ -19,7 +19,7 @@
   },
   "payload": {
     "create": {
-      "tipoProcessoCodigo": "*",
+      "tipoProcessoCodigo": "TODOS_OS_TIPOS",
       "categoria": "documento",
       "regraCodigo": "SMOKE_CRUD_DOC_COMPROVANTE_RESIDENCIA",
       "predicado": {

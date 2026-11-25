@@ -22380,7 +22380,7 @@
       "codigo": "uniplus.selecao.obrigatoriedade_legal.regra_codigo_duplicada",
       "requisitos": [],
       "oQueAconteceu": [
-        "O código de regra informado já pertence a outra obrigatoriedade legal **ativa**. O código identifica\na regra, e duas regras vigentes com o mesmo código tornariam ambígua a referência a ela. A mensagem\nda resposta traz o código informado. Nada é gravado.",
+        "O código de regra informado já pertence a outra obrigatoriedade legal **ativa**. O código identifica\na regra, e duas regras vigentes com o mesmo código tornariam ambígua a referência a ela. A mensagem\nda resposta não repete o código informado. Nada é gravado.",
         "A comparação é exata, com diferença entre maiúsculas e minúsculas, depois de aparar os espaços das\npontas. Só regra ativa conta: o código de uma regra desativada fica livre para uso. Na atualização, a\nprópria regra é desconsiderada, de modo que ela pode manter o código que já tem.",
         "A conferência vem depois da leitura do corpo, da conferência dos campos (entre eles, o próprio código\nde regra:\n[`regra_codigo_obrigatorio`](/erros/uniplus.selecao.obrigatoriedade_legal.regra_codigo_obrigatorio) e\n[`regra_codigo_invalido`](/erros/uniplus.selecao.obrigatoriedade_legal.regra_codigo_invalido)), de, na\natualização, a regra ser encontrada\n([`nao_encontrada`](/erros/uniplus.selecao.obrigatoriedade_legal.nao_encontrada)), e da do tipo de\nprocesso\n([`tipo_processo_nao_encontrado_ou_inativo`](/erros/uniplus.selecao.obrigatoriedade_legal.tipo_processo_nao_encontrado_ou_inativo))\ne das referências do predicado, e antes da gravação.",
         "Duas escritas simultâneas com o mesmo código podem passar juntas pela conferência. Nesse caso é o\nbanco de dados que recusa a segunda, e a resposta é esta mesma, com status 409: a corrida não resulta\nem erro interno do servidor. Se o conteúdo das duas for idêntico,\na recusa pode vir como\n[`hash_colisao`](/erros/uniplus.selecao.obrigatoriedade_legal.hash_colisao)."
@@ -22483,12 +22483,12 @@
       "codigo": "uniplus.selecao.obrigatoriedade_legal.tipo_processo_codigo_invalido",
       "requisitos": [],
       "oQueAconteceu": [
-        "O campo `tipoProcessoCodigo` tem mais de 64 caracteres. A contagem é feita depois de aparar os espaços\ndas pontas, que a regra descarta ao gravar. O tamanho é a única conferência de forma deste campo: se o\ncódigo existe como tipo de processo ativo é a pergunta seguinte, e tem erro próprio\n([`tipo_processo_nao_encontrado_ou_inativo`](/erros/uniplus.selecao.obrigatoriedade_legal.tipo_processo_nao_encontrado_ou_inativo)).\nA mensagem da resposta diz o limite e não repete o valor enviado. Nada é gravado.",
+        "O campo `tipoProcessoCodigo` está fora do formato: até 80 caracteres, começando por letra maiúscula, com letras maiúsculas sem acento, algarismos e sublinhados isolados entre palavras. O código é conferido como recebido, inclusive espaços. Se o\ncódigo existe como tipo de processo ativo é a pergunta seguinte, e tem erro próprio\n([`tipo_processo_nao_encontrado_ou_inativo`](/erros/uniplus.selecao.obrigatoriedade_legal.tipo_processo_nao_encontrado_ou_inativo)).\nA mensagem da resposta diz o limite e não repete o valor enviado. Nada é gravado.",
         "A resposta lista todas as violações de campo da mesma requisição em `errors[]`, cada uma com o campo\nem camelCase, o código e a mensagem; o `code` principal da resposta é o da primeira violação, na ordem em que os\ncampos são conferidos (tipo de processo, categoria, código da regra, predicado, descrição, base legal,\nato normativo, portaria interna e vigência).",
         "A conferência vem depois da permissão para manter obrigatoriedades legais e da leitura do corpo, e\nantes de qualquer consulta: na atualização, antes de a regra ser buscada\n([`nao_encontrada`](/erros/uniplus.selecao.obrigatoriedade_legal.nao_encontrada)); nas duas operações,\nantes da conferência de que o tipo existe e está ativo."
       ],
       "comoResolver": [
-        "Use o código de um tipo de processo ativo do módulo Configuração, ou `*` para uma regra universal, e\nrepita o cadastro ou a atualização. Na atualização, a regra é substituída por inteiro: reenvie também\nos campos que não mudam."
+        "Use o código de um tipo de processo ativo do módulo Configuração, ou `TODOS_OS_TIPOS` para uma regra universal, e\nrepita o cadastro ou a atualização. Na atualização, a regra é substituída por inteiro: reenvie também\nos campos que não mudam."
       ],
       "ondeAparece": [
         "Cadastro de uma obrigatoriedade legal",
@@ -22502,12 +22502,12 @@
         "UNI-REQ-0098"
       ],
       "oQueAconteceu": [
-        "O campo `tipoProcessoCodigo` não veio no corpo da requisição, veio nulo, vazio ou só com espaços. A\nregra legal sempre diz a que tipo de processo seletivo se aplica: ou o código de um tipo cadastrado e\nativo, ou `*`, que a torna universal. Omitir o campo não equivale a `*`. Nada é gravado.",
+        "O campo `tipoProcessoCodigo` não veio no corpo da requisição, veio nulo, vazio ou só com espaços. A\nregra legal sempre diz a que tipo de processo seletivo se aplica: ou o código de um tipo cadastrado e\nativo, ou `TODOS_OS_TIPOS`, que a torna universal. Omitir o campo não equivale a `TODOS_OS_TIPOS`. Nada é gravado.",
         "A recusa é de domínio, com status 422, e não de leitura do corpo: campo omitido e campo vazio têm o\nmesmo resultado. A resposta lista todas as violações de campo da mesma requisição em `errors[]`, cada\numa com o campo em camelCase, o código e a mensagem; o `code` principal da resposta é o da primeira violação, na\nordem em que os campos são conferidos (tipo de processo, categoria, código da regra, predicado,\ndescrição, base legal, ato normativo, portaria interna e vigência).",
         "A conferência vem depois da permissão para manter obrigatoriedades legais e da leitura do corpo, e\nantes de qualquer consulta: na atualização, antes de a regra ser buscada\n([`nao_encontrada`](/erros/uniplus.selecao.obrigatoriedade_legal.nao_encontrada)); nas duas operações,\nantes da conferência de que o tipo existe e está ativo\n([`tipo_processo_nao_encontrado_ou_inativo`](/erros/uniplus.selecao.obrigatoriedade_legal.tipo_processo_nao_encontrado_ou_inativo))."
       ],
       "comoResolver": [
-        "Informe o código de um tipo de processo ativo do módulo Configuração, com até 64 caracteres\n([`tipo_processo_codigo_invalido`](/erros/uniplus.selecao.obrigatoriedade_legal.tipo_processo_codigo_invalido)),\nou `*` para uma regra que vale para todos os tipos. Na atualização, a regra é substituída por inteiro:\nreenvie também os campos que não mudam, porque o que não for enviado é tratado como ausente."
+        "Informe o código de um tipo de processo ativo do módulo Configuração, com até 80 caracteres\n([`tipo_processo_codigo_invalido`](/erros/uniplus.selecao.obrigatoriedade_legal.tipo_processo_codigo_invalido)),\nou `TODOS_OS_TIPOS` para uma regra que vale para todos os tipos. Na atualização, a regra é substituída por inteiro:\nreenvie também os campos que não mudam, porque o que não for enviado é tratado como ausente."
       ],
       "ondeAparece": [
         "Cadastro de uma obrigatoriedade legal",
@@ -22521,14 +22521,14 @@
         "UNI-REQ-0098"
       ],
       "oQueAconteceu": [
-        "A regra legal informa o código do tipo de processo seletivo a que se aplica, e esse código não\ncorresponde a nenhum tipo cadastrado e ativo no módulo Configuração. A mensagem da resposta traz o\ncódigo informado. Nada é gravado.",
-        "O único código aceito sem cadastro é `*`, que torna a regra universal, aplicável a qualquer tipo de\nprocesso. Qualquer outro valor precisa ser o código de um tipo ativo: a comparação é exata, com\ndiferença entre maiúsculas e minúsculas, e os espaços nas pontas são ignorados.",
+        "A regra legal informa o código do tipo de processo seletivo a que se aplica, e esse código não\ncorresponde a nenhum tipo cadastrado e ativo no módulo Configuração. A mensagem da resposta não repete o código informado. Nada é gravado.",
+        "O único código aceito sem cadastro é `TODOS_OS_TIPOS`, que torna a regra universal, aplicável a qualquer tipo de\nprocesso. Qualquer outro valor precisa ser o código de um tipo ativo: a comparação é exata, com\ndiferença entre maiúsculas e minúsculas, e espaços nas pontas são recusados.",
         "Tipo desativado também é recusado. Na atualização, a conferência vale mesmo quando o tipo da regra\nnão mudou: uma regra que cita um tipo desativado depois do cadastro não pode ser alterada enquanto\no tipo continuar inativo.",
         "A conferência do tipo vem depois da permissão para manter obrigatoriedades legais, da leitura do\ncorpo da requisição, da conferência dos campos pelas regras do domínio (cujas recusas têm status 422\ne código próprio por campo, como\n[`tipo_processo_codigo_obrigatorio`](/erros/uniplus.selecao.obrigatoriedade_legal.tipo_processo_codigo_obrigatorio)\ne\n[`tipo_processo_codigo_invalido`](/erros/uniplus.selecao.obrigatoriedade_legal.tipo_processo_codigo_invalido))\ne, na atualização, de a regra ser encontrada\n([`nao_encontrada`](/erros/uniplus.selecao.obrigatoriedade_legal.nao_encontrada)). Vem antes da\nconferência dos códigos que o predicado cita (por exemplo,\n[`tipo_etapa_nao_encontrado_ou_inativo`](/erros/uniplus.selecao.obrigatoriedade_legal.tipo_etapa_nao_encontrado_ou_inativo))\ne da de código de regra já em uso\n([`regra_codigo_duplicada`](/erros/uniplus.selecao.obrigatoriedade_legal.regra_codigo_duplicada)).\nQuando mais de um ponto está errado, responde primeiro o que vem antes nessa ordem.",
         "Há um código parecido no cadastro de processo seletivo,\n[`processo_seletivo.tipo_processo_nao_encontrado_ou_inativo`](/erros/uniplus.selecao.processo_seletivo.tipo_processo_nao_encontrado_ou_inativo),\ncom a mesma causa em outra operação; o campo `code` do corpo de erro diz qual dos dois foi emitido."
       ],
       "comoResolver": [
-        "Confira o código do tipo na listagem de tipos de processo do módulo Configuração e use o de um tipo\nativo. Para uma regra que vale para todos os tipos, informe `*`. Se o tipo desejado foi desativado,\nquem mantém o cadastro de tipos de processo pode reativá-lo, e o código continua o mesmo."
+        "Confira o código do tipo na listagem de tipos de processo do módulo Configuração e use o de um tipo\nativo. Para uma regra que vale para todos os tipos, informe `TODOS_OS_TIPOS`. Se o tipo desejado foi desativado,\nquem mantém o cadastro de tipos de processo pode reativá-lo, e o código continua o mesmo."
       ],
       "ondeAparece": [
         "Cadastro de uma obrigatoriedade legal",

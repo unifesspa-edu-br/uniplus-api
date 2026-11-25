@@ -4,7 +4,6 @@ using System.Collections.Generic;
 
 using Unifesspa.UniPlus.Kernel.Domain.Entities;
 using Unifesspa.UniPlus.Kernel.Domain.Interfaces;
-using Unifesspa.UniPlus.Kernel.Extensions;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Services;
@@ -23,13 +22,6 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 /// </remarks>
 public sealed class ObrigatoriedadeLegal : SoftDeletableEntity, IAuditableEntity
 {
-    /// <summary>
-    /// Valor sentinela aceito em <see cref="TipoProcessoCodigo"/> para regras
-    /// universais (aplicam-se a qualquer tipo de processo). Alinha com a chave
-    /// de filtro pública <c>?tipoProcesso=*</c>.
-    /// </summary>
-    public const string TipoProcessoUniversal = "*";
-
     private const string ModalidadesMinimasVazia = "ObrigatoriedadeLegal.ModalidadesMinimasVazia";
     private const string CodigoEmBranco = "ObrigatoriedadeLegal.PredicadoComCodigoEmBranco";
     private const string AtendimentoDisponivelVazio = "ObrigatoriedadeLegal.AtendimentoDisponivelVazio";
@@ -198,7 +190,7 @@ public sealed class ObrigatoriedadeLegal : SoftDeletableEntity, IAuditableEntity
         DateOnly? vigenciaInicio,
         DateOnly? vigenciaFim)
     {
-        TipoProcessoCodigo = TextoNormalizavel.AparadoEmNfc(ValidacaoDaObrigatoriedadeLegal.Aparar(tipoProcessoCodigo));
+        TipoProcessoCodigo = tipoProcessoCodigo!;
         Categoria = categoria!.Value;
         RegraCodigo = regraCodigo!;
         Predicado = predicado!;

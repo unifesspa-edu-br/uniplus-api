@@ -7,6 +7,8 @@ using AwesomeAssertions;
 
 using Outbox.Cascading;
 
+using Unifesspa.UniPlus.Kernel.Domain;
+
 /// <summary>
 /// A validação dos campos da regra legal é do domínio: cada violação sai com o código de domínio e o campo em
 /// <c>errors[]</c>, todas juntas, e um campo ausente é violação 422, não erro de leitura do corpo.
@@ -35,7 +37,7 @@ public sealed class ObrigatoriedadeLegalCamposEndpointTests : ObrigatoriedadeLeg
     public static TheoryData<string, object?, string, string> CamposDeTipoEVigencia() => new()
     {
         { "tipoProcessoCodigo", null, "tipo_processo_codigo_obrigatorio", "tipoProcessoCodigo" },
-        { "tipoProcessoCodigo", new string('a', 65), "tipo_processo_codigo_invalido", "tipoProcessoCodigo" },
+        { "tipoProcessoCodigo", new string('A', 81), "tipo_processo_codigo_invalido", "tipoProcessoCodigo" },
         { "categoria", "nenhuma", "categoria_invalida", "categoria" },
         { "atoNormativoUrl", new string('a', 1001), "ato_normativo_url_invalido", "atoNormativoUrl" },
         { "portariaInternaCodigo", new string('a', 129), "portaria_interna_codigo_invalido", "portariaInternaCodigo" },
@@ -135,7 +137,7 @@ public sealed class ObrigatoriedadeLegalCamposEndpointTests : ObrigatoriedadeLeg
 
     private static Dictionary<string, object?> CamposDoTexto() => new(StringComparer.Ordinal)
     {
-        ["tipoProcessoCodigo"] = "*",
+        ["tipoProcessoCodigo"] = TodosOsTiposDeProcesso.Codigo,
         ["categoria"] = "OUTROS",
         ["regraCodigo"] = UniqueRegraCodigo(),
         ["predicado"] = PredicadoConcorrenciaDupla,

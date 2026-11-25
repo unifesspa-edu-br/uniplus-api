@@ -21,9 +21,9 @@ using static Unifesspa.UniPlus.Selecao.IntegrationTests.ProcessosSeletivos.Norma
 /// </summary>
 public sealed class ResumoDoConteudoCongeladoRicoTests
 {
-    private const string ResumoDoExemploRico = "4d71fd80463fe4f6c4fda338334fed46a52d2638ee703891025d7c1205bcaf81";
-    private const string ResumoDoExemploDeReferencia = "b9c7dca6287e788917f13ab5ba345defc2e807dc1d6f3fcebb2338eaf715524a";
-    private const string ResumoDoExemploComCascata = "bd672156eeccfaaf36087188958b722de062933dea3a472996d35149d571bc8e";
+    private const string ResumoDoExemploRico = "b7ba24ed8ea1b9c844ce596a190d137e262a133804ecc9afefa6c23c350183f6";
+    private const string ResumoDoExemploDeReferencia = "a9a99d3b4e89acf5d9cdd4743821b7ea59059bc8d51963c98cd3d1bea5136869";
+    private const string ResumoDoExemploComCascata = "cfe093312bb2fa07375c9a03f04460e9efb3707d258a410826a3008790e36e49";
 
     [Fact(DisplayName = "Exemplo rico, com dois termos exigidos, tem o resumo do conteúdo congelado igual ao literal")]
     public void ExemploRico_ResumoDoConteudoCongelado_IgualAoLiteral()

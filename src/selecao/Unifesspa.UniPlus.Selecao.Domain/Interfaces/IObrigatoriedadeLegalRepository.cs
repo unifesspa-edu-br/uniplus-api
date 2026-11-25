@@ -13,8 +13,8 @@ using Unifesspa.UniPlus.Selecao.Domain.Enums;
 /// <remarks>
 /// Listagem paginada por chave (ADR-0026) com filtros admin
 /// (<c>tipoProcessoCodigo</c>, <c>categoria</c>, <c>vigentes</c>). Consultas
-/// para o motor de conformidade (<c>ObterVigentesParaTipoProcessoAsync</c>)
-/// carregam regras universais (<c>"*"</c>) + específicas do tipo.
+/// para a conferência (<c>ObterVigentesParaTipoProcessoAsync</c>)
+/// carregam regras para todos os tipos (<c>TODOS_OS_TIPOS</c>) + específicas do tipo.
 /// </remarks>
 public interface IObrigatoriedadeLegalRepository : IRepository<ObrigatoriedadeLegal>
 {
@@ -36,8 +36,8 @@ public interface IObrigatoriedadeLegalRepository : IRepository<ObrigatoriedadeLe
 
     /// <summary>
     /// Lê o conjunto de regras vigentes aplicáveis ao tipo de processo
-    /// (filtra <c>TipoProcessoCodigo = '*' OR tipo</c>, vigência ativa,
-    /// não soft-deleted). Caminho do motor de conformidade.
+    /// (filtra <c>TipoProcessoCodigo = TODOS_OS_TIPOS OR tipo</c>, vigência ativa,
+    /// não soft-deleted). Caminho da conferência.
     /// </summary>
     Task<IReadOnlyList<ObrigatoriedadeLegal>> ObterVigentesParaTipoProcessoAsync(
         string tipoProcessoCodigo,

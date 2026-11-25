@@ -3714,6 +3714,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.ToTable("cursos", "configuracao", t =>
                         {
+                            t.HasCheckConstraint("ck_cursos_codigo_formato", "codigo ~ '^[A-Z][A-Z0-9]*(_[A-Z0-9]+)*$'");
+
                             t.HasCheckConstraint("ck_cursos_grupo_area_enem", "grupo_area_enem IS NULL OR grupo_area_enem IN ('TECNOLOGICA', 'HUMANISTICA_I', 'HUMANISTICA_II', 'SAUDE_E_BIOLOGICAS')");
                         });
                 });
@@ -5611,6 +5613,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     b.ToTable("opcoes_dos_dados", "configuracao", t =>
                         {
                             t.HasComment("Opções declaradas para os dados do candidato.");
+
+                            t.HasCheckConstraint("ck_opcoes_dos_dados_codigo_formato", "codigo ~ '^[A-Z][A-Z0-9]*(_[A-Z0-9]+)*$'");
                         });
 
                     b.HasData(
@@ -6984,8 +6988,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasComment("Nome do modelo de formulário.");
 
                     b.Property<string>("TipoProcessoCodigo")
-                        .HasMaxLength(64)
-                        .HasColumnType("character varying(64)")
+                        .HasMaxLength(80)
+                        .HasColumnType("character varying(80)")
                         .HasColumnName("tipo_processo_codigo")
                         .HasComment("Código do tipo de processo ao qual o modelo se aplica.");
 
@@ -7021,7 +7025,11 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         {
                             t.HasComment("Modelos de formulário e seu conteúdo para processos seletivos.");
 
+                            t.HasCheckConstraint("ck_modelos_formulario_codigo_formato", "codigo ~ '^[A-Z][A-Z0-9]*(_[A-Z0-9]+)*$'");
+
                             t.HasCheckConstraint("ck_modelos_formulario_finalidade", "finalidade IN ('INSCRICAO', 'ISENCAO_TAXA', 'HABILITACAO')");
+
+                            t.HasCheckConstraint("ck_modelos_formulario_tipo_processo_codigo_formato", "tipo_processo_codigo IS NULL OR tipo_processo_codigo ~ '^[A-Z][A-Z0-9]*(_[A-Z0-9]+)*$'");
                         });
                 });
 
@@ -7838,8 +7846,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.Property<string>("Codigo")
                         .IsRequired()
-                        .HasMaxLength(64)
-                        .HasColumnType("character varying(64)")
+                        .HasMaxLength(80)
+                        .HasColumnType("character varying(80)")
                         .HasColumnName("codigo")
                         .HasComment("Chave natural do tipo, em NFC e imutável; único entre todos os tipos, inclusive os desativados.");
 
@@ -7913,6 +7921,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     b.ToTable("tipos_conceito", "configuracao", t =>
                         {
                             t.HasComment("Tipos de conceito com que uma etapa avalia: numéricos, medidos numa escala, ou por opções, escolhidos entre valores ordenados.");
+
+                            t.HasCheckConstraint("ck_tipos_conceito_codigo_formato", "codigo ~ '^[A-Z][A-Z0-9]*(_[A-Z0-9]+)*$'");
 
                             t.HasCheckConstraint("ck_tipos_conceito_forma", "forma IN ('NUMERICO', 'POR_OPCOES')");
 
@@ -9275,8 +9285,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.Property<string>("Codigo")
                         .IsRequired()
-                        .HasMaxLength(64)
-                        .HasColumnType("character varying(64)")
+                        .HasMaxLength(80)
+                        .HasColumnType("character varying(80)")
                         .HasColumnName("codigo");
 
                     b.Property<DateTimeOffset>("CreatedAt")
@@ -9342,6 +9352,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         {
                             t.HasCheckConstraint("ck_tipos_etapa_carater_admitido", "admite_pontuacao OR admite_eliminacao");
 
+                            t.HasCheckConstraint("ck_tipos_etapa_codigo_formato", "codigo ~ '^[A-Z][A-Z0-9]*(_[A-Z0-9]+)*$'");
+
                             t.HasCheckConstraint("ck_tipos_etapa_correcao_independente_sem_nota_do_enem", "NOT (exige_correcao_independente AND nota_de_origem_no_enem)");
 
                             t.HasCheckConstraint("ck_tipos_etapa_nota_de_origem_no_enem_admite_pontuacao", "NOT nota_de_origem_no_enem OR admite_pontuacao");
@@ -9360,8 +9372,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.Property<string>("Codigo")
                         .IsRequired()
-                        .HasMaxLength(64)
-                        .HasColumnType("character varying(64)")
+                        .HasMaxLength(80)
+                        .HasColumnType("character varying(80)")
                         .HasColumnName("codigo");
 
                     b.Property<DateTimeOffset>("CreatedAt")
@@ -9414,7 +9426,12 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .IsUnique()
                         .HasDatabaseName("ux_tipos_processo_codigo");
 
-                    b.ToTable("tipos_processo", "configuracao");
+                    b.ToTable("tipos_processo", "configuracao", t =>
+                        {
+                            t.HasCheckConstraint("ck_tipos_processo_codigo_formato", "codigo ~ '^[A-Z][A-Z0-9]*(_[A-Z0-9]+)*$'");
+
+                            t.HasCheckConstraint("ck_tipos_processo_codigo_reservado", "codigo <> 'TODOS_OS_TIPOS'");
+                        });
                 });
 
             modelBuilder.Entity("Unifesspa.UniPlus.Discentes.Domain.Entities.SyncRun", b =>
@@ -9782,8 +9799,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.Property<string>("CodigoCurso")
                         .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("character varying(50)")
+                        .HasMaxLength(80)
+                        .HasColumnType("character varying(80)")
                         .HasColumnName("codigo_curso");
 
                     b.Property<DateTimeOffset>("CreatedAt")
@@ -9931,8 +9948,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.Property<string>("CodigoCurso")
                         .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("character varying(50)")
+                        .HasMaxLength(80)
+                        .HasColumnType("character varying(80)")
                         .HasColumnName("codigo_curso");
 
                     b.Property<Guid>("ConvocacaoId")
@@ -10619,6 +10636,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                             t.HasCheckConstraint("ck_atos_normativos_retificacao_completa", "(ato_retificado_id IS NULL AND motivo_retificacao IS NULL) OR (ato_retificado_id IS NOT NULL AND motivo_retificacao IS NOT NULL AND btrim(motivo_retificacao) <> '')");
 
+                            t.HasCheckConstraint("ck_atos_normativos_tipo_codigo_formato", "tipo_codigo ~ '^[A-Z][A-Z0-9]*(_[A-Z0-9]+)*$'");
+
                             t.HasCheckConstraint("ck_atos_normativos_versao_do_objeto_completa", "(versao_do_objeto_id IS NULL AND versao_do_objeto_hash IS NULL) OR (versao_do_objeto_id IS NOT NULL AND versao_do_objeto_hash IS NOT NULL)");
 
                             t.HasCheckConstraint("ck_atos_normativos_versao_do_objeto_hash", "versao_do_objeto_hash IS NULL OR versao_do_objeto_hash ~ '^[0-9a-f]{64}$'");
@@ -10730,7 +10749,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.ToTable("tipos_de_ato_publicado", "publicacoes", t =>
                         {
-                            t.HasCheckConstraint("ck_tipos_de_ato_publicado_codigo_formato", "codigo ~ '^[A-Z]+(_[A-Z]+)*$'");
+                            t.HasCheckConstraint("ck_tipos_de_ato_publicado_codigo_formato", "codigo ~ '^[A-Z][A-Z0-9]*(_[A-Z0-9]+)*$'");
 
                             t.HasCheckConstraint("ck_tipos_de_ato_publicado_vigencia", "vigencia_fim IS NULL OR vigencia_fim > vigencia_inicio");
                         });
@@ -10794,7 +10813,9 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                             t.HasCheckConstraint("ck_exclusividades_de_atos_entidade_id_nao_zero", "entidade_id <> '00000000-0000-0000-0000-000000000000'");
 
-                            t.HasCheckConstraint("ck_exclusividades_de_atos_entidade_tipo_formato", "entidade_tipo ~ '^[A-Z0-9]+(_[A-Z0-9]+)*$'");
+                            t.HasCheckConstraint("ck_exclusividades_de_atos_entidade_tipo_formato", "entidade_tipo ~ '^[A-Z][A-Z0-9]*(_[A-Z0-9]+)*$'");
+
+                            t.HasCheckConstraint("ck_exclusividades_de_atos_tipo_codigo_formato", "tipo_codigo ~ '^[A-Z][A-Z0-9]*(_[A-Z0-9]+)*$'");
                         });
                 });
 
@@ -10833,7 +10854,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         {
                             t.HasCheckConstraint("ck_vinculos_do_ato_com_entidade_id_nao_zero", "entidade_id <> '00000000-0000-0000-0000-000000000000'");
 
-                            t.HasCheckConstraint("ck_vinculos_do_ato_com_entidade_tipo_formato", "entidade_tipo ~ '^[A-Z0-9]+(_[A-Z0-9]+)*$'");
+                            t.HasCheckConstraint("ck_vinculos_do_ato_com_entidade_tipo_formato", "entidade_tipo ~ '^[A-Z][A-Z0-9]*(_[A-Z0-9]+)*$'");
                         });
                 });
 
@@ -13106,6 +13127,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                             t.HasCheckConstraint("ck_etapas_processo_periodo_em_ordem", "inicio IS NULL OR fim IS NULL OR inicio <= fim");
 
                             t.HasCheckConstraint("ck_etapas_processo_peso_positivo", "peso IS NULL OR peso > 0");
+
+                            t.HasCheckConstraint("ck_etapas_processo_tipo_etapa_codigo_formato", "tipo_etapa_codigo ~ '^[A-Z][A-Z0-9]*(_[A-Z0-9]+)*$'");
                         });
                 });
 
@@ -14513,8 +14536,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.Property<string>("TipoProcessoCodigo")
                         .IsRequired()
-                        .HasMaxLength(64)
-                        .HasColumnType("character varying(64)")
+                        .HasMaxLength(80)
+                        .HasColumnType("character varying(80)")
                         .HasColumnName("tipo_processo_codigo")
                         .HasComment("Código do tipo de processo ao qual a regra se aplica.");
 
@@ -14559,6 +14582,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                             t.HasCheckConstraint("ck_obrigatoriedades_legais_categoria", "categoria IN ('ETAPA', 'MODALIDADE', 'DESEMPATE', 'DOCUMENTO', 'FADA', 'ATENDIMENTO', 'OUTROS')");
 
                             t.HasCheckConstraint("ck_obrigatoriedades_legais_regra_codigo_formato", "regra_codigo ~ '^[A-Z][A-Z0-9]*(_[A-Z0-9]+)*$'");
+
+                            t.HasCheckConstraint("ck_obrigatoriedades_legais_tipo_processo_codigo_formato", "tipo_processo_codigo ~ '^[A-Z][A-Z0-9]*(_[A-Z0-9]+)*$'");
                         });
                 });
 
@@ -14904,6 +14929,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                             t.HasCheckConstraint("ck_processos_seletivos_origem_candidatos", "origem_candidatos IN ('INSCRICAO_PROPRIA', 'IMPORTACAO_EXTERNA')");
 
                             t.HasCheckConstraint("ck_processos_seletivos_situacao", "situacao IN ('RASCUNHO', 'PUBLICADO', 'ENCERRADO', 'CANCELADO')");
+
+                            t.HasCheckConstraint("ck_processos_seletivos_tipo_processo_codigo_formato", "tipo_processo_codigo ~ '^[A-Z][A-Z0-9]*(_[A-Z0-9]+)*$'");
 
                             t.HasCheckConstraint("ck_processos_seletivos_unidade_administradora_cidade_completa", "(unidade_administradora_cidade_codigo_ibge IS NULL AND unidade_administradora_cidade_nome IS NULL AND unidade_administradora_cidade_uf IS NULL) OR (unidade_administradora_cidade_codigo_ibge IS NOT NULL AND unidade_administradora_cidade_nome IS NOT NULL AND unidade_administradora_cidade_uf IS NOT NULL)");
                         });
@@ -21274,8 +21301,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                             b1.Property<string>("Codigo")
                                 .IsRequired()
-                                .HasMaxLength(64)
-                                .HasColumnType("character varying(64)")
+                                .HasMaxLength(80)
+                                .HasColumnType("character varying(80)")
                                 .HasColumnName("tipo_etapa_codigo")
                                 .HasComment("Código do tipo de etapa copiado na definição.");
 
@@ -21843,8 +21870,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                             b1.Property<string>("Codigo")
                                 .IsRequired()
-                                .HasMaxLength(64)
-                                .HasColumnType("character varying(64)")
+                                .HasMaxLength(80)
+                                .HasColumnType("character varying(80)")
                                 .HasColumnName("tipo_processo_codigo")
                                 .HasComment("Código do tipo de processo copiado do cadastro na criação.");
 

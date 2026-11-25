@@ -2,6 +2,7 @@ namespace Unifesspa.UniPlus.Selecao.Domain.UnitTests.Entities;
 
 using AwesomeAssertions;
 
+using Unifesspa.UniPlus.Kernel.Domain;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
@@ -18,7 +19,7 @@ public sealed class ObrigatoriedadeLegalValidacaoTests
     private static readonly TextoNormativo TextoValido = new("Descrição da regra.", "Lei 12.711/2012 art. 1º", null, null);
 
     private static Result Validar(
-        string? tipo = "*",
+        string? tipo = TodosOsTiposDeProcesso.Codigo,
         CategoriaObrigatoriedade? categoria = CategoriaObrigatoriedade.Etapa,
         string? regra = "ETAPA_OBRIGATORIA",
         PredicadoObrigatoriedade? predicado = null,
@@ -71,10 +72,10 @@ public sealed class ObrigatoriedadeLegalValidacaoTests
     };
 
     private static Result SemInicio() =>
-        ObrigatoriedadeLegal.ValidarCampos("*", CategoriaObrigatoriedade.Etapa, "X", Predicado, TextoValido, null, null);
+        ObrigatoriedadeLegal.ValidarCampos(TodosOsTiposDeProcesso.Codigo, CategoriaObrigatoriedade.Etapa, "X", Predicado, TextoValido, null, null);
 
     private static Result SemPredicado() =>
-        ObrigatoriedadeLegal.ValidarCampos("*", CategoriaObrigatoriedade.Etapa, "X", null, TextoValido, Inicio, null);
+        ObrigatoriedadeLegal.ValidarCampos(TodosOsTiposDeProcesso.Codigo, CategoriaObrigatoriedade.Etapa, "X", null, TextoValido, Inicio, null);
 
     private static readonly string[] CamposNaOrdem =
         ["tipoProcessoCodigo", "categoria", "regraCodigo", "predicado", "descricaoHumana", "baseLegal", "vigenciaInicio"];
@@ -100,7 +101,7 @@ public sealed class ObrigatoriedadeLegalValidacaoTests
     public void Criar_Invalido_FalhaDeValidacaoAcumulada()
     {
         Result<ObrigatoriedadeLegal> resultado = ObrigatoriedadeLegal.Criar(
-            "*", null, "", Predicado, TextoValido, Inicio, null);
+            TodosOsTiposDeProcesso.Codigo, null, "", Predicado, TextoValido, Inicio, null);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Errors.Select(e => e.Field).Should().Equal("categoria", "regraCodigo");
@@ -110,17 +111,39 @@ public sealed class ObrigatoriedadeLegalValidacaoTests
     public void Criar_Valido_NormalizaEComputaHash()
     {
         Result<ObrigatoriedadeLegal> resultado = ObrigatoriedadeLegal.Criar(
-            " * ", CategoriaObrigatoriedade.Etapa, "REGRA", Predicado,
+            TodosOsTiposDeProcesso.Codigo, CategoriaObrigatoriedade.Etapa, "REGRA", Predicado,
             new TextoNormativo("  desc  ", "  lei  ", "  ", " portaria "), Inicio, null);
 
         ObrigatoriedadeLegal regra = resultado.Value!;
-        regra.TipoProcessoCodigo.Should().Be("*");
+        regra.TipoProcessoCodigo.Should().Be(TodosOsTiposDeProcesso.Codigo);
         regra.RegraCodigo.Should().Be("REGRA");
         regra.DescricaoHumana.Should().Be("desc");
         regra.BaseLegal.Should().Be("lei");
         regra.AtoNormativoUrl.Should().BeNull();
         regra.PortariaInternaCodigo.Should().Be("portaria");
         HashCanonicalComputer.IsValidHashShape(regra.Hash).Should().BeTrue();
+    }
+
+    [Theory]
+    [InlineData("*")]
+    [InlineData(" SISU")]
+    [InlineData("SISU ")]
+    [InlineData("sisu")]
+    [InlineData("A__B")]
+    [InlineData("Á")]
+    public void ValidarCampos_TipoForaDoFormato_RecusaSemRepetirValor(string codigo)
+    {
+        Result resultado = Validar(tipo: codigo);
+
+        resultado.Error!.Code.Should().Be("ObrigatoriedadeLegal.TipoProcessoCodigoInvalido");
+        resultado.Error.Message.Should().NotContain(codigo);
+    }
+
+    [Fact]
+    public void ValidarCampos_TipoNosLimites_ConfereComprimento()
+    {
+        Validar(tipo: new string('A', 80)).IsSuccess.Should().BeTrue();
+        Validar(tipo: new string('A', 81)).Error!.Code.Should().Be("ObrigatoriedadeLegal.TipoProcessoCodigoInvalido");
     }
 
     [Theory]
@@ -150,10 +173,10 @@ public sealed class ObrigatoriedadeLegalValidacaoTests
     public void Atualizar_Invalido_NaoMutaOAgregado()
     {
         ObrigatoriedadeLegal regra = ObrigatoriedadeLegal.Criar(
-            "*", CategoriaObrigatoriedade.Etapa, "REGRA", Predicado, TextoValido, Inicio, null).Value!;
+            TodosOsTiposDeProcesso.Codigo, CategoriaObrigatoriedade.Etapa, "REGRA", Predicado, TextoValido, Inicio, null).Value!;
         string hashAntes = regra.Hash;
 
-        Result resultado = regra.Atualizar("*", CategoriaObrigatoriedade.Etapa, "", Predicado, TextoValido, Inicio, null);
+        Result resultado = regra.Atualizar(TodosOsTiposDeProcesso.Codigo, CategoriaObrigatoriedade.Etapa, "", Predicado, TextoValido, Inicio, null);
 
         resultado.Errors.Should().ContainSingle().Which.Field.Should().Be("regraCodigo");
         regra.RegraCodigo.Should().Be("REGRA");
@@ -164,10 +187,10 @@ public sealed class ObrigatoriedadeLegalValidacaoTests
     public void Atualizar_Valido_AplicaERecomputa()
     {
         ObrigatoriedadeLegal regra = ObrigatoriedadeLegal.Criar(
-            "*", CategoriaObrigatoriedade.Etapa, "REGRA", Predicado, TextoValido, Inicio, null).Value!;
+            TodosOsTiposDeProcesso.Codigo, CategoriaObrigatoriedade.Etapa, "REGRA", Predicado, TextoValido, Inicio, null).Value!;
         string hashAntes = regra.Hash;
 
-        Result resultado = regra.Atualizar("*", CategoriaObrigatoriedade.Etapa, "OUTRA", Predicado, TextoValido, Inicio, null);
+        Result resultado = regra.Atualizar(TodosOsTiposDeProcesso.Codigo, CategoriaObrigatoriedade.Etapa, "OUTRA", Predicado, TextoValido, Inicio, null);
 
         resultado.IsSuccess.Should().BeTrue();
         regra.RegraCodigo.Should().Be("OUTRA");

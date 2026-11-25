@@ -5,6 +5,7 @@ using Domain.Enums;
 using Domain.ValueObjects;
 
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
+using Unifesspa.UniPlus.Kernel.Domain;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Repositories;
 
 /// <summary>
@@ -32,7 +33,7 @@ internal static class ObrigatoriedadeLegalNaoAtendidaSeeder
     public static async Task<Guid> SemearAsync(UniPlusDbContext db, string regraCodigo)
     {
         ObrigatoriedadeLegal regra = ObrigatoriedadeLegal.Criar(
-            ObrigatoriedadeLegal.TipoProcessoUniversal,
+            TodosOsTiposDeProcesso.Codigo,
             CategoriaObrigatoriedade.Outros,
             regraCodigo,
             new EtapaObrigatoria(TipoEtapaNaoOfertada),

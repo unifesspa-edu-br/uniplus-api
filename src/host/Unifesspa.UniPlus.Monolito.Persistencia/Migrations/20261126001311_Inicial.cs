@@ -134,6 +134,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     table.CheckConstraint("ck_atos_normativos_documento_hash", "documento_hash ~ '^[0-9a-f]{64}$'");
                     table.CheckConstraint("ck_atos_normativos_nao_autorretifica", "ato_retificado_id IS NULL OR ato_retificado_id <> id");
                     table.CheckConstraint("ck_atos_normativos_retificacao_completa", "(ato_retificado_id IS NULL AND motivo_retificacao IS NULL) OR (ato_retificado_id IS NOT NULL AND motivo_retificacao IS NOT NULL AND btrim(motivo_retificacao) <> '')");
+                    table.CheckConstraint("ck_atos_normativos_tipo_codigo_formato", "tipo_codigo ~ '^[A-Z][A-Z0-9]*(_[A-Z0-9]+)*$'");
                     table.CheckConstraint("ck_atos_normativos_versao_do_objeto_completa", "(versao_do_objeto_id IS NULL AND versao_do_objeto_hash IS NULL) OR (versao_do_objeto_id IS NOT NULL AND versao_do_objeto_hash IS NOT NULL)");
                     table.CheckConstraint("ck_atos_normativos_versao_do_objeto_hash", "versao_do_objeto_hash IS NULL OR versao_do_objeto_hash ~ '^[0-9a-f]{64}$'");
                     table.CheckConstraint("ck_atos_normativos_versao_do_objeto_id_nao_zero", "versao_do_objeto_id IS NULL OR versao_do_objeto_id <> '00000000-0000-0000-0000-000000000000'");
@@ -411,6 +412,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 constraints: table =>
                 {
                     table.PrimaryKey("pk_cursos", x => x.id);
+                    table.CheckConstraint("ck_cursos_codigo_formato", "codigo ~ '^[A-Z][A-Z0-9]*(_[A-Z0-9]+)*$'");
                     table.CheckConstraint("ck_cursos_grupo_area_enem", "grupo_area_enem IS NULL OR grupo_area_enem IN ('TECNOLOGICA', 'HUMANISTICA_I', 'HUMANISTICA_II', 'SAUDE_E_BIOLOGICAS')");
                 });
 
@@ -636,7 +638,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     convocacao_id = table.Column<Guid>(type: "uuid", nullable: false),
                     candidato_id = table.Column<Guid>(type: "uuid", nullable: false),
                     status = table.Column<string>(type: "character varying(30)", maxLength: 30, nullable: false, comment: "Situação da matrícula. Códigos: PENDENTE, DOCUMENTACAO_ENVIADA, EM_ANALISE, DEFERIDA, INDEFERIDA, EFETIVADA, CANCELADA."),
-                    codigo_curso = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false),
+                    codigo_curso = table.Column<string>(type: "character varying(80)", maxLength: 80, nullable: false),
                     observacoes = table.Column<string>(type: "character varying(2000)", maxLength: 2000, nullable: true),
                     created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false, comment: "Data e hora de criação do registro."),
                     updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true, comment: "Data e hora da última alteração, quando houver."),
@@ -728,7 +730,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     nome = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: false, comment: "Nome do modelo de formulário."),
                     descricao = table.Column<string>(type: "character varying(1000)", maxLength: 1000, nullable: true, comment: "Descrição do modelo de formulário."),
                     finalidade = table.Column<string>(type: "character varying(30)", maxLength: 30, nullable: false, comment: "Finalidade do formulário. Códigos: INSCRICAO, ISENCAO_TAXA, HABILITACAO."),
-                    tipo_processo_codigo = table.Column<string>(type: "character varying(64)", maxLength: 64, nullable: true, comment: "Código do tipo de processo ao qual o modelo se aplica."),
+                    tipo_processo_codigo = table.Column<string>(type: "character varying(80)", maxLength: 80, nullable: true, comment: "Código do tipo de processo ao qual o modelo se aplica."),
                     conteudo = table.Column<string>(type: "jsonb", nullable: false, comment: "Conteúdo do modelo de formulário, com páginas, itens, termos e pressupostos."),
                     ativo = table.Column<bool>(type: "boolean", nullable: false, comment: "Indica se o modelo está disponível para uso."),
                     created_by = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true, comment: "Identificador do responsável pela criação, quando disponível."),
@@ -740,7 +742,9 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 constraints: table =>
                 {
                     table.PrimaryKey("pk_modelos_formulario", x => x.id);
+                    table.CheckConstraint("ck_modelos_formulario_codigo_formato", "codigo ~ '^[A-Z][A-Z0-9]*(_[A-Z0-9]+)*$'");
                     table.CheckConstraint("ck_modelos_formulario_finalidade", "finalidade IN ('INSCRICAO', 'ISENCAO_TAXA', 'HABILITACAO')");
+                    table.CheckConstraint("ck_modelos_formulario_tipo_processo_codigo_formato", "tipo_processo_codigo IS NULL OR tipo_processo_codigo ~ '^[A-Z][A-Z0-9]*(_[A-Z0-9]+)*$'");
                 },
                 comment: "Modelos de formulário e seu conteúdo para processos seletivos.");
 
@@ -805,7 +809,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 columns: table => new
                 {
                     id = table.Column<Guid>(type: "uuid", nullable: false),
-                    tipo_processo_codigo = table.Column<string>(type: "character varying(64)", maxLength: 64, nullable: false, comment: "Código do tipo de processo ao qual a regra se aplica."),
+                    tipo_processo_codigo = table.Column<string>(type: "character varying(80)", maxLength: 80, nullable: false, comment: "Código do tipo de processo ao qual a regra se aplica."),
                     categoria = table.Column<string>(type: "character varying(32)", maxLength: 32, nullable: false, comment: "Categoria da regra. Códigos: ETAPA, MODALIDADE, DESEMPATE, DOCUMENTO, FADA, ATENDIMENTO, OUTROS."),
                     regra_codigo = table.Column<string>(type: "character varying(80)", maxLength: 80, nullable: false, comment: "Código que identifica a regra legal."),
                     condicoes = table.Column<string>(type: "jsonb", nullable: false, comment: "Condições de aplicação da regra legal, em JSON."),
@@ -829,6 +833,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     table.PrimaryKey("pk_obrigatoriedades_legais", x => x.id);
                     table.CheckConstraint("ck_obrigatoriedades_legais_categoria", "categoria IN ('ETAPA', 'MODALIDADE', 'DESEMPATE', 'DOCUMENTO', 'FADA', 'ATENDIMENTO', 'OUTROS')");
                     table.CheckConstraint("ck_obrigatoriedades_legais_regra_codigo_formato", "regra_codigo ~ '^[A-Z][A-Z0-9]*(_[A-Z0-9]+)*$'");
+                    table.CheckConstraint("ck_obrigatoriedades_legais_tipo_processo_codigo_formato", "tipo_processo_codigo ~ '^[A-Z][A-Z0-9]*(_[A-Z0-9]+)*$'");
                 },
                 comment: "Regras legais aplicáveis à configuração de processos seletivos.");
 
@@ -912,7 +917,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     nome = table.Column<string>(type: "character varying(300)", maxLength: 300, nullable: false, comment: "Nome do processo seletivo informado no cadastro."),
                     identificador_legivel = table.Column<string>(type: "character varying(64)", maxLength: 64, nullable: true, comment: "Identificador legível escolhido no cadastro; dele derivam o endereço público do certame e a chave no acervo. Ausência = ainda não declarado."),
                     tipo_processo_origem_id = table.Column<Guid>(type: "uuid", nullable: false, comment: "Identificador do tipo de processo no cadastro de origem, copiado na criação."),
-                    tipo_processo_codigo = table.Column<string>(type: "character varying(64)", maxLength: 64, nullable: false, comment: "Código do tipo de processo copiado do cadastro na criação."),
+                    tipo_processo_codigo = table.Column<string>(type: "character varying(80)", maxLength: 80, nullable: false, comment: "Código do tipo de processo copiado do cadastro na criação."),
                     tipo_processo_nome = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: false, comment: "Nome do tipo de processo copiado do cadastro na criação."),
                     situacao = table.Column<string>(type: "character varying(30)", maxLength: 30, nullable: false, comment: "Situação do processo seletivo. Códigos: RASCUNHO, PUBLICADO, ENCERRADO, CANCELADO."),
                     origem_candidatos = table.Column<string>(type: "character varying(30)", maxLength: 30, nullable: false, comment: "Como os candidatos chegam ao processo. Códigos: INSCRICAO_PROPRIA, IMPORTACAO_EXTERNA."),
@@ -949,6 +954,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     table.CheckConstraint("ck_processos_seletivos_numero_de_opcoes_de_curso", "numero_de_opcoes_de_curso IS NULL OR numero_de_opcoes_de_curso IN (1, 2)");
                     table.CheckConstraint("ck_processos_seletivos_origem_candidatos", "origem_candidatos IN ('INSCRICAO_PROPRIA', 'IMPORTACAO_EXTERNA')");
                     table.CheckConstraint("ck_processos_seletivos_situacao", "situacao IN ('RASCUNHO', 'PUBLICADO', 'ENCERRADO', 'CANCELADO')");
+                    table.CheckConstraint("ck_processos_seletivos_tipo_processo_codigo_formato", "tipo_processo_codigo ~ '^[A-Z][A-Z0-9]*(_[A-Z0-9]+)*$'");
                     table.CheckConstraint("ck_processos_seletivos_unidade_administradora_cidade_completa", "(unidade_administradora_cidade_codigo_ibge IS NULL AND unidade_administradora_cidade_nome IS NULL AND unidade_administradora_cidade_uf IS NULL) OR (unidade_administradora_cidade_codigo_ibge IS NOT NULL AND unidade_administradora_cidade_nome IS NOT NULL AND unidade_administradora_cidade_uf IS NOT NULL)");
                 },
                 comment: "Processos seletivos e suas configurações declaradas para a seleção de candidatos.");
@@ -1124,7 +1130,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 columns: table => new
                 {
                     id = table.Column<Guid>(type: "uuid", nullable: false, comment: "Identificador do tipo de conceito (UUIDv7)."),
-                    codigo = table.Column<string>(type: "character varying(64)", maxLength: 64, nullable: false, comment: "Chave natural do tipo, em NFC e imutável; único entre todos os tipos, inclusive os desativados."),
+                    codigo = table.Column<string>(type: "character varying(80)", maxLength: 80, nullable: false, comment: "Chave natural do tipo, em NFC e imutável; único entre todos os tipos, inclusive os desativados."),
                     nome = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: false, comment: "Nome do tipo de conceito, em NFC."),
                     descricao = table.Column<string>(type: "character varying(1000)", maxLength: 1000, nullable: true, comment: "Descrição livre do tipo, em NFC. Nula quando não informada."),
                     ativo = table.Column<bool>(type: "boolean", nullable: false, comment: "Falso quando o tipo foi desativado: deixa de ser oferecido, e o código continua reservado."),
@@ -1141,6 +1147,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 constraints: table =>
                 {
                     table.PrimaryKey("pk_tipos_conceito", x => x.id);
+                    table.CheckConstraint("ck_tipos_conceito_codigo_formato", "codigo ~ '^[A-Z][A-Z0-9]*(_[A-Z0-9]+)*$'");
                     table.CheckConstraint("ck_tipos_conceito_forma", "forma IN ('NUMERICO', 'POR_OPCOES')");
                     table.CheckConstraint("ck_tipos_conceito_parametros_da_forma", "(forma = 'NUMERICO' AND escala_minima IS NOT NULL AND escala_maxima IS NOT NULL AND casas_decimais IS NOT NULL AND escala_minima < escala_maxima AND casas_decimais BETWEEN 0 AND 4) OR (forma = 'POR_OPCOES' AND escala_minima IS NULL AND escala_maxima IS NULL AND casas_decimais IS NULL)");
                 },
@@ -1174,7 +1181,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 constraints: table =>
                 {
                     table.PrimaryKey("pk_tipos_de_ato_publicado", x => x.id);
-                    table.CheckConstraint("ck_tipos_de_ato_publicado_codigo_formato", "codigo ~ '^[A-Z]+(_[A-Z]+)*$'");
+                    table.CheckConstraint("ck_tipos_de_ato_publicado_codigo_formato", "codigo ~ '^[A-Z][A-Z0-9]*(_[A-Z0-9]+)*$'");
                     table.CheckConstraint("ck_tipos_de_ato_publicado_vigencia", "vigencia_fim IS NULL OR vigencia_fim > vigencia_inicio");
                 });
 
@@ -1330,7 +1337,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 columns: table => new
                 {
                     id = table.Column<Guid>(type: "uuid", nullable: false),
-                    codigo = table.Column<string>(type: "character varying(64)", maxLength: 64, nullable: false),
+                    codigo = table.Column<string>(type: "character varying(80)", maxLength: 80, nullable: false),
                     nome = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: false),
                     descricao = table.Column<string>(type: "character varying(1000)", maxLength: 1000, nullable: true),
                     ativo = table.Column<bool>(type: "boolean", nullable: false),
@@ -1348,6 +1355,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 {
                     table.PrimaryKey("pk_tipos_etapa", x => x.id);
                     table.CheckConstraint("ck_tipos_etapa_carater_admitido", "admite_pontuacao OR admite_eliminacao");
+                    table.CheckConstraint("ck_tipos_etapa_codigo_formato", "codigo ~ '^[A-Z][A-Z0-9]*(_[A-Z0-9]+)*$'");
                     table.CheckConstraint("ck_tipos_etapa_correcao_independente_sem_nota_do_enem", "NOT (exige_correcao_independente AND nota_de_origem_no_enem)");
                     table.CheckConstraint("ck_tipos_etapa_nota_de_origem_no_enem_admite_pontuacao", "NOT nota_de_origem_no_enem OR admite_pontuacao");
                 });
@@ -1358,7 +1366,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 columns: table => new
                 {
                     id = table.Column<Guid>(type: "uuid", nullable: false),
-                    codigo = table.Column<string>(type: "character varying(64)", maxLength: 64, nullable: false),
+                    codigo = table.Column<string>(type: "character varying(80)", maxLength: 80, nullable: false),
                     nome = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: false),
                     descricao = table.Column<string>(type: "character varying(1000)", maxLength: 1000, nullable: true),
                     ativo = table.Column<bool>(type: "boolean", nullable: false),
@@ -1371,6 +1379,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 constraints: table =>
                 {
                     table.PrimaryKey("pk_tipos_processo", x => x.id);
+                    table.CheckConstraint("ck_tipos_processo_codigo_formato", "codigo ~ '^[A-Z][A-Z0-9]*(_[A-Z0-9]+)*$'");
+                    table.CheckConstraint("ck_tipos_processo_codigo_reservado", "codigo <> 'TODOS_OS_TIPOS'");
                 });
 
             migrationBuilder.CreateTable(
@@ -1493,7 +1503,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     table.PrimaryKey("pk_exclusividades_de_atos", x => x.id);
                     table.CheckConstraint("ck_exclusividades_de_atos_ato_inicial_nao_zero", "ato_inicial_id <> '00000000-0000-0000-0000-000000000000'");
                     table.CheckConstraint("ck_exclusividades_de_atos_entidade_id_nao_zero", "entidade_id <> '00000000-0000-0000-0000-000000000000'");
-                    table.CheckConstraint("ck_exclusividades_de_atos_entidade_tipo_formato", "entidade_tipo ~ '^[A-Z0-9]+(_[A-Z0-9]+)*$'");
+                    table.CheckConstraint("ck_exclusividades_de_atos_entidade_tipo_formato", "entidade_tipo ~ '^[A-Z][A-Z0-9]*(_[A-Z0-9]+)*$'");
+                    table.CheckConstraint("ck_exclusividades_de_atos_tipo_codigo_formato", "tipo_codigo ~ '^[A-Z][A-Z0-9]*(_[A-Z0-9]+)*$'");
                     table.ForeignKey(
                         name: "fk_exclusividades_de_atos_ato",
                         column: x => x.ato_id,
@@ -1525,7 +1536,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 {
                     table.PrimaryKey("pk_vinculos_do_ato_com_entidade", x => x.id);
                     table.CheckConstraint("ck_vinculos_do_ato_com_entidade_id_nao_zero", "entidade_id <> '00000000-0000-0000-0000-000000000000'");
-                    table.CheckConstraint("ck_vinculos_do_ato_com_entidade_tipo_formato", "entidade_tipo ~ '^[A-Z0-9]+(_[A-Z0-9]+)*$'");
+                    table.CheckConstraint("ck_vinculos_do_ato_com_entidade_tipo_formato", "entidade_tipo ~ '^[A-Z][A-Z0-9]*(_[A-Z0-9]+)*$'");
                     table.ForeignKey(
                         name: "fk_vinculos_do_ato_com_entidade_ato",
                         column: x => x.ato_id,
@@ -1654,7 +1665,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     protocolo = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false),
                     status = table.Column<string>(type: "character varying(30)", maxLength: 30, nullable: false, comment: "Situação da convocação. Códigos: PENDENTE, ACEITA, RECUSADA, NAO_COMPARECEU, EXPIRADA."),
                     posicao = table.Column<int>(type: "integer", nullable: false),
-                    codigo_curso = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false),
+                    codigo_curso = table.Column<string>(type: "character varying(80)", maxLength: 80, nullable: false),
                     data_manifestacao = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
                     created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false, comment: "Data e hora de criação do registro."),
                     updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true, comment: "Data e hora da última alteração, quando houver."),
@@ -1693,6 +1704,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 constraints: table =>
                 {
                     table.PrimaryKey("pk_opcoes_dos_dados", x => x.id);
+                    table.CheckConstraint("ck_opcoes_dos_dados_codigo_formato", "codigo ~ '^[A-Z][A-Z0-9]*(_[A-Z0-9]+)*$'");
                     table.ForeignKey(
                         name: "fk_opcoes_dos_dados_dados_do_candidato",
                         column: x => x.dado_do_candidato_id,
@@ -2515,7 +2527,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     nome = table.Column<string>(type: "character varying(300)", maxLength: 300, nullable: false, comment: "Nome da etapa no processo seletivo."),
                     carater = table.Column<string>(type: "character varying(30)", maxLength: 30, nullable: false, comment: "Finalidade da etapa na avaliação: classificatoria, eliminatoria ou ambas. Códigos: CLASSIFICATORIA, ELIMINATORIA, AMBAS."),
                     tipo_etapa_origem_id = table.Column<Guid>(type: "uuid", nullable: false, comment: "Identificador do tipo de etapa de origem, copiado na definição."),
-                    tipo_etapa_codigo = table.Column<string>(type: "character varying(64)", maxLength: 64, nullable: false, comment: "Código do tipo de etapa copiado na definição."),
+                    tipo_etapa_codigo = table.Column<string>(type: "character varying(80)", maxLength: 80, nullable: false, comment: "Código do tipo de etapa copiado na definição."),
                     tipo_etapa_nome = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: false, comment: "Nome do tipo de etapa copiado na definição."),
                     tipo_etapa_admite_pontuacao = table.Column<bool>(type: "boolean", nullable: false, comment: "Indica se o tipo de etapa admite pontuação, conforme a definição copiada."),
                     tipo_etapa_admite_eliminacao = table.Column<bool>(type: "boolean", nullable: false, comment: "Indica se o tipo de etapa admite eliminação, conforme a definição copiada."),
@@ -2548,6 +2560,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     table.CheckConstraint("ck_etapas_processo_passo_positivo", "passo_do_lancamento IS NULL OR passo_do_lancamento > 0");
                     table.CheckConstraint("ck_etapas_processo_periodo_em_ordem", "inicio IS NULL OR fim IS NULL OR inicio <= fim");
                     table.CheckConstraint("ck_etapas_processo_peso_positivo", "peso IS NULL OR peso > 0");
+                    table.CheckConstraint("ck_etapas_processo_tipo_etapa_codigo_formato", "tipo_etapa_codigo ~ '^[A-Z][A-Z0-9]*(_[A-Z0-9]+)*$'");
                     table.ForeignKey(
                         name: "fk_etapas_processo_processo_seletivo_processo_seletivo_id",
                         column: x => x.processo_seletivo_id,

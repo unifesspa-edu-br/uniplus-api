@@ -2,6 +2,7 @@ namespace Unifesspa.UniPlus.Selecao.Application.UnitTests.Commands;
 
 using NSubstitute;
 
+using Unifesspa.UniPlus.Kernel.Domain;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
@@ -22,7 +23,7 @@ internal static class RegrasLegaisDeTeste
 
     public static ObrigatoriedadeLegal NovaRegra(string regraCodigo, PredicadoObrigatoriedade predicado) =>
         ObrigatoriedadeLegal.Criar(
-            ObrigatoriedadeLegal.TipoProcessoUniversal,
+            TodosOsTiposDeProcesso.Codigo,
             CategoriaObrigatoriedade.Outros,
             regraCodigo,
             predicado,

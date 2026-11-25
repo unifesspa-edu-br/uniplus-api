@@ -1,6 +1,7 @@
 namespace Unifesspa.UniPlus.Selecao.Application.Commands.ObrigatoriedadesLegais;
 
 using Unifesspa.UniPlus.Configuracao.Contracts;
+using Unifesspa.UniPlus.Kernel.Domain;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Application.Services;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
@@ -52,6 +53,6 @@ public sealed class ConferenciaDaObrigatoriedadeLegal(
     }
 
     private async Task<bool> TipoDeProcessoServeAsync(string codigo, CancellationToken cancellationToken) =>
-        string.Equals(codigo, ObrigatoriedadeLegal.TipoProcessoUniversal, StringComparison.Ordinal)
+        string.Equals(codigo, TodosOsTiposDeProcesso.Codigo, StringComparison.Ordinal)
         || await tipoProcessoReader.ObterAtivoPorCodigoAsync(codigo, cancellationToken).ConfigureAwait(false) is not null;
 }

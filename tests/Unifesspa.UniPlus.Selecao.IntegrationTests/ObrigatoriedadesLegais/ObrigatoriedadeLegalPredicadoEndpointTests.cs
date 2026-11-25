@@ -17,6 +17,7 @@ using Unifesspa.UniPlus.Infrastructure.Core.Errors;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Authentication;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Hosting;
+using Unifesspa.UniPlus.Kernel.Domain;
 using Unifesspa.UniPlus.Selecao.Application.Permissoes;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
@@ -113,7 +114,7 @@ public sealed class ObrigatoriedadeLegalPredicadoEndpointTests : Obrigatoriedade
     /// <summary>O corpo mínimo aceito pelo endpoint, variando só o predicado.</summary>
     private static object PayloadCom(object predicado) => new
     {
-        tipoProcessoCodigo = "*",
+        tipoProcessoCodigo = TodosOsTiposDeProcesso.Codigo,
         categoria = "OUTROS",
         regraCodigo = UniqueRegraCodigo(),
         predicado,

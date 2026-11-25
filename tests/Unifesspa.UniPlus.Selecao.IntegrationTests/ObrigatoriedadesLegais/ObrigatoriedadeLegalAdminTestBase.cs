@@ -17,6 +17,7 @@ using Unifesspa.UniPlus.Infrastructure.Core.Errors;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Authentication;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Hosting;
+using Unifesspa.UniPlus.Kernel.Domain;
 using Unifesspa.UniPlus.Selecao.Application.Permissoes;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
@@ -50,7 +51,7 @@ public abstract class ObrigatoriedadeLegalAdminTestBase : IAsyncLifetime
     /// <summary>
     /// A <see cref="CascadingFixture"/> compartilha UM Postgres entre TODAS as classes da
     /// coleção (Story #853 tornou isso perigoso): uma <c>ObrigatoriedadeLegal</c> universal
-    /// (<c>"*"</c>) que esta classe cria com vigência aberta sobreviveria para o resto da
+    /// (<c>TodosOsTiposDeProcesso.Codigo</c>) que esta classe cria com vigência aberta sobreviveria para o resto da
     /// suíte, e o gate legal novo passaria a avaliar TODO <c>Publicar</c>/<c>Retificar</c>
     /// de OUTRAS classes contra ela — reprovando processos que nunca
     /// tiveram nada a ver com esta suíte. Soft-delete de tudo que esta classe criou

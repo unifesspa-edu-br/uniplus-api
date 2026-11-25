@@ -7,6 +7,7 @@ using AwesomeAssertions;
 using Microsoft.EntityFrameworkCore;
 
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
+using Unifesspa.UniPlus.Kernel.Domain;
 using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Kernel.Tempo;
@@ -131,7 +132,7 @@ public sealed class ConformidadeLegalCongelamentoPersistenciaTests : IClassFixtu
 
     private static ObrigatoriedadeLegal NovaRegraVigente(string regraCodigo) =>
         ObrigatoriedadeLegal.Criar(
-            ObrigatoriedadeLegal.TipoProcessoUniversal,
+            TodosOsTiposDeProcesso.Codigo,
             CategoriaObrigatoriedade.Outros,
             regraCodigo,
             new EtapaObrigatoria("PROVA_OBJETIVA"),
