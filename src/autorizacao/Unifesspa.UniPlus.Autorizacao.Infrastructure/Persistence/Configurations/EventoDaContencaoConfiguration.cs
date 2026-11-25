@@ -9,6 +9,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Unifesspa.UniPlus.Autorizacao.Domain.Entities;
 using Unifesspa.UniPlus.Autorizacao.Domain.Enums;
 using Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects;
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence.CodigosDeContrato;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Protecao;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
 
@@ -28,20 +29,8 @@ internal sealed class EventoDaContencaoConfiguration : IEntityTypeConfiguration<
 
     private const string SemOrigem = "origem IS NULL AND decisao_id IS NULL AND versao_que_entrou_id IS NULL AND permissao_codigo IS NULL";
 
-    private const string DeUmaPessoa =
-        $"ator = '{AtorDoEventoDaContencaoCodigo.Humano}' AND ator_emissor IS NOT NULL AND ator_conta_id IS NOT NULL AND motivo IS NOT NULL";
-
-    private static readonly ValueConverter<TipoDoEventoDaContencao, string> TipoConverter = new(
-        tipo => tipo.ToCodigo(),
-        codigo => TipoDoEventoDaContencaoCodigo.FromCodigo(codigo));
-
-    private static readonly ValueConverter<AtorDoEventoDaContencao, string> AtorConverter = new(
-        ator => ator.ToCodigo(),
-        codigo => AtorDoEventoDaContencaoCodigo.FromCodigo(codigo));
-
-    private static readonly ValueConverter<OrigemDaRetomada, string> OrigemConverter = new(
-        origem => origem.ToCodigo(),
-        codigo => OrigemDaRetomadaCodigo.FromCodigo(codigo));
+    private static readonly string DeUmaPessoa =
+        $"ator = {SqlDosCodigosDeContrato.Literal(AtorDoEventoDaContencao.Humano)} AND ator_emissor IS NOT NULL AND ator_conta_id IS NOT NULL AND motivo IS NOT NULL";
 
     private static readonly ValueConverter<EtapaDaVersao, string> PapelConverter = new(
         papel => papel.ToCodigo(),
@@ -58,9 +47,9 @@ internal sealed class EventoDaContencaoConfiguration : IEntityTypeConfiguration<
         builder.Property(e => e.Id).ValueGeneratedNever();
 
         builder.Property(e => e.Instante).IsRequired();
-        builder.Property(e => e.Tipo).HasConversion(TipoConverter).HasMaxLength(CodigoMaxLength).IsRequired();
-        builder.Property(e => e.Ator).HasConversion(AtorConverter).HasMaxLength(CodigoMaxLength).IsRequired();
-        builder.Property(e => e.Origem).HasConversion(OrigemConverter).HasMaxLength(CodigoMaxLength);
+        builder.Property(e => e.Tipo).HasMaxLength(CodigoMaxLength).IsRequired();
+        builder.Property(e => e.Ator).HasMaxLength(CodigoMaxLength).IsRequired();
+        builder.Property(e => e.Origem).HasMaxLength(CodigoMaxLength);
         builder.Property(e => e.PermissaoCodigo).HasMaxLength(PermissaoMaxLength);
         builder.Property(e => e.AtorEmissor).HasMaxLength(IdentidadeMaxLength);
         builder.Property(e => e.AtorContaId).HasMaxLength(IdentidadeMaxLength);
@@ -91,30 +80,29 @@ internal sealed class EventoDaContencaoConfiguration : IEntityTypeConfiguration<
     {
         tabela.HasCheckConstraint(
             "ck_eventos_de_bloqueio_do_perfil_tipo",
-            $"tipo IN ('{TipoDoEventoDaContencaoCodigo.Suspensao}', '{TipoDoEventoDaContencaoCodigo.Retomada}',"
-            + $" '{TipoDoEventoDaContencaoCodigo.Desativacao}', '{TipoDoEventoDaContencaoCodigo.Reativacao}')");
+            $"tipo IN ({SqlDosCodigosDeContrato.Lista<TipoDoEventoDaContencao>()})");
         tabela.HasCheckConstraint("ck_eventos_de_bloqueio_do_perfil_suspensao", RamoDaSuspensao());
         tabela.HasCheckConstraint("ck_eventos_de_bloqueio_do_perfil_retomada", RamoDaRetomada());
-        tabela.HasCheckConstraint("ck_eventos_de_bloqueio_do_perfil_desativacao", RamoDaDesativacaoOuReativacao(TipoDoEventoDaContencaoCodigo.Desativacao));
-        tabela.HasCheckConstraint("ck_eventos_de_bloqueio_do_perfil_reativacao", RamoDaDesativacaoOuReativacao(TipoDoEventoDaContencaoCodigo.Reativacao));
+        tabela.HasCheckConstraint("ck_eventos_de_bloqueio_do_perfil_desativacao", RamoDaDesativacaoOuReativacao(SqlDosCodigosDeContrato.Literal(TipoDoEventoDaContencao.Desativacao)));
+        tabela.HasCheckConstraint("ck_eventos_de_bloqueio_do_perfil_reativacao", RamoDaDesativacaoOuReativacao(SqlDosCodigosDeContrato.Literal(TipoDoEventoDaContencao.Reativacao)));
     }
 
     private static string RamoDaSuspensao() =>
-        $"tipo <> '{TipoDoEventoDaContencaoCodigo.Suspensao}' OR ({DeUmaPessoa} AND suspensao_id IS NOT NULL AND desativacao_id IS NULL"
+        $"tipo <> {SqlDosCodigosDeContrato.Literal(TipoDoEventoDaContencao.Suspensao)} OR ({DeUmaPessoa} AND suspensao_id IS NOT NULL AND desativacao_id IS NULL"
         + $" AND papel IS NOT NULL AND {SemOrigem})";
 
     private static string RamoDaDesativacaoOuReativacao(string tipo) =>
-        $"tipo <> '{tipo}' OR ({DeUmaPessoa} AND desativacao_id IS NOT NULL AND suspensao_id IS NULL AND papel IS NULL AND {SemOrigem})";
+        $"tipo <> {tipo} OR ({DeUmaPessoa} AND desativacao_id IS NOT NULL AND suspensao_id IS NULL AND papel IS NULL AND {SemOrigem})";
 
     private static string RamoDaRetomada() =>
-        $"tipo <> '{TipoDoEventoDaContencaoCodigo.Retomada}' OR (ator = '{AtorDoEventoDaContencaoCodigo.Sistema}'"
+        $"tipo <> {SqlDosCodigosDeContrato.Literal(TipoDoEventoDaContencao.Retomada)} OR (ator = {SqlDosCodigosDeContrato.Literal(AtorDoEventoDaContencao.Sistema)}"
         + " AND suspensao_id IS NOT NULL AND desativacao_id IS NULL AND ator_emissor IS NULL AND ator_conta_id IS NULL"
         + " AND ator_nome IS NULL AND papel IS NULL AND motivo IS NULL AND origem IS NOT NULL"
-        + $" AND (({OrigemDe(OrigemDaRetomadaCodigo.DecisaoDaEtapa, "decisao_id", "versao_que_entrou_id", "permissao_codigo")})"
-        + $" OR ({OrigemDe(OrigemDaRetomadaCodigo.TrocaDeVigencia, "versao_que_entrou_id", "decisao_id", "permissao_codigo")})"
-        + $" OR ({OrigemDe(OrigemDaRetomadaCodigo.Reclassificacao, "permissao_codigo", "decisao_id", "versao_que_entrou_id")})))";
+        + $" AND (({OrigemDe(SqlDosCodigosDeContrato.Literal(OrigemDaRetomada.DecisaoDaEtapa), "decisao_id", "versao_que_entrou_id", "permissao_codigo")})"
+        + $" OR ({OrigemDe(SqlDosCodigosDeContrato.Literal(OrigemDaRetomada.TrocaDeVigencia), "versao_que_entrou_id", "decisao_id", "permissao_codigo")})"
+        + $" OR ({OrigemDe(SqlDosCodigosDeContrato.Literal(OrigemDaRetomada.Reclassificacao), "permissao_codigo", "decisao_id", "versao_que_entrou_id")})))";
 
     // A origem preenche a própria referência e deixa nulas as dos outros dois ramos.
     private static string OrigemDe(string origem, string propria, string outra, string terceira) =>
-        $"origem = '{origem}' AND {propria} IS NOT NULL AND {outra} IS NULL AND {terceira} IS NULL";
+        $"origem = {origem} AND {propria} IS NOT NULL AND {outra} IS NULL AND {terceira} IS NULL";
 }

@@ -11,6 +11,7 @@ using Unifesspa.UniPlus.Authorization.Contracts;
 using Unifesspa.UniPlus.Autorizacao.Domain.Enums;
 using Unifesspa.UniPlus.Host.IntegrationTests.Instalacao;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Hosting;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
 
 /// <summary>
@@ -30,7 +31,7 @@ public sealed class LiberacaoDaReclassificacaoNoHostTests : ReclassificacaoNoHos
     }
 
     /// <summary>O corpo da decisão que libera todas as concessões na etapa de proteção de dados.</summary>
-    private static object LiberarTodasNaProtecao => new { etapa = EtapaProtecao, resultado = ResultadoDaLiberacaoCodigo.Liberada, todas = true };
+    private static object LiberarTodasNaProtecao => new { etapa = EtapaProtecao, resultado = ResultadoDaLiberacao.Liberada.Codigo(), todas = true };
 
     private RegistroDeDecisoesDeTeste Registro => Fixture.Factory.Services.GetRequiredService<RegistroDeDecisoesDeTeste>();
 

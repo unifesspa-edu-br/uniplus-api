@@ -3,11 +3,11 @@ namespace Unifesspa.UniPlus.Autorizacao.Infrastructure.Persistence.Configuration
 
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
-using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 using Unifesspa.UniPlus.Autorizacao.Domain.Entities;
 using Unifesspa.UniPlus.Autorizacao.Domain.Enums;
 using Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects;
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence.CodigosDeContrato;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Protecao;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
 
@@ -17,20 +17,8 @@ internal sealed class DecisaoDaMigracaoConfiguration : IEntityTypeConfiguration<
     private const int IdentidadeMaxLength = 255;
     private const int CodigoMaxLength = 40;
 
-    private const string Gestao = EtapaDaMigracaoCodigo.GestaoDeAcessos;
-    private const string Protecao = EtapaDaMigracaoCodigo.ProtecaoDeDados;
-
-    private static readonly ValueConverter<EtapaDaMigracao, string> EtapaConverter = new(
-        etapa => etapa.ToCodigo(),
-        codigo => EtapaDaMigracaoCodigo.FromCodigo(codigo));
-
-    private static readonly ValueConverter<ResultadoDaMigracao, string> ResultadoConverter = new(
-        resultado => resultado.ToCodigo(),
-        codigo => ResultadoDaMigracaoCodigo.FromCodigo(codigo));
-
-    private static readonly ValueConverter<AtorDaMigracao, string> AtorConverter = new(
-        ator => ator.ToCodigo(),
-        codigo => AtorDaMigracaoCodigo.FromCodigo(codigo));
+    private static readonly string Gestao = SqlDosCodigosDeContrato.Literal(EtapaDaMigracao.GestaoDeAcessos);
+    private static readonly string Protecao = SqlDosCodigosDeContrato.Literal(EtapaDaMigracao.ProtecaoDeDados);
 
     public void Configure(EntityTypeBuilder<DecisaoDaMigracao> builder)
     {
@@ -48,11 +36,11 @@ internal sealed class DecisaoDaMigracaoConfiguration : IEntityTypeConfiguration<
 
     private static void ConfigurarColunas(EntityTypeBuilder<DecisaoDaMigracao> builder)
     {
-        builder.Property(d => d.EnvioDeOrigemEtapa).HasConversion(EtapaConverter).HasMaxLength(CodigoMaxLength);
-        builder.Property(d => d.EnvioEtapa).HasConversion(EtapaConverter).HasMaxLength(CodigoMaxLength);
-        builder.Property(d => d.Etapa).HasConversion(EtapaConverter).HasMaxLength(CodigoMaxLength).IsRequired();
-        builder.Property(d => d.Resultado).HasColumnName("decisao").HasConversion(ResultadoConverter).HasMaxLength(CodigoMaxLength).IsRequired();
-        builder.Property(d => d.Ator).HasConversion(AtorConverter).HasMaxLength(CodigoMaxLength).IsRequired();
+        builder.Property(d => d.EnvioDeOrigemEtapa).HasMaxLength(CodigoMaxLength);
+        builder.Property(d => d.EnvioEtapa).HasMaxLength(CodigoMaxLength);
+        builder.Property(d => d.Etapa).HasMaxLength(CodigoMaxLength).IsRequired();
+        builder.Property(d => d.Resultado).HasColumnName("decisao").HasMaxLength(CodigoMaxLength).IsRequired();
+        builder.Property(d => d.Ator).HasMaxLength(CodigoMaxLength).IsRequired();
         builder.Property(d => d.DecisorEmissor).HasMaxLength(IdentidadeMaxLength);
         builder.Property(d => d.DecisorContaId).HasMaxLength(IdentidadeMaxLength);
         builder.Property(d => d.DecisorNome).HasMaxLength(NomeDeExibicao.MaxLength);
@@ -102,27 +90,27 @@ internal sealed class DecisaoDaMigracaoConfiguration : IEntityTypeConfiguration<
     {
         tabela.HasCheckConstraint(
             "ck_decisoes_da_migracao_envio_de_origem",
-            $"(envio_de_origem_id IS NULL) = (envio_de_origem_etapa IS NULL) AND (envio_de_origem_etapa IS NULL OR envio_de_origem_etapa = '{Gestao}')");
+            $"(envio_de_origem_id IS NULL) = (envio_de_origem_etapa IS NULL) AND (envio_de_origem_etapa IS NULL OR envio_de_origem_etapa = {Gestao})");
         tabela.HasCheckConstraint(
             "ck_decisoes_da_migracao_envio",
-            $"(envio_id IS NULL) = (envio_etapa IS NULL) AND (envio_etapa IS NULL OR envio_etapa IN ('{Gestao}', '{Protecao}'))");
+            $"(envio_id IS NULL) = (envio_etapa IS NULL) AND (envio_etapa IS NULL OR envio_etapa IN ({Gestao}, {Protecao}))");
         tabela.HasCheckConstraint("ck_decisoes_da_migracao_ramo", $"({RamoHumano()}) OR ({RamoDoSistema()})");
     }
 
     private static string RamoHumano() =>
-        $"ator = '{AtorDaMigracaoCodigo.Humano}'"
-        + $" AND etapa IN ('{Gestao}', '{Protecao}')"
-        + $" AND decisao IN ('{ResultadoDaMigracaoCodigo.Migrar}', '{ResultadoDaMigracaoCodigo.Recusar}')"
+        $"ator = {SqlDosCodigosDeContrato.Literal(AtorDaMigracao.Humano)}"
+        + $" AND etapa IN ({Gestao}, {Protecao})"
+        + $" AND decisao IN ({SqlDosCodigosDeContrato.Literal(ResultadoDaMigracao.Migrar)}, {SqlDosCodigosDeContrato.Literal(ResultadoDaMigracao.Recusar)})"
         + " AND decisor_emissor IS NOT NULL AND decisor_conta_id IS NOT NULL AND decisor_tem_concessao IS NOT NULL"
         + " AND envio_de_origem_id IS NOT NULL"
         + " AND (envio_etapa IS NULL OR envio_etapa = etapa)"
-        + $" AND (etapa <> '{Protecao}' OR envio_id IS NOT NULL)"
-        + $" AND (etapa <> '{Gestao}' OR envio_id IS NULL OR envio_id = envio_de_origem_id)";
+        + $" AND (etapa <> {Protecao} OR envio_id IS NOT NULL)"
+        + $" AND (etapa <> {Gestao} OR envio_id IS NULL OR envio_id = envio_de_origem_id)";
 
     private static string RamoDoSistema() =>
-        $"ator = '{AtorDaMigracaoCodigo.Sistema}'"
+        $"ator = {SqlDosCodigosDeContrato.Literal(AtorDaMigracao.Sistema)}"
         + " AND decisor_emissor IS NULL AND decisor_conta_id IS NULL AND decisor_nome IS NULL AND decisor_tem_concessao IS NULL"
         + " AND envio_id IS NULL"
-        + $" AND ((etapa = '{Gestao}' AND decisao = '{ResultadoDaMigracaoCodigo.Reter}' AND envio_de_origem_id IS NOT NULL)"
-        + $" OR (etapa = '{EtapaDaMigracaoCodigo.Sistema}' AND decisao IN ('{ResultadoDaMigracaoCodigo.NaoMigrada}', '{ResultadoDaMigracaoCodigo.ForaDaLista}')))";
+        + $" AND ((etapa = {Gestao} AND decisao = {SqlDosCodigosDeContrato.Literal(ResultadoDaMigracao.Reter)} AND envio_de_origem_id IS NOT NULL)"
+        + $" OR (etapa = {SqlDosCodigosDeContrato.Literal(EtapaDaMigracao.Sistema)} AND decisao IN ({SqlDosCodigosDeContrato.Literal(ResultadoDaMigracao.NaoMigrada)}, {SqlDosCodigosDeContrato.Literal(ResultadoDaMigracao.ForaDaLista)})))";
 }

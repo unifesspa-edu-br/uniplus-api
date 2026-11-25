@@ -3,11 +3,11 @@ namespace Unifesspa.UniPlus.Autorizacao.Infrastructure.Persistence.Configuration
 
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
-using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 using Unifesspa.UniPlus.Autorizacao.Domain.Entities;
 using Unifesspa.UniPlus.Autorizacao.Domain.Enums;
 using Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects;
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence.CodigosDeContrato;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Protecao;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
 
@@ -15,10 +15,6 @@ using Unifesspa.UniPlus.Kernel.Domain.Enums;
 internal sealed class MigracaoDaConcessaoConfiguration : IEntityTypeConfiguration<MigracaoDaConcessao>
 {
     private const int SituacaoMaxLength = 40;
-
-    private static readonly ValueConverter<SituacaoDaMigracao, string> SituacaoConverter = new(
-        situacao => situacao.ToCodigo(),
-        codigo => SituacaoDaMigracaoCodigo.FromCodigo(codigo));
 
     public void Configure(EntityTypeBuilder<MigracaoDaConcessao> builder)
     {
@@ -29,7 +25,7 @@ internal sealed class MigracaoDaConcessaoConfiguration : IEntityTypeConfiguratio
         builder.HasKey(m => m.Id);
         builder.Property(m => m.Id).ValueGeneratedNever();
 
-        builder.Property(m => m.Situacao).HasConversion(SituacaoConverter).HasMaxLength(SituacaoMaxLength).IsRequired();
+        builder.Property(m => m.Situacao).HasMaxLength(SituacaoMaxLength).IsRequired();
         builder.Property(m => m.ExigeProtecaoDeDados).IsRequired();
         builder.Property(m => m.AtualizadaEm).IsRequired();
 
@@ -48,6 +44,6 @@ internal sealed class MigracaoDaConcessaoConfiguration : IEntityTypeConfiguratio
     {
         tabela.HasCheckConstraint(
             "ck_migracoes_da_concessao_situacao",
-            $"situacao IN ('{SituacaoDaMigracaoCodigo.Retida}', '{SituacaoDaMigracaoCodigo.AguardandoProtecaoDeDados}', '{SituacaoDaMigracaoCodigo.Migrada}', '{SituacaoDaMigracaoCodigo.Recusada}', '{SituacaoDaMigracaoCodigo.NaoMigrada}', '{SituacaoDaMigracaoCodigo.ForaDaLista}')");
+            $"situacao IN ({SqlDosCodigosDeContrato.Lista<SituacaoDaMigracao>()})");
     }
 }

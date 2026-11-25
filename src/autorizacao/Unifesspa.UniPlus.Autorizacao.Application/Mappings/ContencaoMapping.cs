@@ -4,6 +4,7 @@ using Unifesspa.UniPlus.Autorizacao.Application.DTOs;
 using Unifesspa.UniPlus.Autorizacao.Domain.Entities;
 using Unifesspa.UniPlus.Autorizacao.Domain.Enums;
 using Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 
 /// <summary>Mapeamento da trilha da contenção para os registros que a API expõe, na ordem total da trilha.</summary>
 public static class ContencaoMapping
@@ -24,15 +25,15 @@ public static class ContencaoMapping
     private static RegistroDaContencaoDto DoEvento(EventoDaContencao evento) =>
         new(
             evento.Id,
-            evento.Tipo.ToCodigo(),
+            evento.Tipo.Codigo(),
             (evento.SuspensaoId ?? evento.DesativacaoId)!.Value,
             evento.OrdemNoHistorico,
             evento.Instante,
-            evento.Ator.ToCodigo(),
+            evento.Ator.Codigo(),
             evento.AtorEmissor is null || evento.AtorContaId is null ? null : new IdentidadeDto(evento.AtorEmissor, evento.AtorContaId, evento.AtorNome),
             evento.Papel?.ToCodigo(),
             evento.Motivo,
-            evento.Origem?.ToCodigo(),
+            evento.Origem?.Codigo(),
             evento.PerfilProtegido,
             null);
 
@@ -43,7 +44,7 @@ public static class ContencaoMapping
             decisao.SuspensaoId,
             decisao.OrdemNoHistorico,
             decisao.Instante,
-            AtorDoEventoDaContencao.Humano.ToCodigo(),
+            AtorDoEventoDaContencao.Humano.Codigo(),
             new IdentidadeDto(decisao.DecisorEmissor, decisao.DecisorContaId, decisao.DecisorNome),
             decisao.Etapa.ToCodigo(),
             decisao.Motivo,

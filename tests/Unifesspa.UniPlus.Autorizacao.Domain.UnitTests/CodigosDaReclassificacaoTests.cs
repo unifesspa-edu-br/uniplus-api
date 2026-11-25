@@ -4,6 +4,7 @@ using AwesomeAssertions;
 
 using Unifesspa.UniPlus.Autorizacao.Domain.Enums;
 using Unifesspa.UniPlus.Autorizacao.Domain.Errors;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
 
 public sealed class CodigosDaReclassificacaoTests
@@ -35,8 +36,9 @@ public sealed class CodigosDaReclassificacaoTests
     [InlineData(ResultadoDaLiberacao.Mantida)]
     public void ResultadoDaLiberacao_IdaEVolta(ResultadoDaLiberacao valor)
     {
-        ResultadoDaLiberacaoCodigo.FromCodigo(valor.ToCodigo()).Should().Be(valor);
-        ResultadoDaLiberacaoCodigo.TentarLer(valor.ToCodigo()).Should().Be(valor);
+        CatalogoDe<ResultadoDaLiberacao>.Obter(valor.Codigo()).Should().Be(valor);
+        CatalogoDe<ResultadoDaLiberacao>.TentarObter(valor.Codigo(), out ResultadoDaLiberacao lido).Should().BeTrue();
+        lido.Should().Be(valor);
     }
 
     [Fact(DisplayName = "Um código desconhecido é recusado em cada conversão e o resultado desconhecido não é lido")]
@@ -45,12 +47,12 @@ public sealed class CodigosDaReclassificacaoTests
         FluentActions.Invoking(() => OrigemDaBaseCodigo.FromCodigo("x")).Should().Throw<ArgumentOutOfRangeException>();
         FluentActions.Invoking(() => TipoDeDivergenciaCodigo.FromCodigo("x")).Should().Throw<ArgumentOutOfRangeException>();
         FluentActions.Invoking(() => OrigemDoAvisoCodigo.FromCodigo("x")).Should().Throw<ArgumentOutOfRangeException>();
-        FluentActions.Invoking(() => ResultadoDaLiberacaoCodigo.FromCodigo("x")).Should().Throw<ArgumentOutOfRangeException>();
+        FluentActions.Invoking(() => CatalogoDe<ResultadoDaLiberacao>.Obter("x")).Should().Throw<ArgumentException>();
         FluentActions.Invoking(() => ((OrigemDaBase)99).ToCodigo()).Should().Throw<ArgumentOutOfRangeException>();
         FluentActions.Invoking(() => ((TipoDeDivergencia)99).ToCodigo()).Should().Throw<ArgumentOutOfRangeException>();
         FluentActions.Invoking(() => ((OrigemDoAviso)99).ToCodigo()).Should().Throw<ArgumentOutOfRangeException>();
-        FluentActions.Invoking(() => ((ResultadoDaLiberacao)99).ToCodigo()).Should().Throw<ArgumentOutOfRangeException>();
-        ResultadoDaLiberacaoCodigo.TentarLer("x").Should().BeNull();
+        FluentActions.Invoking(() => ((ResultadoDaLiberacao)99).Codigo()).Should().Throw<ArgumentOutOfRangeException>();
+        CatalogoDe<ResultadoDaLiberacao>.TentarObter("x", out _).Should().BeFalse();
     }
 
     [Fact(DisplayName = "Cada erro da reclassificação traz um código próprio e uma mensagem em português")]

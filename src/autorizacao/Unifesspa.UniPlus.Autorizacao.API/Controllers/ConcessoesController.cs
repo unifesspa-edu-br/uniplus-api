@@ -18,6 +18,7 @@ using Unifesspa.UniPlus.Infrastructure.Core.Errors;
 using Unifesspa.UniPlus.Infrastructure.Core.Formatting;
 using Unifesspa.UniPlus.Infrastructure.Core.Idempotency;
 using Unifesspa.UniPlus.Infrastructure.Core.Pagination;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Pagination;
 using Unifesspa.UniPlus.Kernel.Results;
 
@@ -184,17 +185,19 @@ public sealed class ConcessoesController : ControllerBase
 
     private static string? Aparado(string? texto) => string.IsNullOrWhiteSpace(texto) ? null : texto.Trim();
 
-    private static SituacaoDaConcessao? LerSituacao(string? texto) =>
-        string.IsNullOrWhiteSpace(texto)
-            ? SituacaoDaConcessao.Ativa
-            : texto.Trim().ToLowerInvariant() switch
-            {
-                "ativa" => SituacaoDaConcessao.Ativa,
-                "revogada" => SituacaoDaConcessao.Revogada,
-                "vencida" => SituacaoDaConcessao.Vencida,
-                "todas" => SituacaoDaConcessao.Todas,
-                _ => null,
-            };
+    private static SituacaoDaConcessao? LerSituacao(string? texto)
+    {
+        if (string.IsNullOrWhiteSpace(texto))
+        {
+            return SituacaoDaConcessao.Ativa;
+        }
+
+        string normalizado = texto.Trim().ToLowerInvariant();
+        return CatalogoDe<SituacaoDaConcessao>.TentarObter(normalizado.ToUpperInvariant(), out SituacaoDaConcessao situacao)
+            && StringComparer.Ordinal.Equals(normalizado, situacao.Codigo().ToLowerInvariant())
+                ? situacao
+                : null;
+    }
 
     private static Result<ListarConcessoesQuery> Recusa(string codigo, string mensagem) =>
         Result<ListarConcessoesQuery>.Failure(new DomainError(codigo, mensagem));

@@ -9,6 +9,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Unifesspa.UniPlus.Autorizacao.Domain.Entities;
 using Unifesspa.UniPlus.Autorizacao.Domain.Enums;
 using Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects;
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence.CodigosDeContrato;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Protecao;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
 
@@ -29,10 +30,6 @@ internal sealed class LiberacaoDaReclassificacaoConfiguration : IEntityTypeConfi
         etapa => etapa.ToCodigo(),
         codigo => EtapaDaVersaoCodigo.FromCodigo(codigo));
 
-    private static readonly ValueConverter<ResultadoDaLiberacao, string> ResultadoConverter = new(
-        resultado => resultado.ToCodigo(),
-        codigo => ResultadoDaLiberacaoCodigo.FromCodigo(codigo));
-
     public void Configure(EntityTypeBuilder<LiberacaoDaReclassificacao> builder)
     {
         ArgumentNullException.ThrowIfNull(builder);
@@ -44,7 +41,7 @@ internal sealed class LiberacaoDaReclassificacaoConfiguration : IEntityTypeConfi
         builder.Property(l => l.Id).ValueGeneratedNever();
 
         builder.Property(l => l.Etapa).HasConversion(EtapaConverter).HasMaxLength(CodigoMaxLength).IsRequired();
-        builder.Property(l => l.Resultado).HasConversion(ResultadoConverter).HasMaxLength(CodigoMaxLength).IsRequired();
+        builder.Property(l => l.Resultado).HasMaxLength(CodigoMaxLength).IsRequired();
         builder.Property(l => l.Motivo).HasMaxLength(MotivoInformado.MaximoDeCaracteres);
         builder.Property(l => l.DecisorEmissor).HasMaxLength(IdentidadeMaxLength).IsRequired();
         builder.Property(l => l.DecisorContaId).HasMaxLength(IdentidadeMaxLength).IsRequired();
@@ -78,6 +75,6 @@ internal sealed class LiberacaoDaReclassificacaoConfiguration : IEntityTypeConfi
             $"etapa IN ('{EtapaDaVersaoCodigo.GestaoDeAcessos}', '{EtapaDaVersaoCodigo.ProtecaoDeDados}')");
         tabela.HasCheckConstraint(
             "ck_liberacoes_da_reclassificacao_motivo",
-            $"(resultado = '{ResultadoDaLiberacaoCodigo.Mantida}') = (motivo IS NOT NULL) AND resultado IN ('{ResultadoDaLiberacaoCodigo.Liberada}', '{ResultadoDaLiberacaoCodigo.Mantida}')");
+            $"(resultado = {SqlDosCodigosDeContrato.Literal(ResultadoDaLiberacao.Mantida)}) = (motivo IS NOT NULL) AND resultado IN ({SqlDosCodigosDeContrato.Literal(ResultadoDaLiberacao.Liberada)}, {SqlDosCodigosDeContrato.Literal(ResultadoDaLiberacao.Mantida)})");
     }
 }

@@ -10,6 +10,7 @@ public sealed class FiltrosDeIndiceDoModeloDoMonolitoTests
     public static TheoryData<string, string, string> FiltrosEsperados() => new()
     {
         { "arquivos_da_apresentacao", "ix_arquivos_da_apresentacao_em_verificacao", "situacao = 'EM_VERIFICACAO'" },
+        { "envios_de_decisoes", "ux_envios_de_decisoes_gestao", "etapa = 'GESTAO_DE_ACESSOS'" },
         { "inscricoes", "ux_inscricoes_processo_cpf_indice", "situacao <> 'CANCELADA'" },
     };
 
