@@ -9686,15 +9686,16 @@
       "codigo": "uniplus.consulta.busca_muito_longa",
       "requisitos": [],
       "oQueAconteceu": [
-        "O texto de busca da listagem tem **mais de 200 caracteres**. O limite existe\nporque o termo pesquisado acompanha a navegação entre páginas: ele viaja dentro\ndo cursor e é repetido nos links para a página anterior e a seguinte. Um texto\nmuito longo permitiria abrir a primeira página, mas geraria links de\ncontinuação grandes demais para o servidor ou para um intermediário aceitar, e\na paginação deixaria de funcionar.",
+        "O texto de busca ultrapassou o **limite de 200 caracteres** considerado pela\nlistagem. Na listagem de termos de consentimento, os espaços das pontas são\nretirados antes da contagem; outras listagens podem contá-los. O limite existe\nporque o termo pesquisado acompanha a navegação entre páginas e é repetido nos\nlinks para a página anterior e a seguinte. Em algumas listagens, ele também\nviaja dentro do cursor; na listagem de termos de consentimento, o filtro não\nestá vinculado ao cursor. Um texto muito longo poderia gerar links de\ncontinuação grandes demais para o servidor ou para um intermediário aceitar, e\na paginação deixaria de funcionar.",
         "A consulta é recusada antes de ser executada, e nenhum item é devolvido. A\nresposta informa o limite e não repete o texto digitado."
       ],
       "comoResolver": [
-        "Envie um texto de busca mais curto, com até 200 caracteres: o trecho que\nidentifica o que se procura, como parte do nome ou do código. Para refinar a\nbusca por outros atributos, use os filtros próprios da listagem em vez de\ncolocar tudo no texto."
+        "Retire os espaços das pontas e envie um texto de busca com até 200\ncaracteres: o trecho que identifica o que se procura, como parte do nome ou do\ncódigo. Para refinar a busca por outros atributos, use os filtros próprios da\nlistagem em vez de colocar tudo no texto."
       ],
       "ondeAparece": [
         "Listagem de cursos",
         "Listagem de ofertas de curso",
+        "Listagem de termos de consentimento",
         "Listagem das decisões da proteção de dados do catálogo",
         "Listagem da vitrine de certames publicados"
       ]
