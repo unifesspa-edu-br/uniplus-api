@@ -6,7 +6,6 @@ using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Domain.Interfaces;
 using Unifesspa.UniPlus.Infrastructure.Core.Pagination;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
-using Unifesspa.UniPlus.Kernel.Extensions;
 using Unifesspa.UniPlus.Kernel.Pagination;
 
 public sealed class TipoProcessoRepository : ITipoProcessoRepository
@@ -49,7 +48,6 @@ public sealed class TipoProcessoRepository : ITipoProcessoRepository
     public Task<bool> CodigoExisteAsync(string codigo, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(codigo);
-        string codigoNormalizado = TextoNormalizavel.AparadoEmNfc(codigo);
-        return _dbContext.TiposProcesso.AsNoTracking().AnyAsync(tipo => tipo.Codigo == codigoNormalizado, cancellationToken);
+        return _dbContext.TiposProcesso.AsNoTracking().AnyAsync(tipo => tipo.Codigo == codigo, cancellationToken);
     }
 }

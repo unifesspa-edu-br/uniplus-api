@@ -166,7 +166,7 @@ public sealed class RecusasDaPublicacaoTests
     private static ProcessoSeletivo ProcessoNaoConformeQueCobraTaxaSemMotivo()
     {
         // Processo em rascunho, SEM nenhuma dimensão configurada — não conforme.
-        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS Vazio", TiposDeProcessoDeTeste.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
+        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS Vazio", TiposDeProcessoDeTeste.Sisu, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
         processo.DefinirTaxaInscricao(
             ConfiguracaoTaxaInscricao.Criar(true, 100m, ["CADASTRO_UNICO"]).Value!);
 

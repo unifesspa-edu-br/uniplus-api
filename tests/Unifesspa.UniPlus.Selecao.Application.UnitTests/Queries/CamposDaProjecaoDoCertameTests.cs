@@ -51,7 +51,7 @@ public sealed class CamposDaProjecaoDoCertameTests
     {
         CertamePublicadoDto certame = ProjecaoDoCertameDeTeste.Projetado();
 
-        certame.TipoProcesso.Should().Be(new TipoCatalogadoCertameDto("SiSU", "SiSU"));
+        certame.TipoProcesso.Should().Be(new TipoCatalogadoCertameDto("SISU", "SiSU"));
         certame.Periodo.Should().Be(new PeriodoInscricaoCertameDto(
             "001/2026", new DateTimeOffset(2026, 1, 1, 3, 0, 0, TimeSpan.Zero), new DateTimeOffset(2026, 2, 1, 2, 59, 59, TimeSpan.Zero)));
         certame.Localidade.Should().Be(new LocalidadeCertameDto("1504208", "Marabá", "PA", FusoHorarioDto.Institucional));

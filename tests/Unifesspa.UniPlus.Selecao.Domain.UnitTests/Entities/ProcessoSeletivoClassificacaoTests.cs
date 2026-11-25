@@ -89,8 +89,8 @@ public sealed class ProcessoSeletivoClassificacaoTests
     [Fact(DisplayName = "DefinirClassificacao produz o mesmo resultado em processos de Tipo diferente com a mesma configuração (indistinguibilidade)")]
     public void DefinirClassificacao_TiposDiferentesMesmaConfiguracao_ResultadoIdentico()
     {
-        ProcessoSeletivo psiq = NovoProcesso("PSIQ 2026", TiposDeProcessoDeTeste.PSIQ);
-        ProcessoSeletivo sisu = NovoProcesso("SiSU 2026", TiposDeProcessoDeTeste.SiSU);
+        ProcessoSeletivo psiq = NovoProcesso("PSIQ 2026", TiposDeProcessoDeTeste.IndigenaEQuilombola);
+        ProcessoSeletivo sisu = NovoProcesso("SiSU 2026", TiposDeProcessoDeTeste.Sisu);
 
         Result resultadoPsiq = psiq.DefinirClassificacao(ClassificacaoEnemComCorteEmArea());
         Result resultadoSisu = sisu.DefinirClassificacao(ClassificacaoEnemComCorteEmArea());

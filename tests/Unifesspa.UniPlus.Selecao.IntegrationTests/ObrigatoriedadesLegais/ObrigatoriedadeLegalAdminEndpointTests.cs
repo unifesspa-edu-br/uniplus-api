@@ -201,8 +201,8 @@ public sealed class ObrigatoriedadeLegalAdminEndpointTests : ObrigatoriedadeLega
         using HttpClient client = await ClienteComConcessaoAsync();
         string regraSiSU = UniqueRegraCodigo();
         string regraPSIQ = UniqueRegraCodigo();
-        await SeedRegraAsync(client, regraSiSU, tipoProcessoCodigo: "SiSU");
-        await SeedRegraAsync(client, regraPSIQ, tipoProcessoCodigo: "PSIQ");
+        await SeedRegraAsync(client, regraSiSU, tipoProcessoCodigo: "SISU");
+        await SeedRegraAsync(client, regraPSIQ, tipoProcessoCodigo: "INDIGENA_E_QUILOMBOLA");
 
         await VerificarFiltroDeTipoProcessoAsync(client, regraSiSU, regraPSIQ);
 
@@ -267,7 +267,7 @@ public sealed class ObrigatoriedadeLegalAdminEndpointTests : ObrigatoriedadeLega
     private static async Task VerificarFiltroDeTipoProcessoAsync(HttpClient client, string regraSiSU, string regraPSIQ)
     {
         HttpResponseMessage filtrada = await client.GetAsync(
-            new Uri("/api/selecao/obrigatoriedades-legais?tipoProcesso=SiSU&limit=50", UriKind.Relative));
+            new Uri("/api/selecao/obrigatoriedades-legais?tipoProcesso=SISU&limit=50", UriKind.Relative));
         using JsonDocument filtradaJson = JsonDocument.Parse(await filtrada.Content.ReadAsStringAsync());
         IReadOnlyList<string> filtradas = [.. filtradaJson.RootElement.EnumerateArray()
             .Select(static item => item.GetProperty("regraCodigo").GetString()!)];

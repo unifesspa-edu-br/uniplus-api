@@ -63,9 +63,9 @@ public sealed class ListarModelosFormularioQueryHandlerTests
     [InlineData("   ", null)]
     [InlineData("", null)]
     [InlineData(null, null)]
-    [InlineData("  PSR  ", "PSR")]
-    [InlineData("PSR", "PSR")]
-    [InlineData("psr", "psr")]
+    [InlineData("  REGULAR_UNIFICADO  ", "REGULAR_UNIFICADO")]
+    [InlineData("REGULAR_UNIFICADO", "REGULAR_UNIFICADO")]
+    [InlineData("regular_unificado", "regular_unificado")]
     public async Task Handle_TipoDeProcesso_AparaEspacos(string? informado, string? esperado)
     {
         await ListarAsync(tipoProcesso: informado);

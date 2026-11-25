@@ -53,7 +53,7 @@ internal sealed class ApoioDaPersistenciaDoProcessoSeletivo
 
     internal static ProcessoSeletivo NovoProcessoDoSplitQuery() =>
         ProcessoSeletivo.Criar(
-            "PS 2026 — AsSplitQuery", TiposDeProcessoDeTeste.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(),
+            "PS 2026 — AsSplitQuery", TiposDeProcessoDeTeste.Sisu, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(),
             UnidadeAdministradoraSnapshot.Criar("CEPS", "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
 
     internal static EtapaProcesso DefinirEtapaDoSplitQuery(ProcessoSeletivo processo)

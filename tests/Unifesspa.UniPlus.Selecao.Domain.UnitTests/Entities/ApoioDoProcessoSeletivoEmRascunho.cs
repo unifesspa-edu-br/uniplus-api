@@ -11,7 +11,7 @@ internal static class ApoioDoProcessoSeletivoEmRascunho
     internal static UnidadeAdministradoraSnapshot UnidadeAdministradoraCeps() =>
         UnidadeAdministradoraSnapshot.Criar("CEPS", "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!;
 
-    internal static ProcessoSeletivo NovoProcesso() => NovoProcesso("PS 2026 — SiSU", TiposDeProcessoDeTeste.SiSU);
+    internal static ProcessoSeletivo NovoProcesso() => NovoProcesso("PS 2026 — SiSU", TiposDeProcessoDeTeste.Sisu);
 
     internal static ProcessoSeletivo NovoProcesso(
         string nome,

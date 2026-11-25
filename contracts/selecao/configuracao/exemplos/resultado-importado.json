@@ -3,7 +3,7 @@
   "versaoFormato": 1,
   "identificacao": {
     "nome": "Resultado Importado de Exemplo 2027",
-    "tipoProcessoCodigo": "PSR",
+    "tipoProcessoCodigo": "REGULAR_UNIFICADO",
     "unidadeAdministradoraCodigo": "CEPS",
     "origemCandidatos": "IMPORTACAO_EXTERNA",
     "localidadeCodigoIbge": "1504208",

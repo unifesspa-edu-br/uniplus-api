@@ -148,7 +148,7 @@ public sealed class QuadroDePesoPorAreaEnemPersistenciaTests
 
     private static ProcessoSeletivo NovoProcessoComClassificacaoEnem()
     {
-        ProcessoSeletivo processo = NovoProcesso("PS 2027 — Medicina", TiposDeProcessoDeTeste.PSVR);
+        ProcessoSeletivo processo = NovoProcesso("PS 2027 — Medicina", TiposDeProcessoDeTeste.VagasRemanescentes);
 
         ConfiguracaoClassificacao classificacao = ClassificacaoDoEnem();
         processo.DefinirClassificacao(classificacao).IsSuccess.Should().BeTrue();

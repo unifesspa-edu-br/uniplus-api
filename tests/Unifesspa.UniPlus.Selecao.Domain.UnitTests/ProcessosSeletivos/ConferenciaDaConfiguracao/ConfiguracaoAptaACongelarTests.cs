@@ -42,7 +42,7 @@ public sealed class ConfiguracaoAptaACongelarTests
     public void ProcessoComImpedimento_FalhaComAsCausas()
     {
         ProcessoSeletivo semEtapas = ProcessoSeletivo.Criar(
-            "Processo incompleto", TiposDeProcessoDeTeste.SiSU, OrigemCandidatos.InscricaoPropria, Guid.CreateVersion7(),
+            "Processo incompleto", TiposDeProcessoDeTeste.Sisu, OrigemCandidatos.InscricaoPropria, Guid.CreateVersion7(),
             UnidadeAdministradoraSnapshot.Criar("CEPS", "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!,
             LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, identificadorLegivel: IdentificadoresDeTeste.Novo());
 
@@ -58,7 +58,7 @@ public sealed class ConfiguracaoAptaACongelarTests
     public void ItemPendente_ViraCausaEmFrase()
     {
         ProcessoSeletivo semEtapas = ProcessoSeletivo.Criar(
-            "Processo incompleto", TiposDeProcessoDeTeste.SiSU, OrigemCandidatos.InscricaoPropria, Guid.CreateVersion7(),
+            "Processo incompleto", TiposDeProcessoDeTeste.Sisu, OrigemCandidatos.InscricaoPropria, Guid.CreateVersion7(),
             UnidadeAdministradoraSnapshot.Criar("CEPS", "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!,
             LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, identificadorLegivel: IdentificadoresDeTeste.Novo());
 

@@ -29,7 +29,7 @@ internal static class InscricoesDoEnemDeTeste
     public static async Task<ProcessoSeletivo> NovoProcessoAsync(UniPlusDbContext context)
     {
         ProcessoSeletivo processo = ProcessoSeletivo.Criar(
-            "PS 2027 — notas do ENEM", TiposDeProcessoDeTeste.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(),
+            "PS 2027 — notas do ENEM", TiposDeProcessoDeTeste.Sisu, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(),
             UnidadeAdministradoraSnapshot.Criar("CEPS", "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!,
             LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
         context.ProcessosSeletivos.Add(processo);

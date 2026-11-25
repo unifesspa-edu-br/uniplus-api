@@ -41,6 +41,8 @@ public sealed class ProcessoSeletivoConfiguration : IEntityTypeConfiguration<Pro
         builder.ToTable("processos_seletivos", t =>
         {
             t.HasComment("Processos seletivos e suas configurações declaradas para a seleção de candidatos.");
+            t.HasCheckConstraint("ck_processos_seletivos_tipo_processo_codigo_formato",
+                $"tipo_processo_codigo ~ '{FormatoDoCodigo.ExpressaoNoBanco}'");
             t.HasCheckConstraint(
                 "ck_processos_seletivos_unidade_administradora_cidade_completa",
                 "(unidade_administradora_cidade_codigo_ibge IS NULL AND unidade_administradora_cidade_nome IS NULL AND unidade_administradora_cidade_uf IS NULL) "
@@ -93,7 +95,7 @@ public sealed class ProcessoSeletivoConfiguration : IEntityTypeConfiguration<Pro
                 .HasColumnName("tipo_processo_origem_id")
                 .IsRequired()
                 .HasComment("Identificador do tipo de processo no cadastro de origem, copiado na criação.");
-            tipo.Property(x => x.Codigo).HasColumnName("tipo_processo_codigo").HasMaxLength(64).IsRequired().HasComment("Código do tipo de processo copiado do cadastro na criação.");
+            tipo.Property(x => x.Codigo).HasColumnName("tipo_processo_codigo").HasMaxLength(FormatoDoCodigo.ComprimentoMaximo).IsRequired().HasComment("Código do tipo de processo copiado do cadastro na criação.");
             tipo.Property(x => x.Nome).HasColumnName("tipo_processo_nome").HasMaxLength(200).IsRequired().HasComment("Nome do tipo de processo copiado do cadastro na criação.");
         });
         builder.Navigation(p => p.TipoProcesso).IsRequired();

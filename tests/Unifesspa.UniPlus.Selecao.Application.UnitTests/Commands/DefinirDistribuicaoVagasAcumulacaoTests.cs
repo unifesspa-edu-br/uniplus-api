@@ -26,7 +26,7 @@ public sealed class DefinirDistribuicaoVagasAcumulacaoTests
     private const string Institucional = "DISTRIBUICAO_INSTITUCIONAL";
 
     private static ProcessoSeletivo NovoProcesso() => ProcessoSeletivo.Criar(
-        "PSIQ 2026", TiposDeProcessoDeTeste.PSIQ, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(),
+        "PSIQ 2026", TiposDeProcessoDeTeste.IndigenaEQuilombola, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(),
         UnidadeAdministradoraSnapshot.Criar("CEPS", "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!,
         LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
 

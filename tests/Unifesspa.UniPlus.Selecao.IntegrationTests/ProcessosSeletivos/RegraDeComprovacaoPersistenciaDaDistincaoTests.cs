@@ -41,7 +41,7 @@ public sealed class RegraDeComprovacaoPersistenciaDaDistincaoTests(ProcessoSelet
 
     private static ProcessoSeletivo ProcessoComDistincao(CriterioDeDistincaoDasApresentacoes? criterio)
     {
-        ProcessoSeletivo processo = ProcessoSeletivo.Criar("Processo com distinção", TiposDeProcessoDeTeste.SiSU,
+        ProcessoSeletivo processo = ProcessoSeletivo.Criar("Processo com distinção", TiposDeProcessoDeTeste.Sisu,
             OrigemCandidatos.ImportacaoExterna, Guid.CreateVersion7(),
             UnidadeAdministradoraSnapshot.Criar("CEPS", "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!,
             LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());

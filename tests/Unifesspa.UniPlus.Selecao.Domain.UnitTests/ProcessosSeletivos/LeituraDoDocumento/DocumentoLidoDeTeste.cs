@@ -26,7 +26,7 @@ internal static class DocumentoLidoDeTeste
     internal static CadastrosCitadosNoDocumento Cadastros() => new(LidoEm)
     {
         Unidades = Unidades(),
-        TiposDeProcesso = new Dictionary<string, TipoProcessoSnapshot> { ["SiSU"] = TiposDeProcessoDeTeste.SiSU },
+        TiposDeProcesso = new Dictionary<string, TipoProcessoSnapshot> { ["SISU"] = TiposDeProcessoDeTeste.Sisu },
         FasesCanonicas = FasesCanonicas(),
         TiposDeBanca = new Dictionary<string, TipoDeBancaCopiado> { ["ANALISE_RECURSOS"] = TiposDeBancaCopiadosDeTeste.DeRecursos() },
         CategoriasDeDocumento = new Dictionary<string, CategoriaDeDocumentoCitada> { ["IDENTIDADE"] = new(Guid.CreateVersion7(), "IDENTIDADE", "Identidade") },
@@ -61,7 +61,7 @@ internal static class DocumentoLidoDeTeste
     internal static DeclaracoesDoDocumento Documento(params FaseNoDocumento[] fases) => new(Identificacao(), fases);
 
     internal static IdentificacaoNoDocumento Identificacao() =>
-        new("Processo Seletivo de Exemplo 2027", "SiSU", "CEPS", OrigemCandidatos.ImportacaoExterna, "1504208", IdentificadoresDeTeste.NovoValor(), new(CodigoDaConvencao, "v1"));
+        new("Processo Seletivo de Exemplo 2027", "SISU", "CEPS", OrigemCandidatos.ImportacaoExterna, "1504208", IdentificadoresDeTeste.NovoValor(), new(CodigoDaConvencao, "v1"));
 
     internal static FaseNoDocumento Fase(int posicao, string chave, string faseCanonica = "INSCRICAO", string? unidade = "CEPS") =>
         new(posicao, chave, new(faseCanonica, unidade), new(null, null), new([], false, null, null), [], null);

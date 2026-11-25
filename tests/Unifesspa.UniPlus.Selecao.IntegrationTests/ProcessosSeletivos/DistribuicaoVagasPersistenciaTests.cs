@@ -57,7 +57,7 @@ public sealed class DistribuicaoVagasPersistenciaTests : IClassFixture<ProcessoS
     [Fact(DisplayName = "Persiste e recarrega distribuição Lei 12.711 com referência demográfica e modalidades")]
     public async Task PersisteERecarrega_Lei12711ComDemografica()
     {
-        ProcessoSeletivo processo = NovoProcessoComEtapa(TiposDeProcessoDeTeste.SiSU);
+        ProcessoSeletivo processo = NovoProcessoComEtapa(TiposDeProcessoDeTeste.Sisu);
         Guid ofertaCursoId = Guid.CreateVersion7();
         processo.DefinirDistribuicaoVagas([OfertaDaLei12711(ofertaCursoId)], FatosDeModalidadeDeTeste.DoCatalogo).IsSuccess.Should().BeTrue();
         await _apoio.GravarAsync(processo);
@@ -72,7 +72,7 @@ public sealed class DistribuicaoVagasPersistenciaTests : IClassFixture<ProcessoS
     [Fact(DisplayName = "Persiste e recarrega distribuição institucional sem referência demográfica")]
     public async Task PersisteERecarrega_InstitucionalSemDemografica()
     {
-        ProcessoSeletivo processo = NovoProcessoComEtapa(TiposDeProcessoDeTeste.PSIQ);
+        ProcessoSeletivo processo = NovoProcessoComEtapa(TiposDeProcessoDeTeste.IndigenaEQuilombola);
         ConfiguracaoDistribuicaoVagas oferta = OfertaInstitucional(Guid.CreateVersion7(), 60, 'b', [NovaAcaoAfirmativa("IND", 60)]);
         processo.DefinirDistribuicaoVagas([oferta], FatosDeModalidadeDeTeste.DoCatalogo).IsSuccess.Should().BeTrue();
         await _apoio.GravarAsync(processo);
@@ -89,7 +89,7 @@ public sealed class DistribuicaoVagasPersistenciaTests : IClassFixture<ProcessoS
     [InlineData("grupo_area_enem_rotulo")]
     public async Task GrupoComUmaColunaNula_VoltaSemGrupo(string coluna)
     {
-        ProcessoSeletivo processo = NovoProcesso(TiposDeProcessoDeTeste.PSIQ);
+        ProcessoSeletivo processo = NovoProcesso(TiposDeProcessoDeTeste.IndigenaEQuilombola);
         ConfiguracaoDistribuicaoVagas oferta = OfertaInstitucional(Guid.CreateVersion7(), 60, 'b', [NovaAcaoAfirmativa("IND", 60)], ("TECNOLOGICA", "Tecnológica"));
         processo.DefinirDistribuicaoVagas([oferta], FatosDeModalidadeDeTeste.DoCatalogo).IsSuccess.Should().BeTrue();
         await _apoio.GravarAsync(processo);
@@ -108,7 +108,7 @@ public sealed class DistribuicaoVagasPersistenciaTests : IClassFixture<ProcessoS
     [Fact(DisplayName = "Reconfigurar distribuição sobre o agregado tracked insere os filhos novos, não falha em UPDATE")]
     public async Task ReconfigurarDistribuicaoSobreAgregadoTracked_InsereFilhos()
     {
-        ProcessoSeletivo processo = NovoProcessoComEtapa(TiposDeProcessoDeTeste.PSECampo);
+        ProcessoSeletivo processo = NovoProcessoComEtapa(TiposDeProcessoDeTeste.EducacaoDoCampo);
         Guid ofertaCursoId = Guid.CreateVersion7();
         ConfiguracaoDistribuicaoVagas original = OfertaInstitucional(ofertaCursoId, 40, 'c', [NovaAcaoAfirmativa("QUIL", 40)]);
         processo.DefinirDistribuicaoVagas([original], FatosDeModalidadeDeTeste.DoCatalogo).IsSuccess.Should().BeTrue();

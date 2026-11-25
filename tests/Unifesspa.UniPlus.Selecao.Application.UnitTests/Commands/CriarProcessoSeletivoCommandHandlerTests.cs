@@ -28,7 +28,7 @@ public sealed class CriarProcessoSeletivoCommandHandlerTests
         "1504208", "Marabá", "PA");
 
     private static readonly TipoProcessoView TipoSisu = new(
-        TiposDeProcessoDeTeste.SiSU.OrigemId, "SiSU", "SiSU", null);
+        TiposDeProcessoDeTeste.Sisu.OrigemId, "SISU", "SiSU", null);
 
     private readonly IProcessoSeletivoRepository _repository = Substitute.For<IProcessoSeletivoRepository>();
     private readonly IUnidadeReader _unidadeReader = Substitute.For<IUnidadeReader>();
@@ -40,7 +40,7 @@ public sealed class CriarProcessoSeletivoCommandHandlerTests
     public CriarProcessoSeletivoCommandHandlerTests()
     {
         _unidadeReader.ObterPorIdAsync(UnidadeId, Arg.Any<CancellationToken>()).Returns(UnidadeCeps);
-        _tipoProcessoReader.ObterAtivoPorIdAsync(TiposDeProcessoDeTeste.SiSU.OrigemId, Arg.Any<CancellationToken>()).Returns(TipoSisu);
+        _tipoProcessoReader.ObterAtivoPorIdAsync(TiposDeProcessoDeTeste.Sisu.OrigemId, Arg.Any<CancellationToken>()).Returns(TipoSisu);
         _verificador.ExigirAsync(Arg.Any<PermissionRequirement>(), Arg.Any<ResourceContext?>(), Arg.Any<CancellationToken>())
             .Returns(ResultadoDoAcesso.Permitido);
         _repository.When(r => r.AdicionarAsync(Arg.Any<ProcessoSeletivo>(), Arg.Any<CancellationToken>()))
@@ -89,7 +89,7 @@ public sealed class CriarProcessoSeletivoCommandHandlerTests
         await CriarAsync(new CriacaoDoProcessoSeletivoBuilder(UnidadeId).Construir());
 
         _persistido!.TipoProcessoOrigemId.Should().Be(TipoSisu.Id);
-        _persistido.TipoProcesso.Codigo.Should().Be("SiSU");
+        _persistido.TipoProcesso.Codigo.Should().Be("SISU");
         _persistido.TipoProcesso.Nome.Should().Be("SiSU");
     }
 
@@ -127,7 +127,7 @@ public sealed class CriarProcessoSeletivoCommandHandlerTests
     [Fact(DisplayName = "Handle recusa tipo inexistente ou inativo sem criar vínculo")]
     public async Task Handle_TipoInativo_RecusaSemPersistir()
     {
-        _tipoProcessoReader.ObterAtivoPorIdAsync(TiposDeProcessoDeTeste.SiSU.OrigemId, Arg.Any<CancellationToken>()).Returns((TipoProcessoView?)null);
+        _tipoProcessoReader.ObterAtivoPorIdAsync(TiposDeProcessoDeTeste.Sisu.OrigemId, Arg.Any<CancellationToken>()).Returns((TipoProcessoView?)null);
 
         Result<Guid> result = await CriarAsync(
             new CriacaoDoProcessoSeletivoBuilder(UnidadeId).Construir() with { Nome = "PS" });

@@ -24,7 +24,7 @@ public sealed class ProcessoSeletivoTests
 
         processo.Situacao.Should().Be(SituacaoDoProcessoSeletivo.Rascunho);
         processo.Nome.Should().Be("PS 2026 — SiSU");
-        processo.TipoProcesso.Should().Be(TiposDeProcessoDeTeste.SiSU);
+        processo.TipoProcesso.Should().Be(TiposDeProcessoDeTeste.Sisu);
         processo.Etapas.Should().BeEmpty();
         processo.AtendimentoEspecializado.Should().BeNull();
     }
@@ -40,7 +40,7 @@ public sealed class ProcessoSeletivoTests
     [Fact(DisplayName = "Criar sem origem dos candidatos lanca ArgumentException (§3.4)")]
     public void Criar_SemOrigemCandidatos_Lanca()
     {
-        Action act = () => NovoProcesso("PS 2026", TiposDeProcessoDeTeste.SiSU, (OrigemCandidatos)99);
+        Action act = () => NovoProcesso("PS 2026", TiposDeProcessoDeTeste.Sisu, (OrigemCandidatos)99);
 
         act.Should().Throw<ArgumentException>().WithParameterName("origemCandidatos");
     }
@@ -48,7 +48,7 @@ public sealed class ProcessoSeletivoTests
     [Fact(DisplayName = "Criar sem unidade administradora (Guid.Empty) lanca ArgumentException (CA-04)")]
     public void Criar_SemUnidadeAdministradoraOrigemId_Lanca()
     {
-        Action act = () => NovoProcesso("PS 2026", TiposDeProcessoDeTeste.SiSU, unidadeAdministradoraOrigemId: Guid.Empty);
+        Action act = () => NovoProcesso("PS 2026", TiposDeProcessoDeTeste.Sisu, unidadeAdministradoraOrigemId: Guid.Empty);
 
         act.Should().Throw<ArgumentException>().WithParameterName("unidadeAdministradoraOrigemId");
     }
@@ -60,7 +60,7 @@ public sealed class ProcessoSeletivoTests
         UnidadeAdministradoraSnapshot snapshot = UnidadeAdministradoraCeps();
 
         ProcessoSeletivo processo = ProcessoSeletivo.Criar(
-            "PS 2026", TiposDeProcessoDeTeste.SiSU, OrigemCandidatos.InscricaoPropria, unidadeId, snapshot, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
+            "PS 2026", TiposDeProcessoDeTeste.Sisu, OrigemCandidatos.InscricaoPropria, unidadeId, snapshot, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
 
         processo.UnidadeAdministradoraOrigemId.Should().Be(unidadeId);
         processo.UnidadeAdministradora.Should().BeSameAs(snapshot);

@@ -89,7 +89,7 @@ internal static class ApoioDaPoliticaDeOrdenacao
         IReadOnlyList<ConfiguracaoDerivacaoFato>? regrasDerivacao = null)
     {
         ProcessoSeletivo processo = ProcessoSeletivo.Criar(
-            "PS Política de Ordenação", TiposDeProcessoDeTeste.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(),
+            "PS Política de Ordenação", TiposDeProcessoDeTeste.Sisu, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(),
             UnidadeAdministradoraSnapshot.Criar("CEPS", "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
 
 

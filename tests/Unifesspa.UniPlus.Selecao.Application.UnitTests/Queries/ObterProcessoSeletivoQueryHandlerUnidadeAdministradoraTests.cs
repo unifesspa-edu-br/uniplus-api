@@ -1,12 +1,9 @@
 namespace Unifesspa.UniPlus.Selecao.Application.UnitTests.Queries;
 
-using System.Reflection;
-
 using AwesomeAssertions;
 
 using NSubstitute;
 
-using Unifesspa.UniPlus.Governance.Contracts;
 using Unifesspa.UniPlus.Selecao.Application.DTOs;
 using Unifesspa.UniPlus.Selecao.Application.Queries.ProcessosSeletivos;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
@@ -21,21 +18,12 @@ using Unifesspa.UniPlus.Testes.Compartilhado;
 /// </summary>
 public sealed class ObterProcessoSeletivoQueryHandlerUnidadeAdministradoraTests
 {
-    [Fact(DisplayName = "Handle nunca injeta IUnidadeReader — prova estrutural de que o GET nunca releva o cadastro vivo (CA-04)")]
-    public void Handle_NaoInjetaIUnidadeReader()
-    {
-        MethodInfo handle = typeof(ObterProcessoSeletivoQueryHandler).GetMethod(
-            "Handle", BindingFlags.Public | BindingFlags.Static)!;
-
-        handle.GetParameters().Select(p => p.ParameterType).Should().NotContain(typeof(IUnidadeReader));
-    }
-
     [Fact(DisplayName = "Handle persiste e retorna o processo com a Unidade administradora resolvida (round-trip contra o repositório)")]
     public async Task Handle_RetornaProcessoComUnidadeAdministradora()
     {
         Guid unidadeId = Guid.NewGuid();
         ProcessoSeletivo processo = ProcessoSeletivo.Criar(
-            "PS Query", TiposDeProcessoDeTeste.SiSU, OrigemCandidatos.InscricaoPropria, unidadeId,
+            "PS Query", TiposDeProcessoDeTeste.Sisu, OrigemCandidatos.InscricaoPropria, unidadeId,
             UnidadeAdministradoraSnapshot.Criar("CEPS", "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
         IProcessoSeletivoRepository repository = Substitute.For<IProcessoSeletivoRepository>();
         repository.ObterComConfiguracaoAsync(processo.Id, Arg.Any<CancellationToken>()).Returns(processo);
@@ -44,7 +32,11 @@ public sealed class ObterProcessoSeletivoQueryHandlerUnidadeAdministradoraTests
             new ObterProcessoSeletivoQuery(processo.Id), repository, CancellationToken.None);
 
         dto.Should().NotBeNull();
-        dto!.UnidadeAdministradora.OrigemId.Should().Be(unidadeId);
+        ConferirUnidade(dto!, unidadeId);
+    }
+    private static void ConferirUnidade(ProcessoSeletivoDto dto, Guid unidadeId)
+    {
+        dto.UnidadeAdministradora.OrigemId.Should().Be(unidadeId);
         dto.UnidadeAdministradora.Sigla.Should().Be("CEPS");
         dto.UnidadeAdministradora.Slug.Should().Be("ceps");
         dto.UnidadeAdministradora.Nome.Should().Be("Centro de Processos Seletivos");

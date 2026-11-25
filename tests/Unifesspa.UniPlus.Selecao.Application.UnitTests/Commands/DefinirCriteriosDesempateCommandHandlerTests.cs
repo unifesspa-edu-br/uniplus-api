@@ -43,7 +43,7 @@ public sealed class DefinirCriteriosDesempateCommandHandlerTests
     [Fact(DisplayName = "Handle com DESEMPATE_MAIOR_NOTA_ETAPA resolve parâmetros e persiste")]
     public async Task Handle_MaiorNotaEtapa_Persiste()
     {
-        ProcessoSeletivo processo = NovoProcesso("PSIQ 2026", TiposDeProcessoDeTeste.PSIQ);
+        ProcessoSeletivo processo = NovoProcesso("PSIQ 2026", TiposDeProcessoDeTeste.IndigenaEQuilombola);
         EtapaProcesso etapa = EtapaEntrevista();
         processo.DefinirEtapas([etapa]);
         CenarioDosCriteriosDeDesempate cenario = Com(processo).ComRegra(RegraDeDesempate.MaiorNotaNaEtapa.Codigo());
@@ -60,7 +60,7 @@ public sealed class DefinirCriteriosDesempateCommandHandlerTests
     [Fact(DisplayName = "Handle com DESEMPATE_MAIOR_NOTA_ETAPA sem EtapaRef recusa")]
     public async Task Handle_MaiorNotaEtapaSemEtapaRef_Recusa()
     {
-        ProcessoSeletivo processo = NovoProcesso("PSIQ 2026", TiposDeProcessoDeTeste.PSIQ);
+        ProcessoSeletivo processo = NovoProcesso("PSIQ 2026", TiposDeProcessoDeTeste.IndigenaEQuilombola);
         CenarioDosCriteriosDeDesempate cenario = Com(processo).ComRegra(RegraDeDesempate.MaiorNotaNaEtapa.Codigo());
 
         Result result = await cenario.DefinirAsync(Comando(processo.Id, CriterioSimples(1, RegraDeDesempate.MaiorNotaNaEtapa.Codigo())));
@@ -72,7 +72,7 @@ public sealed class DefinirCriteriosDesempateCommandHandlerTests
     [Fact(DisplayName = "Handle com DESEMPATE_IDOSO resolve parâmetros e persiste")]
     public async Task Handle_Idoso_Persiste()
     {
-        ProcessoSeletivo processo = NovoProcesso("PSE 2026", TiposDeProcessoDeTeste.PSECampo);
+        ProcessoSeletivo processo = NovoProcesso("PSE 2026", TiposDeProcessoDeTeste.EducacaoDoCampo);
         CenarioDosCriteriosDeDesempate cenario = Com(processo).ComRegra(RegraDeDesempate.Idoso.Codigo());
         CriterioDesempateInput criterio = CriterioDesempateDeTeste.DaRegra(RegraDeDesempate.Idoso.Codigo()).ComIdadeMinima(60).Construir();
 
@@ -172,7 +172,7 @@ public sealed class DefinirCriteriosDesempateCommandHandlerTests
     [Fact(DisplayName = "Handle com regra inexistente recusa")]
     public async Task Handle_RegraNaoEncontrada_Recusa()
     {
-        ProcessoSeletivo processo = NovoProcesso("PSIQ 2026", TiposDeProcessoDeTeste.PSIQ);
+        ProcessoSeletivo processo = NovoProcesso("PSIQ 2026", TiposDeProcessoDeTeste.IndigenaEQuilombola);
         CenarioDosCriteriosDeDesempate cenario = Com(processo).SemNenhumaRegraNoCatalogo();
 
         Result result = await cenario.DefinirAsync(Comando(processo.Id, CriterioSimples(1, "INEXISTENTE")));
@@ -185,7 +185,7 @@ public sealed class DefinirCriteriosDesempateCommandHandlerTests
     [Fact(DisplayName = "Código fora do catálogo de critérios cai na consulta de reserva: regra de outro tipo recusa")]
     public async Task Handle_RegraTipoInvalido_Recusa()
     {
-        ProcessoSeletivo processo = NovoProcesso("PSIQ 2026", TiposDeProcessoDeTeste.PSIQ);
+        ProcessoSeletivo processo = NovoProcesso("PSIQ 2026", TiposDeProcessoDeTeste.IndigenaEQuilombola);
         CenarioDosCriteriosDeDesempate cenario = Com(processo).ComRegra(RegraDeCalculoDaNota.MediaPonderada.Codigo(), TipoRegra.RegraCalculo);
 
         Result result = await cenario.DefinirAsync(Comando(processo.Id, CriterioSimples(1, RegraDeCalculoDaNota.MediaPonderada.Codigo())));
@@ -197,7 +197,7 @@ public sealed class DefinirCriteriosDesempateCommandHandlerTests
     [Fact(DisplayName = "ADR-0125: ordem inválida acumula junto com a regra inexistente, no mesmo item e em outro")]
     public async Task Handle_OrdemInvalidaERegraInexistente_Acumula()
     {
-        ProcessoSeletivo processo = NovoProcesso("PSIQ 2026", TiposDeProcessoDeTeste.PSIQ);
+        ProcessoSeletivo processo = NovoProcesso("PSIQ 2026", TiposDeProcessoDeTeste.IndigenaEQuilombola);
         CenarioDosCriteriosDeDesempate cenario = Com(processo);
 
         Result result = await cenario.DefinirAsync(Comando(
@@ -215,7 +215,7 @@ public sealed class DefinirCriteriosDesempateCommandHandlerTests
     [Fact(DisplayName = "ADR-0125: ordem inválida acumula entre critérios, com o índice prefixado ao field")]
     public async Task Handle_DoisCriteriosComOrdemInvalida_AcumulaComIndicePrefixado()
     {
-        ProcessoSeletivo processo = NovoProcesso("PSIQ 2026", TiposDeProcessoDeTeste.PSIQ);
+        ProcessoSeletivo processo = NovoProcesso("PSIQ 2026", TiposDeProcessoDeTeste.IndigenaEQuilombola);
         CenarioDosCriteriosDeDesempate cenario = Com(processo);
 
         Result result = await cenario.DefinirAsync(Comando(
@@ -229,7 +229,7 @@ public sealed class DefinirCriteriosDesempateCommandHandlerTests
     [Fact(DisplayName = "ADR-0125: a recusa de CriterioDesempate.Criar carrega o índice do item no campo")]
     public async Task Handle_SegundoCriterioComIdadeMinimaInvalida_PrefixaIndiceNoField()
     {
-        ProcessoSeletivo processo = NovoProcesso("PSE 2026", TiposDeProcessoDeTeste.PSECampo);
+        ProcessoSeletivo processo = NovoProcesso("PSE 2026", TiposDeProcessoDeTeste.EducacaoDoCampo);
         CenarioDosCriteriosDeDesempate cenario = Com(processo).ComRegra(RegraDeDesempate.MaiorIdade.Codigo()).ComRegra(RegraDeDesempate.Idoso.Codigo());
         CriterioDesempateInput idosoSemIdade = CriterioDesempateDeTeste.DaRegra(RegraDeDesempate.Idoso.Codigo()).NaOrdem(2).ComIdadeMinima(0).Construir();
 
@@ -242,7 +242,7 @@ public sealed class DefinirCriteriosDesempateCommandHandlerTests
     [Fact(DisplayName = "Handle com lista vazia remove todos os critérios e persiste")]
     public async Task Handle_ListaVazia_Persiste()
     {
-        ProcessoSeletivo processo = NovoProcesso("PSIQ 2026", TiposDeProcessoDeTeste.PSIQ);
+        ProcessoSeletivo processo = NovoProcesso("PSIQ 2026", TiposDeProcessoDeTeste.IndigenaEQuilombola);
         CenarioDosCriteriosDeDesempate cenario = Com(processo);
 
         Result result = await cenario.DefinirAsync(Comando(processo.Id));

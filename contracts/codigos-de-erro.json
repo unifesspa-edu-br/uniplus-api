@@ -3002,9 +3002,9 @@
       "titulo": "Tipo de etapa não admite nenhum caráter de etapa"
     },
     {
-      "codigo": "uniplus.configuracao.tipo_processo.codigo_caractere_invalido",
+      "codigo": "uniplus.configuracao.tipo_processo.codigo_formato_invalido",
       "status": 422,
-      "titulo": "Código do tipo de processo seletivo contém o caractere nulo ou caractere que não é texto"
+      "titulo": "Código do tipo de processo seletivo fora do formato"
     },
     {
       "codigo": "uniplus.configuracao.tipo_processo.codigo_ja_existe",
@@ -3019,12 +3019,7 @@
     {
       "codigo": "uniplus.configuracao.tipo_processo.codigo_reservado",
       "status": 422,
-      "titulo": "Código reservado para obrigatoriedade legal universal"
-    },
-    {
-      "codigo": "uniplus.configuracao.tipo_processo.codigo_tamanho",
-      "status": 422,
-      "titulo": "Tamanho do código do tipo de processo seletivo inválido"
+      "titulo": "Código reservado para obrigatoriedade legal que vale para todos os tipos"
     },
     {
       "codigo": "uniplus.configuracao.tipo_processo.conflito_de_concorrencia",

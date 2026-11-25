@@ -26,6 +26,6 @@ internal sealed class CriacaoDoProcessoSeletivoBuilder(Guid unidadeId)
     }
 
     public CriarProcessoSeletivoCommand Construir() => new(
-        "PS 2026 — SiSU", TiposDeProcessoDeTeste.SiSU, OrigemCandidatos.InscricaoPropria,
+        "PS 2026 — SiSU", TiposDeProcessoDeTeste.Sisu, OrigemCandidatos.InscricaoPropria,
         unidadeId, _codigoIbge, _cidade, _uf, _identificadorLegivel);
 }

@@ -39,7 +39,7 @@ using static Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Seed.SqlD
 public static class SementePsrMedicina2027
 {
     /// <summary>O tipo de processo do edital de Medicina.</summary>
-    public const string TipoProcessoCodigo = "PSR";
+    public const string TipoProcessoCodigo = "REGULAR_UNIFICADO";
 
     /// <summary>O identificador fixo do tipo de processo semeado.</summary>
     public static Guid TipoProcessoId => Id(TabelaTipoProcesso, 1);

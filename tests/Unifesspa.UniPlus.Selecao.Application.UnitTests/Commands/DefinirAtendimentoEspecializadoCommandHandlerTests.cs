@@ -16,105 +16,72 @@ using Unifesspa.UniPlus.Testes.Compartilhado;
 
 public sealed class DefinirAtendimentoEspecializadoCommandHandlerTests
 {
-    private static (
-        IProcessoSeletivoRepository Repository,
-        ICondicaoAtendimentoReader CondicaoReader,
-        IRecursoAcessibilidadeReader RecursoReader,
-        ITipoDeficienciaReader TipoDeficienciaReader,
-        IUnitOfWork UnitOfWork) NovosMocks(ProcessoSeletivo? processo, Guid processoId)
+    [Theory]
+    [InlineData("PCD", true)]
+    [InlineData("LACTANTE", false)]
+    public async Task Handle_TipoDeficiencia_ExigeCondicaoPcd(string codigo, bool permitido)
     {
-        IProcessoSeletivoRepository repository = Substitute.For<IProcessoSeletivoRepository>();
-        repository.ObterParaMutacaoAsync(processoId, Arg.Any<CancellationToken>()).Returns(processo);
-        return (
-            repository,
-            Substitute.For<ICondicaoAtendimentoReader>(),
-            Substitute.For<IRecursoAcessibilidadeReader>(),
-            Substitute.For<ITipoDeficienciaReader>(),
-            Substitute.For<IUnitOfWork>());
+        Cenario cenario = new();
+        cenario.ConfigurarCondicao(codigo);
+        cenario.ConfigurarTipoDeficiencia();
+        Result resultado = await cenario.Executar([cenario.CondicaoId], [cenario.TipoDeficienciaId]);
+        resultado.IsSuccess.Should().Be(permitido);
+        await ConferirPersistencia(cenario, resultado, permitido);
     }
 
-    [Fact(DisplayName = "Handle com tipo de deficiência sob condição PcD persiste (CA-06, ADR-0067)")]
-    public async Task Handle_TipoDeficienciaSobPcd_Persiste()
+    private static async Task ConferirPersistencia(Cenario cenario, Result resultado, bool permitido)
     {
-        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS 2026 — SiSU", TiposDeProcessoDeTeste.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
-        Guid condicaoId = Guid.CreateVersion7();
-        Guid tipoDeficienciaId = Guid.CreateVersion7();
-
-        (IProcessoSeletivoRepository Repository, ICondicaoAtendimentoReader CondicaoReader, IRecursoAcessibilidadeReader RecursoReader, ITipoDeficienciaReader TipoDeficienciaReader, IUnitOfWork UnitOfWork) mocks = NovosMocks(processo, processo.Id);
-        mocks.CondicaoReader.ObterPorIdAsync(condicaoId, Arg.Any<CancellationToken>())
-            .Returns(new CondicaoAtendimentoView(condicaoId, "PCD", "Pessoa com deficiência"));
-        mocks.TipoDeficienciaReader.ObterPorIdAsync(tipoDeficienciaId, Arg.Any<CancellationToken>())
-            .Returns(new TipoDeficienciaView(tipoDeficienciaId, "DEFICIENCIA_VISUAL", "Deficiência visual", "Deficiência relacionada à visão", null));
-
-        DefinirAtendimentoEspecializadoCommand command = new(processo.Id, [condicaoId], [], [tipoDeficienciaId]);
-
-        Result result = await DefinirAtendimentoEspecializadoCommandHandler.Handle(
-            command, mocks.Repository, mocks.CondicaoReader, mocks.RecursoReader, mocks.TipoDeficienciaReader, mocks.UnitOfWork, CancellationToken.None);
-
-        result.IsSuccess.Should().BeTrue();
-        processo.AtendimentoEspecializado.Should().NotBeNull();
-        processo.AtendimentoEspecializado!.TiposDeficiencia.Should().ContainSingle();
-        await mocks.UnitOfWork.Received(1).SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
+        if (permitido)
+        {
+            cenario.Processo.AtendimentoEspecializado!.TiposDeficiencia.Should().ContainSingle();
+            await cenario.UnitOfWork.Received(1).SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
+        }
+        else
+        {
+            resultado.Error!.Code.Should().Be("AtendimentoEspecializado.TipoDeficienciaSemCondicaoPcd");
+            await cenario.UnitOfWork.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
+        }
     }
 
-    [Fact(DisplayName = "Handle com tipo de deficiência sem condição PcD recusa (CA-06, ADR-0067)")]
-    public async Task Handle_TipoDeficienciaSemPcd_Recusa()
-    {
-        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS 2026 — SiSU", TiposDeProcessoDeTeste.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
-        Guid condicaoId = Guid.CreateVersion7();
-        Guid tipoDeficienciaId = Guid.CreateVersion7();
-
-        (IProcessoSeletivoRepository Repository, ICondicaoAtendimentoReader CondicaoReader, IRecursoAcessibilidadeReader RecursoReader, ITipoDeficienciaReader TipoDeficienciaReader, IUnitOfWork UnitOfWork) mocks = NovosMocks(processo, processo.Id);
-        mocks.CondicaoReader.ObterPorIdAsync(condicaoId, Arg.Any<CancellationToken>())
-            .Returns(new CondicaoAtendimentoView(condicaoId, "LACTANTE", "Lactante"));
-        mocks.TipoDeficienciaReader.ObterPorIdAsync(tipoDeficienciaId, Arg.Any<CancellationToken>())
-            .Returns(new TipoDeficienciaView(tipoDeficienciaId, "DEFICIENCIA_VISUAL", "Deficiência visual", "Deficiência relacionada à visão", null));
-
-        DefinirAtendimentoEspecializadoCommand command = new(processo.Id, [condicaoId], [], [tipoDeficienciaId]);
-
-        Result result = await DefinirAtendimentoEspecializadoCommandHandler.Handle(
-            command, mocks.Repository, mocks.CondicaoReader, mocks.RecursoReader, mocks.TipoDeficienciaReader, mocks.UnitOfWork, CancellationToken.None);
-
-        result.IsFailure.Should().BeTrue();
-        result.Error!.Code.Should().Be("AtendimentoEspecializado.TipoDeficienciaSemCondicaoPcd");
-        await mocks.UnitOfWork.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
-    }
-
-    [Fact(DisplayName = "ADR-0125: Handle recusa CondicaoId duplicado ANTES de consultar qualquer leitor (validação vence I/O)")]
+    [Fact]
     public async Task Handle_CondicaoIdDuplicado_RecusaSemConsultarLeitores()
     {
-        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS 2026 — SiSU", TiposDeProcessoDeTeste.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
-        Guid condicaoId = Guid.CreateVersion7();
-
-        (IProcessoSeletivoRepository Repository, ICondicaoAtendimentoReader CondicaoReader, IRecursoAcessibilidadeReader RecursoReader, ITipoDeficienciaReader TipoDeficienciaReader, IUnitOfWork UnitOfWork) mocks = NovosMocks(processo, processo.Id);
-
-        DefinirAtendimentoEspecializadoCommand command = new(processo.Id, [condicaoId, condicaoId], [], []);
-
-        Result result = await DefinirAtendimentoEspecializadoCommandHandler.Handle(
-            command, mocks.Repository, mocks.CondicaoReader, mocks.RecursoReader, mocks.TipoDeficienciaReader, mocks.UnitOfWork, CancellationToken.None);
-
-        result.IsFailure.Should().BeTrue();
-        result.Error!.Code.Should().Be("AtendimentoEspecializado.CondicaoDuplicada");
-        await mocks.CondicaoReader.DidNotReceiveWithAnyArgs().ObterPorIdAsync(default!, default!);
+        Cenario cenario = new();
+        Result resultado = await cenario.Executar([cenario.CondicaoId, cenario.CondicaoId], []);
+        resultado.Error!.Code.Should().Be("AtendimentoEspecializado.CondicaoDuplicada");
+        await cenario.CondicaoReader.DidNotReceiveWithAnyArgs().ObterPorIdAsync(default!, default!);
     }
 
-    [Fact(DisplayName = "Handle com condição inexistente recusa sem persistir")]
+    [Fact]
     public async Task Handle_CondicaoInexistente_Recusa()
     {
-        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS 2026 — SiSU", TiposDeProcessoDeTeste.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
-        Guid condicaoId = Guid.CreateVersion7();
+        Cenario cenario = new();
+        Result resultado = await cenario.Executar([cenario.CondicaoId], []);
+        resultado.Error!.Code.Should().Be("AtendimentoEspecializado.CondicaoNaoEncontrada");
+        await cenario.UnitOfWork.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
+    }
 
-        (IProcessoSeletivoRepository Repository, ICondicaoAtendimentoReader CondicaoReader, IRecursoAcessibilidadeReader RecursoReader, ITipoDeficienciaReader TipoDeficienciaReader, IUnitOfWork UnitOfWork) mocks = NovosMocks(processo, processo.Id);
-        mocks.CondicaoReader.ObterPorIdAsync(condicaoId, Arg.Any<CancellationToken>())
-            .Returns((CondicaoAtendimentoView?)null);
+    private sealed class Cenario
+    {
+        private readonly IProcessoSeletivoRepository _repository = Substitute.For<IProcessoSeletivoRepository>();
+        private readonly IRecursoAcessibilidadeReader _recursoReader = Substitute.For<IRecursoAcessibilidadeReader>();
+        private readonly ITipoDeficienciaReader _tipoReader = Substitute.For<ITipoDeficienciaReader>();
+        public ICondicaoAtendimentoReader CondicaoReader { get; } = Substitute.For<ICondicaoAtendimentoReader>();
+        public IUnitOfWork UnitOfWork { get; } = Substitute.For<IUnitOfWork>();
+        public Guid CondicaoId { get; } = Guid.CreateVersion7();
+        public Guid TipoDeficienciaId { get; } = Guid.CreateVersion7();
+        public ProcessoSeletivo Processo { get; } = ProcessoSeletivo.Criar(
+            "PS 2026 — SiSU", TiposDeProcessoDeTeste.Sisu, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(),
+            UnidadeAdministradoraSnapshot.Criar("CEPS", "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!,
+            LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
 
-        DefinirAtendimentoEspecializadoCommand command = new(processo.Id, [condicaoId], [], []);
-
-        Result result = await DefinirAtendimentoEspecializadoCommandHandler.Handle(
-            command, mocks.Repository, mocks.CondicaoReader, mocks.RecursoReader, mocks.TipoDeficienciaReader, mocks.UnitOfWork, CancellationToken.None);
-
-        result.IsFailure.Should().BeTrue();
-        result.Error!.Code.Should().Be("AtendimentoEspecializado.CondicaoNaoEncontrada");
-        await mocks.UnitOfWork.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
+        public Cenario() => _repository.ObterParaMutacaoAsync(Processo.Id, Arg.Any<CancellationToken>()).Returns(Processo);
+        public void ConfigurarCondicao(string codigo) => CondicaoReader.ObterPorIdAsync(CondicaoId, Arg.Any<CancellationToken>())
+            .Returns(new CondicaoAtendimentoView(CondicaoId, codigo, "Condição"));
+        public void ConfigurarTipoDeficiencia() => _tipoReader.ObterPorIdAsync(TipoDeficienciaId, Arg.Any<CancellationToken>())
+            .Returns(new TipoDeficienciaView(TipoDeficienciaId, "DEFICIENCIA_VISUAL", "Deficiência visual", "Deficiência relacionada à visão", null));
+        public Task<Result> Executar(Guid[] condicoes, Guid[] tipos) => DefinirAtendimentoEspecializadoCommandHandler.Handle(
+            new DefinirAtendimentoEspecializadoCommand(Processo.Id, condicoes, [], tipos), _repository,
+            CondicaoReader, _recursoReader, _tipoReader, UnitOfWork, CancellationToken.None);
     }
 }

@@ -170,7 +170,7 @@ internal static class CatalogosDoEnvelopeFechado
     }
 
     private static Task<Guid> ObterTipoProcessoSisuAsync(UniPlusDbContext config) =>
-        config.TiposProcesso.Where(tipo => tipo.Codigo == "SiSU" && tipo.Ativo).Select(tipo => tipo.Id).SingleAsync();
+        config.TiposProcesso.Where(tipo => tipo.Codigo == "SISU" && tipo.Ativo).Select(tipo => tipo.Id).SingleAsync();
 
     private static Dictionary<string, Guid> ModalidadesFederaisEAmplaPorCodigo() =>
         ModalidadeSeed.Itens

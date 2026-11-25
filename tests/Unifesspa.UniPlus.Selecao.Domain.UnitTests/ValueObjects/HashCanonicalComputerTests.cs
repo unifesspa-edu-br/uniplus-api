@@ -95,7 +95,7 @@ public sealed class HashCanonicalComputerTests
     }
 
     private static ObrigatoriedadeLegal Criar(string? campo = null) => ObrigatoriedadeLegal.Criar(
-        campo == "tipoProcessoCodigo" ? "PSIQ" : "*",
+        campo == "tipoProcessoCodigo" ? "INDIGENA_E_QUILOMBOLA" : "*",
         campo == "categoria" ? CategoriaObrigatoriedade.Modalidade : CategoriaObrigatoriedade.Etapa,
         campo == "regraCodigo" ? "ETAPA_OBRIGATORIA_V2" : "ETAPA_OBRIGATORIA",
         Predicado(campo),

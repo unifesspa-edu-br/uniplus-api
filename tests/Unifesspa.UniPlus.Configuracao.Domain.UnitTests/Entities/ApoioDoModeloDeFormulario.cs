@@ -36,7 +36,7 @@ internal static class ApoioDoModeloDeFormulario
 
     internal static Result<ModeloFormulario> Criar(
         FinalidadeFormulario? finalidade, ConteudoDoModelo conteudo, IReadOnlyDictionary<string, IReadOnlyCollection<string>>? derivacoes = null) =>
-        ModeloFormulario.Criar("HABILITACAO_MEDICINA", "Habilitação Medicina 2027", null, finalidade, "PSR", conteudo, derivacoes ?? SemDerivacoes);
+        ModeloFormulario.Criar("HABILITACAO_MEDICINA", "Habilitação Medicina 2027", null, finalidade, "REGULAR_UNIFICADO", conteudo, derivacoes ?? SemDerivacoes);
 
     internal static Result<ModeloFormulario> CriarInscricao(ConteudoDoModelo conteudo, IReadOnlyDictionary<string, IReadOnlyCollection<string>> derivacoes) =>
         ModeloFormulario.Criar("INSCRICAO_MEDICINA", "Inscrição Medicina 2027", null, FinalidadeFormulario.Inscricao, null, conteudo, derivacoes);

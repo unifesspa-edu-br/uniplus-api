@@ -61,7 +61,7 @@ internal static class ProcessoConformeFactory
         bool declararOpcoesDeCurso = true, PredicadoDnf? regraDeAplicabilidade = null)
     {
         ProcessoSeletivo processo = ProcessoSeletivo.Criar(
-            "PS Gate", TiposDeProcessoDeTeste.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(),
+            "PS Gate", TiposDeProcessoDeTeste.Sisu, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(),
             UnidadeAdministradoraSnapshot.Criar("CEPS", "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!,
             LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, identificadorLegivel: IdentificadoresDeTeste.Novo());
         DefinirFaseEtapaEAtendimento(processo, fase);

@@ -102,7 +102,7 @@ public sealed class ConferenciaDaAprovacaoDaProtecaoTests
 
     private static async Task<(ProcessoSeletivo Processo, TipoDocumentoView Tipo)> ProcessoComExigenciaAsync(string[] fatosComprovados)
     {
-        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS Medicina", TiposDeProcessoDeTeste.SiSU, OrigemCandidatos.ImportacaoExterna, Guid.NewGuid(), UnidadeAdministradoraSnapshot.Criar("CEPS", "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, identificadorLegivel: IdentificadoresDeTeste.Novo());
+        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS Medicina", TiposDeProcessoDeTeste.Sisu, OrigemCandidatos.ImportacaoExterna, Guid.NewGuid(), UnidadeAdministradoraSnapshot.Criar("CEPS", "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, identificadorLegivel: IdentificadoresDeTeste.Novo());
         FaseCronograma fase = FaseDeInscricao();
         processo.DefinirCronogramaFases([fase], []).IsSuccess.Should().BeTrue();
 

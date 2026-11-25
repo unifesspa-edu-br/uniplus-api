@@ -66,7 +66,7 @@ public abstract class ModeloFormularioHandlerTestBase
 
         Fatos.ListarTodosAsync(Arg.Any<CancellationToken>()).Returns(_ => [Certificado, Cpf, Idade, MaiorIdade, SemRenda, DataNascimento, FaixaEtaria]);
         Termos.ListarVersoesAsync(Arg.Any<IReadOnlyCollection<Guid>>(), Arg.Any<CancellationToken>()).Returns([]);
-        Tipos.ObterAtivoPorCodigoAsync("PSR", Arg.Any<CancellationToken>()).Returns(new TipoProcessoView(Guid.NewGuid(), "PSR", "PSR", null));
+        Tipos.ObterAtivoPorCodigoAsync("REGULAR_UNIFICADO", Arg.Any<CancellationToken>()).Returns(new TipoProcessoView(Guid.NewGuid(), "REGULAR_UNIFICADO", "REGULAR_UNIFICADO", null));
     }
 
     protected static void Aprovar(FatoCandidato fato)

@@ -47,7 +47,7 @@ public sealed class ObterProcessoSeletivoQueryHandlerAlgoritmoContagemTests
     private static ProcessoSeletivo NovoProcesso()
     {
         return ProcessoSeletivo.Criar(
-            "PS Query Contagem", TiposDeProcessoDeTeste.PSIQ, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(),
+            "PS Query Contagem", TiposDeProcessoDeTeste.IndigenaEQuilombola, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(),
             UnidadeAdministradoraSnapshot.Criar("CEPS", "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!,
             LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
 

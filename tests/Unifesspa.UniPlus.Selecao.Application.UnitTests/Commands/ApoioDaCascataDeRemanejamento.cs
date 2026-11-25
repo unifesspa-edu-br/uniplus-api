@@ -58,7 +58,7 @@ internal static class ApoioDaCascataDeRemanejamento
 
     internal static ProcessoSeletivo NovoProcesso() =>
         ProcessoSeletivo.Criar(
-            "PS 2026", TiposDeProcessoDeTeste.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(),
+            "PS 2026", TiposDeProcessoDeTeste.Sisu, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(),
             UnidadeAdministradoraSnapshot.Criar("CEPS", "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!,
             LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, identificadorLegivel: IdentificadoresDeTeste.Novo());
 
@@ -107,7 +107,7 @@ internal static class ApoioDaCascataDeRemanejamento
     /// <summary>Processo publicado, que <see cref="ProcessoSeletivo.MutacaoBloqueada"/> recusa.</summary>
     internal static ProcessoSeletivo NovoProcessoPublicado()
     {
-        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS 2026 — Publicado", TiposDeProcessoDeTeste.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, identificadorLegivel: IdentificadoresDeTeste.Novo());
+        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS 2026 — Publicado", TiposDeProcessoDeTeste.Sisu, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, identificadorLegivel: IdentificadoresDeTeste.Novo());
         DefinirOAtendimento(processo);
         DefinirAsVagasDeAmpla(processo);
         DefinirAClassificacaoImportada(processo);

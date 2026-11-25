@@ -38,7 +38,7 @@ public sealed class ProcessoSeletivoPersistenciaDerivacaoESplitQueryTests : ICla
     public async Task RedefinirRegraDerivacao_SobreAgregadoTracked_ApagaArvoreAntiga()
     {
         ProcessoSeletivo processo = ProcessoSeletivo.Criar(
-            "PS 2026 — Redefinição", TiposDeProcessoDeTeste.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(),
+            "PS 2026 — Redefinição", TiposDeProcessoDeTeste.Sisu, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(),
             UnidadeAdministradoraSnapshot.Criar("CEPS", "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!,
             LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
         processo.DefinirRegrasDerivacao([RegimeDeVagaComUmaRegraCondicionada()]).IsSuccess.Should().BeTrue();

@@ -61,10 +61,10 @@ public sealed class ModeloFormularioVinculoNovoTests : ModeloFormularioHandlerTe
     [Fact(DisplayName = "Tipo de processo inexistente ou desativado é recusado; o que o modelo já usava continua na edição")]
     public async Task TipoDeProcesso_RecusaSoONovo()
     {
-        Result<Guid> criar = await CriarAsync(Conteudo(Item("CERTIFICADO", 0)), tipo: "PSIQ");
-        ModeloFormulario existente = Existente("PSIQ");
+        Result<Guid> criar = await CriarAsync(Conteudo(Item("CERTIFICADO", 0)), tipo: "INDIGENA_E_QUILOMBOLA");
+        ModeloFormulario existente = Existente("INDIGENA_E_QUILOMBOLA");
 
-        Result editar = await AtualizarAsync(existente, Conteudo(Item("CERTIFICADO", 0)), tipo: "PSIQ");
+        Result editar = await AtualizarAsync(existente, Conteudo(Item("CERTIFICADO", 0)), tipo: "INDIGENA_E_QUILOMBOLA");
 
         criar.Errors.Should().ContainSingle().Which.Error.Code.Should().Be(ModeloFormularioErrorCodes.TipoProcessoInexistente);
         editar.IsSuccess.Should().BeTrue(editar.Error?.Message);

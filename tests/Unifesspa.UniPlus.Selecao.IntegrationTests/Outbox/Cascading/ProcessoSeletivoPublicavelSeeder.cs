@@ -108,7 +108,7 @@ internal static class ProcessoSeletivoPublicavelSeeder
 
     private static ProcessoSeletivo CriarProcesso(UniPlusDbContext db, OpcoesDoProcessoSeletivoPublicavel opcoes)
     {
-        ProcessoSeletivo processo = ProcessoSeletivo.Criar(opcoes.Nome, opcoes.Tipo ?? TiposDeProcessoDeTeste.SiSU, OrigemCandidatos.InscricaoPropria, opcoes.UnidadeAdministradoraOrigemId ?? Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, identificadorLegivel: IdentificadoresDeTeste.Novo());
+        ProcessoSeletivo processo = ProcessoSeletivo.Criar(opcoes.Nome, opcoes.Tipo ?? TiposDeProcessoDeTeste.Sisu, OrigemCandidatos.InscricaoPropria, opcoes.UnidadeAdministradoraOrigemId ?? Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, identificadorLegivel: IdentificadoresDeTeste.Novo());
 
         if (opcoes.ProcessoSeletivoId.HasValue)
         {

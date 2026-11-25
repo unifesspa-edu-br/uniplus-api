@@ -58,7 +58,7 @@ internal static class ProcessoParaMotivos
     /// <summary>O processo recém-criado, sem fase nem etapa declaradas.</summary>
     internal static ProcessoSeletivo SemFasesNemEtapas() =>
         ProcessoSeletivo.Criar(
-            "PSR Medicina 2027", TiposDeProcessoDeTeste.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(),
+            "PSR Medicina 2027", TiposDeProcessoDeTeste.Sisu, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(),
             UnidadeAdministradoraSnapshot.Criar("CEPS", "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!,
             LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
 

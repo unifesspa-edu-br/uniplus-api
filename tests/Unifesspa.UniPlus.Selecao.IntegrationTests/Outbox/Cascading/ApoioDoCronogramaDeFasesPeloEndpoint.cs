@@ -135,7 +135,7 @@ internal static class ApoioDoCronogramaDeFasesPeloEndpoint
     private static ProcessoSeletivo NovoProcessoEmRascunho(string nome, OrigemCandidatos origem) =>
         ProcessoSeletivo.Criar(
             nome,
-            TiposDeProcessoDeTeste.SiSU,
+            TiposDeProcessoDeTeste.Sisu,
             origem,
             Guid.CreateVersion7(),
             UnidadeAdministradoraSnapshot.Criar("CEPS", "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!,

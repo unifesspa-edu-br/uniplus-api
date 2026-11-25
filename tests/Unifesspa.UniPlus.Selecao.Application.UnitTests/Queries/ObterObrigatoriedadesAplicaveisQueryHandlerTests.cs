@@ -17,27 +17,19 @@ public sealed class ObterObrigatoriedadesAplicaveisQueryHandlerTests
     [Fact(DisplayName = "Handle delega ao ruleset com o tipo do processo e a data explícita")]
     public async Task Handle_DataExplicita_DelegadaAoRepositorio()
     {
-        ProcessoSeletivo processo = ProcessoSeletivo.Criar(
-            "PSIQ 2026", TiposDeProcessoDeTeste.PSIQ, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
+        ProcessoSeletivo processo = NovoProcesso();
         DateOnly dataReferencia = new(2026, 6, 15);
-        ObrigatoriedadeLegal universal = NovaRegra("*", "UNIVERSAL");
-        ObrigatoriedadeLegal especifica = NovaRegra("PSIQ", "PSIQ");
 
-        IProcessoSeletivoRepository processoRepository = Substitute.For<IProcessoSeletivoRepository>();
-        processoRepository.ObterPorIdAsync(processo.Id, Arg.Any<CancellationToken>()).Returns(processo);
+        IProcessoSeletivoRepository processoRepository = RepositorioDoProcesso(processo);
         IObrigatoriedadeLegalRepository regraRepository = Substitute.For<IObrigatoriedadeLegalRepository>();
-        regraRepository.ObterVigentesParaTipoProcessoAsync("PSIQ", dataReferencia, Arg.Any<CancellationToken>())
-            .Returns([universal, especifica]);
+        regraRepository.ObterVigentesParaTipoProcessoAsync("INDIGENA_E_QUILOMBOLA", dataReferencia, Arg.Any<CancellationToken>())
+            .Returns([NovaRegra("*", "UNIVERSAL"), NovaRegra("INDIGENA_E_QUILOMBOLA", "PSIQ")]);
 
-        IReadOnlyList<ObrigatoriedadeLegalDto> resultado = await ObterObrigatoriedadesAplicaveisQueryHandler.Handle(
-            new ObterObrigatoriedadesAplicaveisQuery(processo.Id, dataReferencia),
-            processoRepository,
-            regraRepository,
-            CancellationToken.None);
+        IReadOnlyList<ObrigatoriedadeLegalDto> resultado = await Consultar(processo.Id, dataReferencia, processoRepository, regraRepository);
 
         resultado.Select(static regra => regra.RegraCodigo).Should().BeEquivalentTo(["UNIVERSAL", "PSIQ"]);
         await regraRepository.Received(1).ObterVigentesParaTipoProcessoAsync(
-            "PSIQ", dataReferencia, Arg.Any<CancellationToken>());
+            "INDIGENA_E_QUILOMBOLA", dataReferencia, Arg.Any<CancellationToken>());
     }
 
     [Fact(DisplayName = "Handle não consulta ruleset quando o processo não existe")]
@@ -62,34 +54,46 @@ public sealed class ObterObrigatoriedadesAplicaveisQueryHandlerTests
     [Fact(DisplayName = "Handle devolve conjuntos diferentes para datas de referência diferentes")]
     public async Task Handle_DatasDiferentes_DevolveConjuntosDiferentes()
     {
-        ProcessoSeletivo processo = ProcessoSeletivo.Criar(
-            "PSIQ 2026", TiposDeProcessoDeTeste.PSIQ, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
+        ProcessoSeletivo processo = NovoProcesso();
         DateOnly duranteVigencia = new(2026, 6, 15);
         DateOnly aposVigencia = new(2026, 7, 5);
-        ObrigatoriedadeLegal regra = NovaRegra("PSIQ", "PSIQ_VIGENTE");
+        ObrigatoriedadeLegal regra = NovaRegra("INDIGENA_E_QUILOMBOLA", "PSIQ_VIGENTE");
 
-        IProcessoSeletivoRepository processoRepository = Substitute.For<IProcessoSeletivoRepository>();
-        processoRepository.ObterPorIdAsync(processo.Id, Arg.Any<CancellationToken>()).Returns(processo);
+        IProcessoSeletivoRepository processoRepository = RepositorioDoProcesso(processo);
         IObrigatoriedadeLegalRepository regraRepository = Substitute.For<IObrigatoriedadeLegalRepository>();
-        regraRepository.ObterVigentesParaTipoProcessoAsync("PSIQ", duranteVigencia, Arg.Any<CancellationToken>())
-            .Returns([regra]);
-        regraRepository.ObterVigentesParaTipoProcessoAsync("PSIQ", aposVigencia, Arg.Any<CancellationToken>())
-            .Returns([]);
+        ConfigurarVigencia(regraRepository, regra, duranteVigencia, aposVigencia);
 
-        IReadOnlyList<ObrigatoriedadeLegalDto> durante = await ObterObrigatoriedadesAplicaveisQueryHandler.Handle(
-            new ObterObrigatoriedadesAplicaveisQuery(processo.Id, duranteVigencia),
-            processoRepository,
-            regraRepository,
-            CancellationToken.None);
-        IReadOnlyList<ObrigatoriedadeLegalDto> apos = await ObterObrigatoriedadesAplicaveisQueryHandler.Handle(
-            new ObterObrigatoriedadesAplicaveisQuery(processo.Id, aposVigencia),
-            processoRepository,
-            regraRepository,
-            CancellationToken.None);
+        IReadOnlyList<ObrigatoriedadeLegalDto> durante = await Consultar(processo.Id, duranteVigencia, processoRepository, regraRepository);
+        IReadOnlyList<ObrigatoriedadeLegalDto> apos = await Consultar(processo.Id, aposVigencia, processoRepository, regraRepository);
 
         durante.Select(static item => item.RegraCodigo).Should().ContainSingle().Which.Should().Be("PSIQ_VIGENTE");
         apos.Should().BeEmpty();
     }
+
+    private static void ConfigurarVigencia(IObrigatoriedadeLegalRepository repositorio, ObrigatoriedadeLegal regra,
+        DateOnly durante, DateOnly depois)
+    {
+        repositorio.ObterVigentesParaTipoProcessoAsync("INDIGENA_E_QUILOMBOLA", durante, Arg.Any<CancellationToken>())
+            .Returns([regra]);
+        repositorio.ObterVigentesParaTipoProcessoAsync("INDIGENA_E_QUILOMBOLA", depois, Arg.Any<CancellationToken>())
+            .Returns([]);
+    }
+
+    private static ProcessoSeletivo NovoProcesso() => ProcessoSeletivo.Criar(
+        "PSIQ 2026", TiposDeProcessoDeTeste.IndigenaEQuilombola, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(),
+        UnidadeAdministradoraSnapshot.Criar("CEPS", "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!,
+        LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
+
+    private static IProcessoSeletivoRepository RepositorioDoProcesso(ProcessoSeletivo processo)
+    {
+        IProcessoSeletivoRepository repository = Substitute.For<IProcessoSeletivoRepository>();
+        repository.ObterPorIdAsync(processo.Id, Arg.Any<CancellationToken>()).Returns(processo);
+        return repository;
+    }
+
+    private static Task<IReadOnlyList<ObrigatoriedadeLegalDto>> Consultar(Guid id, DateOnly data,
+        IProcessoSeletivoRepository processos, IObrigatoriedadeLegalRepository regras) =>
+        ObterObrigatoriedadesAplicaveisQueryHandler.Handle(new(id, data), processos, regras, CancellationToken.None);
 
     private static ObrigatoriedadeLegal NovaRegra(string tipoProcessoCodigo, string regraCodigo) =>
         ObrigatoriedadeLegal.Criar(

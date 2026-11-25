@@ -20,7 +20,7 @@ public sealed class LeituraDaIdentificacaoTests
         IdentificacaoECronogramaLidos lidos = Ler(Identificacao());
 
         lidos.Identidade.Nome.Should().Be("Processo Seletivo de Exemplo 2027");
-        lidos.Identidade.TipoProcesso!.Codigo.Should().Be("SiSU");
+        lidos.Identidade.TipoProcesso!.Codigo.Should().Be("SISU");
         lidos.Identidade.UnidadeAdministradora!.Codigo.Should().Be("CEPS");
         lidos.Identidade.OrigemCandidatos.Should().Be(OrigemCandidatos.ImportacaoExterna);
         lidos.Cronograma.Localidade!.CodigoIbge.Should().Be("1504208");

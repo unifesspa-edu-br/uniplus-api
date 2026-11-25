@@ -240,7 +240,7 @@ public sealed class ObterConformidadeLegalProcessoSeletivoQueryHandlerTests
 
     private static ProcessoSeletivo ProcessoBase() =>
         ProcessoSeletivo.Criar(
-            "PS 2026 — SiSU", TiposDeProcessoDeTeste.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(),
+            "PS 2026 — SiSU", TiposDeProcessoDeTeste.Sisu, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(),
             UnidadeAdministradoraSnapshot.Criar("CEPS", "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!,
             LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
 
@@ -251,7 +251,7 @@ public sealed class ObterConformidadeLegalProcessoSeletivoQueryHandlerTests
     /// </summary>
     private static ProcessoSeletivo ProcessoDeImportacaoExterna() =>
         ProcessoSeletivo.Criar(
-            "PS 2026 — Transferência", TiposDeProcessoDeTeste.SiSU, OrigemCandidatos.ImportacaoExterna, Guid.NewGuid(),
+            "PS 2026 — Transferência", TiposDeProcessoDeTeste.Sisu, OrigemCandidatos.ImportacaoExterna, Guid.NewGuid(),
             UnidadeAdministradoraSnapshot.Criar("CEPS", "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!,
             LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
 

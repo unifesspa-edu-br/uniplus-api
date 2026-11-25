@@ -5,8 +5,7 @@ public static class TipoProcessoErrorCodes
 {
     public const string CodigoObrigatorio = "TipoProcesso.CodigoObrigatorio";
     public const string CodigoReservado = "TipoProcesso.CodigoReservado";
-    public const string CodigoTamanho = "TipoProcesso.CodigoTamanho";
-    public const string CodigoCaractereInvalido = "TipoProcesso.CodigoCaractereInvalido";
+    public const string CodigoFormatoInvalido = "TipoProcesso.CodigoFormatoInvalido";
     public const string CodigoJaExiste = "TipoProcesso.CodigoJaExiste";
     public const string NomeObrigatorio = "TipoProcesso.NomeObrigatorio";
     public const string NomeTamanho = "TipoProcesso.NomeTamanho";

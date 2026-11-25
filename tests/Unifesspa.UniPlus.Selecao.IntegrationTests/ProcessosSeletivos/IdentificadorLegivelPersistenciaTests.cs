@@ -70,7 +70,7 @@ public sealed class IdentificadorLegivelPersistenciaTests : IClassFixture<Proces
     }
 
     private static ProcessoSeletivo NovoProcesso(IdentificadorLegivel identificador) => ProcessoSeletivo.Criar(
-        "PS Identificador", TiposDeProcessoDeTeste.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(),
+        "PS Identificador", TiposDeProcessoDeTeste.Sisu, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(),
         UnidadeAdministradoraSnapshot.Criar("CEPS", "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!,
         LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!,
         identificador);

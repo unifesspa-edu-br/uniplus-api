@@ -61,7 +61,7 @@ public sealed class EnvelopeLidoOrdemEIdentidadeTests
 
     private static RegraAvaliada Regra(string codigo, string id, string? url) => new(
         RegraId: Guid.Parse(id, CultureInfo.InvariantCulture), RegraCodigo: codigo, Categoria: CategoriaObrigatoriedade.Outros,
-        TipoProcessoCodigoAvaliado: "SiSU", Predicado: new ConcorrenciaDuplaObrigatoria(), Aprovada: true, Motivo: null,
+        TipoProcessoCodigoAvaliado: "SISU", Predicado: new ConcorrenciaDuplaObrigatoria(), Aprovada: true, Motivo: null,
         BaseLegal: "Lei de teste", AtoNormativoUrl: url, PortariaInterna: null, DescricaoHumana: "Regra de teste",
         VigenciaInicio: new DateOnly(2020, 1, 1), VigenciaFim: null, Hash: new string('a', 64));
 

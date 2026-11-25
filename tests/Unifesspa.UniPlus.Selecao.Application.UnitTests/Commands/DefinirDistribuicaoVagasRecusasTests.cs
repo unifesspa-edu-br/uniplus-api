@@ -80,7 +80,7 @@ public sealed class DefinirDistribuicaoVagasRecusasTests
     [Fact(DisplayName = "Handle com referência demográfica inexistente recusa")]
     public async Task Handle_ReferenciaDemograficaNaoEncontrada_Recusa()
     {
-        ProcessoSeletivo processo = NovoProcesso(TiposDeProcessoDeTeste.SiSU);
+        ProcessoSeletivo processo = NovoProcesso(TiposDeProcessoDeTeste.Sisu);
         Guid ofertaCursoId = Guid.CreateVersion7();
         Mocks mocks = NovosMocks(processo, processo.Id).ComOferta(ofertaCursoId);
         mocks.RegraCatalogoReader.ObterAsync(RegraDeDistribuicaoDeVagas.Lei12711.Codigo(), "v1", Arg.Any<CancellationToken>())

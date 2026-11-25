@@ -59,8 +59,8 @@ internal static class ConferenciaDeTiposProcesso
     {
         HashSet<string> codigosLegados = new(StringComparer.Ordinal)
         {
-            "SiSU", "PSIQ", "PSECampo", "PSVR", "TransferenciaInterna",
-            "TransferenciaExterna", "PortadorDiploma", "Reopcao",
+            "SISU", "INDIGENA_E_QUILOMBOLA", "EDUCACAO_DO_CAMPO", "VAGAS_REMANESCENTES", "TRANSFERENCIA_INTERNA",
+            "TRANSFERENCIA_EXTERNA", "PORTADOR_DE_DIPLOMA", "REOPCAO",
         };
         return lista.RootElement.EnumerateArray()
             .Where(item => codigosLegados.Contains(item.GetProperty("codigo").GetString()!))

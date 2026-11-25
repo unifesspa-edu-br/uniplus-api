@@ -1,6 +1,5 @@
 namespace Unifesspa.UniPlus.Selecao.Domain.UnitTests.Entities;
 
-using System.Reflection;
 using System.Text;
 
 using AwesomeAssertions;
@@ -9,6 +8,7 @@ using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Errors;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.ConferenciaDaConfiguracao;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Conformidade;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Edicao;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Publicacao;
@@ -21,7 +21,6 @@ using Unifesspa.UniPlus.Testes.Compartilhado;
 /// </summary>
 public sealed class OpcoesDeCursoTests
 {
-    private const string CodigoAcimaDasOfertas = "uniplus.selecao.processo_seletivo.opcoes_de_curso_acima_das_ofertas";
     private const string MensagemAcimaDasOfertas = "Com 2 opções de curso, cadastre pelo menos dois cursos.";
 
     private static IEnumerable<string> Vermelhos(ProcessoSeletivo processo) => ChecklistDeConformidade.AvaliarConformidade(processo.Declaracao(), CadastrosDeTeste.Para(processo))
@@ -128,7 +127,7 @@ public sealed class OpcoesDeCursoTests
     }
 
     private static ProcessoSeletivo ProcessoSemDistribuicao() => ProcessoSeletivo.Criar(
-        "PS Opções", TiposDeProcessoDeTeste.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(),
+        "PS Opções", TiposDeProcessoDeTeste.Sisu, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(),
         UnidadeAdministradoraSnapshot.Criar("CEPS", "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!,
         LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, identificadorLegivel: IdentificadoresDeTeste.Novo());
 
@@ -150,28 +149,28 @@ public sealed class OpcoesDeCursoTests
     public void MaisOpcoesQueCursos_NaoPublica()
     {
         ProcessoSeletivo processo = ProcessoConformeFactory.Criar();
-        // O EF hidrata a linha sem passar por DefinirOpcoesDeCurso: a conferência precisa recusar o
-        // estado inconsistente que uma escrita fora do domínio deixou.
-        Hidratar(processo, 2);
+        ConfiguracaoDeclarada declaracao = DeclaracaoComMaisOpcoesQueOfertas(processo);
 
-        Vermelhos(processo).Should().Equal("opcoes_de_curso_acima_das_ofertas");
-        CausasDeConformidadeDeTeste.De(processo).Should().ContainSingle().Which.Error.Message.Should().Contain("Opções de curso");
+        ChecklistDeConformidade.AvaliarConformidade(declaracao, CadastrosDeTeste.Para(processo))
+            .Where(static item => !item.Ok).Select(static item => item.Codigo)
+            .Should().Equal("opcoes_de_curso_acima_das_ofertas");
+        ChecklistDeConformidade.CausasDeConformidade(declaracao)
+            .Should().ContainSingle().Which.Error.Message.Should().Contain("Opções de curso");
     }
 
-    // A retificação também confere, para o estado que um caminho fora do agregado deixasse.
     [Fact(DisplayName = "A regra vale na retificação: ela recusa o estado com mais opções que cursos")]
     public void Retificacao_ComMaisOpcoesQueCursos_Recusa()
     {
         ProcessoSeletivo processo = ProcessoPublicadoComDuasOpcoes(out VersaoConfiguracao versaoAbertura);
-        Hidratar(processo, 2, ofertas: 1);
+        ConfiguracaoDeclarada declaracao = DeclaracaoComMaisOpcoesQueOfertas(processo);
 
-        Result<VersaoConfiguracao> retificacao = processo.Retificar(
-            new CenarioDeCongelamento { Dados = DadosEdital.Criar("001/2026", DateTimeOffset.UnixEpoch, DateTimeOffset.UnixEpoch.AddDays(30), Guid.CreateVersion7()).Value!, Documento = new DocumentoCongelado(Encoding.UTF8.GetBytes("{}"), "1.0", "canonical-json/sha256@v1", new string('a', 64)) },
-            versaoAbertura,
-            "Reduzir cursos");
+        TransicoesDaVersao.ConferirEstadoParaRetificar(processo.Id, processo.Situacao, versaoAbertura, "Reduzir cursos")
+            .IsSuccess.Should().BeTrue();
+        Result<ConfiguracaoAptaACongelar> conferencia = ConfiguracaoAptaACongelar.Conferir(
+            processo.Id, declaracao, CadastrosDeTeste.Para(processo));
 
-        retificacao.IsFailure.Should().BeTrue();
-        retificacao.Error!.Message.Should().Contain("Opções de curso");
+        conferencia.IsFailure.Should().BeTrue();
+        conferencia.Errors.Should().Contain(erro => erro.Error.Message.Contains("Opções de curso"));
     }
 
     private static ProcessoSeletivo ProcessoPublicadoComDuasOpcoes(out VersaoConfiguracao versaoAbertura)
@@ -188,45 +187,32 @@ public sealed class OpcoesDeCursoTests
         return processo;
     }
 
-    private static void Hidratar(ProcessoSeletivo processo, int numero, int? ofertas = null)
+    private static ConfiguracaoDeclarada DeclaracaoComMaisOpcoesQueOfertas(ProcessoSeletivo processo)
     {
-        typeof(ProcessoSeletivo)
-            .GetProperty(nameof(ProcessoSeletivo.NumeroDeOpcoesDeCurso), BindingFlags.Public | BindingFlags.Instance)!
-            .SetValue(processo, numero);
-
-        if (ofertas is { } quantidade)
+        ConfiguracaoDeclarada original = processo.Declaracao();
+        VagasDeclaradas vagas = original.Vagas;
+        VagasDeclaradas inconsistentes = new(
+            [vagas.DistribuicaoVagas[0]], 2, vagas.AplicaBonusRegional,
+            vagas.BonusRegional, vagas.Cascata, vagas.AtendimentoEspecializado);
+        return new ConfiguracaoDeclarada(original.Identidade, original.Cronograma, original.Avaliacao,
+            inconsistentes, original.Exigencias, original.Coleta, original.DivulgacaoETaxa)
         {
-            System.Collections.IList lista = (System.Collections.IList)typeof(ProcessoSeletivo)
-                .GetField("_distribuicaoVagas", BindingFlags.NonPublic | BindingFlags.Instance)!
-                .GetValue(processo)!;
-            while (lista.Count > quantidade)
-            {
-                lista.RemoveAt(lista.Count - 1);
-            }
-        }
+            ProvaPresencial = original.ProvaPresencial,
+            MotivosDeDecisao = original.MotivosDeDecisao,
+            Origem = original.Origem,
+        };
     }
 
     [Fact(DisplayName = "1 opção sem distribuição gravada não acusa o mínimo de cursos")]
     public void UmaOpcaoSemDistribuicao_NaoAcusaAcimaDasOfertas()
     {
-        ProcessoSeletivo processo = ProcessoSeletivo.Criar(
-            "PS Opções", TiposDeProcessoDeTeste.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(),
-            UnidadeAdministradoraSnapshot.Criar("CEPS", "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!,
-            LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, identificadorLegivel: IdentificadoresDeTeste.Novo());
+        ProcessoSeletivo processo = ProcessoSemDistribuicao();
 
         processo.DefinirOpcoesDeCurso(1).IsSuccess.Should().BeTrue();
 
         Vermelhos(processo).Should().NotContain("opcoes_de_curso_acima_das_ofertas");
     }
 
-    private static ProcessoSeletivo ProcessoSemOfertas()
-    {
-        ProcessoSeletivo processo = ProcessoSeletivo.Criar(
-            "PS Opções", TiposDeProcessoDeTeste.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(),
-            UnidadeAdministradoraSnapshot.Criar("CEPS", "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!,
-            LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, identificadorLegivel: IdentificadoresDeTeste.Novo());
-
-        return processo;
-    }
+    private static ProcessoSeletivo ProcessoSemOfertas() => ProcessoSemDistribuicao();
 
 }

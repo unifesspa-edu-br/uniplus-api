@@ -1200,7 +1200,7 @@
                   "  pm.response.to.have.status(200);",
                   "  const j = pm.response.json();",
                   "  const itens = Array.isArray(j) ? j : (j.items || j.data || []);",
-                  "  const sisu = itens.find(t => t.codigo === 'SiSU');",
+                  "  const sisu = itens.find(t => t.codigo === 'SISU');",
                   "  pm.expect(sisu, 'tipo SiSU no catálogo de tipos de processo').to.be.an('object');",
                   "  pm.environment.set('tipo_processo_id', sisu.id);",
                   "});"

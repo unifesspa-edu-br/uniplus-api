@@ -21,14 +21,14 @@ public sealed class TipoProcessoTests
     [Fact(DisplayName = "Recusa o sentinela universal como código de tipo de processo")]
     public void Criar_CodigoUniversal_Recusa()
     {
-        Result<TipoProcesso> result = TipoProcesso.Criar("*", "Universal", null);
+        Result<TipoProcesso> result = TipoProcesso.Criar("TODOS_OS_TIPOS", "Universal", null);
 
         result.IsFailure.Should().BeTrue();
         result.Error!.Code.Should().Be(TipoProcessoErrorCodes.CodigoReservado);
     }
 
     [Theory(DisplayName = "Recusa U+0000 em todos os campos textuais na criação")]
-    [InlineData("codigo", TipoProcessoErrorCodes.CodigoCaractereInvalido)]
+    [InlineData("codigo", TipoProcessoErrorCodes.CodigoFormatoInvalido)]
     [InlineData("nome", TipoProcessoErrorCodes.NomeCaractereInvalido)]
     [InlineData("descricao", TipoProcessoErrorCodes.DescricaoCaractereInvalido)]
     public void Criar_CampoComCaractereNulo_Recusa(string campo, string codigoEsperado)
@@ -72,7 +72,7 @@ public sealed class TipoProcessoTests
     [InlineData("CODIGO\u202EA")]
     public void Criar_CodigoENomeComInvisivel_Recusam(string texto)
     {
-        TipoProcesso.Criar(texto, "Nome válido", null).Error!.Code.Should().Be(TipoProcessoErrorCodes.CodigoCaractereInvalido);
+        TipoProcesso.Criar(texto, "Nome válido", null).Error!.Code.Should().Be(TipoProcessoErrorCodes.CodigoFormatoInvalido);
         TipoProcesso.Criar("CODIGO_VALIDO", texto, null).Error!.Code.Should().Be(TipoProcessoErrorCodes.NomeCaractereInvalido);
     }
 
@@ -102,22 +102,22 @@ public sealed class TipoProcessoTests
     public void Criar_TresCamposInvalidos_AcumulaAsTresViolacoesRotuladas()
     {
         Result<TipoProcesso> resultado = TipoProcesso.Criar(
-            new string('A', 65), "", new string('b', 1001));
+            new string('A', 81), "", new string('b', 1001));
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Errors.Should().HaveCount(3);
         resultado.Errors[0].Field.Should().Be("codigo");
-        resultado.Errors[0].Error.Code.Should().Be(TipoProcessoErrorCodes.CodigoTamanho);
+        resultado.Errors[0].Error.Code.Should().Be(TipoProcessoErrorCodes.CodigoFormatoInvalido);
         resultado.Errors[1].Field.Should().Be("nome");
         resultado.Errors[1].Error.Code.Should().Be(TipoProcessoErrorCodes.NomeObrigatorio);
         resultado.Errors[2].Field.Should().Be("descricao");
         resultado.Errors[2].Error.Code.Should().Be(TipoProcessoErrorCodes.DescricaoTamanho);
     }
 
-    [Fact(DisplayName = "Código reservado (\"*\") e nome ausente acumulam as duas violações")]
+    [Fact(DisplayName = "Código reservado e nome ausente acumulam as duas violações")]
     public void Criar_CodigoReservadoENomeAusente_AcumulaAsDuasViolacoes()
     {
-        Result<TipoProcesso> resultado = TipoProcesso.Criar("*", "", null);
+        Result<TipoProcesso> resultado = TipoProcesso.Criar("TODOS_OS_TIPOS", "", null);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Errors.Should().HaveCount(2);

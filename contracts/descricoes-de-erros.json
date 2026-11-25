@@ -9541,20 +9541,11 @@
       ]
     },
     {
-      "codigo": "uniplus.configuracao.tipo_processo.codigo_caractere_invalido",
-      "requisitos": [
-        "UNI-REQ-0098"
-      ],
-      "oQueAconteceu": [
-        "O **código** do tipo de processo seletivo contém o caractere nulo (`U+0000`), um caractere de controle (como a quebra de linha ou a tabulação) ou de formatação, ou texto que não é Unicode válido.",
-        "O código não segue um formato de vocabulário fechado (como o UPPER_SNAKE de\nmodalidade ou fase canônica) — aceita qualquer composição de caracteres —,\nmas esses caracteres são recusados explicitamente: o nulo corrompe strings\nem C (e em bancos e protocolos que tratam `\\0` como terminador), e os de controle\ne de formatação, invisíveis, deixariam dois códigos iguais na tela com valores\ndiferentes. O código é conferido aparado e em forma normalizada (NFC). Isso não significa que todo valor seja aceito: o texto `*` inteiro é\nrecusado por uma regra à parte (ver\n[código reservado](/erros/uniplus.configuracao.tipo_processo.codigo_reservado))."
-      ],
-      "comoResolver": [
-        "Remova o caractere inválido do código."
-      ],
-      "ondeAparece": [
-        "Criação de um tipo de processo seletivo"
-      ]
+      "codigo": "uniplus.configuracao.tipo_processo.codigo_formato_invalido",
+      "requisitos": ["UNI-REQ-0098"],
+      "oQueAconteceu": ["O código não segue o formato dos códigos de cadastro ou ultrapassa 80 caracteres."],
+      "comoResolver": ["Comece com letra maiúscula e use letras maiúsculas sem acento, algarismos e sublinhado entre palavras, com até 80 caracteres."],
+      "ondeAparece": ["Criação de um tipo de processo seletivo"]
     },
     {
       "codigo": "uniplus.configuracao.tipo_processo.codigo_ja_existe",
@@ -9577,7 +9568,7 @@
       "requisitos": [],
       "oQueAconteceu": [
         "A operação foi recusada porque o **código** do tipo de processo seletivo não\nfoi preenchido.",
-        "O código (ex.: `SiSU`, `PSIQ`, `PSECampo`) é a chave natural do cadastro —\núnico e imutável para sempre, mesmo após o tipo ser desativado: desativar\nimpede novos vínculos, mas não libera o código para reuso."
+        "O código (ex.: `SISU`, `INDIGENA_E_QUILOMBOLA`, `EDUCACAO_DO_CAMPO`) é a chave natural do cadastro —\núnico e imutável para sempre, mesmo após o tipo ser desativado: desativar\nimpede novos vínculos, mas não libera o código para reuso."
       ],
       "comoResolver": [
         "Informe um código para o tipo de processo seletivo."
@@ -9589,29 +9580,9 @@
     {
       "codigo": "uniplus.configuracao.tipo_processo.codigo_reservado",
       "requisitos": [],
-      "oQueAconteceu": [
-        "O código informado é `*` — reservado para expressar obrigatoriedade legal\n**universal** (aplicável a todo tipo de processo, não a um tipo específico),\nnão disponível para um cadastro de tipo de processo seletivo."
-      ],
-      "comoResolver": [
-        "Use um código diferente de `*` para o tipo de processo seletivo."
-      ],
-      "ondeAparece": [
-        "Criação de um tipo de processo seletivo"
-      ]
-    },
-    {
-      "codigo": "uniplus.configuracao.tipo_processo.codigo_tamanho",
-      "requisitos": [],
-      "oQueAconteceu": [
-        "O **código** do tipo de processo seletivo excede o tamanho máximo aceito: 64\ncaracteres.",
-        "Diferente de outros cadastros de vocabulário fechado do módulo (como\nmodalidade e fase canônica), o código do tipo de processo não segue um\nformato UPPER_SNAKE restrito — aceita qualquer caractere, exceto o caractere\nnulo (ver\n[código com caractere nulo](/erros/uniplus.configuracao.tipo_processo.codigo_caractere_invalido)).\nIsso é sobre o conjunto de caracteres aceitos, não sobre todo valor: o\ncódigo `*` é recusado por inteiro, reservado a outro propósito (ver\n[código reservado](/erros/uniplus.configuracao.tipo_processo.codigo_reservado))."
-      ],
-      "comoResolver": [
-        "Reduza o código para até 64 caracteres."
-      ],
-      "ondeAparece": [
-        "Criação de um tipo de processo seletivo"
-      ]
+      "oQueAconteceu": ["O código TODOS_OS_TIPOS é reservado à obrigatoriedade legal que vale para todos os tipos."],
+      "comoResolver": ["Informe outro código para o tipo de processo seletivo."],
+      "ondeAparece": ["Criação de um tipo de processo seletivo"]
     },
     {
       "codigo": "uniplus.configuracao.tipo_processo.conflito_de_concorrencia",

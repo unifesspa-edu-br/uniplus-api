@@ -35,7 +35,7 @@ internal static class RascunhosSemeadosParaTeste
         await using UniPlusDbContext contexto = fixture.CreateDbContext();
         ProcessoSeletivo processo = ProcessoSeletivo.Criar(
             $"Certame de teste {Guid.CreateVersion7()}",
-            TiposDeProcessoDeTeste.SiSU,
+            TiposDeProcessoDeTeste.Sisu,
             OrigemCandidatos.InscricaoPropria,
             unidadeId,
             UnidadeAdministradoraSnapshot.Criar("CEPS", "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!,

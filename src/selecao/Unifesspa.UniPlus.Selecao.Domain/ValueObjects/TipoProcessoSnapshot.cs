@@ -1,5 +1,6 @@
 namespace Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
+using Unifesspa.UniPlus.Kernel.Domain.ValueObjects;
 using Unifesspa.UniPlus.Kernel.Results;
 
 /// <summary>
@@ -41,7 +42,7 @@ public sealed record TipoProcessoSnapshot
         {
             return Falha("TipoProcessoSnapshot.NomeObrigatorio", "Nome do tipo de processo seletivo é obrigatório.");
         }
-        return codigo.Length > 64 || nome.Trim().Length > 200
+        return codigo.Length > FormatoDoCodigo.ComprimentoMaximo || nome.Trim().Length > 200
             ? Falha("TipoProcessoSnapshot.TamanhoInvalido", "Snapshot do tipo de processo seletivo excede o tamanho permitido.")
             : Result<TipoProcessoSnapshot>.Success(new TipoProcessoSnapshot(origemId, codigo, nome.Trim()));
     }

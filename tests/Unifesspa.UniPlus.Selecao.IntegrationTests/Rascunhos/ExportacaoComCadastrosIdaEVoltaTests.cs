@@ -77,7 +77,7 @@ public sealed class ExportacaoComCadastrosIdaEVoltaTests(CascadingFixture fixtur
     private static string DocumentoCompleto(string codigo) => $$"""
         {
           "formato": "uniplus.selecao.configuracao", "versaoFormato": 1,
-          "identificacao": { "nome": "Processo fictício", "unidadeAdministradoraCodigo": "CEPS", "tipoProcessoCodigo": "SiSU" },
+          "identificacao": { "nome": "Processo fictício", "unidadeAdministradoraCodigo": "CEPS", "tipoProcessoCodigo": "SISU" },
           "cronograma": { "fases": [{ "chave": "inscricao", "tipoFaseCodigo": "INSCRICAO", "unidadeResponsavelCodigo": "CEPS" }] },
           "documentosExigidos": { "exigencias": [{ "chave": "comprovante", "tipoDocumentoCodigo": "{{codigo}}", "faseChave": "inscricao" }] },
           "motivosDeDecisao": [{ "faseChave": "inscricao", "tipoDeDecisaoCodigo": "ISENCAO_DA_TAXA", "codigo": "{{codigo}}" }],
@@ -104,7 +104,7 @@ public sealed class ExportacaoComCadastrosIdaEVoltaTests(CascadingFixture fixtur
         await using AsyncServiceScope escopo = fixture.Factory.Services.CreateAsyncScope();
         UniPlusDbContext banco = escopo.ServiceProvider.GetRequiredService<UniPlusDbContext>();
         Unidade unidade = await banco.Unidades.AsNoTracking().SingleAsync(u => u.Id == UnidadesDeTeste.Ceps.OrigemId);
-        TipoProcesso tipo = await banco.TiposProcesso.AsNoTracking().SingleAsync(t => t.Codigo == "SiSU" && t.Ativo);
+        TipoProcesso tipo = await banco.TiposProcesso.AsNoTracking().SingleAsync(t => t.Codigo == "SISU" && t.Ativo);
         JsonNode identificacao = documento["identificacao"]!;
         identificacao["tipoProcessoNome"]!.GetValue<string>().Should().Be(tipo.Nome);
         JsonNode fase = documento["cronograma"]!["fases"]![0]!;

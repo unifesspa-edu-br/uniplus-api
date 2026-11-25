@@ -81,7 +81,7 @@ public sealed class EnvelopeLidoConjuntosOrdenadosTests
             RegraId: Guid.CreateVersion7(),
             RegraCodigo: codigo,
             Categoria: CategoriaObrigatoriedade.Outros,
-            TipoProcessoCodigoAvaliado: "SiSU",
+            TipoProcessoCodigoAvaliado: "SISU",
             Predicado: predicado,
             Aprovada: true,
             Motivo: null,

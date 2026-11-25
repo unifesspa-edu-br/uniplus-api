@@ -65,7 +65,7 @@ internal static class ApoioDaCoerenciaDaConsequencia
     internal static ProcessoSeletivo NovoProcessoComModalidade(ModalidadeSelecionada modalidade)
     {
         ProcessoSeletivo processo = ProcessoSeletivo.Criar(
-            "PS 2026 — SiSU", TiposDeProcessoDeTeste.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(),
+            "PS 2026 — SiSU", TiposDeProcessoDeTeste.Sisu, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(),
             UnidadeAdministradoraSnapshot.Criar("CEPS", "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!,
             LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, identificadorLegivel: IdentificadoresDeTeste.Novo());
         processo.DefinirCronogramaFases([FaseConforme()], []).IsSuccess.Should().BeTrue();

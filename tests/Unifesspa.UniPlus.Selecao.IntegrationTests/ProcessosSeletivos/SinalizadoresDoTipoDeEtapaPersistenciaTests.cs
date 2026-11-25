@@ -78,7 +78,7 @@ public sealed class SinalizadoresDoTipoDeEtapaPersistenciaTests : IClassFixture<
     private static ProcessoSeletivo ProcessoComEtapas(string nome, params EtapaProcesso[] etapas)
     {
         ProcessoSeletivo processo = ProcessoSeletivo.Criar(
-            nome, TiposDeProcessoDeTeste.PSVR, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(),
+            nome, TiposDeProcessoDeTeste.VagasRemanescentes, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(),
             UnidadeAdministradoraSnapshot.Criar("CEPS", "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!,
             LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
         processo.DefinirEtapas(etapas).IsSuccess.Should().BeTrue();

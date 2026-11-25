@@ -85,12 +85,12 @@ public sealed class DeclaracoesDoDocumentoLidasTests
     public void Identificacao_CopiaOsCodigosEAOrigem()
     {
         IdentificacaoNoDocumento identificacao = Lidas("""
-            { "identificacao": { "nome": "Processo Seletivo de Exemplo 2027", "tipoProcessoCodigo": "SiSU", "unidadeAdministradoraCodigo": "CEPS", "origemCandidatos": "IMPORTACAO_EXTERNA",
+            { "identificacao": { "nome": "Processo Seletivo de Exemplo 2027", "tipoProcessoCodigo": "SISU", "unidadeAdministradoraCodigo": "CEPS", "origemCandidatos": "IMPORTACAO_EXTERNA",
               "localidadeCodigoIbge": "1504208", "identificadorLegivel": "processo-de-teste", "algoritmoContagemPrazo": { "codigo": "CONTAGEM", "versao": "v1" } } }
             """).Identificacao;
 
         identificacao.Should().Be(new IdentificacaoNoDocumento(
-            "Processo Seletivo de Exemplo 2027", "SiSU", "CEPS", OrigemCandidatos.ImportacaoExterna, "1504208", "processo-de-teste", new("CONTAGEM", "v1")));
+            "Processo Seletivo de Exemplo 2027", "SISU", "CEPS", OrigemCandidatos.ImportacaoExterna, "1504208", "processo-de-teste", new("CONTAGEM", "v1")));
     }
 
     [Fact(DisplayName = "A identificação ausente fica sem código e com a origem dos candidatos sem valor")]

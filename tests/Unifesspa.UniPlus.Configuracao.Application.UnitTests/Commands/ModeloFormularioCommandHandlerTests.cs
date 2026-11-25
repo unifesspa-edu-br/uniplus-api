@@ -39,7 +39,7 @@ public sealed class ModeloFormularioCommandHandlerTests : ModeloFormularioHandle
         ModeloFormulario? gravado = null;
         await Repository.AdicionarAsync(Arg.Do<ModeloFormulario>(m => gravado = m), Arg.Any<CancellationToken>());
 
-        Result<Guid> resultado = await CriarAsync(Conteudo(Item("CPF_RESPONSAVEL", 0, "TEXTO")), tipo: "PSR");
+        Result<Guid> resultado = await CriarAsync(Conteudo(Item("CPF_RESPONSAVEL", 0, "TEXTO")), tipo: "REGULAR_UNIFICADO");
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
         gravado!.Conteudo.Itens.Single().Formato.Should().Be("CPF");
