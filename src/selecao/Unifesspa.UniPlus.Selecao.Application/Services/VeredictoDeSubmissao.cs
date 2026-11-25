@@ -23,10 +23,10 @@ using Unifesspa.UniPlus.Regras.ValueObjects;
 /// </summary>
 /// <remarks>
 /// Recebe a avaliação já pronta: a da definição inteira da versão fixada, feita pela
-/// <see cref="AvaliacaoDaInscricao"/> com as etapas da inscrição concluídas, e restrita à finalidade
+/// <see cref="AvaliacaoDaInscricao"/> com as páginas da inscrição concluídas, e restrita à finalidade
 /// Inscrição por <see cref="AvaliacaoDaInscricao.DaInscricao"/>. Quem chama passa só essa parte: um
 /// item ou termo obrigatório de outra finalidade, como a isenção, não é pendência da inscrição. Com as
-/// etapas concluídas, a submissão é o candidato declarando que terminou: um campo opcional sem
+/// páginas concluídas, a submissão é o candidato declarando que terminou: um campo opcional sem
 /// resposta deixa de ser pendência (<see cref="EstadoFato.Indeterminado"/>) e passa a
 /// <see cref="EstadoFato.NaoInformado"/>, que não pesa; só o obrigatório sem resposta permanece
 /// indeterminado.
@@ -226,13 +226,13 @@ public static class VeredictoDeSubmissao
     {
         private readonly Dictionary<string, DefinicaoItem> _itens = geo is null
             ? []
-            : geo.Definicao.Etapas
+            : geo.Definicao.Paginas
                 .SelectMany(static e => e.Itens.Concat(e.Grupos.SelectMany(static g => g.Subitens)))
                 .ToDictionary(static i => i.FatoCodigo, StringComparer.Ordinal);
 
         private readonly Dictionary<string, DefinicaoGrupo> _grupos = geo is null
             ? []
-            : geo.Definicao.Etapas.SelectMany(static e => e.Grupos).ToDictionary(static g => g.Codigo, StringComparer.Ordinal);
+            : geo.Definicao.Paginas.SelectMany(static e => e.Grupos).ToDictionary(static g => g.Codigo, StringComparer.Ordinal);
 
         /// <summary>
         /// A obrigatoriedade saiu indeterminada, ou o campo foi respondido e uma restrição dele cita o derivado indeterminado, o

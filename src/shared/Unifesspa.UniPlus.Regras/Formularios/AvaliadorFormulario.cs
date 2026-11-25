@@ -23,15 +23,15 @@ using Unifesspa.UniPlus.Regras.ValueObjects;
 /// O estado do fato de um item segue esta ordem:
 /// </para>
 /// <list type="number">
-/// <item>etapa ou item oculto: <see cref="EstadoFato.NaoAplicavel"/>, mesmo que haja resposta gravada
+/// <item>página ou item oculto: <see cref="EstadoFato.NaoAplicavel"/>, mesmo que haja resposta gravada
 /// — a resposta anterior deixa de valer sem precisar ser apagada;</item>
 /// <item>exibição ainda indeterminada: <see cref="EstadoFato.Indeterminado"/>;</item>
 /// <item>resposta que atende às restrições: <see cref="EstadoFato.Resolvido"/>;</item>
 /// <item>resposta cuja validade depende de resposta anterior ainda desconhecida:
 /// <see cref="EstadoFato.Indeterminado"/>;</item>
 /// <item>sem resposta, ou com resposta que viola restrição e por isso não vale: pendente
-/// (<see cref="EstadoFato.Indeterminado"/>) se o item é obrigatório ou se a etapa ainda não foi
-/// concluída; <see cref="EstadoFato.NaoInformado"/> se o item é opcional e a etapa foi
+/// (<see cref="EstadoFato.Indeterminado"/>) se o item é obrigatório ou se a página ainda não foi
+/// concluída; <see cref="EstadoFato.NaoInformado"/> se o item é opcional e a página foi
 /// concluída.</item>
 /// </list>
 /// <para>

@@ -1,7 +1,7 @@
 {
   "descricao": "O predicado sem cláusula é falso, e não 'sem condição': o campo exibido por ele não aparece.",
   "regras": {
-    "etapas": [
+    "paginas": [
       {
         "codigo": "DADOS",
         "exibicao": null,
@@ -30,7 +30,7 @@
   },
   "respostas": {},
   "grupos": {},
-  "etapasConcluidas": [],
+  "paginasConcluidas": [],
   "pressupostos": {},
   "esperado": {
     "campos": [

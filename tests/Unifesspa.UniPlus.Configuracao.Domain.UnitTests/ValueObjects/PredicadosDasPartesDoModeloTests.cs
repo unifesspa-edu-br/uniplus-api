@@ -54,16 +54,16 @@ public sealed class PredicadosDasPartesDoModeloTests
             new PredicadoNaEntrada("regras.obrigatoriedade.predicado", null));
     }
 
-    [Fact(DisplayName = "A etapa enumera a exibição")]
-    public void Etapa_Exibicao()
+    [Fact(DisplayName = "A pagina enumera a exibição")]
+    public void Pagina_Exibicao()
     {
-        Etapa(exibicao: Exibicao).Predicados().Should().Equal(new PredicadoNaEntrada("exibicao", Exibicao));
+        Pagina(exibicao: Exibicao).Predicados().Should().Equal(new PredicadoNaEntrada("exibicao", Exibicao));
     }
 
-    [Fact(DisplayName = "A etapa sem exibição enumera o caminho, sem predicado")]
-    public void Etapa_SemExibicao_CaminhoSemPredicado()
+    [Fact(DisplayName = "A pagina sem exibição enumera o caminho, sem predicado")]
+    public void Pagina_SemExibicao_CaminhoSemPredicado()
     {
-        Etapa().Predicados().Should().Equal(new PredicadoNaEntrada("exibicao", null));
+        Pagina().Predicados().Should().Equal(new PredicadoNaEntrada("exibicao", null));
     }
 
     [Fact(DisplayName = "O termo enumera a exibição e o predicado de obrigatoriedade, nessa ordem")]

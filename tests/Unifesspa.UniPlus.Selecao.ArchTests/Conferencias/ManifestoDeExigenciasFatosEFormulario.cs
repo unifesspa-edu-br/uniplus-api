@@ -80,7 +80,7 @@ internal static class ManifestoDeExigenciasFatosEFormulario
         // Rotulo/TipoDeCampo/Obrigatorio — a apresentação do campo no
         // formulário de inscrição, congelada junto do fato no mesmo bloco `fatosColetados`.
         [typeof(FatoColetado)] = (
-            ["FatoCodigo", "Finalidade", "EtapaCodigo", "Ordem", "Rotulo", "TipoDeCampo", "Obrigatoriedade", "Ajuda", "PedirConfirmacao", "Restricoes", "Impedimento", "OrigemValores", "Formato", "ClassificacaoProtecao", "HipoteseLegal", "FinalidadeTratamento", "Descricao", "ComponenteExibicao", "Precondicoes"],
+            ["FatoCodigo", "Finalidade", "PaginaCodigo", "Ordem", "Rotulo", "TipoDeCampo", "Obrigatoriedade", "Ajuda", "PedirConfirmacao", "Restricoes", "Impedimento", "OrigemValores", "Formato", "ClassificacaoProtecao", "HipoteseLegal", "FinalidadeTratamento", "Descricao", "ComponenteExibicao", "Precondicoes"],
             [
                 ("ProcessoSeletivoId", "FK interna — reconstruída junto com o grafo, nunca congelada (ADR-0110 D2)."),
                 ("GrupoColetadoId", "FK interna do campo de grupo — o campo é congelado dentro do grupo, em `gruposColetados`."),
@@ -96,7 +96,7 @@ internal static class ManifestoDeExigenciasFatosEFormulario
         // Grupos repetíveis (UNI-REQ-0146) — congelados no bloco de topo `gruposColetados`, com os
         // campos de cada ocorrência na mesma forma dos itens de `fatosColetados`.
         [typeof(GrupoColetado)] = (
-            ["Codigo", "Finalidade", "EtapaCodigo", "Ordem", "Rotulo", "Minimo", "Maximo", "IncluiCandidato", "Exibicao", "Obrigatoriedade", "Subitens"],
+            ["Codigo", "Finalidade", "PaginaCodigo", "Ordem", "Rotulo", "Minimo", "Maximo", "IncluiCandidato", "Exibicao", "Obrigatoriedade", "Subitens"],
             [
                 ("ProcessoSeletivoId", "FK interna — reconstruída junto com o grafo, nunca congelada (ADR-0110 D2)."),
                 ("FatosCitados", "Derivada da exibição e da obrigatoriedade — recomputada, nunca persistida."),
@@ -112,18 +112,18 @@ internal static class ManifestoDeExigenciasFatosEFormulario
             [("ProcessoSeletivoId", "FK interna — reconstruída junto com o grafo, nunca congelada (ADR-0110 D2).")]),
 
         [typeof(FormularioProcesso)] = (
-            ["Finalidade", "FaseId", "Titulo", "ModeloOrigemId", "ModeloOrigemCodigo", "Etapas"],
+            ["Finalidade", "FaseId", "Titulo", "ModeloOrigemId", "ModeloOrigemCodigo", "Paginas"],
             [
                 ("ProcessoSeletivoId", "FK interna — reconstruída junto com o grafo, nunca congelada (ADR-0110 D2)."),
                 ("ModeloOrigemNome", "Nome copiado do cadastro, ainda não incluído no documento congelado."),
-                ("Estrutura", "Derivada das Etapas — a forma que a estrutura do formulário confere, recomputada."),
+                ("Estrutura", "Derivada das páginas — a forma que a estrutura do formulário confere, recomputada."),
             ]),
 
-        [typeof(EtapaFormulario)] = (
+        [typeof(PaginaDoFormulario)] = (
             ["Codigo", "Ordem", "Tipo", "Bloco", "Titulo", "Descricao", "Aviso", "Exibicao"],
             [
                 ("FormularioProcessoId", "FK interna."),
-                ("Estrutura", "Derivada dos campos da etapa — recomputada, nunca persistida."),
+                ("Estrutura", "Derivada dos campos da página — recomputada, nunca persistida."),
                 ("FatosCitados", "Derivada da Exibicao — recomputada, nunca persistida."),
                 ("Condicoes", "Derivada da Exibicao — recomputada, nunca persistida."),
             ]),

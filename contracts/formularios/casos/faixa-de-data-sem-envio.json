@@ -1,7 +1,7 @@
 {
   "descricao": "Sem o envio, o limite contado dele fica indeterminado e o fato fica pendente; a data que já viola o limite fixo viola em definitivo.",
   "regras": {
-    "etapas": [
+    "paginas": [
       {
         "codigo": "DADOS",
         "exibicao": null,
@@ -87,7 +87,7 @@
     "DATA_B": "1999-12-31"
   },
   "grupos": {},
-  "etapasConcluidas": [],
+  "paginasConcluidas": [],
   "pressupostos": {},
   "esperado": {
     "campos": [

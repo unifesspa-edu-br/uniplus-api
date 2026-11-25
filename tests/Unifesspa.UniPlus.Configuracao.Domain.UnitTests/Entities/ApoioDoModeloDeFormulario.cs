@@ -10,23 +10,23 @@ using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Regras.ValueObjects;
 
 /// <summary>
-/// Montagens comuns dos testes do modelo de formulário: etapas, itens, conteúdo e criação do modelo.
+/// Montagens comuns dos testes do modelo de formulário: páginas, itens, conteúdo e criação do modelo.
 /// </summary>
 internal static class ApoioDoModeloDeFormulario
 {
     internal static readonly Dictionary<string, IReadOnlyCollection<string>> SemDerivacoes = new(StringComparer.Ordinal);
 
-    internal static readonly EtapaDoModelo Dados = new("DADOS", 0, TipoEtapaFormulario.Secao, null, "Dados", null, null, null);
-    internal static readonly EtapaDoModelo Revisao = new("REVISAO", 1, TipoEtapaFormulario.Bloco, BlocoSistema.RevisaoEAceite, "Revisão", null, null, null);
+    internal static readonly PaginaDoModelo Dados = new("DADOS", 0, TipoPaginaFormulario.Secao, null, "Dados", null, null, null);
+    internal static readonly PaginaDoModelo Revisao = new("REVISAO", 1, TipoPaginaFormulario.Bloco, BlocoSistema.RevisaoEAceite, "Revisão", null, null, null);
 
     internal static PredicadoDnf Quando(string fato, Operador operador = Operador.Igual) =>
         PredicadoDnf.CriarDeCondicoesAgrupadas([(0, CondicaoDnf.Criar(fato, operador, JsonSerializer.SerializeToElement(true)).Value!)]).Value!;
 
-    internal static ItemDoModelo Item(string fato, int ordem, Obrigatoriedade? obrigatoriedade = null, PredicadoDnf? exibicao = null, string? etapa = "DADOS") =>
+    internal static ItemDoModelo Item(string fato, int ordem, Obrigatoriedade? obrigatoriedade = null, PredicadoDnf? exibicao = null, string? pagina = "DADOS") =>
         new(
             fato,
             ordem,
-            etapa,
+            pagina,
             new ApresentacaoDoCampo(fato, TipoDeCampo.SimOuNao),
             null,
             new RegrasDoCampo(exibicao, obrigatoriedade ?? Obrigatoriedade.Sempre, []));
@@ -46,5 +46,5 @@ internal static class ApoioDoModeloDeFormulario
             new ExibicaoEObrigatoriedade(null, Obrigatoriedade.Sempre), campos);
 
     internal static ItemDoModelo Campo(string fato, int ordem, Obrigatoriedade? obrigatoriedade = null, PredicadoDnf? exibicao = null) =>
-        Item(fato, ordem, obrigatoriedade, exibicao, etapa: null);
+        Item(fato, ordem, obrigatoriedade, exibicao, pagina: null);
 }

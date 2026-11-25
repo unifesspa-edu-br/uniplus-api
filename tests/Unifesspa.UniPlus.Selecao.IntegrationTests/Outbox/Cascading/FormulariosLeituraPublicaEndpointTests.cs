@@ -74,7 +74,7 @@ public sealed class FormulariosLeituraPublicaEndpointTests
         JsonElement root = raiz.GetProperty("formulario");
         root.GetProperty("finalidade").GetString().Should().Be("INSCRICAO");
         root.GetProperty("titulo").GetString().Should().Be("Formulário de Inscrição");
-        root.GetProperty("etapas").EnumerateArray().Select(static e => e.GetProperty("codigo").GetString())
+        root.GetProperty("paginas").EnumerateArray().Select(static e => e.GetProperty("codigo").GetString())
             .Should().Equal(ConjuntoBasicoDaInscricao.CodigoDaSecao, "DADOS", "REVISAO");
         root.GetProperty("termos").GetArrayLength().Should().Be(0);
         root.GetProperty("pressupostos").GetProperty("fatos").GetArrayLength().Should().Be(0);
@@ -90,14 +90,14 @@ public sealed class FormulariosLeituraPublicaEndpointTests
         JsonElement apresentacao = fato.GetProperty("apresentacao");
         apresentacao.GetProperty("rotulo").GetString().Should().Be("Cor ou raça");
         apresentacao.GetProperty("tipoDeCampo").GetString().Should().Be("ESCOLHA_UNICA");
-        fato.GetProperty("etapaCodigo").GetString().Should().Be(ConjuntoBasicoDaInscricao.CodigoDaSecao);
+        fato.GetProperty("paginaCodigo").GetString().Should().Be(ConjuntoBasicoDaInscricao.CodigoDaSecao);
         fato.TryGetProperty("obrigatoriedade", out _).Should().BeFalse("as regras do campo estão só nas regras do formulário");
         ConferirRegraDaCorRaca(root);
     }
 
     private static void ConferirRegraDaCorRaca(JsonElement root)
     {
-        JsonElement regraDoCampo = root.GetProperty("regras").GetProperty("etapas").EnumerateArray()
+        JsonElement regraDoCampo = root.GetProperty("regras").GetProperty("paginas").EnumerateArray()
             .SelectMany(static e => e.GetProperty("itens").EnumerateArray())
             .Single(static i => i.GetProperty("fatoCodigo").GetString() == "COR_RACA");
         regraDoCampo.GetProperty("regras").GetProperty("obrigatoriedade").GetProperty("tipo").GetString().Should().Be("SEMPRE");

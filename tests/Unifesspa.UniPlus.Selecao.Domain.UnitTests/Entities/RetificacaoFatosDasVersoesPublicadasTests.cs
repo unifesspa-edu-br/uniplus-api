@@ -124,7 +124,7 @@ public sealed class RetificacaoFatosDasVersoesPublicadasTests
     private static Result EscreverRegraQueCitaFatoNovo(Cenario cenario, string regra) => regra switch
     {
         "secao" => cenario.Processo.DefinirFormulario(
-            FinalidadeFormulario.Habilitacao, cenario.Habilitacao.Id, null, EtapasDaHabilitacao(exibicaoDaSegunda: Novo)),
+            FinalidadeFormulario.Habilitacao, cenario.Habilitacao.Id, null, PaginasDaHabilitacao(exibicaoDaSegunda: Novo)),
         "termo" => cenario.Processo.DefinirTermosDoFormulario(FinalidadeFormulario.Habilitacao, [TermoQueCita(Novo)]),
         _ => cenario.Processo.DefinirFatosColetados(
             FinalidadeFormulario.Habilitacao, [Item("COMPROVANTE", 0)],
@@ -142,7 +142,7 @@ public sealed class RetificacaoFatosDasVersoesPublicadasTests
         Cenario cenario = Publicado(comHabilitacao: false);
         ProcessoSeletivo processo = cenario.Processo;
         processo.DefinirFormulario(
-                FinalidadeFormulario.Habilitacao, cenario.Habilitacao.Id, null, FormularioDeTeste.Etapas(FinalidadeFormulario.Habilitacao))
+                FinalidadeFormulario.Habilitacao, cenario.Habilitacao.Id, null, FormularioDeTeste.Paginas(FinalidadeFormulario.Habilitacao))
             .IsSuccess.Should().BeTrue();
 
         processo.DefinirFatosColetados(FinalidadeFormulario.Habilitacao, [ItemQueCita("COMPROVANTE", 0, Novo)])
@@ -170,7 +170,7 @@ public sealed class RetificacaoFatosDasVersoesPublicadasTests
         Cenario cenario = Publicado(comHabilitacao: false);
         ProcessoSeletivo processo = cenario.Processo;
         processo.DefinirFormulario(
-                FinalidadeFormulario.Habilitacao, cenario.Habilitacao.Id, null, FormularioDeTeste.Etapas(FinalidadeFormulario.Habilitacao))
+                FinalidadeFormulario.Habilitacao, cenario.Habilitacao.Id, null, FormularioDeTeste.Paginas(FinalidadeFormulario.Habilitacao))
             .IsSuccess.Should().BeTrue();
         processo.DefinirFatosColetados(FinalidadeFormulario.Habilitacao, [Item("COMPROVANTE", 0)]).IsSuccess.Should().BeTrue();
 
@@ -207,7 +207,7 @@ public sealed class RetificacaoFatosDasVersoesPublicadasTests
     {
         processo.DefinirItens([Item("TEM_RENDA", 0)]).IsSuccess.Should().BeTrue();
         processo.DefinirFormulario(
-                FinalidadeFormulario.Habilitacao, unica.Id, null, FormularioDeTeste.Etapas(FinalidadeFormulario.Habilitacao))
+                FinalidadeFormulario.Habilitacao, unica.Id, null, FormularioDeTeste.Paginas(FinalidadeFormulario.Habilitacao))
             .IsSuccess.Should().BeTrue();
         processo.DefinirFatosColetados(FinalidadeFormulario.Habilitacao, [Item("COMPROVANTE", 0)]).IsSuccess.Should().BeTrue();
         ConfiguracaoPublicada primeira = VersoesPublicadasDeTeste.DoProcesso(processo);
@@ -296,7 +296,7 @@ public sealed class RetificacaoFatosDasVersoesPublicadasTests
     private static void DefinirHabilitacao(ProcessoSeletivo processo, FaseCronograma habilitacao)
     {
         processo.DefinirFormulario(
-                FinalidadeFormulario.Habilitacao, habilitacao.Id, null, FormularioDeTeste.Etapas(FinalidadeFormulario.Habilitacao))
+                FinalidadeFormulario.Habilitacao, habilitacao.Id, null, FormularioDeTeste.Paginas(FinalidadeFormulario.Habilitacao))
             .IsSuccess.Should().BeTrue();
         processo.DefinirFatosColetados(FinalidadeFormulario.Habilitacao, [Item("COMPROVANTE", 0)]).IsSuccess.Should().BeTrue();
     }
@@ -353,11 +353,11 @@ public sealed class RetificacaoFatosDasVersoesPublicadasTests
             new VersaoTermoEscolhida(Guid.CreateVersion7(), Guid.CreateVersion7(), "TERMO_DE_TESTE", 1, "Declaração", "Texto", "Base legal", FormaAceite.RegistroSemEnderecoIp, new string('a', 64)),
             Cita(fato), Obrigatoriedade.Sempre).Value!;
 
-    /// <summary>As etapas mínimas da habilitação com uma segunda seção, que a exibição dada condiciona.</summary>
-    private static IReadOnlyList<EtapaFormulario> EtapasDaHabilitacao(string exibicaoDaSegunda) =>
+    /// <summary>As páginas mínimas da habilitação com uma segunda seção, que a exibição dada condiciona.</summary>
+    private static IReadOnlyList<PaginaDoFormulario> PaginasDaHabilitacao(string exibicaoDaSegunda) =>
     [
-        EtapaFormulario.Criar(new EtapaEstrutura(FormularioDeTeste.Secao, 0, TipoEtapaFormulario.Secao, null), "Dados", null, null).Value!,
-        EtapaFormulario.Criar(new EtapaEstrutura("RENDA", 1, TipoEtapaFormulario.Secao, null), "Renda", null, null, Cita(exibicaoDaSegunda)).Value!,
-        EtapaFormulario.Criar(new EtapaEstrutura("REVISAO", 2, TipoEtapaFormulario.Bloco, BlocoSistema.RevisaoEAceite), "Revisão e aceite", null, null).Value!,
+        PaginaDoFormulario.Criar(new PaginaEstrutura(FormularioDeTeste.Secao, 0, TipoPaginaFormulario.Secao, null), "Dados", null, null).Value!,
+        PaginaDoFormulario.Criar(new PaginaEstrutura("RENDA", 1, TipoPaginaFormulario.Secao, null), "Renda", null, null, Cita(exibicaoDaSegunda)).Value!,
+        PaginaDoFormulario.Criar(new PaginaEstrutura("REVISAO", 2, TipoPaginaFormulario.Bloco, BlocoSistema.RevisaoEAceite), "Revisão e aceite", null, null).Value!,
     ];
 }

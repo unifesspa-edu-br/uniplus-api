@@ -17,7 +17,7 @@ using Unifesspa.UniPlus.Regras.ValueObjects;
 /// </summary>
 public class ImpedimentoTests : TestesDeAvaliacao
 {
-    private const string Etapa = "DADOS";
+    private const string Pagina = "DADOS";
     private const string Mensagem = "Quem tem vínculo com o PARFOR não pode se inscrever neste processo.";
 
     [Theory(DisplayName = "A resposta que cumpre a condição impede; a que não cumpre, o campo oculto e a resposta anterior pendente, não ou ainda não")]
@@ -104,7 +104,7 @@ public class ImpedimentoTests : TestesDeAvaliacao
     private static DefinicaoFormulario FormularioComVinculoImpeditivo() =>
         new(
             [
-                new DefinicaoEtapa(Etapa, exibicao: null,
+                new DefinicaoPagina(Pagina, exibicao: null,
                 [
                     Item("EXIBE_PARFOR"),
                     Item("LICENCIATURA"),

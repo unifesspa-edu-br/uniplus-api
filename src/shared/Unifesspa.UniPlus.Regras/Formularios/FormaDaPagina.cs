@@ -4,8 +4,8 @@ using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Entradas;
 using Unifesspa.UniPlus.Regras.Errors;
 
-/// <summary>A forma de uma etapa do formulário, a mesma no processo e no modelo.</summary>
-public static class FormaDaEtapa
+/// <summary>A forma de uma página do formulário, a mesma no processo e no modelo.</summary>
+public static class FormaDaPagina
 {
     public const int CodigoMaxLength = 60;
     public const int TituloMaxLength = 300;
@@ -16,7 +16,7 @@ public static class FormaDaEtapa
     /// exibição condicional só na seção — o bloco de sistema aparece sempre.
     /// </summary>
     public static List<FieldError> Conferir(
-        string? codigo, int ordem, TipoEtapaFormulario tipo, string? titulo, string? descricao, string? aviso, bool temExibicao) =>
+        string? codigo, int ordem, TipoPaginaFormulario tipo, string? titulo, string? descricao, string? aviso, bool temExibicao) =>
     [
         .. RecusasDoCodigo(codigo),
         .. RecusasDaOrdem(ordem),
@@ -31,8 +31,8 @@ public static class FormaDaEtapa
         if ((codigo?.Trim() ?? string.Empty).Length is 0 or > CodigoMaxLength)
         {
             yield return new("codigo", new DomainError(
-                EstruturaFormularioErrorCodes.EtapaCodigoInvalido,
-                $"O código da etapa é obrigatório e tem no máximo {CodigoMaxLength} caracteres."));
+                EstruturaFormularioErrorCodes.PaginaCodigoInvalido,
+                $"O código da página é obrigatório e tem no máximo {CodigoMaxLength} caracteres."));
         }
     }
 
@@ -40,7 +40,7 @@ public static class FormaDaEtapa
     {
         if (ordem < 0)
         {
-            yield return new("ordem", new DomainError(EstruturaFormularioErrorCodes.EtapaOrdemInvalida, "A ordem da etapa não pode ser negativa."));
+            yield return new("ordem", new DomainError(EstruturaFormularioErrorCodes.PaginaOrdemInvalida, "A ordem da página não pode ser negativa."));
         }
     }
 
@@ -48,9 +48,9 @@ public static class FormaDaEtapa
     {
         if ((titulo?.Trim() ?? string.Empty).Length is 0 or > TituloMaxLength)
         {
-            yield return new($"{EtapaFormularioInput.CaminhoDaApresentacao}.titulo", new DomainError(
-                EstruturaFormularioErrorCodes.EtapaTituloInvalido,
-                $"O título da etapa é obrigatório e tem no máximo {TituloMaxLength} caracteres."));
+            yield return new($"{PaginaDoFormularioInput.CaminhoDaApresentacao}.titulo", new DomainError(
+                EstruturaFormularioErrorCodes.PaginaTituloInvalido,
+                $"O título da página é obrigatório e tem no máximo {TituloMaxLength} caracteres."));
         }
     }
 
@@ -58,8 +58,8 @@ public static class FormaDaEtapa
     {
         if (FormaDoItem.TextoOpcional(descricao) is { Length: > TextoMaxLength })
         {
-            yield return new($"{EtapaFormularioInput.CaminhoDaApresentacao}.descricao", new DomainError(
-                EstruturaFormularioErrorCodes.EtapaTextoTamanho, $"A descrição da etapa tem no máximo {TextoMaxLength} caracteres."));
+            yield return new($"{PaginaDoFormularioInput.CaminhoDaApresentacao}.descricao", new DomainError(
+                EstruturaFormularioErrorCodes.PaginaTextoTamanho, $"A descrição da página tem no máximo {TextoMaxLength} caracteres."));
         }
     }
 
@@ -67,14 +67,14 @@ public static class FormaDaEtapa
     {
         if (FormaDoItem.TextoOpcional(aviso) is { Length: > TextoMaxLength })
         {
-            yield return new($"{EtapaFormularioInput.CaminhoDaApresentacao}.aviso", new DomainError(
-                EstruturaFormularioErrorCodes.EtapaTextoTamanho, $"O aviso da etapa tem no máximo {TextoMaxLength} caracteres."));
+            yield return new($"{PaginaDoFormularioInput.CaminhoDaApresentacao}.aviso", new DomainError(
+                EstruturaFormularioErrorCodes.PaginaTextoTamanho, $"O aviso da página tem no máximo {TextoMaxLength} caracteres."));
         }
     }
 
-    private static IEnumerable<FieldError> RecusasDaExibicao(TipoEtapaFormulario tipo, bool temExibicao)
+    private static IEnumerable<FieldError> RecusasDaExibicao(TipoPaginaFormulario tipo, bool temExibicao)
     {
-        if (temExibicao && tipo != TipoEtapaFormulario.Secao)
+        if (temExibicao && tipo != TipoPaginaFormulario.Secao)
         {
             yield return new("exibicao", new DomainError(
                 EstruturaFormularioErrorCodes.ExibicaoForaDeSecao,

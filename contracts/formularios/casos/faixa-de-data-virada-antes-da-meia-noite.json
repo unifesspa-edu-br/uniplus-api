@@ -1,7 +1,7 @@
 {
   "descricao": "Às 23h59 de 10/10/2026 em Belém (02h59 de 11/10 em UTC) o dia do envio ainda é 10/10: a data de 10/10 atende ao limite de até o envio, e a de 11/10 viola.",
   "regras": {
-    "etapas": [
+    "paginas": [
       {
         "codigo": "DADOS",
         "exibicao": null,
@@ -87,7 +87,7 @@
     "DATA_AMANHA": "2026-10-11"
   },
   "grupos": {},
-  "etapasConcluidas": [],
+  "paginasConcluidas": [],
   "pressupostos": {},
   "envio": {
     "instante": "2026-10-11T02:59:59Z",

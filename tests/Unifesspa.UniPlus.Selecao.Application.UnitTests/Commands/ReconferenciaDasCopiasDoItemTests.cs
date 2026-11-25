@@ -198,7 +198,7 @@ public sealed class ReconferenciaDasCopiasDoItemTests
     {
         FatoColetado[] itens = [.. processo.FatosColetados.Where(static f => f.Finalidade == FinalidadeFormulario.Inscricao)];
         GrupoColetado grupo = GrupoColetadoDeTeste.Agrupando("COMPOSICAO_FAMILIAR", itens.Max(static f => f.Ordem) + 1)
-            .NaSecao(itens.First().EtapaCodigo)
+            .NaSecao(itens.First().PaginaCodigo)
             .ComOcorrencias(0, 10)
             .ExibidoQuando(QuandoCorRacaEPreta())
             .ComCampos(FatoColetadoDeTeste.Coletando("MENOR_SOB_GUARDA", 0).ComRotulo("Menor sob guarda").Construir())

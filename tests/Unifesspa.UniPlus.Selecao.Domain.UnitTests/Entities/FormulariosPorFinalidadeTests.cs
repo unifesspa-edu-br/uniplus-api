@@ -65,19 +65,19 @@ public sealed class FormulariosPorFinalidadeTests
     [Fact(DisplayName = "No rascunho, a recusa de seção aponta o item pelo índice dele na lista enviada")]
     public void Item_ForaDeSecao_ApontaOIndiceOriginal() =>
         ProcessoConformeFactory.Criar().DefinirFatosColetados(
-                FinalidadeFormulario.Inscricao, [Item("A", 0, etapa: null), Item("B", 1, "INEXISTENTE")])
-            .Errors.Should().ContainSingle().Which.Field.Should().Be("itens[1].etapaCodigo");
+                FinalidadeFormulario.Inscricao, [Item("A", 0, pagina: null), Item("B", 1, "INEXISTENTE")])
+            .Errors.Should().ContainSingle().Which.Field.Should().Be("itens[1].paginaCodigo");
 
-    [Fact(DisplayName = "Aviso da etapa acima do limite é recusado no próprio campo")]
-    public void Etapa_AvisoLongo_RecusaNoCampoAviso() =>
-        EtapaFormulario.Criar(new EtapaEstrutura("DADOS", 0, TipoEtapaFormulario.Secao, null), "Dados", null, new string('a', 2001))
+    [Fact(DisplayName = "Aviso da pagina acima do limite é recusado no próprio campo")]
+    public void Pagina_AvisoLongo_RecusaNoCampoAviso() =>
+        PaginaDoFormulario.Criar(new PaginaEstrutura("DADOS", 0, TipoPaginaFormulario.Secao, null), "Dados", null, new string('a', 2001))
             .Errors.Should().ContainSingle().Which.Field.Should().Be("apresentacao.aviso");
 
-    [Theory(DisplayName = "Item em bloco de sistema ou em etapa inexistente é recusado na definição")]
+    [Theory(DisplayName = "Item em bloco de sistema ou em pagina inexistente é recusado na definição")]
     [InlineData("REVISAO")]
     [InlineData("INEXISTENTE")]
-    public void Item_ForaDeSecao_RecusaNaDefinicao(string etapa) =>
-        ProcessoConformeFactory.Criar().DefinirFatosColetados(FinalidadeFormulario.Inscricao, [Item("A", 0, etapa)])
+    public void Item_ForaDeSecao_RecusaNaDefinicao(string pagina) =>
+        ProcessoConformeFactory.Criar().DefinirFatosColetados(FinalidadeFormulario.Inscricao, [Item("A", 0, pagina)])
             .Errors.Should().ContainSingle().Which.Error.Code.Should().Be(EstruturaFormularioErrorCodes.ItemForaDeSecao);
 
     [Fact(DisplayName = "A fase do formulário está no cronograma e é a que a finalidade pede")]
@@ -86,9 +86,9 @@ public sealed class FormulariosPorFinalidadeTests
         ProcessoSeletivo processo = ProcessoConformeFactory.Criar();
         Guid faseDeInscricao = processo.CronogramaFases.Single(static f => f.ColetaInscricao).Id;
 
-        processo.DefinirFormulario(FinalidadeFormulario.Habilitacao, Guid.CreateVersion7(), null, FormularioDeTeste.Etapas())
+        processo.DefinirFormulario(FinalidadeFormulario.Habilitacao, Guid.CreateVersion7(), null, FormularioDeTeste.Paginas())
             .Error!.Code.Should().Be(FormularioProcessoErrorCodes.FaseForaDoCronograma);
-        processo.DefinirFormulario(FinalidadeFormulario.Habilitacao, faseDeInscricao, null, FormularioDeTeste.Etapas())
+        processo.DefinirFormulario(FinalidadeFormulario.Habilitacao, faseDeInscricao, null, FormularioDeTeste.Paginas())
             .Error!.Code.Should().Be(FormularioProcessoErrorCodes.FaseIncoerenteComFinalidade);
     }
 
@@ -97,7 +97,7 @@ public sealed class FormulariosPorFinalidadeTests
     {
         ProcessoSeletivo processo = ProcessoConformeFactory.Criar();
         Guid faseDeInscricao = processo.CronogramaFases.Single(static f => f.ColetaInscricao).Id;
-        EtapaFormulario soSecao = EtapaFormulario.Criar(new EtapaEstrutura("DADOS", 0, TipoEtapaFormulario.Secao, null), "Dados", null, null).Value!;
+        PaginaDoFormulario soSecao = PaginaDoFormulario.Criar(new PaginaEstrutura("DADOS", 0, TipoPaginaFormulario.Secao, null), "Dados", null, null).Value!;
 
         processo.DefinirFormulario(FinalidadeFormulario.Habilitacao, faseDeInscricao, new string('a', 301), [soSecao])
             .Errors.Select(static e => e.Error.Code).Should().BeEquivalentTo(
@@ -108,20 +108,20 @@ public sealed class FormulariosPorFinalidadeTests
             ]);
     }
 
-    [Fact(DisplayName = "Redefinir o formulário sem a seção de um item existente é recusado nas etapas")]
-    public void DefinirFormulario_SemASecaoDeUmItem_RecusaNasEtapas()
+    [Fact(DisplayName = "Redefinir o formulário sem a seção de um item existente é recusado nas paginas")]
+    public void DefinirFormulario_SemASecaoDeUmItem_RecusaNasPaginas()
     {
         ProcessoSeletivo processo = ProcessoConformeFactory.Criar();
         processo.DefinirItens([Item("TEM_RENDA", 0)]).IsSuccess.Should().BeTrue();
-        EtapaFormulario outraSecao = EtapaFormulario.Criar(new EtapaEstrutura("OUTRA", 1, TipoEtapaFormulario.Secao, null), "Outra", null, null).Value!;
-        EtapaFormulario revisao = EtapaFormulario.Criar(new EtapaEstrutura("REVISAO", 2, TipoEtapaFormulario.Bloco, BlocoSistema.RevisaoEAceite), "Revisão", null, null).Value!;
+        PaginaDoFormulario outraSecao = PaginaDoFormulario.Criar(new PaginaEstrutura("OUTRA", 1, TipoPaginaFormulario.Secao, null), "Outra", null, null).Value!;
+        PaginaDoFormulario revisao = PaginaDoFormulario.Criar(new PaginaEstrutura("REVISAO", 2, TipoPaginaFormulario.Bloco, BlocoSistema.RevisaoEAceite), "Revisão", null, null).Value!;
 
         processo.DefinirFormulario(
                 FinalidadeFormulario.Inscricao, processo.FormularioDe(FinalidadeFormulario.Inscricao)!.FaseId, null,
-                [FormularioDeTeste.Etapas()[0], outraSecao, revisao])
+                [FormularioDeTeste.Paginas()[0], outraSecao, revisao])
             .Errors.Should().ContainSingle().Which.Should().BeEquivalentTo(new
             {
-                Field = "etapas",
+                Field = "paginas",
                 Error = new { Code = EstruturaFormularioErrorCodes.ItemForaDeSecao },
             });
     }
@@ -154,7 +154,7 @@ public sealed class FormulariosPorFinalidadeTests
     public void Publicacao_IsencaoExigeTaxa()
     {
         ProcessoSeletivo processo = ProcessoConformeFactory.Criar();
-        processo.DefinirFormulario(FinalidadeFormulario.IsencaoTaxa, null, null, FormularioDeTeste.Etapas())
+        processo.DefinirFormulario(FinalidadeFormulario.IsencaoTaxa, null, null, FormularioDeTeste.Paginas())
             .IsSuccess.Should().BeTrue();
 
         ChecklistDeConformidade.AvaliarConformidade(processo.Declaracao(), CadastrosDeTeste.Para(processo)).Should().Contain(static i => i.Codigo == "formulario_isencao_sem_taxa" && !i.Ok);
@@ -167,7 +167,7 @@ public sealed class FormulariosPorFinalidadeTests
         // Direto no agregado: o helper de teste põe na seção de dados o item que vem sem ela.
         processo.DefinirFatosColetados(
                 FinalidadeFormulario.Inscricao,
-                [Item("TEM_RENDA", FormularioDeTeste.PrimeiraOrdemDeInscricao, etapa: null), .. FormularioDeTeste.DadosBasicos()])
+                [Item("TEM_RENDA", FormularioDeTeste.PrimeiraOrdemDeInscricao, pagina: null), .. FormularioDeTeste.DadosBasicos()])
             .IsSuccess.Should().BeTrue();
 
         CondicoesDaCanonicalizacaoDeTeste.PrimeiraCausa(processo)!.Code.Should().Be(FormularioProcessoErrorCodes.ItemForaDeSecao);

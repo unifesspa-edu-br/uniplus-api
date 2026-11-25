@@ -96,6 +96,11 @@ public sealed class FormularioPortavelTests
     public static readonly TheoryData<FormularioPortavel, string, string> MalformadosComDetalhe = new()
     {
         {
+            new FormularioPortavel([new PaginaPortavel("DADOS", null, [], []), new PaginaPortavel("DADOS", null, [], [])], [], [], []),
+            FormularioPortavelErrorCodes.EstruturaInvalida,
+            "O código 'DADOS' aparece mais de uma vez como página."
+        },
+        {
             Formulario(Item("RENDA"), Item("RENDA")),
             FormularioPortavelErrorCodes.EstruturaInvalida,
             "O código 'RENDA' aparece mais de uma vez como fato produzido ou grupo do formulário."
@@ -136,9 +141,9 @@ public sealed class FormularioPortavelTests
             "O código 'FAMILIA' aparece mais de uma vez como fato produzido ou grupo do formulário."
         },
         {
-            new FormularioPortavel([new EtapaPortavel(" ", null, [], [])], [], [], []),
+            new FormularioPortavel([new PaginaPortavel(" ", null, [], [])], [], [], []),
             FormularioPortavelErrorCodes.EstruturaInvalida,
-            "Uma etapa do formulário não tem código."
+            "Uma página do formulário não tem código."
         },
         {
             ComGrupos(Grupo("", "PARENTE_A")),
@@ -205,7 +210,7 @@ public sealed class FormularioPortavelTests
             "A obrigatoriedade do campo 'CONTATO' é SEMPRE ou NUNCA sem predicado, ou QUANDO com ele."
         },
         {
-            new FormularioPortavel([new EtapaPortavel(" ", null, [Item(" ")], [])], [], [], []),
+            new FormularioPortavel([new PaginaPortavel(" ", null, [Item(" ")], [])], [], [], []),
             FormularioPortavelErrorCodes.EstruturaInvalida,
             "Um campo do formulário não tem o código do fato."
         },
@@ -233,11 +238,11 @@ public sealed class FormularioPortavelTests
         new(codigo, new OcorrenciasDoGrupoDto(0, null, false), Nunca(), [Item(subitem)]);
 
     private static FormularioPortavel ComGrupos(params GrupoPortavel[] grupos) =>
-        new([new EtapaPortavel("INSCRICAO:DADOS", null, [], grupos)], [], [], []);
+        new([new PaginaPortavel("INSCRICAO:DADOS", null, [], grupos)], [], [], []);
 
     private static FormularioPortavel ComGrupo(int minimo, int? maximo) =>
         new(
-            [new EtapaPortavel("INSCRICAO:DADOS", null, [], [new GrupoPortavel("FAMILIA", new OcorrenciasDoGrupoDto(minimo, maximo, false), Nunca(), [Item("NOME")])])],
+            [new PaginaPortavel("INSCRICAO:DADOS", null, [], [new GrupoPortavel("FAMILIA", new OcorrenciasDoGrupoDto(minimo, maximo, false), Nunca(), [Item("NOME")])])],
             [], [], []);
 
     private static ItemPortavel ItemComRestricao(RestricaoValorDto restricao)
@@ -263,21 +268,21 @@ public sealed class FormularioPortavelTests
 
     public static readonly TheoryData<FormularioPortavel, string> NulosAninhados = new()
     {
-        { Formulario(Item("RENDA", exibicao: [null!])), "etapas[0].itens[0].regras.exibicao[0]" },
-        { Formulario(ItemComRegras(new RegrasDoCampoDto(null, Quando([[null!]]), [], null))), "etapas[0].itens[0].regras.obrigatoriedade.predicado[0][0]" },
-        { Formulario(ItemComRegras(new RegrasDoCampoDto(null, new ObrigatoriedadeDto("NUNCA", null), [], new ImpedimentoDto([null!], "Mensagem")))), "etapas[0].itens[0].regras.impedimento.quando[0]" },
+        { Formulario(Item("RENDA", exibicao: [null!])), "paginas[0].itens[0].regras.exibicao[0]" },
+        { Formulario(ItemComRegras(new RegrasDoCampoDto(null, Quando([[null!]]), [], null))), "paginas[0].itens[0].regras.obrigatoriedade.predicado[0][0]" },
+        { Formulario(ItemComRegras(new RegrasDoCampoDto(null, new ObrigatoriedadeDto("NUNCA", null), [], new ImpedimentoDto([null!], "Mensagem")))), "paginas[0].itens[0].regras.impedimento.quando[0]" },
         {
             Formulario(ItemComRestricao(new RestricaoValorDto(TipoRestricaoValor.OpcoesPermitidas.Codigo(), null, null, [null!], null, null, null))),
-            "etapas[0].itens[0].regras.restricoes[0].entradas[0]"
+            "paginas[0].itens[0].regras.restricoes[0].entradas[0]"
         },
         {
             Formulario(ItemComRestricao(new RestricaoValorDto(TipoRestricaoValor.OpcoesDasRespostas.Codigo(), null, null, null, [null!], null, null))),
-            "etapas[0].itens[0].regras.restricoes[0].fatos[0]"
+            "paginas[0].itens[0].regras.restricoes[0].fatos[0]"
         },
         { Formulario(Item("RENDA")) with { Termos = [new TermoPortavel("TERMO", Nunca([null!]))] }, "termos[0].regras.exibicao[0]" },
         {
             ComGrupos(Grupo("FAMILIA", "NOME") with { Regras = new ExibicaoEObrigatoriedadeDto(null, Quando([null!])) }),
-            "etapas[0].grupos[0].regras.obrigatoriedade.predicado[0]"
+            "paginas[0].grupos[0].regras.obrigatoriedade.predicado[0]"
         },
     };
 
@@ -298,27 +303,27 @@ public sealed class FormularioPortavelTests
     public void ParaDefinicao_GrupoSemOcorrencias_RecusaNoCaminho(bool explicito)
     {
         string ocorrencias = explicito ? "\"ocorrencias\":null," : "";
-        string json = "{\"etapas\":[{\"codigo\":\"INSCRICAO:DADOS\",\"itens\":[],\"grupos\":[{\"codigo\":\"FAMILIA\"," +
+        string json = "{\"paginas\":[{\"codigo\":\"INSCRICAO:DADOS\",\"itens\":[],\"grupos\":[{\"codigo\":\"FAMILIA\"," +
             ocorrencias + "\"regras\":{\"obrigatoriedade\":{\"tipo\":\"NUNCA\"}},\"subitens\":[]}]}],\"termos\":[],\"derivacoes\":[],\"agregados\":[]}";
         FormularioPortavel formulario = JsonSerializer.Deserialize<FormularioPortavel>(json, OpcoesDoFio)!;
 
         Result<DefinicaoFormulario> resultado = formulario.ParaDefinicao();
 
         resultado.Errors.Should().ContainSingle().Which.Should().Match<FieldError>(e =>
-            e.Field == "etapas[0].grupos[0].ocorrencias" && e.Error.Code == GrupoFormularioErrorCodes.OcorrenciasObrigatorias);
+            e.Field == "paginas[0].grupos[0].ocorrencias" && e.Error.Code == GrupoFormularioErrorCodes.OcorrenciasObrigatorias);
     }
 
     [Fact]
     public void Avaliar_GrupoSemOcorrencias_PreservaOCaminho()
     {
-        FormularioPortavel formulario = new([new EtapaPortavel("DADOS", null, [],
+        FormularioPortavel formulario = new([new PaginaPortavel("DADOS", null, [],
             [new GrupoPortavel("FAMILIA", null!, Nunca(), [])])], [], [], []);
         EntradaAvaliacaoFormulario entrada = new(new Dictionary<string, JsonElement>(), new HashSet<string>(),
             new Dictionary<string, Regras.ValueObjects.FatoResolvido>(), null);
 
         Result<AvaliacaoFormulario> resultado = formulario.Avaliar(entrada);
 
-        resultado.Errors.Should().ContainSingle().Which.Field.Should().Be("etapas[0].grupos[0].ocorrencias");
+        resultado.Errors.Should().ContainSingle().Which.Field.Should().Be("paginas[0].grupos[0].ocorrencias");
     }
 
     private static ItemPortavel ItemComRegras(RegrasDoCampoDto regras) => Item("RENDA") with { Regras = regras };
@@ -333,7 +338,7 @@ public sealed class FormularioPortavelTests
         Result<DefinicaoFormulario> definicao = formulario.ParaDefinicao();
 
         definicao.Error!.Code.Should().Be(FormularioPortavelErrorCodes.EstruturaInvalida);
-        definicao.Error.Message.Should().Contain("etapas[0].itens[1]");
+        definicao.Error.Message.Should().Contain("paginas[0].itens[1]");
     }
 
     private static AvaliacaoFormulario Avaliar(FormularioPortavel formulario, IReadOnlyDictionary<string, JsonElement> respostas)
@@ -345,7 +350,7 @@ public sealed class FormularioPortavelTests
     }
 
     private static FormularioPortavel Formulario(params ItemPortavel[] itens) =>
-        new([new EtapaPortavel("INSCRICAO:DADOS", null, itens, [])], [], [], []);
+        new([new PaginaPortavel("INSCRICAO:DADOS", null, itens, [])], [], [], []);
 
     private static ItemPortavel Item(
         string fato,

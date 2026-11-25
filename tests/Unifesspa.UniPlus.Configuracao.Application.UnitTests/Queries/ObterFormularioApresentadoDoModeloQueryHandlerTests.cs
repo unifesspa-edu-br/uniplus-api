@@ -28,8 +28,8 @@ public sealed class ObterFormularioApresentadoDoModeloQueryHandlerTests
 {
     private const string Finalidade = "Verificação dos requisitos do processo seletivo.";
 
-    private static readonly EtapaDoModelo Dados = new("DADOS", 0, TipoEtapaFormulario.Secao, null, "Dados", "Dados pessoais", "Atenção", null);
-    private static readonly EtapaDoModelo Revisao = new("REVISAO", 1, TipoEtapaFormulario.Bloco, BlocoSistema.RevisaoEAceite, "Revisão", null, null, null);
+    private static readonly PaginaDoModelo Dados = new("DADOS", 0, TipoPaginaFormulario.Secao, null, "Dados", "Dados pessoais", "Atenção", null);
+    private static readonly PaginaDoModelo Revisao = new("REVISAO", 1, TipoPaginaFormulario.Bloco, BlocoSistema.RevisaoEAceite, "Revisão", null, null, null);
 
     private readonly IModeloFormularioRepository _repository = Substitute.For<IModeloFormularioRepository>();
     private readonly IFatoCandidatoRepository _fatos = Substitute.For<IFatoCandidatoRepository>();
@@ -64,10 +64,10 @@ public sealed class ObterFormularioApresentadoDoModeloQueryHandlerTests
 
         resultado.Finalidade.Should().Be("HABILITACAO");
         resultado.Titulo.Should().Be("Habilitação");
-        resultado.Coleta.Itens.Select(static c => (c.FatoCodigo, c.Ordem, c.EtapaCodigo)).Should().Equal(("PRIMEIRO", 0, "DADOS"), ("SEGUNDO", 1, "DADOS"));
-        resultado.Etapas.Should().Equal(
-            new SecaoRenderizavel("DADOS", "DADOS", 0, "SECAO", null, new ApresentacaoDaEtapaDto("Dados", "Dados pessoais", "Atenção")),
-            new SecaoRenderizavel("REVISAO", null, 1, "BLOCO", "REVISAO_E_ACEITE", new ApresentacaoDaEtapaDto("Revisão", null, null)));
+        resultado.Coleta.Itens.Select(static c => (c.FatoCodigo, c.Ordem, c.PaginaCodigo)).Should().Equal(("PRIMEIRO", 0, "DADOS"), ("SEGUNDO", 1, "DADOS"));
+        resultado.Paginas.Should().Equal(
+            new PaginaApresentada("DADOS", "DADOS", 0, "SECAO", null, new ApresentacaoDaPaginaDto("Dados", "Dados pessoais", "Atenção")),
+            new PaginaApresentada("REVISAO", null, 1, "BLOCO", "REVISAO_E_ACEITE", new ApresentacaoDaPaginaDto("Revisão", null, null)));
     }
 
     [Fact(DisplayName = "O campo de seleção global oferta os valores ativos do catálogo, e o que o processo declara sai nulo")]
@@ -145,7 +145,7 @@ public sealed class ObterFormularioApresentadoDoModeloQueryHandlerTests
         FormularioApresentado resultado = (await ObterAsync(Modelo(grupos: [familia])))!;
 
         GrupoApresentado grupo = resultado.Coleta.Grupos.Should().ContainSingle().Which;
-        (grupo.Codigo, grupo.Ordem, grupo.EtapaCodigo, grupo.Rotulo, grupo.Ocorrencias)
+        (grupo.Codigo, grupo.Ordem, grupo.PaginaCodigo, grupo.Rotulo, grupo.Ocorrencias)
             .Should().Be(("FAMILIA", 1, "DADOS", "Composição familiar", new OcorrenciasDoGrupoDto(1, 3, false)));
         grupo.Subitens.Select(static c => c.FatoCodigo).Should().Equal("PRIMEIRO", "SEGUNDO");
     }
@@ -210,7 +210,7 @@ public sealed class ObterFormularioApresentadoDoModeloQueryHandlerTests
     private static ItemDoModelo Item(string fato, int ordem) =>
         new(fato, ordem, "DADOS", new ApresentacaoDoCampo(fato, TipoDeCampo.EscolhaUnica), null, new RegrasDoCampo(null, Obrigatoriedade.Sempre, []));
 
-    private static ItemDoModelo Subitem(string fato, int ordem) => Item(fato, ordem) with { EtapaCodigo = null };
+    private static ItemDoModelo Subitem(string fato, int ordem) => Item(fato, ordem) with { PaginaCodigo = null };
 
     private static PredicadoDnf Quando(string fato, object valor) =>
         PredicadoDnf.CriarDeCondicoesAgrupadas([(0, CondicaoDnf.Criar(fato, Operador.Igual, JsonSerializer.SerializeToElement(valor)).Value!)]).Value!;

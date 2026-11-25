@@ -75,10 +75,10 @@ internal sealed record ViolacaoDeRegra(
             p =>
             {
                 FormularioProcesso formulario = p.Formularios.Single(f => f.Finalidade == FinalidadeFormulario.Inscricao);
-                return p.DefinirFormulario(FinalidadeFormulario.Inscricao, Guid.CreateVersion7(), formulario.Titulo, [.. formulario.Etapas]);
+                return p.DefinirFormulario(FinalidadeFormulario.Inscricao, Guid.CreateVersion7(), formulario.Titulo, [.. formulario.Paginas]);
             },
             "FormularioProcesso.FaseForaDoCronograma",
-            static p => [.. p.Formularios.SelectMany(static f => (object?[])[f.Finalidade, f.FaseId, f.Titulo, .. f.Etapas])]),
+            static p => [.. p.Formularios.SelectMany(static f => (object?[])[f.Finalidade, f.FaseId, f.Titulo, .. f.Paginas])]),
         [nameof(ProcessoSeletivo.DefinirTermosDoFormulario)] = new(
             p => p.DefinirTermosDoFormulario(FinalidadeFormulario.Habilitacao, []),
             FormularioProcessoErrorCodes.FormularioInexistente,

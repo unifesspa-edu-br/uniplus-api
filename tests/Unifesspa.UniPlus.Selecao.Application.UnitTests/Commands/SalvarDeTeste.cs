@@ -41,8 +41,8 @@ internal static class SalvarDeTeste
         ProcessoSeletivo processoBase = ProcessoSeletivoConformeBuilder.Criar("PS 2026 — Salvar rascunho");
         processoBase.DefinirItens([item], grupos: grupos).IsSuccess.Should().BeTrue();
 
-        // A definição avaliável só reconhece um item que esteja numa etapa de um FORMULÁRIO
-        // (RecorteDaFinalidade filtra por etapa de FormularioProcesso, não por EtapaProcesso do
+        // A definição avaliável só reconhece um item que esteja numa página de um FORMULÁRIO
+        // (RecorteDaFinalidade filtra por página de FormularioProcesso, não por EtapaProcesso do
         // certame) — por isso o grafo leva processoBase.Formularios, que FormularioDeTeste.DefinirItens
         // já colocou o item dentro da seção "DADOS" da finalidade Inscrição.
         return (DivulgacaoDeTeste.VersaoSemReferenciaTemporal(ProcessoId), DivulgacaoDeTeste.ConfiguracaoDe(processoBase));

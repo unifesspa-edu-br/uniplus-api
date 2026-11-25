@@ -8,14 +8,14 @@ using Unifesspa.UniPlus.Regras.ValueObjects;
 
 /// <summary>
 /// A montagem das definições, das entradas e das condições que os testes da avaliação do formulário
-/// repetem: uma etapa de dados, com os itens e as respostas dadas.
+/// repetem: uma página de dados, com os itens e as respostas dadas.
 /// </summary>
 internal static class ApoioDaAvaliacaoDoFormulario
 {
-    internal const string Etapa = "DADOS";
+    internal const string Pagina = "DADOS";
 
     internal static DefinicaoFormulario Formulario(params DefinicaoItem[] itens) =>
-        new([new DefinicaoEtapa(Etapa, exibicao: null, itens)], termos: [], derivacoes: []);
+        new([new DefinicaoPagina(Pagina, exibicao: null, itens)], termos: [], derivacoes: []);
 
     internal static DefinicaoItem Item(
         string fato,
@@ -24,10 +24,10 @@ internal static class ApoioDaAvaliacaoDoFormulario
         IReadOnlyList<RestricaoValor>? restricoes = null) =>
         new(fato, exibicao, obrigatoriedade ?? Obrigatoriedade.Sempre, restricoes ?? []);
 
-    internal static EntradaAvaliacaoFormulario Entrada(bool etapaConcluida, params (string Fato, object Valor)[] respostas) =>
+    internal static EntradaAvaliacaoFormulario Entrada(bool paginaConcluida, params (string Fato, object Valor)[] respostas) =>
         new(
             Respostas(respostas),
-            etapaConcluida ? new HashSet<string>([Etapa], StringComparer.Ordinal) : new HashSet<string>(StringComparer.Ordinal),
+            paginaConcluida ? new HashSet<string>([Pagina], StringComparer.Ordinal) : new HashSet<string>(StringComparer.Ordinal),
             new Dictionary<string, FatoResolvido>(StringComparer.Ordinal),
             Envio: null);
 

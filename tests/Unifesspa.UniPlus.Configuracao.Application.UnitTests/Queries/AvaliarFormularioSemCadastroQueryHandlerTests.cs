@@ -19,7 +19,7 @@ using Unifesspa.UniPlus.Regras.Leituras;
 public sealed class AvaliarFormularioSemCadastroQueryHandlerTests
 {
     private static readonly FormularioPortavel Regras = new(
-        [new EtapaPortavel("DADOS", null, [
+        [new PaginaPortavel("DADOS", null, [
             new ItemPortavel("TIPO_ENDERECO", Sempre(), ["URBANO", "ALDEIA"], null),
             new ItemPortavel("NOME_ALDEIA", Sempre([[new CondicaoPrecondicaoDto("TIPO_ENDERECO", "IGUAL", JsonSerializer.SerializeToElement("ALDEIA"))]]), null, null),
         ], [])],
@@ -40,13 +40,13 @@ public sealed class AvaliarFormularioSemCadastroQueryHandlerTests
     [Fact]
     public void Handle_GrupoSemOcorrencias_PreservaOCaminho()
     {
-        FormularioPortavel regras = new([new EtapaPortavel("DADOS", null, [],
+        FormularioPortavel regras = new([new PaginaPortavel("DADOS", null, [],
             [new GrupoPortavel("FAMILIA", null!, new ExibicaoEObrigatoriedadeDto(null, new ObrigatoriedadeDto("NUNCA", null)), [])])], [], [], []);
 
         Result<AvaliacaoPortavel> resultado = AvaliarFormularioSemCadastroQueryHandler.Handle(
             new AvaliarFormularioSemCadastroQuery(new(regras, null, null, null, null)));
 
-        resultado.Errors.Should().ContainSingle().Which.Field.Should().Be("etapas[0].grupos[0].ocorrencias");
+        resultado.Errors.Should().ContainSingle().Which.Field.Should().Be("paginas[0].grupos[0].ocorrencias");
     }
 
     [Fact(DisplayName = "Envio simulado numa zona que o ambiente não reconhece é recusado no fuso")]
@@ -79,7 +79,7 @@ public sealed class AvaliarFormularioSemCadastroQueryHandlerTests
     }
 
     private static readonly FormularioPortavel RegrasComFaixaDeData = new(
-        [new EtapaPortavel("DADOS", null, [
+        [new PaginaPortavel("DADOS", null, [
             new ItemPortavel(
                 "DATA_NASCIMENTO",
                 new RegrasDoCampoDto(

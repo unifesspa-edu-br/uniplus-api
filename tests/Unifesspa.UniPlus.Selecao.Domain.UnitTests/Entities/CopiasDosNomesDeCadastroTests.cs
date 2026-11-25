@@ -34,7 +34,7 @@ public sealed class CopiasDosNomesDeCadastroTests
     [Fact]
     public void Criar_FormularioSemModelo_NaoGuardaNome()
     {
-        Result<FormularioProcesso> resultado = FormularioProcesso.Criar(FinalidadeFormulario.Inscricao, null, null, FormularioDeTeste.Etapas(FinalidadeFormulario.Inscricao), modeloOrigemNome: "Nome ignorado");
+        Result<FormularioProcesso> resultado = FormularioProcesso.Criar(FinalidadeFormulario.Inscricao, null, null, FormularioDeTeste.Paginas(FinalidadeFormulario.Inscricao), modeloOrigemNome: "Nome ignorado");
 
         resultado.IsSuccess.Should().BeTrue();
         resultado.Value!.ModeloOrigemNome.Should().BeNull();

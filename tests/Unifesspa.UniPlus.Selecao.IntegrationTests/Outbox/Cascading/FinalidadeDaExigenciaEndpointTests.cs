@@ -115,7 +115,7 @@ public sealed class FinalidadeDaExigenciaEndpointTests
     private static void ColetarFatoNaIsencao(ProcessoSeletivo processo, string fato)
     {
         processo.DefinirFormulario(
-                FinalidadeFormulario.IsencaoTaxa, processo.CronogramaFases.Single().Id, null, FormularioDeTeste.Etapas(FinalidadeFormulario.IsencaoTaxa))
+                FinalidadeFormulario.IsencaoTaxa, processo.CronogramaFases.Single().Id, null, FormularioDeTeste.Paginas(FinalidadeFormulario.IsencaoTaxa))
             .IsSuccess.Should().BeTrue();
         processo.DefinirFatosColetados(
                 FinalidadeFormulario.IsencaoTaxa,

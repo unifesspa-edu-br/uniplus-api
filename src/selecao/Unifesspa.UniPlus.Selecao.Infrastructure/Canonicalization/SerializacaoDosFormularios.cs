@@ -21,7 +21,7 @@ using Unifesspa.UniPlus.Selecao.Domain.Services;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 /// <summary>
-/// Registra na configuração publicada os formulários de inscrição, com etapas e termos exigidos, e as regras de valor
+/// Registra na configuração publicada os formulários de inscrição, com páginas e termos exigidos, e as regras de valor
 /// (obrigatoriedade, impedimento e restrições) que o formulário e as exigências compartilham.
 /// </summary>
 internal static class SerializacaoDosFormularios
@@ -42,7 +42,7 @@ internal static class SerializacaoDosFormularios
         ["faseId"] = formulario.FaseId is { } fase ? JsonValue.Create(fase) : null,
         ["titulo"] = formulario.Titulo is { } titulo ? HashCanonicalComputer.NormalizeNfc(titulo) : null,
         ["modeloOrigem"] = SerializarModeloDeOrigem(formulario),
-        ["paginas"] = new JsonArray([.. formulario.Etapas.OrderBy(static e => e.Ordem).Select(SerializarEtapa)]),
+        ["paginas"] = new JsonArray([.. formulario.Paginas.OrderBy(static e => e.Ordem).Select(SerializarPagina)]),
         ["termos"] = new JsonArray([.. processo.TermosExigidos
             .Where(t => t.Finalidade == formulario.Finalidade)
             .OrderBy(static t => t.Ordem)
@@ -57,24 +57,24 @@ internal static class SerializacaoDosFormularios
             ["nome"] = formulario.ModeloOrigemNome is { } nome ? HashCanonicalComputer.NormalizeNfc(nome) : null,
         } : null;
 
-    private static JsonNode SerializarEtapa(EtapaFormulario etapa)
+    private static JsonNode SerializarPagina(PaginaDoFormulario pagina)
     {
-        JsonObject objeto = SerializarEtapaSemContexto(etapa);
-        ContextoDosRotulos.Acrescentar(objeto, "tipo", etapa.Tipo);
-        ContextoDosRotulos.Acrescentar(objeto, "bloco", etapa.Bloco);
+        JsonObject objeto = SerializarPaginaSemContexto(pagina);
+        ContextoDosRotulos.Acrescentar(objeto, "tipo", pagina.Tipo);
+        ContextoDosRotulos.Acrescentar(objeto, "bloco", pagina.Bloco);
         return objeto;
     }
 
-    private static JsonObject SerializarEtapaSemContexto(EtapaFormulario etapa) => new()
+    private static JsonObject SerializarPaginaSemContexto(PaginaDoFormulario pagina) => new()
     {
-        ["codigo"] = HashCanonicalComputer.NormalizeNfc(etapa.Codigo),
-        ["ordem"] = etapa.Ordem,
-        ["tipo"] = etapa.Tipo.Codigo(),
-        ["bloco"] = etapa.Bloco?.Codigo(),
-        ["titulo"] = HashCanonicalComputer.NormalizeNfc(etapa.Titulo),
-        ["descricao"] = etapa.Descricao is { } descricao ? HashCanonicalComputer.NormalizeNfc(descricao) : null,
-        ["aviso"] = etapa.Aviso is { } aviso ? HashCanonicalComputer.NormalizeNfc(aviso) : null,
-        ["exibicao"] = etapa.Exibicao is { } exibicao ? SerializacaoDosPredicados.SerializarDnf(SerializacaoDosPredicados.LinhasDoPredicado(exibicao)) : null,
+        ["codigo"] = HashCanonicalComputer.NormalizeNfc(pagina.Codigo),
+        ["ordem"] = pagina.Ordem,
+        ["tipo"] = pagina.Tipo.Codigo(),
+        ["bloco"] = pagina.Bloco?.Codigo(),
+        ["titulo"] = HashCanonicalComputer.NormalizeNfc(pagina.Titulo),
+        ["descricao"] = pagina.Descricao is { } descricao ? HashCanonicalComputer.NormalizeNfc(descricao) : null,
+        ["aviso"] = pagina.Aviso is { } aviso ? HashCanonicalComputer.NormalizeNfc(aviso) : null,
+        ["exibicao"] = pagina.Exibicao is { } exibicao ? SerializacaoDosPredicados.SerializarDnf(SerializacaoDosPredicados.LinhasDoPredicado(exibicao)) : null,
     };
 
     private static JsonNode SerializarTermoExigido(TermoExigidoFormulario termo)

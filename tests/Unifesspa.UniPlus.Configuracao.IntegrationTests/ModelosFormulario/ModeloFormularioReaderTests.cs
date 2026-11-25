@@ -85,8 +85,8 @@ public sealed class ModeloFormularioReaderTests
         new(
             "Habilitação",
             [
-                new("DADOS", 0, TipoEtapaFormulario.Secao, null, "Dados", null, null, null),
-                new("REVISAO", 1, TipoEtapaFormulario.Bloco, BlocoSistema.RevisaoEAceite, "Revisão", null, null, null),
+                new("DADOS", 0, TipoPaginaFormulario.Secao, null, "Dados", null, null, null),
+                new("REVISAO", 1, TipoPaginaFormulario.Bloco, BlocoSistema.RevisaoEAceite, "Revisão", null, null, null),
             ],
             [new ItemDoModelo("CERTIFICADO", 0, "DADOS", new ApresentacaoDoCampo("Certificado", TipoDeCampo.SimOuNao), null, new RegrasDoCampo(null, Obrigatoriedade.Sempre, []))],
             [],

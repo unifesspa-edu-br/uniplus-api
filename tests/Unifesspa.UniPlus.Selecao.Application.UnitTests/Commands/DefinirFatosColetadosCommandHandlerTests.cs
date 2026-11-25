@@ -80,7 +80,7 @@ public sealed class DefinirFatosColetadosCommandHandlerTests
         daInscricao.Select(static f => f.Ordem).Concat(processo.GruposColetados.Select(static g => g.Ordem)).Should().OnlyHaveUniqueItems();
         processo.GruposColetados.Single().Ordem.Should().Be(baixaRenda.Ordem + 1 + 3, "o grupo omitido sobe com os itens, para a ordem seguir única");
         daInscricao.Where(static f => ConjuntoBasicoDaInscricao.Fatos.Contains(f.FatoCodigo))
-            .Should().OnlyContain(static f => f.EtapaCodigo == ConjuntoBasicoDaInscricao.CodigoDaSecao);
+            .Should().OnlyContain(static f => f.PaginaCodigo == ConjuntoBasicoDaInscricao.CodigoDaSecao);
     }
 
     [Fact(DisplayName = "Com um buraco depois da seção, regravar só os itens sobe item e grupo omitido juntos, sem repetir ordem")]
@@ -141,7 +141,7 @@ public sealed class DefinirFatosColetadosCommandHandlerTests
             EntradaDoFatoColetadoDeTeste.Coletando("BAIXA_RENDA", 1).ComRotulo("Baixa renda").ComObrigatoriedade("NUNCA").NaSecao("OUTRA").Construir(),
         ]);
 
-        resultado.Errors.Select(static e => e.Field).Should().BeEquivalentTo(["itens[0].etapaCodigo", "itens[1].etapaCodigo"]);
+        resultado.Errors.Select(static e => e.Field).Should().BeEquivalentTo(["itens[0].paginaCodigo", "itens[1].paginaCodigo"]);
     }
 
     [Fact(DisplayName = "Coletar fato desativado no catálogo é recusado quando o processo ainda não o coletava; já coletado, continua")]

@@ -22,12 +22,12 @@ using Recusa = (string Campo, string Codigo, string Mensagem);
 
 /// <summary>
 /// A leitura do conteúdo do modelo pela forma das regras: acumula as recusas na ordem das partes
-/// (etapas, itens, termos, grupos, documentos) e guarda a posição de cada parte lida na entrada.
+/// (páginas, itens, termos, grupos, documentos) e guarda a posição de cada parte lida na entrada.
 /// </summary>
 public sealed class ConteudoLidoTests
 {
     private const string ClausulaSemCondicao = "Uma cláusula deve ter ao menos uma condição.";
-    private const string EntradaNula = "A etapa, o item, o grupo ou o termo veio nulo.";
+    private const string EntradaNula = "A página, o item, o grupo ou o termo veio nulo.";
     private const string ObrigatoriedadeIncoerente = "A obrigatoriedade é SEMPRE ou NUNCA, sem predicado, ou QUANDO, com predicado.";
 
     private static readonly Condicoes PredicadoSemCondicao = [[]];
@@ -39,7 +39,7 @@ public sealed class ConteudoLidoTests
     public void Ler_RecusaEmTodasAsPartes_ListaAsRecusasNaOrdemDaLeitura()
     {
         ConteudoDoModeloInput entrada = new(
-            "Habilitação", EtapasRecusadas(), ItensRecusados(), TermosRecusados(), ["CERTIFICADO", ElementoNulo<string>()], GruposRecusados(),
+            "Habilitação", PaginasRecusadas(), ItensRecusados(), TermosRecusados(), ["CERTIFICADO", ElementoNulo<string>()], GruposRecusados(),
             ConjuntoDeDocumentosDoModeloBuilder.SoDocumentos(DocumentosRecusados()));
 
         LeituraDoConteudo leitura = new(Formatos);
@@ -53,43 +53,43 @@ public sealed class ConteudoLidoTests
     public void Ler_EntradaValidaEmTodasAsPartes_ProduzOConteudoEsperado()
     {
         ConteudoDoModeloInput entrada = new(
-            "Habilitação", [EtapaValida()], [ItemValido()], [TermoValido()], ["CERTIFICADO"], [GrupoValido()], ConjuntoDeDocumentosDoModeloBuilder.SoDocumentos(DocumentoValido()));
+            "Habilitação", [PaginaValida()], [ItemValido()], [TermoValido()], ["CERTIFICADO"], [GrupoValido()], ConjuntoDeDocumentosDoModeloBuilder.SoDocumentos(DocumentoValido()));
 
         LeituraDoConteudo leitura = new(Formatos);
         ConteudoLido lido = leitura.Ler(entrada);
 
         leitura.Recusas.Should().BeEmpty();
         lido.ParaConteudo().Should().BeEquivalentTo(
-            new ConteudoDoModelo("Habilitação", [EtapaEsperada()], [ItemEsperado()], [TermoEsperado()], ["CERTIFICADO"], [GrupoEsperado()], new ConjuntoDeDocumentosDoModelo([DocumentoEsperado()], [])),
+            new ConteudoDoModelo("Habilitação", [PaginaEsperada()], [ItemEsperado()], [TermoEsperado()], ["CERTIFICADO"], [GrupoEsperado()], new ConjuntoDeDocumentosDoModelo([DocumentoEsperado()], [])),
             PorMembros);
     }
 
-    [Fact(DisplayName = "A etapa com tipo e bloco que não são códigos do contrato é recusada em cada campo, depois da exibição, e não é montada")]
-    public void Ler_EtapaComTipoEBlocoDesconhecidos_RecusaCadaCampoSemMontarAEtapa()
+    [Fact(DisplayName = "A pagina com tipo e bloco que não são códigos do contrato é recusada em cada campo, depois da exibição, e não é montada")]
+    public void Ler_PaginaComTipoEBlocoDesconhecidos_RecusaCadaCampoSemMontarAPagina()
     {
-        EtapaFormularioInput etapa = EtapaValida() with { Exibicao = PredicadoSemCondicao, Tipo = "secao", Bloco = "RODAPE" };
+        PaginaDoFormularioInput pagina = PaginaValida() with { Exibicao = PredicadoSemCondicao, Tipo = "secao", Bloco = "RODAPE" };
 
         LeituraDoConteudo leitura = new(Formatos);
-        ConteudoLido lido = leitura.Ler(new ConteudoDoModeloInput(null, [etapa], null, null, null));
+        ConteudoLido lido = leitura.Ler(new ConteudoDoModeloInput(null, [pagina], null, null, null));
 
         leitura.Recusas.Select(static e => (e.Field!, e.Error.Code)).Should().Equal(
-            ("etapas[0].exibicao[0]", "ClausulaDnf.ClausulaVazia"),
-            ("etapas[0].tipo", EstruturaFormularioErrorCodes.TipoDeEtapaObrigatorio),
-            ("etapas[0].bloco", EstruturaFormularioErrorCodes.BlocoNaoAdmitido));
-        lido.Etapas.Should().BeEmpty();
+            ("paginas[0].exibicao[0]", "ClausulaDnf.ClausulaVazia"),
+            ("paginas[0].tipo", EstruturaFormularioErrorCodes.TipoDePaginaObrigatorio),
+            ("paginas[0].bloco", EstruturaFormularioErrorCodes.BlocoNaoAdmitido));
+        lido.Paginas.Should().BeEmpty();
     }
 
-    [Fact(DisplayName = "O bloco ausente é a etapa sem bloco, e o código do bloco lido vai para a etapa")]
-    public void Ler_BlocoAusenteOuDeclarado_VaiParaAEtapa()
+    [Fact(DisplayName = "O bloco ausente é a pagina sem bloco, e o código do bloco lido vai para a pagina")]
+    public void Ler_BlocoAusenteOuDeclarado_VaiParaAPagina()
     {
-        EtapaFormularioInput comBloco = EntradaDaEtapaFormularioDeTeste.BlocoDeSistema("REVISAO", 1, "REVISAO_E_ACEITE").Construir();
+        PaginaDoFormularioInput comBloco = EntradaDaPaginaDoFormularioDeTeste.BlocoDeSistema("REVISAO", 1, "REVISAO_E_ACEITE").Construir();
 
         LeituraDoConteudo leitura = new(Formatos);
-        ConteudoLido lido = leitura.Ler(new ConteudoDoModeloInput(null, [EtapaValida(), comBloco], null, null, null));
+        ConteudoLido lido = leitura.Ler(new ConteudoDoModeloInput(null, [PaginaValida(), comBloco], null, null, null));
 
         leitura.Recusas.Should().BeEmpty();
-        lido.Etapas.Select(static e => (e.Etapa.Tipo, e.Etapa.Bloco)).Should().Equal(
-            (TipoEtapaFormulario.Secao, (BlocoSistema?)null), (TipoEtapaFormulario.Bloco, BlocoSistema.RevisaoEAceite));
+        lido.Paginas.Select(static e => (e.Pagina.Tipo, e.Pagina.Bloco)).Should().Equal(
+            (TipoPaginaFormulario.Secao, (BlocoSistema?)null), (TipoPaginaFormulario.Bloco, BlocoSistema.RevisaoEAceite));
     }
 
     [Fact(DisplayName = "A parte lida guarda a posição dela na entrada; a nula e a recusada ficam de fora")]
@@ -97,7 +97,7 @@ public sealed class ConteudoLidoTests
     {
         ConteudoLido lido = new LeituraDoConteudo(Formatos).Ler(ComPartesRecusadasNoMeio());
 
-        lido.Etapas.Select(static e => e.Indice).Should().Equal(0, 3);
+        lido.Paginas.Select(static e => e.Indice).Should().Equal(0, 3);
         lido.Itens.Select(static i => i.Indice).Should().Equal(0, 2);
         lido.Termos.Select(static t => t.Indice).Should().Equal(1);
         lido.Grupos.Select(static g => g.Indice).Should().Equal(0, 2);
@@ -166,7 +166,7 @@ public sealed class ConteudoLidoTests
 
     private static ConteudoDoModeloInput ComPartesRecusadasNoMeio() => new(
         "Habilitação",
-        [EtapaValida(), ElementoNulo<EtapaFormularioInput>(), EtapaValida() with { Exibicao = PredicadoSemCondicao }, EtapaValida()],
+        [PaginaValida(), ElementoNulo<PaginaDoFormularioInput>(), PaginaValida() with { Exibicao = PredicadoSemCondicao }, PaginaValida()],
         [ItemValido(), ElementoNulo<FatoColetadoInput>(), ItemValido()],
         [ElementoNulo<TermoExigidoInput>(), TermoValido()],
         [],
@@ -180,13 +180,13 @@ public sealed class ConteudoLidoTests
         .WhenTypeIs<JsonElement>();
 
     private static Recusa[] RecusasEsperadas() =>
-        [.. RecusasDasEtapas(), .. RecusasDosItens(), .. RecusasDosTermos(), .. RecusasDosGrupos(), .. RecusasDosDocumentos()];
+        [.. RecusasDasPaginas(), .. RecusasDosItens(), .. RecusasDosTermos(), .. RecusasDosGrupos(), .. RecusasDosDocumentos()];
 
-    private static EtapaFormularioInput[] EtapasRecusadas() =>
-        [ElementoNulo<EtapaFormularioInput>(), EntradaDaEtapaFormularioDeTeste.Secao("DADOS", 1).ComTitulo("Dados").ExibidaQuando(PredicadoSemCondicao).Construir()];
+    private static PaginaDoFormularioInput[] PaginasRecusadas() =>
+        [ElementoNulo<PaginaDoFormularioInput>(), EntradaDaPaginaDoFormularioDeTeste.Secao("DADOS", 1).ComTitulo("Dados").ExibidaQuando(PredicadoSemCondicao).Construir()];
 
-    private static Recusa[] RecusasDasEtapas() =>
-        [Malformada("etapas[0]", EntradaNula), ClausulaVazia("etapas[1].exibicao")];
+    private static Recusa[] RecusasDasPaginas() =>
+        [Malformada("paginas[0]", EntradaNula), ClausulaVazia("paginas[1].exibicao")];
 
     private static FatoColetadoInput[] ItensRecusados() =>
     [
@@ -268,11 +268,11 @@ public sealed class ConteudoLidoTests
         Malformada("conjuntoDeDocumentos.documentosExigidos[1].porOpcao.exceto", "A opção excetuada precisa ser um código."),
     ];
 
-    private static EtapaFormularioInput EtapaValida() =>
-        EntradaDaEtapaFormularioDeTeste.Secao("DADOS").ComTitulo("Dados").ComDescricao("Descrição").ComAviso("Aviso").ExibidaQuando(Quando("CERTIFICADO")).Construir();
+    private static PaginaDoFormularioInput PaginaValida() =>
+        EntradaDaPaginaDoFormularioDeTeste.Secao("DADOS").ComTitulo("Dados").ComDescricao("Descrição").ComAviso("Aviso").ExibidaQuando(Quando("CERTIFICADO")).Construir();
 
-    private static EtapaDoModelo EtapaEsperada() =>
-        new("DADOS", 0, TipoEtapaFormulario.Secao, null, "Dados", "Descrição", "Aviso", Predicado("CERTIFICADO"));
+    private static PaginaDoModelo PaginaEsperada() =>
+        new("DADOS", 0, TipoPaginaFormulario.Secao, null, "Dados", "Descrição", "Aviso", Predicado("CERTIFICADO"));
 
     private static FatoColetadoInput ItemValido() =>
         EntradaDoFatoColetadoDeTeste.Coletando("CPF_RESPONSAVEL")

@@ -13,10 +13,10 @@ using Unifesspa.UniPlus.Regras.Formularios;
 /// </summary>
 public sealed class CodigosDeContratoDaEstruturaEDasRegrasDoFormularioTests
 {
-    [Theory(DisplayName = "Cada tipo de etapa tem o código e o rótulo do contrato")]
-    [InlineData(TipoEtapaFormulario.Secao, "SECAO", "Seção")]
-    [InlineData(TipoEtapaFormulario.Bloco, "BLOCO", "Bloco do sistema")]
-    public void TipoEtapaFormulario_ParDeCadaValor(TipoEtapaFormulario valor, string codigo, string rotulo) =>
+    [Theory(DisplayName = "Cada tipo de página tem o código e o rótulo do contrato")]
+    [InlineData(TipoPaginaFormulario.Secao, "SECAO", "Seção")]
+    [InlineData(TipoPaginaFormulario.Bloco, "BLOCO", "Bloco do sistema")]
+    public void TipoPaginaFormulario_ParDeCadaValor(TipoPaginaFormulario valor, string codigo, string rotulo) =>
         ConferirPar(valor, codigo, rotulo);
 
     [Theory(DisplayName = "Cada bloco do sistema tem o código e o rótulo do contrato")]
@@ -53,7 +53,7 @@ public sealed class CodigosDeContratoDaEstruturaEDasRegrasDoFormularioTests
     [Fact(DisplayName = "Os valores de cada enum são exatamente os do contrato, sem membro de ausência")]
     public void CadaEnum_TemSoOsMembrosDoContrato()
     {
-        CatalogoDe<TipoEtapaFormulario>.Valores().Should().Equal(TipoEtapaFormulario.Secao, TipoEtapaFormulario.Bloco);
+        CatalogoDe<TipoPaginaFormulario>.Valores().Should().Equal(TipoPaginaFormulario.Secao, TipoPaginaFormulario.Bloco);
         CatalogoDe<BlocoSistema>.Valores().Should().Equal(
             BlocoSistema.ComprovacaoDocumental, BlocoSistema.ModalidadesCalculadas, BlocoSistema.RevisaoEAceite);
         CatalogoDe<TipoObrigatoriedade>.Valores().Should().Equal(
@@ -72,7 +72,7 @@ public sealed class CodigosDeContratoDaEstruturaEDasRegrasDoFormularioTests
     [InlineData(null)]
     public void CodigoForaDoContrato_NaoEReconhecidoEmNenhumEnum(string? codigo)
     {
-        CatalogoDe<TipoEtapaFormulario>.TentarObter(codigo, out _).Should().BeFalse();
+        CatalogoDe<TipoPaginaFormulario>.TentarObter(codigo, out _).Should().BeFalse();
         CatalogoDe<BlocoSistema>.TentarObter(codigo, out _).Should().BeFalse();
         CatalogoDe<TipoObrigatoriedade>.TentarObter(codigo, out _).Should().BeFalse();
         CatalogoDe<TipoRestricaoValor>.TentarObter(codigo, out _).Should().BeFalse();
@@ -87,7 +87,7 @@ public sealed class CodigosDeContratoDaEstruturaEDasRegrasDoFormularioTests
     [InlineData("revisao_e_aceite")]
     public void CodigoEmMinuscula_NaoEReconhecido(string codigo)
     {
-        CatalogoDe<TipoEtapaFormulario>.TentarObter(codigo, out _).Should().BeFalse();
+        CatalogoDe<TipoPaginaFormulario>.TentarObter(codigo, out _).Should().BeFalse();
         CatalogoDe<BlocoSistema>.TentarObter(codigo, out _).Should().BeFalse();
         CatalogoDe<TipoObrigatoriedade>.TentarObter(codigo, out _).Should().BeFalse();
         CatalogoDe<TipoRestricaoValor>.TentarObter(codigo, out _).Should().BeFalse();

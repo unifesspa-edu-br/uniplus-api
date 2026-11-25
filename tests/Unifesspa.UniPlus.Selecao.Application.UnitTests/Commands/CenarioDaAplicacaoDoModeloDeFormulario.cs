@@ -99,8 +99,8 @@ internal sealed class CenarioDaAplicacaoDoModeloDeFormulario
             new ConteudoDoModeloInput(
                 "Formulário",
                 [
-                    EntradaDaEtapaFormularioDeTeste.Secao("DADOS").ComTitulo("Dados").Construir(),
-                    EntradaDaEtapaFormularioDeTeste.BlocoDeSistema("REVISAO", 1, "REVISAO_E_ACEITE").ComTitulo("Revisão").Construir(),
+                    EntradaDaPaginaDoFormularioDeTeste.Secao("DADOS").ComTitulo("Dados").Construir(),
+                    EntradaDaPaginaDoFormularioDeTeste.BlocoDeSistema("REVISAO", 1, "REVISAO_E_ACEITE").ComTitulo("Revisão").Construir(),
                 ],
                 itens, termos ?? [], pressupostos ?? [], grupos ?? [], documentos));
 

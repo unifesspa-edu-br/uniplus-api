@@ -54,7 +54,7 @@ internal sealed record FatoColetadoDeTeste
             Exibicao = fato.Exibicao,
             Restricoes = fato.Restricoes,
             Impedimento = fato.Impedimento,
-            Secao = fato.EtapaCodigo,
+            Secao = fato.PaginaCodigo,
             Finalidade = fato.Finalidade,
             Ajuda = fato.Ajuda,
             Confirmacao = fato.PedirConfirmacao,

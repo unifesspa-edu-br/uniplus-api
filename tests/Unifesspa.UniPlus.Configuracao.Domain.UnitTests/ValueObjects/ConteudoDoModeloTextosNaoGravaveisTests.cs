@@ -43,12 +43,12 @@ public sealed class ConteudoDoModeloTextosNaoGravaveisTests
     [Fact(DisplayName = "O título com caractere nulo é recusado")]
     public void Titulo_ComNulo_Recusa() => CamposRecusados(Vazio with { Titulo = ComNulo }).Should().Equal("titulo");
 
-    [Fact(DisplayName = "O código da etapa e o valor da exibição dela são recusados, cada um no seu campo")]
-    public void Etapa_CodigoEValorDaExibicao_Recusa()
+    [Fact(DisplayName = "O código da pagina e o valor da exibição dela são recusados, cada um no seu campo")]
+    public void Pagina_CodigoEValorDaExibicao_Recusa()
     {
-        EtapaDoModelo etapa = Etapa(ComNulo, 0, QuandoOValorE(JsonSerializer.SerializeToElement(ComNulo)));
+        PaginaDoModelo pagina = Pagina(ComNulo, 0, QuandoOValorE(JsonSerializer.SerializeToElement(ComNulo)));
 
-        CamposRecusados(Vazio with { Etapas = [etapa] }).Should().Equal("etapas[0].codigo", "etapas[0].exibicao");
+        CamposRecusados(Vazio with { Paginas = [pagina] }).Should().Equal("paginas[0].codigo", "paginas[0].exibicao");
     }
 
     [Fact(DisplayName = "O rótulo do campo de item é recusado no caminho do item")]
@@ -186,13 +186,13 @@ public sealed class ConteudoDoModeloTextosNaoGravaveisTests
         GrupoDoModelo grupo = Grupo("COMPOSICAO", 0, ruim, Item("MAIOR_IDADE")).ComObrigatoriedade(Obrigatoriedade.Quando(ruim));
         TermoDoModelo termo = Termo("LGPD", exibicao: ruim).ComObrigatoriedade(Obrigatoriedade.Quando(ruim));
 
-        return Vazio with { Etapas = [Etapa(exibicao: ruim)], Itens = [campo], Grupos = [grupo], Termos = [termo], ConjuntoDeDocumentos = Conjunto(Documento("LAUDO", ruim)) };
+        return Vazio with { Paginas = [Pagina(exibicao: ruim)], Itens = [campo], Grupos = [grupo], Termos = [termo], ConjuntoDeDocumentos = Conjunto(Documento("LAUDO", ruim)) };
     }
 
     [Fact(DisplayName = "O texto ruim de toda regra de cada parte é recusado no caminho dela, e as partes seguem a ordem do conteúdo")]
     public void RegrasDeTodasAsPartes_RecusaNoCaminhoDeCadaUma_NaOrdemDasPartes() =>
         CamposRecusados(ConteudoComRegraNaoGravavelEmCadaParte()).Should().Equal(
-            "etapas[0].exibicao",
+            "paginas[0].exibicao",
             "itens[0].regras.exibicao",
             "itens[0].regras.obrigatoriedade.predicado",
             "itens[0].regras.impedimento.quando",

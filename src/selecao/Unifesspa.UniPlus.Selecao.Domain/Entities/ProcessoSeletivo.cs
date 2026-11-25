@@ -313,13 +313,13 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
 
     /// <summary>Define o formulário de uma finalidade; o que nasce com <paramref name="itensDaCriacao"/> nasce com eles, numa operação só.</summary>
     public Result DefinirFormulario(
-        FinalidadeFormulario finalidade, Guid? faseId, string? titulo, IReadOnlyList<EtapaFormulario> etapas,
+        FinalidadeFormulario finalidade, Guid? faseId, string? titulo, IReadOnlyList<PaginaDoFormulario> paginas,
         IReadOnlyList<FatoColetado>? itensDaCriacao = null)
     {
-        ArgumentNullException.ThrowIfNull(etapas);
+        ArgumentNullException.ThrowIfNull(paginas);
 
         return Editar(
-            () => RegrasDosFormularios.PlanejarDefinicao(Declaracao(), finalidade, faseId, titulo, etapas, itensDaCriacao),
+            () => RegrasDosFormularios.PlanejarDefinicao(Declaracao(), finalidade, faseId, titulo, paginas, itensDaCriacao),
             Aplicar);
     }
 

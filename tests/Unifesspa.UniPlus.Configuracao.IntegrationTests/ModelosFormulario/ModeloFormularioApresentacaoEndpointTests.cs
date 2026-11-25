@@ -36,7 +36,7 @@ public sealed class ModeloFormularioApresentacaoEndpointTests
         JsonObject formulario = await LerAsync(resposta);
         resposta.Content.Headers.ContentType!.MediaType.Should().Be("application/vnd.uniplus.formulario.v2+json");
         Textos(formulario["coleta"]!["itens"]!, "fatoCodigo").Should().Contain("BAIXA_RENDA");
-        DasEtapasDasRegras(formulario, "itens", "fatoCodigo").Should().Contain("BAIXA_RENDA", "as regras vão com a apresentação");
+        DasPaginasDasRegras(formulario, "itens", "fatoCodigo").Should().Contain("BAIXA_RENDA", "as regras vão com a apresentação");
         (await StatusAsync(client, HttpMethod.Get, $"{Base}/{Guid.NewGuid()}/apresentacao")).Should().Be(HttpStatusCode.NotFound);
     }
 
@@ -51,7 +51,7 @@ public sealed class ModeloFormularioApresentacaoEndpointTests
         JsonNode grupo = Unico(formulario["coleta"]!["grupos"]!, "codigo", "COMPOSICAO_FAMILIAR");
         grupo["ocorrencias"]!["incluiCandidato"]!.GetValue<bool>().Should().BeTrue();
         grupo["subitens"]!.AsArray().Should().NotBeEmpty();
-        DasEtapasDasRegras(formulario, "grupos", "codigo").Should().Contain("COMPOSICAO_FAMILIAR");
+        DasPaginasDasRegras(formulario, "grupos", "codigo").Should().Contain("COMPOSICAO_FAMILIAR");
     }
 
     [Fact(DisplayName = "O apresentado do modelo de inscrição gravado sem o conjunto básico, como o semeado, traz os dados do candidato que o processo terá depois de aplicado")]
@@ -62,10 +62,10 @@ public sealed class ModeloFormularioApresentacaoEndpointTests
 
         JsonObject formulario = await ApresentacaoAsync(client, id);
 
-        Textos(formulario["etapas"]!, "codigo").Should().Contain(ConjuntoBasicoDaInscricao.CodigoDaSecao);
+        Textos(formulario["paginas"]!, "codigo").Should().Contain(ConjuntoBasicoDaInscricao.CodigoDaSecao);
         Textos(formulario["coleta"]!["itens"]!, "fatoCodigo").Should().Contain(ConjuntoBasicoDaInscricao.Fatos);
         ConferirOpcaoPreta(formulario);
-        ItensDaEtapaDasRegras(formulario, ConjuntoBasicoDaInscricao.CodigoDaSecao).Should().Contain(ConjuntoBasicoDaInscricao.Fatos, "as regras vão com a apresentação");
+        ItensDaPaginaDasRegras(formulario, ConjuntoBasicoDaInscricao.CodigoDaSecao).Should().Contain(ConjuntoBasicoDaInscricao.Fatos, "as regras vão com a apresentação");
         ConferirPreVisualizacaoDoBasico(await PreVisualizacaoAsync(client, id, new Dictionary<string, object>()));
     }
 

@@ -137,14 +137,14 @@ public sealed class FatoColetado : EntityBase, IParteDoProcesso
     public FinalidadeFormulario? Finalidade { get; private set; }
 
     /// <summary>A seção do formulário em que o item aparece.</summary>
-    public string? EtapaCodigo { get; private set; }
+    public string? PaginaCodigo { get; private set; }
 
     private FatoColetado() { }
 
     private FatoColetado(
         string fatoCodigo,
         int ordem,
-        string? etapaCodigo,
+        string? paginaCodigo,
         ApresentacaoDoCampo apresentacao,
         RegrasDoCampo regras,
         CopiaDoItemNoCatalogo copia,
@@ -152,7 +152,7 @@ public sealed class FatoColetado : EntityBase, IParteDoProcesso
     {
         FatoCodigo = (fatoCodigo ?? string.Empty).Trim();
         Ordem = ordem;
-        EtapaCodigo = string.IsNullOrWhiteSpace(etapaCodigo) ? null : etapaCodigo.Trim().Normalize(System.Text.NormalizationForm.FormC);
+        PaginaCodigo = string.IsNullOrWhiteSpace(paginaCodigo) ? null : paginaCodigo.Trim().Normalize(System.Text.NormalizationForm.FormC);
 
         // O processo atribui a finalidade ao definir os itens; quem remonta o envelope a informa.
         Finalidade = finalidade;
@@ -170,7 +170,7 @@ public sealed class FatoColetado : EntityBase, IParteDoProcesso
     public static Result<FatoColetado> Criar(
         string fatoCodigo,
         int ordem,
-        string? etapaCodigo,
+        string? paginaCodigo,
         ApresentacaoDoCampo apresentacao,
         RegrasDoCampo regras,
         CopiaDoItemNoCatalogo copia,
@@ -183,7 +183,7 @@ public sealed class FatoColetado : EntityBase, IParteDoProcesso
         List<FieldError> erros = ConferirFormaECopia(fatoCodigo, ordem, apresentacao, regras, copia);
         return erros.Count > 0
             ? Result<FatoColetado>.ValidationFailure(erros)
-            : Result<FatoColetado>.Success(new FatoColetado(fatoCodigo, ordem, etapaCodigo, apresentacao, regras, copia, finalidade));
+            : Result<FatoColetado>.Success(new FatoColetado(fatoCodigo, ordem, paginaCodigo, apresentacao, regras, copia, finalidade));
     }
 
     /// <summary>
@@ -262,7 +262,7 @@ public sealed class FatoColetado : EntityBase, IParteDoProcesso
     }
 
     /// <summary>O item no que o grafo do formulário confere.</summary>
-    public ItemDoGrafo ParaGrafo() => new(FatoCodigo, Ordem, EtapaCodigo, FatosCitados);
+    public ItemDoGrafo ParaGrafo() => new(FatoCodigo, Ordem, PaginaCodigo, FatosCitados);
 
     /// <summary>Indica se o fato é coletado incondicionalmente.</summary>
     public bool SemPrecondicao => _precondicoes.Count == 0;

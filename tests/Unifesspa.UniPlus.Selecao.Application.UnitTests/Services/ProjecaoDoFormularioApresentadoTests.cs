@@ -42,11 +42,11 @@ public sealed class ProjecaoDoFormularioApresentadoTests
 
         FormularioApresentado formulario = configuracao.Projetar(FinalidadeFormulario.Inscricao)!;
 
-        formulario.Etapas.Select(static e => (e.Codigo, e.CodigoNasRegras)).Should().Equal(
-            (Secao, DefinicaoDoProcesso.CodigoDaEtapa(FinalidadeFormulario.Inscricao, Secao)), ("REVISAO", (string?)null));
+        formulario.Paginas.Select(static e => (e.Codigo, e.CodigoNasRegras)).Should().Equal(
+            (Secao, DefinicaoDoProcesso.CodigoDaPagina(FinalidadeFormulario.Inscricao, Secao)), ("REVISAO", (string?)null));
         formulario.Termos.Should().ContainSingle().Which.CodigoNasRegras.Should().Be(
             DefinicaoDoProcesso.CodigoDoTermo(FinalidadeFormulario.Inscricao, "VERACIDADE"));
-        formulario.Regras.Etapas.Select(static e => e.Codigo).Should().Contain(formulario.Etapas[0].CodigoNasRegras);
+        formulario.Regras.Paginas.Select(static e => e.Codigo).Should().Contain(formulario.Paginas[0].CodigoNasRegras);
     }
 
     [Fact(DisplayName = "O NOME congelado com formato é publicado sem formato; o nome da mãe segue com o formato")]
@@ -112,7 +112,7 @@ public sealed class ProjecaoDoFormularioApresentadoTests
             .Should().Equal(null, null, "Passa pela heteroidentificação.");
         formulario.Coleta.Itens[1].ValoresSelecionaveis.Should().BeNull();
         formulario.Coleta.Itens[1].Formato.Should().Be("NOME_PESSOA");
-        formulario.Regras.Etapas.SelectMany(static e => e.Itens).Single(static i => i.FatoCodigo == "COR_RACA").Oferta
+        formulario.Regras.Paginas.SelectMany(static e => e.Itens).Single(static i => i.FatoCodigo == "COR_RACA").Oferta
             .Should().BeEquivalentTo(["AMARELA", "BRANCA", "PRETA"]);
     }
 
@@ -158,7 +158,7 @@ public sealed class ProjecaoDoFormularioApresentadoTests
     private static GrupoColetado Familia() => GrupoColetadoDeTeste.Agrupando("COMPOSICAO_FAMILIAR", 1)
         .NaSecao(Secao)
         .ComOcorrencias(0, null)
-        .ComCampos(Campo("TRABALHADOR_RURAL", 0, TipoDeCampo.SimOuNao, FinalidadeFormulario.Inscricao, etapa: null))
+        .ComCampos(Campo("TRABALHADOR_RURAL", 0, TipoDeCampo.SimOuNao, FinalidadeFormulario.Inscricao, pagina: null))
         .DaFinalidade(FinalidadeFormulario.Inscricao)
         .Construir();
 
@@ -206,8 +206,8 @@ public sealed class ProjecaoDoFormularioApresentadoTests
         FormularioProcesso.Criar(
             finalidade, null, null,
             [
-                EtapaFormulario.Criar(new EtapaEstrutura(Secao, 0, TipoEtapaFormulario.Secao, null), "Dados", null, null).Value!,
-                EtapaFormulario.Criar(new EtapaEstrutura("REVISAO", 1, TipoEtapaFormulario.Bloco, BlocoSistema.RevisaoEAceite), "Revisão e aceite", null, null).Value!,
+                PaginaDoFormulario.Criar(new PaginaEstrutura(Secao, 0, TipoPaginaFormulario.Secao, null), "Dados", null, null).Value!,
+                PaginaDoFormulario.Criar(new PaginaEstrutura("REVISAO", 1, TipoPaginaFormulario.Bloco, BlocoSistema.RevisaoEAceite), "Revisão e aceite", null, null).Value!,
             ]).Value!;
 
     private static FatoColetado Campo(
@@ -216,14 +216,14 @@ public sealed class ProjecaoDoFormularioApresentadoTests
         TipoDeCampo tipo,
         FinalidadeFormulario finalidade,
         string? formato = null,
-        string? etapa = Secao,
+        string? pagina = Secao,
         (string Fato, object Valor)[]? quando = null) =>
         FatoColetadoDeTeste.Coletando(codigo, ordem)
             .DoTipo(tipo)
             .ComFormato(formato)
             .ComObrigatoriedade(Obrigatoriedade.Sempre)
             .ExibidoQuando(quando is null ? null : ExibicaoDeTeste.QuandoTodas([.. quando.Select(static c => (c.Fato, Operador.Igual, c.Valor))]))
-            .NaSecao(etapa)
+            .NaSecao(pagina)
             .DaFinalidade(finalidade)
             .Construir();
 

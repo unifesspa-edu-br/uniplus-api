@@ -71,7 +71,7 @@ public sealed class FormaDoGrupoTests
     [Fact]
     public void Conferir_CampoComSecaoPropria_Recusa() =>
         Conferir(subitens: [("PARENTESCO", "DADOS", false)]).Should().ContainSingle()
-            .Which.Should().Be(new FieldError("subitens[0].etapaCodigo", new DomainError(
+            .Which.Should().Be(new FieldError("subitens[0].paginaCodigo", new DomainError(
                 GrupoFormularioErrorCodes.CampoComSecaoPropria, "O campo 'PARENTESCO' segue a seção do grupo e não declara seção própria.")));
 
     private static List<FieldError> Conferir(

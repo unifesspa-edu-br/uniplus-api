@@ -90,9 +90,9 @@ public static class ConjuntoBasicoDaInscricao
             DataMaxima: new LimiteDeDataInput(RestricaoValorJson.AncoraEnvio)),
     ];
 
-    /// <summary>A seção reservada, a primeira etapa do formulário de inscrição.</summary>
-    public static EtapaFormularioInput Secao { get; } =
-        new(CodigoDaSecao, 0, TipoEtapaFormulario.Secao.Codigo(), null, new ApresentacaoDaEtapaInput("Dados do candidato", null, null));
+    /// <summary>A seção reservada, a primeira página do formulário de inscrição.</summary>
+    public static PaginaDoFormularioInput Secao { get; } =
+        new(CodigoDaSecao, 0, TipoPaginaFormulario.Secao.Codigo(), null, new ApresentacaoDaPaginaInput("Dados do candidato", null, null));
 
     /// <summary>Os itens da seção, na ordem em que são coletados.</summary>
     public static IReadOnlyList<FatoColetadoInput> Itens { get; } = MontarItens();
@@ -133,7 +133,7 @@ public static class ConjuntoBasicoDaInscricao
 
     private static Dictionary<string, FatoColetadoInput> BasicosGravadosNaSecao(IEnumerable<FatoColetadoInput> gravados) =>
         gravados
-            .Where(static g => g is not null && Fatos.Contains(g.FatoCodigo) && EhDaSecao(g.EtapaCodigo))
+            .Where(static g => g is not null && Fatos.Contains(g.FatoCodigo) && EhDaSecao(g.PaginaCodigo))
             .DistinctBy(static g => g.FatoCodigo, StringComparer.Ordinal)
             .ToDictionary(static g => g.FatoCodigo, StringComparer.Ordinal);
 
@@ -144,7 +144,7 @@ public static class ConjuntoBasicoDaInscricao
         (gravada ?? canonica) is { } apresentacao ? apresentacao with { Rotulo = canonica?.Rotulo } : null;
 
     /// <summary>A seção gravada num formulário ou num modelo, ou a do conjunto básico.</summary>
-    public static EtapaFormularioInput SecaoDe(IEnumerable<EtapaFormularioInput> gravadas)
+    public static PaginaDoFormularioInput SecaoDe(IEnumerable<PaginaDoFormularioInput> gravadas)
     {
         ArgumentNullException.ThrowIfNull(gravadas);
         return gravadas.FirstOrDefault(static e => e is not null && EhDaSecao(e.Codigo)) ?? Secao;
@@ -172,12 +172,12 @@ public static class ConjuntoBasicoDaInscricao
     private static IEnumerable<FieldError> RecusasDoClienteNaSecaoReservada(
         IReadOnlyList<FatoColetadoInput> enviados, IReadOnlyList<GrupoColetadoInput> grupos) =>
     [
-        .. enviados.Index().Where(static p => ItemDoClienteNaSecaoReservada(p.Item)).Select(static p => SecaoReservada($"itens[{p.Index}].etapaCodigo")),
-        .. grupos.Index().Where(static p => p.Item is { } grupo && EhDaSecao(grupo.EtapaCodigo)).Select(static p => SecaoReservada($"grupos[{p.Index}].etapaCodigo")),
+        .. enviados.Index().Where(static p => ItemDoClienteNaSecaoReservada(p.Item)).Select(static p => SecaoReservada($"itens[{p.Index}].paginaCodigo")),
+        .. grupos.Index().Where(static p => p.Item is { } grupo && EhDaSecao(grupo.PaginaCodigo)).Select(static p => SecaoReservada($"grupos[{p.Index}].paginaCodigo")),
     ];
 
     private static bool ItemDoClienteNaSecaoReservada(FatoColetadoInput? item) =>
-        item is not null && !Fatos.Contains(item.FatoCodigo) && EhDaSecao(item.EtapaCodigo);
+        item is not null && !Fatos.Contains(item.FatoCodigo) && EhDaSecao(item.PaginaCodigo);
 
     /// <summary>
     /// O que vem depois da seção desloca-se só o bastante para abrir lugar ao último item dela: dos
@@ -220,12 +220,12 @@ public static class ConjuntoBasicoDaInscricao
     }
 
     /// <summary>
-    /// Mescla as etapas enviadas com a seção de <paramref name="referencia"/>: a seção que falta
-    /// entra, e as etapas do cliente sobem uma posição só quando alguma colide com a ordem dela. A
+    /// Mescla as páginas enviadas com a seção de <paramref name="referencia"/>: a seção que falta
+    /// entra, e as páginas do cliente sobem uma posição só quando alguma colide com a ordem dela. A
     /// seção enviada é igual à referência.
     /// </summary>
-    public static (IReadOnlyList<EtapaFormularioInput> Etapas, List<FieldError> Erros) MesclarEtapas(
-        IReadOnlyList<EtapaFormularioInput> enviadas, EtapaFormularioInput referencia)
+    public static (IReadOnlyList<PaginaDoFormularioInput> Paginas, List<FieldError> Erros) MesclarPaginas(
+        IReadOnlyList<PaginaDoFormularioInput> enviadas, PaginaDoFormularioInput referencia)
     {
         ArgumentNullException.ThrowIfNull(enviadas);
         ArgumentNullException.ThrowIfNull(referencia);
@@ -233,35 +233,35 @@ public static class ConjuntoBasicoDaInscricao
         int indice = enviadas.ToList().FindIndex(static e => e is not null && EhDaSecao(e.Codigo));
         return indice >= 0
             ? (enviadas, RecusasDaSecaoEnviada(enviadas[indice], indice, referencia))
-            : (EtapasComASecao(enviadas, referencia), []);
+            : (PaginasComASecao(enviadas, referencia), []);
     }
 
-    private static List<FieldError> RecusasDaSecaoEnviada(EtapaFormularioInput enviada, int indice, EtapaFormularioInput referencia) =>
+    private static List<FieldError> RecusasDaSecaoEnviada(PaginaDoFormularioInput enviada, int indice, PaginaDoFormularioInput referencia) =>
         MesmaSecao(enviada, referencia)
             ? []
             :
             [
-                new($"{EstruturaFormulario.CaminhoDasEtapas}[{indice}]", new DomainError(
+                new($"{EstruturaFormulario.CaminhoDasPaginas}[{indice}]", new DomainError(
                     EstruturaFormularioErrorCodes.SecaoReservadaAlterada,
                     $"A seção {CodigoDaSecao} é a dos dados básicos do candidato e não pode ser alterada.")),
             ];
 
-    private static IReadOnlyList<EtapaFormularioInput> EtapasComASecao(IReadOnlyList<EtapaFormularioInput> enviadas, EtapaFormularioInput referencia)
+    private static IReadOnlyList<PaginaDoFormularioInput> PaginasComASecao(IReadOnlyList<PaginaDoFormularioInput> enviadas, PaginaDoFormularioInput referencia)
     {
         bool colide = enviadas.Any(e => e is not null && e.Ordem <= referencia.Ordem);
         return [.. enviadas.Select(e => colide && e is not null ? e with { Ordem = e.Ordem + 1 } : e!), referencia];
     }
 
-    private static bool EhDaSecao(string? etapaCodigo) => string.Equals(etapaCodigo?.Trim(), CodigoDaSecao, StringComparison.Ordinal);
+    private static bool EhDaSecao(string? paginaCodigo) => string.Equals(paginaCodigo?.Trim(), CodigoDaSecao, StringComparison.Ordinal);
 
-    private static bool MesmaSecao(EtapaFormularioInput enviada, EtapaFormularioInput referencia) =>
+    private static bool MesmaSecao(PaginaDoFormularioInput enviada, PaginaDoFormularioInput referencia) =>
         enviada.Ordem == referencia.Ordem
         && string.Equals(enviada.Tipo, referencia.Tipo, StringComparison.Ordinal)
         && string.IsNullOrWhiteSpace(enviada.Bloco)
         && MesmaApresentacao(enviada.Apresentacao, referencia.Apresentacao)
         && enviada.Exibicao is not { Count: > 0 };
 
-    private static bool MesmaApresentacao(ApresentacaoDaEtapaInput? enviada, ApresentacaoDaEtapaInput? referencia) =>
+    private static bool MesmaApresentacao(ApresentacaoDaPaginaInput? enviada, ApresentacaoDaPaginaInput? referencia) =>
         string.Equals(enviada?.Titulo?.Trim(), referencia?.Titulo, StringComparison.Ordinal)
         && string.Equals(FormaDoItem.TextoOpcional(enviada?.Descricao), referencia?.Descricao, StringComparison.Ordinal)
         && string.Equals(FormaDoItem.TextoOpcional(enviada?.Aviso), referencia?.Aviso, StringComparison.Ordinal);
@@ -278,7 +278,7 @@ public static class ConjuntoBasicoDaInscricao
             .. Identificacao(), .. DocumentoDeIdentidade(), .. Nascimento(), .. Filiacao(), .. Caracterizacao(), .. ContatoEResidencia(),
         ];
 
-        return [.. itens.Select(static (item, ordem) => item with { Ordem = ordem, EtapaCodigo = CodigoDaSecao })];
+        return [.. itens.Select(static (item, ordem) => item with { Ordem = ordem, PaginaCodigo = CodigoDaSecao })];
     }
 
     private static FatoColetadoInput[] Identificacao() =>

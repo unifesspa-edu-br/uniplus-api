@@ -15,28 +15,28 @@ public static class RegrasDosFormularios
         FinalidadeFormulario finalidade,
         Guid? faseId,
         string? titulo,
-        IReadOnlyList<EtapaFormulario> etapas,
+        IReadOnlyList<PaginaDoFormulario> paginas,
         IReadOnlyList<FatoColetado>? itensDaCriacao)
     {
         ArgumentNullException.ThrowIfNull(configuracao);
 
         FormularioProcesso? existente = configuracao.Coleta.FormularioDe(finalidade);
         IReadOnlyList<FatoColetado>? itensIniciais = existente is null && itensDaCriacao is { Count: > 0 } ? itensDaCriacao : null;
-        IReadOnlyList<FieldError> recusas = ConferirFormulario(configuracao, finalidade, faseId, titulo, etapas, itensDaCriacao: itensIniciais);
+        IReadOnlyList<FieldError> recusas = ConferirFormulario(configuracao, finalidade, faseId, titulo, paginas, itensDaCriacao: itensIniciais);
         if (recusas.Count > 0)
         {
             return Result<PlanoDoFormulario>.ValidationFailure(recusas);
         }
 
-        return MontarPlano(configuracao, finalidade, faseId, titulo, etapas, existente, itensIniciais);
+        return MontarPlano(configuracao, finalidade, faseId, titulo, paginas, existente, itensIniciais);
     }
 
     private static Result<PlanoDoFormulario> MontarPlano(
         ConfiguracaoDeclarada configuracao, FinalidadeFormulario finalidade, Guid? faseId, string? titulo,
-        IReadOnlyList<EtapaFormulario> etapas, FormularioProcesso? existente, IReadOnlyList<FatoColetado>? itensIniciais)
+        IReadOnlyList<PaginaDoFormulario> paginas, FormularioProcesso? existente, IReadOnlyList<FatoColetado>? itensIniciais)
     {
         // A conferência anterior já recusou o que a fábrica recusaria.
-        FormularioProcesso novo = FormularioProcesso.Criar(finalidade, faseId, titulo, etapas).Value!;
+        FormularioProcesso novo = FormularioProcesso.Criar(finalidade, faseId, titulo, paginas).Value!;
         Result itens = itensIniciais is null
             ? Result.Success()
             : RegrasDaColeta.ConferirFatosColetados(configuracao, novo, finalidade, itensIniciais, []);
@@ -62,7 +62,7 @@ public static class RegrasDosFormularios
     }
 
     /// <summary>
-    /// A fase do formulário, se informada, está no cronograma e é a que a finalidade pede; as etapas
+    /// A fase do formulário, se informada, está no cronograma e é a que a finalidade pede; as páginas
     /// têm estrutura válida, acomodam os itens e só citam fatos que o formulário conhece antes delas.
     /// </summary>
     public static IReadOnlyList<FieldError> ConferirFormulario(
@@ -70,19 +70,19 @@ public static class RegrasDosFormularios
         FinalidadeFormulario? finalidade,
         Guid? faseId,
         string? titulo,
-        IReadOnlyList<EtapaFormulario> etapas,
-        bool etapasCompletas = true,
+        IReadOnlyList<PaginaDoFormulario> paginas,
+        bool paginasCompletas = true,
         IReadOnlyList<FatoColetado>? itensDaCriacao = null)
     {
         ArgumentNullException.ThrowIfNull(configuracao);
-        ArgumentNullException.ThrowIfNull(etapas);
+        ArgumentNullException.ThrowIfNull(paginas);
 
         List<FieldError> recusas = FormaDoCabecalho.Validar(finalidade, titulo);
         AcrescentarRecusaDaFase(recusas, configuracao, finalidade, faseId);
 
-        if (etapasCompletas && finalidade is { } formulario)
+        if (paginasCompletas && finalidade is { } formulario)
         {
-            recusas.AddRange(RecusasDasEtapas(configuracao, formulario, etapas, itensDaCriacao));
+            recusas.AddRange(RecusasDasPaginas(configuracao, formulario, paginas, itensDaCriacao));
         }
 
         return recusas;
@@ -97,42 +97,42 @@ public static class RegrasDosFormularios
         }
     }
 
-    private static List<FieldError> RecusasDasEtapas(
-        ConfiguracaoDeclarada configuracao, FinalidadeFormulario finalidade, IReadOnlyList<EtapaFormulario> etapas, IReadOnlyList<FatoColetado>? itensDaCriacao)
+    private static List<FieldError> RecusasDasPaginas(
+        ConfiguracaoDeclarada configuracao, FinalidadeFormulario finalidade, IReadOnlyList<PaginaDoFormulario> paginas, IReadOnlyList<FatoColetado>? itensDaCriacao)
     {
-        IReadOnlyList<EtapaEstrutura> estrutura = [.. etapas.Select(static e => e.Estrutura)];
-        List<FieldError> recusas = [.. EstruturaFormulario.ValidarEtapas(finalidade, estrutura)];
+        IReadOnlyList<PaginaEstrutura> estrutura = [.. paginas.Select(static e => e.Estrutura)];
+        List<FieldError> recusas = [.. EstruturaFormulario.ValidarPaginas(finalidade, estrutura)];
         if (recusas.Count == 0)
         {
             recusas.AddRange(RecusasDosItens(configuracao, finalidade, estrutura, itensDaCriacao));
         }
 
-        recusas.AddRange(RecusasDeExibicao(configuracao, finalidade, etapas, itensDaCriacao));
+        recusas.AddRange(RecusasDeExibicao(configuracao, finalidade, paginas, itensDaCriacao));
         return recusas;
     }
 
-    // Os itens não estão no corpo do formulário; a recusa aponta as etapas e nomeia o item.
+    // Os itens não estão no corpo do formulário; a recusa aponta as páginas e nomeia o item.
     private static IEnumerable<FieldError> RecusasDosItens(
-        ConfiguracaoDeclarada configuracao, FinalidadeFormulario finalidade, IReadOnlyList<EtapaEstrutura> estrutura, IReadOnlyList<FatoColetado>? itensDaCriacao) =>
+        ConfiguracaoDeclarada configuracao, FinalidadeFormulario finalidade, IReadOnlyList<PaginaEstrutura> estrutura, IReadOnlyList<FatoColetado>? itensDaCriacao) =>
         EstruturaFormulario.ValidarItens(
             estrutura,
             itensDaCriacao is null ? ItensDaFinalidade(configuracao, finalidade) : CitacoesDosFormularios.ParaEstrutura(itensDaCriacao, []),
             secaoObrigatoria: false)
-        .Select(static recusa => recusa with { Field = EstruturaFormulario.CaminhoDasEtapas });
+        .Select(static recusa => recusa with { Field = EstruturaFormulario.CaminhoDasPaginas });
 
     // A exibição de cada seção cita só o que o formulário conhece antes dela, com os itens atuais ou,
     // na criação, com os que o formulário recebe ao nascer.
     private static IEnumerable<FieldError> RecusasDeExibicao(
-        ConfiguracaoDeclarada configuracao, FinalidadeFormulario finalidade, IReadOnlyList<EtapaFormulario> etapas, IReadOnlyList<FatoColetado>? itensDaCriacao)
+        ConfiguracaoDeclarada configuracao, FinalidadeFormulario finalidade, IReadOnlyList<PaginaDoFormulario> paginas, IReadOnlyList<FatoColetado>? itensDaCriacao)
     {
         FatoColetado[] itens = [.. itensDaCriacao ?? [.. configuracao.Coleta.Itens.Where(f => f.Finalidade == finalidade)]];
         DependenciasDoFormulario dependencias = CitacoesDosFormularios.DependenciasDe(configuracao, finalidade, itens, CitacoesDosFormularios.FatosDaInscricao(configuracao.Coleta.Itens));
-        EtapaDoGrafo[] etapasDoGrafo = [.. etapas.Select(static e => e.ParaGrafo())];
+        PaginaDoGrafo[] paginasDoGrafo = [.. paginas.Select(static e => e.ParaGrafo())];
         ItemDoGrafo[] itensDoGrafo = [.. itens.Select(static i => i.ParaGrafo())];
         GrupoDoGrafo[] gruposDoGrafo = [.. CitacoesDosFormularios.GruposDaFinalidade(configuracao, finalidade).Select(static g => g.ParaGrafo())];
-        for (int indice = 0; indice < etapas.Count; indice++)
+        for (int indice = 0; indice < paginas.Count; indice++)
         {
-            if (RecusaDaExibicao(indice, etapasDoGrafo, itensDoGrafo, gruposDoGrafo, dependencias) is { } recusa)
+            if (RecusaDaExibicao(indice, paginasDoGrafo, itensDoGrafo, gruposDoGrafo, dependencias) is { } recusa)
             {
                 yield return recusa;
             }
@@ -140,11 +140,11 @@ public static class RegrasDosFormularios
     }
 
     private static FieldError? RecusaDaExibicao(
-        int indice, EtapaDoGrafo[] etapas, ItemDoGrafo[] itens, GrupoDoGrafo[] grupos, DependenciasDoFormulario dependencias)
+        int indice, PaginaDoGrafo[] paginas, ItemDoGrafo[] itens, GrupoDoGrafo[] grupos, DependenciasDoFormulario dependencias)
     {
-        DomainError? recusa = GrafoDoFormulario.CitacaoInvalidaDaEtapa(
-            etapas[indice], GrafoDoFormulario.PosicaoDaEtapa(etapas[indice], etapas, itens, grupos), dependencias);
-        return recusa is null ? null : new FieldError($"{EstruturaFormulario.CaminhoDasEtapas}[{indice}].exibicao", recusa);
+        DomainError? recusa = GrafoDoFormulario.CitacaoInvalidaDaPagina(
+            paginas[indice], GrafoDoFormulario.PosicaoDaPagina(paginas[indice], paginas, itens, grupos), dependencias);
+        return recusa is null ? null : new FieldError($"{EstruturaFormulario.CaminhoDasPaginas}[{indice}].exibicao", recusa);
     }
 
     internal static DomainError? RecusaDaFaseDoFormulario(ConfiguracaoDeclarada configuracao, FinalidadeFormulario finalidade, Guid faseId)

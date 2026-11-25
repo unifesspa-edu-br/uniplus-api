@@ -7,7 +7,7 @@ using Unifesspa.UniPlus.Regras.Services;
 using Unifesspa.UniPlus.Regras.ValueObjects;
 
 /// <summary>
-/// Descrição de um formulário para avaliação: etapas ordenadas com os seus itens, termos, as
+/// Descrição de um formulário para avaliação: páginas ordenadas com os seus itens, termos, as
 /// derivações por regra que o formulário usa e os agregados sobre os grupos repetíveis dele
 /// (UNI-REQ-0144, UNI-REQ-0145, UNI-REQ-0146). Não é entidade: o módulo
 /// dono a monta a partir da configuração que ele já validou, e o avaliador trabalha só sobre ela
@@ -17,34 +17,34 @@ using Unifesspa.UniPlus.Regras.ValueObjects;
 /// As invariantes que tornariam a avaliação ambígua são protegidas com
 /// <see cref="ArgumentException"/>: um fato produzido por dois itens ou subitens, um fato que é ao
 /// mesmo tempo item e derivado, um grupo com o código de um fato, um agregado sobre grupo que o
-/// formulário não tem, e código de etapa ou de termo repetido. A recusa com mensagem ao administrador é
+/// formulário não tem, e código de página ou de termo repetido. A recusa com mensagem ao administrador é
 /// do cadastro, antes de a descrição existir.
 /// </remarks>
 public sealed record DefinicaoFormulario
 {
     public DefinicaoFormulario(
-        IReadOnlyList<DefinicaoEtapa> etapas,
+        IReadOnlyList<DefinicaoPagina> paginas,
         IReadOnlyList<DefinicaoTermo> termos,
         IReadOnlyList<DerivacaoDoFato> derivacoes,
         IReadOnlyList<DefinicaoAgregado>? agregados = null)
     {
-        ArgumentNullException.ThrowIfNull(etapas);
+        ArgumentNullException.ThrowIfNull(paginas);
         ArgumentNullException.ThrowIfNull(termos);
         ArgumentNullException.ThrowIfNull(derivacoes);
         IReadOnlyList<DefinicaoAgregado> sobreGrupos = agregados ?? [];
 
-        if (Violacao(etapas, termos, derivacoes, sobreGrupos) is { } violacao)
+        if (Violacao(paginas, termos, derivacoes, sobreGrupos) is { } violacao)
         {
-            throw new ArgumentException(violacao, nameof(etapas));
+            throw new ArgumentException(violacao, nameof(paginas));
         }
 
-        Etapas = [.. etapas];
+        Paginas = [.. paginas];
         Termos = [.. termos];
         Derivacoes = [.. derivacoes];
         Agregados = [.. sobreGrupos];
     }
 
-    public IReadOnlyList<DefinicaoEtapa> Etapas { get; }
+    public IReadOnlyList<DefinicaoPagina> Paginas { get; }
 
     public IReadOnlyList<DefinicaoTermo> Termos { get; }
 
@@ -53,19 +53,19 @@ public sealed record DefinicaoFormulario
     /// <summary>Os fatos agregados sobre os grupos repetíveis, citáveis fora do grupo (ADR-0138).</summary>
     public IReadOnlyList<DefinicaoAgregado> Agregados { get; }
 
-    internal List<(DefinicaoEtapa Etapa, DefinicaoItem Item)> ItensDasEtapas() =>
-        [.. Etapas.SelectMany(static etapa => etapa.Itens.Select(item => (etapa, item)))];
+    internal List<(DefinicaoPagina Pagina, DefinicaoItem Item)> ItensDasPaginas() =>
+        [.. Paginas.SelectMany(static pagina => pagina.Itens.Select(item => (pagina, item)))];
 
-    internal List<(DefinicaoEtapa Etapa, DefinicaoGrupo Grupo)> GruposDasEtapas() =>
-        [.. Etapas.SelectMany(static etapa => etapa.Grupos.Select(grupo => (etapa, grupo)))];
+    internal List<(DefinicaoPagina Pagina, DefinicaoGrupo Grupo)> GruposDasPaginas() =>
+        [.. Paginas.SelectMany(static pagina => pagina.Grupos.Select(grupo => (pagina, grupo)))];
 
     internal List<NoDoGrafo> NosDoGrafoDeFatos()
     {
-        List<(DefinicaoEtapa Etapa, DefinicaoItem Item)> itens = ItensDasEtapas();
+        List<(DefinicaoPagina Pagina, DefinicaoItem Item)> itens = ItensDasPaginas();
         return [.. itens.Select(static (par, posicao) => new NoDoGrafo(
-                    par.Item.FatoCodigo, [.. (par.Etapa.Exibicao?.FatosCitados ?? []).Concat(par.Item.FatosCitados)], posicao)),
-                .. GruposDasEtapas().Select((par, posicao) => new NoDoGrafo(
-                    par.Grupo.Codigo, [.. (par.Etapa.Exibicao?.FatosCitados ?? []).Concat(par.Grupo.FatosDoCandidatoCitados)], itens.Count + posicao)),
+                    par.Item.FatoCodigo, [.. (par.Pagina.Exibicao?.FatosCitados ?? []).Concat(par.Item.FatosCitados)], posicao)),
+                .. GruposDasPaginas().Select((par, posicao) => new NoDoGrafo(
+                    par.Grupo.Codigo, [.. (par.Pagina.Exibicao?.FatosCitados ?? []).Concat(par.Grupo.FatosDoCandidatoCitados)], itens.Count + posicao)),
                 .. Derivacoes.Select(static derivacao => new NoDoGrafo(derivacao.CodigoFato, derivacao.DependenciasDeclaradas, -1)),
                 .. Agregados.Select(static agregado => new NoDoGrafo(agregado.Codigo, [agregado.GrupoCodigo], -1))];
     }
@@ -75,26 +75,26 @@ public sealed record DefinicaoFormulario
     /// Quem monta a definição a partir de conteúdo de fora confere aqui antes de construir.
     /// </summary>
     internal static string? Violacao(
-        IReadOnlyList<DefinicaoEtapa> etapas,
+        IReadOnlyList<DefinicaoPagina> paginas,
         IReadOnlyList<DefinicaoTermo> termos,
         IReadOnlyList<DerivacaoDoFato> derivacoes,
         IReadOnlyList<DefinicaoAgregado> sobreGrupos)
     {
-        return Repetido(etapas.Select(static e => e.Codigo), "etapa")
+        return Repetido(paginas.Select(static e => e.Codigo), "página")
             ?? Repetido(termos.Select(static t => t.Codigo), "termo")
             ?? Repetido(
-                etapas.SelectMany(static e => e.Itens).Select(static i => i.FatoCodigo)
-                    .Concat(etapas.SelectMany(static e => e.Grupos).SelectMany(static g => g.Subitens).Select(static i => i.FatoCodigo))
+                paginas.SelectMany(static e => e.Itens).Select(static i => i.FatoCodigo)
+                    .Concat(paginas.SelectMany(static e => e.Grupos).SelectMany(static g => g.Subitens).Select(static i => i.FatoCodigo))
                     .Concat(derivacoes.Select(static d => d.CodigoFato))
                     .Concat(sobreGrupos.Select(static a => a.Codigo))
-                    .Concat(etapas.SelectMany(static e => e.Grupos).Select(static g => g.Codigo)),
+                    .Concat(paginas.SelectMany(static e => e.Grupos).Select(static g => g.Codigo)),
                 "fato produzido ou grupo do formulário")
-            ?? AgregadoSemGrupo(etapas, sobreGrupos);
+            ?? AgregadoSemGrupo(paginas, sobreGrupos);
     }
 
-    private static string? AgregadoSemGrupo(IReadOnlyList<DefinicaoEtapa> etapas, IReadOnlyList<DefinicaoAgregado> sobreGrupos)
+    private static string? AgregadoSemGrupo(IReadOnlyList<DefinicaoPagina> paginas, IReadOnlyList<DefinicaoAgregado> sobreGrupos)
     {
-        HashSet<string> codigosDosGrupos = new(etapas.SelectMany(static e => e.Grupos).Select(static g => g.Codigo), StringComparer.Ordinal);
+        HashSet<string> codigosDosGrupos = new(paginas.SelectMany(static e => e.Grupos).Select(static g => g.Codigo), StringComparer.Ordinal);
         return sobreGrupos.FirstOrDefault(a => !codigosDosGrupos.Contains(a.GrupoCodigo)) is { } semGrupo
             ? $"O agregado '{semGrupo.Codigo}' é sobre o grupo '{semGrupo.GrupoCodigo}', que o formulário não tem."
             : null;
@@ -110,12 +110,12 @@ public sealed record DefinicaoFormulario
 }
 
 /// <summary>
-/// Uma etapa do formulário, com os itens em ordem e a exibição condicional da etapa inteira. Uma
-/// etapa oculta leva todos os seus itens a não aplicável.
+/// Uma página do formulário, com os itens em ordem e a exibição condicional da página inteira. Uma
+/// página oculta leva todos os seus itens a não aplicável.
 /// </summary>
-public sealed record DefinicaoEtapa
+public sealed record DefinicaoPagina
 {
-    public DefinicaoEtapa(
+    public DefinicaoPagina(
         string codigo, PredicadoDnf? exibicao, IReadOnlyList<DefinicaoItem> itens, IReadOnlyList<DefinicaoGrupo>? grupos = null)
     {
         if (Violacao(codigo) is { } violacao)
@@ -132,16 +132,16 @@ public sealed record DefinicaoEtapa
     }
 
     internal static string? Violacao(string? codigo) =>
-        string.IsNullOrWhiteSpace(codigo) ? "Uma etapa do formulário não tem código." : null;
+        string.IsNullOrWhiteSpace(codigo) ? "Uma página do formulário não tem código." : null;
 
     public string Codigo { get; }
 
-    /// <summary>A condição de exibição da etapa — nula quando a etapa sempre aparece.</summary>
+    /// <summary>A condição de exibição da página — nula quando a página sempre aparece.</summary>
     public PredicadoDnf? Exibicao { get; }
 
     public IReadOnlyList<DefinicaoItem> Itens { get; }
 
-    /// <summary>Os grupos repetíveis da etapa, cada um uma lista de ocorrências (UNI-REQ-0146).</summary>
+    /// <summary>Os grupos repetíveis da página, cada um uma lista de ocorrências (UNI-REQ-0146).</summary>
     public IReadOnlyList<DefinicaoGrupo> Grupos { get; }
 }
 
@@ -186,7 +186,7 @@ public sealed record DefinicaoGrupo
 
     public string Codigo { get; }
 
-    /// <summary>A condição de exibição do grupo inteiro — nula quando o grupo sempre aparece na etapa.</summary>
+    /// <summary>A condição de exibição do grupo inteiro — nula quando o grupo sempre aparece na página.</summary>
     public PredicadoDnf? Exibicao { get; }
 
     public Obrigatoriedade Obrigatoriedade { get; }

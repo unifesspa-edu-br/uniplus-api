@@ -49,7 +49,7 @@ public sealed class FatoDeIntegracaoNasRegrasTests
     public void ExibicaoDeSecao_CitaFatoDeIntegracao_Recusa()
     {
         FormularioDeclarado habilitacao = ColetaDeTeste.Obrigatorio("HABILITACAO", _habilitacao);
-        ColetaDoFormulario coleta = new(habilitacao, [], [], [new EtapaDoGrafo("DADOS", 1, [Integracao])], []);
+        ColetaDoFormulario coleta = new(habilitacao, [], [], [new PaginaDoGrafo("DADOS", 1, [Integracao])], []);
 
         ConferenciaDasRegrasDosFormularios.Conferir(Conhecimento(coleta)).Should().ContainSingle()
             .Which.Error.Code.Should().Be(GrafoFormularioErrorCodes.CitaFatoDeIntegracao);

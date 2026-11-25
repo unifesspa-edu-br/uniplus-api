@@ -113,7 +113,7 @@ public sealed class FatoReclassificadoNaPublicacaoEndpointTests
 
     private static object ItemEGrupo(string item, string campo) => new
     {
-        itens = new[] { FormularioDeInscricaoHttp.Item(item, 0, "Item", "SIM_OU_NAO", "NUNCA", etapaCodigo: FormularioDeTeste.Secao) },
+        itens = new[] { FormularioDeInscricaoHttp.Item(item, 0, "Item", "SIM_OU_NAO", "NUNCA", paginaCodigo: FormularioDeTeste.Secao) },
         grupos = new[]
         {
             FormularioDeInscricaoHttp.Grupo(

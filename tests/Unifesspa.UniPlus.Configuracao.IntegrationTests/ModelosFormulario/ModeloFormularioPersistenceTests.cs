@@ -41,7 +41,7 @@ public sealed class ModeloFormularioPersistenceTests
     private static ModeloFormulario Novo(string codigo)
     {
         ConteudoDoModelo conteudo = new(
-            "Habilitação", EtapasDaHabilitacao(), ItensDaHabilitacao(), [TermoDeVeracidade()], ["FORMA_CONCLUSAO"], [GrupoDaComposicaoFamiliar()]);
+            "Habilitação", PaginasDaHabilitacao(), ItensDaHabilitacao(), [TermoDeVeracidade()], ["FORMA_CONCLUSAO"], [GrupoDaComposicaoFamiliar()]);
         Result<ModeloFormulario> modelo = ModeloFormulario.Criar(
             codigo, "Habilitação Medicina 2027", "Modelo do PSR", FinalidadeFormulario.Habilitacao, "PSR", conteudo,
             new Dictionary<string, IReadOnlyCollection<string>>(StringComparer.Ordinal));
@@ -49,11 +49,11 @@ public sealed class ModeloFormularioPersistenceTests
         return modelo.Value!;
     }
 
-    private static EtapaDoModelo[] EtapasDaHabilitacao() =>
+    private static PaginaDoModelo[] PaginasDaHabilitacao() =>
     [
-        new("ESCOLA", 0, TipoEtapaFormulario.Secao, null, "Escolaridade", "Como concluiu", null, Quando("FORMA_CONCLUSAO", "REGULAR")),
-        new("DOCUMENTOS", 1, TipoEtapaFormulario.Bloco, BlocoSistema.ComprovacaoDocumental, "Documentos", null, null, null),
-        new("REVISAO", 2, TipoEtapaFormulario.Bloco, BlocoSistema.RevisaoEAceite, "Revisão", null, null, null),
+        new("ESCOLA", 0, TipoPaginaFormulario.Secao, null, "Escolaridade", "Como concluiu", null, Quando("FORMA_CONCLUSAO", "REGULAR")),
+        new("DOCUMENTOS", 1, TipoPaginaFormulario.Bloco, BlocoSistema.ComprovacaoDocumental, "Documentos", null, null, null),
+        new("REVISAO", 2, TipoPaginaFormulario.Bloco, BlocoSistema.RevisaoEAceite, "Revisão", null, null, null),
     ];
 
     private static ItemDoModelo[] ItensDaHabilitacao() =>
@@ -103,8 +103,8 @@ public sealed class ModeloFormularioPersistenceTests
         new(
             "Inscrição",
             [
-                new("DADOS", 0, TipoEtapaFormulario.Secao, null, "Dados", null, null, null),
-                new("REVISAO", 1, TipoEtapaFormulario.Bloco, BlocoSistema.RevisaoEAceite, "Revisão", null, null, null),
+                new("DADOS", 0, TipoPaginaFormulario.Secao, null, "Dados", null, null, null),
+                new("REVISAO", 1, TipoPaginaFormulario.Bloco, BlocoSistema.RevisaoEAceite, "Revisão", null, null, null),
             ],
             [new("VINCULO_PARFOR", 0, "DADOS",
                 new ApresentacaoDoCampo("Vínculo com o PARFOR", TipoDeCampo.SimOuNao),

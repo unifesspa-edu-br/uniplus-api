@@ -264,10 +264,10 @@ public sealed class ConteudoDoModeloJsonTests
         ler.Should().Throw<InvalidOperationException>();
     }
 
-    private const string EtapaDadosJson =
+    private const string PaginaDadosJson =
         """{"codigo":"DADOS","ordem":0,"tipo":"SECAO","bloco":null,"titulo":"Dados","descricao":"Dados do candidato","aviso":"Confira os dados","exibicao":[[{"codigoDoDado":"QUILOMBOLA","operador":"IGUAL","valor":true}]]}""";
 
-    private const string EtapaRevisaoJson =
+    private const string PaginaRevisaoJson =
         """{"codigo":"REVISAO","ordem":1,"tipo":"BLOCO","bloco":"REVISAO_E_ACEITE","titulo":"Revis\u00E3o","descricao":null,"aviso":null,"exibicao":null}""";
 
     private const string ItemRendaJson =
@@ -297,7 +297,7 @@ public sealed class ConteudoDoModeloJsonTests
     private const string ItemQuilombolaJson =
         """{"codigoDoDado":"QUILOMBOLA","ordem":0,"paginaCodigo":null,"rotulo":"Pergunta","tipoDeCampo":"SIM_OU_NAO","formato":null,"ajuda":null,"obrigatoriedade":{"tipo":"SEMPRE","predicado":null},"exibicao":null,"restricoes":[],"pedirConfirmacao":false,"impedimento":null}""";
 
-    private const string EtapaDadosMinimaJson =
+    private const string PaginaDadosMinimaJson =
         """{"codigo":"DADOS","ordem":0,"tipo":"SECAO","bloco":null,"titulo":"Dados","descricao":null,"aviso":null,"exibicao":null}""";
 
     private const string TermoUsoMinimoJson =
@@ -319,10 +319,10 @@ public sealed class ConteudoDoModeloJsonTests
         $$"""{"quantidadeMinima":2,"consequenciaIndeferimento":"ELIMINA","basesLegais":[],"documentos":[{{DocumentoCertidaoJson}}]}""";
 
     private const string JsonCompleto =
-        $$"""{"titulo":"Inscri\u00E7\u00E3o \u0022Medicina\u0022 \u003C2027\u003E","paginas":[{{EtapaDadosJson}},{{EtapaRevisaoJson}}],"itens":[{{ItemRendaJson}}],"termos":[{{TermoUsoJson}}],"pressupostos":["COR_RACA"],"grupos":[{{GrupoFamiliaJson}}],"documentosExigidos":[{{DocumentoCertidaoJson}}],"gruposDeDocumentos":[{{GrupoDeDocumentosJson}}]}""";
+        $$"""{"titulo":"Inscri\u00E7\u00E3o \u0022Medicina\u0022 \u003C2027\u003E","paginas":[{{PaginaDadosJson}},{{PaginaRevisaoJson}}],"itens":[{{ItemRendaJson}}],"termos":[{{TermoUsoJson}}],"pressupostos":["COR_RACA"],"grupos":[{{GrupoFamiliaJson}}],"documentosExigidos":[{{DocumentoCertidaoJson}}],"gruposDeDocumentos":[{{GrupoDeDocumentosJson}}]}""";
 
     private const string JsonMinimo =
-        $$"""{"titulo":null,"paginas":[{{EtapaDadosMinimaJson}}],"itens":[{{ItemQuilombolaJson}}],"termos":[{{TermoUsoMinimoJson}}],"pressupostos":[],"grupos":[{{GrupoFamiliaMinimoJson}}],"documentosExigidos":[{{DocumentoMinimoJson}}],"gruposDeDocumentos":[]}""";
+        $$"""{"titulo":null,"paginas":[{{PaginaDadosMinimaJson}}],"itens":[{{ItemQuilombolaJson}}],"termos":[{{TermoUsoMinimoJson}}],"pressupostos":[],"grupos":[{{GrupoFamiliaMinimoJson}}],"documentosExigidos":[{{DocumentoMinimoJson}}],"gruposDeDocumentos":[]}""";
 
     private const string JsonLegado =
         """{"titulo":"Legado","paginas":[{"codigo":"DADOS","ordem":0,"tipo":"SECAO","titulo":"Dados"}],"itens":[{"codigoDoDado":"QUILOMBOLA","ordem":0,"paginaCodigo":null,"rotulo":"Pergunta","tipoDeCampo":"SIM_OU_NAO","obrigatoriedade":{"tipo":"SEMPRE"},"restricoes":[],"pedirConfirmacao":false}],"termos":[],"pressupostos":[],"grupos":[{"codigo":"FAMILIA","ordem":0,"paginaCodigo":null,"rotulo":"Fam\u00EDlia","minimo":1,"maximo":null,"obrigatoriedade":{"tipo":"NUNCA"},"subitens":[],"incluiCandidato":false}]}""";
@@ -338,7 +338,7 @@ public sealed class ConteudoDoModeloJsonTests
 
     private static ConteudoDoModelo ConteudoCompleto() => new(
         "Inscrição \"Medicina\" <2027>",
-        [EtapaCompleta(), new EtapaDoModelo("REVISAO", 1, TipoEtapaFormulario.Bloco, BlocoSistema.RevisaoEAceite, "Revisão", null, null, null)],
+        [PaginaCompleta(), new PaginaDoModelo("REVISAO", 1, TipoPaginaFormulario.Bloco, BlocoSistema.RevisaoEAceite, "Revisão", null, null, null)],
         [ItemCompleto()],
         [new TermoDoModelo(
             "TERMO_USO", 0, TermoId, VersaoId,
@@ -350,7 +350,7 @@ public sealed class ConteudoDoModeloJsonTests
 
     private static ConteudoDoModelo ConteudoMinimo() => new(
         null,
-        [new EtapaDoModelo("DADOS", 0, TipoEtapaFormulario.Secao, null, "Dados", null, null, null)],
+        [new PaginaDoModelo("DADOS", 0, TipoPaginaFormulario.Secao, null, "Dados", null, null, null)],
         [ItemMinimo("QUILOMBOLA", 0)],
         [new TermoDoModelo("TERMO_USO", 0, TermoId, VersaoId, new ExibicaoEObrigatoriedade(null, Obrigatoriedade.Sempre))],
         [],
@@ -359,8 +359,8 @@ public sealed class ConteudoDoModeloJsonTests
         new ConjuntoDeDocumentosDoModelo(
             [new DocumentoExigidoDoModelo("INSCRICAO", "RG", null, new IndeferimentoDoDocumentoDoModelo(true, "INDEFERIMENTO", []), RequisitosDoDocumentoDoModelo.AindaNaoEscolhidos)], []));
 
-    private static EtapaDoModelo EtapaCompleta() => new(
-        "DADOS", 0, TipoEtapaFormulario.Secao, null, "Dados", "Dados do candidato", "Confira os dados", Quando("QUILOMBOLA", true));
+    private static PaginaDoModelo PaginaCompleta() => new(
+        "DADOS", 0, TipoPaginaFormulario.Secao, null, "Dados", "Dados do candidato", "Confira os dados", Quando("QUILOMBOLA", true));
 
     private static ItemDoModelo ItemCompleto() => new(
         "RENDA",

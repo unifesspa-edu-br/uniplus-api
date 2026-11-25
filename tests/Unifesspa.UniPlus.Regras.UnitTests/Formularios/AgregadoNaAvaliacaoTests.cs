@@ -15,11 +15,11 @@ using Unifesspa.UniPlus.Regras.ValueObjects;
 /// </summary>
 public class AgregadoNaAvaliacaoTests : TestesDeAvaliacao
 {
-    private const string Etapa = "HABILITACAO";
+    private const string Pagina = "HABILITACAO";
 
     /// <summary>
     /// A declaração cita o agregado de B, B é exibido pelo agregado de A, e os itens vêm antes dos grupos na
-    /// etapa: só a ordem dos agregados no grafo resolve a cadeia numa passada.
+    /// página: só a ordem dos agregados no grafo resolve a cadeia numa passada.
     /// </summary>
     [Theory(DisplayName = "O agregado de um grupo exibido por outro agregado é resolvido antes do item que o cita")]
     [InlineData(true, Ternario.Verdadeiro)]
@@ -28,7 +28,7 @@ public class AgregadoNaAvaliacaoTests : TestesDeAvaliacao
     {
         AvaliacaoFormulario avaliacao = AvaliarDefinicao(FormularioDaCadeiaDeAgregados(), new EntradaAvaliacaoFormulario(
             new Dictionary<string, JsonElement>(StringComparer.Ordinal),
-            new HashSet<string>([Etapa], StringComparer.Ordinal),
+            new HashSet<string>([Pagina], StringComparer.Ordinal),
             new Dictionary<string, FatoResolvido>(StringComparer.Ordinal),
             Envio: null,
             new Dictionary<string, IReadOnlyList<OcorrenciaRespondida>>(StringComparer.Ordinal)
@@ -43,7 +43,7 @@ public class AgregadoNaAvaliacaoTests : TestesDeAvaliacao
 
     private static DefinicaoFormulario FormularioDaCadeiaDeAgregados() => new(
         [
-            new DefinicaoEtapa(Etapa, exibicao: null,
+            new DefinicaoPagina(Pagina, exibicao: null,
                 [Item("DECLARACAO_RURAL", Quando("PROPRIEDADE_NA_FAMILIA", true))],
                 [
                     Grupo("FAMILIA", exibicao: null, Item("TRABALHA_NO_CAMPO")),
@@ -61,7 +61,7 @@ public class AgregadoNaAvaliacaoTests : TestesDeAvaliacao
     public void Definicao_AgregadoSemGrupo_Recusa()
     {
         Action definir = () => _ = new DefinicaoFormulario(
-            [new DefinicaoEtapa(Etapa, exibicao: null, [])],
+            [new DefinicaoPagina(Pagina, exibicao: null, [])],
             termos: [],
             derivacoes: [],
             [new DefinicaoAgregado("RURAL_NA_FAMILIA", "FAMILIA", "TRABALHA_NO_CAMPO", OperacaoAgregado.Existe)]);

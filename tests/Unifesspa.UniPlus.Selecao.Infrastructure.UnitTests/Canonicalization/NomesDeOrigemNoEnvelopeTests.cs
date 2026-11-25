@@ -157,8 +157,8 @@ public sealed class NomesDeOrigemNoEnvelopeTests
 
     private static CopiaDeModeloDeFormulario CopiaDoModelo(string nome) => new(
         FinalidadeFormulario.Habilitacao, "Formulário", [
-            EtapaFormulario.Criar(new EtapaEstrutura("DADOS", 0, TipoEtapaFormulario.Secao, null), "Dados", null, null).Value!,
-            EtapaFormulario.Criar(new EtapaEstrutura("REVISAO", 1, TipoEtapaFormulario.Bloco, BlocoSistema.RevisaoEAceite), "Revisão", null, null).Value!,
+            PaginaDoFormulario.Criar(new PaginaEstrutura("DADOS", 0, TipoPaginaFormulario.Secao, null), "Dados", null, null).Value!,
+            PaginaDoFormulario.Criar(new PaginaEstrutura("REVISAO", 1, TipoPaginaFormulario.Bloco, BlocoSistema.RevisaoEAceite), "Revisão", null, null).Value!,
         ], [], [], [], [], Guid.NewGuid(), "MODELO")
     { ModeloNome = nome };
 }

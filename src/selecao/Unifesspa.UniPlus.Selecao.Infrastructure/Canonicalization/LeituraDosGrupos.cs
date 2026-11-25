@@ -92,7 +92,7 @@ internal static class LeituraDosGrupos
         }
 
         Result<GrupoColetado> grupo = GrupoColetado.Criar(
-            d.Codigo, d.Ordem, d.EtapaCodigo, d.Rotulo, new OcorrenciasDoGrupo(d.Minimo, d.Maximo, d.IncluiCandidato), regras, campos);
+            d.Codigo, d.Ordem, d.PaginaCodigo, d.Rotulo, new OcorrenciasDoGrupo(d.Minimo, d.Maximo, d.IncluiCandidato), regras, campos);
         return grupo.IsFailure ? leitor.Propagar<GrupoColetado?>(grupo.Error!) : grupo.Value;
     }
 
@@ -121,7 +121,7 @@ internal static class LeituraDosGrupos
             return null;
         }
 
-        return campos.FirstOrDefault(c => c.Finalidade != d.Finalidade || c.EtapaCodigo is not null) is { } foraDoGrupo
+        return campos.FirstOrDefault(c => c.Finalidade != d.Finalidade || c.PaginaCodigo is not null) is { } foraDoGrupo
             ? leitor.Recusar<IReadOnlyList<FatoColetado>?>(
                 $"'{path}.subitens': o campo '{foraDoGrupo.FatoCodigo}' tem finalidade ou seção própria, mas o campo do grupo segue o grupo.")
             : campos;
@@ -131,7 +131,7 @@ internal static class LeituraDosGrupos
     {
         Codigo = leitor.TextoNaoVazio(item, "codigo", path, LimitesDoEnvelope.Fato),
         Finalidade = EstruturaFormulario.FinalidadeDoCodigo(leitor.TextoNaoVazio(item, "finalidade", path)),
-        EtapaCodigo = leitor.TextoOpcional(item, "paginaCodigo", path, LimitesDoEnvelope.CodigoEtapaFormulario),
+        PaginaCodigo = leitor.TextoOpcional(item, "paginaCodigo", path, LimitesDoEnvelope.CodigoPaginaFormulario),
         Ordem = leitor.Inteiro(item, "ordem", path),
         Rotulo = leitor.TextoNaoVazio(item, "rotulo", path, LimitesDoEnvelope.NomeDeCadastro),
         Minimo = leitor.Inteiro(item, "minimo", path),
@@ -147,7 +147,7 @@ internal static class LeituraDosGrupos
 
         public FinalidadeFormulario? Finalidade { get; init; }
 
-        public string? EtapaCodigo { get; init; }
+        public string? PaginaCodigo { get; init; }
 
         public int Ordem { get; init; }
 

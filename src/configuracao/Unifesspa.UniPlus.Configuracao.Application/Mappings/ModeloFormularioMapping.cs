@@ -36,7 +36,7 @@ public static class ModeloFormularioMapping
         ArgumentNullException.ThrowIfNull(conteudo);
         return new ConteudoDoModeloDto(
             conteudo.Titulo,
-            [.. conteudo.Etapas.Select(EtapaParaLeitura)],
+            [.. conteudo.Paginas.Select(PaginaParaLeitura)],
             [.. conteudo.Itens.Select(ItemParaLeitura)],
             [.. conteudo.Termos.Select(TermoParaLeitura)],
             conteudo.Pressupostos,
@@ -44,18 +44,18 @@ public static class ModeloFormularioMapping
             conteudo.Documentos.ParaLeitura());
     }
 
-    private static EtapaFormularioDto EtapaParaLeitura(EtapaDoModelo etapa) => new(
-        etapa.Codigo, etapa.Ordem, etapa.Tipo.Codigo(), etapa.Bloco?.Codigo(),
-        new ApresentacaoDaEtapaDto(etapa.Titulo, etapa.Descricao, etapa.Aviso), etapa.Exibicao is { } exibicao ? LeituraDeRegras.ToDto(exibicao) : null);
+    private static PaginaDoFormularioDto PaginaParaLeitura(PaginaDoModelo pagina) => new(
+        pagina.Codigo, pagina.Ordem, pagina.Tipo.Codigo(), pagina.Bloco?.Codigo(),
+        new ApresentacaoDaPaginaDto(pagina.Titulo, pagina.Descricao, pagina.Aviso), pagina.Exibicao is { } exibicao ? LeituraDeRegras.ToDto(exibicao) : null);
 
     private static ItemDoModeloDto ItemParaLeitura(ItemDoModelo item) => new(
-        item.FatoCodigo, item.Ordem, item.EtapaCodigo, item.Apresentacao.ToDto(), item.Regras.ToDto());
+        item.FatoCodigo, item.Ordem, item.PaginaCodigo, item.Apresentacao.ToDto(), item.Regras.ToDto());
 
     private static TermoDoModeloDto TermoParaLeitura(TermoDoModelo termo) => new(
         termo.Codigo, termo.Ordem, new VersaoDoTermoDoModeloDto(termo.TermoId, termo.VersaoId), termo.Regras.ToDto());
 
     private static GrupoDoModeloDto GrupoParaLeitura(GrupoDoModelo grupo) => new(
-        grupo.Codigo, grupo.Ordem, grupo.EtapaCodigo, grupo.Rotulo, grupo.Ocorrencias.ToDto(), grupo.Regras.ToDto(),
+        grupo.Codigo, grupo.Ordem, grupo.PaginaCodigo, grupo.Rotulo, grupo.Ocorrencias.ToDto(), grupo.Regras.ToDto(),
         [.. grupo.Subitens.Select(ItemParaLeitura)]);
 
     /// <summary>O modelo na forma do leitor entre módulos, com o conteúdo na forma de entrada da escrita.</summary>
@@ -79,7 +79,7 @@ public static class ModeloFormularioMapping
         ArgumentNullException.ThrowIfNull(conteudo);
         return new ConteudoDoModeloInput(
             conteudo.Titulo,
-            [.. conteudo.Etapas.Select(EtapaParaEntrada)],
+            [.. conteudo.Paginas.Select(PaginaParaEntrada)],
             [.. conteudo.Itens.Select(ItemParaEntrada)],
             [.. conteudo.Termos.Select(TermoParaEntrada)],
             conteudo.Pressupostos,
@@ -87,17 +87,17 @@ public static class ModeloFormularioMapping
             conteudo.Documentos.ParaEntrada());
     }
 
-    private static EtapaFormularioInput EtapaParaEntrada(EtapaDoModelo etapa) => new(
-        etapa.Codigo, etapa.Ordem, etapa.Tipo.Codigo(), etapa.Bloco?.Codigo(),
-        new ApresentacaoDaEtapaInput(etapa.Titulo, etapa.Descricao, etapa.Aviso), EntradaDeRegras.ParaEntrada(etapa.Exibicao));
+    private static PaginaDoFormularioInput PaginaParaEntrada(PaginaDoModelo pagina) => new(
+        pagina.Codigo, pagina.Ordem, pagina.Tipo.Codigo(), pagina.Bloco?.Codigo(),
+        new ApresentacaoDaPaginaInput(pagina.Titulo, pagina.Descricao, pagina.Aviso), EntradaDeRegras.ParaEntrada(pagina.Exibicao));
 
     private static FatoColetadoInput ItemParaEntrada(ItemDoModelo campo) => new(
-        campo.FatoCodigo, campo.Ordem, EntradaDeRegras.ParaEntrada(campo.Apresentacao), EntradaDeRegras.ParaEntrada(campo.Regras), campo.EtapaCodigo);
+        campo.FatoCodigo, campo.Ordem, EntradaDeRegras.ParaEntrada(campo.Apresentacao), EntradaDeRegras.ParaEntrada(campo.Regras), campo.PaginaCodigo);
 
     private static TermoExigidoInput TermoParaEntrada(TermoDoModelo termo) => new(
         termo.Codigo, termo.Ordem, new VersaoDoTermoInput(termo.TermoId, termo.VersaoId), EntradaDeRegras.ParaEntrada(termo.Regras));
 
     private static GrupoColetadoInput GrupoParaEntrada(GrupoDoModelo grupo) => new(
         grupo.Codigo, grupo.Ordem, grupo.Rotulo, EntradaDeRegras.ParaEntrada(grupo.Ocorrencias), EntradaDeRegras.ParaEntrada(grupo.Regras),
-        [.. grupo.Subitens.Select(ItemParaEntrada)], grupo.EtapaCodigo);
+        [.. grupo.Subitens.Select(ItemParaEntrada)], grupo.PaginaCodigo);
 }

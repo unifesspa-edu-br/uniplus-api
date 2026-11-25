@@ -60,7 +60,7 @@ public sealed class RegrasEPressupostosDoFormularioPublicadoTests
         EnvelopeReidratado vivo = EnvelopeVivo(processo, entrada);
         DefinicaoAvaliavel daConfiguracao = DefinicaoAvaliavelDoProcesso.DoCongelado(vivo).Value!;
         return RecorteDaFinalidade.De(
-            daConfiguracao.Definicao, DefinicaoDoProcesso.CodigoDaEtapa(FinalidadeFormulario.Inscricao, null), daConfiguracao.Ofertas);
+            daConfiguracao.Definicao, DefinicaoDoProcesso.CodigoDaPagina(FinalidadeFormulario.Inscricao, null), daConfiguracao.Ofertas);
     }
 
     private static EnvelopeReidratado EnvelopeVivo(ProcessoSeletivo processo, EntradaCanonicalizacao entrada) =>
@@ -98,7 +98,7 @@ public sealed class RegrasEPressupostosDoFormularioPublicadoTests
     {
         lido.Formulario.Pressupostos.Fatos.Select(static p => p.FatoCodigo).Should().Equal(esperado.Pressupostos);
         lido.Formulario.Regras.Agregados.Should().BeEmpty("nenhuma regra da inscrição cita os agregados da composição familiar");
-        lido.Formulario.Regras.Etapas.Should().Contain(e => e.Exibicao != null, "a seção de pertencimento só aparece para quem se declarou preto");
+        lido.Formulario.Regras.Paginas.Should().Contain(e => e.Exibicao != null, "a seção de pertencimento só aparece para quem se declarou preto");
         processo.DerivacoesEfetivas().Should().HaveCount(5);
         lido.Formulario.Regras.Derivacoes.Should().BeEmpty("nenhuma regra da inscrição cita derivado, e o contrato não publica o que o formulário não usa");
     }
@@ -192,7 +192,7 @@ public sealed class RegrasEPressupostosDoFormularioPublicadoTests
     {
         FaseCronograma habilitacao = FaseDeHabilitacaoDepoisDasDemais(processo);
         processo.DefinirCronogramaFases([.. processo.CronogramaFases, habilitacao], []).IsSuccess.Should().BeTrue();
-        processo.DefinirFormulario(FinalidadeFormulario.Habilitacao, habilitacao.Id, "Habilitação", FormularioDeTeste.Etapas())
+        processo.DefinirFormulario(FinalidadeFormulario.Habilitacao, habilitacao.Id, "Habilitação", FormularioDeTeste.Paginas())
             .IsSuccess.Should().BeTrue();
         processo.DefinirReferenciaTemporalFatos(
             ReferenciaTemporalFatos.Criar(ReferenciaTipo.DataEspecifica, new DateOnly(2026, 1, 31), null).Value!)

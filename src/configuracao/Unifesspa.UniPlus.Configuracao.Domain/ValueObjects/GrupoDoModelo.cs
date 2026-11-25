@@ -12,7 +12,7 @@ using Unifesspa.UniPlus.Regras.Formularios;
 public sealed record GrupoDoModelo(
     string Codigo,
     int Ordem,
-    string? EtapaCodigo,
+    string? PaginaCodigo,
     string Rotulo,
     OcorrenciasDoGrupo Ocorrencias,
     ExibicaoEObrigatoriedade Regras,

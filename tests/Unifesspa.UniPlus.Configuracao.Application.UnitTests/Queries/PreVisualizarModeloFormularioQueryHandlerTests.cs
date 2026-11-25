@@ -30,8 +30,8 @@ public sealed class PreVisualizarModeloFormularioQueryHandlerTests
     private const string Finalidade = "Verificação dos requisitos do processo seletivo.";
     private const HipoteseLegalTratamento Hipotese = HipoteseLegalTratamento.CumprimentoObrigacaoLegal;
 
-    private static readonly EtapaDoModelo Dados = new("DADOS", 0, TipoEtapaFormulario.Secao, null, "Dados", null, null, null);
-    private static readonly EtapaDoModelo Revisao = new("REVISAO", 1, TipoEtapaFormulario.Bloco, BlocoSistema.RevisaoEAceite, "Revisão", null, null, null);
+    private static readonly PaginaDoModelo Dados = new("DADOS", 0, TipoPaginaFormulario.Secao, null, "Dados", null, null, null);
+    private static readonly PaginaDoModelo Revisao = new("REVISAO", 1, TipoPaginaFormulario.Bloco, BlocoSistema.RevisaoEAceite, "Revisão", null, null, null);
 
     private readonly IModeloFormularioRepository _repository = Substitute.For<IModeloFormularioRepository>();
     private readonly IFatoCandidatoRepository _fatos = Substitute.For<IFatoCandidatoRepository>();
@@ -56,7 +56,7 @@ public sealed class PreVisualizarModeloFormularioQueryHandlerTests
         PreVisualizacaoDoModeloDto com = (await PreVisualizarAsync(modelo, pressupostos: new() { ["CONCLUSAO_REGULAR"] = true }))!;
         PreVisualizacaoDoModeloDto sem = (await PreVisualizarAsync(modelo))!;
 
-        com.Itens.Single().Should().BeEquivalentTo(new { FatoCodigo = "CERTIFICADO", EtapaCodigo = "DADOS", Visivel = "VERDADEIRO", Obrigatorio = "VERDADEIRO" });
+        com.Itens.Single().Should().BeEquivalentTo(new { FatoCodigo = "CERTIFICADO", PaginaCodigo = "DADOS", Visivel = "VERDADEIRO", Obrigatorio = "VERDADEIRO" });
         sem.Itens.Single().Visivel.Should().Be("INDETERMINADO");
     }
 

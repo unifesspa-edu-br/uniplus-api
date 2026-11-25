@@ -51,7 +51,7 @@ public sealed class FormulariosRascunhoEndpointTests
         JsonElement root = raiz.GetProperty("formulario");
         root.GetProperty("titulo").GetString().Should().Be("Formulário de Inscrição");
         root.GetProperty("coleta").GetProperty("itens").GetArrayLength().Should().Be(ConjuntoBasicoDaInscricao.Itens.Count);
-        root.GetProperty("regras").GetProperty("etapas").EnumerateArray().SelectMany(static e => e.GetProperty("itens").EnumerateArray())
+        root.GetProperty("regras").GetProperty("paginas").EnumerateArray().SelectMany(static e => e.GetProperty("itens").EnumerateArray())
             .Select(static i => i.GetProperty("fatoCodigo").GetString())
             .Should().Contain("COR_RACA", "as regras da configuração viva vão com a apresentação");
         raiz.GetProperty("comprovacaoDocumental").ValueKind.Should().Be(JsonValueKind.Null, "a lista de documentos sai da publicação");

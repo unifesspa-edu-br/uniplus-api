@@ -73,7 +73,7 @@ public static class ObterFormularioApresentadoDoModeloQueryHandler
         return new FormularioApresentado(
             finalidade.Codigo(),
             conteudo.Titulo,
-            [.. conteudo.Etapas.OrderBy(static e => e.Ordem).Select(Secao)],
+            [.. conteudo.Paginas.OrderBy(static e => e.Ordem).Select(Secao)],
             termos,
             new ColetaApresentada(
                 [.. conteudo.Itens.OrderBy(static i => i.Ordem).Select(i => Campo(finalidade, i, simulacao.Opcoes))],
@@ -110,19 +110,19 @@ public static class ObterFormularioApresentadoDoModeloQueryHandler
         return new TermoApresentado(termo.Codigo, termo.Codigo, termo.Ordem, termo.TermoId, termo.VersaoId, conteudo);
     }
 
-    private static SecaoRenderizavel Secao(EtapaDoModelo etapa) => new(
-        etapa.Codigo,
-        etapa.Tipo == TipoEtapaFormulario.Secao ? etapa.Codigo : null,
-        etapa.Ordem,
-        etapa.Tipo.Codigo(),
-        etapa.Bloco?.Codigo(),
-        new ApresentacaoDaEtapaDto(etapa.Titulo, etapa.Descricao, etapa.Aviso));
+    private static PaginaApresentada Secao(PaginaDoModelo pagina) => new(
+        pagina.Codigo,
+        pagina.Tipo == TipoPaginaFormulario.Secao ? pagina.Codigo : null,
+        pagina.Ordem,
+        pagina.Tipo.Codigo(),
+        pagina.Bloco?.Codigo(),
+        new ApresentacaoDaPaginaDto(pagina.Titulo, pagina.Descricao, pagina.Aviso));
 
     private static GrupoApresentado Grupo(
         FinalidadeFormulario finalidade, GrupoDoModelo grupo, IReadOnlyDictionary<string, IReadOnlyList<ValorSelecionavel>?> opcoes) => new(
         grupo.Codigo,
         grupo.Ordem,
-        grupo.EtapaCodigo,
+        grupo.PaginaCodigo,
         grupo.Rotulo,
         new OcorrenciasDoGrupoDto(grupo.Ocorrencias.Minimo, grupo.Ocorrencias.Maximo, grupo.Ocorrencias.IncluiCandidato),
         [.. grupo.Subitens.OrderBy(static s => s.Ordem).Select(s => Campo(finalidade, s, opcoes))]);
@@ -131,7 +131,7 @@ public static class ObterFormularioApresentadoDoModeloQueryHandler
         FinalidadeFormulario finalidade, ItemDoModelo item, IReadOnlyDictionary<string, IReadOnlyList<ValorSelecionavel>?> opcoes) => new(
         item.FatoCodigo,
         item.Ordem,
-        item.EtapaCodigo,
+        item.PaginaCodigo,
         new ApresentacaoDoCampoDto(
             item.Apresentacao.Rotulo,
             item.Apresentacao.TipoDeCampo.Codigo(),

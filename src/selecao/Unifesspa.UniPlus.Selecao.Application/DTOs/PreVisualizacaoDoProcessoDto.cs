@@ -9,7 +9,7 @@ using Unifesspa.UniPlus.Regras.Formularios;
 
 /// <summary>
 /// O perfil simulado de um candidato para a pré-visualização do processo: as respostas dos
-/// formulários, por fato; as ocorrências dos grupos repetíveis; as etapas dadas como concluídas; e os
+/// formulários, por fato; as ocorrências dos grupos repetíveis; as páginas dadas como concluídas; e os
 /// pressupostos, os fatos que o formulário não coleta e a execução resolve fora dele — o grupo da
 /// convocação, a faixa etária, a UF e o município de residência. Quando um pressuposto repete um
 /// fato do formulário, vale a resposta do formulário.
@@ -17,14 +17,14 @@ using Unifesspa.UniPlus.Regras.Formularios;
 public sealed record PreVisualizacaoDoProcessoInput(
     IReadOnlyDictionary<string, JsonElement>? Respostas,
     IReadOnlyDictionary<string, IReadOnlyList<OcorrenciaSimuladaInput>>? Grupos,
-    IReadOnlyList<EtapaConcluidaInput>? EtapasConcluidas,
+    IReadOnlyList<PaginaConcluidaInput>? PaginasConcluidas,
     IReadOnlyDictionary<string, JsonElement>? Pressupostos);
 
 /// <summary>Uma ocorrência de grupo repetível, pela identidade dela, e as respostas dos campos.</summary>
 public sealed record OcorrenciaSimuladaInput(string? Id, IReadOnlyDictionary<string, JsonElement>? Respostas);
 
 /// <summary>Uma seção dada como concluída, no formulário da finalidade.</summary>
-public sealed record EtapaConcluidaInput([property: AceitaCodigosDe<FinalidadeFormulario>] string Finalidade, string Etapa);
+public sealed record PaginaConcluidaInput([property: AceitaCodigosDe<FinalidadeFormulario>] string Finalidade, string Pagina);
 
 /// <summary>
 /// O processo avaliado contra o perfil simulado: o que cada formulário mostra e exige, e os
@@ -58,7 +58,7 @@ public sealed record OpcoesSimuladasDto(IReadOnlyList<string> Codigos, bool Defi
 /// </summary>
 public sealed record ItemSimuladoDto(
     string FatoCodigo,
-    string? EtapaCodigo,
+    string? PaginaCodigo,
     CodigoComRotulo<Ternario> Visivel,
     CodigoComRotulo<Ternario> Obrigatorio,
     IReadOnlyList<string> RestricoesVioladas,
@@ -72,7 +72,7 @@ public sealed record ItemSimuladoDto(
 /// </summary>
 public sealed record GrupoSimuladoDto(
     string Codigo,
-    string? EtapaCodigo,
+    string? PaginaCodigo,
     CodigoComRotulo<Ternario> Visivel,
     CodigoComRotulo<Ternario> Obrigatorio,
     bool ContagemValida,

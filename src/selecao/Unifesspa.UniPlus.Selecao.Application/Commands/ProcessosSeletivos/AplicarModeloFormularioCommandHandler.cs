@@ -10,7 +10,7 @@ using Unifesspa.UniPlus.Configuracao.Contracts;
 
 /// <summary>
 /// Copia o modelo de formulário para o processo pelas mesmas conferências da escrita direta (ver
-/// <see cref="AplicacaoDoModeloDeFormulario"/>): as etapas, os itens e os termos passam pelos resolvedores
+/// <see cref="AplicacaoDoModeloDeFormulario"/>): as páginas, os itens e os termos passam pelos resolvedores
 /// da escrita do formulário, e o estado final é conferido pelo agregado, que só então muda o processo
 /// (ADR-0125). O que o catálogo mudou depois da composição do modelo sai da cópia e volta no relatório.
 /// </summary>

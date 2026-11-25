@@ -11,13 +11,13 @@ using Unifesspa.UniPlus.Regras.Formularios;
 /// </summary>
 public sealed class EstruturaFormularioTests
 {
-    private static EtapaEstrutura Secao(string codigo, int ordem) => new(codigo, ordem, TipoEtapaFormulario.Secao, null);
+    private static PaginaEstrutura Secao(string codigo, int ordem) => new(codigo, ordem, TipoPaginaFormulario.Secao, null);
 
-    private static EtapaEstrutura Bloco(BlocoSistema bloco, int ordem) => new(bloco.ToString(), ordem, TipoEtapaFormulario.Bloco, bloco);
+    private static PaginaEstrutura Bloco(BlocoSistema bloco, int ordem) => new(bloco.ToString(), ordem, TipoPaginaFormulario.Bloco, bloco);
 
     [Fact(DisplayName = "Seções seguidas da revisão e aceite formam um formulário válido")]
-    public void ValidarEtapas_Valido() =>
-        EstruturaFormulario.ValidarEtapas(
+    public void ValidarPaginas_Valido() =>
+        EstruturaFormulario.ValidarPaginas(
             FinalidadeFormulario.Inscricao,
             [Secao("DADOS", 0), Bloco(BlocoSistema.ModalidadesCalculadas, 1), Bloco(BlocoSistema.RevisaoEAceite, 2)])
             .Should().BeEmpty();
@@ -25,82 +25,82 @@ public sealed class EstruturaFormularioTests
     [Theory(DisplayName = "A finalidade decide os blocos: modalidades calculadas só na inscrição, e todo formulário termina na revisão e aceite")]
     [InlineData(FinalidadeFormulario.Habilitacao, EstruturaFormularioErrorCodes.BlocoNaoAdmitido)]
     [InlineData(FinalidadeFormulario.IsencaoTaxa, EstruturaFormularioErrorCodes.BlocoNaoAdmitido)]
-    public void ValidarEtapas_BlocoNaoAdmitido(FinalidadeFormulario finalidade, string esperado) =>
-        EstruturaFormulario.ValidarEtapas(
+    public void ValidarPaginas_BlocoNaoAdmitido(FinalidadeFormulario finalidade, string esperado) =>
+        EstruturaFormulario.ValidarPaginas(
             finalidade, [Bloco(BlocoSistema.ModalidadesCalculadas, 0), Bloco(BlocoSistema.RevisaoEAceite, 1)])
             .Should().ContainSingle().Which.Error.Code.Should().Be(esperado);
 
     [Fact(DisplayName = "A segunda página sem identificação do bloco aponta o caminho da página")]
-    public void ValidarEtapas_SegundaPaginaSemBloco_ApontaPagina()
+    public void ValidarPaginas_SegundaPaginaSemBloco_ApontaPagina()
     {
-        EtapaEstrutura[] paginas = [Secao("DADOS", 0), new("BLOCO", 1, TipoEtapaFormulario.Bloco, null)];
+        PaginaEstrutura[] paginas = [Secao("DADOS", 0), new("BLOCO", 1, TipoPaginaFormulario.Bloco, null)];
 
-        IReadOnlyList<FieldError> recusas = EstruturaFormulario.ValidarEtapas(FinalidadeFormulario.Habilitacao, paginas);
+        IReadOnlyList<FieldError> recusas = EstruturaFormulario.ValidarPaginas(FinalidadeFormulario.Habilitacao, paginas);
 
         recusas.Should().ContainSingle(e => e.Error.Code == EstruturaFormularioErrorCodes.BlocoNaoAdmitido)
-            .Which.Field.Should().Be("etapas[1].bloco");
+            .Which.Field.Should().Be("paginas[1].bloco");
     }
 
     [Fact(DisplayName = "Sem a revisão e aceite, o formulário é recusado")]
-    public void ValidarEtapas_SemRevisao() =>
-        EstruturaFormulario.ValidarEtapas(FinalidadeFormulario.Habilitacao, [Secao("DADOS", 0)])
+    public void ValidarPaginas_SemRevisao() =>
+        EstruturaFormulario.ValidarPaginas(FinalidadeFormulario.Habilitacao, [Secao("DADOS", 0)])
             .Should().ContainSingle().Which.Error.Code.Should().Be(EstruturaFormularioErrorCodes.BlocoExigidoAusente);
 
     [Fact(DisplayName = "A revisão e aceite fora da última posição é recusada")]
-    public void ValidarEtapas_RevisaoForaDoFim() =>
-        EstruturaFormulario.ValidarEtapas(FinalidadeFormulario.Habilitacao, [Bloco(BlocoSistema.RevisaoEAceite, 0), Secao("DADOS", 1)])
+    public void ValidarPaginas_RevisaoForaDoFim() =>
+        EstruturaFormulario.ValidarPaginas(FinalidadeFormulario.Habilitacao, [Bloco(BlocoSistema.RevisaoEAceite, 0), Secao("DADOS", 1)])
             .Should().ContainSingle().Which.Error.Code.Should().Be(EstruturaFormularioErrorCodes.RevisaoEAceiteForaDoFim);
 
-    [Fact(DisplayName = "Código e ordem de etapa repetidos acumulam as duas recusas")]
-    public void ValidarEtapas_Repeticoes() =>
-        EstruturaFormulario.ValidarEtapas(
+    [Fact(DisplayName = "Código e ordem de página repetidos acumulam as duas recusas")]
+    public void ValidarPaginas_Repeticoes() =>
+        EstruturaFormulario.ValidarPaginas(
             FinalidadeFormulario.Habilitacao, [Secao("DADOS", 0), Secao("DADOS", 0), Bloco(BlocoSistema.RevisaoEAceite, 1)])
             .Select(static e => e.Error.Code).Should().BeEquivalentTo(
-                [EstruturaFormularioErrorCodes.EtapaCodigoDuplicado, EstruturaFormularioErrorCodes.EtapaOrdemDuplicada]);
+                [EstruturaFormularioErrorCodes.PaginaCodigoDuplicado, EstruturaFormularioErrorCodes.PaginaOrdemDuplicada]);
 
-    [Fact(DisplayName = "As recusas das etapas saem na ordem: cada etapa na sua posição, depois as do formulário")]
-    public void ValidarEtapas_RecusasEmOrdemComCampoECodigo() =>
-        EstruturaFormulario.ValidarEtapas(FinalidadeFormulario.Habilitacao, EtapasComTodasAsRecusas)
-            .Select(static erro => (Campo: erro.Field, Codigo: erro.Error.Code)).Should().Equal(RecusasDasEtapasComTodasAsRecusas);
+    [Fact(DisplayName = "As recusas das páginas saem na ordem: cada página na sua posição, depois as do formulário")]
+    public void ValidarPaginas_RecusasEmOrdemComCampoECodigo() =>
+        EstruturaFormulario.ValidarPaginas(FinalidadeFormulario.Habilitacao, PaginasComTodasAsRecusas)
+            .Select(static erro => (Campo: erro.Field, Codigo: erro.Error.Code)).Should().Equal(RecusasDasPaginasComTodasAsRecusas);
 
-    private static readonly EtapaEstrutura[] EtapasComTodasAsRecusas =
+    private static readonly PaginaEstrutura[] PaginasComTodasAsRecusas =
     [
-        new("DADOS", 0, TipoEtapaFormulario.Secao, BlocoSistema.ComprovacaoDocumental),
-        new("DADOS", 1, TipoEtapaFormulario.Bloco, null),
+        new("DADOS", 0, TipoPaginaFormulario.Secao, BlocoSistema.ComprovacaoDocumental),
+        new("DADOS", 1, TipoPaginaFormulario.Bloco, null),
         Bloco(BlocoSistema.ComprovacaoDocumental, 2),
         Bloco(BlocoSistema.ComprovacaoDocumental, 2),
         Bloco(BlocoSistema.ModalidadesCalculadas, 3),
     ];
 
-    private static readonly (string? Campo, string Codigo)[] RecusasDasEtapasComTodasAsRecusas =
+    private static readonly (string? Campo, string Codigo)[] RecusasDasPaginasComTodasAsRecusas =
     [
-        ("etapas[0].bloco", EstruturaFormularioErrorCodes.SecaoComBloco),
-        ("etapas[1].codigo", EstruturaFormularioErrorCodes.EtapaCodigoDuplicado),
-        ("etapas[1].bloco", EstruturaFormularioErrorCodes.BlocoNaoAdmitido),
-        ("etapas[3].codigo", EstruturaFormularioErrorCodes.EtapaCodigoDuplicado),
-        ("etapas[3].ordem", EstruturaFormularioErrorCodes.EtapaOrdemDuplicada),
-        ("etapas[3].bloco", EstruturaFormularioErrorCodes.BlocoRepetido),
-        ("etapas[4].bloco", EstruturaFormularioErrorCodes.BlocoNaoAdmitido),
-        ("etapas", EstruturaFormularioErrorCodes.BlocoExigidoAusente),
+        ("paginas[0].bloco", EstruturaFormularioErrorCodes.SecaoComBloco),
+        ("paginas[1].codigo", EstruturaFormularioErrorCodes.PaginaCodigoDuplicado),
+        ("paginas[1].bloco", EstruturaFormularioErrorCodes.BlocoNaoAdmitido),
+        ("paginas[3].codigo", EstruturaFormularioErrorCodes.PaginaCodigoDuplicado),
+        ("paginas[3].ordem", EstruturaFormularioErrorCodes.PaginaOrdemDuplicada),
+        ("paginas[3].bloco", EstruturaFormularioErrorCodes.BlocoRepetido),
+        ("paginas[4].bloco", EstruturaFormularioErrorCodes.BlocoNaoAdmitido),
+        ("paginas", EstruturaFormularioErrorCodes.BlocoExigidoAusente),
     ];
 
     [Theory(DisplayName = "Item fora de seção — sem seção, em bloco ou em seção inexistente — é recusado")]
     [InlineData(null)]
     [InlineData("RevisaoEAceite")]
     [InlineData("INEXISTENTE")]
-    public void ValidarItens_ForaDeSecao(string? etapa) =>
+    public void ValidarItens_ForaDeSecao(string? pagina) =>
         EstruturaFormulario.ValidarItens(
-            [Secao("DADOS", 0), Bloco(BlocoSistema.RevisaoEAceite, 1)], [new ItemEstrutura("COR_RACA", 0, etapa)])
+            [Secao("DADOS", 0), Bloco(BlocoSistema.RevisaoEAceite, 1)], [new ItemEstrutura("COR_RACA", 0, pagina)])
             .Should().ContainSingle().Which.Error.Code.Should().Be(EstruturaFormularioErrorCodes.ItemForaDeSecao);
 
     [Fact(DisplayName = "A ordem dos itens acompanha a das seções: item de seção anterior não vem depois")]
     public void ValidarItens_ForaDaOrdemDasSecoes()
     {
-        EtapaEstrutura[] etapas = [Secao("DADOS", 0), Secao("ENDERECO", 1), Bloco(BlocoSistema.RevisaoEAceite, 2)];
+        PaginaEstrutura[] paginas = [Secao("DADOS", 0), Secao("ENDERECO", 1), Bloco(BlocoSistema.RevisaoEAceite, 2)];
 
-        EstruturaFormulario.ValidarItens(etapas, [new ItemEstrutura("CEP", 0, "ENDERECO"), new ItemEstrutura("NOME", 1, "DADOS")])
+        EstruturaFormulario.ValidarItens(paginas, [new ItemEstrutura("CEP", 0, "ENDERECO"), new ItemEstrutura("NOME", 1, "DADOS")])
             .Should().ContainSingle().Which.Error.Code.Should().Be(EstruturaFormularioErrorCodes.ItemForaDaOrdemDasSecoes);
-        EstruturaFormulario.ValidarItens(etapas, [new ItemEstrutura("NOME", 0, "DADOS"), new ItemEstrutura("CEP", 1, "ENDERECO")])
+        EstruturaFormulario.ValidarItens(paginas, [new ItemEstrutura("NOME", 0, "DADOS"), new ItemEstrutura("CEP", 1, "ENDERECO")])
             .Should().BeEmpty();
     }
 }

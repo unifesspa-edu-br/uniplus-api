@@ -87,20 +87,20 @@ public static class SementeIsencaoDaTaxa
 
     private static ConteudoDoModelo Conteudo() => new(
         "Solicitação de isenção da taxa de inscrição",
-        Etapas(),
+        Paginas(),
         [PerguntaDeRenda()],
         [.. Termos.Select(static (t, i) => new TermoDoModelo(
             SqlDaSemente.CodigoDoTermo(t, Declaracao), i + 1, t.TermoId, t.VersaoId, new ExibicaoEObrigatoriedade(null, Obrigatoriedade.Sempre)))],
         IsencaoPorCarenciaSocioeconomica.FatosDaInscricao,
         []);
 
-    private static EtapaDoModelo[] Etapas() =>
+    private static PaginaDoModelo[] Paginas() =>
     [
-        new(Renda, 1, TipoEtapaFormulario.Secao, null, "Renda familiar",
+        new(Renda, 1, TipoPaginaFormulario.Secao, null, "Renda familiar",
             "A isenção pela Lei nº 12.799/2013 é de quem tem renda familiar per capita de até um salário mínimo e meio e cursou o ensino médio completo em escola pública ou como bolsista integral em escola privada. A origem escolar é a que você informou na inscrição.",
             null, null),
-        new("DOCUMENTOS", 2, TipoEtapaFormulario.Bloco, BlocoSistema.ComprovacaoDocumental, "Documentos", null, null, null),
-        new("REVISAO", 3, TipoEtapaFormulario.Bloco, BlocoSistema.RevisaoEAceite, "Revisão e aceite", null, null, null),
+        new("DOCUMENTOS", 2, TipoPaginaFormulario.Bloco, BlocoSistema.ComprovacaoDocumental, "Documentos", null, null, null),
+        new("REVISAO", 3, TipoPaginaFormulario.Bloco, BlocoSistema.RevisaoEAceite, "Revisão e aceite", null, null, null),
     ];
 
     private static ItemDoModelo PerguntaDeRenda() =>

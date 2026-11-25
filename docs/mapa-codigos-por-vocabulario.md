@@ -215,9 +215,9 @@ Ocorrências por arquivo de teste, com as linhas e a ação. `Habilitacao` como 
 
 | Arquivo (em `tests/Unifesspa.UniPlus.*`) | Categoria | Linhas | Ação |
 |---|---|---|---|
-| `Regras.UnitTests/Formularios/AgregadoNaAvaliacaoTests.cs` | código de etapa de teste (`HABILITACAO`), não é fase | 18 | manter |
+| `Regras.UnitTests/Formularios/AgregadoNaAvaliacaoTests.cs` | código de página de formulário de teste (`HABILITACAO`), não é fase | 18 | manter |
 | `Regras.UnitTests/Formularios/RecorteDaFinalidadeTests.cs` | finalidade-HABILITACAO | 19 | manter (ponto em aberto) |
-| `Regras.UnitTests/Formularios/RecorteDaFinalidadeTests.cs` | códigos de etapa e de termo de teste (`HABILITACAO:DOCUMENTOS`, `HABILITACAO:FAMILIA`, `HABILITACAO:VERACIDADE`), não são fase | 26,27,78,122,130 | manter |
+| `Regras.UnitTests/Formularios/RecorteDaFinalidadeTests.cs` | códigos de página de formulário e de termo de teste (`HABILITACAO:DOCUMENTOS`, `HABILITACAO:FAMILIA`, `HABILITACAO:VERACIDADE`), não são fase | 26,27,78,122,130 | manter |
 | `Selecao.IntegrationTests/ProcessosSeletivos/DescarteAposDeslocamentoDeOrdemPersistenciaTests.cs` | fase-HOMOLOGACAO | 89,102,126,222,240,264,363 | renomear |
 | `Selecao.IntegrationTests/ProcessosSeletivos/DescarteAposDeslocamentoDeOrdemPersistenciaTests.cs` | ato-HOMOLOGACAO_INSCRICOES | 103,241,364 | manter |
 | `Selecao.IntegrationTests/ProcessosSeletivos/ProdutosDaFaseReconciliacaoPersistenciaTests.cs` | ato (cadastro) | 43,63,64,81,106,124,125,160,161,175 | manter |

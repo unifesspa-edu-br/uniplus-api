@@ -56,7 +56,7 @@ internal sealed record OperacaoDeEdicao(
             p =>
             {
                 FormularioProcesso formulario = p.Formularios.Single(f => f.Finalidade == Inscricao);
-                return p.DefinirFormulario(Inscricao, formulario.FaseId, formulario.Titulo, [.. formulario.Etapas]);
+                return p.DefinirFormulario(Inscricao, formulario.FaseId, formulario.Titulo, [.. formulario.Paginas]);
             },
             p => p.DefinirFormulario(Inscricao, null, null, null!)),
         new(nameof(ProcessoSeletivo.DefinirTermosDoFormulario),

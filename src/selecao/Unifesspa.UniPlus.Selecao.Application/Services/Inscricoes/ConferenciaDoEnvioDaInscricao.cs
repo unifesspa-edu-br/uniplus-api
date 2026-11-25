@@ -58,7 +58,7 @@ public sealed class ConferenciaDoEnvioDaInscricao(
         Result<ResultadoDaAvaliacaoDaInscricao> avaliacao = AvaliacaoDaInscricaoPorOpcao.Avaliar(entrada.Pedido.Contexto, EntradaDaAvaliacaoDaInscricao.Montar(
             DerivadosDoSistemaInscricao.ComOsDerivados(entrada.Pedido.Contexto.Admitidas.Definicoes), new EntradaDaAvaliacaoDaInscricao(entrada.Mesclado.Respostas,
             InscricaoRequestMapper.ParaAvaliacao(entrada.Mesclado.Grupos), FatosConhecidos(entrada.Derivados),
-            AvaliacaoDaInscricao.CodigosDasEtapasDaInscricao(entrada.Pedido.Contexto.Configuracao.Definicao),
+            AvaliacaoDaInscricao.CodigosDasPaginasDaInscricao(entrada.Pedido.Contexto.Configuracao.Definicao),
             entrada.Envio, arquivos.ApresentacoesVerificadas(), NaFaseDaInscricao: true)));
         return avaliacao.IsFailure
             ? Result<EnvioConferido>.Failure(avaliacao.Error!)

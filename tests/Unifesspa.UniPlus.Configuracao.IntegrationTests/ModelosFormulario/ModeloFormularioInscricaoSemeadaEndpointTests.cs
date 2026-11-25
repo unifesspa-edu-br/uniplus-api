@@ -115,10 +115,10 @@ public sealed class ModeloFormularioInscricaoSemeadaEndpointTests
 
     private static void ConferirLocalidadeAntesDoEndereco(JsonObject formulario)
     {
-        List<string> basicos = ItensDaEtapaDasRegras(formulario, ConjuntoBasicoDaInscricao.CodigoDaSecao);
+        List<string> basicos = ItensDaPaginaDasRegras(formulario, ConjuntoBasicoDaInscricao.CodigoDaSecao);
         basicos.IndexOf("TIPO_ENDERECO").Should().BeLessThan(basicos.IndexOf("NOME_COMUNIDADE"));
         basicos.IndexOf("NOME_COMUNIDADE").Should().BeLessThan(basicos.IndexOf("ENDERECO_RESIDENCIAL"), "a localidade é perguntada antes do endereço");
-        Textos(formulario["etapas"]!, "codigo").Should().NotContain("ENDERECO");
+        Textos(formulario["paginas"]!, "codigo").Should().NotContain("ENDERECO");
     }
 
     private static Dictionary<string, object> RespostasDoFatorPeloEnsinoMedio(string formaDeConclusao) => new()

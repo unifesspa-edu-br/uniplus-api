@@ -31,7 +31,7 @@ public sealed class ModeloFormularioEstruturaECicloDeVidaTests
     [Fact(DisplayName = "Todo item do modelo está numa seção")]
     public void ItemSemSecao_Recusa()
     {
-        Result<ModeloFormulario> modelo = Criar(FinalidadeFormulario.Habilitacao, Conteudo([Item("CERTIFICADO_EMITIDO", 0, etapa: null)]));
+        Result<ModeloFormulario> modelo = Criar(FinalidadeFormulario.Habilitacao, Conteudo([Item("CERTIFICADO_EMITIDO", 0, pagina: null)]));
 
         modelo.Errors.Should().ContainSingle().Which.Error.Code.Should().Be(EstruturaFormularioErrorCodes.ItemForaDeSecao);
     }
@@ -68,15 +68,15 @@ public sealed class ModeloFormularioEstruturaECicloDeVidaTests
         modelo.Errors.Should().ContainSingle().Which.Error.Code.Should().Be(GrafoFormularioErrorCodes.FatoDuplicado);
     }
 
-    [Fact(DisplayName = "Etapa cujo código só difere por espaço repete o código")]
-    public void EtapaRepetidaPorEspaco_Recusa()
+    [Fact(DisplayName = "Pagina cujo código só difere por espaço repete o código")]
+    public void PaginaRepetidaPorEspaco_Recusa()
     {
-        EtapaDoModelo outraDados = Dados with { Codigo = " DADOS", Ordem = 2 };
+        PaginaDoModelo outraDados = Dados with { Codigo = " DADOS", Ordem = 2 };
 
         Result<ModeloFormulario> modelo = Criar(
             FinalidadeFormulario.Habilitacao, new ConteudoDoModelo("Habilitação", [Dados, outraDados, Revisao with { Ordem = 3 }], [Item("CERTIFICADO", 0)], [], [], []));
 
-        modelo.Errors.Should().ContainSingle().Which.Error.Code.Should().Be(EstruturaFormularioErrorCodes.EtapaCodigoDuplicado);
+        modelo.Errors.Should().ContainSingle().Which.Error.Code.Should().Be(EstruturaFormularioErrorCodes.PaginaCodigoDuplicado);
     }
 
     [Fact(DisplayName = "A recusa de restrição aponta a posição em que ela veio")]

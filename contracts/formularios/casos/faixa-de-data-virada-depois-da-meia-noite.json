@@ -1,7 +1,7 @@
 {
   "descricao": "À meia-noite de 11/10/2026 em Belém (03h de 11/10 em UTC) o dia do envio já é 11/10: a data de 11/10 atende ao limite de até o envio.",
   "regras": {
-    "etapas": [
+    "paginas": [
       {
         "codigo": "DADOS",
         "exibicao": null,
@@ -52,7 +52,7 @@
     "DATA_HOJE": "2026-10-11"
   },
   "grupos": {},
-  "etapasConcluidas": [],
+  "paginasConcluidas": [],
   "pressupostos": {},
   "envio": {
     "instante": "2026-10-11T03:00:00Z",

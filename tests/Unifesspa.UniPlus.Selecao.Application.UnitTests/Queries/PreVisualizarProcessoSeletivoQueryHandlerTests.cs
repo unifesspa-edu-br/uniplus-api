@@ -232,9 +232,9 @@ public sealed class PreVisualizarProcessoSeletivoQueryHandlerTests
                 ? null
                 : new Dictionary<string, IReadOnlyList<OcorrenciaSimuladaInput>>(StringComparer.Ordinal) { [Composicao] = membros },
             [
-                new EtapaConcluidaInput("INSCRICAO", ConjuntoBasicoDaInscricao.CodigoDaSecao),
-                new EtapaConcluidaInput("INSCRICAO", FormularioDeTeste.Secao),
-                new EtapaConcluidaInput("HABILITACAO", FormularioDeTeste.Secao),
+                new PaginaConcluidaInput("INSCRICAO", ConjuntoBasicoDaInscricao.CodigoDaSecao),
+                new PaginaConcluidaInput("INSCRICAO", FormularioDeTeste.Secao),
+                new PaginaConcluidaInput("HABILITACAO", FormularioDeTeste.Secao),
             ],
             new Dictionary<string, JsonElement>(StringComparer.Ordinal) { ["MODALIDADE_CONVOCACAO"] = Json(convocacao) });
 
@@ -260,7 +260,7 @@ public sealed class PreVisualizarProcessoSeletivoQueryHandlerTests
     private static ProcessoSeletivo ProcessoDeMedicina(int minimoDaComposicao = 1)
     {
         ProcessoSeletivo processo = ProcessoSeletivoConformeBuilder.Criar("PS Medicina 2027", out Guid fase);
-        processo.DefinirFormulario(FinalidadeFormulario.Habilitacao, null, null, FormularioDeTeste.Etapas(FinalidadeFormulario.Habilitacao))
+        processo.DefinirFormulario(FinalidadeFormulario.Habilitacao, null, null, FormularioDeTeste.Paginas(FinalidadeFormulario.Habilitacao))
             .IsSuccess.Should().BeTrue();
         processo.DefinirFatosColetados(FinalidadeFormulario.Habilitacao, [], [ComposicaoFamiliar(minimoDaComposicao)]).IsSuccess.Should().BeTrue();
         processo.DefinirDistribuicaoVagas(

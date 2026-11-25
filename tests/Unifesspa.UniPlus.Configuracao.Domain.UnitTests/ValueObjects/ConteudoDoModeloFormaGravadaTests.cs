@@ -22,19 +22,19 @@ public sealed class ConteudoDoModeloFormaGravadaTests
         (Vazio with { Titulo = "   " }).NaFormaGravada().Titulo.Should().BeNull();
     }
 
-    [Fact(DisplayName = "Os códigos de etapa, item, grupo e campo de grupo ficam aparados e em NFC")]
+    [Fact(DisplayName = "Os códigos de pagina, item, grupo e campo de grupo ficam aparados e em NFC")]
     public void NaFormaGravada_CodigosDeEstruturaAparadosEmNfc()
     {
         ConteudoDoModelo conteudo = Vazio with
         {
-            Etapas = [Etapa($" ETAPA{CComCedilhaDecomposto} ")],
+            Paginas = [Pagina($" PAGINA{CComCedilhaDecomposto} ")],
             Itens = [Item($" ITEM{CComCedilhaDecomposto}")],
             Grupos = [Grupo($"GRUPO{CComCedilhaDecomposto}", 0, null, Item($"CAMPO{CComCedilhaDecomposto}"))],
         };
 
         ConteudoDoModelo gravado = conteudo.NaFormaGravada();
 
-        gravado.Etapas.Single().Codigo.Should().Be($"ETAPA{CComCedilha}");
+        gravado.Paginas.Single().Codigo.Should().Be($"PAGINA{CComCedilha}");
         gravado.Itens.Single().FatoCodigo.Should().Be($"ITEM{CComCedilha}");
         gravado.Grupos.Single().Codigo.Should().Be($"GRUPO{CComCedilha}");
         gravado.Grupos.Single().Subitens.Single().FatoCodigo.Should().Be($"CAMPO{CComCedilha}");
@@ -105,15 +105,15 @@ public sealed class ConteudoDoModeloFormaGravadaTests
         documentos[1].Requisitos.Should().Be(semFase);
     }
 
-    [Fact(DisplayName = "Rótulo, título de etapa e texto opcional ficam aparados, e o texto opcional em branco fica ausente")]
+    [Fact(DisplayName = "Rótulo, título de pagina e texto opcional ficam aparados, e o texto opcional em branco fica ausente")]
     public void NaFormaGravada_AparaOsTextos()
     {
         ItemDoModelo campo = (Item("RENDA").ComRotulo("  Renda  ").ComAjuda("  Informe  ")) with { Formato = "   " };
 
-        ConteudoDoModelo gravado = (Vazio with { Etapas = [Etapa() with { Titulo = " Dados ", Aviso = "  " }], Itens = [campo] }).NaFormaGravada();
+        ConteudoDoModelo gravado = (Vazio with { Paginas = [Pagina() with { Titulo = " Dados ", Aviso = "  " }], Itens = [campo] }).NaFormaGravada();
 
-        gravado.Etapas.Single().Titulo.Should().Be("Dados");
-        gravado.Etapas.Single().Aviso.Should().BeNull();
+        gravado.Paginas.Single().Titulo.Should().Be("Dados");
+        gravado.Paginas.Single().Aviso.Should().BeNull();
         gravado.Itens.Single().Apresentacao.Rotulo.Should().Be("Renda");
         gravado.Itens.Single().Apresentacao.Ajuda.Should().Be("Informe");
         gravado.Itens.Single().Formato.Should().BeNull();
@@ -144,7 +144,7 @@ public sealed class ConteudoDoModeloFormaGravadaTests
 
         ConteudoDoModelo gravado = new ConteudoDoModelo(null, null!, [semRotulo], null!, null!, null!).NaFormaGravada();
 
-        gravado.Etapas.Should().BeEmpty();
+        gravado.Paginas.Should().BeEmpty();
         gravado.Termos.Should().BeEmpty();
         gravado.Pressupostos.Should().BeEmpty();
         gravado.Grupos.Should().BeEmpty();
@@ -173,19 +173,19 @@ public sealed class ConteudoDoModeloFormaGravadaTests
         gravado.Itens.Single().FatoCodigo.Should().Be("CERTIFICADO\uD800");
     }
 
-    [Fact(DisplayName = "Etapas, itens e termos ficam na ordem declarada")]
-    public void EmOrdem_EtapasItensETermos_OrdenaPelaOrdemDeclarada()
+    [Fact(DisplayName = "Paginas, itens e termos ficam na ordem declarada")]
+    public void EmOrdem_PaginasItensETermos_OrdenaPelaOrdemDeclarada()
     {
         ConteudoDoModelo conteudo = Vazio with
         {
-            Etapas = [Etapa("B", 1), Etapa("A", 0)],
+            Paginas = [Pagina("B", 1), Pagina("A", 0)],
             Itens = [Item("SEGUNDO", 1), Item("PRIMEIRO", 0)],
             Termos = [Termo("T2", 1), Termo("T1", 0)],
         };
 
         ConteudoDoModelo ordenado = conteudo.EmOrdem();
 
-        ordenado.Etapas.Select(static e => e.Codigo).Should().Equal("A", "B");
+        ordenado.Paginas.Select(static e => e.Codigo).Should().Equal("A", "B");
         ordenado.Itens.Select(static i => i.FatoCodigo).Should().Equal("PRIMEIRO", "SEGUNDO");
         ordenado.Termos.Select(static t => t.Codigo).Should().Equal("T1", "T2");
     }

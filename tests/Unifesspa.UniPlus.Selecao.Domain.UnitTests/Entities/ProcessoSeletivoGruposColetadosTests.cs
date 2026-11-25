@@ -112,14 +112,14 @@ public sealed class ProcessoSeletivoGruposColetadosTests
     }
 
     [Fact]
-    public void DefinirFormulario_EtapasSemASecaoDoGrupo_Recusa()
+    public void DefinirFormulario_PaginasSemASecaoDoGrupo_Recusa()
     {
         ProcessoSeletivo processo = NovoProcesso();
         processo.DefinirItens([], grupos: [Grupo("COMPOSICAO", 0, Campo("PARENTESCO", 0))]).IsSuccess.Should().BeTrue();
-        EtapaFormulario[] semADeDados =
+        PaginaDoFormulario[] semADeDados =
         [
-            FormularioDeTeste.Etapas()[0],
-            EtapaFormulario.Criar(new EtapaEstrutura("REVISAO", 1, TipoEtapaFormulario.Bloco, BlocoSistema.RevisaoEAceite), "Revisão", null, null).Value!,
+            FormularioDeTeste.Paginas()[0],
+            PaginaDoFormulario.Criar(new PaginaEstrutura("REVISAO", 1, TipoPaginaFormulario.Bloco, BlocoSistema.RevisaoEAceite), "Revisão", null, null).Value!,
         ];
 
         Result resultado = processo.DefinirFormulario(FinalidadeFormulario.Inscricao, null, null, semADeDados);
@@ -158,7 +158,7 @@ public sealed class ProcessoSeletivoGruposColetadosTests
         ProcessoSeletivo processo = NovoProcesso();
         processo.DefinirItens([], grupos: [Grupo("COMPOSICAO", 0, Campo("PARENTESCO", 0))]).IsSuccess.Should().BeTrue();
         CopiaDeModeloDeFormulario copia = new(
-            FinalidadeFormulario.Inscricao, "Formulário", FormularioDeTeste.Etapas(), [Item("RENDA", 0)], [], [], [], Guid.CreateVersion7(), "MODELO");
+            FinalidadeFormulario.Inscricao, "Formulário", FormularioDeTeste.Paginas(), [Item("RENDA", 0)], [], [], [], Guid.CreateVersion7(), "MODELO");
 
         processo.AplicarModeloDeFormulario(copia).IsSuccess.Should().BeTrue();
 
@@ -170,7 +170,7 @@ public sealed class ProcessoSeletivoGruposColetadosTests
     {
         ProcessoSeletivo processo = NovoProcesso();
         CopiaDeModeloDeFormulario copia = new(
-            FinalidadeFormulario.Inscricao, "Formulário", FormularioDeTeste.Etapas(), [Item("RENDA", 0)],
+            FinalidadeFormulario.Inscricao, "Formulário", FormularioDeTeste.Paginas(), [Item("RENDA", 0)],
             [Grupo("COMPOSICAO", 1, Campo("PARENTESCO", 0), Campo("MAIOR_IDADE", 1))], [], [], Guid.CreateVersion7(), "MODELO");
 
         processo.AplicarModeloDeFormulario(copia).IsSuccess.Should().BeTrue();
@@ -184,7 +184,7 @@ public sealed class ProcessoSeletivoGruposColetadosTests
     {
         ProcessoSeletivo processo = NovoProcesso();
         CopiaDeModeloDeFormulario copia = new(
-            FinalidadeFormulario.Inscricao, "Formulário", FormularioDeTeste.Etapas(), [Item("RENDA", 2, citado: "PARENTESCO")],
+            FinalidadeFormulario.Inscricao, "Formulário", FormularioDeTeste.Paginas(), [Item("RENDA", 2, citado: "PARENTESCO")],
             [Grupo("COMPOSICAO", 0, Campo("PARENTESCO", 0))], [], [], Guid.CreateVersion7(), "MODELO");
 
         processo.AplicarModeloDeFormulario(copia)
@@ -197,7 +197,7 @@ public sealed class ProcessoSeletivoGruposColetadosTests
         ProcessoSeletivo processo = NovoProcesso();
         processo.DefinirItens([Item("PARENTESCO", 0)]).IsSuccess.Should().BeTrue();
         CopiaDeModeloDeFormulario copia = new(
-            FinalidadeFormulario.Habilitacao, "Formulário", FormularioDeTeste.Etapas(), [],
+            FinalidadeFormulario.Habilitacao, "Formulário", FormularioDeTeste.Paginas(), [],
             [Grupo("COMPOSICAO", 0, Campo("PARENTESCO", 0))], [], [], Guid.CreateVersion7(), "MODELO");
 
         processo.AplicarModeloDeFormulario(copia)
@@ -213,7 +213,7 @@ public sealed class ProcessoSeletivoGruposColetadosTests
         processo.DefinirItens([], finalidade: FinalidadeFormulario.Habilitacao, grupos: [Grupo("COMPOSICAO", 0, Campo("PARENTESCO", 0))])
             .IsSuccess.Should().BeTrue();
         CopiaDeModeloDeFormulario copia = new(
-            FinalidadeFormulario.Inscricao, "Formulário", FormularioDeTeste.Etapas(), [Item(codigo, 0)], [], [], [], Guid.CreateVersion7(), "MODELO");
+            FinalidadeFormulario.Inscricao, "Formulário", FormularioDeTeste.Paginas(), [Item(codigo, 0)], [], [], [], Guid.CreateVersion7(), "MODELO");
 
         Result resultado = processo.AplicarModeloDeFormulario(copia);
 

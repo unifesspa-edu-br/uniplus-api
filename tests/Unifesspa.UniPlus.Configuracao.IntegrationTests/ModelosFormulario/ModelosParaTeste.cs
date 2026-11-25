@@ -64,10 +64,10 @@ internal static class ModelosParaTeste
             codigo,
             finalidade,
             descritivo = new { nome, descricao = (string?)null, tipoProcessoCodigo = (string?)null },
-            conteudo = new { titulo, etapas = Etapas(), itens },
+            conteudo = new { titulo, paginas = Paginas(), itens },
         };
 
-    private static object[] Etapas() =>
+    private static object[] Paginas() =>
     [
         new { codigo = "DADOS", ordem = 0, tipo = "SECAO", bloco = (string?)null, apresentacao = new { titulo = "Dados", descricao = (string?)null, aviso = (string?)null } },
         new { codigo = "REVISAO", ordem = 1, tipo = "BLOCO", bloco = "REVISAO_E_ACEITE", apresentacao = new { titulo = "Revisão", descricao = (string?)null, aviso = (string?)null } },
@@ -79,7 +79,7 @@ internal static class ModelosParaTeste
         {
             fatoCodigo,
             ordem,
-            etapaCodigo = "DADOS",
+            paginaCodigo = "DADOS",
             apresentacao = new { rotulo, tipoDeCampo },
             regras = new { exibicao, obrigatoriedade = new { tipo = obrigatoriedade } },
         };
@@ -89,7 +89,7 @@ internal static class ModelosParaTeste
         {
             fatoCodigo,
             ordem,
-            etapaCodigo = "DADOS",
+            paginaCodigo = "DADOS",
             apresentacao = new { rotulo, tipoDeCampo },
             regras = new { exibicao = (object?)null, obrigatoriedade = new { tipo = "SEMPRE" }, restricoes },
         };

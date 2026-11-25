@@ -19,13 +19,13 @@ using Unifesspa.UniPlus.Regras.Serializacao;
 using Unifesspa.UniPlus.Regras.ValueObjects;
 
 /// <summary>
-/// As respostas simuladas da pré-visualização: as do formulário, por fato; as etapas dadas como
+/// As respostas simuladas da pré-visualização: as do formulário, por fato; as páginas dadas como
 /// concluídas; os pressupostos, os fatos da inscrição que o modelo cita; e as ocorrências de cada grupo
 /// repetível, pela identidade de cada uma.
 /// </summary>
 public sealed record PreVisualizacaoDoModeloInput(
     IReadOnlyDictionary<string, JsonElement>? Respostas,
-    IReadOnlyList<string>? EtapasConcluidas,
+    IReadOnlyList<string>? PaginasConcluidas,
     IReadOnlyDictionary<string, JsonElement>? Pressupostos,
     IReadOnlyDictionary<string, IReadOnlyList<OcorrenciaRecebida>?>? Grupos = null);
 
@@ -86,7 +86,7 @@ public static class PreVisualizarModeloFormularioQueryHandler
             simulacao.Definicao(),
             new EntradaAvaliacaoFormulario(
                 simulacao.RespostasDentroDaOferta(entrada.Respostas ?? new Dictionary<string, JsonElement>()),
-                new HashSet<string>(entrada.EtapasConcluidas ?? [], StringComparer.Ordinal),
+                new HashSet<string>(entrada.PaginasConcluidas ?? [], StringComparer.Ordinal),
                 RespostaDeCampo.ComoFatosConhecidos(entrada.Pressupostos),
                 Envio: null,
                 OcorrenciasDentroDaOferta(simulacao, ocorrencias)));
@@ -105,12 +105,12 @@ public static class PreVisualizarModeloFormularioQueryHandler
             [.. avaliacao.Itens.Select(i => Item(i, itemPorFato))],
             [.. avaliacao.Termos.Select(static t => new TermoPreVisualizadoDto(t.Codigo, t.Visivel.Codigo(), t.Obrigatorio.Codigo()))],
             [.. avaliacao.Grupos.Select(g => Grupo(g, itemPorFato))],
-            [.. avaliacao.Etapas.Select(static e => new SecaoPreVisualizadaDto(e.Codigo, e.Visivel.Codigo()))]);
+            [.. avaliacao.Paginas.Select(static e => new SecaoPreVisualizadaDto(e.Codigo, e.Visivel.Codigo()))]);
     }
 
     private static GrupoPreVisualizadoDto Grupo(AvaliacaoGrupo grupo, Dictionary<string, ItemDoModelo> itemPorFato) => new(
         grupo.Codigo,
-        grupo.EtapaCodigo,
+        grupo.PaginaCodigo,
         grupo.Visivel.Codigo(),
         grupo.Obrigatorio.Codigo(),
         grupo.ContagemValida,
@@ -119,7 +119,7 @@ public static class PreVisualizarModeloFormularioQueryHandler
 
     private static ItemPreVisualizadoDto Item(AvaliacaoItem item, Dictionary<string, ItemDoModelo> itemPorFato) => new(
         item.FatoCodigo,
-        item.EtapaCodigo,
+        item.PaginaCodigo,
         item.Visivel.Codigo(),
         item.Obrigatorio.Codigo(),
         [.. item.RestricoesVioladas.Select(static r => r.Tipo.Codigo())],

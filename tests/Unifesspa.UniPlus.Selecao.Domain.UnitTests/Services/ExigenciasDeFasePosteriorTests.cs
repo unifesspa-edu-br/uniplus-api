@@ -151,7 +151,7 @@ public sealed class ExigenciasDeFasePosteriorTests
     {
         Dictionary<FinalidadeFormulario, DocumentoExigido> documentos = Finalidades.ToDictionary(static f => f, f => ExigenciaDoFato(fases[0], FatoDe(f)));
         ConfiguracaoAvaliavel configuracao = new(
-            DefinicaoComUmaEtapaPorFinalidade(),
+            DefinicaoComUmaPaginaPorFinalidade(),
             new Dictionary<string, IReadOnlySet<string>>(StringComparer.Ordinal),
             RegrasDeComprovacaoDaVersao.DaConfiguracaoPublicada([.. Finalidades.Select((f, indice) => RegraDeComprovacao.CriarRegraDeDocumento(documentos[f], indice).Value!)]),
             [],
@@ -163,10 +163,10 @@ public sealed class ExigenciasDeFasePosteriorTests
         return (configuracao, documentos.ToDictionary(static d => d.Key, static d => d.Value.Id));
     }
 
-    private static DefinicaoFormulario DefinicaoComUmaEtapaPorFinalidade() =>
+    private static DefinicaoFormulario DefinicaoComUmaPaginaPorFinalidade() =>
         new(
-            [.. Finalidades.Select(static f => new DefinicaoEtapa(
-                DefinicaoDoProcesso.CodigoDaEtapa(f, Secao), null, [new DefinicaoItem(FatoDe(f), null, Obrigatoriedade.Sempre, [])]))],
+            [.. Finalidades.Select(static f => new DefinicaoPagina(
+                DefinicaoDoProcesso.CodigoDaPagina(f, Secao), null, [new DefinicaoItem(FatoDe(f), null, Obrigatoriedade.Sempre, [])]))],
             [],
             []);
 
@@ -185,7 +185,7 @@ public sealed class ExigenciasDeFasePosteriorTests
     private static FormularioProcesso Formulario(FinalidadeFormulario finalidade, Guid faseId) =>
         FormularioProcesso.Criar(
             finalidade, faseId, null,
-            [EtapaFormulario.Criar(new EtapaEstrutura("REVISAO", 0, TipoEtapaFormulario.Bloco, BlocoSistema.RevisaoEAceite), "Revisão e aceite", null, null).Value!]).Value!;
+            [PaginaDoFormulario.Criar(new PaginaEstrutura("REVISAO", 0, TipoPaginaFormulario.Bloco, BlocoSistema.RevisaoEAceite), "Revisão e aceite", null, null).Value!]).Value!;
 
     private static FaseCronograma FaseReidratada(Guid id, int ordem) =>
         FaseCronograma.Reidratar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("fase").Value!,

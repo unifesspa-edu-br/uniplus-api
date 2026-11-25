@@ -23,9 +23,9 @@ public sealed class ConferenciaDoConteudoDoModeloGrafoTests
 {
     private static readonly Dictionary<string, IReadOnlyCollection<string>> SemDerivacoes = new(StringComparer.Ordinal);
 
-    private static readonly EtapaDoModelo Revisao = new("REVISAO", 1, TipoEtapaFormulario.Bloco, BlocoSistema.RevisaoEAceite, "Revisão", null, null, null);
+    private static readonly PaginaDoModelo Revisao = new("REVISAO", 1, TipoPaginaFormulario.Bloco, BlocoSistema.RevisaoEAceite, "Revisão", null, null, null);
 
-    private static ConteudoDoModelo Conteudo(params ItemDoModelo[] itens) => new("Habilitação", [Etapa(), Revisao], itens, [], [], []);
+    private static ConteudoDoModelo Conteudo(params ItemDoModelo[] itens) => new("Habilitação", [Pagina(), Revisao], itens, [], [], []);
 
     private static List<FieldError> Conferir(
         ConteudoDoModelo conteudo,
@@ -132,7 +132,7 @@ public sealed class ConferenciaDoConteudoDoModeloGrafoTests
     [Fact(DisplayName = "O grafo só é conferido depois da estrutura: com o item fora de seção, a citação desconhecida não é lida")]
     public void Grafo_NaoEConferidoComEstruturaRecusada()
     {
-        ConteudoDoModelo conteudo = Conteudo(Item("CERTIFICADO", 0, Quando("OUTRO_FATO")) with { EtapaCodigo = null });
+        ConteudoDoModelo conteudo = Conteudo(Item("CERTIFICADO", 0, Quando("OUTRO_FATO")) with { PaginaCodigo = null });
 
         Conferir(conteudo).Should().ContainSingle().Which.Error.Code.Should().Be(EstruturaFormularioErrorCodes.ItemForaDeSecao);
     }

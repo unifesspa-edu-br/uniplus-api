@@ -249,7 +249,7 @@ public static class ProjecaoDoFormularioDaVersao
         out List<ExigenciaDocumentalCertameDto>? comprovacao)
     {
         comprovacao = null;
-        return !formulario.Etapas.Any(static e => e.Bloco == BlocoSistema.ComprovacaoDocumental)
+        return !formulario.Paginas.Any(static e => e.Bloco == BlocoSistema.ComprovacaoDocumental)
             || TentarExigenciasDaFase(lida, formulario.FaseId, finalidade, acervo, out comprovacao);
     }
 

@@ -2210,7 +2210,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"faseId\": \"{{fase_inscricao_id}}\",\n  \"titulo\": \"Formulário de Inscrição (smoke)\",\n  \"etapas\": [\n    {\n      \"codigo\": \"DADOS\",\n      \"ordem\": 0,\n      \"tipo\": \"SECAO\",\n      \"bloco\": null,\n      \"titulo\": \"Dados do candidato\"\n    },\n    {\n      \"codigo\": \"REVISAO\",\n      \"ordem\": 1,\n      \"tipo\": \"BLOCO\",\n      \"bloco\": \"REVISAO_E_ACEITE\",\n      \"titulo\": \"Revisão e aceite\"\n    }\n  ]\n}",
+              "raw": "{\n  \"faseId\": \"{{fase_inscricao_id}}\",\n  \"titulo\": \"Formulário de Inscrição (smoke)\",\n  \"paginas\": [\n    {\n      \"codigo\": \"DADOS\",\n      \"ordem\": 0,\n      \"tipo\": \"SECAO\",\n      \"bloco\": null,\n      \"titulo\": \"Dados do candidato\"\n    },\n    {\n      \"codigo\": \"REVISAO\",\n      \"ordem\": 1,\n      \"tipo\": \"BLOCO\",\n      \"bloco\": \"REVISAO_E_ACEITE\",\n      \"titulo\": \"Revisão e aceite\"\n    }\n  ]\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -2275,7 +2275,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"itens\": [\n    {\n      \"fatoCodigo\": \"BAIXA_RENDA\",\n      \"ordem\": 1,\n      \"rotulo\": \"Baixa renda\",\n      \"tipoDeCampo\": \"SIM_OU_NAO\",\n      \"obrigatoriedade\": \"NUNCA\",\n      \"precondicao\": [\n        [\n          {\n            \"fato\": \"COR_RACA\",\n            \"operador\": \"IGUAL\",\n            \"valor\": \"PRETA\"\n          }\n        ]\n      ],\n      \"etapaCodigo\": \"DADOS\"\n    },\n    {\n      \"fatoCodigo\": \"CONDICAO_ATENDIMENTO\",\n      \"ordem\": 2,\n      \"rotulo\": \"Condição de atendimento especializado\",\n      \"tipoDeCampo\": \"ESCOLHA_MULTIPLA\",\n      \"obrigatoriedade\": \"NUNCA\",\n      \"precondicao\": null,\n      \"etapaCodigo\": \"DADOS\"\n    }\n  ],\n  \"grupos\": [\n    {\n      \"codigo\": \"COMPOSICAO_FAMILIAR\",\n      \"ordem\": 5,\n      \"rotulo\": \"Composição familiar\",\n      \"etapaCodigo\": \"DADOS\",\n      \"minimo\": 1,\n      \"maximo\": 10,\n      \"obrigatoriedade\": \"SEMPRE\",\n      \"subitens\": [\n        {\n          \"fatoCodigo\": \"MAIOR_IDADE\",\n          \"ordem\": 0,\n          \"rotulo\": \"Maior de idade\",\n          \"tipoDeCampo\": \"SIM_OU_NAO\",\n          \"obrigatoriedade\": \"SEMPRE\"\n        }\n      ]\n    }\n  ]\n}",
+              "raw": "{\n  \"itens\": [\n    {\n      \"fatoCodigo\": \"BAIXA_RENDA\",\n      \"ordem\": 1,\n      \"rotulo\": \"Baixa renda\",\n      \"tipoDeCampo\": \"SIM_OU_NAO\",\n      \"obrigatoriedade\": \"NUNCA\",\n      \"precondicao\": [\n        [\n          {\n            \"fato\": \"COR_RACA\",\n            \"operador\": \"IGUAL\",\n            \"valor\": \"PRETA\"\n          }\n        ]\n      ],\n      \"paginaCodigo\": \"DADOS\"\n    },\n    {\n      \"fatoCodigo\": \"CONDICAO_ATENDIMENTO\",\n      \"ordem\": 2,\n      \"rotulo\": \"Condição de atendimento especializado\",\n      \"tipoDeCampo\": \"ESCOLHA_MULTIPLA\",\n      \"obrigatoriedade\": \"NUNCA\",\n      \"precondicao\": null,\n      \"paginaCodigo\": \"DADOS\"\n    }\n  ],\n  \"grupos\": [\n    {\n      \"codigo\": \"COMPOSICAO_FAMILIAR\",\n      \"ordem\": 5,\n      \"rotulo\": \"Composição familiar\",\n      \"paginaCodigo\": \"DADOS\",\n      \"minimo\": 1,\n      \"maximo\": 10,\n      \"obrigatoriedade\": \"SEMPRE\",\n      \"subitens\": [\n        {\n          \"fatoCodigo\": \"MAIOR_IDADE\",\n          \"ordem\": 0,\n          \"rotulo\": \"Maior de idade\",\n          \"tipoDeCampo\": \"SIM_OU_NAO\",\n          \"obrigatoriedade\": \"SEMPRE\"\n        }\n      ]\n    }\n  ]\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -2784,9 +2784,9 @@
                   "});",
                   "pm.test('O formulário de inscrição começa pela seção dos dados básicos, com os itens dela', () => {",
                   "  const inscricao = pm.response.json().formularios.find(f => f.finalidade === 'INSCRICAO');",
-                  "  const primeira = inscricao.etapas.reduce((a, b) => (a.ordem <= b.ordem ? a : b));",
+                  "  const primeira = inscricao.paginas.reduce((a, b) => (a.ordem <= b.ordem ? a : b));",
                   "  pm.expect(primeira.codigo).to.eql('DADOS_BASICOS');",
-                  "  const basicos = inscricao.fatosColetados.filter(f => f.etapaCodigo === 'DADOS_BASICOS').map(f => f.fatoCodigo);",
+                  "  const basicos = inscricao.fatosColetados.filter(f => f.paginaCodigo === 'DADOS_BASICOS').map(f => f.fatoCodigo);",
                   "  pm.expect(basicos).to.include.members(['NOME', 'CPF', 'NACIONALIDADE', 'DATA_NASCIMENTO', 'COR_RACA', 'ENDERECO_RESIDENCIAL']);",
                   "  pm.expect(basicos).to.have.lengthOf(22);",
                   "});"
@@ -3581,7 +3581,7 @@
                   "  pm.response.to.have.status(200);",
                   "  const j = pm.response.json();",
                   "  pm.expect(j.finalidade).to.eql('INSCRICAO');",
-                  "  pm.expect(j.regras.etapas).to.be.an('array');",
+                  "  pm.expect(j.regras.paginas).to.be.an('array');",
                   "  pm.expect(j.fatosColetados).to.be.an('array');",
                   "  pm.expect(j.comprovacaoDocumental).to.eql(null);",
                   "});"
@@ -3858,7 +3858,7 @@
                   "  if (pm.response.code === 200) {",
                   "    const j = pm.response.json();",
                   "    pm.expect(j.finalidade).to.eql('INSCRICAO');",
-                  "    pm.expect(j.regras.etapas).to.be.an('array');",
+                  "    pm.expect(j.regras.paginas).to.be.an('array');",
                   "    pm.expect(j.pressupostos).to.be.an('array');",
                   "    j.fatosColetados.forEach(f => pm.expect(f).to.not.have.property('obrigatoriedade'));",
                   "  }",
@@ -5133,7 +5133,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"faseId\": \"{{regras_fase_inscricao_id_p2}}\",\n  \"titulo\": \"Formulário de inscrição (regras de comprovação)\",\n  \"etapas\": [\n    {\n      \"codigo\": \"DADOS\",\n      \"ordem\": 0,\n      \"tipo\": \"SECAO\",\n      \"bloco\": null,\n      \"titulo\": \"Dados do candidato\"\n    },\n    {\n      \"codigo\": \"REVISAO\",\n      \"ordem\": 1,\n      \"tipo\": \"BLOCO\",\n      \"bloco\": \"REVISAO_E_ACEITE\",\n      \"titulo\": \"Revisão e aceite\"\n    }\n  ]\n}",
+              "raw": "{\n  \"faseId\": \"{{regras_fase_inscricao_id_p2}}\",\n  \"titulo\": \"Formulário de inscrição (regras de comprovação)\",\n  \"paginas\": [\n    {\n      \"codigo\": \"DADOS\",\n      \"ordem\": 0,\n      \"tipo\": \"SECAO\",\n      \"bloco\": null,\n      \"titulo\": \"Dados do candidato\"\n    },\n    {\n      \"codigo\": \"REVISAO\",\n      \"ordem\": 1,\n      \"tipo\": \"BLOCO\",\n      \"bloco\": \"REVISAO_E_ACEITE\",\n      \"titulo\": \"Revisão e aceite\"\n    }\n  ]\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -5174,7 +5174,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"itens\": [],\n  \"grupos\": [\n    {\n      \"codigo\": \"COMPOSICAO_FAMILIAR\",\n      \"ordem\": 0,\n      \"rotulo\": \"Composição familiar\",\n      \"etapaCodigo\": \"DADOS\",\n      \"minimo\": 1,\n      \"maximo\": 10,\n      \"obrigatoriedade\": \"SEMPRE\",\n      \"subitens\": [\n        {\n          \"fatoCodigo\": \"MAIOR_IDADE\",\n          \"ordem\": 0,\n          \"rotulo\": \"Maior de idade\",\n          \"tipoDeCampo\": \"SIM_OU_NAO\",\n          \"obrigatoriedade\": \"SEMPRE\"\n        },\n        {\n          \"fatoCodigo\": \"SEM_RENDA\",\n          \"ordem\": 1,\n          \"rotulo\": \"Sem renda\",\n          \"tipoDeCampo\": \"SIM_OU_NAO\",\n          \"obrigatoriedade\": \"SEMPRE\"\n        },\n        {\n          \"fatoCodigo\": \"SOB_GUARDA\",\n          \"ordem\": 2,\n          \"rotulo\": \"Sob guarda\",\n          \"tipoDeCampo\": \"SIM_OU_NAO\",\n          \"obrigatoriedade\": \"SEMPRE\"\n        }\n      ]\n    }\n  ]\n}",
+              "raw": "{\n  \"itens\": [],\n  \"grupos\": [\n    {\n      \"codigo\": \"COMPOSICAO_FAMILIAR\",\n      \"ordem\": 0,\n      \"rotulo\": \"Composição familiar\",\n      \"paginaCodigo\": \"DADOS\",\n      \"minimo\": 1,\n      \"maximo\": 10,\n      \"obrigatoriedade\": \"SEMPRE\",\n      \"subitens\": [\n        {\n          \"fatoCodigo\": \"MAIOR_IDADE\",\n          \"ordem\": 0,\n          \"rotulo\": \"Maior de idade\",\n          \"tipoDeCampo\": \"SIM_OU_NAO\",\n          \"obrigatoriedade\": \"SEMPRE\"\n        },\n        {\n          \"fatoCodigo\": \"SEM_RENDA\",\n          \"ordem\": 1,\n          \"rotulo\": \"Sem renda\",\n          \"tipoDeCampo\": \"SIM_OU_NAO\",\n          \"obrigatoriedade\": \"SEMPRE\"\n        },\n        {\n          \"fatoCodigo\": \"SOB_GUARDA\",\n          \"ordem\": 2,\n          \"rotulo\": \"Sob guarda\",\n          \"tipoDeCampo\": \"SIM_OU_NAO\",\n          \"obrigatoriedade\": \"SEMPRE\"\n        }\n      ]\n    }\n  ]\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -5751,7 +5751,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"faseId\": \"{{regras_fase_inscricao_id_p3}}\",\n  \"titulo\": \"Formulário de inscrição (regras de comprovação)\",\n  \"etapas\": [\n    {\n      \"codigo\": \"DADOS\",\n      \"ordem\": 0,\n      \"tipo\": \"SECAO\",\n      \"bloco\": null,\n      \"titulo\": \"Dados do candidato\"\n    },\n    {\n      \"codigo\": \"REVISAO\",\n      \"ordem\": 1,\n      \"tipo\": \"BLOCO\",\n      \"bloco\": \"REVISAO_E_ACEITE\",\n      \"titulo\": \"Revisão e aceite\"\n    }\n  ]\n}",
+              "raw": "{\n  \"faseId\": \"{{regras_fase_inscricao_id_p3}}\",\n  \"titulo\": \"Formulário de inscrição (regras de comprovação)\",\n  \"paginas\": [\n    {\n      \"codigo\": \"DADOS\",\n      \"ordem\": 0,\n      \"tipo\": \"SECAO\",\n      \"bloco\": null,\n      \"titulo\": \"Dados do candidato\"\n    },\n    {\n      \"codigo\": \"REVISAO\",\n      \"ordem\": 1,\n      \"tipo\": \"BLOCO\",\n      \"bloco\": \"REVISAO_E_ACEITE\",\n      \"titulo\": \"Revisão e aceite\"\n    }\n  ]\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -5792,7 +5792,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"itens\": [],\n  \"grupos\": [\n    {\n      \"codigo\": \"COMPOSICAO_FAMILIAR\",\n      \"ordem\": 0,\n      \"rotulo\": \"Composição familiar\",\n      \"etapaCodigo\": \"DADOS\",\n      \"minimo\": 1,\n      \"maximo\": 10,\n      \"obrigatoriedade\": \"SEMPRE\",\n      \"subitens\": [\n        {\n          \"fatoCodigo\": \"MAIOR_IDADE\",\n          \"ordem\": 0,\n          \"rotulo\": \"Maior de idade\",\n          \"tipoDeCampo\": \"SIM_OU_NAO\",\n          \"obrigatoriedade\": \"SEMPRE\"\n        },\n        {\n          \"fatoCodigo\": \"SEM_RENDA\",\n          \"ordem\": 1,\n          \"rotulo\": \"Sem renda\",\n          \"tipoDeCampo\": \"SIM_OU_NAO\",\n          \"obrigatoriedade\": \"SEMPRE\"\n        },\n        {\n          \"fatoCodigo\": \"SOB_GUARDA\",\n          \"ordem\": 2,\n          \"rotulo\": \"Sob guarda\",\n          \"tipoDeCampo\": \"SIM_OU_NAO\",\n          \"obrigatoriedade\": \"SEMPRE\"\n        }\n      ]\n    }\n  ]\n}",
+              "raw": "{\n  \"itens\": [],\n  \"grupos\": [\n    {\n      \"codigo\": \"COMPOSICAO_FAMILIAR\",\n      \"ordem\": 0,\n      \"rotulo\": \"Composição familiar\",\n      \"paginaCodigo\": \"DADOS\",\n      \"minimo\": 1,\n      \"maximo\": 10,\n      \"obrigatoriedade\": \"SEMPRE\",\n      \"subitens\": [\n        {\n          \"fatoCodigo\": \"MAIOR_IDADE\",\n          \"ordem\": 0,\n          \"rotulo\": \"Maior de idade\",\n          \"tipoDeCampo\": \"SIM_OU_NAO\",\n          \"obrigatoriedade\": \"SEMPRE\"\n        },\n        {\n          \"fatoCodigo\": \"SEM_RENDA\",\n          \"ordem\": 1,\n          \"rotulo\": \"Sem renda\",\n          \"tipoDeCampo\": \"SIM_OU_NAO\",\n          \"obrigatoriedade\": \"SEMPRE\"\n        },\n        {\n          \"fatoCodigo\": \"SOB_GUARDA\",\n          \"ordem\": 2,\n          \"rotulo\": \"Sob guarda\",\n          \"tipoDeCampo\": \"SIM_OU_NAO\",\n          \"obrigatoriedade\": \"SEMPRE\"\n        }\n      ]\n    }\n  ]\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -6362,7 +6362,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"faseId\": \"{{regras_fase_inscricao_id_p4}}\",\n  \"titulo\": \"Formulário de inscrição (regras de comprovação)\",\n  \"etapas\": [\n    {\n      \"codigo\": \"DADOS\",\n      \"ordem\": 0,\n      \"tipo\": \"SECAO\",\n      \"bloco\": null,\n      \"titulo\": \"Dados do candidato\"\n    },\n    {\n      \"codigo\": \"REVISAO\",\n      \"ordem\": 1,\n      \"tipo\": \"BLOCO\",\n      \"bloco\": \"REVISAO_E_ACEITE\",\n      \"titulo\": \"Revisão e aceite\"\n    }\n  ]\n}",
+              "raw": "{\n  \"faseId\": \"{{regras_fase_inscricao_id_p4}}\",\n  \"titulo\": \"Formulário de inscrição (regras de comprovação)\",\n  \"paginas\": [\n    {\n      \"codigo\": \"DADOS\",\n      \"ordem\": 0,\n      \"tipo\": \"SECAO\",\n      \"bloco\": null,\n      \"titulo\": \"Dados do candidato\"\n    },\n    {\n      \"codigo\": \"REVISAO\",\n      \"ordem\": 1,\n      \"tipo\": \"BLOCO\",\n      \"bloco\": \"REVISAO_E_ACEITE\",\n      \"titulo\": \"Revisão e aceite\"\n    }\n  ]\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -6403,7 +6403,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"itens\": [],\n  \"grupos\": [\n    {\n      \"codigo\": \"COMPOSICAO_FAMILIAR\",\n      \"ordem\": 0,\n      \"rotulo\": \"Composição familiar\",\n      \"etapaCodigo\": \"DADOS\",\n      \"minimo\": 1,\n      \"maximo\": 10,\n      \"obrigatoriedade\": \"SEMPRE\",\n      \"subitens\": [\n        {\n          \"fatoCodigo\": \"MAIOR_IDADE\",\n          \"ordem\": 0,\n          \"rotulo\": \"Maior de idade\",\n          \"tipoDeCampo\": \"SIM_OU_NAO\",\n          \"obrigatoriedade\": \"SEMPRE\"\n        },\n        {\n          \"fatoCodigo\": \"SEM_RENDA\",\n          \"ordem\": 1,\n          \"rotulo\": \"Sem renda\",\n          \"tipoDeCampo\": \"SIM_OU_NAO\",\n          \"obrigatoriedade\": \"SEMPRE\"\n        },\n        {\n          \"fatoCodigo\": \"SOB_GUARDA\",\n          \"ordem\": 2,\n          \"rotulo\": \"Sob guarda\",\n          \"tipoDeCampo\": \"SIM_OU_NAO\",\n          \"obrigatoriedade\": \"SEMPRE\"\n        }\n      ]\n    }\n  ]\n}",
+              "raw": "{\n  \"itens\": [],\n  \"grupos\": [\n    {\n      \"codigo\": \"COMPOSICAO_FAMILIAR\",\n      \"ordem\": 0,\n      \"rotulo\": \"Composição familiar\",\n      \"paginaCodigo\": \"DADOS\",\n      \"minimo\": 1,\n      \"maximo\": 10,\n      \"obrigatoriedade\": \"SEMPRE\",\n      \"subitens\": [\n        {\n          \"fatoCodigo\": \"MAIOR_IDADE\",\n          \"ordem\": 0,\n          \"rotulo\": \"Maior de idade\",\n          \"tipoDeCampo\": \"SIM_OU_NAO\",\n          \"obrigatoriedade\": \"SEMPRE\"\n        },\n        {\n          \"fatoCodigo\": \"SEM_RENDA\",\n          \"ordem\": 1,\n          \"rotulo\": \"Sem renda\",\n          \"tipoDeCampo\": \"SIM_OU_NAO\",\n          \"obrigatoriedade\": \"SEMPRE\"\n        },\n        {\n          \"fatoCodigo\": \"SOB_GUARDA\",\n          \"ordem\": 2,\n          \"rotulo\": \"Sob guarda\",\n          \"tipoDeCampo\": \"SIM_OU_NAO\",\n          \"obrigatoriedade\": \"SEMPRE\"\n        }\n      ]\n    }\n  ]\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -6977,7 +6977,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"faseId\": \"{{regras_fase_inscricao_id_p5}}\",\n  \"titulo\": \"Formulário de inscrição (regras de comprovação)\",\n  \"etapas\": [\n    {\n      \"codigo\": \"DADOS\",\n      \"ordem\": 0,\n      \"tipo\": \"SECAO\",\n      \"bloco\": null,\n      \"titulo\": \"Dados do candidato\"\n    },\n    {\n      \"codigo\": \"REVISAO\",\n      \"ordem\": 1,\n      \"tipo\": \"BLOCO\",\n      \"bloco\": \"REVISAO_E_ACEITE\",\n      \"titulo\": \"Revisão e aceite\"\n    }\n  ]\n}",
+              "raw": "{\n  \"faseId\": \"{{regras_fase_inscricao_id_p5}}\",\n  \"titulo\": \"Formulário de inscrição (regras de comprovação)\",\n  \"paginas\": [\n    {\n      \"codigo\": \"DADOS\",\n      \"ordem\": 0,\n      \"tipo\": \"SECAO\",\n      \"bloco\": null,\n      \"titulo\": \"Dados do candidato\"\n    },\n    {\n      \"codigo\": \"REVISAO\",\n      \"ordem\": 1,\n      \"tipo\": \"BLOCO\",\n      \"bloco\": \"REVISAO_E_ACEITE\",\n      \"titulo\": \"Revisão e aceite\"\n    }\n  ]\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -7059,7 +7059,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"itens\": [],\n  \"grupos\": [\n    {\n      \"codigo\": \"PESSOAS_JURIDICAS\",\n      \"ordem\": 0,\n      \"rotulo\": \"Pessoas jurídicas vinculadas\",\n      \"etapaCodigo\": \"DADOS\",\n      \"minimo\": 1,\n      \"maximo\": 10,\n      \"obrigatoriedade\": \"SEMPRE\",\n      \"subitens\": [\n        {\n          \"fatoCodigo\": \"CNPJ_PJ_VINCULADA\",\n          \"ordem\": 0,\n          \"rotulo\": \"CNPJ\",\n          \"tipoDeCampo\": \"TEXTO\",\n          \"obrigatoriedade\": \"SEMPRE\"\n        }\n      ]\n    }\n  ]\n}",
+              "raw": "{\n  \"itens\": [],\n  \"grupos\": [\n    {\n      \"codigo\": \"PESSOAS_JURIDICAS\",\n      \"ordem\": 0,\n      \"rotulo\": \"Pessoas jurídicas vinculadas\",\n      \"paginaCodigo\": \"DADOS\",\n      \"minimo\": 1,\n      \"maximo\": 10,\n      \"obrigatoriedade\": \"SEMPRE\",\n      \"subitens\": [\n        {\n          \"fatoCodigo\": \"CNPJ_PJ_VINCULADA\",\n          \"ordem\": 0,\n          \"rotulo\": \"CNPJ\",\n          \"tipoDeCampo\": \"TEXTO\",\n          \"obrigatoriedade\": \"SEMPRE\"\n        }\n      ]\n    }\n  ]\n}",
               "options": {
                 "raw": {
                   "language": "json"

@@ -43,15 +43,15 @@ public sealed class EnvelopeCodecRecusaVersaoEIntegridadeTests
         resultado.Error.Message.Should().Contain("unidadeResponsavel");
     }
 
-    [Fact(DisplayName = "Etapas do formulário fora da ordem crescente são recusadas: o encoder nunca as emite assim")]
-    public void EtapasForaDeOrdem_Recusa()
+    [Fact(DisplayName = "Páginas do formulário fora da ordem crescente são recusadas: o encoder nunca as emite assim")]
+    public void PaginasForaDeOrdem_Recusa()
     {
         Result<EnvelopeReidratado> resultado = ReidratarComEnvelopeAdulterado(envelope =>
         {
-            JsonArray etapas = envelope["formularios"]![0]!["paginas"]!.AsArray();
-            JsonNode primeira = etapas[0]!.DeepClone();
-            etapas.RemoveAt(0);
-            etapas.Add(primeira);
+            JsonArray paginas = envelope["formularios"]![0]!["paginas"]!.AsArray();
+            JsonNode primeira = paginas[0]!.DeepClone();
+            paginas.RemoveAt(0);
+            paginas.Add(primeira);
         });
 
         resultado.Error!.Code.Should().Be(ErrosCodecEnvelope.EnvelopeMalformado);

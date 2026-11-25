@@ -22,7 +22,7 @@ using Unifesspa.UniPlus.Regras.ValueObjects;
 /// <param name="formatos">O formato do campo de texto de cada fato, pelo código na forma gravada.</param>
 internal sealed class LeituraDoConteudo(IReadOnlyDictionary<string, string> formatos)
 {
-    private const string MensagemDaEntradaNula = "A etapa, o item, o grupo ou o termo veio nulo.";
+    private const string MensagemDaEntradaNula = "A página, o item, o grupo ou o termo veio nulo.";
 
     private readonly List<FieldError> _recusas = [];
 
@@ -30,12 +30,12 @@ internal sealed class LeituraDoConteudo(IReadOnlyDictionary<string, string> form
     public IReadOnlyList<FieldError> Recusas => _recusas;
 
     /// <summary>
-    /// Lê as partes na ordem dos argumentos, que é a ordem das recusas: etapas, itens, termos, grupos,
+    /// Lê as partes na ordem dos argumentos, que é a ordem das recusas: páginas, itens, termos, grupos,
     /// documentos e grupos de documentos.
     /// </summary>
     public ConteudoLido Ler(ConteudoDoModeloInput? entrada) => new(
         entrada?.Titulo,
-        Lista(entrada?.Etapas, "etapas", LerEtapa),
+        Lista(entrada?.Paginas, "paginas", LerPagina),
         Lista(entrada?.Itens, "itens", LerItem),
         Lista(entrada?.Termos, "termos", LerTermo),
         [.. (entrada?.Pressupostos ?? []).Select(static p => p ?? string.Empty)],
@@ -72,22 +72,22 @@ internal sealed class LeituraDoConteudo(IReadOnlyDictionary<string, string> form
         return ler(entrada, campo);
     }
 
-    private EtapaDoModelo? LerEtapa(EtapaFormularioInput entrada, string campo)
+    private PaginaDoModelo? LerPagina(PaginaDoFormularioInput entrada, string campo)
     {
         int recusasAntes = _recusas.Count;
         PredicadoDnf? exibicao = LerPredicado(entrada.Exibicao, $"{campo}.exibicao");
-        TipoEtapaFormulario? tipo = LerTipoDaEtapa(entrada.Tipo, $"{campo}.tipo");
-        BlocoSistema? bloco = LerBlocoDaEtapa(entrada.Bloco, $"{campo}.bloco");
+        TipoPaginaFormulario? tipo = LerTipoDaPagina(entrada.Tipo, $"{campo}.tipo");
+        BlocoSistema? bloco = LerBlocoDaPagina(entrada.Bloco, $"{campo}.bloco");
         return RecusouDesde(recusasAntes)
             ? null
-            : new EtapaDoModelo(
+            : new PaginaDoModelo(
                 entrada.Codigo, entrada.Ordem, tipo!.Value, bloco,
                 entrada.Apresentacao?.Titulo ?? string.Empty, entrada.Apresentacao?.Descricao, entrada.Apresentacao?.Aviso, exibicao);
     }
 
-    private TipoEtapaFormulario? LerTipoDaEtapa(string? codigo, string campo)
+    private TipoPaginaFormulario? LerTipoDaPagina(string? codigo, string campo)
     {
-        Result<TipoEtapaFormulario> tipo = TipoEBlocoDaEntrada.LerTipo(codigo);
+        Result<TipoPaginaFormulario> tipo = TipoEBlocoDaEntrada.LerTipo(codigo);
         if (tipo.IsFailure)
         {
             _recusas.Add(new(campo, tipo.Error!));
@@ -96,7 +96,7 @@ internal sealed class LeituraDoConteudo(IReadOnlyDictionary<string, string> form
         return tipo.IsSuccess ? tipo.Value : null;
     }
 
-    private BlocoSistema? LerBlocoDaEtapa(string? codigo, string campo)
+    private BlocoSistema? LerBlocoDaPagina(string? codigo, string campo)
     {
         Result<BlocoSistema?> bloco = TipoEBlocoDaEntrada.LerBloco(codigo);
         if (bloco.IsFailure)
@@ -117,7 +117,7 @@ internal sealed class LeituraDoConteudo(IReadOnlyDictionary<string, string> form
             : new ItemDoModelo(
                 entrada.FatoCodigo,
                 entrada.Ordem,
-                entrada.EtapaCodigo,
+                entrada.PaginaCodigo,
                 EntradaDeRegras.Apresentacao(entrada.Apresentacao, tipo!.Value),
                 FormatoDoCatalogo(entrada.FatoCodigo),
                 regras!);
@@ -163,7 +163,7 @@ internal sealed class LeituraDoConteudo(IReadOnlyDictionary<string, string> form
         return RecusouDesde(recusasAntes)
             ? null
             : new GrupoDoModelo(
-                entrada.Codigo, entrada.Ordem, entrada.EtapaCodigo, entrada.Rotulo, ocorrencias.Declaradas!, regras!, subitens);
+                entrada.Codigo, entrada.Ordem, entrada.PaginaCodigo, entrada.Rotulo, ocorrencias.Declaradas!, regras!, subitens);
     }
 
     private ExibicaoEObrigatoriedade? LerExibicaoEObrigatoriedade(ExibicaoEObrigatoriedadeInput? entrada, string campo)

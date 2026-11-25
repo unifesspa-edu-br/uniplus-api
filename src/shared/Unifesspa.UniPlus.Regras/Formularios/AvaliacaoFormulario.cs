@@ -6,7 +6,7 @@ using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.ValueObjects;
 
 /// <summary>
-/// O que o avaliador recebe além da descrição do formulário: as respostas do candidato, as etapas
+/// O que o avaliador recebe além da descrição do formulário: as respostas do candidato, as páginas
 /// que ele já concluiu, os fatos já conhecidos de fora do formulário — os coletados por uma
 /// finalidade anterior e os derivados pelo sistema, como o grupo da convocação — e o envio das
 /// respostas, de que se contam os limites da faixa de data.
@@ -19,7 +19,7 @@ using Unifesspa.UniPlus.Regras.ValueObjects;
 /// </remarks>
 public sealed record EntradaAvaliacaoFormulario(
     IReadOnlyDictionary<string, JsonElement> Respostas,
-    IReadOnlySet<string> EtapasConcluidas,
+    IReadOnlySet<string> PaginasConcluidas,
     IReadOnlyDictionary<string, FatoResolvido> FatosConhecidos,
     EnvioDasRespostas? Envio,
     IReadOnlyDictionary<string, IReadOnlyList<OcorrenciaRespondida>>? RespostasDosGrupos = null)
@@ -55,10 +55,10 @@ public sealed record AvaliacaoFormulario(
     IReadOnlyList<AvaliacaoItem> Itens,
     IReadOnlyList<AvaliacaoTermo> Termos,
     IReadOnlyList<AvaliacaoGrupo> Grupos,
-    IReadOnlyList<AvaliacaoEtapa> Etapas);
+    IReadOnlyList<AvaliacaoPagina> Paginas);
 
 /// <summary>A avaliação de uma seção: se ela aparece. A seção oculta leva todos os campos dela a não aplicáveis.</summary>
-public sealed record AvaliacaoEtapa(string Codigo, Ternario Visivel);
+public sealed record AvaliacaoPagina(string Codigo, Ternario Visivel);
 
 /// <summary>
 /// As opções que um campo de escolha deixa escolher diante das respostas anteriores: as que valem em
@@ -95,13 +95,13 @@ public sealed record OpcoesVigentes
 /// </summary>
 /// <remarks>
 /// O estado segue o UNI-REQ-0074: oculto, não aplicável; sem resposta ou com contagem que não vale,
-/// pendente se é obrigatório ou a etapa está aberta, e não informado se é opcional com a etapa
+/// pendente se é obrigatório ou a página está aberta, e não informado se é opcional com a página
 /// concluída; a lista vazia do opcional é não informado; e resolvido quando todas as ocorrências
 /// resolveram.
 /// </remarks>
 public sealed record AvaliacaoGrupo(
     string Codigo,
-    string EtapaCodigo,
+    string PaginaCodigo,
     Ternario Visivel,
     Ternario Obrigatorio,
     EstadoFato Estado,
@@ -126,7 +126,7 @@ public sealed record AvaliacaoOcorrencia(
 /// </summary>
 public sealed record AvaliacaoItem(
     string FatoCodigo,
-    string EtapaCodigo,
+    string PaginaCodigo,
     Ternario Visivel,
     Ternario Obrigatorio,
     IReadOnlyList<RestricaoValor> RestricoesVioladas,

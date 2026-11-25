@@ -126,8 +126,8 @@ public sealed class AplicarModeloFormularioEndpointTests
     private static ConteudoDoModelo Conteudo(params string[] fatos) => new(
         "Formulário",
         [
-            new("DADOS", 0, TipoEtapaFormulario.Secao, null, "Dados", null, null, null),
-            new("REVISAO", 1, TipoEtapaFormulario.Bloco, BlocoSistema.RevisaoEAceite, "Revisão e aceite", null, null, null),
+            new("DADOS", 0, TipoPaginaFormulario.Secao, null, "Dados", null, null, null),
+            new("REVISAO", 1, TipoPaginaFormulario.Bloco, BlocoSistema.RevisaoEAceite, "Revisão e aceite", null, null, null),
         ],
         [.. fatos.Select(static (fato, ordem) => new ItemDoModelo(
             fato, ordem, "DADOS", new ApresentacaoDoCampo(fato, TipoDeCampo.SimOuNao), null, new RegrasDoCampo(null, Obrigatoriedade.Sempre, [])))],

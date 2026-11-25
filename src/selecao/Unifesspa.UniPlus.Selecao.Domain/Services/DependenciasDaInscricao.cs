@@ -43,10 +43,10 @@ internal static class DependenciasDaInscricao
             .Concat(repetidos).Distinct(StringComparer.Ordinal).Order(StringComparer.Ordinal)];
 
     private static HashSet<string> CamposDaInscricao(DefinicaoFormulario definicao) =>
-        new(AvaliacaoDaInscricao.EtapasDaInscricao(definicao).SelectMany(static e => e.Itens).Select(static i => i.FatoCodigo), StringComparer.Ordinal);
+        new(AvaliacaoDaInscricao.PaginasDaInscricao(definicao).SelectMany(static e => e.Itens).Select(static i => i.FatoCodigo), StringComparer.Ordinal);
 
     private static HashSet<string> GruposDaInscricao(DefinicaoFormulario definicao) =>
-        new(AvaliacaoDaInscricao.EtapasDaInscricao(definicao).SelectMany(static e => e.Grupos).Select(static g => g.Codigo), StringComparer.Ordinal);
+        new(AvaliacaoDaInscricao.PaginasDaInscricao(definicao).SelectMany(static e => e.Grupos).Select(static g => g.Codigo), StringComparer.Ordinal);
 
     private static string[] FatosDasDependencias(
         FechamentoDasDependencias fechamento, HashSet<string> camposDaInscricao,
@@ -91,7 +91,7 @@ internal static class DependenciasDaInscricao
 
         return FechamentoDasDependencias.De(
             citados,
-            definicao.Etapas.SelectMany(static e => e.Itens).Select(static i => i.FatoCodigo).ToHashSet(StringComparer.Ordinal),
+            definicao.Paginas.SelectMany(static e => e.Itens).Select(static i => i.FatoCodigo).ToHashSet(StringComparer.Ordinal),
             definicao.Derivacoes.ToDictionary(static d => d.CodigoFato, StringComparer.Ordinal),
             definicao.Agregados.ToDictionary(static a => a.Codigo, StringComparer.Ordinal),
             condicoes);
@@ -101,10 +101,10 @@ internal static class DependenciasDaInscricao
         DefinicaoFormulario definicao, Dictionary<string, IReadOnlyCollection<string>> condicoes,
         Dictionary<string, IReadOnlyCollection<string>> condicoesDoGrupo)
     {
-        foreach (DefinicaoEtapa etapa in definicao.Etapas)
+        foreach (DefinicaoPagina pagina in definicao.Paginas)
         {
-            IReadOnlyCollection<string> daSecao = etapa.Exibicao?.FatosCitados ?? [];
-            foreach (DefinicaoItem item in etapa.Itens)
+            IReadOnlyCollection<string> daSecao = pagina.Exibicao?.FatosCitados ?? [];
+            foreach (DefinicaoItem item in pagina.Itens)
             {
                 condicoes[item.FatoCodigo] = [.. daSecao, .. item.FatosCitados];
             }
@@ -121,7 +121,7 @@ internal static class DependenciasDaInscricao
     /// exibição e de obrigatoriedade do próprio grupo.
     /// </summary>
     private static Dictionary<string, IReadOnlyCollection<string>> CondicoesDosGrupos(DefinicaoFormulario definicao) =>
-        definicao.Etapas
+        definicao.Paginas
             .SelectMany(static e => e.Grupos.Select(g => (Grupo: g, DaSecao: e.Exibicao?.FatosCitados ?? [])))
             .ToDictionary(
                 static g => g.Grupo.Codigo,

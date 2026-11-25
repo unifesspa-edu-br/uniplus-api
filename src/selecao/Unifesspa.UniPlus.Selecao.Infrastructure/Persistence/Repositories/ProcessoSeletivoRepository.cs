@@ -166,7 +166,7 @@ public sealed class ProcessoSeletivoRepository : IProcessoSeletivoRepository
     private static IQueryable<ProcessoSeletivo> ComTermosEFormularios(IQueryable<ProcessoSeletivo> query) =>
         query
             .Include(p => p.TermosExigidos)
-            .Include(p => p.Formularios).ThenInclude(f => f.Etapas);
+            .Include(p => p.Formularios).ThenInclude(f => f.Paginas);
 
     private static IQueryable<ProcessoSeletivo> ComRegrasDeDerivacao(IQueryable<ProcessoSeletivo> query) =>
         query

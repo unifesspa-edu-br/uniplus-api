@@ -21,9 +21,9 @@ public sealed class ConferenciaDoConteudoDoModeloTests
 {
     private static readonly Dictionary<string, IReadOnlyCollection<string>> SemDerivacoes = new(StringComparer.Ordinal);
 
-    private static readonly EtapaDoModelo Revisao = new("REVISAO", 1, TipoEtapaFormulario.Bloco, BlocoSistema.RevisaoEAceite, "Revisão", null, null, null);
+    private static readonly PaginaDoModelo Revisao = new("REVISAO", 1, TipoPaginaFormulario.Bloco, BlocoSistema.RevisaoEAceite, "Revisão", null, null, null);
 
-    private static ConteudoDoModelo Conteudo(params ItemDoModelo[] itens) => new("Habilitação", [Etapa(), Revisao], itens, [], [], []);
+    private static ConteudoDoModelo Conteudo(params ItemDoModelo[] itens) => new("Habilitação", [Pagina(), Revisao], itens, [], [], []);
 
     private static List<FieldError> Conferir(ConteudoDoModelo conteudo, FinalidadeFormulario? finalidade = FinalidadeFormulario.Habilitacao) =>
         ConferenciaDoConteudoDoModelo.Conferir(finalidade, conteudo, SemDerivacoes);
@@ -80,26 +80,26 @@ public sealed class ConferenciaDoConteudoDoModeloTests
         Campos(erros).Should().Equal(recusado ? ["conteudo.titulo"] : []);
     }
 
-    [Fact(DisplayName = "A forma de cada etapa é recusada no índice dela")]
-    public void Etapa_RecusaNoIndice()
+    [Fact(DisplayName = "A forma de cada pagina é recusada no índice dela")]
+    public void Pagina_RecusaNoIndice()
     {
-        ConteudoDoModelo conteudo = Conteudo(Item("CERTIFICADO")) with { Etapas = [Etapa(), Revisao with { Titulo = " " }] };
+        ConteudoDoModelo conteudo = Conteudo(Item("CERTIFICADO")) with { Paginas = [Pagina(), Revisao with { Titulo = " " }] };
 
         List<FieldError> erros = Conferir(conteudo);
 
-        Campos(erros).Should().Equal("conteudo.etapas[1].apresentacao.titulo");
-        Codigos(erros).Should().Equal(EstruturaFormularioErrorCodes.EtapaTituloInvalido);
+        Campos(erros).Should().Equal("conteudo.paginas[1].apresentacao.titulo");
+        Codigos(erros).Should().Equal(EstruturaFormularioErrorCodes.PaginaTituloInvalido);
     }
 
-    [Fact(DisplayName = "Código de etapa repetido é recusado no índice do conteúdo")]
-    public void Etapas_CodigoRepetido_RecusaNoIndiceDoConteudo()
+    [Fact(DisplayName = "Código de pagina repetido é recusado no índice do conteúdo")]
+    public void Paginas_CodigoRepetido_RecusaNoIndiceDoConteudo()
     {
-        ConteudoDoModelo conteudo = Conteudo() with { Etapas = [Etapa(), Etapa() with { Ordem = 1 }, Revisao with { Ordem = 2 }] };
+        ConteudoDoModelo conteudo = Conteudo() with { Paginas = [Pagina(), Pagina() with { Ordem = 1 }, Revisao with { Ordem = 2 }] };
 
         List<FieldError> erros = Conferir(conteudo);
 
         erros.Select(static e => (e.Field, e.Error.Code)).Should()
-            .Contain(("conteudo.etapas[1].codigo", EstruturaFormularioErrorCodes.EtapaCodigoDuplicado));
+            .Contain(("conteudo.paginas[1].codigo", EstruturaFormularioErrorCodes.PaginaCodigoDuplicado));
     }
 
     [Fact(DisplayName = "A forma de cada item é recusada no índice dele")]
@@ -139,7 +139,7 @@ public sealed class ConferenciaDoConteudoDoModeloTests
     [Fact(DisplayName = "A forma do grupo, o candidato como membro e a forma de cada campo saem nessa ordem, cada um no caminho do grupo")]
     public void Grupo_RecusaNaOrdemDaFormaDoCandidatoEDosCampos()
     {
-        GrupoDoModelo grupo = Grupo("COMPOSICAO_FAMILIAR", 1, null, (Item("RENDA") with { EtapaCodigo = null }).ComRotulo(string.Empty))
+        GrupoDoModelo grupo = Grupo("COMPOSICAO_FAMILIAR", 1, null, (Item("RENDA") with { PaginaCodigo = null }).ComRotulo(string.Empty))
             .ComOcorrencias(3, 2, incluiCandidato: true);
 
         List<FieldError> erros = Conferir(Conteudo(Item("CERTIFICADO")) with { Grupos = [grupo] });
@@ -150,7 +150,7 @@ public sealed class ConferenciaDoConteudoDoModeloTests
     [Fact(DisplayName = "O grupo que não inclui o candidato não pede o parentesco")]
     public void Grupo_SemCandidatoComoMembro_NaoPedeParentesco()
     {
-        GrupoDoModelo grupo = Grupo("COMPOSICAO_FAMILIAR", 1, null, Item("RENDA") with { EtapaCodigo = null });
+        GrupoDoModelo grupo = Grupo("COMPOSICAO_FAMILIAR", 1, null, Item("RENDA") with { PaginaCodigo = null });
 
         Conferir(Conteudo(Item("CERTIFICADO")) with { Grupos = [grupo] }).Should().BeEmpty();
     }
@@ -201,7 +201,7 @@ public sealed class ConferenciaDoConteudoDoModeloTests
     [Fact(DisplayName = "A estrutura por finalidade só é conferida sobre partes bem formadas")]
     public void Estrutura_NaoEConferidaComParteMalFormada()
     {
-        ConteudoDoModelo foraDeSecao = Conteudo(Item("CERTIFICADO") with { EtapaCodigo = null });
+        ConteudoDoModelo foraDeSecao = Conteudo(Item("CERTIFICADO") with { PaginaCodigo = null });
 
         Codigos(Conferir(foraDeSecao)).Should().Equal(EstruturaFormularioErrorCodes.ItemForaDeSecao);
         Codigos(Conferir(foraDeSecao with { Titulo = new string('T', FormaDoCabecalho.TituloMaxLength + 1) }))
@@ -210,15 +210,15 @@ public sealed class ConferenciaDoConteudoDoModeloTests
 
     [Fact(DisplayName = "Com a finalidade recusada no cadastro, a estrutura que depende dela não é conferida")]
     public void Estrutura_NaoEConferidaSemFinalidade() =>
-        Conferir(Conteudo(Item("CERTIFICADO") with { EtapaCodigo = null }), finalidade: null).Should().BeEmpty();
+        Conferir(Conteudo(Item("CERTIFICADO") with { PaginaCodigo = null }), finalidade: null).Should().BeEmpty();
 
-    [Fact(DisplayName = "A estrutura das etapas recusada impede a conferência da posição dos itens")]
-    public void Estrutura_EtapaRecusada_ImpedeAConferenciaDosItens()
+    [Fact(DisplayName = "A estrutura das paginas recusada impede a conferência da posição dos itens")]
+    public void Estrutura_PaginaRecusada_ImpedeAConferenciaDosItens()
     {
-        EtapaDoModelo repetida = Etapa() with { Ordem = 2 };
-        ConteudoDoModelo conteudo = Conteudo(Item("CERTIFICADO") with { EtapaCodigo = null }) with { Etapas = [Etapa(), repetida, Revisao with { Ordem = 3 }] };
+        PaginaDoModelo repetida = Pagina() with { Ordem = 2 };
+        ConteudoDoModelo conteudo = Conteudo(Item("CERTIFICADO") with { PaginaCodigo = null }) with { Paginas = [Pagina(), repetida, Revisao with { Ordem = 3 }] };
 
-        Codigos(Conferir(conteudo)).Should().Equal(EstruturaFormularioErrorCodes.EtapaCodigoDuplicado);
+        Codigos(Conferir(conteudo)).Should().Equal(EstruturaFormularioErrorCodes.PaginaCodigoDuplicado);
     }
 
     [Fact(DisplayName = "As recusas das famílias acumulam juntas, cada uma no seu ponteiro, na ordem das regras do conteúdo")]
@@ -227,14 +227,14 @@ public sealed class ConferenciaDoConteudoDoModeloTests
         ConteudoDoModelo conteudo = Conteudo(Item("CERTIFICADO").ComRotulo(string.Empty), ComImpedimento(Item("LAUDO", 1))) with
         {
             Titulo = new string('T', FormaDoCabecalho.TituloMaxLength + 1),
-            Etapas = [Etapa(), Revisao with { Titulo = " " }],
-            Grupos = [Grupo("COMPOSICAO_FAMILIAR", 2, null, Item("RENDA") with { EtapaCodigo = null }).ComOcorrencias(3, 2)],
+            Paginas = [Pagina(), Revisao with { Titulo = " " }],
+            Grupos = [Grupo("COMPOSICAO_FAMILIAR", 2, null, Item("RENDA") with { PaginaCodigo = null }).ComOcorrencias(3, 2)],
             Termos = [Termo(" ", 0)],
             Pressupostos = [string.Empty],
         };
 
         Campos(Conferir(conteudo)).Should().Equal(
-            "conteudo.titulo", "conteudo.etapas[1].apresentacao.titulo", "conteudo.itens[0].apresentacao.rotulo", "conteudo.itens[1].regras.impedimento",
+            "conteudo.titulo", "conteudo.paginas[1].apresentacao.titulo", "conteudo.itens[0].apresentacao.rotulo", "conteudo.itens[1].regras.impedimento",
             "conteudo.grupos[0].ocorrencias.maximo", "conteudo.termos[0].codigo", "conteudo.pressupostos[0]");
     }
 

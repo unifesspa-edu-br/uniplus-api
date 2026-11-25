@@ -43,7 +43,7 @@ public static class ReferenciasVivas
             .Concat(configuracao.Avaliacao.CriteriosDesempate.Select(static c => c.Parametros).OfType<ParametrosDesempatePredicadoFato>()
                 .Select(static a => (a.Condicao.Fato, a.Condicao.Operador, a.Condicao.Valor)))
             .Concat(configuracao.Coleta.TermosExigidos.SelectMany(static t => t.Condicoes).Select(static c => (c.Fato, c.Operador, c.Valor)))
-            .Concat(configuracao.Coleta.Formularios.SelectMany(static f => f.Etapas).SelectMany(static e => e.Condicoes).Select(static c => (c.Fato, c.Operador, c.Valor)));
+            .Concat(configuracao.Coleta.Formularios.SelectMany(static f => f.Paginas).SelectMany(static e => e.Condicoes).Select(static c => (c.Fato, c.Operador, c.Valor)));
 
     /// <summary>
     /// Um gatilho DNF sobre um
@@ -65,16 +65,17 @@ public static class ReferenciasVivas
                 continue;
             }
 
-            IEnumerable<string?> valoresReferenciados = valor.ValueKind == JsonValueKind.Array
-                ? valor.EnumerateArray().Select(static v => v.GetString())
-                : [valor.ValueKind == JsonValueKind.String ? valor.GetString() : null];
-
-            if (valoresReferenciados.Any(v => v is not null && !novosCodigosValidos.Contains(v)))
-            {
-                return true;
-            }
+            if (ContemValorRemovido(valor, novosCodigosValidos)) return true;
         }
 
         return false;
     }
+    private static bool ContemValorRemovido(JsonElement valor, HashSet<string> novosCodigosValidos)
+    {
+        IEnumerable<string?> valores = valor.ValueKind == JsonValueKind.Array
+            ? valor.EnumerateArray().Select(static v => v.GetString())
+            : [valor.ValueKind == JsonValueKind.String ? valor.GetString() : null];
+        return valores.Any(v => v is not null && !novosCodigosValidos.Contains(v));
+    }
+
 }

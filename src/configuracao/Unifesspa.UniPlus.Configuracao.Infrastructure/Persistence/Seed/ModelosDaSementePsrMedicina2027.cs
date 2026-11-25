@@ -64,7 +64,7 @@ internal static class ModelosDaSementePsrMedicina2027
     /// </summary>
     internal static ConteudoDoModelo Inscricao(bool comProva) => new(
         "Inscrição no Processo Seletivo Regular Unificado",
-        EtapasDaInscricao(comProva),
+        PaginasDaInscricao(comProva),
         CamposDaInscricao(comProva),
         [Termo(Termos[0], 1), Termo(Termos[1], 2)],
         [],
@@ -78,7 +78,7 @@ internal static class ModelosDaSementePsrMedicina2027
     /// </summary>
     internal static ConteudoDoModelo Habilitacao() => new(
         "Habilitação no Processo Seletivo Regular Unificado de Medicina 2027",
-        EtapasDaHabilitacao(),
+        PaginasDaHabilitacao(),
         CamposDaHabilitacao(),
         [Termo(Termos[2], 1, exibicao: Se(ConcorrerRenda, Operador.Igual, true))],
         [OrigemEscolar.FatoFormaDeConclusao, ConcorrerRenda],
@@ -97,14 +97,14 @@ internal static class ModelosDaSementePsrMedicina2027
         .. comProva ? [Campo(CidadeDeProva, 121, CidadeDeProva, "Em qual cidade você fará a prova?", TipoDeCampo.EscolhaUnica, null)] : Array.Empty<ItemDoModelo>(),
     ];
 
-    private static EtapaDoModelo[] EtapasDaInscricao(bool comProva) =>
+    private static PaginaDoModelo[] PaginasDaInscricao(bool comProva) =>
     [
         Secao(Enem, 1, "ENEM", "A edição do ENEM cujas notas você vai usar neste processo seletivo."),
         Secao(Escolaridade, 2, "Ensino médio", "Como você concluiu o ensino médio e onde o cursou."),
         Secao(Fator, 3, "Fator de Atenuação das Desigualdades de Acesso", "Pedido do Fator de Atenuação das Desigualdades de Acesso previsto no edital."),
         Secao(ReservaDeVagas, 4, "Reserva de vagas", "Condições que permitem concorrer às vagas reservadas da Lei nº 12.711/2012 e às ações afirmativas do edital."),
-        .. comProva ? [SecaoDoAtendimento()] : Array.Empty<EtapaDoModelo>(),
-        .. comProva ? [Secao(CidadeDeProva, 6, "Cidade de prova", "Escolha a cidade onde você fará a prova.")] : Array.Empty<EtapaDoModelo>(),
+        .. comProva ? [SecaoDoAtendimento()] : Array.Empty<PaginaDoModelo>(),
+        .. comProva ? [Secao(CidadeDeProva, 6, "Cidade de prova", "Escolha a cidade onde você fará a prova.")] : Array.Empty<PaginaDoModelo>(),
         Bloco("MODALIDADES", comProva ? 7 : 6, BlocoSistema.ModalidadesCalculadas, "Modalidades de concorrência"),
         Bloco("DOCUMENTOS", comProva ? 8 : 7, BlocoSistema.ComprovacaoDocumental, "Documentos"),
         Bloco("REVISAO", comProva ? 9 : 8, BlocoSistema.RevisaoEAceite, "Revisão e aceite"),
@@ -194,7 +194,7 @@ internal static class ModelosDaSementePsrMedicina2027
             exibicao: SeAlguma([Optou, Condicao(BaixaRenda, Operador.Igual, true)])),
     ];
 
-    private static EtapaDoModelo SecaoDoAtendimento() =>
+    private static PaginaDoModelo SecaoDoAtendimento() =>
         Secao(Atendimento, 5, "Atendimento especializado", "Pedido de atendimento especializado nas etapas presenciais do processo seletivo.");
 
     /// <summary>
@@ -254,7 +254,7 @@ internal static class ModelosDaSementePsrMedicina2027
         new("Decreto nº 3.298/1999", Federal, Resolvido, ReferenciaDeConcurso),
     ];
 
-    private static EtapaDoModelo[] EtapasDaHabilitacao() =>
+    private static PaginaDoModelo[] PaginasDaHabilitacao() =>
     [
         Secao(Conclusao, 1, "Conclusão do ensino médio e vínculos", "Situação da conclusão do ensino médio e vínculos com outras instituições."),
         Secao(Familia, 2, "Composição familiar", "Destina-se a quem foi convocado em vaga com critério de renda: informe as pessoas que compõem o seu grupo familiar, incluindo você."),
@@ -284,15 +284,15 @@ internal static class ModelosDaSementePsrMedicina2027
                     "Sob a sua guarda ou a de alguém da família."),
             ]);
 
-    private static EtapaDoModelo Secao(string codigo, int ordem, string titulo, string descricao) =>
-        new(codigo, ordem, TipoEtapaFormulario.Secao, null, titulo, descricao, null, null);
+    private static PaginaDoModelo Secao(string codigo, int ordem, string titulo, string descricao) =>
+        new(codigo, ordem, TipoPaginaFormulario.Secao, null, titulo, descricao, null, null);
 
-    private static EtapaDoModelo Bloco(string codigo, int ordem, BlocoSistema bloco, string titulo) =>
-        new(codigo, ordem, TipoEtapaFormulario.Bloco, bloco, titulo, null, null, null);
+    private static PaginaDoModelo Bloco(string codigo, int ordem, BlocoSistema bloco, string titulo) =>
+        new(codigo, ordem, TipoPaginaFormulario.Bloco, bloco, titulo, null, null, null);
 
     private static ItemDoModelo Campo(
-        string fato, int ordem, string? etapa, string rotulo, TipoDeCampo tipo, string? ajuda, PredicadoDnf? exibicao = null) =>
-        new(fato, ordem, etapa, new ApresentacaoDoCampo(rotulo, tipo, ajuda), null, new RegrasDoCampo(exibicao, Obrigatoriedade.Sempre, []));
+        string fato, int ordem, string? pagina, string rotulo, TipoDeCampo tipo, string? ajuda, PredicadoDnf? exibicao = null) =>
+        new(fato, ordem, pagina, new ApresentacaoDoCampo(rotulo, tipo, ajuda), null, new RegrasDoCampo(exibicao, Obrigatoriedade.Sempre, []));
 
     private static ItemDoModelo ComFormato(this ItemDoModelo item, string formato) => item with { Formato = formato };
 

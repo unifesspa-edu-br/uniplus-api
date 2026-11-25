@@ -32,7 +32,7 @@ public sealed record ConfiguracaoAvaliavel(
 /// <summary>
 /// O que o candidato respondeu e o que se sabe dele de fora do formulário: as respostas e os grupos;
 /// os fatos já conhecidos — os pressupostos e os derivados do sistema que se conseguiu apurar —; e as
-/// etapas dadas como concluídas, que decidem se o opcional em branco é não informado; e o instante
+/// páginas dadas como concluídas, que decidem se o opcional em branco é não informado; e o instante
 /// em que as respostas são gravadas, de que dependem os limites de data relativos a ele — nulo na
 /// pré-visualização, que não grava. <see cref="NaFaseDaInscricao"/> diz que quem avalia é o candidato,
 /// na fase da inscrição: o que só se conhece numa fase posterior não decide documento nenhum. A
@@ -43,7 +43,7 @@ public sealed record EntradaDaAvaliacaoDaInscricao(
     IReadOnlyDictionary<string, JsonElement> Respostas,
     IReadOnlyDictionary<string, IReadOnlyList<OcorrenciaRespondida>> Grupos,
     IReadOnlyDictionary<string, FatoResolvido> FatosConhecidos,
-    IReadOnlySet<string> EtapasConcluidas,
+    IReadOnlySet<string> PaginasConcluidas,
     EnvioDasRespostas? Envio,
     IReadOnlyDictionary<Guid, IReadOnlyList<ApresentacaoDocumento>> Apresentacoes,
     bool NaFaseDaInscricao = false)

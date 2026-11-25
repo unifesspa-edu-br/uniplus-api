@@ -7,14 +7,14 @@ using Unifesspa.UniPlus.Selecao.Domain.Entities;
 
 /// <summary>
 /// Os formulários do processo como uma definição só para o avaliador (ADR-0135): cada seção de cada
-/// formulário é uma etapa, com a exibição da seção, na ordem das finalidades e das seções, com os
+/// formulário é uma página, com a exibição da seção, na ordem das finalidades e das seções, com os
 /// itens e os grupos dela; os termos de todos os formulários; as derivações e os agregados do
 /// processo. Uma definição só porque o formulário seguinte cita os fatos e os derivados do
 /// anterior, e o avaliador resolve tudo numa ordem.
 /// </summary>
 /// <remarks>
-/// A etapa e o termo levam a finalidade no código, porque o código da seção e o do termo só são
-/// únicos dentro do formulário. O item sem seção fica numa etapa sem exibição da sua finalidade.
+/// A página e o termo levam a finalidade no código, porque o código da seção e o do termo só são
+/// únicos dentro do formulário. O item sem seção fica numa página sem exibição da sua finalidade.
 /// </remarks>
 public static class DefinicaoDoProcesso
 {
@@ -34,7 +34,7 @@ public static class DefinicaoDoProcesso
         ArgumentNullException.ThrowIfNull(agregados);
 
         return new DefinicaoFormulario(
-            [.. FinalidadesDeclaradas(formularios, itens, grupos).SelectMany(finalidade => EtapasDaFinalidade(
+            [.. FinalidadesDeclaradas(formularios, itens, grupos).SelectMany(finalidade => PaginasDaFinalidade(
                 finalidade, formularios.FirstOrDefault(f => f.Finalidade == finalidade),
                 [.. itens.Where(i => i.Finalidade == finalidade)], [.. grupos.Where(g => g.Finalidade == finalidade)]))],
             TermosDaDefinicao(termos), derivacoes, agregados);
@@ -51,15 +51,15 @@ public static class DefinicaoDoProcesso
         [.. termos.OrderBy(static t => t.Finalidade).ThenBy(static t => t.Ordem)
             .Select(static t => new DefinicaoTermo(CodigoDoTermo(t.Finalidade!.Value, t.Codigo), t.Exibicao, t.Obrigatoriedade))];
 
-    /// <summary>O código da etapa na definição do processo: a seção, ou a finalidade para o item sem seção.</summary>
-    public static string CodigoDaEtapa(FinalidadeFormulario finalidade, string? secao) =>
+    /// <summary>O código da página na definição do processo: a seção, ou a finalidade para o item sem seção.</summary>
+    public static string CodigoDaPagina(FinalidadeFormulario finalidade, string? secao) =>
         secao is null ? finalidade.ToString() : $"{finalidade}:{secao}";
 
     /// <summary>O código do termo na definição do processo.</summary>
     public static string CodigoDoTermo(FinalidadeFormulario finalidade, string codigo) =>
         $"{finalidade}:{codigo}";
 
-    /// <summary>Se a etapa ou o termo, pelo código que tem na definição do processo, é da finalidade.</summary>
+    /// <summary>Se a página ou o termo, pelo código que tem na definição do processo, é da finalidade.</summary>
     public static bool EhDaFinalidade(string codigo, FinalidadeFormulario finalidade)
     {
         ArgumentNullException.ThrowIfNull(codigo);
@@ -67,42 +67,42 @@ public static class DefinicaoDoProcesso
         return codigo == prefixo || codigo.StartsWith(prefixo + ":", StringComparison.Ordinal);
     }
 
-    private static IEnumerable<DefinicaoEtapa> EtapasDaFinalidade(
+    private static IEnumerable<DefinicaoPagina> PaginasDaFinalidade(
         FinalidadeFormulario finalidade, FormularioProcesso? formulario, IReadOnlyList<FatoColetado> itens, IReadOnlyList<GrupoColetado> grupos)
     {
-        EtapaFormulario[] secoes = [.. (formulario?.Etapas ?? []).Where(static e => e.Tipo == TipoEtapaFormulario.Secao).OrderBy(static e => e.Ordem)];
+        PaginaDoFormulario[] secoes = [.. (formulario?.Paginas ?? []).Where(static e => e.Tipo == TipoPaginaFormulario.Secao).OrderBy(static e => e.Ordem)];
         HashSet<string> codigosDasSecoes = new(secoes.Select(static s => s.Codigo), StringComparer.Ordinal);
 
-        if (EtapaDosItensSemSecao(finalidade, itens, grupos, codigosDasSecoes) is { } semSecao)
+        if (PaginaDosItensSemSecao(finalidade, itens, grupos, codigosDasSecoes) is { } semSecao)
         {
             yield return semSecao;
         }
 
-        foreach (EtapaFormulario secao in secoes)
+        foreach (PaginaDoFormulario secao in secoes)
         {
-            yield return EtapaDaSecao(finalidade, secao, itens, grupos);
+            yield return PaginaDaSecao(finalidade, secao, itens, grupos);
         }
     }
 
-    private static DefinicaoEtapa EtapaDaSecao(
-        FinalidadeFormulario finalidade, EtapaFormulario secao, IReadOnlyList<FatoColetado> itens, IReadOnlyList<GrupoColetado> grupos) =>
-        Etapa(
-            CodigoDaEtapa(finalidade, secao.Codigo),
+    private static DefinicaoPagina PaginaDaSecao(
+        FinalidadeFormulario finalidade, PaginaDoFormulario secao, IReadOnlyList<FatoColetado> itens, IReadOnlyList<GrupoColetado> grupos) =>
+        Pagina(
+            CodigoDaPagina(finalidade, secao.Codigo),
             secao.Exibicao,
-            [.. itens.Where(i => string.Equals(i.EtapaCodigo, secao.Codigo, StringComparison.Ordinal))],
-            [.. grupos.Where(g => string.Equals(g.EtapaCodigo, secao.Codigo, StringComparison.Ordinal))]);
+            [.. itens.Where(i => string.Equals(i.PaginaCodigo, secao.Codigo, StringComparison.Ordinal))],
+            [.. grupos.Where(g => string.Equals(g.PaginaCodigo, secao.Codigo, StringComparison.Ordinal))]);
 
-    private static DefinicaoEtapa? EtapaDosItensSemSecao(
+    private static DefinicaoPagina? PaginaDosItensSemSecao(
         FinalidadeFormulario finalidade, IReadOnlyList<FatoColetado> itens, IReadOnlyList<GrupoColetado> grupos, HashSet<string> secoes)
     {
-        FatoColetado[] semSecao = [.. itens.Where(i => i.EtapaCodigo is not { } codigo || !secoes.Contains(codigo))];
-        GrupoColetado[] gruposSemSecao = [.. grupos.Where(g => g.EtapaCodigo is not { } codigo || !secoes.Contains(codigo))];
+        FatoColetado[] semSecao = [.. itens.Where(i => i.PaginaCodigo is not { } codigo || !secoes.Contains(codigo))];
+        GrupoColetado[] gruposSemSecao = [.. grupos.Where(g => g.PaginaCodigo is not { } codigo || !secoes.Contains(codigo))];
         return semSecao.Length > 0 || gruposSemSecao.Length > 0
-            ? Etapa(CodigoDaEtapa(finalidade, null), null, semSecao, gruposSemSecao)
+            ? Pagina(CodigoDaPagina(finalidade, null), null, semSecao, gruposSemSecao)
             : null;
     }
 
-    private static DefinicaoEtapa Etapa(string codigo, PredicadoDnf? exibicao, IEnumerable<FatoColetado> itens, IEnumerable<GrupoColetado> grupos) =>
+    private static DefinicaoPagina Pagina(string codigo, PredicadoDnf? exibicao, IEnumerable<FatoColetado> itens, IEnumerable<GrupoColetado> grupos) =>
         new(
             codigo,
             exibicao,

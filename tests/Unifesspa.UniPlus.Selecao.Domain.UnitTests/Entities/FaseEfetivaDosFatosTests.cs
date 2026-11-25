@@ -86,7 +86,7 @@ public sealed class FaseEfetivaDosFatosTests
     private static void DefinirFormularioComUmFato(
         ProcessoSeletivo processo, FinalidadeFormulario finalidade, FaseCronograma fase, string fato, GrupoColetado[] grupos)
     {
-        processo.DefinirFormulario(finalidade, fase.Id, null, FormularioDeTeste.Etapas()).IsSuccess.Should().BeTrue();
+        processo.DefinirFormulario(finalidade, fase.Id, null, FormularioDeTeste.Paginas()).IsSuccess.Should().BeTrue();
         Result itens = processo.DefinirFatosColetados(finalidade, [Item(fato)], grupos);
         itens.IsSuccess.Should().BeTrue(itens.Error?.Message);
     }
@@ -103,7 +103,7 @@ public sealed class FaseEfetivaDosFatosTests
             (FinalidadeFormulario.IsencaoTaxa, "BOLSISTA"),
         })
         {
-            processo.DefinirFormulario(finalidade, compartilhada.Id, null, FormularioDeTeste.Etapas()).IsSuccess.Should().BeTrue();
+            processo.DefinirFormulario(finalidade, compartilhada.Id, null, FormularioDeTeste.Paginas()).IsSuccess.Should().BeTrue();
             processo.DefinirFatosColetados(finalidade, [Item(fato)]).IsSuccess.Should().BeTrue();
         }
 

@@ -50,7 +50,7 @@ public sealed class DefinicaoDoProcessoTests
 
         DefinicaoFormulario definicao = Montar(processo);
 
-        definicao.Etapas.Single(static e => e.Codigo == DefinicaoDoProcesso.CodigoDaEtapa(FinalidadeFormulario.Habilitacao, "FAMILIA"))
+        definicao.Paginas.Single(static e => e.Codigo == DefinicaoDoProcesso.CodigoDaPagina(FinalidadeFormulario.Habilitacao, "FAMILIA"))
             .Grupos.Should().ContainSingle().Which.Codigo.Should().Be("COMPOSICAO_FAMILIAR");
     }
 
@@ -68,7 +68,7 @@ public sealed class DefinicaoDoProcessoTests
                 .Construir()],
             finalidade: FinalidadeFormulario.Habilitacao).IsSuccess.Should().BeTrue();
 
-        DefinicaoItem item = Montar(processo).Etapas.SelectMany(static e => e.Itens).Single(static i => i.FatoCodigo == "CPF_RESPONSAVEL");
+        DefinicaoItem item = Montar(processo).Paginas.SelectMany(static e => e.Itens).Single(static i => i.FatoCodigo == "CPF_RESPONSAVEL");
 
         item.RestricoesDaResposta.OfType<FormatoDeTexto>().Should().ContainSingle().Which.Formato.Should().Be("CPF");
     }
@@ -82,9 +82,9 @@ public sealed class DefinicaoDoProcessoTests
         processo.DefinirFormulario(
             FinalidadeFormulario.Habilitacao, null, null,
             [
-                EtapaFormulario.Criar(new EtapaEstrutura("DADOS", 0, TipoEtapaFormulario.Secao, null), "Dados", null, null).Value!,
-                EtapaFormulario.Criar(new EtapaEstrutura("FAMILIA", 1, TipoEtapaFormulario.Secao, null), "Família", null, null).Value!,
-                EtapaFormulario.Criar(new EtapaEstrutura("REVISAO", 2, TipoEtapaFormulario.Bloco, BlocoSistema.RevisaoEAceite), "Revisão e aceite", null, null).Value!,
+                PaginaDoFormulario.Criar(new PaginaEstrutura("DADOS", 0, TipoPaginaFormulario.Secao, null), "Dados", null, null).Value!,
+                PaginaDoFormulario.Criar(new PaginaEstrutura("FAMILIA", 1, TipoPaginaFormulario.Secao, null), "Família", null, null).Value!,
+                PaginaDoFormulario.Criar(new PaginaEstrutura("REVISAO", 2, TipoPaginaFormulario.Bloco, BlocoSistema.RevisaoEAceite), "Revisão e aceite", null, null).Value!,
             ]).IsSuccess.Should().BeTrue();
         return processo;
     }

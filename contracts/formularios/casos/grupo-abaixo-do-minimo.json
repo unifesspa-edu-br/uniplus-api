@@ -1,7 +1,7 @@
 {
   "descricao": "O grupo com menos ocorrências que o mínimo não vale a contagem.",
   "regras": {
-    "etapas": [
+    "paginas": [
       {
         "codigo": "DADOS",
         "exibicao": null,
@@ -56,7 +56,7 @@
       }
     ]
   },
-  "etapasConcluidas": [],
+  "paginasConcluidas": [],
   "pressupostos": {},
   "esperado": {
     "grupos": [

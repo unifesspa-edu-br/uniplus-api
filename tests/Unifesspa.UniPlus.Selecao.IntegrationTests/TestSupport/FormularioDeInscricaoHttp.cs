@@ -7,7 +7,7 @@ using Unifesspa.UniPlus.Regras.Entradas;
 
 /// <summary>
 /// Os itens do formulário de inscrição pelo HTTP, para os testes que não tratam da estrutura
-/// dele: a rota administrativa dos itens e o corpo, com cada item sem etapa posto na seção de
+/// dele: a rota administrativa dos itens e o corpo, com cada item sem página posto na seção de
 /// dados do formulário mínimo — o item fora de seção é aceito no rascunho, mas trava a publicação.
 /// </summary>
 internal static class FormularioDeInscricaoHttp
@@ -19,7 +19,7 @@ internal static class FormularioDeInscricaoHttp
 
     /// <summary>
     /// O item na forma do corpo: a apresentação e as regras aninhadas, e a obrigatoriedade com o tipo. Sem
-    /// <paramref name="etapaCodigo"/>, o item vai sem seção, e <see cref="CorpoDosItens"/> o põe na dos dados.
+    /// <paramref name="paginaCodigo"/>, o item vai sem seção, e <see cref="CorpoDosItens"/> o põe na dos dados.
     /// </summary>
     public static object Item(
         string fatoCodigo,
@@ -28,7 +28,7 @@ internal static class FormularioDeInscricaoHttp
         string tipoDeCampo,
         string obrigatoriedade = "SEMPRE",
         object? exibicao = null,
-        string? etapaCodigo = null)
+        string? paginaCodigo = null)
     {
         Dictionary<string, object?> item = new()
         {
@@ -37,9 +37,9 @@ internal static class FormularioDeInscricaoHttp
             ["apresentacao"] = new { rotulo, tipoDeCampo },
             ["regras"] = new { exibicao, obrigatoriedade = new { tipo = obrigatoriedade } },
         };
-        if (etapaCodigo is not null)
+        if (paginaCodigo is not null)
         {
-            item["etapaCodigo"] = etapaCodigo;
+            item["paginaCodigo"] = paginaCodigo;
         }
 
         return item;
@@ -53,7 +53,7 @@ internal static class FormularioDeInscricaoHttp
         string codigo,
         int ordem,
         string rotulo,
-        string etapaCodigo,
+        string paginaCodigo,
         object[] subitens,
         OcorrenciasDoGrupoInput? ocorrencias = null,
         string obrigatoriedade = "NUNCA") => new
@@ -61,7 +61,7 @@ internal static class FormularioDeInscricaoHttp
             codigo,
             ordem,
             rotulo,
-            etapaCodigo,
+            paginaCodigo,
             ocorrencias = ocorrencias ?? new OcorrenciasDoGrupoInput(0, false),
             regras = new { exibicao = (object?)null, obrigatoriedade = new { tipo = obrigatoriedade } },
             subitens,
@@ -72,7 +72,7 @@ internal static class FormularioDeInscricaoHttp
         itens = itens.Select(static item =>
         {
             JsonObject objeto = JsonSerializer.SerializeToNode(item)!.AsObject();
-            objeto.TryAdd("etapaCodigo", Secao);
+            objeto.TryAdd("paginaCodigo", Secao);
             return objeto;
         }).ToArray(),
     };

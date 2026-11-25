@@ -25,7 +25,7 @@ using Recusa = (string? Campo, string Codigo, string Mensagem);
 
 /// <summary>
 /// A conferência do conteúdo do modelo contra o catálogo: acumula as recusas na ordem das partes
-/// (itens, grupos, documentos, etapas, termos, pressupostos, vínculos novos) e aponta cada uma pela
+/// (itens, grupos, documentos, páginas, termos, pressupostos, vínculos novos) e aponta cada uma pela
 /// posição da parte na entrada.
 /// </summary>
 public sealed class ConferenciaDoModeloTests
@@ -81,8 +81,8 @@ public sealed class ConferenciaDoModeloTests
     private static ConteudoDoModeloInput EntradaComSubitemQueRecusaRestricoesEImpedimento() => new(
         "Habilitação",
         [
-            EntradaDaEtapaFormularioDeTeste.Secao("DADOS").ComTitulo("Dados").Construir(),
-            EntradaDaEtapaFormularioDeTeste.BlocoDeSistema("REVISAO", 1, "REVISAO_E_ACEITE").ComTitulo("Revisão").Construir(),
+            EntradaDaPaginaDoFormularioDeTeste.Secao("DADOS").ComTitulo("Dados").Construir(),
+            EntradaDaPaginaDoFormularioDeTeste.BlocoDeSistema("REVISAO", 1, "REVISAO_E_ACEITE").ComTitulo("Revisão").Construir(),
         ],
         [],
         [],
@@ -109,8 +109,8 @@ public sealed class ConferenciaDoModeloTests
     private static ConteudoDoModeloInput EntradaQueRecusaEmTodasAsPartes() => new(
         "Habilitação",
         [
-            EntradaDaEtapaFormularioDeTeste.Secao("DADOS").ComTitulo("Dados").ExibidaQuando(CitandoFatoInexistente).Construir(),
-            EntradaDaEtapaFormularioDeTeste.BlocoDeSistema("REVISAO", 1, "REVISAO_E_ACEITE").ComTitulo("Revisão").Construir(),
+            EntradaDaPaginaDoFormularioDeTeste.Secao("DADOS").ComTitulo("Dados").ExibidaQuando(CitandoFatoInexistente).Construir(),
+            EntradaDaPaginaDoFormularioDeTeste.BlocoDeSistema("REVISAO", 1, "REVISAO_E_ACEITE").ComTitulo("Revisão").Construir(),
         ],
         ItensQueRecusam(),
         [
@@ -173,7 +173,7 @@ public sealed class ConferenciaDoModeloTests
 
     private static Recusa[] RecusasEsperadas() =>
     [
-        .. RecusasDosItens(), .. RecusasDosGrupos(), .. RecusasDosDocumentos(), .. RecusasDasEtapas(), .. RecusasDosTermos(), .. RecusasDosPressupostos(), .. RecusasDosVinculos(),
+        .. RecusasDosItens(), .. RecusasDosGrupos(), .. RecusasDosDocumentos(), .. RecusasDasPaginas(), .. RecusasDosTermos(), .. RecusasDosPressupostos(), .. RecusasDosVinculos(),
     ];
 
     private static Recusa[] RecusasDosItens() =>
@@ -211,7 +211,7 @@ public sealed class ConferenciaDoModeloTests
         FatoInexistenteNoPredicado("conjuntoDeDocumentos.gruposDeDocumentos[1].documentos[1].quando"),
     ];
 
-    private static Recusa[] RecusasDasEtapas() => [FatoInexistenteNoPredicado("etapas[0].exibicao")];
+    private static Recusa[] RecusasDasPaginas() => [FatoInexistenteNoPredicado("paginas[0].exibicao")];
 
     private static Recusa[] RecusasDosTermos() =>
     [

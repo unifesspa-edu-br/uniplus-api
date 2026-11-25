@@ -221,7 +221,7 @@ internal static class ProcessosDeInscricaoDeTeste
     {
         processo.DefinirFormulario(
                 FinalidadeFormulario.IsencaoTaxa, processo.CronogramaFases.Single(f => f.ColetaSolicitacaoIsencao).Id, null,
-                FormularioDeTeste.Etapas(FinalidadeFormulario.IsencaoTaxa))
+                FormularioDeTeste.Paginas(FinalidadeFormulario.IsencaoTaxa))
             .IsSuccess.Should().BeTrue();
         processo.DefinirFatosColetados(
                 FinalidadeFormulario.IsencaoTaxa,

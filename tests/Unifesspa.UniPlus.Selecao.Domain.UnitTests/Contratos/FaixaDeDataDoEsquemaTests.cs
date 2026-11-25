@@ -88,7 +88,7 @@ public sealed class FaixaDeDataDoEsquemaTests
             RegraOrdemAlocacao = ReferenciaRegra.De(RegraDeOrdemDeAlocacao.PrimeiraOpcaoPrioritaria.Codigo(), "v1", new string('b', 64)),
         }).Value!).IsSuccess.Should().BeTrue();
         processo.DefinirOpcoesDeCurso(1).IsSuccess.Should().BeTrue();
-        processo.DefinirFormulario(FinalidadeFormulario.Inscricao, null, null, FormularioDeTeste.Etapas(), FormularioDeTeste.DadosBasicos())
+        processo.DefinirFormulario(FinalidadeFormulario.Inscricao, null, null, FormularioDeTeste.Paginas(), FormularioDeTeste.DadosBasicos())
             .IsSuccess.Should().BeTrue();
         return processo;
     }

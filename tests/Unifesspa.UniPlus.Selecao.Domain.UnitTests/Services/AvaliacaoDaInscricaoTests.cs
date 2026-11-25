@@ -24,7 +24,7 @@ using Unifesspa.UniPlus.Testes.Compartilhado;
 public sealed class AvaliacaoDaInscricaoTests
 {
     private const string Secao = "RESERVA";
-    private static readonly string Etapa = DefinicaoDoProcesso.CodigoDaEtapa(FinalidadeFormulario.Inscricao, Secao);
+    private static readonly string Pagina = DefinicaoDoProcesso.CodigoDaPagina(FinalidadeFormulario.Inscricao, Secao);
 
     private static readonly string[] Perguntas =
     [
@@ -254,7 +254,7 @@ public sealed class AvaliacaoDaInscricaoTests
             : [DerivacaoDoFato.CriarBooleana(OrigemEscolar.FatoEgresso, OrigemEscolar.RegrasDoEgresso, OrigemEscolar.DependenciasDoEgresso).Value!];
 
     private static DefinicaoFormulario DefinicaoDasPerguntas(string[] perguntas, bool rendaSoParaBaixaRenda, List<DerivacaoDoFato> derivacoes) => new(
-        [new DefinicaoEtapa(Etapa, null, [.. perguntas.Select(f => new DefinicaoItem(f, ExibicaoDe(f, rendaSoParaBaixaRenda), Obrigatoriedade.Sempre, []))])],
+        [new DefinicaoPagina(Pagina, null, [.. perguntas.Select(f => new DefinicaoItem(f, ExibicaoDe(f, rendaSoParaBaixaRenda), Obrigatoriedade.Sempre, []))])],
         [],
         derivacoes);
 
@@ -269,7 +269,7 @@ public sealed class AvaliacaoDaInscricaoTests
     }
 
     private static DefinicaoFormulario DefinicaoComGrupoDeMunicipios(string[] perguntas, List<DerivacaoDoFato> derivacoes) => new(
-        [new DefinicaoEtapa(Etapa, null, [.. perguntas.Select(f => new DefinicaoItem(f, null, Obrigatoriedade.Sempre, []))],
+        [new DefinicaoPagina(Pagina, null, [.. perguntas.Select(f => new DefinicaoItem(f, null, Obrigatoriedade.Sempre, []))],
             [new DefinicaoGrupo(GrupoDeMunicipios, QuandoEIgualATrue(PedeOFator), Obrigatoriedade.Sempre, 0, 3,
                 [new DefinicaoItem(MunicipioDoBonus, null, Obrigatoriedade.Sempre, [])], incluiCandidato: false)])],
         [],

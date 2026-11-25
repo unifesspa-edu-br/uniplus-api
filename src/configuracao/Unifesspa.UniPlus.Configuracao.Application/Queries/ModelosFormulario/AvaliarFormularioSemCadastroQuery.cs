@@ -20,7 +20,7 @@ public sealed record AvaliacaoSemCadastroInput(
     FormularioPortavel Regras,
     IReadOnlyDictionary<string, JsonElement>? Respostas,
     IReadOnlyDictionary<string, IReadOnlyList<OcorrenciaRecebida>?>? Grupos,
-    IReadOnlyList<string>? EtapasConcluidas,
+    IReadOnlyList<string>? PaginasConcluidas,
     IReadOnlyDictionary<string, JsonElement>? Pressupostos,
     EnvioSimuladoInput? Envio = null);
 
@@ -57,7 +57,7 @@ public static class AvaliarFormularioSemCadastroQueryHandler
     {
         Result<AvaliacaoFormulario> avaliacao = simulacao.Regras.Avaliar(new EntradaAvaliacaoFormulario(
             simulacao.Respostas ?? new Dictionary<string, JsonElement>(),
-            new HashSet<string>(simulacao.EtapasConcluidas ?? [], StringComparer.Ordinal),
+            new HashSet<string>(simulacao.PaginasConcluidas ?? [], StringComparer.Ordinal),
             RespostaDeCampo.ComoFatosConhecidos(simulacao.Pressupostos),
             envio,
             ocorrencias));

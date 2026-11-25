@@ -1,7 +1,7 @@
 {
   "descricao": "O deslocamento soma os anos e depois os dias, e o 29 de fevereiro que cai em ano sem ele vira 28: um ano e um dia antes do envio de 29/02/2028 é 27/02/2027, que atende, e 26/02/2027 viola.",
   "regras": {
-    "etapas": [
+    "paginas": [
       {
         "codigo": "DADOS",
         "exibicao": null,
@@ -77,7 +77,7 @@
     "DATA_B": "2027-02-26"
   },
   "grupos": {},
-  "etapasConcluidas": [],
+  "paginasConcluidas": [],
   "pressupostos": {},
   "envio": {
     "instante": "2028-02-29T15:00:00Z",

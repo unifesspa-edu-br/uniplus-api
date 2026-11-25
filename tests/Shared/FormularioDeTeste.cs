@@ -36,21 +36,21 @@ internal static class FormularioDeTeste
     public static ResultadoDaAvaliacaoDaInscricao AvaliacaoDoEnvio(AvaliacaoFormulario formulario) =>
         new(formulario, ModalidadesDeConcorrencia.SemDerivacao, new DocumentosDaInscricao([], new Dictionary<Guid, IReadOnlyList<PendenciaDaAvaliacao>>(), []));
 
-    public static IReadOnlyList<EtapaFormulario> Etapas(FinalidadeFormulario finalidade = FinalidadeFormulario.Inscricao)
+    public static IReadOnlyList<PaginaDoFormulario> Paginas(FinalidadeFormulario finalidade = FinalidadeFormulario.Inscricao)
     {
         int deslocamento = finalidade == FinalidadeFormulario.Inscricao ? 1 : 0;
-        EtapaFormulario[] doTeste =
+        PaginaDoFormulario[] doTeste =
         [
-            EtapaFormulario.Criar(new EtapaEstrutura(Secao, deslocamento, TipoEtapaFormulario.Secao, null), "Dados", null, null).Value!,
-            EtapaFormulario.Criar(new EtapaEstrutura("REVISAO", deslocamento + 1, TipoEtapaFormulario.Bloco, BlocoSistema.RevisaoEAceite), "Revisão e aceite", null, null).Value!,
+            PaginaDoFormulario.Criar(new PaginaEstrutura(Secao, deslocamento, TipoPaginaFormulario.Secao, null), "Dados", null, null).Value!,
+            PaginaDoFormulario.Criar(new PaginaEstrutura("REVISAO", deslocamento + 1, TipoPaginaFormulario.Bloco, BlocoSistema.RevisaoEAceite), "Revisão e aceite", null, null).Value!,
         ];
         if (deslocamento == 0)
         {
             return doTeste;
         }
 
-        EtapaFormularioInput secao = ConjuntoBasicoDaInscricao.Secao;
-        return [EtapaFormulario.Criar(new EtapaEstrutura(secao.Codigo, secao.Ordem, TipoEtapaFormulario.Secao, null), secao.Apresentacao!.Titulo!, secao.Apresentacao.Descricao, secao.Apresentacao.Aviso).Value!, .. doTeste];
+        PaginaDoFormularioInput secao = ConjuntoBasicoDaInscricao.Secao;
+        return [PaginaDoFormulario.Criar(new PaginaEstrutura(secao.Codigo, secao.Ordem, TipoPaginaFormulario.Secao, null), secao.Apresentacao!.Titulo!, secao.Apresentacao.Descricao, secao.Apresentacao.Aviso).Value!, .. doTeste];
     }
 
     /// <summary>Os itens do conjunto básico, como a escrita os monta, sem os que o teste já declara.</summary>
@@ -124,14 +124,14 @@ internal static class FormularioDeTeste
         return processo.DefinirItens(fatos);
     }
 
-    /// <summary>Define o título do formulário da finalidade, mantendo a fase e as etapas mínimas.</summary>
+    /// <summary>Define o título do formulário da finalidade, mantendo a fase e as páginas mínimas.</summary>
     public static Result DefinirTitulo(
         this ProcessoSeletivo processo,
         string? titulo,
         FinalidadeFormulario finalidade = FinalidadeFormulario.Inscricao)
     {
         GarantirFormulario(processo, finalidade);
-        return processo.DefinirFormulario(finalidade, processo.FormularioDe(finalidade)!.FaseId, titulo, Etapas(finalidade));
+        return processo.DefinirFormulario(finalidade, processo.FormularioDe(finalidade)!.FaseId, titulo, Paginas(finalidade));
     }
 
     /// <summary>Define os termos da finalidade, criando antes o formulário mínimo quando o processo não o tem.</summary>
@@ -230,7 +230,7 @@ internal static class FormularioDeTeste
 
         Guid? fase = FaseDe(processo, finalidade);
         Result criado = processo.DefinirFormulario(
-            finalidade, fase, null, Etapas(finalidade),
+            finalidade, fase, null, Paginas(finalidade),
             finalidade == FinalidadeFormulario.Inscricao ? DadosBasicos() : null);
         if (criado.IsFailure)
         {
@@ -260,7 +260,7 @@ internal static class FormularioDeTeste
 
     /// <summary>O dado básico que o teste declara vai para a seção reservada, na ordem do conjunto básico.</summary>
     private static FatoColetado NaSecaoReservada(FatoColetado fato) =>
-        string.Equals(fato.EtapaCodigo, ConjuntoBasicoDaInscricao.CodigoDaSecao, StringComparison.Ordinal)
+        string.Equals(fato.PaginaCodigo, ConjuntoBasicoDaInscricao.CodigoDaSecao, StringComparison.Ordinal)
             ? fato
             : FatoColetadoDeTeste.Como(fato)
                 .NaOrdem(ConjuntoBasicoDaInscricao.Itens.Single(i => i.FatoCodigo == fato.FatoCodigo).Ordem)
@@ -268,11 +268,11 @@ internal static class FormularioDeTeste
                 .Construir();
 
     private static FatoColetado NaSecao(FatoColetado fato, int deslocamento) =>
-        fato.EtapaCodigo is not null && deslocamento == 0
+        fato.PaginaCodigo is not null && deslocamento == 0
             ? fato
             : FatoColetadoDeTeste.Como(fato)
                 .NaOrdem(fato.Ordem + deslocamento)
-                .NaSecao(fato.EtapaCodigo ?? Secao)
+                .NaSecao(fato.PaginaCodigo ?? Secao)
                 .Construir();
 
     private static GrupoColetado Deslocar(GrupoColetado grupo, int deslocamento) =>
@@ -317,7 +317,7 @@ internal static class FormularioDeTeste
             .ComObrigatoriedade(ObrigatoriedadeDaEntrada(entrada))
             .ExibidoQuando(ExibicaoDaEntrada(entrada))
             .ComCopia(CopiaDoCatalogoDoBasico(entrada))
-            .NaSecao(entrada.EtapaCodigo)
+            .NaSecao(entrada.PaginaCodigo)
             .ComAjuda(entrada.Apresentacao.Ajuda)
             .ComRestricoes([.. (entrada.Regras!.Restricoes ?? []).Select(static r => EntradaDeRegras.Restricao(r).Value!)])
             .Construir();

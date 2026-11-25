@@ -18,8 +18,8 @@
       "pattern": "\\S"
     },
     "paginaCodigo": {
-      "title": "Etapa",
-      "description": "Código da etapa do tipo SECAO, do mesmo formulário, em que o item aparece. Nulo ou ausente em subitem de grupo.",
+      "title": "Página",
+      "description": "Código da página do tipo SECAO, do mesmo formulário, em que o item aparece. Nulo ou ausente em subitem de grupo.",
       "anyOf": [
         {
           "type": "null"

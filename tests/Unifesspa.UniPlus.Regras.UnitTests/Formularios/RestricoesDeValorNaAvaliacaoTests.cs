@@ -25,7 +25,7 @@ public class RestricoesDeValorNaAvaliacaoTests : TestesDeAvaliacao
         AvaliacaoFormulario avaliacao = AvaliarDefinicao(
             formulario,
             Entrada(
-                etapaConcluida: true,
+                paginaConcluida: true,
                 ("CURSOS", new[] { "MED" }),
                 ("LISTA_ESPERA", JsonDocument.Parse(listaDeEspera).RootElement)));
 
@@ -47,7 +47,7 @@ public class RestricoesDeValorNaAvaliacaoTests : TestesDeAvaliacao
             ? [("NATURALIDADE_MUNICIPIO", municipio)]
             : [("NATURALIDADE_UF", uf), ("NATURALIDADE_MUNICIPIO", municipio)];
 
-        AvaliacaoFormulario avaliacao = AvaliarDefinicao(formulario, Entrada(etapaConcluida: true, respostas));
+        AvaliacaoFormulario avaliacao = AvaliarDefinicao(formulario, Entrada(paginaConcluida: true, respostas));
 
         avaliacao.Fatos["NATURALIDADE_MUNICIPIO"].Estado.Should().Be(estadoEsperado);
         avaliacao.Itens[1].RestricoesVioladas.Should().HaveCount(violacoes);
@@ -64,7 +64,7 @@ public class RestricoesDeValorNaAvaliacaoTests : TestesDeAvaliacao
         DefinicaoFormulario formulario = Formulario(
             new DefinicaoItem("CONTATO", null, Obrigatoriedade.Sempre, [], formato: formato));
 
-        AvaliacaoFormulario avaliacao = AvaliarDefinicao(formulario, Entrada(etapaConcluida: true, ("CONTATO", resposta)));
+        AvaliacaoFormulario avaliacao = AvaliarDefinicao(formulario, Entrada(paginaConcluida: true, ("CONTATO", resposta)));
 
         avaliacao.Fatos["CONTATO"].Estado.Should().Be(atende ? EstadoFato.Resolvido : EstadoFato.Indeterminado);
         avaliacao.Itens[0].RestricoesVioladas.Select(static r => r.Tipo).Should().Equal(
@@ -80,7 +80,7 @@ public class RestricoesDeValorNaAvaliacaoTests : TestesDeAvaliacao
         DefinicaoFormulario formulario = Formulario(
             new DefinicaoItem(fato, null, Obrigatoriedade.Sempre, [], formato: "NOME_PESSOA"));
 
-        AvaliacaoFormulario avaliacao = AvaliarDefinicao(formulario, Entrada(etapaConcluida: true, (fato, resposta)));
+        AvaliacaoFormulario avaliacao = AvaliarDefinicao(formulario, Entrada(paginaConcluida: true, (fato, resposta)));
 
         avaliacao.Itens[0].RestricoesVioladas.Select(static r => r.Tipo).Should().Equal(
             atende ? [] : [TipoRestricaoValor.FormatoTexto]);
@@ -93,7 +93,7 @@ public class RestricoesDeValorNaAvaliacaoTests : TestesDeAvaliacao
             Item("NATURALIDADE_UF"),
             Item("NATURALIDADE_MUNICIPIO", restricoes: [new MunicipiosDaUf("NATURALIDADE_UF")]));
 
-        AvaliacaoFormulario avaliacao = AvaliarDefinicao(formulario, Entrada(etapaConcluida: false, ("NATURALIDADE_MUNICIPIO", "1504208")));
+        AvaliacaoFormulario avaliacao = AvaliarDefinicao(formulario, Entrada(paginaConcluida: false, ("NATURALIDADE_MUNICIPIO", "1504208")));
 
         avaliacao.Fatos["NATURALIDADE_MUNICIPIO"].Estado.Should().Be(EstadoFato.Indeterminado);
         avaliacao.Itens[1].RestricoesVioladas.Should().BeEmpty();
@@ -110,7 +110,7 @@ public class RestricoesDeValorNaAvaliacaoTests : TestesDeAvaliacao
         DefinicaoFormulario formulario = Formulario(Item("UF"), Item("MUNICIPIO", restricoes: [municipios]));
 
         AvaliacaoFormulario avaliacao = AvaliarDefinicao(
-            formulario, Entrada(etapaConcluida: true, ("UF", "PA"), ("MUNICIPIO", "MANAUS")));
+            formulario, Entrada(paginaConcluida: true, ("UF", "PA"), ("MUNICIPIO", "MANAUS")));
 
         avaliacao.Itens[1].RestricoesVioladas.Should().ContainSingle();
         avaliacao.Fatos["MUNICIPIO"].Estado.Should().Be(EstadoFato.Indeterminado, "o campo é obrigatório e a resposta não vale");
@@ -129,7 +129,7 @@ public class RestricoesDeValorNaAvaliacaoTests : TestesDeAvaliacao
         DefinicaoFormulario formulario = Formulario(Item("UF"), Item("MUNICIPIO", restricoes: [municipios]));
         (string, object)[] respostas = uf is null ? [] : [("UF", uf)];
 
-        AvaliacaoFormulario avaliacao = AvaliarDefinicao(formulario, Entrada(etapaConcluida: false, respostas));
+        AvaliacaoFormulario avaliacao = AvaliarDefinicao(formulario, Entrada(paginaConcluida: false, respostas));
 
         avaliacao.Itens[1].Opcoes!.Codigos.Should().Equal(esperadas);
         avaliacao.Itens[1].Opcoes!.Definitivas.Should().Be(definitivas);
@@ -146,7 +146,7 @@ public class RestricoesDeValorNaAvaliacaoTests : TestesDeAvaliacao
         ]);
         DefinicaoFormulario formulario = Formulario(Item("UF"), Item("ESCOLHA", restricoes: [opcoes]));
 
-        AvaliacaoFormulario avaliacao = AvaliarDefinicao(formulario, Entrada(etapaConcluida: false));
+        AvaliacaoFormulario avaliacao = AvaliarDefinicao(formulario, Entrada(paginaConcluida: false));
 
         avaliacao.Itens[1].Opcoes!.Codigos.Should().Equal("A", "B");
         avaliacao.Itens[1].Opcoes!.Definitivas.Should().BeTrue("a resposta pendente só poderia acrescentar A, que já vale");
@@ -167,7 +167,7 @@ public class RestricoesDeValorNaAvaliacaoTests : TestesDeAvaliacao
             Item("LOCAL", restricoes: [opcoes]));
 
         AvaliacaoFormulario avaliacao = AvaliarDefinicao(
-            formulario, Entrada(etapaConcluida: false, ("LOCAL", JsonDocument.Parse(municipio).RootElement)));
+            formulario, Entrada(paginaConcluida: false, ("LOCAL", JsonDocument.Parse(municipio).RootElement)));
 
         avaliacao.Fatos["LOCAL"].Estado.Should().Be(esperado);
         avaliacao.Itens[1].RestricoesVioladas.Should().BeEmpty();

@@ -184,7 +184,7 @@ internal sealed class InscricaoAdministrativaDeTeste
             new VagasDeclaradas([ProcessoSeletivoConformeBuilder.DistribuicaoAmplaConcorrencia(ofertaCursoOrigemId: OfertaCursoId)], 1, processo.BonusRegional is not null,
                 processo.BonusRegional, null, processo.AtendimentoEspecializado!),
             new ExigenciasDeclaradas(_exigencias, []),
-            new ColetaDeclarada(ConfiguracaoPublicadaDeTeste.CamposDaColeta(_fatos, _grupos), _grupos, [FormularioProcesso.Criar(FinalidadeFormulario.Inscricao, _faseId, null, FormularioDeTeste.Etapas()).Value!], [],
+            new ColetaDeclarada(ConfiguracaoPublicadaDeTeste.CamposDaColeta(_fatos, _grupos), _grupos, [FormularioProcesso.Criar(FinalidadeFormulario.Inscricao, _faseId, null, FormularioDeTeste.Paginas()).Value!], [],
                 [], [], null),
             new DivulgacaoETaxaDeclaradas(null, null), null);
 

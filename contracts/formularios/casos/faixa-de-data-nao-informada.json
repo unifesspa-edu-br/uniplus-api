@@ -1,7 +1,7 @@
 {
-  "descricao": "O campo de data opcional deixado em branco, com a etapa concluída, é não informado: a faixa de data não pesa sobre a resposta que não existe.",
+  "descricao": "O campo de data opcional deixado em branco, com a página concluída, é não informado: a faixa de data não pesa sobre a resposta que não existe.",
   "regras": {
-    "etapas": [
+    "paginas": [
       {
         "codigo": "DADOS",
         "exibicao": null,
@@ -50,7 +50,7 @@
   },
   "respostas": {},
   "grupos": {},
-  "etapasConcluidas": [
+  "paginasConcluidas": [
     "DADOS"
   ],
   "pressupostos": {},

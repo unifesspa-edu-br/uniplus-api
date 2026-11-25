@@ -20,7 +20,7 @@ public sealed class EnvioSimuladoDaAvaliacaoEndpointTests
 
     private static readonly object RegrasSemItens = new
     {
-        etapas = new[] { new { codigo = "DADOS", exibicao = (object?)null, itens = Array.Empty<object>(), grupos = Array.Empty<object>() } },
+        paginas = new[] { new { codigo = "DADOS", exibicao = (object?)null, itens = Array.Empty<object>(), grupos = Array.Empty<object>() } },
         termos = Array.Empty<object>(),
         derivacoes = Array.Empty<object>(),
         agregados = Array.Empty<object>(),

@@ -23,7 +23,7 @@ public sealed class RecorteDaFinalidadeTests
     {
         RecorteDaFinalidade recorte = RecorteDaFinalidade.De(Processo(), Habilitacao);
 
-        recorte.Regras.Etapas.Select(static e => e.Codigo).Should().Equal("HABILITACAO:DOCUMENTOS");
+        recorte.Regras.Paginas.Select(static e => e.Codigo).Should().Equal("HABILITACAO:DOCUMENTOS");
         recorte.Regras.Termos.Select(static t => t.Codigo).Should().Equal("HABILITACAO:VERACIDADE");
         recorte.Regras.Derivacoes.Select(static d => d.FatoCodigo).Should().BeEquivalentTo(
             ["ESCOLA_PUBLICA", "EGRESSO_REDE_PUBLICA"], "a derivação citada leva junto a derivação de que ela depende");
@@ -46,7 +46,7 @@ public sealed class RecorteDaFinalidadeTests
             new(StringComparer.Ordinal) { ["MODALIDADE_CONVOCACAO"] = conhecidos["MODALIDADE_CONVOCACAO"] }));
 
         doRecorte.IsSuccess.Should().BeTrue(doRecorte.Error?.Message);
-        Serializar(doRecorte.Value!.Itens).Should().Be(Serializar(doProcesso.Itens.Where(static i => i.EtapaCodigo.StartsWith(Habilitacao, StringComparison.Ordinal))));
+        Serializar(doRecorte.Value!.Itens).Should().Be(Serializar(doProcesso.Itens.Where(static i => i.PaginaCodigo.StartsWith(Habilitacao, StringComparison.Ordinal))));
         Serializar(doRecorte.Value!.Termos).Should().Be(Serializar(doProcesso.Termos.Where(static t => t.Codigo.StartsWith(Habilitacao, StringComparison.Ordinal))));
     }
 
@@ -72,8 +72,8 @@ public sealed class RecorteDaFinalidadeTests
 
     private static DefinicaoFormulario ProcessoComAgregadosDeDuasFinalidades() => new(
         [
-            new DefinicaoEtapa("INSCRICAO:FAMILIA", null, [], [Grupo("FAMILIA_INSCRICAO", "TRABALHA_NO_CAMPO")]),
-            new DefinicaoEtapa("HABILITACAO:FAMILIA", null,
+            new DefinicaoPagina("INSCRICAO:FAMILIA", null, [], [Grupo("FAMILIA_INSCRICAO", "TRABALHA_NO_CAMPO")]),
+            new DefinicaoPagina("HABILITACAO:FAMILIA", null,
                 [new DefinicaoItem("DECLARACAO_RURAL", Quando("PROPRIEDADE_NA_FAMILIA", true), Obrigatoriedade.Sempre, [])],
                 [Grupo("PROPRIEDADES", "TEM_PROPRIEDADE", Quando("RURAL_NA_FAMILIA", true))]),
         ],
@@ -97,13 +97,13 @@ public sealed class RecorteDaFinalidadeTests
     public void DoFormulario_LevaTudoEPodaODerivadoNaoCitado()
     {
         DefinicaoFormulario modelo = new(
-            [new DefinicaoEtapa("DOCUMENTOS", null, [new DefinicaoItem("CERTIFICADO", Quando("ESCOLA_PUBLICA", true), Obrigatoriedade.Sempre, [])])],
+            [new DefinicaoPagina("DOCUMENTOS", null, [new DefinicaoItem("CERTIFICADO", Quando("ESCOLA_PUBLICA", true), Obrigatoriedade.Sempre, [])])],
             [new DefinicaoTermo("VERACIDADE", null, Obrigatoriedade.Sempre)],
             [Booleana("ESCOLA_PUBLICA", Quando("TIPO_ESCOLA", "PUBLICA")), Booleana("NAO_CITADO", Quando("TIPO_ESCOLA", "PRIVADA"))]);
 
         RecorteDaFinalidade recorte = RecorteDaFinalidade.DoFormulario(modelo);
 
-        recorte.Regras.Etapas.Select(static e => e.Codigo).Should().Equal("DOCUMENTOS");
+        recorte.Regras.Paginas.Select(static e => e.Codigo).Should().Equal("DOCUMENTOS");
         recorte.Regras.Termos.Select(static t => t.Codigo).Should().Equal("VERACIDADE");
         recorte.Regras.Derivacoes.Select(static d => d.FatoCodigo).Should().Equal("ESCOLA_PUBLICA");
         recorte.Pressupostos.Should().Equal("TIPO_ESCOLA");
@@ -117,12 +117,12 @@ public sealed class RecorteDaFinalidadeTests
     /// pública e a declaração de quem foi convocado em vaga de escola pública. A derivação que nenhum
     /// formulário da habilitação cita fica de fora do recorte.
     /// </summary>
-    private static DefinicaoFormulario Processo() => new(EtapasDoProcesso(), TermosDoProcesso(), DerivacoesDoProcesso());
+    private static DefinicaoFormulario Processo() => new(PaginasDoProcesso(), TermosDoProcesso(), DerivacoesDoProcesso());
 
-    private static DefinicaoEtapa[] EtapasDoProcesso() =>
+    private static DefinicaoPagina[] PaginasDoProcesso() =>
     [
-        new DefinicaoEtapa("INSCRICAO:ESCOLA", null, [new DefinicaoItem("TIPO_ESCOLA", null, Obrigatoriedade.Sempre, [])]),
-        new DefinicaoEtapa("HABILITACAO:DOCUMENTOS", null,
+        new DefinicaoPagina("INSCRICAO:ESCOLA", null, [new DefinicaoItem("TIPO_ESCOLA", null, Obrigatoriedade.Sempre, [])]),
+        new DefinicaoPagina("HABILITACAO:DOCUMENTOS", null,
         [
             new DefinicaoItem("CERTIFICADO", Quando("EGRESSO_REDE_PUBLICA", true), Obrigatoriedade.Sempre, []),
             new DefinicaoItem("DECLARACAO_ESCOLA", Quando("MODALIDADE_CONVOCACAO", "LB_EP"), Obrigatoriedade.Sempre, []),

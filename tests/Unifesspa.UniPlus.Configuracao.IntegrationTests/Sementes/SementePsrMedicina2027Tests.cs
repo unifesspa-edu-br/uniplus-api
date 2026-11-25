@@ -111,7 +111,7 @@ public sealed class SementePsrMedicina2027Tests
 
     private static IEnumerable<string?> TextosDoModelo(ModeloFormulario modelo) =>
         new[] { modelo.Nome, modelo.Descricao, modelo.Conteudo.Titulo }
-            .Concat(modelo.Conteudo.Etapas.SelectMany(static e => new[] { e.Titulo, e.Descricao, e.Aviso }))
+            .Concat(modelo.Conteudo.Paginas.SelectMany(static e => new[] { e.Titulo, e.Descricao, e.Aviso }))
             .Concat(modelo.Conteudo.Grupos.Select(static g => g.Rotulo))
             .Concat(modelo.Conteudo.Campos().SelectMany(static i => new[] { i.Apresentacao.Rotulo, i.Apresentacao.Ajuda }));
 
@@ -156,8 +156,8 @@ public sealed class SementePsrMedicina2027Tests
 
         ModeloFormulario inscricao = await ctx.ModelosFormulario.SingleAsync(m => m.Codigo == SementePsrMedicina2027.ModeloDeInscricaoSemProva);
 
-        inscricao.Conteudo.Etapas.Should().Contain(static e => e.Codigo == ConjuntoBasicoDaInscricao.CodigoDaSecao);
-        inscricao.Conteudo.Itens.Where(static i => i.EtapaCodigo == ConjuntoBasicoDaInscricao.CodigoDaSecao).Select(static i => i.FatoCodigo)
+        inscricao.Conteudo.Paginas.Should().Contain(static e => e.Codigo == ConjuntoBasicoDaInscricao.CodigoDaSecao);
+        inscricao.Conteudo.Itens.Where(static i => i.PaginaCodigo == ConjuntoBasicoDaInscricao.CodigoDaSecao).Select(static i => i.FatoCodigo)
             .Should().Equal(ConjuntoBasicoDaInscricao.Itens.Select(static i => i.FatoCodigo));
         inscricao.Conteudo.Itens.Single(static i => i.FatoCodigo == "CONCORRER_PPI").FatosCitados.Should().Contain("COR_RACA");
     }
@@ -176,10 +176,10 @@ public sealed class SementePsrMedicina2027Tests
 
     private static void ConferirSecaoDoAtendimento(ModeloFormulario inscricao, Dictionary<string, ItemDoModelo> itens)
     {
-        inscricao.Conteudo.Etapas.Should().ContainSingle(static e => e.Codigo == "ATENDIMENTO_ESPECIALIZADO")
+        inscricao.Conteudo.Paginas.Should().ContainSingle(static e => e.Codigo == "ATENDIMENTO_ESPECIALIZADO")
             .Which.Titulo.Should().Be("Atendimento especializado");
         string[] daSecao = ["SOLICITA_ATENDIMENTO_ESPECIALIZADO", "CONDICAO_ATENDIMENTO", "DESCRICAO_OUTRA_CONDICAO_ATENDIMENTO", "RECURSO_ACESSIBILIDADE"];
-        daSecao.Should().OnlyContain(c => itens[c].EtapaCodigo == "ATENDIMENTO_ESPECIALIZADO");
+        daSecao.Should().OnlyContain(c => itens[c].PaginaCodigo == "ATENDIMENTO_ESPECIALIZADO");
         daSecao.Should().OnlyContain(c => itens[c].Regras.Obrigatoriedade.Tipo == TipoObrigatoriedade.Sempre, "o que aparece é exigido");
     }
 
@@ -189,7 +189,7 @@ public sealed class SementePsrMedicina2027Tests
         Exibicao(itens["CONDICAO_ATENDIMENTO"]).Should().Be(Se("SOLICITA_ATENDIMENTO_ESPECIALIZADO", true));
         Exibicao(itens["RECURSO_ACESSIBILIDADE"]).Should().Be(Se("SOLICITA_ATENDIMENTO_ESPECIALIZADO", true));
         Exibicao(itens["DESCRICAO_OUTRA_CONDICAO_ATENDIMENTO"]).Should().Be(Se("CONDICAO_ATENDIMENTO", SementePsrMedicina2027.CondicaoForaDaLista));
-        itens["TIPO_DEFICIENCIA"].EtapaCodigo.Should().Be("RESERVA_DE_VAGAS", "a etapa do tipo de deficiência não muda nesta configuração");
+        itens["TIPO_DEFICIENCIA"].PaginaCodigo.Should().Be("RESERVA_DE_VAGAS", "a página do tipo de deficiência não muda nesta configuração");
         itens["DESCRICAO_OUTRA_CONDICAO_ATENDIMENTO"].Regras.Restricoes.Should().ContainSingle()
             .Which.Should().BeEquivalentTo(new TamanhoTexto(null, 120));
     }
@@ -204,7 +204,7 @@ public sealed class SementePsrMedicina2027Tests
 
         string[] doAtendimento = ["SOLICITA_ATENDIMENTO_ESPECIALIZADO", "CONDICAO_ATENDIMENTO", "DESCRICAO_OUTRA_CONDICAO_ATENDIMENTO", "RECURSO_ACESSIBILIDADE"];
         semProva.Conteudo.Itens.Select(static i => i.FatoCodigo).Should().NotContain(doAtendimento);
-        semProva.Conteudo.Etapas.Should().NotContain(static e => e.Codigo == "ATENDIMENTO_ESPECIALIZADO");
+        semProva.Conteudo.Paginas.Should().NotContain(static e => e.Codigo == "ATENDIMENTO_ESPECIALIZADO");
         semProva.Conteudo.Documentos.DocumentosExigidos.Should().BeEmpty();
 
         semProva.Conteudo.Itens.Should().Contain(static i => i.FatoCodigo == "TIPO_DEFICIENCIA");

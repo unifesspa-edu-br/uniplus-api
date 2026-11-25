@@ -20,14 +20,14 @@ using static Unifesspa.UniPlus.Selecao.Application.UnitTests.TestSupport.Cenario
 
 public sealed class DefinirFormularioCommandHandlerTests
 {
-    [Fact(DisplayName = "Processo publicado recusa a mutação antes de conferir as etapas")]
-    public async Task Handle_Publicado_EtapaInvalida_RecusaAMutacao()
+    [Fact(DisplayName = "Processo publicado recusa a mutação antes de conferir as paginas")]
+    public async Task Handle_Publicado_PaginaInvalida_RecusaAMutacao()
     {
         ProcessoSeletivo processo = ProcessoSemEtapas();
         typeof(ProcessoSeletivo).GetProperty(nameof(ProcessoSeletivo.Situacao))!.SetValue(processo, SituacaoDoProcessoSeletivo.Publicado);
 
         Result result = await DefinirAsync(
-            processo, FinalidadeFormulario.Inscricao, faseId: null, titulo: null, EntradaDaEtapaFormularioDeTeste.Secao("DADOS").ComTitulo("").Construir());
+            processo, FinalidadeFormulario.Inscricao, faseId: null, titulo: null, EntradaDaPaginaDoFormularioDeTeste.Secao("DADOS").ComTitulo("").Construir());
 
         result.Error!.Code.Should().Be("ProcessoSeletivo.MutacaoPosPublicacaoBloqueada");
         result.Errors.Should().ContainSingle().Which.Field.Should().BeNull();
@@ -46,33 +46,33 @@ public sealed class DefinirFormularioCommandHandlerTests
         result.Errors.Should().ContainSingle().Which.Field.Should().BeNull();
     }
 
-    [Fact(DisplayName = "Título, fase e etapa inválidos saem juntos na mesma recusa")]
-    public async Task Handle_TituloFaseEEtapaInvalidos_AcumulaAsRecusas()
+    [Fact(DisplayName = "Título, fase e pagina inválidos saem juntos na mesma recusa")]
+    public async Task Handle_TituloFaseEPaginaInvalidos_AcumulaAsRecusas()
     {
         ProcessoSeletivo processo = ProcessoSeletivoConformeBuilder.Criar("PS Formulário", out Guid faseDeInscricao);
 
         Result result = await DefinirAsync(
-            processo, FinalidadeFormulario.Habilitacao, faseDeInscricao, new string('a', 301), EntradaDaEtapaFormularioDeTeste.Secao("DADOS").ComTitulo("").Construir());
+            processo, FinalidadeFormulario.Habilitacao, faseDeInscricao, new string('a', 301), EntradaDaPaginaDoFormularioDeTeste.Secao("DADOS").ComTitulo("").Construir());
 
-        result.Errors.Select(static e => e.Field).Should().BeEquivalentTo(["etapas[0].apresentacao.titulo", "titulo", "faseId"]);
+        result.Errors.Select(static e => e.Field).Should().BeEquivalentTo(["paginas[0].apresentacao.titulo", "titulo", "faseId"]);
     }
 
-    [Fact(DisplayName = "Etapa sem a apresentação é recusada no título, no caminho da apresentação")]
-    public async Task Handle_EtapaSemApresentacao_RecusaOTituloAusente()
+    [Fact(DisplayName = "Pagina sem a apresentação é recusada no título, no caminho da apresentação")]
+    public async Task Handle_PaginaSemApresentacao_RecusaOTituloAusente()
     {
         ProcessoSeletivo processo = ProcessoSeletivoConformeBuilder.Criar("PS Formulário", out Guid faseDeInscricao);
 
         Result result = await DefinirAsync(
-            processo, FinalidadeFormulario.Habilitacao, faseDeInscricao, titulo: null, EntradaDaEtapaFormularioDeTeste.Secao("DADOS").SemApresentacao().Construir());
+            processo, FinalidadeFormulario.Habilitacao, faseDeInscricao, titulo: null, EntradaDaPaginaDoFormularioDeTeste.Secao("DADOS").SemApresentacao().Construir());
 
-        result.Errors.Select(static e => (e.Field, e.Error.Code)).Should().Contain(("etapas[0].apresentacao.titulo", EstruturaFormularioErrorCodes.EtapaTituloInvalido));
+        result.Errors.Select(static e => (e.Field, e.Error.Code)).Should().Contain(("paginas[0].apresentacao.titulo", EstruturaFormularioErrorCodes.PaginaTituloInvalido));
     }
 
-    [Fact(DisplayName = "Exibição de seção que cita fato fora do catálogo é recusada na etapa, junto das recusas de estrutura e de título")]
-    public async Task Handle_ExibicaoComFatoDesconhecido_RecusaNaEtapa()
+    [Fact(DisplayName = "Exibição de seção que cita fato fora do catálogo é recusada na pagina, junto das recusas de estrutura e de título")]
+    public async Task Handle_ExibicaoComFatoDesconhecido_RecusaNaPagina()
     {
         ProcessoSeletivo processo = ProcessoSeletivoConformeBuilder.Criar("PS Formulário", out Guid faseDeInscricao);
-        EtapaFormularioInput secao = EntradaDaEtapaFormularioDeTeste.Secao("DADOS").ComTitulo("Dados")
+        PaginaDoFormularioInput secao = EntradaDaPaginaDoFormularioDeTeste.Secao("DADOS").ComTitulo("Dados")
             .ExibidaQuando([[new CondicaoPrecondicaoInput("FATO_INEXISTENTE", "IGUAL", System.Text.Json.JsonSerializer.SerializeToElement(true))]]).Construir();
 
         Result result = await DefinirAsync(
@@ -80,23 +80,23 @@ public sealed class DefinirFormularioCommandHandlerTests
 
         result.Errors.Select(static e => (e.Field, e.Error.Code)).Should().BeEquivalentTo(
         [
-            ("etapas[0].exibicao", "PredicadoDnf.FatoDesconhecido"),
+            ("paginas[0].exibicao", "PredicadoDnf.FatoDesconhecido"),
             ("titulo", EstruturaFormularioErrorCodes.TituloTamanho),
-            ("etapas", "EstruturaFormulario.BlocoExigidoAusente"),
+            ("paginas", "EstruturaFormulario.BlocoExigidoAusente"),
         ]);
     }
 
-    [Fact(DisplayName = "A segunda etapa inválida é recusada no caminho enviado")]
-    public async Task Handle_SegundaEtapaInvalida_RecusaNoCaminhoDasEtapas()
+    [Fact(DisplayName = "A segunda pagina inválida é recusada no caminho enviado")]
+    public async Task Handle_SegundaPaginaInvalida_RecusaNoCaminhoDasPaginas()
     {
         ProcessoSeletivo processo = ProcessoSeletivoConformeBuilder.Criar("PS Formulário", out Guid faseDeInscricao);
 
         Result result = await DefinirAsync(processo, FinalidadeFormulario.Habilitacao, faseDeInscricao, null,
-            EntradaDaEtapaFormularioDeTeste.Secao("DADOS", 0).Construir(),
-            EntradaDaEtapaFormularioDeTeste.Secao("OUTRA", 1).ComTitulo("").Construir());
+            EntradaDaPaginaDoFormularioDeTeste.Secao("DADOS", 0).Construir(),
+            EntradaDaPaginaDoFormularioDeTeste.Secao("OUTRA", 1).ComTitulo("").Construir());
 
         result.Errors.Select(static e => (e.Field, e.Error.Code)).Should()
-            .Contain(("etapas[1].apresentacao.titulo", EstruturaFormularioErrorCodes.EtapaTituloInvalido));
+            .Contain(("paginas[1].apresentacao.titulo", EstruturaFormularioErrorCodes.PaginaTituloInvalido));
     }
 
     [Fact(DisplayName = "Criar o formulário de inscrição põe a seção dos dados básicos em primeiro, com os itens dela")]
@@ -104,30 +104,30 @@ public sealed class DefinirFormularioCommandHandlerTests
     {
         ProcessoSeletivo processo = ProcessoSeletivoConformeBuilder.Criar("PS Formulário", out Guid faseDeInscricao);
         processo.RemoverFormulario(FinalidadeFormulario.Inscricao).IsSuccess.Should().BeTrue();
-        EtapaFormularioInput[] etapas =
+        PaginaDoFormularioInput[] paginas =
         [
-            EntradaDaEtapaFormularioDeTeste.Secao("DADOS").ComTitulo("Dados").Construir(),
-            EntradaDaEtapaFormularioDeTeste.BlocoDeSistema("REVISAO", 1, "REVISAO_E_ACEITE").ComTitulo("Revisão e aceite").Construir(),
+            EntradaDaPaginaDoFormularioDeTeste.Secao("DADOS").ComTitulo("Dados").Construir(),
+            EntradaDaPaginaDoFormularioDeTeste.BlocoDeSistema("REVISAO", 1, "REVISAO_E_ACEITE").ComTitulo("Revisão e aceite").Construir(),
         ];
 
-        Result result = await DefinirAsync(processo, FinalidadeFormulario.Inscricao, faseDeInscricao, titulo: null, etapas, CatalogoDoConjuntoBasico.Fatos);
+        Result result = await DefinirAsync(processo, FinalidadeFormulario.Inscricao, faseDeInscricao, titulo: null, paginas, CatalogoDoConjuntoBasico.Fatos);
 
         result.IsSuccess.Should().BeTrue(result.Error?.Message);
-        processo.FormularioDe(FinalidadeFormulario.Inscricao)!.Etapas.OrderBy(static e => e.Ordem).Select(static e => e.Codigo)
+        processo.FormularioDe(FinalidadeFormulario.Inscricao)!.Paginas.OrderBy(static e => e.Ordem).Select(static e => e.Codigo)
             .Should().Equal(ConjuntoBasicoDaInscricao.CodigoDaSecao, "DADOS", "REVISAO");
         processo.FatosColetados.Select(static f => f.FatoCodigo).Should().BeEquivalentTo(ConjuntoBasicoDaInscricao.Fatos);
     }
 
     private static Task<Result> DefinirAsync(
-        ProcessoSeletivo processo, FinalidadeFormulario finalidade, Guid? faseId, string? titulo, params EtapaFormularioInput[] etapas) =>
-        DefinirAsync(processo, finalidade, faseId, titulo, etapas, catalogo: []);
+        ProcessoSeletivo processo, FinalidadeFormulario finalidade, Guid? faseId, string? titulo, params PaginaDoFormularioInput[] paginas) =>
+        DefinirAsync(processo, finalidade, faseId, titulo, paginas, catalogo: []);
 
     private static Task<Result> DefinirAsync(
         ProcessoSeletivo processo,
         FinalidadeFormulario finalidade,
         Guid? faseId,
         string? titulo,
-        IReadOnlyList<EtapaFormularioInput> etapas,
+        IReadOnlyList<PaginaDoFormularioInput> paginas,
         IReadOnlyList<FatoCandidatoView> catalogo)
     {
         IProcessoSeletivoRepository repository = Substitute.For<IProcessoSeletivoRepository>();
@@ -135,6 +135,6 @@ public sealed class DefinirFormularioCommandHandlerTests
         IFatoCandidatoReader reader = Substitute.For<IFatoCandidatoReader>();
         reader.ListarAsync(Arg.Any<CancellationToken>()).Returns(catalogo);
         return DefinirFormularioCommandHandler.Handle(
-            new DefinirFormularioCommand(processo.Id, finalidade, faseId, titulo, etapas), repository, reader, Substitute.For<IUnitOfWork>(), CancellationToken.None);
+            new DefinirFormularioCommand(processo.Id, finalidade, faseId, titulo, paginas), repository, reader, Substitute.For<IUnitOfWork>(), CancellationToken.None);
     }
 }

@@ -29,7 +29,7 @@ public sealed record OpcoesPreVisualizadasDto(IReadOnlyList<string> Codigos, boo
 /// </summary>
 public sealed record GrupoPreVisualizadoDto(
     string Codigo,
-    string EtapaCodigo,
+    string PaginaCodigo,
     [property: AceitaCodigosDe<Ternario>] string Visivel,
     [property: AceitaCodigosDe<Ternario>] string Obrigatorio,
     bool ContagemValida,
@@ -45,7 +45,7 @@ public sealed record OcorrenciaPreVisualizadaDto(string Id, IReadOnlyList<ItemPr
 /// </summary>
 public sealed record ItemPreVisualizadoDto(
     string FatoCodigo,
-    string EtapaCodigo,
+    string PaginaCodigo,
     [property: AceitaCodigosDe<Ternario>] string Visivel,
     [property: AceitaCodigosDe<Ternario>] string Obrigatorio,
     IReadOnlyList<string> RestricoesVioladas,

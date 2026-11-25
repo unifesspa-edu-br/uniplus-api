@@ -167,7 +167,7 @@ public sealed class RespostasDoRascunhoSobreVersaoFixadaTests
     {
         ResultadoDaAvaliacaoDaInscricao avaliacao = AvaliacaoDaInscricao.Avaliar(contexto.Configuracao, new EntradaDaAvaliacaoDaInscricao(
             inscricao.Formulario.Preenchimento.Respostas, new Dictionary<string, IReadOnlyList<OcorrenciaRespondida>>(StringComparer.Ordinal),
-            new Dictionary<string, FatoResolvido>(StringComparer.Ordinal), AvaliacaoDaInscricao.CodigosDasEtapasDaInscricao(contexto.Configuracao.Definicao),
+            new Dictionary<string, FatoResolvido>(StringComparer.Ordinal), AvaliacaoDaInscricao.CodigosDasPaginasDaInscricao(contexto.Configuracao.Definicao),
             Envio: null, Apresentacoes: EntradaDaAvaliacaoDaInscricao.SemApresentacoes)).Value!;
         return inscricao.Submeter("000901",
             PreenchimentoDoCandidato.Criar(OpcoesDeCursoDaInscricao.Reidratar(contexto.Admitidas.OfertasDeCurso.Single(), null), new Dictionary<string, JsonElement>(StringComparer.Ordinal), new Dictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricao>>(StringComparer.Ordinal), []), contexto.Admitidas with { NomeCivilDoLogin = PersonasDeTeste.NomeFernandaDrumond },

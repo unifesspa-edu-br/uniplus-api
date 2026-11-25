@@ -61,9 +61,9 @@ public sealed class ObterFormularioDaInscricaoQueryHandlerTests
         finalidade, faseDoBloco, null,
         [
             .. faseDoBloco is null
-                ? Array.Empty<EtapaFormulario>()
-                : [EtapaFormulario.Criar(new EtapaEstrutura("DOCUMENTOS", 0, TipoEtapaFormulario.Bloco, BlocoSistema.ComprovacaoDocumental), "Documentos", null, null).Value!],
-            EtapaFormulario.Criar(new EtapaEstrutura("REVISAO", 1, TipoEtapaFormulario.Bloco, BlocoSistema.RevisaoEAceite), "Revisão e aceite", null, null).Value!,
+                ? Array.Empty<PaginaDoFormulario>()
+                : [PaginaDoFormulario.Criar(new PaginaEstrutura("DOCUMENTOS", 0, TipoPaginaFormulario.Bloco, BlocoSistema.ComprovacaoDocumental), "Documentos", null, null).Value!],
+            PaginaDoFormulario.Criar(new PaginaEstrutura("REVISAO", 1, TipoPaginaFormulario.Bloco, BlocoSistema.RevisaoEAceite), "Revisão e aceite", null, null).Value!,
         ]).Value!;
 
     private static ConfiguracaoPublicada ConfiguracaoComFormulario(ProcessoSeletivo processoBase, FormularioProcesso formulario) => new ConfiguracaoPublicada(

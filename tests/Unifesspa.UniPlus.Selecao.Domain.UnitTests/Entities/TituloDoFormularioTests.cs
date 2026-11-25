@@ -15,11 +15,11 @@ public sealed class TituloDoFormularioTests
     {
         ProcessoSeletivo processo = ProcessoConformeFactory.Criar();
 
-        processo.DefinirFormulario(FinalidadeFormulario.Habilitacao, null, "  Formulário  ", FormularioDeTeste.Etapas())
+        processo.DefinirFormulario(FinalidadeFormulario.Habilitacao, null, "  Formulário  ", FormularioDeTeste.Paginas())
             .IsSuccess.Should().BeTrue();
         processo.FormularioDe(FinalidadeFormulario.Habilitacao)!.Titulo.Should().Be("Formulário");
 
-        processo.DefinirFormulario(FinalidadeFormulario.Habilitacao, null, "   ", FormularioDeTeste.Etapas())
+        processo.DefinirFormulario(FinalidadeFormulario.Habilitacao, null, "   ", FormularioDeTeste.Paginas())
             .IsSuccess.Should().BeTrue();
         processo.FormularioDe(FinalidadeFormulario.Habilitacao)!.Titulo.Should().BeNull();
     }
@@ -31,7 +31,7 @@ public sealed class TituloDoFormularioTests
         processo.FormularioDe(FinalidadeFormulario.Habilitacao).Should().BeNull();
 
         Result resultado = processo.DefinirFormulario(
-            FinalidadeFormulario.Habilitacao, null, new string('a', 301), FormularioDeTeste.Etapas());
+            FinalidadeFormulario.Habilitacao, null, new string('a', 301), FormularioDeTeste.Paginas());
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Errors.Should().ContainSingle().Which.Should().BeEquivalentTo(new

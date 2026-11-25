@@ -12,7 +12,7 @@ using Unifesspa.UniPlus.Monolito.Persistencia;
 namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 {
     [DbContext(typeof(MonolitoDbContext))]
-    [Migration("20261125045123_Inicial")]
+    [Migration("20261125080712_Inicial")]
     partial class Inicial
     {
         /// <inheritdoc />
@@ -6910,7 +6910,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .IsRequired()
                         .HasColumnType("jsonb")
                         .HasColumnName("conteudo")
-                        .HasComment("Conteúdo do modelo de formulário, com etapas, itens, termos e pressupostos.");
+                        .HasComment("Conteúdo do modelo de formulário, com páginas, itens, termos e pressupostos.");
 
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
@@ -12916,88 +12916,6 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         });
                 });
 
-            modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.EtapaFormulario", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .HasColumnType("uuid")
-                        .HasColumnName("id");
-
-                    b.Property<string>("Aviso")
-                        .HasMaxLength(2000)
-                        .HasColumnType("character varying(2000)")
-                        .HasColumnName("aviso");
-
-                    b.Property<string>("Bloco")
-                        .HasMaxLength(30)
-                        .HasColumnType("character varying(30)")
-                        .HasColumnName("bloco")
-                        .HasComment("O bloco que o sistema monta; nulo na seção. Códigos: COMPROVACAO_DOCUMENTAL, MODALIDADES_CALCULADAS, REVISAO_E_ACEITE.");
-
-                    b.Property<string>("Codigo")
-                        .IsRequired()
-                        .HasMaxLength(60)
-                        .HasColumnType("character varying(60)")
-                        .HasColumnName("codigo");
-
-                    b.Property<DateTimeOffset>("CreatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at")
-                        .HasComment("Data e hora de criação do registro.");
-
-                    b.Property<string>("Descricao")
-                        .HasMaxLength(2000)
-                        .HasColumnType("character varying(2000)")
-                        .HasColumnName("descricao");
-
-                    b.Property<string>("Exibicao")
-                        .HasColumnType("jsonb")
-                        .HasColumnName("exibicao");
-
-                    b.Property<Guid>("FormularioProcessoId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("formulario_processo_id");
-
-                    b.Property<int>("Ordem")
-                        .HasColumnType("integer")
-                        .HasColumnName("ordem");
-
-                    b.Property<string>("Tipo")
-                        .IsRequired()
-                        .HasMaxLength(30)
-                        .HasColumnType("character varying(30)")
-                        .HasColumnName("tipo")
-                        .HasComment("O que a página é. Códigos: SECAO, BLOCO.");
-
-                    b.Property<string>("Titulo")
-                        .IsRequired()
-                        .HasMaxLength(300)
-                        .HasColumnType("character varying(300)")
-                        .HasColumnName("titulo");
-
-                    b.Property<DateTimeOffset?>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("updated_at")
-                        .HasComment("Data e hora da última alteração, quando houver.");
-
-                    b.HasKey("Id")
-                        .HasName("pk_paginas_do_formulario");
-
-                    b.HasIndex("FormularioProcessoId", "Codigo")
-                        .IsUnique()
-                        .HasDatabaseName("ux_paginas_do_formulario_formulario_codigo");
-
-                    b.HasIndex("FormularioProcessoId", "Ordem")
-                        .IsUnique()
-                        .HasDatabaseName("ux_paginas_do_formulario_formulario_ordem");
-
-                    b.ToTable("paginas_do_formulario", "selecao", t =>
-                        {
-                            t.HasCheckConstraint("ck_paginas_do_formulario_bloco", "bloco IS NULL OR bloco IN ('COMPROVACAO_DOCUMENTAL', 'MODALIDADES_CALCULADAS', 'REVISAO_E_ACEITE')");
-
-                            t.HasCheckConstraint("ck_paginas_do_formulario_tipo", "tipo IN ('SECAO', 'BLOCO')");
-                        });
-                });
-
             modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.EtapaProcesso", b =>
                 {
                     b.Property<Guid>("Id")
@@ -13322,12 +13240,6 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasColumnName("descricao")
                         .HasComment("Descrição do dado solicitado.");
 
-                    b.Property<string>("EtapaCodigo")
-                        .HasMaxLength(60)
-                        .HasColumnType("character varying(60)")
-                        .HasColumnName("pagina_codigo")
-                        .HasComment("Código da página do formulário, quando houver.");
-
                     b.Property<string>("FatoCodigo")
                         .IsRequired()
                         .HasMaxLength(60)
@@ -13389,6 +13301,12 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasColumnType("character varying(30)")
                         .HasColumnName("origem_valores")
                         .HasComment("Origem das opções. Códigos: CATALOGO, OPCOES_DO_PROCESSO, MUNICIPIOS_DO_FADA, UNIDADES_FEDERATIVAS, MUNICIPIOS_DA_PROVA_PRESENCIAL.");
+
+                    b.Property<string>("PaginaCodigo")
+                        .HasMaxLength(60)
+                        .HasColumnType("character varying(60)")
+                        .HasColumnName("pagina_codigo")
+                        .HasComment("Código da página do formulário, quando houver.");
 
                     b.Property<bool>("PedirConfirmacao")
                         .HasColumnType("boolean")
@@ -13610,12 +13528,6 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasColumnName("created_at")
                         .HasComment("Data e hora de criação do registro.");
 
-                    b.Property<string>("EtapaCodigo")
-                        .HasMaxLength(60)
-                        .HasColumnType("character varying(60)")
-                        .HasColumnName("pagina_codigo")
-                        .HasComment("Código da página do formulário, quando houver.");
-
                     b.Property<string>("Exibicao")
                         .HasColumnType("jsonb")
                         .HasColumnName("exibicao")
@@ -13653,6 +13565,12 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasColumnType("integer")
                         .HasColumnName("ordem")
                         .HasComment("Posição de apresentação ou avaliação no conjunto.");
+
+                    b.Property<string>("PaginaCodigo")
+                        .HasMaxLength(60)
+                        .HasColumnType("character varying(60)")
+                        .HasColumnName("pagina_codigo")
+                        .HasComment("Código da página do formulário, quando houver.");
 
                     b.Property<Guid>("ProcessoSeletivoId")
                         .HasColumnType("uuid")
@@ -14738,6 +14656,88 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     b.ToTable("opcoes_declaradas_do_dado", "selecao", t =>
                         {
                             t.HasComment("Opções de resposta declaradas pelo processo para um dado.");
+                        });
+                });
+
+            modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.PaginaDoFormulario", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("Aviso")
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)")
+                        .HasColumnName("aviso");
+
+                    b.Property<string>("Bloco")
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)")
+                        .HasColumnName("bloco")
+                        .HasComment("O bloco que o sistema monta; nulo na seção. Códigos: COMPROVACAO_DOCUMENTAL, MODALIDADES_CALCULADAS, REVISAO_E_ACEITE.");
+
+                    b.Property<string>("Codigo")
+                        .IsRequired()
+                        .HasMaxLength(60)
+                        .HasColumnType("character varying(60)")
+                        .HasColumnName("codigo");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at")
+                        .HasComment("Data e hora de criação do registro.");
+
+                    b.Property<string>("Descricao")
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)")
+                        .HasColumnName("descricao");
+
+                    b.Property<string>("Exibicao")
+                        .HasColumnType("jsonb")
+                        .HasColumnName("exibicao");
+
+                    b.Property<Guid>("FormularioProcessoId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("formulario_processo_id");
+
+                    b.Property<int>("Ordem")
+                        .HasColumnType("integer")
+                        .HasColumnName("ordem");
+
+                    b.Property<string>("Tipo")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)")
+                        .HasColumnName("tipo")
+                        .HasComment("O que a página é. Códigos: SECAO, BLOCO.");
+
+                    b.Property<string>("Titulo")
+                        .IsRequired()
+                        .HasMaxLength(300)
+                        .HasColumnType("character varying(300)")
+                        .HasColumnName("titulo");
+
+                    b.Property<DateTimeOffset?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at")
+                        .HasComment("Data e hora da última alteração, quando houver.");
+
+                    b.HasKey("Id")
+                        .HasName("pk_paginas_do_formulario");
+
+                    b.HasIndex("FormularioProcessoId", "Codigo")
+                        .IsUnique()
+                        .HasDatabaseName("ux_paginas_do_formulario_formulario_codigo");
+
+                    b.HasIndex("FormularioProcessoId", "Ordem")
+                        .IsUnique()
+                        .HasDatabaseName("ux_paginas_do_formulario_formulario_ordem");
+
+                    b.ToTable("paginas_do_formulario", "selecao", t =>
+                        {
+                            t.HasCheckConstraint("ck_paginas_do_formulario_bloco", "bloco IS NULL OR bloco IN ('COMPROVACAO_DOCUMENTAL', 'MODALIDADES_CALCULADAS', 'REVISAO_E_ACEITE')");
+
+                            t.HasCheckConstraint("ck_paginas_do_formulario_tipo", "tipo IN ('SECAO', 'BLOCO')");
                         });
                 });
 
@@ -21074,16 +21074,6 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasConstraintName("fk_documentos_exigidos_base_legal_documento_exigido");
                 });
 
-            modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.EtapaFormulario", b =>
-                {
-                    b.HasOne("Unifesspa.UniPlus.Selecao.Domain.Entities.FormularioProcesso", null)
-                        .WithMany("Etapas")
-                        .HasForeignKey("FormularioProcessoId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired()
-                        .HasConstraintName("fk_paginas_do_formulario_formulario_processo");
-                });
-
             modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.EtapaProcesso", b =>
                 {
                     b.HasOne("Unifesspa.UniPlus.Selecao.Domain.Entities.ProcessoSeletivo", null)
@@ -21570,6 +21560,16 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
                         .HasConstraintName("fk_opcoes_declaradas_do_dado_processo_seletivo");
+                });
+
+            modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.PaginaDoFormulario", b =>
+                {
+                    b.HasOne("Unifesspa.UniPlus.Selecao.Domain.Entities.FormularioProcesso", null)
+                        .WithMany("Paginas")
+                        .HasForeignKey("FormularioProcessoId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_paginas_do_formulario_formulario_processo");
                 });
 
             modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.ProcessoSeletivo", b =>
@@ -22600,7 +22600,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
             modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.FormularioProcesso", b =>
                 {
-                    b.Navigation("Etapas");
+                    b.Navigation("Paginas");
                 });
 
             modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.GrupoColetado", b =>

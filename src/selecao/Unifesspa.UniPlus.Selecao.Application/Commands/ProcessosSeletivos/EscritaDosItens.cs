@@ -171,7 +171,7 @@ internal static class EscritaDosItens
         NoCaminho(
             FormaDoGrupo.Conferir(
                 input.Codigo, input.Ordem, input.Rotulo, ocorrencias,
-                [.. (input.Subitens ?? []).Select(static s => (s?.FatoCodigo, s?.EtapaCodigo, s?.Regras?.Impedimento is not null))],
+                [.. (input.Subitens ?? []).Select(static s => (s?.FatoCodigo, s?.PaginaCodigo, s?.Regras?.Impedimento is not null))],
                 regras.ParaAConferenciaDaForma),
             caminho);
 
@@ -220,7 +220,7 @@ internal static class EscritaDosItens
     // A forma do grupo e a identificação do candidato já foram conferidas na leitura; a fábrica as
     // repete e devolve o grupo.
     private static GrupoColetado CriarGrupo(GrupoLido lido, OcorrenciasDoGrupo ocorrencias, ExibicaoEObrigatoriedade configuracao, List<FatoColetado> campos) =>
-        GrupoColetado.Criar(lido.Entrada.Codigo, lido.Entrada.Ordem, lido.Entrada.EtapaCodigo, lido.Entrada.Rotulo, ocorrencias, configuracao, campos).Value!;
+        GrupoColetado.Criar(lido.Entrada.Codigo, lido.Entrada.Ordem, lido.Entrada.PaginaCodigo, lido.Entrada.Rotulo, ocorrencias, configuracao, campos).Value!;
 
     /// <summary>
     /// Os itens de forma válida conferidos contra o catálogo, com as recusas da forma e da semântica
@@ -342,7 +342,7 @@ internal static class EscritaDosItens
         Result<FatoColetado> item = FatoColetado.Criar(
             input.FatoCodigo,
             input.Ordem,
-            input.EtapaCodigo,
+            input.PaginaCodigo,
             EntradaDeRegras.Apresentacao(input.Apresentacao, tipoDeCampo),
             regras,
             VocabularioDeFatos.CopiaNoCatalogo(fato));

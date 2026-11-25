@@ -16,7 +16,7 @@ using Unifesspa.UniPlus.Regras.Formularios;
 /// </summary>
 /// <remarks>
 /// O modelo segue as mesmas regras do formulário do processo, pelo mesmo código de
-/// <c>Unifesspa.UniPlus.Regras</c>: a forma do cabeçalho, das etapas, dos itens e dos termos, o teto de
+/// <c>Unifesspa.UniPlus.Regras</c>: a forma do cabeçalho, das páginas, dos itens e dos termos, o teto de
 /// itens, a estrutura por finalidade e o grafo de coleta. A conferência contra o catálogo de fatos e de
 /// termos é de quem tem o catálogo; o modelo recebe dele só as dependências dos derivados por regra.
 /// O código e a finalidade são imutáveis; vários modelos ativos convivem por tipo e finalidade.

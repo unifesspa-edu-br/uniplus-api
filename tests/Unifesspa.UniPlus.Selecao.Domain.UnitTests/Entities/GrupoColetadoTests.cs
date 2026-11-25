@@ -96,7 +96,7 @@ public sealed class GrupoColetadoTests
         GrupoColetado grupo = GrupoColetado.Criar(" RENDAS ", 0, " DADOS ", " Rendas ", ZeroACinco, SempreNunca, [campo]).Value!;
 
         grupo.Codigo.Should().Be("RENDAS");
-        grupo.EtapaCodigo.Should().Be("DADOS");
+        grupo.PaginaCodigo.Should().Be("DADOS");
         grupo.Rotulo.Should().Be("Rendas");
         campo.GrupoColetadoId.Should().Be(grupo.Id);
     }

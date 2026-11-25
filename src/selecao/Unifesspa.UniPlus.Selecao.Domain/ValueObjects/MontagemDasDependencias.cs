@@ -83,7 +83,7 @@ internal sealed class MontagemDasDependencias
         itens.SelectMany(static i => i.FatosCitados)
             .Concat(grupos.SelectMany(static g => g.FatosCitados.Concat(g.Subitens.SelectMany(static s => s.FatosCitados))))
             .Concat(regras.SelectMany(static r => r.FatosCitados)).Concat(documentos.SelectMany(DadosDasCondicoes))
-            .Concat(formularios.SelectMany(static f => f.Etapas).SelectMany(static e => e.FatosCitados))
+            .Concat(formularios.SelectMany(static f => f.Paginas).SelectMany(static e => e.FatosCitados))
             .Concat(termos.SelectMany(static t => t.FatosCitados));
 
     private void LigarItens(IEnumerable<FatoColetado> itens, IEnumerable<GrupoColetado> grupos)
@@ -123,14 +123,14 @@ internal sealed class MontagemDasDependencias
     {
         foreach (FormularioProcesso formulario in formularios)
         {
-            foreach (EtapaFormulario secao in formulario.Etapas.Where(static e => e.Exibicao is not null))
+            foreach (PaginaDoFormulario secao in formulario.Paginas.Where(static e => e.Exibicao is not null))
             {
                 LigarSecao(formulario, secao, itens, grupos);
             }
         }
     }
 
-    private void LigarSecao(FormularioProcesso formulario, EtapaFormulario secao, IEnumerable<FatoColetado> itens, IEnumerable<GrupoColetado> grupos)
+    private void LigarSecao(FormularioProcesso formulario, PaginaDoFormulario secao, IEnumerable<FatoColetado> itens, IEnumerable<GrupoColetado> grupos)
     {
         ParteDaConfiguracao parte = Parte(TipoDeParteDaConfiguracao.Secao, CodigoNoFormulario(formulario.Finalidade, secao.Codigo));
         _posicoes[parte] = PosicaoNaColeta.DaSecao(formulario, secao, itens, grupos);
@@ -141,10 +141,10 @@ internal sealed class MontagemDasDependencias
         }
     }
 
-    private static IEnumerable<FatoColetado> CamposDaSecao(FormularioProcesso formulario, EtapaFormulario secao,
+    private static IEnumerable<FatoColetado> CamposDaSecao(FormularioProcesso formulario, PaginaDoFormulario secao,
         IEnumerable<FatoColetado> itens, IEnumerable<GrupoColetado> grupos) =>
-        itens.Where(i => i.Finalidade == formulario.Finalidade && string.Equals(i.EtapaCodigo, secao.Codigo, StringComparison.Ordinal))
-            .Concat(grupos.Where(g => g.Finalidade == formulario.Finalidade && string.Equals(g.EtapaCodigo, secao.Codigo, StringComparison.Ordinal))
+        itens.Where(i => i.Finalidade == formulario.Finalidade && string.Equals(i.PaginaCodigo, secao.Codigo, StringComparison.Ordinal))
+            .Concat(grupos.Where(g => g.Finalidade == formulario.Finalidade && string.Equals(g.PaginaCodigo, secao.Codigo, StringComparison.Ordinal))
                 .SelectMany(static g => g.Subitens));
 
     private void LigarTermos(IEnumerable<TermoExigidoFormulario> termos)

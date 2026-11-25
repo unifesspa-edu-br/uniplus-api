@@ -15,11 +15,11 @@ public sealed class ModeloFormularioPressupostosTests
 {
     private static readonly Dictionary<string, IReadOnlyCollection<string>> SemDerivacoes = new(StringComparer.Ordinal);
 
-    private static readonly EtapaDoModelo Dados = new("DADOS", 0, TipoEtapaFormulario.Secao, null, "Dados", null, null, null);
-    private static readonly EtapaDoModelo Revisao = new("REVISAO", 1, TipoEtapaFormulario.Bloco, BlocoSistema.RevisaoEAceite, "Revisão", null, null, null);
+    private static readonly PaginaDoModelo Dados = new("DADOS", 0, TipoPaginaFormulario.Secao, null, "Dados", null, null, null);
+    private static readonly PaginaDoModelo Revisao = new("REVISAO", 1, TipoPaginaFormulario.Bloco, BlocoSistema.RevisaoEAceite, "Revisão", null, null, null);
 
-    private static ItemDoModelo Item(string fato, int ordem, string? etapa = "DADOS") =>
-        new(fato, ordem, etapa, new ApresentacaoDoCampo(fato, TipoDeCampo.SimOuNao), null, new RegrasDoCampo(null, Obrigatoriedade.Sempre, []));
+    private static ItemDoModelo Item(string fato, int ordem, string? pagina = "DADOS") =>
+        new(fato, ordem, pagina, new ApresentacaoDoCampo(fato, TipoDeCampo.SimOuNao), null, new RegrasDoCampo(null, Obrigatoriedade.Sempre, []));
 
     private static ConteudoDoModelo Conteudo(IReadOnlyList<ItemDoModelo> itens, IReadOnlyList<GrupoDoModelo> grupos, params string[] pressupostos) =>
         new("Habilitação", [Dados, Revisao], itens, [], pressupostos, grupos);
@@ -48,7 +48,7 @@ public sealed class ModeloFormularioPressupostosTests
     {
         GrupoDoModelo composicao = new(
             "COMPOSICAO_FAMILIAR", 1, "DADOS", "Composição familiar", new OcorrenciasDoGrupo(1, 10, IncluiCandidato: false),
-            new ExibicaoEObrigatoriedade(null, Obrigatoriedade.Sempre), [Item("RENDA", 0, etapa: null)]);
+            new ExibicaoEObrigatoriedade(null, Obrigatoriedade.Sempre), [Item("RENDA", 0, pagina: null)]);
 
         Result<ModeloFormulario> modelo = Criar(FinalidadeFormulario.Habilitacao, Conteudo([Item("CONCLUSAO_REGULAR", 0)], [composicao], "RENDA"));
 

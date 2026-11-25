@@ -11,8 +11,8 @@ internal sealed class ResolucaoDoFormulario
     private readonly DefinicaoFormulario _definicao;
     private readonly EntradaAvaliacaoFormulario _entrada;
     private readonly DateOnly? _diaDoEnvio;
-    private readonly Dictionary<string, (DefinicaoEtapa Etapa, DefinicaoItem Item)> _itens;
-    private readonly Dictionary<string, (DefinicaoEtapa Etapa, DefinicaoGrupo Grupo)> _grupos;
+    private readonly Dictionary<string, (DefinicaoPagina Pagina, DefinicaoItem Item)> _itens;
+    private readonly Dictionary<string, (DefinicaoPagina Pagina, DefinicaoGrupo Grupo)> _grupos;
     private readonly Dictionary<string, DerivacaoDoFato> _derivacoes;
     private readonly Dictionary<string, DefinicaoAgregado> _agregados;
     private readonly Dictionary<string, FatoResolvido> _fatos;
@@ -24,8 +24,8 @@ internal sealed class ResolucaoDoFormulario
         _definicao = definicao;
         _entrada = entrada;
         _diaDoEnvio = entrada.Envio?.Dia;
-        _itens = definicao.ItensDasEtapas().ToDictionary(static par => par.Item.FatoCodigo, StringComparer.Ordinal);
-        _grupos = definicao.GruposDasEtapas().ToDictionary(static par => par.Grupo.Codigo, StringComparer.Ordinal);
+        _itens = definicao.ItensDasPaginas().ToDictionary(static par => par.Item.FatoCodigo, StringComparer.Ordinal);
+        _grupos = definicao.GruposDasPaginas().ToDictionary(static par => par.Grupo.Codigo, StringComparer.Ordinal);
         _derivacoes = definicao.Derivacoes.ToDictionary(static derivacao => derivacao.CodigoFato, StringComparer.Ordinal);
         _agregados = definicao.Agregados.ToDictionary(static agregado => agregado.Codigo, StringComparer.Ordinal);
         _fatos = new(entrada.FatosConhecidos, StringComparer.Ordinal);
@@ -61,10 +61,10 @@ internal sealed class ResolucaoDoFormulario
 
     private void ResolverColeta(string codigo)
     {
-        if (_grupos.TryGetValue(codigo, out (DefinicaoEtapa Etapa, DefinicaoGrupo Grupo) grupo))
+        if (_grupos.TryGetValue(codigo, out (DefinicaoPagina Pagina, DefinicaoGrupo Grupo) grupo))
         {
-            _avaliacoesDosGrupos[codigo] = new AvaliacaoDaColeta(grupo.Etapa.Codigo, _diaDoEnvio, _fatos)
-                .AvaliarGrupo(grupo.Etapa, grupo.Grupo, _entrada);
+            _avaliacoesDosGrupos[codigo] = new AvaliacaoDaColeta(grupo.Pagina.Codigo, _diaDoEnvio, _fatos)
+                .AvaliarGrupo(grupo.Pagina, grupo.Grupo, _entrada);
         }
         else
         {
@@ -74,10 +74,10 @@ internal sealed class ResolucaoDoFormulario
 
     private void ResolverItem(string codigo)
     {
-        (DefinicaoEtapa etapa, DefinicaoItem item) = _itens[codigo];
-        Ternario visivel = etapa.Exibicao?.Avaliar(_fatos) ?? Ternario.Verdadeiro;
+        (DefinicaoPagina pagina, DefinicaoItem item) = _itens[codigo];
+        Ternario visivel = pagina.Exibicao?.Avaliar(_fatos) ?? Ternario.Verdadeiro;
         JsonElement? resposta = _entrada.Respostas.TryGetValue(item.FatoCodigo, out JsonElement valor) ? valor : null;
-        AvaliacaoDoItem avaliacaoDoItem = new(etapa.Codigo, _entrada.EtapasConcluidas.Contains(etapa.Codigo), _diaDoEnvio, _fatos, item, visivel);
+        AvaliacaoDoItem avaliacaoDoItem = new(pagina.Codigo, _entrada.PaginasConcluidas.Contains(pagina.Codigo), _diaDoEnvio, _fatos, item, visivel);
         (FatoResolvido fato, AvaliacaoItem avaliacao) = avaliacaoDoItem.Avaliar(resposta);
         _fatos[codigo] = fato;
         _avaliacoesDosItens[codigo] = avaliacao;
@@ -85,27 +85,27 @@ internal sealed class ResolucaoDoFormulario
 
     internal void DeixarIndeterminado(string codigo)
     {
-        if (_grupos.TryGetValue(codigo, out (DefinicaoEtapa Etapa, DefinicaoGrupo Grupo) grupo))
+        if (_grupos.TryGetValue(codigo, out (DefinicaoPagina Pagina, DefinicaoGrupo Grupo) grupo))
         {
-            _avaliacoesDosGrupos[codigo] = new AvaliacaoGrupo(codigo, grupo.Etapa.Codigo, Ternario.Indeterminado,
+            _avaliacoesDosGrupos[codigo] = new AvaliacaoGrupo(codigo, grupo.Pagina.Codigo, Ternario.Indeterminado,
                 Ternario.Indeterminado, EstadoFato.Indeterminado, ContagemValida: true, OcorrenciaDoCandidatoValida: true, []);
             return;
         }
 
         _fatos[codigo] = FatoResolvido.Indeterminado();
-        if (_itens.TryGetValue(codigo, out (DefinicaoEtapa Etapa, DefinicaoItem Item) item))
+        if (_itens.TryGetValue(codigo, out (DefinicaoPagina Pagina, DefinicaoItem Item) item))
         {
-            _avaliacoesDosItens[codigo] = new AvaliacaoItem(codigo, item.Etapa.Codigo, Ternario.Indeterminado,
+            _avaliacoesDosItens[codigo] = new AvaliacaoItem(codigo, item.Pagina.Codigo, Ternario.Indeterminado,
                 Ternario.Indeterminado, [], item.Item.Impedimento is null ? Ternario.Falso : Ternario.Indeterminado);
         }
     }
 
     internal AvaliacaoFormulario Resultado() => new(
         _fatos,
-        [.. _definicao.ItensDasEtapas().Select(par => _avaliacoesDosItens[par.Item.FatoCodigo])],
+        [.. _definicao.ItensDasPaginas().Select(par => _avaliacoesDosItens[par.Item.FatoCodigo])],
         [.. _definicao.Termos.Select(AvaliarTermo)],
-        [.. _definicao.GruposDasEtapas().Select(par => _avaliacoesDosGrupos[par.Grupo.Codigo])],
-        [.. _definicao.Etapas.Select(etapa => new AvaliacaoEtapa(etapa.Codigo, etapa.Exibicao?.Avaliar(_fatos) ?? Ternario.Verdadeiro))]);
+        [.. _definicao.GruposDasPaginas().Select(par => _avaliacoesDosGrupos[par.Grupo.Codigo])],
+        [.. _definicao.Paginas.Select(pagina => new AvaliacaoPagina(pagina.Codigo, pagina.Exibicao?.Avaliar(_fatos) ?? Ternario.Verdadeiro))]);
 
     private AvaliacaoTermo AvaliarTermo(DefinicaoTermo termo)
     {

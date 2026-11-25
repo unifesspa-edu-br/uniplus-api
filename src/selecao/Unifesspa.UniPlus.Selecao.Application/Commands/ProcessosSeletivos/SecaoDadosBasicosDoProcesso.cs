@@ -56,13 +56,13 @@ internal static class SecaoDadosBasicosDoProcesso
     }
 
     /// <summary>A seção gravada no formulário de inscrição, ou a do conjunto básico.</summary>
-    public static EtapaFormularioInput Secao(ProcessoSeletivo processo)
+    public static PaginaDoFormularioInput Secao(ProcessoSeletivo processo)
     {
         ArgumentNullException.ThrowIfNull(processo);
-        return ConjuntoBasicoDaInscricao.SecaoDe((processo.FormularioDe(FinalidadeFormulario.Inscricao)?.Etapas ?? [])
-            .Select(static gravada => new EtapaFormularioInput(
+        return ConjuntoBasicoDaInscricao.SecaoDe((processo.FormularioDe(FinalidadeFormulario.Inscricao)?.Paginas ?? [])
+            .Select(static gravada => new PaginaDoFormularioInput(
                 gravada.Codigo, gravada.Ordem, gravada.Tipo.Codigo(), gravada.Bloco?.Codigo(),
-                new ApresentacaoDaEtapaInput(gravada.Titulo, gravada.Descricao, gravada.Aviso), EntradaDeRegras.ParaEntrada(gravada.Exibicao))));
+                new ApresentacaoDaPaginaInput(gravada.Titulo, gravada.Descricao, gravada.Aviso), EntradaDeRegras.ParaEntrada(gravada.Exibicao))));
     }
 
     /// <summary>Os grupos gravados no formulário de inscrição, na forma de entrada.</summary>
@@ -73,7 +73,7 @@ internal static class SecaoDadosBasicosDoProcesso
             .Where(static g => g.Finalidade == FinalidadeFormulario.Inscricao)
             .Select(static g => new GrupoColetadoInput(
                 g.Codigo, g.Ordem, g.Rotulo, EntradaDeRegras.ParaEntrada(g.Ocorrencias), EntradaDeRegras.ParaEntrada(g.Regras),
-                [.. g.Subitens.Select(Entrada)], g.EtapaCodigo))];
+                [.. g.Subitens.Select(Entrada)], g.PaginaCodigo))];
     }
 
     /// <summary>
@@ -85,7 +85,7 @@ internal static class SecaoDadosBasicosDoProcesso
         ArgumentNullException.ThrowIfNull(processo);
         int naSecao = processo.FatosColetados
             .Where(static f => f.Finalidade == FinalidadeFormulario.Inscricao
-                && string.Equals(f.EtapaCodigo, ConjuntoBasicoDaInscricao.CodigoDaSecao, StringComparison.Ordinal)
+                && string.Equals(f.PaginaCodigo, ConjuntoBasicoDaInscricao.CodigoDaSecao, StringComparison.Ordinal)
                 && ConjuntoBasicoDaInscricao.Fatos.Contains(f.FatoCodigo))
             .Select(static f => f.FatoCodigo).Distinct(StringComparer.Ordinal).Count();
         return naSecao > 0 && naSecao < ConjuntoBasicoDaInscricao.Fatos.Count;
@@ -93,5 +93,5 @@ internal static class SecaoDadosBasicosDoProcesso
 
     /// <summary>O item gravado na forma de entrada.</summary>
     private static FatoColetadoInput Entrada(FatoColetado fato) =>
-        new(fato.FatoCodigo, fato.Ordem, EntradaDeRegras.ParaEntrada(fato.Apresentacao), EntradaDeRegras.ParaEntrada(fato.Regras), fato.EtapaCodigo);
+        new(fato.FatoCodigo, fato.Ordem, EntradaDeRegras.ParaEntrada(fato.Apresentacao), EntradaDeRegras.ParaEntrada(fato.Regras), fato.PaginaCodigo);
 }

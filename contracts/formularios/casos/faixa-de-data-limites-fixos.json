@@ -1,7 +1,7 @@
 {
   "descricao": "Os limites fixos da faixa de data entram na faixa: 01/01/2000 e 31/12/2010 atendem, e o dia anterior ao mínimo e o seguinte ao máximo violam.",
   "regras": {
-    "etapas": [
+    "paginas": [
       {
         "codigo": "DADOS",
         "exibicao": null,
@@ -157,7 +157,7 @@
     "DATA_D": "2011-01-01"
   },
   "grupos": {},
-  "etapasConcluidas": [],
+  "paginasConcluidas": [],
   "pressupostos": {},
   "envio": {
     "instante": "2026-10-10T15:00:00Z",

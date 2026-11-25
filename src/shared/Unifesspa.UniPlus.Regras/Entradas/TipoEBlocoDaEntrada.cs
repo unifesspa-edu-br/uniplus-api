@@ -5,20 +5,20 @@ using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Formularios;
 
 /// <summary>
-/// O tipo e o bloco de sistema que o pedido informou para uma etapa do formulário: a única leitura deles, no processo e
+/// O tipo e o bloco de sistema que o pedido informou para uma página do formulário: a única leitura deles, no processo e
 /// no modelo. A mensagem do código desconhecido lista os códigos aceitos sem repetir o valor recebido.
 /// </summary>
 public static class TipoEBlocoDaEntrada
 {
     /// <summary>O tipo do código informado, ou a recusa de domínio quando ele falta ou não é um dos aceitos.</summary>
-    public static Result<TipoEtapaFormulario> LerTipo(string? codigo) =>
-        CatalogoDe<TipoEtapaFormulario>.TentarObter(codigo, out TipoEtapaFormulario tipo)
-            ? Result<TipoEtapaFormulario>.Success(tipo)
-            : Result<TipoEtapaFormulario>.Failure(new DomainError(
-                EstruturaFormularioErrorCodes.TipoDeEtapaObrigatorio,
-                $"A etapa é uma seção ou um bloco de sistema. Os tipos aceitos são {CodigosAceitos<TipoEtapaFormulario>()}."));
+    public static Result<TipoPaginaFormulario> LerTipo(string? codigo) =>
+        CatalogoDe<TipoPaginaFormulario>.TentarObter(codigo, out TipoPaginaFormulario tipo)
+            ? Result<TipoPaginaFormulario>.Success(tipo)
+            : Result<TipoPaginaFormulario>.Failure(new DomainError(
+                EstruturaFormularioErrorCodes.TipoDePaginaObrigatorio,
+                $"A página é uma seção ou um bloco de sistema. Os tipos aceitos são {CodigosAceitos<TipoPaginaFormulario>()}."));
 
-    /// <summary>O bloco do código informado; o código ausente é a etapa sem bloco, e o desconhecido é recusado.</summary>
+    /// <summary>O bloco do código informado; o código ausente é a página sem bloco, e o desconhecido é recusado.</summary>
     public static Result<BlocoSistema?> LerBloco(string? codigo)
     {
         if (codigo is null)

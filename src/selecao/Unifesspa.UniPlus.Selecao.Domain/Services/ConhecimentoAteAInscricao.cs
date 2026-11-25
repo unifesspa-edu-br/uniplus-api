@@ -14,10 +14,10 @@ using ValueObjects;
 /// </summary>
 internal sealed class ConhecimentoAteAInscricao
 {
-    private readonly ProducaoDasEtapas _ateAInscricao;
+    private readonly ProducaoDasPaginas _ateAInscricao;
     private readonly IReadOnlyDictionary<string, FatoResolvido> _fatosConhecidos;
 
-    private ConhecimentoAteAInscricao(ProducaoDasEtapas ateAInscricao, IReadOnlyDictionary<string, FatoResolvido> fatosConhecidos)
+    private ConhecimentoAteAInscricao(ProducaoDasPaginas ateAInscricao, IReadOnlyDictionary<string, FatoResolvido> fatosConhecidos)
     {
         _ateAInscricao = ateAInscricao;
         _fatosConhecidos = fatosConhecidos;
@@ -28,9 +28,9 @@ internal sealed class ConhecimentoAteAInscricao
         IReadOnlyList<FinalidadeFormulario> finalidadesAteAInscricao,
         IReadOnlyDictionary<string, FatoResolvido> fatosConhecidos) =>
         new(
-            ProducaoDasEtapas.De(
+            ProducaoDasPaginas.De(
                 configuracao.Definicao,
-                configuracao.Definicao.Etapas.Where(e => finalidadesAteAInscricao.Any(f => DefinicaoDoProcesso.EhDaFinalidade(e.Codigo, f)))),
+                configuracao.Definicao.Paginas.Where(e => finalidadesAteAInscricao.Any(f => DefinicaoDoProcesso.EhDaFinalidade(e.Codigo, f)))),
             fatosConhecidos);
 
     internal bool ConheceOGrupo(string? grupoRepetido) =>
