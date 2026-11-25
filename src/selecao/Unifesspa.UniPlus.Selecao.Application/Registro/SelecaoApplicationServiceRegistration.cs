@@ -1,4 +1,4 @@
-namespace Unifesspa.UniPlus.Selecao.Application.Mappings;
+namespace Unifesspa.UniPlus.Selecao.Application.Registro;
 
 using FluentValidation;
 
@@ -6,26 +6,27 @@ using Microsoft.Extensions.DependencyInjection;
 
 using Services;
 using Services.AcessoPelaBanca;
+using Services.Comprovantes;
 using Services.DocumentoDaConfiguracao;
 using Services.ExportacaoDaVersaoPublicada;
 using Services.InscricaoAdministrativa;
+using Services.Inscricoes;
+using Services.ListagemDeInscricoes;
+using Services.NotasDoEnem;
 using Services.Rascunhos;
 using Services.Rascunhos.Descricoes;
 
 using Unifesspa.UniPlus.Authorization.Projecao;
 using Unifesspa.UniPlus.Selecao.Application.Commands.AtosDoProcesso;
+using Unifesspa.UniPlus.Selecao.Application.Commands.NotasDoEnem;
 using Unifesspa.UniPlus.Selecao.Application.Commands.ObrigatoriedadesLegais;
 using Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
 using Unifesspa.UniPlus.Selecao.Application.Permissoes;
 using Unifesspa.UniPlus.Selecao.Application.Queries.ProcessosSeletivos;
 
 /// <summary>
-/// Registra os recursos da camada Application do módulo Seleção. CQRS roda
-/// integralmente sobre Wolverine (<c>ICommandBus</c>/<c>IQueryBus</c>) — esta
-/// extensão registra os validators FluentValidation, consumidos pelo
-/// middleware de validação FluentValidation do Wolverine (<c>UseFluentValidation</c>,
-/// configurado em <c>Infrastructure.Core</c>), e os serviços que rodam fora do
-/// barramento, como a remoção dos envios de arquivo pendentes vencidos.
+/// Registra os validadores e serviços da camada Application do módulo Seleção,
+/// incluindo a porta de permissão compartilhada com os demais módulos.
 /// </summary>
 public static class SelecaoApplicationServiceRegistration
 {
@@ -38,6 +39,7 @@ public static class SelecaoApplicationServiceRegistration
         AddConferenciaDaObrigatoriedadeLegal(services);
         AddPublicacaoDoProcesso(services);
         AddInscricao(services);
+        AddNotasDoEnem(services);
         AddRemocaoDeArquivosPendentesVencidos(services);
         AddPortaDePermissao(services);
 
@@ -76,9 +78,81 @@ public static class SelecaoApplicationServiceRegistration
 
     private static void AddInscricao(IServiceCollection services)
     {
-        AddAcessoAoCampoEAoDocumentoDaInscricao(services);
+        AddTitularPeriodoEVersaoDaInscricao(services);
+        AddInicioDescarteECancelamentoDaInscricao(services);
+        AddEnvioDaInscricao(services);
+        AddConsultaDaInscricaoPeloCandidato(services);
+        AddDocumentosDaInscricao(services);
+        AddComprovanteDaInscricao(services);
         AddSalvamentoDoRascunho(services);
         AddDescricaoDosRascunhos(services);
+        AddAcessoAoCampoEAoDocumentoDaInscricao(services);
+        AddConsultaAdministrativaDasInscricoes(services);
+    }
+
+    private static void AddTitularPeriodoEVersaoDaInscricao(IServiceCollection services)
+    {
+        services.AddScoped<InscricaoDoDono>();
+        services.AddScoped<PeriodoDaInscricaoResolver>();
+        services.AddScoped<VersaoDaInscricaoResolver>();
+        services.AddScoped<ContextoDaVersaoFixadaResolver>();
+    }
+
+    private static void AddInicioDescarteECancelamentoDaInscricao(IServiceCollection services)
+    {
+        services.AddScoped<InicioDaInscricao>();
+        services.AddScoped<DescarteDaInscricao>();
+        services.AddScoped<CancelamentoDaInscricaoPeloTitular>();
+    }
+
+    private static void AddEnvioDaInscricao(IServiceCollection services)
+    {
+        services.AddScoped<ConferenciaDoEnderecoDaInscricao>();
+        services.AddScoped<ConferenciaDosMunicipiosDaInscricao>();
+        services.AddScoped<PreparacaoDoEnvioDaInscricao>();
+        services.AddScoped<ConferenciaDoEnvioDaInscricao>();
+        services.AddScoped<RegistroDoEnvioDaInscricao>();
+        services.AddScoped<SubmissaoDaInscricao>();
+    }
+
+    private static void AddConsultaDaInscricaoPeloCandidato(IServiceCollection services)
+    {
+        services.AddScoped<LeituraDaInscricao>();
+        services.AddScoped<ConsultaDaAvaliacaoDaInscricao>();
+        services.AddScoped<PreparacaoDaAvaliacaoDaInscricao>();
+        services.AddScoped<ProcessosDasInscricoes>();
+    }
+
+    private static void AddDocumentosDaInscricao(IServiceCollection services)
+    {
+        services.AddScoped<DocumentosEnviadosDaInscricao>();
+        services.AddScoped<AcessoAoDocumentoDaInscricao>();
+        services.AddScoped<InicioDoEnvioDeDocumento>();
+        services.AddScoped<ConfirmacaoDoEnvioDeDocumento>();
+        services.AddScoped<RemocaoDoArquivoDaInscricao>();
+    }
+
+    private static void AddComprovanteDaInscricao(IServiceCollection services)
+    {
+        services.AddScoped<PrazoDaCorrecaoDoComprovante>();
+        services.AddScoped<CancelamentoDoComprovante>();
+        services.AddScoped<MontadorDoComprovante>();
+    }
+
+    private static void AddConsultaAdministrativaDasInscricoes(IServiceCollection services)
+    {
+        services.AddScoped<ProjetorDaInscricaoAdministrativa>();
+        services.AddScoped<LeituraDaInscricaoAdministrativa>();
+        services.AddScoped<ProjetorDaListagemDeInscricoes>();
+    }
+
+    private static void AddNotasDoEnem(IServiceCollection services)
+    {
+        services.AddScoped<ResolvedorDoEscopoDeNotasDoEnem>();
+        services.AddScoped<PreparacaoDaImportacaoDeNotas>();
+        services.AddScoped<ImportacaoDasNotasDoEnem>();
+        services.AddScoped<DetalheDoLoteDeNotasMontador>();
+        services.AddScoped<GeracaoDoEnvioAoInep>();
     }
 
     // O resolvedor guarda só as portas dos cadastros por construtor; o comando que grava a distribuição e a query que a

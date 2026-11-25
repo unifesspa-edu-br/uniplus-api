@@ -26,14 +26,8 @@ using Unifesspa.UniPlus.Infrastructure.Core.DependencyInjection;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.Infrastructure.Core.Storage;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
-using Unifesspa.UniPlus.Selecao.Application.Commands.NotasDoEnem;
 using Unifesspa.UniPlus.Selecao.Application.Queries.ProcessosSeletivos;
 using Unifesspa.UniPlus.Selecao.Application.Services;
-using Unifesspa.UniPlus.Selecao.Application.Services.Comprovantes;
-using Unifesspa.UniPlus.Selecao.Application.Services.InscricaoAdministrativa;
-using Unifesspa.UniPlus.Selecao.Application.Services.Inscricoes;
-using Unifesspa.UniPlus.Selecao.Application.Services.ListagemDeInscricoes;
-using Unifesspa.UniPlus.Selecao.Application.Services.NotasDoEnem;
 
 public static class SelecaoInfrastructureRegistration
 {
@@ -69,69 +63,7 @@ public static class SelecaoInfrastructureRegistration
         services.AddScoped<IRascunhoDeProcessoSeletivoRepository, RascunhoDeProcessoSeletivoRepository>();
         services.AddScoped<IInscricaoRepository, InscricaoRepository>();
         services.AddScoped<IComprovanteDaInscricaoRepository, ComprovanteDaInscricaoRepository>();
-        services.AddScoped<ILoteDeNotasDoEnemRepository, LoteDeNotasDoEnemRepository>();
-        services.AddScoped<IGeracaoDeEnvioAoInepRepository, GeracaoDeEnvioAoInepRepository>();
-    }
-
-    private static void AddServicosDeAplicacaoDaInscricao(this IServiceCollection services)
-    {
-        services.AddEtapasDoEnvioDaInscricao();
-        services.AddLeituraEAvaliacaoDaInscricao();
-        services.AddScoped<PrazoDaCorrecaoDoComprovante>();
-        services.AddScoped<CancelamentoDoComprovante>();
-        services.AddScoped<MontadorDoComprovante>();
-        services.AddScoped<ProjetorDaInscricaoAdministrativa>();
-        services.AddScoped<ProjetorDaListagemDeInscricoes>();
-        services.AddScoped<LeituraDaInscricaoAdministrativa>();
-        services.AddScoped<ProcessosDasInscricoes>();
         services.AddScoped<IGeradorDeNumeroInscricao, GeradorDeNumeroInscricao>();
-        services.AddScoped<IResolvedorDaUnidadeResponsavel, ResolvedorDaUnidadeResponsavel>();
-        services.AddScoped<IInscritosDaEdicaoDoEnem, InscritosDaEdicaoDoEnem>();
-        services.AddScoped<IIndiceCegoDoCpf, CalculadorDoIndiceCegoDoCpf>();
-    }
-
-    private static void AddLeituraEAvaliacaoDaInscricao(this IServiceCollection services)
-    {
-        services.AddOperacoesDoEnem();
-        services.AddScoped<InicioDaInscricao>();
-        services.AddScoped<CancelamentoDaInscricaoPeloTitular>();
-        services.AddScoped<ConsultaDaAvaliacaoDaInscricao>();
-        services.AddScoped<LeituraDaInscricao>();
-        services.AddScoped<PreparacaoDaAvaliacaoDaInscricao>();
-        services.AddOperacoesDosDocumentosDaInscricao();
-    }
-
-    private static void AddOperacoesDoEnem(this IServiceCollection services)
-    {
-        services.AddScoped<ResolvedorDoEscopoDeNotasDoEnem>();
-        services.AddScoped<PreparacaoDaImportacaoDeNotas>();
-        services.AddScoped<ImportacaoDasNotasDoEnem>();
-        services.AddScoped<GeracaoDoEnvioAoInep>();
-        services.AddScoped<DetalheDoLoteDeNotasMontador>();
-    }
-
-    private static void AddOperacoesDosDocumentosDaInscricao(this IServiceCollection services)
-    {
-        services.AddScoped<AcessoAoDocumentoDaInscricao>();
-        services.AddScoped<InicioDoEnvioDeDocumento>();
-        services.AddScoped<ConfirmacaoDoEnvioDeDocumento>();
-        services.AddScoped<RemocaoDoArquivoDaInscricao>();
-    }
-
-    private static void AddEtapasDoEnvioDaInscricao(this IServiceCollection services)
-    {
-        services.AddScoped<ConferenciaDoEnderecoDaInscricao>();
-        services.AddScoped<ConferenciaDosMunicipiosDaInscricao>();
-        services.AddScoped<DocumentosEnviadosDaInscricao>();
-        services.AddScoped<InscricaoDoDono>();
-        services.AddScoped<PeriodoDaInscricaoResolver>();
-        services.AddScoped<VersaoDaInscricaoResolver>();
-        services.AddScoped<ContextoDaVersaoFixadaResolver>();
-        services.AddScoped<PreparacaoDoEnvioDaInscricao>();
-        services.AddScoped<ConferenciaDoEnvioDaInscricao>();
-        services.AddScoped<RegistroDoEnvioDaInscricao>();
-        services.AddScoped<SubmissaoDaInscricao>();
-        services.AddScoped<DescarteDaInscricao>();
     }
 
     private static void AddPortasELeitoresDoModulo(this IServiceCollection services)
@@ -141,6 +73,7 @@ public static class SelecaoInfrastructureRegistration
         // os módulos (ADR-0098).
         services.Replace(ServiceDescriptor.Scoped<IInscricaoDoSujeitoNoProcesso>(
             static sp => new InscricaoDoSujeitoNoProcesso(sp.GetRequiredService<UniPlusDbContext>())));
+        services.AddScoped<IResolvedorDaUnidadeResponsavel, ResolvedorDaUnidadeResponsavel>();
         services.AddScoped<ILancamentosDeNotaReader, LancamentosDeNotaReader>();
         services.AddScoped<IIndicadoresDoProcessoReader, IndicadoresDoProcessoReader>();
         services.AddScoped<IAvaliacoesDaEtapaReader, AvaliacoesDaEtapaReader>();
@@ -148,6 +81,14 @@ public static class SelecaoInfrastructureRegistration
 
         // O esquema do documento é montado uma vez, dos arquivos embutidos no assembly, e é compartilhado por todas as requisições.
         services.AddSingleton<IEsquemaDoDocumentoDaConfiguracao, EsquemaDoDocumentoDaConfiguracao>();
+    }
+
+    private static void AddPortasDasNotasDoEnem(this IServiceCollection services)
+    {
+        services.AddScoped<IInscritosDaEdicaoDoEnem, InscritosDaEdicaoDoEnem>();
+        services.AddScoped<IIndiceCegoDoCpf, CalculadorDoIndiceCegoDoCpf>();
+        services.AddScoped<ILoteDeNotasDoEnemRepository, LoteDeNotasDoEnemRepository>();
+        services.AddScoped<IGeracaoDeEnvioAoInepRepository, GeracaoDeEnvioAoInepRepository>();
     }
 
     private static void AddArmazenamentoDosArquivos(this IServiceCollection services)
@@ -220,7 +161,7 @@ public static class SelecaoInfrastructureRegistration
         services.AddProcessoSeletivoEAsLeiturasDaVersaoPublicada();
         services.AddCertameDivulgadoESnapshotDaVersao();
         services.AddRepositoriosDoModulo();
-        services.AddServicosDeAplicacaoDaInscricao();
+        services.AddPortasDasNotasDoEnem();
         services.AddPortasELeitoresDoModulo();
         services.AddArmazenamentoDosArquivos();
         services.AddOpcoesDoModulo();
