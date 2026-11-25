@@ -9,6 +9,31 @@ using Unifesspa.UniPlus.Selecao.Infrastructure.Canonicalization;
 
 public sealed class CausasDoFormularioNoEnvelopeTests
 {
+    private const string ValorFicticio = "VALOR FICTÍCIO RECONHECÍVEL";
+
+    [Fact]
+    public void LerFormularios_ExibicaoDaSegundaPaginaRecusada_SituaCausaNaExibicao()
+    {
+        JsonObject formulario = FormularioComTermosNoEnvelope.Formulario("INSCRICAO");
+        formulario["paginas"] = new JsonArray(FormularioComTermosNoEnvelope.Pagina("PRIMEIRA", 0, "SECAO", null),
+            FormularioComTermosNoEnvelope.Pagina("SEGUNDA", 1, "SECAO", null, ExibicaoIncoerente()));
+        IReadOnlyList<FieldError> causas = LerCausas(FormularioComTermosNoEnvelope.Documento(formulario));
+
+        causas.Should().Equal(FormaIncoerente("formularios[0].paginas[1].exibicao"));
+        ConferirAusenciaDoTexto(causas, ValorFicticio);
+    }
+
+    [Fact]
+    public void LerFormularios_ExibicaoDoSegundoTermoRecusada_SituaCausaNaExibicao()
+    {
+        JsonObject formulario = FormularioComTermosNoEnvelope.Formulario("INSCRICAO", FormularioComTermosNoEnvelope.Termo("PRIMEIRO", 0),
+            FormularioComTermosNoEnvelope.Termo("SEGUNDO", 1, ExibicaoIncoerente()));
+        IReadOnlyList<FieldError> causas = LerCausas(FormularioComTermosNoEnvelope.Documento(formulario));
+
+        causas.Should().Equal(FormaIncoerente("formularios[0].termos[1].exibicao"));
+        ConferirAusenciaDoTexto(causas, ValorFicticio);
+    }
+
     [Fact]
     public void LerFormularios_SegundoFormularioSemRevisao_SituaCausaNoFormulario()
     {
@@ -139,6 +164,17 @@ public sealed class CausasDoFormularioNoEnvelopeTests
         causas.Should().OnlyContain(causa => !causa.Error.Message.Contains(texto, StringComparison.Ordinal)
             && (causa.Field == null || !causa.Field.Contains(texto, StringComparison.Ordinal)));
     }
+
+    private static JsonArray ExibicaoIncoerente() => new(new JsonArray(new JsonObject
+    {
+        ["codigoDoDado"] = "FATO",
+        ["operador"] = "IGUAL",
+        ["valor"] = new JsonArray(ValorFicticio),
+    }));
+
+    private static FieldError FormaIncoerente(string campo) => new(campo,
+        new DomainError("CondicaoDnf.FormaIncoerenteComOperador",
+            "Os operadores IGUAL, DIFERENTE, MAIOR_IGUAL e MENOR_IGUAL exigem um valor JSON escalar não branco."));
 
     private static FieldError BlocoExigido(string campo) => new(campo,
         new DomainError("EstruturaFormulario.BlocoExigidoAusente", "O formulário precisa do bloco REVISAO_E_ACEITE."));
