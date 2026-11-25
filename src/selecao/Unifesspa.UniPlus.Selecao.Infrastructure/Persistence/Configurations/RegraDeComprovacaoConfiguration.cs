@@ -11,6 +11,7 @@ using Microsoft.EntityFrameworkCore.ChangeTracking;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence.CodigosDeContrato;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Protecao;
 using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
@@ -33,23 +34,18 @@ public sealed class RegraDeComprovacaoConfiguration : IEntityTypeConfiguration<R
 
     private static void ConfigurarRestricoes(TableBuilder<RegraDeComprovacao> t)
     {
-        t.HasCheckConstraint(
-            "ck_regras_de_comprovacao_forma_coerente",
-            "(forma = 'DOCUMENTO' AND documento_exigido_id IS NOT NULL AND quantidade_minima IS NOT NULL AND consequencia IS NULL) OR " +
-            "(forma = 'TODOS_OS_ITENS' AND documento_exigido_id IS NULL AND quantidade_minima IS NULL AND consequencia IS NULL " +
-            "AND criterio_de_distincao IS NULL AND data_referencia IS NULL AND ocorrencias_esperadas IS NULL) OR " +
-            "(forma = 'QUANTIDADE_MINIMA_DE_ITENS' AND documento_exigido_id IS NULL AND quantidade_minima IS NOT NULL " +
-            "AND criterio_de_distincao IS NULL AND data_referencia IS NULL AND ocorrencias_esperadas IS NULL)");
+        t.HasCheckConstraint("ck_regras_de_comprovacao_forma_coerente",
+            $"(forma = {SqlDosCodigosDeContrato.Literal(FormaDeComprovacao.Documento)} AND documento_exigido_id IS NOT NULL AND quantidade_minima IS NOT NULL AND consequencia IS NULL) OR " +
+            $"(forma = {SqlDosCodigosDeContrato.Literal(FormaDeComprovacao.TodosOsItens)} AND documento_exigido_id IS NULL AND quantidade_minima IS NULL AND consequencia IS NULL AND criterio_de_distincao IS NULL AND data_referencia IS NULL AND ocorrencias_esperadas IS NULL) OR " +
+            $"(forma = {SqlDosCodigosDeContrato.Literal(FormaDeComprovacao.QuantidadeMinimaDeItens)} AND documento_exigido_id IS NULL AND quantidade_minima IS NOT NULL AND criterio_de_distincao IS NULL AND data_referencia IS NULL AND ocorrencias_esperadas IS NULL)");
         t.HasCheckConstraint("ck_regras_de_comprovacao_id_diferente_de_regra_que_contem_id", "id <> regra_que_contem_id");
         t.HasCheckConstraint("ck_regras_de_comprovacao_ordem_nao_negativa", "ordem >= 0");
-        t.HasCheckConstraint(
-            "ck_regras_de_comprovacao_quantidade_minima_positiva", "quantidade_minima IS NULL OR quantidade_minima >= 1");
+        t.HasCheckConstraint("ck_regras_de_comprovacao_quantidade_minima_positiva", "quantidade_minima IS NULL OR quantidade_minima >= 1");
         // O teste explícito de nulo evita que UNKNOWN no PostgreSQL aceite uma combinação inválida.
-        t.HasCheckConstraint(
-            "ck_regras_de_comprovacao_criterio_de_distincao_coerente",
+        t.HasCheckConstraint("ck_regras_de_comprovacao_criterio_de_distincao_coerente",
             "(criterio_de_distincao IS NULL AND data_referencia IS NULL AND ocorrencias_esperadas IS NULL) OR " +
-            "(criterio_de_distincao IS NOT NULL AND criterio_de_distincao IN ('COMPETENCIA_MENSAL', 'EXERCICIO_ANUAL') AND data_referencia IS NOT NULL AND ocorrencias_esperadas IS NULL) OR " +
-            "(criterio_de_distincao IS NOT NULL AND criterio_de_distincao = 'OCORRENCIA' AND data_referencia IS NULL AND (ocorrencias_esperadas IS NULL OR jsonb_array_length(ocorrencias_esperadas) > 0))");
+            $"(criterio_de_distincao IS NOT NULL AND criterio_de_distincao IN ({SqlDosCodigosDeContrato.Literal(CriterioDeDistincaoDasApresentacoes.CompetenciaMensal)}, {SqlDosCodigosDeContrato.Literal(CriterioDeDistincaoDasApresentacoes.ExercicioAnual)}) AND data_referencia IS NOT NULL AND ocorrencias_esperadas IS NULL) OR " +
+            $"(criterio_de_distincao IS NOT NULL AND criterio_de_distincao = {SqlDosCodigosDeContrato.Literal(CriterioDeDistincaoDasApresentacoes.Ocorrencia)} AND data_referencia IS NULL AND (ocorrencias_esperadas IS NULL OR jsonb_array_length(ocorrencias_esperadas) > 0))");
     }
 
     private static void ConfigurarCampos(EntityTypeBuilder<RegraDeComprovacao> builder)

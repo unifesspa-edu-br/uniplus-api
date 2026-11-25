@@ -105,7 +105,7 @@ internal sealed class InscricaoRecordConfiguration : IEntityTypeConfiguration<In
         // devolver a inscrição existente em vez de um 500. Nunca duas ativas para o mesmo candidato.
         builder.HasIndex(i => new { i.ProcessoSeletivoId, i.CpfIndice })
             .IsUnique()
-            .HasFilter("situacao <> 'CANCELADA'")
+            .HasFilter($"situacao <> {SqlDosCodigosDeContrato.Literal(SituacaoInscricao.Cancelada)}")
             .HasDatabaseName("ux_inscricoes_processo_cpf_indice");
 
         // "Minhas inscrições" busca por CPF em qualquer processo — o índice

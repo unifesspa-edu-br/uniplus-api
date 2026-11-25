@@ -6,8 +6,8 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence.CodigosDeContrato;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Protecao;
-using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
@@ -36,7 +36,7 @@ internal sealed class LancamentoDeNotaConfiguration : IEntityTypeConfiguration<L
         {
             t.HasComment("Uma nota de uma inscrição em uma área do ENEM, com sua situação. Os registros não são alterados ou excluídos; a correção exige importar outro lote.");
             t.HasCheckConstraint("ck_lancamentos_de_nota_nota", "nota BETWEEN 0 AND 1000");
-            t.HasCheckConstraint("ck_lancamentos_de_nota_situacao", $"situacao IN ('{SituacaoDaProvaNoEnem.Presente.Codigo()}', '{SituacaoDaProvaNoEnem.Ausente.Codigo()}')");
+            t.HasCheckConstraint("ck_lancamentos_de_nota_situacao", $"situacao IN ({SqlDosCodigosDeContrato.Lista<SituacaoDaProvaNoEnem>()})");
         });
 
         builder.HasKey(l => l.Id);

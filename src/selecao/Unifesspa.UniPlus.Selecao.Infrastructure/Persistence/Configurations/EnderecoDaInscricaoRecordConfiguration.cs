@@ -3,9 +3,11 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Configurations;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence.CodigosDeContrato;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Protecao;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Regras.Formularios;
+using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Records;
 
 [System.Diagnostics.CodeAnalysis.SuppressMessage(
@@ -40,7 +42,7 @@ internal sealed class EnderecoDaInscricaoRecordConfiguration : IEntityTypeConfig
         builder.ToTable("enderecos_da_inscricao", t =>
         {
             t.HasComment("A resposta de um campo de endereço da inscrição, um componente por coluna.");
-            t.HasCheckConstraint("ck_enderecos_da_inscricao_origem", "origem IN ('INFORMADA', 'CALCULADA')");
+            t.HasCheckConstraint("ck_enderecos_da_inscricao_origem", $"origem IN ({SqlDosCodigosDeContrato.Lista<OrigemDaResposta>()})");
         });
 
         // Cada componente do endereço é valor de um fato cuja classificação real vem do fato coletado da
