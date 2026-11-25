@@ -222,7 +222,7 @@ internal static class LeituraDosFormularios
         Result<PredicadoDnf?> exibicaoLida = LeituraDasCondicoes.PredicadoOpcional(d.Exibicao);
         if (exibicaoLida.IsFailure)
         {
-            return leitor.Propagar<PaginaDoFormulario?>(exibicaoLida.Error!);
+            return leitor.Propagar<PaginaDoFormulario?>(exibicaoLida.Errors, $"{pathPagina}.exibicao");
         }
 
         return MontarPagina(leitor, pathPagina, ordemAnterior, d, exibicaoLida.Value);
@@ -273,7 +273,7 @@ internal static class LeituraDosFormularios
         Result<PredicadoDnf?> exibicaoLida = LeituraDasCondicoes.PredicadoOpcional(declaracao.Exibicao);
         if (exibicaoLida.IsFailure)
         {
-            return leitor.Propagar<TermoExigidoFormulario>(exibicaoLida.Error!);
+            return leitor.Propagar<TermoExigidoFormulario>(exibicaoLida.Errors, $"{path}.exibicao");
         }
 
         if (LeituraDasCondicoes.LerObrigatoriedade(leitor, item, path) is not { } obrigatoriedade)
