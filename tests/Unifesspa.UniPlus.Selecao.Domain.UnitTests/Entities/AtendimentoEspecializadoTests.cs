@@ -5,12 +5,6 @@ using AwesomeAssertions;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 
-/// <summary>
-/// Cobertura de <see cref="AtendimentoEspecializado.Criar"/> (CA-06, Story #758,
-/// ADR-0067) — acumulação de duplicatas por dimensão e da invariante "tipo de deficiência só
-/// sob condição PcD" (ADR-0125), e de <see cref="AtendimentoEspecializado.ValidarIdsUnicos"/>
-/// (checagem pura, sem cadastro resolvido).
-/// </summary>
 public sealed class AtendimentoEspecializadoTests
 {
     [Fact(DisplayName = "Criar com condição PcD e tipo de deficiência tem sucesso")]
@@ -49,7 +43,36 @@ public sealed class AtendimentoEspecializadoTests
         resultado.Error!.Code.Should().Be("AtendimentoEspecializado.TipoDeficienciaSemCondicaoPcd");
     }
 
-    [Fact(DisplayName = "ADR-0125: Criar acumula duplicata de recurso e de tipo de deficiência no mesmo lote")]
+    [Fact(DisplayName = "Código pcd em minúsculas não permite ofertar tipo de deficiência")]
+    public void Criar_CondicaoPcdEmMinusculas_RecusaTipoDeficiencia()
+    {
+        Result<AtendimentoEspecializado> resultado = AtendimentoEspecializado.Criar(
+            [CondicaoOfertada.Criar(Guid.CreateVersion7(), "pcd", "Condição")], [],
+            [DeficienciaAtendida.Criar(Guid.CreateVersion7(), "VISUAL", "Visual")]);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Errors.Should().ContainSingle().Which.Should().BeEquivalentTo(new FieldError(
+            "tipoDeficienciaIds", new DomainError("AtendimentoEspecializado.TipoDeficienciaSemCondicaoPcd",
+                "Tipos de deficiência só podem ser ofertados quando a condição PcD está ofertada.")));
+    }
+
+    [Fact(DisplayName = "Código pcd em minúsculas acumula recusa com recurso duplicado")]
+    public void Criar_CondicaoPcdEmMinusculasERecursoDuplicado_AcumulaRecusas()
+    {
+        Guid recursoId = Guid.CreateVersion7();
+        Result<AtendimentoEspecializado> resultado = AtendimentoEspecializado.Criar(
+            [CondicaoOfertada.Criar(Guid.CreateVersion7(), "pcd", "Condição")],
+            [RecursoOfertado.Criar(recursoId, "LEDOR", "Ledor"), RecursoOfertado.Criar(recursoId, "LEDOR", "Ledor")],
+            [DeficienciaAtendida.Criar(Guid.CreateVersion7(), "VISUAL", "Visual")]);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Errors.Select(e => (e.Field, e.Error.Code)).Should().BeEquivalentTo(
+            [("recursoIds", "AtendimentoEspecializado.RecursoDuplicado"),
+             ("tipoDeficienciaIds", "AtendimentoEspecializado.TipoDeficienciaSemCondicaoPcd")], o => o.WithStrictOrdering());
+        resultado.Errors.Should().OnlyContain(e => !e.Error.Message.Contains("pcd", StringComparison.Ordinal));
+    }
+
+    [Fact(DisplayName = "Criar acumula recurso e tipo de deficiência duplicados")]
     public void Criar_RecursoETipoDeficienciaDuplicados_AcumulaAsDuasViolacoes()
     {
         Guid recursoId = Guid.CreateVersion7();
@@ -65,10 +88,10 @@ public sealed class AtendimentoEspecializadoTests
         [
             "AtendimentoEspecializado.RecursoDuplicado",
             "AtendimentoEspecializado.TipoDeficienciaDuplicado",
-        ]);
+        ], o => o.WithStrictOrdering());
     }
 
-    [Fact(DisplayName = "ADR-0125: Criar acumula duplicata de tipo de deficiência com a invariante PcD ausente, no mesmo lote")]
+    [Fact(DisplayName = "Criar acumula tipo de deficiência duplicado e condição PcD ausente")]
     public void Criar_TipoDeficienciaDuplicadoSemPcd_AcumulaAsDuasViolacoes()
     {
         Guid tipoId = Guid.CreateVersion7();
@@ -83,7 +106,7 @@ public sealed class AtendimentoEspecializadoTests
         [
             "AtendimentoEspecializado.TipoDeficienciaDuplicado",
             "AtendimentoEspecializado.TipoDeficienciaSemCondicaoPcd",
-        ]);
+        ], o => o.WithStrictOrdering());
     }
 
     [Fact(DisplayName = "ValidarIdsUnicos sem duplicatas não retorna violações")]
