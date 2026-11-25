@@ -18,8 +18,8 @@ using static Unifesspa.UniPlus.Selecao.IntegrationTests.ProcessosSeletivos.Adult
 /// </summary>
 public sealed class EnvelopeCodecRecusaVocabularioEBlocosDerivadosTests
 {
-    [Fact(DisplayName = "Código inválido é recusado antes da ação inválida")]
-    public void Modalidade_CodigoEAcaoInvalidos_RecusaCodigoPrimeiro()
+    [Fact(DisplayName = "Código e ação inválidos são recusados em ordem")]
+    public void Modalidade_CodigoEAcaoInvalidos_RecusaAmbos()
     {
         Result<EnvelopeReidratado> resultado = ReidratarComEnvelopeAdulterado(envelope =>
         {
@@ -27,9 +27,12 @@ public sealed class EnvelopeCodecRecusaVocabularioEBlocosDerivadosTests
             modalidade["codigo"] = "codigo-invalido";
             modalidade["acaoQuandoIndeferido"] = "INVALIDA";
         });
-        resultado.Error!.Code.Should().Be(ErrosCodecEnvelope.EnvelopeMalformado);
-        resultado.Error.Message.Should().Contain("o código não tem o formato do cadastro");
-        resultado.Error.Message.Should().NotContain("codigo-invalido");
+        resultado.Errors.Select(causa => (causa.Field, causa.Error.Code)).Should().Equal(
+            ("modalidades[0].codigo", ErrosCodecEnvelope.EnvelopeMalformado),
+            ("modalidades[0].acaoQuandoIndeferido", ErrosCodecEnvelope.EnvelopeMalformado));
+        resultado.Errors[0].Error.Message.Should().Contain("o código não tem o formato do cadastro");
+        resultado.Errors[1].Error.Message.Should().Contain("a ação ao indeferir não pertence");
+        resultado.Errors.Should().OnlyContain(causa => !causa.Error.Message.Contains("codigo-invalido"));
     }
 
     // ── Vocabulário fechado: as factories do domínio NÃO o fecham ──
@@ -119,14 +122,14 @@ public sealed class EnvelopeCodecRecusaVocabularioEBlocosDerivadosTests
         resultado.IsFailure.Should().BeTrue(
             $"'{natureza}' com remanejamento '{remanejamento}' é combinação que o cadastro proíbe e que o caminho de " +
             "escrita jamais produz — mas o encoder reemite os dois enums verbatim, então ela faz round-trip PERFEITO. " +
-            "Restaurá-la entregaria ao motor de vagas do certame publicado uma configuração que nunca existiu.");
+            "Restaurá-la entregaria ao certame publicado uma configuração que nunca existiu.");
     }
 
     /// <summary>
     /// O <c>acaoQuandoIndeferido</c> é <b>domínio fechado</b> no cadastro
     /// (<c>RECLASSIFICA_AC</c> · <c>RECLASSIFICA_CONFORME_EDITAL</c>), e o comando nunca
     /// produz outro token — ele <b>copia</b> o da view. Um token inventado no envelope faria
-    /// round-trip perfeito e restauraria uma <b>instrução que o motor de homologação não sabe
+    /// round-trip perfeito e restauraria uma <b>instrução que a homologação não sabe
     /// executar</b>.
     /// </summary>
     [Theory(DisplayName = "Ação ao indeferir fora do domínio fechado do cadastro é recusada")]
@@ -140,8 +143,8 @@ public sealed class EnvelopeCodecRecusaVocabularioEBlocosDerivadosTests
             envelope["modalidades"]!.AsArray()[1]!["acaoQuandoIndeferido"] = token);
 
         resultado.IsFailure.Should().BeTrue(
-            $"'{token}' não pertence ao domínio fechado do cadastro — restaurá-lo daria ao motor de homologação " +
-            "uma instrução que ele não sabe executar");
+            $"'{token}' não pertence ao domínio fechado do cadastro — restaurá-lo daria à homologação " +
+            "uma instrução que ela não sabe executar");
         resultado.Error!.Code.Should().Be(ErrosCodecEnvelope.EnvelopeMalformado);
     }
 
@@ -161,7 +164,7 @@ public sealed class EnvelopeCodecRecusaVocabularioEBlocosDerivadosTests
 
         resultado.IsFailure.Should().BeTrue(
             $"'{codigo}' não tem o formato do cadastro (A-Z, 0-9, underscore) — e um código inválido vira chave do " +
-            "grafo de remanejamento que o motor de vagas do certame vai percorrer");
+            "grafo de remanejamento do certame publicado");
         resultado.Error!.Code.Should().BeOneOf(
             ErrosCodecEnvelope.EnvelopeMalformado,
             ErrosCodecEnvelope.BlocosDerivadosIncoerentes);

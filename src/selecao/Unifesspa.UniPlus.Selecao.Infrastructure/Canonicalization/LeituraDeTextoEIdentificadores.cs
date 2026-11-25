@@ -13,6 +13,8 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 /// </summary>
 internal static class LeituraDeTextoEIdentificadores
 {
+    private const string TextoNaoVazioEsperado = "esperado um texto não vazio.";
+
     public static string Texto(this LeitorEnvelope leitor, JsonObject pai, string chave, string path, int maxLength = 0)
     {
         if (leitor.Falhou)
@@ -55,7 +57,7 @@ internal static class LeituraDeTextoEIdentificadores
         }
 
         return string.IsNullOrWhiteSpace(texto)
-            ? leitor.Malformado<string>($"{path}.{chave}", "esperado um texto não vazio.")
+            ? leitor.Malformado<string>($"{path}.{chave}", TextoNaoVazioEsperado)
             : texto;
     }
 
@@ -87,6 +89,14 @@ internal static class LeituraDeTextoEIdentificadores
         return node.GetValueKind() == System.Text.Json.JsonValueKind.String
             ? leitor.GuardarComprimento(node.GetValue<string>(), $"{path}.{chave}", maxLength)
             : leitor.Malformado<string?>($"{path}.{chave}", "esperado um texto.");
+    }
+
+    public static string? TextoOpcionalNaoVazio(this LeitorEnvelope leitor, JsonObject pai, string chave, string path, int maxLength = 0)
+    {
+        string? texto = leitor.TextoOpcional(pai, chave, path, maxLength);
+        return texto is not null && string.IsNullOrWhiteSpace(texto)
+            ? leitor.Malformado<string?>($"{path}.{chave}", TextoNaoVazioEsperado)
+            : texto;
     }
 
     /// <summary>
