@@ -95,7 +95,9 @@ public sealed class DivulgacaoNoCommitDaPublicacaoTests
         AcervoPublicoEmMemoria acervo = AcervoDaFabrica(api);
         using AcervoIndisponivel acervoFora = AcervoIndisponivel.Ligar(api);
         using ProcessoPublicado publicado = await PublicarNovoProcessoAsync(api);
-        await AguardarFalhasAsync(acervo, 1);
+        await AguardarFalhaDoAtoAsync(acervo, publicado.AtoId);
+        await AguardarAsync(async () => await MensagensDaCopiaNaFilaAsync(api, publicado.AtoId) == 1,
+            "a mensagem de cópia do ato deveria ter sido reagendada na fila");
 
         string selo = await ConferirEntradaSemEnderecoAsync(api, publicado);
 
@@ -112,7 +114,7 @@ public sealed class DivulgacaoNoCommitDaPublicacaoTests
         using AcervoIndisponivel acervoFora = AcervoIndisponivel.Ligar(api);
         using ProcessoPublicado publicado = await PublicarNovoProcessoAsync(api);
         await RetificarSemCopiarAsync(api, publicado);
-        await AguardarFalhasAsync(acervo, 2);
+        await AguardarFalhaDoAtoAsync(acervo, await AtoDaRetificacaoAsync(api, publicado.ProcessoId));
         acervoFora.Restabelecer();
 
         await CopiarAoAcervoAsync(api, publicado.ProcessoId, publicado.AtoId);
@@ -170,7 +172,7 @@ public sealed class DivulgacaoNoCommitDaPublicacaoTests
 
     private static async Task ConferirSoAAberturaCopiadaAsync(CascadingApiFactory api, ProcessoPublicado publicado)
     {
-        Guid retificacao = (await LerVersaoAsync(api, publicado.ProcessoId, numero: 2)).AtoCriadorId;
+        Guid retificacao = await AtoDaRetificacaoAsync(api, publicado.ProcessoId);
         CertameDivulgado divulgado = await LerDivulgacaoAsync(api, publicado.ProcessoId);
 
         divulgado.CopiouOsDocumentosDoAto(publicado.AtoId).Should().BeTrue();
@@ -179,12 +181,19 @@ public sealed class DivulgacaoNoCommitDaPublicacaoTests
         divulgado.AtoCriadorId.Should().Be(retificacao);
     }
 
-    private static async Task AguardarFalhasAsync(AcervoPublicoEmMemoria acervo, int esperadas)
+    private static async Task<Guid> AtoDaRetificacaoAsync(CascadingApiFactory api, Guid processoId) =>
+        (await LerVersaoAsync(api, processoId, numero: 2)).AtoCriadorId;
+
+    private static Task AguardarFalhaDoAtoAsync(AcervoPublicoEmMemoria acervo, Guid atoId) =>
+        AguardarAsync(() => Task.FromResult(acervo.FalhasDoAto(atoId) >= 1),
+            "a cópia do ato ao acervo deveria ter sido tentada e falhado");
+
+    private static async Task AguardarAsync(Func<Task<bool>> condicao, string porque)
     {
         DateTimeOffset limite = DateTimeOffset.UtcNow + TimeSpan.FromSeconds(30);
-        while (acervo.Falhas < esperadas)
+        while (!await condicao())
         {
-            DateTimeOffset.UtcNow.Should().BeBefore(limite, "a cópia ao acervo deveria ter sido tentada e falhado");
+            DateTimeOffset.UtcNow.Should().BeBefore(limite, porque);
             await Task.Delay(TimeSpan.FromMilliseconds(200));
         }
     }

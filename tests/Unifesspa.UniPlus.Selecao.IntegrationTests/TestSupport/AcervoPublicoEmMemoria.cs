@@ -12,9 +12,9 @@ using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 internal sealed class AcervoPublicoEmMemoria : IAcervoPublico
 {
     private readonly ConcurrentDictionary<string, DocumentoNoAcervo> _copiados = new(StringComparer.Ordinal);
+    private readonly ConcurrentDictionary<Guid, int> _falhasPorAto = new();
 
     private volatile bool _indisponivel;
-    private int _falhas;
 
     /// <summary>Enquanto verdadeiro, a cópia falha como o armazenamento fora do ar: nada é guardado.</summary>
     public bool Indisponivel
@@ -23,8 +23,8 @@ internal sealed class AcervoPublicoEmMemoria : IAcervoPublico
         set => _indisponivel = value;
     }
 
-    /// <summary>Quantas cópias falharam por indisponibilidade.</summary>
-    public int Falhas => Volatile.Read(ref _falhas);
+    /// <summary>Quantas cópias do ato falharam por indisponibilidade.</summary>
+    public int FalhasDoAto(Guid atoId) => _falhasPorAto.GetValueOrDefault(atoId);
 
     /// <summary>As chaves no acervo, com o documento que cada uma recebeu.</summary>
     public IReadOnlyDictionary<string, DocumentoNoAcervo> Copiados => _copiados;
@@ -37,7 +37,7 @@ internal sealed class AcervoPublicoEmMemoria : IAcervoPublico
     {
         if (_indisponivel)
         {
-            Interlocked.Increment(ref _falhas);
+            _falhasPorAto.AddOrUpdate(documento.AtoId, 1, static (_, falhas) => falhas + 1);
             throw new AcervoPublicoIndisponivelException(
                 "O acervo público de teste está indisponível.", new IOException("armazenamento fora do ar"));
         }
