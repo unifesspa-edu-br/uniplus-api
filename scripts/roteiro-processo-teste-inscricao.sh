@@ -263,8 +263,7 @@ setup_configuracao() {
     }')
     [ -z "$CAMPUS_ID" ] && CAMPUS_ID=$(api_get "/api/configuracao/campi?limit=100" | jq -r '.[] | select(.sigla=="MARABA") | .id' | head -1)
     exigir_id "CAMPUS_ID" "$CAMPUS_ID"
-    # O local de oferta e a oferta de curso não têm código próprio: reaproveita
-    # pelo campus e pelo curso antes de criar.
+    # Reaproveita o local pelo campus e a oferta pelo curso antes de criar.
     LOCAL_OFERTA_ID=$(api_get "/api/configuracao/locais-oferta?limit=100" | jq -r --arg c "$CAMPUS_ID" '.[] | select(.campusResponsavelId==$c) | .id' | head -1)
     if [ -z "$LOCAL_OFERTA_ID" ]; then
         LOCAL_OFERTA_ID=$(post_tolerante "/api/configuracao/admin/locais-oferta" "{
@@ -280,19 +279,36 @@ setup_configuracao() {
     }')
     [ -z "$CURSO_ID" ] && CURSO_ID=$(api_get "/api/configuracao/cursos?limit=100" | jq -r '.[] | select(.codigo=="MEDICINA") | .id' | head -1)
     exigir_id "CURSO_ID" "$CURSO_ID"
-    OFERTA_CURSO_ID=$(api_get "/api/configuracao/ofertas-curso?limit=100" | jq -r --arg c "$CURSO_ID" '.[] | select(.cursoId==$c) | .id' | head -1)
+    OFERTA_CURSO_ID=$(api_get "/api/configuracao/ofertas-curso?limit=100" | jq -r --arg c "$CURSO_ID" --arg l "$LOCAL_OFERTA_ID" --arg u "$UNIDADE_OFERTANTE_ID" '.[] | select(.cursoId==$c and .localOfertaId==$l and .unidadeOfertante.origemId==$u) | .id' | head -1)
     if [ -z "$OFERTA_CURSO_ID" ]; then
         OFERTA_CURSO_ID=$(post_tolerante "/api/configuracao/admin/ofertas-curso" "{
             \"cursoId\": \"$CURSO_ID\", \"localOfertaId\": \"$LOCAL_OFERTA_ID\",
-            \"unidadeOfertanteOrigemId\": \"$UNIDADE_OFERTANTE_ID\", \"codigo\": \"OFERTA_MEDICINA_MATUTINO\",
+            \"unidadeOfertanteOrigemId\": \"$UNIDADE_OFERTANTE_ID\", \"codigo\": \"OFERTA_MEDICINA_INTEGRAL\",
             \"programaDeOferta\": \"REGULAR\",
             \"regimeDeFuncionamento\": \"EXTENSIVO\", \"formatoPedagogico\": \"PRESENCIAL\",
-            \"regimeDeTurno\": \"REGULAR\", \"turnos\": [\"MATUTINO\"],
+            \"regimeDeTurno\": \"INTEGRAL\", \"turnos\": [\"MATUTINO\", \"VESPERTINO\"],
             \"eMecCodigo\": null, \"codigoSga\": null, \"vagasAnuaisAutorizadas\": null,
             \"baseLegal\": null, \"atoAutorizacaoMec\": null
         }")
+        [ -z "$OFERTA_CURSO_ID" ] && OFERTA_CURSO_ID=$(api_get "/api/configuracao/ofertas-curso?limit=100" | jq -r --arg c "$CURSO_ID" --arg l "$LOCAL_OFERTA_ID" --arg u "$UNIDADE_OFERTANTE_ID" '.[] | select(.cursoId==$c and .localOfertaId==$l and .unidadeOfertante.origemId==$u) | .id' | head -1)
     fi
-    exigir_id "OFERTA_CURSO_ID" "$OFERTA_CURSO_ID"
+    [ -n "$OFERTA_CURSO_ID" ] || fail "A API recusou o cadastro da oferta de Medicina para o local e a unidade selecionados; nenhuma oferta correspondente foi encontrada."
+    local oferta
+    oferta=$(api_get "/api/configuracao/ofertas-curso/$OFERTA_CURSO_ID")
+    jq -e --arg c "$CURSO_ID" --arg l "$LOCAL_OFERTA_ID" --arg u "$UNIDADE_OFERTANTE_ID" '.cursoId==$c and .localOfertaId==$l and .unidadeOfertante.origemId==$u' <<< "$oferta" >/dev/null \
+        || fail "A oferta $OFERTA_CURSO_ID não corresponde ao curso, local e unidade selecionados para Medicina."
+    if ! jq -e '(.regimeDeTurno.codigo == "INTEGRAL") and ([.turnos[]?.codigo] | sort == ["MATUTINO", "VESPERTINO"])' <<< "$oferta" >/dev/null; then
+        api PUT "/api/configuracao/admin/ofertas-curso/$OFERTA_CURSO_ID" "$(jq -c '{
+            id, codigo, programaDeOferta: .programaDeOferta.codigo,
+            regimeDeFuncionamento: .regimeDeFuncionamento.codigo,
+            regimeDeTurno: "INTEGRAL", turnos: ["MATUTINO", "VESPERTINO"],
+            formatoPedagogico: .formatoPedagogico.codigo,
+            eMecCodigo, codigoSga, vagasAnuaisAutorizadas, baseLegal, atoAutorizacaoMec
+        }' <<< "$oferta")" >/dev/null
+        oferta=$(api_get "/api/configuracao/ofertas-curso/$OFERTA_CURSO_ID")
+    fi
+    jq -e '(.regimeDeTurno.codigo == "INTEGRAL") and ([.turnos[]?.codigo] | sort == ["MATUTINO", "VESPERTINO"])' <<< "$oferta" >/dev/null \
+        || fail "A oferta de Medicina cadastrada deve ter regime INTEGRAL e os turnos MATUTINO e VESPERTINO. Confira a oferta $OFERTA_CURSO_ID."
     ok "campus=$CAMPUS_ID local_oferta=$LOCAL_OFERTA_ID curso=$CURSO_ID oferta_curso=$OFERTA_CURSO_ID"
 
     log "Setup — fases canônicas e referência de reserva demográfica"
@@ -564,7 +580,8 @@ definir_distribuicao_vagas() {
         "70da1000-0000-7000-8000-000000000010"
     ]'
     local ofertas=("${OFERTAS_DISTRIBUIDAS[@]:-$OFERTA_CURSO_ID}")
-    api PUT "/api/selecao/processos-seletivos/$PROCESSO_ID/distribuicao-vagas" "$(jq -nc \
+    local distribuicao oferta_id
+    distribuicao=$(api PUT "/api/selecao/processos-seletivos/$PROCESSO_ID/distribuicao-vagas" "$(jq -nc \
         --argjson ofertas "$(printf '%s\n' "${ofertas[@]}" | jq -R . | jq -sc .)" \
         --arg reserva "$RESERVA_DEMOGRAFICA_ID" --argjson modalidades "$modalidades" '
         [$ofertas[] | {
@@ -574,7 +591,15 @@ definir_distribuicao_vagas() {
             referenciaReservaDemograficaId: $reserva,
             modalidadeIds: $modalidades,
             quadro: [{modalidadeId: "70da1000-0000-7000-8000-000000000010", quantidade: 2}]
-        }]')" >/dev/null
+        }]')")
+    for oferta_id in "${ofertas[@]}"; do
+        jq -e --arg id "$oferta_id" '
+            [.[] | select(.ofertaCursoOrigemId == $id)] |
+            length == 1 and (.[0].quadro | type == "array" and length > 0 and
+                all(.[]; (.quantidade | type) == "number") and (map(.quantidade) | add) == 30)
+        ' <<< "$distribuicao" >/dev/null \
+            || fail "O quadro de vagas da oferta $oferta_id não soma 30 vagas, como exige o Anexo II."
+    done
     ok "distribuição de vagas definida"
 }
 
