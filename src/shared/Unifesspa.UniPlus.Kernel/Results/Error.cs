@@ -28,16 +28,18 @@ public sealed record FieldError(
 {
     /// <summary>
     /// A causa dentro de um contêiner. A causa sem campo (<see langword="null"/>) continua sem campo; a raiz
-    /// relativa (<c>""</c>) passa a ser o caminho do contêiner; um campo interno vira filho dele.
+    /// relativa (<c>""</c>) passa a ser o caminho do contêiner; um campo interno vira filho dele, com índices
+    /// entre colchetes unidos sem ponto. O caminho vazio representa a raiz do documento e deixa a causa como está.
     /// </summary>
     public FieldError NoCaminhoDe(string caminho)
     {
         ArgumentNullException.ThrowIfNull(caminho);
 
-        return Field switch
+        return (caminho, Field) switch
         {
-            null => this,
-            { Length: 0 } => this with { Field = caminho },
+            ("", _) or (_, null) => this,
+            (_, { Length: 0 }) => this with { Field = caminho },
+            (_, ['[', ..]) => this with { Field = $"{caminho}{Field}" },
             _ => this with { Field = $"{caminho}.{Field}" },
         };
     }

@@ -20,6 +20,22 @@ public sealed class FieldErrorTests
     public void NoCaminhoDe_CampoInterno_ViraFilhoDoConteiner() =>
         new FieldError("rotulo", Erro).NoCaminhoDe("itens[0]").Field.Should().Be("itens[0].rotulo");
 
+    [Fact(DisplayName = "Os índices do campo são unidos ao caminho sem ponto")]
+    public void NoCaminhoDe_CampoComIndices_JuntaSemPonto() =>
+        new FieldError("[0][1].valor", Erro).NoCaminhoDe("exibicao").Field.Should().Be("exibicao[0][1].valor");
+
+    [Theory(DisplayName = "O caminho vazio mantém a causa na raiz do documento")]
+    [InlineData(null)]
+    [InlineData("")]
+    [InlineData("provaPresencial.municipios[0]")]
+    [InlineData("[0].valor")]
+    public void NoCaminhoDe_CaminhoVazio_MantemACausa(string? campo)
+    {
+        FieldError causa = new(campo, Erro, "FATO");
+
+        causa.NoCaminhoDe(string.Empty).Should().BeSameAs(causa);
+    }
+
     [Fact(DisplayName = "O código, a mensagem e a origem da causa seguem os mesmos")]
     public void NoCaminhoDe_MantemOErroEAOrigem()
     {
