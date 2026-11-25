@@ -37,4 +37,14 @@
                 Condition="$([System.String]::Copy('%(Analyzer.Identity)').Contains('MR.EntityFrameworkCore.KeysetPagination'))" />
     </ItemGroup>
   </Target>
+  <!-- Projeto de teste não publica documento OpenAPI: o único AddOpenApi está no Infrastructure.Core.
+       O gerador de comentários XML do pacote chega aos testes pelas referências às APIs e só emitiria
+       ali código de apoio sem uso. -->
+  <Target Name="RemoverGeradorDeComentariosDoOpenApiDosTestes" BeforeTargets="CoreCompile"
+          Condition="'$(IsTestProject)' == 'true'">
+    <ItemGroup>
+      <Analyzer Remove="@(Analyzer)"
+                Condition="'%(Analyzer.Filename)' == 'Microsoft.AspNetCore.OpenApi.SourceGenerators'" />
+    </ItemGroup>
+  </Target>
 </Project>
