@@ -8,6 +8,7 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence.CodigosDeContrato;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Protecao;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
+using Unifesspa.UniPlus.Kernel.Domain.ValueObjects;
 using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 
@@ -49,6 +50,7 @@ public sealed class FatoColetadoConfiguration : IEntityTypeConfiguration<FatoCol
 
         builder.ToTable("dados_dos_formularios", t =>
         {
+            t.HasCheckConstraint("ck_dados_dos_formularios_pagina_codigo_formato", $"pagina_codigo ~ '{FormatoDoCodigo.ExpressaoNoBanco}'");
             t.HasComment("Dados solicitados nos formulários de um processo seletivo.");
             t.HasCheckConstraint("ck_dados_dos_formularios_finalidade", $"finalidade IN ({SqlDosCodigosDeContrato.Lista<FinalidadeFormulario>()})");
             t.HasCheckConstraint("ck_dados_dos_formularios_origem_valores", $"origem_valores IN ({SqlDosCodigosDeContrato.Lista<OrigemValoresColeta>()})");

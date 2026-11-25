@@ -161,7 +161,7 @@ public static class LimitesDoEnvelope
     public const int ObservacaoBaseLegal = 1000;
 
     /// <summary><c>CondicaoGatilho.Fato</c> — nome do fato do gatilho DNF.</summary>
-    public const int Fato = 60;
+    public const int Fato = FatoDoCatalogo.CodigoMaxLength;
 
     // Decimais — precisão total (o `p` de numeric(p,s)).
     public const int PrecisaoEtapa = 18;

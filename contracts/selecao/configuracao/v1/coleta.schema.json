@@ -48,10 +48,10 @@
         "properties": {
           "codigoDoDado": {
             "title": "Fato derivado",
-            "description": "Código do fato derivado no catálogo, de 1 a 60 caracteres.",
+            "description": "Código do fato derivado no catálogo, de 1 a 50 caracteres.",
             "type": "string",
             "minLength": 1,
-            "maxLength": 60,
+            "maxLength": 50,
             "pattern": "\\S"
           },
           "regras": {

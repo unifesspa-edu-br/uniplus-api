@@ -13,6 +13,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Protecao;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
+using Unifesspa.UniPlus.Regras.Formularios;
 
 /// <summary>
 /// Configuração EF Core de <see cref="CondicaoGatilho"/> — entidade
@@ -20,7 +21,7 @@ using Unifesspa.UniPlus.Kernel.Domain.Enums;
 /// </summary>
 public sealed class CondicaoGatilhoConfiguration : IEntityTypeConfiguration<CondicaoGatilho>
 {
-    private const int FatoMaxLength = 60;
+    private const int FatoMaxLength = FatoDoCatalogo.CodigoMaxLength;
 
     public void Configure(EntityTypeBuilder<CondicaoGatilho> builder)
     {

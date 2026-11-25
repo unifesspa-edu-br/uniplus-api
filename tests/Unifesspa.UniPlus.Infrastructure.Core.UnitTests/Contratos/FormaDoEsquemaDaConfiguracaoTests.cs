@@ -102,6 +102,41 @@ public sealed class FormaDoEsquemaDaConfiguracaoTests
         CaminhosComErro(documento).Should().Contain(caminho);
     }
 
+    [Theory]
+    [InlineData("/formularios/0/paginas/0/codigo")]
+    [InlineData("/formularios/0/grupos/0/codigo")]
+    [InlineData("/formularios/0/termos/0/codigo")]
+    [InlineData("/formularios/0/itens/0/paginaCodigo")]
+    [InlineData("/formularios/0/grupos/0/paginaCodigo")]
+    public void CodigoDoFormulario_ForaDoFormato_Recusa(string caminho)
+    {
+        ArgumentNullException.ThrowIfNull(caminho);
+        JsonNode documento = Carregar(Path.Join("exemplos", "inscricao-pelo-sistema.json"));
+        Atribuir(documento, caminho, "A__B");
+
+        CaminhosComErro(documento).Should().Contain(caminho);
+    }
+
+    [Theory]
+    [InlineData("LEI_12711")]
+    [InlineData("A")]
+    public void CodigoDaPagina_NoFormato_Aceita(string codigo)
+    {
+        JsonNode documento = Carregar(Path.Join("exemplos", "inscricao-pelo-sistema.json"));
+        documento["formularios"]![0]!["paginas"]![0]!["codigo"] = codigo;
+
+        CaminhosComErro(documento).Should().NotContain("/formularios/0/paginas/0/codigo");
+    }
+
+    [Fact]
+    public void CodigoDaOpcao_SomenteEspaco_Recusa()
+    {
+        JsonNode documento = Carregar(Path.Join("exemplos", "inscricao-pelo-sistema.json"));
+        documento["formularios"]![0]!["itens"]![0]!["opcoes"] = new JsonArray(new JsonObject { ["codigo"] = " " });
+
+        CaminhosComErro(documento).Should().Contain("/formularios/0/itens/0/opcoes/0/codigo");
+    }
+
     private static readonly string[] CaminhosDoCodigoDaUnidade =
         ["/identificacao/unidadeAdministradoraCodigo", "/cronograma/fases/0/unidadeResponsavelCodigo"];
 

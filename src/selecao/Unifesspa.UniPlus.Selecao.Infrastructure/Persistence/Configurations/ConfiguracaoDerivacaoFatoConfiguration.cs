@@ -7,6 +7,7 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Protecao;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
+using Unifesspa.UniPlus.Regras.Formularios;
 
 /// <summary>
 /// Configuração EF Core de <see cref="ConfiguracaoDerivacaoFato"/> (Story #927) — entidade filha de
@@ -15,7 +16,7 @@ using Unifesspa.UniPlus.Kernel.Domain.Enums;
 /// </summary>
 public sealed class ConfiguracaoDerivacaoFatoConfiguration : IEntityTypeConfiguration<ConfiguracaoDerivacaoFato>
 {
-    private const int FatoCodigoMaxLength = 60;
+    private const int FatoCodigoMaxLength = FatoDoCatalogo.CodigoMaxLength;
 
     public void Configure(EntityTypeBuilder<ConfiguracaoDerivacaoFato> builder)
     {

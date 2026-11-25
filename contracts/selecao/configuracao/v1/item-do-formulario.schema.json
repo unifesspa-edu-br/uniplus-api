@@ -11,11 +11,9 @@
   "properties": {
     "codigoDoDado": {
       "title": "Fato",
-      "description": "Código do fato no catálogo, de 1 a 60 caracteres. Cada fato é coletado por um só formulário do processo.",
-      "type": "string",
-      "minLength": 1,
-      "maxLength": 60,
-      "pattern": "\\S"
+      "description": "Código do fato no catálogo, de 1 a 50 caracteres. Cada fato é coletado por um só formulário do processo.",
+      "maxLength": 50,
+      "$ref": "comuns.schema.json#/$defs/codigoDeCadastro"
     },
     "paginaCodigo": {
       "title": "Página",
@@ -102,11 +100,9 @@
   "$defs": {
     "codigoLocal": {
       "title": "Código local",
-      "description": "Código escolhido por quem escreve o formulário, de 1 a 60 caracteres, único no formulário.",
-      "type": "string",
-      "minLength": 1,
+      "description": "Código de 1 a 60 caracteres, com letra maiúscula inicial, letras maiúsculas e algarismos separados por sublinhado.",
       "maxLength": 60,
-      "pattern": "\\S"
+      "$ref": "comuns.schema.json#/$defs/codigoDeCadastro"
     },
     "impedimento": {
       "title": "Impedimento de inscrição",
@@ -145,7 +141,7 @@
         "codigo": {
           "title": "Código",
           "description": "Código da opção, de 1 a 60 caracteres, único no fato.",
-          "$ref": "#/$defs/codigoLocal"
+          "$ref": "#/$defs/codigoDaOpcao"
         },
         "rotulo": {
           "title": "Rótulo",
@@ -154,6 +150,14 @@
           "maxLength": 300
         }
       }
+    },
+    "codigoDaOpcao": {
+      "title": "Código da opção",
+      "description": "Texto de 1 a 60 caracteres, único no fato.",
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 60,
+      "pattern": "\\S"
     }
   }
 }

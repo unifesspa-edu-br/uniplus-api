@@ -21,23 +21,23 @@ public sealed class FormulariosDoEsquemaDaConfiguracaoTests
         {
           "finalidade": "INSCRICAO", "faseChave": "inscricao", "titulo": "Inscrição",
           "paginas": [
-            { "codigo": "dados", "ordem": 0, "tipo": "SECAO", "titulo": "Dados" },
-            { "codigo": "revisao", "ordem": 1, "tipo": "BLOCO", "bloco": "REVISAO_E_ACEITE" }
+            { "codigo": "DADOS", "ordem": 0, "tipo": "SECAO", "titulo": "Dados" },
+            { "codigo": "REVISAO", "ordem": 1, "tipo": "BLOCO", "bloco": "REVISAO_E_ACEITE" }
           ],
           "itens": [
-            { "codigoDoDado": "RENDA_PER_CAPITA", "paginaCodigo": "dados", "ordem": 0, "rotulo": "Renda",
+            { "codigoDoDado": "RENDA_PER_CAPITA", "paginaCodigo": "DADOS", "ordem": 0, "rotulo": "Renda",
               "obrigatoriedade": { "tipo": "SEMPRE" },
               "restricoes": [ { "tipo": "FAIXA_NUMERICA", "minimo": 0, "maximo": 100000.5 } ],
               "impedimento": { "quando": [[ { "codigoDoDado": "RENDA_PER_CAPITA", "operador": "MAIOR_IGUAL", "valor": 5000 } ]], "mensagem": "Renda acima do limite." } },
-            { "codigoDoDado": "SITUACAO", "paginaCodigo": "dados", "ordem": 1, "opcoes": [ { "codigo": "A", "rotulo": "Opção A" } ] }
+            { "codigoDoDado": "SITUACAO", "paginaCodigo": "DADOS", "ordem": 1, "opcoes": [ { "codigo": "A", "rotulo": "Opção A" } ] }
           ],
           "grupos": [
-            { "codigo": "familia", "paginaCodigo": "dados", "ordem": 2, "rotulo": "Família", "minimo": 0, "maximo": null, "incluiCandidato": true,
+            { "codigo": "FAMILIA", "paginaCodigo": "DADOS", "ordem": 2, "rotulo": "Família", "minimo": 0, "maximo": null, "incluiCandidato": true,
               "obrigatoriedade": { "tipo": "NUNCA" },
               "subitens": [ { "codigoDoDado": "NOME_MEMBRO", "ordem": 0 } ] }
           ],
           "termos": [
-            { "codigo": "lgpd", "ordem": 0, "termoCodigo": "TERMO_LGPD", "versaoNumero": 2, "obrigatoriedade": { "tipo": "SEMPRE" } }
+            { "codigo": "LGPD", "ordem": 0, "termoCodigo": "TERMO_LGPD", "versaoNumero": 2, "obrigatoriedade": { "tipo": "SEMPRE" } }
           ]
         }
         """;
@@ -104,7 +104,7 @@ public sealed class FormulariosDoEsquemaDaConfiguracaoTests
         CaminhosComErro(Alterado(ponteiro, valor), Formulario).Should().Contain(caminho);
 
     [Theory(DisplayName = "O subitem de grupo com página ou impedimento preenchidos é recusado")]
-    [InlineData("paginaCodigo", "\"dados\"")]
+    [InlineData("paginaCodigo", "\"DADOS\"")]
     [InlineData("impedimento", """{ "quando": [[ { "codigoDoDado": "F", "operador": "IGUAL", "valor": true } ]], "mensagem": "Não." }""")]
     public void Subitem_ComPaginaOuImpedimento_Recusa(string propriedade, string valor)
     {
