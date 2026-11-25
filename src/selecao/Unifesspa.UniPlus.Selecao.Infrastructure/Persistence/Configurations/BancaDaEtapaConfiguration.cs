@@ -7,6 +7,7 @@ using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Protecao;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
+using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Converters;
 
 /// <summary>Mapeamento de <see cref="BancaDaEtapa"/> — filha de <see cref="EtapaProcesso"/>.</summary>
 public sealed class BancaDaEtapaConfiguration : IEntityTypeConfiguration<BancaDaEtapa>
@@ -21,7 +22,7 @@ public sealed class BancaDaEtapaConfiguration : IEntityTypeConfiguration<BancaDa
         builder.HasKey(b => b.Id);
         builder.Property<Guid>("ProcessoSeletivoId").HasComment("Processo seletivo ao qual a banca pertence.");
         builder.Property(b => b.Chave)
-            .HasConversion(chave => chave.Valor, valor => ChaveLocal.Criar(valor).Value)
+            .HasConversion<ChaveLocalValueConverter>()
             .HasColumnName("chave_local").HasMaxLength(ChaveLocal.ComprimentoMaximo).IsRequired()
             .HasComment("Identificador que a parte guarda dentro da configuração publicada; único no processo.");
         builder.HasIndex("ProcessoSeletivoId", nameof(BancaDaEtapa.Chave)).IsUnique().HasDatabaseName("ux_bancas_da_etapa_processo_chave_local");

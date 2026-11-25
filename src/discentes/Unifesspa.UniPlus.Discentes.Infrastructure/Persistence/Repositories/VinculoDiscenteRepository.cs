@@ -12,6 +12,7 @@ using Unifesspa.UniPlus.Discentes.Infrastructure.Persistence.Cryptography;
 using Unifesspa.UniPlus.Discentes.Infrastructure.Persistence.Records;
 using Unifesspa.UniPlus.Infrastructure.Core.Cryptography;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Converters;
 using Unifesspa.UniPlus.Kernel.Domain.ValueObjects;
 
 /// <summary>
@@ -210,7 +211,7 @@ public sealed class VinculoDiscenteRepository : IVinculoDiscenteRepository
             .DecryptAsync(DiscentesEncryptionKeys.IdentificadoresPessoais, record.CpfCiphertext, cancellationToken)
             .ConfigureAwait(false);
 
-        return MapeamentoDoVinculoDiscente.ParaDominio(record, ReidratarCpf(cpfPlano));
+        return MapeamentoDoVinculoDiscente.ParaDominio(record, ObjetoDeValorGravado.Reidratar(Cpf.Criar(Encoding.UTF8.GetString(cpfPlano)), nameof(Cpf)));
     }
 
     private async Task<VinculoDiscenteRecord> ParaRegistroNovoAsync(VinculoDiscente entity, CancellationToken cancellationToken)
@@ -240,19 +241,4 @@ public sealed class VinculoDiscenteRepository : IVinculoDiscenteRepository
             DiscentesEncryptionKeys.IdentificadoresPessoais,
             Encoding.UTF8.GetBytes(cpf.Valor),
             cancellationToken);
-
-    /// <summary>
-    /// Revalida o CPF decifrado contra a regra de domínio — dado corrompido no banco
-    /// ou chave de cifragem incorreta falha alto, em vez de produzir um <see cref="Cpf"/>
-    /// inválido silenciosamente.
-    /// </summary>
-    private static Cpf ReidratarCpf(byte[] cpfPlano)
-    {
-        string valor = Encoding.UTF8.GetString(cpfPlano);
-
-        return Cpf.Criar(valor).Match(
-            cpf => cpf,
-            erro => throw new InvalidOperationException(
-                $"CPF decifrado da tabela vinculos_de_discentes falhou a revalidação de domínio ({erro.Code})."));
-    }
 }

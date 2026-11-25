@@ -3,30 +3,15 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Converters;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
-using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Converters;
 
-// Mapeia CodigoTermoConsentimento ↔ string (varchar). A reidratação falha com contexto se a coluna foi alterada fora do
-// fluxo da aplicação.
+// A leitura falha com contexto se o valor gravado não respeita a regra do domínio.
 public sealed class CodigoTermoConsentimentoValueConverter : ValueConverter<CodigoTermoConsentimento, string>
 {
     public CodigoTermoConsentimentoValueConverter()
         : base(
             codigo => codigo.Valor,
-            valor => Reidratar(valor))
+            valor => ObjetoDeValorGravado.Reidratar(CodigoTermoConsentimento.Criar(valor), nameof(CodigoTermoConsentimento)))
     {
-    }
-
-    private static CodigoTermoConsentimento Reidratar(string valor)
-    {
-        Result<CodigoTermoConsentimento> resultado = CodigoTermoConsentimento.Criar(valor);
-        if (resultado.IsFailure || resultado.Value is null)
-        {
-            throw new InvalidOperationException(
-                $"Dado inválido no banco ao reidratar {nameof(CodigoTermoConsentimento)}: " +
-                $"{resultado.Error?.Code ?? "Desconhecido"}. " +
-                "Verifique se houve alteração manual da coluna fora do fluxo da aplicação.");
-        }
-
-        return resultado.Value;
     }
 }

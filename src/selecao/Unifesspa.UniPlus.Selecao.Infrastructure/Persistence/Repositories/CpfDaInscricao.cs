@@ -5,6 +5,7 @@ using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
 
 using Unifesspa.UniPlus.Infrastructure.Core.Cryptography;
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Converters;
 using Unifesspa.UniPlus.Kernel.Domain.ValueObjects;
 using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
@@ -88,14 +89,10 @@ internal static class CpfDaInscricao
     }
 
     /// <summary>
-    /// Revalida o CPF decifrado contra a regra de domínio — dado corrompido no banco ou chave de
-    /// cifragem incorreta falha alto, em vez de produzir um <see cref="Cpf"/> inválido em silêncio
-    /// (mesmo padrão de <c>VinculoDiscenteRepository</c>).
+    /// Dado gravado inválido falha na hora, sem o conteúdo, em vez de produzir um <see cref="Cpf"/> inválido.
     /// </summary>
     public static Cpf Revalidar(string valor) =>
-        Cpf.Criar(valor).Match(
-            cpf => cpf,
-            erro => throw new InvalidOperationException($"CPF da resposta da inscrição falhou a revalidação de domínio ({erro.Code})."));
+        ObjetoDeValorGravado.Reidratar(Cpf.Criar(valor), nameof(Cpf));
 
     private sealed record RespostaDoCpf(Guid InscricaoId, byte[]? ValorCifrado);
 }

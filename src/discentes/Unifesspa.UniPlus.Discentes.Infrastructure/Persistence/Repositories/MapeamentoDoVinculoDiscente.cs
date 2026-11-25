@@ -3,8 +3,8 @@ namespace Unifesspa.UniPlus.Discentes.Infrastructure.Persistence.Repositories;
 using Unifesspa.UniPlus.Discentes.Domain.Entities;
 using Unifesspa.UniPlus.Discentes.Domain.ValueObjects;
 using Unifesspa.UniPlus.Discentes.Infrastructure.Persistence.Records;
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Converters;
 using Unifesspa.UniPlus.Kernel.Domain.ValueObjects;
-using Unifesspa.UniPlus.Kernel.Results;
 
 /// <summary>
 /// Traduz o vínculo entre o registro persistido e o domínio. A cifra do CPF fica com o
@@ -36,9 +36,9 @@ internal static class MapeamentoDoVinculoDiscente
         PeriodoIngresso ingresso = IngressoDe(record);
         IdentificacaoDoDiscente identificacao = IdentificacaoDe(record, cpf);
 
-        VinculoDiscenteCopiado dadosCopiados = Exigir(
+        VinculoDiscenteCopiado dadosCopiados = ObjetoDeValorGravado.Reidratar(
             VinculoDiscenteCopiado.Criar(identificacao, record.Nivel, curso, situacao, ingresso),
-            "Dados copiados corrompidos");
+            nameof(VinculoDiscenteCopiado));
 
         return VinculoDiscente.Reidratar(record.Id, dadosCopiados);
     }
@@ -74,27 +74,21 @@ internal static class MapeamentoDoVinculoDiscente
     }
 
     private static IdentificacaoDoDiscente IdentificacaoDe(VinculoDiscenteRecord record, Cpf cpf) =>
-        Exigir(
+        ObjetoDeValorGravado.Reidratar(
             IdentificacaoDoDiscente.Criar(record.IdDiscenteSigaa, record.Matricula, cpf, record.Nome),
-            "Dados copiados corrompidos");
+            nameof(IdentificacaoDoDiscente));
 
     private static CursoCopiadoDoSigaa CursoDe(VinculoDiscenteRecord record) =>
-        Exigir(
+        ObjetoDeValorGravado.Reidratar(
             CursoCopiadoDoSigaa.Criar(
                 record.CursoId, record.CursoNome, record.CursoCodigoEmec, record.CursoUnidadeId, record.CursoUnidadeNome),
-            "Curso corrompido");
+            nameof(CursoCopiadoDoSigaa));
 
     private static SituacaoAcademicaCopiada SituacaoDe(VinculoDiscenteRecord record) =>
-        Exigir(
+        ObjetoDeValorGravado.Reidratar(
             SituacaoAcademicaCopiada.Criar(record.SituacaoId, record.SituacaoDescricao, record.SituacaoVinculo),
-            "Situação corrompida");
+            nameof(SituacaoAcademicaCopiada));
 
     private static PeriodoIngresso IngressoDe(VinculoDiscenteRecord record) =>
-        Exigir(PeriodoIngresso.Criar(record.AnoIngresso, record.PeriodoIngresso), "Período corrompido");
-
-    private static T Exigir<T>(Result<T> resultado, string descricaoDoDefeito) =>
-        resultado.Match(
-            valor => valor,
-            erro => throw new InvalidOperationException(
-                $"{descricaoDoDefeito} no registro persistido ({erro.Code})."));
+        ObjetoDeValorGravado.Reidratar(PeriodoIngresso.Criar(record.AnoIngresso, record.PeriodoIngresso), nameof(PeriodoIngresso));
 }

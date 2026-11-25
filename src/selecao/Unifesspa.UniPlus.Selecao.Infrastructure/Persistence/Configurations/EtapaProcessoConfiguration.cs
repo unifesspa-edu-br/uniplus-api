@@ -12,6 +12,7 @@ using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Protecao;
 using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Kernel.Domain.ValueObjects;
+using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Converters;
 
 public sealed class EtapaProcessoConfiguration : IEntityTypeConfiguration<EtapaProcesso>
 {
@@ -42,7 +43,7 @@ public sealed class EtapaProcessoConfiguration : IEntityTypeConfiguration<EtapaP
         // ao reconfigurar o agregado tracked). Convenção do repo.
         builder.Property(e => e.Id).ValueGeneratedNever().HasComment("Identificador da etapa.");
         builder.Property(e => e.Chave)
-            .HasConversion(chave => chave.Valor, valor => ChaveLocal.Criar(valor).Value)
+            .HasConversion<ChaveLocalValueConverter>()
             .HasColumnName("chave_local").HasMaxLength(ChaveLocal.ComprimentoMaximo).IsRequired()
             .HasComment("Identificador que a parte guarda dentro da configuração publicada; único no processo.");
         builder.HasIndex(e => new { e.ProcessoSeletivoId, e.Chave })
@@ -159,7 +160,7 @@ public sealed class EtapaProcessoConfiguration : IEntityTypeConfiguration<EtapaP
             nivel.HasKey("Id");
             nivel.Property<Guid>("EtapaProcessoId").HasComment("Etapa à qual o nível pertence.");
             nivel.Property(n => n.Chave)
-                .HasConversion(chave => chave.Valor, valor => ChaveLocal.Criar(valor).Value)
+                .HasConversion<ChaveLocalValueConverter>()
                 .HasColumnName("chave_local").HasMaxLength(ChaveLocal.ComprimentoMaximo).IsRequired().HasComment("Identificador que a parte guarda dentro da configuração publicada; único na etapa.");
             nivel.HasIndex("EtapaProcessoId", nameof(NivelDeAtendimento.Chave)).IsUnique().HasDatabaseName("ux_niveis_de_atendimento_da_etapa_chave_local");
             nivel.Property(n => n.Rotulo).HasMaxLength(NivelDeAtendimento.RotuloMaxLength).IsRequired().HasComment("Texto escolhido pela banca na avaliação.");
