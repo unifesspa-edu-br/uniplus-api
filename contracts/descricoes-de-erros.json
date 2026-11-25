@@ -5087,11 +5087,25 @@
         "UNI-REQ-0065"
       ],
       "oQueAconteceu": [
-        "O administrador acrescentou um valor a um fato do catálogo (`POST /api/configuracao/admin/fatos-candidato/{id}/valores`) com um código que o fato já tem. Em cada fato, o código do valor é único: é o que o critério de aceite do UNI-REQ-0065 declara, e a API aplica a regra comparando o código depois de aparado. A comparação desconsidera os espaços nas pontas, mas diferencia maiúsculas de minúsculas: `eja` e `EJA` são códigos diferentes. O valor desativado continua ocupando o seu código, porque o código de um valor nunca é removido do fato.",
+        "O administrador acrescentou um valor a um fato do catálogo (`POST /api/configuracao/admin/fatos-candidato/{id}/valores`) com um código que o fato já tem. Em cada fato, o código do valor é único: é o que o critério de aceite do UNI-REQ-0065 declara, e a API compara o código exatamente como recebido. O valor desativado continua ocupando o seu código, porque o código de um valor nunca é removido do fato.",
         "Na conferência comum, a recusa vem na lista `errors` da resposta, com `field` igual a `codigo`. Quando dois acréscimos do mesmo código, ou um acréscimo e outra alteração do mesmo fato, chegam ao mesmo tempo, o resultado depende de qual verificação detecta a colisão primeiro: pode ser esta recusa, só com o código de erro e a mensagem da resposta e sem a lista `errors` (a violação do índice único de código, `MutacaoDoFato.cs:52-61`), ou o conflito de concorrência do fato (409, `uniplus.configuracao.fato_candidato.conflito_de_concorrencia`, `MutacaoDoFato.cs:62-70`). Em qualquer dos casos nada é gravado. A busca do fato vem antes da conferência do corpo: com um `{id}` que não existe, a resposta é a de fato não encontrado (`uniplus.configuracao.fato_candidato.nao_encontrado`), e não esta."
       ],
       "comoResolver": [
         "Escolha outro código para o valor novo. Se a resposta foi o conflito de concorrência, consulte o fato e confira se o valor já foi acrescentado antes de repetir o pedido. Se o valor que você queria já existe e está desativado, reative-o (`POST /api/configuracao/admin/fatos-candidato/{id}/valores/{codigo}/ativacao`); se só o texto precisa mudar, corrija a descrição ou a orientação dele (`PUT /api/configuracao/admin/fatos-candidato/{id}/valores/{codigo}`)."
+      ],
+      "ondeAparece": [
+        "Acréscimo de um valor a um fato do catálogo"
+      ]
+    },
+    {
+      "codigo": "uniplus.configuracao.fato_valor_dominio.codigo_formato_invalido",
+      "requisitos": [],
+      "oQueAconteceu": [
+        "O administrador acrescentou um valor a um fato do catálogo (`POST /api/configuracao/admin/fatos-candidato/{id}/valores`) com um código fora do formato aceito ou com mais de 50 caracteres. O código é conferido como recebido, sem aparar nem normalizar.",
+        "A recusa vem na lista `errors` da resposta, com `field` igual a `codigo`. Se o corpo tiver outros problemas, cada um vem numa entrada própria da mesma resposta, e nada é gravado. A busca do fato vem antes da conferência do corpo: com um `{id}` que não existe, a resposta é a de fato não encontrado (`uniplus.configuracao.fato_candidato.nao_encontrado`), e não esta."
+      ],
+      "comoResolver": [
+        "Use até 50 caracteres, começando por letra maiúscula e usando letras maiúsculas sem acento, algarismos e sublinhado entre palavras. O texto que o candidato lê vai na descrição do valor."
       ],
       "ondeAparece": [
         "Acréscimo de um valor a um fato do catálogo"
@@ -5109,20 +5123,6 @@
       ],
       "comoResolver": [
         "Envie o valor com o campo `codigo` presente e preenchido, de até 50 caracteres e que ainda não exista no fato. Depois de acrescentado, o código do valor não muda."
-      ],
-      "ondeAparece": [
-        "Acréscimo de um valor a um fato do catálogo"
-      ]
-    },
-    {
-      "codigo": "uniplus.configuracao.fato_valor_dominio.codigo_tamanho",
-      "requisitos": [],
-      "oQueAconteceu": [
-        "O administrador acrescentou um valor a um fato do catálogo (`POST /api/configuracao/admin/fatos-candidato/{id}/valores`) com um código de mais de 50 caracteres. O código é conferido como recebido. O limite é o mesmo do código do próprio fato.",
-        "A recusa vem na lista `errors` da resposta, com `field` igual a `codigo`. Se o corpo tiver outros problemas, cada um vem numa entrada própria da mesma resposta, e nada é gravado. A busca do fato vem antes da conferência do corpo: com um `{id}` que não existe, a resposta é a de fato não encontrado (`uniplus.configuracao.fato_candidato.nao_encontrado`), e não esta."
-      ],
-      "comoResolver": [
-        "Use um código de até 50 caracteres. O texto que o candidato lê vai na descrição do valor, não no código."
       ],
       "ondeAparece": [
         "Acréscimo de um valor a um fato do catálogo"

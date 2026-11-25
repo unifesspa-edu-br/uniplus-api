@@ -22,9 +22,9 @@ public static class FatoValorDominioErrorCodes
     public const string NaoPermitidoForaDeFonteGlobal = "FatoValorDominio.NaoPermitidoForaDeFonteGlobal";
 
     public const string CodigoObrigatorio = "FatoValorDominio.CodigoObrigatorio";
-    public const string CodigoTamanho = "FatoValorDominio.CodigoTamanho";
+    public const string CodigoFormatoInvalido = "FatoValorDominio.CodigoFormatoInvalido";
 
-    /// <summary>Código já usado por um irmão do mesmo <c>FatoCandidato</c> (normalizado, comparação ordinal).</summary>
+    /// <summary>Código já usado por um irmão do mesmo <c>FatoCandidato</c> (comparação ordinal).</summary>
     public const string CodigoDuplicado = "FatoValorDominio.CodigoDuplicado";
 
     /// <summary>Descrição ausente quando o fato pai é <see cref="Enums.OrigemFato.Declarado"/>.</summary>
