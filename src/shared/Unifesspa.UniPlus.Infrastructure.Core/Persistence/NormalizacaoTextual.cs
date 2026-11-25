@@ -42,4 +42,8 @@ public static class NormalizacaoTextual
     /// </summary>
     public static string? PrepararTermoDeBusca(string? termo) =>
         FormaParaComparacao.Termo(termo) is { } normalizado ? EscaparCuringas(normalizado) : null;
+
+    /// <summary>Escapa os curingas do termo validado para uso no <c>LIKE</c>.</summary>
+    public static string? PrepararTermoDeBusca(TermoDeBusca? termo) =>
+        termo is null ? null : EscaparCuringas(termo.Normalizado);
 }
