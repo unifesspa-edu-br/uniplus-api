@@ -2,6 +2,7 @@ namespace Unifesspa.UniPlus.Authorization.UnitTests.Decisao;
 
 using Unifesspa.UniPlus.Authorization.Abstractions;
 using Unifesspa.UniPlus.Authorization.Contracts;
+using Unifesspa.UniPlus.Authorization.Decisao;
 using Unifesspa.UniPlus.Authorization.Enums;
 using Unifesspa.UniPlus.Authorization.ValueObjects;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
@@ -9,7 +10,7 @@ using Unifesspa.UniPlus.Kernel.Domain.Enums;
 /// <summary>
 /// Fábricas dos contratos que toda decisão recebe, com os valores neutros do
 /// caso feliz — cada teste altera só o que o seu cenário exige, e o que ele não
-/// menciona não influencia o resultado.
+/// menciona não influencia o resultado. Também monta o ponto de decisão como o produto monta.
 /// </summary>
 internal static class CenariosDeDecisao
 {
@@ -105,6 +106,23 @@ internal static class CenariosDeDecisao
             "jti-abc",
             mfaSatisfeito,
             concessoesEfetivas: concessoes).Value!;
+
+    public static PermissionRequirement RequisitoPessoal() =>
+        Requisito(ClassificacaoDeProtecao.Pessoal, baseLegalPadrao: "Lei nº 13.709/2018 (LGPD), art. 7º, III");
+
+    public static Task<AuthorizationDecision> Decidir(
+        AuthorizationSubject sujeito,
+        PermissionRequirement requisito,
+        ResourceContext? resource = null,
+        IEnumerable<IPermissaoCheck>? checks = null,
+        IInscricaoDoSujeitoNoProcesso? inscricoes = null)
+    {
+        AuthorizationDecisionService servico = new(
+            new GrantEfetivoAplicavelCheck(),
+            new ImpedimentoPorInscricaoCheck(inscricoes ?? new InscricoesEmMemoria()),
+            checks ?? []);
+        return servico.DecidirAsync(sujeito, requisito, resource ?? Resource(), Requisicao(), CancellationToken.None);
+    }
 
     /// <summary>Registro que apenas guarda o que recebeu, para os testes conferirem.</summary>
     public sealed class RegistroEmMemoria : IRegistroOperacionalRestrito

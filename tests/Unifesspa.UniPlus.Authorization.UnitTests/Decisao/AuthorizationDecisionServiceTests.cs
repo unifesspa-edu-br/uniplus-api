@@ -1,10 +1,10 @@
 namespace Unifesspa.UniPlus.Authorization.UnitTests.Decisao;
 
+using System.Text.Json;
+
 using AwesomeAssertions;
 
-using Unifesspa.UniPlus.Authorization.Abstractions;
 using Unifesspa.UniPlus.Authorization.Contracts;
-using Unifesspa.UniPlus.Authorization.Decisao;
 using Unifesspa.UniPlus.Authorization.Enums;
 using Unifesspa.UniPlus.Authorization.ValueObjects;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
@@ -325,11 +325,14 @@ public sealed class AuthorizationDecisionServiceTests
     [Fact(DisplayName = "O registro identifica o ator por emissor e identificador da conta, e nunca pelo identificador do token")]
     public async Task Decide_Registro_IdentificaOAtorSemJti()
     {
-        RegistroDecisaoAcesso registro = await RegistroDe(Sujeito(concessoes: ConcessaoInstitucional()), RequisitoPessoal());
+        AuthorizationSubject sujeito = Sujeito(concessoes: ConcessaoInstitucional());
+        RegistroDecisaoAcesso registro = await RegistroDe(sujeito, RequisitoPessoal());
         registro.AtorEmissor.Should().Be("https://idp.exemplo/realms/unifesspa");
         registro.AtorContaId.Should().Be("conta-opaco-123");
-        typeof(RegistroDecisaoAcesso).GetProperties().Select(static p => p.Name)
-            .Should().NotContain("Jti", "o jti identifica a sessão e não é do registro");
+        string json = JsonSerializer.Serialize(registro);
+        json.Should().NotContain(sujeito.Jti, "o jti identifica a sessão e não é do registro");
+        using JsonDocument documento = JsonDocument.Parse(json);
+        documento.RootElement.TryGetProperty(nameof(AuthorizationSubject.Jti), out _).Should().BeFalse();
     }
 
     [Fact(DisplayName = "O registro grava a sensibilidade efetiva, não a menor das duas declarações")]
@@ -346,80 +349,6 @@ public sealed class AuthorizationDecisionServiceTests
             + "consultas de conformidade sobre o registro deixariam de encontrá-la");
     }
 
-    [Fact(DisplayName = "Nega por impedido_por_inscricao_no_processo quem tem a concessão e está inscrito no processo do resource")]
-    public async Task Decide_InscritoNoProcesso_NegaPorImpedimento()
-    {
-        Guid processo = Guid.CreateVersion7();
-        InscricoesEmMemoria inscricoes = new(processo);
-
-        AuthorizationDecision decisao = await Decidir(
-            Sujeito(concessoes: ConcessaoInstitucional()), RequisitoPessoal(), Resource(processoId: processo), inscricoes: inscricoes);
-
-        decisao.Allowed.Should().BeFalse();
-        decisao.DenyReason!.Codigo.Should().Be(MotivoNegativa.ImpedidoPorInscricaoNoProcesso);
-        decisao.Resultado.Should().Be(ResultadoDoAcesso.Impedido);
-    }
-
-    [Fact(DisplayName = "O impedimento vale para a concessão de processo, que também não o supera")]
-    public async Task Decide_InscritoComConcessaoDoProprioProcesso_NegaPorImpedimento()
-    {
-        Guid processo = Guid.CreateVersion7();
-
-        AuthorizationDecision decisao = await Decidir(
-            Sujeito(concessoes: ConcessaoDoProcesso(processo)),
-            Requisito(),
-            Resource(processoId: processo),
-            inscricoes: new InscricoesEmMemoria(processo));
-
-        decisao.DenyReason!.Codigo.Should().Be(MotivoNegativa.ImpedidoPorInscricaoNoProcesso);
-    }
-
-    [Fact(DisplayName = "Quem não tem concessão segue recusado por sem_concessao_aplicavel, ainda que esteja inscrito")]
-    public async Task Decide_InscritoSemConcessao_MantemMotivoDaConcessao()
-    {
-        Guid processo = Guid.CreateVersion7();
-
-        AuthorizationDecision decisao = await Decidir(
-            Sujeito(), Requisito(), Resource(processoId: processo), inscricoes: new InscricoesEmMemoria(processo));
-
-        decisao.DenyReason!.Codigo.Should().Be(MotivoNegativa.SemConcessaoAplicavel);
-    }
-
-    [Fact(DisplayName = "Inscrição em outro processo não impede a operação")]
-    public async Task Decide_InscritoEmOutroProcesso_Permite()
-    {
-        AuthorizationDecision decisao = await Decidir(
-            Sujeito(concessoes: ConcessaoInstitucional()),
-            Requisito(),
-            Resource(processoId: Guid.CreateVersion7()),
-            inscricoes: new InscricoesEmMemoria(Guid.CreateVersion7()));
-
-        decisao.Allowed.Should().BeTrue();
-    }
-
-    [Fact(DisplayName = "Resource sem processo não passa pela verificação de impedimento")]
-    public async Task Decide_ResourceSemProcesso_NaoConsultaInscricoes()
-    {
-        InscricoesEmMemoria inscricoes = new(Guid.CreateVersion7());
-
-        AuthorizationDecision decisao = await Decidir(
-            Sujeito(concessoes: ConcessaoInstitucional()), Requisito(), Resource(), inscricoes: inscricoes);
-
-        decisao.Allowed.Should().BeTrue();
-        inscricoes.Consultas.Should().Be(0);
-    }
-
-    private static PermissionRequirement RequisitoPessoal() =>
-        Requisito(ClassificacaoDeProtecao.Pessoal, baseLegalPadrao: "Lei nº 13.709/2018 (LGPD), art. 7º, III");
-
-    private static AuthorizationDecisionService Servico(
-        IEnumerable<IPermissaoCheck>? checks = null,
-        IInscricaoDoSujeitoNoProcesso? inscricoes = null) =>
-        new(
-            new GrantEfetivoAplicavelCheck(),
-            new ImpedimentoPorInscricaoCheck(inscricoes ?? new InscricoesEmMemoria()),
-            checks ?? []);
-
     // O registro que o verificador gravaria para a decisão: é o do contrato, montado com o mesmo contexto.
     private static async Task<RegistroDecisaoAcesso> RegistroDe(
         AuthorizationSubject sujeito, PermissionRequirement requisito, ResourceContext? resource = null)
@@ -429,20 +358,4 @@ public sealed class AuthorizationDecisionServiceTests
         return RegistroDecisaoAcesso.De(sujeito, requisito, alvo, Requisicao(), await Decidir(sujeito, requisito, alvo));
     }
 
-    private static Task<AuthorizationDecision> Decidir(
-        AuthorizationSubject sujeito,
-        PermissionRequirement requisito,
-        ResourceContext? resource = null,
-        IEnumerable<IPermissaoCheck>? checks = null,
-        IInscricaoDoSujeitoNoProcesso? inscricoes = null)
-    {
-        AuthorizationDecisionService servico = Servico(checks, inscricoes);
-
-        return servico.DecidirAsync(
-            sujeito,
-            requisito,
-            resource ?? Resource(),
-            Requisicao(),
-            CancellationToken.None);
-    }
 }

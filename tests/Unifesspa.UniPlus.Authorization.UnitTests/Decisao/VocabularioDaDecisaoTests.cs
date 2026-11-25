@@ -1,6 +1,5 @@
 namespace Unifesspa.UniPlus.Authorization.UnitTests.Decisao;
 
-using System.Reflection;
 
 using AwesomeAssertions;
 
