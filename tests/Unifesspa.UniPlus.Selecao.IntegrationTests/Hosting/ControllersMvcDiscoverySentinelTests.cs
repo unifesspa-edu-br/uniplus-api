@@ -38,13 +38,15 @@ public sealed class ControllersMvcDiscoverySentinelTests : IClassFixture<Selecao
 
         EndpointDataSource dataSource = _factory.Services.GetRequiredService<EndpointDataSource>();
 
-        IEnumerable<ControllerActionDescriptor> actions = dataSource.Endpoints
-            .Select(static endpoint => endpoint.Metadata.GetMetadata<ControllerActionDescriptor>())
-            .Where(static descriptor => descriptor is not null)
-            .Cast<ControllerActionDescriptor>()
+        IEnumerable<ControllerActionDescriptor> actions = AcoesDosControllers.Obter(dataSource)
             .Where(descriptor => string.Equals(
                 descriptor.ControllerTypeInfo.Name, controllerName, StringComparison.Ordinal));
 
+        ConferirRotasDoController(actions, controllerName);
+    }
+
+    private static void ConferirRotasDoController(IEnumerable<ControllerActionDescriptor> actions, string controllerName)
+    {
         actions.Should().NotBeEmpty(
             because: $"{controllerName} deve estar registrado pelo MVC. Recidiva mais provável: o "
             + "controller virou `internal sealed` (ControllerFeatureProvider só descobre `public`). "
