@@ -8,11 +8,9 @@ using Unifesspa.UniPlus.Authorization.ValueObjects;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
 
 /// <summary>
-/// Cobre o CA-01 da Story #608 (records imutáveis, igualdade por valor) para os
-/// tipos da assinatura sem coleção, onde a igualdade por valor é determinística.
-/// A varredura por reflection de todo o contrato (sem setter público, schema
-/// canônico, sem nome de provedor — CA-10/CA-11/CA-07) é a fitness de contrato
-/// da task irmã #653.
+/// Confere a igualdade por valor dos tipos da assinatura sem coleção, onde ela é determinística.
+/// A imutabilidade dos records do contrato é conferida pela regra de arquitetura
+/// ContratoDeAutorizacaoImutavelTests.
 /// </summary>
 public sealed class TiposFormaisContratoTests
 {

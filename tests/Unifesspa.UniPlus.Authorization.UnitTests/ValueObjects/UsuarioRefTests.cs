@@ -8,7 +8,6 @@ using Unifesspa.UniPlus.Kernel.Results;
 
 public sealed class UsuarioRefTests
 {
-    // ─── CA-02: ContaId é texto opaco, nunca GUID ──────────────────────────
 
     [Fact]
     public void UsuarioRef_ContaIdEhTextoOpaco_NaoGuid()
@@ -22,12 +21,8 @@ public sealed class UsuarioRefTests
 
         resultado.IsSuccess.Should().BeTrue();
         resultado.Value!.ContaId.Should().Be(contaIdOpaco);
-
-        typeof(UsuarioRef).GetProperty(nameof(UsuarioRef.ContaId))!.PropertyType
-            .Should().Be<string>("o contaId é estruturalmente uma string opaca, nunca um Guid");
     }
 
-    // ─── CA-02: emissor/contaId vazios são rejeitados ──────────────────────
 
     [Theory]
     [InlineData(null, "conta-123")]
@@ -53,7 +48,6 @@ public sealed class UsuarioRefTests
         resultado.Error!.Code.Should().Be(AuthorizationErrorCodes.UsuarioRefContaIdObrigatorio);
     }
 
-    // ─── CA-02: contraprova positiva ───────────────────────────────────────
 
     [Fact]
     public void UsuarioRef_EmissorEContaIdValidos_Constroi()
