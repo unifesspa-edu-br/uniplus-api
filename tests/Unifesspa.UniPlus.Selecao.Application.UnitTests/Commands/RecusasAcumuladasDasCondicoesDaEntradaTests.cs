@@ -66,6 +66,18 @@ public sealed class RecusasAcumuladasDasCondicoesDaEntradaTests
             ["itens[0].regras.impedimento.quando[0][0].fato", "itens[0].regras.impedimento.quando[0][1].operador"]);
     }
 
+    [Fact]
+    public async Task DefinirFatosColetados_PredicadoDaObrigatoriedadeInvalido_ApontaOCampo()
+    {
+        FatoColetadoInput item = EntradaDoFatoColetadoDeTeste.Coletando("BAIXA_RENDA")
+            .ComObrigatoriedade("QUANDO", [[Condicao("", "IGUAL", true)]])
+            .NaSecao(FormularioDeTeste.Secao).Construir();
+
+        Result resultado = await DefinirNaHabilitacaoAsync(ProcessoEmRascunho(), [item]);
+
+        resultado.Errors.Should().Contain(e => e.Field == "itens[0].regras.obrigatoriedade.predicado[0][0].fato");
+    }
+
     [Fact(DisplayName = "Gatilho da exigência com fato vazio e operador desconhecido na mesma condição recusa os dois campos")]
     public async Task DefinirDocumentosExigidos_GatilhoComFatoVazioEOperadorDesconhecido_AcumulaOsDoisCampos()
     {

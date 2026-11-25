@@ -227,6 +227,19 @@ public sealed class DefinirDocumentosExigidosValidacaoDoDocumentoCommandHandlerT
     }
 
     [Fact]
+    public async Task Handle_ModeloNaoEncontrado_RecusaNoCampoDoModelo()
+    {
+        CenarioDaExigencia cenario = ProcessoComUmaFase();
+        ItemDocumentoExigidoInput documento = cenario.ItemGeral().Construir();
+        documento = documento with { Requisitos = documento.Requisitos! with { Modelo = new(Guid.Parse("11111111-1111-4111-8111-111111111111")) } };
+
+        Result resultado = await HandleAsync(cenario.Mocks, new(cenario.Processo.Id, [new("DOCUMENTO", documento)]));
+
+        resultado.Errors.Should().ContainSingle(e => e.Error.Code == "DocumentoExigido.ModeloNaoEncontrado")
+            .Which.Field.Should().Be("regrasDeComprovacao[0].documento.requisitos.modelo.modeloId");
+    }
+
+    [Fact]
     public async Task Handle_RestricoesInvalidas_AcumulaNaOrdem()
     {
         CenarioDaExigencia cenario = ProcessoComUmaFase();

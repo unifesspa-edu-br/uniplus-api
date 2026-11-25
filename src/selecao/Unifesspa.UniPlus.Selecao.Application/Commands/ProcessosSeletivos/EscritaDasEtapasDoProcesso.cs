@@ -32,7 +32,7 @@ internal static class EscritaDasEtapasDoProcesso
 
     /// <summary>Prefixa o campo de cada erro com a posição da etapa no payload.</summary>
     public static IReadOnlyList<FieldError> ComIndice(IEnumerable<FieldError> erros, int indice) =>
-        [.. erros.Select(erro => erro.Field is null ? erro : erro with { Field = $"etapas[{indice}].{erro.Field}" })];
+        [.. erros.Select(erro => erro.NoCaminhoDe($"etapas[{indice}]"))];
 
     public static List<ItemDeAvaliacaoDeclarado> ItensDeclarados(EtapaProcessoInput input) =>
         [.. (input.ItensDeAvaliacao ?? []).Select(static i => new ItemDeAvaliacaoDeclarado(i.Id, i.Rotulo, i.PontuacaoMaxima))];

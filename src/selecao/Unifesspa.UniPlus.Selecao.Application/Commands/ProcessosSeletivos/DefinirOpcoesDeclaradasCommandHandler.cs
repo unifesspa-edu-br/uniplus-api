@@ -64,7 +64,7 @@ public static class DefinirOpcoesDeclaradasCommandHandler
     {
         List<(int Ordem, Result<OpcaoDeclaradaFato> Opcao)> criadas =
             [.. command.Opcoes.Select((input, ordem) => (ordem, OpcaoDeclaradaFato.Criar(command.FatoCodigo, input.Codigo, input.Rotulo, ordem)))];
-        FieldError[] erros = [.. criadas.SelectMany(static c => c.Opcao.Errors.Select(e => new FieldError($"opcoes[{c.Ordem}].{e.Field}", e.Error)))];
+        FieldError[] erros = [.. criadas.SelectMany(static c => c.Opcao.Errors.Select(e => e.NoCaminhoDoItem($"opcoes[{c.Ordem}]")))];
         return erros.Length > 0
             ? Result<IReadOnlyList<OpcaoDeclaradaFato>>.ValidationFailure(erros)
             : Result<IReadOnlyList<OpcaoDeclaradaFato>>.Success([.. criadas.Select(static c => c.Opcao.Value!)]);

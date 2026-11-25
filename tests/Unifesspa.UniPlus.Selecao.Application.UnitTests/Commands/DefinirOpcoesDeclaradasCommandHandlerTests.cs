@@ -73,6 +73,19 @@ public sealed class DefinirOpcoesDeclaradasCommandHandlerTests
 
         resultado.Error!.Code.Should().Be(OpcaoDeclaradaFatoErrorCodes.ReferenciadaPorExigenciaViva);
     }
+    [Fact]
+    public async Task Handle_OpcaoSemRotulo_ApontaOCampoDaOpcao()
+    {
+        ProcessoSeletivo processo = CriarProcesso();
+        IProcessoSeletivoRepository repositorio = CriarRepositorio(processo);
+        DefinirOpcoesDeclaradasCommand comando = new(processo.Id, "CATEGORIA_RENDA", [new("RURAL", "")]);
+
+        Result resultado = await DefinirOpcoesDeclaradasCommandHandler.Handle(
+            comando, repositorio, Substitute.For<IFatoCandidatoReader>(), Substitute.For<IUnitOfWork>(), CancellationToken.None);
+
+        resultado.Errors.Should().ContainSingle().Which.Field.Should().Be("opcoes[0].rotulo");
+    }
+
     private static ProcessoSeletivo CriarProcesso() => ProcessoSeletivo.Criar(
         "PS Opções", TiposDeProcessoDeTeste.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(),
         UnidadeAdministradoraSnapshot.Criar("CEPS", "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!,

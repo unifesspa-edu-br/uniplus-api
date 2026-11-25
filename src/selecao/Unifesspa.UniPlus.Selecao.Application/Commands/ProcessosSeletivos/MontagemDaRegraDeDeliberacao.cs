@@ -22,6 +22,6 @@ internal static class MontagemDaRegraDeDeliberacao
         return regra.IsSuccess
             ? Result<RegraDeDeliberacao?>.Success(regra.Value)
             : Result<RegraDeDeliberacao?>.ValidationFailure(
-                [.. regra.Errors.Select(erro => erro with { Field = $"{campoDaBanca}.regraDeDeliberacao.{erro.Field}" })]);
+                [.. regra.Errors.Select(erro => erro.NoCaminhoDoItem($"{campoDaBanca}.regraDeDeliberacao"))]);
     }
 }
