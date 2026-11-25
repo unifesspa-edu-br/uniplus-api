@@ -6,7 +6,6 @@ using AwesomeAssertions;
 
 using Infrastructure;
 
-using Microsoft.AspNetCore.Mvc.Controllers;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -35,18 +34,8 @@ public sealed class DocumentoAPublicarIdempotencyTtlSentinelTests : IClassFixtur
         using HttpClient _ = _factory.CreateClient();
         EndpointDataSource dataSource = _factory.Services.GetRequiredService<EndpointDataSource>();
 
-        MethodInfo metodo = dataSource.Endpoints
-            .Select(static endpoint => endpoint.Metadata.GetMetadata<ControllerActionDescriptor>())
-            .Where(static descriptor => descriptor is not null)
-            .Cast<ControllerActionDescriptor>()
-            .Where(descriptor => descriptor.ControllerTypeInfo == typeof(DocumentosAPublicarController)
-                && descriptor.MethodInfo.Name == nameof(DocumentosAPublicarController.IniciarEnvio))
-            .Select(descriptor => descriptor.MethodInfo)
-            .Should().ContainSingle(because: "o endpoint deve estar registrado pelo MVC")
-            .Subject;
-
-        RequiresIdempotencyKeyAttribute atributo = metodo
-            .GetCustomAttribute<RequiresIdempotencyKeyAttribute>(inherit: true)!;
+        RequiresIdempotencyKeyAttribute atributo = ObterIdempotencia(
+            dataSource, nameof(DocumentosAPublicarController.IniciarEnvio));
 
         atributo.Should().NotBeNull();
         atributo.TtlSeconds.Should().Be(
@@ -60,20 +49,22 @@ public sealed class DocumentoAPublicarIdempotencyTtlSentinelTests : IClassFixtur
         using HttpClient _ = _factory.CreateClient();
         EndpointDataSource dataSource = _factory.Services.GetRequiredService<EndpointDataSource>();
 
-        MethodInfo metodo = dataSource.Endpoints
-            .Select(static endpoint => endpoint.Metadata.GetMetadata<ControllerActionDescriptor>())
-            .Where(static descriptor => descriptor is not null)
-            .Cast<ControllerActionDescriptor>()
+        RequiresIdempotencyKeyAttribute atributo = ObterIdempotencia(
+            dataSource, nameof(DocumentosAPublicarController.ConfirmarEnvio));
+
+        atributo.Should().NotBeNull();
+        atributo.TtlSeconds.Should().Be(-1, because: "sem override, usa IdempotencyOptions.Ttl");
+    }
+
+    private static RequiresIdempotencyKeyAttribute ObterIdempotencia(EndpointDataSource dataSource, string acao)
+    {
+        MethodInfo metodo = AcoesDosControllers.Obter(dataSource)
             .Where(descriptor => descriptor.ControllerTypeInfo == typeof(DocumentosAPublicarController)
-                && descriptor.MethodInfo.Name == nameof(DocumentosAPublicarController.ConfirmarEnvio))
+                && descriptor.MethodInfo.Name == acao)
             .Select(descriptor => descriptor.MethodInfo)
             .Should().ContainSingle(because: "o endpoint deve estar registrado pelo MVC")
             .Subject;
 
-        RequiresIdempotencyKeyAttribute atributo = metodo
-            .GetCustomAttribute<RequiresIdempotencyKeyAttribute>(inherit: true)!;
-
-        atributo.Should().NotBeNull();
-        atributo.TtlSeconds.Should().Be(-1, because: "sem override, usa IdempotencyOptions.Ttl");
+        return metodo.GetCustomAttribute<RequiresIdempotencyKeyAttribute>(inherit: true)!;
     }
 }
