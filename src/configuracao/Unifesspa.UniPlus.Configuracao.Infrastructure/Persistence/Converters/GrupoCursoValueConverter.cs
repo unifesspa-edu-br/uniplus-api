@@ -3,6 +3,7 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Converters;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
 
 // Mapeia GrupoCurso ↔ código do grupo (varchar); o rótulo volta da lista do domínio.
@@ -27,7 +28,7 @@ public sealed class GrupoCursoValueConverter : ValueConverter<GrupoCurso, string
     /// colunas que este converter grava — curso e Pesos por Área usam a mesma lista.
     /// </summary>
     internal static string CodigosEmSql() =>
-        string.Join(", ", GrupoCurso.Todos.Select(static grupo => $"'{grupo.Codigo}'"));
+        SqlDosCodigosDeContrato.Lista(GrupoCurso.Todos.Select(static grupo => grupo.Codigo));
 
     private static GrupoCurso Reidratar(string valor)
     {

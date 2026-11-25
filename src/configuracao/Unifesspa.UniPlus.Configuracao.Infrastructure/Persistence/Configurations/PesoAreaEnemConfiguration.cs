@@ -8,6 +8,7 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Unifesspa.UniPlus.Configuracao.Application.Persistence;
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Converters;
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence.CodigosDeContrato;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Protecao;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
 
@@ -83,7 +84,7 @@ internal sealed class PesoAreaEnemConfiguration
 
                     t.HasCheckConstraint(
                         "ck_areas_dos_pesos_do_enem_codigo",
-                        $"codigo IN ({string.Join(", ", PesoAreaEnem.Areas.Select(static a => $"'{a.Codigo}'"))})");
+                        $"codigo IN ({SqlDosCodigosDeContrato.Lista(PesoAreaEnem.Areas.Select(static a => a.Codigo))})");
                     t.HasCheckConstraint("ck_areas_dos_pesos_do_enem_peso", "peso >= 0");
 
                     // Corte opcional na faixa da nota do ENEM (0–1000). O teto também

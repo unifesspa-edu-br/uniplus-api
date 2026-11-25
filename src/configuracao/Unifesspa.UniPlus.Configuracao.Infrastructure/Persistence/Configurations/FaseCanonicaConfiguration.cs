@@ -180,7 +180,7 @@ internal sealed class FaseCanonicaConfiguration : IEntityTypeConfiguration<FaseC
 
         table.HasCheckConstraint(
             "ck_tipos_de_fase_codigo_canonico",
-            $"codigo IN ({CodigosSql(FaseCanonicaCatalogo.Codigos)})");
+            $"codigo IN ({SqlDosCodigosDeContrato.Lista(FaseCanonicaCatalogo.Codigos)})");
 
         table.HasCheckConstraint(
             "ck_tipos_de_fase_origem_data",
@@ -197,7 +197,7 @@ internal sealed class FaseCanonicaConfiguration : IEntityTypeConfiguration<FaseC
 
         table.HasCheckConstraint(
             "ck_tipos_de_fase_complementacao",
-            $"permite_complementacao = false OR codigo IN ({CodigosSql(FaseCanonicaCatalogo.CodigosComComplementacaoPermitida)})");
+            $"permite_complementacao = false OR codigo IN ({SqlDosCodigosDeContrato.Lista(FaseCanonicaCatalogo.CodigosComComplementacaoPermitida)})");
     }
 
     // Coerência: a marca de solicitação de isenção existe na fase de isenção, e só nela;
@@ -212,7 +212,4 @@ internal sealed class FaseCanonicaConfiguration : IEntityTypeConfiguration<FaseC
             "ck_tipos_de_fase_inscricao_e_isencao_exclusivas",
             "NOT (coleta_inscricao AND coleta_solicitacao_isencao)");
     }
-
-    private static string CodigosSql(IReadOnlyList<string> codigos) =>
-        string.Join(", ", codigos.Select(codigo => $"'{codigo}'"));
 }
