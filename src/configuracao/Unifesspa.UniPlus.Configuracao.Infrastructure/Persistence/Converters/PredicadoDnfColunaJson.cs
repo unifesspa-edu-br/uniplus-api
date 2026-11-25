@@ -5,6 +5,7 @@ using System.Text.Json;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Converters;
 using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Regras.ValueObjects;
 
@@ -27,5 +28,7 @@ internal static class PredicadoDnfColunaJson
 
     public static PredicadoDnf Desserializar(string json) =>
         PredicadoDnfGravado.Remontar(
-            JsonSerializer.Deserialize<IReadOnlyList<IReadOnlyList<PredicadoDnfGravado.CondicaoGravada>>>(json, Opcoes) ?? []);
+            ObjetoDeValorGravado.DesserializarDocumento(
+                () => JsonSerializer.Deserialize<IReadOnlyList<IReadOnlyList<PredicadoDnfGravado.CondicaoGravada>>>(json, Opcoes) ?? [],
+                nameof(PredicadoDnf)));
 }

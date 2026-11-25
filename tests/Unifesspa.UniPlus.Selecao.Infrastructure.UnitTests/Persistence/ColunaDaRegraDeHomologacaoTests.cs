@@ -15,7 +15,7 @@ public sealed class ColunaDaRegraDeHomologacaoTests
 {
     private const string ResultadoPreliminar = "RESULTADO_PRELIMINAR_HOMOLOGACAO";
 
-    [Theory]
+    [Theory(DisplayName = "Documento inválido não leva a causa da biblioteca")]
     [InlineData("{\"Alternativas\":[]}")]
     [InlineData("{\"alternativas\":[{\"condicoes\":[{\"tipo\":\"RESULTADO_NO_RETORNO_DO_INEP\",\"edicaoDoExame\":\"2024\"}]}]}")]
     [InlineData("{\"alternativas\":[],\"desconhecida\":1}")]
@@ -24,8 +24,9 @@ public sealed class ColunaDaRegraDeHomologacaoTests
     {
         Action leitura = () => ColunaDaRegraDeHomologacao.Ler(documento);
 
-        leitura.Should().Throw<InvalidOperationException>()
-            .WithMessage("Regra de homologação gravada inválida:*");
+        InvalidOperationException erro = leitura.Should().Throw<InvalidOperationException>().Which;
+        erro.Message.Should().Be("Dado inválido no banco ao reidratar RegraDeHomologacaoDasInscricoes: documento JSON inválido. Verifique se houve alteração manual da coluna fora do fluxo da aplicação.");
+        erro.InnerException.Should().BeNull();
     }
 
     [Fact(DisplayName = "Regra com enquadramento e sem enquadramento volta igual ao que foi gravada")]
@@ -145,13 +146,14 @@ public sealed class ColunaDaRegraDeHomologacaoTests
 
         leitura.Should().Throw<Exception>();
     }
-    [Fact]
+    [Fact(DisplayName = "Duas recusas informam os códigos na ordem sem expor o conteúdo")]
     public void Ler_DuasCondicoesInvalidas_IncluiAsDuasCausasNaMensagem()
     {
-        const string documento = """{"alternativas":[{"condicoes":[{"tipo":"RESULTADO_NO_RETORNO_DO_INEP","edicaoDoExame":2025,"enquadramento":[[{"codigoDoDado":"DADO_A","operador":"ALGUM_DE","valor":true},{"codigoDoDado":"DADO_B","operador":"IGUAL","valor":[]}]]}]}]}""";
+        const string documento = """{"alternativas":[{"condicoes":[{"tipo":"RESULTADO_NO_RETORNO_DO_INEP","edicaoDoExame":2025,"enquadramento":[[{"codigoDoDado":"DADO_A","operador":"INEXISTENTE","valor":"valor-gravado-ficticio-7f3a"},{"codigoDoDado":"DADO_B","operador":"IGUAL","valor":[]}]]}]}]}""";
         Action leitura = () => ColunaDaRegraDeHomologacao.Ler(documento);
 
-        leitura.Should().Throw<InvalidOperationException>().WithMessage(
-            "Regra de homologação gravada inválida: Os operadores ALGUM_DE e NENHUM_DE exigem um array JSON, sem itens de texto em branco (array vazio é aceito). Os operadores IGUAL, DIFERENTE, MAIOR_IGUAL e MENOR_IGUAL exigem um valor JSON escalar não branco..");
+        string mensagem = leitura.Should().Throw<InvalidOperationException>().Which.Message;
+        mensagem.Should().Be("Dado inválido no banco ao reidratar RegraDeHomologacaoDasInscricoes: CondicaoDnf.OperadorInvalido, CondicaoDnf.FormaIncoerenteComOperador. Verifique se houve alteração manual da coluna fora do fluxo da aplicação.");
+        mensagem.Should().NotContain("valor-gravado-ficticio-7f3a").And.NotContain("operadores");
     }
 }

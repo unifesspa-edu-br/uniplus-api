@@ -10,6 +10,8 @@ using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Regras.Serializacao;
 using Unifesspa.UniPlus.Regras.ValueObjects;
 
+using static Unifesspa.UniPlus.Infrastructure.Core.Persistence.Converters.ObjetoDeValorGravado;
+
 /// <summary>
 /// Predicado, obrigatoriedade, restrições de valor e impedimento das regras do formulário gravados em
 /// <c>jsonb</c>, na forma de <see cref="PredicadoDnfJson"/> e <see cref="RestricaoValorJson"/>: são
@@ -66,40 +68,28 @@ internal static class ConversoresDeRegras
 
     private static string SerializarImpedimento(Impedimento impedimento) => PredicadoDnfJson.ParaJson(impedimento).ToJsonString();
 
-    private static Impedimento LerImpedimento(string json)
-    {
-        using JsonDocument documento = JsonDocument.Parse(json);
-        return Exigir(PredicadoDnfJson.ImpedimentoDeJson(documento.RootElement))!;
-    }
+    private static Impedimento? LerImpedimento(string json) =>
+        Ler(json, PredicadoDnfJson.ImpedimentoDeJson, nameof(Impedimento));
 
     private static string SerializarRestricoes(IReadOnlyList<RestricaoValor> restricoes) =>
         RestricaoValorJson.ParaJson(restricoes).ToJsonString();
 
-    private static IReadOnlyList<RestricaoValor> LerRestricoes(string json)
-    {
-        using JsonDocument documento = JsonDocument.Parse(json);
-        return Exigir(RestricaoValorJson.ListaDeJson(documento.RootElement));
-    }
+    private static IReadOnlyList<RestricaoValor> LerRestricoes(string json) =>
+        Ler(json, RestricaoValorJson.ListaDeJson, nameof(RestricaoValor));
 
     private static string SerializarPredicado(PredicadoDnf predicado) => PredicadoDnfJson.ParaJson(predicado).ToJsonString();
 
     private static string SerializarObrigatoriedade(Obrigatoriedade obrigatoriedade) =>
         PredicadoDnfJson.ParaJson(obrigatoriedade).ToJsonString();
 
-    private static PredicadoDnf LerPredicado(string json)
-    {
-        using JsonDocument documento = JsonDocument.Parse(json);
-        return Exigir(PredicadoDnfJson.DeJson(documento.RootElement));
-    }
+    private static PredicadoDnf LerPredicado(string json) => Ler(json, PredicadoDnfJson.DeJson, nameof(PredicadoDnf));
 
-    private static Obrigatoriedade LerObrigatoriedade(string json)
-    {
-        using JsonDocument documento = JsonDocument.Parse(json);
-        return Exigir(PredicadoDnfJson.ObrigatoriedadeDeJson(documento.RootElement));
-    }
+    private static Obrigatoriedade LerObrigatoriedade(string json) =>
+        Ler(json, PredicadoDnfJson.ObrigatoriedadeDeJson, nameof(Obrigatoriedade));
 
-    private static T Exigir<T>(Result<T> resultado) =>
-        resultado.IsSuccess
-            ? resultado.Value!
-            : throw new InvalidOperationException($"Regra gravada do formulário inválida: {resultado.Error!.Message}");
+    private static T Ler<T>(string json, Func<JsonElement, Result<T>> leitura, string nomeDoValor)
+    {
+        using JsonDocument documento = DesserializarDocumento(() => JsonDocument.Parse(json), nomeDoValor);
+        return Reidratar(leitura(documento.RootElement), nomeDoValor);
+    }
 }

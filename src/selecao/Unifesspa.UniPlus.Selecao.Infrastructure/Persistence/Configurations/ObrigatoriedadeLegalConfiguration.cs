@@ -16,6 +16,8 @@ using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
+using static Unifesspa.UniPlus.Infrastructure.Core.Persistence.Converters.ObjetoDeValorGravado;
+
 /// <summary>
 /// Configuração EF Core da entidade <see cref="ObrigatoriedadeLegal"/>.
 /// </summary>
@@ -178,16 +180,9 @@ public sealed class ObrigatoriedadeLegalConfiguration
     private static string Serialize(PredicadoObrigatoriedade? v) =>
         v is null ? string.Empty : JsonSerializer.Serialize(v, HashCanonicalComputer.CanonicalOptions);
 
-    private static PredicadoObrigatoriedade Deserialize(string json)
-    {
-        try
-        {
-            return JsonSerializer.Deserialize<PredicadoObrigatoriedade>(json, OpcoesDeLeitura)
-                ?? throw new JsonException("O predicado não é um objeto.");
-        }
-        catch (JsonException excecao)
-        {
-            throw new InvalidOperationException("Predicado de obrigatoriedade legal gravado inválido: documento JSON inválido.", excecao);
-        }
-    }
+    private static PredicadoObrigatoriedade Deserialize(string json) =>
+        DesserializarDocumento(
+            () => JsonSerializer.Deserialize<PredicadoObrigatoriedade>(json, OpcoesDeLeitura)
+                ?? throw new JsonException("O predicado não é um objeto."),
+            nameof(PredicadoObrigatoriedade));
 }

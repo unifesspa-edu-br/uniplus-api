@@ -1,25 +1,38 @@
 namespace Unifesspa.UniPlus.Infrastructure.Core.Persistence.Converters;
 
+using System.Text.Json;
+
 using Unifesspa.UniPlus.Kernel.Results;
 
-/// <summary>
-/// Falha com contexto na leitura para evitar NullReferenceException tardia.
-/// O conteúdo gravado não entra na mensagem porque ela chega ao log e pode conter dado pessoal.
-/// </summary>
+/// <summary>Reidrata valores gravados sem expor seu conteúdo nas falhas de leitura.</summary>
 public static class ObjetoDeValorGravado
 {
-    public static T Reidratar<T>(Result<T> criacao, string nomeDoValor) where T : notnull
+    public static T Reidratar<T>(Result<T> criacao, string nomeDoValor)
     {
         ArgumentNullException.ThrowIfNull(criacao);
-
-        if (criacao.IsFailure || criacao.Value is null)
+        if (criacao.IsFailure)
         {
-            string codigo = criacao.Error?.Code ?? "Desconhecido";
-            throw new InvalidOperationException(
-                $"Dado inválido no banco ao reidratar {nomeDoValor}: {codigo}. " +
-                "Verifique se houve alteração manual da coluna fora do fluxo da aplicação.");
+            throw DadoInvalido(nomeDoValor, string.Join(", ", criacao.Errors.Select(static erro => erro.Error.Code).Distinct()));
         }
 
-        return criacao.Value;
+        return criacao.Value!;
     }
+
+    public static T DesserializarDocumento<T>(Func<T> desserializacao, string nomeDoValor)
+    {
+        ArgumentNullException.ThrowIfNull(desserializacao);
+        try
+        {
+            return desserializacao();
+        }
+        catch (JsonException)
+        {
+            // A exceção da biblioteca pode repetir o documento no log.
+            throw DadoInvalido(nomeDoValor, "documento JSON inválido");
+        }
+    }
+
+    private static InvalidOperationException DadoInvalido(string nomeDoValor, string motivo) =>
+        new($"Dado inválido no banco ao reidratar {nomeDoValor}: {motivo}. " +
+            "Verifique se houve alteração manual da coluna fora do fluxo da aplicação.");
 }

@@ -118,7 +118,7 @@ public static class RestricaoValorJson
             Result<RestricaoValor> lida = DeJson(item);
             if (lida.IsFailure)
             {
-                return Result<IReadOnlyList<RestricaoValor>>.Failure(lida.Error!);
+                return Result<IReadOnlyList<RestricaoValor>>.ValidationFailure(lida.Errors);
             }
 
             restricoes.Add(lida.Value!);
@@ -200,7 +200,7 @@ public static class RestricaoValorJson
             Result<(PredicadoDnf? Quando, IReadOnlyCollection<string> Valores)> lida = LerEntradaDeOpcoes(entrada);
             if (lida.IsFailure)
             {
-                return Result<RestricaoValor>.Failure(lida.Error!);
+                return Result<RestricaoValor>.ValidationFailure(lida.Errors);
             }
 
             lidas.Add(lida.Value);
@@ -218,7 +218,7 @@ public static class RestricaoValorJson
 
         Result<PredicadoDnf?> quando = LerPredicadoDaEntrada(entrada);
         return quando.IsFailure
-            ? Result<(PredicadoDnf?, IReadOnlyCollection<string>)>.Failure(quando.Error!)
+            ? Result<(PredicadoDnf?, IReadOnlyCollection<string>)>.ValidationFailure(quando.Errors)
             : Result<(PredicadoDnf?, IReadOnlyCollection<string>)>.Success((quando.Value, valores));
     }
 
@@ -230,7 +230,7 @@ public static class RestricaoValorJson
         }
 
         Result<PredicadoDnf> lido = PredicadoDnfJson.DeJson(predicado);
-        return lido.IsFailure ? Result<PredicadoDnf?>.Failure(lido.Error!) : Result<PredicadoDnf?>.Success(lido.Value);
+        return lido.IsFailure ? Result<PredicadoDnf?>.ValidationFailure(lido.Errors) : Result<PredicadoDnf?>.Success(lido.Value);
     }
 
     private static Result<RestricaoValor> LerFaixaDeData(JsonElement json)
@@ -239,7 +239,7 @@ public static class RestricaoValorJson
         Result<LimiteDeData?> maxima = LimiteDeJson(json, "dataMaxima");
         if (minima.IsFailure || maxima.IsFailure)
         {
-            return Result<RestricaoValor>.Failure((minima.Error ?? maxima.Error)!);
+            return Result<RestricaoValor>.ValidationFailure([.. minima.Errors, .. maxima.Errors]);
         }
 
         return RestricoesDeValor.FaixaDeData(minima.Value, maxima.Value);
@@ -281,7 +281,7 @@ public static class RestricaoValorJson
         Result<LimiteDeData> lidoDoLimite = RestricoesDeValor.Limite(ancora, dia, anos, dias);
         return lidoDoLimite.IsSuccess
             ? Result<LimiteDeData?>.Success(lidoDoLimite.Value)
-            : Result<LimiteDeData?>.Failure(lidoDoLimite.Error!);
+            : Result<LimiteDeData?>.ValidationFailure(lidoDoLimite.Errors);
     }
 
     private static bool Texto(JsonElement json, string chave, out string? texto)

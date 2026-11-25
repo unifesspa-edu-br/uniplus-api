@@ -20,9 +20,9 @@ public sealed class PredicadoObrigatoriedadeNaColunaTests
     {
         Action leitura = () => ObrigatoriedadeLegalConfiguration.PredicadoConverter.ConvertFromProvider(documento);
 
-        leitura.Should().Throw<InvalidOperationException>()
-            .WithMessage("Predicado de obrigatoriedade legal gravado inválido: documento JSON inválido.")
-            .WithInnerException<JsonException>();
+        InvalidOperationException erro = leitura.Should().Throw<InvalidOperationException>().Which;
+        erro.Message.Should().Be("Dado inválido no banco ao reidratar PredicadoObrigatoriedade: documento JSON inválido. Verifique se houve alteração manual da coluna fora do fluxo da aplicação.");
+        erro.InnerException.Should().BeNull();
     }
 
     public static TheoryData<PredicadoObrigatoriedade> Predicados => new()
