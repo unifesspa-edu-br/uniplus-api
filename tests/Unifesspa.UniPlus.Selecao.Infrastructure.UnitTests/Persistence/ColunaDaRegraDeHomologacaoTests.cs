@@ -15,6 +15,19 @@ public sealed class ColunaDaRegraDeHomologacaoTests
 {
     private const string ResultadoPreliminar = "RESULTADO_PRELIMINAR_HOMOLOGACAO";
 
+    [Theory]
+    [InlineData("{\"Alternativas\":[]}")]
+    [InlineData("{\"alternativas\":[{\"condicoes\":[{\"tipo\":\"RESULTADO_NO_RETORNO_DO_INEP\",\"edicaoDoExame\":\"2024\"}]}]}")]
+    [InlineData("{\"alternativas\":[],\"desconhecida\":1}")]
+    [InlineData("{\"alternativas\":[],\"alternativas\":[]}")]
+    public void Ler_JsonComConteudoInvalido_IdentificaDadoCorrompido(string documento)
+    {
+        Action leitura = () => ColunaDaRegraDeHomologacao.Ler(documento);
+
+        leitura.Should().Throw<InvalidOperationException>()
+            .WithMessage("Regra de homologação gravada inválida:*");
+    }
+
     [Fact(DisplayName = "Regra com enquadramento e sem enquadramento volta igual ao que foi gravada")]
     public void RegraCompleta_VoltaIgual()
     {
