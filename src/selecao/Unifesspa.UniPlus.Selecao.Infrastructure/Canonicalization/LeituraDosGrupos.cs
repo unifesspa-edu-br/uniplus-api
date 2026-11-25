@@ -93,8 +93,13 @@ internal static class LeituraDosGrupos
 
         Result<GrupoColetado> grupo = GrupoColetado.Criar(
             d.Codigo, d.Ordem, d.PaginaCodigo, d.Rotulo, new OcorrenciasDoGrupo(d.Minimo, d.Maximo, d.IncluiCandidato), regras, campos);
-        return grupo.IsFailure ? leitor.Propagar<GrupoColetado?>(grupo.Error!) : grupo.Value;
+        return grupo.IsFailure ? leitor.Propagar<GrupoColetado?>(CausasDoGrupoNoDocumento(grupo.Errors), path) : grupo.Value;
     }
+
+    private static IReadOnlyList<FieldError> CausasDoGrupoNoDocumento(IReadOnlyList<FieldError> causas) =>
+        [.. causas.Select(static causa => causa.Field is { } campo
+            && (campo.StartsWith("ocorrencias.", StringComparison.Ordinal) || campo.Contains("regras.", StringComparison.Ordinal))
+                ? LeitorEnvelope.NoProprioItem([causa])[0] : causa)];
 
     private static ExibicaoEObrigatoriedade? LerRegrasDoGrupo(LeitorEnvelope leitor, DeclaracaoDoGrupo d, JsonObject item, string path)
     {

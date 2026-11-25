@@ -285,6 +285,6 @@ internal static class LeituraDasRegrasDeComprovacao
         }
 
         Result<BaseLegalDaComprovacao> baseLegal = BaseLegalDaComprovacao.Criar(lida.Referencia, lida.Abrangencia, lida.Situacao, lida.Observacao);
-        return baseLegal.IsFailure ? leitor.Propagar<BaseLegalDaComprovacao?>(baseLegal.Error!) : baseLegal.Value;
+        return baseLegal.IsFailure ? leitor.Propagar<BaseLegalDaComprovacao?>(baseLegal.Errors, caminho) : baseLegal.Value;
     }
 }

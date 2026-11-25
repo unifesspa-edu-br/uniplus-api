@@ -43,6 +43,11 @@ internal static class LeituraDaDivulgacaoETaxa
             return null;
         }
 
+        return LerConfiguracaoDeDivulgacao(leitor, bloco);
+    }
+
+    private static ConfiguracaoDivulgacao? LerConfiguracaoDeDivulgacao(LeitorEnvelope leitor, JsonObject bloco)
+    {
         leitor.ExigirChaves(bloco, "divulgacao", "camposPublicos", "regraNomeAbreviado", "justificativa");
 
         IReadOnlyList<string> camposPublicos = leitor.Textos(bloco, "camposPublicos", "divulgacao");
@@ -53,6 +58,12 @@ internal static class LeituraDaDivulgacaoETaxa
             return null;
         }
 
+        return ReidratarDivulgacao(leitor, camposPublicos, regraNomeAbreviado, justificativa);
+    }
+
+    private static ConfiguracaoDivulgacao? ReidratarDivulgacao(
+        LeitorEnvelope leitor, IReadOnlyList<string> camposPublicos, string? regraNomeAbreviado, string? justificativa)
+    {
         if (FormaNaoCanonica(camposPublicos, regraNomeAbreviado, justificativa) is { } mensagem)
         {
             return leitor.Recusar<ConfiguracaoDivulgacao?>(mensagem);
@@ -64,7 +75,7 @@ internal static class LeituraDaDivulgacaoETaxa
         }
 
         Result<ConfiguracaoDivulgacao> configuracao = ConfiguracaoDivulgacao.Criar(camposPublicos, justificativa);
-        return configuracao.IsFailure ? leitor.Propagar<ConfiguracaoDivulgacao>(configuracao.Error!) : configuracao.Value;
+        return configuracao.IsFailure ? leitor.Propagar<ConfiguracaoDivulgacao>(configuracao.Errors, "divulgacao") : configuracao.Value;
     }
 
     private static string? FormaNaoCanonica(IReadOnlyList<string> camposPublicos, string? regraNomeAbreviado, string? justificativa)
@@ -81,6 +92,11 @@ internal static class LeituraDaDivulgacaoETaxa
             return "'divulgacao.camposPublicos' não está na ordem canônica.";
         }
 
+        return RegraDeNomeForaDaForma(camposPublicos, regraNomeAbreviado) ?? JustificativaForaDaForma(justificativa);
+    }
+
+    private static string? RegraDeNomeForaDaForma(IReadOnlyList<string> camposPublicos, string? regraNomeAbreviado)
+    {
         if (camposPublicos.Contains(ConfiguracaoDivulgacao.NomeAbreviado, StringComparer.Ordinal) != (regraNomeAbreviado is not null))
         {
             return "'divulgacao.regraNomeAbreviado' tem de estar presente se, e somente se, 'camposPublicos' contém 'NOME_ABREVIADO'.";
@@ -91,7 +107,7 @@ internal static class LeituraDaDivulgacaoETaxa
             return $"'divulgacao.regraNomeAbreviado' não é uma regra conhecida: '{regraNomeAbreviado}'.";
         }
 
-        return JustificativaForaDaForma(justificativa);
+        return null;
     }
 
     // O codificador nunca emite justificativa vazia nem só espaços: quando não há, emite null. A string
@@ -138,6 +154,11 @@ internal static class LeituraDaDivulgacaoETaxa
             return null;
         }
 
+        return LerTaxaDeclarada(leitor, bloco);
+    }
+
+    private static ConfiguracaoTaxaInscricao? LerTaxaDeclarada(LeitorEnvelope leitor, JsonObject bloco)
+    {
         bool presente = leitor.Booleano(bloco, "presente", "taxaInscricao");
         if (leitor.Falhou)
         {
@@ -164,13 +185,19 @@ internal static class LeituraDaDivulgacaoETaxa
             return null;
         }
 
+        return ReidratarTaxa(leitor, cobra, valor, fundamentos);
+    }
+
+    private static ConfiguracaoTaxaInscricao? ReidratarTaxa(
+        LeitorEnvelope leitor, bool cobra, decimal? valor, IReadOnlyList<string> fundamentos)
+    {
         if (FundamentosForaDaForma(fundamentos) is { } mensagem)
         {
             return leitor.Recusar<ConfiguracaoTaxaInscricao?>(mensagem);
         }
 
         Result<ConfiguracaoTaxaInscricao> configuracao = ConfiguracaoTaxaInscricao.Criar(cobra, valor, fundamentos);
-        return configuracao.IsFailure ? leitor.Propagar<ConfiguracaoTaxaInscricao>(configuracao.Error!) : configuracao.Value;
+        return configuracao.IsFailure ? leitor.Propagar<ConfiguracaoTaxaInscricao>(configuracao.Errors, "taxaInscricao") : configuracao.Value;
     }
 
     private static bool NaOrdemCanonica(IReadOnlyList<string> tokens) =>
