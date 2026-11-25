@@ -4,7 +4,6 @@ using System.Diagnostics.CodeAnalysis;
 
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
-using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 using Unifesspa.UniPlus.Autorizacao.Domain.Entities;
 using Unifesspa.UniPlus.Autorizacao.Domain.Enums;
@@ -21,10 +20,6 @@ internal sealed class TentativaDeInstalacaoConfiguration : IEntityTypeConfigurat
     private const int IdentidadeMaxLength = 255;
     private const int ResultadoMaxLength = 20;
 
-    private static readonly ValueConverter<ResultadoDaTentativaDeInstalacao, string> ResultadoConverter = new(
-        resultado => resultado.ToCodigo(),
-        codigo => ResultadoDaTentativaDeInstalacaoCodigo.FromCodigo(codigo));
-
     public void Configure(EntityTypeBuilder<TentativaDeInstalacao> builder)
     {
         ArgumentNullException.ThrowIfNull(builder);
@@ -36,7 +31,7 @@ internal sealed class TentativaDeInstalacaoConfiguration : IEntityTypeConfigurat
 
         builder.Property(t => t.AutorEmissor).HasMaxLength(IdentidadeMaxLength).IsRequired();
         builder.Property(t => t.AutorContaId).HasMaxLength(IdentidadeMaxLength).IsRequired();
-        builder.Property(t => t.Resultado).HasConversion(ResultadoConverter).HasMaxLength(ResultadoMaxLength).IsRequired();
+        builder.Property(t => t.Resultado).HasMaxLength(ResultadoMaxLength).IsRequired();
         builder.Property(t => t.Instante).IsRequired();
 
         // A instalação é do mesmo módulo; a tentativa sem pendência não aponta para nenhuma.

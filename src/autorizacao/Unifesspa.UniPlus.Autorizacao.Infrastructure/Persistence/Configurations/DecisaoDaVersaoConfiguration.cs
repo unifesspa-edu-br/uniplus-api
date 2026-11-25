@@ -4,7 +4,6 @@ using System.Diagnostics.CodeAnalysis;
 
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
-using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 using Unifesspa.UniPlus.Autorizacao.Domain.Entities;
 using Unifesspa.UniPlus.Autorizacao.Domain.Enums;
@@ -23,10 +22,6 @@ internal sealed class DecisaoDaVersaoConfiguration : IEntityTypeConfiguration<De
     private const int IdentidadeMaxLength = 255;
     private const int CodigoMaxLength = 40;
 
-    private static readonly ValueConverter<ResultadoDaDecisao, string> ResultadoConverter = new(
-        resultado => resultado.ToCodigo(),
-        codigo => ResultadoDaDecisaoCodigo.FromCodigo(codigo));
-
     public void Configure(EntityTypeBuilder<DecisaoDaVersao> builder)
     {
         ArgumentNullException.ThrowIfNull(builder);
@@ -39,7 +34,7 @@ internal sealed class DecisaoDaVersaoConfiguration : IEntityTypeConfiguration<De
 
         builder.Property(d => d.Ciclo).IsRequired();
         builder.Property(d => d.Etapa).HasMaxLength(CodigoMaxLength).IsRequired();
-        builder.Property(d => d.Resultado).HasConversion(ResultadoConverter).HasMaxLength(CodigoMaxLength).IsRequired();
+        builder.Property(d => d.Resultado).HasMaxLength(CodigoMaxLength).IsRequired();
         builder.Property(d => d.DecisorEmissor).HasMaxLength(IdentidadeMaxLength).IsRequired();
         builder.Property(d => d.DecisorContaId).HasMaxLength(IdentidadeMaxLength).IsRequired();
         builder.Property(d => d.DecisorNome).HasMaxLength(NomeDeExibicao.MaxLength);
@@ -60,12 +55,12 @@ internal sealed class DecisaoDaVersaoConfiguration : IEntityTypeConfiguration<De
     {
         tabela.HasCheckConstraint(
             "ck_decisoes_da_versao_motivo_na_recusa",
-            $"(resultado = '{ResultadoDaDecisaoCodigo.Recusado}') = (motivo IS NOT NULL)");
+            $"(resultado = {SqlDosCodigosDeContrato.Literal(ResultadoDaDecisao.Recusado)}) = (motivo IS NOT NULL)");
         tabela.HasCheckConstraint(
             "ck_decisoes_da_versao_etapa",
             $"etapa IN ({SqlDosCodigosDeContrato.Lista<EtapaDaVersao>()})");
         tabela.HasCheckConstraint(
             "ck_decisoes_da_versao_resultado",
-            $"resultado IN ('{ResultadoDaDecisaoCodigo.Aprovado}', '{ResultadoDaDecisaoCodigo.Recusado}')");
+            $"resultado IN ({SqlDosCodigosDeContrato.Literal(ResultadoDaDecisao.Aprovado)}, {SqlDosCodigosDeContrato.Literal(ResultadoDaDecisao.Recusado)})");
     }
 }

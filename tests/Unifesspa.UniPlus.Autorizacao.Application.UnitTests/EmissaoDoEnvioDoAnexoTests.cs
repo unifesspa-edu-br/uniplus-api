@@ -15,6 +15,7 @@ using Unifesspa.UniPlus.Autorizacao.Domain.Errors;
 using Unifesspa.UniPlus.Autorizacao.Domain.Interfaces;
 using Unifesspa.UniPlus.Autorizacao.Domain.UnitTests;
 using Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
 
 using static Unifesspa.UniPlus.Autorizacao.Application.UnitTests.DoublesDaInstalacao;
@@ -138,7 +139,7 @@ public sealed class EmissaoDoEnvioDoAnexoTests
             new DoublesDePerfis.Usuario(ApoioDoPedido.Betina.Identidade),
             CancellationToken.None);
 
-        resultado.Value!.Situacao.Should().Be(SituacaoDoAnexoCodigo.AguardandoEnvio);
+        resultado.Value!.Situacao.Should().Be(SituacaoDoAnexo.AguardandoEnvio.Codigo());
         cenario.Pedido.Anexos.Should().ContainSingle();
     }
 

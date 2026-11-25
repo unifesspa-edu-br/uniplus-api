@@ -1,68 +1,39 @@
 namespace Unifesspa.UniPlus.Autorizacao.Domain.Enums;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
+
 /// <summary>Situação da instalação dos primeiros gestores de acessos.</summary>
 public enum SituacaoDaInstalacao
 {
     /// <summary>Iniciada; o PDF ainda não foi enviado nem confirmado.</summary>
+    [CodigoDeContrato("AGUARDANDO_DOCUMENTO", "Aguardando documento")]
     AguardandoDocumento = 1,
 
     /// <summary>PDF confirmado; o verificador ainda não devolveu o veredicto.</summary>
+    [CodigoDeContrato("DOCUMENTO_EM_VERIFICACAO", "Documento em verificação")]
     DocumentoEmVerificacao = 2,
 
     /// <summary>PDF limpo e promovido; o código ainda não foi pedido.</summary>
+    [CodigoDeContrato("DOCUMENTO_VERIFICADO", "Documento verificado")]
     DocumentoVerificado = 3,
 
     /// <summary>Terminal: o verificador recusou o PDF, e a instalação recomeça.</summary>
+    [CodigoDeContrato("DOCUMENTO_RECUSADO", "Documento recusado")]
     DocumentoRecusado = 4,
 
     /// <summary>Código enviado ao e-mail de quem executa; falta a confirmação.</summary>
+    [CodigoDeContrato("AGUARDANDO_CODIGO", "Aguardando código")]
     AguardandoCodigo = 5,
 
     /// <summary>Terminal: confirmada; os dois gestores foram concedidos.</summary>
+    [CodigoDeContrato("CONFIRMADA", "Confirmada")]
     Confirmada = 6,
 
     /// <summary>Terminal: substituída por outra instalação ou esgotadas as tentativas.</summary>
+    [CodigoDeContrato("CANCELADA", "Cancelada")]
     Cancelada = 7,
 
     /// <summary>Terminal: o prazo do código esgotou.</summary>
+    [CodigoDeContrato("EXPIRADA", "Expirada")]
     Expirada = 8,
-}
-
-/// <summary>Código textual canônico de <see cref="SituacaoDaInstalacao"/>, o valor gravado e exposto.</summary>
-public static class SituacaoDaInstalacaoCodigo
-{
-    public const string AguardandoDocumento = "AGUARDANDO_DOCUMENTO";
-    public const string DocumentoEmVerificacao = "DOCUMENTO_EM_VERIFICACAO";
-    public const string DocumentoVerificado = "DOCUMENTO_VERIFICADO";
-    public const string DocumentoRecusado = "DOCUMENTO_RECUSADO";
-    public const string AguardandoCodigo = "AGUARDANDO_CODIGO";
-    public const string Confirmada = "CONFIRMADA";
-    public const string Cancelada = "CANCELADA";
-    public const string Expirada = "EXPIRADA";
-
-    public static string ToCodigo(this SituacaoDaInstalacao situacao) => situacao switch
-    {
-        SituacaoDaInstalacao.AguardandoDocumento => AguardandoDocumento,
-        SituacaoDaInstalacao.DocumentoEmVerificacao => DocumentoEmVerificacao,
-        SituacaoDaInstalacao.DocumentoVerificado => DocumentoVerificado,
-        SituacaoDaInstalacao.DocumentoRecusado => DocumentoRecusado,
-        SituacaoDaInstalacao.AguardandoCodigo => AguardandoCodigo,
-        SituacaoDaInstalacao.Confirmada => Confirmada,
-        SituacaoDaInstalacao.Cancelada => Cancelada,
-        SituacaoDaInstalacao.Expirada => Expirada,
-        _ => throw new ArgumentOutOfRangeException(nameof(situacao), situacao, null),
-    };
-
-    public static SituacaoDaInstalacao FromCodigo(string codigo) => codigo switch
-    {
-        AguardandoDocumento => SituacaoDaInstalacao.AguardandoDocumento,
-        DocumentoEmVerificacao => SituacaoDaInstalacao.DocumentoEmVerificacao,
-        DocumentoVerificado => SituacaoDaInstalacao.DocumentoVerificado,
-        DocumentoRecusado => SituacaoDaInstalacao.DocumentoRecusado,
-        AguardandoCodigo => SituacaoDaInstalacao.AguardandoCodigo,
-        Confirmada => SituacaoDaInstalacao.Confirmada,
-        Cancelada => SituacaoDaInstalacao.Cancelada,
-        Expirada => SituacaoDaInstalacao.Expirada,
-        _ => throw new ArgumentOutOfRangeException(nameof(codigo), codigo, null),
-    };
 }

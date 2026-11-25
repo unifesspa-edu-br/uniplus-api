@@ -1,32 +1,15 @@
 namespace Unifesspa.UniPlus.Autorizacao.Domain.Enums;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
+
 /// <summary>Por que os gestores da instalação receberam a concessão sem aceitar o termo de responsabilidade.</summary>
 public enum SituacaoDoTermoNaInstalacao
 {
     /// <summary>A instalação antecedeu a primeira publicação do termo: não havia termo a aceitar.</summary>
+    [CodigoDeContrato("SEM_TERMO_PUBLICADO", "Sem termo publicado")]
     SemTermoPublicado = 1,
 
     /// <summary>Estado anômalo: já havia versão vigente, e a instalação a registrou sem exigir aceite (ADR-0162).</summary>
+    [CodigoDeContrato("TERMO_VIGENTE_SEM_ACEITE", "Termo vigente sem aceite")]
     TermoVigenteSemAceite = 2,
-}
-
-/// <summary>Código textual canônico de <see cref="SituacaoDoTermoNaInstalacao"/>, o valor gravado e exposto.</summary>
-public static class SituacaoDoTermoNaInstalacaoCodigo
-{
-    public const string SemTermoPublicado = "SEM_TERMO_PUBLICADO";
-    public const string TermoVigenteSemAceite = "TERMO_VIGENTE_SEM_ACEITE";
-
-    public static string ToCodigo(this SituacaoDoTermoNaInstalacao situacao) => situacao switch
-    {
-        SituacaoDoTermoNaInstalacao.SemTermoPublicado => SemTermoPublicado,
-        SituacaoDoTermoNaInstalacao.TermoVigenteSemAceite => TermoVigenteSemAceite,
-        _ => throw new ArgumentOutOfRangeException(nameof(situacao), situacao, null),
-    };
-
-    public static SituacaoDoTermoNaInstalacao FromCodigo(string codigo) => codigo switch
-    {
-        SemTermoPublicado => SituacaoDoTermoNaInstalacao.SemTermoPublicado,
-        TermoVigenteSemAceite => SituacaoDoTermoNaInstalacao.TermoVigenteSemAceite,
-        _ => throw new ArgumentOutOfRangeException(nameof(codigo), codigo, null),
-    };
 }

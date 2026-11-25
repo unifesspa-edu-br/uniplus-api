@@ -3,6 +3,7 @@ namespace Unifesspa.UniPlus.Autorizacao.Application.Commands.Perfis;
 using Unifesspa.UniPlus.Autorizacao.Application.DTOs;
 using Unifesspa.UniPlus.Autorizacao.Domain.Entities;
 using Unifesspa.UniPlus.Autorizacao.Domain.Enums;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 
 /// <summary>
 /// Emite a URL de PUT assinada do documento de uma versão (ADR-0146). A URL sai antes de gravar: se o armazenamento
@@ -38,7 +39,7 @@ public sealed class EnvioDoDocumento
             documento.PerfilId,
             documento.VersaoId,
             documento.Id,
-            documento.Situacao.ToCodigo(),
+            documento.Situacao.Codigo(),
             envio.Endereco,
             EnvioDoPdf.TipoDeMidia,
             envio.ExpiraEm);

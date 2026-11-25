@@ -2,10 +2,10 @@ namespace Unifesspa.UniPlus.Autorizacao.Infrastructure.Persistence.Configuration
 
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
-using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 using Unifesspa.UniPlus.Autorizacao.Domain.Entities;
 using Unifesspa.UniPlus.Autorizacao.Domain.Enums;
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence.CodigosDeContrato;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Protecao;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
 
@@ -13,10 +13,6 @@ using Unifesspa.UniPlus.Kernel.Domain.Enums;
 public sealed class TermoNaInstalacaoConfiguration : IEntityTypeConfiguration<TermoNaInstalacao>
 {
     private const int SituacaoMaxLength = 40;
-
-    private static readonly ValueConverter<SituacaoDoTermoNaInstalacao, string> SituacaoConverter = new(
-        situacao => situacao.ToCodigo(),
-        codigo => SituacaoDoTermoNaInstalacaoCodigo.FromCodigo(codigo));
 
     public void Configure(EntityTypeBuilder<TermoNaInstalacao> builder)
     {
@@ -27,10 +23,10 @@ public sealed class TermoNaInstalacaoConfiguration : IEntityTypeConfiguration<Te
         builder.ToTable("termos_na_instalacao", tabela =>
             tabela.HasCheckConstraint(
                 "ck_termos_na_instalacao_versao",
-                "(situacao = 'SEM_TERMO_PUBLICADO') = (versao_do_termo_id IS NULL) AND (versao_do_termo_id IS NULL) = (numero IS NULL)"));
+                $"(situacao = {SqlDosCodigosDeContrato.Literal(SituacaoDoTermoNaInstalacao.SemTermoPublicado)}) = (versao_do_termo_id IS NULL) AND (versao_do_termo_id IS NULL) = (numero IS NULL)"));
         builder.HasKey(t => t.Id);
         builder.Property(t => t.Id).ValueGeneratedNever();
-        builder.Property(t => t.Situacao).HasConversion(SituacaoConverter).HasMaxLength(SituacaoMaxLength).IsRequired();
+        builder.Property(t => t.Situacao).HasMaxLength(SituacaoMaxLength).IsRequired();
         builder.Property(t => t.RegistradaEm).IsRequired();
 
         builder.HasOne<Instalacao>()
