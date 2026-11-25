@@ -8,7 +8,7 @@ using Unifesspa.UniPlus.Regras.ValueObjects;
 
 /// <summary>
 /// Modalidade de concorrência selecionada para a distribuição de vagas de uma
-/// oferta (<see cref="ConfiguracaoDistribuicaoVagas"/>) — snapshot-copy por
+/// oferta (<see cref="ConfiguracaoDistribuicaoVagas"/>) — cópia por
 /// valor (ADR-0061) da <c>Modalidade</c> viva do módulo Configuração
 /// (<c>IModalidadeReader</c>, ADR-0056) no momento da seleção. Entidade
 /// interna do agregado <see cref="ProcessoSeletivo"/>: criada, substituída e
@@ -42,10 +42,10 @@ public sealed class ModalidadeSelecionada : EntityBase
     public PredicadoDnf RegraDeAplicabilidade { get; private set; } = null!;
 
     /// <summary>
-    /// Snapshot-copy da ação de indeferimento do cadastro de <c>Modalidade</c>
-    /// (Configuração) — token UPPER_SNAKE, <c>RECLASSIFICA_AC</c> ou
+    /// Cópia da ação de indeferimento do cadastro de <c>Modalidade</c>
+    /// (Configuração) — código em letras maiúsculas, <c>RECLASSIFICA_AC</c> ou
     /// <c>RECLASSIFICA_CONFORME_EDITAL</c>. <see langword="null"/> declara que a modalidade não
-    /// reclassifica, e é assim que o gate de coerência da publicação a lê: só confronta a
+    /// reclassifica, e é assim que a conferência de coerência da publicação a lê: só confronta a
     /// consequência da exigência documental com esta ação quando ela está declarada. Sem
     /// ação, quem responde pelo destino do candidato indeferido é a própria exigência.
     /// </summary>
@@ -55,10 +55,10 @@ public sealed class ModalidadeSelecionada : EntityBase
     /// <summary>
     /// Quantidade de vagas fixada pelo edital para esta modalidade
     /// (ADR-0115) — só um campo de transporte. A obrigatoriedade/vedação
-    /// (fixa no ramo institucional e nas composições RETIRADA_DE_OUTRA_MODALIDADE/SUPLEMENTAR_AO_TOTAL;
+    /// (fixa no quadro fixado pelo edital e nas composições RETIRADA_DE_OUTRA_MODALIDADE/SUPLEMENTAR_AO_TOTAL;
     /// proibida nas calculadas) é validada em
     /// <see cref="ConfiguracaoDistribuicaoVagas.Criar"/>, que é quem conhece o
-    /// ramo de distribuição — esta factory não tem essa informação.
+    /// tipo de distribuição — esta criação não tem essa informação.
     /// </summary>
     public int? QuantidadeDeclarada { get; private set; }
 
@@ -69,7 +69,7 @@ public sealed class ModalidadeSelecionada : EntityBase
     /// </summary>
     /// <remarks>
     /// Fica fora de <see cref="Criar"/> porque esta é a cópia congelada de uma modalidade: a
-    /// publicação recusa a cópia incoerente com erro nomeado, e a leitura do envelope publicado a
+    /// publicação recusa a cópia incoerente com erro nomeado, e a leitura da configuração publicada a
     /// recusa como malformada, as duas por esta mesma regra.
     /// </remarks>
     public bool RemanejamentoCoerenteComANatureza() => NaturezaLegal switch
@@ -85,11 +85,10 @@ public sealed class ModalidadeSelecionada : EntityBase
     {
         ArgumentNullException.ThrowIfNull(modalidade);
         ArgumentNullException.ThrowIfNull(modalidade.RegraDeAplicabilidade, nameof(modalidade));
-        DomainError? recusa = RecusaDaIdentidade(modalidade) ?? RecusaDoCadastroIncompleto(modalidade)
-            ?? RecusaDaComposicao(modalidade) ?? RecusaDaCotaReservadaForaDaOrdemLegal(modalidade)
-            ?? RecusaDosParametrosDoRemanejamento(modalidade);
-        return recusa is null ? Result<ModalidadeSelecionada>.Success(new ModalidadeSelecionada(modalidade, quantidadeDeclarada))
-            : Result<ModalidadeSelecionada>.Failure(recusa);
+        IReadOnlyList<FieldError> recusas = Conferir(modalidade);
+        return recusas.Count == 0
+            ? Result<ModalidadeSelecionada>.Success(new ModalidadeSelecionada(modalidade, quantidadeDeclarada))
+            : Result<ModalidadeSelecionada>.ValidationFailure(recusas);
     }
 
     private ModalidadeSelecionada(ModalidadeNoCadastro modalidade, int? quantidadeDeclarada)
@@ -110,44 +109,72 @@ public sealed class ModalidadeSelecionada : EntityBase
         QuantidadeDeclarada = quantidadeDeclarada;
     }
 
-    // A identidade permite reconhecer a modalidade exigida legalmente (ADR-0129).
-    private static DomainError? RecusaDaIdentidade(ModalidadeNoCadastro m) =>
-        m.Id == Guid.Empty ? RecusasDaModalidadeSelecionada.OrigemObrigatoria()
-        : string.IsNullOrWhiteSpace(m.Codigo) ? RecusasDaModalidadeSelecionada.CodigoObrigatorio() : null;
+    private static IReadOnlyList<FieldError> Conferir(ModalidadeNoCadastro modalidade) =>
+        [.. RecusasDaIdentidade(modalidade), .. RecusasDoCadastroIncompleto(modalidade), .. RecusasDaComposicao(modalidade),
+            .. RecusasDaCotaReservadaForaDaOrdemLegal(modalidade), .. RecusasDosParametrosDoRemanejamento(modalidade)];
 
-    private static DomainError? RecusaDoCadastroIncompleto(ModalidadeNoCadastro m) =>
-        m.NaturezaLegal is null || !Enum.IsDefined(m.NaturezaLegal.Value) ? RecusasDaModalidadeSelecionada.NaturezaLegalObrigatoria(m.Codigo)
-        : m.ComposicaoVagas is null || !Enum.IsDefined(m.ComposicaoVagas.Value) ? RecusasDaModalidadeSelecionada.ComposicaoVagasObrigatoria(m.Codigo)
-        : string.IsNullOrWhiteSpace(m.BaseLegal) ? RecusasDaModalidadeSelecionada.BaseLegalObrigatoria(m.Codigo) : null;
+    private static IEnumerable<FieldError> RecusaSe(bool recusada, DomainError recusa) =>
+        recusada ? [new FieldError(null, recusa)] : [];
 
-    private static DomainError? RecusaDaComposicao(ModalidadeNoCadastro m) =>
-        m.ComposicaoVagas == ComposicaoVagasModalidade.RetiradaDeOutraModalidade
-            ? string.IsNullOrWhiteSpace(m.ComposicaoOrigemCodigo) ? RecusasDaModalidadeSelecionada.ComposicaoOrigemObrigatoria(m.Codigo) : null
-            : m.ComposicaoOrigemCodigo is not null ? RecusasDaModalidadeSelecionada.ComposicaoOrigemIndevida(m.Codigo) : null;
+    private static IEnumerable<FieldError> RecusasDaIdentidade(ModalidadeNoCadastro modalidade) =>
+    [
+        .. RecusaSe(modalidade.Id == Guid.Empty, RecusasDaModalidadeSelecionada.OrigemObrigatoria()),
+        .. RecusaSe(string.IsNullOrWhiteSpace(modalidade.Codigo), RecusasDaModalidadeSelecionada.CodigoObrigatorio()),
+    ];
 
-    private static DomainError? RecusaDaCotaReservadaForaDaOrdemLegal(ModalidadeNoCadastro m) =>
-        m.NaturezaLegal == NaturezaLegalModalidade.CotaReservada && m.RegraRemanejamento != RegraRemanejamentoModalidade.SegueOrdemDeRemanejamento
-            ? RecusasDaModalidadeSelecionada.CotaReservadaExigeCascata(m.Codigo) : null;
+    private static IEnumerable<FieldError> RecusasDoCadastroIncompleto(ModalidadeNoCadastro modalidade) =>
+    [
+        .. RecusaSe(!NaturezaReconhecida(modalidade), RecusasDaModalidadeSelecionada.NaturezaLegalObrigatoria()),
+        .. RecusaSe(!ComposicaoReconhecida(modalidade), RecusasDaModalidadeSelecionada.ComposicaoVagasObrigatoria()),
+        .. RecusaSe(string.IsNullOrWhiteSpace(modalidade.BaseLegal), RecusasDaModalidadeSelecionada.BaseLegalObrigatoria()),
+    ];
 
-    private static DomainError? RecusaDosParametrosDoRemanejamento(ModalidadeNoCadastro m) => m.RegraRemanejamento switch
-    {
-        RegraRemanejamentoModalidade.DestinoUnico => RecusaDoDestinoUnico(m),
-        RegraRemanejamentoModalidade.Cruzado => RecusaDoCruzado(m),
-        _ => RecusaDeParametroNaoAdmitido(m),
-    };
+    private static bool NaturezaReconhecida(ModalidadeNoCadastro modalidade) =>
+        modalidade.NaturezaLegal is not null && Enum.IsDefined(modalidade.NaturezaLegal.Value);
 
-    private static DomainError? RecusaDoDestinoUnico(ModalidadeNoCadastro m) =>
-        string.IsNullOrWhiteSpace(m.RemanejamentoDestino) ? RecusasDaModalidadeSelecionada.RemanejamentoDestinoObrigatorio(m.Codigo)
-        : m.RemanejamentoPar is not null || m.RemanejamentoFallback is not null ? RecusasDaModalidadeSelecionada.RemanejamentoCruzadoIndevido(m.Codigo) : null;
+    private static bool ComposicaoReconhecida(ModalidadeNoCadastro modalidade) =>
+        modalidade.ComposicaoVagas is not null && Enum.IsDefined(modalidade.ComposicaoVagas.Value);
 
-    // O destino final é opcional no cruzamento; o par é obrigatório (UNI-REQ-0096).
-    private static DomainError? RecusaDoCruzado(ModalidadeNoCadastro m) =>
-        string.IsNullOrWhiteSpace(m.RemanejamentoPar) ? RecusasDaModalidadeSelecionada.RemanejamentoCruzadoIncompleto(m.Codigo)
-        : m.RemanejamentoDestino is not null ? RecusasDaModalidadeSelecionada.RemanejamentoDestinoIndevido(m.Codigo) : null;
+    private static IEnumerable<FieldError> RecusasDaComposicao(ModalidadeNoCadastro modalidade) =>
+        !ComposicaoReconhecida(modalidade) ? [] : modalidade.ComposicaoVagas == ComposicaoVagasModalidade.RetiradaDeOutraModalidade
+        ? RecusaSe(string.IsNullOrWhiteSpace(modalidade.ComposicaoOrigemCodigo), RecusasDaModalidadeSelecionada.ComposicaoOrigemObrigatoria())
+        : RecusaSe(modalidade.ComposicaoOrigemCodigo is not null, RecusasDaModalidadeSelecionada.ComposicaoOrigemIndevida());
 
-    private static DomainError? RecusaDeParametroNaoAdmitido(ModalidadeNoCadastro m) =>
-        m.RemanejamentoDestino is not null ? RecusasDaModalidadeSelecionada.RemanejamentoDestinoIndevido(m.Codigo)
-        : m.RemanejamentoPar is not null || m.RemanejamentoFallback is not null ? RecusasDaModalidadeSelecionada.RemanejamentoCruzadoIndevido(m.Codigo) : null;
+    private static bool CotaReservadaForaDaOrdemLegal(ModalidadeNoCadastro modalidade) =>
+        modalidade.NaturezaLegal == NaturezaLegalModalidade.CotaReservada
+        && modalidade.RegraRemanejamento != RegraRemanejamentoModalidade.SegueOrdemDeRemanejamento;
+
+    private static IEnumerable<FieldError> RecusasDaCotaReservadaForaDaOrdemLegal(ModalidadeNoCadastro modalidade) =>
+        RecusaSe(CotaReservadaForaDaOrdemLegal(modalidade), RecusasDaModalidadeSelecionada.CotaReservadaExigeCascata());
+
+    private static IEnumerable<FieldError> RecusasDosParametrosDoRemanejamento(ModalidadeNoCadastro modalidade) =>
+        CotaReservadaForaDaOrdemLegal(modalidade) ? [] : modalidade.RegraRemanejamento switch
+        {
+            RegraRemanejamentoModalidade.DestinoUnico => RecusasDoDestinoUnico(modalidade),
+            RegraRemanejamentoModalidade.Cruzado => RecusasDoCruzado(modalidade),
+            _ => RecusasDeParametroNaoAdmitido(modalidade),
+        };
+
+    private static IEnumerable<FieldError> RecusasDoDestinoUnico(ModalidadeNoCadastro modalidade) =>
+    [
+        .. RecusaSe(string.IsNullOrWhiteSpace(modalidade.RemanejamentoDestino), RecusasDaModalidadeSelecionada.RemanejamentoDestinoObrigatorio()),
+        .. RecusaSe(DeclaraParOuDestinoFinal(modalidade), RecusasDaModalidadeSelecionada.RemanejamentoCruzadoIndevido()),
+    ];
+
+    private static IEnumerable<FieldError> RecusasDoCruzado(ModalidadeNoCadastro modalidade) =>
+    [
+        .. RecusaSe(string.IsNullOrWhiteSpace(modalidade.RemanejamentoPar), RecusasDaModalidadeSelecionada.RemanejamentoCruzadoIncompleto()),
+        .. RecusaSe(modalidade.RemanejamentoDestino is not null, RecusasDaModalidadeSelecionada.RemanejamentoDestinoIndevido()),
+    ];
+
+    private static IEnumerable<FieldError> RecusasDeParametroNaoAdmitido(ModalidadeNoCadastro modalidade) =>
+    [
+        .. RecusaSe(modalidade.RemanejamentoDestino is not null, RecusasDaModalidadeSelecionada.RemanejamentoDestinoIndevido()),
+        .. RecusaSe(DeclaraParOuDestinoFinal(modalidade), RecusasDaModalidadeSelecionada.RemanejamentoCruzadoIndevido()),
+    ];
+
+    private static bool DeclaraParOuDestinoFinal(ModalidadeNoCadastro modalidade) =>
+        modalidade.RemanejamentoPar is not null || modalidade.RemanejamentoFallback is not null;
 
     internal void VincularConfiguracao(Guid configuracaoDistribuicaoVagasId) =>
         ConfiguracaoDistribuicaoVagasId = configuracaoDistribuicaoVagasId;

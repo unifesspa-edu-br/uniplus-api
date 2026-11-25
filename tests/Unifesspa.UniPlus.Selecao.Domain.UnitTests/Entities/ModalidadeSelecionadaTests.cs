@@ -20,6 +20,8 @@ public sealed class ModalidadeSelecionadaTests
         resultado.IsFailure.Should().BeTrue(
             "a identidade da origem é o que decide se esta oferta é a modalidade que uma regra legal exige");
         resultado.Error!.Code.Should().Be("ModalidadeSelecionada.ModalidadeOrigemIdObrigatorio");
+        resultado.Error!.Message.Should().Be("Identidade da modalidade de origem é obrigatória.");
+        resultado.Errors.Should().ContainSingle();
     }
 
     [Fact(DisplayName = "Criar modalidade ampla (residual, sem remanejamento) tem sucesso")]
@@ -64,6 +66,8 @@ public sealed class ModalidadeSelecionadaTests
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("ModalidadeSelecionada.CodigoObrigatorio");
+        resultado.Error!.Message.Should().Be("Código da modalidade é obrigatório.");
+        resultado.Errors.Should().ContainSingle();
     }
 
     [Fact(DisplayName = "Criar com natureza legal Nenhuma falha")]
@@ -73,6 +77,8 @@ public sealed class ModalidadeSelecionadaTests
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("ModalidadeSelecionada.NaturezaLegalObrigatoria");
+        resultado.Error!.Message.Should().Be("Natureza legal da modalidade é obrigatória.");
+        resultado.Errors.Should().ContainSingle();
     }
 
     [Fact(DisplayName = "Criar com composição de vagas Nenhuma falha")]
@@ -82,6 +88,8 @@ public sealed class ModalidadeSelecionadaTests
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("ModalidadeSelecionada.ComposicaoVagasObrigatoria");
+        resultado.Error!.Message.Should().Be("Composição de vagas da modalidade é obrigatória.");
+        resultado.Errors.Should().ContainSingle();
     }
 
     [Fact(DisplayName = "Criar com base legal vazia falha")]
@@ -91,6 +99,8 @@ public sealed class ModalidadeSelecionadaTests
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("ModalidadeSelecionada.BaseLegalObrigatoria");
+        resultado.Error!.Message.Should().Be("Base legal da modalidade é obrigatória.");
+        resultado.Errors.Should().ContainSingle();
     }
 
     [Fact(DisplayName = "Criar RETIRADA_DE_OUTRA_MODALIDADE sem código de origem falha")]
@@ -100,6 +110,8 @@ public sealed class ModalidadeSelecionadaTests
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("ModalidadeSelecionada.ComposicaoOrigemObrigatoria");
+        resultado.Error!.Message.Should().Be("Modalidade com composição RETIRADA_DE_OUTRA_MODALIDADE exige o código da modalidade de origem.");
+        resultado.Errors.Should().ContainSingle();
     }
 
     [Fact(DisplayName = "Criar com origem informada fora de RETIRADA_DE_OUTRA_MODALIDADE falha")]
@@ -109,6 +121,8 @@ public sealed class ModalidadeSelecionadaTests
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("ModalidadeSelecionada.ComposicaoOrigemIndevida");
+        resultado.Error!.Message.Should().Be("A modalidade só declara código de origem quando a composição de vagas é RETIRADA_DE_OUTRA_MODALIDADE.");
+        resultado.Errors.Should().ContainSingle();
     }
 
     [Fact(DisplayName = "Criar cota reservada sem SEGUE_ORDEM_DE_REMANEJAMENTO falha")]
@@ -118,6 +132,8 @@ public sealed class ModalidadeSelecionadaTests
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("ModalidadeSelecionada.CotaReservadaExigeCascata");
+        resultado.Error!.Message.Should().Be("A modalidade é cota reservada da Lei 12.711 e deve seguir a ordem legal de remanejamento (SEGUE_ORDEM_DE_REMANEJAMENTO).");
+        resultado.Errors.Should().ContainSingle();
     }
 
     [Fact(DisplayName = "Criar DESTINO_UNICO sem destino falha")]
@@ -127,6 +143,8 @@ public sealed class ModalidadeSelecionadaTests
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("ModalidadeSelecionada.RemanejamentoDestinoObrigatorio");
+        resultado.Error!.Message.Should().Be("Modalidade com remanejamento DESTINO_UNICO exige o destino.");
+        resultado.Errors.Should().ContainSingle();
     }
 
     [Fact(DisplayName = "Criar CRUZADO sem par falha — o par é o que define o cruzamento")]
@@ -136,6 +154,8 @@ public sealed class ModalidadeSelecionadaTests
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("ModalidadeSelecionada.RemanejamentoCruzadoIncompleto");
+        resultado.Error!.Message.Should().Be("Modalidade com remanejamento CRUZADO exige a modalidade par.");
+        resultado.Errors.Should().ContainSingle();
     }
 
     [Fact(DisplayName = "Criar CRUZADO com par e sem fallback tem sucesso — certame isolado não tem destino final")]
@@ -156,59 +176,19 @@ public sealed class ModalidadeSelecionadaTests
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("ModalidadeSelecionada.RemanejamentoDestinoIndevido");
+        resultado.Error!.Message.Should().Be("A modalidade só declara destino de remanejamento quando a regra é DESTINO_UNICO.");
+        resultado.Errors.Should().ContainSingle();
     }
 
-    [Fact(DisplayName = "Criar com par/fallback informados fora de CRUZADO falha")]
+    [Fact(DisplayName = "Criar com par ou destino final informados fora de CRUZADO falha")]
     public void Criar_RemanejamentoCruzadoIndevido_Falha()
     {
         Result<ModalidadeSelecionada> resultado = ModalidadeSelecionada.Criar(ModalidadesNoCadastroDeTeste.Da("AC", NaturezaLegalModalidade.Ampla, ComposicaoVagasModalidade.RestanteDasVagasOfertadas) with { RemanejamentoPar = "X", RemanejamentoFallback = "Y", BaseLegal = "base" });
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("ModalidadeSelecionada.RemanejamentoCruzadoIndevido");
-    }
-    [Fact(DisplayName = "Criar com IdentidadeECodigoVazios respeita a ordem das recusas")]
-    public void Criar_IdentidadeECodigoVazios_RecusaNaOrdem()
-    {
-        ModalidadeNoCadastro cadastro = ModalidadesNoCadastroDeTeste.Da("AC", NaturezaLegalModalidade.Ampla,
-            ComposicaoVagasModalidade.RestanteDasVagasOfertadas) with
-        { Id = Guid.Empty, Codigo = "" };
-        ModalidadeSelecionada.Criar(cadastro).Error!.Code.Should().Be("ModalidadeSelecionada.ModalidadeOrigemIdObrigatorio");
-    }
-
-    [Fact(DisplayName = "Criar com CotaComDestinoUnicoSemDestino respeita a ordem das recusas")]
-    public void Criar_CotaComDestinoUnicoSemDestino_RecusaNaOrdem()
-    {
-        ModalidadeNoCadastro cadastro = ModalidadesNoCadastroDeTeste.Da("AC", NaturezaLegalModalidade.CotaReservada,
-            ComposicaoVagasModalidade.DentroDaReservaLegal) with
-        { RegraRemanejamento = RegraRemanejamentoModalidade.DestinoUnico };
-        ModalidadeSelecionada.Criar(cadastro).Error!.Code.Should().Be("ModalidadeSelecionada.CotaReservadaExigeCascata");
-    }
-
-    [Fact(DisplayName = "Criar com DestinoUnicoSemDestinoEComPar respeita a ordem das recusas")]
-    public void Criar_DestinoUnicoSemDestinoEComPar_RecusaNaOrdem()
-    {
-        ModalidadeNoCadastro cadastro = ModalidadesNoCadastroDeTeste.Da("AC", NaturezaLegalModalidade.AcaoAfirmativa,
-            ComposicaoVagasModalidade.SuplementarAoTotal) with
-        { RegraRemanejamento = RegraRemanejamentoModalidade.DestinoUnico, RemanejamentoPar = "P" };
-        ModalidadeSelecionada.Criar(cadastro).Error!.Code.Should().Be("ModalidadeSelecionada.RemanejamentoDestinoObrigatorio");
-    }
-
-    [Fact(DisplayName = "Criar com CruzadoSemParEComDestino respeita a ordem das recusas")]
-    public void Criar_CruzadoSemParEComDestino_RecusaNaOrdem()
-    {
-        ModalidadeNoCadastro cadastro = ModalidadesNoCadastroDeTeste.Da("AC", NaturezaLegalModalidade.AcaoAfirmativa,
-            ComposicaoVagasModalidade.SuplementarAoTotal) with
-        { RegraRemanejamento = RegraRemanejamentoModalidade.Cruzado, RemanejamentoDestino = "D" };
-        ModalidadeSelecionada.Criar(cadastro).Error!.Code.Should().Be("ModalidadeSelecionada.RemanejamentoCruzadoIncompleto");
-    }
-
-    [Fact(DisplayName = "Criar com SemRegraComDestinoEPar respeita a ordem das recusas")]
-    public void Criar_SemRegraComDestinoEPar_RecusaNaOrdem()
-    {
-        ModalidadeNoCadastro cadastro = ModalidadesNoCadastroDeTeste.Da("AC", NaturezaLegalModalidade.Ampla,
-            ComposicaoVagasModalidade.RestanteDasVagasOfertadas) with
-        { RemanejamentoDestino = "D", RemanejamentoPar = "P" };
-        ModalidadeSelecionada.Criar(cadastro).Error!.Code.Should().Be("ModalidadeSelecionada.RemanejamentoDestinoIndevido");
+        resultado.Error!.Message.Should().Be("A modalidade só declara par ou destino final de remanejamento quando a regra é CRUZADO.");
+        resultado.Errors.Should().ContainSingle();
     }
 
 }
