@@ -121,27 +121,15 @@ public sealed class FaseCanonicaEndpointTests
     {
         await LiberarSlotDoSeedAsync("AVALIACAO_BIOPSICOSSOCIAL");
 
-        var body = new
-        {
-            codigo = "AVALIACAO_BIOPSICOSSOCIAL",
-            nome = "Avaliação biopsicossocial",
-            descricao = "Avaliação multiprofissional e interdisciplinar da condição de deficiência",
-            origemData = "NO_EDITAL",
-        };
-
         using HttpClient client = _fixture.Factory.CreateClient();
-        HttpResponseMessage criar = await EnviarPostAdmin(client, body);
+        HttpResponseMessage criar = await EnviarPostAdmin(client, DadosAvaliacaoBiopsicossocial());
 
         criar.StatusCode.Should().Be(HttpStatusCode.Created);
         Guid id = await criar.Content.ReadFromJsonAsync<Guid>();
         id.Should().NotBe(Guid.Empty);
 
-        HttpResponseMessage obter = await client.GetAsync(
-            new Uri($"/api/configuracao/fases-canonicas/{id}", UriKind.Relative));
-        obter.StatusCode.Should().Be(HttpStatusCode.OK);
-
-        using JsonDocument doc = JsonDocument.Parse(await obter.Content.ReadAsStringAsync());
-        doc.RootElement.GetProperty("codigo").GetString().Should().Be("AVALIACAO_BIOPSICOSSOCIAL");
+        JsonElement fase = await ObterAsync(client, id);
+        fase.GetProperty("codigo").GetString().Should().Be("AVALIACAO_BIOPSICOSSOCIAL");
     }
 
     [Fact(DisplayName = "POST com código fora do conjunto canônico retorna 422")]
@@ -228,6 +216,14 @@ public sealed class FaseCanonicaEndpointTests
         erros.GetArrayLength().Should().Be(1,
             "a coerência AgrupaEtapasApenasAvaliacao depende de um código já confiável e não deve somar ao erro de código");
     }
+
+    private static object DadosAvaliacaoBiopsicossocial() => new
+    {
+        codigo = "AVALIACAO_BIOPSICOSSOCIAL",
+        nome = "Avaliação biopsicossocial",
+        descricao = "Avaliação multiprofissional e interdisciplinar da condição de deficiência",
+        origemData = "NO_EDITAL",
+    };
 
     private static void ConfirmarChamadaSemSinalizadoresLigados(JsonElement fase)
     {
