@@ -68,11 +68,16 @@ public sealed class ModelosFormularioController : ControllerBase
         CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(page);
-        ListarModelosFormularioResult resultado = await _queryBus.Send(
+        Result<ListarModelosFormularioResult> resultado = await _queryBus.Send(
             new ListarModelosFormularioQuery(page.AfterId, page.Limit, page.Direction, tipoProcesso, finalidade, ativo), cancellationToken)
             .ConfigureAwait(false);
+        if (resultado.IsFailure)
+        {
+            return resultado.ToActionResult(_mapper);
+        }
+
         return await this.OkPaginatedAsync(
-            resultado.Items, resultado.AnteriorAfterId, resultado.ProximoAfterId, page, ResourceTag, cancellationToken: cancellationToken)
+            resultado.Value!.Items, resultado.Value.AnteriorAfterId, resultado.Value.ProximoAfterId, page, ResourceTag, cancellationToken: cancellationToken)
             .ConfigureAwait(false);
     }
 

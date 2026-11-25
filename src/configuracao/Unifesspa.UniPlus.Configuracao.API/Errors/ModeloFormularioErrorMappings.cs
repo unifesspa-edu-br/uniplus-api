@@ -10,6 +10,8 @@ internal static class ModeloFormularioErrorMappings
 {
     internal static readonly IReadOnlyList<KeyValuePair<string, DomainErrorMapping>> Todos =
     [
+        new(ModeloFormularioErrorCodes.FiltroDeFinalidadeInvalida, new DomainErrorMapping(StatusCodes.Status400BadRequest,
+            "uniplus.configuracao.modelo_formulario.filtro_de_finalidade_invalida", "Finalidade do filtro de modelos inválida")),
         new(ModeloFormularioErrorCodes.OcorrenciaSimuladaInvalida,
             new DomainErrorMapping(
                 StatusCodes.Status422UnprocessableEntity,

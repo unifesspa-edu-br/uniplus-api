@@ -1,12 +1,15 @@
 namespace Unifesspa.UniPlus.Configuracao.Application.Queries.ModelosFormulario;
 
+using Unifesspa.UniPlus.Application.Abstractions.Consultas;
 using Unifesspa.UniPlus.Application.Abstractions.Messaging;
 using Unifesspa.UniPlus.Configuracao.Application.DTOs;
 using Unifesspa.UniPlus.Configuracao.Application.Mappings;
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
+using Unifesspa.UniPlus.Configuracao.Domain.Errors;
 using Unifesspa.UniPlus.Configuracao.Domain.Interfaces;
 using Unifesspa.UniPlus.Configuracao.Domain.Services;
 using Unifesspa.UniPlus.Kernel.Pagination;
+using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Formularios;
 
 /// <summary>O modelo para manutenção, ativo ou desativado.</summary>
@@ -14,12 +17,12 @@ public sealed record ObterModeloFormularioQuery(Guid Id) : IQuery<ModeloFormular
 
 /// <summary>
 /// Lista de manutenção dos modelos, paginada, com filtros opcionais: o tipo de processo (traz os
-/// modelos que servem a ele, inclusive os que servem a todos), a finalidade (token canônico) e o
+/// modelos que servem a ele, inclusive os que servem a todos), a finalidade (código publicado) e o
 /// estado ativo.
 /// </summary>
 public sealed record ListarModelosFormularioQuery(
     Guid? AfterId, int Limit, PaginationDirection Direction, string? TipoProcessoCodigo, string? Finalidade, bool? Ativo)
-    : IQuery<ListarModelosFormularioResult>;
+    : IQuery<Result<ListarModelosFormularioResult>>;
 
 public sealed record ListarModelosFormularioResult(
     IReadOnlyList<ModeloFormularioDto> Items, Guid? AnteriorAfterId, Guid? ProximoAfterId);
@@ -40,16 +43,23 @@ public static class ListarModelosFormularioQueryHandler
 {
     private static readonly ListarModelosFormularioResult PaginaVazia = new([], null, null);
 
-    public static async Task<ListarModelosFormularioResult> Handle(
+    public static async Task<Result<ListarModelosFormularioResult>> Handle(
         ListarModelosFormularioQuery query, IModeloFormularioRepository repository, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(query);
         ArgumentNullException.ThrowIfNull(repository);
 
-        FinalidadeFormulario? finalidade = EstruturaFormulario.FinalidadeDoCodigo(query.Finalidade);
-        return (query.Finalidade is not null && finalidade is null) || TipoDeProcessoNaoGravavel(query.TipoProcessoCodigo)
+        Result<FinalidadeFormulario?> finalidade = FiltroPorCodigoPedido.Ler<FinalidadeFormulario>(query.Finalidade,
+            new DomainError(ModeloFormularioErrorCodes.FiltroDeFinalidadeInvalida, "Finalidade inválida. Use um dos códigos publicados para a finalidade do formulário."));
+        if (finalidade.IsFailure)
+        {
+            return Result<ListarModelosFormularioResult>.Failure(finalidade.Error!);
+        }
+
+        ListarModelosFormularioResult pagina = TipoDeProcessoNaoGravavel(query.TipoProcessoCodigo)
             ? PaginaVazia
-            : await ListarPaginaAsync(query, finalidade, repository, cancellationToken).ConfigureAwait(false);
+            : await ListarPaginaAsync(query, finalidade.Value, repository, cancellationToken).ConfigureAwait(false);
+        return Result<ListarModelosFormularioResult>.Success(pagina);
     }
 
     private static async Task<ListarModelosFormularioResult> ListarPaginaAsync(

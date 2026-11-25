@@ -3,6 +3,7 @@ namespace Unifesspa.UniPlus.Configuracao.Domain.Errors;
 /// <summary>Códigos de erro dos modelos de formulário (UNI-REQ-0144, ADR-0137).</summary>
 public static class ModeloFormularioErrorCodes
 {
+    public const string FiltroDeFinalidadeInvalida = "ModeloFormulario.FiltroDeFinalidadeInvalida";
     public const string CodigoObrigatorio = "ModeloFormulario.CodigoObrigatorio";
     public const string CodigoTamanho = "ModeloFormulario.CodigoTamanho";
     public const string CodigoJaExiste = "ModeloFormulario.CodigoJaExiste";

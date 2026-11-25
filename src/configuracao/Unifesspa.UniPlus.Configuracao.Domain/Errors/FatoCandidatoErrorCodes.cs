@@ -13,6 +13,7 @@ using Unifesspa.UniPlus.Regras.Enums;
 /// </summary>
 public static class FatoCandidatoErrorCodes
 {
+    public const string FiltroDeOrigemInvalida = "FatoCandidato.FiltroDeOrigemInvalida";
     public const string CodigoObrigatorio = "FatoCandidato.CodigoObrigatorio";
     public const string CodigoFormatoInvalido = "FatoCandidato.CodigoFormatoInvalido";
     public const string NomeObrigatorio = "FatoCandidato.NomeObrigatorio";
