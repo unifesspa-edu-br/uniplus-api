@@ -49,7 +49,7 @@ public sealed class VencimentoDaProvidenciaNoHostTests : ProvidenciasNoHostTestB
         lida.GetProperty("encerramentoDaConcessao").GetProperty("em").GetDateTimeOffset().Should().BeCloseTo(validaAte, TimeSpan.FromMilliseconds(1));
         (await LinhaAsync(providencia)).Should().Be(antes, "a situação derivada não grava nada");
         (await FilaDasProvidenciasAsync(g.Diogo)).Should().NotContain(providencia);
-        (await FilaDasProvidenciasAsync(g.Diogo, "?situacao=prejudicada")).Should().Contain(providencia);
+        (await FilaDasProvidenciasAsync(g.Diogo, "?situacao=PREJUDICADA")).Should().Contain(providencia);
     }
 
     [Fact(DisplayName = "A resposta que espera a trava da concessão e atravessa o vencimento é recusada, porque o instante é lido depois da trava")]

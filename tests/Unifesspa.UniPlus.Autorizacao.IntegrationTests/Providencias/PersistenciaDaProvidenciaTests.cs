@@ -2,12 +2,19 @@ namespace Unifesspa.UniPlus.Autorizacao.IntegrationTests.Providencias;
 
 using AwesomeAssertions;
 
+using Microsoft.Extensions.DependencyInjection;
+
 using Npgsql;
 
 using NpgsqlTypes;
 
+using Unifesspa.UniPlus.Autorizacao.Domain.Enums;
+using Unifesspa.UniPlus.Autorizacao.Domain.Interfaces;
 using Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects;
+using Unifesspa.UniPlus.Autorizacao.Infrastructure.Persistence.Repositories;
 using Unifesspa.UniPlus.Autorizacao.IntegrationTests.Infrastructure;
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
+using Unifesspa.UniPlus.Kernel.Pagination;
 
 /// <summary>
 /// O que o banco garante sozinho na providência, mesmo contra a gravação que não passa pelo agregado: no máximo uma aberta
@@ -78,6 +85,18 @@ public sealed class PersistenciaDaProvidenciaTests : ProvidenciaEndpointTestBase
         PostgresException violacao = await FalharAsync(() => ExecutarSqlAsync("DELETE FROM autorizacao.concessoes WHERE id = {0}", concessao));
 
         violacao.SqlState.Should().Be(PostgresErrorCodes.RestrictViolation);
+    }
+
+    [Fact]
+    public async Task ListarPaginado_SituacaoDesconhecida_LancaExcecao()
+    {
+        await using AsyncServiceScope scope = Fixture.Factory.Services.CreateAsyncScope();
+        ProvidenciaRepository repositorio = new(scope.ServiceProvider.GetRequiredService<UniPlusDbContext>());
+        FiltroDeProvidencias filtro = new(new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero), (SituacaoDaProvidencia)999);
+
+        Func<Task> listar = async () => await repositorio.ListarPaginadoAsync(filtro, null, null, 20, PaginationDirection.Next);
+
+        await listar.Should().ThrowAsync<ArgumentOutOfRangeException>();
     }
 
     private async Task<Guid> ConcessaoAsync() =>

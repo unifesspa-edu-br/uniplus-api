@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Mvc;
 
 using Unifesspa.UniPlus.Application.Abstractions.Messaging;
 using Unifesspa.UniPlus.Authorization.Catalogo;
+using Unifesspa.UniPlus.Autorizacao.API.Filtros;
 using Unifesspa.UniPlus.Autorizacao.Application.Commands.Providencias;
 using Unifesspa.UniPlus.Autorizacao.Application.DTOs;
 using Unifesspa.UniPlus.Autorizacao.Application.Permissoes;
@@ -139,9 +140,9 @@ public sealed class ProvidenciasController : ControllerBase
 
     /// <summary>
     /// A fila das providências, paginada por cursor opaco bidirecional (ADR-0026 + ADR-0089), em ordem de abertura, a mais
-    /// antiga primeiro; no mesmo instante, pelo identificador. Sem
-    /// <c>situacao</c>, a fila prioritária: as abertas com concessão ativa. <c>situacao</c> aceita <c>aberta</c>,
-    /// <c>respondida</c>, <c>atendida</c>, <c>prejudicada</c> ou <c>todas</c>; <c>concessao</c> restringe às de uma
+    /// antiga primeiro; no mesmo instante, pelo identificador. Sem <c>situacao</c>, não há filtro de situação.
+    /// <c>situacao</c> aceita <c>ABERTA</c>, <c>RESPONDIDA</c>, <c>ATENDIDA</c> ou <c>PREJUDICADA</c>;
+    /// <c>concessao</c> restringe às de uma
     /// concessão. Os itens não trazem o fundamento nem o motivo do desfecho.
     /// </summary>
     [HttpGet("providencias")]
@@ -160,17 +161,19 @@ public sealed class ProvidenciasController : ControllerBase
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status503ServiceUnavailable)]
     public async Task<IActionResult> Listar(
         [FromCursor(ResourceTag, RequireSortKey = true)] PageRequest page,
-        [FromQuery] string? situacao = null,
+        [FromQuery, AceitaCodigosDe<SituacaoDaProvidencia>] string? situacao = null,
         [FromQuery] Guid? concessao = null,
         CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(page);
 
-        if (Consulta(page, situacao, concessao) is not { } consulta)
+        Result<SituacaoDaProvidencia?> filtro = FiltroDeSituacao.Ler<SituacaoDaProvidencia>(situacao, FiltroDeSituacaoInvalido());
+        if (filtro.IsFailure)
         {
-            return Result<ListarProvidenciasResult>.Failure(FiltroDeSituacaoInvalido()).ToActionResult(_mapper);
+            return filtro.ToActionResult(_mapper);
         }
 
+        ListarProvidenciasQuery consulta = new(filtro.Value, concessao, page.AfterSortKey, page.AfterId, page.Limit, page.Direction);
         ListarProvidenciasResult resultado = await _queryBus.Send(consulta, cancellationToken).ConfigureAwait(false);
 
         return await this.OkPaginatedOrdenadoAsync(
@@ -180,16 +183,6 @@ public sealed class ProvidenciasController : ControllerBase
     private IActionResult Resposta(Result<ProvidenciaDto> resultado) =>
         resultado.IsSuccess ? Ok(resultado.Value) : resultado.ToActionResult(_mapper);
 
-    // Sem situação, a fila prioritária: as abertas com concessão ativa. "todas" tira o filtro; outro valor é recusado.
-    private static ListarProvidenciasQuery? Consulta(PageRequest page, string? situacao, Guid? concessao) =>
-        situacao?.Trim().ToLowerInvariant() switch
-        {
-            null or "" => new(SituacaoDaProvidencia.Aberta, concessao, page.AfterSortKey, page.AfterId, page.Limit, page.Direction),
-            "todas" => new(null, concessao, page.AfterSortKey, page.AfterId, page.Limit, page.Direction),
-            var codigo when (CatalogoDe<SituacaoDaProvidencia>.TentarObter(codigo?.Trim().ToUpperInvariant(), out SituacaoDaProvidencia valorLido) ? valorLido : (SituacaoDaProvidencia?)null) is { } lida => new(lida, concessao, page.AfterSortKey, page.AfterId, page.Limit, page.Direction),
-            _ => null,
-        };
-
     private static DomainError FiltroDeSituacaoInvalido() =>
-        new(ProvidenciaErrorCodes.FiltroDeSituacaoInvalido, "Situação inválida. Use aberta, respondida, atendida, prejudicada ou todas.");
+        new(ProvidenciaErrorCodes.FiltroDeSituacaoInvalido, "Situação inválida. Use um dos códigos publicados para a situação da providência.");
 }
