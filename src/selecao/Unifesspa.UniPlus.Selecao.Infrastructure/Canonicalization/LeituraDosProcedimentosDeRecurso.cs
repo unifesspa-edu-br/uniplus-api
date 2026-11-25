@@ -19,19 +19,21 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 /// </summary>
 internal static class LeituraDosProcedimentosDeRecurso
 {
+    private const string Procedimentos = "procedimentos";
+
     internal static ProcedimentosDeRecurso? Ler(LeitorEnvelope leitor, JsonObject pai, string path, CodigosDoProcedimentoDeRecurso codigos)
     {
-        JsonArray array = leitor.Array(pai, "procedimentos", path);
-        string pathLista = $"{path}.procedimentos";
+        JsonArray array = leitor.Array(pai, Procedimentos, path);
+        string pathLista = $"{path}.{Procedimentos}";
         List<ProcedimentoDeRecursoDeclarado>? declarados = LerCadaProcedimento(leitor, array, pathLista);
         if (declarados is null)
         {
             return null;
         }
 
-        IReadOnlyList<FieldError> incoerencias = ConferenciaDosProcedimentosDeRecurso.FaltasDeCoerencia(declarados, codigos, pathLista);
+        IReadOnlyList<FieldError> incoerencias = ConferenciaDosProcedimentosDeRecurso.FaltasDeCoerencia(declarados, codigos, Procedimentos);
         return incoerencias.Count > 0
-            ? leitor.Propagar<ProcedimentosDeRecurso?>(incoerencias[0].Error)
+            ? leitor.Propagar<ProcedimentosDeRecurso?>(incoerencias, path)
             : ProcedimentosDeRecurso.De(declarados);
     }
 

@@ -36,10 +36,10 @@ internal static class LeituraDaClassificacao
         {
             return null;
         }
-
         Result<ConfiguracaoClassificacao> classificacao = ConfiguracaoClassificacao.Criar(declaracao);
         return classificacao.IsFailure
-            ? leitor.Propagar<ConfiguracaoClassificacao>(classificacao.Error!)
+            ? leitor.Propagar<ConfiguracaoClassificacao>([.. classificacao.Errors.Select(static causa => causa.Field == "regraArredondamentoCodigo"
+                || causa.Field?.EndsWith(".areaCodigo", StringComparison.Ordinal) == true ? LeitorEnvelope.NoProprioItem([causa])[0] : causa)], "classificacao")
             : classificacao.Value;
     }
 
@@ -101,20 +101,20 @@ internal static class LeituraDaClassificacao
             return null;
         }
 
-        return ConstruirRegraDeEliminacao(leitor, regra, parametros, $"{path}.parametros");
+        return ConstruirRegraDeEliminacao(leitor, regra, parametros, path);
     }
 
     private static RegraEliminacao? ConstruirRegraDeEliminacao(
         LeitorEnvelope leitor, ReferenciaRegra regra, JsonObject parametros, string path)
     {
-        ParametrosRegraEliminacao? parametrosTipados = LerParametrosEliminacao(leitor, CatalogoDe<RegraDeEliminacaoPorCalculo>.Obter(regra.Codigo), parametros, path);
+        ParametrosRegraEliminacao? parametrosTipados = LerParametrosEliminacao(leitor, CatalogoDe<RegraDeEliminacaoPorCalculo>.Obter(regra.Codigo), parametros, $"{path}.parametros");
         if (leitor.Falhou)
         {
             return null;
         }
 
         Result<RegraEliminacao> eliminacao = RegraEliminacao.Criar(regra, parametrosTipados!);
-        return eliminacao.IsFailure ? leitor.Propagar<RegraEliminacao?>(eliminacao.Error!) : eliminacao.Value;
+        return eliminacao.IsFailure ? leitor.Propagar<RegraEliminacao?>(eliminacao.Errors, path) : eliminacao.Value;
     }
 
     /// <summary>
@@ -155,7 +155,7 @@ internal static class LeituraDaClassificacao
         }
 
         Result<GrupoPesoAreaEnemCongelado> congelado = GrupoPesoAreaEnemCongelado.Criar(grupo.Codigo, grupo.Rotulo, baseLegal, areas);
-        return congelado.IsFailure ? leitor.Propagar<GrupoPesoAreaEnemCongelado?>(congelado.Error!) : congelado.Value;
+        return congelado.IsFailure ? leitor.Propagar<GrupoPesoAreaEnemCongelado?>(congelado.Errors, path) : congelado.Value;
     }
 
     private static List<(string? Codigo, string? Rotulo, decimal Peso, decimal? Corte)>? LerAreas(

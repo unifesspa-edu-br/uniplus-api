@@ -51,20 +51,21 @@ internal static class LeituraDoDesempate
         ReferenciaRegra regra = leitor.Regra<RegraDeDesempate>(item, "regra", path);
         JsonObject parametros = leitor.Objeto(item, "parametros", path);
 
-        return leitor.Falhou ? null : CriarCriterio(leitor, ordem, regra, parametros, $"{path}.parametros");
+        return leitor.Falhou ? null : CriarCriterio(leitor, ordem, regra, parametros, path);
     }
 
     private static CriterioDesempate? CriarCriterio(
         LeitorEnvelope leitor, int ordem, ReferenciaRegra regra, JsonObject parametros, string path)
     {
-        ParametrosCriterioDesempate? parametrosTipados = LerParametrosDesempate(leitor, CatalogoDe<RegraDeDesempate>.Obter(regra.Codigo), parametros, path);
+        ParametrosCriterioDesempate? parametrosTipados = LerParametrosDesempate(leitor, CatalogoDe<RegraDeDesempate>.Obter(regra.Codigo), parametros, $"{path}.parametros");
         if (leitor.Falhou)
         {
             return null;
         }
 
         Result<CriterioDesempate> criterio = CriterioDesempate.Criar(ordem, regra, parametrosTipados!);
-        return criterio.IsFailure ? leitor.Propagar<CriterioDesempate?>(criterio.Error!) : criterio.Value;
+        return criterio.IsFailure ? leitor.Propagar<CriterioDesempate?>([.. criterio.Errors.Select(static causa => causa.Field == "ordem"
+            ? causa : LeitorEnvelope.NoProprioItem([causa])[0])], path) : criterio.Value;
     }
 
     /// <summary>

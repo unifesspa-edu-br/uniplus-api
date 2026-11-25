@@ -62,7 +62,8 @@ internal static class LeituraDaDerivacao
         }
 
         Result<ConfiguracaoDerivacaoFato> config = ConfiguracaoDerivacaoFato.Criar(codigoFato, regras);
-        return config.IsFailure ? leitor.Propagar<ConfiguracaoDerivacaoFato?>(config.Error!) : config.Value;
+        return config.IsFailure ? leitor.Propagar<ConfiguracaoDerivacaoFato?>([.. config.Errors.Select(static causa => causa.Field == "codigoFato"
+            ? LeitorEnvelope.NoProprioItem([causa])[0] : causa)], path) : config.Value;
     }
 
     internal static IReadOnlyList<RegraDerivacaoConfigurada> LerRegrasDaDerivacao(
@@ -107,7 +108,7 @@ internal static class LeituraDaDerivacao
         }
 
         Result<RegraDerivacaoConfigurada> regra = RegraDerivacaoConfigurada.Criar(ordem, contribui, condicoes);
-        return regra.IsFailure ? leitor.Propagar<RegraDerivacaoConfigurada?>(regra.Error!) : regra.Value;
+        return regra.IsFailure ? leitor.Propagar<RegraDerivacaoConfigurada?>(regra.Errors, path) : regra.Value;
     }
 
     private static List<CondicaoRegraDerivacao>? LerCondicoesDaDerivacao(

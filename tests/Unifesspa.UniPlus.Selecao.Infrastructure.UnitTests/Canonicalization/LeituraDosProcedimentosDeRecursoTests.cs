@@ -5,6 +5,7 @@ using System.Text.Json.Nodes;
 using AwesomeAssertions;
 
 using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
+using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
@@ -61,6 +62,36 @@ public sealed class LeituraDosProcedimentosDeRecursoTests
         LeituraDosProcedimentosDeRecurso.Ler(leitor, pai, "fase", CodigosDoProcedimentoDeRecurso.DaFase);
 
         leitor.Erro.Code.Should().Be(ErrosCodecEnvelope.EnvelopeMalformado);
+    }
+
+    [Theory]
+    [InlineData(2)]
+    [InlineData(3)]
+    public void Ler_ProcedimentosRepetidos_PropagaTodasAsIncoerencias(int quantidade)
+    {
+        JsonObject pai = PaiComUmProcedimentoDoTipo(TipoMotivoDeDecisao.Classificacao.Codigo());
+        JsonArray procedimentos = (JsonArray)pai["procedimentos"]!;
+        for (int indice = 1; indice < quantidade; indice++)
+        {
+            procedimentos.Add(procedimentos[0]!.DeepClone());
+        }
+        LeitorEnvelope leitor = new();
+        LeituraDosProcedimentosDeRecurso.Ler(leitor, pai, "fase", CodigosDoProcedimentoDeRecurso.DaFase);
+        IReadOnlyList<FieldError> causas = leitor.Falha<object>().Errors;
+        causas.Should().HaveCount(quantidade - 1);
+        ConferirDuplicados(new JsonObject { ["fase"] = pai }, causas);
+    }
+
+    private static void ConferirDuplicados(JsonObject documento, IReadOnlyList<FieldError> causas)
+    {
+        for (int indice = 0; indice < causas.Count; indice++)
+        {
+            string caminho = $"fase.procedimentos[{indice + 1}]";
+            causas[indice].Should().Be(new FieldError(caminho, new DomainError(
+                CodigosDoProcedimentoDeRecurso.DaFase.Duplicado,
+                $"A matéria do tipo '{TipoMotivoDeDecisao.Classificacao.Codigo()}' já tem procedimento declarado; cada matéria tem um único procedimento.")));
+            CaminhoNoDocumento.Existe(documento, caminho).Should().BeTrue();
+        }
     }
 
     private static JsonObject PaiComUmProcedimentoDoTipo(string tipoDeDecisao) =>
