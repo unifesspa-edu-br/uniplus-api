@@ -67,6 +67,7 @@
         "tags": [
           "AtosDoProcesso"
         ],
+        "operationId": "PublicarAtoAvulsoDoProcesso",
         "parameters": [
           {
             "name": "processoSeletivoId",
@@ -231,6 +232,7 @@
         "tags": [
           "AtosDoProcesso"
         ],
+        "operationId": "ListarAtosDoProcesso",
         "parameters": [
           {
             "name": "processoSeletivoId",
@@ -309,6 +311,7 @@
         "tags": [
           "AtosDoProcesso"
         ],
+        "operationId": "ObterAtoDoProcesso",
         "parameters": [
           {
             "name": "processoSeletivoId",
@@ -393,6 +396,7 @@
         "tags": [
           "CertamePublicado"
         ],
+        "operationId": "ListarProcessosSeletivosPublicados",
         "parameters": [
           {
             "name": "situacao",
@@ -575,6 +579,7 @@
         "tags": [
           "CertamePublicado"
         ],
+        "operationId": "ObterProcessoSeletivoPublicado",
         "parameters": [
           {
             "name": "id",
@@ -661,6 +666,7 @@
         "tags": [
           "DocumentosAPublicar"
         ],
+        "operationId": "ListarDocumentosAPublicar",
         "parameters": [
           {
             "name": "processoSeletivoId",
@@ -754,6 +760,7 @@
         "tags": [
           "DocumentosAPublicar"
         ],
+        "operationId": "IniciarEnvioDeDocumentoAPublicar",
         "parameters": [
           {
             "name": "processoSeletivoId",
@@ -902,6 +909,7 @@
         "tags": [
           "DocumentosAPublicar"
         ],
+        "operationId": "ConfirmarEnvioDeDocumentoAPublicar",
         "parameters": [
           {
             "name": "processoSeletivoId",
@@ -1039,6 +1047,7 @@
         "tags": [
           "DocumentosAPublicar"
         ],
+        "operationId": "ObterAcessoAoDocumentoAPublicar",
         "parameters": [
           {
             "name": "processoSeletivoId",
@@ -1133,6 +1142,7 @@
         "tags": [
           "DocumentosDaInscricao"
         ],
+        "operationId": "IniciarEnvioDeDocumentoDaInscricao",
         "parameters": [
           {
             "name": "id",
@@ -1281,6 +1291,7 @@
         "tags": [
           "DocumentosDaInscricao"
         ],
+        "operationId": "ConfirmarEnvioDeDocumentoDaInscricao",
         "parameters": [
           {
             "name": "id",
@@ -1431,6 +1442,7 @@
         "tags": [
           "DocumentosDaInscricao"
         ],
+        "operationId": "ObterAcessoAoDocumentoDaInscricao",
         "parameters": [
           {
             "name": "id",
@@ -1525,6 +1537,7 @@
         "tags": [
           "DocumentosDaInscricao"
         ],
+        "operationId": "RemoverArquivoDaInscricao",
         "parameters": [
           {
             "name": "id",
@@ -1645,6 +1658,7 @@
         "tags": [
           "Formularios"
         ],
+        "operationId": "ObterFormularioDoProcesso",
         "parameters": [
           {
             "name": "id",
@@ -1713,6 +1727,7 @@
         "tags": [
           "Formularios"
         ],
+        "operationId": "ObterFormularioDoProcessoParaManutencao",
         "parameters": [
           {
             "name": "id",
@@ -1806,6 +1821,7 @@
         "tags": [
           "Formularios"
         ],
+        "operationId": "DefinirFormularioDoProcesso",
         "parameters": [
           {
             "name": "id",
@@ -1953,6 +1969,7 @@
         "tags": [
           "Formularios"
         ],
+        "operationId": "RemoverFormularioDoProcesso",
         "parameters": [
           {
             "name": "id",
@@ -2039,6 +2056,7 @@
         "tags": [
           "Formularios"
         ],
+        "operationId": "DefinirItensDoFormularioDoProcesso",
         "parameters": [
           {
             "name": "id",
@@ -2188,6 +2206,7 @@
         "tags": [
           "Formularios"
         ],
+        "operationId": "DefinirTermosDoFormularioDoProcesso",
         "parameters": [
           {
             "name": "id",
@@ -2337,6 +2356,7 @@
         "tags": [
           "Formularios"
         ],
+        "operationId": "AplicarModeloDeFormularioAoProcesso",
         "parameters": [
           {
             "name": "id",
@@ -2573,6 +2593,7 @@
         "tags": [
           "Inscricoes"
         ],
+        "operationId": "ObterInscricaoDoCandidato",
         "parameters": [
           {
             "name": "id",
@@ -2646,6 +2667,7 @@
         "tags": [
           "Inscricoes"
         ],
+        "operationId": "IniciarInscricao",
         "parameters": [
           {
             "name": "id",
@@ -2719,6 +2741,7 @@
         "tags": [
           "Inscricoes"
         ],
+        "operationId": "SalvarRascunhoDaInscricao",
         "parameters": [
           {
             "name": "id",
@@ -2859,6 +2882,7 @@
         "tags": [
           "Inscricoes"
         ],
+        "operationId": "DescartarInscricao",
         "parameters": [
           {
             "name": "id",
@@ -2974,6 +2998,7 @@
         "tags": [
           "Inscricoes"
         ],
+        "operationId": "ObterFormularioDaInscricao",
         "parameters": [
           {
             "name": "id",
@@ -3059,6 +3084,7 @@
         "tags": [
           "Inscricoes"
         ],
+        "operationId": "AvaliarRespostasDaInscricao",
         "parameters": [
           {
             "name": "id",
@@ -3182,6 +3208,7 @@
         "tags": [
           "Inscricoes"
         ],
+        "operationId": "CancelarInscricao",
         "parameters": [
           {
             "name": "id",
@@ -3360,6 +3387,7 @@
         "tags": [
           "Inscricoes"
         ],
+        "operationId": "SubmeterInscricao",
         "parameters": [
           {
             "name": "id",
@@ -3535,6 +3563,7 @@
         "tags": [
           "Inscricoes"
         ],
+        "operationId": "ObterComprovanteDaInscricao",
         "parameters": [
           {
             "name": "inscricaoId",
@@ -3629,6 +3658,7 @@
         "tags": [
           "Inscricoes"
         ],
+        "operationId": "ListarInscricoesDoCandidato",
         "responses": {
           "200": {
             "description": "OK",
@@ -3686,6 +3716,7 @@
         "tags": [
           "InscricoesDoProcesso"
         ],
+        "operationId": "ListarInscricoesDoProcesso",
         "parameters": [
           {
             "name": "id",
@@ -3840,6 +3871,7 @@
         "tags": [
           "InscricoesDoProcesso"
         ],
+        "operationId": "ObterInscricaoDoProcesso",
         "parameters": [
           {
             "name": "id",
@@ -3924,6 +3956,7 @@
         "tags": [
           "InscricoesDoProcesso"
         ],
+        "operationId": "RevelarCampoDaInscricao",
         "parameters": [
           {
             "name": "id",
@@ -4024,6 +4057,7 @@
         "tags": [
           "InscricoesDoProcesso"
         ],
+        "operationId": "ObterAcessoAoDocumentoDeInscricaoDoProcesso",
         "parameters": [
           {
             "name": "id",
@@ -4127,6 +4161,7 @@
         "tags": [
           "InscricoesDoProcesso"
         ],
+        "operationId": "EmitirComprovanteDeInscricaoDoProcesso",
         "parameters": [
           {
             "name": "id",
@@ -4220,6 +4255,7 @@
         "tags": [
           "ModelosDeDocumento"
         ],
+        "operationId": "IniciarEnvioDeModeloDeDocumento",
         "parameters": [
           {
             "name": "processoSeletivoId",
@@ -4368,6 +4404,7 @@
         "tags": [
           "ModelosDeDocumento"
         ],
+        "operationId": "ConfirmarEnvioDeModeloDeDocumento",
         "parameters": [
           {
             "name": "processoSeletivoId",
@@ -4505,6 +4542,7 @@
         "tags": [
           "ModelosDeDocumento"
         ],
+        "operationId": "ObterAcessoAoModeloDeDocumento",
         "parameters": [
           {
             "name": "processoSeletivoId",
@@ -4599,19 +4637,20 @@
         "tags": [
           "MotivosDeDecisao"
         ],
+        "operationId": "ListarMotivosDeDecisao",
         "parameters": [
           {
             "name": "tipo",
             "in": "query",
             "schema": {
-              "type": "string"
+              "$ref": "#/components/schemas/TipoMotivoDeDecisaoCodigo"
             }
           },
           {
             "name": "subclassificacao",
             "in": "query",
             "schema": {
-              "type": "string"
+              "$ref": "#/components/schemas/FundamentoIsencaoCodigo"
             }
           },
           {
@@ -4731,6 +4770,7 @@
         "tags": [
           "MotivosDeDecisao"
         ],
+        "operationId": "ObterMotivoDeDecisao",
         "parameters": [
           {
             "name": "id",
@@ -4781,6 +4821,7 @@
         "tags": [
           "MotivosDeDecisao"
         ],
+        "operationId": "CadastrarMotivoDeDecisao",
         "parameters": [
           {
             "name": "Idempotency-Key",
@@ -4913,6 +4954,7 @@
         "tags": [
           "MotivosDeDecisao"
         ],
+        "operationId": "AlterarMotivoDeDecisao",
         "parameters": [
           {
             "name": "id",
@@ -5044,6 +5086,7 @@
         "tags": [
           "MotivosDeDecisao"
         ],
+        "operationId": "ReativarMotivoDeDecisao",
         "parameters": [
           {
             "name": "id",
@@ -5146,6 +5189,7 @@
         "tags": [
           "MotivosDeDecisao"
         ],
+        "operationId": "DesativarMotivoDeDecisao",
         "parameters": [
           {
             "name": "id",
@@ -5250,12 +5294,13 @@
         "tags": [
           "NotasDoEnem"
         ],
+        "operationId": "ListarLeiautesDeArquivoDoInep",
         "parameters": [
           {
             "name": "tipo",
             "in": "query",
             "schema": {
-              "type": "string"
+              "$ref": "#/components/schemas/TipoDeLeiauteDoInepCodigo"
             }
           }
         ],
@@ -5326,6 +5371,7 @@
         "tags": [
           "NotasDoEnem"
         ],
+        "operationId": "GerarEnvioAoInep",
         "parameters": [
           {
             "name": "processoSeletivoId",
@@ -5457,6 +5503,7 @@
         "tags": [
           "NotasDoEnem"
         ],
+        "operationId": "ListarEnviosAoInep",
         "parameters": [
           {
             "name": "processoSeletivoId",
@@ -5562,6 +5609,7 @@
         "tags": [
           "NotasDoEnem"
         ],
+        "operationId": "ImportarNotasDoEnem",
         "parameters": [
           {
             "name": "processoSeletivoId",
@@ -5739,6 +5787,7 @@
         "tags": [
           "NotasDoEnem"
         ],
+        "operationId": "ListarImportacoesDeNotasDoEnem",
         "parameters": [
           {
             "name": "processoSeletivoId",
@@ -5844,6 +5893,7 @@
         "tags": [
           "NotasDoEnem"
         ],
+        "operationId": "ObterImportacaoDeNotasDoEnem",
         "parameters": [
           {
             "name": "processoSeletivoId",
@@ -5955,6 +6005,7 @@
         "tags": [
           "ObrigatoriedadeLegal"
         ],
+        "operationId": "ListarObrigatoriedadesLegais",
         "parameters": [
           {
             "name": "tipoProcesso",
@@ -6087,6 +6138,7 @@
         "tags": [
           "ObrigatoriedadeLegal"
         ],
+        "operationId": "ObterObrigatoriedadeLegal",
         "parameters": [
           {
             "name": "id",
@@ -6137,6 +6189,7 @@
         "tags": [
           "ObrigatoriedadeLegal"
         ],
+        "operationId": "CadastrarObrigatoriedadeLegal",
         "parameters": [
           {
             "name": "Idempotency-Key",
@@ -6269,6 +6322,7 @@
         "tags": [
           "ObrigatoriedadeLegal"
         ],
+        "operationId": "AlterarObrigatoriedadeLegal",
         "parameters": [
           {
             "name": "id",
@@ -6398,6 +6452,7 @@
         "tags": [
           "ObrigatoriedadeLegal"
         ],
+        "operationId": "DesativarObrigatoriedadeLegal",
         "parameters": [
           {
             "name": "id",
@@ -6456,6 +6511,7 @@
         "tags": [
           "ProcessoSeletivo"
         ],
+        "operationId": "CriarProcessoSeletivo",
         "parameters": [
           {
             "name": "Idempotency-Key",
@@ -6586,6 +6642,7 @@
         "tags": [
           "ProcessoSeletivo"
         ],
+        "operationId": "ListarProcessosSeletivos",
         "parameters": [
           {
             "name": "cursor",
@@ -6696,6 +6753,7 @@
         "tags": [
           "ProcessoSeletivo"
         ],
+        "operationId": "ObterProcessoSeletivo",
         "parameters": [
           {
             "name": "id",
@@ -6758,6 +6816,7 @@
         ],
         "summary": "Substitui as etapas e as bancas do processo",
         "description": "Substitui as etapas e as bancas de cada etapa inteiras: o que o corpo n\u00E3o traz deixa de existir no processo. A regra de delibera\u00E7\u00E3o de uma banca \u00E9 opcional neste pedido, e a banca que a omite apaga a regra que j\u00E1 estava gravada. A obrigatoriedade da regra de delibera\u00E7\u00E3o \u00E9 conferida na publica\u00E7\u00E3o. Para preservar as chaves, devolva o id de cada etapa, item e banca que permanece e a chave de cada n\u00EDvel que permanece. As chaves novas v\u00EAm na releitura pelo GET.",
+        "operationId": "DefinirEtapasDoProcesso",
         "parameters": [
           {
             "name": "id",
@@ -6908,6 +6967,7 @@
         "tags": [
           "ProcessoSeletivo"
         ],
+        "operationId": "DefinirOpcoesDeclaradasDoDado",
         "parameters": [
           {
             "name": "id",
@@ -7057,6 +7117,7 @@
         "tags": [
           "ProcessoSeletivo"
         ],
+        "operationId": "DefinirAtendimentoEspecializado",
         "parameters": [
           {
             "name": "id",
@@ -7198,6 +7259,7 @@
         "tags": [
           "ProcessoSeletivo"
         ],
+        "operationId": "DefinirDistribuicaoDeVagas",
         "parameters": [
           {
             "name": "id",
@@ -7374,6 +7436,7 @@
         "tags": [
           "ProcessoSeletivo"
         ],
+        "operationId": "SimularDistribuicaoDeVagas",
         "parameters": [
           {
             "name": "id",
@@ -7501,6 +7564,7 @@
         "tags": [
           "ProcessoSeletivo"
         ],
+        "operationId": "PreVisualizarProcessoSeletivo",
         "parameters": [
           {
             "name": "id",
@@ -7616,6 +7680,7 @@
         "tags": [
           "ProcessoSeletivo"
         ],
+        "operationId": "ListarMotivosDeDecisaoDoProcesso",
         "parameters": [
           {
             "name": "id",
@@ -7702,6 +7767,7 @@
         "tags": [
           "ProcessoSeletivo"
         ],
+        "operationId": "IncluirMotivoDeDecisaoNaFase",
         "parameters": [
           {
             "name": "id",
@@ -7832,6 +7898,7 @@
         "tags": [
           "ProcessoSeletivo"
         ],
+        "operationId": "RetirarMotivoDeDecisaoDaFase",
         "parameters": [
           {
             "name": "id",
@@ -7964,6 +8031,7 @@
         "tags": [
           "ProcessoSeletivo"
         ],
+        "operationId": "IncluirMotivoDeDecisaoNaEtapa",
         "parameters": [
           {
             "name": "id",
@@ -8094,6 +8162,7 @@
         "tags": [
           "ProcessoSeletivo"
         ],
+        "operationId": "RetirarMotivoDeDecisaoDaEtapa",
         "parameters": [
           {
             "name": "id",
@@ -8226,6 +8295,7 @@
         "tags": [
           "ProcessoSeletivo"
         ],
+        "operationId": "DefinirCriteriosDeDesempate",
         "parameters": [
           {
             "name": "id",
@@ -8376,6 +8446,7 @@
         "tags": [
           "ProcessoSeletivo"
         ],
+        "operationId": "DefinirFadaDoProcesso",
         "parameters": [
           {
             "name": "id",
@@ -8517,6 +8588,7 @@
         "tags": [
           "ProcessoSeletivo"
         ],
+        "operationId": "DefinirProvaPresencial",
         "parameters": [
           {
             "name": "id",
@@ -8658,6 +8730,7 @@
         "tags": [
           "ProcessoSeletivo"
         ],
+        "operationId": "DefinirOpcoesDeCurso",
         "parameters": [
           {
             "name": "id",
@@ -8799,6 +8872,7 @@
         "tags": [
           "ProcessoSeletivo"
         ],
+        "operationId": "DefinirTaxaDeInscricao",
         "parameters": [
           {
             "name": "id",
@@ -8940,6 +9014,7 @@
         "tags": [
           "ProcessoSeletivo"
         ],
+        "operationId": "DefinirCamposPublicosDaDivulgacao",
         "parameters": [
           {
             "name": "id",
@@ -9081,6 +9156,7 @@
         "tags": [
           "ProcessoSeletivo"
         ],
+        "operationId": "DefinirCascataDeRemanejamento",
         "parameters": [
           {
             "name": "id",
@@ -9222,6 +9298,7 @@
         "tags": [
           "ProcessoSeletivo"
         ],
+        "operationId": "DefinirClassificacao",
         "parameters": [
           {
             "name": "id",
@@ -9364,6 +9441,7 @@
           "ProcessoSeletivo"
         ],
         "description": "Para preservar as chaves, devolva o tipo de cada fase e o id de cada banca que permanece. As chaves da fase e da banca novas v\u00EAm na releitura pelo GET.",
+        "operationId": "DefinirCronogramaDeFases",
         "parameters": [
           {
             "name": "id",
@@ -9514,6 +9592,7 @@
         "tags": [
           "ProcessoSeletivo"
         ],
+        "operationId": "DefinirDocumentosExigidos",
         "parameters": [
           {
             "name": "id",
@@ -9664,6 +9743,7 @@
         "tags": [
           "ProcessoSeletivo"
         ],
+        "operationId": "DefinirIdentificadorLegivel",
         "parameters": [
           {
             "name": "id",
@@ -9805,6 +9885,7 @@
         "tags": [
           "ProcessoSeletivo"
         ],
+        "operationId": "DefinirLocalidadeDoProcesso",
         "parameters": [
           {
             "name": "id",
@@ -9946,6 +10027,7 @@
         "tags": [
           "ProcessoSeletivo"
         ],
+        "operationId": "DefinirRegraDeContagemDePrazo",
         "parameters": [
           {
             "name": "id",
@@ -10087,6 +10169,7 @@
         "tags": [
           "ProcessoSeletivo"
         ],
+        "operationId": "DefinirDataDeReferenciaDosDados",
         "parameters": [
           {
             "name": "id",
@@ -10228,6 +10311,7 @@
         "tags": [
           "ProcessoSeletivo"
         ],
+        "operationId": "DefinirRegrasDeCalculoDosDados",
         "parameters": [
           {
             "name": "id",
@@ -10378,6 +10462,7 @@
         "tags": [
           "ProcessoSeletivo"
         ],
+        "operationId": "PublicarProcessoSeletivo",
         "parameters": [
           {
             "name": "id",
@@ -10519,6 +10604,7 @@
         "tags": [
           "ProcessoSeletivo"
         ],
+        "operationId": "RetificarProcessoSeletivo",
         "parameters": [
           {
             "name": "id",
@@ -10660,6 +10746,7 @@
         "tags": [
           "ProcessoSeletivo"
         ],
+        "operationId": "VerificarConformidadeDoProcesso",
         "parameters": [
           {
             "name": "id",
@@ -10735,6 +10822,7 @@
         "tags": [
           "ProcessoSeletivo"
         ],
+        "operationId": "VerificarConformidadeLegalDoProcesso",
         "parameters": [
           {
             "name": "id",
@@ -10838,6 +10926,7 @@
         "tags": [
           "ProcessoSeletivo"
         ],
+        "operationId": "ObterConfiguracaoVigente",
         "parameters": [
           {
             "name": "id",
@@ -10916,6 +11005,7 @@
         "tags": [
           "ProcessoSeletivo"
         ],
+        "operationId": "ExportarConfiguracaoDoProcesso",
         "parameters": [
           {
             "name": "id",
@@ -11017,6 +11107,7 @@
         "tags": [
           "ProdutosPrevistosDoProcesso"
         ],
+        "operationId": "ListarPublicacoesPrevistasDoProcesso",
         "parameters": [
           {
             "name": "processoSeletivoId",
@@ -11102,6 +11193,7 @@
         "tags": [
           "ProdutosPrevistosDoProcesso"
         ],
+        "operationId": "PublicarPublicacaoPrevista",
         "parameters": [
           {
             "name": "processoSeletivoId",
@@ -11277,6 +11369,7 @@
         "tags": [
           "RascunhoDeProcessoSeletivo"
         ],
+        "operationId": "CriarRascunhoDeProcessoSeletivo",
         "parameters": [
           {
             "name": "Idempotency-Key",
@@ -11410,6 +11503,7 @@
         "tags": [
           "RascunhoDeProcessoSeletivo"
         ],
+        "operationId": "ObterRascunhoDeProcessoSeletivo",
         "parameters": [
           {
             "name": "id",
@@ -11493,6 +11587,7 @@
         ],
         "summary": "Substitui o documento inteiro do rascunho",
         "description": "Substitui o documento inteiro do rascunho. O corpo \u00E9 o documento completo: todo bloco que o corpo n\u00E3o traz \u00E9 apagado, e nada \u00E9 mesclado com o que estava salvo. Uma lista enviada como [] continua presente e declara nenhum item; s\u00F3 o bloco omitido \u00E9 apagado. Para mudar uma parte, leia o rascunho pelo GET, altere a parte e envie o documento inteiro. Devolva a chave de cada parte que o esquema identifica por chave, como a leitura a trouxe, porque as refer\u00EAncias entre as partes (decis\u00F5es, fatos, produtos) usam a chave; essa parte, sem a chave, recusa o salvamento (422). A distribui\u00E7\u00E3o de vagas \u00E9 identificada por ofertaCursoCodigo e n\u00E3o tem chave. O id da raiz e os campos somente de leitura enviados s\u00E3o ignorados: vale o rascunho da rota. Exige o If-Match da revis\u00E3o lida. Se outra altera\u00E7\u00E3o do mesmo rascunho estiver em andamento e a espera passar do limite, a resposta \u00E9 503, nada \u00E9 gravado e o envio pode ser repetido.",
+        "operationId": "SubstituirRascunhoDeProcessoSeletivo",
         "parameters": [
           {
             "name": "id",
@@ -11663,6 +11758,7 @@
         "tags": [
           "RascunhoDeProcessoSeletivo"
         ],
+        "operationId": "ExcluirRascunhoDeProcessoSeletivo",
         "parameters": [
           {
             "name": "id",
@@ -11780,12 +11876,13 @@
         "tags": [
           "RegrasCatalogo"
         ],
+        "operationId": "ListarRegrasDoCatalogo",
         "parameters": [
           {
             "name": "tipo",
             "in": "query",
             "schema": {
-              "type": "string"
+              "$ref": "#/components/schemas/TipoRegraCodigo"
             }
           },
           {
@@ -11922,6 +12019,7 @@
         "tags": [
           "RegrasCatalogo"
         ],
+        "operationId": "ObterRegraDoCatalogo",
         "parameters": [
           {
             "name": "codigo",
@@ -12004,6 +12102,7 @@
         "tags": [
           "Vocabularios"
         ],
+        "operationId": "ListarFundamentosDeIsencao",
         "responses": {
           "200": {
             "description": "OK",
@@ -12036,6 +12135,7 @@
         "tags": [
           "Vocabularios"
         ],
+        "operationId": "ListarCamposDeDivulgacao",
         "responses": {
           "200": {
             "description": "OK",
@@ -12068,6 +12168,7 @@
         "tags": [
           "Vocabularios"
         ],
+        "operationId": "ListarUnidadesDoPrazoDeRecurso",
         "responses": {
           "200": {
             "description": "OK",
@@ -12100,6 +12201,7 @@
         "tags": [
           "Vocabularios"
         ],
+        "operationId": "ListarEfeitosSuspensivos",
         "responses": {
           "200": {
             "description": "OK",
@@ -12132,6 +12234,7 @@
         "tags": [
           "Vocabularios"
         ],
+        "operationId": "ListarGuardasDaVaga",
         "responses": {
           "200": {
             "description": "OK",
@@ -12164,6 +12267,7 @@
         "tags": [
           "Vocabularios"
         ],
+        "operationId": "ListarModosDeDeliberacao",
         "responses": {
           "200": {
             "description": "OK",
@@ -12196,6 +12300,7 @@
         "tags": [
           "Vocabularios"
         ],
+        "operationId": "ListarCriteriosDeVotacao",
         "responses": {
           "200": {
             "description": "OK",
@@ -12228,6 +12333,7 @@
         "tags": [
           "Vocabularios"
         ],
+        "operationId": "ListarDesempatesDaVotacao",
         "responses": {
           "200": {
             "description": "OK",
@@ -12260,6 +12366,7 @@
         "tags": [
           "Vocabularios"
         ],
+        "operationId": "ListarEncerramentosDaVotacao",
         "responses": {
           "200": {
             "description": "OK",
@@ -12292,6 +12399,7 @@
         "tags": [
           "Vocabularios"
         ],
+        "operationId": "ListarResultadosSemUnanimidade",
         "responses": {
           "200": {
             "description": "OK",
@@ -12324,6 +12432,7 @@
         "tags": [
           "Vocabularios"
         ],
+        "operationId": "ListarFormasDeComprovacao",
         "responses": {
           "200": {
             "description": "OK",
@@ -12356,6 +12465,7 @@
         "tags": [
           "Vocabularios"
         ],
+        "operationId": "ListarEscolhasDoPrazoDeEmissao",
         "responses": {
           "200": {
             "description": "OK",
@@ -12388,6 +12498,7 @@
         "tags": [
           "Vocabularios"
         ],
+        "operationId": "ListarEscolhasDaValidade",
         "responses": {
           "200": {
             "description": "OK",
@@ -12420,6 +12531,7 @@
         "tags": [
           "Vocabularios"
         ],
+        "operationId": "ListarUnidadesDoPrazoDeEmissao",
         "responses": {
           "200": {
             "description": "OK",
@@ -12452,6 +12564,7 @@
         "tags": [
           "Vocabularios"
         ],
+        "operationId": "ListarTiposDaDataDeReferencia",
         "responses": {
           "200": {
             "description": "OK",
@@ -12484,6 +12597,7 @@
         "tags": [
           "Vocabularios"
         ],
+        "operationId": "ListarEfeitosNaAnaliseDoDocumento",
         "responses": {
           "200": {
             "description": "OK",
@@ -12516,6 +12630,7 @@
         "tags": [
           "Vocabularios"
         ],
+        "operationId": "ListarFormatosPermitidosDoDocumento",
         "responses": {
           "200": {
             "description": "OK",
@@ -12548,6 +12663,7 @@
         "tags": [
           "Vocabularios"
         ],
+        "operationId": "ListarCriteriosDeDistincaoDasApresentacoes",
         "responses": {
           "200": {
             "description": "OK",
@@ -12580,6 +12696,7 @@
         "tags": [
           "Vocabularios"
         ],
+        "operationId": "ListarConsequenciasDoIndeferimento",
         "responses": {
           "200": {
             "description": "OK",
@@ -14025,10 +14142,10 @@
             "type": "string"
           },
           "abrangencia": {
-            "type": "string"
+            "$ref": "#/components/schemas/TipoAbrangenciaCodigo"
           },
           "situacao": {
-            "type": "string"
+            "$ref": "#/components/schemas/StatusBaseLegalCodigo"
           },
           "observacao": {
             "type": [
@@ -14681,9 +14798,13 @@
         "type": "object",
         "properties": {
           "tipo": {
-            "type": [
-              "null",
-              "string"
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/TipoDeCondicaoDeHomologacaoCodigo"
+              }
             ]
           },
           "edicaoDoExame": {
@@ -15516,9 +15637,13 @@
         "type": "object",
         "properties": {
           "tipo": {
-            "type": [
-              "null",
-              "string"
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/TipoMotivoDeDecisaoCodigo"
+              }
             ]
           },
           "codigo": {
@@ -15534,9 +15659,13 @@
             ]
           },
           "subclassificacao": {
-            "type": [
-              "null",
-              "string"
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/FundamentoIsencaoCodigo"
+              }
             ]
           },
           "sentido": {
@@ -16354,9 +16483,13 @@
         "type": "object",
         "properties": {
           "tipo": {
-            "type": [
-              "null",
-              "string"
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/ReferenciaTipoCodigo"
+              }
             ]
           },
           "data": {
@@ -16402,12 +16535,7 @@
               "array"
             ],
             "items": {
-              "enum": [
-                "CADASTRO_UNICO",
-                "DOACAO_MEDULA_OSSEA",
-                "CARENCIA_SOCIOECONOMICA"
-              ],
-              "type": "string"
+              "$ref": "#/components/schemas/FundamentoIsencaoCodigo"
             }
           }
         }
@@ -16588,9 +16716,13 @@
         "type": "object",
         "properties": {
           "criterioDeDistincao": {
-            "type": [
-              "null",
-              "string"
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/CriterioDeDistincaoDasApresentacoesCodigo"
+              }
             ]
           },
           "dataReferencia": {
@@ -22220,6 +22352,18 @@
           }
         }
       },
+      "FormatoTextoCodigo": {
+        "enum": [
+          "LIVRE",
+          "CPF",
+          "EMAIL",
+          "TELEFONE",
+          "CEP",
+          "NOME_PESSOA"
+        ],
+        "type": "string",
+        "description": "O formato que o texto de um dado do candidato precisa ter.\n\n- \u0060LIVRE\u0060: Texto livre \u2014 Texto sem formato, que pode conter qualquer coisa.\n- \u0060CPF\u0060: CPF \u2014 N\u00FAmero de CPF com os d\u00EDgitos verificadores corretos.\n- \u0060EMAIL\u0060: E-mail \u2014 Endere\u00E7o de e-mail.\n- \u0060TELEFONE\u0060: Telefone \u2014 Telefone brasileiro com DDD.\n- \u0060CEP\u0060: CEP \u2014 CEP de oito d\u00EDgitos.\n- \u0060NOME_PESSOA\u0060: Nome de pessoa \u2014 Nome de pessoa, com nome e sobrenome."
+      },
       "FormularioApresentado": {
         "required": [
           "finalidade",
@@ -23168,9 +23312,13 @@
             "type": "boolean"
           },
           "consequencia": {
-            "type": [
-              "null",
-              "string"
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/ConsequenciaDoIndeferimentoCodigo"
+              }
             ]
           },
           "basesLegais": {
@@ -23213,9 +23361,13 @@
         "type": "object",
         "properties": {
           "consequencia": {
-            "type": [
-              "null",
-              "string"
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/ConsequenciaDoIndeferimentoCodigo"
+              }
             ]
           },
           "basesLegais": {
@@ -23464,9 +23616,13 @@
             ]
           },
           "formato": {
-            "type": [
-              "null",
-              "string"
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/FormatoDeDocumentoCodigo"
+              }
             ]
           }
         }
@@ -24077,9 +24233,13 @@
             }
           },
           "formato": {
-            "type": [
-              "null",
-              "string"
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/FormatoTextoCodigo"
+              }
             ]
           }
         }
@@ -26964,9 +27124,13 @@
         "type": "object",
         "properties": {
           "tipoDeDecisao": {
-            "type": [
-              "null",
-              "string"
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/TipoMotivoDeDecisaoCodigo"
+              }
             ]
           },
           "alvo": {
@@ -29222,7 +29386,7 @@
         "type": "object",
         "properties": {
           "tipo": {
-            "type": "string"
+            "$ref": "#/components/schemas/TipoRestricaoValorCodigo"
           },
           "minimo": {
             "type": [
@@ -29285,7 +29449,7 @@
         "type": "object",
         "properties": {
           "tipo": {
-            "type": "string"
+            "$ref": "#/components/schemas/TipoRestricaoValorCodigo"
           },
           "minimo": {
             "type": [
@@ -30102,6 +30266,13 @@
         "type": "string",
         "description": "Como o campo do formul\u00E1rio \u00E9 apresentado e respondido pelo candidato.\n\n- \u0060NUMERO\u0060: N\u00FAmero \u2014 Campo em que o candidato digita um n\u00FAmero inteiro.\n- \u0060SIM_OU_NAO\u0060: Sim ou n\u00E3o \u2014 Campo em que o candidato responde sim ou n\u00E3o.\n- \u0060ESCOLHA_UNICA\u0060: Escolha de um valor \u2014 Campo em que o candidato escolhe uma op\u00E7\u00E3o entre as oferecidas.\n- \u0060ESCOLHA_MULTIPLA\u0060: Escolha de v\u00E1rios valores \u2014 Campo em que o candidato escolhe uma ou mais op\u00E7\u00F5es entre as oferecidas.\n- \u0060TEXTO\u0060: Texto \u2014 Campo em que o candidato digita um texto, conferido pelo formato do dado.\n- \u0060DATA\u0060: Data \u2014 Campo em que o candidato informa uma data do calend\u00E1rio.\n- \u0060ENDERECO\u0060: Endere\u00E7o \u2014 Campo de endere\u00E7o completo, preenchido a partir da busca do CEP.\n- \u0060MUNICIPIO\u0060: Munic\u00EDpio \u2014 Campo em que o candidato escolhe o munic\u00EDpio entre os da unidade federativa j\u00E1 respondida."
       },
+      "TipoDeCondicaoDeHomologacaoCodigo": {
+        "enum": [
+          "RESULTADO_NO_RETORNO_DO_INEP"
+        ],
+        "type": "string",
+        "description": "- \u0060RESULTADO_NO_RETORNO_DO_INEP\u0060: Resultado no retorno do INEP \u2014 A inscri\u00E7\u00E3o tem resultado no retorno do INEP."
+      },
       "TipoDeLeiauteDoInep": {
         "required": [
           "codigo",
@@ -30317,6 +30488,19 @@
         ],
         "type": "string",
         "description": "- \u0060REGRA_CALCULO\u0060: C\u00E1lculo da nota \u2014 C\u00E1lculo da nota.\n- \u0060REGRA_ARREDONDAMENTO\u0060: Arredondamento da nota \u2014 Arredondamento da nota.\n- \u0060REGRA_ELIMINACAO\u0060: Elimina\u00E7\u00E3o \u2014 Elimina\u00E7\u00E3o.\n- \u0060REGRA_FADA\u0060: Fator de Atenua\u00E7\u00E3o das Desigualdades de Acesso (FADA) \u2014 Regra do Fator de Atenua\u00E7\u00E3o das Desigualdades de Acesso (FADA).\n- \u0060CRITERIO_DESEMPATE\u0060: Crit\u00E9rio de desempate \u2014 Crit\u00E9rio de desempate.\n- \u0060CRITERIO_REMANEJAMENTO\u0060: Crit\u00E9rio de remanejamento \u2014 Crit\u00E9rio de remanejamento.\n- \u0060REGRA_ORDEM_ALOCACAO\u0060: Ordem de aloca\u00E7\u00E3o \u2014 Ordem de aloca\u00E7\u00E3o.\n- \u0060REGRA_ELEGIBILIDADE\u0060: Elegibilidade \u2014 Elegibilidade.\n- \u0060REGRA_DISTRIBUICAO_VAGAS\u0060: Distribui\u00E7\u00E3o de vagas \u2014 Distribui\u00E7\u00E3o de vagas.\n- \u0060REGRA_AJUSTE_DISTRIBUICAO_VAGAS\u0060: Ajuste da distribui\u00E7\u00E3o de vagas \u2014 Ajuste da distribui\u00E7\u00E3o de vagas.\n- \u0060REGRA_PRAZO_RECURSO\u0060: Prazo de recurso \u2014 Prazo de recurso.\n- \u0060CONVENCAO_CONTAGEM_PRAZO\u0060: Conven\u00E7\u00E3o de contagem do prazo \u2014 Conven\u00E7\u00E3o de contagem do prazo.\n- \u0060REGRA_APURACAO_AVALIACAO\u0060: Apura\u00E7\u00E3o da avalia\u00E7\u00E3o \u2014 Apura\u00E7\u00E3o da avalia\u00E7\u00E3o.\n- \u0060REGRA_PROCEDIMENTO_RECURSO\u0060: Procedimento de recurso \u2014 Procedimento de recurso."
+      },
+      "TipoRestricaoValorCodigo": {
+        "enum": [
+          "FAIXA_NUMERICA",
+          "TAMANHO_TEXTO",
+          "OPCOES_PERMITIDAS",
+          "OPCOES_DAS_RESPOSTAS",
+          "MUNICIPIOS_DA_UF",
+          "FORMATO_TEXTO",
+          "FAIXA_DE_DATA"
+        ],
+        "type": "string",
+        "description": "O que a restri\u00E7\u00E3o limita na resposta do candidato a um item do formul\u00E1rio.\n\n- \u0060FAIXA_NUMERICA\u0060: Faixa num\u00E9rica \u2014 A resposta num\u00E9rica fica entre um m\u00EDnimo e um m\u00E1ximo.\n- \u0060TAMANHO_TEXTO\u0060: Tamanho do texto \u2014 A resposta de texto tem de um m\u00EDnimo a um m\u00E1ximo de caracteres.\n- \u0060OPCOES_PERMITIDAS\u0060: Op\u00E7\u00F5es permitidas \u2014 A resposta escolhe entre op\u00E7\u00F5es fixas ou condicionadas a respostas anteriores.\n- \u0060OPCOES_DAS_RESPOSTAS\u0060: Op\u00E7\u00F5es formadas pelas respostas \u2014 A resposta escolhe entre as respostas dadas a itens anteriores.\n- \u0060MUNICIPIOS_DA_UF\u0060: Munic\u00EDpios do estado \u2014 A resposta \u00E9 um munic\u00EDpio do estado respondido num item anterior.\n- \u0060FORMATO_TEXTO\u0060: Formato do texto \u2014 A resposta de texto est\u00E1 no formato do fato no cat\u00E1logo, como CPF ou e-mail. Vem do cat\u00E1logo e n\u00E3o se declara no item.\n- \u0060FAIXA_DE_DATA\u0060: Faixa de data \u2014 A resposta de data fica entre uma data m\u00EDnima e uma m\u00E1xima, fixas ou contadas do dia do envio."
       },
       "UnidadeAdministradoraCertameDto": {
         "required": [
