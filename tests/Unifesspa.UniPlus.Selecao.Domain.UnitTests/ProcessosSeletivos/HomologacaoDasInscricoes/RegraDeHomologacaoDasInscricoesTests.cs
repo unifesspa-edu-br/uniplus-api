@@ -80,11 +80,11 @@ public sealed class RegraDeHomologacaoDasInscricoesTests
         declarar.Should().Throw<ArgumentException>();
     }
 
-    [Fact(DisplayName = "O código do resultado apontado é guardado sem os espaços das pontas")]
-    public void Declarar_ResultadoComEspacos_ENormalizado()
+    [Fact(DisplayName = "O código do resultado é preservado para a conferência")]
+    public void Declarar_ResultadoComEspacos_Preserva()
     {
         RegraDeHomologacaoDasInscricoes regra = RegraDeHomologacaoDasInscricoes.Declarar("  RESULTADO_HOMOLOGACAO ", []);
 
-        regra.ResultadoAtoCodigo.Should().Be("RESULTADO_HOMOLOGACAO");
+        regra.ResultadoAtoCodigo.Should().Be("  RESULTADO_HOMOLOGACAO ");
     }
 }

@@ -82,6 +82,17 @@ public sealed class ConferenciaDaRegraDeHomologacaoTests
         recusa.Error.Message.Should().Contain("precisa ser produto, com papel").And.Contain(FaseDaRegra).And.NotContain("OUTRO_RESULTADO");
     }
 
+    [Theory]
+    [InlineData(" RESULTADO_HOMOLOGACAO ")]
+    [InlineData("resultado_homologacao")]
+    public void Resultado_CodigoInexato_Recusa(string codigo)
+    {
+        FieldError? recusa = QueNaoEProduto(Regra(codigo), [Preliminar("RESULTADO_HOMOLOGACAO")]);
+
+        recusa!.Error.Code.Should().Be(HomologacaoDasInscricoesErrorCodes.ResultadoNaoDeclarado);
+        recusa.Error.Message.Should().NotContain(codigo);
+    }
+
     [Fact(DisplayName = "Regra sem resultado não é recusada como resultado que não é produto: a falta é de outra regra")]
     public void Resultado_NaoApontado_NaoEQueNaoEProduto() =>
         QueNaoEProduto(Regra(resultado: null), [Preliminar()]).Should().BeNull();

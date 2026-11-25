@@ -83,7 +83,7 @@ public sealed class ConfiguracaoBonusRegional : EntityBase, IParteDoProcesso
         ArgumentNullException.ThrowIfNull(regra);
         ArgumentNullException.ThrowIfNull(baseLegal);
 
-        string? fatoElegibilidade = fatoElegibilidadeCodigo?.Trim();
+        string? fatoElegibilidade = fatoElegibilidadeCodigo;
         FieldError[] erros = [.. Recusas(regra, fator, teto, fatoElegibilidade, baseLegal).OfType<FieldError>()];
 
         return erros.Length > 0
@@ -119,7 +119,7 @@ public sealed class ConfiguracaoBonusRegional : EntityBase, IParteDoProcesso
             : null;
 
     private static FieldError? RecusaDoFato(string? fatoElegibilidade) =>
-        fatoElegibilidade is { Length: 0 } || fatoElegibilidade?.Length > FormaDoItem.FatoCodigoMaxLength
+        fatoElegibilidade is not null && string.IsNullOrWhiteSpace(fatoElegibilidade) || fatoElegibilidade?.Length > FormaDoItem.FatoCodigoMaxLength
             ? new("fatoElegibilidadeCodigo", new DomainError(
                 "ConfiguracaoBonusRegional.FatoElegibilidadeInvalido",
                 $"O código do fato que decide quem recebe o acréscimo, quando citado, tem de 1 a {FormaDoItem.FatoCodigoMaxLength} caracteres."))

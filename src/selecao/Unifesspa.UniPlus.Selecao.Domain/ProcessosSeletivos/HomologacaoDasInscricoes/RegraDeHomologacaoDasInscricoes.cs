@@ -46,7 +46,7 @@ public sealed record RegraDeHomologacaoDasInscricoes
         }
 
         return new RegraDeHomologacaoDasInscricoes(
-            string.IsNullOrWhiteSpace(resultadoAtoCodigo) ? null : resultadoAtoCodigo.Trim(),
+            string.IsNullOrWhiteSpace(resultadoAtoCodigo) ? null : resultadoAtoCodigo,
             [.. alternativas]);
     }
 }
