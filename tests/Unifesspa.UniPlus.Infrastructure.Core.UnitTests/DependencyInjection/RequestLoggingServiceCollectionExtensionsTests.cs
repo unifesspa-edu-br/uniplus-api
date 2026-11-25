@@ -34,14 +34,7 @@ public class RequestLoggingServiceCollectionExtensionsTests
     {
         ServiceCollection services = new();
 
-        services.AddRequestLogging(configure: opts =>
-        {
-            // Limpar + adicionar expressa substituição explícita. Sem Clear,
-            // a semântica seria merge com os defaults (ver teste abaixo).
-            opts.NomesParametrosSensiveis.Clear();
-            opts.NomesParametrosSensiveis.Add("matricula");
-            opts.ValorMascarado = "[hidden]";
-        });
+        services.AddRequestLogging(configure: SubstituirParametrosSensiveis);
 
         using ServiceProvider provider = services.BuildServiceProvider();
         QueryStringMasker masker = provider.GetRequiredService<QueryStringMasker>();
@@ -53,17 +46,7 @@ public class RequestLoggingServiceCollectionExtensionsTests
     [Fact]
     public void AddRequestLogging_ComConfiguration_DeveMesclarDefaultsComValoresBindados()
     {
-        // Binder do IConfiguration agrega às listas pré-populadas (semântica
-        // "defaults como piso, config amplia"). Isso impede que um appsettings
-        // acidentalmente remova `cpf` da proteção — o máximo que config pode
-        // fazer é ampliar o conjunto protegido.
-        Dictionary<string, string?> valores = new()
-        {
-            [$"{RequestLoggingOptions.SectionName}:NomesParametrosSensiveis:0"] = "documento",
-            [$"{RequestLoggingOptions.SectionName}:NomesParametrosSensiveis:1"] = "rg",
-            [$"{RequestLoggingOptions.SectionName}:ValorMascarado"] = "[REDACTED]",
-        };
-        IConfiguration configuration = new ConfigurationBuilder().AddInMemoryCollection(valores).Build();
+        IConfiguration configuration = CriarConfiguracaoComParametrosAdicionais();
         ServiceCollection services = new();
 
         services.AddRequestLogging(configuration);
@@ -81,14 +64,7 @@ public class RequestLoggingServiceCollectionExtensionsTests
     {
         ServiceCollection services = new();
 
-        services.AddRequestLogging(configure: opts =>
-        {
-            // "CPF" duplica defaults (case-insensitive), "  " é entrada em branco,
-            // "rg" é válida. PostConfigure deve manter apenas entradas normalizadas.
-            opts.NomesParametrosSensiveis.Add("CPF");
-            opts.NomesParametrosSensiveis.Add("  ");
-            opts.NomesParametrosSensiveis.Add("rg");
-        });
+        services.AddRequestLogging(configure: AdicionarParametrosDuplicadosOuEmBranco);
 
         using ServiceProvider provider = services.BuildServiceProvider();
         RequestLoggingOptions options = provider.GetRequiredService<IOptions<RequestLoggingOptions>>().Value;
@@ -150,5 +126,38 @@ public class RequestLoggingServiceCollectionExtensionsTests
         Func<IServiceCollection> acao = () => RequestLoggingServiceCollectionExtensions.AddRequestLogging(null!);
 
         acao.Should().Throw<ArgumentNullException>();
+    }
+
+    private static void SubstituirParametrosSensiveis(RequestLoggingOptions opts)
+    {
+        // Limpar + adicionar expressa substituição explícita. Sem Clear,
+        // a semântica seria merge com os defaults (ver teste abaixo).
+        opts.NomesParametrosSensiveis.Clear();
+        opts.NomesParametrosSensiveis.Add("matricula");
+        opts.ValorMascarado = "[hidden]";
+    }
+
+    private static IConfiguration CriarConfiguracaoComParametrosAdicionais()
+    {
+        // Binder do IConfiguration agrega às listas pré-populadas (semântica
+        // "defaults como piso, config amplia"). Isso impede que um appsettings
+        // acidentalmente remova `cpf` da proteção — o máximo que config pode
+        // fazer é ampliar o conjunto protegido.
+        Dictionary<string, string?> valores = new()
+        {
+            [$"{RequestLoggingOptions.SectionName}:NomesParametrosSensiveis:0"] = "documento",
+            [$"{RequestLoggingOptions.SectionName}:NomesParametrosSensiveis:1"] = "rg",
+            [$"{RequestLoggingOptions.SectionName}:ValorMascarado"] = "[REDACTED]",
+        };
+        return new ConfigurationBuilder().AddInMemoryCollection(valores).Build();
+    }
+
+    private static void AdicionarParametrosDuplicadosOuEmBranco(RequestLoggingOptions opts)
+    {
+        // "CPF" duplica defaults (case-insensitive), "  " é entrada em branco,
+        // "rg" é válida. PostConfigure deve manter apenas entradas normalizadas.
+        opts.NomesParametrosSensiveis.Add("CPF");
+        opts.NomesParametrosSensiveis.Add("  ");
+        opts.NomesParametrosSensiveis.Add("rg");
     }
 }

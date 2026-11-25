@@ -19,11 +19,7 @@ public class WolverineMessagingServiceCollectionExtensionsTests
         // resolve para WolverineCommandBus, que é o único caminho aprovado para
         // delegar a Wolverine.IMessageBus. Se alguém remover a registração ou
         // trocar por outra implementação, este teste quebra antes do startup.
-        ServiceCollection services = new();
-        services.AddScoped(_ => Substitute.For<Wolverine.IMessageBus>());
-        services.AddWolverineMessaging();
-
-        using ServiceProvider sp = services.BuildServiceProvider();
+        using ServiceProvider sp = CriarProviderComWolverine();
         using IServiceScope scope = sp.CreateScope();
 
         ICommandBus bus = scope.ServiceProvider.GetRequiredService<ICommandBus>();
@@ -39,11 +35,7 @@ public class WolverineMessagingServiceCollectionExtensionsTests
         // resolve para WolverineQueryBus, único caminho aprovado para delegar a
         // Wolverine.IMessageBus em queries. Se alguém remover a registração ou
         // trocar por outra implementação, este teste quebra antes do startup.
-        ServiceCollection services = new();
-        services.AddScoped(_ => Substitute.For<Wolverine.IMessageBus>());
-        services.AddWolverineMessaging();
-
-        using ServiceProvider sp = services.BuildServiceProvider();
+        using ServiceProvider sp = CriarProviderComWolverine();
         using IServiceScope scope = sp.CreateScope();
 
         IQueryBus bus = scope.ServiceProvider.GetRequiredService<IQueryBus>();
@@ -60,5 +52,13 @@ public class WolverineMessagingServiceCollectionExtensionsTests
         Action acao = () => services!.AddWolverineMessaging();
 
         acao.Should().Throw<ArgumentNullException>();
+    }
+
+    private static ServiceProvider CriarProviderComWolverine()
+    {
+        ServiceCollection services = new();
+        services.AddScoped(_ => Substitute.For<Wolverine.IMessageBus>());
+        services.AddWolverineMessaging();
+        return services.BuildServiceProvider();
     }
 }

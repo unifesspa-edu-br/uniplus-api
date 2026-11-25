@@ -119,15 +119,7 @@ public sealed class MigrationExecutionModeExtensionsTests
     {
         // Reproduz a sequência do composition root — configurar o modo, construir, aplicar —
         // que é onde o defeito aparecia: testar as duas peças em separado não o revelava.
-        using IHost host = new HostBuilder()
-            .ConfigureServices(s =>
-            {
-                s.AddLogging();
-                s.AddDbContext<ContextoDeTeste>(o => o.UseInMemoryDatabase("caminho-real"));
-                s.AddDbContextMigrationsOnStartup<ContextoDeTeste>();
-                s.ConfigurarModoDeMigration(MigrationExecutionMode.ApplyAndExit);
-            })
-            .Build();
+        using IHost host = HostComModoApplyAndExit();
 
         int codigo = await host.AplicarMigrationsEEncerrarAsync(CancellationToken.None);
 
@@ -187,15 +179,7 @@ public sealed class MigrationExecutionModeExtensionsTests
         // filtro. Se um serviço sem relação com schema não puder ser construído — warmup de
         // criptografia, mensageria, schema registry —, o Job falharia por motivo falso e
         // abortaria o rollout de uma migration perfeitamente válida.
-        using IHost host = new HostBuilder()
-            .ConfigureServices(s =>
-            {
-                s.AddLogging();
-                s.AddDbContext<ContextoDeTeste>(o => o.UseInMemoryDatabase("sem-alheios"));
-                s.AddDbContextMigrationsOnStartup<ContextoDeTeste>();
-                s.AddSingleton<IHostedService, HostedServiceQueNaoConstroi>();
-            })
-            .Build();
+        using IHost host = HostComServicoAlheioQueNaoConstroi();
 
         int codigo = await host.AplicarMigrationsEEncerrarAsync(CancellationToken.None);
 
@@ -220,6 +204,26 @@ public sealed class MigrationExecutionModeExtensionsTests
         MigrationExecutionModeExtensions.ProvisionamentoDeSchemaPara(resolvido)
             .Should().Be(esperado);
     }
+
+    private static IHost HostComModoApplyAndExit() => new HostBuilder()
+        .ConfigureServices(s =>
+        {
+            s.AddLogging();
+            s.AddDbContext<ContextoDeTeste>(o => o.UseInMemoryDatabase("caminho-real"));
+            s.AddDbContextMigrationsOnStartup<ContextoDeTeste>();
+            s.ConfigurarModoDeMigration(MigrationExecutionMode.ApplyAndExit);
+        })
+        .Build();
+
+    private static IHost HostComServicoAlheioQueNaoConstroi() => new HostBuilder()
+        .ConfigureServices(s =>
+        {
+            s.AddLogging();
+            s.AddDbContext<ContextoDeTeste>(o => o.UseInMemoryDatabase("sem-alheios"));
+            s.AddDbContextMigrationsOnStartup<ContextoDeTeste>();
+            s.AddSingleton<IHostedService, HostedServiceQueNaoConstroi>();
+        })
+        .Build();
 
     private sealed class ContextoDeTeste : DbContext
     {

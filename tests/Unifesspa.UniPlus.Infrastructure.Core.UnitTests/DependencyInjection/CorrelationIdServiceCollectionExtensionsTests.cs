@@ -22,12 +22,7 @@ public class CorrelationIdServiceCollectionExtensionsTests
 
         using ServiceProvider sp = services.BuildServiceProvider();
 
-        ICorrelationIdAccessor reader = sp.GetRequiredService<ICorrelationIdAccessor>();
-        ICorrelationIdWriter writer = sp.GetRequiredService<ICorrelationIdWriter>();
-        CorrelationIdAccessor concreta = sp.GetRequiredService<CorrelationIdAccessor>();
-
-        reader.Should().BeSameAs(writer);
-        reader.Should().BeSameAs(concreta);
+        VerificarInstanciaCompartilhada(sp);
     }
 
     [Fact]
@@ -38,5 +33,15 @@ public class CorrelationIdServiceCollectionExtensionsTests
         Action acao = () => services!.AddCorrelationIdAccessor();
 
         acao.Should().Throw<ArgumentNullException>();
+    }
+
+    private static void VerificarInstanciaCompartilhada(ServiceProvider sp)
+    {
+        ICorrelationIdAccessor reader = sp.GetRequiredService<ICorrelationIdAccessor>();
+        ICorrelationIdWriter writer = sp.GetRequiredService<ICorrelationIdWriter>();
+        CorrelationIdAccessor concreta = sp.GetRequiredService<CorrelationIdAccessor>();
+
+        reader.Should().BeSameAs(writer);
+        reader.Should().BeSameAs(concreta);
     }
 }
