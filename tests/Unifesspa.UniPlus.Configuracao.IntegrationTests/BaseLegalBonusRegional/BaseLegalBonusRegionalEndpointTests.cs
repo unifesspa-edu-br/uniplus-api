@@ -9,6 +9,7 @@ using System.Text.Json;
 using AwesomeAssertions;
 
 using Unifesspa.UniPlus.Configuracao.IntegrationTests.Infrastructure;
+using Unifesspa.UniPlus.IntegrationTests.Fixtures.Assertions;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Authentication;
 
 /// <summary>
@@ -202,7 +203,7 @@ public sealed class BaseLegalBonusRegionalEndpointTests
 
         HttpResponseMessage response = await EnviarPutAdmin(client, idNaUrl: Guid.NewGuid(), CorpoDaAtualizacao(id: Guid.NewGuid()));
 
-        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        await RecusaDoIdDivergente.ConferirAsync(response);
     }
 
     [Fact(DisplayName = "PUT sem Idempotency-Key retorna 400")]

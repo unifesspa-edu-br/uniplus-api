@@ -9743,7 +9743,7 @@
         "Envie a mesma identificação nos dois lugares. Confira se o Id do corpo é o do\nrecurso que a rota nomeia, e não o de outro registro copiado de uma tela ou de\numa resposta anterior. Se a intenção era atualizar outro recurso, corrija a\nrota."
       ],
       "ondeAparece": [
-        "Atualização de obrigatoriedade legal (`PUT /admin/obrigatoriedades-legais/{id}`)"
+        "Atualizações que informam o identificador na rota e no corpo, nos módulos de Configuração, Seleção, Organização Institucional e Publicações"
       ]
     },
     {

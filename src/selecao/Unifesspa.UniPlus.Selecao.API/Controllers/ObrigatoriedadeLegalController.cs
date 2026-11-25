@@ -177,10 +177,9 @@ public sealed class ObrigatoriedadeLegalController : ControllerBase
     {
         ArgumentNullException.ThrowIfNull(command);
 
-        if (command.Id != id)
+        if (this.ConferirIdDaRota(id, command.Id, _mapper) is { } divergente)
         {
-            DomainErrorMapping recusa = ErrosDaFronteiraHttp.IdDaRotaDivergenteDoCorpo;
-            return BadRequest(new ProblemDetails { Title = recusa.Title, Status = recusa.Status, Type = recusa.Code });
+            return divergente;
         }
 
         Result resultado = await _commandBus

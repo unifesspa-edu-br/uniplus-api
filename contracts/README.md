@@ -64,9 +64,7 @@ O código de erro vai no corpo `application/problem+json` (ADR-0023), e não é 
 O arquivo é gerado em memória pelo teste `CodigosDeErroPublicadosTests` (`tests/Unifesspa.UniPlus.Contratos.UnitTests/Conferencias/`), que reúne:
 
 1. todas as `IDomainErrorRegistration` dos módulos e do compartilhado (Seleção, Ingresso, Configuração, Organização Institucional, Publicações, Autorização, Discentes, Portal e `Infrastructure.Core`), obtidas dos contêineres dos hosts;
-2. as definições da fronteira HTTP (`ErrosDaFronteiraHttp`), de quem o `GlobalExceptionMiddleware`, o `AuthenticationProblemDetailsWriter`, o `VendorMediaTypeAttribute` e a recusa de contrato do controller de obrigatoriedades legais leem status, código e título. Um erro novo emitido fora dos registros nasce ali, e não como literal no emissor.
-
-Uma exceção do conteúdo: `uniplus.contract.id_path_body_divergente` vai hoje no campo `type` da resposta 400, e não na extensão `code` que a ADR-0023 exige. Está na lista porque é o identificador estável que o controller emite; o cliente só o lê em `type` até a resposta ganhar o `code`.
+2. as definições da fronteira HTTP (`ErrosDaFronteiraHttp`), de quem o `GlobalExceptionMiddleware`, o `AuthenticationProblemDetailsWriter`, o `VendorMediaTypeAttribute` e a conferência do identificador da rota leem status, código e título. Um erro novo emitido fora dos registros nasce ali, e não como literal no emissor.
 
 O mesmo código declarado em mais de um registro com o mesmo status e título entra uma vez; com status ou título diferentes, a geração falha e aponta o código e os registros.
 

@@ -13,8 +13,8 @@ using Microsoft.Extensions.DependencyInjection;
 
 using Outbox.Cascading;
 
-using Unifesspa.UniPlus.Infrastructure.Core.Errors;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
+using Unifesspa.UniPlus.IntegrationTests.Fixtures.Assertions;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Authentication;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Hosting;
 using Unifesspa.UniPlus.Selecao.Application.Permissoes;
@@ -160,7 +160,7 @@ public sealed class ObrigatoriedadeLegalAdminEndpointTests : ObrigatoriedadeLega
             $"/api/selecao/admin/obrigatoriedades-legais/{idReal}",
             putPayload);
 
-        await VerificarProblemaDeIdDivergenteAsync(response);
+        await RecusaDoIdDivergente.ConferirAsync(response);
     }
 
     [Fact(DisplayName = "DELETE soft-delete retorna 204 e regra some do GET público")]
@@ -297,16 +297,6 @@ public sealed class ObrigatoriedadeLegalAdminEndpointTests : ObrigatoriedadeLega
             .Where(h => h.RegraId == id)
             .CountAsync();
         historico.Should().Be(2, "insert + update geram 2 linhas no histórico forensic");
-    }
-
-    private static async Task VerificarProblemaDeIdDivergenteAsync(HttpResponseMessage response)
-    {
-        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
-        using JsonDocument problema = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
-        DomainErrorMapping definicao = ErrosDaFronteiraHttp.IdDaRotaDivergenteDoCorpo;
-        problema.RootElement.GetProperty("type").GetString().Should().Be(definicao.Code);
-        problema.RootElement.GetProperty("title").GetString().Should().Be(definicao.Title);
-        problema.RootElement.GetProperty("status").GetInt32().Should().Be(definicao.Status);
     }
 
     private async Task VerificarHistoricoDaDesativacaoAsync(Guid id)
