@@ -23,6 +23,7 @@ public sealed class AceitaCodigosDeTests
     {
         app.MapGet("/parametro", ([AceitaCodigosDe<Fase>] string? fase) => Results.Ok(fase));
         app.MapGet("/consulta", ([AsParameters] FiltroDeFase filtro) => Results.Ok(filtro));
+        app.MapGet("/consulta-posicional", ([AsParameters] FiltroPosicional filtro) => Results.Ok(filtro));
     }));
 
     [Fact(DisplayName = "O campo de pedido de texto obrigatório referencia os códigos e continua obrigatório")]
@@ -198,6 +199,16 @@ public sealed class AceitaCodigosDeTests
 
         DocumentoPublicado.Referencia(parametro.Campo("schema")).Should().Be(ComponenteDosCodigos);
         Obrigatorio(parametro).Should().BeFalse();
+    }
+
+    [Fact(DisplayName = "O atributo no parâmetro do registro posicional de consulta referencia os códigos")]
+    public async Task ParametroDeRegistroPosicionalDeConsulta_ReferenciaOsCodigos()
+    {
+        DocumentoPublicado documento = await RotasMinimas.Value;
+
+        JsonNode parametro = documento.Parametro("/consulta-posicional", "get", "fasePosicional");
+
+        DocumentoPublicado.Referencia(parametro.Campo("schema")).Should().Be(ComponenteDosCodigos);
     }
 
     [Fact(DisplayName = "O parâmetro de consulta sem o atributo continua texto livre")]

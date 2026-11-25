@@ -1,6 +1,7 @@
 namespace Unifesspa.UniPlus.Infrastructure.Core.OpenApi;
 
 using System.Reflection;
+using System.Text.Json;
 using System.Text.Json.Serialization.Metadata;
 
 using Microsoft.AspNetCore.Mvc.ApiExplorer;
@@ -79,8 +80,16 @@ internal sealed class CampoQueAceitaCodigos
     // liga à propriedade do tipo; o parâmetro direto de uma ação ou de uma rota mínima tem o atributo no ParameterInfo.
     private static object[] AtributosDo(ApiParameterDescription parametro) =>
         parametro.ModelMetadata is { MetadataKind: ModelMetadataKind.Property, ContainerType: { } tipo, PropertyName: { } nome }
-            ? tipo.GetProperty(nome)?.GetCustomAttributes(inherit: true) ?? []
+            ? AtributosDaPropriedadeDeConsulta(tipo, nome)
             : (parametro.ParameterDescriptor as IParameterInfoParameterDescriptor)?.ParameterInfo.GetCustomAttributes(inherit: true) ?? [];
+
+    private static object[] AtributosDaPropriedadeDeConsulta(Type tipo, string nome)
+    {
+        object[] atributos = AtributosDe(tipo.GetProperty(nome));
+        JsonPropertyInfo? propriedade = JsonSerializerOptions.Default.GetTypeInfo(tipo).Properties
+            .FirstOrDefault(p => p.AttributeProvider is PropertyInfo info && info.Name == nome);
+        return [.. atributos, .. AtributosDe(propriedade?.AssociatedParameter?.AttributeProvider)];
+    }
 
     private static Type? EnumDoAtributo(IEnumerable<object>? atributos) =>
         atributos?.OfType<IAceitaCodigosDe>().FirstOrDefault()?.EnumDeContrato;
