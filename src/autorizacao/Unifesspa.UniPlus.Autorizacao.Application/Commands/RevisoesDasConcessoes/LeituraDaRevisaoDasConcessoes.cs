@@ -1,8 +1,10 @@
 namespace Unifesspa.UniPlus.Autorizacao.Application.Commands.RevisoesDasConcessoes;
 
+using Unifesspa.UniPlus.Application.Abstractions.Respostas;
 using Unifesspa.UniPlus.Autorizacao.Application.DTOs;
 using Unifesspa.UniPlus.Autorizacao.Application.Mappings;
 using Unifesspa.UniPlus.Autorizacao.Domain.Entities;
+using Unifesspa.UniPlus.Autorizacao.Domain.Enums;
 using Unifesspa.UniPlus.Autorizacao.Domain.Interfaces;
 using Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects;
 
@@ -50,6 +52,6 @@ public sealed class LeituraDaRevisaoDasConcessoes
 
         bool aberta = await _revisoes.TemRevisaoAbertaAsync(perfilId, _clock.GetUtcNow(), cancellationToken).ConfigureAwait(false);
 
-        return new RevisaoDoPerfilDto(revisao.Id, revisao.TerminaEm, aberta ? "aberta" : "encerrando");
+        return new RevisaoDoPerfilDto(revisao.Id, revisao.TerminaEm, CodigoComRotulo<SituacaoDaRevisaoDasConcessoes>.De(aberta ? SituacaoDaRevisaoDasConcessoes.Aberta : SituacaoDaRevisaoDasConcessoes.Encerrando));
     }
 }

@@ -54,7 +54,7 @@ public sealed class RevisaoComSuspensaoNoHostTests : RevisaoDasConcessoesNoHostT
         JsonElement revisao = await MigrarTodasAsync(gestao, protecao, cenario);
 
         cenario.Concessoes.Values.Should().OnlyContain(id => SituacaoDe(revisao, id) == "MIGRADA");
-        revisao.GetProperty("situacao").GetString().Should().Be("encerrada");
+        revisao.GetProperty("situacao").GetProperty("codigo").GetString().Should().Be("ENCERRADA");
         (await TemConcessaoAtivaAsync(Leandro, cenario.PerfilId)).Should().BeFalse();
         (await TemConcessaoAtivaAsync(Betina, cenario.PerfilId)).Should().BeFalse();
         await ConferirRetomadaAsync(gestao, protecao, cenario.PerfilId);
@@ -75,7 +75,7 @@ public sealed class RevisaoComSuspensaoNoHostTests : RevisaoDasConcessoesNoHostT
         desativacao.StatusCode.Should().Be(HttpStatusCode.NoContent);
         reativacao.StatusCode.Should().Be(HttpStatusCode.NoContent);
         JsonElement revisao = await RevisaoAsync(gestao, cenario.PerfilId);
-        revisao.GetProperty("situacao").GetString().Should().Be("encerrada");
+        revisao.GetProperty("situacao").GetProperty("codigo").GetString().Should().Be("ENCERRADA");
         (await PerfilAsync(gestao, cenario.PerfilId)).GetProperty("ativo").GetBoolean().Should().BeTrue();
     }
 
@@ -93,13 +93,13 @@ public sealed class RevisaoComSuspensaoNoHostTests : RevisaoDasConcessoesNoHostT
         itemSuspenso.GetProperty("acrescimo").EnumerateArray().Select(c => c.GetString()).Should().Equal(Laudos);
         itemSuspenso.GetProperty("acrescimo").GetRawText().Should().Be(itemSemSuspensao.GetProperty("acrescimo").GetRawText());
         itemSuspenso.GetProperty("exigeProtecaoDeDados").GetBoolean().Should().Be(itemSemSuspensao.GetProperty("exigeProtecaoDeDados").GetBoolean());
-        itemSuspenso.GetProperty("situacao").GetString().Should().Be(itemSemSuspensao.GetProperty("situacao").GetString());
+        itemSuspenso.GetProperty("situacao").GetProperty("codigo").GetString().Should().Be(itemSemSuspensao.GetProperty("situacao").GetProperty("codigo").GetString());
     }
 
     private static async Task ConferirRevisaoVencidaAsync(HttpClient gestao, RevisaoAberta cenario)
     {
         JsonElement vencida = await RevisaoAsync(gestao, cenario.PerfilId);
-        vencida.GetProperty("situacao").GetString().Should().Be("encerrada");
+        vencida.GetProperty("situacao").GetProperty("codigo").GetString().Should().Be("ENCERRADA");
         cenario.Concessoes.Values.Should().OnlyContain(id => SituacaoDe(vencida, id) == "NAO_MIGRADA");
     }
 
@@ -107,7 +107,7 @@ public sealed class RevisaoComSuspensaoNoHostTests : RevisaoDasConcessoesNoHostT
     {
         Relogio.Avancar(TimeSpan.FromHours(24));
         JsonElement correndo = await RevisaoAsync(gestao, perfilId);
-        correndo.GetProperty("situacao").GetString().Should().Be("aberta");
+        correndo.GetProperty("situacao").GetProperty("codigo").GetString().Should().Be("ABERTA");
         correndo.GetProperty("terminaEm").GetDateTimeOffset().Should().Be(prazo);
     }
 

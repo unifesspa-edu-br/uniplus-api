@@ -100,7 +100,7 @@ public sealed class ConcorrenciaDaRevisaoNoHostTests : RevisaoDasConcessoesNoHos
         using HttpResponseMessage resposta = await EnviarDecisoes(gestao, cenario);
 
         JsonElement item = ItemDe(await CorpoAsync(resposta, HttpStatusCode.OK), cenario.Concessoes[Leandro]);
-        item.GetProperty("situacao").GetString().Should().Be("AGUARDANDO_PROTECAO_DE_DADOS");
+        item.GetProperty("situacao").GetProperty("codigo").GetString().Should().Be("AGUARDANDO_PROTECAO_DE_DADOS");
         item.TryGetProperty("dispensa", out _).Should().BeFalse("a migração deixou de ter dispensa");
     }
 

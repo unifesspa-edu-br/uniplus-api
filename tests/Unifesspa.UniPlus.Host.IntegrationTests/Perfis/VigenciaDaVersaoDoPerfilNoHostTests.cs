@@ -86,7 +86,7 @@ public sealed class VigenciaDaVersaoDoPerfilNoHostTests : VersoesDoPerfilNoHostT
 
         JsonElement perfil = await LerAsync(gestor, $"{RotaPerfis}/{original.PerfilId}");
         perfil.GetProperty("composicaoEmVigor").GetProperty("numero").GetInt32().Should().Be(2);
-        perfil.GetProperty("revisaoDasConcessoes").GetProperty("situacao").GetString().Should().Be("aberta");
+        perfil.GetProperty("revisaoDasConcessoes").GetProperty("situacao").GetProperty("codigo").GetString().Should().Be("ABERTA");
     }
 
     [Fact(DisplayName = "Concessão posterior à entrada em vigor não impede a próxima ampliação: a versão é criada pendente")]

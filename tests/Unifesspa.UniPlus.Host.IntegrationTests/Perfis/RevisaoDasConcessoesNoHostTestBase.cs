@@ -191,7 +191,7 @@ public abstract class RevisaoDasConcessoesNoHostTestBase : AprovacaoDaVersaoNoHo
         revisao.GetProperty("itens").EnumerateArray().Single(i => i.GetProperty("concessaoId").GetGuid() == concessaoId);
 
     private protected static string SituacaoDe(JsonElement revisao, Guid concessaoId) =>
-        ItemDe(revisao, concessaoId).GetProperty("situacao").GetString()!;
+        ItemDe(revisao, concessaoId).GetProperty("situacao").GetProperty("codigo").GetString()!;
 
     private protected static async Task ConferirRecusaDaMigracaoAsync(HttpResponseMessage resposta, HttpStatusCode status, string codigo)
     {

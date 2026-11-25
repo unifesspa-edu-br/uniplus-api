@@ -102,7 +102,7 @@ public sealed class RevisaoVencidaNoHostTests : RevisaoDasConcessoesNoHostTestBa
         await ConferirRecusaDaMigracaoAsync(primeira, HttpStatusCode.UnprocessableEntity, "revisao_encerrada");
         await ConferirRecusaDaMigracaoAsync(replay, HttpStatusCode.UnprocessableEntity, "revisao_encerrada");
         (await EncerradaEmAsync(cenario.PerfilId)).Should().NotBeNull();
-        (await RevisaoAsync(gestao, cenario.PerfilId)).GetProperty("forma").GetString().Should().Be("CONCLUIDA");
+        (await RevisaoAsync(gestao, cenario.PerfilId)).GetProperty("forma").GetProperty("codigo").GetString().Should().Be("CONCLUIDA");
     }
 
     [Fact(DisplayName = "O replay do envio, da etapa e do encerramento devolve a mesma resposta sem repetir a transição")]
