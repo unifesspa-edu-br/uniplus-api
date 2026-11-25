@@ -6,6 +6,7 @@ using Unifesspa.UniPlus.Autorizacao.Application.Mappings;
 using Unifesspa.UniPlus.Autorizacao.Domain.Entities;
 using Unifesspa.UniPlus.Autorizacao.Domain.Enums;
 using Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 
 public sealed class InstalacaoMappingTests
 {
@@ -36,7 +37,7 @@ public sealed class InstalacaoMappingTests
 
         instalacao.Cancelar(DateTimeOffset.UtcNow);
 
-        InstalacaoMapping.ToDto(instalacao).Situacao.Should().Be(SituacaoDaInstalacao.Cancelada.ToCodigo());
+        InstalacaoMapping.ToDto(instalacao).Situacao.Should().Be(SituacaoDaInstalacao.Cancelada.Codigo());
         InstalacaoMapping.ToDto(instalacao).TentativasRestantes.Should().BeNull();
         InstalacaoMapping.ToDto(instalacao).CodigoExpiraEm.Should().BeNull();
     }

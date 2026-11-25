@@ -16,6 +16,13 @@ public sealed class ChecksDoModeloDoMonolitoTests
 {
     private static readonly RestricaoEsperada[] Esperadas =
     [
+        new("decisoes_da_versao", "ck_decisoes_da_versao_motivo_na_recusa", "(resultado = 'RECUSADO') = (motivo IS NOT NULL)"),
+        new("decisoes_da_versao", "ck_decisoes_da_versao_resultado", "resultado IN ('APROVADO', 'RECUSADO')"),
+        new("decisoes_do_pedido", "ck_decisoes_do_pedido_motivo_na_recusa", "resultado <> 'RECUSADO' OR motivo IS NOT NULL"),
+        new("pedidos_de_concessao", "ck_pedidos_de_concessao_concessao_so_aprovado", "concessao_id IS NULL OR situacao = 'APROVADO'"),
+        new("pedidos_de_concessao", "ck_pedidos_de_concessao_decisao_com_beneficiario", "situacao IN ('AGUARDANDO_DOCUMENTO', 'AGUARDANDO_BENEFICIARIO', 'CANCELADO', 'DEVOLVIDO') OR beneficiario_conta_id IS NOT NULL"),
+        new("pedidos_de_concessao", "ck_pedidos_de_concessao_encerramento", "(situacao IN ('APROVADO', 'RECUSADO', 'CANCELADO', 'DEVOLVIDO')) = (encerrado_em IS NOT NULL)"),
+        new("termos_na_instalacao", "ck_termos_na_instalacao_versao", "(situacao = 'SEM_TERMO_PUBLICADO') = (versao_do_termo_id IS NULL) AND (versao_do_termo_id IS NULL) = (numero IS NULL)"),
         new("dados_do_candidato", "ck_dados_do_candidato_classificacao_minima_do_tipo", "(tipo NOT IN ('TEXTO', 'DATA', 'ENDERECO') AND classificacao_protecao <> 'IDENTIFICADOR') OR (tipo = 'TEXTO' AND classificacao_protecao IN ('PESSOAL', 'IDENTIFICADOR', 'SENSIVEL')) OR (tipo IN ('DATA', 'ENDERECO') AND classificacao_protecao IN ('PESSOAL', 'SENSIVEL'))"),
         new("dados_do_candidato", "ck_dados_do_candidato_classificacao_protecao", "classificacao_protecao IN ('PUBLICO', 'INTERNO', 'PESSOAL', 'IDENTIFICADOR', 'SENSIVEL')"),
         new("dados_do_candidato", "ck_dados_do_candidato_hipotese_legal", "hipotese_legal IN ('CONSENTIMENTO', 'CUMPRIMENTO_OBRIGACAO_LEGAL', 'EXECUCAO_POLITICAS_PUBLICAS', 'ESTUDOS_POR_ORGAO_DE_PESQUISA', 'EXECUCAO_CONTRATO', 'EXERCICIO_REGULAR_DE_DIREITOS', 'PROTECAO_DA_VIDA', 'TUTELA_DA_SAUDE', 'INTERESSE_LEGITIMO', 'PROTECAO_DO_CREDITO', 'PREVENCAO_A_FRAUDE')"),
@@ -86,9 +93,9 @@ public sealed class ChecksDoModeloDoMonolitoTests
         return dados;
     }
 
-    [Fact(DisplayName = "A lista esperada tem as 57 restrições de enum com código de contrato")]
+    [Fact(DisplayName = "A lista esperada tem as 64 restrições de enum com código de contrato")]
     public void ListaEsperada_TemAsRestricoes() =>
-        Esperadas.Select(esperada => esperada.Nome).Should().OnlyHaveUniqueItems().And.HaveCount(57);
+        Esperadas.Select(esperada => esperada.Nome).Should().OnlyHaveUniqueItems().And.HaveCount(64);
 
     [Theory(DisplayName = "O modelo de design-time guarda a restrição com o nome e o texto literais")]
     [MemberData(nameof(RestricoesEsperadas))]

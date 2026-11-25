@@ -4,11 +4,11 @@ using System.Diagnostics.CodeAnalysis;
 
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
-using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 using Unifesspa.UniPlus.Autorizacao.Domain.Entities;
 using Unifesspa.UniPlus.Autorizacao.Domain.Enums;
 using Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects;
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence.CodigosDeContrato;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Protecao;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
 
@@ -23,14 +23,6 @@ internal sealed class DecisaoDoPedidoConfiguration : IEntityTypeConfiguration<De
     private const int CodigoMaxLength = 40;
     private const int SensibilidadeMaxLength = 20;
 
-    private static readonly ValueConverter<EtapaDoPedido, string> EtapaConverter = new(
-        etapa => etapa.ToCodigo(),
-        codigo => EtapaDoPedidoCodigo.FromCodigo(codigo));
-
-    private static readonly ValueConverter<ResultadoDaDecisao, string> ResultadoConverter = new(
-        resultado => resultado.ToCodigo(),
-        codigo => ResultadoDaDecisaoCodigo.FromCodigo(codigo));
-
     public void Configure(EntityTypeBuilder<DecisaoDoPedido> builder)
     {
         ArgumentNullException.ThrowIfNull(builder);
@@ -39,12 +31,12 @@ internal sealed class DecisaoDoPedidoConfiguration : IEntityTypeConfiguration<De
 
         builder.ToTable("decisoes_do_pedido", tabela => tabela.HasCheckConstraint(
             "ck_decisoes_do_pedido_motivo_na_recusa",
-            "resultado <> 'RECUSADO' OR motivo IS NOT NULL"));
+            $"resultado <> {SqlDosCodigosDeContrato.Literal(ResultadoDaDecisao.Recusado)} OR motivo IS NOT NULL"));
         builder.HasKey(d => d.Id);
         builder.Property(d => d.Id).ValueGeneratedNever();
 
-        builder.Property(d => d.Etapa).HasConversion(EtapaConverter).HasMaxLength(CodigoMaxLength).IsRequired();
-        builder.Property(d => d.Resultado).HasConversion(ResultadoConverter).HasMaxLength(CodigoMaxLength).IsRequired();
+        builder.Property(d => d.Etapa).HasMaxLength(CodigoMaxLength).IsRequired();
+        builder.Property(d => d.Resultado).HasMaxLength(CodigoMaxLength).IsRequired();
         builder.Property(d => d.DecisorEmissor).HasMaxLength(IdentidadeMaxLength).IsRequired();
         builder.Property(d => d.DecisorContaId).HasMaxLength(IdentidadeMaxLength).IsRequired();
         builder.Property(d => d.DecisorNome).HasMaxLength(NomeDeExibicao.MaxLength);

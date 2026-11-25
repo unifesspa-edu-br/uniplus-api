@@ -4,11 +4,11 @@ using System.Diagnostics.CodeAnalysis;
 
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
-using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 using Unifesspa.UniPlus.Autorizacao.Domain.Entities;
 using Unifesspa.UniPlus.Autorizacao.Domain.Enums;
 using Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects;
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence.CodigosDeContrato;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Protecao;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
 
@@ -22,10 +22,6 @@ internal sealed class InstalacaoConfiguration : IEntityTypeConfiguration<Instala
     private const int IdentidadeMaxLength = 255;
     private const int SituacaoMaxLength = 40;
     private const int Sha256HexLength = 64;
-
-    private static readonly ValueConverter<SituacaoDaInstalacao, string> SituacaoConverter = new(
-        situacao => situacao.ToCodigo(),
-        codigo => SituacaoDaInstalacaoCodigo.FromCodigo(codigo));
 
     public void Configure(EntityTypeBuilder<Instalacao> builder)
     {
@@ -49,7 +45,7 @@ internal sealed class InstalacaoConfiguration : IEntityTypeConfiguration<Instala
         builder.Property(i => i.ExecutorNome).ClassificaComo(ClassificacaoDeProtecao.Pessoal).HasMaxLength(NomeDeExibicao.MaxLength);
         builder.Property(i => i.NumeroDoDocumento).HasMaxLength(DocumentoDeDesignacao.NumeroMaxLength).IsRequired();
         builder.Property(i => i.TamanhoDoPdf).IsRequired();
-        builder.Property(i => i.Situacao).HasConversion(SituacaoConverter).HasMaxLength(SituacaoMaxLength).IsRequired();
+        builder.Property(i => i.Situacao).HasMaxLength(SituacaoMaxLength).IsRequired();
         builder.Property(i => i.DocumentoETag).HasColumnName("documento_etag").HasMaxLength(ETagDoArmazenamento.MaxLength);
         builder.Property(i => i.DocumentoSha256).HasMaxLength(Sha256HexLength);
         // HMAC do código de confirmação: credencial, com a classe mais alta.
@@ -85,7 +81,7 @@ internal sealed class InstalacaoConfiguration : IEntityTypeConfiguration<Instala
             .IsUnique()
             .HasFilter(
                 "situacao IN ("
-                + string.Join(", ", Instalacao.SituacoesPendentes.Select(s => $"'{s.ToCodigo()}'"))
+                + string.Join(", ", Instalacao.SituacoesPendentes.Select(SqlDosCodigosDeContrato.Literal))
                 + ")")
             .HasDatabaseName("ux_instalacoes_executor_pendente");
 

@@ -4,11 +4,11 @@ using System.Diagnostics.CodeAnalysis;
 
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
-using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 using Unifesspa.UniPlus.Autorizacao.Domain.Entities;
 using Unifesspa.UniPlus.Autorizacao.Domain.Enums;
 using Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects;
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence.CodigosDeContrato;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Protecao;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
 
@@ -21,10 +21,6 @@ internal sealed class PedidoDeConcessaoConfiguration : IEntityTypeConfiguration<
 {
     private const int IdentidadeMaxLength = 255;
     private const int SituacaoMaxLength = 40;
-
-    private static readonly ValueConverter<SituacaoDoPedido, string> SituacaoConverter = new(
-        situacao => situacao.ToCodigo(),
-        codigo => SituacaoDoPedidoCodigo.FromCodigo(codigo));
 
     public void Configure(EntityTypeBuilder<PedidoDeConcessao> builder)
     {
@@ -54,13 +50,13 @@ internal sealed class PedidoDeConcessaoConfiguration : IEntityTypeConfiguration<
                 "(beneficiario_emissor IS NULL) = (beneficiario_conta_id IS NULL)");
             tabela.HasCheckConstraint(
                 "ck_pedidos_de_concessao_decisao_com_beneficiario",
-                "situacao IN ('AGUARDANDO_DOCUMENTO', 'AGUARDANDO_BENEFICIARIO', 'CANCELADO', 'DEVOLVIDO') OR beneficiario_conta_id IS NOT NULL");
+                $"situacao IN ({SqlDosCodigosDeContrato.Literal(SituacaoDoPedido.AguardandoDocumento)}, {SqlDosCodigosDeContrato.Literal(SituacaoDoPedido.AguardandoBeneficiario)}, {SqlDosCodigosDeContrato.Literal(SituacaoDoPedido.Cancelado)}, {SqlDosCodigosDeContrato.Literal(SituacaoDoPedido.Devolvido)}) OR beneficiario_conta_id IS NOT NULL");
             tabela.HasCheckConstraint(
                 "ck_pedidos_de_concessao_encerramento",
-                "(situacao IN ('APROVADO', 'RECUSADO', 'CANCELADO', 'DEVOLVIDO')) = (encerrado_em IS NOT NULL)");
+                $"(situacao IN ({SqlDosCodigosDeContrato.Literal(SituacaoDoPedido.Aprovado)}, {SqlDosCodigosDeContrato.Literal(SituacaoDoPedido.Recusado)}, {SqlDosCodigosDeContrato.Literal(SituacaoDoPedido.Cancelado)}, {SqlDosCodigosDeContrato.Literal(SituacaoDoPedido.Devolvido)})) = (encerrado_em IS NOT NULL)");
             tabela.HasCheckConstraint(
                 "ck_pedidos_de_concessao_concessao_so_aprovado",
-                "concessao_id IS NULL OR situacao = 'APROVADO'");
+                $"concessao_id IS NULL OR situacao = {SqlDosCodigosDeContrato.Literal(SituacaoDoPedido.Aprovado)}");
             tabela.HasCheckConstraint(
                 "ck_pedidos_de_concessao_termo_completo",
                 "(termo_versao_id IS NULL) = (termo_numero IS NULL) AND (termo_versao_id IS NULL) = (termo_resumo IS NULL)");
@@ -87,7 +83,7 @@ internal sealed class PedidoDeConcessaoConfiguration : IEntityTypeConfiguration<
         builder.OwnsOne(p => p.Andamento, andamento =>
         {
             andamento.ClassificaPorPadrao(ClassificacaoDeProtecao.Pessoal);
-            andamento.Property(a => a.Situacao).HasColumnName("situacao").HasConversion(SituacaoConverter).HasMaxLength(SituacaoMaxLength).IsRequired();
+            andamento.Property(a => a.Situacao).HasColumnName("situacao").HasMaxLength(SituacaoMaxLength).IsRequired();
             andamento.Property(a => a.ValidaAte).HasColumnName("valida_ate");
             andamento.Property(a => a.EncerradoEm).HasColumnName("encerrado_em");
             andamento.Ignore(a => a.Ativo);
@@ -202,7 +198,7 @@ internal sealed class PedidoDeConcessaoConfiguration : IEntityTypeConfiguration<
             .AreNullsDistinct(false)
             .HasFilter(
                 "situacao IN ("
-                + string.Join(", ", AndamentoDoPedido.SituacoesAtivas.Select(s => $"'{s.ToCodigo()}'"))
+                + string.Join(", ", AndamentoDoPedido.SituacoesAtivas.Select(SqlDosCodigosDeContrato.Literal))
                 + ")")
             .HasDatabaseName("ux_pedidos_de_concessao_ativo_unico");
     }

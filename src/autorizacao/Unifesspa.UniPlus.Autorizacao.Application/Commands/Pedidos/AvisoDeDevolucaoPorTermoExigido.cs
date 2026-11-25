@@ -5,6 +5,7 @@ using Unifesspa.UniPlus.Autorizacao.Application.Abstractions;
 using Unifesspa.UniPlus.Autorizacao.Application.Avisos;
 using Unifesspa.UniPlus.Autorizacao.Domain.Entities;
 using Unifesspa.UniPlus.Autorizacao.Domain.Enums;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 
 /// <summary>
 /// O aviso do pedido devolvido na aprovação do gestor porque o perfil passou a exigir o termo de responsabilidade depois
@@ -33,6 +34,6 @@ public sealed class AvisoDeDevolucaoPorTermoExigido
         DestinatarioDoAviso[] solicitante = [new(pedido.Solicitante.Identidade, pedido.Solicitante.Email ?? string.Empty)];
 
         return _emissor.EmitirAsync(
-            new PedidoDeAviso(modelo, pedido.Id, ResultadoDaDecisaoCodigo.TermoExigido, solicitante, []), cancellationToken);
+            new PedidoDeAviso(modelo, pedido.Id, ResultadoDaDecisao.TermoExigido.Codigo(), solicitante, []), cancellationToken);
     }
 }

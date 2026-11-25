@@ -5,6 +5,7 @@ using Unifesspa.UniPlus.Autorizacao.Application.DTOs;
 using Unifesspa.UniPlus.Autorizacao.Domain.Entities;
 using Unifesspa.UniPlus.Autorizacao.Domain.Enums;
 using Unifesspa.UniPlus.Autorizacao.Domain.Interfaces;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 
 /// <summary>
 /// Os eventos que o pedido conta, montados na leitura a partir das colunas, das decisões, do aceite do termo e dos acessos
@@ -106,14 +107,14 @@ public sealed class EventosDoPedido : IEventosDaOrigem
     private static EventoDaTrilhaDto[] DaDecisao(DecisaoDoPedido decisao)
     {
         IdentidadeDto decisor = Dto(decisao.DecisorEmissor, decisao.DecisorContaId, decisao.DecisorNome);
-        string etapa = $"Etapa: {decisao.Etapa.ToCodigo()}.";
+        string etapa = $"Etapa: {decisao.Etapa.Codigo()}.";
         if (SemDecisao(decisao.Resultado) is { } semDecisao)
         {
             return [new(semDecisao.Tipo, decisao.Instante, decisor, $"{etapa} {semDecisao.Detalhe}")];
         }
 
         string motivo = decisao.Motivo is null ? string.Empty : $" Motivo: {decisao.Motivo}";
-        EventoDaTrilhaDto decidida = new(decisao.Resultado.ToCodigo(), decisao.Instante, decisor, $"{etapa} Sensibilidade avaliada: {decisao.SensibilidadeAvaliada}.{motivo}");
+        EventoDaTrilhaDto decidida = new(decisao.Resultado.Codigo(), decisao.Instante, decisor, $"{etapa} Sensibilidade avaliada: {decisao.SensibilidadeAvaliada}.{motivo}");
 
         return decisao.Dispensa is { } dispensa
             ? [decidida, new("segunda_aprovacao_dispensada", decisao.Instante, decisor, $"Motivo: {dispensa}.")]

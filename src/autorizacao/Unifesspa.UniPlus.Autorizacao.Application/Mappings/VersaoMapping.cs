@@ -16,7 +16,7 @@ public static class VersaoMapping
         ArgumentNullException.ThrowIfNull(documento);
 
         return new DocumentoDaVersaoDto(
-            documento.Id, documento.VersaoId, documento.Situacao.ToCodigo(), documento.TamanhoDeclarado, documento.EnviadoEm);
+            documento.Id, documento.VersaoId, documento.Situacao.Codigo(), documento.TamanhoDeclarado, documento.EnviadoEm);
     }
 
     internal static ComposicaoEmVigorDto VigenteDe(Perfil perfil, VersaoDoPerfil vigente, CatalogoDaAplicacao catalogo) =>
@@ -46,7 +46,7 @@ public static class VersaoMapping
 
         return new VersaoPendenteDto(
             pendente.Id, pendente.Numero, pendente.Nome, pendente.Descricao, Descrever(pendente.Codigos(), catalogo), pendente.Protocolo,
-            documento.Id, documento.Situacao.ToCodigo(), pendente.CriadaEm, pendente.ExpiraEm!.Value,
+            documento.Id, documento.Situacao.Codigo(), pendente.CriadaEm, pendente.ExpiraEm!.Value,
             EtapaAtual(pendente, exige).Codigo(), exige, Descrever(acrescimo, catalogo),
             Descrever((perfil.VersaoVigente?.Codigos() ?? []).Except(pendente.Codigos(), StringComparer.Ordinal), catalogo),
             [.. pendente.DecisoesDoCiclo().Select(DecisaoDe)],
@@ -63,7 +63,7 @@ public static class VersaoMapping
     }
 
     private static DecisaoDaVersaoDto DecisaoDe(DecisaoDaVersao decisao) =>
-        new(decisao.Etapa.Codigo(), decisao.Resultado.ToCodigo(), decisao.DecisorNome, decisao.DecisorTemConcessao, decisao.Instante);
+        new(decisao.Etapa.Codigo(), decisao.Resultado.Codigo(), decisao.DecisorNome, decisao.DecisorTemConcessao, decisao.Instante);
 
     private static EtapaDaVersao EtapaAtual(VersaoDoPerfil versao, bool exigeProtecaoDeDados) =>
         versao.AprovadaPelaGestao && exigeProtecaoDeDados ? EtapaDaVersao.ProtecaoDeDados : EtapaDaVersao.GestaoDeAcessos;

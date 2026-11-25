@@ -15,7 +15,7 @@ public static class PedidoMapping
         ArgumentNullException.ThrowIfNull(p);
 
         return new PedidoDeConcessaoDto(
-            p.Id, p.Andamento.Situacao.ToCodigo(), p.Andamento.EtapaAtual?.ToCodigo(),
+            p.Id, p.Andamento.Situacao.Codigo(), p.Andamento.EtapaAtual?.Codigo(),
             new IdentidadeDto(p.Solicitante.Emissor, p.Solicitante.ContaId, p.Solicitante.Nome),
             Beneficiario(p),
             new PerfilResumoDto(p.PerfilId, perfil?.Nome ?? string.Empty),
@@ -33,7 +33,7 @@ public static class PedidoMapping
         PedidoDeConcessao p = item.Pedido;
 
         return new PedidoResumoDto(
-            p.Id, p.Andamento.Situacao.ToCodigo(), p.Andamento.EtapaAtual?.ToCodigo(),
+            p.Id, p.Andamento.Situacao.Codigo(), p.Andamento.EtapaAtual?.Codigo(),
             Beneficiario(p),
             new PerfilResumoDto(p.PerfilId, item.PerfilNome.Valor),
             item.Versao, Escopo(p), p.Declaracao.Justificativa,
@@ -44,7 +44,7 @@ public static class PedidoMapping
     {
         ArgumentNullException.ThrowIfNull(a);
 
-        return new AnexoDoPedidoDto(a.Id, a.Situacao.ToCodigo(), a.TamanhoDeclarado, a.EnviadoEm);
+        return new AnexoDoPedidoDto(a.Id, a.Situacao.Codigo(), a.TamanhoDeclarado, a.EnviadoEm);
     }
 
     // O número é o da versão que o próprio pedido segue, nunca o da vigente: o pedido encerrado mantém a versão dele.
@@ -55,9 +55,9 @@ public static class PedidoMapping
         new(t.VersaoAnterior, t.VersaoNova, t.Desfecho.Codigo(), t.Instante);
 
     private static DecisaoDoPedidoDto ToDto(DecisaoDoPedido d) => new(
-        d.Etapa.ToCodigo(),
+        d.Etapa.Codigo(),
         new IdentidadeDto(d.DecisorEmissor, d.DecisorContaId, d.DecisorNome),
-        d.Resultado.ToCodigo(),
+        d.Resultado.Codigo(),
         d.Motivo,
         d.Instante,
         d.PermissoesAvaliadas,

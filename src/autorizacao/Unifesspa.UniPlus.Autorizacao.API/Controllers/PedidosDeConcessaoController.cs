@@ -17,6 +17,7 @@ using Unifesspa.UniPlus.Infrastructure.Core.Errors;
 using Unifesspa.UniPlus.Infrastructure.Core.Formatting;
 using Unifesspa.UniPlus.Infrastructure.Core.Idempotency;
 using Unifesspa.UniPlus.Infrastructure.Core.Pagination;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Pagination;
 using Unifesspa.UniPlus.Kernel.Results;
 
@@ -39,7 +40,7 @@ public sealed class PedidosDeConcessaoController : ControllerBase
     private const string PerfisParaPedidoTag = "perfis-para-pedido";
 
     private static readonly Dictionary<string, SituacaoDoPedido> Situacoes =
-        Enum.GetValues<SituacaoDoPedido>().ToDictionary(static s => s.ToCodigo(), StringComparer.Ordinal);
+        Enum.GetValues<SituacaoDoPedido>().ToDictionary(static s => s.Codigo(), StringComparer.Ordinal);
 
     private readonly ICommandBus _commandBus;
     private readonly IQueryBus _queryBus;

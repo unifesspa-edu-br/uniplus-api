@@ -8,6 +8,7 @@ using Unifesspa.UniPlus.Autorizacao.Domain.Enums;
 using Unifesspa.UniPlus.Autorizacao.Domain.Errors;
 using Unifesspa.UniPlus.Autorizacao.Domain.UnitTests;
 using Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
 
 using static Unifesspa.UniPlus.Autorizacao.Application.UnitTests.ApoioDaRecusa;
@@ -25,7 +26,7 @@ public sealed class GravacaoDaRecusaDoPedidoTests
         (Result<PedidoDeConcessaoDto> resposta, _) = await Recusar(decisao, ApoioDoPedido.Diogo.Identidade, unidade);
 
         resposta.IsSuccess.Should().BeTrue();
-        resposta.Value!.Situacao.Should().Be(SituacaoDoPedidoCodigo.Recusado);
+        resposta.Value!.Situacao.Should().Be(SituacaoDoPedido.Recusado.Codigo());
         unidade.Gravacoes.Should().Be(1);
         unidade.Descartou.Should().BeFalse();
     }

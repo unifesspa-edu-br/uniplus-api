@@ -4,7 +4,6 @@ using System.Diagnostics.CodeAnalysis;
 
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
-using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 using Unifesspa.UniPlus.Autorizacao.Domain.Entities;
 using Unifesspa.UniPlus.Autorizacao.Domain.Enums;
@@ -22,10 +21,6 @@ internal sealed class AnexoDoPedidoConfiguration : IEntityTypeConfiguration<Anex
     private const int SituacaoMaxLength = 40;
     private const int Sha256HexLength = 64;
 
-    private static readonly ValueConverter<SituacaoDoAnexo, string> SituacaoConverter = new(
-        situacao => situacao.ToCodigo(),
-        codigo => SituacaoDoAnexoCodigo.FromCodigo(codigo));
-
     public void Configure(EntityTypeBuilder<AnexoDoPedido> builder)
     {
         ArgumentNullException.ThrowIfNull(builder);
@@ -36,7 +31,7 @@ internal sealed class AnexoDoPedidoConfiguration : IEntityTypeConfiguration<Anex
         builder.HasKey(a => a.Id);
         builder.Property(a => a.Id).ValueGeneratedNever();
 
-        builder.Property(a => a.Situacao).HasConversion(SituacaoConverter).HasMaxLength(SituacaoMaxLength).IsRequired();
+        builder.Property(a => a.Situacao).HasMaxLength(SituacaoMaxLength).IsRequired();
         builder.Property(a => a.TamanhoDeclarado).IsRequired();
         builder.Property(a => a.ETag).HasColumnName("etag").HasMaxLength(ETagDoArmazenamento.MaxLength);
         builder.Property(a => a.Sha256).HasColumnName("sha256").HasMaxLength(Sha256HexLength);
