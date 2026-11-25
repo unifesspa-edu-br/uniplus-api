@@ -191,11 +191,11 @@ public sealed class ConfiguracaoDistribuicaoVagasQuadroTests
 
         Result<ConfiguracaoDistribuicaoVagas> resultado = CriarConfiguracao(40, RegraComAcPcd(), modalidades);
 
-        resultado.IsFailure.Should().BeTrue("sem motor declarado não há de onde tirar");
+        resultado.IsFailure.Should().BeTrue("sem regra de ajuste do quadro declarada não há de onde tirar");
         resultado.Error!.Code.Should().Be("ConfiguracaoDistribuicaoVagas.QuadroExcedeAsVagasOfertadasBase");
     }
 
-    [Fact(DisplayName = "A sobra continua recusada mesmo com regra de ajuste — os motores só reduzem")]
+    [Fact(DisplayName = "A sobra continua recusada mesmo com regra de ajuste — as regras de ajuste do quadro só reduzem")]
     public void Criar_QuadroComSobra_ComAjuste_ContinuaRecusado()
     {
         List<ModalidadeSelecionada> modalidades =

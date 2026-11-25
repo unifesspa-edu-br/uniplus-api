@@ -4822,11 +4822,6 @@
       "titulo": "A oferta deve ter ao menos uma modalidade selecionada"
     },
     {
-      "codigo": "uniplus.selecao.configuracao_distribuicao_vagas.motor_de_ajuste_vedado_na_lei_de_cotas",
-      "status": 422,
-      "titulo": "Motor de redução não se aplica à distribuição pela Lei 12.711"
-    },
-    {
       "codigo": "uniplus.selecao.configuracao_distribuicao_vagas.oferta_curso_nao_encontrada",
       "status": 422,
       "titulo": "Oferta de curso não encontrada ou não está mais viva"
@@ -4915,6 +4910,11 @@
       "codigo": "uniplus.selecao.configuracao_distribuicao_vagas.regra_ajuste_tipo_invalido",
       "status": 422,
       "titulo": "A regra referenciada não é do tipo regra_ajuste_distribuicao_vagas"
+    },
+    {
+      "codigo": "uniplus.selecao.configuracao_distribuicao_vagas.regra_de_ajuste_vedada_na_lei_de_cotas",
+      "status": 422,
+      "titulo": "A regra de ajuste do quadro não se aplica à distribuição pela Lei 12.711"
     },
     {
       "codigo": "uniplus.selecao.configuracao_distribuicao_vagas.regra_distribuicao_nao_encontrada",

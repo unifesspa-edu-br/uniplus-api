@@ -43,8 +43,8 @@ public sealed class ConferenciaDaDistribuicaoDeVagasComDadoRecusadoTests
         Codigos(Conferir(ComRegraRecusada(FixadaNoEdital(Fixada("IND", 25), Fixada("IND", 25)))))
             .Should().Equal(DistribuicaoDeVagasErrorCodes.ModalidadeDuplicada);
 
-    [Fact(DisplayName = "A regra de distribuição recusada não confere a fronteira da quantidade nem o motor de ajuste")]
-    public void RegraRecusada_NaoConfereFronteiraNemMotor()
+    [Fact(DisplayName = "A regra de distribuição recusada não confere a fronteira da quantidade nem a regra de ajuste do quadro")]
+    public void RegraRecusada_NaoConfereFronteiraNemAjusteDoQuadro()
     {
         ModalidadeSelecionada semQuantidade = Modalidade(
             "IND", NaturezaLegalModalidade.AcaoAfirmativa, ComposicaoVagasModalidade.SuplementarAoTotal);

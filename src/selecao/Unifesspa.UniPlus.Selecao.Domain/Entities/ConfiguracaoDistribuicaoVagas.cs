@@ -9,7 +9,7 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 /// <summary>
 /// Configuração de distribuição de vagas de uma oferta de curso dentro do <see cref="ProcessoSeletivo"/>:
 /// o que o admin declara (as vagas ofertadas base, a regra de distribuição, o percentual da reserva legal
-/// no ramo da Lei de Cotas, a referência demográfica e o motor de ajuste) mais as modalidades que
+/// no ramo da Lei de Cotas, a referência demográfica e a regra de ajuste do quadro) mais as modalidades que
 /// participam da oferta, e o quadro de vagas que a regra produz sobre essa declaração (ADR-0115).
 /// </summary>
 /// <remarks>
@@ -51,8 +51,8 @@ public sealed class ConfiguracaoDistribuicaoVagas : EntityBase, IParteDoProcesso
     public ReferenciaRegra? RegraAjuste { get; private set; }
 
     /// <summary>
-    /// O motor que reduz o quadro fixado cuja soma passou das vagas ofertadas base, como o edital o declarou;
-    /// <see langword="null"/> quando não declarou motor e na Lei de Cotas, que não aceita motor.
+    /// A regra de ajuste do quadro que reduz o quadro fixado cuja soma passou das vagas ofertadas base, como o edital o declarou;
+    /// <see langword="null"/> quando não declarou a regra de ajuste do quadro e na Lei de Cotas, que não a aceita.
     /// </summary>
     public ParametrosRegraAjusteDistribuicao? AjusteDoQuadro { get; private set; }
 

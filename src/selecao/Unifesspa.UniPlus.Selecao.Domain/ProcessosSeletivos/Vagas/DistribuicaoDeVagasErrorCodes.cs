@@ -17,7 +17,7 @@ public static class DistribuicaoDeVagasErrorCodes
     public const string ModalidadesFederaisIncompletas = Prefixo + "ModalidadesFederaisIncompletas";
     public const string RetiradaFederalDeveSerDeAmplaConcorrencia = Prefixo + "RetiradaFederalDeveSerDeAmplaConcorrencia";
     public const string RegraAjusteObrigatoria = Prefixo + "RegraAjusteObrigatoria";
-    public const string MotorDeAjusteVedadoNaLeiDeCotas = Prefixo + "MotorDeAjusteVedadoNaLeiDeCotas";
+    public const string RegraDeAjusteVedadaNaLeiDeCotas = Prefixo + "RegraDeAjusteVedadaNaLeiDeCotas";
     public const string QuadroModalidadeAusente = Prefixo + "QuadroModalidadeAusente";
     public const string QuantidadeCalculadaNaoInformavel = Prefixo + "QuantidadeCalculadaNaoInformavel";
     public const string QuantidadeDeclaradaObrigatoria = Prefixo + "QuantidadeDeclaradaObrigatoria";

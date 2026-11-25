@@ -15610,15 +15610,15 @@
       "codigo": "uniplus.selecao.configuracao_distribuicao_vagas.ajuste_nao_absorve_o_excesso",
       "requisitos": [],
       "oQueAconteceu": [
-        "Numa distribuição institucional, as quantidades que o edital fixou no quadro somam mais que o\n`voBase` da oferta, e o motor de redução declarado em `argsAjuste` não consegue retirar o\nexcesso inteiro:",
+        "Numa distribuição institucional, as quantidades que o edital fixou no quadro somam mais que o\n`voBase` da oferta, e a regra de ajuste do quadro declarada em `argsAjuste` não consegue retirar o\nexcesso inteiro:",
         "- **`reduzirDe`:** a modalidade nomeada tem menos vagas que o excesso.\n- **`reduzirProporcionalEm`:** as modalidades nomeadas, somadas, têm menos vagas que o excesso.",
-        "O sistema não reduz o que pode e devolve um quadro que continua acima do total: ou o motor\nfecha o quadro, ou a distribuição é recusada. A mensagem do erro traz o código da modalidade\n(no `reduzirDe`), a quantidade de vagas disponível e o tamanho do excesso.",
-        "A conferência só roda quando há excesso e há motor declarado; sem excesso o motor não é\naplicado. Sem motor, o excesso é recusado por\n[`quadro_excede_as_vagas_ofertadas_base`](/erros/uniplus.selecao.configuracao_distribuicao_vagas.quadro_excede_as_vagas_ofertadas_base).\nSe o motor cita modalidade fora das selecionadas, a recusa é\n[`ajuste_referencia_modalidade_fora_do_quadro`](/erros/uniplus.selecao.configuracao_distribuicao_vagas.ajuste_referencia_modalidade_fora_do_quadro),\nconferida antes.",
+        "O sistema não reduz o que pode e devolve um quadro que continua acima do total: ou a regra de ajuste do quadro\nfecha o quadro, ou a distribuição é recusada. A mensagem do erro traz o código da modalidade\n(no `reduzirDe`), a quantidade de vagas disponível e o tamanho do excesso.",
+        "A conferência só roda quando há excesso e há regra de ajuste do quadro declarada; sem excesso a regra de ajuste do quadro não é\naplicada. Sem regra de ajuste do quadro, o excesso é recusado por\n[`quadro_excede_as_vagas_ofertadas_base`](/erros/uniplus.selecao.configuracao_distribuicao_vagas.quadro_excede_as_vagas_ofertadas_base).\nSe a regra de ajuste do quadro cita modalidade fora das selecionadas, a recusa é\n[`ajuste_referencia_modalidade_fora_do_quadro`](/erros/uniplus.selecao.configuracao_distribuicao_vagas.ajuste_referencia_modalidade_fora_do_quadro),\nconferida antes.",
         "A recusa vem sem campo específico e, por ser conferida depois das demais verificações do item,\nnão acumula com elas. O processamento para na primeira distribuição da lista que falhar. A\nsimulação da distribuição devolve a mesma recusa, sem gravar nada."
       ],
       "comoResolver": [
         "Conforme a intenção:",
-        "- **O motor deve absorver o excesso:** aponte `argsAjuste` para modalidade (ou conjunto de\n  modalidades) com vagas suficientes, ou acrescente modalidades ao `reduzirProporcionalEm`.\n- **O quadro está com quantidades demais:** reduza as quantidades do quadro para que a soma\n  seja igual ao `voBase`.\n- **O `voBase` está baixo:** corrija o `voBase` para o total que o edital autoriza."
+        "- **A regra de ajuste do quadro deve absorver o excesso:** aponte `argsAjuste` para modalidade (ou conjunto de\n  modalidades) com vagas suficientes, ou acrescente modalidades ao `reduzirProporcionalEm`.\n- **O quadro está com quantidades demais:** reduza as quantidades do quadro para que a soma\n  seja igual ao `voBase`.\n- **O `voBase` está baixo:** corrija o `voBase` para o total que o edital autoriza."
       ],
       "ondeAparece": [
         "Definição de distribuição de vagas do processo seletivo",
@@ -15629,13 +15629,13 @@
       "codigo": "uniplus.selecao.configuracao_distribuicao_vagas.ajuste_referencia_modalidade_fora_do_quadro",
       "requisitos": [],
       "oQueAconteceu": [
-        "Numa distribuição institucional, as quantidades do quadro somam mais que o `voBase` e o\nmotor de redução declarado em `argsAjuste` nomeia uma modalidade (`reduzirDe`) ou uma das\nmodalidades da lista (`reduzirProporcionalEm`) cujo código não está entre as modalidades\nselecionadas da oferta. Não há de onde retirar vagas de uma modalidade que a oferta não tem. A\nmensagem do erro traz o código da modalidade citada; no `reduzirProporcionalEm`, é a primeira\nda lista que não está no quadro.",
-        "A conferência só roda quando há excesso e há motor declarado: se o quadro não passa do total, o\nmotor não é aplicado e os códigos dele não são conferidos. Esta causa é conferida antes da de\nvagas insuficientes\n([`ajuste_nao_absorve_o_excesso`](/erros/uniplus.selecao.configuracao_distribuicao_vagas.ajuste_nao_absorve_o_excesso)).",
+        "Numa distribuição institucional, as quantidades do quadro somam mais que o `voBase` e a\nregra de ajuste do quadro declarada em `argsAjuste` nomeia uma modalidade (`reduzirDe`) ou uma das\nmodalidades da lista (`reduzirProporcionalEm`) cujo código não está entre as modalidades\nselecionadas da oferta. Não há de onde retirar vagas de uma modalidade que a oferta não tem. A\nmensagem do erro traz o código da modalidade citada; no `reduzirProporcionalEm`, é a primeira\nda lista que não está no quadro.",
+        "A conferência só roda quando há excesso e há regra de ajuste do quadro declarada: se o quadro não passa do total, a\nregra de ajuste do quadro não é aplicada e os códigos dela não são conferidos. Esta causa é conferida antes da de\nvagas insuficientes\n([`ajuste_nao_absorve_o_excesso`](/erros/uniplus.selecao.configuracao_distribuicao_vagas.ajuste_nao_absorve_o_excesso)).",
         "A recusa vem sem campo específico e, por ser conferida depois das demais verificações do item,\nnão acumula com elas. O processamento para na primeira distribuição da lista que falhar. A\nsimulação da distribuição devolve a mesma recusa, sem gravar nada."
       ],
       "comoResolver": [
         "Conforme a causa:",
-        "- **O código do motor está errado:** corrija `argsAjuste` para o código de uma modalidade\n  selecionada da oferta.\n- **A modalidade deveria participar da oferta:** inclua-a em `modalidadeIds`, com a quantidade\n  dela no quadro."
+        "- **O código da modalidade indicado no ajuste do quadro está errado:** corrija `argsAjuste` para o código de uma modalidade\n  selecionada da oferta.\n- **A modalidade deveria participar da oferta:** inclua-a em `modalidadeIds`, com a quantidade\n  dela no quadro."
       ],
       "ondeAparece": [
         "Definição de distribuição de vagas do processo seletivo",
@@ -15752,32 +15752,6 @@
       ]
     },
     {
-      "codigo": "uniplus.selecao.configuracao_distribuicao_vagas.motor_de_ajuste_vedado_na_lei_de_cotas",
-      "requisitos": [],
-      "oQueAconteceu": [
-        "A distribuição pela Lei 12.711 declarou um motor de redução em `ajusteDoQuadro`. Essa distribuição usa a regra própria de reconciliação.",
-        "A recusa também pode aparecer na leitura da configuração publicada, nas operações listadas acima. Nesse caso, ela se refere à configuração publicada, e não aos dados enviados na operação."
-      ],
-      "comoResolver": [
-        "Retire `ajusteDoQuadro` da distribuição pela Lei 12.711 e informe a regra de ajuste correspondente. Se a recusa vier da leitura da configuração publicada, procure a equipe técnica do Uni+."
-      ],
-      "ondeAparece": [
-        "Definição de distribuição de vagas (`PUT /api/selecao/processos-seletivos/{id}/distribuicao-vagas`)",
-        "Simulação da distribuição de vagas (`POST /api/selecao/processos-seletivos/{id}/distribuicao-vagas/simulacao`)",
-        "Retificação em ato único",
-        "Apresentação do formulário do processo",
-        "Consulta do formulário da inscrição",
-        "Consulta da inscrição do candidato (`GET /api/selecao/processos-seletivos/{id}/inscricao`)",
-        "Início, salvamento, submissão, cancelamento e descarte do rascunho da inscrição",
-        "Avaliação da inscrição",
-        "Início, confirmação e remoção de envio de documento da inscrição",
-        "Consulta e emissão do comprovante da inscrição",
-        "Consulta administrativa da inscrição e dos documentos dela",
-        "Publicação de produto do edital e listagem de produtos previstos do processo",
-        "Notas do ENEM (importação das notas do exame a partir do arquivo de retorno do INEP em `POST /api/selecao/processos-seletivos/{processoSeletivoId}/etapas/{etapaId}/edicoes-do-enem/{edicao}/lotes-de-notas`, geração do envio ao INEP em `POST /api/selecao/processos-seletivos/{processoSeletivoId}/etapas/{etapaId}/edicoes-do-enem/{edicao}/envios-ao-inep` e consulta das importações e dos envios)"
-      ]
-    },
-    {
       "codigo": "uniplus.selecao.configuracao_distribuicao_vagas.oferta_curso_nao_encontrada",
       "requisitos": [
         "UNI-REQ-0134"
@@ -15862,7 +15836,7 @@
       "codigo": "uniplus.selecao.configuracao_distribuicao_vagas.quadro_excede_as_vagas_ofertadas_base",
       "requisitos": [],
       "oQueAconteceu": [
-        "Na distribuição de quadro fixado pelo edital, a soma das quantidades supera `vagasOfertadasBase` e não foi declarado um motor de redução.",
+        "Na distribuição de quadro fixado pelo edital, a soma das quantidades supera `vagasOfertadasBase` e não foi declarada uma regra de ajuste do quadro.",
         "A recusa também pode aparecer na leitura da configuração publicada, nas operações listadas acima. Nesse caso, ela se refere à configuração publicada, e não aos dados enviados na operação."
       ],
       "comoResolver": [
@@ -16102,6 +16076,32 @@
       ],
       "ondeAparece": [
         "Definição de distribuição de vagas do processo seletivo"
+      ]
+    },
+    {
+      "codigo": "uniplus.selecao.configuracao_distribuicao_vagas.regra_de_ajuste_vedada_na_lei_de_cotas",
+      "requisitos": [],
+      "oQueAconteceu": [
+        "A distribuição pela Lei 12.711 declarou uma regra de ajuste do quadro em `ajusteDoQuadro`. Essa distribuição usa a regra própria de reconciliação.",
+        "A recusa também pode aparecer na leitura da configuração publicada, nas operações listadas acima. Nesse caso, ela se refere à configuração publicada, e não aos dados enviados na operação."
+      ],
+      "comoResolver": [
+        "Retire `ajusteDoQuadro` da distribuição pela Lei 12.711 e informe a regra de ajuste correspondente. Se a recusa vier da leitura da configuração publicada, procure a equipe técnica do Uni+."
+      ],
+      "ondeAparece": [
+        "Definição de distribuição de vagas (`PUT /api/selecao/processos-seletivos/{id}/distribuicao-vagas`)",
+        "Simulação da distribuição de vagas (`POST /api/selecao/processos-seletivos/{id}/distribuicao-vagas/simulacao`)",
+        "Retificação em ato único",
+        "Apresentação do formulário do processo",
+        "Consulta do formulário da inscrição",
+        "Consulta da inscrição do candidato (`GET /api/selecao/processos-seletivos/{id}/inscricao`)",
+        "Início, salvamento, submissão, cancelamento e descarte do rascunho da inscrição",
+        "Avaliação da inscrição",
+        "Início, confirmação e remoção de envio de documento da inscrição",
+        "Consulta e emissão do comprovante da inscrição",
+        "Consulta administrativa da inscrição e dos documentos dela",
+        "Publicação de produto do edital e listagem de produtos previstos do processo",
+        "Notas do ENEM (importação das notas do exame a partir do arquivo de retorno do INEP em `POST /api/selecao/processos-seletivos/{processoSeletivoId}/etapas/{etapaId}/edicoes-do-enem/{edicao}/lotes-de-notas`, geração do envio ao INEP em `POST /api/selecao/processos-seletivos/{processoSeletivoId}/etapas/{etapaId}/edicoes-do-enem/{edicao}/envios-ao-inep` e consulta das importações e dos envios)"
       ]
     },
     {

@@ -187,7 +187,7 @@ public static class ConferenciaDaDistribuicaoDeVagas
         .. Presentes(
             ReferenciaDemograficaAusente(declarada),
             RegraDeAjusteAusente(declarada),
-            MotorDeAjusteVedado(declarada),
+            RegraDeAjusteVedada(declarada),
             ModalidadesFederaisFaltantes(declarada)),
         .. RetiradasForaDaAmplaConcorrencia(declarada.Modalidades),
     ];
@@ -204,12 +204,12 @@ public static class ConferenciaDaDistribuicaoDeVagas
                 "A distribuição pelo ramo federal (Lei 12.711) exige a regra de ajuste (AJUSTE_VAGAS_ARTIGO_11_PARAGRAFO_UNICO).")
             : null;
 
-    // Os motores são da distribuição institucional. Na Lei de Cotas a reconciliação é a do art. 11,
-    // parágrafo único, e aceitar o motor deixaria o ajuste declarado sem rodar.
-    private static FieldError? MotorDeAjusteVedado(DistribuicaoDeVagasDeclarada declarada) =>
+    // As regras de ajuste do quadro são da distribuição institucional. Na Lei de Cotas a reconciliação é a do art. 11,
+    // parágrafo único, e aceitar a regra de ajuste do quadro deixaria o ajuste declarado sem rodar.
+    private static FieldError? RegraDeAjusteVedada(DistribuicaoDeVagasDeclarada declarada) =>
         declarada.AjusteDoQuadro is not null
-            ? Recusa("ajusteDoQuadro", DistribuicaoDeVagasErrorCodes.MotorDeAjusteVedadoNaLeiDeCotas,
-                "Os motores de redução não se aplicam à distribuição pelo ramo federal (Lei 12.711) — a reconciliação dele é a do art. 11, parágrafo único.")
+            ? Recusa("ajusteDoQuadro", DistribuicaoDeVagasErrorCodes.RegraDeAjusteVedadaNaLeiDeCotas,
+                "As regras de ajuste do quadro não se aplicam à distribuição pelo ramo federal (Lei 12.711) — a reconciliação dele é a do art. 11, parágrafo único.")
             : null;
 
     private static FieldError? ModalidadesFederaisFaltantes(DistribuicaoDeVagasDeclarada declarada)

@@ -15,7 +15,7 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 /// <summary>
 /// O mapeamento do que a configuração de vagas guarda do quadro, na forma do ramo: as vagas ofertadas base e
-/// o percentual, a conferência da reserva legal (só na Lei de Cotas), o motor de ajuste e as vagas retiradas
+/// o percentual, a conferência da reserva legal (só na Lei de Cotas), a regra de ajuste do quadro e as vagas retiradas
 /// no ajuste (só no quadro fixado no edital), e as restrições que impedem a gravação de um quadro com a forma
 /// de um ramo e o campo do outro.
 /// </summary>
@@ -37,7 +37,7 @@ internal static class QuadroDeVagasDaConfiguracao
         WriteIndented = false,
     });
 
-    // O EF não chama o conversor para nulo: a coluna nula é a ausência do motor e das retiradas.
+    // O EF não chama o conversor para nulo: a coluna nula é a ausência da regra de ajuste do quadro e das retiradas.
     private static readonly ValueConverter<ParametrosRegraAjusteDistribuicao?, string?> ConversorDoAjuste =
         new(ajuste => Serializar(ajuste!), json => Ler<ParametrosRegraAjusteDistribuicao>(json!));
 
@@ -71,7 +71,7 @@ internal static class QuadroDeVagasDaConfiguracao
     }
 
     // Cada ramo tem o seu registro: a reserva legal (o percentual e a conferência) é toda presente ou toda ausente, e só a Lei de Cotas a tem;
-    // as vagas retiradas no ajuste e o motor só existem no quadro fixado no edital. O ramo pelo código da regra
+    // as vagas retiradas no ajuste e a regra de ajuste do quadro só existem no quadro fixado no edital. O ramo pelo código da regra
     // não entra aqui, porque a lista de códigos mudaria a cada regra nova: a coerência do ramo com a forma é do
     // domínio e da leitura do envelope.
     internal static void RestricoesDoQuadro(TableBuilder<ConfiguracaoDistribuicaoVagas> tabela)

@@ -6,7 +6,7 @@ using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 /// <summary>
-/// Reduz um quadro fixado pelo edital cuja soma passa das vagas ofertadas base, aplicando o motor
+/// Reduz um quadro fixado pelo edital cuja soma passa das vagas ofertadas base, aplicando os parâmetros de ajuste do quadro
 /// que a regra de ajuste declara. Serviço de domínio puro: recebe o quadro já resolvido e
 /// não consulta cadastro (ADR-0013).
 /// </summary>
@@ -17,10 +17,10 @@ public static class ReconciliadorQuadroInstitucional
     public sealed record QuadroReconciliado(IReadOnlyList<int> Quantidades, int Reduzido);
 
     /// <summary>
-    /// Retira <paramref name="excesso"/> vagas do quadro, distribuindo conforme o motor.
+    /// Retira <paramref name="excesso"/> vagas do quadro, distribuindo conforme a regra de ajuste do quadro.
     /// </summary>
     /// <remarks>
-    /// Recusa quando as modalidades que o motor nomeia não existem no quadro ou não somam o
+    /// Recusa quando as modalidades que a regra de ajuste do quadro nomeia não existem no quadro ou não somam o
     /// excesso: reduzir o que se pode e devolver um quadro que continua estourado seria
     /// entregar como reconciliado o que não fecha.
     /// </remarks>
@@ -33,17 +33,17 @@ public static class ReconciliadorQuadroInstitucional
 
         return excesso <= 0
             ? Result<QuadroReconciliado>.Success(new QuadroReconciliado(quantidades, Reduzido: 0))
-            : ReduzirConformeOMotor(codigos, quantidades, excesso, parametros);
+            : ReduzirConformeARegraDeAjuste(codigos, quantidades, excesso, parametros);
     }
 
-    private static Result<QuadroReconciliado> ReduzirConformeOMotor(
+    private static Result<QuadroReconciliado> ReduzirConformeARegraDeAjuste(
         IReadOnlyList<string> codigos, IReadOnlyList<int> quantidades, int excesso, ParametrosRegraAjusteDistribuicao parametros) =>
         parametros switch
         {
             ParametrosReduzirDe reduzirDe => ReduzirDeUmaModalidade(codigos, quantidades, excesso, reduzirDe),
             ParametrosReduzirProporcionalEm proporcional => ReduzirProporcionalmente(codigos, quantidades, excesso, proporcional),
             _ => throw new UnreachableException(
-                $"O motor {parametros.GetType().Name} não é uma das variantes de {nameof(ParametrosRegraAjusteDistribuicao)}."),
+                $"A regra de ajuste do quadro {parametros.GetType().Name} não é uma das variantes de {nameof(ParametrosRegraAjusteDistribuicao)}."),
         };
 
     private static Result<QuadroReconciliado> ReduzirDeUmaModalidade(

@@ -9,7 +9,8 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 /// <summary>
 /// O que a configuração declara da distribuição de vagas de uma oferta, antes de virar quadro: a
 /// regra de distribuição, as vagas ofertadas base, o percentual da reserva legal (só no ramo da Lei de
-/// Cotas), a referência demográfica, a regra e o motor de ajuste e as modalidades selecionadas. Um dado que o
+/// Cotas), a referência demográfica, a regra de ajuste, os parâmetros de ajuste do quadro e as modalidades
+/// selecionadas. Um dado que o
 /// cadastro recusou fica ausente e consta em <see cref="Recusados"/>: a conferência só deixa de rodar a regra
 /// que lê o valor dele.
 /// </summary>

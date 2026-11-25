@@ -31,7 +31,7 @@ internal static class ErrosDaDistribuicaoDeVagas
     /// <summary>Regra de distribuição, rol de modalidades que ela admite e ajuste do quadro.</summary>
     private static IEnumerable<KeyValuePair<string, DomainErrorMapping>> DaRegraDeDistribuicaoEDoAjuste() =>
     [
-        new("ConfiguracaoDistribuicaoVagas.MotorDeAjusteVedadoNaLeiDeCotas", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.configuracao_distribuicao_vagas.motor_de_ajuste_vedado_na_lei_de_cotas", "Motor de redução não se aplica à distribuição pela Lei 12.711")),
+        new("ConfiguracaoDistribuicaoVagas.RegraDeAjusteVedadaNaLeiDeCotas", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.configuracao_distribuicao_vagas.regra_de_ajuste_vedada_na_lei_de_cotas", "A regra de ajuste do quadro não se aplica à distribuição pela Lei 12.711")),
         new("ConfiguracaoDistribuicaoVagas.AjusteNaoAbsorveOExcesso", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.configuracao_distribuicao_vagas.ajuste_nao_absorve_o_excesso", "Modalidades do ajuste não comportam o excesso do quadro")),
         new("ConfiguracaoDistribuicaoVagas.AjusteReferenciaModalidadeForaDoQuadro", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.configuracao_distribuicao_vagas.ajuste_referencia_modalidade_fora_do_quadro", "Ajuste reduz de modalidade fora das selecionadas")),
         new("ConfiguracaoDistribuicaoVagas.ModalidadeNaoAdmitidaPelaRegra", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.configuracao_distribuicao_vagas.modalidade_nao_admitida_pela_regra", "Modalidade fora do rol que a regra de distribuição admite")),
