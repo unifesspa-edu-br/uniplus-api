@@ -20,6 +20,19 @@ using Unifesspa.UniPlus.Regras.Serializacao;
 public sealed class FormularioPortavelTests
 {
     [Fact]
+    public void ParaDefinicao_CondicoesInvalidas_PreservaCodigosNaOrdem()
+    {
+        JsonElement valor = JsonSerializer.SerializeToElement(true);
+        FormularioPortavel formulario = Formulario(ItemComRegras(new RegrasDoCampoDto(
+            null, Quando([[new("", "IGUAL", valor), new("DADO", "INVALIDO", valor)]]), [], null)));
+
+        Result<DefinicaoFormulario> resultado = formulario.ParaDefinicao();
+
+        resultado.Errors.Select(static erro => erro.Error.Code).Should().Equal(
+            "CondicaoDnf.FatoObrigatorio", "CondicaoDnf.OperadorInvalido");
+    }
+
+    [Fact]
     public void PredicadoSemClausula_ContinuaFalso_ENaoViraSemCondicao()
     {
         FormularioPortavel formulario = Formulario(Item("DETALHE", exibicao: []));

@@ -4,6 +4,7 @@ using System.Text.Json;
 
 using AwesomeAssertions;
 
+using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Entradas;
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.Formularios;
@@ -13,6 +14,19 @@ using Unifesspa.UniPlus.Regras.ValueObjects;
 public sealed class ItemDoFormularioNaEntradaTests
 {
     private static readonly CondicaoPrecondicaoInput Condicao = new("ANTERIOR", "IGUAL", JsonSerializer.SerializeToElement(true));
+
+    [Fact]
+    public void Restricao_CondicoesInvalidas_PreservaCodigosNaOrdem()
+    {
+        JsonElement valor = JsonSerializer.SerializeToElement(true);
+        RestricaoValorInput entrada = new("OPCOES_PERMITIDAS", Entradas:
+            [new OpcoesCondicionadasInput([[new("", "IGUAL", valor), new("DADO", "INVALIDO", valor)]], ["A"])]);
+
+        Result<RestricaoValor> resultado = EntradaDeRegras.Restricao(entrada);
+
+        resultado.Errors.Select(static erro => erro.Error.Code).Should().Equal(
+            "CondicaoDnf.FatoObrigatorio", "CondicaoDnf.OperadorInvalido");
+    }
 
     [Fact(DisplayName = "A apresentação do domínio vai à entrada com o tipo de campo no código canônico")]
     public void ParaEntrada_Apresentacao_LevaOCodigoDoTipo()
