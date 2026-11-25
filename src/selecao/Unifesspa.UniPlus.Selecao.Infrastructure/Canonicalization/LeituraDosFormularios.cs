@@ -100,7 +100,7 @@ internal static class LeituraDosFormularios
             declaracao.Paginas, declaracao.ModeloId, declaracao.ModeloCodigo, declaracao.ModeloNome);
         if (formulario.IsFailure)
         {
-            return leitor.Propagar<FormularioComTermosExigidos?>(formulario.Error!);
+            return leitor.Propagar<FormularioComTermosExigidos?>(formulario.Errors, path);
         }
         List<TermoExigidoFormulario> termos = LerTermos(leitor, declaracao.Termos, path, finalidade);
         return leitor.Falhou ? null : new FormularioComTermosExigidos(formulario.Value!, termos);
@@ -241,7 +241,7 @@ internal static class LeituraDosFormularios
         Result<PaginaDoFormulario> pagina = PaginaDoFormulario.Criar(
             new PaginaEstrutura(d.Codigo, d.Ordem, d.Tipo, d.Bloco),
             d.Titulo, d.Descricao, d.Aviso, exibicao);
-        return pagina.IsFailure ? leitor.Propagar<PaginaDoFormulario?>(pagina.Error!) : pagina.Value;
+        return pagina.IsFailure ? leitor.Propagar<PaginaDoFormulario?>(pagina.Errors, pathPagina) : pagina.Value;
     }
 
     private static TermoExigidoFormulario? LerTermoExigido(
@@ -283,7 +283,7 @@ internal static class LeituraDosFormularios
 
         Result<TermoExigidoFormulario> termo = TermoExigidoFormulario.Criar(
             declaracao.Codigo, declaracao.Ordem, declaracao.Versao, exibicaoLida.Value, obrigatoriedade, finalidade);
-        return termo.IsSuccess ? termo.Value : leitor.Propagar<TermoExigidoFormulario>(termo.Error!);
+        return termo.IsSuccess ? termo.Value : leitor.Propagar<TermoExigidoFormulario>(termo.Errors, path);
     }
 
     private static int LerNumeroDaVersao(LeitorEnvelope leitor, JsonObject item, string path)
