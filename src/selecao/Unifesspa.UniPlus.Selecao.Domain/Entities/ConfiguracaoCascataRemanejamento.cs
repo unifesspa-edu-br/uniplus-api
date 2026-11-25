@@ -36,7 +36,7 @@ public sealed partial class ConfiguracaoCascataRemanejamento : EntityBase, IPart
     private const int MaxOrigens = 8;
     private const int MaxDestinos = 56;
 
-    [GeneratedRegex("^[A-Z0-9_]+$")]
+    [GeneratedRegex("^[A-Z0-9_]+\\z")]
     private static partial Regex CodigoValido();
 
     public Guid ProcessoSeletivoId { get; private set; }

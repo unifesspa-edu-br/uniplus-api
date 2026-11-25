@@ -141,6 +141,7 @@ public sealed class ConfiguracaoCascataRemanejamentoTests
     [InlineData("")]
     [InlineData("ac")]
     [InlineData("AC-1")]
+    [InlineData("AC\n")]
     public void Criar_FallbackInvalido_Recusa(string? fallback)
     {
         Result<ConfiguracaoCascataRemanejamento> resultado = ConfiguracaoCascataRemanejamento.Criar(
@@ -195,8 +196,10 @@ public sealed class ConfiguracaoCascataRemanejamentoTests
     [Theory(DisplayName = "Criar com código de origem ou destino fora de ^[A-Z0-9_]+$ ou acima de 60 caracteres falha")]
     [InlineData("lb_ppi", "LB_Q")]
     [InlineData("LB-PPI", "LB_Q")]
+    [InlineData("LB_PPI\n", "LB_Q")]
     [InlineData("LB_PPI", "lb_q")]
     [InlineData("LB_PPI", "LB-Q")]
+    [InlineData("LB_PPI", "LB_Q\n")]
     public void Criar_CodigoInvalido_Recusa(string origem, string destino)
     {
         Result<DestinoRemanejamento> resultado = DestinoRemanejamento.Criar(origem, 1, destino);
