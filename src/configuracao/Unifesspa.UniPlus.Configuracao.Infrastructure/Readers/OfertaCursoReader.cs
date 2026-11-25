@@ -1,7 +1,5 @@
 namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Readers;
 
-using System.Text;
-
 using Microsoft.EntityFrameworkCore;
 
 using Unifesspa.UniPlus.Configuracao.Contracts;
@@ -11,7 +9,6 @@ using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
-using Unifesspa.UniPlus.Kernel.Results;
 
 /// <summary>
 /// Implementação de <see cref="IOfertaCursoReader"/> (ADR-0056): leitura direta
@@ -63,28 +60,6 @@ internal sealed class OfertaCursoReader : IOfertaCursoReader
             [entidade.CursoId], cancellationToken).ConfigureAwait(false);
 
         return ParaView(entidade, cursos.GetValueOrDefault(entidade.CursoId));
-    }
-
-    public async Task<OfertaCursoView?> ObterVivaPorCodigoAsync(
-        string codigo,
-        CancellationToken cancellationToken = default)
-    {
-        ArgumentNullException.ThrowIfNull(codigo);
-
-        // Código fora do formato não tem oferta viva, então a consulta é dispensável.
-        Result<CodigoOfertaCurso> codigoResult = CodigoOfertaCurso.Criar(codigo);
-
-        return codigoResult.IsFailure ? null : await ObterPorCodigoInformadoAsync(codigoResult.Value!.Valor, cancellationToken).ConfigureAwait(false);
-    }
-
-    private async Task<OfertaCursoView?> ObterPorCodigoInformadoAsync(string codigo, CancellationToken cancellationToken)
-    {
-        OfertaCurso? entidade = await _dbContext.OfertasCurso
-            .AsNoTracking()
-            .FirstOrDefaultAsync(o => o.Codigo == codigo, cancellationToken)
-            .ConfigureAwait(false);
-
-        return entidade is null ? null : await ParaViewComCursoAsync(entidade, cancellationToken).ConfigureAwait(false);
     }
 
     /// <summary>

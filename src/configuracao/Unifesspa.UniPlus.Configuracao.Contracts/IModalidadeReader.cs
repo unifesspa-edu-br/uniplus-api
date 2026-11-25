@@ -25,8 +25,7 @@ public interface IModalidadeReader
 
     /// <summary>
     /// Obtém uma modalidade viva pela chave natural — o <paramref name="codigo"/> —,
-    /// ou <see langword="null"/> se inexistente / soft-deleted. O valor de busca é
-    /// normalizado (<c>Trim</c> + NFC) antes da comparação, que é ordinal.
+    /// ou <see langword="null"/> se inexistente / soft-deleted. A comparação usa o código exato, sem aparar nem normalizar.
     /// </summary>
     /// <remarks>
     /// Existe para quem referencia a modalidade por código e precisa recusar a

@@ -136,7 +136,7 @@ public sealed class ReferenciasDoPredicado(
         string codigo = CodigoOuVazio(predicado.TipoEtapaCodigo);
         TipoEtapaView? tipo = await tipoEtapaReader.ObterAtivoPorCodigoAsync(codigo, cancellationToken).ConfigureAwait(false);
 
-        return CodigoConfere(tipo?.Codigo, codigo)
+        return tipo is not null
             ? Result<PredicadoObrigatoriedade>.Success(predicado with { TipoEtapaCodigo = codigo })
             : Result<PredicadoObrigatoriedade>.Failure(TipoEtapaNaoEncontradoOuInativo());
     }
@@ -154,7 +154,7 @@ public sealed class ReferenciasDoPredicado(
         }
 
         TipoDocumentoView? tipo = await tipoDocumentoReader.ObterVivoPorCodigoAsync(tipoDocumento, cancellationToken).ConfigureAwait(false);
-        return !CodigoConfere(tipo?.Codigo, tipoDocumento)
+        return tipo is null
             ? Result<PredicadoObrigatoriedade>.Failure(TipoDocumentoNaoEncontrado())
             : Result<PredicadoObrigatoriedade>.Success(predicado with { Modalidade = modalidade, TipoDocumento = tipoDocumento });
     }
@@ -181,10 +181,7 @@ public sealed class ReferenciasDoPredicado(
     }
 
     private async Task<bool> ModalidadeEstaVivaAsync(string codigo, CancellationToken cancellationToken) =>
-        CodigoConfere((await modalidadeReader.ObterVivaPorCodigoAsync(codigo, cancellationToken).ConfigureAwait(false))?.Codigo, codigo);
-
-    private static bool CodigoConfere(string? codigoEncontrado, string codigoRecebido) =>
-        codigoEncontrado is not null && string.Equals(codigoEncontrado, codigoRecebido, StringComparison.Ordinal);
+        await modalidadeReader.ObterVivaPorCodigoAsync(codigo, cancellationToken).ConfigureAwait(false) is not null;
 
     private static string CodigoOuVazio(string? codigo) => codigo ?? string.Empty;
 

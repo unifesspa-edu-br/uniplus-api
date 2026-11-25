@@ -95,7 +95,6 @@ public static class ConfiguracaoInfrastructureRegistration
         services.AddScoped<ITipoBancaReader, TipoBancaReader>();
         services.AddScoped<ITipoProcessoReader, TipoProcessoReader>();
         services.AddScoped<ITipoEtapaReader, TipoEtapaReader>();
-        services.AddScoped<ITipoConceitoReader, TipoConceitoReader>();
         services.AddScoped<IPrecedenciaFaseReader, PrecedenciaFaseReader>();
         services.AddScoped<ICalendarioVigenteReader>(sp => new CalendarioVigenteReader(sp.GetRequiredService<UniPlusDbContext>()));
         services.AddScoped<ITermoConsentimentoReader, TermoConsentimentoReader>();

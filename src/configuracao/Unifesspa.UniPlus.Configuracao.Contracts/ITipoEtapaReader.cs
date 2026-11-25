@@ -5,5 +5,6 @@ public interface ITipoEtapaReader
 {
     Task<IReadOnlyList<TipoEtapaView>> ListarAtivosAsync(CancellationToken cancellationToken = default);
     Task<TipoEtapaView?> ObterAtivoPorIdAsync(Guid id, CancellationToken cancellationToken = default);
+    /// <summary>Busca pelo código exato, sem aparar nem normalizar.</summary>
     Task<TipoEtapaView?> ObterAtivoPorCodigoAsync(string codigo, CancellationToken cancellationToken = default);
 }

@@ -20,7 +20,7 @@ public interface ITipoDocumentoReader
     /// Os tipos de documento vivos (não soft-deleted) dos <paramref name="codigos"/>, numa só
     /// leitura, ordenados por <c>Codigo</c> ascendente. O código sem tipo vivo — fora do
     /// formato, sem cadastro ou removido — não aparece no resultado, e um código repetido no lote
-    /// devolve o tipo uma só vez. Os códigos são aparados antes da comparação ordinal.
+    /// devolve o tipo uma só vez. A comparação usa os códigos exatos, sem aparar nem normalizar.
     /// </summary>
     Task<IReadOnlyList<TipoDocumentoView>> ListarVivosPorCodigosAsync(
         IReadOnlyCollection<string> codigos,
@@ -37,15 +37,14 @@ public interface ITipoDocumentoReader
     /// <summary>
     /// Obtém um tipo de documento vivo pela chave natural — o
     /// <paramref name="codigo"/> —, ou <see langword="null"/> se inexistente /
-    /// soft-deleted. O valor de busca é aparado antes da comparação, que é ordinal.
+    /// soft-deleted. A comparação usa o código exato, sem aparar nem normalizar.
     /// </summary>
     /// <remarks>
     /// <para>Existe para quem referencia o tipo por código e precisa recusar a referência
     /// na escrita — sem isso a única alternativa é listar tudo e filtrar em memória.
     /// Espelha <see cref="ITipoEtapaReader.ObterAtivoPorCodigoAsync"/>.</para>
     /// <para>O código tem formato fechado — letra maiúscula inicial, depois maiúsculas,
-    /// dígitos e sublinhado —, o que dispensa normalização Unicode: não há caractere
-    /// componível no conjunto aceito. Um valor de busca fora desse formato não pode
+    /// dígitos e sublinhado. Um valor de busca fora desse formato não pode
     /// corresponder a registro algum e devolve <see langword="null"/> sem consultar o
     /// banco.</para>
     /// </remarks>

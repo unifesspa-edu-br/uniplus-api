@@ -47,6 +47,7 @@ public sealed class CriarObrigatoriedadeLegalCommandHandlerTests
     [Theory]
     [InlineData(" * ")]
     [InlineData(" sisu ")]
+    [InlineData(" PS_NOVO ")]
     public async Task Handle_TipoProcessoNaoExato_RecusaSemRepetirValor(string codigo)
     {
         ITipoProcessoReader tipos = _cenario.TiposDeProcesso = Substitute.For<ITipoProcessoReader>();
@@ -56,6 +57,15 @@ public sealed class CriarObrigatoriedadeLegalCommandHandlerTests
         resultado.Error!.Code.Should().Be("ObrigatoriedadeLegal.TipoProcessoNaoEncontradoOuInativo");
         resultado.Error.Message.Should().NotContain(codigo);
         await tipos.Received(1).ObterAtivoPorCodigoAsync(codigo, Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task Handle_TipoProcessoAtivoComEspacos_RecusaComoInexistente()
+    {
+        Result<Guid> resultado = await _cenario.CriarAsync(ComandoDeCriar() with { TipoProcessoCodigo = " PS_NOVO " });
+
+        resultado.Error!.Code.Should().Be("ObrigatoriedadeLegal.TipoProcessoNaoEncontradoOuInativo");
+        await _cenario.UnitOfWork.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
     }
 
     [Fact(DisplayName = "O sentinela universal é aceito sem consultar os tipos de processo")]
