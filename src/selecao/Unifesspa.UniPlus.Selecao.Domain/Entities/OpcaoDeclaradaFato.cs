@@ -36,36 +36,36 @@ public sealed class OpcaoDeclaradaFato : EntityBase, IParteDoProcesso
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(fatoCodigo);
 
-        List<FieldError> erros = [];
         string codigoNormalizado = codigo?.Trim() ?? string.Empty;
         string rotuloNormalizado = rotulo?.Trim() ?? string.Empty;
+        List<FieldError> erros = ValidarOpcao(codigoNormalizado, rotuloNormalizado);
+        return erros.Count > 0
+            ? Result<OpcaoDeclaradaFato>.ValidationFailure(erros)
+            : Result<OpcaoDeclaradaFato>.Success(new OpcaoDeclaradaFato
+            {
+                FatoCodigo = fatoCodigo,
+                Codigo = codigoNormalizado,
+                Rotulo = rotuloNormalizado,
+                Ordem = ordem,
+            });
+    }
 
-        if (codigoNormalizado.Length is 0 or > CodigoMaxLength)
+    private static List<FieldError> ValidarOpcao(string codigo, string rotulo)
+    {
+        List<FieldError> erros = [];
+        if (codigo.Length is 0 or > CodigoMaxLength)
         {
             erros.Add(new("codigo", new DomainError(
                 OpcaoDeclaradaFatoErrorCodes.CodigoInvalido,
                 $"O código da opção é obrigatório e tem no máximo {CodigoMaxLength} caracteres.")));
         }
-
-        if (rotuloNormalizado.Length is 0 or > RotuloMaxLength)
+        if (rotulo.Length is 0 or > RotuloMaxLength)
         {
             erros.Add(new("rotulo", new DomainError(
                 OpcaoDeclaradaFatoErrorCodes.RotuloInvalido,
                 $"O rótulo da opção é obrigatório e tem no máximo {RotuloMaxLength} caracteres.")));
         }
-
-        if (erros.Count > 0)
-        {
-            return Result<OpcaoDeclaradaFato>.ValidationFailure(erros);
-        }
-
-        return Result<OpcaoDeclaradaFato>.Success(new OpcaoDeclaradaFato
-        {
-            FatoCodigo = fatoCodigo.Trim(),
-            Codigo = codigoNormalizado,
-            Rotulo = rotuloNormalizado,
-            Ordem = ordem,
-        });
+        return erros;
     }
 
     void IParteDoProcesso.VincularProcesso(Guid processoSeletivoId) => ProcessoSeletivoId = processoSeletivoId;

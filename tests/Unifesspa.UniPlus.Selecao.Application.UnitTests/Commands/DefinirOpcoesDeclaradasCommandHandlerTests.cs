@@ -21,6 +21,22 @@ using Unifesspa.UniPlus.Testes.Compartilhado;
 
 public sealed class DefinirOpcoesDeclaradasCommandHandlerTests
 {
+    [Theory]
+    [InlineData(" CATEGORIA_RENDA")]
+    [InlineData("CATEGORIA_RENDA ")]
+    [InlineData("categoria_renda")]
+    public async Task Handle_CodigoDeFatoDiferenteDoCatalogo_Recusa(string codigo)
+    {
+        ProcessoSeletivo processo = CriarProcesso();
+        Result resultado = await DefinirOpcoesDeclaradasCommandHandler.Handle(
+            new DefinirOpcoesDeclaradasCommand(processo.Id, codigo, [new OpcaoDeclaradaInput("RURAL", "Rural")]),
+            CriarRepositorio(processo), CriarReader(), Substitute.For<IUnitOfWork>(), CancellationToken.None);
+
+        resultado.Error!.Code.Should().Be("OpcaoDeclaradaFato.FonteNaoEhDoProcesso");
+        resultado.Error.Message.Should().NotContain(codigo);
+        processo.OpcoesDeclaradas.Should().BeEmpty();
+    }
+
     [Theory(DisplayName = "Declarar opções para fato cuja fonte não é o processo, fora do catálogo ou agregado de grupo é recusado")]
     [InlineData(FonteValoresFato.Catalogo, "CAMPO_FORMULARIO:COR_RACA")]
     [InlineData(null, "CAMPO_FORMULARIO:COR_RACA")]
