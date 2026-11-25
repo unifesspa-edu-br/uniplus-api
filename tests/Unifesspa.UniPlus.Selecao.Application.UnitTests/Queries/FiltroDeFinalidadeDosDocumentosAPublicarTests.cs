@@ -11,7 +11,6 @@ public sealed class FiltroDeFinalidadeDosDocumentosAPublicarTests
     [Theory(DisplayName = "Sem finalidade informada, a consulta não filtra")]
     [InlineData(null)]
     [InlineData("")]
-    [InlineData("   ")]
     public void Ler_SemFinalidade_NaoFiltra(string? finalidade)
     {
         Result<FinalidadeDoDocumento?> resultado = FiltroDeFinalidadeDosDocumentosAPublicar.Ler(finalidade);
@@ -31,6 +30,9 @@ public sealed class FiltroDeFinalidadeDosDocumentosAPublicarTests
 
     [Theory(DisplayName = "Código que o vocabulário não conhece é recusado sem repetir o valor recebido")]
     [InlineData("AnexoDoEdital")]
+    [InlineData("   ")]
+    [InlineData(" ANEXO_DO_EDITAL ")]
+    [InlineData("anexo_do_edital")]
     [InlineData("inexistente")]
     public void Ler_CodigoDesconhecido_Recusa(string finalidade)
     {

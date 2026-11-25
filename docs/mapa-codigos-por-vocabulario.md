@@ -493,7 +493,7 @@ Usos do mecanismo de código do tipo de decisão, sem literal, para os seis cód
 
 | Arquivo | Uso | Ação |
 |---|---|---|
-| `src/selecao/Unifesspa.UniPlus.Selecao.API/Controllers/FiltroDaListagemDeMotivos.cs` (linhas 24 e 34) | converte e lista os códigos aceitos no filtro da listagem | manter |
+| `src/selecao/Unifesspa.UniPlus.Selecao.Application/Queries/MotivosDeDecisao/FiltroDaListagemDeMotivos.cs` (linhas 17 e 19) | converte e lista os códigos aceitos no filtro da listagem | manter |
 | `src/selecao/Unifesspa.UniPlus.Selecao.Application/Commands/MotivosDeDecisao/CriarMotivoDeDecisaoCommandHandler.cs` (linha 27) | converte o código recebido na criação do motivo | manter |
 | `src/selecao/Unifesspa.UniPlus.Selecao.Domain/MotivosDeDecisao/ValidacaoDoMotivo.cs` (linhas 84 e 102) | recusa tipo desconhecido e sentido não admitido, citando o código | manter |
 | `src/selecao/Unifesspa.UniPlus.Selecao.Application/Mappings/MotivoDeDecisaoMapping.cs` (linhas 16 e 30) | devolve o código do tipo no contrato | manter |

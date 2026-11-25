@@ -83,6 +83,10 @@ public sealed class LeiautesDoInepEndpointTests : IAsyncLifetime
         using HttpClient client = _fixture.Factory.CreateClient();
         using HttpRequestMessage request = Requisicao(Rota + "?tipo=outro", autenticado: true);
 
-        (await client.SendAsync(request)).StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        using HttpResponseMessage resposta = await client.SendAsync(request);
+        resposta.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        resposta.Content.Headers.ContentType!.MediaType.Should().Be("application/problem+json");
+        using JsonDocument problema = JsonDocument.Parse(await resposta.Content.ReadAsStringAsync());
+        problema.RootElement.GetProperty("code").GetString().Should().Be("uniplus.selecao.leiaute_do_inep.filtro_de_tipo_invalido");
     }
 }

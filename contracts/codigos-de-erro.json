@@ -6302,6 +6302,11 @@
       "titulo": "O rótulo do item de avaliação é obrigatório e tem tamanho máximo"
     },
     {
+      "codigo": "uniplus.selecao.leiaute_do_inep.filtro_de_tipo_invalido",
+      "status": 400,
+      "titulo": "Tipo do filtro de leiautes do INEP inválido"
+    },
+    {
       "codigo": "uniplus.selecao.modalidade_selecionada.base_legal_obrigatoria",
       "status": 422,
       "titulo": "Base legal da modalidade é obrigatória"
@@ -6450,6 +6455,16 @@
       "codigo": "uniplus.selecao.motivo_de_decisao.fase_ou_etapa_nao_encontrada",
       "status": 404,
       "titulo": "Fase ou etapa não encontrada no processo"
+    },
+    {
+      "codigo": "uniplus.selecao.motivo_de_decisao.filtro_de_subclassificacao_invalida",
+      "status": 400,
+      "titulo": "Subclassificação do filtro de motivos inválida"
+    },
+    {
+      "codigo": "uniplus.selecao.motivo_de_decisao.filtro_de_tipo_invalido",
+      "status": 400,
+      "titulo": "Tipo do filtro de motivos inválido"
     },
     {
       "codigo": "uniplus.selecao.motivo_de_decisao.ja_ativo",
@@ -7760,6 +7775,11 @@
       "codigo": "uniplus.selecao.referencia_temporal_fatos.tipo_obrigatorio",
       "status": 422,
       "titulo": "O tipo de referência temporal é obrigatório"
+    },
+    {
+      "codigo": "uniplus.selecao.regra_catalogo.filtro_de_tipo_invalido",
+      "status": 400,
+      "titulo": "Tipo do filtro de regras inválido"
     },
     {
       "codigo": "uniplus.selecao.regra_catalogo.nao_encontrada",

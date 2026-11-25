@@ -12,12 +12,15 @@ using Unifesspa.UniPlus.Infrastructure.Core.Formatting;
 using Unifesspa.UniPlus.Infrastructure.Core.Hateoas;
 using Unifesspa.UniPlus.Infrastructure.Core.Idempotency;
 using Unifesspa.UniPlus.Infrastructure.Core.Pagination;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Pagination;
 using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Selecao.Application.Commands.MotivosDeDecisao;
 using Unifesspa.UniPlus.Selecao.Application.DTOs;
 using Unifesspa.UniPlus.Selecao.Application.Permissoes;
 using Unifesspa.UniPlus.Selecao.Application.Queries.MotivosDeDecisao;
+using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
 
 /// <summary>
@@ -83,8 +86,8 @@ public sealed class MotivosDeDecisaoController : ControllerBase
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status422UnprocessableEntity)]
     public async Task<IActionResult> Listar(
         [FromCursor(ResourceTag)] PageRequest page,
-        [FromQuery] string? tipo,
-        [FromQuery] string? subclassificacao,
+        [FromQuery, AceitaCodigosDe<TipoMotivoDeDecisao>] string? tipo,
+        [FromQuery, AceitaCodigosDe<FundamentoIsencao>] string? subclassificacao,
         [FromQuery] bool apenasAtivos = true,
         CancellationToken cancellationToken = default)
     {

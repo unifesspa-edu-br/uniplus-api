@@ -38,19 +38,14 @@ public sealed class RecusaDeParametroDaVitrineTests
     [InlineData("naoExiste")]
     public async Task Situacao_ForaDoVocabulario_ERecusada(string valor)
     {
-        // Quem recusa é o binding do parâmetro, não código nosso — verificado removendo qualquer
-        // guarda própria e observando 400 nos quatro valores. O teste existe para TRAVAR isso: é
-        // comportamento de framework do qual a rota depende, e uma mudança nele devolveria a
-        // vitrine inteira a quem pediu um recorte, sem nada denunciar. O literal numérico entra na
-        // amostra de propósito, porque é o caso em que se poderia supor que o enum aceita o valor.
         using HttpClient client = _fixture.Factory.CreateClient();
 
         using HttpResponseMessage resposta = await client.GetAsync(
             new Uri($"/api/selecao/certames?situacao={valor}", UriKind.Relative), CancellationToken.None);
 
-        resposta.StatusCode.Should().BeOneOf(
-            [HttpStatusCode.UnprocessableEntity, HttpStatusCode.BadRequest],
-            "recortar por situação inexistente não pode devolver 200 com a coleção inteira");
+        resposta.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        string corpo = await resposta.Content.ReadAsStringAsync(CancellationToken.None);
+        corpo.Should().Contain("uniplus.selecao.certame.filtro_de_situacao_invalido");
     }
 
     [Theory(DisplayName = "Situação do vocabulário é aceita")]

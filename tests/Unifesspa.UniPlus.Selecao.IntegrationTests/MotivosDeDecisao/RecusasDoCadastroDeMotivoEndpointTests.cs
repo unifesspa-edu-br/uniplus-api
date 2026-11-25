@@ -85,7 +85,7 @@ public sealed class RecusasDoCadastroDeMotivoEndpointTests : IAsyncLifetime
         ConferirSemOValorRecusado(problema, TipoRecusado);
     }
 
-    [Theory(DisplayName = "O filtro recusa tipo fora do vocabulário com o mesmo erro do cadastro, sem repetir o valor")]
+    [Theory(DisplayName = "O filtro recusa tipo fora do vocabulário com erro próprio, sem repetir o valor")]
     [InlineData(TipoRecusado)]
     [InlineData("NENHUM")]
     [InlineData(" ISENCAO_DA_TAXA ")]
@@ -97,11 +97,27 @@ public sealed class RecusasDoCadastroDeMotivoEndpointTests : IAsyncLifetime
         using HttpResponseMessage resposta = await client.GetAsync(
             new Uri($"/api/selecao/motivos-de-decisao?tipo={tipo}", UriKind.Relative));
 
-        JsonElement problema = await LerProblemaAsync(resposta);
-        problema.GetProperty("code").GetString().Should().Be(Prefixo + "tipo_invalido");
-        problema.GetProperty("title").GetString().Should().Be("Tipo de decisão desconhecido");
-        CampoDoErro(problema).Should().Be("tipo");
-        ConferirSemOValorRecusado(problema, tipo);
+        resposta.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        JsonElement problema = JsonDocument.Parse(await resposta.Content.ReadAsStringAsync()).RootElement.Clone();
+        problema.GetProperty("code").GetString().Should().Be(Prefixo + "filtro_de_tipo_invalido");
+        problema.GetProperty("title").GetString().Should().Be("Tipo do filtro de motivos inválido");
+        problema.GetProperty("detail").GetString().Should().NotContain(tipo);
+    }
+
+    [Theory(DisplayName = "O filtro recusa subclassificação fora do vocabulário com erro próprio")]
+    [InlineData("cadastro_unico")]
+    [InlineData(" CADASTRO_UNICO ")]
+    [InlineData("   ")]
+    public async Task Listar_SubclassificacaoForaDoVocabulario_Recusa(string subclassificacao)
+    {
+        using HttpClient client = _fixture.Factory.CreateClient();
+        using HttpResponseMessage resposta = await client.GetAsync(
+            new Uri($"/api/selecao/motivos-de-decisao?subclassificacao={Uri.EscapeDataString(subclassificacao)}", UriKind.Relative));
+
+        resposta.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        JsonElement problema = JsonDocument.Parse(await resposta.Content.ReadAsStringAsync()).RootElement.Clone();
+        problema.GetProperty("code").GetString().Should().Be(Prefixo + "filtro_de_subclassificacao_invalida");
+        problema.GetProperty("detail").GetString().Should().NotContain(subclassificacao);
     }
 
     [Fact(DisplayName = "POST sem sentido é recusado com 422")]

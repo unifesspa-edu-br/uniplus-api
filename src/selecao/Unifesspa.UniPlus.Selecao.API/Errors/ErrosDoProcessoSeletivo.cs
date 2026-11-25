@@ -14,6 +14,7 @@ using Unifesspa.UniPlus.Selecao.Domain.Errors;
 /// </summary>
 internal static class ErrosDoProcessoSeletivo
 {
+
     internal static IEnumerable<KeyValuePair<string, DomainErrorMapping>> Mapeamentos() =>
     [
         .. AcessoEConsultaDoProcesso(),

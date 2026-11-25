@@ -3,6 +3,7 @@ namespace Unifesspa.UniPlus.Selecao.API.Errors;
 using Microsoft.AspNetCore.Http;
 
 using Unifesspa.UniPlus.Infrastructure.Core.Errors;
+using Unifesspa.UniPlus.Selecao.Application.Queries.RolDeRegras;
 using Unifesspa.UniPlus.Selecao.Domain.Errors;
 
 /// <summary>
@@ -187,6 +188,7 @@ internal static class ErrosDoCronograma
     /// </summary>
     private static IEnumerable<KeyValuePair<string, DomainErrorMapping>> AncoraDoRecursoDaFase() =>
     [
+        new(FiltroDeTipoDasRegrasDoCatalogo.CodigoDeErro, new DomainErrorMapping(StatusCodes.Status400BadRequest, "uniplus.selecao.regra_catalogo.filtro_de_tipo_invalido", "Tipo do filtro de regras inválido")),
         new("RegraCatalogo.NaoEncontrada", new DomainErrorMapping(StatusCodes.Status404NotFound, "uniplus.selecao.regra_catalogo.nao_encontrada", "Regra não encontrada no catálogo na versão pedida")),
         new("RegraRecursoFase.FaseSemProdutoPreliminar", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.regra_recurso_fase.fase_sem_produto_preliminar", "A fase admite recurso e não publica nenhum produto com papel preliminar")),
         new("RegraRecursoFase.AncoraNaoEhProdutoPreliminarDaFase", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.regra_recurso_fase.ancora_nao_eh_produto_preliminar_da_fase", "O evento que inicia o prazo do recurso da fase tem de ser a publicação de um dos produtos preliminares da própria fase; escolha um deles")),

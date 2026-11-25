@@ -2,7 +2,7 @@ namespace Unifesspa.UniPlus.Selecao.Application.Queries.ObrigatoriedadesLegais;
 
 using Domain.Enums;
 
-using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
+using Unifesspa.UniPlus.Application.Abstractions.Consultas;
 using Unifesspa.UniPlus.Kernel.Results;
 
 /// <summary>
@@ -13,17 +13,7 @@ public static class FiltroDeCategoriaDasObrigatoriedadesLegais
 {
     public const string CodigoDeErro = "ObrigatoriedadeLegal.FiltroDeCategoriaInvalido";
 
-    public static Result<CategoriaObrigatoriedade?> Ler(string? categoria)
-    {
-        if (string.IsNullOrWhiteSpace(categoria))
-        {
-            return Result<CategoriaObrigatoriedade?>.Success(null);
-        }
-
-        return CatalogoDe<CategoriaObrigatoriedade>.TentarObter(categoria, out CategoriaObrigatoriedade valor)
-            ? Result<CategoriaObrigatoriedade?>.Success(valor)
-            : Result<CategoriaObrigatoriedade?>.Failure(new DomainError(
-                CodigoDeErro,
-                "Categoria inválida. Use um dos códigos publicados para a categoria da obrigatoriedade."));
-    }
+    public static Result<CategoriaObrigatoriedade?> Ler(string? categoria) =>
+        FiltroPorCodigoPedido.Ler<CategoriaObrigatoriedade>(categoria, new DomainError(
+            CodigoDeErro, "Categoria inválida. Use um dos códigos publicados para a categoria da obrigatoriedade."));
 }
