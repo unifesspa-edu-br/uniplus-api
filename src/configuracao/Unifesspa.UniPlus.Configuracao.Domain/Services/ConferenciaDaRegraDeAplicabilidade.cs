@@ -12,7 +12,7 @@ using Unifesspa.UniPlus.Regras.ValueObjects;
 /// cita só fato que o predicado sabe avaliar, com operador e valor do domínio dele; só fato conhecido
 /// até a inscrição, porque a modalidade se decide nela; e nada que dependa da própria
 /// modalidade. Desativar um fato ou um valor recusa só a citação nova. As recusas se acumulam
-/// (ADR-0125), todas no campo da regra.
+/// (ADR-0125), apontando a condição ou a regra inteira.
 /// </summary>
 public static class ConferenciaDaRegraDeAplicabilidade
 {
@@ -31,99 +31,84 @@ public static class ConferenciaDaRegraDeAplicabilidade
         Dictionary<string, FatoCandidato> fatos = catalogo.Fatos.ToDictionary(static f => f.Codigo, StringComparer.Ordinal);
         Dictionary<string, DescritorFatoCandidato> vocabulario = VocabularioDoCatalogo.Descritores(fatos.Values);
         VinculosDeFatos existentes = Vinculos(vigente);
-
         List<FieldError> erros = [];
-        void Recusar(string codigo, string mensagem, string? citado = null) =>
-            erros.Add(new(Campo, new DomainError(codigo, mensagem), citado ?? Campo));
+        void Recusar(string campo, string codigo, string mensagem, string origem) =>
+            erros.Add(new(campo, new DomainError(codigo, mensagem), origem));
 
-        ConferirPredicado(regra, catalogo, fatos, vocabulario, existentes, erros, Recusar);
+        bool fora = ConferirFatos(regra, catalogo, fatos, vocabulario, existentes, Recusar);
+        if (!fora)
+            ConferirPredicado(regra, fatos, vocabulario, Recusar);
         ConferirValores(regra, fatos, existentes, Recusar);
         ConferirCiclo(regra, fatos.Values, Recusar);
         return erros;
     }
 
+    private static IEnumerable<(string Caminho, CondicaoDnf Condicao)> CondicoesNoPedido(PredicadoDnf regra) =>
+        regra.Clausulas.SelectMany((clausula, c) => clausula.Condicoes.Select((condicao, i) => ($"{Campo}[{c}][{i}]", condicao)));
+
     private static void ConferirPredicado(
-        PredicadoDnf regra, CatalogoDeFatos catalogo, Dictionary<string, FatoCandidato> fatos,
-        Dictionary<string, DescritorFatoCandidato> vocabulario, VinculosDeFatos existentes,
-        List<FieldError> erros, Action<string, string, string?> recusar)
+        PredicadoDnf regra, Dictionary<string, FatoCandidato> fatos,
+        Dictionary<string, DescritorFatoCandidato> vocabulario, Action<string, string, string, string> recusar)
     {
-        if (!ConferirFatos(regra, catalogo, fatos, vocabulario, existentes, recusar)
-            && PredicadoDnfValidador.ValidarComCausa(regra, vocabulario, dominiosDinamicos: VocabularioDoCatalogo.DominiosDinamicos(fatos.Values))
-                is ({ IsFailure: true } predicado, { } causa, _))
+        if (PredicadoDnfValidador.ValidarComCausa(regra, vocabulario, dominiosDinamicos: VocabularioDoCatalogo.DominiosDinamicos(fatos.Values))
+            is ({ IsFailure: true } predicado, { } causa, _))
         {
-            erros.Add(new(Campo, predicado.Error!, causa));
+            recusar($"{Campo}{predicado.Errors[0].Field}", predicado.Error!.Code, predicado.Error.Message, causa);
         }
     }
 
-    private static void ConferirCiclo(PredicadoDnf regra, IEnumerable<FatoCandidato> fatos, Action<string, string, string?> recusar)
+    private static void ConferirCiclo(PredicadoDnf regra, IEnumerable<FatoCandidato> fatos, Action<string, string, string, string> recusar)
     {
         if (CicloComAModalidade(regra, fatos) is { } ciclo)
         {
-            recusar(ModalidadeErrorCodes.RegraDependeDaModalidade,
-                $"A regra depende da própria modalidade de concorrência: {string.Join(" → ", ciclo)}.", null);
+            recusar(Campo, ModalidadeErrorCodes.RegraDependeDaModalidade,
+                $"A regra depende da própria modalidade de concorrência: {string.Join(" → ", ciclo)}.", Campo);
         }
     }
 
     private static bool ConferirFatos(
         PredicadoDnf regra, CatalogoDeFatos catalogo, Dictionary<string, FatoCandidato> fatos,
         Dictionary<string, DescritorFatoCandidato> vocabulario, VinculosDeFatos existentes,
-        Action<string, string, string?> recusar)
+        Action<string, string, string, string> recusar)
     {
-        bool citaForaDoVocabulario = false;
-        foreach (string citado in regra.FatosCitados)
+        bool fora = false;
+        foreach ((string caminho, CondicaoDnf condicao) in CondicoesNoPedido(regra))
         {
-            if (fatos.TryGetValue(citado, out FatoCandidato? fato))
-            {
-                bool foraDoVocabulario = !vocabulario.ContainsKey(citado);
-                ConferirFato(fato, foraDoVocabulario, existentes, catalogo.Precedencias, recusar);
-                citaForaDoVocabulario |= foraDoVocabulario;
-            }
+            if (!fatos.TryGetValue(condicao.Fato, out FatoCandidato? fato))
+                continue;
+            bool naoCitavel = !vocabulario.ContainsKey(condicao.Fato);
+            ConferirFato($"{caminho}.fato", fato, naoCitavel, existentes, catalogo.Precedencias, recusar);
+            fora |= naoCitavel;
         }
-
-        return citaForaDoVocabulario;
+        return fora;
     }
 
     private static void ConferirFato(
-        FatoCandidato fato, bool foraDoVocabulario, VinculosDeFatos existentes,
-        IReadOnlyCollection<PrecedenciaFase> precedencias, Action<string, string, string?> recusar)
+        string campo, FatoCandidato fato, bool naoCitavel, VinculosDeFatos existentes,
+        IReadOnlyCollection<PrecedenciaFase> precedencias, Action<string, string, string, string> recusar)
     {
-        string citado = fato.Codigo;
-        if (foraDoVocabulario)
-        {
-            recusar(ModalidadeErrorCodes.RegraCitaFatoNaoCitavel,
-                "O fato não pode ser citado em regra: texto, data, endereço, fato de membro de grupo e categórico sem valores não entram em predicado.", citado);
-        }
-
-        ConferirDisponibilidade(fato, existentes, precedencias, recusar);
-    }
-
-    private static void ConferirDisponibilidade(
-        FatoCandidato fato, VinculosDeFatos existentes, IReadOnlyCollection<PrecedenciaFase> precedencias,
-        Action<string, string, string?> recusar)
-    {
-        string citado = fato.Codigo;
-        if (!fato.Ativo && !existentes.Fatos.Contains(citado))
-        {
-            recusar(ModalidadeErrorCodes.RegraCitaFatoDesativado, "O fato está desativado e não aceita citação nova.", citado);
-        }
-
+        if (naoCitavel)
+            recusar(campo, ModalidadeErrorCodes.RegraCitaFatoNaoCitavel,
+                "O fato não pode ser citado em regra: texto, data, endereço, fato de membro de grupo e categórico sem valores não entram em predicado.", fato.Codigo);
+        if (!fato.Ativo && !existentes.Fatos.Contains(fato.Codigo))
+            recusar(campo, ModalidadeErrorCodes.RegraCitaFatoDesativado, "O fato está desativado e não aceita citação nova.", fato.Codigo);
         if (!ConhecidoAteAInscricao(fato.PontoResolucao, precedencias))
-        {
-            recusar(ModalidadeErrorCodes.RegraCitaFatoPosteriorAInscricao,
-                $"O fato só é conhecido em {fato.PontoResolucao}, que não antecede a inscrição, em que a modalidade se decide.", citado);
-        }
+            recusar(campo, ModalidadeErrorCodes.RegraCitaFatoPosteriorAInscricao,
+                $"O fato só é conhecido em {fato.PontoResolucao}, que não antecede a inscrição, em que a modalidade se decide.", fato.Codigo);
     }
 
     private static void ConferirValores(
         PredicadoDnf regra, Dictionary<string, FatoCandidato> fatos, VinculosDeFatos existentes,
-        Action<string, string, string?> recusar)
+        Action<string, string, string, string> recusar)
     {
-        IEnumerable<(string Fato, string Valor)> valoresDesativados = Vinculos(regra).Valores
-            .Where(v => !existentes.Valores.Contains(v) && ValidadorRegrasPadrao.ValorDesativado(fatos, v.Fato, v.Valor))
-            .OrderBy(static v => v.Fato, StringComparer.Ordinal).ThenBy(static v => v.Valor, StringComparer.Ordinal);
-        foreach ((string fato, string valor) in valoresDesativados)
+        foreach ((string caminho, CondicaoDnf condicao) in CondicoesNoPedido(regra))
         {
-            recusar(ModalidadeErrorCodes.RegraCitaValorDesativado, "O valor do fato está desativado e não aceita citação nova.", $"{fato}.{valor}");
+            string[] valores = [.. VinculosDeFatos.De([], [(condicao.Fato, condicao.Valor)]).Valores
+                .Where(v => !existentes.Valores.Contains(v) && ValidadorRegrasPadrao.ValorDesativado(fatos, v.Fato, v.Valor))
+                .Select(static v => v.Valor).Distinct(StringComparer.Ordinal).Order(StringComparer.Ordinal)];
+            if (valores.Length > 0)
+                recusar($"{caminho}.valor", ModalidadeErrorCodes.RegraCitaValorDesativado,
+                    "O valor do fato está desativado e não aceita citação nova.", $"{condicao.Fato}.{string.Join(",", valores)}");
         }
     }
 

@@ -107,6 +107,17 @@ public sealed class AlterarDefinicaoDoFatoCandidatoCommandHandlerTests
         await DeveTerSidoDescartadoSemGravarAsync();
     }
 
+    [Fact]
+    public async Task Handle_FatoRepetidoQuePassaASerPosterior_RecusaModalidadeUmaVez()
+    {
+        _modalidades.ListarVivasAsync(Arg.Any<CancellationToken>()).Returns([ModalidadeQueCitaOptou(repetir: true)]);
+        Result resultado = await AlterarAsync("OPTOU", Definicao("SIM_OU_NAO", ponto: "RESULTADO_FINAL"));
+        FieldError erro = resultado.Errors.Should().ContainSingle().Which;
+        erro.Field.Should().Be("citacoes.modalidades.PSVR_AMPLA");
+        erro.Error.Code.Should().Be(FatoCandidatoErrorCodes.AlteracaoQuebraRegraDeAplicabilidade);
+        erro.Error.Message.Split("O fato só é conhecido", StringSplitOptions.None).Should().HaveCount(2);
+    }
+
     [Fact(DisplayName = "Modelo de formulário inativo também é conferido")]
     public async Task Handle_QuebraModeloInativo_Recusa()
     {
@@ -296,13 +307,20 @@ public sealed class AlterarDefinicaoDoFatoCandidatoCommandHandlerTests
         PredicadoDnf.CriarDeCondicoesAgrupadas(
             [(0, CondicaoDnf.Criar(fato, Operador.Igual, JsonSerializer.SerializeToElement(true)).Value!)]).Value!;
 
-    private static Modalidade ModalidadeQueCitaOptou() =>
+    private static Modalidade ModalidadeQueCitaOptou(bool repetir = false) =>
         Modalidade.Criar("PSVR_AMPLA", new DeclaracaoDaModalidade(
             "Ampla", "ACAO_AFIRMATIVA", "SUPLEMENTAR_AO_TOTAL", null, "DESTINO_UNICO", "AC", null, null,
             PredicadoDnf.CriarDeCondicoesAgrupadas(
             [
                 (0, CondicaoDnf.Criar(OpcaoPelasCotasDaLei.Fato, Operador.Igual, JsonSerializer.SerializeToElement(false)).Value!),
                 (0, CondicaoDnf.Criar("OPTOU", Operador.Igual, JsonSerializer.SerializeToElement(true)).Value!),
+                .. repetir
+                    ? new[]
+                    {
+                        (1, CondicaoDnf.Criar(OpcaoPelasCotasDaLei.Fato, Operador.Igual, JsonSerializer.SerializeToElement(false)).Value!),
+                        (1, CondicaoDnf.Criar("OPTOU", Operador.Igual, JsonSerializer.SerializeToElement(true)).Value!),
+                    }
+                    : [],
             ]).Value!, null, null)).Value!;
 
     private static ModeloFormulario ModeloComPrecondicaoSobre(string primeiro, string segundo)

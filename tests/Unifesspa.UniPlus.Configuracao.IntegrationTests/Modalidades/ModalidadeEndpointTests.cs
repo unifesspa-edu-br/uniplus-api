@@ -259,6 +259,9 @@ public sealed class ModalidadeEndpointTests
 
         response.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
         (await LerCodigoDeErro(response)).Should().Be("uniplus.configuracao.modalidade.regra_cita_fato_nao_citavel");
+        using JsonDocument doc = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        doc.RootElement.GetProperty("errors").EnumerateArray().Single().GetProperty("field").GetString()
+            .Should().Be("regraDeAplicabilidade[0][1].fato");
     }
 
     private static readonly object[] Incondicional = [];
@@ -271,7 +274,7 @@ public sealed class ModalidadeEndpointTests
         new object[]
         {
             new { fato = "OPTOU_PELAS_COTAS_DA_LEI", operador = "IGUAL", valor = true },
-            new { fato = "NOME", operador = "IGUAL", valor = "MARIA" },
+            new { fato = "NOME", operador = "IGUAL", valor = "VALOR_DE_TESTE" },
         },
     ];
 

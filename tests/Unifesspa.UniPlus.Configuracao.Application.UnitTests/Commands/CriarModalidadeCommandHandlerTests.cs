@@ -186,6 +186,9 @@ public sealed class CriarModalidadeCommandHandlerTests
 
         resultado.Errors.Select(static e => e.Error.Code).Should().Contain(
             [ModalidadeErrorCodes.DescricaoTamanho, ModalidadeErrorCodes.RegraCitaFatoDesativado]);
+        resultado.Error!.Code.Should().Be(ModalidadeErrorCodes.DescricaoTamanho);
+        resultado.Errors.Single(static e => e.Error.Code == ModalidadeErrorCodes.RegraCitaFatoDesativado)
+            .Field.Should().Be("regraDeAplicabilidade[0][1].fato");
         await _repository.DidNotReceive().AdicionarAsync(Arg.Any<Modalidade>(), Arg.Any<CancellationToken>());
     }
 

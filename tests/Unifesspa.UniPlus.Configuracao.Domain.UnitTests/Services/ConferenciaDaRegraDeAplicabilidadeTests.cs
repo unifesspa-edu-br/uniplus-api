@@ -47,9 +47,9 @@ public sealed class ConferenciaDaRegraDeAplicabilidadeTests
         FieldError erro = ConferenciaDaRegraDeAplicabilidade.Conferir(
             Quando(("FATO_DE_TESTE", "valor")), vigente: null, Catalogo(fato)).Single();
 
-        erro.Field.Should().Be("regraDeAplicabilidade");
+        erro.Field.Should().Be("regraDeAplicabilidade[0][0].fato");
         erro.Error.Code.Should().Be(ModalidadeErrorCodes.RegraCitaFatoNaoCitavel);
-        erro.Error.Message.Should().NotContain("FATO_DE_TESTE");
+        erro.Error.Message.Should().Be("O fato não pode ser citado em regra: texto, data, endereço, fato de membro de grupo e categórico sem valores não entram em predicado.");
         erro.Origem.Should().Be("FATO_DE_TESTE");
     }
 
@@ -61,9 +61,9 @@ public sealed class ConferenciaDaRegraDeAplicabilidadeTests
         FieldError erro = ConferenciaDaRegraDeAplicabilidade.Conferir(
             Quando(("FATO_DE_TESTE", true)), vigente: null, Catalogo(fato)).Single();
 
-        erro.Field.Should().Be("regraDeAplicabilidade");
+        erro.Field.Should().Be("regraDeAplicabilidade[0][0].fato");
         erro.Error.Code.Should().Be(ModalidadeErrorCodes.RegraCitaFatoDesativado);
-        erro.Error.Message.Should().NotContain("FATO_DE_TESTE");
+        erro.Error.Message.Should().Be("O fato está desativado e não aceita citação nova.");
         erro.Origem.Should().Be("FATO_DE_TESTE");
     }
 
@@ -74,9 +74,9 @@ public sealed class ConferenciaDaRegraDeAplicabilidadeTests
         FieldError erro = ConferenciaDaRegraDeAplicabilidade.Conferir(
             Quando(("FATO_DE_TESTE", true)), vigente: null, Catalogo(fato)).Single();
 
-        erro.Field.Should().Be("regraDeAplicabilidade");
+        erro.Field.Should().Be("regraDeAplicabilidade[0][0].fato");
         erro.Error.Code.Should().Be(ModalidadeErrorCodes.RegraCitaFatoPosteriorAInscricao);
-        erro.Error.Message.Should().NotContain("FATO_DE_TESTE").And.Contain("RESULTADO_FINAL");
+        erro.Error.Message.Should().Be("O fato só é conhecido em RESULTADO_FINAL, que não antecede a inscrição, em que a modalidade se decide.");
         erro.Origem.Should().Be("FATO_DE_TESTE");
     }
 
@@ -116,9 +116,10 @@ public sealed class ConferenciaDaRegraDeAplicabilidadeTests
         FieldError erro = ConferenciaDaRegraDeAplicabilidade.Conferir(
             Quando(("FATO_DE_TESTE", "VALOR_DE_TESTE")), vigente: null, Catalogo(fato)).Single();
 
-        erro.Field.Should().Be("regraDeAplicabilidade");
+        erro.Field.Should().Be("regraDeAplicabilidade[0][0].valor");
         erro.Error.Code.Should().Be(ModalidadeErrorCodes.RegraCitaValorDesativado);
-        erro.Error.Message.Should().NotContain("FATO_DE_TESTE").And.NotContain("VALOR_DE_TESTE");
+        erro.Error.Message.Should().Be("O valor do fato está desativado e não aceita citação nova.");
+        erro.Field.Should().NotContain("VALOR_DE_TESTE");
     }
 
     [Theory(DisplayName = "Só fato conhecido até a inscrição decide a modalidade; fase sem precedência até ela é recusada")]
@@ -184,9 +185,100 @@ public sealed class ConferenciaDaRegraDeAplicabilidadeTests
         IReadOnlyList<FieldError> erros = ConferenciaDaRegraDeAplicabilidade.Conferir(
             Quando(("PCD", true), (ModalidadeDoCandidato.Fato, "AC")), vigente: null, Catalogo(pcd, modalidade));
 
-        erros.Should().AllSatisfy(static e => e.Field.Should().Be("regraDeAplicabilidade"));
+        erros.Select(static e => e.Field).Should().Equal("regraDeAplicabilidade[0][0].fato", "regraDeAplicabilidade");
         Codigos(erros).Should().BeEquivalentTo(
             [ModalidadeErrorCodes.RegraCitaFatoDesativado, ModalidadeErrorCodes.RegraDependeDaModalidade]);
+    }
+
+    [Fact]
+    public void Conferir_FatoRepetidoEmDuasClausulas_RecusaCadaPosicao()
+    {
+        FatoCandidato fato = Declarado("FATO_DE_TESTE");
+        fato.Desativar();
+        CondicaoDnf condicao = CondicaoDnf.Criar("FATO_DE_TESTE", Operador.Igual, JsonSerializer.SerializeToElement(true)).Value!;
+        PredicadoDnf regra = PredicadoDnf.CriarDeCondicoesAgrupadas([(0, condicao), (1, condicao), (1, condicao)]).Value!;
+        IReadOnlyList<FieldError> erros = ConferenciaDaRegraDeAplicabilidade.Conferir(regra, null, Catalogo(fato));
+        erros.Select(static e => e.Field).Should().Equal("regraDeAplicabilidade[0][0].fato", "regraDeAplicabilidade[1][0].fato", "regraDeAplicabilidade[1][1].fato");
+        erros.Should().OnlyContain(static e => e.Error.Code == ModalidadeErrorCodes.RegraCitaFatoDesativado);
+        ConferenciaDaRegraDeAplicabilidade.Conferir(regra, Quando(("FATO_DE_TESTE", true)), Catalogo(fato)).Should().BeEmpty();
+    }
+
+    [Fact]
+    public void Conferir_ValorRepetidoEmDuasCondicoes_RecusaCadaPosicao()
+    {
+        FatoCandidato fato = Declarado("FATO_DE_TESTE", TipoDoDado.Opcao);
+        fato.AdicionarValorDominio("VALOR_DE_TESTE", "Valor", 0, ativo: true);
+        fato.DesativarValor("VALOR_DE_TESTE");
+        PredicadoDnf regra = Quando(("FATO_DE_TESTE", "VALOR_DE_TESTE"), ("FATO_DE_TESTE", "VALOR_DE_TESTE"));
+        IReadOnlyList<FieldError> erros = ConferenciaDaRegraDeAplicabilidade.Conferir(regra, null, Catalogo(fato));
+        erros.Select(static e => e.Field).Should().Equal("regraDeAplicabilidade[0][0].valor", "regraDeAplicabilidade[0][1].valor");
+        erros.Should().OnlyContain(static e => e.Error.Code == ModalidadeErrorCodes.RegraCitaValorDesativado);
+        erros.Should().AllSatisfy(static e => { e.Field.Should().NotContain("VALOR_DE_TESTE"); e.Error.Message.Should().NotContain("VALOR_DE_TESTE"); });
+        ConferenciaDaRegraDeAplicabilidade.Conferir(regra, Quando(("FATO_DE_TESTE", "VALOR_DE_TESTE")), Catalogo(fato)).Should().BeEmpty();
+    }
+
+    [Fact]
+    public void Conferir_RecusasDeFasesDistintas_PreservaOrdem()
+    {
+        FatoCandidato fato = Declarado("FATO", ponto: "RESULTADO_FINAL");
+        fato.Desativar();
+        FatoCandidato opcao = Declarado("OPCAO", TipoDoDado.Opcao);
+        opcao.AdicionarValorDominio("INATIVO", "Inativo", 0, ativo: true);
+        opcao.DesativarValor("INATIVO");
+        PredicadoDnf regra = Quando(("FATO", true), ("DESCONHECIDO", true), ("OPCAO", "INATIVO"), (ModalidadeDoCandidato.Fato, "AC"));
+        IReadOnlyList<FieldError> erros = ConferenciaDaRegraDeAplicabilidade.Conferir(regra, null, Catalogo(fato, opcao, Modalidade()));
+        Codigos(erros).Should().Equal(ModalidadeErrorCodes.RegraCitaFatoDesativado, ModalidadeErrorCodes.RegraCitaFatoPosteriorAInscricao,
+            "PredicadoDnf.FatoDesconhecido", ModalidadeErrorCodes.RegraCitaValorDesativado, ModalidadeErrorCodes.RegraDependeDaModalidade);
+        erros.Select(static e => e.Field).Should().Equal("regraDeAplicabilidade[0][0].fato", "regraDeAplicabilidade[0][0].fato",
+            "regraDeAplicabilidade[0][1].fato", "regraDeAplicabilidade[0][2].valor", "regraDeAplicabilidade");
+    }
+
+    [Fact]
+    public void Conferir_ListaComValoresDesativados_RecusaUmaVez()
+    {
+        FatoCandidato fato = Declarado("FATO_DE_TESTE", TipoDoDado.Opcao);
+        fato.AdicionarValorDominio("B", "B", 0, ativo: true);
+        fato.AdicionarValorDominio("A", "A", 1, ativo: true);
+        fato.DesativarValor("A");
+        fato.DesativarValor("B");
+        CondicaoDnf condicao = CondicaoDnf.Criar("FATO_DE_TESTE", Operador.AlgumDe, JsonSerializer.SerializeToElement(new[] { "B", "A", "B" })).Value!;
+        FieldError erro = ConferenciaDaRegraDeAplicabilidade.Conferir(Predicado(condicao), null, Catalogo(fato)).Single();
+        erro.Field.Should().Be("regraDeAplicabilidade[0][0].valor");
+        erro.Error.Code.Should().Be(ModalidadeErrorCodes.RegraCitaValorDesativado);
+        erro.Error.Message.Should().Be("O valor do fato está desativado e não aceita citação nova.");
+        erro.Origem.Should().Be("FATO_DE_TESTE.A,B");
+    }
+
+    [Theory]
+    [InlineData("DESCONHECIDO", Operador.Igual, true, "PredicadoDnf.FatoDesconhecido", "fato")]
+    [InlineData("PCD", Operador.MaiorIgual, 1, PredicadoDnfErrorCodes.OperadorIncompativelComDominio, "operador")]
+    [InlineData("PCD", Operador.Igual, "VALOR_DE_TESTE", PredicadoDnfErrorCodes.ValorIncompativelComTipo, "valor")]
+    public void Conferir_PredicadoInvalido_ApontaCondicao(string fato, Operador operador, object valor, string codigo, string campo)
+    {
+        CondicaoDnf valida = CondicaoDnf.Criar("PCD", Operador.Igual, JsonSerializer.SerializeToElement(true)).Value!;
+        CondicaoDnf invalida = CondicaoDnf.Criar(fato, operador, JsonSerializer.SerializeToElement(valor)).Value!;
+        PredicadoDnf regra = PredicadoDnf.CriarDeCondicoesAgrupadas([(0, valida), (1, valida), (1, invalida)]).Value!;
+        FieldError erro = ConferenciaDaRegraDeAplicabilidade.Conferir(regra, null, Catalogo(Declarado("PCD"))).Single();
+        erro.Field.Should().Be($"regraDeAplicabilidade[1][1].{campo}");
+        erro.Error.Code.Should().Be(codigo);
+        string mensagem = codigo switch
+        {
+            "PredicadoDnf.FatoDesconhecido" => "O fato 'DESCONHECIDO' não pertence ao vocabulário fechado.",
+            PredicadoDnfErrorCodes.OperadorIncompativelComDominio => "O operador MAIOR_IGUAL não é compatível com o fato 'PCD', de domínio booleano. Os operadores admitidos são IGUAL, DIFERENTE.",
+            _ => "O valor da condição sobre 'PCD' deve ser um booleano JSON.",
+        };
+        erro.Error.Message.Should().Be(mensagem);
+    }
+
+    [Fact]
+    public void Conferir_ValorForaDoDominio_ApontaValor()
+    {
+        FatoCandidato fato = Declarado("FATO_DE_TESTE", TipoDoDado.Opcao);
+        fato.AdicionarValorDominio("ATIVO", "Ativo", 0, ativo: true);
+        FieldError erro = ConferenciaDaRegraDeAplicabilidade.Conferir(Quando(("FATO_DE_TESTE", "OUTRO")), null, Catalogo(fato)).Single();
+        erro.Field.Should().Be("regraDeAplicabilidade[0][0].valor");
+        erro.Error.Code.Should().Be(PredicadoDnfErrorCodes.ValorForaDoDominio);
+        erro.Error.Message.Should().Be("O valor 'OUTRO' da condição sobre 'FATO_DE_TESTE' não pertence ao domínio declarado.");
     }
 
     private static string[] Codigos(IReadOnlyList<FieldError> erros) => [.. erros.Select(static e => e.Error.Code)];
