@@ -34,7 +34,6 @@
 #   RESOLUCAO_PESOS (default: Resolução nº 805/2024/Consepe)
 #   SENHA_PERSONAS  (default: $ADMIN_PASS)
 #   FAKE_PEOPLE     (default: ../uniplus-developers/src/data/fake-people.json)
-#   GEO_URL         (default: http://localhost:5400)
 #   PERSONA_NAO_INSCRITA, PERSONA_FORA_DO_ARQUIVO (usernames; ver abaixo)
 
 set -euo pipefail
@@ -53,7 +52,6 @@ NUMERO_OPCOES_DE_CURSO=2
 # Dados das personas (uniplus-developers/src/data/fake-people.json): o roteiro lê o
 # arquivo do checkout vizinho, e a conferência do CEP é a do Geo local.
 FAKE_PEOPLE="${FAKE_PEOPLE:-$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)/uniplus-developers/src/data/fake-people.json}"
-GEO_URL="${GEO_URL:-http://localhost:5400}"
 # Uma persona candidata fica sem inscrição (vira a linha "sem inscrito" do arquivo
 # de retorno) e uma inscrita fica sem linha no arquivo (vira "inscrito sem nota").
 PERSONA_NAO_INSCRITA="${PERSONA_NAO_INSCRITA:-leandro.viana}"
@@ -189,9 +187,15 @@ token_da_persona() {
 respostas_da_persona() {
     local pessoa="$1" edicao="$2" token="$3" cep geo
     cep=$(jq -r '.cep | gsub("\\D"; "")' <<< "$pessoa")
-    geo=$(curl -sS "$GEO_URL/api/cep/$cep" -H "Authorization: Bearer $token")
-    jq -e '.codigoIbge' <<< "$geo" >/dev/null || fail "o Geo não resolveu o CEP $cep: $geo"
-    jq -nc --argjson p "$pessoa" --argjson g "$geo" --arg edicao "$edicao" '
+    geo=$(curl -sS "$GEO_URL/api/cep/$cep" -H "Authorization: Bearer $token") \
+        || fail "não foi possível consultar o endereço da persona no Geo"
+    jq -e '.codigoIbge' <<< "$geo" >/dev/null || fail "o Geo não resolveu o endereço da persona"
+    local cidade_de_prova=""
+    if [ "$MODELO_PEDE_CIDADE_DE_PROVA" = "true" ]; then
+        cidade_de_prova=$(jq -r '.[0].codigoIbge' <<< "$MUNICIPIOS_DE_PROVA")
+    fi
+    jq -nc --argjson p "$pessoa" --argjson g "$geo" --arg edicao "$edicao" \
+        --arg fato_cidade "$FATO_CIDADE_DE_PROVA" --arg cidade_prova "$cidade_de_prova" '
         ({"Feminino": "FEMININO", "Masculino": "MASCULINO"}[$p.sexo]) as $sexo | {
         NOME: $p.nome, DESEJA_NOME_SOCIAL: ($p.nome_social != null), NACIONALIDADE: "NATO",
         CPF: ($p.cpf | gsub("\\D"; "")), DATA_NASCIMENTO: ($p.data_nasc | split("/") | reverse | join("-")),
@@ -210,36 +214,54 @@ respostas_da_persona() {
         SOLICITA_FATOR_ATENUACAO: false, PCD: false, CONCORRER_PCD: false, CONCORRER_EP: false,
         INDIGENA: false, QUILOMBOLA: false, CONCORRER_PPI: false, CONCORRER_Q: false,
         BAIXA_RENDA: false, CONCORRER_RENDA: false
-    } + (if $p.nome_social != null then {NOME_SOCIAL: $p.nome_social} else {} end)'
+    } + (if $p.nome_social != null then {NOME_SOCIAL: $p.nome_social} else {} end)
+      + (if $fato_cidade != "" then {($fato_cidade): $cidade_prova, SOLICITA_ATENDIMENTO_ESPECIALIZADO: false} else {} end)'
 }
 
-# Cria o rascunho, salva as respostas e envia a inscrição de uma persona.
+# Consulta a inscrição do titular: preserva as já submetidas e retoma rascunhos.
 inscrever_persona() {
-    local pessoa="$1" edicao="$2" oferta1="$3" oferta2="$4" username token accept corpo rascunho resposta http_code
+    local pessoa="$1" edicao="$2" oferta1="$3" oferta2="$4" username token accept corpo rascunho resposta http_code situacao
     username=$(jq -r '.username' <<< "$pessoa")
-    token=$(token_da_persona "$username")
+    token=$(token_da_persona "$username") || fail "não foi possível obter token da persona $username"
     [ -n "$token" ] || fail "não obtive token da persona $username"
     local url="$API_URL/api/selecao/processos-seletivos/$PROCESSO_ID/inscricao"
     accept="Accept: application/vnd.uniplus.inscricao.v1+json"
 
-    rascunho=$(curl -sS -w '\n%{http_code}' "$url" -H "Authorization: Bearer $token" -H "$accept")
-    if [ "$(tail -n1 <<< "$rascunho")" = "404" ]; then
-        rascunho=$(curl -sS -w '\n%{http_code}' -X POST "$url" -H "Authorization: Bearer $token" -H "Idempotency-Key: $(idem)" -H "$accept")
-    fi
-    [ "$(tail -n1 <<< "$rascunho")" = "200" ] || fail "rascunho de $username: $(sed '$d' <<< "$rascunho")"
+    rascunho=$(curl -sS -w '\n%{http_code}' "$url" -H "Authorization: Bearer $token" -H "$accept") \
+        || fail "não foi possível consultar a inscrição da persona $username"
+    http_code=$(tail -n1 <<< "$rascunho")
+    case "$http_code" in
+        200)
+            situacao=$(sed '$d' <<< "$rascunho" | jq -r '.situacao.codigo // empty') \
+                || fail "resposta inválida ao consultar a inscrição da persona $username"
+            case "$situacao" in
+                SUBMETIDA) return ;;
+                RASCUNHO) ;;
+                *) fail "não foi possível completar a inscrição da persona $username: situação inesperada" ;;
+            esac
+            ;;
+        404)
+            rascunho=$(curl -sS -w '\n%{http_code}' -X POST "$url" -H "Authorization: Bearer $token" -H "Idempotency-Key: $(idem)" -H "$accept") \
+                || fail "não foi possível iniciar a inscrição da persona $username"
+            [ "$(tail -n1 <<< "$rascunho")" = "200" ] || fail "não foi possível iniciar a inscrição da persona $username (HTTP $(tail -n1 <<< "$rascunho"))"
+            ;;
+        *) fail "não foi possível consultar a inscrição da persona $username (HTTP $http_code)" ;;
+    esac
 
     corpo=$(jq -nc --arg o1 "$oferta1" --arg o2 "$oferta2" --argjson a "$ACEITES" \
         --argjson r "$(respostas_da_persona "$pessoa" "$edicao" "$token")" \
         '{ofertaCursoId: $o1, ofertaCursoSegundaOpcaoId: $o2, respostas: $r, grupos: {}, aceites: $a}')
     rascunho=$(curl -sS -X PUT "$url" -H "Authorization: Bearer $token" -H "Idempotency-Key: $(idem)" \
-        -H "If-Match: $(jq -r '.eTag' <<< "$(sed '$d' <<< "$rascunho")")" -H "Content-Type: application/json" -H "$accept" -d "$corpo")
-    jq -e '.eTag' <<< "$rascunho" >/dev/null || fail "salvar as respostas de $username: $(head -c 400 <<< "$rascunho")"
+        -H "If-Match: $(jq -r '.eTag' <<< "$(sed '$d' <<< "$rascunho")")" -H "Content-Type: application/json" -H "$accept" -d "$corpo") \
+        || fail "não foi possível salvar as respostas da persona $username"
+    jq -e '.eTag' <<< "$rascunho" >/dev/null || fail "não foi possível salvar as respostas da persona $username"
 
     resposta=$(curl -sS -w '\n%{http_code}' -X POST "$url/submissao" -H "Authorization: Bearer $token" -H "Idempotency-Key: $(idem)" \
         -H "If-Match: $(jq -r '.eTag' <<< "$rascunho")" -H "Content-Type: application/json" \
-        -H "Accept: application/vnd.uniplus.recibo-da-inscricao.v1+json" -d "$corpo")
+        -H "Accept: application/vnd.uniplus.recibo-da-inscricao.v1+json" -d "$corpo") \
+        || fail "não foi possível enviar a inscrição da persona $username"
     http_code=$(tail -n1 <<< "$resposta")
-    [ "$http_code" = "200" ] || fail "enviar a inscrição de $username → $http_code: $(sed '$d' <<< "$resposta" | head -c 600)"
+    [ "$http_code" = "200" ] || fail "não foi possível enviar a inscrição da persona $username (HTTP $http_code)"
 }
 
 # As 56 personas candidatas (menos a não inscrita), distribuídas entre as edições
@@ -259,7 +281,7 @@ inscrever_personas() {
         inscrever_persona "$pessoa" "${edicoes[$((i % 4))]}" "${ofertas[$(((i / 4) % 2))]}" "${ofertas[$((((i / 4) + 1) % 2))]}"
         i=$((i + 1))
     done <<< "$candidatas"
-    ok "$i inscrições enviadas"
+    ok "$i inscrições conferidas ou enviadas"
     ok "sem inscrição: $PERSONA_NAO_INSCRITA — inscrita e fora do arquivo de retorno: $PERSONA_FORA_DO_ARQUIVO"
 }
 
@@ -292,7 +314,17 @@ main() {
     obter_fase_classificacao
     setup_ofertas_por_grupo
     cadastrar_pesos_por_area
+    conferir_modelo_inscricao
     criar_processo
+    if [ "$PROCESSO_JA_PUBLICADO" = "true" ]; then
+        conferir_resultado
+        aguardar_ato_registrado
+        inscrever_personas
+        ok "PROCESSO_ID=$PROCESSO_ID — roteiro concluído"
+        echo "PROCESSO_ID=$PROCESSO_ID"
+        return
+    fi
+    conferir_periodo_da_inscricao
     definir_algoritmo_contagem_prazo
     definir_atendimento_especializado
     definir_distribuicao_vagas
@@ -311,11 +343,12 @@ main() {
     definir_documentos_exigidos
     documento_do_edital
     divulgar
-    definir_sem_prova_presencial
+    declarar_prova_presencial
     publicar
     aguardar_ato_registrado
     conferir_resultado
     inscrever_personas
+    ok "PROCESSO_ID=$PROCESSO_ID — roteiro concluído"
     echo "PROCESSO_ID=$PROCESSO_ID"
 }
 
