@@ -1,4 +1,4 @@
-namespace Unifesspa.UniPlus.Selecao.IntegrationTests.ProcessosSeletivos;
+namespace Unifesspa.UniPlus.Selecao.Infrastructure.UnitTests.Persistence;
 
 using System.Text.Json.Nodes;
 
@@ -17,21 +17,20 @@ using Xunit;
 /// </summary>
 public sealed class FasesNoEnvelopeTests
 {
-    private static readonly DateTimeOffset Inicio = new DateTimeOffset(2040, 3, 10, 12, 0, 0, TimeSpan.Zero).AddTicks(1234560);
-    private static readonly DateTimeOffset Fim = new DateTimeOffset(2040, 3, 20, 12, 0, 0, TimeSpan.Zero).AddTicks(9999990);
-
     [Fact(DisplayName = "O período da fase e da etapa é lido com os microssegundos que o envelope guarda")]
     public void Das_LeOPeriodoEmMicrossegundos()
     {
+        DateTimeOffset inicio = new DateTimeOffset(2040, 3, 10, 12, 0, 0, TimeSpan.Zero).AddTicks(1234560);
+        DateTimeOffset fim = new DateTimeOffset(2040, 3, 20, 12, 0, 0, TimeSpan.Zero).AddTicks(9999990);
         string envelope = Envelope(
-            faseInicio: Canonico(Inicio), faseFim: Canonico(Fim), etapaInicio: Canonico(Inicio), etapaFim: Canonico(Fim));
+            faseInicio: Canonico(inicio), faseFim: Canonico(fim), etapaInicio: Canonico(inicio), etapaFim: Canonico(fim));
 
         FaseDaVersaoPublicada fase = FasesNoEnvelope.Das(envelope).Single();
 
-        fase.Periodo.Inicio.Should().Be(Inicio);
-        fase.Periodo.Fim.Should().Be(Fim);
-        fase.Etapas.Single().Periodo.Inicio.Should().Be(Inicio);
-        fase.Etapas.Single().Periodo.Fim.Should().Be(Fim);
+        fase.Periodo.Inicio.Should().Be(inicio);
+        fase.Periodo.Fim.Should().Be(fim);
+        fase.Etapas.Single().Periodo.Inicio.Should().Be(inicio);
+        fase.Etapas.Single().Periodo.Fim.Should().Be(fim);
     }
 
     [Fact(DisplayName = "O instante nulo ou ausente é a fase e a etapa sem período")]
@@ -100,7 +99,7 @@ public sealed class FasesNoEnvelopeTests
     private static JsonObject Etapa(string? inicio, string? fim) =>
         new()
         {
-            ["id"] = Guid.CreateVersion7(),
+            ["id"] = Guid.Parse("11111111-1111-4111-8111-111111111111"),
             ["nome"] = "Prova objetiva",
             ["faseCodigo"] = "AVALIACAO",
             ["inicio"] = inicio,
@@ -110,8 +109,8 @@ public sealed class FasesNoEnvelopeTests
     private static JsonObject Fase(string? inicio, string? fim) =>
         new()
         {
-            ["id"] = Guid.CreateVersion7(),
-            ["tipoFaseOrigemId"] = Guid.CreateVersion7(),
+            ["id"] = Guid.Parse("11111111-1111-4111-8111-111111111111"),
+            ["tipoFaseOrigemId"] = Guid.Parse("11111111-1111-4111-8111-111111111111"),
             ["codigo"] = "AVALIACAO",
             ["inicio"] = inicio,
             ["fim"] = fim,

@@ -8,98 +8,119 @@ using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Cronograma;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Canonicalization;
 
-/// <summary>
-/// Lê, no envelope congelado de uma versão, as fases do cronograma e a fase de cada etapa. A etapa se liga à fase
-/// pelo código dela, e a fase tem o identificador estável que o envelope carrega.
-/// </summary>
+/// <summary>Lê as fases e etapas de uma versão congelada.</summary>
 internal static class FasesNoEnvelope
 {
-    internal static IReadOnlyList<FaseDaVersaoPublicada> Das(string? congelado) =>
-        Envelope(congelado) is { } envelope ? Das(envelope) : [];
+    internal static IReadOnlyList<FaseDaVersaoPublicada> Das(string? congelado) => Ler(congelado).Fases;
 
     internal static UnidadeDaFase? DaFase(string? congelado, Guid faseId) =>
-        Das(congelado).FirstOrDefault(f => f.Id == faseId) is { UnidadeResponsavelOrigemId: { } unidade } fase
-            ? new UnidadeDaFase(fase.Id, unidade)
-            : null;
+        Unidade(Ler(congelado).Fases.FirstOrDefault(f => f.Id == faseId));
 
     internal static UnidadeDaFase? DaEtapa(string? congelado, Guid etapaId)
     {
-        if (Envelope(congelado) is not { } envelope || CodigoDaFaseDaEtapa(envelope, etapaId) is not { } codigo)
-        {
-            return null;
-        }
-
-        FaseDaVersaoPublicada? fase = Das(envelope).FirstOrDefault(f => string.Equals(f.Codigo, codigo, StringComparison.Ordinal));
-        return fase?.UnidadeResponsavelOrigemId is { } unidade ? new UnidadeDaFase(fase.Id, unidade) : null;
+        (List<FaseDaVersaoPublicada> Fases, List<(EtapaDaVersaoPublicada Etapa, string? FaseCodigo)> Etapas) leitura = Ler(congelado);
+        string? codigo = leitura.Etapas.FirstOrDefault(e => e.Etapa.Id == etapaId).FaseCodigo;
+        return codigo is null ? null : Unidade(leitura.Fases.FirstOrDefault(f => string.Equals(f.Codigo, codigo, StringComparison.Ordinal)));
     }
 
-    private static string? CodigoDaFaseDaEtapa(JsonObject envelope, Guid etapaId) =>
-        (envelope["etapas"] as JsonArray ?? [])
-            .OfType<JsonObject>()
-            .FirstOrDefault(e => GuidDe(e["id"]) == etapaId) is { } etapa
-            ? TextoDe(etapa["faseCodigo"])
-            : null;
+    private static UnidadeDaFase? Unidade(FaseDaVersaoPublicada? fase) =>
+        fase?.UnidadeResponsavelOrigemId is { } unidade ? new UnidadeDaFase(fase.Id, unidade) : null;
 
-    private static List<FaseDaVersaoPublicada> Das(JsonObject envelope)
+    private static (List<FaseDaVersaoPublicada> Fases, List<(EtapaDaVersaoPublicada Etapa, string? FaseCodigo)> Etapas) Ler(string? texto)
     {
-        List<(EtapaDaVersaoPublicada Etapa, string? FaseCodigo)> etapas = [.. (envelope["etapas"] as JsonArray ?? [])
-            .OfType<JsonObject>()
-            .Select(static e => (
-                new EtapaDaVersaoPublicada(GuidDe(e["id"]) ?? Guid.Empty, TextoDe(e["nome"]) ?? string.Empty, new JanelaDeTempo(InstanteDe(e["inicio"]), InstanteDe(e["fim"]))),
-                TextoDe(e["faseCodigo"])))];
-
-        return [.. ((envelope["cronogramaFases"] as JsonObject)?["fases"] as JsonArray ?? [])
-            .OfType<JsonObject>()
-            .Select(f => LerFase(f, etapas))
-            .Where(static f => f.Id != Guid.Empty)];
-    }
-
-    private static FaseDaVersaoPublicada LerFase(JsonObject f, List<(EtapaDaVersaoPublicada Etapa, string? FaseCodigo)> etapas) => new(
-        GuidDe(f["id"]) ?? Guid.Empty,
-        GuidDe(f["tipoFaseOrigemId"]) ?? Guid.Empty,
-        TextoDe(f["codigo"]) ?? string.Empty,
-        GuidDe((f["unidadeResponsavel"] as JsonObject)?["origemId"]),
-        new JanelaDeTempo(InstanteDe(f["inicio"]), InstanteDe(f["fim"])),
-        f["coletaInscricao"] is JsonValue coleta && coleta.TryGetValue(out bool coletaInscricao) && coletaInscricao,
-        [.. etapas.Where(e => string.Equals(e.FaseCodigo, TextoDe(f["codigo"]), StringComparison.Ordinal)).Select(static e => e.Etapa)]);
-
-    private static JsonObject? Envelope(string? congelado)
-    {
-        if (string.IsNullOrWhiteSpace(congelado))
+        if (texto is null)
         {
-            return null;
+            return ([], []);
         }
 
+        return LerPresente(texto);
+    }
+
+    private static (List<FaseDaVersaoPublicada> Fases, List<(EtapaDaVersaoPublicada Etapa, string? FaseCodigo)> Etapas) LerPresente(string texto)
+    {
+        LeitorEnvelope leitor = new();
+        JsonObject envelope = LerObjetoRaiz(leitor, texto);
+        JsonArray etapasArray = leitor.Array(envelope, "etapas", "$");
+        List<(EtapaDaVersaoPublicada Etapa, string? FaseCodigo)> etapas = LerEtapas(leitor, etapasArray);
+        JsonObject cronograma = leitor.Objeto(envelope, "cronogramaFases", "$");
+        JsonArray fasesArray = leitor.Array(cronograma, "fases", "cronogramaFases");
+        List<FaseDaVersaoPublicada> fases = LerFases(leitor, fasesArray, etapas);
+        if (leitor.Falhou)
+        {
+            throw new PayloadForaDoPerfilCanonicoException(leitor.Erro.Message);
+        }
+
+        return (fases, etapas);
+    }
+
+    private static JsonObject LerObjetoRaiz(LeitorEnvelope leitor, string texto)
+    {
         try
         {
-            return JsonNode.Parse(congelado) as JsonObject;
+            return JsonNode.Parse(texto) as JsonObject ?? leitor.Malformado<JsonObject>("$", "esperado um objeto.");
         }
         catch (JsonException)
         {
-            return null;
+            return leitor.Malformado<JsonObject>("$", "JSON inválido.");
         }
     }
 
-    private static Guid? GuidDe(JsonNode? node) => Guid.TryParse(TextoDe(node), out Guid id) ? id : null;
-
-    /// <summary>
-    /// Sem período quando o nó é ausente ou <c>null</c>. Qualquer outro valor que não esteja na forma canônica
-    /// do envelope é falha, não ausência: tratar o instante ilegível como "sem período" faria a fase passar
-    /// por não iniciada.
-    /// </summary>
-    private static DateTimeOffset? InstanteDe(JsonNode? node)
+    private static List<(EtapaDaVersaoPublicada Etapa, string? FaseCodigo)> LerEtapas(LeitorEnvelope leitor, JsonArray array)
     {
-        if (node is null)
+        List<(EtapaDaVersaoPublicada Etapa, string? FaseCodigo)> etapas = [];
+        for (int i = 0; !leitor.Falhou && i < array.Count; i++)
         {
-            return null;
+            JsonObject item = leitor.ItemObjeto(array, i, "etapas");
+            AdicionarEtapa(leitor, item, $"etapas[{i}]", etapas);
         }
 
-        return TextoDe(node) is { } texto && HashCanonicalComputer.TryParseInstantCanonical(texto, out DateTimeOffset instante)
-            ? instante
-            : throw new PayloadForaDoPerfilCanonicoException(
-                $"O envelope congelado traz um instante fora da forma canônica '{HashCanonicalComputer.CanonicalInstantFormat}'.");
+        return etapas;
     }
 
-    private static string? TextoDe(JsonNode? node) =>
-        node is JsonValue valor && valor.TryGetValue(out string? texto) ? texto : null;
+    private static void AdicionarEtapa(
+        LeitorEnvelope leitor, JsonObject item, string caminho, List<(EtapaDaVersaoPublicada Etapa, string? FaseCodigo)> etapas)
+    {
+        Guid id = leitor.Identificador(item, "id", caminho);
+        string nome = leitor.TextoNaoVazio(item, "nome", caminho, LimitesDoEnvelope.EtapaNome);
+        string? codigo = leitor.TextoOpcional(item, "faseCodigo", caminho, LimitesDoEnvelope.FaseCodigo);
+        JanelaDeTempo periodo = LerPeriodo(leitor, item, caminho);
+        if (!leitor.Falhou)
+        {
+            etapas.Add((new EtapaDaVersaoPublicada(id, nome, periodo), codigo));
+        }
+    }
+
+    private static List<FaseDaVersaoPublicada> LerFases(
+        LeitorEnvelope leitor, JsonArray array, List<(EtapaDaVersaoPublicada Etapa, string? FaseCodigo)> etapas)
+    {
+        List<FaseDaVersaoPublicada> fases = [];
+        for (int i = 0; !leitor.Falhou && i < array.Count; i++)
+        {
+            JsonObject item = leitor.ItemObjeto(array, i, "cronogramaFases.fases");
+            FaseDaVersaoPublicada? fase = LerFase(leitor, item, $"cronogramaFases.fases[{i}]", etapas);
+            if (fase is not null)
+            {
+                fases.Add(fase);
+            }
+        }
+
+        return fases;
+    }
+
+    private static FaseDaVersaoPublicada? LerFase(
+        LeitorEnvelope leitor, JsonObject item, string caminho, List<(EtapaDaVersaoPublicada Etapa, string? FaseCodigo)> etapas)
+    {
+        Guid id = leitor.Identificador(item, "id", caminho);
+        Guid tipoId = leitor.Identificador(item, "tipoFaseOrigemId", caminho);
+        string codigo = leitor.TextoNaoVazio(item, "codigo", caminho, LimitesDoEnvelope.FaseCodigo);
+        UnidadeResponsavelSnapshot? unidade = LeituraDoCronograma.LerUnidadeResponsavel(leitor, item, caminho);
+        JanelaDeTempo periodo = LerPeriodo(leitor, item, caminho);
+        bool coleta = leitor.Booleano(item, "coletaInscricao", caminho);
+        return leitor.Falhou ? null : new FaseDaVersaoPublicada(
+            id, tipoId, codigo, unidade?.OrigemId, periodo, coleta,
+            [.. etapas.Where(e => string.Equals(e.FaseCodigo, codigo, StringComparison.Ordinal)).Select(static e => e.Etapa)]);
+    }
+
+    private static JanelaDeTempo LerPeriodo(LeitorEnvelope leitor, JsonObject item, string caminho) =>
+        new(leitor.InstanteOpcional(item, "inicio", caminho), leitor.InstanteOpcional(item, "fim", caminho));
 }
