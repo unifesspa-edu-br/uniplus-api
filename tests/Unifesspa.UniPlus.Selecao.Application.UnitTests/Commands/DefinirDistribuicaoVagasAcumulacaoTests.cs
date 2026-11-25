@@ -89,6 +89,22 @@ public sealed class DefinirDistribuicaoVagasAcumulacaoTests
             Recusa(0, "modalidadeIds[1]", "ModalidadeNaoEncontrada"));
     }
 
+    [Fact]
+    public async Task ModalidadeComDoisDefeitos_PropagaTodasAsCausasNoItem()
+    {
+        ProcessoSeletivo processo = NovoProcesso();
+        Guid oferta = Guid.CreateVersion7();
+        Guid modalidade = Guid.CreateVersion7();
+        Mocks mocks = MocksComOferta(processo, oferta, RegraDistribuicao(Institucional));
+        mocks.ModalidadeReader.ObterPorIdAsync(modalidade, Arg.Any<CancellationToken>()).Returns(
+            NovaModalidadeAmpla(modalidade) with { BaseLegal = null, RegraRemanejamento = "CRUZADO" });
+        Result<IReadOnlyList<ConfiguracaoDistribuicaoVagasDto>> resultado = await DefinirAsync(
+            mocks, processo, Pedido(oferta, Institucional, [modalidade]));
+        resultado.Errors.Select(e => (e.Field, e.Error.Code)).Should().Equal(
+            ("distribuicaoVagas[0].modalidadeIds[0]", "ModalidadeSelecionada.BaseLegalObrigatoria"),
+            ("distribuicaoVagas[0].modalidadeIds[0]", "ModalidadeSelecionada.RemanejamentoCruzadoIncompleto"));
+    }
+
     [Fact(DisplayName = "O nome recusado da oferta não esconde o teto de vagas, que vem da mesma oferta")]
     public async Task NomeDaOfertaRecusado_NaoEscondeOTetoDeVagas()
     {
