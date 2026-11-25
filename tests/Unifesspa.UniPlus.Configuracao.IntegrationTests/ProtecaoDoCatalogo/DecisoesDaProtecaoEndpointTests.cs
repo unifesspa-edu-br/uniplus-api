@@ -22,7 +22,7 @@ public sealed class DecisoesDaProtecaoEndpointTests : HistoricoDaProtecaoTestBas
     {
     }
 
-    [Fact(DisplayName = "As decisões saem das mais recentes para as mais antigas, e o filtro de ato e o de cadastro restringem o recorte")]
+    [Fact(DisplayName = "As decisões saem das mais recentes para as mais antigas, e os filtros de ato e de cadastro restringem os resultados")]
     public async Task Decisoes_OrdemEFiltrosDeAtoECadastro()
     {
         (string marca, _, _, _) = await RegistrarTresDecisoesAsync();
@@ -46,7 +46,7 @@ public sealed class DecisoesDaProtecaoEndpointTests : HistoricoDaProtecaoTestBas
         (await NomesAsync(client, Caroline, $"busca={marca}")).Should().HaveCount(3, "sem o filtro, o Representante do controlador vê todas as decisões");
     }
 
-    [Fact(DisplayName = "O período restringe o recorte, e a data máxima não tem limite superior")]
+    [Fact(DisplayName = "O período restringe os resultados, e a data máxima não tem limite superior")]
     public async Task Decisoes_FiltroDePeriodo()
     {
         (string marca, _, _, _) = await RegistrarTresDecisoesAsync();
@@ -97,8 +97,8 @@ public sealed class DecisoesDaProtecaoEndpointTests : HistoricoDaProtecaoTestBas
         paginas.Should().Be(2);
     }
 
-    [Fact(DisplayName = "O cursor emitido para um recorte não continua outro")]
-    public async Task Decisoes_CursorDeOutroRecorte_Retorna400()
+    [Fact(DisplayName = "O cursor emitido para um filtro não continua outro")]
+    public async Task Decisoes_CursorDeOutroFiltro_Retorna400()
     {
         (string marca, _, _, _) = await RegistrarTresDecisoesAsync();
         using HttpClient client = Fixture.Factory.CreateClient();
@@ -106,10 +106,26 @@ public sealed class DecisoesDaProtecaoEndpointTests : HistoricoDaProtecaoTestBas
         string cursor = new Uri(LinkRel(primeira, "next")!, UriKind.RelativeOrAbsolute).Query.TrimStart('?').Split('&')
             .Single(p => p.StartsWith("cursor=", StringComparison.Ordinal));
 
-        // O mesmo cursor, com o recorte trocado.
+        // O mesmo cursor, com o filtro trocado.
         HttpResponseMessage resposta = await Enviar(client, HttpMethod.Get, $"{Base}/decisoes?busca={marca}&cadastro=DADO_DO_CANDIDATO&{cursor}&direction=next", Betina);
 
         resposta.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+    }
+
+    [Fact]
+    public async Task Decisoes_CursorComBuscaAparada_ContinuaMesmoFiltro()
+    {
+        (string marca, _, _, _) = await RegistrarTresDecisoesAsync();
+        using HttpClient client = Fixture.Factory.CreateClient();
+        HttpResponseMessage primeira = await Enviar(client, HttpMethod.Get, $"{Base}/decisoes?busca=%20{marca}%20&limit=1", Betina);
+        string link = LinkRel(primeira, "next")!;
+        link.Should().Contain($"busca=%20{marca}%20");
+        HttpResponseMessage seguindoLink = await Enviar(client, HttpMethod.Get, link, Betina);
+        HttpResponseMessage aparada = await Enviar(client, HttpMethod.Get, link.Replace($"%20{marca}%20", marca, StringComparison.Ordinal), Betina);
+
+        seguindoLink.StatusCode.Should().Be(HttpStatusCode.OK);
+        aparada.StatusCode.Should().Be(HttpStatusCode.OK);
+        (await aparada.Content.ReadAsStringAsync()).Should().Be(await seguindoLink.Content.ReadAsStringAsync());
     }
 
     [Theory(DisplayName = "O filtro fora do vocabulário, ou que não é decisão, e o período invertido respondem 422 no campo")]

@@ -1,7 +1,6 @@
 namespace Unifesspa.UniPlus.Configuracao.Application.Queries.ProtecaoDoCatalogo;
 
 using Unifesspa.UniPlus.Application.Abstractions.Authentication;
-using Unifesspa.UniPlus.Application.Abstractions.Consultas;
 using Unifesspa.UniPlus.Configuracao.Application.Abstractions;
 using Unifesspa.UniPlus.Configuracao.Application.Commands.ProtecaoDoCatalogo;
 using Unifesspa.UniPlus.Configuracao.Application.DTOs;
@@ -11,6 +10,7 @@ using Unifesspa.UniPlus.Configuracao.Domain.Enums;
 using Unifesspa.UniPlus.Configuracao.Domain.Errors;
 using Unifesspa.UniPlus.Configuracao.Domain.Interfaces;
 using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
+using Unifesspa.UniPlus.Kernel.Domain.ValueObjects;
 using Unifesspa.UniPlus.Kernel.Results;
 
 /// <summary>
@@ -54,7 +54,7 @@ public static class ListarDecisoesDaProtecaoQueryHandler
         CadastroDoCatalogo? cadastro = Cadastro(query.Cadastro, erros);
         ConferirPeriodo(query.De, query.Ate, erros);
 
-        Result<string?> busca = BuscaPedida.Validar(query.Busca);
+        Result<TermoDeBusca?> busca = TermoDeBusca.Criar(query.Busca);
         if (busca.IsFailure)
         {
             erros.Add(new("busca", busca.Error!));
