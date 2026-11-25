@@ -1,11 +1,12 @@
 namespace Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
 
+using Abstractions;
+
 using Domain.Entities;
 using Domain.Interfaces;
 using Domain.ValueObjects;
 
 using Unifesspa.UniPlus.Kernel.Results;
-using Unifesspa.UniPlus.Publicacoes.Contracts;
 
 /// <summary>
 /// Monta o registro do ato do processo para o ato que cria uma versão de configuração — a abertura e
@@ -22,36 +23,29 @@ using Unifesspa.UniPlus.Publicacoes.Contracts;
 internal static class RegistroDoAtoDaVersao
 {
     public static Result<AtoDoProcesso> Montar(
-        ProcessoSeletivo processo,
-        VersaoConfiguracao versao,
-        DadosDoAto ato,
-        TipoAtoPublicadoView tipoConferido,
-        DadosEdital dados,
-        Guid documentoEditalId,
-        Guid? atoRetificadoId,
-        string? motivoRetificacao)
+        ProcessoSeletivo processo, VersaoConfiguracao versao, AtoEDocumentoConferidos ato, DadosEdital edital, RetificacaoDoEdital? retificacao)
     {
         ArgumentNullException.ThrowIfNull(processo);
         ArgumentNullException.ThrowIfNull(versao);
-        ArgumentNullException.ThrowIfNull(ato);
-        ArgumentNullException.ThrowIfNull(tipoConferido);
-        ArgumentNullException.ThrowIfNull(dados);
+        ArgumentNullException.ThrowIfNull(edital);
 
-        return AtoDoProcesso.Registrar(
-            new NovoAtoDoProcesso(
-                AtoId: versao.AtoCriadorId,
-                ProcessoSeletivoId: processo.Id,
-                TipoCodigo: ato.TipoAtoCodigo,
-                TipoNome: tipoConferido.Nome,
-                Numero: dados.Numero,
-                DataDoAto: ato.DataDoAto,
-                Assinante: ato.Assinante,
-                IdentificadorNoEnderecoWebDaUnidadeAdministradora: processo.UnidadeAdministradora.IdentificadorNoEnderecoWeb,
-                IdentificadorLegivelDoProcesso: processo.IdentificadorLegivel!.Value.Valor,
-                DocumentoPrincipalId: documentoEditalId,
-                Anexos: [.. dados.Anexos.Select(static a => new AnexoDeclarado(a.DocumentoId, a.NomeArquivo))],
-                AtoCorrigidoId: atoRetificadoId,
-                MotivoDaCorrecao: motivoRetificacao),
-            versao.VigenteAPartirDe);
+        return AtoDoProcesso.Registrar(NovoAtoDaVersao(processo, versao, ato, edital, retificacao), versao.VigenteAPartirDe);
     }
+
+    private static NovoAtoDoProcesso NovoAtoDaVersao(
+        ProcessoSeletivo processo, VersaoConfiguracao versao, AtoEDocumentoConferidos ato, DadosEdital edital, RetificacaoDoEdital? retificacao) =>
+        new(
+            AtoId: versao.AtoCriadorId,
+            ProcessoSeletivoId: processo.Id,
+            TipoCodigo: ato.Ato.TipoAtoCodigo,
+            TipoNome: ato.TipoDoAto.Nome,
+            Numero: edital.Numero,
+            DataDoAto: ato.Ato.DataDoAto,
+            Assinante: ato.Ato.Assinante,
+            IdentificadorNoEnderecoWebDaUnidadeAdministradora: processo.UnidadeAdministradora.IdentificadorNoEnderecoWeb,
+            IdentificadorLegivelDoProcesso: processo.IdentificadorLegivel!.Value.Valor,
+            DocumentoPrincipalId: ato.Documento.Id,
+            Anexos: [.. edital.Anexos.Select(static a => new AnexoDeclarado(a.DocumentoId, a.NomeArquivo))],
+            AtoCorrigidoId: retificacao?.EditalRetificadoId,
+            MotivoDaCorrecao: retificacao?.Motivo);
 }

@@ -51,22 +51,28 @@ internal static class LeituraDoCertameEdital
     {
         ArgumentNullException.ThrowIfNull(ato);
 
-        edital = null;
-        if (!PrimitivasDaProjecao.TentarTexto(envelope, ProjecaoDoCertamePublicado.BlocoPublico("identificadorLegivel"), out string identificadorLegivel)
-            || !TentarIdentificadorNoEnderecoWebDaUnidade(envelope, out string unidade)
-            || !TentarDocumentoDoEdital(envelope, out Guid documentoEditalId, out string hashSha256)
-            || string.IsNullOrWhiteSpace(unidade)
-            || string.IsNullOrWhiteSpace(hashSha256)
-            || string.IsNullOrWhiteSpace(ato.TipoCodigo))
-        {
-            return false;
-        }
-
-        string chave = ChaveNoAcervoPublico.DoEdital(ato.Ano, unidade, ato.TipoCodigo, identificadorLegivel, ato.Id, hashSha256, FormatoDeDocumento.Pdf);
-        string nomeDeApresentacao = $"{identificadorLegivel}-{ChaveNoAcervoPublico.SegmentoDoTipo(ato.TipoCodigo)}.pdf";
-        edital = new EditalNoAcervo(documentoEditalId, hashSha256, chave, nomeDeApresentacao);
-        return true;
+        edital = PrimitivasDaProjecao.TentarTexto(envelope, ProjecaoDoCertamePublicado.BlocoPublico("identificadorLegivel"), out string identificadorLegivel)
+            && TentarIdentificadorNoEnderecoWebDaUnidade(envelope, out string unidade)
+            && TentarDocumentoDoEdital(envelope, out Guid documentoEditalId, out string hashSha256)
+            && !string.IsNullOrWhiteSpace(unidade)
+            && !string.IsNullOrWhiteSpace(hashSha256)
+            && !string.IsNullOrWhiteSpace(ato.TipoCodigo)
+                ? EditalNoAcervo.De(ato, identificadorLegivel, unidade, documentoEditalId, hashSha256)
+                : null;
+        return edital is not null;
     }
+
+    internal static EditalNoAcervo EditalCongeladoNoAcervo(JsonObject envelope, AtoDaDivulgacao ato, Guid processoSeletivoId) =>
+        TentarEditalNoAcervo(envelope, ato, out EditalNoAcervo? edital)
+            ? edital
+            : throw new InvalidOperationException(
+                $"Configuração congelada do processo {processoSeletivoId} não tem a forma esperada no documento do edital.");
+
+    internal static List<AnexoDoEdital> AnexosCongelados(JsonObject envelope, Guid processoSeletivoId) =>
+        TentarAnexosCongelados(envelope, out List<AnexoDoEdital>? anexos)
+            ? anexos
+            : throw new InvalidOperationException(
+                $"Configuração congelada do processo {processoSeletivoId} não tem a forma esperada nos anexos do edital.");
 
     private static bool TentarIdentificadorNoEnderecoWebDaUnidade(JsonObject envelope, out string unidade)
     {
@@ -89,7 +95,7 @@ internal static class LeituraDoCertameEdital
     /// Os anexos do edital como o envelope da versão os congelou, na ordem em que o edital os
     /// apresenta — o que a divulgação publica no acervo. Vazio quando o edital não tem anexo.
     /// </summary>
-    internal static bool TentarAnexosCongelados(
+    private static bool TentarAnexosCongelados(
         JsonObject envelope,
         [NotNullWhen(true)] out List<AnexoDoEdital>? anexos)
     {
@@ -123,21 +129,17 @@ internal static class LeituraDoCertameEdital
 
     private static bool TentarAnexo(JsonNode? item, [NotNullWhen(true)] out AnexoDoEdital? resultado)
     {
-        resultado = null;
-        if (item is not JsonObject anexo
-            || !PrimitivasDaProjecao.TentarIdentificador(anexo, "anexoId", out Guid anexoId)
-            || !PrimitivasDaProjecao.TentarIdentificador(anexo, "documentoId", out Guid documentoId)
-            || !PrimitivasDaProjecao.TentarTexto(anexo, "nomeArquivo", out string nomeArquivo)
-            || !PrimitivasDaProjecao.TentarTexto(anexo, "tipoDeMidia", out string tipoDeMidia)
-            || !PrimitivasDaProjecao.TentarInteiro(anexo, "tamanhoBytes", out int tamanhoBytes)
-            || !PrimitivasDaProjecao.TentarTexto(anexo, "hashSha256", out string hashSha256)
-            || FormatosDeDocumento.DoTipoDeMidia(tipoDeMidia) is not { } formato)
-        {
-            return false;
-        }
-
-        resultado = new AnexoDoEdital(anexoId, documentoId, nomeArquivo, formato, tamanhoBytes, hashSha256);
-        return true;
+        resultado = item is JsonObject anexo
+            && PrimitivasDaProjecao.TentarIdentificador(anexo, "anexoId", out Guid anexoId)
+            && PrimitivasDaProjecao.TentarIdentificador(anexo, "documentoId", out Guid documentoId)
+            && PrimitivasDaProjecao.TentarTexto(anexo, "nomeArquivo", out string nomeArquivo)
+            && PrimitivasDaProjecao.TentarTexto(anexo, "tipoDeMidia", out string tipoDeMidia)
+            && PrimitivasDaProjecao.TentarInteiro(anexo, "tamanhoBytes", out int tamanhoBytes)
+            && PrimitivasDaProjecao.TentarTexto(anexo, "hashSha256", out string hashSha256)
+            && FormatosDeDocumento.DoTipoDeMidia(tipoDeMidia) is { } formato
+                ? new AnexoDoEdital(anexoId, documentoId, nomeArquivo, formato, tamanhoBytes, hashSha256)
+                : null;
+        return resultado is not null;
     }
 
     /// <summary>

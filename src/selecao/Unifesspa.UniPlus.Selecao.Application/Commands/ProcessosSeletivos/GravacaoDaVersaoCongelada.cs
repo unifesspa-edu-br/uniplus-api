@@ -39,7 +39,7 @@ public sealed class GravacaoDaVersaoCongelada(
         CancellationToken cancellationToken)
     {
         Result<AtoDoProcesso> registroDoAto = RegistroDoAtoDaVersao.Montar(
-            processo, versao, ato.Ato, ato.TipoDoAto, dados, ato.Documento.Id, retificacao?.EditalRetificadoId, retificacao?.Motivo);
+            processo, versao, ato, dados, retificacao);
         if (registroDoAto.IsFailure)
         {
             return (Result.ValidationFailure(registroDoAto.Errors), []);

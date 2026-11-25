@@ -1,6 +1,8 @@
 namespace Unifesspa.UniPlus.Selecao.Application.Queries.ProcessosSeletivos;
 
 using Domain.Entities;
+using Domain.Enums;
+using Domain.Services;
 
 using DTOs;
 
@@ -33,6 +35,14 @@ internal sealed record AtoDaDivulgacao(Guid Id, int Ano, string TipoCodigo)
 /// <param name="NomeDeApresentacao">Nome com que o arquivo é salvo por quem o baixa.</param>
 internal sealed record EditalNoAcervo(Guid DocumentoEditalId, string HashSha256, string Chave, string NomeDeApresentacao)
 {
+    internal static EditalNoAcervo De(
+        AtoDaDivulgacao ato, string identificadorLegivel, string identificadorNoEnderecoWebDaUnidade, Guid documentoEditalId, string hashSha256)
+    {
+        string chave = ChaveNoAcervoPublico.DoEdital(ato.Ano, identificadorNoEnderecoWebDaUnidade, ato.TipoCodigo, identificadorLegivel, ato.Id, hashSha256, FormatoDeDocumento.Pdf);
+        string nome = $"{identificadorLegivel}-{ChaveNoAcervoPublico.SegmentoDoTipo(ato.TipoCodigo)}.pdf";
+        return new EditalNoAcervo(documentoEditalId, hashSha256, chave, nome);
+    }
+
     /// <summary>O edital como o contrato público o divulga: o endereço é o da <see cref="Chave"/> no acervo.</summary>
     /// <param name="enderecoNoAcervo">O endereço público de uma chave do acervo.</param>
     internal DocumentoEditalCertameDto NoContratoPublico(Func<string, Uri> enderecoNoAcervo) =>
