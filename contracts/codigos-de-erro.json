@@ -4569,7 +4569,7 @@
     {
       "codigo": "uniplus.selecao.configuracao_cascata_remanejamento.codigo_invalido",
       "status": 422,
-      "titulo": "Código de modalidade fora do vocabulário ^[A-Z0-9_]+$ ou acima de 60 caracteres"
+      "titulo": "Código de modalidade fora do formato aceito ou acima de 60 caracteres"
     },
     {
       "codigo": "uniplus.selecao.configuracao_cascata_remanejamento.destino_duplicado",

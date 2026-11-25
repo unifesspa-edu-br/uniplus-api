@@ -1,8 +1,7 @@
 namespace Unifesspa.UniPlus.Selecao.Domain.Entities;
 
-using System.Text.RegularExpressions;
-
 using Unifesspa.UniPlus.Kernel.Domain.Entities;
+using Unifesspa.UniPlus.Kernel.Domain.ValueObjects;
 using Unifesspa.UniPlus.Kernel.Results;
 
 /// <summary>
@@ -17,13 +16,10 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// concorrência nunca aparece aqui — é o <c>FallbackCodigo</c> da cascata, campo
 /// separado (§2.3 da story).
 /// </remarks>
-public sealed partial class DestinoRemanejamento : EntityBase
+public sealed class DestinoRemanejamento : EntityBase
 {
     /// <summary>Alinhado a <c>DestinoRemanejamentoConfiguration</c> (varchar(60)).</summary>
     public const int CodigoMaxLength = 60;
-
-    [GeneratedRegex("^[A-Z0-9_]+\\z")]
-    private static partial Regex CodigoValido();
 
     public Guid ConfiguracaoCascataRemanejamentoId { get; private set; }
     public string ModalidadeOrigemCodigo { get; private set; } = string.Empty;
@@ -86,19 +82,19 @@ public sealed partial class DestinoRemanejamento : EntityBase
         {
             erros.Add(new("modalidadeOrigemCodigo", new DomainError(
                 "ConfiguracaoCascataRemanejamento.CodigoInvalido",
-                $"Código de origem inválido — precisa casar com ^[A-Z0-9_]+$ e ter no máximo {CodigoMaxLength} caracteres.")));
+                $"Código de origem inválido — deve começar com letra maiúscula, usar letras maiúsculas, números ou sublinhados isolados e ter no máximo {CodigoMaxLength} caracteres.")));
         }
 
         if (!destinoValido)
         {
             erros.Add(new("modalidadeDestinoCodigo", new DomainError(
                 "ConfiguracaoCascataRemanejamento.CodigoInvalido",
-                $"Código de destino inválido — precisa casar com ^[A-Z0-9_]+$ e ter no máximo {CodigoMaxLength} caracteres.")));
+                $"Código de destino inválido — deve começar com letra maiúscula, usar letras maiúsculas, números ou sublinhados isolados e ter no máximo {CodigoMaxLength} caracteres.")));
         }
     }
 
     private static bool CodigoEhValido(string? codigo) =>
-        !string.IsNullOrWhiteSpace(codigo) && codigo.Length <= CodigoMaxLength && CodigoValido().IsMatch(codigo);
+        !string.IsNullOrWhiteSpace(codigo) && codigo.Length <= CodigoMaxLength && FormatoDoCodigo.TemFormatoValido(codigo);
 
     internal void VincularCascata(Guid configuracaoCascataRemanejamentoId) =>
         ConfiguracaoCascataRemanejamentoId = configuracaoCascataRemanejamentoId;

@@ -27,7 +27,7 @@ public sealed class RegraLegalInavaliavelNaPublicacaoTests
     {
         DependenciasDosHandlersQueCongelam handlers = DependenciasDosHandlersQueCongelam.Para(PublicacaoDeTeste.NovoProcessoConforme());
         handlers.ObrigatoriedadesLegais = RepositorioCom(
-            NovaRegra("GATE-DOC-ORFAO", new DocumentoObrigatorioParaModalidade("LB_PPI", "TIPO_QUE_NAO_EXISTE")));
+            NovaRegra("GATE_DOC_ORFAO", new DocumentoObrigatorioParaModalidade("LB_PPI", "TIPO_QUE_NAO_EXISTE")));
 
         (Result resposta, IEnumerable<object> eventos) = await handlers.PublicarAsync();
 
@@ -45,7 +45,7 @@ public sealed class RegraLegalInavaliavelNaPublicacaoTests
     {
         DependenciasDosHandlersQueCongelam handlers = DependenciasDosHandlersQueCongelam.Para(PublicacaoDeTeste.NovoProcessoConforme());
         handlers.ObrigatoriedadesLegais = RepositorioCom(
-            NovaRegra("GATE-ORFA", new DocumentoObrigatorioParaModalidade("LB_PPl", "LAUDO_MEDICO")));
+            NovaRegra("GATE_ORFA", new DocumentoObrigatorioParaModalidade("LB_PPl", "LAUDO_MEDICO")));
         handlers.Modalidades = Substitute.For<IModalidadeReader>();
         handlers.Modalidades.ObterVivaPorCodigoAsync(Arg.Any<string>(), Arg.Any<CancellationToken>()).Returns((ModalidadeView?)null);
 
@@ -64,7 +64,7 @@ public sealed class RegraLegalInavaliavelNaPublicacaoTests
     public async Task Publicar_ComRegraDeModalidadesMinimasVazia_Recusa()
     {
         DependenciasDosHandlersQueCongelam handlers = DependenciasDosHandlersQueCongelam.Para(PublicacaoDeTeste.NovoProcessoConforme());
-        handlers.ObrigatoriedadesLegais = RepositorioCom(RegraGravadaSemPassarPelaFactory("GATE-VAZIA", new ModalidadesMinimas([])));
+        handlers.ObrigatoriedadesLegais = RepositorioCom(RegraGravadaSemPassarPelaFactory("GATE_VAZIA", new ModalidadesMinimas([])));
 
         (Result resposta, IEnumerable<object> eventos) = await handlers.PublicarAsync();
 
@@ -82,7 +82,7 @@ public sealed class RegraLegalInavaliavelNaPublicacaoTests
     {
         DependenciasDosHandlersQueCongelam handlers = DependenciasDosHandlersQueCongelam.Para(PublicacaoDeTeste.NovoProcessoConforme());
         handlers.ObrigatoriedadesLegais = RepositorioCom(
-            NovaRegra("GATE-ESPACO", new DocumentoObrigatorioParaModalidade("LB_PPI ", "LAUDO_MEDICO")));
+            NovaRegra("GATE_ESPACO", new DocumentoObrigatorioParaModalidade("LB_PPI ", "LAUDO_MEDICO")));
         handlers.Modalidades = Substitute.For<IModalidadeReader>();
         handlers.Modalidades.ObterVivaPorCodigoAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
             .Returns(chamada => CadastrosVivos.Modalidade(chamada.Arg<string>().Trim()));

@@ -200,7 +200,7 @@ public sealed class ObrigatoriedadeLegal : SoftDeletableEntity, IAuditableEntity
     {
         TipoProcessoCodigo = TextoNormalizavel.AparadoEmNfc(ValidacaoDaObrigatoriedadeLegal.Aparar(tipoProcessoCodigo));
         Categoria = categoria!.Value;
-        RegraCodigo = ValidacaoDaObrigatoriedadeLegal.Aparar(regraCodigo);
+        RegraCodigo = regraCodigo!;
         Predicado = predicado!;
         AplicarTexto(texto);
         VigenciaInicio = vigenciaInicio!.Value;

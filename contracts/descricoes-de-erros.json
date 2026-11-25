@@ -14912,12 +14912,12 @@
         "UNI-REQ-0056"
       ],
       "oQueAconteceu": [
-        "O código de modalidade de origem ou de destino de uma posição da cascata\nnão casa com `^[A-Z0-9_]+$` (só maiúsculas, dígitos e sublinhado) ou excede\n60 caracteres — o mesmo vocabulário de código de modalidade usado no resto\ndo módulo Seleção.",
+        "O código de modalidade de origem ou de destino de uma posição da cascata\nnão casa com `^[A-Z][A-Z0-9]*(_[A-Z0-9]+)*$` (só maiúsculas, dígitos e sublinhado) ou excede\n60 caracteres — o mesmo vocabulário de código de modalidade usado no resto\ndo módulo Seleção.",
         "Uma posição da cascata (`modalidadeOrigemCodigo`+`ordem`+`modalidadeDestinoCodigo`)\npode reprovar este código **até duas vezes ao mesmo tempo** — uma para o\ncódigo de origem, outra para o de destino, cada uma com o campo (`field`)\ncorrespondente — se os dois vierem fora do vocabulário. Também pode\ncoexistir, no mesmo item, com\n[`ordem_invalida`](/erros/uniplus.selecao.configuracao_cascata_remanejamento.ordem_invalida):\nas conferências do código de origem, do código de destino e da ordem do item são independentes entre si e acumulam (ADR-0125).\nNão coexiste com\n[`origem_igual_ao_destino`](/erros/uniplus.selecao.configuracao_cascata_remanejamento.origem_igual_ao_destino)\nno mesmo par — essa causa só é conferida quando os dois códigos do item já\nsão individualmente válidos.",
         "Na definição, o lote de erros de item acumula com os de outros itens da\nmesma lista `destinos`, e, se algum item falhar, também com as causas que\nnão dependem de os itens serem válidos (fallback, limites de\norigens/destinos) — ver\n[`campos_obrigatorios`](/erros/uniplus.selecao.configuracao_cascata_remanejamento.campos_obrigatorios)\npara o detalhe dessa composição."
       ],
       "comoResolver": [
-        "Corrija o código de origem e/ou de destino para casar com\n`^[A-Z0-9_]+$` e ter no máximo 60 caracteres — o mesmo formato usado para\ndeclarar código de modalidade em qualquer outro corpo do pedido do módulo."
+        "Corrija o código de origem e/ou de destino para casar com\n`^[A-Z][A-Z0-9]*(_[A-Z0-9]+)*$` e ter no máximo 60 caracteres — o mesmo formato usado para\ndeclarar código de modalidade em qualquer outro corpo do pedido do módulo."
       ],
       "ondeAparece": [
         "Definição de cascata de remanejamento do processo seletivo"
@@ -14978,14 +14978,14 @@
         "UNI-REQ-0056"
       ],
       "oQueAconteceu": [
-        "`fallbackCodigo` está ausente, vazio, fora do vocabulário\n`^[A-Z0-9_]+$` ou excede 60 caracteres — o mesmo formato de código de\nmodalidade usado no resto do módulo, e a mesma conferência que\n[`codigo_invalido`](/erros/uniplus.selecao.configuracao_cascata_remanejamento.codigo_invalido)\naplica a cada origem/destino, mas para o campo `fallbackCodigo`.",
+        "`fallbackCodigo` está ausente, vazio, fora do vocabulário\n`^[A-Z][A-Z0-9]*(_[A-Z0-9]+)*$` ou excede 60 caracteres — o mesmo formato de código de\nmodalidade usado no resto do módulo, e a mesma conferência que\n[`codigo_invalido`](/erros/uniplus.selecao.configuracao_cascata_remanejamento.codigo_invalido)\naplica a cada origem/destino, mas para o campo `fallbackCodigo`.",
         "O fallback é a modalidade de ampla concorrência que recebe a vaga quando\nnenhum destino da fila de remanejamento de uma origem está selecionado na\noferta em questão — o \"fim de linha\" da cascata. Sem ele declarado, a\ncascata não tem para onde encaminhar uma vaga que a fila inteira não\nresolveu.",
         "É a primeira conferência dentro da validação de forma da cascata — roda antes\nde qualquer conferência sobre os destinos. Acumula (ADR-0125), mas o conjunto\nde causas com que pode coexistir muda conforme a lista `destinos` estiver\nvazia ou não:",
         "- Lista vazia: só pode coexistir com\n  [`sem_destinos`](/erros/uniplus.selecao.configuracao_cascata_remanejamento.sem_destinos)\n  — sem nenhum destino, não há origem para verificar limite nem ordem.\n- Lista não vazia, todos os itens válidos: pode coexistir com\n  [`excede_limite_de_origens`](/erros/uniplus.selecao.configuracao_cascata_remanejamento.excede_limite_de_origens),\n  [`excede_limite_de_destinos`](/erros/uniplus.selecao.configuracao_cascata_remanejamento.excede_limite_de_destinos),\n  [`ordem_duplicada_na_origem`](/erros/uniplus.selecao.configuracao_cascata_remanejamento.ordem_duplicada_na_origem),\n  [`ordem_nao_contigua`](/erros/uniplus.selecao.configuracao_cascata_remanejamento.ordem_nao_contigua)\n  e\n  [`destino_duplicado`](/erros/uniplus.selecao.configuracao_cascata_remanejamento.destino_duplicado)\n  — nunca com `sem_destinos`.\n- Lista não vazia, algum item inválido: acumula com as causas de item e,\n  no máximo, com `excede_limite_de_origens`/`excede_limite_de_destinos` —\n  ver\n  [`campos_obrigatorios`](/erros/uniplus.selecao.configuracao_cascata_remanejamento.campos_obrigatorios)\n  para o detalhe dessa composição alternativa.",
         "Na leitura da configuração publicada, este erro pode ocorrer quando `fallbackCodigo` está vazio ou fora dos valores aceitos. Se a chave estiver ausente ou tiver mais de 60 caracteres, a leitura é recusada antes como `envelope_codec.envelope_malformado`. A leitura para na primeira violação."
       ],
       "comoResolver": [
-        "Informe `fallbackCodigo` casando com `^[A-Z0-9_]+$`, com no máximo 60\ncaracteres — o código de uma modalidade de ampla concorrência que de fato\nestá selecionada nas ofertas que a cascata cobre."
+        "Informe `fallbackCodigo` casando com `^[A-Z][A-Z0-9]*(_[A-Z0-9]+)*$`, com no máximo 60\ncaracteres — o código de uma modalidade de ampla concorrência que de fato\nestá selecionada nas ofertas que a cascata cobre."
       ],
       "ondeAparece": [
         "Definição de cascata de remanejamento do processo seletivo",
@@ -21317,7 +21317,7 @@
         "UNI-REQ-0120"
       ],
       "oQueAconteceu": [
-        "O código do motivo segue o formato `^[A-Z][A-Z0-9_]{1,49}$`: começa com letra maiúscula, continua com letras maiúsculas, dígitos ou sublinhado e tem de 2 a 50 caracteres. O código enviado em `POST /api/selecao/admin/motivos-de-decisao` não segue esse formato, por exemplo por ter letra minúscula, acento, espaço ou hífen. A recusa sai com **422**, e o erro aparece no campo `codigo`."
+        "O código do motivo começa com letra maiúscula, continua com letras maiúsculas ou dígitos separados por sublinhados isolados e tem até 50 caracteres. O código enviado em `POST /api/selecao/admin/motivos-de-decisao` não segue esse formato, por exemplo por ter letra minúscula, acento, espaço ou hífen. A recusa sai com **422**, e o erro aparece no campo `codigo`."
       ],
       "comoResolver": [
         "Reescreva o código no formato aceito: `DOCUMENTO_ILEGIVEL` é aceito; `documento-ilegível` não é."
@@ -22337,12 +22337,12 @@
       "codigo": "uniplus.selecao.obrigatoriedade_legal.regra_codigo_invalido",
       "requisitos": [],
       "oQueAconteceu": [
-        "O campo `regraCodigo` tem mais de 128 caracteres. A contagem é feita depois de aparar os espaços das\npontas, que a regra descarta ao gravar. O tamanho é a única conferência de forma deste campo: nenhum\nformato de caractere é exigido. A mensagem da resposta diz o limite e não repete o valor enviado.\nNada é gravado.",
+        "O campo `regraCodigo` excede 80 caracteres ou está fora do formato: começa com letra maiúscula e contém letras maiúsculas ou dígitos, separados por sublinhados isolados. O código é conferido como recebido. A mensagem da resposta diz o limite e não repete o valor enviado.\nNada é gravado.",
         "A resposta lista todas as violações de campo da mesma requisição em `errors[]`, cada uma com o campo\nem camelCase, o código e a mensagem; o `code` principal da resposta é o da primeira violação, na ordem em que os\ncampos são conferidos (tipo de processo, categoria, código da regra, predicado, descrição, base legal,\nato normativo, portaria interna e vigência).",
         "A conferência vem depois da permissão para manter obrigatoriedades legais e da leitura do corpo, e\nantes de qualquer consulta: na atualização, antes de a regra ser buscada\n([`nao_encontrada`](/erros/uniplus.selecao.obrigatoriedade_legal.nao_encontrada)); nas duas operações,\nantes da conferência de código de regra já em uso\n([`regra_codigo_duplicada`](/erros/uniplus.selecao.obrigatoriedade_legal.regra_codigo_duplicada))."
       ],
       "comoResolver": [
-        "Use um código de até 128 caracteres e repita o cadastro ou a atualização. Na atualização, a regra é\nsubstituída por inteiro: reenvie também os campos que não mudam."
+        "Use um código válido de até 80 caracteres e repita o cadastro ou a atualização. Na atualização, a regra é\nsubstituída por inteiro: reenvie também os campos que não mudam."
       ],
       "ondeAparece": [
         "Cadastro de uma obrigatoriedade legal",
@@ -22358,7 +22358,7 @@
         "A conferência vem depois da permissão para manter obrigatoriedades legais e da leitura do corpo, e\nantes de qualquer consulta: na atualização, antes de a regra ser buscada\n([`nao_encontrada`](/erros/uniplus.selecao.obrigatoriedade_legal.nao_encontrada)); nas duas operações,\nantes da conferência de código de regra já em uso\n([`regra_codigo_duplicada`](/erros/uniplus.selecao.obrigatoriedade_legal.regra_codigo_duplicada))."
       ],
       "comoResolver": [
-        "Informe um código de regra preenchido, de até 128 caracteres\n([`regra_codigo_invalido`](/erros/uniplus.selecao.obrigatoriedade_legal.regra_codigo_invalido)) e que\nnenhuma outra regra ativa use. Na atualização, a regra é substituída por inteiro: reenvie também os\ncampos que não mudam, porque o que não for enviado é tratado como ausente."
+        "Informe um código de regra preenchido, no formato aceito, de até 80 caracteres\n([`regra_codigo_invalido`](/erros/uniplus.selecao.obrigatoriedade_legal.regra_codigo_invalido)) e que\nnenhuma outra regra ativa use. Na atualização, a regra é substituída por inteiro: reenvie também os\ncampos que não mudam, porque o que não for enviado é tratado como ausente."
       ],
       "ondeAparece": [
         "Cadastro de uma obrigatoriedade legal",

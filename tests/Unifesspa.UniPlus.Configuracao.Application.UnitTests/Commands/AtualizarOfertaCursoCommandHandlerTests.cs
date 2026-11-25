@@ -134,6 +134,7 @@ public sealed class AtualizarOfertaCursoCommandHandlerTests
             Comando(oferta.Id), _repository, _unitOfWork, CancellationToken.None);
 
         resultado.Error!.Code.Should().Be(OfertaCursoErrorCodes.CodigoJaEmUso);
+        resultado.Error.Message.Should().NotContain("ENF_BACH_MARABA");
         oferta.Codigo.Should().Be("ENF_BACHARELADO_MARABA", "a recusa vem antes de qualquer mutação");
         await _unitOfWork.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
     }
