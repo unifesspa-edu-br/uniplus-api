@@ -4283,7 +4283,7 @@
       "oQueAconteceu": [
         "Um fato derivado revela o que se sabe dos fatos de que depende: a regra padrão cita esses fatos, e o resumo de grupo reúne as respostas ao fato de membro. Por isso ele não pode ter classificação de proteção de dados mais fraca que a de nenhum deles. A escala vai do mais fraco ao mais forte: `PUBLICO`, `INTERNO`, `PESSOAL`, `IDENTIFICADOR`, `SENSIVEL`. A recusa vale para:",
         "- o cadastro do resumo de grupo (`POST /api/configuracao/admin/fatos-candidato/agregados`), contra o fato de membro, com `field` igual a `classificacaoProtecao`;\n- a definição das regras padrão (`PUT /api/configuracao/admin/fatos-candidato/{id}/regras-padrao`), contra cada fato citado, com `field` igual ao índice da regra, como `regras[0]`;\n- a alteração da definição do derivado ou do resumo de grupo (`PUT /api/configuracao/admin/fatos-candidato/{id}/definicao`) e o aceite da recomendação de ajuste (`POST /api/configuracao/admin/fatos-candidato/{id}/aceite-da-recomendacao`), contra o que o fato já cita ou resume, com `field` igual a `classificacaoProtecao`.",
-        "A mensagem cita o código do fato de que o derivado depende. Na alteração, só conta a recusa que a mudança causa: a que já existia antes dela não impede a alteração. Nada é gravado."
+        "No cadastro do resumo de grupo, a mensagem cita o código do fato de membro. Na alteração, só conta a recusa que a mudança causa: a que já existia antes dela não impede a alteração. Nada é gravado."
       ],
       "comoResolver": [
         "Eleve a classificação do fato derivado até a do fato mais protegido que ele cita ou resume, ou tire a citação da regra. A proteção do fato de que ele depende também pode ser revista, mas isso muda o dado de origem e passa pela aprovação da proteção de dados (UNI-REQ-0205). Para elevar a classificação do derivado, altere a definição dele (`PUT /api/configuracao/admin/fatos-candidato/{id}/definicao`)."
@@ -4922,7 +4922,7 @@
         "UNI-REQ-0143"
       ],
       "oQueAconteceu": [
-        "O ponto de resolução é a fase do processo em que o valor do fato fica conhecido. Um fato derivado só resolve quando todos os fatos de que depende resolveram (UNI-REQ-0075), então ele não pode ser conhecido numa fase anterior à de uma dependência: a regra padrão cita esses fatos, e o resumo de grupo reúne as respostas ao fato de membro. A ordem entre as fases vem do cadastro de precedência entre fases. Fases sem precedência entre si, e a mesma fase, não geram esta recusa. A mensagem cita o código do fato de que o derivado depende e as duas fases.",
+        "O ponto de resolução é a fase do processo em que o valor do fato fica conhecido. Um fato derivado só resolve quando todos os fatos de que depende resolveram (UNI-REQ-0075), então ele não pode ser conhecido numa fase anterior à de uma dependência: a regra padrão cita esses fatos, e o resumo de grupo reúne as respostas ao fato de membro. A ordem entre as fases vem do cadastro de precedência entre fases. Fases sem precedência entre si, e a mesma fase, não geram esta recusa. A mensagem cita as duas fases; no cadastro do resumo de grupo, também cita o código do fato de membro.",
         "A recusa vale para:",
         "- o cadastro do resumo de grupo (`POST /api/configuracao/admin/fatos-candidato/agregados`), contra o fato de membro, com `field` igual a `pontoResolucao`;\n- a definição das regras padrão (`PUT /api/configuracao/admin/fatos-candidato/{id}/regras-padrao`), contra cada fato citado, com `field` igual ao índice da regra, como `regras[0]`;\n- a alteração da definição de um derivado ou de um resumo de grupo (`PUT /api/configuracao/admin/fatos-candidato/{id}/definicao`), contra o que o fato já cita ou resume, com `field` igual a `pontoResolucao`.",
         "Na alteração, só conta a recusa que a mudança causa: a que já existia antes dela não impede a alteração. Nada é gravado."
@@ -4977,7 +4977,7 @@
       ],
       "oQueAconteceu": [
         "O administrador substituiu as regras padrão de um fato derivado por regra (`PUT /api/configuracao/admin/fatos-candidato/{id}/regras-padrao`), e uma regra cita um fato que está desativado e que as regras gravadas do derivado ainda não citavam. O fato desativado não aceita vínculos novos e preserva os que já existem (UNI-REQ-0143): a citação que já existia continua aceita quando as regras são regravadas, e só a citação nova é recusada.",
-        "A recusa vem na lista `errors` da resposta, com `field` igual ao índice da regra, como `regras[0]`, uma entrada por fato desativado citado. A mensagem cita o código do fato. Nada é gravado."
+        "A recusa vem na lista `errors` da resposta, com `field` igual ao índice da regra, como `regras[0]`, uma entrada por fato desativado citado. Nada é gravado."
       ],
       "comoResolver": [
         "Tire a citação ao fato desativado da regra, ou reative o fato (`POST /api/configuracao/admin/fatos-candidato/{id}/ativacao`) se ele deve voltar a ser usado, e envie as regras de novo."
@@ -4993,7 +4993,7 @@
       ],
       "oQueAconteceu": [
         "O administrador substituiu as regras padrão de um fato derivado por regra (`PUT /api/configuracao/admin/fatos-candidato/{id}/regras-padrao`), e uma regra cita um fato que o predicado não sabe avaliar. Não entram em regra o fato de texto, de data e de endereço, para que dado pessoal não vá parar no edital congelado (UNI-REQ-0143), o fato de membro de grupo repetível e o fato categórico de fonte `CATALOGO` que ainda não tem valores cadastrados.",
-        "A recusa vem na lista `errors` da resposta, com `field` igual ao índice da regra, como `regras[0]`, uma entrada por fato citado. A mensagem cita o código do fato. Quando uma regra cita fato assim, a conferência dos operadores e valores do predicado dessa regra não roda. Nada é gravado."
+        "A recusa vem na lista `errors` da resposta, com `field` igual ao índice da regra, como `regras[0]`, uma entrada por fato citado. Quando uma regra cita fato assim, a conferência dos operadores e valores do predicado dessa regra não roda. Nada é gravado."
       ],
       "comoResolver": [
         "Cite outro fato na regra: um booleano, um número ou um categórico com valores. Uma data entra em regra por um fato derivado relativo à data de referência, como a faixa etária, e a UF e o município saem do endereço pelos fatos derivados deles. Para o fato de membro de um grupo repetível, a regra usa um resumo de grupo (`POST /api/configuracao/admin/fatos-candidato/agregados`), como \"existe membro que…\". Se o fato categórico ainda não tem valores, acrescente-os (`POST /api/configuracao/admin/fatos-candidato/{id}/valores`)."
@@ -5009,7 +5009,7 @@
       ],
       "oQueAconteceu": [
         "O administrador substituiu as regras padrão de um fato derivado por regra (`PUT /api/configuracao/admin/fatos-candidato/{id}/regras-padrao`), e uma regra cita, na condição, ou contribui, no resultado, um valor desativado que as regras gravadas do derivado ainda não usavam. O valor desativado não aceita vínculos novos e preserva os que já existem (UNI-REQ-0143): o uso que já existia continua aceito quando as regras são regravadas, e só o uso novo é recusado.",
-        "A recusa vem na lista `errors` da resposta, com `field` igual ao índice da regra, como `regras[0]`, uma entrada por valor. A mensagem cita o código do valor e o do fato. Nada é gravado."
+        "A recusa vem na lista `errors` da resposta, com `field` igual ao índice da regra, como `regras[0]`, uma entrada por valor. Nada é gravado."
       ],
       "comoResolver": [
         "Troque o valor desativado por um valor ativo na regra, ou reative o valor (`POST /api/configuracao/admin/fatos-candidato/{id}/valores/{codigo}/ativacao`) se ele deve voltar a ser usado, e envie as regras de novo."
