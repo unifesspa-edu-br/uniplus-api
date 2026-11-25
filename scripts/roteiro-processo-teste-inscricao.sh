@@ -12,7 +12,7 @@
 #   - os pesos por área da Resolução 805/2024 não constam dela, então a nota do
 #     ENEM entra importada (CLASSIFICACAO_IMPORTADA) até o cadastro dos pesos;
 #   - o percentual quilombola da reserva demográfica;
-#   - a lista completa das regiões de influência do bônus (item 1.5): entram os
+#   - a lista completa das regiões de influência do FADA (item 1.5): entram os
 #     oito municípios-polo que a minuta nomeia;
 #   - as datas em branco do Anexo I: o cronograma tem a inscrição, o
 #     resultado final e a habilitação, que abre na 1ª chamada e dura cinco
@@ -21,11 +21,11 @@
 # Sequência:
 #   Setup (Publicações/Organização/Configuração) →
 #   Criar ProcessoSeletivo → Atendimento Especializado → Distribuição de Vagas
-#   (Anexo II) → Cascata de Remanejamento (Quadro 3) → Bônus Regional (item
+#   (Anexo II) → Cascata de Remanejamento (Quadro 3) → FADA (item
 #   1.6) → Critérios de Desempate (item 6.3) → Classificação e eliminação
 #   (itens 5.6 e 8.1) → Taxa de Inscrição (gratuita, item 2.2) → Cronograma de
 #   Fases → aplicar o modelo de inscrição da Medicina → vincular a fase do
-#   formulário → documentos que comprovam o Fator na habilitação (os do modelo, se
+#   formulário → documentos que comprovam o FADA na habilitação (os do modelo, se
 #   houver, são mantidos) → Documento do
 #   Edital → Divulgação (sempre ANTES de publicar: depois da publicação o
 #   processo só aceita mutação por retificação) → Publicar.
@@ -403,11 +403,11 @@ setup_configuracao() {
         TIPO_DEFICIENCIA_IDS=$(jq -c --arg id "$id" '. + [$id]' <<< "$TIPO_DEFICIENCIA_IDS")
     done <<< "$tipos"
 
-    # O próprio edital institui o fator (itens 1.5 e 1.6), com os municípios das
+    # O próprio edital institui o FADA (itens 1.5 e 1.6), com os municípios das
     # regiões de influência destes oito polos. A minuta não lista os demais.
-    local bonus_identificacao="Edital nº XX/2026-CEPS/Unifesspa, itens 1.5 e 1.6"
-    BASE_LEGAL_BONUS_ID=$(post_tolerante "/api/configuracao/admin/base-legal-bonus-regional" "{
-        \"tipoInstrumento\": \"EDITAL\", \"identificacao\": \"$bonus_identificacao\",
+    local fada_identificacao="Edital nº XX/2026-CEPS/Unifesspa, itens 1.5 e 1.6"
+    BASE_LEGAL_FADA_ID=$(post_tolerante "/api/configuracao/admin/base-legal-bonus-regional" "{
+        \"tipoInstrumento\": \"EDITAL\", \"identificacao\": \"$fada_identificacao\",
         \"descricao\": \"Fator de Atenuação das Desigualdades de Acesso\",
         \"municipios\": [
             {\"codigoIbge\": \"1504208\", \"nome\": \"Marabá\", \"uf\": \"PA\"},
@@ -420,8 +420,8 @@ setup_configuracao() {
             {\"codigoIbge\": \"1702109\", \"nome\": \"Araguaína\", \"uf\": \"TO\"}
         ]
     }")
-    [ -z "$BASE_LEGAL_BONUS_ID" ] && BASE_LEGAL_BONUS_ID=$(api_get "/api/configuracao/base-legal-bonus-regional?limit=100" | jq -r --arg i "$bonus_identificacao" '.[] | select(.identificacao==$i) | .id' | head -1)
-    exigir_id "BASE_LEGAL_BONUS_ID" "$BASE_LEGAL_BONUS_ID"
+    [ -z "$BASE_LEGAL_FADA_ID" ] && BASE_LEGAL_FADA_ID=$(api_get "/api/configuracao/base-legal-bonus-regional?limit=100" | jq -r --arg i "$fada_identificacao" '.[] | select(.identificacao==$i) | .id' | head -1)
+    exigir_id "BASE_LEGAL_FADA_ID" "$BASE_LEGAL_FADA_ID"
 
     # Pré-requisito explícito do roteiro: calendário de dias úteis vigente.
     # Sem fase com regraRecurso o agregado não o exige para publicar, mas o
@@ -449,7 +449,7 @@ setup_configuracao() {
         api POST "/api/configuracao/admin/calendarios-dias-uteis/$calendario_id/vigente" "" >/dev/null
     fi
 
-    ok "fase_inscricao=$FASE_INSCRICAO_ID fase_resultado=$FASE_RESULTADO_ID reserva_demografica=$RESERVA_DEMOGRAFICA_ID tipo_processo=$TIPO_PROCESSO_ID condicoes_atendimento=$CONDICAO_ATENDIMENTO_IDS recursos_acessibilidade=$RECURSO_ACESSIBILIDADE_IDS tipos_deficiencia=$TIPO_DEFICIENCIA_IDS base_legal_bonus=$BASE_LEGAL_BONUS_ID calendario_dias_uteis=$calendario_id"
+    ok "fase_inscricao=$FASE_INSCRICAO_ID fase_resultado=$FASE_RESULTADO_ID reserva_demografica=$RESERVA_DEMOGRAFICA_ID tipo_processo=$TIPO_PROCESSO_ID condicoes_atendimento=$CONDICAO_ATENDIMENTO_IDS recursos_acessibilidade=$RECURSO_ACESSIBILIDADE_IDS tipos_deficiencia=$TIPO_DEFICIENCIA_IDS base_legal_fada=$BASE_LEGAL_FADA_ID calendario_dias_uteis=$calendario_id"
 }
 
 criar_processo() {
@@ -565,19 +565,19 @@ definir_cascata_remanejamento() {
     ok "cascata de remanejamento definida (Quadro 3)"
 }
 
-definir_bonus_regional() {
+definir_fada() {
     log "Definir o Fator de Atenuação das Desigualdades de Acesso (FADA_MULTIPLICATIVO)"
-    # O modelo da Medicina pede a quem pede o Fator o município do ensino
+    # O modelo da Medicina pede a quem pede o FADA o município do ensino
     # médio ou, a quem concluiu por certificação e escolhe esse caminho, o da
     # residência no período, com as opções da base legal do acréscimo. Recebe
     # o acréscimo quem o pede no formulário (item 1.6): a configuração cita o
     # pedido.
     api PUT "/api/selecao/processos-seletivos/$PROCESSO_ID/bonus-regional" "{
         \"aplica\": true, \"regra\": {\"codigo\": \"FADA_MULTIPLICATIVO\", \"versao\": \"v1\"},
-        \"fator\": 1.2, \"teto\": null, \"fatoElegibilidadeCodigo\": \"SOLICITA_FATOR_ATENUACAO\",
-        \"baseLegal\": {\"id\": \"$BASE_LEGAL_BONUS_ID\"}
+        \"fator\": 1.15, \"teto\": null, \"fatoElegibilidadeCodigo\": \"SOLICITA_FATOR_ATENUACAO\",
+        \"baseLegal\": {\"id\": \"$BASE_LEGAL_FADA_ID\"}
     }" >/dev/null
-    ok "Fator de Atenuação definido (acréscimo de 20%, itens 1.6 e 5.1)"
+    ok "FADA definido (acréscimo de 15% sobre a média ponderada, itens 1.6 e 5.1)"
 }
 
 definir_criterios_desempate() {
@@ -801,14 +801,14 @@ vincular_fase_do_formulario() {
 }
 
 # Cadastra, na fase de habilitação, o documento que comprova cada caminho do
-# Fator (itens 1.6 e 13): o histórico escolar para quem pede pelo ensino médio
+# FADA (itens 1.6 e 13): o histórico escolar para quem pede pelo ensino médio
 # cursado na área — quem concluiu no regular ou na EJA, ou quem concluiu por
 # certificação e escolheu esse caminho — e a conta de energia, água ou
 # telefone do período para quem escolheu a residência. A comprovação negada
 # remove o acréscimo, não elimina. Vem depois do modelo: os gatilhos citam
 # fatos que o formulário coleta.
 definir_documentos_exigidos() {
-    log "Definir os documentos que comprovam o Fator na habilitação, mantendo os do modelo"
+    log "Definir os documentos que comprovam o FADA na habilitação, mantendo os do modelo"
     local fase_habilitacao_processo_id base_legal processo documentos_do_modelo
     processo=$(api_get "/api/selecao/processos-seletivos/$PROCESSO_ID")
     fase_habilitacao_processo_id=$(jq -r '.cronogramaFases[] | select(.codigo=="HABILITACAO") | .id' <<< "$processo")
@@ -875,7 +875,7 @@ definir_documentos_exigidos() {
                 pedido(0), {clausula: 0, fato: "CAMINHO_FATOR_ATENUACAO", operador: "IGUAL", valor: "\"RESIDENCIA\""}
             ])
         ]')" >/dev/null
-    ok "documentos do modelo mantidos e documentos do Fator definidos na fase $fase_habilitacao_processo_id"
+    ok "documentos do modelo mantidos e documentos do FADA definidos na fase $fase_habilitacao_processo_id"
 }
 
 documento_do_edital() {
@@ -987,7 +987,7 @@ main() {
     definir_distribuicao_vagas
     definir_opcoes_de_curso
     definir_cascata_remanejamento
-    definir_bonus_regional
+    definir_fada
     definir_criterios_desempate
     definir_classificacao
     definir_edicoes_enem
