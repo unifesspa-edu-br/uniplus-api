@@ -178,8 +178,32 @@ public sealed class TermoConsentimentoEndpointTests
         return inicio > 0 && fim > inicio ? parte[inicio..fim] : null;
     }
 
-    [Fact(DisplayName = "GET coleção ?q= acima do limite de tamanho retorna 400")]
-    public async Task Listar_ComBuscaMuitoLonga_Retorna400()
+    [Fact(DisplayName = "GET coleção ?q= com 200 caracteres retorna 200")]
+    public async Task Listar_ComBuscaNoLimite_Retorna200()
+    {
+        string busca = new('a', 200);
+        using HttpClient client = _fixture.Factory.CreateClient();
+
+        HttpResponseMessage response = await client.GetAsync(
+            new Uri($"{ColecaoPath}?q={busca}", UriKind.Relative));
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+    }
+
+    [Fact(DisplayName = "GET coleção ?q= com espaços nas pontas e 200 caracteres após aparar retorna 200")]
+    public async Task Listar_ComBuscaNoLimiteAposAparar_Retorna200()
+    {
+        string busca = $" {new string('a', 200)} ";
+        using HttpClient client = _fixture.Factory.CreateClient();
+
+        HttpResponseMessage response = await client.GetAsync(
+            new Uri($"{ColecaoPath}?q={Uri.EscapeDataString(busca)}", UriKind.Relative));
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+    }
+
+    [Fact(DisplayName = "GET coleção ?q= acima do limite de tamanho retorna 422")]
+    public async Task Listar_ComBuscaMuitoLonga_Retorna422ComCodigo()
     {
         string buscaMuitoLonga = new('a', 201);
         using HttpClient client = _fixture.Factory.CreateClient();
@@ -187,7 +211,9 @@ public sealed class TermoConsentimentoEndpointTests
         HttpResponseMessage response = await client.GetAsync(
             new Uri($"{ColecaoPath}?q={buscaMuitoLonga}", UriKind.Relative));
 
-        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        response.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
+        using JsonDocument problema = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        problema.RootElement.GetProperty("code").GetString().Should().Be("uniplus.consulta.busca_muito_longa");
     }
 
     [Fact(DisplayName = "GET coleção não inclui versoes — a listagem projeta só o resumo")]

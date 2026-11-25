@@ -106,24 +106,24 @@ public sealed class OfertasCursoController : ControllerBase
             return erro.ParaResposta(_mapper);
         }
 
-        Result<ListarOfertasCursoResult> resultado = await _queryBus
-            .Send(
-                new ListarOfertasCursoQuery(
-                    ordenacao, q, page.AfterSortKey, page.AfterId, page.Limit, page.Direction, cursoId, includeTotal),
-                cancellationToken)
-            .ConfigureAwait(false);
+        Result<ListarOfertasCursoResult> resultado = await _queryBus.Send(new ListarOfertasCursoQuery(
+                ordenacao, q, page.AfterSortKey, page.AfterId, page.Limit, page.Direction, cursoId, includeTotal),
+                cancellationToken).ConfigureAwait(false);
 
-        if (!resultado.IsSuccess)
-        {
-            return resultado.ToActionResult(_mapper);
-        }
+        return resultado.IsSuccess
+            ? await MontarPaginaAsync(resultado.Value!, page, cancellationToken).ConfigureAwait(false)
+            : resultado.ToActionResult(_mapper);
+    }
 
+    private async Task<IActionResult> MontarPaginaAsync(
+        ListarOfertasCursoResult resultado, PageRequest page, CancellationToken cancellationToken)
+    {
         OfertaCursoDto[] comLinks =
-            [.. resultado.Value!.Items.Select(o => o with { Links = _linksBuilder.Build(o) })];
+            [.. resultado.Items.Select(o => o with { Links = _linksBuilder.Build(o) })];
 
         return await this.OkPaginatedOrdenadoAsync(
-            comLinks, resultado.Value.Anterior, resultado.Value.Proximo,
-            page, ResourceTag, total: resultado.Value.Total,
+            comLinks, resultado.Anterior, resultado.Proximo,
+            page, ResourceTag, total: resultado.Total,
             cancellationToken: cancellationToken).ConfigureAwait(false);
     }
 

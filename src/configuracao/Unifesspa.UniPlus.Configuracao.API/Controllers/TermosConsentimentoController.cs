@@ -6,6 +6,7 @@ using System.Diagnostics.CodeAnalysis;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
+using Unifesspa.UniPlus.Application.Abstractions.Consultas;
 using Unifesspa.UniPlus.Application.Abstractions.Messaging;
 using Unifesspa.UniPlus.Configuracao.Application.Commands.TermosConsentimento;
 using Unifesspa.UniPlus.Configuracao.Application.DTOs;
@@ -17,6 +18,7 @@ using Unifesspa.UniPlus.Infrastructure.Core.Formatting;
 using Unifesspa.UniPlus.Infrastructure.Core.Hateoas;
 using Unifesspa.UniPlus.Infrastructure.Core.Idempotency;
 using Unifesspa.UniPlus.Infrastructure.Core.Pagination;
+using Unifesspa.UniPlus.Kernel.Pagination;
 using Unifesspa.UniPlus.Kernel.Results;
 
 /// <summary>
@@ -34,9 +36,6 @@ using Unifesspa.UniPlus.Kernel.Results;
 public sealed class TermosConsentimentoController : ControllerBase
 {
     private const string ResourceTag = "termos-consentimento";
-
-    /// <summary>Limite defensivo do termo de busca — igual ao <c>Nome</c> máximo da entidade.</summary>
-    private const int SearchTermMaxLength = 200;
 
     private readonly ICommandBus _commandBus;
     private readonly IQueryBus _queryBus;
@@ -92,25 +91,23 @@ public sealed class TermosConsentimentoController : ControllerBase
     {
         ArgumentNullException.ThrowIfNull(page);
 
-        // Normaliza (trim) ANTES de checar o tamanho — um termo com espaços nas
-        // pontas que só excede 200 caracteres por causa deles não pode ser
-        // rejeitado quando o valor normalizado cabe no limite.
         string? searchTerm = string.IsNullOrWhiteSpace(q) ? null : q.Trim();
-
-        if (searchTerm is { Length: > SearchTermMaxLength })
+        Result<string?> busca = BuscaPedida.Validar(searchTerm);
+        if (!busca.IsSuccess)
         {
-            return BadRequest(new ProblemDetails
-            {
-                Title = "Termo de busca muito longo",
-                Detail = $"O parâmetro 'q' não pode exceder {SearchTermMaxLength} caracteres.",
-                Status = StatusCodes.Status400BadRequest,
-            });
+            return busca.ToActionResult(_mapper);
         }
 
         ListarTermosConsentimentoResult resultado = await _queryBus
             .Send(new ListarTermosConsentimentoQuery(page.AfterId, page.Limit, page.Direction, searchTerm), cancellationToken)
             .ConfigureAwait(false);
 
+        return await MontarPaginaAsync(resultado, page, cancellationToken).ConfigureAwait(false);
+    }
+
+    private async Task<IActionResult> MontarPaginaAsync(
+        ListarTermosConsentimentoResult resultado, PageRequest page, CancellationToken cancellationToken)
+    {
         TermoConsentimentoResumoDto[] comLinks =
             [.. resultado.Items.Select(t => t with { Links = _resumoLinksBuilder.Build(t) })];
 
