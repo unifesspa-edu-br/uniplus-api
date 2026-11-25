@@ -12,8 +12,6 @@
 #   - os pesos por área da Resolução 805/2024 não constam dela, então a nota do
 #     ENEM entra importada (CLASSIFICACAO_IMPORTADA) até o cadastro dos pesos;
 #   - o percentual quilombola da reserva demográfica;
-#   - a lista completa das regiões de influência do FADA (item 1.5): entram os
-#     oito municípios-polo que a minuta nomeia;
 #   - as datas em branco do Anexo I: o cronograma tem a inscrição, o
 #     resultado final e a habilitação, que abre na 1ª chamada e dura cinco
 #     dias.
@@ -113,6 +111,13 @@ source "$(dirname "${BASH_SOURCE[0]}")/governanca-do-roteiro.sh"
 # de busca) sai vazio, em vez de deixar "" descer em silêncio para o próximo
 # PUT/POST e estourar um 400/422 longe da causa real.
 exigir_id() { [ -n "$2" ] || fail "$1 ficou vazio (409 sem entrada equivalente encontrada no fallback de busca?)"; }
+
+municipios_da_base_legal_conferem() {
+    jq -e --argjson esperados "$2" \
+        '([.municipios[] | {codigoIbge, nome, uf}] | sort_by(.codigoIbge, .nome, .uf)) ==
+         ([$esperados[] | {codigoIbge, nome, uf}] | sort_by(.codigoIbge, .nome, .uf))' \
+        <<< "$1" >/dev/null
+}
 
 # curl autenticado, falha (com o corpo do erro) em qualquer resposta fora de
 # 2xx. $1=método $2=caminho (a partir de API_URL) $3=corpo (ou "")
@@ -403,24 +408,74 @@ setup_configuracao() {
         TIPO_DEFICIENCIA_IDS=$(jq -c --arg id "$id" '. + [$id]' <<< "$TIPO_DEFICIENCIA_IDS")
     done <<< "$tipos"
 
-    # O próprio edital institui o FADA (itens 1.5 e 1.6), com os municípios das
-    # regiões de influência destes oito polos. A minuta não lista os demais.
+    # Municípios do Anexo V da minuta para o FADA.
     local fada_identificacao="Edital nº XX/2026-CEPS/Unifesspa, itens 1.5 e 1.6"
-    BASE_LEGAL_FADA_ID=$(post_tolerante "/api/configuracao/admin/base-legal-bonus-regional" "{
-        \"tipoInstrumento\": \"EDITAL\", \"identificacao\": \"$fada_identificacao\",
-        \"descricao\": \"Fator de Atenuação das Desigualdades de Acesso\",
-        \"municipios\": [
-            {\"codigoIbge\": \"1504208\", \"nome\": \"Marabá\", \"uf\": \"PA\"},
-            {\"codigoIbge\": \"1506187\", \"nome\": \"Rondon do Pará\", \"uf\": \"PA\"},
-            {\"codigoIbge\": \"1508407\", \"nome\": \"Xinguara\", \"uf\": \"PA\"},
-            {\"codigoIbge\": \"1507300\", \"nome\": \"São Félix do Xingu\", \"uf\": \"PA\"},
-            {\"codigoIbge\": \"1506708\", \"nome\": \"Santana do Araguaia\", \"uf\": \"PA\"},
-            {\"codigoIbge\": \"1502152\", \"nome\": \"Canaã dos Carajás\", \"uf\": \"PA\"},
-            {\"codigoIbge\": \"2105302\", \"nome\": \"Imperatriz\", \"uf\": \"MA\"},
-            {\"codigoIbge\": \"1702109\", \"nome\": \"Araguaína\", \"uf\": \"TO\"}
-        ]
-    }")
-    [ -z "$BASE_LEGAL_FADA_ID" ] && BASE_LEGAL_FADA_ID=$(api_get "/api/configuracao/base-legal-bonus-regional?limit=100" | jq -r --arg i "$fada_identificacao" '.[] | select(.identificacao==$i) | .id' | head -1)
+    local municipios_fada base_legal_fada
+    municipios_fada=$(cat <<'JSON'
+[
+        {"codigoIbge": "1500131", "nome": "Abel Figueiredo", "uf": "PA"},
+        {"codigoIbge": "1500347", "nome": "Água Azul do Norte", "uf": "PA"},
+        {"codigoIbge": "1501204", "nome": "Baião", "uf": "PA"},
+        {"codigoIbge": "1501253", "nome": "Bannach", "uf": "PA"},
+        {"codigoIbge": "1501576", "nome": "Bom Jesus do Tocantins", "uf": "PA"},
+        {"codigoIbge": "1501758", "nome": "Brejo Grande do Araguaia", "uf": "PA"},
+        {"codigoIbge": "1501782", "nome": "Breu Branco", "uf": "PA"},
+        {"codigoIbge": "1502152", "nome": "Canaã dos Carajás", "uf": "PA"},
+        {"codigoIbge": "1502707", "nome": "Conceição do Araguaia", "uf": "PA"},
+        {"codigoIbge": "1502764", "nome": "Cumaru do Norte", "uf": "PA"},
+        {"codigoIbge": "1502772", "nome": "Curionópolis", "uf": "PA"},
+        {"codigoIbge": "1502954", "nome": "Eldorado dos Carajás", "uf": "PA"},
+        {"codigoIbge": "1503044", "nome": "Floresta do Araguaia", "uf": "PA"},
+        {"codigoIbge": "1503093", "nome": "Goianésia do Pará", "uf": "PA"},
+        {"codigoIbge": "1503705", "nome": "Itupiranga", "uf": "PA"},
+        {"codigoIbge": "1503804", "nome": "Jacundá", "uf": "PA"},
+        {"codigoIbge": "1504208", "nome": "Marabá", "uf": "PA"},
+        {"codigoIbge": "1504976", "nome": "Nova Ipixuna", "uf": "PA"},
+        {"codigoIbge": "1505064", "nome": "Novo Repartimento", "uf": "PA"},
+        {"codigoIbge": "1505437", "nome": "Ourilândia do Norte", "uf": "PA"},
+        {"codigoIbge": "1505486", "nome": "Pacajá", "uf": "PA"},
+        {"codigoIbge": "1505494", "nome": "Palestina do Pará", "uf": "PA"},
+        {"codigoIbge": "1505536", "nome": "Parauapebas", "uf": "PA"},
+        {"codigoIbge": "1505551", "nome": "Pau d'Arco", "uf": "PA"},
+        {"codigoIbge": "1505635", "nome": "Piçarra", "uf": "PA"},
+        {"codigoIbge": "1506138", "nome": "Redenção", "uf": "PA"},
+        {"codigoIbge": "1506161", "nome": "Rio Maria", "uf": "PA"},
+        {"codigoIbge": "1506187", "nome": "Rondon do Pará", "uf": "PA"},
+        {"codigoIbge": "1506583", "nome": "Santa Maria das Barreiras", "uf": "PA"},
+        {"codigoIbge": "1506708", "nome": "Santana do Araguaia", "uf": "PA"},
+        {"codigoIbge": "1507151", "nome": "São Domingos do Araguaia", "uf": "PA"},
+        {"codigoIbge": "1507300", "nome": "São Félix do Xingu", "uf": "PA"},
+        {"codigoIbge": "1507458", "nome": "São Geraldo do Araguaia", "uf": "PA"},
+        {"codigoIbge": "1507508", "nome": "São João do Araguaia", "uf": "PA"},
+        {"codigoIbge": "1507755", "nome": "Sapucaia", "uf": "PA"},
+        {"codigoIbge": "1508084", "nome": "Tucumã", "uf": "PA"},
+        {"codigoIbge": "1508100", "nome": "Tucuruí", "uf": "PA"},
+        {"codigoIbge": "1508407", "nome": "Xinguara", "uf": "PA"}
+]
+JSON
+    )
+    BASE_LEGAL_FADA_ID=$(post_tolerante "/api/configuracao/admin/base-legal-bonus-regional" "$(jq -nc \
+        --arg identificacao "$fada_identificacao" --argjson municipios "$municipios_fada" \
+        '{tipoInstrumento: "EDITAL", identificacao: $identificacao,
+          descricao: "Fator de Atenuação das Desigualdades de Acesso", municipios: $municipios}')")
+    if [ -z "$BASE_LEGAL_FADA_ID" ]; then
+        base_legal_fada=$(api_get "/api/configuracao/base-legal-bonus-regional?limit=100" | jq -c --arg i "$fada_identificacao" '[.[] | select(.identificacao == $i)] | if length == 1 then .[0] else null end')
+        BASE_LEGAL_FADA_ID=$(jq -r '.id // empty' <<< "$base_legal_fada")
+        exigir_id "BASE_LEGAL_FADA_ID" "$BASE_LEGAL_FADA_ID"
+        if ! municipios_da_base_legal_conferem "$base_legal_fada" "$municipios_fada"; then
+            log "Atualizando os municípios da base legal do FADA conforme o Anexo V"
+            if ! (api PUT "/api/configuracao/admin/base-legal-bonus-regional/$BASE_LEGAL_FADA_ID" "$(jq -c \
+                --argjson municipios "$municipios_fada" \
+                '{id, tipoInstrumento: .tipoInstrumento.codigo, identificacao, descricao,
+                  municipios: [$municipios[] | {codigoIbge, nome, uf}]}' <<< "$base_legal_fada")" >/dev/null); then
+                fail "A atualização dos municípios da base legal do FADA foi recusada."
+            fi
+            base_legal_fada=$(api_get "/api/configuracao/base-legal-bonus-regional/$BASE_LEGAL_FADA_ID")
+            if ! municipios_da_base_legal_conferem "$base_legal_fada" "$municipios_fada"; then
+                fail "Os municípios da base legal do FADA continuam diferentes dos previstos no Anexo V após a atualização."
+            fi
+        fi
+    fi
     exigir_id "BASE_LEGAL_FADA_ID" "$BASE_LEGAL_FADA_ID"
 
     # Pré-requisito explícito do roteiro: calendário de dias úteis vigente.
