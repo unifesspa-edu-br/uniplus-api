@@ -11,16 +11,9 @@ public sealed class DescricaoDeTiposDeProcesso(ITipoProcessoReader tipos) : IDes
         IReadOnlyCollection<(string Codigo, string? Complemento)> codigos, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(codigos);
-        Dictionary<(string Codigo, string? Complemento), IReadOnlyList<object?>> atributos = [];
-        foreach ((string Codigo, string? Complemento) codigo in codigos)
-        {
-            TipoProcessoView? tipo = await tipos.ObterAtivoPorCodigoAsync(codigo.Codigo, cancellationToken).ConfigureAwait(false);
-            if (tipo is not null)
-            {
-                atributos.Add(codigo, [tipo.Nome]);
-            }
-        }
-
-        return atributos;
+        IReadOnlyDictionary<string, string> nomes = await tipos.ObterNomesPorCodigosAsync(
+            [.. codigos.Select(codigo => codigo.Codigo).Distinct()], cancellationToken).ConfigureAwait(false);
+        return codigos.Where(codigo => nomes.ContainsKey(codigo.Codigo))
+            .ToDictionary(codigo => codigo, codigo => (IReadOnlyList<object?>)[nomes[codigo.Codigo]]);
     }
 }

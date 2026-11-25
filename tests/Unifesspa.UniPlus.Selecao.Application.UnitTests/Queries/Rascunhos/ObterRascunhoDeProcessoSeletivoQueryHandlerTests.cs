@@ -65,8 +65,8 @@ public sealed class ObterRascunhoDeProcessoSeletivoQueryHandlerTests
     [Fact(DisplayName = "O nome do tipo de processo entra quando o documento cita o código e o cadastro o resolve")]
     public async Task TipoDeProcesso_NomeQuandoResolve()
     {
-        _cenario.Tipos.ObterAtivoPorCodigoAsync("SISU", Arg.Any<CancellationToken>())
-            .Returns(new TipoProcessoView(Guid.CreateVersion7(), "SISU", "Sistema de Seleção Unificada", null));
+        _cenario.Tipos.ObterNomesPorCodigosAsync(Arg.Any<IReadOnlyCollection<string>>(), Arg.Any<CancellationToken>())
+            .Returns(new Dictionary<string, string> { ["SISU"] = "Sistema de Seleção Unificada" });
         RascunhoDeProcessoSeletivo rascunho = _cenario.ExisteUmRascunhoNaRevisao1(CenarioDoRascunho.Ceps, DocumentoComTipo("SISU"));
 
         JsonObject documento = (await Obter(rascunho.Id)).Value!.Documento;
@@ -96,7 +96,7 @@ public sealed class ObterRascunhoDeProcessoSeletivoQueryHandlerTests
 
         await Obter(rascunho.Id);
 
-        await _cenario.Tipos.DidNotReceiveWithAnyArgs().ObterAtivoPorCodigoAsync(default!, default);
+        await _cenario.Tipos.DidNotReceiveWithAnyArgs().ObterNomesPorCodigosAsync(default!, default);
     }
 
     [Fact(DisplayName = "O rascunho que não existe recusa 404 como o processo que não existe")]

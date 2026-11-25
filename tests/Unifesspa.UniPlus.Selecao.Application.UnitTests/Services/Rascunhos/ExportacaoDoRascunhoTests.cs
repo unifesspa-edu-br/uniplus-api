@@ -86,8 +86,8 @@ public sealed class ExportacaoDoRascunhoTests
     {
         Result<DocumentoPreparado> guardado = _cenario.Preparacao.Preparar(DocumentoComNos(LimitesDoDocumento.QuantidadeMaximaDeNos));
         RascunhoDeProcessoSeletivo rascunho = _cenario.ExisteUmRascunhoNaRevisao1(CenarioDoRascunho.Ceps, guardado.Value!.Documento.Conteudo);
-        _cenario.Tipos.ObterAtivoPorCodigoAsync("SISU", Arg.Any<CancellationToken>()).Returns(
-            new TipoProcessoView(Guid.CreateVersion7(), "SISU", "Sistema de Seleção Unificada", null));
+        _cenario.Tipos.ObterNomesPorCodigosAsync(Arg.Any<IReadOnlyCollection<string>>(), Arg.Any<CancellationToken>())
+            .Returns(new Dictionary<string, string> { ["SISU"] = "Sistema de Seleção Unificada" });
         JsonObject exportado = await _cenario.Exportacao.ExportarAsync(rascunho, CancellationToken.None);
 
         Result<DocumentoPreparado> reimportado = _cenario.Preparacao.Preparar(exportado.ToJsonString());
@@ -116,8 +116,8 @@ public sealed class ExportacaoDoRascunhoTests
     [Fact(DisplayName = "Cada cadastro citado é consultado uma vez por código e o nome entra ao lado do código")]
     public async Task Exportar_CadastrosCitados_ConsultaCodigosDistintosEEscreveAoLado()
     {
-        _cenario.Tipos.ObterAtivoPorCodigoAsync("SISU", Arg.Any<CancellationToken>()).Returns(
-            new TipoProcessoView(Guid.CreateVersion7(), "SISU", "Seleção Exemplo", null));
+        _cenario.Tipos.ObterNomesPorCodigosAsync(Arg.Any<IReadOnlyCollection<string>>(), Arg.Any<CancellationToken>())
+            .Returns(new Dictionary<string, string> { ["SISU"] = "Seleção Exemplo" });
         RascunhoDeProcessoSeletivo rascunho = _cenario.ExisteUmRascunhoNaRevisao1(CenarioDoRascunho.Ceps, DocumentoComFases);
         JsonObject documento = await _cenario.Exportacao.ExportarAsync(rascunho, CancellationToken.None);
         JsonArray fases = documento["cronograma"]!["fases"]!.AsArray();
@@ -127,7 +127,8 @@ public sealed class ExportacaoDoRascunhoTests
         fases[2]!["unidadeResponsavelNome"].Should().BeNull();
         await _cenario.Unidades.Received(1).ObterPorCodigoAsync("CGA", Arg.Any<CancellationToken>());
         await _cenario.Unidades.Received(1).ObterPorCodigoAsync("AUSENTE", Arg.Any<CancellationToken>());
-        await _cenario.Tipos.Received(1).ObterAtivoPorCodigoAsync("SISU", Arg.Any<CancellationToken>());
+        await _cenario.Tipos.Received(1).ObterNomesPorCodigosAsync(
+            Arg.Is<IReadOnlyCollection<string>>(codigos => codigos.Count == 1 && codigos.Contains("SISU")), Arg.Any<CancellationToken>());
     }
 
     [Fact(DisplayName = "O descritivo que o esquema não declara só de leitura não é escrito")]

@@ -116,6 +116,7 @@ Na listagem, o filtro trata `TODOS_OS_TIPOS` como qualquer outro código, com
 comparação exata. A resposta da API devolve o código junto do rótulo
 "Todos os tipos de processo" para exibição nas telas. O `*` deixa de existir no
 contrato e no banco.
+O `rotulo` é texto de tela e cobre também o código reservado, que não tem cadastro.
 
 ## Mais informações
 

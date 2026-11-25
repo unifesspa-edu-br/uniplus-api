@@ -25,21 +25,15 @@ public static class ObterObrigatoriedadesAplicaveisQueryHandler
         ArgumentNullException.ThrowIfNull(processoSeletivoRepository);
         ArgumentNullException.ThrowIfNull(obrigatoriedadeLegalRepository);
 
-        ProcessoSeletivo? processo = await processoSeletivoRepository
-            .ObterPorIdAsync(query.ProcessoSeletivoId, cancellationToken)
-            .ConfigureAwait(false);
+        ProcessoSeletivo? processo = await processoSeletivoRepository.ObterPorIdAsync(
+            query.ProcessoSeletivoId, cancellationToken).ConfigureAwait(false);
         if (processo is null)
-        {
             return [];
-        }
 
-        IReadOnlyList<ObrigatoriedadeLegal> regras = await obrigatoriedadeLegalRepository
-            .ObterVigentesParaTipoProcessoAsync(
-                processo.TipoProcesso.Codigo,
-                query.DataReferencia,
-                cancellationToken)
-            .ConfigureAwait(false);
+        IReadOnlyList<ObrigatoriedadeLegal> regras = await obrigatoriedadeLegalRepository.ObterVigentesParaTipoProcessoAsync(
+            processo.TipoProcesso.Codigo, query.DataReferencia, cancellationToken).ConfigureAwait(false);
 
-        return [.. regras.Select(ObrigatoriedadeLegalMapping.ToDto)];
+        Dictionary<string, string> nomes = new() { [processo.TipoProcesso.Codigo] = processo.TipoProcesso.Nome };
+        return [.. regras.Select(regra => ObrigatoriedadeLegalMapping.ToDto(regra, nomes))];
     }
 }

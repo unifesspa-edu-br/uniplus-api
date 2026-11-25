@@ -10,6 +10,7 @@ using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Readers;
 using Unifesspa.UniPlus.Configuracao.IntegrationTests.Infrastructure;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
+using Unifesspa.UniPlus.Kernel.Domain;
 
 [Collection(ConfiguracaoDbCollection.Name)]
 public sealed class LeitoresDeTiposPorCodigoTests(ConfiguracaoDbFixture fixture)
@@ -36,5 +37,31 @@ public sealed class LeitoresDeTiposPorCodigoTests(ConfiguracaoDbFixture fixture)
 
         (await reader.ObterAtivoPorCodigoAsync("TIPO_EXATO")).Should().NotBeNull();
         (await reader.ObterAtivoPorCodigoAsync(" TIPO_EXATO ")).Should().BeNull();
+    }
+    [Fact]
+    public async Task ObterNomesPorCodigosAsync_ComVariosCodigos_IncluiDesativados()
+    {
+        await using UniPlusDbContext context = fixture.CreateDbContext(userId: null);
+        await using IDbContextTransaction transacao = await context.Database.BeginTransactionAsync();
+        TipoProcesso ativo = TipoProcesso.Criar("LEITURA_ATIVO", "Nome ativo", null).Value!;
+        TipoProcesso inativo = TipoProcesso.Criar("LEITURA_INATIVO", "Nome inativo", null).Value!;
+        inativo.Desativar().IsSuccess.Should().BeTrue();
+        context.TiposProcesso.AddRange(ativo, inativo);
+        await context.SaveChangesAsync();
+
+        IReadOnlyDictionary<string, string> nomes = await new TipoProcessoReader(context).ObterNomesPorCodigosAsync(
+            [ativo.Codigo, inativo.Codigo, TodosOsTiposDeProcesso.Codigo, "INEXISTENTE"]);
+
+        nomes.Should().BeEquivalentTo(new Dictionary<string, string> { [ativo.Codigo] = ativo.Nome, [inativo.Codigo] = inativo.Nome });
+    }
+
+    [Fact]
+    public async Task ObterNomesPorCodigosAsync_SemCodigos_RetornaVazio()
+    {
+        await using UniPlusDbContext context = fixture.CreateDbContext(userId: null);
+
+        IReadOnlyDictionary<string, string> nomes = await new TipoProcessoReader(context).ObterNomesPorCodigosAsync([]);
+
+        nomes.Should().BeEmpty();
     }
 }
