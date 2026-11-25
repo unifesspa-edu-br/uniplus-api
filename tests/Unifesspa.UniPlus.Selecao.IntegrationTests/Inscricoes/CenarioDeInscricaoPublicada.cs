@@ -97,8 +97,8 @@ internal sealed class CenarioDeInscricaoPublicada
 
     public async Task<Result<FormularioApresentadoDoProcessoDto>> ObterFormularioAsync(UniPlusDbContext db, Guid processoId, IUserContext usuario) =>
         await ObterFormularioDaInscricaoQueryHandler.Handle(
-            new ObterFormularioDaInscricaoQuery(processoId), NovoRepositorioDeInscricao(db),
-            new VersaoDaInscricaoResolver(new CertameDivulgadoRepository(db), ProcessoSeletivoRepositoryDeTeste.Criar(db), RegistroCodecs), RegistroCodecs, usuario,
+            new ObterFormularioDaInscricaoQuery(processoId), new InscricaoDoDono(NovoRepositorioDeInscricao(db), usuario),
+            new VersaoDaInscricaoResolver(new CertameDivulgadoRepository(db), ProcessoSeletivoRepositoryDeTeste.Criar(db), RegistroCodecs), RegistroCodecs,
             CancellationToken.None);
 
     public async Task<Result<AvaliacaoDaInscricaoDto>> AvaliarAsync(
