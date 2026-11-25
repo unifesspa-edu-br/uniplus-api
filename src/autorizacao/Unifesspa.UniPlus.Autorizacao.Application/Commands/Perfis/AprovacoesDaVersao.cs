@@ -54,7 +54,7 @@ public sealed class AprovacoesDaVersao
         ArgumentNullException.ThrowIfNull(solicitada);
         ArgumentNullException.ThrowIfNull(verificador);
 
-        Result<AutoriaDaVersao> autorizada = await AutorizarAsync(solicitada, verificador, cancellationToken).ConfigureAwait(false);
+        Result<DecisorDaEtapa> autorizada = await AutorizarAsync(solicitada, verificador, cancellationToken).ConfigureAwait(false);
 
         return autorizada.IsFailure
             ? GravacaoDaOperacao<PerfilDto>.Sem(Result<PerfilDto>.Failure(autorizada.Error!))
@@ -66,27 +66,31 @@ public sealed class AprovacoesDaVersao
                 .ConfigureAwait(false);
     }
 
-    private async Task<Result<AutoriaDaVersao>> AutorizarAsync(
+    private async Task<Result<DecisorDaEtapa>> AutorizarAsync(
         DecisaoSolicitada solicitada, IVerificadorDeAcesso verificador, CancellationToken cancellationToken)
     {
         AcessoDasEtapas? acesso = await AcessoDaVersao.ConsultarAsync(verificador, solicitada.PerfilId, cancellationToken).ConfigureAwait(false);
-        DomainError? recusa = acesso is null
-            ? PerfilHandlerErros.AutorNaoIdentificado()
-            : await acesso.RecusaDaEtapaAsync((CatalogoDe<EtapaDaVersao>.TentarObter(solicitada.Etapa, out EtapaDaVersao valorEtapaDaVersao) ? valorEtapaDaVersao : (EtapaDaVersao?)null), verificador, cancellationToken)
-                .ConfigureAwait(false);
+        if (acesso is null)
+            return Result<DecisorDaEtapa>.Failure(PerfilHandlerErros.AutorNaoIdentificado());
 
-        return recusa is null
-            ? await _autoria.ExigirDaVersaoAsync(solicitada.PerfilId, cancellationToken).ConfigureAwait(false)
-            : Result<AutoriaDaVersao>.Failure(recusa);
+        EtapaDaVersao? pedida = CatalogoDe<EtapaDaVersao>.TentarObter(solicitada.Etapa, out EtapaDaVersao etapa) ? etapa : null;
+        Result<EtapaDaVersao> permitida = await acesso.EtapaPermitidaAsync(pedida, verificador, cancellationToken).ConfigureAwait(false);
+        if (permitida.IsFailure)
+            return Result<DecisorDaEtapa>.Failure(permitida.Error!);
+
+        Result<AutoriaDaVersao> autoria = await _autoria.ExigirDaVersaoAsync(solicitada.PerfilId, cancellationToken).ConfigureAwait(false);
+        return autoria.IsFailure
+            ? Result<DecisorDaEtapa>.Failure(autoria.Error!)
+            : Result<DecisorDaEtapa>.Success(new DecisorDaEtapa(permitida.Value, autoria.Value!));
     }
 
-    private static PedidoDeDecisaoDaVersao Pedido(DecisaoSolicitada solicitada, AutoriaDaVersao autoria, DateTimeOffset agora) =>
+    private static PedidoDeDecisaoDaVersao Pedido(DecisaoSolicitada solicitada, DecisorDaEtapa decisor, DateTimeOffset agora) =>
         new(
             solicitada.VersaoId,
-            CatalogoDe<EtapaDaVersao>.Obter(solicitada.Etapa!),
+            decisor.Etapa,
             solicitada.Resultado,
             MotivoInformado.Normalizar(solicitada.Motivo),
-            autoria,
+            decisor.Autoria,
             agora);
 
     private async Task<DesfechoDaOperacao<PerfilDto>> DecidirNoPerfilAsync(
@@ -102,4 +106,6 @@ public sealed class AprovacoesDaVersao
 
         return await _efeitos.AplicarAsync(perfil, desfecho, pedida.Autoria.Pessoa, cancellationToken).ConfigureAwait(false);
     }
+
+    private sealed record DecisorDaEtapa(EtapaDaVersao Etapa, AutoriaDaVersao Autoria);
 }

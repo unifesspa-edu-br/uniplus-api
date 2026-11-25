@@ -95,10 +95,15 @@ internal static class DoublesDePerfis
 
         public List<LeituraDoDocumentoDaVersao> Leituras { get; } = [];
 
+        public int ConsultasPorId { get; private set; }
+
         public Perfil Unico() => _perfis.Single();
 
-        public Task<Perfil?> ObterPorIdAsync(Guid id, CancellationToken cancellationToken = default) =>
-            Task.FromResult(_perfis.Find(p => p.Id == id));
+        public Task<Perfil?> ObterPorIdAsync(Guid id, CancellationToken cancellationToken = default)
+        {
+            ConsultasPorId++;
+            return Task.FromResult(_perfis.Find(p => p.Id == id));
+        }
 
         public Task<Perfil?> ObterParaEditarAsync(Guid id, CancellationToken cancellationToken = default) =>
             ObterPorIdAsync(id, cancellationToken);
