@@ -50,28 +50,22 @@ internal static class LeituraDaRegraDeHomologacaoDaFase
 
     private static ValorLido<CondicaoDeHomologacao?> Condicao(FaseNoDocumento fase, CondicaoNoDocumento declarada, string campo)
     {
-        ValorLido<PredicadoDnf?> enquadramento = Enquadramento(fase, declarada.Enquadramento, $"{campo}.enquadramento");
-        Result<CondicaoDeHomologacao> condicao = CondicaoDeHomologacao.Declarar(
-            declarada.Tipo is { } tipo && Enum.IsDefined(tipo) ? tipo.Codigo() : null, declarada.EdicaoDoExame, declarada.MotivoDesfavoravelCodigo, enquadramento.Valor);
-        RecusaDaParte[] recusas = [.. Recusas(fase, campo, condicao.Errors), .. enquadramento.Recusas];
-
-        return new(recusas.Length > 0 ? null : condicao.Value, recusas);
+        Result<PredicadoDnf?> enquadramento = Enquadramento(declarada.Enquadramento);
+        Result<CondicaoDeHomologacao> condicao = CondicaoDeHomologacao.DeclararComOEnquadramentoRecebido(
+            declarada.Tipo is { } tipo && Enum.IsDefined(tipo) ? tipo.Codigo() : null, declarada.EdicaoDoExame, declarada.MotivoDesfavoravelCodigo, enquadramento);
+        return new(condicao.Value, Recusas(fase, campo, condicao.Errors));
     }
 
-    private static ValorLido<PredicadoDnf?> Enquadramento(FaseNoDocumento fase, JsonElement? declarado, string campo)
+    private static Result<PredicadoDnf?> Enquadramento(JsonElement? declarado)
     {
         if (declarado is not { } json)
         {
-            return new(null, []);
+            return Result<PredicadoDnf?>.Success(null);
         }
 
         Result<PredicadoDnf> predicado = PredicadoDaTroca.Ler(json);
-
-        FieldError[] erros = [.. predicado.Errors.Select(static erro => erro with
-        {
-            Error = new DomainError(erro.Error.Code, MensagemDoEnquadramento(erro.Error)),
-        })];
-        return new(predicado.Value, Recusas(fase, campo, erros));
+        return predicado.IsSuccess ? Result<PredicadoDnf?>.Success(predicado.Value) : Result<PredicadoDnf?>.ValidationFailure(
+            [.. predicado.Errors.Select(static erro => erro with { Error = new DomainError(erro.Error.Code, MensagemDoEnquadramento(erro.Error)) })]);
     }
 
     private static string MensagemDoEnquadramento(DomainError erro) => erro.Code switch

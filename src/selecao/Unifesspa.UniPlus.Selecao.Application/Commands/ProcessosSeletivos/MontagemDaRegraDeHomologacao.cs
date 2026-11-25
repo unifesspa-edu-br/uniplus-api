@@ -74,17 +74,13 @@ internal sealed class MontagemDaRegraDeHomologacao(
     private async Task<Result<CondicaoDeHomologacao>> CondicaoAsync(
         CondicaoDeHomologacaoInput declarada, string campo, CancellationToken cancellationToken)
     {
-        Result<PredicadoDnf?> enquadramento = await EnquadramentoAsync(declarada.Enquadramento, $"{campo}.enquadramento", cancellationToken)
-            .ConfigureAwait(false);
-        Result<CondicaoDeHomologacao> condicao = NoCampo(
-            CondicaoDeHomologacao.Declarar(declarada.Tipo, declarada.EdicaoDoExame, declarada.MotivoDesfavoravelCodigo, enquadramento.Value), campo);
-        return enquadramento.IsFailure || condicao.IsFailure
-            ? Result<CondicaoDeHomologacao>.ValidationFailure([.. condicao.Errors, .. enquadramento.Errors])
-            : condicao;
+        Result<PredicadoDnf?> enquadramento = await EnquadramentoAsync(declarada.Enquadramento, cancellationToken).ConfigureAwait(false);
+        return NoCampo(CondicaoDeHomologacao.DeclararComOEnquadramentoRecebido(
+            declarada.Tipo, declarada.EdicaoDoExame, declarada.MotivoDesfavoravelCodigo, enquadramento), campo);
     }
 
     private async Task<Result<PredicadoDnf?>> EnquadramentoAsync(
-        IReadOnlyList<IReadOnlyList<CondicaoPrecondicaoInput>>? clausulas, string campo, CancellationToken cancellationToken)
+        IReadOnlyList<IReadOnlyList<CondicaoPrecondicaoInput>>? clausulas, CancellationToken cancellationToken)
     {
         if (clausulas is { Count: 0 })
         {
@@ -94,23 +90,23 @@ internal sealed class MontagemDaRegraDeHomologacao(
         Result<PredicadoDnf?> predicado = EntradaDeRegras.Predicado(clausulas);
         if (predicado.IsFailure || predicado.Value is null)
         {
-            return predicado.IsFailure ? RecusasDoEnquadramento(campo, predicado.Errors) : predicado;
+            return predicado.IsFailure ? RecusasDoEnquadramento(predicado.Errors) : predicado;
         }
 
-        return await ConferirEnquadramentoAsync(predicado, predicado.Value, campo, cancellationToken).ConfigureAwait(false);
+        return await ConferirEnquadramentoAsync(predicado, predicado.Value, cancellationToken).ConfigureAwait(false);
     }
 
     private async Task<Result<PredicadoDnf?>> ConferirEnquadramentoAsync(
-        Result<PredicadoDnf?> predicado, PredicadoDnf enquadramento, string campo, CancellationToken cancellationToken)
+        Result<PredicadoDnf?> predicado, PredicadoDnf enquadramento, CancellationToken cancellationToken)
     {
         ContextoDoCatalogo catalogo = (await catalogos.ObterAsync(processo, cancellationToken).ConfigureAwait(false))!;
         (Result semantica, _, TipoDeValorEsperado? tipoEsperado) = PredicadoDnfValidador.ValidarComCausa(enquadramento, catalogo.Vocabulario, null, catalogo.DominiosDinamicos);
-        return semantica.IsFailure ? RecusasDoEnquadramento(campo, semantica.Errors, tipoEsperado) : predicado;
+        return semantica.IsFailure ? RecusasDoEnquadramento(semantica.Errors, tipoEsperado) : predicado;
     }
 
-    private static Result<PredicadoDnf?> RecusasDoEnquadramento(string campo, IReadOnlyList<FieldError> erros, TipoDeValorEsperado? tipoEsperado = null) =>
+    private static Result<PredicadoDnf?> RecusasDoEnquadramento(IReadOnlyList<FieldError> erros, TipoDeValorEsperado? tipoEsperado = null) =>
         Result<PredicadoDnf?>.ValidationFailure([.. erros.Select(erro => new FieldError(
-            erro.NoCaminhoDoItem(campo).Field,
+            erro.Field,
             new DomainError(erro.Error.Code, MensagemDaRecusa(erro.Error.Code, tipoEsperado))))]);
 
     private static string MensagemDaRecusa(string codigo, TipoDeValorEsperado? tipoEsperado) => codigo.StartsWith("CondicaoDnf.", StringComparison.Ordinal)

@@ -16,6 +16,7 @@ public sealed record CondicaoDeHomologacao
 {
     private const int PrimeiraEdicaoDoExame = 1998;
     private const int UltimaEdicaoAdmitida = 2100;
+    private const string CampoDoEnquadramento = "enquadramento";
     private const string CampoDoTipo = "tipo";
     private const string CampoDaEdicaoDoExame = "edicaoDoExame";
     private const string CampoDoMotivoDesfavoravel = "motivoDesfavoravelCodigo";
@@ -70,6 +71,17 @@ public sealed record CondicaoDeHomologacao
             : Result<CondicaoDeHomologacao>.Success(new CondicaoDeHomologacao(tipo.Value, edicaoDoExame!.Value, motivo?.Value!.Valor, enquadramento));
     }
 
+    /// <summary>Declara a condição acumulando as recusas do enquadramento recebido.</summary>
+    public static Result<CondicaoDeHomologacao> DeclararComOEnquadramentoRecebido(
+        string? tipoCodigo, int? edicaoDoExame, string? motivoDesfavoravelCodigo, Result<PredicadoDnf?> enquadramento)
+    {
+        ArgumentNullException.ThrowIfNull(enquadramento);
+        Result<CondicaoDeHomologacao> condicao = Declarar(tipoCodigo, edicaoDoExame, motivoDesfavoravelCodigo, enquadramento.Value);
+        return condicao.IsFailure || enquadramento.IsFailure
+            ? Result<CondicaoDeHomologacao>.ValidationFailure([.. condicao.Errors, .. enquadramento.Errors.Select(causa => causa.NoCaminhoDoItem(CampoDoEnquadramento))])
+            : condicao;
+    }
+
     private static Result<TipoDeCondicaoDeHomologacao> LerTipo(string? codigo) =>
         CatalogoDe<TipoDeCondicaoDeHomologacao>.TentarObter(codigo, out TipoDeCondicaoDeHomologacao tipo)
             ? Result<TipoDeCondicaoDeHomologacao>.Success(tipo)
@@ -109,7 +121,7 @@ public sealed record CondicaoDeHomologacao
     {
         if (enquadramento is { Clausulas.Count: 0 })
         {
-            yield return new FieldError("enquadramento", new DomainError(
+            yield return new FieldError(CampoDoEnquadramento, new DomainError(
                 PredicadoDnfJson.FormaInvalida, "O enquadramento deve ter ao menos uma cláusula."));
         }
     }
