@@ -15,6 +15,8 @@ using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.Kernel.Pagination;
 using Unifesspa.UniPlus.Kernel.Results;
 
+using static Unifesspa.UniPlus.Configuracao.IntegrationTests.TiposDeficiencia.DadosDeTipoDeficiencia;
+
 /// <summary>
 /// Exercita os handlers de TipoDeficiencia na corrida check-then-act contra
 /// Postgres real: a consulta de unicidade não vê o concorrente, o índice único
@@ -50,16 +52,10 @@ public sealed class TipoDeficienciaCorridaDeUnicidadeTests
     public async Task Criar_CorridaNoCodigo_TraduzParaCodigoJaExiste()
     {
         string codigo = CodigoUnico();
-        await SemearAsync(codigo, NomeUnico());
+        await SemearAsync(codigo, NomeDePersistenciaUnico());
 
         await using UniPlusDbContext ctx = _fixture.CreateDbContext(Admin);
-        var repositorio = new RepositorioComUnicidadeCega(ctx);
-
-        Result<Guid> resultado = await CriarTipoDeficienciaCommandHandler.Handle(
-            new CriarTipoDeficienciaCommand(codigo, NomeUnico(), Descricao),
-            repositorio,
-            ctx,
-            CancellationToken.None);
+        Result<Guid> resultado = await CriarEmCorridaAsync(ctx, codigo, NomeDePersistenciaUnico());
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be(TipoDeficienciaErrorCodes.CodigoJaExiste);
@@ -70,17 +66,11 @@ public sealed class TipoDeficienciaCorridaDeUnicidadeTests
     [Fact(DisplayName = "Criar em corrida no nome devolve NomeJaExiste (409), não CodigoJaExiste")]
     public async Task Criar_CorridaNoNome_TraduzParaNomeJaExiste()
     {
-        string nome = NomeUnico();
+        string nome = NomeDePersistenciaUnico();
         await SemearAsync(CodigoUnico(), nome);
 
         await using UniPlusDbContext ctx = _fixture.CreateDbContext(Admin);
-        var repositorio = new RepositorioComUnicidadeCega(ctx);
-
-        Result<Guid> resultado = await CriarTipoDeficienciaCommandHandler.Handle(
-            new CriarTipoDeficienciaCommand(CodigoUnico(), nome, Descricao),
-            repositorio,
-            ctx,
-            CancellationToken.None);
+        Result<Guid> resultado = await CriarEmCorridaAsync(ctx, CodigoUnico(), nome);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be(
@@ -93,24 +83,25 @@ public sealed class TipoDeficienciaCorridaDeUnicidadeTests
     public async Task Atualizar_CorridaNoCodigo_TraduzParaCodigoJaExiste()
     {
         string codigoOcupado = CodigoUnico();
-        await SemearAsync(codigoOcupado, NomeUnico());
+        await SemearAsync(codigoOcupado, NomeDePersistenciaUnico());
 
-        string nomeAlvo = NomeUnico();
+        string nomeAlvo = NomeDePersistenciaUnico();
         Guid alvoId = await SemearAsync(CodigoUnico(), nomeAlvo);
 
         await using UniPlusDbContext ctx = _fixture.CreateDbContext(Admin);
-        var repositorio = new RepositorioComUnicidadeCega(ctx);
-
         Result resultado = await AtualizarTipoDeficienciaCommandHandler.Handle(
             new AtualizarTipoDeficienciaCommand(alvoId, codigoOcupado, nomeAlvo, Descricao),
-            repositorio,
-            ctx,
-            CancellationToken.None);
+            new RepositorioComUnicidadeCega(ctx), ctx, CancellationToken.None);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be(TipoDeficienciaErrorCodes.CodigoJaExiste);
         await SaveChangesPosterior(ctx).Should().NotThrowAsync();
     }
+
+    private static Task<Result<Guid>> CriarEmCorridaAsync(UniPlusDbContext ctx, string codigo, string nome) =>
+        CriarTipoDeficienciaCommandHandler.Handle(
+            new CriarTipoDeficienciaCommand(codigo, nome, Descricao),
+            new RepositorioComUnicidadeCega(ctx), ctx, CancellationToken.None);
 
     private async Task<Guid> SemearAsync(string codigo, string nome)
     {
@@ -125,10 +116,6 @@ public sealed class TipoDeficienciaCorridaDeUnicidadeTests
 
     private static Func<Task> SaveChangesPosterior(UniPlusDbContext ctx) =>
         async () => await ctx.SaveChangesAsync();
-
-    private static string CodigoUnico() => $"DEF_{Guid.NewGuid().ToString("N")[..12].ToUpperInvariant()}";
-
-    private static string NomeUnico() => $"DEF_{Guid.NewGuid().ToString("N")[..12].ToUpperInvariant()}";
 
     /// <summary>
     /// Repositório real, exceto pelas consultas de unicidade: ambas declaram o
