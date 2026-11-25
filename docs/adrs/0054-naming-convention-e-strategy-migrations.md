@@ -191,3 +191,7 @@ Aplicação no cluster standalone: o pod restart aciona o `MigrationHostedServic
 ## Emenda 1 (2026-11-13) — migration única enquanto não houver uso real
 
 A seção "Estratégia de migration: H + J" deixa de valer enquanto não houver uso real: o monólito tem uma única migration, gerada do zero, e o SQL escrito à mão vive em scripts versionados. A regra se inverte quando houver uso real. O naming `snake_case` e o resto desta ADR seguem. Ver [ADR-0170](0170-contexto-de-persistencia-unico-para-os-modulos-do-monolito.md).
+
+## Emenda 2 (2026-11-25) — sem convenção global de conversor por tipo de Value Object
+
+A convenção `ValueObjectConventions` e os quatro conversores que ela registrava (`Cpf`, `Email`, `NomeSocial`, `NotaFinal`) foram removidos (issue #2914): nenhum contexto do monólito chamava a convenção, e nenhuma propriedade usava os conversores. Deixa de valer a última frase da seção "Value Objects: D", que os mantinha "disponíveis para uso pontual ou para o cutover futuro". A transição para `ComplexProperty` (#397), se for retomada, não depende deles. O uso pontual que aquela frase previa é o que já existe: quando um Value Object de um só campo é gravado como coluna simples, a configuração da entidade declara o conversor na própria propriedade (`HasConversion<TConversor>()`), como faz o `PercentualValueConverter`. Nenhum conversor se aplica a todas as propriedades de um tipo de Value Object. A opção F continua como registro das opções avaliadas. O restante desta ADR não muda.
