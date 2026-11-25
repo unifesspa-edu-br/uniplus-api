@@ -1,6 +1,7 @@
 namespace Unifesspa.UniPlus.Configuracao.Domain.Interfaces;
 
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
+using Unifesspa.UniPlus.Kernel.Domain.ValueObjects;
 using Unifesspa.UniPlus.Kernel.Pagination;
 
 /// <summary>
@@ -28,7 +29,7 @@ public interface ICursoRepository
     /// </param>
     /// <param name="busca">
     /// Texto pesquisado sobre nome e código, insensível a caixa e acento;
-    /// <c>null</c> ou em branco lista tudo.
+    /// <c>null</c> lista tudo.
     /// </param>
     /// <param name="afterSortKey">
     /// Chave de ordenação da âncora de continuação; <c>null</c> na primeira página.
@@ -36,7 +37,7 @@ public interface ICursoRepository
     Task<(IReadOnlyList<Curso> Itens, (string SortKey, Guid Id)? Anterior, (string SortKey, Guid Id)? Proximo)>
         ListarPaginadoAsync(
             IReadOnlyList<SortField> ordenacao,
-            string? busca,
+            TermoDeBusca? busca,
             string? afterSortKey,
             Guid? afterId,
             int limit,
