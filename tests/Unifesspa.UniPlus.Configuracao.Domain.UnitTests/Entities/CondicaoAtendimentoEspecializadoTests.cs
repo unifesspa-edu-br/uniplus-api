@@ -53,7 +53,7 @@ public sealed class CondicaoAtendimentoEspecializadoTests
     [InlineData("dislexia")]      // minúsculas
     [InlineData("1PCD")]          // começa com dígito
     [InlineData("_PCD")]          // começa com sublinhado
-    [InlineData("P")]             // curto demais (< 2)
+    [InlineData("P__A")]
     [InlineData("PCD-A")]         // hífen não permitido
     [InlineData("PCD A")]         // espaço não permitido
     public void Criar_CodigoFormatoInvalido_Falha(string codigo)

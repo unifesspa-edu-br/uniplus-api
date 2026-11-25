@@ -216,9 +216,10 @@ public sealed class OfertaCursoTests
     [InlineData("   ", OfertaCursoErrorCodes.CodigoObrigatorio)]
     [InlineData("enf_maraba", OfertaCursoErrorCodes.CodigoFormatoInvalido)]
     [InlineData("1ENF", OfertaCursoErrorCodes.CodigoFormatoInvalido)]
-    [InlineData("E", OfertaCursoErrorCodes.CodigoFormatoInvalido)]
+    [InlineData("E__A", OfertaCursoErrorCodes.CodigoFormatoInvalido)]
     [InlineData("ENF-MARABA", OfertaCursoErrorCodes.CodigoFormatoInvalido)]
     [InlineData("ENF MARABA", OfertaCursoErrorCodes.CodigoFormatoInvalido)]
+    [InlineData("  ENF_BACH_MARABA  ", OfertaCursoErrorCodes.CodigoFormatoInvalido)]
     [InlineData("ENFERMAGEM_BACHARELADO_CAMPUS_MARABA_TURNO_NOTURNO_2027_X", OfertaCursoErrorCodes.CodigoFormatoInvalido)]
     public void Criar_CodigoInvalido_Falha(string? codigo, string codigoDoErro)
     {
@@ -228,9 +229,9 @@ public sealed class OfertaCursoTests
         resultado.Errors.Should().ContainSingle(e => e.Field == "codigo" && e.Error.Code == codigoDoErro);
     }
 
-    [Theory(DisplayName = "Código no limite do formato é aceito, com os espaços das pontas descartados")]
+    [Theory(DisplayName = "Código no limite do formato é aceito e preservado")]
+    [InlineData("A", "A")]
     [InlineData("EN", "EN")]
-    [InlineData("  ENF_BACH_MARABA  ", "ENF_BACH_MARABA")]
     [InlineData("A1234567890123456789012345678901234567890123456789", "A1234567890123456789012345678901234567890123456789")]
     public void Criar_CodigoNoLimite_Aceita(string informado, string esperado) =>
         Criar(d => d with { Codigo = informado }).Value!.Codigo.Should().Be(esperado);

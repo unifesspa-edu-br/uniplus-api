@@ -8,6 +8,7 @@ using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Converters;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Protecao;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
+using Unifesspa.UniPlus.Kernel.Domain.ValueObjects;
 
 [System.Diagnostics.CodeAnalysis.SuppressMessage(
     "Performance",
@@ -35,7 +36,7 @@ internal sealed class RecursoAcessibilidadeConfiguration
                 // contra inserts crus. Case-sensitive, alinhado ao value object.
                 t.HasCheckConstraint(
                     "ck_recursos_de_acessibilidade_codigo_formato",
-                    "codigo ~ '^[A-Z][A-Z0-9_]{1,49}$'");
+                    $"codigo ~ '{FormatoDoCodigo.ExpressaoNoBanco}'");
             });
 
         builder.HasKey(r => r.Id);

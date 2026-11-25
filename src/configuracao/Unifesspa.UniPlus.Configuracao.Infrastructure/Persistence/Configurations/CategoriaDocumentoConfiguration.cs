@@ -10,6 +10,7 @@ using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Converters;
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Seed;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Protecao;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
+using Unifesspa.UniPlus.Kernel.Domain.ValueObjects;
 
 [System.Diagnostics.CodeAnalysis.SuppressMessage(
     "Performance",
@@ -36,7 +37,7 @@ internal sealed class CategoriaDocumentoConfiguration : IEntityTypeConfiguration
                 // contra inserts crus. Case-sensitive, alinhado ao value object.
                 t.HasCheckConstraint(
                     "ck_categorias_de_documento_codigo_formato",
-                    "codigo ~ '^[A-Z][A-Z0-9_]{1,49}$'");
+                    $"codigo ~ '{FormatoDoCodigo.ExpressaoNoBanco}'");
 
                 // Ordem de exibição é posição, não pode ser negativa — mesmo guarda do
                 // agregado, aplicado também contra inserts crus.

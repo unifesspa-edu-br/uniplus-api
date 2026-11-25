@@ -73,12 +73,12 @@ internal sealed class OfertaCursoReader : IOfertaCursoReader
 
         // Trim + NFC antes da query, como no leitor de modalidade: o EF não traduz normalização Unicode para SQL e o
         // cadastro guarda o código já normalizado. Código fora do formato não tem oferta viva, e a consulta é dispensável.
-        Result<CodigoOfertaCurso> codigoResult = CodigoOfertaCurso.Criar(codigo.Trim().Normalize(NormalizationForm.FormC));
+        Result<CodigoOfertaCurso> codigoResult = CodigoOfertaCurso.Criar(codigo);
 
-        return codigoResult.IsFailure ? null : await ObterPorCodigoNormalizadoAsync(codigoResult.Value!.Valor, cancellationToken).ConfigureAwait(false);
+        return codigoResult.IsFailure ? null : await ObterPorCodigoInformadoAsync(codigoResult.Value!.Valor, cancellationToken).ConfigureAwait(false);
     }
 
-    private async Task<OfertaCursoView?> ObterPorCodigoNormalizadoAsync(string codigo, CancellationToken cancellationToken)
+    private async Task<OfertaCursoView?> ObterPorCodigoInformadoAsync(string codigo, CancellationToken cancellationToken)
     {
         OfertaCurso? entidade = await _dbContext.OfertasCurso
             .AsNoTracking()

@@ -268,7 +268,7 @@
           "description": "Código estável do termo no catálogo de termos de consentimento, de até 100 caracteres.",
           "type": "string",
           "minLength": 1,
-          "maxLength": 100,
+          "maxLength": 80,
           "pattern": "^[A-Z][A-Z0-9_]+$"
         },
         "versaoNumero": {

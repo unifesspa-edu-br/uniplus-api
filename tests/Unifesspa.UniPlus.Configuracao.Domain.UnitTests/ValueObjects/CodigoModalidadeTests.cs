@@ -41,13 +41,12 @@ public sealed class CodigoModalidadeTests
         CodigoModalidade.EhCodigoLegalFixo(codigo).Should().BeFalse();
     }
 
-    [Theory(DisplayName = "A reserva enxerga o código com espaços à volta")]
+    [Theory(DisplayName = "A reserva recusa código com espaços à volta")]
     [InlineData(" LB_PPI ")]
     [InlineData("\tAC")]
     [InlineData("AC_PCD\n")]
-    public void EhCodigoLegalFixo_ComEspacos_Verdadeiro(string codigo) =>
-        CodigoModalidade.EhCodigoLegalFixo(codigo).Should().BeTrue(
-            "o cadastro apara o código antes de persistir — com espaços é o mesmo código");
+    public void EhCodigoLegalFixo_ComEspacos_Falso(string codigo) =>
+        CodigoModalidade.EhCodigoLegalFixo(codigo).Should().BeFalse();
 
     [Theory(DisplayName = "Valor nulo ou em branco não é código protegido")]
     [InlineData(null)]
@@ -55,6 +54,17 @@ public sealed class CodigoModalidadeTests
     [InlineData("   ")]
     public void EhCodigoLegalFixo_NuloOuBranco_Falso(string? codigo) =>
         CodigoModalidade.EhCodigoLegalFixo(codigo).Should().BeFalse();
+
+    [Theory]
+    [InlineData("1X")]
+    [InlineData("_X")]
+    [InlineData(" X ")]
+    [InlineData("A__B")]
+    public void Criar_FormatoInvalido_Recusa(string codigo) =>
+        CodigoModalidade.Criar(codigo).IsFailure.Should().BeTrue();
+
+    [Fact]
+    public void Criar_UmaLetra_Aceita() => CodigoModalidade.Criar("A").IsSuccess.Should().BeTrue();
 
     [Fact(DisplayName = "O catálogo legal fixo tem exatamente doze códigos")]
     public void CodigosLegaisFixos_TemDozeItens() =>

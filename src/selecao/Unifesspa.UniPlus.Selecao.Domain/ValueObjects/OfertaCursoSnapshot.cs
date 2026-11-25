@@ -1,6 +1,6 @@
 namespace Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
-using System.Text.RegularExpressions;
+using Unifesspa.UniPlus.Kernel.Domain.ValueObjects;
 
 using Unifesspa.UniPlus.Kernel.Results;
 
@@ -13,7 +13,7 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// Renomear o curso ou a unidade depois não alcança o processo; quem quiser o nome novo redefine
 /// a distribuição.
 /// </remarks>
-public sealed partial record OfertaCursoSnapshot
+public sealed record OfertaCursoSnapshot
 {
     /// <summary>Tamanho máximo do código da oferta — o mesmo da coluna do cadastro de ofertas.</summary>
     public const int CodigoMaxLength = 50;
@@ -57,18 +57,21 @@ public sealed partial record OfertaCursoSnapshot
     public static Result<OfertaCursoSnapshot> Criar(
         string? codigo, string? cursoNome, string? cursoGrau, string? unidadeOfertanteNome, IReadOnlyList<string>? turnos)
     {
-        string? codigoNormalizado = Texto(codigo, CodigoMaxLength) is { } texto && FormatoDoCodigo().IsMatch(texto) ? texto : null;
+        string? codigoInformado = CodigoValido(codigo) ? codigo : null;
         string? nome = Texto(cursoNome, CursoNomeMaxLength);
         string? grau = Texto(cursoGrau, CursoGrauMaxLength);
         string? unidade = Texto(unidadeOfertanteNome, UnidadeOfertanteNomeMaxLength);
         List<string?> turnosNormalizados = [.. (turnos ?? []).Select(static t => Texto(t, TurnoMaxLength))];
 
-        return codigoNormalizado is null || nome is null || grau is null || unidade is null
+        return codigoInformado is null || nome is null || grau is null || unidade is null
             || turnosNormalizados.Count == 0 || turnosNormalizados.Any(static t => t is null)
             ? Result<OfertaCursoSnapshot>.Failure(new DomainError("OfertaCursoSnapshot.Invalida", MensagemDeInvalidez))
             : Result<OfertaCursoSnapshot>.Success(
-                new OfertaCursoSnapshot(codigoNormalizado, nome, grau, unidade, [.. turnosNormalizados.Select(static t => t!)]));
+                new OfertaCursoSnapshot(codigoInformado, nome, grau, unidade, [.. turnosNormalizados.Select(static t => t!)]));
     }
+
+    private static bool CodigoValido(string? codigo) =>
+        codigo is not null && codigo.Length <= CodigoMaxLength && FormatoDoCodigo.TemFormatoValido(codigo);
 
     private static readonly string MensagemDeInvalidez =
         "A oferta de curso precisa de código, curso, grau, unidade ofertante e ao menos um turno, sem caractere nulo e "
@@ -90,9 +93,6 @@ public sealed partial record OfertaCursoSnapshot
     /// caractere nulo — o decodificador também passa por aqui, e um envelope adulterado não pode
     /// injetar U+0000 que só falharia na constraint do Postgres.
     /// </summary>
-    [GeneratedRegex("^[A-Z][A-Z0-9_]{1,49}\\z", RegexOptions.CultureInvariant)]
-    private static partial Regex FormatoDoCodigo();
-
     private static string? Texto(string? valor, int tamanhoMaximo)
     {
         if (string.IsNullOrWhiteSpace(valor))

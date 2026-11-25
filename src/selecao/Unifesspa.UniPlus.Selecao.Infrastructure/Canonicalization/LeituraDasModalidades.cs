@@ -2,9 +2,9 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Canonicalization;
 
 using System.Text.Json;
 using System.Text.Json.Nodes;
-using System.Text.RegularExpressions;
 
 using Unifesspa.UniPlus.Kernel.Domain.Cidades;
+using Unifesspa.UniPlus.Kernel.Domain.ValueObjects;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.ValueObjects;
@@ -42,23 +42,6 @@ internal static class LeituraDasModalidades
     internal static readonly string[] AcoesQuandoIndeferido =
         ["RECLASSIFICA_AC", "RECLASSIFICA_CONFORME_EDITAL"];
 
-    /// <summary>
-    /// O formato que o <c>CodigoModalidade</c> do cadastro impõe (<c>^[A-Z0-9_]+$</c>). Um
-    /// código fora dele nunca sai do cadastro — mas é <b>chave</b> de composição e de
-    /// remanejamento dentro da oferta, e um envelope adulterado o usaria como tal.
-    /// </summary>
-    internal static readonly Regex FormatoCodigoModalidade =
-        new("^[A-Z0-9_]+$", RegexOptions.CultureInvariant, TimeSpan.FromSeconds(1));
-
-    /// <summary>
-    /// O formato que o <c>CodigoCondicao</c> do cadastro impõe
-    /// (<c>^[A-Z][A-Z0-9_]{1,49}$</c>). O código da condição é <b>chave natural</b> — é por
-    /// ele que a invariante ADR-0067 reconhece a condição PcD (<c>CodigoCondicaoPcd</c>) —,
-    /// e um <c>"pcd"</c> minúsculo reidratado do envelope seria uma condição que o cadastro
-    /// não produz e que o resto do código trata como chave.
-    /// </summary>
-    internal static readonly Regex FormatoCodigoCondicao =
-        new("^[A-Z][A-Z0-9_]{1,49}$", RegexOptions.CultureInvariant, TimeSpan.FromSeconds(1));
 
     internal static ModalidadeSelecionada? LerModalidade(LeitorEnvelope leitor, JsonObject item, string path)
     {
@@ -123,7 +106,7 @@ internal static class LeituraDasModalidades
     // O envelope não passa pelo cadastro; a coerência é a mesma exigida na publicação.
     private static ModalidadeSelecionada? ConferirRemanejamentoPelaNatureza(LeitorEnvelope leitor, ModalidadeSelecionada modalidade) =>
         modalidade.RemanejamentoCoerenteComANatureza() ? modalidade
-            : leitor.Malformado<ModalidadeSelecionada?>("modalidades", $"a regra de remanejamento de {modalidade.Codigo} não é a que a natureza dela pede.");
+            : leitor.Malformado<ModalidadeSelecionada?>("modalidades", "a regra de remanejamento não é a que a natureza da modalidade pede.");
 
     private sealed record ModalidadeLidaDoEnvelope
     {
@@ -173,21 +156,21 @@ internal static class LeituraDasModalidades
         };
 
         internal DomainError? RecusaDoVocabulario() =>
-            CodigoForaDoFormato() is { } codigo ? RecusaDoFormatoDoCodigo(codigo)
+            CodigoForaDoFormato() is not null ? RecusaDoFormatoDoCodigo()
             : AcaoQuandoIndeferido is { } acao && !AcoesQuandoIndeferido.Contains(acao, StringComparer.Ordinal)
-                ? RecusaDaAcaoAoIndeferir(acao) : null;
+                ? RecusaDaAcaoAoIndeferir() : null;
 
         private string? CodigoForaDoFormato() => new[] { Codigo, ComposicaoOrigem, Destino, Par, Fallback }
-            .FirstOrDefault(codigo => codigo is not null && !FormatoCodigoModalidade.IsMatch(codigo));
+            .FirstOrDefault(codigo => codigo is not null && !FormatoDoCodigo.TemFormatoValido(codigo));
 
-        private static DomainError RecusaDoFormatoDoCodigo(string codigo) => new(
+        private static DomainError RecusaDoFormatoDoCodigo() => new(
             ErrosCodecEnvelope.EnvelopeMalformado,
-            $"Envelope malformado em 'modalidades': o código '{codigo}' não tem o formato do cadastro " +
+            "Envelope malformado em 'modalidades': o código não tem o formato do cadastro " +
             "(A-Z, 0-9 e underscore) — e códigos são chave de composição e de remanejamento dentro da oferta.");
 
-        private static DomainError RecusaDaAcaoAoIndeferir(string acao) => new(
+        private static DomainError RecusaDaAcaoAoIndeferir() => new(
             ErrosCodecEnvelope.EnvelopeMalformado,
-            $"Envelope malformado em 'modalidades': a ação ao indeferir '{acao}' não pertence ao " +
+            "Envelope malformado em 'modalidades': a ação ao indeferir não pertence ao " +
             $"domínio fechado do cadastro ({string.Join(", ", AcoesQuandoIndeferido)}) — restaurá-la daria ao " +
             "motor de homologação uma instrução que ele não sabe executar.");
     }

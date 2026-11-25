@@ -2,10 +2,10 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Canonicalization;
 
 using System.Text.Json;
 using System.Text.Json.Nodes;
-using System.Text.RegularExpressions;
 
 using Unifesspa.UniPlus.Kernel.Domain.Cidades;
 using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
+using Unifesspa.UniPlus.Kernel.Domain.ValueObjects;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.ValueObjects;
@@ -75,9 +75,9 @@ internal static partial class LeituraDoBonusEAtendimento
         Guid origemId = leitor.Identificador(item, "condicaoOrigemId", path);
         string codigo = leitor.TextoNaoVazio(item, "condicaoCodigo", path, LimitesDoEnvelope.CondicaoCodigo);
 
-        if (!leitor.Falhou && !LeituraDasModalidades.FormatoCodigoCondicao.IsMatch(codigo))
+        if (!leitor.Falhou && !FormatoDoCodigo.TemFormatoValido(codigo))
         {
-            return leitor.Malformado<CondicaoOfertada?>(path, $"o código de condição '{codigo}' não tem o formato do cadastro (maiúscula inicial, depois maiúsculas, dígitos e underscore).");
+            return leitor.Malformado<CondicaoOfertada?>(path, "o código de condição não tem o formato do cadastro.");
         }
 
         string nome = leitor.TextoNaoVazio(item, "condicaoNome", path, LimitesDoEnvelope.NomeDeCadastro);
@@ -140,16 +140,13 @@ internal static partial class LeituraDoBonusEAtendimento
     private static string LerCodigoDaBaseLegal(LeitorEnvelope leitor, JsonObject bloco)
     {
         string codigo = leitor.TextoNaoVazio(bloco, "baseLegalCodigo", "fada", LimitesDoEnvelope.CodigoBaseLegalBonusRegional);
-        if (!leitor.Falhou && !FormatoDoCodigoDaBaseLegal().IsMatch(codigo))
+        if (!leitor.Falhou && !FormatoDoCodigo.TemFormatoValido(codigo))
         {
-            leitor.Recusar<object>("'fada.baseLegalCodigo' tem de ter de 2 a 100 caracteres, começar por letra maiúscula e ter só maiúsculas, dígitos e '_'.");
+            leitor.Recusar<object>("'fada.baseLegalCodigo' tem de ter até 80 caracteres, começar por letra maiúscula e ter só maiúsculas, dígitos e '_'.");
         }
 
         return codigo;
     }
-
-    [GeneratedRegex(@"\A[A-Z][A-Z0-9_]{1,99}\z", RegexOptions.CultureInvariant)]
-    private static partial Regex FormatoDoCodigoDaBaseLegal();
 
     private static void ExigirChavesDoBonus(LeitorEnvelope leitor, JsonObject bloco) =>
         leitor.ExigirChaves(

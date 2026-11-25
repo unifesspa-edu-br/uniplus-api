@@ -8,6 +8,7 @@ using Unifesspa.UniPlus.Configuracao.Domain.Enums;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence.CodigosDeContrato;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Protecao;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
+using Unifesspa.UniPlus.Kernel.Domain.ValueObjects;
 using Unifesspa.UniPlus.Regras.Enums;
 
 internal static class ChecksDoFatoCandidato
@@ -19,6 +20,7 @@ internal static class ChecksDoFatoCandidato
 
     internal static void Configurar(TableBuilder<FatoCandidato> table)
     {
+        table.HasCheckConstraint("ck_dados_do_candidato_codigo_formato", $"codigo ~ '{FormatoDoCodigo.ExpressaoNoBanco}'");
         table.HasComment("Catálogo de dados solicitados ou calculados para candidatos e suas regras de uso.");
         ConfigurarChecksDosDominiosFechados(table);
         ConfigurarChecksDeCoerenciaDoDominio(table);

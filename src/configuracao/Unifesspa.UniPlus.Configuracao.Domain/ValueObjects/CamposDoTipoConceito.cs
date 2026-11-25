@@ -8,7 +8,6 @@ internal static class CamposDoTipoConceito
     public const int CodigoMaxLength = 64;
     public const int NomeMaxLength = 200;
     public const int DescricaoMaxLength = 1000;
-    public const int CodigoDoValorMaxLength = 50;
     public const int RotuloDoValorMaxLength = 100;
 
     public static readonly CampoTextual Codigo = new(
@@ -22,10 +21,6 @@ internal static class CamposDoTipoConceito
     public static readonly CampoTextual Descricao = new(
         "Descrição do tipo de conceito", DescricaoMaxLength,
         TipoConceitoErrorCodes.DescricaoTamanho, TipoConceitoErrorCodes.DescricaoCaractereInvalido, FormaDoTexto.VariasLinhas);
-
-    public static readonly CampoTextual CodigoDoValor = new(
-        "Código do valor categórico", CodigoDoValorMaxLength,
-        TipoConceitoErrorCodes.ValorCategoricoCodigoInvalido, TipoConceitoErrorCodes.ValorCategoricoCodigoInvalido, FormaDoTexto.Livre);
 
     public static readonly CampoTextual RotuloDoValor = new(
         "Rótulo do valor categórico", RotuloDoValorMaxLength,

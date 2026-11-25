@@ -8,7 +8,7 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// <summary>
 /// Uma das duas pontas de uma <see cref="PrecedenciaFase"/>: o campo em que o código chega, os três códigos
 /// de erro que a leitura pode recusar e o rótulo que a mensagem usa. Lê o código informado e o devolve sem
-/// espaços nas pontas, ou a recusa já ligada ao campo (ADR-0125).
+/// alterações, ou a recusa já ligada ao campo (ADR-0125).
 /// </summary>
 internal sealed record PontaDaPrecedencia(
     string Campo,
@@ -33,7 +33,7 @@ internal sealed record PontaDaPrecedencia(
 
     internal Result<string> Ler(string? valor)
     {
-        string normalizado = valor?.Trim() ?? string.Empty;
+        string normalizado = valor ?? string.Empty;
         DomainError? recusa = Recusar(normalizado);
         return recusa is null
             ? Result<string>.Success(normalizado)
@@ -46,7 +46,7 @@ internal sealed record PontaDaPrecedencia(
         { Length: 0 } => Recusa(CodigoObrigatorio, "é obrigatório."),
         _ when !CodigoFase.EhValido(normalizado) => Recusa(
             CodigoFormatoInvalido,
-            "deve conter apenas letras maiúsculas e sublinhado (sem hífen e sem dígito)."),
+            "deve iniciar com letra maiúscula e conter letras maiúsculas, dígitos e sublinhados separados."),
         _ when !FaseCanonicaCatalogo.EhCanonico(normalizado) => Recusa(
             CodigoForaDoConjuntoCanonico,
             "não pertence ao conjunto canônico."),

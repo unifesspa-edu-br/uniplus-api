@@ -1,16 +1,14 @@
 namespace Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
 
-using System.Text.RegularExpressions;
-
 using Unifesspa.UniPlus.Configuracao.Domain.Errors;
+using Unifesspa.UniPlus.Kernel.Domain.ValueObjects;
 using Unifesspa.UniPlus.Kernel.Results;
 
 /// <summary>
 /// Código de um <see cref="Entities.FatoCandidato"/> (UNI-REQ-0077) — chave natural
 /// classificatória do vocabulário de fatos (ex.: <c>COR_RACA</c>, <c>PCD</c>,
-/// <c>MODALIDADE</c>). Value object com formato fechado <c>^[A-Z][A-Z0-9_]{1,49}$</c>
-/// — começa por letra maiúscula, seguido de maiúsculas, dígitos e sublinhado, de 2
-/// a 50 caracteres. Persistido como texto via conversor de valor (fail-fast na
+/// <c>MODALIDADE</c>). Value object com formato fechado <c>^[A-Z][A-Z0-9]*(_[A-Z0-9]+)*$</c>
+/// — começa por letra maiúscula, seguido de maiúsculas e dígitos, com sublinhados isolados, até 50 caracteres. Persistido como texto via conversor de valor (fail-fast na
 /// reidratação).
 /// </summary>
 /// <remarks>
@@ -18,8 +16,10 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// congelado num snapshot de publicação (congelamento dos parâmetros na publicação, UNI-REQ-0019, ADR-0061) — renomear reinterpretaria
 /// o passado. A entidade não expõe método que o altere.
 /// </remarks>
-public sealed partial record CodigoFatoCandidato
+public sealed record CodigoFatoCandidato
 {
+    public const int TamanhoMaximo = 50;
+
     public string Valor { get; }
 
     private CodigoFatoCandidato(string valor) => Valor = valor;
@@ -27,8 +27,7 @@ public sealed partial record CodigoFatoCandidato
     /// <summary>
     /// Cria um <see cref="CodigoFatoCandidato"/> validando o formato fechado. Valor
     /// nulo/em branco retorna <c>CodigoObrigatorio</c>; fora do formato retorna
-    /// <c>CodigoFormatoInvalido</c>. O valor é normalizado por <c>Trim</c> antes da
-    /// validação.
+    /// <c>CodigoFormatoInvalido</c>. O valor é conferido como recebido.
     /// </summary>
     public static Result<CodigoFatoCandidato> Criar(string valor)
     {
@@ -39,25 +38,17 @@ public sealed partial record CodigoFatoCandidato
                 "Código do fato do candidato é obrigatório."));
         }
 
-        string normalizado = valor.Trim();
-
-        if (!FormatoValido().IsMatch(normalizado))
-        {
-            return Result<CodigoFatoCandidato>.Failure(new DomainError(
+        return EhValido(valor)
+            ? Result<CodigoFatoCandidato>.Success(new CodigoFatoCandidato(valor!))
+            : Result<CodigoFatoCandidato>.Failure(new DomainError(
                 FatoCandidatoErrorCodes.CodigoFormatoInvalido,
                 "Código do fato deve começar por letra maiúscula e conter apenas letras maiúsculas, "
-                + "dígitos e sublinhado, com 2 a 50 caracteres (ex.: COR_RACA, PCD, MODALIDADE)."));
-        }
-
-        return Result<CodigoFatoCandidato>.Success(new CodigoFatoCandidato(normalizado));
+                + "dígitos e sublinhado, com no máximo 50 caracteres (ex.: COR_RACA, PCD, MODALIDADE)."));
     }
 
     /// <summary>Indica se <paramref name="valor"/> respeita o formato fechado, sem alocar value object.</summary>
     public static bool EhValido(string? valor) =>
-        !string.IsNullOrWhiteSpace(valor) && FormatoValido().IsMatch(valor.Trim());
+        valor is not null && valor.Length <= TamanhoMaximo && FormatoDoCodigo.TemFormatoValido(valor);
 
     public override string ToString() => Valor;
-
-    [GeneratedRegex("^[A-Z][A-Z0-9_]{1,49}$", RegexOptions.CultureInvariant)]
-    private static partial Regex FormatoValido();
 }

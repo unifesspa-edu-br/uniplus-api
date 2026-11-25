@@ -60,7 +60,7 @@ internal sealed class ModalidadeReader : IModalidadeReader
     {
         ArgumentNullException.ThrowIfNull(codigo);
 
-        if (CodigoNormalizado(codigo) is not { } codigoBuscado)
+        if (CodigoInformado(codigo) is not { } codigoBuscado)
         {
             return null;
         }
@@ -78,9 +78,9 @@ internal sealed class ModalidadeReader : IModalidadeReader
     // normalizado — comparar sem isso erraria o "mesmo" texto em outra forma.
     // Código fora do formato do value object não tem modalidade viva alguma, então
     // a consulta é dispensável.
-    private static CodigoModalidade? CodigoNormalizado(string codigo)
+    private static CodigoModalidade? CodigoInformado(string codigo)
     {
-        Result<CodigoModalidade> resultado = CodigoModalidade.Criar(codigo.Trim().Normalize(NormalizationForm.FormC));
+        Result<CodigoModalidade> resultado = CodigoModalidade.Criar(codigo);
 
         return resultado.IsSuccess ? resultado.Value : null;
     }

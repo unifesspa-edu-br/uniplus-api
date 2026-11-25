@@ -1,10 +1,9 @@
 namespace Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
 
-using System.Text.RegularExpressions;
-
 using Unifesspa.UniPlus.Configuracao.Domain.Enums;
 using Unifesspa.UniPlus.Configuracao.Domain.Errors;
 using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
+using Unifesspa.UniPlus.Kernel.Domain.ValueObjects;
 using Unifesspa.UniPlus.Kernel.Results;
 
 /// <summary>
@@ -17,9 +16,9 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// O código identifica o ato no momento do cadastro; a decisão de negócio usa sempre o <c>Id</c>. Identificações que só
 /// diferem em acento, caixa ou pontuação geram o mesmo código e são o mesmo ato.
 /// </remarks>
-public sealed partial record CodigoBaseLegalBonusRegional
+public sealed record CodigoBaseLegalBonusRegional
 {
-    public const int TamanhoMaximo = 100;
+    public const int TamanhoMaximo = 80;
 
     public string Valor { get; }
 
@@ -42,14 +41,15 @@ public sealed partial record CodigoBaseLegalBonusRegional
     /// <summary>Valida um código já formado, vindo de uma referência do documento ou do banco.</summary>
     public static Result<CodigoBaseLegalBonusRegional> Criar(string? valor)
     {
-        string normalizado = valor?.Trim() ?? string.Empty;
-
-        return FormatoValido().IsMatch(normalizado)
-            ? Result<CodigoBaseLegalBonusRegional>.Success(new CodigoBaseLegalBonusRegional(normalizado))
+        return EhValido(valor)
+            ? Result<CodigoBaseLegalBonusRegional>.Success(new CodigoBaseLegalBonusRegional(valor!))
             : Result<CodigoBaseLegalBonusRegional>.Failure(new DomainError(
                 BaseLegalBonusRegionalErrorCodes.CodigoFormatoInvalido,
-                $"O código da base legal deve iniciar com letra maiúscula e conter apenas letras maiúsculas, dígitos e sublinhado, com 2 a {TamanhoMaximo} caracteres."));
+                $"O código da base legal deve iniciar com letra maiúscula e conter apenas letras maiúsculas, dígitos e sublinhado, com no máximo {TamanhoMaximo} caracteres."));
     }
+
+    public static bool EhValido(string? valor) =>
+        valor is not null && valor.Length <= TamanhoMaximo && FormatoDoCodigo.TemFormatoValido(valor);
 
     public override string ToString() => Valor;
 
@@ -65,6 +65,4 @@ public sealed partial record CodigoBaseLegalBonusRegional
                 $"O código da base legal, formado pelo tipo e pela identificação, passa de {TamanhoMaximo} caracteres: abrevie a identificação."))
             : Result<CodigoBaseLegalBonusRegional>.Success(new CodigoBaseLegalBonusRegional(codigo));
 
-    [GeneratedRegex("^[A-Z][A-Z0-9_]{1,99}$", RegexOptions.CultureInvariant)]
-    private static partial Regex FormatoValido();
 }

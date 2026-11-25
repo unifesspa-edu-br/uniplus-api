@@ -120,7 +120,7 @@ public sealed class InscricoesDoProcessoController : ControllerBase
     /// <param name="ocorrencia">O identificador da ocorrência do grupo, quando o campo está em grupo.</param>
     /// <param name="cancellationToken">Token de cancelamento.</param>
     [ResponseCache(NoStore = true, Location = ResponseCacheLocation.None)]
-    [HttpPost("{inscricaoId:guid}/campos/{fatoCodigo:regex(^[[A-Z]][[A-Z0-9_]]{{0,59}}$)}/revelacao")]
+    [HttpPost("{inscricaoId:guid}/campos/{fatoCodigo:regex(^(?=.{{1,50}}$)[[A-Z]][[A-Z0-9]]*(_[[A-Z0-9]]+)*$)}/revelacao")]
     [VendorMediaType(Resource = "campo-revelado-da-inscricao", Versions = [1])]
     [ProducesResponseType(typeof(CampoReveladoDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]

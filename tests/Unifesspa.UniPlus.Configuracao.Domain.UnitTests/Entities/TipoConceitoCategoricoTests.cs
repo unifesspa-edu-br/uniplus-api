@@ -39,6 +39,8 @@ public sealed class TipoConceitoCategoricoTests
     [InlineData("_DEFERIDO")]
     [InlineData("DEFERIDO PARCIAL")]
     [InlineData("DEFERIDO-PARCIAL")]
+    [InlineData(" X ")]
+    [InlineData("A__B")]
     [InlineData("DEFERIDO\0")]
     public void Valor_CodigoInvalido_Recusa(string? codigo) =>
         CriarComValores(Valor(codigo, "Rótulo"), Valor("B", "Beta"))

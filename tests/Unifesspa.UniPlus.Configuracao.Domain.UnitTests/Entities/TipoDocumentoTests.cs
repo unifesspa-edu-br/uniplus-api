@@ -83,7 +83,7 @@ public sealed class TipoDocumentoTests
     [InlineData("laudo_medico", "minúsculas")]
     [InlineData("LAUDO-MEDICO", "hífen fora do alfabeto aceito")]
     [InlineData("LAUDO MEDICO", "espaço")]
-    [InlineData("L", "menos de 2 caracteres")]
+    [InlineData("L__A", "sublinhados consecutivos")]
     [InlineData("_RG", "começa com sublinhado")]
     [InlineData("LAUDO_MÉDICO", "acentuação")]
     public void Criar_CodigoForaDoFormato_Falha(string codigo, string motivo)
@@ -157,17 +157,12 @@ public sealed class TipoDocumentoTests
         resultado.Value!.Categoria.Should().Be("DOCUMENTO_MILITAR");
     }
 
-    [Fact(DisplayName = "Categoria é normalizada antes de persistir, não só na comparação")]
-    public void Criar_CategoriaComEspacoEmVolta_PersisteNormalizada()
+    [Fact(DisplayName = "Categoria com espaços nas pontas é recusada")]
+    public void Criar_CategoriaComEspacos_Recusa()
     {
-        // A comparação com o cadastro é ordinal: o valor que persiste tem de ser o
-        // normalizado, senão " RENDA " nunca casaria com a categoria RENDA viva.
-        // A normalização Unicode acompanha o Trim, mas é inócua enquanto o formato
-        // aceita só ASCII — nenhuma letra de A a Z tem forma decomposta.
         Result<TipoDocumento> resultado = Criar(categoria: "  RENDA  ");
 
-        resultado.IsSuccess.Should().BeTrue();
-        resultado.Value!.Categoria.Should().Be("RENDA");
+        resultado.Error!.Code.Should().Be(TipoDocumentoErrorCodes.CategoriaFormatoInvalido);
     }
 
     [Theory(DisplayName = "Tamanho máximo zero ou negativo é rejeitado; positivo e nulo são aceitos")]

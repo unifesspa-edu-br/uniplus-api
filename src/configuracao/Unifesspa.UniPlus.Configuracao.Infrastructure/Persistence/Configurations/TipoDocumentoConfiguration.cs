@@ -12,6 +12,7 @@ using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Seed;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Converters;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Protecao;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
+using Unifesspa.UniPlus.Kernel.Domain.ValueObjects;
 
 public sealed class TipoDocumentoConfiguration
     : IEntityTypeConfiguration<TipoDocumento>
@@ -42,7 +43,7 @@ public sealed class TipoDocumentoConfiguration
                 // ele venha a ganhar, e a que ele perder continua válida na linha antiga.
                 t.HasCheckConstraint(
                     "ck_tipos_de_documento_categoria_formato",
-                    "categoria ~ '^[A-Z][A-Z0-9_]{1,49}$'");
+                    $"categoria ~ '{FormatoDoCodigo.ExpressaoNoBanco}'");
 
                 // Forma do próprio código — defesa em profundidade do invariante de
                 // domínio (CodigoTipoDocumento) contra insert cru. Sem ele, um valor
@@ -50,7 +51,7 @@ public sealed class TipoDocumentoConfiguration
                 // leitura da tabela estouraria por causa de uma única linha.
                 t.HasCheckConstraint(
                     "ck_tipos_de_documento_codigo_formato",
-                    "codigo ~ '^[A-Z][A-Z0-9_]{1,49}$'");
+                    $"codigo ~ '{FormatoDoCodigo.ExpressaoNoBanco}'");
 
                 // Tipo equivalente é rótulo classificatório: nunca aponta para o próprio
                 // código. Null-safe (a coluna é opcional). Case-sensitive, alinhado ao

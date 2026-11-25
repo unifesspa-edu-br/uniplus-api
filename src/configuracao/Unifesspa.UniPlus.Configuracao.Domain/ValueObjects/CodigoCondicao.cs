@@ -1,16 +1,15 @@
 namespace Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
 
-using System.Text.RegularExpressions;
-
 using Unifesspa.UniPlus.Configuracao.Domain.Errors;
+using Unifesspa.UniPlus.Kernel.Domain.ValueObjects;
 using Unifesspa.UniPlus.Kernel.Results;
 
 /// <summary>
 /// Código da condição que habilita atendimento especializado (UNI-REQ-0012,
 /// módulo Configuração) — chave natural classificatória (ex.: <c>PCD</c>,
 /// <c>DISLEXIA</c>, <c>LACTANTE</c>). Value object com formato fechado:
-/// <c>^[A-Z][A-Z0-9_]{1,49}$</c> — inicia com letra maiúscula, segue com letras
-/// maiúsculas, dígitos e sublinhado, total de 2 a 50 caracteres. Persistido como
+/// <c>^[A-Z][A-Z0-9]*(_[A-Z0-9]+)*$</c> — inicia com letra maiúscula, segue com letras
+/// maiúsculas, dígitos e sublinhado, total de no máximo 50 caracteres. Persistido como
 /// <c>varchar</c> via conversor de valor (fail-fast na reidratação).
 /// </summary>
 /// <remarks>
@@ -19,9 +18,8 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// literalmente). A proteção é exposta por <see cref="EhProtegido"/> e aplicada
 /// pelo agregado/handlers, não pelo banco.
 /// </remarks>
-public sealed partial record CodigoCondicao
+public sealed record CodigoCondicao
 {
-    private const int TamanhoMinimo = 2;
     private const int TamanhoMaximo = 50;
 
     /// <summary>Código reservado da condição de pessoa com deficiência (ADR-0067).</summary>
@@ -41,8 +39,7 @@ public sealed partial record CodigoCondicao
     /// <summary>
     /// Cria um <see cref="CodigoCondicao"/> validando o formato fechado. Valor
     /// nulo/em branco retorna <c>CodigoObrigatorio</c>; fora do formato retorna
-    /// <c>CodigoFormatoInvalido</c>. O valor é normalizado por <c>Trim</c> antes
-    /// da validação.
+    /// <c>CodigoFormatoInvalido</c>. O valor é conferido como recebido.
     /// </summary>
     public static Result<CodigoCondicao> Criar(string? valor)
     {
@@ -53,26 +50,18 @@ public sealed partial record CodigoCondicao
                 "Código da condição de atendimento especializado é obrigatório."));
         }
 
-        string normalizado = valor.Trim();
-
-        if (!FormatoValido().IsMatch(normalizado))
-        {
-            return Result<CodigoCondicao>.Failure(new DomainError(
+        return EhValido(valor)
+            ? Result<CodigoCondicao>.Success(new CodigoCondicao(valor!))
+            : Result<CodigoCondicao>.Failure(new DomainError(
                 CondicaoAtendimentoErrorCodes.CodigoFormatoInvalido,
                 "Código da condição deve iniciar com letra maiúscula e conter apenas letras "
-                + $"maiúsculas, dígitos e sublinhado, com {TamanhoMinimo} a {TamanhoMaximo} "
+                + $"maiúsculas, dígitos e sublinhado, com no máximo {TamanhoMaximo} "
                 + "caracteres (ex.: PCD, DISLEXIA, LACTANTE)."));
-        }
-
-        return Result<CodigoCondicao>.Success(new CodigoCondicao(normalizado));
     }
 
     /// <summary>Indica se <paramref name="valor"/> respeita o formato fechado, sem alocar value object.</summary>
-    public static bool EhValido(string valor) =>
-        !string.IsNullOrWhiteSpace(valor) && FormatoValido().IsMatch(valor.Trim());
+    public static bool EhValido(string? valor) =>
+        valor is not null && valor.Length <= TamanhoMaximo && FormatoDoCodigo.TemFormatoValido(valor);
 
     public override string ToString() => Valor;
-
-    [GeneratedRegex("^[A-Z][A-Z0-9_]{1,49}$", RegexOptions.CultureInvariant)]
-    private static partial Regex FormatoValido();
 }

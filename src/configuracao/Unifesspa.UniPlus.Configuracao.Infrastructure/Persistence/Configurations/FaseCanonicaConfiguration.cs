@@ -12,6 +12,7 @@ using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Seed;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence.CodigosDeContrato;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Protecao;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
+using Unifesspa.UniPlus.Kernel.Domain.ValueObjects;
 
 internal sealed class FaseCanonicaConfiguration : IEntityTypeConfiguration<FaseCanonica>
 {
@@ -176,7 +177,7 @@ internal sealed class FaseCanonicaConfiguration : IEntityTypeConfiguration<FaseC
     {
         table.HasCheckConstraint(
             "ck_tipos_de_fase_codigo_formato",
-            "codigo ~ '^[A-Z_]+$'");
+            $"codigo ~ '{FormatoDoCodigo.ExpressaoNoBanco}'");
 
         table.HasCheckConstraint(
             "ck_tipos_de_fase_codigo_canonico",

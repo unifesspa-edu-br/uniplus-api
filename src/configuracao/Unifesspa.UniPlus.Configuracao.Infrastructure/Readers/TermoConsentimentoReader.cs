@@ -47,7 +47,7 @@ internal sealed class TermoConsentimentoReader : ITermoConsentimentoReader
     public async Task<VersaoTermoConsentimentoView?> ObterVersaoPorCodigoENumeroAsync(
         string codigo, int numero, CancellationToken cancellationToken)
     {
-        Result<CodigoTermoConsentimento> codigoValido = CodigoTermoConsentimento.Criar(codigo?.Normalize(NormalizationForm.FormC));
+        Result<CodigoTermoConsentimento> codigoValido = CodigoTermoConsentimento.Criar(codigo);
         if (codigoValido.IsFailure)
         {
             return null;

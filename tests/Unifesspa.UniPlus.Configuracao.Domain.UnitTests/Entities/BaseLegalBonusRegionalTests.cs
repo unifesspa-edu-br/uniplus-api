@@ -286,7 +286,7 @@ public sealed class BaseLegalBonusRegionalTests
         result.IsFailure.Should().BeTrue();
         result.Errors.Select(e => e.Error.Code).Should().Contain(
             [BaseLegalBonusRegionalErrorCodes.SemMunicipios, BaseLegalBonusRegionalErrorCodes.CodigoTamanho]);
-        result.Errors.Single(e => e.Error.Code == BaseLegalBonusRegionalErrorCodes.CodigoTamanho).Error.Message.Should().Contain("100");
+        result.Errors.Single(e => e.Error.Code == BaseLegalBonusRegionalErrorCodes.CodigoTamanho).Error.Message.Should().Contain("80");
     }
 
     [Fact(DisplayName = "Identificação sem letra nem dígito é recusada pelo código")]

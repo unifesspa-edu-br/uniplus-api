@@ -12,6 +12,7 @@ using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Seed;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence.CodigosDeContrato;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Protecao;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
+using Unifesspa.UniPlus.Kernel.Domain.ValueObjects;
 
 /// <summary>
 /// Configuração EF Core de <see cref="PrecedenciaFase"/> — a tabela
@@ -65,11 +66,11 @@ internal sealed class PrecedenciaFaseConfiguration : IEntityTypeConfiguration<Pr
         // Formato fechado dos códigos — alinhado ao value object CodigoFase.
         table.HasCheckConstraint(
             "ck_precedencias_entre_fases_antecessora_formato",
-            "antecessora_codigo ~ '^[A-Z_]+$'");
+            $"antecessora_codigo ~ '{FormatoDoCodigo.ExpressaoNoBanco}'");
 
         table.HasCheckConstraint(
             "ck_precedencias_entre_fases_sucessora_formato",
-            "sucessora_codigo ~ '^[A-Z_]+$'");
+            $"sucessora_codigo ~ '{FormatoDoCodigo.ExpressaoNoBanco}'");
 
         // Domínio fechado das fases canônicas (defesa em profundidade).
         table.HasCheckConstraint(

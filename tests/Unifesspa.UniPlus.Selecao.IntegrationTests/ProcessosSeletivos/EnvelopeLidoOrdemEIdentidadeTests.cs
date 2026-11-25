@@ -20,15 +20,15 @@ public sealed class EnvelopeLidoOrdemEIdentidadeTests
     public void Reidratar_OrdemDeConteudoOpostaAosIds_ConservaASequencia()
     {
         ProcessoSeletivo processo = ExemploDeEnvelopeProcessoRico.ProcessoRico();
-        RegraAvaliada primeira = Regra("REGRA-A", "aaaaaaaa-0000-7000-8000-000000000099", "https://example.org/ato");
-        RegraAvaliada segunda = Regra("REGRA-B", "aaaaaaaa-0000-7000-8000-000000000001", null);
+        RegraAvaliada primeira = Regra("REGRA_A", "aaaaaaaa-0000-7000-8000-000000000099", "https://example.org/ato");
+        RegraAvaliada segunda = Regra("REGRA_B", "aaaaaaaa-0000-7000-8000-000000000001", null);
         primeira.RegraId.CompareTo(segunda.RegraId).Should().BePositive();
         ResultadoConformidade conformidade = new([segunda, primeira], []);
         SnapshotCanonico congelado = ExemploDeEnvelope.Canonicalizador.Canonicalizar(ExemploDeEnvelopeEntrada.Entrada(processo, conformidade: conformidade));
         EnvelopeReidratado lido = FidelidadeDoEnvelopeDeTeste.Conferir(processo, ExemploDeEnvelopeEntrada.VersaoDeAbertura(processo, congelado.Bytes), congelado);
         ApoioDoEnvelopeCodec.Envelope(congelado)["documentosExigidos"]!["obrigatoriedades"]!.AsArray()
-            .Select(r => r!["regraCodigo"]!.GetValue<string>()).Should().Equal("REGRA-A", "REGRA-B");
-        lido.Conformidade!.Regras.Select(r => r.RegraCodigo).Should().Equal("REGRA-A", "REGRA-B");
+            .Select(r => r!["regraCodigo"]!.GetValue<string>()).Should().Equal("REGRA_A", "REGRA_B");
+        lido.Conformidade!.Regras.Select(r => r.RegraCodigo).Should().Equal("REGRA_A", "REGRA_B");
     }
 
     [Fact]

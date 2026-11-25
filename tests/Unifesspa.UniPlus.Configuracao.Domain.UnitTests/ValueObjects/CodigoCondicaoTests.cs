@@ -8,15 +8,16 @@ using Unifesspa.UniPlus.Kernel.Results;
 
 public sealed class CodigoCondicaoTests
 {
-    [Theory(DisplayName = "Códigos no formato fechado são aceitos e normalizados por Trim")]
+    [Theory(DisplayName = "Códigos no formato fechado são aceitos")]
     [InlineData("PCD")]
     [InlineData("DISLEXIA")]
     [InlineData("LACTANTE")]
     [InlineData("TEA_NIVEL_2")]
+    [InlineData("A")]
     [InlineData("AB")]
     public void Criar_FormatoValido_Aceita(string valor)
     {
-        Result<CodigoCondicao> resultado = CodigoCondicao.Criar($"  {valor}  ");
+        Result<CodigoCondicao> resultado = CodigoCondicao.Criar(valor);
 
         resultado.IsSuccess.Should().BeTrue();
         resultado.Value!.Valor.Should().Be(valor);
@@ -37,7 +38,8 @@ public sealed class CodigoCondicaoTests
     [InlineData("pcd")]
     [InlineData("1PCD")]
     [InlineData("_PCD")]
-    [InlineData("P")]
+    [InlineData(" X ")]
+    [InlineData("A__B")]
     [InlineData("PCD-A")]
     [InlineData("PÇD")]
     public void Criar_FormatoInvalido_Falha(string valor)
@@ -59,7 +61,7 @@ public sealed class CodigoCondicaoTests
     [InlineData("PCD", true)]
     [InlineData("pcd", false)]
     [InlineData("", false)]
-    [InlineData("A", false)]
+    [InlineData("A", true)]
     public void EhValido_RefleteFormato(string valor, bool esperado)
     {
         CodigoCondicao.EhValido(valor).Should().Be(esperado);

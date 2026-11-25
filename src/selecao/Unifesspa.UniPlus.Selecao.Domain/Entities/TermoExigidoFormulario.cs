@@ -20,7 +20,7 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 public sealed class TermoExigidoFormulario : EntityBase, IParteDoProcesso
 {
     /// <summary>Tamanho máximo do código do termo no catálogo.</summary>
-    public const int TermoCodigoMaxLength = 100;
+    public const int TermoCodigoMaxLength = 80;
 
     public Guid ProcessoSeletivoId { get; private set; }
 

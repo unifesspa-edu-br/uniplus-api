@@ -2821,7 +2821,7 @@
       "codigo": "uniplus.configuracao.base_legal_bonus_regional.codigo_tamanho",
       "requisitos": [],
       "oQueAconteceu": [
-        "O código formado pelo tipo do instrumento e pela identificação ultrapassa 100 caracteres."
+        "O código formado pelo tipo do instrumento e pela identificação ultrapassa 80 caracteres."
       ],
       "comoResolver": [
         "Abrevie a identificação do instrumento."
@@ -3378,7 +3378,7 @@
       "requisitos": [],
       "oQueAconteceu": [
         "O código informado não segue o formato exigido. O código da categoria de documento:",
-        "- começa com uma letra maiúscula;\n- continua só com letras maiúsculas, dígitos e sublinhado (`_`);\n- tem de 2 a 50 caracteres no total;\n- não tem espaço no meio, acento nem hífen.",
+        "- começa com uma letra maiúscula;\n- continua só com letras maiúsculas, dígitos e sublinhado (`_`);\n- tem até 50 caracteres no total;\n- não tem espaço no meio, acento nem hífen.",
         "Exemplos válidos: `RENDA`, `DOCUMENTO_PROCESSUAL`, `RACA_ETNIA`. Os espaços do começo e do fim são removidos antes da conferência e aceitos; só espaço **no meio** do código é recusado. Nada foi gravado."
       ],
       "comoResolver": [
@@ -3493,10 +3493,10 @@
       "codigo": "uniplus.configuracao.condicao_atendimento.codigo_formato_invalido",
       "requisitos": [],
       "oQueAconteceu": [
-        "O **código** informado não respeita o formato fechado —\n`^[A-Z][A-Z0-9_]{1,49}$`: inicia com letra maiúscula, segue com letras\nmaiúsculas, dígitos e sublinhado, com 2 a 50 caracteres no total (ex.:\n`PCD`, `DISLEXIA`, `LACTANTE`)."
+        "O **código** informado não respeita o formato fechado —\n`^[A-Z][A-Z0-9]*(_[A-Z0-9]+)*$`: inicia com letra maiúscula, segue com letras\nmaiúsculas, dígitos e sublinhado, com até 50 caracteres no total (ex.:\n`PCD`, `DISLEXIA`, `LACTANTE`)."
       ],
       "comoResolver": [
-        "Use um código que comece com letra maiúscula e contenha apenas letras\nmaiúsculas, dígitos e sublinhado, com 2 a 50 caracteres."
+        "Use um código que comece com letra maiúscula e contenha apenas letras\nmaiúsculas, dígitos e sublinhado, com até 50 caracteres."
       ],
       "ondeAparece": [
         "Criação de uma condição de atendimento especializado",
@@ -3819,7 +3819,7 @@
         "UNI-REQ-0139"
       ],
       "oQueAconteceu": [
-        "O código informado respeita o formato (`^[A-Z_]+$`), mas não é um dos\ncatorze códigos do conjunto canônico:",
+        "O código informado respeita o formato (`^[A-Z][A-Z0-9]*(_[A-Z0-9]+)*$`), mas não é um dos\ncatorze códigos do conjunto canônico:",
         "`INSCRICAO`, `SOLICITACAO_ISENCAO`, `HOMOLOGACAO_INSCRICOES`, `ENSALAMENTO`,\n`AVALIACAO`, `CLASSIFICACAO`, `RESULTADO_FINAL`, `HETEROIDENTIFICACAO`,\n`AVALIACAO_BIOPSICOSSOCIAL`, `HABILITACAO`, `MATRICULA`,\n`HOMOLOGACAO_RESULTADO_FINAL`, `LISTA_ESPERA`, `CHAMADA`.",
         "Não há código para o resultado preliminar nem para o recurso: toda fase que publica um\nresultado preliminar publica nela mesma o definitivo do mesmo tipo de ato, e o\nrecurso é configuração da fase ou da etapa.",
         "Os catorze tipos de fase já vêm cadastrados. Os atributos de cada tipo que\npodem ser alterados estão no `UNI-REQ-0139`. O próprio conjunto de códigos aceitos é fixo em código, não\nconfigurável."
@@ -3835,11 +3835,11 @@
       "codigo": "uniplus.configuracao.fase_canonica.codigo_formato_invalido",
       "requisitos": [],
       "oQueAconteceu": [
-        "O **código** informado não respeita o formato fechado — `^[A-Z_]+$`: apenas\nletras maiúsculas e sublinhado, **sem hífen e sem dígito** (diferente do\ncódigo de modalidade de concorrência, que aceita dígito) —, com no máximo 60\ncaracteres (ex.: `INSCRICAO`, `AVALIACAO`, `CLASSIFICACAO`).",
+        "O **código** informado não respeita o formato `^[A-Z][A-Z0-9]*(_[A-Z0-9]+)*$` ou excede 60 caracteres. Começa com letra maiúscula e contém letras maiúsculas ou dígitos, separados por sublinhados isolados.",
         "Esta validação é só de formato. Um código bem formado ainda pode não\npertencer ao conjunto canônico das catorze fases — ver\n[código fora do conjunto canônico](/erros/uniplus.configuracao.fase_canonica.codigo_fora_do_conjunto_canonico)."
       ],
       "comoResolver": [
-        "Use apenas letras maiúsculas e sublinhado, sem hífen e sem dígito, com até\n60 caracteres."
+        "Use letra maiúscula inicial, letras maiúsculas ou dígitos e sublinhados isolados, com até 60 caracteres."
       ],
       "ondeAparece": [
         "Criação de uma fase canônica"
@@ -4057,7 +4057,7 @@
         "UNI-REQ-0146"
       ],
       "oQueAconteceu": [
-        "O administrador cadastrou um fato que resume respostas de grupo (`POST /api/configuracao/admin/fatos-candidato/agregados`) com um `fatoDeMembro` que não é o código de nenhum fato do catálogo. Esse fato reúne as respostas dos membros de um grupo repetível, como a composição familiar, a outro fato, e esse fato precisa existir (UNI-REQ-0146). O código é comparado depois de aparado dos espaços nas pontas, e maiúsculas e minúsculas contam: `renda_membro` não é o fato `RENDA_MEMBRO`. Um `fatoDeMembro` em branco cai aqui.",
+        "O administrador cadastrou um fato que resume respostas de grupo (`POST /api/configuracao/admin/fatos-candidato/agregados`) com um `fatoDeMembro` que não é o código de nenhum fato do catálogo. Esse fato reúne as respostas dos membros de um grupo repetível, como a composição familiar, a outro fato, e esse fato precisa existir (UNI-REQ-0146). O código é comparado como recebido, e maiúsculas e minúsculas contam: `renda_membro` não é o fato `RENDA_MEMBRO`. Um `fatoDeMembro` em branco cai aqui.",
         "A recusa vem na lista `errors` da resposta, com `field` igual a `fatoDeMembro`. Sem o fato de membro, o tipo de dado, a fonte dos valores e o vínculo do resumo de grupo, que saem dele, não são conferidos; as demais conferências do cadastro (código, nome, proteção de dados) seguem e aparecem na mesma resposta. Nada é gravado."
       ],
       "comoResolver": [
@@ -4362,7 +4362,7 @@
         "UNI-REQ-0143"
       ],
       "oQueAconteceu": [
-        "O administrador cadastrou um fato (`POST /api/configuracao/admin/fatos-candidato`, `POST /api/configuracao/admin/fatos-candidato/derivados` ou `POST /api/configuracao/admin/fatos-candidato/agregados`) com um `codigo` fora do formato. O código é a chave do fato e nunca muda: ele entra por valor nas regras que o citam e nos processos publicados (UNI-REQ-0143). Por isso o formato é fechado: começa por letra maiúscula, seguida de letras maiúsculas, dígitos e sublinhado, com 2 a 50 caracteres. Os espaços nas pontas são desconsiderados antes da conferência.",
+        "O administrador cadastrou um fato (`POST /api/configuracao/admin/fatos-candidato`, `POST /api/configuracao/admin/fatos-candidato/derivados` ou `POST /api/configuracao/admin/fatos-candidato/agregados`) com um `codigo` fora do formato. O código é a chave do fato e nunca muda: ele entra por valor nas regras que o citam e nos processos publicados (UNI-REQ-0143). Por isso o formato é fechado: começa por letra maiúscula, seguida de letras maiúsculas, dígitos e sublinhado, com até 50 caracteres. O código é conferido como recebido.",
         "A recusa vem na lista `errors` da resposta, com `field` igual a `codigo`. Nada é gravado. Um código vazio ou só com espaços recebe [a recusa de código obrigatório](/erros/uniplus.configuracao.fato_candidato.codigo_obrigatorio)."
       ],
       "comoResolver": [
@@ -4378,7 +4378,7 @@
         "UNI-REQ-0143"
       ],
       "oQueAconteceu": [
-        "O administrador cadastrou um fato (`POST /api/configuracao/admin/fatos-candidato`, `POST /api/configuracao/admin/fatos-candidato/derivados` ou `POST /api/configuracao/admin/fatos-candidato/agregados`) com um `codigo` que outro fato já usa. O código é único no catálogo e nunca é reutilizado (UNI-REQ-0143): o fato desativado continua dono do código, porque os vínculos que já existem o preservam. O código é comparado depois de aparado dos espaços nas pontas.",
+        "O administrador cadastrou um fato (`POST /api/configuracao/admin/fatos-candidato`, `POST /api/configuracao/admin/fatos-candidato/derivados` ou `POST /api/configuracao/admin/fatos-candidato/agregados`) com um `codigo` que outro fato já usa. O código é único no catálogo e nunca é reutilizado (UNI-REQ-0143): o fato desativado continua dono do código, porque os vínculos que já existem o preservam. O código é comparado como recebido.",
         "Esta recusa vem depois de todas as conferências do cadastro: um cadastro com outro erro recebe a recusa de validação correspondente, e só um cadastro válido chega à verificação do código. Ela também é dada quando dois cadastros do mesmo código chegam ao mesmo tempo e só um é gravado. A resposta não traz a lista `errors`. Nada é gravado."
       ],
       "comoResolver": [
@@ -4398,7 +4398,7 @@
         "A recusa vem na lista `errors` da resposta, com `field` igual a `codigo`. Nada é gravado."
       ],
       "comoResolver": [
-        "Informe o código do fato, no formato fechado do catálogo: letra maiúscula seguida de letras maiúsculas, dígitos e sublinhado, de 2 a 50 caracteres, como `COR_RACA`. Um código fora do formato recebe [a recusa de código em formato inválido](/erros/uniplus.configuracao.fato_candidato.codigo_formato_invalido)."
+        "Informe o código do fato, no formato fechado do catálogo: letra maiúscula seguida de letras maiúsculas, dígitos e sublinhado, até 50 caracteres, como `COR_RACA`. Um código fora do formato recebe [a recusa de código em formato inválido](/erros/uniplus.configuracao.fato_candidato.codigo_formato_invalido)."
       ],
       "ondeAparece": [
         "Cadastro de um fato do catálogo (declarado, derivado ou resumo de grupo)"
@@ -5102,7 +5102,7 @@
       "codigo": "uniplus.configuracao.fato_valor_dominio.codigo_tamanho",
       "requisitos": [],
       "oQueAconteceu": [
-        "O administrador acrescentou um valor a um fato do catálogo (`POST /api/configuracao/admin/fatos-candidato/{id}/valores`) com um código de mais de 50 caracteres. Os espaços nas pontas são desconsiderados antes da conferência. O limite é o mesmo do código do próprio fato.",
+        "O administrador acrescentou um valor a um fato do catálogo (`POST /api/configuracao/admin/fatos-candidato/{id}/valores`) com um código de mais de 50 caracteres. O código é conferido como recebido. O limite é o mesmo do código do próprio fato.",
         "A recusa vem na lista `errors` da resposta, com `field` igual a `codigo`. Se o corpo tiver outros problemas, cada um vem numa entrada própria da mesma resposta, e nada é gravado. A busca do fato vem antes da conferência do corpo: com um `{id}` que não existe, a resposta é a de fato não encontrado (`uniplus.configuracao.fato_candidato.nao_encontrado`), e não esta."
       ],
       "comoResolver": [
@@ -5134,7 +5134,7 @@
       "codigo": "uniplus.configuracao.fato_valor_dominio.descricao_tamanho",
       "requisitos": [],
       "oQueAconteceu": [
-        "A descrição enviada para um valor de fato do catálogo tem mais de 500 caracteres, ao acrescentar o valor (`POST /api/configuracao/admin/fatos-candidato/{id}/valores`) ou ao corrigi-lo (`PUT /api/configuracao/admin/fatos-candidato/{id}/valores/{codigo}`). Os espaços nas pontas são desconsiderados antes da conferência. A descrição é o nome curto da opção, não um parágrafo.",
+        "A descrição enviada para um valor de fato do catálogo tem mais de 500 caracteres, ao acrescentar o valor (`POST /api/configuracao/admin/fatos-candidato/{id}/valores`) ou ao corrigi-lo (`PUT /api/configuracao/admin/fatos-candidato/{id}/valores/{codigo}`). O código é conferido como recebido. A descrição é o nome curto da opção, não um parágrafo.",
         "A recusa vem na lista `errors` da resposta, com `field` igual a `descricao`. Se o corpo tiver outros problemas, cada um vem numa entrada própria da mesma resposta, e nada é gravado. A busca do fato vem antes da conferência do corpo, e na correção a busca do valor também: um `{id}` ou um `{codigo}` que não existe responde como não encontrado, e não com esta recusa."
       ],
       "comoResolver": [
@@ -5451,7 +5451,7 @@
       "requisitos": [],
       "oQueAconteceu": [
         "Este código é compartilhado por duas causas distintas, que a entrada do\ncatálogo não distingue no `detail`:",
-        "- O **código da própria modalidade** não respeita o formato fechado —\n  `^[A-Z0-9_]+$` (letras maiúsculas, dígitos e sublinhado, sem hífen), com no\n  máximo 60 caracteres (ex.: `AC`, `LB_PPI`, `LI_Q`).\n- O **código de origem** da composição `RETIRADA_DE_OUTRA_MODALIDADE` (`composicao_origem`)\n  excede 60 caracteres — este segundo caso só confere o tamanho, não o\n  formato: um código de origem com caracteres fora do padrão `^[A-Z0-9_]+$`\n  não é recusado aqui (a integridade referencial de que ele aponta para uma\n  modalidade viva é conferida à parte, ver\n  [referência inexistente ou inativa](/erros/uniplus.configuracao.modalidade.referencia_inexistente_ou_inativa))."
+        "- O **código da própria modalidade** não respeita o formato fechado —\n  `^[A-Z][A-Z0-9]*(_[A-Z0-9]+)*$` (letra inicial maiúscula, letras maiúsculas, dígitos e sublinhados isolados), com no\n  máximo 60 caracteres (ex.: `AC`, `LB_PPI`, `LI_Q`).\n- O **código de origem** da composição `RETIRADA_DE_OUTRA_MODALIDADE` (`composicao_origem`)\n  excede 60 caracteres — este segundo caso só confere o tamanho, não o\n  formato: um código de origem com caracteres fora do padrão `^[A-Z][A-Z0-9]*(_[A-Z0-9]+)*$`\n  não é recusado aqui (a integridade referencial de que ele aponta para uma\n  modalidade viva é conferida à parte, ver\n  [referência inexistente ou inativa](/erros/uniplus.configuracao.modalidade.referencia_inexistente_ou_inativa))."
       ],
       "comoResolver": [
         "Se a causa é o código próprio: use apenas letras maiúsculas, dígitos e\nsublinhado, com até 60 caracteres. Se a causa é o código de origem da\ncomposição `RETIRADA_DE_OUTRA_MODALIDADE`: reduza-o para até 60 caracteres."
@@ -6346,7 +6346,7 @@
       "codigo": "uniplus.configuracao.oferta_curso.codigo_formato_invalido",
       "requisitos": [],
       "oQueAconteceu": [
-        "O código da oferta não segue o formato exigido: começa por letra maiúscula e contém de 2 a 50 caracteres, apenas letras maiúsculas, dígitos e sublinhado."
+        "O código da oferta não segue o formato exigido: começa por letra maiúscula e contém até 50 caracteres, apenas letras maiúsculas, dígitos e sublinhado."
       ],
       "comoResolver": [
         "Corrija o campo `codigo` para o formato exigido."
@@ -6392,7 +6392,7 @@
         "O campo `codigo` da oferta de curso está ausente ou em branco."
       ],
       "comoResolver": [
-        "Informe um código com 2 a 50 caracteres, iniciado por letra maiúscula e composto por letras maiúsculas, dígitos ou sublinhado."
+        "Informe um código com até 50 caracteres, iniciado por letra maiúscula e composto por letras maiúsculas, dígitos ou sublinhado."
       ],
       "ondeAparece": [
         "POST /api/configuracao/admin/ofertas-curso",
@@ -7055,7 +7055,7 @@
       "codigo": "uniplus.configuracao.precedencia_fase.antecessora_codigo_formato_invalido",
       "requisitos": [],
       "oQueAconteceu": [
-        "O campo `antecessoraCodigo` do cadastro de uma precedência (`POST /api/configuracao/admin/precedencias-fase`) não respeita o formato do código de fase: só letras maiúsculas e sublinhado, sem hífen e sem dígito, com no máximo 60 caracteres. Os espaços nas pontas são desconsiderados. Esta conferência é só de formato; um código bem formado ainda precisa ser um dos catorze do vocabulário de fases (ver [código da fase antecessora fora do conjunto canônico](/erros/uniplus.configuracao.precedencia_fase.antecessora_fora_do_conjunto_canonico)).",
+        "O campo `antecessoraCodigo` do cadastro de uma precedência (`POST /api/configuracao/admin/precedencias-fase`) não respeita o formato do código de fase: letra maiúscula inicial, seguida de letras maiúsculas ou dígitos e sublinhados isolados, com no máximo 60 caracteres. O código é conferido como recebido. Esta conferência é só de formato; um código bem formado ainda precisa ser um dos catorze do vocabulário de fases (ver [código da fase antecessora fora do conjunto canônico](/erros/uniplus.configuracao.precedencia_fase.antecessora_fora_do_conjunto_canonico)).",
         "A recusa vem na lista `errors` da resposta, com `field` igual a `antecessoraCodigo`. Se o outro código também tiver problema, a recusa dele vem na mesma resposta, e nada é gravado."
       ],
       "comoResolver": [
@@ -7156,7 +7156,7 @@
       "codigo": "uniplus.configuracao.precedencia_fase.sucessora_codigo_formato_invalido",
       "requisitos": [],
       "oQueAconteceu": [
-        "O campo `sucessoraCodigo` do cadastro de uma precedência (`POST /api/configuracao/admin/precedencias-fase`) não respeita o formato do código de fase: só letras maiúsculas e sublinhado, sem hífen e sem dígito, com no máximo 60 caracteres. Os espaços nas pontas são desconsiderados. Esta conferência é só de formato; um código bem formado ainda precisa ser um dos catorze do vocabulário de fases (ver [código da fase sucessora fora do conjunto canônico](/erros/uniplus.configuracao.precedencia_fase.sucessora_fora_do_conjunto_canonico)).",
+        "O campo `sucessoraCodigo` do cadastro de uma precedência (`POST /api/configuracao/admin/precedencias-fase`) não respeita o formato do código de fase: letra maiúscula inicial, seguida de letras maiúsculas ou dígitos e sublinhados isolados, com no máximo 60 caracteres. O código é conferido como recebido. Esta conferência é só de formato; um código bem formado ainda precisa ser um dos catorze do vocabulário de fases (ver [código da fase sucessora fora do conjunto canônico](/erros/uniplus.configuracao.precedencia_fase.sucessora_fora_do_conjunto_canonico)).",
         "A recusa vem na lista `errors` da resposta, com `field` igual a `sucessoraCodigo`. Se o outro código também tiver problema, a recusa dele vem na mesma resposta, e nada é gravado."
       ],
       "comoResolver": [
@@ -7690,7 +7690,7 @@
       "requisitos": [],
       "oQueAconteceu": [
         "O código informado não segue o formato exigido. O código do recurso de acessibilidade:",
-        "- começa com uma letra maiúscula;\n- continua só com letras maiúsculas, dígitos e sublinhado (`_`);\n- tem de 2 a 50 caracteres no total;\n- não tem espaço no meio, acento nem hífen.",
+        "- começa com uma letra maiúscula;\n- continua só com letras maiúsculas, dígitos e sublinhado (`_`);\n- tem até 50 caracteres no total;\n- não tem espaço no meio, acento nem hífen.",
         "Exemplos válidos: `LEDOR`, `SALA_AMAMENTACAO`. Os espaços do começo e do fim são removidos antes da conferência e aceitos; só espaço **no meio** do código é recusado. Nada foi gravado."
       ],
       "comoResolver": [
@@ -7907,7 +7907,7 @@
       "codigo": "uniplus.configuracao.termo_consentimento.base_legal_tamanho",
       "requisitos": [],
       "oQueAconteceu": [
-        "O campo `baseLegalRascunho`, no cadastro (`POST /api/configuracao/admin/termos-consentimento`) ou na edição do rascunho (`PUT /api/configuracao/admin/termos-consentimento/{id}/rascunho`), tem mais de 500 caracteres. Os espaços nas pontas são desconsiderados antes da conferência.",
+        "O campo `baseLegalRascunho`, no cadastro (`POST /api/configuracao/admin/termos-consentimento`) ou na edição do rascunho (`PUT /api/configuracao/admin/termos-consentimento/{id}/rascunho`), tem mais de 500 caracteres. O código é conferido como recebido.",
         "A recusa vem na lista `errors` da resposta, com `field` igual a `baseLegalRascunho`. As demais recusas do corpo vêm na mesma resposta, e nada é gravado; na edição, o rascunho continua como estava, inclusive a marca de revisão. Na edição, o `id` do corpo diferente do da rota é recusado com 400 antes das demais conferências, e em seguida o corpo é conferido, antes da busca do termo: um `{id}` que não existe só responde como não encontrado quando o corpo é válido."
       ],
       "comoResolver": [
@@ -7924,7 +7924,7 @@
         "UNI-REQ-0086"
       ],
       "oQueAconteceu": [
-        "O nome informado não gera um código válido para o termo. Após a normalização, o código deve começar por letra de A a Z e ter de 2 a 100 caracteres, com letras, dígitos e sublinhado."
+        "O nome informado não gera um código válido para o termo. Após a normalização, o código deve começar por letra de A a Z e ter até 80 caracteres, com letras, dígitos e sublinhado."
       ],
       "comoResolver": [
         "Escolha um nome que forme um código nesse formato."
@@ -7954,7 +7954,7 @@
         "UNI-REQ-0086"
       ],
       "oQueAconteceu": [
-        "O código formado a partir do nome do termo ultrapassa 100 caracteres."
+        "O código formado a partir do nome do termo ultrapassa 80 caracteres."
       ],
       "comoResolver": [
         "Abrevie o nome do termo."
@@ -8033,7 +8033,7 @@
       "codigo": "uniplus.configuracao.termo_consentimento.nome_tamanho",
       "requisitos": [],
       "oQueAconteceu": [
-        "O cadastro de um termo de consentimento (`POST /api/configuracao/admin/termos-consentimento`) trouxe um `nome` com mais de 200 caracteres. Os espaços nas pontas são desconsiderados antes da conferência.",
+        "O cadastro de um termo de consentimento (`POST /api/configuracao/admin/termos-consentimento`) trouxe um `nome` com mais de 200 caracteres. O código é conferido como recebido.",
         "A recusa vem na lista `errors` da resposta, com `field` igual a `nome`. As demais recusas do corpo vêm na mesma resposta, e nada é gravado."
       ],
       "comoResolver": [
@@ -8112,7 +8112,7 @@
       "codigo": "uniplus.configuracao.termo_consentimento.texto_tamanho",
       "requisitos": [],
       "oQueAconteceu": [
-        "O campo `textoRascunho`, no cadastro (`POST /api/configuracao/admin/termos-consentimento`) ou na edição do rascunho (`PUT /api/configuracao/admin/termos-consentimento/{id}/rascunho`), tem mais de 20.000 caracteres. Os espaços nas pontas são desconsiderados antes da conferência.",
+        "O campo `textoRascunho`, no cadastro (`POST /api/configuracao/admin/termos-consentimento`) ou na edição do rascunho (`PUT /api/configuracao/admin/termos-consentimento/{id}/rascunho`), tem mais de 20.000 caracteres. O código é conferido como recebido.",
         "A recusa vem na lista `errors` da resposta, com `field` igual a `textoRascunho`. As demais recusas do corpo vêm na mesma resposta, e nada é gravado; na edição, o rascunho continua como estava, inclusive a marca de revisão. Na edição, o `id` do corpo diferente do da rota é recusado com 400 antes das demais conferências, e em seguida o corpo é conferido, antes da busca do termo: um `{id}` que não existe só responde como não encontrado quando o corpo é válido."
       ],
       "comoResolver": [
@@ -8340,7 +8340,7 @@
       "codigo": "uniplus.configuracao.tipo_conceito.codigo_caractere_invalido",
       "requisitos": [],
       "oQueAconteceu": [
-        "A criação de um tipo de conceito (`POST /api/configuracao/admin/tipos-conceito`) trouxe um `codigo` com o caractere nulo (`U+0000`), um caractere de controle (como a quebra de linha ou a tabulação) ou de formatação, ou com texto que não é Unicode válido e, por isso, não pode ser normalizado. A recusa evita que o código seja truncado, corrompido ou confundido com outro em silêncio. Os espaços nas pontas são desconsiderados antes da conferência.",
+        "A criação de um tipo de conceito (`POST /api/configuracao/admin/tipos-conceito`) trouxe um `codigo` com o caractere nulo (`U+0000`), um caractere de controle (como a quebra de linha ou a tabulação) ou de formatação, ou com texto que não é Unicode válido e, por isso, não pode ser normalizado. A recusa evita que o código seja truncado, corrompido ou confundido com outro em silêncio. O código é conferido como recebido.",
         "O código do tipo de conceito não tem formato fixo, ao contrário do código de cada valor categórico: fora o caractere inválido, a regra é só o tamanho máximo ([código do tipo de conceito muito longo](/erros/uniplus.configuracao.tipo_conceito.codigo_tamanho)).",
         "A recusa vem na lista `errors` da resposta, com `field` igual a `codigo`. As demais recusas do corpo vêm na mesma resposta, e nada é gravado. Só a criação recebe o código: ele é imutável e a atualização não o aceita."
       ],
@@ -8568,7 +8568,7 @@
       "codigo": "uniplus.configuracao.tipo_conceito.valor_categorico_codigo_invalido",
       "requisitos": [],
       "oQueAconteceu": [
-        "Um item de `valores`, na criação (`POST /api/configuracao/admin/tipos-conceito`) ou na atualização (`PUT /api/configuracao/admin/tipos-conceito/{id}`) de um tipo categórico, traz um `codigo` que não é aceito. O código é recusado quando está ausente, vazio ou só com espaços; quando passa de 50 caracteres; quando tem o caractere nulo ou texto que não é Unicode válido; e quando, depois de aparado nas pontas, não começa por letra maiúscula de A a Z ou tem qualquer caractere fora de A a Z, dígitos e sublinhado. Letra minúscula e letra acentuada são recusadas. Um item `null` na lista chega ao domínio e é recusado aqui e também em [rótulo de valor categórico inválido](/erros/uniplus.configuracao.tipo_conceito.valor_categorico_rotulo_invalido).",
+        "Um item de `valores`, na criação (`POST /api/configuracao/admin/tipos-conceito`) ou na atualização (`PUT /api/configuracao/admin/tipos-conceito/{id}`) de um tipo categórico, traz um `codigo` que não é aceito. O código é recusado quando está ausente, vazio ou só com espaços; quando passa de 50 caracteres; quando tem o caractere nulo ou texto que não é Unicode válido; e quando o texto recebido não começa por letra maiúscula de A a Z, contém caracteres fora de A a Z, dígitos e sublinhado ou tem sublinhados consecutivos ou no final. Letra minúscula e letra acentuada são recusadas. Um item `null` na lista chega ao domínio e é recusado aqui e também em [rótulo de valor categórico inválido](/erros/uniplus.configuracao.tipo_conceito.valor_categorico_rotulo_invalido).",
         "A recusa vem na lista `errors` da resposta, com `field` igual a `valores[i].codigo`, em que `i` é a posição do item, contada a partir de 0. Cada item com problema gera a própria entrada, e nada é gravado. A recusa só aparece em tipo de natureza `categorico`.",
         "Todo item de `valores` precisa dizer se conta como aprovação: o item que omite `contaComoAprovacao` é recusado no próprio campo, com [conta como aprovação obrigatória](/erros/uniplus.configuracao.tipo_conceito.valor_categorico_conta_como_aprovacao_obrigatoria), junto das recusas de código e de rótulo do mesmo item. Por isso `valores: [{}]` produz as três recusas, uma para cada campo.",
         "Na atualização, com o corpo desserializável e o `id` do corpo igual ao da rota, a conferência do corpo vem antes da busca do tipo: com um `{id}` que não existe, a resposta é esta, e não a de [tipo de conceito não encontrado](/erros/uniplus.configuracao.tipo_conceito.nao_encontrado). O corpo que não desserializa e o `id` do corpo diferente do da rota são recusados antes, com 400 e sem o código desta página."
@@ -8653,11 +8653,11 @@
         "UNI-REQ-0012"
       ],
       "oQueAconteceu": [
-        "O **código** informado não respeita o formato fechado —\n`^[A-Z][A-Z0-9_]{1,49}$`: inicia com letra maiúscula, segue com letras\nmaiúsculas, dígitos e sublinhado, com 2 a 50 caracteres no total (ex.:\n`DEFICIENCIA_VISUAL`, `TEA`, `SURDOCEGUEIRA`).",
+        "O **código** informado não respeita o formato fechado —\n`^[A-Z][A-Z0-9]*(_[A-Z0-9]+)*$`: inicia com letra maiúscula, segue com letras\nmaiúsculas, dígitos e sublinhado, com até 50 caracteres no total (ex.:\n`DEFICIENCIA_VISUAL`, `TEA`, `SURDOCEGUEIRA`).",
         "São recusados, entre outros, o código em caixa baixa\n(`deficiencia_visual`), o que começa por dígito (`1_DEFICIENCIA`), o que\ntraz caractere acentuado (`DEFICIÊNCIA_VISUAL`), o que usa hífen no lugar\ndo sublinhado (`DEFICIENCIA-VISUAL`) e o de um único caractere (`D`)."
       ],
       "comoResolver": [
-        "Use um código que comece com letra maiúscula e contenha apenas letras\nmaiúsculas, dígitos e sublinhado, com 2 a 50 caracteres."
+        "Use um código que comece com letra maiúscula e contenha apenas letras\nmaiúsculas, dígitos e sublinhado, com até 50 caracteres."
       ],
       "ondeAparece": [
         "Criação de um tipo de deficiência",
@@ -8798,7 +8798,7 @@
         "UNI-REQ-0013"
       ],
       "oQueAconteceu": [
-        "A **categoria** informada não tem a forma de um código de cadastro —\n`^[A-Z][A-Z0-9_]{1,49}$`. São recusados, entre outros, o valor em caixa baixa\n(`renda`), o que traz acento (`RAÇA_ETNIA`), o que usa hífen (`RACA-ETNIA`) e o\nque começa por dígito.",
+        "A **categoria** informada não tem a forma de um código de cadastro —\n`^[A-Z][A-Z0-9]*(_[A-Z0-9]+)*$`. São recusados, entre outros, o valor em caixa baixa\n(`renda`), o que traz acento (`RAÇA_ETNIA`), o que usa hífen (`RACA-ETNIA`) e o\nque começa por dígito.",
         "Este erro é sobre a **forma** do valor, não sobre o conjunto: mesmo bem escrito,\num código sem categoria correspondente no cadastro é recusado por\n[categoria não encontrada](/erros/uniplus.configuracao.tipo_documento.categoria_nao_encontrada).\nA distinção existe para que o operador saiba se errou a grafia ou se a categoria\nsimplesmente não existe."
       ],
       "comoResolver": [
@@ -8865,14 +8865,14 @@
         "UNI-REQ-0013"
       ],
       "oQueAconteceu": [
-        "O **código** informado não respeita o formato fechado —\n`^[A-Z][A-Z0-9_]{1,49}$`: inicia com letra maiúscula, segue com letras\nmaiúsculas, dígitos e sublinhado, com 2 a 50 caracteres no total (ex.: `RG`,\n`LAUDO_MEDICO`, `DECLARACAO_IRPF_2025`).",
+        "O **código** informado não respeita o formato fechado —\n`^[A-Z][A-Z0-9]*(_[A-Z0-9]+)*$`: inicia com letra maiúscula, segue com letras\nmaiúsculas, dígitos e sublinhado, com até 50 caracteres no total (ex.: `RG`,\n`LAUDO_MEDICO`, `DECLARACAO_IRPF_2025`).",
         "São recusados, entre outros, o código em caixa baixa (`laudo_medico`), o que\ncomeça por dígito (`01`), o que traz caractere acentuado (`LAUDO_MÉDICO`), o\nque usa hífen no lugar do sublinhado (`LAUDO-MEDICO`) e o de um único\ncaractere (`L`).",
         "O dígito é aceito em qualquer posição **menos a primeira**. É essa restrição\nque separa o código semântico da numeração sequencial: preserva usos legítimos\ncomo `DECLARACAO_IRPF_2025`, onde o número é o exercício fiscal, e `LEI_12711`,\nonde é o número da lei — e recusa `01`, que não identifica nada por si.",
         "O código do tipo de documento não é rótulo de exibição. É a chave de igualdade\ncom que o sistema decide se as exigências documentais de um edital satisfazem a\nregra legal aplicável, e é congelado no registro imutável da publicação. Um\nedital publicado guarda o código tal como estava no momento em que foi\ncongelado, de modo que corrigir o cadastro depois não corrige o edital já\npublicado.",
         "Daí a exigência de um código que se explique por leitura: `LAUDO_MEDICO`\nidentifica o documento em qualquer contexto; `01` só faz sentido para quem tem\na tabela de correspondência à mão."
       ],
       "comoResolver": [
-        "Informe um código que comece com letra maiúscula e contenha apenas letras\nmaiúsculas, dígitos e sublinhado, com 2 a 50 caracteres — e que nomeie o\ndocumento, não a sua posição numa lista.",
+        "Informe um código que comece com letra maiúscula e contenha apenas letras\nmaiúsculas, dígitos e sublinhado, com até 50 caracteres — e que nomeie o\ndocumento, não a sua posição numa lista.",
         "No cadastro pela interface, o código é sugerido a partir do nome e permanece\neditável antes de salvar."
       ],
       "ondeAparece": [

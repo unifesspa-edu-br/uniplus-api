@@ -85,6 +85,29 @@ public sealed class CodigoDoTermoPersistenceTests
         violacao.ConstraintName.Should().Be("ck_termos_de_consentimento_codigo_formato");
     }
 
+    [Fact]
+    public async Task CodigoComSublinhadosConsecutivos_BancoRecusa()
+    {
+        Guid id = await Gravar(NomeUnico());
+        await using UniPlusDbContext contexto = _fixture.CreateDbContext(Admin);
+        Func<Task> alterar = async () => await contexto.Database.ExecuteSqlAsync(
+            $"UPDATE configuracao.termos_de_consentimento SET codigo = {"A__B"} WHERE id = {id}");
+
+        Npgsql.PostgresException violacao = (await alterar.Should().ThrowAsync<Npgsql.PostgresException>()).Which;
+        violacao.ConstraintName.Should().Be("ck_termos_de_consentimento_codigo_formato");
+    }
+
+    [Fact]
+    public async Task CodigoComDigitos_BancoAceita()
+    {
+        Guid id = await Gravar(NomeUnico());
+        await using UniPlusDbContext contexto = _fixture.CreateDbContext(Admin);
+        int alterados = await contexto.Database.ExecuteSqlAsync(
+            $"UPDATE configuracao.termos_de_consentimento SET codigo = {"LEI_12711"} WHERE id = {id}");
+
+        alterados.Should().Be(1);
+    }
+
     private static string NomeUnico() => $"Termo de teste {Guid.NewGuid():N}";
 
     private async Task<Guid> Gravar(string nome)

@@ -12,6 +12,7 @@ using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Seed;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence.CodigosDeContrato;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Protecao;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
+using Unifesspa.UniPlus.Kernel.Domain.ValueObjects;
 
 internal sealed class ModalidadeConfiguration : IEntityTypeConfiguration<Modalidade>
 {
@@ -206,7 +207,7 @@ internal sealed class ModalidadeConfiguration : IEntityTypeConfiguration<Modalid
     {
         table.HasCheckConstraint(
             "ck_modalidades_codigo_formato",
-            "codigo ~ '^[A-Z0-9_]+$'");
+            $"codigo ~ '{FormatoDoCodigo.ExpressaoNoBanco}'");
 
         table.HasCheckConstraint(
             "ck_modalidades_retirada_de_outra_modalidade_origem",

@@ -122,7 +122,7 @@ public sealed class FatoCandidatoTests
     public void CriarDoAdministrador_DeclaradoComVinculoDoCodigo()
     {
         FatoCandidato fato = CriacaoDoFato.CriarDoAdministrador(
-            new DescritivoDoFato(" ANO_CONCLUSAO ", "Ano de conclusão", "Descrição do fato."),
+            new DescritivoDoFato("ANO_CONCLUSAO", "Ano de conclusão", "Descrição do fato."),
             new DefinicaoDoFato(TipoDoDado.Numerico, QuantidadeDeValores.ValorUnico, null, null, PontoResolucaoInscricao, EscopoFato.Candidato, ClassificacaoDeProtecao.Pessoal, Finalidade, HipoteseLegalTratamento.CumprimentoObrigacaoLegal)).Value!;
 
         fato.Origem.Should().Be(OrigemFato.Declarado);
@@ -233,7 +233,7 @@ public sealed class FatoCandidatoTests
     [InlineData("cor_raca")]      // minúsculo
     [InlineData("1COR")]          // começa por dígito
     [InlineData("COR-RACA")]      // hífen
-    [InlineData("A")]             // curto demais (< 2)
+    [InlineData("A__B")]
     public void Criar_CodigoInvalido_Falha(string codigo)
     {
         Result<FatoCandidato> resultado = Criar(descritivo: Descritivo with { Codigo = codigo });

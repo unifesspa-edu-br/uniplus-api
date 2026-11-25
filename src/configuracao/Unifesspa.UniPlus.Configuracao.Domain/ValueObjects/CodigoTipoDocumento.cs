@@ -1,16 +1,15 @@
 namespace Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
 
-using System.Text.RegularExpressions;
-
 using Unifesspa.UniPlus.Configuracao.Domain.Errors;
+using Unifesspa.UniPlus.Kernel.Domain.ValueObjects;
 using Unifesspa.UniPlus.Kernel.Results;
 
 /// <summary>
 /// Código do tipo de documento (UNI-REQ-0013, módulo Configuração) — chave
 /// natural classificatória (ex.: <c>RG</c>, <c>LAUDO_MEDICO</c>,
 /// <c>DECLARACAO_IRPF_2025</c>). Value object com formato fechado:
-/// <c>^[A-Z][A-Z0-9_]{1,49}$</c> — inicia com letra maiúscula, segue com letras
-/// maiúsculas, dígitos e sublinhado, total de 2 a 50 caracteres. Persistido como
+/// <c>^[A-Z][A-Z0-9]*(_[A-Z0-9]+)*$</c> — inicia com letra maiúscula, segue com letras
+/// maiúsculas, dígitos e sublinhado, total de no máximo 50 caracteres. Persistido como
 /// <c>varchar</c> via conversor de valor (fail-fast na reidratação).
 /// </summary>
 /// <remarks>
@@ -27,9 +26,8 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// Modalidade: é justamente o congelamento por snapshot-copy que torna a edição
 /// inofensiva para quem já consumiu.</para>
 /// </remarks>
-public sealed partial record CodigoTipoDocumento
+public sealed record CodigoTipoDocumento
 {
-    private const int TamanhoMinimo = 2;
     private const int TamanhoMaximo = 50;
 
     public string Valor { get; }
@@ -39,8 +37,7 @@ public sealed partial record CodigoTipoDocumento
     /// <summary>
     /// Cria um <see cref="CodigoTipoDocumento"/> validando o formato fechado.
     /// Valor nulo/em branco retorna <c>CodigoObrigatorio</c>; fora do formato
-    /// retorna <c>CodigoFormatoInvalido</c>. O valor é normalizado por
-    /// <c>Trim</c> antes da validação.
+    /// retorna <c>CodigoFormatoInvalido</c>. O valor é conferido como recebido.
     /// </summary>
     public static Result<CodigoTipoDocumento> Criar(string? valor)
     {
@@ -51,26 +48,18 @@ public sealed partial record CodigoTipoDocumento
                 "Código do tipo de documento é obrigatório."));
         }
 
-        string normalizado = valor.Trim();
-
-        if (!FormatoValido().IsMatch(normalizado))
-        {
-            return Result<CodigoTipoDocumento>.Failure(new DomainError(
+        return EhValido(valor)
+            ? Result<CodigoTipoDocumento>.Success(new CodigoTipoDocumento(valor!))
+            : Result<CodigoTipoDocumento>.Failure(new DomainError(
                 TipoDocumentoErrorCodes.CodigoFormatoInvalido,
                 "Código do tipo de documento deve iniciar com letra maiúscula e conter apenas "
-                + $"letras maiúsculas, dígitos e sublinhado, com {TamanhoMinimo} a {TamanhoMaximo} "
+                + $"letras maiúsculas, dígitos e sublinhado, com no máximo {TamanhoMaximo} "
                 + "caracteres (ex.: RG, LAUDO_MEDICO, DECLARACAO_IRPF_2025)."));
-        }
-
-        return Result<CodigoTipoDocumento>.Success(new CodigoTipoDocumento(normalizado));
     }
 
     /// <summary>Indica se <paramref name="valor"/> respeita o formato fechado, sem alocar o value object.</summary>
-    public static bool EhValido(string valor) =>
-        !string.IsNullOrWhiteSpace(valor) && FormatoValido().IsMatch(valor.Trim());
+    public static bool EhValido(string? valor) =>
+        valor is not null && valor.Length <= TamanhoMaximo && FormatoDoCodigo.TemFormatoValido(valor);
 
     public override string ToString() => Valor;
-
-    [GeneratedRegex("^[A-Z][A-Z0-9_]{1,49}$", RegexOptions.CultureInvariant)]
-    private static partial Regex FormatoValido();
 }

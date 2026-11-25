@@ -8,15 +8,16 @@ using Unifesspa.UniPlus.Kernel.Results;
 
 public sealed class CodigoTipoDeficienciaTests
 {
-    [Theory(DisplayName = "Códigos no formato fechado são aceitos e normalizados por Trim")]
+    [Theory(DisplayName = "Códigos no formato fechado são aceitos")]
     [InlineData("DEFICIENCIA_VISUAL")]
     [InlineData("TEA")]
     [InlineData("TEA_NIVEL_2")]
+    [InlineData("A")]
     [InlineData("AB")]
     [InlineData("D1")]
     public void Criar_FormatoValido_Aceita(string valor)
     {
-        Result<CodigoTipoDeficiencia> resultado = CodigoTipoDeficiencia.Criar($"  {valor}  ");
+        Result<CodigoTipoDeficiencia> resultado = CodigoTipoDeficiencia.Criar(valor);
 
         resultado.IsSuccess.Should().BeTrue();
         resultado.Value!.Valor.Should().Be(valor);
@@ -51,7 +52,8 @@ public sealed class CodigoTipoDeficienciaTests
     [InlineData("1_DEFICIENCIA")]
     [InlineData("DEFICIÊNCIA_VISUAL")]
     [InlineData("DEFICIENCIA-VISUAL")]
-    [InlineData("D")]
+    [InlineData(" X ")]
+    [InlineData("A__B")]
     [InlineData("DEFICIENCIA_VISUAL_COM_NOME_LONGO_QUE_PASSA_DE_CINQUENTA")]
     [InlineData("_DEFICIENCIA")]
     public void Criar_FormatoInvalido_Falha(string valor)
@@ -64,10 +66,10 @@ public sealed class CodigoTipoDeficienciaTests
 
     [Theory(DisplayName = "EhValido reflete o formato fechado sem alocar value object")]
     [InlineData("DEFICIENCIA_VISUAL", true)]
-    [InlineData("  TEA  ", true)]
+    [InlineData("  TEA  ", false)]
     [InlineData("deficiencia_visual", false)]
     [InlineData("", false)]
-    [InlineData("D", false)]
+    [InlineData("D", true)]
     public void EhValido_RefleteFormato(string valor, bool esperado)
     {
         CodigoTipoDeficiencia.EhValido(valor).Should().Be(esperado);

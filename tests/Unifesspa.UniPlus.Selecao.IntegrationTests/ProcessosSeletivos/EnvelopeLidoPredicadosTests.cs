@@ -66,7 +66,7 @@ public sealed class EnvelopeLidoPredicadosTests
         CondicaoGatilho.Criar(clausula, fato, Operador.Igual, JsonSerializer.SerializeToElement(valor)).Value!;
 
     private static RegraAvaliada RegraCustomizada() => new(
-        RegraId: Guid.CreateVersion7(), RegraCodigo: "REGRA-CUSTOMIZADA", Categoria: CategoriaObrigatoriedade.Outros,
+        RegraId: Guid.CreateVersion7(), RegraCodigo: "REGRA_CUSTOMIZADA", Categoria: CategoriaObrigatoriedade.Outros,
         TipoProcessoCodigoAvaliado: "SiSU", Predicado: new Customizado(JsonSerializer.SerializeToElement(new { limite = 1.5m, regra = "transitoria" })),
         Aprovada: true, Motivo: null, BaseLegal: "Lei de teste", AtoNormativoUrl: null, PortariaInterna: null,
         DescricaoHumana: "Regra com parâmetro decimal", VigenciaInicio: new DateOnly(2020, 1, 1), VigenciaFim: null, Hash: new string('c', 64));

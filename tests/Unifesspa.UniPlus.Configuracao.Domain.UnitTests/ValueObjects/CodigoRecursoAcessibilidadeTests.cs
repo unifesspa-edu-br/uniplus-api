@@ -8,14 +8,15 @@ using Unifesspa.UniPlus.Kernel.Results;
 
 public sealed class CodigoRecursoAcessibilidadeTests
 {
-    [Theory(DisplayName = "Códigos no formato fechado são aceitos e normalizados por Trim")]
+    [Theory(DisplayName = "Códigos no formato fechado são aceitos")]
     [InlineData("LEDOR")]
     [InlineData("SALA_AMAMENTACAO")]
+    [InlineData("A")]
     [InlineData("AB")]
     [InlineData("L1")]
     public void Criar_FormatoValido_Aceita(string valor)
     {
-        Result<CodigoRecursoAcessibilidade> resultado = CodigoRecursoAcessibilidade.Criar($"  {valor}  ");
+        Result<CodigoRecursoAcessibilidade> resultado = CodigoRecursoAcessibilidade.Criar(valor);
 
         resultado.IsSuccess.Should().BeTrue();
         resultado.Value!.Valor.Should().Be(valor);
@@ -38,7 +39,8 @@ public sealed class CodigoRecursoAcessibilidadeTests
     [InlineData("_LEDOR")]
     [InlineData("SALA-AMAMENTACAO")]
     [InlineData("SALA_AMAMENTAÇÃO")]
-    [InlineData("L")]
+    [InlineData(" X ")]
+    [InlineData("A__B")]
     [InlineData("LEDOR_COM_UM_CODIGO_LONGO_DEMAIS_QUE_PASSA_DE_CINQUENTA")]
     public void Criar_FormatoInvalido_Falha(string valor)
     {

@@ -11,6 +11,7 @@ using Unifesspa.UniPlus.Infrastructure.Core.Persistence.CodigosDeContrato;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Protecao;
 using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
+using Unifesspa.UniPlus.Kernel.Domain.ValueObjects;
 
 internal sealed class OfertaCursoConfiguration : IEntityTypeConfiguration<OfertaCurso>
 {
@@ -174,7 +175,7 @@ internal sealed class OfertaCursoConfiguration : IEntityTypeConfiguration<Oferta
     {
         table.HasCheckConstraint(
             "ck_ofertas_de_curso_codigo_formato",
-            "codigo ~ '^[A-Z][A-Z0-9_]{1,49}$'");
+            $"codigo ~ '{FormatoDoCodigo.ExpressaoNoBanco}'");
 
         table.HasCheckConstraint(
             "ck_ofertas_de_curso_vagas_anuais_autorizadas",

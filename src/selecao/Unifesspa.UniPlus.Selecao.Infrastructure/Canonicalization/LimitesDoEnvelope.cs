@@ -273,7 +273,7 @@ public static class LimitesDoEnvelope
     public const int FatoElegibilidadeBonusRegional = FormaDoItem.FatoCodigoMaxLength;
 
     /// <summary><c>ConfiguracaoBonusRegional.BaseLegalBonusRegionalCodigo</c> — cópia do código estável da Base Legal (teto do <c>CodigoBaseLegalBonusRegional</c>).</summary>
-    public const int CodigoBaseLegalBonusRegional = 100;
+    public const int CodigoBaseLegalBonusRegional = 80;
 
     /// <summary><c>ConfiguracaoBonusRegional.Identificacao</c> — cópia da identificação da Base Legal.</summary>
     public const int IdentificacaoBaseLegalBonusRegional = 500;
