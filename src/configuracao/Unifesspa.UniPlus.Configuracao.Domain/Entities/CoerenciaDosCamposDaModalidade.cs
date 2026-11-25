@@ -168,7 +168,7 @@ internal static class CoerenciaDosCamposDaModalidade
             "A ampla concorrência vale para todo candidato: a regra dela não tem condição.")),
         NaturezaLegal.CotaReservada when !OpcaoPelasCotasDaLei.TodaClausulaExige(regra, optou: true) => new("regraDeAplicabilidade", new DomainError(
             ModalidadeErrorCodes.CotaSemOpcaoPelasCotasDaLei,
-            $"Toda cláusula da regra de uma cota da lei exige {OpcaoPelasCotasDaLei.Fato} verdadeiro.")),
+            "Inclua, em toda alternativa da regra de aplicabilidade, a condição de que o candidato optou pelas cotas da Lei 12.711.")),
         NaturezaLegal.AcaoAfirmativa when codigo is not null => ValidarRegraDaAcaoAfirmativa(codigo, regra),
         _ => null,
     };
@@ -181,9 +181,8 @@ internal static class CoerenciaDosCamposDaModalidade
         }
 
         string detalhe = OpcaoPelasCotasDaLei.SeSomaAsCotas(codigo.Valor)
-            ? $"A regra da reserva de vagas para pessoa com deficiência não cita {OpcaoPelasCotasDaLei.Fato}: "
-                + "ela vale para quem optou pelas cotas da lei e para quem não optou."
-            : $"Toda cláusula da regra de uma ação afirmativa exige {OpcaoPelasCotasDaLei.Fato} falso: quem optou pelas cotas da lei não concorre a ela.";
+            ? "A regra da reserva de vagas para pessoa com deficiência deve ter condições e valer para quem optou pelas cotas da Lei 12.711 e para quem não optou."
+            : "Em toda alternativa da regra de aplicabilidade, inclua a condição de que o candidato não optou pelas cotas da Lei 12.711: quem optou não concorre a esta ação afirmativa.";
         return new("regraDeAplicabilidade", new DomainError(ModalidadeErrorCodes.AcaoAfirmativaComOpcaoPelasCotasDaLei, detalhe));
     }
 }
