@@ -68,5 +68,5 @@ public sealed record CombinacaoDoGrupo(FormaDeComprovacao Forma, int? Quantidade
         _ => null,
     };
 
-    internal static string? NormalizarConsequencia(string? consequencia) => string.IsNullOrWhiteSpace(consequencia) ? null : consequencia.Trim();
+    internal static string? NormalizarConsequencia(string? consequencia) => string.IsNullOrWhiteSpace(consequencia) ? null : consequencia;
 }

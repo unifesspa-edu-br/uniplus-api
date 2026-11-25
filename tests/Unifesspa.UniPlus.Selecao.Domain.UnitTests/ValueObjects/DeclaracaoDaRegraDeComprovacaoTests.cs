@@ -79,9 +79,9 @@ public sealed class DeclaracaoDaRegraDeComprovacaoTests
     }
 
     [Fact]
-    public void Interpretar_GrupoComDadosNormalizaveis_GuardaOsDadosNormalizados()
+    public void Interpretar_GrupoComDadosValidos_GuardaOsDados()
     {
-        DeclaracaoDaRegraDeComprovacao declaracao = DeclaracaoDaRegraDeComprovacao.Interpretar("QUANTIDADE_MINIMA_DE_ITENS", false, 1, null, " ELIMINA ");
+        DeclaracaoDaRegraDeComprovacao declaracao = DeclaracaoDaRegraDeComprovacao.Interpretar("QUANTIDADE_MINIMA_DE_ITENS", false, 1, null, "ELIMINA");
 
         declaracao.Forma.Should().Be(FormaDeComprovacao.QuantidadeMinimaDeItens);
         declaracao.QuantidadeDeItens.Should().Be(1);

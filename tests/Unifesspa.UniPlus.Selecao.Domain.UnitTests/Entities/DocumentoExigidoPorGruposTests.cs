@@ -5,6 +5,7 @@ using System.Text.Json;
 using AwesomeAssertions;
 
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
+using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
@@ -148,23 +149,27 @@ public sealed class DocumentoExigidoPorGruposTests
         criar.Should().Throw<ArgumentException>();
     }
 
-    [Fact(DisplayName = "Criar aparra os textos do tipo e dos fatos comprovados e normaliza a consequência")]
-    public void Criar_AparaOsTextosENormalizaAConsequencia()
+    [Theory]
+    [InlineData(" ELIMINA ")]
+    [InlineData("elimina")]
+    public void Criar_ConsequenciaComEspacosOuMinuscula_Recusa(string consequencia)
     {
-        DocumentoExigidoDeclarado declarada = Declarada();
+        DocumentoExigidoDeclarado declarada = Declarada() with { Indeferimento = new(true, consequencia, []) };
 
-        DocumentoExigido exigencia = DocumentoExigido.Criar(Chave, declarada with
-        {
-            Tipo = declarada.Tipo with { Codigo = "IDENTIDADE", Nome = " Documento de identidade ", Categoria = " PESSOAL " },
-            Indeferimento = new(true, " ELIMINA ", []),
-            FatosComprovados = [" COR_RACA "],
-        }).Value!;
+        Result<DocumentoExigido> resultado = DocumentoExigido.Criar(Chave, declarada);
 
-        exigencia.TipoDocumentoCodigo.Should().Be("IDENTIDADE");
-        exigencia.TipoDocumentoNome.Should().Be("Documento de identidade");
-        exigencia.TipoDocumentoCategoria.Should().Be("PESSOAL");
-        exigencia.ConsequenciaIndeferimento.Should().Be("ELIMINA");
-        exigencia.FatosComprovados.Should().Equal("COR_RACA");
+        resultado.Error!.Code.Should().Be("DocumentoExigido.ConsequenciaIndeferimentoInvalida");
+        resultado.Error.Message.Should().NotContain(consequencia);
+    }
+
+    [Fact]
+    public void Reidratar_FatoComEspacos_PreservaReferencia()
+    {
+        DocumentoExigidoDeclarado declarada = Declarada() with { FatosComprovados = [" COR_RACA "] };
+
+        DocumentoExigido exigencia = DocumentoExigido.Reidratar(Chave, Guid.CreateVersion7(), declarada);
+
+        exigencia.FatosComprovados.Should().Equal(" COR_RACA ");
     }
 
     [Fact(DisplayName = "Criar vincula as condições e as bases legais ao Id da exigência criada")]

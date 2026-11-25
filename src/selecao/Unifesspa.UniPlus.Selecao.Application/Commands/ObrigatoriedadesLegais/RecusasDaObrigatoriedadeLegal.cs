@@ -5,9 +5,9 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// <summary>As recusas de negócio, não de campo, de criar e atualizar uma obrigatoriedade legal.</summary>
 internal static class RecusasDaObrigatoriedadeLegal
 {
-    internal static DomainError TipoProcessoNaoEncontradoOuInativo(string codigo) => new(
+    internal static DomainError TipoProcessoNaoEncontradoOuInativo() => new(
         "ObrigatoriedadeLegal.TipoProcessoNaoEncontradoOuInativo",
-        $"Tipo de processo seletivo '{codigo}' não encontrado ou não está ativo.");
+        "Tipo de processo seletivo não encontrado ou não está ativo.");
 
     internal static DomainError NaoEncontrada(Guid id) => new(
         "ObrigatoriedadeLegal.NaoEncontrada",

@@ -77,12 +77,15 @@ public sealed class MotivoDeDecisaoTests
             .Which.Error.Code.Should().Be(MotivoDeDecisaoErrorCodes.SubclassificacaoInvalida);
     }
 
-    [Fact(DisplayName = "O fundamento declarado com espaços é normalizado")]
-    public void Criar_IsencaoComFundamentoComEspacos_Normaliza()
+    [Theory]
+    [InlineData(" DOACAO_MEDULA_OSSEA ")]
+    [InlineData("doacao_medula_ossea")]
+    public void Criar_IsencaoComFundamentoNaoExato_Recusa(string fundamento)
     {
-        Result<MotivoDeDecisao> resultado = Criar(TipoMotivoDeDecisao.IsencaoDaTaxa, "RENDA_ACIMA_DO_LIMITE", " DOACAO_MEDULA_OSSEA ", SentidoDoMotivo.Favoravel);
+        Result<MotivoDeDecisao> resultado = Criar(TipoMotivoDeDecisao.IsencaoDaTaxa, "RENDA_ACIMA_DO_LIMITE", fundamento, SentidoDoMotivo.Favoravel);
 
-        resultado.Value!.Subclassificacao.Should().Be("DOACAO_MEDULA_OSSEA");
+        resultado.Errors.Should().ContainSingle().Which.Error.Code.Should().Be(MotivoDeDecisaoErrorCodes.SubclassificacaoInvalida);
+        resultado.Error!.Message.Should().NotContain(fundamento);
     }
 
     [Fact(DisplayName = "Motivo sem sentido é recusado")]

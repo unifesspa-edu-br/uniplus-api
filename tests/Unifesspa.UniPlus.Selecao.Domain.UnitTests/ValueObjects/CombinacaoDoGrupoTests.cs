@@ -27,12 +27,23 @@ public sealed class CombinacaoDoGrupoTests
     }
 
     [Fact]
-    public void Declarar_GrupoDeQuantidadeMinimaSemCardinalidadeENormalizavel_AplicaPadrao()
+    public void Declarar_GrupoDeQuantidadeMinimaSemCardinalidade_AplicaPadrao()
     {
-        CombinacaoDoGrupo combinacao = CombinacaoDoGrupo.Declarar(FormaDeComprovacao.QuantidadeMinimaDeItens, null, " ELIMINA ", 1, true).Value!;
+        CombinacaoDoGrupo combinacao = CombinacaoDoGrupo.Declarar(FormaDeComprovacao.QuantidadeMinimaDeItens, null, "ELIMINA", 1, true).Value!;
 
         combinacao.Forma.Should().Be(FormaDeComprovacao.QuantidadeMinimaDeItens);
         combinacao.QuantidadeMinima.Should().Be(1);
         combinacao.Consequencia.Should().Be("ELIMINA");
     }
+    [Theory]
+    [InlineData(" ELIMINA ")]
+    [InlineData("elimina")]
+    public void Declarar_ConsequenciaNaoExata_Recusa(string consequencia)
+    {
+        Result<CombinacaoDoGrupo> resultado = CombinacaoDoGrupo.Declarar(FormaDeComprovacao.QuantidadeMinimaDeItens, 1, consequencia, 1, false);
+
+        resultado.Error!.Code.Should().Be("RegraDeComprovacao.ConsequenciaInvalida");
+        resultado.Error.Message.Should().NotContain(consequencia);
+    }
+
 }
