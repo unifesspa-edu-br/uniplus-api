@@ -1,7 +1,5 @@
 namespace Unifesspa.UniPlus.Selecao.Application.Services;
 
-using Abstractions;
-
 using Domain.Entities;
 using Domain.Interfaces;
 
@@ -10,7 +8,7 @@ using DTOs.NotasDoEnem;
 
 /// <summary>Monta o lote com as ocorrências e os ausentes, para a importação e para a consulta.</summary>
 public sealed class DetalheDoLoteDeNotasMontador(ILoteDeNotasDoEnemRepository lotes,
-    IProcessoSeletivoRepository processoSeletivoRepository, IRegistroCodecsEnvelope registroCodecs)
+    ContextoDaVersaoFixadaResolver contexto)
 {
     /// <summary>
     /// O lote com as ocorrências e os ausentes. Todos os inscritos citados saem de uma só leitura das
@@ -36,9 +34,9 @@ public sealed class DetalheDoLoteDeNotasMontador(ILoteDeNotasDoEnemRepository lo
         Guid[] inscricaoIds = [.. lote.Ocorrencias.Where(static o => o.InscricaoId is not null)
             .Select(static o => o.InscricaoId!.Value).Concat(ausentes.Keys).Distinct()];
         IReadOnlyDictionary<Guid, InscritoDoLote> inscritos = await lotes.ObterInscritosAsync(inscricaoIds, cancellationToken).ConfigureAwait(false);
-        IReadOnlyDictionary<Guid, IReadOnlyList<OfertaEscolhidaDto>> ofertas = await OfertasEscolhidas
-            .ResolverAsync(lote.ProcessoSeletivoId, inscritos, processoSeletivoRepository, registroCodecs, cancellationToken)
-            .ConfigureAwait(false);
+        Dictionary<Guid, IReadOnlyList<OfertaDeCursoCertameDto>> ofertasPorVersao = await contexto
+            .OfertasDasVersoesAsync(inscritos.Values.Select(i => (lote.ProcessoSeletivoId, i.VersaoFormularioId)), cancellationToken).ConfigureAwait(false);
+        IReadOnlyDictionary<Guid, IReadOnlyList<OfertaEscolhidaDto>> ofertas = OfertasEscolhidas.DosInscritos(inscritos, ofertasPorVersao);
 
         return LoteDeNotasDoEnemDto.De(lote, vigente, new DetalheDoLoteDeNotas(inscritos, ausentes, ofertas), ausentes.Count);
     }

@@ -73,7 +73,7 @@ public sealed class ImportarNotasDoEnemCommandHandlerTests
         RelogioFixo relogio = new(agora);
         ResolvedorFusoDeTeste fuso = new();
         PreparacaoDaImportacaoDeNotas preparacao = new(escopos, _indices, fuso, relogio);
-        DetalheDoLoteDeNotasMontador detalhes = new(_lotes, _cenario.Processos, _cenario.Codecs);
+        DetalheDoLoteDeNotasMontador detalhes = new(_lotes, new ContextoDaVersaoFixadaResolver(_cenario.Processos, _cenario.Codecs));
         ImportacaoDasNotasDoEnem importacao = new(escopos, _lotes, _inscritos, _usuario, fuso, detalhes, NullLogger<ImportacaoDasNotasDoEnem>.Instance);
         return ImportarNotasDoEnemCommandHandler.Handle(command, preparacao, importacao, _cenario.Processos, _unitOfWork, relogio, CancellationToken.None);
     }
