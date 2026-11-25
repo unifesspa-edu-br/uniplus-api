@@ -3,7 +3,7 @@ namespace Unifesspa.UniPlus.Configuracao.Domain.Errors;
 public static class CursoErrorCodes
 {
     public const string CodigoObrigatorio = "Curso.CodigoObrigatorio";
-    public const string CodigoTamanho = "Curso.CodigoTamanho";
+    public const string CodigoFormatoInvalido = "Curso.CodigoFormatoInvalido";
     public const string CodigoJaExiste = "Curso.CodigoJaExiste";
     public const string NomeObrigatorio = "Curso.NomeObrigatorio";
     public const string NomeTamanho = "Curso.NomeTamanho";

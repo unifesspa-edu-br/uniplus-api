@@ -1,6 +1,5 @@
 namespace Unifesspa.UniPlus.Configuracao.IntegrationTests.Cursos;
 
-using System.Diagnostics.CodeAnalysis;
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
@@ -34,10 +33,6 @@ using static Unifesspa.UniPlus.Configuracao.IntegrationTests.Cursos.ApoioDaOrden
 /// intercalariam e nenhuma sequência esperada seria estável.
 /// </remarks>
 [Collection(ConfiguracaoEndpointCollection.Name)]
-[SuppressMessage(
-    "Performance",
-    "CA1515:Consider making public types internal",
-    Justification = "xUnit collection fixture exige tipo de teste público.")]
 public sealed class OrdenacaoAlfabeticaEndpointTests
 {
     private readonly ConfiguracaoEndpointFixture _fixture;
@@ -90,13 +85,13 @@ public sealed class OrdenacaoAlfabeticaEndpointTests
         string nome = $"{bloco} Homonimo";
         using HttpClient client = _fixture.Factory.CreateClient();
 
-        await CriarCursoAsync(client, nome, codigo: $"{bloco}-C");
-        await CriarCursoAsync(client, nome, codigo: $"{bloco}-A");
-        await CriarCursoAsync(client, nome, codigo: $"{bloco}-B");
+        await CriarCursoAsync(client, nome, codigo: $"{bloco}_C");
+        await CriarCursoAsync(client, nome, codigo: $"{bloco}_A");
+        await CriarCursoAsync(client, nome, codigo: $"{bloco}_B");
 
         IReadOnlyList<JsonElement> itens = await ListarDoBlocoAsync(client, Cursos, bloco);
 
         itens.Select(i => i.GetProperty("codigo").GetString())
-            .Should().Equal($"{bloco}-A", $"{bloco}-B", $"{bloco}-C");
+            .Should().Equal($"{bloco}_A", $"{bloco}_B", $"{bloco}_C");
     }
 }

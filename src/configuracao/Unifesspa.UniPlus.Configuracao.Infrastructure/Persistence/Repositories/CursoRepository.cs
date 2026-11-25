@@ -10,10 +10,6 @@ using Unifesspa.UniPlus.Infrastructure.Core.Pagination;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.Kernel.Pagination;
 
-[System.Diagnostics.CodeAnalysis.SuppressMessage(
-    "Performance",
-    "CA1812:Avoid uninstantiated internal classes",
-    Justification = "Instanciada via DI em ConfiguracaoInfrastructureRegistration.")]
 public sealed class CursoRepository : ICursoRepository
 {
     /// <summary>
@@ -57,46 +53,34 @@ public sealed class CursoRepository : ICursoRepository
     {
         ArgumentNullException.ThrowIfNull(ordenacao);
 
-        // A chave de ordenação alfabética é coluna gerada mapeada como propriedade
-        // sombra — a entidade materializada não a carrega, então a listagem projeta
-        // uma linha que a traz junto e serve de âncora ao motor de paginação.
-        IQueryable<CursoOrdenado> query = _dbContext.Cursos
-            .AsNoTracking()
-            .Select(c => new CursoOrdenado
-            {
-                Id = c.Id,
-                NomeOrdenacao = EF.Property<string>(c, CursoConfiguration.NomeOrdenacaoPropriedade),
-                Codigo = c.Codigo,
-                Grau = c.Grau,
-                NivelEnsino = c.NivelEnsino,
-                CriadoEm = c.CreatedAt,
-                Entidade = c,
-            });
-
-        // A busca compara contra a mesma coluna normalizada que ordena, então acento
-        // e caixa já não participam do nome. O código é reduzido a minúsculas na
-        // consulta, pelo banco.
         string? termo = NormalizacaoTextual.PrepararTermoDeBusca(busca);
-        if (termo is not null)
+        IQueryable<CursoOrdenado> consulta = Filtrar(ProjetarCursos(), termo);
+        OrderedKeysetPage<CursoOrdenado> pagina = await OrderedKeysetCursor.ApplyAsync(
+            consulta, OrdenacaoDeCursos.DeCursos(ordenacao, RecorteDeCurso(termo)),
+            afterSortKey, afterId, limit, direction, cancellationToken).ConfigureAwait(false);
+        return ([.. pagina.Items.Select(static linha => linha.Entidade)], pagina.Previous, pagina.Next);
+    }
+
+    private IQueryable<CursoOrdenado> ProjetarCursos() => _dbContext.Cursos.AsNoTracking().Select(c => new CursoOrdenado
+    {
+        Id = c.Id,
+        NomeOrdenacao = EF.Property<string>(c, CursoConfiguration.NomeOrdenacaoPropriedade),
+        Codigo = c.Codigo,
+        Grau = c.Grau,
+        NivelEnsino = c.NivelEnsino,
+        CriadoEm = c.CreatedAt,
+        Entidade = c,
+    });
+
+    private static IQueryable<CursoOrdenado> Filtrar(IQueryable<CursoOrdenado> consulta, string? termo)
+    {
+        if (termo is null)
         {
-            string padrao = "%" + termo + "%";
-            query = query.Where(c =>
-                EF.Functions.ILike(c.NomeOrdenacao, padrao, EscapeDoLike)
-                || EF.Functions.ILike(FuncoesDaPlataforma.NormalizarParaComparacao(c.Codigo), padrao, EscapeDoLike));
+            return consulta;
         }
-
-        OrderedKeysetPage<CursoOrdenado> page = await OrderedKeysetCursor
-            .ApplyAsync(
-                query,
-                OrdenacaoDeCursos.DeCursos(ordenacao, RecorteDeCurso(termo)),
-                afterSortKey,
-                afterId,
-                limit,
-                direction,
-                cancellationToken)
-            .ConfigureAwait(false);
-
-        return ([.. page.Items.Select(static linha => linha.Entidade)], page.Previous, page.Next);
+        string padrao = "%" + termo + "%";
+        return consulta.Where(c => EF.Functions.ILike(c.NomeOrdenacao, padrao, EscapeDoLike)
+            || EF.Functions.ILike(FuncoesDaPlataforma.NormalizarParaComparacao(c.Codigo), padrao, EscapeDoLike));
     }
 
     /// <summary>
@@ -126,14 +110,10 @@ public sealed class CursoRepository : ICursoRepository
     {
         ArgumentNullException.ThrowIfNull(codigo);
 
-        // Espelha a normalização do agregado (Trim) para casar com o valor persistido.
-        // Comparação case-sensitive (default do Postgres) — alinhada ao índice único.
-        string codigoNorm = codigo.Trim();
-
         return _dbContext.Cursos
             .AsNoTracking()
             .Where(c => excluirId == null || c.Id != excluirId)
-            .AnyAsync(c => c.Codigo == codigoNorm, cancellationToken);
+            .AnyAsync(c => c.Codigo == codigo, cancellationToken);
     }
 
     public Task<bool> ReferenciadoPorOfertaCursoVivaAsync(Guid cursoId, CancellationToken cancellationToken)

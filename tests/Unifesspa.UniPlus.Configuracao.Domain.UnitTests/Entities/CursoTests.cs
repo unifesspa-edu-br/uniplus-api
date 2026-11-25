@@ -78,7 +78,7 @@ public sealed class CursoTests
         Result<Curso> resultado = Criar(codigo: new string('A', 61));
 
         resultado.IsFailure.Should().BeTrue();
-        resultado.Error!.Code.Should().Be(CursoErrorCodes.CodigoTamanho);
+        resultado.Error!.Code.Should().Be(CursoErrorCodes.CodigoFormatoInvalido);
     }
 
     [Theory(DisplayName = "Nome ausente ou em branco é rejeitado")]
@@ -145,7 +145,7 @@ public sealed class CursoTests
     public void Criar_CamposComEspacos_Normaliza()
     {
         Curso curso = Criar(
-            codigo: "  ENG_CIVIL  ",
+            codigo: "ENG_CIVIL",
             nome: "  Engenharia Civil  ",
             grau: "  Bacharelado  ",
             nivelEnsino: "  Graduação  ",

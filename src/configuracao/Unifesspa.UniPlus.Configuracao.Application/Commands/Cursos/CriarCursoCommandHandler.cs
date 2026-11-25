@@ -10,7 +10,7 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// Handler do <see cref="CriarCursoCommand"/> (convention-based Wolverine):
 /// valida o agregado por inteiro primeiro (sem I/O) — os cinco campos acumulam
 /// no mesmo lote — só então confere a unicidade do código entre vivos, com o
-/// código já normalizado. Protege a corrida check-then-act traduzindo a violação
+/// código recebido. Protege a corrida check-then-act traduzindo a violação
 /// do índice único parcial em <c>CodigoJaExiste</c>.
 /// </summary>
 public static class CriarCursoCommandHandler
@@ -32,31 +32,33 @@ public static class CriarCursoCommandHandler
             return Result<Guid>.ValidationFailure(criar.Errors);
         }
 
-        Curso curso = criar.Value!;
+        return await SalvarAsync(criar.Value!, repository, unitOfWork, cancellationToken).ConfigureAwait(false);
+    }
 
+    private static async Task<Result<Guid>> SalvarAsync(
+        Curso curso, ICursoRepository repository, IUnitOfWork unitOfWork, CancellationToken cancellationToken)
+    {
         if (await repository.CodigoExisteEntreVivosAsync(curso.Codigo, null, cancellationToken).ConfigureAwait(false))
         {
             return Result<Guid>.Failure(CodigoJaExisteErro());
         }
-
         await repository.AdicionarAsync(curso, cancellationToken).ConfigureAwait(false);
+        return await ConfirmarAsync(curso, unitOfWork, cancellationToken).ConfigureAwait(false);
+    }
 
+    private static async Task<Result<Guid>> ConfirmarAsync(Curso curso, IUnitOfWork unitOfWork, CancellationToken cancellationToken)
+    {
         try
         {
             await unitOfWork.SalvarAlteracoesAsync(cancellationToken).ConfigureAwait(false);
+            return Result<Guid>.Success(curso.Id);
         }
-        catch (Exception ex) when (UniqueConstraintViolation.GetViolatedConstraint(ex) is { } constraint
-            && UniqueConstraintViolation.IsCodigoConflict(constraint))
+        catch (Exception excecao) when (UniqueConstraintViolation.GetViolatedConstraint(excecao) is { } restricao
+            && UniqueConstraintViolation.IsCodigoConflict(restricao))
         {
-            // Sem descartar, a entidade Added continua rastreada e o SaveChangesAsync
-            // automático do Wolverine (AutoApplyTransactions) tenta a mesma inserção de
-            // novo FORA deste catch — a mesma violação estoura sem tradução, e o 409
-            // pretendido vira 500.
             unitOfWork.DescartarAlteracoesNaoSalvas();
             return Result<Guid>.Failure(CodigoJaExisteErro());
         }
-
-        return Result<Guid>.Success(curso.Id);
     }
 
     private static DomainError CodigoJaExisteErro() =>

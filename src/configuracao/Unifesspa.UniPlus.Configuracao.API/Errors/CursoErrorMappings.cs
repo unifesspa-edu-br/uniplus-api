@@ -16,11 +16,11 @@ internal static class CursoErrorMappings
                 "uniplus.configuracao.curso.codigo_obrigatorio",
                 "Código do curso é obrigatório")),
 
-        new(CursoErrorCodes.CodigoTamanho,
+        new(CursoErrorCodes.CodigoFormatoInvalido,
             new DomainErrorMapping(
                 StatusCodes.Status422UnprocessableEntity,
-                "uniplus.configuracao.curso.codigo_tamanho",
-                "Tamanho do código do curso inválido")),
+                "uniplus.configuracao.curso.codigo_formato_invalido",
+                "Código do curso fora do formato")),
 
         new(CursoErrorCodes.CodigoJaExiste,
             new DomainErrorMapping(

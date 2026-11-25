@@ -1127,6 +1127,11 @@
       "titulo": "A condição reservada não pode ser removida"
     },
     {
+      "codigo": "uniplus.configuracao.curso.codigo_formato_invalido",
+      "status": 422,
+      "titulo": "Código do curso fora do formato"
+    },
+    {
       "codigo": "uniplus.configuracao.curso.codigo_ja_existe",
       "status": 409,
       "titulo": "Já existe um curso ativo com este código"
@@ -1135,11 +1140,6 @@
       "codigo": "uniplus.configuracao.curso.codigo_obrigatorio",
       "status": 422,
       "titulo": "Código do curso é obrigatório"
-    },
-    {
-      "codigo": "uniplus.configuracao.curso.codigo_tamanho",
-      "status": 422,
-      "titulo": "Tamanho do código do curso inválido"
     },
     {
       "codigo": "uniplus.configuracao.curso.grau_obrigatorio",

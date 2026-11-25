@@ -33,44 +33,45 @@ public static class AtualizarCursoCommandHandler
             return Result.ValidationFailure(campos.Errors);
         }
 
-        Curso? curso = await repository.ObterPorIdAsync(command.Id, cancellationToken).ConfigureAwait(false);
+        return await AtualizarAsync(command, campos.Value.Codigo, repository, unitOfWork, cancellationToken).ConfigureAwait(false);
+    }
+
+    private static async Task<Result> AtualizarAsync(AtualizarCursoCommand comando, string codigo,
+        ICursoRepository repository, IUnitOfWork unitOfWork, CancellationToken cancellationToken)
+    {
+        Curso? curso = await repository.ObterPorIdAsync(comando.Id, cancellationToken).ConfigureAwait(false);
         if (curso is null)
         {
-            return Result.Failure(new DomainError(
-                CursoErrorCodes.NaoEncontrado,
-                "Curso não encontrado."));
+            return Result.Failure(new DomainError(CursoErrorCodes.NaoEncontrado, "Curso não encontrado."));
         }
-
-        // Código é case-sensitive (Ordinal) — só checa colisão quando o código
-        // normalizado efetivamente muda em relação ao atual.
-        if (!string.Equals(campos.Value.Codigo, curso.Codigo, StringComparison.Ordinal)
-            && await repository.CodigoExisteEntreVivosAsync(campos.Value.Codigo, command.Id, cancellationToken).ConfigureAwait(false))
+        if (!string.Equals(codigo, curso.Codigo, StringComparison.Ordinal)
+            && await repository.CodigoExisteEntreVivosAsync(codigo, comando.Id, cancellationToken).ConfigureAwait(false))
         {
             return Result.Failure(CodigoJaExisteErro());
         }
+        return await AplicarAsync(curso, comando, unitOfWork, cancellationToken).ConfigureAwait(false);
+    }
 
-        Result atualizarResult = curso.Atualizar(
-            command.Codigo, command.Nome, command.Grau, command.NivelEnsino, command.GrupoAreaEnem);
-        if (atualizarResult.IsFailure)
-        {
-            return atualizarResult;
-        }
+    private static async Task<Result> AplicarAsync(Curso curso, AtualizarCursoCommand comando,
+        IUnitOfWork unitOfWork, CancellationToken cancellationToken)
+    {
+        Result resultado = curso.Atualizar(comando.Codigo, comando.Nome, comando.Grau, comando.NivelEnsino, comando.GrupoAreaEnem);
+        return resultado.IsFailure ? resultado : await ConfirmarAsync(unitOfWork, cancellationToken).ConfigureAwait(false);
+    }
 
+    private static async Task<Result> ConfirmarAsync(IUnitOfWork unitOfWork, CancellationToken cancellationToken)
+    {
         try
         {
             await unitOfWork.SalvarAlteracoesAsync(cancellationToken).ConfigureAwait(false);
+            return Result.Success();
         }
-        catch (Exception ex) when (UniqueConstraintViolation.GetViolatedConstraint(ex) is { } constraint
-            && UniqueConstraintViolation.IsCodigoConflict(constraint))
+        catch (Exception excecao) when (UniqueConstraintViolation.GetViolatedConstraint(excecao) is { } restricao
+            && UniqueConstraintViolation.IsCodigoConflict(restricao))
         {
-            // Corrida entre a checagem de unicidade e o UPDATE: o índice único parcial
-            // dispara 23505; sem descartar, o SaveChangesAsync automático do Wolverine
-            // repetiria o mesmo UPDATE fora deste catch e o 409 pretendido viraria 500.
             unitOfWork.DescartarAlteracoesNaoSalvas();
             return Result.Failure(CodigoJaExisteErro());
         }
-
-        return Result.Success();
     }
 
     private static DomainError CodigoJaExisteErro() =>

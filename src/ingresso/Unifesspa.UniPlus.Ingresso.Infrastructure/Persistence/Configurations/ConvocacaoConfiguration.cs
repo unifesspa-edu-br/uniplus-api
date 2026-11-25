@@ -9,6 +9,7 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence.CodigosDeContrato;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Protecao;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
+using Unifesspa.UniPlus.Kernel.Domain.ValueObjects;
 
 public sealed class ConvocacaoConfiguration : IEntityTypeConfiguration<Convocacao>
 {
@@ -38,6 +39,6 @@ public sealed class ConvocacaoConfiguration : IEntityTypeConfiguration<Convocaca
             .HasComment("Situação da convocação.")
             .IsRequired();
         builder.Property(c => c.Posicao).IsRequired();
-        builder.Property(c => c.CodigoCurso).HasMaxLength(50).IsRequired();
+        builder.Property(c => c.CodigoCurso).HasMaxLength(FormatoDoCodigo.ComprimentoMaximo).IsRequired();
     }
 }
