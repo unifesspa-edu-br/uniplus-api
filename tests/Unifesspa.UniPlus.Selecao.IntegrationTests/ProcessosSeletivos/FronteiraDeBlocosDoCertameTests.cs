@@ -299,6 +299,17 @@ public sealed class FronteiraDeBlocosDoCertameTests
         certame.Should().BeNull();
     }
 
+    [Fact(DisplayName = "Documento com quantidade de vagas escrita como texto é recusado")]
+    public void TentarLerProjecao_QuantidadeDeVagasComoTexto_Recusa()
+    {
+        JsonObject documento = (JsonObject)JsonNode.Parse(DocumentoInteiro())!;
+        documento["vagas"]![0]!["quadro"]![0]!["quantidade"] = "3";
+
+        LeituraDoDocumentoDivulgado.TentarLerProjecao(documento.ToJsonString(), out CertamePublicadoDto? certame)
+            .Should().BeFalse();
+        certame.Should().BeNull();
+    }
+
     [Fact(DisplayName = "O documento inteiro, como a materialização o grava, é lido com sucesso")]
     public void TentarLerProjecao_QuandoDocumentoInteiro_DeveLer()
     {

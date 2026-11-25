@@ -4,6 +4,7 @@ using System.Text.Json;
 
 using AwesomeAssertions;
 
+using Unifesspa.UniPlus.Selecao.Application.DTOs;
 using Unifesspa.UniPlus.Selecao.Application.Queries.ProcessosSeletivos;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
@@ -31,6 +32,30 @@ public sealed class OpcoesDoDocumentoDivulgadoTests
         FluentActions.Invoking(static () => JsonSerializer.Deserialize<Exemplo>(
                 """{"modo":"codigo_inventado","situacao":3}""", ProjecaoDoCertamePublicado.OpcoesDoDocumento))
             .Should().Throw<JsonException>().Which.Message.Should().NotContain("codigo_inventado");
+
+    [Fact(DisplayName = "Quantidade escrita como texto é recusada")]
+    public void Opcoes_QuantidadeComoTexto_Recusa() =>
+        FluentActions.Invoking(static () => JsonSerializer.Deserialize<VagaPorModalidadeCertameDto>(
+                """{"modalidadeCodigo":"AC","quantidade":"3"}""", ProjecaoDoCertamePublicado.OpcoesDoDocumento))
+            .Should().Throw<JsonException>();
+
+    [Fact(DisplayName = "Quantidade numérica é escrita e lida com o nome correto")]
+    public void Opcoes_QuantidadeNumerica_EscreveELe()
+    {
+        VagaPorModalidadeCertameDto vaga = new("AC", 3);
+
+        string texto = JsonSerializer.Serialize(vaga, ProjecaoDoCertamePublicado.OpcoesDoDocumento);
+
+        texto.Should().Be("""{"modalidadeCodigo":"AC","quantidade":3}""");
+        JsonSerializer.Deserialize<VagaPorModalidadeCertameDto>(texto, ProjecaoDoCertamePublicado.OpcoesDoDocumento)
+            .Should().Be(vaga);
+    }
+
+    [Fact(DisplayName = "Nome de propriedade com caixa diferente é recusado")]
+    public void Opcoes_NomeComOutraCaixa_Recusa() =>
+        FluentActions.Invoking(static () => JsonSerializer.Deserialize<VagaPorModalidadeCertameDto>(
+                """{"modalidadeCodigo":"AC","Quantidade":3}""", ProjecaoDoCertamePublicado.OpcoesDoDocumento))
+            .Should().Throw<JsonException>();
 
     [Fact(DisplayName = "As opções ficam somente leitura depois de criadas")]
     public void Opcoes_DepoisDeCriadas_FicamSomenteLeitura() =>
