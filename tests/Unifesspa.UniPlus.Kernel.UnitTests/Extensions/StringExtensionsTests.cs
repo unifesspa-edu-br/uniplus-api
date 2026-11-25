@@ -6,6 +6,16 @@ using Unifesspa.UniPlus.Kernel.Extensions;
 
 public sealed class StringExtensionsTests
 {
+    [Theory]
+    [InlineData(0xD800)]
+    [InlineData(0xDC00)]
+    public void TemSubstitutoIsolado_UnidadeSemPar_RetornaVerdadeiro(int unidade) =>
+        $"a{(char)unidade}b".TemSubstitutoIsolado().Should().BeTrue();
+
+    [Fact]
+    public void TemSubstitutoIsolado_ParCompleto_RetornaFalso() =>
+        "a😀b".TemSubstitutoIsolado().Should().BeFalse();
+
     [Theory(DisplayName = "ApenasDigitos remove caracteres não numéricos preservando ordem")]
     [InlineData("123.456.789-00", "12345678900")]
     [InlineData("(91) 99999-0000", "91999990000")]

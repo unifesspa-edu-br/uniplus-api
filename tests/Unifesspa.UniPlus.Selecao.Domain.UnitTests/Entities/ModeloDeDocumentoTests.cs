@@ -18,6 +18,14 @@ public sealed class ModeloDeDocumentoTests
 {
     private static readonly TimeProvider Relogio = TimeProvider.System;
 
+    [Fact]
+    public void IniciarPendente_NomeComSubstitutoIsolado_RecusaNome()
+    {
+        Result<ModeloDeDocumento> resultado = ModeloDeDocumento.IniciarPendente(Guid.NewGuid(), "modelo\uD800", "DOCX", Relogio, TimeSpan.FromMinutes(15));
+
+        resultado.Errors.Should().ContainSingle().Which.Error.Code.Should().Be(ModeloDeDocumentoErrorCodes.NomeArquivoInvalido);
+    }
+
     [Theory(DisplayName = "Documento de texto DOCX, qualquer que seja o nome da parte principal, e ODT, com o content-type do formato, são aceitos")]
     [InlineData("DOCX", "word/document.xml")]
     [InlineData("DOCX", "word/Document2.xml")]
@@ -30,7 +38,7 @@ public sealed class ModeloDeDocumentoTests
         modelo.ValidarConteudo(conteudo.Length, modelo.ContentType, conteudo).IsSuccess.Should().BeTrue();
     }
 
-    public static TheoryData<string, string, byte[], string> Recusados => new()
+    public static TheoryData<string, string, byte[], string> RecusadosDocx => new()
     {
         { "DOCX", ArquivosDeModeloDeTeste.ContentTypeDocx, ArquivosDeModeloDeTeste.Pdf(), ModeloDeDocumentoErrorCodes.ConteudoDivergeDoFormato },
         { "DOCX", ArquivosDeModeloDeTeste.ContentTypeDocx, ArquivosDeModeloDeTeste.PlanilhaComoDocx(), ModeloDeDocumentoErrorCodes.ConteudoDivergeDoFormato },
@@ -38,6 +46,10 @@ public sealed class ModeloDeDocumentoTests
         { "DOCX", ArquivosDeModeloDeTeste.ContentTypeDocx, ArquivosDeModeloDeTeste.DocxComMacro(), ModeloDeDocumentoErrorCodes.ContemMacro },
         { "DOCX", ArquivosDeModeloDeTeste.ContentTypeDocx, ArquivosDeModeloDeTeste.DocxComPrincipalNaoDeclarado(), ModeloDeDocumentoErrorCodes.ConteudoDivergeDoFormato },
         { "DOCX", ArquivosDeModeloDeTeste.ContentTypeDocx, ArquivosDeModeloDeTeste.Docx(comAParte: false), ModeloDeDocumentoErrorCodes.ConteudoDivergeDoFormato },
+    };
+
+    public static TheoryData<string, string, byte[], string> RecusadosOdt => new()
+    {
         { "ODT", ArquivosDeModeloDeTeste.ContentTypeOdt, ArquivosDeModeloDeTeste.Odt(comConteudo: false), ModeloDeDocumentoErrorCodes.ConteudoDivergeDoFormato },
         { "ODT", ArquivosDeModeloDeTeste.ContentTypeOdt, ArquivosDeModeloDeTeste.Odt(comManifesto: false), ModeloDeDocumentoErrorCodes.ConteudoDivergeDoFormato },
         { "ODT", ArquivosDeModeloDeTeste.ContentTypeOdt, ArquivosDeModeloDeTeste.Odt("application/vnd.oasis.opendocument.spreadsheet"), ModeloDeDocumentoErrorCodes.ConteudoDivergeDoFormato },
@@ -49,7 +61,8 @@ public sealed class ModeloDeDocumentoTests
     };
 
     [Theory(DisplayName = "PDF, planilha renomeada, pacote só com os metadados, content-type de outro formato, ODT de planilha, de modelo, sem conteúdo, sem manifesto ou com o mimetype comprimido e pacote com macro são recusados")]
-    [MemberData(nameof(Recusados))]
+    [MemberData(nameof(RecusadosDocx))]
+    [MemberData(nameof(RecusadosOdt))]
     public void ValidarConteudo_ForaDoFormato_Recusa(string formato, string contentType, byte[] conteudo, string codigo)
     {
         ArgumentNullException.ThrowIfNull(conteudo);
