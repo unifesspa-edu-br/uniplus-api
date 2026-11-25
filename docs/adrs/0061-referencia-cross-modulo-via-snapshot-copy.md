@@ -56,7 +56,7 @@ Esta ADR estende a mesma disciplina ao binding cross-módulo de dados de referê
 5. Edições subsequentes na linha-fonte do catálogo **não** propagam para a entidade consumidora. Snapshot é imutável pela vida da entidade (sujeito a soft-delete ou re-bind explícito).
 6. **Nenhuma declaração `FOREIGN KEY`** existe no banco consumidor apontando para o banco produtor.
 
-> **Emenda (2026-09-01):** a [ADR-0129](0129-identidade-da-origem-decide-conformidade.md) promoveu `{Catalogo}OrigemId` de rastreabilidade **opcional** a **chave de decisão obrigatória** nas entidades cujo snapshot participe de decisão do sistema — a comparação que conclui "isto é aquilo" passa a ser por identidade, nunca pelo código congelado. O código continua persistido, exibido e publicado no envelope: ele é o que se mostra ao humano. O mecanismo não muda (segue sem FK cross-banco, regra 6); muda o papel do campo, e a regra 5 ganha a leitura de que a imutabilidade do snapshot é justamente o motivo de a identidade ser necessária — o código congelado envelhece por construção. A referência por `AreaCodigo` descrita em "Onde o pattern NÃO se aplica" segue legítima, porque ali o código é imutável por invariante do [ADR-0055](0055-organizacao-institucional-bounded-context.md). Motivo: comparar código editável fazia o gate de conformidade legal aprovar edital satisfeito pelo documento errado quando o código era reciclado, e recusar publicação legítima quando o tipo era renomeado com a regra atualizada (`unifesspa-edu-br/uniplus-api#1372`).
+> **Emenda (2026-09-01):** a [ADR-0129](0129-identidade-da-origem-decide-conformidade.md) promoveu `{Catalogo}OrigemId` de rastreabilidade **opcional** a **chave de decisão obrigatória** nas entidades cujo snapshot participe de decisão do sistema — a comparação que conclui "isto é aquilo" passa a ser por identidade, nunca pelo código congelado. O código continua persistido, exibido e publicado no envelope: ele é o que se mostra ao humano. O mecanismo não muda (segue sem FK cross-banco, regra 6); muda o papel do campo, e a regra 5 ganha a leitura de que a imutabilidade do snapshot é justamente o motivo de a identidade ser necessária — o código congelado envelhece por construção. A referência por `AreaCodigo` descrita em "Onde o pattern NÃO se aplica" segue legítima, porque ali o código é imutável por invariante do [ADR-0055](0055-organizacao-institucional-bounded-context.md). Motivo: comparar código editável fazia a verificação de conformidade legal aprovar edital satisfeito pelo documento errado quando o código era reciclado, e recusar publicação legítima quando o tipo era renomeado com a regra atualizada (`unifesspa-edu-br/uniplus-api#1372`).
 
 ### Exemplo: `LocalProva` referenciando `Endereco`
 
@@ -135,7 +135,7 @@ O reader **não** materializa o valor continuamente na entidade consumidora. Nã
 
 - **Reprodutibilidade de auditoria**: `LocalProva` histórico preserva o endereço exato que foi comunicado ao candidato no binding. Defensável em juízo.
 - **Sem FK cross-banco**: respeita isolation do [ADR-0054](0054-naming-convention-e-strategy-migrations.md); zero acoplamento de schema.
-- **Sem projection machinery**: nada de consumer Kafka, sem janela de eventual consistency no read-side, sem risco de replay storm.
+- **Sem projection machinery**: nada de consumer Kafka, sem período de eventual consistency no read-side, sem risco de replay storm.
 - **Coerente com RN08 e Pattern 1**: a mesma disciplina de snapshot uniformemente aplicada a referência cross-módulo e a metadata de governança de áreas.
 - **Papel do reader claro**: admin escolhe de catálogo existente (UX); write copia dado (integridade).
 - **Custo de armazenamento negligível**: 8 campos de endereço × 6 LocalProvas × poucos editais/ano = trivial.
@@ -166,13 +166,13 @@ O reader **não** materializa o valor continuamente na entidade consumidora. Nã
 ### A — Validação síncrona cross-DB no handler, sem snapshot
 
 - **Prós**: sem duplicação; economia de storage; updates de endereço propagam.
-- **Contras**: sem integridade no banco; janela TTL de cache permite criação órfã (admin deleta Endereco, write acontece durante stale cache). Auditoria "qual endereço foi usado em data X?" requer join cross-banco + lógica de soft-delete — frágil.
+- **Contras**: sem integridade no banco; prazo TTL de cache permite criação órfã (admin deleta Endereco, write acontece durante stale cache). Auditoria "qual endereço foi usado em data X?" requer join cross-banco + lógica de soft-delete — frágil.
 - **Por que rejeitada**: mesmos vícios das junctions polimórficas em [ADR-0060](0060-junction-tables-por-entidade-com-view-unificada.md) — sem integridade real, audit story depende de correção da aplicação. Sponsor rejeitou explicitamente.
 
 ### B — Projeção Kafka, réplica local read-only
 
 - **Prós**: FK real; eventual consistency; padrão event-driven.
-- **Contras**: caro operacionalmente: projection handler, replay logic, dead-letter handling, jobs de reconciliação, invalidação de cache, debug de projeção stale. Prematuro para 1-DB-1-consumer. Janela de eventual consistency cria bugs visíveis para usuário ("acabei de criar Endereco X — por que LocalProva não vê?").
+- **Contras**: caro operacionalmente: projection handler, replay logic, dead-letter handling, jobs de reconciliação, invalidação de cache, debug de projeção stale. Prematuro para 1-DB-1-consumer. Período de eventual consistency cria bugs visíveis para usuário ("acabei de criar Endereco X — por que LocalProva não vê?").
 - **Por que rejeitada**: complexidade injustificada para V1; snapshot entrega o mesmo benefício de fluxo de dado sem a maquinaria.
 
 ### C — Sem referência alguma, admin redigita endereço

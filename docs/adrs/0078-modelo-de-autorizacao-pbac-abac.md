@@ -32,7 +32,7 @@ Espalhar essas condições por verificações ad hoc nos controllers — por exe
 - Autorização sensível a **atributos de contexto**, não apenas ao papel.
 - **Um único ponto de decisão** — toda decisão de acesso passa pelo mesmo contrato, para ser auditável e testável.
 - **Sujeito explícito** na assinatura da decisão — nunca inferido do ambiente (thread estático, header solto, estado global).
-- LGPD-by-design: a decisão precisa poder considerar a classificação do dado e a base legal (detalhado em ADR própria desta frente).
+- LGPD-by-design: a decisão precisa poder considerar a classificação do dado e a base legal (detalhado em ADR própria deste trabalho).
 - Concessões fora do papel padrão (excepcional, sessão delegada) avaliadas no servidor, sem depender do conteúdo do token.
 - Substituir o modelo por papéis fixos por Unidade da ADR-0057, que não acompanha a complexidade real e tende à proliferação de papéis.
 
@@ -87,7 +87,7 @@ Cada permissão declara as verificações de contexto obrigatórias (por exemplo
 
 ### O que esta ADR não decide
 
-Em respeito à regra "1 ADR = 1 decisão", esta ADR fixa **apenas** o modelo de decisão (PBAC + ABAC, ponto único, sujeito explícito, concessão efetiva). Decisões correlatas têm ADR própria desta frente de autorização: o catálogo de permissões (ADR-0151, que superou o catálogo declarativo da ADR-0080); a **hierarquia institucional sem herança de permissão** (ADR seguinte); a proteção de dado por permissão (LGPD-by-design); os grupos OIDC e seu provisionamento (ADR-0083, superada pela ADR-0152); a concessão excepcional e a sessão delegada; o cache e a revogação de concessões; a trilha de auditoria de autorização; e a persistência da autorização (ADR-0087, schema `autorizacao`).
+Em respeito à regra "1 ADR = 1 decisão", esta ADR fixa **apenas** o modelo de decisão (PBAC + ABAC, ponto único, sujeito explícito, concessão efetiva). Decisões correlatas têm ADR própria deste trabalho de autorização: o catálogo de permissões (ADR-0151, que superou o catálogo declarativo da ADR-0080); a **hierarquia institucional sem herança de permissão** (ADR seguinte); a proteção de dado por permissão (LGPD-by-design); os grupos OIDC e seu provisionamento (ADR-0083, superada pela ADR-0152); a concessão excepcional e a sessão delegada; o cache e a revogação de concessões; a trilha de auditoria de autorização; e a persistência da autorização (ADR-0087, schema `autorizacao`).
 
 ## Consequências
 
@@ -138,4 +138,4 @@ Em respeito à regra "1 ADR = 1 decisão", esta ADR fixa **apenas** o modelo de 
 - **Supersede** a [ADR-0057](0057-areas-rbac-snapshot-historia-invariantes.md) (modelo por papéis fixos por Unidade): o eixo de decisão deixa de ser o papel por Unidade e passa a ser permissão + atributos de contexto, com escopo por Unidade.
 - **Refina** a [ADR-0055](0055-organizacao-institucional-bounded-context.md) (Organização como bounded context): a Unidade permanece o escopo institucional, mas a autorização sobre ela passa a ser PBAC + ABAC, não papel global por Unidade.
 - Relaciona-se com: [ADR-0033](0033-icurrentuser-abstraction-via-iusercontext.md) (`IUserContext`, estendido para expor o sujeito), [ADR-0010](0010-audience-unica-uniplus-em-tokens-oidc.md) (audience OIDC), [ADR-0034](0034-problemdetails-em-401-403-via-jwtbearer-events.md) (ProblemDetails em 401/403), [ADR-0019](0019-proibir-pii-em-path-segments-de-url.md) (sem dado pessoal em URL) e [ADR-0063](0063-entidades-forensics-isentas-de-soft-delete.md) (trilha forense isenta de soft-delete).
-- A **hierarquia institucional sem herança de permissão** (unidades irmãs; auditoria explícita) é decidida na ADR seguinte desta frente; o catálogo de permissões, a proteção de dado por permissão e o provisionamento OIDC seguem em ADRs próprias.
+- A **hierarquia institucional sem herança de permissão** (unidades irmãs; auditoria explícita) é decidida na ADR seguinte deste trabalho; o catálogo de permissões, a proteção de dado por permissão e o provisionamento OIDC seguem em ADRs próprias.

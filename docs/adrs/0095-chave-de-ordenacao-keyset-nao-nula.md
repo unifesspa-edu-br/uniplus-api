@@ -12,7 +12,7 @@ informed:
 
 ## Contexto e enunciado do problema
 
-A ordenação keyset multi-coluna ([ADR-0094](0094-keyset-ordenado-via-mr-sob-cursor-opaco.md)) usa uma chave de ordenação (ex.: `nome_normalizado`) seguida do `Id` de desempate. O seek monta um `WHERE` que compara a chave com a âncora da página anterior.
+A ordenação keyset multi-coluna ([ADR-0094](0094-keyset-ordenado-via-mr-sob-cursor-opaco.md)) usa uma chave de ordenação (ex.: `nome_normalizado`) seguida do `Id` de desempate. O seek monta um `WHERE` que compara a chave com o ponto de continuação da página anterior.
 
 `NULL` é um valor especial no banco: não se compara a ele (`coluna > NULL` é desconhecido, invalidando a cláusula e devolvendo **zero resultados**). Uma coluna nullable na chave de keyset quebra o seek de forma silenciosa. No Geo (hoje serviço externo, [ADR-0099](0099-geo-como-repositorio-dedicado.md)), `nome_normalizado` é derivado do `Nome` (não-nulo), mas está tipado como `string?` no domínio e pode, em teoria, ser nulo (ex.: nome só com caracteres não normalizáveis).
 
@@ -41,7 +41,7 @@ A pergunta é como garantir que a chave de ordenação seja sempre não-nula par
 - Em Estado/Cidade, essa chave é `nome_ordenacao`, coluna gerada pelo banco a partir de `COALESCE(NULLIF(nome_normalizado, ''), nome)` com `lower(translate(...))` para remover acentos no fallback.
 - `nome_normalizado` mantém a semântica de busca/autocomplete e pode continuar nulo quando a fonte não traz o texto sem acento.
 - O índice de suporte é B-tree sobre `(nome_ordenacao, id)`, casando o `ORDER BY`/`WHERE` gerado pela biblioteca de paginação por chave.
-- A âncora do cursor carrega `SortKey = nome_ordenacao` e `After = Id`; cursores ordenados sem `SortKey` são inválidos no boundary HTTP.
+- O ponto de continuação do cursor carrega `SortKey = nome_ordenacao` e `After = Id`; cursores ordenados sem `SortKey` são inválidos no boundary HTTP.
 
 ## Consequências
 

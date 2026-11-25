@@ -9,7 +9,7 @@ informed: []
 
 # ADR-0069: Event Sourcing seletivo com Marten em agregados críticos do Uni+
 
-> **Accepted (binding).** O gate de viabilidade foi cumprido pelo spike da issue #540
+> **Accepted (binding).** A verificação de viabilidade foi cumprida pelo spike da issue #540
 > (22 testes de integração via Testcontainers): atomicidade *append (Marten) + outbox
 > (Wolverine)* (happy + rollback verificado contra a tabela de envelopes), crypto-shredding
 > de PII, replay/rebuild de projeção, upcasting, fitness da fronteira EF Core × Marten,
@@ -99,7 +99,7 @@ funcional auditável e reconstrução temporal sem introduzir componente
 operacional novo, reaproveitando o PostgreSQL (ADR-0007) e o ecossistema
 JasperFx já presente pelo Wolverine (ADR-0003).
 
-A decisão é **accepted (binding)** — o gate de viabilidade foi cumprido pelo spike da
+A decisão é **accepted (binding)** — a verificação de viabilidade foi cumprida pelo spike da
 issue 540 (ver Confirmação) — e **desacoplada do pacote primário**: configuração e
 inscrição seguem CRUD e embarcam sem Marten. O Marten é adotado como store
 **`ancillary`** (auxiliar), **por-API e apenas onde há agregado event-sourced**
@@ -345,9 +345,9 @@ e operação.
 
 ## Confirmação
 
-O gate de viabilidade foi **cumprido** pelo spike #540 (22 testes de integração
+A verificação de viabilidade foi **cumprida** pelo spike #540 (22 testes de integração
 verdes — ver [relatório](../spikes/adr-0069-event-sourcing-findings.md)) e a ADR
-está **accepted**. O gate era composto por:
+está **accepted**. A verificação era composta por:
 
 1. **Spike de atomicidade** provando que `append (Marten) + outbox (Wolverine)`
    commitam na mesma unidade transacional — incluindo falha controlada que prove
@@ -380,14 +380,14 @@ Testes obrigatórios do piloto (homologação documental):
 8. LGPD: teste/validação de que payloads críticos não carregam anexos ou PII
    excessiva.
 
-Decisões **fechadas pelo gate** (spike #540):
+Decisões **fechadas pela verificação** (spike #540):
 
 - agregado piloto: **homologação documental**;
 - pacotes: **Marten 8.37.1 + WolverineFx.Marten 5.39.3** (.NET 10 / Npgsql 10);
 - topologia: **EF Core/Postgres = store `main`**; **Marten = store `ancillary`**
   (`AddMartenStore<…>`), por-API e só onde há agregado event-sourced.
 
-Hardening e decisões de implementação do piloto (não bloqueiam o gate):
+Hardening e decisões de implementação do piloto (não bloqueiam a verificação):
 
 - schema PostgreSQL do Marten + provisionamento no deploy (ADR-0039);
 - convenções de nomes de streams e de nomes/versões de eventos;
@@ -412,7 +412,7 @@ Hardening e decisões de implementação do piloto (não bloqueiam o gate):
 ### Kafka como fonte de verdade
 
 - Bom, porque é integração natural event-driven e permite replay operacional de
-  mensagens dentro da janela de retenção.
+  mensagens dentro do prazo de retenção.
 - Ruim, porque Kafka é barramento, não Event Store de domínio; retenção,
   compactação, governança, versionamento e reconstrução por consumidor não
   atendem sozinhos à auditoria jurídica. Também conflita com a ADR-0014.

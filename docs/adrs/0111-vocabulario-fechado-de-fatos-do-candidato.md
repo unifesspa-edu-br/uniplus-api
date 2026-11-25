@@ -201,14 +201,14 @@ editáveis** — códigos não reservados podem ser renomeados ou removidos. O d
 do catálogo é apenas o primeiro filtro: o valor também precisa pertencer à
 configuração do **próprio processo**. `MODALIDADE` é validado contra as modalidades
 selecionadas e congeladas no processo; `CONDICAO_ATENDIMENTO`, contra as condições
-ofertadas e congeladas. Um valor existente globalmente, mas ausente desse recorte,
+ofertadas e congeladas. Um valor existente globalmente, mas ausente desse conjunto,
 é recusado na configuração/publicação para que não crie um predicado
 insatisfazível. Isso não cria risco para predicados já publicados, por causa de
 duas fronteiras que a ADR fixa explicitamente:
 
-1. **A validação contra o cadastro vivo e contra o recorte do processo ocorre no
+1. **A validação contra o cadastro vivo e contra os valores do processo ocorre no
    instante de configuração**, antes do congelamento — só se pode citar um código
-   existente e efetivamente ofertado/selecionado naquele processo. É um gate de
+   existente e efetivamente ofertado/selecionado naquele processo. É uma verificação de
    *configuração*, não de *runtime*.
 2. **No congelamento, o código entra no predicado por valor** (RN08): a
    `VersaoConfiguracao` publicada carrega o texto do código dentro do predicado
@@ -409,7 +409,7 @@ do predicado", é substituída por 1.3. A forma do valor booleano é corrigida e
 | `Categorico` (estático ou de escopo-processo) | `IGUAL`, `DIFERENTE`, `EM`, `NAO_EM` | `IGUAL`/`DIFERENTE`: um código do domínio; `EM`/`NAO_EM`: lista de códigos do domínio |
 
 A regra que gera a tabela: **`DIFERENTE` acompanha `IGUAL` em todo domínio onde `IGUAL` vale** —
-inclusive booleano e numérico —, e **`NAO_EM` acompanha `EM`**, valendo portanto só nos dois ramos
+inclusive booleano e numérico —, e **`NAO_EM` acompanha `EM`**, valendo portanto só nas duas variantes
 categóricos, já que booleano e numérico nunca admitiram `EM`. A forma do valor de um operador negativo
 é a mesma do positivo que ele nega: escalar para `DIFERENTE`, lista para `NAO_EM`.
 

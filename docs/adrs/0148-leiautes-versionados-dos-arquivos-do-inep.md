@@ -43,9 +43,9 @@ Cada leiaute tem código e versão, e o hash da sua definição o identifica, no
 
 Um leiaute novo é composto dos leitores que já existem, e só um formato que nenhum deles cobre pede um leitor novo. Todos os leiautes produzem o mesmo conjunto fechado de campos, e só esses campos chegam ao cruzamento com as inscrições e à avaliação. Nenhum consumidor conhece o leiaute.
 
-Na importação, o administrador escolhe o leiaute entre os ativos. O arquivo é conferido contra a estrutura do leiaute escolhido, e o arquivo que não confere é recusado inteiro, sem gravar nenhuma nota. O lote registra o código, a versão e o hash do leiaute usado.
+Na importação, o administrador escolhe o leiaute entre os ativos. O arquivo é conferido contra a estrutura do leiaute escolhido, e o arquivo que não confere é recusado inteiro, sem gravar nenhuma nota. A importação registra o código, a versão e o hash do leiaute usado.
 
-O arquivo de envio ao INEP segue a mesma regra. O leiaute que deixa de valer é desativado e sai da escolha, e o lote que o usou continua a citá-lo.
+O arquivo de envio ao INEP segue a mesma regra. O leiaute que deixa de valer é desativado e sai da escolha, e o envio que o usou continua a citá-lo.
 
 Os primeiros leiautes são o de envio e o de retorno do ENEM, conferidos com o retorno da edição de 2024.
 

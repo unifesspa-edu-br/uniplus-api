@@ -110,7 +110,7 @@ ADR-0001 é refinada conforme segue:
 2. A interface retorna DTOs read-only (`{Resource}View`), nunca entidades de `Domain`.
 3. Métodos recebem **contexto explícito de áreas** como parâmetro — caller passa `IReadOnlyCollection<AreaCodigo> areasCaller`, nunca resolvido internamente de `IUserContext`. (Isso endereça cache correctness — ver [ADR-0057](0057-areas-rbac-snapshot-historia-invariantes.md).)
 4. A implementação é registrada como Singleton respaldada por **distributed cache (Redis 8 via `IDistributedCache`, TTL 5 minutos)**. O cache armazena o **raw set por recurso** sob chave canônica (`configuracao:{recurso}`, ex.: `configuracao:modalidades`), não views per-caller; o filtro de áreas acontece após retrieval do cache, no reader, baseado no parâmetro `areasCaller` explícito. Cache L1 in-process (`IMemoryCache`) **NÃO** é adicionado em V1 — é otimização adiada gated por evidência de P95 latency ou throughput (ver Riscos).
-5. Invalidação via subscriber de evento de domínio Kafka (`ModalidadeAtualizadaEvent` triggera `IDistributedCache.RemoveAsync("configuracao:modalidades")`). O `DEL` único é atômico cross-replicas — não há janela de inconsistência cross-pod.
+5. Invalidação via subscriber de evento de domínio Kafka (`ModalidadeAtualizadaEvent` triggera `IDistributedCache.RemoveAsync("configuracao:modalidades")`). O `DEL` único é atômico cross-replicas — não há período de inconsistência cross-pod.
 6. Stampede protection em cache miss: reader adquire lease curto (~300ms) via Redis `SET NX EX` antes de bater no PostgreSQL, fazendo requests concorrentes coalescerem em uma única source query.
 7. A entidade carrega atributo `[ReferenceData]` (declarado em `Configuracao.Contracts`).
 
@@ -168,7 +168,7 @@ Admin endpoints de `Endereco` são restritos: apenas `plataforma-admin` pode cri
 - `Endereco` reutilizável cross-módulo; infraestrutura física modelada uma vez.
 - ADR-0001 refinada com desmembramento preciso fitness-test-enforced — não violada ad hoc.
 - Wizard latency permanece aceitável para reference reads (~1–5ms warm via Redis; reference data é invocada uma vez por screen load, não por linha — overhead negligível contra budgets típicos de request 100–300ms).
-- **Consistência cross-pod é atômica** — invalidação Kafka triggera DEL Redis único, todas as réplicas imediatamente param de servir valor stale. Isso elimina a janela de não-determinismo que cache in-memory per-pod introduziria, material sob RN08 (parameter freeze) e obrigações de reproducibilidade judicial-audit.
+- **Consistência cross-pod é atômica** — invalidação Kafka triggera DEL Redis único, todas as réplicas imediatamente param de servir valor stale. Isso elimina o período de não-determinismo que cache in-memory per-pod introduziria, material sob RN08 (parameter freeze) e obrigações de reproducibilidade judicial-audit.
 - Adicionar novo consumer module é trivial: referencia `Configuracao.Contracts`, injeta `IModalidadeReader`. Sem nova infra.
 - Per-resource vendor MIME preservado.
 - Passing explícito de áreas faz background jobs e operações admin naturalmente expressáveis.

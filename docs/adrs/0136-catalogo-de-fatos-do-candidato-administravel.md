@@ -111,7 +111,7 @@ Pelo marco acima, sem publicação que os cite. Como não há produção, os pro
 | `Derivado` | `PRESENCA_NA_IMPORTACAO:` | código do dado básico importável (UNI-REQ-0151): o dado veio no arquivo da importação do resultado, completo, na granularidade do dado; só em fato de sistema, sem dependência de outro fato, para o campo que complementa o dado poder citá-lo sem ciclo com ele |
 | `Integracao` | `INTEGRACAO:` | sistema externo |
 
-**À ADR-0116, emenda 1.5:** o derivado por regra também pode ser booleano, com a semântica acima, e o derivado categórico por regra é multivalorado. O recorte pela oferta do item 4 passa a acontecer na cópia da regra padrão para o processo, e não só no último passo da avaliação, porque a regra que contribui código fora dos valores do processo não tem significado nele.
+**À ADR-0116, emenda 1.5:** o derivado por regra também pode ser booleano, com a semântica acima, e o derivado categórico por regra é multivalorado. A restrição aos valores da oferta do item 4 passa a acontecer na cópia da regra padrão para o processo, e não só no último passo da avaliação, porque a regra que contribui código fora dos valores do processo não tem significado nele.
 
 **À ADR-0096:** o endereço do candidato é conferido no servidor contra o Geo, como descrito em "Forma do fato".
 

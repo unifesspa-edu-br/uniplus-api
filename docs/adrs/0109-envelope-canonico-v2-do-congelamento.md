@@ -17,18 +17,18 @@ O congelamento da configuração (RN08) materializa-se num único artefato: os *
 
 **Todas as stories restantes da Feature #40 escrevem nesse envelope.** Sem um contrato fechado, cada uma responderia por conta própria a cinco perguntas que precisam ter **uma** resposta — e a segunda story re-litigaria a decisão da primeira. Só que o envelope é append-only: **o passado não se muta**. Uma resposta errada na primeira story não se corrige na segunda; ela fica congelada em documento com peso jurídico.
 
-E há um agravante verificado: **o OpenAPI não protege o envelope.** `SnapshotVigenteDto.Configuracao` é declarado como `JsonNode`, e o schema gerado na baseline é literalmente `"JsonNode": {}` — um objeto livre. Um stub virando objeto rico, uma chave nova, uma troca de `null` explícito por omissão: **nada disso aparece no diff da baseline**. O envelope — a evidência que sustenta o resultado do certame perante mandado de segurança — era, até esta ADR, **o único contrato do repositório sem gate de regressão**.
+E há um agravante verificado: **o OpenAPI não protege o envelope.** `SnapshotVigenteDto.Configuracao` é declarado como `JsonNode`, e o schema gerado na baseline é literalmente `"JsonNode": {}` — um objeto livre. Um stub virando objeto rico, uma chave nova, uma troca de `null` explícito por omissão: **nada disso aparece no diff da baseline**. O envelope — a evidência que sustenta o resultado do certame perante mandado de segurança — era, até esta ADR, **o único contrato do repositório sem verificação de regressão**.
 
 ## Drivers da decisão
 
 - **Reprodutibilidade.** A mesma configuração tem de produzir sempre os mesmos bytes. É o que permite provar, anos depois, o que valia quando o ato foi praticado.
 - **O passado não se muta.** Versões já congeladas não são recalculadas. Qualquer decisão aqui vale para o futuro; o histórico permanece com os seus bytes, o seu hash e a sua `schema_version` originais.
 - **Uma resposta, não seis.** Seis stories escrevem no envelope. O contrato precisa preceder todas.
-- **Mudança visível.** Se o envelope muda, alguém tem de ver. Um gate que não falha não é gate.
+- **Mudança visível.** Se o envelope muda, alguém tem de ver. Uma verificação que não falha não verifica.
 
 ## Resultado da decisão
 
-Fecha-se o contrato do envelope em nove decisões (D1–D9) **antes** de qualquer story escrever nele, e o congelamento passa a ter gate de regressão próprio — golden fixtures byte a byte, com canários que provam que o gate falha quando deve falhar.
+Fecha-se o contrato do envelope em nove decisões (D1–D9) **antes** de qualquer story escrever nele, e o congelamento passa a ter verificação de regressão própria — golden fixtures byte a byte, com canários que provam que a verificação falha quando deve falhar.
 
 ### D1 — `schema_version` sobe a cada mudança de **forma**
 
@@ -46,7 +46,7 @@ A fixture compara **byte a byte**. Um teste de política falha o build quando a 
 
 Guids v7 gerados pela entidade variam a cada execução: são identidade técnica, não conteúdo. A fixture os normaliza **declaradamente** e compara todo o resto byte a byte.
 
-**Consequência:** a fixture é possível sem deixar de proteger o que é conteúdo. Três **canários** provam que ela protege de fato: acrescentar uma chave, trocar um stub por objeto, e substituir `null` explícito por omissão — os três **fazem a fixture falhar**. Sem os canários, uma fixture sempre-verde passaria por gate.
+**Consequência:** a fixture é possível sem deixar de proteger o que é conteúdo. Três **canários** provam que ela protege de fato: acrescentar uma chave, trocar um stub por objeto, e substituir `null` explícito por omissão — os três **fazem a fixture falhar**. Sem os canários, uma fixture sempre-verde passaria pela verificação.
 
 ### D4 — `null` explícito é a forma canônica da ausência
 
@@ -56,11 +56,11 @@ O item 4 da ADR-0100 ("campo opcional sem valor é omitido") foi lido como regra
 
 **Consequência:** a emenda **descreve**, não altera. Nada nos bytes muda. `CanonicalOptions` permanece byte-idêntico — mexer nele, ou passar a omitir os nulls de topo, mudaria os hashes de `ObrigatoriedadeLegal` já gravados e quebraria a `UNIQUE (hash)` parcial e a trilha forense. Um teste congela o hash de uma regra de referência **por valor literal**, para que essa quebra não passe em silêncio. A escolha é coerente com o item 10 da própria ADR-0100 ("todo bloco canônico está presente"): se o bloco está sempre lá, o campo do bloco também está — com `null` quando não tem valor.
 
-### D5 — O gate de conformidade vale para **publicar e retificar**
+### D5 — A verificação de conformidade vale para **publicar e retificar**
 
 `ProcessoSeletivo.PendenciaDeConformidade()` é a **fonte única** do checklist. As duas transições a consultam e recusam com o **mesmo** `DomainError`. Os handlers avaliam **antes** de canonicalizar.
 
-**Consequência:** hoje só `Publicar` avaliava. Mas a retificação também abre uma `VersaoConfiguracao` append-only e vinculante — congelar configuração incompleta ali produz um documento irreparável, exatamente como na publicação. E o gate precede a projeção para que um processo não conforme devolva o `DomainError` que o contrato HTTP promete, em vez de estourar em D8.
+**Consequência:** hoje só `Publicar` avaliava. Mas a retificação também abre uma `VersaoConfiguracao` append-only e vinculante — congelar configuração incompleta ali produz um documento irreparável, exatamente como na publicação. E a verificação precede a projeção para que um processo não conforme devolva o `DomainError` que o contrato HTTP promete, em vez de estourar em D8.
 
 ### D6 — O canonicalizador é uma **projeção pura**, com entrada única
 
@@ -77,7 +77,7 @@ O item 4 da ADR-0100 ("campo opcional sem valor é omitido") foi lido como regra
 
 ### D8 — Um bloco **real** nunca emite `nao_construido`
 
-O literal é reservado às 7 dimensões sem dono. Se uma dimensão é obrigatória, a sua ausência é **pendência de conformidade**, e o gate (D5) recusa a transição antes de a canonicalização acontecer. Chegar à projeção sem ela é invariante quebrada — **falha alto**.
+O literal é reservado às 7 dimensões sem dono. Se uma dimensão é obrigatória, a sua ausência é **pendência de conformidade**, e a verificação (D5) recusa a transição antes de a canonicalização acontecer. Chegar à projeção sem ela é invariante quebrada — **falha alto**.
 
 **Consequência:** antes, `atendimento` e `classificacao` tinham fallback para `nao_construido`. Um processo publicado sem classificação — o bloco que determina o resultado do certame — congelaria `{"status":"nao_construido"}` **em silêncio**, num documento juridicamente vinculante. Era o pior modo de falha possível do envelope.
 
@@ -95,7 +95,7 @@ Onde a coleção não tem chave de negócio (as regras de eliminação: cardinal
 
 ## Consequências
 
-**Positivas.** O envelope ganha o primeiro gate de regressão da sua história, e ele é adversarial (os canários). O contrato precede as seis stories que vão escrevê-lo. Dois modos de falha silenciosos morrem: o bloco real congelado como stub (D8) e o Guid vazando para o hash (D9). A retificação passa a ser tão exigente quanto a publicação (D5).
+**Positivas.** O envelope ganha a primeira verificação de regressão da sua história, e ela é adversarial (os canários). O contrato precede as seis stories que vão escrevê-lo. Dois modos de falha silenciosos morrem: o bloco real congelado como stub (D8) e o Guid vazando para o hash (D9). A retificação passa a ser tão exigente quanto a publicação (D5).
 
 **Negativas.** Cada story que preencher um bloco terá de bumpar a `schema_version` e regenerar a fixture — atrito deliberado: é o preço de a mudança ser visível. As fixtures crescem uma por versão; é histórico, não duplicação.
 
@@ -123,7 +123,7 @@ sequência, cada uma decidindo só o que a anterior deixou empatado:
 
 1. **`Ordem` semântica**, quando o campo existe e é atribuído por quem configura — etapas
    (`Ordem` nulo ao fim), critérios de desempate, fases do cronograma, destinos da cascata de
-   remanejamento dentro de uma origem, raízes e filhos da árvore de satisfação (aqui a
+   remanejamento dentro de uma origem, itens de primeiro nível e itens subordinados das regras de comprovação (aqui a
    unicidade de `Ordem` garantida por índice único dispensa qualquer camada seguinte) e
    `valoresDominioDeclarados` (`Ordem`, depois `Codigo` como desempate de NEGÓCIO, não
    técnico);
@@ -158,10 +158,10 @@ Registrar a camada não basta — nomear cada array de `Ordem` semântica pelo q
 | `etapas` | organização opcional da apresentação — NÃO é parcela do divisor da média (caráter e peso decidem isso) nem precedência de execução; nenhum consumidor a lê como sequência |
 | `cascataRemanejamento.ordens[].destinos` | prioridade legal de tentativa de remanejamento — muda para ONDE a vaga é oferecida primeiro, e pode mudar quem é convocado (UNI-REQ-0056) |
 | `criteriosDesempate` | refinamento sequencial do empate — o primeiro critério é aplicado antes do seguinte, e só desempata o resíduo que sobrar |
-| `cronogramaFases.fases` | ordem cronológica e jurídica — base de janelas, precedências entre fases e prazos de recurso |
+| `cronogramaFases.fases` | ordem cronológica e jurídica — base de períodos, precedências entre fases e prazos de recurso |
 | `fatosColetados` | ordem de exibição e coleta no formulário; também limita toda pré-condição a citar só fato ANTERIOR |
 | `regrasDeComprovacao` e `regrasDeComprovacao[*].itens` | posição declarada no fluxo documental — a álgebra de satisfação (grupos E/OU) é comutativa, a apresentação ao candidato não |
-| `regrasDerivacao[].regras` | ordem configurada de avaliação da derivação, incluindo qual regra é a âncora (incondicional) |
+| `regrasDerivacao[].regras` | ordem configurada de avaliação da derivação, incluindo qual regra é incondicional |
 | `documentosExigidos.metadadosFatos[].valoresDominioDeclarados` | ordem de apresentação das opções de um fato de seleção no formulário |
 | `grafoDependencia.ordemTopologica` | ordem produtor→consumidor entre campo, fato e exigência — delegada ao domínio, ver E1.2 |
 
@@ -191,7 +191,7 @@ A **D1 continua valendo integralmente**: toda mudança de forma do envelope avan
 corrente. Não é permitido deixar de avançar uma versão porque a alteração pareça pequena ou
 porque apenas um bloco provisório ganhou conteúdo real.
 
-Antes de haver produção ou certame publicado, mudanças de forma que pertencem à mesma janela
+Antes de haver produção ou certame publicado, mudanças de forma que pertencem ao mesmo período
 e **só fazem sentido publicadas juntas** formam um trem coordenado. As entradas anteriores
 regeneram a golden fixture sem avançar a versão; a última entrada faz o único avanço que
 fecha o trem. Isto não é exceção à D1: nenhuma forma intermediária é publicável, portanto
@@ -246,7 +246,7 @@ fixture existe para provar.
 falha que a D2 protege continuam cobertos, e nenhum deles depende do nome: bumpar sem atualizar
 a declaração falha no teste de versão; mudar a forma sem regenerar falha na comparação byte a
 byte. A cobertura é a mesma de antes também no que ela nunca teve — no regime de nome
-versionado, satisfazer o gate sem congelar forma nova era questão de renomear o arquivo, assim
+versionado, satisfazer a verificação sem congelar forma nova era questão de renomear o arquivo, assim
 como aqui é de editar uma linha.
 
 ### E3.2 — As fixtures de versões mortas saem
@@ -256,7 +256,7 @@ lidas por teste nenhum: não há decoder que as reidrate, e nenhum certame publi
 elas reproduzam. Mantê-las sugeria um versionamento de fixture que a Emenda 2 já havia
 encerrado.
 
-**Consequência:** o diretório passa a conter exatamente o que o gate usa — três corpus da forma
+**Consequência:** o diretório passa a conter exatamente o que a verificação usa — três corpus da forma
 corrente e a versão que eles congelam.
 
 ### Fora desta emenda
@@ -350,7 +350,7 @@ A classificação de cada bloco é registrada em `ClassificacaoDosBlocosDoCertam
 
 ## Emenda 7 (2026-11-23) — o nome do processo no documento congelado
 
-O documento congelado guarda, na raiz, o `nome` do processo seletivo, com o mesmo nome da `v1` (`identificacao.nome`). É obrigatório, tem de 1 a 300 caracteres e é gravado em NFC; o leitor exige a chave. É lido do próprio processo ao congelar, na publicação e na retificação, e entra nos bytes e no resumo criptográfico. A página pública, a busca e a exportação da versão publicada tiram o nome do documento congelado, nunca do processo gravado no banco. A D1 e a nota de 23/11 sobre a versão não mudam: o envelope continua em `0.0.57`, editado no lugar.
+O documento congelado guarda, no primeiro nível, o `nome` do processo seletivo, com o mesmo nome da `v1` (`identificacao.nome`). É obrigatório, tem de 1 a 300 caracteres e é gravado em NFC; o leitor exige a chave. É lido do próprio processo ao congelar, na publicação e na retificação, e entra nos bytes e no resumo criptográfico. A página pública, a busca e a exportação da versão publicada tiram o nome do documento congelado, nunca do processo gravado no banco. A D1 e a nota de 23/11 sobre a versão não mudam: o envelope continua em `0.0.57`, editado no lugar.
 
 **Consequência:** os três envelopes de referência dos testes são gerados de novo, e a retificação que muda o nome do processo muda o resumo da versão.
 

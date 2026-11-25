@@ -20,7 +20,7 @@ O caso que expôs o custo foi a avaliação de conformidade legal. Uma `Obrigato
 
 Os dois erros são simétricos, e o silencioso é o que pesa:
 
-- **Falso positivo.** O código é reciclado por outro documento. O gate de publicação aprova o edital como legalmente conforme, satisfeito pelo documento errado, e nada sinaliza.
+- **Falso positivo.** O código é reciclado por outro documento. A verificação de publicação aprova o edital como legalmente conforme, satisfeito pelo documento errado, e nada sinaliza.
 - **Falso negativo.** Alguém renomeia o tipo e atualiza a regra — faz exatamente o certo. O código novo da regra não casa com o código velho congelado na exigência, e a publicação legítima é recusada com uma mensagem que manda procurar uma exigência que está na tela.
 
 O ADR-0061 não foi ingênuo quanto a isso. Ao justificar por que a referência a `AreaOrganizacional` pode ser feita por código, ele escreve: *"é por código (não por id) e `AreaCodigo` é **imutável post-criação** per Invariante 2 do [ADR-0055](0055-organizacao-institucional-bounded-context.md). Mesma disciplina por mecanismo diferente."* Comparar por código é seguro **quando o código é imutável**. Quando os cadastros de Configuração adotaram código editável, a premissa caiu — e o registro não foi revisitado.
@@ -54,7 +54,7 @@ Em uma frase: **decisão de correspondência compara identidade; texto dirigido 
 3. O código congelado continua sendo persistido, exibido e publicado no envelope. É o que aparece em mensagem de erro, tela e documento oficial.
 4. Quando o código casa e a identidade não, a recusa tem **motivo próprio**, que nomeia o que aconteceu: o código foi reatribuído depois que a regra foi escrita. Dizer "não encontrei" seria mandar procurar algo que está visível.
 5. A resolução de código para identidade é feita pela camada de aplicação e entregue ao domínio como dado. O serviço de domínio não ganha leitor ([ADR-0013](0013-classificacao-dos-candidatos-como-servicos-de-dominio-puros.md)).
-6. Quando gate de escrita e consulta de leitura precisam do mesmo veredicto, ambos consomem **a mesma resolução**, não duas leituras independentes do catálogo — duas leituras podem divergir, e o invariante é que a regra mostrada como reprovada seja a que bloqueia a transição.
+6. Quando verificação de escrita e consulta de leitura precisam do mesmo veredicto, ambas consomem **a mesma resolução**, não duas leituras independentes do catálogo — duas leituras podem divergir, e o invariante é que a regra mostrada como reprovada seja a que bloqueia a transição.
 
 ### Emenda ao ADR-0061
 
@@ -89,7 +89,7 @@ O restante do ADR-0061 segue valendo integralmente, inclusive a ausência de FK 
 
 A verificação é por **tipagem**, não por inspeção de texto.
 
-O serviço de domínio que decide conformidade recebe a identidade como parâmetro obrigatório e **não expõe sobrecarga** que aceite apenas o código. Um chamador que "esqueça" a identidade não compila — o compilador é o gate. Foi assim que a #1372 introduziu o pattern, e é a forma que as extensões devem seguir.
+O serviço de domínio que decide conformidade recebe a identidade como parâmetro obrigatório e **não expõe sobrecarga** que aceite apenas o código. Um chamador que "esqueça" a identidade não compila — o compilador faz a verificação. Foi assim que a #1372 introduziu o pattern, e é a forma que as extensões devem seguir.
 
 Deliberadamente **não** se propõe scanner de fonte no CI procurando comparação de string. "Comparar código numa decisão" não é detectável por reflexão sobre assembly, e um analisador de texto sobre o fonte produziria ruído sem cobrir os casos que importam. Onde a tipagem não alcançar, a revisão de PR alcança — e o princípio, registrado aqui, é o que ela cita.
 
@@ -105,10 +105,10 @@ Os testes que acompanham cada ponto de decisão vêm em par, e ambos falham sem 
 
 ### B — tornar o código imutável pós-criação
 
-- Bom, porque elimina a classe de defeito na raiz: sem edição não há reciclagem, e comparar código volta a ser correto.
+- Bom, porque elimina a causa dessa classe de defeito: sem edição não há reciclagem, e comparar código volta a ser correto.
 - Bom, porque é disciplina já praticada no projeto, em `AreaCodigo` ([ADR-0055](0055-organizacao-institucional-bounded-context.md)).
 - Ruim, porque o custo recai sobre o operador, que erra um código ao cadastrar e passa a precisar recriar o item e migrar o que já o referenciava.
-- Ruim, porque reverteria decisão recente de produto — o código semântico editável dos cadastros institucionais é entrega da própria frente que descobriu este problema.
+- Ruim, porque reverteria decisão recente de produto — o código semântico editável dos cadastros institucionais é entrega do próprio trabalho que descobriu este problema.
 
 ### C — identidade decide, código comunica (escolhida)
 

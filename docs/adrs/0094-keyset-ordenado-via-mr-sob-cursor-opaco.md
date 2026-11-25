@@ -37,7 +37,7 @@ A pergunta é **construir** o seek SQL multi-coluna à mão (estender o `CursorK
 **Escolhida:** "B — biblioteca de keyset para paginação por chave, sob o nosso cursor opaco", porque delega o seek SQL multi-coluna provado a uma biblioteca de paginação por chave mantida e de baixo nível, mantendo a nossa camada de cursor (mais robusta que o padrão de mercado) como dona do contrato.
 
 - A biblioteca gera **apenas** o `WHERE`/`ORDER BY`/Forward-Backward + `HasPrevious`/`HasNext`; a nossa camada (`CursorPayload` + `OkPaginatedOrdenadoAsync`) mantém AES-GCM, TTL, user-binding e `Link`.
-- A chave de ordenação viaja no **payload opaco** (campo `SortKey`); a âncora de continuação é a tupla `(SortKey, Id)`.
+- A chave de ordenação viaja no **payload opaco** (campo `SortKey`); o ponto de continuação é a tupla `(SortKey, Id)`.
 - A integração fica num helper compartilhado reutilizável (`KeysetOrdenadoCursor`, em `Infrastructure.Core/Pagination`): qualquer endpoint futuro ganha ordenação chamando-o.
 - **Só os readers ordenados** (Estado/Cidade) adotam a biblioteca de paginação por chave; os consumidores que paginam por `Id` permanecem no `CursorKeyset` atual (menor raio de explosão).
 
