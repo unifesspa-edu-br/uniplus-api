@@ -18,8 +18,8 @@ using LinhaDoPredicado = (int Clausula, string Fato, Unifesspa.UniPlus.Regras.En
 /// muda o sentido.
 /// </summary>
 /// <remarks>
-/// A leitura remonta a regra pelas mesmas fábricas do domínio e recusa, como envelope malformado, a forma que a escrita
-/// nunca produz: chave ausente ou desconhecida, texto vazio e valor que o domínio não declararia.
+/// A leitura recusa como configuração malformada a forma que a escrita nunca produz. As recusas do domínio são
+/// repassadas como estão, com código, campo e caminho.
 /// </remarks>
 internal static class RegraDeHomologacaoNoEnvelope
 {
@@ -102,7 +102,18 @@ internal static class RegraDeHomologacaoNoEnvelope
     {
         leitor.ExigirChaves(item, path, ChaveDasCondicoes);
         JsonArray array = leitor.Array(item, ChaveDasCondicoes, path);
-        string pathLista = $"{path}.{ChaveDasCondicoes}";
+        List<CondicaoDeHomologacao> condicoes = LerCondicoes(leitor, array, $"{path}.{ChaveDasCondicoes}");
+        if (leitor.Falhou)
+        {
+            return null;
+        }
+
+        Result<AlternativaDeCondicoes> declaracao = AlternativaDeCondicoes.Declarar(condicoes);
+        return declaracao.IsSuccess ? declaracao.Value : leitor.Propagar<AlternativaDeCondicoes?>(declaracao.Errors, path);
+    }
+
+    private static List<CondicaoDeHomologacao> LerCondicoes(LeitorEnvelope leitor, JsonArray array, string pathLista)
+    {
         List<CondicaoDeHomologacao> condicoes = [];
         for (int i = 0; !leitor.Falhou && i < array.Count; i++)
         {
@@ -113,7 +124,7 @@ internal static class RegraDeHomologacaoNoEnvelope
             }
         }
 
-        return leitor.Falhou ? null : Declarada(leitor, AlternativaDeCondicoes.Declarar(condicoes), path);
+        return condicoes;
     }
 
     private static CondicaoDeHomologacao? LerCondicao(LeitorEnvelope leitor, JsonObject item, string path)
@@ -122,43 +133,35 @@ internal static class RegraDeHomologacaoNoEnvelope
         string tipo = leitor.TextoNaoVazio(item, ChaveDoTipo, path);
         int edicaoDoExame = leitor.Inteiro(item, ChaveDaEdicaoDoExame, path);
         string? motivo = TextoNuloOuNaoVazio(leitor, item, ChaveDoMotivoDesfavoravel, path);
-        PredicadoDnf? enquadramento = LerEnquadramento(leitor, item, path);
+        IReadOnlyList<LinhaDoPredicado> linhas = LerEnquadramento(leitor, item, path);
 
-        return leitor.Falhou
-            ? null
-            : Declarada(leitor, CondicaoDeHomologacao.Declarar(tipo, edicaoDoExame, motivo, enquadramento), path);
+        return leitor.Falhou ? null : CondicaoDeclarada(leitor, tipo, edicaoDoExame, motivo, linhas, path);
     }
 
-    private static PredicadoDnf? LerEnquadramento(LeitorEnvelope leitor, JsonObject condicao, string path)
+    private static IReadOnlyList<LinhaDoPredicado> LerEnquadramento(LeitorEnvelope leitor, JsonObject condicao, string path)
     {
         if (leitor.Falhou)
         {
-            return null;
+            return [];
         }
 
         IReadOnlyList<LinhaDoPredicado> linhas = LeituraDasCondicoes.LerDnf(leitor, condicao, ChaveDoEnquadramento, path);
-        return leitor.Falhou ? null : Predicado(leitor, linhas, $"{path}.{ChaveDoEnquadramento}");
+        return leitor.Falhou ? [] : linhas;
     }
 
-    private static PredicadoDnf? Predicado(LeitorEnvelope leitor, IReadOnlyList<LinhaDoPredicado> linhas, string path)
+    private static CondicaoDeHomologacao? CondicaoDeclarada(
+        LeitorEnvelope leitor, string tipo, int edicaoDoExame, string? motivo, IReadOnlyList<LinhaDoPredicado> enquadramento, string path)
     {
-        Result<PredicadoDnf?> predicado = LeituraDasCondicoes.PredicadoOpcional(linhas);
-        return predicado.IsSuccess ? predicado.Value : leitor.Malformado<PredicadoDnf?>(path, predicado.Error!.Message);
+        Result<PredicadoDnf?> predicado = LeituraDasCondicoes.PredicadoOpcional(enquadramento);
+        Result<CondicaoDeHomologacao> condicao = CondicaoDeHomologacao.Declarar(tipo, edicaoDoExame, motivo, predicado.Value);
+        FieldError[] causas = [.. condicao.Errors, .. predicado.Errors.Select(NoEnquadramento)];
+        return causas.Length == 0 ? condicao.Value : leitor.Propagar<CondicaoDeHomologacao?>(causas, path);
     }
+
+    private static FieldError NoEnquadramento(FieldError causa) =>
+        (causa with { Field = causa.Field ?? string.Empty }).NoCaminhoDe(ChaveDoEnquadramento);
 
     private static string? TextoNuloOuNaoVazio(LeitorEnvelope leitor, JsonObject objeto, string chave, string path) =>
         !leitor.Falhou && objeto[chave] is not null ? leitor.TextoNaoVazio(objeto, chave, path) : null;
 
-    private static T? Declarada<T>(LeitorEnvelope leitor, Result<T> declaracao, string path)
-        where T : class
-    {
-        if (declaracao.IsSuccess)
-        {
-            return declaracao.Value;
-        }
-
-        FieldError recusa = declaracao.Errors[0];
-        string pathDaRecusa = recusa.Field is { Length: > 0 } campo ? $"{path}.{campo}" : path;
-        return leitor.Malformado<T?>(pathDaRecusa, recusa.Error.Message);
-    }
 }

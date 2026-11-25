@@ -8,6 +8,7 @@ using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
+using Unifesspa.UniPlus.Selecao.Domain.Errors;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.HomologacaoDasInscricoes;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Canonicalization;
@@ -114,7 +115,7 @@ public sealed class CronogramaComRegraDeHomologacaoTests
         leitor.Erro.Message.Should().Contain("regraDeHomologacao");
     }
 
-    [Fact(DisplayName = "A regra com forma inválida dentro da fase é recusada como envelope malformado")]
+    [Fact(DisplayName = "A edição inválida da regra é recusada no campo da condição")]
     public void RegraInvalida_Recusada()
     {
         JsonObject item = SacarFase(Fase(RegraCompleta()));
@@ -123,8 +124,8 @@ public sealed class CronogramaComRegraDeHomologacaoTests
         LeitorEnvelope leitor = Ler(item);
 
         leitor.Falhou.Should().BeTrue();
-        leitor.Erro.Code.Should().Be(ErrosCodecEnvelope.EnvelopeMalformado);
-        leitor.Erro.Message.Should().Contain("regraDeHomologacao");
+        leitor.Erro.Code.Should().Be(HomologacaoDasInscricoesErrorCodes.EdicaoDoExameInvalida);
+        leitor.Falha<object>().Errors[0].Field.Should().Be("cronogramaFases.fases[0].regraDeHomologacao.alternativas[0].condicoes[0].edicaoDoExame");
     }
 
     [Fact(DisplayName = "A fase que não é um objeto é recusada como envelope malformado")]

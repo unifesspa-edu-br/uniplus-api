@@ -148,31 +148,26 @@ public sealed class RegraDeHomologacaoNoEnvelopeTests
         lida!.ResultadoAtoCodigo.Should().BeNull();
     }
 
-    [Theory(DisplayName = "A leitura recusa, como envelope malformado, a regra fora da forma que a escrita produz")]
+    [Theory(DisplayName = "A leitura recusa, como configuração malformada, a regra fora da forma que a escrita produz")]
     [InlineData("{" + ResultadoNulo + ",\"alternativas\":[],\"intrusa\":1}", "chave desconhecida na regra")]
     [InlineData("{" + ResultadoNulo + "}", "sem as alternativas")]
     [InlineData("{\"alternativas\":[]}", "sem a chave do resultado")]
     [InlineData("{" + ResultadoNulo + ",\"alternativas\":{}}", "alternativas que não são lista")]
     [InlineData("{\"resultadoAtoCodigo\":\"\",\"alternativas\":[]}", "resultado vazio")]
     [InlineData("{" + ResultadoNulo + ",\"alternativas\":[{}]}", "alternativa sem a chave das condições")]
-    [InlineData("{" + ResultadoNulo + ",\"alternativas\":[{\"condicoes\":[]}]}", "alternativa sem condição")]
     [InlineData("{" + ResultadoNulo + ",\"alternativas\":[{\"condicoes\":[],\"intrusa\":1}]}", "chave desconhecida na alternativa")]
     public void RegraForaDaForma_Recusa(string regra, string defeito) =>
         ConferirRecusa(LerRegra(regra), defeito);
 
-    [Theory(DisplayName = "A leitura recusa, como envelope malformado, a condição fora da forma que a escrita produz")]
+    [Theory(DisplayName = "A leitura recusa, como configuração malformada, a condição fora da forma que a escrita produz")]
     [InlineData("{" + Tipo + "," + Edicao + "," + MotivoNulo + "," + EnquadramentoNulo + ",\"intrusa\":1}", "chave desconhecida na condição")]
-    [InlineData("{\"tipo\":\"CONDICAO_QUE_NAO_EXISTE\"," + Edicao + "," + MotivoNulo + "," + EnquadramentoNulo + "}", "tipo que o sistema não apura")]
     [InlineData("{" + Edicao + "," + MotivoNulo + "," + EnquadramentoNulo + "}", "sem o tipo")]
     [InlineData("{" + Tipo + "," + MotivoNulo + "," + EnquadramentoNulo + "}", "sem a edição do exame")]
-    [InlineData("{" + Tipo + ",\"edicaoDoExame\":1997," + MotivoNulo + "," + EnquadramentoNulo + "}", "edição antes de 1998")]
-    [InlineData("{" + Tipo + ",\"edicaoDoExame\":2101," + MotivoNulo + "," + EnquadramentoNulo + "}", "edição depois de 2100")]
-    [InlineData("{" + Tipo + "," + Edicao + ",\"motivoDesfavoravelCodigo\":\"motivo mal formado\"," + EnquadramentoNulo + "}", "motivo mal formado")]
     [InlineData("{" + Tipo + "," + Edicao + ",\"motivoDesfavoravelCodigo\":\"\"," + EnquadramentoNulo + "}", "motivo vazio")]
     [InlineData("{" + Tipo + "," + Edicao + "," + EnquadramentoNulo + "}", "sem a chave do motivo")]
     [InlineData("{" + Tipo + "," + Edicao + "," + MotivoNulo + "}", "sem a chave do enquadramento")]
     [InlineData("{" + Tipo + "," + Edicao + "," + MotivoNulo + ",\"enquadramento\":[]}", "enquadramento vazio")]
-    [InlineData("{" + Tipo + "," + Edicao + "," + MotivoNulo + ",\"enquadramento\":[[{\"fato\":\"MODALIDADE\",\"operador\":\"INEXISTENTE\",\"valor\":\"AMPLA\"}]]}", "operador do enquadramento desconhecido")]
+    [InlineData("{" + Tipo + "," + Edicao + "," + MotivoNulo + ",\"enquadramento\":[[{\"codigoDoDado\":\"MODALIDADE\",\"operador\":\"INEXISTENTE\",\"valor\":\"AMPLA\"}]]}", "operador do enquadramento desconhecido")]
     public void CondicaoForaDaForma_Recusa(string condicao, string defeito) =>
         ConferirRecusa(LerRegra("{" + ResultadoNulo + ",\"alternativas\":[{\"condicoes\":[" + condicao + "]}]}"), defeito);
 
@@ -182,7 +177,18 @@ public sealed class RegraDeHomologacaoNoEnvelopeTests
         LeitorEnvelope leitor = LerRegra(
             "{" + ResultadoNulo + ",\"alternativas\":[{\"condicoes\":[{" + Tipo + ",\"edicaoDoExame\":1997," + MotivoNulo + "," + EnquadramentoNulo + "}]}]}");
 
-        leitor.Erro.Message.Should().Contain($"{CaminhoDaCondicao}.edicaoDoExame");
+        leitor.Falha<object>().Errors[0].Field.Should().Be($"{CaminhoDaCondicao}.edicaoDoExame");
+        leitor.Erro.Code.Should().Be(Unifesspa.UniPlus.Selecao.Domain.Errors.HomologacaoDasInscricoesErrorCodes.EdicaoDoExameInvalida);
+    }
+
+    [Fact(DisplayName = "Código do dado em branco é recusado como configuração malformada")]
+    public void Enquadramento_CodigoDoDadoEmBranco_Recusa()
+    {
+        LeitorEnvelope leitor = LerRegra("{" + ResultadoNulo + ",\"alternativas\":[{\"condicoes\":[{" + Tipo + "," + Edicao + "," + MotivoNulo +
+            ",\"enquadramento\":[[{\"codigoDoDado\":\" \",\"operador\":\"IGUAL\",\"valor\":true}]]}]}]}");
+
+        leitor.Erro.Code.Should().Be(ErrosCodecEnvelope.EnvelopeMalformado);
+        leitor.Erro.Message.Should().Contain($"{CaminhoDaCondicao}.enquadramento[0][0].codigoDoDado");
     }
 
     private static RegraDeHomologacaoDasInscricoes? IdaEVolta(RegraDeHomologacaoDasInscricoes regra)

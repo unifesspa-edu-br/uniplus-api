@@ -71,15 +71,15 @@ public sealed class EnvelopeCodecRegraDeHomologacaoTests
         FaseReidratada(envelope, FasePreliminar).RegraDeHomologacao!.Alternativas[1].Condicoes[0].EdicaoDoExame.Should().Be(2023);
     }
 
-    [Fact(DisplayName = "A leitura recusa a regra de homologação com forma inválida")]
+    [Fact(DisplayName = "A leitura recusa a edição inválida da regra de homologação")]
     public void RegraInvalida_Recusa()
     {
         Result<EnvelopeReidratado> resultado = ReidratarComEnvelopeAdulterado(envelope =>
             FaseNoEnvelope(envelope, FasePreliminar)["regraDeHomologacao"]!["alternativas"]![0]!["condicoes"]![0]!["edicaoDoExame"] = 1997);
 
         resultado.IsFailure.Should().BeTrue();
-        resultado.Error!.Code.Should().Be(ErrosCodecEnvelope.EnvelopeMalformado);
-        resultado.Error.Message.Should().Contain("regraDeHomologacao");
+        resultado.Error!.Code.Should().Be(Unifesspa.UniPlus.Selecao.Domain.Errors.HomologacaoDasInscricoesErrorCodes.EdicaoDoExameInvalida);
+        resultado.Errors[0].Field.Should().EndWith(".regraDeHomologacao.alternativas[0].condicoes[0].edicaoDoExame");
     }
 
     [Fact(DisplayName = "A leitura continua recusando a chave desconhecida na fase")]

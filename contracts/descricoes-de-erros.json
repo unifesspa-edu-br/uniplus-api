@@ -2746,6 +2746,7 @@
         "A forma é conferida quando o operador é reconhecido e sua recusa pode vir junto com a de [fato](/erros/uniplus.condicao_dnf.fato_obrigatorio). Só a forma é conferida aqui: o tipo do valor contra o tipo do fato é outra recusa, de [valor incompatível com o tipo do fato](/erros/uniplus.predicado_dnf.valor_incompativel_com_tipo).",
         "A recusa vem na lista `errors` da resposta, com `field` apontando `[c][i].valor` sob o caminho do predicado ou, no critério de desempate, o campo do critério:",
         "- Nos modelos de formulário (criação e atualização): `paginas[i].exibicao`, `itens[i].precondicao`, `itens[i].predicadoObrigatoriedade`, `itens[i].impedimento.quando`, `itens[i].restricoes[j]` (a condição de um grupo de opções), `grupos[g].exibicao`, `grupos[g].predicadoObrigatoriedade`, `termos[i].exibicao`, `termos[i].predicadoObrigatoriedade` e `documentosExigidos[i].quando`, mais os mesmos caminhos do item sob `grupos[g].subitens[j]`.\n- Na gravação dos termos do formulário: `termos[i].exibicao` e `termos[i].predicadoObrigatoriedade`.\n- Na gravação das páginas do formulário: `paginas[i].exibicao`.\n- Na gravação dos itens do formulário: `itens[i].predicadoObrigatoriedade`, `itens[i].impedimento.quando`, `itens[i].restricoes[j]`, `grupos[g].exibicao` e `grupos[g].predicadoObrigatoriedade`, e os mesmos caminhos do item sob `grupos[g].subitens[j]` nos campos de grupo. A pré-condição do item tem recusas próprias, que não são as deste catálogo.\n- Na criação e na atualização de uma modalidade de concorrência: `regraDeAplicabilidade`.\n- Na definição das regras padrão de um fato derivado por regra: `regras[i]`.\n- Na definição dos critérios de desempate, no critério que testa um fato (regra de predicado sobre fato): `criterios[i].valor`. O valor do critério é um texto: se ele é um JSON válido (como `[\"A\",\"B\"]`), é lido como tal, e o texto que não é JSON vale como texto simples.\n- Na definição de documentos exigidos do processo seletivo, na condição do gatilho da exigência: as recusas de forma vêm em `errors`, com o campo da condição e de seu valor.",
+        "Na regra de homologação, o campo aponta `…regraDeHomologacao.alternativas[a].condicoes[k].enquadramento[c][i].valor`.",
         "Na leitura de forma que preserva as recusas, as condições são conferidas na ordem de cláusula e posição, e suas recusas são devolvidas juntas. Em grupos de opções, a leitura da restrição pode repassar apenas a primeira recusa. Quando o pedido traz mais de um predicado, a criação e a atualização de modelo de formulário, a gravação dos termos, das páginas e dos itens do formulário, a definição das regras padrão de um fato derivado e a definição dos critérios de desempate conferem todos e devolvem as recusas juntas em `errors`; a definição de documentos exigidos também reúne as recusas de forma das condições. Nos modelos de formulário, o `field` começa por `conteudo.`. A parte do modelo (item, grupo, página, termo ou documento) com recusa de forma não segue para as conferências contra o catálogo de fatos, e na atualização um `{id}` que não existe é recusado antes, como [modelo de formulário não encontrado](/erros/uniplus.configuracao.modelo_formulario.nao_encontrado). Nada é gravado."
       ],
       "comoResolver": [
@@ -2764,7 +2765,7 @@
         "Criação de uma modalidade de concorrência",
         "Atualização de uma modalidade de concorrência",
         "Definição das regras padrão de um fato derivado por regra",
-        "Importação e leitura da configuração publicada do processo seletivo"
+        "Leitura da configuração publicada do processo seletivo"
       ]
     },
     {
@@ -18332,14 +18333,14 @@
         "UNI-REQ-0019"
       ],
       "oQueAconteceu": [
-        "Cada versão do formato da configuração publicada usa um algoritmo próprio para o hash. A leitura é recusada quando o algoritmo registrado é diferente do esperado para o formato; a mensagem informa ambos.",
+        "Cada versão do formato da configuração publicada usa um algoritmo próprio para o hash. Ao conferir o hash da versão, a leitura é recusada quando o algoritmo registrado é diferente do esperado para o formato; a mensagem informa ambos.",
         "Sem o algoritmo correto, não é possível conferir o hash e demonstrar a integridade da configuração publicada."
       ],
       "comoResolver": [
         "Acione o suporte, informando o `instance` e o `traceId` do ProblemDetails recebido. Não há o que corrigir em formulário, cadastro ou documento: a recusa é sobre a integridade do processo já congelado, e a análise e a correção dependem da equipe responsável pelo sistema. Com o suporte acionado, o processo permanece como estava, sem alteração, até a análise."
       ],
       "ondeAparece": [
-        "Leitura da configuração congelada de um processo seletivo, ao conferir o hash da versão"
+        "Leitura da configuração publicada do processo seletivo"
       ]
     },
     {
@@ -18355,7 +18356,7 @@
         "Acione o suporte, informando o `instance` e o `traceId` do ProblemDetails recebido. Não há o que corrigir em formulário, cadastro ou documento: a recusa é sobre a integridade do processo já congelado, e a análise e a correção dependem da equipe responsável pelo sistema. Com o suporte acionado, o processo permanece como estava, sem alteração, até a análise."
       ],
       "ondeAparece": [
-        "Leitura da configuração congelada de um processo seletivo"
+        "Leitura da configuração publicada do processo seletivo"
       ]
     },
     {
@@ -18373,7 +18374,7 @@
         "Acione o suporte, informando o `instance` e o `traceId` do ProblemDetails recebido. Não há o que corrigir em formulário, cadastro ou documento: a recusa é sobre a integridade do processo já congelado, e a análise e a correção dependem da equipe responsável pelo sistema. Com o suporte acionado, o processo permanece como estava, sem alteração, até a análise."
       ],
       "ondeAparece": [
-        "Leitura da configuração congelada de um processo seletivo"
+        "Leitura da configuração publicada do processo seletivo"
       ]
     },
     {
@@ -18389,7 +18390,7 @@
         "Acione o suporte, informando o `instance` e o `traceId` do ProblemDetails recebido. Não há o que corrigir em formulário, cadastro ou documento: a recusa é sobre a integridade do processo já congelado, e a análise e a correção dependem da equipe responsável pelo sistema. Com o suporte acionado, o processo permanece como estava, sem alteração, até a análise."
       ],
       "ondeAparece": [
-        "Leitura da configuração congelada de um processo seletivo"
+        "Leitura da configuração publicada do processo seletivo"
       ]
     },
     {
@@ -18405,7 +18406,7 @@
         "Acione o suporte, informando o `instance` e o `traceId` do ProblemDetails recebido. Não há o que corrigir em formulário, cadastro ou documento: a recusa é sobre a integridade do processo já congelado, e a análise e a correção dependem da equipe responsável pelo sistema. Com o suporte acionado, o processo permanece como estava, sem alteração, até a análise."
       ],
       "ondeAparece": [
-        "Leitura da configuração congelada de um processo seletivo"
+        "Leitura da configuração publicada do processo seletivo"
       ]
     },
     {
@@ -18414,14 +18415,14 @@
         "UNI-REQ-0019"
       ],
       "oQueAconteceu": [
-        "A configuração publicada identifica regras por código, como critérios de desempate, regras de eliminação e condições de obrigatoriedade de documentos. A leitura é recusada quando o sistema não conhece um desses códigos ou quando os parâmetros guardados não correspondem a uma variante conhecida da regra. A mensagem informa o código e o trecho da configuração.",
+        "A configuração publicada identifica regras por código, como regras de classificação, de eliminação, de distribuição de vagas e de prazo, critérios de desempate e condições de obrigatoriedade de documentos. Ao recuperar qualquer regra identificada por código, a leitura é recusada quando o sistema não conhece esse código ou quando os parâmetros guardados não correspondem a uma variante conhecida da regra. A mensagem informa o código e o trecho da configuração.",
         "Interpretar um código desconhecido como uma regra padrão reconstruiria uma configuração diferente da congelada."
       ],
       "comoResolver": [
         "Acione o suporte, informando o `instance` e o `traceId` do ProblemDetails recebido. Não há o que corrigir em formulário, cadastro ou documento: a recusa é sobre a integridade do processo já congelado, e a análise e a correção dependem da equipe responsável pelo sistema. Com o suporte acionado, o processo permanece como estava, sem alteração, até a análise."
       ],
       "ondeAparece": [
-        "Leitura da configuração congelada de um processo seletivo, ao reconstruir qualquer regra referenciada por código, como regras de classificação, de eliminação, de distribuição de vagas e de prazo, critérios de desempate e condições de obrigatoriedade de documentos"
+        "Leitura da configuração publicada do processo seletivo"
       ]
     },
     {
@@ -18431,13 +18432,13 @@
       ],
       "oQueAconteceu": [
         "Ao publicar um processo seletivo, o sistema guarda sua configuração junto da versão do formato usada. Esta recusa indica que o sistema atual não conhece essa versão e não consegue recuperar a configuração.",
-        "Isso pode ocorrer após uma atualização do formato. A mensagem informa a versão encontrada (por exemplo, `0.0.33`) e a consequência para a operação solicitada. O sistema recusa a leitura para evitar apresentar uma configuração diferente da publicada."
+        "Isso pode ocorrer após uma atualização do formato. A mensagem informa a versão encontrada (por exemplo, `0.0.33`) e a consequência para a operação solicitada. O sistema recusa a leitura antes de a operação em curso, como retificar ou conferir os dados coletados, prosseguir, para evitar apresentar uma configuração diferente da publicada."
       ],
       "comoResolver": [
         "Acione o suporte, informando o `instance` e o `traceId` do ProblemDetails recebido. O processo foi congelado por uma versão do formato que o sistema não lê mais, e nada que se edite na tela muda isso: a leitura desse processo depende da equipe responsável pelo sistema. Com o suporte acionado, o processo permanece como estava, sem alteração, até a análise."
       ],
       "ondeAparece": [
-        "Leitura da configuração congelada de um processo seletivo, antes de a operação em curso (por exemplo, retificar ou conferir os dados coletados) prosseguir"
+        "Leitura da configuração publicada do processo seletivo"
       ]
     },
     {
@@ -19813,12 +19814,14 @@
         "Uma alternativa da regra de homologação não contém condições."
       ],
       "comoResolver": [
-        "Inclua ao menos uma condição na alternativa ou remova a alternativa que não será utilizada."
+        "Inclua ao menos uma condição na alternativa ou remova a alternativa que não será utilizada.",
+        "Na leitura da configuração publicada do processo seletivo, esta causa indica um problema de integridade. Acione o suporte."
       ],
       "ondeAparece": [
         "Definição do cronograma (`PUT /api/selecao/processos-seletivos/{id}/cronograma-fases`)",
         "Publicação inicial (`POST /api/selecao/processos-seletivos/{id}/publicacao`)",
-        "Retificação (`POST /api/selecao/processos-seletivos/{id}/retificacoes`)"
+        "Retificação (`POST /api/selecao/processos-seletivos/{id}/retificacoes`)",
+        "Leitura da configuração publicada do processo seletivo"
       ]
     },
     {
@@ -19830,12 +19833,14 @@
         "O tipo da condição de homologação não foi informado ou não está disponível para apuração pelo sistema."
       ],
       "comoResolver": [
-        "Informe um tipo disponível. Atualmente, o sistema apura `RESULTADO_NO_RETORNO_DO_INEP`."
+        "Informe um tipo disponível. Atualmente, o sistema apura `RESULTADO_NO_RETORNO_DO_INEP`.",
+        "Na leitura da configuração publicada do processo seletivo, esta causa indica um problema de integridade. Acione o suporte."
       ],
       "ondeAparece": [
         "Definição do cronograma (`PUT /api/selecao/processos-seletivos/{id}/cronograma-fases`)",
         "Publicação inicial (`POST /api/selecao/processos-seletivos/{id}/publicacao`)",
-        "Retificação (`POST /api/selecao/processos-seletivos/{id}/retificacoes`)"
+        "Retificação (`POST /api/selecao/processos-seletivos/{id}/retificacoes`)",
+        "Leitura da configuração publicada do processo seletivo"
       ]
     },
     {
@@ -19863,12 +19868,14 @@
         "A condição não informa uma edição do exame entre 1998 e 2100, inclusive."
       ],
       "comoResolver": [
-        "Informe uma edição do exame entre 1998 e 2100, inclusive."
+        "Informe uma edição do exame entre 1998 e 2100, inclusive.",
+        "Na leitura da configuração publicada do processo seletivo, esta causa indica um problema de integridade. Acione o suporte."
       ],
       "ondeAparece": [
         "Definição do cronograma (`PUT /api/selecao/processos-seletivos/{id}/cronograma-fases`)",
         "Publicação inicial (`POST /api/selecao/processos-seletivos/{id}/publicacao`)",
-        "Retificação (`POST /api/selecao/processos-seletivos/{id}/retificacoes`)"
+        "Retificação (`POST /api/selecao/processos-seletivos/{id}/retificacoes`)",
+        "Leitura da configuração publicada do processo seletivo"
       ]
     },
     {
@@ -21322,10 +21329,12 @@
         "O código do motivo começa com letra maiúscula, continua com letras maiúsculas ou dígitos separados por sublinhados isolados e tem até 50 caracteres. O código enviado em `POST /api/selecao/admin/motivos-de-decisao` não segue esse formato, por exemplo por ter letra minúscula, acento, espaço ou hífen. A recusa sai com **422**, e o erro aparece no campo `codigo`."
       ],
       "comoResolver": [
-        "Reescreva o código no formato aceito: `DOCUMENTO_ILEGIVEL` é aceito; `documento-ilegível` não é."
+        "Reescreva o código no formato aceito: `DOCUMENTO_ILEGIVEL` é aceito; `documento-ilegível` não é.",
+        "Na leitura da configuração publicada do processo seletivo, esta causa indica um problema de integridade. Acione o suporte."
       ],
       "ondeAparece": [
-        "Cadastro de motivo de decisão"
+        "Cadastro de motivo de decisão",
+        "Leitura da configuração publicada do processo seletivo"
       ]
     },
     {
