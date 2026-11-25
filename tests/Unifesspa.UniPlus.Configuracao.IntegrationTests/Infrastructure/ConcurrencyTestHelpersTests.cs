@@ -47,120 +47,121 @@ public sealed class ConcurrencyTestHelpersTests
     public async Task WaitForBlockedBackendAsync_WithBackendBlockedByUnrelatedHolder_DoesNotFalsePositive()
     {
         MonolitoApiFactory api = _fixture.Factory;
+        (Guid targetId, Guid decoyId) = await CriarCalendariosAsync(api);
+        await VerificarBloqueioPorTransacaoAlheiaAsync(api, targetId, decoyId);
+    }
 
-        Guid targetId;
-        Guid decoyId;
-        await using (AsyncServiceScope setupScope = api.Services.CreateAsyncScope())
-        {
-            UniPlusDbContext db = setupScope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
-            CalendarioDiasUteis target = CalendarioDiasUteis.Criar(
-                $"pid-target-{Guid.NewGuid():N}"[..20],
-                [new DiaNaoUtilCriacao("NACIONAL", null, null, null, new DateOnly(2099, 1, 1), "x")]).Value!;
-            CalendarioDiasUteis decoy = CalendarioDiasUteis.Criar(
-                $"pid-decoy-{Guid.NewGuid():N}"[..20],
-                [new DiaNaoUtilCriacao("NACIONAL", null, null, null, new DateOnly(2099, 1, 1), "x")]).Value!;
-            db.CalendariosDiasUteis.AddRange(target, decoy);
-            await db.SaveChangesAsync();
-            targetId = target.Id;
-            decoyId = decoy.Id;
-        }
+    private static async Task<(Guid TargetId, Guid DecoyId)> CriarCalendariosAsync(MonolitoApiFactory api)
+    {
+        await using AsyncServiceScope scope = api.Services.CreateAsyncScope();
+        UniPlusDbContext db = scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
+        CalendarioDiasUteis target = CriarCalendario("target");
+        CalendarioDiasUteis decoy = CriarCalendario("decoy");
+        db.CalendariosDiasUteis.AddRange(target, decoy);
+        await db.SaveChangesAsync();
+        return (target.Id, decoy.Id);
+    }
 
-        // Decoy: uma segunda corrida, TOTALMENTE alheia à corrida sob teste,
-        // sobre uma linha DIFERENTE da mesma tabela — um backend genuinamente
-        // bloqueado (wait_event_type='Lock'), com query mencionando
-        // "calendarios_de_dias_uteis" por coincidência, mas bloqueado por um
-        // holder que NÃO é o que a corrida real vai usar.
-        await using AsyncServiceScope scopeDecoyHolder = api.Services.CreateAsyncScope();
-        UniPlusDbContext dbDecoyHolder = scopeDecoyHolder.ServiceProvider.GetRequiredService<UniPlusDbContext>();
-        await using IDbContextTransaction txDecoyHolder = await dbDecoyHolder.Database.BeginTransactionAsync();
-        await dbDecoyHolder.Database.ExecuteSqlInterpolatedAsync(
-            $"UPDATE configuracao.calendarios_de_dias_uteis SET updated_at = now() WHERE id = {decoyId}");
-        int pdecoyIdHolder = await ConcorrenciaTestHelpers.GetConnectionPidAsync(dbDecoyHolder);
+    private static CalendarioDiasUteis CriarCalendario(string finalidade) => CalendarioDiasUteis.Criar(
+        $"pid-{finalidade}-{Guid.NewGuid():N}"[..20],
+        [new DiaNaoUtilCriacao("NACIONAL", null, null, null, new DateOnly(2099, 1, 1), "x")]).Value!;
 
-        await using AsyncServiceScope scopeDecoyBlocked = api.Services.CreateAsyncScope();
-        UniPlusDbContext dbDecoyBlocked = scopeDecoyBlocked.ServiceProvider.GetRequiredService<UniPlusDbContext>();
-        await using IDbContextTransaction txDecoyBlocked = await dbDecoyBlocked.Database.BeginTransactionAsync();
-        Task decoyBlockedTask = dbDecoyBlocked.Database.ExecuteSqlInterpolatedAsync(
-            $"UPDATE configuracao.calendarios_de_dias_uteis SET updated_at = now() WHERE id = {decoyId}");
+    private static async Task VerificarBloqueioPorTransacaoAlheiaAsync(MonolitoApiFactory api, Guid targetId, Guid decoyId)
+    {
+        await using AsyncServiceScope scopeHolder = api.Services.CreateAsyncScope();
+        UniPlusDbContext dbHolder = scopeHolder.ServiceProvider.GetRequiredService<UniPlusDbContext>();
+        await using IDbContextTransaction txHolder = await dbHolder.Database.BeginTransactionAsync();
+        await AtualizarCalendarioAsync(dbHolder, decoyId);
+        int holderPid = await ConcorrenciaTestHelpers.GetConnectionPidAsync(dbHolder);
+        await using AsyncServiceScope scopeBlocked = api.Services.CreateAsyncScope();
+        UniPlusDbContext dbBlocked = scopeBlocked.ServiceProvider.GetRequiredService<UniPlusDbContext>();
+        await using IDbContextTransaction txBlocked = await dbBlocked.Database.BeginTransactionAsync();
+        Task blockedTask = AtualizarCalendarioAsync(dbBlocked, decoyId);
+        var corrida = new CorridaAlheia(txHolder, txBlocked, blockedTask, holderPid);
+        await VerificarCorridasAsync(api, targetId, corrida);
+    }
 
-        // Se qualquer asserção abaixo — incluindo a própria confirmação de que
-        // o decoy está bloqueado — falhar antes de liberar txDecoyHolder,
-        // decoyBlockedTask continua bloqueado quando o `await using` de
-        // txDecoyBlocked/scopeDecoyBlocked começar a descartar a conexão —
-        // Npgsql não aceita descartar uma conexão com um comando ainda em
-        // voo. Dois flags distintos:
-        // "o holder commitou" (não pode mais ser revertido por rollback) é
-        // diferente de "o decoy foi de fato aguardado e descartado" — commitar
-        // txDecoyHolder libera o lock do LADO DO SERVIDOR, mas não garante que
-        // o comando Npgsql bloqueado do LADO DO CLIENTE já retornou; se a
-        // asserção final (linha ~135) falhar depois do commit mas antes do
-        // await de decoyBlockedTask, o finally ainda precisa aguardá-lo e
-        // descartar txDecoyBlocked antes do `await using` de disposal.
-        bool decoyHolderCommitted = false;
-        bool decoyBlockedCleanedUp = false;
+    private static Task<int> AtualizarCalendarioAsync(UniPlusDbContext db, Guid id) =>
+        db.Database.ExecuteSqlInterpolatedAsync(
+            $"UPDATE configuracao.calendarios_de_dias_uteis SET updated_at = now() WHERE id = {id}");
+
+    private static async Task VerificarCorridasAsync(MonolitoApiFactory api, Guid targetId, CorridaAlheia corrida)
+    {
         try
         {
-            // Prova de que o decoy está genuinamente bloqueado — pelo holder
-            // DELE, não pelo que a corrida real vai usar.
             await ConcorrenciaTestHelpers.WaitForBlockedBackendAsync(
-                api, decoyBlockedTask, [pdecoyIdHolder], TimeSpan.FromSeconds(5));
-
-            // --- Fase 1: com o decoy já bloqueado, a corrida real (busA) nem
-            // começou. Pedir a espera correlacionada ao holder de A (que só vai
-            // existir de verdade na Fase 2) não deve ser satisfeita pelo decoy —
-            // ele está bloqueado por pdecoyIdHolder, não por targetHolderPid.
-            await using AsyncServiceScope scopeTargetHolder = api.Services.CreateAsyncScope();
-            UniPlusDbContext dbTargetHolder = scopeTargetHolder.ServiceProvider.GetRequiredService<UniPlusDbContext>();
-            await using IDbContextTransaction txTargetHolder = await dbTargetHolder.Database.BeginTransactionAsync();
-            await dbTargetHolder.Database.ExecuteSqlInterpolatedAsync(
-                $"UPDATE configuracao.calendarios_de_dias_uteis SET updated_at = now() WHERE id = {targetId}");
-            int targetHolderPid = await ConcorrenciaTestHelpers.GetConnectionPidAsync(dbTargetHolder);
-
-            Task taskThatNeverActuallyBlocks = Task.Delay(TimeSpan.FromMinutes(1));
-            Func<Task> waitWithoutBusA = () => ConcorrenciaTestHelpers.WaitForBlockedBackendAsync(
-                api, taskThatNeverActuallyBlocks, [targetHolderPid], TimeSpan.FromMilliseconds(300));
-
-            await waitWithoutBusA.Should().ThrowAsync<FailException>(
-                "o decoy está bloqueado por outro holder — pg_blocking_pids não o correlaciona com targetHolderPid");
-
-            // --- Fase 2: agora a corrida real (busA) começa e disputa a MESMA
-            // linha que dbTargetHolder está segurando — pg_blocking_pids vai
-            // confirmar que o bloqueador de busA é especificamente targetHolderPid.
-            await using AsyncServiceScope scopeA = api.Services.CreateAsyncScope();
-            IMessageBus busA = scopeA.ServiceProvider.GetRequiredService<IMessageBus>();
-            Task<Result> taskA = busA.InvokeAsync<Result>(new RemoverCalendarioDiasUteisCommand(targetId));
-
-            await ConcorrenciaTestHelpers.WaitForBlockedBackendAsync(
-                api, taskA, [targetHolderPid], TimeSpan.FromSeconds(5));
-
-            await txTargetHolder.CommitAsync();
-            await txDecoyHolder.CommitAsync();
-            decoyHolderCommitted = true;
-
-            Func<Task> act = async () => await taskA;
-            await act.Should().ThrowAsync<DbUpdateConcurrencyException>(
-                "o xmin lido por busA ficou obsoleto assim que dbTargetHolder commitou a própria escrita na mesma linha (ADR-0119 — RemoverCalendarioDiasUteisCommandHandler propaga sem catch)");
-
-            await decoyBlockedTask;
-            await txDecoyBlocked.RollbackAsync();
-            decoyBlockedCleanedUp = true;
+                api, corrida.TarefaBloqueada, [corrida.HolderPid], TimeSpan.FromSeconds(5));
+            await VerificarCorridaDoCalendarioAsync(api, targetId, corrida);
         }
         finally
         {
-            // txDecoyHolder só aceita Rollback se ainda não foi commitado.
-            if (!decoyHolderCommitted)
-            {
-                await txDecoyHolder.RollbackAsync();
-            }
-
-            // decoyBlockedTask só é seguro aguardar/descartar depois que o
-            // lock que o prendia foi liberado — seja pelo commit acima, seja
-            // pelo rollback que acabou de rodar.
-            if (!decoyBlockedCleanedUp)
-            {
-                await decoyBlockedTask;
-                await txDecoyBlocked.RollbackAsync();
-            }
+            await LiberarCorridaAlheiaAsync(corrida);
         }
+    }
+
+    private static async Task VerificarCorridaDoCalendarioAsync(MonolitoApiFactory api, Guid targetId, CorridaAlheia corrida)
+    {
+        await using AsyncServiceScope scopeHolder = api.Services.CreateAsyncScope();
+        UniPlusDbContext dbHolder = scopeHolder.ServiceProvider.GetRequiredService<UniPlusDbContext>();
+        await using IDbContextTransaction txHolder = await dbHolder.Database.BeginTransactionAsync();
+        await AtualizarCalendarioAsync(dbHolder, targetId);
+        int holderPid = await ConcorrenciaTestHelpers.GetConnectionPidAsync(dbHolder);
+        await VerificarBloqueioAlheioIgnoradoAsync(api, holderPid);
+        await VerificarConflitoDeConcorrenciaAsync(api, targetId, holderPid, txHolder, corrida);
+    }
+
+    private static async Task VerificarBloqueioAlheioIgnoradoAsync(MonolitoApiFactory api, int holderPid)
+    {
+        Task taskThatNeverActuallyBlocks = Task.Delay(TimeSpan.FromMinutes(1));
+        Func<Task> waitWithoutBusA = () => ConcorrenciaTestHelpers.WaitForBlockedBackendAsync(
+            api, taskThatNeverActuallyBlocks, [holderPid], TimeSpan.FromMilliseconds(300));
+        await waitWithoutBusA.Should().ThrowAsync<FailException>(
+            "o decoy está bloqueado por outro holder — pg_blocking_pids não o correlaciona com targetHolderPid");
+    }
+
+    private static async Task VerificarConflitoDeConcorrenciaAsync(
+        MonolitoApiFactory api, Guid targetId, int holderPid, IDbContextTransaction txHolder, CorridaAlheia corrida)
+    {
+        await using AsyncServiceScope scope = api.Services.CreateAsyncScope();
+        IMessageBus bus = scope.ServiceProvider.GetRequiredService<IMessageBus>();
+        Task<Result> task = bus.InvokeAsync<Result>(new RemoverCalendarioDiasUteisCommand(targetId));
+        await ConcorrenciaTestHelpers.WaitForBlockedBackendAsync(api, task, [holderPid], TimeSpan.FromSeconds(5));
+        await txHolder.CommitAsync();
+        await corrida.TransacaoHolder.CommitAsync();
+        corrida.HolderCommitado = true;
+        Func<Task> act = async () => await task;
+        await act.Should().ThrowAsync<DbUpdateConcurrencyException>(
+            "o xmin lido por busA ficou obsoleto assim que dbTargetHolder commitou a própria escrita na mesma linha (ADR-0119 — RemoverCalendarioDiasUteisCommandHandler propaga sem catch)");
+        await FinalizarTransacaoBloqueadaAsync(corrida);
+    }
+
+    private static async Task LiberarCorridaAlheiaAsync(CorridaAlheia corrida)
+    {
+        if (!corrida.HolderCommitado)
+        {
+            await corrida.TransacaoHolder.RollbackAsync();
+        }
+
+        if (!corrida.BloqueadaFinalizada)
+        {
+            await FinalizarTransacaoBloqueadaAsync(corrida);
+        }
+    }
+
+    private static async Task FinalizarTransacaoBloqueadaAsync(CorridaAlheia corrida)
+    {
+        await corrida.TarefaBloqueada;
+        await corrida.TransacaoBloqueada.RollbackAsync();
+        corrida.BloqueadaFinalizada = true;
+    }
+
+    private sealed record CorridaAlheia(
+        IDbContextTransaction TransacaoHolder,
+        IDbContextTransaction TransacaoBloqueada,
+        Task TarefaBloqueada,
+        int HolderPid)
+    {
+        public bool HolderCommitado { get; set; }
+        public bool BloqueadaFinalizada { get; set; }
     }
 }

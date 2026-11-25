@@ -68,38 +68,18 @@ internal static class ConcorrenciaTestHelpers
 
         await using AsyncServiceScope pollScope = api.Services.CreateAsyncScope();
         UniPlusDbContext pollDb = pollScope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
-        int[] holderPids = [.. lockHolderPids];
+        await AguardarBloqueioAsync(pollDb, taskExpectedToBlock, [.. lockHolderPids], timeout ?? DefaultTimeout);
+    }
 
-        DateTimeOffset deadline = DateTimeOffset.UtcNow.Add(timeout ?? DefaultTimeout);
+    private static async Task AguardarBloqueioAsync(
+        UniPlusDbContext pollDb, Task taskExpectedToBlock, int[] holderPids, TimeSpan timeout)
+    {
+        DateTimeOffset deadline = DateTimeOffset.UtcNow.Add(timeout);
         while (DateTimeOffset.UtcNow < deadline)
         {
-            if (taskExpectedToBlock.IsCompleted)
-            {
-                Assert.Fail("A tarefa completou antes de bloquear no lock — a corrida não foi forçada como esperado.");
-            }
+            GarantirTarefaEmAndamento(taskExpectedToBlock);
 
-            // Sem exclusão de PID da própria conexão de poll: o backend que
-            // está executando ESTA query não pode estar simultaneamente em
-            // wait_event_type='Lock' (ele está rodando, não esperando), então
-            // a exclusão seria redundante — e, pior, arriscada: o EF Core não
-            // mantém a conexão física aberta entre comandos fora de uma
-            // transação explícita, então o PID capturado antes do loop podia
-            // já ter voltado ao pool do Npgsql e sido reaproveitado pelo
-            // PRÓPRIO handler sob teste, excluindo exatamente o backend que
-            // este método deveria encontrar.
-            int blockedBackends = await pollDb.Database
-                .SqlQuery<int>(
-                    $"""
-                    SELECT count(*)::int AS "Value" FROM pg_stat_activity psa
-                    WHERE psa.wait_event_type = 'Lock'
-                      AND EXISTS (
-                          SELECT 1 FROM unnest(pg_blocking_pids(psa.pid)) AS blocker(pid)
-                          WHERE blocker.pid = ANY({holderPids})
-                      )
-                    """)
-                .SingleAsync();
-
-            if (blockedBackends > 0)
+            if (await ExisteBackendBloqueadoAsync(pollDb, holderPids))
             {
                 return;
             }
@@ -108,6 +88,29 @@ internal static class ConcorrenciaTestHelpers
         }
 
         Assert.Fail("Nenhum backend bloqueado especificamente pelos seguradores do lock apareceu dentro do prazo — a corrida não foi forçada.");
+    }
+
+    private static void GarantirTarefaEmAndamento(Task taskExpectedToBlock)
+    {
+        if (taskExpectedToBlock.IsCompleted)
+        {
+            Assert.Fail("A tarefa completou antes de bloquear no lock — a corrida não foi forçada como esperado.");
+        }
+    }
+
+    private static async Task<bool> ExisteBackendBloqueadoAsync(UniPlusDbContext pollDb, int[] holderPids)
+    {
+        return await pollDb.Database
+            .SqlQuery<int>(
+                $"""
+                SELECT count(*)::int AS "Value" FROM pg_stat_activity psa
+                WHERE psa.wait_event_type = 'Lock'
+                  AND EXISTS (
+                      SELECT 1 FROM unnest(pg_blocking_pids(psa.pid)) AS blocker(pid)
+                      WHERE blocker.pid = ANY({holderPids})
+                  )
+                """)
+            .SingleAsync() > 0;
     }
 
     /// <summary>
