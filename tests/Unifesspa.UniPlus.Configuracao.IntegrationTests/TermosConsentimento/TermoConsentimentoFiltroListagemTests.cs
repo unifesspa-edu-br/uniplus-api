@@ -99,26 +99,22 @@ public sealed class TermoConsentimentoFiltroListagemTests
     public async Task Busca_EscapaCuringasLike()
     {
         string iso = NovoToken();
-        // Pares com o MESMO comprimento: sem escape, o curinga no termo casaria
-        // o caractere/sequência divergente do par, devolvendo o registro errado.
         Guid comUnderscore = await SeedAsync($"Alfa_{iso}");
         Guid soLetra = await SeedAsync($"AlfaX{iso}");
         Guid comPercent = await SeedAsync($"Beta%{iso}");
         Guid soSequencia = await SeedAsync($"BetaZZ{iso}");
         Guid comBarra = await SeedAsync($"Gama\\{iso}");
         Guid soLetraBarra = await SeedAsync($"GamaX{iso}");
+        await ConferirCuringaLiteralAsync($"Alfa_{iso}", comUnderscore, soLetra, "'_' deve ser literal, não curinga de 1 caractere");
+        await ConferirCuringaLiteralAsync($"Beta%{iso}", comPercent, soSequencia, "'%' deve ser literal, não curinga de sequência");
+        await ConferirCuringaLiteralAsync($"Gama\\{iso}", comBarra, soLetraBarra, "'\\' deve ser literal, não escape de LIKE do usuário");
+    }
 
-        IReadOnlyList<Guid> porUnderscore = await ListarIdsAsync($"Alfa_{iso}");
-        porUnderscore.Should().Contain(comUnderscore);
-        porUnderscore.Should().NotContain(soLetra, "'_' deve ser literal, não curinga de 1 caractere");
-
-        IReadOnlyList<Guid> porPercent = await ListarIdsAsync($"Beta%{iso}");
-        porPercent.Should().Contain(comPercent);
-        porPercent.Should().NotContain(soSequencia, "'%' deve ser literal, não curinga de sequência");
-
-        IReadOnlyList<Guid> porBarra = await ListarIdsAsync($"Gama\\{iso}");
-        porBarra.Should().Contain(comBarra);
-        porBarra.Should().NotContain(soLetraBarra, "'\\' deve ser literal, não escape de LIKE do usuário");
+    private async Task ConferirCuringaLiteralAsync(string busca, Guid comCuringa, Guid semCuringa, string motivo)
+    {
+        IReadOnlyList<Guid> resultado = await ListarIdsAsync(busca);
+        resultado.Should().Contain(comCuringa);
+        resultado.Should().NotContain(semCuringa, motivo);
     }
 
     [Fact(DisplayName = "Cursor avança sobre o conjunto filtrado sem incluir registros de fora do filtro")]
@@ -135,7 +131,12 @@ public sealed class TermoConsentimentoFiltroListagemTests
         List<Guid> esperados = [.. (await ListarIdsAsync(iso, TakeAlto)).OrderBy(id => id)];
         esperados.Should().BeEquivalentTo([t1, t2, t3]);
 
-        // Drena em páginas de 2 seguindo o keyset.
+        List<Guid> acumulado = await PercorrerPaginasAsync(iso, esperados.Count);
+        acumulado.Should().Equal(esperados, "o cursor deve percorrer só o conjunto filtrado, em ordem de Id");
+    }
+
+    private async Task<List<Guid>> PercorrerPaginasAsync(string iso, int quantidadeEsperada)
+    {
         List<Guid> acumulado = [];
         Guid? cursor = null;
         do
@@ -144,52 +145,53 @@ public sealed class TermoConsentimentoFiltroListagemTests
             acumulado.AddRange(pagina.Select(t => t.Id));
             cursor = pagina.Count == 2 ? pagina[^1].Id : null;
         }
-        while (cursor is not null && acumulado.Count < esperados.Count);
-
-        acumulado.Should().Equal(esperados, "o cursor deve percorrer só o conjunto filtrado, em ordem de Id");
+        while (cursor is not null && acumulado.Count < quantidadeEsperada);
+        return acumulado;
     }
 
     [Fact(DisplayName = "Navegação bidirecional com filtro: prev volta à página anterior com flags exatas")]
     public async Task Navegacao_Bidirecional_ComFiltro_FlagsExatas()
     {
         string iso = NovoToken();
-        // A ordem de criação NÃO é a ordem da página: o Id é um Guid v7, e v7 só ordena por tempo
-        // quando o carimbo difere — semeados no mesmo milissegundo, estes três ficam na ordem dos
-        // bits aleatórios, diferente a cada execução. Era essa premissa que tornava o teste
-        // intermitente.
-        Guid[] ids =
-        [
-            await SeedAsync($"BiDir {iso} 0"),
-            await SeedAsync($"BiDir {iso} 1"),
-            await SeedAsync($"BiDir {iso} 2"),
-        ];
-
-        // O conjunto filtrado na ordem em que a paginação o percorre. A pertinência é afirmada à
-        // parte — o filtro tem de trazer exatamente os três semeados — e só então a ordem deles
-        // serve de referência.
+        Guid[] ids = await CriarTermosParaNavegacaoAsync(iso);
         IReadOnlyList<Guid> ordenados = await ListarIdsAsync(iso);
         ordenados.Should().BeEquivalentTo(ids);
         ordenados.Should().BeInAscendingOrder(
             "a referência sai do mesmo método que as páginas, e sem esta asserção uma listagem que " +
             "devolvesse o conjunto fora de ordem casaria com páginas igualmente fora de ordem");
+        await ConferirNavegacaoBidirecionalAsync(iso, ordenados);
+    }
 
+    private async Task<Guid[]> CriarTermosParaNavegacaoAsync(string iso) =>
+    [
+        await SeedAsync($"BiDir {iso} 0"),
+        await SeedAsync($"BiDir {iso} 1"),
+        await SeedAsync($"BiDir {iso} 2"),
+    ];
+
+    private async Task ConferirNavegacaoBidirecionalAsync(string iso, IReadOnlyList<Guid> ordenados)
+    {
         (IReadOnlyList<TermoConsentimento> p1, Guid? p1Ant, Guid? p1Prox) =
             await PaginarAsync(iso, take: 2, afterId: null, PaginationDirection.Next);
         p1.Select(t => t.Id).Should().Equal(ordenados[0], ordenados[1]);
         p1Ant.Should().BeNull();
         p1Prox.Should().Be(ordenados[1]);
-
-        (IReadOnlyList<TermoConsentimento> ultima, Guid? ultAnt, Guid? ultProx) =
-            await PaginarAsync(iso, take: 2, afterId: p1Prox, PaginationDirection.Next);
-        ultima.Select(t => t.Id).Should().Equal(ordenados[2]);
-        ultProx.Should().BeNull();
-        ultAnt.Should().Be(ordenados[2]);
-
+        Guid? anterior = await ConferirUltimaPaginaAsync(iso, p1Prox, ordenados);
         (IReadOnlyList<TermoConsentimento> volta, Guid? voltaAnt, Guid? voltaProx) =
-            await PaginarAsync(iso, take: 2, afterId: ultAnt, PaginationDirection.Prev);
+            await PaginarAsync(iso, take: 2, afterId: anterior, PaginationDirection.Prev);
         volta.Select(t => t.Id).Should().Equal(ordenados[0], ordenados[1]);
         voltaAnt.Should().BeNull();
         voltaProx.Should().Be(ordenados[1]);
+    }
+
+    private async Task<Guid?> ConferirUltimaPaginaAsync(string iso, Guid? cursor, IReadOnlyList<Guid> ordenados)
+    {
+        (IReadOnlyList<TermoConsentimento> ultima, Guid? ultAnt, Guid? ultProx) =
+            await PaginarAsync(iso, take: 2, afterId: cursor, PaginationDirection.Next);
+        ultima.Select(t => t.Id).Should().Equal(ordenados[2]);
+        ultProx.Should().BeNull();
+        ultAnt.Should().Be(ordenados[2]);
+        return ultAnt;
     }
 
     [Fact(DisplayName = "Busca nula/vazia não restringe a listagem")]
