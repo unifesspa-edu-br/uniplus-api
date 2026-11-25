@@ -43,28 +43,37 @@ public sealed class PublicarAtoAvulsoEndpointTests
         Guid anexo = await SemearDocumentoAsync(api, processoId, TiposDeMidiaDeDocumento.Docx, "quadro.docx");
         string chave = Guid.CreateVersion7().ToString("N");
 
+        Guid atoId = await PublicarAvisoComAnexoAsync(client, processoId, principal, anexo, chave);
+        await AtoNoRegistroCentral.LerAsync(api, atoId);
+        (await ContarAtosAsync(api, processoId, "AVISO")).Should().Be(1, "a repetição devolve a resposta guardada e não registra outro ato");
+        await ExigirAvisoNaConsultaAsync(client, processoId, atoId, principal);
+        await ExigirAvisoNaPaginaPublicaAsync(client, processoId, atoId);
+    }
+
+    private static async Task<Guid> PublicarAvisoComAnexoAsync(HttpClient client, Guid processoId, Guid principal, Guid anexo, string chave)
+    {
         Guid atoId;
         using (HttpResponseMessage resposta = await PublicarAvisoAsync(client, processoId, principal, chave, anexos: [new { documentoId = anexo, nome = "Quadro de vagas" }]))
         {
             resposta.StatusCode.Should().Be(HttpStatusCode.Created, await resposta.Content.ReadAsStringAsync());
             atoId = (await resposta.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("atoId").GetGuid();
         }
+        using HttpResponseMessage repeticao = await PublicarAvisoAsync(client, processoId, principal, chave, anexos: [new { documentoId = anexo, nome = "Quadro de vagas" }]);
+        repeticao.StatusCode.Should().Be(HttpStatusCode.Created);
+        (await repeticao.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("atoId").GetGuid().Should().Be(atoId);
+        return atoId;
+    }
 
-        using (HttpResponseMessage repeticao = await PublicarAvisoAsync(client, processoId, principal, chave, anexos: [new { documentoId = anexo, nome = "Quadro de vagas" }]))
-        {
-            repeticao.StatusCode.Should().Be(HttpStatusCode.Created);
-            (await repeticao.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("atoId").GetGuid().Should().Be(atoId);
-        }
-
-        await AtoNoRegistroCentral.LerAsync(api, atoId);
-
-        (await ContarAtosAsync(api, processoId, "AVISO")).Should().Be(1, "a repetição devolve a resposta guardada e não registra outro ato");
-
+    private static async Task ExigirAvisoNaConsultaAsync(HttpClient client, Guid processoId, Guid atoId, Guid principal)
+    {
         JsonElement ato = (await ConsultarAtosAsync(client, processoId)).Single(a => a.GetProperty("id").GetGuid() == atoId);
         ato.GetProperty("documentoPrincipal").GetProperty("documentoAPublicarId").GetGuid().Should().Be(principal);
         ato.GetProperty("anexos").EnumerateArray().Should().ContainSingle()
             .Which.GetProperty("nomeDeExibicao").GetString().Should().Be("Quadro de vagas.docx");
+    }
 
+    private static async Task ExigirAvisoNaPaginaPublicaAsync(HttpClient client, Guid processoId, Guid atoId)
+    {
         JsonElement publicado = await AguardarNaPaginaPublicaAsync(client, processoId, atoId);
         JsonElement[] documentos = [.. publicado.GetProperty("documentos").EnumerateArray()];
         documentos.Select(d => d.GetProperty("papel").GetString()).Should().Equal("principal", "anexo");
@@ -78,27 +87,29 @@ public sealed class PublicarAtoAvulsoEndpointTests
         (Guid processoId, _) = await PublicarEditalAsync(api, client);
         Guid aviso = await PublicarEObterOAtoAsync(api, client, processoId);
 
-        Guid errata;
-        using (HttpResponseMessage primeira = await PublicarAvisoAsync(
-            client, processoId, await SemearDocumentoAsync(api, processoId, TiposDeMidiaDeDocumento.Pdf, "errata.pdf"), atoCorrigidoId: aviso, motivo: "Data errada"))
-        {
-            primeira.StatusCode.Should().Be(HttpStatusCode.Created, await primeira.Content.ReadAsStringAsync());
-            errata = (await primeira.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("atoId").GetGuid();
-        }
-
+        Guid errata = await PublicarPrimeiraErrataAsync(api, client, processoId, aviso);
         JsonElement naConsulta = (await ConsultarAtosAsync(client, processoId)).Single(a => a.GetProperty("id").GetGuid() == errata);
         naConsulta.GetProperty("atoCorrigidoId").GetGuid().Should().Be(aviso);
         naConsulta.GetProperty("motivoDaCorrecao").GetString().Should().Be("Data errada");
-
-        using (HttpResponseMessage segunda = await PublicarAvisoAsync(
-            client, processoId, await SemearDocumentoAsync(api, processoId, TiposDeMidiaDeDocumento.Pdf, "errata2.pdf"), atoCorrigidoId: aviso, motivo: "Outra"))
-        {
-            await ExigirProblemaAsync(segunda, "uniplus.selecao.ato_do_processo.ato_corrigido_ja_corrigido");
-        }
-
+        await ExigirRecusaDeSegundaErrataAsync(api, client, processoId, aviso);
         using HttpResponseMessage daErrata = await PublicarAvisoAsync(
-            client, processoId, await SemearDocumentoAsync(api, processoId, TiposDeMidiaDeDocumento.Pdf, "errata4.pdf"), atoCorrigidoId: errata, motivo: "Corrige a errata");
+            client, processoId, await SemearDocumentoAsync(api, processoId, TiposDeMidiaDeDocumento.Pdf, "errata4.pdf"), correcao: new(errata, "Corrige a errata"));
         daErrata.StatusCode.Should().Be(HttpStatusCode.Created, "a correção seguinte aponta o ato mais recente da cadeia");
+    }
+
+    private static async Task<Guid> PublicarPrimeiraErrataAsync(CascadingApiFactory api, HttpClient client, Guid processoId, Guid aviso)
+    {
+        using HttpResponseMessage primeira = await PublicarAvisoAsync(
+            client, processoId, await SemearDocumentoAsync(api, processoId, TiposDeMidiaDeDocumento.Pdf, "errata.pdf"), correcao: new(aviso, "Data errada"));
+        primeira.StatusCode.Should().Be(HttpStatusCode.Created, await primeira.Content.ReadAsStringAsync());
+        return (await primeira.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("atoId").GetGuid();
+    }
+
+    private static async Task ExigirRecusaDeSegundaErrataAsync(CascadingApiFactory api, HttpClient client, Guid processoId, Guid aviso)
+    {
+        using HttpResponseMessage segunda = await PublicarAvisoAsync(
+            client, processoId, await SemearDocumentoAsync(api, processoId, TiposDeMidiaDeDocumento.Pdf, "errata2.pdf"), correcao: new(aviso, "Outra"));
+        await ExigirProblemaAsync(segunda, "uniplus.selecao.ato_do_processo.ato_corrigido_ja_corrigido");
     }
 
     [Fact(DisplayName = "Duas correções simultâneas do mesmo ato: uma é aceita e a outra recusada, sem erro de servidor")]
@@ -111,8 +122,13 @@ public sealed class PublicarAtoAvulsoEndpointTests
             SemearDocumentoAsync(api, processoId, TiposDeMidiaDeDocumento.Pdf, $"errata{i}.pdf")))];
 
         HttpResponseMessage[] respostas = await Task.WhenAll(documentos.Select(d =>
-            PublicarAvisoAsync(client, processoId, d, atoCorrigidoId: aviso, motivo: "Corrida")));
+            PublicarAvisoAsync(client, processoId, d, correcao: new(aviso, "Corrida"))));
 
+        await ExigirResultadoDasCorrecoesAsync(respostas);
+    }
+
+    private static async Task ExigirResultadoDasCorrecoesAsync(HttpResponseMessage[] respostas)
+    {
         respostas.Select(r => r.StatusCode).Count(s => s == HttpStatusCode.Created).Should().Be(1);
         respostas.Where(r => r.StatusCode != HttpStatusCode.Created).Should().OnlyContain(r => r.StatusCode == HttpStatusCode.UnprocessableEntity);
         foreach (HttpResponseMessage resposta in respostas.Where(r => r.StatusCode != HttpStatusCode.Created))
@@ -166,7 +182,7 @@ public sealed class PublicarAtoAvulsoEndpointTests
         Guid avisoDoOutro = await PublicarEObterOAtoAsync(api, client, outroProcessoId);
 
         using HttpResponseMessage resposta = await PublicarAvisoAsync(
-            client, processoId, await SemearDocumentoAsync(api, processoId, TiposDeMidiaDeDocumento.Pdf, "errata.pdf"), atoCorrigidoId: avisoDoOutro, motivo: "Erro");
+            client, processoId, await SemearDocumentoAsync(api, processoId, TiposDeMidiaDeDocumento.Pdf, "errata.pdf"), correcao: new(avisoDoOutro, "Erro"));
 
         await ExigirProblemaAsync(resposta, "uniplus.selecao.ato_do_processo.ato_corrigido_de_outro_processo");
     }
@@ -178,7 +194,7 @@ public sealed class PublicarAtoAvulsoEndpointTests
         (Guid processoId, Guid editalAtoId) = await PublicarEditalAsync(api, client);
 
         using HttpResponseMessage resposta = await PublicarAvisoAsync(
-            client, processoId, await SemearDocumentoAsync(api, processoId, TiposDeMidiaDeDocumento.Pdf, "errata.pdf"), atoCorrigidoId: editalAtoId);
+            client, processoId, await SemearDocumentoAsync(api, processoId, TiposDeMidiaDeDocumento.Pdf, "errata.pdf"), correcao: new(editalAtoId, null));
 
         resposta.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
         JsonElement problema = await resposta.Content.ReadFromJsonAsync<JsonElement>();
@@ -193,7 +209,7 @@ public sealed class PublicarAtoAvulsoEndpointTests
         (Guid processoId, Guid editalAtoId) = await PublicarEditalAsync(api, client);
 
         using HttpResponseMessage resposta = await PublicarAvisoAsync(
-            client, processoId, await SemearDocumentoAsync(api, processoId, TiposDeMidiaDeDocumento.Pdf, "errata.pdf"), atoCorrigidoId: editalAtoId, motivo: "Erro");
+            client, processoId, await SemearDocumentoAsync(api, processoId, TiposDeMidiaDeDocumento.Pdf, "errata.pdf"), correcao: new(editalAtoId, "Erro"));
 
         await ExigirProblemaAsync(resposta, "uniplus.selecao.ato_do_processo.ato_corrigido_de_outra_classe");
     }
@@ -250,53 +266,9 @@ public sealed class PublicarAtoAvulsoEndpointTests
         return (api, api.CreateClient());
     }
 
-    /// <summary>Publica o edital de abertura pela API e espera a divulgação do certame, que o ato avulso exige.</summary>
-    internal static async Task<(Guid ProcessoId, Guid EditalAtoId)> PublicarEditalAsync(
-        CascadingApiFactory api,
-        HttpClient client,
-        IReadOnlyList<ProdutoDaFase>? produtosDaFase = null,
-        DateTimeOffset? fimDasInscricoes = null)
-    {
-        Guid processoId;
-        Guid documentoEdital;
-        await using (AsyncServiceScope escopo = api.Services.CreateAsyncScope())
-        {
-            (ProcessoSeletivo processo, DocumentoAPublicar documento) = await ProcessoSeletivoPublicavelSeeder.SemearAsync(escopo.ServiceProvider.GetRequiredService<UniPlusDbContext>(), new OpcoesDoProcessoSeletivoPublicavel { Nome = $"Atos avulsos {Guid.CreateVersion7()}", ProdutosDaFase = produtosDaFase, FimDasInscricoes = fimDasInscricoes });
-            processoId = processo.Id;
-            documentoEdital = documento.Id;
-        }
-
-        using HttpRequestMessage pedido = Autenticado(HttpMethod.Post, $"/api/selecao/processos-seletivos/{processoId}/publicacao");
-        pedido.Content = JsonContent.Create(new
-        {
-            numero = "001/2026",
-            documentoEditalId = documentoEdital,
-            ato = new
-            {
-                orgao = "CEPS",
-                serie = "EDITAL",
-                ano = 2026,
-                dataDoAto = HojeEmTexto(),
-                assinante = "Diretor do CEPS",
-                tipoAtoCodigo = DadosDoAtoDeTeste.TipoAbertura,
-            },
-        });
-        pedido.Headers.TryAddWithoutValidation("Idempotency-Key", Guid.CreateVersion7().ToString("N"));
-        (await client.SendAsync(pedido)).StatusCode.Should().Be(HttpStatusCode.NoContent);
-
-        Guid editalAtoId;
-        await using (AsyncServiceScope escopo = api.Services.CreateAsyncScope())
-        {
-            editalAtoId = await escopo.ServiceProvider.GetRequiredService<UniPlusDbContext>().VersoesConfiguracao.AsNoTracking()
-                .Where(v => v.ProcessoSeletivoId == processoId)
-                .Select(v => v.AtoCriadorId)
-                .SingleAsync();
-        }
-
-        await AtoNoRegistroCentral.LerAsync(api, editalAtoId);
-        await ExigirDivulgacaoAsync(api, processoId);
-        return (processoId, editalAtoId);
-    }
+    internal static Task<(Guid ProcessoId, Guid EditalAtoId)> PublicarEditalAsync(
+        CascadingApiFactory api, HttpClient client, IReadOnlyList<ProdutoDaFase>? produtosDaFase = null, DateTimeOffset? fimDasInscricoes = null) =>
+        PublicacaoDeAtosDeTeste.PublicarAsync(api, client, produtosDaFase, fimDasInscricoes);
 
     private static async Task<Guid> PublicarEObterOAtoAsync(CascadingApiFactory api, HttpClient client, Guid processoId)
     {
@@ -314,8 +286,7 @@ public sealed class PublicarAtoAvulsoEndpointTests
         Guid documentoPrincipal,
         string? chave = null,
         object[]? anexos = null,
-        Guid? atoCorrigidoId = null,
-        string? motivo = null,
+        CorrecaoDeAto? correcao = null,
         string tipo = DadosDoAtoDeTeste.TipoAviso)
     {
         HttpRequestMessage pedido = Autenticado(HttpMethod.Post, $"/api/selecao/processos-seletivos/{processoId}/atos");
@@ -327,8 +298,8 @@ public sealed class PublicarAtoAvulsoEndpointTests
             assinante = "Diretor do CEPS",
             documentoPrincipalId = documentoPrincipal,
             anexos,
-            atoCorrigidoId,
-            motivoDaCorrecao = motivo,
+            atoCorrigidoId = correcao?.AtoCorrigidoId,
+            motivoDaCorrecao = correcao?.Motivo,
         });
         pedido.Headers.TryAddWithoutValidation("Idempotency-Key", chave ?? Guid.CreateVersion7().ToString("N"));
         return client.SendAsync(pedido);
@@ -379,29 +350,8 @@ public sealed class PublicarAtoAvulsoEndpointTests
         return [.. (await resposta.Content.ReadFromJsonAsync<JsonElement>()).EnumerateArray().Select(static e => e.Clone())];
     }
 
-    /// <summary>O ato entra na divulgação ao ser publicado, mas os documentos dele só aparecem na página quando a cópia ao acervo público termina.</summary>
-    internal static async Task<JsonElement> AguardarNaPaginaPublicaAsync(HttpClient client, Guid processoId, Guid atoId)
-    {
-        DateTimeOffset limite = DateTimeOffset.UtcNow.AddSeconds(30);
-        while (true)
-        {
-            using HttpResponseMessage resposta = await client.GetAsync(new Uri($"/api/selecao/certames/{processoId}", UriKind.Relative));
-            if (resposta.StatusCode == HttpStatusCode.OK)
-            {
-                JsonElement certame = await resposta.Content.ReadFromJsonAsync<JsonElement>();
-                foreach (JsonElement edital in certame.GetProperty("editaisPublicados").EnumerateArray())
-                {
-                    if (edital.GetProperty("atoId").GetGuid() == atoId && edital.GetProperty("documentos").GetArrayLength() > 0)
-                    {
-                        return edital.Clone();
-                    }
-                }
-            }
-
-            DateTimeOffset.UtcNow.Should().BeBefore(limite, "os documentos do ato não chegaram à página pública do certame");
-            await Task.Delay(TimeSpan.FromMilliseconds(300));
-        }
-    }
+    internal static Task<JsonElement> AguardarNaPaginaPublicaAsync(HttpClient client, Guid processoId, Guid atoId) =>
+        PublicacaoDeAtosDeTeste.AguardarNaPaginaPublicaAsync(client, processoId, atoId);
 
     internal static async Task ExigirDivulgacaoAsync(CascadingApiFactory api, Guid processoId)
     {
@@ -429,3 +379,5 @@ public sealed class PublicarAtoAvulsoEndpointTests
         return documento.Id;
     }
 }
+
+internal sealed record CorrecaoDeAto(Guid AtoCorrigidoId, string? Motivo);

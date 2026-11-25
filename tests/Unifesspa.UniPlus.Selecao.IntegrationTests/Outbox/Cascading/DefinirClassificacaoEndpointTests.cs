@@ -37,16 +37,7 @@ using Unifesspa.UniPlus.Selecao.Domain.Enums;
 [Trait("Category", "OutboxCascading")]
 public sealed class DefinirClassificacaoEndpointTests
 {
-    private readonly CascadingFixture _fixture;
-
-    public DefinirClassificacaoEndpointTests(CascadingFixture fixture) => _fixture = fixture;
-
-    [Fact(DisplayName = "Corpo sem baseadoEmEnem é rejeitado com 400 — não vira false silencioso")]
-    public async Task SemBaseadoEmEnem_400()
-    {
-        Contexto ctx = await SemearRascunhoAsync(nameof(SemBaseadoEmEnem_400));
-
-        const string corpoSemCampo = """
+    private const string CorpoSemBaseadoEmEnem = """
             {
               "regraCalculoCodigo": "CLASSIFICACAO_IMPORTADA",
               "regraCalculoVersao": "v1",
@@ -59,7 +50,16 @@ public sealed class DefinirClassificacaoEndpointTests
             }
             """;
 
-        HttpResponseMessage resposta = await ctx.PutClassificacaoRawAsync(corpoSemCampo);
+    private readonly CascadingFixture _fixture;
+
+    public DefinirClassificacaoEndpointTests(CascadingFixture fixture) => _fixture = fixture;
+
+    [Fact(DisplayName = "Corpo sem baseadoEmEnem é rejeitado com 400 — não vira false silencioso")]
+    public async Task SemBaseadoEmEnem_400()
+    {
+        Contexto ctx = await SemearRascunhoAsync(nameof(SemBaseadoEmEnem_400));
+
+        HttpResponseMessage resposta = await ctx.PutClassificacaoRawAsync(CorpoSemBaseadoEmEnem);
 
         resposta.StatusCode.Should().Be(HttpStatusCode.BadRequest,
             "baseadoEmEnem omitido não pode desserializar como false implícito — o parâmetro é [JsonRequired]");
@@ -74,10 +74,7 @@ public sealed class DefinirClassificacaoEndpointTests
 
         resposta.StatusCode.Should().Be(HttpStatusCode.NoContent);
 
-        await using AsyncServiceScope scope = ctx.Api.Services.CreateAsyncScope();
-        UniPlusDbContext db = scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
-        ConfiguracaoClassificacao classificacao = await db.Set<ConfiguracaoClassificacao>().AsNoTracking()
-            .SingleAsync(c => c.ProcessoSeletivoId == ctx.ProcessoId);
+        ConfiguracaoClassificacao classificacao = await ClassificacaoPersistidaAsync(ctx);
         classificacao.BaseadoEmEnem.Should().BeFalse();
     }
 
@@ -90,10 +87,7 @@ public sealed class DefinirClassificacaoEndpointTests
 
         resposta.StatusCode.Should().Be(HttpStatusCode.NoContent);
 
-        await using AsyncServiceScope scope = ctx.Api.Services.CreateAsyncScope();
-        UniPlusDbContext db = scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
-        ConfiguracaoClassificacao classificacao = await db.Set<ConfiguracaoClassificacao>().AsNoTracking()
-            .SingleAsync(c => c.ProcessoSeletivoId == ctx.ProcessoId);
+        ConfiguracaoClassificacao classificacao = await ClassificacaoPersistidaAsync(ctx);
         classificacao.BaseadoEmEnem.Should().BeTrue();
     }
 
@@ -130,30 +124,9 @@ public sealed class DefinirClassificacaoEndpointTests
         HttpResponseMessage resposta = await ctx.PutClassificacaoAsync(CorpoEnemLocal(resolucao));
 
         resposta.StatusCode.Should().Be(HttpStatusCode.NoContent, await resposta.Content.ReadAsStringAsync());
-        (await QuadroCongeladoAsync(ctx)).Should().BeEquivalentTo(
-        [
-            ("HUMANISTICA_I", "REDACAO", 2.00m),
-            ("HUMANISTICA_II", "REDACAO", 2.00m),
-            ("SAUDE_E_BIOLOGICAS", "REDACAO", 2.00m),
-            ("TECNOLOGICA", "REDACAO", 2.00m),
-        ]);
+        await ConferirQuadroCongeladoCompletoAsync(ctx);
 
-        await using (AsyncServiceScope scope = ctx.Api.Services.CreateAsyncScope())
-        {
-            UniPlusDbContext config = scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
-            List<PesoAreaEnem> linhas = await config.PesosAreaEnem.Where(p => p.Resolucao == resolucao).ToListAsync();
-            PesoAreaEnem saude = linhas.Single(p => p.GrupoCurso.Codigo == GrupoCurso.SaudeEBiologicas);
-            saude.Atualizar(
-                [
-                    new AreaInformada(PesoAreaEnem.CodigoRedacao, 3.00m, 500m),
-                    new AreaInformada(PesoAreaEnem.CodigoCienciasDaNatureza, 1.50m, null),
-                    new AreaInformada(PesoAreaEnem.CodigoCienciasHumanas, 2.50m, null),
-                    new AreaInformada(PesoAreaEnem.CodigoLinguagens, 2.50m, null),
-                    new AreaInformada(PesoAreaEnem.CodigoMatematica, 1.50m, null),
-                ],
-                "Resolução nº 805/2024/Consepe – Anexo I (alterada)").IsSuccess.Should().BeTrue();
-            await config.SaveChangesAsync();
-        }
+        await AlterarPesoDeSaudeNoCadastroAsync(ctx, resolucao);
 
         (await QuadroCongeladoAsync(ctx)).Should().Contain(("SAUDE_E_BIOLOGICAS", "REDACAO", 2.00m),
             "o processo guarda a cópia feita quando a classificação foi definida; o cadastro editado não o alcança");
@@ -169,16 +142,9 @@ public sealed class DefinirClassificacaoEndpointTests
         HttpResponseMessage resposta = await ctx.PutClassificacaoAsync(CorpoEnemLocal(resolucao));
 
         resposta.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
-        using JsonDocument problema = JsonDocument.Parse(await resposta.Content.ReadAsStringAsync());
-        string[] textos = [.. Textos(problema.RootElement)];
-        textos.Should().Contain("uniplus.selecao.configuracao_classificacao.resolucao_peso_area_enem_incompleta");
-        textos.Should().Contain(texto => texto.Contains("Saúde e Biológicas", StringComparison.Ordinal),
-            "sem o nome do grupo o operador não sabe o que cadastrar");
+        await ConferirGrupoAusenteAsync(resposta);
 
-        await using AsyncServiceScope scope = ctx.Api.Services.CreateAsyncScope();
-        UniPlusDbContext db = scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
-        ConfiguracaoClassificacao classificacao = await db.Set<ConfiguracaoClassificacao>().AsNoTracking()
-            .SingleAsync(c => c.ProcessoSeletivoId == ctx.ProcessoId);
+        ConfiguracaoClassificacao classificacao = await ClassificacaoPersistidaAsync(ctx);
         classificacao.BaseadoEmEnem.Should().BeFalse("a recusa não grava nada: fica a classificação que o processo já tinha");
     }
 
@@ -193,10 +159,7 @@ public sealed class DefinirClassificacaoEndpointTests
         HttpResponseMessage resposta = await ctx.PutClassificacaoAsync(CorpoEnemLocal(decomposta));
 
         resposta.StatusCode.Should().Be(HttpStatusCode.NoContent, await resposta.Content.ReadAsStringAsync());
-        await using AsyncServiceScope scope = ctx.Api.Services.CreateAsyncScope();
-        UniPlusDbContext db = scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
-        ConfiguracaoClassificacao classificacao = await db.Set<ConfiguracaoClassificacao>().AsNoTracking()
-            .SingleAsync(c => c.ProcessoSeletivoId == ctx.ProcessoId);
+        ConfiguracaoClassificacao classificacao = await ClassificacaoPersistidaAsync(ctx);
         classificacao.ResolucaoPesoAreaEnem.Should().Be(doCadastro);
     }
 
@@ -238,11 +201,57 @@ public sealed class DefinirClassificacaoEndpointTests
         resposta.StatusCode.Should().Be(HttpStatusCode.NoContent);
         (await QuadroCongeladoAsync(ctx)).Should().BeEmpty("sem ENEM não há quadro, e nenhum grupo fica órfão");
 
+        ConfiguracaoClassificacao classificacao = await ClassificacaoPersistidaAsync(ctx);
+        classificacao.ResolucaoPesoAreaEnem.Should().BeNull();
+    }
+
+    private static async Task ConferirGrupoAusenteAsync(HttpResponseMessage resposta)
+    {
+        using JsonDocument problema = JsonDocument.Parse(await resposta.Content.ReadAsStringAsync());
+        string[] textos = [.. Textos(problema.RootElement)];
+        textos.Should().Contain("uniplus.selecao.configuracao_classificacao.resolucao_peso_area_enem_incompleta");
+        textos.Should().Contain(texto => texto.Contains("Saúde e Biológicas", StringComparison.Ordinal),
+            "sem o nome do grupo o operador não sabe o que cadastrar");
+    }
+
+    private static async Task ConferirQuadroCongeladoCompletoAsync(Contexto ctx)
+    {
+        (await QuadroCongeladoAsync(ctx)).Should().BeEquivalentTo(
+        [
+            ("HUMANISTICA_I", "REDACAO", 2.00m),
+            ("HUMANISTICA_II", "REDACAO", 2.00m),
+            ("SAUDE_E_BIOLOGICAS", "REDACAO", 2.00m),
+            ("TECNOLOGICA", "REDACAO", 2.00m),
+        ]);
+    }
+
+    private static async Task AlterarPesoDeSaudeNoCadastroAsync(Contexto ctx, string resolucao)
+    {
+        await using AsyncServiceScope scope = ctx.Api.Services.CreateAsyncScope();
+        UniPlusDbContext config = scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
+        List<PesoAreaEnem> linhas = await config.PesosAreaEnem.Where(p => p.Resolucao == resolucao).ToListAsync();
+        PesoAreaEnem saude = linhas.Single(p => p.GrupoCurso.Codigo == GrupoCurso.SaudeEBiologicas);
+        saude.Atualizar(
+            AreasDeSaudeAlteradas(),
+            "Resolução nº 805/2024/Consepe – Anexo I (alterada)").IsSuccess.Should().BeTrue();
+        await config.SaveChangesAsync();
+    }
+
+    private static AreaInformada[] AreasDeSaudeAlteradas() =>
+    [
+        new(PesoAreaEnem.CodigoRedacao, 3.00m, 500m),
+        new(PesoAreaEnem.CodigoCienciasDaNatureza, 1.50m, null),
+        new(PesoAreaEnem.CodigoCienciasHumanas, 2.50m, null),
+        new(PesoAreaEnem.CodigoLinguagens, 2.50m, null),
+        new(PesoAreaEnem.CodigoMatematica, 1.50m, null),
+    ];
+
+    private static async Task<ConfiguracaoClassificacao> ClassificacaoPersistidaAsync(Contexto ctx)
+    {
         await using AsyncServiceScope scope = ctx.Api.Services.CreateAsyncScope();
         UniPlusDbContext db = scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
-        ConfiguracaoClassificacao classificacao = await db.Set<ConfiguracaoClassificacao>().AsNoTracking()
+        return await db.Set<ConfiguracaoClassificacao>().AsNoTracking()
             .SingleAsync(c => c.ProcessoSeletivoId == ctx.ProcessoId);
-        classificacao.ResolucaoPesoAreaEnem.Should().BeNull();
     }
 
     /// <summary>
@@ -300,10 +309,7 @@ public sealed class DefinirClassificacaoEndpointTests
 
     private static async Task<decimal?> EscalaPersistidaAsync(Contexto ctx)
     {
-        await using AsyncServiceScope scope = ctx.Api.Services.CreateAsyncScope();
-        UniPlusDbContext db = scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
-        ConfiguracaoClassificacao classificacao = await db.Set<ConfiguracaoClassificacao>().AsNoTracking()
-            .SingleAsync(c => c.ProcessoSeletivoId == ctx.ProcessoId);
+        ConfiguracaoClassificacao classificacao = await ClassificacaoPersistidaAsync(ctx);
         return classificacao.EscalaNotaFinal;
     }
 

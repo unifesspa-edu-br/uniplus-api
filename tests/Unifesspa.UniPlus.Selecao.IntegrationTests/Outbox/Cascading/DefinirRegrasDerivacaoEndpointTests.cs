@@ -42,32 +42,13 @@ public sealed class DefinirRegrasDerivacaoEndpointTests
         // A condição cita COR_RACA, que o formulário de inscrição coleta na seção do conjunto básico.
         (await ctx.PutFatosAsync([])).StatusCode.Should().Be(HttpStatusCode.NoContent);
 
-        object[] corpo =
-        [
-            new
-            {
-                codigoFato = Derivado,
-                regras = new object[]
-                {
-                    new
-                    {
-                        ordem = 0,
-                        contribui = (string?)null,
-                        quando = new[] { new[] { new { fato = "COR_RACA", operador = "IGUAL", valor = "PRETA" } } },
-                    },
-                },
-            },
-        ];
+        object[] corpo = RegrasComCondicaoDeCorRaca();
 
         HttpResponseMessage resposta = await ctx.PutRegrasAsync(corpo);
 
         resposta.StatusCode.Should().Be(HttpStatusCode.NoContent);
 
-        await using AsyncServiceScope scope = ctx.Api.Services.CreateAsyncScope();
-        UniPlusDbContext db = scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
-        List<ConfiguracaoDerivacaoFato> configs = await db.Set<ConfiguracaoDerivacaoFato>().AsNoTracking()
-            .Where(c => c.ProcessoSeletivoId == ctx.ProcessoId).ToListAsync();
-        configs.Select(c => c.CodigoFato).Should().BeEquivalentTo([Derivado]);
+        await VerificarDerivacaoGravadaAsync(ctx);
     }
 
     [Fact(DisplayName = "A modalidade do candidato, que sai das modalidades ofertadas, é recusada com 422")]
@@ -75,14 +56,7 @@ public sealed class DefinirRegrasDerivacaoEndpointTests
     {
         Contexto ctx = await SemearRascunhoAsync(nameof(Rascunho_DerivacaoDaOferta_422));
 
-        object[] corpo =
-        [
-            new
-            {
-                codigoFato = "MODALIDADE",
-                regras = new object[] { new { ordem = 0, contribui = "AC", quando = (object?)null } },
-            },
-        ];
+        object[] corpo = RegraDeModalidadeDaOferta();
 
         HttpResponseMessage resposta = await ctx.PutRegrasAsync(corpo);
 
@@ -115,14 +89,7 @@ public sealed class DefinirRegrasDerivacaoEndpointTests
         Contexto ctx = await SemearRascunhoAsync(nameof(Publicado_Recusa_422));
         await ctx.PublicarAsync();
 
-        object[] corpo =
-        [
-            new
-            {
-                codigoFato = Derivado,
-                regras = new object[] { new { ordem = 0, contribui = (string?)null, quando = (object?)null } },
-            },
-        ];
+        object[] corpo = RegraSemCondicao();
 
         HttpResponseMessage resposta = await ctx.PutRegrasAsync(corpo);
 
@@ -133,14 +100,7 @@ public sealed class DefinirRegrasDerivacaoEndpointTests
     public async Task Rascunho_ReplayIdempotente_204()
     {
         Contexto ctx = await SemearRascunhoAsync(nameof(Rascunho_ReplayIdempotente_204));
-        object[] corpo =
-        [
-            new
-            {
-                codigoFato = Derivado,
-                regras = new object[] { new { ordem = 0, contribui = (string?)null, quando = (object?)null } },
-            },
-        ];
+        object[] corpo = RegraSemCondicao();
         string chave = MakeIdempotencyKey();
 
         (await ctx.PutRegrasAsync(corpo, idempotencyKey: chave)).StatusCode.Should().Be(HttpStatusCode.NoContent);
@@ -156,7 +116,7 @@ public sealed class DefinirRegrasDerivacaoEndpointTests
         Contexto ctx = await SemearRascunhoAsync(nameof(SemAutenticacao_401));
 
         HttpResponseMessage resposta = await ctx.PutRegrasAsync(
-            [new { codigoFato = Derivado, regras = new object[] { new { ordem = 0, contribui = (string?)null, quando = (object?)null } } }],
+            RegraSemCondicao(),
             autenticar: Autenticacao.Nenhuma);
 
         resposta.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
@@ -168,11 +128,55 @@ public sealed class DefinirRegrasDerivacaoEndpointTests
         Contexto ctx = await SemearRascunhoAsync(nameof(SemConcessao_404));
 
         HttpResponseMessage resposta = await ctx.PutRegrasAsync(
-            [new { codigoFato = Derivado, regras = new object[] { new { ordem = 0, contribui = (string?)null, quando = (object?)null } } }],
+            RegraSemCondicao(),
             autenticar: Autenticacao.PapelErrado);
 
         resposta.StatusCode.Should().Be(HttpStatusCode.NotFound);
     }
+
+    private static object[] RegrasComCondicaoDeCorRaca() =>
+    [
+        new
+        {
+            codigoFato = Derivado,
+            regras = new object[]
+            {
+                new
+                {
+                    ordem = 0,
+                    contribui = (string?)null,
+                    quando = new[] { new[] { new { fato = "COR_RACA", operador = "IGUAL", valor = "PRETA" } } },
+                },
+            },
+        },
+    ];
+
+    private static async Task VerificarDerivacaoGravadaAsync(Contexto ctx)
+    {
+        await using AsyncServiceScope scope = ctx.Api.Services.CreateAsyncScope();
+        UniPlusDbContext db = scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
+        List<ConfiguracaoDerivacaoFato> configs = await db.Set<ConfiguracaoDerivacaoFato>().AsNoTracking()
+            .Where(c => c.ProcessoSeletivoId == ctx.ProcessoId).ToListAsync();
+        configs.Select(c => c.CodigoFato).Should().BeEquivalentTo([Derivado]);
+    }
+
+    private static object[] RegraDeModalidadeDaOferta() =>
+    [
+        new
+        {
+            codigoFato = "MODALIDADE",
+            regras = new object[] { new { ordem = 0, contribui = "AC", quando = (object?)null } },
+        },
+    ];
+
+    private static object[] RegraSemCondicao() =>
+    [
+        new
+        {
+            codigoFato = Derivado,
+            regras = new object[] { new { ordem = 0, contribui = (string?)null, quando = (object?)null } },
+        },
+    ];
 
     private enum Autenticacao
     {
@@ -212,20 +216,7 @@ public sealed class DefinirRegrasDerivacaoEndpointTests
                 HttpMethod.Post,
                 new Uri($"/api/selecao/processos-seletivos/{ProcessoId}/publicacao", UriKind.Relative))
             {
-                Content = JsonContent.Create(new
-                {
-                    numero = "001/2026",
-                    documentoEditalId = DocumentoId,
-                    ato = new
-                    {
-                        orgao = "CEPS",
-                        serie = "EDITAL",
-                        ano = 2026,
-                        dataDoAto = Hoje(),
-                        assinante = "Diretor do CEPS",
-                        tipoAtoCodigo = "EDITAL_ABERTURA",
-                    },
-                }),
+                Content = JsonContent.Create(ApoioDaPublicacaoDoProcessoSeletivo.NovoCorpoPublicacao(DocumentoId, "001/2026")),
             };
             Autenticar(publicar, Autenticacao.PlataformaAdmin);
             publicar.Headers.TryAddWithoutValidation("Idempotency-Key", MakeIdempotencyKey());
@@ -240,18 +231,18 @@ public sealed class DefinirRegrasDerivacaoEndpointTests
         await TiposDeAtoSeeder.SemearAsync(api.Services);
         HttpClient client = api.CreateClient();
 
-        Guid processoId;
-        Guid documentoId;
-        await using (AsyncServiceScope scope = api.Services.CreateAsyncScope())
-        {
-            UniPlusDbContext db = scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
-            (ProcessoSeletivo processo, DocumentoAPublicar documento) = await ProcessoSeletivoPublicavelSeeder
-                .SemearAsync(db, new OpcoesDoProcessoSeletivoPublicavel { Nome = $"{nome} {Guid.CreateVersion7()}" });
-            processoId = processo.Id;
-            documentoId = documento.Id;
-        }
+        (Guid processoId, Guid documentoId) = await SemearProcessoAsync(api, nome);
 
         return new Contexto(api, client, processoId, documentoId);
+    }
+
+    private static async Task<(Guid ProcessoId, Guid DocumentoId)> SemearProcessoAsync(CascadingApiFactory api, string nome)
+    {
+        await using AsyncServiceScope scope = api.Services.CreateAsyncScope();
+        UniPlusDbContext db = scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
+        (ProcessoSeletivo processo, DocumentoAPublicar documento) = await ProcessoSeletivoPublicavelSeeder
+            .SemearAsync(db, new OpcoesDoProcessoSeletivoPublicavel { Nome = $"{nome} {Guid.CreateVersion7()}" });
+        return (processo.Id, documento.Id);
     }
 
     private static void Autenticar(HttpRequestMessage request, Autenticacao autenticacao)
@@ -267,9 +258,6 @@ public sealed class DefinirRegrasDerivacaoEndpointTests
             TestAuthHandler.RolesHeader,
             autenticacao == Autenticacao.PlataformaAdmin ? "plataforma-admin" : "consulta-publica");
     }
-
-    private static string Hoje() =>
-        DateOnly.FromDateTime(DateTime.UtcNow).ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
 
     private static string HojeMais(int dias) =>
         DateOnly.FromDateTime(DateTime.UtcNow.AddDays(dias)).ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);

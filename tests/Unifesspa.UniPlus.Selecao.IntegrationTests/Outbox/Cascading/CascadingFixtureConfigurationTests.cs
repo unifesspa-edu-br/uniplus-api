@@ -30,6 +30,11 @@ public sealed class CascadingFixtureConfigurationTests
 
     public CascadingFixtureConfigurationTests(CascadingFixture fixture) => _fixture = fixture;
 
+    // Sem expor a connection string completa em logs/asserts — apenas
+    // validar marcadores estruturais. A MonolitoPostgresFixtureBase cria o
+    // testcontainer com Username="uniplus_test" (distinto do usuário "uniplus"
+    // do appsettings.Development), então a presença de uniplus_test prova que
+    // a connection string efetiva veio do testcontainer e não do appsettings.
     [Fact(DisplayName = "IConfiguration efetiva expõe a connection string do testcontainer Postgres")]
     public void Configuration_ExpoeConnectionStringDoTestcontainer()
     {
@@ -40,11 +45,6 @@ public sealed class CascadingFixtureConfigurationTests
         connectionString.Should().NotBeNullOrWhiteSpace(
             because: "ConnectionStrings__UniPlusDb deve ter sido injetada pela fixture via env var; "
             + "se ficou vazia, o registro do contexto único não conseguiria configurar o DbContext.");
-        // Sem expor a connection string completa em logs/asserts — apenas
-        // validar marcadores estruturais. A MonolitoPostgresFixtureBase cria o
-        // testcontainer com Username="uniplus_test" (distinto do usuário "uniplus"
-        // do appsettings.Development), então a presença de uniplus_test prova que
-        // a connection string efetiva veio do testcontainer e não do appsettings.
         connectionString.Should().Contain("uniplus_test",
             because: "a fixture cria o testcontainer com WithUsername(\"uniplus_test\"); "
             + "se o usuário divergir, a config efetiva não está vindo do testcontainer.");
@@ -64,4 +64,6 @@ public sealed class CascadingFixtureConfigurationTests
             + "o Wolverine inicializaria o transporte Kafka e ficaria em retry indefinido — a fixture não provisiona "
             + "broker Kafka, então o transporte tem que estar desligado.");
     }
+
+
 }

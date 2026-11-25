@@ -32,6 +32,12 @@ internal static class TiposDeEtapaSeeder
             return;
         }
 
+        db.TiposEtapa.Add(CriarTipoDeEtapa(codigo));
+        await db.SaveChangesAsync().ConfigureAwait(false);
+    }
+
+    private static TipoEtapa CriarTipoDeEtapa(string codigo)
+    {
         Result<TipoEtapa> tipo = TipoEtapa.Criar(
             codigo, "Entrevista", null, admitePontuacao: true, admiteEliminacao: true, exigeCorrecaoIndependente: false);
         if (tipo.IsFailure)
@@ -40,7 +46,6 @@ internal static class TiposDeEtapaSeeder
                 $"Tipo de etapa '{codigo}' recusado pelo domínio: {tipo.Error?.Message}");
         }
 
-        db.TiposEtapa.Add(tipo.Value!);
-        await db.SaveChangesAsync().ConfigureAwait(false);
+        return tipo.Value!;
     }
 }

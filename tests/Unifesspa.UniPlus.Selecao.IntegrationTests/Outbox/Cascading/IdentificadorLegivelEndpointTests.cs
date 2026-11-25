@@ -1,6 +1,5 @@
 namespace Unifesspa.UniPlus.Selecao.IntegrationTests.Outbox.Cascading;
 
-using System.Globalization;
 using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
@@ -140,20 +139,7 @@ public sealed class IdentificadorLegivelEndpointTests
     {
         using HttpRequestMessage request = new(HttpMethod.Post, new Uri($"{Rota}/{processoId}/publicacao", UriKind.Relative))
         {
-            Content = JsonContent.Create(new
-            {
-                numero = "001/2026",
-                documentoEditalId = documentoId,
-                ato = new
-                {
-                    orgao = "CEPS",
-                    serie = "EDITAL",
-                    ano = 2026,
-                    dataDoAto = DateOnly.FromDateTime(DateTime.UtcNow).ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
-                    assinante = "Diretor do CEPS",
-                    tipoAtoCodigo = "EDITAL_ABERTURA",
-                },
-            }),
+            Content = JsonContent.Create(ApoioDaPublicacaoDoProcessoSeletivo.NovoCorpoPublicacao(documentoId, "001/2026")),
         };
         AppendTestAuth(request);
         request.Headers.TryAddWithoutValidation("Idempotency-Key", MakeIdempotencyKey());
