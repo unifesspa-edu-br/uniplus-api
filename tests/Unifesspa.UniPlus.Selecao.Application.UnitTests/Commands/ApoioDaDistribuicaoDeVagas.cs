@@ -73,7 +73,7 @@ internal static class ApoioDaDistribuicaoDeVagas
 
     internal static ProcessoSeletivo NovoProcesso(TipoProcessoSnapshot? tipo = null) =>
         ProcessoSeletivo.Criar(
-            "Processo 2026", tipo ?? TiposDeProcessoDeTeste.PSIQ, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(),
+            "Processo 2026", tipo ?? TiposDeProcessoDeTeste.IndigenaEQuilombola, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(),
             UnidadeAdministradoraSnapshot.Criar("CEPS", "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!,
             LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
 

@@ -140,7 +140,7 @@ public sealed class CriacaoDoProcessoLiberaAChaveEndpointTests : IAsyncLifetime
         await using AsyncServiceScope escopo = _fixture.Factory.Services.CreateAsyncScope();
         UniPlusDbContext config = escopo.ServiceProvider.GetRequiredService<UniPlusDbContext>();
         Guid tipoProcessoId = await config.TiposProcesso
-            .Where(tipo => tipo.Codigo == "SiSU" && tipo.Ativo)
+            .Where(tipo => tipo.Codigo == "SISU" && tipo.Ativo)
             .Select(tipo => tipo.Id)
             .SingleAsync();
         return (unidadeId, tipoProcessoId);

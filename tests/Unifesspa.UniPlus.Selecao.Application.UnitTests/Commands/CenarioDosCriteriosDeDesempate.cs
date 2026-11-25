@@ -50,7 +50,7 @@ internal sealed class CenarioDosCriteriosDeDesempate
 
     public static ProcessoSeletivo ProcessoComClassificacaoEnem()
     {
-        ProcessoSeletivo processo = NovoProcesso("PS ENEM 2027", TiposDeProcessoDeTeste.PSIQ);
+        ProcessoSeletivo processo = NovoProcesso("PS ENEM 2027", TiposDeProcessoDeTeste.IndigenaEQuilombola);
         processo.DefinirClassificacao(ConfiguracaoClassificacao.Criar(new DeclaracaoDaClassificacao
         {
             RegraCalculo = ReferenciaRegra.De(RegraDeCalculoDaNota.MediaPonderada.Codigo(), "v1", new string('a', 64)),

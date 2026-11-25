@@ -13,7 +13,7 @@ internal static class EtapaDeAtendimentoBuilder
     internal static ProcessoSeletivo CriarProcesso(IReadOnlyList<NivelDeAtendimento> niveis, IReadOnlyList<ItemDeAvaliacaoDeclarado> itens)
     {
         ProcessoSeletivo processo = ProcessoSeletivo.Criar(
-            $"Processo {Guid.CreateVersion7()}", TiposDeProcessoDeTeste.SiSU, OrigemCandidatos.InscricaoPropria, Guid.CreateVersion7(),
+            $"Processo {Guid.CreateVersion7()}", TiposDeProcessoDeTeste.Sisu, OrigemCandidatos.InscricaoPropria, Guid.CreateVersion7(),
             UnidadeAdministradoraSnapshot.Criar("CEPS", "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!,
             LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
         processo.DefinirEtapas([CriarEtapa(niveis, itens)]).IsSuccess.Should().BeTrue();

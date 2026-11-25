@@ -28,7 +28,7 @@ public sealed class DefinirDistribuicaoVagasCommandHandlerTests
     [Fact(DisplayName = "Handle com lista vazia devolve a causa de domínio, não a recusa de forma")]
     public async Task Handle_ListaVazia_DevolveCausaDeDominio()
     {
-        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PSIQ 2026", TiposDeProcessoDeTeste.PSIQ, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
+        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PSIQ 2026", TiposDeProcessoDeTeste.IndigenaEQuilombola, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
         Mocks mocks = NovosMocks(processo, processo.Id);
         DefinirDistribuicaoVagasCommand command = new(processo.Id, []);
 
@@ -59,7 +59,7 @@ public sealed class DefinirDistribuicaoVagasCommandHandlerTests
     [Fact(DisplayName = "Handle institucional (sem referência demográfica) persiste")]
     public async Task Handle_Institucional_Persiste()
     {
-        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PSIQ 2026", TiposDeProcessoDeTeste.PSIQ, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
+        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PSIQ 2026", TiposDeProcessoDeTeste.IndigenaEQuilombola, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
         Guid ofertaCursoId = Guid.CreateVersion7();
         Guid modalidadeId = Guid.CreateVersion7();
         Mocks mocks = NovosMocks(processo, processo.Id);
@@ -76,7 +76,7 @@ public sealed class DefinirDistribuicaoVagasCommandHandlerTests
     [Fact(DisplayName = "Handle Lei 12.711 resolve a referência demográfica e persiste")]
     public async Task Handle_Lei12711_ResolveReferenciaDemografica_Persiste()
     {
-        ProcessoSeletivo processo = ProcessoSeletivo.Criar("SiSU 2026", TiposDeProcessoDeTeste.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
+        ProcessoSeletivo processo = ProcessoSeletivo.Criar("SiSU 2026", TiposDeProcessoDeTeste.Sisu, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
         Guid ofertaCursoId = Guid.CreateVersion7();
         Guid referenciaId = Guid.CreateVersion7();
         (string Codigo, Guid Id)[] federaisMaisAc = ModalidadesFederais();

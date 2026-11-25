@@ -19,7 +19,7 @@ public sealed class ProcessoSeletivoRegraDeComprovacaoConferenciasTests
     private static readonly FormatosPermitidos Qualquer = FormatosPermitidos.Criar(true, null).Value!;
 
     private static ProcessoSeletivo NovoProcesso() =>
-        ProcessoSeletivo.Criar("PS Conferências de Grupo", TiposDeProcessoDeTeste.SiSU, OrigemCandidatos.ImportacaoExterna, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
+        ProcessoSeletivo.Criar("PS Conferências de Grupo", TiposDeProcessoDeTeste.Sisu, OrigemCandidatos.ImportacaoExterna, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
 
     private static FaseCronograma NovaFase(Guid faseCanonicaOrigemId, bool permiteComplementacao) => FaseCronograma.Criar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("fase").Value!,
         OrigensCanonicasDeTeste.ComNome(new OrigemCanonicaDaFase(

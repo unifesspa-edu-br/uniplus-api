@@ -31,7 +31,7 @@ public sealed class TiposDeProcessoSoComoConfiguracaoTests
     public void ConsultaEnxergaOsTiposFixosDoSuporteDeTeste()
     {
         PropriedadesEstaticasDeTipoDeProcesso(ArquiteturaDoSuporteDeTeste, "Unifesspa.UniPlus.Testes.Compartilhado").Select(nome => nome.Split('.')[^1].Split(' ')[0])
-            .Should().Contain(["SiSU", "PSIQ", "PSECampo", "PSVR", "TransferenciaInterna", "TransferenciaExterna", "PortadorDiploma", "Reopcao"]);
+            .Should().Contain(["Sisu", "IndigenaEQuilombola", "EducacaoDoCampo", "VagasRemanescentes", "TransferenciaInterna", "TransferenciaExterna", "PortadorDeDiploma", "Reopcao"]);
     }
 
     private static IEnumerable<string> PropriedadesEstaticasDeTipoDeProcesso(Architecture arquitetura, string escopo)

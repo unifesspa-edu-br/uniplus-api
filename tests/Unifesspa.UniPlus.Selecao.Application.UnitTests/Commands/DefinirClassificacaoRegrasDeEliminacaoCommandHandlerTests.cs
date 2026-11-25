@@ -24,7 +24,7 @@ public sealed class DefinirClassificacaoRegrasDeEliminacaoCommandHandlerTests
     [Fact(DisplayName = "Handle com ELIMINACAO_NOTA_MINIMA_ETAPA resolve parâmetros e persiste")]
     public async Task Handle_ComEliminacaoNotaMinimaEtapa_Persiste()
     {
-        ProcessoSeletivo processo = NovoProcesso("PS Convênios 2026", TiposDeProcessoDeTeste.PSIQ);
+        ProcessoSeletivo processo = NovoProcesso("PS Convênios 2026", TiposDeProcessoDeTeste.IndigenaEQuilombola);
         EtapaProcesso etapa = EtapaObjetiva();
         processo.DefinirEtapas([etapa]);
         CenarioDaClassificacao cenario = CenarioComEliminacao(processo, RegraDeEliminacaoPorCalculo.NotaMinimaNaEtapa.Codigo());
@@ -40,7 +40,7 @@ public sealed class DefinirClassificacaoRegrasDeEliminacaoCommandHandlerTests
     [Fact(DisplayName = "Handle com ELIMINACAO_NOTA_MINIMA_ETAPA sem EtapaRef/NotaMinima recusa")]
     public async Task Handle_EliminacaoSemEtapaRef_Recusa()
     {
-        ProcessoSeletivo processo = NovoProcesso("PSIQ 2026", TiposDeProcessoDeTeste.PSIQ);
+        ProcessoSeletivo processo = NovoProcesso("PSIQ 2026", TiposDeProcessoDeTeste.IndigenaEQuilombola);
         CenarioDaClassificacao cenario = CenarioComEliminacao(processo, RegraDeEliminacaoPorCalculo.NotaMinimaNaEtapa.Codigo());
 
         Result result = await cenario.DefinirAsync(ComandoComEliminacao(
@@ -53,7 +53,7 @@ public sealed class DefinirClassificacaoRegrasDeEliminacaoCommandHandlerTests
     [Fact(DisplayName = "Handle com ELIMINACAO_AUSENCIA_NA_ETAPA e a etapa citada grava a regra")]
     public async Task Handle_AusenciaNaEtapa_GravaARegra()
     {
-        ProcessoSeletivo processo = NovoProcesso("PS Convênios 2026", TiposDeProcessoDeTeste.PSIQ);
+        ProcessoSeletivo processo = NovoProcesso("PS Convênios 2026", TiposDeProcessoDeTeste.IndigenaEQuilombola);
         EtapaProcesso etapa = EtapaObjetiva();
         processo.DefinirEtapas([etapa]);
         CenarioDaClassificacao cenario = CenarioComEliminacao(processo, RegraDeEliminacaoPorCalculo.AusenciaNaEtapa.Codigo());
@@ -70,7 +70,7 @@ public sealed class DefinirClassificacaoRegrasDeEliminacaoCommandHandlerTests
     [InlineData(true, true)]
     public async Task Handle_AusenciaNaEtapaComParametrosErrados_Recusa(bool comEtapaRef, bool comNotaMinima)
     {
-        ProcessoSeletivo processo = NovoProcesso("PSIQ 2026", TiposDeProcessoDeTeste.PSIQ);
+        ProcessoSeletivo processo = NovoProcesso("PSIQ 2026", TiposDeProcessoDeTeste.IndigenaEQuilombola);
         CenarioDaClassificacao cenario = CenarioComEliminacao(processo, RegraDeEliminacaoPorCalculo.AusenciaNaEtapa.Codigo());
         RegraEliminacaoInput eliminacao = new(
             RegraDeEliminacaoPorCalculo.AusenciaNaEtapa.Codigo(), "v1", comEtapaRef ? Guid.CreateVersion7() : null, comNotaMinima ? 4m : null, null, null);
@@ -84,7 +84,7 @@ public sealed class DefinirClassificacaoRegrasDeEliminacaoCommandHandlerTests
     [Fact(DisplayName = "Handle com ELIMINACAO_ZERO_EM_AREA e Minimo estranho aos parâmetros recusa (payload contraditório)")]
     public async Task Handle_ZeroEmAreaComParametrosEstranhos_Recusa()
     {
-        ProcessoSeletivo processo = NovoProcesso("SiSU 2026", TiposDeProcessoDeTeste.SiSU);
+        ProcessoSeletivo processo = NovoProcesso("SiSU 2026", TiposDeProcessoDeTeste.Sisu);
         CenarioDaClassificacao cenario = CenarioComEliminacao(processo, RegraDeEliminacaoPorCalculo.ZeroEmAreaDoEnem.Codigo());
 
         Result result = await cenario.DefinirAsync(ComandoComEliminacao(

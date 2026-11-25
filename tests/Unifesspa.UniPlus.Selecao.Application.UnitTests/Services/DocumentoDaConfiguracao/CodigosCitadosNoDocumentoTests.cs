@@ -13,7 +13,7 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 public sealed class CodigosCitadosNoDocumentoTests
 {
     private static readonly IdentificacaoNoDocumento Identificacao =
-        new("Processo de Teste", "SiSU", "CEPS", OrigemCandidatos.ImportacaoExterna, "1504208", null, new("CONTAGEM", "v1"));
+        new("Processo de Teste", "SISU", "CEPS", OrigemCandidatos.ImportacaoExterna, "1504208", null, new("CONTAGEM", "v1"));
 
     private static readonly ParametrosDeclaradosDoRecurso Prazo = new(new PrazoDeclarado(1m, "HORAS"), false, PrazoDeclarado.Ausente, "SEM_EFEITO_SUSPENSIVO", null);
 
@@ -42,7 +42,7 @@ public sealed class CodigosCitadosNoDocumentoTests
         CodigosCitadosPorCadastro codigos = Codigos(Identificacao, Fase(0, "INSCRICAO"));
 
         codigos.Unidades.Should().Equal("CEPS");
-        codigos.TipoDeProcesso.Should().Be("SiSU");
+        codigos.TipoDeProcesso.Should().Be("SISU");
         codigos.Localidade.Should().Be("1504208");
         codigos.FasesCanonicas.Should().Equal("INSCRICAO");
         codigos.Regras.Should().Equal(("CONTAGEM", "v1"));

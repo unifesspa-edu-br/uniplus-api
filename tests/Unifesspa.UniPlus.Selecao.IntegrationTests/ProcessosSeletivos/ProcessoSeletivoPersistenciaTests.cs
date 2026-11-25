@@ -67,8 +67,8 @@ public sealed class ProcessoSeletivoPersistenciaTests : IClassFixture<ProcessoSe
 
         recarregados.Should().HaveCount(2);
         recarregados.Should().OnlyContain(processo =>
-            processo.TipoProcesso.OrigemId == TiposDeProcessoDeTeste.SiSU.OrigemId
-            && processo.TipoProcesso.Codigo == "SiSU"
+            processo.TipoProcesso.OrigemId == TiposDeProcessoDeTeste.Sisu.OrigemId
+            && processo.TipoProcesso.Codigo == "SISU"
             && processo.TipoProcesso.Nome == "SiSU");
     }
 
@@ -172,7 +172,7 @@ public sealed class ProcessoSeletivoPersistenciaTests : IClassFixture<ProcessoSe
     [Fact(DisplayName = "Reconfigurar etapas sobre o agregado carregado (tracked) insere os filhos novos, não falha em UPDATE")]
     public async Task ReconfigurarEtapasSobreAgregadoTracked_InsereFilhos()
     {
-        ProcessoSeletivo processo = NovoProcesso("PS 2026 — PSIQ", TiposDeProcessoDeTeste.PSIQ);
+        ProcessoSeletivo processo = NovoProcesso("PS 2026 — PSIQ", TiposDeProcessoDeTeste.IndigenaEQuilombola);
         processo.DefinirEtapas([NovaEtapa("Prova Objetiva", CaraterEtapa.Classificatoria, 1, DeclaracaoComPeso(1m))]);
         await _apoio.GravarAsync(processo);
 
@@ -188,7 +188,7 @@ public sealed class ProcessoSeletivoPersistenciaTests : IClassFixture<ProcessoSe
     [Fact(DisplayName = "Persiste e lê do banco a regra de derivação nos três níveis")]
     public async Task PersisteELeDoBanco_RegraDerivacao()
     {
-        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS 2026 — Derivação", TiposDeProcessoDeTeste.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
+        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS 2026 — Derivação", TiposDeProcessoDeTeste.Sisu, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
 
         ConfiguracaoDerivacaoFato config = ConfiguracaoDaDerivacao();
         processo.DefinirRegrasDerivacao([config]).IsSuccess.Should().BeTrue();
@@ -235,7 +235,7 @@ public sealed class ProcessoSeletivoPersistenciaTests : IClassFixture<ProcessoSe
                 unidade_administradora_sigla, unidade_administradora_identificador_no_endereco_web, unidade_administradora_nome, unidade_administradora_tipo,
                 created_at, is_deleted)
             VALUES (
-                {processoId}, 'PS sem unidade', {TiposDeProcessoDeTeste.SiSU.OrigemId}, 'SiSU', 'SiSU', 'RASCUNHO', 'INSCRICAO_PROPRIA', '1504208', 'Marabá', 'PA',
+                {processoId}, 'PS sem unidade', {TiposDeProcessoDeTeste.Sisu.OrigemId}, 'SISU', 'SiSU', 'RASCUNHO', 'INSCRICAO_PROPRIA', '1504208', 'Marabá', 'PA',
                 {Guid.NewGuid()},
                 NULL, 'ceps', 'Centro de Processos Seletivos', 'ADMINISTRATIVA',
                 now(), false)
@@ -263,7 +263,7 @@ public sealed class ProcessoSeletivoPersistenciaTests : IClassFixture<ProcessoSe
     private static ProcessoSeletivo NovoProcesso(
         string nome, TipoProcessoSnapshot? tipo = null, UnidadeAdministradoraSnapshot? unidade = null, Guid? unidadeOrigemId = null) =>
         ProcessoSeletivo.Criar(
-            nome, tipo ?? TiposDeProcessoDeTeste.SiSU, OrigemCandidatos.InscricaoPropria, unidadeOrigemId ?? Guid.NewGuid(),
+            nome, tipo ?? TiposDeProcessoDeTeste.Sisu, OrigemCandidatos.InscricaoPropria, unidadeOrigemId ?? Guid.NewGuid(),
             unidade ?? UnidadeDoCeps(), LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
 
     private static UnidadeAdministradoraSnapshot UnidadeDoCeps(CidadeCopiadaDaUnidade? cidade = null) =>
@@ -316,9 +316,9 @@ public sealed class ProcessoSeletivoPersistenciaTests : IClassFixture<ProcessoSe
     private static void ConferirOProcessoEAsEtapasDaFundacao(ProcessoSeletivo recarregado)
     {
         recarregado.Situacao.Should().Be(SituacaoDoProcessoSeletivo.Rascunho);
-        recarregado.TipoProcesso.OrigemId.Should().Be(TiposDeProcessoDeTeste.SiSU.OrigemId);
-        recarregado.TipoProcessoOrigemId.Should().Be(TiposDeProcessoDeTeste.SiSU.OrigemId);
-        recarregado.TipoProcesso.Codigo.Should().Be("SiSU");
+        recarregado.TipoProcesso.OrigemId.Should().Be(TiposDeProcessoDeTeste.Sisu.OrigemId);
+        recarregado.TipoProcessoOrigemId.Should().Be(TiposDeProcessoDeTeste.Sisu.OrigemId);
+        recarregado.TipoProcesso.Codigo.Should().Be("SISU");
         recarregado.Etapas.Should().HaveCount(2);
         recarregado.Declaracao().Avaliacao.CalcularDivisorMedia().Should().Be(5m);
         recarregado.Etapas.Single(e => e.Ordem == 1).Should().Match<EtapaProcesso>(

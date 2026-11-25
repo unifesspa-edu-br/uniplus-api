@@ -61,7 +61,7 @@ public sealed class RegraDeComprovacaoPersistenciaTests : IClassFixture<Processo
 
     private static ProcessoSeletivo ProcessoComGruposDeRegras()
     {
-        ProcessoSeletivo processo = ProcessoSeletivo.Criar("Processo com grupos de regras", TiposDeProcessoDeTeste.SiSU, OrigemCandidatos.ImportacaoExterna, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
+        ProcessoSeletivo processo = ProcessoSeletivo.Criar("Processo com grupos de regras", TiposDeProcessoDeTeste.Sisu, OrigemCandidatos.ImportacaoExterna, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
         FaseCronograma fase = FaseDeInscricao();
         processo.DefinirCronogramaFases([fase], []).IsSuccess.Should().BeTrue();
 
@@ -117,7 +117,7 @@ public sealed class RegraDeComprovacaoPersistenciaTests : IClassFixture<Processo
     [Fact(DisplayName = "Substituir regras com grupos repetidamente na mesma sessão preserva a integridade")]
     public async Task SubstituiRegrasComGrupo_MultiplasVezesSeguidas()
     {
-        ProcessoSeletivo processo = ProcessoSeletivo.Criar("Processo com substituição de regras", TiposDeProcessoDeTeste.SiSU, OrigemCandidatos.ImportacaoExterna, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
+        ProcessoSeletivo processo = ProcessoSeletivo.Criar("Processo com substituição de regras", TiposDeProcessoDeTeste.Sisu, OrigemCandidatos.ImportacaoExterna, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
         FaseCronograma fase = FaseDeInscricao();
         processo.DefinirCronogramaFases([fase], []).IsSuccess.Should().BeTrue();
 

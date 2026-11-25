@@ -111,7 +111,7 @@ public sealed class RetencaoDoModeloDeDocumentoConfirmadoTests : IClassFixture<P
     }
 
     private static ProcessoSeletivo CriarProcesso() => ProcessoSeletivo.Criar(
-        $"Retenção {Guid.CreateVersion7()}", TiposDeProcessoDeTeste.SiSU, OrigemCandidatos.InscricaoPropria,
+        $"Retenção {Guid.CreateVersion7()}", TiposDeProcessoDeTeste.Sisu, OrigemCandidatos.InscricaoPropria,
         Guid.NewGuid(), UnidadeAdministradoraSnapshot.Criar("CEPS", "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!,
         LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
 

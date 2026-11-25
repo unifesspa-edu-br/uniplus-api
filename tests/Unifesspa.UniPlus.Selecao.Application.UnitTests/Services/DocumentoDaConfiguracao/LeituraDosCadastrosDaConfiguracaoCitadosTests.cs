@@ -39,7 +39,7 @@ public sealed class LeituraDosCadastrosDaConfiguracaoCitadosTests
 
     private void CadastrosComOsCodigosCitados()
     {
-        _tiposDeProcesso.ObterAtivoPorCodigoAsync("SiSU", Arg.Any<CancellationToken>()).Returns(new TipoProcessoView(Guid.CreateVersion7(), "SiSU", "Sistema de Seleção", null));
+        _tiposDeProcesso.ObterAtivoPorCodigoAsync("SISU", Arg.Any<CancellationToken>()).Returns(new TipoProcessoView(Guid.CreateVersion7(), "SISU", "Sistema de Seleção", null));
         _fasesCanonicas.ListarVivasPorCodigosAsync(Lote("INSCRICAO", "RECURSO"), Arg.Any<CancellationToken>()).Returns([Fase("INSCRICAO"), Fase("RECURSO")]);
         _tiposDeBanca.ListarVivosPorCodigosAsync(Lote("BANCA_ANALISE_DOCUMENTAL"), Arg.Any<CancellationToken>()).Returns([TipoCadastrado(TipoDeBanca.AnaliseDocumental)]);
         _categorias.ListarVivasPorCodigosAsync(Lote("RENDA", "IDENTIDADE"), Arg.Any<CancellationToken>()).Returns([Categoria("RENDA"), Categoria("IDENTIDADE")]);
@@ -51,10 +51,10 @@ public sealed class LeituraDosCadastrosDaConfiguracaoCitadosTests
         CadastrosComOsCodigosCitados();
 
         Result<CadastrosDaConfiguracaoCitados> lidos = await _leitura.LerAsync(
-            SemCodigos with { TipoDeProcesso = "SiSU", FasesCanonicas = ["INSCRICAO", "RECURSO"], TiposDeBanca = ["BANCA_ANALISE_DOCUMENTAL"], CategoriasDeDocumento = ["RENDA", "IDENTIDADE"] },
+            SemCodigos with { TipoDeProcesso = "SISU", FasesCanonicas = ["INSCRICAO", "RECURSO"], TiposDeBanca = ["BANCA_ANALISE_DOCUMENTAL"], CategoriasDeDocumento = ["RENDA", "IDENTIDADE"] },
             CancellationToken.None);
 
-        lidos.Value!.TiposDeProcesso.Keys.Should().Equal("SiSU");
+        lidos.Value!.TiposDeProcesso.Keys.Should().Equal("SISU");
         lidos.Value.FasesCanonicas.Keys.Should().Equal("INSCRICAO", "RECURSO");
         ConferirOsTiposDeBancaLidos(lidos.Value.TiposDeBanca);
         lidos.Value.CategoriasDeDocumento.Keys.Should().Equal("RENDA", "IDENTIDADE");
@@ -114,21 +114,21 @@ public sealed class LeituraDosCadastrosDaConfiguracaoCitadosTests
     [Fact(DisplayName = "O tipo de processo ativo congela o id, o código e o nome")]
     public async Task TipoDeProcesso_CongelaIdCodigoENome()
     {
-        TipoProcessoView tipo = new(Guid.CreateVersion7(), "PSIQ", "Processo Seletivo Indígena e Quilombola", null);
-        _tiposDeProcesso.ObterAtivoPorCodigoAsync("PSIQ", Arg.Any<CancellationToken>()).Returns(tipo);
+        TipoProcessoView tipo = new(Guid.CreateVersion7(), "INDIGENA_E_QUILOMBOLA", "Processo Seletivo Indígena e Quilombola", null);
+        _tiposDeProcesso.ObterAtivoPorCodigoAsync("INDIGENA_E_QUILOMBOLA", Arg.Any<CancellationToken>()).Returns(tipo);
 
-        Result<CadastrosDaConfiguracaoCitados> lidos = await _leitura.LerAsync(SemCodigos with { TipoDeProcesso = "PSIQ" }, CancellationToken.None);
+        Result<CadastrosDaConfiguracaoCitados> lidos = await _leitura.LerAsync(SemCodigos with { TipoDeProcesso = "INDIGENA_E_QUILOMBOLA" }, CancellationToken.None);
 
-        (lidos.Value!.TiposDeProcesso["PSIQ"].OrigemId, lidos.Value.TiposDeProcesso["PSIQ"].Nome).Should().Be((tipo.Id, tipo.Nome));
+        (lidos.Value!.TiposDeProcesso["INDIGENA_E_QUILOMBOLA"].OrigemId, lidos.Value.TiposDeProcesso["INDIGENA_E_QUILOMBOLA"].Nome).Should().Be((tipo.Id, tipo.Nome));
     }
 
     [Fact(DisplayName = "O tipo de processo que o domínio recusa copiar é falha da leitura, não código inexistente")]
     public async Task TipoDeProcessoQueODominioRecusa_EFalha()
     {
-        _tiposDeProcesso.ObterAtivoPorCodigoAsync("SiSU", Arg.Any<CancellationToken>())
-            .Returns(new TipoProcessoView(Guid.CreateVersion7(), "SiSU", new string('N', 201), null));
+        _tiposDeProcesso.ObterAtivoPorCodigoAsync("SISU", Arg.Any<CancellationToken>())
+            .Returns(new TipoProcessoView(Guid.CreateVersion7(), "SISU", new string('N', 201), null));
 
-        Result<CadastrosDaConfiguracaoCitados> lidos = await _leitura.LerAsync(SemCodigos with { TipoDeProcesso = "SiSU" }, CancellationToken.None);
+        Result<CadastrosDaConfiguracaoCitados> lidos = await _leitura.LerAsync(SemCodigos with { TipoDeProcesso = "SISU" }, CancellationToken.None);
 
         lidos.IsFailure.Should().BeTrue();
         lidos.Error!.Code.Should().Be("TipoProcessoSnapshot.TamanhoInvalido");

@@ -104,7 +104,7 @@ public sealed class ProvaPresencialPersistenciaTests(ProcessoSeletivoDbFixture f
     }
 
     private static ProcessoSeletivo NovoProcesso() => ProcessoSeletivo.Criar(
-        "Processo com prova presencial", TiposDeProcessoDeTeste.SiSU, OrigemCandidatos.InscricaoPropria, Guid.CreateVersion7(),
+        "Processo com prova presencial", TiposDeProcessoDeTeste.Sisu, OrigemCandidatos.InscricaoPropria, Guid.CreateVersion7(),
         UnidadeAdministradoraSnapshot.Criar("CEPS", "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!,
         LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
 }

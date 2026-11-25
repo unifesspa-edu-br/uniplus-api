@@ -18,7 +18,7 @@ public sealed class CadastrosCitadosNoDocumentoTests
 
         cadastros.LidoEm.Should().Be(LidoEm);
         cadastros.Unidades.Keys.Should().BeEquivalentTo("CEPS", "CGA");
-        cadastros.TiposDeProcesso.Keys.Should().Equal("SiSU");
+        cadastros.TiposDeProcesso.Keys.Should().Equal("SISU");
         cadastros.FasesCanonicas.Keys.Should().BeEquivalentTo("INSCRICAO", "RECURSO", "RESULTADO");
         cadastros.TiposDeBanca.Keys.Should().Equal("ANALISE_RECURSOS");
         cadastros.CategoriasDeDocumento.Keys.Should().Equal("IDENTIDADE");

@@ -65,7 +65,7 @@ public sealed class DesempateBonusPersistenciaTests : IClassFixture<ProcessoSele
     [Fact(DisplayName = "Reconfigurar desempate+bônus sobre o agregado tracked insere os filhos novos, não falha em UPDATE")]
     public async Task ReconfigurarDesempateBonusSobreAgregadoTracked_InsereFilhos()
     {
-        ProcessoSeletivo processo = NovoProcesso("PSIQ 2026 — Reconfig", TiposDeProcessoDeTeste.PSIQ);
+        ProcessoSeletivo processo = NovoProcesso("PSIQ 2026 — Reconfig", TiposDeProcessoDeTeste.IndigenaEQuilombola);
         processo.DefinirEtapas([EtapaDeRedacao("RESULTADO_FINAL")]);
         processo.DefinirCriteriosDesempate([CriterioDeMaiorIdade(1, "a")]);
         processo.DefinirBonusRegional(aplica: true, bonus: BonusMultiplicativo(Guid.CreateVersion7(), 1.10m, null, null, "b"));
@@ -96,7 +96,7 @@ public sealed class DesempateBonusPersistenciaTests : IClassFixture<ProcessoSele
     }
 
     private static ProcessoSeletivo NovoProcesso(string nome, TipoProcessoSnapshot? tipo = null) => ProcessoSeletivo.Criar(
-        nome, tipo ?? TiposDeProcessoDeTeste.PSVR, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(),
+        nome, tipo ?? TiposDeProcessoDeTeste.VagasRemanescentes, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(),
         UnidadeAdministradoraSnapshot.Criar("CEPS", "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!,
         LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
 

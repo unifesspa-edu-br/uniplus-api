@@ -51,7 +51,7 @@ internal sealed class CenarioDaClassificacao
     public static ProcessoSeletivo NovoProcesso(string titulo, TipoProcessoSnapshot tipo) =>
         ProcessoSeletivo.Criar(titulo, tipo, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(), UnidadeAdministradoraSnapshot.Criar("CEPS", "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
 
-    public static ProcessoSeletivo NovoProcessoEnem() => NovoProcesso("PS Medicina 2027", TiposDeProcessoDeTeste.PSVR);
+    public static ProcessoSeletivo NovoProcessoEnem() => NovoProcesso("PS Medicina 2027", TiposDeProcessoDeTeste.VagasRemanescentes);
 
     public static EtapaProcesso EtapaObjetiva() =>
         EtapaProcesso.Criar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("etapa").Value!,

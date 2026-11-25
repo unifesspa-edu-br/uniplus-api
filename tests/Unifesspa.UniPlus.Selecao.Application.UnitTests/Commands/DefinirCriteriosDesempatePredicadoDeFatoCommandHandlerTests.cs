@@ -35,7 +35,7 @@ public sealed class DefinirCriteriosDesempatePredicadoDeFatoCommandHandlerTests
     [Fact(DisplayName = "Handle com DESEMPATE_CONDICAO_SOBRE_DADO sobre fato do vocabulário fechado resolve e persiste")]
     public async Task Handle_PredicadoFato_FatoConhecido_Persiste()
     {
-        ProcessoSeletivo processo = NovoProcesso("PSE 2026", TiposDeProcessoDeTeste.PSECampo);
+        ProcessoSeletivo processo = NovoProcesso("PSE 2026", TiposDeProcessoDeTeste.EducacaoDoCampo);
         CenarioDosCriteriosDeDesempate cenario = Com(processo).ComRegra(RegraDeDesempate.CondicaoSobreDado.Codigo());
 
         Result result = await cenario.DefinirAsync(Comando(processo.Id, PredicadoDoFato("PROFESSOR_RURAL", "IGUAL", "true")));
@@ -49,7 +49,7 @@ public sealed class DefinirCriteriosDesempatePredicadoDeFatoCommandHandlerTests
     [Fact(DisplayName = "Handle com DESEMPATE_CONDICAO_SOBRE_DADO sobre fato fora do vocabulário fechado recusa")]
     public async Task Handle_PredicadoFato_FatoDesconhecido_Recusa()
     {
-        ProcessoSeletivo processo = NovoProcesso("PSE 2026", TiposDeProcessoDeTeste.PSECampo);
+        ProcessoSeletivo processo = NovoProcesso("PSE 2026", TiposDeProcessoDeTeste.EducacaoDoCampo);
         CenarioDosCriteriosDeDesempate cenario = Com(processo).ComRegra(RegraDeDesempate.CondicaoSobreDado.Codigo());
 
         Result result = await cenario.DefinirAsync(Comando(processo.Id, PredicadoDoFato("FATO_INEXISTENTE", "IGUAL", "S")));
@@ -61,7 +61,7 @@ public sealed class DefinirCriteriosDesempatePredicadoDeFatoCommandHandlerTests
     [Fact(DisplayName = "Handle com DESEMPATE_CONDICAO_SOBRE_DADO incompleto recusa")]
     public async Task Handle_PredicadoFatoIncompleto_Recusa()
     {
-        ProcessoSeletivo processo = NovoProcesso("PSE 2026", TiposDeProcessoDeTeste.PSECampo);
+        ProcessoSeletivo processo = NovoProcesso("PSE 2026", TiposDeProcessoDeTeste.EducacaoDoCampo);
         CenarioDosCriteriosDeDesempate cenario = Com(processo).ComRegra(RegraDeDesempate.CondicaoSobreDado.Codigo());
 
         Result result = await cenario.DefinirAsync(Comando(processo.Id, PredicadoDoFato("PROFESSOR_RURAL", null, null)));

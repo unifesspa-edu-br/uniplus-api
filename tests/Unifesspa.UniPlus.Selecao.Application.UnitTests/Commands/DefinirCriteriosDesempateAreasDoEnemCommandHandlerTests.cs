@@ -23,7 +23,7 @@ public sealed class DefinirCriteriosDesempateAreasDoEnemCommandHandlerTests
 {
     private static ProcessoSeletivo ProcessoComClassificacaoImportadaSemQuadro()
     {
-        ProcessoSeletivo processo = NovoProcesso("PS ENEM 2027", TiposDeProcessoDeTeste.PSIQ);
+        ProcessoSeletivo processo = NovoProcesso("PS ENEM 2027", TiposDeProcessoDeTeste.IndigenaEQuilombola);
         processo.DefinirClassificacao(ConfiguracaoClassificacao.Criar(new DeclaracaoDaClassificacao
         {
             RegraCalculo = ReferenciaRegra.De(RegraDeCalculoDaNota.ClassificacaoImportada.Codigo(), "v1", new string('a', 64)),
@@ -78,7 +78,7 @@ public sealed class DefinirCriteriosDesempateAreasDoEnemCommandHandlerTests
     [Fact(DisplayName = "Handle com DESEMPATE_MAIOR_NOTA_AREA_ENEM sem áreas recusa no campo do critério")]
     public async Task Handle_MaiorNotaAreaEnemSemAreas_RecusaNoCampo()
     {
-        ProcessoSeletivo processo = NovoProcesso("PS ENEM 2027", TiposDeProcessoDeTeste.PSIQ);
+        ProcessoSeletivo processo = NovoProcesso("PS ENEM 2027", TiposDeProcessoDeTeste.IndigenaEQuilombola);
         CenarioDosCriteriosDeDesempate cenario = Com(processo).ComRegra(RegraDeDesempate.MaiorNotaPorAreaDoEnem.Codigo());
 
         Result result = await cenario.DefinirAsync(Comando(processo.Id, CriterioSimples(1, RegraDeDesempate.MaiorNotaPorAreaDoEnem.Codigo())));
@@ -93,7 +93,7 @@ public sealed class DefinirCriteriosDesempateAreasDoEnemCommandHandlerTests
     [Fact(DisplayName = "Handle com área nula na ordem recusa no campo do item, sem estourar")]
     public async Task Handle_MaiorNotaAreaEnemComItemNulo_RecusaNoCampoDoItem()
     {
-        ProcessoSeletivo processo = NovoProcesso("PS ENEM 2027", TiposDeProcessoDeTeste.PSIQ);
+        ProcessoSeletivo processo = NovoProcesso("PS ENEM 2027", TiposDeProcessoDeTeste.IndigenaEQuilombola);
         CenarioDosCriteriosDeDesempate cenario = Com(processo).ComRegra(RegraDeDesempate.MaiorNotaPorAreaDoEnem.Codigo());
 
         Result result = await cenario.DefinirAsync(Comando(processo.Id, CriterioDeAreas(1, "REDACAO", null!)));

@@ -104,7 +104,7 @@ public sealed class OrdenacaoDeConjuntosCanonicosTests
 
     private static ProcessoSeletivo CriarProcesso() =>
         ProcessoSeletivo.Criar(
-            "PS Ordenação de Conjuntos", TiposDeProcessoDeTeste.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(),
+            "PS Ordenação de Conjuntos", TiposDeProcessoDeTeste.Sisu, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(),
             UnidadeAdministradoraSnapshot.Criar("CEPS", "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
 
     private static void DefinirClassificacao(ProcessoSeletivo processo)
@@ -217,7 +217,7 @@ public sealed class OrdenacaoDeConjuntosCanonicosTests
         RegraId: id,
         RegraCodigo: codigo,
         Categoria: CategoriaObrigatoriedade.Outros,
-        TipoProcessoCodigoAvaliado: "SiSU",
+        TipoProcessoCodigoAvaliado: "SISU",
         Predicado: new ConcorrenciaDuplaObrigatoria(),
         Aprovada: true,
         Motivo: null,

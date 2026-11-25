@@ -55,7 +55,7 @@ public sealed class AplicarModeloFormularioCommandHandlerTests
     [Fact(DisplayName = "Modelo inativo e de outro tipo de processo é recusado pelos dois motivos")]
     public async Task Handle_ModeloInativoDeOutroTipo_RecusaOsDois()
     {
-        ModeloFormularioView modelo = Modelo(FinalidadeFormulario.Inscricao, [Item("QUILOMBOLA", 0)]) with { Ativo = false, TipoProcessoCodigo = "PSIQ" };
+        ModeloFormularioView modelo = Modelo(FinalidadeFormulario.Inscricao, [Item("QUILOMBOLA", 0)]) with { Ativo = false, TipoProcessoCodigo = "INDIGENA_E_QUILOMBOLA" };
 
         Result<AplicacaoDeModeloDto> resultado = await _cenario.AplicarAsync(modelo);
 

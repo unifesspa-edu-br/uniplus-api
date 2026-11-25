@@ -87,7 +87,7 @@ public sealed class DiaDaConsultaDosTiposDeAtoTests
         private static ProcessoSeletivo ProcessoComUmaFase()
         {
             ProcessoSeletivo processo = ProcessoSeletivo.Criar(
-                "PS Dia da consulta", TiposDeProcessoDeTeste.SiSU, OrigemCandidatos.ImportacaoExterna, Guid.NewGuid(),
+                "PS Dia da consulta", TiposDeProcessoDeTeste.Sisu, OrigemCandidatos.ImportacaoExterna, Guid.NewGuid(),
                 UnidadeAdministradoraSnapshot.Criar("CEPS", "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!,
                 LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
             processo.DefinirCronogramaFases([FaseDeClassificacaoComResultado()], []).IsSuccess.Should().BeTrue();

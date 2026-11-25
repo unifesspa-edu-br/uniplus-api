@@ -5,13 +5,11 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Protecao;
+using Unifesspa.UniPlus.Kernel.Domain;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
+using Unifesspa.UniPlus.Kernel.Domain.ValueObjects;
 
-[System.Diagnostics.CodeAnalysis.SuppressMessage(
-    "Performance",
-    "CA1812:Avoid uninstantiated internal classes",
-    Justification = "Instanciada pelo EF Core via reflection.")]
-internal sealed class TipoProcessoConfiguration : IEntityTypeConfiguration<TipoProcesso>
+public sealed class TipoProcessoConfiguration : IEntityTypeConfiguration<TipoProcesso>
 {
     public void Configure(EntityTypeBuilder<TipoProcesso> builder)
     {
@@ -19,10 +17,14 @@ internal sealed class TipoProcessoConfiguration : IEntityTypeConfiguration<TipoP
 
         builder.ClassificaPorPadrao(ClassificacaoDeProtecao.Interno);
 
-        builder.ToTable("tipos_processo");
+        builder.ToTable("tipos_processo", table =>
+        {
+            table.HasCheckConstraint("ck_tipos_processo_codigo_formato", $"codigo ~ '{FormatoDoCodigo.ExpressaoNoBanco}'");
+            table.HasCheckConstraint("ck_tipos_processo_codigo_reservado", $"codigo <> '{TodosOsTiposDeProcesso.Codigo}'");
+        });
         builder.HasKey(tipo => tipo.Id);
         builder.Property(tipo => tipo.Id).ValueGeneratedNever();
-        builder.Property(tipo => tipo.Codigo).HasMaxLength(64).IsRequired();
+        builder.Property(tipo => tipo.Codigo).HasMaxLength(FormatoDoCodigo.ComprimentoMaximo).IsRequired();
         builder.Property(tipo => tipo.Nome).HasMaxLength(200).IsRequired();
         builder.Property(tipo => tipo.Descricao).HasMaxLength(1000);
         builder.Property(tipo => tipo.Ativo).IsRequired();

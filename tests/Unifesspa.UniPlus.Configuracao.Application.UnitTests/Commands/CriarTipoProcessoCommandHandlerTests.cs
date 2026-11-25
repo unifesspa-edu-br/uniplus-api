@@ -49,7 +49,7 @@ public sealed class CriarTipoProcessoCommandHandlerTests
     [Fact(DisplayName = "Código reservado propaga o erro de domínio sem consultar unicidade nem persistir")]
     public async Task Handle_CodigoReservado_RetornaErroSemConsultarUnicidadeNemPersistir()
     {
-        CriarTipoProcessoCommand comando = ComandoValido() with { Codigo = "*" };
+        CriarTipoProcessoCommand comando = ComandoValido() with { Codigo = "TODOS_OS_TIPOS" };
 
         Result<Guid> resultado = await CriarTipoProcessoCommandHandler.Handle(
             comando, _repository, _unitOfWork, CancellationToken.None);

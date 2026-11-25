@@ -161,10 +161,10 @@ public sealed class ObrigatoriedadeLegalPersistenceTests : IClassFixture<Obrigat
     public async Task ObterVigentesParaTipoProcesso_UniaoEDataReferencia()
     {
         await GravarAsync(
-            AdminA, NovaRegraValida("RULESET_UNIVERSAL"), RegraDeJunho("PSIQ", "RULESET_PSIQ"), RegraDeJunho("SiSU", "RULESET_SISU"));
+            AdminA, NovaRegraValida("RULESET_UNIVERSAL"), RegraDeJunho("INDIGENA_E_QUILOMBOLA", "RULESET_PSIQ"), RegraDeJunho("SISU", "RULESET_SISU"));
 
-        IReadOnlyList<string> emVigencia = await CodigosVigentesAsync("PSIQ", new DateOnly(2026, 6, 15));
-        IReadOnlyList<string> foraDaVigencia = await CodigosVigentesAsync("PSIQ", new DateOnly(2026, 7, 5));
+        IReadOnlyList<string> emVigencia = await CodigosVigentesAsync("INDIGENA_E_QUILOMBOLA", new DateOnly(2026, 6, 15));
+        IReadOnlyList<string> foraDaVigencia = await CodigosVigentesAsync("INDIGENA_E_QUILOMBOLA", new DateOnly(2026, 7, 5));
 
         emVigencia.Should().Contain(["RULESET_UNIVERSAL", "RULESET_PSIQ"]).And.NotContain("RULESET_SISU");
         foraDaVigencia.Should().Contain("RULESET_UNIVERSAL").And.NotContain("RULESET_PSIQ");

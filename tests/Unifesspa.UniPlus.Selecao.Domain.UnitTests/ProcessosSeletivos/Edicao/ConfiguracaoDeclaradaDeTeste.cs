@@ -16,7 +16,7 @@ internal static class ConfiguracaoDeclaradaDeTeste
 {
     internal static ProcessoSeletivo NovoProcesso() => ProcessoSeletivo.Criar(
         "PS 2026 — SiSU",
-        TiposDeProcessoDeTeste.SiSU,
+        TiposDeProcessoDeTeste.Sisu,
         OrigemCandidatos.InscricaoPropria,
         Guid.NewGuid(),
         UnidadeAdministradoraSnapshot.Criar("CEPS", "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!,

@@ -10,8 +10,8 @@ public sealed class TiposDeProcessoDeTesteTests
     [Fact(DisplayName = "Getter legado retorna snapshot distinto em cada acesso")]
     public void SiSU_AcessosConsecutivos_RetornamSnapshotsDistintos()
     {
-        TipoProcessoSnapshot primeiro = TiposDeProcessoDeTeste.SiSU;
-        TipoProcessoSnapshot segundo = TiposDeProcessoDeTeste.SiSU;
+        TipoProcessoSnapshot primeiro = TiposDeProcessoDeTeste.Sisu;
+        TipoProcessoSnapshot segundo = TiposDeProcessoDeTeste.Sisu;
 
         primeiro.Should().NotBeSameAs(segundo,
             "o EF mapeia o snapshot como owned e uma instância não pode pertencer a dois agregados");
@@ -23,16 +23,15 @@ public sealed class TiposDeProcessoDeTesteTests
     {
         TipoProcessoSnapshot[] tiposLegados =
         [
-            TiposDeProcessoDeTeste.SiSU,
-            TiposDeProcessoDeTeste.PSIQ,
-            TiposDeProcessoDeTeste.PSECampo,
-            TiposDeProcessoDeTeste.PSVR,
+            TiposDeProcessoDeTeste.Sisu,
+            TiposDeProcessoDeTeste.IndigenaEQuilombola,
+            TiposDeProcessoDeTeste.EducacaoDoCampo,
+            TiposDeProcessoDeTeste.VagasRemanescentes,
             TiposDeProcessoDeTeste.TransferenciaInterna,
             TiposDeProcessoDeTeste.TransferenciaExterna,
-            TiposDeProcessoDeTeste.PortadorDiploma,
+            TiposDeProcessoDeTeste.PortadorDeDiploma,
             TiposDeProcessoDeTeste.Reopcao,
         ];
-
         tiposLegados.Select(tipo => tipo.OrigemId).Should().OnlyHaveUniqueItems();
         tiposLegados.Should().OnlyContain(tipo => EhUuidV7Rfc9562(tipo.OrigemId),
             "os mesmos IDs são copiados para o agregado e para o envelope canônico");

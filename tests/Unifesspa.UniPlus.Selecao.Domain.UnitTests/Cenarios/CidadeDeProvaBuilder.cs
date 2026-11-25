@@ -14,7 +14,7 @@ using Unifesspa.UniPlus.Testes.Compartilhado;
 internal sealed class CidadeDeProvaBuilder
 {
     private readonly ProcessoSeletivo _processo = ProcessoSeletivo.Criar(
-        "Processo de seleção", TiposDeProcessoDeTeste.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(),
+        "Processo de seleção", TiposDeProcessoDeTeste.Sisu, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(),
         UnidadeAdministradoraSnapshot.Criar("CEPS", "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!,
         LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
 

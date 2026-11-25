@@ -21,12 +21,12 @@ using Unifesspa.UniPlus.Testes.Compartilhado;
 /// </summary>
 internal static class CenarioDeConformidadeLegal
 {
-    internal const string TipoProcessoAvaliado = "SiSU";
+    internal const string TipoProcessoAvaliado = "SISU";
 
     internal static ProcessoSeletivo NovoProcesso() =>
         ProcessoSeletivo.Criar(
             "PS Avaliador 2026",
-            TiposDeProcessoDeTeste.SiSU,
+            TiposDeProcessoDeTeste.Sisu,
             OrigemCandidatos.InscricaoPropria,
             Guid.NewGuid(),
             UnidadeAdministradoraSnapshot.Criar("CEPS", "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!,

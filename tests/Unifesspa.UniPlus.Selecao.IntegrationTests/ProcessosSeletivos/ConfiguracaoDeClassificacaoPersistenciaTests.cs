@@ -46,7 +46,7 @@ public sealed class ConfiguracaoDeClassificacaoPersistenciaTests
     [Fact(DisplayName = "Persiste e recarrega classificação com as 5 variantes de eliminação (prova a coluna json polimórfica)")]
     public async Task PersisteERecarrega_ComCincoVariantesDeEliminacao()
     {
-        ProcessoSeletivo processo = ProcessoComEtapa("PS 2026 — SiSU", TiposDeProcessoDeTeste.SiSU);
+        ProcessoSeletivo processo = ProcessoComEtapa("PS 2026 — SiSU", TiposDeProcessoDeTeste.Sisu);
         Guid etapaId = processo.Etapas.Single().Id;
         ConfiguracaoClassificacao configuracao = ClassificacaoComCincoVariantes(etapaId);
         processo.DefinirClassificacao(configuracao).IsSuccess.Should().BeTrue();
@@ -80,7 +80,7 @@ public sealed class ConfiguracaoDeClassificacaoPersistenciaTests
     [Fact(DisplayName = "Reconfigurar classificação sobre o agregado rastreado insere os filhos novos, sem falhar na atualização")]
     public async Task ReconfigurarClassificacaoSobreAgregadoTracked_InsereFilhos()
     {
-        ProcessoSeletivo processo = ProcessoComEtapa("PS 2026 — PSVR", TiposDeProcessoDeTeste.PSVR);
+        ProcessoSeletivo processo = ProcessoComEtapa("PS 2026 — PSVR", TiposDeProcessoDeTeste.VagasRemanescentes);
         processo.DefinirClassificacao(CriarClassificacao(ClassificacaoPonderada())).IsSuccess.Should().BeTrue();
         await _cenario.PersistirAsync(processo);
         await ReconfigurarClassificacaoAsync(processo.Id);
@@ -94,7 +94,7 @@ public sealed class ConfiguracaoDeClassificacaoPersistenciaTests
     [Fact(DisplayName = "Atualizar dados da mesma etapa, preservando o identificador, mantém a eliminação referenciando-a")]
     public async Task AtualizarEtapaMesmoId_MantemEliminacaoReferenciada()
     {
-        ProcessoSeletivo processo = ProcessoComEtapa("PS 2026 — SiSU", TiposDeProcessoDeTeste.SiSU);
+        ProcessoSeletivo processo = ProcessoComEtapa("PS 2026 — SiSU", TiposDeProcessoDeTeste.Sisu);
         Guid etapaId = processo.Etapas.Single().Id;
         processo.DefinirClassificacao(ClassificacaoComNotaMinima(etapaId)).IsSuccess.Should().BeTrue();
         await _cenario.PersistirAsync(processo);
@@ -113,7 +113,7 @@ public sealed class ConfiguracaoDeClassificacaoPersistenciaTests
     [InlineData(false)]
     public async Task PersisteERecarrega_BaseadoEmEnem(bool baseadoEmEnem)
     {
-        ProcessoSeletivo processo = ProcessoComEtapa("PS 2026 — BaseadoEmEnem", TiposDeProcessoDeTeste.PSIQ);
+        ProcessoSeletivo processo = ProcessoComEtapa("PS 2026 — BaseadoEmEnem", TiposDeProcessoDeTeste.IndigenaEQuilombola);
         processo.DefinirClassificacao(CriarClassificacao(ClassificacaoPonderada(baseadoEmEnem))).IsSuccess.Should().BeTrue();
         await _cenario.PersistirAsync(processo);
 

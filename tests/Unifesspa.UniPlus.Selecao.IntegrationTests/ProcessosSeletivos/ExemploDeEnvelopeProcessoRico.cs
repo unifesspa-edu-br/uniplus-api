@@ -73,7 +73,7 @@ internal static class ExemploDeEnvelopeProcessoRico
     internal static ProcessoSeletivo NovoProcessoRico(int variante)
     {
         ProcessoSeletivo processo = ProcessoSeletivo.Criar(
-            "PS Rico 2026", TiposDeProcessoDeTeste.SiSU, OrigemCandidatos.InscricaoPropria, UnidadeAdministradora,
+            "PS Rico 2026", TiposDeProcessoDeTeste.Sisu, OrigemCandidatos.InscricaoPropria, UnidadeAdministradora,
             UnidadeAdministradoraDoExemplo(),
             LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!,
             identificadorLegivel: IdentificadorLegivel.Criar($"ps-rico-2026-v{variante}").Value);

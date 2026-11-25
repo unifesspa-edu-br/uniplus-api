@@ -14,7 +14,7 @@ using Unifesspa.UniPlus.Testes.Compartilhado;
 internal static class ApoioProcessoSeletivoCronograma
 {
     internal static ProcessoSeletivo NovoProcesso(OrigemCandidatos origem = OrigemCandidatos.ImportacaoExterna) =>
-        ProcessoSeletivo.Criar("PS Cronograma", TiposDeProcessoDeTeste.SiSU, origem, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
+        ProcessoSeletivo.Criar("PS Cronograma", TiposDeProcessoDeTeste.Sisu, origem, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
 
     internal static (FaseCronograma Inscricao, FaseCronograma Homologacao) InscricaoEHomologacaoComPeriodosSobrepostos()
     {

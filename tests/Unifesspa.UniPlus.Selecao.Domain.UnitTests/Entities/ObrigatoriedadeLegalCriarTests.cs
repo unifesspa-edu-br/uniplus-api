@@ -54,9 +54,9 @@ public sealed class ObrigatoriedadeLegalCriarTests
 
     [Theory(DisplayName = "TipoProcessoCodigo estruturalmente válido é aceito; a atividade é validada pelo catálogo no handler")]
     [InlineData("*")]
-    [InlineData("SiSU")]
-    [InlineData("PSIQ")]
-    [InlineData("PortadorDiploma")]
+    [InlineData("SISU")]
+    [InlineData("INDIGENA_E_QUILOMBOLA")]
+    [InlineData("PORTADOR_DE_DIPLOMA")]
     [InlineData("SISU_ANTIGO")]
     [InlineData("sisu")]
     public void Criar_TipoProcessoCodigoEstruturalmenteValido_Aceita(string tipoProcessoCodigo)

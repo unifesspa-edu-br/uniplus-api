@@ -13,7 +13,7 @@ using Unifesspa.UniPlus.Testes.Compartilhado;
 internal static class ApoioDoDesempatePorAreaEnem
 {
     internal static ProcessoSeletivo NovoProcesso() =>
-        ProcessoSeletivo.Criar("PS ENEM 2027", TiposDeProcessoDeTeste.PSIQ, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(), UnidadeAdministradoraSnapshot.Criar("CEPS", "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
+        ProcessoSeletivo.Criar("PS ENEM 2027", TiposDeProcessoDeTeste.IndigenaEQuilombola, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(), UnidadeAdministradoraSnapshot.Criar("CEPS", "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
 
     internal static ReferenciaRegra Regra(string codigo, char semente) =>
         ReferenciaRegra.De(codigo, "v1", new string(semente, 64));

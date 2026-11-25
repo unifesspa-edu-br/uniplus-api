@@ -22,7 +22,7 @@ public sealed class LeituraDaIdentificacaoEDoCronogramaTests
 {
     private const string Documento = """
         {
-          "identificacao": { "nome": "Processo de Teste", "tipoProcessoCodigo": "SiSU", "unidadeAdministradoraCodigo": "CEPS", "origemCandidatos": "IMPORTACAO_EXTERNA", "localidadeCodigoIbge": "1504208" },
+          "identificacao": { "nome": "Processo de Teste", "tipoProcessoCodigo": "SISU", "unidadeAdministradoraCodigo": "CEPS", "origemCandidatos": "IMPORTACAO_EXTERNA", "localidadeCodigoIbge": "1504208" },
           "cronograma": { "fases": [
             { "chave": "inscricao", "tipoFaseCodigo": "INSCRICAO", "unidadeResponsavelCodigo": "CEPS" },
             { "chave": "recurso", "tipoFaseCodigo": "RECURSO", "unidadeResponsavelCodigo": "CEPS" },
@@ -43,7 +43,7 @@ public sealed class LeituraDaIdentificacaoEDoCronogramaTests
         tiposDeAto.ListarVigentesAsync(default!, default, default).ReturnsForAnyArgs([]);
         _unidades.ObterPorCodigoAsync("CEPS", Arg.Any<CancellationToken>()).Returns(Unidade("CEPS"));
         _unidades.ObterPorCodigoAsync("CGA", Arg.Any<CancellationToken>()).Returns((UnidadeView?)null);
-        _tiposDeProcesso.ObterAtivoPorCodigoAsync("SiSU", Arg.Any<CancellationToken>()).Returns(new TipoProcessoView(Guid.CreateVersion7(), "SiSU", "Sistema de Seleção", null));
+        _tiposDeProcesso.ObterAtivoPorCodigoAsync("SISU", Arg.Any<CancellationToken>()).Returns(new TipoProcessoView(Guid.CreateVersion7(), "SISU", "Sistema de Seleção", null));
         _fasesCanonicas.ListarVivasPorCodigosAsync(default!, default).ReturnsForAnyArgs([Fase("INSCRICAO"), Fase("RECURSO")]);
         _geo.ConferirMunicipioAsync("1504208", "PA", Arg.Any<CancellationToken>()).Returns(Result<string>.Success("Marabá"));
         _leitura = new(new(
@@ -70,7 +70,7 @@ public sealed class LeituraDaIdentificacaoEDoCronogramaTests
 
         lidos.IsSuccess.Should().BeTrue();
         lidos.Value!.Identidade.Nome.Should().Be("Processo de Teste");
-        lidos.Value.Identidade.TipoProcesso!.Codigo.Should().Be("SiSU");
+        lidos.Value.Identidade.TipoProcesso!.Codigo.Should().Be("SISU");
         lidos.Value.Identidade.UnidadeAdministradora!.Codigo.Should().Be("CEPS");
         lidos.Value.Cronograma.Localidade!.CodigoIbge.Should().Be("1504208");
         lidos.Value.Cronograma.CronogramaFases.Should().HaveCount(3);
@@ -84,7 +84,7 @@ public sealed class LeituraDaIdentificacaoEDoCronogramaTests
         await _unidades.Received(1).ObterPorCodigoAsync("CEPS", Arg.Any<CancellationToken>());
         await _unidades.Received(1).ObterPorCodigoAsync("CGA", Arg.Any<CancellationToken>());
         await _fasesCanonicas.Received(1).ListarVivasPorCodigosAsync(Arg.Is<IReadOnlyCollection<string>>(c => c.SequenceEqual(new[] { "INSCRICAO", "RECURSO" })), Arg.Any<CancellationToken>());
-        await _tiposDeProcesso.Received(1).ObterAtivoPorCodigoAsync("SiSU", Arg.Any<CancellationToken>());
+        await _tiposDeProcesso.Received(1).ObterAtivoPorCodigoAsync("SISU", Arg.Any<CancellationToken>());
         await _geo.Received(1).ConferirMunicipioAsync("1504208", "PA", Arg.Any<CancellationToken>());
     }
 

@@ -119,7 +119,7 @@ public sealed class ModeloFormularioAdminEndpointTests
     public async Task TipoProcessoComCaractereNulo_RecusaSemErroDoBanco()
     {
         using HttpClient client = _fixture.Factory.CreateClient();
-        object modelo = ComTipoDeProcesso(Habilitacao(CodigoUnico()), "PSR\u0000");
+        object modelo = ComTipoDeProcesso(Habilitacao(CodigoUnico()), "REGULAR_UNIFICADO\u0000");
 
         HttpResponseMessage criar = await EnviarAsync(client, HttpMethod.Post, Base, modelo);
         HttpResponseMessage listar = await EnviarAsync(client, HttpMethod.Get, $"{Base}?tipoProcesso=%00");

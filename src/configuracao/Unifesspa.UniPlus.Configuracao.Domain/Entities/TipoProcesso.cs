@@ -2,9 +2,10 @@ namespace Unifesspa.UniPlus.Configuracao.Domain.Entities;
 
 using Unifesspa.UniPlus.Configuracao.Domain.Errors;
 using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
+using Unifesspa.UniPlus.Kernel.Domain;
 using Unifesspa.UniPlus.Kernel.Domain.Entities;
 using Unifesspa.UniPlus.Kernel.Domain.Interfaces;
-using Unifesspa.UniPlus.Kernel.Extensions;
+using Unifesspa.UniPlus.Kernel.Domain.ValueObjects;
 using Unifesspa.UniPlus.Kernel.Results;
 
 /// <summary>
@@ -17,13 +18,12 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// </remarks>
 public sealed class TipoProcesso : EntityBase, IAuditableEntity
 {
-    private const int CodigoMaxLength = 64;
     private const int NomeMaxLength = 200;
     private const int DescricaoMaxLength = 1000;
 
-    private static readonly CampoTextual CampoCodigo = new(
-        "Código do tipo de processo seletivo", CodigoMaxLength,
-        TipoProcessoErrorCodes.CodigoTamanho, TipoProcessoErrorCodes.CodigoCaractereInvalido, FormaDoTexto.UmaLinha);
+    private static readonly CampoDeCodigo CampoCodigo = new(
+        "Código do tipo de processo seletivo", FormatoDoCodigo.ComprimentoMaximo,
+        TipoProcessoErrorCodes.CodigoObrigatorio, TipoProcessoErrorCodes.CodigoFormatoInvalido);
 
     private static readonly CampoTextual CampoNome = new(
         "Nome do tipo de processo seletivo", NomeMaxLength,
@@ -42,23 +42,20 @@ public sealed class TipoProcesso : EntityBase, IAuditableEntity
 
     private TipoProcesso() { }
 
-    /// <summary>
-    /// Valida o código (formato, tamanho e reserva de "*"), sem mutar nada —
-    /// existe para o handler de criação decidir se vale a pena consultar a
-    /// unicidade antes mesmo de chamar <see cref="Criar"/>, que revalida por
-    /// conta própria.
-    /// </summary>
+    /// <summary>Valida o código sem alterar o valor recebido.</summary>
     public static Result<string> ValidarCodigo(string? codigo)
     {
-        List<FieldError> erros = [];
-        string? normalizado = CampoCodigo.Obrigatorio(codigo, "codigo", TipoProcessoErrorCodes.CodigoObrigatorio, erros);
-        if (normalizado == "*")
+        FieldError? recusa = CampoCodigo.Recusa(codigo, "codigo");
+        if (recusa is not null)
         {
-            erros.Add(new("codigo", new DomainError(
-                TipoProcessoErrorCodes.CodigoReservado, "O código '*' é reservado para obrigatoriedade legal universal.")));
+            return Result<string>.ValidationFailure([recusa]);
         }
-
-        return erros.Count > 0 ? Result<string>.ValidationFailure(erros) : Result<string>.Success(normalizado!);
+        if (codigo == TodosOsTiposDeProcesso.Codigo)
+        {
+            return Result<string>.ValidationFailure([new("codigo", new DomainError(
+                TipoProcessoErrorCodes.CodigoReservado, "O código do tipo de processo seletivo é reservado à obrigatoriedade legal que vale para todos os tipos"))]);
+        }
+        return Result<string>.Success(codigo!);
     }
 
     /// <summary>
@@ -85,25 +82,13 @@ public sealed class TipoProcesso : EntityBase, IAuditableEntity
     /// </summary>
     public static Result<TipoProcesso> Criar(string? codigo, string? nome, string? descricao)
     {
-        List<FieldError> erros = [];
-
         Result<string> codigoResult = ValidarCodigo(codigo);
-        if (codigoResult.IsFailure)
-        {
-            erros.AddRange(codigoResult.Errors);
-        }
-
         Result<(string Nome, string? Descricao)> camposResult = ValidarCamposEditaveis(nome, descricao);
-        if (camposResult.IsFailure)
-        {
-            erros.AddRange(camposResult.Errors);
-        }
-
+        List<FieldError> erros = [.. codigoResult.Errors, .. camposResult.Errors];
         if (erros.Count > 0)
         {
             return Result<TipoProcesso>.ValidationFailure(erros);
         }
-
         return Result<TipoProcesso>.Success(new TipoProcesso
         {
             Codigo = codigoResult.Value!,

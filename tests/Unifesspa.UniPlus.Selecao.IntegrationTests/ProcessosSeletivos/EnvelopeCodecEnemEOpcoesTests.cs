@@ -234,7 +234,7 @@ public sealed class EnvelopeCodecEnemEOpcoesTests
     private static ProcessoSeletivo NovoProcessoPsiq()
     {
         ProcessoSeletivo processo = ProcessoSeletivo.Criar(
-            "PS BaseadoEmEnem", TiposDeProcessoDeTeste.PSIQ, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(),
+            "PS BaseadoEmEnem", TiposDeProcessoDeTeste.IndigenaEQuilombola, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(),
             UnidadeAdministradoraSnapshot.Criar("CEPS", "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, identificadorLegivel: IdentificadoresDeTeste.Novo());
 
         return processo;

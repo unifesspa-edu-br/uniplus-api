@@ -69,7 +69,7 @@ internal static class ApoioDaDefinicaoDasRegrasDeDerivacao
     ];
 
     internal static ProcessoSeletivo ProcessoBase() =>
-        ProcessoSeletivo.Criar("PS Regras", TiposDeProcessoDeTeste.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
+        ProcessoSeletivo.Criar("PS Regras", TiposDeProcessoDeTeste.Sisu, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
 
     /// <summary>Processo em rascunho que oferta a modalidade AC e coleta COR_RACA — o mínimo para uma derivação válida.</summary>
     internal static ProcessoSeletivo ProcessoComModalidadeAcEColeta()

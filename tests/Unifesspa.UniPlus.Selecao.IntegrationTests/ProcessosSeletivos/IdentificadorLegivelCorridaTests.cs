@@ -97,7 +97,7 @@ public sealed class IdentificadorLegivelCorridaTests : IClassFixture<ProcessoSel
     }
 
     private static CriarProcessoSeletivoCommand PedidoDeCriacao(IdentificadorLegivel identificador) => new(
-        "PS Corrida", TiposDeProcessoDeTeste.SiSU, OrigemCandidatos.InscricaoPropria, UnidadeId,
+        "PS Corrida", TiposDeProcessoDeTeste.Sisu, OrigemCandidatos.InscricaoPropria, UnidadeId,
         "1504208", "Marabá", "PA", identificador.Valor);
 
     private static IUnidadeReader UnidadeAdministradora()
@@ -112,8 +112,8 @@ public sealed class IdentificadorLegivelCorridaTests : IClassFixture<ProcessoSel
     private static ITipoProcessoReader TipoDeProcesso()
     {
         ITipoProcessoReader tipoProcessoReader = Substitute.For<ITipoProcessoReader>();
-        tipoProcessoReader.ObterAtivoPorIdAsync(TiposDeProcessoDeTeste.SiSU.OrigemId, Arg.Any<CancellationToken>())
-            .Returns(new TipoProcessoView(TiposDeProcessoDeTeste.SiSU.OrigemId, "SiSU", "SiSU", null));
+        tipoProcessoReader.ObterAtivoPorIdAsync(TiposDeProcessoDeTeste.Sisu.OrigemId, Arg.Any<CancellationToken>())
+            .Returns(new TipoProcessoView(TiposDeProcessoDeTeste.Sisu.OrigemId, "SISU", "SiSU", null));
         return tipoProcessoReader;
     }
 
@@ -126,7 +126,7 @@ public sealed class IdentificadorLegivelCorridaTests : IClassFixture<ProcessoSel
     }
 
     private static ProcessoSeletivo NovoProcesso(IdentificadorLegivel identificador) => ProcessoSeletivo.Criar(
-        "PS Corrida", TiposDeProcessoDeTeste.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(),
+        "PS Corrida", TiposDeProcessoDeTeste.Sisu, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(),
         UnidadeAdministradoraSnapshot.Criar("CEPS", "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!,
         LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!,
         identificador);

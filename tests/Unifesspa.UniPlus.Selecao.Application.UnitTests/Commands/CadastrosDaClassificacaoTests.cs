@@ -19,7 +19,7 @@ public sealed class CadastrosDaClassificacaoTests
     [InlineData(true, "RegraEliminacao.RegraTipoInvalido")]
     public async Task Handle_RegraDeEliminacaoAusenteOuDeOutroTipo_Recusa(bool outroTipo, string codigoEsperado)
     {
-        ProcessoSeletivo processo = NovoProcesso("Seleção", TiposDeProcessoDeTeste.PSIQ);
+        ProcessoSeletivo processo = NovoProcesso("Seleção", TiposDeProcessoDeTeste.IndigenaEQuilombola);
         string codigo = RegraDeEliminacaoPorCalculo.ZeroEmAreaDoEnem.Codigo();
         CenarioDaClassificacao cenario = Com(processo).ComRegrasBasicas();
         if (outroTipo)
@@ -35,7 +35,7 @@ public sealed class CadastrosDaClassificacaoTests
     [Fact]
     public async Task Handle_RegraDeEliminacaoForaDoCatalogoDeTipos_Recusa()
     {
-        ProcessoSeletivo processo = NovoProcesso("Seleção", TiposDeProcessoDeTeste.PSIQ);
+        ProcessoSeletivo processo = NovoProcesso("Seleção", TiposDeProcessoDeTeste.IndigenaEQuilombola);
         CenarioDaClassificacao cenario = Com(processo).ComRegrasBasicas().ComRegra("INEXISTENTE", TipoRegra.RegraEliminacao);
 
         Result resultado = await cenario.DefinirAsync(ComandoComEliminacao(processo.Id, new("INEXISTENTE", "v1", null, null, null, null)));

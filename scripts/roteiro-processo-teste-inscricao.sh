@@ -364,8 +364,8 @@ setup_configuracao() {
     # PSR (Processo Seletivo Regular) é o tipo de processo do modelo de
     # inscrição semeado da Medicina (SementePsrMedicina2027) — aplicar o
     # modelo exige que o processo seja do mesmo tipo.
-    TIPO_PROCESSO_ID=$(api_get "/api/configuracao/tipos-processo?limit=100" | jq -r '.[] | select(.codigo=="PSR") | .id')
-    [ -n "$TIPO_PROCESSO_ID" ] || fail "tipo de processo 'PSR' não encontrado no catálogo semeado"
+    TIPO_PROCESSO_ID=$(api_get "/api/configuracao/tipos-processo?limit=100" | jq -r '.[] | select(.codigo=="REGULAR_UNIFICADO") | .id')
+    [ -n "$TIPO_PROCESSO_ID" ] || fail "tipo de processo 'REGULAR_UNIFICADO' não encontrado no catálogo semeado"
 
     # O modelo com prova coleta CONDICAO_ATENDIMENTO e RECURSO_ACESSIBILIDADE, cujas
     # opções são as que o processo oferta em atendimento especializado; a conformidade

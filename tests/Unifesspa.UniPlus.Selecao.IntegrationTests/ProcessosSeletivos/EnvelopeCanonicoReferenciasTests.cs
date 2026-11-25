@@ -42,7 +42,7 @@ public sealed class EnvelopeCanonicoReferenciasTests
             "o tipo de processo é uma cópia entre módulos: a origem permite rastrear a escolha e código/nome " +
             "preservam a interpretação publicada mesmo que o catálogo seja alterado depois");
         tipoProcesso["origemId"]!.GetValue<string>().Should().NotBeNullOrWhiteSpace();
-        tipoProcesso["codigo"]!.GetValue<string>().Should().Be("SiSU");
+        tipoProcesso["codigo"]!.GetValue<string>().Should().Be("SISU");
         tipoProcesso["nome"]!.GetValue<string>().Should().Be("SiSU");
     }
 

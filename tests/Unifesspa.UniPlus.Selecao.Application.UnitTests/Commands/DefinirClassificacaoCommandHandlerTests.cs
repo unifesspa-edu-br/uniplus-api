@@ -32,7 +32,7 @@ public sealed class DefinirClassificacaoCommandHandlerTests
     [Fact(DisplayName = "Handle com FORMULA_MEDIA_PONDERADA + arredondamento resolve e persiste")]
     public async Task Handle_MediaPonderadaComArredondamento_Persiste()
     {
-        ProcessoSeletivo processo = NovoProcesso("PSIQ 2026", TiposDeProcessoDeTeste.PSIQ);
+        ProcessoSeletivo processo = NovoProcesso("PSIQ 2026", TiposDeProcessoDeTeste.IndigenaEQuilombola);
         CenarioDaClassificacao cenario = Com(processo).ComRegrasBasicas();
 
         Result result = await cenario.DefinirAsync(ComandoDeMediaPonderada(processo.Id));
@@ -46,7 +46,7 @@ public sealed class DefinirClassificacaoCommandHandlerTests
     [Fact(DisplayName = "Handle repassa a escala da nota final para Criar — chega até a configuração persistida")]
     public async Task Handle_PropagaAEscalaDaNotaFinal()
     {
-        ProcessoSeletivo processo = NovoProcesso("PSIQ 2026", TiposDeProcessoDeTeste.PSIQ);
+        ProcessoSeletivo processo = NovoProcesso("PSIQ 2026", TiposDeProcessoDeTeste.IndigenaEQuilombola);
         CenarioDaClassificacao cenario = Com(processo).ComRegrasBasicas();
 
         Result result = await cenario.DefinirAsync(ComandoDeMediaPonderada(processo.Id) with { EscalaNotaFinal = 1000m });
@@ -60,7 +60,7 @@ public sealed class DefinirClassificacaoCommandHandlerTests
     [InlineData(false)]
     public async Task Handle_PropagaBaseadoEmEnem(bool baseadoEmEnem)
     {
-        ProcessoSeletivo processo = NovoProcesso("PSIQ 2026", TiposDeProcessoDeTeste.PSIQ);
+        ProcessoSeletivo processo = NovoProcesso("PSIQ 2026", TiposDeProcessoDeTeste.IndigenaEQuilombola);
         CenarioDaClassificacao cenario = Com(processo).ComRegrasBasicas().ComResolucaoDosPesos();
 
         // Classificação baseada em ENEM com cálculo local exige a resolução de Pesos por Área.
@@ -77,7 +77,7 @@ public sealed class DefinirClassificacaoCommandHandlerTests
     [Fact(DisplayName = "Handle com CLASSIFICACAO_IMPORTADA sem arredondamento resolve e persiste")]
     public async Task Handle_Importada_SemArredondamento_Persiste()
     {
-        ProcessoSeletivo processo = NovoProcesso("SiSU 2026", TiposDeProcessoDeTeste.SiSU);
+        ProcessoSeletivo processo = NovoProcesso("SiSU 2026", TiposDeProcessoDeTeste.Sisu);
         CenarioDaClassificacao cenario = Com(processo)
             .ComRegra(RegraDeCalculoDaNota.ClassificacaoImportada.Codigo(), TipoRegra.RegraCalculo)
             .ComRegra(RegraDeOrdemDeAlocacao.PrimeiraOpcaoPrioritaria.Codigo(), TipoRegra.RegraOrdemAlocacao);
@@ -92,7 +92,7 @@ public sealed class DefinirClassificacaoCommandHandlerTests
     [Fact(DisplayName = "Handle com regra de cálculo inexistente recusa")]
     public async Task Handle_RegraCalculoNaoEncontrada_Recusa()
     {
-        ProcessoSeletivo processo = NovoProcesso("PSIQ 2026", TiposDeProcessoDeTeste.PSIQ);
+        ProcessoSeletivo processo = NovoProcesso("PSIQ 2026", TiposDeProcessoDeTeste.IndigenaEQuilombola);
         CenarioDaClassificacao cenario = Com(processo).SemNenhumaRegraNoCatalogo();
         DefinirClassificacaoCommand command = new(
             processo.Id, "INEXISTENTE", "v1", null, null, null, RegraDeOrdemDeAlocacao.PrimeiraOpcaoPrioritaria.Codigo(), "v1", [], false, null, null);
@@ -106,7 +106,7 @@ public sealed class DefinirClassificacaoCommandHandlerTests
     [Fact(DisplayName = "Handle com regra de cálculo de tipo inválido recusa")]
     public async Task Handle_RegraCalculoTipoInvalido_Recusa()
     {
-        ProcessoSeletivo processo = NovoProcesso("PSIQ 2026", TiposDeProcessoDeTeste.PSIQ);
+        ProcessoSeletivo processo = NovoProcesso("PSIQ 2026", TiposDeProcessoDeTeste.IndigenaEQuilombola);
         CenarioDaClassificacao cenario = Com(processo).ComRegra(RegraDeCalculoDaNota.MediaPonderada.Codigo(), TipoRegra.RegraArredondamento);
         DefinirClassificacaoCommand command = new(
             processo.Id, RegraDeCalculoDaNota.MediaPonderada.Codigo(), "v1", null, null, null,

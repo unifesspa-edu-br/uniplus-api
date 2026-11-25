@@ -227,7 +227,7 @@ public sealed class ConformidadePublicabilidadeEstruturalDerivacaoEContraprovaTe
     private static ProcessoSeletivo ProcessoComAtendimentoECronogramaPendentes()
     {
         ProcessoSeletivo processo = ProcessoSeletivo.Criar(
-            "PS Precedência", TiposDeProcessoDeTeste.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(),
+            "PS Precedência", TiposDeProcessoDeTeste.Sisu, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(),
             UnidadeAdministradoraSnapshot.Criar("CEPS", "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!,
             LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, identificadorLegivel: IdentificadoresDeTeste.Novo());
         processo.DefinirDistribuicaoVagas([DistribuicaoAmpla(10)], FatosDeModalidadeDeTeste.DoCatalogo).IsSuccess.Should().BeTrue();
