@@ -58,73 +58,87 @@ public static class VeredictoDeSubmissao
         ArgumentNullException.ThrowIfNull(aceites);
 
         ClassificadorDoGeo classificador = new(geo);
-        List<RecusaDaSubmissao> recusas = [.. ProblemasDosItens(avaliacao.Itens, avaliacao.Fatos, caminho: null, diaDoEnvio, classificador)];
+        return [.. ProblemasDosItens(avaliacao.Itens, avaliacao.Fatos, caminho: null, diaDoEnvio, classificador),
+            .. RecusasDosGrupos(avaliacao.Grupos, diaDoEnvio, classificador),
+            .. RecusasDosTermos(avaliacao.Termos, termosExigidos, aceites)];
+    }
 
-        foreach (AvaliacaoGrupo grupo in avaliacao.Grupos)
+    private static IEnumerable<RecusaDaSubmissao> RecusasDosGrupos(
+        IReadOnlyList<AvaliacaoGrupo> grupos, DateOnly diaDoEnvio, ClassificadorDoGeo classificador)
+    {
+        foreach (AvaliacaoGrupo grupo in grupos)
         {
             if (grupo.Visivel != Ternario.Verdadeiro)
-            {
                 continue;
-            }
-
-            if (!grupo.ContagemValida)
+            foreach (RecusaDaSubmissao recusa in RecusasDoGrupo(grupo, classificador))
             {
-                recusas.Add(new RecusaDaSubmissao(
-                    Recusa(grupo.Codigo, InscricaoErrorCodes.GrupoContagemInvalida, "O número de ocorrências do grupo não respeita o mínimo ou o máximo exigido."),
-                    classificador.ContagemAbaixoDoMinimo(grupo)));
+                yield return recusa;
             }
-
-            if (!grupo.OcorrenciaDoCandidatoValida)
+            foreach (RecusaDaSubmissao recusa in RecusasDasOcorrencias(grupo, diaDoEnvio, classificador))
             {
-                recusas.Add(Independente(Recusa(grupo.Codigo, InscricaoErrorCodes.GrupoCandidatoAusente, "O grupo inclui o candidato, mas nenhuma ocorrência o representa.")));
-            }
-
-            if (grupo.Obrigatorio == Ternario.Verdadeiro && grupo.Estado == EstadoFato.Indeterminado)
-            {
-                recusas.Add(Independente(Recusa(grupo.Codigo, InscricaoErrorCodes.ItemObrigatorioAusente, $"O grupo '{grupo.Codigo}' é obrigatório e não tem ocorrência nenhuma.")));
-            }
-
-            HashSet<string> idsVistos = new(StringComparer.Ordinal);
-            foreach (AvaliacaoOcorrencia ocorrencia in grupo.Ocorrencias)
-            {
-                if (!idsVistos.Add(ocorrencia.Id))
-                {
-                    recusas.Add(Independente(Recusa($"{grupo.Codigo}.{ocorrencia.Id}", InscricaoErrorCodes.GrupoIdDuplicado, $"Duas ocorrências do grupo '{grupo.Codigo}' repetem o id '{ocorrencia.Id}'.")));
-                }
-
-                recusas.AddRange(ProblemasDosItens(ocorrencia.Itens, ocorrencia.Fatos, caminho: $"{grupo.Codigo}.{ocorrencia.Id}", diaDoEnvio, classificador));
+                yield return recusa;
             }
         }
+    }
 
-        foreach (AvaliacaoTermo termo in avaliacao.Termos)
+    private static IEnumerable<RecusaDaSubmissao> RecusasDoGrupo(AvaliacaoGrupo grupo, ClassificadorDoGeo classificador)
+    {
+        if (!grupo.ContagemValida)
+            yield return new RecusaDaSubmissao(
+                Recusa(grupo.Codigo, InscricaoErrorCodes.GrupoContagemInvalida, "O número de ocorrências do grupo não respeita o mínimo ou o máximo exigido."),
+                classificador.ContagemAbaixoDoMinimo(grupo));
+        if (!grupo.OcorrenciaDoCandidatoValida)
+            yield return Independente(Recusa(grupo.Codigo, InscricaoErrorCodes.GrupoCandidatoAusente, "O grupo inclui o candidato, mas nenhuma ocorrência o representa."));
+        if (grupo.Obrigatorio == Ternario.Verdadeiro && grupo.Estado == EstadoFato.Indeterminado)
+            yield return Independente(Recusa(grupo.Codigo, InscricaoErrorCodes.ItemObrigatorioAusente, $"O grupo '{grupo.Codigo}' é obrigatório e não tem ocorrência nenhuma."));
+    }
+
+    private static IEnumerable<RecusaDaSubmissao> RecusasDasOcorrencias(
+        AvaliacaoGrupo grupo, DateOnly diaDoEnvio, ClassificadorDoGeo classificador)
+    {
+        HashSet<string> idsVistos = new(StringComparer.Ordinal);
+        foreach (AvaliacaoOcorrencia ocorrencia in grupo.Ocorrencias)
+        {
+            if (!idsVistos.Add(ocorrencia.Id))
+                yield return Independente(Recusa($"{grupo.Codigo}.{ocorrencia.Id}", InscricaoErrorCodes.GrupoIdDuplicado, $"Duas ocorrências do grupo '{grupo.Codigo}' repetem o id '{ocorrencia.Id}'."));
+            foreach (RecusaDaSubmissao recusa in ProblemasDosItens(ocorrencia.Itens, ocorrencia.Fatos, $"{grupo.Codigo}.{ocorrencia.Id}", diaDoEnvio, classificador))
+            {
+                yield return recusa;
+            }
+        }
+    }
+
+    /// <summary>A recusa é sobre o aceite e, por isso, usa o código sem prefixo do termo exigido.</summary>
+    private static IEnumerable<RecusaDaSubmissao> RecusasDosTermos(
+        IReadOnlyList<AvaliacaoTermo> termos, IReadOnlyList<TermoExigidoFormulario> termosExigidos, IReadOnlyList<AceiteDeTermo> aceites)
+    {
+        foreach (AvaliacaoTermo termo in termos)
         {
             if (termo.Visivel != Ternario.Verdadeiro || termo.Obrigatorio != Ternario.Verdadeiro)
-            {
                 continue;
-            }
-
-            // avaliacao.Termos usa o código PREFIXADO pela finalidade (DefinicaoDoProcesso.CodigoDoTermo) —
-            // o mesmo que a apresentação do formulário já expõe (ProjecaoDoFormularioApresentado.Termo).
-            // termosExigidos e aceites usam o código NU, que é o que o candidato conhece e envia; a
-            // recusa é sobre o aceite, então sai nele.
-            TermoExigidoFormulario? exigido = termosExigidos.FirstOrDefault(t =>
-                string.Equals(DefinicaoDoProcesso.CodigoDoTermo(t.Finalidade!.Value, t.Codigo), termo.Codigo, StringComparison.Ordinal));
-            AceiteDeTermo? aceite = exigido is null
-                ? null
-                : aceites.FirstOrDefault(a => string.Equals(a.Codigo, exigido.Codigo, StringComparison.Ordinal));
-
-            bool aceitoNaVersaoFixada = exigido is not null && aceite is not null
-                && aceite.VersaoId == exigido.VersaoId
-                && string.Equals(aceite.HashVersao, exigido.HashVersao, StringComparison.Ordinal);
-
-            if (!aceitoNaVersaoFixada)
+            TermoExigidoFormulario? exigido = TermoExigidoDaAvaliacao(termo, termosExigidos);
+            if (exigido is null || !AceitoNaVersaoFixada(exigido, aceites))
             {
                 string campo = exigido?.Codigo ?? termo.Codigo;
-                recusas.Add(Independente(Recusa(campo, InscricaoErrorCodes.TermoNaoAceito, $"O termo '{campo}' é obrigatório e não foi aceito na versão fixada da inscrição.")));
+                yield return Independente(Recusa(campo, InscricaoErrorCodes.TermoNaoAceito, $"O termo '{campo}' é obrigatório e não foi aceito na versão fixada da inscrição."));
             }
         }
+    }
 
-        return recusas;
+    /// <summary>
+    /// A avaliação usa o código prefixado pela finalidade (<see cref="DefinicaoDoProcesso.CodigoDoTermo"/>),
+    /// o mesmo que a apresentação do formulário expõe; os termos exigidos e os aceites usam o código
+    /// sem prefixo, que é o que o candidato conhece e envia.
+    /// </summary>
+    private static TermoExigidoFormulario? TermoExigidoDaAvaliacao(AvaliacaoTermo termo, IReadOnlyList<TermoExigidoFormulario> termosExigidos) =>
+        termosExigidos.FirstOrDefault(t =>
+            string.Equals(DefinicaoDoProcesso.CodigoDoTermo(t.Finalidade!.Value, t.Codigo), termo.Codigo, StringComparison.Ordinal));
+
+    private static bool AceitoNaVersaoFixada(TermoExigidoFormulario exigido, IReadOnlyList<AceiteDeTermo> aceites)
+    {
+        AceiteDeTermo? aceite = aceites.FirstOrDefault(a => string.Equals(a.Codigo, exigido.Codigo, StringComparison.Ordinal));
+        return aceite is not null && aceite.VersaoId == exigido.VersaoId
+            && string.Equals(aceite.HashVersao, exigido.HashVersao, StringComparison.Ordinal);
     }
 
     /// <summary>
@@ -161,14 +175,8 @@ public static class VeredictoDeSubmissao
     {
         foreach ((string fatoCodigo, JsonElement valor) in respostas)
         {
-            if (!ofertas.TryGetValue(fatoCodigo, out IReadOnlySet<string>? oferta)
-                || RespostaDeCampo.EstaVazia(valor)
-                || RespostaDeCampo.Codigos(ValorDeMunicipio.ComoCodigo(valor)) is not { } codigos
-                || codigos.All(oferta.Contains))
-            {
+            if (!ofertas.TryGetValue(fatoCodigo, out IReadOnlySet<string>? oferta) || !RespostaForaDaOferta(valor, oferta))
                 continue;
-            }
-
             yield return Recusa(
                 caminho is null ? fatoCodigo : $"{caminho}.{fatoCodigo}",
                 InscricaoErrorCodes.RespostaInvalida,
@@ -176,35 +184,37 @@ public static class VeredictoDeSubmissao
         }
     }
 
+    private static bool RespostaForaDaOferta(JsonElement valor, IReadOnlySet<string> oferta) =>
+        !RespostaDeCampo.EstaVazia(valor)
+        && RespostaDeCampo.Codigos(ValorDeMunicipio.ComoCodigo(valor)) is { } codigos
+        && !codigos.All(oferta.Contains);
+
     private static IEnumerable<RecusaDaSubmissao> ProblemasDosItens(
         IReadOnlyList<AvaliacaoItem> itens, IReadOnlyDictionary<string, FatoResolvido> fatos, string? caminho, DateOnly diaDoEnvio, ClassificadorDoGeo classificador)
     {
         foreach (AvaliacaoItem item in itens)
         {
             if (item.Visivel != Ternario.Verdadeiro)
-            {
                 continue;
-            }
-
             string campo = caminho is null ? item.FatoCodigo : $"{caminho}.{item.FatoCodigo}";
-
-            if (item.Impedido == Ternario.Verdadeiro)
+            foreach (RecusaDaSubmissao recusa in RecusasDoItem(item, campo, fatos, diaDoEnvio, classificador))
             {
-                yield return Independente(Recusa(campo, InscricaoErrorCodes.Impedimento, $"A resposta de '{item.FatoCodigo}' impede a submissão desta inscrição."));
-            }
-
-            if (item.RestricoesVioladas.Count > 0)
-            {
-                yield return new RecusaDaSubmissao(RecusaDaResposta.De(campo, item, diaDoEnvio), classificador.RestricaoViolada(item));
-            }
-
-            if (fatos.TryGetValue(item.FatoCodigo, out FatoResolvido? resolvido) && resolvido.Estado == EstadoFato.Indeterminado)
-            {
-                yield return new RecusaDaSubmissao(
-                    Recusa(campo, InscricaoErrorCodes.ItemObrigatorioAusente, $"O item '{item.FatoCodigo}' é obrigatório e está sem resposta."),
-                    classificador.ItemObrigatorioAusente(item, campo));
+                yield return recusa;
             }
         }
+    }
+
+    private static IEnumerable<RecusaDaSubmissao> RecusasDoItem(
+        AvaliacaoItem item, string campo, IReadOnlyDictionary<string, FatoResolvido> fatos, DateOnly diaDoEnvio, ClassificadorDoGeo classificador)
+    {
+        if (item.Impedido == Ternario.Verdadeiro)
+            yield return Independente(Recusa(campo, InscricaoErrorCodes.Impedimento, $"A resposta de '{item.FatoCodigo}' impede a submissão desta inscrição."));
+        if (item.RestricoesVioladas.Count > 0)
+            yield return new RecusaDaSubmissao(RecusaDaResposta.De(campo, item, diaDoEnvio), classificador.RestricaoViolada(item));
+        if (fatos.TryGetValue(item.FatoCodigo, out FatoResolvido? resolvido) && resolvido.Estado == EstadoFato.Indeterminado)
+            yield return new RecusaDaSubmissao(
+                Recusa(campo, InscricaoErrorCodes.ItemObrigatorioAusente, $"O item '{item.FatoCodigo}' é obrigatório e está sem resposta."),
+                classificador.ItemObrigatorioAusente(item, campo));
     }
 
     private static RecusaDaSubmissao Independente(FieldError recusa) => new(recusa, DependeDoGeo: false);
@@ -273,18 +283,19 @@ public sealed record DependenciaDoGeo(DefinicaoFormulario Definicao, IReadOnlySe
         ArgumentNullException.ThrowIfNull(avaliacao);
         ArgumentNullException.ThrowIfNull(daPrimeiraOpcao);
 
-        ModalidadesDeConcorrencia SemSeDependeDoGeo(ModalidadesDeConcorrencia modalidades, ConfiguracaoAvaliavel configuracao) =>
-            modalidades.Situacao == SituacaoDasModalidades.FaltaResponder
-            && AvaliacaoDaInscricao.DerivadosDoSistemaDaModalidade(configuracao).Overlaps(DerivadosIndeterminados)
-                ? ModalidadesDeConcorrencia.SemDerivacao
-                : modalidades;
-
         return avaliacao with
         {
-            Modalidades = SemSeDependeDoGeo(avaliacao.Modalidades, daPrimeiraOpcao),
+            Modalidades = SemSeDependeDoGeo(avaliacao.Modalidades, daPrimeiraOpcao, DerivadosIndeterminados),
             ModalidadesSegundaOpcao = avaliacao.ModalidadesSegundaOpcao is { } daSegunda && daSegundaOpcao is not null
-                ? SemSeDependeDoGeo(daSegunda, daSegundaOpcao)
+                ? SemSeDependeDoGeo(daSegunda, daSegundaOpcao, DerivadosIndeterminados)
                 : avaliacao.ModalidadesSegundaOpcao,
         };
     }
+
+    private static ModalidadesDeConcorrencia SemSeDependeDoGeo(
+        ModalidadesDeConcorrencia modalidades, ConfiguracaoAvaliavel configuracao, IReadOnlySet<string> derivadosIndeterminados) =>
+        modalidades.Situacao == SituacaoDasModalidades.FaltaResponder
+        && AvaliacaoDaInscricao.DerivadosDoSistemaDaModalidade(configuracao).Overlaps(derivadosIndeterminados)
+            ? ModalidadesDeConcorrencia.SemDerivacao
+            : modalidades;
 }
