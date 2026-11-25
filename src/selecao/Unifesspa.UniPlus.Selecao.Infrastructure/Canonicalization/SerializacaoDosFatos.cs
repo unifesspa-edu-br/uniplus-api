@@ -160,7 +160,7 @@ internal static class SerializacaoDosFatos
     {
         ["codigoDoDado"] = HashCanonicalComputer.NormalizeNfc(fato.FatoCodigo),
         ["finalidade"] = fato.Finalidade!.Value.Codigo(),
-        ["paginaCodigo"] = fato.EtapaCodigo is { } etapa ? HashCanonicalComputer.NormalizeNfc(etapa) : null,
+        ["paginaCodigo"] = fato.PaginaCodigo is { } pagina ? HashCanonicalComputer.NormalizeNfc(pagina) : null,
         ["ordem"] = fato.Ordem,
         ["rotulo"] = HashCanonicalComputer.NormalizeNfc(fato.Rotulo),
         ["tipoDeCampo"] = fato.TipoDeCampo.Codigo(),
@@ -228,7 +228,7 @@ internal static class SerializacaoDosFatos
     {
         ["codigo"] = HashCanonicalComputer.NormalizeNfc(g.Codigo),
         ["finalidade"] = g.Finalidade!.Value.Codigo(),
-        ["paginaCodigo"] = g.EtapaCodigo is { } etapa ? HashCanonicalComputer.NormalizeNfc(etapa) : null,
+        ["paginaCodigo"] = g.PaginaCodigo is { } pagina ? HashCanonicalComputer.NormalizeNfc(pagina) : null,
         ["ordem"] = g.Ordem,
         ["rotulo"] = HashCanonicalComputer.NormalizeNfc(g.Rotulo),
         ["minimo"] = g.Minimo,

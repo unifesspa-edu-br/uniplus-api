@@ -51,7 +51,7 @@ public sealed partial class PublicarProcessoSeletivoCommandHandlerTests
             .ComFormato(cpfDoCatalogoAntigo.Formato)
             .ComObrigatoriedade(cpfDoCatalogoAntigo.Obrigatoriedade)
             .ComOrigem(cpfDoCatalogoAntigo.OrigemValores)
-            .NaSecao(cpfDoCatalogoAntigo.EtapaCodigo)
+            .NaSecao(cpfDoCatalogoAntigo.PaginaCodigo)
             .Construir();
         processo.DefinirItens([.. processo.FatosColetados.Select(f => f.FatoCodigo == "CPF" ? cpf : f)]).IsSuccess.Should().BeTrue();
         DefinicaoDaResposta.De(cpf.TipoDeCampo, cpf.ClassificacaoProtecao, fatoCodigo: "CPF").Cifrada.Should().BeFalse("a cópia velha não cifra");

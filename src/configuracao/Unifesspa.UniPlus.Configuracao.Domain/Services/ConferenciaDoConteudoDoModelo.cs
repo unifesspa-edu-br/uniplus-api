@@ -8,7 +8,7 @@ using Unifesspa.UniPlus.Regras.Formularios;
 /// <summary>
 /// As regras do conteúdo do modelo de formulário, as mesmas do formulário do processo, aplicadas por
 /// <c>Unifesspa.UniPlus.Regras</c>. As recusas acumulam (ADR-0125) na ordem das regras: o cabeçalho, a forma
-/// de cada etapa, item, grupo e termo, o teto de itens e os pressupostos; a estrutura por finalidade e o
+/// de cada página, item, grupo e termo, o teto de itens e os pressupostos; a estrutura por finalidade e o
 /// grafo de coleta só são conferidos sobre partes bem formadas, porque dependem delas.
 /// </summary>
 public static class ConferenciaDoConteudoDoModelo
@@ -46,7 +46,7 @@ public static class ConferenciaDoConteudoDoModelo
     [
         .. conteudo.TextosNaoGravaveis(),
         .. FormaDoCabecalho.ValidarTitulo(conteudo.Titulo),
-        .. ConferirFormaDasEtapas(conteudo),
+        .. ConferirFormaDasPaginas(conteudo),
         .. ConferirCamposEGrupos(finalidade, conteudo),
         .. ConferirFormaDosTermos(conteudo),
         .. ConferirPressupostos(finalidade, conteudo),
@@ -64,10 +64,10 @@ public static class ConferenciaDoConteudoDoModelo
         return erros;
     }
 
-    private static IEnumerable<FieldError> ConferirFormaDasEtapas(ConteudoDoModelo conteudo) =>
-        conteudo.Etapas.SelectMany((etapa, i) => NoCaminho(
-            FormaDaEtapa.Conferir(etapa.Codigo, etapa.Ordem, etapa.Tipo, etapa.Titulo, etapa.Descricao, etapa.Aviso, etapa.Exibicao is not null),
-            $"etapas[{i}]"));
+    private static IEnumerable<FieldError> ConferirFormaDasPaginas(ConteudoDoModelo conteudo) =>
+        conteudo.Paginas.SelectMany((pagina, i) => NoCaminho(
+            FormaDaPagina.Conferir(pagina.Codigo, pagina.Ordem, pagina.Tipo, pagina.Titulo, pagina.Descricao, pagina.Aviso, pagina.Exibicao is not null),
+            $"paginas[{i}]"));
 
     private static List<FieldError> ConferirCamposEGrupos(FinalidadeFormulario? finalidade, ConteudoDoModelo conteudo)
     {
@@ -103,7 +103,7 @@ public static class ConferenciaDoConteudoDoModelo
             .. NoCaminho(
                 FormaDoGrupo.Conferir(
                     grupo.Codigo, grupo.Ordem, grupo.Rotulo, grupo.Ocorrencias,
-                    [.. grupo.Subitens.Select(static s => ((string?)s.FatoCodigo, s.EtapaCodigo, s.Regras.Impedimento is not null))],
+                    [.. grupo.Subitens.Select(static s => ((string?)s.FatoCodigo, s.PaginaCodigo, s.Regras.Impedimento is not null))],
                     grupo.Regras),
                 caminho),
             .. ConferirCandidatoComoMembro(grupo.Ocorrencias, grupo.Subitens, caminho),
@@ -176,15 +176,15 @@ public static class ConferenciaDoConteudoDoModelo
 
     private static List<FieldError> ConferirEstruturaPorFinalidade(FinalidadeFormulario finalidade, ConteudoDoModelo conteudo)
     {
-        EtapaEstrutura[] etapas = [.. conteudo.Etapas.Select(static e => new EtapaEstrutura(e.Codigo, e.Ordem, e.Tipo, e.Bloco))];
-        List<FieldError> erros = [.. EstruturaFormulario.ValidarEtapas(finalidade, etapas)];
+        PaginaEstrutura[] paginas = [.. conteudo.Paginas.Select(static e => new PaginaEstrutura(e.Codigo, e.Ordem, e.Tipo, e.Bloco))];
+        List<FieldError> erros = [.. EstruturaFormulario.ValidarPaginas(finalidade, paginas)];
         if (erros.Count == 0)
         {
             erros.AddRange(EstruturaFormulario.ValidarItens(
-                etapas,
+                paginas,
                 [
-                    .. conteudo.Itens.Select(static i => new ItemEstrutura(i.FatoCodigo, i.Ordem, i.EtapaCodigo)),
-                    .. conteudo.Grupos.Select(static g => new ItemEstrutura(g.Codigo, g.Ordem, g.EtapaCodigo)),
+                    .. conteudo.Itens.Select(static i => new ItemEstrutura(i.FatoCodigo, i.Ordem, i.PaginaCodigo)),
+                    .. conteudo.Grupos.Select(static g => new ItemEstrutura(g.Codigo, g.Ordem, g.PaginaCodigo)),
                 ],
                 secaoObrigatoria: true));
         }
@@ -200,19 +200,19 @@ public static class ConferenciaDoConteudoDoModelo
     private static FieldError? ConferirGrafo(ConteudoDoModelo conteudo, IReadOnlyDictionary<string, IReadOnlyCollection<string>> derivacoes)
     {
         ItemDoGrafo[] itens = [.. conteudo.Itens.Select(ParaGrafo)];
-        EtapaDoGrafo[] etapas = [.. conteudo.Etapas.Select(static e => new EtapaDoGrafo(e.Codigo, e.Ordem, e.FatosCitados))];
+        PaginaDoGrafo[] paginas = [.. conteudo.Paginas.Select(static e => new PaginaDoGrafo(e.Codigo, e.Ordem, e.FatosCitados))];
         GrupoDoGrafo[] grupos = [.. conteudo.Grupos.Select(static g => new GrupoDoGrafo(
-            g.Codigo, g.Ordem, g.EtapaCodigo, g.FatosCitados, [.. g.Subitens.OrderBy(static s => s.Ordem).Select(ParaGrafo)]))];
+            g.Codigo, g.Ordem, g.PaginaCodigo, g.FatosCitados, [.. g.Subitens.OrderBy(static s => s.Ordem).Select(ParaGrafo)]))];
         HashSet<string> pressupostos = new(conteudo.Pressupostos, StringComparer.Ordinal);
 
-        return NoConteudoDoGrafo(GrafoDoFormulario.ValidarColeta(itens, etapas, pressupostos, derivacoes, grupos))
+        return NoConteudoDoGrafo(GrafoDoFormulario.ValidarColeta(itens, paginas, pressupostos, derivacoes, grupos))
             ?? ConferirCitacoesDosTermosEDosDocumentos(conteudo, GrafoDoFormulario.Dependencias(itens, pressupostos, derivacoes))
             ?? NoConteudoDoGrafo(ConferirCampoOpcionalQueAlimentaRegra(conteudo, derivacoes));
     }
 
     private static FieldError? NoConteudoDoGrafo(DomainError? erro) => erro is null ? null : new(string.Empty, erro);
 
-    private static ItemDoGrafo ParaGrafo(ItemDoModelo campo) => new(campo.FatoCodigo, campo.Ordem, campo.EtapaCodigo, campo.FatosCitados);
+    private static ItemDoGrafo ParaGrafo(ItemDoModelo campo) => new(campo.FatoCodigo, campo.Ordem, campo.PaginaCodigo, campo.FatosCitados);
 
     private static FieldError? ConferirCitacoesDosTermosEDosDocumentos(ConteudoDoModelo conteudo, DependenciasDoFormulario dependencias) =>
         NoConteudoDoGrafo(conteudo.Termos.Select(t => GrafoDoFormulario.CitacaoInvalidaDoTermo(new TermoDoGrafo(t.Codigo, t.FatosCitados), dependencias))

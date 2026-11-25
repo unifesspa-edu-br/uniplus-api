@@ -109,7 +109,7 @@ internal static class CoerenciaEntreBlocos
     {
         Dictionary<FinalidadeFormulario, FormularioProcesso> porFinalidade = formularios.ToDictionary(static f => f.Finalidade);
         IEnumerable<(FinalidadeFormulario Finalidade, ItemEstrutura Item)> itensEGrupos = fatos
-            .Select(static f => (f.Finalidade!.Value, new ItemEstrutura(f.FatoCodigo, f.Ordem, f.EtapaCodigo)))
+            .Select(static f => (f.Finalidade!.Value, new ItemEstrutura(f.FatoCodigo, f.Ordem, f.PaginaCodigo)))
             .Concat(grupos.Select(static g => (g.Finalidade!.Value, g.ParaEstrutura())));
         foreach (IGrouping<FinalidadeFormulario, ItemEstrutura> itens in itensEGrupos.GroupBy(static p => p.Finalidade, static p => p.Item))
         {

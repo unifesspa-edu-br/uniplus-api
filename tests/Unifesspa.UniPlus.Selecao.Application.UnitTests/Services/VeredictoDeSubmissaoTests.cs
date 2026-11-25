@@ -60,7 +60,7 @@ public sealed class VeredictoDeSubmissaoTests
         recusas.Should().ContainSingle(r => r.Field == "APELIDO" && r.Error.Code == "Inscricao.ItemObrigatorioAusente");
     }
 
-    [Fact(DisplayName = "Item opcional sem resposta, com a etapa concluída, não pesa")]
+    [Fact(DisplayName = "Item opcional sem resposta, com a página concluída, não pesa")]
     public void Avaliar_ItemOpcionalNaoInformado_NaoRecusa()
     {
         AvaliacaoItem item = new("APELIDO", "DADOS", Ternario.Verdadeiro, Ternario.Falso, [], Ternario.Falso);
@@ -230,7 +230,7 @@ public sealed class VeredictoDeSubmissaoTests
         PredicadoDnf predicado = PredicadoDnf.CriarDeCondicoesAgrupadas(
             [(1, CondicaoDnf.Criar(derivado, Operador.Igual, JsonSerializer.SerializeToElement(true)).Value!)]).Value!;
         DefinicaoGrupo grupo = new("GRUPO_1", null, Obrigatoriedade.Quando(predicado), 2, null, [], false);
-        DefinicaoFormulario definicao = new([new DefinicaoEtapa("DADOS", null, [], [grupo])], [], []);
+        DefinicaoFormulario definicao = new([new DefinicaoPagina("DADOS", null, [], [grupo])], [], []);
         return new(definicao, new HashSet<string>([derivado], StringComparer.Ordinal), new HashSet<string>(StringComparer.Ordinal));
     }
 

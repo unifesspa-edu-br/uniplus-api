@@ -219,11 +219,11 @@ public static class CitacoesDosFormularios
         ConfiguracaoDeclarada configuracao,
         FormularioProcesso formulario, FatoColetado[] itens, GrupoColetado[] grupos) =>
         CitacoesDosCampos(itens, grupos)
-            .Concat(formulario.Etapas.SelectMany(secao => CitacoesDaSecao(secao)
+            .Concat(formulario.Paginas.SelectMany(secao => CitacoesDaSecao(secao)
                 .Select(c => (c.Dono,
-                    GrafoDoFormulario.PosicaoDaEtapa(
+                    GrafoDoFormulario.PosicaoDaPagina(
                         secao.ParaGrafo(),
-                        formulario.Etapas.Select(static e => e.ParaGrafo()),
+                        formulario.Paginas.Select(static e => e.ParaGrafo()),
                         itens.Select(static i => i.ParaGrafo()),
                         grupos.Select(static g => g.ParaGrafo())),
                     c.Citado))))
@@ -236,7 +236,7 @@ public static class CitacoesDosFormularios
         itens.SelectMany(static item => item.FatosCitados.Select(c => ($"o item '{item.FatoCodigo}'", (long)item.Ordem, c)))
             .Concat(grupos.SelectMany(static grupo => CitacoesDeFora(grupo).Select(c => ($"o grupo '{grupo.Codigo}'", (long)grupo.Ordem, c))));
 
-    internal static IEnumerable<(string Dono, string Citado)> CitacoesDaSecao(EtapaFormulario secao) =>
+    internal static IEnumerable<(string Dono, string Citado)> CitacoesDaSecao(PaginaDoFormulario secao) =>
         secao.FatosCitados.Select(c => ($"a exibição da seção '{secao.Codigo}'", c));
 
     internal static IEnumerable<(string Dono, string Citado)> CitacoesDoTermo(TermoExigidoFormulario termo) =>
@@ -249,14 +249,14 @@ public static class CitacoesDosFormularios
     /// (UNI-REQ-0144, UNI-REQ-0145).
     /// </summary>
     internal static DomainError? ValidarGrafoDeFatos(
-        IReadOnlyCollection<EtapaFormulario> etapas,
+        IReadOnlyCollection<PaginaDoFormulario> paginas,
         IReadOnlyList<FatoColetado> fatos,
         IReadOnlyList<GrupoColetado> grupos,
         HashSet<string> daInscricao,
         IReadOnlyDictionary<string, IReadOnlyCollection<string>> derivacoes) =>
         GrafoDoFormulario.ValidarColeta(
             [.. fatos.Select(static f => f.ParaGrafo())],
-            [.. etapas.Select(static e => e.ParaGrafo())],
+            [.. paginas.Select(static e => e.ParaGrafo())],
             daInscricao,
             derivacoes,
             [.. grupos.Select(static g => g.ParaGrafo())]);
@@ -282,7 +282,7 @@ public static class CitacoesDosFormularios
 
     /// <summary>Os itens e os grupos, na forma que a estrutura confere: o grupo ocupa uma posição na ordem dos itens.</summary>
     internal static IReadOnlyList<ItemEstrutura> ParaEstrutura(IEnumerable<FatoColetado> itens, IEnumerable<GrupoColetado> grupos) =>
-        [.. itens.Select(static f => new ItemEstrutura(f.FatoCodigo, f.Ordem, f.EtapaCodigo)), .. grupos.Select(static g => g.ParaEstrutura())];
+        [.. itens.Select(static f => new ItemEstrutura(f.FatoCodigo, f.Ordem, f.PaginaCodigo)), .. grupos.Select(static g => g.ParaEstrutura())];
 
     /// <summary>
     /// A primeira regra de item ou condição de termo que cita fato que o formulário dela não
@@ -318,7 +318,7 @@ public static class CitacoesDosFormularios
         FatoColetado[] itens = [.. fatos.Where(f => f.Finalidade == finalidade)];
         DependenciasDoFormulario dependencias = DependenciasDe(finalidade, itens, daInscricao, derivacoes);
         return GrafoDoFormulario.CitacaoInvalida(
-            [.. itens.Select(static i => i.ParaGrafo())], [.. formulario.Etapas.Select(static e => e.ParaGrafo())],
+            [.. itens.Select(static i => i.ParaGrafo())], [.. formulario.Paginas.Select(static e => e.ParaGrafo())],
             termos.Where(t => t.Finalidade == finalidade).Select(static t => t.ParaGrafo()), dependencias,
             [.. grupos.Where(g => g.Finalidade == finalidade).Select(static g => g.ParaGrafo())]);
     }

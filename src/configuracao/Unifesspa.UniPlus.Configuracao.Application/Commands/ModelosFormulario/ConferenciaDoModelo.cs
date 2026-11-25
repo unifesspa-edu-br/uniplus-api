@@ -71,7 +71,7 @@ internal static class ConferenciaDoModelo
             .. ConferirItens(conteudo.Itens, catalogo),
             .. ConferirGrupos(conteudo.Grupos, catalogo),
             .. ConferirDocumentos(conteudo.Documentos.ComCaminho(), catalogo),
-            .. ConferirEtapas(conteudo.Etapas, catalogo),
+            .. ConferirPaginas(conteudo.Paginas, catalogo),
             .. ConferirTermos(conteudo.Termos, catalogo, versoes, existentes.Termos),
             .. ConferirPressupostos(conteudo.Pressupostos, catalogo),
             .. ConferirVinculos(conteudo, catalogo, existentes),
@@ -128,8 +128,8 @@ internal static class ConferenciaDoModelo
         .. ConferirExigenciaPorOpcao(documento.PorOpcao, caminho, catalogo),
     ];
 
-    private static IEnumerable<FieldError> ConferirEtapas(IReadOnlyList<(int Indice, EtapaDoModelo Etapa)> etapas, CatalogoDoModelo catalogo) =>
-        etapas.SelectMany(etapa => ConferirPredicados($"etapas[{etapa.Indice}]", etapa.Etapa.Predicados(), catalogo));
+    private static IEnumerable<FieldError> ConferirPaginas(IReadOnlyList<(int Indice, PaginaDoModelo Pagina)> paginas, CatalogoDoModelo catalogo) =>
+        paginas.SelectMany(pagina => ConferirPredicados($"paginas[{pagina.Indice}]", pagina.Pagina.Predicados(), catalogo));
 
     private static IEnumerable<FieldError> ConferirTermos(
         IReadOnlyList<(int Indice, TermoDoModelo Termo)> termos,

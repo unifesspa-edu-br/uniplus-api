@@ -70,10 +70,10 @@ public sealed class ConjuntoBasicoNoFormularioDeInscricaoTests
         ProcessoSeletivo processo = ProcessoConformeFactory.Criar();
         Guid? fase = processo.FormularioDe(FinalidadeFormulario.Inscricao)!.FaseId;
         processo.RemoverFormulario(FinalidadeFormulario.Inscricao).IsSuccess.Should().BeTrue();
-        IReadOnlyList<EtapaFormulario> etapas = EtapasComSecaoDeRevalidacao();
+        IReadOnlyList<PaginaDoFormulario> paginas = PaginasComSecaoDeRevalidacao();
 
         Result resultado = processo.DefinirFormulario(
-            FinalidadeFormulario.Inscricao, fase, null, etapas, comOsDadosBasicos ? FormularioDeTeste.DadosBasicos() : null);
+            FinalidadeFormulario.Inscricao, fase, null, paginas, comOsDadosBasicos ? FormularioDeTeste.DadosBasicos() : null);
 
         ConferirDadosBasicos(processo, resultado, comOsDadosBasicos);
     }
@@ -89,23 +89,23 @@ public sealed class ConjuntoBasicoNoFormularioDeInscricaoTests
             finalidade: FinalidadeFormulario.Habilitacao).IsSuccess.Should().BeTrue();
 
         Result resultado = processo.DefinirFormulario(
-            FinalidadeFormulario.Inscricao, fase, null, FormularioDeTeste.Etapas(), FormularioDeTeste.DadosBasicos());
+            FinalidadeFormulario.Inscricao, fase, null, FormularioDeTeste.Paginas(), FormularioDeTeste.DadosBasicos());
 
         resultado.Error!.Code.Should().Be(FatoColetadoErrorCodes.FatoDuplicado);
         resultado.Error.Message.Should().Contain("dados básicos").And.Contain("HABILITACAO");
     }
 
-    private static IReadOnlyList<EtapaFormulario> EtapasComSecaoDeRevalidacao()
+    private static IReadOnlyList<PaginaDoFormulario> PaginasComSecaoDeRevalidacao()
     {
         PredicadoDnf estrangeiro = PredicadoDnf.CriarDeCondicoesAgrupadas(
             [(0, CondicaoDnf.Criar("NACIONALIDADE", Operador.Igual, JsonSerializer.SerializeToElement("ESTRANGEIRO")).Value!)]).Value!;
-        IReadOnlyList<EtapaFormulario> etapas =
+        IReadOnlyList<PaginaDoFormulario> paginas =
         [
-            FormularioDeTeste.Etapas()[0],
-            EtapaFormulario.Criar(new EtapaEstrutura("REVALIDACAO", 1, TipoEtapaFormulario.Secao, null), "Revalidação", null, null, estrangeiro).Value!,
-            EtapaFormulario.Criar(new EtapaEstrutura("REVISAO", 2, TipoEtapaFormulario.Bloco, BlocoSistema.RevisaoEAceite), "Revisão e aceite", null, null).Value!,
+            FormularioDeTeste.Paginas()[0],
+            PaginaDoFormulario.Criar(new PaginaEstrutura("REVALIDACAO", 1, TipoPaginaFormulario.Secao, null), "Revalidação", null, null, estrangeiro).Value!,
+            PaginaDoFormulario.Criar(new PaginaEstrutura("REVISAO", 2, TipoPaginaFormulario.Bloco, BlocoSistema.RevisaoEAceite), "Revisão e aceite", null, null).Value!,
         ];
-        return etapas;
+        return paginas;
     }
 
 

@@ -337,16 +337,16 @@ public sealed class AlterarDefinicaoDoFatoCandidatoCommandHandlerTests
             ItemBooleano("CERTIFICADO", 2, "Certificado", precondicao),
         ];
 
-        return ModeloHabilitacao(new ConteudoDoModelo("Habilitação", EtapasDoModelo(), itens, [], [], []), ativo: true);
+        return ModeloHabilitacao(new ConteudoDoModelo("Habilitação", PaginasDoModelo(), itens, [], [], []), ativo: true);
     }
 
     private static ModeloFormulario ModeloComCertificado(bool ativo = true) =>
-        ModeloHabilitacao(new ConteudoDoModelo("Habilitação", EtapasDoModelo(), [ItemBooleano("CERTIFICADO", 0, "Certificado")], [], [], []), ativo);
+        ModeloHabilitacao(new ConteudoDoModelo("Habilitação", PaginasDoModelo(), [ItemBooleano("CERTIFICADO", 0, "Certificado")], [], [], []), ativo);
 
-    private static EtapaDoModelo[] EtapasDoModelo() =>
+    private static PaginaDoModelo[] PaginasDoModelo() =>
     [
-        new("DADOS", 0, TipoEtapaFormulario.Secao, null, "Dados", null, null, null),
-        new("REVISAO", 1, TipoEtapaFormulario.Bloco, BlocoSistema.RevisaoEAceite, "Revisão", null, null, null),
+        new("DADOS", 0, TipoPaginaFormulario.Secao, null, "Dados", null, null, null),
+        new("REVISAO", 1, TipoPaginaFormulario.Bloco, BlocoSistema.RevisaoEAceite, "Revisão", null, null, null),
     ];
 
     private static ItemDoModelo ItemBooleano(string fato, int ordem, string? rotulo = null, PredicadoDnf? precondicao = null) =>

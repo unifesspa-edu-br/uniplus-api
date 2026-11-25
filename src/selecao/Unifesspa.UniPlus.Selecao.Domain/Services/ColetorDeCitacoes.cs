@@ -15,7 +15,7 @@ internal sealed class ColetorDeCitacoes
     internal ColetorDeCitacoes(DefinicaoFormulario definicao, Func<Guid, bool>? incluir)
     {
         _incluir = incluir;
-        _subitensPorGrupo = definicao.Etapas.SelectMany(static e => e.Grupos).ToDictionary(
+        _subitensPorGrupo = definicao.Paginas.SelectMany(static e => e.Grupos).ToDictionary(
             static g => g.Codigo,
             static g => g.Subitens.Select(static s => s.FatoCodigo).ToHashSet(StringComparer.Ordinal),
             StringComparer.Ordinal);

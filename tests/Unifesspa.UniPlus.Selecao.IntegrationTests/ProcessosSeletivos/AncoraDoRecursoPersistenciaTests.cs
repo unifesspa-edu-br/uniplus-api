@@ -289,7 +289,7 @@ public sealed class AncoraDoRecursoPersistenciaTests : IClassFixture<ProcessoSel
             .Include(p => p.Etapas)
             .Include(p => p.DistribuicaoVagas).ThenInclude(d => d.Modalidades)
             .Include(p => p.Classificacao)
-            .Include(p => p.Formularios).ThenInclude(f => f.Etapas)
+            .Include(p => p.Formularios).ThenInclude(f => f.Paginas)
             .Include(p => p.Campos).ThenInclude(f => f.Precondicoes)
             .Include(p => p.AtendimentoEspecializado)
             .Include(p => p.CronogramaFases).ThenInclude(f => f.Produtos)

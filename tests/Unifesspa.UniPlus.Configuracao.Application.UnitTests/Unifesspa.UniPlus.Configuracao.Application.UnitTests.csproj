@@ -39,7 +39,7 @@
     <Compile Include="../Shared/DecisaoDeAcessoDeTeste.cs" Link="DecisaoDeAcessoDeTeste.cs" />
     <Compile Include="../Shared/EntradaDoFatoColetadoDeTeste.cs" Link="EntradaDoFatoColetadoDeTeste.cs" />
     <Compile Include="../Shared/EntradaDoGrupoColetadoDeTeste.cs" Link="EntradaDoGrupoColetadoDeTeste.cs" />
-    <Compile Include="../Shared/EntradaDaEtapaFormularioDeTeste.cs" Link="EntradaDaEtapaFormularioDeTeste.cs" />
+    <Compile Include="../Shared/EntradaDaPaginaDoFormularioDeTeste.cs" Link="EntradaDaPaginaDoFormularioDeTeste.cs" />
     <Compile Include="../Shared/EntradaDoTermoExigidoDeTeste.cs" Link="EntradaDoTermoExigidoDeTeste.cs" />
     <Compile Include="../Shared/Cenarios/RequisitosDoDocumentoDoModeloBuilder.cs" Link="Cenarios/RequisitosDoDocumentoDoModeloBuilder.cs" />
     <Compile Include="../Shared/Cenarios/ConjuntoDeDocumentosDoModeloBuilder.cs" Link="Cenarios/ConjuntoDeDocumentosDoModeloBuilder.cs" />

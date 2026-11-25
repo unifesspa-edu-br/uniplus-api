@@ -7,7 +7,7 @@ using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Fatos;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Formularios;
 
 /// <summary>
-/// Exibição, obrigatoriedade, opções e condição de termo de um campo, de uma etapa ou de um termo só citam
+/// Exibição, obrigatoriedade, opções e condição de termo de um campo, de uma página ou de um termo só citam
 /// fatos conhecidos no formulário dono, e o conjunto das dependências é acíclico (UNI-REQ-0145,
 /// UNI-REQ-0077, UNI-REQ-0086). O campo de grupo repetível só é citado dentro do próprio grupo. Como o
 /// formulário facultativo não é fonte de ninguém e dois obrigatórios da mesma fase não se alcançam, dois
@@ -93,9 +93,9 @@ public static class ConferenciaDasRegrasDosFormularios
     /// </summary>
     private static IEnumerable<(ItemDoGrafo Campo, IEnumerable<string> DaExibicao)> CamposComAExibicaoQueOsLibera(ColetaDoFormulario coleta) =>
     [
-        .. coleta.Itens.Select(item => (item, FatosDaSecao(coleta, item.EtapaCodigo))),
+        .. coleta.Itens.Select(item => (item, FatosDaSecao(coleta, item.PaginaCodigo))),
         .. coleta.Grupos.SelectMany(grupo => grupo.Subitens.Select(campo =>
-            (campo, grupo.FatosCitados.Concat(FatosDaSecao(coleta, grupo.EtapaCodigo)).Concat(FatosDaSecao(coleta, campo.EtapaCodigo))))),
+            (campo, grupo.FatosCitados.Concat(FatosDaSecao(coleta, grupo.PaginaCodigo)).Concat(FatosDaSecao(coleta, campo.PaginaCodigo))))),
     ];
 
     private static IEnumerable<string> FatosDaSecao(ColetaDoFormulario coleta, string? codigoDaSecao) =>

@@ -220,14 +220,14 @@ public static class LimitesDoEnvelope
     public const int UnidadeAdministradoraCidadeUf = ReferenciaCidadeGeo.UfLength;
 
     // UNI-REQ-0144 — formulários por finalidade.
-    /// <summary><c>EtapaFormulario.Codigo</c>, também o <c>etapaCodigo</c> de cada item.</summary>
-    public const int CodigoEtapaFormulario = FormaDaEtapa.CodigoMaxLength;
+    /// <summary><c>PaginaDoFormulario.Codigo</c>, também o <c>paginaCodigo</c> de cada item.</summary>
+    public const int CodigoPaginaFormulario = FormaDaPagina.CodigoMaxLength;
 
-    /// <summary><c>EtapaFormulario.Titulo</c>.</summary>
-    public const int TituloEtapaFormulario = FormaDaEtapa.TituloMaxLength;
+    /// <summary><c>PaginaDoFormulario.Titulo</c>.</summary>
+    public const int TituloPaginaFormulario = FormaDaPagina.TituloMaxLength;
 
-    /// <summary><c>EtapaFormulario.Descricao</c> e <c>Aviso</c>.</summary>
-    public const int TextoEtapaFormulario = FormaDaEtapa.TextoMaxLength;
+    /// <summary><c>PaginaDoFormulario.Descricao</c> e <c>Aviso</c>.</summary>
+    public const int TextoPaginaFormulario = FormaDaPagina.TextoMaxLength;
     public const int AjudaDoCampo = FormaDoItem.AjudaMaxLength;
 
     /// <summary><c>FatoColetado.Impedimento.Mensagem</c>.</summary>

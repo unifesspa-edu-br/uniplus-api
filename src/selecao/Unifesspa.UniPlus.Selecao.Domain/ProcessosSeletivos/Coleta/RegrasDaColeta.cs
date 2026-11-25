@@ -1,7 +1,5 @@
 namespace Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Coleta;
 
-using System.Text.Json;
-
 using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Extensions;
 using Unifesspa.UniPlus.Kernel.Results;
@@ -74,24 +72,18 @@ public static class RegrasDaColeta
     {
         ArgumentNullException.ThrowIfNull(configuracao);
 
-        // O derivado não coincide com grupo repetível nem com campo de grupo: o código do grupo é único
-        // no processo, e o campo é fato de membro, que existe por ocorrência.
         HashSet<string> dosGrupos = new(
             configuracao.Coleta.GruposColetados.SelectMany(static g => g.Subitens.Select(static s => s.FatoCodigo).Append(g.Codigo)), StringComparer.Ordinal);
+        return ConferirDerivacoesContraOsGrupos(regrasDerivacao, dosGrupos);
+    }
+
+    private static Result ConferirDerivacoesContraOsGrupos(
+        IReadOnlyList<ConfiguracaoDerivacaoFato> regrasDerivacao, HashSet<string> dosGrupos)
+    {
         HashSet<string> codigos = new(StringComparer.Ordinal);
-        foreach (ConfiguracaoDerivacaoFato config in regrasDerivacao)
+        foreach (ConfiguracaoDerivacaoFato derivacao in regrasDerivacao)
         {
-            DomainError? recusa = DerivacoesDaOferta.Deriva(config.CodigoFato)
-                ? DerivacoesDaOferta.RecusaDeConfiguracao(config.CodigoFato)
-                : !codigos.Add(config.CodigoFato)
-                    ? new DomainError(
-                        ConfiguracaoDerivacaoFatoErrorCodes.CodigoFatoDuplicado,
-                        $"O fato '{config.CodigoFato}' tem mais de uma configuração de derivação neste processo.")
-                    : dosGrupos.Contains(config.CodigoFato)
-                        ? new DomainError(
-                            ConfiguracaoDerivacaoFatoErrorCodes.CodigoFatoDuplicado,
-                            $"O código '{config.CodigoFato}' já é de um grupo repetível ou de um campo de grupo do processo.")
-                        : null;
+            DomainError? recusa = RecusaDaDerivacao(derivacao, codigos, dosGrupos);
             if (recusa is not null)
             {
                 return Result.Failure(recusa);
@@ -99,6 +91,22 @@ public static class RegrasDaColeta
         }
 
         return Result.Success();
+    }
+
+    private static DomainError? RecusaDaDerivacao(
+        ConfiguracaoDerivacaoFato configuracao, HashSet<string> codigos, HashSet<string> dosGrupos)
+    {
+        return DerivacoesDaOferta.Deriva(configuracao.CodigoFato)
+            ? DerivacoesDaOferta.RecusaDeConfiguracao(configuracao.CodigoFato)
+            : !codigos.Add(configuracao.CodigoFato)
+                ? new DomainError(
+                    ConfiguracaoDerivacaoFatoErrorCodes.CodigoFatoDuplicado,
+                    $"O fato '{configuracao.CodigoFato}' tem mais de uma configuração de derivação neste processo.")
+                : dosGrupos.Contains(configuracao.CodigoFato)
+                    ? new DomainError(
+                        ConfiguracaoDerivacaoFatoErrorCodes.CodigoFatoDuplicado,
+                        $"O código '{configuracao.CodigoFato}' já é de um grupo repetível ou de um campo de grupo do processo.")
+                    : null;
     }
 
     internal static Result<PlanoDaRecopiaDoCatalogo> PlanejarRecopia(
@@ -133,18 +141,19 @@ public static class RegrasDaColeta
         ArgumentNullException.ThrowIfNull(catalogo);
         ArgumentNullException.ThrowIfNull(fatosJaColetados);
 
-        List<RecusaDaCopiaDoItem> recusas = [];
-        foreach (FatoColetado item in configuracao.Coleta.Campos)
+        return [.. RecusasDasCopias(configuracao.Coleta.Campos, catalogo, fatosJaColetados)];
+    }
+
+    private static IEnumerable<RecusaDaCopiaDoItem> RecusasDasCopias(
+        IEnumerable<FatoColetado> itens, IReadOnlyDictionary<string, CopiaDoItemNoCatalogo> catalogo, IReadOnlySet<string> fatosJaColetados)
+    {
+        foreach (FatoColetado item in itens)
         {
             if (fatosJaColetados.Contains(item.FatoCodigo) || !catalogo.TryGetValue(item.FatoCodigo, out CopiaDoItemNoCatalogo? copia))
-            {
                 continue;
-            }
-
-            recusas.AddRange(item.ConferirCopiaDoCatalogo(copia).Errors.Select(erro => new RecusaDaCopiaDoItem(item, erro)));
+            foreach (FieldError erro in item.ConferirCopiaDoCatalogo(copia).Errors)
+                yield return new RecusaDaCopiaDoItem(item, erro);
         }
-
-        return recusas;
     }
 
     /// <summary>
@@ -155,62 +164,37 @@ public static class RegrasDaColeta
         ConfiguracaoDeclarada configuracao,
         FormularioProcesso formulario, FinalidadeFormulario finalidade, IReadOnlyList<FatoColetado> fatosColetados, IReadOnlyList<GrupoColetado> grupos)
     {
-        if (FormaDoItem.ValidarQuantidade(CitacoesDosFormularios.QuantidadeNoTeto(fatosColetados.Count, grupos)) is [var excesso, ..])
-        {
-            return Result.ValidationFailure([excesso]);
-        }
-
-        if (Impedimento.ConferirFinalidade(finalidade, fatosColetados.Select(static f => f.Impedimento)) is { Count: > 0 } foraDaInscricao)
-        {
-            return Result.ValidationFailure(foraDaInscricao);
-        }
-
-        // A inscrição só cita os próprios campos; as outras finalidades citam também os dela.
-        HashSet<string> daInscricao = finalidade == FinalidadeFormulario.Inscricao
-            ? new(StringComparer.Ordinal)
-            : CitacoesDosFormularios.FatosDaInscricao(configuracao.Coleta.Itens);
-        if (CitacoesDosFormularios.ValidarGrafoDeFatos(formulario.Etapas, fatosColetados, grupos, daInscricao, CitacoesDosFormularios.DependenciasDasDerivacoes(configuracao)) is { } erro)
-        {
-            return Result.Failure(erro);
-        }
-
+        Result forma = ConferirForma(finalidade, fatosColetados, grupos);
+        if (forma.IsFailure) return forma;
+        Result grafo = ConferirGrafo(configuracao, formulario, finalidade, fatosColetados, grupos);
+        if (grafo.IsFailure) return grafo;
         if (finalidade == FinalidadeFormulario.Inscricao && CitacoesDosFormularios.CitacaoQueFicariaOrfa(configuracao, fatosColetados) is { } orfa)
-        {
             return Result.Failure(orfa);
-        }
-
-        // O código do grupo é único no processo e não coincide com o de fato coletado: um grupo novo
-        // não repete grupo nem fato de outro formulário, e um fato novo não repete grupo de outro.
-        HashSet<string> deOutrosFormularios = new(
-            configuracao.Coleta.Campos.Where(f => f.Finalidade != finalidade).Select(static f => f.FatoCodigo)
-                .Concat(configuracao.Coleta.GruposColetados.Where(g => g.Finalidade != finalidade).Select(static g => g.Codigo)),
-            StringComparer.Ordinal);
-        HashSet<string> gruposDeOutros = new(
-            configuracao.Coleta.GruposColetados.Where(g => g.Finalidade != finalidade).Select(static g => g.Codigo), StringComparer.Ordinal);
-        if ((grupos.Select(static g => g.Codigo).FirstOrDefault(deOutrosFormularios.Contains)
-                ?? fatosColetados.Concat(grupos.SelectMany(static g => g.Subitens)).Select(static f => f.FatoCodigo).FirstOrDefault(gruposDeOutros.Contains))
-            is { } codigoRepetido)
-        {
-            return Result.Failure(new DomainError(
-                FatoColetadoErrorCodes.FatoDuplicado,
-                $"O código '{codigoRepetido}' já é usado por um fato ou grupo de outro formulário do processo."));
-        }
-
-        // Produtor único (UNI-REQ-0144): cada fato é coletado por um só formulário do processo,
-        // contando os campos dos grupos.
-        HashSet<string> novos = new(fatosColetados.Concat(grupos.SelectMany(static g => g.Subitens)).Select(static f => f.FatoCodigo), StringComparer.Ordinal);
-        if (configuracao.Coleta.Campos.FirstOrDefault(f => f.Finalidade != finalidade && novos.Contains(f.FatoCodigo)) is { } jaProduzido)
-        {
-            string outro = jaProduzido.Finalidade!.Value.Codigo();
-            return Result.Failure(new DomainError(
-                FatoColetadoErrorCodes.FatoDuplicado,
-                finalidade == FinalidadeFormulario.Inscricao && ConjuntoBasicoDaInscricao.Fatos.Contains(jaProduzido.FatoCodigo)
-                    ? $"O fato '{jaProduzido.FatoCodigo}' é dos dados básicos do candidato, que o formulário de inscrição coleta; tire-o do formulário de {outro} antes."
-                    : $"O fato '{jaProduzido.FatoCodigo}' já é coletado pelo formulário de {outro}."));
-        }
-
-        IReadOnlyList<FieldError> itensForaDasSecoes = EstruturaFormulario.ValidarItens(
+        UnicidadeEntreFormularios unicidade = new(configuracao, finalidade, fatosColetados, grupos);
+        Result codigos = unicidade.ConferirCodigos();
+        if (codigos.IsFailure) return codigos;
+        Result produtores = unicidade.ConferirProdutor();
+        if (produtores.IsFailure) return produtores;
+        IReadOnlyList<FieldError> foraDasSecoes = EstruturaFormulario.ValidarItens(
             formulario.Estrutura, CitacoesDosFormularios.ParaEstrutura(fatosColetados, grupos), secaoObrigatoria: false);
-        return itensForaDasSecoes.Count > 0 ? Result.ValidationFailure(itensForaDasSecoes) : Result.Success();
+        return foraDasSecoes.Count > 0 ? Result.ValidationFailure(foraDasSecoes) : Result.Success();
+    }
+
+    private static Result ConferirForma(FinalidadeFormulario finalidade, IReadOnlyList<FatoColetado> fatos, IReadOnlyList<GrupoColetado> grupos)
+    {
+        if (FormaDoItem.ValidarQuantidade(CitacoesDosFormularios.QuantidadeNoTeto(fatos.Count, grupos)) is [var excesso, ..])
+            return Result.ValidationFailure([excesso]);
+        if (Impedimento.ConferirFinalidade(finalidade, fatos.Select(static f => f.Impedimento)) is { Count: > 0 } foraDaInscricao)
+            return Result.ValidationFailure(foraDaInscricao);
+        return Result.Success();
+    }
+
+    private static Result ConferirGrafo(ConfiguracaoDeclarada configuracao, FormularioProcesso formulario,
+        FinalidadeFormulario finalidade, IReadOnlyList<FatoColetado> fatos, IReadOnlyList<GrupoColetado> grupos)
+    {
+        HashSet<string> daInscricao = finalidade == FinalidadeFormulario.Inscricao
+            ? new(StringComparer.Ordinal) : CitacoesDosFormularios.FatosDaInscricao(configuracao.Coleta.Itens);
+        return CitacoesDosFormularios.ValidarGrafoDeFatos(formulario.Paginas, fatos, grupos, daInscricao,
+            CitacoesDosFormularios.DependenciasDasDerivacoes(configuracao)) is { } erro ? Result.Failure(erro) : Result.Success();
     }
 }

@@ -4,10 +4,10 @@ using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Services;
 
 /// <summary>Um item do formulário, no que o grafo confere: o fato, a ordem, a seção e os fatos que as regras dele citam.</summary>
-public sealed record ItemDoGrafo(string FatoCodigo, int Ordem, string? EtapaCodigo, IReadOnlyCollection<string> FatosCitados);
+public sealed record ItemDoGrafo(string FatoCodigo, int Ordem, string? PaginaCodigo, IReadOnlyCollection<string> FatosCitados);
 
-/// <summary>Uma etapa do formulário, no que o grafo confere: o código, a ordem e os fatos que a exibição cita.</summary>
-public sealed record EtapaDoGrafo(string Codigo, int Ordem, IReadOnlyCollection<string> FatosCitados);
+/// <summary>Uma página do formulário, no que o grafo confere: o código, a ordem e os fatos que a exibição cita.</summary>
+public sealed record PaginaDoGrafo(string Codigo, int Ordem, IReadOnlyCollection<string> FatosCitados);
 
 /// <summary>
 /// Um grupo repetível, no que o grafo confere: o código, a posição na ordem do formulário — a mesma
@@ -15,7 +15,7 @@ public sealed record EtapaDoGrafo(string Codigo, int Ordem, IReadOnlyCollection<
 /// subitens, cada um com a ordem própria dentro do grupo (UNI-REQ-0146).
 /// </summary>
 public sealed record GrupoDoGrafo(
-    string Codigo, int Ordem, string? EtapaCodigo, IReadOnlyCollection<string> FatosCitados, IReadOnlyList<ItemDoGrafo> Subitens);
+    string Codigo, int Ordem, string? PaginaCodigo, IReadOnlyCollection<string> FatosCitados, IReadOnlyList<ItemDoGrafo> Subitens);
 
 /// <summary>Um termo exigido pelo formulário, no que o grafo confere: o código e os fatos que as condições citam.</summary>
 public sealed record TermoDoGrafo(string Codigo, IReadOnlyCollection<string> FatosCitados);
@@ -58,13 +58,13 @@ public static class GrafoDoFormulario
     /// </summary>
     public static DomainError? ValidarColeta(
         IReadOnlyList<ItemDoGrafo> itens,
-        IReadOnlyCollection<EtapaDoGrafo> etapas,
+        IReadOnlyCollection<PaginaDoGrafo> paginas,
         IReadOnlySet<string> conhecidosAntes,
         IReadOnlyDictionary<string, IReadOnlyCollection<string>> derivacoes,
         IReadOnlyList<GrupoDoGrafo>? grupos = null)
     {
         ArgumentNullException.ThrowIfNull(itens);
-        ArgumentNullException.ThrowIfNull(etapas);
+        ArgumentNullException.ThrowIfNull(paginas);
         ArgumentNullException.ThrowIfNull(conhecidosAntes);
         ArgumentNullException.ThrowIfNull(derivacoes);
         grupos ??= [];
@@ -72,7 +72,7 @@ public static class GrafoDoFormulario
         DomainError? recusa = UnicidadeDaColeta.Conferir(itens, grupos, conhecidosAntes, derivacoes, out Dictionary<string, ItemDoGrafo> fatos);
         return recusa
             ?? CicloDasRegras(fatos)
-            ?? CitacoesDaColeta(itens, etapas, conhecidosAntes, derivacoes, grupos);
+            ?? CitacoesDaColeta(itens, paginas, conhecidosAntes, derivacoes, grupos);
     }
 
     private static DomainError? CicloDasRegras(IReadOnlyDictionary<string, ItemDoGrafo> fatos)
@@ -85,14 +85,14 @@ public static class GrafoDoFormulario
     }
 
     private static DomainError? CitacoesDaColeta(
-        IReadOnlyList<ItemDoGrafo> itens, IReadOnlyCollection<EtapaDoGrafo> etapas, IReadOnlySet<string> conhecidosAntes,
+        IReadOnlyList<ItemDoGrafo> itens, IReadOnlyCollection<PaginaDoGrafo> paginas, IReadOnlySet<string> conhecidosAntes,
         IReadOnlyDictionary<string, IReadOnlyCollection<string>> derivacoes, IReadOnlyList<GrupoDoGrafo> grupos)
     {
         DependenciasDoFormulario dependencias = Dependencias(itens, conhecidosAntes, derivacoes);
-        return CitacaoDeMembroForaDoGrupo(itens, etapas, [], grupos)
+        return CitacaoDeMembroForaDoGrupo(itens, paginas, [], grupos)
             ?? CitacaoInvalidaDosItens(itens, dependencias)
             ?? CitacaoInvalidaDosGrupos(grupos, dependencias)
-            ?? CitacaoInvalidaDasEtapas(etapas, itens, dependencias, grupos);
+            ?? CitacaoInvalidaDasPaginas(paginas, itens, dependencias, grupos);
     }
 
     /// <summary>
@@ -102,7 +102,7 @@ public static class GrafoDoFormulario
     /// </summary>
     public static DomainError? CitacaoInvalida(
         IReadOnlyCollection<ItemDoGrafo> itens,
-        IReadOnlyCollection<EtapaDoGrafo> etapas,
+        IReadOnlyCollection<PaginaDoGrafo> paginas,
         IEnumerable<TermoDoGrafo> termos,
         DependenciasDoFormulario dependencias,
         IReadOnlyList<GrupoDoGrafo>? grupos = null)
@@ -110,10 +110,10 @@ public static class GrafoDoFormulario
         ArgumentNullException.ThrowIfNull(termos);
         grupos ??= [];
         IReadOnlyList<TermoDoGrafo> listaDeTermos = [.. termos];
-        return CitacaoDeMembroForaDoGrupo(itens, etapas, listaDeTermos, grupos)
+        return CitacaoDeMembroForaDoGrupo(itens, paginas, listaDeTermos, grupos)
             ?? CitacaoInvalidaDosItens(itens, dependencias)
             ?? CitacaoInvalidaDosGrupos(grupos, dependencias)
-            ?? CitacaoInvalidaDasEtapas(etapas, itens, dependencias, grupos)
+            ?? CitacaoInvalidaDasPaginas(paginas, itens, dependencias, grupos)
             ?? listaDeTermos.Select(t => CitacaoInvalidaDoTermo(t, dependencias)).FirstOrDefault(static e => e is not null);
     }
 
@@ -123,10 +123,10 @@ public static class GrafoDoFormulario
     /// tem valor único: existe uma vez por ocorrência.
     /// </summary>
     public static DomainError? CitacaoDeMembroForaDoGrupo(
-        IEnumerable<ItemDoGrafo> itens, IEnumerable<EtapaDoGrafo> etapas, IEnumerable<TermoDoGrafo> termos, IReadOnlyList<GrupoDoGrafo> grupos)
+        IEnumerable<ItemDoGrafo> itens, IEnumerable<PaginaDoGrafo> paginas, IEnumerable<TermoDoGrafo> termos, IReadOnlyList<GrupoDoGrafo> grupos)
     {
         ArgumentNullException.ThrowIfNull(itens);
-        ArgumentNullException.ThrowIfNull(etapas);
+        ArgumentNullException.ThrowIfNull(paginas);
         ArgumentNullException.ThrowIfNull(termos);
         ArgumentNullException.ThrowIfNull(grupos);
 
@@ -136,7 +136,7 @@ public static class GrafoDoFormulario
             return null;
         }
 
-        return RegrasQueCitam(itens, etapas, termos, grupos)
+        return RegrasQueCitam(itens, paginas, termos, grupos)
             .Select(regra => regra.CitacaoForaDoGrupo(grupoDoMembro))
             .FirstOrDefault(static recusa => recusa is not null);
     }
@@ -156,11 +156,11 @@ public static class GrafoDoFormulario
     }
 
     private static IEnumerable<RegraQueCita> RegrasQueCitam(
-        IEnumerable<ItemDoGrafo> itens, IEnumerable<EtapaDoGrafo> etapas, IEnumerable<TermoDoGrafo> termos, IEnumerable<GrupoDoGrafo> grupos) =>
+        IEnumerable<ItemDoGrafo> itens, IEnumerable<PaginaDoGrafo> paginas, IEnumerable<TermoDoGrafo> termos, IEnumerable<GrupoDoGrafo> grupos) =>
         [.. itens.Select(static i => new RegraQueCita($"do fato '{i.FatoCodigo}'", i.FatosCitados, null)),
          .. grupos.Select(static g => new RegraQueCita($"do grupo '{g.Codigo}'", g.FatosCitados, null)),
          .. grupos.SelectMany(static g => g.Subitens.Select(s => new RegraQueCita($"do fato '{s.FatoCodigo}'", s.FatosCitados, g.Codigo))),
-         .. etapas.Select(static e => new RegraQueCita($"de exibição da seção '{e.Codigo}'", e.FatosCitados, null)),
+         .. paginas.Select(static e => new RegraQueCita($"de exibição da seção '{e.Codigo}'", e.FatosCitados, null)),
          .. termos.Select(static t => new RegraQueCita($"do termo '{t.Codigo}'", t.FatosCitados, null))];
 
     /// <summary>
@@ -191,34 +191,34 @@ public static class GrafoDoFormulario
     /// A exibição da seção cita só o que o formulário conhece antes dela: antes do primeiro item ou
     /// grupo da própria seção ou, se ela está vazia, das seções seguintes.
     /// </summary>
-    public static DomainError? CitacaoInvalidaDasEtapas(
-        IReadOnlyCollection<EtapaDoGrafo> etapas,
+    public static DomainError? CitacaoInvalidaDasPaginas(
+        IReadOnlyCollection<PaginaDoGrafo> paginas,
         IEnumerable<ItemDoGrafo> itens,
         DependenciasDoFormulario dependencias,
         IReadOnlyList<GrupoDoGrafo>? grupos = null)
     {
-        ArgumentNullException.ThrowIfNull(etapas);
-        return etapas.OrderBy(static e => e.Ordem)
-            .Select(etapa => CitacaoInvalidaDaEtapa(etapa, PosicaoDaEtapa(etapa, etapas, itens, grupos), dependencias))
+        ArgumentNullException.ThrowIfNull(paginas);
+        return paginas.OrderBy(static e => e.Ordem)
+            .Select(pagina => CitacaoInvalidaDaPagina(pagina, PosicaoDaPagina(pagina, paginas, itens, grupos), dependencias))
             .FirstOrDefault(static e => e is not null);
     }
 
-    /// <summary>A exibição da etapa, na posição dada, cita fato que o formulário não conhece antes dela.</summary>
-    public static DomainError? CitacaoInvalidaDaEtapa(EtapaDoGrafo etapa, long posicao, DependenciasDoFormulario dependencias)
+    /// <summary>A exibição da página, na posição dada, cita fato que o formulário não conhece antes dela.</summary>
+    public static DomainError? CitacaoInvalidaDaPagina(PaginaDoGrafo pagina, long posicao, DependenciasDoFormulario dependencias)
     {
-        ArgumentNullException.ThrowIfNull(etapa);
+        ArgumentNullException.ThrowIfNull(pagina);
         ArgumentNullException.ThrowIfNull(dependencias);
 
-        return etapa.FatosCitados.Select(citado => RecusaDaEtapa(etapa, citado, dependencias.Conferir(citado, posicao)))
+        return pagina.FatosCitados.Select(citado => RecusaDaPagina(pagina, citado, dependencias.Conferir(citado, posicao)))
             .FirstOrDefault(static recusa => recusa is not null);
     }
 
-    private static DomainError? RecusaDaEtapa(EtapaDoGrafo etapa, string citado, RecusaDeCitacao? recusa) => recusa switch
+    private static DomainError? RecusaDaPagina(PaginaDoGrafo pagina, string citado, RecusaDeCitacao? recusa) => recusa switch
     {
         RecusaDeCitacao.FatoNaoConhecido => new DomainError(GrafoFormularioErrorCodes.CitaFatoNaoConhecido,
-            $"A exibição da seção '{etapa.Codigo}' cita '{citado}', que o formulário não coleta nem deriva antes dela."),
+            $"A exibição da seção '{pagina.Codigo}' cita '{citado}', que o formulário não coleta nem deriva antes dela."),
         RecusaDeCitacao.FatoPosterior => new DomainError(GrafoFormularioErrorCodes.CitaFatoPosterior,
-            $"A exibição da seção '{etapa.Codigo}' cita '{citado}', que só fica conhecido na própria seção ou depois dela."),
+            $"A exibição da seção '{pagina.Codigo}' cita '{citado}', que só fica conhecido na própria seção ou depois dela."),
         _ => null,
     };
 
@@ -241,18 +241,18 @@ public static class GrafoDoFormulario
     internal static DomainError OrdemDuplicada(int ordem) =>
         new(GrafoFormularioErrorCodes.OrdemDuplicada, $"A ordem {ordem} é usada por mais de um item ou grupo — a ordem de coleta precisa ser total.");
 
-    /// <summary>A posição da etapa na ordem de coleta: a do primeiro item ou grupo dela ou das etapas seguintes.</summary>
-    public static long PosicaoDaEtapa(
-        EtapaDoGrafo etapa, IEnumerable<EtapaDoGrafo> etapas, IEnumerable<ItemDoGrafo> itens, IEnumerable<GrupoDoGrafo>? grupos = null)
+    /// <summary>A posição da página na ordem de coleta: a do primeiro item ou grupo dela ou das páginas seguintes.</summary>
+    public static long PosicaoDaPagina(
+        PaginaDoGrafo pagina, IEnumerable<PaginaDoGrafo> paginas, IEnumerable<ItemDoGrafo> itens, IEnumerable<GrupoDoGrafo>? grupos = null)
     {
-        ArgumentNullException.ThrowIfNull(etapa);
-        ArgumentNullException.ThrowIfNull(etapas);
+        ArgumentNullException.ThrowIfNull(pagina);
+        ArgumentNullException.ThrowIfNull(paginas);
         ArgumentNullException.ThrowIfNull(itens);
 
-        HashSet<string> daquiEmDiante = new(etapas.Where(e => e.Ordem >= etapa.Ordem).Select(static e => e.Codigo), StringComparer.Ordinal);
-        return itens.Select(static i => (i.EtapaCodigo, i.Ordem))
-            .Concat((grupos ?? []).Select(static g => (g.EtapaCodigo, g.Ordem)))
-            .Where(p => p.EtapaCodigo is { } codigo && daquiEmDiante.Contains(codigo))
+        HashSet<string> daquiEmDiante = new(paginas.Where(e => e.Ordem >= pagina.Ordem).Select(static e => e.Codigo), StringComparer.Ordinal);
+        return itens.Select(static i => (i.PaginaCodigo, i.Ordem))
+            .Concat((grupos ?? []).Select(static g => (g.PaginaCodigo, g.Ordem)))
+            .Where(p => p.PaginaCodigo is { } codigo && daquiEmDiante.Contains(codigo))
             .Select(static p => (long)p.Ordem)
             .DefaultIfEmpty(DependenciasDoFormulario.PosicaoDosTermos)
             .Min();

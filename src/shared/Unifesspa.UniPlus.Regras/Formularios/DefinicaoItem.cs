@@ -44,7 +44,7 @@ public sealed record DefinicaoItem
 
     public string FatoCodigo { get; }
 
-    /// <summary>A condição de exibição do item — nula quando o item sempre aparece na etapa.</summary>
+    /// <summary>A condição de exibição do item — nula quando o item sempre aparece na página.</summary>
     public PredicadoDnf? Exibicao { get; }
 
     public Obrigatoriedade Obrigatoriedade { get; }
@@ -79,7 +79,7 @@ public sealed record DefinicaoItem
             ?? Ternario.Falso;
 
     /// <summary>
-    /// Os fatos citados pelas regras do próprio item, sem a exibição da etapa. O impedimento cita a
+    /// Os fatos citados pelas regras do próprio item, sem a exibição da página. O impedimento cita a
     /// resposta do próprio campo, que não é dependência dele: só as respostas anteriores entram.
     /// </summary>
     public IReadOnlyCollection<string> FatosCitados =>

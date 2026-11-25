@@ -8,7 +8,7 @@ using Unifesspa.UniPlus.Regras.ValueObjects;
 
 /// <summary>
 /// O formulário do processo para uma finalidade (UNI-REQ-0144): a fase do cronograma em que é
-/// respondido, o título, as etapas e o modelo de que partiu. Os itens e os termos ficam no processo,
+/// respondido, o título, as páginas e o modelo de que partiu. Os itens e os termos ficam no processo,
 /// marcados com a finalidade do formulário a que pertencem, porque o produtor único de cada fato e as
 /// condições vivas são regras do processo inteiro.
 /// </summary>
@@ -20,7 +20,7 @@ public sealed class FormularioProcesso : EntityBase, IParteDoProcesso
     /// <summary>O código canônico da fase de habilitação no catálogo de fases.</summary>
     public const string CodigoFaseHabilitacao = "HABILITACAO";
 
-    private readonly List<EtapaFormulario> _etapas = [];
+    private readonly List<PaginaDoFormulario> _paginas = [];
 
     public Guid ProcessoSeletivoId { get; private set; }
 
@@ -41,12 +41,12 @@ public sealed class FormularioProcesso : EntityBase, IParteDoProcesso
 
     public string? ModeloOrigemNome { get; private set; }
 
-    public IReadOnlyCollection<EtapaFormulario> Etapas => _etapas.AsReadOnly();
+    public IReadOnlyCollection<PaginaDoFormulario> Paginas => _paginas.AsReadOnly();
 
     private FormularioProcesso() { }
 
     /// <summary>
-    /// Acumula as recusas de forma (ADR-0125): finalidade, título e a estrutura das etapas pelas
+    /// Acumula as recusas de forma (ADR-0125): finalidade, título e a estrutura das páginas pelas
     /// regras do formulário compartilhadas com o modelo. A fase é conferida pelo processo, que tem o
     /// cronograma.
     /// </summary>
@@ -57,20 +57,20 @@ public sealed class FormularioProcesso : EntityBase, IParteDoProcesso
         FinalidadeFormulario? finalidade,
         Guid? faseId,
         string? titulo,
-        IReadOnlyList<EtapaFormulario> etapas,
+        IReadOnlyList<PaginaDoFormulario> paginas,
         Guid? modeloOrigemId = null,
         string? modeloOrigemCodigo = null,
         string? modeloOrigemNome = null)
     {
-        ArgumentNullException.ThrowIfNull(etapas);
-        List<FieldError> erros = ValidarForma(finalidade, titulo, etapas);
+        ArgumentNullException.ThrowIfNull(paginas);
+        List<FieldError> erros = ValidarForma(finalidade, titulo, paginas);
         if (erros.Count > 0)
         {
             return Result<FormularioProcesso>.ValidationFailure(erros);
         }
 
         FormularioProcesso formulario = Novo(finalidade!.Value, faseId, titulo, modeloOrigemId, modeloOrigemCodigo, modeloOrigemNome);
-        formulario.AdicionarEtapas(etapas);
+        formulario.AdicionarPaginas(paginas);
         return Result<FormularioProcesso>.Success(formulario);
     }
 
@@ -85,41 +85,41 @@ public sealed class FormularioProcesso : EntityBase, IParteDoProcesso
             ModeloOrigemNome = modeloOrigemId is null ? null : modeloOrigemNome?.Trim(),
         };
 
-    private static List<FieldError> ValidarForma(FinalidadeFormulario? finalidade, string? titulo, IReadOnlyList<EtapaFormulario> etapas)
+    private static List<FieldError> ValidarForma(FinalidadeFormulario? finalidade, string? titulo, IReadOnlyList<PaginaDoFormulario> paginas)
     {
         List<FieldError> erros = FormaDoCabecalho.Validar(finalidade, titulo);
         if (finalidade is { } declarada)
         {
-            erros.AddRange(EstruturaFormulario.ValidarEtapas(declarada, [.. etapas.Select(static e => e.Estrutura)]));
+            erros.AddRange(EstruturaFormulario.ValidarPaginas(declarada, [.. paginas.Select(static e => e.Estrutura)]));
         }
 
         return erros;
     }
 
-    private void AdicionarEtapas(IReadOnlyList<EtapaFormulario> etapas)
+    private void AdicionarPaginas(IReadOnlyList<PaginaDoFormulario> paginas)
     {
-        foreach (EtapaFormulario etapa in etapas)
+        foreach (PaginaDoFormulario pagina in paginas)
         {
-            etapa.VincularFormulario(Id);
-            _etapas.Add(etapa);
+            pagina.VincularFormulario(Id);
+            _paginas.Add(pagina);
         }
     }
 
     /// <summary>Indica se o item é solicitado a todo candidato que responde o formulário.</summary>
     internal bool PedeATodoCandidato(FatoColetado item) =>
         item.Finalidade == Finalidade && item.GrupoColetadoId is null && item.SemPrecondicao && item.Obrigatoriedade.Tipo == TipoObrigatoriedade.Sempre
-        && !_etapas.Any(e => string.Equals(e.Codigo, item.EtapaCodigo, StringComparison.Ordinal) && e.Exibicao is not null);
+        && !_paginas.Any(e => string.Equals(e.Codigo, item.PaginaCodigo, StringComparison.Ordinal) && e.Exibicao is not null);
 
-    /// <summary>As etapas na forma que a estrutura do formulário confere.</summary>
-    public IReadOnlyList<EtapaEstrutura> Estrutura => [.. _etapas.Select(static e => e.Estrutura)];
+    /// <summary>As páginas na forma que a estrutura do formulário confere.</summary>
+    public IReadOnlyList<PaginaEstrutura> Estrutura => [.. _paginas.Select(static e => e.Estrutura)];
 
     /// <summary>Substitui o conteúdo por outro formulário já validado da mesma finalidade.</summary>
     internal void Substituir(FormularioProcesso outro)
     {
         FaseId = outro.FaseId;
         Titulo = outro.Titulo;
-        _etapas.Clear();
-        AdicionarEtapas(outro._etapas);
+        _paginas.Clear();
+        AdicionarPaginas(outro._paginas);
     }
 
     /// <summary>Registra o modelo de que o conteúdo atual partiu; a cópia continua sendo a que vale.</summary>
@@ -134,10 +134,10 @@ public sealed class FormularioProcesso : EntityBase, IParteDoProcesso
 }
 
 /// <summary>
-/// Uma etapa do formulário: uma seção com os itens do administrador, ou um bloco que o sistema
+/// Uma página do formulário: uma seção com os itens do administrador, ou um bloco que o sistema
 /// monta (comprovação documental, modalidades calculadas, revisão e aceite).
 /// </summary>
-public sealed class EtapaFormulario : EntityBase
+public sealed class PaginaDoFormulario : EntityBase
 {
     public Guid FormularioProcessoId { get; private set; }
 
@@ -145,7 +145,7 @@ public sealed class EtapaFormulario : EntityBase
 
     public int Ordem { get; private set; }
 
-    public TipoEtapaFormulario Tipo { get; private set; }
+    public TipoPaginaFormulario Tipo { get; private set; }
 
     /// <summary>O bloco que o sistema monta; nulo na seção.</summary>
     public BlocoSistema? Bloco { get; private set; }
@@ -163,33 +163,33 @@ public sealed class EtapaFormulario : EntityBase
     /// </summary>
     public PredicadoDnf? Exibicao { get; private set; }
 
-    private EtapaFormulario() { }
+    private PaginaDoFormulario() { }
 
-    public EtapaEstrutura Estrutura => new(Codigo, Ordem, Tipo, Bloco);
+    public PaginaEstrutura Estrutura => new(Codigo, Ordem, Tipo, Bloco);
 
     /// <summary>Os fatos que a exibição cita.</summary>
     public IReadOnlyCollection<string> FatosCitados => Exibicao?.FatosCitados ?? [];
 
-    /// <summary>A etapa no que o grafo do formulário confere.</summary>
-    public EtapaDoGrafo ParaGrafo() => new(Codigo, Ordem, FatosCitados);
+    /// <summary>A página no que o grafo do formulário confere.</summary>
+    public PaginaDoGrafo ParaGrafo() => new(Codigo, Ordem, FatosCitados);
 
     /// <summary>As condições da exibição, para os vínculos e as referências a valor do processo.</summary>
     public IEnumerable<CondicaoDnf> Condicoes => (Exibicao?.Clausulas ?? []).SelectMany(static c => c.Condicoes);
 
-    public static Result<EtapaFormulario> Criar(
-        EtapaEstrutura estrutura, string titulo, string? descricao, string? aviso, PredicadoDnf? exibicao = null)
+    public static Result<PaginaDoFormulario> Criar(
+        PaginaEstrutura estrutura, string titulo, string? descricao, string? aviso, PredicadoDnf? exibicao = null)
     {
         ArgumentNullException.ThrowIfNull(estrutura);
 
-        List<FieldError> erros = FormaDaEtapa.Conferir(
+        List<FieldError> erros = FormaDaPagina.Conferir(
             estrutura.Codigo, estrutura.Ordem, estrutura.Tipo, titulo, descricao, aviso, exibicao is not null);
         return erros.Count > 0
-            ? Result<EtapaFormulario>.ValidationFailure(erros)
-            : Result<EtapaFormulario>.Success(Montar(estrutura, titulo, descricao, aviso, exibicao));
+            ? Result<PaginaDoFormulario>.ValidationFailure(erros)
+            : Result<PaginaDoFormulario>.Success(Montar(estrutura, titulo, descricao, aviso, exibicao));
     }
 
-    private static EtapaFormulario Montar(
-        EtapaEstrutura estrutura, string titulo, string? descricao, string? aviso, PredicadoDnf? exibicao) => new()
+    private static PaginaDoFormulario Montar(
+        PaginaEstrutura estrutura, string titulo, string? descricao, string? aviso, PredicadoDnf? exibicao) => new()
         {
             Codigo = (estrutura.Codigo ?? string.Empty).Trim().Normalize(System.Text.NormalizationForm.FormC),
             Ordem = estrutura.Ordem,

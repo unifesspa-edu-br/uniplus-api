@@ -700,7 +700,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     descricao = table.Column<string>(type: "character varying(1000)", maxLength: 1000, nullable: true, comment: "Descrição do modelo de formulário."),
                     finalidade = table.Column<string>(type: "character varying(30)", maxLength: 30, nullable: false, comment: "Finalidade do formulário. Códigos: INSCRICAO, ISENCAO_TAXA, HABILITACAO."),
                     tipo_processo_codigo = table.Column<string>(type: "character varying(64)", maxLength: 64, nullable: true, comment: "Código do tipo de processo ao qual o modelo se aplica."),
-                    conteudo = table.Column<string>(type: "jsonb", nullable: false, comment: "Conteúdo do modelo de formulário, com etapas, itens, termos e pressupostos."),
+                    conteudo = table.Column<string>(type: "jsonb", nullable: false, comment: "Conteúdo do modelo de formulário, com páginas, itens, termos e pressupostos."),
                     ativo = table.Column<bool>(type: "boolean", nullable: false, comment: "Indica se o modelo está disponível para uso."),
                     created_by = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true, comment: "Identificador do responsável pela criação, quando disponível."),
                     updated_by = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true, comment: "Identificador do responsável pela última alteração, quando disponível."),

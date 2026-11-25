@@ -15994,7 +15994,7 @@
           }
         }
       },
-      "ApresentacaoDaEtapaDto": {
+      "ApresentacaoDaPaginaDto": {
         "required": [
           "titulo",
           "descricao",
@@ -16019,7 +16019,7 @@
           }
         }
       },
-      "ApresentacaoDaEtapaInput": {
+      "ApresentacaoDaPaginaInput": {
         "required": [
           "titulo",
           "descricao",
@@ -17243,17 +17243,17 @@
       },
       "AvaliacaoPortavel": {
         "required": [
-          "etapas",
+          "paginas",
           "campos",
           "grupos",
           "termos"
         ],
         "type": "object",
         "properties": {
-          "etapas": {
+          "paginas": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/EtapaAvaliada"
+              "$ref": "#/components/schemas/PaginaAvaliada"
             }
           },
           "campos": {
@@ -17281,7 +17281,7 @@
           "regras",
           "respostas",
           "grupos",
-          "etapasConcluidas",
+          "paginasConcluidas",
           "pressupostos"
         ],
         "type": "object",
@@ -17307,7 +17307,7 @@
               }
             }
           },
-          "etapasConcluidas": {
+          "paginasConcluidas": {
             "type": [
               "null",
               "array"
@@ -17461,7 +17461,7 @@
           "REVISAO_E_ACEITE"
         ],
         "type": "string",
-        "description": "Os blocos que o sistema monta no formul\u00E1rio a partir da configura\u00E7\u00E3o do processo seletivo.\n\n- \u0060COMPROVACAO_DOCUMENTAL\u0060: Comprova\u00E7\u00E3o documental \u2014 Os documentos que o candidato envia, conforme a exig\u00EAncia de cada situa\u00E7\u00E3o dele.\n- \u0060MODALIDADES_CALCULADAS\u0060: Modalidades calculadas \u2014 As modalidades de concorr\u00EAncia em que o candidato se enquadra, calculadas pelas respostas dele.\n- \u0060REVISAO_E_ACEITE\u0060: Revis\u00E3o e aceite \u2014 A confer\u00EAncia das respostas e o aceite dos termos, sempre a \u00FAltima etapa do formul\u00E1rio."
+        "description": "Os blocos que o sistema monta no formul\u00E1rio a partir da configura\u00E7\u00E3o do processo seletivo.\n\n- \u0060COMPROVACAO_DOCUMENTAL\u0060: Comprova\u00E7\u00E3o documental \u2014 Os documentos que o candidato envia, conforme a exig\u00EAncia de cada situa\u00E7\u00E3o dele.\n- \u0060MODALIDADES_CALCULADAS\u0060: Modalidades calculadas \u2014 As modalidades de concorr\u00EAncia em que o candidato se enquadra, calculadas pelas respostas dele.\n- \u0060REVISAO_E_ACEITE\u0060: Revis\u00E3o e aceite \u2014 A confer\u00EAncia das respostas e o aceite dos termos, sempre a \u00FAltima p\u00E1gina do formul\u00E1rio."
       },
       "CalendarioDiasUteisDto": {
         "required": [
@@ -17542,7 +17542,7 @@
         "required": [
           "fatoCodigo",
           "ordem",
-          "etapaCodigo",
+          "paginaCodigo",
           "apresentacao",
           "formato",
           "valoresSelecionaveis"
@@ -17556,7 +17556,7 @@
             "type": "integer",
             "format": "int32"
           },
-          "etapaCodigo": {
+          "paginaCodigo": {
             "type": [
               "null",
               "string"
@@ -17586,7 +17586,7 @@
       "CampoAvaliado": {
         "required": [
           "fatoCodigo",
-          "etapaCodigo",
+          "paginaCodigo",
           "estado",
           "regras",
           "opcoes"
@@ -17596,7 +17596,7 @@
           "fatoCodigo": {
             "type": "string"
           },
-          "etapaCodigo": {
+          "paginaCodigo": {
             "type": "string"
           },
           "estado": {
@@ -18026,7 +18026,7 @@
       "ConteudoDoModeloDto": {
         "required": [
           "titulo",
-          "etapas",
+          "paginas",
           "itens",
           "termos",
           "pressupostos",
@@ -18041,10 +18041,10 @@
               "string"
             ]
           },
-          "etapas": {
+          "paginas": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/EtapaFormularioDto"
+              "$ref": "#/components/schemas/PaginaDoFormularioDto"
             }
           },
           "itens": {
@@ -18079,7 +18079,7 @@
       "ConteudoDoModeloInput": {
         "required": [
           "titulo",
-          "etapas",
+          "paginas",
           "itens",
           "termos",
           "pressupostos"
@@ -18092,13 +18092,13 @@
               "string"
             ]
           },
-          "etapas": {
+          "paginas": {
             "type": [
               "null",
               "array"
             ],
             "items": {
-              "$ref": "#/components/schemas/EtapaFormularioInput"
+              "$ref": "#/components/schemas/PaginaDoFormularioInput"
             }
           },
           "itens": {
@@ -20789,161 +20789,6 @@
         "type": "string",
         "description": "Estado de resolu\u00E7\u00E3o de um fato do candidato: distingue o que n\u00E3o se aplica, o que ainda n\u00E3o se sabe, o que tem valor e o que foi deixado em branco.\n\n- \u0060INDETERMINADO\u0060: Indeterminado\n- \u0060NAO_APLICAVEL\u0060: N\u00E3o se aplica\n- \u0060RESOLVIDO\u0060: Resolvido\n- \u0060NAO_INFORMADO\u0060: N\u00E3o informado"
       },
-      "EtapaAvaliada": {
-        "required": [
-          "codigo",
-          "visivel"
-        ],
-        "type": "object",
-        "properties": {
-          "codigo": {
-            "type": "string"
-          },
-          "visivel": {
-            "$ref": "#/components/schemas/TernarioCodigo"
-          }
-        }
-      },
-      "EtapaFormularioDto": {
-        "required": [
-          "codigo",
-          "ordem",
-          "tipo",
-          "bloco",
-          "apresentacao",
-          "exibicao"
-        ],
-        "type": "object",
-        "properties": {
-          "codigo": {
-            "type": "string"
-          },
-          "ordem": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "tipo": {
-            "$ref": "#/components/schemas/TipoEtapaFormularioCodigo"
-          },
-          "bloco": {
-            "oneOf": [
-              {
-                "type": "null"
-              },
-              {
-                "$ref": "#/components/schemas/BlocoSistemaCodigo"
-              }
-            ]
-          },
-          "apresentacao": {
-            "$ref": "#/components/schemas/ApresentacaoDaEtapaDto"
-          },
-          "exibicao": {
-            "type": [
-              "null",
-              "array"
-            ],
-            "items": {
-              "type": "array",
-              "items": {
-                "$ref": "#/components/schemas/CondicaoPrecondicaoDto"
-              }
-            }
-          }
-        }
-      },
-      "EtapaFormularioInput": {
-        "required": [
-          "codigo",
-          "ordem",
-          "tipo",
-          "bloco",
-          "apresentacao"
-        ],
-        "type": "object",
-        "properties": {
-          "codigo": {
-            "type": "string"
-          },
-          "ordem": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "tipo": {
-            "$ref": "#/components/schemas/TipoEtapaFormularioCodigo"
-          },
-          "bloco": {
-            "oneOf": [
-              {
-                "type": "null"
-              },
-              {
-                "$ref": "#/components/schemas/BlocoSistemaCodigo"
-              }
-            ]
-          },
-          "apresentacao": {
-            "oneOf": [
-              {
-                "type": "null"
-              },
-              {
-                "$ref": "#/components/schemas/ApresentacaoDaEtapaInput"
-              }
-            ]
-          },
-          "exibicao": {
-            "type": [
-              "null",
-              "array"
-            ],
-            "items": {
-              "type": "array",
-              "items": {
-                "$ref": "#/components/schemas/CondicaoPrecondicaoInput"
-              }
-            }
-          }
-        }
-      },
-      "EtapaPortavel": {
-        "required": [
-          "codigo",
-          "exibicao",
-          "itens",
-          "grupos"
-        ],
-        "type": "object",
-        "properties": {
-          "codigo": {
-            "type": "string"
-          },
-          "exibicao": {
-            "type": [
-              "null",
-              "array"
-            ],
-            "items": {
-              "type": "array",
-              "items": {
-                "$ref": "#/components/schemas/CondicaoPrecondicaoDto"
-              }
-            }
-          },
-          "itens": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/ItemPortavel"
-            }
-          },
-          "grupos": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/GrupoPortavel"
-            }
-          }
-        }
-      },
       "ExibicaoEObrigatoriedadeAvaliadas": {
         "required": [
           "visivel",
@@ -21341,7 +21186,7 @@
               }
             ]
           },
-          "etapaCodigo": {
+          "paginaCodigo": {
             "type": [
               "null",
               "string"
@@ -21637,7 +21482,7 @@
         "required": [
           "finalidade",
           "titulo",
-          "etapas",
+          "paginas",
           "termos",
           "coleta",
           "regras",
@@ -21654,10 +21499,10 @@
               "string"
             ]
           },
-          "etapas": {
+          "paginas": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/SecaoRenderizavel"
+              "$ref": "#/components/schemas/PaginaApresentada"
             }
           },
           "termos": {
@@ -21679,17 +21524,17 @@
       },
       "FormularioPortavel": {
         "required": [
-          "etapas",
+          "paginas",
           "termos",
           "derivacoes",
           "agregados"
         ],
         "type": "object",
         "properties": {
-          "etapas": {
+          "paginas": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/EtapaPortavel"
+              "$ref": "#/components/schemas/PaginaPortavel"
             }
           },
           "termos": {
@@ -21716,7 +21561,7 @@
         "required": [
           "codigo",
           "ordem",
-          "etapaCodigo",
+          "paginaCodigo",
           "rotulo",
           "ocorrencias",
           "subitens"
@@ -21730,7 +21575,7 @@
             "type": "integer",
             "format": "int32"
           },
-          "etapaCodigo": {
+          "paginaCodigo": {
             "type": [
               "null",
               "string"
@@ -21768,7 +21613,7 @@
       "GrupoAvaliado": {
         "required": [
           "codigo",
-          "etapaCodigo",
+          "paginaCodigo",
           "estado",
           "regras",
           "ocorrencias"
@@ -21778,7 +21623,7 @@
           "codigo": {
             "type": "string"
           },
-          "etapaCodigo": {
+          "paginaCodigo": {
             "type": "string"
           },
           "estado": {
@@ -21839,7 +21684,7 @@
               "$ref": "#/components/schemas/FatoColetadoInput"
             }
           },
-          "etapaCodigo": {
+          "paginaCodigo": {
             "type": [
               "null",
               "string"
@@ -21920,7 +21765,7 @@
         "required": [
           "codigo",
           "ordem",
-          "etapaCodigo",
+          "paginaCodigo",
           "rotulo",
           "ocorrencias",
           "regras",
@@ -21935,7 +21780,7 @@
             "type": "integer",
             "format": "int32"
           },
-          "etapaCodigo": {
+          "paginaCodigo": {
             "type": [
               "null",
               "string"
@@ -21987,7 +21832,7 @@
       "GrupoPreVisualizadoDto": {
         "required": [
           "codigo",
-          "etapaCodigo",
+          "paginaCodigo",
           "visivel",
           "obrigatorio",
           "contagemValida",
@@ -21999,7 +21844,7 @@
           "codigo": {
             "type": "string"
           },
-          "etapaCodigo": {
+          "paginaCodigo": {
             "type": "string"
           },
           "visivel": {
@@ -22200,7 +22045,7 @@
         "required": [
           "fatoCodigo",
           "ordem",
-          "etapaCodigo",
+          "paginaCodigo",
           "apresentacao",
           "regras"
         ],
@@ -22213,7 +22058,7 @@
             "type": "integer",
             "format": "int32"
           },
-          "etapaCodigo": {
+          "paginaCodigo": {
             "type": [
               "null",
               "string"
@@ -22285,7 +22130,7 @@
       "ItemPreVisualizadoDto": {
         "required": [
           "fatoCodigo",
-          "etapaCodigo",
+          "paginaCodigo",
           "visivel",
           "obrigatorio",
           "restricoesVioladas",
@@ -22298,7 +22143,7 @@
           "fatoCodigo": {
             "type": "string"
           },
-          "etapaCodigo": {
+          "paginaCodigo": {
             "type": "string"
           },
           "visivel": {
@@ -23146,6 +22991,203 @@
         "type": "string",
         "description": "Como o valor de um dado do cat\u00E1logo chega ao sistema: calculado, declarado pelo candidato ou recebido de integra\u00E7\u00E3o.\n\n- \u0060CALCULADO\u0060: Calculado \u2014 O valor \u00E9 calculado pelo sistema ou por uma regra; n\u00E3o \u00E9 coletado, \u00E9 resultado.\n- \u0060DECLARADO\u0060: Declarado \u2014 O valor \u00E9 a resposta ou a escolha direta do candidato no formul\u00E1rio.\n- \u0060INTEGRACAO\u0060: Integra\u00E7\u00E3o \u2014 O valor \u00E9 recebido de uma integra\u00E7\u00E3o com outro sistema."
       },
+      "PaginaApresentada": {
+        "required": [
+          "codigo",
+          "codigoNasRegras",
+          "ordem",
+          "tipo",
+          "bloco",
+          "apresentacao"
+        ],
+        "type": "object",
+        "properties": {
+          "codigo": {
+            "type": "string"
+          },
+          "codigoNasRegras": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "ordem": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "tipo": {
+            "$ref": "#/components/schemas/TipoPaginaFormularioCodigo"
+          },
+          "bloco": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/BlocoSistemaCodigo"
+              }
+            ]
+          },
+          "apresentacao": {
+            "$ref": "#/components/schemas/ApresentacaoDaPaginaDto"
+          }
+        }
+      },
+      "PaginaAvaliada": {
+        "required": [
+          "codigo",
+          "visivel"
+        ],
+        "type": "object",
+        "properties": {
+          "codigo": {
+            "type": "string"
+          },
+          "visivel": {
+            "$ref": "#/components/schemas/TernarioCodigo"
+          }
+        }
+      },
+      "PaginaDoFormularioDto": {
+        "required": [
+          "codigo",
+          "ordem",
+          "tipo",
+          "bloco",
+          "apresentacao",
+          "exibicao"
+        ],
+        "type": "object",
+        "properties": {
+          "codigo": {
+            "type": "string"
+          },
+          "ordem": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "tipo": {
+            "$ref": "#/components/schemas/TipoPaginaFormularioCodigo"
+          },
+          "bloco": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/BlocoSistemaCodigo"
+              }
+            ]
+          },
+          "apresentacao": {
+            "$ref": "#/components/schemas/ApresentacaoDaPaginaDto"
+          },
+          "exibicao": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "type": "array",
+              "items": {
+                "$ref": "#/components/schemas/CondicaoPrecondicaoDto"
+              }
+            }
+          }
+        }
+      },
+      "PaginaDoFormularioInput": {
+        "required": [
+          "codigo",
+          "ordem",
+          "tipo",
+          "bloco",
+          "apresentacao"
+        ],
+        "type": "object",
+        "properties": {
+          "codigo": {
+            "type": "string"
+          },
+          "ordem": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "tipo": {
+            "$ref": "#/components/schemas/TipoPaginaFormularioCodigo"
+          },
+          "bloco": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/BlocoSistemaCodigo"
+              }
+            ]
+          },
+          "apresentacao": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/ApresentacaoDaPaginaInput"
+              }
+            ]
+          },
+          "exibicao": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "type": "array",
+              "items": {
+                "$ref": "#/components/schemas/CondicaoPrecondicaoInput"
+              }
+            }
+          }
+        }
+      },
+      "PaginaPortavel": {
+        "required": [
+          "codigo",
+          "exibicao",
+          "itens",
+          "grupos"
+        ],
+        "type": "object",
+        "properties": {
+          "codigo": {
+            "type": "string"
+          },
+          "exibicao": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "type": "array",
+              "items": {
+                "$ref": "#/components/schemas/CondicaoPrecondicaoDto"
+              }
+            }
+          },
+          "itens": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ItemPortavel"
+            }
+          },
+          "grupos": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GrupoPortavel"
+            }
+          }
+        }
+      },
       "PapelDaBanca": {
         "required": [
           "codigo",
@@ -23545,7 +23587,7 @@
       "PreVisualizacaoDoModeloInput": {
         "required": [
           "respostas",
-          "etapasConcluidas",
+          "paginasConcluidas",
           "pressupostos"
         ],
         "type": "object",
@@ -23556,7 +23598,7 @@
               "object"
             ]
           },
-          "etapasConcluidas": {
+          "paginasConcluidas": {
             "type": [
               "null",
               "array"
@@ -24454,48 +24496,6 @@
           }
         }
       },
-      "SecaoRenderizavel": {
-        "required": [
-          "codigo",
-          "codigoNasRegras",
-          "ordem",
-          "tipo",
-          "bloco",
-          "apresentacao"
-        ],
-        "type": "object",
-        "properties": {
-          "codigo": {
-            "type": "string"
-          },
-          "codigoNasRegras": {
-            "type": [
-              "null",
-              "string"
-            ]
-          },
-          "ordem": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "tipo": {
-            "$ref": "#/components/schemas/TipoEtapaFormularioCodigo"
-          },
-          "bloco": {
-            "oneOf": [
-              {
-                "type": "null"
-              },
-              {
-                "$ref": "#/components/schemas/BlocoSistemaCodigo"
-              }
-            ]
-          },
-          "apresentacao": {
-            "$ref": "#/components/schemas/ApresentacaoDaEtapaDto"
-          }
-        }
-      },
       "SolicitacaoDaProtecaoDto": {
         "required": [
           "tiposDeDocumento",
@@ -25229,14 +25229,6 @@
           }
         }
       },
-      "TipoEtapaFormularioCodigo": {
-        "enum": [
-          "SECAO",
-          "BLOCO"
-        ],
-        "type": "string",
-        "description": "O que a etapa do formul\u00E1rio \u00E9: uma se\u00E7\u00E3o com itens de resposta ou um bloco que o sistema monta.\n\n- \u0060SECAO\u0060: Se\u00E7\u00E3o \u2014 Etapa com os itens que o candidato responde.\n- \u0060BLOCO\u0060: Bloco do sistema \u2014 Etapa que o sistema monta a partir da configura\u00E7\u00E3o do processo; o bloco diz qual."
-      },
       "TipoInstrumentoNormativo": {
         "required": [
           "codigo",
@@ -25348,6 +25340,14 @@
         ],
         "type": "string",
         "description": "Quando o item ou o termo do formul\u00E1rio \u00E9 de resposta obrigat\u00F3ria.\n\n- \u0060SEMPRE\u0060: Sempre obrigat\u00F3rio \u2014 O candidato sempre precisa responder. N\u00E3o tem condi\u00E7\u00E3o.\n- \u0060NUNCA\u0060: Nunca obrigat\u00F3rio \u2014 A resposta \u00E9 sempre opcional. N\u00E3o tem condi\u00E7\u00E3o.\n- \u0060QUANDO\u0060: Obrigat\u00F3rio quando a condi\u00E7\u00E3o \u00E9 verdadeira \u2014 O candidato precisa responder quando a condi\u00E7\u00E3o sobre as respostas anteriores \u00E9 verdadeira. Tem sempre uma condi\u00E7\u00E3o."
+      },
+      "TipoPaginaFormularioCodigo": {
+        "enum": [
+          "SECAO",
+          "BLOCO"
+        ],
+        "type": "string",
+        "description": "O que a p\u00E1gina do formul\u00E1rio \u00E9: uma se\u00E7\u00E3o com itens de resposta ou um bloco que o sistema monta.\n\n- \u0060SECAO\u0060: Se\u00E7\u00E3o \u2014 P\u00E1gina com os itens que o candidato responde.\n- \u0060BLOCO\u0060: Bloco do sistema \u2014 P\u00E1gina que o sistema monta a partir da configura\u00E7\u00E3o do processo; o bloco diz qual."
       },
       "TipoProcessoDto": {
         "required": [

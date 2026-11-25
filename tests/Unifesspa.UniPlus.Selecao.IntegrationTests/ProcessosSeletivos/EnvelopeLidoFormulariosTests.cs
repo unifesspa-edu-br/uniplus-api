@@ -116,7 +116,7 @@ public sealed class EnvelopeLidoFormulariosTests
         FaseCronograma habilitacao = FaseDeHabilitacao(processo);
         processo.DefinirCronogramaFases([.. processo.CronogramaFases, habilitacao], [])
             .IsSuccess.Should().BeTrue();
-        processo.DefinirFormulario(FinalidadeFormulario.Habilitacao, habilitacao.Id, "Habilitação", FormularioDeTeste.Etapas())
+        processo.DefinirFormulario(FinalidadeFormulario.Habilitacao, habilitacao.Id, "Habilitação", FormularioDeTeste.Paginas())
             .IsSuccess.Should().BeTrue();
         processo.DefinirItens(
             [FatoColetadoDeTeste.Coletando("CERTIFICADO_EMITIDO", 0)
@@ -187,7 +187,7 @@ public sealed class EnvelopeLidoFormulariosTests
         Result<DefinicaoAvaliavel> avaliavel = DefinicaoAvaliavelDoProcesso.DoCongelado(reidratado.Value!);
         avaliavel.IsSuccess.Should().BeTrue(avaliavel.Error?.Message);
         RecorteDaFinalidade recorte = RecorteDaFinalidade.De(
-            avaliavel.Value!.Definicao, DefinicaoDoProcesso.CodigoDaEtapa(FinalidadeFormulario.Inscricao, null));
+            avaliavel.Value!.Definicao, DefinicaoDoProcesso.CodigoDaPagina(FinalidadeFormulario.Inscricao, null));
         recorte.Regras.Derivacoes.Select(static d => d.FatoCodigo)
             .Should().Contain([OpcaoPelasCotasDaLei.Fato, OrigemEscolar.FatoEgresso]);
         recorte.Pressupostos.Should().NotContain(OpcaoPelasCotasDaLei.Fato);

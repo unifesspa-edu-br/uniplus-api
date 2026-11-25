@@ -17,8 +17,8 @@ internal static class ConteudosDoModeloDeTeste
     public static PredicadoDnf Quando(string fato, Operador operador, JsonElement valor) =>
         PredicadoDnf.CriarDeCondicoesAgrupadas([(0, CondicaoDnf.Criar(fato, operador, valor).Value!)]).Value!;
 
-    public static EtapaDoModelo Etapa(string codigo = "DADOS", int ordem = 0, PredicadoDnf? exibicao = null) =>
-        new(codigo, ordem, TipoEtapaFormulario.Secao, null, "Dados", null, null, exibicao);
+    public static PaginaDoModelo Pagina(string codigo = "DADOS", int ordem = 0, PredicadoDnf? exibicao = null) =>
+        new(codigo, ordem, TipoPaginaFormulario.Secao, null, "Dados", null, null, exibicao);
 
     public static ItemDoModelo Item(string fato, int ordem = 0, PredicadoDnf? exibicao = null) =>
         new(fato, ordem, "DADOS", new ApresentacaoDoCampo(fato, TipoDeCampo.SimOuNao), null, new RegrasDoCampo(exibicao, Obrigatoriedade.Sempre, []));

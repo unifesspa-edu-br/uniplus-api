@@ -12,7 +12,7 @@ using Unifesspa.UniPlus.Regras.Leituras;
 public sealed record GrupoColetadoDto(
     string Codigo,
     int Ordem,
-    string? EtapaCodigo,
+    string? PaginaCodigo,
     string Rotulo,
     OcorrenciasDoGrupoDto Ocorrencias,
     ExibicaoEObrigatoriedadeDto Regras,
@@ -29,13 +29,13 @@ public sealed record ColetaDoFormularioDto(IReadOnlyList<FatoColetadoDto> Itens,
 
 /// <summary>
 /// O formulário de uma finalidade (UNI-REQ-0144): a fase, o título, o modelo de origem — nulo quando o formulário não
-/// partiu de um modelo —, as etapas, o que ele coleta e os termos exigidos.
+/// partiu de um modelo —, as páginas, o que ele coleta e os termos exigidos.
 /// </summary>
 public sealed record FormularioDto(
     CodigoComRotulo<FinalidadeFormulario> Finalidade,
     Guid? FaseId,
     string? Titulo,
     ModeloDeOrigemDto? ModeloOrigem,
-    IReadOnlyList<EtapaFormularioDto> Etapas,
+    IReadOnlyList<PaginaDoFormularioDto> Paginas,
     ColetaDoFormularioDto Coleta,
     IReadOnlyList<TermoExigidoDto> Termos);

@@ -17,7 +17,7 @@ using Unifesspa.UniPlus.Regras.Leituras;
 public sealed record FatoColetadoDto(
     string FatoCodigo,
     int Ordem,
-    string? EtapaCodigo,
+    string? PaginaCodigo,
     ApresentacaoDoCampoDto Apresentacao,
     RegrasDoCampoDto Regras,
     string? Formato,

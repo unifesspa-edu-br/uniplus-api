@@ -125,7 +125,7 @@ public sealed class ExigenciaComFatoDeFasePosteriorEndpointTests(CascadingFixtur
     private static void ColetarOFatoNaIsencao(ProcessoSeletivo processo, string fato)
     {
         Guid fase = processo.CronogramaFases.Single(f => f.Ordem == 1).Id;
-        processo.DefinirFormulario(FinalidadeFormulario.IsencaoTaxa, fase, null, FormularioDeTeste.Etapas(FinalidadeFormulario.IsencaoTaxa)).IsSuccess.Should().BeTrue();
+        processo.DefinirFormulario(FinalidadeFormulario.IsencaoTaxa, fase, null, FormularioDeTeste.Paginas(FinalidadeFormulario.IsencaoTaxa)).IsSuccess.Should().BeTrue();
         processo.DefinirFatosColetados(
                 FinalidadeFormulario.IsencaoTaxa,
                 [FatoColetadoDeTeste.Coletando(fato, 0)

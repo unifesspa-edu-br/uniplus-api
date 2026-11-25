@@ -7,19 +7,19 @@ using Unifesspa.UniPlus.Regras.ValueObjects;
 
 internal sealed class AvaliacaoDaOcorrencia
 {
-    private readonly string _etapaCodigo;
-    private readonly bool _etapaConcluida;
+    private readonly string _paginaCodigo;
+    private readonly bool _paginaConcluida;
     private readonly DateOnly? _diaDoEnvio;
     private readonly OcorrenciaRespondida _ocorrencia;
     private readonly Dictionary<string, FatoResolvido> _contexto;
     private readonly Dictionary<string, FatoResolvido> _fatos = new(StringComparer.Ordinal);
     private readonly List<AvaliacaoItem> _itens = [];
 
-    internal AvaliacaoDaOcorrencia(string etapaCodigo, bool etapaConcluida, DateOnly? diaDoEnvio,
+    internal AvaliacaoDaOcorrencia(string paginaCodigo, bool paginaConcluida, DateOnly? diaDoEnvio,
         IReadOnlyDictionary<string, FatoResolvido> fatos, OcorrenciaRespondida ocorrencia)
     {
-        _etapaCodigo = etapaCodigo;
-        _etapaConcluida = etapaConcluida;
+        _paginaCodigo = paginaCodigo;
+        _paginaConcluida = paginaConcluida;
         _diaDoEnvio = diaDoEnvio;
         _ocorrencia = ocorrencia;
         _contexto = new(fatos, StringComparer.Ordinal);
@@ -38,7 +38,7 @@ internal sealed class AvaliacaoDaOcorrencia
     private void AvaliarSubitem(DefinicaoItem subitem)
     {
         JsonElement? resposta = _ocorrencia.Respostas.TryGetValue(subitem.FatoCodigo, out JsonElement valor) ? valor : null;
-        AvaliacaoDoItem avaliacaoDoItem = new(_etapaCodigo, _etapaConcluida, _diaDoEnvio, _contexto, subitem, Ternario.Verdadeiro);
+        AvaliacaoDoItem avaliacaoDoItem = new(_paginaCodigo, _paginaConcluida, _diaDoEnvio, _contexto, subitem, Ternario.Verdadeiro);
         (FatoResolvido fato, AvaliacaoItem avaliacao) = avaliacaoDoItem.Avaliar(resposta);
         _contexto[subitem.FatoCodigo] = fato;
         _fatos[subitem.FatoCodigo] = fato;

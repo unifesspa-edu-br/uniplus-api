@@ -14,7 +14,7 @@ public sealed record ColetaDoFormulario(
     FormularioDeclarado Formulario,
     IReadOnlyList<ItemDoGrafo> Itens,
     IReadOnlyList<GrupoDoGrafo> Grupos,
-    IReadOnlyCollection<EtapaDoGrafo> Secoes,
+    IReadOnlyCollection<PaginaDoGrafo> Secoes,
     IReadOnlyCollection<TermoDoGrafo> Termos,
     string? FatoDaEscolhaDeFundamentos = null)
 {

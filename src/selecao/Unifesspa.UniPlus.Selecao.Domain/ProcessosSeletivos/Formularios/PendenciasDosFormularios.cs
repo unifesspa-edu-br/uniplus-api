@@ -68,7 +68,7 @@ public static class PendenciasDosFormularios
 
     private static HashSet<string> FatosColetadosNaSecaoDosDadosBasicos(ConfiguracaoDeclarada configuracao) => new(
         configuracao.Coleta.Itens.Where(static f => f.Finalidade == FinalidadeFormulario.Inscricao
-                && string.Equals(f.EtapaCodigo, ConjuntoBasicoDaInscricao.CodigoDaSecao, StringComparison.Ordinal))
+                && string.Equals(f.PaginaCodigo, ConjuntoBasicoDaInscricao.CodigoDaSecao, StringComparison.Ordinal))
             .Select(static f => f.FatoCodigo),
         StringComparer.Ordinal);
 

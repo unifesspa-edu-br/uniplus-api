@@ -43,7 +43,7 @@ public sealed class ModeloFormularioAvaliacaoEndpointTests
 
         ConferirCamposIguaisAosDaPreVisualizacao(avaliacao, preVisualizacao["itens"]!.AsArray());
         ConferirOpcoesDaFormaDeConclusao(avaliacao, quilombola);
-        ConferirEtapasIguaisAsSecoes(avaliacao, preVisualizacao);
+        ConferirPaginasIguaisAsSecoes(avaliacao, preVisualizacao);
     }
 
     [Fact(DisplayName = "A avaliação sem cadastro recusa regras que não formam formulário com a causa")]
@@ -88,16 +88,16 @@ public sealed class ModeloFormularioAvaliacaoEndpointTests
         Unico(avaliacao["campos"]!, "fatoCodigo", "FORMA_CONCLUSAO_EM")["opcoes"]!["codigos"]!.AsArray()
             .Select(static c => c!.GetValue<string>()).Should().Equal(quilombola ? ["EJA", "REGULAR"] : ["REGULAR"], "as opções seguem a resposta anterior");
 
-    // No modelo, o código da etapa nas regras é o da seção: as duas listas se comparam direto.
-    private static void ConferirEtapasIguaisAsSecoes(JsonObject avaliacao, JsonObject preVisualizacao) =>
-        Pares(avaliacao["etapas"]!).Should().Equal(Pares(preVisualizacao["secoes"]!));
+    // No modelo, o código da página nas regras é o da seção: as duas listas se comparam direto.
+    private static void ConferirPaginasIguaisAsSecoes(JsonObject avaliacao, JsonObject preVisualizacao) =>
+        Pares(avaliacao["paginas"]!).Should().Equal(Pares(preVisualizacao["secoes"]!));
 
     private static List<string> Pares(JsonNode lista) =>
         [.. lista.AsArray().Select(e => $"{e!["codigo"]!.GetValue<string>()}={e["visivel"]!.GetValue<string>()}")];
 
     private static object RegrasComAgregadoInvalido() => new
     {
-        etapas = new[] { new { codigo = "DADOS", exibicao = (object?)null, itens = Array.Empty<object>(), grupos = Array.Empty<object>() } },
+        paginas = new[] { new { codigo = "DADOS", exibicao = (object?)null, itens = Array.Empty<object>(), grupos = Array.Empty<object>() } },
         termos = Array.Empty<object>(),
         derivacoes = Array.Empty<object>(),
         agregados = new[] { new { codigo = "ALGUEM", grupoCodigo = "FAMILIA", fatoDeMembro = "SEM_RENDA", operacao = "SOMA" } },

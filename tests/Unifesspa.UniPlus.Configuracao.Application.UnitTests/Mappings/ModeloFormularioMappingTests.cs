@@ -131,7 +131,7 @@ public sealed class ModeloFormularioMappingTests
 
     private static ConteudoDoModelo ConteudoCompleto() => new(
         "Inscrição Medicina",
-        [EtapaCompleta(), new EtapaDoModelo("REVISAO", 1, TipoEtapaFormulario.Bloco, BlocoSistema.RevisaoEAceite, "Revisão", null, null, null)],
+        [PaginaCompleta(), new PaginaDoModelo("REVISAO", 1, TipoPaginaFormulario.Bloco, BlocoSistema.RevisaoEAceite, "Revisão", null, null, null)],
         [ItemCompleto()],
         [new TermoDoModelo(
             "TERMO_USO", 0, TermoId, VersaoId,
@@ -142,7 +142,7 @@ public sealed class ModeloFormularioMappingTests
 
     private static ConteudoDoModelo ConteudoMinimo() => new(
         null,
-        [new EtapaDoModelo("DADOS", 0, TipoEtapaFormulario.Secao, null, "Dados", null, null, null)],
+        [new PaginaDoModelo("DADOS", 0, TipoPaginaFormulario.Secao, null, "Dados", null, null, null)],
         [ItemMinimo("QUILOMBOLA", 0)],
         [new TermoDoModelo("TERMO_USO", 0, TermoId, VersaoId, new ExibicaoEObrigatoriedade(null, Obrigatoriedade.Sempre))],
         [],
@@ -163,8 +163,8 @@ public sealed class ModeloFormularioMappingTests
             new DataDeReferenciaDoDocumentoDoModelo(TipoDaDataDeReferencia.DataEspecifica, null, new DateOnly(2027, 2, 1)),
             EfeitoNaAnaliseDoDocumento.AceitarComAviso));
 
-    private static EtapaDoModelo EtapaCompleta() => new(
-        "DADOS", 0, TipoEtapaFormulario.Secao, null, "Dados", "Dados do candidato", "Confira os dados", Quando("QUILOMBOLA", true));
+    private static PaginaDoModelo PaginaCompleta() => new(
+        "DADOS", 0, TipoPaginaFormulario.Secao, null, "Dados", "Dados do candidato", "Confira os dados", Quando("QUILOMBOLA", true));
 
     private static ItemDoModelo ItemCompleto() => new(
         "RENDA",
@@ -203,7 +203,7 @@ public sealed class ModeloFormularioMappingTests
 
     private static ConteudoDoModeloInput EntradaCompleta() => new(
         "Inscrição Medicina",
-        [EtapaCompletaNaEntrada(), EntradaDaEtapaFormularioDeTeste.BlocoDeSistema("REVISAO", 1, "REVISAO_E_ACEITE").ComTitulo("Revisão").Construir()],
+        [PaginaCompletaNaEntrada(), EntradaDaPaginaDoFormularioDeTeste.BlocoDeSistema("REVISAO", 1, "REVISAO_E_ACEITE").ComTitulo("Revisão").Construir()],
         [ItemCompletoNaEntrada()],
         [
             EntradaDoTermoExigidoDeTeste.Exigindo("TERMO_USO").DaVersao(TermoId, VersaoId).ExibidoQuando(QuandoNaEntrada("QUILOMBOLA", true))
@@ -218,7 +218,7 @@ public sealed class ModeloFormularioMappingTests
 
     private static ConteudoDoModeloInput EntradaMinima() => new(
         null,
-        [EntradaDaEtapaFormularioDeTeste.Secao("DADOS").ComTitulo("Dados").Construir()],
+        [EntradaDaPaginaDoFormularioDeTeste.Secao("DADOS").ComTitulo("Dados").Construir()],
         [ItemMinimoNaEntrada("QUILOMBOLA", 0)],
         [EntradaDoTermoExigidoDeTeste.Exigindo("TERMO_USO").DaVersao(TermoId, VersaoId).Construir()],
         [],
@@ -227,8 +227,8 @@ public sealed class ModeloFormularioMappingTests
         ConjuntoDeDocumentosDoModeloBuilder.SoDocumentos(
             new DocumentoExigidoDoModeloInput("INSCRICAO", "RG", null, new IndeferimentoDoDocumentoDoModeloInput(true, "INDEFERIMENTO", []), NenhumaEscolha)));
 
-    private static EtapaFormularioInput EtapaCompletaNaEntrada() =>
-        EntradaDaEtapaFormularioDeTeste.Secao("DADOS").ComTitulo("Dados").ComDescricao("Dados do candidato").ComAviso("Confira os dados")
+    private static PaginaDoFormularioInput PaginaCompletaNaEntrada() =>
+        EntradaDaPaginaDoFormularioDeTeste.Secao("DADOS").ComTitulo("Dados").ComDescricao("Dados do candidato").ComAviso("Confira os dados")
             .ExibidaQuando(QuandoNaEntrada("QUILOMBOLA", true)).Construir();
 
     private static FatoColetadoInput ItemCompletoNaEntrada() =>

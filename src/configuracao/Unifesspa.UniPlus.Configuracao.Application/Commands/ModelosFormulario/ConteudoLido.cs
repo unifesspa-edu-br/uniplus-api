@@ -9,7 +9,7 @@ using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
 /// </summary>
 internal sealed record ConteudoLido(
     string? Titulo,
-    IReadOnlyList<(int Indice, EtapaDoModelo Etapa)> Etapas,
+    IReadOnlyList<(int Indice, PaginaDoModelo Pagina)> Paginas,
     IReadOnlyList<(int Indice, ItemDoModelo Item)> Itens,
     IReadOnlyList<(int Indice, TermoDoModelo Termo)> Termos,
     IReadOnlyList<string> Pressupostos,
@@ -17,6 +17,6 @@ internal sealed record ConteudoLido(
     ConjuntoLidoDeDocumentos Documentos)
 {
     public ConteudoDoModelo ParaConteudo() => new(
-        Titulo, [.. Etapas.Select(static e => e.Etapa)], [.. Itens.Select(static i => i.Item)], [.. Termos.Select(static t => t.Termo)], Pressupostos,
+        Titulo, [.. Paginas.Select(static e => e.Pagina)], [.. Itens.Select(static i => i.Item)], [.. Termos.Select(static t => t.Termo)], Pressupostos,
         [.. Grupos.Select(static g => g.Grupo)], Documentos.ParaConjunto());
 }

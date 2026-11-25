@@ -21,8 +21,8 @@ public sealed class ModeloFormularioTipoDeProcessoTests
     private static ConteudoDoModelo Conteudo() => new(
         "Habilitação",
         [
-            new EtapaDoModelo("DADOS", 0, TipoEtapaFormulario.Secao, null, "Dados", null, null, null),
-            new EtapaDoModelo("REVISAO", 1, TipoEtapaFormulario.Bloco, BlocoSistema.RevisaoEAceite, "Revisão", null, null, null),
+            new PaginaDoModelo("DADOS", 0, TipoPaginaFormulario.Secao, null, "Dados", null, null, null),
+            new PaginaDoModelo("REVISAO", 1, TipoPaginaFormulario.Bloco, BlocoSistema.RevisaoEAceite, "Revisão", null, null, null),
         ],
         [new ItemDoModelo("QUILOMBOLA", 0, "DADOS", new ApresentacaoDoCampo("Quilombola", TipoDeCampo.SimOuNao), null, new RegrasDoCampo(null, Obrigatoriedade.Sempre, []))],
         [],

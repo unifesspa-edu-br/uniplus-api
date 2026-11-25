@@ -26,7 +26,7 @@ public sealed class GrupoColetadoConfiguration : IEntityTypeConfiguration<GrupoC
         builder.Property(g => g.ProcessoSeletivoId).HasComment("Identificador do processo seletivo ao qual pertence.");
         builder.Property(g => g.Codigo).HasComment("Código que identifica o item no processo.");
         builder.Property(g => g.Ordem).HasComment("Posição de apresentação ou avaliação no conjunto.");
-        builder.Property(g => g.EtapaCodigo).HasComment("Código da página do formulário, quando houver.");
+        builder.Property(g => g.PaginaCodigo).HasComment("Código da página do formulário, quando houver.");
         builder.Property(g => g.Rotulo).HasComment("Texto apresentado à pessoa candidata.");
         builder.Property(g => g.Minimo).HasComment("Quantidade mínima de ocorrências do grupo.");
         builder.Property(g => g.Maximo).HasComment("Quantidade máxima de ocorrências do grupo, quando limitada.");
@@ -45,7 +45,7 @@ public sealed class GrupoColetadoConfiguration : IEntityTypeConfiguration<GrupoC
         builder.Property(g => g.Finalidade).HasMaxLength(TamanhoDoCodigoDeContrato.Maximo).IsRequired().HasComment("Finalidade do formulário.");
         builder.Property(g => g.Codigo).HasMaxLength(FormaDoGrupo.CodigoMaxLength).IsRequired();
         builder.Property(g => g.Ordem).IsRequired();
-        builder.Property(g => g.EtapaCodigo).HasColumnName("pagina_codigo").HasMaxLength(FormaDaEtapa.CodigoMaxLength);
+        builder.Property(g => g.PaginaCodigo).HasColumnName("pagina_codigo").HasMaxLength(FormaDaPagina.CodigoMaxLength);
         builder.Property(g => g.Rotulo).HasMaxLength(FormaDoItem.RotuloMaxLength).IsRequired();
         builder.Property(g => g.Minimo).IsRequired();
         builder.Property(g => g.Maximo);

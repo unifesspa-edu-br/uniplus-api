@@ -56,7 +56,7 @@ public sealed class ConferenciaDosMunicipiosDaInscricao(IConferenciaEnderecoGeo 
     private static Dictionary<string, string> UfDeCadaCampoDeMunicipio(DefinicaoFormulario definicao, RespostasAdmitidas admitidas)
     {
         Dictionary<string, string> ufDoMunicipio = new(StringComparer.Ordinal);
-        foreach (DefinicaoItem item in definicao.Etapas.SelectMany(static e => e.Itens.Concat(e.Grupos.SelectMany(static g => g.Subitens))))
+        foreach (DefinicaoItem item in definicao.Paginas.SelectMany(static e => e.Itens.Concat(e.Grupos.SelectMany(static g => g.Subitens))))
         {
             if (admitidas.Definicoes.TryGetValue(item.FatoCodigo, out DefinicaoDaResposta? definicaoDaResposta) && definicaoDaResposta.EhMunicipio
                 && item.Restricoes.OfType<MunicipiosDaUf>().FirstOrDefault() is { } daUf)

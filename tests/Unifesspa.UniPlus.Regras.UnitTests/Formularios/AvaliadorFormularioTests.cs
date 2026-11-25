@@ -23,7 +23,7 @@ public class AvaliadorFormularioTests : TestesDeAvaliacao
             Item("RENDA_FAMILIAR", obrigatoriedade: Obrigatoriedade.Quando(Predicado(Condicao("CONCORRER_RENDA", Operador.Igual, true)))));
 
         AvaliacaoFormulario avaliacao = AvaliarDefinicao(
-            formulario, Entrada(etapaConcluida: true, ("CONCORRER_RENDA", concorreRenda)));
+            formulario, Entrada(paginaConcluida: true, ("CONCORRER_RENDA", concorreRenda)));
 
         avaliacao.Itens[1].Obrigatorio.Should().Be(obrigatorioEsperado);
         avaliacao.Fatos["RENDA_FAMILIAR"].Estado.Should().Be(estadoSemResposta);
@@ -32,19 +32,19 @@ public class AvaliadorFormularioTests : TestesDeAvaliacao
     [Theory]
     [InlineData(Operador.Diferente, "\"X\"")]
     [InlineData(Operador.NenhumDe, "[\"X\"]")]
-    public void OpcionalEmBranco_ComEtapaConcluida_TornaFalsaInclusiveANegacao(Operador operador, string valor)
+    public void OpcionalEmBranco_ComPaginaConcluida_TornaFalsaInclusiveANegacao(Operador operador, string valor)
     {
         DefinicaoFormulario formulario = Formulario(
             Item("APELIDO", obrigatoriedade: Obrigatoriedade.Nunca),
             Item("DETALHE", exibicao: Predicado(Condicao("APELIDO", operador, JsonDocument.Parse(valor).RootElement))));
 
-        AvaliacaoFormulario concluida = AvaliarDefinicao(formulario, Entrada(etapaConcluida: true));
-        AvaliacaoFormulario emAberto = AvaliarDefinicao(formulario, Entrada(etapaConcluida: false));
+        AvaliacaoFormulario concluida = AvaliarDefinicao(formulario, Entrada(paginaConcluida: true));
+        AvaliacaoFormulario emAberto = AvaliarDefinicao(formulario, Entrada(paginaConcluida: false));
 
         concluida.Fatos["APELIDO"].Estado.Should().Be(EstadoFato.NaoInformado);
         concluida.Itens[1].Visivel.Should().Be(Ternario.Falso, "o opcional em branco não satisfaz a negação por omissão");
         concluida.Fatos["DETALHE"].Estado.Should().Be(EstadoFato.NaoAplicavel, "a regra seguinte não trava");
-        emAberto.Fatos["APELIDO"].Estado.Should().Be(EstadoFato.Indeterminado, "o não informado só nasce ao concluir a etapa");
+        emAberto.Fatos["APELIDO"].Estado.Should().Be(EstadoFato.Indeterminado, "o não informado só nasce ao concluir a pagina");
         emAberto.Fatos["DETALHE"].Estado.Should().Be(EstadoFato.Indeterminado);
     }
 
@@ -56,7 +56,7 @@ public class AvaliadorFormularioTests : TestesDeAvaliacao
         DefinicaoFormulario formulario = Formulario(Item("APELIDO", obrigatoriedade: Obrigatoriedade.Nunca));
 
         AvaliacaoFormulario avaliacao = AvaliarDefinicao(
-            formulario, Entrada(etapaConcluida: true, ("APELIDO", JsonDocument.Parse(resposta).RootElement)));
+            formulario, Entrada(paginaConcluida: true, ("APELIDO", JsonDocument.Parse(resposta).RootElement)));
 
         avaliacao.Fatos["APELIDO"].Estado.Should().Be(EstadoFato.NaoInformado);
     }
@@ -65,29 +65,29 @@ public class AvaliadorFormularioTests : TestesDeAvaliacao
     public void Derivacao_AceitaDependenciaNaoInformada()
     {
         DefinicaoFormulario formulario = new(
-            [new DefinicaoEtapa(Etapa, exibicao: null, [Item("OPCAO", obrigatoriedade: Obrigatoriedade.Nunca)])],
+            [new DefinicaoPagina(Pagina, exibicao: null, [Item("OPCAO", obrigatoriedade: Obrigatoriedade.Nunca)])],
             termos: [],
             [Derivacao("DERIVADO", Predicado(Condicao("OPCAO", Operador.Igual, "A")), "X")]);
 
-        AvaliacaoFormulario avaliacao = AvaliarDefinicao(formulario, Entrada(etapaConcluida: true));
+        AvaliacaoFormulario avaliacao = AvaliarDefinicao(formulario, Entrada(paginaConcluida: true));
 
         avaliacao.Fatos["DERIVADO"].Estado.Should().Be(EstadoFato.Resolvido);
         avaliacao.Fatos["DERIVADO"].Valor!.Value.GetArrayLength().Should().Be(0);
     }
 
-    private static DefinicaoFormulario FormularioComEtapaDoDocumentoEstrangeiro() => new(
+    private static DefinicaoFormulario FormularioComPaginaDoDocumentoEstrangeiro() => new(
         [
-            new DefinicaoEtapa(Etapa, exibicao: null, [Item("ESTRANGEIRO")]),
-            new DefinicaoEtapa("DOCUMENTO_ESTRANGEIRO", Predicado(Condicao("ESTRANGEIRO", Operador.Igual, true)), [Item("PASSAPORTE")]),
+            new DefinicaoPagina(Pagina, exibicao: null, [Item("ESTRANGEIRO")]),
+            new DefinicaoPagina("DOCUMENTO_ESTRANGEIRO", Predicado(Condicao("ESTRANGEIRO", Operador.Igual, true)), [Item("PASSAPORTE")]),
         ],
         termos: [],
         derivacoes: []);
 
     [Fact]
-    public void EtapaOculta_LevaSeusItensANaoAplicavel_MesmoComRespostaGravada()
+    public void PaginaOculta_LevaSeusItensANaoAplicavel_MesmoComRespostaGravada()
     {
         AvaliacaoFormulario avaliacao = AvaliarDefinicao(
-            FormularioComEtapaDoDocumentoEstrangeiro(), Entrada(etapaConcluida: true, ("ESTRANGEIRO", false), ("PASSAPORTE", "AB123")));
+            FormularioComPaginaDoDocumentoEstrangeiro(), Entrada(paginaConcluida: true, ("ESTRANGEIRO", false), ("PASSAPORTE", "AB123")));
 
         avaliacao.Itens[1].Visivel.Should().Be(Ternario.Falso);
         avaliacao.Fatos["PASSAPORTE"].Estado.Should().Be(EstadoFato.NaoAplicavel);
@@ -95,8 +95,8 @@ public class AvaliadorFormularioTests : TestesDeAvaliacao
 
     private static DefinicaoFormulario FormularioComModalidadeDerivadaDePcd() => new(
         [
-            new DefinicaoEtapa(Etapa, exibicao: null, [Item("PCD")]),
-            new DefinicaoEtapa(
+            new DefinicaoPagina(Pagina, exibicao: null, [Item("PCD")]),
+            new DefinicaoPagina(
                 "LAUDO",
                 exibicao: null,
                 [Item("LAUDO_MEDICO", exibicao: Predicado(Condicao("MODALIDADE", Operador.AlgumDe, new[] { "AC_PCD" })))]),
@@ -107,26 +107,26 @@ public class AvaliadorFormularioTests : TestesDeAvaliacao
     [Fact]
     public void Derivado_EhResolvidoEntreOsItens_AntesDoItemQueOCita()
     {
-        AvaliacaoFormulario avaliacao = AvaliarDefinicao(FormularioComModalidadeDerivadaDePcd(), Entrada(etapaConcluida: false, ("PCD", true)));
+        AvaliacaoFormulario avaliacao = AvaliarDefinicao(FormularioComModalidadeDerivadaDePcd(), Entrada(paginaConcluida: false, ("PCD", true)));
 
         avaliacao.Itens[1].Visivel.Should().Be(Ternario.Verdadeiro);
         avaliacao.Itens.Select(static i => i.FatoCodigo).Should().Equal("PCD", "LAUDO_MEDICO");
     }
 
     [Fact(DisplayName = "A avaliação diz de cada seção se ela aparece")]
-    public void Etapas_DizemSeAparecem()
+    public void Paginas_DizemSeAparecem()
     {
         DefinicaoFormulario formulario = new(
             [
-                new DefinicaoEtapa("DADOS", exibicao: null, [Item("TIPO_ENDERECO")]),
-                new DefinicaoEtapa("ALDEIA", Predicado(Condicao("TIPO_ENDERECO", Operador.Igual, "ALDEIA")), [Item("NOME_ALDEIA")]),
+                new DefinicaoPagina("DADOS", exibicao: null, [Item("TIPO_ENDERECO")]),
+                new DefinicaoPagina("ALDEIA", Predicado(Condicao("TIPO_ENDERECO", Operador.Igual, "ALDEIA")), [Item("NOME_ALDEIA")]),
             ],
             termos: [],
             derivacoes: []);
 
-        AvaliacaoFormulario avaliacao = AvaliarDefinicao(formulario, Entrada(etapaConcluida: false, ("TIPO_ENDERECO", "URBANO")));
+        AvaliacaoFormulario avaliacao = AvaliarDefinicao(formulario, Entrada(paginaConcluida: false, ("TIPO_ENDERECO", "URBANO")));
 
-        avaliacao.Etapas.Select(static e => (e.Codigo, e.Visivel)).Should().Equal(("DADOS", Ternario.Verdadeiro), ("ALDEIA", Ternario.Falso));
+        avaliacao.Paginas.Select(static e => (e.Codigo, e.Visivel)).Should().Equal(("DADOS", Ternario.Verdadeiro), ("ALDEIA", Ternario.Falso));
     }
 
     [Fact]
@@ -136,7 +136,7 @@ public class AvaliadorFormularioTests : TestesDeAvaliacao
             Item("ESTRANGEIRO"),
             Item("PASSAPORTE", exibicao: Predicado(Condicao("ESTRANGEIRO", Operador.Igual, true)), obrigatoriedade: Obrigatoriedade.Nunca));
 
-        AvaliacaoItem passaporte = AvaliarDefinicao(formulario, Entrada(etapaConcluida: false)).Itens[1];
+        AvaliacaoItem passaporte = AvaliarDefinicao(formulario, Entrada(paginaConcluida: false)).Itens[1];
 
         passaporte.Visivel.Should().Be(Ternario.Indeterminado);
         passaporte.Obrigatorio.Should().Be(Ternario.Falso);
@@ -148,12 +148,12 @@ public class AvaliadorFormularioTests : TestesDeAvaliacao
     public void TermoCondicionado_AparecePara_QuemSatisfazACondicao(bool concorreRenda, Ternario esperado)
     {
         DefinicaoFormulario formulario = new(
-            [new DefinicaoEtapa(Etapa, exibicao: null, [Item("CONCORRER_RENDA")])],
+            [new DefinicaoPagina(Pagina, exibicao: null, [Item("CONCORRER_RENDA")])],
             [new DefinicaoTermo("CONSULTA_BANCO_CENTRAL", Predicado(Condicao("CONCORRER_RENDA", Operador.Igual, true)), Obrigatoriedade.Sempre)],
             derivacoes: []);
 
         AvaliacaoTermo termo = AvaliarDefinicao(
-            formulario, Entrada(etapaConcluida: true, ("CONCORRER_RENDA", concorreRenda))).Termos.Single();
+            formulario, Entrada(paginaConcluida: true, ("CONCORRER_RENDA", concorreRenda))).Termos.Single();
 
         termo.Visivel.Should().Be(esperado);
         termo.Obrigatorio.Should().Be(esperado);
@@ -163,14 +163,14 @@ public class AvaliadorFormularioTests : TestesDeAvaliacao
     public void DerivadosEmCiclo_FicamIndeterminados()
     {
         DefinicaoFormulario formulario = new(
-            [new DefinicaoEtapa(Etapa, exibicao: null, [])],
+            [new DefinicaoPagina(Pagina, exibicao: null, [])],
             termos: [],
             [
                 Derivacao("A", Predicado(Condicao("B", Operador.AlgumDe, new[] { "X" })), "X"),
                 Derivacao("B", Predicado(Condicao("A", Operador.AlgumDe, new[] { "X" })), "X"),
             ]);
 
-        AvaliacaoFormulario avaliacao = AvaliarDefinicao(formulario, Entrada(etapaConcluida: true));
+        AvaliacaoFormulario avaliacao = AvaliarDefinicao(formulario, Entrada(paginaConcluida: true));
 
         avaliacao.Fatos["A"].Estado.Should().Be(EstadoFato.Indeterminado);
         avaliacao.Fatos["B"].Estado.Should().Be(EstadoFato.Indeterminado);

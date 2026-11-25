@@ -24,8 +24,8 @@ internal static class ConteudosDeModeloParaTeste
     public const string Finalidade = "Verificação dos requisitos do processo seletivo.";
     public const HipoteseLegalTratamento Hipotese = HipoteseLegalTratamento.CumprimentoObrigacaoLegal;
 
-    public static readonly EtapaDoModelo Secao = new("DADOS", 0, TipoEtapaFormulario.Secao, null, "Dados", null, null, null);
-    public static readonly EtapaDoModelo Revisao = new("REVISAO", 1, TipoEtapaFormulario.Bloco, BlocoSistema.RevisaoEAceite, "Revisão", null, null, null);
+    public static readonly PaginaDoModelo Secao = new("DADOS", 0, TipoPaginaFormulario.Secao, null, "Dados", null, null, null);
+    public static readonly PaginaDoModelo Revisao = new("REVISAO", 1, TipoPaginaFormulario.Bloco, BlocoSistema.RevisaoEAceite, "Revisão", null, null, null);
 
     public static void Aprovar(FatoCandidato fato)
     {
@@ -43,8 +43,8 @@ internal static class ConteudosDeModeloParaTeste
     public static ConteudoDoModeloInput Conteudo(params FatoColetadoInput[] itens) => new(
         "Habilitação",
         [
-            EntradaDaEtapaFormularioDeTeste.Secao("DADOS").ComTitulo("Dados").Construir(),
-            EntradaDaEtapaFormularioDeTeste.BlocoDeSistema("REVISAO", 1, "REVISAO_E_ACEITE").ComTitulo("Revisão").Construir(),
+            EntradaDaPaginaDoFormularioDeTeste.Secao("DADOS").ComTitulo("Dados").Construir(),
+            EntradaDaPaginaDoFormularioDeTeste.BlocoDeSistema("REVISAO", 1, "REVISAO_E_ACEITE").ComTitulo("Revisão").Construir(),
         ],
         itens,
         [],

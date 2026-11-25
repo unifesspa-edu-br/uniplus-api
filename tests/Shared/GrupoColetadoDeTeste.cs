@@ -44,7 +44,7 @@ internal sealed record GrupoColetadoDeTeste
     public static GrupoColetadoDeTeste Como(GrupoColetado grupo) =>
         Agrupando(grupo.Codigo, grupo.Ordem) with
         {
-            Secao = grupo.EtapaCodigo,
+            Secao = grupo.PaginaCodigo,
             Rotulo = grupo.Rotulo,
             Minimo = grupo.Minimo,
             Maximo = grupo.Maximo,

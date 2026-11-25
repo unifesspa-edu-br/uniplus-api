@@ -53,12 +53,12 @@ public static class ProjecaoDoFormularioApresentado
         DateOnly? dataReferenciaFatos)
     {
         IReadOnlyDictionary<string, IReadOnlyList<ValorDominioDeclaradoCongelado>?> valores = avaliavel.ValoresSelecionaveis;
-        RecorteDaFinalidade recorte = RecorteDaFinalidade.De(avaliavel.Definicao, DefinicaoDoProcesso.CodigoDaEtapa(finalidade, null), avaliavel.Ofertas);
+        RecorteDaFinalidade recorte = RecorteDaFinalidade.De(avaliavel.Definicao, DefinicaoDoProcesso.CodigoDaPagina(finalidade, null), avaliavel.Ofertas);
 
         return new FormularioApresentado(
             finalidade.Codigo(),
             formulario.Titulo,
-            [.. formulario.Etapas.OrderBy(static e => e.Ordem).Select(e => Secao(finalidade, e))],
+            [.. formulario.Paginas.OrderBy(static e => e.Ordem).Select(e => Secao(finalidade, e))],
             [.. termos.Where(t => t.Finalidade == finalidade).OrderBy(static t => t.Ordem).Select(t => Termo(finalidade, t))],
             Coleta(finalidade, fatos, grupos, valores),
             recorte.Regras,
@@ -88,13 +88,13 @@ public static class ProjecaoDoFormularioApresentado
         [.. fatos.Where(f => f.Finalidade == finalidade).OrderBy(static f => f.Ordem).Select(f => Campo(f, valores))],
         [.. grupos.Where(g => g.Finalidade == finalidade).OrderBy(static g => g.Ordem).Select(g => Grupo(g, valores))]);
 
-    private static SecaoRenderizavel Secao(FinalidadeFormulario finalidade, EtapaFormulario etapa) => new(
-        etapa.Codigo,
-        etapa.Tipo == TipoEtapaFormulario.Secao ? DefinicaoDoProcesso.CodigoDaEtapa(finalidade, etapa.Codigo) : null,
-        etapa.Ordem,
-        etapa.Tipo.Codigo(),
-        etapa.Bloco?.Codigo(),
-        new ApresentacaoDaEtapaDto(etapa.Titulo, etapa.Descricao, etapa.Aviso));
+    private static PaginaApresentada Secao(FinalidadeFormulario finalidade, PaginaDoFormulario pagina) => new(
+        pagina.Codigo,
+        pagina.Tipo == TipoPaginaFormulario.Secao ? DefinicaoDoProcesso.CodigoDaPagina(finalidade, pagina.Codigo) : null,
+        pagina.Ordem,
+        pagina.Tipo.Codigo(),
+        pagina.Bloco?.Codigo(),
+        new ApresentacaoDaPaginaDto(pagina.Titulo, pagina.Descricao, pagina.Aviso));
 
     private static TermoApresentado Termo(FinalidadeFormulario finalidade, TermoExigidoFormulario termo) => new(
         termo.Codigo,
@@ -108,7 +108,7 @@ public static class ProjecaoDoFormularioApresentado
         GrupoColetado grupo, IReadOnlyDictionary<string, IReadOnlyList<ValorDominioDeclaradoCongelado>?> valores) => new(
         grupo.Codigo,
         grupo.Ordem,
-        grupo.EtapaCodigo,
+        grupo.PaginaCodigo,
         grupo.Rotulo,
         new OcorrenciasDoGrupoDto(grupo.Minimo, grupo.Maximo, grupo.IncluiCandidato),
         [.. grupo.Subitens.OrderBy(static s => s.Ordem).Select(s => Campo(s, valores))]);
@@ -118,7 +118,7 @@ public static class ProjecaoDoFormularioApresentado
         FatoColetado fato, IReadOnlyDictionary<string, IReadOnlyList<ValorDominioDeclaradoCongelado>?> valores) => new(
         fato.FatoCodigo,
         fato.Ordem,
-        fato.EtapaCodigo,
+        fato.PaginaCodigo,
         new ApresentacaoDoCampoDto(
             fato.Rotulo,
             fato.TipoDeCampo.Codigo(),

@@ -64,7 +64,7 @@ public sealed class AplicarModeloFormularioFinalidadeEConjuntoBasicoTests
         Result<AplicacaoDeModeloDto> resultado = await _cenario.AplicarAsync(Modelo(FinalidadeFormulario.Inscricao, [Item("QUILOMBOLA", 0)]));
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
-        _cenario.Processo.FormularioDe(FinalidadeFormulario.Inscricao)!.Etapas.MinBy(static e => e.Ordem)!.Codigo.Should().Be(ConjuntoBasicoDaInscricao.CodigoDaSecao);
+        _cenario.Processo.FormularioDe(FinalidadeFormulario.Inscricao)!.Paginas.MinBy(static e => e.Ordem)!.Codigo.Should().Be(ConjuntoBasicoDaInscricao.CodigoDaSecao);
         _cenario.Processo.FatosColetados.Select(static f => f.FatoCodigo).Should().Contain(ConjuntoBasicoDaInscricao.Fatos);
         _cenario.Processo.FatosColetados.ForaDoConjuntoBasico().Should().ContainSingle().Which.Ordem.Should().Be(FormularioDeTeste.PrimeiraOrdemDeInscricao);
     }

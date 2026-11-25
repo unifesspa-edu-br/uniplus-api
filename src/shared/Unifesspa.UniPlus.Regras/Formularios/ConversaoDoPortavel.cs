@@ -11,33 +11,33 @@ using Unifesspa.UniPlus.Regras.ValueObjects;
 /// A definição avaliável de um formulário portável. Cada elemento é conferido onde o construtor dele
 /// o exigiria, por meio da <c>Violacao</c> do próprio tipo, e a recusa sai como texto para quem
 /// importou: o construtor só protege quem monta a definição pelo módulo. A leitura para na primeira
-/// recusa, na ordem etapas, termos, derivações, agregados e, por fim, a definição: o que vem depois
+/// recusa, na ordem páginas, termos, derivações, agregados e, por fim, a definição: o que vem depois
 /// dela não chega a ser lido.
 /// </summary>
 internal static class ConversaoDoPortavel
 {
     internal static Result<DefinicaoFormulario> Converter(FormularioPortavel portavel)
     {
-        List<DefinicaoEtapa> etapas = [];
+        List<DefinicaoPagina> paginas = [];
         List<DefinicaoTermo> termos = [];
         List<DerivacaoDoFato> derivacoes = [];
         List<DefinicaoAgregado> agregados = [];
-        DomainError? erro = Ler(portavel.Etapas, Etapa, etapas) ?? Ler(portavel.Termos, Termo, termos)
+        DomainError? erro = Ler(portavel.Paginas, Pagina, paginas) ?? Ler(portavel.Termos, Termo, termos)
             ?? Ler(portavel.Derivacoes, Derivacao, derivacoes) ?? Ler(portavel.Agregados, Agregado, agregados)
-            ?? Recusa(DefinicaoFormulario.Violacao(etapas, termos, derivacoes, agregados));
+            ?? Recusa(DefinicaoFormulario.Violacao(paginas, termos, derivacoes, agregados));
 
-        return Montado(erro, () => new DefinicaoFormulario(etapas, termos, derivacoes, agregados));
+        return Montado(erro, () => new DefinicaoFormulario(paginas, termos, derivacoes, agregados));
     }
 
-    private static Result<DefinicaoEtapa> Etapa(EtapaPortavel etapa)
+    private static Result<DefinicaoPagina> Pagina(PaginaPortavel pagina)
     {
-        Result<PredicadoDnf?> exibicao = DoFio(etapa.Exibicao);
+        Result<PredicadoDnf?> exibicao = DoFio(pagina.Exibicao);
         List<DefinicaoItem> itens = [];
         List<DefinicaoGrupo> grupos = [];
-        DomainError? erro = exibicao.Error ?? Ler(etapa.Itens, Item, itens) ?? Ler(etapa.Grupos, Grupo, grupos)
-            ?? Recusa(DefinicaoEtapa.Violacao(etapa.Codigo));
+        DomainError? erro = exibicao.Error ?? Ler(pagina.Itens, Item, itens) ?? Ler(pagina.Grupos, Grupo, grupos)
+            ?? Recusa(DefinicaoPagina.Violacao(pagina.Codigo));
 
-        return Montado(erro, () => new DefinicaoEtapa(etapa.Codigo, exibicao.Value, itens, grupos));
+        return Montado(erro, () => new DefinicaoPagina(pagina.Codigo, exibicao.Value, itens, grupos));
     }
 
     private static Result<DefinicaoGrupo> Grupo(GrupoPortavel grupo)

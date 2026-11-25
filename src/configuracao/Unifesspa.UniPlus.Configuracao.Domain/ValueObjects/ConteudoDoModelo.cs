@@ -10,13 +10,13 @@ using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Regras.ValueObjects;
 
 /// <summary>
-/// O conteúdo do modelo, lido e gravado inteiro: o título, as etapas, os itens, os termos, os fatos
+/// O conteúdo do modelo, lido e gravado inteiro: o título, as páginas, os itens, os termos, os fatos
 /// pressupostos — coletados pela inscrição, que o modelo de outra finalidade pode citar (UNI-REQ-0144)
 /// — e os grupos repetíveis.
 /// </summary>
 public sealed record ConteudoDoModelo(
     string? Titulo,
-    IReadOnlyList<EtapaDoModelo> Etapas,
+    IReadOnlyList<PaginaDoModelo> Paginas,
     IReadOnlyList<ItemDoModelo> Itens,
     IReadOnlyList<TermoDoModelo> Termos,
     IReadOnlyList<string> Pressupostos,
@@ -36,14 +36,14 @@ public sealed record ConteudoDoModelo(
     {
         ArgumentNullException.ThrowIfNull(derivacoes);
         ArgumentNullException.ThrowIfNull(agregados);
-        ILookup<string?, ItemDoModelo> itensPorEtapa = Itens.ToLookup(static i => i.EtapaCodigo, StringComparer.Ordinal);
-        ILookup<string?, GrupoDoModelo> gruposPorEtapa = Grupos.ToLookup(static g => g.EtapaCodigo, StringComparer.Ordinal);
+        ILookup<string?, ItemDoModelo> itensPorPagina = Itens.ToLookup(static i => i.PaginaCodigo, StringComparer.Ordinal);
+        ILookup<string?, GrupoDoModelo> gruposPorPagina = Grupos.ToLookup(static g => g.PaginaCodigo, StringComparer.Ordinal);
         return new DefinicaoFormulario(
-            [.. Etapas.Where(static e => e.Tipo == TipoEtapaFormulario.Secao).OrderBy(static e => e.Ordem).Select(e => new DefinicaoEtapa(
+            [.. Paginas.Where(static e => e.Tipo == TipoPaginaFormulario.Secao).OrderBy(static e => e.Ordem).Select(e => new DefinicaoPagina(
                 e.Codigo,
                 e.Exibicao,
-                [.. itensPorEtapa[e.Codigo].OrderBy(static i => i.Ordem).Select(Item)],
-                [.. gruposPorEtapa[e.Codigo].OrderBy(static g => g.Ordem).Select(Grupo)]))],
+                [.. itensPorPagina[e.Codigo].OrderBy(static i => i.Ordem).Select(Item)],
+                [.. gruposPorPagina[e.Codigo].OrderBy(static g => g.Ordem).Select(Grupo)]))],
             [.. Termos.OrderBy(static t => t.Ordem).Select(static t => new DefinicaoTermo(t.Codigo, t.Regras.Exibicao, t.Regras.Obrigatoriedade))],
             derivacoes,
             agregados);
@@ -59,11 +59,11 @@ public sealed record ConteudoDoModelo(
     /// <summary>Os campos do modelo, itens e campos de grupo.</summary>
     public IEnumerable<ItemDoModelo> Campos() => Itens.Concat(Grupos.SelectMany(static g => g.Subitens));
 
-    /// <summary>Os fatos que as regras do modelo citam — dos campos, dos grupos, das etapas, dos termos e dos documentos.</summary>
+    /// <summary>Os fatos que as regras do modelo citam — dos campos, dos grupos, das páginas, dos termos e dos documentos.</summary>
     public IEnumerable<string> FatosCitados() =>
         Campos().SelectMany(static i => i.FatosCitados)
             .Concat(Grupos.SelectMany(static g => g.FatosCitados))
-            .Concat(Etapas.SelectMany(static e => e.FatosCitados))
+            .Concat(Paginas.SelectMany(static e => e.FatosCitados))
             .Concat(Termos.SelectMany(static t => t.FatosCitados))
             .Concat(Documentos.FatosCitados());
 
@@ -74,7 +74,7 @@ public sealed record ConteudoDoModelo(
     private IEnumerable<PredicadoDnf> PredicadosDasRegras() =>
         Campos().SelectMany(static i => SemCaminho(i.Predicados()).Append(i.Regras.Impedimento?.Quando).Concat(PredicadosDasOpcoesPermitidas(i)))
             .Concat(Grupos.SelectMany(static g => SemCaminho(g.Predicados())))
-            .Concat(Etapas.SelectMany(static e => SemCaminho(e.Predicados())))
+            .Concat(Paginas.SelectMany(static e => SemCaminho(e.Predicados())))
             .Concat(Termos.SelectMany(static t => SemCaminho(t.Predicados())))
             .Concat(SemCaminho(Documentos.Predicados()))
             .OfType<PredicadoDnf>();
@@ -91,7 +91,7 @@ public sealed record ConteudoDoModelo(
     /// </summary>
     public ConteudoDoModelo NaFormaGravada() => new(
         FormaDoItem.TextoOpcional(Titulo),
-        [.. (Etapas ?? []).Select(EtapaNaFormaGravada)],
+        [.. (Paginas ?? []).Select(PaginaNaFormaGravada)],
         [.. (Itens ?? []).Select(CampoNaFormaGravada)],
         [.. (Termos ?? []).Select(static t => t with { Codigo = TextoGravavel.CodigoNaFormaGravada(t.Codigo) })],
         [.. (Pressupostos ?? []).Select(static p => TextoGravavel.CodigoNaFormaGravada(p))],
@@ -99,12 +99,12 @@ public sealed record ConteudoDoModelo(
         Documentos.NaFormaGravada());
 
     /// <summary>
-    /// O conteúdo na ordem em que é gravado: etapas, itens, grupos, campos de grupo e termos na ordem
+    /// O conteúdo na ordem em que é gravado: páginas, itens, grupos, campos de grupo e termos na ordem
     /// declarada, e as restrições de cada campo na ordem do tipo.
     /// </summary>
     public ConteudoDoModelo EmOrdem() => this with
     {
-        Etapas = [.. Etapas.OrderBy(static e => e.Ordem)],
+        Paginas = [.. Paginas.OrderBy(static e => e.Ordem)],
         Itens = [.. Itens.OrderBy(static i => i.Ordem).Select(ComRestricoesEmOrdem)],
         Termos = [.. Termos.OrderBy(static t => t.Ordem)],
         Grupos = [.. Grupos.OrderBy(static g => g.Ordem)
@@ -123,18 +123,18 @@ public sealed record ConteudoDoModelo(
     private static ItemDoModelo ComRestricoesEmOrdem(ItemDoModelo campo) =>
         campo with { Regras = campo.Regras.ComRestricoesNaOrdemDoTipo() };
 
-    private static EtapaDoModelo EtapaNaFormaGravada(EtapaDoModelo etapa) => etapa with
+    private static PaginaDoModelo PaginaNaFormaGravada(PaginaDoModelo pagina) => pagina with
     {
-        Codigo = TextoGravavel.CodigoNaFormaGravada(etapa.Codigo),
-        Titulo = (etapa.Titulo ?? string.Empty).Trim(),
-        Descricao = FormaDoItem.TextoOpcional(etapa.Descricao),
-        Aviso = FormaDoItem.TextoOpcional(etapa.Aviso),
+        Codigo = TextoGravavel.CodigoNaFormaGravada(pagina.Codigo),
+        Titulo = (pagina.Titulo ?? string.Empty).Trim(),
+        Descricao = FormaDoItem.TextoOpcional(pagina.Descricao),
+        Aviso = FormaDoItem.TextoOpcional(pagina.Aviso),
     };
 
     private static ItemDoModelo CampoNaFormaGravada(ItemDoModelo campo) => campo with
     {
         FatoCodigo = TextoGravavel.CodigoNaFormaGravada(campo.FatoCodigo),
-        EtapaCodigo = campo.EtapaCodigo is null ? null : TextoGravavel.CodigoNaFormaGravada(campo.EtapaCodigo),
+        PaginaCodigo = campo.PaginaCodigo is null ? null : TextoGravavel.CodigoNaFormaGravada(campo.PaginaCodigo),
         Apresentacao = campo.Apresentacao.NaFormaGravada(),
         Formato = FormaDoItem.TextoOpcional(campo.Formato),
     };
@@ -142,14 +142,14 @@ public sealed record ConteudoDoModelo(
     private static GrupoDoModelo GrupoNaFormaGravada(GrupoDoModelo grupo) => grupo with
     {
         Codigo = TextoGravavel.CodigoNaFormaGravada(grupo.Codigo),
-        EtapaCodigo = grupo.EtapaCodigo is null ? null : TextoGravavel.CodigoNaFormaGravada(grupo.EtapaCodigo),
+        PaginaCodigo = grupo.PaginaCodigo is null ? null : TextoGravavel.CodigoNaFormaGravada(grupo.PaginaCodigo),
         Rotulo = (grupo.Rotulo ?? string.Empty).Trim(),
         Subitens = [.. (grupo.Subitens ?? []).Select(CampoNaFormaGravada)],
     };
 
     private IEnumerable<(string Campo, string? Texto)> TextosDoConteudo() =>
         new (string, string?)[] { ("titulo", Titulo) }
-            .Concat(Etapas.SelectMany(TextosDaEtapa))
+            .Concat(Paginas.SelectMany(TextosDaPagina))
             .Concat(Itens.SelectMany(static (item, i) => TextosDoCampo($"itens[{i}]", item)))
             .Concat(Grupos.SelectMany(TextosDoGrupo))
             .Concat(Termos.SelectMany(TextosDoTermo))
@@ -157,20 +157,20 @@ public sealed record ConteudoDoModelo(
             .Concat(Documentos.GruposDeDocumentos.SelectMany(TextosDoGrupoDeDocumentos))
             .Concat(Pressupostos.Select(static (p, i) => ($"pressupostos[{i}]", (string?)p)));
 
-    private static IEnumerable<(string Campo, string? Texto)> TextosDaEtapa(EtapaDoModelo etapa, int indice) =>
+    private static IEnumerable<(string Campo, string? Texto)> TextosDaPagina(PaginaDoModelo pagina, int indice) =>
         new (string, string?)[]
         {
-            ($"etapas[{indice}].codigo", etapa.Codigo),
-            ($"etapas[{indice}].{EtapaFormularioInput.CaminhoDaApresentacao}.titulo", etapa.Titulo),
-            ($"etapas[{indice}].{EtapaFormularioInput.CaminhoDaApresentacao}.descricao", etapa.Descricao),
-            ($"etapas[{indice}].{EtapaFormularioInput.CaminhoDaApresentacao}.aviso", etapa.Aviso),
+            ($"paginas[{indice}].codigo", pagina.Codigo),
+            ($"paginas[{indice}].{PaginaDoFormularioInput.CaminhoDaApresentacao}.titulo", pagina.Titulo),
+            ($"paginas[{indice}].{PaginaDoFormularioInput.CaminhoDaApresentacao}.descricao", pagina.Descricao),
+            ($"paginas[{indice}].{PaginaDoFormularioInput.CaminhoDaApresentacao}.aviso", pagina.Aviso),
         }
-        .Concat(TextosDosPredicados($"etapas[{indice}]", etapa.Predicados()));
+        .Concat(TextosDosPredicados($"paginas[{indice}]", pagina.Predicados()));
 
     private static IEnumerable<(string Campo, string? Texto)> TextosDoGrupo(GrupoDoModelo grupo, int indice) =>
         new (string, string?)[]
         {
-            ($"grupos[{indice}].codigo", grupo.Codigo), ($"grupos[{indice}].etapaCodigo", grupo.EtapaCodigo), ($"grupos[{indice}].rotulo", grupo.Rotulo),
+            ($"grupos[{indice}].codigo", grupo.Codigo), ($"grupos[{indice}].paginaCodigo", grupo.PaginaCodigo), ($"grupos[{indice}].rotulo", grupo.Rotulo),
         }
         .Concat(TextosDosPredicados($"grupos[{indice}]", grupo.Predicados()))
         .Concat(grupo.Subitens.SelectMany((s, j) => TextosDoCampo($"grupos[{indice}].subitens[{j}]", s)));
@@ -220,7 +220,7 @@ public sealed record ConteudoDoModelo(
     private static IEnumerable<(string Campo, string? Texto)> TextosDoCampo(string caminho, ItemDoModelo campo) =>
         new (string, string?)[]
         {
-            ($"{caminho}.fatoCodigo", campo.FatoCodigo), ($"{caminho}.etapaCodigo", campo.EtapaCodigo),
+            ($"{caminho}.fatoCodigo", campo.FatoCodigo), ($"{caminho}.paginaCodigo", campo.PaginaCodigo),
             ($"{caminho}.{FatoColetadoInput.CaminhoDaApresentacao}.rotulo", campo.Apresentacao.Rotulo), ($"{caminho}.formato", campo.Formato),
             ($"{caminho}.{FatoColetadoInput.CaminhoDaApresentacao}.ajuda", campo.Apresentacao.Ajuda),
         }

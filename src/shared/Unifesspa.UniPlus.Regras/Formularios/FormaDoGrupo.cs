@@ -30,7 +30,7 @@ public static class FormaDoGrupo
         int ordem,
         string? rotulo,
         OcorrenciasDoGrupo ocorrencias,
-        IReadOnlyList<(string? FatoCodigo, string? EtapaCodigo, bool TemImpedimento)> subitens,
+        IReadOnlyList<(string? FatoCodigo, string? PaginaCodigo, bool TemImpedimento)> subitens,
         ExibicaoEObrigatoriedade regras)
     {
         ArgumentNullException.ThrowIfNull(ocorrencias);
@@ -82,14 +82,14 @@ public static class FormaDoGrupo
         }
     }
 
-    private static IEnumerable<FieldError> RecusasDosCampos(IReadOnlyList<(string? FatoCodigo, string? EtapaCodigo, bool TemImpedimento)> subitens) =>
+    private static IEnumerable<FieldError> RecusasDosCampos(IReadOnlyList<(string? FatoCodigo, string? PaginaCodigo, bool TemImpedimento)> subitens) =>
         subitens.SelectMany(static (subitem, indice) => RecusasDoCampo(subitem, indice));
 
-    private static IEnumerable<FieldError> RecusasDoCampo((string? FatoCodigo, string? EtapaCodigo, bool TemImpedimento) subitem, int indice)
+    private static IEnumerable<FieldError> RecusasDoCampo((string? FatoCodigo, string? PaginaCodigo, bool TemImpedimento) subitem, int indice)
     {
-        if (subitem.EtapaCodigo is not null)
+        if (subitem.PaginaCodigo is not null)
         {
-            yield return new($"subitens[{indice}].etapaCodigo", new DomainError(
+            yield return new($"subitens[{indice}].paginaCodigo", new DomainError(
                 GrupoFormularioErrorCodes.CampoComSecaoPropria,
                 $"O campo '{subitem.FatoCodigo}' segue a seção do grupo e não declara seção própria."));
         }
@@ -104,7 +104,7 @@ public static class FormaDoGrupo
 
     private static IEnumerable<FieldError> RecusasDeRegraQueCitaOGrupo(
         string codigoAparado,
-        IReadOnlyList<(string? FatoCodigo, string? EtapaCodigo, bool TemImpedimento)> subitens,
+        IReadOnlyList<(string? FatoCodigo, string? PaginaCodigo, bool TemImpedimento)> subitens,
         ExibicaoEObrigatoriedade regras)
     {
         HashSet<string> doGrupo = new(subitens.Select(static s => s.FatoCodigo).OfType<string>().Append(codigoAparado), StringComparer.Ordinal);

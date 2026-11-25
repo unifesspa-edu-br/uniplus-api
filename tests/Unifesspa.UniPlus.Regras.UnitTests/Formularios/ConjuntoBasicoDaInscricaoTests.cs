@@ -44,7 +44,7 @@ public class ConjuntoBasicoDaInscricaoTests : TestesDeAvaliacao
         ConjuntoBasicoDaInscricao.Fatos.Should().Contain(codigos);
         IReadOnlyList<FatoColetadoInput> itens = [.. codigos.Select(c => ConjuntoBasicoDaInscricao.Itens.Single(i => i.FatoCodigo == c))];
         itens.Select(static i => i.Apresentacao!.Rotulo).Should().Equal("Sexo biológico", "Sexo civil", "Identidade de gênero", "Orientação sexual");
-        itens.Should().OnlyContain(static i => i.Regras!.Obrigatoriedade!.Tipo == TipoObrigatoriedade.Sempre.Codigo() && i.EtapaCodigo == ConjuntoBasicoDaInscricao.CodigoDaSecao);
+        itens.Should().OnlyContain(static i => i.Regras!.Obrigatoriedade!.Tipo == TipoObrigatoriedade.Sempre.Codigo() && i.PaginaCodigo == ConjuntoBasicoDaInscricao.CodigoDaSecao);
     }
 
     [Fact(DisplayName = "O grupo do cliente que colide com a seção sobe com os itens")]
@@ -66,12 +66,12 @@ public class ConjuntoBasicoDaInscricaoTests : TestesDeAvaliacao
             .NaSecao(ConjuntoBasicoDaInscricao.CodigoDaSecao).ComOcorrencias(1).Construir();
 
         (_, _, List<FieldError> erros) = ConjuntoBasicoDaInscricao.MesclarItens(
-            [ItemDoCliente("QUILOMBOLA", 30) with { EtapaCodigo = ConjuntoBasicoDaInscricao.CodigoDaSecao }], [grupo], ConjuntoBasicoDaInscricao.Itens);
+            [ItemDoCliente("QUILOMBOLA", 30) with { PaginaCodigo = ConjuntoBasicoDaInscricao.CodigoDaSecao }], [grupo], ConjuntoBasicoDaInscricao.Itens);
 
         erros.Select(static e => (e.Field, e.Error.Code)).Should().BeEquivalentTo(
         [
-            ("itens[0].etapaCodigo", EstruturaFormularioErrorCodes.SecaoReservada),
-            ("grupos[0].etapaCodigo", EstruturaFormularioErrorCodes.SecaoReservada),
+            ("itens[0].paginaCodigo", EstruturaFormularioErrorCodes.SecaoReservada),
+            ("grupos[0].paginaCodigo", EstruturaFormularioErrorCodes.SecaoReservada),
         ]);
     }
 
@@ -165,13 +165,13 @@ public class ConjuntoBasicoDaInscricaoTests : TestesDeAvaliacao
     {
         FatoColetadoInput nome = ConjuntoBasicoDaInscricao.Itens[0];
         FatoColetadoInput nomeNaSecao = nome with { Apresentacao = nome.Apresentacao! with { Ajuda = "Como está no documento." } };
-        FatoColetadoInput sexoForaDaSecao = ConjuntoBasicoDaInscricao.Itens.Single(static i => i.FatoCodigo == "SEXO") with { EtapaCodigo = "DADOS" };
+        FatoColetadoInput sexoForaDaSecao = ConjuntoBasicoDaInscricao.Itens.Single(static i => i.FatoCodigo == "SEXO") with { PaginaCodigo = "DADOS" };
 
         IReadOnlyList<FatoColetadoInput> referencia = ConjuntoBasicoDaInscricao.Referencia([nomeNaSecao, sexoForaDaSecao]);
 
         referencia.Should().HaveCount(Teto);
         referencia[0].Apresentacao!.Ajuda.Should().Be("Como está no documento.");
-        referencia.Single(static i => i.FatoCodigo == "SEXO").EtapaCodigo.Should().Be(ConjuntoBasicoDaInscricao.CodigoDaSecao);
+        referencia.Single(static i => i.FatoCodigo == "SEXO").PaginaCodigo.Should().Be(ConjuntoBasicoDaInscricao.CodigoDaSecao);
     }
 
     [Fact(DisplayName = "A referência refaz a ordem e o rótulo do conjunto, a partir da menor ordem gravada, e preserva o resto")]
@@ -191,28 +191,28 @@ public class ConjuntoBasicoDaInscricaoTests : TestesDeAvaliacao
         referencia.Should().OnlyContain(static i => i.Apresentacao!.Ajuda == "Ajuda gravada.");
     }
 
-    [Theory(DisplayName = "A seção omitida entra na primeira posição, e as etapas do cliente sobem só quando colidem")]
+    [Theory(DisplayName = "A seção omitida entra na primeira posição, e as páginas do cliente sobem só quando colidem")]
     [InlineData(0, 1)]
     [InlineData(3, 3)]
-    public void MesclarEtapas_SecaoOmitida_Entra(int ordemEnviada, int ordemGravada)
+    public void MesclarPaginas_SecaoOmitida_Entra(int ordemEnviada, int ordemGravada)
     {
-        EtapaFormularioInput dados = new("DADOS", ordemEnviada, TipoEtapaFormulario.Secao.Codigo(), null, new ApresentacaoDaEtapaInput("Dados", null, null));
+        PaginaDoFormularioInput dados = new("DADOS", ordemEnviada, TipoPaginaFormulario.Secao.Codigo(), null, new ApresentacaoDaPaginaInput("Dados", null, null));
 
-        (IReadOnlyList<EtapaFormularioInput> etapas, List<FieldError> erros) = ConjuntoBasicoDaInscricao.MesclarEtapas([dados], ConjuntoBasicoDaInscricao.Secao);
+        (IReadOnlyList<PaginaDoFormularioInput> paginas, List<FieldError> erros) = ConjuntoBasicoDaInscricao.MesclarPaginas([dados], ConjuntoBasicoDaInscricao.Secao);
 
         erros.Should().BeEmpty();
-        etapas.Should().Contain(ConjuntoBasicoDaInscricao.Secao);
-        etapas.Single(static e => e.Codigo == "DADOS").Ordem.Should().Be(ordemGravada);
+        paginas.Should().Contain(ConjuntoBasicoDaInscricao.Secao);
+        paginas.Single(static e => e.Codigo == "DADOS").Ordem.Should().Be(ordemGravada);
     }
 
     [Theory(DisplayName = "A seção enviada igual à gravada é aceita; alterada, é recusada")]
     [InlineData(false)]
     [InlineData(true)]
-    public void MesclarEtapas_SecaoEnviada_SoComoEsta(bool alterada)
+    public void MesclarPaginas_SecaoEnviada_SoComoEsta(bool alterada)
     {
-        EtapaFormularioInput secao = alterada ? ConjuntoBasicoDaInscricao.Secao with { Apresentacao = new ApresentacaoDaEtapaInput("Identificação", null, null) } : ConjuntoBasicoDaInscricao.Secao;
+        PaginaDoFormularioInput secao = alterada ? ConjuntoBasicoDaInscricao.Secao with { Apresentacao = new ApresentacaoDaPaginaInput("Identificação", null, null) } : ConjuntoBasicoDaInscricao.Secao;
 
-        (_, List<FieldError> erros) = ConjuntoBasicoDaInscricao.MesclarEtapas([secao], ConjuntoBasicoDaInscricao.Secao);
+        (_, List<FieldError> erros) = ConjuntoBasicoDaInscricao.MesclarPaginas([secao], ConjuntoBasicoDaInscricao.Secao);
 
         erros.Select(static e => e.Error.Code).Should().Equal(alterada ? [EstruturaFormularioErrorCodes.SecaoReservadaAlterada] : []);
     }
@@ -293,7 +293,7 @@ public class ConjuntoBasicoDaInscricaoTests : TestesDeAvaliacao
         return alteracao switch
         {
             "obrigatoriedade" => nome with { Regras = nome.Regras! with { Obrigatoriedade = new ObrigatoriedadeInput(TipoObrigatoriedade.Nunca.Codigo()) } },
-            "secao" => nome with { EtapaCodigo = "DADOS" },
+            "secao" => nome with { PaginaCodigo = "DADOS" },
             _ => nome with
             {
                 Regras = nome.Regras! with { Exibicao = [[new CondicaoPrecondicaoInput("NACIONALIDADE", "IGUAL", JsonSerializer.SerializeToElement("NATO"))]] },
@@ -320,7 +320,7 @@ public class ConjuntoBasicoDaInscricaoTests : TestesDeAvaliacao
             Envio: envio));
 
     private static DefinicaoFormulario DefinicaoDaSecao() =>
-        new([new DefinicaoEtapa(ConjuntoBasicoDaInscricao.CodigoDaSecao, exibicao: null, [.. ConjuntoBasicoDaInscricao.Itens.Select(DefinicaoDoItem)])], termos: [], derivacoes: []);
+        new([new DefinicaoPagina(ConjuntoBasicoDaInscricao.CodigoDaSecao, exibicao: null, [.. ConjuntoBasicoDaInscricao.Itens.Select(DefinicaoDoItem)])], termos: [], derivacoes: []);
 
     private static DefinicaoItem DefinicaoDoItem(FatoColetadoInput item)
     {

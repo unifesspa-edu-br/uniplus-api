@@ -19,13 +19,13 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using LinhaDoPredicado = (int Clausula, string Fato, Unifesspa.UniPlus.Regras.Enums.Operador Operador, System.Text.Json.JsonElement Valor);
 
 /// <summary>
-/// Leitura do bloco de formulários de inscrição: etapas, termos exigidos e modelo de origem.
+/// Leitura do bloco de formulários de inscrição: páginas, termos exigidos e modelo de origem.
 /// </summary>
 internal static class LeituraDosFormularios
 {
     /// <summary>
     /// Os formulários por finalidade (UNI-REQ-0144), em ordem de finalidade e sem repetição, cada um
-    /// remontado pelas factories do domínio — que reconferem a estrutura das etapas — com os seus
+    /// remontado pelas factories do domínio — que reconferem a estrutura das páginas — com os seus
     /// termos, em ordem crescente e com código único no formulário.
     /// </summary>
     internal static (IReadOnlyList<FormularioProcesso> Formularios, IReadOnlyList<TermoExigidoFormulario> Termos) LerFormularios(
@@ -78,7 +78,7 @@ internal static class LeituraDosFormularios
         Guid? faseId = leitor.IdentificadorOpcional(bloco, "faseId", path);
         string? titulo = leitor.TextoOpcional(bloco, "titulo", path, LimitesDoEnvelope.NomeDeCadastro);
         (Guid? modeloId, string? modeloCodigo, string? modeloNome) = LerModeloDeOrigem(leitor, bloco, path);
-        IReadOnlyList<EtapaFormulario> etapas = LerEtapasDoFormulario(leitor, bloco, path);
+        IReadOnlyList<PaginaDoFormulario> paginas = LerPaginasDoFormulario(leitor, bloco, path);
         JsonArray itensDeTermo = leitor.Array(bloco, "termos", path);
         if (leitor.Falhou)
         {
@@ -86,12 +86,12 @@ internal static class LeituraDosFormularios
         }
 
         return CriarFormulario(leitor, path, finalidadeAnterior, termos,
-            new DeclaracaoFormulario(finalidade, faseId, titulo, modeloId, modeloCodigo, modeloNome, etapas, itensDeTermo));
+            new DeclaracaoFormulario(finalidade, faseId, titulo, modeloId, modeloCodigo, modeloNome, paginas, itensDeTermo));
     }
 
     private sealed record DeclaracaoFormulario(
         FinalidadeFormulario? Finalidade, Guid? FaseId, string? Titulo, Guid? ModeloId, string? ModeloCodigo, string? ModeloNome,
-        IReadOnlyList<EtapaFormulario> Etapas, JsonArray Termos);
+        IReadOnlyList<PaginaDoFormulario> Paginas, JsonArray Termos);
 
     private static FormularioProcesso? CriarFormulario(
         LeitorEnvelope leitor, string path, FinalidadeFormulario? finalidadeAnterior, List<TermoExigidoFormulario> termos, DeclaracaoFormulario d)
@@ -101,7 +101,7 @@ internal static class LeituraDosFormularios
             return leitor.Recusar<FormularioProcesso?>($"'{path}.finalidade' fora do vocabulário, repetida ou fora de ordem.");
         }
 
-        Result<FormularioProcesso> formulario = FormularioProcesso.Criar(d.Finalidade, d.FaseId, d.Titulo, d.Etapas, d.ModeloId, d.ModeloCodigo, d.ModeloNome);
+        Result<FormularioProcesso> formulario = FormularioProcesso.Criar(d.Finalidade, d.FaseId, d.Titulo, d.Paginas, d.ModeloId, d.ModeloCodigo, d.ModeloNome);
         if (formulario.IsFailure)
         {
             return leitor.Propagar<FormularioProcesso?>(formulario.Error!);
@@ -192,7 +192,7 @@ internal static class LeituraDosFormularios
     private static bool OrigemCoerente(string? codigo, string? nome) =>
         (codigo is null && nome is null) || (!string.IsNullOrWhiteSpace(codigo) && !string.IsNullOrWhiteSpace(nome));
 
-    internal static IReadOnlyList<EtapaFormulario> LerEtapasDoFormulario(LeitorEnvelope leitor, JsonObject bloco, string path)
+    internal static IReadOnlyList<PaginaDoFormulario> LerPaginasDoFormulario(LeitorEnvelope leitor, JsonObject bloco, string path)
     {
         JsonArray itens = leitor.Array(bloco, "paginas", path);
         if (leitor.Falhou)
@@ -203,74 +203,74 @@ internal static class LeituraDosFormularios
         return LerPaginas(leitor, itens, path);
     }
 
-    private static List<EtapaFormulario> LerPaginas(LeitorEnvelope leitor, JsonArray itens, string path)
+    private static List<PaginaDoFormulario> LerPaginas(LeitorEnvelope leitor, JsonArray itens, string path)
     {
-        List<EtapaFormulario> etapas = [];
+        List<PaginaDoFormulario> paginas = [];
         for (int i = 0; i < itens.Count; i++)
         {
-            EtapaFormulario? etapa = LerEtapaDoFormulario(
-                leitor, leitor.ItemObjeto(itens, i, $"{path}.paginas"), $"{path}.paginas[{i}]", etapas.LastOrDefault()?.Ordem);
-            if (etapa is null)
+            PaginaDoFormulario? pagina = LerPaginaDoFormulario(
+                leitor, leitor.ItemObjeto(itens, i, $"{path}.paginas"), $"{path}.paginas[{i}]", paginas.LastOrDefault()?.Ordem);
+            if (pagina is null)
             {
                 return [];
             }
 
-            etapas.Add(etapa);
+            paginas.Add(pagina);
         }
 
-        return etapas;
+        return paginas;
     }
 
-    private static EtapaFormulario? LerEtapaDoFormulario(LeitorEnvelope leitor, JsonObject item, string pathEtapa, int? ordemAnterior)
+    private static PaginaDoFormulario? LerPaginaDoFormulario(LeitorEnvelope leitor, JsonObject item, string pathPagina, int? ordemAnterior)
     {
-        leitor.ExigirChaves(item, pathEtapa, "codigo", "ordem", "tipo", "bloco", "titulo", "descricao", "aviso", "exibicao");
-        DeclaracaoEtapa d = LerDeclaracaoDaEtapa(leitor, item, pathEtapa);
+        leitor.ExigirChaves(item, pathPagina, "codigo", "ordem", "tipo", "bloco", "titulo", "descricao", "aviso", "exibicao");
+        DeclaracaoPagina d = LerDeclaracaoDaPagina(leitor, item, pathPagina);
         if (leitor.Falhou)
         {
             return null;
         }
 
-        return CriarEtapa(leitor, pathEtapa, ordemAnterior, d);
+        return CriarPagina(leitor, pathPagina, ordemAnterior, d);
     }
 
-    private sealed record DeclaracaoEtapa(string Codigo, int Ordem, TipoEtapaFormulario Tipo, BlocoSistema? Bloco, string Titulo, string? Descricao,
+    private sealed record DeclaracaoPagina(string Codigo, int Ordem, TipoPaginaFormulario Tipo, BlocoSistema? Bloco, string Titulo, string? Descricao,
         string? Aviso, IReadOnlyList<LinhaDoPredicado> Exibicao);
 
-    private static DeclaracaoEtapa LerDeclaracaoDaEtapa(LeitorEnvelope leitor, JsonObject item, string path) => new(
-        leitor.TextoNaoVazio(item, "codigo", path, LimitesDoEnvelope.CodigoEtapaFormulario),
+    private static DeclaracaoPagina LerDeclaracaoDaPagina(LeitorEnvelope leitor, JsonObject item, string path) => new(
+        leitor.TextoNaoVazio(item, "codigo", path, LimitesDoEnvelope.CodigoPaginaFormulario),
         leitor.Inteiro(item, "ordem", path),
-        leitor.CodigoDeContrato<TipoEtapaFormulario>(item, "tipo", path),
+        leitor.CodigoDeContrato<TipoPaginaFormulario>(item, "tipo", path),
         leitor.CodigoDeContratoOpcional<BlocoSistema>(item, "bloco", path),
-        leitor.TextoNaoVazio(item, "titulo", path, LimitesDoEnvelope.TituloEtapaFormulario),
-        leitor.TextoOpcional(item, "descricao", path, LimitesDoEnvelope.TextoEtapaFormulario),
-        leitor.TextoOpcional(item, "aviso", path, LimitesDoEnvelope.TextoEtapaFormulario),
+        leitor.TextoNaoVazio(item, "titulo", path, LimitesDoEnvelope.TituloPaginaFormulario),
+        leitor.TextoOpcional(item, "descricao", path, LimitesDoEnvelope.TextoPaginaFormulario),
+        leitor.TextoOpcional(item, "aviso", path, LimitesDoEnvelope.TextoPaginaFormulario),
         LeituraDasCondicoes.LerDnf(leitor, item, "exibicao", path));
 
-    private static EtapaFormulario? CriarEtapa(LeitorEnvelope leitor, string pathEtapa, int? ordemAnterior, DeclaracaoEtapa d)
+    private static PaginaDoFormulario? CriarPagina(LeitorEnvelope leitor, string pathPagina, int? ordemAnterior, DeclaracaoPagina d)
     {
         Result<PredicadoDnf?> exibicaoLida = LeituraDasCondicoes.PredicadoOpcional(d.Exibicao);
         if (exibicaoLida.IsFailure)
         {
-            return leitor.Propagar<EtapaFormulario?>(exibicaoLida.Error!);
+            return leitor.Propagar<PaginaDoFormulario?>(exibicaoLida.Error!);
         }
 
-        return MontarEtapa(leitor, pathEtapa, ordemAnterior, d, exibicaoLida.Value);
+        return MontarPagina(leitor, pathPagina, ordemAnterior, d, exibicaoLida.Value);
     }
 
-    private static EtapaFormulario? MontarEtapa(
-        LeitorEnvelope leitor, string pathEtapa, int? ordemAnterior, DeclaracaoEtapa d, PredicadoDnf? exibicao)
+    private static PaginaDoFormulario? MontarPagina(
+        LeitorEnvelope leitor, string pathPagina, int? ordemAnterior, DeclaracaoPagina d, PredicadoDnf? exibicao)
     {
-        // O encoder emite as etapas em ordem estritamente crescente; outra forma só vem de envelope
+        // O encoder emite as páginas em ordem estritamente crescente; outra forma só vem de envelope
         // adulterado e não reproduziria os bytes.
         if (d.Ordem <= ordemAnterior)
         {
-            return leitor.Recusar<EtapaFormulario?>($"'{pathEtapa}' quebra a ordem crescente das etapas.");
+            return leitor.Recusar<PaginaDoFormulario?>($"'{pathPagina}' quebra a ordem crescente das páginas.");
         }
 
-        Result<EtapaFormulario> etapa = EtapaFormulario.Criar(
-            new EtapaEstrutura(d.Codigo, d.Ordem, d.Tipo, d.Bloco),
+        Result<PaginaDoFormulario> pagina = PaginaDoFormulario.Criar(
+            new PaginaEstrutura(d.Codigo, d.Ordem, d.Tipo, d.Bloco),
             d.Titulo, d.Descricao, d.Aviso, exibicao);
-        return etapa.IsFailure ? leitor.Propagar<EtapaFormulario?>(etapa.Error!) : etapa.Value;
+        return pagina.IsFailure ? leitor.Propagar<PaginaDoFormulario?>(pagina.Error!) : pagina.Value;
     }
 
     internal static TermoExigidoFormulario? LerTermoExigido(

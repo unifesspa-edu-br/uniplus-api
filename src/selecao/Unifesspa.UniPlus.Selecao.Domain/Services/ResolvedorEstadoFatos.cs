@@ -20,10 +20,10 @@ using Unifesspa.UniPlus.Selecao.Domain.Entities;
 /// precisar apagá-la de lugar nenhum.
 /// </para>
 /// <para>
-/// A avaliação é a do avaliador de formulário compartilhado (ADR-0135): cada seção é uma etapa,
+/// A avaliação é a do avaliador de formulário compartilhado (ADR-0135): cada seção é uma página,
 /// com a exibição da seção, na ordem das finalidades e das seções, e os fatos na ordem de coleta,
 /// com a pré-condição como exibição, a obrigatoriedade e as restrições de valor do campo — a
-/// resposta que viola uma restrição não vale. Nenhuma etapa é dada como concluída, então um campo aplicável sem resposta fica pendente.
+/// resposta que viola uma restrição não vale. Nenhuma página é dada como concluída, então um campo aplicável sem resposta fica pendente.
 /// </para>
 /// </remarks>
 public static class ResolvedorEstadoFatos

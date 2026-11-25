@@ -49,24 +49,24 @@ internal static class ProjecaoDaColeta
         formulario.FaseId,
         formulario.Titulo,
         formulario.ModeloOrigemId is { } modeloId ? new ModeloDeOrigemDto(modeloId, formulario.ModeloOrigemCodigo!) : null,
-        [.. formulario.Etapas.OrderBy(static e => e.Ordem).Select(ProjetarEtapa)],
+        [.. formulario.Paginas.OrderBy(static e => e.Ordem).Select(ProjetarPagina)],
         ProjetarColeta(processo, formulario.Finalidade),
         [.. processo.TermosExigidos.Where(t => t.Finalidade == formulario.Finalidade).OrderBy(static t => t.Ordem).Select(static t => t.ToDto())]);
 
-    private static EtapaFormularioDto ProjetarEtapa(EtapaFormulario etapa) => new(
-        etapa.Codigo,
-        etapa.Ordem,
-        etapa.Tipo.Codigo(),
-        etapa.Bloco?.Codigo(),
-        new ApresentacaoDaEtapaDto(etapa.Titulo, etapa.Descricao, etapa.Aviso),
-        etapa.Exibicao?.ToDto());
+    private static PaginaDoFormularioDto ProjetarPagina(PaginaDoFormulario pagina) => new(
+        pagina.Codigo,
+        pagina.Ordem,
+        pagina.Tipo.Codigo(),
+        pagina.Bloco?.Codigo(),
+        new ApresentacaoDaPaginaDto(pagina.Titulo, pagina.Descricao, pagina.Aviso),
+        pagina.Exibicao?.ToDto());
 
     private static ColetaDoFormularioDto ProjetarColeta(ProcessoSeletivo processo, FinalidadeFormulario finalidade) => new(
         [.. processo.FatosColetados.Where(f => f.Finalidade == finalidade).OrderBy(static f => f.Ordem).Select(f => ProjetarFato(processo, f))],
         [.. processo.GruposColetados.Where(g => g.Finalidade == finalidade).OrderBy(static g => g.Ordem).Select(g => ProjetarGrupo(processo, g))]);
 
     private static GrupoColetadoDto ProjetarGrupo(ProcessoSeletivo processo, GrupoColetado g) => new(
-        g.Codigo, g.Ordem, g.EtapaCodigo, g.Rotulo,
+        g.Codigo, g.Ordem, g.PaginaCodigo, g.Rotulo,
         new OcorrenciasDoGrupoDto(g.Minimo, g.Maximo, g.IncluiCandidato),
         new ExibicaoEObrigatoriedadeDto(g.Exibicao?.ToDto(), g.Obrigatoriedade.ToDto()),
         [.. g.Subitens.OrderBy(static s => s.Ordem).Select(s => ProjetarFato(processo, s))]);
@@ -74,7 +74,7 @@ internal static class ProjecaoDaColeta
     private static FatoColetadoDto ProjetarFato(ProcessoSeletivo processo, FatoColetado fato) => new(
         fato.FatoCodigo,
         fato.Ordem,
-        fato.EtapaCodigo,
+        fato.PaginaCodigo,
         new ApresentacaoDoCampoDto(fato.Rotulo, fato.TipoDeCampo.Codigo(), fato.Ajuda, fato.PedirConfirmacao),
         ProjetarRegras(fato),
         fato.Formato,

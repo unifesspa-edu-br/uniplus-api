@@ -340,8 +340,8 @@ public sealed class AvaliacaoDosDocumentosDaInscricaoTests
     /// <param name="exibicaoDaFamilia">Quando o grupo da família aparece; sempre, quando nula.</param>
     private static DefinicaoFormulario DefinicaoDoFormularioDaInscricao(PredicadoDnf? exibicaoDaFamilia) =>
         new(
-            [new DefinicaoEtapa(
-                DefinicaoDoProcesso.CodigoDaEtapa(FinalidadeFormulario.Inscricao, Secao),
+            [new DefinicaoPagina(
+                DefinicaoDoProcesso.CodigoDaPagina(FinalidadeFormulario.Inscricao, Secao),
                 null,
                 [new DefinicaoItem(BaixaRenda, null, Obrigatoriedade.Sempre, []), new DefinicaoItem(PediuFator, null, Obrigatoriedade.Sempre, [])],
                 [DefinicaoDoGrupoDaFamilia(exibicaoDaFamilia)])],
@@ -395,7 +395,7 @@ public sealed class AvaliacaoDosDocumentosDaInscricaoTests
     private static FormularioProcesso Formulario(FinalidadeFormulario finalidade, FaseCronograma fase) =>
         FormularioProcesso.Criar(
             finalidade, fase.Id, null,
-            [EtapaFormulario.Criar(new EtapaEstrutura("REVISAO", 0, TipoEtapaFormulario.Bloco, BlocoSistema.RevisaoEAceite), "Revisão e aceite", null, null).Value!]).Value!;
+            [PaginaDoFormulario.Criar(new PaginaEstrutura("REVISAO", 0, TipoPaginaFormulario.Bloco, BlocoSistema.RevisaoEAceite), "Revisão e aceite", null, null).Value!]).Value!;
 
     private static FaseCronograma Fase(int ordem, string codigo) =>
         FaseCronograma.Reidratar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("fase").Value!,

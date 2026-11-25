@@ -3,8 +3,8 @@ namespace Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Regras.Leituras;
 
-/// <summary>Uma etapa: o código com que o avaliador a identifica, a exibição da etapa inteira, os itens e os grupos.</summary>
-public sealed record EtapaPortavel(
+/// <summary>Uma página: o código com que o avaliador a identifica, a exibição da página inteira, os itens e os grupos.</summary>
+public sealed record PaginaPortavel(
     string Codigo,
     IReadOnlyList<IReadOnlyList<CondicaoPrecondicaoDto>>? Exibicao,
     IReadOnlyList<ItemPortavel> Itens,

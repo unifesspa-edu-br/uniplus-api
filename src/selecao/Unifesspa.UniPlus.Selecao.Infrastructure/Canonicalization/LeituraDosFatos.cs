@@ -139,7 +139,7 @@ internal static class LeituraDosFatos
         FatoColetado.Criar(
             d.FatoCodigo,
             d.Ordem,
-            d.EtapaCodigo,
+            d.PaginaCodigo,
             new ApresentacaoDoCampo(d.Rotulo, d.TipoDeCampo!.Value, d.Ajuda, d.PedirConfirmacao),
             c.Regras,
             d.Copia,
@@ -204,7 +204,7 @@ internal static class LeituraDosFatos
     {
         FatoCodigo = leitor.TextoNaoVazio(item, "codigoDoDado", path, LimitesDoEnvelope.Fato),
         Finalidade = EstruturaFormulario.FinalidadeDoCodigo(leitor.TextoNaoVazio(item, "finalidade", path)),
-        EtapaCodigo = leitor.TextoOpcional(item, "paginaCodigo", path, LimitesDoEnvelope.CodigoEtapaFormulario),
+        PaginaCodigo = leitor.TextoOpcional(item, "paginaCodigo", path, LimitesDoEnvelope.CodigoPaginaFormulario),
         Ordem = leitor.Inteiro(item, "ordem", path),
         Rotulo = leitor.TextoNaoVazio(item, "rotulo", path, LimitesDoEnvelope.NomeDeCadastro),
         TipoDeCampo = TipoDoCodigo(leitor.TextoNaoVazio(item, "tipoDeCampo", path)),
@@ -231,7 +231,7 @@ internal static class LeituraDosFatos
 
         public FinalidadeFormulario? Finalidade { get; init; }
 
-        public string? EtapaCodigo { get; init; }
+        public string? PaginaCodigo { get; init; }
 
         public int Ordem { get; init; }
 

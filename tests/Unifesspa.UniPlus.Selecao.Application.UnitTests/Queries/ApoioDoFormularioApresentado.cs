@@ -148,9 +148,9 @@ internal static class ApoioDoFormularioApresentado
             finalidade, faseId, null,
             [
                 .. comComprovacao
-                    ? [EtapaFormulario.Criar(new EtapaEstrutura("DOCUMENTOS", 0, TipoEtapaFormulario.Bloco, BlocoSistema.ComprovacaoDocumental), "Documentos", null, null).Value!]
-                    : Array.Empty<EtapaFormulario>(),
-                EtapaFormulario.Criar(new EtapaEstrutura("REVISAO", 1, TipoEtapaFormulario.Bloco, BlocoSistema.RevisaoEAceite), "Revisão e aceite", null, null).Value!,
+                    ? [PaginaDoFormulario.Criar(new PaginaEstrutura("DOCUMENTOS", 0, TipoPaginaFormulario.Bloco, BlocoSistema.ComprovacaoDocumental), "Documentos", null, null).Value!]
+                    : Array.Empty<PaginaDoFormulario>(),
+                PaginaDoFormulario.Criar(new PaginaEstrutura("REVISAO", 1, TipoPaginaFormulario.Bloco, BlocoSistema.RevisaoEAceite), "Revisão e aceite", null, null).Value!,
             ]).Value!;
 
     internal static Task<Result<FormularioApresentadoDoProcessoDto>> HandleAsync(

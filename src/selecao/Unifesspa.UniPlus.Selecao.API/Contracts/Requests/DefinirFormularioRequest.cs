@@ -10,12 +10,12 @@ using Unifesspa.UniPlus.Regras.Entradas;
 
 /// <summary>
 /// Corpo de <see cref="FormulariosController.DefinirFormulario"/> — o processo e a finalidade vêm da
-/// rota. A lista de etapas é obrigatória: o formulário termina sempre na revisão e aceite.
+/// rota. A lista de páginas é obrigatória: o formulário termina sempre na revisão e aceite.
 /// </summary>
 public sealed record DefinirFormularioRequest(
     Guid? FaseId,
     string? Titulo,
-    [property: JsonRequired] IReadOnlyList<EtapaFormularioInput> Etapas);
+    [property: JsonRequired] IReadOnlyList<PaginaDoFormularioInput> Paginas);
 
 /// <summary>
 /// Corpo de <see cref="FormulariosController.DefinirItens"/>. A lista de itens é obrigatória: só a

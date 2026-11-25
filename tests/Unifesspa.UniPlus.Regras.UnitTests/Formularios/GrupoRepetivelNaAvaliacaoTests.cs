@@ -22,7 +22,7 @@ public class GrupoRepetivelNaAvaliacaoTests : TestesDeAvaliacao
 
         AvaliacaoGrupo avaliacao = AvaliarDefinicao(
             ComGrupo(grupo),
-            EntradaComGrupo(etapaConcluida: false, [Ocorrencia("m1", ("PARENTESCO", "FILHO")), Ocorrencia("m2", ("PARENTESCO", "MAE"))])).Grupos.Single();
+            EntradaComGrupo(paginaConcluida: false, [Ocorrencia("m1", ("PARENTESCO", "FILHO")), Ocorrencia("m2", ("PARENTESCO", "MAE"))])).Grupos.Single();
 
         avaliacao.Ocorrencias.Select(static o => o.Itens[1].Visivel).Should().Equal(Ternario.Verdadeiro, Ternario.Falso);
         avaliacao.Ocorrencias.Select(static o => o.Estado).Should().Equal(EstadoFato.Indeterminado, EstadoFato.Resolvido);
@@ -34,7 +34,7 @@ public class GrupoRepetivelNaAvaliacaoTests : TestesDeAvaliacao
     {
         AvaliacaoFormulario avaliacao = AvaliarDefinicao(
             ComGrupo(Grupo(Obrigatoriedade.Sempre, minimo: 1, maximo: 5, Item("PARENTESCO"))),
-            EntradaComGrupo(etapaConcluida: true, [Ocorrencia("m1", ("PARENTESCO", "MAE"))]));
+            EntradaComGrupo(paginaConcluida: true, [Ocorrencia("m1", ("PARENTESCO", "MAE"))]));
 
         avaliacao.Fatos.Should().NotContainKey("PARENTESCO");
         avaliacao.Grupos.Single().Estado.Should().Be(EstadoFato.Resolvido);
@@ -51,7 +51,7 @@ public class GrupoRepetivelNaAvaliacaoTests : TestesDeAvaliacao
         DefinicaoGrupo grupo = Grupo(Obrigatoriedade.Sempre, minimo: 2, maximo: 3, Item("PARENTESCO"));
         (string, (string, object)[])[] ocorrencias = [.. Enumerable.Range(0, quantas).Select(i => Ocorrencia($"m{i}", ("PARENTESCO", "MAE")))];
 
-        AvaliacaoGrupo avaliacao = AvaliarDefinicao(ComGrupo(grupo), EntradaComGrupo(etapaConcluida: true, ocorrencias)).Grupos.Single();
+        AvaliacaoGrupo avaliacao = AvaliarDefinicao(ComGrupo(grupo), EntradaComGrupo(paginaConcluida: true, ocorrencias)).Grupos.Single();
 
         avaliacao.ContagemValida.Should().Be(valida);
         avaliacao.Estado.Should().Be(valida ? EstadoFato.Resolvido : EstadoFato.Indeterminado);
@@ -63,7 +63,7 @@ public class GrupoRepetivelNaAvaliacaoTests : TestesDeAvaliacao
         DefinicaoGrupo grupo = Grupo(Obrigatoriedade.Sempre, minimo: 1, maximo: null, Item("PARENTESCO"));
         (string, (string, object)[])[] ocorrencias = [.. Enumerable.Range(0, 1000).Select(i => Ocorrencia($"m{i}", ("PARENTESCO", "MAE")))];
 
-        AvaliacaoGrupo avaliacao = AvaliarDefinicao(ComGrupo(grupo), EntradaComGrupo(etapaConcluida: true, ocorrencias)).Grupos.Single();
+        AvaliacaoGrupo avaliacao = AvaliarDefinicao(ComGrupo(grupo), EntradaComGrupo(paginaConcluida: true, ocorrencias)).Grupos.Single();
 
         avaliacao.ContagemValida.Should().BeTrue();
     }
@@ -75,7 +75,7 @@ public class GrupoRepetivelNaAvaliacaoTests : TestesDeAvaliacao
     {
         AvaliacaoGrupo avaliacao = AvaliarDefinicao(
             ComGrupo(Grupo(Obrigatoriedade.Sempre, minimo, maximo: 5, Item("PARENTESCO"))),
-            EntradaComGrupo(etapaConcluida: true, [])).Grupos.Single();
+            EntradaComGrupo(paginaConcluida: true, [])).Grupos.Single();
 
         avaliacao.Estado.Should().Be(esperado);
     }
@@ -83,24 +83,24 @@ public class GrupoRepetivelNaAvaliacaoTests : TestesDeAvaliacao
     [Theory]
     [InlineData(true)]
     [InlineData(false)]
-    public void GrupoOpcional_ListaVazia_EhNaoInformado_MesmoComMinimoAcimaDeZero(bool etapaConcluida)
+    public void GrupoOpcional_ListaVazia_EhNaoInformado_MesmoComMinimoAcimaDeZero(bool paginaConcluida)
     {
         AvaliacaoGrupo avaliacao = AvaliarDefinicao(
             ComGrupo(Grupo(Obrigatoriedade.Nunca, minimo: 2, maximo: 5, Item("PARENTESCO"))),
-            EntradaComGrupo(etapaConcluida, [])).Grupos.Single();
+            EntradaComGrupo(paginaConcluida, [])).Grupos.Single();
 
         avaliacao.ContagemValida.Should().BeTrue("o opcional aceita zero ocorrência");
-        avaliacao.Estado.Should().Be(EstadoFato.NaoInformado, "a lista vazia é resposta, mesmo com a etapa aberta");
+        avaliacao.Estado.Should().Be(EstadoFato.NaoInformado, "a lista vazia é resposta, mesmo com a página aberta");
     }
 
     [Theory]
     [InlineData(true, EstadoFato.NaoInformado)]
     [InlineData(false, EstadoFato.Indeterminado)]
-    public void GrupoOpcional_SemResposta_SoViraNaoInformadoComAEtapaConcluida(bool etapaConcluida, EstadoFato esperado)
+    public void GrupoOpcional_SemResposta_SoViraNaoInformadoComAPaginaConcluida(bool paginaConcluida, EstadoFato esperado)
     {
         AvaliacaoGrupo avaliacao = AvaliarDefinicao(
             ComGrupo(Grupo(Obrigatoriedade.Nunca, minimo: 0, maximo: 5, Item("PARENTESCO"))),
-            Entrada(etapaConcluida)).Grupos.Single();
+            Entrada(paginaConcluida)).Grupos.Single();
 
         avaliacao.Estado.Should().Be(esperado);
     }
@@ -110,7 +110,7 @@ public class GrupoRepetivelNaAvaliacaoTests : TestesDeAvaliacao
     {
         Action avaliar = () => AvaliarDefinicao(
             ComGrupo(Grupo(Obrigatoriedade.Sempre, minimo: 1, maximo: 5, Item("PARENTESCO"))),
-            EntradaComGrupo(etapaConcluida: true, [Ocorrencia("m1", ("PARENTESCO", "MAE")), Ocorrencia("m1", ("PARENTESCO", "PAI"))]));
+            EntradaComGrupo(paginaConcluida: true, [Ocorrencia("m1", ("PARENTESCO", "MAE")), Ocorrencia("m1", ("PARENTESCO", "PAI"))]));
 
         avaliar.Should().Throw<ArgumentException>().WithMessage("*'m1'*");
     }
@@ -134,7 +134,7 @@ public class GrupoRepetivelNaAvaliacaoTests : TestesDeAvaliacao
         DefinicaoGrupo grupo = new("COMPOSICAO", exibicao: null, Obrigatoriedade.Sempre, minimo: 1, maximo: null, [Item("PARENTESCO")], incluiCandidato: true);
         (string, (string, object)[])[] ocorrencias = [.. parentescos.Select((p, i) => Ocorrencia($"m{i}", ("PARENTESCO", p)))];
 
-        AvaliacaoGrupo avaliacao = AvaliarDefinicao(ComGrupo(grupo), EntradaComGrupo(etapaConcluida: true, ocorrencias)).Grupos.Single();
+        AvaliacaoGrupo avaliacao = AvaliarDefinicao(ComGrupo(grupo), EntradaComGrupo(paginaConcluida: true, ocorrencias)).Grupos.Single();
 
         avaliacao.OcorrenciaDoCandidatoValida.Should().Be(valida);
         avaliacao.Estado.Should().Be(valida ? EstadoFato.Resolvido : EstadoFato.Indeterminado);
@@ -145,15 +145,15 @@ public class GrupoRepetivelNaAvaliacaoTests : TestesDeAvaliacao
     {
         DefinicaoGrupo grupo = new("COMPOSICAO", exibicao: null, Obrigatoriedade.Nunca, minimo: 1, maximo: null, [Item("PARENTESCO")], incluiCandidato: true);
 
-        AvaliacaoGrupo avaliacao = AvaliarDefinicao(ComGrupo(grupo), EntradaComGrupo(etapaConcluida: false, [])).Grupos.Single();
+        AvaliacaoGrupo avaliacao = AvaliarDefinicao(ComGrupo(grupo), EntradaComGrupo(paginaConcluida: false, [])).Grupos.Single();
 
         avaliacao.OcorrenciaDoCandidatoValida.Should().BeTrue("a lista vazia não tem ocorrência do candidato a conferir");
         avaliacao.Estado.Should().Be(EstadoFato.NaoInformado);
     }
 
     private static DefinicaoFormulario FormularioComGrupoExibidoSoParaQuemConcorrePorRenda() => new(
-        [new DefinicaoEtapa(
-            Etapa,
+        [new DefinicaoPagina(
+            Pagina,
             exibicao: null,
             [Item("CONCORRER_RENDA")],
             [new DefinicaoGrupo(
@@ -172,7 +172,7 @@ public class GrupoRepetivelNaAvaliacaoTests : TestesDeAvaliacao
     {
         AvaliacaoGrupo avaliacao = AvaliarDefinicao(
             FormularioComGrupoExibidoSoParaQuemConcorrePorRenda(),
-            EntradaComGrupo(etapaConcluida: true, [Ocorrencia("m1", ("PARENTESCO", "MAE"))], ("CONCORRER_RENDA", false))).Grupos.Single();
+            EntradaComGrupo(paginaConcluida: true, [Ocorrencia("m1", ("PARENTESCO", "MAE"))], ("CONCORRER_RENDA", false))).Grupos.Single();
 
         avaliacao.Visivel.Should().Be(Ternario.Falso);
         avaliacao.Estado.Should().Be(EstadoFato.NaoAplicavel);
@@ -183,17 +183,17 @@ public class GrupoRepetivelNaAvaliacaoTests : TestesDeAvaliacao
         new("COMPOSICAO", exibicao: null, obrigatoriedade, minimo, maximo, subitens, incluiCandidato: false);
 
     private static DefinicaoFormulario ComGrupo(DefinicaoGrupo grupo) =>
-        new([new DefinicaoEtapa(Etapa, exibicao: null, [], [grupo])], termos: [], derivacoes: []);
+        new([new DefinicaoPagina(Pagina, exibicao: null, [], [grupo])], termos: [], derivacoes: []);
 
     private static (string Id, (string Fato, object Valor)[] Respostas) Ocorrencia(string id, params (string Fato, object Valor)[] respostas) =>
         (id, respostas);
 
     /// <summary>A entrada com as ocorrências do grupo <c>COMPOSICAO</c>, na ordem dada, e as respostas do candidato.</summary>
     private static EntradaAvaliacaoFormulario EntradaComGrupo(
-        bool etapaConcluida,
+        bool paginaConcluida,
         IReadOnlyList<(string Id, (string Fato, object Valor)[] Respostas)> ocorrencias,
         params (string Fato, object Valor)[] respostas) =>
-        Entrada(etapaConcluida, respostas) with
+        Entrada(paginaConcluida, respostas) with
         {
             RespostasDosGrupos = new Dictionary<string, IReadOnlyList<OcorrenciaRespondida>>(StringComparer.Ordinal)
             {

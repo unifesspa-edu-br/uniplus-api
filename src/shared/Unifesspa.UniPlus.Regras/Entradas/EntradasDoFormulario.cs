@@ -110,7 +110,7 @@ public sealed record FatoColetadoInput(
     int Ordem,
     ApresentacaoDoCampoInput? Apresentacao,
     RegrasDoCampoInput? Regras,
-    string? EtapaCodigo = null)
+    string? PaginaCodigo = null)
 {
     /// <summary>O caminho da apresentação do campo no item, onde a recusa de rótulo, tipo e ajuda se aponta.</summary>
     public const string CaminhoDaApresentacao = "apresentacao";
@@ -156,7 +156,7 @@ public sealed record GrupoColetadoInput(
     OcorrenciasDoGrupoInput? Ocorrencias,
     ExibicaoEObrigatoriedadeInput? Regras,
     IReadOnlyList<FatoColetadoInput> Subitens,
-    string? EtapaCodigo = null)
+    string? PaginaCodigo = null)
 {
     /// <summary>O caminho das ocorrências no grupo, onde a recusa de mínimo e máximo se aponta.</summary>
     public const string CaminhoDasOcorrencias = "ocorrencias";
@@ -166,26 +166,26 @@ public sealed record GrupoColetadoInput(
 }
 
 /// <summary>
-/// Como a etapa se apresenta ao candidato: o título, a descrição e o aviso. O título é obrigatório; o domínio
+/// Como a página se apresenta ao candidato: o título, a descrição e o aviso. O título é obrigatório; o domínio
 /// recusa o que falta.
 /// </summary>
-public sealed record ApresentacaoDaEtapaInput(string? Titulo, string? Descricao, string? Aviso);
+public sealed record ApresentacaoDaPaginaInput(string? Titulo, string? Descricao, string? Aviso);
 
 /// <summary>
-/// Uma etapa do formulário: seção (<c>SECAO</c>) ou bloco de sistema (<c>BLOCO</c>, com o bloco em
+/// Uma página do formulário: seção (<c>SECAO</c>) ou bloco de sistema (<c>BLOCO</c>, com o bloco em
 /// <see cref="Bloco"/>), com a ordem, a <see cref="Apresentacao"/> e, na seção, a
 /// <see cref="Exibicao"/> condicional — predicado sobre fatos conhecidos antes dela. A apresentação ausente chega
 /// ao domínio, que recusa o título que falta no caminho dela.
 /// </summary>
-public sealed record EtapaFormularioInput(
+public sealed record PaginaDoFormularioInput(
     string Codigo,
     int Ordem,
-    [AceitaCodigosDe<TipoEtapaFormulario>] string Tipo,
+    [AceitaCodigosDe<TipoPaginaFormulario>] string Tipo,
     [AceitaCodigosDe<BlocoSistema>] string? Bloco,
-    ApresentacaoDaEtapaInput? Apresentacao,
+    ApresentacaoDaPaginaInput? Apresentacao,
     IReadOnlyList<IReadOnlyList<CondicaoPrecondicaoInput>>? Exibicao = null)
 {
-    /// <summary>O caminho da apresentação na etapa, onde a recusa de título, descrição e aviso se aponta.</summary>
+    /// <summary>O caminho da apresentação na página, onde a recusa de título, descrição e aviso se aponta.</summary>
     public const string CaminhoDaApresentacao = "apresentacao";
 }
 

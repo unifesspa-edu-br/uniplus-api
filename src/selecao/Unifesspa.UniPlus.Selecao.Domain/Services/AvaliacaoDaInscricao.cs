@@ -90,7 +90,7 @@ public static class AvaliacaoDaInscricao
             configuracao.Definicao,
             new EntradaAvaliacaoFormulario(
                 RespostaDeCampo.DentroDaOferta(entrada.Respostas, configuracao.Ofertas),
-                entrada.EtapasConcluidas,
+                entrada.PaginasConcluidas,
                 entrada.FatosConhecidos,
                 entrada.Envio,
                 entrada.Grupos.ToDictionary(
@@ -192,7 +192,7 @@ public static class AvaliacaoDaInscricao
             : new DependenciasDaAvaliacao([], []);
 
     /// <summary>
-    /// A avaliação só com o que o formulário de inscrição pergunta: as etapas, os itens, os grupos e os
+    /// A avaliação só com o que o formulário de inscrição pergunta: as páginas, os itens, os grupos e os
     /// termos da finalidade Inscrição. Os fatos ficam todos, porque a derivação pode citar um fato que
     /// outra finalidade coleta. É sobre ela que se decide o veredito da inscrição: o item obrigatório de
     /// outra finalidade, como a isenção, não é pendência da inscrição.
@@ -202,23 +202,23 @@ public static class AvaliacaoDaInscricao
         ArgumentNullException.ThrowIfNull(formulario);
         return formulario with
         {
-            Etapas = [.. formulario.Etapas.Where(static e => DaInscricao(e.Codigo))],
-            Itens = [.. formulario.Itens.Where(static i => DaInscricao(i.EtapaCodigo))],
-            Grupos = [.. formulario.Grupos.Where(static g => DaInscricao(g.EtapaCodigo))],
+            Paginas = [.. formulario.Paginas.Where(static e => DaInscricao(e.Codigo))],
+            Itens = [.. formulario.Itens.Where(static i => DaInscricao(i.PaginaCodigo))],
+            Grupos = [.. formulario.Grupos.Where(static g => DaInscricao(g.PaginaCodigo))],
             Termos = [.. formulario.Termos.Where(static t => DaInscricao(t.Codigo))],
         };
     }
 
-    public static IReadOnlySet<string> CodigosDasEtapasDaInscricao(DefinicaoFormulario definicao)
+    public static IReadOnlySet<string> CodigosDasPaginasDaInscricao(DefinicaoFormulario definicao)
     {
         ArgumentNullException.ThrowIfNull(definicao);
-        return EtapasDaInscricao(definicao).Select(static e => e.Codigo).ToHashSet(StringComparer.Ordinal);
+        return PaginasDaInscricao(definicao).Select(static e => e.Codigo).ToHashSet(StringComparer.Ordinal);
     }
 
     private static bool DaInscricao(string codigo) => DefinicaoDoProcesso.EhDaFinalidade(codigo, FinalidadeFormulario.Inscricao);
 
-    internal static IEnumerable<DefinicaoEtapa> EtapasDaInscricao(DefinicaoFormulario definicao) =>
-        definicao.Etapas.Where(static e => DaInscricao(e.Codigo));
+    internal static IEnumerable<DefinicaoPagina> PaginasDaInscricao(DefinicaoFormulario definicao) =>
+        definicao.Paginas.Where(static e => DaInscricao(e.Codigo));
 
     private static ModalidadesDeConcorrencia Modalidades(ConfiguracaoAvaliavel configuracao, AvaliacaoFormulario formulario)
     {

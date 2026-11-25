@@ -54,7 +54,7 @@ internal static class ProcessoDoGrafoLidoDeTeste
         foreach (FormularioProcesso formulario in grafo.Coleta.Formularios.OrderBy(f => f.Finalidade))
         {
             Aceita(processo.DefinirFormulario(formulario.Finalidade, formulario.FaseId, formulario.Titulo,
-                [.. formulario.Etapas], [.. grafo.Coleta.Itens.Where(f => f.Finalidade == formulario.Finalidade)]));
+                [.. formulario.Paginas], [.. grafo.Coleta.Itens.Where(f => f.Finalidade == formulario.Finalidade)]));
             DefinirColeta(processo, grafo, formulario.Finalidade);
         }
 

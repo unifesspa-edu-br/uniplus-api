@@ -1,7 +1,7 @@
 {
   "descricao": "A faixa numérica compara decimais: 0,49 fica fora do mínimo 0,5, e 0,5 atende.",
   "regras": {
-    "etapas": [
+    "paginas": [
       {
         "codigo": "DADOS",
         "exibicao": null,
@@ -63,7 +63,7 @@
     "NOTA_B": 0.5
   },
   "grupos": {},
-  "etapasConcluidas": [],
+  "paginasConcluidas": [],
   "pressupostos": {},
   "esperado": {
     "campos": [

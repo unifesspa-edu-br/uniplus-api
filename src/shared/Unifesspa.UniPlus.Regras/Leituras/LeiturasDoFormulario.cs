@@ -86,22 +86,22 @@ public sealed record ExibicaoEObrigatoriedadeDto(
 public sealed record OcorrenciasDoGrupoDto(int Minimo, int? Maximo, bool IncluiCandidato);
 
 /// <summary>
-/// Como a etapa se apresenta ao candidato: o título, a descrição e o aviso. Tem a forma de
-/// <see cref="ApresentacaoDaEtapaInput"/>, que a escrita aceita.
+/// Como a página se apresenta ao candidato: o título, a descrição e o aviso. Tem a forma de
+/// <see cref="ApresentacaoDaPaginaInput"/>, que a escrita aceita.
 /// </summary>
-public sealed record ApresentacaoDaEtapaDto(string Titulo, string? Descricao, string? Aviso);
+public sealed record ApresentacaoDaPaginaDto(string Titulo, string? Descricao, string? Aviso);
 
 /// <summary>
-/// Uma etapa do formulário: seção ou bloco de sistema, em token canônico, com a apresentação e a exibição
-/// condicional da seção — nula quando ela sempre aparece. Tem a forma de <see cref="EtapaFormularioInput"/>,
+/// Uma página do formulário: seção ou bloco de sistema, em token canônico, com a apresentação e a exibição
+/// condicional da seção — nula quando ela sempre aparece. Tem a forma de <see cref="PaginaDoFormularioInput"/>,
 /// que a escrita aceita.
 /// </summary>
-public sealed record EtapaFormularioDto(
+public sealed record PaginaDoFormularioDto(
     string Codigo,
     int Ordem,
-    [property: AceitaCodigosDe<TipoEtapaFormulario>] string Tipo,
+    [property: AceitaCodigosDe<TipoPaginaFormulario>] string Tipo,
     [property: AceitaCodigosDe<BlocoSistema>] string? Bloco,
-    ApresentacaoDaEtapaDto Apresentacao,
+    ApresentacaoDaPaginaDto Apresentacao,
     IReadOnlyList<IReadOnlyList<CondicaoPrecondicaoDto>>? Exibicao);
 
 /// <summary>O conteúdo congelado da versão do termo: o nome, o texto, a base legal, a forma de aceite e o hash.</summary>

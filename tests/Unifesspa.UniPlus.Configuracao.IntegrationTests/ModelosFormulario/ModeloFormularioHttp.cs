@@ -105,13 +105,13 @@ internal static class ModeloFormularioHttp
     internal static List<string> Opcoes(JsonObject formulario, string fatoCodigo) =>
         [.. Textos(Unico(formulario["coleta"]!["itens"]!, "fatoCodigo", fatoCodigo)["valoresSelecionaveis"]!, "codigo")];
 
-    internal static IEnumerable<string> DasEtapasDasRegras(JsonObject formulario, string colecao, string chave) =>
-        formulario["regras"]!["etapas"]!.AsArray()
+    internal static IEnumerable<string> DasPaginasDasRegras(JsonObject formulario, string colecao, string chave) =>
+        formulario["regras"]!["paginas"]!.AsArray()
             .SelectMany(e => e![colecao]!.AsArray())
             .Select(i => i![chave]!.GetValue<string>());
 
-    internal static List<string> ItensDaEtapaDasRegras(JsonObject formulario, string etapaCodigo) =>
-        [.. Textos(Unico(formulario["regras"]!["etapas"]!, "codigo", etapaCodigo)["itens"]!, "fatoCodigo")];
+    internal static List<string> ItensDaPaginaDasRegras(JsonObject formulario, string paginaCodigo) =>
+        [.. Textos(Unico(formulario["regras"]!["paginas"]!, "codigo", paginaCodigo)["itens"]!, "fatoCodigo")];
 
     internal static string CodigoDe(string prefixo, int tamanho) =>
         $"{prefixo}_{Guid.NewGuid().ToString("N")[..tamanho].ToUpperInvariant()}";

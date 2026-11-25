@@ -285,7 +285,7 @@ public sealed class ProtecaoDaExigenciaEndpointTests
                 new { itens = new[] { ItemSensivel() } });
 
         private static object ItemSensivel() =>
-            FormularioDeInscricaoHttp.Item(FatoSensivel, PrimeiraOrdem, FatoSensivel, "SIM_OU_NAO", "NUNCA", etapaCodigo: FormularioDeInscricaoHttp.Secao);
+            FormularioDeInscricaoHttp.Item(FatoSensivel, PrimeiraOrdem, FatoSensivel, "SIM_OU_NAO", "NUNCA", paginaCodigo: FormularioDeInscricaoHttp.Secao);
 
         public Task<HttpResponseMessage> PutExigenciaAsync(Guid tipoDocumentoId, string[]? comprova = null) =>
             EnviarAsync(

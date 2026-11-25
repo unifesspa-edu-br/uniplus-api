@@ -33,7 +33,7 @@ internal static class ConteudoDoModeloJson
     public static string Serializar(ConteudoDoModelo conteudo) => new JsonObject
     {
         ["titulo"] = conteudo.Titulo,
-        ["paginas"] = new JsonArray([.. conteudo.Etapas.Select(EtapaParaJson)]),
+        ["paginas"] = new JsonArray([.. conteudo.Paginas.Select(PaginaParaJson)]),
         ["itens"] = new JsonArray([.. conteudo.Itens.Select(CampoParaJson)]),
         ["termos"] = new JsonArray([.. conteudo.Termos.Select(TermoParaJson)]),
         ["pressupostos"] = new JsonArray([.. conteudo.Pressupostos.Select(static pressuposto => (JsonNode)pressuposto)]),
@@ -42,23 +42,23 @@ internal static class ConteudoDoModeloJson
         ["gruposDeDocumentos"] = new JsonArray([.. conteudo.Documentos.GruposDeDocumentos.Select(GrupoDeDocumentosParaJson)]),
     }.ToJsonString();
 
-    private static JsonObject EtapaParaJson(EtapaDoModelo etapa) => new()
+    private static JsonObject PaginaParaJson(PaginaDoModelo pagina) => new()
     {
-        ["codigo"] = etapa.Codigo,
-        ["ordem"] = etapa.Ordem,
-        ["tipo"] = etapa.Tipo.Codigo(),
-        ["bloco"] = etapa.Bloco?.Codigo(),
-        ["titulo"] = etapa.Titulo,
-        ["descricao"] = etapa.Descricao,
-        ["aviso"] = etapa.Aviso,
-        ["exibicao"] = PredicadoOpcionalParaJson(etapa.Exibicao),
+        ["codigo"] = pagina.Codigo,
+        ["ordem"] = pagina.Ordem,
+        ["tipo"] = pagina.Tipo.Codigo(),
+        ["bloco"] = pagina.Bloco?.Codigo(),
+        ["titulo"] = pagina.Titulo,
+        ["descricao"] = pagina.Descricao,
+        ["aviso"] = pagina.Aviso,
+        ["exibicao"] = PredicadoOpcionalParaJson(pagina.Exibicao),
     };
 
     private static JsonObject CampoParaJson(ItemDoModelo campo) => new()
     {
         ["codigoDoDado"] = campo.FatoCodigo,
         ["ordem"] = campo.Ordem,
-        ["paginaCodigo"] = campo.EtapaCodigo,
+        ["paginaCodigo"] = campo.PaginaCodigo,
         ["rotulo"] = campo.Apresentacao.Rotulo,
         ["tipoDeCampo"] = campo.Apresentacao.TipoDeCampo.Codigo(),
         ["formato"] = campo.Formato,
@@ -84,7 +84,7 @@ internal static class ConteudoDoModeloJson
     {
         ["codigo"] = grupo.Codigo,
         ["ordem"] = grupo.Ordem,
-        ["paginaCodigo"] = grupo.EtapaCodigo,
+        ["paginaCodigo"] = grupo.PaginaCodigo,
         ["rotulo"] = grupo.Rotulo,
         ["minimo"] = grupo.Ocorrencias.Minimo,
         ["maximo"] = grupo.Ocorrencias.Maximo,
@@ -168,7 +168,7 @@ internal static class ConteudoDoModeloJson
         JsonElement elementoPrincipal = documento.RootElement;
         return new ConteudoDoModelo(
             Texto(elementoPrincipal, "titulo"),
-            [.. elementoPrincipal.GetProperty("paginas").EnumerateArray().Select(EtapaDeJson)],
+            [.. elementoPrincipal.GetProperty("paginas").EnumerateArray().Select(PaginaDeJson)],
             [.. elementoPrincipal.GetProperty("itens").EnumerateArray().Select(CampoDeJson)],
             [.. elementoPrincipal.GetProperty("termos").EnumerateArray().Select(TermoDeJson)],
             [.. elementoPrincipal.GetProperty("pressupostos").EnumerateArray().Select(static pressuposto => pressuposto.GetString()!)],
@@ -176,15 +176,15 @@ internal static class ConteudoDoModeloJson
             new ConjuntoDeDocumentosDoModelo(DocumentosDeJson(elementoPrincipal), GruposDeDocumentosDeJson(elementoPrincipal)));
     }
 
-    private static EtapaDoModelo EtapaDeJson(JsonElement etapa) => new(
-        etapa.GetProperty("codigo").GetString()!,
-        etapa.GetProperty("ordem").GetInt32(),
-        CatalogoDe<TipoEtapaFormulario>.Obter(etapa.GetProperty("tipo").GetString()!),
-        Texto(etapa, "bloco") is { } bloco ? CatalogoDe<BlocoSistema>.Obter(bloco) : null,
-        etapa.GetProperty("titulo").GetString()!,
-        Texto(etapa, "descricao"),
-        Texto(etapa, "aviso"),
-        Predicado(etapa, "exibicao"));
+    private static PaginaDoModelo PaginaDeJson(JsonElement pagina) => new(
+        pagina.GetProperty("codigo").GetString()!,
+        pagina.GetProperty("ordem").GetInt32(),
+        CatalogoDe<TipoPaginaFormulario>.Obter(pagina.GetProperty("tipo").GetString()!),
+        Texto(pagina, "bloco") is { } bloco ? CatalogoDe<BlocoSistema>.Obter(bloco) : null,
+        pagina.GetProperty("titulo").GetString()!,
+        Texto(pagina, "descricao"),
+        Texto(pagina, "aviso"),
+        Predicado(pagina, "exibicao"));
 
     private static ItemDoModelo CampoDeJson(JsonElement campo) => new(
         campo.GetProperty("codigoDoDado").GetString()!,

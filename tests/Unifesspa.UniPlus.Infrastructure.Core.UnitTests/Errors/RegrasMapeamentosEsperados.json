@@ -1,21 +1,21 @@
 [
   {
-    "chave": "EstruturaFormulario.EtapaCodigoDuplicado",
+    "chave": "EstruturaFormulario.PaginaCodigoDuplicado",
     "status": 422,
-    "codigo": "uniplus.estrutura_formulario.etapa_codigo_duplicado",
-    "titulo": "O código de etapa se repete no formulário"
+    "codigo": "uniplus.estrutura_formulario.pagina_codigo_duplicado",
+    "titulo": "O código de página se repete no formulário"
   },
   {
-    "chave": "EstruturaFormulario.EtapaOrdemDuplicada",
+    "chave": "EstruturaFormulario.PaginaOrdemDuplicada",
     "status": 422,
-    "codigo": "uniplus.estrutura_formulario.etapa_ordem_duplicada",
-    "titulo": "Duas etapas do formulário têm a mesma ordem"
+    "codigo": "uniplus.estrutura_formulario.pagina_ordem_duplicada",
+    "titulo": "Duas páginas do formulário têm a mesma ordem"
   },
   {
-    "chave": "EstruturaFormulario.TipoDeEtapaObrigatorio",
+    "chave": "EstruturaFormulario.TipoDePaginaObrigatorio",
     "status": 422,
-    "codigo": "uniplus.estrutura_formulario.tipo_de_etapa_obrigatorio",
-    "titulo": "A etapa é uma seção ou um bloco de sistema"
+    "codigo": "uniplus.estrutura_formulario.tipo_de_pagina_obrigatorio",
+    "titulo": "A página é uma seção ou um bloco de sistema"
   },
   {
     "chave": "EstruturaFormulario.SecaoReservada",
@@ -63,7 +63,7 @@
     "chave": "EstruturaFormulario.RevisaoEAceiteForaDoFim",
     "status": 422,
     "codigo": "uniplus.estrutura_formulario.revisao_e_aceite_fora_do_fim",
-    "titulo": "A revisão e aceite é sempre a última etapa"
+    "titulo": "A revisão e aceite é sempre a última página"
   },
   {
     "chave": "EstruturaFormulario.ItemForaDeSecao",
@@ -90,28 +90,28 @@
     "titulo": "O título do formulário excede o tamanho máximo"
   },
   {
-    "chave": "EstruturaFormulario.EtapaCodigoInvalido",
+    "chave": "EstruturaFormulario.PaginaCodigoInvalido",
     "status": 422,
-    "codigo": "uniplus.estrutura_formulario.etapa_codigo_invalido",
-    "titulo": "O código da etapa é obrigatório e tem tamanho limitado"
+    "codigo": "uniplus.estrutura_formulario.pagina_codigo_invalido",
+    "titulo": "O código da página é obrigatório e tem tamanho limitado"
   },
   {
-    "chave": "EstruturaFormulario.EtapaOrdemInvalida",
+    "chave": "EstruturaFormulario.PaginaOrdemInvalida",
     "status": 422,
-    "codigo": "uniplus.estrutura_formulario.etapa_ordem_invalida",
-    "titulo": "A ordem da etapa não pode ser negativa"
+    "codigo": "uniplus.estrutura_formulario.pagina_ordem_invalida",
+    "titulo": "A ordem da página não pode ser negativa"
   },
   {
-    "chave": "EstruturaFormulario.EtapaTituloInvalido",
+    "chave": "EstruturaFormulario.PaginaTituloInvalido",
     "status": 422,
-    "codigo": "uniplus.estrutura_formulario.etapa_titulo_invalido",
-    "titulo": "O título da etapa é obrigatório e tem tamanho limitado"
+    "codigo": "uniplus.estrutura_formulario.pagina_titulo_invalido",
+    "titulo": "O título da página é obrigatório e tem tamanho limitado"
   },
   {
-    "chave": "EstruturaFormulario.EtapaTextoTamanho",
+    "chave": "EstruturaFormulario.PaginaTextoTamanho",
     "status": 422,
-    "codigo": "uniplus.estrutura_formulario.etapa_texto_tamanho",
-    "titulo": "A descrição ou o aviso da etapa excede o tamanho máximo"
+    "codigo": "uniplus.estrutura_formulario.pagina_texto_tamanho",
+    "titulo": "A descrição ou o aviso da página excede o tamanho máximo"
   },
   {
     "chave": "EstruturaFormulario.ExibicaoForaDeSecao",

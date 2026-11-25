@@ -3,13 +3,13 @@ namespace Unifesspa.UniPlus.Configuracao.Contracts;
 using Unifesspa.UniPlus.Regras.Entradas;
 
 /// <summary>
-/// O conteúdo do modelo no mesmo formato da escrita do formulário do processo: título, etapas,
+/// O conteúdo do modelo no mesmo formato da escrita do formulário do processo: título, páginas,
 /// itens, termos, os fatos pressupostos — coletados pela inscrição, citáveis pelo modelo de outra
 /// finalidade (UNI-REQ-0144) — e os grupos repetíveis (UNI-REQ-0146); grupos ausentes são nenhum.
 /// </summary>
 public sealed record ConteudoDoModeloInput(
     string? Titulo,
-    IReadOnlyList<EtapaFormularioInput>? Etapas,
+    IReadOnlyList<PaginaDoFormularioInput>? Paginas,
     IReadOnlyList<FatoColetadoInput>? Itens,
     IReadOnlyList<TermoExigidoInput>? Termos,
     IReadOnlyList<string>? Pressupostos,

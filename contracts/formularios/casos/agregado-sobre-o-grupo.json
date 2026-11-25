@@ -1,7 +1,7 @@
 {
   "descricao": "A resposta de cada ocorrência do grupo é avaliada, e o agregado sobre o grupo vale para as regras de fora dele: um membro trabalhador rural faz aparecer a declaração rural.",
   "regras": {
-    "etapas": [
+    "paginas": [
       {
         "codigo": "DADOS",
         "exibicao": null,
@@ -92,7 +92,7 @@
       }
     ]
   },
-  "etapasConcluidas": [],
+  "paginasConcluidas": [],
   "pressupostos": {},
   "esperado": {
     "grupos": [

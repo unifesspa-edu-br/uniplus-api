@@ -34,7 +34,7 @@ public sealed class GrupoColetado : EntityBase, IParteDoProcesso
     public int Ordem { get; private set; }
 
     /// <summary>A seção do formulário em que o grupo aparece.</summary>
-    public string? EtapaCodigo { get; private set; }
+    public string? PaginaCodigo { get; private set; }
 
     public string Rotulo { get; private set; } = string.Empty;
 
@@ -57,11 +57,11 @@ public sealed class GrupoColetado : EntityBase, IParteDoProcesso
     private GrupoColetado() { }
 
     private GrupoColetado(
-        string? codigo, int ordem, string? etapaCodigo, string? rotulo, OcorrenciasDoGrupo ocorrencias, ExibicaoEObrigatoriedade regras, IReadOnlyList<FatoColetado> subitens)
+        string? codigo, int ordem, string? paginaCodigo, string? rotulo, OcorrenciasDoGrupo ocorrencias, ExibicaoEObrigatoriedade regras, IReadOnlyList<FatoColetado> subitens)
     {
         Codigo = (codigo ?? string.Empty).Trim().Normalize(NormalizationForm.FormC);
         Ordem = ordem;
-        EtapaCodigo = string.IsNullOrWhiteSpace(etapaCodigo) ? null : etapaCodigo.Trim().Normalize(NormalizationForm.FormC);
+        PaginaCodigo = string.IsNullOrWhiteSpace(paginaCodigo) ? null : paginaCodigo.Trim().Normalize(NormalizationForm.FormC);
         Rotulo = (rotulo ?? string.Empty).Trim();
         Minimo = ocorrencias.Minimo;
         Maximo = ocorrencias.Maximo;
@@ -90,7 +90,7 @@ public sealed class GrupoColetado : EntityBase, IParteDoProcesso
     public static Result<GrupoColetado> Criar(
         string codigo,
         int ordem,
-        string? etapaCodigo,
+        string? paginaCodigo,
         string rotulo,
         OcorrenciasDoGrupo ocorrencias,
         ExibicaoEObrigatoriedade regras,
@@ -103,14 +103,14 @@ public sealed class GrupoColetado : EntityBase, IParteDoProcesso
         List<FieldError> erros = ConferirForma(codigo, ordem, rotulo, ocorrencias, regras, subitens);
         return erros.Count > 0
             ? Result<GrupoColetado>.ValidationFailure(erros)
-            : Result<GrupoColetado>.Success(new GrupoColetado(codigo, ordem, etapaCodigo, rotulo, ocorrencias, regras, subitens));
+            : Result<GrupoColetado>.Success(new GrupoColetado(codigo, ordem, paginaCodigo, rotulo, ocorrencias, regras, subitens));
     }
 
     private static List<FieldError> ConferirForma(
         string codigo, int ordem, string rotulo, OcorrenciasDoGrupo ocorrencias, ExibicaoEObrigatoriedade regras, IReadOnlyList<FatoColetado> subitens) =>
     [
         .. FormaDoGrupo.Conferir(
-            codigo, ordem, rotulo, ocorrencias, [.. subitens.Select(static s => ((string?)s.FatoCodigo, s.EtapaCodigo, s.Impedimento is not null))], regras),
+            codigo, ordem, rotulo, ocorrencias, [.. subitens.Select(static s => ((string?)s.FatoCodigo, s.PaginaCodigo, s.Impedimento is not null))], regras),
         .. ocorrencias.ConferirCandidatoComoMembro([.. subitens.Select(static s => (s.FatoCodigo, !s.SemPrecondicao, s.Obrigatoriedade, s.Restricoes))]),
     ];
 
@@ -131,10 +131,10 @@ public sealed class GrupoColetado : EntityBase, IParteDoProcesso
 
     /// <summary>O grupo no que o grafo do formulário confere.</summary>
     public GrupoDoGrafo ParaGrafo() =>
-        new(Codigo, Ordem, EtapaCodigo, FatosCitados, [.. _subitens.OrderBy(static s => s.Ordem).Select(static s => s.ParaGrafo())]);
+        new(Codigo, Ordem, PaginaCodigo, FatosCitados, [.. _subitens.OrderBy(static s => s.Ordem).Select(static s => s.ParaGrafo())]);
 
     /// <summary>O grupo na forma que a estrutura do formulário confere: uma posição na ordem dos itens, numa seção.</summary>
-    public ItemEstrutura ParaEstrutura() => new(Codigo, Ordem, EtapaCodigo);
+    public ItemEstrutura ParaEstrutura() => new(Codigo, Ordem, PaginaCodigo);
 
     /// <summary>
     /// As condições das regras do grupo e dos campos dele, para os vínculos e as referências a valor

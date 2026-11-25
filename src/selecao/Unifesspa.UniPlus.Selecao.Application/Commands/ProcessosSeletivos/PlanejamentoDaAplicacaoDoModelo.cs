@@ -16,7 +16,7 @@ using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Regras.ValueObjects;
 
 /// <summary>
-/// Calcula a cópia do modelo para o processo sem mudá-lo: as etapas, os itens e os termos passam pelos
+/// Calcula a cópia do modelo para o processo sem mudá-lo: as páginas, os itens e os termos passam pelos
 /// resolvedores da escrita do formulário (ADR-0125), e o estado final é conferido contra o catálogo antes
 /// de o agregado receber a cópia. Antes, o modelo precisa estar ativo, servir ao tipo do processo e ter os
 /// pressupostos coletados pela inscrição.
@@ -39,12 +39,14 @@ internal sealed class PlanejamentoDaAplicacaoDoModelo(
             .SelecionarAsync(conteudo.Termos ?? [], cancellationToken).ConfigureAwait(false);
 
         PartesResolvidas copia = await ResolverAsync(contexto, conteudo, formulario, termos, cancellationToken).ConfigureAwait(false);
-        List<FieldError> recusas = [.. formulario.Recusas, .. copia.Recusas];
-        if (recusas.Count > 0)
-        {
-            return Result<PlanoDaAplicacaoDoModelo>.ValidationFailure(recusas);
-        }
+        return Concluir(contexto, conteudo, formulario, termos, copia, catalogo);
+    }
 
+    private Result<PlanoDaAplicacaoDoModelo> Concluir(ContextoDoCatalogo contexto, ConteudoDoModeloInput conteudo,
+        FormularioSelecionado formulario, TermosSelecionados termos, PartesResolvidas copia, IReadOnlyList<FatoCandidatoView> catalogo)
+    {
+        List<FieldError> recusas = [.. formulario.Recusas, .. copia.Recusas];
+        if (recusas.Count > 0) return Result<PlanoDaAplicacaoDoModelo>.ValidationFailure(recusas);
         Result vinculoNovo = ConferirVinculoNovo(contexto, formulario, copia);
         return vinculoNovo.IsFailure
             ? Result<PlanoDaAplicacaoDoModelo>.ValidationFailure([.. vinculoNovo.Errors.Select(static e => PosicaoNoModelo.NoModelo(e))])
@@ -66,26 +68,24 @@ internal sealed class PlanejamentoDaAplicacaoDoModelo(
         DerivacoesEscolhidas escolhidas = await derivacoes.EscolherAsync(citados, cancellationToken).ConfigureAwait(false);
         FieldError? semDistribuicaoDeVagas = derivacoes.ConferirModalidade(citados, escolhidas.ACopiar);
 
-        HashSet<string> coletados = new(
-            processo.FatosColetados.Select(static f => f.FatoCodigo).Concat(formulario.Itens.Itens.Select(static i => i.FatoCodigo)),
-            StringComparer.Ordinal);
-        HashSet<string> universo = new(
-            coletados
-                .Concat(processo.DerivacoesEfetivas().Select(static r => r.CodigoFato))
-                .Concat(escolhidas.ACopiar.Select(static d => d.CodigoFato)),
-            StringComparer.Ordinal);
-        DerivacoesResolvidas derivacoesResolvidas = derivacoes.Resolver(escolhidas.ACopiar, universo);
-        TermosResolvidos termosResolvidos = SelecaoDosTermosDoModelo.Resolver(
-            termos, contexto, new HashSet<string>(universo.Concat(VocabularioDeFatos.DerivadosDoSistemaResolvidos(coletados)), StringComparer.Ordinal));
-        List<FieldError> recusas = [.. escolhidas.Recusas];
-        if (semDistribuicaoDeVagas is not null)
-        {
-            recusas.Add(semDistribuicaoDeVagas);
-        }
+        return ResolverPartes(contexto, formulario, termos, derivacoes, escolhidas, semDistribuicaoDeVagas);
+    }
 
-        recusas.AddRange(derivacoesResolvidas.Recusas);
+    private PartesResolvidas ResolverPartes(ContextoDoCatalogo contexto, FormularioSelecionado formulario, TermosSelecionados termos,
+        SelecaoDasDerivacoesDoModelo derivacoes, DerivacoesEscolhidas escolhidas, FieldError? semDistribuicaoDeVagas)
+    {
+        HashSet<string> coletados = new(processo.FatosColetados.Select(static f => f.FatoCodigo)
+            .Concat(formulario.Itens.Itens.Select(static i => i.FatoCodigo)), StringComparer.Ordinal);
+        HashSet<string> universo = new(coletados.Concat(processo.DerivacoesEfetivas().Select(static r => r.CodigoFato))
+            .Concat(escolhidas.ACopiar.Select(static d => d.CodigoFato)), StringComparer.Ordinal);
+        DerivacoesResolvidas resolvidas = derivacoes.Resolver(escolhidas.ACopiar, universo);
+        TermosResolvidos termosResolvidos = SelecaoDosTermosDoModelo.Resolver(termos, contexto,
+            new HashSet<string>(universo.Concat(VocabularioDeFatos.DerivadosDoSistemaResolvidos(coletados)), StringComparer.Ordinal));
+        List<FieldError> recusas = [.. escolhidas.Recusas];
+        if (semDistribuicaoDeVagas is not null) recusas.Add(semDistribuicaoDeVagas);
+        recusas.AddRange(resolvidas.Recusas);
         recusas.AddRange(termosResolvidos.Recusas);
-        return new PartesResolvidas(derivacoesResolvidas.Derivacoes, termosResolvidos.Termos, recusas);
+        return new PartesResolvidas(resolvidas.Derivacoes, termosResolvidos.Termos, recusas);
     }
 
     // O valor desativado no catálogo é recusado como vínculo novo; o que o processo já citava continua.
@@ -102,7 +102,7 @@ internal sealed class PlanejamentoDaAplicacaoDoModelo(
     private static IEnumerable<(string Fato, JsonElement Valor)> CondicoesDaCopia(FormularioSelecionado formulario, PartesResolvidas copia) =>
         formulario.Itens.Itens.SelectMany(static i => i.Condicoes)
             .Concat(formulario.Grupos.Grupos.SelectMany(static g => g.Condicoes))
-            .Concat(formulario.Etapas.Etapas.SelectMany(static e => e.Condicoes))
+            .Concat(formulario.Paginas.Paginas.SelectMany(static e => e.Condicoes))
             .Concat(copia.Termos.SelectMany(static t => t.Condicoes))
             .Select(static c => (c.Fato, c.Valor))
             .Concat(copia.Derivacoes.SelectMany(static d => d.Regras).SelectMany(static r => r.Condicoes).Select(static c => (c.Fato, c.Valor)));
@@ -115,7 +115,7 @@ internal sealed class PlanejamentoDaAplicacaoDoModelo(
         IReadOnlyList<FatoCandidatoView> catalogo) =>
         new(
             new CopiaDeModeloDeFormulario(
-                _finalidade, conteudo.Titulo, formulario.Etapas.Etapas, formulario.Itens.Itens, formulario.Grupos.Grupos,
+                _finalidade, conteudo.Titulo, formulario.Paginas.Paginas, formulario.Itens.Itens, formulario.Grupos.Grupos,
                 copia.Termos, copia.Derivacoes, modelo.Id, modelo.Codigo)
             { ModeloNome = modelo.Nome },
             new IndicesNoModelo(formulario.Itens.IndicesNoModelo, formulario.Grupos.IndicesNoModelo, termos.IndicesNoModelo),

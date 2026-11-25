@@ -1,7 +1,7 @@
 {
   "descricao": "O limite de 120 anos antes do envio de 10/10/2026 é 10/10/1906: essa data atende, e 09/10/1906 viola.",
   "regras": {
-    "etapas": [
+    "paginas": [
       {
         "codigo": "DADOS",
         "exibicao": null,
@@ -87,7 +87,7 @@
     "NASCIMENTO_B": "1906-10-09"
   },
   "grupos": {},
-  "etapasConcluidas": [],
+  "paginasConcluidas": [],
   "pressupostos": {},
   "envio": {
     "instante": "2026-10-10T15:00:00Z",

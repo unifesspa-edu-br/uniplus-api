@@ -18,7 +18,7 @@ public sealed class FatosDasVersoesPublicadasTests
     private static readonly FormularioProcesso Habilitacao = Formulario(FinalidadeFormulario.Habilitacao);
 
     private static FormularioProcesso Formulario(FinalidadeFormulario finalidade) =>
-        FormularioProcesso.Criar(finalidade, null, null, FormularioDeTeste.Etapas(finalidade)).Value!;
+        FormularioProcesso.Criar(finalidade, null, null, FormularioDeTeste.Paginas(finalidade)).Value!;
 
     private static FatoColetado Item(string codigo, FinalidadeFormulario finalidade = FinalidadeFormulario.Inscricao) =>
         FatoColetadoDeTeste.Coletando(codigo, 0).ComObrigatoriedade(Obrigatoriedade.Sempre).DaFinalidade(finalidade).Construir();

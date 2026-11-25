@@ -101,14 +101,14 @@ public abstract class ModeloFormularioHandlerTestBase
             new Dictionary<string, IReadOnlyCollection<string>>(StringComparer.Ordinal)).Value!;
     }
 
-    protected static readonly EtapaDoModelo Secao = new("DADOS", 0, TipoEtapaFormulario.Secao, null, "Dados", null, null, null);
-    protected static readonly EtapaDoModelo Revisao = new("REVISAO", 1, TipoEtapaFormulario.Bloco, BlocoSistema.RevisaoEAceite, "Revisão", null, null, null);
+    protected static readonly PaginaDoModelo Secao = new("DADOS", 0, TipoPaginaFormulario.Secao, null, "Dados", null, null, null);
+    protected static readonly PaginaDoModelo Revisao = new("REVISAO", 1, TipoPaginaFormulario.Bloco, BlocoSistema.RevisaoEAceite, "Revisão", null, null, null);
 
     protected static ConteudoDoModeloInput Conteudo(params FatoColetadoInput[] itens) => new(
         "Habilitação",
         [
-            EntradaDaEtapaFormularioDeTeste.Secao("DADOS").ComTitulo("Dados").Construir(),
-            EntradaDaEtapaFormularioDeTeste.BlocoDeSistema("REVISAO", 1, "REVISAO_E_ACEITE").ComTitulo("Revisão").Construir(),
+            EntradaDaPaginaDoFormularioDeTeste.Secao("DADOS").ComTitulo("Dados").Construir(),
+            EntradaDaPaginaDoFormularioDeTeste.BlocoDeSistema("REVISAO", 1, "REVISAO_E_ACEITE").ComTitulo("Revisão").Construir(),
         ],
         itens,
         [],

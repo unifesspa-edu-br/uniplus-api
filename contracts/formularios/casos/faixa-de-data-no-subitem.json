@@ -1,7 +1,7 @@
 {
   "descricao": "A faixa de data vale no subitem de cada ocorrência do grupo: o membro nascido depois do envio viola, o outro não.",
   "regras": {
-    "etapas": [
+    "paginas": [
       {
         "codigo": "DADOS",
         "exibicao": null,
@@ -82,7 +82,7 @@
       }
     ]
   },
-  "etapasConcluidas": [],
+  "paginasConcluidas": [],
   "pressupostos": {},
   "envio": {
     "instante": "2026-10-10T15:00:00Z",

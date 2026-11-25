@@ -35,7 +35,7 @@ internal sealed record FatosDaVersao(
             static d => d.Key, d => Derivado(d.Value, envelope), StringComparer.Ordinal);
 
         return new FatosDaVersao(
-            ColetadosForaDeGrupo(envelope, declaradas), GruposDaInscricao(envelope, declaradas), derivados, TitulosDasEtapas(envelope));
+            ColetadosForaDeGrupo(envelope, declaradas), GruposDaInscricao(envelope, declaradas), derivados, TitulosDasPaginas(envelope));
     }
 
     private static Dictionary<string, Dictionary<string, string>> OpcoesDeclaradasPorFato(EnvelopeReidratado envelope)
@@ -66,7 +66,7 @@ internal sealed record FatosDaVersao(
             Classificacao(fato.ClassificacaoProtecao) == ClassificacaoDeProtecao.Identificador),
         Classificacao(fato.ClassificacaoProtecao),
         string.IsNullOrWhiteSpace(fato.HipoteseLegal) ? null : fato.HipoteseLegal,
-        fato.EtapaCodigo,
+        fato.PaginaCodigo,
         fato.Ordem,
         fato.OrigemValores == OrigemValoresColeta.UnidadesFederativas ? NomesDasUfs() : Opcoes(fato.FatoCodigo, declaradas, envelope),
         EhCpf(fato.FatoCodigo, fato.Formato));
@@ -84,17 +84,17 @@ internal sealed record FatosDaVersao(
         .. envelope.Configuracao.Coleta.GruposColetados
             .Where(static g => g.Finalidade == FinalidadeFormulario.Inscricao)
             .Select(g => new GrupoDoProcesso(
-                g.Codigo, g.Rotulo, g.EtapaCodigo, g.Ordem,
+                g.Codigo, g.Rotulo, g.PaginaCodigo, g.Ordem,
                 g.Subitens.GroupBy(static s => s.FatoCodigo, StringComparer.Ordinal)
                     .ToDictionary(static s => s.Key, s => Coletado(s.First(), declaradas, envelope), StringComparer.Ordinal),
                 g.IncluiCandidato)),
     ];
 
-    private static Dictionary<string, string> TitulosDasEtapas(EnvelopeReidratado envelope) =>
+    private static Dictionary<string, string> TitulosDasPaginas(EnvelopeReidratado envelope) =>
         envelope.Configuracao.Coleta.Formularios
             .Where(static f => f.Finalidade == FinalidadeFormulario.Inscricao)
-            .SelectMany(static f => f.Etapas)
-            .ToDictionary(static e => e.Codigo, static e => e.Titulo, StringComparer.Ordinal);
+            .SelectMany(static f => f.Paginas)
+            .ToDictionary(static pagina => pagina.Codigo, static pagina => pagina.Titulo, StringComparer.Ordinal);
 
     /// <summary>
     /// Os campos identificadores de código <paramref name="fatoCodigo"/>: com <paramref name="emGrupo"/>, um por grupo

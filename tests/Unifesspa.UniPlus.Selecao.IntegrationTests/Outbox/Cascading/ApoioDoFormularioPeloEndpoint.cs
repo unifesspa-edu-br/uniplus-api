@@ -90,7 +90,7 @@ internal static class ApoioDoFormularioPeloEndpoint
                 HttpMethod.Put,
                 new Uri($"/api/selecao/admin/processos-seletivos/{ProcessoId}/formularios/{finalidade}", UriKind.Relative))
             {
-                Content = JsonContent.Create(new { faseId = fase, titulo, etapas = EtapasDoFormulario() }),
+                Content = JsonContent.Create(new { faseId = fase, titulo, paginas = PaginasDoFormulario() }),
             };
             Autenticar(request, autenticar);
             request.Headers.TryAddWithoutValidation("Idempotency-Key", MakeIdempotencyKey());
@@ -178,7 +178,7 @@ internal static class ApoioDoFormularioPeloEndpoint
         tipoAtoCodigo = "EDITAL_ABERTURA",
     };
 
-    internal static object[] EtapasDoFormulario() =>
+    internal static object[] PaginasDoFormulario() =>
     [
         new { codigo = "DADOS", ordem = 0, tipo = "SECAO", bloco = (string?)null, apresentacao = new { titulo = "Dados" } },
         new { codigo = "REVISAO", ordem = 1, tipo = "BLOCO", bloco = "REVISAO_E_ACEITE", apresentacao = new { titulo = "Revisão e aceite" } },

@@ -3212,36 +3212,6 @@
       "titulo": "O item do conjunto básico de dados do candidato não pode ser alterado"
     },
     {
-      "codigo": "uniplus.estrutura_formulario.etapa_codigo_duplicado",
-      "status": 422,
-      "titulo": "O código de etapa se repete no formulário"
-    },
-    {
-      "codigo": "uniplus.estrutura_formulario.etapa_codigo_invalido",
-      "status": 422,
-      "titulo": "O código da etapa é obrigatório e tem tamanho limitado"
-    },
-    {
-      "codigo": "uniplus.estrutura_formulario.etapa_ordem_duplicada",
-      "status": 422,
-      "titulo": "Duas etapas do formulário têm a mesma ordem"
-    },
-    {
-      "codigo": "uniplus.estrutura_formulario.etapa_ordem_invalida",
-      "status": 422,
-      "titulo": "A ordem da etapa não pode ser negativa"
-    },
-    {
-      "codigo": "uniplus.estrutura_formulario.etapa_texto_tamanho",
-      "status": 422,
-      "titulo": "A descrição ou o aviso da etapa excede o tamanho máximo"
-    },
-    {
-      "codigo": "uniplus.estrutura_formulario.etapa_titulo_invalido",
-      "status": 422,
-      "titulo": "O título da etapa é obrigatório e tem tamanho limitado"
-    },
-    {
       "codigo": "uniplus.estrutura_formulario.exibicao_fora_de_secao",
       "status": 422,
       "titulo": "Só a seção do formulário tem exibição condicional"
@@ -3262,9 +3232,39 @@
       "titulo": "O item precisa estar numa seção do formulário"
     },
     {
+      "codigo": "uniplus.estrutura_formulario.pagina_codigo_duplicado",
+      "status": 422,
+      "titulo": "O código de página se repete no formulário"
+    },
+    {
+      "codigo": "uniplus.estrutura_formulario.pagina_codigo_invalido",
+      "status": 422,
+      "titulo": "O código da página é obrigatório e tem tamanho limitado"
+    },
+    {
+      "codigo": "uniplus.estrutura_formulario.pagina_ordem_duplicada",
+      "status": 422,
+      "titulo": "Duas páginas do formulário têm a mesma ordem"
+    },
+    {
+      "codigo": "uniplus.estrutura_formulario.pagina_ordem_invalida",
+      "status": 422,
+      "titulo": "A ordem da página não pode ser negativa"
+    },
+    {
+      "codigo": "uniplus.estrutura_formulario.pagina_texto_tamanho",
+      "status": 422,
+      "titulo": "A descrição ou o aviso da página excede o tamanho máximo"
+    },
+    {
+      "codigo": "uniplus.estrutura_formulario.pagina_titulo_invalido",
+      "status": 422,
+      "titulo": "O título da página é obrigatório e tem tamanho limitado"
+    },
+    {
       "codigo": "uniplus.estrutura_formulario.revisao_e_aceite_fora_do_fim",
       "status": 422,
-      "titulo": "A revisão e aceite é sempre a última etapa"
+      "titulo": "A revisão e aceite é sempre a última página"
     },
     {
       "codigo": "uniplus.estrutura_formulario.secao_com_bloco",
@@ -3282,9 +3282,9 @@
       "titulo": "A seção dos dados básicos do candidato não pode ser alterada"
     },
     {
-      "codigo": "uniplus.estrutura_formulario.tipo_de_etapa_obrigatorio",
+      "codigo": "uniplus.estrutura_formulario.tipo_de_pagina_obrigatorio",
       "status": 422,
-      "titulo": "A etapa é uma seção ou um bloco de sistema"
+      "titulo": "A página é uma seção ou um bloco de sistema"
     },
     {
       "codigo": "uniplus.estrutura_formulario.titulo_tamanho",

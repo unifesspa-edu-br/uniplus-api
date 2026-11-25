@@ -11,7 +11,7 @@ using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Formularios;
 using Unifesspa.UniPlus.Selecao.Domain.UnitTests.ProcessosSeletivos.Formularios;
 
 /// <summary>
-/// Exibição, obrigatoriedade, opções e condição de termo de um campo, de uma etapa ou de um termo só citam
+/// Exibição, obrigatoriedade, opções e condição de termo de um campo, de uma página ou de um termo só citam
 /// fatos conhecidos no formulário dono, e o conjunto das dependências é acíclico (UNI-REQ-0145,
 /// UNI-REQ-0077, UNI-REQ-0086). Dois formulários não dependem um do outro em círculo (UNI-REQ-0144).
 /// </summary>
@@ -95,7 +95,7 @@ public sealed class ConferenciaDasRegrasDosFormulariosTests
     {
         FormularioDeclarado inscricao = ColetaDeTeste.Obrigatorio("INSCRICAO", _inscricao);
         ColetaDoFormulario coleta = new(
-            inscricao, [new ItemDoGrafo("renda", 1, "DADOS", [])], [], [new EtapaDoGrafo("DADOS", 1, ["renda"])], []);
+            inscricao, [new ItemDoGrafo("renda", 1, "DADOS", [])], [], [new PaginaDoGrafo("DADOS", 1, ["renda"])], []);
 
         ConferenciaDasRegrasDosFormularios.Conferir(Conhecimento(coleta)).Select(static recusa => recusa.Error.Code)
             .Should().Contain(GrafoFormularioErrorCodes.GrafoComCiclo);
@@ -107,7 +107,7 @@ public sealed class ConferenciaDasRegrasDosFormulariosTests
         FormularioDeclarado inscricao = ColetaDeTeste.Obrigatorio("INSCRICAO", _inscricao);
         GrupoDoGrafo grupoComExibicao = new("dependentes", 1, null, ["tem_dependente"], [new ItemDoGrafo("tem_dependente", 1, null, [])]);
         GrupoDoGrafo grupoNaSecao = new("irmaos", 2, "FAMILIA", [], [new ItemDoGrafo("nome_do_irmao", 1, null, [])]);
-        ColetaDoFormulario coleta = new(inscricao, [], [grupoComExibicao, grupoNaSecao], [new EtapaDoGrafo("FAMILIA", 1, ["nome_do_irmao"])], []);
+        ColetaDoFormulario coleta = new(inscricao, [], [grupoComExibicao, grupoNaSecao], [new PaginaDoGrafo("FAMILIA", 1, ["nome_do_irmao"])], []);
 
         ConferenciaDasRegrasDosFormularios.Conferir(Conhecimento(coleta)).Select(static recusa => recusa.Error.Code)
             .Should().Contain(GrafoFormularioErrorCodes.GrafoComCiclo);
@@ -129,7 +129,7 @@ public sealed class ConferenciaDasRegrasDosFormulariosTests
     {
         FormularioDeclarado inscricao = ColetaDeTeste.Obrigatorio("INSCRICAO", _inscricao);
         ColetaDoFormulario coleta = new(
-            inscricao, [Item("origem_escolar", 1)], [], [new EtapaDoGrafo("DADOS", 1, ["origem_escolar", "desconhecido_a"])], [new TermoDoGrafo("TERMO", ["desconhecido_b"])]);
+            inscricao, [Item("origem_escolar", 1)], [], [new PaginaDoGrafo("DADOS", 1, ["origem_escolar", "desconhecido_a"])], [new TermoDoGrafo("TERMO", ["desconhecido_b"])]);
 
         ConferenciaDasRegrasDosFormularios.Conferir(Conhecimento(coleta)).Select(static recusa => recusa.Field).Should().Equal(
             "formularios[INSCRICAO].secoes.DADOS.fatosCitados.desconhecido_a", "formularios[INSCRICAO].termos.TERMO.fatosCitados.desconhecido_b");

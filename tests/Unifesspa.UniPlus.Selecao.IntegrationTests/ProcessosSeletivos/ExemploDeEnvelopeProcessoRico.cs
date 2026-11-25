@@ -201,7 +201,7 @@ internal static class ExemploDeEnvelopeProcessoRico
         PredicadoDnf corPreta = PredicadoDnf.CriarDeCondicoesAgrupadas(
             [(0, CondicaoDnf.Criar("COR_RACA", Operador.Igual, JsonSerializer.SerializeToElement("PRETA")).Value!)]).Value!;
         DefinirTituloETermos(processo, corPreta);
-        DefinirEtapasDoFormulario(processo, corPreta);
+        DefinirPaginasDoFormulario(processo, corPreta);
         DefinirRegrasDeDerivacao(processo, permutar);
     }
 
@@ -267,17 +267,17 @@ internal static class ExemploDeEnvelopeProcessoRico
     }
 
     // Seção com exibição condicional: aparece só para quem se declarou preto — o decoder remonta
-    // a exibição da seção junto das demais etapas.
-    internal static void DefinirEtapasDoFormulario(ProcessoSeletivo processo, PredicadoDnf corPreta)
+    // a exibição da seção junto das demais páginas.
+    internal static void DefinirPaginasDoFormulario(ProcessoSeletivo processo, PredicadoDnf corPreta)
     {
         FormularioProcesso inscricao = processo.FormularioDe(FinalidadeFormulario.Inscricao)!;
         processo.DefinirFormulario(
             FinalidadeFormulario.Inscricao, inscricao.FaseId, inscricao.Titulo,
             [
-                FormularioDeTeste.Etapas()[0],
-                EtapaFormulario.Criar(new EtapaEstrutura(FormularioDeTeste.Secao, 1, TipoEtapaFormulario.Secao, null), "Dados", null, null).Value!,
-                EtapaFormulario.Criar(new EtapaEstrutura("PERTENCIMENTO", 2, TipoEtapaFormulario.Secao, null), "Pertencimento", null, null, corPreta).Value!,
-                EtapaFormulario.Criar(new EtapaEstrutura("REVISAO", 3, TipoEtapaFormulario.Bloco, BlocoSistema.RevisaoEAceite), "Revisão e aceite", null, null).Value!,
+                FormularioDeTeste.Paginas()[0],
+                PaginaDoFormulario.Criar(new PaginaEstrutura(FormularioDeTeste.Secao, 1, TipoPaginaFormulario.Secao, null), "Dados", null, null).Value!,
+                PaginaDoFormulario.Criar(new PaginaEstrutura("PERTENCIMENTO", 2, TipoPaginaFormulario.Secao, null), "Pertencimento", null, null, corPreta).Value!,
+                PaginaDoFormulario.Criar(new PaginaEstrutura("REVISAO", 3, TipoPaginaFormulario.Bloco, BlocoSistema.RevisaoEAceite), "Revisão e aceite", null, null).Value!,
             ]).IsSuccess.Should().BeTrue();
     }
 

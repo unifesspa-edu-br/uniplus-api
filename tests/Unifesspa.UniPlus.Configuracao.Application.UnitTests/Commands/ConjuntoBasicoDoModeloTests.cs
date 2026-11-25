@@ -31,7 +31,7 @@ public sealed class ConjuntoBasicoDoModeloTests
         ["NOME_COMUNIDADE"] = "LIVRE",
     };
 
-    private static readonly EtapaDoModelo Dados = new("DADOS", 1, TipoEtapaFormulario.Secao, null, "Dados", null, null, null);
+    private static readonly PaginaDoModelo Dados = new("DADOS", 1, TipoPaginaFormulario.Secao, null, "Dados", null, null, null);
 
     [Fact(DisplayName = "O modelo de inscrição gravado sem os dados de sexo e gênero os recebe na seção dos dados básicos, sem repetir a ordem de nenhum item")]
     public void Mesclar_ModeloGravadoAntesDosTresDados_RecebeOsItensSemColidir()
@@ -42,7 +42,7 @@ public sealed class ConjuntoBasicoDoModeloTests
 
         mesclado.Itens.Select(static i => i.FatoCodigo).Should().Contain(ConjuntoBasicoDaInscricao.Fatos);
         mesclado.Itens.Select(static i => i.Ordem).Should().OnlyHaveUniqueItems();
-        int ultimoDaSecao = mesclado.Itens.Where(static i => i.EtapaCodigo == ConjuntoBasicoDaInscricao.CodigoDaSecao).Max(static i => i.Ordem);
+        int ultimoDaSecao = mesclado.Itens.Where(static i => i.PaginaCodigo == ConjuntoBasicoDaInscricao.CodigoDaSecao).Max(static i => i.Ordem);
         mesclado.Itens.Single(static i => i.FatoCodigo == "BAIXA_RENDA").Ordem.Should().BeGreaterThan(ultimoDaSecao, "o item do administrador segue depois da seção");
     }
 
@@ -50,7 +50,7 @@ public sealed class ConjuntoBasicoDoModeloTests
     public void Mesclar_SecaoForaDaOrdem_SaiNaOrdemCanonica()
     {
         ConteudoDoModelo completo = ConteudoComOConjunto();
-        ItemDoModelo[] doConjunto = [.. completo.Itens.Where(i => i.EtapaCodigo == ConjuntoBasicoDaInscricao.CodigoDaSecao)];
+        ItemDoModelo[] doConjunto = [.. completo.Itens.Where(i => i.PaginaCodigo == ConjuntoBasicoDaInscricao.CodigoDaSecao)];
         ItemDoModelo sexo = doConjunto.Single(static i => i.FatoCodigo == "SEXO");
         ItemDoModelo[] sexoNoFim = [.. doConjunto.Where(static i => i.FatoCodigo != "SEXO"), sexo.ComRotulo("Sexo")];
         ConteudoDoModelo legado = completo with { Itens = [.. sexoNoFim.Select(static (item, ordem) => item with { Ordem = ordem })] };
@@ -89,7 +89,7 @@ public sealed class ConjuntoBasicoDoModeloTests
     {
         ConteudoDoModelo completo = ConteudoComOConjunto();
         string[] novos = ["SEXO_CIVIL", "IDENTIDADE_GENERO", "ORIENTACAO_SEXUAL"];
-        ItemDoModelo[] doConjunto = [.. completo.Itens.Where(i => i.EtapaCodigo == ConjuntoBasicoDaInscricao.CodigoDaSecao && !novos.Contains(i.FatoCodigo))];
+        ItemDoModelo[] doConjunto = [.. completo.Itens.Where(i => i.PaginaCodigo == ConjuntoBasicoDaInscricao.CodigoDaSecao && !novos.Contains(i.FatoCodigo))];
         ItemDoModelo[] gravadosAntes =
         [
             .. doConjunto.Select(static (item, ordem) => item with { Ordem = ordem }),

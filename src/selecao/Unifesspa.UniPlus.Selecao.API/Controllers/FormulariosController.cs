@@ -122,7 +122,7 @@ public sealed class FormulariosController : ControllerBase
     }
 
     /// <summary>
-    /// Define ou substitui o formulário da finalidade: a fase do cronograma, o título e as etapas.
+    /// Define ou substitui o formulário da finalidade: a fase do cronograma, o título e as páginas.
     /// Editável só em rascunho.
     /// </summary>
     [HttpPut("admin/processos-seletivos/{id:guid}/formularios/{finalidade}")]
@@ -143,7 +143,7 @@ public sealed class FormulariosController : ControllerBase
     {
         ArgumentNullException.ThrowIfNull(request);
         return EnviarMutacao(finalidade,
-            alvo => new DefinirFormularioCommand(id, alvo, request.FaseId, request.Titulo, request.Etapas),
+            alvo => new DefinirFormularioCommand(id, alvo, request.FaseId, request.Titulo, request.Paginas),
             cancellationToken);
     }
 

@@ -189,9 +189,9 @@ public sealed class ModeloFormularioAdminEndpointTests
 
     private static void ConferirSecaoDosDadosBasicos(JsonObject lido)
     {
-        lido["conteudo"]!["etapas"]![0]!["codigo"]!.GetValue<string>().Should().Be("DADOS_BASICOS");
+        lido["conteudo"]!["paginas"]![0]!["codigo"]!.GetValue<string>().Should().Be("DADOS_BASICOS");
         JsonArray itens = lido["conteudo"]!["itens"]!.AsArray();
-        itens.Where(static i => i!["etapaCodigo"]!.GetValue<string>() == "DADOS_BASICOS").Should().HaveCount(ConjuntoBasicoDaInscricao.Itens.Count);
+        itens.Where(static i => i!["paginaCodigo"]!.GetValue<string>() == "DADOS_BASICOS").Should().HaveCount(ConjuntoBasicoDaInscricao.Itens.Count);
     }
 
     private static JsonNode ComCorRacaDispensada(JsonNode conteudo)

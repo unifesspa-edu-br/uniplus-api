@@ -13,11 +13,11 @@ public sealed class CidadeDeProvaNoModeloSemeadoTests
     public void Inscricao_ComProva_PedeCidadeEmSecaoSempreVisivel()
     {
         ConteudoDoModelo modelo = ModelosDaSementePsrMedicina2027.Inscricao(comProva: true);
-        EtapaDoModelo secao = modelo.Etapas.Should().ContainSingle(static e => e.Codigo == "CIDADE_DE_PROVA").Which;
+        PaginaDoModelo secao = modelo.Paginas.Should().ContainSingle(static e => e.Codigo == "CIDADE_DE_PROVA").Which;
         ItemDoModelo cidade = modelo.Itens.Should().ContainSingle(static i => i.FatoCodigo == "CIDADE_DE_PROVA").Which;
 
         secao.Exibicao.Should().BeNull();
-        cidade.EtapaCodigo.Should().Be(secao.Codigo);
+        cidade.PaginaCodigo.Should().Be(secao.Codigo);
         cidade.Apresentacao.TipoDeCampo.Should().Be(TipoDeCampo.EscolhaUnica);
         cidade.Regras.Exibicao.Should().BeNull();
         cidade.Regras.Obrigatoriedade.Tipo.Should().Be(TipoObrigatoriedade.Sempre);
@@ -28,7 +28,7 @@ public sealed class CidadeDeProvaNoModeloSemeadoTests
     {
         ConteudoDoModelo modelo = ModelosDaSementePsrMedicina2027.Inscricao(comProva: false);
 
-        modelo.Etapas.Should().NotContain(static e => e.Codigo == "CIDADE_DE_PROVA");
+        modelo.Paginas.Should().NotContain(static e => e.Codigo == "CIDADE_DE_PROVA");
         modelo.Itens.Should().NotContain(static i => i.FatoCodigo == "CIDADE_DE_PROVA");
     }
 
@@ -38,7 +38,7 @@ public sealed class CidadeDeProvaNoModeloSemeadoTests
         ConteudoDoModelo semProva = ModelosDaSementePsrMedicina2027.Inscricao(comProva: false);
         ConteudoDoModelo comProva = ModelosDaSementePsrMedicina2027.Inscricao(comProva: true);
 
-        comProva.Etapas.Should().HaveCount(semProva.Etapas.Count + 2);
+        comProva.Paginas.Should().HaveCount(semProva.Paginas.Count + 2);
         comProva.Itens.Should().HaveCount(semProva.Itens.Count + 5);
     }
 

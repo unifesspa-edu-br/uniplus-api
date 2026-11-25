@@ -37,14 +37,14 @@ public sealed class ModeloFormularioConfiguration : IEntityTypeConfiguration<Mod
         builder.Property(modelo => modelo.TipoProcessoCodigo).HasMaxLength(ModeloFormulario.TipoProcessoCodigoMaxLength).HasComment("Código do tipo de processo ao qual o modelo se aplica.");
         builder.Property(modelo => modelo.Ativo).IsRequired().HasComment("Indica se o modelo está disponível para uso.");
 
-        // Etapas, itens, termos e pressupostos são lidos e gravados sempre inteiros, junto do modelo,
+        // Páginas, itens, termos e pressupostos são lidos e gravados sempre inteiros, junto do modelo,
         // sem consulta por item — num documento, e não em linhas (ADR-0137). Mudar só o conteúdo muda
         // a linha do modelo, e o xmin abaixo confere a concorrência dessa edição também.
         builder.Property(modelo => modelo.Conteudo)
             .HasColumnType("jsonb")
             .HasConversion(ConteudoDoModeloJson.Converter, ConteudoDoModeloJson.Comparer)
             .IsRequired()
-            .HasComment("Conteúdo do modelo de formulário, com etapas, itens, termos e pressupostos.");
+            .HasComment("Conteúdo do modelo de formulário, com páginas, itens, termos e pressupostos.");
 
         // Concorrência otimista pela coluna de sistema xmin (convenção do provider Npgsql).
         builder.Property<uint>("Version").IsRowVersion();

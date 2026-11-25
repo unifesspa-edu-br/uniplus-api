@@ -129,7 +129,7 @@ public sealed class ValoresSelecionaveisDeFatosSemOfertaNaPublicacaoEndpointTest
     };
 
     private static object Item(string fatoCodigo, int ordem) =>
-        FormularioDeInscricaoHttp.Item(fatoCodigo, ordem, "Item", "ESCOLHA_UNICA", "NUNCA", etapaCodigo: FormularioDeTeste.Secao);
+        FormularioDeInscricaoHttp.Item(fatoCodigo, ordem, "Item", "ESCOLHA_UNICA", "NUNCA", paginaCodigo: FormularioDeTeste.Secao);
 
     private async Task DesativarOsValoresAsync(string primeiro, string segundo)
     {

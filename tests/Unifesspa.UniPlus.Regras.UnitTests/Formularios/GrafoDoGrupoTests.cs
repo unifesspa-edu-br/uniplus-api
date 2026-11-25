@@ -50,7 +50,7 @@ public sealed class GrafoDoGrupoTests
     {
         DomainError? erro = GrafoDoFormulario.ValidarColeta(
             [],
-            [new EtapaDoGrafo("RENDA", 1, ["PARENTESCO"])],
+            [new PaginaDoGrafo("RENDA", 1, ["PARENTESCO"])],
             NenhumConhecidoAntes,
             SemDerivacoes,
             [Grupo("COMPOSICAO", 1, [], Subitem("PARENTESCO", 0))]);
@@ -63,7 +63,7 @@ public sealed class GrafoDoGrupoTests
     {
         DomainError? erro = GrafoDoFormulario.ValidarColeta(
             [Item("RENDA", 2)],
-            [new EtapaDoGrafo("FAMILIA", 1, ["RENDA"])],
+            [new PaginaDoGrafo("FAMILIA", 1, ["RENDA"])],
             NenhumConhecidoAntes,
             SemDerivacoes,
             [new GrupoDoGrafo("COMPOSICAO", 1, "FAMILIA", [], [Subitem("PARENTESCO", 0)])]);

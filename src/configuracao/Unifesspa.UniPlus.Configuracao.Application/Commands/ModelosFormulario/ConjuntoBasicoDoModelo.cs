@@ -48,8 +48,8 @@ public static class ConjuntoBasicoDoModelo
 
         (IReadOnlyList<FatoColetadoInput> itens, IReadOnlyList<GrupoColetadoInput> grupos, List<FieldError> erros) =
             ConjuntoBasicoDaInscricao.MesclarItens(entrada.Itens ?? [], entrada.Grupos ?? [], ConjuntoBasicoDaInscricao.Referencia(gravado?.Itens ?? []));
-        (IReadOnlyList<EtapaFormularioInput> etapas, List<FieldError> daSecao) =
-            ConjuntoBasicoDaInscricao.MesclarEtapas(entrada.Etapas ?? [], ConjuntoBasicoDaInscricao.SecaoDe(gravado?.Etapas ?? []));
-        return (entrada with { Itens = itens, Grupos = grupos, Etapas = etapas }, [.. erros, .. daSecao]);
+        (IReadOnlyList<PaginaDoFormularioInput> paginas, List<FieldError> daSecao) =
+            ConjuntoBasicoDaInscricao.MesclarPaginas(entrada.Paginas ?? [], ConjuntoBasicoDaInscricao.SecaoDe(gravado?.Paginas ?? []));
+        return (entrada with { Itens = itens, Grupos = grupos, Paginas = paginas }, [.. erros, .. daSecao]);
     }
 }

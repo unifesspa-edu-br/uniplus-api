@@ -13,7 +13,7 @@ internal static class FatosCitadosPeloModelo
     public static string[] Todos(ConteudoDoModeloInput conteudo, FormularioSelecionado formulario, TermosSelecionados termos)
     {
         IEnumerable<DocumentoExigidoDoModeloInput> documentos = (conteudo.ConjuntoDeDocumentos?.TodosOsDocumentos() ?? []).Select(static c => c.Documento);
-        return [.. DasPartes(formulario.Itens.Entradas, formulario.Grupos.Entradas, conteudo.Etapas ?? [], termos.Entradas)
+        return [.. DasPartes(formulario.Itens.Entradas, formulario.Grupos.Entradas, conteudo.Paginas ?? [], termos.Entradas)
             .Concat(documentos.SelectMany(static d => Do(d.Quando)))
             .Concat(documentos.Select(static d => d.PorOpcao?.FatoCodigo).OfType<string>())
             .Distinct(StringComparer.Ordinal)];
@@ -22,12 +22,12 @@ internal static class FatosCitadosPeloModelo
     private static IEnumerable<string> DasPartes(
         IEnumerable<FatoColetadoInput> itens,
         IEnumerable<GrupoColetadoInput> grupos,
-        IEnumerable<EtapaFormularioInput> etapas,
+        IEnumerable<PaginaDoFormularioInput> paginas,
         IEnumerable<TermoExigidoInput> termos) =>
         itens.Concat(grupos.SelectMany(static g => g.Subitens ?? []))
             .SelectMany(static i => DasRegras(i?.Regras, i?.FatoCodigo))
             .Concat(grupos.SelectMany(static g => DasRegrasDeExibicao(g.Regras)))
-            .Concat(etapas.SelectMany(static e => Do(e?.Exibicao)))
+            .Concat(paginas.SelectMany(static e => Do(e?.Exibicao)))
             .Concat(termos.SelectMany(static t => DasRegrasDeExibicao(t.Regras)));
 
     private static IEnumerable<string> DasRegrasDeExibicao(ExibicaoEObrigatoriedadeInput? regras) =>

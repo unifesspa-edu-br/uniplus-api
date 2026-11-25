@@ -30,19 +30,19 @@ public sealed class ConteudoDoModeloRegrasTests
     [Fact(DisplayName = "O modelo sem itens nem grupos não tem campos")]
     public void Campos_ModeloSemItensNemGrupos_Vazio() => Vazio.Campos().Should().BeEmpty();
 
-    [Fact(DisplayName = "Os fatos citados vêm dos campos, dos campos de grupo, dos grupos, das etapas, dos termos e dos documentos")]
+    [Fact(DisplayName = "Os fatos citados vêm dos campos, dos campos de grupo, dos grupos, das paginas, dos termos e dos documentos")]
     public void FatosCitados_ReuneTodasAsOrigens()
     {
         ConteudoDoModelo conteudo = Vazio with
         {
-            Etapas = [Etapa(exibicao: Quando("DA_ETAPA"))],
+            Paginas = [Pagina(exibicao: Quando("DA_PAGINA"))],
             Itens = [Item("RENDA", exibicao: Quando("DO_ITEM"))],
             Grupos = [Grupo("COMPOSICAO", 0, Quando("DO_GRUPO"), Item("MAIOR_IDADE", exibicao: Quando("DO_CAMPO_DE_GRUPO")))],
             Termos = [Termo("LGPD", exibicao: Quando("DO_TERMO"))],
             ConjuntoDeDocumentos = Conjunto(Documento("LAUDO", Quando("DO_DOCUMENTO"))),
         };
 
-        conteudo.FatosCitados().Should().Equal("DO_ITEM", "DO_CAMPO_DE_GRUPO", "DO_GRUPO", "DA_ETAPA", "DO_TERMO", "DO_DOCUMENTO");
+        conteudo.FatosCitados().Should().Equal("DO_ITEM", "DO_CAMPO_DE_GRUPO", "DO_GRUPO", "DA_PAGINA", "DO_TERMO", "DO_DOCUMENTO");
     }
 
     [Fact(DisplayName = "O documento multiplicado por opção cita também o fato das opções")]
@@ -92,14 +92,14 @@ public sealed class ConteudoDoModeloRegrasTests
 
     private static ConteudoDoModelo ConteudoComRegrasEmTodasAsOrigens() => Vazio with
     {
-        Etapas = [Etapa(exibicao: Quando("DA_ETAPA"))],
+        Paginas = [Pagina(exibicao: Quando("DA_PAGINA"))],
         Itens = [CampoComRegras()],
         Grupos = [GrupoComRegras()],
         Termos = [TermoComRegras()],
         ConjuntoDeDocumentos = Conjunto(Documento("LAUDO", Quando("DO_DOCUMENTO"))),
     };
 
-    [Fact(DisplayName = "As condições vêm das regras de campos, campos de grupo, grupos, etapas, termos e documentos, nessa ordem")]
+    [Fact(DisplayName = "As condições vêm das regras de campos, campos de grupo, grupos, paginas, termos e documentos, nessa ordem")]
     public void CondicoesDasRegras_ReuneTodasAsOrigensNaOrdem()
     {
         IEnumerable<string> fatos = ConteudoComRegrasEmTodasAsOrigens().CondicoesDasRegras().Select(static c => c.Fato);
@@ -111,7 +111,7 @@ public sealed class ConteudoDoModeloRegrasTests
             "DO_CAMPO_DE_GRUPO",
             "DA_EXIBICAO_DO_GRUPO",
             "DA_OBRIGATORIEDADE_DO_GRUPO",
-            "DA_ETAPA",
+            "DA_PAGINA",
             "DA_EXIBICAO_DO_TERMO",
             "DA_OBRIGATORIEDADE_DO_TERMO",
             "DO_DOCUMENTO");

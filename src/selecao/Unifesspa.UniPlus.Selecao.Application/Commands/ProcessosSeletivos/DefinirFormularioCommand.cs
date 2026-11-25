@@ -10,14 +10,14 @@ using Unifesspa.UniPlus.Regras.Formularios;
 
 /// <summary>
 /// Define ou substitui o formulário de uma finalidade (UNI-REQ-0144): a fase do cronograma, o título
-/// e as etapas. Editável só em rascunho.
+/// e as páginas. Editável só em rascunho.
 /// </summary>
 public sealed record DefinirFormularioCommand(
     Guid ProcessoSeletivoId,
     FinalidadeFormulario Finalidade,
     Guid? FaseId,
     string? Titulo,
-    IReadOnlyList<EtapaFormularioInput> Etapas) : ICommand<Result>;
+    IReadOnlyList<PaginaDoFormularioInput> Paginas) : ICommand<Result>;
 
 /// <summary>Remove o formulário de uma finalidade, com os itens e os termos dele. Só em rascunho.</summary>
 public sealed record RemoverFormularioCommand(

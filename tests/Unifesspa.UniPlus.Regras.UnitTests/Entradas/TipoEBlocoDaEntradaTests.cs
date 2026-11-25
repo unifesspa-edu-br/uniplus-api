@@ -9,11 +9,11 @@ using Unifesspa.UniPlus.Regras.Formularios;
 public sealed class TipoEBlocoDaEntradaTests
 {
     [Theory(DisplayName = "O código de cada tipo de etapa é lido como o tipo")]
-    [InlineData("SECAO", TipoEtapaFormulario.Secao)]
-    [InlineData("BLOCO", TipoEtapaFormulario.Bloco)]
-    public void LerTipo_CodigoDeclarado_DevolveOTipo(string codigo, TipoEtapaFormulario esperado)
+    [InlineData("SECAO", TipoPaginaFormulario.Secao)]
+    [InlineData("BLOCO", TipoPaginaFormulario.Bloco)]
+    public void LerTipo_CodigoDeclarado_DevolveOTipo(string codigo, TipoPaginaFormulario esperado)
     {
-        Result<TipoEtapaFormulario> lido = TipoEBlocoDaEntrada.LerTipo(codigo);
+        Result<TipoPaginaFormulario> lido = TipoEBlocoDaEntrada.LerTipo(codigo);
 
         lido.IsSuccess.Should().BeTrue();
         lido.Value.Should().Be(esperado);
@@ -27,11 +27,11 @@ public sealed class TipoEBlocoDaEntradaTests
     [InlineData("PAGINA")]
     public void LerTipo_AusenteOuDesconhecido_Recusa(string? codigo)
     {
-        Result<TipoEtapaFormulario> lido = TipoEBlocoDaEntrada.LerTipo(codigo);
+        Result<TipoPaginaFormulario> lido = TipoEBlocoDaEntrada.LerTipo(codigo);
 
         lido.IsFailure.Should().BeTrue();
-        lido.Error!.Code.Should().Be(EstruturaFormularioErrorCodes.TipoDeEtapaObrigatorio);
-        lido.Error.Message.Should().Be("A etapa é uma seção ou um bloco de sistema. Os tipos aceitos são SECAO, BLOCO.");
+        lido.Error!.Code.Should().Be(EstruturaFormularioErrorCodes.TipoDePaginaObrigatorio);
+        lido.Error.Message.Should().Be("A página é uma seção ou um bloco de sistema. Os tipos aceitos são SECAO, BLOCO.");
     }
 
     [Theory(DisplayName = "O código de cada bloco é lido como o bloco")]
@@ -46,7 +46,7 @@ public sealed class TipoEBlocoDaEntradaTests
         lido.Value.Should().Be(esperado);
     }
 
-    [Fact(DisplayName = "O bloco ausente é a etapa sem bloco, e não uma recusa")]
+    [Fact(DisplayName = "O bloco ausente é a página sem bloco, e não uma recusa")]
     public void LerBloco_Ausente_EASecaoSemBloco()
     {
         Result<BlocoSistema?> lido = TipoEBlocoDaEntrada.LerBloco(null);

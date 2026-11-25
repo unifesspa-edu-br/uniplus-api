@@ -30,16 +30,16 @@ public sealed class ExibicaoCondicionalDosFormulariosTests
     {
         ProcessoSeletivo processo = ProcessoConformeFactory.Criar();
         Guid? fase = processo.FormularioDe(FinalidadeFormulario.Inscricao)!.FaseId;
-        processo.DefinirFormulario(FinalidadeFormulario.Inscricao, fase, null, EtapasComExibicao(null))
+        processo.DefinirFormulario(FinalidadeFormulario.Inscricao, fase, null, PaginasComExibicao(null))
             .IsSuccess.Should().BeTrue();
         processo.DefinirItens([ItemNaSecao("TEM_RENDA", 0, "DADOS"), ItemNaSecao("RENDA_FORMAL", 1, "RENDA")]).IsSuccess.Should().BeTrue();
 
-        processo.DefinirFormulario(FinalidadeFormulario.Inscricao, fase, null, EtapasComExibicao("TEM_RENDA"))
+        processo.DefinirFormulario(FinalidadeFormulario.Inscricao, fase, null, PaginasComExibicao("TEM_RENDA"))
             .IsSuccess.Should().BeTrue();
-        processo.DefinirFormulario(FinalidadeFormulario.Inscricao, fase, null, EtapasComExibicao("RENDA_FORMAL"))
+        processo.DefinirFormulario(FinalidadeFormulario.Inscricao, fase, null, PaginasComExibicao("RENDA_FORMAL"))
             .Errors.Should().ContainSingle().Which.Should().BeEquivalentTo(new
             {
-                Field = "etapas[2].exibicao",
+                Field = "paginas[2].exibicao",
                 Error = new { Code = GrafoFormularioErrorCodes.CitaFatoPosterior },
             });
     }
@@ -49,15 +49,15 @@ public sealed class ExibicaoCondicionalDosFormulariosTests
     {
         ProcessoSeletivo processo = ProcessoConformeFactory.Criar();
         Guid? fase = processo.FormularioDe(FinalidadeFormulario.Inscricao)!.FaseId;
-        processo.DefinirFormulario(FinalidadeFormulario.Inscricao, fase, null, EtapasComExibicao(null))
+        processo.DefinirFormulario(FinalidadeFormulario.Inscricao, fase, null, PaginasComExibicao(null))
             .IsSuccess.Should().BeTrue();
         processo.DefinirItens([ItemNaSecao("TEM_RENDA", 0, "DADOS"), ItemNaSecao("RENDA_FORMAL", 1, "RENDA")]).IsSuccess.Should().BeTrue();
-        IReadOnlyList<EtapaFormulario> semOBlocoDeRevisao = [.. EtapasComExibicao("RENDA_FORMAL").Take(3)];
+        IReadOnlyList<PaginaDoFormulario> semOBlocoDeRevisao = [.. PaginasComExibicao("RENDA_FORMAL").Take(3)];
 
         Result resultado = processo.DefinirFormulario(FinalidadeFormulario.Inscricao, fase, null, semOBlocoDeRevisao);
 
-        resultado.Errors.Select(static e => e.Field).Should().Contain("etapas[2].exibicao")
-            .And.Contain(static campo => campo != "etapas[2].exibicao", "a estrutura recusada também é informada");
+        resultado.Errors.Select(static e => e.Field).Should().Contain("paginas[2].exibicao")
+            .And.Contain(static campo => campo != "paginas[2].exibicao", "a estrutura recusada também é informada");
     }
 
     [Fact(DisplayName = "Trocar os itens de modo que a seção passe a citar campo dela mesma é recusado")]
@@ -65,10 +65,10 @@ public sealed class ExibicaoCondicionalDosFormulariosTests
     {
         ProcessoSeletivo processo = ProcessoConformeFactory.Criar();
         Guid? fase = processo.FormularioDe(FinalidadeFormulario.Inscricao)!.FaseId;
-        processo.DefinirFormulario(FinalidadeFormulario.Inscricao, fase, null, EtapasComExibicao(null))
+        processo.DefinirFormulario(FinalidadeFormulario.Inscricao, fase, null, PaginasComExibicao(null))
             .IsSuccess.Should().BeTrue();
         processo.DefinirItens([ItemNaSecao("TEM_RENDA", 0, "DADOS"), ItemNaSecao("RENDA_FORMAL", 1, "RENDA")]).IsSuccess.Should().BeTrue();
-        processo.DefinirFormulario(FinalidadeFormulario.Inscricao, fase, null, EtapasComExibicao("TEM_RENDA"))
+        processo.DefinirFormulario(FinalidadeFormulario.Inscricao, fase, null, PaginasComExibicao("TEM_RENDA"))
             .IsSuccess.Should().BeTrue();
 
         processo.DefinirItens([ItemNaSecao("RENDA_FORMAL", 0, "DADOS"), ItemNaSecao("TEM_RENDA", 1, "RENDA")])
@@ -80,7 +80,7 @@ public sealed class ExibicaoCondicionalDosFormulariosTests
     {
         ProcessoSeletivo processo = ComHabilitacao();
         processo.DefinirItens([Item("TEM_RENDA", 0)]).IsSuccess.Should().BeTrue();
-        processo.DefinirFormulario(FinalidadeFormulario.Habilitacao, null, null, EtapasComExibicao("TEM_RENDA"))
+        processo.DefinirFormulario(FinalidadeFormulario.Habilitacao, null, null, PaginasComExibicao("TEM_RENDA"))
             .IsSuccess.Should().BeTrue();
 
         processo.DefinirItens([Item("COR_RACA", 0)])
@@ -92,11 +92,11 @@ public sealed class ExibicaoCondicionalDosFormulariosTests
     {
         ProcessoSeletivo processo = ProcessoConformeFactory.Criar();
         Guid? fase = processo.FormularioDe(FinalidadeFormulario.Inscricao)!.FaseId;
-        processo.DefinirFormulario(FinalidadeFormulario.Inscricao, fase, null, EtapasComExibicao(null))
+        processo.DefinirFormulario(FinalidadeFormulario.Inscricao, fase, null, PaginasComExibicao(null))
             .IsSuccess.Should().BeTrue();
         processo.DefinirItens([ItemNaSecao("TEM_RENDA", 0, "DADOS"), ItemNaSecao("RENDA_FORMAL", 1, "RENDA")]).IsSuccess.Should().BeTrue();
         processo.DefinirRegrasDerivacao([DerivadoQueDependeDe("TEM_RENDA")]).IsSuccess.Should().BeTrue();
-        processo.DefinirFormulario(FinalidadeFormulario.Inscricao, fase, null, EtapasComSecaoCondicionada()).IsSuccess.Should().BeTrue();
+        processo.DefinirFormulario(FinalidadeFormulario.Inscricao, fase, null, PaginasComSecaoCondicionada()).IsSuccess.Should().BeTrue();
         CondicoesDaCanonicalizacaoDeTeste.PrimeiraCausa(processo).Should().BeNull();
 
         processo.DefinirRegrasDerivacao([DerivadoQueDependeDe("RENDA_FORMAL")]).IsSuccess.Should().BeTrue();
@@ -158,7 +158,7 @@ public sealed class ExibicaoCondicionalDosFormulariosTests
 
     [Fact(DisplayName = "Bloco de sistema não tem exibição condicional")]
     public void Bloco_ComExibicao_Recusa() =>
-        EtapaFormulario.Criar(new EtapaEstrutura("REVISAO", 2, TipoEtapaFormulario.Bloco, BlocoSistema.RevisaoEAceite), "Revisão", null, null,
+        PaginaDoFormulario.Criar(new PaginaEstrutura("REVISAO", 2, TipoPaginaFormulario.Bloco, BlocoSistema.RevisaoEAceite), "Revisão", null, null,
                 PredicadoDnf.CriarDeCondicoesAgrupadas([(0, CondicaoDnf.Criar("TEM_RENDA", Operador.Igual, JsonSerializer.SerializeToElement(true)).Value!)]).Value!)
             .Errors.Should().ContainSingle().Which.Should().BeEquivalentTo(new
             {
@@ -166,12 +166,12 @@ public sealed class ExibicaoCondicionalDosFormulariosTests
                 Error = new { Code = EstruturaFormularioErrorCodes.ExibicaoForaDeSecao },
             });
 
-    private static IReadOnlyList<EtapaFormulario> EtapasComSecaoCondicionada() =>
+    private static IReadOnlyList<PaginaDoFormulario> PaginasComSecaoCondicionada() =>
         [
-            FormularioDeTeste.Etapas()[0],
-            EtapaFormulario.Criar(new EtapaEstrutura("DADOS", 1, TipoEtapaFormulario.Secao, null), "Dados", null, null).Value!,
-            EtapaFormulario.Criar(new EtapaEstrutura("RENDA", 2, TipoEtapaFormulario.Secao, null), "Renda", null, null,
+            FormularioDeTeste.Paginas()[0],
+            PaginaDoFormulario.Criar(new PaginaEstrutura("DADOS", 1, TipoPaginaFormulario.Secao, null), "Dados", null, null).Value!,
+            PaginaDoFormulario.Criar(new PaginaEstrutura("RENDA", 2, TipoPaginaFormulario.Secao, null), "Renda", null, null,
                 PredicadoDnf.CriarDeCondicoesAgrupadas([(0, CondicaoDnf.Criar("REGIME_DE_VAGA", Operador.Igual, JsonSerializer.SerializeToElement("AC")).Value!)]).Value!).Value!,
-            EtapaFormulario.Criar(new EtapaEstrutura("REVISAO", 3, TipoEtapaFormulario.Bloco, BlocoSistema.RevisaoEAceite), "Revisão e aceite", null, null).Value!,
+            PaginaDoFormulario.Criar(new PaginaEstrutura("REVISAO", 3, TipoPaginaFormulario.Bloco, BlocoSistema.RevisaoEAceite), "Revisão e aceite", null, null).Value!,
         ];
 }

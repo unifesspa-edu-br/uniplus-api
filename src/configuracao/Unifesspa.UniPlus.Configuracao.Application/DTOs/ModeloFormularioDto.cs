@@ -23,13 +23,13 @@ public sealed record ModeloFormularioDto(
 public sealed record DescritivoDoModeloDto(string Nome, string? Descricao, string? TipoProcessoCodigo);
 
 /// <summary>
-/// O conteúdo do modelo: o título, as etapas, os itens, os termos, os fatos pressupostos — coletados pela
+/// O conteúdo do modelo: o título, as páginas, os itens, os termos, os fatos pressupostos — coletados pela
 /// inscrição, citáveis pelo modelo de outra finalidade (UNI-REQ-0144) —, os grupos repetíveis (UNI-REQ-0146)
 /// e o conjunto de documentos exigidos.
 /// </summary>
 public sealed record ConteudoDoModeloDto(
     string? Titulo,
-    IReadOnlyList<EtapaFormularioDto> Etapas,
+    IReadOnlyList<PaginaDoFormularioDto> Paginas,
     IReadOnlyList<ItemDoModeloDto> Itens,
     IReadOnlyList<TermoDoModeloDto> Termos,
     IReadOnlyList<string> Pressupostos,
@@ -40,7 +40,7 @@ public sealed record ConteudoDoModeloDto(
 public sealed record ItemDoModeloDto(
     string FatoCodigo,
     int Ordem,
-    string? EtapaCodigo,
+    string? PaginaCodigo,
     ApresentacaoDoCampoDto Apresentacao,
     RegrasDoCampoDto Regras);
 
@@ -48,7 +48,7 @@ public sealed record ItemDoModeloDto(
 public sealed record GrupoDoModeloDto(
     string Codigo,
     int Ordem,
-    string? EtapaCodigo,
+    string? PaginaCodigo,
     string Rotulo,
     OcorrenciasDoGrupoDto Ocorrencias,
     ExibicaoEObrigatoriedadeDto Regras,

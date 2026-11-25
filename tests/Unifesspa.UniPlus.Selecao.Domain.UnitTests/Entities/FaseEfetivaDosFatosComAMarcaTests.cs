@@ -51,7 +51,7 @@ public sealed class FaseEfetivaDosFatosComAMarcaTests
 
     private static void DefinirFormularioComUmFato(ProcessoSeletivo processo, FinalidadeFormulario finalidade, FaseCronograma fase, string fato)
     {
-        processo.DefinirFormulario(finalidade, fase.Id, null, FormularioDeTeste.Etapas()).IsSuccess.Should().BeTrue();
+        processo.DefinirFormulario(finalidade, fase.Id, null, FormularioDeTeste.Paginas()).IsSuccess.Should().BeTrue();
         Result itens = processo.DefinirFatosColetados(finalidade, [Item(fato)]);
         itens.IsSuccess.Should().BeTrue(itens.Error?.Message);
     }

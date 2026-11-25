@@ -1039,27 +1039,27 @@ aplicar_modelo_inscricao() {
 # Vincula o formulário de inscrição (já criado pela aplicação do modelo) à fase
 # INSCRICAO do cronograma DESTE processo. "Aplicar modelo" não fixa a fase —
 # ela é por definição processo-específica, e só existe depois do cronograma.
-# As etapas replicam exatamente as seções/blocos de ConteudoDaInscricao()
+# As páginas replicam exatamente as seções/blocos de ConteudoDaInscricao()
 # (SementePsrMedicina2027) — reenviar a mesma estrutura, com o FaseId
 # acrescentado, não recria nem descarta os itens já aplicados (o handler só
 # substitui os itens quando o formulário nasce agora, não quando já existe).
 vincular_fase_do_formulario() {
     log "Vincular o formulário de inscrição à fase do cronograma"
-    local processo fase_inscricao_processo_id apresentado titulo etapas
+    local processo fase_inscricao_processo_id apresentado titulo paginas
 
     processo=$(api_get "/api/selecao/processos-seletivos/$PROCESSO_ID")
     fase_inscricao_processo_id=$(jq -r '.cronogramaFases[] | select(.codigo=="INSCRICAO") | .id' <<< "$processo")
     [ -n "$fase_inscricao_processo_id" ] || fail "fase INSCRICAO não encontrada no cronograma do processo $PROCESSO_ID"
 
-    # Lê a estrutura (título + etapas) que a aplicação do modelo já criou, em
+    # Lê a estrutura (título + páginas) que a aplicação do modelo já criou, em
     # vez de copiá-la à mão do seed — sobrevive a qualquer mudança no modelo
     # da Medicina. DADOS_BASICOS é excluída: o handler do PUT já a repõe por
-    # conta própria (ConjuntoBasicoDaInscricao.MesclarEtapas) a partir da
+    # conta própria (ConjuntoBasicoDaInscricao.MesclarPaginas) a partir da
     # referência do processo — reenviá-la é redundante, e arriscaria recusa
     # por SecaoReservadaAlterada se a apresentação um dia divergir, por
     # pouco que seja, da referência que o handler usa para comparar.
     # A projeção do formulário apresentado
-    # não traz a exibição condicional de cada etapa (SecaoRenderizavel não
+    # não traz a exibição condicional de cada página (a projeção não
     # tem esse campo) — hoje o modelo da Medicina não usa exibição condicional
     # em nenhuma seção/bloco, então "exibicao: null" aqui reflete o estado
     # real; um modelo futuro com seção condicional exigiria uma fonte própria
@@ -1070,18 +1070,18 @@ vincular_fase_do_formulario() {
     apresentado=$(sed '$d' <<< "$apresentado")
     titulo=$(jq -r '.formulario.titulo' <<< "$apresentado")
     [ -n "$titulo" ] && [ "$titulo" != "null" ] || fail "formulário INSCRICAO sem título — a aplicação do modelo falhou em silêncio?"
-    etapas=$(jq -c '[.formulario.etapas[] | select(.codigo != "DADOS_BASICOS") | {codigo, ordem, tipo, bloco, apresentacao, exibicao: null}]' <<< "$apresentado")
-    [ "$(jq 'length' <<< "$etapas")" -gt 0 ] || fail "formulário INSCRICAO sem etapas — a aplicação do modelo falhou em silêncio?"
+    paginas=$(jq -c '[.formulario.paginas[] | select(.codigo != "DADOS_BASICOS") | {codigo, ordem, tipo, bloco, apresentacao, exibicao: null}]' <<< "$apresentado")
+    [ "$(jq 'length' <<< "$paginas")" -gt 0 ] || fail "formulário INSCRICAO sem páginas — a aplicação do modelo falhou em silêncio?"
 
     api PUT "/api/selecao/admin/processos-seletivos/$PROCESSO_ID/formularios/INSCRICAO" "$(jq -nc \
-        --arg fase "$fase_inscricao_processo_id" --arg titulo "$titulo" --argjson etapas "$etapas" \
-        '{faseId: $fase, titulo: $titulo, etapas: $etapas}')" >/dev/null
+        --arg fase "$fase_inscricao_processo_id" --arg titulo "$titulo" --argjson paginas "$paginas" \
+        '{faseId: $fase, titulo: $titulo, paginas: $paginas}')" >/dev/null
     ok "formulário vinculado à fase $fase_inscricao_processo_id"
 }
 
 aplicar_modelo_habilitacao() {
     log "Aplicar e vincular o modelo de habilitação"
-    local modelo_id processo fase_id apresentado titulo etapas
+    local modelo_id processo fase_id apresentado titulo paginas
     modelo_id="5e3d0006-0000-7000-8000-000000000002"
     processo=$(api_get "/api/selecao/processos-seletivos/$PROCESSO_ID")
     fase_id=$(jq -r '.cronogramaFases[] | select(.codigo == "HABILITACAO") | .id' <<< "$processo")
@@ -1092,18 +1092,18 @@ aplicar_modelo_habilitacao() {
         "$API_URL/api/selecao/admin/processos-seletivos/$PROCESSO_ID/formularios/HABILITACAO/apresentacao")
     [ "$(tail -n1 <<< "$apresentado")" = "200" ] || fail "não foi possível ler o formulário de habilitação: $(sed '$d' <<< "$apresentado")"
     apresentado=$(sed '$d' <<< "$apresentado")
-    jq -e '[.formulario.etapas[] | select((.codigo == "CONCLUSAO_ENSINO_MEDIO" and .tipo == "SECAO") or (.codigo == "COMPOSICAO_FAMILIAR" and .tipo == "SECAO") or (.codigo == "DOCUMENTOS" and .tipo == "BLOCO" and .bloco == "COMPROVACAO_DOCUMENTAL") or (.codigo == "REVISAO" and .tipo == "BLOCO" and .bloco == "REVISAO_E_ACEITE")) | .codigo] | unique | length == 4' <<< "$apresentado" >/dev/null \
+    jq -e '[.formulario.paginas[] | select((.codigo == "CONCLUSAO_ENSINO_MEDIO" and .tipo == "SECAO") or (.codigo == "COMPOSICAO_FAMILIAR" and .tipo == "SECAO") or (.codigo == "DOCUMENTOS" and .tipo == "BLOCO" and .bloco == "COMPROVACAO_DOCUMENTAL") or (.codigo == "REVISAO" and .tipo == "BLOCO" and .bloco == "REVISAO_E_ACEITE")) | .codigo] | unique | length == 4' <<< "$apresentado" >/dev/null \
         || fail "formulário de habilitação sem as seções ou blocos esperados"
     titulo=$(jq -r '.formulario.titulo // empty' <<< "$apresentado")
     [ -n "$titulo" ] || fail "formulário de habilitação sem título"
-    etapas=$(jq -c '[.formulario.etapas[] | {codigo, ordem, tipo, bloco, apresentacao, exibicao: null}]' <<< "$apresentado")
+    paginas=$(jq -c '[.formulario.paginas[] | {codigo, ordem, tipo, bloco, apresentacao, exibicao: null}]' <<< "$apresentado")
     api PUT "/api/selecao/admin/processos-seletivos/$PROCESSO_ID/formularios/HABILITACAO" "$(jq -nc \
-        --arg fase "$fase_id" --arg titulo "$titulo" --argjson etapas "$etapas" \
-        '{faseId: $fase, titulo: $titulo, etapas: $etapas}')" >/dev/null
+        --arg fase "$fase_id" --arg titulo "$titulo" --argjson paginas "$paginas" \
+        '{faseId: $fase, titulo: $titulo, paginas: $paginas}')" >/dev/null
     apresentado=$(curl -sS -w '\n%{http_code}' -H "Authorization: Bearer $TOKEN" -H "Accept: application/vnd.uniplus.formulario.v2+json" \
         "$API_URL/api/selecao/admin/processos-seletivos/$PROCESSO_ID/formularios/HABILITACAO/apresentacao")
     [ "$(tail -n1 <<< "$apresentado")" = "200" ] || fail "não foi possível conferir o formulário de habilitação"
-    sed '$d' <<< "$apresentado" | jq -e '[.formulario.etapas[] | select((.codigo == "CONCLUSAO_ENSINO_MEDIO" and .tipo == "SECAO") or (.codigo == "COMPOSICAO_FAMILIAR" and .tipo == "SECAO") or (.codigo == "DOCUMENTOS" and .tipo == "BLOCO" and .bloco == "COMPROVACAO_DOCUMENTAL") or (.codigo == "REVISAO" and .tipo == "BLOCO" and .bloco == "REVISAO_E_ACEITE")) | .codigo] | unique | length == 4' >/dev/null \
+    sed '$d' <<< "$apresentado" | jq -e '[.formulario.paginas[] | select((.codigo == "CONCLUSAO_ENSINO_MEDIO" and .tipo == "SECAO") or (.codigo == "COMPOSICAO_FAMILIAR" and .tipo == "SECAO") or (.codigo == "DOCUMENTOS" and .tipo == "BLOCO" and .bloco == "COMPROVACAO_DOCUMENTAL") or (.codigo == "REVISAO" and .tipo == "BLOCO" and .bloco == "REVISAO_E_ACEITE")) | .codigo] | unique | length == 4' >/dev/null \
         || fail "formulário de habilitação vinculado sem as seções ou blocos esperados"
     ok "modelo de habilitação vinculado à fase $fase_id"
 }
@@ -1277,13 +1277,13 @@ conferir_resultado() {
     # A projeção da vitrine é assíncrona — alguns segundos depois do 204.
     for tentativa in 1 2 3 4 5; do
         formulario=$(curl -sS "$API_URL/api/selecao/processos-seletivos/$PROCESSO_ID/formularios/INSCRICAO")
-        if jq -e '.formulario.etapas' <<< "$formulario" >/dev/null 2>&1; then
+        if jq -e '.formulario.paginas' <<< "$formulario" >/dev/null 2>&1; then
             ok "formulário público de inscrição responde (tentativa $tentativa)"
             break
         fi
         sleep 5
     done
-    jq -e '.formulario.etapas' <<< "$formulario" >/dev/null 2>&1 || fail "formulário público não respondeu como esperado: $(head -c 300 <<< "$formulario")"
+    jq -e '.formulario.paginas' <<< "$formulario" >/dev/null 2>&1 || fail "formulário público não respondeu como esperado: $(head -c 300 <<< "$formulario")"
 
     # GET certames/{id} aceita o Guid direto — evita depender da página em que
     # o processo cai em GET /certames (paginado por cursor).

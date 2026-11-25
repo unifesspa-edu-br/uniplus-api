@@ -108,9 +108,9 @@ public sealed class EdicaoDoEnemNaInscricaoTests
         processo.DefinirFormulario(
                 FinalidadeFormulario.Inscricao, inscricao.FaseId, inscricao.Titulo,
                 [
-                    FormularioDeTeste.Etapas()[0],
-                    EtapaFormulario.Criar(new EtapaEstrutura(FormularioDeTeste.Secao, 1, TipoEtapaFormulario.Secao, null), "Dados", null, null, SeCasado()).Value!,
-                    EtapaFormulario.Criar(new EtapaEstrutura("REVISAO", 2, TipoEtapaFormulario.Bloco, BlocoSistema.RevisaoEAceite), "Revisão e aceite", null, null).Value!,
+                    FormularioDeTeste.Paginas()[0],
+                    PaginaDoFormulario.Criar(new PaginaEstrutura(FormularioDeTeste.Secao, 1, TipoPaginaFormulario.Secao, null), "Dados", null, null, SeCasado()).Value!,
+                    PaginaDoFormulario.Criar(new PaginaEstrutura("REVISAO", 2, TipoPaginaFormulario.Bloco, BlocoSistema.RevisaoEAceite), "Revisão e aceite", null, null).Value!,
                 ])
             .IsSuccess.Should().BeTrue();
         processo.DefinirItens([CampoDaEdicao()]).IsSuccess.Should().BeTrue();

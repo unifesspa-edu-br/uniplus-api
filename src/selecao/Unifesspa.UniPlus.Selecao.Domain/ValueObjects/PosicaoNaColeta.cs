@@ -9,10 +9,10 @@ internal static class PosicaoNaColeta
     internal static long DoItem(FinalidadeFormulario finalidade, int ordem) => DaOrdem(finalidade, ordem) | 1;
     internal static long DoTermo(FinalidadeFormulario finalidade, int ordem) => DaOrdem(finalidade, ordem) | (1L << 34) | 1;
 
-    internal static long DaSecao(FormularioProcesso formulario, EtapaFormulario secao,
+    internal static long DaSecao(FormularioProcesso formulario, PaginaDoFormulario secao,
         IEnumerable<FatoColetado> itens, IEnumerable<GrupoColetado> grupos)
     {
-        long ordem = GrafoDoFormulario.PosicaoDaEtapa(secao.ParaGrafo(), formulario.Etapas.Select(static e => e.ParaGrafo()),
+        long ordem = GrafoDoFormulario.PosicaoDaPagina(secao.ParaGrafo(), formulario.Paginas.Select(static e => e.ParaGrafo()),
             itens.Where(i => i.Finalidade == formulario.Finalidade).Select(static i => i.ParaGrafo()),
             grupos.Where(g => g.Finalidade == formulario.Finalidade).Select(static g => g.ParaGrafo()));
         return DaOrdem(formulario.Finalidade, ordem == DependenciasDoFormulario.PosicaoDosTermos ? int.MaxValue : (int)ordem);

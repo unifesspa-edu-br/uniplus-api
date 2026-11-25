@@ -19,7 +19,7 @@ public sealed record ValorSelecionavel(string Codigo, string? Descricao, int Ord
 public sealed record CampoApresentado(
     string FatoCodigo,
     int Ordem,
-    string? EtapaCodigo,
+    string? PaginaCodigo,
     ApresentacaoDoCampoDto Apresentacao,
     string? Formato,
     IReadOnlyList<ValorSelecionavel>? ValoresSelecionaveis);
@@ -32,7 +32,7 @@ public sealed record CampoApresentado(
 public sealed record GrupoApresentado(
     string Codigo,
     int Ordem,
-    string? EtapaCodigo,
+    string? PaginaCodigo,
     string Rotulo,
     OcorrenciasDoGrupoDto Ocorrencias,
     IReadOnlyList<CampoApresentado> Subitens);
@@ -57,13 +57,13 @@ public sealed record FatoPressuposto(
 /// Uma seção ou um bloco do formulário pronto para apresentação. <see cref="CodigoNasRegras"/> é o
 /// código com que a seção aparece nas regras — nulo no bloco, que não tem regra própria.
 /// </summary>
-public sealed record SecaoRenderizavel(
+public sealed record PaginaApresentada(
     string Codigo,
     string? CodigoNasRegras,
     int Ordem,
-    [property: AceitaCodigosDe<TipoEtapaFormulario>] string Tipo,
+    [property: AceitaCodigosDe<TipoPaginaFormulario>] string Tipo,
     [property: AceitaCodigosDe<BlocoSistema>] string? Bloco,
-    ApresentacaoDaEtapaDto Apresentacao);
+    ApresentacaoDaPaginaDto Apresentacao);
 
 /// <summary>
 /// Um termo exigido pronto para apresentação (UNI-REQ-0086): a versão escolhida no catálogo, com o
@@ -112,7 +112,7 @@ public sealed record PressupostosDoFormulario(
 public sealed record FormularioApresentado(
     string Finalidade,
     string? Titulo,
-    IReadOnlyList<SecaoRenderizavel> Etapas,
+    IReadOnlyList<PaginaApresentada> Paginas,
     IReadOnlyList<TermoApresentado> Termos,
     ColetaApresentada Coleta,
     FormularioPortavel Regras,

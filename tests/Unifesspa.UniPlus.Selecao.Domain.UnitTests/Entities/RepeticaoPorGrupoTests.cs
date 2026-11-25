@@ -55,7 +55,7 @@ public sealed class RepeticaoPorGrupoTests
         ProcessoSeletivo processo = ProcessoConformeFactory.Criar(fase: inscricao);
         FaseCronograma habilitacao = Fase(2, FormularioProcesso.CodigoFaseHabilitacao);
         processo.DefinirCronogramaFases([inscricao, habilitacao], []).IsSuccess.Should().BeTrue();
-        processo.DefinirFormulario(FinalidadeFormulario.Habilitacao, habilitacao.Id, null, FormularioDeTeste.Etapas())
+        processo.DefinirFormulario(FinalidadeFormulario.Habilitacao, habilitacao.Id, null, FormularioDeTeste.Paginas())
             .IsSuccess.Should().BeTrue();
         processo.DefinirFatosColetados(FinalidadeFormulario.Habilitacao, [], [GrupoDaComposicao()])
             .IsSuccess.Should().BeTrue();
@@ -68,7 +68,7 @@ public sealed class RepeticaoPorGrupoTests
         FaseCronograma compartilhada = Fase(1, "INSCRICAO", coletaInscricao: true, coletaIsencao: true);
         ProcessoSeletivo processo = ProcessoConformeFactory.Criar(fase: compartilhada);
         processo.DefinirCronogramaFases([compartilhada], []).IsSuccess.Should().BeTrue();
-        processo.DefinirFormulario(FinalidadeFormulario.IsencaoTaxa, compartilhada.Id, null, FormularioDeTeste.Etapas())
+        processo.DefinirFormulario(FinalidadeFormulario.IsencaoTaxa, compartilhada.Id, null, FormularioDeTeste.Paginas())
             .IsSuccess.Should().BeTrue();
         processo.DefinirFatosColetados(FinalidadeFormulario.IsencaoTaxa, [], [GrupoDaComposicao()])
             .IsSuccess.Should().BeTrue();

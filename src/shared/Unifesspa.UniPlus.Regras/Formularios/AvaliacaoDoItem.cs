@@ -7,8 +7,8 @@ using Unifesspa.UniPlus.Regras.ValueObjects;
 
 internal sealed class AvaliacaoDoItem
 {
-    private readonly string _etapaCodigo;
-    private readonly bool _etapaConcluida;
+    private readonly string _paginaCodigo;
+    private readonly bool _paginaConcluida;
     private readonly DateOnly? _diaDoEnvio;
     private readonly IReadOnlyDictionary<string, FatoResolvido> _fatos;
     private readonly DefinicaoItem _item;
@@ -16,11 +16,11 @@ internal sealed class AvaliacaoDoItem
     private readonly Ternario _obrigatorio;
     private readonly OpcoesVigentes? _opcoes;
 
-    internal AvaliacaoDoItem(string etapaCodigo, bool etapaConcluida, DateOnly? diaDoEnvio,
+    internal AvaliacaoDoItem(string paginaCodigo, bool paginaConcluida, DateOnly? diaDoEnvio,
         IReadOnlyDictionary<string, FatoResolvido> fatos, DefinicaoItem item, Ternario visivelDoContentor)
     {
-        _etapaCodigo = etapaCodigo;
-        _etapaConcluida = etapaConcluida;
+        _paginaCodigo = paginaCodigo;
+        _paginaConcluida = paginaConcluida;
         _diaDoEnvio = diaDoEnvio;
         _fatos = fatos;
         _item = item;
@@ -62,11 +62,11 @@ internal sealed class AvaliacaoDoItem
 
     private (FatoResolvido Fato, AvaliacaoItem Avaliacao) ResultadoSemResposta(IReadOnlyList<RestricaoValor> violadas)
     {
-        FatoResolvido semResposta = AvaliacaoDaColeta.EstadoSemResposta(_obrigatorio, _etapaConcluida) == EstadoFato.NaoInformado
+        FatoResolvido semResposta = AvaliacaoDaColeta.EstadoSemResposta(_obrigatorio, _paginaConcluida) == EstadoFato.NaoInformado
             ? FatoResolvido.NaoInformado() : FatoResolvido.Indeterminado();
         return Resultado(semResposta, violadas);
     }
 
     private (FatoResolvido Fato, AvaliacaoItem Avaliacao) Resultado(FatoResolvido fato, IReadOnlyList<RestricaoValor> violadas) =>
-        (fato, new AvaliacaoItem(_item.FatoCodigo, _etapaCodigo, _visivel, _obrigatorio, violadas, _item.Impedido(fato, _fatos), _opcoes));
+        (fato, new AvaliacaoItem(_item.FatoCodigo, _paginaCodigo, _visivel, _obrigatorio, violadas, _item.Impedido(fato, _fatos), _opcoes));
 }

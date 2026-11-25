@@ -246,7 +246,7 @@ public sealed class GruposEInscricaoNaColetaDeFatosTests
         Result resultado = await HandleAsync(mocks, ComGrupo(processo, GrupoComVariasRecusas()));
 
         resultado.Errors.Select(static e => e.Field).Should().Contain(
-            ["grupos[0].ocorrencias.maximo", "grupos[0].regras.exibicao", "grupos[0].subitens[0].fatoCodigo", "grupos[0].subitens[1].etapaCodigo"]);
+            ["grupos[0].ocorrencias.maximo", "grupos[0].regras.exibicao", "grupos[0].subitens[0].fatoCodigo", "grupos[0].subitens[1].paginaCodigo"]);
     }
 
     [Fact(DisplayName = "PUT sem grupos mantém os grupos do formulário")]
@@ -344,7 +344,7 @@ public sealed class GruposEInscricaoNaColetaDeFatosTests
         resultado.Errors.Select(static e => (e.Field, e.Error.Code)).Should().BeEquivalentTo(
         [
             ("itens[0]", EstruturaFormularioErrorCodes.DadoBasicoAlterado),
-            ("itens[1].etapaCodigo", EstruturaFormularioErrorCodes.SecaoReservada),
+            ("itens[1].paginaCodigo", EstruturaFormularioErrorCodes.SecaoReservada),
         ]);
         await mocks.UnitOfWork.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
     }

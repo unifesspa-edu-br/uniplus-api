@@ -31,17 +31,17 @@ public sealed class AplicarModeloFormularioCommandHandlerTests
     public async Task Handle_PaginaInvalidaDoModelo_RecusaNoCaminhoDasPaginas()
     {
         ModeloFormularioView modelo = Modelo(FinalidadeFormulario.Habilitacao, []);
-        EtapaFormularioInput[] etapas =
+        PaginaDoFormularioInput[] paginas =
         [
-            EntradaDaEtapaFormularioDeTeste.Secao("DADOS", 0).Construir(),
-            EntradaDaEtapaFormularioDeTeste.Secao("OUTRA", 1).ComTitulo("").Construir(),
+            EntradaDaPaginaDoFormularioDeTeste.Secao("DADOS", 0).Construir(),
+            EntradaDaPaginaDoFormularioDeTeste.Secao("OUTRA", 1).ComTitulo("").Construir(),
         ];
-        modelo = modelo with { Conteudo = modelo.Conteudo with { Etapas = etapas } };
+        modelo = modelo with { Conteudo = modelo.Conteudo with { Paginas = paginas } };
 
         Result<AplicacaoDeModeloDto> resultado = await _cenario.AplicarAsync(modelo);
 
         resultado.Errors.Select(static e => (e.Field, e.Error.Code)).Should()
-            .Contain(("modelo.etapas[1].apresentacao.titulo", EstruturaFormularioErrorCodes.EtapaTituloInvalido));
+            .Contain(("modelo.paginas[1].apresentacao.titulo", EstruturaFormularioErrorCodes.PaginaTituloInvalido));
     }
 
     [Fact(DisplayName = "Modelo inexistente é recusado no campo do modelo")]

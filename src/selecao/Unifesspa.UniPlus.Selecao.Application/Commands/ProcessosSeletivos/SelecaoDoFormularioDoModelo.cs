@@ -12,7 +12,7 @@ using Unifesspa.UniPlus.Regras.Entradas;
 using Unifesspa.UniPlus.Regras.Formularios;
 
 /// <summary>
-/// Copia do modelo os itens, os grupos e as etapas do formulário pelos mesmos resolvedores da escrita
+/// Copia do modelo os itens, os grupos e as páginas do formulário pelos mesmos resolvedores da escrita
 /// direta. O que o catálogo mudou depois da composição do modelo sai da cópia e volta no relatório; o fato
 /// desativado que o processo já vincula não é vínculo novo e continua (ADR-0136). O fato que outra
 /// finalidade já coleta segue o par de finalidades, porque só a inscrição é citável pelas outras
@@ -33,11 +33,11 @@ internal sealed class SelecaoDoFormularioDoModelo(
             finalidade == FinalidadeFormulario.Inscricao ? ComConjuntoBasico(conteudo) : (conteudo, []);
         ItensSelecionados itens = CopiarItens(conteudoFinal.Itens ?? []);
         GruposSelecionados grupos = CopiarGrupos(conteudoFinal.Grupos ?? []);
-        EtapasDoFormularioLidas etapas = EscritaDasEtapasDoFormulario.Ler(conteudoFinal.Etapas ?? []);
-        IEnumerable<FieldError> recusasDasEtapas = etapas.Erros
-            .Concat(EscritaDasEtapasDoFormulario.ConferirExibicoes(etapas, contexto))
+        PaginasDoFormularioLidas paginas = EscritaDasPaginasDoFormulario.Ler(conteudoFinal.Paginas ?? []);
+        IEnumerable<FieldError> recusasDasPaginas = paginas.Erros
+            .Concat(EscritaDasPaginasDoFormulario.ConferirExibicoes(paginas, contexto))
             .Select(static e => PosicaoNoModelo.NoModelo(e));
-        return new FormularioSelecionado(itens, grupos, etapas, [.. recusasDaMescla, .. itens.Recusas, .. grupos.Recusas, .. recusasDasEtapas]);
+        return new FormularioSelecionado(itens, grupos, paginas, [.. recusasDaMescla, .. itens.Recusas, .. grupos.Recusas, .. recusasDasPaginas]);
     }
 
     // O formulário de inscrição coleta o conjunto básico na seção reservada: o básico que o modelo não traz
@@ -45,14 +45,14 @@ internal sealed class SelecaoDoFormularioDoModelo(
     private static (ConteudoDoModeloInput Conteudo, List<FieldError> Recusas) ComConjuntoBasico(ConteudoDoModeloInput conteudo)
     {
         IReadOnlyList<FatoColetadoInput> itens = conteudo.Itens ?? [];
-        IReadOnlyList<EtapaFormularioInput> etapas = conteudo.Etapas ?? [];
+        IReadOnlyList<PaginaDoFormularioInput> paginas = conteudo.Paginas ?? [];
         (IReadOnlyList<FatoColetadoInput> itensMesclados, IReadOnlyList<GrupoColetadoInput> gruposMesclados, List<FieldError> mescla) =
             ConjuntoBasicoDaInscricao.MesclarItens(itens, conteudo.Grupos ?? [], ConjuntoBasicoDaInscricao.Referencia(itens));
-        (IReadOnlyList<EtapaFormularioInput> etapasMescladas, List<FieldError> mesclaDasEtapas) =
-            ConjuntoBasicoDaInscricao.MesclarEtapas(etapas, ConjuntoBasicoDaInscricao.SecaoDe(etapas));
+        (IReadOnlyList<PaginaDoFormularioInput> paginasMescladas, List<FieldError> mesclaDasPaginas) =
+            ConjuntoBasicoDaInscricao.MesclarPaginas(paginas, ConjuntoBasicoDaInscricao.SecaoDe(paginas));
         return (
-            conteudo with { Itens = itensMesclados, Grupos = gruposMesclados, Etapas = etapasMescladas },
-            [.. mescla.Concat(mesclaDasEtapas).Select(static e => PosicaoNoModelo.NoModelo(e))]);
+            conteudo with { Itens = itensMesclados, Grupos = gruposMesclados, Paginas = paginasMescladas },
+            [.. mescla.Concat(mesclaDasPaginas).Select(static e => PosicaoNoModelo.NoModelo(e))]);
     }
 
     private ItensSelecionados CopiarItens(IReadOnlyList<FatoColetadoInput> itensDoModelo)
@@ -156,4 +156,4 @@ internal sealed record GruposSelecionados(
     List<GrupoColetado> Grupos, List<int> IndicesNoModelo, List<GrupoColetadoInput> Entradas, List<FieldError> Recusas);
 
 /// <summary>As partes do formulário copiadas do modelo e as recusas de todas elas, na ordem de avaliação.</summary>
-internal sealed record FormularioSelecionado(ItensSelecionados Itens, GruposSelecionados Grupos, EtapasDoFormularioLidas Etapas, List<FieldError> Recusas);
+internal sealed record FormularioSelecionado(ItensSelecionados Itens, GruposSelecionados Grupos, PaginasDoFormularioLidas Paginas, List<FieldError> Recusas);

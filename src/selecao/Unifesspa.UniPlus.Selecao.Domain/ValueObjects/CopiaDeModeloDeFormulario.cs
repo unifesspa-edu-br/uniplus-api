@@ -5,13 +5,13 @@ using Unifesspa.UniPlus.Selecao.Domain.Entities;
 
 /// <summary>
 /// A cópia de um modelo de formulário pronta para o processo: o formulário da finalidade do modelo
-/// — título, etapas, itens, grupos repetíveis e termos já conferidos contra o catálogo — e as derivações que o processo
+/// — título, páginas, itens, grupos repetíveis e termos já conferidos contra o catálogo — e as derivações que o processo
 /// ainda não configura, com o modelo de que partiu (ADR-0061).
 /// </summary>
 public sealed record CopiaDeModeloDeFormulario(
     FinalidadeFormulario Finalidade,
     string? Titulo,
-    IReadOnlyList<EtapaFormulario> Etapas,
+    IReadOnlyList<PaginaDoFormulario> Paginas,
     IReadOnlyList<FatoColetado> Itens,
     IReadOnlyList<GrupoColetado> Grupos,
     IReadOnlyList<TermoExigidoFormulario> Termos,

@@ -236,7 +236,7 @@ public sealed class FatoDeElegibilidadeDoAcrescimoTests
 
     private static void DefinirFormularioComFatos(ProcessoSeletivo processo, FinalidadeFormulario finalidade, Guid faseId, FatoColetado[] fatos)
     {
-        processo.DefinirFormulario(finalidade, faseId, null, FormularioDeTeste.Etapas()).IsSuccess.Should().BeTrue();
+        processo.DefinirFormulario(finalidade, faseId, null, FormularioDeTeste.Paginas()).IsSuccess.Should().BeTrue();
         Result itens = processo.DefinirFatosColetados(
             finalidade, fatos, finalidade == FinalidadeFormulario.Inscricao ? [GrupoDaInscricao()] : null);
         itens.IsSuccess.Should().BeTrue(itens.Error?.Message);

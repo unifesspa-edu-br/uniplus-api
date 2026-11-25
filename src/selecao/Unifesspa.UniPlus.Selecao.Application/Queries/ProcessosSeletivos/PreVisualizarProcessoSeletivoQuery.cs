@@ -88,8 +88,8 @@ public static class PreVisualizarProcessoSeletivoQueryHandler
         IReadOnlyDictionary<string, IReadOnlyList<OcorrenciaRespondida>> ocorrencias) =>
         EntradaDaAvaliacaoDaInscricao.Montar(DefinicoesDasRespostas(processo), new EntradaDaAvaliacaoDaInscricao(
             simulacao.Respostas ?? new Dictionary<string, JsonElement>(), ocorrencias, RespostaDeCampo.ComoFatosConhecidos(simulacao.Pressupostos),
-            new HashSet<string>((simulacao.EtapasConcluidas ?? []).Where(static e => e is not null)
-                .Select(static e => EstruturaFormulario.FinalidadeDoCodigo(e.Finalidade) is { } finalidade ? DefinicaoDoProcesso.CodigoDaEtapa(finalidade, e.Etapa) : null)
+            new HashSet<string>((simulacao.PaginasConcluidas ?? []).Where(static e => e is not null)
+                .Select(static e => EstruturaFormulario.FinalidadeDoCodigo(e.Finalidade) is { } finalidade ? DefinicaoDoProcesso.CodigoDaPagina(finalidade, e.Pagina) : null)
                 .OfType<string>(), StringComparer.Ordinal),
             Envio: null, Apresentacoes: EntradaDaAvaliacaoDaInscricao.SemApresentacoes));
 
@@ -122,18 +122,18 @@ public static class PreVisualizarProcessoSeletivoQueryHandler
     }
 
     private static GrupoSimuladoDto Grupo(AvaliacaoGrupo grupo, GrupoColetado coletado) => new(
-        grupo.Codigo, coletado.EtapaCodigo, CodigoComRotulo<Ternario>.De(grupo.Visivel), CodigoComRotulo<Ternario>.De(grupo.Obrigatorio), grupo.ContagemValida, grupo.OcorrenciaDoCandidatoValida,
+        grupo.Codigo, coletado.PaginaCodigo, CodigoComRotulo<Ternario>.De(grupo.Visivel), CodigoComRotulo<Ternario>.De(grupo.Obrigatorio), grupo.ContagemValida, grupo.OcorrenciaDoCandidatoValida,
         [.. grupo.Ocorrencias.Select(o => new OcorrenciaSimuladaDto(o.Id,
-            [.. o.Itens.Select(i => Item(i, coletado.Subitens.Single(s => s.FatoCodigo == i.FatoCodigo), coletado.EtapaCodigo))]))]);
+            [.. o.Itens.Select(i => Item(i, coletado.Subitens.Single(s => s.FatoCodigo == i.FatoCodigo), coletado.PaginaCodigo))]))]);
 
     private static List<SecaoSimuladaDto> Secoes(FormularioProcesso formulario, AvaliacaoFormulario avaliacao) =>
-        [.. formulario.Etapas.Where(static e => e.Tipo == TipoEtapaFormulario.Secao).OrderBy(static e => e.Ordem)
+        [.. formulario.Paginas.Where(static e => e.Tipo == TipoPaginaFormulario.Secao).OrderBy(static e => e.Ordem)
             .Select(e => new SecaoSimuladaDto(e.Codigo,
-                CodigoComRotulo<Ternario>.De(avaliacao.Etapas.Single(a => a.Codigo == DefinicaoDoProcesso.CodigoDaEtapa(formulario.Finalidade, e.Codigo)).Visivel)))];
+                CodigoComRotulo<Ternario>.De(avaliacao.Paginas.Single(a => a.Codigo == DefinicaoDoProcesso.CodigoDaPagina(formulario.Finalidade, e.Codigo)).Visivel)))];
 
     /// <summary>O item avaliado; o campo de grupo segue a seção do grupo.</summary>
-    private static ItemSimuladoDto Item(AvaliacaoItem item, FatoColetado campo, string? etapaDoGrupo = null) => new(
-        item.FatoCodigo, etapaDoGrupo ?? campo.EtapaCodigo, CodigoComRotulo<Ternario>.De(item.Visivel), CodigoComRotulo<Ternario>.De(item.Obrigatorio),
+    private static ItemSimuladoDto Item(AvaliacaoItem item, FatoColetado campo, string? paginaDoGrupo = null) => new(
+        item.FatoCodigo, paginaDoGrupo ?? campo.PaginaCodigo, CodigoComRotulo<Ternario>.De(item.Visivel), CodigoComRotulo<Ternario>.De(item.Obrigatorio),
         [.. item.RestricoesVioladas.Select(static r => r.Tipo.Codigo())],
         CodigoComRotulo<Ternario>.De(item.Impedido), campo.Impedimento?.Mensagem,
         item.Opcoes is { } opcoes ? new OpcoesSimuladasDto(opcoes.Codigos, opcoes.Definitivas) : null);

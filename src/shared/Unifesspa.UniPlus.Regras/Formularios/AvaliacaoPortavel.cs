@@ -13,7 +13,7 @@ using Unifesspa.UniPlus.Regras.ValueObjects;
 /// <c>RESOLVIDO</c>, <c>INDETERMINADO</c>, <c>NAO_APLICAVEL</c> e <c>NAO_INFORMADO</c> para o fato.
 /// </summary>
 public sealed record AvaliacaoPortavel(
-    IReadOnlyList<EtapaAvaliada> Etapas,
+    IReadOnlyList<PaginaAvaliada> Paginas,
     IReadOnlyList<CampoAvaliado> Campos,
     IReadOnlyList<GrupoAvaliado> Grupos,
     IReadOnlyList<TermoAvaliado> Termos)
@@ -22,7 +22,7 @@ public sealed record AvaliacaoPortavel(
     {
         ArgumentNullException.ThrowIfNull(avaliacao);
         return new(
-            [.. avaliacao.Etapas.Select(static e => new EtapaAvaliada(e.Codigo, e.Visivel.Codigo()))],
+            [.. avaliacao.Paginas.Select(static e => new PaginaAvaliada(e.Codigo, e.Visivel.Codigo()))],
             [.. avaliacao.Itens.Select(i => Campo(i, avaliacao.Fatos))],
             [.. avaliacao.Grupos.Select(Grupo)],
             [.. avaliacao.Termos.Select(static t => new TermoAvaliado(t.Codigo, t.Visivel.Codigo(), t.Obrigatorio.Codigo()))]);
@@ -30,7 +30,7 @@ public sealed record AvaliacaoPortavel(
 
     private static GrupoAvaliado Grupo(AvaliacaoGrupo grupo) => new(
         grupo.Codigo,
-        grupo.EtapaCodigo,
+        grupo.PaginaCodigo,
         grupo.Estado.Codigo(),
         new ExibicaoEObrigatoriedadeAvaliadas(grupo.Visivel.Codigo(), grupo.Obrigatorio.Codigo()),
         new OcorrenciasAvaliadas(grupo.ContagemValida, grupo.OcorrenciaDoCandidatoValida, [.. grupo.Ocorrencias.Select(Ocorrencia)]));
@@ -40,7 +40,7 @@ public sealed record AvaliacaoPortavel(
 
     private static CampoAvaliado Campo(AvaliacaoItem item, IReadOnlyDictionary<string, FatoResolvido> fatos) => new(
         item.FatoCodigo,
-        item.EtapaCodigo,
+        item.PaginaCodigo,
         fatos.TryGetValue(item.FatoCodigo, out FatoResolvido? fato) ? fato.Estado.Codigo() : EstadoFato.Indeterminado.Codigo(),
         new RegrasDoCampoAvaliadas(
             item.Visivel.Codigo(),
@@ -51,11 +51,11 @@ public sealed record AvaliacaoPortavel(
 }
 
 /// <summary>
-/// Uma etapa das regras avaliada, pelo código nas regras: se ela aparece. As etapas são as seções do
-/// formulário e, no rascunho com campo ainda sem seção, a etapa da finalidade; os blocos que o sistema
+/// Uma página das regras avaliada, pelo código nas regras: se ela aparece. As páginas são as seções do
+/// formulário e, no rascunho com campo ainda sem seção, a página da finalidade; os blocos que o sistema
 /// monta não têm regra e não entram.
 /// </summary>
-public sealed record EtapaAvaliada(string Codigo, [property: AceitaCodigosDe<Ternario>] string Visivel);
+public sealed record PaginaAvaliada(string Codigo, [property: AceitaCodigosDe<Ternario>] string Visivel);
 
 /// <summary>
 /// Um campo avaliado: o estado do fato que ele produz, o que as regras do campo resultam e as opções
@@ -63,7 +63,7 @@ public sealed record EtapaAvaliada(string Codigo, [property: AceitaCodigosDe<Ter
 /// </summary>
 public sealed record CampoAvaliado(
     string FatoCodigo,
-    string EtapaCodigo,
+    string PaginaCodigo,
     [property: AceitaCodigosDe<EstadoFato>] string Estado,
     RegrasDoCampoAvaliadas Regras,
     OpcoesVigentes? Opcoes);
@@ -81,7 +81,7 @@ public sealed record RegrasDoCampoAvaliadas(
 /// <summary>Um grupo repetível avaliado: o estado da lista, o que as regras resultam e as ocorrências.</summary>
 public sealed record GrupoAvaliado(
     string Codigo,
-    string EtapaCodigo,
+    string PaginaCodigo,
     [property: AceitaCodigosDe<EstadoFato>] string Estado,
     ExibicaoEObrigatoriedadeAvaliadas Regras,
     OcorrenciasAvaliadas Ocorrencias);

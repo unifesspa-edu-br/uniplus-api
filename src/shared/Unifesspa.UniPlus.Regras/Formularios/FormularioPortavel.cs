@@ -10,7 +10,7 @@ using Unifesspa.UniPlus.Regras.ValueObjects;
 /// <summary>
 /// As regras de um formulário na forma que atravessa o fio: o que o avaliador usa para decidir o que
 /// aparece, o que é obrigatório, quais opções valem, o que a resposta viola e o que impede a inscrição
-/// — etapas, itens, grupos repetíveis, termos, derivações e agregados —, mais a oferta de valores de
+/// — páginas, itens, grupos repetíveis, termos, derivações e agregados —, mais a oferta de valores de
 /// cada campo. É a forma que a API publica e que o interpretador do front lê (ADR-0139).
 /// </summary>
 /// <remarks>
@@ -26,7 +26,7 @@ using Unifesspa.UniPlus.Regras.ValueObjects;
 /// </para>
 /// </remarks>
 public sealed record FormularioPortavel(
-    IReadOnlyList<EtapaPortavel> Etapas,
+    IReadOnlyList<PaginaPortavel> Paginas,
     IReadOnlyList<TermoPortavel> Termos,
     IReadOnlyList<DerivacaoPortavel> Derivacoes,
     IReadOnlyList<AgregadoPortavel> Agregados)
@@ -42,7 +42,7 @@ public sealed record FormularioPortavel(
         IReadOnlyDictionary<string, IReadOnlySet<string>> ofertados = ofertas ?? new Dictionary<string, IReadOnlySet<string>>();
 
         return new(
-            [.. definicao.Etapas.Select(e => Etapa(e, ofertados))],
+            [.. definicao.Paginas.Select(e => Pagina(e, ofertados))],
             [.. definicao.Termos.Select(Termo)],
             [.. definicao.Derivacoes.Select(Derivacao)],
             [.. definicao.Agregados.Select(Agregado)]);
@@ -71,26 +71,26 @@ public sealed record FormularioPortavel(
     }
 
     private string? CaminhoDasOcorrenciasAusentes() =>
-        (Etapas ?? []).SelectMany((etapa, i) => (etapa.Grupos ?? []).Select((grupo, j) => (grupo, i, j)))
+        (Paginas ?? []).SelectMany((pagina, i) => (pagina.Grupos ?? []).Select((grupo, j) => (grupo, i, j)))
             .Where(static x => x.grupo.Ocorrencias is null)
-            .Select(static x => $"etapas[{x.i}].grupos[{x.j}].ocorrencias").FirstOrDefault();
+            .Select(static x => $"paginas[{x.i}].grupos[{x.j}].ocorrencias").FirstOrDefault();
 
     /// <summary>
-    /// O caminho do primeiro elemento nulo dentro das regras, como <c>etapas[0].itens[2]</c>; nulo
+    /// O caminho do primeiro elemento nulo dentro das regras, como <c>paginas[0].itens[2]</c>; nulo
     /// quando não há. O arquivo importado chega pelo fio, e a lista com elemento nulo não forma
     /// definição.
     /// </summary>
     private string? CaminhoDoPrimeiroNulo() =>
-        Lista(Etapas, "etapas", NuloNaEtapa)
+        Lista(Paginas, "paginas", NuloNaPagina)
         ?? Lista(Termos, "termos", static (termo, caminho) => NuloNaExibicaoEObrigatoriedade(termo.Regras, $"{caminho}.regras"))
         ?? Lista(Derivacoes, "derivacoes", static (derivacao, caminho) =>
             Lista(derivacao.Regras, $"{caminho}.regras", static (regra, daRegra) => Predicado(regra.Quando, $"{daRegra}.quando")))
         ?? Lista(Agregados, "agregados", static (_, _) => null);
 
-    private static string? NuloNaEtapa(EtapaPortavel etapa, string caminho) =>
-        Predicado(etapa.Exibicao, $"{caminho}.exibicao")
-        ?? Lista(etapa.Itens, $"{caminho}.itens", NuloNoItem)
-        ?? Lista(etapa.Grupos, $"{caminho}.grupos", NuloNoGrupo);
+    private static string? NuloNaPagina(PaginaPortavel pagina, string caminho) =>
+        Predicado(pagina.Exibicao, $"{caminho}.exibicao")
+        ?? Lista(pagina.Itens, $"{caminho}.itens", NuloNoItem)
+        ?? Lista(pagina.Grupos, $"{caminho}.grupos", NuloNoGrupo);
 
     private static string? NuloNoGrupo(GrupoPortavel grupo, string caminho) =>
         NuloNaExibicaoEObrigatoriedade(grupo.Regras, $"{caminho}.regras")
@@ -139,7 +139,7 @@ public sealed record FormularioPortavel(
     public IReadOnlyDictionary<string, IReadOnlySet<string>> Ofertas()
     {
         Dictionary<string, IReadOnlySet<string>> ofertas = new(StringComparer.Ordinal);
-        foreach (ItemPortavel item in (Etapas ?? [])
+        foreach (ItemPortavel item in (Paginas ?? [])
             .SelectMany(static e => (e.Itens ?? []).Concat((e.Grupos ?? []).SelectMany(static g => g.Subitens ?? [])))
             .Where(static i => i.Oferta is not null))
         {
@@ -178,12 +178,12 @@ public sealed record FormularioPortavel(
         };
     }
 
-    private static EtapaPortavel Etapa(DefinicaoEtapa etapa, IReadOnlyDictionary<string, IReadOnlySet<string>> ofertados) =>
+    private static PaginaPortavel Pagina(DefinicaoPagina pagina, IReadOnlyDictionary<string, IReadOnlySet<string>> ofertados) =>
         new(
-            etapa.Codigo,
-            etapa.Exibicao?.ToDto(),
-            [.. etapa.Itens.Select(i => Item(i, ofertados))],
-            [.. etapa.Grupos.Select(g => Grupo(g, ofertados))]);
+            pagina.Codigo,
+            pagina.Exibicao?.ToDto(),
+            [.. pagina.Itens.Select(i => Item(i, ofertados))],
+            [.. pagina.Grupos.Select(g => Grupo(g, ofertados))]);
 
     private static GrupoPortavel Grupo(DefinicaoGrupo grupo, IReadOnlyDictionary<string, IReadOnlySet<string>> ofertados) =>
         new(

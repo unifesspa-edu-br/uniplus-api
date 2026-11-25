@@ -1,7 +1,7 @@
 {
   "descricao": "O tamanho do texto é contado sem os espaços das pontas.",
   "regras": {
-    "etapas": [
+    "paginas": [
       {
         "codigo": "DADOS",
         "exibicao": null,
@@ -40,7 +40,7 @@
     "SIGLA": "  abc  "
   },
   "grupos": {},
-  "etapasConcluidas": [],
+  "paginasConcluidas": [],
   "pressupostos": {},
   "esperado": {
     "campos": [

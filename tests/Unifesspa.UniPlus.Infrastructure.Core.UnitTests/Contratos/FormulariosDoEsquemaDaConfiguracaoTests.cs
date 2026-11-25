@@ -103,10 +103,10 @@ public sealed class FormulariosDoEsquemaDaConfiguracaoTests
     public void Formulario_ForaDoVocabulario_Recusa(string ponteiro, string valor, string caminho) =>
         CaminhosComErro(Alterado(ponteiro, valor), Formulario).Should().Contain(caminho);
 
-    [Theory(DisplayName = "O subitem de grupo com etapa ou impedimento preenchidos é recusado")]
+    [Theory(DisplayName = "O subitem de grupo com página ou impedimento preenchidos é recusado")]
     [InlineData("paginaCodigo", "\"dados\"")]
     [InlineData("impedimento", """{ "quando": [[ { "codigoDoDado": "F", "operador": "IGUAL", "valor": true } ]], "mensagem": "Não." }""")]
-    public void Subitem_ComEtapaOuImpedimento_Recusa(string propriedade, string valor)
+    public void Subitem_ComPaginaOuImpedimento_Recusa(string propriedade, string valor)
     {
         ArgumentNullException.ThrowIfNull(propriedade);
         ArgumentNullException.ThrowIfNull(valor);
@@ -116,8 +116,8 @@ public sealed class FormulariosDoEsquemaDaConfiguracaoTests
         CaminhosComErro(formulario, Formulario).Should().Contain("/grupos/0/subitens/0/" + propriedade);
     }
 
-    [Fact(DisplayName = "O subitem com etapa e impedimento nulos, como o envelope os escreve, valida")]
-    public void Subitem_ComEtapaEImpedimentoNulos_Valida()
+    [Fact(DisplayName = "O subitem com página e impedimento nulos, como o envelope os escreve, valida")]
+    public void Subitem_ComPaginaEImpedimentoNulos_Valida()
     {
         JsonNode formulario = Documento(FormularioValido);
         formulario["grupos"]![0]!["subitens"]![0]!["paginaCodigo"] = null;

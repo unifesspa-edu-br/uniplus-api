@@ -1,7 +1,7 @@
 {
   "descricao": "Quem mora em área urbana não vê o campo do nome da aldeia, comunidade ou quilombo.",
   "regras": {
-    "etapas": [
+    "paginas": [
       {
         "codigo": "DADOS",
         "exibicao": null,
@@ -57,7 +57,7 @@
     "TIPO_ENDERECO": "URBANO"
   },
   "grupos": {},
-  "etapasConcluidas": [],
+  "paginasConcluidas": [],
   "pressupostos": {},
   "esperado": {
     "campos": [

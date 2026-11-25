@@ -11,7 +11,7 @@ using Unifesspa.UniPlus.Regras.Formularios;
 public sealed record ItemDoModelo(
     string FatoCodigo,
     int Ordem,
-    string? EtapaCodigo,
+    string? PaginaCodigo,
     ApresentacaoDoCampo Apresentacao,
     string? Formato,
     RegrasDoCampo Regras)

@@ -91,7 +91,7 @@ public sealed class EnvelopeCodecRecusaGruposColetadosTests
     public void GruposColetados_CampoComSecaoPropria_Recusa()
     {
         Result<EnvelopeReidratado> resultado = ReidratarComEnvelopeAdulterado(envelope =>
-            envelope["gruposDosFormularios"]!.AsArray().Single()!["subitens"]!.AsArray()[0]!["etapaCodigo"] = "DADOS");
+            envelope["gruposDosFormularios"]!.AsArray().Single()!["subitens"]!.AsArray()[0]!["paginaCodigo"] = "DADOS");
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be(ErrosCodecEnvelope.EnvelopeMalformado);

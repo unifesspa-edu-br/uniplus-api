@@ -20,13 +20,13 @@ using Unifesspa.UniPlus.Testes.Compartilhado;
 /// <summary>Os itens, os termos e os processos que os testes dos formulários por finalidade montam.</summary>
 internal static class ApoioFormulariosPorFinalidade
 {
-    internal static FatoColetado Item(string codigo, int ordem, string? etapa = FormularioDeTeste.Secao) =>
-        FatoColetadoDeTeste.Coletando(codigo, ordem).ComObrigatoriedade(Obrigatoriedade.Sempre).NaSecao(etapa).Construir();
+    internal static FatoColetado Item(string codigo, int ordem, string? pagina = FormularioDeTeste.Secao) =>
+        FatoColetadoDeTeste.Coletando(codigo, ordem).ComObrigatoriedade(Obrigatoriedade.Sempre).NaSecao(pagina).Construir();
 
     internal static ProcessoSeletivo ComHabilitacao()
     {
         ProcessoSeletivo processo = ProcessoConformeFactory.Criar();
-        processo.DefinirFormulario(FinalidadeFormulario.Habilitacao, null, null, FormularioDeTeste.Etapas())
+        processo.DefinirFormulario(FinalidadeFormulario.Habilitacao, null, null, FormularioDeTeste.Paginas())
             .IsSuccess.Should().BeTrue();
         return processo;
     }
@@ -48,15 +48,15 @@ internal static class ApoioFormulariosPorFinalidade
             [RegraDerivacaoConfigurada.Criar(0, "AC", [CondicaoRegraDerivacao.Criar(0, fato, Operador.Igual, JsonSerializer.SerializeToElement(true)).Value!]).Value!])
             .Value!;
 
-    internal static IReadOnlyList<EtapaFormulario> EtapasComExibicao(string? citado) =>
+    internal static IReadOnlyList<PaginaDoFormulario> PaginasComExibicao(string? citado) =>
     [
-        FormularioDeTeste.Etapas()[0],
-        EtapaFormulario.Criar(new EtapaEstrutura("DADOS", 1, TipoEtapaFormulario.Secao, null), "Dados", null, null).Value!,
-        EtapaFormulario.Criar(new EtapaEstrutura("RENDA", 2, TipoEtapaFormulario.Secao, null), "Renda", null, null,
+        FormularioDeTeste.Paginas()[0],
+        PaginaDoFormulario.Criar(new PaginaEstrutura("DADOS", 1, TipoPaginaFormulario.Secao, null), "Dados", null, null).Value!,
+        PaginaDoFormulario.Criar(new PaginaEstrutura("RENDA", 2, TipoPaginaFormulario.Secao, null), "Renda", null, null,
             citado is null
                 ? null
                 : PredicadoDnf.CriarDeCondicoesAgrupadas([(0, CondicaoDnf.Criar(citado, Operador.Igual, JsonSerializer.SerializeToElement(true)).Value!)]).Value!).Value!,
-        EtapaFormulario.Criar(new EtapaEstrutura("REVISAO", 3, TipoEtapaFormulario.Bloco, BlocoSistema.RevisaoEAceite), "Revisão e aceite", null, null).Value!,
+        PaginaDoFormulario.Criar(new PaginaEstrutura("REVISAO", 3, TipoPaginaFormulario.Bloco, BlocoSistema.RevisaoEAceite), "Revisão e aceite", null, null).Value!,
     ];
 
     internal static FatoColetado ItemNaSecao(string codigo, int ordem, string secao) =>

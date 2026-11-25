@@ -163,7 +163,7 @@ public sealed class FaixaDeDataTests
 /// </summary>
 public class FaixaDeDataNaAvaliacaoTests : TestesDeAvaliacao
 {
-    private const string Etapa = "DADOS";
+    private const string Pagina = "DADOS";
 
     private static readonly EnvioDasRespostas Envio = new(
         new DateTimeOffset(2026, 10, 10, 15, 0, 0, TimeSpan.Zero), TimeZoneInfo.FindSystemTimeZoneById("America/Belem"));
@@ -176,13 +176,13 @@ public class FaixaDeDataNaAvaliacaoTests : TestesDeAvaliacao
     public void Avaliar_ItemComFaixa_RecusaDataFutura(string nascimento, bool viola)
     {
         DefinicaoFormulario formulario = new(
-            [new DefinicaoEtapa(Etapa, exibicao: null, [new DefinicaoItem("DATA_NASCIMENTO", null, Obrigatoriedade.Sempre, [AteOEnvio])])],
+            [new DefinicaoPagina(Pagina, exibicao: null, [new DefinicaoItem("DATA_NASCIMENTO", null, Obrigatoriedade.Sempre, [AteOEnvio])])],
             termos: [],
             derivacoes: []);
 
         AvaliacaoFormulario avaliacao = AvaliarDefinicao(formulario, new EntradaAvaliacaoFormulario(
             new Dictionary<string, JsonElement>(StringComparer.Ordinal) { ["DATA_NASCIMENTO"] = JsonSerializer.SerializeToElement(nascimento) },
-            new HashSet<string>([Etapa], StringComparer.Ordinal),
+            new HashSet<string>([Pagina], StringComparer.Ordinal),
             new Dictionary<string, FatoResolvido>(StringComparer.Ordinal),
             Envio));
 
@@ -204,7 +204,7 @@ public class FaixaDeDataNaAvaliacaoTests : TestesDeAvaliacao
     private static DefinicaoFormulario FormularioComGrupoDeNascimentos() =>
         new(
             [
-                new DefinicaoEtapa(Etapa, exibicao: null, [],
+                new DefinicaoPagina(Pagina, exibicao: null, [],
                     [new DefinicaoGrupo("FAMILIA", null, Obrigatoriedade.Nunca, 0, null,
                         [new DefinicaoItem("NASCIMENTO_MEMBRO", null, Obrigatoriedade.Sempre, [AteOEnvio])], incluiCandidato: false)]),
             ],
@@ -214,7 +214,7 @@ public class FaixaDeDataNaAvaliacaoTests : TestesDeAvaliacao
     private static EntradaAvaliacaoFormulario EntradaComDuasOcorrencias() =>
         new(
             new Dictionary<string, JsonElement>(StringComparer.Ordinal),
-            new HashSet<string>([Etapa], StringComparer.Ordinal),
+            new HashSet<string>([Pagina], StringComparer.Ordinal),
             new Dictionary<string, FatoResolvido>(StringComparer.Ordinal),
             Envio,
             new Dictionary<string, IReadOnlyList<OcorrenciaRespondida>>(StringComparer.Ordinal)

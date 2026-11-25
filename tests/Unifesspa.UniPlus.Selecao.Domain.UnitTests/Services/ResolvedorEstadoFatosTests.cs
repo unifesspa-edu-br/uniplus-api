@@ -169,9 +169,9 @@ public sealed class ResolvedorEstadoFatosTests
         return FormularioProcesso.Criar(
             FinalidadeFormulario.Inscricao, null, null,
             [
-                EtapaFormulario.Criar(new EtapaEstrutura("DADOS", 0, TipoEtapaFormulario.Secao, null), "Dados", null, null).Value!,
-                EtapaFormulario.Criar(new EtapaEstrutura("COTAS", 1, TipoEtapaFormulario.Secao, null), "Cotas", null, null, egresso).Value!,
-                EtapaFormulario.Criar(new EtapaEstrutura("REVISAO", 2, TipoEtapaFormulario.Bloco, BlocoSistema.RevisaoEAceite), "Revisão e aceite", null, null).Value!,
+                PaginaDoFormulario.Criar(new PaginaEstrutura("DADOS", 0, TipoPaginaFormulario.Secao, null), "Dados", null, null).Value!,
+                PaginaDoFormulario.Criar(new PaginaEstrutura("COTAS", 1, TipoPaginaFormulario.Secao, null), "Cotas", null, null, egresso).Value!,
+                PaginaDoFormulario.Criar(new PaginaEstrutura("REVISAO", 2, TipoPaginaFormulario.Bloco, BlocoSistema.RevisaoEAceite), "Revisão e aceite", null, null).Value!,
             ]).Value!;
     }
 

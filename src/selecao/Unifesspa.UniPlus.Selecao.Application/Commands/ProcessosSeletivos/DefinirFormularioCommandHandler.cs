@@ -15,7 +15,7 @@ using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Formularios;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Referencias;
 
 /// <summary>
-/// Monta as etapas com as recusas acumuladas por etapa (ADR-0125) e entrega ao processo, que confere
+/// Monta as páginas com as recusas acumuladas por página (ADR-0125) e entrega ao processo, que confere
 /// a estrutura do formulário, a fase, os itens já definidos e os fatos que a exibição de cada seção
 /// cita. A semântica da exibição (fato do catálogo, operador e valor do domínio) é conferida aqui,
 /// contra o catálogo.
@@ -64,7 +64,7 @@ public static class DefinirFormularioCommandHandler
     }
 
     /// <summary>
-    /// As etapas lidas pela forma, as exibições conferidas contra o catálogo — lido só quando preciso — e, na criação do
+    /// As páginas lidas pela forma, as exibições conferidas contra o catálogo — lido só quando preciso — e, na criação do
     /// formulário de inscrição, os itens do conjunto básico. O formulário de inscrição tem a seção reservada dos dados
     /// básicos, a primeira: o que nasce agora nasce também com os itens dela.
     /// </summary>
@@ -72,18 +72,18 @@ public static class DefinirFormularioCommandHandler
         DefinirFormularioCommand command, ProcessoSeletivo processo, IFatoCandidatoReader fatoCandidatoReader, CancellationToken cancellationToken)
     {
         bool inscricao = command.Finalidade == FinalidadeFormulario.Inscricao;
-        (IReadOnlyList<EtapaFormularioInput> entradas, List<FieldError> daSecao) = inscricao
-            ? ConjuntoBasicoDaInscricao.MesclarEtapas(command.Etapas ?? [], SecaoDadosBasicosDoProcesso.Secao(processo))
-            : (command.Etapas ?? [], []);
-        EtapasDoFormularioLidas lidas = EscritaDasEtapasDoFormulario.Ler(entradas);
+        (IReadOnlyList<PaginaDoFormularioInput> entradas, List<FieldError> daSecao) = inscricao
+            ? ConjuntoBasicoDaInscricao.MesclarPaginas(command.Paginas ?? [], SecaoDadosBasicosDoProcesso.Secao(processo))
+            : (command.Paginas ?? [], []);
+        PaginasDoFormularioLidas lidas = EscritaDasPaginasDoFormulario.Ler(entradas);
         bool criaInscricao = inscricao && processo.FormularioDe(FinalidadeFormulario.Inscricao) is null;
         IReadOnlyList<FatoCandidatoView> catalogo = criaInscricao || lidas.Exibicoes.Any(static e => e is not null)
             ? await fatoCandidatoReader.ListarAsync(cancellationToken).ConfigureAwait(false)
             : [];
         ContextoDoCatalogo contexto = ContextoDoCatalogo.De(processo, catalogo);
-        List<FieldError> erros = [.. daSecao, .. lidas.Erros, .. EscritaDasEtapasDoFormulario.ConferirExibicoes(lidas, contexto)];
+        List<FieldError> erros = [.. daSecao, .. lidas.Erros, .. EscritaDasPaginasDoFormulario.ConferirExibicoes(lidas, contexto)];
         List<FatoColetado>? itensDaCriacao = criaInscricao ? ResolverItensDaCriacao(contexto, erros) : null;
-        return new FormularioLido(entradas.Count, [.. lidas.Etapas], itensDaCriacao, contexto, erros);
+        return new FormularioLido(entradas.Count, [.. lidas.Paginas], itensDaCriacao, contexto, erros);
     }
 
     private static List<FatoColetado> ResolverItensDaCriacao(ContextoDoCatalogo contexto, List<FieldError> erros)
@@ -94,7 +94,7 @@ public static class DefinirFormularioCommandHandler
     }
 
     /// <summary>
-    /// As recusas do formulário somam-se às das etapas (ADR-0125). A estrutura só é conferida com todas as etapas montadas,
+    /// As recusas do formulário somam-se às das páginas (ADR-0125). A estrutura só é conferida com todas as páginas montadas,
     /// e a exibição já recusada pela semântica não é recusada de novo pela posição.
     /// </summary>
     private static IEnumerable<FieldError> ConferirEstrutura(DefinirFormularioCommand command, ProcessoSeletivo processo, FormularioLido lido)
@@ -102,7 +102,7 @@ public static class DefinirFormularioCommandHandler
         HashSet<string> recusados = [.. lido.Erros.Select(static e => e.Field ?? string.Empty)];
         return RegrasDosFormularios
             .ConferirFormulario(
-                processo.Declaracao(), command.Finalidade, command.FaseId, command.Titulo, lido.Etapas, lido.EtapasCompletas, lido.ItensDaCriacao)
+                processo.Declaracao(), command.Finalidade, command.FaseId, command.Titulo, lido.Paginas, lido.PaginasCompletas, lido.ItensDaCriacao)
             .Where(recusa => recusa.Field is not { } campo || !campo.EndsWith(".exibicao", StringComparison.Ordinal) || !recusados.Contains(campo));
     }
 
@@ -114,7 +114,7 @@ public static class DefinirFormularioCommandHandler
             return Result.Failure(vinculoNovo.Error!);
         }
 
-        Result definido = processo.DefinirFormulario(command.Finalidade, command.FaseId, command.Titulo, lido.Etapas, lido.ItensDaCriacao);
+        Result definido = processo.DefinirFormulario(command.Finalidade, command.FaseId, command.Titulo, lido.Paginas, lido.ItensDaCriacao);
         return definido.IsFailure ? Result.ValidationFailure(definido.Errors) : Result.Success();
     }
 
@@ -124,17 +124,17 @@ public static class DefinirFormularioCommandHandler
             ReferenciasVivas.Vinculos(processo.Declaracao()),
             VinculosDeFatos.De(
                 (lido.ItensDaCriacao ?? []).Select(static f => f.FatoCodigo),
-                lido.Etapas.SelectMany(static e => e.Condicoes).Concat((lido.ItensDaCriacao ?? []).SelectMany(static f => f.Condicoes))
+                lido.Paginas.SelectMany(static e => e.Condicoes).Concat((lido.ItensDaCriacao ?? []).SelectMany(static f => f.Condicoes))
                     .Select(static c => (c.Fato, c.Valor))));
 
     /// <summary>
-    /// As etapas montadas, os itens da criação do formulário de inscrição, o contexto do catálogo que as conferiu e as
-    /// recusas da leitura; as etapas estão completas quando nenhuma entrada foi recusada.
+    /// As páginas montadas, os itens da criação do formulário de inscrição, o contexto do catálogo que as conferiu e as
+    /// recusas da leitura; as páginas estão completas quando nenhuma entrada foi recusada.
     /// </summary>
     private sealed record FormularioLido(
-        int QuantidadeEnviada, List<EtapaFormulario> Etapas, List<FatoColetado>? ItensDaCriacao, ContextoDoCatalogo Contexto, List<FieldError> Erros)
+        int QuantidadeEnviada, List<PaginaDoFormulario> Paginas, List<FatoColetado>? ItensDaCriacao, ContextoDoCatalogo Contexto, List<FieldError> Erros)
     {
-        public bool EtapasCompletas => Etapas.Count == QuantidadeEnviada;
+        public bool PaginasCompletas => Paginas.Count == QuantidadeEnviada;
     }
 }
 
