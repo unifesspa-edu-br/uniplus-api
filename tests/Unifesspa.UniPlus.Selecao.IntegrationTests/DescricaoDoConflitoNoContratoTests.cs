@@ -63,18 +63,23 @@ public sealed class DescricaoDoConflitoNoContratoTests
 
         foreach ((string metodo, string rota) in RotasComConflitoDescrito)
         {
-            paths.TryGetProperty(rota, out JsonElement caminho).Should().BeTrue(
-                $"'{rota}' precisa existir no contrato para este teste dizer algo");
-
-            JsonElement conflito = caminho.GetProperty(metodo).GetProperty("responses").GetProperty("409");
-            string descricao = conflito.GetProperty("description").GetString()!;
-
-            descricao.Should().NotBe(generica,
-                $"o 409 de {metodo.ToUpperInvariant()} {rota} tem causa própria, e o rótulo do status não a diz");
-            descricao.Length.Should().BeGreaterThan(generica.Length);
-
-            conflito.TryGetProperty("content", out _).Should().BeTrue(
-                "descrever a resposta não pode custar o corpo tipado que o cliente gerado usa para ler o erro");
+            ConferirDescricaoDoConflito(paths, metodo, rota, generica);
         }
+    }
+
+    private static void ConferirDescricaoDoConflito(JsonElement paths, string metodo, string rota, string generica)
+    {
+        paths.TryGetProperty(rota, out JsonElement caminho).Should().BeTrue(
+            $"'{rota}' precisa existir no contrato para este teste dizer algo");
+
+        JsonElement conflito = caminho.GetProperty(metodo).GetProperty("responses").GetProperty("409");
+        string descricao = conflito.GetProperty("description").GetString()!;
+
+        descricao.Should().NotBe(generica,
+            $"o 409 de {metodo.ToUpperInvariant()} {rota} tem causa própria, e o rótulo do status não a diz");
+        descricao.Length.Should().BeGreaterThan(generica.Length);
+
+        conflito.TryGetProperty("content", out _).Should().BeTrue(
+            "descrever a resposta não pode custar o corpo tipado que o cliente gerado usa para ler o erro");
     }
 }

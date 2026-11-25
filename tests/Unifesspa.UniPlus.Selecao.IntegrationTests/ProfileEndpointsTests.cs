@@ -51,15 +51,7 @@ public sealed class ProfileEndpointsTests : IClassFixture<SelecaoApiFactory>
     {
         using WebApplicationFactory<Unifesspa.UniPlus.Host.HostAssemblyMarker> factory = ComConcessoes();
         using HttpClient client = factory.CreateClient();
-        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue(
-            TestAuthHandler.AuthorizationScheme,
-            TestAuthHandler.TokenValue);
-        client.DefaultRequestHeaders.Add(TestAuthHandler.UserIdHeader, "4dc27b1b-c56f-488a-a7a2-2a30bdbc08b8");
-        client.DefaultRequestHeaders.Add(TestAuthHandler.NameHeader, "Maria Santos");
-        client.DefaultRequestHeaders.Add(TestAuthHandler.EmailHeader, "maria@teste.unifesspa.edu.br");
-        client.DefaultRequestHeaders.Add(TestAuthHandler.RolesHeader, "candidato");
-        client.DefaultRequestHeaders.Add(TestAuthHandler.CpfHeader, "529.982.247-25");
-        client.DefaultRequestHeaders.Add(TestAuthHandler.NomeSocialHeader, "Maria dos Santos");
+        IdentificarCandidata(client);
 
         HttpResponseMessage response = await client.GetAsync(GetMeUri);
 
@@ -67,14 +59,35 @@ public sealed class ProfileEndpointsTests : IClassFixture<SelecaoApiFactory>
 
         using JsonDocument payload = await JsonDocument.ParseAsync(await response.Content.ReadAsStreamAsync());
 
-        payload.RootElement.GetProperty("userId").GetString().Should().Be("4dc27b1b-c56f-488a-a7a2-2a30bdbc08b8");
-        payload.RootElement.GetProperty("name").GetString().Should().Be("Maria Santos");
-        payload.RootElement.GetProperty("email").GetString().Should().Be("maria@teste.unifesspa.edu.br");
-        payload.RootElement.GetProperty("cpf").GetString().Should().Be("529.982.247-25");
-        payload.RootElement.GetProperty("nomeSocial").GetString().Should().Be("Maria dos Santos");
-        payload.RootElement.TryGetProperty("roles", out _).Should().BeFalse("o papel do token não é perfil de acesso");
-        payload.RootElement.GetProperty("perfis").GetArrayLength().Should().Be(0);
-        payload.RootElement.GetProperty("timestamp").GetDateTimeOffset().Should().BeCloseTo(DateTimeOffset.UtcNow, TimeSpan.FromMinutes(1));
+        ConferirDadosDaCandidata(payload.RootElement);
+    }
+
+    private static void Autenticar(HttpClient client) =>
+        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue(
+            TestAuthHandler.AuthorizationScheme,
+            TestAuthHandler.TokenValue);
+
+    private static void IdentificarCandidata(HttpClient client)
+    {
+        Autenticar(client);
+        client.DefaultRequestHeaders.Add(TestAuthHandler.UserIdHeader, "4dc27b1b-c56f-488a-a7a2-2a30bdbc08b8");
+        client.DefaultRequestHeaders.Add(TestAuthHandler.NameHeader, "Maria Santos");
+        client.DefaultRequestHeaders.Add(TestAuthHandler.EmailHeader, "maria@teste.unifesspa.edu.br");
+        client.DefaultRequestHeaders.Add(TestAuthHandler.RolesHeader, "candidato");
+        client.DefaultRequestHeaders.Add(TestAuthHandler.CpfHeader, "529.982.247-25");
+        client.DefaultRequestHeaders.Add(TestAuthHandler.NomeSocialHeader, "Maria dos Santos");
+    }
+
+    private static void ConferirDadosDaCandidata(JsonElement perfil)
+    {
+        perfil.GetProperty("userId").GetString().Should().Be("4dc27b1b-c56f-488a-a7a2-2a30bdbc08b8");
+        perfil.GetProperty("name").GetString().Should().Be("Maria Santos");
+        perfil.GetProperty("email").GetString().Should().Be("maria@teste.unifesspa.edu.br");
+        perfil.GetProperty("cpf").GetString().Should().Be("529.982.247-25");
+        perfil.GetProperty("nomeSocial").GetString().Should().Be("Maria dos Santos");
+        perfil.TryGetProperty("roles", out _).Should().BeFalse("o papel do token não é perfil de acesso");
+        perfil.GetProperty("perfis").GetArrayLength().Should().Be(0);
+        perfil.GetProperty("timestamp").GetDateTimeOffset().Should().BeCloseTo(DateTimeOffset.UtcNow, TimeSpan.FromMinutes(1));
     }
 
     [Fact]
@@ -82,9 +95,7 @@ public sealed class ProfileEndpointsTests : IClassFixture<SelecaoApiFactory>
     {
         using WebApplicationFactory<Unifesspa.UniPlus.Host.HostAssemblyMarker> factory = ComConcessoes();
         using HttpClient client = factory.CreateClient();
-        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue(
-            TestAuthHandler.AuthorizationScheme,
-            TestAuthHandler.TokenValue);
+        Autenticar(client);
 
         HttpResponseMessage response = await client.GetAsync(GetMeUri);
 
@@ -100,16 +111,10 @@ public sealed class ProfileEndpointsTests : IClassFixture<SelecaoApiFactory>
     public async Task GetMe_ShouldReturnGrantedProfiles_WithScopeUnitAndExpiry()
     {
         Guid unidadeId = Guid.CreateVersion7();
-        ConcessaoAtiva institucional = new(Guid.CreateVersion7(), Guid.CreateVersion7(), null, "Consulta institucional", null, true, null, []);
-        ConcessaoAtiva daUnidade = new(
-            Guid.CreateVersion7(), Guid.CreateVersion7(), null, "Gestor de processo seletivo", unidadeId, false, DateTimeOffset.UtcNow.AddDays(30), []);
-        using WebApplicationFactory<Unifesspa.UniPlus.Host.HostAssemblyMarker> factory = ComConcessoes(
-            [daUnidade, institucional],
-            new UnidadeView(unidadeId, "CEPS", "CEPS", "ceps", "Centro de Processos Seletivos", null, "Centro", true, null));
+        using WebApplicationFactory<Unifesspa.UniPlus.Host.HostAssemblyMarker> factory =
+            ComConcessoesDeInstituicaoEUnidade(unidadeId, out ConcessaoAtiva daUnidade);
         using HttpClient client = factory.CreateClient();
-        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue(
-            TestAuthHandler.AuthorizationScheme,
-            TestAuthHandler.TokenValue);
+        Autenticar(client);
 
         HttpResponseMessage response = await client.GetAsync(GetMeUri);
 
@@ -118,6 +123,22 @@ public sealed class ProfileEndpointsTests : IClassFixture<SelecaoApiFactory>
         using JsonDocument payload = await JsonDocument.ParseAsync(await response.Content.ReadAsStreamAsync());
         JsonElement[] perfis = [.. payload.RootElement.GetProperty("perfis").EnumerateArray()];
 
+        ConferirPerfisConcedidos(perfis, daUnidade, unidadeId);
+    }
+
+    private WebApplicationFactory<Unifesspa.UniPlus.Host.HostAssemblyMarker> ComConcessoesDeInstituicaoEUnidade(
+        Guid unidadeId, out ConcessaoAtiva daUnidade)
+    {
+        ConcessaoAtiva institucional = new(Guid.CreateVersion7(), Guid.CreateVersion7(), null, "Consulta institucional", null, true, null, []);
+        daUnidade = new(
+            Guid.CreateVersion7(), Guid.CreateVersion7(), null, "Gestor de processo seletivo", unidadeId, false, DateTimeOffset.UtcNow.AddDays(30), []);
+        return ComConcessoes(
+            [daUnidade, institucional],
+            new UnidadeView(unidadeId, "CEPS", "CEPS", "ceps", "Centro de Processos Seletivos", null, "Centro", true, null));
+    }
+
+    private static void ConferirPerfisConcedidos(JsonElement[] perfis, ConcessaoAtiva daUnidade, Guid unidadeId)
+    {
         perfis.Select(static p => p.GetProperty("nome").GetString())
             .Should().Equal("Consulta institucional", "Gestor de processo seletivo");
         perfis[0].GetProperty("escopoTipo").GetString().Should().Be("instituicao");
