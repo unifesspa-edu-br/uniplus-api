@@ -1,6 +1,7 @@
 namespace Unifesspa.UniPlus.Autorizacao.Infrastructure.Persistence.Repositories;
 
 using Unifesspa.UniPlus.Autorizacao.Domain.Entities;
+using Unifesspa.UniPlus.Autorizacao.Domain.Enums;
 using Unifesspa.UniPlus.Autorizacao.Domain.Interfaces;
 
 /// <summary>O recorte das concessões pelos critérios da listagem: pessoa, unidade, perfil e situação.</summary>
@@ -32,13 +33,13 @@ internal static class ConcessoesDoFiltro
     private static IQueryable<Concessao> DoPerfil(this IQueryable<Concessao> concessoes, Guid? perfilId) =>
         perfilId is { } perfil ? concessoes.Where(c => c.PerfilId == perfil) : concessoes;
 
-    // A situação que o recorte não conhece não recorta, como a de todas.
-    private static IQueryable<Concessao> NaSituacao(this IQueryable<Concessao> concessoes, SituacaoDaConcessao situacao, DateTimeOffset agora) =>
+    private static IQueryable<Concessao> NaSituacao(this IQueryable<Concessao> concessoes, SituacaoDaConcessao? situacao, DateTimeOffset agora) =>
         situacao switch
         {
             SituacaoDaConcessao.Ativa => concessoes.Vigentes(agora),
             SituacaoDaConcessao.Revogada => concessoes.Where(c => c.RevogadaEm != null),
             SituacaoDaConcessao.Vencida => concessoes.Where(c => c.RevogadaEm == null && c.ValidaAte != null && c.ValidaAte <= agora),
-            _ => concessoes,
+            null => concessoes,
+            _ => throw new ArgumentOutOfRangeException(nameof(situacao), situacao, "Situação da concessão desconhecida."),
         };
 }

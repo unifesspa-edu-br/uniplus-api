@@ -142,10 +142,10 @@
       "codigo": "uniplus.autorizacao.concessao.filtro_de_situacao_invalido",
       "requisitos": [],
       "oQueAconteceu": [
-        "O filtro por situação da lista de concessões recebeu um valor desconhecido. As situações possíveis são: ativa, revogada, vencida e todas. Nenhuma concessão foi listada."
+        "O filtro por situação da lista de concessões recebeu um valor desconhecido. As situações possíveis são: ativa, revogada e vencida. Nenhuma concessão foi listada."
       ],
       "comoResolver": [
-        "Escolha uma das quatro situações. Sem informar a situação, a lista mostra só as concessões ativas."
+        "Escolha uma das situações disponíveis. Sem informar a situação, a lista não é filtrada por situação."
       ],
       "ondeAparece": [
         "Listagem de concessões de acesso"

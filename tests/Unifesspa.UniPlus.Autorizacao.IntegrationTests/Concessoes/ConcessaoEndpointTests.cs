@@ -17,6 +17,7 @@ using Unifesspa.UniPlus.Autorizacao.Domain.Interfaces;
 using Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Autorizacao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Autorizacao.IntegrationTests.Infrastructure;
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Authentication;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Hosting;
 using Unifesspa.UniPlus.Kernel.Results;
@@ -86,24 +87,26 @@ public sealed class ConcessaoEndpointTests : ConcessaoEndpointTestBase
         nova.Should().NotBe(vencida);
     }
 
-    [Fact(DisplayName = "A lista traz só as ativas por padrão e a revogada sai delas")]
-    public async Task Listar_PorPadrao_TrazSoAsAtivas()
+    [Fact(DisplayName = "A lista sem situação traz concessões em qualquer situação")]
+    public async Task Listar_SemSituacao_TrazAtivasRevogadasEVencidas()
     {
         Guid perfil = await CriarPerfilComumAsync();
         Guid ativa = await ConcederAsync(perfil, Leandro, EscopoDaConcessao.DaUnidade(Guid.NewGuid()));
         Guid revogada = await ConcederAsync(perfil, Leandro, EscopoDaConcessao.DaUnidade(Guid.NewGuid()));
+        Guid vencida = await ConcederAsync(perfil, Leandro, EscopoDaConcessao.DaUnidade(Guid.NewGuid()), validaAteDaquiAMinutos: 1);
+        await VencerEmDataPassadaAsync(vencida);
         using HttpClient diogo = await ClienteDoGestorAsync(Diogo);
         (await EnviarAsync(diogo, HttpMethod.Post, $"{Rota}/{revogada}/revogacao", new { motivo = Motivo, confirmacaoEmail = EmailDoBeneficiario }))
             .StatusCode.Should().Be(HttpStatusCode.NoContent);
 
         string filtro = $"?contaId={Leandro.ContaId}&emissor={Uri.EscapeDataString(Leandro.Emissor)}&perfil={perfil}";
 
-        (await IdsAsync(diogo, filtro)).Should().Equal(ativa);
-        (await IdsAsync(diogo, filtro + "&situacao=revogada")).Should().Equal(revogada);
-        (await IdsAsync(diogo, filtro + "&situacao=todas")).Should().BeEquivalentTo([ativa, revogada]);
+        (await IdsAsync(diogo, filtro)).Should().BeEquivalentTo([ativa, revogada, vencida]);
+        (await IdsAsync(diogo, filtro + "&situacao=ATIVA")).Should().Equal(ativa);
+        (await IdsAsync(diogo, filtro + "&situacao=REVOGADA")).Should().Equal(revogada);
     }
 
-    [Fact(DisplayName = "Situação vencida traz só a não revogada com vigência vencida, sem distinguir maiúsculas")]
+    [Fact(DisplayName = "Situação vencida traz só a não revogada com vigência vencida")]
     public async Task Listar_Vencida_TrazSoAVigenciaVencida()
     {
         Guid perfil = await CriarPerfilComumAsync();
@@ -115,7 +118,7 @@ public sealed class ConcessaoEndpointTests : ConcessaoEndpointTestBase
         string filtro = $"?contaId={Leandro.ContaId}&emissor={Uri.EscapeDataString(Leandro.Emissor)}&perfil={perfil}";
 
         (await IdsAsync(diogo, filtro + "&situacao=VENCIDA")).Should().Equal(vencida);
-        (await IdsAsync(diogo, filtro)).Should().HaveCount(1).And.NotContain(vencida);
+        (await IdsAsync(diogo, filtro)).Should().HaveCount(2).And.Contain(vencida);
     }
 
     [Fact(DisplayName = "A lista filtra pela unidade")]
@@ -142,14 +145,42 @@ public sealed class ConcessaoEndpointTests : ConcessaoEndpointTestBase
             .StatusCode.Should().Be(HttpStatusCode.BadRequest);
     }
 
-    [Fact(DisplayName = "Situação desconhecida é recusada com 400")]
-    public async Task Listar_SituacaoDesconhecida_Devolve400()
+    [Theory]
+    [InlineData("ativa")]
+    [InlineData("%20ATIVA%20")]
+    [InlineData("todas")]
+    [InlineData("expirada")]
+    public async Task Listar_SituacaoInvalida_Devolve400(string situacao)
     {
         using HttpClient diogo = await ClienteDoGestorAsync(Diogo);
 
-        using HttpResponseMessage resposta = await diogo.GetAsync(new Uri($"{Rota}?situacao=expirada", UriKind.Relative));
+        using HttpResponseMessage resposta = await diogo.GetAsync(new Uri($"{Rota}?situacao={situacao}", UriKind.Relative));
+
         resposta.StatusCode.Should().Be(HttpStatusCode.BadRequest);
-        (await resposta.Content.ReadAsStringAsync()).Should().Contain("uniplus.autorizacao.concessao.filtro_de_situacao_invalido");
+        string corpo = await resposta.Content.ReadAsStringAsync();
+        corpo.Should().Contain("uniplus.autorizacao.concessao.filtro_de_situacao_invalido").And.NotContain(situacao);
+    }
+
+    [Fact]
+    public async Task Listar_PessoaIncompletaESituacaoInvalida_RecusaPessoa()
+    {
+        using HttpClient diogo = await ClienteDoGestorAsync(Diogo);
+
+        using HttpResponseMessage resposta = await diogo.GetAsync(new Uri($"{Rota}?contaId={Leandro.ContaId}&situacao=expirada", UriKind.Relative));
+
+        resposta.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        string corpo = await resposta.Content.ReadAsStringAsync();
+        corpo.Should().Contain("uniplus.autorizacao.concessao.filtro_de_pessoa_invalido").And.NotContain("filtro_de_situacao_invalido");
+    }
+
+    [Fact]
+    public async Task Listar_SemPermissaoESituacaoInvalida_RecusaPermissao()
+    {
+        using HttpClient pessoa = Cliente(Pessoa("caroline.jesus"));
+
+        using HttpResponseMessage resposta = await pessoa.GetAsync(new Uri($"{Rota}?situacao=expirada", UriKind.Relative));
+
+        resposta.StatusCode.Should().Be(HttpStatusCode.Forbidden);
     }
 
     [Fact(DisplayName = "O detalhe devolve beneficiário, perfil, escopo e origem sem nome nem CPF")]
@@ -180,5 +211,13 @@ public sealed class ConcessaoEndpointTests : ConcessaoEndpointTestBase
 
         resposta.StatusCode.Should().Be(HttpStatusCode.NotFound);
         (await resposta.Content.ReadAsStringAsync()).Should().Contain("uniplus.autorizacao.concessao.nao_encontrada");
+    }
+
+    private async Task VencerEmDataPassadaAsync(Guid id)
+    {
+        await using AsyncServiceScope scope = Fixture.Factory.Services.CreateAsyncScope();
+        UniPlusDbContext db = scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
+        await db.Database.ExecuteSqlRawAsync(
+            "UPDATE autorizacao.concessoes SET concedida_em = '2000-01-01T00:00:00Z', valida_ate = '2001-01-01T00:00:00Z' WHERE id = {0}", id);
     }
 }
