@@ -48,6 +48,16 @@ public sealed class AtendimentoEspecializado : EntityBase, IParteDoProcesso
     public static bool GereOpcoesDoFato(string fatoCodigo) =>
         ImpoeOrigemDoFato(fatoCodigo) || fatoCodigo is FatoTipoDeficiencia;
 
+    private static readonly DomainError CondicaoDuplicada = new(
+        "AtendimentoEspecializado.CondicaoDuplicada", "Cada condição de atendimento só pode ser ofertada uma vez.");
+    private static readonly DomainError RecursoDuplicado = new(
+        "AtendimentoEspecializado.RecursoDuplicado", "Cada recurso de acessibilidade só pode ser ofertado uma vez.");
+    private static readonly DomainError TipoDeficienciaDuplicado = new(
+        "AtendimentoEspecializado.TipoDeficienciaDuplicado", "Cada tipo de deficiência só pode ser ofertado uma vez.");
+    private static readonly DomainError TipoDeficienciaSemCondicaoPcd = new(
+        "AtendimentoEspecializado.TipoDeficienciaSemCondicaoPcd",
+        "Tipos de deficiência só podem ser ofertados quando a condição PcD está ofertada.");
+
     public Guid ProcessoSeletivoId { get; private set; }
 
     private readonly List<CondicaoOfertada> _condicoes = [];
@@ -60,6 +70,16 @@ public sealed class AtendimentoEspecializado : EntityBase, IParteDoProcesso
     public IReadOnlyCollection<DeficienciaAtendida> TiposDeficiencia => _tiposDeficiencia.AsReadOnly();
 
     private AtendimentoEspecializado() { }
+
+    private AtendimentoEspecializado(
+        IReadOnlyList<CondicaoOfertada> condicoes,
+        IReadOnlyList<RecursoOfertado> recursos,
+        IReadOnlyList<DeficienciaAtendida> tiposDeficiencia)
+    {
+        OfertarCondicoes(condicoes);
+        OfertarRecursos(recursos);
+        AtenderDeficiencias(tiposDeficiencia);
+    }
 
     /// <summary>
     /// As opções que o atendimento dá ao fato, ordenadas pelo código e numeradas a partir de zero: o
@@ -82,13 +102,7 @@ public sealed class AtendimentoEspecializado : EntityBase, IParteDoProcesso
         };
 
     /// <summary>
-    /// Acumula toda violação independente em vez de retornar na primeira (ADR-0125) — as
-    /// três checagens de duplicata e a invariante ADR-0067 (tipo de deficiência só sob
-    /// condição PcD) não dependem umas das outras. As checagens de duplicata só existem
-    /// aqui por defesa em profundidade: o handler já confirma unicidade via
-    /// <see cref="ValidarIdsUnicos"/>, sobre os IDs crus, ANTES de resolver cada dimensão nos
-    /// cadastros vivos (validação sempre precede I/O) — chamar <see cref="Criar"/>
-    /// diretamente sem passar por ali (ex.: em teste) ainda é seguro.
+    /// Valida as ofertas e acumula as recusas de duplicidade e de tipos de deficiência sem condição PcD.
     /// </summary>
     public static Result<AtendimentoEspecializado> Criar(
         IReadOnlyList<CondicaoOfertada> condicoes,
@@ -98,78 +112,18 @@ public sealed class AtendimentoEspecializado : EntityBase, IParteDoProcesso
         ArgumentNullException.ThrowIfNull(condicoes);
         ArgumentNullException.ThrowIfNull(recursos);
         ArgumentNullException.ThrowIfNull(tiposDeficiencia);
-
-        List<FieldError> erros = [];
-
-        // Recusa duplicatas aqui — não no índice único do banco (CA-06): sem
-        // este guard, um request com o mesmo *_origem_id repetido passaria
-        // pelo domínio e só falharia no SaveChanges como DbUpdateException
-        // (500), em vez de Result 422.
-        if (condicoes.Select(c => c.CondicaoOrigemId).Distinct().Count() != condicoes.Count)
-        {
-            erros.Add(new("condicaoIds", new DomainError(
-                "AtendimentoEspecializado.CondicaoDuplicada",
-                "Cada condição de atendimento só pode ser ofertada uma vez.")));
-        }
-
-        if (recursos.Select(r => r.RecursoOrigemId).Distinct().Count() != recursos.Count)
-        {
-            erros.Add(new("recursoIds", new DomainError(
-                "AtendimentoEspecializado.RecursoDuplicado",
-                "Cada recurso de acessibilidade só pode ser ofertado uma vez.")));
-        }
-
-        if (tiposDeficiencia.Select(t => t.TipoDeficienciaOrigemId).Distinct().Count() != tiposDeficiencia.Count)
-        {
-            erros.Add(new("tipoDeficienciaIds", new DomainError(
-                "AtendimentoEspecializado.TipoDeficienciaDuplicado",
-                "Cada tipo de deficiência só pode ser ofertado uma vez.")));
-        }
-
-        bool pcdOfertada = condicoes.Any(c =>
-            string.Equals(c.CondicaoCodigo, CodigoCondicaoPcd, StringComparison.OrdinalIgnoreCase));
-
-        if (tiposDeficiencia.Count > 0 && !pcdOfertada)
-        {
-            erros.Add(new("tipoDeficienciaIds", new DomainError(
-                "AtendimentoEspecializado.TipoDeficienciaSemCondicaoPcd",
-                "Tipos de deficiência só podem ser ofertados quando a condição PcD está ofertada.")));
-        }
-
-        if (erros.Count > 0)
-        {
-            return Result<AtendimentoEspecializado>.ValidationFailure(erros);
-        }
-
-        AtendimentoEspecializado atendimento = new();
-        foreach (CondicaoOfertada condicao in condicoes)
-        {
-            condicao.VincularAtendimentoEspecializado(atendimento.Id);
-            atendimento._condicoes.Add(condicao);
-        }
-
-        foreach (RecursoOfertado recurso in recursos)
-        {
-            recurso.VincularAtendimentoEspecializado(atendimento.Id);
-            atendimento._recursos.Add(recurso);
-        }
-
-        foreach (DeficienciaAtendida deficiencia in tiposDeficiencia)
-        {
-            deficiencia.VincularAtendimentoEspecializado(atendimento.Id);
-            atendimento._tiposDeficiencia.Add(deficiencia);
-        }
-
-        return Result<AtendimentoEspecializado>.Success(atendimento);
+        List<FieldError> recusas = ValidarIdsUnicos(
+            [.. condicoes.Select(static c => c.CondicaoOrigemId)],
+            [.. recursos.Select(static r => r.RecursoOrigemId)],
+            [.. tiposDeficiencia.Select(static t => t.TipoDeficienciaOrigemId)]);
+        RecusarDeficienciaSemCondicaoPcd(recusas, condicoes, tiposDeficiencia);
+        return recusas.Count > 0
+            ? Result<AtendimentoEspecializado>.ValidationFailure(recusas)
+            : Result<AtendimentoEspecializado>.Success(new(condicoes, recursos, tiposDeficiencia));
     }
 
     /// <summary>
-    /// Confirma unicidade dos IDs crus de cada dimensão — sem depender do cadastro vivo
-    /// (ADR-0056) já resolvido, ao contrário das checagens equivalentes dentro de
-    /// <see cref="Criar"/>. Existe para o handler poder recusar duplicatas ANTES de consultar
-    /// os três leitores cross-módulo (ADR-0125 ponto 5: validação sempre precede I/O) — um
-    /// payload com o mesmo <c>condicaoId</c> repetido não precisa de três chamadas de rede
-    /// para descobrir que vai falhar.
+    /// Confere a unicidade dos IDs de origem antes da consulta aos cadastros.
     /// </summary>
     public static List<FieldError> ValidarIdsUnicos(
         IReadOnlyList<Guid> condicaoIds, IReadOnlyList<Guid> recursoIds, IReadOnlyList<Guid> tipoDeficienciaIds)
@@ -177,31 +131,60 @@ public sealed class AtendimentoEspecializado : EntityBase, IParteDoProcesso
         ArgumentNullException.ThrowIfNull(condicaoIds);
         ArgumentNullException.ThrowIfNull(recursoIds);
         ArgumentNullException.ThrowIfNull(tipoDeficienciaIds);
+        List<FieldError> recusas = [];
+        RecusarOfertaRepetida(recusas, condicaoIds, "condicaoIds", CondicaoDuplicada);
+        RecusarOfertaRepetida(recusas, recursoIds, "recursoIds", RecursoDuplicado);
+        RecusarOfertaRepetida(recusas, tipoDeficienciaIds, "tipoDeficienciaIds", TipoDeficienciaDuplicado);
+        return recusas;
+    }
 
-        List<FieldError> erros = [];
-
-        if (condicaoIds.Distinct().Count() != condicaoIds.Count)
+    private static void RecusarOfertaRepetida(
+        List<FieldError> recusas, IReadOnlyList<Guid> origemIds, string campo, DomainError recusa)
+    {
+        if (origemIds.Distinct().Count() != origemIds.Count)
         {
-            erros.Add(new("condicaoIds", new DomainError(
-                "AtendimentoEspecializado.CondicaoDuplicada",
-                "Cada condição de atendimento só pode ser ofertada uma vez.")));
+            recusas.Add(new(campo, recusa));
         }
+    }
 
-        if (recursoIds.Distinct().Count() != recursoIds.Count)
+    private static void RecusarDeficienciaSemCondicaoPcd(
+        List<FieldError> recusas, IReadOnlyList<CondicaoOfertada> condicoes,
+        IReadOnlyList<DeficienciaAtendida> tiposDeficiencia)
+    {
+        if (tiposDeficiencia.Count > 0 && !OfertaCondicaoPcd(condicoes))
         {
-            erros.Add(new("recursoIds", new DomainError(
-                "AtendimentoEspecializado.RecursoDuplicado",
-                "Cada recurso de acessibilidade só pode ser ofertado uma vez.")));
+            recusas.Add(new("tipoDeficienciaIds", TipoDeficienciaSemCondicaoPcd));
         }
+    }
 
-        if (tipoDeficienciaIds.Distinct().Count() != tipoDeficienciaIds.Count)
+    private static bool OfertaCondicaoPcd(IReadOnlyList<CondicaoOfertada> condicoes) =>
+        condicoes.Any(c => string.Equals(c.CondicaoCodigo, CodigoCondicaoPcd, StringComparison.Ordinal));
+
+    private void OfertarCondicoes(IReadOnlyList<CondicaoOfertada> condicoes)
+    {
+        foreach (CondicaoOfertada condicao in condicoes)
         {
-            erros.Add(new("tipoDeficienciaIds", new DomainError(
-                "AtendimentoEspecializado.TipoDeficienciaDuplicado",
-                "Cada tipo de deficiência só pode ser ofertado uma vez.")));
+            condicao.VincularAtendimentoEspecializado(Id);
+            _condicoes.Add(condicao);
         }
+    }
 
-        return erros;
+    private void OfertarRecursos(IReadOnlyList<RecursoOfertado> recursos)
+    {
+        foreach (RecursoOfertado recurso in recursos)
+        {
+            recurso.VincularAtendimentoEspecializado(Id);
+            _recursos.Add(recurso);
+        }
+    }
+
+    private void AtenderDeficiencias(IReadOnlyList<DeficienciaAtendida> tiposDeficiencia)
+    {
+        foreach (DeficienciaAtendida deficiencia in tiposDeficiencia)
+        {
+            deficiencia.VincularAtendimentoEspecializado(Id);
+            _tiposDeficiencia.Add(deficiencia);
+        }
     }
 
     void IParteDoProcesso.VincularProcesso(Guid processoSeletivoId) =>
