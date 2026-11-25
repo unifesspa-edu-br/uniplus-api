@@ -19,7 +19,7 @@ public sealed class CausasDoFormularioNoEnvelopeTests
             FormularioComTermosNoEnvelope.Pagina("SEGUNDA", 1, "SECAO", null, ExibicaoIncoerente()));
         IReadOnlyList<FieldError> causas = LerCausas(FormularioComTermosNoEnvelope.Documento(formulario));
 
-        causas.Should().Equal(FormaIncoerente("formularios[0].paginas[1].exibicao"));
+        causas.Should().Equal(FormaIncoerente("formularios[0].paginas[1].exibicao[0][0].valor"));
         ConferirAusenciaDoTexto(causas, ValorFicticio);
     }
 
@@ -30,7 +30,7 @@ public sealed class CausasDoFormularioNoEnvelopeTests
             FormularioComTermosNoEnvelope.Termo("SEGUNDO", 1, ExibicaoIncoerente()));
         IReadOnlyList<FieldError> causas = LerCausas(FormularioComTermosNoEnvelope.Documento(formulario));
 
-        causas.Should().Equal(FormaIncoerente("formularios[0].termos[1].exibicao"));
+        causas.Should().Equal(FormaIncoerente("formularios[0].termos[1].exibicao[0][0].valor"));
         ConferirAusenciaDoTexto(causas, ValorFicticio);
     }
 

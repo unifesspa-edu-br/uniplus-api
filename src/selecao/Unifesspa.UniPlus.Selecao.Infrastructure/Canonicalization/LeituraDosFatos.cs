@@ -197,7 +197,7 @@ internal static class LeituraDosFatos
         }
 
         Result<PredicadoDnf?> predicado = LeituraDasCondicoes.PredicadoOpcional(linhas);
-        return predicado.IsFailure ? leitor.Propagar<PredicadoDnf?>(predicado.Error!) : predicado.Value;
+        return predicado.IsFailure ? leitor.Propagar<PredicadoDnf?>(predicado.Errors, $"{path}.exibicao") : predicado.Value;
     }
 
     private static DeclaracaoDoFato LerDeclaracao(LeitorEnvelope leitor, JsonObject item, string path) => new()

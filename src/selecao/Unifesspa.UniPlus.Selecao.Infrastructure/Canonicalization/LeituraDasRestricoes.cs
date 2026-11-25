@@ -54,7 +54,7 @@ internal static class LeituraDasRestricoes
 
         if (restricao.IsFailure)
         {
-            leitor.Propagar<List<RestricaoValor>?>(restricao.Error!);
+            leitor.Propagar<List<RestricaoValor>?>(restricao.Errors, $"{path}.restricoes[{indice}]");
             return false;
         }
 
@@ -102,9 +102,23 @@ internal static class LeituraDasRestricoes
             return null;
         }
 
-        return minima is { IsFailure: true } || maxima is { IsFailure: true }
-            ? Result<RestricaoValor>.Failure((minima?.Error ?? maxima?.Error)!)
-            : RestricoesDeValor.FaixaDeData(minima?.Value, maxima?.Value);
+        return MontarFaixaDeData(minima, maxima);
+    }
+
+    private static Result<RestricaoValor> MontarFaixaDeData(Result<LimiteDeData>? minima, Result<LimiteDeData>? maxima)
+    {
+        List<FieldError> causas = [];
+        AcrescentarCausasDoLimite(causas, minima, "dataMinima");
+        AcrescentarCausasDoLimite(causas, maxima, "dataMaxima");
+        return causas.Count > 0 ? Result<RestricaoValor>.ValidationFailure(causas) : RestricoesDeValor.FaixaDeData(minima?.Value, maxima?.Value);
+    }
+
+    private static void AcrescentarCausasDoLimite(List<FieldError> causas, Result<LimiteDeData>? limite, string caminho)
+    {
+        if (limite is { IsFailure: true })
+        {
+            causas.AddRange(limite.Errors.Select(causa => (causa with { Field = causa.Field ?? string.Empty }).NoCaminhoDe(caminho)));
+        }
     }
 
     /// <summary>O limite da faixa de data, com exatamente as chaves da âncora; nulo quando o limite falta.</summary>
@@ -173,14 +187,19 @@ internal static class LeituraDasRestricoes
             Result<(PredicadoDnf? Quando, IReadOnlyCollection<string> Valores)>? entrada = LerEntradaDeOpcoes(leitor, entradas, i, path);
             if (leitor.Falhou || entrada is null || entrada.IsFailure)
             {
-                return entrada is { IsFailure: true } && !leitor.Falhou ? Result<RestricaoValor>.Failure(entrada.Error!) : null;
+                return entrada is { IsFailure: true } && !leitor.Falhou
+                    ? FalhaDaEntrada(entrada, i)
+                    : null;
             }
-
             lidas.Add(entrada.Value);
         }
 
         return leitor.Falhou ? null : RestricoesDeValor.Opcoes(lidas);
     }
+
+    private static Result<RestricaoValor> FalhaDaEntrada(
+        Result<(PredicadoDnf? Quando, IReadOnlyCollection<string> Valores)> entrada, int indice) =>
+        Result<RestricaoValor>.ValidationFailure(entrada.Errors.Select(causa => causa.NoCaminhoDe($"entradas[{indice}].quando")).ToList());
 
     private static Result<(PredicadoDnf? Quando, IReadOnlyCollection<string> Valores)>? LerEntradaDeOpcoes(
         LeitorEnvelope leitor, JsonArray entradas, int indice, string path)
@@ -198,7 +217,7 @@ internal static class LeituraDasRestricoes
     {
         Result<PredicadoDnf?> predicado = LeituraDasCondicoes.PredicadoOpcional(quando);
         return predicado.IsFailure
-            ? Result<(PredicadoDnf?, IReadOnlyCollection<string>)>.Failure(predicado.Error!)
+            ? Result<(PredicadoDnf?, IReadOnlyCollection<string>)>.ValidationFailure(predicado.Errors)
             : Result<(PredicadoDnf?, IReadOnlyCollection<string>)>.Success((predicado.Value, valores));
     }
 

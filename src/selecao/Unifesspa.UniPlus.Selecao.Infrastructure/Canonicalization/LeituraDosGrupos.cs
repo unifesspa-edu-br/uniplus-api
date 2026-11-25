@@ -101,7 +101,7 @@ internal static class LeituraDosGrupos
         Result<PredicadoDnf?> exibicao = LeituraDasCondicoes.PredicadoOpcional(d.Exibicao);
         if (exibicao.IsFailure)
         {
-            return leitor.Propagar<ExibicaoEObrigatoriedade?>(exibicao.Error!);
+            return leitor.Propagar<ExibicaoEObrigatoriedade?>(exibicao.Errors, $"{path}.exibicao");
         }
 
         return LeituraDasCondicoes.LerObrigatoriedade(leitor, item, path) is { } obrigatoriedade

@@ -100,7 +100,7 @@ internal static class LeituraDaDerivacao
             return null;
         }
 
-        List<CondicaoRegraDerivacao>? condicoes = LerCondicoesDaDerivacao(leitor, linhas);
+        List<CondicaoRegraDerivacao>? condicoes = LerCondicoesDaDerivacao(leitor, linhas, $"{path}.quando");
         if (condicoes is null)
         {
             return null;
@@ -110,20 +110,28 @@ internal static class LeituraDaDerivacao
         return regra.IsFailure ? leitor.Propagar<RegraDerivacaoConfigurada?>(regra.Error!) : regra.Value;
     }
 
-    private static List<CondicaoRegraDerivacao>? LerCondicoesDaDerivacao(LeitorEnvelope leitor, IReadOnlyList<LinhaDoPredicado> linhas)
+    private static List<CondicaoRegraDerivacao>? LerCondicoesDaDerivacao(
+        LeitorEnvelope leitor, IReadOnlyList<LinhaDoPredicado> linhas, string caminho)
+    {
+        Result<List<(int Clausula, CondicaoDnf Condicao)>> lidas = LeituraDasCondicoes.CondicoesDasLinhas(linhas);
+        return lidas.IsFailure
+            ? leitor.Propagar<List<CondicaoRegraDerivacao>?>(lidas.Errors, caminho)
+            : CriarCondicoesDaDerivacao(leitor, lidas.Value!, caminho);
+    }
+
+    private static List<CondicaoRegraDerivacao>? CriarCondicoesDaDerivacao(
+        LeitorEnvelope leitor, IReadOnlyList<(int Clausula, CondicaoDnf Condicao)> linhas, string caminho)
     {
         List<CondicaoRegraDerivacao> condicoes = [];
-        foreach ((int clausula, string fato, Operador operador, JsonElement valor) in linhas)
+        foreach ((int clausula, CondicaoDnf condicao) in linhas)
         {
-            Result<CondicaoRegraDerivacao> condicao = CondicaoRegraDerivacao.Criar(clausula, fato, operador, valor);
-            if (condicao.IsFailure)
+            Result<CondicaoRegraDerivacao> criada = CondicaoRegraDerivacao.Criar(clausula, condicao.Fato, condicao.Operador, condicao.Valor);
+            if (criada.IsFailure)
             {
-                return leitor.Propagar<List<CondicaoRegraDerivacao>?>(condicao.Error!);
+                return leitor.Propagar<List<CondicaoRegraDerivacao>?>(criada.Errors, caminho);
             }
-
-            condicoes.Add(condicao.Value!);
+            condicoes.Add(criada.Value!);
         }
-
         return condicoes;
     }
 

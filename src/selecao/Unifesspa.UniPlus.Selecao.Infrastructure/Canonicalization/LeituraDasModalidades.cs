@@ -55,10 +55,10 @@ internal static class LeituraDasModalidades
 
         if (declaracao.RecusaDoVocabulario() is { } vocabulario)
         {
-            return leitor.Propagar<ModalidadeSelecionada>(vocabulario);
+            return leitor.Propagar<ModalidadeSelecionada>([new FieldError(null, vocabulario)], path);
         }
 
-        return Reidratar(leitor, declaracao);
+        return Reidratar(leitor, declaracao, path);
     }
 
     private static ModalidadeLidaDoEnvelope LerDeclaracao(LeitorEnvelope leitor, JsonObject item, string path) =>
@@ -85,19 +85,25 @@ internal static class LeituraDasModalidades
         Fallback = leitor.TextoOpcional(item, "remanejamentoDestinoFinal", path, LimitesDoEnvelope.ModalidadeCodigo),
     };
 
-    private static ModalidadeSelecionada? Reidratar(LeitorEnvelope leitor, ModalidadeLidaDoEnvelope d)
+    private static ModalidadeSelecionada? Reidratar(LeitorEnvelope leitor, ModalidadeLidaDoEnvelope d, string path)
     {
         Result<PredicadoDnf?> regraLida = LeituraDasCondicoes.PredicadoOpcional(d.Regra);
         if (regraLida.IsFailure)
         {
-            return leitor.Propagar<ModalidadeSelecionada>(regraLida.Error!);
+            return leitor.Propagar<ModalidadeSelecionada>(regraLida.Errors, $"{path}.regraDeAplicabilidade");
         }
 
+        return CriarModalidade(leitor, d, regraLida.Value, path);
+    }
+
+    private static ModalidadeSelecionada? CriarModalidade(
+        LeitorEnvelope leitor, ModalidadeLidaDoEnvelope d, PredicadoDnf? regra, string path)
+    {
         Result<ModalidadeSelecionada> modalidade = ModalidadeSelecionada.Criar(
-            d.NoCadastro(regraLida.Value ?? PredicadoDnf.SemClausula), d.QuantidadeDeclarada);
+            d.NoCadastro(regra ?? PredicadoDnf.SemClausula), d.QuantidadeDeclarada);
         if (modalidade.IsFailure)
         {
-            return leitor.Propagar<ModalidadeSelecionada>(modalidade.Error!);
+            return leitor.Propagar<ModalidadeSelecionada>(modalidade.Errors, path);
         }
 
         return ConferirRemanejamentoPelaNatureza(leitor, modalidade.Value!);

@@ -8,6 +8,7 @@ using Unifesspa.UniPlus.Kernel.Domain.Cidades;
 using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Regras.Entradas;
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Regras.Serializacao;
@@ -50,7 +51,7 @@ internal static class LeituraDasCondicoes
         Result<PredicadoDnf?> predicado = PredicadoOpcional(linhas);
 
         return predicado.IsFailure
-            ? leitor.Propagar<Obrigatoriedade>(predicado.Error!)
+            ? leitor.Propagar<Obrigatoriedade>(predicado.Errors, $"{path}.quando")
             : ObrigatoriedadeDaForma(leitor, tipo, predicado.Value, path);
     }
 
@@ -59,41 +60,17 @@ internal static class LeituraDasCondicoes
             ?? leitor.Recusar<Obrigatoriedade>($"'{path}' tem tipo SEMPRE ou NUNCA sem predicado, ou QUANDO com predicado.");
 
     /// <summary>O predicado das linhas lidas; <see langword="null"/> quando não há condição.</summary>
-    internal static Result<PredicadoDnf?> PredicadoOpcional(
-        IReadOnlyList<(int Clausula, string Fato, Operador Operador, JsonElement Valor)> linhas)
-    {
-        if (linhas.Count == 0)
-        {
-            return Result<PredicadoDnf?>.Success(null);
-        }
+    internal static Result<PredicadoDnf?> PredicadoOpcional(IReadOnlyList<LinhaDoPredicado> linhas) =>
+        EntradaDeRegras.Predicado(Clausulas(linhas));
 
-        Result<List<(int Clausula, CondicaoDnf Condicao)>> condicoes = CondicoesDasLinhas(linhas);
-        if (condicoes.IsFailure)
-        {
-            return Result<PredicadoDnf?>.Failure(condicoes.Error!);
-        }
+    internal static Result<List<(int Clausula, CondicaoDnf Condicao)>> CondicoesDasLinhas(IReadOnlyList<LinhaDoPredicado> linhas) =>
+        EntradaDeRegras.Condicoes(Clausulas(linhas));
 
-        Result<PredicadoDnf> predicado = PredicadoDnf.CriarDeCondicoesAgrupadas(condicoes.Value!);
-        return predicado.IsSuccess ? Result<PredicadoDnf?>.Success(predicado.Value) : Result<PredicadoDnf?>.Failure(predicado.Error!);
-    }
-
-    private static Result<List<(int Clausula, CondicaoDnf Condicao)>> CondicoesDasLinhas(
-        IReadOnlyList<(int Clausula, string Fato, Operador Operador, JsonElement Valor)> linhas)
-    {
-        List<(int Clausula, CondicaoDnf Condicao)> condicoes = [];
-        foreach ((int clausula, string fato, Operador operador, JsonElement valor) in linhas)
-        {
-            Result<CondicaoDnf> condicao = CondicaoDnf.Criar(fato, operador, valor);
-            if (condicao.IsFailure)
-            {
-                return Result<List<(int Clausula, CondicaoDnf Condicao)>>.Failure(condicao.Error!);
-            }
-
-            condicoes.Add((clausula, condicao.Value!));
-        }
-
-        return Result<List<(int Clausula, CondicaoDnf Condicao)>>.Success(condicoes);
-    }
+    private static List<IReadOnlyList<CondicaoPrecondicaoInput>> Clausulas(IReadOnlyList<LinhaDoPredicado> linhas) =>
+        linhas.GroupBy(linha => linha.Clausula)
+            .Select(grupo => (IReadOnlyList<CondicaoPrecondicaoInput>)grupo
+                .Select(linha => new CondicaoPrecondicaoInput(linha.Fato, linha.Operador.Codigo(), linha.Valor)).ToList())
+            .ToList();
 
     /// <summary>
     /// O predicado DNF: <see langword="null"/> na chave é "sem gatilho" (0
@@ -106,17 +83,32 @@ internal static class LeituraDasCondicoes
     /// </summary>
     internal static IReadOnlyList<CondicaoGatilho> LerCondicaoGatilho(LeitorEnvelope leitor, JsonObject item, string pathPai)
     {
-        const string chave = "condicoes";
-        if (ArrayDeClausulas(leitor, item, chave, pathPai) is not { } clausulas)
+        IReadOnlyList<LinhaDoPredicado> linhas = LerDnf(leitor, item, "condicoes", pathPai);
+        if (leitor.Falhou)
         {
             return [];
         }
 
-        List<CondicaoGatilho> condicoes = [];
-        bool lidas = Enumerable.Range(0, clausulas.Count)
-            .All(c => LerClausulaDoGatilho(leitor, clausulas[c], c, $"{pathPai}.{chave}[{c}]", condicoes));
+        Result<List<(int Clausula, CondicaoDnf Condicao)>> lidas = CondicoesDasLinhas(linhas);
+        return lidas.IsFailure
+            ? leitor.Propagar<IReadOnlyList<CondicaoGatilho>>(lidas.Errors, $"{pathPai}.condicoes")
+            : CriarGatilhos(leitor, lidas.Value!, $"{pathPai}.condicoes");
+    }
 
-        return lidas ? condicoes : [];
+    private static IReadOnlyList<CondicaoGatilho> CriarGatilhos(
+        LeitorEnvelope leitor, IReadOnlyList<(int Clausula, CondicaoDnf Condicao)> linhas, string caminho)
+    {
+        List<CondicaoGatilho> gatilhos = [];
+        foreach ((int clausula, CondicaoDnf condicao) in linhas)
+        {
+            Result<CondicaoGatilho> gatilho = CondicaoGatilho.Criar(clausula, condicao.Fato, condicao.Operador, condicao.Valor);
+            if (gatilho.IsFailure)
+            {
+                return leitor.Propagar<IReadOnlyList<CondicaoGatilho>>(gatilho.Errors, caminho);
+            }
+            gatilhos.Add(gatilho.Value!);
+        }
+        return gatilhos;
     }
 
     /// <summary>
@@ -137,31 +129,6 @@ internal static class LeituraDasCondicoes
 
         leitor.Recusar<object>($"'{pathPai}.{chave}' deveria ser um array de cláusulas ou null.");
         return null;
-    }
-
-    private static bool LerClausulaDoGatilho(LeitorEnvelope leitor, JsonNode? node, int clausula, string clausulaPath, List<CondicaoGatilho> condicoes)
-    {
-        if (node is not JsonArray condicoesDaClausula)
-        {
-            leitor.Recusar<object>($"'{clausulaPath}' deveria ser um array de condições.");
-            return false;
-        }
-
-        List<LinhaDoPredicado> linhas = [];
-        return LerLinhas(leitor, condicoesDaClausula, clausula, clausulaPath, linhas) && linhas.TrueForAll(linha => AdicionarGatilho(leitor, linha, condicoes));
-    }
-
-    private static bool AdicionarGatilho(LeitorEnvelope leitor, LinhaDoPredicado linha, List<CondicaoGatilho> condicoes)
-    {
-        Result<CondicaoGatilho> condicao = CondicaoGatilho.Criar(linha.Clausula, linha.Fato, linha.Operador, linha.Valor);
-        if (condicao.IsFailure)
-        {
-            leitor.Propagar<CondicaoGatilho>(condicao.Error!);
-            return false;
-        }
-
-        condicoes.Add(condicao.Value!);
-        return true;
     }
 
     /// <summary>
@@ -188,7 +155,7 @@ internal static class LeituraDasCondicoes
         Result<PredicadoDnf?> quando = PredicadoOpcional(linhas);
 
         return quando.IsFailure
-            ? leitor.Propagar<Impedimento>(quando.Error!)
+            ? leitor.Propagar<Impedimento>(quando.Errors, $"{path}.quando")
             : ImpedimentoDe(leitor, quando.Value, mensagem, path);
     }
 
