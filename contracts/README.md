@@ -37,7 +37,9 @@ A integração `OpenApiEndpointTests` nos módulos com baseline (`tests/Unifessp
 
 ### Como aprovar uma mudança
 
-Execute o teste `SpecRuntime` do projeto de integração do módulo e siga o [procedimento de aprovação](../CONTRIBUTING.md#aprovação-de-referências-de-teste). O teste compara o documento emitido à referência copiada para a saída. Se houver divergência, informa o arquivo obtido para revisão. Mudanças nos esquemas compartilhados exigem conferir o contrato de Seleção. Execute também o Spectral sobre o contrato aprovado.
+Toda ação de controlador declara `[EndpointName("VerboObjeto")]`: nome escrito à mão com verbo do negócio no infinitivo e objeto, em português e PascalCase, sem acento, `Get`, `Post`, `Admin` ou sigla. Não derive o nome do método, da rota ou do verbo HTTP. Ele é único entre os documentos do host e sua alteração muda o contrato. Campo de texto lido pelo domínio ou pela consulta por `CatalogoDe<T>`, em parâmetro de consulta ou propriedade de pedido, leva `[AceitaCodigosDe<T>]`; o filtro é lido de forma exata.
+
+Ao alterar o contrato, execute o teste `SpecRuntime` do projeto de integração do módulo e siga o [procedimento de aprovação](../CONTRIBUTING.md#aprovação-de-referências-de-teste). O teste compara o documento emitido à referência copiada para a saída. Se houver divergência, informa o arquivo obtido para revisão e aprovação; nunca edite os arquivos OpenAPI à mão. Mudanças nos esquemas compartilhados exigem conferir o contrato de Seleção. Execute também o Spectral sobre o contrato aprovado.
 
 ## Códigos de erro
 

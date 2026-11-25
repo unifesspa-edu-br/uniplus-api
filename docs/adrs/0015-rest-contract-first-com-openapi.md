@@ -5,7 +5,7 @@ decision-makers:
   - "Tech Lead (CTIC)"
 ---
 
-# ADR-0015: REST contract-first com OpenAPI 3.0 e versionamento de API
+# ADR-0015: REST contract-first com OpenAPI 3.1 e versionamento de API
 
 ## Contexto e enunciado do problema
 
@@ -29,26 +29,30 @@ O contrato precisa ser fonte de verdade — implementação backend e clientes f
 
 ## Resultado da decisão
 
-**Escolhida:** REST contract-first com OpenAPI 3.0. A spec OpenAPI é o artefato de referência. Backend implementa a partir dela; frontend consome cliente gerado dela.
+**Escolhida:** REST contract-first com OpenAPI. A spec OpenAPI é o artefato de referência, conforme a emenda abaixo.
 
 Regras técnicas:
 
-- **Contract-first.** A spec OpenAPI vive no repositório de documentação institucional e é versionada antes da implementação.
+- **Contract-first.** O contrato OpenAPI vive em `contracts/` neste repositório, conforme a [ADR-0030](0030-openapi-3-1-contract-first-microsoft-aspnetcore-openapi.md).
 - **Erros padronizados via ProblemDetails (RFC 7807)** com `correlationId` para rastreabilidade.
-- **Versionamento via Asp.Versioning** — URL path `/api/v1/` para major versions e header `api-version` para minor.
-- **Geração de clientes** — clientes TypeScript gerados via NSwag ou Kiota a partir da spec.
+- **Versionamento** — por recurso, via negociação de conteúdo, sem versão na rota, conforme as ADRs [0028](0028-versionamento-per-resource-content-negotiation.md) e [0064](0064-convencao-roteamento-path-based-com-prefixo-modulo.md).
+- **Tipos do web** — os tipos TypeScript do web são gerados pelo `openapi-typescript` a partir do contrato ([ADR-0013 do web](https://github.com/unifesspa-edu-br/uniplus-web/blob/main/docs/adrs/0013-gerador-openapi-node-only.md)).
 - **Health checks** via `Microsoft.Extensions.Diagnostics.HealthChecks` em `/health/live` (liveness), `/health` (todas as verificações, com o estado de cada uma) e `/health/ready` (readiness com checks de dependências: PostgreSQL, Kafka, Redis, MinIO; o Keycloak aparece como degradado no `/health`, fora da readiness, conforme a ADR-0131).
 - **Rate limiting nativo do .NET** com políticas por rota — proteção contra abuso em endpoints públicos (inscrição, consulta de resultado).
-- **Testes de contrato (Pact)** para garantir que a implementação não diverge da spec.
+- **Testes de contrato** comparam os documentos gerados às referências aprovadas em `contracts/`.
+
+### Emenda — 2026-11-25
+
+O contrato publicado usa OpenAPI 3.1 e é gerado a partir do código, conforme a [ADR-0030](0030-openapi-3-1-contract-first-microsoft-aspnetcore-openapi.md). A versão é por recurso e não aparece na rota, conforme as ADRs 0028 e 0064. A geração de tipos do web segue a ADR-0013 do web. Pact não foi adotado para essa comparação de contrato.
 
 ## Consequências
 
 ### Positivas
 
 - Desenvolvimento paralelo frontend/backend sem bloqueios.
-- Drift eliminado por geração automática + Pact em CI.
+- Divergências entre documentos gerados e referências aprovadas são detectadas pelos testes de contrato.
 - ProblemDetails padroniza tratamento de erros em toda a plataforma.
-- Versionamento via URL path mantém backward compatibility.
+- Versionamento por recurso permite evolução independente.
 - Health checks habilitam readiness probes no Kubernetes.
 
 ### Negativas
@@ -59,13 +63,13 @@ Regras técnicas:
 
 ### Riscos
 
-- **Spec desatualizada.** Mitigado por testes Pact que falham o CI em divergência.
+- **Spec desatualizada.** Mitigado por testes que comparam os documentos gerados às referências aprovadas.
 - **Over-fetching/under-fetching.** Mitigado por endpoints específicos por caso de uso (não genéricos) e BFF como evolução possível.
 
 ## Confirmação
 
-- Pipeline de CI executa contract tests Pact contra a spec OpenAPI.
-- Build do frontend regenera o client e falha se a spec apontada não estiver acessível.
+- Testes de integração comparam os documentos OpenAPI gerados às referências aprovadas.
+- A geração dos tipos do web segue a ADR-0013 do web.
 
 ## Prós e contras das opções
 

@@ -22,7 +22,7 @@ A umbrella ([ADR-0022](0022-contrato-rest-canonico-umbrella.md), princípio 6) j
 - **Spec é contrato com terceiros.** O spec exportado e committed (`contracts/openapi.<modulo>.json`) é o que integradores institucionais e codegen consomem. PR que altera comportamento sem regerar e committar o spec quebra esse contrato silenciosamente.
 - **Drift code↔spec é o pior dos mundos.** Spec desatualizado é pior que ausência de spec — causa decisões erradas em integradores. CI precisa falhar PR que não regenerou o spec.
 - **Reflexão das ADRs irmãs no spec.** Vendor media types per-resource ([ADR-0028](0028-versionamento-per-resource-content-negotiation.md)), `code` regex e `legal_reference` extension ([ADR-0023](0023-wire-formato-erro-rfc-9457.md)), cursor opaco ([ADR-0026](0026-paginacao-cursor-opaco-cifrado.md)), `_links` ([ADR-0029](0029-hateoas-level-1-links.md)) e `Sunset`/`Deprecation` headers ([ADR-0028](0028-versionamento-per-resource-content-negotiation.md)) precisam aparecer no spec sem trabalho manual por endpoint.
-- **Codegen `.NET` e Angular.** Clientes para consumo cross-módulo (interno) e para o `uniplus-web` (Angular) saem do mesmo spec — o pipeline precisa ser composable, não monolítico.
+- **Consumo por .NET e web.** O cliente .NET e os tipos do `uniplus-web` partem do mesmo contrato; o consumo pelo web segue a ADR-0013 do web.
 
 ## Opções consideradas
 
@@ -49,23 +49,23 @@ Na prática, isso entrega contract-first com 95% do rigor e 30% do custo de manu
 
 ### Tooling stack
 
-- **`Microsoft.AspNetCore.OpenApi` 1.x** (.NET 10) — registrado por módulo: `services.AddOpenApi("selecao")`, `services.AddOpenApi("ingresso")`. Cada módulo expõe o próprio documento em `/openapi/{documentName}.json`.
-- **`Microsoft.OpenApi` 1.6+** — para os transformers programáticos (`IOpenApiDocumentTransformer`, `IOpenApiOperationTransformer`, `IOpenApiSchemaTransformer`).
+- **`Microsoft.AspNetCore.OpenApi` 10.0.12** (.NET 10) — registra os documentos `autorizacao`, `configuracao`, `ingresso`, `organizacao`, `portal`, `publicacoes` e `selecao`, expostos em `/openapi/{documentName}.json`.
+- **`Microsoft.OpenApi` 2.12.2** — para os transformers programáticos (`IOpenApiDocumentTransformer`, `IOpenApiOperationTransformer`, `IOpenApiSchemaTransformer`).
 - **Spectral** (Stoplight CLI) — lint do spec committed com ruleset Uni+ versionado em `tools/spectral/.spectral.yaml`.
 - **Esquemas compartilhados** — a [ADR-0035](0035-shared-schemas-cross-module-fitness-test.md) define a conferência entre documentos de módulos.
 - **`Microsoft.OpenApi.Kiota`** — codegen de cliente .NET para consumo cross-módulo interno e SDKs futuros.
-- **`@openapitools/openapi-generator-cli`** — codegen de cliente Angular consumido pelo `uniplus-web`.
+- **Tipos do web** — o consumo do contrato segue a [ADR-0013 do web](https://github.com/unifesspa-edu-br/uniplus-web/blob/main/docs/adrs/0013-gerador-openapi-node-only.md).
 
 ### Pipeline de pós-processamento (CI a cada PR e a cada merge na main)
 
 1. **Build .NET.** `dotnet build` produz os assemblies dos módulos.
-2. **Extração do spec por módulo.** Spawn efêmero hits `/openapi/selecao.json` e `/openapi/ingresso.json` capturando o spec gerado de cada módulo.
+2. **Extração do spec por módulo.** Captura dos documentos gerados em `/openapi/{documentName}.json`.
 3. **Aplicação dos transformers Uni+** (ver "Transformers requeridos" abaixo).
 4. **Lint via Spectral** com ruleset Uni+ (ver "Regras Spectral mínimas" abaixo). Falha o PR em violação.
 5. **Esquemas compartilhados** — a [ADR-0035](0035-shared-schemas-cross-module-fitness-test.md) determina definições nos documentos dos módulos e a comparação entre elas.
 6. **Drift check.** Compara spec gerado e enriquecido com `contracts/openapi.<modulo>.json` committed. Diff → PR falha. Dev regenera e commita.
 7. **Codegen .NET.** Kiota gera `Unifesspa.UniPlus.Selecao.Client` e `Unifesspa.UniPlus.Ingresso.Client`.
-8. **Codegen Angular.** `openapi-generator-cli` gera `@uniplus/api-selecao-client` e `@uniplus/api-ingresso-client`.
+8. **Tipos do web.** O consumo do contrato segue a ADR-0013 do web.
 9. **Publicação no portal.** No merge para main, specs são pushados para `uniplus-developers` onde Docusaurus + Redoc renderizam por módulo.
 
 ### Transformers requeridos (mínimos)
@@ -89,8 +89,7 @@ Regras adicionais entram conforme padrões de erro recorrentes aparecem em PR re
 
 ### Um spec por módulo + shared
 
-- **`contracts/openapi.selecao.json`** — Selecao: `Edital`, `Inscricao`, `Classificacao`, etc.
-- **`contracts/openapi.ingresso.json`** — Ingresso: `Chamada`, `Convocacao`, `Matricula`, etc.
+- **Documentos publicados** — `contracts/openapi.{autorizacao,configuracao,ingresso,organizacao,portal,publicacoes,selecao}.json`.
 - **Esquemas compartilhados** — definidos nos documentos dos módulos e comparados conforme a [ADR-0035](0035-shared-schemas-cross-module-fitness-test.md).
 - Módulos futuros (Auxílio Estudantil, Pesquisa) seguem o mesmo padrão de path.
 
@@ -108,7 +107,7 @@ Antes de comprometer o pipeline na slice pilot, **spike obrigatório**: validar 
 ### Por que B, C, D, E e F foram rejeitadas
 
 - **B (Swashbuckle).** Manutenção comunitária pós-.NET 10; suporte OpenAPI 3.1 incompleto; risco de drift relativo à evolução Microsoft. Migrar de Swashbuckle para built-in depois custaria rework — adotar built-in desde o V1 elimina essa migração.
-- **C (NSwag).** Toolchain monolítica (gerador + codegen integrado) sem benefício composto sobre best-of-breed (Microsoft + Kiota + openapi-generator) na escala V1. Suporte de segunda classe relativo ao built-in.
+- **C (NSwag).** Ferramenta integrada de geração do contrato e de cliente, sem benefício sobre a escolha do gerador Microsoft e do Kiota para .NET. O consumo pelo web segue a ADR-0013 do web.
 - **D (contract-first puro com YAML).** Hand-authoring de 30-50 endpoints em 2+ módulos é alto custo cognitivo; manter sync com código vira disciplina dispendiosa; não há caminho .NET-nativo que gere skeletons OpenAPI 3.1 com fidelidade necessária para Wolverine + Clean Architecture; Kiota server codegen está em preview.
 - **E (spec unificado).** Versionar um único recurso (ex.: `Inscricao.v2`) força tocar o spec único, aumentando coordenação cross-módulo; ownership por módulo se dilui no artefato; deprecation per-módulo difícil de expressar; hierarquia do portal arbitrária.
 - **F (híbrido per-módulo + agregado).** Dois artefatos para manter; agregador é infra custom; agregado dá falsa impressão de "uma API" quando a realidade é múltiplos módulos com ciclos diferentes. Sem consumidor real demandando agregado no V1; se aparecer no V2, `redocly-cli bundle` produz na hora.
@@ -122,7 +121,7 @@ Antes de comprometer o pipeline na slice pilot, **spike obrigatório**: validar 
 - **Per-module specs alinham com modular monolith.** Owners controlam contrato do próprio módulo independentemente.
 - **Spectral ruleset enforça house style.** Qualidade de spec é gated em CI, não aspiracional.
 - **Pipeline composable.** Cada passo (extract, transform, lint, drift check, codegen) é independentemente scriptável e substituível.
-- **Codegen .NET + Angular** sem trancar em toolchain monolítica.
+- **Consumo por .NET e web** sem depender de uma única ferramenta de geração.
 
 ### Negativas
 
@@ -168,8 +167,12 @@ Antes de comprometer o pipeline na slice pilot, **spike obrigatório**: validar 
 - [Microsoft.OpenApi.Kiota for .NET client codegen](https://learn.microsoft.com/en-us/openapi/kiota/dotnet-tutorial).
 - [Spectral — OpenAPI linter](https://github.com/stoplightio/spectral).
 - [Redocly CLI](https://redocly.com/docs/cli).
-- [@openapitools/openapi-generator-cli](https://www.npmjs.com/package/@openapitools/openapi-generator-cli).
+- [ADR-0013 do web](https://github.com/unifesspa-edu-br/uniplus-web/blob/main/docs/adrs/0013-gerador-openapi-node-only.md) — consumo do contrato pelo web.
 
 ## Emenda — aprovação das referências
 
 Os testes comparam o resultado à referência aprovada e indicam o arquivo obtido quando há divergência. A aprovação e a cópia para o arquivo versionado são explícitas, conforme o [procedimento de referências](../../CONTRIBUTING.md#aprovação-de-referências-de-teste).
+
+## Emenda — 2026-11-25: Identificador das operações e consumo do contrato pelo web
+
+Toda operação declara seu `operationId` na própria ação com `[EndpointName("…")]`, escrito à mão: verbo do negócio no infinitivo e objeto, em português, PascalCase, sem acento, sem `Get`, `Post`, `Admin` ou sigla. O nome nunca é extraído do método, da rota ou do verbo HTTP. É único em todo o executável, entre todos os documentos do host; alterá-lo muda o contrato. Um teste sobre os documentos gerados reprova operações sem nome ou com nome repetido. O web consome o contrato por tipos gerados pelo `openapi-typescript`, conforme a ADR-0013 do web; o cliente .NET continua com Kiota.

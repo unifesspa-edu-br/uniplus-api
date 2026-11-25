@@ -864,7 +864,6 @@ Uma seção do `.editorconfig` com `severity = error` não basta: o `WarningsNot
 |---|---|---|---|
 | Mutação | Domain | Stryker.NET | Motor de classificação, fórmulas legais |
 | Property-based | Domain | FsCheck | Cálculos matemáticos, fórmulas de nota |
-| Contrato | API | Pact | Eventos Kafka entre módulos |
 
 ### Convenções de teste
 
@@ -893,6 +892,12 @@ public void CalcularNotaFinal_ComBonusRegional_DeveAplicarBonusSobreTotal()
 - Usar **Testcontainers** para testes de integração (PostgreSQL, Redis, Kafka)
 - Nunca usar dados reais de candidatos em testes
 - Testes de arquitetura usam só regras declarativas do **ArchUnitNET**; nada de regex sobre o fonte, leitor de IL próprio ou árvore do Roslyn no teste — ver [orientação para revisão](orientacao-para-revisao.md), que também lista o que é conferido só na revisão
+
+### Contrato OpenAPI
+
+- Toda ação de controlador declara `[EndpointName("VerboObjeto")]` na própria ação. Escreva o nome à mão, com verbo do negócio no infinitivo e objeto, em português e PascalCase, sem acento, `Get`, `Post`, `Admin` ou sigla. Não derive o nome do método, da rota ou do verbo HTTP. Ele deve ser único entre todos os documentos do host; alterá-lo muda o contrato.
+- Campo de texto lido pelo domínio ou pela consulta por `CatalogoDe<T>`, seja parâmetro de consulta ou propriedade de pedido, leva `[AceitaCodigosDe<T>]`. Leia o filtro de forma exata.
+- Ao alterar o contrato, execute o teste `SpecRuntime` do projeto de integração do módulo para gerar o documento obtido e siga a aprovação abaixo. Nunca edite os arquivos OpenAPI em `contracts/` à mão.
 
 ### Aprovação de referências de teste
 
