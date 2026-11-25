@@ -5,6 +5,7 @@ using Unifesspa.UniPlus.Autorizacao.Domain.Entities;
 using Unifesspa.UniPlus.Autorizacao.Domain.Enums;
 using Unifesspa.UniPlus.Autorizacao.Domain.Interfaces;
 using Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 
 /// <summary>Mapeamento <see cref="Concessao"/> para <see cref="ConcessaoDto"/> e para a trilha.</summary>
 public static class ConcessaoMapping
@@ -22,8 +23,8 @@ public static class ConcessaoMapping
             new IdentidadeDto(c.BeneficiarioEmissor, c.BeneficiarioContaId, c.BeneficiarioNome),
             new PerfilResumoDto(c.PerfilId, perfilNome),
             versao,
-            new EscopoDto(c.EscopoTipo.ToCodigo(), c.UnidadeId),
-            new OrigemDto(c.OrigemTipo.ToCodigo(), c.OrigemId),
+            new EscopoDto(c.EscopoTipo.Codigo(), c.UnidadeId),
+            new OrigemDto(c.OrigemTipo.Codigo(), c.OrigemId),
             c.ConcedidaEm,
             c.ValidaAte,
             c.RevogadaEm,
@@ -44,7 +45,7 @@ public static class ConcessaoMapping
             "concedida",
             c.ConcedidaEm,
             new IdentidadeDto(c.ConcedidaPorEmissor, c.ConcedidaPorContaId, c.ConcedidaPorNome),
-            $"Origem: {c.OrigemTipo.ToCodigo()} {c.OrigemId}.");
+            $"Origem: {c.OrigemTipo.Codigo()} {c.OrigemId}.");
 
         foreach (EventoDaTrilhaDto fim in DoFim(c, agora))
         {

@@ -57,7 +57,7 @@ public static class RevisaoDasConcessoesMapping
         return new ConcessaoDaRevisaoDto(
             concessao.Id,
             concessao.BeneficiarioNome,
-            concessao.EscopoTipo.ToCodigo(), concessao.UnidadeId,
+            concessao.EscopoTipo.Codigo(), concessao.UnidadeId,
             concessao.ValidaAte,
             perfil.Versoes.FirstOrDefault(v => v.Id == concessao.VersaoId)?.Numero,
             composicao.Acrescimo,

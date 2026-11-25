@@ -94,7 +94,7 @@ public sealed class DecisoesDaReclassificacao
 
     private static Result<PedidoLido> Ler(DecidirReclassificacaoRequest dados)
     {
-        EtapaDaVersao? etapa = EtapaDaVersaoCodigo.TentarLer(dados.Etapa);
+        EtapaDaVersao? etapa = (CatalogoDe<EtapaDaVersao>.TentarObter(dados.Etapa, out EtapaDaVersao valorEtapaDaVersao) ? valorEtapaDaVersao : (EtapaDaVersao?)null);
         ResultadoDaLiberacao? resultado = CatalogoDe<ResultadoDaLiberacao>.TentarObter(dados.Resultado, out ResultadoDaLiberacao valor) ? valor : null;
         bool alvoValido = dados.Todas ? dados.Concessoes is null or { Count: 0 } : dados.Concessoes is { Count: > 0 };
 

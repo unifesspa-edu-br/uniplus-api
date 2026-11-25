@@ -8,6 +8,7 @@ using Unifesspa.UniPlus.Autorizacao.Application.DTOs;
 using Unifesspa.UniPlus.Autorizacao.Application.Mappings;
 using Unifesspa.UniPlus.Autorizacao.Domain.Entities;
 using Unifesspa.UniPlus.Autorizacao.Domain.Enums;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
 
 using static Unifesspa.UniPlus.Autorizacao.Application.UnitTests.CatalogoDoMapeamento;
@@ -109,7 +110,7 @@ public sealed class PerfilListadoMappingTests
     {
         Perfil perfil = PerfisDeTeste.DeGovernanca("Gestão de acessos", "Governa os acessos.", ["teste:itens:ler"], new DoublesDePerfis.CatalogoDeTeste());
 
-        PerfilMapping.ToListadoDto(perfil, Catalogo).Governanca.Should().Be(TipoDeGovernanca.GestorDeAcessos.ToCodigo());
+        PerfilMapping.ToListadoDto(perfil, Catalogo).Governanca.Should().Be(TipoDeGovernanca.GestorDeAcessos.Codigo());
     }
 
     [Fact(DisplayName = "O perfil desativado expõe o instante da desativação")]
@@ -129,8 +130,8 @@ public sealed class PerfilListadoMappingTests
 
         SuspensaoDoPerfilDto? suspensao = PerfilMapping.ToListadoDto(perfil, Catalogo).Suspensao;
 
-        suspensao!.PapelDeQuemSuspendeu.Should().Be(EtapaDaVersao.GestaoDeAcessos.ToCodigo());
-        suspensao.EtapasExigidasAgora.Should().Equal(EtapaDaVersaoCodigo.GestaoDeAcessos);
+        suspensao!.PapelDeQuemSuspendeu.Should().Be(EtapaDaVersao.GestaoDeAcessos.Codigo());
+        suspensao.EtapasExigidasAgora.Should().Equal(EtapaDaVersao.GestaoDeAcessos.Codigo());
     }
 
     private static CodigoComRotulo<SituacaoDoAcessoDoPerfil> Esperada(SituacaoDoAcessoDoPerfil valor) => CodigoComRotulo<SituacaoDoAcessoDoPerfil>.De(valor);

@@ -4,6 +4,7 @@ using Unifesspa.UniPlus.Authorization.Abstractions;
 using Unifesspa.UniPlus.Autorizacao.Application.Commands.Perfis;
 using Unifesspa.UniPlus.Autorizacao.Domain.Enums;
 using Unifesspa.UniPlus.Autorizacao.Domain.Errors;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
 
 /// <summary>
@@ -28,7 +29,7 @@ internal static class AcessoAFila
     {
         ArgumentNullException.ThrowIfNull(verificador);
 
-        if (EtapaDaVersaoCodigo.TentarLer(etapa) is not { } pedida)
+        if (!CatalogoDe<EtapaDaVersao>.TentarObter(etapa, out EtapaDaVersao pedida))
         {
             return Result<EtapaDaVersao>.Failure(PerfilErros.EtapaInvalida());
         }

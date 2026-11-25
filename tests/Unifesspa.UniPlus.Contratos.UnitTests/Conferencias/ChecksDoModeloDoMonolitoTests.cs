@@ -19,6 +19,17 @@ public sealed class ChecksDoModeloDoMonolitoTests
         new("dados_do_candidato", "ck_dados_do_candidato_classificacao_minima_do_tipo", "(tipo NOT IN ('TEXTO', 'DATA', 'ENDERECO') AND classificacao_protecao <> 'IDENTIFICADOR') OR (tipo = 'TEXTO' AND classificacao_protecao IN ('PESSOAL', 'IDENTIFICADOR', 'SENSIVEL')) OR (tipo IN ('DATA', 'ENDERECO') AND classificacao_protecao IN ('PESSOAL', 'SENSIVEL'))"),
         new("dados_do_candidato", "ck_dados_do_candidato_classificacao_protecao", "classificacao_protecao IN ('PUBLICO', 'INTERNO', 'PESSOAL', 'IDENTIFICADOR', 'SENSIVEL')"),
         new("dados_do_candidato", "ck_dados_do_candidato_hipotese_legal", "hipotese_legal IN ('CONSENTIMENTO', 'CUMPRIMENTO_OBRIGACAO_LEGAL', 'EXECUCAO_POLITICAS_PUBLICAS', 'ESTUDOS_POR_ORGAO_DE_PESQUISA', 'EXECUCAO_CONTRATO', 'EXERCICIO_REGULAR_DE_DIREITOS', 'PROTECAO_DA_VIDA', 'TUTELA_DA_SAUDE', 'INTERESSE_LEGITIMO', 'PROTECAO_DO_CREDITO', 'PREVENCAO_A_FRAUDE')"),
+        new("bases_da_permissao_concedida", "ck_bases_da_permissao_concedida_origem", "origem IN ('MIGRACAO', 'SAIDA', 'LIBERACAO', 'CONCILIACAO')"),
+        new("bases_da_permissao_concedida", "ck_bases_da_permissao_concedida_saida", "(origem = 'SAIDA') = (classificacao IS NULL AND de_unidade IS NULL)"),
+        new("concessoes", "ck_concessoes_escopo_unidade", "(escopo_tipo = 'UNIDADE') = (unidade_id IS NOT NULL)"),
+        new("decisoes_da_retomada", "ck_decisoes_da_retomada_etapa", "etapa IN ('GESTAO_DE_ACESSOS', 'PROTECAO_DE_DADOS')"),
+        new("decisoes_da_versao", "ck_decisoes_da_versao_etapa", "etapa IN ('GESTAO_DE_ACESSOS', 'PROTECAO_DE_DADOS')"),
+        new("liberacoes_da_reclassificacao", "ck_liberacoes_da_reclassificacao_etapa", "etapa IN ('GESTAO_DE_ACESSOS', 'PROTECAO_DE_DADOS')"),
+        new("suspensoes_do_perfil", "ck_suspensoes_do_perfil_papel", "papel_de_quem_suspendeu IN ('GESTAO_DE_ACESSOS', 'PROTECAO_DE_DADOS')"),
+        new("versoes_do_perfil", "ck_versoes_do_perfil_origem", "(origem = 'REMOCAO' AND motivo_da_remocao IS NOT NULL AND versao_do_documento IS NOT NULL AND expira_em IS NULL) OR (origem = 'PROPOSTA' AND expira_em IS NOT NULL AND motivo_da_remocao IS NULL AND versao_do_documento IS NULL)"),
+        new("versoes_do_perfil", "ck_versoes_do_perfil_cancelamento", "(situacao = 'CANCELADA') = (forma_do_cancelamento IS NOT NULL AND cancelada_em IS NOT NULL) AND (forma_do_cancelamento IS NULL) = (cancelada_em IS NULL)"),
+        new("versoes_do_perfil", "ck_versoes_do_perfil_motivo_do_cancelamento", "forma_do_cancelamento IS DISTINCT FROM 'PESSOA' OR motivo_do_cancelamento IS NOT NULL"),
+        new("versoes_do_perfil", "ck_versoes_do_perfil_expiracao", "(situacao = 'EXPIRADA') = (expirada_em IS NOT NULL)"),
         new("tipos_de_fase", "ck_tipos_de_fase_origem_data", "origem_data IN ('NO_EDITAL', 'NA_EXECUCAO')"),
         new("modalidades", "ck_modalidades_acao_quando_indeferido", "acao_quando_indeferido IS NULL OR acao_quando_indeferido IN ('RECLASSIFICA_AC', 'RECLASSIFICA_CONFORME_EDITAL')"),
         new("modalidades", "ck_modalidades_composicao_vagas", "composicao_vagas IN ('RESTANTE_DAS_VAGAS_OFERTADAS', 'DENTRO_DA_RESERVA_LEGAL', 'RETIRADA_DE_OUTRA_MODALIDADE', 'SUPLEMENTAR_AO_TOTAL')"),
@@ -75,9 +86,9 @@ public sealed class ChecksDoModeloDoMonolitoTests
         return dados;
     }
 
-    [Fact(DisplayName = "A lista esperada tem as 46 restrições de enum com código de contrato")]
+    [Fact(DisplayName = "A lista esperada tem as 57 restrições de enum com código de contrato")]
     public void ListaEsperada_TemAsRestricoes() =>
-        Esperadas.Select(esperada => esperada.Nome).Should().OnlyHaveUniqueItems().And.HaveCount(46);
+        Esperadas.Select(esperada => esperada.Nome).Should().OnlyHaveUniqueItems().And.HaveCount(57);
 
     [Theory(DisplayName = "O modelo de design-time guarda a restrição com o nome e o texto literais")]
     [MemberData(nameof(RestricoesEsperadas))]

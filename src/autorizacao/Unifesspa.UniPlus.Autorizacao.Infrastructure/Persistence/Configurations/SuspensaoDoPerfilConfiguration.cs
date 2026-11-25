@@ -4,11 +4,11 @@ using System.Diagnostics.CodeAnalysis;
 
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
-using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 using Unifesspa.UniPlus.Autorizacao.Domain.Entities;
 using Unifesspa.UniPlus.Autorizacao.Domain.Enums;
 using Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects;
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence.CodigosDeContrato;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Protecao;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
 
@@ -22,10 +22,6 @@ internal sealed class SuspensaoDoPerfilConfiguration : IEntityTypeConfiguration<
     private const int IdentidadeMaxLength = 255;
     private const int CodigoMaxLength = 40;
 
-    private static readonly ValueConverter<EtapaDaVersao, string> PapelConverter = new(
-        papel => papel.ToCodigo(),
-        codigo => EtapaDaVersaoCodigo.FromCodigo(codigo));
-
     public void Configure(EntityTypeBuilder<SuspensaoDoPerfil> builder)
     {
         ArgumentNullException.ThrowIfNull(builder);
@@ -34,7 +30,7 @@ internal sealed class SuspensaoDoPerfilConfiguration : IEntityTypeConfiguration<
 
         builder.ToTable("suspensoes_do_perfil", tabela => tabela.HasCheckConstraint(
             "ck_suspensoes_do_perfil_papel",
-            $"papel_de_quem_suspendeu IN ('{EtapaDaVersaoCodigo.GestaoDeAcessos}', '{EtapaDaVersaoCodigo.ProtecaoDeDados}')"));
+            $"papel_de_quem_suspendeu IN ({SqlDosCodigosDeContrato.Lista<EtapaDaVersao>()})"));
         builder.HasKey(s => s.Id);
         builder.Property(s => s.Id).ValueGeneratedNever();
 
@@ -42,7 +38,7 @@ internal sealed class SuspensaoDoPerfilConfiguration : IEntityTypeConfiguration<
         builder.Property(s => s.SuspensaPorEmissor).HasMaxLength(IdentidadeMaxLength).IsRequired();
         builder.Property(s => s.SuspensaPorContaId).HasMaxLength(IdentidadeMaxLength).IsRequired();
         builder.Property(s => s.SuspensaPorNome).HasMaxLength(NomeDeExibicao.MaxLength);
-        builder.Property(s => s.Papel).HasColumnName("papel_de_quem_suspendeu").HasConversion(PapelConverter).HasMaxLength(CodigoMaxLength).IsRequired();
+        builder.Property(s => s.Papel).HasColumnName("papel_de_quem_suspendeu").HasMaxLength(CodigoMaxLength).IsRequired();
         builder.Property(s => s.Motivo).HasMaxLength(MotivoInformado.MaximoDeCaracteres).IsRequired();
         builder.Property(s => s.OrdemNoHistorico).IsRequired();
 

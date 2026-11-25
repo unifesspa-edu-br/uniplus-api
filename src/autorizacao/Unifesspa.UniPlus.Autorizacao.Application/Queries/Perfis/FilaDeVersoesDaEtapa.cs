@@ -7,6 +7,7 @@ using Unifesspa.UniPlus.Autorizacao.Domain.Entities;
 using Unifesspa.UniPlus.Autorizacao.Domain.Enums;
 using Unifesspa.UniPlus.Autorizacao.Domain.Interfaces;
 using Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 
 /// <summary>
 /// A fila de aprovação de uma etapa: as versões pendentes no prazo cuja etapa atual é a pedida, da mais antiga para a mais
@@ -36,7 +37,7 @@ public sealed class FilaDeVersoesDaEtapa
         return
         [.. comPendente
             .Select(p => (Perfil: p, Versao: VersaoMapping.PendenteDe(p, _catalogo, leitor)))
-            .Where(x => x.Versao?.EtapaAtual == etapa.ToCodigo())
+            .Where(x => x.Versao?.EtapaAtual == etapa.Codigo())
             .Select(static x => new ItemDaFilaDeVersoesDto(x.Perfil.Id, x.Perfil.Nome, x.Versao!, x.Versao!.PropostaPorQuemLe))
             .OrderBy(static i => i.Versao.CriadaEm)
             .ThenBy(static i => i.PerfilId)];

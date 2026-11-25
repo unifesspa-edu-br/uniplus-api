@@ -4,6 +4,7 @@ using Unifesspa.UniPlus.Autorizacao.Application.DTOs;
 using Unifesspa.UniPlus.Autorizacao.Domain.Entities;
 using Unifesspa.UniPlus.Autorizacao.Domain.Enums;
 using Unifesspa.UniPlus.Autorizacao.Domain.Interfaces;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 
 /// <summary>Mapeamento <see cref="PedidoDeConcessao"/> para os DTOs do pedido.</summary>
 public static class PedidoMapping
@@ -51,7 +52,7 @@ public static class PedidoMapping
         perfil?.Versoes.FirstOrDefault(v => v.Id == p.VersaoId)?.Numero;
 
     private static TrocaDeVersaoDoPedidoDto ToDto(TrocaDeVersaoDoPedido t) =>
-        new(t.VersaoAnterior, t.VersaoNova, t.Desfecho.ToCodigo(), t.Instante);
+        new(t.VersaoAnterior, t.VersaoNova, t.Desfecho.Codigo(), t.Instante);
 
     private static DecisaoDoPedidoDto ToDto(DecisaoDoPedido d) => new(
         d.Etapa.ToCodigo(),
@@ -82,5 +83,5 @@ public static class PedidoMapping
     private static AceiteDoTermoDto? Aceite(AceiteDoTermo? a) =>
         a is null ? null : new AceiteDoTermoDto(new IdentidadeDto(a.PessoaEmissor, a.PessoaContaId, a.PessoaNome), a.AceitoEm, a.VersaoDoTermoId, a.Numero, a.Resumo);
 
-    private static EscopoDto Escopo(PedidoDeConcessao p) => new(p.Escopo.Tipo.ToCodigo(), p.UnidadeId);
+    private static EscopoDto Escopo(PedidoDeConcessao p) => new(p.Escopo.Tipo.Codigo(), p.UnidadeId);
 }

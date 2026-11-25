@@ -9,6 +9,7 @@ using Unifesspa.UniPlus.Autorizacao.Application.Mappings;
 using Unifesspa.UniPlus.Autorizacao.Domain.Entities;
 using Unifesspa.UniPlus.Autorizacao.Domain.Enums;
 using Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 
 /// <summary>
 /// Avisa quem aprova a etapa em que a versão pendente ficou apta, os gestores de acessos ou os Representantes do
@@ -49,9 +50,9 @@ public sealed class AvisoDeEtapaApta
         }
 
         VersaoDoPerfil versao = perfil.VersaoPendente!;
-        EtapaDaVersao etapa = EtapaDaVersaoCodigo.FromCodigo(pendente!.EtapaAtual);
+        EtapaDaVersao etapa = CatalogoDe<EtapaDaVersao>.Obter(pendente!.EtapaAtual);
         List<DestinatarioDoAviso> aprovadores = await _grupos.ListarAsync(GruposDaGovernanca.DaEtapa(etapa), cancellationToken).ConfigureAwait(false);
-        PedidoDeAviso pedido = new(Modelo(perfil, versao, pendente, etapa), versao.Id, $"{versao.CicloDeAprovacao}:{etapa.ToCodigo()}", aprovadores, Excluidos(versao));
+        PedidoDeAviso pedido = new(Modelo(perfil, versao, pendente, etapa), versao.Id, $"{versao.CicloDeAprovacao}:{etapa.Codigo()}", aprovadores, Excluidos(versao));
 
         return await _emissor.EmitirAsync(pedido, cancellationToken).ConfigureAwait(false);
     }

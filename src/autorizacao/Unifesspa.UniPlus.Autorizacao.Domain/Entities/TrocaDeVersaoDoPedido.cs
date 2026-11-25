@@ -30,8 +30,14 @@ public sealed class TrocaDeVersaoDoPedido : IForensicEntity
     }
 
     internal static TrocaDeVersaoDoPedido Registrar(
-        Guid pedidoId, int versaoAnterior, int versaoNova, DesfechoDaTrocaDeVersao desfecho, DateTimeOffset instante) =>
-        new()
+        Guid pedidoId, int versaoAnterior, int versaoNova, DesfechoDaTrocaDeVersao desfecho, DateTimeOffset instante)
+    {
+        if (desfecho is not (DesfechoDaTrocaDeVersao.VersaoAtualizada or DesfechoDaTrocaDeVersao.VoltouAoGestor or DesfechoDaTrocaDeVersao.Devolvido))
+        {
+            throw new ArgumentOutOfRangeException(nameof(desfecho), desfecho, null);
+        }
+
+        return new()
         {
             PedidoId = pedidoId,
             VersaoAnterior = versaoAnterior,
@@ -39,4 +45,5 @@ public sealed class TrocaDeVersaoDoPedido : IForensicEntity
             Desfecho = desfecho,
             Instante = instante,
         };
+    }
 }

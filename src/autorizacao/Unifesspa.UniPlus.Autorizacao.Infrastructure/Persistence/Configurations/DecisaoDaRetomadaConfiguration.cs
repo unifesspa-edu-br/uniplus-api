@@ -4,11 +4,11 @@ using System.Diagnostics.CodeAnalysis;
 
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
-using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 using Unifesspa.UniPlus.Autorizacao.Domain.Entities;
 using Unifesspa.UniPlus.Autorizacao.Domain.Enums;
 using Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects;
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence.CodigosDeContrato;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Protecao;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
 
@@ -22,10 +22,6 @@ internal sealed class DecisaoDaRetomadaConfiguration : IEntityTypeConfiguration<
     private const int IdentidadeMaxLength = 255;
     private const int CodigoMaxLength = 40;
 
-    private static readonly ValueConverter<EtapaDaVersao, string> EtapaConverter = new(
-        etapa => etapa.ToCodigo(),
-        codigo => EtapaDaVersaoCodigo.FromCodigo(codigo));
-
     public void Configure(EntityTypeBuilder<DecisaoDaRetomada> builder)
     {
         ArgumentNullException.ThrowIfNull(builder);
@@ -34,11 +30,11 @@ internal sealed class DecisaoDaRetomadaConfiguration : IEntityTypeConfiguration<
 
         builder.ToTable("decisoes_da_retomada", tabela => tabela.HasCheckConstraint(
             "ck_decisoes_da_retomada_etapa",
-            $"etapa IN ('{EtapaDaVersaoCodigo.GestaoDeAcessos}', '{EtapaDaVersaoCodigo.ProtecaoDeDados}')"));
+            $"etapa IN ({SqlDosCodigosDeContrato.Lista<EtapaDaVersao>()})"));
         builder.HasKey(d => d.Id);
         builder.Property(d => d.Id).ValueGeneratedNever();
 
-        builder.Property(d => d.Etapa).HasConversion(EtapaConverter).HasMaxLength(CodigoMaxLength).IsRequired();
+        builder.Property(d => d.Etapa).HasMaxLength(CodigoMaxLength).IsRequired();
         builder.Property(d => d.DecisorEmissor).HasMaxLength(IdentidadeMaxLength).IsRequired();
         builder.Property(d => d.DecisorContaId).HasMaxLength(IdentidadeMaxLength).IsRequired();
         builder.Property(d => d.DecisorNome).HasMaxLength(NomeDeExibicao.MaxLength);

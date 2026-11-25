@@ -7,6 +7,7 @@ using Unifesspa.UniPlus.Autorizacao.Domain.Enums;
 using Unifesspa.UniPlus.Autorizacao.Domain.Errors;
 using Unifesspa.UniPlus.Autorizacao.Domain.Interfaces;
 using Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
 
 /// <summary>
@@ -62,7 +63,7 @@ public sealed class ContencaoPorSuspensao
     {
         ArgumentNullException.ThrowIfNull(verificador);
 
-        EtapaDaVersao? pedida = EtapaDaVersaoCodigo.TentarLer(etapa);
+        EtapaDaVersao? pedida = (CatalogoDe<EtapaDaVersao>.TentarObter(etapa, out EtapaDaVersao valorEtapaDaVersao) ? valorEtapaDaVersao : (EtapaDaVersao?)null);
         DomainError? recusa = await RecusaDaRetomadaAsync(perfilId, pedida, verificador, cancellationToken).ConfigureAwait(false);
 
         return recusa is not null
@@ -145,7 +146,7 @@ public sealed class ContencaoPorSuspensao
             ? Result<RetomadaDaSuspensaoDto>.ValidationFailure(decisao.Errors)
             : Result<RetomadaDaSuspensaoDto>.Success(new RetomadaDaSuspensaoDto(
                 perfil.SuspensaoAberta is null,
-                [.. perfil.EtapasPendentesDaRetomada(_catalogo).Select(static e => e.ToCodigo())]));
+                [.. perfil.EtapasPendentesDaRetomada(_catalogo).Select(static e => e.Codigo())]));
     }
 
     private sealed record PedidoDeSuspensao(Identidade Autor, EtapaDaVersao Papel, string? Motivo);

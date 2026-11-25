@@ -10,6 +10,7 @@ using Unifesspa.UniPlus.Autorizacao.Domain.Entities;
 using Unifesspa.UniPlus.Autorizacao.Domain.Enums;
 using Unifesspa.UniPlus.Autorizacao.Domain.Interfaces;
 using Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
 
 /// <summary>
@@ -88,8 +89,8 @@ public sealed class OfertaDePerfis
                 perfil.Id,
                 perfil.Nome,
                 perfil.Descricao,
-                alcance.ToCodigo(),
+                alcance.Codigo(),
                 PerfilMapping.Avaliar(perfil, _catalogoDaAplicacao).ExigeAprovacaoDeProtecaoDeDados,
-                perfil.Governanca?.ToCodigo())
+                perfil.Governanca?.Codigo())
             : null;
 }

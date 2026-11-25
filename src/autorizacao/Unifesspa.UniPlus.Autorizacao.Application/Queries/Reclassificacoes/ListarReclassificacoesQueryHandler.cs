@@ -9,6 +9,7 @@ using Unifesspa.UniPlus.Autorizacao.Domain.Enums;
 using Unifesspa.UniPlus.Autorizacao.Domain.Errors;
 using Unifesspa.UniPlus.Autorizacao.Domain.Interfaces;
 using Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
 
 /// <summary>A fila de reclassificações da etapa pedida.</summary>
@@ -31,7 +32,7 @@ public static class ListarReclassificacoesQueryHandler
     private static async Task<Result<EtapaDaVersao>> EtapaPermitidaAsync(
         ListarReclassificacoesQuery query, IVerificadorDeAcesso verificador, CancellationToken cancellationToken)
     {
-        if (EtapaDaVersaoCodigo.TentarLer(query.Etapa) is not { } etapa)
+        if (!CatalogoDe<EtapaDaVersao>.TentarObter(query.Etapa, out EtapaDaVersao etapa))
         {
             return Result<EtapaDaVersao>.Failure(ReclassificacaoErros.EtapaInvalida());
         }

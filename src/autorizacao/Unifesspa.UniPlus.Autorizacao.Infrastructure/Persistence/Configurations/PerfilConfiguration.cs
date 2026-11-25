@@ -3,7 +3,6 @@ namespace Unifesspa.UniPlus.Autorizacao.Infrastructure.Persistence.Configuration
 
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
-using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 using Unifesspa.UniPlus.Autorizacao.Domain.Entities;
 using Unifesspa.UniPlus.Autorizacao.Domain.Enums;
@@ -23,10 +22,6 @@ internal sealed class PerfilConfiguration : IEntityTypeConfiguration<Perfil>
     private const int DescricaoMaxLength = 500;
     private const int GovernancaMaxLength = 40;
     private const int CodigoPermissaoMaxLength = 120;
-
-    private static readonly ValueConverter<TipoDeGovernanca, string> GovernancaConverter = new(
-        governanca => governanca.ToCodigo(),
-        codigo => TipoDeGovernancaCodigo.FromCodigo(codigo));
 
     // Perfis de sistema, com identificador fixo, para que a conferência do catálogo e os testes os alcancem.
     private static readonly Guid GestorDeAcessosId = PerfisDeSistema.GestorDeAcessosId;
@@ -60,9 +55,7 @@ internal sealed class PerfilConfiguration : IEntityTypeConfiguration<Perfil>
         builder.Property(p => p.Descricao).HasMaxLength(DescricaoMaxLength).IsRequired();
         builder.Property(p => p.Ativo).IsRequired();
 
-        builder.Property(p => p.Governanca)
-            .HasConversion(GovernancaConverter)
-            .HasMaxLength(GovernancaMaxLength);
+        builder.Property(p => p.Governanca).HasMaxLength(GovernancaMaxLength);
 
         // O nome é único sem distinguir maiúsculas de minúsculas. A coluna gerada guarda a
         // forma minúscula e o índice único recai sobre ela; o handler antecipa o conflito com

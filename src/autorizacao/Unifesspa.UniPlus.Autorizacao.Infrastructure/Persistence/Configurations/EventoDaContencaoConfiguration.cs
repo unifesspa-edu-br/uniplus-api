@@ -4,7 +4,6 @@ using System.Diagnostics.CodeAnalysis;
 
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
-using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 using Unifesspa.UniPlus.Autorizacao.Domain.Entities;
 using Unifesspa.UniPlus.Autorizacao.Domain.Enums;
@@ -32,10 +31,6 @@ internal sealed class EventoDaContencaoConfiguration : IEntityTypeConfiguration<
     private static readonly string DeUmaPessoa =
         $"ator = {SqlDosCodigosDeContrato.Literal(AtorDoEventoDaContencao.Humano)} AND ator_emissor IS NOT NULL AND ator_conta_id IS NOT NULL AND motivo IS NOT NULL";
 
-    private static readonly ValueConverter<EtapaDaVersao, string> PapelConverter = new(
-        papel => papel.ToCodigo(),
-        codigo => EtapaDaVersaoCodigo.FromCodigo(codigo));
-
     public void Configure(EntityTypeBuilder<EventoDaContencao> builder)
     {
         ArgumentNullException.ThrowIfNull(builder);
@@ -54,7 +49,7 @@ internal sealed class EventoDaContencaoConfiguration : IEntityTypeConfiguration<
         builder.Property(e => e.AtorEmissor).HasMaxLength(IdentidadeMaxLength);
         builder.Property(e => e.AtorContaId).HasMaxLength(IdentidadeMaxLength);
         builder.Property(e => e.AtorNome).HasMaxLength(NomeDeExibicao.MaxLength);
-        builder.Property(e => e.Papel).HasConversion(PapelConverter).HasMaxLength(CodigoMaxLength);
+        builder.Property(e => e.Papel).HasMaxLength(CodigoMaxLength);
         builder.Property(e => e.Motivo).HasMaxLength(MotivoInformado.MaximoDeCaracteres);
         builder.Property(e => e.PerfilProtegido).IsRequired();
         builder.Property(e => e.OrdemNoHistorico).IsRequired();

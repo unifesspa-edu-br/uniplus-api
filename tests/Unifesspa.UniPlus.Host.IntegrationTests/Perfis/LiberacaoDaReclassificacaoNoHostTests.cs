@@ -57,7 +57,7 @@ public sealed class LiberacaoDaReclassificacaoNoHostTests : ReclassificacaoNoHos
 
         (await PermissoesAsync(Leandro, perfil.Perfil)).Should().BeEquivalentTo(Consultar, Sensivel);
         (await PermissoesAsync(Betina, perfil.Perfil)).Should().Equal(Consultar);
-        (await OrigemDaBaseAsync(perfil.De(Leandro), Sensivel)).Should().Be(OrigemDaBaseCodigo.Liberacao);
+        (await OrigemDaBaseAsync(perfil.De(Leandro), Sensivel)).Should().Be(OrigemDaBase.Liberacao.Codigo());
     }
 
     [Fact(DisplayName = "A mudança de escopo é liberada pela gestão de acessos, sem a proteção de dados")]
@@ -87,7 +87,7 @@ public sealed class LiberacaoDaReclassificacaoNoHostTests : ReclassificacaoNoHos
         await LiberarAsync(Marlene, EtapaProtecao, perfil.Perfil, descida);
 
         (await PermissoesAsync(Leandro, perfil.Perfil)).Should().Equal(Consultar);
-        (await OrigemDaBaseAsync(perfil.De(Leandro), Consultar)).Should().Be(OrigemDaBaseCodigo.Liberacao);
+        (await OrigemDaBaseAsync(perfil.De(Leandro), Consultar)).Should().Be(OrigemDaBase.Liberacao.Codigo());
         (await FilaDaProtecaoAsync()).Should().NotContain(descida.ToString());
     }
 

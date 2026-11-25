@@ -1,32 +1,15 @@
 namespace Unifesspa.UniPlus.Autorizacao.Domain.Enums;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
+
 /// <summary>Alcance de uma concessão: uma unidade organizacional ou a instituição inteira.</summary>
 public enum TipoDeEscopo
 {
     /// <summary>A concessão vale numa unidade; não alcança as unidades abaixo dela (ADR-0079).</summary>
+    [CodigoDeContrato("UNIDADE", "Unidade")]
     Unidade = 1,
 
     /// <summary>A concessão vale para recursos da instituição.</summary>
+    [CodigoDeContrato("INSTITUICAO", "Instituição")]
     Instituicao = 2,
-}
-
-/// <summary>Código textual canônico de <see cref="TipoDeEscopo"/>, o valor gravado e exposto.</summary>
-public static class TipoDeEscopoCodigo
-{
-    public const string Unidade = "UNIDADE";
-    public const string Instituicao = "INSTITUICAO";
-
-    public static string ToCodigo(this TipoDeEscopo tipo) => tipo switch
-    {
-        TipoDeEscopo.Unidade => Unidade,
-        TipoDeEscopo.Instituicao => Instituicao,
-        _ => throw new ArgumentOutOfRangeException(nameof(tipo), tipo, null),
-    };
-
-    public static TipoDeEscopo FromCodigo(string codigo) => codigo switch
-    {
-        Unidade => TipoDeEscopo.Unidade,
-        Instituicao => TipoDeEscopo.Instituicao,
-        _ => throw new ArgumentOutOfRangeException(nameof(codigo), codigo, null),
-    };
 }

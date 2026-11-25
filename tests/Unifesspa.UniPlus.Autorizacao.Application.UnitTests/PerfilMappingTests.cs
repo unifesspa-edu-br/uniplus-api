@@ -10,6 +10,7 @@ using Unifesspa.UniPlus.Autorizacao.Application.Mappings;
 using Unifesspa.UniPlus.Autorizacao.Domain.Entities;
 using Unifesspa.UniPlus.Autorizacao.Domain.Enums;
 using Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
 
 using static Unifesspa.UniPlus.Autorizacao.Application.UnitTests.CatalogoDoMapeamento;
@@ -43,7 +44,7 @@ public sealed class PerfilMappingTests
 
         PerfilDto dto = PerfilMapping.ToDto(perfil, Catalogo);
 
-        dto.Governanca.Should().Be(TipoDeGovernanca.GestorDeAcessos.ToCodigo());
+        dto.Governanca.Should().Be(TipoDeGovernanca.GestorDeAcessos.Codigo());
         dto.ComposicaoEmVigor!.VersaoId.Should().BeNull();
         dto.ComposicaoEmVigor.Permissoes.Select(static p => p.Codigo).Should().Equal("teste:itens:ler");
     }
@@ -83,7 +84,7 @@ public sealed class PerfilMappingTests
             VersaoId = perfil.VersaoPendente!.Id,
             Numero = 1,
             Protocolo = PerfisDeTeste.Protocolo,
-            EtapaAtual = EtapaDaVersao.GestaoDeAcessos.ToCodigo(),
+            EtapaAtual = EtapaDaVersao.GestaoDeAcessos.Codigo(),
             ExigeProtecaoDeDados = false,
         });
     }
@@ -134,9 +135,9 @@ public sealed class PerfilMappingTests
 
         SuspensaoDoPerfilDto? suspensao = PerfilMapping.ToDto(perfil, Catalogo).Suspensao;
 
-        suspensao!.PapelDeQuemSuspendeu.Should().Be(EtapaDaVersao.GestaoDeAcessos.ToCodigo());
-        suspensao.EtapasExigidasAgora.Should().Equal(EtapaDaVersaoCodigo.GestaoDeAcessos, EtapaDaVersaoCodigo.ProtecaoDeDados);
-        suspensao.EtapasDecididas.Should().Equal(EtapaDaVersaoCodigo.ProtecaoDeDados);
+        suspensao!.PapelDeQuemSuspendeu.Should().Be(EtapaDaVersao.GestaoDeAcessos.Codigo());
+        suspensao.EtapasExigidasAgora.Should().Equal(EtapaDaVersao.GestaoDeAcessos.Codigo(), EtapaDaVersao.ProtecaoDeDados.Codigo());
+        suspensao.EtapasDecididas.Should().Equal(EtapaDaVersao.ProtecaoDeDados.Codigo());
     }
 
     [Fact(DisplayName = "Sem composição em vigor e com pendente protegida, a suspensão mostra a sensibilidade da pendente e as etapas da composição vazia")]
@@ -148,7 +149,7 @@ public sealed class PerfilMappingTests
         PerfilDto dto = PerfilMapping.ToDto(perfil, Catalogo);
 
         dto.Sensibilidade.Should().Be(ValoresCanonicos.De(ClassificacaoDeProtecao.Sensivel));
-        dto.Suspensao!.EtapasExigidasAgora.Should().Equal(EtapaDaVersaoCodigo.GestaoDeAcessos);
+        dto.Suspensao!.EtapasExigidasAgora.Should().Equal(EtapaDaVersao.GestaoDeAcessos.Codigo());
     }
 
     [Fact(DisplayName = "O perfil com versão em vigor e pendente é projetado por inteiro, com os blocos das versões vindos do mapeamento de versões")]
