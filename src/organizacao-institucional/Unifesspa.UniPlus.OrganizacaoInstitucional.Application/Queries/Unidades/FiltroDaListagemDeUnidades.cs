@@ -1,6 +1,6 @@
 namespace Unifesspa.UniPlus.OrganizacaoInstitucional.Application.Queries.Unidades;
 
-using Unifesspa.UniPlus.Application.Abstractions.Consultas;
+using Unifesspa.UniPlus.Kernel.Domain.ValueObjects;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.Enums;
 using Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.Interfaces;
@@ -12,7 +12,7 @@ internal static class FiltroDaListagemDeUnidades
 {
     internal static Result<FiltroListagemUnidades> Resolver(string? busca, IReadOnlyList<int>? tipos)
     {
-        Result<string?> termo = BuscaPedida.Validar(busca);
+        Result<TermoDeBusca?> termo = TermoDeBusca.Criar(busca);
         if (!termo.IsSuccess)
         {
             return Result<FiltroListagemUnidades>.Failure(termo.Error!);
@@ -20,9 +20,7 @@ internal static class FiltroDaListagemDeUnidades
 
         Result<IReadOnlyList<TipoUnidade>> pedidos = TiposDaListagem.Resolver(tipos);
         return pedidos.IsSuccess
-            ? Result<FiltroListagemUnidades>.Success(new FiltroListagemUnidades(TermoOuNulo(termo.Value), pedidos.Value!))
+            ? Result<FiltroListagemUnidades>.Success(new FiltroListagemUnidades(termo.Value, pedidos.Value!))
             : Result<FiltroListagemUnidades>.Failure(pedidos.Error!);
     }
-
-    private static string? TermoOuNulo(string? termo) => string.IsNullOrWhiteSpace(termo) ? null : termo;
 }

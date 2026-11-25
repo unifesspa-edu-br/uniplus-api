@@ -65,7 +65,7 @@ public sealed class ListarUnidadesAtivasQueryHandlerTests
         resultado.Value.AnteriorAfterId.Should().BeNull();
     }
 
-    [Fact(DisplayName = "O repositório recebe o filtro resolvido: o termo como veio e os tipos pedidos")]
+    [Fact(DisplayName = "O repositório recebe o filtro resolvido: o termo normalizado e os tipos pedidos")]
     public async Task FiltroValido_ChegaResolvidoAoRepositorio()
     {
         await ListarAsync("ceps", [(int)TipoUnidade.Centro]);
@@ -74,7 +74,7 @@ public sealed class ListarUnidadesAtivasQueryHandlerTests
             null,
             20,
             PaginationDirection.Next,
-            Arg.Is<FiltroListagemUnidades>(filtro => filtro.Termo == "ceps" && filtro.Tipos.SequenceEqual(new[] { TipoUnidade.Centro })),
+            Arg.Is<FiltroListagemUnidades>(filtro => filtro.Termo != null && filtro.Termo.Normalizado == "ceps" && filtro.Tipos.SequenceEqual(new[] { TipoUnidade.Centro })),
             Arg.Any<CancellationToken>());
     }
 }

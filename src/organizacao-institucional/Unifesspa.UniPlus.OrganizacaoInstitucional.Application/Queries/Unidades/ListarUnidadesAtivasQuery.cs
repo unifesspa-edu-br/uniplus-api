@@ -15,7 +15,7 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// <param name="AfterId">Posição de continuação da página anterior; <c>null</c> retorna a primeira página.</param>
 /// <param name="Limit">Tamanho máximo da página a retornar.</param>
 /// <param name="Direction">Direção de navegação (<c>Next</c>/<c>Prev</c>, ADR-0089).</param>
-/// <param name="Busca">Termo de busca livre (acento/caixa-insensível) sobre sigla, nome, código, slug e alias; <c>null</c>/em branco = sem filtro textual; acima de 200 caracteres a consulta é recusada.</param>
+/// <param name="Busca">Termo de busca livre (acento/caixa-insensível) sobre sigla, nome, código, slug e alias; <c>null</c>/em branco = sem filtro textual; acima de 200 caracteres, sem contar os espaços das pontas, a consulta é recusada.</param>
 /// <param name="Tipos">Valores numéricos de tipo de unidade a incluir (OR entre si), como chegaram; <c>null</c> ou vazio = sem filtro por tipo; valor que não é tipo filtrável recusa a consulta.</param>
 public sealed record ListarUnidadesAtivasQuery(
     Guid? AfterId,
