@@ -127,7 +127,6 @@ public sealed class PedidosDeConcessaoCriacaoEVisibilidadeTests : PedidosDeConce
         (await ListarFilaAsync(betina, "meus")).Should().Equal(esperando);
         (await ListarFilaAsync(leandro, "meus")).Should().BeEquivalentTo([esperando, noGestor]);
         (await ListarFilaAsync(leandro, "meus", "AGUARDANDO_GESTOR")).Should().Equal(noGestor);
-        (await ListarFilaAsync(leandro, "meus", "%20%20")).Should().BeEquivalentTo([esperando, noGestor]);
     }
 
     [Theory]
@@ -135,6 +134,7 @@ public sealed class PedidosDeConcessaoCriacaoEVisibilidadeTests : PedidosDeConce
     [InlineData("%20AGUARDANDO_GESTOR%20")]
     [InlineData("desconhecida")]
     [InlineData("todas")]
+    [InlineData("%20%20")]
     public async Task Listar_SituacaoDesconhecida_RecebeRecusaSemValor(string situacao)
     {
         using HttpClient leandro = Cliente(Leandro);
@@ -142,8 +142,9 @@ public sealed class PedidosDeConcessaoCriacaoEVisibilidadeTests : PedidosDeConce
 
         resposta.StatusCode.Should().Be(HttpStatusCode.BadRequest);
         string corpo = await resposta.Content.ReadAsStringAsync();
-        corpo.Should().Contain("uniplus.autorizacao.pedido.filtro_de_situacao_invalido");
         using JsonDocument problema = JsonDocument.Parse(corpo);
+        problema.RootElement.GetProperty("code").GetString().Should().Be("uniplus.autorizacao.pedido.filtro_de_situacao_invalido");
+        problema.RootElement.GetProperty("title").GetString().Should().Be("Situação do filtro de pedidos inválida");
         problema.RootElement.GetProperty("detail").GetString().Should()
             .Be("Situação inválida. Use um dos códigos publicados para a situação do pedido.")
             .And.NotContain(situacao).And.NotContain("AGUARDANDO_GESTOR").And.NotContain("APROVADO");
