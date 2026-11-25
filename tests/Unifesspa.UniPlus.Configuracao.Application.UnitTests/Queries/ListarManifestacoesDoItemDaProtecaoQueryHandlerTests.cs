@@ -22,7 +22,7 @@ public sealed class ListarManifestacoesDoItemDaProtecaoQueryHandlerTests
     [Fact(DisplayName = "O histórico mostra a substituída e a vigente, com o nome de quem se manifestou e sem o identificador")]
     public async Task Tipo_HistoricoComASituacao()
     {
-        ItemSobAprovacaoBuilder montagem = new ItemSobAprovacaoBuilder().Solicitado().ComManifestacao("INADEQUADA").ComManifestacao("RECOMENDA_AJUSTE");
+        ItemSobAprovacaoBuilder montagem = new ItemSobAprovacaoBuilder().Solicitado().ComManifestacao("RECOMENDA_NAO_USO").ComManifestacao("RECOMENDA_AJUSTE");
         TipoDocumento tipo = montagem.Tipo();
         _tipos.ObterPorIdParaLeituraAsync(tipo.Id, Arg.Any<CancellationToken>()).Returns(tipo);
         _manifestacoes.ListarDoItemAsync(new ItemDaProtecao(CadastroDoCatalogo.TipoDocumento, tipo.Id), Arg.Any<CancellationToken>()).Returns(montagem.Eventos);
@@ -30,7 +30,7 @@ public sealed class ListarManifestacoesDoItemDaProtecaoQueryHandlerTests
         IReadOnlyList<ManifestacaoDaProtecaoDto>? historico = await ListarAsync(CadastroDaProtecaoDoCatalogo.TipoDocumento, tipo.Id);
 
         historico!.Select(m => (m.Parecer, m.Situacao, m.AutorNome, m.Ciclo)).Should().Equal(
-            ("INADEQUADA", "SUBSTITUIDA", "Kevin Anderson Carvalho", 1),
+            ("RECOMENDA_NAO_USO", "SUBSTITUIDA", "Kevin Anderson Carvalho", 1),
             ("RECOMENDA_AJUSTE", "VIGENTE", "Kevin Anderson Carvalho", 1));
         typeof(ManifestacaoDaProtecaoDto).GetProperties().Select(p => p.Name).Should().NotContain(["AutorContaId", "AutorEmissor", "ContaId", "Emissor"]);
     }
@@ -38,9 +38,9 @@ public sealed class ListarManifestacoesDoItemDaProtecaoQueryHandlerTests
     [Fact(DisplayName = "A manifestação de ciclo anterior ao corrente sai encerrada")]
     public async Task Fato_CicloAnterior_Encerrada()
     {
-        ItemSobAprovacaoBuilder montagem = new ItemSobAprovacaoBuilder().Solicitado().ComManifestacao("ADEQUADA", texto: null);
+        ItemSobAprovacaoBuilder montagem = new ItemSobAprovacaoBuilder().Solicitado().ComManifestacao("RECOMENDA_APROVACAO", texto: null);
         FatoCandidato fato = montagem.Fato();
-        fato.ReprovarProtecao("Dado desnecessário.", "helena.rezende", DateTimeOffset.UtcNow);
+        fato.DevolverProtecao("Dado desnecessário.", "helena.rezende", DateTimeOffset.UtcNow);
         fato.AlterarDescritivo("Renda familiar", "Renda bruta declarada.", null);
         _fatos.ObterPorIdParaLeituraAsync(fato.Id, Arg.Any<CancellationToken>()).Returns(fato);
         _manifestacoes.ListarDoItemAsync(new ItemDaProtecao(CadastroDoCatalogo.Fato, fato.Id), Arg.Any<CancellationToken>()).Returns(montagem.Eventos);

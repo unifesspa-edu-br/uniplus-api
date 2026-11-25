@@ -6,7 +6,7 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// <summary>
 /// A decisão do Representante do controlador sobre a proteção de dados de um tipo de documento ou fato do candidato que
 /// está numa solicitação (ADR-0153): aprova a proteção declarada, recomenda o ajuste indicando a classificação correta,
-/// ou a reprova com a justificativa.
+/// ou a devolve com a justificativa.
 /// </summary>
 /// <param name="Item">O cadastro e o identificador do item.</param>
 /// <param name="Decisao">A decisão, a classificação recomendada e a justificativa.</param>

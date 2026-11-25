@@ -11,7 +11,7 @@ using Unifesspa.UniPlus.Kernel.Results;
 
 /// <summary>
 /// Lê o que aguarda a proteção de dados para quem a aprova, para quem a consulta e para quem mantém os cadastros: o
-/// administrador acompanha o que enviou, e a proteção de dados decide. Cada um vê o que a sua permissão alcança — quem
+/// administrador acompanha o que enviou, e o Representante do controlador decide. Cada um vê o que a sua permissão alcança — quem
 /// aprova ou consulta vê os dois cadastros, quem só mantém um cadastro vê esse. A leitura entra na trilha de acesso pela
 /// permissão de classe mais alta que a autorizou, antes de a lista sair.
 /// </summary>
@@ -75,7 +75,7 @@ public static class ListarProtecaoDoCatalogoQueryHandler
     private static FieldError SituacaoInvalida() =>
         new("situacao", new DomainError(
             ProtecaoDoCatalogoErrorCodes.SituacaoInvalida,
-            "A situação deve ser PENDENTE, SOLICITADA, AJUSTE_RECOMENDADO ou REPROVADA: o item aprovado não aguarda a proteção de dados."));
+            "A situação deve ser PENDENTE, SOLICITADA, AJUSTE_RECOMENDADO ou DEVOLVIDA: o item aprovado não aguarda a proteção de dados."));
 
     // Quem aprova ou consulta vê os dois cadastros; quem só mantém um vê o dele. O filtro da situação vale para os dois.
     private static async Task<IReadOnlyList<ItemDaProtecaoDoCatalogoDto>> ListarAsync(

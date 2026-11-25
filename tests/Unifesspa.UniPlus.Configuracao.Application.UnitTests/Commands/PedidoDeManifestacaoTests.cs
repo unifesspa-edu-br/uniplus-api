@@ -16,11 +16,11 @@ public sealed class PedidoDeManifestacaoTests
     {
         Guid id = Guid.CreateVersion7();
 
-        PedidoDeManifestacao pedido = PedidoDeManifestacao.Ler(new(new ItemInformado("DADO_DO_CANDIDATO", id), 2, new ConteudoInformado("INADEQUADA", " O dado é sensível. "))).Value!;
+        PedidoDeManifestacao pedido = PedidoDeManifestacao.Ler(new(new ItemInformado("DADO_DO_CANDIDATO", id), 2, new ConteudoInformado("RECOMENDA_NAO_USO", " O dado é sensível. "))).Value!;
 
         pedido.Item.Should().Be(new ItemDaProtecao(CadastroDoCatalogo.Fato, id));
         pedido.Ciclo.Should().Be(new CicloDaAprovacao(2));
-        (pedido.Conteudo.Parecer, pedido.Conteudo.Texto!.Valor).Should().Be((ParecerDaManifestacao.Inadequada, "O dado é sensível."));
+        (pedido.Conteudo.Parecer, pedido.Conteudo.Texto!.Valor).Should().Be((ParecerDaManifestacao.RecomendaNaoUso, "O dado é sensível."));
     }
 
     [Fact(DisplayName = "O cadastro, o ciclo, o parecer e o texto inválidos saem juntos, cada um no seu campo")]
@@ -36,10 +36,10 @@ public sealed class PedidoDeManifestacaoTests
             ("texto", ProtecaoDoCatalogoErrorCodes.TextoDaManifestacaoMuitoLongo));
     }
 
-    [Theory(DisplayName = "Os pareceres desfavoráveis sem texto são recusados no campo texto; o adequado dispensa o texto")]
+    [Theory(DisplayName = "Os pareceres desfavoráveis sem texto são recusados no campo texto; recomenda aprovação dispensa o texto")]
     [InlineData("RECOMENDA_AJUSTE", false)]
-    [InlineData("INADEQUADA", false)]
-    [InlineData("ADEQUADA", true)]
+    [InlineData("RECOMENDA_NAO_USO", false)]
+    [InlineData("RECOMENDA_APROVACAO", true)]
     public void Ler_TextoNoParecer(string parecer, bool aceito)
     {
         Result<PedidoDeManifestacao> pedido = PedidoDeManifestacao.Ler(new(new ItemInformado("TIPO_DOCUMENTO", Guid.NewGuid()), 1, new ConteudoInformado(parecer)));

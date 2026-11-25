@@ -55,7 +55,7 @@ public sealed class DetalheDaProtecaoDoCatalogoEndpointTests : ProtecaoDoCatalog
         (await EnviarAsync(client, HttpMethod.Put, $"{Fatos}/{IdDeQuilombola}/definicao", DefinicaoDe(original))).StatusCode.Should().Be(HttpStatusCode.NoContent);
         (await SolicitarAsync(client, "DADO_DO_CANDIDATO", IdDeQuilombola)).StatusCode.Should().Be(HttpStatusCode.OK);
 
-        (await DecidirAsync(client, "DADO_DO_CANDIDATO", IdDeQuilombola, "RECOMENDAR_AJUSTE", "PESSOAL")).StatusCode.Should().Be(HttpStatusCode.NoContent);
+        (await DecidirAsync(client, "DADO_DO_CANDIDATO", IdDeQuilombola, "AJUSTE_RECOMENDADO", "PESSOAL")).StatusCode.Should().Be(HttpStatusCode.NoContent);
         (await EnviarAsync(client, HttpMethod.Post, $"{Fatos}/{IdDeQuilombola}/aceite-da-recomendacao")).StatusCode.Should().Be(HttpStatusCode.NoContent);
 
         JsonElement aceito = await ObterFatoAsync(client, IdDeQuilombola);

@@ -116,7 +116,7 @@
         "UNI-REQ-0184"
       ],
       "oQueAconteceu": [
-        "O escopo informado não é aceito. Escopo de unidade exige a unidade, e escopo da instituição não admite unidade. O escopo admitido segue o alcance das permissões do perfil: perfil de permissões por unidade se concede numa unidade, e perfil de permissões da instituição inteira, como os de governança (gestor de acessos, Representante do controlador e Encarregado de dados), se concede na instituição."
+        "O escopo informado não é aceito. Escopo de unidade exige a unidade, e escopo da instituição não admite unidade. O escopo admitido segue o alcance das permissões do perfil: perfil de permissões por unidade se concede numa unidade, e perfil de permissões da instituição inteira, como os de governança (gestor de acessos, Representante do controlador e Gestor de proteção de dados), se concede na instituição."
       ],
       "comoResolver": [
         "Corrija o escopo conforme o alcance do perfil: indique a unidade quando o perfil for de unidade, ou a instituição quando for da instituição."
@@ -271,7 +271,7 @@
         "UNI-REQ-0394"
       ],
       "oQueAconteceu": [
-        "A data de fim da concessão não é posterior ao início, ou foi informada para um perfil que não admite prazo. Os perfis de gestor de acessos e de Representante do controlador não admitem prazo: a concessão deles só termina pela revogação, que confere o mínimo de dois gestores e a regra do último Representante vigente. O perfil de Encarregado de dados admite prazo, como os perfis comuns."
+        "A data de fim da concessão não é posterior ao início, ou foi informada para um perfil que não admite prazo. Os perfis de gestor de acessos e de Representante do controlador não admitem prazo: a concessão deles só termina pela revogação, que confere o mínimo de dois gestores e a regra do último Representante vigente. O perfil de Gestor de proteção de dados admite prazo, como os perfis comuns."
       ],
       "comoResolver": [
         "Informe uma data de fim posterior ao início. Para os perfis de gestor de acessos e de Representante do controlador, não informe data de fim."
@@ -566,7 +566,7 @@
         "UNI-REQ-0184"
       ],
       "oQueAconteceu": [
-        "O escopo do pedido segue o alcance das permissões do perfil. Perfil cujas permissões valem por unidade se pede para uma unidade, que precisa ser informada. Perfil cujas permissões valem para a instituição inteira, como os de governança (gestor de acessos, Representante do controlador e Encarregado de dados), se pede sem unidade."
+        "O escopo do pedido segue o alcance das permissões do perfil. Perfil cujas permissões valem por unidade se pede para uma unidade, que precisa ser informada. Perfil cujas permissões valem para a instituição inteira, como os de governança (gestor de acessos, Representante do controlador e Gestor de proteção de dados), se pede sem unidade."
       ],
       "comoResolver": [
         "Confira na lista de perfis o escopo do perfil escolhido: informe a unidade quando o escopo for de unidade, e nenhuma unidade quando for da instituição."
@@ -728,7 +728,7 @@
         "UNI-REQ-0184"
       ],
       "oQueAconteceu": [
-        "Uma mesma pessoa não pode ter, ao mesmo tempo, concessões vigentes de Representante do controlador e de Encarregado de dados. O beneficiário tem concessão vigente do outro papel; ela precisa ser revogada ou vencer antes desta designação.",
+        "Uma mesma pessoa não pode ter, ao mesmo tempo, concessões vigentes de Representante do controlador e de Gestor de proteção de dados. O beneficiário tem concessão vigente do outro papel; ela precisa ser revogada ou vencer antes desta designação.",
         "Quem decide a etapa da proteção de dados não fiscaliza a própria decisão. Gestor de acessos e Representante do controlador podem ser a mesma pessoa. Concessão vencida ou revogada não conta."
       ],
       "comoResolver": [
@@ -939,7 +939,7 @@
         "UNI-REQ-0394"
       ],
       "oQueAconteceu": [
-        "O prazo informado não é posterior ao momento do pedido ou da aprovação, ou foi informado para um perfil que não admite prazo. Os perfis de gestor de acessos e de Representante do controlador não admitem prazo: a concessão deles só termina pela revogação, que confere o mínimo de dois gestores e a regra do último Representante vigente. O perfil de Encarregado de dados admite prazo, como os perfis comuns. Na etapa da proteção de dados, o prazo também é recusado: ele é definido pelo gestor. Isso alcança o pedido de Representante que chegou à etapa da proteção de dados com prazo definido pelo gestor antes de o perfil deixar de admitir prazo: a aprovação é recusada antes de virar concessão, e nada é gravado."
+        "O prazo informado não é posterior ao momento do pedido ou da aprovação, ou foi informado para um perfil que não admite prazo. Os perfis de gestor de acessos e de Representante do controlador não admitem prazo: a concessão deles só termina pela revogação, que confere o mínimo de dois gestores e a regra do último Representante vigente. O perfil de Gestor de proteção de dados admite prazo, como os perfis comuns. Na etapa da proteção de dados, o prazo também é recusado: ele é definido pelo gestor. Isso alcança o pedido de Representante que chegou à etapa da proteção de dados com prazo definido pelo gestor antes de o perfil deixar de admitir prazo: a aprovação é recusada antes de virar concessão, e nada é gravado."
       ],
       "comoResolver": [
         "Informe um prazo futuro, ou deixe o prazo em branco. Para os perfis de gestor de acessos e de Representante do controlador, não informe prazo, nem como sugestão no pedido nem na aprovação. Na etapa da proteção de dados, aprove sem informar prazo; se o prazo definido pelo gestor não for adequado, recuse o pedido. O pedido de Representante que já tinha prazo não pode ser aprovado: o Representante o recusa, e a pessoa faz outro pedido, sem prazo. O pedido não pode ser cancelado por quem pediu, porque o cancelamento só vale antes da primeira decisão."
@@ -1974,7 +1974,7 @@
       ],
       "oQueAconteceu": [
         "Todo acesso a dado pessoal ou sensível de um candidato fica registrado antes de o dado ser entregue. O registro desta ação não pôde ser gravado, e por isso nada foi registrado e o dado não foi mostrado. Não é uma recusa: a permissão de quem pediu não foi avaliada como insuficiente.",
-        "O mesmo vale para as leituras do Encarregado de dados: pedidos, concessões, revisões, versões dos perfis, período de migração, proteção do catálogo e anexos. Cada leitura é registrada antes da entrega, e, sem o registro, a tela mostra este erro sem exibir o dado."
+        "O mesmo vale para as leituras do Gestor de proteção de dados: pedidos, concessões, revisões, versões dos perfis, período de migração, proteção do catálogo e anexos. Cada leitura é registrada antes da entrega, e, sem o registro, a tela mostra este erro sem exibir o dado."
       ],
       "comoResolver": [
         "Repita a ação em instantes. Se a falha continuar, avise a equipe de suporte do Uni+, porque nenhum acesso a dado protegido é concluído enquanto o registro estiver indisponível."
@@ -1982,7 +1982,7 @@
       "ondeAparece": [
         "Revelação do CPF da inscrição",
         "Abertura de documento da inscrição",
-        "Consultas do Encarregado de dados (pedidos, concessões, revisões, versões dos perfis, período de migração, proteção do catálogo e anexos)"
+        "Consultas do Gestor de proteção de dados (pedidos, concessões, revisões, versões dos perfis, período de migração, proteção do catálogo e anexos)"
       ]
     },
     {
@@ -7193,15 +7193,15 @@
       ]
     },
     {
-      "codigo": "uniplus.configuracao.protecao_do_catalogo.aceite_de_item_reprovado",
+      "codigo": "uniplus.configuracao.protecao_do_catalogo.aceite_de_item_devolvido",
       "requisitos": [
         "UNI-REQ-0205"
       ],
       "oQueAconteceu": [
-        "A reprovação não indica classificação, e por isso não há recomendação a aceitar. O administrador do cadastro só pode editar um item reprovado, lendo a justificativa do Representante do controlador."
+        "A devolução não indica classificação, e por isso não há recomendação a aceitar. O administrador do cadastro só pode editar um item devolvido, lendo a justificativa do Representante do controlador."
       ],
       "comoResolver": [
-        "Leia a justificativa da reprovação e edite o item. A edição devolve o item a pendente, para uma nova solicitação."
+        "Leia a justificativa da devolução e edite o item. A edição devolve o item a pendente, para uma nova solicitação."
       ],
       "ondeAparece": [
         "Aceite da recomendação do Representante do controlador pelo administrador do cadastro"
@@ -7213,10 +7213,10 @@
         "UNI-REQ-0205"
       ],
       "oQueAconteceu": [
-        "A consulta das decisões filtrou por um valor que não é decisão. Só a aprovação, o ajuste recomendado e a reprovação são decisões do Representante do controlador; a solicitação e o aceite ficam no histórico do item, mas não entram na lista de decisões."
+        "A consulta das decisões filtrou por um valor que não é decisão. Só a aprovação, o ajuste recomendado e a devolução são decisões do Representante do controlador; a solicitação e o aceite ficam no histórico do item, mas não entram na lista de decisões."
       ],
       "comoResolver": [
-        "Filtre por `APROVACAO`, `AJUSTE_RECOMENDADO` ou `REPROVACAO`. Para ver a solicitação e o aceite, abra o histórico do item."
+        "Filtre por `APROVACAO`, `AJUSTE_RECOMENDADO` ou `DEVOLUCAO`. Para ver a solicitação e o aceite, abra o histórico do item."
       ],
       "ondeAparece": [
         "Consulta das decisões da proteção de dados"
@@ -7234,7 +7234,7 @@
         "Informe `TIPO_DOCUMENTO` ou `DADO_DO_CANDIDATO`."
       ],
       "ondeAparece": [
-        "Decisão da proteção de dados (aprovação, ajuste recomendado ou reprovação)"
+        "Decisão da proteção de dados (aprovação, ajuste recomendado ou devolução)"
       ]
     },
     {
@@ -7285,7 +7285,7 @@
       ],
       "ondeAparece": [
         "Envio da solicitação de aprovação da proteção de dados",
-        "Decisão da proteção de dados (aprovação, ajuste recomendado ou reprovação) de um item",
+        "Decisão da proteção de dados (aprovação, ajuste recomendado ou devolução) de um item",
         "Aceite da classificação recomendada"
       ]
     },
@@ -7295,13 +7295,13 @@
         "UNI-REQ-0205"
       ],
       "oQueAconteceu": [
-        "Cada decisão admite só alguns dados: a aprovação não aceita classificação recomendada; o ajuste recomendado exige a classificação recomendada; a reprovação não aceita classificação recomendada. A justificativa é aceita nas três decisões (UNI-REQ-0205). A decisão enviada traz um dado que a decisão escolhida não admite."
+        "Cada decisão admite só alguns dados: a aprovação não aceita classificação recomendada; o ajuste recomendado exige a classificação recomendada; a devolução não aceita classificação recomendada. A justificativa é aceita nas três decisões (UNI-REQ-0205). A decisão enviada traz um dado que a decisão escolhida não admite."
       ],
       "comoResolver": [
-        "Retire da decisão a classificação recomendada que não cabe nela. Para indicar a classificação correta, escolha o ajuste recomendado, que exige a classificação recomendada e, diante de manifestação desfavorável vigente do Encarregado de dados, também a justificativa (UNI-REQ-0374)."
+        "Retire da decisão a classificação recomendada que não cabe nela. Para indicar a classificação correta, escolha o ajuste recomendado, que exige a classificação recomendada e, diante de manifestação desfavorável vigente do Gestor de proteção de dados, também a justificativa (UNI-REQ-0374)."
       ],
       "ondeAparece": [
-        "Decisão da proteção de dados (aprovação, ajuste recomendado ou reprovação)"
+        "Decisão da proteção de dados (aprovação, ajuste recomendado ou devolução)"
       ]
     },
     {
@@ -7310,13 +7310,13 @@
         "UNI-REQ-0205"
       ],
       "oQueAconteceu": [
-        "O Representante do controlador aprova, recomenda ajuste ou reprova cada item. O valor enviado não é nenhum dos três."
+        "O Representante do controlador aprova, recomenda ajuste ou devolve cada item. O valor enviado não é nenhum dos três."
       ],
       "comoResolver": [
-        "Informe `APROVAR`, `RECOMENDAR_AJUSTE` ou `REPROVAR`. No ajuste, informe também a classificação recomendada; na reprovação, a justificativa."
+        "Informe `APROVACAO`, `AJUSTE_RECOMENDADO` ou `DEVOLUCAO`. No ajuste, informe também a classificação recomendada; na devolução, a justificativa."
       ],
       "ondeAparece": [
-        "Decisão da proteção de dados (aprovação, ajuste recomendado ou reprovação)"
+        "Decisão da proteção de dados (aprovação, ajuste recomendado ou devolução)"
       ]
     },
     {
@@ -7326,7 +7326,7 @@
         "UNI-REQ-0374"
       ],
       "oQueAconteceu": [
-        "Depois que o item foi lido, o Representante do controlador decidiu a aprovação dele, e a manifestação não se aplica a um item já decidido sem que o Encarregado de dados veja a decisão. Nada foi registrado. Repetir a mesma requisição não resolve.",
+        "Depois que o item foi lido, o Representante do controlador decidiu a aprovação dele, e a manifestação não se aplica a um item já decidido sem que o Gestor de proteção de dados veja a decisão. Nada foi registrado. Repetir a mesma requisição não resolve.",
         "Regra da manifestação técnica na proteção do catálogo de tipos de documento e de fatos do candidato, definida na ADR-0162 da uniplus-api."
       ],
       "comoResolver": [
@@ -7364,7 +7364,7 @@
         "Atualize a lista de itens aguardando decisão. Se o item voltou a pendente, espere o administrador enviar a nova solicitação."
       ],
       "ondeAparece": [
-        "Decisão da proteção de dados (aprovação, ajuste recomendado ou reprovação) de um item do catálogo"
+        "Decisão da proteção de dados (aprovação, ajuste recomendado ou devolução) de um item do catálogo"
       ]
     },
     {
@@ -7389,7 +7389,7 @@
         "UNI-REQ-0205"
       ],
       "oQueAconteceu": [
-        "O item tem, no ciclo de aprovação atual, manifestação desfavorável vigente do Encarregado de dados (parecer recomenda ajuste ou inadequada). Nesse caso, o Representante do controlador só aprova ou recomenda ajuste informando a justificativa, que fica registrada no ato da decisão. A justificativa chegou ausente ou em branco, no campo `justificativa`. Nada foi decidido.",
+        "O item tem, no ciclo de aprovação atual, manifestação desfavorável vigente do Gestor de proteção de dados (parecer recomenda ajuste ou recomenda não uso). Nesse caso, o Representante do controlador só aprova ou recomenda ajuste informando a justificativa, que fica registrada no ato da decisão. A justificativa chegou ausente ou em branco, no campo `justificativa`. Nada foi decidido.",
         "Regra da manifestação técnica na proteção do catálogo de tipos de documento e de fatos do candidato, definida na ADR-0162 da uniplus-api."
       ],
       "comoResolver": [
@@ -7411,7 +7411,7 @@
         "Resuma a justificativa até o limite de 2.000 caracteres e envie a decisão de novo."
       ],
       "ondeAparece": [
-        "Decisão da proteção de dados (aprovação, ajuste recomendado ou reprovação)"
+        "Decisão da proteção de dados (aprovação, ajuste recomendado ou devolução)"
       ]
     },
     {
@@ -7421,14 +7421,14 @@
         "UNI-REQ-0374"
       ],
       "oQueAconteceu": [
-        "Ao reprovar um item, o Representante do controlador explica o motivo, porque a reprovação não indica classificação e o administrador só tem a justificativa para saber o que corrigir. A justificativa chegou ausente ou em branco."
+        "Ao devolver um item, o Representante do controlador explica o motivo, porque a devolução não indica classificação e o administrador só tem a justificativa para saber o que corrigir. A justificativa chegou ausente ou em branco."
       ],
       "comoResolver": [
-        "Informe a justificativa da reprovação. Se a ideia é indicar a classificação correta, use o ajuste recomendado, que exige a classificação recomendada e, diante de manifestação desfavorável vigente, também a justificativa.",
-        "Na aprovação e no ajuste recomendado, a justificativa é opcional. Diante de manifestação desfavorável vigente do Encarregado de dados no ciclo, ela passa a ser obrigatória nessas duas decisões, e a falta dela é recusada com o código próprio [`uniplus.configuracao.protecao_do_catalogo.justificativa_exigida_pela_manifestacao`](/erros/uniplus.configuracao.protecao_do_catalogo.justificativa_exigida_pela_manifestacao) (UNI-REQ-0374)."
+        "Informe a justificativa da devolução. Se a ideia é indicar a classificação correta, use o ajuste recomendado, que exige a classificação recomendada e, diante de manifestação desfavorável vigente, também a justificativa.",
+        "Na aprovação e no ajuste recomendado, a justificativa é opcional. Diante de manifestação desfavorável vigente do Gestor de proteção de dados no ciclo, ela passa a ser obrigatória nessas duas decisões, e a falta dela é recusada com o código próprio [`uniplus.configuracao.protecao_do_catalogo.justificativa_exigida_pela_manifestacao`](/erros/uniplus.configuracao.protecao_do_catalogo.justificativa_exigida_pela_manifestacao) (UNI-REQ-0374)."
       ],
       "ondeAparece": [
-        "Decisão da proteção de dados (aprovação, ajuste recomendado ou reprovação)"
+        "Decisão da proteção de dados (aprovação, ajuste recomendado ou devolução)"
       ]
     },
     {
@@ -7438,7 +7438,7 @@
         "UNI-REQ-0373"
       ],
       "oQueAconteceu": [
-        "A decisão informa, obrigatoriamente, o ciclo de aprovação e a contagem de manifestações do ciclo que quem decide leu no item (`ciclo` e `manifestacoesNoCiclo`). Depois dessa leitura, o Encarregado de dados registrou ou substituiu uma manifestação técnica no item, e a decisão não pode ser tomada sem considerá-la, porque uma manifestação desfavorável exige justificativa. Nada foi decidido. Repetir a mesma requisição não resolve.",
+        "A decisão informa, obrigatoriamente, o ciclo de aprovação e a contagem de manifestações do ciclo que quem decide leu no item (`ciclo` e `manifestacoesNoCiclo`). Depois dessa leitura, o Gestor de proteção de dados registrou ou substituiu uma manifestação técnica no item, e a decisão não pode ser tomada sem considerá-la, porque uma manifestação desfavorável exige justificativa. Nada foi decidido. Repetir a mesma requisição não resolve.",
         "Regra da manifestação técnica na proteção do catálogo de tipos de documento e de fatos do candidato, definida na ADR-0162 da uniplus-api."
       ],
       "comoResolver": [
@@ -7470,11 +7470,11 @@
         "UNI-REQ-0373"
       ],
       "oQueAconteceu": [
-        "O campo `parecer` da manifestação trouxe um valor que não está entre os aceitos: `ADEQUADA`, `RECOMENDA_AJUSTE` e `INADEQUADA`. A recusa aparece junto das demais violações do corpo, em `errors[]`. Nada foi registrado.",
+        "O campo `parecer` da manifestação trouxe um valor que não está entre os aceitos: `RECOMENDA_APROVACAO`, `RECOMENDA_AJUSTE` e `RECOMENDA_NAO_USO`. A recusa aparece junto das demais violações do corpo, em `errors[]`. Nada foi registrado.",
         "Regra da manifestação técnica na proteção do catálogo de tipos de documento e de fatos do candidato, definida na ADR-0162 da uniplus-api."
       ],
       "comoResolver": [
-        "Envie um dos três pareceres. Nos pareceres `RECOMENDA_AJUSTE` e `INADEQUADA`, informe também o texto."
+        "Envie um dos três pareceres. Nos pareceres `RECOMENDA_AJUSTE` e `RECOMENDA_NAO_USO`, informe também o texto."
       ],
       "ondeAparece": [
         "Registro de manifestação na proteção do catálogo de tipos de documento e de fatos do candidato (`POST /api/configuracao/admin/protecao-do-catalogo/manifestacoes`)"
@@ -7507,7 +7507,7 @@
         "Envie a decisão com a classificação, a base legal e a finalidade do item como aparecem na lista de itens solicitados. Se o item tiver mudado desde então, a decisão é recusada porque a proteção mudou: abra a lista de novo e analise o item atual."
       ],
       "ondeAparece": [
-        "Decisão da proteção de dados (aprovação, ajuste recomendado ou reprovação) de um item"
+        "Decisão da proteção de dados (aprovação, ajuste recomendado ou devolução) de um item"
       ]
     },
     {
@@ -7522,7 +7522,7 @@
         "Repetir a mesma decisão não resolve. Abra de novo a lista de itens solicitados, analise a proteção atual do item e decida sobre ela."
       ],
       "ondeAparece": [
-        "Decisão da proteção de dados (aprovação, ajuste recomendado ou reprovação) de um item"
+        "Decisão da proteção de dados (aprovação, ajuste recomendado ou devolução) de um item"
       ]
     },
     {
@@ -7564,10 +7564,10 @@
         "Ao recomendar ajuste de um item, o Representante do controlador indica a classificação que considera correta, para que o administrador possa aceitá-la sem novo ciclo. No fato, a recomendada respeita a classificação mínima do tipo de dado."
       ],
       "comoResolver": [
-        "Informe a classificação recomendada junto do ajuste recomendado. Se não há classificação a indicar, reprove o item com a justificativa."
+        "Informe a classificação recomendada junto do ajuste recomendado. Se não há classificação a indicar, devolva o item com a justificativa."
       ],
       "ondeAparece": [
-        "Decisão da proteção de dados (aprovação, ajuste recomendado ou reprovação)"
+        "Decisão da proteção de dados (aprovação, ajuste recomendado ou devolução)"
       ]
     },
     {
@@ -7610,7 +7610,7 @@
         "UNI-REQ-0205"
       ],
       "oQueAconteceu": [
-        "Só o item com ajuste recomendado pelo Representante do controlador tem uma classificação recomendada. Este item está pendente, aguardando decisão, já aprovado ou reprovado."
+        "Só o item com ajuste recomendado pelo Representante do controlador tem uma classificação recomendada. Este item está pendente, aguardando decisão, já aprovado ou devolvido."
       ],
       "comoResolver": [
         "Confira a situação do item. O aceite só cabe depois de um ajuste recomendado."
@@ -7671,7 +7671,7 @@
         "UNI-REQ-0373"
       ],
       "oQueAconteceu": [
-        "A manifestação com parecer `RECOMENDA_AJUSTE` ou `INADEQUADA` explica o que está inadequado na proteção do item, para que o Representante do controlador saiba o que considerar ao decidir. O texto chegou ausente ou em branco. No parecer `ADEQUADA`, o texto é opcional. Nada foi registrado.",
+        "A manifestação com parecer `RECOMENDA_AJUSTE` ou `RECOMENDA_NAO_USO` explica o que está inadequado na proteção do item, para que o Representante do controlador saiba o que considerar ao decidir. O texto chegou ausente ou em branco. No parecer `RECOMENDA_APROVACAO`, o texto é opcional. Nada foi registrado.",
         "Regra da manifestação técnica na proteção do catálogo de tipos de documento e de fatos do candidato, definida na ADR-0162 da uniplus-api."
       ],
       "comoResolver": [
@@ -9054,7 +9054,7 @@
       "comoResolver": [
         "Envie de novo o cadastro com os três dados preenchidos:",
         "- **classificação de proteção**, na mesma escala dos dados do candidato: público,\n  interno, pessoal, identificador ou sensível;\n- **finalidade do tratamento**, que explica para que o documento é pedido;\n- **hipótese legal**, que fundamenta o tratamento.",
-        "Na dúvida sobre a classificação de um tipo de documento, consulte o Encarregado de dados\nda Unifesspa antes de cadastrá-lo."
+        "Na dúvida sobre a classificação de um tipo de documento, consulte o Encarregado pelo Tratamento de Dados Pessoais\nda Unifesspa antes de cadastrá-lo."
       ],
       "ondeAparece": [
         "Cadastro de um tipo de documento",

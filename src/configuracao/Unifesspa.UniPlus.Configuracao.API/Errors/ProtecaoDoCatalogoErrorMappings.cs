@@ -118,7 +118,7 @@ internal static class ProtecaoDoCatalogoErrorMappings
             new DomainErrorMapping(
                 StatusCodes.Status422UnprocessableEntity,
                 "uniplus.configuracao.protecao_do_catalogo.justificativa_obrigatoria",
-                "A reprovação exige a justificativa")),
+                "A devolução exige a justificativa")),
 
         new(ProtecaoDoCatalogoErrorCodes.JustificativaMuitoLonga,
             new DomainErrorMapping(
@@ -148,7 +148,7 @@ internal static class ProtecaoDoCatalogoErrorMappings
             new DomainErrorMapping(
                 StatusCodes.Status422UnprocessableEntity,
                 "uniplus.configuracao.protecao_do_catalogo.texto_da_manifestacao_obrigatorio",
-                "Os pareceres recomenda ajuste e inadequada exigem o texto")),
+                "Os pareceres recomenda ajuste e recomenda não uso exigem o texto")),
 
         new(ProtecaoDoCatalogoErrorCodes.TextoDaManifestacaoMuitoLongo,
             new DomainErrorMapping(
@@ -186,11 +186,11 @@ internal static class ProtecaoDoCatalogoErrorMappings
                 "uniplus.configuracao.protecao_do_catalogo.ciclo_mudou",
                 "O ciclo de aprovação do item mudou depois de lido; releia o item")),
 
-        new(ProtecaoDoCatalogoErrorCodes.AceiteDeItemReprovado,
+        new(ProtecaoDoCatalogoErrorCodes.AceiteDeItemDevolvido,
             new DomainErrorMapping(
                 StatusCodes.Status422UnprocessableEntity,
-                "uniplus.configuracao.protecao_do_catalogo.aceite_de_item_reprovado",
-                "O item reprovado não tem recomendação a aceitar")),
+                "uniplus.configuracao.protecao_do_catalogo.aceite_de_item_devolvido",
+                "O item devolvido não tem recomendação a aceitar")),
 
         new(ProtecaoDoCatalogoErrorCodes.AtoInvalido,
             new DomainErrorMapping(

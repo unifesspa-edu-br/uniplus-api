@@ -34,11 +34,11 @@ public sealed class ManifestacaoNaProtecaoDoCatalogoTests
     {
         TipoDocumento laudo = Tipo(new ItemSobAprovacaoBuilder().Solicitado());
 
-        Result resultado = await ManifestarAsync("TIPO_DOCUMENTO", laudo.Id, 1, "INADEQUADA", "O laudo revela condição de saúde.");
+        Result resultado = await ManifestarAsync("TIPO_DOCUMENTO", laudo.Id, 1, "RECOMENDA_NAO_USO", "O laudo revela condição de saúde.");
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
         EventoGravado().Should().Match<ManifestacaoDaProtecaoDoCatalogo>(m =>
-            m.Parecer == ParecerDaManifestacao.Inadequada && m.Autor.ContaId == Isabella && m.Instante == Agora && m.SubstituiId == null);
+            m.Parecer == ParecerDaManifestacao.RecomendaNaoUso && m.Autor.ContaId == Isabella && m.Instante == Agora && m.SubstituiId == null);
         (laudo.Aprovacao.Situacao, laudo.Aprovacao.ManifestacaoDesfavoravelVigente, laudo.Aprovacao.ManifestadaEm)
             .Should().Be((SituacaoDaAprovacao.Solicitada, true, Agora));
         await _unitOfWork.Received(1).SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
@@ -47,12 +47,12 @@ public sealed class ManifestacaoNaProtecaoDoCatalogoTests
     [Fact(DisplayName = "A nova manifestação da mesma pessoa no fato substitui a vigente dela, lida do ciclo do item")]
     public async Task Fato_SubstituiAVigenteDaMesmaPessoa()
     {
-        ItemSobAprovacaoBuilder montagem = new ItemSobAprovacaoBuilder().Solicitado().ComManifestacao("INADEQUADA", autor: UsuarioComoAutor());
+        ItemSobAprovacaoBuilder montagem = new ItemSobAprovacaoBuilder().Solicitado().ComManifestacao("RECOMENDA_NAO_USO", autor: UsuarioComoAutor());
         FatoCandidato fato = Fato(montagem);
         _manifestacoes.ListarDoCicloAsync(new ItemDaProtecao(CadastroDoCatalogo.Fato, fato.Id), CicloDaAprovacao.Primeiro, Arg.Any<CancellationToken>())
             .Returns(montagem.Eventos);
 
-        Result resultado = await ManifestarAsync("DADO_DO_CANDIDATO", fato.Id, 1, "ADEQUADA", null);
+        Result resultado = await ManifestarAsync("DADO_DO_CANDIDATO", fato.Id, 1, "RECOMENDA_APROVACAO", null);
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
         EventoGravado().SubstituiId.Should().Be(montagem.Eventos[0].Id);
@@ -65,8 +65,8 @@ public sealed class ManifestacaoNaProtecaoDoCatalogoTests
         TipoDocumento solicitado = Tipo(new ItemSobAprovacaoBuilder().Solicitado());
         TipoDocumento pendente = Tipo(new ItemSobAprovacaoBuilder());
 
-        Result cicloMudou = await ManifestarAsync("TIPO_DOCUMENTO", solicitado.Id, 2, "ADEQUADA", null);
-        Result foraDeSolicitacao = await ManifestarAsync("TIPO_DOCUMENTO", pendente.Id, 1, "ADEQUADA", null);
+        Result cicloMudou = await ManifestarAsync("TIPO_DOCUMENTO", solicitado.Id, 2, "RECOMENDA_APROVACAO", null);
+        Result foraDeSolicitacao = await ManifestarAsync("TIPO_DOCUMENTO", pendente.Id, 1, "RECOMENDA_APROVACAO", null);
 
         cicloMudou.Error!.Code.Should().Be(ProtecaoDoCatalogoErrorCodes.CicloMudou);
         foraDeSolicitacao.Error!.Code.Should().Be(ProtecaoDoCatalogoErrorCodes.ItemForaDeSolicitacao);
@@ -80,7 +80,7 @@ public sealed class ManifestacaoNaProtecaoDoCatalogoTests
         TipoDocumento laudo = Tipo(new ItemSobAprovacaoBuilder().Solicitado());
         _unitOfWork.SalvarAlteracoesAsync(Arg.Any<CancellationToken>()).Returns(Task.FromException<int>(new DbUpdateConcurrencyException()));
 
-        Result resultado = await ManifestarAsync("TIPO_DOCUMENTO", laudo.Id, 1, "ADEQUADA", null);
+        Result resultado = await ManifestarAsync("TIPO_DOCUMENTO", laudo.Id, 1, "RECOMENDA_APROVACAO", null);
 
         resultado.Error!.Code.Should().Be(ProtecaoDoCatalogoErrorCodes.ConflitoDeConcorrencia);
         _unitOfWork.Received(1).DescartarAlteracoesNaoSalvas();
@@ -89,8 +89,8 @@ public sealed class ManifestacaoNaProtecaoDoCatalogoTests
     [Fact(DisplayName = "A manifestação sobre item inexistente responde o não encontrado; a forma inválida não lê nada")]
     public async Task Inexistente_EFormaInvalida()
     {
-        (await ManifestarAsync("DADO_DO_CANDIDATO", Guid.NewGuid(), 1, "ADEQUADA", null)).Error!.Code.Should().Be(FatoCandidatoErrorCodes.NaoEncontrado);
-        (await ManifestarAsync("TIPO_DOCUMENTO", Guid.NewGuid(), 0, "ADEQUADA", null)).Errors.Should().ContainSingle(e => e.Field == "ciclo");
+        (await ManifestarAsync("DADO_DO_CANDIDATO", Guid.NewGuid(), 1, "RECOMENDA_APROVACAO", null)).Error!.Code.Should().Be(FatoCandidatoErrorCodes.NaoEncontrado);
+        (await ManifestarAsync("TIPO_DOCUMENTO", Guid.NewGuid(), 0, "RECOMENDA_APROVACAO", null)).Errors.Should().ContainSingle(e => e.Field == "ciclo");
         await _tipos.DidNotReceiveWithAnyArgs().ObterPorIdAsync(default, default);
     }
 

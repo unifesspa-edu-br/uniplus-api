@@ -60,28 +60,28 @@ public static class ProtecaoDoCatalogoErrorCodes
     /// <summary>O cadastro do item da decisão (<c>TIPO_DOCUMENTO</c> ou <c>DADO_DO_CANDIDATO</c>) ausente ou fora do vocabulário.</summary>
     public const string CadastroInvalido = "ProtecaoDoCatalogo.CadastroInvalido";
 
-    /// <summary>A decisão (<c>APROVAR</c>, <c>RECOMENDAR_AJUSTE</c> ou <c>REPROVAR</c>) ausente ou fora do vocabulário.</summary>
+    /// <summary>A decisão (<c>APROVACAO</c>, <c>AJUSTE_RECOMENDADO</c> ou <c>DEVOLUCAO</c>) ausente ou fora do vocabulário.</summary>
     public const string DecisaoInvalida = "ProtecaoDoCatalogo.DecisaoInvalida";
 
-    /// <summary>Reprovação sem justificativa (ausente ou em branco).</summary>
+    /// <summary>Devolução sem justificativa (ausente ou em branco).</summary>
     public const string JustificativaObrigatoria = "ProtecaoDoCatalogo.JustificativaObrigatoria";
 
     /// <summary>Justificativa da decisão acima do limite de caracteres.</summary>
     public const string JustificativaMuitoLonga = "ProtecaoDoCatalogo.JustificativaMuitoLonga";
 
-    /// <summary>Classificação recomendada numa decisão que não a admite (aprovação ou reprovação).</summary>
+    /// <summary>Classificação recomendada numa decisão que não a admite (aprovação ou devolução).</summary>
     public const string DadoDaDecisaoNaoCabe = "ProtecaoDoCatalogo.DadoDaDecisaoNaoCabe";
 
     /// <summary>
     /// Aprovação ou recomendação de ajuste sem justificativa num item com manifestação técnica desfavorável vigente
-    /// (recomenda ajuste ou inadequada) no ciclo.
+    /// (recomenda ajuste ou recomenda não uso) no ciclo.
     /// </summary>
     public const string JustificativaExigidaPelaManifestacao = "ProtecaoDoCatalogo.JustificativaExigidaPelaManifestacao";
 
-    /// <summary>O parecer da manifestação (<c>ADEQUADA</c>, <c>RECOMENDA_AJUSTE</c> ou <c>INADEQUADA</c>) ausente ou fora do vocabulário.</summary>
+    /// <summary>O parecer da manifestação (<c>RECOMENDA_APROVACAO</c>, <c>RECOMENDA_AJUSTE</c> ou <c>RECOMENDA_NAO_USO</c>) ausente ou fora do vocabulário.</summary>
     public const string ParecerInvalido = "ProtecaoDoCatalogo.ParecerInvalido";
 
-    /// <summary>Manifestação com parecer recomenda ajuste ou inadequada sem o texto.</summary>
+    /// <summary>Manifestação com parecer recomenda ajuste ou recomenda não uso sem o texto.</summary>
     public const string TextoDaManifestacaoObrigatorio = "ProtecaoDoCatalogo.TextoDaManifestacaoObrigatorio";
 
     /// <summary>Texto da manifestação acima do limite de caracteres.</summary>
@@ -113,10 +113,10 @@ public static class ProtecaoDoCatalogoErrorCodes
     /// </summary>
     public const string DecisaoJaTomada = "ProtecaoDoCatalogo.DecisaoJaTomada";
 
-    /// <summary>Aceite da recomendação num item reprovado: a reprovação não recomenda classificação, o item só se edita.</summary>
-    public const string AceiteDeItemReprovado = "ProtecaoDoCatalogo.AceiteDeItemReprovado";
+    /// <summary>Aceite da recomendação num item devolvido: a devolução não recomenda classificação, o item só se edita.</summary>
+    public const string AceiteDeItemDevolvido = "ProtecaoDoCatalogo.AceiteDeItemDevolvido";
 
-    /// <summary>O filtro de decisão da consulta fora do vocabulário (<c>APROVACAO</c>, <c>AJUSTE_RECOMENDADO</c> ou <c>REPROVACAO</c>).</summary>
+    /// <summary>O filtro de decisão da consulta fora do vocabulário (<c>APROVACAO</c>, <c>AJUSTE_RECOMENDADO</c> ou <c>DEVOLUCAO</c>).</summary>
     public const string AtoInvalido = "ProtecaoDoCatalogo.AtoInvalido";
 
     /// <summary>O período da consulta com a data inicial depois da final.</summary>

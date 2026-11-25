@@ -10,22 +10,22 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// <summary>O parecer e o texto da manifestação técnica (UNI-REQ-0373).</summary>
 public sealed class ConteudoDaManifestacaoTests
 {
-    [Fact(DisplayName = "O parecer adequada dispensa o texto e não é desfavorável")]
-    public void Ler_AdequadaSemTexto_Aceita()
+    [Fact(DisplayName = "O parecer recomenda aprovação dispensa o texto e não é desfavorável")]
+    public void Ler_RecomendaAprovacaoSemTexto_Aceita()
     {
         List<FieldError> erros = [];
 
-        ConteudoDaManifestacao? conteudo = ConteudoDaManifestacao.Ler(" ADEQUADA ", null, erros);
+        ConteudoDaManifestacao? conteudo = ConteudoDaManifestacao.Ler(" RECOMENDA_APROVACAO ", null, erros);
 
-        conteudo!.Parecer.Should().Be(ParecerDaManifestacao.Adequada);
+        conteudo!.Parecer.Should().Be(ParecerDaManifestacao.RecomendaAprovacao);
         conteudo.Texto.Should().BeNull();
         conteudo.Desfavoravel.Should().BeFalse();
         erros.Should().BeEmpty();
     }
 
-    [Theory(DisplayName = "Recomenda ajuste e inadequada com texto são aceitos e desfavoráveis")]
+    [Theory(DisplayName = "Recomenda ajuste e recomenda não uso com texto são aceitos e desfavoráveis")]
     [InlineData("RECOMENDA_AJUSTE", ParecerDaManifestacao.RecomendaAjuste)]
-    [InlineData("INADEQUADA", ParecerDaManifestacao.Inadequada)]
+    [InlineData("RECOMENDA_NAO_USO", ParecerDaManifestacao.RecomendaNaoUso)]
     public void Ler_DesfavoravelComTexto_Aceita(string parecer, ParecerDaManifestacao esperado)
     {
         List<FieldError> erros = [];
@@ -37,9 +37,9 @@ public sealed class ConteudoDaManifestacaoTests
         conteudo.Desfavoravel.Should().BeTrue();
     }
 
-    [Theory(DisplayName = "Recomenda ajuste e inadequada sem texto são recusados no campo texto")]
+    [Theory(DisplayName = "Recomenda ajuste e recomenda não uso sem texto são recusados no campo texto")]
     [InlineData("RECOMENDA_AJUSTE")]
-    [InlineData("INADEQUADA")]
+    [InlineData("RECOMENDA_NAO_USO")]
     public void Ler_DesfavoravelSemTexto_Recusa(string parecer)
     {
         List<FieldError> erros = [];
@@ -47,6 +47,17 @@ public sealed class ConteudoDaManifestacaoTests
         ConteudoDaManifestacao.Ler(parecer, "   ", erros).Should().BeNull();
         erros.Should().ContainSingle().Which.Should().Match<FieldError>(e =>
             e.Field == "texto" && e.Error.Code == ProtecaoDoCatalogoErrorCodes.TextoDaManifestacaoObrigatorio);
+    }
+
+    [Theory]
+    [InlineData("ADEQUADA")]
+    [InlineData("INADEQUADA")]
+    public void Ler_ParecerAntigo_Recusa(string parecer)
+    {
+        List<FieldError> erros = [];
+        ConteudoDaManifestacao.Ler(parecer, "Texto.", erros).Should().BeNull();
+        erros.Should().ContainSingle(e => e.Field == "parecer" && e.Error.Code == ProtecaoDoCatalogoErrorCodes.ParecerInvalido);
+        new Action(() => PareceresDaManifestacao.Analisar(parecer)).Should().Throw<ArgumentOutOfRangeException>();
     }
 
     [Fact(DisplayName = "O parecer fora do vocabulário e o texto longo demais saem juntos no lote")]
@@ -63,10 +74,10 @@ public sealed class ConteudoDaManifestacaoTests
     [Fact(DisplayName = "Os pareceres têm token canônico, e o token fora do vocabulário falha alto na reidratação")]
     public void Pareceres_TokensCanonicos()
     {
-        PareceresDaManifestacao.TokensCanonicos.Should().Equal("ADEQUADA", "RECOMENDA_AJUSTE", "INADEQUADA");
+        PareceresDaManifestacao.TokensCanonicos.Should().Equal("RECOMENDA_APROVACAO", "RECOMENDA_AJUSTE", "RECOMENDA_NAO_USO");
         PareceresDaManifestacao.ParaTokenCanonico(ParecerDaManifestacao.RecomendaAjuste).Should().Be("RECOMENDA_AJUSTE");
-        PareceresDaManifestacao.Analisar("INADEQUADA").Should().Be(ParecerDaManifestacao.Inadequada);
-        PareceresDaManifestacao.TryAnalisar("inadequada", out _).Should().BeFalse();
+        PareceresDaManifestacao.Analisar("RECOMENDA_NAO_USO").Should().Be(ParecerDaManifestacao.RecomendaNaoUso);
+        PareceresDaManifestacao.TryAnalisar("recomenda não uso", out _).Should().BeFalse();
         new Action(() => PareceresDaManifestacao.Analisar("TALVEZ")).Should().Throw<ArgumentOutOfRangeException>();
         new Action(() => PareceresDaManifestacao.ParaTokenCanonico(ParecerDaManifestacao.Nenhum)).Should().Throw<ArgumentOutOfRangeException>();
     }

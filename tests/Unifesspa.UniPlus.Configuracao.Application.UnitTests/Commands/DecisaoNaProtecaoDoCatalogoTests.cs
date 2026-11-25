@@ -40,7 +40,7 @@ public sealed class DecisaoNaProtecaoDoCatalogoTests
     {
         TipoDocumento laudo = Tipo(new ItemSobAprovacaoBuilder().Solicitado());
 
-        Result resultado = await DecidirAsync("TIPO_DOCUMENTO", laudo.Id, "RECOMENDAR_AJUSTE", "SENSIVEL", " Traz dado de saúde. ");
+        Result resultado = await DecidirAsync("TIPO_DOCUMENTO", laudo.Id, "AJUSTE_RECOMENDADO", "SENSIVEL", " Traz dado de saúde. ");
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
         (laudo.Aprovacao.Situacao, laudo.Aprovacao.Justificativa, laudo.Aprovacao.DecididaPor)
@@ -56,7 +56,7 @@ public sealed class DecisaoNaProtecaoDoCatalogoTests
     {
         FatoCandidato fato = Fato(new ItemSobAprovacaoBuilder().Solicitado());
 
-        Result resultado = await DecidirAsync("DADO_DO_CANDIDATO", fato.Id, "APROVAR", justificativa: Justificativa, classificacao: "PESSOAL");
+        Result resultado = await DecidirAsync("DADO_DO_CANDIDATO", fato.Id, "APROVACAO", justificativa: Justificativa, classificacao: "PESSOAL");
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
         (fato.Aprovacao.Situacao, fato.Aprovacao.Justificativa).Should().Be((SituacaoDaAprovacao.Aprovada, (string?)null));
@@ -64,11 +64,11 @@ public sealed class DecisaoNaProtecaoDoCatalogoTests
     }
 
     [Theory(DisplayName = "Aprovar ou recomendar ajuste sem justificativa diante de manifestação desfavorável é recusado sem mudar nem gravar")]
-    [InlineData("APROVAR", null)]
-    [InlineData("RECOMENDAR_AJUSTE", "SENSIVEL")]
+    [InlineData("APROVACAO", null)]
+    [InlineData("AJUSTE_RECOMENDADO", "SENSIVEL")]
     public async Task DianteDeDesfavoravel_SemJustificativa_Recusa(string decisao, string? recomendada)
     {
-        TipoDocumento laudo = Tipo(new ItemSobAprovacaoBuilder().Solicitado().ComManifestacao("INADEQUADA"));
+        TipoDocumento laudo = Tipo(new ItemSobAprovacaoBuilder().Solicitado().ComManifestacao("RECOMENDA_NAO_USO"));
 
         Result resultado = await DecidirAsync("TIPO_DOCUMENTO", laudo.Id, decisao, recomendada);
 
@@ -82,9 +82,9 @@ public sealed class DecisaoNaProtecaoDoCatalogoTests
     [Fact(DisplayName = "O ajuste sem justificativa, diante de manifestação desfavorável e com a classificação atual, sai com as duas recusas, sem mudar nem gravar")]
     public async Task DianteDeDesfavoravel_AjusteIgualAAtual_AcumulaAsDuasRecusas()
     {
-        TipoDocumento laudo = Tipo(new ItemSobAprovacaoBuilder().Solicitado().ComManifestacao("INADEQUADA"));
+        TipoDocumento laudo = Tipo(new ItemSobAprovacaoBuilder().Solicitado().ComManifestacao("RECOMENDA_NAO_USO"));
 
-        Result resultado = await DecidirAsync("TIPO_DOCUMENTO", laudo.Id, "RECOMENDAR_AJUSTE", "INTERNO");
+        Result resultado = await DecidirAsync("TIPO_DOCUMENTO", laudo.Id, "AJUSTE_RECOMENDADO", "INTERNO");
 
         resultado.Errors.Select(static e => e.Error.Code).Should().BeEquivalentTo(
             ProtecaoDoCatalogoErrorCodes.JustificativaExigidaPelaManifestacao, ProtecaoDoCatalogoErrorCodes.RecomendacaoIgualAAtual);
@@ -98,31 +98,31 @@ public sealed class DecisaoNaProtecaoDoCatalogoTests
     {
         FatoCandidato fato = Fato(new ItemSobAprovacaoBuilder().Solicitado().ComManifestacao("RECOMENDA_AJUSTE"));
 
-        Result resultado = await DecidirAsync("DADO_DO_CANDIDATO", fato.Id, "APROVAR", justificativa: Justificativa, classificacao: "PESSOAL");
+        Result resultado = await DecidirAsync("DADO_DO_CANDIDATO", fato.Id, "APROVACAO", justificativa: Justificativa, classificacao: "PESSOAL");
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
         AtoRegistrado().Should().Match<AtoDaProtecaoDoCatalogo>(a =>
             a.Ato == AtoDaProtecao.Aprovacao && a.Justificativa == Justificativa && a.DianteDeManifestacaoDesfavoravel && a.Ciclo == CicloDaAprovacao.Primeiro);
     }
 
-    [Fact(DisplayName = "A manifestação desfavorável substituída por adequada deixa de exigir a justificativa")]
+    [Fact(DisplayName = "A manifestação desfavorável substituída por recomenda aprovação deixa de exigir a justificativa")]
     public async Task DesfavoravelSubstituida_DispensaAJustificativa()
     {
-        TipoDocumento laudo = Tipo(new ItemSobAprovacaoBuilder().Solicitado().ComManifestacao("INADEQUADA").ComManifestacao("ADEQUADA", texto: null));
+        TipoDocumento laudo = Tipo(new ItemSobAprovacaoBuilder().Solicitado().ComManifestacao("RECOMENDA_NAO_USO").ComManifestacao("RECOMENDA_APROVACAO", texto: null));
 
-        (await DecidirAsync("TIPO_DOCUMENTO", laudo.Id, "APROVAR")).IsSuccess.Should().BeTrue();
+        (await DecidirAsync("TIPO_DOCUMENTO", laudo.Id, "APROVACAO")).IsSuccess.Should().BeTrue();
     }
 
-    [Fact(DisplayName = "A reprovação do fato grava a justificativa aparada")]
-    public async Task Reprovacao_DoFato()
+    [Fact(DisplayName = "A devolução do fato grava a justificativa aparada")]
+    public async Task Devolucao_DoFato()
     {
         FatoCandidato fato = Fato(new ItemSobAprovacaoBuilder().Solicitado());
 
-        Result resultado = await DecidirAsync("DADO_DO_CANDIDATO", fato.Id, "REPROVAR", justificativa: "  Dado desnecessário.  ", classificacao: "PESSOAL");
+        Result resultado = await DecidirAsync("DADO_DO_CANDIDATO", fato.Id, "DEVOLUCAO", justificativa: "  Dado desnecessário.  ", classificacao: "PESSOAL");
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
-        (fato.Aprovacao.Situacao, fato.Aprovacao.Justificativa).Should().Be((SituacaoDaAprovacao.Reprovada, "Dado desnecessário."));
-        AtoRegistrado().Should().Match<AtoDaProtecaoDoCatalogo>(a => a.Ato == AtoDaProtecao.Reprovacao && a.Cadastro == CadastroDoCatalogo.Fato);
+        (fato.Aprovacao.Situacao, fato.Aprovacao.Justificativa).Should().Be((SituacaoDaAprovacao.Devolvida, "Dado desnecessário."));
+        AtoRegistrado().Should().Match<AtoDaProtecaoDoCatalogo>(a => a.Ato == AtoDaProtecao.Devolucao && a.Cadastro == CadastroDoCatalogo.Fato);
     }
 
     [Fact(DisplayName = "A decisão sobre o item fora de solicitação é recusada pelo circuito e não registra ato")]
@@ -130,7 +130,7 @@ public sealed class DecisaoNaProtecaoDoCatalogoTests
     {
         TipoDocumento pendente = Tipo(new ItemSobAprovacaoBuilder());
 
-        Result resultado = await DecidirAsync("TIPO_DOCUMENTO", pendente.Id, "APROVAR");
+        Result resultado = await DecidirAsync("TIPO_DOCUMENTO", pendente.Id, "APROVACAO");
 
         resultado.Error!.Code.Should().Be(ProtecaoDoCatalogoErrorCodes.ItemForaDeSolicitacao);
         _atos.DidNotReceiveWithAnyArgs().Adicionar(default!);
@@ -142,7 +142,7 @@ public sealed class DecisaoNaProtecaoDoCatalogoTests
     {
         TipoDocumento laudo = Tipo(new ItemSobAprovacaoBuilder().Solicitado());
 
-        Result resultado = await DecidirAsync("TIPO_DOCUMENTO", laudo.Id, "APROVAR", classificacao: "SENSIVEL");
+        Result resultado = await DecidirAsync("TIPO_DOCUMENTO", laudo.Id, "APROVACAO", classificacao: "SENSIVEL");
 
         resultado.Error!.Code.Should().Be(ProtecaoDoCatalogoErrorCodes.ProtecaoMudou);
         laudo.Aprovacao.Situacao.Should().Be(SituacaoDaAprovacao.Solicitada);
@@ -156,7 +156,7 @@ public sealed class DecisaoNaProtecaoDoCatalogoTests
         Guid id = cadastro == "DADO_DO_CANDIDATO" ? Fato(new ItemSobAprovacaoBuilder().Solicitado()).Id : Tipo(new ItemSobAprovacaoBuilder().Solicitado()).Id;
         _unitOfWork.SalvarAlteracoesAsync(Arg.Any<CancellationToken>()).Returns(Task.FromException<int>(new DbUpdateConcurrencyException()));
 
-        Result resultado = await DecidirAsync(cadastro, id, "APROVAR", classificacao: classificacao);
+        Result resultado = await DecidirAsync(cadastro, id, "APROVACAO", classificacao: classificacao);
 
         resultado.Error!.Code.Should().Be(ProtecaoDoCatalogoErrorCodes.ConflitoDeConcorrencia);
         _unitOfWork.Received(1).DescartarAlteracoesNaoSalvas();
@@ -165,9 +165,9 @@ public sealed class DecisaoNaProtecaoDoCatalogoTests
     [Fact(DisplayName = "O ajuste sem a classificação recomendada é recusado uma vez, antes de ler o item")]
     public async Task AjusteSemRecomendacao_RecusaUmaVezSemLer()
     {
-        TipoDocumento laudo = Tipo(new ItemSobAprovacaoBuilder().Solicitado().ComManifestacao("INADEQUADA"));
+        TipoDocumento laudo = Tipo(new ItemSobAprovacaoBuilder().Solicitado().ComManifestacao("RECOMENDA_NAO_USO"));
 
-        Result resultado = await DecidirAsync("TIPO_DOCUMENTO", laudo.Id, "RECOMENDAR_AJUSTE", justificativa: "O dado é sensível.");
+        Result resultado = await DecidirAsync("TIPO_DOCUMENTO", laudo.Id, "AJUSTE_RECOMENDADO", justificativa: "O dado é sensível.");
 
         resultado.Errors.Should().ContainSingle().Which.Error.Code.Should().Be(ProtecaoDoCatalogoErrorCodes.RecomendacaoObrigatoria);
         await _tipos.DidNotReceiveWithAnyArgs().ObterPorIdAsync(default, default);
@@ -177,10 +177,10 @@ public sealed class DecisaoNaProtecaoDoCatalogoTests
     public async Task ManifestacaoDepoisDaLeitura_Recusa()
     {
         ItemSobAprovacaoBuilder montagem = new ItemSobAprovacaoBuilder().Solicitado();
-        TipoDocumento laudo = Tipo(montagem.ComManifestacao("ADEQUADA", texto: null));
+        TipoDocumento laudo = Tipo(montagem.ComManifestacao("RECOMENDA_APROVACAO", texto: null));
         _lida = (1, 0);
 
-        Result resultado = await DecidirAsync("TIPO_DOCUMENTO", laudo.Id, "APROVAR");
+        Result resultado = await DecidirAsync("TIPO_DOCUMENTO", laudo.Id, "APROVACAO");
 
         resultado.Error!.Code.Should().Be(ProtecaoDoCatalogoErrorCodes.ManifestacaoNaoLida);
         laudo.Aprovacao.Situacao.Should().Be(SituacaoDaAprovacao.Solicitada);
@@ -190,10 +190,10 @@ public sealed class DecisaoNaProtecaoDoCatalogoTests
     [Fact(DisplayName = "A proteção editada e a manifestação registrada depois da leitura saem juntas no lote de conflitos")]
     public async Task ProtecaoEManifestacaoDepoisDaLeitura_AcumulaOsConflitos()
     {
-        TipoDocumento laudo = Tipo(new ItemSobAprovacaoBuilder().Solicitado().ComManifestacao("INADEQUADA"));
+        TipoDocumento laudo = Tipo(new ItemSobAprovacaoBuilder().Solicitado().ComManifestacao("RECOMENDA_NAO_USO"));
         _lida = (1, 0);
 
-        Result resultado = await DecidirAsync("TIPO_DOCUMENTO", laudo.Id, "APROVAR", classificacao: "SENSIVEL");
+        Result resultado = await DecidirAsync("TIPO_DOCUMENTO", laudo.Id, "APROVACAO", classificacao: "SENSIVEL");
 
         resultado.Errors.Select(static e => (e.Field, e.Error.Code)).Should().Equal(
             ("classificacaoProtecao", ProtecaoDoCatalogoErrorCodes.ProtecaoMudou), ("manifestacoesNoCiclo", ProtecaoDoCatalogoErrorCodes.ManifestacaoNaoLida));
@@ -205,7 +205,7 @@ public sealed class DecisaoNaProtecaoDoCatalogoTests
     {
         TipoDocumento laudo = Tipo(new ItemSobAprovacaoBuilder().Solicitado());
 
-        Result resultado = await DecidirAsync("TIPO_DOCUMENTO", laudo.Id, "APROVAR", classificacao: "SENSIVEL", finalidade: "Outra finalidade.");
+        Result resultado = await DecidirAsync("TIPO_DOCUMENTO", laudo.Id, "APROVACAO", classificacao: "SENSIVEL", finalidade: "Outra finalidade.");
 
         resultado.Errors.Select(static e => (e.Field, e.Error.Code)).Should().Equal(
             ("classificacaoProtecao", ProtecaoDoCatalogoErrorCodes.ProtecaoMudou), ("finalidadeTratamento", ProtecaoDoCatalogoErrorCodes.ProtecaoMudou));
@@ -217,16 +217,16 @@ public sealed class DecisaoNaProtecaoDoCatalogoTests
         TipoDocumento laudo = Tipo(new ItemSobAprovacaoBuilder().Solicitado());
         _lida = (2, 0);
 
-        (await DecidirAsync("TIPO_DOCUMENTO", laudo.Id, "APROVAR")).Errors.Should().ContainSingle().Which.Should().Match<FieldError>(e =>
+        (await DecidirAsync("TIPO_DOCUMENTO", laudo.Id, "APROVACAO")).Errors.Should().ContainSingle().Which.Should().Match<FieldError>(e =>
             e.Field == "ciclo" && e.Error.Code == ProtecaoDoCatalogoErrorCodes.ManifestacaoNaoLida);
     }
 
     [Fact(DisplayName = "O item inexistente responde o não encontrado do cadastro; a forma inválida não lê nada")]
     public async Task Inexistente_EFormaInvalida()
     {
-        (await DecidirAsync("TIPO_DOCUMENTO", Guid.NewGuid(), "APROVAR")).Error!.Code.Should().Be(TipoDocumentoErrorCodes.NaoEncontrado);
-        (await DecidirAsync("DADO_DO_CANDIDATO", Guid.NewGuid(), "APROVAR")).Error!.Code.Should().Be(FatoCandidatoErrorCodes.NaoEncontrado);
-        (await DecidirAsync("MODALIDADE", Guid.NewGuid(), "APROVAR")).Error!.Code.Should().Be(ProtecaoDoCatalogoErrorCodes.CadastroInvalido);
+        (await DecidirAsync("TIPO_DOCUMENTO", Guid.NewGuid(), "APROVACAO")).Error!.Code.Should().Be(TipoDocumentoErrorCodes.NaoEncontrado);
+        (await DecidirAsync("DADO_DO_CANDIDATO", Guid.NewGuid(), "APROVACAO")).Error!.Code.Should().Be(FatoCandidatoErrorCodes.NaoEncontrado);
+        (await DecidirAsync("MODALIDADE", Guid.NewGuid(), "APROVACAO")).Error!.Code.Should().Be(ProtecaoDoCatalogoErrorCodes.CadastroInvalido);
         await _fatos.Received(1).ObterPorIdAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>());
     }
 

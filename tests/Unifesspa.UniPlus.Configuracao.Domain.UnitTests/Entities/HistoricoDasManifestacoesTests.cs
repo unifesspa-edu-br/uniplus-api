@@ -44,5 +44,5 @@ public sealed class HistoricoDasManifestacoesTests
 
     private static ManifestacaoDaProtecaoDoCatalogo Evento(
         CicloDaAprovacao ciclo, AtorDoAto autor, ManifestacaoDaProtecaoDoCatalogo? substituida, int minutos) =>
-        ManifestacaoDaProtecaoDoCatalogo.Registrar(Item, ciclo, Inadequada(), autor, substituida, Instante.AddMinutes(minutos));
+        ManifestacaoDaProtecaoDoCatalogo.Registrar(Item, ciclo, RecomendaNaoUso(), autor, substituida, Instante.AddMinutes(minutos));
 }

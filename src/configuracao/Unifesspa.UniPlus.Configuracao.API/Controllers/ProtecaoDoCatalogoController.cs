@@ -66,7 +66,7 @@ public sealed class ProtecaoDoCatalogoController : ControllerBase
     }
 
     /// <summary>
-    /// As decisões que o Representante do controlador registrou — aprovação, ajuste recomendado e reprovação —,
+    /// As decisões que o Representante do controlador registrou — aprovação, ajuste recomendado e devolução —,
     /// paginadas por cursor opaco bidirecional (ADR-0026 + ADR-0094), das mais recentes para as mais antigas. Quem
     /// aprova ou consulta a proteção de dados do catálogo de tipos de documento e de fatos do candidato vê todas, e a
     /// leitura é registrada antes da resposta (sem o registro, 503); <c>minhas=true</c> restringe às de quem consulta.

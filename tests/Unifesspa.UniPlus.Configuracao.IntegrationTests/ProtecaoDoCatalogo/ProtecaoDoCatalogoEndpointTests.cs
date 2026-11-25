@@ -16,7 +16,7 @@ using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Authentication;
 /// <summary>
 /// O circuito de aprovação da proteção de dados do catálogo pelo host real (ADR-0153): o item nasce pendente, o
-/// administrador envia a solicitação, o Representante do controlador recomenda o ajuste com a classificação ou reprova,
+/// administrador envia a solicitação, o Representante do controlador recomenda o ajuste com a classificação ou devolve,
 /// e o administrador aceita.
 /// </summary>
 [Collection(ConfiguracaoEndpointCollection.Name)]
@@ -48,7 +48,7 @@ public sealed class ProtecaoDoCatalogoEndpointTests : ProtecaoDoCatalogoTestBase
         using HttpClient client = Fixture.Factory.CreateClient();
         Guid id = await TipoSolicitadoAsync(client);
 
-        (await DecidirAsync(client, "TIPO_DOCUMENTO", id, "RECOMENDAR_AJUSTE", "SENSIVEL")).StatusCode.Should().Be(HttpStatusCode.NoContent);
+        (await DecidirAsync(client, "TIPO_DOCUMENTO", id, "AJUSTE_RECOMENDADO", "SENSIVEL")).StatusCode.Should().Be(HttpStatusCode.NoContent);
         JsonElement ajustado = (await ObterDoCatalogoAsync(client, id)).GetProperty("aprovacao");
         (ajustado.GetProperty("situacao").GetString(), ajustado.GetProperty("classificacaoRecomendada").GetString()).Should().Be(("AJUSTE_RECOMENDADO", "SENSIVEL"));
         (await EnviarAsync(client, HttpMethod.Post, $"{Tipos}/{id}/aceite-da-recomendacao")).StatusCode.Should().Be(HttpStatusCode.NoContent);
@@ -70,14 +70,14 @@ public sealed class ProtecaoDoCatalogoEndpointTests : ProtecaoDoCatalogoTestBase
         resposta.Content.Headers.ContentType!.MediaType.Should().Be("application/problem+json");
     }
 
-    [Fact(DisplayName = "A reprovação exige a justificativa, e a longa demais é recusada")]
-    public async Task Reprovacao_ExigeJustificativa()
+    [Fact(DisplayName = "A devolução exige a justificativa, e a longa demais é recusada")]
+    public async Task Devolucao_ExigeJustificativa()
     {
         using HttpClient client = Fixture.Factory.CreateClient();
         Guid id = await TipoSolicitadoAsync(client);
 
-        HttpResponseMessage semMotivo = await DecidirAsync(client, "TIPO_DOCUMENTO", id, "REPROVAR");
-        HttpResponseMessage longa = await DecidirAsync(client, "TIPO_DOCUMENTO", id, "REPROVAR", justificativa: new string('a', 2001));
+        HttpResponseMessage semMotivo = await DecidirAsync(client, "TIPO_DOCUMENTO", id, "DEVOLUCAO");
+        HttpResponseMessage longa = await DecidirAsync(client, "TIPO_DOCUMENTO", id, "DEVOLUCAO", justificativa: new string('a', 2001));
 
         semMotivo.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
         (await semMotivo.Content.ReadAsStringAsync()).Should().Contain("justificativa_obrigatoria");
@@ -85,22 +85,23 @@ public sealed class ProtecaoDoCatalogoEndpointTests : ProtecaoDoCatalogoTestBase
         (await longa.Content.ReadAsStringAsync()).Should().Contain("justificativa_muito_longa");
     }
 
-    [Fact(DisplayName = "A reprovação aparece na fila e no detalhe, e o aceite do item reprovado é recusado")]
-    public async Task Reprovacao_NaFilaENoDetalhe_SemAceite()
+    [Fact(DisplayName = "A devolução aparece na fila e no detalhe, e o aceite do item devolvido é recusado")]
+    public async Task Devolucao_NaFilaENoDetalhe_SemAceite()
     {
         const string Justificativa = "O laudo não é necessário para a finalidade.";
         using HttpClient client = Fixture.Factory.CreateClient();
         Guid id = await TipoSolicitadoAsync(client);
 
-        (await DecidirAsync(client, "TIPO_DOCUMENTO", id, "REPROVAR", justificativa: Justificativa)).StatusCode.Should().Be(HttpStatusCode.NoContent);
+        (await DecidirAsync(client, "TIPO_DOCUMENTO", id, "DEVOLUCAO", justificativa: Justificativa)).StatusCode.Should().Be(HttpStatusCode.NoContent);
 
-        JsonElement reprovado = (await ObterDoCatalogoAsync(client, id)).GetProperty("aprovacao");
-        (reprovado.GetProperty("situacao").GetString(), reprovado.GetProperty("justificativa").GetString()).Should().Be(("REPROVADA", Justificativa));
+        JsonElement devolvido = (await ObterDoCatalogoAsync(client, id)).GetProperty("aprovacao");
+        (devolvido.GetProperty("situacao").GetString(), devolvido.GetProperty("justificativa").GetString()).Should().Be(("DEVOLVIDA", Justificativa));
         JsonElement detalhe = await (await EnviarAsync(client, HttpMethod.Get, $"{Base}/tipos-documento/{id}")).Content.ReadFromJsonAsync<JsonElement>();
         detalhe.GetProperty("aprovacao").GetProperty("justificativa").GetString().Should().Be(Justificativa);
         HttpResponseMessage aceite = await EnviarAsync(client, HttpMethod.Post, $"{Tipos}/{id}/aceite-da-recomendacao");
         aceite.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
-        (await aceite.Content.ReadAsStringAsync()).Should().Contain("aceite_de_item_reprovado");
+        JsonElement problema = await aceite.Content.ReadFromJsonAsync<JsonElement>();
+        problema.GetProperty("type").GetString().Should().EndWith("/erros/uniplus.configuracao.protecao_do_catalogo.aceite_de_item_devolvido");
     }
 
     [Fact(DisplayName = "A solicitação envia só os itens escolhidos; o outro pendente continua pendente")]
@@ -176,7 +177,7 @@ public sealed class ProtecaoDoCatalogoEndpointTests : ProtecaoDoCatalogoTestBase
         Guid id = await TipoSolicitadoAsync(client);
 
         HttpResponseMessage resposta = await EnviarComoPauloAsync(
-            client, HttpMethod.Post, Base, CorpoDaDecisao(await ObterDoCatalogoAsync(client, id), "TIPO_DOCUMENTO", "APROVAR"));
+            client, HttpMethod.Post, Base, CorpoDaDecisao(await ObterDoCatalogoAsync(client, id), "TIPO_DOCUMENTO", "APROVACAO"));
 
         resposta.StatusCode.Should().Be(HttpStatusCode.Forbidden);
         (await SituacaoAsync(client, id)).Should().Be("SOLICITADA");
@@ -188,7 +189,7 @@ public sealed class ProtecaoDoCatalogoEndpointTests : ProtecaoDoCatalogoTestBase
         using HttpClient client = Fixture.Factory.CreateClient();
         Guid id = await TipoSolicitadoAsync(client);
 
-        HttpResponseMessage resposta = await DecidirAsync(client, "TIPO_DOCUMENTO", id, "APROVAR", protecaoDesatualizada: true);
+        HttpResponseMessage resposta = await DecidirAsync(client, "TIPO_DOCUMENTO", id, "APROVACAO", protecaoDesatualizada: true);
 
         resposta.StatusCode.Should().Be(HttpStatusCode.Conflict);
         (await resposta.Content.ReadAsStringAsync()).Should().Contain("protecao_mudou").And.NotContain("conflito_de_concorrencia");
@@ -201,7 +202,7 @@ public sealed class ProtecaoDoCatalogoEndpointTests : ProtecaoDoCatalogoTestBase
         using HttpClient client = Fixture.Factory.CreateClient();
         Guid id = await CadastrarTipoAsync(client, "PESSOAL");
 
-        HttpResponseMessage resposta = await DecidirAsync(client, "TIPO_DOCUMENTO", id, "APROVAR");
+        HttpResponseMessage resposta = await DecidirAsync(client, "TIPO_DOCUMENTO", id, "APROVACAO");
 
         resposta.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
         (await resposta.Content.ReadAsStringAsync()).Should().Contain("item_fora_de_solicitacao");
@@ -230,7 +231,7 @@ public sealed class ProtecaoDoCatalogoEndpointTests : ProtecaoDoCatalogoTestBase
         await concorrente.Database.ExecuteSqlInterpolatedAsync($"UPDATE configuracao.tipos_de_documento SET updated_at = now() WHERE id = {id}");
         int pid = await ConcorrenciaTestHelpers.GetConnectionPidAsync(concorrente);
 
-        Task<HttpResponseMessage> decisao = DecidirAsync(client, "TIPO_DOCUMENTO", id, "APROVAR");
+        Task<HttpResponseMessage> decisao = DecidirAsync(client, "TIPO_DOCUMENTO", id, "APROVACAO");
         await ConcorrenciaTestHelpers.WaitForBlockedBackendAsync(Fixture.Factory, decisao, [pid]);
         await transacao.CommitAsync();
         return await decisao;

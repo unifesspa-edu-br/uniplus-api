@@ -8,5 +8,5 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// Os tipos de documento e fatos do catálogo que ainda não têm a proteção aprovada (ADR-0153), dos dois
 /// cadastros, ordenados por cadastro e código. O volume é o do catálogo, portanto a leitura não é paginada.
 /// </summary>
-/// <param name="Situacao">Token canônico opcional (<c>PENDENTE</c>, <c>SOLICITADA</c>, <c>AJUSTE_RECOMENDADO</c> ou <c>REPROVADA</c>) que restringe a lista.</param>
+/// <param name="Situacao">Token canônico opcional (<c>PENDENTE</c>, <c>SOLICITADA</c>, <c>AJUSTE_RECOMENDADO</c> ou <c>DEVOLVIDA</c>) que restringe a lista.</param>
 public sealed record ListarProtecaoDoCatalogoQuery(string? Situacao = null) : IQuery<Result<IReadOnlyList<ItemDaProtecaoDoCatalogoDto>>>;

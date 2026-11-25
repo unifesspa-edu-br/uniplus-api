@@ -31,14 +31,14 @@ public sealed class ManifestacaoDaProtecaoEndpointTests : ManifestacaoDaProtecao
         using HttpClient client = Fixture.Factory.CreateClient();
         Guid id = await SolicitadoAsync(client, cadastro);
 
-        (await ManifestarAsync(client, Kevin, cadastro, id, "INADEQUADA", "O laudo revela condição de saúde.")).StatusCode.Should().Be(HttpStatusCode.NoContent);
+        (await ManifestarAsync(client, Kevin, cadastro, id, "RECOMENDA_NAO_USO", "O laudo revela condição de saúde.")).StatusCode.Should().Be(HttpStatusCode.NoContent);
 
         JsonElement detalhe = await DetalheAsync(client, cadastro, id);
         JsonElement aprovacao = detalhe.GetProperty("aprovacao");
         (aprovacao.GetProperty("situacao").GetString(), aprovacao.GetProperty("ciclo").GetInt32(), aprovacao.GetProperty("manifestacaoDesfavoravel").GetBoolean())
             .Should().Be(("SOLICITADA", 1, true));
         detalhe.GetProperty("manifestacoesVigentes").EnumerateArray().Select(m => (m.GetProperty("parecer").GetString(), m.GetProperty("autorNome").GetString()))
-            .Should().Equal(("INADEQUADA", Kevin.Nome));
+            .Should().Equal(("RECOMENDA_NAO_USO", Kevin.Nome));
     }
 
     [Fact(DisplayName = "A forma inválida sai num único lote: parecer fora do vocabulário, ciclo ausente e cadastro inválido")]
@@ -62,7 +62,7 @@ public sealed class ManifestacaoDaProtecaoEndpointTests : ManifestacaoDaProtecao
         Guid id = await SolicitadoAsync(client, "TIPO_DOCUMENTO");
 
         HttpResponseMessage semTexto = await ManifestarAsync(client, Kevin, "TIPO_DOCUMENTO", id, "RECOMENDA_AJUSTE", texto: null);
-        HttpResponseMessage longo = await ManifestarAsync(client, Kevin, "TIPO_DOCUMENTO", id, "ADEQUADA", texto: new string('a', 2001));
+        HttpResponseMessage longo = await ManifestarAsync(client, Kevin, "TIPO_DOCUMENTO", id, "RECOMENDA_APROVACAO", texto: new string('a', 2001));
 
         (await CodigoAsync(semTexto)).Should().Be("uniplus.configuracao.protecao_do_catalogo.texto_da_manifestacao_obrigatorio");
         (await CodigoAsync(longo)).Should().Be("uniplus.configuracao.protecao_do_catalogo.texto_da_manifestacao_muito_longo");
@@ -75,8 +75,8 @@ public sealed class ManifestacaoDaProtecaoEndpointTests : ManifestacaoDaProtecao
         using HttpClient client = Fixture.Factory.CreateClient();
         Guid pendente = await CadastrarTipoAsync(client, $"{Marca()} Certidão de nascimento");
 
-        HttpResponseMessage foraDeSolicitacao = await ManifestarAsync(client, Kevin, "TIPO_DOCUMENTO", pendente, "ADEQUADA");
-        HttpResponseMessage inexistente = await ManifestarAsync(client, Kevin, "DADO_DO_CANDIDATO", Guid.NewGuid(), "ADEQUADA");
+        HttpResponseMessage foraDeSolicitacao = await ManifestarAsync(client, Kevin, "TIPO_DOCUMENTO", pendente, "RECOMENDA_APROVACAO");
+        HttpResponseMessage inexistente = await ManifestarAsync(client, Kevin, "DADO_DO_CANDIDATO", Guid.NewGuid(), "RECOMENDA_APROVACAO");
 
         (await CodigoAsync(foraDeSolicitacao)).Should().Be("uniplus.configuracao.protecao_do_catalogo.item_fora_de_solicitacao");
         inexistente.StatusCode.Should().Be(HttpStatusCode.NotFound);
@@ -89,7 +89,7 @@ public sealed class ManifestacaoDaProtecaoEndpointTests : ManifestacaoDaProtecao
         using HttpClient client = Fixture.Factory.CreateClient();
         Guid solicitado = await SolicitadoAsync(client, "DADO_DO_CANDIDATO");
 
-        HttpResponseMessage cicloErrado = await ManifestarAsync(client, Kevin, "DADO_DO_CANDIDATO", solicitado, "ADEQUADA", ciclo: 2);
+        HttpResponseMessage cicloErrado = await ManifestarAsync(client, Kevin, "DADO_DO_CANDIDATO", solicitado, "RECOMENDA_APROVACAO", ciclo: 2);
 
         cicloErrado.StatusCode.Should().Be(HttpStatusCode.Conflict);
         JsonElement problema = await cicloErrado.Content.ReadFromJsonAsync<JsonElement>();
@@ -104,7 +104,7 @@ public sealed class ManifestacaoDaProtecaoEndpointTests : ManifestacaoDaProtecao
         using HttpClient client = Fixture.Factory.CreateClient();
         using HttpRequestMessage request = new(HttpMethod.Post, new Uri($"{Base}/manifestacoes", UriKind.Relative))
         {
-            Content = JsonContent.Create(new { cadastro = "DADO_DO_CANDIDATO", itemId = Guid.NewGuid(), ciclo = 1, parecer = "ADEQUADA" }),
+            Content = JsonContent.Create(new { cadastro = "DADO_DO_CANDIDATO", itemId = Guid.NewGuid(), ciclo = 1, parecer = "RECOMENDA_APROVACAO" }),
         };
         request.Headers.Add("Authorization", $"{TestAuthHandler.AuthorizationScheme} {TestAuthHandler.TokenValue}");
         request.Headers.TryAddWithoutValidation(TestAuthHandler.UserIdHeader, Kevin.ContaId);
@@ -119,8 +119,8 @@ public sealed class ManifestacaoDaProtecaoEndpointTests : ManifestacaoDaProtecao
         using HttpClient client = Fixture.Factory.CreateClient();
         Guid id = await SolicitadoAsync(client, "TIPO_DOCUMENTO");
 
-        HttpResponseMessage representante = await ManifestarAsync(client, Betina, "TIPO_DOCUMENTO", id, "ADEQUADA");
-        HttpResponseMessage gestorDeProtecaoDeDados = await DecidirComoAsync(client, Kevin, "TIPO_DOCUMENTO", id, "APROVAR");
+        HttpResponseMessage representante = await ManifestarAsync(client, Betina, "TIPO_DOCUMENTO", id, "RECOMENDA_APROVACAO");
+        HttpResponseMessage gestorDeProtecaoDeDados = await DecidirComoAsync(client, Kevin, "TIPO_DOCUMENTO", id, "APROVACAO");
 
         representante.StatusCode.Should().Be(HttpStatusCode.Forbidden);
         gestorDeProtecaoDeDados.StatusCode.Should().Be(HttpStatusCode.Forbidden);
@@ -134,13 +134,13 @@ public sealed class ManifestacaoDaProtecaoEndpointTests : ManifestacaoDaProtecao
         using HttpClient client = Fixture.Factory.CreateClient();
         Guid id = await SolicitadoAsync(client, "DADO_DO_CANDIDATO");
 
-        (await ManifestarAsync(client, Kevin, "DADO_DO_CANDIDATO", id, "INADEQUADA")).StatusCode.Should().Be(HttpStatusCode.NoContent);
-        (await ManifestarAsync(client, Kevin, "DADO_DO_CANDIDATO", id, "ADEQUADA", texto: null)).StatusCode.Should().Be(HttpStatusCode.NoContent);
+        (await ManifestarAsync(client, Kevin, "DADO_DO_CANDIDATO", id, "RECOMENDA_NAO_USO")).StatusCode.Should().Be(HttpStatusCode.NoContent);
+        (await ManifestarAsync(client, Kevin, "DADO_DO_CANDIDATO", id, "RECOMENDA_APROVACAO", texto: null)).StatusCode.Should().Be(HttpStatusCode.NoContent);
         (await ManifestarAsync(client, Lucia, "DADO_DO_CANDIDATO", id, "RECOMENDA_AJUSTE")).StatusCode.Should().Be(HttpStatusCode.NoContent);
 
         JsonElement detalhe = await DetalheAsync(client, "DADO_DO_CANDIDATO", id);
         detalhe.GetProperty("manifestacoesVigentes").EnumerateArray().Select(m => (m.GetProperty("parecer").GetString(), m.GetProperty("autorNome").GetString()))
-            .Should().Equal(("ADEQUADA", Kevin.Nome), ("RECOMENDA_AJUSTE", Lucia.Nome));
+            .Should().Equal(("RECOMENDA_APROVACAO", Kevin.Nome), ("RECOMENDA_AJUSTE", Lucia.Nome));
         detalhe.GetProperty("aprovacao").GetProperty("manifestacaoDesfavoravel").GetBoolean().Should().BeTrue();
     }
 
@@ -150,7 +150,7 @@ public sealed class ManifestacaoDaProtecaoEndpointTests : ManifestacaoDaProtecao
         await PrepararTodosAsync();
         using HttpClient client = Fixture.Factory.CreateClient();
         Guid id = await SolicitadoAsync(client, "DADO_DO_CANDIDATO");
-        (await ManifestarAsync(client, Kevin, "DADO_DO_CANDIDATO", id, "INADEQUADA")).StatusCode.Should().Be(HttpStatusCode.NoContent);
+        (await ManifestarAsync(client, Kevin, "DADO_DO_CANDIDATO", id, "RECOMENDA_NAO_USO")).StatusCode.Should().Be(HttpStatusCode.NoContent);
 
         (await EditarFatoAsync(client, id)).StatusCode.Should().Be(HttpStatusCode.NoContent);
 
@@ -158,15 +158,15 @@ public sealed class ManifestacaoDaProtecaoEndpointTests : ManifestacaoDaProtecao
         (detalhe.GetProperty("aprovacao").GetProperty("ciclo").GetInt32(), detalhe.GetProperty("manifestacoesVigentes").GetArrayLength()).Should().Be((1, 1));
     }
 
-    [Theory(DisplayName = "Editar o item reprovado ou com ajuste recomendado reinicia o ciclo e encerra as manifestações dele")]
-    [InlineData("REPROVAR", null)]
-    [InlineData("RECOMENDAR_AJUSTE", "SENSIVEL")]
+    [Theory(DisplayName = "Editar o item devolvido ou com ajuste recomendado reinicia o ciclo e encerra as manifestações dele")]
+    [InlineData("DEVOLUCAO", null)]
+    [InlineData("AJUSTE_RECOMENDADO", "SENSIVEL")]
     public async Task EdicaoComReinicio_EncerraOCiclo(string decisao, string? recomendada)
     {
         await PrepararTodosAsync();
         using HttpClient client = Fixture.Factory.CreateClient();
         Guid id = await SolicitadoAsync(client, "DADO_DO_CANDIDATO");
-        (await ManifestarAsync(client, Kevin, "DADO_DO_CANDIDATO", id, "INADEQUADA")).StatusCode.Should().Be(HttpStatusCode.NoContent);
+        (await ManifestarAsync(client, Kevin, "DADO_DO_CANDIDATO", id, "RECOMENDA_NAO_USO")).StatusCode.Should().Be(HttpStatusCode.NoContent);
         (await DecidirComoAsync(client, Betina, "DADO_DO_CANDIDATO", id, decisao, "O dado é sensível.", recomendada)).StatusCode.Should().Be(HttpStatusCode.NoContent);
 
         (await EditarFatoAsync(client, id)).StatusCode.Should().Be(HttpStatusCode.NoContent);

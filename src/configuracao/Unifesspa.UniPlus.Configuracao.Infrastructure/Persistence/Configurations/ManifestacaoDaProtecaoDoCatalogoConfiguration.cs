@@ -105,7 +105,7 @@ public sealed class ManifestacaoDaProtecaoDoCatalogoConfiguration : IEntityTypeC
         tabela.HasCheckConstraint("ck_manifestacoes_da_protecao_parecer", $"parecer IN ({pareceres})");
         tabela.HasCheckConstraint("ck_manifestacoes_da_protecao_ciclo_positivo", "ciclo >= 1");
         tabela.HasCheckConstraint(
-            "ck_manifestacoes_da_protecao_texto_no_desfavoravel", "parecer = 'ADEQUADA' OR texto IS NOT NULL");
+            "ck_manifestacoes_da_protecao_texto_no_desfavoravel", "parecer = 'RECOMENDA_APROVACAO' OR texto IS NOT NULL");
         tabela.HasCheckConstraint(
             "ck_manifestacoes_da_protecao_substitui_outra", "substitui_id IS NULL OR substitui_id <> id");
     }

@@ -20,7 +20,7 @@ public sealed class PedidoDeDecisaoTests
     {
         Guid id = Guid.CreateVersion7();
 
-        PedidoDeDecisao pedido = PedidoDeDecisao.Ler(Comando("RECOMENDAR_AJUSTE", id, " DADO_DO_CANDIDATO ", "SENSIVEL", "  Traz dado de saúde.  ")).Value!;
+        PedidoDeDecisao pedido = PedidoDeDecisao.Ler(Comando("AJUSTE_RECOMENDADO", id, " DADO_DO_CANDIDATO ", "SENSIVEL", "  Traz dado de saúde.  ")).Value!;
 
         (pedido.Item.Cadastro, pedido.Item.ItemId).Should().Be((CadastroDoCatalogo.Fato, id));
         (pedido.Decisao.Ato, pedido.Decisao.ClassificacaoRecomendada, pedido.Decisao.Justificativa!.Valor)
@@ -31,23 +31,34 @@ public sealed class PedidoDeDecisaoTests
 
     [Fact(DisplayName = "A aprovação aceita justificativa, que segue para o ato")]
     public void Ler_AprovacaoComJustificativa_Aceita() =>
-        PedidoDeDecisao.Ler(Comando("APROVAR", justificativa: "A classificação interna basta.")).Value!
+        PedidoDeDecisao.Ler(Comando("APROVACAO", justificativa: "A classificação interna basta.")).Value!
             .Decisao.Justificativa!.Valor.Should().Be("A classificação interna basta.");
 
-    [Theory(DisplayName = "A recomendação que não cabe, ou a reprovação sem justificativa, é recusada no campo")]
-    [InlineData("APROVAR", "SENSIVEL", null, "classificacaoRecomendada", "DadoDaDecisaoNaoCabe")]
-    [InlineData("REPROVAR", "SENSIVEL", "Motivo.", "classificacaoRecomendada", "DadoDaDecisaoNaoCabe")]
-    [InlineData("REPROVAR", null, null, "justificativa", "JustificativaObrigatoria")]
-    [InlineData("REPROVAR", null, "   ", "justificativa", "JustificativaObrigatoria")]
-    [InlineData("RECOMENDAR_AJUSTE", null, null, "classificacaoRecomendada", "RecomendacaoObrigatoria")]
-    [InlineData("RECOMENDAR_AJUSTE", "SECRETISSIMO", null, "classificacaoRecomendada", "RecomendacaoObrigatoria")]
+    [Theory(DisplayName = "A recomendação que não cabe, ou a devolução sem justificativa, é recusada no campo")]
+    [InlineData("APROVACAO", "SENSIVEL", null, "classificacaoRecomendada", "DadoDaDecisaoNaoCabe")]
+    [InlineData("DEVOLUCAO", "SENSIVEL", "Motivo.", "classificacaoRecomendada", "DadoDaDecisaoNaoCabe")]
+    [InlineData("DEVOLUCAO", null, null, "justificativa", "JustificativaObrigatoria")]
+    [InlineData("DEVOLUCAO", null, "   ", "justificativa", "JustificativaObrigatoria")]
+    [InlineData("AJUSTE_RECOMENDADO", null, null, "classificacaoRecomendada", "RecomendacaoObrigatoria")]
+    [InlineData("AJUSTE_RECOMENDADO", "SECRETISSIMO", null, "classificacaoRecomendada", "RecomendacaoObrigatoria")]
     public void Ler_DadoDaDecisaoInvalido_RecusaNoCampo(string decisao, string? recomendada, string? justificativa, string campo, string codigo) =>
         PedidoDeDecisao.Ler(Comando(decisao, recomendada: recomendada, justificativa: justificativa)).Errors
             .Should().ContainSingle(e => e.Field == campo).Which.Error.Code.Should().Be($"ProtecaoDoCatalogo.{codigo}");
 
+    [Theory]
+    [InlineData("APROVAR")]
+    [InlineData("RECOMENDAR_AJUSTE")]
+    [InlineData("REPROVAR")]
+    [InlineData("DEVOLVER")]
+    [InlineData("SOLICITACAO")]
+    [InlineData("ACEITE")]
+    public void Ler_DecisaoForaDoVoculario_Recusa(string decisao) =>
+        PedidoDeDecisao.Ler(Comando(decisao, justificativa: "Motivo.")).Errors
+            .Should().ContainSingle(e => e.Field == "decisao" && e.Error.Code == ProtecaoDoCatalogoErrorCodes.DecisaoInvalida);
+
     [Fact(DisplayName = "O ajuste sem a classificação recomendada sai com uma recusa só no lote, a da regra do domínio")]
     public void Ler_AjusteSemRecomendacao_UmaRecusaSo() =>
-        PedidoDeDecisao.Ler(Comando("RECOMENDAR_AJUSTE")).Errors.Should().ContainSingle()
+        PedidoDeDecisao.Ler(Comando("AJUSTE_RECOMENDADO")).Errors.Should().ContainSingle()
             .Which.Should().Match<FieldError>(e => e.Field == "classificacaoRecomendada" && e.Error.Code == ProtecaoDoCatalogoErrorCodes.RecomendacaoObrigatoria);
 
     [Theory(DisplayName = "A justificativa de até 2.000 caracteres é aceita; com mais, recusada")]
@@ -55,7 +66,7 @@ public sealed class PedidoDeDecisaoTests
     [InlineData(2001, false)]
     public void Ler_LimiteDaJustificativa(int tamanho, bool aceita)
     {
-        Result<PedidoDeDecisao> pedido = PedidoDeDecisao.Ler(Comando("APROVAR", justificativa: new string('a', tamanho)));
+        Result<PedidoDeDecisao> pedido = PedidoDeDecisao.Ler(Comando("APROVACAO", justificativa: new string('a', tamanho)));
 
         pedido.IsSuccess.Should().Be(aceita);
         pedido.Errors.Select(static e => e.Error.Code).Should().Equal(aceita ? [] : new[] { ProtecaoDoCatalogoErrorCodes.JustificativaMuitoLonga });
@@ -82,12 +93,12 @@ public sealed class PedidoDeDecisaoTests
 
     [Fact(DisplayName = "A decisão leva o ciclo e a contagem de manifestações que o Representante do controlador leu")]
     public void Ler_LevaALeituraDoCircuito() =>
-        PedidoDeDecisao.Ler(Comando("APROVAR") with { Lida = new LeituraInformada(2, 3) }).Value!.Lida
+        PedidoDeDecisao.Ler(Comando("APROVACAO") with { Lida = new LeituraInformada(2, 3) }).Value!.Lida
             .Should().Be(new LeituraDoCircuito(new CicloDaAprovacao(2), 3));
 
     [Fact(DisplayName = "Sem o ciclo e a contagem de manifestações lidos, a decisão é recusada nos dois campos")]
     public void Ler_SemLeituraDoCircuito_Recusa() =>
-        PedidoDeDecisao.Ler(Comando("APROVAR") with { Lida = new LeituraInformada(null, null) }).Errors.Select(static e => e.Field)
+        PedidoDeDecisao.Ler(Comando("APROVACAO") with { Lida = new LeituraInformada(null, null) }).Errors.Select(static e => e.Field)
             .Should().BeEquivalentTo("ciclo", "manifestacoesNoCiclo");
 
     private static DecidirProtecaoDoCatalogoCommand Comando(

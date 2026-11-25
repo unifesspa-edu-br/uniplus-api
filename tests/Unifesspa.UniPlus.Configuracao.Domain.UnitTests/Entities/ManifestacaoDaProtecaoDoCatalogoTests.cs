@@ -39,13 +39,13 @@ public sealed class ManifestacaoDaProtecaoDoCatalogoTests
     [InlineData("   ", null)]
     [InlineData("Kevin\0Carvalho", null)]
     public void Registrar_NormalizaONome(string? nome, string? esperado) =>
-        ManifestacaoDaProtecaoDoCatalogo.Registrar(Item, CicloDaAprovacao.Primeiro, Adequada(), Kevin with { Nome = nome }, null, Instante)
+        ManifestacaoDaProtecaoDoCatalogo.Registrar(Item, CicloDaAprovacao.Primeiro, RecomendaAprovacao(), Kevin with { Nome = nome }, null, Instante)
             .Autor.Nome.Should().Be(esperado);
 
     [Fact(DisplayName = "A mesma pessoa é reconhecida pelo emissor e pela conta, e não pelo nome")]
     public void DaMesmaPessoa_PeloEmissorEPeloContaId()
     {
-        ManifestacaoDaProtecaoDoCatalogo evento = ManifestacaoDaProtecaoDoCatalogo.Registrar(Item, CicloDaAprovacao.Primeiro, Adequada(), Kevin, null, Instante);
+        ManifestacaoDaProtecaoDoCatalogo evento = ManifestacaoDaProtecaoDoCatalogo.Registrar(Item, CicloDaAprovacao.Primeiro, RecomendaAprovacao(), Kevin, null, Instante);
 
         evento.DaMesmaPessoa(Kevin with { Nome = "Outro nome" }).Should().BeTrue();
         evento.DaMesmaPessoa(Lucia).Should().BeFalse();
@@ -55,11 +55,11 @@ public sealed class ManifestacaoDaProtecaoDoCatalogoTests
     [Fact(DisplayName = "Substituir a manifestação de outra pessoa, de outro ciclo ou de outro item é erro de programação")]
     public void Registrar_SubstituidaDeOutro_Falha()
     {
-        ManifestacaoDaProtecaoDoCatalogo doKevin = ManifestacaoDaProtecaoDoCatalogo.Registrar(Item, CicloDaAprovacao.Primeiro, Adequada(), Kevin, null, Instante);
+        ManifestacaoDaProtecaoDoCatalogo doKevin = ManifestacaoDaProtecaoDoCatalogo.Registrar(Item, CicloDaAprovacao.Primeiro, RecomendaAprovacao(), Kevin, null, Instante);
 
-        Action outraPessoa = () => ManifestacaoDaProtecaoDoCatalogo.Registrar(Item, CicloDaAprovacao.Primeiro, Adequada(), Lucia, doKevin, Instante);
-        Action outroCiclo = () => ManifestacaoDaProtecaoDoCatalogo.Registrar(Item, new CicloDaAprovacao(2), Adequada(), Kevin, doKevin, Instante);
-        Action outroItem = () => ManifestacaoDaProtecaoDoCatalogo.Registrar(Item with { ItemId = Guid.CreateVersion7() }, CicloDaAprovacao.Primeiro, Adequada(), Kevin, doKevin, Instante);
+        Action outraPessoa = () => ManifestacaoDaProtecaoDoCatalogo.Registrar(Item, CicloDaAprovacao.Primeiro, RecomendaAprovacao(), Lucia, doKevin, Instante);
+        Action outroCiclo = () => ManifestacaoDaProtecaoDoCatalogo.Registrar(Item, new CicloDaAprovacao(2), RecomendaAprovacao(), Kevin, doKevin, Instante);
+        Action outroItem = () => ManifestacaoDaProtecaoDoCatalogo.Registrar(Item with { ItemId = Guid.CreateVersion7() }, CicloDaAprovacao.Primeiro, RecomendaAprovacao(), Kevin, doKevin, Instante);
 
         outraPessoa.Should().Throw<ArgumentException>();
         outroCiclo.Should().Throw<ArgumentException>();

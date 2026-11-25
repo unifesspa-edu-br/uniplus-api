@@ -29,8 +29,8 @@ public sealed class DecisoesDaProtecaoEndpointTests : HistoricoDaProtecaoTestBas
         using HttpClient client = Fixture.Factory.CreateClient();
 
         (await NomesAsync(client, Betina, $"busca={marca}")).Should().Equal(Nomes(marca, "Laudo médico complementar", "Renda familiar bruta", "Certidão de nascimento"));
-        (await NomesAsync(client, Betina, $"busca={marca}&ato=REPROVACAO")).Should().Equal(Nomes(marca, "Renda familiar bruta"));
-        (await NomesAsync(client, Betina, $"busca={marca}&ato=REPROVACAO&ato=APROVACAO")).Should().Equal(Nomes(marca, "Renda familiar bruta", "Certidão de nascimento"));
+        (await NomesAsync(client, Betina, $"busca={marca}&ato=DEVOLUCAO")).Should().Equal(Nomes(marca, "Renda familiar bruta"));
+        (await NomesAsync(client, Betina, $"busca={marca}&ato=DEVOLUCAO&ato=APROVACAO")).Should().Equal(Nomes(marca, "Renda familiar bruta", "Certidão de nascimento"));
         (await NomesAsync(client, Betina, $"busca={marca}&cadastro=TIPO_DOCUMENTO")).Should().Equal(Nomes(marca, "Laudo médico complementar", "Certidão de nascimento"));
         (await NomesAsync(client, Betina, $"busca={marca}&cadastro=DADO_DO_CANDIDATO")).Should().Equal(Nomes(marca, "Renda familiar bruta"));
     }

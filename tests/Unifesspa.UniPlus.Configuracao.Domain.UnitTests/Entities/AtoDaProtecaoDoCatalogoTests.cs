@@ -51,7 +51,7 @@ public sealed class AtoDaProtecaoDoCatalogoTests
     [Theory(DisplayName = "A decisão não se registra como ato sem fundamentos")]
     [InlineData(AtoDaProtecao.Aprovacao)]
     [InlineData(AtoDaProtecao.AjusteRecomendado)]
-    [InlineData(AtoDaProtecao.Reprovacao)]
+    [InlineData(AtoDaProtecao.Devolucao)]
     [InlineData(AtoDaProtecao.Nenhum)]
     public void Registrar_Decisao_Falha(AtoDaProtecao ato) =>
         new Action(() => AtoDaProtecaoDoCatalogo.Registrar(Retrato(), ato, Betina, Segunda)).Should().Throw<ArgumentException>();
@@ -59,7 +59,7 @@ public sealed class AtoDaProtecaoDoCatalogoTests
     [Theory(DisplayName = "A classificação recomendada só acompanha o ajuste; a justificativa acompanha as três decisões, inclusive a aprovação")]
     [InlineData(AtoDaProtecao.Aprovacao, false)]
     [InlineData(AtoDaProtecao.AjusteRecomendado, true)]
-    [InlineData(AtoDaProtecao.Reprovacao, false)]
+    [InlineData(AtoDaProtecao.Devolucao, false)]
     public void RegistrarDecisao_GuardaOsFundamentos(AtoDaProtecao tipo, bool guardaRecomendada)
     {
         AtoDaProtecaoDoCatalogo ato = AtoDaProtecaoDoCatalogo.RegistrarDecisao(
@@ -103,11 +103,14 @@ public sealed class AtoDaProtecaoDoCatalogoTests
     [Fact(DisplayName = "Os atos têm token canônico e as decisões são três")]
     public void Tokens_SaoCanonicos()
     {
-        AtosDaProtecao.TokensCanonicos.Should().Equal("SOLICITACAO", "APROVACAO", "AJUSTE_RECOMENDADO", "REPROVACAO", "ACEITE");
-        AtosDaProtecao.Decisoes.Should().Equal(AtoDaProtecao.Aprovacao, AtoDaProtecao.AjusteRecomendado, AtoDaProtecao.Reprovacao);
-        AtosDaProtecao.TryAnalisar("REPROVACAO", out AtoDaProtecao reprovacao).Should().BeTrue();
-        reprovacao.Should().Be(AtoDaProtecao.Reprovacao);
-        AtosDaProtecao.TryAnalisar("reprovacao", out _).Should().BeFalse();
+        AtosDaProtecao.TokensCanonicos.Should().Equal("SOLICITACAO", "APROVACAO", "AJUSTE_RECOMENDADO", "DEVOLUCAO", "ACEITE");
+        AtosDaProtecao.Decisoes.Should().Equal(AtoDaProtecao.Aprovacao, AtoDaProtecao.AjusteRecomendado, AtoDaProtecao.Devolucao);
+        AtosDaProtecao.TryAnalisar("DEVOLUCAO", out AtoDaProtecao devolucao).Should().BeTrue();
+        devolucao.Should().Be(AtoDaProtecao.Devolucao);
+        AtosDaProtecao.TryAnalisar("devolucao", out _).Should().BeFalse();
+        AtosDaProtecao.TryAnalisar("REPROVACAO", out _).Should().BeFalse();
+        SituacoesDaAprovacao.Analisar("DEVOLVIDA").Should().Be(SituacaoDaAprovacao.Devolvida);
+        new Action(() => SituacoesDaAprovacao.Analisar("REPROVADA")).Should().Throw<ArgumentOutOfRangeException>();
         CadastrosDoCatalogo.TokensCanonicos.Should().Equal("TIPO_DOCUMENTO", "DADO_DO_CANDIDATO");
         CadastrosDoCatalogo.TryAnalisar(" DADO_DO_CANDIDATO ", out CadastroDoCatalogo fato).Should().BeTrue();
         fato.Should().Be(CadastroDoCatalogo.Fato);

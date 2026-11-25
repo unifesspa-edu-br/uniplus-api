@@ -6,7 +6,7 @@ using Unifesspa.UniPlus.Kernel.Pagination;
 using Unifesspa.UniPlus.Kernel.Results;
 
 /// <summary>
-/// As decisões que a proteção de dados registrou (aprovação, ajuste recomendado e reprovação), paginadas por cursor
+/// As decisões que a proteção de dados registrou (aprovação, ajuste recomendado e devolução), paginadas por cursor
 /// keyset ordenado, das mais recentes para as mais antigas (ADR-0026 + ADR-0094). A permissão de aprovar é
 /// verificada na borda.
 /// </summary>

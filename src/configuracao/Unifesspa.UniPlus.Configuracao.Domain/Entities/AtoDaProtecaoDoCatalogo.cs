@@ -8,7 +8,7 @@ using Unifesspa.UniPlus.Regras.Enums;
 
 /// <summary>
 /// Um ato do circuito de aprovação da proteção de dados de um tipo de documento ou fato do candidato (ADR-0153): a
-/// solicitação, a aprovação, o ajuste recomendado, a reprovação e o aceite da recomendação. Só se acrescenta, nunca se
+/// solicitação, a aprovação, o ajuste recomendado, a devolução e o aceite da recomendação. Só se acrescenta, nunca se
 /// altera nem se apaga: é evidência forense (ADR-0063) de que o Representante do controlador exerceu a sua decisão, e
 /// sobrevive à edição do item, que reinicia o circuito corrente (<see cref="AprovacaoDaProtecao"/>) mas não este
 /// registro.
@@ -50,7 +50,7 @@ public sealed class AtoDaProtecaoDoCatalogo : IForensicEntity
     public ClassificacaoDeProtecao? ClassificacaoRecomendada { get; private set; }
 
     /// <summary>
-    /// O motivo da decisão: obrigatório na reprovação; opcional na aprovação e no ajuste, salvo diante de manifestação
+    /// O motivo da decisão: obrigatório na devolução; opcional na aprovação e no ajuste, salvo diante de manifestação
     /// desfavorável vigente.
     /// </summary>
     public string? Justificativa { get; private set; }

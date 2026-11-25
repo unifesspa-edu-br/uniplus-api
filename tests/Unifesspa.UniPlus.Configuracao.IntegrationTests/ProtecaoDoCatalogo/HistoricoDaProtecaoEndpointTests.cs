@@ -25,11 +25,11 @@ public sealed class HistoricoDaProtecaoEndpointTests : HistoricoDaProtecaoTestBa
     {
     }
 
-    [Fact(DisplayName = "A reprovação continua registrada depois que o administrador corrige o fato, que volta a pendente")]
-    public async Task Reprovacao_ContinuaRegistradaDepoisDaCorrecao()
+    [Fact(DisplayName = "A devolução continua registrada depois que o administrador corrige o fato, que volta a pendente")]
+    public async Task Devolucao_ContinuaRegistradaDepoisDaCorrecao()
     {
         using HttpClient client = Fixture.Factory.CreateClient();
-        Guid id = await FatoReprovadoECorrigidoAsync(client);
+        Guid id = await FatoDevolvidoECorrigidoAsync(client);
 
         AprovacaoDoFato(await ObterFatoAsync(client, id)).GetProperty("situacao").GetString().Should().Be("PENDENTE");
         HttpResponseMessage historico = await Enviar(client, HttpMethod.Get, $"{Fatos}/{id}/protecao/atos", Isabella);
@@ -37,7 +37,7 @@ public sealed class HistoricoDaProtecaoEndpointTests : HistoricoDaProtecaoTestBa
         historico.Content.Headers.ContentType!.MediaType.Should().Be("application/vnd.uniplus.protecao-do-catalogo-ato.v1+json");
         List<JsonElement> atos = [.. (await historico.Content.ReadFromJsonAsync<JsonElement>()).EnumerateArray()];
         atos.Select(a => (a.GetProperty("ato").GetString(), a.GetProperty("atorNome").GetString()))
-            .Should().Equal(("SOLICITACAO", Isabella.Nome), ("REPROVACAO", Betina.Nome));
+            .Should().Equal(("SOLICITACAO", Isabella.Nome), ("DEVOLUCAO", Betina.Nome));
         (atos[1].GetProperty("justificativa").GetString(), atos[1].GetProperty("finalidadeTratamento").GetString())
             .Should().Be(("A renda bruta é desnecessária para a finalidade.", Finalidade));
         atos.Should().OnlyContain(a => a.GetProperty("instante").GetDateTimeOffset() > DateTimeOffset.UtcNow.AddMinutes(-5));
@@ -45,14 +45,14 @@ public sealed class HistoricoDaProtecaoEndpointTests : HistoricoDaProtecaoTestBa
     }
 
     [Fact(DisplayName = "O detalhe do item, lido pelo Representante do controlador, traz os atos registrados mesmo depois da correção")]
-    public async Task Reprovacao_DetalheTrazOsAtos()
+    public async Task Devolucao_DetalheTrazOsAtos()
     {
         using HttpClient client = Fixture.Factory.CreateClient();
-        Guid id = await FatoReprovadoECorrigidoAsync(client);
+        Guid id = await FatoDevolvidoECorrigidoAsync(client);
 
         JsonElement detalhe = await (await Enviar(client, HttpMethod.Get, $"{Base}/fatos/{id}", Betina)).Content.ReadFromJsonAsync<JsonElement>();
 
-        detalhe.GetProperty("atos").EnumerateArray().Select(a => a.GetProperty("ato").GetString()).Should().Equal("SOLICITACAO", "REPROVACAO");
+        detalhe.GetProperty("atos").EnumerateArray().Select(a => a.GetProperty("ato").GetString()).Should().Equal("SOLICITACAO", "DEVOLUCAO");
     }
 
     [Fact(DisplayName = "O administrador vê a solicitação, o ajuste recomendado e o aceite do tipo, em ordem")]
@@ -112,13 +112,13 @@ public sealed class HistoricoDaProtecaoEndpointTests : HistoricoDaProtecaoTestBa
         return (await CadastrarTipoAsync(client, $"{Marca()} Laudo médico complementar"), await CadastrarFatoAsync(client, $"{Marca()} Renda familiar bruta"));
     }
 
-    // O fato solicitado por Isabella, reprovado por Betina e corrigido por Isabella depois.
-    private async Task<Guid> FatoReprovadoECorrigidoAsync(HttpClient client)
+    // O fato solicitado por Isabella, devolvido por Betina e corrigido por Isabella depois.
+    private async Task<Guid> FatoDevolvidoECorrigidoAsync(HttpClient client)
     {
         await PrepararPersonasAsync();
         Guid id = await CadastrarFatoAsync(client, $"{Marca()} Renda familiar bruta");
         (await SolicitarAsync(client, Isabella, "DADO_DO_CANDIDATO", id)).StatusCode.Should().Be(HttpStatusCode.OK);
-        (await DecidirAsync(client, Betina, new("DADO_DO_CANDIDATO", id, "REPROVAR", "PESSOAL", Justificativa: "A renda bruta é desnecessária para a finalidade.")))
+        (await DecidirAsync(client, Betina, new("DADO_DO_CANDIDATO", id, "DEVOLUCAO", "PESSOAL", Justificativa: "A renda bruta é desnecessária para a finalidade.")))
             .StatusCode.Should().Be(HttpStatusCode.NoContent);
 
         JsonElement fato = await ObterFatoAsync(client, id);
@@ -133,7 +133,7 @@ public sealed class HistoricoDaProtecaoEndpointTests : HistoricoDaProtecaoTestBa
         await PrepararPersonasAsync();
         Guid id = await CadastrarTipoAsync(client, $"{Marca()} Laudo médico complementar");
         (await SolicitarAsync(client, Isabella, "TIPO_DOCUMENTO", id)).StatusCode.Should().Be(HttpStatusCode.OK);
-        (await DecidirAsync(client, Caroline, new("TIPO_DOCUMENTO", id, "RECOMENDAR_AJUSTE", "INTERNO", "SENSIVEL", "Traz dado de saúde.")))
+        (await DecidirAsync(client, Caroline, new("TIPO_DOCUMENTO", id, "AJUSTE_RECOMENDADO", "INTERNO", "SENSIVEL", "Traz dado de saúde.")))
             .StatusCode.Should().Be(HttpStatusCode.NoContent);
         (await Enviar(client, HttpMethod.Post, $"{Tipos}/{id}/aceite-da-recomendacao", Isabella)).StatusCode.Should().Be(HttpStatusCode.NoContent);
         return id;

@@ -29,16 +29,16 @@ public sealed class LeituraAntesDaGravacaoConcorrenteTests : ManifestacaoDaProte
     }
 
     [Theory(DisplayName = "Lido o item com a manifestação ainda em curso, a decisão enviada depois dela é recusada por conflito, mesmo com justificativa")]
-    [InlineData("TIPO_DOCUMENTO", "APROVAR", null)]
-    [InlineData("DADO_DO_CANDIDATO", "APROVAR", null)]
-    [InlineData("TIPO_DOCUMENTO", "RECOMENDAR_AJUSTE", "SENSIVEL")]
-    [InlineData("DADO_DO_CANDIDATO", "RECOMENDAR_AJUSTE", "SENSIVEL")]
+    [InlineData("TIPO_DOCUMENTO", "APROVACAO", null)]
+    [InlineData("DADO_DO_CANDIDATO", "APROVACAO", null)]
+    [InlineData("TIPO_DOCUMENTO", "AJUSTE_RECOMENDADO", "SENSIVEL")]
+    [InlineData("DADO_DO_CANDIDATO", "AJUSTE_RECOMENDADO", "SENSIVEL")]
     public async Task ManifestacaoEmCursoNaLeitura_RecusaADecisao(string cadastro, string decisao, string? recomendada)
     {
         using HttpClient client = Fixture.Factory.CreateClient();
         Guid id = await PrepararAsync(client, cadastro);
 
-        LeituraDoCircuitoLida lida = await LerDuranteAsync(cadastro, id, Betina, () => ManifestarAsync(client, Kevin, cadastro, id, "INADEQUADA"));
+        LeituraDoCircuitoLida lida = await LerDuranteAsync(cadastro, id, Betina, () => ManifestarAsync(client, Kevin, cadastro, id, "RECOMENDA_NAO_USO"));
         HttpResponseMessage resposta = await DecidirSobreALeituraAsync(
             client, new(cadastro, id, decisao, Classificacao(cadastro), recomendada, Justificativa), lida);
 
@@ -47,8 +47,8 @@ public sealed class LeituraAntesDaGravacaoConcorrenteTests : ManifestacaoDaProte
     }
 
     [Theory(DisplayName = "Lido o item com a decisão ainda em curso, a manifestação enviada depois dela é recusada por conflito")]
-    [InlineData("TIPO_DOCUMENTO", "APROVAR", null)]
-    [InlineData("DADO_DO_CANDIDATO", "RECOMENDAR_AJUSTE", "SENSIVEL")]
+    [InlineData("TIPO_DOCUMENTO", "APROVACAO", null)]
+    [InlineData("DADO_DO_CANDIDATO", "AJUSTE_RECOMENDADO", "SENSIVEL")]
     public async Task DecisaoEmCursoNaLeitura_RecusaAManifestacao(string cadastro, string decisao, string? recomendada)
     {
         using HttpClient client = Fixture.Factory.CreateClient();
@@ -56,7 +56,7 @@ public sealed class LeituraAntesDaGravacaoConcorrenteTests : ManifestacaoDaProte
 
         LeituraDoCircuitoLida lida = await LerDuranteAsync(
             cadastro, id, Kevin, () => DecidirComoAsync(client, Betina, cadastro, id, decisao, Justificativa, recomendada));
-        HttpResponseMessage resposta = await ManifestarAsync(client, Kevin, cadastro, id, "INADEQUADA", ciclo: lida.Ciclo);
+        HttpResponseMessage resposta = await ManifestarAsync(client, Kevin, cadastro, id, "RECOMENDA_NAO_USO", ciclo: lida.Ciclo);
 
         await DeveSerConflitoSemNovaTentativaAsync(resposta, "decisao_ja_tomada");
         (await HistoricoAsync(client, Kevin, cadastro, id)).Should().BeEmpty();
@@ -73,7 +73,7 @@ public sealed class LeituraAntesDaGravacaoConcorrenteTests : ManifestacaoDaProte
 
         await GravarForaDaLinhaDoItemAsync(cadastro, id, InserirManifestacao);
         HttpResponseMessage resposta = await DecidirSobreALeituraAsync(
-            client, new(cadastro, id, "APROVAR", Classificacao(cadastro), Justificativa: Justificativa), lida);
+            client, new(cadastro, id, "APROVACAO", Classificacao(cadastro), Justificativa: Justificativa), lida);
 
         resposta.StatusCode.Should().Be(HttpStatusCode.NoContent, "só a contagem gravada na linha do item faz a decisão perceber a manifestação");
     }
@@ -87,7 +87,7 @@ public sealed class LeituraAntesDaGravacaoConcorrenteTests : ManifestacaoDaProte
         Guid id = await PrepararAsync(client, cadastro);
 
         await GravarForaDaLinhaDoItemAsync(cadastro, id, InserirAprovacao);
-        HttpResponseMessage resposta = await ManifestarAsync(client, Kevin, cadastro, id, "INADEQUADA");
+        HttpResponseMessage resposta = await ManifestarAsync(client, Kevin, cadastro, id, "RECOMENDA_NAO_USO");
 
         resposta.StatusCode.Should().Be(HttpStatusCode.NoContent, "só a situação gravada na linha do item faz a manifestação perceber a decisão");
     }
@@ -125,7 +125,7 @@ public sealed class LeituraAntesDaGravacaoConcorrenteTests : ManifestacaoDaProte
             $"""
             INSERT INTO configuracao.manifestacoes_da_protecao
                 (id, cadastro, item_id, ciclo, parecer, texto, substitui_id, autor_emissor, autor_conta_id, autor_nome, instante)
-            VALUES ({Guid.CreateVersion7()}, {cadastro}, {id}, 1, 'INADEQUADA', 'O dado é sensível.', NULL,
+            VALUES ({Guid.CreateVersion7()}, {cadastro}, {id}, 1, 'RECOMENDA_NAO_USO', 'O dado é sensível.', NULL,
                     {TestAuthHandler.DefaultIssuer}, {Kevin.ContaId}, {Kevin.Nome}, now())
             """);
 

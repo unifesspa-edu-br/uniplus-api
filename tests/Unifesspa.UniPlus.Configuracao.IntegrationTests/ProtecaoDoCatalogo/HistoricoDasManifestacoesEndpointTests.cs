@@ -40,9 +40,9 @@ public sealed class HistoricoDasManifestacoesEndpointTests : ManifestacaoDaProte
             (db) => new ManifestacaoDaProtecaoRepository(db).ListarDoItemAsync(new ItemDaProtecao(CadastroDoCatalogo.TipoDocumento, id), CancellationToken.None));
 
         eventos.Select(static e => (e.Ciclo.Numero, e.Parecer, e.Autor.Nome)).Should().Equal(
-            (1, ParecerDaManifestacao.Inadequada, Kevin.Nome),
+            (1, ParecerDaManifestacao.RecomendaNaoUso, Kevin.Nome),
             (2, ParecerDaManifestacao.RecomendaAjuste, Kevin.Nome),
-            (2, ParecerDaManifestacao.Adequada, Kevin.Nome));
+            (2, ParecerDaManifestacao.RecomendaAprovacao, Kevin.Nome));
         (eventos[2].SubstituiId, eventos[1].SubstituiId).Should().Be((eventos[1].Id, (Guid?)null));
         eventos[1].Texto!.Valor.Should().Be("A classificação deve ser sensível.");
     }
@@ -86,20 +86,20 @@ public sealed class HistoricoDasManifestacoesEndpointTests : ManifestacaoDaProte
         (inexistente.StatusCode, mantenedora.StatusCode).Should().Be((HttpStatusCode.NotFound, HttpStatusCode.Forbidden));
     }
 
-    // Ciclo 1: Kevin julga inadequada e Betina reprova; Isabella corrige e solicita de novo. Ciclo 2: Kevin recomenda
-    // ajuste, depois julga adequada, e Betina aprova com justificativa.
+    // Ciclo 1: Kevin recomenda não uso e Betina devolve; Isabella corrige e solicita de novo. Ciclo 2: Kevin recomenda
+    // ajuste, depois recomenda aprovação, e Betina aprova com justificativa.
     private async Task<Guid> DoisCiclosAsync()
     {
         await PrepararTodosAsync();
         using HttpClient client = Fixture.Factory.CreateClient();
         Guid id = await SolicitadoAsync(client, "TIPO_DOCUMENTO");
-        await PassoAsync(ManifestarAsync(client, Kevin, "TIPO_DOCUMENTO", id, "INADEQUADA"));
-        await PassoAsync(DecidirComoAsync(client, Betina, "TIPO_DOCUMENTO", id, "REPROVAR", "O laudo não é necessário."));
+        await PassoAsync(ManifestarAsync(client, Kevin, "TIPO_DOCUMENTO", id, "RECOMENDA_NAO_USO"));
+        await PassoAsync(DecidirComoAsync(client, Betina, "TIPO_DOCUMENTO", id, "DEVOLUCAO", "O laudo não é necessário."));
         await PassoAsync(EditarTipoAsync(client, id));
         (await SolicitarAsync(client, Isabella, "TIPO_DOCUMENTO", id)).StatusCode.Should().Be(HttpStatusCode.OK);
         await PassoAsync(ManifestarAsync(client, Kevin, "TIPO_DOCUMENTO", id, "RECOMENDA_AJUSTE", ciclo: 2));
-        await PassoAsync(ManifestarAsync(client, Kevin, "TIPO_DOCUMENTO", id, "ADEQUADA", texto: null, ciclo: 2));
-        await PassoAsync(DecidirComoAsync(client, Betina, "TIPO_DOCUMENTO", id, "APROVAR", Justificativa));
+        await PassoAsync(ManifestarAsync(client, Kevin, "TIPO_DOCUMENTO", id, "RECOMENDA_APROVACAO", texto: null, ciclo: 2));
+        await PassoAsync(DecidirComoAsync(client, Betina, "TIPO_DOCUMENTO", id, "APROVACAO", Justificativa));
         return id;
     }
 

@@ -80,7 +80,7 @@ public sealed class ObterDetalheDaProtecaoDoCatalogoQueryHandlerTests
     public async Task Detalhe_TrazAsManifestacoesVigentes()
     {
         ItemSobAprovacaoBuilder montagem = new ItemSobAprovacaoBuilder().Solicitado()
-            .ComManifestacao("INADEQUADA").ComManifestacao("ADEQUADA", texto: null).ComManifestacao("RECOMENDA_AJUSTE", autor: ItemSobAprovacaoBuilder.Lucia);
+            .ComManifestacao("RECOMENDA_NAO_USO").ComManifestacao("RECOMENDA_APROVACAO", texto: null).ComManifestacao("RECOMENDA_AJUSTE", autor: ItemSobAprovacaoBuilder.Lucia);
         FatoCandidato fato = montagem.Fato();
         _fatos.ObterPorIdParaLeituraAsync(fato.Id, Arg.Any<CancellationToken>()).Returns(fato);
         _manifestacoes.ListarDoCicloAsync(new ItemDaProtecao(CadastroDoCatalogo.Fato, fato.Id), fato.Aprovacao.Ciclo, Arg.Any<CancellationToken>())
@@ -90,7 +90,7 @@ public sealed class ObterDetalheDaProtecaoDoCatalogoQueryHandlerTests
 
         (detalhe!.Aprovacao.Ciclo, detalhe.Aprovacao.ManifestacaoDesfavoravel, detalhe.Aprovacao.ManifestadaEm).Should().Be((1, true, montagem.Eventos[^1].Instante));
         detalhe.ManifestacoesVigentes.Select(m => (m.Parecer, m.AutorNome, m.SubstituiId, m.Situacao)).Should().Equal(
-            ("ADEQUADA", "Kevin Anderson Carvalho", montagem.Eventos[0].Id, "VIGENTE"),
+            ("RECOMENDA_APROVACAO", "Kevin Anderson Carvalho", montagem.Eventos[0].Id, "VIGENTE"),
             ("RECOMENDA_AJUSTE", "Lúcia Bruna Maya Almeida", (Guid?)null, "VIGENTE"));
     }
 

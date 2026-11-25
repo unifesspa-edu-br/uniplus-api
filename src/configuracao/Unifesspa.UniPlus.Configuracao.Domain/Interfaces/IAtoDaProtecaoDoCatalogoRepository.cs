@@ -19,7 +19,7 @@ public interface IAtoDaProtecaoDoCatalogoRepository
         CadastroDoCatalogo cadastro, Guid itemId, CancellationToken cancellationToken);
 
     /// <summary>
-    /// As decisões da proteção de dados (aprovação, ajuste recomendado e reprovação) que passam pelo filtro, paginadas
+    /// As decisões da proteção de dados (aprovação, ajuste recomendado e devolução) que passam pelo filtro, paginadas
     /// por cursor keyset ordenado, das mais recentes para as mais antigas.
     /// </summary>
     Task<(IReadOnlyList<AtoDaProtecaoDoCatalogo> Itens, (string SortKey, Guid Id)? Anterior, (string SortKey, Guid Id)? Proximo)> ListarDecisoesAsync(

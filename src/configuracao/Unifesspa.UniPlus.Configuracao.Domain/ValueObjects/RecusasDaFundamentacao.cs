@@ -14,19 +14,19 @@ using Unifesspa.UniPlus.Configuracao.Domain.Errors;
 public sealed record RecusasDaFundamentacao(
     string Campo, string Rotulo, string Obrigatoria, string MuitoLonga, string MensagemObrigatoria)
 {
-    /// <summary>A justificativa da decisão: obrigatória na reprovação.</summary>
+    /// <summary>A justificativa da decisão: obrigatória na devolução.</summary>
     public static RecusasDaFundamentacao DaJustificativa { get; } = new(
         "justificativa",
         "A justificativa",
         ProtecaoDoCatalogoErrorCodes.JustificativaObrigatoria,
         ProtecaoDoCatalogoErrorCodes.JustificativaMuitoLonga,
-        "A reprovação exige a justificativa.");
+        "A devolução exige a justificativa.");
 
-    /// <summary>O texto da manifestação: obrigatório nos pareceres recomenda ajuste e inadequada.</summary>
+    /// <summary>O texto da manifestação: obrigatório nos pareceres recomenda ajuste e recomenda não uso.</summary>
     public static RecusasDaFundamentacao DoTextoDaManifestacao { get; } = new(
         "texto",
         "O texto da manifestação",
         ProtecaoDoCatalogoErrorCodes.TextoDaManifestacaoObrigatorio,
         ProtecaoDoCatalogoErrorCodes.TextoDaManifestacaoMuitoLongo,
-        "Os pareceres RECOMENDA_AJUSTE e INADEQUADA exigem o texto.");
+        "Os pareceres RECOMENDA_AJUSTE e RECOMENDA_NAO_USO exigem o texto.");
 }

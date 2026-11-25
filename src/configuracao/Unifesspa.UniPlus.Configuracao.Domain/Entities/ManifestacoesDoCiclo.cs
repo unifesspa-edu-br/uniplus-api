@@ -29,7 +29,7 @@ public sealed class ManifestacoesDoCiclo
     public IReadOnlyList<ManifestacaoDaProtecaoDoCatalogo> Vigentes =>
         [.. _eventos.Where(e => !_eventos.Any(outro => outro.SubstituiId == e.Id)).OrderBy(static e => e.Instante).ThenBy(static e => e.PosicaoNoInstante)];
 
-    /// <summary>Se alguma manifestação vigente tem parecer recomenda ajuste ou inadequada.</summary>
+    /// <summary>Se alguma manifestação vigente tem parecer recomenda ajuste ou recomenda não uso.</summary>
     public bool HaDesfavoravelVigente => Vigentes.Any(static m => m.Desfavoravel);
 
     /// <summary>Os eventos já gravados do item no ciclo.</summary>
@@ -84,7 +84,7 @@ public sealed class ManifestacoesDoCiclo
             : new(ProtecaoDoCatalogoErrorCodes.CicloMudou, "O ciclo de aprovação do item mudou depois de lido; releia o item.");
     }
 
-    // No ciclo lido, o item pendente nunca foi solicitado nele; o aprovado, o reprovado e o com ajuste recomendado já
+    // No ciclo lido, o item pendente nunca foi solicitado nele; o aprovado, o devolvido e o com ajuste recomendado já
     // foram decididos depois da leitura (UNI-REQ-0374).
     private static DomainError? RecusaDaSituacao(SituacaoDaAprovacao situacao) => situacao switch
     {

@@ -26,7 +26,7 @@ public sealed class ManifestacaoEDecisaoConcorrentesTests : ManifestacaoDaProtec
     {
     }
 
-    [Theory(DisplayName = "A manifestação inadequada gravada antes vence a aprovação sem justificativa, que relida exige a justificativa")]
+    [Theory(DisplayName = "A manifestação recomenda não uso gravada antes vence a aprovação sem justificativa, que relida exige a justificativa")]
     [InlineData("TIPO_DOCUMENTO")]
     [InlineData("DADO_DO_CANDIDATO")]
     public async Task ManifestacaoAntesDaAprovacao(string cadastro)
@@ -35,13 +35,13 @@ public sealed class ManifestacaoEDecisaoConcorrentesTests : ManifestacaoDaProtec
         Guid id = await PrepararAsync(client, cadastro);
 
         (HttpResponseMessage manifestacao, HttpResponseMessage aprovacao) = await CorridaAsync(cadastro, id,
-            () => ManifestarAsync(client, Kevin, cadastro, id, "INADEQUADA"),
-            () => DecidirComoAsync(client, Betina, cadastro, id, "APROVAR"));
+            () => ManifestarAsync(client, Kevin, cadastro, id, "RECOMENDA_NAO_USO"),
+            () => DecidirComoAsync(client, Betina, cadastro, id, "APROVACAO"));
 
         manifestacao.StatusCode.Should().Be(HttpStatusCode.NoContent);
         await DeveSerConflitoComNovaTentativaAsync(aprovacao);
         (await DetalheAsync(client, cadastro, id)).GetProperty("aprovacao").GetProperty("manifestacaoDesfavoravel").GetBoolean().Should().BeTrue();
-        await RefazerExigindoAJustificativaAsync(client, cadastro, id, "APROVAR", recomendada: null);
+        await RefazerExigindoAJustificativaAsync(client, cadastro, id, "APROVACAO", recomendada: null);
         (await UltimoAtoAsync(client, cadastro, id)).GetProperty("dianteDeManifestacaoDesfavoravel").GetBoolean().Should().BeTrue();
     }
 
@@ -55,11 +55,11 @@ public sealed class ManifestacaoEDecisaoConcorrentesTests : ManifestacaoDaProtec
 
         (HttpResponseMessage manifestacao, HttpResponseMessage ajuste) = await CorridaAsync(cadastro, id,
             () => ManifestarAsync(client, Kevin, cadastro, id, "RECOMENDA_AJUSTE"),
-            () => DecidirComoAsync(client, Betina, cadastro, id, "RECOMENDAR_AJUSTE", recomendada: "SENSIVEL"));
+            () => DecidirComoAsync(client, Betina, cadastro, id, "AJUSTE_RECOMENDADO", recomendada: "SENSIVEL"));
 
         manifestacao.StatusCode.Should().Be(HttpStatusCode.NoContent);
         await DeveSerConflitoComNovaTentativaAsync(ajuste);
-        await RefazerExigindoAJustificativaAsync(client, cadastro, id, "RECOMENDAR_AJUSTE", recomendada: "SENSIVEL");
+        await RefazerExigindoAJustificativaAsync(client, cadastro, id, "AJUSTE_RECOMENDADO", recomendada: "SENSIVEL");
         (await AceitarAsync(client, cadastro, id)).StatusCode.Should().Be(HttpStatusCode.NoContent);
     }
 
@@ -72,12 +72,12 @@ public sealed class ManifestacaoEDecisaoConcorrentesTests : ManifestacaoDaProtec
         Guid id = await PrepararAsync(client, cadastro);
 
         (HttpResponseMessage ajuste, HttpResponseMessage manifestacao) = await CorridaAsync(cadastro, id,
-            () => DecidirComoAsync(client, Betina, cadastro, id, "RECOMENDAR_AJUSTE", recomendada: "SENSIVEL"),
-            () => ManifestarAsync(client, Kevin, cadastro, id, "INADEQUADA"));
+            () => DecidirComoAsync(client, Betina, cadastro, id, "AJUSTE_RECOMENDADO", recomendada: "SENSIVEL"),
+            () => ManifestarAsync(client, Kevin, cadastro, id, "RECOMENDA_NAO_USO"));
 
         ajuste.StatusCode.Should().Be(HttpStatusCode.NoContent);
         await DeveSerConflitoComNovaTentativaAsync(manifestacao);
-        (await CodigoAsync(await ManifestarAsync(client, Kevin, cadastro, id, "INADEQUADA"))).Should().EndWith(".decisao_ja_tomada");
+        (await CodigoAsync(await ManifestarAsync(client, Kevin, cadastro, id, "RECOMENDA_NAO_USO"))).Should().EndWith(".decisao_ja_tomada");
         (await AceitarAsync(client, cadastro, id)).StatusCode.Should().Be(HttpStatusCode.NoContent);
         (await DetalheAsync(client, cadastro, id)).GetProperty("aprovacao").GetProperty("ciclo").GetInt32().Should().Be(1);
     }
@@ -91,12 +91,12 @@ public sealed class ManifestacaoEDecisaoConcorrentesTests : ManifestacaoDaProtec
         Guid id = await PrepararAsync(client, cadastro);
 
         (HttpResponseMessage doKevin, HttpResponseMessage daLucia) = await CorridaAsync(cadastro, id,
-            () => ManifestarAsync(client, Kevin, cadastro, id, "ADEQUADA", texto: null),
-            () => ManifestarAsync(client, Lucia, cadastro, id, "INADEQUADA"));
+            () => ManifestarAsync(client, Kevin, cadastro, id, "RECOMENDA_APROVACAO", texto: null),
+            () => ManifestarAsync(client, Lucia, cadastro, id, "RECOMENDA_NAO_USO"));
 
         doKevin.StatusCode.Should().Be(HttpStatusCode.NoContent);
         await DeveSerConflitoComNovaTentativaAsync(daLucia);
-        (await ManifestarAsync(client, Lucia, cadastro, id, "INADEQUADA")).StatusCode.Should().Be(HttpStatusCode.NoContent);
+        (await ManifestarAsync(client, Lucia, cadastro, id, "RECOMENDA_NAO_USO")).StatusCode.Should().Be(HttpStatusCode.NoContent);
         JsonElement detalhe = await DetalheAsync(client, cadastro, id);
         (detalhe.GetProperty("manifestacoesVigentes").GetArrayLength(), detalhe.GetProperty("aprovacao").GetProperty("manifestacaoDesfavoravel").GetBoolean())
             .Should().Be((2, true));
@@ -110,22 +110,22 @@ public sealed class ManifestacaoEDecisaoConcorrentesTests : ManifestacaoDaProtec
         using HttpClient client = Fixture.Factory.CreateClient();
         Guid id = await PrepararAsync(client, cadastro);
         using IDisposable congelado = ((ConfiguracaoEndpointFactory)Fixture.Factory).Relogio.Congelar();
-        (await ManifestarAsync(client, Kevin, cadastro, id, "INADEQUADA")).StatusCode.Should().Be(HttpStatusCode.NoContent);
+        (await ManifestarAsync(client, Kevin, cadastro, id, "RECOMENDA_NAO_USO")).StatusCode.Should().Be(HttpStatusCode.NoContent);
 
         // Nem o instante nem o indicador mudam: só a contagem do ciclo faz a linha do item mudar e entrar na fila.
         (HttpResponseMessage doKevin, HttpResponseMessage daLucia) = await CorridaAsync(cadastro, id,
-            () => ManifestarAsync(client, Kevin, cadastro, id, "INADEQUADA", "Reitero: o dado é sensível."),
-            () => ManifestarAsync(client, Lucia, cadastro, id, "INADEQUADA"));
+            () => ManifestarAsync(client, Kevin, cadastro, id, "RECOMENDA_NAO_USO", "Reitero: o dado é sensível."),
+            () => ManifestarAsync(client, Lucia, cadastro, id, "RECOMENDA_NAO_USO"));
 
         doKevin.StatusCode.Should().Be(HttpStatusCode.NoContent);
         await DeveSerConflitoComNovaTentativaAsync(daLucia);
     }
 
     [Theory(DisplayName = "Controle: a manifestação gravada sem tocar a linha do item deixaria passar a aprovação ou o ajuste sem justificativa")]
-    [InlineData("TIPO_DOCUMENTO", "APROVAR", null)]
-    [InlineData("DADO_DO_CANDIDATO", "APROVAR", null)]
-    [InlineData("TIPO_DOCUMENTO", "RECOMENDAR_AJUSTE", "SENSIVEL")]
-    [InlineData("DADO_DO_CANDIDATO", "RECOMENDAR_AJUSTE", "SENSIVEL")]
+    [InlineData("TIPO_DOCUMENTO", "APROVACAO", null)]
+    [InlineData("DADO_DO_CANDIDATO", "APROVACAO", null)]
+    [InlineData("TIPO_DOCUMENTO", "AJUSTE_RECOMENDADO", "SENSIVEL")]
+    [InlineData("DADO_DO_CANDIDATO", "AJUSTE_RECOMENDADO", "SENSIVEL")]
     public async Task SemEscritaNaLinhaDoItem_ACorridaPassaria(string cadastro, string decisao, string? recomendada)
     {
         using HttpClient client = Fixture.Factory.CreateClient();
@@ -134,11 +134,11 @@ public sealed class ManifestacaoEDecisaoConcorrentesTests : ManifestacaoDaProtec
 
         Task<HttpResponseMessage> decidida = DecidirComoAsync(client, Betina, cadastro, id, decisao, recomendada: recomendada);
         await trava.EsperarNaFilaAsync(decidida, 1);
-        await InserirManifestacaoInadequadaAsync(trava, cadastro, id);
+        await InserirManifestacaoRecomendaNaoUsoAsync(trava, cadastro, id);
         await trava.LiberarAsync();
 
         (await decidida).StatusCode.Should().Be(HttpStatusCode.NoContent, "só a mudança na linha do item faz a decisão perder a corrida");
-        (await HistoricoAsync(client, Betina, cadastro, id)).Should().ContainSingle().Which.GetProperty("parecer").GetString().Should().Be("INADEQUADA");
+        (await HistoricoAsync(client, Betina, cadastro, id)).Should().ContainSingle().Which.GetProperty("parecer").GetString().Should().Be("RECOMENDA_NAO_USO");
     }
 
     private async Task<Guid> PrepararAsync(HttpClient client, string cadastro)
@@ -180,12 +180,12 @@ public sealed class ManifestacaoEDecisaoConcorrentesTests : ManifestacaoDaProtec
     }
 
     // A manifestação gravada só na tabela dela, na transação da trava, sem a mudança do circuito na linha do item.
-    private static Task<int> InserirManifestacaoInadequadaAsync(TravaDaLinhaDoItem trava, string cadastro, Guid id) =>
+    private static Task<int> InserirManifestacaoRecomendaNaoUsoAsync(TravaDaLinhaDoItem trava, string cadastro, Guid id) =>
         trava.Contexto.Database.ExecuteSqlInterpolatedAsync(
             $"""
             INSERT INTO configuracao.manifestacoes_da_protecao
                 (id, cadastro, item_id, ciclo, parecer, texto, substitui_id, autor_emissor, autor_conta_id, autor_nome, instante)
-            VALUES ({Guid.CreateVersion7()}, {cadastro}, {id}, 1, 'INADEQUADA', 'O dado é sensível.', NULL,
+            VALUES ({Guid.CreateVersion7()}, {cadastro}, {id}, 1, 'RECOMENDA_NAO_USO', 'O dado é sensível.', NULL,
                     {TestAuthHandler.DefaultIssuer}, {Kevin.ContaId}, {Kevin.Nome}, now())
             """);
 }

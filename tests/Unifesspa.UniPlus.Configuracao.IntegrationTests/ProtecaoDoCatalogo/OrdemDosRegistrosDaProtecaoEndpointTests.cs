@@ -56,8 +56,8 @@ public sealed class OrdemDosRegistrosDaProtecaoEndpointTests : ManifestacaoDaPro
         await PrepararTodosAsync();
         using HttpClient client = Fixture.Factory.CreateClient();
         Guid id = await SolicitadoAsync(client, "TIPO_DOCUMENTO");
-        (await ManifestarAsync(client, Kevin, "TIPO_DOCUMENTO", id, "ADEQUADA", texto: null)).StatusCode.Should().Be(HttpStatusCode.NoContent);
-        (await ManifestarAsync(client, Lucia, "TIPO_DOCUMENTO", id, "ADEQUADA", texto: null)).StatusCode.Should().Be(HttpStatusCode.NoContent);
+        (await ManifestarAsync(client, Kevin, "TIPO_DOCUMENTO", id, "RECOMENDA_APROVACAO", texto: null)).StatusCode.Should().Be(HttpStatusCode.NoContent);
+        (await ManifestarAsync(client, Lucia, "TIPO_DOCUMENTO", id, "RECOMENDA_APROVACAO", texto: null)).StatusCode.Should().Be(HttpStatusCode.NoContent);
         await ExecutarAsync(InverterAsManifestacoes, id);
 
         IReadOnlyList<ManifestacaoDaProtecaoDoCatalogo> eventos = await RecarregarAsync(
@@ -72,7 +72,7 @@ public sealed class OrdemDosRegistrosDaProtecaoEndpointTests : ManifestacaoDaPro
         await PrepararTodosAsync();
         using HttpClient client = Fixture.Factory.CreateClient();
         Guid id = await SolicitadoAsync(client, "TIPO_DOCUMENTO");
-        (await DecidirComoAsync(client, Betina, "TIPO_DOCUMENTO", id, "APROVAR")).StatusCode.Should().Be(HttpStatusCode.NoContent);
+        (await DecidirComoAsync(client, Betina, "TIPO_DOCUMENTO", id, "APROVACAO")).StatusCode.Should().Be(HttpStatusCode.NoContent);
         await ExecutarAsync(InverterOsAtos, id);
 
         IReadOnlyList<AtoDaProtecaoDoCatalogo> atos = await RecarregarAsync(

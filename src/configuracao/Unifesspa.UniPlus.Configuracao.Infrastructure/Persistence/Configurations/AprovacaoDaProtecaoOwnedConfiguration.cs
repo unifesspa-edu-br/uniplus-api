@@ -72,7 +72,7 @@ internal static class AprovacaoDaProtecaoOwnedConfiguration
 
     /// <summary>
     /// Os CHECKs do circuito na tabela do dono: a situação pertence ao vocabulário, o item com ajuste recomendado
-    /// carrega a classificação recomendada, o reprovado carrega a justificativa, o ciclo começa em 1, a manifestação
+    /// carrega a classificação recomendada, o devolvido carrega a justificativa, o ciclo começa em 1, a manifestação
     /// desfavorável vigente tem o instante da manifestação, e o instante existe se e só se o ciclo contou manifestação.
     /// </summary>
     public static void ConfigurarChecks<TEntity>(TableBuilder<TEntity> table, string tabela)
@@ -86,8 +86,8 @@ internal static class AprovacaoDaProtecaoOwnedConfiguration
             $"ck_{tabela}_protecao_ajuste_com_recomendacao",
             "protecao_situacao <> 'AJUSTE_RECOMENDADO' OR protecao_recomendada IS NOT NULL");
         table.HasCheckConstraint(
-            $"ck_{tabela}_protecao_reprovada_com_justificativa",
-            "protecao_situacao <> 'REPROVADA' OR protecao_justificativa IS NOT NULL");
+            $"ck_{tabela}_protecao_devolvida_com_justificativa",
+            "protecao_situacao <> 'DEVOLVIDA' OR protecao_justificativa IS NOT NULL");
         table.HasCheckConstraint($"ck_{tabela}_protecao_ciclo_positivo", "protecao_ciclo >= 1");
         table.HasCheckConstraint(
             $"ck_{tabela}_protecao_desfavoravel_manifestada",

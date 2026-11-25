@@ -14,7 +14,7 @@ using Unifesspa.UniPlus.Infrastructure.Core.Pagination;
 public sealed record FiltroDasDecisoesDaProtecaoRequest
 {
     [FromQuery(Name = "ato")]
-    [Description("Decisão: APROVACAO, AJUSTE_RECOMENDADO ou REPROVACAO. Repetível; sem o parâmetro, as três.")]
+    [Description("Decisão: APROVACAO, AJUSTE_RECOMENDADO ou DEVOLUCAO. Repetível; sem o parâmetro, as três.")]
     public string[]? Ato { get; init; }
 
     [FromQuery(Name = "cadastro")]

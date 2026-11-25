@@ -10,9 +10,9 @@ using Unifesspa.UniPlus.Regras.Enums;
 /// <summary>
 /// O circuito de aprovação da proteção de dados de um tipo de documento ou fato do candidato (ADR-0153): o item nasce
 /// pendente, o administrador do cadastro o envia numa solicitação, o Representante do controlador o aprova, recomenda o
-/// ajuste da classificação ou o reprova com a justificativa, e o administrador do cadastro aceita a recomendação do
+/// ajuste da classificação ou o devolve com a justificativa, e o administrador do cadastro aceita a recomendação do
 /// ajuste ou edita o item. Guarda quem agiu e quando em cada passo, só o ciclo corrente: mudar a classificação, a
-/// hipótese legal ou a finalidade do item reinicia o circuito, e editar o item com ajuste recomendado ou reprovado
+/// hipótese legal ou a finalidade do item reinicia o circuito, e editar o item com ajuste recomendado ou devolvido
 /// também o reinicia, seja qual for o campo. O reinício de item já solicitado abre um novo ciclo, que encerra as
 /// manifestações técnicas do anterior (ADR-0163).
 /// </summary>
@@ -35,9 +35,9 @@ public sealed class AprovacaoDaProtecao
         "A hipótese legal do item não cabe na classificação recomendada: o administrador do cadastro não poderia aceitá-la. "
         + "Recomende uma classificação que a hipótese admita.");
 
-    private static readonly DomainError AceiteDeItemReprovado = new(
-        ProtecaoDoCatalogoErrorCodes.AceiteDeItemReprovado,
-        "O item reprovado não tem recomendação a aceitar: edite o item e peça a aprovação de novo.");
+    private static readonly DomainError AceiteDeItemDevolvido = new(
+        ProtecaoDoCatalogoErrorCodes.AceiteDeItemDevolvido,
+        "O item devolvido não tem recomendação a aceitar: edite o item e peça a aprovação de novo.");
 
     private static readonly DomainError SemRecomendacao = new(
         ProtecaoDoCatalogoErrorCodes.SemRecomendacaoParaAceitar,
@@ -63,7 +63,7 @@ public sealed class AprovacaoDaProtecao
     public ClassificacaoDeProtecao? ClassificacaoRecomendada { get; private set; }
 
     /// <summary>
-    /// O motivo do ajuste recomendado (opcional) ou da reprovação (obrigatório). A justificativa da aprovação fica só no
+    /// O motivo do ajuste recomendado (opcional) ou da devolução (obrigatório). A justificativa da aprovação fica só no
     /// ato da decisão.
     /// </summary>
     public string? Justificativa { get; private set; }
@@ -76,7 +76,7 @@ public sealed class AprovacaoDaProtecao
     public DateTimeOffset? ManifestadaEm { get; private set; }
 
     /// <summary>
-    /// Se há, no ciclo, manifestação técnica vigente com parecer recomenda ajuste ou inadequada: diante dela, aprovar
+    /// Se há, no ciclo, manifestação técnica vigente com parecer recomenda ajuste ou recomenda não uso: diante dela, aprovar
     /// ou recomendar ajuste exige a justificativa (UNI-REQ-0374). Fica na linha do item para a manifestação e a decisão
     /// disputarem o mesmo controle de concorrência (ADR-0163).
     /// </summary>
@@ -85,7 +85,7 @@ public sealed class AprovacaoDaProtecao
     /// <summary>
     /// Quantos eventos de manifestação técnica (registros e substituições) o ciclo recebeu. Cada manifestação o avança,
     /// então toda manifestação muda a linha do item e disputa o token de concorrência da decisão, mesmo quando o
-    /// instante e o indicador desfavorável não mudam (relógio repetido, nova manifestação adequada) (ADR-0163, ADR-0119).
+    /// instante e o indicador desfavorável não mudam (relógio repetido, nova manifestação recomenda aprovação) (ADR-0163, ADR-0119).
     /// </summary>
     public int ManifestacoesNoCiclo { get; private set; }
 
@@ -135,15 +135,15 @@ public sealed class AprovacaoDaProtecao
         return Result.Success();
     }
 
-    internal Result Reprovar(string? justificativa, string ator, DateTimeOffset em)
+    internal Result Devolver(string? justificativa, string ator, DateTimeOffset em)
     {
-        Result<Fundamentacao?> conferida = ConferirDecisao(justificativa, obrigatoria: true, "Só o item que está numa solicitação é reprovado.");
+        Result<Fundamentacao?> conferida = ConferirDecisao(justificativa, obrigatoria: true, "Só o item que está numa solicitação é devolvido.");
         if (conferida.IsFailure)
         {
             return Result.ValidationFailure(conferida.Errors);
         }
 
-        Situacao = SituacaoDaAprovacao.Reprovada;
+        Situacao = SituacaoDaAprovacao.Devolvida;
         Justificativa = conferida.Value?.Valor;
         Decidir(ator, em);
         return Result.Success();
@@ -151,13 +151,13 @@ public sealed class AprovacaoDaProtecao
 
     /// <summary>
     /// A classificação recomendada pelo ajuste, ou a falha quando o item não tem ajuste recomendado: o item
-    /// reprovado não tem recomendação, e o aceite é recusado com código próprio.
+    /// devolvido não tem recomendação, e o aceite é recusado com código próprio.
     /// </summary>
     internal Result<ClassificacaoDeProtecao> RecomendacaoAAceitar()
     {
-        if (Situacao == SituacaoDaAprovacao.Reprovada)
+        if (Situacao == SituacaoDaAprovacao.Devolvida)
         {
-            return Result<ClassificacaoDeProtecao>.Failure(AceiteDeItemReprovado);
+            return Result<ClassificacaoDeProtecao>.Failure(AceiteDeItemDevolvido);
         }
 
         return Situacao == SituacaoDaAprovacao.AjusteRecomendado && ClassificacaoRecomendada is { } recomendada
@@ -197,12 +197,12 @@ public sealed class AprovacaoDaProtecao
 
     /// <summary>
     /// O item foi editado e salvo. A mudança da proteção reinicia o circuito de qualquer situação; o item com ajuste
-    /// recomendado ou reprovado também recomeça por qualquer edição, porque a decisão pode ter sido sobre qualquer
+    /// recomendado ou devolvido também recomeça por qualquer edição, porque a decisão pode ter sido sobre qualquer
     /// campo. O aprovado só recomeça se a proteção mudou; a edição que não reinicia mantém o ciclo e as manifestações.
     /// </summary>
     internal void AoEditarItem(bool protecaoMudou)
     {
-        if (protecaoMudou || Situacao is SituacaoDaAprovacao.AjusteRecomendado or SituacaoDaAprovacao.Reprovada)
+        if (protecaoMudou || Situacao is SituacaoDaAprovacao.AjusteRecomendado or SituacaoDaAprovacao.Devolvida)
         {
             Reiniciar();
         }

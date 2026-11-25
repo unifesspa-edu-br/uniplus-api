@@ -23,11 +23,11 @@ public sealed class ManifestacoesNoMesmoInstanteTests
     public void Vigentes_NaoGravadaEAMaisRecente()
     {
         TipoDocumento tipo = new TipoDocumentoNaAprovacaoBuilder().Solicitado().Build();
-        ManifestacaoDaProtecaoDoCatalogo gravada = Do(tipo).Registrar(tipo.Aprovacao, CicloDaAprovacao.Primeiro, Adequada(), Kevin, Instante).Value!;
+        ManifestacaoDaProtecaoDoCatalogo gravada = Do(tipo).Registrar(tipo.Aprovacao, CicloDaAprovacao.Primeiro, RecomendaAprovacao(), Kevin, Instante).Value!;
         Numerar(gravada, 5);
         ManifestacoesDoCiclo manifestacoes = Do(tipo, gravada);
 
-        ManifestacaoDaProtecaoDoCatalogo nova = manifestacoes.Registrar(tipo.Aprovacao, CicloDaAprovacao.Primeiro, Adequada(), Lucia, Instante).Value!;
+        ManifestacaoDaProtecaoDoCatalogo nova = manifestacoes.Registrar(tipo.Aprovacao, CicloDaAprovacao.Primeiro, RecomendaAprovacao(), Lucia, Instante).Value!;
 
         manifestacoes.Vigentes.Should().Equal(gravada, nova);
     }
@@ -38,8 +38,8 @@ public sealed class ManifestacoesNoMesmoInstanteTests
     public void Vigentes_PelaOrdemDeRegistro(long ordemDeKevin, long ordemDeLucia)
     {
         TipoDocumento tipo = new TipoDocumentoNaAprovacaoBuilder().Solicitado().Build();
-        ManifestacaoDaProtecaoDoCatalogo kevin = Do(tipo).Registrar(tipo.Aprovacao, CicloDaAprovacao.Primeiro, Adequada(), Kevin, Instante).Value!;
-        ManifestacaoDaProtecaoDoCatalogo lucia = Do(tipo, kevin).Registrar(tipo.Aprovacao, CicloDaAprovacao.Primeiro, Adequada(), Lucia, Instante).Value!;
+        ManifestacaoDaProtecaoDoCatalogo kevin = Do(tipo).Registrar(tipo.Aprovacao, CicloDaAprovacao.Primeiro, RecomendaAprovacao(), Kevin, Instante).Value!;
+        ManifestacaoDaProtecaoDoCatalogo lucia = Do(tipo, kevin).Registrar(tipo.Aprovacao, CicloDaAprovacao.Primeiro, RecomendaAprovacao(), Lucia, Instante).Value!;
         Numerar(kevin, ordemDeKevin);
         Numerar(lucia, ordemDeLucia);
 

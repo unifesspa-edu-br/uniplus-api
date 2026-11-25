@@ -14,7 +14,7 @@ using static Unifesspa.UniPlus.Configuracao.Domain.UnitTests.TestSupport.Manifes
 
 /// <summary>
 /// A regra da justificativa diante de manifestação técnica desfavorável vigente (UNI-REQ-0374): aprovar ou recomendar
-/// ajuste a exige; a reprovação já a exige sempre; sem manifestação desfavorável, ela é opcional.
+/// ajuste a exige; a devolução já a exige sempre; sem manifestação desfavorável, ela é opcional.
 /// </summary>
 public sealed class DecisaoFundamentadaTests
 {
@@ -25,7 +25,7 @@ public sealed class DecisaoFundamentadaTests
     [InlineData(AtoDaProtecao.AjusteRecomendado)]
     public void Conferir_SemJustificativaDianteDeDesfavoravel_Recusa(AtoDaProtecao ato)
     {
-        TipoDocumento tipo = ComManifestacao(Inadequada());
+        TipoDocumento tipo = ComManifestacao(RecomendaNaoUso());
 
         Result resultado = Decisao(ato, null).Conferir(tipo.Aprovacao, tipo.Protecao);
 
@@ -36,7 +36,7 @@ public sealed class DecisaoFundamentadaTests
     [Fact(DisplayName = "O ajuste sem justificativa diante de manifestação desfavorável e com a classificação atual sai com as duas recusas no lote")]
     public void Conferir_AjusteSemJustificativaEIgualAAtual_AcumulaAsDuasRecusas()
     {
-        TipoDocumento tipo = ComManifestacao(Inadequada());
+        TipoDocumento tipo = ComManifestacao(RecomendaNaoUso());
         DecisaoFundamentada ajuste = new(AtoDaProtecao.AjusteRecomendado, tipo.ClassificacaoProtecao, null);
 
         Result resultado = ajuste.Conferir(tipo.Aprovacao, tipo.Protecao);
@@ -68,23 +68,23 @@ public sealed class DecisaoFundamentadaTests
         Decisao(ato, Justificativa).Conferir(tipo.Aprovacao, tipo.Protecao).IsSuccess.Should().BeTrue();
     }
 
-    [Fact(DisplayName = "Sem manifestação, ou só com manifestação adequada, a aprovação sem justificativa é aceita")]
+    [Fact(DisplayName = "Sem manifestação, ou só com manifestação recomenda aprovação, a aprovação sem justificativa é aceita")]
     public void Conferir_SemDesfavoravel_Aceita()
     {
         DecisaoFundamentada aprovacao = Decisao(AtoDaProtecao.Aprovacao, null);
         TipoDocumento semManifestacao = new TipoDocumentoNaAprovacaoBuilder().Solicitado().Build();
-        TipoDocumento adequada = ComManifestacao(Adequada());
+        TipoDocumento favoravel = ComManifestacao(RecomendaAprovacao());
 
         aprovacao.Conferir(semManifestacao.Aprovacao, semManifestacao.Protecao).IsSuccess.Should().BeTrue();
-        aprovacao.Conferir(adequada.Aprovacao, adequada.Protecao).IsSuccess.Should().BeTrue();
+        aprovacao.Conferir(favoravel.Aprovacao, favoravel.Protecao).IsSuccess.Should().BeTrue();
     }
 
-    [Fact(DisplayName = "A reprovação não passa pela regra da justificativa diante da manifestação: a dela é obrigatória sempre")]
-    public void Conferir_Reprovacao_NaoConfere()
+    [Fact(DisplayName = "A devolução não passa pela regra da justificativa diante da manifestação: a dela é obrigatória sempre")]
+    public void Conferir_Devolucao_NaoConfere()
     {
-        TipoDocumento tipo = ComManifestacao(Inadequada());
+        TipoDocumento tipo = ComManifestacao(RecomendaNaoUso());
 
-        Decisao(AtoDaProtecao.Reprovacao, null).Conferir(tipo.Aprovacao, tipo.Protecao).IsSuccess.Should().BeTrue();
+        Decisao(AtoDaProtecao.Devolucao, null).Conferir(tipo.Aprovacao, tipo.Protecao).IsSuccess.Should().BeTrue();
     }
 
     [Fact(DisplayName = "Fora de solicitação a regra da justificativa não confere: a transição do circuito recusa a decisão")]

@@ -56,9 +56,21 @@ public sealed class ListarProtecaoDoCatalogoQueryHandlerTests
         resultado.Value!.Should().ContainSingle().Which.Codigo.Should().Be("LAUDO_MEDICO_COMPLEMENTAR");
     }
 
+    [Fact]
+    public async Task FiltraPorSituacao_Devolvida_LeOItem()
+    {
+        TipoDocumento devolvido = NovoTipo();
+        devolvido.SolicitarAprovacaoDaProtecao(Isabella, Agora);
+        devolvido.DevolverProtecao("Corrija o item.", Isabella, Agora);
+        _tipos.ListarSemProtecaoAprovadaAsync(Arg.Any<CancellationToken>()).Returns([devolvido, NovoTipo()]);
+        Result<IReadOnlyList<ItemDaProtecaoDoCatalogoDto>> resultado = await ListarAsync("DEVOLVIDA", PermissaoConfiguracao.ProtecaoDoCatalogoAprovar);
+        resultado.Value!.Should().ContainSingle().Which.Aprovacao.Situacao.Should().Be("DEVOLVIDA");
+    }
+
     [Theory(DisplayName = "A situação aprovada ou desconhecida não é filtro")]
     [InlineData("APROVADA")]
     [InlineData("QUALQUER")]
+    [InlineData("REPROVADA")]
     public async Task SituacaoInvalida_Recusa(string situacao)
     {
         Result<IReadOnlyList<ItemDaProtecaoDoCatalogoDto>> resultado = await ListarAsync(situacao, PermissaoConfiguracao.ProtecaoDoCatalogoAprovar);
