@@ -86,7 +86,8 @@ public static class SelecaoInfrastructureRegistration
     private static void AddPortasDasNotasDoEnem(this IServiceCollection services)
     {
         services.AddScoped<IInscritosDaEdicaoDoEnem, InscritosDaEdicaoDoEnem>();
-        services.AddScoped<IIndiceCegoDoCpf, CalculadorDoIndiceCegoDoCpf>();
+        services.AddScoped<CalculadorDoIndiceCegoDoCpf>();
+        services.AddScoped<IIndiceCegoDoCpf>(static sp => sp.GetRequiredService<CalculadorDoIndiceCegoDoCpf>());
         services.AddScoped<ILoteDeNotasDoEnemRepository, LoteDeNotasDoEnemRepository>();
         services.AddScoped<IGeracaoDeEnvioAoInepRepository, GeracaoDeEnvioAoInepRepository>();
     }

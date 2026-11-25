@@ -42,19 +42,19 @@ public sealed class InscricaoRepository : IInscricaoRepository
     public InscricaoRepository(
         UniPlusDbContext dbContext,
         IUniPlusEncryptionService encryption,
-        IUniPlusBlindIndexService blindIndex,
+        CalculadorDoIndiceCegoDoCpf indiceDoCpf,
         TimeProvider timeProvider,
         IComprovanteDaInscricaoRepository comprovantes)
     {
         ArgumentNullException.ThrowIfNull(dbContext);
         ArgumentNullException.ThrowIfNull(encryption);
-        ArgumentNullException.ThrowIfNull(blindIndex);
+        ArgumentNullException.ThrowIfNull(indiceDoCpf);
         ArgumentNullException.ThrowIfNull(timeProvider);
         ArgumentNullException.ThrowIfNull(comprovantes);
 
         _dbContext = dbContext;
         _encryption = encryption;
-        _indiceDoCpf = new CalculadorDoIndiceCegoDoCpf(blindIndex);
+        _indiceDoCpf = indiceDoCpf;
         _timeProvider = timeProvider;
         _comprovantes = comprovantes;
         _valores = new ValorGravadoDaResposta(encryption);
