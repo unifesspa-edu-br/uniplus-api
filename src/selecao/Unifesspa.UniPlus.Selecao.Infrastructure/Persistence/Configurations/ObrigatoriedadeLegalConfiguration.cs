@@ -2,6 +2,7 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Configurations;
 
 using System.Diagnostics.CodeAnalysis;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
@@ -142,6 +143,13 @@ internal sealed class ObrigatoriedadeLegalConfiguration
             .HasDatabaseName("ux_obrigatoriedades_legais_regra_codigo_ativos");
     }
 
+    private static readonly JsonSerializerOptions OpcoesDeLeitura = new(HashCanonicalComputer.CanonicalOptions)
+    {
+        UnmappedMemberHandling = JsonUnmappedMemberHandling.Disallow,
+        RespectRequiredConstructorParameters = true,
+        RespectNullableAnnotations = true,
+    };
+
     /// <summary>
     /// Serializa polimorficamente o predicado para JSON (atributos
     /// <c>[JsonPolymorphic]</c>/<c>[JsonDerivedType]</c> em
@@ -151,10 +159,10 @@ internal sealed class ObrigatoriedadeLegalConfiguration
     /// round-trip estável entre persistência, hash, histórico e exposição
     /// HTTP futura.
     /// </summary>
-    private static readonly ValueConverter<PredicadoObrigatoriedade, string> PredicadoConverter =
+    internal static readonly ValueConverter<PredicadoObrigatoriedade, string> PredicadoConverter =
         new(
             predicado => JsonSerializer.Serialize(predicado, HashCanonicalComputer.CanonicalOptions),
-            json => JsonSerializer.Deserialize<PredicadoObrigatoriedade>(json, HashCanonicalComputer.CanonicalOptions)!);
+            json => Deserialize(json));
 
     /// <summary>
     /// ValueComparer baseado em round-trip JSON com
@@ -163,7 +171,7 @@ internal sealed class ObrigatoriedadeLegalConfiguration
     /// dentro do predicado) sejam detectadas pelo change-tracker
     /// exatamente como invalidam o hash.
     /// </summary>
-    private static readonly ValueComparer<PredicadoObrigatoriedade> PredicadoComparer =
+    internal static readonly ValueComparer<PredicadoObrigatoriedade> PredicadoComparer =
         new(
             (a, b) => Serialize(a) == Serialize(b),
             v => v == null ? 0 : Serialize(v).GetHashCode(StringComparison.Ordinal),
@@ -172,6 +180,16 @@ internal sealed class ObrigatoriedadeLegalConfiguration
     private static string Serialize(PredicadoObrigatoriedade? v) =>
         v is null ? string.Empty : JsonSerializer.Serialize(v, HashCanonicalComputer.CanonicalOptions);
 
-    private static PredicadoObrigatoriedade Deserialize(string json) =>
-        JsonSerializer.Deserialize<PredicadoObrigatoriedade>(json, HashCanonicalComputer.CanonicalOptions)!;
+    private static PredicadoObrigatoriedade Deserialize(string json)
+    {
+        try
+        {
+            return JsonSerializer.Deserialize<PredicadoObrigatoriedade>(json, OpcoesDeLeitura)
+                ?? throw new JsonException("O predicado não é um objeto.");
+        }
+        catch (JsonException excecao)
+        {
+            throw new InvalidOperationException("Predicado de obrigatoriedade legal gravado inválido: documento JSON inválido.", excecao);
+        }
+    }
 }
