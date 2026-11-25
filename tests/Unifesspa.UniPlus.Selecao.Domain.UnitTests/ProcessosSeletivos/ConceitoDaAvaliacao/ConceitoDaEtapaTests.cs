@@ -2,6 +2,7 @@ namespace Unifesspa.UniPlus.Selecao.Domain.UnitTests.ProcessosSeletivos.Conceito
 
 using AwesomeAssertions;
 
+using Unifesspa.UniPlus.Kernel.Domain.ValueObjects;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
@@ -165,10 +166,10 @@ public sealed class ConceitoDaEtapaTests
             ("codigo", ConceitoDaEtapaErrorCodes.CodigoInvalido), ("nome", ConceitoDaEtapaErrorCodes.NomeInvalido));
     }
 
-    [Fact(DisplayName = "O código acima de 64 caracteres é recusado sem repetir o texto na mensagem")]
+    [Fact(DisplayName = "O código acima de 80 caracteres é recusado sem repetir o texto na mensagem")]
     public void Criar_CodigoLongo_RecusaSemRepetirOTexto()
     {
-        string longo = new('X', 65);
+        string longo = new('X', FormatoDoCodigo.ComprimentoMaximo + 1);
 
         Result<ConceitoDaEtapa> resultado = ConceitoDaEtapa.Criar(longo, "Nota", FormaDoConceito.Numerico, new EscalaInformada(0m, 10m, 2), null);
 

@@ -1,7 +1,6 @@
 namespace Unifesspa.UniPlus.Configuracao.Domain.Entities;
 
 using Unifesspa.UniPlus.Configuracao.Domain.Enums;
-using Unifesspa.UniPlus.Configuracao.Domain.Errors;
 using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Kernel.Domain.Entities;
 using Unifesspa.UniPlus.Kernel.Domain.Interfaces;
@@ -55,9 +54,8 @@ public sealed class TipoConceito : EntityBase, IAuditableEntity
     public static Result<TipoConceito> Criar(string? codigo, DefinicaoInformada definicao)
     {
         ArgumentNullException.ThrowIfNull(definicao);
-        List<FieldError> erros = [];
-        string? codigoNormalizado = CamposDoTipoConceito.Codigo.Obrigatorio(
-            codigo, "codigo", TipoConceitoErrorCodes.CodigoObrigatorio, erros);
+        FieldError? recusa = CamposDoTipoConceito.Codigo.Recusa(codigo, "codigo");
+        List<FieldError> erros = recusa is null ? [] : [recusa];
         Result<DefinicaoValidada> validada = definicao.Validar();
         erros.AddRange(validada.Errors);
         if (erros.Count > 0)
@@ -65,9 +63,14 @@ public sealed class TipoConceito : EntityBase, IAuditableEntity
             return Result<TipoConceito>.ValidationFailure(erros);
         }
 
-        TipoConceito tipo = new() { Codigo = codigoNormalizado!, Ativo = true };
-        tipo.Aplicar(validada.Value!);
-        return Result<TipoConceito>.Success(tipo);
+        return Result<TipoConceito>.Success(Novo(codigo!, validada.Value!));
+    }
+
+    private static TipoConceito Novo(string codigo, DefinicaoValidada definicao)
+    {
+        TipoConceito tipo = new() { Codigo = codigo, Ativo = true };
+        tipo.Aplicar(definicao);
+        return tipo;
     }
 
     /// <summary>Aplica uma definição já validada; o código, o id e a situação não mudam.</summary>

@@ -11,6 +11,7 @@ using Unifesspa.UniPlus.Infrastructure.Core.Persistence.CodigosDeContrato;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Protecao;
 using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
+using Unifesspa.UniPlus.Kernel.Domain.ValueObjects;
 
 public sealed class EtapaProcessoConfiguration : IEntityTypeConfiguration<EtapaProcesso>
 {
@@ -23,6 +24,7 @@ public sealed class EtapaProcessoConfiguration : IEntityTypeConfiguration<EtapaP
         builder.ToTable("etapas_processo", t =>
         {
             t.HasComment("Etapas de avaliação e suas definições em cada processo seletivo.");
+            t.HasCheckConstraint("ck_etapas_processo_tipo_etapa_codigo_formato", $"tipo_etapa_codigo ~ '{FormatoDoCodigo.ExpressaoNoBanco}'");
             // A coerência entre notas e passo é conferida pelo domínio.
             t.HasCheckConstraint("ck_etapas_processo_peso_positivo", "peso IS NULL OR peso > 0");
             t.HasCheckConstraint("ck_etapas_processo_nota_minima_nao_negativa", "nota_minima IS NULL OR nota_minima >= 0");
@@ -61,7 +63,7 @@ public sealed class EtapaProcessoConfiguration : IEntityTypeConfiguration<EtapaP
                 .HasColumnName("tipo_etapa_origem_id")
                 .IsRequired()
                 .HasComment("Identificador do tipo de etapa de origem, copiado na definição.");
-            tipo.Property(x => x.Codigo).HasComment("Código do tipo de etapa copiado na definição.").HasColumnName("tipo_etapa_codigo").HasMaxLength(64).IsRequired();
+            tipo.Property(x => x.Codigo).HasComment("Código do tipo de etapa copiado na definição.").HasColumnName("tipo_etapa_codigo").HasMaxLength(FormatoDoCodigo.ComprimentoMaximo).IsRequired();
             tipo.Property(x => x.Nome).HasComment("Nome do tipo de etapa copiado na definição.").HasColumnName("tipo_etapa_nome").HasMaxLength(200).IsRequired();
             tipo.Property(x => x.AdmitePontuacao).HasComment("Indica se o tipo de etapa admite pontuação, conforme a definição copiada.").HasColumnName("tipo_etapa_admite_pontuacao").IsRequired();
             tipo.Property(x => x.AdmiteEliminacao).HasComment("Indica se o tipo de etapa admite eliminação, conforme a definição copiada.").HasColumnName("tipo_etapa_admite_eliminacao").IsRequired();

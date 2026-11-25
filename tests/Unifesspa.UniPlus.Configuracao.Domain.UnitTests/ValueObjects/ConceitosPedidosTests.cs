@@ -77,15 +77,11 @@ public sealed class ConceitosPedidosTests
         resultado.Errors.Should().ContainSingle();
     }
 
-    [Fact(DisplayName = "Repetição só se distingue por espaço ou forma Unicode ainda é duplicada")]
-    public void Resolver_RepeticaoComEspacoEFormaUnicode_RecusaComoDuplicado()
+    [Fact(DisplayName = "Espaços no código não identificam o conceito")]
+    public void Resolver_CodigoComEspacos_RecusaComoInexistente()
     {
-        string composto = "AVALIAÇÃO";
-        string decomposto = " " + composto.Normalize(System.Text.NormalizationForm.FormD) + " ";
-
-        Result<IReadOnlyList<TipoConceito>> resultado = ConceitosPedidos.De([composto, decomposto]).Resolver([Conceito(composto)]);
-
-        resultado.DeveRecusarComo(TipoEtapaErrorCodes.ConceitoDuplicado, Campo);
+        Result<IReadOnlyList<TipoConceito>> resultado = ConceitosPedidos.De([" NOTA "]).Resolver([Conceito("NOTA")]);
+        resultado.DeveRecusarComo(TipoEtapaErrorCodes.ConceitoInexistente, Campo);
     }
 
     [Fact(DisplayName = "Inexistente, inativo e duplicado acumulam no mesmo lote, uma recusa por espécie")]
@@ -119,8 +115,8 @@ public sealed class ConceitosPedidosTests
         resultado.DeveRecusarComo(TipoEtapaErrorCodes.ConceitoInexistente, Campo);
     }
 
-    [Fact(DisplayName = "A consulta ao catálogo leva só os códigos distintos, aparados e sem os em branco")]
-    public void CodigosParaConsulta_TrazOsDistintosNormalizados()
+    [Fact(DisplayName = "A consulta ao catálogo leva apenas códigos válidos e distintos")]
+    public void CodigosParaConsulta_TrazOsValidosEDistintos()
     {
         ConceitosPedidos pedidos = ConceitosPedidos.De([" NOTA ", "NOTA", "", "PARECER"]);
 

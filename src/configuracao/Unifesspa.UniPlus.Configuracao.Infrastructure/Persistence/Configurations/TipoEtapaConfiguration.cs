@@ -7,12 +7,9 @@ using Unifesspa.UniPlus.Configuracao.Application.Persistence;
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Protecao;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
+using Unifesspa.UniPlus.Kernel.Domain.ValueObjects;
 
-[System.Diagnostics.CodeAnalysis.SuppressMessage(
-    "Performance",
-    "CA1812:Avoid uninstantiated internal classes",
-    Justification = "Instanciada pelo EF Core via reflection.")]
-internal sealed class TipoEtapaConfiguration : IEntityTypeConfiguration<TipoEtapa>
+public sealed class TipoEtapaConfiguration : IEntityTypeConfiguration<TipoEtapa>
 {
     private const string JuncaoDosConceitosAdmitidos = "conceitos_do_tipo_de_etapa";
 
@@ -26,6 +23,7 @@ internal sealed class TipoEtapaConfiguration : IEntityTypeConfiguration<TipoEtap
         // declara um caráter, e nenhum sobraria para escolher.
         builder.ToTable("tipos_etapa", t =>
         {
+            t.HasCheckConstraint("ck_tipos_etapa_codigo_formato", $"codigo ~ '{FormatoDoCodigo.ExpressaoNoBanco}'");
             t.HasCheckConstraint(
                 "ck_tipos_etapa_carater_admitido",
                 "admite_pontuacao OR admite_eliminacao");
@@ -43,7 +41,7 @@ internal sealed class TipoEtapaConfiguration : IEntityTypeConfiguration<TipoEtap
         });
         builder.HasKey(tipo => tipo.Id);
         builder.Property(tipo => tipo.Id).ValueGeneratedNever();
-        builder.Property(tipo => tipo.Codigo).HasMaxLength(64).IsRequired();
+        builder.Property(tipo => tipo.Codigo).HasMaxLength(FormatoDoCodigo.ComprimentoMaximo).IsRequired();
         builder.Property(tipo => tipo.Nome).HasMaxLength(200).IsRequired();
         builder.Property(tipo => tipo.Descricao).HasMaxLength(1000);
         builder.Property(tipo => tipo.Ativo).IsRequired();

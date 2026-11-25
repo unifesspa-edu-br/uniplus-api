@@ -4,8 +4,7 @@ namespace Unifesspa.UniPlus.Configuracao.Domain.Errors;
 public static class TipoEtapaErrorCodes
 {
     public const string CodigoObrigatorio = "TipoEtapa.CodigoObrigatorio";
-    public const string CodigoTamanho = "TipoEtapa.CodigoTamanho";
-    public const string CodigoCaractereInvalido = "TipoEtapa.CodigoCaractereInvalido";
+    public const string CodigoFormatoInvalido = "TipoEtapa.CodigoFormatoInvalido";
     public const string CodigoJaExiste = "TipoEtapa.CodigoJaExiste";
     public const string NomeObrigatorio = "TipoEtapa.NomeObrigatorio";
     public const string NomeTamanho = "TipoEtapa.NomeTamanho";

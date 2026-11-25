@@ -2637,9 +2637,9 @@
       "titulo": "Casas decimais do tipo de conceito inválidas"
     },
     {
-      "codigo": "uniplus.configuracao.tipo_conceito.codigo_caractere_invalido",
+      "codigo": "uniplus.configuracao.tipo_conceito.codigo_formato_invalido",
       "status": 422,
-      "titulo": "Código do tipo de conceito contém o caractere nulo ou caractere que não é texto"
+      "titulo": "Código do tipo de conceito fora do formato"
     },
     {
       "codigo": "uniplus.configuracao.tipo_conceito.codigo_ja_existe",
@@ -2650,11 +2650,6 @@
       "codigo": "uniplus.configuracao.tipo_conceito.codigo_obrigatorio",
       "status": 422,
       "titulo": "Código do tipo de conceito é obrigatório"
-    },
-    {
-      "codigo": "uniplus.configuracao.tipo_conceito.codigo_tamanho",
-      "status": 422,
-      "titulo": "Tamanho do código do tipo de conceito inválido"
     },
     {
       "codigo": "uniplus.configuracao.tipo_conceito.conflito_de_concorrencia",
@@ -2892,9 +2887,9 @@
       "titulo": "Declaração de que o tipo de etapa compõe a nota final é obrigatória"
     },
     {
-      "codigo": "uniplus.configuracao.tipo_etapa.codigo_caractere_invalido",
+      "codigo": "uniplus.configuracao.tipo_etapa.codigo_formato_invalido",
       "status": 422,
-      "titulo": "Código do tipo de etapa contém o caractere nulo ou caractere que não é texto"
+      "titulo": "Código do tipo de etapa fora do formato"
     },
     {
       "codigo": "uniplus.configuracao.tipo_etapa.codigo_ja_existe",
@@ -2905,11 +2900,6 @@
       "codigo": "uniplus.configuracao.tipo_etapa.codigo_obrigatorio",
       "status": 422,
       "titulo": "Código do tipo de etapa é obrigatório"
-    },
-    {
-      "codigo": "uniplus.configuracao.tipo_etapa.codigo_tamanho",
-      "status": 422,
-      "titulo": "Tamanho do código do tipo de etapa inválido"
     },
     {
       "codigo": "uniplus.configuracao.tipo_etapa.conceito_duplicado",

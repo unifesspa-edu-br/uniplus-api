@@ -94,16 +94,18 @@ public sealed class TipoEtapaConceitosAdmitidosEndpointTests
         (await CodigosAdmitidosAsync(client, id)).Should().BeEmpty();
     }
 
-    [Fact(DisplayName = "O código do conceito com espaços nas pontas é resolvido contra o catálogo")]
-    public async Task Criar_CodigoComEspacosNasPontas_EResolvido()
+    [Fact(DisplayName = "O código do conceito com espaços nas pontas é recusado")]
+    public async Task Criar_CodigoComEspacosNasPontas_Retorna422()
     {
         using HttpClient client = _fixture.Factory.CreateClient();
         string conceito = CodigoUnico();
         await CriarAsync(client, Numerico(conceito));
 
-        Guid id = await CriarTipoAsync(client, [$"  {conceito} "]);
+        using HttpResponseMessage resposta = await EnviarAsync(
+            client, HttpMethod.Post, Rota, CorpoDoTipo(CodigoUnico(), [$"  {conceito} "]));
 
-        (await CodigosAdmitidosAsync(client, id)).Should().Equal(conceito);
+        resposta.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
+        (await ErrosAsync(resposta)).Should().Equal(("avaliacao.conceitosAdmitidos", $"{Prefixo}conceito_inexistente"));
     }
 
     [Theory(DisplayName = "POST e PUT sem conceitosAdmitidos retornam 422 conceitos_admitidos_obrigatorio")]

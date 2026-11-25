@@ -2,6 +2,7 @@ namespace Unifesspa.UniPlus.Selecao.Domain.UnitTests.ValueObjects;
 
 using AwesomeAssertions;
 
+using Unifesspa.UniPlus.Kernel.Domain.ValueObjects;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
@@ -103,10 +104,10 @@ public sealed class TipoEtapaSnapshotTests
         resultado.Error!.Code.Should().Be("TipoEtapaSnapshot.CaractereInvalido");
     }
 
-    [Fact(DisplayName = "Criar com código acima de 64 caracteres falha")]
+    [Fact(DisplayName = "Criar com código acima de 80 caracteres falha")]
     public void Criar_CodigoAcimaDoLimite_Falha()
     {
-        string codigoLongo = new('A', 65);
+        string codigoLongo = new('A', FormatoDoCodigo.ComprimentoMaximo + 1);
 
         Result<TipoEtapaSnapshot> resultado = TipoEtapaSnapshot.Criar(OrigemId, codigoLongo, "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false);
 

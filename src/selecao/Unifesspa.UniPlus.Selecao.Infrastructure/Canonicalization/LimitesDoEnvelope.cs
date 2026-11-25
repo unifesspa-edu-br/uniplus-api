@@ -1,6 +1,7 @@
 namespace Unifesspa.UniPlus.Selecao.Infrastructure.Canonicalization;
 
 using Unifesspa.UniPlus.Kernel.Domain.Cidades;
+using Unifesspa.UniPlus.Kernel.Domain.ValueObjects;
 using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
@@ -35,7 +36,7 @@ public static class LimitesDoEnvelope
     // Texto — comprimento máximo (varchar).
     public const int NomeDoProcesso = DocumentoDoRascunho.NomeMaxLength;
     public const int EtapaNome = 300;
-    public const int TipoEtapaCodigo = 64;
+    public const int TipoEtapaCodigo = FormatoDoCodigo.ComprimentoMaximo;
     public const int TipoEtapaNome = 200;
     public const int ModalidadeCodigo = 60;
     public const int ModalidadeDescricao = 300;

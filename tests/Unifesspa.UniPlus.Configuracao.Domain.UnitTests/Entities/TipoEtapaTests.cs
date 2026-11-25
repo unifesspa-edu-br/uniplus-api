@@ -20,32 +20,8 @@ public sealed class TipoEtapaTests
         result.Value.Codigo.Should().Be("NOVO_TIPO");
     }
 
-    // Mesmo texto em duas representacoes Unicode: NFC (um unico code point por letra
-    // acentuada, aqui \u00C7 e \u00C3) e NFD (letra base + combining mark) - bytes
-    // diferentes, mesmo significado. Escapes em vez de literal acentuado no fonte, para o
-    // teste nao depender de qual normalizacao o editor/terminal aplicaria ao salvar o
-    // arquivo. Sem normalizar, duas grafias do "mesmo" codigo colidiriam com o indice unico
-    // do banco só por coincidencia de bytes, e um lookup por codigo (TipoEtapaReader) feito
-    // com a outra forma nunca encontraria o registro.
-    private const string CodigoComposto = "BANCA_HETEROIDENTIFICA\u00C7\u00C3O";
-    private const string NomeComposto = "Banca de Heteroidentifica\u00E7\u00E3o";
-
-    [Fact(DisplayName = "Criar normaliza codigo, nome e descricao para NFC")]
-    public void Criar_ComFormaDecomposta_NormalizaParaNfc()
-    {
-        string codigoDecomposto = CodigoComposto.Normalize(System.Text.NormalizationForm.FormD);
-        string nomeDecomposto = NomeComposto.Normalize(System.Text.NormalizationForm.FormD);
-        codigoDecomposto.Should().NotBe(CodigoComposto, "pre-condicao do teste: as duas formas tem bytes diferentes");
-
-        Result<TipoEtapa> result = TipoEtapa.Criar(codigoDecomposto, nomeDecomposto, null, true, true, false);
-
-        result.IsSuccess.Should().BeTrue();
-        result.Value!.Codigo.Should().Be(CodigoComposto);
-        result.Value.Nome.Should().Be(NomeComposto);
-    }
-
     [Theory(DisplayName = "Recusa U+0000 em todos os campos textuais na criação")]
-    [InlineData("codigo", TipoEtapaErrorCodes.CodigoCaractereInvalido)]
+    [InlineData("codigo", TipoEtapaErrorCodes.CodigoFormatoInvalido)]
     [InlineData("nome", TipoEtapaErrorCodes.NomeCaractereInvalido)]
     [InlineData("descricao", TipoEtapaErrorCodes.DescricaoCaractereInvalido)]
     public void Criar_CampoComCaractereNulo_Recusa(string campo, string codigoEsperado)
@@ -70,7 +46,7 @@ public sealed class TipoEtapaTests
     [InlineData("CODIGO\u202EA")]
     public void Criar_CodigoENomeComInvisivel_Recusam(string texto)
     {
-        TipoEtapa.Criar(texto, "Nome válido", null, true, true, false).Error!.Code.Should().Be(TipoEtapaErrorCodes.CodigoCaractereInvalido);
+        TipoEtapa.Criar(texto, "Nome válido", null, true, true, false).Error!.Code.Should().Be(TipoEtapaErrorCodes.CodigoFormatoInvalido);
         TipoEtapa.Criar("CODIGO_VALIDO", texto, null, true, true, false).Error!.Code.Should().Be(TipoEtapaErrorCodes.NomeCaractereInvalido);
     }
 
@@ -124,12 +100,12 @@ public sealed class TipoEtapaTests
     public void Criar_TresCamposInvalidos_AcumulaAsTresViolacoesRotuladas()
     {
         Result<TipoEtapa> resultado = TipoEtapa.Criar(
-            new string('A', 65), "", new string('b', 1001), admitePontuacao: true, admiteEliminacao: true, exigeCorrecaoIndependente: false);
+            new string('A', 81), "", new string('b', 1001), admitePontuacao: true, admiteEliminacao: true, exigeCorrecaoIndependente: false);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Errors.Should().HaveCount(3);
         resultado.Errors[0].Field.Should().Be("codigo");
-        resultado.Errors[0].Error.Code.Should().Be(TipoEtapaErrorCodes.CodigoTamanho);
+        resultado.Errors[0].Error.Code.Should().Be(TipoEtapaErrorCodes.CodigoFormatoInvalido);
         resultado.Errors[1].Field.Should().Be("nome");
         resultado.Errors[1].Error.Code.Should().Be(TipoEtapaErrorCodes.NomeObrigatorio);
         resultado.Errors[2].Field.Should().Be("descricao");

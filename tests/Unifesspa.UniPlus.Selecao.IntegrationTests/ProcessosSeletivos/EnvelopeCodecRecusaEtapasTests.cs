@@ -145,14 +145,14 @@ public sealed class EnvelopeCodecRecusaEtapasTests
         resultado.Error!.Code.Should().Be(ErrosCodecEnvelope.EnvelopeMalformado);
     }
 
-    [Fact(DisplayName = "etapas[].tipoEtapa.codigo acima do limite da coluna (64) é recusado")]
+    [Fact(DisplayName = "etapas[].tipoEtapa.codigo acima do limite da coluna (80) é recusado")]
     public void TipoEtapa_CodigoAcimaDoLimite_Recusa()
     {
         Result<EnvelopeReidratado> resultado = ReidratarComEnvelopeAdulterado(envelope =>
-            envelope["etapas"]!.AsArray()[0]!["tipoEtapa"]!["codigo"] = new string('A', 65));
+            envelope["etapas"]!.AsArray()[0]!["tipoEtapa"]!["codigo"] = new string('A', 81));
 
         resultado.IsFailure.Should().BeTrue(
-            "um código de 65 caracteres não cabe na coluna tipo_etapa_codigo (varchar 64) — recusar aqui evita " +
+            "um código de 81 caracteres não cabe na coluna tipo_etapa_codigo (varchar 80) — recusar aqui evita " +
             "DbUpdateException (500) no meio do descarte");
         resultado.Error!.Code.Should().Be(ErrosCodecEnvelope.EnvelopeMalformado);
     }

@@ -43,7 +43,7 @@ public sealed class TipoConceitoTests
         tipo.CasasDecimais.Should().BeNull();
     }
 
-    [Fact(DisplayName = "Normaliza código, nome e descrição para NFC e remove os espaços das pontas")]
+    [Fact(DisplayName = "Normaliza nome e descrição para NFC e remove os espaços das pontas")]
     public void Criar_ComFormaDecomposta_NormalizaParaNfc()
     {
         const string composto = "Avaliação";
@@ -51,9 +51,9 @@ public sealed class TipoConceitoTests
         decomposto.Should().NotBe(composto, "pré-condição: as duas formas têm bytes diferentes");
         DefinicaoInformada definicao = DefinicoesDeTipoConceito.Numerica() with { Nome = $" {decomposto} ", Descricao = $" {decomposto} " };
 
-        TipoConceito tipo = TipoConceito.Criar($" AVALIAÇÃO ".Normalize(NormalizationForm.FormD), definicao).Value!;
+        TipoConceito tipo = TipoConceito.Criar("AVALIACAO", definicao).Value!;
 
-        (tipo.Codigo, tipo.Nome, tipo.Descricao).Should().Be(("AVALIAÇÃO", composto, composto));
+        (tipo.Codigo, tipo.Nome, tipo.Descricao).Should().Be(("AVALIACAO", composto, composto));
     }
 
     [Fact(DisplayName = "Descrição em branco vira ausência de descrição")]
@@ -72,19 +72,19 @@ public sealed class TipoConceitoTests
         TipoConceito.Criar(codigo, DefinicoesDeTipoConceito.Numerica())
             .DeveRecusarComo(TipoConceitoErrorCodes.CodigoObrigatorio, "codigo");
 
-    [Fact(DisplayName = "Aceita código de 64 caracteres e recusa o de 65")]
+    [Fact(DisplayName = "Aceita código de 80 caracteres e recusa o de 81")]
     public void Criar_CodigoNoLimiteDeTamanho()
     {
-        TipoConceito.Criar(new string('A', 64), DefinicoesDeTipoConceito.Numerica()).IsSuccess.Should().BeTrue();
+        TipoConceito.Criar(new string('A', 80), DefinicoesDeTipoConceito.Numerica()).IsSuccess.Should().BeTrue();
 
-        TipoConceito.Criar(new string('A', 65), DefinicoesDeTipoConceito.Numerica())
-            .DeveRecusarComo(TipoConceitoErrorCodes.CodigoTamanho, "codigo");
+        TipoConceito.Criar(new string('A', 81), DefinicoesDeTipoConceito.Numerica())
+            .DeveRecusarComo(TipoConceitoErrorCodes.CodigoFormatoInvalido, "codigo");
     }
 
     [Fact(DisplayName = "Recusa código com o caractere nulo")]
     public void Criar_CodigoCaractereInvalido_Recusa() =>
         TipoConceito.Criar(Nulo, DefinicoesDeTipoConceito.Numerica())
-            .DeveRecusarComo(TipoConceitoErrorCodes.CodigoCaractereInvalido, "codigo");
+            .DeveRecusarComo(TipoConceitoErrorCodes.CodigoFormatoInvalido, "codigo");
 
     [Theory(DisplayName = "Recusa nome ausente")]
     [InlineData(null)]
@@ -128,7 +128,7 @@ public sealed class TipoConceitoTests
     public void Criar_CodigoENomeDeUmaLinha_RecusamInvisiveis(string texto)
     {
         TipoConceito.Criar(texto, DefinicoesDeTipoConceito.Numerica())
-            .DeveRecusarComo(TipoConceitoErrorCodes.CodigoCaractereInvalido, "codigo");
+            .DeveRecusarComo(TipoConceitoErrorCodes.CodigoFormatoInvalido, "codigo");
         TipoConceito.Criar("TIPO", DefinicoesDeTipoConceito.Numerica() with { Nome = texto })
             .DeveRecusarComo(TipoConceitoErrorCodes.NomeCaractereInvalido, "nome");
     }
