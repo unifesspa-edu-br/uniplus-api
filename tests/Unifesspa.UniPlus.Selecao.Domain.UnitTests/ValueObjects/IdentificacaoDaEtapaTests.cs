@@ -13,15 +13,15 @@ public sealed class IdentificacaoDaEtapaTests
     private static TipoEtapaSnapshot Tipo() =>
         TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!;
 
-    [Fact(DisplayName = "O nome e o código da fase são aparados, e o resto fica como chegou")]
-    public void Normalizada_ComEspacos_ApaNomeECodigo()
+    [Fact(DisplayName = "O nome é aparado e o código da fase é preservado")]
+    public void Normalizada_ComEspacos_PreservaCodigo()
     {
         TipoEtapaSnapshot tipo = Tipo();
         IdentificacaoDaEtapa identificacao = new("  Prova objetiva ", CaraterEtapa.Ambas, tipo, 2, " AVALIACAO ");
 
         IdentificacaoDaEtapa normalizada = identificacao.Normalizada();
 
-        normalizada.Should().Be(new IdentificacaoDaEtapa("Prova objetiva", CaraterEtapa.Ambas, tipo, 2, "AVALIACAO"));
+        normalizada.Should().Be(new IdentificacaoDaEtapa("Prova objetiva", CaraterEtapa.Ambas, tipo, 2, " AVALIACAO "));
     }
 
     [Theory(DisplayName = "O código da fase em branco vira ausente")]

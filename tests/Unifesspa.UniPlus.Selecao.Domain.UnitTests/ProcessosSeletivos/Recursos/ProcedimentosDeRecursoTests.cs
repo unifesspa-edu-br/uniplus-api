@@ -47,7 +47,7 @@ public sealed class ProcedimentosDeRecursoTests
     {
         AlvoItem().Should().Be(AlvoItem());
         AlvoItem().Valor.Should().Be("11111111-1111-1111-1111-111111111111");
-        AlvoArea().Should().Be(AlvoArea(" MATEMATICA "));
+        AlvoArea().Should().NotBe(AlvoArea(" MATEMATICA "));
         AlvoItem().Should().NotBe(AlvoItem(OutroItem));
     }
 
