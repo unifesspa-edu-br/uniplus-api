@@ -60,7 +60,7 @@
 #   NOME_PROCESSO (default: o nome do processo da Medicina 2027)
 #   IDENTIFICADOR_PROCESSO (default: psm-2027) — o identificador legível é único:
 #                 outro processo na mesma base precisa de outro valor
-#   INICIO_INSCRICAO, FIM_INSCRICAO (default: a inscrição abre ontem e dura um mês) —
+#   INICIO_INSCRICAO, FIM_INSCRICAO (default: a inscrição abre ontem e termina 31 dias depois) —
 #                 início e fim do período de inscrição, com data, hora e fuso de Belém,
 #                 como 2026-11-08T00:00:00-03:00
 #
@@ -317,10 +317,14 @@ setup_configuracao() {
     fases=$(api_get "/api/configuracao/fases-canonicas?limit=100")
     FASE_INSCRICAO_ID=$(jq -r '.[] | select(.codigo=="INSCRICAO") | .id' <<< "$fases")
     FASE_RESULTADO_ID=$(jq -r '.[] | select(.codigo=="RESULTADO_FINAL") | .id' <<< "$fases")
+    FASE_CHAMADA_ID=$(jq -r '.[] | select(.codigo=="CHAMADA") | .id' <<< "$fases")
+    FASE_MATRICULA_ID=$(jq -r '.[] | select(.codigo=="MATRICULA") | .id' <<< "$fases")
     FASE_HABILITACAO_ID=$(jq -r '.[] | select(.codigo=="HABILITACAO") | .id' <<< "$fases")
     exigir_id "FASE_INSCRICAO_ID" "$FASE_INSCRICAO_ID"
     exigir_id "FASE_RESULTADO_ID" "$FASE_RESULTADO_ID"
     exigir_id "FASE_HABILITACAO_ID" "$FASE_HABILITACAO_ID"
+    exigir_id "FASE_CHAMADA_ID" "$FASE_CHAMADA_ID"
+    exigir_id "FASE_MATRICULA_ID" "$FASE_MATRICULA_ID"
 
     # Os tipos de documento vêm do catálogo semeado (TipoDocumentoSeed): o
     # histórico prova o ensino médio cursado na área, e o comprovante de
@@ -729,20 +733,25 @@ banca_requerida() {
 
 definir_cronograma_fases() {
     log "Definir Cronograma de Fases (Anexo I deslocado, fuso America/Belem)"
-    # Anexo I: inscrição de 10/12/2026 a 10/01/2027 e 1ª chamada em 25/01/2027.
-    # As datas andam juntas, de modo que a inscrição tenha aberto ontem; o
-    # resultado final, em branco na minuta, fica entre o fim da inscrição e a
-    # 1ª chamada. America/Belém é UTC-3 fixo, sem horário de verão.
-    local hoje deslocamento inicio_inscricao fim_inscricao inicio_resultado fim_resultado inicio_habilitacao fim_habilitacao
+    # A data de início da inscrição no Anexo I é a âncora de todo o cronograma.
+    local hoje deslocamento inicio_inscricao fim_inscricao inicio_resultado fim_resultado inicio_habilitacao fim_habilitacao data_inicio
     hoje=$(TZ=America/Belem date +%Y-%m-%d)
-    deslocamento=$(( ($(date -d "$hoje -1 day" +%s) - $(date -d 2026-12-10 +%s)) / 86400 ))
+    inicio_inscricao="${INICIO_INSCRICAO:-$(TZ=America/Belem date -d "$hoje -1 day" +%Y-%m-%dT00:00:00-03:00)}"
+    [[ "$inicio_inscricao" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}T00:00:00-03:00$ ]] \
+        || fail "INICIO_INSCRICAO deve ter o formato AAAA-MM-DDT00:00:00-03:00."
+    data_inicio=${inicio_inscricao%%T*}
+    date -u -d "$data_inicio" +%F >/dev/null 2>&1 || fail "INICIO_INSCRICAO contém uma data inválida."
+    deslocamento=$(( ($(date -u -d "$data_inicio" +%s) - $(date -u -d 2026-12-16 +%s)) / 86400 ))
     na_data() { TZ=America/Belem date -d "$1 $deslocamento days" +%Y-%m-%dT"$2"-03:00; }
-    inicio_inscricao="${INICIO_INSCRICAO:-$(na_data 2026-12-10 00:00:00)}"
-    fim_inscricao="${FIM_INSCRICAO:-$(na_data 2027-01-10 23:59:59)}"
-    inicio_resultado=$(na_data 2027-01-11 00:00:00)
-    fim_resultado=$(na_data 2027-01-24 23:59:59)
-    inicio_habilitacao=$(na_data 2027-01-25 00:00:00)
-    fim_habilitacao=$(na_data 2027-01-29 23:59:59)
+    fim_inscricao=$(na_data 2027-01-16 23:59:59)
+    [ "${FIM_INSCRICAO:-$fim_inscricao}" = "$fim_inscricao" ] \
+        || fail "FIM_INSCRICAO deve ser $fim_inscricao para manter a duração da inscrição do Anexo I."
+    [[ "$hoje" > "$data_inicio" || "$hoje" = "$data_inicio" ]] && [[ "$hoje" < "${fim_inscricao%%T*}" || "$hoje" = "${fim_inscricao%%T*}" ]] \
+        || fail "A inscrição deve estar aberta hoje ($hoje). Ajuste INICIO_INSCRICAO e FIM_INSCRICAO."
+    inicio_resultado=$(na_data 2027-01-26 00:00:00)
+    fim_resultado=$(na_data 2027-01-29 00:00:00)
+    inicio_habilitacao=$(na_data 2027-01-29 00:00:00)
+    fim_habilitacao=$(na_data 2027-02-02 23:59:59)
 
     local fases banca_homologacao
     banca_homologacao=$(banca_requerida BANCA_HOMOLOGACAO_INSCRICOES)
@@ -761,7 +770,11 @@ definir_cronograma_fases() {
             \"bancasRequeridas\": [$banca_homologacao], \"regraRecurso\": null, \"tiposDeDecisao\": [\"HOMOLOGACAO_DAS_INSCRICOES\"],
             \"regraDeHomologacao\": {
                 \"resultadoAtoCodigo\": \"RESULTADO_CLASSIFICACAO\",
-                \"alternativas\": [{\"condicoes\": [{\"tipo\": \"RESULTADO_NO_RETORNO_DO_INEP\", \"edicaoDoExame\": 2026, \"motivoDesfavoravelCodigo\": \"SEM_RESULTADO_INEP\"}]}]
+                \"alternativas\": [
+                    {\"condicoes\": [{\"tipo\": \"RESULTADO_NO_RETORNO_DO_INEP\", \"edicaoDoExame\": 2024, \"motivoDesfavoravelCodigo\": \"SEM_RESULTADO_INEP\"}]},
+                    {\"condicoes\": [{\"tipo\": \"RESULTADO_NO_RETORNO_DO_INEP\", \"edicaoDoExame\": 2025, \"motivoDesfavoravelCodigo\": \"SEM_RESULTADO_INEP\"}]},
+                    {\"condicoes\": [{\"tipo\": \"RESULTADO_NO_RETORNO_DO_INEP\", \"edicaoDoExame\": 2026, \"motivoDesfavoravelCodigo\": \"SEM_RESULTADO_INEP\"}]}
+                ]
             }
         },
         {
@@ -769,17 +782,26 @@ definir_cronograma_fases() {
             \"inicio\": \"$inicio_habilitacao\", \"fim\": \"$fim_habilitacao\",
             \"produtos\": [],
             \"emiteParecerIndividual\": false, \"bancasRequeridas\": [], \"regraRecurso\": null
+        },
+        {
+            \"ordem\": 4, \"faseCanonicaId\": \"$FASE_CHAMADA_ID\",
+            \"inicio\": \"$(na_data 2027-02-18 00:00:00)\", \"fim\": \"$(na_data 2027-03-05 23:59:59)\",
+            \"produtos\": [], \"emiteParecerIndividual\": false, \"bancasRequeridas\": [], \"regraRecurso\": null
+        },
+        {
+            \"ordem\": 5, \"faseCanonicaId\": \"$FASE_MATRICULA_ID\",
+            \"inicio\": \"$(na_data 2027-02-19 00:00:00)\", \"fim\": \"$(na_data 2027-03-11 23:59:59)\",
+            \"produtos\": [], \"emiteParecerIndividual\": false, \"bancasRequeridas\": [], \"regraRecurso\": null
         }
     ]"
     # A fase de classificação, quando o roteiro declara uma etapa nela, ocupa o
     # intervalo entre o fim da inscrição e o resultado.
     if [ -n "${FASE_CLASSIFICACAO_ID:-}" ]; then
-        fases=$(jq -c --arg fase "$FASE_CLASSIFICACAO_ID" --arg inicio "$(na_data 2027-01-11 00:00:00)" --arg fim "$(na_data 2027-01-12 23:59:59)" \
+        fases=$(jq -c --arg fase "$FASE_CLASSIFICACAO_ID" --arg inicio "$(na_data 2027-01-17 00:00:00)" --arg fim "$(na_data 2027-01-25 23:59:59)" \
             --argjson banca_notas "$(banca_requerida BANCA_IMPORTACAO_NOTAS_INEP)" '
             [.[0], {ordem: 2, faseCanonicaId: $fase, inicio: $inicio, fim: $fim, produtos: [],
                 emiteParecerIndividual: false, bancasRequeridas: [$banca_notas], regraRecurso: null}]
             + (.[1:] | map(.ordem += 1))' <<< "$fases")
-        fases=$(jq -c --arg inicio "$(na_data 2027-01-13 00:00:00)" '.[2].inicio = $inicio' <<< "$fases")
     fi
     # Toda fase precisa de unidade responsável para o processo publicar; no roteiro, é a
     # unidade do processo.
