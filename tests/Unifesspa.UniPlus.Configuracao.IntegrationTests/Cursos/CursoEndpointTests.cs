@@ -86,14 +86,7 @@ public sealed class CursoEndpointTests
     public async Task Criar_ComAuthEIdempotency_Retorna201EPersiste()
     {
         string codigo = CodigoUnico();
-        var body = new
-        {
-            codigo,
-            nome = "Engenharia Civil",
-            grau = "Bacharelado",
-            nivelEnsino = "Graduação",
-            grupoAreaEnem = "TECNOLOGICA",
-        };
+        object body = CursoComGrupoTecnologico(codigo);
 
         using HttpClient client = _fixture.Factory.CreateClient();
         HttpResponseMessage criar = await EnviarPostAdmin(client, body);
@@ -102,19 +95,7 @@ public sealed class CursoEndpointTests
         Guid id = await criar.Content.ReadFromJsonAsync<Guid>();
         id.Should().NotBe(Guid.Empty);
 
-        HttpResponseMessage obter = await client.GetAsync(
-            new Uri($"/api/configuracao/cursos/{id}", UriKind.Relative));
-        obter.StatusCode.Should().Be(HttpStatusCode.OK);
-
-        using JsonDocument doc = JsonDocument.Parse(await obter.Content.ReadAsStringAsync());
-        JsonElement root = doc.RootElement;
-        root.GetProperty("codigo").GetString().Should().Be(codigo);
-        root.GetProperty("nome").GetString().Should().Be("Engenharia Civil");
-        root.GetProperty("grau").GetString().Should().Be("Bacharelado");
-        root.GetProperty("nivelEnsino").GetString().Should().Be("Graduação");
-        root.GetProperty("grupoAreaEnem").GetProperty("codigo").GetString().Should().Be("TECNOLOGICA");
-        root.GetProperty("grupoAreaEnem").GetProperty("rotulo").GetString().Should().Be("Tecnológica");
-        root.TryGetProperty("_links", out _).Should().BeTrue("HATEOAS Level 1 expõe _links.self (ADR-0029)");
+        await VerificarCursoCriadoAsync(client, id, codigo);
     }
 
     [Fact(DisplayName = "POST sem grupo de área do ENEM cria (201) e o GET retorna grupoAreaEnem nulo")]
@@ -148,15 +129,7 @@ public sealed class CursoEndpointTests
             new Uri($"/api/configuracao/cursos/{id}", UriKind.Relative));
         using JsonDocument doc = JsonDocument.Parse(await obter.Content.ReadAsStringAsync());
 
-        // A separação central da #748: o curso é matriz curricular pura; código
-        // e-MEC, local de oferta e unidade pertencem à OfertaCurso (#749).
-        string[] propriedadesDeOfertaProibidas =
-            ["codigoEmec", "localOfertaId", "unidadeId", "campusId", "regimeDeTurno", "turnos", "vagas"];
-        foreach (string proibida in propriedadesDeOfertaProibidas)
-        {
-            doc.RootElement.TryGetProperty(proibida, out _)
-                .Should().BeFalse($"o curso é matriz curricular pura e não deve expor '{proibida}'");
-        }
+        VerificarAusenciaDeCamposDeOferta(doc.RootElement);
     }
 
     [Theory(DisplayName = "POST com grupo de área do ENEM fora dos quatro códigos retorna 422 no campo do grupo, inclusive o rótulo")]
@@ -164,14 +137,7 @@ public sealed class CursoEndpointTests
     [InlineData("Tecnológica")]
     public async Task Criar_GrupoAreaEnemInvalido_Retorna422(string grupoAreaEnem)
     {
-        var body = new
-        {
-            codigo = CodigoUnico(),
-            nome = "Grupo inválido",
-            grau = "Bacharelado",
-            nivelEnsino = "Graduação",
-            grupoAreaEnem,
-        };
+        object body = CursoComGrupoInvalido(grupoAreaEnem);
 
         using HttpClient client = _fixture.Factory.CreateClient();
         HttpResponseMessage response = await EnviarPostAdmin(client, body);
@@ -227,8 +193,60 @@ public sealed class CursoEndpointTests
         criar.StatusCode.Should().Be(HttpStatusCode.Created);
         Guid id = await criar.Content.ReadFromJsonAsync<Guid>();
 
-        // PUT: código é editável; grupo de área do ENEM passa a TECNOLOGICA (rótulo "Tecnológica").
         string codigoNovo = CodigoUnico();
+        await AtualizarCursoAsync(client, id, codigoNovo);
+        await VerificarCursoAtualizadoAsync(client, id, codigoNovo);
+
+        await RemoverEVerificarCursoAsync(client, id);
+    }
+
+    private static async Task VerificarCursoCriadoAsync(HttpClient client, Guid id, string codigo)
+    {
+        HttpResponseMessage obter = await client.GetAsync(
+            new Uri($"/api/configuracao/cursos/{id}", UriKind.Relative));
+        obter.StatusCode.Should().Be(HttpStatusCode.OK);
+        using JsonDocument doc = JsonDocument.Parse(await obter.Content.ReadAsStringAsync());
+        JsonElement root = doc.RootElement;
+        root.GetProperty("codigo").GetString().Should().Be(codigo);
+        root.GetProperty("nome").GetString().Should().Be("Engenharia Civil");
+        root.GetProperty("grau").GetString().Should().Be("Bacharelado");
+        root.GetProperty("nivelEnsino").GetString().Should().Be("Graduação");
+        root.GetProperty("grupoAreaEnem").GetProperty("codigo").GetString().Should().Be("TECNOLOGICA");
+        root.GetProperty("grupoAreaEnem").GetProperty("rotulo").GetString().Should().Be("Tecnológica");
+        root.TryGetProperty("_links", out _).Should().BeTrue("HATEOAS Level 1 expõe _links.self (ADR-0029)");
+    }
+
+    private static void VerificarAusenciaDeCamposDeOferta(JsonElement curso)
+    {
+        string[] propriedadesDeOfertaProibidas =
+            ["codigoEmec", "localOfertaId", "unidadeId", "campusId", "regimeDeTurno", "turnos", "vagas"];
+        foreach (string proibida in propriedadesDeOfertaProibidas)
+        {
+            curso.TryGetProperty(proibida, out _)
+                .Should().BeFalse($"o curso é matriz curricular pura e não deve expor '{proibida}'");
+        }
+    }
+
+    private static object CursoComGrupoTecnologico(string codigo) => new
+    {
+        codigo,
+        nome = "Engenharia Civil",
+        grau = "Bacharelado",
+        nivelEnsino = "Graduação",
+        grupoAreaEnem = "TECNOLOGICA",
+    };
+
+    private static object CursoComGrupoInvalido(string grupoAreaEnem) => new
+    {
+        codigo = CodigoUnico(),
+        nome = "Grupo inválido",
+        grau = "Bacharelado",
+        nivelEnsino = "Graduação",
+        grupoAreaEnem,
+    };
+
+    private static async Task AtualizarCursoAsync(HttpClient client, Guid id, string codigoNovo)
+    {
         var bodyPut = new
         {
             id,
@@ -240,22 +258,25 @@ public sealed class CursoEndpointTests
         };
         HttpResponseMessage atualizar = await EnviarPutAdmin(client, id, bodyPut);
         atualizar.StatusCode.Should().Be(HttpStatusCode.NoContent);
+    }
 
+    private static async Task VerificarCursoAtualizadoAsync(HttpClient client, Guid id, string codigoNovo)
+    {
         HttpResponseMessage obter = await client.GetAsync(
             new Uri($"/api/configuracao/cursos/{id}", UriKind.Relative));
         obter.StatusCode.Should().Be(HttpStatusCode.OK);
-        using (JsonDocument doc = JsonDocument.Parse(await obter.Content.ReadAsStringAsync()))
-        {
-            JsonElement root = doc.RootElement;
-            root.GetProperty("codigo").GetString().Should().Be(codigoNovo);
-            root.GetProperty("nome").GetString().Should().Be("Engenharia Civil Integral");
-            root.GetProperty("grau").GetString().Should().Be("Licenciatura");
-            root.GetProperty("nivelEnsino").GetString().Should().Be("Mestrado");
-            root.GetProperty("grupoAreaEnem").GetProperty("codigo").GetString().Should().Be("TECNOLOGICA");
-            root.GetProperty("grupoAreaEnem").GetProperty("rotulo").GetString().Should().Be("Tecnológica");
-        }
+        using JsonDocument doc = JsonDocument.Parse(await obter.Content.ReadAsStringAsync());
+        JsonElement root = doc.RootElement;
+        root.GetProperty("codigo").GetString().Should().Be(codigoNovo);
+        root.GetProperty("nome").GetString().Should().Be("Engenharia Civil Integral");
+        root.GetProperty("grau").GetString().Should().Be("Licenciatura");
+        root.GetProperty("nivelEnsino").GetString().Should().Be("Mestrado");
+        root.GetProperty("grupoAreaEnem").GetProperty("codigo").GetString().Should().Be("TECNOLOGICA");
+        root.GetProperty("grupoAreaEnem").GetProperty("rotulo").GetString().Should().Be("Tecnológica");
+    }
 
-        // DELETE: soft-delete — sem oferta de curso viva (#749), a remoção não bloqueia.
+    private static async Task RemoverEVerificarCursoAsync(HttpClient client, Guid id)
+    {
         HttpResponseMessage remover = await EnviarDeleteAdmin(client, id);
         remover.StatusCode.Should().Be(HttpStatusCode.NoContent);
 

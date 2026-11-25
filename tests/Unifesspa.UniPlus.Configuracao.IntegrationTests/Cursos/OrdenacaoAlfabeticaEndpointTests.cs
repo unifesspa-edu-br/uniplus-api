@@ -55,12 +55,7 @@ public sealed class OrdenacaoAlfabeticaEndpointTests
         string bloco = Bloco();
         using HttpClient client = _fixture.Factory.CreateClient();
 
-        // Cadastro em ordem inversa: se a listagem devolvesse a ordem de gravação,
-        // a asserção falharia.
-        foreach (string sufixo in new[] { "Zoologia", "Matematica", "Biologia", "Agronomia" })
-        {
-            await CriarCursoAsync(client, $"{bloco} {sufixo}");
-        }
+        await CriarCursosAsync(client, bloco, ["Zoologia", "Matematica", "Biologia", "Agronomia"]);
 
         IReadOnlyList<string> nomes = await ListarNomesDoBlocoAsync(client, Cursos, bloco);
 
@@ -77,16 +72,10 @@ public sealed class OrdenacaoAlfabeticaEndpointTests
         string bloco = Bloco();
         using HttpClient client = _fixture.Factory.CreateClient();
 
-        foreach (string sufixo in new[] { "Zootecnia", "Ástrofisica", "biologia", "Ciências Contábeis" })
-        {
-            await CriarCursoAsync(client, $"{bloco} {sufixo}");
-        }
+        await CriarCursosAsync(client, bloco, ["Zootecnia", "Ástrofisica", "biologia", "Ciências Contábeis"]);
 
         IReadOnlyList<string> nomes = await ListarNomesDoBlocoAsync(client, Cursos, bloco);
 
-        // "Ástrofisica" antes de "biologia" só acontece se o acento for removido
-        // antes de comparar; "biologia" minúsculo antes de "Ciências" só se a
-        // caixa também sair. Comparando o texto cru, os dois viriam por último.
         nomes.Should().Equal(
             $"{bloco} Ástrofisica",
             $"{bloco} biologia",
@@ -101,9 +90,6 @@ public sealed class OrdenacaoAlfabeticaEndpointTests
         string nome = $"{bloco} Homonimo";
         using HttpClient client = _fixture.Factory.CreateClient();
 
-        // Cadastrados fora da ordem dos códigos; dois cursos vivos não podem
-        // compartilhar código, então o desempate observável é entre códigos
-        // diferentes sob o mesmo nome.
         await CriarCursoAsync(client, nome, codigo: $"{bloco}-C");
         await CriarCursoAsync(client, nome, codigo: $"{bloco}-A");
         await CriarCursoAsync(client, nome, codigo: $"{bloco}-B");
