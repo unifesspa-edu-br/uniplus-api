@@ -165,7 +165,7 @@ public static class PredicadoDnfJson
         Result<PredicadoDnf> lido = DeJson(predicado);
         return lido.IsSuccess
             ? Result<Obrigatoriedade>.Success(Obrigatoriedade.DaForma(TipoObrigatoriedade.Quando, lido.Value)!)
-            : Result<Obrigatoriedade>.Failure(lido.Error!);
+            : Result<Obrigatoriedade>.ValidationFailure(lido.Errors);
     }
 
     /// <summary>O impedimento: a condição e a mensagem ao candidato.</summary>
@@ -202,7 +202,7 @@ public static class PredicadoDnfJson
         Result<PredicadoDnf> lido = DeJson(quando);
         return lido.IsSuccess
             ? Result<Impedimento?>.Success(new Impedimento(lido.Value!, mensagem))
-            : Result<Impedimento?>.Failure(lido.Error!);
+            : Result<Impedimento?>.ValidationFailure(lido.Errors);
     }
 
     private static Result<PredicadoDnf> Falha(string mensagem, string campo = "") =>

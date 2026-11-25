@@ -5,6 +5,7 @@ using System.Text.Json;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Converters;
 using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Regras.ValueObjects;
 
@@ -32,7 +33,8 @@ internal static class RegrasPadraoJson
 
     public static IReadOnlyList<RegraDerivacao> Desserializar(string json)
     {
-        IReadOnlyList<RegraGravada> gravadas = JsonSerializer.Deserialize<IReadOnlyList<RegraGravada>>(json, Opcoes) ?? [];
+        IReadOnlyList<RegraGravada> gravadas = ObjetoDeValorGravado.DesserializarDocumento(
+            () => JsonSerializer.Deserialize<IReadOnlyList<RegraGravada>>(json, Opcoes) ?? [], nameof(RegraDerivacao));
         return [.. gravadas.Select(Remontar)];
     }
 
@@ -41,7 +43,7 @@ internal static class RegrasPadraoJson
         PredicadoDnf quando = PredicadoDnfGravado.Remontar(gravada.Quando);
         return gravada.Contribui is null
             ? RegraDerivacao.CriarBooleana(quando)
-            : PredicadoDnfGravado.Exigir(RegraDerivacao.Criar(quando, gravada.Contribui));
+            : ObjetoDeValorGravado.Reidratar(RegraDerivacao.Criar(quando, gravada.Contribui), nameof(RegraDerivacao));
     }
 
     private sealed record RegraGravada(string? Contribui, IReadOnlyList<IReadOnlyList<PredicadoDnfGravado.CondicaoGravada>> Quando);

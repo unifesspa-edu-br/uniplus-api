@@ -6,13 +6,14 @@ using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Converters;
 
 public sealed class RecusasDoPredicadoNoConteudoDoModeloTests
 {
-    [Fact]
-    public void Desserializar_DuasCondicoesInvalidas_CitaSomenteAPrimeiraCausa()
+    [Fact(DisplayName = "As recusas do predicado informam os códigos na ordem sem expor o conteúdo")]
+    public void Desserializar_DuasCondicoesInvalidas_InformaOsCodigosNaOrdem()
     {
-        const string documento = """{"titulo":"Modelo","paginas":[{"codigo":"DADOS","ordem":0,"tipo":"SECAO","titulo":"Dados","exibicao":[[{"codigoDoDado":"DADO_A","operador":"ALGUM_DE","valor":true},{"codigoDoDado":"DADO_B","operador":"IGUAL","valor":[]}]]}],"itens":[],"termos":[],"pressupostos":[],"grupos":[]}""";
+        const string documento = """{"titulo":"Modelo","paginas":[{"codigo":"DADOS","ordem":0,"tipo":"SECAO","titulo":"Dados","exibicao":[[{"codigoDoDado":"DADO_A","operador":"INEXISTENTE","valor":"valor-gravado-ficticio-7f3a"},{"codigoDoDado":"DADO_B","operador":"IGUAL","valor":[]}]]}],"itens":[],"termos":[],"pressupostos":[],"grupos":[]}""";
         Action leitura = () => ConteudoDoModeloJson.Desserializar(documento);
 
-        leitura.Should().Throw<InvalidOperationException>().WithMessage(
-            "O conteúdo gravado do modelo de formulário não remonta: Os operadores ALGUM_DE e NENHUM_DE exigem um array JSON, sem itens de texto em branco (array vazio é aceito).");
+        string mensagem = leitura.Should().Throw<InvalidOperationException>().Which.Message;
+        mensagem.Should().Be("Dado inválido no banco ao reidratar ConteudoDoModelo: CondicaoDnf.OperadorInvalido, CondicaoDnf.FormaIncoerenteComOperador. Verifique se houve alteração manual da coluna fora do fluxo da aplicação.");
+        mensagem.Should().NotContain("valor-gravado-ficticio-7f3a").And.NotContain("operadores");
     }
 }

@@ -2,9 +2,9 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Converters;
 
 using System.Text.Json;
 
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Converters;
 using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
-using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.ValueObjects;
 
 /// <summary>
@@ -20,20 +20,16 @@ internal static class PredicadoDnfGravado
 
     public static PredicadoDnf Remontar(IReadOnlyList<IReadOnlyList<CondicaoGravada>> clausulas)
     {
-        List<(int Clausula, CondicaoDnf Condicao)> linhas = [];
-        for (int i = 0; i < clausulas.Count; i++)
-        {
-            linhas.AddRange(clausulas[i].Select(c =>
-                (i, Exigir(CondicaoDnf.Criar(c.CodigoDoDado, CatalogoDe<Operador>.Obter(c.Operador), c.Valor)))));
-        }
+        List<(int Clausula, Result<CondicaoDnf> Condicao)> lidas =
+            [.. clausulas.SelectMany(static (condicoes, i) => condicoes.Select(c => (i, CondicaoDnf.CriarInformada(c.CodigoDoDado, c.Operador, c.Valor))))];
+        List<FieldError> recusas = [.. lidas.SelectMany(static l => l.Condicao.Errors)];
 
-        return Exigir(PredicadoDnf.CriarDeCondicoesAgrupadas(linhas));
+        return ObjetoDeValorGravado.Reidratar(
+            recusas.Count > 0
+                ? Result<PredicadoDnf>.ValidationFailure(recusas)
+                : PredicadoDnf.CriarDeCondicoesAgrupadas([.. lidas.Select(static l => (l.Clausula, l.Condicao.Value!))]),
+            nameof(PredicadoDnf));
     }
-
-    internal static T Exigir<T>(Result<T> resultado) =>
-        resultado.IsSuccess
-            ? resultado.Value!
-            : throw new InvalidOperationException($"Predicado gravado inválido: {resultado.Error!.Message}");
 
     internal sealed record CondicaoGravada(string CodigoDoDado, string Operador, JsonElement Valor);
 }

@@ -24,7 +24,7 @@ public sealed class OperadorNoModeloDaSelecaoTests
     {
         FluentActions.Invoking(() => ConversoresDeRegras.PredicadoObrigatorio.ConvertFromProvider(json))
             .Should().Throw<InvalidOperationException>()
-            .WithMessage("*chave 'fato' não é aceita; use 'codigoDoDado'*");
+            .WithMessage("Dado inválido no banco ao reidratar PredicadoDnf: PredicadoDnf.FormaJsonInvalida. Verifique se houve alteração manual da coluna fora do fluxo da aplicação.");
     }
 
     public static TheoryData<Type> EntidadesComOperador => new()
