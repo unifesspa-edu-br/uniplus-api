@@ -85,6 +85,7 @@ Aplicada automaticamente via NuGet `EFCore.NamingConventions` + `UseSnakeCaseNam
 | `string` (texto longo) | `text` | Quando o conteúdo varia muito (>1000 chars) |
 | `decimal` (dinheiro/nota) | `numeric(p,s)` | Sempre `HasPrecision(p, s)` explícito |
 | Enum com código de contrato | `text` ou `varchar(N)` | Gravado pelo código declarado, com conversão por convenção ([ADR-0176](adrs/0176-codigo-de-contrato-dos-enums-declarado-por-atributo-e-lido-por-catalogo-no-kernel.md)) |
+| Restrição ou filtro de enum com código de contrato | SQL | Montado por `SqlDosCodigosDeContrato` |
 | Enum ainda sem código de contrato | `int4` | Conversão para inteiro conforme o mapeamento existente |
 | JSON estruturado | `jsonb` | Sempre `jsonb`, nunca `json` |
 | Bool | `boolean` | EF padrão |
