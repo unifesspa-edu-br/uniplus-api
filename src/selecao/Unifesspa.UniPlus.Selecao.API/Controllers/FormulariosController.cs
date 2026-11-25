@@ -12,6 +12,7 @@ using Http;
 
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Routing;
 
 using Unifesspa.UniPlus.Application.Abstractions.Messaging;
 using Unifesspa.UniPlus.Infrastructure.Core.Errors;
@@ -70,6 +71,7 @@ public sealed class FormulariosController : ControllerBase
     /// </para>
     /// </remarks>
     [HttpGet("processos-seletivos/{id:guid}/formularios/{finalidade}")]
+    [EndpointName("ObterFormularioDoProcesso")]
     [AllowAnonymous]
     [VendorMediaType(Resource = "formulario", Versions = [2])]
     [ProducesResponseType(typeof(FormularioApresentadoDoProcessoDto), StatusCodes.Status200OK)]
@@ -99,6 +101,7 @@ public sealed class FormulariosController : ControllerBase
     /// administrador interpreta antes de publicar; nada é gravado.
     /// </summary>
     [HttpGet("admin/processos-seletivos/{id:guid}/formularios/{finalidade}/apresentacao")]
+    [EndpointName("ObterFormularioDoProcessoParaManutencao")]
     [Authorize]
     [ExigePermissaoNoProcesso(PermissaoSelecao.ProcessosConfigurar)]
     [VendorMediaType(Resource = "formulario", Versions = [2])]
@@ -126,6 +129,7 @@ public sealed class FormulariosController : ControllerBase
     /// Editável só em rascunho.
     /// </summary>
     [HttpPut("admin/processos-seletivos/{id:guid}/formularios/{finalidade}")]
+    [EndpointName("DefinirFormularioDoProcesso")]
     [Authorize]
     [ExigePermissaoNoProcesso(PermissaoSelecao.ProcessosConfigurar)]
     [RequiresIdempotencyKey]
@@ -149,6 +153,7 @@ public sealed class FormulariosController : ControllerBase
 
     /// <summary>Remove o formulário da finalidade, com os itens e os termos dele. Só em rascunho.</summary>
     [HttpDelete("admin/processos-seletivos/{id:guid}/formularios/{finalidade}")]
+    [EndpointName("RemoverFormularioDoProcesso")]
     [Authorize]
     [ExigePermissaoNoProcesso(PermissaoSelecao.ProcessosConfigurar)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
@@ -166,6 +171,7 @@ public sealed class FormulariosController : ControllerBase
     /// e a pré-condição. Cada fato é coletado por um só formulário do processo.
     /// </summary>
     [HttpPut("admin/processos-seletivos/{id:guid}/formularios/{finalidade}/itens")]
+    [EndpointName("DefinirItensDoFormularioDoProcesso")]
     [Authorize]
     [ExigePermissaoNoProcesso(PermissaoSelecao.ProcessosConfigurar)]
     [RequiresIdempotencyKey]
@@ -192,6 +198,7 @@ public sealed class FormulariosController : ControllerBase
     /// catálogo por termo e versão (UNI-REQ-0086).
     /// </summary>
     [HttpPut("admin/processos-seletivos/{id:guid}/formularios/{finalidade}/termos")]
+    [EndpointName("DefinirTermosDoFormularioDoProcesso")]
     [Authorize]
     [ExigePermissaoNoProcesso(PermissaoSelecao.ProcessosConfigurar)]
     [RequiresIdempotencyKey]
@@ -219,6 +226,7 @@ public sealed class FormulariosController : ControllerBase
     /// descartou e derivou (UNI-REQ-0144). Só em rascunho; mudar o modelo depois não muda o processo.
     /// </summary>
     [HttpPost("admin/processos-seletivos/{id:guid}/formularios/aplicacoes-de-modelo")]
+    [EndpointName("AplicarModeloDeFormularioAoProcesso")]
     [Authorize]
     [ExigePermissaoNoProcesso(PermissaoSelecao.ProcessosConfigurar)]
     [RequiresIdempotencyKey]

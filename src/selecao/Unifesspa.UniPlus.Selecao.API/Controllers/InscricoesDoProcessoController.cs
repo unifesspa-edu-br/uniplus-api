@@ -14,6 +14,7 @@ using Authorization;
 
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Routing;
 
 using Unifesspa.UniPlus.Application.Abstractions.Messaging;
 using Unifesspa.UniPlus.Infrastructure.Core.Errors;
@@ -56,6 +57,7 @@ public sealed class InscricoesDoProcessoController : ControllerBase
     /// acessos.
     /// </summary>
     [HttpGet]
+    [EndpointName("ListarInscricoesDoProcesso")]
     [ResponseCache(NoStore = true, Location = ResponseCacheLocation.None)]
     [ExigePermissaoNoProcesso(PermissaoSelecao.InscricoesConsultar, Alvo = AlvoDaPermissaoNoProcesso.Inscricoes)]
     [VendorMediaType(Resource = "inscricao-do-processo", Versions = [1])]
@@ -92,6 +94,7 @@ public sealed class InscricoesDoProcessoController : ControllerBase
     /// <param name="cancellationToken">Token de cancelamento.</param>
     [ResponseCache(NoStore = true, Location = ResponseCacheLocation.None)]
     [HttpGet("{inscricaoId:guid}")]
+    [EndpointName("ObterInscricaoDoProcesso")]
     [VendorMediaType(Resource = "inscricao-administrativa", Versions = [1])]
     [ProducesResponseType(typeof(InscricaoAdministrativaDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
@@ -121,6 +124,7 @@ public sealed class InscricoesDoProcessoController : ControllerBase
     /// <param name="cancellationToken">Token de cancelamento.</param>
     [ResponseCache(NoStore = true, Location = ResponseCacheLocation.None)]
     [HttpPost("{inscricaoId:guid}/campos/{fatoCodigo:regex(^(?=.{{1,50}}$)[[A-Z]][[A-Z0-9]]*(_[[A-Z0-9]]+)*$)}/revelacao")]
+    [EndpointName("RevelarCampoDaInscricao")]
     [VendorMediaType(Resource = "campo-revelado-da-inscricao", Versions = [1])]
     [ProducesResponseType(typeof(CampoReveladoDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
@@ -145,6 +149,7 @@ public sealed class InscricoesDoProcessoController : ControllerBase
     /// </summary>
     [ResponseCache(NoStore = true, Location = ResponseCacheLocation.None)]
     [HttpGet("{inscricaoId:guid}/documentos/arquivos/{arquivoId:guid}/acesso")]
+    [EndpointName("ObterAcessoAoDocumentoDeInscricaoDoProcesso")]
     [VendorMediaType(Resource = "acesso-arquivo-da-inscricao", Versions = [1])]
     [ProducesResponseType(typeof(AcessoArquivoDoCandidatoDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
@@ -173,6 +178,7 @@ public sealed class InscricoesDoProcessoController : ControllerBase
     /// <param name="cancellationToken">Token de cancelamento.</param>
     [ResponseCache(NoStore = true, Location = ResponseCacheLocation.None)]
     [HttpGet("{inscricaoId:guid}/comprovantes/{numero:int}")]
+    [EndpointName("EmitirComprovanteDeInscricaoDoProcesso")]
     [VendorMediaType(Resource = "comprovante-inscricao", Versions = [1])]
     [ProducesResponseType(typeof(ComprovanteDaInscricaoDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]

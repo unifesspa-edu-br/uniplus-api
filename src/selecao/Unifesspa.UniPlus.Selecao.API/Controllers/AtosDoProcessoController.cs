@@ -9,6 +9,7 @@ using Contracts.Requests;
 
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Routing;
 
 using Unifesspa.UniPlus.Application.Abstractions.Messaging;
 using Unifesspa.UniPlus.Infrastructure.Core.Errors;
@@ -62,6 +63,7 @@ public sealed class AtosDoProcessoController : ControllerBase
     /// </remarks>
     [ExigePermissaoNoProcesso(PermissaoSelecao.ProcessosPublicar, ParametroDaRota = RotaDoProcesso.ParametroAninhado)]
     [HttpPost]
+    [EndpointName("PublicarAtoAvulsoDoProcesso")]
     [RequiresIdempotencyKey]
     [ProducesResponseType(typeof(AtoPublicadoDto), StatusCodes.Status201Created)]
     [EmiteHeader("Location", DescricaoDoLocationDoAtoPublicado, Status = "201")]
@@ -91,6 +93,7 @@ public sealed class AtosDoProcessoController : ControllerBase
     /// </summary>
     [ExigePermissaoNoProcesso(PermissaoSelecao.ProcessosAcompanhar, ParametroDaRota = RotaDoProcesso.ParametroAninhado)]
     [HttpGet]
+    [EndpointName("ListarAtosDoProcesso")]
     [VendorMediaType(Resource = "ato-do-processo", Versions = [1])]
     [ProducesResponseType(typeof(IEnumerable<AtoDoProcessoDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
@@ -109,6 +112,7 @@ public sealed class AtosDoProcessoController : ControllerBase
     /// </summary>
     [ExigePermissaoNoProcesso(PermissaoSelecao.ProcessosAcompanhar, ParametroDaRota = RotaDoProcesso.ParametroAninhado)]
     [HttpGet("{atoId:guid}")]
+    [EndpointName("ObterAtoDoProcesso")]
     [VendorMediaType(Resource = "ato-do-processo", Versions = [1])]
     [ProducesResponseType(typeof(AtoDoProcessoDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound,

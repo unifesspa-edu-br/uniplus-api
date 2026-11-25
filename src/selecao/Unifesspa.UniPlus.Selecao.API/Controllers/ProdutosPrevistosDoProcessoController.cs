@@ -9,6 +9,7 @@ using Contracts.Requests;
 
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Routing;
 
 using Unifesspa.UniPlus.Application.Abstractions.Messaging;
 using Unifesspa.UniPlus.Infrastructure.Core.Errors;
@@ -50,6 +51,7 @@ public sealed class ProdutosPrevistosDoProcessoController : ControllerBase
     /// </summary>
     [ExigePermissaoNoProcesso(PermissaoSelecao.ProcessosAcompanhar, ParametroDaRota = RotaDoProcesso.ParametroAninhado)]
     [HttpGet]
+    [EndpointName("ListarPublicacoesPrevistasDoProcesso")]
     [VendorMediaType(Resource = "produtos-previstos-do-processo", Versions = [1])]
     [ProducesResponseType(typeof(ProdutosPrevistosDoProcessoDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
@@ -80,6 +82,7 @@ public sealed class ProdutosPrevistosDoProcessoController : ControllerBase
     /// </remarks>
     [ExigePermissaoNoProcesso(PermissaoSelecao.ProcessosPublicar, ParametroDaRota = RotaDoProcesso.ParametroAninhado)]
     [HttpPost("{produtoId:guid}/publicacoes")]
+    [EndpointName("PublicarPublicacaoPrevista")]
     [RequiresIdempotencyKey]
     [ProducesResponseType(typeof(AtoPublicadoDto), StatusCodes.Status201Created)]
     [EmiteHeader("Location", AtosDoProcessoController.DescricaoDoLocationDoAtoPublicado, Status = "201")]

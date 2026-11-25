@@ -4,6 +4,7 @@ using System.Collections.Generic;
 
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Routing;
 
 using Unifesspa.UniPlus.Application.Abstractions.Messaging;
 using Unifesspa.UniPlus.Application.Abstractions.Respostas;
@@ -54,6 +55,7 @@ public sealed class VocabulariosController : ControllerBase
     /// fundamento, ainda fora desta configuração.
     /// </summary>
     [HttpGet("fundamentos-isencao")]
+    [EndpointName("ListarFundamentosDeIsencao")]
     [AllowAnonymous]
     [VendorMediaType(Resource = "fundamento-isencao", Versions = [1])]
     [ProducesResponseType(typeof(IEnumerable<FundamentoIsencaoDto>), StatusCodes.Status200OK)]
@@ -72,6 +74,7 @@ public sealed class VocabulariosController : ControllerBase
     /// configuração remove e o campo cuja publicação exige justificativa.
     /// </summary>
     [HttpGet("campos-divulgacao")]
+    [EndpointName("ListarCamposDeDivulgacao")]
     [AllowAnonymous]
     [VendorMediaType(Resource = "campo-divulgacao", Versions = [1])]
     [ProducesResponseType(typeof(IEnumerable<CampoDivulgacaoDto>), StatusCodes.Status200OK)]
@@ -91,6 +94,7 @@ public sealed class VocabulariosController : ControllerBase
     /// sem que a pessoa possa agir.
     /// </summary>
     [HttpGet("unidades-do-prazo-de-recurso")]
+    [EndpointName("ListarUnidadesDoPrazoDeRecurso")]
     [AllowAnonymous]
     [VendorMediaType(Resource = "unidade-do-prazo-de-recurso", Versions = [1])]
     [ProducesResponseType(typeof(IEnumerable<CodigoComRotulo<UnidadePrazo>>), StatusCodes.Status200OK)]
@@ -109,6 +113,7 @@ public sealed class VocabulariosController : ControllerBase
     /// explicação do que ela significa para o processo.
     /// </summary>
     [HttpGet("efeitos-suspensivos")]
+    [EndpointName("ListarEfeitosSuspensivos")]
     [AllowAnonymous]
     [VendorMediaType(Resource = "efeito-suspensivo", Versions = [1])]
     [ProducesResponseType(typeof(IEnumerable<CodigoComDescricao<EfeitoSuspensivo>>), StatusCodes.Status200OK)]
@@ -127,6 +132,7 @@ public sealed class VocabulariosController : ControllerBase
     /// do que ela significa para quem recorre.
     /// </summary>
     [HttpGet("guardas-da-vaga")]
+    [EndpointName("ListarGuardasDaVaga")]
     [AllowAnonymous]
     [VendorMediaType(Resource = "guarda-da-vaga", Versions = [1])]
     [ProducesResponseType(typeof(IEnumerable<CodigoComDescricao<GuardaDaVaga>>), StatusCodes.Status200OK)]
@@ -142,6 +148,7 @@ public sealed class VocabulariosController : ControllerBase
 
     /// <summary>Lista os modos de deliberação com código e rótulo.</summary>
     [HttpGet("vocabularios/modos-deliberacao")]
+    [EndpointName("ListarModosDeDeliberacao")]
     [AllowAnonymous]
     [VendorMediaType(Resource = "modo-deliberacao", Versions = [1])]
     [ProducesResponseType(typeof(IEnumerable<CodigoComRotulo<ModoDeDeliberacao>>), StatusCodes.Status200OK)]
@@ -157,6 +164,7 @@ public sealed class VocabulariosController : ControllerBase
 
     /// <summary>Lista os critérios de votação com código e rótulo.</summary>
     [HttpGet("vocabularios/criterios-votacao")]
+    [EndpointName("ListarCriteriosDeVotacao")]
     [AllowAnonymous]
     [VendorMediaType(Resource = "criterio-votacao", Versions = [1])]
     [ProducesResponseType(typeof(IEnumerable<CodigoComRotulo<CriterioDeVotacao>>), StatusCodes.Status200OK)]
@@ -172,6 +180,7 @@ public sealed class VocabulariosController : ControllerBase
 
     /// <summary>Lista os desempates da votação com código e rótulo.</summary>
     [HttpGet("vocabularios/desempates-votacao")]
+    [EndpointName("ListarDesempatesDaVotacao")]
     [AllowAnonymous]
     [VendorMediaType(Resource = "desempate-votacao", Versions = [1])]
     [ProducesResponseType(typeof(IEnumerable<CodigoComRotulo<DesempateDaVotacao>>), StatusCodes.Status200OK)]
@@ -187,6 +196,7 @@ public sealed class VocabulariosController : ControllerBase
 
     /// <summary>Lista os encerramentos da votação com código e rótulo.</summary>
     [HttpGet("vocabularios/encerramentos-votacao")]
+    [EndpointName("ListarEncerramentosDaVotacao")]
     [AllowAnonymous]
     [VendorMediaType(Resource = "encerramento-votacao", Versions = [1])]
     [ProducesResponseType(typeof(IEnumerable<CodigoComRotulo<EncerramentoDaVotacao>>), StatusCodes.Status200OK)]
@@ -202,6 +212,7 @@ public sealed class VocabulariosController : ControllerBase
 
     /// <summary>Lista os resultados sem unanimidade com código e rótulo.</summary>
     [HttpGet("vocabularios/resultados-sem-unanimidade")]
+    [EndpointName("ListarResultadosSemUnanimidade")]
     [AllowAnonymous]
     [VendorMediaType(Resource = "resultado-sem-unanimidade", Versions = [1])]
     [ProducesResponseType(typeof(IEnumerable<CodigoComRotulo<ResultadoSemUnanimidade>>), StatusCodes.Status200OK)]

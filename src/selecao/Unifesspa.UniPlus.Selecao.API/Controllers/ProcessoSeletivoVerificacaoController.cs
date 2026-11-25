@@ -7,6 +7,7 @@ using Application.Queries.ProcessosSeletivos;
 
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Routing;
 
 using Unifesspa.UniPlus.Application.Abstractions.Messaging;
 using Unifesspa.UniPlus.Infrastructure.Core.Errors;
@@ -60,6 +61,7 @@ public sealed class ProcessoSeletivoVerificacaoController : ControllerBase
     /// </remarks>
     [ExigePermissaoNoProcesso(PermissaoSelecao.ProcessosConfigurar)]
     [HttpGet("{id:guid}/conformidade")]
+    [EndpointName("VerificarConformidadeDoProcesso")]
     [VendorMediaType(Resource = "conformidade-processo-seletivo", Versions = [1])]
     [ProducesResponseType(typeof(ConformidadeProcessoSeletivoDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -93,6 +95,7 @@ public sealed class ProcessoSeletivoVerificacaoController : ControllerBase
     /// </summary>
     [ExigePermissaoNoProcesso(PermissaoSelecao.ProcessosConfigurar)]
     [HttpGet("{id:guid}/conformidade-legal")]
+    [EndpointName("VerificarConformidadeLegalDoProcesso")]
     [VendorMediaType(Resource = "conformidade-legal-processo-seletivo", Versions = [1])]
     [ProducesResponseType(typeof(ConformidadeLegalProcessoSeletivoDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]

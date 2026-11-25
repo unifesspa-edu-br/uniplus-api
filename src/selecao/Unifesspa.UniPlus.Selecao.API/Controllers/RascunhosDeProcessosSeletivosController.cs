@@ -10,6 +10,7 @@ using Http;
 
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Routing;
 
 using Unifesspa.UniPlus.Application.Abstractions.Messaging;
 using Unifesspa.UniPlus.Infrastructure.Core.Errors;
@@ -86,6 +87,7 @@ public sealed class RascunhosDeProcessosSeletivosController : ControllerBase
     /// </para>
     /// </remarks>
     [HttpPost]
+    [EndpointName("CriarRascunhoDeProcessoSeletivo")]
     [RequiresIdempotencyKey(MaxBodyBytes = LimitesDoDocumento.TamanhoMaximoEmBytes)]
     [Consumes("application/json")]
     [CorpoJson(EsquemaPublicadoDoDocumento.Componente)]
@@ -119,6 +121,7 @@ public sealed class RascunhosDeProcessosSeletivosController : ControllerBase
     /// resposta identifica a revisão exportada.
     /// </summary>
     [HttpGet("{id:guid}")]
+    [EndpointName("ObterRascunhoDeProcessoSeletivo")]
     [ExigePermissaoNoProcesso(PermissaoSelecao.ProcessosConfigurar)]
     [VendorMediaType(Resource = "rascunho-de-processo-seletivo", Versions = [1])]
     [RespostaJson(EsquemaPublicadoDoDocumento.Componente)]
@@ -166,6 +169,7 @@ public sealed class RascunhosDeProcessosSeletivosController : ControllerBase
     /// </para>
     /// </remarks>
     [HttpPut("{id:guid}")]
+    [EndpointName("SubstituirRascunhoDeProcessoSeletivo")]
     [EndpointSummary("Substitui o documento inteiro do rascunho")]
     [EndpointDescription(DescricaoDaSubstituicao)]
     [ExigePermissaoNoProcesso(PermissaoSelecao.ProcessosConfigurar)]
@@ -207,6 +211,7 @@ public sealed class RascunhosDeProcessosSeletivosController : ControllerBase
     /// o publicado responde 409.
     /// </summary>
     [HttpDelete("{id:guid}")]
+    [EndpointName("ExcluirRascunhoDeProcessoSeletivo")]
     [ExigePermissaoNoProcesso(PermissaoSelecao.ProcessosConfigurar)]
     [PrecondicaoObrigatoria]
     [EmiteEsperaEsgotadaPelaTrava]

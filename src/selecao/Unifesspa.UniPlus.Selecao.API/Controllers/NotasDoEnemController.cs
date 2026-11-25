@@ -12,6 +12,7 @@ using Domain.Leiautes;
 
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Routing;
 
 using Unifesspa.UniPlus.Application.Abstractions.Messaging;
 using Unifesspa.UniPlus.Infrastructure.Core.Authorization;
@@ -65,6 +66,7 @@ public sealed class NotasDoEnemController : ControllerBase
     /// importação do retorno. Sem o filtro <c>tipo</c> (<c>Envio</c> ou <c>Retorno</c>), devolve os dois tipos.
     /// </summary>
     [HttpGet("leiautes-de-arquivo-do-inep")]
+    [EndpointName("ListarLeiautesDeArquivoDoInep")]
     [ExigePermissao<PermissaoSelecao>(PermissaoSelecao.LeiautesInepConsultar, ResourceTipo = ResourceTiposSelecao.LeiauteInep)]
     [VendorMediaType(Resource = "leiaute-de-arquivo-do-inep", Versions = [1])]
     [ProducesResponseType(typeof(IEnumerable<LeiauteDoInepDto>), StatusCodes.Status200OK)]
@@ -97,6 +99,7 @@ public sealed class NotasDoEnemController : ControllerBase
     /// CPFs. Repetir a requisição registra outra geração, e cada geração é um ato.
     /// </remarks>
     [HttpPost(BaseDaEdicao + "/envios-ao-inep")]
+    [EndpointName("GerarEnvioAoInep")]
     [ExigePermissaoNoProcesso(PermissaoSelecao.EnviosInepGerar, ParametroDaRota = RotaDoProcesso.ParametroAninhado)]
     [Produces("text/plain")]
     [ProducesResponseType(typeof(byte[]), StatusCodes.Status200OK, "text/plain")]
@@ -131,6 +134,7 @@ public sealed class NotasDoEnemController : ControllerBase
     /// gerou, quando, com que leiaute e quantos CPFs.
     /// </summary>
     [HttpGet(BaseDaEdicao + "/envios-ao-inep")]
+    [EndpointName("ListarEnviosAoInep")]
     [ExigePermissaoNoProcesso(PermissaoSelecao.EnviosInepGerar, ParametroDaRota = RotaDoProcesso.ParametroAninhado)]
     [VendorMediaType(Resource = "envio-ao-inep", Versions = [1])]
     [ProducesResponseType(typeof(IEnumerable<GeracaoDeEnvioDto>), StatusCodes.Status200OK)]
@@ -160,6 +164,7 @@ public sealed class NotasDoEnemController : ControllerBase
     /// <c>leiauteVersao</c>; o nome do arquivo enviado nunca é gravado nem logado.
     /// </remarks>
     [HttpPost(BaseDaEdicao + "/lotes-de-notas")]
+    [EndpointName("ImportarNotasDoEnem")]
     [ExigePermissaoNoProcesso(PermissaoSelecao.NotasEnemImportar, ParametroDaRota = RotaDoProcesso.ParametroAninhado)]
     [Consumes("multipart/form-data")]
     [CorpoMultipart(CampoDoArquivo, CamposDeTexto = [CampoDoLeiauteCodigo, CampoDoLeiauteVersao])]
@@ -272,6 +277,7 @@ public sealed class NotasDoEnemController : ControllerBase
 
     /// <summary>Lista os lotes de notas da edição, do mais recente para o mais antigo, marcando o vigente. Sem as ocorrências.</summary>
     [HttpGet(BaseDaEdicao + "/lotes-de-notas")]
+    [EndpointName("ListarImportacoesDeNotasDoEnem")]
     [ExigePermissaoNoProcesso(PermissaoSelecao.NotasEnemImportar, ParametroDaRota = RotaDoProcesso.ParametroAninhado)]
     [VendorMediaType(Resource = "lote-de-notas-do-enem", Versions = [1])]
     [ProducesResponseType(typeof(IEnumerable<LoteDeNotasDoEnemDto>), StatusCodes.Status200OK)]
@@ -290,6 +296,7 @@ public sealed class NotasDoEnemController : ControllerBase
 
     /// <summary>Obtém um lote de notas com tudo o que não virou nota: inscritos sem linha, linhas sem inscrito e conflitos.</summary>
     [HttpGet(BaseDaEdicao + "/lotes-de-notas/{loteId:guid}")]
+    [EndpointName("ObterImportacaoDeNotasDoEnem")]
     [ExigePermissaoNoProcesso(PermissaoSelecao.NotasEnemImportar, ParametroDaRota = RotaDoProcesso.ParametroAninhado)]
     [VendorMediaType(Resource = "lote-de-notas-do-enem", Versions = [1])]
     [ProducesResponseType(typeof(LoteDeNotasDoEnemDto), StatusCodes.Status200OK)]

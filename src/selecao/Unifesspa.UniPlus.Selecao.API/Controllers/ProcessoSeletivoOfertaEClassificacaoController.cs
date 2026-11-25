@@ -10,6 +10,7 @@ using Http;
 
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Routing;
 
 using Unifesspa.UniPlus.Application.Abstractions.Messaging;
 using Unifesspa.UniPlus.Infrastructure.Core.Errors;
@@ -51,6 +52,7 @@ public sealed class ProcessoSeletivoOfertaEClassificacaoController : ControllerB
     /// </summary>
     [ExigePermissaoNoProcesso(PermissaoSelecao.ProcessosConfigurar)]
     [HttpPut("{id:guid}/criterios-desempate")]
+    [EndpointName("DefinirCriteriosDeDesempate")]
     [RequiresIdempotencyKey]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
@@ -73,6 +75,7 @@ public sealed class ProcessoSeletivoOfertaEClassificacaoController : ControllerB
     /// </summary>
     [ExigePermissaoNoProcesso(PermissaoSelecao.ProcessosConfigurar)]
     [HttpPut("{id:guid}/bonus-regional")]
+    [EndpointName("DefinirFadaDoProcesso")]
     [RequiresIdempotencyKey]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
@@ -94,6 +97,7 @@ public sealed class ProcessoSeletivoOfertaEClassificacaoController : ControllerB
     /// <summary>Substitui a declaração da prova presencial e seus municípios de prova.</summary>
     [ExigePermissaoNoProcesso(PermissaoSelecao.ProcessosConfigurar)]
     [HttpPut("{id:guid}/prova-presencial")]
+    [EndpointName("DefinirProvaPresencial")]
     [RequiresIdempotencyKey]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
@@ -114,6 +118,7 @@ public sealed class ProcessoSeletivoOfertaEClassificacaoController : ControllerB
     /// </summary>
     [ExigePermissaoNoProcesso(PermissaoSelecao.ProcessosConfigurar)]
     [HttpPut("{id:guid}/opcoes-de-curso")]
+    [EndpointName("DefinirOpcoesDeCurso")]
     [RequiresIdempotencyKey]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status409Conflict)]
@@ -139,6 +144,7 @@ public sealed class ProcessoSeletivoOfertaEClassificacaoController : ControllerB
     /// </summary>
     [ExigePermissaoNoProcesso(PermissaoSelecao.ProcessosConfigurar)]
     [HttpPut("{id:guid}/taxa-inscricao")]
+    [EndpointName("DefinirTaxaDeInscricao")]
     [RequiresIdempotencyKey]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
@@ -164,6 +170,7 @@ public sealed class ProcessoSeletivoOfertaEClassificacaoController : ControllerB
     /// </summary>
     [ExigePermissaoNoProcesso(PermissaoSelecao.ProcessosConfigurar)]
     [HttpPut("{id:guid}/divulgacao")]
+    [EndpointName("DefinirCamposPublicosDaDivulgacao")]
     [RequiresIdempotencyKey]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
@@ -189,6 +196,7 @@ public sealed class ProcessoSeletivoOfertaEClassificacaoController : ControllerB
     /// </summary>
     [ExigePermissaoNoProcesso(PermissaoSelecao.ProcessosConfigurar)]
     [HttpPut("{id:guid}/cascata-remanejamento")]
+    [EndpointName("DefinirCascataDeRemanejamento")]
     [RequiresIdempotencyKey]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
@@ -215,6 +223,7 @@ public sealed class ProcessoSeletivoOfertaEClassificacaoController : ControllerB
     /// </summary>
     [ExigePermissaoNoProcesso(PermissaoSelecao.ProcessosConfigurar)]
     [HttpPut("{id:guid}/classificacao")]
+    [EndpointName("DefinirClassificacao")]
     [RequiresIdempotencyKey]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]

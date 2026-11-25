@@ -9,6 +9,7 @@ using Application.Queries.MotivosDeDecisaoDoProcesso;
 
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Routing;
 
 using Unifesspa.UniPlus.Application.Abstractions.Messaging;
 using Unifesspa.UniPlus.Infrastructure.Core.Errors;
@@ -54,6 +55,7 @@ public sealed class ProcessoSeletivoMotivosController : ControllerBase
     /// </summary>
     [ExigePermissaoNoProcesso(PermissaoSelecao.ProcessosConfigurar)]
     [HttpGet("{id:guid}/motivos-de-decisao")]
+    [EndpointName("ListarMotivosDeDecisaoDoProcesso")]
     [VendorMediaType(Resource = "motivo-do-processo", Versions = [1])]
     [ProducesResponseType(typeof(IReadOnlyList<MotivoDeDecisaoDoProcessoDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
@@ -72,6 +74,7 @@ public sealed class ProcessoSeletivoMotivosController : ControllerBase
     /// </summary>
     [ExigePermissaoNoProcesso(PermissaoSelecao.ProcessosConfigurar)]
     [HttpPut("{id:guid}/fases/{faseCanonicaOrigemId:guid}/motivos-de-decisao/{motivoDeDecisaoId:guid}")]
+    [EndpointName("IncluirMotivoDeDecisaoNaFase")]
     [RequiresIdempotencyKey]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
@@ -86,6 +89,7 @@ public sealed class ProcessoSeletivoMotivosController : ControllerBase
     /// </summary>
     [ExigePermissaoNoProcesso(PermissaoSelecao.ProcessosConfigurar)]
     [HttpPut("{id:guid}/etapas/{etapaId:guid}/motivos-de-decisao/{motivoDeDecisaoId:guid}")]
+    [EndpointName("IncluirMotivoDeDecisaoNaEtapa")]
     [RequiresIdempotencyKey]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
@@ -97,6 +101,7 @@ public sealed class ProcessoSeletivoMotivosController : ControllerBase
     /// <summary>Retira da fase o motivo escolhido, só em rascunho; o publicado não sai (UNI-REQ-0124).</summary>
     [ExigePermissaoNoProcesso(PermissaoSelecao.ProcessosConfigurar)]
     [HttpDelete("{id:guid}/fases/{faseCanonicaOrigemId:guid}/motivos-de-decisao/{motivoDeDecisaoId:guid}")]
+    [EndpointName("RetirarMotivoDeDecisaoDaFase")]
     [RequiresIdempotencyKey]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
@@ -108,6 +113,7 @@ public sealed class ProcessoSeletivoMotivosController : ControllerBase
     /// <summary>Retira da etapa o motivo escolhido, só em rascunho; o publicado não sai (UNI-REQ-0124).</summary>
     [ExigePermissaoNoProcesso(PermissaoSelecao.ProcessosConfigurar)]
     [HttpDelete("{id:guid}/etapas/{etapaId:guid}/motivos-de-decisao/{motivoDeDecisaoId:guid}")]
+    [EndpointName("RetirarMotivoDeDecisaoDaEtapa")]
     [RequiresIdempotencyKey]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]

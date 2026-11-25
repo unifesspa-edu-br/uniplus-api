@@ -10,6 +10,7 @@ using Http;
 
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Routing;
 
 using Unifesspa.UniPlus.Application.Abstractions.Messaging;
 using Unifesspa.UniPlus.Infrastructure.Core.Errors;
@@ -55,6 +56,7 @@ public sealed class ProcessoSeletivoEtapasEVagasController : ControllerBase
     /// </remarks>
     [ExigePermissaoNoProcesso(PermissaoSelecao.ProcessosConfigurar)]
     [HttpPut("{id:guid}/etapas")]
+    [EndpointName("DefinirEtapasDoProcesso")]
     [EndpointSummary("Substitui as etapas e as bancas do processo")]
     [EndpointDescription("Substitui as etapas e as bancas de cada etapa inteiras: o que o corpo não traz deixa de existir no processo. A regra de deliberação de uma banca é opcional neste pedido, e a banca que a omite apaga a regra que já estava gravada. A obrigatoriedade da regra de deliberação é conferida na publicação. Para preservar as chaves, devolva o id de cada etapa, item e banca que permanece e a chave de cada nível que permanece. As chaves novas vêm na releitura pelo GET.")]
     [EmiteEsperaEsgotadaPelaTrava]
@@ -80,6 +82,7 @@ public sealed class ProcessoSeletivoEtapasEVagasController : ControllerBase
     /// </summary>
     [ExigePermissaoNoProcesso(PermissaoSelecao.ProcessosConfigurar)]
     [HttpPut("{id:guid}/fatos/{fatoCodigo}/opcoes")]
+    [EndpointName("DefinirOpcoesDeclaradasDoDado")]
     [EmiteEsperaEsgotadaPelaTrava]
     [RequiresIdempotencyKey]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
@@ -114,6 +117,7 @@ public sealed class ProcessoSeletivoEtapasEVagasController : ControllerBase
     /// </summary>
     [ExigePermissaoNoProcesso(PermissaoSelecao.ProcessosConfigurar)]
     [HttpPut("{id:guid}/atendimento-especializado")]
+    [EndpointName("DefinirAtendimentoEspecializado")]
     [EmiteEsperaEsgotadaPelaTrava]
     [RequiresIdempotencyKey]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
@@ -142,6 +146,7 @@ public sealed class ProcessoSeletivoEtapasEVagasController : ControllerBase
     /// </summary>
     [ExigePermissaoNoProcesso(PermissaoSelecao.ProcessosConfigurar)]
     [HttpPut("{id:guid}/distribuicao-vagas")]
+    [EndpointName("DefinirDistribuicaoDeVagas")]
     [EmiteEsperaEsgotadaPelaTrava]
     [RequiresIdempotencyKey]
     [ProducesResponseType(typeof(IReadOnlyList<ConfiguracaoDistribuicaoVagasDto>), StatusCodes.Status200OK)]
@@ -190,6 +195,7 @@ public sealed class ProcessoSeletivoEtapasEVagasController : ControllerBase
     /// </remarks>
     [ExigePermissaoNoProcesso(PermissaoSelecao.ProcessosConfigurar)]
     [HttpPost("{id:guid}/distribuicao-vagas/simulacao")]
+    [EndpointName("SimularDistribuicaoDeVagas")]
     [VendorMediaType(Resource = "simulacao-distribuicao-vagas", Versions = [1])]
     [ProducesResponseType(typeof(IReadOnlyList<ConfiguracaoDistribuicaoVagasDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
@@ -218,6 +224,7 @@ public sealed class ProcessoSeletivoEtapasEVagasController : ControllerBase
     /// </summary>
     [ExigePermissaoNoProcesso(PermissaoSelecao.ProcessosConfigurar)]
     [HttpPost("{id:guid}/pre-visualizacao")]
+    [EndpointName("PreVisualizarProcessoSeletivo")]
     [VendorMediaType(Resource = "pre-visualizacao-processo-seletivo", Versions = [1])]
     [ProducesResponseType(typeof(PreVisualizacaoDoProcessoDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]

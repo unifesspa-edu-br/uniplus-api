@@ -10,6 +10,7 @@ using Http;
 
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Routing;
 
 using Unifesspa.UniPlus.Application.Abstractions.Messaging;
 using Unifesspa.UniPlus.Infrastructure.Core.Errors;
@@ -68,6 +69,7 @@ public sealed class ProcessoSeletivoController : ControllerBase
     }
 
     [HttpPost]
+    [EndpointName("CriarProcessoSeletivo")]
     [RequiresIdempotencyKey]
     [ProducesResponseType(typeof(Guid), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
@@ -85,6 +87,7 @@ public sealed class ProcessoSeletivoController : ControllerBase
 
     [AllowAnonymous]
     [HttpGet]
+    [EndpointName("ListarProcessosSeletivos")]
     [VendorMediaType(Resource = "processo-seletivo", Versions = [1])]
     [ProducesResponseType(typeof(IEnumerable<ProcessoSeletivoResumoDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
@@ -108,6 +111,7 @@ public sealed class ProcessoSeletivoController : ControllerBase
     [AllowAnonymous]
     [ExigeLeituraDoProcesso]
     [HttpGet("{id:guid}")]
+    [EndpointName("ObterProcessoSeletivo")]
     [VendorMediaType(Resource = "processo-seletivo", Versions = [1])]
     [ProducesResponseType(typeof(ProcessoSeletivoDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
