@@ -2001,12 +2001,12 @@ selecao.respostas_da_inscricao.ocorrencia_id: Interno
 selecao.respostas_da_inscricao.origem: Interno
 selecao.respostas_da_inscricao.posicao: Interno
 selecao.respostas_da_inscricao.tipo: Interno
-selecao.respostas_da_inscricao.valor_booleano: Sensivel
 selecao.respostas_da_inscricao.valor_cifrado: Sensivel
 selecao.respostas_da_inscricao.valor_codigo: Sensivel
 selecao.respostas_da_inscricao.valor_data: Sensivel
 selecao.respostas_da_inscricao.valor_numero: Sensivel
 selecao.respostas_da_inscricao.valor_rotulo: Sensivel
+selecao.respostas_da_inscricao.valor_sim_ou_nao: Sensivel
 selecao.respostas_da_inscricao.valor_texto: Sensivel
 selecao.termos_exigidos_formulario.base_legal: Interno
 selecao.termos_exigidos_formulario.codigo: Interno
