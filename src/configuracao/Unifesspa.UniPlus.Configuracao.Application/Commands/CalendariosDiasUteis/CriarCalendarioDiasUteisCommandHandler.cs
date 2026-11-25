@@ -23,7 +23,26 @@ public static class CriarCalendarioDiasUteisCommandHandler
         ArgumentNullException.ThrowIfNull(repository);
         ArgumentNullException.ThrowIfNull(unitOfWork);
 
-        Result<CalendarioDiasUteis> calendarioResult = CalendarioDiasUteis.Criar(
+        Result<CalendarioDiasUteis> calendarioResult = CriarCalendario(command);
+
+        if (calendarioResult.IsFailure)
+        {
+            return Result<Guid>.ValidationFailure(calendarioResult.Errors);
+        }
+
+        return await PersistirCalendarioAsync(calendarioResult.Value!, repository, unitOfWork, cancellationToken).ConfigureAwait(false);
+    }
+
+    private static async Task<Result<Guid>> PersistirCalendarioAsync(
+        CalendarioDiasUteis calendario, ICalendarioDiasUteisRepository repository, IUnitOfWork unitOfWork, CancellationToken cancellationToken)
+    {
+        await repository.AdicionarAsync(calendario, cancellationToken).ConfigureAwait(false);
+        await unitOfWork.SalvarAlteracoesAsync(cancellationToken).ConfigureAwait(false);
+        return Result<Guid>.Success(calendario.Id);
+    }
+
+    private static Result<CalendarioDiasUteis> CriarCalendario(CriarCalendarioDiasUteisCommand command) =>
+        CalendarioDiasUteis.Criar(
             command.VersaoDoCalendario,
             command.DiasNaoUteis?.Select(d => d is null
                 ? null
@@ -35,16 +54,4 @@ public static class CriarCalendarioDiasUteisCommandHandler
                     d.Data,
                     d.Descricao,
                     d.Uf)).ToList());
-
-        if (calendarioResult.IsFailure)
-        {
-            return Result<Guid>.ValidationFailure(calendarioResult.Errors);
-        }
-
-        CalendarioDiasUteis calendario = calendarioResult.Value!;
-        await repository.AdicionarAsync(calendario, cancellationToken).ConfigureAwait(false);
-        await unitOfWork.SalvarAlteracoesAsync(cancellationToken).ConfigureAwait(false);
-
-        return Result<Guid>.Success(calendario.Id);
-    }
 }

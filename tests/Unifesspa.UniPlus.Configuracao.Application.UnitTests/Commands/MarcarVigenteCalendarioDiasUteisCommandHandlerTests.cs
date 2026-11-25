@@ -96,9 +96,7 @@ public sealed class MarcarVigenteCalendarioDiasUteisCommandHandlerTests
         // IMMEDIATE), não em SalvarAlteracoesAsync — a constraint é DEFERRABLE INITIALLY
         // DEFERRED, então SaveChangesAsync sozinho não a checaria (só o faria no commit
         // externo do outbox do Wolverine, fora do try do handler).
-        CalendarioDiasUteis calendario = Novo();
-        _repository.ObterPorIdAsync(calendario.Id, Arg.Any<CancellationToken>()).Returns(calendario);
-        _repository.ObterVigenteAsync(Arg.Any<CancellationToken>()).Returns((CalendarioDiasUteis?)null);
+        CalendarioDiasUteis calendario = PrepararCalendarioSemVigente();
         _unitOfWork.ForcarChecagemImediataDeConstraintsAsync(Arg.Any<CancellationToken>())
             .ThrowsAsync(PostgresExceptionFactory.Create("23P01", RestricoesDoBanco.CalendarioDeDiasUteisVigenteUnico));
 
@@ -115,10 +113,8 @@ public sealed class MarcarVigenteCalendarioDiasUteisCommandHandlerTests
     {
         // Endpoint tem [RequiresIdempotencyKey] (ADR-0119): a exceção não pode
         // propagar sem catch — IdempotencyFilter não verifica
-        // ResourceExecutedContext.Exception antes de cachear a resposta (#1028).
-        CalendarioDiasUteis calendario = Novo();
-        _repository.ObterPorIdAsync(calendario.Id, Arg.Any<CancellationToken>()).Returns(calendario);
-        _repository.ObterVigenteAsync(Arg.Any<CancellationToken>()).Returns((CalendarioDiasUteis?)null);
+        // ResourceExecutedContext.Exception antes de armazenar a resposta.
+        CalendarioDiasUteis calendario = PrepararCalendarioSemVigente();
         _unitOfWork.SalvarAlteracoesAsync(Arg.Any<CancellationToken>())
             .ThrowsAsync(new DbUpdateConcurrencyException("conflito sintético de teste"));
 
@@ -143,5 +139,13 @@ public sealed class MarcarVigenteCalendarioDiasUteisCommandHandlerTests
             new MarcarVigenteCalendarioDiasUteisCommand(calendario.Id), _repository, _unitOfWork, CancellationToken.None);
 
         await act.Should().ThrowAsync<Npgsql.PostgresException>();
+    }
+
+    private CalendarioDiasUteis PrepararCalendarioSemVigente()
+    {
+        CalendarioDiasUteis calendario = Novo();
+        _repository.ObterPorIdAsync(calendario.Id, Arg.Any<CancellationToken>()).Returns(calendario);
+        _repository.ObterVigenteAsync(Arg.Any<CancellationToken>()).Returns((CalendarioDiasUteis?)null);
+        return calendario;
     }
 }

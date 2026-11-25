@@ -84,15 +84,19 @@ public sealed class ProcessoSeletivoPublicacaoController : ControllerBase
         ArgumentNullException.ThrowIfNull(request);
 
         Result resultado = await _commandBus.Send(
-            new PublicarProcessoSeletivoCommand(
-                id, request.Numero, request.PeriodoInscricaoInicio, request.PeriodoInscricaoFim, request.DocumentoEditalId,
-                MapeamentoDoAto.ParaDados(request.Ato), MapeamentoDoAto.ParaAnexos(request.Anexos)),
+            PrepararPublicacao(id, request),
             cancellationToken);
         if (resultado.IsSuccess)
         {
             return NoContent();
         }
 
+        return await PrepararRecusaAsync(resultado, id, request, cancellationToken).ConfigureAwait(false);
+    }
+
+    private async Task<IActionResult> PrepararRecusaAsync(
+        Result resultado, Guid id, PublicarProcessoSeletivoRequest request, CancellationToken cancellationToken)
+    {
         IActionResult actionResult = resultado.ToActionResult(_mapper);
         actionResult = await EnriquecimentoDaPublicacao
             .EnriquecerComPendenciasEstruturaisAsync(_queryBus, actionResult, id, cancellationToken)
@@ -100,4 +104,8 @@ public sealed class ProcessoSeletivoPublicacaoController : ControllerBase
         return await EnriquecimentoDaPublicacao.EnriquecerComObrigatoriedadesReprovadasAsync(
             _queryBus, resultado, actionResult, id, request.PeriodoInscricaoInicio, cancellationToken).ConfigureAwait(false);
     }
+
+    private static PublicarProcessoSeletivoCommand PrepararPublicacao(Guid id, PublicarProcessoSeletivoRequest request) =>
+        new(id, request.Numero, request.PeriodoInscricaoInicio, request.PeriodoInscricaoFim, request.DocumentoEditalId,
+            MapeamentoDoAto.ParaDados(request.Ato), MapeamentoDoAto.ParaAnexos(request.Anexos));
 }

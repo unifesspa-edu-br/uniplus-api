@@ -36,20 +36,7 @@ public sealed class CriarCalendarioDiasUteisTests
         CalendarioDiasUteis calendario = resultado.Value!;
         calendario.DiasNaoUteis.Should().HaveCount(2);
 
-        calendario.DiasNaoUteis.Should().Contain(d =>
-            d.Abrangencia == Abrangencia.Nacional
-            && d.MunicipioIbge == null
-            && d.Data == DataBase
-            && d.Descricao == "Confraternização Universal");
-
-        calendario.DiasNaoUteis.Should().Contain(d =>
-            d.Abrangencia == Abrangencia.Municipal
-            && d.MunicipioIbge == "1501402"
-            && d.MunicipioNome == "Belém"
-            && d.MunicipioUf == "PA"
-            && d.Uf == null
-            && d.Data == DataBase.AddDays(2)
-            && d.Descricao == "Aniversário do município");
+        ConferirDiasNacionalEMunicipal(calendario);
     }
 
     [Fact(DisplayName = "Criar normaliza código, nome e UF do snapshot municipal")]
@@ -57,13 +44,7 @@ public sealed class CriarCalendarioDiasUteisTests
     {
         Result<CalendarioDiasUteis> resultado = CalendarioDiasUteis.Criar(
             "2027.1",
-            [new DiaNaoUtilCriacao(
-                "MUNICIPAL",
-                " 1501402 ",
-                "  Belém  ",
-                " pa ",
-                DataBase,
-                "Aniversário do município")]);
+            [DiaMunicipalComEspacos()]);
 
         resultado.IsSuccess.Should().BeTrue();
         resultado.Value!.DiasNaoUteis.Should().Contain(d =>
@@ -383,4 +364,25 @@ public sealed class CriarCalendarioDiasUteisTests
         resultado.Errors.Should().ContainSingle();
         resultado.Errors[0].Field.Should().Be("diasNaoUteis[0].abrangencia");
     }
+
+    private static void ConferirDiasNacionalEMunicipal(CalendarioDiasUteis calendario)
+    {
+        calendario.DiasNaoUteis.Should().Contain(d =>
+            d.Abrangencia == Abrangencia.Nacional
+            && d.MunicipioIbge == null
+            && d.Data == DataBase
+            && d.Descricao == "Confraternização Universal");
+
+        calendario.DiasNaoUteis.Should().Contain(d =>
+            d.Abrangencia == Abrangencia.Municipal
+            && d.MunicipioIbge == "1501402"
+            && d.MunicipioNome == "Belém"
+            && d.MunicipioUf == "PA"
+            && d.Uf == null
+            && d.Data == DataBase.AddDays(2)
+            && d.Descricao == "Aniversário do município");
+    }
+
+    private static DiaNaoUtilCriacao DiaMunicipalComEspacos() =>
+        new("MUNICIPAL", " 1501402 ", "  Belém  ", " pa ", DataBase, "Aniversário do município");
 }

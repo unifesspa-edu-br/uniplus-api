@@ -17,11 +17,10 @@ using static Unifesspa.UniPlus.Selecao.Application.UnitTests.Commands.DublesDoCo
 using static Unifesspa.UniPlus.Selecao.Application.UnitTests.Commands.RegrasLegaisDeTeste;
 
 /// <summary>
-/// Story #853: o gate legal — segunda dimensão de conformidade, ao lado da estrutural
-/// (<see cref="PublicarProcessoSeletivoGateTests"/>) — nos <b>três</b> handlers que
-/// congelam (CA-12, CA-14). Prova, por handler, que uma regra vigente reprovada recusa
-/// ANTES da canonicalização, e que a aprovação repassa o <see cref="ResultadoConformidade"/>
-/// no campo novo de <see cref="EntradaCanonicalizacao"/> (CA-13).
+/// A verificação legal é a segunda dimensão de conformidade, ao lado da estrutural
+/// (<see cref="PublicarProcessoSeletivoGateTests"/>), nos três handlers que congelam
+/// a configuração. Uma regra vigente reprovada impede a canonicalização; a aprovação
+/// repassa o <see cref="ResultadoConformidade"/> em <see cref="EntradaCanonicalizacao"/>.
 /// </summary>
 public sealed class ConformidadeLegalGateTests
 {

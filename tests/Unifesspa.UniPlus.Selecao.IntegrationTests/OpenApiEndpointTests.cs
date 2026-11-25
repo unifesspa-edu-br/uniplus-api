@@ -10,13 +10,12 @@ using Outbox.Cascading;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures;
 
 /// <summary>
-/// Smoke + drift check do endpoint <c>/openapi/selecao.json</c>:
+/// Verifica o endpoint <c>/openapi/selecao.json</c>:
 /// <list type="bullet">
-///   <item><description>Smoke — runtime gera spec OpenAPI 3.x com metadata Uni+ aplicada
-///   (ADR-0030, story #289).</description></item>
-///   <item><description>Drift — compara o spec emitido com o baseline committed em
-///   <c>contracts/openapi.selecao.json</c> (story #290). Falha o PR quando o
-///   contrato muda sem atualização da referência aprovada.</description></item>
+///   <item><description>A aplicação gera o documento OpenAPI 3.x com os metadados Uni+
+///   (ADR-0030).</description></item>
+///   <item><description>A comparação com <c>contracts/openapi.selecao.json</c> identifica
+///   mudanças no contrato sem atualização da referência aprovada.</description></item>
 /// </list>
 /// </summary>
 [Collection(CascadingCollection.Name)]
@@ -224,6 +223,16 @@ public sealed class OpenApiEndpointTests
         using JsonDocument spec = await LerSpecAsync();
         JsonElement schemas = spec.RootElement.GetProperty("components").GetProperty("schemas");
 
+        ConferirSituacaoNosDtos(schemas);
+
+        schemas.GetProperty("SituacaoDoProcessoSeletivo").GetProperty("properties").GetProperty("codigo").GetProperty("$ref").GetString()
+            .Should().Be("#/components/schemas/SituacaoDoProcessoSeletivoCodigo");
+        schemas.GetProperty("SituacaoDoProcessoSeletivoCodigo").GetProperty("enum").EnumerateArray().Select(static valor => valor.GetString())
+            .Should().Equal("RASCUNHO", "PUBLICADO", "ENCERRADO", "CANCELADO");
+    }
+
+    private static void ConferirSituacaoNosDtos(JsonElement schemas)
+    {
         foreach (string nome in new[] { "ProcessoSeletivoDto", "ProcessoSeletivoResumoDto" })
         {
             JsonElement propriedades = schemas.GetProperty(nome).GetProperty("properties");
@@ -231,11 +240,6 @@ public sealed class OpenApiEndpointTests
             propriedades.GetProperty("situacao").GetProperty("$ref").GetString()
                 .Should().Be("#/components/schemas/SituacaoDoProcessoSeletivo");
         }
-
-        schemas.GetProperty("SituacaoDoProcessoSeletivo").GetProperty("properties").GetProperty("codigo").GetProperty("$ref").GetString()
-            .Should().Be("#/components/schemas/SituacaoDoProcessoSeletivoCodigo");
-        schemas.GetProperty("SituacaoDoProcessoSeletivoCodigo").GetProperty("enum").EnumerateArray().Select(static valor => valor.GetString())
-            .Should().Equal("RASCUNHO", "PUBLICADO", "ENCERRADO", "CANCELADO");
     }
 
     private static void ExigirUrlDownload(JsonElement schemas, string schema, bool nulo)
@@ -256,5 +260,4 @@ public sealed class OpenApiEndpointTests
         response.EnsureSuccessStatusCode();
         return JsonDocument.Parse(await response.Content.ReadAsStringAsync());
     }
-
 }

@@ -45,7 +45,7 @@ internal sealed class CalendarioDiasUteisConfiguration : IEntityTypeConfiguratio
         builder.Property(c => c.UpdatedBy).HasMaxLength(255);
 
         // Dias não úteis do calendário: append-only pela vida do calendário — a lista nasce
-        // no Criar e só cresce depois, via IncluirDiaNaoUtil (api#1458); nunca edita
+        // no Criar e só cresce depois, via IncluirDiaNaoUtil; nunca edita
         // ou remove linha existente.
         // ClientNoAction (não Restrict/Cascade): com a coleção já rastreada,
         // Restrict/NoAction lançam "required relationship severed" ao marcar o

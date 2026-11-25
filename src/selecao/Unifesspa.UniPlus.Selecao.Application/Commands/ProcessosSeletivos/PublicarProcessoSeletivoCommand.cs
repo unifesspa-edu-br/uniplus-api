@@ -5,10 +5,10 @@ using Kernel.Results;
 using Unifesspa.UniPlus.Application.Abstractions.Messaging;
 
 /// <summary>
-/// Publica o Edital de abertura do processo (congelamento dos parâmetros na publicação, UNI-REQ-0019, Story #759, T4 #785):
+/// Publica o Edital de abertura do processo, congelando os parâmetros:
 /// valida a conformidade estrutural, congela a configuração na versão 1 da
 /// <c>VersaoConfiguracao</c> (append-only) e transita a situação para Publicado,
-/// tudo na mesma transação (CA-01/CA-02). O ator (<c>IUserContext.UserId</c>)
+/// tudo na mesma transação. O ator (<c>IUserContext.UserId</c>)
 /// nunca é input do command — vem do contexto autenticado.
 /// <para>
 /// <see cref="Ato"/> carrega o que o DOCUMENTO declara — órgão, série, ano, data
@@ -17,8 +17,8 @@ using Unifesspa.UniPlus.Application.Abstractions.Messaging;
 /// </para>
 /// </summary>
 /// <param name="PeriodoInscricaoInicio">
-/// Início do período, informado APENAS quando o certame não coleta inscrição pelo sistema
-/// (issue #1350) — coletando, ele vem da janela da fase. Anulável para separar "omitido" de
+/// Início do período, informado apenas quando o certame não coleta inscrição pelo sistema;
+/// caso contrário, vem da janela da fase. Anulável para separar "omitido" de
 /// instante zerado.
 /// </param>
 /// <param name="PeriodoInscricaoFim">Fim do período, com a mesma regra do início.</param>

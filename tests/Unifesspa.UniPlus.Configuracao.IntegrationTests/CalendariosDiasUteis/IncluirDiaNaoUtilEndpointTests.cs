@@ -17,7 +17,7 @@ using Unifesspa.UniPlus.IntegrationTests.Fixtures.Authentication;
 
 /// <summary>
 /// Caminho de escrita de <c>POST admin/calendarios-dias-uteis/{id}/dias-nao-uteis</c>
-/// (api#1458): CA01–CA11 da issue — inclusão preserva id/versão/datas anteriores,
+/// verifica que a inclusão preserva id, versão e datas anteriores,
 /// validação de domínio, duplicidade, calendário inexistente, autorização e
 /// atomicidade, com Wolverine rodando contra Postgres efêmero.
 /// </summary>
