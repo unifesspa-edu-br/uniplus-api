@@ -60,7 +60,7 @@ internal static class ParametrosDoDesempateDeclarados
     /// </summary>
     private static Result<ParametrosCriterioDesempate> DaMaiorNotaPorAreaDoEnem(ParametrosDoCriterioDesempateInput parametros) =>
         Result<ParametrosCriterioDesempate>.Success(new ParametrosDesempateMaiorNotaAreaEnem(
-            [.. (parametros.Areas ?? []).Take(ParametrosDesempateMaiorNotaAreaEnem.AreasMaximo + 1).Select(static area => area?.Trim() ?? string.Empty)]));
+            [.. (parametros.Areas ?? []).Take(ParametrosDesempateMaiorNotaAreaEnem.AreasMaximo + 1).Select(static area => area ?? string.Empty)]));
 
     private static Result<ParametrosCriterioDesempate> DoPredicadoDeFato(int ordem, ParametrosDoCriterioDesempateInput parametros)
     {

@@ -3,6 +3,7 @@ namespace Unifesspa.UniPlus.Selecao.IntegrationTests.Outbox.Cascading;
 using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
+using System.Text;
 using System.Text.Json;
 
 using AwesomeAssertions;
@@ -98,6 +99,36 @@ public sealed class DesempatePorAreaEnemEndpointTests
             && texto.Contains("MATEMATICA (Matemática e suas Tecnologias)", StringComparison.Ordinal));
 
         (await CriteriosGravadosAsync(ctx)).Should().BeEmpty("a recusa não grava nada");
+    }
+
+    [Fact(DisplayName = "Área enviada como número recebe 400 e não é gravada")]
+    public async Task AreaNumerica_400SemGravar()
+    {
+        Contexto ctx = await SemearComClassificacaoEnemAsync(nameof(AreaNumerica_400SemGravar));
+        const string corpo = """[{"ordem":1,"regra":{"codigo":"DESEMPATE_MAIOR_NOTA_AREA_ENEM","versao":"v1"},"parametros":{"areas":[3]}}]""";
+
+        HttpResponseMessage resposta = await ctx.PutJsonAsync("criterios-desempate", corpo);
+
+        resposta.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        using JsonDocument problema = JsonDocument.Parse(await resposta.Content.ReadAsStringAsync());
+        Textos(problema.RootElement).Should().Contain("uniplus.requisicao.malformada");
+        (await CriteriosGravadosAsync(ctx)).Should().BeEmpty();
+    }
+
+    [Fact(DisplayName = "Área com espaços recebe 422 no campo da área e não é gravada")]
+    public async Task AreaComEspacos_422NoCampoSemGravar()
+    {
+        Contexto ctx = await SemearComClassificacaoEnemAsync(nameof(AreaComEspacos_422NoCampoSemGravar));
+        const string corpo = """[{"ordem":1,"regra":{"codigo":"DESEMPATE_MAIOR_NOTA_AREA_ENEM","versao":"v1"},"parametros":{"areas":[" REDACAO "]}}]""";
+
+        HttpResponseMessage resposta = await ctx.PutJsonAsync("criterios-desempate", corpo);
+
+        resposta.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
+        using JsonDocument problema = JsonDocument.Parse(await resposta.Content.ReadAsStringAsync());
+        string[] textos = [.. Textos(problema.RootElement)];
+        textos.Should().Contain("uniplus.selecao.criterio_desempate.area_invalida");
+        textos.Should().Contain("criterios[0].parametros.areas[0]");
+        (await CriteriosGravadosAsync(ctx)).Should().BeEmpty();
     }
 
     [Fact(DisplayName = "Área repetida na ordem é recusada com 422 no campo do item")]
@@ -223,13 +254,18 @@ public sealed class DesempatePorAreaEnemEndpointTests
 
     private sealed record Contexto(CascadingApiFactory Api, HttpClient Client, Guid ProcessoId)
     {
-        public async Task<HttpResponseMessage> PutAsync(string recurso, object corpo)
+        public Task<HttpResponseMessage> PutAsync(string recurso, object corpo) => PutConteudoAsync(recurso, JsonContent.Create(corpo));
+
+        public Task<HttpResponseMessage> PutJsonAsync(string recurso, string corpo) =>
+            PutConteudoAsync(recurso, new StringContent(corpo, Encoding.UTF8, "application/json"));
+
+        private async Task<HttpResponseMessage> PutConteudoAsync(string recurso, HttpContent conteudo)
         {
             using HttpRequestMessage request = new(
                 HttpMethod.Put,
                 new Uri($"/api/selecao/processos-seletivos/{ProcessoId}/{recurso}", UriKind.Relative))
             {
-                Content = JsonContent.Create(corpo),
+                Content = conteudo,
             };
             Autenticar(request);
             request.Headers.TryAddWithoutValidation("Idempotency-Key", Guid.CreateVersion7().ToString("N"));
