@@ -12,7 +12,7 @@ using Unifesspa.UniPlus.Monolito.Persistencia;
 namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 {
     [DbContext(typeof(MonolitoDbContext))]
-    [Migration("20261125080712_Inicial")]
+    [Migration("20261125113346_Inicial")]
     partial class Inicial
     {
         /// <inheritdoc />
@@ -3060,8 +3060,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.Property<string>("Codigo")
                         .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)")
+                        .HasMaxLength(80)
+                        .HasColumnType("character varying(80)")
                         .HasColumnName("codigo")
                         .HasComment("Código da base legal do Fator de Atenuação das Desigualdades de Acesso (FADA).");
 
@@ -3400,7 +3400,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.ToTable("categorias_de_documento", "configuracao", t =>
                         {
-                            t.HasCheckConstraint("ck_categorias_de_documento_codigo_formato", "codigo ~ '^[A-Z][A-Z0-9_]{1,49}$'");
+                            t.HasCheckConstraint("ck_categorias_de_documento_codigo_formato", "codigo ~ '^[A-Z][A-Z0-9]*(_[A-Z0-9]+)*$'");
 
                             t.HasCheckConstraint("ck_categorias_de_documento_ordem_nao_negativa", "ordem >= 0");
                         });
@@ -3569,7 +3569,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.ToTable("condicoes_de_atendimento", "configuracao", t =>
                         {
-                            t.HasCheckConstraint("ck_condicoes_de_atendimento_codigo_formato", "codigo ~ '^[A-Z][A-Z0-9_]{1,49}$'");
+                            t.HasCheckConstraint("ck_condicoes_de_atendimento_codigo_formato", "codigo ~ '^[A-Z][A-Z0-9]*(_[A-Z0-9]+)*$'");
                         });
                 });
 
@@ -3863,7 +3863,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                             t.HasCheckConstraint("ck_tipos_de_fase_codigo_canonico", "codigo IN ('INSCRICAO', 'SOLICITACAO_ISENCAO', 'HOMOLOGACAO_INSCRICOES', 'ENSALAMENTO', 'AVALIACAO', 'CLASSIFICACAO', 'RESULTADO_FINAL', 'HABILITACAO', 'HETEROIDENTIFICACAO', 'AVALIACAO_BIOPSICOSSOCIAL', 'MATRICULA', 'HOMOLOGACAO_RESULTADO_FINAL', 'LISTA_ESPERA', 'CHAMADA')");
 
-                            t.HasCheckConstraint("ck_tipos_de_fase_codigo_formato", "codigo ~ '^[A-Z_]+$'");
+                            t.HasCheckConstraint("ck_tipos_de_fase_codigo_formato", "codigo ~ '^[A-Z][A-Z0-9]*(_[A-Z0-9]+)*$'");
 
                             t.HasCheckConstraint("ck_tipos_de_fase_complementacao", "permite_complementacao = false OR codigo IN ('HOMOLOGACAO_INSCRICOES')");
 
@@ -4198,6 +4198,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                             t.HasCheckConstraint("ck_dados_do_candidato_classificacao_minima_do_tipo", "(tipo NOT IN ('TEXTO', 'DATA', 'ENDERECO') AND classificacao_protecao <> 'IDENTIFICADOR') OR (tipo = 'TEXTO' AND classificacao_protecao IN ('PESSOAL', 'IDENTIFICADOR', 'SENSIVEL')) OR (tipo IN ('DATA', 'ENDERECO') AND classificacao_protecao IN ('PESSOAL', 'SENSIVEL'))");
 
                             t.HasCheckConstraint("ck_dados_do_candidato_classificacao_protecao", "classificacao_protecao IN ('PUBLICO', 'INTERNO', 'PESSOAL', 'IDENTIFICADOR', 'SENSIVEL')");
+
+                            t.HasCheckConstraint("ck_dados_do_candidato_codigo_formato", "codigo ~ '^[A-Z][A-Z0-9]*(_[A-Z0-9]+)*$'");
 
                             t.HasCheckConstraint("ck_dados_do_candidato_componente_exibicao", "componente_exibicao IS NULL OR componente_exibicao IN ('MOEDA', 'SITUACAO')");
 
@@ -6711,7 +6713,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                             t.HasCheckConstraint("ck_modalidades_acao_quando_indeferido", "acao_quando_indeferido IS NULL OR acao_quando_indeferido IN ('RECLASSIFICA_AC', 'RECLASSIFICA_CONFORME_EDITAL')");
 
-                            t.HasCheckConstraint("ck_modalidades_codigo_formato", "codigo ~ '^[A-Z0-9_]+$'");
+                            t.HasCheckConstraint("ck_modalidades_codigo_formato", "codigo ~ '^[A-Z][A-Z0-9]*(_[A-Z0-9]+)*$'");
 
                             t.HasCheckConstraint("ck_modalidades_composicao_vagas", "composicao_vagas IN ('RESTANTE_DAS_VAGAS_OFERTADAS', 'DENTRO_DA_RESERVA_LEGAL', 'RETIRADA_DE_OUTRA_MODALIDADE', 'SUPLEMENTAR_AO_TOTAL')");
 
@@ -7119,7 +7121,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         {
                             t.HasCheckConstraint("ck_ofertas_de_curso_base_legal_programa", "programa_de_oferta = 'REGULAR' OR base_legal IS NOT NULL");
 
-                            t.HasCheckConstraint("ck_ofertas_de_curso_codigo_formato", "codigo ~ '^[A-Z][A-Z0-9_]{1,49}$'");
+                            t.HasCheckConstraint("ck_ofertas_de_curso_codigo_formato", "codigo ~ '^[A-Z][A-Z0-9]*(_[A-Z0-9]+)*$'");
 
                             t.HasCheckConstraint("ck_ofertas_de_curso_formato_pedagogico", "formato_pedagogico IN ('PRESENCIAL', 'SEMIPRESENCIAL', 'EAD')");
 
@@ -7297,13 +7299,13 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         {
                             t.HasCheckConstraint("ck_precedencias_entre_fases_antecessora_canonica", "antecessora_codigo IN ('INSCRICAO', 'SOLICITACAO_ISENCAO', 'HOMOLOGACAO_INSCRICOES', 'ENSALAMENTO', 'AVALIACAO', 'CLASSIFICACAO', 'RESULTADO_FINAL', 'HABILITACAO', 'HETEROIDENTIFICACAO', 'AVALIACAO_BIOPSICOSSOCIAL', 'MATRICULA', 'HOMOLOGACAO_RESULTADO_FINAL', 'LISTA_ESPERA', 'CHAMADA')");
 
-                            t.HasCheckConstraint("ck_precedencias_entre_fases_antecessora_formato", "antecessora_codigo ~ '^[A-Z_]+$'");
+                            t.HasCheckConstraint("ck_precedencias_entre_fases_antecessora_formato", "antecessora_codigo ~ '^[A-Z][A-Z0-9]*(_[A-Z0-9]+)*$'");
 
                             t.HasCheckConstraint("ck_precedencias_entre_fases_sem_self_loop", "antecessora_codigo <> sucessora_codigo");
 
                             t.HasCheckConstraint("ck_precedencias_entre_fases_sucessora_canonica", "sucessora_codigo IN ('INSCRICAO', 'SOLICITACAO_ISENCAO', 'HOMOLOGACAO_INSCRICOES', 'ENSALAMENTO', 'AVALIACAO', 'CLASSIFICACAO', 'RESULTADO_FINAL', 'HABILITACAO', 'HETEROIDENTIFICACAO', 'AVALIACAO_BIOPSICOSSOCIAL', 'MATRICULA', 'HOMOLOGACAO_RESULTADO_FINAL', 'LISTA_ESPERA', 'CHAMADA')");
 
-                            t.HasCheckConstraint("ck_precedencias_entre_fases_sucessora_formato", "sucessora_codigo ~ '^[A-Z_]+$'");
+                            t.HasCheckConstraint("ck_precedencias_entre_fases_sucessora_formato", "sucessora_codigo ~ '^[A-Z][A-Z0-9]*(_[A-Z0-9]+)*$'");
                         });
 
                     b.HasData(
@@ -7421,7 +7423,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.ToTable("recursos_de_acessibilidade", "configuracao", t =>
                         {
-                            t.HasCheckConstraint("ck_recursos_de_acessibilidade_codigo_formato", "codigo ~ '^[A-Z][A-Z0-9_]{1,49}$'");
+                            t.HasCheckConstraint("ck_recursos_de_acessibilidade_codigo_formato", "codigo ~ '^[A-Z][A-Z0-9]*(_[A-Z0-9]+)*$'");
                         });
                 });
 
@@ -7528,8 +7530,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.Property<string>("Codigo")
                         .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)")
+                        .HasMaxLength(80)
+                        .HasColumnType("character varying(80)")
                         .HasColumnName("codigo");
 
                     b.Property<DateTimeOffset>("CreatedAt")
@@ -7621,7 +7623,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.ToTable("termos_de_consentimento", "configuracao", t =>
                         {
-                            t.HasCheckConstraint("ck_termos_de_consentimento_codigo_formato", "codigo ~ '^[A-Z][A-Z0-9_]{1,99}$'");
+                            t.HasCheckConstraint("ck_termos_de_consentimento_codigo_formato", "codigo ~ '^[A-Z][A-Z0-9]*(_[A-Z0-9]+)*$'");
 
                             t.HasCheckConstraint("ck_termos_de_consentimento_forma_aceite_rascunho", "forma_aceite_rascunho IN ('A_DEFINIR', 'REGISTRO_SEM_ENDERECO_IP', 'REGISTRO_COM_ENDERECO_IP')");
                         });
@@ -7961,7 +7963,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.ToTable("tipos_de_deficiencia", "configuracao", t =>
                         {
-                            t.HasCheckConstraint("ck_tipos_de_deficiencia_codigo_formato", "codigo ~ '^[A-Z][A-Z0-9_]{1,49}$'");
+                            t.HasCheckConstraint("ck_tipos_de_deficiencia_codigo_formato", "codigo ~ '^[A-Z][A-Z0-9]*(_[A-Z0-9]+)*$'");
                         });
                 });
 
@@ -8086,9 +8088,9 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.ToTable("tipos_de_documento", "configuracao", t =>
                         {
-                            t.HasCheckConstraint("ck_tipos_de_documento_categoria_formato", "categoria ~ '^[A-Z][A-Z0-9_]{1,49}$'");
+                            t.HasCheckConstraint("ck_tipos_de_documento_categoria_formato", "categoria ~ '^[A-Z][A-Z0-9]*(_[A-Z0-9]+)*$'");
 
-                            t.HasCheckConstraint("ck_tipos_de_documento_codigo_formato", "codigo ~ '^[A-Z][A-Z0-9_]{1,49}$'");
+                            t.HasCheckConstraint("ck_tipos_de_documento_codigo_formato", "codigo ~ '^[A-Z][A-Z0-9]*(_[A-Z0-9]+)*$'");
 
                             t.HasCheckConstraint("ck_tipos_de_documento_equivalente_diferente_codigo", "tipo_equivalente IS NULL OR tipo_equivalente <> codigo");
 
@@ -12015,8 +12017,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.Property<string>("BaseLegalBonusRegionalCodigo")
                         .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)")
+                        .HasMaxLength(80)
+                        .HasColumnType("character varying(80)")
                         .HasColumnName("base_legal_codigo")
                         .HasComment("Código da base legal do Fator de Atenuação das Desigualdades de Acesso (FADA) copiado na configuração.");
 
@@ -12038,8 +12040,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasComment("Descrição da base legal do Fator de Atenuação das Desigualdades de Acesso (FADA), copiada na configuração.");
 
                     b.Property<string>("FatoElegibilidadeCodigo")
-                        .HasMaxLength(60)
-                        .HasColumnType("character varying(60)")
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
                         .HasColumnName("codigo_do_dado_de_elegibilidade")
                         .HasComment("Código do dado do candidato que decide a elegibilidade ao Fator de Atenuação das Desigualdades de Acesso (FADA), quando definido.");
 
@@ -14438,8 +14440,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.Property<string>("RegraCodigo")
                         .IsRequired()
-                        .HasMaxLength(128)
-                        .HasColumnType("character varying(128)")
+                        .HasMaxLength(80)
+                        .HasColumnType("character varying(80)")
                         .HasColumnName("regra_codigo")
                         .HasComment("Código que identifica a regra legal.");
 
@@ -14489,6 +14491,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                             t.HasComment("Regras legais aplicáveis à configuração de processos seletivos.");
 
                             t.HasCheckConstraint("ck_obrigatoriedades_legais_categoria", "categoria IN ('ETAPA', 'MODALIDADE', 'DESEMPATE', 'DOCUMENTO', 'FADA', 'ATENDIMENTO', 'OUTROS')");
+
+                            t.HasCheckConstraint("ck_obrigatoriedades_legais_regra_codigo_formato", "regra_codigo ~ '^[A-Z][A-Z0-9]*(_[A-Z0-9]+)*$'");
                         });
                 });
 
@@ -15888,8 +15892,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.Property<string>("TermoCodigo")
                         .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)")
+                        .HasMaxLength(80)
+                        .HasColumnType("character varying(80)")
                         .HasColumnName("termo_codigo");
 
                     b.Property<Guid>("TermoId")
@@ -18767,7 +18771,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                                 {
                                     t.HasComment("Valores de um tipo de conceito categórico, na ordem em que foram informados.");
 
-                                    t.HasCheckConstraint("ck_opcoes_do_tipo_de_conceito_codigo", "codigo ~ '^[A-Z][A-Z0-9_]*$'");
+                                    t.HasCheckConstraint("ck_opcoes_do_tipo_de_conceito_codigo", "codigo ~ '^[A-Z][A-Z0-9]*(_[A-Z0-9]+)*$'");
 
                                     t.HasCheckConstraint("ck_opcoes_do_tipo_de_conceito_posicao", "posicao >= 1");
                                 });
