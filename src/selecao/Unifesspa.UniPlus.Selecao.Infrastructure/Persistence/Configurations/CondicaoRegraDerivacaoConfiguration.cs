@@ -12,6 +12,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Protecao;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
+using Unifesspa.UniPlus.Regras.Formularios;
 
 /// <summary>
 /// Configuração EF Core de <see cref="CondicaoRegraDerivacao"/> — entidade filha de
@@ -21,7 +22,7 @@ using Unifesspa.UniPlus.Kernel.Domain.Enums;
 /// </summary>
 public sealed class CondicaoRegraDerivacaoConfiguration : IEntityTypeConfiguration<CondicaoRegraDerivacao>
 {
-    private const int FatoMaxLength = 60;
+    private const int FatoMaxLength = FatoDoCatalogo.CodigoMaxLength;
     private const int OperadorCodigoMaxLength = 20;
 
     public void Configure(EntityTypeBuilder<CondicaoRegraDerivacao> builder)

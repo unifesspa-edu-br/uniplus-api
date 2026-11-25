@@ -26,7 +26,7 @@ internal sealed class OcorrenciaDeGrupoDaInscricaoRecordConfiguration : IEntityT
         builder.HasKey(o => o.Id);
         builder.Property(o => o.Id).ValueGeneratedNever();
 
-        builder.Property(o => o.GrupoCodigo).HasMaxLength(FormaDoItem.FatoCodigoMaxLength).IsRequired();
+        builder.Property(o => o.GrupoCodigo).HasMaxLength(FormaDoGrupo.CodigoMaxLength).IsRequired();
         builder.Property(o => o.MembroId)
             .IsRequired()
             .HasComment("O id estável que o formulário dá ao membro — reordenar a lista não troca a identidade dele.");

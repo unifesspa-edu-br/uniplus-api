@@ -66,19 +66,19 @@
       "titulo": "Formulário de inscrição",
       "paginas": [
         {
-          "codigo": "dados-pessoais",
+          "codigo": "DADOS_PESSOAIS",
           "ordem": 0,
           "tipo": "SECAO",
           "titulo": "Dados pessoais"
         },
         {
-          "codigo": "dados-socioeconomicos",
+          "codigo": "DADOS_SOCIOECONOMICOS",
           "ordem": 1,
           "tipo": "SECAO",
           "titulo": "Dados socioeconômicos"
         },
         {
-          "codigo": "revisao-e-aceite",
+          "codigo": "REVISAO_E_ACEITE",
           "ordem": 2,
           "tipo": "BLOCO",
           "bloco": "REVISAO_E_ACEITE",
@@ -88,7 +88,7 @@
       "itens": [
         {
           "codigoDoDado": "RENDA_PER_CAPITA",
-          "paginaCodigo": "dados-socioeconomicos",
+          "paginaCodigo": "DADOS_SOCIOECONOMICOS",
           "ordem": 0,
           "rotulo": "Renda mensal per capita da família",
           "ajuda": "Informe o valor em reais.",
@@ -105,7 +105,7 @@
         },
         {
           "codigoDoDado": "DATA_DE_NASCIMENTO",
-          "paginaCodigo": "dados-pessoais",
+          "paginaCodigo": "DADOS_PESSOAIS",
           "ordem": 1,
           "rotulo": "Data de nascimento",
           "obrigatoriedade": {
@@ -130,8 +130,8 @@
       ],
       "grupos": [
         {
-          "codigo": "composicao-familiar",
-          "paginaCodigo": "dados-socioeconomicos",
+          "codigo": "COMPOSICAO_FAMILIAR",
+          "paginaCodigo": "DADOS_SOCIOECONOMICOS",
           "ordem": 2,
           "rotulo": "Composição familiar",
           "minimo": 0,
@@ -154,7 +154,7 @@
       ],
       "termos": [
         {
-          "codigo": "consentimento-lgpd",
+          "codigo": "CONSENTIMENTO_LGPD",
           "ordem": 0,
           "termoCodigo": "TERMO_DE_CONSENTIMENTO_LGPD",
           "versaoNumero": 1,

@@ -74,9 +74,7 @@
     "grupoDoFormularioParaRepeticao": {
       "title": "Grupo do formulário para repetição",
       "description": "Código do grupo do formulário para cujos registros a regra é aplicada.",
-      "type": "string",
-      "minLength": 1,
-      "maxLength": 60
+      "$ref": "item-do-formulario.schema.json#/$defs/codigoLocal"
     },
     "itens": {
       "title": "Itens",

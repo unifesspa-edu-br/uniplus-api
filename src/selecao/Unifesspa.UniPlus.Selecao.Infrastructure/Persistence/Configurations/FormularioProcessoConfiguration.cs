@@ -8,6 +8,7 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence.CodigosDeContrato;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Protecao;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
+using Unifesspa.UniPlus.Kernel.Domain.ValueObjects;
 using Unifesspa.UniPlus.Regras.Formularios;
 
 /// <summary>
@@ -59,6 +60,7 @@ public sealed class PaginaDoFormularioConfiguration : IEntityTypeConfiguration<P
 
         builder.ToTable("paginas_do_formulario", t =>
         {
+            t.HasCheckConstraint("ck_paginas_do_formulario_codigo_formato", $"codigo ~ '{FormatoDoCodigo.ExpressaoNoBanco}'");
             t.HasCheckConstraint("ck_paginas_do_formulario_tipo", $"tipo IN ({SqlDosCodigosDeContrato.Lista<TipoPaginaFormulario>()})");
             t.HasCheckConstraint("ck_paginas_do_formulario_bloco", $"bloco IS NULL OR bloco IN ({SqlDosCodigosDeContrato.Lista<BlocoSistema>()})");
         });

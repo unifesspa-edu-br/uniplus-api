@@ -34,7 +34,6 @@ using Unifesspa.UniPlus.Regras.ValueObjects;
 /// </remarks>
 public sealed class FatoCandidatoConfiguration : IEntityTypeConfiguration<FatoCandidato>
 {
-    private const int CodigoMaxLength = 50;
     private const int NomeMaxLength = 200;
     private const int DescricaoMaxLength = 1000;
     private const int CodigoDeContratoMaxLength = 20;
@@ -93,7 +92,7 @@ public sealed class FatoCandidatoConfiguration : IEntityTypeConfiguration<FatoCa
         // EF a tratar a chave como fornecida pela aplicação (convenção do repo).
         builder.Property(f => f.Id).ValueGeneratedNever();
 
-        builder.Property(f => f.Codigo).HasMaxLength(CodigoMaxLength).IsRequired();
+        builder.Property(f => f.Codigo).HasMaxLength(CodigoFatoCandidato.TamanhoMaximo).IsRequired();
         builder.Property(f => f.Nome).HasMaxLength(NomeMaxLength).IsRequired();
         builder.Property(f => f.Descricao).HasMaxLength(DescricaoMaxLength).IsRequired();
     }

@@ -8,6 +8,7 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence.CodigosDeContrato;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Protecao;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
+using Unifesspa.UniPlus.Kernel.Domain.ValueObjects;
 using Unifesspa.UniPlus.Regras.Formularios;
 
 
@@ -31,7 +32,10 @@ public sealed class TermoExigidoFormularioConfiguration : IEntityTypeConfigurati
         builder.ClassificaPorPadrao(ClassificacaoDeProtecao.Interno);
 
         builder.ToTable("termos_exigidos_formulario", t =>
-            t.HasCheckConstraint("ck_termos_exigidos_formulario_finalidade", $"finalidade IN ({SqlDosCodigosDeContrato.Lista<FinalidadeFormulario>()})"));
+        {
+            t.HasCheckConstraint("ck_termos_exigidos_formulario_codigo_formato", $"codigo ~ '{FormatoDoCodigo.ExpressaoNoBanco}'");
+            t.HasCheckConstraint("ck_termos_exigidos_formulario_finalidade", $"finalidade IN ({SqlDosCodigosDeContrato.Lista<FinalidadeFormulario>()})");
+        });
         builder.HasKey(t => t.Id);
         builder.Property(t => t.Id).ValueGeneratedNever();
 

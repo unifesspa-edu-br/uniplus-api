@@ -8,6 +8,7 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence.CodigosDeContrato;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Protecao;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
+using Unifesspa.UniPlus.Kernel.Domain.ValueObjects;
 using Unifesspa.UniPlus.Regras.Formularios;
 
 /// <summary>
@@ -36,6 +37,8 @@ public sealed class GrupoColetadoConfiguration : IEntityTypeConfiguration<GrupoC
 
         builder.ToTable("grupos_dos_formularios", t =>
         {
+            t.HasCheckConstraint("ck_grupos_dos_formularios_codigo_formato", $"codigo ~ '{FormatoDoCodigo.ExpressaoNoBanco}'");
+            t.HasCheckConstraint("ck_grupos_dos_formularios_pagina_codigo_formato", $"pagina_codigo ~ '{FormatoDoCodigo.ExpressaoNoBanco}'");
             t.HasComment("Grupos repetíveis de dados solicitados nos formulários.");
             t.HasCheckConstraint("ck_grupos_dos_formularios_finalidade", $"finalidade IN ({SqlDosCodigosDeContrato.Lista<FinalidadeFormulario>()})");
         });

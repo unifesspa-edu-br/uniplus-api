@@ -17,10 +17,10 @@
       "properties": {
         "codigoDoDado": {
           "title": "Dado",
-          "description": "Código do fato que a condição examina, de 1 a 60 caracteres (o limite do armazenamento), com ao menos um caractere que não seja espaço.",
+          "description": "Código do fato que a condição examina, de 1 a 50 caracteres (o limite do armazenamento), com ao menos um caractere que não seja espaço.",
           "type": "string",
           "minLength": 1,
-          "maxLength": 60,
+          "maxLength": 50,
           "pattern": "\\S"
         },
         "operador": {

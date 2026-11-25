@@ -17199,10 +17199,10 @@
               "properties": {
                 "codigoDoDado": {
                   "title": "Fato derivado",
-                  "description": "C\u00F3digo do fato derivado no cat\u00E1logo, de 1 a 60 caracteres.",
+                  "description": "C\u00F3digo do fato derivado no cat\u00E1logo, de 1 a 50 caracteres.",
                   "type": "string",
                   "minLength": 1,
-                  "maxLength": 60,
+                  "maxLength": 50,
                   "pattern": "\\S"
                 },
                 "regras": {
@@ -17580,10 +17580,10 @@
         "properties": {
           "codigoDoDado": {
             "title": "Dado",
-            "description": "C\u00F3digo do fato que a condi\u00E7\u00E3o examina, de 1 a 60 caracteres (o limite do armazenamento), com ao menos um caractere que n\u00E3o seja espa\u00E7o.",
+            "description": "C\u00F3digo do fato que a condi\u00E7\u00E3o examina, de 1 a 50 caracteres (o limite do armazenamento), com ao menos um caractere que n\u00E3o seja espa\u00E7o.",
             "type": "string",
             "minLength": 1,
-            "maxLength": 60,
+            "maxLength": 50,
             "pattern": "\\S"
           },
           "operador": {
@@ -19842,11 +19842,9 @@
         "properties": {
           "codigoDoDado": {
             "title": "Fato",
-            "description": "C\u00F3digo do fato no cat\u00E1logo, de 1 a 60 caracteres. Cada fato \u00E9 coletado por um s\u00F3 formul\u00E1rio do processo.",
-            "type": "string",
-            "minLength": 1,
-            "maxLength": 60,
-            "pattern": "\\S"
+            "description": "C\u00F3digo do fato no cat\u00E1logo, de 1 a 50 caracteres. Cada fato \u00E9 coletado por um s\u00F3 formul\u00E1rio do processo.",
+            "maxLength": 50,
+            "$ref": "#/components/schemas/DocumentoDaConfiguracaoComunsCodigoDeCadastro"
           },
           "paginaCodigo": {
             "title": "P\u00E1gina",
@@ -19931,13 +19929,19 @@
           }
         }
       },
-      "DocumentoDaConfiguracaoItemDoFormularioCodigoLocal": {
-        "title": "C\u00F3digo local",
-        "description": "C\u00F3digo escolhido por quem escreve o formul\u00E1rio, de 1 a 60 caracteres, \u00FAnico no formul\u00E1rio.",
+      "DocumentoDaConfiguracaoItemDoFormularioCodigoDaOpcao": {
+        "title": "C\u00F3digo da op\u00E7\u00E3o",
+        "description": "Texto de 1 a 60 caracteres, \u00FAnico no fato.",
         "type": "string",
         "minLength": 1,
         "maxLength": 60,
         "pattern": "\\S"
+      },
+      "DocumentoDaConfiguracaoItemDoFormularioCodigoLocal": {
+        "title": "C\u00F3digo local",
+        "description": "C\u00F3digo de 1 a 60 caracteres, com letra mai\u00FAscula inicial, letras mai\u00FAsculas e algarismos separados por sublinhado.",
+        "maxLength": 60,
+        "$ref": "#/components/schemas/DocumentoDaConfiguracaoComunsCodigoDeCadastro"
       },
       "DocumentoDaConfiguracaoItemDoFormularioImpedimento": {
         "title": "Impedimento de inscri\u00E7\u00E3o",
@@ -19976,7 +19980,7 @@
           "codigo": {
             "title": "C\u00F3digo",
             "description": "C\u00F3digo da op\u00E7\u00E3o, de 1 a 60 caracteres, \u00FAnico no fato.",
-            "$ref": "#/components/schemas/DocumentoDaConfiguracaoItemDoFormularioCodigoLocal"
+            "$ref": "#/components/schemas/DocumentoDaConfiguracaoItemDoFormularioCodigoDaOpcao"
           },
           "rotulo": {
             "title": "R\u00F3tulo",
@@ -20344,9 +20348,7 @@
           "grupoDoFormularioParaRepeticao": {
             "title": "Grupo do formul\u00E1rio para repeti\u00E7\u00E3o",
             "description": "C\u00F3digo do grupo do formul\u00E1rio para cujos registros a regra \u00E9 aplicada.",
-            "type": "string",
-            "minLength": 1,
-            "maxLength": 60
+            "$ref": "#/components/schemas/DocumentoDaConfiguracaoItemDoFormularioCodigoLocal"
           },
           "itens": {
             "title": "Itens",

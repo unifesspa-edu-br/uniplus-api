@@ -134,7 +134,7 @@ internal static class LeituraDosGrupos
 
     private static DeclaracaoDoGrupo LerCamposDaDeclaracaoDoGrupo(LeitorEnvelope leitor, JsonObject item, string path) => new()
     {
-        Codigo = leitor.TextoNaoVazio(item, "codigo", path, LimitesDoEnvelope.Fato),
+        Codigo = leitor.TextoNaoVazio(item, "codigo", path, FormaDoGrupo.CodigoMaxLength),
         Finalidade = EstruturaFormulario.FinalidadeDoCodigo(leitor.TextoNaoVazio(item, "finalidade", path)),
         PaginaCodigo = leitor.TextoOpcional(item, "paginaCodigo", path, LimitesDoEnvelope.CodigoPaginaFormulario),
         Ordem = leitor.Inteiro(item, "ordem", path),

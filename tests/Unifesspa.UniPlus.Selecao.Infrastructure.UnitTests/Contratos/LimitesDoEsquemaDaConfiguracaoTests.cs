@@ -101,6 +101,17 @@ public sealed class LimitesDoEsquemaDaConfiguracaoTests
         limiteDoEsquema.Should().BeGreaterThanOrEqualTo(LimitesDoEnvelope.UnidadeAdministradoraCodigo);
     }
 
+    [Fact]
+    public void CodigosDoFormulario_LimitesDoContrato_SaoOsDoDominio()
+    {
+        FormaDoItem.FatoCodigoMaxLength.Should().Be(50);
+        MaximoDoEsquema(Item, "/properties/codigoDoDado").Should().Be(50);
+        FormaDaPagina.CodigoMaxLength.Should().Be(60);
+        FormaDoGrupo.CodigoMaxLength.Should().Be(60);
+        FormaDoTermo.CodigoMaxLength.Should().Be(60);
+        MaximoDoEsquema(Item, "/$defs/codigoLocal").Should().Be(60);
+    }
+
     [Theory(DisplayName = "O limite de tamanho do esquema bate com o que o codec aplica")]
     [MemberData(nameof(Constantes))]
     public void LimiteDoEsquema_BateComOCodec(string constante)
