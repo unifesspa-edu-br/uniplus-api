@@ -125,3 +125,7 @@ Decisões do líder técnico (24/11/2026).
 3. **Conferência e comparação.** O código é conferido e comparado como chegou, sem aparar espaços, trocar maiúsculas e minúsculas ou normalizar. Fora do formato, é recusado com o código de erro de formato do próprio campo, junto das demais recusas ([ADR-0125](0125-dominio-fonte-unica-validacao-sem-fluentvalidation-duplicado.md)) e sem repetir o valor recebido ([ADR-0023](0023-wire-formato-erro-rfc-9457.md)). Uma linha do banco com código fora do formato é defeito de leitura.
 4. **Código formado a partir de texto.** O código formado a partir de um nome ou de uma identificação segue o mesmo formato. Se ultrapassar o tamanho permitido, é recusado e se pede um texto mais curto.
 5. **Adoção.** Os cadastros de texto livre que ainda não têm formato o adotam em trabalho próprio; até lá, não emitem recusa de formato.
+
+## Emenda 6 (2026-11-25) — códigos das partes do formulário
+
+O formato e as regras da emenda 5 valem também para o código da página, do grupo e do termo exigido do formulário, no processo e no modelo, e para a citação da página pelo item e pelo grupo; o limite de cada um continua 60. O código do dado que o item coleta é o código do fato do catálogo: tem o limite dele, 50, definido uma vez, e é conferido pela existência no catálogo, como chegou.
