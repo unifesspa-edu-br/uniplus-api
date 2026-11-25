@@ -33,26 +33,23 @@ public static class DefinicaoDoProcesso
         ArgumentNullException.ThrowIfNull(derivacoes);
         ArgumentNullException.ThrowIfNull(agregados);
 
-        FinalidadeFormulario[] finalidades =
-        [
-            .. formularios.Select(static f => f.Finalidade)
-                .Concat(itens.Select(static i => i.Finalidade).OfType<FinalidadeFormulario>())
-                .Concat(grupos.Select(static g => g.Finalidade).OfType<FinalidadeFormulario>())
-                .Distinct()
-                .Order(),
-        ];
-
         return new DefinicaoFormulario(
-            [.. finalidades.SelectMany(finalidade => EtapasDaFinalidade(
-                finalidade,
-                formularios.FirstOrDefault(f => f.Finalidade == finalidade),
-                [.. itens.Where(i => i.Finalidade == finalidade)],
-                [.. grupos.Where(g => g.Finalidade == finalidade)]))],
-            [.. termos.OrderBy(static t => t.Finalidade).ThenBy(static t => t.Ordem)
-                .Select(static t => new DefinicaoTermo(CodigoDoTermo(t.Finalidade!.Value, t.Codigo), t.Exibicao, t.Obrigatoriedade))],
-            derivacoes,
-            agregados);
+            [.. FinalidadesDeclaradas(formularios, itens, grupos).SelectMany(finalidade => EtapasDaFinalidade(
+                finalidade, formularios.FirstOrDefault(f => f.Finalidade == finalidade),
+                [.. itens.Where(i => i.Finalidade == finalidade)], [.. grupos.Where(g => g.Finalidade == finalidade)]))],
+            TermosDaDefinicao(termos), derivacoes, agregados);
     }
+
+    private static IEnumerable<FinalidadeFormulario> FinalidadesDeclaradas(
+        IEnumerable<FormularioProcesso> formularios, IEnumerable<FatoColetado> itens, IEnumerable<GrupoColetado> grupos) =>
+        formularios.Select(static f => f.Finalidade)
+            .Concat(itens.Select(static i => i.Finalidade).OfType<FinalidadeFormulario>())
+            .Concat(grupos.Select(static g => g.Finalidade).OfType<FinalidadeFormulario>())
+            .Distinct().Order();
+
+    private static DefinicaoTermo[] TermosDaDefinicao(IEnumerable<TermoExigidoFormulario> termos) =>
+        [.. termos.OrderBy(static t => t.Finalidade).ThenBy(static t => t.Ordem)
+            .Select(static t => new DefinicaoTermo(CodigoDoTermo(t.Finalidade!.Value, t.Codigo), t.Exibicao, t.Obrigatoriedade))];
 
     /// <summary>O código da etapa na definição do processo: a seção, ou a finalidade para o item sem seção.</summary>
     public static string CodigoDaEtapa(FinalidadeFormulario finalidade, string? secao) =>
@@ -76,23 +73,33 @@ public static class DefinicaoDoProcesso
         EtapaFormulario[] secoes = [.. (formulario?.Etapas ?? []).Where(static e => e.Tipo == TipoEtapaFormulario.Secao).OrderBy(static e => e.Ordem)];
         HashSet<string> codigosDasSecoes = new(secoes.Select(static s => s.Codigo), StringComparer.Ordinal);
 
-        // O que não está numa seção do formulário — o rascunho ainda em montagem — fica numa etapa
-        // da finalidade, antes das seções, sem exibição.
-        FatoColetado[] semSecao = [.. itens.Where(i => i.EtapaCodigo is not { } codigo || !codigosDasSecoes.Contains(codigo))];
-        GrupoColetado[] gruposSemSecao = [.. grupos.Where(g => g.EtapaCodigo is not { } codigo || !codigosDasSecoes.Contains(codigo))];
-        if (semSecao.Length > 0 || gruposSemSecao.Length > 0)
+        if (EtapaDosItensSemSecao(finalidade, itens, grupos, codigosDasSecoes) is { } semSecao)
         {
-            yield return Etapa(CodigoDaEtapa(finalidade, null), null, semSecao, gruposSemSecao);
+            yield return semSecao;
         }
 
         foreach (EtapaFormulario secao in secoes)
         {
-            yield return Etapa(
-                CodigoDaEtapa(finalidade, secao.Codigo),
-                secao.Exibicao,
-                [.. itens.Where(i => string.Equals(i.EtapaCodigo, secao.Codigo, StringComparison.Ordinal))],
-                [.. grupos.Where(g => string.Equals(g.EtapaCodigo, secao.Codigo, StringComparison.Ordinal))]);
+            yield return EtapaDaSecao(finalidade, secao, itens, grupos);
         }
+    }
+
+    private static DefinicaoEtapa EtapaDaSecao(
+        FinalidadeFormulario finalidade, EtapaFormulario secao, IReadOnlyList<FatoColetado> itens, IReadOnlyList<GrupoColetado> grupos) =>
+        Etapa(
+            CodigoDaEtapa(finalidade, secao.Codigo),
+            secao.Exibicao,
+            [.. itens.Where(i => string.Equals(i.EtapaCodigo, secao.Codigo, StringComparison.Ordinal))],
+            [.. grupos.Where(g => string.Equals(g.EtapaCodigo, secao.Codigo, StringComparison.Ordinal))]);
+
+    private static DefinicaoEtapa? EtapaDosItensSemSecao(
+        FinalidadeFormulario finalidade, IReadOnlyList<FatoColetado> itens, IReadOnlyList<GrupoColetado> grupos, HashSet<string> secoes)
+    {
+        FatoColetado[] semSecao = [.. itens.Where(i => i.EtapaCodigo is not { } codigo || !secoes.Contains(codigo))];
+        GrupoColetado[] gruposSemSecao = [.. grupos.Where(g => g.EtapaCodigo is not { } codigo || !secoes.Contains(codigo))];
+        return semSecao.Length > 0 || gruposSemSecao.Length > 0
+            ? Etapa(CodigoDaEtapa(finalidade, null), null, semSecao, gruposSemSecao)
+            : null;
     }
 
     private static DefinicaoEtapa Etapa(string codigo, PredicadoDnf? exibicao, IEnumerable<FatoColetado> itens, IEnumerable<GrupoColetado> grupos) =>

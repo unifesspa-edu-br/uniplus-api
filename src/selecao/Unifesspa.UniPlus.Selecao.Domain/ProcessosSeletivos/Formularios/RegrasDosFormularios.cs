@@ -208,13 +208,7 @@ public static class RegrasDosFormularios
         List<FieldError> erros = FormaDoTermo.ConferirUnicidade([.. termos.Select(static t => ((string?, int)?)(t.Codigo, t.Ordem))]);
         DependenciasDoFormulario dependencias = CitacoesDosFormularios.DependenciasDe(
             configuracao, finalidade, configuracao.Coleta.Itens.Where(f => f.Finalidade == finalidade), CitacoesDosFormularios.FatosDaInscricao(configuracao.Coleta.Itens));
-        for (int indice = 0; indice < termos.Count; indice++)
-        {
-            if (GrafoDoFormulario.CitacaoInvalidaDoTermo(termos[indice].ParaGrafo(), dependencias) is { } recusa)
-            {
-                erros.Add(new($"termos[{indice}]", recusa));
-            }
-        }
+        erros.AddRange(CitacoesDosFormularios.RecusasDosTermos(termos, dependencias));
 
         return erros;
     }

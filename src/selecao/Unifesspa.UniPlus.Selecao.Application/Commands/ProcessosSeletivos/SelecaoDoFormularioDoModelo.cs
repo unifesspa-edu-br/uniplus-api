@@ -80,6 +80,11 @@ internal sealed class SelecaoDoFormularioDoModelo(
             return false;
         }
 
+        return DecidirCopiaEntreFinalidades(item);
+    }
+
+    private bool DecidirCopiaEntreFinalidades(FatoColetadoInput item)
+    {
         FatoColetado? emOutra = processo.FatosColetados.FirstOrDefault(f => f.FatoCodigo == item.FatoCodigo && f.Finalidade != finalidade);
         if (emOutra is not null && finalidade == FinalidadeFormulario.Inscricao)
         {

@@ -57,17 +57,23 @@ public static class CitacoesDosFormularios
         {
             if (FatoNaoGarantido(configuracao, citado, finalidadePropria, publicadas, membroPorAgregado, []) is { } naoGarantido)
             {
-                string anterior = naoGarantido.Produtora.Codigo();
-                string sujeito = string.Equals(citado, naoGarantido.Fato, StringComparison.Ordinal)
-                    ? $"O fato '{citado}', citado por {citante}, não"
-                    : $"O fato '{citado}', citado por {citante}, depende de '{naoGarantido.Fato}', que não";
-                return new DomainError(
-                    RetificacaoErrorCodes.FatoAusenteDeVersaoPublicada,
-                    $"{sujeito} é coletado pelo formulário de {anterior} em todas as versões publicadas do edital: quem preencheu esse formulário numa versão anterior não o informou.");
+                return ErroDeFatoNaoGarantido(citante, citado, naoGarantido);
             }
         }
 
         return null;
+    }
+
+    private static DomainError ErroDeFatoNaoGarantido(
+        string citante, string citado, (string Fato, FinalidadeFormulario Produtora) naoGarantido)
+    {
+        string anterior = naoGarantido.Produtora.Codigo();
+        string sujeito = string.Equals(citado, naoGarantido.Fato, StringComparison.Ordinal)
+            ? $"O fato '{citado}', citado por {citante}, não"
+            : $"O fato '{citado}', citado por {citante}, depende de '{naoGarantido.Fato}', que não";
+        return new DomainError(
+            RetificacaoErrorCodes.FatoAusenteDeVersaoPublicada,
+            $"{sujeito} é coletado pelo formulário de {anterior} em todas as versões publicadas do edital: quem preencheu esse formulário numa versão anterior não o informou.");
     }
 
     /// <summary>
@@ -94,6 +100,17 @@ public static class CitacoesDosFormularios
             return null;
         }
 
+        return DependenciaNaoGarantida(configuracao, fato, finalidadePropria, publicadas, membroPorAgregado, emAvaliacao);
+    }
+
+    private static (string Fato, FinalidadeFormulario Produtora)? DependenciaNaoGarantida(
+        ConfiguracaoDeclarada configuracao,
+        string fato,
+        FinalidadeFormulario? finalidadePropria,
+        FatosDasVersoesPublicadas publicadas,
+        IReadOnlyDictionary<string, string> membroPorAgregado,
+        HashSet<string> emAvaliacao)
+    {
         foreach (string dependencia in FaseEfetivaDoFato.DependenciasDoFato(configuracao, fato, membroPorAgregado))
         {
             if (FatoNaoGarantido(configuracao, dependencia, finalidadePropria, publicadas, membroPorAgregado, emAvaliacao) is { } naoGarantido)
@@ -172,14 +189,24 @@ public static class CitacoesDosFormularios
             GrupoColetado[] grupos = [.. GruposDaFinalidade(configuracao, outra)];
             DependenciasDoFormulario antes = DependenciasDe(outra, configuracao.Coleta.Itens.Where(f => f.Finalidade == outra), atuais, derivacoesAntes);
             DependenciasDoFormulario depois = DependenciasDe(outra, itens, daInscricaoDepois, derivacoesDepois);
-            foreach ((string dono, long posicao, string citado) in CitacoesDoFormulario(configuracao, formulario, itens, grupos))
+            foreach (DomainError recusa in CitacoesInvalidadas(configuracao, formulario, outra, itens, grupos, antes, depois))
             {
-                if (antes.Conferir(citado, posicao) is null && depois.Conferir(citado, posicao) is not null)
-                {
-                    yield return new DomainError(
-                        GrafoFormularioErrorCodes.CitaFatoNaoConhecido,
-                        $"O fato '{citado}', citado por {dono} do formulário de {outra.Codigo()}, deixaria de ser conhecido por ele.");
-                }
+                yield return recusa;
+            }
+        }
+    }
+
+    private static IEnumerable<DomainError> CitacoesInvalidadas(
+        ConfiguracaoDeclarada configuracao, FormularioProcesso formulario, FinalidadeFormulario finalidade,
+        FatoColetado[] itens, GrupoColetado[] grupos, DependenciasDoFormulario antes, DependenciasDoFormulario depois)
+    {
+        foreach ((string dono, long posicao, string citado) in CitacoesDoFormulario(configuracao, formulario, itens, grupos))
+        {
+            if (antes.Conferir(citado, posicao) is null && depois.Conferir(citado, posicao) is not null)
+            {
+                yield return new DomainError(
+                    GrafoFormularioErrorCodes.CitaFatoNaoConhecido,
+                    $"O fato '{citado}', citado por {dono} do formulário de {finalidade.Codigo()}, deixaria de ser conhecido por ele.");
             }
         }
     }
@@ -277,23 +304,35 @@ public static class CitacoesDosFormularios
         HashSet<string> daInscricao = FatosDaInscricao(fatos);
         Dictionary<string, IReadOnlyCollection<string>> dependenciasDasDerivacoes =
             MapaDeDerivacoes(derivacoes);
-        foreach (FormularioProcesso formulario in formularios)
+        return formularios.Select(formulario => CitacaoInvalidaDoFormulario(
+            formulario, fatos, termos, grupos ?? [], daInscricao, dependenciasDasDerivacoes))
+            .FirstOrDefault(static recusa => recusa is not null);
+    }
+
+    private static DomainError? CitacaoInvalidaDoFormulario(
+        FormularioProcesso formulario, IReadOnlyCollection<FatoColetado> fatos, IReadOnlyCollection<TermoExigidoFormulario> termos,
+        IReadOnlyCollection<GrupoColetado> grupos, IReadOnlySet<string> daInscricao,
+        IReadOnlyDictionary<string, IReadOnlyCollection<string>> derivacoes)
+    {
+        FinalidadeFormulario finalidade = formulario.Finalidade;
+        FatoColetado[] itens = [.. fatos.Where(f => f.Finalidade == finalidade)];
+        DependenciasDoFormulario dependencias = DependenciasDe(finalidade, itens, daInscricao, derivacoes);
+        return GrafoDoFormulario.CitacaoInvalida(
+            [.. itens.Select(static i => i.ParaGrafo())], [.. formulario.Etapas.Select(static e => e.ParaGrafo())],
+            termos.Where(t => t.Finalidade == finalidade).Select(static t => t.ParaGrafo()), dependencias,
+            [.. grupos.Where(g => g.Finalidade == finalidade).Select(static g => g.ParaGrafo())]);
+    }
+
+    internal static IEnumerable<FieldError> RecusasDosTermos(
+        IReadOnlyList<TermoExigidoFormulario> termos, DependenciasDoFormulario dependencias)
+    {
+        for (int indice = 0; indice < termos.Count; indice++)
         {
-            FinalidadeFormulario finalidade = formulario.Finalidade;
-            FatoColetado[] itens = [.. fatos.Where(f => f.Finalidade == finalidade)];
-            DependenciasDoFormulario dependencias = DependenciasDe(finalidade, itens, daInscricao, dependenciasDasDerivacoes);
-            if (GrafoDoFormulario.CitacaoInvalida(
-                    [.. itens.Select(static i => i.ParaGrafo())],
-                    [.. formulario.Etapas.Select(static e => e.ParaGrafo())],
-                    termos.Where(t => t.Finalidade == finalidade).Select(static t => t.ParaGrafo()),
-                    dependencias,
-                    [.. (grupos ?? []).Where(g => g.Finalidade == finalidade).Select(static g => g.ParaGrafo())]) is { } recusa)
+            if (GrafoDoFormulario.CitacaoInvalidaDoTermo(termos[indice].ParaGrafo(), dependencias) is { } recusa)
             {
-                return recusa;
+                yield return new FieldError($"termos[{indice}]", recusa);
             }
         }
-
-        return null;
     }
 
     /// <summary>
