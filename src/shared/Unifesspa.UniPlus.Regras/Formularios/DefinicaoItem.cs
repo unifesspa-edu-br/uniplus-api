@@ -60,14 +60,13 @@ public sealed record DefinicaoItem
     /// <summary>O que a resposta tem de atender: as restrições declaradas e o formato do campo.</summary>
     public IReadOnlyList<RestricaoValor> RestricoesDaResposta { get; }
 
-    internal (IReadOnlyList<RestricaoValor> Violadas, bool Indeterminada) ConferirResposta(JsonElement resposta, ContextoDaResposta contexto)
+    internal ConferenciaDaResposta ConferirResposta(JsonElement resposta, ContextoDaResposta contexto)
     {
-        ConferenciaDaResposta conferencia = new();
-        foreach (RestricaoValor restricao in RestricoesDaResposta)
-        {
-            conferencia.Conferir(restricao, resposta, contexto);
-        }
-        return (conferencia.Violadas, conferencia.Indeterminada);
+        (RestricaoValor Restricao, Ternario Resultado)[] avaliacoes = [.. RestricoesDaResposta
+            .Select(restricao => (restricao, restricao.Avaliar(resposta, contexto)))];
+        RestricaoValor[] violadas = [.. avaliacoes.Where(static avaliacao => avaliacao.Resultado == Ternario.Falso)
+            .Select(static avaliacao => avaliacao.Restricao)];
+        return new(Array.AsReadOnly(violadas), avaliacoes.Any(static avaliacao => avaliacao.Resultado == Ternario.Indeterminado));
     }
 
     internal OpcoesVigentes? OpcoesVigentes(IReadOnlyDictionary<string, FatoResolvido> fatos) =>

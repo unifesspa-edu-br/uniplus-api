@@ -5,7 +5,7 @@ using System.Text.Json;
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.ValueObjects;
 
-internal sealed class AvaliacaoDaOcorrencia
+internal sealed class AvaliadorDaOcorrencia
 {
     private readonly string _paginaCodigo;
     private readonly bool _paginaConcluida;
@@ -15,14 +15,14 @@ internal sealed class AvaliacaoDaOcorrencia
     private readonly Dictionary<string, FatoResolvido> _fatos = new(StringComparer.Ordinal);
     private readonly List<AvaliacaoItem> _itens = [];
 
-    internal AvaliacaoDaOcorrencia(string paginaCodigo, bool paginaConcluida, DateOnly? diaDoEnvio,
-        IReadOnlyDictionary<string, FatoResolvido> fatos, OcorrenciaRespondida ocorrencia)
+    internal AvaliadorDaOcorrencia(string paginaCodigo, bool paginaConcluida, ContextoDaResposta contexto,
+        OcorrenciaRespondida ocorrencia)
     {
         _paginaCodigo = paginaCodigo;
         _paginaConcluida = paginaConcluida;
-        _diaDoEnvio = diaDoEnvio;
+        _diaDoEnvio = contexto.DiaDoEnvio;
         _ocorrencia = ocorrencia;
-        _contexto = new(fatos, StringComparer.Ordinal);
+        _contexto = new(contexto.Fatos, StringComparer.Ordinal);
     }
 
     internal AvaliacaoOcorrencia Avaliar(IEnumerable<DefinicaoItem> subitens)
@@ -38,8 +38,8 @@ internal sealed class AvaliacaoDaOcorrencia
     private void AvaliarSubitem(DefinicaoItem subitem)
     {
         JsonElement? resposta = _ocorrencia.Respostas.TryGetValue(subitem.FatoCodigo, out JsonElement valor) ? valor : null;
-        AvaliacaoDoItem avaliacaoDoItem = new(_paginaCodigo, _paginaConcluida, _diaDoEnvio, _contexto, subitem, Ternario.Verdadeiro);
-        (FatoResolvido fato, AvaliacaoItem avaliacao) = avaliacaoDoItem.Avaliar(resposta);
+        AvaliadorDoItem avaliadorDoItem = new(_paginaCodigo, _paginaConcluida, new ContextoDaResposta(_contexto, _diaDoEnvio), subitem, Ternario.Verdadeiro);
+        (FatoResolvido fato, AvaliacaoItem avaliacao) = avaliadorDoItem.Avaliar(resposta);
         _contexto[subitem.FatoCodigo] = fato;
         _fatos[subitem.FatoCodigo] = fato;
         _itens.Add(avaliacao);

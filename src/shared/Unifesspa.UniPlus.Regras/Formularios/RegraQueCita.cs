@@ -6,7 +6,7 @@ internal sealed record RegraQueCita(string Citante, IReadOnlyCollection<string> 
 {
     internal DomainError? CitacaoForaDoGrupo(IReadOnlyDictionary<string, string> grupoDoMembro)
     {
-        string? membro = Citados.FirstOrDefault(c => grupoDoMembro.TryGetValue(c, out string? grupo) && grupo != GrupoProprio);
+        string? membro = Citados.FirstOrDefault(citado => grupoDoMembro.TryGetValue(citado, out string? grupo) && grupo != GrupoProprio);
         return membro is null ? null : new DomainError(
             GrafoFormularioErrorCodes.CitaFatoDeMembroForaDoGrupo,
             $"Uma regra {Citante} cita '{membro}', campo do grupo '{grupoDoMembro[membro]}' — fora do grupo ele existe uma vez por "

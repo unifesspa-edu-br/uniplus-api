@@ -63,8 +63,10 @@ internal sealed class ResolucaoDoFormulario
     {
         if (_grupos.TryGetValue(codigo, out (DefinicaoPagina Pagina, DefinicaoGrupo Grupo) grupo))
         {
-            _avaliacoesDosGrupos[codigo] = new AvaliacaoDaColeta(grupo.Pagina.Codigo, _diaDoEnvio, _fatos)
-                .AvaliarGrupo(grupo.Pagina, grupo.Grupo, _entrada);
+            Ternario visibilidadeHerdada = grupo.Pagina.Exibicao?.Avaliar(_fatos) ?? Ternario.Verdadeiro;
+            AvaliadorDoGrupo avaliador = new(grupo.Grupo, grupo.Pagina.Codigo, _entrada.PaginasConcluidas.Contains(grupo.Pagina.Codigo),
+                new ContextoDaResposta(_fatos, _diaDoEnvio), visibilidadeHerdada);
+            _avaliacoesDosGrupos[codigo] = avaliador.Avaliar(_entrada);
         }
         else
         {
@@ -77,13 +79,14 @@ internal sealed class ResolucaoDoFormulario
         (DefinicaoPagina pagina, DefinicaoItem item) = _itens[codigo];
         Ternario visivel = pagina.Exibicao?.Avaliar(_fatos) ?? Ternario.Verdadeiro;
         JsonElement? resposta = _entrada.Respostas.TryGetValue(item.FatoCodigo, out JsonElement valor) ? valor : null;
-        AvaliacaoDoItem avaliacaoDoItem = new(pagina.Codigo, _entrada.PaginasConcluidas.Contains(pagina.Codigo), _diaDoEnvio, _fatos, item, visivel);
-        (FatoResolvido fato, AvaliacaoItem avaliacao) = avaliacaoDoItem.Avaliar(resposta);
+        AvaliadorDoItem avaliadorDoItem = new(pagina.Codigo, _entrada.PaginasConcluidas.Contains(pagina.Codigo),
+            new ContextoDaResposta(_fatos, _diaDoEnvio), item, visivel);
+        (FatoResolvido fato, AvaliacaoItem avaliacao) = avaliadorDoItem.Avaliar(resposta);
         _fatos[codigo] = fato;
         _avaliacoesDosItens[codigo] = avaliacao;
     }
 
-    internal void DeixarIndeterminado(string codigo)
+    private void DeixarIndeterminado(string codigo)
     {
         if (_grupos.TryGetValue(codigo, out (DefinicaoPagina Pagina, DefinicaoGrupo Grupo) grupo))
         {
@@ -91,7 +94,6 @@ internal sealed class ResolucaoDoFormulario
                 Ternario.Indeterminado, EstadoFato.Indeterminado, ContagemValida: true, OcorrenciaDoCandidatoValida: true, []);
             return;
         }
-
         _fatos[codigo] = FatoResolvido.Indeterminado();
         if (_itens.TryGetValue(codigo, out (DefinicaoPagina Pagina, DefinicaoItem Item) item))
         {
