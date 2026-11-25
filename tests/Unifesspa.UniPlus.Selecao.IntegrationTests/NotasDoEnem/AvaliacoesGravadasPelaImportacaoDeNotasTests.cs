@@ -58,6 +58,11 @@ public sealed class AvaliacoesGravadasPelaImportacaoDeNotasTests
 
         resposta.StatusCode.Should().Be(HttpStatusCode.Created, await resposta.Content.ReadAsStringAsync());
         IReadOnlyList<AvaliacaoDaEtapa> avaliacoes = await AvaliacoesDoLoteAsync(await IdDoLoteAsync(resposta));
+        ConferirNotasPorOferta(avaliacoes, cenario);
+    }
+
+    private static void ConferirNotasPorOferta(IReadOnlyList<AvaliacaoDaEtapa> avaliacoes, Cenario cenario)
+    {
         avaliacoes.Should().HaveCount(4);
         AvaliacaoDaEtapa naTecnologica = avaliacoes.Single(a => a.InscricaoId == cenario.Inscricoes[0] && a.OfertaCursoId == cenario.Processo.OfertaTecnologicaId);
         AvaliacaoDaEtapa naHumanistica = avaliacoes.Single(a => a.InscricaoId == cenario.Inscricoes[0] && a.OfertaCursoId == cenario.Processo.OfertaHumanisticaId);
@@ -78,23 +83,32 @@ public sealed class AvaliacoesGravadasPelaImportacaoDeNotasTests
         HttpResponseMessage resposta = await ImportarAsync(client, cenario, Bytes([Linha(Pessoas[0], 1), LinhaDeAusente(Pessoas[1], 2), Linha(Pessoas[2], 3)]));
         resposta.StatusCode.Should().Be(HttpStatusCode.Created, await resposta.Content.ReadAsStringAsync());
         Guid lote = await IdDoLoteAsync(resposta);
-
         await using AsyncServiceScope scope = _fixture.Factory.Services.CreateAsyncScope();
         UniPlusDbContext db = scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
-        await db.RespostasDaInscricao
-            .Where(r => r.InscricaoId == cenario.Inscricoes[2] && r.FatoCodigo == Unifesspa.UniPlus.Regras.Services.EdicaoDoEnem.Fato)
-            .ExecuteUpdateAsync(s => s.SetProperty(r => r.ValorCodigo, "2024"));
-        await db.Inscricoes.Where(i => i.Id == cenario.Inscricoes[1])
-            .ExecuteUpdateAsync(s => s.SetProperty(i => i.OfertaCursoSegundaOpcaoId, (Guid?)null));
+        await AlterarEdicaoEOfertaAsync(db, cenario);
         IAvaliacoesDaEtapaReader leitor = scope.ServiceProvider.GetRequiredService<IAvaliacoesDaEtapaReader>();
 
         IReadOnlyList<AvaliacaoVigente> vigentes = await leitor.ListarVigentesAsync(
             cenario.Processo.EtapaDoEnemId, [.. cenario.Inscricoes.Values]);
 
+        ConferirAvaliacoesVigentes(vigentes, cenario, lote);
+    }
+
+    private static void ConferirAvaliacoesVigentes(IReadOnlyList<AvaliacaoVigente> vigentes, Cenario cenario, Guid lote)
+    {
         vigentes.Should().OnlyContain(a => a.LoteId == lote && a.InscricaoId != cenario.Inscricoes[2]);
         vigentes.Where(a => a.InscricaoId == cenario.Inscricoes[0]).Should().HaveCount(2).And.OnlyContain(a => a.Nota != null);
         vigentes.Where(a => a.InscricaoId == cenario.Inscricoes[1]).Should().ContainSingle()
             .Which.OfertaCursoId.Should().Be(cenario.Processo.OfertaTecnologicaId);
+    }
+
+    private static async Task AlterarEdicaoEOfertaAsync(UniPlusDbContext db, Cenario cenario)
+    {
+        await db.RespostasDaInscricao
+            .Where(r => r.InscricaoId == cenario.Inscricoes[2] && r.FatoCodigo == Unifesspa.UniPlus.Regras.Services.EdicaoDoEnem.Fato)
+            .ExecuteUpdateAsync(s => s.SetProperty(r => r.ValorCodigo, "2024"));
+        await db.Inscricoes.Where(i => i.Id == cenario.Inscricoes[1])
+            .ExecuteUpdateAsync(s => s.SetProperty(i => i.OfertaCursoSegundaOpcaoId, (Guid?)null));
     }
 
     [Fact(DisplayName = "duas linhas diferentes do mesmo CPF deixam a inscrição sem nota, em conflito")]
@@ -124,6 +138,11 @@ public sealed class AvaliacoesGravadasPelaImportacaoDeNotasTests
         Guid loteDeNovoA = await IdDoLoteAsync(await ImportarAsync(client, cenario, comFernanda));
 
         loteDeNovoA.Should().NotBe(loteA, "o arquivo de um lote substituído cria lote novo");
+        await ConferirAvaliacoesDosLotesAsync(cenario, loteA, loteB, loteDeNovoA);
+    }
+
+    private async Task ConferirAvaliacoesDosLotesAsync(Cenario cenario, Guid loteA, Guid loteB, Guid loteDeNovoA)
+    {
         (await AvaliacoesDoLoteAsync(loteB)).Where(a => a.InscricaoId == cenario.Inscricoes[0])
             .Should().HaveCount(2).And.OnlyContain(a => a.Situacao == SituacaoDaAvaliacao.InscritoSemLinha && a.Nota == null);
         (await AvaliacoesDoLoteAsync(loteA)).Where(a => a.InscricaoId == cenario.Inscricoes[0])
