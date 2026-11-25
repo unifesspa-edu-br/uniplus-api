@@ -25,18 +25,20 @@ internal static class UnidadesDeTesteNoCadastro
         UniPlusDbContext org = scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
         foreach (UnidadeResponsavelSnapshot modelo in new[] { UnidadesDeTeste.Ceps, UnidadesDeTeste.Cga })
         {
-            Unidade unidade = Unidade.Criar(
-                modelo.Nome,
-                new IdentificadoresDaUnidade(modelo.Sigla.ToLowerInvariant(), modelo.Sigla, modelo.Sigla, null),
-                new CidadeDaUnidade("1504208", "Marabá", "PA"),
-                new VigenciaDaUnidade(new DateOnly(2020, 1, 1), null),
-                null,
-                TipoUnidade.Centro,
-                true).Value!;
+            Unidade unidade = CriarUnidade(modelo);
             org.Entry(unidade).Property(u => u.Id).CurrentValue = modelo.OrigemId;
             org.Unidades.Add(unidade);
         }
 
         await org.SaveChangesAsync().ConfigureAwait(false);
     }
+
+    private static Unidade CriarUnidade(UnidadeResponsavelSnapshot modelo) => Unidade.Criar(
+        modelo.Nome,
+        new IdentificadoresDaUnidade(modelo.Sigla.ToLowerInvariant(), modelo.Sigla, modelo.Sigla, null),
+        new CidadeDaUnidade("1504208", "Marabá", "PA"),
+        new VigenciaDaUnidade(new DateOnly(2020, 1, 1), null),
+        null,
+        TipoUnidade.Centro,
+        true).Value!;
 }

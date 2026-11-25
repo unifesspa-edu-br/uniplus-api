@@ -139,7 +139,7 @@ public sealed class PublicarProdutoDoEditalEndpointTests
         item.GetProperty("ato").GetProperty("id").GetGuid().Should().Be(atos.Preliminar, "a primeira publicação continua sendo a original");
         item.GetProperty("correcoes").EnumerateArray().Last().GetProperty("id").GetGuid().Should().Be(atos.Errata, "a cabeça da cadeia é a errata");
         using HttpResponseMessage porAviso = await PublicarAtoAvulsoEndpointTests.PublicarAvisoAsync(
-            client, processoId, await DocumentoAsync(api, processoId), atoCorrigidoId: atos.Errata, motivo: "Contorno");
+            client, processoId, await DocumentoAsync(api, processoId), correcao: new(atos.Errata, "Contorno"));
         await PublicarAtoAvulsoEndpointTests.ExigirProblemaAsync(porAviso, "uniplus.selecao.ato_do_processo.ato_corrigido_eh_item_do_edital");
     }
 

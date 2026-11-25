@@ -55,17 +55,17 @@ internal static class ApoioDaConcorrenciaDaPublicacao
         processoId, Numero: null, PeriodoInscricaoInicio: null, PeriodoInscricaoFim: null,
         DocumentoEditalId: documentoId, Ato: DadosDoAtoDeTeste.Padrao);
 
-    internal static async Task<(Result Definir, Result Publicar)> ExecutarAsync(
-        CascadingApiFactory api, object definir, PublicarProcessoSeletivoCommand publicar)
+    internal static async Task<(Result Primeiro, Result Segundo)> ExecutarAsync(
+        CascadingApiFactory api, object primeiraOperacao, object segundaOperacao)
     {
-        await using AsyncServiceScope definirScope = api.Services.CreateAsyncScope();
-        await using AsyncServiceScope publicarScope = api.Services.CreateAsyncScope();
-        IMessageBus definirBus = definirScope.ServiceProvider.GetRequiredService<IMessageBus>();
-        IMessageBus publicarBus = publicarScope.ServiceProvider.GetRequiredService<IMessageBus>();
-        Task<Result> definirTask = definirBus.InvokeAsync<Result>(definir);
-        Task<Result> publicarTask = publicarBus.InvokeAsync<Result>(publicar);
-        await Task.WhenAll(definirTask, publicarTask);
-        return (await definirTask, await publicarTask);
+        await using AsyncServiceScope primeiroScope = api.Services.CreateAsyncScope();
+        await using AsyncServiceScope segundoScope = api.Services.CreateAsyncScope();
+        IMessageBus primeiroBus = primeiroScope.ServiceProvider.GetRequiredService<IMessageBus>();
+        IMessageBus segundoBus = segundoScope.ServiceProvider.GetRequiredService<IMessageBus>();
+        Task<Result> primeiraTask = primeiroBus.InvokeAsync<Result>(primeiraOperacao);
+        Task<Result> segundaTask = segundoBus.InvokeAsync<Result>(segundaOperacao);
+        await Task.WhenAll(primeiraTask, segundaTask);
+        return (await primeiraTask, await segundaTask);
     }
 
     internal static async Task ConferirEtapasAsync(CascadingApiFactory api, Guid id, Result definir, Result publicar)

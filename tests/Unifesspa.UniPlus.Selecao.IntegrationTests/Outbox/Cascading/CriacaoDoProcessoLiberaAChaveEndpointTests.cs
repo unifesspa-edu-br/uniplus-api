@@ -55,10 +55,7 @@ public sealed class CriacaoDoProcessoLiberaAChaveEndpointTests : IAsyncLifetime
         using HttpResponseMessage recusada = await PostAsync(client, corpo, chave);
         recusada.StatusCode.Should().Be(HttpStatusCode.Forbidden);
 
-        Guid perfil = await ConcessoesDeTeste.CriarPerfilAsync(
-            _fixture.Factory.Services, PermissaoSelecao.ProcessosConfigurar.Codigo);
-        await ConcessoesDeTeste.ConcederAsync(
-            _fixture.Factory.Services, Leandro, perfil, EscopoDaConcessao.DaUnidade(unidadeId));
+        await ConcederPermissaoNaUnidadeAsync(unidadeId);
 
         using HttpResponseMessage criada = await PostAsync(client, corpo, chave);
 
@@ -70,23 +67,31 @@ public sealed class CriacaoDoProcessoLiberaAChaveEndpointTests : IAsyncLifetime
     public async Task Criar_AposIdentidadeIncompletaComAMesmaChave_Cria()
     {
         (Guid unidadeId, Guid tipoProcessoId) = await SemearAsync();
-        Guid perfil = await ConcessoesDeTeste.CriarPerfilAsync(
-            _fixture.Factory.Services, PermissaoSelecao.ProcessosConfigurar.Codigo);
-        await ConcessoesDeTeste.ConcederAsync(
-            _fixture.Factory.Services, Leandro, perfil, EscopoDaConcessao.DaUnidade(unidadeId));
+        await ConcederPermissaoNaUnidadeAsync(unidadeId);
         string chave = Guid.CreateVersion7().ToString("N");
         string corpo = Corpo(tipoProcessoId, unidadeId);
 
-        using (HttpClient semJti = ClienteDe(semJti: true))
-        {
-            using HttpResponseMessage desafio = await PostAsync(semJti, corpo, chave);
-            desafio.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
-        }
+        await VerificarRecusaDaIdentidadeIncompletaAsync(corpo, chave);
 
         using HttpClient completo = ClienteDe(semJti: false);
         using HttpResponseMessage criada = await PostAsync(completo, corpo, chave);
 
         criada.StatusCode.Should().Be(HttpStatusCode.Created, await criada.Content.ReadAsStringAsync());
+    }
+
+    private async Task VerificarRecusaDaIdentidadeIncompletaAsync(string corpo, string chave)
+    {
+        using HttpClient semJti = ClienteDe(semJti: true);
+        using HttpResponseMessage desafio = await PostAsync(semJti, corpo, chave);
+        desafio.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+    }
+
+    private async Task ConcederPermissaoNaUnidadeAsync(Guid unidadeId)
+    {
+        Guid perfil = await ConcessoesDeTeste.CriarPerfilAsync(
+            _fixture.Factory.Services, PermissaoSelecao.ProcessosConfigurar.Codigo);
+        await ConcessoesDeTeste.ConcederAsync(
+            _fixture.Factory.Services, Leandro, perfil, EscopoDaConcessao.DaUnidade(unidadeId));
     }
 
     private static string Corpo(Guid tipoProcessoId, Guid unidadeId) => $$"""
@@ -131,25 +136,7 @@ public sealed class CriacaoDoProcessoLiberaAChaveEndpointTests : IAsyncLifetime
 
     private async Task<(Guid UnidadeId, Guid TipoProcessoId)> SemearAsync()
     {
-        string sufixo = Guid.NewGuid().ToString("N")[..8];
-        Guid unidadeId;
-        await using (AsyncServiceScope scope = _fixture.Factory.Services.CreateAsyncScope())
-        {
-            UniPlusDbContext org = scope.ServiceProvider
-                .GetRequiredService<UniPlusDbContext>();
-            Unidade unidade = Unidade.Criar(
-                "Centro de Processos Seletivos — chave",
-                new IdentificadoresDaUnidade($"ceps-chave-{sufixo}", $"CEPSC{sufixo}", $"CEPSC-{sufixo}", null),
-                new CidadeDaUnidade("1504208", "Marabá", "PA"),
-                new VigenciaDaUnidade(new DateOnly(2020, 1, 1), null),
-                null,
-                TipoUnidade.Centro,
-                true).Value!;
-            org.Unidades.Add(unidade);
-            await org.SaveChangesAsync();
-            unidadeId = unidade.Id;
-        }
-
+        Guid unidadeId = await SemearUnidadeAsync();
         await using AsyncServiceScope escopo = _fixture.Factory.Services.CreateAsyncScope();
         UniPlusDbContext config = escopo.ServiceProvider.GetRequiredService<UniPlusDbContext>();
         Guid tipoProcessoId = await config.TiposProcesso
@@ -157,5 +144,21 @@ public sealed class CriacaoDoProcessoLiberaAChaveEndpointTests : IAsyncLifetime
             .Select(tipo => tipo.Id)
             .SingleAsync();
         return (unidadeId, tipoProcessoId);
+    }
+
+    private async Task<Guid> SemearUnidadeAsync()
+    {
+        string sufixo = Guid.NewGuid().ToString("N")[..8];
+        await using AsyncServiceScope scope = _fixture.Factory.Services.CreateAsyncScope();
+        UniPlusDbContext org = scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
+        Unidade unidade = Unidade.Criar(
+            "Centro de Processos Seletivos — chave",
+            new IdentificadoresDaUnidade($"ceps-chave-{sufixo}", $"CEPSC{sufixo}", $"CEPSC-{sufixo}", null),
+            new CidadeDaUnidade("1504208", "Marabá", "PA"),
+            new VigenciaDaUnidade(new DateOnly(2020, 1, 1), null),
+            null, TipoUnidade.Centro, true).Value!;
+        org.Unidades.Add(unidade);
+        await org.SaveChangesAsync();
+        return unidade.Id;
     }
 }

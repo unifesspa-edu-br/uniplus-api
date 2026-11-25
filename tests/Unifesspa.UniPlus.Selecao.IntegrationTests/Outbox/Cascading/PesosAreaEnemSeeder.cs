@@ -26,20 +26,23 @@ internal static class PesosAreaEnemSeeder
         string resolucao = $"{prefixo} {Guid.NewGuid().ToString("N")[..12]}";
         await using AsyncServiceScope scope = api.Services.CreateAsyncScope();
         UniPlusDbContext db = scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
-        IEnumerable<PesoAreaEnem> linhas = (grupos ?? TodosOsGrupos).Select(grupo => PesoAreaEnem.Criar(
-            resolucao,
-            grupo,
-            [
-                new AreaInformada(PesoAreaEnem.CodigoRedacao, 2.00m, 400m),
-                new AreaInformada(PesoAreaEnem.CodigoCienciasDaNatureza, 1.50m, null),
-                new AreaInformada(PesoAreaEnem.CodigoCienciasHumanas, 2.50m, null),
-                new AreaInformada(PesoAreaEnem.CodigoLinguagens, 2.50m, null),
-                new AreaInformada(PesoAreaEnem.CodigoMatematica, 1.50m, null),
-            ],
-            "Resolução nº 805/2024/Consepe – Anexo I").Value!);
+        IEnumerable<PesoAreaEnem> linhas = (grupos ?? TodosOsGrupos)
+            .Select(grupo => CriarPesoDaResolucao(resolucao, grupo));
         await db.PesosAreaEnem.AddRangeAsync(linhas).ConfigureAwait(false);
 
         await db.SaveChangesAsync().ConfigureAwait(false);
         return PesoAreaEnem.NormalizarResolucao(resolucao)!;
     }
+
+    private static PesoAreaEnem CriarPesoDaResolucao(string resolucao, string grupo) => PesoAreaEnem.Criar(
+        resolucao,
+        grupo,
+        [
+            new AreaInformada(PesoAreaEnem.CodigoRedacao, 2.00m, 400m),
+            new AreaInformada(PesoAreaEnem.CodigoCienciasDaNatureza, 1.50m, null),
+            new AreaInformada(PesoAreaEnem.CodigoCienciasHumanas, 2.50m, null),
+            new AreaInformada(PesoAreaEnem.CodigoLinguagens, 2.50m, null),
+            new AreaInformada(PesoAreaEnem.CodigoMatematica, 1.50m, null),
+        ],
+        "Resolução nº 805/2024/Consepe – Anexo I").Value!;
 }

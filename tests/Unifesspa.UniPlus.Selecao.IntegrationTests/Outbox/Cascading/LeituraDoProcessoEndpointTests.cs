@@ -1,6 +1,5 @@
 namespace Unifesspa.UniPlus.Selecao.IntegrationTests.Outbox.Cascading;
 
-using System.Globalization;
 using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
@@ -70,8 +69,7 @@ public sealed class LeituraDoProcessoEndpointTests : IAsyncLifetime
     public async Task Rascunho_SoParaQuemConfiguraNaUnidadeDona()
     {
         Guid processoId = await SemearRascunhoAsync(nameof(Rascunho_SoParaQuemConfiguraNaUnidadeDona));
-        await ConcederConfigurarAsync(Betina, await UnidadeDoProcessoAsync(processoId));
-        await ConcederConfigurarAsync(Leandro, Guid.CreateVersion7());
+        await ConcederParaUnidadesDiferentesAsync(processoId);
 
         using HttpResponseMessage dona = await EnviarAsync(Betina, HttpMethod.Get, $"{Rota}/{processoId}");
         using HttpResponseMessage outraUnidade = await EnviarAsync(Leandro, HttpMethod.Get, $"{Rota}/{processoId}");
@@ -261,6 +259,12 @@ public sealed class LeituraDoProcessoEndpointTests : IAsyncLifetime
         return ids;
     }
 
+    private async Task ConcederParaUnidadesDiferentesAsync(Guid processoId)
+    {
+        await ConcederConfigurarAsync(Betina, await UnidadeDoProcessoAsync(processoId));
+        await ConcederConfigurarAsync(Leandro, Guid.CreateVersion7());
+    }
+
     private static string? ProximaPagina(HttpResponseMessage resposta)
     {
         if (!resposta.Headers.TryGetValues("Link", out IEnumerable<string>? valores))
@@ -276,6 +280,11 @@ public sealed class LeituraDoProcessoEndpointTests : IAsyncLifetime
             return null;
         }
 
+        return CaminhoDaProximaPagina(next);
+    }
+
+    private static string CaminhoDaProximaPagina(string next)
+    {
         string url = next[(next.IndexOf('<', StringComparison.Ordinal) + 1)..next.IndexOf('>', StringComparison.Ordinal)];
         return Uri.TryCreate(url, UriKind.Absolute, out Uri? absoluta) ? absoluta.PathAndQuery : url;
     }
@@ -305,35 +314,20 @@ public sealed class LeituraDoProcessoEndpointTests : IAsyncLifetime
     private async Task<Guid> SemearPublicadoAsync(string nome)
     {
         await TiposDeAtoSeeder.SemearAsync(_fixture.Factory.Services);
-        Guid processoId;
-        Guid documentoId;
-        await using (AsyncServiceScope scope = _fixture.Factory.Services.CreateAsyncScope())
-        {
-            UniPlusDbContext db = scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
-            (ProcessoSeletivo processo, DocumentoAPublicar documento) = await ProcessoSeletivoPublicavelSeeder
-                .SemearAsync(db, new OpcoesDoProcessoSeletivoPublicavel { Nome = $"{nome} {Guid.CreateVersion7()}" });
-            processoId = processo.Id;
-            documentoId = documento.Id;
-        }
-
+        (Guid processoId, Guid documentoId) = await SemearProcessoEDocumentoAsync(nome);
         using HttpResponseMessage publicacao = await EnviarAsync(
-            null, HttpMethod.Post, $"{Rota}/{processoId}/publicacao", "plataforma-admin",
-            new
-            {
-                numero = "001/2026",
-                documentoEditalId = documentoId,
-                ato = new
-                {
-                    orgao = "CEPS",
-                    serie = "EDITAL",
-                    ano = 2026,
-                    dataDoAto = DateOnly.FromDateTime(DateTime.UtcNow).ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
-                    assinante = "Diretor do CEPS",
-                    tipoAtoCodigo = "EDITAL_ABERTURA",
-                },
-            });
+            null, HttpMethod.Post, $"{Rota}/{processoId}/publicacao", "plataforma-admin", ApoioDaPublicacaoDoProcessoSeletivo.NovoCorpoPublicacao(documentoId, "001/2026"));
         publicacao.StatusCode.Should().Be(HttpStatusCode.NoContent, await publicacao.Content.ReadAsStringAsync());
         return processoId;
+    }
+
+    private async Task<(Guid ProcessoId, Guid DocumentoId)> SemearProcessoEDocumentoAsync(string nome)
+    {
+        await using AsyncServiceScope scope = _fixture.Factory.Services.CreateAsyncScope();
+        UniPlusDbContext db = scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
+        (ProcessoSeletivo processo, DocumentoAPublicar documento) = await ProcessoSeletivoPublicavelSeeder
+            .SemearAsync(db, new OpcoesDoProcessoSeletivoPublicavel { Nome = $"{nome} {Guid.CreateVersion7()}" });
+        return (processo.Id, documento.Id);
     }
 
     private async Task<Guid> UnidadeDoProcessoAsync(Guid processoId)
@@ -355,6 +349,15 @@ public sealed class LeituraDoProcessoEndpointTests : IAsyncLifetime
             request.Content = JsonContent.Create(corpo);
         }
 
+        AdicionarAutenticacao(request, contaId, papel);
+
+        AdicionarChaveDeIdempotencia(request, metodo);
+
+        return await client.SendAsync(request);
+    }
+
+    private static void AdicionarAutenticacao(HttpRequestMessage request, string? contaId, string? papel)
+    {
         if (contaId is not null || papel is not null)
         {
             request.Headers.Authorization = new AuthenticationHeaderValue(TestAuthHandler.AuthorizationScheme, TestAuthHandler.TokenValue);
@@ -365,16 +368,22 @@ public sealed class LeituraDoProcessoEndpointTests : IAsyncLifetime
             request.Headers.TryAddWithoutValidation(TestAuthHandler.UserIdHeader, contaId);
         }
 
+        AdicionarPapel(request, papel);
+    }
+
+    private static void AdicionarPapel(HttpRequestMessage request, string? papel)
+    {
         if (papel is not null)
         {
             request.Headers.TryAddWithoutValidation(TestAuthHandler.RolesHeader, papel);
         }
+    }
 
+    private static void AdicionarChaveDeIdempotencia(HttpRequestMessage request, HttpMethod metodo)
+    {
         if (metodo != HttpMethod.Get)
         {
             request.Headers.TryAddWithoutValidation("Idempotency-Key", Guid.CreateVersion7().ToString("N"));
         }
-
-        return await client.SendAsync(request);
     }
 }

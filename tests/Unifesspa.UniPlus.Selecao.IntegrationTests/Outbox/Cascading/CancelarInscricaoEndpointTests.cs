@@ -32,6 +32,17 @@ public sealed class CancelarInscricaoEndpointTests
     public async Task SemCorpo_ChegaAoHandler()
     {
         CascadingApiFactory api = _fixture.Factory;
+        Guid processoId = await SemearProcessoAsync(api);
+        using HttpRequestMessage request = CriarPedidoDeCancelamento(processoId);
+        using HttpClient client = api.CreateClient();
+        HttpResponseMessage resposta = await client.SendAsync(request);
+
+        resposta.StatusCode.Should().Be(HttpStatusCode.NotFound,
+            "o corpo é opcional: sem inscrição, a recusa é a do handler, e não a do binder");
+    }
+
+    private static async Task<Guid> SemearProcessoAsync(CascadingApiFactory api)
+    {
         Guid processoId;
         await using (AsyncServiceScope scope = api.Services.CreateAsyncScope())
         {
@@ -41,7 +52,12 @@ public sealed class CancelarInscricaoEndpointTests
             processoId = processo.Id;
         }
 
-        using HttpRequestMessage request = new(
+        return processoId;
+    }
+
+    private static HttpRequestMessage CriarPedidoDeCancelamento(Guid processoId)
+    {
+        HttpRequestMessage request = new(
             HttpMethod.Post,
             new Uri($"/api/selecao/processos-seletivos/{processoId}/inscricao/cancelamento", UriKind.Relative))
         {
@@ -53,10 +69,6 @@ public sealed class CancelarInscricaoEndpointTests
         request.Headers.TryAddWithoutValidation("If-Match", "\"qualquer\"");
         request.Headers.TryAddWithoutValidation("Idempotency-Key", Guid.NewGuid().ToString());
 
-        using HttpClient client = api.CreateClient();
-        HttpResponseMessage resposta = await client.SendAsync(request);
-
-        resposta.StatusCode.Should().Be(HttpStatusCode.NotFound,
-            "o corpo é opcional: sem inscrição, a recusa é a do handler, e não a do binder");
+        return request;
     }
 }
