@@ -79,7 +79,7 @@ public static class ComponentesDeItem
     {
         if (!string.IsNullOrWhiteSpace(declarado))
         {
-            return declarado.Trim().ToLowerInvariant();
+            return declarado.ToLowerInvariant();
         }
 
         if (formatoCpf)

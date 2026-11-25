@@ -42,7 +42,7 @@ public sealed record CopiaDoItemNoCatalogo(
                 "Classificação de proteção de dados fora do vocabulário fechado."));
         }
 
-        if (FormaDoItem.TextoOpcional(ComponenteExibicao) is { } componente && !CatalogoDe<ComponenteDeExibicao>.TentarObter(componente, out _))
+        if (!string.IsNullOrWhiteSpace(ComponenteExibicao) && ComponenteExibicao is { } componente && !CatalogoDe<ComponenteDeExibicao>.TentarObter(componente, out _))
         {
             yield return new("componenteExibicao", new DomainError(
                 FatoColetadoErrorCodes.ComponenteExibicaoInvalido,
@@ -51,7 +51,7 @@ public sealed record CopiaDoItemNoCatalogo(
     }
 
     /// <summary>
-    /// A cópia na forma em que o envelope a congela: textos aparados, hipótese legal, finalidade e
+    /// A cópia na forma em que o envelope a congela: textos descritivos aparados, hipótese legal, finalidade e
     /// descrição também em NFC, e o texto opcional em branco ausente. A cópia precisa já ter passado
     /// por <see cref="Violacao"/>.
     /// </summary>
@@ -61,7 +61,7 @@ public sealed record CopiaDoItemNoCatalogo(
         HipoteseLegal = HipoteseLegal.Trim(),
         FinalidadeTratamento = FinalidadeTratamento.Trim().Normalize(NormalizationForm.FormC),
         Descricao = Descricao.Trim().Normalize(NormalizationForm.FormC),
-        ComponenteExibicao = FormaDoItem.TextoOpcional(ComponenteExibicao),
+        ComponenteExibicao = string.IsNullOrWhiteSpace(ComponenteExibicao) ? null : ComponenteExibicao,
     };
 }
 

@@ -110,6 +110,8 @@ public sealed class DefinirEtapasAvaliacaoHumanaTests
     [Theory(DisplayName = "Código sem versão, ou versão sem código, é recusado dizendo qual metade falta")]
     [InlineData("APURACAO_AVALIACAO_UNICA", null, "a versão")]
     [InlineData(null, "v1", "o código")]
+    [InlineData("APURACAO_AVALIACAO_UNICA", "  ", "a versão")]
+    [InlineData("  ", "v1", "o código")]
     public async Task Handle_RegraDeConsolidacaoPelaMetade_Recusa(string? codigo, string? versao, string falta)
     {
         (ProcessoSeletivo processo, IProcessoSeletivoRepository repository) = ProcessoEmRascunho();
@@ -120,6 +122,26 @@ public sealed class DefinirEtapasAvaliacaoHumanaTests
 
         resultado.Errors.Should().ContainSingle().Which.Error.Message.Should().Contain(falta);
         resultado.Errors[0].Error.Code.Should().Be(EtapaProcessoErrorCodes.RegraDeConsolidacaoInvalida);
+    }
+
+    [Theory]
+    [InlineData(" APURACAO_AVALIACAO_UNICA", "v1")]
+    [InlineData("APURACAO_AVALIACAO_UNICA ", "v1")]
+    [InlineData("apuracao_avaliacao_unica", "v1")]
+    [InlineData("APURACAO_AVALIACAO_UNICA", " v1")]
+    [InlineData("APURACAO_AVALIACAO_UNICA", "v1 ")]
+    [InlineData("APURACAO_AVALIACAO_UNICA", "V1")]
+    public async Task Handle_RegraDeConsolidacaoComCodigoOuVersaoDiferente_Recusa(string codigo, string versao)
+    {
+        (ProcessoSeletivo processo, IProcessoSeletivoRepository repositorio) = ProcessoEmRascunho();
+        IRegraCatalogoReader catalogo = Substitute.For<IRegraCatalogoReader>();
+        catalogo.ObterAsync("APURACAO_AVALIACAO_UNICA", "v1", Arg.Any<CancellationToken>())
+            .Returns(RegraDoCatalogo("APURACAO_AVALIACAO_UNICA", TipoRegra.RegraApuracaoAvaliacao));
+        Result resultado = await Executar(RedacaoHumana(processo, "HUMANA", codigo, versao),
+            repositorio, Substitute.For<IUnitOfWork>(), cadastros: new(Regras: catalogo));
+        DomainError erro = resultado.Errors.Should().ContainSingle().Subject.Error;
+        erro.Code.Should().Be(EtapaProcessoErrorCodes.RegraDeConsolidacaoInvalida);
+        erro.Message.Should().NotContain(codigo).And.NotContain(versao);
     }
 
     [Fact(DisplayName = "Token de forma de avaliação desconhecido é recusado, não lido como ausente")]

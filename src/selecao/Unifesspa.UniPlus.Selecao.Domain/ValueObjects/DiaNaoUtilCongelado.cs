@@ -80,7 +80,7 @@ public sealed record DiaNaoUtilCongelado
                 "A data do dia não útil não pode ser o valor default (0001-01-01) — é assim que uma data omitida se materializa.");
         }
 
-        if (!CatalogoDe<AbrangenciaDoDiaNaoUtil>.TentarObter(abrangencia?.Trim(), out AbrangenciaDoDiaNaoUtil valor))
+        if (!CatalogoDe<AbrangenciaDoDiaNaoUtil>.TentarObter(abrangencia, out AbrangenciaDoDiaNaoUtil valor))
         {
             return Falha(DiaNaoUtilCongeladoErrorCodes.AbrangenciaInvalida, "A abrangência não pertence ao calendário de dias úteis.");
         }
