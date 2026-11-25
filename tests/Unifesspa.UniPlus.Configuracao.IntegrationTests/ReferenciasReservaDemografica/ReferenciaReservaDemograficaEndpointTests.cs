@@ -1,6 +1,5 @@
 namespace Unifesspa.UniPlus.Configuracao.IntegrationTests.ReferenciasReservaDemografica;
 
-using System.Diagnostics.CodeAnalysis;
 using System.Net;
 using System.Net.Http.Json;
 using System.Text;
@@ -18,10 +17,6 @@ using Unifesspa.UniPlus.IntegrationTests.Fixtures.Authentication;
 /// Postgres efêmero.
 /// </summary>
 [Collection(ConfiguracaoEndpointCollection.Name)]
-[SuppressMessage(
-    "Performance",
-    "CA1515:Consider making public types internal",
-    Justification = "xUnit collection fixture exige tipo de teste público.")]
 public sealed class ReferenciaReservaDemograficaEndpointTests
 {
     private const string VendorMime = "application/vnd.uniplus.referencia-reserva-demografica.v1+json";
@@ -83,11 +78,7 @@ public sealed class ReferenciaReservaDemograficaEndpointTests
         HttpResponseMessage obter = await client.GetAsync(new Uri($"{ColecaoPath}/{id}", UriKind.Relative));
         obter.StatusCode.Should().Be(HttpStatusCode.OK);
 
-        using JsonDocument doc = JsonDocument.Parse(await obter.Content.ReadAsStringAsync());
-        JsonElement root = doc.RootElement;
-        root.GetProperty("ppiPercentual").GetDecimal().Should().Be(78.50m);
-        root.GetProperty("baseLegal").GetString().Should().Be("Lei 12.711/2012, art. 10, III");
-        root.TryGetProperty("_links", out _).Should().BeTrue("HATEOAS Level 1 expõe _links.self (ADR-0029)");
+        await VerificarReferenciaObtida(obter);
     }
 
     [Fact(DisplayName = "POST admin com percentual fora do intervalo retorna 422")]
@@ -106,6 +97,15 @@ public sealed class ReferenciaReservaDemograficaEndpointTests
         HttpResponseMessage response = await EnviarPostAdmin(client, AdminPath, body);
 
         response.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
+    }
+
+    private static async Task VerificarReferenciaObtida(HttpResponseMessage resposta)
+    {
+        using JsonDocument doc = JsonDocument.Parse(await resposta.Content.ReadAsStringAsync());
+        JsonElement root = doc.RootElement;
+        root.GetProperty("ppiPercentual").GetDecimal().Should().Be(78.50m);
+        root.GetProperty("baseLegal").GetString().Should().Be("Lei 12.711/2012, art. 10, III");
+        root.TryGetProperty("_links", out _).Should().BeTrue("HATEOAS Level 1 expõe _links.self (ADR-0029)");
     }
 
     private static object CorpoValido(string? censo = null) => new

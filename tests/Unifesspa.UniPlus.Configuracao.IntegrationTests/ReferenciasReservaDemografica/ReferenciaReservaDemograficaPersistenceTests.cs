@@ -1,6 +1,6 @@
 namespace Unifesspa.UniPlus.Configuracao.IntegrationTests.ReferenciasReservaDemografica;
 
-using System.Diagnostics.CodeAnalysis;
+using System.Linq.Expressions;
 
 using AwesomeAssertions;
 
@@ -21,10 +21,6 @@ using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 /// preservando a trilha.
 /// </summary>
 [Collection(ConfiguracaoDbCollection.Name)]
-[SuppressMessage(
-    "Performance",
-    "CA1515:Consider making public types internal",
-    Justification = "xUnit collection fixture exige tipo de teste público.")]
 public sealed class ReferenciaReservaDemograficaPersistenceTests
 {
     private const string AdminA = "admin-a";
@@ -43,78 +39,37 @@ public sealed class ReferenciaReservaDemograficaPersistenceTests
     {
         ReferenciaReservaDemografica referencia = Nova("2022", 78.50m, 1.20m, 8.40m);
 
-        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(AdminA))
-        {
-            ctx.ReferenciasReservaDemografica.Add(referencia);
-            await ctx.SaveChangesAsync();
-        }
+        await SalvarReferencias(referencia);
 
         await using UniPlusDbContext readCtx = _fixture.CreateDbContext(userId: null);
         ReferenciaReservaDemografica persistida = await readCtx.ReferenciasReservaDemografica
             .SingleAsync(r => r.Id == referencia.Id);
 
-        persistida.CensoReferencia.Should().Be("2022");
-        persistida.PpiPercentual.Valor.Should().Be(78.50m);
-        persistida.QuilombolaPercentual.Valor.Should().Be(1.20m);
-        persistida.PcdPercentual.Valor.Should().Be(8.40m);
-        persistida.CreatedBy.Should().Be(AdminA);
-        persistida.IsDeleted.Should().BeFalse();
-
-        var reader = new ReferenciaReservaDemograficaReader(readCtx);
-        ReferenciaReservaDemograficaView? view = await reader.ObterPorIdAsync(referencia.Id);
-        view.Should().NotBeNull();
-        view!.CensoReferencia.Should().Be("2022");
-        view.PpiPercentual.Should().Be(78.50m);
+        VerificarReferenciaPersistida(persistida);
+        await VerificarReferenciaNoReader(readCtx, referencia.Id);
     }
 
     [Fact(DisplayName = "UNIQUE parcial (censo) rejeita segunda referência viva para o mesmo Censo")]
     public async Task UniquePartial_Censo_RejeitaDuplicataAtiva()
     {
-        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(AdminA))
-        {
-            ctx.ReferenciasReservaDemografica.Add(Nova("2000", 50m, 1m, 5m));
-            await ctx.SaveChangesAsync();
-        }
+        await SalvarReferencias(Nova("2000", 50m, 1m, 5m));
 
         await using UniPlusDbContext ctx2 = _fixture.CreateDbContext(AdminA);
         ctx2.ReferenciasReservaDemografica.Add(Nova("2000", 60m, 2m, 6m));
 
         Func<Task> act = async () => await ctx2.SaveChangesAsync();
 
-        // Trava as constantes que o handler usa para traduzir a corrida concorrente
-        // (UniqueConstraintViolation.GetViolatedConstraint/IsCensoConflict) em
-        // CensoJaExiste/409: SqlState 23505 + nome do índice único parcial.
-        DbUpdateException ex = (await act.Should().ThrowAsync<DbUpdateException>()).Which;
-        Npgsql.PostgresException pg = ex.InnerException.Should().BeOfType<Npgsql.PostgresException>().Which;
-        pg.SqlState.Should().Be("23505");
-        pg.ConstraintName.Should().Be(RestricoesDoBanco.ReferenciaDemograficaCensoAtivos);
+        await VerificarConflitoDeCenso(act);
     }
 
     [Fact(DisplayName = "Soft-delete preserva a trilha e liberta o slot da UNIQUE parcial de Censo")]
     public async Task SoftDelete_PreservaTrilhaELibertaSlot()
     {
         ReferenciaReservaDemografica referencia = Nova("1991", 40m, 1m, 4m);
-        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(AdminA))
-        {
-            ctx.ReferenciasReservaDemografica.Add(referencia);
-            await ctx.SaveChangesAsync();
-        }
+        await SalvarReferencias(referencia);
+        await ExcluirReferencia(r => r.Id == referencia.Id);
 
-        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(AdminB))
-        {
-            ReferenciaReservaDemografica tracked = await ctx.ReferenciasReservaDemografica
-                .SingleAsync(r => r.Id == referencia.Id);
-            ctx.ReferenciasReservaDemografica.Remove(tracked);
-            await ctx.SaveChangesAsync();
-        }
-
-        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null))
-        {
-            ReferenciaReservaDemografica excluida = await ctx.ReferenciasReservaDemografica
-                .IgnoreQueryFilters().SingleAsync(r => r.Id == referencia.Id);
-            excluida.IsDeleted.Should().BeTrue();
-            excluida.DeletedBy.Should().Be(AdminB);
-        }
+        await VerificarTrilhaDeExclusao(referencia.Id);
 
         await using UniPlusDbContext ctx3 = _fixture.CreateDbContext(AdminA);
         ctx3.ReferenciasReservaDemografica.Add(Nova("1991", 41m, 2m, 5m));
@@ -146,22 +101,70 @@ public sealed class ReferenciaReservaDemograficaPersistenceTests
         string censoExcluido = $"{prefixo}-d";
 
         // Insere fora de ordem (B antes de A) para provar a ordenação do reader.
-        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(AdminA))
-        {
-            ctx.ReferenciasReservaDemografica.Add(Nova(censoB, 60m, 2m, 6m));
-            ctx.ReferenciasReservaDemografica.Add(Nova(censoA, 50m, 1m, 5m));
-            ctx.ReferenciasReservaDemografica.Add(Nova(censoExcluido, 40m, 1m, 4m));
-            await ctx.SaveChangesAsync();
-        }
+        await SalvarReferencias(Nova(censoB, 60m, 2m, 6m), Nova(censoA, 50m, 1m, 5m),
+            Nova(censoExcluido, 40m, 1m, 4m));
+        await ExcluirReferencia(r => r.CensoReferencia == censoExcluido);
 
-        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(AdminB))
-        {
-            ReferenciaReservaDemografica aExcluir = await ctx.ReferenciasReservaDemografica
-                .SingleAsync(r => r.CensoReferencia == censoExcluido);
-            ctx.ReferenciasReservaDemografica.Remove(aExcluir);
-            await ctx.SaveChangesAsync();
-        }
+        await VerificarReferenciasOrdenadas(prefixo, censoA, censoB);
+    }
 
+    private async Task SalvarReferencias(params ReferenciaReservaDemografica[] referencias)
+    {
+        await using UniPlusDbContext ctx = _fixture.CreateDbContext(AdminA);
+        ctx.ReferenciasReservaDemografica.AddRange(referencias);
+        await ctx.SaveChangesAsync();
+    }
+
+    private async Task ExcluirReferencia(Expression<Func<ReferenciaReservaDemografica, bool>> criterio)
+    {
+        await using UniPlusDbContext ctx = _fixture.CreateDbContext(AdminB);
+        ReferenciaReservaDemografica referencia = await ctx.ReferenciasReservaDemografica
+            .SingleAsync(criterio);
+        ctx.ReferenciasReservaDemografica.Remove(referencia);
+        await ctx.SaveChangesAsync();
+    }
+
+    private static void VerificarReferenciaPersistida(ReferenciaReservaDemografica persistida)
+    {
+        persistida.CensoReferencia.Should().Be("2022");
+        persistida.PpiPercentual.Valor.Should().Be(78.50m);
+        persistida.QuilombolaPercentual.Valor.Should().Be(1.20m);
+        persistida.PcdPercentual.Valor.Should().Be(8.40m);
+        persistida.CreatedBy.Should().Be(AdminA);
+        persistida.IsDeleted.Should().BeFalse();
+    }
+
+    private static async Task VerificarReferenciaNoReader(UniPlusDbContext readCtx, Guid id)
+    {
+        var reader = new ReferenciaReservaDemograficaReader(readCtx);
+        ReferenciaReservaDemograficaView? view = await reader.ObterPorIdAsync(id);
+        view.Should().NotBeNull();
+        view!.CensoReferencia.Should().Be("2022");
+        view.PpiPercentual.Should().Be(78.50m);
+    }
+
+    private static async Task VerificarConflitoDeCenso(Func<Task> act)
+    {
+        // Trava as constantes que o handler usa para traduzir a corrida concorrente
+        // (UniqueConstraintViolation.GetViolatedConstraint/IsCensoConflict) em
+        // CensoJaExiste/409: SqlState 23505 + nome do índice único parcial.
+        DbUpdateException ex = (await act.Should().ThrowAsync<DbUpdateException>()).Which;
+        Npgsql.PostgresException pg = ex.InnerException.Should().BeOfType<Npgsql.PostgresException>().Which;
+        pg.SqlState.Should().Be("23505");
+        pg.ConstraintName.Should().Be(RestricoesDoBanco.ReferenciaDemograficaCensoAtivos);
+    }
+
+    private async Task VerificarTrilhaDeExclusao(Guid id)
+    {
+        await using UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null);
+        ReferenciaReservaDemografica excluida = await ctx.ReferenciasReservaDemografica
+            .IgnoreQueryFilters().SingleAsync(r => r.Id == id);
+        excluida.IsDeleted.Should().BeTrue();
+        excluida.DeletedBy.Should().Be(AdminB);
+    }
+
+    private async Task VerificarReferenciasOrdenadas(string prefixo, string censoA, string censoB)
+    {
         await using UniPlusDbContext readCtx = _fixture.CreateDbContext(userId: null);
         var reader = new ReferenciaReservaDemograficaReader(readCtx);
         IReadOnlyList<ReferenciaReservaDemograficaView> todas = await reader.ListarVivasAsync();
