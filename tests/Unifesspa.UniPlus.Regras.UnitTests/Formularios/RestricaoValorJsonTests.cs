@@ -62,6 +62,29 @@ public sealed class RestricaoValorJsonTests
         lida.Error!.Code.Should().Be(codigo);
     }
 
+    [Fact(DisplayName = "Faixa de data com os dois limites inválidos na forma gravada recusa os dois, na ordem")]
+    public void DeJson_FaixaDeDataComLimitesInvalidos_InformaOsDois()
+    {
+        using JsonDocument documento = JsonDocument.Parse(
+            """{"tipo":"FAIXA_DE_DATA","dataMinima":{"referenciaDaData":"HOJE"},"dataMaxima":{"referenciaDaData":"DATA_FIXA","data":"10/01/2027"}}""");
+
+        Result<RestricaoValor> lida = RestricaoValorJson.DeJson(documento.RootElement);
+
+        lida.Errors.Select(static erro => erro.Error.Code).Should().Equal(
+            RestricaoValorErrorCodes.LimiteDeDataInvalido, RestricaoValorErrorCodes.FormaJsonInvalida);
+    }
+
+    [Fact(DisplayName = "Faixa de data com os dois limites inválidos na entrada recusa os dois")]
+    public void Restricao_FaixaDeDataComLimitesInvalidos_InformaOsDois()
+    {
+        RestricaoValorInput entrada = new(
+            "FAIXA_DE_DATA", DataMinima: new LimiteDeDataInput("HOJE"), DataMaxima: new LimiteDeDataInput("ONTEM"));
+
+        Result<RestricaoValor> resultado = EntradaDeRegras.Restricao(entrada);
+
+        resultado.Errors.Should().HaveCount(2);
+    }
+
     [Theory(DisplayName = "O tipo declarável é o do código exato; o formato do texto vem do catálogo e não se declara")]
     [InlineData("FAIXA_NUMERICA", TipoRestricaoValor.FaixaNumerica)]
     [InlineData("TAMANHO_TEXTO", TipoRestricaoValor.TamanhoTexto)]

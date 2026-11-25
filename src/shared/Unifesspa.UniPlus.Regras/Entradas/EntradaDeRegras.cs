@@ -32,7 +32,7 @@ public static class EntradaDeRegras
         }
 
         Result<PredicadoDnf> predicado = lidas.Predicado();
-        return predicado.IsSuccess ? Result<PredicadoDnf?>.Success(predicado.Value) : Result<PredicadoDnf?>.Failure(predicado.Error!);
+        return predicado.IsSuccess ? Result<PredicadoDnf?>.Success(predicado.Value) : Result<PredicadoDnf?>.ValidationFailure(predicado.Errors);
     }
 
     /// <summary>
@@ -152,7 +152,7 @@ public static class EntradaDeRegras
         Result<LimiteDeData?> lidaMinima = LerLimite(minima);
         Result<LimiteDeData?> lidaMaxima = LerLimite(maxima);
         return lidaMinima.IsFailure || lidaMaxima.IsFailure
-            ? Result<RestricaoValor>.Failure((lidaMinima.Error ?? lidaMaxima.Error)!)
+            ? Result<RestricaoValor>.ValidationFailure([.. lidaMinima.Errors, .. lidaMaxima.Errors])
             : RestricoesDeValor.FaixaDeData(lidaMinima.Value, lidaMaxima.Value);
     }
 
@@ -164,7 +164,7 @@ public static class EntradaDeRegras
         }
 
         Result<LimiteDeData> lido = RestricoesDeValor.Limite(input.Ancora, input.Data, input.Anos, input.Dias);
-        return lido.IsSuccess ? Result<LimiteDeData?>.Success(lido.Value) : Result<LimiteDeData?>.Failure(lido.Error!);
+        return lido.IsSuccess ? Result<LimiteDeData?>.Success(lido.Value) : Result<LimiteDeData?>.ValidationFailure(lido.Errors);
     }
 
     /// <summary>
@@ -230,7 +230,7 @@ public static class EntradaDeRegras
             Result<(PredicadoDnf? Quando, IReadOnlyCollection<string> Valores)> lida = GrupoDeOpcoes(entrada);
             if (lida.IsFailure)
             {
-                return Result<RestricaoValor>.Failure(lida.Error!);
+                return Result<RestricaoValor>.ValidationFailure(lida.Errors);
             }
 
             lidas.Add(lida.Value);
@@ -249,7 +249,7 @@ public static class EntradaDeRegras
 
         Result<PredicadoDnf?> quando = Predicado(entrada.Quando);
         return quando.IsFailure
-            ? Result<(PredicadoDnf? Quando, IReadOnlyCollection<string> Valores)>.Failure(quando.Error!)
+            ? Result<(PredicadoDnf? Quando, IReadOnlyCollection<string> Valores)>.ValidationFailure(quando.Errors)
             : Result<(PredicadoDnf? Quando, IReadOnlyCollection<string> Valores)>.Success((quando.Value, entrada.Valores ?? []));
     }
 
