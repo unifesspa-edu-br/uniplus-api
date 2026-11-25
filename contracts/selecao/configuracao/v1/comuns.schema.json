@@ -12,6 +12,12 @@
       "minLength": 1,
       "maxLength": 64
     },
+    "codigoDeCadastro": {
+      "title": "Código de cadastro",
+      "description": "Código com letra maiúscula inicial, seguido de letras maiúsculas e algarismos, com palavras separadas por sublinhado.",
+      "type": "string",
+      "pattern": "^[A-Z][A-Z0-9]*(_[A-Z0-9]+)*$"
+    },
     "codigoDeCatalogo": {
       "title": "Código estável de catálogo",
       "description": "Código estável e legível de um item de catálogo ou de uma unidade. Nunca o identificador interno do banco: um valor com a forma de identificador único (UUID) é recusado.",

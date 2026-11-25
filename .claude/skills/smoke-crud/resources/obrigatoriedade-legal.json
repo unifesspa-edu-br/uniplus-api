@@ -21,7 +21,7 @@
     "create": {
       "tipoProcessoCodigo": "*",
       "categoria": "documento",
-      "regraCodigo": "SMOKE-CRUD-DOC-COMPROVANTE-RESIDENCIA",
+      "regraCodigo": "SMOKE_CRUD_DOC_COMPROVANTE_RESIDENCIA",
       "predicado": {
         "$tipo": "documentoObrigatorioParaModalidade",
         "modalidade": "BONUS_REGIONAL",

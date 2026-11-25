@@ -265,11 +265,9 @@
         },
         "termoCodigo": {
           "title": "Termo",
-          "description": "Código estável do termo no catálogo de termos de consentimento, de até 100 caracteres.",
-          "type": "string",
-          "minLength": 1,
-          "maxLength": 80,
-          "pattern": "^[A-Z][A-Z0-9_]+$"
+          "description": "Código estável do termo no catálogo de termos de consentimento, de até 80 caracteres.",
+          "$ref": "comuns.schema.json#/$defs/codigoDeCadastro",
+          "maxLength": 80
         },
         "versaoNumero": {
           "title": "Versão do termo",

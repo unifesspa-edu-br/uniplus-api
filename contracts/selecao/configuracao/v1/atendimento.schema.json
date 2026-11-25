@@ -43,9 +43,9 @@
       "properties": {
         "condicaoCodigo": {
           "title": "Código",
-          "description": "Código estável no catálogo: maiúscula inicial, depois maiúsculas, dígitos e sublinhado, de 2 a 50 caracteres.",
-          "type": "string",
-          "pattern": "^[A-Z][A-Z0-9_]{1,49}$"
+          "description": "Código estável no catálogo: letra maiúscula inicial, letras maiúsculas e algarismos, com palavras separadas por sublinhado, de 1 a 50 caracteres.",
+          "$ref": "comuns.schema.json#/$defs/codigoDeCadastro",
+          "maxLength": 50
         },
         "condicaoNome": {
           "title": "Nome",
@@ -67,9 +67,9 @@
       "properties": {
         "recursoCodigo": {
           "title": "Código",
-          "description": "Código estável no catálogo: maiúscula inicial, depois maiúsculas, dígitos e sublinhado, de 2 a 50 caracteres.",
-          "type": "string",
-          "pattern": "^[A-Z][A-Z0-9_]{1,49}$"
+          "description": "Código estável no catálogo: letra maiúscula inicial, letras maiúsculas e algarismos, com palavras separadas por sublinhado, de 1 a 50 caracteres.",
+          "$ref": "comuns.schema.json#/$defs/codigoDeCadastro",
+          "maxLength": 50
         },
         "recursoNome": {
           "title": "Nome",
@@ -91,9 +91,9 @@
       "properties": {
         "tipoDeficienciaCodigo": {
           "title": "Código",
-          "description": "Código estável no catálogo: maiúscula inicial, depois maiúsculas, dígitos e sublinhado, de 2 a 50 caracteres.",
-          "type": "string",
-          "pattern": "^[A-Z][A-Z0-9_]{1,49}$"
+          "description": "Código estável no catálogo: letra maiúscula inicial, letras maiúsculas e algarismos, com palavras separadas por sublinhado, de 1 a 50 caracteres.",
+          "$ref": "comuns.schema.json#/$defs/codigoDeCadastro",
+          "maxLength": 50
         },
         "tipoDeficienciaNome": {
           "title": "Nome",
