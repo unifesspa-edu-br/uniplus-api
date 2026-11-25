@@ -62,7 +62,11 @@ public sealed class VaultContainerFixture : IAsyncLifetime
             .PostAsJsonAsync($"/v1/{TransitMount}/keys/{keyName}", body)
             .ConfigureAwait(false);
 
-        // 200 (criada) ou 400 (já existe) são ambos aceitáveis
+        await ValidarCriacaoDaChaveAsync(response, keyName).ConfigureAwait(false);
+    }
+
+    private static async Task ValidarCriacaoDaChaveAsync(HttpResponseMessage response, string keyName)
+    {
         if (!response.IsSuccessStatusCode && response.StatusCode != HttpStatusCode.BadRequest)
         {
             string responseBody = await response.Content.ReadAsStringAsync().ConfigureAwait(false);

@@ -86,16 +86,12 @@ public sealed class OtelCollectorContainerFixture : IAsyncLifetime
     {
         ArgumentNullException.ThrowIfNull(tokensEsperados);
 
-        TimeSpan limite = timeout ?? TimeSpan.FromSeconds(10);
-        DateTimeOffset deadline = DateTimeOffset.UtcNow + limite;
+        DateTimeOffset deadline = DateTimeOffset.UtcNow + (timeout ?? TimeSpan.FromSeconds(10));
 
         while (true)
         {
             string output = await GetLogsAsync().ConfigureAwait(false);
-            bool todosPresentes = tokensEsperados.All(
-                token => output.Contains(token, StringComparison.Ordinal));
-
-            if (todosPresentes || DateTimeOffset.UtcNow >= deadline)
+            if (ContemTodosOsTokens(output, tokensEsperados) || DateTimeOffset.UtcNow >= deadline)
             {
                 return output;
             }
@@ -104,12 +100,17 @@ public sealed class OtelCollectorContainerFixture : IAsyncLifetime
         }
     }
 
+    private static bool ContemTodosOsTokens(string output, IReadOnlyCollection<string> tokensEsperados) =>
+        tokensEsperados.All(token => output.Contains(token, StringComparison.Ordinal));
+
     public Task InitializeAsync() => _container.StartAsync();
 
     public async Task DisposeAsync() =>
         await _container.DisposeAsync().ConfigureAwait(false);
 
-    private static string BuildMinimalConfig() => """
+    private static string BuildMinimalConfig() => string.Concat(ConfigReceiversEProcessors(), ConfigExportersETraces(), ConfigMetricsELogs());
+
+    private static string ConfigReceiversEProcessors() => """
         receivers:
           otlp:
             protocols:
@@ -121,7 +122,9 @@ public sealed class OtelCollectorContainerFixture : IAsyncLifetime
         processors:
           batch:
             timeout: 100ms
+        """ + "\n\n";
 
+    private static string ConfigExportersETraces() => """
         exporters:
           debug:
             verbosity: detailed
@@ -132,6 +135,9 @@ public sealed class OtelCollectorContainerFixture : IAsyncLifetime
               receivers: [otlp]
               processors: [batch]
               exporters: [debug]
+        """ + "\n";
+
+    private static string ConfigMetricsELogs() => """
             metrics:
               receivers: [otlp]
               processors: [batch]

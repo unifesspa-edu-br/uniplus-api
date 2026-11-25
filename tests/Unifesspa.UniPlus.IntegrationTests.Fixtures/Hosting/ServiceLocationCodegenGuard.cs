@@ -48,11 +48,6 @@ public static class ServiceLocationCodegenGuard
     /// <paramref name="prefixoAssembly"/> e devolve os tipos que exigem service
     /// location sob a política vigente.
     /// </summary>
-    [SuppressMessage(
-        "Design",
-        "CA1031:Do not catch general exception types",
-        Justification = "A guarda só se importa com InvalidServiceLocationException; qualquer "
-            + "outra exceção (validação / corpo do handler com dados default) é ruído e ignorada.")]
     public static async Task<ServiceLocationVarredura> VarrerAsync(IServiceProvider services, string prefixoAssembly)
     {
         ArgumentNullException.ThrowIfNull(services);
@@ -62,26 +57,42 @@ public static class ServiceLocationCodegenGuard
         IMessageBus bus = scope.ServiceProvider.GetRequiredService<IMessageBus>();
 
         IReadOnlyList<Type> mensagens = DescobrirMensagensCqrs(prefixoAssembly);
-        List<string> ofensores = [];
+        List<string> ofensores = await BuscarOfensoresAsync(bus, mensagens).ConfigureAwait(false);
+        return new ServiceLocationVarredura(mensagens.Count, ofensores);
+    }
 
+    private static async Task<List<string>> BuscarOfensoresAsync(IMessageBus bus, IReadOnlyList<Type> mensagens)
+    {
+        List<string> ofensores = [];
         foreach (Type mt in mensagens)
         {
-            object instancia = RuntimeHelpers.GetUninitializedObject(mt);
-            try
+            string? svcLoc = await InvocarMensagemAsync(bus, mt).ConfigureAwait(false);
+            if (svcLoc is not null)
             {
-                await bus.InvokeAsync(instancia, CancellationToken.None).ConfigureAwait(false);
-            }
-            catch (Exception ex)
-            {
-                string? svcLoc = MensagemDeServiceLocation(ex);
-                if (svcLoc is not null)
-                {
-                    ofensores.Add($"{mt.FullName}: {svcLoc}");
-                }
+                ofensores.Add($"{mt.FullName}: {svcLoc}");
             }
         }
 
-        return new ServiceLocationVarredura(mensagens.Count, ofensores);
+        return ofensores;
+    }
+
+    [SuppressMessage(
+        "Design",
+        "CA1031:Do not catch general exception types",
+        Justification = "A guarda só se importa com InvalidServiceLocationException; qualquer "
+            + "outra exceção (validação / corpo do handler com dados default) é ruído e ignorada.")]
+    private static async Task<string?> InvocarMensagemAsync(IMessageBus bus, Type tipo)
+    {
+        object instancia = RuntimeHelpers.GetUninitializedObject(tipo);
+        try
+        {
+            await bus.InvokeAsync(instancia, CancellationToken.None).ConfigureAwait(false);
+            return null;
+        }
+        catch (Exception ex)
+        {
+            return MensagemDeServiceLocation(ex);
+        }
     }
 
     private static IReadOnlyList<Type> DescobrirMensagensCqrs(string prefixoAssembly)

@@ -73,7 +73,30 @@ public sealed class TestAuthHandler : AuthenticationHandler<AuthenticationScheme
             return Task.FromResult(AuthenticateResult.Fail("Invalid test token."));
         }
 
+        return AuthenticateToken();
+    }
+
+    private Task<AuthenticateResult> AuthenticateToken()
+    {
         string[] roles = GetHeaderValues(RolesHeader);
+        List<Claim> claims = CreateIdentityClaims();
+        if (GetOptionalHeaderValue(SemCpfHeader) is not null)
+        {
+            return Task.FromResult(AuthenticateResult.Fail("O token não traz o CPF da pessoa."));
+        }
+
+        AddPersonalClaims(claims, roles);
+        return Task.FromResult(CreateTicket(claims));
+    }
+
+    // O emissor e o identificador de sessão não são opcionais para o
+    // ponto de decisão: sem eles o sujeito não se monta e toda decisão
+    // responde "identidade incompleta", que a borda traduz em 401. Vêm
+    // com valor fixo porque nenhum teste precisa variá-los para
+    // exercitar autorização — quem precisar cobre o caso ausente
+    // montando o principal à mão, como fazem os testes do resolver.
+    private List<Claim> CreateIdentityClaims()
+    {
         List<Claim> claims =
         [
             new("sub", GetHeaderValue(UserIdHeader, "test-user-id")),
@@ -81,49 +104,49 @@ public sealed class TestAuthHandler : AuthenticationHandler<AuthenticationScheme
             new("email", GetHeaderValue(EmailHeader, "test@unifesspa.edu.br")),
             new("email_verified", GetHeaderValue(EmailVerifiedHeader, "true")),
 
-            // O emissor e o identificador de sessão não são opcionais para o
-            // ponto de decisão: sem eles o sujeito não se monta e toda decisão
-            // responde "identidade incompleta", que a borda traduz em 401. Vêm
-            // com valor fixo porque nenhum teste precisa variá-los para
-            // exercitar autorização — quem precisar cobre o caso ausente
-            // montando o principal à mão, como fazem os testes do resolver.
             new("iss", DefaultIssuer),
         ];
 
+        AddSessionClaim(claims);
+        return claims;
+    }
+
+    private void AddSessionClaim(List<Claim> claims)
+    {
         if (GetOptionalHeaderValue(SemJtiHeader) is null)
         {
             claims.Add(new Claim("jti", $"jti-{Guid.NewGuid():N}"));
         }
+    }
 
-        if (GetOptionalHeaderValue(SemCpfHeader) is not null)
-        {
-            return Task.FromResult(AuthenticateResult.Fail("O token não traz o CPF da pessoa."));
-        }
-
+    private void AddPersonalClaims(List<Claim> claims, string[] roles)
+    {
         claims.Add(new Claim("cpf", GetHeaderValue(CpfHeader, CpfPadrao)));
 
-        string? nomeSocial = GetOptionalHeaderValue(NomeSocialHeader);
-        if (nomeSocial is not null)
-        {
-            claims.Add(new Claim("nomeSocial", nomeSocial));
-        }
-
-        string? clienteOidc = GetOptionalHeaderValue(ClienteOidcHeader);
-        if (clienteOidc is not null)
-        {
-            claims.Add(new Claim("azp", clienteOidc));
-        }
-
+        AddOptionalClaim(claims, NomeSocialHeader, "nomeSocial");
+        AddOptionalClaim(claims, ClienteOidcHeader, "azp");
         if (roles.Length > 0)
         {
             claims.Add(new Claim("realm_access", JsonSerializer.Serialize(new { roles })));
         }
+    }
 
+    private void AddOptionalClaim(List<Claim> claims, string header, string claimType)
+    {
+        string? value = GetOptionalHeaderValue(header);
+        if (value is not null)
+        {
+            claims.Add(new Claim(claimType, value));
+        }
+    }
+
+    private static AuthenticateResult CreateTicket(List<Claim> claims)
+    {
         ClaimsIdentity identity = new(claims, SchemeName);
         ClaimsPrincipal principal = new(identity);
         AuthenticationTicket ticket = new(principal, SchemeName);
 
-        return Task.FromResult(AuthenticateResult.Success(ticket));
+        return AuthenticateResult.Success(ticket);
     }
 
     /// <summary>
