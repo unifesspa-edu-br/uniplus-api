@@ -41,7 +41,7 @@ npx markdownlint-cli2 'docs/adrs/**/*.md'
 | [0010](0010-audience-unica-uniplus-em-tokens-oidc.md) | Audience única `uniplus` em tokens OIDC | accepted | 2026-04-28 |
 | [0011](0011-mascaramento-de-cpf-em-logs.md) | Mascaramento de CPF em logs via enricher Serilog | accepted | 2026-04-28 |
 | [0012](0012-archunitnet-como-fitness-tests-arquiteturais.md) | ArchUnitNET como biblioteca de fitness tests arquiteturais | accepted | 2026-04-28 |
-| [0013](0013-motor-de-classificacao-como-servicos-de-dominio-puros.md) | Motor de classificação como serviços de domínio puros | accepted | 2026-04-28 |
+| [0013](0013-motor-de-classificacao-como-servicos-de-dominio-puros.md) | Classificação dos candidatos como serviços de domínio puros | accepted | 2026-04-28 |
 | [0014](0014-kafka-como-bus-assincrono-inter-modulos.md) | Kafka como bus assíncrono inter-módulos e para integrações externas | accepted | 2026-04-28 |
 | [0015](0015-rest-contract-first-com-openapi.md) | REST contract-first com OpenAPI 3.0 e versionamento de API | accepted | 2026-04-28 |
 | [0016](0016-keycloak-como-identity-provider.md) | Keycloak como identity provider OIDC do `uniplus-api` | accepted | 2026-04-28 |
@@ -170,7 +170,7 @@ npx markdownlint-cli2 'docs/adrs/**/*.md'
 | [0139](0139-interpretador-de-regras-de-formulario-no-front.md) | O front interpreta as regras do formulário publicadas pela API, e a API valida tudo no envio: o contrato público declara os derivados e agregados que o formulário cita, um conversor de mão dupla garante a completude e um corpus de casos compartilhado mantém as duas implementações iguais | accepted | 2026-10-05 |
 | [0140](0140-gatilho-diario-duravel-de-sincronizacao.md) | Gatilho diário durável para a sincronização de discentes | accepted | 2026-10-06 |
 | [0141](0141-respostas-da-inscricao-em-tabela.md) | As respostas da inscrição ficam em tabela, uma linha por valor, com o tipo e a origem de cada valor; `jsonb` fica para o que é congelado | proposed | 2026-10-10 |
-| [0142](0142-elegibilidade-do-fator-de-atenuacao.md) | O Fator de Atenuação das Desigualdades de Acesso cita o fato booleano do processo que decide quem o recebe; o motor aplica o acréscimo a quem o fato resolve verdadeiro | proposed | 2026-10-10 |
+| [0142](0142-elegibilidade-do-fator-de-atenuacao.md) | O Fator de Atenuação das Desigualdades de Acesso cita o fato booleano do processo que decide quem o recebe; a classificação dos candidatos aplica o acréscimo a quem o fato resolve verdadeiro | proposed | 2026-10-10 |
 | [0143](0143-avaliacao-sob-demanda-dos-fatos-do-candidato.md) | A API avalia sob demanda o que depende dos fatos do candidato | proposed | 2026-10-10 |
 | [0144](0144-regra-de-aplicabilidade-pertence-a-modalidade.md) | A regra de aplicabilidade pertence à modalidade | proposed | 2026-10-11 |
 | [0145](0145-recurso-por-etapa.md) | O recurso também pertence à etapa, e cada janela declara se admite instância superior — emendada pelas ADRs 0158 e 0177 | accepted | 2026-10-18 |

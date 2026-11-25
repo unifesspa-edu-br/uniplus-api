@@ -172,7 +172,7 @@ A banca não é desenhada aqui, mas a base não a bloqueia:
 - o resource da banca é a avaliação da inscrição na etapa, com só os fatos e documentos que a etapa declara analisar; o recorte vem do resource, e as permissões de classificação continuam por módulo;
 - o escopo é a designação da banca (processo, fase, etapa e código da banca), fato da Seleção conferido a cada acesso por verificação de contexto declarada na permissão; revogar a designação corta o acesso na hora;
 - a concessão de quem integra a banca é na unidade da fase ou da etapa da banca, conforme a [ADR-0159](0159-acao-interna-da-fase-decidida-na-unidade-responsavel-pela-fase.md), e a banca da própria fase entra no mesmo recorte;
-- o motor de autorização não conhece escopo de negócio: a concessão diz o que a pessoa pode fazer, em que unidade e até quando, e o escopo de negócio entra pela verificação do módulo. Por isso a chamada e o processo deixam de ser escopo de concessão no motor, em frente própria: o escopo de negócio da concessão excepcional da [ADR-0084](0084-concessao-excepcional-e-atuacao-institucional-server-side.md) (processo, fase, banca) passa à designação, e a concessão excepcional fica com unidade e tipo de resource.
+- a decisão de acesso não considera escopo de negócio: a concessão diz o que a pessoa pode fazer, em que unidade e até quando, e o escopo de negócio entra pela verificação do módulo. Por isso a chamada e o processo deixam de ser escopo de concessão na decisão de acesso, em frente própria: o escopo de negócio da concessão excepcional da [ADR-0084](0084-concessao-excepcional-e-atuacao-institucional-server-side.md) (processo, fase, banca) passa à designação, e a concessão excepcional fica com unidade e tipo de resource.
 
 ### Aprovação da proteção de dados como pré-condição
 
@@ -247,7 +247,7 @@ Descartados também, dentro da opção escolhida: a permissão de acesso ao reso
 - **Responde à pendência da [ADR-0136](0136-catalogo-de-fatos-do-candidato-administravel.md)** ("Proteção dos valores"): o fato cadastrado em tempo de execução é projetado pela classificação e pela base legal congeladas no processo. O armazenamento e a cifra seguem a ADR-0141 e a ADR-0121.
 - **Emenda à governança da [ADR-0136](0136-catalogo-de-fatos-do-candidato-administravel.md)**: a classificação do fato de sistema deixa de ser fixa na semente e passa à aprovação do Representante do controlador.
 - [ADR-0152](0152-governanca-das-concessoes-de-acesso.md) não muda: a revelação a pedido segue a regra do CPF dela, agora para todo identificador.
-- [ADR-0078](0078-modelo-de-autorizacao-pbac-abac.md): ponto de decisão único e verificações de contexto; a chamada, listada lá entre os escopos da concessão, sai do motor pela banca acima.
+- [ADR-0078](0078-modelo-de-autorizacao-pbac-abac.md): ponto de decisão único e verificações de contexto; a chamada, listada lá entre os escopos da concessão, sai da decisão de acesso pela banca acima.
 - [ADR-0084](0084-concessao-excepcional-e-atuacao-institucional-server-side.md): a concessão excepcional deixa de ser escopada por processo, chamada ou banca; esse escopo passa à designação, e a concessão fica com unidade e tipo de resource.
 - [ADR-0082](0082-nome-social-publico-nome-civil-pessoal.md): o nome social e o nome civil são `Pessoal` na consulta administrativa; o que a ADR-0082 chama de público é a forma de identificação nos pontos de publicação, que não passa pelo projetor.
 - [ADR-0154](0154-classificacao-da-modalidade-e-dos-opt-ins.md): classificação da modalidade e congelamento da classificação do derivado.

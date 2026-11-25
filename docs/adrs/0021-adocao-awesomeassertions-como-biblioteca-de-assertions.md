@@ -43,7 +43,7 @@ A Story `unifesspa-edu-br/uniplus-api#169` formaliza a remediação e decompõe 
 
 A versão alvo é **AwesomeAssertions 9.x** (estável atual: 9.4.0). A migração no PR-2 (`#171`) é mecânica: trocar a entry em `Directory.Packages.props`, as 11 referências em `.csproj` de teste e os 32 `using FluentAssertions;` por `using AwesomeAssertions;`, além de atualizar as docs (`CLAUDE.md`, `CONTRIBUTING.md`) que listam a biblioteca de assertions. Nenhuma alteração no corpo dos testes é prevista.
 
-A escolha **não se reduz à facilidade de migração**. Mesmo num cenário hipotético em que a suíte fosse pequena, AwesomeAssertions ainda venceria pela capacidade de equivalência estrutural configurável — exigência projetada para a fase de implementação do motor de classificação ([ADR-0013](0013-motor-de-classificacao-como-servicos-de-dominio-puros.md)) e dos contratos REST ([ADR-0015](0015-rest-contract-first-com-openapi.md)). A continuidade da DSL fluente, embora útil, é consequência da escolha — não sua justificativa.
+A escolha **não se reduz à facilidade de migração**. Mesmo num cenário hipotético em que a suíte fosse pequena, AwesomeAssertions ainda venceria pela capacidade de equivalência estrutural configurável — exigência projetada para a fase de implementação da classificação dos candidatos ([ADR-0013](0013-motor-de-classificacao-como-servicos-de-dominio-puros.md)) e dos contratos REST ([ADR-0015](0015-rest-contract-first-com-openapi.md)). A continuidade da DSL fluente, embora útil, é consequência da escolha — não sua justificativa.
 
 **Guardrail de uso.** `BeEquivalentTo` e seus operadores estruturais devem ser usados com critério para validação de **contratos e shapes** (DTOs, responses HTTP, payloads de eventos). Para regras de negócio centrais — em especial decisões de aprovação, reprovação, classificação e desempate — a suíte deve preferir **assertions explícitas e nominais** sobre o resultado, evitando que uma comparação estrutural genérica mascare uma quebra semântica importante.
 
@@ -53,7 +53,7 @@ A escolha **não se reduz à facilidade de migração**. Mesmo num cenário hipo
 
 - Licença Apache-2.0 elimina o risco regulatório e o custo de licenciamento associados à v8 da Xceed.
 - Migração custo-zero: a API pública de AwesomeAssertions v9 é drop-in compatível com a DSL fluente já em uso.
-- Capacidade plena de equivalência estrutural preservada para os cenários previstos (motor de classificação, contratos REST, eventos Wolverine).
+- Capacidade plena de equivalência estrutural preservada para os cenários previstos (classificação dos candidatos, contratos REST, eventos Wolverine).
 - Independência de fornecedor: o fork é mantido pela comunidade sob licença permissiva.
 
 ### Negativas
@@ -118,4 +118,4 @@ Mecanismos para confirmar a decisão ao longo do tempo:
 - [Issue Shouldly sobre customização de `ShouldBeEquivalentTo`](https://github.com/shouldly/shouldly/issues/1116)
 - Story: [`unifesspa-edu-br/uniplus-api#169`](https://github.com/unifesspa-edu-br/uniplus-api/issues/169)
 - Tasks: [`#170`](https://github.com/unifesspa-edu-br/uniplus-api/issues/170) (esta ADR), [`#171`](https://github.com/unifesspa-edu-br/uniplus-api/issues/171) (refactor)
-- ADRs relacionadas: [ADR-0013](0013-motor-de-classificacao-como-servicos-de-dominio-puros.md) (motor de classificação), [ADR-0015](0015-rest-contract-first-com-openapi.md) (contratos REST)
+- ADRs relacionadas: [ADR-0013](0013-motor-de-classificacao-como-servicos-de-dominio-puros.md) (classificação dos candidatos), [ADR-0015](0015-rest-contract-first-com-openapi.md) (contratos REST)

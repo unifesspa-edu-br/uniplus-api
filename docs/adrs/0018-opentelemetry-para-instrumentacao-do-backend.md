@@ -9,7 +9,7 @@ decision-makers:
 
 ## Contexto e enunciado do problema
 
-O `uniplus-api` precisa de observabilidade end-to-end durante picos de inscrição. Traces, métricas e logs precisam ser correlacionados por um único `traceId` que atravesse a API, handlers Wolverine, consumers Kafka e queries no PostgreSQL. Sem instrumentação estruturada, problemas de latência, erros silenciosos e gargalos no motor de classificação passam despercebidos até virarem falhas reportadas por candidatos.
+O `uniplus-api` precisa de observabilidade end-to-end durante picos de inscrição. Traces, métricas e logs precisam ser correlacionados por um único `traceId` que atravesse a API, handlers Wolverine, consumers Kafka e queries no PostgreSQL. Sem instrumentação estruturada, problemas de latência, erros silenciosos e gargalos na classificação dos candidatos passam despercebidos até virarem falhas reportadas por candidatos.
 
 A stack de armazenamento (Loki, Grafana, Tempo, Prometheus) é decisão de plataforma — esta ADR cobre o lado do `uniplus-api` (instrumentação backend). A instrumentação frontend (RUM) é decisão própria do `uniplus-web`.
 

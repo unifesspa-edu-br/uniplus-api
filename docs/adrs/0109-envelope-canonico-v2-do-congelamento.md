@@ -71,7 +71,7 @@ O item 4 da ADR-0100 ("campo opcional sem valor é omitido") foi lido como regra
 ### D7 — Duas gramáticas de predicado, deliberadas e disjuntas
 
 1. **Átomo DNF** — `{fato, operador, valor}` sobre o **rol de fatos do candidato**. É a gramática do gatilho da exigência documental e da condição de exibição do formulário. Elas são **a mesma coisa** e compartilham o mesmo value object.
-2. **Predicado nomeado + args** — `{"predicado": "...", "args": {...}}` sobre o **estado do certame**. É a gramática da condição da cascata de remanejamento. Entra no envelope como **dado cru**, com validação de forma apenas: o rol de predicados nomeados é fechado, mas não há motor que os avalie nesta fatia.
+2. **Predicado nomeado + args** — `{"predicado": "...", "args": {...}}` sobre o **estado do certame**. É a gramática da condição da cascata de remanejamento. Entra no envelope como **dado cru**, com validação de forma apenas: o rol de predicados nomeados é fechado, mas a avaliação dos predicados não ocorre nesta fatia.
 
 **Consequência:** a pergunta "o gatilho do documento e a condição da cascata são a mesma gramática?" tem resposta — **não** —, e ela está registrada antes de as duas stories a responderem em separado.
 
@@ -104,7 +104,7 @@ Onde a coleção não tem chave de negócio (as regras de eliminação: cardinal
 ## Fora de escopo
 
 - O **conteúdo** dos 7 blocos ainda não construídos — cada um é a sua story.
-- O **motor** que avalia os predicados de D7. Esta ADR fixa a gramática e o freeze; quem executa é incremento (Inscrição, Homologação, Classificação).
+- A **avaliação dos predicados** de D7. Esta ADR fixa a gramática e o freeze; quem executa é incremento (Inscrição, Homologação, Classificação).
 - A **canonicalização portável** (JCS/RFC 8785). O algoritmo corrente (`canonical-json/sha256@v1`) é estável e reproduzível dentro do runtime .NET; a interoperabilidade com outro runtime não é requisito desta fatia.
 
 ## Emenda 1 (2026-08-05) — composição hierárquica da ordenação de coleções, e delegação do grafo de dependência
@@ -160,7 +160,7 @@ Registrar a camada não basta — nomear cada array de `Ordem` semântica pelo q
 | `criteriosDesempate` | refinamento sequencial do empate — o primeiro critério é aplicado antes do seguinte, e só desempata o resíduo que sobrar |
 | `cronogramaFases.fases` | ordem cronológica e jurídica — base de janelas, precedências entre fases e prazos de recurso |
 | `fatosColetados` | ordem de exibição e coleta no formulário; também limita toda pré-condição a citar só fato ANTERIOR |
-| `arvoreSatisfacao` (raízes e filhos) | posição declarada no fluxo documental — a álgebra de satisfação (grupos E/OU) é comutativa, a apresentação ao candidato não |
+| `regrasDeComprovacao` e `regrasDeComprovacao[*].itens` | posição declarada no fluxo documental — a álgebra de satisfação (grupos E/OU) é comutativa, a apresentação ao candidato não |
 | `regrasDerivacao[].regras` | ordem configurada de avaliação da derivação, incluindo qual regra é a âncora (incondicional) |
 | `documentosExigidos.metadadosFatos[].valoresDominioDeclarados` | ordem de apresentação das opções de um fato de seleção no formulário |
 | `grafoDependencia.ordemTopologica` | ordem produtor→consumidor entre campo, fato e exigência — delegada ao domínio, ver E1.2 |

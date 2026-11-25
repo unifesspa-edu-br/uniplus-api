@@ -14,11 +14,11 @@ informed:
 
 A unidade responsável pelo processo seletivo cadastra, publica e retifica os dados gerais e o cronograma. A unidade responsável por cada fase (`FaseCronograma.UnidadeResponsavel`) conduz as ações internas da fase, mesmo quando não é a dona do processo: publica os documentos dela, designa as bancas dela, julga os recursos dela e conduz chamada, habilitação e matrícula. A etapa segue a unidade da fase que a contém (UNI-REQ-0329 a UNI-REQ-0343).
 
-Hoje toda decisão de acesso da Seleção monta o resource com a unidade dona. A unidade da fase é uma cópia congelada no cronograma e nenhum ponto de acesso a lê. Como o motor exige concessão na mesma unidade do resource, sem herança ([ADR-0079](0079-hierarquia-institucional-sem-heranca-de-permissao.md)), quem conduz uma fase de outra unidade precisaria de concessão na unidade dona, o que contraria a regra de negócio.
+Hoje toda decisão de acesso da Seleção monta o resource com a unidade dona. A unidade da fase é uma cópia congelada no cronograma e nenhum ponto de acesso a lê. Como a decisão de acesso exige concessão na mesma unidade do resource, sem herança ([ADR-0079](0079-hierarquia-institucional-sem-heranca-de-permissao.md)), quem conduz uma fase de outra unidade precisaria de concessão na unidade dona, o que contraria a regra de negócio.
 
 ## Drivers da decisão
 
-- Manter o motor de autorização como está: uma concessão comparada com uma unidade.
+- Manter a decisão de acesso como está: uma concessão comparada com uma unidade.
 - Decidir pela unidade que o edital publicou, e não pela do rascunho de uma retificação em curso.
 - Não haver fase que se resolve "quase": a ação de fase ou decide na unidade da fase, ou recebe a resposta de quem não encontra.
 
@@ -30,7 +30,7 @@ Hoje toda decisão de acesso da Seleção monta o resource com a unidade dona. A
 
 ## Resultado da decisão
 
-**Escolhida:** "decidir a ação interna na unidade da fase, lida da versão publicada vigente", porque preserva o motor e a ADR-0079 e põe a decisão onde a regra de negócio a coloca.
+**Escolhida:** "decidir a ação interna na unidade da fase, lida da versão publicada vigente", porque preserva a decisão de acesso e a ADR-0079 e põe a decisão onde a regra de negócio a coloca.
 
 - A Seleção monta o resource da ação da fase com a unidade da fase no lugar da dona, sempre com o `ProcessoId`, para que o impedimento por inscrição valha. A etapa decide pela unidade da fase que a contém. A ação que por natureza não tem fase decide na dona.
 - A unidade da fase e a fase de uma etapa são lidas do envelope da versão publicada vigente, nunca das entidades vivas durante a sessão de retificação. A troca de unidade de uma fase que não começou passa a valer quando a retificação fecha.
@@ -43,7 +43,7 @@ Hoje toda decisão de acesso da Seleção monta o resource com a unidade dona. A
 ### Positivas
 
 - A unidade que conduz a fase atua com concessão na própria unidade, sem herança e sem escopo de auditoria.
-- O motor não muda; o Ingresso e as demais frentes reutilizam a mesma peça.
+- A decisão de acesso não muda; o Ingresso e as demais frentes reutilizam a mesma peça.
 
 ### Negativas
 
@@ -66,7 +66,7 @@ Testes diretos da peça de decisão e dos leitores da versão vigente, e teste d
 
 ### Decidir na unidade da fase
 
-- Bom, porque a decisão acompanha a regra de negócio sem tocar no motor.
+- Bom, porque a decisão acompanha a regra de negócio sem alterar a decisão de acesso.
 - Ruim, porque cada operação precisa declarar se é de fase.
 
 ## Mais informações

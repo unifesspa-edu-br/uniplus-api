@@ -40,11 +40,11 @@ Espalhar essas condições por verificações ad hoc nos controllers — por exe
 
 - **A**: Manter o modelo por papéis fixos por Unidade (ADR-0057) — papéis globais por Unidade.
 - **B**: **PBAC** (baseado em permissão — *o que* pode ser feito) **+ ABAC** (baseado em atributos de contexto — *em que circunstância*) com um **ponto de decisão único** e **sujeito explícito**.
-- **C**: ReBAC / motor externo de políticas (Cedar, OPA, OpenFGA) como sidecar.
+- **C**: ReBAC / serviço externo de decisão de acesso (Cedar, OPA, OpenFGA) como sidecar.
 
 ## Resultado da decisão
 
-**Escolhida:** "B — PBAC + ABAC com ponto de decisão único", porque combina permissões granulares com atributos de contexto num contrato formal único, auditável e testável, sem o acoplamento operacional de um motor externo nesta fase.
+**Escolhida:** "B — PBAC + ABAC com ponto de decisão único", porque combina permissões granulares com atributos de contexto num contrato formal único, auditável e testável, sem o acoplamento operacional de um serviço externo de decisão de acesso nesta fase.
 
 Perfis e grupos existentes, inclusive `plataforma-admin`, não são removidos por esta decisão. Eles permanecem como representação de responsabilidades administrativas e podem compor as concessões avaliadas. Esta ADR substitui apenas o uso de papel ou área como regra suficiente para decisões contextuais sobre recursos protegidos; a migração de endpoints e contratos existentes pertence às respectivas issues de desenvolvimento.
 
@@ -107,7 +107,7 @@ Em respeito à regra "1 ADR = 1 decisão", esta ADR fixa **apenas** o modelo de 
 
 ### Neutras
 
-- Não fecha a porta para um motor externo de políticas (Cedar/OPA/OpenFGA) no futuro — fica como avaliação posterior, caso a complexidade das políticas justifique.
+- Não fecha a porta para um serviço externo de decisão de acesso (Cedar/OPA/OpenFGA) no futuro — fica como avaliação posterior, caso a complexidade das políticas justifique.
 
 ## Confirmação
 
@@ -126,7 +126,7 @@ Em respeito à regra "1 ADR = 1 decisão", esta ADR fixa **apenas** o modelo de 
 - Bom, porque decide por permissão + atributos de contexto num contrato único, auditável e testável, com sujeito explícito.
 - Ruim, porque exige tipos formais e verificações declaradas — mais peças que um atributo de papel.
 
-### C — Motor externo de políticas (Cedar/OPA/OpenFGA)
+### C — Serviço externo de decisão de acesso (Cedar/OPA/OpenFGA)
 
 - Bom, porque externaliza a linguagem de políticas e escala para regras complexas.
 - Ruim, porque adiciona um componente de runtime e uma linguagem própria sem necessidade comprovada nesta fase; acoplamento operacional alto para o ganho atual.

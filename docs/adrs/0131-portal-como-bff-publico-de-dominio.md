@@ -19,7 +19,7 @@ O `portal-api` existe como deployable autônomo desde a criação do seu esquele
 
 A pergunta deixa de ser teórica agora que o portal ganha conteúdo. A primeira entrega é uma vitrine de processos seletivos publicados e a página de um processo, com as suas publicações e o edital em PDF.
 
-Um processo publicado congela a sua configuração numa `VersaoConfiguracao` cujo conteúdo é um envelope canônico de vinte e oito blocos, que cresce a cada incremento do domínio. Esse envelope carrega o critério de classificação, os critérios de desempate, o bônus regional, a árvore de satisfação documental, o grafo de dependência entre fatos e o resultado do motor de conformidade — tudo o que o cidadão **não** precisa ler para se inscrever, e boa parte do que a instituição não tem interesse em publicar num endereço anônimo.
+Um processo publicado congela a sua configuração numa `VersaoConfiguracao` cujo conteúdo é um envelope canônico de vinte e oito blocos, que cresce a cada incremento do domínio. Esse envelope carrega o critério de classificação, os critérios de desempate, o bônus regional, a árvore de satisfação documental, o grafo de dependência entre fatos e o resultado da conferência de conformidade legal — tudo o que o cidadão **não** precisa ler para se inscrever, e boa parte do que a instituição não tem interesse em publicar num endereço anônimo.
 
 A questão a decidir é **de onde o portal tira o que mostra**. O caminho de menor esforço seria abrir a leitura administrativa do processo a uma identidade de serviço e deixar o Portal montar a página a partir do envelope. É esse caminho que esta ADR recusa, e o que ela põe no lugar define, por consequência, o que o Portal é.
 

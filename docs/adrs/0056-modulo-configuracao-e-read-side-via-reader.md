@@ -18,7 +18,7 @@ O `uniplus-api` tem oito catálogos admin-editáveis identificados pelo protóti
 |---|---|---|
 | `TipoProcesso` | Cadastro administrativo de tipos de processo seletivo | Configuracao + Selecao |
 | `TipoEtapa` | Cadastro administrativo de tipos de etapa de processo seletivo | Configuracao + Selecao |
-| `CriterioDesempate` | Primitiva do motor de classificação ([ADR-0013](0013-motor-de-classificacao-como-servicos-de-dominio-puros.md)) | Apenas Selecao |
+| `CriterioDesempate` | Primitiva da classificação dos candidatos ([ADR-0013](0013-motor-de-classificacao-como-servicos-de-dominio-puros.md)) | Apenas Selecao |
 | `LocalProva` | Local de aplicação de prova (capacidade, responsável exam-specific) | Apenas Selecao |
 | `ObrigatoriedadeLegal` | Engine configurável de validação legal para editais | Apenas Selecao (ver [ADR-0058](0058-obrigatoriedade-legal-validacao-data-driven.md)) |
 | `Modalidade` | Modalidade de cota federal (Lei 12.711/2023) | Selecao + Ingresso + módulos futuros |
@@ -96,7 +96,7 @@ src/configuracao/
 
 1. **`TipoProcesso`** → Configuracao, por emenda da ADR-0122; Seleção o consome por `ITipoProcessoReader` e congela snapshot-copy, sem FK cross-schema.
 2. **`TipoEtapa`** → Configuracao, por emenda da ADR-0123; Seleção o consome por `ITipoEtapaReader` e congela snapshot-copy em `EtapaProcesso`, sem FK cross-schema.
-3. **`CriterioDesempate`** → Selecao (primitiva do motor de classificação per [ADR-0013](0013-motor-de-classificacao-como-servicos-de-dominio-puros.md)).
+3. **`CriterioDesempate`** → Selecao (primitiva da classificação dos candidatos per [ADR-0013](0013-motor-de-classificacao-como-servicos-de-dominio-puros.md)).
 4. **`LocalProva`** → Selecao (referencia `Endereco` por `EnderecoOrigemId` snapshot per [ADR-0061](0061-referencia-cross-modulo-via-snapshot-copy.md); adiciona campos exam-specific: `CapacidadeMaxima`, `ResponsavelExame`, `CondicoesAcessibilidade`. CEPS-administered).
 5. **`ObrigatoriedadeLegal`** → ver [ADR-0058](0058-obrigatoriedade-legal-validacao-data-driven.md) para design completo; fica em Selecao para V1 com critérios de promoção a futuro módulo `Normativos` documentados.
 
@@ -222,7 +222,7 @@ Admin endpoints de `Endereco` são restritos: apenas `plataforma-admin` pode cri
 ## Mais informações
 
 - [ADR-0001](0001-monolito-modular-como-estilo-arquitetural.md) — Monolito modular (refinada aqui).
-- [ADR-0013](0013-motor-de-classificacao-como-servicos-de-dominio-puros.md) — Motor de classificação como pure domain services.
+- [ADR-0013](0013-motor-de-classificacao-como-servicos-de-dominio-puros.md) — Classificação dos candidatos como pure domain services.
 - [ADR-0026](0026-paginacao-cursor-opaco-cifrado.md) — Paginação cursor (com exceção documentada para reference data bounded).
 - [ADR-0027](0027-idempotency-key-store-postgresql.md) — Idempotency-Key store.
 - [ADR-0028](0028-versionamento-per-resource-content-negotiation.md) — Versionamento per resource.

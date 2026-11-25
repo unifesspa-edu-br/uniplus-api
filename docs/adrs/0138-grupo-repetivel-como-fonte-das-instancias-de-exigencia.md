@@ -20,7 +20,7 @@ A habilitação do edital de Medicina 2027 pede a composição familiar como lis
 
 - A lista de membros é coletada no formulário, com regras próprias por ocorrência.
 - As exigências por membro precisam das ocorrências da lista, sem um mecanismo novo de exigência.
-- O motor de regras resolve um valor por código de fato; uma regra do candidato não sabe escolher entre membros.
+- O cálculo dos dados do candidato resolve um valor por código de fato; uma regra do candidato não sabe escolher entre membros.
 
 ## Opções consideradas
 

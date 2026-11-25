@@ -9,7 +9,7 @@ decision-makers:
 
 ## Contexto e enunciado do problema
 
-Mesmo com PostgreSQL como banco primário (ver ADR-0007), o `uniplus-api` precisa de cache distribuído para queries de leitura repetidas (lista de editais ativos, cursos disponíveis, vagas por modalidade), rate limiting de endpoints públicos (inscrição, consulta de resultado) e dados temporários durante processamento em lote (locks durante execução do motor de classificação).
+Mesmo com PostgreSQL como banco primário (ver ADR-0007), o `uniplus-api` precisa de cache distribuído para queries de leitura repetidas (lista de editais ativos, cursos disponíveis, vagas por modalidade), rate limiting de endpoints públicos (inscrição, consulta de resultado) e dados temporários durante processamento em lote (locks durante execução da classificação dos candidatos).
 
 Cache local em memória do .NET (`IMemoryCache`) não atende — múltiplas réplicas no Kubernetes precisariam compartilhar estado.
 
@@ -35,7 +35,7 @@ Casos de uso e políticas:
 - **Cache de queries frequentes** com TTL longo (editais ativos, cursos, vagas) — invalidação por evento de domínio.
 - **Session state complementar** para fluxo de inscrição em andamento — TTL curto.
 - **Rate limiting de endpoints públicos** via contadores Redis (ver ADR-0015).
-- **Locks distribuídos** durante execução do motor de classificação para garantir uma única execução por edital concorrente.
+- **Locks distribuídos** durante execução da classificação dos candidatos para garantir uma única execução por edital concorrente.
 
 A aplicação degrada graciosamente sem Redis — cai para PostgreSQL com perda de performance, mas não de correção. Isso é uma propriedade exigida do design.
 

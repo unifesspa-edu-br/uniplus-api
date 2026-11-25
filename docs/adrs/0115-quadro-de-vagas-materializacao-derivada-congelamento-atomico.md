@@ -14,7 +14,7 @@ informed:
 
 ## Contexto e enunciado do problema
 
-O bloco `vagas` do envelope canônico (ADR-0100, ADR-0109) é hoje um dos 5 blocos ainda sem dono: `SnapshotPublicacaoCanonicalizer` grava o literal `{"status":"nao_construido"}`, e `SnapshotPublicadoPersistidoTests.Snapshot_Contem33BlocosCanonicos` asserta isso como esperado. O que existe hoje são só os **insumos**: `ConfiguracaoDistribuicaoVagas` (uma por oferta de curso) congela as vagas ofertadas base, o percentual da reserva legal, a referência à regra de distribuição e a referência demográfica (snapshot-copy do Censo, ADR-0061), mais as `ModalidadeSelecionada` da oferta. A própria entidade documenta que não modela o `QuadroDeVagas` — "output derivado... responsabilidade do motor de cálculo (incremento futuro)".
+O bloco `vagas` do envelope canônico (ADR-0100, ADR-0109) é hoje um dos 5 blocos ainda sem dono: `SnapshotPublicacaoCanonicalizer` grava o literal `{"status":"nao_construido"}`, e `SnapshotPublicadoPersistidoTests.Snapshot_Contem33BlocosCanonicos` asserta isso como esperado. O que existe hoje são só os **insumos**: `ConfiguracaoDistribuicaoVagas` (uma por oferta de curso) congela as vagas ofertadas base, o percentual da reserva legal, a referência à regra de distribuição e a referência demográfica (snapshot-copy do Censo, ADR-0061), mais as `ModalidadeSelecionada` da oferta. A própria entidade documenta que não modela o `QuadroDeVagas` — "output derivado... responsabilidade do cálculo do quadro (incremento futuro)".
 
 Sem o quadro materializado e congelado, o edital publicado não diz quantas vagas há por modalidade, não há como provar que o certame respeitou a Lei 12.711/2012 (redação da Lei 14.723/2023), o gate de consequência do indeferimento (documentos exigidos) não tem a linha `(oferta × modalidade)` sobre a qual raciocinar, e o envelope nunca fecha as suas 17 chaves.
 
@@ -28,7 +28,7 @@ Falta decidir: (1) onde o quadro vive no agregado, (2) se ele nasce por um coman
 - **RN08 (congelamento por edital).** O quadro, uma vez publicado, não pode ser recalculado a partir do cadastro vivo — precisa ser prova reproduzível a partir dos **insumos congelados**, não do cadastro de hoje.
 - **A prova não pode ser tautológica.** Se o insumo e o resultado fossem o mesmo dado, "recomputar e comparar" não provaria nada. Insumo (vagas ofertadas base, percentual da reserva legal, referência demográfica, quantidades declaradas) e output (o quadro) precisam ser blocos congelados **separados**.
 - **Nenhum código pode ramificar por tipo de processo.** Um PSIQ 100% afirmativo e um SiSU convencional têm de ser cobertos pela **mesma** factory — a diferença vem inteiramente do que o cadastro exige, nunca de um `if (tipo == X)`.
-- **O motor de Classificação consome o quadro; não o produz.** O quadro é o estoque inicial de cada concorrência — a fronteira com a cascata de remanejamento (que **move** vaga não preenchida entre modalidades) precisa ficar explícita para não colidir com trabalho futuro.
+- **A classificação dos candidatos consome o quadro; não o produz.** O quadro é o estoque inicial de cada concorrência — a fronteira com a cascata de remanejamento (que **move** vaga não preenchida entre modalidades) precisa ficar explícita para não colidir com trabalho futuro.
 
 ## Opções consideradas
 
@@ -50,7 +50,7 @@ O cálculo do ramo federal é um **domain service puro** (`CalculadoraQuadroVaga
 
 - Uma única fonte de verdade para a chave `(oferta × modalidade)` — sem risco de o quadro divergir do pai.
 - A garantia RN08 fica estrutural: não existe caminho de código que publique insumo sem quadro, ou quadro sem insumo — nascem e morrem juntos.
-- O motor de Classificação ganha uma fronteira de leitura limpa: consome `VagaOfertada` como estoque inicial, sem tocar no cálculo que o produziu.
+- A classificação dos candidatos ganha uma fronteira de leitura limpa: consome `VagaOfertada` como estoque inicial, sem tocar no cálculo que o produziu.
 - A prova de reprodutibilidade (recomputar a partir do congelado e comparar) é genuína, porque insumo e output são blocos distintos no envelope.
 
 ### Negativas
@@ -60,7 +60,7 @@ O cálculo do ramo federal é um **domain service puro** (`CalculadoraQuadroVaga
 
 ### Neutras
 
-- A regra de ajuste (`AJUSTE_VAGAS_ARTIGO_11_PARAGRAFO_UNICO`) é referenciada e congelada por esta decisão, mas os motores de ajuste não-federais que ela também descreve (`REDUZIR_DE`, `REDUZIR_PROPORCIONAL_EM`) não são executados — ficam como referência congelada para incremento futuro, fora do escopo desta ADR.
+- A regra de ajuste (`AJUSTE_VAGAS_ARTIGO_11_PARAGRAFO_UNICO`) é referenciada e congelada por esta decisão, mas as regras de ajuste do quadro não-federais que ela também descreve (`REDUZIR_DE`, `REDUZIR_PROPORCIONAL_EM`) não são executadas — ficam como referência congelada para incremento futuro, fora do escopo desta ADR.
 
 ## Confirmação
 
@@ -125,9 +125,9 @@ códigos cada caminho reconhece.
 
 ## Emenda 3 (2026-11-16) — o quadro é de dois ramos, e cada um declara o que o envelope grava
 
-**Contexto.** O quadro foi descrito como um tipo único de saída. Os dois ramos, porém, produzem coisas diferentes: o da Lei 12.711/2012 calcula as quantidades e pode conferi-las contra a reserva legal; o de quadro fixo recebe as quantidades do edital e só pode ter sido ajustado por um motor de redução. Um tipo único obrigava campos sem sentido em um dos lados (percentual da reserva legal num quadro que não o usa, conferência da reserva legal num quadro que não a calcula).
+**Contexto.** O quadro foi descrito como um tipo único de saída. Os dois ramos, porém, produzem coisas diferentes: o da Lei 12.711/2012 calcula as quantidades e pode conferi-las contra a reserva legal; o de quadro fixo recebe as quantidades do edital e só pode ter sido ajustado por uma regra de ajuste do quadro. Um tipo único obrigava campos sem sentido em um dos lados (percentual da reserva legal num quadro que não o usa, conferência da reserva legal num quadro que não a calcula).
 
-**Decisão.** O quadro tem um tipo por ramo: o quadro da lei de cotas carrega a conferência da reserva legal; o quadro fixado no edital carrega o ajuste que o reduziu, quando houve. O ramo é resolvido pelo código da regra de distribuição (`RegraDistribuicaoVagasCodigo.RamoDe`). O envelope grava, por oferta, `vagasOfertadasBase`, o `percentualDaReservaLegal` (ausente no quadro fixado), o `ajusteDoQuadro` e o `totalDeVagasDoEdital`; a leitura recalcula o quadro e recusa o envelope cujo bloco `vagas` diverge do recalculado. O motor de ajuste só vale no quadro fixado: a regra de ajuste declarada num processo de lei de cotas é recusada.
+**Decisão.** O quadro tem um tipo por ramo: o quadro da lei de cotas carrega a conferência da reserva legal; o quadro fixado no edital carrega o ajuste que o reduziu, quando houve. O ramo é resolvido pelo código da regra de distribuição (`RegraDistribuicaoVagasCodigo.RamoDe`). O envelope grava, por oferta, `vagasOfertadasBase`, o `percentualDaReservaLegal` (ausente no quadro fixado), o `ajusteDoQuadro` e o `totalDeVagasDoEdital`; a leitura recalcula o quadro e recusa o envelope cujo bloco `vagas` diverge do recalculado. A regra de ajuste do quadro só vale no quadro fixado: um ajuste do quadro declarado na distribuição pela Lei de Cotas é recusado.
 
 **Correção da Emenda 1.** A Emenda 1 listava como terceira regra de quadro fixo a de código `DISTRIB-VAGAS-COM-PCD-PURO`. O código vigente do catálogo é `DISTRIBUICAO_COM_AMPLA_CONCORRENCIA_E_PESSOA_COM_DEFICIENCIA`, e a regra não é "PcD puro": o rol fechado é ampla concorrência e pessoa com deficiência, e a montagem é a do quadro fixado no edital, como a das outras duas.
 
