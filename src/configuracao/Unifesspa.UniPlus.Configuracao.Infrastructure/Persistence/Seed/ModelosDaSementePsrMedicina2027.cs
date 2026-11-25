@@ -128,7 +128,7 @@ internal static class ModelosDaSementePsrMedicina2027
     [
         Campo(SolicitaFator, 103, Fator, "Deseja solicitar o Fator de Atenuação das Desigualdades de Acesso?", TipoDeCampo.SimOuNao,
             "Para quem cursou pelo menos um ano do ensino médio num dos municípios da área que o edital lista ou, se concluiu por certificação, residiu num deles no período do edital. A comprovação é pedida na habilitação."),
-        Campo(CaminhoFator, 104, Fator, "Por qual vínculo com a área você solicita o Fator?", TipoDeCampo.EscolhaUnica,
+        Campo(CaminhoFator, 104, Fator, "Por qual vínculo com a área você solicita o Fator de Atenuação das Desigualdades de Acesso?", TipoDeCampo.EscolhaUnica,
             "Como você concluiu o ensino médio por certificação, pode usar o ensino médio cursado na área ou a residência na área no período do edital.",
             exibicao: SeAlguma([Condicao(SolicitaFator, Operador.Igual, true), Condicao(OrigemEscolar.FatoFormaDeConclusao, Operador.AlgumDe, OrigemEscolar.Certificacoes)])),
     ];
