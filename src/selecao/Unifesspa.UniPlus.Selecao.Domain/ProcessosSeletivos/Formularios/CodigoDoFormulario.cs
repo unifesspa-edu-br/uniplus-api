@@ -20,7 +20,7 @@ public sealed record CodigoDoFormulario
 
     private CodigoDoFormulario(string valor) => Valor = valor;
 
-    /// <summary>Aceita o código no formato fechado, depois de aparar os espaços das pontas.</summary>
+    /// <summary>Aceita o código no formato fechado, como recebido.</summary>
     public static Result<CodigoDoFormulario> Criar(string? valor)
     {
         if (string.IsNullOrWhiteSpace(valor))
@@ -30,9 +30,8 @@ public sealed record CodigoDoFormulario
                 "O código do formulário é obrigatório."));
         }
 
-        string aparado = valor.Trim();
-        return TemFormatoValido(aparado)
-            ? Result<CodigoDoFormulario>.Success(new CodigoDoFormulario(aparado))
+        return TemFormatoValido(valor)
+            ? Result<CodigoDoFormulario>.Success(new CodigoDoFormulario(valor))
             : Result<CodigoDoFormulario>.Failure(new DomainError(
                 CodigoDoFormularioErrorCodes.FormatoInvalido,
                 "O código do formulário começa com letra maiúscula e tem só letras maiúsculas, dígitos e "

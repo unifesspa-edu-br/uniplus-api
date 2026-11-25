@@ -22,7 +22,7 @@ public sealed partial class DestinoRemanejamento : EntityBase
     /// <summary>Alinhado a <c>DestinoRemanejamentoConfiguration</c> (varchar(60)).</summary>
     public const int CodigoMaxLength = 60;
 
-    [GeneratedRegex("^[A-Z0-9_]+$")]
+    [GeneratedRegex("^[A-Z0-9_]+\\z")]
     private static partial Regex CodigoValido();
 
     public Guid ConfiguracaoCascataRemanejamentoId { get; private set; }
@@ -41,38 +41,7 @@ public sealed partial class DestinoRemanejamento : EntityBase
     /// </summary>
     public static Result<DestinoRemanejamento> Criar(string? modalidadeOrigemCodigo, int ordem, string? modalidadeDestinoCodigo)
     {
-        List<FieldError> erros = [];
-
-        bool origemValida = CodigoEhValido(modalidadeOrigemCodigo);
-        if (!origemValida)
-        {
-            erros.Add(new("modalidadeOrigemCodigo", new DomainError(
-                "ConfiguracaoCascataRemanejamento.CodigoInvalido",
-                $"Código de origem inválido — precisa casar com ^[A-Z0-9_]+$ e ter no máximo {CodigoMaxLength} caracteres.")));
-        }
-
-        bool destinoValido = CodigoEhValido(modalidadeDestinoCodigo);
-        if (!destinoValido)
-        {
-            erros.Add(new("modalidadeDestinoCodigo", new DomainError(
-                "ConfiguracaoCascataRemanejamento.CodigoInvalido",
-                $"Código de destino inválido — precisa casar com ^[A-Z0-9_]+$ e ter no máximo {CodigoMaxLength} caracteres.")));
-        }
-
-        if (ordem < 1)
-        {
-            erros.Add(new("ordem", new DomainError(
-                "ConfiguracaoCascataRemanejamento.OrdemInvalida",
-                "A ordem do destino deve ser ≥ 1.")));
-        }
-
-        if (origemValida && destinoValido && string.Equals(modalidadeOrigemCodigo, modalidadeDestinoCodigo, StringComparison.Ordinal))
-        {
-            erros.Add(new("modalidadeDestinoCodigo", new DomainError(
-                "ConfiguracaoCascataRemanejamento.OrigemIgualAoDestino",
-                "Uma modalidade não pode remanejar para si mesma.")));
-        }
-
+        List<FieldError> erros = Validar(modalidadeOrigemCodigo, ordem, modalidadeDestinoCodigo);
         if (erros.Count > 0)
         {
             return Result<DestinoRemanejamento>.ValidationFailure(erros);
@@ -84,6 +53,48 @@ public sealed partial class DestinoRemanejamento : EntityBase
             Ordem = ordem,
             ModalidadeDestinoCodigo = modalidadeDestinoCodigo!,
         });
+    }
+
+    private static List<FieldError> Validar(string? origem, int ordem, string? destino)
+    {
+        List<FieldError> erros = [];
+        bool origemValida = CodigoEhValido(origem);
+        bool destinoValido = CodigoEhValido(destino);
+        ValidarCodigos(erros, origemValida, destinoValido);
+        ValidarOrdem(erros, ordem);
+        if (origemValida && destinoValido && string.Equals(origem, destino, StringComparison.Ordinal))
+        {
+            erros.Add(new("modalidadeDestinoCodigo", new DomainError(
+                "ConfiguracaoCascataRemanejamento.OrigemIgualAoDestino", "Uma modalidade não pode remanejar para si mesma.")));
+        }
+
+        return erros;
+    }
+
+    private static void ValidarOrdem(List<FieldError> erros, int ordem)
+    {
+        if (ordem < 1)
+        {
+            erros.Add(new("ordem", new DomainError(
+                "ConfiguracaoCascataRemanejamento.OrdemInvalida", "A ordem do destino deve ser ≥ 1.")));
+        }
+    }
+
+    private static void ValidarCodigos(List<FieldError> erros, bool origemValida, bool destinoValido)
+    {
+        if (!origemValida)
+        {
+            erros.Add(new("modalidadeOrigemCodigo", new DomainError(
+                "ConfiguracaoCascataRemanejamento.CodigoInvalido",
+                $"Código de origem inválido — precisa casar com ^[A-Z0-9_]+$ e ter no máximo {CodigoMaxLength} caracteres.")));
+        }
+
+        if (!destinoValido)
+        {
+            erros.Add(new("modalidadeDestinoCodigo", new DomainError(
+                "ConfiguracaoCascataRemanejamento.CodigoInvalido",
+                $"Código de destino inválido — precisa casar com ^[A-Z0-9_]+$ e ter no máximo {CodigoMaxLength} caracteres.")));
+        }
     }
 
     private static bool CodigoEhValido(string? codigo) =>

@@ -32,12 +32,6 @@ public sealed class CodigoDoFormularioTests
             .Which.Error.Code.Should().Be(CodigoDoFormularioErrorCodes.FormatoInvalido);
     }
 
-    [Fact(DisplayName = "Os espaços nas pontas são aparados antes da conferência")]
-    public void EspacosNasPontas_SaoAparados()
-    {
-        CodigoDoFormulario.Criar("  INSCRICAO ").Value!.Valor.Should().Be("INSCRICAO");
-    }
-
     [Theory(DisplayName = "Código ausente ou em branco é recusado como obrigatório")]
     [InlineData(null)]
     [InlineData("")]
@@ -49,6 +43,8 @@ public sealed class CodigoDoFormularioTests
     }
 
     [Theory(DisplayName = "Código fora do formato é recusado")]
+    [InlineData("  INSCRICAO ")]
+    [InlineData("INSCRICAO\n")]
     [InlineData("inscricao")]
     [InlineData("1INSCRICAO")]
     [InlineData("_INSCRICAO")]

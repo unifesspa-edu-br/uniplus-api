@@ -10,7 +10,7 @@ using Unifesspa.UniPlus.Selecao.Domain.Errors;
 /// Código do motivo de decisão (UNI-REQ-0120, UNI-REQ-0283) — chave natural
 /// estável dentro do tipo do motivo, citada na decisão que o usa (ex.:
 /// <c>RENDA_ACIMA_DO_LIMITE</c>, <c>SEM_RESULTADO_INEP</c>). Formato fechado
-/// <c>^[A-Z][A-Z0-9_]{1,49}$</c>: inicia com letra maiúscula e segue com letras
+/// <c>^[A-Z][A-Z0-9_]{1,49}\z</c>: inicia com letra maiúscula e segue com letras
 /// maiúsculas, dígitos e sublinhado, de 2 a 50 caracteres. Persistido como
 /// <c>varchar</c> por conversor de valor.
 /// </summary>
@@ -34,7 +34,6 @@ public sealed partial record CodigoMotivoDecisao
     /// <summary>
     /// Cria o código validando o formato fechado. Nulo ou em branco retorna
     /// <c>CodigoObrigatorio</c>; fora do formato, <c>CodigoFormatoInvalido</c>.
-    /// O valor é normalizado por <c>Trim</c> antes da validação.
     /// </summary>
     public static Result<CodigoMotivoDecisao> Criar(string? valor)
     {
@@ -45,10 +44,8 @@ public sealed partial record CodigoMotivoDecisao
                 "Código do motivo de decisão é obrigatório."));
         }
 
-        string normalizado = valor.Trim();
-
-        return FormatoValido().IsMatch(normalizado)
-            ? Result<CodigoMotivoDecisao>.Success(new CodigoMotivoDecisao(normalizado))
+        return FormatoValido().IsMatch(valor)
+            ? Result<CodigoMotivoDecisao>.Success(new CodigoMotivoDecisao(valor))
             : RecusarFormato();
     }
 
@@ -71,7 +68,7 @@ public sealed partial record CodigoMotivoDecisao
         return resultado.IsSuccess
             ? resultado.Value!
             : throw new InvalidOperationException(
-                $"Código de motivo de decisão inválido na persistência: '{valor}'.");
+                "Código de motivo de decisão inválido na persistência.");
     }
 
     public override string ToString() => Valor;
@@ -79,6 +76,6 @@ public sealed partial record CodigoMotivoDecisao
     // O quantificador repete o literal de TamanhoMinimo/TamanhoMaximo porque
     // GeneratedRegex exige padrão constante em tempo de compilação; o teste
     // do value object confere os dois limites contra as constantes.
-    [GeneratedRegex("^[A-Z][A-Z0-9_]{1,49}$", RegexOptions.CultureInvariant)]
+    [GeneratedRegex("^[A-Z][A-Z0-9_]{1,49}\\z", RegexOptions.CultureInvariant)]
     private static partial Regex FormatoValido();
 }

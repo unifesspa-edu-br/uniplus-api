@@ -90,7 +90,7 @@ public sealed partial record OfertaCursoSnapshot
     /// caractere nulo — o decodificador também passa por aqui, e um envelope adulterado não pode
     /// injetar U+0000 que só falharia na constraint do Postgres.
     /// </summary>
-    [GeneratedRegex("^[A-Z][A-Z0-9_]{1,49}$", RegexOptions.CultureInvariant)]
+    [GeneratedRegex("^[A-Z][A-Z0-9_]{1,49}\\z", RegexOptions.CultureInvariant)]
     private static partial Regex FormatoDoCodigo();
 
     private static string? Texto(string? valor, int tamanhoMaximo)
