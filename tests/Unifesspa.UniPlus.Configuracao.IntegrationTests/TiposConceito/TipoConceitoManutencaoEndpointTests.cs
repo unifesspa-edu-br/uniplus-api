@@ -8,6 +8,7 @@ using System.Text.Json;
 using AwesomeAssertions;
 
 using Unifesspa.UniPlus.Configuracao.IntegrationTests.Infrastructure;
+using Unifesspa.UniPlus.IntegrationTests.Fixtures.Assertions;
 
 using static Unifesspa.UniPlus.Configuracao.IntegrationTests.Infrastructure.TiposConceitoHttpDeTeste;
 
@@ -153,7 +154,7 @@ public sealed class TipoConceitoManutencaoEndpointTests
 
         using HttpResponseMessage resposta = await AtualizarAsync(client, id, Numerico().Sem("codigo").Com("id", Guid.CreateVersion7()));
 
-        resposta.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        await RecusaDoIdDivergente.ConferirAsync(resposta);
     }
 
     [Fact(DisplayName = "PUT de tipo inexistente retorna 404 nao_encontrado")]

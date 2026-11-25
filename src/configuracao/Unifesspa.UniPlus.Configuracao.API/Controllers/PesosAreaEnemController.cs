@@ -164,14 +164,9 @@ public sealed class PesosAreaEnemController : ControllerBase
     {
         ArgumentNullException.ThrowIfNull(command);
 
-        if (id != command.Id)
+        if (this.ConferirIdDaRota(id, command.Id, _mapper) is { } divergente)
         {
-            return BadRequest(new ProblemDetails
-            {
-                Title = "Id divergente",
-                Detail = "O Id na URL não corresponde ao Id no corpo da requisição.",
-                Status = StatusCodes.Status400BadRequest,
-            });
+            return divergente;
         }
 
         Result resultado = await _commandBus

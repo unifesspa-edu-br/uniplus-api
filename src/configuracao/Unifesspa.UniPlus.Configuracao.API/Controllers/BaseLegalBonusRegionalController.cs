@@ -131,9 +131,9 @@ public sealed class BaseLegalBonusRegionalController : ControllerBase
     {
         ArgumentNullException.ThrowIfNull(command);
 
-        if (id != command.Id)
+        if (this.ConferirIdDaRota(id, command.Id, _mapper) is { } divergente)
         {
-            return IdDivergente();
+            return divergente;
         }
 
         Result resultado = await _commandBus
@@ -158,10 +158,4 @@ public sealed class BaseLegalBonusRegionalController : ControllerBase
         return resultado.IsSuccess ? NoContent() : resultado.ToActionResult(_mapper);
     }
 
-    private BadRequestObjectResult IdDivergente() => BadRequest(new ProblemDetails
-    {
-        Title = "Id divergente",
-        Detail = "O Id na URL não corresponde ao Id no corpo da requisição.",
-        Status = StatusCodes.Status400BadRequest,
-    });
 }

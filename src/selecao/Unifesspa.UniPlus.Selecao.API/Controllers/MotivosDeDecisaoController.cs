@@ -174,13 +174,9 @@ public sealed class MotivosDeDecisaoController : ControllerBase
     {
         ArgumentNullException.ThrowIfNull(command);
 
-        if (command.Id != id)
+        if (this.ConferirIdDaRota(id, command.Id, _mapper) is { } divergente)
         {
-            return BadRequest(new ProblemDetails
-            {
-                Title = "Id do path não corresponde ao Id do corpo",
-                Status = StatusCodes.Status400BadRequest,
-            });
+            return divergente;
         }
 
         Result resultado = await _commandBus.Send(command, cancellationToken).ConfigureAwait(false);

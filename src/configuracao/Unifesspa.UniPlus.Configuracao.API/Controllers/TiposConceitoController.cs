@@ -103,9 +103,9 @@ public sealed class TiposConceitoController : ControllerBase
     public async Task<IActionResult> Atualizar(Guid id, [FromBody] AtualizarTipoConceitoCommand command, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(command);
-        if (id != command.Id)
+        if (this.ConferirIdDaRota(id, command.Id, _mapper) is { } divergente)
         {
-            return BadRequest(new ProblemDetails { Title = "Id divergente", Detail = "O Id na URL não corresponde ao Id no corpo da requisição.", Status = StatusCodes.Status400BadRequest });
+            return divergente;
         }
         Result resultado = await _commandBus.Send(command, cancellationToken).ConfigureAwait(false);
         return resultado.IsSuccess ? NoContent() : resultado.ToActionResult(_mapper);
