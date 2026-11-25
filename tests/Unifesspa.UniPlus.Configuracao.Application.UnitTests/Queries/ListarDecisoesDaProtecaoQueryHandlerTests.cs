@@ -13,6 +13,7 @@ using Unifesspa.UniPlus.Configuracao.Domain.Errors;
 using Unifesspa.UniPlus.Configuracao.Domain.Interfaces;
 using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
+using Unifesspa.UniPlus.Kernel.Domain.ValueObjects;
 using Unifesspa.UniPlus.Kernel.Pagination;
 using Unifesspa.UniPlus.Kernel.Results;
 
@@ -48,7 +49,7 @@ public sealed class ListarDecisoesDaProtecaoQueryHandlerTests
                 && f.Cadastro == CadastroDoCatalogo.Fato
                 && f.De == new DateOnly(2026, 11, 1)
                 && f.Ate == new DateOnly(2026, 11, 2)
-                && f.Busca == "renda"
+                && f.Busca != null && f.Busca.Normalizado == "renda"
                 && f.Autor == null),
             null, null, 20, PaginationDirection.Next, Arg.Any<CancellationToken>());
     }
@@ -85,6 +86,29 @@ public sealed class ListarDecisoesDaProtecaoQueryHandlerTests
         resultado.Errors.Select(e => e.Field).Should().BeEquivalentTo("cadastro", "de", "busca");
         resultado.Errors.Single(e => e.Field == "cadastro").Error.Code.Should().Be(ProtecaoDoCatalogoErrorCodes.CadastroInvalido);
         resultado.Errors.Single(e => e.Field == "de").Error.Code.Should().Be(ProtecaoDoCatalogoErrorCodes.PeriodoInvalido);
+        resultado.Errors.Single(e => e.Field == "busca").Error.Code.Should().Be(TermoDeBusca.CodigoDeBuscaMuitoLonga);
+        await _atos.DidNotReceiveWithAnyArgs().ListarDecisoesAsync(default!, default, default, default, default, default);
+    }
+
+    [Fact]
+    public async Task Handle_BuscaNoLimiteComEspacosNasPontas_RepassaTermoNormalizado()
+    {
+        string busca = new('Á', TermoDeBusca.ComprimentoMaximo);
+        await ListarAsync(Consulta(busca: $" \t{busca}\n "));
+
+        await _atos.Received(1).ListarDecisoesAsync(
+            Arg.Is<FiltroDasDecisoesDaProtecao>(f => f.Busca != null && f.Busca.Normalizado == new string('a', 200)),
+            null, null, 20, PaginationDirection.Next, Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task Handle_BuscaSoDeEspacos_RepassaAusenciaDeBusca()
+    {
+        await ListarAsync(Consulta(busca: new string(' ', 201)));
+
+        await _atos.Received(1).ListarDecisoesAsync(
+            Arg.Is<FiltroDasDecisoesDaProtecao>(f => f.Busca == null),
+            null, null, 20, PaginationDirection.Next, Arg.Any<CancellationToken>());
     }
 
     [Fact(DisplayName = "A decisão sai com o item e o nome de quem decidiu, sem o emissor nem a conta")]

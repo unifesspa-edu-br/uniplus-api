@@ -1,8 +1,9 @@
 namespace Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
 
 using Unifesspa.UniPlus.Configuracao.Domain.Enums;
+using Unifesspa.UniPlus.Kernel.Domain.ValueObjects;
 
-/// <summary>O recorte das decisões da proteção de dados que a consulta pede; cada critério ausente não restringe.</summary>
+/// <summary>O filtro das decisões da proteção de dados que a consulta pede; cada critério ausente não restringe.</summary>
 /// <param name="Atos">Quais decisões; vazio, as três.</param>
 /// <param name="Cadastro">O cadastro do item.</param>
 /// <param name="De">A data inicial (inclusive), no fuso institucional (America/Belem).</param>
@@ -14,5 +15,5 @@ public sealed record FiltroDasDecisoesDaProtecao(
     CadastroDoCatalogo? Cadastro,
     DateOnly? De,
     DateOnly? Ate,
-    string? Busca,
+    TermoDeBusca? Busca,
     (string Emissor, string ContaId)? Autor);
