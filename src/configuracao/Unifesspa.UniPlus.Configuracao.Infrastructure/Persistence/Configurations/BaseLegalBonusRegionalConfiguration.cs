@@ -8,8 +8,8 @@ using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Domain.Enums;
 using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Converters;
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence.CodigosDeContrato;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Protecao;
-using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
 
 public sealed class BaseLegalBonusRegionalConfiguration : IEntityTypeConfiguration<BaseLegalBonusRegional>
@@ -35,7 +35,7 @@ public sealed class BaseLegalBonusRegionalConfiguration : IEntityTypeConfigurati
             .HasMaxLength(30)
             .IsRequired();
 
-        builder.ToTable(t => t.HasCheckConstraint("ck_bases_legais_do_fada_tipo_instrumento", $"tipo_instrumento IN ({CodigosDoTipoDeInstrumentoEmSql()})"));
+        builder.ToTable(t => t.HasCheckConstraint("ck_bases_legais_do_fada_tipo_instrumento", $"tipo_instrumento IN ({SqlDosCodigosDeContrato.Lista<TipoInstrumentoNormativo>()})"));
 
         builder.Property(e => e.Identificacao).HasComment("Identificação do instrumento do Fator de Atenuação das Desigualdades de Acesso (FADA).").HasMaxLength(500).IsRequired();
         builder.Property(e => e.Descricao).HasComment("Descrição da base legal do Fator de Atenuação das Desigualdades de Acesso (FADA).").HasMaxLength(2000).IsRequired();
@@ -66,7 +66,4 @@ public sealed class BaseLegalBonusRegionalConfiguration : IEntityTypeConfigurati
 
         builder.HasIndex(e => e.TipoInstrumento).HasDatabaseName("ix_bases_legais_do_fada_tipo_instrumento");
     }
-
-    private static string CodigosDoTipoDeInstrumentoEmSql() =>
-        string.Join(",", CatalogoDe<TipoInstrumentoNormativo>.Todos().Select(static d => $"'{d.Codigo}'"));
 }

@@ -9,6 +9,7 @@ using Unifesspa.UniPlus.Configuracao.Application.Persistence;
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Domain.Enums;
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Seed;
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence.CodigosDeContrato;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Protecao;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
 
@@ -73,11 +74,11 @@ internal sealed class PrecedenciaFaseConfiguration : IEntityTypeConfiguration<Pr
         // Domínio fechado das fases canônicas (defesa em profundidade).
         table.HasCheckConstraint(
             "ck_precedencias_entre_fases_antecessora_canonica",
-            $"antecessora_codigo IN ({TokensSql(FaseCanonicaCatalogo.Codigos)})");
+            $"antecessora_codigo IN ({SqlDosCodigosDeContrato.Lista(FaseCanonicaCatalogo.Codigos)})");
 
         table.HasCheckConstraint(
             "ck_precedencias_entre_fases_sucessora_canonica",
-            $"sucessora_codigo IN ({TokensSql(FaseCanonicaCatalogo.Codigos)})");
+            $"sucessora_codigo IN ({SqlDosCodigosDeContrato.Lista(FaseCanonicaCatalogo.Codigos)})");
 
         // Defesa em profundidade contra self-loop via insert cru (a guarda
         // primária é a factory PrecedenciaFase.Criar).
@@ -85,9 +86,6 @@ internal sealed class PrecedenciaFaseConfiguration : IEntityTypeConfiguration<Pr
             "ck_precedencias_entre_fases_sem_self_loop",
             "antecessora_codigo <> sucessora_codigo");
     }
-
-    private static string TokensSql(IReadOnlyList<string> tokens) =>
-        string.Join(", ", tokens.Select(token => $"'{token}'"));
 
     /// <summary>
     /// Projeta o seed (<see cref="PrecedenciaFaseSeed.Itens"/>) para linhas que o
