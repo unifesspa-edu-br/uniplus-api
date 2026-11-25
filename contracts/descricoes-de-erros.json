@@ -10350,7 +10350,7 @@
       "codigo": "uniplus.estrutura_formulario.pagina_codigo_invalido",
       "requisitos": [],
       "oQueAconteceu": [
-        "O `codigo` de uma página do formulário está vazio, só com espaços, ou tem mais de 60 caracteres depois de aparado. A mensagem é \"O código da página é obrigatório e tem no máximo 60 caracteres.\"",
+        "O `codigo` da página está vazio, excede 60 caracteres ou está fora do formato. A mensagem é \"O código da página é obrigatório, começa com letra maiúscula e tem só letras maiúsculas, algarismos e sublinhados isolados, até 60 caracteres.\"",
         "A recusa vem na lista `errors` da resposta, com `field` igual a `paginas[i].codigo`; nos modelos de formulário o caminho começa por `conteudo.paginas`. Nada é gravado. Cada página recusada tem a própria entrada, junto das demais recusas da forma da página (título, ordem, descrição, aviso e exibição).",
         "A recusa vale para o texto presente. A propriedade `codigo` ausente ou nula é recusada antes, com 400 e sem código deste catálogo, pela leitura do corpo. Há ainda um caso só da gravação do formulário do processo: uma página nula dentro da lista de `paginas` é recusada com este mesmo código, com `field` igual a `paginas[i]` e a mensagem \"A página veio nula.\"; nos modelos, a página nula é recusada como [conteúdo malformado](/erros/uniplus.configuracao.modelo_formulario.entrada_malformada).",
         "Nos modelos de formulário, a conferência só ocorre quando o conteúdo foi lido sem recusa de leitura (como a de [conteúdo malformado](/erros/uniplus.configuracao.modelo_formulario.entrada_malformada)), e na atualização um `{id}` que não existe é recusado antes, como [modelo de formulário não encontrado](/erros/uniplus.configuracao.modelo_formulario.nao_encontrado)."
@@ -10853,7 +10853,7 @@
         "UNI-REQ-0146"
       ],
       "oQueAconteceu": [
-        "O `codigo` de um grupo repetível, em `grupos`, está vazio, só com espaços, ou tem mais de 60 caracteres depois de aparado. A mensagem é \"O código do grupo é obrigatório e tem no máximo 60 caracteres.\" O tamanho exato do limite é da API; o UNI-REQ-0146 define o grupo, não o tamanho do código.",
+        "O `codigo` do grupo está vazio, excede 60 caracteres ou está fora do formato. A mensagem é \"O código do grupo é obrigatório, começa com letra maiúscula e tem só letras maiúsculas, algarismos e sublinhados isolados, até 60 caracteres.\" O tamanho exato do limite é da API; o UNI-REQ-0146 define o grupo, não o tamanho do código.",
         "A recusa vem na lista `errors` da resposta, com `field` igual a `grupos[i].codigo`, uma entrada por grupo recusado, junto das demais recusas da forma do grupo. Na criação e na atualização de um modelo de formulário o `field` começa por `conteudo.`. Nada é gravado.",
         "A recusa vale para o texto presente. A propriedade `codigo` ausente ou nula é recusada antes, com 400 e sem código deste catálogo, pela leitura do corpo. Nos modelos, a conferência da forma do grupo só ocorre quando o conteúdo foi lido sem recusa de leitura (como a de [conteúdo malformado](/erros/uniplus.configuracao.modelo_formulario.entrada_malformada)), e na atualização um `{id}` que não existe é recusado antes, como [modelo de formulário não encontrado](/erros/uniplus.configuracao.modelo_formulario.nao_encontrado)."
       ],
@@ -11117,11 +11117,11 @@
       "codigo": "uniplus.item_formulario.fato_codigo_tamanho",
       "requisitos": [],
       "oQueAconteceu": [
-        "O `fatoCodigo` de um item do formulário, ou de um campo de grupo, tem mais de 60 caracteres depois de aparado. A mensagem é \"O código do fato do item deve ter no máximo 60 caracteres.\"",
+        "O `fatoCodigo` de um item do formulário, ou de um campo de grupo, tem mais de 50 caracteres. A mensagem é \"O código do fato do item deve ter no máximo 50 caracteres.\"",
         "A recusa vem na lista `errors` da resposta, com `field` igual a `itens[i].fatoCodigo` ou, no campo de um grupo, `grupos[g].subitens[j].fatoCodigo`; nos modelos de formulário o `field` começa por `conteudo.`. Cada item recusado tem a própria entrada, junto das demais recusas da forma do item. O item de forma recusada não segue para a conferência contra o catálogo de fatos. Nada é gravado. Nos modelos, a conferência só ocorre quando o conteúdo foi lido sem recusa de leitura (como a de [conteúdo malformado](/erros/uniplus.configuracao.modelo_formulario.entrada_malformada)), e na atualização um `{id}` que não existe é recusado antes, como [modelo de formulário não encontrado](/erros/uniplus.configuracao.modelo_formulario.nao_encontrado)."
       ],
       "comoResolver": [
-        "Informe em `fatoCodigo` o código de um fato do catálogo de fatos do candidato, que tem até 60 caracteres."
+        "Informe em `fatoCodigo` o código de um fato do catálogo de fatos do candidato, que tem até 50 caracteres."
       ],
       "ondeAparece": [
         "Criação de um modelo de formulário",
@@ -27183,12 +27183,30 @@
         "UNI-REQ-0086"
       ],
       "oQueAconteceu": [
-        "Dois termos exigidos pelo formulário têm o mesmo `codigo`. O código identifica a exigência do termo no formulário (UNI-REQ-0086), e por isso é único entre os termos dele. A comparação ignora os espaços das pontas e normaliza o texto antes de comparar, e diferencia maiúsculas de minúsculas. A mensagem é \"O código '`{código\\}`' aparece em mais de um termo do formulário.\", com o código aparado.",
-        "A recusa vem na lista `errors` da resposta, com `field` igual a `termos[i].codigo` (nos modelos de formulário o `field` começa por `conteudo.`). A entrada aponta a segunda ocorrência e as seguintes; a primeira fica de fora. Nada é gravado. O termo sem código não entra nesta conferência, porque a recusa dele é a de [código obrigatório](/erros/uniplus.termo_formulario.codigo_obrigatorio).",
+        "Dois termos exigidos pelo formulário têm o mesmo `codigo`. O código identifica a exigência do termo no formulário (UNI-REQ-0086), e por isso é único entre os termos dele. A comparação usa o código exatamente como foi enviado. A mensagem é \"O código aparece em mais de um termo do formulário.\"",
+        "A recusa vem na lista `errors` da resposta, com `field` igual a `termos[i].codigo` (nos modelos de formulário o `field` começa por `conteudo.`). A entrada aponta a segunda ocorrência e as seguintes; a primeira fica de fora. Nada é gravado. O código recusado pela forma não entra nesta conferência.",
         "Nas duas gravações a conferência da forma de cada termo (código e ordem) acumula com as demais recusas do pedido, sem interromper na primeira. Nos modelos de formulário, a conferência só ocorre quando o conteúdo foi lido sem recusa de leitura (como a de [conteúdo malformado](/erros/uniplus.configuracao.modelo_formulario.entrada_malformada)), e na atualização um `{id}` que não existe é recusado antes, como [modelo de formulário não encontrado](/erros/uniplus.configuracao.modelo_formulario.nao_encontrado)."
       ],
       "comoResolver": [
         "Dê a cada termo do formulário um `codigo` distinto. Se o mesmo termo do catálogo precisa ser exigido duas vezes, cada exigência tem o próprio código."
+      ],
+      "ondeAparece": [
+        "Criação de um modelo de formulário",
+        "Atualização de um modelo de formulário",
+        "Gravação dos termos do formulário"
+      ]
+    },
+    {
+      "codigo": "uniplus.termo_formulario.codigo_formato_invalido",
+      "requisitos": [
+        "UNI-REQ-0086"
+      ],
+      "oQueAconteceu": [
+        "O código do termo exigido está fora do formato. A mensagem é \"O código do termo exigido começa com letra maiúscula e tem só letras maiúsculas, algarismos e sublinhados isolados (ex.: CIENCIA_DO_EDITAL).\"",
+        "A recusa vem na lista `errors`, com `field` igual a `termos[i].codigo`; nos modelos de formulário o caminho começa por `conteudo.`. Nada é gravado. As recusas de campos independentes são acumuladas."
+      ],
+      "comoResolver": [
+        "Informe um código que comece com letra maiúscula e contenha apenas letras maiúsculas, algarismos e sublinhados isolados, até 60 caracteres."
       ],
       "ondeAparece": [
         "Criação de um modelo de formulário",
@@ -27220,7 +27238,7 @@
       "codigo": "uniplus.termo_formulario.codigo_tamanho",
       "requisitos": [],
       "oQueAconteceu": [
-        "O `codigo` de um termo exigido pelo formulário tem mais de 60 caracteres depois de aparado. A mensagem é \"O código do termo exigido deve ter no máximo 60 caracteres.\"",
+        "O `codigo` de um termo exigido pelo formulário tem mais de 60 caracteres. A mensagem é \"O código do termo exigido deve ter no máximo 60 caracteres.\"",
         "A recusa vem na lista `errors` da resposta, com `field` igual a `termos[i].codigo`, em que `i` é a posição do termo na lista enviada (nos modelos de formulário o `field` começa por `conteudo.`). Cada termo recusado tem a própria entrada. Nada é gravado.",
         "Um termo nulo dentro da lista tem recusa própria: na gravação dos termos do processo, a de [lista de termos ou termo nulo](/erros/uniplus.selecao.termo_exigido_formulario.entrada_malformada) e, nos modelos, a de [conteúdo malformado](/erros/uniplus.configuracao.modelo_formulario.entrada_malformada).",
         "Nas duas gravações a conferência da forma de cada termo (código e ordem) acumula com as demais recusas do pedido, sem interromper na primeira. Nos modelos de formulário, a conferência só ocorre quando o conteúdo foi lido sem recusa de leitura (como a de [conteúdo malformado](/erros/uniplus.configuracao.modelo_formulario.entrada_malformada)), e na atualização um `{id}` que não existe é recusado antes, como [modelo de formulário não encontrado](/erros/uniplus.configuracao.modelo_formulario.nao_encontrado)."

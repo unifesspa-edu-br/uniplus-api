@@ -44,7 +44,6 @@ internal static class RepeticaoDoItemBasico
         ArgumentNullException.ThrowIfNull(item);
         return JsonSerializer.Serialize(item with
         {
-            PaginaCodigo = string.IsNullOrWhiteSpace(item.PaginaCodigo) ? null : item.PaginaCodigo.Trim(),
             Apresentacao = ApresentacaoCanonica(item.Apresentacao),
             Regras = RegrasCanonicas(item.Regras),
         });

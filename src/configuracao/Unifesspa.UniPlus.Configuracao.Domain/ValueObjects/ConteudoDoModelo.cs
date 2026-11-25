@@ -85,7 +85,7 @@ public sealed record ConteudoDoModelo(
         campo.Regras.Restricoes.OfType<OpcoesPermitidas>().SelectMany(static o => o.Entradas.Select(static e => e.Quando));
 
     /// <summary>
-    /// O conteúdo na forma em que é conferido e gravado: textos aparados, códigos em NFC, ausente como
+    /// O conteúdo na forma em que é conferido e gravado: textos aparados, ausente como
     /// vazio — a forma do item recusa o vazio. Mantém as posições, inclusive das restrições, para que
     /// cada recusa aponte o índice que veio.
     /// </summary>
@@ -93,7 +93,7 @@ public sealed record ConteudoDoModelo(
         FormaDoItem.TextoOpcional(Titulo),
         [.. (Paginas ?? []).Select(PaginaNaFormaGravada)],
         [.. (Itens ?? []).Select(CampoNaFormaGravada)],
-        [.. (Termos ?? []).Select(static t => t with { Codigo = TextoGravavel.CodigoNaFormaGravada(t.Codigo) })],
+        [.. (Termos ?? [])],
         [.. (Pressupostos ?? []).Select(static p => TextoGravavel.CodigoNaFormaGravada(p))],
         [.. (Grupos ?? []).Select(GrupoNaFormaGravada)],
         Documentos.NaFormaGravada());
@@ -125,7 +125,6 @@ public sealed record ConteudoDoModelo(
 
     private static PaginaDoModelo PaginaNaFormaGravada(PaginaDoModelo pagina) => pagina with
     {
-        Codigo = TextoGravavel.CodigoNaFormaGravada(pagina.Codigo),
         Titulo = (pagina.Titulo ?? string.Empty).Trim(),
         Descricao = FormaDoItem.TextoOpcional(pagina.Descricao),
         Aviso = FormaDoItem.TextoOpcional(pagina.Aviso),
@@ -133,16 +132,12 @@ public sealed record ConteudoDoModelo(
 
     private static ItemDoModelo CampoNaFormaGravada(ItemDoModelo campo) => campo with
     {
-        FatoCodigo = TextoGravavel.CodigoNaFormaGravada(campo.FatoCodigo),
-        PaginaCodigo = campo.PaginaCodigo is null ? null : TextoGravavel.CodigoNaFormaGravada(campo.PaginaCodigo),
         Apresentacao = campo.Apresentacao.NaFormaGravada(),
         Formato = FormaDoItem.TextoOpcional(campo.Formato),
     };
 
     private static GrupoDoModelo GrupoNaFormaGravada(GrupoDoModelo grupo) => grupo with
     {
-        Codigo = TextoGravavel.CodigoNaFormaGravada(grupo.Codigo),
-        PaginaCodigo = grupo.PaginaCodigo is null ? null : TextoGravavel.CodigoNaFormaGravada(grupo.PaginaCodigo),
         Rotulo = (grupo.Rotulo ?? string.Empty).Trim(),
         Subitens = [.. (grupo.Subitens ?? []).Select(CampoNaFormaGravada)],
     };
@@ -160,7 +155,6 @@ public sealed record ConteudoDoModelo(
     private static IEnumerable<(string Campo, string? Texto)> TextosDaPagina(PaginaDoModelo pagina, int indice) =>
         new (string, string?)[]
         {
-            ($"paginas[{indice}].codigo", pagina.Codigo),
             ($"paginas[{indice}].{PaginaDoFormularioInput.CaminhoDaApresentacao}.titulo", pagina.Titulo),
             ($"paginas[{indice}].{PaginaDoFormularioInput.CaminhoDaApresentacao}.descricao", pagina.Descricao),
             ($"paginas[{indice}].{PaginaDoFormularioInput.CaminhoDaApresentacao}.aviso", pagina.Aviso),
@@ -170,14 +164,13 @@ public sealed record ConteudoDoModelo(
     private static IEnumerable<(string Campo, string? Texto)> TextosDoGrupo(GrupoDoModelo grupo, int indice) =>
         new (string, string?)[]
         {
-            ($"grupos[{indice}].codigo", grupo.Codigo), ($"grupos[{indice}].paginaCodigo", grupo.PaginaCodigo), ($"grupos[{indice}].rotulo", grupo.Rotulo),
+            ($"grupos[{indice}].paginaCodigo", grupo.PaginaCodigo), ($"grupos[{indice}].rotulo", grupo.Rotulo),
         }
         .Concat(TextosDosPredicados($"grupos[{indice}]", grupo.Predicados()))
         .Concat(grupo.Subitens.SelectMany((s, j) => TextosDoCampo($"grupos[{indice}].subitens[{j}]", s)));
 
     private static IEnumerable<(string Campo, string? Texto)> TextosDoTermo(TermoDoModelo termo, int indice) =>
-        new (string, string?)[] { ($"termos[{indice}].codigo", termo.Codigo) }
-            .Concat(TextosDosPredicados($"termos[{indice}]", termo.Predicados()));
+        TextosDosPredicados($"termos[{indice}]", termo.Predicados());
 
     private static IEnumerable<(string Campo, string? Texto)> TextosDoGrupoDeDocumentos(GrupoDeDocumentosDoModelo grupo, int indice) =>
         grupo.Indeferimento is { } indeferimento

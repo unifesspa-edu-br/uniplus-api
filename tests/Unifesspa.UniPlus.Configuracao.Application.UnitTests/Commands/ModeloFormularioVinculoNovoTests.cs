@@ -97,14 +97,14 @@ public sealed class ModeloFormularioVinculoNovoTests : ModeloFormularioHandlerTe
         editar.IsSuccess.Should().BeTrue(editar.Error?.Message);
     }
 
-    [Fact(DisplayName = "Código de fato desativado com espaço é o mesmo fato: o vínculo novo é recusado")]
-    public async Task Criar_FatoDesativadoComEspaco_Recusa()
+    [Fact(DisplayName = "Código de fato com espaço não existe no catálogo")]
+    public async Task Criar_FatoComEspaco_RecusaComoDesconhecido()
     {
         Certificado.Desativar().IsSuccess.Should().BeTrue();
 
         Result<Guid> resultado = await CriarAsync(Conteudo(Item(" CERTIFICADO", 0)));
 
-        resultado.Errors.Should().ContainSingle().Which.Error.Code.Should().Be(VinculoCatalogoErrorCodes.FatoDesativado);
+        resultado.Errors.Should().ContainSingle().Which.Error.Code.Should().Be(ItemFormularioErrorCodes.FatoDesconhecido);
     }
 
     [Fact(DisplayName = "Derivado desativado cujas respostas formam as opções de um item é vínculo novo recusado")]

@@ -27,6 +27,19 @@ public sealed class FatoColetadoTests
     private static RegrasDoCampo Regras(Obrigatoriedade? obrigatoriedade = null, IReadOnlyList<RestricaoValor>? restricoes = null) =>
         new(null, obrigatoriedade ?? Obrigatoriedade.Nunca, restricoes ?? []);
 
+    [Fact]
+    public void Criar_CodigosComEspacos_GravaComoVieram()
+    {
+        Result<FatoColetado> resultado = FatoColetado.Criar(
+            " FATO ", 0, " PAGINA ", Campo("Campo", TipoDeCampo.SimOuNao), Regras(), CopiaPadrao);
+
+        resultado.IsSuccess.Should().BeTrue();
+        resultado.Value.Should().NotBeNull();
+        FatoColetado gravado = resultado.Value!;
+        gravado.FatoCodigo.Should().Be(" FATO ");
+        gravado.PaginaCodigo.Should().Be(" PAGINA ");
+    }
+
     [Fact(DisplayName = "Rótulo vazio é recusado")]
     public void Criar_RotuloVazio_RetornaFalha()
     {

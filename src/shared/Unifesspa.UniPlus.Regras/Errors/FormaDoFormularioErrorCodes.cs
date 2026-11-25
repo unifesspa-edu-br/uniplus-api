@@ -59,6 +59,7 @@ public static class TermoFormularioErrorCodes
 {
     public const string CodigoObrigatorio = "TermoFormulario.CodigoObrigatorio";
     public const string CodigoTamanho = "TermoFormulario.CodigoTamanho";
+    public const string CodigoFormatoInvalido = "TermoFormulario.CodigoFormatoInvalido";
     public const string OrdemInvalida = "TermoFormulario.OrdemInvalida";
     public const string CodigoDuplicado = "TermoFormulario.CodigoDuplicado";
     public const string OrdemDuplicada = "TermoFormulario.OrdemDuplicada";

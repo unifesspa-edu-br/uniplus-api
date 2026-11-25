@@ -2,7 +2,9 @@ namespace Unifesspa.UniPlus.Configuracao.Domain.UnitTests.ValueObjects;
 
 using AwesomeAssertions;
 
+using Unifesspa.UniPlus.Configuracao.Domain.Services;
 using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
+using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Testes.Compartilhado;
@@ -22,8 +24,8 @@ public sealed class ConteudoDoModeloFormaGravadaTests
         (Vazio with { Titulo = "   " }).NaFormaGravada().Titulo.Should().BeNull();
     }
 
-    [Fact(DisplayName = "Os códigos de pagina, item, grupo e campo de grupo ficam aparados e em NFC")]
-    public void NaFormaGravada_CodigosDeEstruturaAparadosEmNfc()
+    [Fact(DisplayName = "Os códigos de página, item, grupo e campo de grupo ficam como enviados")]
+    public void NaFormaGravada_CodigosDeEstrutura_FicamComoEnviados()
     {
         ConteudoDoModelo conteudo = Vazio with
         {
@@ -34,13 +36,44 @@ public sealed class ConteudoDoModeloFormaGravadaTests
 
         ConteudoDoModelo gravado = conteudo.NaFormaGravada();
 
-        gravado.Paginas.Single().Codigo.Should().Be($"PAGINA{CComCedilha}");
-        gravado.Itens.Single().FatoCodigo.Should().Be($"ITEM{CComCedilha}");
-        gravado.Grupos.Single().Codigo.Should().Be($"GRUPO{CComCedilha}");
-        gravado.Grupos.Single().Subitens.Single().FatoCodigo.Should().Be($"CAMPO{CComCedilha}");
+        gravado.Paginas.Single().Codigo.Should().Be($" PAGINA{CComCedilhaDecomposto} ");
+        gravado.Itens.Single().FatoCodigo.Should().Be($" ITEM{CComCedilhaDecomposto}");
+        gravado.Grupos.Single().Codigo.Should().Be($"GRUPO{CComCedilhaDecomposto}");
+        gravado.Grupos.Single().Subitens.Single().FatoCodigo.Should().Be($"CAMPO{CComCedilhaDecomposto}");
     }
 
-    [Fact(DisplayName = "Os códigos de termo, pressuposto e documento ficam aparados e em NFC")]
+    [Fact]
+    public void NaFormaGravada_CitacoesDePagina_FicamComoEnviadas()
+    {
+        ItemDoModelo campo = Item("FATO") with { PaginaCodigo = " PAGINA " };
+        ConteudoDoModelo conteudo = Vazio with { Itens = [campo], Grupos = [Grupo("GRUPO", 0, null, campo) with { PaginaCodigo = " PAGINA " }] };
+
+        ConteudoDoModelo gravado = conteudo.NaFormaGravada();
+
+        gravado.Itens.Single().PaginaCodigo.Should().Be(" PAGINA ");
+        gravado.Grupos.Single().PaginaCodigo.Should().Be(" PAGINA ");
+        gravado.Grupos.Single().Subitens.Single().PaginaCodigo.Should().Be(" PAGINA ");
+    }
+
+    [Theory]
+    [InlineData(false, "conteudo.itens[0].paginaCodigo")]
+    [InlineData(true, "conteudo.itens[0].paginaCodigo")]
+    public void Conferir_CitacaoDePaginaComEspacos_Recusa(bool grupo, string campo)
+    {
+        ItemDoModelo item = Item("FATO") with { PaginaCodigo = grupo ? null : " DADOS " };
+        ConteudoDoModelo conteudo = Vazio with
+        {
+            Paginas = [Pagina(), new("REVISAO", 1, TipoPaginaFormulario.Bloco, BlocoSistema.RevisaoEAceite, "Revisão", null, null, null)],
+            Itens = grupo ? [] : [item],
+            Grupos = grupo ? [Grupo("GRUPO", 0, null, item) with { PaginaCodigo = " DADOS " }] : []
+        };
+
+        List<FieldError> erros = ConferenciaDoConteudoDoModelo.Conferir(FinalidadeFormulario.Habilitacao, conteudo.NaFormaGravada(), new Dictionary<string, IReadOnlyCollection<string>>());
+
+        erros.Should().ContainSingle(erro => erro.Field == campo && erro.Error.Code == EstruturaFormularioErrorCodes.ItemForaDeSecao);
+    }
+
+    [Fact(DisplayName = "O código do termo fica como enviado; pressuposto e documento ficam aparados e em NFC")]
     public void NaFormaGravada_CodigosDeTermoPressupostoEDocumentoAparadosEmNfc()
     {
         ConteudoDoModelo conteudo = Vazio with
@@ -52,7 +85,7 @@ public sealed class ConteudoDoModeloFormaGravadaTests
 
         ConteudoDoModelo gravado = conteudo.NaFormaGravada();
 
-        gravado.Termos.Single().Codigo.Should().Be($"TERMO{CComCedilha}");
+        gravado.Termos.Single().Codigo.Should().Be($"TERMO{CComCedilhaDecomposto} ");
         gravado.Pressupostos.Should().Equal($"PRESSUPOSTO{CComCedilha}");
         gravado.Documentos.DocumentosExigidos.Single().TipoDocumentoCodigo.Should().Be($"TIPO{CComCedilha}");
         gravado.Documentos.DocumentosExigidos.Single().FaseCodigo.Should().Be($"FASE{CComCedilha}");
@@ -165,12 +198,12 @@ public sealed class ConteudoDoModeloFormaGravadaTests
         gravado.Itens[2].Regras.Restricoes.Select(static r => r.Tipo).Should().Equal(conteudo.Itens[2].Regras.Restricoes.Select(static r => r.Tipo));
     }
 
-    [Fact(DisplayName = "O código que não se normaliza fica como veio, só aparado, sem exceção")]
+    [Fact(DisplayName = "O código que não se normaliza fica como veio, sem exceção")]
     public void NaFormaGravada_CodigoComSurrogateSemPar_FicaComoVeio()
     {
         ConteudoDoModelo gravado = (Vazio with { Itens = [Item(" CERTIFICADO\uD800 ")] }).NaFormaGravada();
 
-        gravado.Itens.Single().FatoCodigo.Should().Be("CERTIFICADO\uD800");
+        gravado.Itens.Single().FatoCodigo.Should().Be(" CERTIFICADO\uD800 ");
     }
 
     [Fact(DisplayName = "Paginas, itens e termos ficam na ordem declarada")]

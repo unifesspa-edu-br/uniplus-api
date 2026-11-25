@@ -1,6 +1,8 @@
 namespace Unifesspa.UniPlus.Regras.Formularios;
 
-using Unifesspa.UniPlus.Kernel.Extensions;
+using System.Diagnostics.CodeAnalysis;
+
+using Unifesspa.UniPlus.Kernel.Domain.ValueObjects;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Errors;
 
@@ -13,18 +15,29 @@ public static class FormaDoTermo
     public static List<FieldError> ValidarFormaBasica(string? codigo, int ordem) =>
         [.. RecusasDoCodigo(codigo), .. RecusasDaOrdem(ordem)];
 
-    private static IEnumerable<FieldError> RecusasDoCodigo(string? codigo)
+    private static List<FieldError> RecusasDoCodigo(string? codigo) =>
+        RecusaDoCodigo(codigo) is { } recusa ? [new FieldError("codigo", recusa)] : [];
+
+    private static DomainError? RecusaDoCodigo(string? codigo)
     {
         if (string.IsNullOrWhiteSpace(codigo))
         {
-            yield return new("codigo", new DomainError(TermoFormularioErrorCodes.CodigoObrigatorio, "O código do termo exigido é obrigatório."));
+            return new DomainError(TermoFormularioErrorCodes.CodigoObrigatorio, "O código do termo exigido é obrigatório.");
         }
-        else if (codigo.Trim().Length > CodigoMaxLength)
+        if (codigo.Length > CodigoMaxLength)
         {
-            yield return new("codigo", new DomainError(
-                TermoFormularioErrorCodes.CodigoTamanho, $"O código do termo exigido deve ter no máximo {CodigoMaxLength} caracteres."));
+            return new DomainError(TermoFormularioErrorCodes.CodigoTamanho, $"O código do termo exigido deve ter no máximo {CodigoMaxLength} caracteres.");
         }
+        if (!CodigoValido(codigo))
+        {
+            return new DomainError(TermoFormularioErrorCodes.CodigoFormatoInvalido,
+                "O código do termo exigido começa com letra maiúscula e tem só letras maiúsculas, algarismos e sublinhados isolados (ex.: CIENCIA_DO_EDITAL).");
+        }
+        return null;
     }
+
+    private static bool CodigoValido([NotNullWhen(true)] string? codigo) =>
+        !string.IsNullOrWhiteSpace(codigo) && codigo.Length <= CodigoMaxLength && FormatoDoCodigo.TemFormatoValido(codigo);
 
     private static IEnumerable<FieldError> RecusasDaOrdem(int ordem)
     {
@@ -34,14 +47,7 @@ public static class FormaDoTermo
         }
     }
 
-    /// <summary>O código em NFC; o que não se normaliza é comparado como veio, e a recusa dele é de quem guarda o texto.</summary>
-    private static string EmNfc(string codigo) => TextoNormalizavel.TentarNormalizar(codigo, out string normalizado) ? normalizado : codigo;
-
-    /// <summary>
-    /// Código e ordem únicos entre os termos do formulário, com o código na forma que o termo guarda
-    /// (aparado, em NFC). Termo ausente ou sem código não entra na conferência do código — a recusa
-    /// dele é a de forma.
-    /// </summary>
+    /// <summary>Confere a unicidade dos códigos válidos e das ordens dos termos.</summary>
     public static List<FieldError> ConferirUnicidade(IReadOnlyList<(string? Codigo, int Ordem)?> termos)
     {
         ArgumentNullException.ThrowIfNull(termos);
@@ -62,10 +68,10 @@ public static class FormaDoTermo
 
     private static IEnumerable<FieldError> RecusasDeCodigoDuplicado(int indice, string? codigo, HashSet<string> codigos)
     {
-        if (!string.IsNullOrWhiteSpace(codigo) && !codigos.Add(EmNfc(codigo.Trim())))
+        if (CodigoValido(codigo) && !codigos.Add(codigo))
         {
             yield return new($"termos[{indice}].codigo", new DomainError(
-                TermoFormularioErrorCodes.CodigoDuplicado, $"O código '{codigo.Trim()}' aparece em mais de um termo do formulário."));
+                TermoFormularioErrorCodes.CodigoDuplicado, "O código aparece em mais de um termo do formulário."));
         }
     }
 

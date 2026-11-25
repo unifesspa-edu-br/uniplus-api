@@ -6,6 +6,7 @@ using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Domain.Entities;
 using Unifesspa.UniPlus.Kernel.Domain.ValueObjects;
 using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 /// <summary>
@@ -31,7 +32,7 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 /// </remarks>
 public sealed class ConfiguracaoBonusRegional : EntityBase, IParteDoProcesso
 {
-    public const int FatoElegibilidadeCodigoMaxLength = 50;
+    public const int FatoElegibilidadeCodigoMaxLength = FatoDoCatalogo.CodigoMaxLength;
 
     private const int FatorPrecisao = 6;
     private const int FatorEscala = 4;

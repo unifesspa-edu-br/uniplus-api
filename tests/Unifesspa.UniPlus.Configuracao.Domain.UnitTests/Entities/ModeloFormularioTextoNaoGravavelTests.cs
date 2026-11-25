@@ -138,7 +138,7 @@ public sealed class ModeloFormularioTextoNaoGravavelTests
         Result<ModeloFormulario> modelo = Criar(
             FinalidadeFormulario.Habilitacao, new ConteudoDoModelo("Habilitação", [Dados, Revisao], [Item("CERTIFICADO", 0)], [termo], [], []));
 
-        modelo.Errors.Should().ContainSingle().Which.Error.Code.Should().Be(ModeloFormularioErrorCodes.TextoNaoGravavel);
+        modelo.Errors.Should().ContainSingle().Which.Error.Code.Should().Be(TermoFormularioErrorCodes.CodigoFormatoInvalido);
     }
 
     [Fact(DisplayName = "O tamanho do código do modelo é o do código normalizado, que é o gravado")]

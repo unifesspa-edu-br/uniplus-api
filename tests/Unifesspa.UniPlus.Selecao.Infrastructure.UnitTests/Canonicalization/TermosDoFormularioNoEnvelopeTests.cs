@@ -162,12 +162,12 @@ public sealed class TermosDoFormularioNoEnvelopeTests
     [Theory]
     [InlineData("TERMO", " TERMO ")]
     [InlineData("AÇÕES", "AC\u0327O\u0303ES")]
-    public void LerFormularios_CodigosEquivalentesDepoisDaNormalizacao_Recusa(string primeiroCodigo, string segundoCodigo)
+    public void LerFormularios_CodigosForaDoFormato_Recusa(string primeiroCodigo, string segundoCodigo)
     {
         JsonObject documento = FormularioComTermosNoEnvelope.Documento(FormularioComTermosNoEnvelope.Formulario("INSCRICAO",
             FormularioComTermosNoEnvelope.Termo(primeiroCodigo, 1), FormularioComTermosNoEnvelope.Termo(segundoCodigo, 2)));
 
-        ConferirRecusa(documento, "EnvelopeCodec.EnvelopeMalformado", "'formularios[0].termos[1]' repete código ou quebra a ordem crescente dos termos.");
+        ConferirRecusa(documento, "TermoFormulario.CodigoFormatoInvalido", "O código do termo exigido começa com letra maiúscula e tem só letras maiúsculas, algarismos e sublinhados isolados (ex.: CIENCIA_DO_EDITAL).");
     }
 
     private static void ConferirRecusa(JsonObject documento, string codigo, string mensagem)

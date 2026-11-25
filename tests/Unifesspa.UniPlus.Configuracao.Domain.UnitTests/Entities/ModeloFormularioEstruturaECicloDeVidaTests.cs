@@ -60,23 +60,23 @@ public sealed class ModeloFormularioEstruturaECicloDeVidaTests
         modelo.Errors.Should().ContainSingle().Which.Error.Code.Should().Be(ItemFormularioErrorCodes.ItensEmExcesso);
     }
 
-    [Fact(DisplayName = "Fato que só difere por espaço é o mesmo fato: aparecer duas vezes é recusado")]
-    public void FatoRepetidoPorEspaco_Recusa()
+    [Fact(DisplayName = "Fatos que diferem por espaço são distintos")]
+    public void FatoDiferentePorEspaco_NaoRepete()
     {
         Result<ModeloFormulario> modelo = Criar(FinalidadeFormulario.Habilitacao, Conteudo([Item("CERTIFICADO", 0), Item("CERTIFICADO ", 1)]));
 
-        modelo.Errors.Should().ContainSingle().Which.Error.Code.Should().Be(GrafoFormularioErrorCodes.FatoDuplicado);
+        modelo.IsSuccess.Should().BeTrue();
     }
 
-    [Fact(DisplayName = "Pagina cujo código só difere por espaço repete o código")]
-    public void PaginaRepetidaPorEspaco_Recusa()
+    [Fact(DisplayName = "Página com espaço no código é recusada pela forma")]
+    public void PaginaComEspaco_Recusa()
     {
         PaginaDoModelo outraDados = Dados with { Codigo = " DADOS", Ordem = 2 };
 
         Result<ModeloFormulario> modelo = Criar(
             FinalidadeFormulario.Habilitacao, new ConteudoDoModelo("Habilitação", [Dados, outraDados, Revisao with { Ordem = 3 }], [Item("CERTIFICADO", 0)], [], [], []));
 
-        modelo.Errors.Should().ContainSingle().Which.Error.Code.Should().Be(EstruturaFormularioErrorCodes.PaginaCodigoDuplicado);
+        modelo.Errors.Should().ContainSingle().Which.Error.Code.Should().Be(EstruturaFormularioErrorCodes.PaginaCodigoInvalido);
     }
 
     [Fact(DisplayName = "A recusa de restrição aponta a posição em que ela veio")]

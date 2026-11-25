@@ -1,5 +1,6 @@
 namespace Unifesspa.UniPlus.Regras.Formularios;
 
+using Unifesspa.UniPlus.Kernel.Domain.ValueObjects;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Entradas;
 using Unifesspa.UniPlus.Regras.Errors;
@@ -28,11 +29,11 @@ public static class FormaDaPagina
 
     private static IEnumerable<FieldError> RecusasDoCodigo(string? codigo)
     {
-        if ((codigo?.Trim() ?? string.Empty).Length is 0 or > CodigoMaxLength)
+        if (codigo is null || codigo.Length > CodigoMaxLength || !FormatoDoCodigo.TemFormatoValido(codigo))
         {
             yield return new("codigo", new DomainError(
                 EstruturaFormularioErrorCodes.PaginaCodigoInvalido,
-                $"O código da página é obrigatório e tem no máximo {CodigoMaxLength} caracteres."));
+                $"O código da página é obrigatório, começa com letra maiúscula e tem só letras maiúsculas, algarismos e sublinhados isolados, até {CodigoMaxLength} caracteres."));
         }
     }
 

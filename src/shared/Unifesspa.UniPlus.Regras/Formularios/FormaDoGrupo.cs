@@ -1,5 +1,6 @@
 namespace Unifesspa.UniPlus.Regras.Formularios;
 
+using Unifesspa.UniPlus.Kernel.Domain.ValueObjects;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Entradas;
 using Unifesspa.UniPlus.Regras.Errors;
@@ -42,16 +43,16 @@ public static class FormaDoGrupo
             .. RecusasDoCodigo(codigo), .. RecusasDaOrdem(ordem), .. RecusasDoRotulo(rotulo),
             .. ocorrencias.Conferir().Select(static erro => erro.NoCaminhoDe(GrupoColetadoInput.CaminhoDasOcorrencias)),
             .. RecusasDaQuantidadeDeCampos(subitens.Count), .. RecusasDosCampos(subitens),
-            .. RecusasDeRegraQueCitaOGrupo(codigo?.Trim() ?? string.Empty, subitens, regras),
+            .. RecusasDeRegraQueCitaOGrupo(codigo ?? string.Empty, subitens, regras),
         ];
     }
 
     private static IEnumerable<FieldError> RecusasDoCodigo(string? codigo)
     {
-        if ((codigo?.Trim() ?? string.Empty).Length is 0 or > CodigoMaxLength)
+        if (codigo is null || codigo.Length > CodigoMaxLength || !FormatoDoCodigo.TemFormatoValido(codigo))
         {
             yield return new("codigo", new DomainError(
-                GrupoFormularioErrorCodes.CodigoInvalido, $"O código do grupo é obrigatório e tem no máximo {CodigoMaxLength} caracteres."));
+                GrupoFormularioErrorCodes.CodigoInvalido, $"O código do grupo é obrigatório, começa com letra maiúscula e tem só letras maiúsculas, algarismos e sublinhados isolados, até {CodigoMaxLength} caracteres."));
         }
     }
 
@@ -103,11 +104,11 @@ public static class FormaDoGrupo
     }
 
     private static IEnumerable<FieldError> RecusasDeRegraQueCitaOGrupo(
-        string codigoAparado,
+        string codigo,
         IReadOnlyList<(string? FatoCodigo, string? PaginaCodigo, bool TemImpedimento)> subitens,
         ExibicaoEObrigatoriedade regras)
     {
-        HashSet<string> doGrupo = new(subitens.Select(static s => s.FatoCodigo).OfType<string>().Append(codigoAparado), StringComparer.Ordinal);
+        HashSet<string> doGrupo = new(subitens.Select(static s => s.FatoCodigo).OfType<string>().Append(codigo), StringComparer.Ordinal);
         return
         [
             .. RecusasDaRegraQueCitaOGrupo($"{GrupoColetadoInput.CaminhoDasRegras}.exibicao", regras.Exibicao?.FatosCitados ?? [], doGrupo),

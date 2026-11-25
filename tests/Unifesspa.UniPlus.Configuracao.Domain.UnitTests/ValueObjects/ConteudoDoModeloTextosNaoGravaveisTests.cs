@@ -43,12 +43,12 @@ public sealed class ConteudoDoModeloTextosNaoGravaveisTests
     [Fact(DisplayName = "O título com caractere nulo é recusado")]
     public void Titulo_ComNulo_Recusa() => CamposRecusados(Vazio with { Titulo = ComNulo }).Should().Equal("titulo");
 
-    [Fact(DisplayName = "O código da pagina e o valor da exibição dela são recusados, cada um no seu campo")]
-    public void Pagina_CodigoEValorDaExibicao_Recusa()
+    [Fact(DisplayName = "O valor da exibição é recusado; o código é conferido pela forma")]
+    public void Pagina_ValorDaExibicao_Recusa()
     {
         PaginaDoModelo pagina = Pagina(ComNulo, 0, QuandoOValorE(JsonSerializer.SerializeToElement(ComNulo)));
 
-        CamposRecusados(Vazio with { Paginas = [pagina] }).Should().Equal("paginas[0].codigo", "paginas[0].exibicao");
+        CamposRecusados(Vazio with { Paginas = [pagina] }).Should().Equal("paginas[0].exibicao");
     }
 
     [Fact(DisplayName = "O rótulo do campo de item é recusado no caminho do item")]
@@ -104,12 +104,12 @@ public sealed class ConteudoDoModeloTextosNaoGravaveisTests
         CamposRecusados(Vazio with { Grupos = [grupo] }).Should().Equal("grupos[0].rotulo", "grupos[0].subitens[1].fatoCodigo");
     }
 
-    [Fact(DisplayName = "O código do termo, a exibição e a obrigatoriedade dele são recusados, cada um no seu campo")]
-    public void Termo_CodigoExibicaoEObrigatoriedade_Recusa()
+    [Fact(DisplayName = "A exibição e a obrigatoriedade são recusadas; o código é conferido pela forma")]
+    public void Termo_ExibicaoEObrigatoriedade_Recusa()
     {
         TermoDoModelo termo = Termo(ComNulo, 0, QuandoOValorE(ValorComNulo)).ComObrigatoriedade(Obrigatoriedade.Quando(QuandoOValorE(ValorComNulo)));
 
-        CamposRecusados(Vazio with { Termos = [termo] }).Should().Equal("termos[0].codigo", "termos[0].regras.exibicao", "termos[0].regras.obrigatoriedade.predicado");
+        CamposRecusados(Vazio with { Termos = [termo] }).Should().Equal("termos[0].regras.exibicao", "termos[0].regras.obrigatoriedade.predicado");
     }
 
     [Fact(DisplayName = "A exibição do item é recusada no caminho das regras")]
@@ -216,9 +216,9 @@ public sealed class ConteudoDoModeloTextosNaoGravaveisTests
             .Should().Equal("itens[0].regras.exibicao", "itens[1].regras.exibicao");
     }
 
-    [Fact(DisplayName = "O código com surrogate sem par não é Unicode válido e é recusado, sem exceção")]
-    public void CodigoComSurrogateSemPar_Recusa() =>
-        CamposRecusados(Vazio with { Termos = [Termo("LGPD\uD800")] }).Should().Equal("termos[0].codigo");
+    [Fact(DisplayName = "O código do termo é conferido pela forma, sem exceção")]
+    public void CodigoDoTermoComSurrogateSemPar_ConferidoPelaForma() =>
+        CamposRecusados(Vazio with { Termos = [Termo("LGPD\uD800")] }).Should().BeEmpty();
 
     [Fact(DisplayName = "Mais de um texto ruim no mesmo campo é uma recusa só")]
     public void MaisDeUmTextoRuimNoMesmoCampo_UmaRecusa()

@@ -150,9 +150,9 @@ public sealed class FatoColetado : EntityBase, IParteDoProcesso
         CopiaDoItemNoCatalogo copia,
         FinalidadeFormulario? finalidade)
     {
-        FatoCodigo = (fatoCodigo ?? string.Empty).Trim();
+        FatoCodigo = fatoCodigo ?? string.Empty;
         Ordem = ordem;
-        PaginaCodigo = string.IsNullOrWhiteSpace(paginaCodigo) ? null : paginaCodigo.Trim().Normalize(System.Text.NormalizationForm.FormC);
+        PaginaCodigo = paginaCodigo;
 
         // O processo atribui a finalidade ao definir os itens; quem remonta o envelope a informa.
         Finalidade = finalidade;

@@ -12,7 +12,7 @@ using Unifesspa.UniPlus.Regras.Errors;
 /// </summary>
 public static class FormaDoItem
 {
-    public const int FatoCodigoMaxLength = 60;
+    public const int FatoCodigoMaxLength = FatoDoCatalogo.CodigoMaxLength;
 
     /// <summary>A mesma grandeza de um nome de cadastro curto; o envelope aplica o mesmo limite.</summary>
     public const int RotuloMaxLength = 300;
@@ -133,7 +133,7 @@ public static class FormaDoItem
             .. ValidarFormaBasica(fatoCodigo, ordem, apresentacao.Rotulo),
             .. apresentacao.ConferirAjuda().Select(static erro => erro.NoCaminhoDe(FatoColetadoInput.CaminhoDaApresentacao)),
             .. RecusasDoFormato(apresentacao.TipoDeCampo, formato),
-            .. regras.ConferirNoCampo(fatoCodigo?.Trim() ?? string.Empty, apresentacao.TipoDeCampo)
+            .. regras.ConferirNoCampo(fatoCodigo ?? string.Empty, apresentacao.TipoDeCampo)
                 .Select(static erro => erro.NoCaminhoDe(FatoColetadoInput.CaminhoDasRegras)),
         ];
     }

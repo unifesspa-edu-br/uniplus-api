@@ -181,6 +181,18 @@ public sealed class ProcessoSeletivoProtecaoDasExigenciasTests
         repetido.Errors.Should().ContainSingle().Which.Error.Code.Should().Be(DocumentoExigido.FatosComprovadosInvalidos);
     }
 
+    [Fact]
+    public void ValidarFormaBasica_TamanhoDoFatoComprovado_RespeitaLimiteDoCatalogo()
+    {
+        DocumentoExigido.ValidarFormaBasica(Aplicabilidade.Geral, null, 0, fatosComprovados: [new string('A', 50)]).Should().BeEmpty();
+        FieldError erro = DocumentoExigido.ValidarFormaBasica(Aplicabilidade.Geral, null, 0, fatosComprovados: [new string('A', 51)])
+            .Should().ContainSingle().Subject;
+
+        erro.Field.Should().Be("fatosComprovados");
+        erro.Error.Code.Should().Be(DocumentoExigido.FatosComprovadosInvalidos);
+        erro.Error.Message.Should().Contain("50 caracteres");
+    }
+
     [Fact(DisplayName = "A proteção efetiva da exigência, vinda do contexto, é a que a conferência usa, e AplicarProtecaoVigente a congela")]
     public void ProtecaoEfetiva_ConferenciaEAplicacao()
     {

@@ -191,7 +191,7 @@ public sealed class PaginaDoFormulario : EntityBase
     private static PaginaDoFormulario Montar(
         PaginaEstrutura estrutura, string titulo, string? descricao, string? aviso, PredicadoDnf? exibicao) => new()
         {
-            Codigo = (estrutura.Codigo ?? string.Empty).Trim().Normalize(System.Text.NormalizationForm.FormC),
+            Codigo = estrutura.Codigo ?? string.Empty,
             Ordem = estrutura.Ordem,
             Tipo = estrutura.Tipo,
             Bloco = estrutura.Bloco,

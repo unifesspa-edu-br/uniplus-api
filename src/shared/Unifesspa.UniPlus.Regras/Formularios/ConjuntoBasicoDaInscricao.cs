@@ -252,7 +252,7 @@ public static class ConjuntoBasicoDaInscricao
         return [.. enviadas.Select(e => colide && e is not null ? e with { Ordem = e.Ordem + 1 } : e!), referencia];
     }
 
-    private static bool EhDaSecao(string? paginaCodigo) => string.Equals(paginaCodigo?.Trim(), CodigoDaSecao, StringComparison.Ordinal);
+    private static bool EhDaSecao(string? paginaCodigo) => string.Equals(paginaCodigo, CodigoDaSecao, StringComparison.Ordinal);
 
     private static bool MesmaSecao(PaginaDoFormularioInput enviada, PaginaDoFormularioInput referencia) =>
         enviada.Ordem == referencia.Ordem

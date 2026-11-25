@@ -27,7 +27,10 @@ public sealed record FatoDoCatalogo(
     string Escopo,
     bool Ativo,
     IReadOnlyList<ValorDoCatalogo> Valores,
-    bool ProtecaoAprovada);
+    bool ProtecaoAprovada)
+{
+    public const int CodigoMaxLength = 50;
+}
 
 /// <summary>
 /// A conferência das regras do formulário contra o catálogo de fatos, no processo e no modelo: o
