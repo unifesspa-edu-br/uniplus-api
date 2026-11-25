@@ -76,7 +76,7 @@ internal static class LeituraDosRecursosDaEtapa
         Result<RecursoDaEtapa> recurso = RecursoDaEtapa.Reidratar(
             Guid.CreateVersion7(), lido.Ancora, lido.Regra, parametros, lido.AncoraId ?? Guid.Empty, lido.Procedimentos);
         return recurso.IsFailure
-            ? leitor.Propagar<RecursoDaEtapa?>([.. recurso.Errors.Select(erro => erro.NoCaminhoDe(pathRecurso))])
+            ? leitor.Propagar<RecursoDaEtapa?>(recurso.Errors, pathRecurso)
             : recurso.Value;
     }
 }

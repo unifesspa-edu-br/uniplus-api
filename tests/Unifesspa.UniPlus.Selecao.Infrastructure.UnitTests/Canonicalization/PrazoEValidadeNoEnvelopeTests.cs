@@ -4,7 +4,9 @@ using System.Text.Json.Nodes;
 
 using AwesomeAssertions;
 
+using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Enums;
+using Unifesspa.UniPlus.Regras.Errors;
 using Unifesspa.UniPlus.Selecao.Domain.UnitTests.Cenarios;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Canonicalization;
@@ -113,5 +115,24 @@ public sealed class PrazoEValidadeNoEnvelopeTests
         LeituraDoPrazoEDaValidade.LerValidade(leitor, Item("validade", bloco), "item");
 
         leitor.Falhou.Should().BeTrue();
+        leitor.Falha<object>().Errors.Should().ContainSingle().Which.Field.Should().Be("item.validade");
+    }
+
+    [Fact(DisplayName = "Referência incoerente recusa o envelope com todas as causas no caminho aninhado")]
+    public void Validade_ReferenciaIncoerente_PropagaTodasAsCausas()
+    {
+        LeitorEnvelope leitor = new();
+        JsonObject bloco = SerializacaoDoPrazoEDaValidade.Validade(new ValidadeDoDocumentoBuilder().Construir())!;
+        bloco["referencia"] = new JsonObject { ["tipo"] = "DATA_ESPECIFICA", ["data"] = null, ["faseId"] = Fase.ToString() };
+        FieldError[] causasEsperadas =
+        [
+            new("item.validade.referencia.data", new DomainError(DataDeReferenciaDoDocumentoErrorCodes.DataIncoerenteComTipo, "Informe a data somente para uma data específica.")),
+            new("item.validade.referencia.faseId", new DomainError(DataDeReferenciaDoDocumentoErrorCodes.FaseIncoerenteComTipo, "Informe a fase somente para o início ou o fim de uma fase.")),
+        ];
+
+        LeituraDoPrazoEDaValidade.LerValidade(leitor, Item("validade", bloco), "item");
+
+        leitor.Falhou.Should().BeTrue();
+        leitor.Falha<object>().Errors.Should().Equal(causasEsperadas);
     }
 }
