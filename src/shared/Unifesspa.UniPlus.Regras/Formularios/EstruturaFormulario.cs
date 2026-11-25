@@ -95,7 +95,7 @@ public static class EstruturaFormulario
         FieldError?[] recusas =
         [
             anteriores.Any(a => string.Equals(a.Codigo, pagina.Codigo, StringComparison.Ordinal))
-                ? Recusa($"{campo}.codigo", EstruturaFormularioErrorCodes.PaginaCodigoDuplicado, $"O código de página '{pagina.Codigo}' se repete no formulário.")
+                ? Recusa($"{campo}.codigo", EstruturaFormularioErrorCodes.PaginaCodigoDuplicado, "Existe outra página com o mesmo código no formulário.")
                 : null,
             anteriores.Any(a => a.Ordem == pagina.Ordem)
                 ? Recusa($"{campo}.ordem", EstruturaFormularioErrorCodes.PaginaOrdemDuplicada, "Duas páginas do formulário têm a mesma ordem.")
