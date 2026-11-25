@@ -21,6 +21,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="../Unifesspa.UniPlus.Kernel.EnumsDefeituososDeTeste/Unifesspa.UniPlus.Kernel.EnumsDefeituososDeTeste.csproj" />
     <ProjectReference Include="..\..\src\shared\Unifesspa.UniPlus.Infrastructure.Core\Unifesspa.UniPlus.Infrastructure.Core.csproj" />
   </ItemGroup>
 
@@ -45,7 +46,6 @@
   <ItemGroup>
     <Compile Include="../Shared/DecisaoDeAcessoDeTeste.cs" Link="DecisaoDeAcessoDeTeste.cs" />
     <Compile Include="../Shared/EnumsDeCodigoDeContratoDeTeste.cs" Link="EnumsDeCodigoDeContratoDeTeste.cs" />
-    <Compile Include="../Shared/ExecutavelComEnumsDefeituosos.cs" Link="ExecutavelComEnumsDefeituosos.cs" />
     <Compile Include="../Shared/SondaDeInicioDoHost.cs" Link="SondaDeInicioDoHost.cs" />
     <Compile Include="../Shared/RegraDeNomeDeTabela.cs" Link="RegraDeNomeDeTabela.cs" />
     <Compile Include="../Shared/RegraDeTamanhoDeIdentificador.cs" Link="RegraDeTamanhoDeIdentificador.cs" />

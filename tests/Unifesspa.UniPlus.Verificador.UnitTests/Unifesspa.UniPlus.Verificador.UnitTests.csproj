@@ -14,6 +14,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="../Unifesspa.UniPlus.Kernel.EnumsDefeituososDeTeste/Unifesspa.UniPlus.Kernel.EnumsDefeituososDeTeste.csproj" />
     <ProjectReference Include="../../src/verificador/Unifesspa.UniPlus.Verificador/Unifesspa.UniPlus.Verificador.csproj" />
   </ItemGroup>
 
@@ -26,7 +27,6 @@
 
   <ItemGroup>
     <Compile Include="../Shared/EnumsDeCodigoDeContratoDeTeste.cs" Link="EnumsDeCodigoDeContratoDeTeste.cs" />
-    <Compile Include="../Shared/ExecutavelComEnumsDefeituosos.cs" Link="ExecutavelComEnumsDefeituosos.cs" />
     <Compile Include="../Shared/SerializacaoDosCodigosNasMensagensTestsBase.cs" Link="SerializacaoDosCodigosNasMensagensTestsBase.cs" />
     <Compile Include="../Shared/SondaDeInicioDoHost.cs" Link="SondaDeInicioDoHost.cs" />
     <Using Include="Xunit" />
