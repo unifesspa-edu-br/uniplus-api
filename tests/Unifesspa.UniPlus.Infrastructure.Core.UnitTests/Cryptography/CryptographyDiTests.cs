@@ -21,35 +21,38 @@ public sealed class CryptographyDiTests
         string? kubernetesRole = null,
         string? vaultToken = null)
     {
-        Dictionary<string, string?> values = new()
-        {
-            ["UniPlus:Encryption:Provider"] = provider,
-        };
-
-        if (localKey is not null)
-        {
-            values["UniPlus:Encryption:LocalKey"] = localKey;
-        }
-
-        if (vaultAddress is not null)
-        {
-            values["UniPlus:Encryption:VaultAddress"] = vaultAddress;
-        }
-
-        if (kubernetesRole is not null)
-        {
-            values["UniPlus:Encryption:KubernetesRole"] = kubernetesRole;
-        }
-
-        if (vaultToken is not null)
-        {
-            values["UniPlus:Encryption:VaultToken"] = vaultToken;
-        }
-
+        KeyValuePair<string, string?>[] opcoes =
+        [
+            new("UniPlus:Encryption:Provider", provider),
+            new("UniPlus:Encryption:LocalKey", localKey),
+            new("UniPlus:Encryption:VaultAddress", vaultAddress),
+            new("UniPlus:Encryption:KubernetesRole", kubernetesRole),
+            new("UniPlus:Encryption:VaultToken", vaultToken),
+        ];
         return new ConfigurationBuilder()
-            .AddInMemoryCollection(values)
+            .AddInMemoryCollection(opcoes.Where(opcao => opcao.Value is not null))
             .Build();
     }
+
+    private static IConfiguration CriarConfigVaultComJwt(string path) => new ConfigurationBuilder()
+        .AddInMemoryCollection(new Dictionary<string, string?>
+        {
+            ["UniPlus:Encryption:Provider"] = "vault",
+            ["UniPlus:Encryption:VaultAddress"] = "http://vault.vault.svc:8200",
+            ["UniPlus:Encryption:KubernetesRole"] = "uniplus-api",
+            ["UniPlus:Encryption:KubernetesJwtPath"] = path,
+        })
+        .Build();
+
+    private static IConfiguration CriarConfigVaultComToken() => new ConfigurationBuilder()
+        .AddInMemoryCollection(new Dictionary<string, string?>
+        {
+            ["UniPlus:Encryption:Provider"] = "vault",
+            ["UniPlus:Encryption:VaultAddress"] = "http://vault.vault.svc:8200",
+            ["UniPlus:Encryption:VaultToken"] = "hvs.dev",
+            ["UniPlus:Encryption:KubernetesJwtPath"] = "/path/inexistente",
+        })
+        .Build();
 
     [Fact]
     public void AddUniPlusEncryption_ProviderLocal_DeveResolverLocalAesEncryptionService()
@@ -239,21 +242,9 @@ public sealed class CryptographyDiTests
         // mas o construtor do VaultTransitEncryptionService falha porque o JWT
         // não existe no path configurado.
         string pathInexistente = Path.Combine(Path.GetTempPath(), $"uniplus-test-no-jwt-{Guid.NewGuid():N}");
-        Dictionary<string, string?> values = new()
-        {
-            ["UniPlus:Encryption:Provider"] = "vault",
-            ["UniPlus:Encryption:VaultAddress"] = "http://vault.vault.svc:8200",
-            ["UniPlus:Encryption:KubernetesRole"] = "uniplus-api",
-            ["UniPlus:Encryption:KubernetesJwtPath"] = pathInexistente,
-        };
-        IConfiguration config = new ConfigurationBuilder()
-            .AddInMemoryCollection(values)
-            .Build();
+        IConfiguration config = CriarConfigVaultComJwt(pathInexistente);
 
-        ServiceProvider sp = new ServiceCollection()
-            .AddLogging()
-            .AddUniPlusEncryption(config)
-            .BuildServiceProvider();
+        ServiceProvider sp = CriarServicosDeCriptografia(config);
 
         Action ato = () => sp.GetRequiredService<IUniPlusEncryptionService>();
 
@@ -267,21 +258,9 @@ public sealed class CryptographyDiTests
     {
         // Caminho dev/CI: VaultToken estático, sem JWT do K8s. O construtor não deve
         // tentar ler disco quando a config seleciona token auth.
-        Dictionary<string, string?> values = new()
-        {
-            ["UniPlus:Encryption:Provider"] = "vault",
-            ["UniPlus:Encryption:VaultAddress"] = "http://vault.vault.svc:8200",
-            ["UniPlus:Encryption:VaultToken"] = "hvs.dev",
-            ["UniPlus:Encryption:KubernetesJwtPath"] = "/path/inexistente",
-        };
-        IConfiguration config = new ConfigurationBuilder()
-            .AddInMemoryCollection(values)
-            .Build();
+        IConfiguration config = CriarConfigVaultComToken();
 
-        ServiceProvider sp = new ServiceCollection()
-            .AddLogging()
-            .AddUniPlusEncryption(config)
-            .BuildServiceProvider();
+        ServiceProvider sp = CriarServicosDeCriptografia(config);
 
         Action ato = () => sp.GetRequiredService<IUniPlusEncryptionService>();
 
@@ -289,6 +268,11 @@ public sealed class CryptographyDiTests
     }
 
     // ─── Warmup hosted service (fail-fast no Host.StartAsync) ─────────────────
+
+    private static ServiceProvider CriarServicosDeCriptografia(IConfiguration config) => new ServiceCollection()
+        .AddLogging()
+        .AddUniPlusEncryption(config)
+        .BuildServiceProvider();
 
     private static IHost CriarHostComEncryption(IConfiguration config)
     {
@@ -314,19 +298,9 @@ public sealed class CryptographyDiTests
     {
         // EncryptionOptionsValidator passa (KubernetesRole + VaultAddress válidos),
         // mas o construtor de VaultTransitEncryptionService falha em ReadJwtOrThrow
-        // porque o JWT path não existe. Antes deste PR isso só estouraria no
-        // primeiro GetRequiredService; agora o warmup garante CrashLoopBackOff.
+        // porque o JWT path não existe. O warmup garante falha na inicialização.
         string pathInexistente = Path.Combine(Path.GetTempPath(), $"uniplus-warmup-test-{Guid.NewGuid():N}");
-        Dictionary<string, string?> values = new()
-        {
-            ["UniPlus:Encryption:Provider"] = "vault",
-            ["UniPlus:Encryption:VaultAddress"] = "http://vault.vault.svc:8200",
-            ["UniPlus:Encryption:KubernetesRole"] = "uniplus-api",
-            ["UniPlus:Encryption:KubernetesJwtPath"] = pathInexistente,
-        };
-        IConfiguration config = new ConfigurationBuilder()
-            .AddInMemoryCollection(values)
-            .Build();
+        IConfiguration config = CriarConfigVaultComJwt(pathInexistente);
 
         using IHost host = CriarHostComEncryption(config);
 

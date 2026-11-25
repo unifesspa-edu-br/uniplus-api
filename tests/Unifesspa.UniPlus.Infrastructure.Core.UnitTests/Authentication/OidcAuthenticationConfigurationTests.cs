@@ -40,12 +40,7 @@ public sealed class OidcAuthenticationConfigurationTests
     {
         using ServiceProvider provider = BuildProvider(
             Environments.Production,
-            new Dictionary<string, string?>
-            {
-                ["Auth:Authority"] = "http://insecure.example.com/realms/test",
-                ["Auth:Audience"] = "uniplus",
-                ["Auth:ClientId"] = "uniplus-api",
-            });
+            ConfiguracaoDeAutenticacao("http://insecure.example.com/realms/test"));
 
         IOptions<AuthOptions> options = provider.GetRequiredService<IOptions<AuthOptions>>();
         Action act = () => _ = options.Value;
@@ -60,12 +55,7 @@ public sealed class OidcAuthenticationConfigurationTests
     {
         using ServiceProvider provider = BuildProvider(
             Environments.Production,
-            new Dictionary<string, string?>
-            {
-                ["Auth:Authority"] = "https://idp.example.com/realms/test",
-                ["Auth:Audience"] = "uniplus",
-                ["Auth:ClientId"] = "uniplus-api",
-            });
+            ConfiguracaoDeAutenticacao("https://idp.example.com/realms/test"));
 
         IOptions<AuthOptions> options = provider.GetRequiredService<IOptions<AuthOptions>>();
         Action act = () => _ = options.Value;
@@ -78,12 +68,7 @@ public sealed class OidcAuthenticationConfigurationTests
     {
         using ServiceProvider provider = BuildProvider(
             Environments.Development,
-            new Dictionary<string, string?>
-            {
-                ["Auth:Authority"] = "http://localhost:8080/realms/test",
-                ["Auth:Audience"] = "uniplus",
-                ["Auth:ClientId"] = "uniplus-api",
-            });
+            ConfiguracaoDeAutenticacao("http://localhost:8080/realms/test"));
 
         IOptions<AuthOptions> options = provider.GetRequiredService<IOptions<AuthOptions>>();
         Action act = () => _ = options.Value;
@@ -99,21 +84,10 @@ public sealed class OidcAuthenticationConfigurationTests
     {
         using ServiceProvider provider = BuildProvider(
             Environments.Production,
-            new Dictionary<string, string?>
-            {
-                ["Auth:Authority"] = "https://idp.example.com/realms/test",
-                ["Auth:Audience"] = "uniplus",
-                ["Auth:ClientId"] = "uniplus-api",
-            });
+            ConfiguracaoDeAutenticacao("https://idp.example.com/realms/test"));
         JwtBearerOptions opcoes = provider.GetRequiredService<IOptionsMonitor<JwtBearerOptions>>()
             .Get(JwtBearerDefaults.AuthenticationScheme);
-        TokenValidatedContext contexto = new(
-            new DefaultHttpContext(),
-            new AuthenticationScheme(JwtBearerDefaults.AuthenticationScheme, displayName: null, typeof(JwtBearerHandler)),
-            opcoes)
-        {
-            Principal = new ClaimsPrincipal(new ClaimsIdentity([new Claim(claim, valor)], "teste")),
-        };
+        TokenValidatedContext contexto = ContextoComClaim(opcoes, claim, valor);
 
         await opcoes.Events.OnTokenValidated(contexto);
 
@@ -129,19 +103,9 @@ public sealed class OidcAuthenticationConfigurationTests
     {
         using ServiceProvider provider = BuildProvider(
             Environments.Production,
-            new Dictionary<string, string?>
-            {
-                ["Auth:Authority"] = "https://idp.example.com/realms/test",
-                ["Auth:Audience"] = "uniplus",
-                ["Auth:ClientId"] = "uniplus-api",
-            });
+            ConfiguracaoDeAutenticacao("https://idp.example.com/realms/test"));
         ClaimsPrincipal usuario = new(autenticada ? new ClaimsIdentity([new Claim("sub", "abc")], "teste") : new ClaimsIdentity());
-        DefaultHttpContext? contexto = requisicao == Requisicao.ForaDoPipeline ? null : new DefaultHttpContext();
-        if (requisicao == Requisicao.ParaRota)
-        {
-            contexto!.SetEndpoint(new RouteEndpoint(
-                static _ => Task.CompletedTask, RoutePatternFactory.Parse("/api/rota"), 0, EndpointMetadataCollection.Empty, "rota"));
-        }
+        DefaultHttpContext? contexto = ContextoDaRequisicao(requisicao);
 
         AuthorizationPolicy? padrao = await provider.GetRequiredService<IAuthorizationPolicyProvider>().GetFallbackPolicyAsync();
         padrao.Should().NotBeNull("sem política padrão, endpoint sem atributo fica público");
@@ -156,6 +120,33 @@ public sealed class OidcAuthenticationConfigurationTests
         ParaRota,
         SemRota,
         ForaDoPipeline,
+    }
+
+    private static Dictionary<string, string?> ConfiguracaoDeAutenticacao(string authority) => new()
+    {
+        ["Auth:Authority"] = authority,
+        ["Auth:Audience"] = "uniplus",
+        ["Auth:ClientId"] = "uniplus-api",
+    };
+
+    private static TokenValidatedContext ContextoComClaim(JwtBearerOptions opcoes, string claim, string valor) => new(
+        new DefaultHttpContext(),
+        new AuthenticationScheme(JwtBearerDefaults.AuthenticationScheme, displayName: null, typeof(JwtBearerHandler)),
+        opcoes)
+    {
+        Principal = new ClaimsPrincipal(new ClaimsIdentity([new Claim(claim, valor)], "teste")),
+    };
+
+    private static DefaultHttpContext? ContextoDaRequisicao(Requisicao requisicao)
+    {
+        DefaultHttpContext? contexto = requisicao == Requisicao.ForaDoPipeline ? null : new DefaultHttpContext();
+        if (requisicao == Requisicao.ParaRota)
+        {
+            contexto!.SetEndpoint(new RouteEndpoint(
+                static _ => Task.CompletedTask, RoutePatternFactory.Parse("/api/rota"), 0, EndpointMetadataCollection.Empty, "rota"));
+        }
+
+        return contexto;
     }
 
     private static ServiceProvider BuildProvider(string environmentName, IDictionary<string, string?> configValues)
