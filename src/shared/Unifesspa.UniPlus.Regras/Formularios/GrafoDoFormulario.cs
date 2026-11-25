@@ -69,64 +69,25 @@ public static class GrafoDoFormulario
         ArgumentNullException.ThrowIfNull(derivacoes);
         grupos ??= [];
 
-        Dictionary<string, ItemDoGrafo> porCodigo = new(StringComparer.Ordinal);
-        HashSet<int> ordens = [];
-        foreach (ItemDoGrafo item in itens)
-        {
-            if (!porCodigo.TryAdd(item.FatoCodigo, item))
-            {
-                return FatoDuplicado(item.FatoCodigo);
-            }
+        DomainError? recusa = UnicidadeDaColeta.Conferir(itens, grupos, conhecidosAntes, derivacoes, out Dictionary<string, ItemDoGrafo> fatos);
+        return recusa
+            ?? CicloDasRegras(fatos)
+            ?? CitacoesDaColeta(itens, etapas, conhecidosAntes, derivacoes, grupos);
+    }
 
-            if (!ordens.Add(item.Ordem))
-            {
-                return OrdemDuplicada(item.Ordem);
-            }
-        }
-
-        HashSet<string> codigosDeGrupo = new(StringComparer.Ordinal);
-        foreach (GrupoDoGrafo grupo in grupos)
-        {
-            if (porCodigo.ContainsKey(grupo.Codigo)
-                || derivacoes.ContainsKey(grupo.Codigo)
-                || conhecidosAntes.Contains(grupo.Codigo)
-                || !codigosDeGrupo.Add(grupo.Codigo))
-            {
-                return FatoDuplicado(grupo.Codigo);
-            }
-
-            if (!ordens.Add(grupo.Ordem))
-            {
-                return OrdemDuplicada(grupo.Ordem);
-            }
-
-            HashSet<int> ordensNoGrupo = [];
-            foreach (ItemDoGrafo subitem in grupo.Subitens)
-            {
-                // O campo de grupo é fato de membro: não é derivado, nem grupo, nem outro campo.
-                if (codigosDeGrupo.Contains(subitem.FatoCodigo)
-                    || derivacoes.ContainsKey(subitem.FatoCodigo)
-                    || !porCodigo.TryAdd(subitem.FatoCodigo, subitem))
-                {
-                    return FatoDuplicado(subitem.FatoCodigo);
-                }
-
-                if (!ordensNoGrupo.Add(subitem.Ordem))
-                {
-                    return new DomainError(
-                        GrafoFormularioErrorCodes.OrdemDuplicada,
-                        $"A ordem {subitem.Ordem} é usada por mais de um campo do grupo '{grupo.Codigo}' — a ordem dentro do grupo precisa ser total.");
-                }
-            }
-        }
-
-        Dictionary<string, IReadOnlyCollection<string>> citacoes = porCodigo.ToDictionary(
+    private static DomainError? CicloDasRegras(IReadOnlyDictionary<string, ItemDoGrafo> fatos)
+    {
+        Dictionary<string, IReadOnlyCollection<string>> citacoes = fatos.ToDictionary(
             static par => par.Key, static par => par.Value.FatosCitados, StringComparer.Ordinal);
-        if (GrafoDeFatos.DetectarCiclo(citacoes) is { } caminho)
-        {
-            return new DomainError(GrafoFormularioErrorCodes.GrafoComCiclo, $"As regras dos campos formam um ciclo: {string.Join(" → ", caminho)}.");
-        }
+        return GrafoDeFatos.DetectarCiclo(citacoes) is { } caminho
+            ? new DomainError(GrafoFormularioErrorCodes.GrafoComCiclo, $"As regras dos campos formam um ciclo: {string.Join(" → ", caminho)}.")
+            : null;
+    }
 
+    private static DomainError? CitacoesDaColeta(
+        IReadOnlyList<ItemDoGrafo> itens, IReadOnlyCollection<EtapaDoGrafo> etapas, IReadOnlySet<string> conhecidosAntes,
+        IReadOnlyDictionary<string, IReadOnlyCollection<string>> derivacoes, IReadOnlyList<GrupoDoGrafo> grupos)
+    {
         DependenciasDoFormulario dependencias = Dependencias(itens, conhecidosAntes, derivacoes);
         return CitacaoDeMembroForaDoGrupo(itens, etapas, [], grupos)
             ?? CitacaoInvalidaDosItens(itens, dependencias)
@@ -169,41 +130,38 @@ public static class GrafoDoFormulario
         ArgumentNullException.ThrowIfNull(termos);
         ArgumentNullException.ThrowIfNull(grupos);
 
-        Dictionary<string, string> grupoDoMembro = new(StringComparer.Ordinal);
-        foreach (GrupoDoGrafo grupo in grupos)
-        {
-            foreach (ItemDoGrafo subitem in grupo.Subitens)
-            {
-                grupoDoMembro.TryAdd(subitem.FatoCodigo, grupo.Codigo);
-            }
-        }
-
+        Dictionary<string, string> grupoDoMembro = GrupoDeCadaMembro(grupos);
         if (grupoDoMembro.Count == 0)
         {
             return null;
         }
 
-        IEnumerable<(string Citante, IReadOnlyCollection<string> Citados, string? GrupoProprio)> regras =
-        [
-            .. itens.Select(static i => ($"do fato '{i.FatoCodigo}'", i.FatosCitados, (string?)null)),
-            .. grupos.Select(static g => ($"do grupo '{g.Codigo}'", g.FatosCitados, (string?)null)),
-            .. grupos.SelectMany(static g => g.Subitens.Select(s => ($"do fato '{s.FatoCodigo}'", s.FatosCitados, (string?)g.Codigo))),
-            .. etapas.Select(static e => ($"de exibição da seção '{e.Codigo}'", e.FatosCitados, (string?)null)),
-            .. termos.Select(static t => ($"do termo '{t.Codigo}'", t.FatosCitados, (string?)null)),
-        ];
-        foreach ((string citante, IReadOnlyCollection<string> citados, string? grupoProprio) in regras)
+        return RegrasQueCitam(itens, etapas, termos, grupos)
+            .Select(regra => regra.CitacaoForaDoGrupo(grupoDoMembro))
+            .FirstOrDefault(static recusa => recusa is not null);
+    }
+
+    private static Dictionary<string, string> GrupoDeCadaMembro(IEnumerable<GrupoDoGrafo> grupos)
+    {
+        Dictionary<string, string> resultado = new(StringComparer.Ordinal);
+        foreach (GrupoDoGrafo grupo in grupos)
         {
-            if (citados.FirstOrDefault(c => grupoDoMembro.TryGetValue(c, out string? doGrupo) && doGrupo != grupoProprio) is { } membro)
+            foreach (ItemDoGrafo subitem in grupo.Subitens)
             {
-                return new DomainError(
-                    GrafoFormularioErrorCodes.CitaFatoDeMembroForaDoGrupo,
-                    $"Uma regra {citante} cita '{membro}', campo do grupo '{grupoDoMembro[membro]}' — fora do grupo ele existe uma vez por "
-                    + "ocorrência e não tem valor único.");
+                resultado.TryAdd(subitem.FatoCodigo, grupo.Codigo);
             }
         }
 
-        return null;
+        return resultado;
     }
+
+    private static IEnumerable<RegraQueCita> RegrasQueCitam(
+        IEnumerable<ItemDoGrafo> itens, IEnumerable<EtapaDoGrafo> etapas, IEnumerable<TermoDoGrafo> termos, IEnumerable<GrupoDoGrafo> grupos) =>
+        [.. itens.Select(static i => new RegraQueCita($"do fato '{i.FatoCodigo}'", i.FatosCitados, null)),
+         .. grupos.Select(static g => new RegraQueCita($"do grupo '{g.Codigo}'", g.FatosCitados, null)),
+         .. grupos.SelectMany(static g => g.Subitens.Select(s => new RegraQueCita($"do fato '{s.FatoCodigo}'", s.FatosCitados, g.Codigo))),
+         .. etapas.Select(static e => new RegraQueCita($"de exibição da seção '{e.Codigo}'", e.FatosCitados, null)),
+         .. termos.Select(static t => new RegraQueCita($"do termo '{t.Codigo}'", t.FatosCitados, null))];
 
     /// <summary>
     /// As regras dos grupos citam só o que o formulário conhece antes da posição do grupo; o subitem
@@ -214,34 +172,8 @@ public static class GrafoDoFormulario
         ArgumentNullException.ThrowIfNull(grupos);
         ArgumentNullException.ThrowIfNull(dependencias);
 
-        foreach (GrupoDoGrafo grupo in grupos)
-        {
-            if (CitacaoInvalidaNaPosicao($"do grupo '{grupo.Codigo}'", grupo.FatosCitados, grupo.Ordem, dependencias) is { } doGrupo)
-            {
-                return doGrupo;
-            }
-
-            Dictionary<string, int> ordemNoGrupo = grupo.Subitens.ToDictionary(static s => s.FatoCodigo, static s => s.Ordem, StringComparer.Ordinal);
-            foreach (ItemDoGrafo subitem in grupo.Subitens)
-            {
-                if (subitem.FatosCitados.FirstOrDefault(c => ordemNoGrupo.TryGetValue(c, out int ordem) && ordem >= subitem.Ordem) is { } posterior)
-                {
-                    return new DomainError(
-                        GrafoFormularioErrorCodes.CitaFatoPosterior,
-                        $"Uma regra do fato '{subitem.FatoCodigo}' cita '{posterior}', campo do grupo '{grupo.Codigo}' que vem nele ou depois dele — "
-                        + "o campo dependeria de uma resposta ainda não dada na ocorrência.");
-                }
-
-                if (CitacaoInvalidaNaPosicao(
-                        $"do fato '{subitem.FatoCodigo}'", [.. subitem.FatosCitados.Where(c => !ordemNoGrupo.ContainsKey(c))], grupo.Ordem, dependencias)
-                    is { } doSubitem)
-                {
-                    return doSubitem;
-                }
-            }
-        }
-
-        return null;
+        return grupos.Select(grupo => new CitacoesDoGrupo(grupo, dependencias).PrimeiraRecusa())
+            .FirstOrDefault(static recusa => recusa is not null);
     }
 
     /// <summary>A primeira regra de item que cita fato que o formulário não conhece antes do item.</summary>
@@ -250,29 +182,9 @@ public static class GrafoDoFormulario
         ArgumentNullException.ThrowIfNull(itens);
         ArgumentNullException.ThrowIfNull(dependencias);
 
-        foreach (ItemDoGrafo item in itens)
-        {
-            foreach (string citado in item.FatosCitados)
-            {
-                switch (dependencias.Conferir(citado, item.Ordem))
-                {
-                    case RecusaDeCitacao.FatoNaoConhecido:
-                        return new DomainError(
-                            GrafoFormularioErrorCodes.CitaFatoNaoConhecido,
-                            $"Uma regra do fato '{item.FatoCodigo}' cita '{citado}', que o formulário não coleta nem deriva, nem é conhecido antes dele.");
-                    case RecusaDeCitacao.FatoPosterior:
-                        return new DomainError(
-                            GrafoFormularioErrorCodes.CitaFatoPosterior,
-                            $"Uma regra do fato '{item.FatoCodigo}' cita '{citado}', que só fica conhecido nesse campo ou depois dele — "
-                            + "o campo dependeria de uma resposta ainda não dada.");
-                    case null:
-                    default:
-                        break;
-                }
-            }
-        }
-
-        return null;
+        return itens.Select(item => new RegraQueCita($"do fato '{item.FatoCodigo}'", item.FatosCitados, null)
+                .CitacaoInvalidaDoItem(item.Ordem, dependencias))
+            .FirstOrDefault(static recusa => recusa is not null);
     }
 
     /// <summary>
@@ -297,26 +209,18 @@ public static class GrafoDoFormulario
         ArgumentNullException.ThrowIfNull(etapa);
         ArgumentNullException.ThrowIfNull(dependencias);
 
-        foreach (string citado in etapa.FatosCitados)
-        {
-            switch (dependencias.Conferir(citado, posicao))
-            {
-                case RecusaDeCitacao.FatoNaoConhecido:
-                    return new DomainError(
-                        GrafoFormularioErrorCodes.CitaFatoNaoConhecido,
-                        $"A exibição da seção '{etapa.Codigo}' cita '{citado}', que o formulário não coleta nem deriva antes dela.");
-                case RecusaDeCitacao.FatoPosterior:
-                    return new DomainError(
-                        GrafoFormularioErrorCodes.CitaFatoPosterior,
-                        $"A exibição da seção '{etapa.Codigo}' cita '{citado}', que só fica conhecido na própria seção ou depois dela.");
-                case null:
-                default:
-                    break;
-            }
-        }
-
-        return null;
+        return etapa.FatosCitados.Select(citado => RecusaDaEtapa(etapa, citado, dependencias.Conferir(citado, posicao)))
+            .FirstOrDefault(static recusa => recusa is not null);
     }
+
+    private static DomainError? RecusaDaEtapa(EtapaDoGrafo etapa, string citado, RecusaDeCitacao? recusa) => recusa switch
+    {
+        RecusaDeCitacao.FatoNaoConhecido => new DomainError(GrafoFormularioErrorCodes.CitaFatoNaoConhecido,
+            $"A exibição da seção '{etapa.Codigo}' cita '{citado}', que o formulário não coleta nem deriva antes dela."),
+        RecusaDeCitacao.FatoPosterior => new DomainError(GrafoFormularioErrorCodes.CitaFatoPosterior,
+            $"A exibição da seção '{etapa.Codigo}' cita '{citado}', que só fica conhecido na própria seção ou depois dela."),
+        _ => null,
+    };
 
     /// <summary>A condição do termo cita fato que o formulário não conhece.</summary>
     public static DomainError? CitacaoInvalidaDoTermo(TermoDoGrafo termo, DependenciasDoFormulario dependencias)
@@ -331,35 +235,10 @@ public static class GrafoDoFormulario
             : null;
     }
 
-    /// <summary>A primeira citação, de uma regra na posição dada, a fato que o formulário não conhece antes dela.</summary>
-    private static DomainError? CitacaoInvalidaNaPosicao(
-        string citante, IEnumerable<string> citados, long posicao, DependenciasDoFormulario dependencias)
-    {
-        foreach (string citado in citados)
-        {
-            switch (dependencias.Conferir(citado, posicao))
-            {
-                case RecusaDeCitacao.FatoNaoConhecido:
-                    return new DomainError(
-                        GrafoFormularioErrorCodes.CitaFatoNaoConhecido,
-                        $"Uma regra {citante} cita '{citado}', que o formulário não coleta nem deriva, nem é conhecido antes do grupo.");
-                case RecusaDeCitacao.FatoPosterior:
-                    return new DomainError(
-                        GrafoFormularioErrorCodes.CitaFatoPosterior,
-                        $"Uma regra {citante} cita '{citado}', que só fica conhecido na posição do grupo ou depois dela.");
-                case null:
-                default:
-                    break;
-            }
-        }
-
-        return null;
-    }
-
-    private static DomainError FatoDuplicado(string codigo) =>
+    internal static DomainError FatoDuplicado(string codigo) =>
         new(GrafoFormularioErrorCodes.FatoDuplicado, $"O código '{codigo}' aparece mais de uma vez no formulário, entre fatos e grupos.");
 
-    private static DomainError OrdemDuplicada(int ordem) =>
+    internal static DomainError OrdemDuplicada(int ordem) =>
         new(GrafoFormularioErrorCodes.OrdemDuplicada, $"A ordem {ordem} é usada por mais de um item ou grupo — a ordem de coleta precisa ser total.");
 
     /// <summary>A posição da etapa na ordem de coleta: a do primeiro item ou grupo dela ou das etapas seguintes.</summary>

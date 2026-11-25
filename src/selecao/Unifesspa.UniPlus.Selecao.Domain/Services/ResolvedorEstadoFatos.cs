@@ -63,11 +63,7 @@ public static class ResolvedorEstadoFatos
 
         AvaliacaoFormulario avaliacao = AvaliadorFormulario.Avaliar(
             DefinicaoDoProcesso.Montar(formularios, fatosColetados, grupos: [], termos: [], derivacoes, agregados: []),
-            new EntradaAvaliacaoFormulario(
-                RespostaDeCampo.DentroDaOferta(respostasBrutas, valoresOfertados),
-                EtapasConcluidas: new HashSet<string>(StringComparer.Ordinal),
-                FatosConhecidos: new Dictionary<string, FatoResolvido>(StringComparer.Ordinal),
-                Envio: null));
+            EntradaAvaliacaoFormulario.SoComRespostas(RespostaDeCampo.DentroDaOferta(respostasBrutas, valoresOfertados)));
 
         // Os derivados entram só na avaliação; o resultado é o estado dos fatos coletados.
         return fatosColetados.ToDictionary(static f => f.FatoCodigo, f => avaliacao.Fatos[f.FatoCodigo], StringComparer.Ordinal);

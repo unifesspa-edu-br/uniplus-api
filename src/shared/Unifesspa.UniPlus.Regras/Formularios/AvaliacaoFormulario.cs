@@ -22,7 +22,11 @@ public sealed record EntradaAvaliacaoFormulario(
     IReadOnlySet<string> EtapasConcluidas,
     IReadOnlyDictionary<string, FatoResolvido> FatosConhecidos,
     EnvioDasRespostas? Envio,
-    IReadOnlyDictionary<string, IReadOnlyList<OcorrenciaRespondida>>? RespostasDosGrupos = null);
+    IReadOnlyDictionary<string, IReadOnlyList<OcorrenciaRespondida>>? RespostasDosGrupos = null)
+{
+    public static EntradaAvaliacaoFormulario SoComRespostas(IReadOnlyDictionary<string, JsonElement> respostas) =>
+        new(respostas, new HashSet<string>(StringComparer.Ordinal), new Dictionary<string, FatoResolvido>(StringComparer.Ordinal), null);
+}
 
 /// <summary>
 /// O instante em que as respostas são gravadas — o do rascunho ao salvar, o do envio ao enviar — e o
