@@ -244,7 +244,7 @@ public sealed class VinculoDiscenteRepository : IVinculoDiscenteRepository
     /// <summary>
     /// Revalida o CPF decifrado contra a regra de domínio — dado corrompido no banco
     /// ou chave de cifragem incorreta falha alto, em vez de produzir um <see cref="Cpf"/>
-    /// inválido silenciosamente (mesmo espírito do <c>CpfValueConverter</c> atual).
+    /// inválido silenciosamente.
     /// </summary>
     private static Cpf ReidratarCpf(byte[] cpfPlano)
     {
