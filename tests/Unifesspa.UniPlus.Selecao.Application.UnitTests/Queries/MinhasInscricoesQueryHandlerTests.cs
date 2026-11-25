@@ -50,7 +50,11 @@ public sealed class MinhasInscricoesQueryHandlerTests
 
     private static ProcessosDasInscricoes Processos(
         ICertameDivulgadoRepository divulgados, IProcessoSeletivoRepository processoRepository, IRegistroCodecsEnvelope registro) =>
-        new(divulgados, processoRepository, registro, Substitute.For<IResolvedorFusoInstitucional>(), TimeProvider.System);
+        new(
+            divulgados,
+            new PeriodoDaInscricaoResolver(divulgados, processoRepository, registro, Substitute.For<IResolvedorFusoInstitucional>()),
+            new ContextoDaVersaoFixadaResolver(processoRepository, registro),
+            TimeProvider.System);
 
     /// <summary>Nenhum processo divulgado: o nome do processo sai nulo e a lista não depende dele.</summary>
     private static ICertameDivulgadoRepository CertamesDivulgados() => Substitute.For<ICertameDivulgadoRepository>();

@@ -1,7 +1,5 @@
 namespace Unifesspa.UniPlus.Selecao.Application.Services;
 
-using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
-using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Application.DTOs;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
@@ -14,33 +12,29 @@ public sealed record SituacaoDoProcessoDaInscricao(string? Nome, bool Inscricoes
 /// <summary>
 /// Os processos das inscrições de um candidato, lidos uma vez por processo e no mesmo instante: o período vem do processo, e
 /// as ofertas de curso, da versão em que cada inscrição está, nunca da vigente. Processo sem versão divulgada legível, ou sem
-/// janela, conta como fechado: nada a oferecer.
+/// período, conta como fechado: nada a oferecer.
 /// </summary>
 public sealed class ProcessosDasInscricoes
 {
     private readonly ICertameDivulgadoRepository _certameDivulgadoRepository;
-    private readonly IProcessoSeletivoRepository _processoSeletivoRepository;
-    private readonly IRegistroCodecsEnvelope _registroCodecs;
-    private readonly IResolvedorFusoInstitucional _resolvedorFuso;
+    private readonly PeriodoDaInscricaoResolver _periodo;
+    private readonly ContextoDaVersaoFixadaResolver _contexto;
     private readonly TimeProvider _timeProvider;
 
     public ProcessosDasInscricoes(
         ICertameDivulgadoRepository certameDivulgadoRepository,
-        IProcessoSeletivoRepository processoSeletivoRepository,
-        IRegistroCodecsEnvelope registroCodecs,
-        IResolvedorFusoInstitucional resolvedorFuso,
+        PeriodoDaInscricaoResolver periodo,
+        ContextoDaVersaoFixadaResolver contexto,
         TimeProvider timeProvider)
     {
         ArgumentNullException.ThrowIfNull(certameDivulgadoRepository);
-        ArgumentNullException.ThrowIfNull(processoSeletivoRepository);
-        ArgumentNullException.ThrowIfNull(registroCodecs);
-        ArgumentNullException.ThrowIfNull(resolvedorFuso);
+        ArgumentNullException.ThrowIfNull(periodo);
+        ArgumentNullException.ThrowIfNull(contexto);
         ArgumentNullException.ThrowIfNull(timeProvider);
 
         _certameDivulgadoRepository = certameDivulgadoRepository;
-        _processoSeletivoRepository = processoSeletivoRepository;
-        _registroCodecs = registroCodecs;
-        _resolvedorFuso = resolvedorFuso;
+        _periodo = periodo;
+        _contexto = contexto;
         _timeProvider = timeProvider;
     }
 
@@ -66,14 +60,14 @@ public sealed class ProcessosDasInscricoes
     {
         ArgumentNullException.ThrowIfNull(inscricoes);
 
-        return new ContextoDaVersaoFixadaResolver(_processoSeletivoRepository, _registroCodecs).OfertasDasVersoesAsync(inscricoes.Select(static i => (i.ProcessoSeletivoId, i.Formulario.VersaoFormularioId)), cancellationToken);
+        return _contexto.OfertasDasVersoesAsync(inscricoes.Select(static i => (i.ProcessoSeletivoId, i.Formulario.VersaoFormularioId)), cancellationToken);
     }
 
     private async Task<SituacaoDoProcessoDaInscricao> SituacaoAsync(Guid processo, DateTimeOffset agora, CancellationToken cancellationToken)
     {
         CertameDivulgado? divulgado = await _certameDivulgadoRepository
             .ObterParaLeituraAsync(processo, cancellationToken).ConfigureAwait(false);
-        bool abertas = await new PeriodoDaInscricaoResolver(_certameDivulgadoRepository, _processoSeletivoRepository, _registroCodecs, _resolvedorFuso).ConferirAsync(processo, agora, cancellationToken)
+        bool abertas = await _periodo.ConferirAsync(processo, agora, cancellationToken)
             .ConfigureAwait(false) is null;
 
         return new SituacaoDoProcessoDaInscricao(divulgado?.Nome, abertas);
