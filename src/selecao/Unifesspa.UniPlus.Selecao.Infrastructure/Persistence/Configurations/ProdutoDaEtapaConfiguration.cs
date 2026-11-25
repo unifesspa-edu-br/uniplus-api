@@ -33,7 +33,7 @@ public sealed class ProdutoDaEtapaConfiguration : IEntityTypeConfiguration<Produ
         builder.Property(p => p.Id).HasComment("Identificador do registro.").ValueGeneratedNever();
 
         builder.Property(p => p.AtoCodigo).HasComment("Código do ato previsto para publicação.").HasMaxLength(AtoCodigoMaxLength).IsRequired();
-        builder.Property(p => p.Papel).HasMaxLength(TamanhoDoCodigoDeContrato.Maximo).HasComment("Papel da publicação no resultado, quando aplicável: PRELIMINAR ou DEFINITIVO.");
+        builder.Property(p => p.Papel).HasMaxLength(TamanhoDoCodigoDeContrato.Maximo).HasComment("Papel da publicação no resultado, quando aplicável.");
 
         // O par ato + papel uma única vez por etapa, pela mesma razão dos produtos da fase:
         // a matéria é uma, o papel é que distingue a publicação que abre o ciclo recursal da

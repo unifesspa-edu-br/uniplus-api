@@ -37,7 +37,7 @@ public sealed class RecursoDaEtapaConfiguration : IEntityTypeConfiguration<Recur
         builder.Property(r => r.EtapaProcessoId).HasComment("Identificador do registro ao qual esta configuração pertence.");
         builder.HasKey(r => r.Id);
         builder.Property(r => r.Id).HasComment("Identificador do registro.").ValueGeneratedNever();
-        builder.Property(r => r.Ancora).HasComment("Evento que inicia o prazo: PUBLICACAO_DO_ATO ou CIENCIA_INDIVIDUAL.").HasColumnName("evento_inicial_do_prazo").HasMaxLength(TamanhoDoCodigoDeContrato.Maximo).IsRequired();
+        builder.Property(r => r.Ancora).HasComment("Evento que inicia o prazo.").HasColumnName("evento_inicial_do_prazo").HasMaxLength(TamanhoDoCodigoDeContrato.Maximo).IsRequired();
         builder.Property(r => r.ProdutoAncoraId).HasComment("Identificador da publicação usada como referência para o início do prazo.").HasColumnName("publicacao_de_referencia_id");
         builder.MapearProcedimentosDeRecurso(r => r.Procedimentos);
 

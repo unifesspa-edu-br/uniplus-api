@@ -45,7 +45,7 @@ internal sealed class OcorrenciaDoLoteDeNotasConfiguration : IEntityTypeConfigur
         builder.Property(o => o.Tipo)
             .HasMaxLength(18)
             .IsRequired()
-            .HasComment($"Códigos: {Codigos<TipoDeOcorrenciaDoLote>()}.");
+            .HasComment("Tipo de ocorrência no lote de notas.");
 
         builder.Property(o => o.InscricaoId).HasComment("Identificador da inscrição afetada, quando encontrada.");
 
@@ -76,6 +76,4 @@ internal sealed class OcorrenciaDoLoteDeNotasConfiguration : IEntityTypeConfigur
             .HasDatabaseName("ix_ocorrencias_da_importacao_importacao");
     }
 
-    private static string Codigos<TEnum>() where TEnum : struct, Enum =>
-        string.Join(", ", CatalogoDe<TEnum>.Todos().Select(c => c.Codigo));
 }

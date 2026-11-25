@@ -11,7 +11,6 @@ using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Converters;
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Seed;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence.CodigosDeContrato;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Protecao;
-using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
 
 internal sealed class ModalidadeConfiguration : IEntityTypeConfiguration<Modalidade>
@@ -65,12 +64,12 @@ internal sealed class ModalidadeConfiguration : IEntityTypeConfiguration<Modalid
     private static void ConfigurarNaturezaEComposicaoDasVagas(EntityTypeBuilder<Modalidade> builder)
     {
         builder.Property(m => m.NaturezaLegal)
-            .HasComment($"Natureza legal da modalidade. Códigos: {Codigos<NaturezaLegal>()}.")
+            .HasComment("Natureza legal da modalidade.")
             .HasMaxLength(CodigoDeContratoMaxLength)
             .IsRequired();
 
         builder.Property(m => m.ComposicaoVagas)
-            .HasComment($"Forma de composição das vagas. Códigos: {Codigos<ComposicaoVagas>()}.")
+            .HasComment("Forma de composição das vagas.")
             .HasMaxLength(CodigoDeContratoMaxLength)
             .IsRequired();
 
@@ -81,11 +80,11 @@ internal sealed class ModalidadeConfiguration : IEntityTypeConfiguration<Modalid
     private static void ConfigurarRemanejamento(EntityTypeBuilder<Modalidade> builder)
     {
         builder.Property(m => m.RegraRemanejamento)
-            .HasComment($"Regra aplicada ao remanejamento das vagas, quando definida. Códigos: {Codigos<RegraRemanejamento>()}.")
+            .HasComment("Regra aplicada ao remanejamento das vagas, quando definida.")
             .HasMaxLength(CodigoDeContratoMaxLength);
 
         builder.Property(m => m.AcaoQuandoIndeferido)
-            .HasComment($"Ação aplicada quando a candidatura é indeferida, quando definida. Códigos: {Codigos<AcaoQuandoIndeferido>()}.")
+            .HasComment("Ação aplicada quando a candidatura é indeferida, quando definida.")
             .HasMaxLength(CodigoDeContratoMaxLength);
     }
 
@@ -164,8 +163,6 @@ internal sealed class ModalidadeConfiguration : IEntityTypeConfiguration<Modalid
         IsDeleted = false,
     };
 
-    private static string Codigos<TEnum>() where TEnum : struct, Enum =>
-        string.Join(", ", CatalogoDe<TEnum>.Todos().Select(static item => item.Codigo));
 
     private static void ConfigurarChecks(TableBuilder<Modalidade> table)
     {

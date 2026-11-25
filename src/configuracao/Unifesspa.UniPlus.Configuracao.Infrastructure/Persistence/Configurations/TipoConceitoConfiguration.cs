@@ -78,7 +78,7 @@ internal sealed class TipoConceitoConfiguration : IEntityTypeConfiguration<TipoC
         builder.Property(tipo => tipo.Natureza)
             .HasColumnName("forma")
             .HasMaxLength(NaturezaMaxLength).IsRequired()
-            .HasComment("Forma do conceito: NUMERICO, medido na escala desta linha, ou POR_OPCOES, escolhido entre os valores de opcoes_do_tipo_de_conceito.");
+            .HasComment("Forma do conceito, medido na escala desta linha ou escolhido entre as opções do tipo.");
         builder.Property(tipo => tipo.EscalaMinima).HasColumnType("numeric")
             .HasComment("Menor valor da escala. Só no tipo numérico.");
         builder.Property(tipo => tipo.EscalaMaxima).HasColumnType("numeric")

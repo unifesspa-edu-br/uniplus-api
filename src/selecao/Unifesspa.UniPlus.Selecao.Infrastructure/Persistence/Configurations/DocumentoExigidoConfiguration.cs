@@ -92,20 +92,20 @@ public sealed class DocumentoExigidoConfiguration : IEntityTypeConfiguration<Doc
         builder.Property(d => d.ClassificacaoProtecao)
             .HasMaxLength(ColunaDaClassificacao.MaxLength)
             .IsRequired()
-            .HasComment("Classificação de proteção de dados do documento, copiada do tipo de documento: PUBLICO, INTERNO, PESSOAL, IDENTIFICADOR ou SENSIVEL.");
+            .HasComment("Classificação de proteção de dados do documento, copiada do tipo de documento.");
         builder.Property(d => d.FinalidadeTratamento).HasMaxLength(FinalidadeTratamentoMaxLength).IsRequired().HasComment("Finalidade do tratamento dos dados do documento, copiada do tipo de documento.");
         builder.Property(d => d.HipoteseLegal).HasMaxLength(HipoteseLegalMaxLength).IsRequired().HasComment("Hipótese legal do tratamento dos dados do documento, copiada do tipo de documento.");
         builder.Property(d => d.FatosComprovados).HasColumnName("dados_comprovados").IsRequired().HasComment("Códigos dos dados do candidato que o documento comprova; vazio quando a exigência não comprova dados.");
         builder.Property(d => d.Aplicabilidade).HasMaxLength(TamanhoDoCodigoDeContrato.Maximo).IsRequired()
-            .HasComment($"A quem a exigência se aplica: todos os candidatos ou só quem atende às condições da exigência. {ComentarioDosCodigosDeContrato.Codigos<Aplicabilidade>()}");
+            .HasComment("A quem a exigência se aplica: todos os candidatos ou só quem atende às condições da exigência.");
         builder.Property(d => d.Obrigatorio).IsRequired().HasComment("Indica se a falta do documento impede a inscrição de seguir.");
         builder.Property(d => d.ConsequenciaIndeferimento).HasMaxLength(ConsequenciaIndeferimentoMaxLength)
-            .HasComment($"O que acontece com o candidato quando o documento é indeferido; vazio quando a exigência não determina resultado. {ComentarioDosCodigosDeContrato.Codigos<ConsequenciaDoIndeferimento>()}");
+            .HasComment("O que acontece com o candidato quando o documento é indeferido; vazio quando a exigência não determina resultado.");
         // A etapa que coleta o documento, quando a fase se subdivide — opcional.
         builder.Property(d => d.ExigidoNaEtapaId).HasComment("Etapa da fase que coleta o documento; vazio quando o documento é da fase inteira.");
         // O formulário a que o documento pertence — nulo fora de fase de formulário. A coerência com a fase é do domínio.
         builder.Property(d => d.Finalidade).HasMaxLength(TamanhoDoCodigoDeContrato.Maximo)
-            .HasComment($"Formulário a que o documento pertence; vazio quando a fase não responde formulário. {ComentarioDosCodigosDeContrato.Codigos<FinalidadeFormulario>()}");
+            .HasComment("Formulário a que o documento pertence; vazio quando a fase não responde formulário.");
     }
 
     private static void ConfigurarRelacionamentos(EntityTypeBuilder<DocumentoExigido> builder)
@@ -223,7 +223,7 @@ public sealed class DocumentoExigidoConfiguration : IEntityTypeConfiguration<Doc
             modelo.Property(m => m.NomeArquivo).HasColumnName("modelo_nome_arquivo").HasMaxLength(ModeloDeDocumento.NomeArquivoMaxLength)
                 .HasComment("Nome do arquivo do modelo de documento, copiado ao gravar a exigência.");
             modelo.Property(m => m.Formato).HasColumnName("modelo_formato").HasMaxLength(4)
-                .HasComment($"Formato do arquivo do modelo, copiado ao gravar a exigência. {ComentarioDosCodigosDeContrato.Codigos<FormatoDeDocumento>()}");
+                .HasComment("Formato do arquivo do modelo, copiado ao gravar a exigência.");
             modelo.Property(m => m.HashSha256).HasColumnName("modelo_hash_sha256").HasMaxLength(64)
                 .HasComment("Resumo SHA-256 do arquivo do modelo, copiado ao gravar a exigência.");
         });
@@ -235,13 +235,13 @@ public sealed class DocumentoExigidoConfiguration : IEntityTypeConfiguration<Doc
     {
         prazo.ClassificaPorPadrao(ClassificacaoDeProtecao.Interno);
         prazo.Property(p => p.Escolha).HasColumnName("prazo_emissao_escolha").HasMaxLength(CodigoDoPrazoEDaValidadeMaxLength)
-            .HasComment("Escolha sobre o prazo de emissão do documento: SEM_PRAZO ou COM_PRAZO; vazio enquanto a escolha não foi feita.");
+            .HasComment("Escolha sobre o prazo de emissão do documento; vazio enquanto a escolha não foi feita.");
         prazo.Property(p => p.Valor).HasColumnName("prazo_emissao_valor")
             .HasComment("Quantidade de dias, meses ou anos do prazo de emissão, maior que zero; preenchida só quando a escolha é COM_PRAZO.");
         prazo.Property(p => p.Unidade).HasColumnName("prazo_emissao_unidade").HasMaxLength(UnidadeDoPrazoMaxLength)
-            .HasComment("Unidade do prazo de emissão: DIAS, MESES ou ANOS; preenchida só quando a escolha é COM_PRAZO.");
+            .HasComment("Unidade do prazo de emissão; preenchida só quando a escolha é COM_PRAZO.");
         prazo.Property(p => p.EfeitoForaDoPrazo).HasColumnName("prazo_emissao_efeito").HasMaxLength(CodigoDoPrazoEDaValidadeMaxLength)
-            .HasComment("O que a análise faz com o documento emitido fora do prazo: RECUSAR_DOCUMENTO ou ACEITAR_COM_AVISO; preenchida só quando a escolha é COM_PRAZO.");
+            .HasComment("O que a análise faz com o documento emitido fora do prazo; preenchida só quando a escolha é COM_PRAZO.");
         prazo.OwnsOne(p => p.Referencia, referencia => ConfigurarReferencia(referencia, "prazo_emissao", "do prazo de emissão", "COM_PRAZO"));
     }
 
@@ -249,9 +249,9 @@ public sealed class DocumentoExigidoConfiguration : IEntityTypeConfiguration<Doc
     {
         validade.ClassificaPorPadrao(ClassificacaoDeProtecao.Interno);
         validade.Property(v => v.Escolha).HasColumnName("validade_escolha").HasMaxLength(CodigoDoPrazoEDaValidadeMaxLength)
-            .HasComment("Escolha sobre a validade do documento: NAO_EXIGE_DOCUMENTO_VALIDO ou EXIGE_DOCUMENTO_VALIDO; vazio enquanto a escolha não foi feita.");
+            .HasComment("Escolha sobre a validade do documento; vazio enquanto a escolha não foi feita.");
         validade.Property(v => v.EfeitoDoVencimento).HasColumnName("validade_efeito").HasMaxLength(CodigoDoPrazoEDaValidadeMaxLength)
-            .HasComment("O que a análise faz com o documento vencido: RECUSAR_DOCUMENTO ou ACEITAR_COM_AVISO; preenchida só quando a escolha é EXIGE_DOCUMENTO_VALIDO.");
+            .HasComment("O que a análise faz com o documento vencido; preenchida só quando a escolha é EXIGE_DOCUMENTO_VALIDO.");
         validade.OwnsOne(v => v.Referencia, referencia => ConfigurarReferencia(referencia, "validade", "da validade", "EXIGE_DOCUMENTO_VALIDO"));
     }
 
@@ -261,7 +261,7 @@ public sealed class DocumentoExigidoConfiguration : IEntityTypeConfiguration<Doc
     {
         referencia.ClassificaPorPadrao(ClassificacaoDeProtecao.Interno);
         referencia.Property(r => r.Tipo).HasColumnName($"{prefixo}_referencia_tipo").HasMaxLength(CodigoDoPrazoEDaValidadeMaxLength)
-            .HasComment($"Data de referência {deQuem}: FIM_DAS_INSCRICOES, INICIO_DA_FASE, FIM_DA_FASE, DATA_ESPECIFICA ou DATA_DA_APRESENTACAO; preenchida só quando a escolha é {escolhaQuePreenche}.");
+            .HasComment($"Data de referência {deQuem}; preenchida só quando a escolha é {escolhaQuePreenche}.");
         referencia.Property(r => r.Data).HasColumnName($"{prefixo}_referencia_data")
             .HasComment($"Data específica usada como referência {deQuem}; preenchida só quando o tipo da data de referência é DATA_ESPECIFICA.");
         referencia.Property(r => r.FaseId).HasColumnName($"{prefixo}_referencia_fase_id")

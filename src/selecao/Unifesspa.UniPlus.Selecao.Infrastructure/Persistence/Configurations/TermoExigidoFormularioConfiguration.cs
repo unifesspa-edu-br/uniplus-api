@@ -37,7 +37,7 @@ public sealed class TermoExigidoFormularioConfiguration : IEntityTypeConfigurati
 
         builder.Property(t => t.Codigo).HasMaxLength(FormaDoTermo.CodigoMaxLength).IsRequired();
         builder.Property(t => t.Ordem).IsRequired();
-        builder.Property(t => t.Finalidade).HasMaxLength(TamanhoDoCodigoDeContrato.Maximo).IsRequired().HasComment($"Finalidade do formulário. {ComentarioDosCodigosDeContrato.Codigos<FinalidadeFormulario>()}");
+        builder.Property(t => t.Finalidade).HasMaxLength(TamanhoDoCodigoDeContrato.Maximo).IsRequired().HasComment("Finalidade do formulário.");
         builder.Property(t => t.TermoId).IsRequired();
         builder.Property(t => t.VersaoId).IsRequired();
         builder.Property(t => t.TermoCodigo).HasMaxLength(TermoExigidoFormulario.TermoCodigoMaxLength).IsRequired();

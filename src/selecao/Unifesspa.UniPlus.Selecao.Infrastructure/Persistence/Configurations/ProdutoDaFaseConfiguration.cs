@@ -36,7 +36,7 @@ public sealed class ProdutoDaFaseConfiguration : IEntityTypeConfiguration<Produt
         builder.Property(p => p.Id).HasComment("Identificador do registro.").ValueGeneratedNever();
 
         builder.Property(p => p.AtoCodigo).HasComment("Código do ato previsto para publicação.").HasMaxLength(AtoCodigoMaxLength).IsRequired();
-        builder.Property(p => p.Papel).HasMaxLength(TamanhoDoCodigoDeContrato.Maximo).HasComment("Papel da publicação no resultado, quando aplicável: PRELIMINAR ou DEFINITIVO.");
+        builder.Property(p => p.Papel).HasMaxLength(TamanhoDoCodigoDeContrato.Maximo).HasComment("Papel da publicação no resultado, quando aplicável.");
 
         // O par ato + papel declarado uma única vez por fase — a mesma matéria é publicada
         // uma vez como preliminar e outra como definitiva, então o ato sozinho não é chave.

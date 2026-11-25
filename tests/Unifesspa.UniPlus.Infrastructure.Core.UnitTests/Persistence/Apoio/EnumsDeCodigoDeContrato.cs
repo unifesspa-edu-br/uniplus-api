@@ -37,3 +37,9 @@ public enum CodigoForaDeOrdem
     [CodigoDeContrato("ORDEM_A", "Ordem A")]
     Primeiro = 3,
 }
+
+public enum CodigoUnico
+{
+    [CodigoDeContrato("UNICO", "Único")]
+    Unico = 1,
+}

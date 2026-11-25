@@ -15,7 +15,8 @@ public static class ModelBuilderCodigosDeContratoExtensions
     /// <summary>
     /// Garante o <see cref="CodigoDeContratoValueConverter{TEnum}"/> em todo valor de enum com código de contrato do
     /// modelo: a propriedade escalar, inclusive a opcional (<c>TEnum?</c>), e o elemento de coleção primitiva, nos tipos de
-    /// entidade, nos tipos próprios (<c>owned</c>) e nos tipos complexos, em qualquer nível de aninhamento.
+    /// entidade, nos tipos próprios (<c>owned</c>) e nos tipos complexos, em qualquer nível de aninhamento. Acrescenta
+    /// ao comentário da coluna os códigos declarados pelo enum, na ordem de declaração.
     /// </summary>
     /// <remarks>
     /// O ponto sem conversão recebe o conversor do código, um só por enum. O ponto que já usa o conversor do código, por

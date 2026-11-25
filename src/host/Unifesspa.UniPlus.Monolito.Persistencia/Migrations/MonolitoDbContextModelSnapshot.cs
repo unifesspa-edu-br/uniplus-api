@@ -193,7 +193,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     b.Property<string>("Classificacao")
                         .HasMaxLength(20)
                         .HasColumnType("character varying(20)")
-                        .HasColumnName("classificacao");
+                        .HasColumnName("classificacao")
+                        .HasComment("Códigos: PUBLICO, INTERNO, PESSOAL, IDENTIFICADOR, SENSIVEL.");
 
                     b.Property<string>("Codigo")
                         .IsRequired()
@@ -1889,7 +1890,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .IsRequired()
                         .HasMaxLength(20)
                         .HasColumnType("character varying(20)")
-                        .HasColumnName("classificacao");
+                        .HasColumnName("classificacao")
+                        .HasComment("Códigos: PUBLICO, INTERNO, PESSOAL, IDENTIFICADOR, SENSIVEL.");
 
                     b.Property<bool>("DeUnidade")
                         .HasColumnType("boolean")
@@ -2071,13 +2073,15 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .IsRequired()
                         .HasMaxLength(20)
                         .HasColumnType("character varying(20)")
-                        .HasColumnName("classificacao_anterior");
+                        .HasColumnName("classificacao_anterior")
+                        .HasComment("Códigos: PUBLICO, INTERNO, PESSOAL, IDENTIFICADOR, SENSIVEL.");
 
                     b.Property<string>("ClassificacaoNova")
                         .IsRequired()
                         .HasMaxLength(20)
                         .HasColumnType("character varying(20)")
-                        .HasColumnName("classificacao_nova");
+                        .HasColumnName("classificacao_nova")
+                        .HasComment("Códigos: PUBLICO, INTERNO, PESSOAL, IDENTIFICADOR, SENSIVEL.");
 
                     b.Property<string>("Codigo")
                         .IsRequired()
@@ -2951,12 +2955,14 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .IsRequired()
                         .HasMaxLength(20)
                         .HasColumnType("character varying(20)")
-                        .HasColumnName("classificacao_protecao");
+                        .HasColumnName("classificacao_protecao")
+                        .HasComment("Códigos: PUBLICO, INTERNO, PESSOAL, IDENTIFICADOR, SENSIVEL.");
 
                     b.Property<string>("ClassificacaoRecomendada")
                         .HasMaxLength(20)
                         .HasColumnType("character varying(20)")
-                        .HasColumnName("classificacao_recomendada");
+                        .HasColumnName("classificacao_recomendada")
+                        .HasComment("Códigos: PUBLICO, INTERNO, PESSOAL, IDENTIFICADOR, SENSIVEL.");
 
                     b.Property<bool>("DianteDeManifestacaoDesfavoravel")
                         .HasColumnType("boolean")
@@ -2972,7 +2978,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .IsRequired()
                         .HasMaxLength(40)
                         .HasColumnType("character varying(40)")
-                        .HasColumnName("hipotese_legal");
+                        .HasColumnName("hipotese_legal")
+                        .HasComment("Códigos: CONSENTIMENTO, CUMPRIMENTO_OBRIGACAO_LEGAL, EXECUCAO_POLITICAS_PUBLICAS, ESTUDOS_POR_ORGAO_DE_PESQUISA, EXECUCAO_CONTRATO, EXERCICIO_REGULAR_DE_DIREITOS, PROTECAO_DA_VIDA, TUTELA_DA_SAUDE, INTERESSE_LEGITIMO, PROTECAO_DO_CREDITO, PREVENCAO_A_FRAUDE.");
 
                     b.Property<DateTimeOffset>("Instante")
                         .HasColumnType("timestamp with time zone")
@@ -3100,7 +3107,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasMaxLength(30)
                         .HasColumnType("character varying(30)")
                         .HasColumnName("tipo_instrumento")
-                        .HasComment("Tipo do instrumento do Fator de Atenuação das Desigualdades de Acesso (FADA): LEI, DECRETO, PORTARIA, RESOLUCAO, INSTRUCAO_NORMATIVA, PARECER ou EDITAL.");
+                        .HasComment("Tipo do instrumento do Fator de Atenuação das Desigualdades de Acesso (FADA). Códigos: LEI, DECRETO, PORTARIA, RESOLUCAO, INSTRUCAO_NORMATIVA, PARECER, EDITAL.");
 
                     b.Property<DateTimeOffset?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
@@ -3128,7 +3135,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         {
                             t.HasComment("Bases legais do Fator de Atenuação das Desigualdades de Acesso (FADA).");
 
-                            t.HasCheckConstraint("ck_bases_legais_do_fada_tipo_instrumento", "tipo_instrumento IN ('LEI','DECRETO','PORTARIA','RESOLUCAO','INSTRUCAO_NORMATIVA','PARECER','EDITAL')");
+                            t.HasCheckConstraint("ck_bases_legais_do_fada_tipo_instrumento", "tipo_instrumento IN ('LEI', 'DECRETO', 'PORTARIA', 'RESOLUCAO', 'INSTRUCAO_NORMATIVA', 'PARECER', 'EDITAL')");
                         });
                 });
 
@@ -3681,7 +3688,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .IsRequired()
                         .HasMaxLength(20)
                         .HasColumnType("character varying(20)")
-                        .HasColumnName("abrangencia");
+                        .HasColumnName("abrangencia")
+                        .HasComment("Códigos: NACIONAL, ESTADUAL, MUNICIPAL, INSTITUCIONAL.");
 
                     b.Property<Guid>("CalendarioDiasUteisId")
                         .HasColumnType("uuid")
@@ -3806,7 +3814,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasMaxLength(30)
                         .HasColumnType("character varying(30)")
                         .HasColumnName("origem_data")
-                        .HasComment("Origem das datas: NO_EDITAL ou NA_EXECUCAO.");
+                        .HasComment("Origem das datas. Códigos: NO_EDITAL, NA_EXECUCAO.");
 
                     b.Property<string>("UnidadeSugeridaNome")
                         .HasMaxLength(250)
@@ -4033,14 +4041,14 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasMaxLength(20)
                         .HasColumnType("character varying(20)")
                         .HasColumnName("quantidade_de_valores")
-                        .HasComment("Quantidade de valores: VALOR_UNICO ou VARIOS_VALORES.");
+                        .HasComment("Quantidade de valores. Códigos: VALOR_UNICO, VARIOS_VALORES.");
 
                     b.Property<string>("ClassificacaoProtecao")
                         .IsRequired()
                         .HasMaxLength(20)
                         .HasColumnType("character varying(20)")
                         .HasColumnName("classificacao_protecao")
-                        .HasComment("Classificação de proteção: PUBLICO, INTERNO, PESSOAL, IDENTIFICADOR ou SENSIVEL.");
+                        .HasComment("Classificação de proteção. Códigos: PUBLICO, INTERNO, PESSOAL, IDENTIFICADOR, SENSIVEL.");
 
                     b.Property<string>("Codigo")
                         .IsRequired()
@@ -4053,7 +4061,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasMaxLength(20)
                         .HasColumnType("character varying(20)")
                         .HasColumnName("componente_exibicao")
-                        .HasComment("Apresentação sugerida: MOEDA ou SITUACAO; nula quando não definida.");
+                        .HasComment("Apresentação sugerida; nula quando não definida. Códigos: MOEDA, SITUACAO.");
 
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
@@ -4086,14 +4094,14 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasMaxLength(20)
                         .HasColumnType("character varying(20)")
                         .HasColumnName("tipo")
-                        .HasComment("Tipo do dado: SIM_OU_NAO, OPCAO, NUMERICO, TEXTO, DATA ou ENDERECO.");
+                        .HasComment("Tipo do dado. Códigos: SIM_OU_NAO, OPCAO, NUMERICO, TEXTO, DATA, ENDERECO.");
 
                     b.Property<string>("Escopo")
                         .IsRequired()
                         .HasMaxLength(20)
                         .HasColumnType("character varying(20)")
                         .HasColumnName("escopo")
-                        .HasComment("Pessoa a que se refere: CANDIDATO ou MEMBRO_GRUPO.");
+                        .HasComment("Pessoa a que se refere. Códigos: CANDIDATO, MEMBRO_GRUPO.");
 
                     b.Property<string>("FinalidadeTratamento")
                         .IsRequired()
@@ -4106,20 +4114,20 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasMaxLength(30)
                         .HasColumnType("character varying(30)")
                         .HasColumnName("fonte_das_opcoes")
-                        .HasComment("Origem das opções: CATALOGO, OPCOES_DO_PROCESSO, MODALIDADE, MUNICIPIOS_DO_FADA, MUNICIPIOS_PROVA_PRESENCIAL, UNIDADES_FEDERATIVAS, MUNICIPIOS ou TIPOS_DE_DEFICIENCIA; nula para outros tipos.");
+                        .HasComment("Origem das opções; nula para outros tipos. Códigos: CATALOGO, OPCOES_DO_PROCESSO, MODALIDADE, MUNICIPIOS_DO_FADA, UNIDADES_FEDERATIVAS, MUNICIPIOS, TIPOS_DE_DEFICIENCIA, MUNICIPIOS_PROVA_PRESENCIAL.");
 
                     b.Property<string>("Formato")
                         .HasMaxLength(20)
                         .HasColumnType("character varying(20)")
                         .HasColumnName("formato")
-                        .HasComment("Formato do texto: LIVRE, CPF, EMAIL, TELEFONE, CEP ou NOME_PESSOA; nulo para outros tipos.");
+                        .HasComment("Formato do texto; nulo para outros tipos. Códigos: LIVRE, CPF, EMAIL, TELEFONE, CEP, NOME_PESSOA.");
 
                     b.Property<string>("HipoteseLegal")
                         .IsRequired()
                         .HasMaxLength(40)
                         .HasColumnType("character varying(40)")
                         .HasColumnName("hipotese_legal")
-                        .HasComment("Hipótese legal: CONSENTIMENTO, CUMPRIMENTO_OBRIGACAO_LEGAL, EXECUCAO_POLITICAS_PUBLICAS, ESTUDOS_POR_ORGAO_DE_PESQUISA, EXECUCAO_CONTRATO, EXERCICIO_REGULAR_DE_DIREITOS, PROTECAO_DA_VIDA, TUTELA_DA_SAUDE, INTERESSE_LEGITIMO, PROTECAO_DO_CREDITO, PREVENCAO_A_FRAUDE.");
+                        .HasComment("Hipótese legal para o tratamento do dado. Códigos: CONSENTIMENTO, CUMPRIMENTO_OBRIGACAO_LEGAL, EXECUCAO_POLITICAS_PUBLICAS, ESTUDOS_POR_ORGAO_DE_PESQUISA, EXECUCAO_CONTRATO, EXERCICIO_REGULAR_DE_DIREITOS, PROTECAO_DA_VIDA, TUTELA_DA_SAUDE, INTERESSE_LEGITIMO, PROTECAO_DO_CREDITO, PREVENCAO_A_FRAUDE.");
 
                     b.Property<string>("Nome")
                         .IsRequired()
@@ -4133,7 +4141,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasMaxLength(20)
                         .HasColumnType("character varying(20)")
                         .HasColumnName("origem")
-                        .HasComment("Origem do dado: CALCULADO, DECLARADO ou INTEGRACAO.");
+                        .HasComment("Origem do dado. Códigos: CALCULADO, DECLARADO, INTEGRACAO.");
 
                     b.Property<string>("PontoResolucao")
                         .IsRequired()
@@ -6455,7 +6463,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .IsRequired()
                         .HasMaxLength(30)
                         .HasColumnType("character varying(30)")
-                        .HasColumnName("tipo");
+                        .HasColumnName("tipo")
+                        .HasComment("Códigos: CAMPUS_SEDE, CAMPUS_FORA_DE_SEDE, CURSO_FORA_DE_SEDE, POLO_DE_EDUCACAO_A_DISTANCIA, CONVENIO_DE_INTERIORIZACAO, OUTRO.");
 
                     b.Property<DateTimeOffset?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
@@ -6922,7 +6931,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasMaxLength(30)
                         .HasColumnType("character varying(30)")
                         .HasColumnName("finalidade")
-                        .HasComment("Finalidade do formulário: INSCRICAO, ISENCAO_TAXA ou HABILITACAO.");
+                        .HasComment("Finalidade do formulário. Códigos: INSCRICAO, ISENCAO_TAXA, HABILITACAO.");
 
                     b.Property<string>("Nome")
                         .IsRequired()
@@ -7035,7 +7044,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .IsRequired()
                         .HasMaxLength(30)
                         .HasColumnType("character varying(30)")
-                        .HasColumnName("formato_pedagogico");
+                        .HasColumnName("formato_pedagogico")
+                        .HasComment("Códigos: PRESENCIAL, SEMIPRESENCIAL, EAD.");
 
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("boolean")
@@ -7050,24 +7060,28 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .IsRequired()
                         .HasMaxLength(30)
                         .HasColumnType("character varying(30)")
-                        .HasColumnName("programa_de_oferta");
+                        .HasColumnName("programa_de_oferta")
+                        .HasComment("Códigos: REGULAR, FORMA_PARA, PARFOR, PRONERA, PEPETI, CONVENIO_OUTRO, OUTRO.");
 
                     b.Property<string>("RegimeDeFuncionamento")
                         .IsRequired()
                         .HasMaxLength(30)
                         .HasColumnType("character varying(30)")
-                        .HasColumnName("regime_de_funcionamento");
+                        .HasColumnName("regime_de_funcionamento")
+                        .HasComment("Códigos: INTENSIVO, EXTENSIVO, ALTERNANCIA_PEDAGOGICA.");
 
                     b.Property<string>("RegimeDeTurno")
                         .IsRequired()
                         .HasMaxLength(30)
                         .HasColumnType("character varying(30)")
-                        .HasColumnName("regime_de_turno");
+                        .HasColumnName("regime_de_turno")
+                        .HasComment("Códigos: REGULAR, INTEGRAL.");
 
                     b.PrimitiveCollection<string[]>("Turnos")
                         .IsRequired()
                         .HasColumnType("character varying(30)[]")
-                        .HasColumnName("turnos");
+                        .HasColumnName("turnos")
+                        .HasComment("Códigos: MATUTINO, VESPERTINO, NOTURNO.");
 
                     b.Property<DateTimeOffset?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
@@ -7540,7 +7554,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .IsRequired()
                         .HasMaxLength(30)
                         .HasColumnType("character varying(30)")
-                        .HasColumnName("forma_aceite_rascunho");
+                        .HasColumnName("forma_aceite_rascunho")
+                        .HasComment("Códigos: A_DEFINIR, REGISTRO_SEM_ENDERECO_IP, REGISTRO_COM_ENDERECO_IP.");
 
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("boolean")
@@ -7625,7 +7640,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .IsRequired()
                         .HasMaxLength(30)
                         .HasColumnType("character varying(30)")
-                        .HasColumnName("forma_aceite");
+                        .HasColumnName("forma_aceite")
+                        .HasComment("Códigos: A_DEFINIR, REGISTRO_SEM_ENDERECO_IP, REGISTRO_COM_ENDERECO_IP.");
 
                     b.Property<string>("Hash")
                         .IsRequired()
@@ -7686,7 +7702,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .IsRequired()
                         .HasMaxLength(60)
                         .HasColumnType("character varying(60)")
-                        .HasColumnName("codigo");
+                        .HasColumnName("codigo")
+                        .HasComment("Códigos: BANCA_ANALISE_DOCUMENTAL, BANCA_ENTREVISTA, BANCA_CORRECAO_REDACOES, BANCA_ANALISE_RECURSOS, BANCA_HETEROIDENTIFICACAO, BANCA_BIOPSICOSSOCIAL, BANCA_HOMOLOGACAO_INSCRICOES, BANCA_IMPORTACAO_NOTAS_INEP, BANCA_IMPORTACAO_CANDIDATOS, BANCA_ANALISE_RECURSOS_SEGUNDA_INSTANCIA.");
 
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
@@ -7814,7 +7831,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasMaxLength(20)
                         .HasColumnType("character varying(20)")
                         .HasColumnName("forma")
-                        .HasComment("Forma do conceito: NUMERICO, medido na escala desta linha, ou POR_OPCOES, escolhido entre os valores de opcoes_do_tipo_de_conceito.");
+                        .HasComment("Forma do conceito, medido na escala desta linha ou escolhido entre as opções do tipo. Códigos: NUMERICO, POR_OPCOES.");
 
                     b.Property<string>("Nome")
                         .IsRequired()
@@ -7962,7 +7979,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .IsRequired()
                         .HasMaxLength(20)
                         .HasColumnType("character varying(20)")
-                        .HasColumnName("classificacao_protecao");
+                        .HasColumnName("classificacao_protecao")
+                        .HasComment("Códigos: PUBLICO, INTERNO, PESSOAL, IDENTIFICADOR, SENSIVEL.");
 
                     b.Property<string>("Codigo")
                         .IsRequired()
@@ -8011,7 +8029,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .IsRequired()
                         .HasMaxLength(40)
                         .HasColumnType("character varying(40)")
-                        .HasColumnName("hipotese_legal");
+                        .HasColumnName("hipotese_legal")
+                        .HasComment("Códigos: CONSENTIMENTO, CUMPRIMENTO_OBRIGACAO_LEGAL, EXECUCAO_POLITICAS_PUBLICAS, ESTUDOS_POR_ORGAO_DE_PESQUISA, EXECUCAO_CONTRATO, EXERCICIO_REGULAR_DE_DIREITOS, PROTECAO_DA_VIDA, TUTELA_DA_SAUDE, INTERESSE_LEGITIMO, PROTECAO_DO_CREDITO, PREVENCAO_A_FRAUDE.");
 
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("boolean")
@@ -9617,7 +9636,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasMaxLength(30)
                         .HasColumnType("character varying(30)")
                         .HasColumnName("status")
-                        .HasComment("Situação da chave: EM_PROCESSAMENTO enquanto a operação executa; CONCLUIDA quando a resposta está guardada para repetição.");
+                        .HasComment("Situação da chave durante a execução e após guardar a resposta para repetição. Códigos: EM_PROCESSAMENTO, CONCLUIDA.");
 
                     b.HasKey("Id")
                         .HasName("pk_chaves_de_idempotencia");
@@ -11028,7 +11047,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasMaxLength(4)
                         .HasColumnType("character varying(4)")
                         .HasColumnName("formato")
-                        .HasComment("Formato do arquivo.");
+                        .HasComment("Formato do arquivo. Códigos: PDF, JPEG, PNG.");
 
                     b.Property<string>("HashSha256")
                         .HasMaxLength(64)
@@ -11044,7 +11063,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasMaxLength(38)
                         .HasColumnType("character varying(38)")
                         .HasColumnName("motivo_da_recusa")
-                        .HasComment("Por que a verificação recusou o arquivo; nulo fora da recusa.");
+                        .HasComment("Por que a verificação recusou o arquivo; nulo fora da recusa. Códigos: TAMANHO_EXCEDIDO, FORMATO_NAO_CORRESPONDE, PDF_COM_SENHA, NAO_PASSOU_NA_VERIFICACAO_DE_SEGURANCA.");
 
                     b.Property<string>("ObjectKey")
                         .IsRequired()
@@ -11068,7 +11087,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasMaxLength(18)
                         .HasColumnType("character varying(18)")
                         .HasColumnName("situacao")
-                        .HasComment("Situação da verificação; só o arquivo verificado atende à exigência.");
+                        .HasComment("Situação da verificação; só o arquivo verificado atende à exigência. Códigos: PENDENTE, EM_VERIFICACAO, VERIFICADO, RECUSADO, REENVIO_NECESSARIO.");
 
                     b.Property<long?>("TamanhoBytes")
                         .HasColumnType("bigint")
@@ -11308,7 +11327,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasMaxLength(18)
                         .HasColumnType("character varying(18)")
                         .HasColumnName("situacao")
-                        .HasComment("Códigos: APURADA, INSCRITO_SEM_LINHA, EM_CONFLITO.");
+                        .HasComment("Situação da avaliação. Códigos: APURADA, INSCRITO_SEM_LINHA, EM_CONFLITO.");
 
                     b.HasKey("Id")
                         .HasName("pk_avaliacoes_da_etapa");
@@ -11447,7 +11466,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .IsRequired()
                         .HasMaxLength(20)
                         .HasColumnType("character varying(20)")
-                        .HasColumnName("abrangencia");
+                        .HasColumnName("abrangencia")
+                        .HasComment("Códigos: FEDERAL, ESTADUAL, MUNICIPAL, INTERNA_NORMA, INTERNA_EDITAL.");
 
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
@@ -11473,7 +11493,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .IsRequired()
                         .HasMaxLength(20)
                         .HasColumnType("character varying(20)")
-                        .HasColumnName("situacao");
+                        .HasColumnName("situacao")
+                        .HasComment("Códigos: PENDENTE, RESOLVIDO.");
 
                     b.Property<DateTimeOffset?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
@@ -11795,7 +11816,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasMaxLength(20)
                         .HasColumnType("character varying(20)")
                         .HasColumnName("operador")
-                        .HasComment("Comparação aplicada ao valor: ALGUM_DE, DIFERENTE, IGUAL, MAIOR_IGUAL, MENOR_IGUAL ou NENHUM_DE.");
+                        .HasComment("Comparação aplicada ao valor. Códigos: IGUAL, ALGUM_DE, MAIOR_IGUAL, MENOR_IGUAL, DIFERENTE, NENHUM_DE.");
 
                     b.Property<DateTimeOffset?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
@@ -11899,7 +11920,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasMaxLength(20)
                         .HasColumnType("character varying(20)")
                         .HasColumnName("operador")
-                        .HasComment("Comparação aplicada ao valor: ALGUM_DE, DIFERENTE, IGUAL, MAIOR_IGUAL, MENOR_IGUAL ou NENHUM_DE.");
+                        .HasComment("Comparação aplicada ao valor. Códigos: IGUAL, ALGUM_DE, MAIOR_IGUAL, MENOR_IGUAL, DIFERENTE, NENHUM_DE.");
 
                     b.Property<DateTimeOffset?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
@@ -11952,7 +11973,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasMaxLength(20)
                         .HasColumnType("character varying(20)")
                         .HasColumnName("operador")
-                        .HasComment("Comparação aplicada ao valor: ALGUM_DE, DIFERENTE, IGUAL, MAIOR_IGUAL, MENOR_IGUAL ou NENHUM_DE.");
+                        .HasComment("Comparação aplicada ao valor. Códigos: IGUAL, ALGUM_DE, MAIOR_IGUAL, MENOR_IGUAL, DIFERENTE, NENHUM_DE.");
 
                     b.Property<Guid>("RegraDerivacaoConfiguradaId")
                         .HasColumnType("uuid")
@@ -12048,7 +12069,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasMaxLength(30)
                         .HasColumnType("character varying(30)")
                         .HasColumnName("tipo_instrumento")
-                        .HasComment("Tipo do instrumento do Fator de Atenuação das Desigualdades de Acesso (FADA): LEI, DECRETO, PORTARIA, RESOLUCAO, INSTRUCAO_NORMATIVA, PARECER ou EDITAL; copiado da base legal.");
+                        .HasComment("Tipo do instrumento do Fator de Atenuação das Desigualdades de Acesso (FADA); copiado da base legal.");
 
                     b.Property<DateTimeOffset?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
@@ -12414,7 +12435,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .IsRequired()
                         .HasColumnType("text[]")
                         .HasColumnName("fundamentos")
-                        .HasComment("Fundamentos de isenção.");
+                        .HasComment("Fundamentos de isenção. Códigos: CADASTRO_UNICO, DOACAO_MEDULA_OSSEA, CARENCIA_SOCIOECONOMICA.");
 
                     b.HasKey("Id")
                         .HasName("pk_configuracoes_taxa_inscricao");
@@ -12694,13 +12715,13 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasMaxLength(20)
                         .HasColumnType("character varying(20)")
                         .HasColumnName("classificacao_protecao")
-                        .HasComment("Classificação de proteção de dados do documento, copiada do tipo de documento: PUBLICO, INTERNO, PESSOAL, IDENTIFICADOR ou SENSIVEL.");
+                        .HasComment("Classificação de proteção de dados do documento, copiada do tipo de documento. Códigos: PUBLICO, INTERNO, PESSOAL, IDENTIFICADOR, SENSIVEL.");
 
                     b.Property<string>("ConsequenciaIndeferimento")
                         .HasMaxLength(30)
                         .HasColumnType("character varying(30)")
                         .HasColumnName("consequencia_indeferimento")
-                        .HasComment("O que acontece com o candidato quando o documento é indeferido; vazio quando a exigência não determina resultado. Códigos: ELIMINA, RECLASSIFICA_AC, REMOVE_VANTAGEM, ABRE_PRAZO_PARA_REENVIO.");
+                        .HasComment("O que acontece com o candidato quando o documento é indeferido; vazio quando a exigência não determina resultado.");
 
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
@@ -12839,7 +12860,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasMaxLength(20)
                         .HasColumnType("character varying(20)")
                         .HasColumnName("abrangencia")
-                        .HasComment("Abrangência da base legal.");
+                        .HasComment("Abrangência da base legal. Códigos: FEDERAL, ESTADUAL, MUNICIPAL, INTERNA_NORMA, INTERNA_EDITAL.");
 
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
@@ -12869,7 +12890,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasMaxLength(20)
                         .HasColumnType("character varying(20)")
                         .HasColumnName("situacao")
-                        .HasComment("Situação da base legal.");
+                        .HasComment("Situação da base legal. Códigos: PENDENTE, RESOLVIDO.");
 
                     b.Property<DateTimeOffset?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
@@ -12986,7 +13007,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasMaxLength(30)
                         .HasColumnType("character varying(30)")
                         .HasColumnName("carater")
-                        .HasComment("Finalidade da etapa na avaliação: classificatoria, eliminatoria ou ambas.");
+                        .HasComment("Finalidade da etapa na avaliação: classificatoria, eliminatoria ou ambas. Códigos: CLASSIFICATORIA, ELIMINATORIA, AMBAS.");
 
                     b.Property<string>("Chave")
                         .IsRequired()
@@ -13022,7 +13043,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasMaxLength(30)
                         .HasColumnType("character varying(30)")
                         .HasColumnName("forma_de_avaliacao")
-                        .HasComment("Como a nota da etapa é obtida: OBJETIVA ou HUMANA; ausente quando não definida.");
+                        .HasComment("Como a nota da etapa é obtida; ausente quando não definida. Códigos: OBJETIVA, HUMANA.");
 
                     b.Property<DateTimeOffset?>("Inicio")
                         .HasColumnType("timestamp with time zone")
@@ -13194,7 +13215,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasMaxLength(30)
                         .HasColumnType("character varying(30)")
                         .HasColumnName("origem_data")
-                        .HasComment("Momento em que as datas da fase são definidas: NO_EDITAL ou NA_EXECUCAO.");
+                        .HasComment("Momento em que as datas da fase são definidas. Códigos: NO_EDITAL, NA_EXECUCAO.");
 
                     b.Property<bool>("PermiteComplementacao")
                         .HasColumnType("boolean")
@@ -13364,7 +13385,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasMaxLength(30)
                         .HasColumnType("character varying(30)")
                         .HasColumnName("origem_valores")
-                        .HasComment("Origem das opções: CATALOGO, OPCOES_DO_PROCESSO, MUNICIPIOS_DO_BONUS, UNIDADES_FEDERATIVAS ou MUNICIPIOS_DA_PROVA_PRESENCIAL.");
+                        .HasComment("Origem das opções. Códigos: CATALOGO, OPCOES_DO_PROCESSO, MUNICIPIOS_DO_FADA, UNIDADES_FEDERATIVAS, MUNICIPIOS_DA_PROVA_PRESENCIAL.");
 
                     b.Property<bool>("PedirConfirmacao")
                         .HasColumnType("boolean")
@@ -13394,7 +13415,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasMaxLength(30)
                         .HasColumnType("character varying(30)")
                         .HasColumnName("tipo_de_campo")
-                        .HasComment("Tipo de campo: NUMERO, SIM_OU_NAO, ESCOLHA_UNICA, ESCOLHA_MULTIPLA, TEXTO, DATA, ENDERECO ou MUNICIPIO.");
+                        .HasComment("Tipo de campo. Códigos: NUMERO, SIM_OU_NAO, ESCOLHA_UNICA, ESCOLHA_MULTIPLA, TEXTO, DATA, ENDERECO, MUNICIPIO.");
 
                     b.Property<DateTimeOffset?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
@@ -13831,7 +13852,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasMaxLength(40)
                         .HasColumnType("character varying(40)")
                         .HasColumnName("item_codigo")
-                        .HasComment("Área do ENEM: REDACAO, CIENCIAS_DA_NATUREZA, CIENCIAS_HUMANAS, LINGUAGENS ou MATEMATICA.");
+                        .HasComment("Área do ENEM.");
 
                     b.Property<Guid>("LoteId")
                         .HasColumnType("uuid")
@@ -13849,7 +13870,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasMaxLength(8)
                         .HasColumnType("character varying(8)")
                         .HasColumnName("situacao")
-                        .HasComment("Códigos: PRESENTE, AUSENTE.");
+                        .HasComment("Situação da prova no ENEM. Códigos: PRESENTE, AUSENTE.");
 
                     b.HasKey("Id")
                         .HasName("pk_lancamentos_de_nota");
@@ -14264,7 +14285,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .IsRequired()
                         .HasMaxLength(12)
                         .HasColumnType("character varying(12)")
-                        .HasColumnName("sentido");
+                        .HasColumnName("sentido")
+                        .HasComment("Códigos: FAVORAVEL, DESFAVORAVEL.");
 
                     b.Property<string>("Subclassificacao")
                         .HasMaxLength(64)
@@ -14275,7 +14297,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .IsRequired()
                         .HasMaxLength(32)
                         .HasColumnType("character varying(32)")
-                        .HasColumnName("tipo");
+                        .HasColumnName("tipo")
+                        .HasComment("Códigos: ISENCAO_DA_TAXA, HOMOLOGACAO_DAS_INSCRICOES, ANALISE_DOCUMENTAL, HETEROIDENTIFICACAO, AVALIACAO_BIOPSICOSSOCIAL, CLASSIFICACAO, GABARITO_DA_PROVA, NOTA_DA_ETAPA.");
 
                     b.Property<DateTimeOffset?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
@@ -14362,7 +14385,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasMaxLength(12)
                         .HasColumnType("character varying(12)")
                         .HasColumnName("sentido")
-                        .HasComment("Sentido da decisão associado ao motivo: FAVORAVEL ou DESFAVORAVEL.");
+                        .HasComment("Sentido da decisão associado ao motivo. Códigos: FAVORAVEL, DESFAVORAVEL.");
 
                     b.Property<string>("Subclassificacao")
                         .HasMaxLength(64)
@@ -14375,7 +14398,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasMaxLength(32)
                         .HasColumnType("character varying(32)")
                         .HasColumnName("tipo")
-                        .HasComment("Tipo de decisão: ISENCAO_DA_TAXA, HOMOLOGACAO_DAS_INSCRICOES, ANALISE_DOCUMENTAL, HETEROIDENTIFICACAO, AVALIACAO_BIOPSICOSSOCIAL, CLASSIFICACAO, GABARITO_DA_PROVA ou NOTA_DA_ETAPA.");
+                        .HasComment("Tipo de decisão. Códigos: ISENCAO_DA_TAXA, HOMOLOGACAO_DAS_INSCRICOES, ANALISE_DOCUMENTAL, HETEROIDENTIFICACAO, AVALIACAO_BIOPSICOSSOCIAL, CLASSIFICACAO, GABARITO_DA_PROVA, NOTA_DA_ETAPA.");
 
                     b.Property<DateTimeOffset?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
@@ -14436,7 +14459,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasMaxLength(32)
                         .HasColumnType("character varying(32)")
                         .HasColumnName("categoria")
-                        .HasComment("Categoria da regra: etapa, modalidade, desempate, documento, fada, atendimento ou outros.");
+                        .HasComment("Categoria da regra. Códigos: ETAPA, MODALIDADE, DESEMPATE, DOCUMENTO, FADA, ATENDIMENTO, OUTROS.");
 
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
@@ -14636,7 +14659,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasMaxLength(18)
                         .HasColumnType("character varying(18)")
                         .HasColumnName("tipo")
-                        .HasComment("Códigos: INSCRITO_SEM_LINHA, LINHA_SEM_INSCRITO, CONFLITO.");
+                        .HasComment("Tipo de ocorrência no lote de notas. Códigos: INSCRITO_SEM_LINHA, LINHA_SEM_INSCRITO, CONFLITO.");
 
                     b.HasKey("Id")
                         .HasName("pk_ocorrencias_da_importacao");
@@ -14770,7 +14793,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasMaxLength(30)
                         .HasColumnType("character varying(30)")
                         .HasColumnName("origem_candidatos")
-                        .HasComment("Como os candidatos chegam ao processo: INSCRICAO_PROPRIA ou IMPORTACAO_EXTERNA.");
+                        .HasComment("Como os candidatos chegam ao processo. Códigos: INSCRICAO_PROPRIA, IMPORTACAO_EXTERNA.");
 
                     b.Property<string>("Status")
                         .IsRequired()
@@ -14839,7 +14862,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasMaxLength(30)
                         .HasColumnType("character varying(30)")
                         .HasColumnName("papel")
-                        .HasComment("Papel da publicação no resultado, quando aplicável: PRELIMINAR ou DEFINITIVO.");
+                        .HasComment("Papel da publicação no resultado, quando aplicável. Códigos: PRELIMINAR, DEFINITIVO.");
 
                     b.Property<DateTimeOffset?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
@@ -14891,7 +14914,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasMaxLength(30)
                         .HasColumnType("character varying(30)")
                         .HasColumnName("papel")
-                        .HasComment("Papel da publicação no resultado, quando aplicável: PRELIMINAR ou DEFINITIVO.");
+                        .HasComment("Papel da publicação no resultado, quando aplicável. Códigos: PRELIMINAR, DEFINITIVO.");
 
                     b.Property<DateTimeOffset?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
@@ -14977,7 +15000,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasMaxLength(30)
                         .HasColumnType("character varying(30)")
                         .HasColumnName("evento_inicial_do_prazo")
-                        .HasComment("Evento que inicia o prazo: PUBLICACAO_DO_ATO ou CIENCIA_INDIVIDUAL.");
+                        .HasComment("Evento que inicia o prazo. Códigos: PUBLICACAO_DO_ATO, CIENCIA_INDIVIDUAL.");
 
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
@@ -15112,7 +15135,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasMaxLength(48)
                         .HasColumnType("character varying(48)")
                         .HasColumnName("tipo")
-                        .HasComment("Tipo da regra no catálogo.");
+                        .HasComment("Tipo da regra no catálogo. Códigos: REGRA_CALCULO, REGRA_ARREDONDAMENTO, REGRA_ELIMINACAO, REGRA_FADA, CRITERIO_DESEMPATE, CRITERIO_REMANEJAMENTO, REGRA_ORDEM_ALOCACAO, REGRA_ELEGIBILIDADE, REGRA_DISTRIBUICAO_VAGAS, REGRA_AJUSTE_DISTRIBUICAO_VAGAS, REGRA_PRAZO_RECURSO, CONVENCAO_CONTAGEM_PRAZO, REGRA_APURACAO_AVALIACAO, REGRA_PROCEDIMENTO_RECURSO.");
 
                     b.Property<DateTimeOffset?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
@@ -15610,7 +15633,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     b.Property<string>("Forma")
                         .IsRequired()
                         .HasColumnType("text")
-                        .HasColumnName("forma");
+                        .HasColumnName("forma")
+                        .HasComment("Códigos: DOCUMENTO, TODOS_OS_ITENS, QUANTIDADE_MINIMA_DE_ITENS.");
 
                     b.Property<string>("GrupoDoFormularioParaRepeticao")
                         .HasMaxLength(60)
@@ -15831,7 +15855,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .IsRequired()
                         .HasMaxLength(30)
                         .HasColumnType("character varying(30)")
-                        .HasColumnName("forma_aceite");
+                        .HasColumnName("forma_aceite")
+                        .HasComment("Códigos: A_DEFINIR, REGISTRO_SEM_ENDERECO_IP, REGISTRO_COM_ENDERECO_IP.");
 
                     b.Property<string>("HashVersao")
                         .IsRequired()
@@ -16192,7 +16217,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasMaxLength(9)
                         .HasColumnType("character varying(9)")
                         .HasColumnName("origem")
-                        .HasComment("Origem da resposta.");
+                        .HasComment("Origem da resposta. Códigos: INFORMADA, CALCULADA.");
 
                     b.Property<string>("Procedencia")
                         .HasColumnType("text")
@@ -16301,7 +16326,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasMaxLength(9)
                         .HasColumnType("character varying(9)")
                         .HasColumnName("situacao")
-                        .HasComment("Situação da inscrição.");
+                        .HasComment("Situação da inscrição. Códigos: RASCUNHO, SUBMETIDA, CANCELADA.");
 
                     b.Property<DateTimeOffset?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
@@ -16402,7 +16427,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasMaxLength(9)
                         .HasColumnType("character varying(9)")
                         .HasColumnName("origem")
-                        .HasComment("Origem da resposta.");
+                        .HasComment("Origem da resposta. Códigos: INFORMADA, CALCULADA.");
 
                     b.Property<int?>("Posicao")
                         .HasColumnType("integer")
@@ -16414,7 +16439,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasMaxLength(10)
                         .HasColumnType("character varying(10)")
                         .HasColumnName("tipo")
-                        .HasComment("Tipo do valor da resposta.");
+                        .HasComment("Tipo do valor da resposta. O tipo ENDERECO não é gravado aqui, porque o endereço tem registro próprio. Códigos: SIM_OU_NAO, NUMERO, OPCAO, TEXTO, DATA, ENDERECO, MUNICIPIO.");
 
                     b.Property<bool?>("ValorBooleano")
                         .HasColumnType("boolean")
@@ -17355,7 +17380,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                                 .IsRequired()
                                 .HasMaxLength(20)
                                 .HasColumnType("character varying(20)")
-                                .HasColumnName("classificacao");
+                                .HasColumnName("classificacao")
+                                .HasComment("Códigos: PUBLICO, INTERNO, PESSOAL, IDENTIFICADOR, SENSIVEL.");
 
                             b1.Property<bool>("DeUnidade")
                                 .HasColumnType("boolean")
@@ -17757,7 +17783,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                                 .HasMaxLength(20)
                                 .HasColumnType("character varying(20)")
                                 .HasColumnName("protecao_recomendada")
-                                .HasComment("Classificação recomendada: PUBLICO, INTERNO, PESSOAL, IDENTIFICADOR ou SENSIVEL; nula quando não houver.");
+                                .HasComment("Classificação recomendada; nula quando não houver. Códigos: PUBLICO, INTERNO, PESSOAL, IDENTIFICADOR, SENSIVEL.");
 
                             b1.Property<DateTimeOffset?>("DecididaEm")
                                 .HasColumnType("timestamp with time zone")
@@ -17796,7 +17822,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                                 .HasMaxLength(20)
                                 .HasColumnType("character varying(20)")
                                 .HasColumnName("protecao_situacao")
-                                .HasComment("Situação da análise: PENDENTE, SOLICITADA, APROVADA, AJUSTE_RECOMENDADO ou REPROVADA.");
+                                .HasComment("Situação da análise.");
 
                             b1.Property<DateTimeOffset?>("SolicitadaEm")
                                 .HasColumnType("timestamp with time zone")
@@ -18654,7 +18680,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                                 .IsRequired()
                                 .HasMaxLength(60)
                                 .HasColumnType("character varying(60)")
-                                .HasColumnName("papel");
+                                .HasColumnName("papel")
+                                .HasComment("Códigos: AVALIA_O_MERITO, JULGA_A_PRIMEIRA_INSTANCIA, IMPORTA_AS_NOTAS_DO_INEP, IMPORTA_CANDIDATOS, JULGA_A_SEGUNDA_INSTANCIA.");
 
                             b1.PrimitiveCollection<string[]>("_tiposDeDecisaoJulgados")
                                 .IsRequired()
@@ -18662,7 +18689,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                                 .HasColumnType("text[]")
                                 .HasColumnName("tipos_de_decisao_julgados")
                                 .HasDefaultValueSql("'{}'::text[]")
-                                .HasComment("Tipos de decisão que o tipo de banca julga, em ordem alfabética ordinal do código e sem repetição; só o papel que avalia o mérito os declara.");
+                                .HasComment("Tipos de decisão que o tipo de banca julga, em ordem alfabética ordinal do código e sem repetição; só o papel que avalia o mérito os declara. Códigos: ISENCAO_DA_TAXA, HOMOLOGACAO_DAS_INSCRICOES, ANALISE_DOCUMENTAL, HETEROIDENTIFICACAO, AVALIACAO_BIOPSICOSSOCIAL, CLASSIFICACAO, GABARITO_DA_PROVA, NOTA_DA_ETAPA.");
 
                             b1.HasKey("TipoBancaId");
 
@@ -18774,7 +18801,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                             b1.Property<string>("ClassificacaoRecomendada")
                                 .HasMaxLength(20)
                                 .HasColumnType("character varying(20)")
-                                .HasColumnName("protecao_recomendada");
+                                .HasColumnName("protecao_recomendada")
+                                .HasComment("Códigos: PUBLICO, INTERNO, PESSOAL, IDENTIFICADOR, SENSIVEL.");
 
                             b1.Property<DateTimeOffset?>("DecididaEm")
                                 .HasColumnType("timestamp with time zone")
@@ -19924,17 +19952,17 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                             b1.Property<string>("Criterio")
                                 .HasColumnType("text")
                                 .HasColumnName("regra_deliberacao_criterio")
-                                .HasComment("Critério da deliberação.");
+                                .HasComment("Critério da deliberação. Códigos: MAIORIA_SIMPLES, MAIORIA_ABSOLUTA, UNANIMIDADE.");
 
                             b1.Property<string>("Desempate")
                                 .HasColumnType("text")
                                 .HasColumnName("regra_deliberacao_desempate")
-                                .HasComment("Regra de desempate da deliberação.");
+                                .HasComment("Regra de desempate da deliberação. Códigos: VOTO_DA_PRESIDENCIA, NOVA_VOTACAO.");
 
                             b1.Property<string>("Encerramento")
                                 .HasColumnType("text")
                                 .HasColumnName("regra_deliberacao_encerramento")
-                                .HasComment("Regra de encerramento da deliberação.");
+                                .HasComment("Regra de encerramento da deliberação. Códigos: TODOS_OS_TITULARES, PRESIDENCIA_NO_QUORUM.");
 
                             b1.Property<int>("Integrantes")
                                 .HasColumnType("integer")
@@ -19945,7 +19973,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                                 .IsRequired()
                                 .HasColumnType("text")
                                 .HasColumnName("regra_deliberacao_modo")
-                                .HasComment("Modo de deliberação da banca.");
+                                .HasComment("Modo de deliberação da banca. Códigos: COLEGIADA_COM_VOTACAO, ATO_INDIVIDUAL.");
 
                             b1.Property<int?>("Quorum")
                                 .HasColumnType("integer")
@@ -19955,7 +19983,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                             b1.Property<string>("SemUnanimidade")
                                 .HasColumnType("text")
                                 .HasColumnName("regra_deliberacao_sem_unanimidade")
-                                .HasComment("Regra aplicada quando não há unanimidade.");
+                                .HasComment("Regra aplicada quando não há unanimidade. Códigos: FAVORAVEL, DESFAVORAVEL, NOVA_VOTACAO.");
 
                             b1.Property<int>("Suplentes")
                                 .HasColumnType("integer")
@@ -19982,7 +20010,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                                 .HasMaxLength(60)
                                 .HasColumnType("character varying(60)")
                                 .HasColumnName("codigo")
-                                .HasComment("Código do tipo de banca copiado do cadastro.");
+                                .HasComment("Código do tipo de banca copiado do cadastro. Códigos: BANCA_ANALISE_DOCUMENTAL, BANCA_ENTREVISTA, BANCA_CORRECAO_REDACOES, BANCA_ANALISE_RECURSOS, BANCA_HETEROIDENTIFICACAO, BANCA_BIOPSICOSSOCIAL, BANCA_HOMOLOGACAO_INSCRICOES, BANCA_IMPORTACAO_NOTAS_INEP, BANCA_IMPORTACAO_CANDIDATOS, BANCA_ANALISE_RECURSOS_SEGUNDA_INSTANCIA.");
 
                             b1.Property<bool>("EncerraRecursoNaPrimeiraInstancia")
                                 .HasColumnType("boolean")
@@ -20011,7 +20039,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                                 .HasMaxLength(60)
                                 .HasColumnType("character varying(60)")
                                 .HasColumnName("papel")
-                                .HasComment("Papel do tipo de banca copiado do cadastro.");
+                                .HasComment("Papel do tipo de banca copiado do cadastro. Códigos: AVALIA_O_MERITO, JULGA_A_PRIMEIRA_INSTANCIA, IMPORTA_AS_NOTAS_DO_INEP, IMPORTA_CANDIDATOS, JULGA_A_SEGUNDA_INSTANCIA.");
 
                             b1.PrimitiveCollection<string[]>("_tiposDeDecisaoJulgados")
                                 .IsRequired()
@@ -20019,7 +20047,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                                 .HasColumnType("text[]")
                                 .HasColumnName("tipos_de_decisao_julgados")
                                 .HasDefaultValueSql("'{}'::text[]")
-                                .HasComment("Tipos de decisão que o tipo de banca julgava quando a banca o copiou, em ordem alfabética ordinal do código e sem repetição.");
+                                .HasComment("Tipos de decisão que o tipo de banca julgava quando a banca o copiou, em ordem alfabética ordinal do código e sem repetição. Códigos: ISENCAO_DA_TAXA, HOMOLOGACAO_DAS_INSCRICOES, ANALISE_DOCUMENTAL, HETEROIDENTIFICACAO, AVALIACAO_BIOPSICOSSOCIAL, CLASSIFICACAO, GABARITO_DA_PROVA, NOTA_DA_ETAPA.");
 
                             b1.HasKey("BancaDaEtapaId");
 
@@ -20055,17 +20083,17 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                             b1.Property<string>("Criterio")
                                 .HasColumnType("text")
                                 .HasColumnName("regra_deliberacao_criterio")
-                                .HasComment("Critério da deliberação.");
+                                .HasComment("Critério da deliberação. Códigos: MAIORIA_SIMPLES, MAIORIA_ABSOLUTA, UNANIMIDADE.");
 
                             b1.Property<string>("Desempate")
                                 .HasColumnType("text")
                                 .HasColumnName("regra_deliberacao_desempate")
-                                .HasComment("Regra de desempate da deliberação.");
+                                .HasComment("Regra de desempate da deliberação. Códigos: VOTO_DA_PRESIDENCIA, NOVA_VOTACAO.");
 
                             b1.Property<string>("Encerramento")
                                 .HasColumnType("text")
                                 .HasColumnName("regra_deliberacao_encerramento")
-                                .HasComment("Regra de encerramento da deliberação.");
+                                .HasComment("Regra de encerramento da deliberação. Códigos: TODOS_OS_TITULARES, PRESIDENCIA_NO_QUORUM.");
 
                             b1.Property<int>("Integrantes")
                                 .HasColumnType("integer")
@@ -20076,7 +20104,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                                 .IsRequired()
                                 .HasColumnType("text")
                                 .HasColumnName("regra_deliberacao_modo")
-                                .HasComment("Modo de deliberação da banca.");
+                                .HasComment("Modo de deliberação da banca. Códigos: COLEGIADA_COM_VOTACAO, ATO_INDIVIDUAL.");
 
                             b1.Property<int?>("Quorum")
                                 .HasColumnType("integer")
@@ -20086,7 +20114,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                             b1.Property<string>("SemUnanimidade")
                                 .HasColumnType("text")
                                 .HasColumnName("regra_deliberacao_sem_unanimidade")
-                                .HasComment("Regra aplicada quando não há unanimidade.");
+                                .HasComment("Regra aplicada quando não há unanimidade. Códigos: FAVORAVEL, DESFAVORAVEL, NOVA_VOTACAO.");
 
                             b1.Property<int>("Suplentes")
                                 .HasColumnType("integer")
@@ -20113,7 +20141,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                                 .HasMaxLength(60)
                                 .HasColumnType("character varying(60)")
                                 .HasColumnName("codigo")
-                                .HasComment("Código do tipo de banca copiado do cadastro.");
+                                .HasComment("Código do tipo de banca copiado do cadastro. Códigos: BANCA_ANALISE_DOCUMENTAL, BANCA_ENTREVISTA, BANCA_CORRECAO_REDACOES, BANCA_ANALISE_RECURSOS, BANCA_HETEROIDENTIFICACAO, BANCA_BIOPSICOSSOCIAL, BANCA_HOMOLOGACAO_INSCRICOES, BANCA_IMPORTACAO_NOTAS_INEP, BANCA_IMPORTACAO_CANDIDATOS, BANCA_ANALISE_RECURSOS_SEGUNDA_INSTANCIA.");
 
                             b1.Property<bool>("EncerraRecursoNaPrimeiraInstancia")
                                 .HasColumnType("boolean")
@@ -20142,7 +20170,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                                 .HasMaxLength(60)
                                 .HasColumnType("character varying(60)")
                                 .HasColumnName("papel")
-                                .HasComment("Papel do tipo de banca copiado do cadastro.");
+                                .HasComment("Papel do tipo de banca copiado do cadastro. Códigos: AVALIA_O_MERITO, JULGA_A_PRIMEIRA_INSTANCIA, IMPORTA_AS_NOTAS_DO_INEP, IMPORTA_CANDIDATOS, JULGA_A_SEGUNDA_INSTANCIA.");
 
                             b1.PrimitiveCollection<string[]>("_tiposDeDecisaoJulgados")
                                 .IsRequired()
@@ -20150,7 +20178,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                                 .HasColumnType("text[]")
                                 .HasColumnName("tipos_de_decisao_julgados")
                                 .HasDefaultValueSql("'{}'::text[]")
-                                .HasComment("Tipos de decisão que o tipo de banca julgava quando a banca o copiou, em ordem alfabética ordinal do código e sem repetição.");
+                                .HasComment("Tipos de decisão que o tipo de banca julgava quando a banca o copiou, em ordem alfabética ordinal do código e sem repetição. Códigos: ISENCAO_DA_TAXA, HOMOLOGACAO_DAS_INSCRICOES, ANALISE_DOCUMENTAL, HETEROIDENTIFICACAO, AVALIACAO_BIOPSICOSSOCIAL, CLASSIFICACAO, GABARITO_DA_PROVA, NOTA_DA_ETAPA.");
 
                             b1.HasKey("BancaRequeridaId");
 
@@ -20894,20 +20922,20 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                                         .HasMaxLength(30)
                                         .HasColumnType("character varying(30)")
                                         .HasColumnName("prazo_emissao_efeito")
-                                        .HasComment("O que a análise faz com o documento emitido fora do prazo: RECUSAR_DOCUMENTO ou ACEITAR_COM_AVISO; preenchida só quando a escolha é COM_PRAZO.");
+                                        .HasComment("O que a análise faz com o documento emitido fora do prazo; preenchida só quando a escolha é COM_PRAZO. Códigos: RECUSAR_DOCUMENTO, ACEITAR_COM_AVISO.");
 
                                     b2.Property<string>("Escolha")
                                         .IsRequired()
                                         .HasMaxLength(30)
                                         .HasColumnType("character varying(30)")
                                         .HasColumnName("prazo_emissao_escolha")
-                                        .HasComment("Escolha sobre o prazo de emissão do documento: SEM_PRAZO ou COM_PRAZO; vazio enquanto a escolha não foi feita.");
+                                        .HasComment("Escolha sobre o prazo de emissão do documento; vazio enquanto a escolha não foi feita. Códigos: SEM_PRAZO, COM_PRAZO.");
 
                                     b2.Property<string>("Unidade")
                                         .HasMaxLength(10)
                                         .HasColumnType("character varying(10)")
                                         .HasColumnName("prazo_emissao_unidade")
-                                        .HasComment("Unidade do prazo de emissão: DIAS, MESES ou ANOS; preenchida só quando a escolha é COM_PRAZO.");
+                                        .HasComment("Unidade do prazo de emissão; preenchida só quando a escolha é COM_PRAZO. Códigos: DIAS, MESES, ANOS.");
 
                                     b2.Property<int?>("Valor")
                                         .HasColumnType("integer")
@@ -20943,7 +20971,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                                                 .HasMaxLength(30)
                                                 .HasColumnType("character varying(30)")
                                                 .HasColumnName("prazo_emissao_referencia_tipo")
-                                                .HasComment("Data de referência do prazo de emissão: FIM_DAS_INSCRICOES, INICIO_DA_FASE, FIM_DA_FASE, DATA_ESPECIFICA ou DATA_DA_APRESENTACAO; preenchida só quando a escolha é COM_PRAZO.");
+                                                .HasComment("Data de referência do prazo de emissão; preenchida só quando a escolha é COM_PRAZO. Códigos: FIM_DAS_INSCRICOES, INICIO_DA_FASE, FIM_DA_FASE, DATA_ESPECIFICA, DATA_DA_APRESENTACAO.");
 
                                             b3.HasKey("PrazoDeEmissaoRequisitosDoDocumentoDocumentoExigidoId");
 
@@ -20967,14 +20995,14 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                                         .HasMaxLength(30)
                                         .HasColumnType("character varying(30)")
                                         .HasColumnName("validade_efeito")
-                                        .HasComment("O que a análise faz com o documento vencido: RECUSAR_DOCUMENTO ou ACEITAR_COM_AVISO; preenchida só quando a escolha é EXIGE_DOCUMENTO_VALIDO.");
+                                        .HasComment("O que a análise faz com o documento vencido; preenchida só quando a escolha é EXIGE_DOCUMENTO_VALIDO. Códigos: RECUSAR_DOCUMENTO, ACEITAR_COM_AVISO.");
 
                                     b2.Property<string>("Escolha")
                                         .IsRequired()
                                         .HasMaxLength(30)
                                         .HasColumnType("character varying(30)")
                                         .HasColumnName("validade_escolha")
-                                        .HasComment("Escolha sobre a validade do documento: NAO_EXIGE_DOCUMENTO_VALIDO ou EXIGE_DOCUMENTO_VALIDO; vazio enquanto a escolha não foi feita.");
+                                        .HasComment("Escolha sobre a validade do documento; vazio enquanto a escolha não foi feita. Códigos: NAO_EXIGE_DOCUMENTO_VALIDO, EXIGE_DOCUMENTO_VALIDO.");
 
                                     b2.HasKey("RequisitosDoDocumentoDocumentoExigidoId");
 
@@ -21005,7 +21033,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                                                 .HasMaxLength(30)
                                                 .HasColumnType("character varying(30)")
                                                 .HasColumnName("validade_referencia_tipo")
-                                                .HasComment("Data de referência da validade: FIM_DAS_INSCRICOES, INICIO_DA_FASE, FIM_DA_FASE, DATA_ESPECIFICA ou DATA_DA_APRESENTACAO; preenchida só quando a escolha é EXIGE_DOCUMENTO_VALIDO.");
+                                                .HasComment("Data de referência da validade; preenchida só quando a escolha é EXIGE_DOCUMENTO_VALIDO. Códigos: FIM_DAS_INSCRICOES, INICIO_DA_FASE, FIM_DA_FASE, DATA_ESPECIFICA, DATA_DA_APRESENTACAO.");
 
                                             b3.HasKey("ValidadeDoDocumentoRequisitosDoDocumentoDocumentoExigidoId");
 
@@ -21728,7 +21756,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                                 .HasMaxLength(20)
                                 .HasColumnType("character varying(20)")
                                 .HasColumnName("referencia_temporal_dados_tipo")
-                                .HasComment("Referência para apurar os dados do candidato: FIM_INSCRICAO, INICIO_FASE, FIM_FASE ou DATA_ESPECIFICA. Ausente quando não declarada.");
+                                .HasComment("Referência para apurar os dados do candidato. Ausente quando não declarada. Códigos: FIM_INSCRICAO, INICIO_FASE, FIM_FASE, DATA_ESPECIFICA.");
 
                             b1.HasKey("ProcessoSeletivoId");
 
@@ -21909,7 +21937,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                                 .IsRequired()
                                 .HasColumnType("text")
                                 .HasColumnName("guarda_da_vaga")
-                                .HasComment("Guarda da vaga durante o recurso: ATE_O_RESULTADO_DEFINITIVO ou NAO_GUARDA.");
+                                .HasComment("Guarda da vaga durante o recurso. Códigos: ATE_O_RESULTADO_DEFINITIVO, NAO_GUARDA.");
 
                             b1.HasKey("RecursoDaEtapaId");
 
@@ -21929,7 +21957,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                                         .IsRequired()
                                         .HasColumnType("text")
                                         .HasColumnName("prazo_segunda_instancia_unidade")
-                                        .HasComment("Unidade do prazo: HORAS, DIAS ou DIAS_UTEIS.");
+                                        .HasComment("Unidade do prazo. Códigos: HORAS, DIAS, DIAS_UTEIS.");
 
                                     b2.Property<decimal>("Valor")
                                         .HasPrecision(18, 4)
@@ -21956,7 +21984,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                                         .IsRequired()
                                         .HasColumnType("text")
                                         .HasColumnName("prazo_unidade")
-                                        .HasComment("Unidade do prazo: HORAS, DIAS ou DIAS_UTEIS.");
+                                        .HasComment("Unidade do prazo. Códigos: HORAS, DIAS, DIAS_UTEIS.");
 
                                     b2.Property<decimal>("Valor")
                                         .HasPrecision(18, 4)
@@ -22063,7 +22091,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                             b1.Property<string>("Criterio")
                                 .HasMaxLength(18)
                                 .HasColumnType("character varying(18)")
-                                .HasColumnName("criterio_de_distincao");
+                                .HasColumnName("criterio_de_distincao")
+                                .HasComment("Códigos: COMPETENCIA_MENSAL, EXERCICIO_ANUAL, OCORRENCIA.");
 
                             b1.Property<DateOnly?>("DataReferencia")
                                 .HasColumnType("date")
@@ -22174,7 +22203,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                                 .IsRequired()
                                 .HasColumnType("text")
                                 .HasColumnName("guarda_da_vaga")
-                                .HasComment("Guarda da vaga durante o recurso: ATE_O_RESULTADO_DEFINITIVO ou NAO_GUARDA.");
+                                .HasComment("Guarda da vaga durante o recurso. Códigos: ATE_O_RESULTADO_DEFINITIVO, NAO_GUARDA.");
 
                             b1.HasKey("RegraRecursoFaseId");
 
@@ -22194,7 +22223,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                                         .IsRequired()
                                         .HasColumnType("text")
                                         .HasColumnName("prazo_segunda_instancia_unidade")
-                                        .HasComment("Unidade do prazo: HORAS, DIAS ou DIAS_UTEIS.");
+                                        .HasComment("Unidade do prazo. Códigos: HORAS, DIAS, DIAS_UTEIS.");
 
                                     b2.Property<decimal>("Valor")
                                         .HasPrecision(18, 4)
@@ -22221,7 +22250,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                                         .IsRequired()
                                         .HasColumnType("text")
                                         .HasColumnName("prazo_unidade")
-                                        .HasComment("Unidade do prazo: HORAS, DIAS ou DIAS_UTEIS.");
+                                        .HasComment("Unidade do prazo. Códigos: HORAS, DIAS, DIAS_UTEIS.");
 
                                     b2.Property<decimal>("Valor")
                                         .HasPrecision(18, 4)

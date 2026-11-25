@@ -25,8 +25,6 @@ internal sealed class RespostaDaInscricaoRecordConfiguration : IEntityTypeConfig
         builder.Property(r => r.OcorrenciaId).HasComment("Identificador da ocorrência de grupo, quando a resposta pertence a um grupo repetível.");
         builder.Property(r => r.Posicao).HasComment("Posição do valor em uma resposta com vários valores; nula para valor único.");
         builder.Property(r => r.FatoCodigo).HasComment("Código do dado do candidato. Exemplos: RENDA_PER_CAPITA, CONCORRER_RENDA.");
-        builder.Property(r => r.Origem).HasComment("Origem da resposta: INFORMADA pela pessoa candidata ou CALCULADA pelo sistema.");
-        builder.Property(r => r.Tipo).HasComment("Tipo do valor: SIM_OU_NAO, NUMERO, OPCAO, TEXTO, DATA ou MUNICIPIO.");
         builder.Property(r => r.ValorBooleano).HasComment("Resposta booleana, quando aplicável.");
         builder.Property(r => r.ValorNumero).HasComment("Resposta numérica, quando aplicável.");
         builder.Property(r => r.ValorCodigo).HasComment("Código da opção ou município respondido, quando aplicável.");

@@ -31,7 +31,7 @@ public sealed class BaseLegalBonusRegionalConfiguration : IEntityTypeConfigurati
             .IsRequired();
 
         builder.Property(e => e.TipoInstrumento)
-            .HasComment("Tipo do instrumento do Fator de Atenuação das Desigualdades de Acesso (FADA): LEI, DECRETO, PORTARIA, RESOLUCAO, INSTRUCAO_NORMATIVA, PARECER ou EDITAL.")
+            .HasComment("Tipo do instrumento do Fator de Atenuação das Desigualdades de Acesso (FADA).")
             .HasMaxLength(30)
             .IsRequired();
 

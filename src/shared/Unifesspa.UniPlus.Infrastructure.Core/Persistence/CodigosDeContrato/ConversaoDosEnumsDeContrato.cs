@@ -46,6 +46,19 @@ internal sealed class ConversaoDosEnumsDeContrato
         {
             throw OutraConversao(ponto, tipoDoEnum);
         }
+
+        AcrescentarCodigosAoComentario(ponto, tipoDoEnum);
+    }
+
+    private static void AcrescentarCodigosAoComentario(IPontoDeConversao ponto, Type tipoDoEnum)
+    {
+        string[] codigos = EnumsDeContrato.Declarados(tipoDoEnum).Select(static declarado => declarado.Codigo).ToArray();
+        string lista = $"{(codigos.Length == 1 ? "Código" : "Códigos")}: {string.Join(", ", codigos)}.";
+        string? comentario = ponto.Comentario;
+        if (comentario?.Contains(lista, StringComparison.Ordinal) != true)
+        {
+            ponto.DefinirComentario(string.IsNullOrEmpty(comentario) ? lista : $"{comentario} {lista}");
+        }
     }
 
     private ValueConverter ConversorDe(Type tipoDoEnum)

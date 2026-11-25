@@ -27,7 +27,7 @@ public sealed class FormularioProcessoConfiguration : IEntityTypeConfiguration<F
         builder.HasKey(f => f.Id);
         builder.Property(f => f.Id).ValueGeneratedNever();
 
-        builder.Property(f => f.Finalidade).HasMaxLength(TamanhoDoCodigoDeContrato.Maximo).IsRequired().HasComment($"Finalidade do formulário. {ComentarioDosCodigosDeContrato.Codigos<FinalidadeFormulario>()}");
+        builder.Property(f => f.Finalidade).HasMaxLength(TamanhoDoCodigoDeContrato.Maximo).IsRequired().HasComment("Finalidade do formulário.");
         builder.Property(f => f.Titulo).HasMaxLength(FormaDoCabecalho.TituloMaxLength);
         builder.Property(f => f.ModeloOrigemCodigo).HasMaxLength(FormularioProcesso.ModeloOrigemCodigoMaxLength);
         builder.Property(f => f.ModeloOrigemNome).HasColumnName("modelo_origem_nome").HasMaxLength(FormularioProcesso.ModeloOrigemNomeMaxLength)
@@ -68,9 +68,9 @@ public sealed class EtapaFormularioConfiguration : IEntityTypeConfiguration<Etap
         builder.Property(e => e.Codigo).HasMaxLength(FormaDaEtapa.CodigoMaxLength).IsRequired();
         builder.Property(e => e.Ordem).IsRequired();
         builder.Property(e => e.Tipo).HasMaxLength(TamanhoDoCodigoDeContrato.Maximo).IsRequired()
-            .HasComment($"O que a página é. {ComentarioDosCodigosDeContrato.Codigos<TipoEtapaFormulario>()}");
+            .HasComment("O que a página é.");
         builder.Property(e => e.Bloco).HasMaxLength(TamanhoDoCodigoDeContrato.Maximo)
-            .HasComment($"O bloco que o sistema monta; nulo na seção. {ComentarioDosCodigosDeContrato.Codigos<BlocoSistema>()}");
+            .HasComment("O bloco que o sistema monta; nulo na seção.");
         builder.Property(e => e.Titulo).HasMaxLength(FormaDaEtapa.TituloMaxLength).IsRequired();
         builder.Property(e => e.Descricao).HasMaxLength(FormaDaEtapa.TextoMaxLength);
         builder.Property(e => e.Aviso).HasMaxLength(FormaDaEtapa.TextoMaxLength);

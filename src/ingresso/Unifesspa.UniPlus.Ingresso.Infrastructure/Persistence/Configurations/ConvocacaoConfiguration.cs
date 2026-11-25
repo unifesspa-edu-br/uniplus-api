@@ -35,7 +35,7 @@ public sealed class ConvocacaoConfiguration : IEntityTypeConfiguration<Convocaca
 
         builder.Property(c => c.Status)
             .HasMaxLength(CodigoDeContratoMaxLength)
-            .HasComment("Situação da convocação. Códigos: PENDENTE, ACEITA, RECUSADA, NAO_COMPARECEU, EXPIRADA.")
+            .HasComment("Situação da convocação.")
             .IsRequired();
         builder.Property(c => c.Posicao).IsRequired();
         builder.Property(c => c.CodigoCurso).HasMaxLength(50).IsRequired();
