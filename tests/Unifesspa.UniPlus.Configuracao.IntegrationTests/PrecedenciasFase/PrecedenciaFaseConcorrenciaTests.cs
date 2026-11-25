@@ -59,36 +59,38 @@ public sealed class PrecedenciaFaseConcorrenciaTests
     {
         MonolitoApiFactory api = _fixture.Factory;
 
-        var comandoIda = new CriarPrecedenciaFaseCommand("ENSALAMENTO", "AVALIACAO");
-        var comandoVolta = new CriarPrecedenciaFaseCommand("AVALIACAO", "ENSALAMENTO");
-
-        // Cada lado da corrida usa seu próprio scope/IMessageBus — mesmo
-        // padrão de PublicacaoConcorrenciaTests (Selecao): os dois scopes só
-        // são descartados no fim do método.
         await using AsyncServiceScope idaScope = api.Services.CreateAsyncScope();
         await using AsyncServiceScope voltaScope = api.Services.CreateAsyncScope();
+        (Result<Guid> idaResultado, Result<Guid> voltaResultado) =
+            await CriarArestasInversasAsync(idaScope, voltaScope);
+
+        VerificarResultadoDaConcorrencia(idaResultado, voltaResultado);
+        await VerificarGrafoSemCicloAsync(api);
+    }
+
+    private static async Task<(Result<Guid> Ida, Result<Guid> Volta)> CriarArestasInversasAsync(
+        AsyncServiceScope idaScope, AsyncServiceScope voltaScope)
+    {
+        var comandoIda = new CriarPrecedenciaFaseCommand("ENSALAMENTO", "AVALIACAO");
+        var comandoVolta = new CriarPrecedenciaFaseCommand("AVALIACAO", "ENSALAMENTO");
         IMessageBus idaBus = idaScope.ServiceProvider.GetRequiredService<IMessageBus>();
         IMessageBus voltaBus = voltaScope.ServiceProvider.GetRequiredService<IMessageBus>();
-
         Task<Result<Guid>> idaTask = idaBus.InvokeAsync<Result<Guid>>(comandoIda);
         Task<Result<Guid>> voltaTask = voltaBus.InvokeAsync<Result<Guid>>(comandoVolta);
-
         await Task.WhenAll(idaTask, voltaTask);
+        return (await idaTask, await voltaTask);
+    }
 
-        Result<Guid> idaResultado = await idaTask;
-        Result<Guid> voltaResultado = await voltaTask;
-
-        // O lock serializa — não paraleliza de verdade — então exatamente um
-        // dos dois lados vence: o primeiro a adquirir o advisory lock lê o
-        // grafo ainda sem a aresta do outro e persiste; o segundo, ao
-        // adquirir o lock em seguida, já lê o grafo COM a aresta do
-        // primeiro e a guarda de ciclo do domínio recusa a sua.
+    private static void VerificarResultadoDaConcorrencia(Result<Guid> idaResultado, Result<Guid> voltaResultado)
+    {
         (idaResultado.IsSuccess, voltaResultado.IsSuccess).Should().BeOneOf(
             (true, false), (false, true));
-
         Result<Guid> perdedor = idaResultado.IsFailure ? idaResultado : voltaResultado;
         perdedor.Error!.Code.Should().Be(PrecedenciaFaseErrorCodes.CicloDetectado);
+    }
 
+    private static async Task VerificarGrafoSemCicloAsync(MonolitoApiFactory api)
+    {
         await using AsyncServiceScope readScope = api.Services.CreateAsyncScope();
         UniPlusDbContext readDb = readScope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
         List<PrecedenciaFase> arestasEnvolvidas = await readDb.PrecedenciasFase
@@ -97,7 +99,6 @@ public sealed class PrecedenciaFaseConcorrenciaTests
                 (a.AntecessoraCodigo == "ENSALAMENTO" && a.SucessoraCodigo == "AVALIACAO")
                 || (a.AntecessoraCodigo == "AVALIACAO" && a.SucessoraCodigo == "ENSALAMENTO"))
             .ToListAsync();
-
         arestasEnvolvidas.Should().ContainSingle(
             "o grafo final não pode conter as duas arestas — isso seria um ciclo de dois nós");
     }
@@ -110,38 +111,47 @@ public sealed class PrecedenciaFaseConcorrenciaTests
 
         await using AsyncServiceScope primeiraScope = api.Services.CreateAsyncScope();
         await using AsyncServiceScope segundaScope = api.Services.CreateAsyncScope();
-        UniPlusDbContext primeiraDb = primeiraScope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
-        IPrecedenciaFaseRepository primeiroRepositorio =
-            primeiraScope.ServiceProvider.GetRequiredService<IPrecedenciaFaseRepository>();
         IPrecedenciaFaseRepository segundoRepositorio =
             segundaScope.ServiceProvider.GetRequiredService<IPrecedenciaFaseRepository>();
         UniPlusDbContext segundaDb = segundaScope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
 
-        await using IDbContextTransaction primeiraTx =
-            await primeiraDb.Database.BeginTransactionAsync();
-        await primeiroRepositorio.TravarGrafoParaEscritaAsync(CancellationToken.None);
+        await using IDbContextTransaction primeiraTx = await IniciarTransacaoComGrafoTravadoAsync(primeiraScope);
 
-        Task segundaTarefa = Task.Run(async () =>
-        {
-            await using IDbContextTransaction segundaTx =
-                await segundaDb.Database.BeginTransactionAsync();
-            await segundoRepositorio.TravarGrafoParaEscritaAsync(CancellationToken.None);
-            await segundaTx.CommitAsync();
-        });
+        Task segundaTarefa = Task.Run(() => TravarGrafoEmSegundaTransacaoAsync(segundaDb, segundoRepositorio));
+        await VerificarBloqueioDaSegundaTransacaoAsync(segundaTarefa);
+        await primeiraTx.CommitAsync();
+        await VerificarConclusaoDaSegundaTransacaoAsync(segundaTarefa);
+    }
 
-        // A segunda transação bloqueia no advisory lock enquanto a primeira
-        // não commita — sem isso, a corrida de P1-02 não teria como ser
-        // serializada. Um curto prazo é suficiente para observar o bloqueio
-        // sem tornar o teste sensível a variação normal de agendamento.
+    private static async Task VerificarConclusaoDaSegundaTransacaoAsync(Task segundaTarefa)
+    {
+        await segundaTarefa.WaitAsync(TimeSpan.FromSeconds(10));
+        segundaTarefa.IsCompletedSuccessfully.Should().BeTrue(
+            "liberado o lock da primeira transação, a segunda deve concluir rapidamente");
+    }
+
+    private static async Task<IDbContextTransaction> IniciarTransacaoComGrafoTravadoAsync(AsyncServiceScope scope)
+    {
+        UniPlusDbContext db = scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
+        IPrecedenciaFaseRepository repositorio = scope.ServiceProvider.GetRequiredService<IPrecedenciaFaseRepository>();
+        IDbContextTransaction transacao = await db.Database.BeginTransactionAsync();
+        await repositorio.TravarGrafoParaEscritaAsync(CancellationToken.None);
+        return transacao;
+    }
+
+    private static async Task TravarGrafoEmSegundaTransacaoAsync(
+        UniPlusDbContext db, IPrecedenciaFaseRepository repositorio)
+    {
+        await using IDbContextTransaction transacao = await db.Database.BeginTransactionAsync();
+        await repositorio.TravarGrafoParaEscritaAsync(CancellationToken.None);
+        await transacao.CommitAsync();
+    }
+
+    private static async Task VerificarBloqueioDaSegundaTransacaoAsync(Task segundaTarefa)
+    {
         Task tarefaConcluidaCedo = await Task.WhenAny(segundaTarefa, Task.Delay(TimeSpan.FromMilliseconds(500)));
         tarefaConcluidaCedo.Should().NotBe(
             segundaTarefa,
             "a segunda transação deveria estar bloqueada aguardando o lock da primeira");
-
-        await primeiraTx.CommitAsync();
-
-        await segundaTarefa.WaitAsync(TimeSpan.FromSeconds(10));
-        segundaTarefa.IsCompletedSuccessfully.Should().BeTrue(
-            "liberado o lock da primeira transação, a segunda deve concluir rapidamente");
     }
 }

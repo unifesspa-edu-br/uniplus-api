@@ -98,6 +98,11 @@ public sealed class PrecedenciaFaseEndpointTests
             new Uri($"/api/configuracao/precedencias-fase/{id}", UriKind.Relative));
         obter.StatusCode.Should().Be(HttpStatusCode.OK);
 
+        await VerificarPrecedenciaCriadaAsync(obter);
+    }
+
+    private static async Task VerificarPrecedenciaCriadaAsync(HttpResponseMessage obter)
+    {
         using JsonDocument doc = JsonDocument.Parse(await obter.Content.ReadAsStringAsync());
         JsonElement root = doc.RootElement;
         root.GetProperty("antecessoraCodigo").GetString().Should().Be("CLASSIFICACAO");
@@ -173,13 +178,7 @@ public sealed class PrecedenciaFaseEndpointTests
         const string json = """{"sucessoraCodigo":"MATRICULA"}""";
 
         using HttpClient client = _fixture.Factory.CreateClient();
-        using HttpRequestMessage request = new(HttpMethod.Post, new Uri("/api/configuracao/admin/precedencias-fase", UriKind.Relative));
-        request.Headers.Add("Authorization", $"{TestAuthHandler.AuthorizationScheme} {TestAuthHandler.TokenValue}");
-        request.Headers.Add(TestAuthHandler.RolesHeader, "plataforma-admin");
-        request.Headers.Add("Idempotency-Key", Guid.NewGuid().ToString());
-        request.Content = new StringContent(json, Encoding.UTF8, "application/json");
-
-        HttpResponseMessage response = await client.SendAsync(request);
+        HttpResponseMessage response = await EnviarPostAdminComJsonAsync(client, json);
 
         response.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
 
@@ -212,6 +211,11 @@ public sealed class PrecedenciaFaseEndpointTests
         HttpResponseMessage atualizar = await EnviarPutAdmin(client, id, atualizarBody);
         atualizar.StatusCode.Should().Be(HttpStatusCode.NoContent);
 
+        await VerificarSobreposicaoAtualizadaAsync(client, id);
+    }
+
+    private static async Task VerificarSobreposicaoAtualizadaAsync(HttpClient client, Guid id)
+    {
         HttpResponseMessage obter = await client.GetAsync(
             new Uri($"/api/configuracao/precedencias-fase/{id}", UriKind.Relative));
         using JsonDocument doc = JsonDocument.Parse(await obter.Content.ReadAsStringAsync());
@@ -229,34 +233,42 @@ public sealed class PrecedenciaFaseEndpointTests
         criar.StatusCode.Should().Be(HttpStatusCode.Created);
         Guid id = await criar.Content.ReadFromJsonAsync<Guid>();
 
-        using HttpRequestMessage removerRequest = new(HttpMethod.Delete, new Uri($"/api/configuracao/admin/precedencias-fase/{id}", UriKind.Relative));
-        removerRequest.Headers.Add("Authorization", $"{TestAuthHandler.AuthorizationScheme} {TestAuthHandler.TokenValue}");
-        removerRequest.Headers.Add(TestAuthHandler.RolesHeader, "plataforma-admin");
-        HttpResponseMessage remover = await client.SendAsync(removerRequest);
-        remover.StatusCode.Should().Be(HttpStatusCode.NoContent);
+        await RemoverPrecedenciaAsync(client, id);
 
         HttpResponseMessage obter = await client.GetAsync(
             new Uri($"/api/configuracao/precedencias-fase/{id}", UriKind.Relative));
         obter.StatusCode.Should().Be(HttpStatusCode.NotFound);
     }
 
-    private static async Task<HttpResponseMessage> EnviarPostAdmin(HttpClient client, object body)
+    private static async Task RemoverPrecedenciaAsync(HttpClient client, Guid id)
     {
-        using HttpRequestMessage request = new(HttpMethod.Post, new Uri("/api/configuracao/admin/precedencias-fase", UriKind.Relative));
-        request.Headers.Add("Authorization", $"{TestAuthHandler.AuthorizationScheme} {TestAuthHandler.TokenValue}");
-        request.Headers.Add(TestAuthHandler.RolesHeader, "plataforma-admin");
-        request.Headers.Add("Idempotency-Key", Guid.NewGuid().ToString());
-        request.Content = JsonContent.Create(body);
-        return await client.SendAsync(request);
+        using HttpRequestMessage removerRequest = new(HttpMethod.Delete, new Uri($"/api/configuracao/admin/precedencias-fase/{id}", UriKind.Relative));
+        removerRequest.Headers.Add("Authorization", $"{TestAuthHandler.AuthorizationScheme} {TestAuthHandler.TokenValue}");
+        removerRequest.Headers.Add(TestAuthHandler.RolesHeader, "plataforma-admin");
+        HttpResponseMessage remover = await client.SendAsync(removerRequest);
+        remover.StatusCode.Should().Be(HttpStatusCode.NoContent);
     }
 
-    private static async Task<HttpResponseMessage> EnviarPutAdmin(HttpClient client, Guid id, object body)
+    private static Task<HttpResponseMessage> EnviarPostAdminComJsonAsync(HttpClient client, string json) =>
+        EnviarAdminAsync(client, HttpMethod.Post, new Uri("/api/configuracao/admin/precedencias-fase", UriKind.Relative),
+            new StringContent(json, Encoding.UTF8, "application/json"));
+
+    private static Task<HttpResponseMessage> EnviarPostAdmin(HttpClient client, object body) =>
+        EnviarAdminAsync(client, HttpMethod.Post, new Uri("/api/configuracao/admin/precedencias-fase", UriKind.Relative),
+            JsonContent.Create(body));
+
+    private static Task<HttpResponseMessage> EnviarPutAdmin(HttpClient client, Guid id, object body) =>
+        EnviarAdminAsync(client, HttpMethod.Put, new Uri($"/api/configuracao/admin/precedencias-fase/{id}", UriKind.Relative),
+            JsonContent.Create(body));
+
+    private static async Task<HttpResponseMessage> EnviarAdminAsync(
+        HttpClient client, HttpMethod method, Uri uri, HttpContent content)
     {
-        using HttpRequestMessage request = new(HttpMethod.Put, new Uri($"/api/configuracao/admin/precedencias-fase/{id}", UriKind.Relative));
+        using HttpRequestMessage request = new(method, uri);
         request.Headers.Add("Authorization", $"{TestAuthHandler.AuthorizationScheme} {TestAuthHandler.TokenValue}");
         request.Headers.Add(TestAuthHandler.RolesHeader, "plataforma-admin");
         request.Headers.Add("Idempotency-Key", Guid.NewGuid().ToString());
-        request.Content = JsonContent.Create(body);
+        request.Content = content;
         return await client.SendAsync(request);
     }
 }
