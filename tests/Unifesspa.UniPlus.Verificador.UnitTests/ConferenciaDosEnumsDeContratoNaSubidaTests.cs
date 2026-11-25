@@ -8,6 +8,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 
 using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
+using Unifesspa.UniPlus.Kernel.EnumsDefeituososDeTeste;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 using Unifesspa.UniPlus.Verificador.Configuracao;
 using Unifesspa.UniPlus.Verificador.Hosting;
@@ -22,7 +23,7 @@ public sealed class ConferenciaDosEnumsDeContratoNaSubidaTests
     public async Task StartAsync_EnumsDefeituosos_FalhaComOsDoisDefeitosESemIniciarServico(bool iniciaServicosEmParalelo)
     {
         SondaDeInicioDoHost sonda = new();
-        using IHost host = ConstruirHost(ExecutavelComEnumsDefeituosos.Criar(), sonda, iniciaServicosEmParalelo);
+        using IHost host = ConstruirHost(typeof(ComCodigoRepetidoNoExecutavel).Assembly, sonda, iniciaServicosEmParalelo);
 
         Func<Task> iniciar = () => host.StartAsync();
 
@@ -30,8 +31,8 @@ public sealed class ConferenciaDosEnumsDeContratoNaSubidaTests
         CodigosDeContratoInvalidosException falha = (await iniciar.Should().ThrowExactlyAsync<CodigosDeContratoInvalidosException>()).Which;
 
         falha.Defeitos.Should().HaveCount(2)
-            .And.Contain(static d => d.StartsWith($"{ExecutavelComEnumsDefeituosos.EnumComCodigoRepetido}.", StringComparison.Ordinal))
-            .And.Contain(static d => d.StartsWith($"{ExecutavelComEnumsDefeituosos.EnumComCodigoAusente}.", StringComparison.Ordinal));
+            .And.Contain(static d => d.StartsWith($"{nameof(ComCodigoRepetidoNoExecutavel)}.", StringComparison.Ordinal))
+            .And.Contain(static d => d.StartsWith($"{nameof(ComCodigoAusenteNoExecutavel)}.", StringComparison.Ordinal));
         sonda.ChamadasDeStartAsync.Should().Be(0, "nenhum StartAsync roda depois de um StartingAsync que falha");
     }
 

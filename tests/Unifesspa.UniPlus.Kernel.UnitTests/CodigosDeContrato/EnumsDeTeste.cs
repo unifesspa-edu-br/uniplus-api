@@ -41,6 +41,15 @@ public enum ComCodigoRepetido
     Segundo = 2,
 }
 
+public enum ComValorNumericoRepetido
+{
+    [CodigoDeContrato("UM", "Um")]
+    Um = 1,
+
+    [CodigoDeContrato("OUTRO_UM", "Outro um")]
+    OutroUm = Um,
+}
+
 public enum ComEspacoNoCodigo
 {
     [CodigoDeContrato(" APARADO", "Com espaço")]

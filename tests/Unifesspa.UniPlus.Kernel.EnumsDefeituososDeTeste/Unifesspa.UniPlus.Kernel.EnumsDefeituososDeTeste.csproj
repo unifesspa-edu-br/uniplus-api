@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <IsPackable>false</IsPackable>
+    <IsTestProject>false</IsTestProject>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\shared\Unifesspa.UniPlus.Kernel\Unifesspa.UniPlus.Kernel.csproj" />
+  </ItemGroup>
+
+</Project>

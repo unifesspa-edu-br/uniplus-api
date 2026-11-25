@@ -756,6 +756,12 @@
       "unifesspa.uniplus.kernel": {
         "type": "Project"
       },
+      "unifesspa.uniplus.kernel.enumsdefeituososdeteste": {
+        "type": "Project",
+        "dependencies": {
+          "Unifesspa.UniPlus.Kernel": "[1.0.0, )"
+        }
+      },
       "unifesspa.uniplus.verificador": {
         "type": "Project",
         "dependencies": {

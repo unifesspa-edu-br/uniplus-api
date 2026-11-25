@@ -1,11 +1,12 @@
 namespace Unifesspa.UniPlus.Kernel.UnitTests.CodigosDeContrato;
 
 using System.Reflection;
-using System.Reflection.Emit;
 
 using AwesomeAssertions;
 
 using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
+using Unifesspa.UniPlus.Kernel.Domain.Enums;
+using Unifesspa.UniPlus.Kernel.EnumsDefeituososDeTeste;
 
 public sealed class EnumsDeContratoTests
 {
@@ -38,32 +39,31 @@ public sealed class EnumsDeContratoTests
     [Fact(DisplayName = "A conferência do assembly junta os defeitos de todos os enums que declaram códigos")]
     public void ConferirEnumsDe_JuntaOsDefeitosDeTodosOsEnums()
     {
-        Assembly assembly = AssemblyComEnumsDefeituosos();
+        Assembly assembly = typeof(ComCodigoRepetidoNoExecutavel).Assembly;
 
         FluentActions.Invoking(() => EnumsDeContrato.ConferirEnumsDe([assembly]))
             .Should().Throw<CodigosDeContratoInvalidosException>().Which.Defeitos
             .Should().HaveCount(2)
-            .And.Contain(d => d.Contains("Primeiro.", StringComparison.Ordinal))
-            .And.Contain(d => d.Contains("Segundo.", StringComparison.Ordinal));
+            .And.Contain(d => d.Contains(nameof(ComCodigoRepetidoNoExecutavel) + ".", StringComparison.Ordinal))
+            .And.Contain(d => d.Contains(nameof(ComCodigoAusenteNoExecutavel) + ".", StringComparison.Ordinal));
     }
 
     [Fact(DisplayName = "A conferência de vários assemblies junta numa só exceção os defeitos de todos eles")]
     public void ConferirEnumsDe_VariosAssemblies_JuntaOsDefeitosDosDois()
     {
-        Assembly primeiro = AssemblyComUmEnum("Alfa", ("A", "A", 1), ("A", "B", 2));
-        Assembly segundo = AssemblyComUmEnum("Beta", ("X", "X", 1), ("Y", "X", 2));
+        Assembly primeiro = typeof(ComCodigoRepetidoNoExecutavel).Assembly;
+        Assembly segundo = typeof(ComCodigoRepetido).Assembly;
 
         FluentActions.Invoking(() => EnumsDeContrato.ConferirEnumsDe([primeiro, segundo]))
             .Should().Throw<CodigosDeContratoInvalidosException>().Which.Defeitos
-            .Should().HaveCount(2)
-            .And.Contain(d => d.Contains("Alfa.", StringComparison.Ordinal))
-            .And.Contain(d => d.Contains("Beta.", StringComparison.Ordinal));
+            .Should().Contain(d => d.Contains(nameof(ComCodigoRepetidoNoExecutavel) + ".", StringComparison.Ordinal))
+            .And.Contain(d => d.Contains(nameof(ComCodigoRepetido) + ".", StringComparison.Ordinal));
     }
 
     [Fact(DisplayName = "O assembly recebido mais de uma vez é conferido uma vez só")]
     public void ConferirEnumsDe_AssemblyRepetido_NaoRepeteOsDefeitos()
     {
-        Assembly assembly = AssemblyComEnumsDefeituosos();
+        Assembly assembly = typeof(ComCodigoRepetidoNoExecutavel).Assembly;
 
         FluentActions.Invoking(() => EnumsDeContrato.ConferirEnumsDe([assembly, assembly]))
             .Should().Throw<CodigosDeContratoInvalidosException>().Which.Defeitos.Should().HaveCount(2);
@@ -72,7 +72,7 @@ public sealed class EnumsDeContratoTests
     [Fact(DisplayName = "A conferência do enum com códigos válidos não lança")]
     public void ConferirEnumsDe_EnumValido_NaoLanca()
     {
-        Assembly assembly = AssemblyComUmEnum("Valido", ("A", "A", 1), ("B", "B", 2));
+        Assembly assembly = typeof(ClassificacaoDeProtecao).Assembly;
 
         FluentActions.Invoking(() => EnumsDeContrato.ConferirEnumsDe([assembly])).Should().NotThrow();
     }
@@ -88,7 +88,7 @@ public sealed class EnumsDeContratoTests
     [Fact(DisplayName = "A conferência do assembly ignora o enum que não declara código algum")]
     public void ConferirEnumsDe_EnumSemCodigos_Ignora()
     {
-        Assembly assembly = AssemblyComUmEnumSemCodigos();
+        Assembly assembly = typeof(object).Assembly;
 
         FluentActions.Invoking(() => EnumsDeContrato.ConferirEnumsDe([assembly])).Should().NotThrow();
     }
@@ -96,17 +96,17 @@ public sealed class EnumsDeContratoTests
     [Fact(DisplayName = "A conferência do executável alcança e junta os defeitos dos enums de uma referência dele")]
     public void ConferirNoExecutavel_EnumDefeituosoNumaReferencia_LancaComOsDefeitos()
     {
-        Assembly executavel = EnumsCriadosEmExecucao.ExecutavelQueReferencia(typeof(Cor));
+        Assembly executavel = typeof(EnumsDeContratoTests).Assembly;
 
         FluentActions.Invoking(() => EnumsDeContrato.ConferirNoExecutavel(executavel))
             .Should().Throw<CodigosDeContratoInvalidosException>().Which.Defeitos
-            .Should().Contain(d => d.StartsWith($"{nameof(ComCodigoRepetido)}.", StringComparison.Ordinal));
+            .Should().Contain(d => d.StartsWith($"{nameof(ComCodigoRepetidoNoExecutavel)}.", StringComparison.Ordinal));
     }
 
     [Fact(DisplayName = "A conferência do executável cujas referências do Uni+ não têm defeito não lança")]
     public void ConferirNoExecutavel_ReferenciasSemDefeito_NaoLanca()
     {
-        Assembly executavel = EnumsCriadosEmExecucao.ExecutavelQueReferencia(typeof(AssembliesDoUniPlus));
+        Assembly executavel = typeof(AssembliesDoUniPlus).Assembly;
 
         FluentActions.Invoking(() => EnumsDeContrato.ConferirNoExecutavel(executavel)).Should().NotThrow();
     }
@@ -128,32 +128,4 @@ public sealed class EnumsDeContratoTests
     [Fact(DisplayName = "A pergunta sobre o tipo recusa tipo nulo")]
     public void EhEnumQueDeclaraCodigo_TipoNulo_Recusa() =>
         FluentActions.Invoking(() => EnumsDeContrato.EhEnumQueDeclaraCodigo(null!)).Should().Throw<ArgumentNullException>();
-
-    private static Assembly AssemblyComEnumsDefeituosos()
-    {
-        ModuleBuilder modulo = EnumsCriadosEmExecucao.NovoModulo();
-
-        EnumsCriadosEmExecucao.Definir(modulo, "Primeiro", ("A", "A", 1), ("A", "B", 2));
-        EnumsCriadosEmExecucao.Definir(modulo, "Segundo", ("X", "X", 1), ("Y", "X", 2));
-
-        return modulo.Assembly;
-    }
-
-    private static Assembly AssemblyComUmEnum(string nome, params (string Codigo, string Rotulo, int Valor)[] membros)
-    {
-        ModuleBuilder modulo = EnumsCriadosEmExecucao.NovoModulo();
-        EnumsCriadosEmExecucao.Definir(modulo, nome, membros);
-
-        return modulo.Assembly;
-    }
-
-    private static Assembly AssemblyComUmEnumSemCodigos()
-    {
-        ModuleBuilder modulo = EnumsCriadosEmExecucao.NovoModulo();
-        EnumBuilder semCodigos = modulo.DefineEnum("SemCodigos", TypeAttributes.Public, typeof(int));
-        semCodigos.DefineLiteral("Unico", 1);
-        semCodigos.CreateType();
-
-        return modulo.Assembly;
-    }
 }

@@ -32,6 +32,11 @@ public sealed class ConferenciaDosCodigosTests
     public void CodigoRepetido_Recusa() =>
         Defeitos<ComCodigoRepetido>().Should().ContainSingle().Which.Should().Contain("ComCodigoRepetido.Segundo").And.Contain("ComCodigoRepetido.Primeiro").And.NotContain("IGUAL");
 
+    [Fact(DisplayName = "Membro com o valor numérico de outro é recusado e cita o primeiro membro")]
+    public void ValorNumericoRepetido_Recusa() =>
+        Defeitos<ComValorNumericoRepetido>().Should().ContainSingle().Which.Should()
+            .Contain("ComValorNumericoRepetido.OutroUm").And.Contain("já é de ComValorNumericoRepetido.Um");
+
     [Fact(DisplayName = "Código com espaço no começo ou no fim é recusado")]
     public void CodigoComEspaco_Recusa()
     {
@@ -55,17 +60,6 @@ public sealed class ConferenciaDosCodigosTests
         defeitos.Count(d => d.Contains("espaço", StringComparison.Ordinal)).Should().Be(2);
         defeitos.Count(d => d.Contains("maiúscula", StringComparison.Ordinal)).Should().Be(2);
         defeitos.Should().ContainSingle(d => d.Contains("ComEspacoERepetido.Segundo", StringComparison.Ordinal) && d.Contains("já é de ComEspacoERepetido.Primeiro", StringComparison.Ordinal)).Which.Should().NotContain(" IGUAL");
-    }
-
-    [Fact(DisplayName = "Dois membros com o mesmo valor numérico são recusados")]
-    public void ValorNumericoRepetido_Recusa()
-    {
-        Type enumeracao = EnumsCriadosEmExecucao.Definir(
-            EnumsCriadosEmExecucao.NovoModulo(), "ComValorRepetido", ("UM", "Um", 1), ("OUTRO_UM", "Outro um", 1));
-
-        FluentActions.Invoking(() => EnumsDeContrato.Declarados(enumeracao))
-            .Should().Throw<CodigosDeContratoInvalidosException>().Which.Defeitos
-            .Should().ContainSingle().Which.Should().Contain("ComValorRepetido.Membro1").And.Contain("ComValorRepetido.Membro0");
     }
 
     [Fact(DisplayName = "Rótulo vazio é recusado")]
