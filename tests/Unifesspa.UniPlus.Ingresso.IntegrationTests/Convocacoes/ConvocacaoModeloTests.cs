@@ -35,6 +35,6 @@ public sealed class ConvocacaoModeloTests
 
         ConstructorBinding binding = tipo.ConstructorBinding.Should().BeOfType<ConstructorBinding>().Subject;
 
-        binding.Constructor.GetParameters().Should().BeEmpty();
+        binding.ParameterBindings.Should().BeEmpty();
     }
 }
