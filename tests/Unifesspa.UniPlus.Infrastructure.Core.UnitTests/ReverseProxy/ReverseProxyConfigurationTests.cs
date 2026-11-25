@@ -28,7 +28,8 @@ public sealed class ReverseProxyConfigurationTests
     {
         // O caminho que importa: sem esta recusa, qualquer cliente que alcance a aplicação
         // decide o scheme das URLs que ela emite só mandando o header.
-        HttpContext context = await ProcessAsync(
+        HttpContext context = await ProcessWithOptionsAsync(
+            ResolveForwardedHeaders(TrustedNetwork),
             remoteIp: "203.0.113.9",
             forwardedProto: "https");
 
@@ -39,7 +40,8 @@ public sealed class ReverseProxyConfigurationTests
     [Fact]
     public async Task UseReverseProxyConfiguration_HeaderDaTrustedNetwork_EHonrado()
     {
-        HttpContext context = await ProcessAsync(
+        HttpContext context = await ProcessWithOptionsAsync(
+            ResolveForwardedHeaders(TrustedNetwork),
             remoteIp: "10.42.0.7",
             forwardedProto: "https");
 
@@ -50,7 +52,8 @@ public sealed class ReverseProxyConfigurationTests
     [Fact]
     public async Task UseReverseProxyConfiguration_SemHeaderEncaminhado_MantemOSchemeDaConexao()
     {
-        HttpContext context = await ProcessAsync(
+        HttpContext context = await ProcessWithOptionsAsync(
+            ResolveForwardedHeaders(TrustedNetwork),
             remoteIp: "10.42.0.7",
             forwardedProto: null);
 
@@ -113,7 +116,8 @@ public sealed class ReverseProxyConfigurationTests
         // Socket dual-mode entrega o peer IPv4 como ::ffff:10.42.0.7. Se a comparação com a
         // rede declarada fosse por família de endereço, a rede IPv4 não casaria e a correção
         // seria inócua justamente onde ela precisa valer.
-        HttpContext context = await ProcessAsync(
+        HttpContext context = await ProcessWithOptionsAsync(
+            ResolveForwardedHeaders(TrustedNetwork),
             remoteIp: "::ffff:10.42.0.7",
             forwardedProto: "https");
 
@@ -156,48 +160,31 @@ public sealed class ReverseProxyConfigurationTests
             because: "lista vazia é negação explícita, não ausência de filtro");
     }
 
-    private static async Task<HttpContext> ProcessAsync(string remoteIp, string? forwardedProto)
-    {
-        IOptions<ForwardedHeadersOptions> options =
-            Options.Create(ResolveForwardedHeaders(TrustedNetwork));
-
-        DefaultHttpContext context = new();
-        context.Request.Scheme = "http";
-        context.Connection.RemoteIpAddress = IPAddress.Parse(remoteIp);
-        if (forwardedProto is not null)
-        {
-            context.Request.Headers["X-Forwarded-Proto"] = forwardedProto;
-        }
-
-        ForwardedHeadersMiddleware middleware = new(
-            next: _ => Task.CompletedTask,
-            loggerFactory: NullLoggerFactory.Instance,
-            options: options);
-
-        await middleware.Invoke(context);
-
-        return context;
-    }
-
     private static async Task<HttpContext> ProcessWithOptionsAsync(
         ForwardedHeadersOptions options,
         string remoteIp,
         string? forwardedProto)
     {
-        DefaultHttpContext context = new();
-        context.Request.Scheme = "http";
-        context.Connection.RemoteIpAddress = IPAddress.Parse(remoteIp);
-        if (forwardedProto is not null)
-        {
-            context.Request.Headers["X-Forwarded-Proto"] = forwardedProto;
-        }
-
+        DefaultHttpContext context = ContextoDaConexao(remoteIp, forwardedProto);
         ForwardedHeadersMiddleware middleware = new(
             next: _ => Task.CompletedTask,
             loggerFactory: NullLoggerFactory.Instance,
             options: Options.Create(options));
 
         await middleware.Invoke(context);
+
+        return context;
+    }
+
+    private static DefaultHttpContext ContextoDaConexao(string remoteIp, string? forwardedProto)
+    {
+        DefaultHttpContext context = new();
+        context.Request.Scheme = "http";
+        context.Connection.RemoteIpAddress = IPAddress.Parse(remoteIp);
+        if (forwardedProto is not null)
+        {
+            context.Request.Headers["X-Forwarded-Proto"] = forwardedProto;
+        }
 
         return context;
     }
@@ -224,21 +211,25 @@ public sealed class ReverseProxyConfigurationTests
 
     private static ServiceProvider BuildProvider(string environmentName, params string[] trustedNetworks)
     {
-        Dictionary<string, string?> values = [];
-        for (int i = 0; i < trustedNetworks.Length; i++)
-        {
-            values[$"{ReverseProxyOptions.SectionName}:TrustedNetworks:{i}"] = trustedNetworks[i];
-        }
-
-        IConfiguration configuration = new ConfigurationBuilder()
-            .AddInMemoryCollection(values)
-            .Build();
-
+        IConfiguration configuration = ConfiguracaoDasRedes(trustedNetworks);
         IHostEnvironment environment = Substitute.For<IHostEnvironment>();
         environment.EnvironmentName.Returns(environmentName);
 
         return new ServiceCollection()
             .AddReverseProxyConfiguration(configuration, environment)
             .BuildServiceProvider();
+    }
+
+    private static IConfiguration ConfiguracaoDasRedes(string[] trustedNetworks)
+    {
+        Dictionary<string, string?> values = [];
+        for (int i = 0; i < trustedNetworks.Length; i++)
+        {
+            values[$"{ReverseProxyOptions.SectionName}:TrustedNetworks:{i}"] = trustedNetworks[i];
+        }
+
+        return new ConfigurationBuilder()
+            .AddInMemoryCollection(values)
+            .Build();
     }
 }
