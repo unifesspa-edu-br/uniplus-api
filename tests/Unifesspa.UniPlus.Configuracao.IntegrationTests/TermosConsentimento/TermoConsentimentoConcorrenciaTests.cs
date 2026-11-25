@@ -55,48 +55,64 @@ public sealed class TermoConsentimentoConcorrenciaTests
     {
         MonolitoApiFactory api = _fixture.Factory;
 
-        Guid id;
-        await using (AsyncServiceScope setupScope = api.Services.CreateAsyncScope())
-        {
-            UniPlusDbContext db = setupScope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
-            TermoConsentimento criado = TermoConsentimento.Criar($"Termo LGPD {Guid.NewGuid():N}", null, null, null).Value!;
-            db.TermosConsentimento.Add(criado);
-            await db.SaveChangesAsync();
-            id = criado.Id;
-        }
+        Guid id = await CriarTermoAsync(api);
 
+        await RemoverDuranteEscritaConcorrenteAsync(api, id);
+    }
+
+    private static async Task RemoverDuranteEscritaConcorrenteAsync(MonolitoApiFactory api, Guid id)
+    {
         await using AsyncServiceScope scopeB = api.Services.CreateAsyncScope();
         UniPlusDbContext dbB = scopeB.ServiceProvider.GetRequiredService<UniPlusDbContext>();
         await using IDbContextTransaction txB = await dbB.Database.BeginTransactionAsync();
 
-        // Trava a linha (lock de escrita do Postgres) sem commitar ainda —
-        // qualquer outra transação que tente escrever na mesma linha bloqueia
-        // aqui até txB liberar.
-        await dbB.Database.ExecuteSqlInterpolatedAsync(
-            $"UPDATE configuracao.termos_de_consentimento SET updated_at = now() WHERE id = {id}");
-        int pidDbB = await ConcorrenciaTestHelpers.GetConnectionPidAsync(dbB);
+        int pidDbB = await BloquearTermoAsync(dbB, id);
 
+        await ConferirRemocaoBloqueadaAsync(api, id, txB, pidDbB);
+    }
+
+    private static async Task ConferirRemocaoBloqueadaAsync(
+        MonolitoApiFactory api, Guid id, IDbContextTransaction txB, int pidDbB)
+    {
         await using AsyncServiceScope scopeA = api.Services.CreateAsyncScope();
         IMessageBus busA = scopeA.ServiceProvider.GetRequiredService<IMessageBus>();
         Task<Result> taskA = busA.InvokeAsync<Result>(new RemoverTermoConsentimentoCommand(id));
-
-        // Prova direta (não uma aposta de tempo) de que busA já leu o xmin
-        // antigo e está bloqueado tentando escrever: poll em pg_stat_activity
-        // até aparecer um backend em wait_event_type='Lock' que não é nem a
-        // conexão de poll nem dbB (issue #1031 — identificação por PID, não
-        // por texto de query).
         await ConcorrenciaTestHelpers.WaitForBlockedBackendAsync(api, taskA, [pidDbB]);
-
         await txB.CommitAsync();
 
-        Func<Task> act = async () => await taskA;
+        await ConferirExcecaoDeConcorrenciaAsync(taskA);
+        await ConferirTermoNaoRemovidoAsync(api, id);
+    }
 
+    private static async Task<Guid> CriarTermoAsync(MonolitoApiFactory api)
+    {
+        await using AsyncServiceScope scope = api.Services.CreateAsyncScope();
+        UniPlusDbContext db = scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
+        TermoConsentimento criado = TermoConsentimento.Criar($"Termo LGPD {Guid.NewGuid():N}", null, null, null).Value!;
+        db.TermosConsentimento.Add(criado);
+        await db.SaveChangesAsync();
+        return criado.Id;
+    }
+
+    private static async Task<int> BloquearTermoAsync(UniPlusDbContext db, Guid id)
+    {
+        await db.Database.ExecuteSqlInterpolatedAsync(
+            $"UPDATE configuracao.termos_de_consentimento SET updated_at = now() WHERE id = {id}");
+        return await ConcorrenciaTestHelpers.GetConnectionPidAsync(db);
+    }
+
+    private static async Task ConferirExcecaoDeConcorrenciaAsync(Task<Result> tarefa)
+    {
+        Func<Task> act = async () => await tarefa;
         await act.Should().ThrowAsync<DbUpdateConcurrencyException>(
             "o xmin lido pelo handler ficou obsoleto assim que txB commitou a própria escrita na mesma linha");
+    }
 
-        await using AsyncServiceScope readScope = api.Services.CreateAsyncScope();
-        UniPlusDbContext readDb = readScope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
-        TermoConsentimento persistido = await readDb.TermosConsentimento.SingleAsync(t => t.Id == id);
+    private static async Task ConferirTermoNaoRemovidoAsync(MonolitoApiFactory api, Guid id)
+    {
+        await using AsyncServiceScope scope = api.Services.CreateAsyncScope();
+        UniPlusDbContext db = scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
+        TermoConsentimento persistido = await db.TermosConsentimento.SingleAsync(t => t.Id == id);
         persistido.IsDeleted.Should().BeFalse(
             "o handler perdeu a corrida e não deve ter removido nada — nenhuma segunda tentativa do outbox deve ter reaplicado a remoção");
     }

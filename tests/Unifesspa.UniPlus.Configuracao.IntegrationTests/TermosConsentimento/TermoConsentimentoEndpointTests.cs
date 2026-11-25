@@ -9,7 +9,8 @@ using System.Text.Json;
 using AwesomeAssertions;
 
 using Unifesspa.UniPlus.Configuracao.IntegrationTests.Infrastructure;
-using Unifesspa.UniPlus.IntegrationTests.Fixtures.Authentication;
+
+using static Unifesspa.UniPlus.Configuracao.IntegrationTests.TermosConsentimento.RequisicoesDeTermoConsentimento;
 
 /// <summary>
 /// Smoke + caminho de escrita dos endpoints de <c>TermoConsentimento</c>
@@ -84,6 +85,11 @@ public sealed class TermoConsentimentoEndpointTests
         HttpResponseMessage obter = await client.GetAsync(new Uri($"{ColecaoPath}/{id}", UriKind.Relative));
         obter.StatusCode.Should().Be(HttpStatusCode.OK);
 
+        await ConferirRascunhoCriadoAsync(obter);
+    }
+
+    private static async Task ConferirRascunhoCriadoAsync(HttpResponseMessage obter)
+    {
         using JsonDocument doc = JsonDocument.Parse(await obter.Content.ReadAsStringAsync());
         JsonElement root = doc.RootElement;
         root.GetProperty("revisado").GetBoolean().Should().BeFalse("todo termo nasce EM_ELABORACAO");
@@ -113,24 +119,35 @@ public sealed class TermoConsentimentoEndpointTests
     public async Task Listar_ComBusca_PreservaQueryParamNoLinkNext()
     {
         string token = Guid.NewGuid().ToString("N")[..10];
-        // Duas ocorrências do token → com limit=1 há próxima página (rel=next).
-        await CriarTermoComNome(_fixture.Factory.CreateClient(), $"Termo {token} Um");
-        await CriarTermoComNome(_fixture.Factory.CreateClient(), $"Termo {token} Dois");
-        await CriarTermoComNome(_fixture.Factory.CreateClient(), $"Termo Fora Do Filtro {Guid.NewGuid():N}");
+        await CriarTermosParaPaginacaoAsync(token);
 
         using HttpClient client = _fixture.Factory.CreateClient();
         HttpResponseMessage primeira = await client.GetAsync(
             new Uri($"{ColecaoPath}?q={token}&limit=1", UriKind.Relative));
 
+        string next = ConferirProximaPagina(primeira, token);
+        await ConferirFiltroNaProximaPaginaAsync(client, next, token);
+    }
+
+    private async Task CriarTermosParaPaginacaoAsync(string token)
+    {
+        await CriarTermoComNome(_fixture.Factory.CreateClient(), $"Termo {token} Um");
+        await CriarTermoComNome(_fixture.Factory.CreateClient(), $"Termo {token} Dois");
+        await CriarTermoComNome(_fixture.Factory.CreateClient(), $"Termo Fora Do Filtro {Guid.NewGuid():N}");
+    }
+
+    private static string ConferirProximaPagina(HttpResponseMessage primeira, string token)
+    {
         primeira.StatusCode.Should().Be(HttpStatusCode.OK);
         string? next = LerLinkRel(primeira, "next");
-        // Extrai só o link rel="next" (não a string inteira do header, que
-        // também contém rel="self") — prova que o filtro viaja especificamente
-        // no link seguido pelo cliente ao paginar, não só no link atual.
         next.Should().NotBeNull("limit=1 com 2 itens filtrados deve emitir próxima página");
         next.Should().Contain($"q={token}");
+        return next!;
+    }
 
-        HttpResponseMessage segunda = await client.GetAsync(new Uri(next!, UriKind.Absolute));
+    private static async Task ConferirFiltroNaProximaPaginaAsync(HttpClient client, string next, string token)
+    {
+        HttpResponseMessage segunda = await client.GetAsync(new Uri(next, UriKind.Absolute));
         segunda.StatusCode.Should().Be(HttpStatusCode.OK);
         IReadOnlyList<string> nomes = await LerNomesAsync(segunda);
         nomes.Should().OnlyContain(n => n.Contains(token, StringComparison.Ordinal),
@@ -144,23 +161,21 @@ public sealed class TermoConsentimentoEndpointTests
             return null;
         }
 
-        string header = links.Single();
-        foreach (string parte in header.Split(", ", StringSplitOptions.RemoveEmptyEntries))
-        {
-            if (!parte.Contains($"rel=\"{rel}\"", StringComparison.Ordinal))
-            {
-                continue;
-            }
+        return links.Single().Split(", ", StringSplitOptions.RemoveEmptyEntries)
+            .Select(parte => LerEnderecoDoLink(parte, rel))
+            .FirstOrDefault(endereco => endereco is not null);
+    }
 
-            int inicio = parte.IndexOf('<', StringComparison.Ordinal) + 1;
-            int fim = parte.IndexOf('>', StringComparison.Ordinal);
-            if (inicio > 0 && fim > inicio)
-            {
-                return parte[inicio..fim];
-            }
+    private static string? LerEnderecoDoLink(string parte, string rel)
+    {
+        if (!parte.Contains($"rel=\"{rel}\"", StringComparison.Ordinal))
+        {
+            return null;
         }
 
-        return null;
+        int inicio = parte.IndexOf('<', StringComparison.Ordinal) + 1;
+        int fim = parte.IndexOf('>', StringComparison.Ordinal);
+        return inicio > 0 && fim > inicio ? parte[inicio..fim] : null;
     }
 
     [Fact(DisplayName = "GET coleção ?q= acima do limite de tamanho retorna 400")]
@@ -185,6 +200,11 @@ public sealed class TermoConsentimentoEndpointTests
         HttpResponseMessage listar = await client.GetAsync(new Uri(ColecaoPath, UriKind.Relative));
 
         listar.StatusCode.Should().Be(HttpStatusCode.OK);
+        await ConferirListagemSemVersoesAsync(listar);
+    }
+
+    private static async Task ConferirListagemSemVersoesAsync(HttpResponseMessage listar)
+    {
         using JsonDocument doc = JsonDocument.Parse(await listar.Content.ReadAsStringAsync());
         JsonElement itens = doc.RootElement;
         itens.GetArrayLength().Should().BeGreaterThan(0);
@@ -326,37 +346,6 @@ public sealed class TermoConsentimentoEndpointTests
         termo.GetProperty("versoes")[0].TryGetProperty("promovidaPor", out _).Should().BeFalse();
     }
 
-    private static object CorpoValido() => new
-    {
-        nome = $"Termo LGPD {Guid.NewGuid():N}",
-        textoRascunho = "Texto do termo",
-        baseLegalRascunho = "Lei 13.709/2018",
-        formaAceiteRascunho = "REGISTRO_SEM_ENDERECO_IP",
-    };
-
-    private static object CorpoVazio() => new
-    {
-        nome = $"Termo em branco {Guid.NewGuid():N}",
-        textoRascunho = (string?)null,
-        baseLegalRascunho = (string?)null,
-        formaAceiteRascunho = (string?)null,
-    };
-
-    private static async Task<Guid> CriarTermo(HttpClient client, object corpo)
-    {
-        HttpResponseMessage criar = await EnviarAdmin(client, HttpMethod.Post, AdminPath, corpo);
-        criar.StatusCode.Should().Be(HttpStatusCode.Created);
-        return await criar.Content.ReadFromJsonAsync<Guid>();
-    }
-
-    private static Task<Guid> CriarTermoComNome(HttpClient client, string nome) => CriarTermo(client, new
-    {
-        nome,
-        textoRascunho = (string?)null,
-        baseLegalRascunho = (string?)null,
-        formaAceiteRascunho = (string?)null,
-    });
-
     private static async Task<IReadOnlyList<string>> LerNomesAsync(HttpResponseMessage response)
     {
         string body = await response.Content.ReadAsStringAsync();
@@ -382,22 +371,4 @@ public sealed class TermoConsentimentoEndpointTests
         return doc.RootElement.GetProperty("code").GetString();
     }
 
-    private static async Task<HttpResponseMessage> EnviarAdmin(HttpClient client, HttpMethod method, string path, object? body)
-    {
-        using HttpRequestMessage request = new(method, new Uri(path, UriKind.Relative));
-        request.Headers.Add("Authorization", $"{TestAuthHandler.AuthorizationScheme} {TestAuthHandler.TokenValue}");
-        request.Headers.Add(TestAuthHandler.RolesHeader, "plataforma-admin");
-        request.Headers.Add("Idempotency-Key", Guid.NewGuid().ToString());
-        request.Content = JsonContent.Create(body);
-        return await client.SendAsync(request);
-    }
-
-    private static async Task<HttpResponseMessage> EnviarDeleteAdmin(HttpClient client, Guid id)
-    {
-        using HttpRequestMessage request = new(
-            HttpMethod.Delete, new Uri($"{AdminPath}/{id}", UriKind.Relative));
-        request.Headers.Add("Authorization", $"{TestAuthHandler.AuthorizationScheme} {TestAuthHandler.TokenValue}");
-        request.Headers.Add(TestAuthHandler.RolesHeader, "plataforma-admin");
-        return await client.SendAsync(request);
-    }
 }
