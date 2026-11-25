@@ -15,9 +15,9 @@ using Unifesspa.UniPlus.Selecao.API.Rotinas;
 using Unifesspa.UniPlus.Selecao.Application.Commands.DocumentosDaInscricao;
 using Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
 using Unifesspa.UniPlus.Selecao.Application.DTOs;
-using Unifesspa.UniPlus.Selecao.Application.Mappings;
 using Unifesspa.UniPlus.Selecao.Application.Permissoes;
 using Unifesspa.UniPlus.Selecao.Application.Queries.AtosDoProcesso;
+using Unifesspa.UniPlus.Selecao.Application.Registro;
 using Unifesspa.UniPlus.Selecao.Infrastructure;
 using Unifesspa.UniPlus.Selecao.Infrastructure.DocumentoDaConfiguracao;
 

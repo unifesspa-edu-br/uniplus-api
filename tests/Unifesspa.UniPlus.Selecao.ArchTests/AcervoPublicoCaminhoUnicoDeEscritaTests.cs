@@ -25,7 +25,7 @@ public sealed class AcervoPublicoCaminhoUnicoDeEscritaTests
     /// </summary>
     private const string CaminhoPrevisto =
         @"^Unifesspa\.UniPlus\.Selecao\.Application\.(Commands\.ProcessosSeletivos\.(CopiaDosDocumentosDoAto|AcervoDaDivulgacao)"
-        + @"|Mappings\.SelecaoApplicationServiceRegistration)(\+|$)";
+        + @"|Registro\.SelecaoApplicationServiceRegistration)(\+|$)";
 
     private static readonly Architecture Arquitetura = ArquiteturaDaSelecao.Produto;
 
