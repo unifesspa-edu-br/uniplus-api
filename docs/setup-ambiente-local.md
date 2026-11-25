@@ -64,7 +64,7 @@ O `docker compose up` já sobe com uma base pronta, restaurada na primeira subid
 e a base de CEP no Geo. Não há passo extra além de `cp .env.example .env`.
 
 - **Processos:** `psm-teste-multicurso-2027` (56 inscrições das personas) e `psm-2027` (Medicina, sem inscrições). A inscrição de `psm-2027` vai de
-  11/11/2026 às 00:00 até 26/11/2026 às 23:59:59, e a de `psm-teste-multicurso-2027`, de 11/11/2026 às 00:00 até 25/11/2026 às 00:38:46, horário de Belém.
+  24/11/2026 às 00:00 até 25/12/2026 às 23:59:59, e a de `psm-teste-multicurso-2027`, de 12/11/2026 às 00:00 até 25/11/2026 às 04:27:19, horário de Belém.
 - **Pessoas:** as 60 personas fictícias do portal, com e-mail `{usuário}-uniplus-dev@unifesspa.edu.br` (os avisos vão só ao Mailpit) e a
   senha de desenvolvimento do `.env.example`. Gestores de acessos: `diogo.souza` e `leandro.viana`; Representantes do controlador:
   `betina.neves` e `caroline.jesus`; Gestor de proteção de dados: `marlene.martins`.
@@ -133,13 +133,11 @@ anterior: quem segue estes passos não precisa de nenhum dado gravado antes.
    | Consulta sem dados pessoais | unidade CEPS | `erick.ramos` |
    | Gestor de proteção de dados (já vem da migration) | instituição | `marlene.martins` |
 
-3. **Criar os dois processos de exemplo,** com a persona administradora e, em cada um, o período de inscrição (data, hora e fuso de Belém):
+3. **Criar os dois processos de exemplo,** com a persona administradora. No multicurso, informe o período de inscrição com data, hora e fuso de Belém:
    ```bash
    export ADMIN_USER=diogo.souza
-   # Medicina: a inscrição abriu há 13 dias e fecha daqui a 2 dias.
-   INICIO_INSCRICAO="$(TZ=America/Belem date -d '13 days ago' +%Y-%m-%dT00:00:00-03:00)" \
-   FIM_INSCRICAO="$(TZ=America/Belem date -d '2 days' +%Y-%m-%dT23:59:59-03:00)" \
-     scripts/roteiro-processo-teste-inscricao.sh
+   # Medicina: a inscrição abre ontem e fecha 31 dias depois do início, conforme a minuta.
+   scripts/roteiro-processo-teste-inscricao.sh
    # Multicurso: a inscrição fecha depois de as personas se inscreverem (aqui, 40 minutos; aumente se o seu computador for lento:
    # o roteiro para com erro se o período fechar antes da última inscrição).
    INICIO_INSCRICAO="$(TZ=America/Belem date -d '13 days ago' +%Y-%m-%dT00:00:00-03:00)" \
@@ -160,7 +158,7 @@ anterior: quem segue estes passos não precisa de nenhum dado gravado antes.
    só é gerado de novo se o banco do Geo mudou.
 5. **Prova em projeto limpo.** Derrube o ambiente com `docker compose -p base-local down -v`, e então rode `cp .env.example .env` e
    `docker compose up` numa cópia limpa do repositório, com os arquivos novos e outro nome de projeto. Confira e anexe ao PR:
-   - a API responde `/health/ready` com 200, e o Geo responde (um CEP conhecido, como `/api/cep/79096730`, devolve 200 com o token de uma persona);
+   - a API responde `/health/ready` com 200, e o Geo responde em `http://localhost:5400/api/cep/79096730` com 200 e o token de uma persona (porta `GEO_API_PORT`; a API do Uni+ na porta 5200 não tem essa rota);
    - a migration em `plataforma."__EFMigrationsHistory"` é a da branch;
    - os 60 acessos de teste existem no Keycloak, e o login de uma persona funciona;
    - os perfis de operação existem, cada um com ao menos uma concessão ativa, e `diogo.souza` tem o perfil Gestor de acessos;
