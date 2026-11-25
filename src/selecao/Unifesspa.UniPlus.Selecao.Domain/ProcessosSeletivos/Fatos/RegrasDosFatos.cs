@@ -58,7 +58,7 @@ public static class RegrasDosFatos
         return coletado is { TipoDeCampo: not TipoDeCampo.SimOuNao } || derivado is { Booleano: false }
             ? new DomainError(
                 ProcessoSeletivoErrorCodes.FatoElegibilidadeNaoBooleano,
-                $"O fato '{fato}', que decide quem recebe o acréscimo, precisa ser booleano.")
+                "O fato que decide quem recebe o acréscimo precisa ser booleano.")
             : null;
     }
 
@@ -68,10 +68,10 @@ public static class RegrasDosFatos
                 && string.Equals(f.FatoCodigo, fato, StringComparison.Ordinal))
             ? new DomainError(
                 ProcessoSeletivoErrorCodes.FatoElegibilidadeDeMembroDeGrupo,
-                $"O fato '{fato}', que decide quem recebe o acréscimo, é campo de membro de um grupo do formulário de inscrição; o acréscimo é decidido por um fato do candidato.")
+                "O fato que decide quem recebe o acréscimo é campo de membro de um grupo do formulário de inscrição; o acréscimo é decidido por um fato do candidato.")
             : new DomainError(
                 ProcessoSeletivoErrorCodes.FatoElegibilidadeForaDoProcesso,
-                $"O fato '{fato}', que decide quem recebe o acréscimo, não é campo do formulário de inscrição nem derivado pelo processo.");
+                "O fato que decide quem recebe o acréscimo não é campo do formulário de inscrição nem derivado pelo processo.");
 
     // Sem o formulário de inscrição na fase dele, a pendência é a do próprio formulário.
     private static DomainError? ConferirMomentoEmQueOFatoEConhecido(
@@ -90,7 +90,7 @@ public static class RegrasDosFatos
             new OrigensDoFatoNaConfiguracaoDeclarada(configuracao, pontoResolucaoPorFato, membroPorAgregado), ordem, fato);
 
         return conhecida.Recusa
-            ?? RecusaDoFatoConhecidoDepoisDaInscricao(ordem, conhecida, faseDaInscricao, fato)
+            ?? RecusaDoFatoConhecidoDepoisDaInscricao(ordem, conhecida, faseDaInscricao)
             ?? RecusaDoFatoSoDaIsencao(configuracao, fato, membroPorAgregado);
     }
 
@@ -100,17 +100,17 @@ public static class RegrasDosFatos
             : null;
 
     private static DomainError? RecusaDoFatoConhecidoDepoisDaInscricao(
-        OrdemDoCronograma ordem, FaseConhecida conhecida, FaseCronograma faseDaInscricao, string fato) =>
+        OrdemDoCronograma ordem, FaseConhecida conhecida, FaseCronograma faseDaInscricao) =>
         conhecida.Fase is { } fase && ordem.Posterior(fase, faseDaInscricao)
             ? new DomainError(
                 ProcessoSeletivoErrorCodes.FatoElegibilidadeConhecidoDepoisDaInscricao,
-                $"O fato '{fato}', que decide quem recebe o acréscimo, só é conhecido na fase '{fase.Codigo}', depois da inscrição.")
+                $"O fato que decide quem recebe o acréscimo só é conhecido na fase '{fase.Codigo}', depois da inscrição.")
             : null;
 
     private static DomainError? RecusaDoFatoSoDaIsencao(ConfiguracaoDeclarada configuracao, string fato, IReadOnlyDictionary<string, string> membroPorAgregado) =>
         FaseEfetivaDoFato.DependeDeFatoSoDaIsencao(configuracao, fato, membroPorAgregado, [])
             ? new DomainError(
                 ProcessoSeletivoErrorCodes.FatoElegibilidadeDaIsencao,
-                $"O fato '{fato}', que decide quem recebe o acréscimo, depende do que só o formulário de isenção coleta.")
+                "O fato que decide quem recebe o acréscimo depende do que só o formulário de isenção coleta.")
             : null;
 }

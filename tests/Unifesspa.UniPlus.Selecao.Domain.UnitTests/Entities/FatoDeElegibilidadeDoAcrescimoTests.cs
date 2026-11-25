@@ -135,6 +135,19 @@ public sealed class FatoDeElegibilidadeDoAcrescimoTests
         RegrasDosFatos.ConferirFatoDeElegibilidade(processo.Declaracao(), SemCatalogo, SemCatalogo)!.Code.Should().Be(ProcessoSeletivoErrorCodes.FatoElegibilidadeForaDoProcesso);
     }
 
+    [Theory]
+    [InlineData(" PEDE_O_ACRESCIMO ")]
+    [InlineData("pede_o_acrescimo")]
+    public void FatoDeElegibilidade_Inexato_Recusa(string codigo)
+    {
+        ProcessoSeletivo processo = Processo();
+        Aplicar(processo, codigo);
+
+        DomainError recusa = RegrasDosFatos.ConferirFatoDeElegibilidade(processo.Declaracao(), SemCatalogo, SemCatalogo)!;
+        recusa.Code.Should().Be(ProcessoSeletivoErrorCodes.FatoElegibilidadeForaDoProcesso);
+        recusa.Message.Should().NotContain(codigo);
+    }
+
     [Fact(DisplayName = "O campo de membro de grupo não decide o acréscimo, que é decidido por um fato do candidato")]
     public void CampoDeMembroDeGrupo_Recusa()
     {
