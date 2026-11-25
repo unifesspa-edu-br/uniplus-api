@@ -126,10 +126,9 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
         ArgumentException.ThrowIfNullOrWhiteSpace(fatoCodigo);
         ArgumentNullException.ThrowIfNull(opcoes);
 
-        string fato = fatoCodigo.Trim();
         return Editar(
-            () => RegrasDasOpcoesDeclaradas.ConferirSubstituicao(Declaracao(), fato, opcoes, agregadosDoFato).Com(opcoes),
-            novas => SubstituirOnde(_opcoesDeclaradas, o => string.Equals(o.FatoCodigo, fato, StringComparison.Ordinal), novas));
+            () => RegrasDasOpcoesDeclaradas.ConferirSubstituicao(Declaracao(), fatoCodigo, opcoes, agregadosDoFato).Com(opcoes),
+            novas => SubstituirOnde(_opcoesDeclaradas, o => string.Equals(o.FatoCodigo, fatoCodigo, StringComparison.Ordinal), novas));
     }
 
     private readonly List<ConfiguracaoDerivacaoFato> _regrasDerivacao = [];

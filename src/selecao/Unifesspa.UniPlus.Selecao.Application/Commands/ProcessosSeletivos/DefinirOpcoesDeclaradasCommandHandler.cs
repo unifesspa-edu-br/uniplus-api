@@ -56,7 +56,7 @@ public static class DefinirOpcoesDeclaradasCommandHandler
             return Result.ValidationFailure(opcoes.Errors);
         }
 
-        FatoCandidatoView? fato = await fatoCandidatoReader.ObterPorCodigoAsync(command.FatoCodigo.Trim(), cancellationToken).ConfigureAwait(false);
+        FatoCandidatoView? fato = await fatoCandidatoReader.ObterPorCodigoAsync(command.FatoCodigo, cancellationToken).ConfigureAwait(false);
         return RecusaDoFato(fato) ?? await GravarAsync(processo, fato!, opcoes.Value!, fatoCandidatoReader, unitOfWork, cancellationToken).ConfigureAwait(false);
     }
 
@@ -82,7 +82,7 @@ public static class DefinirOpcoesDeclaradasCommandHandler
         return VinculoDeFato.Usa(fato.Binding, MecanismoDoVinculo.ResumoDeGrupo)
             ? Result.Failure(new DomainError(
                 OpcaoDeclaradaFatoErrorCodes.FonteNaoEhDoProcesso,
-                $"O fato '{fato.Codigo}' é agregado sobre grupo repetível: as opções dele são as do fato de membro."))
+                "O fato é agregado sobre grupo repetível: as opções dele são as do fato de membro."))
             : null;
     }
 
