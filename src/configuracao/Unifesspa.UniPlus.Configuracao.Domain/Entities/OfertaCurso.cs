@@ -9,7 +9,7 @@ using Unifesspa.UniPlus.Kernel.Results;
 
 /// <summary>
 /// Oferta de Curso — a instância <b>regulatória</b> da oferta acadêmica
-/// (story #588, issue #749, ADR-0066): liga um <see cref="Curso"/> (matriz
+/// (ADR-0066): liga um <see cref="Curso"/> (matriz
 /// curricular pura) a um <see cref="LocalOferta"/> e à unidade ofertante
 /// (instituto/faculdade, snapshot-copy — ADR-0061), carregando os atributos
 /// que variam por campus: código da oferta, código e-MEC, código no sistema acadêmico,
@@ -90,7 +90,7 @@ public sealed class OfertaCurso : SoftDeletableEntity, IAuditableEntity
     /// <summary>Código e-MEC da oferta por campus-sede (opcional).</summary>
     public string? CodigoEmec { get; private set; }
 
-    /// <summary>Código no sistema acadêmico (nome vendor-neutral, opcional).</summary>
+    /// <summary>Código opcional no sistema acadêmico; o nome não depende do fornecedor do sistema acadêmico.</summary>
     public string? CodigoNoSistemaAcademico { get; private set; }
 
     /// <summary>Teto de vagas anuais autorizadas no e-MEC (≥ 0) — não são vagas de certame.</summary>

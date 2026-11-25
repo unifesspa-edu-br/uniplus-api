@@ -17,9 +17,8 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// <remarks>
 /// <para>O calendário nasce completo em <see cref="Criar"/> e admite inclusão pontual de
 /// data via <see cref="IncluirDiaNaoUtil"/> — correção ou complemento antes de o
-/// calendário ser consolidado em um Processo Seletivo publicado (decisão de PO,
-/// api#1458). A operação preserva <see cref="Id"/> e <see cref="VersaoDoCalendario"/> e
-/// nunca remove/edita data já cadastrada. Processos Seletivos já publicados não são
+/// calendário ser consolidado em um Processo Seletivo publicado. A operação preserva
+/// <see cref="Id"/> e <see cref="VersaoDoCalendario"/> e nunca remove ou edita data já cadastrada. Processos Seletivos já publicados não são
 /// afetados: eles carregam cópia por valor do calendário congelada na publicação
 /// (padrão snapshot-copy, ADR-0061), sem referência viva a este agregado.</para>
 /// <para>No máximo um calendário é vigente por vez — a invariante cross-agregado é
@@ -114,13 +113,13 @@ public sealed class CalendarioDiasUteis : SoftDeletableEntity, IAuditableEntity
     /// <summary>
     /// Inclui uma data não útil neste calendário já existente, preservando
     /// <see cref="Id"/>, <see cref="VersaoDoCalendario"/> e todas as datas já
-    /// cadastradas (api#1458). Aplica as mesmas validações de campo usadas em
+    /// cadastradas. Aplica as mesmas validações de campo usadas em
     /// <see cref="Criar"/> e recusa duplicata contra as datas <b>já persistidas</b>
     /// no agregado, a mesma checagem que <see cref="Criar"/> aplica a cada item
     /// contra os itens já aceitos da lista. A defesa final contra duplicata
-    /// sob concorrência real é o índice único de banco (sem controle de concorrência
-    /// no pai: inserir um filho não muta o pai, então nada aqui depende de
-    /// <c>xmin</c>).
+    /// sob concorrência é o índice único no banco. Na inclusão, o repositório marca
+    /// o calendário como modificado para que o <c>xmin</c> detecte uma remoção
+    /// ou mudança de vigência concorrente do mesmo calendário.
     /// </summary>
     public Result<DiaNaoUtil> IncluirDiaNaoUtil(DiaNaoUtilCriacao? item) => IncluirDia(item, "item");
 

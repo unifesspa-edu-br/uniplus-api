@@ -21,7 +21,7 @@ using Xunit;
 /// O checklist vale para as <b>duas</b> transições que congelam. A retificação
 /// também abre uma <c>VersaoConfiguracao</c> append-only e vinculante: congelar
 /// configuração incompleta ali produz um documento irreparável, exatamente como
-/// na publicação. Antes desta story, só <c>Publicar</c> avaliava.
+/// na publicação.
 /// </remarks>
 public sealed class ConferenciaDeConformidadeTests
 {

@@ -128,23 +128,8 @@ public sealed class OfertaCursoPersistenceTests
         (Guid cursoId, Guid localId) = await _apoio.SemearCursoELocalAsync();
         OfertaCurso oferta = NovaOferta(cursoId, localId, NovaUnidade());
 
-        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(AdminA))
-        {
-            ctx.OfertasCurso.Add(oferta);
-            await ctx.SaveChangesAsync();
-        }
-
-        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(AdminA))
-        {
-            OfertaCurso rastreada = await ctx.OfertasCurso.SingleAsync(o => o.Id == oferta.Id);
-
-            Result atualizacao = rastreada.Atualizar(new DeclaracaoDaOfertaDeCurso(
-                "OFERTA_EDITADA", "PARFOR", "SEMIPRESENCIAL", "EXTENSIVO", "REGULAR", ["MATUTINO"],
-                "123456", "ENG-01", 40, "Decreto 6.755/2009", "Portaria MEC 9/2009"));
-            atualizacao.IsSuccess.Should().BeTrue(atualizacao.Error?.Message);
-
-            await ctx.SaveChangesAsync();
-        }
+        await PersistirOfertaAsync(oferta);
+        await AtualizarTurnosAsync(oferta.Id);
 
         await using UniPlusDbContext readCtx = _fixture.CreateDbContext(userId: null);
         OfertaCurso persistida = await readCtx.OfertasCurso.SingleAsync(o => o.Id == oferta.Id);
@@ -153,6 +138,26 @@ public sealed class OfertaCursoPersistenceTests
         persistida.Turnos.Should().ContainSingle(
             "a troca do backing field da coleção primitiva precisa ser detectada pelo change tracker")
             .Which.Should().Be(TurnoOferta.Matutino);
+    }
+
+    private async Task PersistirOfertaAsync(OfertaCurso oferta)
+    {
+        await using UniPlusDbContext ctx = _fixture.CreateDbContext(AdminA);
+        ctx.OfertasCurso.Add(oferta);
+        await ctx.SaveChangesAsync();
+    }
+
+    private async Task AtualizarTurnosAsync(Guid ofertaId)
+    {
+        await using UniPlusDbContext ctx = _fixture.CreateDbContext(AdminA);
+        OfertaCurso rastreada = await ctx.OfertasCurso.SingleAsync(o => o.Id == ofertaId);
+
+        Result atualizacao = rastreada.Atualizar(new DeclaracaoDaOfertaDeCurso(
+            "OFERTA_EDITADA", "PARFOR", "SEMIPRESENCIAL", "EXTENSIVO", "REGULAR", ["MATUTINO"],
+            "123456", "ENG-01", 40, "Decreto 6.755/2009", "Portaria MEC 9/2009"));
+        atualizacao.IsSuccess.Should().BeTrue(atualizacao.Error?.Message);
+
+        await ctx.SaveChangesAsync();
     }
 
     private static OfertaCurso OfertaComCodigo(Guid cursoId, Guid localId, string codigo) =>

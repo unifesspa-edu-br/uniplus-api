@@ -220,7 +220,7 @@ public sealed class ConteudoDoModeloJsonTests
         ItemDoModelo item = ConteudoDoModeloJson.Desserializar(json).Itens.Single();
 
         json.Should().Contain("\"tipoDeCampo\":\"SIM_OU_NAO\"").And.Contain("\"codigoDoDado\":\"QUILOMBOLA\"");
-        json.Should().NotContain("\"fatoCodigo\"");
+        json.Should().NotContain("\"fatoCodigo\"").And.NotContain("tipoRenderizacao");
         item.Apresentacao.TipoDeCampo.Should().Be(TipoDeCampo.SimOuNao);
         item.FatoCodigo.Should().Be("QUILOMBOLA");
     }

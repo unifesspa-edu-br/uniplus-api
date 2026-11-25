@@ -76,7 +76,10 @@ public sealed class TransicoesDaVersaoSequenciaTests
         ProcessoEmEdicaoDeTeste.Publicado(out VersaoConfiguracao deOutro);
 
         TransicoesDaVersao.ConferirEstadoParaPublicar(rascunho.Situacao).IsSuccess.Should().BeTrue();
-        TransicoesDaVersao.ConferirEstadoParaRetificar(rascunho.Id, rascunho.Situacao, deOutro, "Correção do prazo").Error!.Message.Should().Contain("situação atual: Rascunho");
+
+        DomainError recusa = TransicoesDaVersao.ConferirEstadoParaRetificar(rascunho.Id, rascunho.Situacao, deOutro, "Correção do prazo").Error!;
+        recusa.Code.Should().Be("ProcessoSeletivo.TransicaoInvalida");
+        recusa.Message.Should().Contain("situação atual: Rascunho");
     }
 
     [Fact(DisplayName = "O estado do processo publicado não admite publicar de novo e exige o motivo da retificação")]

@@ -24,10 +24,7 @@ using Wolverine;
 /// </summary>
 /// <remarks>
 /// <para>
-/// Os guard rails mudaram de casa com a #804, e é isso que estes testes travam. Não existe
-/// mais <c>ux_editais_processo_abertura_unica</c> (o índice que filtrava por
-/// <c>natureza = 1</c>) nem <c>ux_editais_edital_retificado_unico</c>. Quem garante o mesmo,
-/// agora sem literal de tipo de ato no filtro:
+/// A integridade da cadeia é garantida sem depender do tipo de ato no filtro:
 /// </para>
 /// <list type="bullet">
 ///   <item><c>ux_versoes_configuracao_processo_numero</c> — duas publicações concorrentes
@@ -38,8 +35,8 @@ using Wolverine;
 /// </list>
 /// <para>
 /// Ambos atuam na MESMA transação da Seleção. Os índices de Publicações também barram a
-/// duplicação, mas só no consumo da fila durável — são backstop pós-commit, não guard rail
-/// transacional, e por isso não podem ser a única defesa.
+/// duplicação, mas só no consumo da fila durável, após a confirmação da transação;
+/// por isso não podem ser a única defesa.
 /// </para>
 /// </remarks>
 [Collection(CascadingCollection.Name)]
@@ -61,29 +58,31 @@ public sealed class RetificacaoConcorrenciaTests
 
         (Guid processoId, Guid documentoId) = await SemearProcessoPublicavelAsync(api);
 
-        var publicarCommand = new PublicarProcessoSeletivoCommand(
-            processoId,
-            Numero: null,
-            PeriodoInscricaoInicio: null,
-            PeriodoInscricaoFim: null,
-            DocumentoEditalId: documentoId,
-            Ato: DadosDoAtoDeTeste.Padrao);
+        PublicarProcessoSeletivoCommand publicarCommand = PrepararPublicacao(processoId, documentoId);
 
+        Result[] resultados = await PublicarConcorrentementeAsync(api, publicarCommand);
+        ConferirResultadoDasPublicacoes(resultados);
+        await ConferirVersaoDeAberturaAsync(api, processoId);
+    }
+
+    private static async Task<Result[]> PublicarConcorrentementeAsync(CascadingApiFactory api, PublicarProcessoSeletivoCommand command)
+    {
         await using AsyncServiceScope scopeA = api.Services.CreateAsyncScope();
         await using AsyncServiceScope scopeB = api.Services.CreateAsyncScope();
         IMessageBus busA = scopeA.ServiceProvider.GetRequiredService<IMessageBus>();
         IMessageBus busB = scopeB.ServiceProvider.GetRequiredService<IMessageBus>();
-
-        Task<Result> taskA = busA.InvokeAsync<Result>(publicarCommand);
-        Task<Result> taskB = busB.InvokeAsync<Result>(publicarCommand);
+        Task<Result> taskA = busA.InvokeAsync<Result>(command);
+        Task<Result> taskB = busB.InvokeAsync<Result>(command);
         await Task.WhenAll(taskA, taskB);
+        return [await taskA, await taskB];
+    }
 
-        Result[] resultados = [await taskA, await taskB];
+    private static PublicarProcessoSeletivoCommand PrepararPublicacao(Guid processoId, Guid documentoId) =>
+        new(processoId, Numero: null, PeriodoInscricaoInicio: null, PeriodoInscricaoFim: null,
+            DocumentoEditalId: documentoId, Ato: DadosDoAtoDeTeste.Padrao);
 
-        // Exatamente UMA vence. A segunda é barrada pelo lock pessimista (relê Situacao =
-        // Publicado → TransicaoInvalida) ou, se a janela escapar, pelo índice de numeração
-        // das versões. Antes da #804 quem barrava era ux_editais_processo_abertura_unica —
-        // e ele carregava `natureza = 1` no filtro, o literal que esta story eliminou.
+    private static void ConferirResultadoDasPublicacoes(Result[] resultados)
+    {
         resultados.Count(r => r.IsSuccess).Should().Be(1, "só uma publicação pode abrir a cadeia do certame");
 
         Result perdedor = resultados.Single(r => r.IsFailure);
@@ -91,7 +90,10 @@ public sealed class RetificacaoConcorrenciaTests
             || perdedor.HasErrorCode("VersaoConfiguracao.NumeroDuplicado"))
             .Should().BeTrue(
                 $"a publicação perdedora é recusada por transição ou pelo índice de numeração — veio '{perdedor.Error?.Code}'");
+    }
 
+    private static async Task ConferirVersaoDeAberturaAsync(CascadingApiFactory api, Guid processoId)
+    {
         await using AsyncServiceScope readScope = api.Services.CreateAsyncScope();
         UniPlusDbContext readDb = readScope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
         List<VersaoConfiguracao> versoes = await readDb.VersoesConfiguracao.AsNoTracking()
@@ -109,63 +111,56 @@ public sealed class RetificacaoConcorrenciaTests
     {
         CascadingApiFactory api = _fixture.Factory;
         await TiposDeAtoSeeder.SemearAsync(api.Services);
-
         (Guid processoId, Guid documentoAbertura) = await SemearProcessoPublicavelAsync(api);
+        await PublicarAberturaAsync(api, processoId, documentoAbertura);
+        (Guid atoAberturaId, Guid documentoRetificacao) = await PrepararRetificacaoAsync(api, processoId);
+        var command = new RetificarProcessoSeletivoCommand(
+            processoId, "Correção concorrente do prazo de inscrição", Numero: "001/2026-R1",
+            PeriodoInscricaoInicio: null, PeriodoInscricaoFim: null,
+            DocumentoEditalId: documentoRetificacao, Ato: DadosDoAtoDeTeste.Padrao);
+        Result[] resultados = await RetificarConcorrentementeAsync(api, command);
+        int sucessos = ConferirResultadoDasRetificacoes(resultados);
+        await ConferirCadeiaDeVersoesAsync(api, processoId, atoAberturaId, sucessos);
+    }
 
-        // Publica a abertura pelo bus (mesmo caminho do handler HTTP).
-        var publicarCommand = new PublicarProcessoSeletivoCommand(
-            processoId,
-            Numero: null,
-            PeriodoInscricaoInicio: null,
-            PeriodoInscricaoFim: null,
-            DocumentoEditalId: documentoAbertura,
-            Ato: DadosDoAtoDeTeste.Padrao);
-        await using (AsyncServiceScope publicarScope = api.Services.CreateAsyncScope())
-        {
-            IMessageBus publicarBus = publicarScope.ServiceProvider.GetRequiredService<IMessageBus>();
-            Result publicarResultado = await publicarBus.InvokeAsync<Result>(publicarCommand);
-            publicarResultado.IsSuccess.Should().BeTrue(publicarResultado.Error?.Message);
-        }
+    private static async Task PublicarAberturaAsync(CascadingApiFactory api, Guid processoId, Guid documentoId)
+    {
+        PublicarProcessoSeletivoCommand command = PrepararPublicacao(processoId, documentoId);
+        await using AsyncServiceScope scope = api.Services.CreateAsyncScope();
+        IMessageBus bus = scope.ServiceProvider.GetRequiredService<IMessageBus>();
+        Result resultado = await bus.InvokeAsync<Result>(command);
+        resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
+    }
 
-        Guid atoAberturaId;
-        Guid documentoRetificacao;
-        await using (AsyncServiceScope preparoScope = api.Services.CreateAsyncScope())
-        {
-            UniPlusDbContext db = preparoScope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
-            atoAberturaId = await db.VersoesConfiguracao.AsNoTracking()
-                .Where(v => v.ProcessoSeletivoId == processoId)
-                .Select(v => v.AtoCriadorId)
-                .SingleAsync();
+    private static async Task<(Guid AtoAberturaId, Guid DocumentoRetificacao)> PrepararRetificacaoAsync(
+        CascadingApiFactory api, Guid processoId)
+    {
+        await using AsyncServiceScope scope = api.Services.CreateAsyncScope();
+        UniPlusDbContext db = scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
+        Guid atoAberturaId = await db.VersoesConfiguracao.AsNoTracking()
+            .Where(v => v.ProcessoSeletivoId == processoId)
+            .Select(v => v.AtoCriadorId)
+            .SingleAsync();
+        Guid documentoRetificacao = await SemearDocumentoConfirmadoAsync(db, processoId);
+        return (atoAberturaId, documentoRetificacao);
+    }
 
-            documentoRetificacao = await SemearDocumentoConfirmadoAsync(db, processoId);
-        }
-
-        var retificarCommand = new RetificarProcessoSeletivoCommand(
-            processoId,
-            "Correção concorrente do prazo de inscrição",
-            Numero: "001/2026-R1",
-            PeriodoInscricaoInicio: null,
-            PeriodoInscricaoFim: null,
-            DocumentoEditalId: documentoRetificacao,
-            Ato: DadosDoAtoDeTeste.Padrao);
-
+    private static async Task<Result[]> RetificarConcorrentementeAsync(CascadingApiFactory api, RetificarProcessoSeletivoCommand command)
+    {
         await using AsyncServiceScope scopeA = api.Services.CreateAsyncScope();
         await using AsyncServiceScope scopeB = api.Services.CreateAsyncScope();
         IMessageBus busA = scopeA.ServiceProvider.GetRequiredService<IMessageBus>();
         IMessageBus busB = scopeB.ServiceProvider.GetRequiredService<IMessageBus>();
+        Task<Result> taskA = busA.InvokeAsync<Result>(command);
+        Task<Result> taskB = busB.InvokeAsync<Result>(command);
+        await Task.WhenAll(taskA, taskB);
+        return [await taskA, await taskB];
+    }
 
-        Task<Result> retificarTaskA = busA.InvokeAsync<Result>(retificarCommand);
-        Task<Result> retificarTaskB = busB.InvokeAsync<Result>(retificarCommand);
-        await Task.WhenAll(retificarTaskA, retificarTaskB);
-
-        Result[] resultados = [await retificarTaskA, await retificarTaskB];
-
-        // Ao menos uma conclui. Sob o lock as duas serializam e ambas concluem (empilhando na
-        // cabeça); se a janela escapasse, o índice de numeração barraria a segunda. O
-        // invariante testado é a NÃO-RAMIFICAÇÃO da cadeia, não o número de vencedores.
+    private static int ConferirResultadoDasRetificacoes(Result[] resultados)
+    {
         int sucessos = resultados.Count(r => r.IsSuccess);
         sucessos.Should().BeGreaterThanOrEqualTo(1, "ao menos uma retificação conclui");
-
         if (resultados.FirstOrDefault(r => r.IsFailure) is { } perdedor)
         {
             (perdedor.HasErrorCode("VersaoConfiguracao.NumeroDuplicado")
@@ -174,22 +169,26 @@ public sealed class RetificacaoConcorrenciaTests
                 .Should().BeTrue(
                     $"a retificação que perde a corrida é barrada por um guard rail da CADEIA DE VERSÕES — veio '{perdedor.Error?.Code}'");
         }
+        return sucessos;
+    }
 
-        await using AsyncServiceScope readScope = api.Services.CreateAsyncScope();
-        UniPlusDbContext readDb = readScope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
-        List<VersaoConfiguracao> versoes = await readDb.VersoesConfiguracao.AsNoTracking()
+    private static async Task ConferirCadeiaDeVersoesAsync(CascadingApiFactory api, Guid processoId, Guid atoAberturaId, int sucessos)
+    {
+        await using AsyncServiceScope scope = api.Services.CreateAsyncScope();
+        UniPlusDbContext db = scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
+        List<VersaoConfiguracao> versoes = await db.VersoesConfiguracao.AsNoTracking()
             .Where(v => v.ProcessoSeletivoId == processoId)
             .OrderBy(v => v.NumeroVersao)
             .ToListAsync();
+        ConferirLinearidadeENumeracao(versoes, atoAberturaId, sucessos);
+    }
 
-        // Linearidade (ADR-0103): nenhum ato é emendado por mais de um ramo.
+    private static void ConferirLinearidadeENumeracao(List<VersaoConfiguracao> versoes, Guid atoAberturaId, int sucessos)
+    {
         versoes.Where(v => v.AtoCriadorRetificaId is not null)
             .GroupBy(v => v.AtoCriadorRetificaId)
             .Where(g => g.Count() > 1)
             .Should().BeEmpty("nenhum ato pode ser emendado por dois ramos — a cadeia é linear");
-
-        // Cada retificação concluída acrescenta exatamente uma versão; a numeração é
-        // contígua a partir da abertura, e o ato da abertura é emendado no máximo uma vez.
         versoes.Should().HaveCount(1 + sucessos);
         versoes.Select(v => v.NumeroVersao).Should().BeEquivalentTo(
             Enumerable.Range(1, versoes.Count),

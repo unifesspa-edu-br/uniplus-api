@@ -65,58 +65,21 @@ public sealed class CalendarioDiasUteisConcorrenciaTests
     public async Task Remocao_ColideComEscritaConcorrente_PropagaExcecaoLimpa()
     {
         MonolitoApiFactory api = _fixture.Factory;
-
-        Guid id;
-        await using (AsyncServiceScope setupScope = api.Services.CreateAsyncScope())
-        {
-            UniPlusDbContext db = setupScope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
-            CalendarioDiasUteis criado = CalendarioDiasUteis.Criar(
-                $"conc-{Guid.NewGuid():N}"[..20],
-                [new DiaNaoUtilCriacao("NACIONAL", null, null, null, new DateOnly(2099, 1, 1), "Ano novo")]).Value!;
-            db.CalendariosDiasUteis.Add(criado);
-            await db.SaveChangesAsync();
-            id = criado.Id;
-        }
-
+        Guid id = await SemearCalendarioAsync(api);
         await using AsyncServiceScope scopeB = api.Services.CreateAsyncScope();
         UniPlusDbContext dbB = scopeB.ServiceProvider.GetRequiredService<UniPlusDbContext>();
         await using IDbContextTransaction txB = await dbB.Database.BeginTransactionAsync();
-
-        // Trava a linha (lock de escrita do Postgres) sem commitar ainda —
-        // qualquer outra transação que tente escrever na mesma linha bloqueia
-        // aqui até txB liberar.
-        await dbB.Database.ExecuteSqlInterpolatedAsync(
-            $"UPDATE configuracao.calendarios_de_dias_uteis SET updated_at = now() WHERE id = {id}");
-        int pidDbB = await ConcorrenciaTestHelpers.GetConnectionPidAsync(dbB);
-
+        int pidDbB = await TrancarCalendarioComAtualizacaoAsync(dbB, id);
         await using AsyncServiceScope scopeA = api.Services.CreateAsyncScope();
         IMessageBus busA = scopeA.ServiceProvider.GetRequiredService<IMessageBus>();
         Task<Result> taskA = busA.InvokeAsync<Result>(new RemoverCalendarioDiasUteisCommand(id));
-
-        // Prova direta (não uma aposta de tempo) de que busA já leu o xmin
-        // antigo e está bloqueado tentando escrever: poll em pg_stat_activity
-        // até aparecer um backend em wait_event_type='Lock' que não é nem a
-        // conexão de poll nem dbB (issue #1031 — identificação por PID, não
-        // por texto de query).
         await ConcorrenciaTestHelpers.WaitForBlockedBackendAsync(api, taskA, [pidDbB]);
-
         await txB.CommitAsync();
-
-        Func<Task> act = async () => await taskA;
-
-        await act.Should().ThrowAsync<DbUpdateConcurrencyException>(
-            "o xmin lido pelo handler ficou obsoleto assim que txB commitou a própria escrita na mesma linha");
-
-        await using AsyncServiceScope readScope = api.Services.CreateAsyncScope();
-        UniPlusDbContext readDb = readScope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
-        CalendarioDiasUteis persistido = await readDb.CalendariosDiasUteis.SingleAsync(c => c.Id == id);
-        persistido.IsDeleted.Should().BeFalse(
-            "o handler perdeu a corrida e não deve ter removido nada — nenhuma segunda tentativa do outbox deve ter reaplicado a remoção");
+        await ConferirRemocaoPerdedoraAsync(api, id, taskA);
     }
 
     /// <summary>
-    /// Prova de ponta a ponta do achado de revisão do PR #1460 (api#1458): sem
-    /// <c>RegistrarInclusaoDeDiaNaoUtil</c> marcar o pai como alterado, inserir só
+    /// Sem <c>RegistrarInclusaoDeDiaNaoUtil</c> marcar o pai como alterado, inserir só
     /// o filho nunca compararia o <c>xmin</c> do <see cref="CalendarioDiasUteis"/>
     /// — uma remoção (soft-delete) concorrente do MESMO calendário não viraria
     /// conflito, porque a FK só exige que a linha física do pai exista, não que
@@ -129,118 +92,71 @@ public sealed class CalendarioDiasUteisConcorrenciaTests
     {
         MonolitoApiFactory api = _fixture.Factory;
         var novaData = new DateOnly(2099, 6, 15);
-
-        Guid id;
-        await using (AsyncServiceScope setupScope = api.Services.CreateAsyncScope())
-        {
-            UniPlusDbContext db = setupScope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
-            CalendarioDiasUteis criado = CalendarioDiasUteis.Criar(
-                $"conc-{Guid.NewGuid():N}"[..20],
-                [new DiaNaoUtilCriacao("NACIONAL", null, null, null, new DateOnly(2099, 1, 1), "Ano novo")]).Value!;
-            db.CalendariosDiasUteis.Add(criado);
-            await db.SaveChangesAsync();
-            id = criado.Id;
-        }
-
+        Guid id = await SemearCalendarioAsync(api);
         await using AsyncServiceScope scopeB = api.Services.CreateAsyncScope();
         UniPlusDbContext dbB = scopeB.ServiceProvider.GetRequiredService<UniPlusDbContext>();
         await using IDbContextTransaction txB = await dbB.Database.BeginTransactionAsync();
-
-        // Simula o UPDATE que RemoverCalendarioDiasUteisCommandHandler (via
-        // SoftDeleteInterceptor) emitiria, sem commitar ainda — trava a linha
-        // do pai para qualquer outro escritor concorrente.
-        await dbB.Database.ExecuteSqlInterpolatedAsync(
-            $"UPDATE configuracao.calendarios_de_dias_uteis SET is_deleted = true, updated_at = now() WHERE id = {id}");
-        int pidDbB = await ConcorrenciaTestHelpers.GetConnectionPidAsync(dbB);
-
+        int pidDbB = await TrancarCalendarioComRemocaoAsync(dbB, id);
         await using AsyncServiceScope scopeA = api.Services.CreateAsyncScope();
         IMessageBus busA = scopeA.ServiceProvider.GetRequiredService<IMessageBus>();
         var itemA = new DiaNaoUtilCommandItem("NACIONAL", null, null, null, novaData, "Feriado incluído durante a corrida");
-        Task<Result<CalendarioDiasUteisDto>> taskA = busA.InvokeAsync<Result<CalendarioDiasUteisDto>>(
-            new IncluirDiaNaoUtilCommand(id, itemA));
-
+        Task<Result<CalendarioDiasUteisDto>> taskA = busA.InvokeAsync<Result<CalendarioDiasUteisDto>>(new IncluirDiaNaoUtilCommand(id, itemA));
         await ConcorrenciaTestHelpers.WaitForBlockedBackendAsync(api, taskA, [pidDbB]);
-
         await txB.CommitAsync();
-
-        Result<CalendarioDiasUteisDto> resultadoA = await taskA;
-
-        resultadoA.IsFailure.Should().BeTrue(
-            "o xmin lido por busA ficou obsoleto assim que txB commitou o soft-delete na mesma linha");
-        resultadoA.Error!.Code.Should().Be(CalendarioDiasUteisErrorCodes.ConflitoDeConcorrencia);
-
-        await using AsyncServiceScope readScope = api.Services.CreateAsyncScope();
-        UniPlusDbContext readDb = readScope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
-        int diasComANovaData = await readDb.Database.SqlQuery<int>(
-            $"""
-            SELECT count(*)::int AS "Value" FROM configuracao.dias_nao_uteis
-            WHERE calendario_dias_uteis_id = {id} AND data = {novaData}
-            """).SingleAsync();
-        diasComANovaData.Should().Be(0,
-            "busA perdeu a corrida e o INSERT do filho deve ter sido revertido junto com o UPDATE do pai que falhou");
+        await ConferirInclusaoPerdedoraAsync(api, id, novaData, taskA);
     }
 
     /// <summary>
-    /// Prova de ponta a ponta da Decisão D2 (api#1458): a checagem de duplicidade
-    /// em memória de <c>CalendarioDiasUteis.IncluirDiaNaoUtil</c> só compara contra
-    /// o que já está carregado no agregado — ela NÃO alcança uma linha inserida por
-    /// outra transação ainda não commitada. A defesa real contra a corrida é o
-    /// índice único <c>ix_dias_nao_uteis_unicidade</c> (sem token de concorrência no
-    /// pai: inserir um filho não muta o pai, então nada aqui depende de <c>xmin</c>
-    /// — ver <see cref="IncluirDiaNaoUtilCommandHandler"/>).
+    /// A checagem de duplicidade em memória só compara os dias carregados no agregado;
+    /// uma linha inserida por outra transação ainda não confirmada exige a proteção
+    /// do índice único <c>ix_dias_nao_uteis_unicidade</c>.
     /// </summary>
     [Fact(DisplayName =
         "Duas inclusões concorrentes da mesma combinação: uma persiste, a outra recebe DataDuplicadaNoCalendario sem duplicar")]
     public async Task IncluirDiaNaoUtil_DuasInclusoesConcorrentesDaMesmaCombinacao_UmaFalhaSemDuplicar()
     {
         MonolitoApiFactory api = _fixture.Factory;
-        var novaData = new DateOnly(2099, 5, 8);
-
-        Guid id;
-        await using (AsyncServiceScope setupScope = api.Services.CreateAsyncScope())
-        {
-            UniPlusDbContext db = setupScope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
-            CalendarioDiasUteis criado = CalendarioDiasUteis.Criar(
-                $"conc-{Guid.NewGuid():N}"[..20],
-                [new DiaNaoUtilCriacao("NACIONAL", null, null, null, new DateOnly(2099, 1, 1), "Ano novo")]).Value!;
-            db.CalendariosDiasUteis.Add(criado);
-            await db.SaveChangesAsync();
-            id = criado.Id;
-        }
-
-        await using AsyncServiceScope scopeB = api.Services.CreateAsyncScope();
-        UniPlusDbContext dbB = scopeB.ServiceProvider.GetRequiredService<UniPlusDbContext>();
-        await using IDbContextTransaction txB = await dbB.Database.BeginTransactionAsync();
-
-        // Insere a MESMA combinação diretamente por SQL cru, sem commitar — o
-        // handler real (busA) não pode ver esta linha (ainda não commitada) e por
-        // isso a checagem em memória do agregado não vai detectar a duplicata;
-        // só o índice único, checado no momento do INSERT de busA, protege aqui.
-        await dbB.Database.ExecuteSqlInterpolatedAsync(
-            $"""
-            INSERT INTO configuracao.dias_nao_uteis
-                (id, calendario_dias_uteis_id, abrangencia, municipio_ibge, uf, data, descricao, created_at)
-            VALUES
-                (gen_random_uuid(), {id}, 'ESTADUAL', NULL, 'PA', {novaData}, 'Feriado estadual (txB)', now())
-            """);
-        int pidDbB = await ConcorrenciaTestHelpers.GetConnectionPidAsync(dbB);
-
-        await using AsyncServiceScope scopeA = api.Services.CreateAsyncScope();
-        IMessageBus busA = scopeA.ServiceProvider.GetRequiredService<IMessageBus>();
-        var itemA = new DiaNaoUtilCommandItem("ESTADUAL", null, null, null, novaData, "Feriado estadual (busA)", "PA");
-        Task<Result<CalendarioDiasUteisDto>> taskA = busA.InvokeAsync<Result<CalendarioDiasUteisDto>>(
-            new IncluirDiaNaoUtilCommand(id, itemA));
-
-        await ConcorrenciaTestHelpers.WaitForBlockedBackendAsync(api, taskA, [pidDbB]);
-
-        await txB.CommitAsync();
-
-        Result<CalendarioDiasUteisDto> resultadoA = await taskA;
+        DateOnly novaData = new(2099, 5, 8);
+        Guid id = await SemearCalendarioAsync(api);
+        Result<CalendarioDiasUteisDto> resultadoA = await DisputarInclusaoDaMesmaDataAsync(api, id, novaData);
 
         resultadoA.IsFailure.Should().BeTrue(
             "busA só descobre o conflito no INSERT, depois que txB já commitou a mesma combinação");
         resultadoA.Error!.Code.Should().Be(CalendarioDiasUteisErrorCodes.DataDuplicadaNoCalendario);
+        await ConferirUnicaDataEstadualAsync(api, id, novaData);
+    }
 
+    private static async Task<Result<CalendarioDiasUteisDto>> DisputarInclusaoDaMesmaDataAsync(
+        MonolitoApiFactory api, Guid id, DateOnly novaData)
+    {
+        await using AsyncServiceScope scopeB = api.Services.CreateAsyncScope();
+        UniPlusDbContext dbB = scopeB.ServiceProvider.GetRequiredService<UniPlusDbContext>();
+        await using IDbContextTransaction txB = await dbB.Database.BeginTransactionAsync();
+        await InserirDataEstadualSemCommitAsync(dbB, id, novaData);
+        int pidDbB = await ConcorrenciaTestHelpers.GetConnectionPidAsync(dbB);
+        await using AsyncServiceScope scopeA = api.Services.CreateAsyncScope();
+        IMessageBus busA = scopeA.ServiceProvider.GetRequiredService<IMessageBus>();
+        DiaNaoUtilCommandItem itemA = new("ESTADUAL", null, null, null, novaData, "Feriado estadual (busA)", "PA");
+        Task<Result<CalendarioDiasUteisDto>> taskA = busA.InvokeAsync<Result<CalendarioDiasUteisDto>>(
+            new IncluirDiaNaoUtilCommand(id, itemA));
+        await ConcorrenciaTestHelpers.WaitForBlockedBackendAsync(api, taskA, [pidDbB]);
+        await txB.CommitAsync();
+        return await taskA;
+    }
+
+    private static async Task InserirDataEstadualSemCommitAsync(UniPlusDbContext db, Guid id, DateOnly data)
+    {
+        await db.Database.ExecuteSqlInterpolatedAsync(
+            $"""
+            INSERT INTO configuracao.dias_nao_uteis
+                (id, calendario_dias_uteis_id, abrangencia, municipio_ibge, uf, data, descricao, created_at)
+            VALUES
+                (gen_random_uuid(), {id}, 'ESTADUAL', NULL, 'PA', {data}, 'Feriado estadual (txB)', now())
+            """);
+    }
+
+    private static async Task ConferirUnicaDataEstadualAsync(MonolitoApiFactory api, Guid id, DateOnly novaData)
+    {
         await using AsyncServiceScope readScope = api.Services.CreateAsyncScope();
         UniPlusDbContext readDb = readScope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
         int totalNaCombinacao = await readDb.Database.SqlQuery<int>(
@@ -249,5 +165,61 @@ public sealed class CalendarioDiasUteisConcorrenciaTests
             WHERE calendario_dias_uteis_id = {id} AND data = {novaData} AND abrangencia = 'ESTADUAL' AND uf = 'PA'
             """).SingleAsync();
         totalNaCombinacao.Should().Be(1, "só a linha de txB persiste — busA perdeu a corrida e nada seu foi gravado");
+    }
+
+    private static async Task<Guid> SemearCalendarioAsync(MonolitoApiFactory api)
+    {
+        await using AsyncServiceScope scope = api.Services.CreateAsyncScope();
+        UniPlusDbContext db = scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
+        CalendarioDiasUteis criado = CalendarioDiasUteis.Criar(
+            $"conc-{Guid.NewGuid():N}"[..20],
+            [new DiaNaoUtilCriacao("NACIONAL", null, null, null, new DateOnly(2099, 1, 1), "Ano novo")]).Value!;
+        db.CalendariosDiasUteis.Add(criado);
+        await db.SaveChangesAsync();
+        return criado.Id;
+    }
+
+    private static async Task<int> TrancarCalendarioComAtualizacaoAsync(UniPlusDbContext db, Guid id)
+    {
+        await db.Database.ExecuteSqlInterpolatedAsync(
+            $"UPDATE configuracao.calendarios_de_dias_uteis SET updated_at = now() WHERE id = {id}");
+        return await ConcorrenciaTestHelpers.GetConnectionPidAsync(db);
+    }
+
+    private static async Task<int> TrancarCalendarioComRemocaoAsync(UniPlusDbContext db, Guid id)
+    {
+        await db.Database.ExecuteSqlInterpolatedAsync(
+            $"UPDATE configuracao.calendarios_de_dias_uteis SET is_deleted = true, updated_at = now() WHERE id = {id}");
+        return await ConcorrenciaTestHelpers.GetConnectionPidAsync(db);
+    }
+
+    private static async Task ConferirRemocaoPerdedoraAsync(MonolitoApiFactory api, Guid id, Task<Result> tarefa)
+    {
+        Func<Task> act = async () => await tarefa;
+        await act.Should().ThrowAsync<DbUpdateConcurrencyException>(
+            "o xmin lido pelo handler ficou obsoleto assim que txB commitou a própria escrita na mesma linha");
+        await using AsyncServiceScope scope = api.Services.CreateAsyncScope();
+        UniPlusDbContext db = scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
+        CalendarioDiasUteis persistido = await db.CalendariosDiasUteis.SingleAsync(c => c.Id == id);
+        persistido.IsDeleted.Should().BeFalse(
+            "o handler perdeu a corrida e não deve ter removido nada — nenhuma segunda tentativa do outbox deve ter reaplicado a remoção");
+    }
+
+    private static async Task ConferirInclusaoPerdedoraAsync(
+        MonolitoApiFactory api, Guid id, DateOnly novaData, Task<Result<CalendarioDiasUteisDto>> tarefa)
+    {
+        Result<CalendarioDiasUteisDto> resultadoA = await tarefa;
+        resultadoA.IsFailure.Should().BeTrue(
+            "o xmin lido por busA ficou obsoleto assim que txB commitou o soft-delete na mesma linha");
+        resultadoA.Error!.Code.Should().Be(CalendarioDiasUteisErrorCodes.ConflitoDeConcorrencia);
+        await using AsyncServiceScope scope = api.Services.CreateAsyncScope();
+        UniPlusDbContext db = scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
+        int diasComANovaData = await db.Database.SqlQuery<int>(
+            $"""
+            SELECT count(*)::int AS "Value" FROM configuracao.dias_nao_uteis
+            WHERE calendario_dias_uteis_id = {id} AND data = {novaData}
+            """).SingleAsync();
+        diasComANovaData.Should().Be(0,
+            "busA perdeu a corrida e o INSERT do filho deve ter sido revertido junto com o UPDATE do pai que falhou");
     }
 }

@@ -52,26 +52,33 @@ public sealed class PublicarProcessoSeletivoEndpointTests
     public async Task Publicar_FluxoCompleto_DispatchaCascadingMessages()
     {
         CascadingApiFactory api = _fixture.Factory;
-
         await TiposDeAtoSeeder.SemearAsync(api.Services);
         using HttpClient client = api.CreateClient();
 
         DomainEventCollector collector = api.Services.GetRequiredService<DomainEventCollector>();
         collector.Clear();
-
         (Guid processoId, Guid documentoId) = await SemearAsync(api, nameof(Publicar_FluxoCompleto_DispatchaCascadingMessages));
 
         HttpResponseMessage response = await PostPublicarAsync(client, processoId, documentoId, MakeIdempotencyKey());
 
         response.StatusCode.Should().Be(HttpStatusCode.NoContent);
 
+        await ConferirEventoPublicadoAsync(collector, processoId);
+        await ConferirProcessoPublicadoAsync(api, processoId);
+    }
+
+    private static async Task ConferirEventoPublicadoAsync(DomainEventCollector collector, Guid processoId)
+    {
         ProcessoPublicadoEvent? evento = await CascadingScenariosTests.EsperarEventoAsync(
             collector, processoId, TimeSpan.FromSeconds(15));
 
         evento.Should().NotBeNull(
             "o handler produtivo retorna o evento via cascading; o listener PG entrega ao subscritor de teste");
         evento!.ProcessoSeletivoId.Should().Be(processoId);
+    }
 
+    private static async Task ConferirProcessoPublicadoAsync(CascadingApiFactory api, Guid processoId)
+    {
         await using AsyncServiceScope scope = api.Services.CreateAsyncScope();
         UniPlusDbContext db = scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
         ProcessoSeletivo? persistido = await db.ProcessosSeletivos.AsNoTracking()
@@ -103,27 +110,14 @@ public sealed class PublicarProcessoSeletivoEndpointTests
         "POST /processos-seletivos/{id}/publicacao com keys diferentes — segunda chamada retorna 422 TransicaoInvalida")]
     public async Task Publicar_QuandoJaPublicado_Retorna422()
     {
-        // Cliente com keys distintas força handler a executar duas vezes;
-        // segunda execução vê processo já publicado e retorna 422 (regra de
-        // domínio, não idempotência do middleware Idempotency-Key).
         CascadingApiFactory api = _fixture.Factory;
-
         await TiposDeAtoSeeder.SemearAsync(api.Services);
         using HttpClient client = api.CreateClient();
-
         (Guid processoId, Guid documentoId) = await SemearAsync(api, nameof(Publicar_QuandoJaPublicado_Retorna422));
-
         HttpResponseMessage primeira = await PostPublicarAsync(client, processoId, documentoId, MakeIdempotencyKey());
         primeira.StatusCode.Should().Be(HttpStatusCode.NoContent);
-
         HttpResponseMessage segunda = await PostPublicarAsync(client, processoId, documentoId, MakeIdempotencyKey());
-        segunda.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
-        using JsonDocument doc = JsonDocument.Parse(await segunda.Content.ReadAsStringAsync());
-        doc.RootElement.GetProperty("code").GetString()
-            .Should().Be("uniplus.selecao.processo_seletivo.transicao_invalida");
-        // CA-07: processo já publicado tem o checklist estrutural 100% verde —
-        // "pendencias" nunca aparece vazio, e aqui nem deveria aparecer.
-        doc.RootElement.TryGetProperty("pendencias", out _).Should().BeFalse();
+        await ConferirTransicaoInvalidaAsync(segunda);
     }
 
     [Fact(DisplayName =
@@ -178,18 +172,32 @@ public sealed class PublicarProcessoSeletivoEndpointTests
         CascadingApiFactory api = _fixture.Factory;
         await TiposDeAtoSeeder.SemearAsync(api.Services);
         using HttpClient client = api.CreateClient();
-
         await using AsyncServiceScope scope = api.Services.CreateAsyncScope();
         UniPlusDbContext db = scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
         (ProcessoSeletivo processo, DocumentoAPublicar documento) =
             await ProcessoSeletivoPendenciasSeeder.SemearComCronogramaNaoConformeAsync(
                 db, $"{nameof(Publicar_Recusado_PendenciasCasamComOChecklistDoPreview)} {Guid.CreateVersion7()}");
+        (string Codigo, string Dimensao)[] reprovados = await ObterReprovadosNoPreviewAsync(client, processo.Id);
+        HttpResponseMessage recusa = await PostPublicarAsync(client, processo.Id, documento.Id, MakeIdempotencyKey());
+        await ConferirPendenciasDaRecusaAsync(recusa, reprovados);
+    }
 
-        // O preview: o que o editor viu antes de tentar publicar.
-        HttpResponseMessage preview = await GetConformidadeAsync(client, processo.Id);
+    private static async Task ConferirTransicaoInvalidaAsync(HttpResponseMessage resposta)
+    {
+        resposta.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
+        using JsonDocument doc = JsonDocument.Parse(await resposta.Content.ReadAsStringAsync());
+        doc.RootElement.GetProperty("code").GetString()
+            .Should().Be("uniplus.selecao.processo_seletivo.transicao_invalida");
+        // CA-07: processo já publicado tem o checklist estrutural 100% verde —
+        // "pendencias" nunca aparece vazio, e aqui nem deveria aparecer.
+        doc.RootElement.TryGetProperty("pendencias", out _).Should().BeFalse();
+    }
+
+    private static async Task<(string Codigo, string Dimensao)[]> ObterReprovadosNoPreviewAsync(HttpClient client, Guid processoId)
+    {
+        HttpResponseMessage preview = await GetConformidadeAsync(client, processoId);
         preview.StatusCode.Should().Be(HttpStatusCode.OK);
         using JsonDocument checklist = JsonDocument.Parse(await preview.Content.ReadAsStringAsync());
-
         (string Codigo, string Dimensao)[] reprovadosNoPreview =
         [
             .. checklist.RootElement.GetProperty("itens").EnumerateArray()
@@ -197,23 +205,22 @@ public sealed class PublicarProcessoSeletivoEndpointTests
                 .Select(i => (i.GetProperty("codigo").GetString()!, i.GetProperty("dimensao").GetString()!)),
         ];
         reprovadosNoPreview.Should().NotBeEmpty("pré-condição: o cenário semeado tem pendência estrutural");
+        return reprovadosNoPreview;
+    }
 
-        // A recusa: o que a publicação devolveu.
-        HttpResponseMessage recusa = await PostPublicarAsync(client, processo.Id, documento.Id, MakeIdempotencyKey());
+    private static async Task ConferirPendenciasDaRecusaAsync(
+        HttpResponseMessage recusa, (string Codigo, string Dimensao)[] reprovadosNoPreview)
+    {
         recusa.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
         using JsonDocument problema = JsonDocument.Parse(await recusa.Content.ReadAsStringAsync());
-
         (string Codigo, string Dimensao)[] naRecusa =
         [
             .. problema.RootElement.GetProperty("pendencias").EnumerateArray()
                 .Select(p => (p.GetProperty("codigo").GetString()!, p.GetProperty("dimensao").GetString()!)),
         ];
-
         naRecusa.Should().BeEquivalentTo(reprovadosNoPreview,
             "é a correspondência que permite ao cliente descobrir que o preview aprovado ficou obsoleto e levar "
             + "quem publica à mesma seção do editor, sem comparar frases");
-
-        // A mensagem viaja junto, mas como texto humano — não é ela que identifica o item.
         problema.RootElement.GetProperty("pendencias").EnumerateArray()
             .Should().AllSatisfy(p => p.GetProperty("mensagem").GetString().Should().NotBeNullOrWhiteSpace());
     }

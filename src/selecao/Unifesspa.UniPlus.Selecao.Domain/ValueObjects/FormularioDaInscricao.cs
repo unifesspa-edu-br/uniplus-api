@@ -116,7 +116,7 @@ public sealed class FormularioDaInscricao : IEquatable<FormularioDaInscricao>
     internal FormularioDaInscricao ComDefinicoes(IEnumerable<KeyValuePair<string, DefinicaoDaResposta>> definicoes) => new(VersaoFormularioId, Preenchimento, Derivados, CopiarDefinicoes(ComCpfCifrado(definicoes)));
 
     /// <summary>
-    /// O comprovante nunca carrega número de documento (§4.1 do plano da #1855) — o domínio aplica
+    /// O comprovante nunca carrega número de documento — o domínio aplica
     /// esta invariante por si, independente do que a Infrastructure faça com o jsonb de respostas.
     /// </summary>
     public Dictionary<string, JsonElement> SemNumerosDeDocumento(IReadOnlyDictionary<string, JsonElement> respostas) =>
