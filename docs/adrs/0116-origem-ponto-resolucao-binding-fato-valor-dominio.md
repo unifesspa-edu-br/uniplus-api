@@ -86,7 +86,7 @@ contra `FaseCanonicaCatalogo.EhCanonico(...)` (o conjunto fechado de catorze
 códigos, sem depender de linha viva em `fases_canonicas` — decopla do fato de a
 tabela ser povoada operacionalmente pós-deploy). Todos os fatos desta colheita
 (os nove existentes + `NACIONALIDADE`/`TIPO_DEFICIENCIA`) resolvem em
-`INSCRICAO`. O *gate* que recusa uma condição citando fato de fase posterior
+`INSCRICAO`. A verificação que recusa uma condição citando fato de fase posterior
 (comparando o ponto de resolução contra a fase da exigência, via a tabela de
 precedência entre fases já existente — migration
 `AddPrecedenciaFaseEAtributosFaseCanonica` — nunca por posição em lista, que
@@ -160,7 +160,7 @@ mesmo mecanismo de `OfertaAtendimentoEspecializado`/`OfertaTipoDeficiencia`).
 
 ## Mais informações
 
-- **Sucedida em parte pela ADR-0136:** a governança somente por seed passa a valer só para os fatos de sistema; o marco de imutabilidade da emenda 1.1 continua valendo nos fatos de sistema, estendido a todos os eixos (o código é imutável desde o cadastro em todo fato, e os eixos dos fatos do administrador são editáveis no próprio fato, por emenda de 17/10/2026 da ADR-0136); a emenda 1.5 ganha o derivado booleano e o categórico multivalorado, e o recorte pela oferta do item 4 passa a acontecer também na cópia da regra padrão para o processo; e o mapa de prefixos do vínculo passa a ser o daquela ADR (`CAMPO_FORMULARIO:` no lugar de `CAMPO_INSCRICAO:`, e `AGREGACAO_GRUPO:` reservado para os agregados do grupo repetível, aceito só depois da ADR do grupo).
+- **Sucedida em parte pela ADR-0136:** a governança somente por seed passa a valer só para os fatos de sistema; o marco de imutabilidade da emenda 1.1 continua valendo nos fatos de sistema, estendido a todos os eixos (o código é imutável desde o cadastro em todo fato, e os eixos dos fatos do administrador são editáveis no próprio fato, por emenda de 17/10/2026 da ADR-0136); a emenda 1.5 ganha o derivado booleano e o categórico multivalorado, e a restrição aos valores da oferta do item 4 passa a acontecer também na cópia da regra padrão para o processo; e o mapa de prefixos do vínculo passa a ser o daquela ADR (`CAMPO_FORMULARIO:` no lugar de `CAMPO_INSCRICAO:`, e `AGREGACAO_GRUPO:` reservado para os agregados do grupo repetível, aceito só depois da ADR do grupo).
 - ADR-0111 (vocabulário fechado de fatos do candidato — continua vigente para
   domínio, cardinalidade e governança seed-only, com o alcance reduzido pela
   ADR-0136: domínios texto, data e endereço aceitos e governança por seed só
@@ -299,7 +299,7 @@ o binding ficar decorativo — exatamente o defeito que a ADR-0111 existe para i
    da ordem de avaliação; nenhuma regra aplicável produz o conjunto vazio.
 3. **Dependências explícitas**, não inferidas do texto da regra — é o que alimenta o grafo acíclico
    de 1.4.
-4. **Recorte pela oferta congelada** do processo como último passo, e não como propriedade da regra.
+4. **Restrição aos valores da oferta congelada** do processo como último passo, e não como propriedade da regra.
 5. **Congelamento**: a regra entra no snapshot da publicação junto com o vocabulário e a versão do
    interpretador que a avalia, de modo que uma reavaliação futura produza o mesmo resultado (RN08).
 

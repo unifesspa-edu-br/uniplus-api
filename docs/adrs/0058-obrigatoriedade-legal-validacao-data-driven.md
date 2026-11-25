@@ -34,7 +34,7 @@ informed:
 > `documentosExigidos.obrigatoriedades[]` do envelope de publicação (ADR-0100,
 > ADR-0109 D6), com a mesma leitura exposta publicamente por
 > `GET /processos-seletivos/{id}/conformidade-legal` — fonte única entre a
-> consulta e o gate.
+> consulta e a verificação.
 
 ## Contexto e enunciado do problema
 
@@ -208,7 +208,7 @@ Vendor MIME: `application/vnd.uniplus.obrigatoriedade-legal.v1+json`.
 - **Risco**: variante `Customizado` vira escape hatch padrão.
   **Mitigação**: emite warning logs na avaliação; revisão trimestral; nova variante tipada no próximo sprint se padrão emergir.
 - **Risco**: edição admin no meio de ciclo afeta editais em andamento.
-  **Mitigação**: snapshot acontece em `Publicar()`, não em render do wizard. Janela pré-publicação é consultiva; publicação é vinculante.
+  **Mitigação**: snapshot acontece em `Publicar()`, não em render do wizard. Período pré-publicação é consultivo; publicação é vinculante.
 - **Risco**: Jurídico considera o snapshot insuficiente para algum processo específico.
   **Mitigação**: snapshot inclui `DescricaoHumana`, `BaseLegal`, `PortariaInterna`, `Hash`, serialização completa do predicate. Excede o que o COC legado produz.
 - **Risco**: colisão de hash.

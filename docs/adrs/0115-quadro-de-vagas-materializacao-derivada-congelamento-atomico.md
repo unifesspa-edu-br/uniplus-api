@@ -16,7 +16,7 @@ informed:
 
 O bloco `vagas` do envelope canônico (ADR-0100, ADR-0109) é hoje um dos 5 blocos ainda sem dono: `SnapshotPublicacaoCanonicalizer` grava o literal `{"status":"nao_construido"}`, e `SnapshotPublicadoPersistidoTests.Snapshot_Contem33BlocosCanonicos` asserta isso como esperado. O que existe hoje são só os **insumos**: `ConfiguracaoDistribuicaoVagas` (uma por oferta de curso) congela as vagas ofertadas base, o percentual da reserva legal, a referência à regra de distribuição e a referência demográfica (snapshot-copy do Censo, ADR-0061), mais as `ModalidadeSelecionada` da oferta. A própria entidade documenta que não modela o `QuadroDeVagas` — "output derivado... responsabilidade do cálculo do quadro (incremento futuro)".
 
-Sem o quadro materializado e congelado, o edital publicado não diz quantas vagas há por modalidade, não há como provar que o certame respeitou a Lei 12.711/2012 (redação da Lei 14.723/2023), o gate de consequência do indeferimento (documentos exigidos) não tem a linha `(oferta × modalidade)` sobre a qual raciocinar, e o envelope nunca fecha as suas 17 chaves.
+Sem o quadro materializado e congelado, o edital publicado não diz quantas vagas há por modalidade, não há como provar que o certame respeitou a Lei 12.711/2012 (redação da Lei 14.723/2023), a verificação de consequência do indeferimento (documentos exigidos) não tem a linha `(oferta × modalidade)` sobre a qual raciocinar, e o envelope nunca fecha as suas 17 chaves.
 
 Dois ramos de regra coexistem no catálogo (`regras_do_catalogo`), já semeados e sem consumidor: `DISTRIBUICAO_LEI_12711` (a quantidade de cada sub-reserva é **calculada** pela fórmula legal a partir das vagas ofertadas base, do percentual da reserva legal e dos percentuais demográficos) e `DISTRIBUICAO_INSTITUCIONAL` (a quantidade de cada modalidade é **fixada** integralmente pelo edital, sem cálculo). Uma terceira regra, `AJUSTE_VAGAS_ARTIGO_11_PARAGRAFO_UNICO`, rege a capagem nas vagas ofertadas base na escassez e a prioridade legal entre sub-reservas — também semeada, também órfã.
 
@@ -32,7 +32,7 @@ Falta decidir: (1) onde o quadro vive no agregado, (2) se ele nasce por um coman
 
 ## Opções consideradas
 
-- **A** — `VagaOfertada` como coleção da raiz `ProcessoSeletivo`, correlacionada a `ConfiguracaoDistribuicaoVagas` por chave estrangeira lateral.
+- **A** — `VagaOfertada` como coleção de `ProcessoSeletivo`, correlacionada a `ConfiguracaoDistribuicaoVagas` por chave estrangeira lateral.
 - **B** — `VagaOfertada` como filha de `ConfiguracaoDistribuicaoVagas` (mesmo padrão de `ModalidadeSelecionada`), calculada/fixada dentro da própria factory `Criar`.
 - **C** — Comando dedicado (`CalcularQuadroDeVagas`) executado depois de `DefinirDistribuicaoVagas`, com estado intermediário "distribuição definida, quadro pendente".
 
@@ -71,7 +71,7 @@ O cálculo do ramo federal é um **domain service puro** (`CalculadoraQuadroVaga
 
 ## Prós e contras das opções
 
-### A — `VagaOfertada` na raiz, correlacionada por chave lateral
+### A — `VagaOfertada` em `ProcessoSeletivo`, correlacionada por chave lateral
 
 - Bom, porque desacopla o ciclo de vida do quadro do ciclo de vida da configuração por oferta.
 - Ruim, porque cria uma segunda fonte de verdade para a mesma chave `(oferta × modalidade)` que o pai já garante única — divergência é possível sem um segundo mecanismo de sincronismo.

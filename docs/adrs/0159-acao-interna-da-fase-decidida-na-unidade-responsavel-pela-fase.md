@@ -35,7 +35,7 @@ Hoje toda decisão de acesso da Seleção monta o resource com a unidade dona. A
 - A Seleção monta o resource da ação da fase com a unidade da fase no lugar da dona, sempre com o `ProcessoId`, para que o impedimento por inscrição valha. A etapa decide pela unidade da fase que a contém. A ação que por natureza não tem fase decide na dona.
 - A unidade da fase e a fase de uma etapa são lidas do envelope da versão publicada vigente, nunca das entidades vivas durante a sessão de retificação. A troca de unidade de uma fase que não começou passa a valer quando a retificação fecha.
 - A ação de fase cuja fase não se resolve (inexistente, de outro processo ou sem unidade na versão vigente) recebe o 404 do resource inexistente, sem recorrer à dona, sem consultar o ponto de decisão e sem registro. A negativa por falta de permissão na unidade da fase e o impedimento por inscrição são registrados; a consulta de capacidade não registra; a falha ao publicar a negativa responde 503 ([ADR-0153](0153-projecao-por-protecao.md)).
-- A publicação e a retificação recusam a etapa que não declara a fase; o rascunho a aceita. A retificação que troca a unidade de uma fase iniciada é recusada. <!-- Cláusula alterada pela Emenda 1 (2026-11-20), no fim deste documento: o início da fase passa a ter condições. -->Fase iniciada é a que tem a janela publicada começada ou, sem janela, a que já tem ato ou registro; a encerrada conta como iniciada (UNI-REQ-0332 e UNI-REQ-0333).
+- A publicação e a retificação recusam a etapa que não declara a fase; o rascunho a aceita. A retificação que troca a unidade de uma fase iniciada é recusada. <!-- Cláusula alterada pela Emenda 1 (2026-11-20), no fim deste documento: o início da fase passa a ter condições. -->Fase iniciada é a que tem o período publicado iniciado ou, sem período, a que já tem ato ou registro; a encerrada conta como iniciada (UNI-REQ-0332 e UNI-REQ-0333).
 - A permissão `selecao:documentos-da-fase:publicar` entra no catálogo ([ADR-0151](0151-catalogo-de-permissoes-em-codigo-por-modulo.md)) e é concedida pelo fluxo da [ADR-0152](0152-governanca-das-concessoes-de-acesso.md).
 
 ## Consequências
@@ -43,7 +43,7 @@ Hoje toda decisão de acesso da Seleção monta o resource com a unidade dona. A
 ### Positivas
 
 - A unidade que conduz a fase atua com concessão na própria unidade, sem herança e sem escopo de auditoria.
-- A decisão de acesso não muda; o Ingresso e as demais frentes reutilizam a mesma peça.
+- A decisão de acesso não muda; o Ingresso e os demais trabalhos reutilizam a mesma peça.
 
 ### Negativas
 

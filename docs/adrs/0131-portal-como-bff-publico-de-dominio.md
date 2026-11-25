@@ -19,7 +19,7 @@ O `portal-api` existe como deployable autônomo desde a criação do seu esquele
 
 A pergunta deixa de ser teórica agora que o portal ganha conteúdo. A primeira entrega é uma vitrine de processos seletivos publicados e a página de um processo, com as suas publicações e o edital em PDF.
 
-Um processo publicado congela a sua configuração numa `VersaoConfiguracao` cujo conteúdo é um envelope canônico de vinte e oito blocos, que cresce a cada incremento do domínio. Esse envelope carrega o critério de classificação, os critérios de desempate, o bônus regional, a árvore de satisfação documental, o grafo de dependência entre fatos e o resultado da conferência de conformidade legal — tudo o que o cidadão **não** precisa ler para se inscrever, e boa parte do que a instituição não tem interesse em publicar num endereço anônimo.
+Um processo publicado congela a sua configuração numa `VersaoConfiguracao` cujo conteúdo é um envelope canônico de vinte e oito blocos, que cresce a cada incremento do domínio. Esse envelope carrega o critério de classificação, os critérios de desempate, o bônus regional, as regras de comprovação documental, o grafo de dependência entre fatos e o resultado da conferência de conformidade legal — tudo o que o cidadão **não** precisa ler para se inscrever, e boa parte do que a instituição não tem interesse em publicar num endereço anônimo.
 
 A questão a decidir é **de onde o portal tira o que mostra**. O caminho de menor esforço seria abrir a leitura administrativa do processo a uma identidade de serviço e deixar o Portal montar a página a partir do envelope. É esse caminho que esta ADR recusa, e o que ela põe no lugar define, por consequência, o que o Portal é.
 
@@ -30,7 +30,7 @@ A questão a decidir é **de onde o portal tira o que mostra**. O caminho de men
 - **Fronteiras de módulo preservadas** — o Portal não acessa schema interno, nem in-process, nem por rede.
 - **Sem privilégio administrativo para ler o que é público.** A leitura administrativa do processo em rascunho é restrita por decisão anterior, e ampliá-la para um consumidor público seria revogá-la de lado.
 - **Simplicidade operacional** na infraestrutura on-premises da Unifesspa, com equipe pequena e sem SRE dedicado.
-- **Preparar a inscrição sem construí-la agora.** A frente seguinte traz estado do candidato e superfície autenticada.
+- **Preparar a inscrição sem construí-la agora.** O trabalho seguinte traz estado do candidato e superfície autenticada.
 
 ## Opções consideradas
 
@@ -44,7 +44,7 @@ A questão a decidir é **de onde o portal tira o que mostra**. O caminho de men
 
 ### O módulo Seleção passa a ser um Open Host Service
 
-Seleção publica um contrato de leitura estável para o certame publicado, com uma camada de tradução que mapeia a configuração congelada para uma linguagem de integração. **Tipo interno não aparece no wire.** O contrato é composto por tipos declarados campo a campo; não é um recorte de subárvore do envelope, nem um filtro sobre documento JSON.
+Seleção publica um contrato de leitura estável para o certame publicado, com uma camada de tradução que mapeia a configuração congelada para uma linguagem de integração. **Tipo interno não aparece no wire.** O contrato é composto por tipos declarados campo a campo; não é uma parte da estrutura do envelope, nem um filtro sobre documento JSON.
 
 Essa forma não é preferência de estilo. Um contrato montado por filtro sobre o documento congelado devolve o campo novo por omissão: basta o envelope ganhar um bloco para ele atravessar a fronteira sem que ninguém decida. Com tipos declarados, a fronteira é a assinatura do tipo, e o campo novo só passa quando alguém o escreve.
 
@@ -52,7 +52,7 @@ Essa forma não é preferência de estilo. Um contrato montado por filtro sobre 
 
 A leitura é anônima e **pode ser alcançada diretamente** — é um Open Host Service, e o seu propósito é servir consumidores, não apenas um.
 
-Justamente por isso, **o critério de visibilidade vive no contrato, e não no Portal**. Um gate aplicado apenas no backend do portal seria contornado por quem consultasse Seleção diretamente, que é o uso que esta decisão autoriza. Quem responde é quem confere. Isso alinha o certame publicado com o que o sistema já pratica: o registro de atos é anônimo por decisão da [ADR-0105](0105-modulo-publicacoes-registro-central-dos-atos.md), os catálogos de configuração são anônimos, e a apresentação do formulário de inscrição já é pública. A proteção vem do contrato — tipos declarados e ausência de oráculo de existência —, não de obscuridade de rede.
+Justamente por isso, **o critério de visibilidade vive no contrato, e não no Portal**. Uma verificação aplicada apenas no backend do portal seria contornada por quem consultasse Seleção diretamente, que é o uso que esta decisão autoriza. Quem responde é quem confere. Isso alinha o certame publicado com o que o sistema já pratica: o registro de atos é anônimo por decisão da [ADR-0105](0105-modulo-publicacoes-registro-central-dos-atos.md), os catálogos de configuração são anônimos, e a apresentação do formulário de inscrição já é pública. A proteção vem do contrato — tipos declarados e ausência de oráculo de existência —, não de obscuridade de rede.
 
 Quanto ao controle de taxa: a [ADR-0093](0093-rate-limiting-na-borda-para-reference-data-publico.md) decidiu tratá-lo na borda, mas o seu alcance declarado são os catálogos de referência. **Esta ADR estende esse alcance** ao contrato público do certame e ao acervo de documentos publicados — que são, juntos, a primeira superfície anônima de alto valor do sistema, com pico previsível na abertura de inscrições.
 
@@ -62,7 +62,7 @@ A escrita permanece administrativa, declarada na própria action, como já ocorr
 
 Ele compõe o contrato de leitura de Seleção com a consulta unificada de atos de Publicações, aplica política de cache, adapta a resposta à tela e absorve indisponibilidade das origens. O documento do edital **não** passa por ele: o contrato público carrega o endereço do acervo, e o navegador o busca direto (ADR-0132). Ele **não** guarda regra de negócio, **não** escreve em banco de domínio e **não** decide o que pertence ao domínio — a deriva de fronteira é o modo conhecido de morte desse padrão.
 
-O Portal existe, portanto, pela experiência que serve e pelo que vem depois dela — estado do candidato e superfície autenticada na frente de inscrição —, **não por desempenho**: nesta entrega a agregação são duas origens, e cache de conteúdo anônimo pertence à borda. É um **Portal por experiência**: o `portal-api` serve o portal do candidato, e não as aplicações administrativas; um backend que serve todas as telas volta a ser o backend de propósito geral que este padrão existe para evitar.
+O Portal existe, portanto, pela experiência que serve e pelo que vem depois dela — estado do candidato e superfície autenticada no trabalho de inscrição —, **não por desempenho**: nesta entrega a agregação são duas origens, e cache de conteúdo anônimo pertence à borda. É um **Portal por experiência**: o `portal-api` serve o portal do candidato, e não as aplicações administrativas; um backend que serve todas as telas volta a ser o backend de propósito geral que este padrão existe para evitar.
 
 Decorrem daí quatro consequências que precisam estar decididas, e não descobertas na implementação:
 
@@ -84,7 +84,7 @@ A regra vale para o detalhe **e para a vitrine**, pelo mesmo motivo e com o mesm
 
   Resta uma assimetria a tratar: o cursor da origem carrega o próprio prazo, cifrado com chave que o Portal deliberadamente não tem — logo ele não pode lê-lo. Se o prazo da origem for o menor dos dois, o cursor externo continuaria válido depois de a origem já recusar o interno. **A validade emitida pelo Portal nunca ultrapassa a da origem**: o prazo trafega ao lado do token, autenticado, ou é limitado por construção à política conhecida da origem.
 
-  E há um efeito que decorre de ordenar por prazo: **o prazo muda**. Uma retificação que altere o encerramento de um certame durante a navegação reposiciona o item em relação à âncora que o cursor guarda — e quem cruza a âncora num sentido aparece duas vezes, quem cruza no outro desaparece. Encapsular o cursor da origem preserva a âncora, não a coleção. A navegação fica **presa à revisão da coleção em que começou**; quando ela avança, o cliente é avisado e recomeça, em vez de receber uma lista silenciosamente inconsistente.
+  E há um efeito que decorre de ordenar por prazo: **o prazo muda**. Uma retificação que altere o encerramento de um certame durante a navegação reposiciona o item em relação ao ponto de continuação que o cursor guarda — e quem cruza o ponto de continuação num sentido aparece duas vezes, quem cruza no outro desaparece. Encapsular o cursor da origem preserva o ponto de continuação, não a coleção. A navegação fica **presa à revisão da coleção em que começou**; quando ela avança, o cliente é avisado e recomeça, em vez de receber uma lista silenciosamente inconsistente.
 
 - **A indisponibilidade das origens tem respostas distintas.** Ausência do registro do ato **degrada** enquanto o certame já é visível — o que, pelo critério de visibilidade adiante, significa atos posteriores ainda não drenados, e não o ato criador: a linha do tempo vem vazia ou incompleta, com aviso neutro, e essa resposta não é cacheada.
 
@@ -116,7 +116,7 @@ Por isso o critério é conjunto, e a ausência do ato não é lida como atraso:
 - O envelope canônico permanece conhecido em um só lugar. Um bloco novo no domínio não vaza para o público por omissão.
 - O Portal nunca recebe privilégio administrativo, e a leitura administrativa do processo em rascunho continua restrita, como a decisão original previa.
 - O contrato público serve a qualquer consumidor futuro — o sítio institucional, um painel de transparência, um agregador externo — sem integração sob medida para cada um.
-- A frente de inscrição encontra a fronteira pronta: quando houver estado de candidato, não será preciso reabrir a topologia.
+- O trabalho de inscrição encontra a fronteira pronta: quando houver estado de candidato, não será preciso reabrir a topologia.
 
 ### Negativas
 
@@ -154,14 +154,14 @@ Por isso o critério é conjunto, e a ausência do ato não é lida como atraso:
 
 - **Fronteira de tipo:** um teste compara as chaves do envelope canônico contra a lista conhecida e **falha quando um bloco novo aparece**, obrigando a decisão explícita "público ou interno" a cada incremento do domínio.
 - **Fronteira de módulo:** nenhum projeto do Portal referencia projeto de Seleção. Essa checagem não enxerga acoplamento por rede, e por isso vale o que está no parágrafo seguinte.
-- **Contrato próprio, não emprestado:** o documento de contrato do Portal é gerado a partir dos seus próprios tipos. Onde um tipo do Portal tiver o mesmo nome de um de outro módulo, a verificação de coerência entre contratos exige que as duas formas sejam idênticas — ela não proíbe o nome repetido, obriga a coincidência. **Essa cobertura não existe hoje:** a verificação enumera os contratos dos cinco módulos internos, e o do Portal ainda não existe nem está na lista. Publicar o contrato do Portal e incluí-lo nessa enumeração é requisito desta decisão; enquanto não acontecer, um tipo do Portal pode divergir sob nome alheio sem quebrar gate algum.
+- **Contrato próprio, não emprestado:** o documento de contrato do Portal é gerado a partir dos seus próprios tipos. Onde um tipo do Portal tiver o mesmo nome de um de outro módulo, a verificação de coerência entre contratos exige que as duas formas sejam idênticas — ela não proíbe o nome repetido, obriga a coincidência. **Essa cobertura não existe hoje:** a verificação enumera os contratos dos cinco módulos internos, e o do Portal ainda não existe nem está na lista. Publicar o contrato do Portal e incluí-lo nessa enumeração é requisito desta decisão; enquanto não acontecer, um tipo do Portal pode divergir sob nome alheio sem falhar em verificação alguma.
 - **Ausência de oráculo:** as rotas públicas respondem com o mesmo "não encontrado" para tudo que não satisfaça o critério de visibilidade — versão vigente **e** ato criador registrado. Um processo inexistente, um em rascunho e um cuja publicação teve o registro do ato recusado recebem a mesma resposta, e nenhuma delas se distingue das demais. O último caso importa duas vezes: além de não vazar estado interno, é ele que impede divulgar certame sem ato correspondente.
 
   > **Emenda (2026-09-24):** o "não encontrado" uniforme vale para a **abertura** cujo registro do ato foi recusado; na retificação recusada, o certame continua servido com o conteúdo anterior ([ADR-0133](0133-divulgacao-do-certame-materializada-no-registro-do-ato.md)). Ver [Emenda 1](#emenda-1-2026-09-24--degradação-da-linha-do-tempo-e-revalidação-sob-a-divulgação-materializada).
 - **Nada vencido depois de uma retificação:** retificar um certame, ou vincular-lhe um ato novo, muda o que as rotas públicas devolvem na consulta seguinte — tanto no detalhe quanto na vitrine, e tanto na origem quanto em representação já guardada. Uma resposta de "não modificado" sobre conteúdo que mudou é falha do ensaio.
 
-  > **Emenda (2026-09-24):** por este ensaio, o Portal não guarda conteúdo nem ponteiro com validade — qualquer janela o reprovaria. Ver [Emenda 1](#emenda-1-2026-09-24--degradação-da-linha-do-tempo-e-revalidação-sob-a-divulgação-materializada).
-- **Navegação estável:** um percurso da vitrine sem mudança de revisão devolve cada certame uma vez, sem repetição nem omissão. Quando uma retificação altera prazos no meio do percurso, a navegação **não** tenta prosseguir com a âncora antiga: ela é interrompida com o sinal de reinício. E um endereço de continuação nunca sobrevive ao da origem que ele encapsula.
+  > **Emenda (2026-09-24):** por este ensaio, o Portal não guarda conteúdo nem ponteiro com validade — qualquer prazo de validade o reprovaria. Ver [Emenda 1](#emenda-1-2026-09-24--degradação-da-linha-do-tempo-e-revalidação-sob-a-divulgação-materializada).
+- **Navegação estável:** um percurso da vitrine sem mudança de revisão devolve cada certame uma vez, sem repetição nem omissão. Quando uma retificação altera prazos no meio do percurso, a navegação **não** tenta prosseguir com o ponto de continuação antigo: ela é interrompida com o sinal de reinício. E um endereço de continuação nunca sobrevive ao da origem que ele encapsula.
 - **Prontidão honesta:** a sonda não reprova por dependência sem consumidor entre as rotas servidas, nem por origem consultada por rede; e não aprova o processo quando uma rota que ele expõe está inoperante por dependência própria — incluindo as autenticadas, enquanto compartilharem o deployable.
 
 ## Emenda 1 (2026-09-24) — degradação da linha do tempo e revalidação sob a divulgação materializada
@@ -172,7 +172,7 @@ A [ADR-0133](0133-divulgacao-do-certame-materializada-no-registro-do-ato.md) tor
 
 A exigência de tornar observável a pendência de "atos posteriores ainda não drenados" deixa de valer, e construir esse sinal passa a ser indesejável:
 
-- o único ato registrado por mensagem durável é o que cria versão de configuração; o registro feito diretamente no módulo de Publicações é síncrono e não tem janela de drenagem;
+- o único ato registrado por mensagem durável é o que cria versão de configuração; o registro feito diretamente no módulo de Publicações é síncrono e não tem período de drenagem;
 - sem esse ato, a divulgação não avança — não há conteúdo novo a anunciar, e o detalhe continua servindo o último estado que tem ato normativo;
 - a recusa de mérito é terminal: a [ADR-0108](0108-registro-do-ato-por-mensagem-duravel.md) prevê retentativa antes da fila morta, mas a política do registro a reserva às falhas transitórias e à recusa por ordem — a recusa de mérito não melhora com o tempo e vai direto para a fila morta, onde só uma intervenção a reprocessa. Um sinal derivado da diferença entre o ato esperado e o registrado ficaria pendente para sempre, e a página, degradada para sempre;
 - expor o sinal revelaria a existência de uma retificação interna ainda sem publicidade, contra a ausência de oráculo que a Confirmação exige.
@@ -184,7 +184,7 @@ A degradação é decidida pelo que o Portal observa nas próprias respostas das
 - o registro de atos está indisponível ou falha — inclusive no meio do percurso de páginas: uma resposta parcial não é apresentada como completa;
 - o percurso atinge o teto de páginas que o Portal se impõe — a origem ordena do mais antigo para o mais recente, e truncar cortaria justamente os atos mais recentes;
 - o ato que criou a versão servida pelo detalhe não aparece na linha do tempo;
-- a linha do tempo traz um ato que congela configuração **mais recente** que o ato criador da versão servida: o registro já aconteceu, mas a divulgação ainda não o alcançou — janela de consumo, ou divulgação parada na fila morta. O ato já é público no registro de atos, e por isso apontar a defasagem não revela nada que o público não possa consultar.
+- a linha do tempo traz um ato que congela configuração **mais recente** que o ato criador da versão servida: o registro já aconteceu, mas a divulgação ainda não o alcançou — período de consumo, ou divulgação parada na fila morta. O ato já é público no registro de atos, e por isso apontar a defasagem não revela nada que o público não possa consultar.
 
 Os dois últimos casos são conferências de consistência entre as duas origens, e não um segundo critério de visibilidade: quem decide o que é divulgado continua sendo o contrato de Seleção.
 
@@ -194,7 +194,7 @@ O endereço do documento ainda em cópia para o acervo é observável na própri
 
 Mantém-se o que o texto original decide: não degrada e não serve conteúdo vencido. A forma é a de indisponibilidade temporária — `503`, no formato de erro da [ADR-0023](0023-wire-formato-erro-rfc-9457.md) — com `Retry-After` indicando quando reencaminhar.
 
-### Revalidação sem janela
+### Revalidação sem prazo de validade
 
 O Portal **não guarda a resposta composta** — nem o conteúdo, nem um ponteiro do identificador do certame para o selo. Qualquer validade de conteúdo guardado reprovaria o ensaio "Nada vencido depois de uma retificação", que exige refletir o ato novo na consulta seguinte; e a própria decisão já registra que cache de conteúdo anônimo pertence à borda. O Portal revalida por identificador de conteúdo sobre a composição, com revalidação obrigatória em toda resposta, e a resposta degradada não é guardada.
 
@@ -212,11 +212,11 @@ A confirmação "Ausência de oráculo" lê-se com a distinção já registrada 
 
 ## Emenda 2 (2026-10-10) — a inscrição autenticada ainda não passa pelo Portal
 
-Esta decisão trata da superfície **pública e anônima** — a vitrine e o detalhe do certame publicado. A frente seguinte, antecipada no texto original como "estado do candidato e superfície autenticada", chegou com a inscrição (issue #1859, UNI-REQ-0084): o frontend do candidato consome os endpoints de inscrição (iniciar, consultar, salvar rascunho, obter o formulário apresentado, submeter) **diretamente do módulo Seleção**, autenticado, com o titular resolvido pelo CPF do token, não através do Portal.
+Esta decisão trata da superfície **pública e anônima** — a vitrine e o detalhe do certame publicado. O trabalho seguinte, antecipado no texto original como "estado do candidato e superfície autenticada", chegou com a inscrição (issue #1859, UNI-REQ-0084): o frontend do candidato consome os endpoints de inscrição (iniciar, consultar, salvar rascunho, obter o formulário apresentado, submeter) **diretamente do módulo Seleção**, autenticado, com o titular resolvido pelo CPF do token, não através do Portal.
 
-Isso não revoga nem contradiz a decisão: o que ela proíbe é o Portal — ou qualquer consumidor público e anônimo — lendo o envelope congelado ou recebendo privilégio administrativo. A inscrição é autenticada, por candidato, e o contrato que ela expõe já é desenhado campo a campo (`InscricaoRequest`/`InscricaoDto`/`FormularioApresentadoDoProcessoDto`), não uma projeção do envelope. O que fica registrado é que o Portal **ainda não é o único ponto de entrada do candidato** — continua sendo até ele ganhar a responsabilidade de compor também essa frente.
+Isso não revoga nem contradiz a decisão: o que ela proíbe é o Portal — ou qualquer consumidor público e anônimo — lendo o envelope congelado ou recebendo privilégio administrativo. A inscrição é autenticada, por candidato, e o contrato que ela expõe já é desenhado campo a campo (`InscricaoRequest`/`InscricaoDto`/`FormularioApresentadoDoProcessoDto`), não uma projeção do envelope. O que fica registrado é que o Portal **ainda não é o único ponto de entrada do candidato** — continua sendo até ele ganhar a responsabilidade de compor também esse trabalho.
 
-Quando a Portal API passar a servir a inscrição, o movimento compatível com esta decisão é o mesmo já previsto para a reversão da opção B: o Portal compõe o contrato de Seleção, nunca o envelope. Até lá, o frontend atravessa a fronteira de módulo que esta ADR reserva ao Portal — uma excepcionalidade que decorre de o Portal não cobrir ainda esta frente, não de nova decisão arquitetural.
+Quando a Portal API passar a servir a inscrição, o movimento compatível com esta decisão é o mesmo já previsto para a reversão da opção B: o Portal compõe o contrato de Seleção, nunca o envelope. Até lá, o frontend atravessa a fronteira de módulo que esta ADR reserva ao Portal — uma excepcionalidade que decorre de o Portal não cobrir ainda este trabalho, não de nova decisão arquitetural.
 
 ## Emenda 3 (2026-11-11) — o provedor de identidade sai da prontidão
 
@@ -226,7 +226,7 @@ O critério da prontidão fica; muda o que ele conclui sobre o provedor de ident
 
 Gatilhos de reversão, para que a revisão desta decisão não dependa de impressão:
 
-- **Disponibilidade** — indisponibilidade do monolito derrubando a vitrine em janela de inscrição aberta.
+- **Disponibilidade** — indisponibilidade do monolito derrubando a vitrine durante o período de inscrição.
 - **Latência** — tempo de resposta da vitrine acima do orçamento no pico de abertura, com o controle de borda já em operação.
 
 Ambos exigem medição: taxa de acerto do cache, latência por origem consultada e frequência de degradação da linha do tempo.

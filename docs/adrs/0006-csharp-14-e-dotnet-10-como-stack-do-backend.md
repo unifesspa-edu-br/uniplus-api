@@ -9,7 +9,7 @@ decision-makers:
 
 ## Contexto e enunciado do problema
 
-O `uniplus-api` precisa de uma stack que comporte Clean Architecture, CQRS, processamento de classificação em lote e integrações com Keycloak, PostgreSQL, Kafka e S3. A equipe está se capacitando em .NET, alinhada com o ecossistema institucional da Unifesspa.
+O `uniplus-api` precisa de uma stack que comporte Clean Architecture, CQRS, processamento da classificação de grupos de candidatos e integrações com Keycloak, PostgreSQL, Kafka e S3. A equipe está se capacitando em .NET, alinhada com o ecossistema institucional da Unifesspa.
 
 O sistema deve absorver picos de inscrição (5000+ candidatos simultâneos), gerar PDFs e planilhas, processar importação de notas em CSV/Excel e executar a classificação dos candidatos com fórmulas configuráveis e desempates encadeados.
 
