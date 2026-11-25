@@ -18,8 +18,7 @@ public sealed record RemanejamentoParametros
     public static RemanejamentoParametros Vazio => new();
 
     /// <summary>
-    /// Cria um <see cref="RemanejamentoParametros"/> normalizando cada campo por
-    /// <c>Trim</c> (valores em branco viram <see langword="null"/>).
+    /// Cria parâmetros preservando os códigos; valores em branco viram <see langword="null"/>.
     /// </summary>
     public static RemanejamentoParametros Criar(string? destino, string? par, string? destinoFinal) =>
         new()
@@ -34,5 +33,5 @@ public sealed record RemanejamentoParametros
     public bool TemAlgum => Destino is not null || Par is not null || DestinoFinal is not null;
 
     private static string? Normalizar(string? valor) =>
-        string.IsNullOrWhiteSpace(valor) ? null : valor.Trim();
+        string.IsNullOrWhiteSpace(valor) ? null : valor;
 }

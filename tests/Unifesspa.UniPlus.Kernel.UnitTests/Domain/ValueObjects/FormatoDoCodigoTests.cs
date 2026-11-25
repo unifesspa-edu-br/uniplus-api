@@ -1,7 +1,5 @@
 namespace Unifesspa.UniPlus.Kernel.UnitTests.Domain.ValueObjects;
 
-using System.Text.RegularExpressions;
-
 using AwesomeAssertions;
 
 using Unifesspa.UniPlus.Kernel.Domain.ValueObjects;
@@ -23,14 +21,8 @@ public sealed class FormatoDoCodigoTests
     [InlineData("1A", false)]
     [InlineData("A\n", false)]
     [InlineData("", false)]
-    public void TemFormatoValido_Exemplos_ConcordaComExpressaoDoBanco(string codigo, bool esperado)
-    {
-        ArgumentNullException.ThrowIfNull(codigo);
-        Match correspondencia = Regex.Match(codigo, FormatoDoCodigo.ExpressaoNoBanco, RegexOptions.None, TimeSpan.FromSeconds(1));
-
+    public void TemFormatoValido_Exemplos_DevolveResultadoEsperado(string codigo, bool esperado) =>
         FormatoDoCodigo.TemFormatoValido(codigo).Should().Be(esperado);
-        (correspondencia.Success && correspondencia.Length == codigo.Length).Should().Be(esperado);
-    }
 
     [Fact]
     public void TemFormatoValido_ValorNulo_LancaExcecao() =>

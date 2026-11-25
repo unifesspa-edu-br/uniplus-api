@@ -15,7 +15,6 @@ public static class ValidacaoDosCamposDaModalidade
 {
     private const int DescricaoMaxLength = 300;
     private const int BaseLegalMaxLength = 500;
-    private const int CodigoReferenciaMaxLength = 60;
 
     /// <summary>
     /// Valida só os campos independentes de coerência cruzada (parse dos enums,
@@ -71,14 +70,14 @@ public static class ValidacaoDosCamposDaModalidade
     {
         string? descricao = NormalizarOpcional(declaracao.Descricao);
         string? baseLegal = NormalizarOpcional(declaracao.BaseLegal);
-        string? origem = NormalizarOpcional(declaracao.ComposicaoOrigem);
+        string? origem = string.IsNullOrWhiteSpace(declaracao.ComposicaoOrigem) ? null : declaracao.ComposicaoOrigem;
         CodigosResolvidosDaModalidade codigos = CodigosResolvidosDaModalidade.De(declaracao);
         FieldError?[] recusas =
         [
             RecusaDeTamanho(descricao, DescricaoMaxLength, "descricao", ModalidadeErrorCodes.DescricaoTamanho, "Descrição da modalidade"),
             RecusaDeTamanho(baseLegal, BaseLegalMaxLength, "baseLegal", ModalidadeErrorCodes.BaseLegalTamanho, "Base legal da modalidade"),
             .. codigos.Recusas,
-            RecusaDeTamanho(origem, CodigoReferenciaMaxLength, "composicaoOrigem", ModalidadeErrorCodes.CodigoFormatoInvalido, "Código de origem da composição"),
+            .. RecusasDasReferencias(declaracao),
             RecusaDaRegraDeAplicabilidade(declaracao.RegraDeAplicabilidade),
         ];
         return new([.. recusas.OfType<FieldError>()], codigos.Reconhecidos, CamposResolvidos(declaracao, codigos, descricao, origem, baseLegal));
@@ -101,6 +100,19 @@ public static class ValidacaoDosCamposDaModalidade
         valor is { } texto && texto.Length > maximo
             ? new FieldError(campo, new DomainError(codigoDaRecusa, $"{rotulo} deve ter no máximo {maximo} caracteres."))
             : null;
+
+    private static FieldError? RecusaDeCodigo(string? valor, string campo) =>
+        string.IsNullOrWhiteSpace(valor) || CodigoModalidade.EhValido(valor)
+            ? null
+            : new FieldError(campo, CodigoModalidade.Criar(valor).Error!);
+
+    private static FieldError?[] RecusasDasReferencias(DeclaracaoDaModalidade declaracao) =>
+    [
+        RecusaDeCodigo(declaracao.ComposicaoOrigem, "composicaoOrigem"),
+        RecusaDeCodigo(declaracao.RemanejamentoDestino, "remanejamento.destino"),
+        RecusaDeCodigo(declaracao.RemanejamentoPar, "remanejamento.par"),
+        RecusaDeCodigo(declaracao.RemanejamentoFallback, "remanejamento.fallback"),
+    ];
 
     private static FieldError? RecusaDaRegraDeAplicabilidade(PredicadoDnf? regra) =>
         regra is null
