@@ -32,6 +32,10 @@ using Unifesspa.UniPlus.Regras.Enums;
 [JsonUnmappedMemberHandling(JsonUnmappedMemberHandling.Disallow)]
 public sealed record CondicaoDnf
 {
+    public const string CampoFato = "fato";
+    public const string CampoOperador = "operador";
+    public const string CampoValor = "valor";
+
     /// <remarks>
     /// Privado, mas anotado com <see cref="JsonConstructorAttribute"/>: é o construtor
     /// que o <c>System.Text.Json</c> usa para materializar <c>CriterioDesempate.Parametros</c>
@@ -97,16 +101,16 @@ public sealed record CondicaoDnf
     {
         if (RecusaDoFato(fato) is { } recusaDoFato)
         {
-            yield return new("fato", recusaDoFato);
+            yield return new(CampoFato, recusaDoFato);
         }
 
         if (operador is not { } lido)
         {
-            yield return new("operador", OperadorNaoReconhecido());
+            yield return new(CampoOperador, OperadorNaoReconhecido());
         }
         else if (RecusaDaForma(lido, valor) is { } recusaDaForma)
         {
-            yield return new("valor", recusaDaForma);
+            yield return new(CampoValor, recusaDaForma);
         }
     }
 

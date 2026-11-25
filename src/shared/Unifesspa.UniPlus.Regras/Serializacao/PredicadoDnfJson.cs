@@ -18,13 +18,15 @@ using Unifesspa.UniPlus.Regras.ValueObjects;
 public static class PredicadoDnfJson
 {
     public const string FormaInvalida = "PredicadoDnf.FormaJsonInvalida";
+    private const string ChaveFato = "fato";
+    private const string ChaveCodigoDoDado = "codigoDoDado";
 
     public static JsonArray ParaJson(PredicadoDnf predicado)
     {
         ArgumentNullException.ThrowIfNull(predicado);
         return new JsonArray([.. predicado.Clausulas.Select(static c => (JsonNode)new JsonArray([.. c.Condicoes.Select(static d => (JsonNode)new JsonObject
         {
-            ["codigoDoDado"] = d.Fato,
+            [ChaveCodigoDoDado] = d.Fato,
             ["operador"] = d.Operador.Codigo(),
             ["valor"] = JsonNode.Parse(d.Valor.GetRawText()),
         })]))]);
@@ -96,9 +98,9 @@ public static class PredicadoDnfJson
 
     private static Result<CondicaoDnf> LerCondicaoObjeto(JsonElement condicao)
     {
-        if (condicao.TryGetProperty("fato", out _))
+        if (condicao.TryGetProperty(ChaveFato, out _))
         {
-            return Result<CondicaoDnf>.ValidationFailure([new FieldError("fato", Erro("chave 'fato' não é aceita; use 'codigoDoDado'"))]);
+            return Result<CondicaoDnf>.ValidationFailure([new FieldError(ChaveFato, Erro("chave 'fato' não é aceita; use 'codigoDoDado'"))]);
         }
 
         string? campo = CampoAusente(condicao);
@@ -110,15 +112,21 @@ public static class PredicadoDnfJson
         return CriarCondicao(condicao);
     }
 
-    private static Result<CondicaoDnf> CriarCondicao(JsonElement condicao) =>
-        CondicaoDnf.CriarInformada(
-            condicao.GetProperty("codigoDoDado").GetString(), condicao.GetProperty("operador").GetString(), condicao.GetProperty("valor"));
+    private static Result<CondicaoDnf> CriarCondicao(JsonElement condicao)
+    {
+        Result<CondicaoDnf> criada = CondicaoDnf.CriarInformada(
+            condicao.GetProperty(ChaveCodigoDoDado).GetString(), condicao.GetProperty("operador").GetString(), condicao.GetProperty("valor"));
+        return criada.IsSuccess
+            ? criada
+            : Result<CondicaoDnf>.ValidationFailure([.. criada.Errors.Select(static erro =>
+                erro.Field == CondicaoDnf.CampoFato ? erro with { Field = ChaveCodigoDoDado } : erro)]);
+    }
 
     private static string? CampoAusente(JsonElement condicao)
     {
-        if (!condicao.TryGetProperty("codigoDoDado", out JsonElement codigoDoDado) || codigoDoDado.ValueKind != JsonValueKind.String)
+        if (!condicao.TryGetProperty(ChaveCodigoDoDado, out JsonElement codigoDoDado) || codigoDoDado.ValueKind != JsonValueKind.String)
         {
-            return "codigoDoDado";
+            return ChaveCodigoDoDado;
         }
 
         if (!condicao.TryGetProperty("operador", out JsonElement operador) || operador.ValueKind != JsonValueKind.String)

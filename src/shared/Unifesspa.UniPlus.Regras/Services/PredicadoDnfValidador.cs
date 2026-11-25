@@ -81,7 +81,7 @@ public static class PredicadoDnfValidador
             if (resultado.IsFailure)
             {
                 string campo = CampoDaRecusa(resultado.Error!.Code);
-                return (Result.ValidationFailure([new FieldError($"[{c}][{i}]{campo}", resultado.Error)]), CausaDaRecusa(condicao, resultado.Error.Code), tipoEsperado);
+                return (Result.ValidationFailure([new FieldError(campo, resultado.Error).NoCaminhoDe($"[{c}][{i}]")]), CausaDaRecusa(condicao, resultado.Error.Code), tipoEsperado);
             }
         }
 
@@ -90,9 +90,9 @@ public static class PredicadoDnfValidador
 
     private static string CampoDaRecusa(string codigo) => codigo switch
     {
-        "PredicadoDnf.FatoDesconhecido" or "PredicadoDnf.FatoNaoColetadoPeloProcesso" => ".fato",
-        PredicadoDnfErrorCodes.OperadorIncompativelComDominio => ".operador",
-        PredicadoDnfErrorCodes.ValorForaDoDominio or PredicadoDnfErrorCodes.ValorIncompativelComTipo => ".valor",
+        "PredicadoDnf.FatoDesconhecido" or "PredicadoDnf.FatoNaoColetadoPeloProcesso" => CondicaoDnf.CampoFato,
+        PredicadoDnfErrorCodes.OperadorIncompativelComDominio => CondicaoDnf.CampoOperador,
+        PredicadoDnfErrorCodes.ValorForaDoDominio or PredicadoDnfErrorCodes.ValorIncompativelComTipo => CondicaoDnf.CampoValor,
         _ => "",
     };
 

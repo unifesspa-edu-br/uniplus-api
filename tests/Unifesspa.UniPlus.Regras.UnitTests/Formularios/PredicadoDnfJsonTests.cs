@@ -37,6 +37,17 @@ public sealed class PredicadoDnfJsonTests
     }
 
     [Fact]
+    public void DeJson_ComCodigoDoDadoEmBranco_RecusaNoCampoDoDocumento()
+    {
+        using JsonDocument documento = JsonDocument.Parse("""[[{"codigoDoDado":" ","operador":"IGUAL","valor":true}]]""");
+
+        Result<PredicadoDnf> lido = PredicadoDnfJson.DeJson(documento.RootElement);
+
+        lido.Errors.Select(static erro => (erro.Field, erro.Error.Code)).Should().Equal(
+            ("[0][0].codigoDoDado", "CondicaoDnf.FatoObrigatorio"));
+    }
+
+    [Fact]
     public void CondicaoGravada_IdaEVolta_PreservaCondicaoEUsaCodigoDoDado()
     {
         CondicaoDnf condicao = CondicaoDnf.Criar("IDADE", Operador.MaiorIgual, JsonSerializer.SerializeToElement(18)).Value!;
