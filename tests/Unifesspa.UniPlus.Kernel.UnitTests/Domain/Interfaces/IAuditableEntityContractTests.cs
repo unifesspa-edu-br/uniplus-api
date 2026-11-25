@@ -4,24 +4,15 @@ using AwesomeAssertions;
 
 using Unifesspa.UniPlus.Kernel.Domain.Interfaces;
 
-// Contract test via dummy implementation. Padrão acordado em #129
-// (FakeUnitOfWork): se o contrato público da interface mudar, o dummy
-// quebra a compilação e o time vê a breaking change imediatamente.
 public sealed class IAuditableEntityContractTests
 {
+    private static readonly DateTimeOffset InstanteDeCriacao = new(2026, 1, 1, 12, 0, 0, TimeSpan.Zero);
+
     [Fact(DisplayName = "IAuditableEntity expõe CreatedAt, UpdatedAt, CreatedBy, UpdatedBy via implementação dummy")]
     public void DummyImplementacao_ExpoePropriedades()
     {
-        DateTimeOffset agora = DateTimeOffset.UtcNow;
-        DummyAuditavel dummy = new()
-        {
-            CreatedAt = agora,
-            UpdatedAt = agora.AddMinutes(5),
-            CreatedBy = "alice",
-            UpdatedBy = "bob",
-        };
-
-        IAuditableEntity contrato = dummy;
+        DateTimeOffset agora = InstanteDeCriacao;
+        IAuditableEntity contrato = CriarAuditavel(agora);
 
         contrato.CreatedAt.Should().Be(agora);
         contrato.UpdatedAt.Should().Be(agora.AddMinutes(5));
@@ -34,7 +25,7 @@ public sealed class IAuditableEntityContractTests
     {
         DummyAuditavel dummy = new()
         {
-            CreatedAt = DateTimeOffset.UtcNow,
+            CreatedAt = InstanteDeCriacao,
             UpdatedAt = null,
             CreatedBy = null,
             UpdatedBy = null,
@@ -46,6 +37,14 @@ public sealed class IAuditableEntityContractTests
         contrato.CreatedBy.Should().BeNull();
         contrato.UpdatedBy.Should().BeNull();
     }
+
+    private static DummyAuditavel CriarAuditavel(DateTimeOffset criadoEm) => new()
+    {
+        CreatedAt = criadoEm,
+        UpdatedAt = criadoEm.AddMinutes(5),
+        CreatedBy = "alice",
+        UpdatedBy = "bob",
+    };
 
     private sealed class DummyAuditavel : IAuditableEntity
     {

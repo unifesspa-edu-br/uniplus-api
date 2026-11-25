@@ -16,28 +16,25 @@ public sealed class ReferenciaEnderecoGeoTests
 {
     private static readonly DateTimeOffset Agora = new(2026, 6, 22, 17, 10, 0, TimeSpan.Zero);
 
-    private static Result<ReferenciaEnderecoGeo> CriarValido(
-        string? cep = "68507590",
-        string? logradouro = "Folha 31, Quadra 7",
-        string? numero = "s/n",
-        string? complemento = "Bloco A",
-        string? bairro = "Nova Marabá",
-        string? distrito = null,
-        string? cidadeCodigoIbge = "1504208",
-        string? cidadeNome = "Marabá",
-        string? cidadeUf = "PA",
-        decimal? latitude = -5.368m,
-        decimal? longitude = -49.118m,
-        string? nivelResolucao = NivelResolucaoEndereco.Logradouro,
-        string? origem = "logradouro") =>
-        ReferenciaEnderecoGeo.Criar(
-            cep, logradouro, numero, complemento, bairro, distrito,
-            cidadeCodigoIbge, cidadeNome, cidadeUf, latitude, longitude, nivelResolucao, origem, Agora);
+    private const string Cep = "68507590";
+    private const string Logradouro = "Folha 31, Quadra 7";
+    private const string Numero = "s/n";
+    private const string Complemento = "Bloco A";
+    private const string Bairro = "Nova Marabá";
+    private const string CidadeCodigoIbge = "1504208";
+    private const string CidadeNome = "Marabá";
+    private const string CidadeUf = "PA";
+    private const decimal Latitude = -5.368m;
+    private const decimal Longitude = -49.118m;
+    private const string Origem = "logradouro";
 
     [Fact(DisplayName = "Criar com dados completos válidos preenche e normaliza o endereço")]
     public void Criar_DadosValidos_NormalizaCampos()
     {
-        Result<ReferenciaEnderecoGeo> resultado = CriarValido(cep: " 68507590 ", cidadeUf: "pa");
+        Result<ReferenciaEnderecoGeo> resultado = ReferenciaEnderecoGeo.Criar(
+            " 68507590 ", Logradouro, Numero, Complemento, Bairro, null,
+            CidadeCodigoIbge, CidadeNome, "pa", Latitude, Longitude,
+            NivelResolucaoEndereco.Logradouro, Origem, Agora);
 
         resultado.IsSuccess.Should().BeTrue();
         ReferenciaEnderecoGeo endereco = resultado.Value!;
@@ -53,9 +50,10 @@ public sealed class ReferenciaEnderecoGeoTests
     [Fact(DisplayName = "Criar tolera resolução parcial (só cidade): logradouro/bairro/coordenada nulos")]
     public void Criar_ResolucaoParcial_Aceita()
     {
-        Result<ReferenciaEnderecoGeo> resultado = CriarValido(
-            logradouro: null, numero: null, complemento: null, bairro: null, distrito: null,
-            latitude: null, longitude: null, nivelResolucao: NivelResolucaoEndereco.Cidade, origem: "faixa-cidade");
+        Result<ReferenciaEnderecoGeo> resultado = ReferenciaEnderecoGeo.Criar(
+            Cep, null, null, null, null, null,
+            CidadeCodigoIbge, CidadeNome, CidadeUf, null, null,
+            NivelResolucaoEndereco.Cidade, "faixa-cidade", Agora);
 
         resultado.IsSuccess.Should().BeTrue();
         resultado.Value!.Logradouro.Should().BeNull();
@@ -70,7 +68,10 @@ public sealed class ReferenciaEnderecoGeoTests
     [InlineData("6850759X", EnderecoReferenciaErrorCodes.CepFormatoInvalido)]
     public void Criar_CepInvalido_Falha(string? cep, string esperado)
     {
-        Result<ReferenciaEnderecoGeo> resultado = CriarValido(cep: cep);
+        Result<ReferenciaEnderecoGeo> resultado = ReferenciaEnderecoGeo.Criar(
+            cep, Logradouro, Numero, Complemento, Bairro, null,
+            CidadeCodigoIbge, CidadeNome, CidadeUf, Latitude, Longitude,
+            NivelResolucaoEndereco.Logradouro, Origem, Agora);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be(esperado);
@@ -79,7 +80,10 @@ public sealed class ReferenciaEnderecoGeoTests
     [Fact(DisplayName = "Criar com código IBGE do snapshot malformado falha com erro de cidade")]
     public void Criar_CidadeSnapshotMalformado_Falha()
     {
-        Result<ReferenciaEnderecoGeo> resultado = CriarValido(cidadeCodigoIbge: "150420");
+        Result<ReferenciaEnderecoGeo> resultado = ReferenciaEnderecoGeo.Criar(
+            Cep, Logradouro, Numero, Complemento, Bairro, null,
+            "150420", CidadeNome, CidadeUf, Latitude, Longitude,
+            NivelResolucaoEndereco.Logradouro, Origem, Agora);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be(CidadeReferenciaErrorCodes.CodigoIbgeFormatoInvalido);
@@ -90,7 +94,10 @@ public sealed class ReferenciaEnderecoGeoTests
     [InlineData("quadra", EnderecoReferenciaErrorCodes.NivelResolucaoInvalido)]
     public void Criar_NivelResolucaoInvalido_Falha(string? nivel, string esperado)
     {
-        Result<ReferenciaEnderecoGeo> resultado = CriarValido(nivelResolucao: nivel);
+        Result<ReferenciaEnderecoGeo> resultado = ReferenciaEnderecoGeo.Criar(
+            Cep, Logradouro, Numero, Complemento, Bairro, null,
+            CidadeCodigoIbge, CidadeNome, CidadeUf, Latitude, Longitude,
+            nivel, Origem, Agora);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be(esperado);
@@ -99,7 +106,10 @@ public sealed class ReferenciaEnderecoGeoTests
     [Fact(DisplayName = "Criar sem origem falha")]
     public void Criar_SemOrigem_Falha()
     {
-        Result<ReferenciaEnderecoGeo> resultado = CriarValido(origem: "  ");
+        Result<ReferenciaEnderecoGeo> resultado = ReferenciaEnderecoGeo.Criar(
+            Cep, Logradouro, Numero, Complemento, Bairro, null,
+            CidadeCodigoIbge, CidadeNome, CidadeUf, Latitude, Longitude,
+            NivelResolucaoEndereco.Logradouro, "  ", Agora);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be(EnderecoReferenciaErrorCodes.OrigemObrigatoria);
@@ -110,7 +120,10 @@ public sealed class ReferenciaEnderecoGeoTests
     [InlineData(0, 181, EnderecoReferenciaErrorCodes.LongitudeForaDeFaixa)]
     public void Criar_CoordenadaForaDeFaixa_Falha(double latitude, double longitude, string esperado)
     {
-        Result<ReferenciaEnderecoGeo> resultado = CriarValido(latitude: (decimal)latitude, longitude: (decimal)longitude);
+        Result<ReferenciaEnderecoGeo> resultado = ReferenciaEnderecoGeo.Criar(
+            Cep, Logradouro, Numero, Complemento, Bairro, null,
+            CidadeCodigoIbge, CidadeNome, CidadeUf, (decimal)latitude, (decimal)longitude,
+            NivelResolucaoEndereco.Logradouro, Origem, Agora);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be(esperado);
@@ -119,8 +132,10 @@ public sealed class ReferenciaEnderecoGeoTests
     [Fact(DisplayName = "Criar com logradouro acima do limite falha")]
     public void Criar_LogradouroLongo_Falha()
     {
-        Result<ReferenciaEnderecoGeo> resultado = CriarValido(
-            logradouro: new string('x', ReferenciaEnderecoGeo.LogradouroMaxLength + 1));
+        Result<ReferenciaEnderecoGeo> resultado = ReferenciaEnderecoGeo.Criar(
+            Cep, new string('x', ReferenciaEnderecoGeo.LogradouroMaxLength + 1), Numero, Complemento, Bairro, null,
+            CidadeCodigoIbge, CidadeNome, CidadeUf, Latitude, Longitude,
+            NivelResolucaoEndereco.Logradouro, Origem, Agora);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be(EnderecoReferenciaErrorCodes.LogradouroTamanho);
@@ -169,11 +184,14 @@ public sealed class ReferenciaEnderecoGeoTests
     [Fact(DisplayName = "ConteudoEquivale ignora o display cache (mesmo conteúdo, carimbo distinto)")]
     public void ConteudoEquivale_MesmoConteudoOutroCarimbo_True()
     {
-        ReferenciaEnderecoGeo a = CriarValido().Value!;
+        ReferenciaEnderecoGeo a = ReferenciaEnderecoGeo.Criar(
+            Cep, Logradouro, Numero, Complemento, Bairro, null,
+            CidadeCodigoIbge, CidadeNome, CidadeUf, Latitude, Longitude,
+            NivelResolucaoEndereco.Logradouro, Origem, Agora).Value!;
         ReferenciaEnderecoGeo b = ReferenciaEnderecoGeo.Criar(
-            "68507590", "Folha 31, Quadra 7", "s/n", "Bloco A", "Nova Marabá", null,
-            "1504208", "Marabá", "PA", -5.368m, -49.118m, NivelResolucaoEndereco.Logradouro, "logradouro",
-            Agora.AddDays(30)).Value!;
+            Cep, Logradouro, Numero, Complemento, Bairro, null,
+            CidadeCodigoIbge, CidadeNome, CidadeUf, Latitude, Longitude,
+            NivelResolucaoEndereco.Logradouro, Origem, Agora.AddDays(30)).Value!;
 
         a.ConteudoEquivale(b).Should().BeTrue();
     }
@@ -181,8 +199,14 @@ public sealed class ReferenciaEnderecoGeoTests
     [Fact(DisplayName = "ConteudoEquivale detecta diferença de conteúdo")]
     public void ConteudoEquivale_ConteudoDiferente_False()
     {
-        ReferenciaEnderecoGeo a = CriarValido().Value!;
-        ReferenciaEnderecoGeo b = CriarValido(numero: "100").Value!;
+        ReferenciaEnderecoGeo a = ReferenciaEnderecoGeo.Criar(
+            Cep, Logradouro, Numero, Complemento, Bairro, null,
+            CidadeCodigoIbge, CidadeNome, CidadeUf, Latitude, Longitude,
+            NivelResolucaoEndereco.Logradouro, Origem, Agora).Value!;
+        ReferenciaEnderecoGeo b = ReferenciaEnderecoGeo.Criar(
+            Cep, Logradouro, "100", Complemento, Bairro, null,
+            CidadeCodigoIbge, CidadeNome, CidadeUf, Latitude, Longitude,
+            NivelResolucaoEndereco.Logradouro, Origem, Agora).Value!;
 
         a.ConteudoEquivale(b).Should().BeFalse();
         a.ConteudoEquivale(null).Should().BeFalse();
