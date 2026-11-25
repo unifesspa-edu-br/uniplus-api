@@ -4,6 +4,7 @@ using AwesomeAssertions;
 
 using Unifesspa.UniPlus.Selecao.Application.DTOs;
 using Unifesspa.UniPlus.Selecao.Application.Services;
+using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
 
 using Xunit;
 
@@ -53,4 +54,15 @@ public sealed class OfertasEscolhidasTests
     public void Montar_SoASegunda_OrdemUm() =>
         OfertasEscolhidas.Montar(null, Segunda, new Dictionary<Guid, string>())
             .Should().Equal(new OfertaEscolhidaDto(Segunda, null, 1));
+
+    [Fact(DisplayName = "Versão não lida mantém a escolha com nome nulo")]
+    public void DosInscritos_VersaoNaoLida_MantemEscolhaSemNome()
+    {
+        Guid inscricaoId = Guid.CreateVersion7();
+        Dictionary<Guid, InscritoDoLote> inscritos = new() { [inscricaoId] = new(null, null, "", Guid.CreateVersion7(), Primeira, null) };
+
+        IReadOnlyDictionary<Guid, IReadOnlyList<OfertaEscolhidaDto>> ofertas = OfertasEscolhidas.DosInscritos(inscritos, new Dictionary<Guid, IReadOnlyList<OfertaDeCursoCertameDto>>());
+
+        ofertas[inscricaoId].Should().Equal(new OfertaEscolhidaDto(Primeira, null, 1));
+    }
 }

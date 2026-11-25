@@ -1,7 +1,5 @@
 namespace Unifesspa.UniPlus.Selecao.Application.Services;
 
-using Abstractions;
-
 using Domain.Interfaces;
 
 using DTOs;
@@ -46,30 +44,14 @@ public static class OfertasEscolhidas
         return ofertas.ToDictionary(static o => o.OfertaCursoOrigemId, Nome);
     }
 
-    /// <summary>As ofertas de cada inscrito do lote, pelo nome congelado na versão dele. Cada versão é reidratada uma vez.</summary>
-    public static async Task<IReadOnlyDictionary<Guid, IReadOnlyList<OfertaEscolhidaDto>>> ResolverAsync(
-        Guid processoSeletivoId,
+    /// <summary>As ofertas de cada inscrito do lote, pelo nome congelado na versão dele.</summary>
+    public static IReadOnlyDictionary<Guid, IReadOnlyList<OfertaEscolhidaDto>> DosInscritos(
         IReadOnlyDictionary<Guid, InscritoDoLote> inscritos,
-        IProcessoSeletivoRepository processoSeletivoRepository,
-        IRegistroCodecsEnvelope registroCodecs,
-        CancellationToken cancellationToken)
+        IReadOnlyDictionary<Guid, IReadOnlyList<OfertaDeCursoCertameDto>> ofertasPorVersao)
     {
         ArgumentNullException.ThrowIfNull(inscritos);
-        ArgumentNullException.ThrowIfNull(processoSeletivoRepository);
-        ArgumentNullException.ThrowIfNull(registroCodecs);
-
-        if (inscritos.Count == 0)
-        {
-            return new Dictionary<Guid, IReadOnlyList<OfertaEscolhidaDto>>();
-        }
-        Dictionary<Guid, IReadOnlyList<OfertaDeCursoCertameDto>> ofertasPorVersao = await new ContextoDaVersaoFixadaResolver(processoSeletivoRepository, registroCodecs)
-            .OfertasDasVersoesAsync(inscritos.Values.Select(e => (processoSeletivoId, e.VersaoFormularioId)), cancellationToken).ConfigureAwait(false);
-        return MontarPorInscrito(inscritos, ofertasPorVersao.ToDictionary(static v => v.Key, static v => NomesDe(v.Value)));
-    }
-
-    private static Dictionary<Guid, IReadOnlyList<OfertaEscolhidaDto>> MontarPorInscrito(
-        IReadOnlyDictionary<Guid, InscritoDoLote> inscritos, Dictionary<Guid, Dictionary<Guid, string>> nomesPorVersao)
-    {
+        ArgumentNullException.ThrowIfNull(ofertasPorVersao);
+        Dictionary<Guid, Dictionary<Guid, string>> nomesPorVersao = ofertasPorVersao.ToDictionary(static v => v.Key, static v => NomesDe(v.Value));
         Dictionary<Guid, IReadOnlyList<OfertaEscolhidaDto>> resultado = [];
         foreach ((Guid inscricaoId, InscritoDoLote inscrito) in inscritos)
         {
