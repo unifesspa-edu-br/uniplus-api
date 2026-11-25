@@ -1,30 +1,28 @@
 #!/usr/bin/env bash
 # roteiro-processo-teste-inscricao.sh — cria o processo local de validação: o
 # Processo Seletivo para o Curso de Medicina Unifesspa 2027, pela minuta do
-# edital nº XX/2026-CEPS/Unifesspa, com o modelo de inscrição sem prova
-# aplicado, publicado e divulgado, e a inscrição aberta no dia da execução.
+# edital nº XX/2026-CEPS/Unifesspa, publicado e divulgado, com inscrição
+# aberta no dia da execução e modelos de inscrição sem prova e de habilitação.
+# A oferta é em turno integral. O FADA prevê acréscimo de 15% e usa os 38
+# municípios do Anexo V.
 #
 # Os cadastros (unidades, campus, curso, oferta) têm os códigos da minuta e são
 # reaproveitados numa segunda execução. O processo é um só: com o identificador
 # legível já em uso, a criação recusa e o roteiro para — limpe a base antes.
 #
-# O que a minuta não define fica sem valor inventado:
-#   - os pesos por área da Resolução 805/2024 não constam dela, então a nota do
-#     ENEM entra importada (CLASSIFICACAO_IMPORTADA) até o cadastro dos pesos;
-#   - o percentual quilombola da reserva demográfica;
-#   - as datas em branco do Anexo I: o cronograma tem a inscrição, o
-#     resultado final e a habilitação, que abre na 1ª chamada e dura cinco
-#     dias.
+# A minuta remete os pesos à Resolução nº 966/2026 e não os traz; a nota do
+# ENEM entra importada. O cronograma usa datas deslocadas do Anexo I para
+# inscrição, resultado, habilitação, chamada e matrícula, com a inscrição
+# aberta no dia da execução. Na habilitação, o roteiro define documentos
+# comuns e documentos para comprovar o FADA, preservando os do modelo.
 #
 # Sequência:
 #   Setup (Publicações/Organização/Configuração) →
 #   Criar ProcessoSeletivo → Atendimento Especializado → Distribuição de Vagas
 #   (Anexo II) → Cascata de Remanejamento (Quadro 3) → FADA (item
-#   1.6) → Critérios de Desempate (item 6.3) → Classificação e eliminação
-#   (itens 5.6 e 8.1) → Taxa de Inscrição (gratuita, item 2.2) → Cronograma de
-#   Fases → aplicar o modelo de inscrição da Medicina → vincular a fase do
-#   formulário → documentos que comprovam o FADA na habilitação (os do modelo, se
-#   houver, são mantidos) → Documento do
+#   1.6) → Critério de Desempate → Classificação importada → Taxa de Inscrição
+#   (gratuita, item 2.2) → Cronograma de Fases → aplicar e vincular os modelos
+#   de inscrição e habilitação → documentos comuns e do FADA → Documento do
 #   Edital → Divulgação (sempre ANTES de publicar: depois da publicação o
 #   processo só aceita mutação por retificação) → Publicar.
 #
@@ -335,9 +333,7 @@ setup_configuracao() {
     exigir_id "TIPO_DOCUMENTO_HISTORICO_ID" "$TIPO_DOCUMENTO_HISTORICO_ID"
     exigir_id "TIPO_DOCUMENTO_RESIDENCIA_ID" "$TIPO_DOCUMENTO_RESIDENCIA_ID"
 
-    # Nota 2 do Anexo II: PPI do Pará pelo Censo 2022 (9,77 + 69,87 + 0,85) e
-    # PcD do Pará pelo Censo 2010. A minuta não dá o percentual quilombola: vai
-    # o do Pará no Censo 2022 (135.033 pessoas, 1,66%), conferido pelo quadro.
+    # Referência demográfica usada na distribuição de vagas do processo.
     local censo="IBGE 2022/2010 PA"
     RESERVA_DEMOGRAFICA_ID=$(post_tolerante "/api/configuracao/admin/referencias-reserva-demografica" "{
         \"censoReferencia\": \"$censo\",
@@ -665,10 +661,7 @@ definir_fada() {
 
 definir_criterios_desempate() {
     log "Definir Critérios de Desempate"
-    # O item 6.3 desempata pela nota da Redação, de Linguagens, de Matemática,
-    # de Ciências da Natureza e de Ciências Humanas, e por último pela maior
-    # idade. O desempate por área só cita área do quadro de pesos da
-    # Resolução 805/2024, que a minuta não traz: fica a maior idade.
+    # O critério de desempate configurado é a maior idade.
     api PUT "/api/selecao/processos-seletivos/$PROCESSO_ID/criterios-desempate" '[
         {
             "ordem": 1, "regra": {"codigo": "DESEMPATE_MAIOR_IDADE", "versao": "v1"},
@@ -683,10 +676,8 @@ definir_criterios_desempate() {
 
 definir_classificacao() {
     log "Definir Classificação"
-    # A minuta classifica pela média ponderada do ENEM, truncada na segunda
-    # casa (item 5.6), com eliminação (item 8.1). Os pesos da Resolução
-    # 805/2024 não constam dela, e sem eles não há cálculo local: a nota entra
-    # importada, e truncamento e eliminação só se aplicam ao cálculo local.
+    # A minuta remete os pesos à Resolução nº 966/2026 e não os traz; a nota
+    # do ENEM entra importada.
     api PUT "/api/selecao/processos-seletivos/$PROCESSO_ID/classificacao" '{
         "regraCalculoCodigo": "CLASSIFICACAO_IMPORTADA", "regraCalculoVersao": "v1",
         "regraArredondamentoCodigo": null, "regraArredondamentoVersao": null,
@@ -694,7 +685,7 @@ definir_classificacao() {
         "regraOrdemAlocacaoCodigo": "ALOCACAO_PRIMEIRA_OPCAO_PRIORITARIA", "regraOrdemAlocacaoVersao": "v1",
         "regrasEliminacao": [], "baseadoEmEnem": true
     }' >/dev/null
-    ok "classificação definida"
+    ok "classificação definida com nota do ENEM importada"
 }
 
 definir_edicoes_enem() {
@@ -732,7 +723,7 @@ banca_requerida() {
 
 definir_cronograma_fases() {
     log "Definir Cronograma de Fases (Anexo I deslocado, fuso America/Belem)"
-    # A data de início da inscrição no Anexo I é a âncora de todo o cronograma.
+    # As datas são deslocadas juntas a partir do início da inscrição.
     local hoje deslocamento inicio_inscricao fim_inscricao inicio_resultado fim_resultado inicio_habilitacao fim_habilitacao data_inicio
     hoje=$(TZ=America/Belem date +%Y-%m-%d)
     inicio_inscricao="${INICIO_INSCRICAO:-$(TZ=America/Belem date -d "$hoje -1 day" +%Y-%m-%dT00:00:00-03:00)}"
