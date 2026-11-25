@@ -11,10 +11,11 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
-using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Serializacao;
 using Unifesspa.UniPlus.Regras.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.HomologacaoDasInscricoes;
+
+using static Unifesspa.UniPlus.Infrastructure.Core.Persistence.Converters.ObjetoDeValorGravado;
 
 /// <summary>
 /// A coluna <c>regra_de_homologacao</c> (<c>jsonb</c>) da fase do cronograma: a regra de homologação das
@@ -76,17 +77,8 @@ internal static class ColunaDaRegraDeHomologacao
         return RegraDeHomologacaoDasInscricoes.Declarar(regra.ResultadoAtoCodigo, [.. alternativas.Select(Alternativa)]);
     }
 
-    private static RegraPersistida? Desserializar(string documento)
-    {
-        try
-        {
-            return JsonSerializer.Deserialize<RegraPersistida>(documento, Opcoes);
-        }
-        catch (JsonException excecao)
-        {
-            throw new InvalidOperationException("Regra de homologação gravada inválida: documento JSON inválido.", excecao);
-        }
-    }
+    private static RegraPersistida? Desserializar(string documento) =>
+        DesserializarDocumento(() => JsonSerializer.Deserialize<RegraPersistida>(documento, Opcoes), nameof(RegraDeHomologacaoDasInscricoes));
 
     private static AlternativaPersistida PersistirAlternativa(AlternativaDeCondicoes alternativa) =>
         new([.. alternativa.Condicoes.Select(PersistirCondicao)]);
@@ -102,11 +94,11 @@ internal static class ColunaDaRegraDeHomologacao
         IReadOnlyList<CondicaoPersistida> condicoes = persistida.Condicoes
             ?? throw Corrompida("uma alternativa não tem a lista de condições");
 
-        return Exigir(AlternativaDeCondicoes.Declarar([.. condicoes.Select(Condicao)]));
+        return Reidratar(AlternativaDeCondicoes.Declarar([.. condicoes.Select(Condicao)]), nameof(RegraDeHomologacaoDasInscricoes));
     }
 
-    private static CondicaoDeHomologacao Condicao(CondicaoPersistida persistida) => Exigir(CondicaoDeHomologacao.Declarar(
-        persistida.Tipo, persistida.EdicaoDoExame, persistida.MotivoDesfavoravelCodigo, Enquadramento(persistida.Enquadramento)));
+    private static CondicaoDeHomologacao Condicao(CondicaoPersistida persistida) => Reidratar(CondicaoDeHomologacao.Declarar(
+        persistida.Tipo, persistida.EdicaoDoExame, persistida.MotivoDesfavoravelCodigo, Enquadramento(persistida.Enquadramento)), nameof(RegraDeHomologacaoDasInscricoes));
 
     private static PredicadoDnf? Enquadramento(JsonNode? enquadramento)
     {
@@ -117,7 +109,7 @@ internal static class ColunaDaRegraDeHomologacao
 
         JsonElement documento = enquadramento.Deserialize<JsonElement>(Opcoes);
         ExigirSomenteAsChavesDosAtomos(documento);
-        PredicadoDnf predicado = Exigir(PredicadoDnfJson.DeJson(documento));
+        PredicadoDnf predicado = Reidratar(PredicadoDnfJson.DeJson(documento), nameof(RegraDeHomologacaoDasInscricoes));
         return predicado.Clausulas.Count > 0
             ? predicado
             : throw Corrompida("o enquadramento não tem cláusula");
@@ -139,11 +131,6 @@ internal static class ColunaDaRegraDeHomologacao
             throw Corrompida("um átomo do enquadramento tem chave desconhecida");
         }
     }
-
-    private static T Exigir<T>(Result<T> resultado) =>
-        resultado.IsSuccess
-            ? resultado.Value!
-            : throw Corrompida(string.Join(" ", resultado.Errors.Select(static recusa => recusa.Error.Message)));
 
     private static InvalidOperationException Corrompida(string motivo) =>
         new($"Regra de homologação gravada inválida: {motivo}.");

@@ -1,5 +1,7 @@
 namespace Unifesspa.UniPlus.Infrastructure.Core.UnitTests.Persistence;
 
+using System.Text.Json;
+
 using AwesomeAssertions;
 
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Converters;
@@ -35,5 +37,45 @@ public sealed class ObjetoDeValorGravadoTests
             .Should().Throw<InvalidOperationException>().Which.Message.Should().Be(
                 "Dado inválido no banco ao reidratar Número: Teste.Invalido. " +
                 "Verifique se houve alteração manual da coluna fora do fluxo da aplicação.");
+    }
+
+    [Fact(DisplayName = "Recusas repetidas informam códigos distintos na ordem sem descrição nem campo")]
+    public void Reidratar_VariasRecusas_InformaCodigosDistintos()
+    {
+        Result<int> resultado = Result<int>.ValidationFailure([
+            new("campo-ficticio", new DomainError("Teste.Um", "texto-ficticio")),
+            new("campo-ficticio", new DomainError("Teste.Dois", "texto-ficticio")),
+            new("campo-ficticio", new DomainError("Teste.Um", "texto-ficticio"))]);
+        string mensagem = FluentActions.Invoking(() => ObjetoDeValorGravado.Reidratar(resultado, "Valor"))
+            .Should().Throw<InvalidOperationException>().Which.Message;
+        mensagem.Should().Be("Dado inválido no banco ao reidratar Valor: Teste.Um, Teste.Dois. Verifique se houve alteração manual da coluna fora do fluxo da aplicação.");
+        mensagem.Should().NotContain("campo-ficticio").And.NotContain("texto-ficticio");
+    }
+
+    [Fact(DisplayName = "A ausência válida continua ausente")]
+    public void Reidratar_SucessoNulo_DevolveAusencia() =>
+        ObjetoDeValorGravado.Reidratar(Result<string?>.Success(null), "Valor").Should().BeNull();
+
+    [Fact(DisplayName = "JSON inválido não expõe o documento nem carrega a causa")]
+    public void DesserializarDocumento_JsonInvalido_OcultaConteudoECausa()
+    {
+        const string json = "{\"valor-gravado-ficticio-7f3a\":";
+        InvalidOperationException erro = FluentActions.Invoking(() => ObjetoDeValorGravado.DesserializarDocumento(
+            () => JsonDocument.Parse(json), "Valor")).Should().Throw<InvalidOperationException>().Which;
+        erro.Message.Should().Be("Dado inválido no banco ao reidratar Valor: documento JSON inválido. Verifique se houve alteração manual da coluna fora do fluxo da aplicação.");
+        erro.Message.Should().NotContain("valor-gravado-ficticio-7f3a");
+        erro.InnerException.Should().BeNull();
+    }
+
+    [Fact(DisplayName = "Documento válido devolve o resultado")]
+    public void DesserializarDocumento_Valido_DevolveResultado() =>
+        ObjetoDeValorGravado.DesserializarDocumento(() => JsonSerializer.Deserialize<int>("7"), "Valor").Should().Be(7);
+
+    [Fact(DisplayName = "Outra exceção passa sem alteração")]
+    public void DesserializarDocumento_OutraExcecao_Propaga()
+    {
+        InvalidOperationException original = new("falha fictícia");
+        FluentActions.Invoking(() => ObjetoDeValorGravado.DesserializarDocumento<int>(() => throw original, "Valor"))
+            .Should().Throw<InvalidOperationException>().Which.Should().BeSameAs(original);
     }
 }

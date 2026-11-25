@@ -14,6 +14,8 @@ using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Regras.Serializacao;
 using Unifesspa.UniPlus.Regras.ValueObjects;
 
+using static Unifesspa.UniPlus.Infrastructure.Core.Persistence.Converters.ObjetoDeValorGravado;
+
 /// <summary>
 /// O conteúdo do modelo de formulário num documento jsonb: lido e gravado inteiro, junto do modelo,
 /// sem consulta por item (ADR-0137). As regras usam os mesmos tokens e a mesma forma de JSON do envelope
@@ -164,7 +166,7 @@ internal static class ConteudoDoModeloJson
     /// </summary>
     public static ConteudoDoModelo Desserializar(string json)
     {
-        using JsonDocument documento = JsonDocument.Parse(json);
+        using JsonDocument documento = DesserializarDocumento(() => JsonDocument.Parse(json), nameof(ConteudoDoModelo));
         JsonElement elementoPrincipal = documento.RootElement;
         return new ConteudoDoModelo(
             Texto(elementoPrincipal, "titulo"),
@@ -202,9 +204,9 @@ internal static class ConteudoDoModeloJson
 
     private static RegrasDoCampo RegrasDeJson(JsonElement campo) => new(
         Predicado(campo, "exibicao"),
-        Remontar(PredicadoDnfJson.ObrigatoriedadeDeJson(campo.GetProperty("obrigatoriedade"))),
-        Remontar(RestricaoValorJson.ListaDeJson(campo.GetProperty("restricoes"))),
-        Remontar(PredicadoDnfJson.ImpedimentoDeJson(campo.TryGetProperty("impedimento", out JsonElement impedimento) ? impedimento : default)));
+        Reidratar(PredicadoDnfJson.ObrigatoriedadeDeJson(campo.GetProperty("obrigatoriedade")), nameof(ConteudoDoModelo)),
+        Reidratar(RestricaoValorJson.ListaDeJson(campo.GetProperty("restricoes")), nameof(ConteudoDoModelo)),
+        Reidratar(PredicadoDnfJson.ImpedimentoDeJson(campo.TryGetProperty("impedimento", out JsonElement impedimento) ? impedimento : default), nameof(ConteudoDoModelo)));
 
     private static TermoDoModelo TermoDeJson(JsonElement termo) => new(
         termo.GetProperty("codigo").GetString()!,
@@ -212,7 +214,7 @@ internal static class ConteudoDoModeloJson
         termo.GetProperty("termoId").GetGuid(),
         termo.GetProperty("versaoId").GetGuid(),
         new ExibicaoEObrigatoriedade(
-            Predicado(termo, "exibicao"), Remontar(PredicadoDnfJson.ObrigatoriedadeDeJson(termo.GetProperty("obrigatoriedade")))));
+            Predicado(termo, "exibicao"), Reidratar(PredicadoDnfJson.ObrigatoriedadeDeJson(termo.GetProperty("obrigatoriedade")), nameof(ConteudoDoModelo))));
 
     private static GrupoDoModelo GrupoDeJson(JsonElement grupo) => new(
         grupo.GetProperty("codigo").GetString()!,
@@ -222,7 +224,7 @@ internal static class ConteudoDoModeloJson
         new OcorrenciasDoGrupo(
             grupo.GetProperty("minimo").GetInt32(), InteiroOuNulo(grupo.GetProperty("maximo")), grupo.GetProperty("incluiCandidato").GetBoolean()),
         new ExibicaoEObrigatoriedade(
-            Predicado(grupo, "exibicao"), Remontar(PredicadoDnfJson.ObrigatoriedadeDeJson(grupo.GetProperty("obrigatoriedade")))),
+            Predicado(grupo, "exibicao"), Reidratar(PredicadoDnfJson.ObrigatoriedadeDeJson(grupo.GetProperty("obrigatoriedade")), nameof(ConteudoDoModelo))),
         [.. grupo.GetProperty("subitens").EnumerateArray().Select(CampoDeJson)]);
 
     private static IReadOnlyList<DocumentoExigidoDoModelo> DocumentosDeJson(JsonElement elementoPrincipal) =>
@@ -313,11 +315,7 @@ internal static class ConteudoDoModeloJson
 
     private static PredicadoDnf? Predicado(JsonElement objeto, string chave) =>
         objeto.TryGetProperty(chave, out JsonElement valor) && valor.ValueKind != JsonValueKind.Null
-            ? Remontar(PredicadoDnfJson.DeJson(valor))
+            ? Reidratar(PredicadoDnfJson.DeJson(valor), nameof(ConteudoDoModelo))
             : null;
 
-    private static T Remontar<T>(Kernel.Results.Result<T> resultado) =>
-        resultado.IsSuccess
-            ? resultado.Value!
-            : throw new InvalidOperationException($"O conteúdo gravado do modelo de formulário não remonta: {resultado.Error?.Message}");
 }
