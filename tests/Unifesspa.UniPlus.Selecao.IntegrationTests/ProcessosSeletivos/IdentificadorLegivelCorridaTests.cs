@@ -43,18 +43,10 @@ public sealed class IdentificadorLegivelCorridaTests : IClassFixture<ProcessoSel
 
         await using UniPlusDbContext ctx = _fixture.CreateDbContext();
         IProcessoSeletivoRepository repository = RepositorioQueNaoVeAConcorrencia(ctx);
-        IUnidadeReader unidadeReader = Substitute.For<IUnidadeReader>();
-        unidadeReader.ObterPorIdAsync(UnidadeId, Arg.Any<CancellationToken>()).Returns(new UnidadeView(
-            UnidadeId, "CEPS", "CEPS", "ceps", "Centro de Processos Seletivos", null, "ADMINISTRATIVA", false, null,
-            "1504208", "Marabá", "PA"));
-        ITipoProcessoReader tipoProcessoReader = Substitute.For<ITipoProcessoReader>();
-        tipoProcessoReader.ObterAtivoPorIdAsync(TiposDeProcessoDeTeste.SiSU.OrigemId, Arg.Any<CancellationToken>())
-            .Returns(new TipoProcessoView(TiposDeProcessoDeTeste.SiSU.OrigemId, "SiSU", "SiSU", null));
-        CriarProcessoSeletivoCommand command = new(
-            "PS Corrida", TiposDeProcessoDeTeste.SiSU, OrigemCandidatos.InscricaoPropria, UnidadeId, "1504208", "Marabá", "PA", disputado.Valor);
+        CriarProcessoSeletivoCommand command = PedidoDeCriacao(disputado);
 
         Result<Guid> resultado = await CriarProcessoSeletivoCommandHandler.Handle(
-            command, repository, VerificadorQuePermite(), unidadeReader, tipoProcessoReader, ctx, CancellationToken.None);
+            command, repository, VerificadorQuePermite(), UnidadeAdministradora(), TipoDeProcesso(), ctx, CancellationToken.None);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be(ProcessoSeletivoErrorCodes.IdentificadorLegivelEmUso);
@@ -77,6 +69,11 @@ public sealed class IdentificadorLegivelCorridaTests : IClassFixture<ProcessoSel
             new DefinirIdentificadorLegivelCommand(alvo.Id, disputado.Valor),
             repository, ctx, CancellationToken.None);
 
+        ConferirConflitoAoDefinir(resultado, ctx);
+    }
+
+    private static void ConferirConflitoAoDefinir(Result resultado, UniPlusDbContext ctx)
+    {
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be(ProcessoSeletivoErrorCodes.IdentificadorLegivelEmUso);
         ctx.ChangeTracker.HasChanges().Should().BeFalse(
@@ -97,6 +94,27 @@ public sealed class IdentificadorLegivelCorridaTests : IClassFixture<ProcessoSel
         repository.ObterParaMutacaoAsync(default, default)
             .ReturnsForAnyArgs(ci => real.ObterParaMutacaoAsync(ci.Arg<Guid>(), ci.Arg<CancellationToken>()));
         return repository;
+    }
+
+    private static CriarProcessoSeletivoCommand PedidoDeCriacao(IdentificadorLegivel identificador) => new(
+        "PS Corrida", TiposDeProcessoDeTeste.SiSU, OrigemCandidatos.InscricaoPropria, UnidadeId,
+        "1504208", "Marabá", "PA", identificador.Valor);
+
+    private static IUnidadeReader UnidadeAdministradora()
+    {
+        IUnidadeReader unidadeReader = Substitute.For<IUnidadeReader>();
+        unidadeReader.ObterPorIdAsync(UnidadeId, Arg.Any<CancellationToken>()).Returns(new UnidadeView(
+            UnidadeId, "CEPS", "CEPS", "ceps", "Centro de Processos Seletivos", null, "ADMINISTRATIVA", false, null,
+            "1504208", "Marabá", "PA"));
+        return unidadeReader;
+    }
+
+    private static ITipoProcessoReader TipoDeProcesso()
+    {
+        ITipoProcessoReader tipoProcessoReader = Substitute.For<ITipoProcessoReader>();
+        tipoProcessoReader.ObterAtivoPorIdAsync(TiposDeProcessoDeTeste.SiSU.OrigemId, Arg.Any<CancellationToken>())
+            .Returns(new TipoProcessoView(TiposDeProcessoDeTeste.SiSU.OrigemId, "SiSU", "SiSU", null));
+        return tipoProcessoReader;
     }
 
     private static IVerificadorDeAcesso VerificadorQuePermite()

@@ -116,27 +116,30 @@ public sealed class RecorteDaVitrinePersistenciaTests : IClassFixture<ProcessoSe
             incluirContadores: true, VersaoServida, CancellationToken.None)).Contadores!.Value;
 
         // Contar por um critério e filtrar por outro faz o rótulo mentir sem nada quebrar.
-        contadores.EmBreve.Should().Be((await ListarAsync(SituacaoDoCertame.EmBreve)).Count);
-        contadores.InscricoesAbertas.Should().Be((await ListarAsync(SituacaoDoCertame.InscricoesAbertas)).Count);
-        contadores.UltimosDias.Should().Be((await ListarAsync(SituacaoDoCertame.UltimosDias)).Count);
-        contadores.Encerrados.Should().Be((await ListarAsync(SituacaoDoCertame.Encerradas)).Count);
+        await ConferirTamanhoDosRecortesAsync(contadores);
 
         (contadores.EmBreve + contadores.InscricoesAbertas + contadores.UltimosDias + contadores.Encerrados)
             .Should().Be(_semeados.Count, "as quatro situações particionam o conjunto divulgado");
     }
 
+    private async Task ConferirTamanhoDosRecortesAsync(ContadoresDaVitrine contadores)
+    {
+        contadores.EmBreve.Should().Be((await ListarAsync(SituacaoDoCertame.EmBreve)).Count);
+        contadores.InscricoesAbertas.Should().Be((await ListarAsync(SituacaoDoCertame.InscricoesAbertas)).Count);
+        contadores.UltimosDias.Should().Be((await ListarAsync(SituacaoDoCertame.UltimosDias)).Count);
+        contadores.Encerrados.Should().Be((await ListarAsync(SituacaoDoCertame.Encerradas)).Count);
+    }
+
+    // Contar o que a página não pode mostrar faz o número ao lado do filtro prometer item que
+    // filtro nenhum alcança. Numa janela de deploy em fases, o documento gravado por um
+    // processo já atualizado é ilegível para este — e a linha existe no banco.
     [Fact(DisplayName = "Certame de outra versão de projeção fica fora da página e da contagem")]
     public async Task ListarVitrine_QuandoHaLinhaDeOutraVersaoDeProjecao_DeveOmitiLaDosDois()
     {
-        // Contar o que a página não pode mostrar faz o número ao lado do filtro prometer item que
-        // filtro nenhum alcança. Numa janela de deploy em fases, o documento gravado por um
-        // processo já atualizado é ilegível para este — e a linha existe no banco.
         await using UniPlusDbContext context = _fixture.CreateDbContext();
         CertameDivulgadoRepository repository = new(context);
 
-        context.CertamesDivulgados.Add(Divulgado(
-            Agora.AddDays(-1), Agora.AddDays(30), versaoProjecao: "2"));
-        await context.SaveChangesAsync(CancellationToken.None);
+        await AdicionarCertameDeOutraVersaoAsync(context);
 
         PaginaDaVitrine pagina = await repository.ListarVitrineAsync(
             Agora, new RecorteDaVitrine(), [], Limiar, null, null, _semeados.Count + 10,
@@ -147,6 +150,13 @@ public sealed class RecorteDaVitrinePersistenciaTests : IClassFixture<ProcessoSe
         pagina.Itens.Should().HaveCount(_semeados.Count, "a linha de outra versão não é servível por esta consulta");
         (contadores.EmBreve + contadores.InscricoesAbertas + contadores.UltimosDias + contadores.Encerrados)
             .Should().Be(_semeados.Count, "a contagem descreve a mesma coleção que a página");
+    }
+
+    private static async Task AdicionarCertameDeOutraVersaoAsync(UniPlusDbContext context)
+    {
+        context.CertamesDivulgados.Add(Divulgado(
+            Agora.AddDays(-1), Agora.AddDays(30), versaoProjecao: "2"));
+        await context.SaveChangesAsync(CancellationToken.None);
     }
 
     private static SituacaoDoCertame Classificar(CertameDivulgado certame) =>

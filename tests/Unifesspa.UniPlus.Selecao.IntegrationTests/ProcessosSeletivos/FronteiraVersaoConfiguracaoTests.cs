@@ -62,22 +62,24 @@ public sealed class FronteiraVersaoConfiguracaoTests : IClassFixture<ProcessoSel
         await using NpgsqlConnection conexao = new(_fixture.ConnectionString);
         await conexao.OpenAsync();
 
-        // Canário: o banco ACEITARIA uma FK do ato criador para uma tabela local, e o
-        // detector a enxergaria. É o que torna a ausência, abaixo, uma decisão — e não
-        // um acidente de esquema. (Antes da #804 o alvo do canário era `selecao.editais`;
-        // com a tabela eliminada, qualquer tabela do módulo serve — o que se prova é que
-        // NÃO HÁ integridade referencial sobre o ato criador, seja para onde for.)
+        await ConferirDeteccaoDaChaveEstrangeiraAsync(conexao);
+
+        IReadOnlyList<string> noSchemaReal = await ListarAsync(conexao, transacao: null, ListaChavesEstrangeirasSobreOAto);
+
+        noSchemaReal.Should().BeEmpty(
+            "o ato criador é referenciado por VALOR (ADR-0061): ele vive em Publicacoes, e não há "
+            + "integridade referencial cruzando a fronteira do módulo");
+    }
+
+    // Canário: o banco ACEITARIA uma FK do ato criador para uma tabela local, e o
+    // detector a enxergaria. É o que torna a ausência, abaixo, uma decisão — e não
+    // um acidente de esquema. Qualquer tabela do módulo serve para verificar que
+    // não há integridade referencial sobre o ato criador, seja para onde for.
+    private static async Task ConferirDeteccaoDaChaveEstrangeiraAsync(NpgsqlConnection conexao)
+    {
         await using (NpgsqlTransaction canario = await conexao.BeginTransactionAsync())
         {
-            await ExecutarAsync(conexao, canario, """
-                CREATE TABLE selecao.canario_atos (id uuid PRIMARY KEY);
-                """);
-            await ExecutarAsync(conexao, canario, """
-                ALTER TABLE selecao.versoes_configuracao
-                ADD CONSTRAINT canario_fk_ato_criador
-                FOREIGN KEY (ato_criador_id) REFERENCES selecao.canario_atos (id)
-                NOT VALID
-                """);
+            await CriarChaveEstrangeiraDeTesteAsync(conexao, canario);
 
             IReadOnlyList<string> comCanario = await ListarAsync(conexao, canario, ListaChavesEstrangeirasSobreOAto);
             comCanario.Should().ContainSingle(
@@ -85,12 +87,19 @@ public sealed class FronteiraVersaoConfiguracaoTests : IClassFixture<ProcessoSel
 
             await canario.RollbackAsync();
         }
+    }
 
-        IReadOnlyList<string> noSchemaReal = await ListarAsync(conexao, transacao: null, ListaChavesEstrangeirasSobreOAto);
-
-        noSchemaReal.Should().BeEmpty(
-            "o ato criador é referenciado por VALOR (ADR-0061): ele vive em Publicacoes, e não há "
-            + "integridade referencial cruzando a fronteira do módulo");
+    private static async Task CriarChaveEstrangeiraDeTesteAsync(NpgsqlConnection conexao, NpgsqlTransaction canario)
+    {
+        await ExecutarAsync(conexao, canario, """
+            CREATE TABLE selecao.canario_atos (id uuid PRIMARY KEY);
+            """);
+        await ExecutarAsync(conexao, canario, """
+            ALTER TABLE selecao.versoes_configuracao
+            ADD CONSTRAINT canario_fk_ato_criador
+            FOREIGN KEY (ato_criador_id) REFERENCES selecao.canario_atos (id)
+            NOT VALID
+            """);
     }
 
     [Fact(DisplayName = "A única chave estrangeira da tabela é a do processo — e não sai do schema do módulo")]

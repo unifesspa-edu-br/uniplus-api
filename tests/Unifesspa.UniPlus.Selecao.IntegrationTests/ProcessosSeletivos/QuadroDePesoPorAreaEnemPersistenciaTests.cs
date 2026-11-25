@@ -48,6 +48,11 @@ public sealed class QuadroDePesoPorAreaEnemPersistenciaTests
         classificacao.QuadroPesoAreaEnem.Select(g => g.GrupoAreaEnem.Codigo).Should().BeEquivalentTo(
             ["HUMANISTICA_I", "HUMANISTICA_II", "SAUDE_E_BIOLOGICAS", "TECNOLOGICA"]);
 
+        ConferirPesosDeHumanisticaI(classificacao);
+    }
+
+    private static void ConferirPesosDeHumanisticaI(ConfiguracaoClassificacao classificacao)
+    {
         GrupoPesoAreaEnemCongelado humanisticaI = classificacao.QuadroPesoAreaEnem.Single(g => g.GrupoAreaEnem.Codigo == "HUMANISTICA_I");
         humanisticaI.GrupoAreaEnem.Rotulo.Should().Be("Humanística I");
         humanisticaI.BaseLegal.Should().Be("Resolução nº 805/2024/Consepe – Anexo I");
@@ -73,28 +78,37 @@ public sealed class QuadroDePesoPorAreaEnemPersistenciaTests
         (await ContarGruposAsync(classificacaoOriginalId)).Should().Be(4);
         (await ContarAreasAsync(gruposOriginais)).Should().Be(20);
 
+        await DesmarcarEnemAsync(processo.Id);
+        await ConferirClassificacaoSemEnemAsync(processo.Id);
+
+        (await ContarGruposAsync(classificacaoOriginalId)).Should().Be(0, "o quadro vai embora com a classificação que o congelou");
+        (await ContarAreasAsync(gruposOriginais)).Should().Be(0, "as áreas vão embora com o grupo");
+    }
+
+    private async Task DesmarcarEnemAsync(Guid processoId)
+    {
         await using (UniPlusDbContext configureContext = _cenario.CriarDbContext())
         {
             ProcessoSeletivoRepository repository = ProcessoSeletivoRepositoryDeTeste.Criar(configureContext);
-            ProcessoSeletivo carregado = (await repository.ObterComConfiguracaoAsync(processo.Id, CancellationToken.None))!;
+            ProcessoSeletivo carregado = (await repository.ObterComConfiguracaoAsync(processoId, CancellationToken.None))!;
 
             ConfiguracaoClassificacao semEnem = ClassificacaoSemEnem();
             carregado.DefinirClassificacao(semEnem).IsSuccess.Should().BeTrue();
 
             await configureContext.SaveChangesAsync(CancellationToken.None);
         }
+    }
 
+    private async Task ConferirClassificacaoSemEnemAsync(Guid processoId)
+    {
         await using (UniPlusDbContext readContext = _cenario.CriarDbContext())
         {
             ProcessoSeletivo recarregado = (await ProcessoSeletivoRepositoryDeTeste.Criar(readContext)
-                .ObterComConfiguracaoAsync(processo.Id, CancellationToken.None))!;
+                .ObterComConfiguracaoAsync(processoId, CancellationToken.None))!;
             recarregado.Classificacao!.BaseadoEmEnem.Should().BeFalse();
             recarregado.Classificacao.ResolucaoPesoAreaEnem.Should().BeNull();
             recarregado.Classificacao.QuadroPesoAreaEnem.Should().BeEmpty();
         }
-
-        (await ContarGruposAsync(classificacaoOriginalId)).Should().Be(0, "o quadro vai embora com a classificação que o congelou");
-        (await ContarAreasAsync(gruposOriginais)).Should().Be(0, "as áreas vão embora com o grupo");
     }
 
     [Fact(DisplayName = "O banco recusa o mesmo grupo duas vezes no quadro de uma classificação")]
