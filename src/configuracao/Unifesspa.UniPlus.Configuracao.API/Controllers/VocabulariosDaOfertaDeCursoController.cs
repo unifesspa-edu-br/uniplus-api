@@ -4,6 +4,7 @@ using System.Collections.Generic;
 
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Routing;
 
 using Unifesspa.UniPlus.Application.Abstractions.Messaging;
 using Unifesspa.UniPlus.Application.Abstractions.Respostas;
@@ -37,6 +38,7 @@ public sealed class VocabulariosDaOfertaDeCursoController : ControllerBase
 
     /// <summary>Lista os programas de oferta, com código e rótulo, na ordem de exibição.</summary>
     [HttpGet("vocabularios/programas-oferta")]
+    [EndpointName("ListarProgramasDeOferta")]
     [AllowAnonymous]
     [VendorMediaType(Resource = "codigo-programa-de-oferta", Versions = [1])]
     [ProducesResponseType(typeof(IReadOnlyList<CodigoComRotulo<ProgramaDeOferta>>), StatusCodes.Status200OK)]
@@ -52,6 +54,7 @@ public sealed class VocabulariosDaOfertaDeCursoController : ControllerBase
 
     /// <summary>Lista os formatos pedagógicos, com código e rótulo, na ordem de exibição.</summary>
     [HttpGet("vocabularios/formatos-pedagogicos")]
+    [EndpointName("ListarFormatosPedagogicos")]
     [AllowAnonymous]
     [VendorMediaType(Resource = "codigo-formato-pedagogico", Versions = [1])]
     [ProducesResponseType(typeof(IReadOnlyList<CodigoComRotulo<FormatoPedagogico>>), StatusCodes.Status200OK)]
@@ -67,6 +70,7 @@ public sealed class VocabulariosDaOfertaDeCursoController : ControllerBase
 
     /// <summary>Lista os regimes de funcionamento, com código e rótulo, na ordem de exibição.</summary>
     [HttpGet("vocabularios/regimes-funcionamento")]
+    [EndpointName("ListarRegimesDeFuncionamento")]
     [AllowAnonymous]
     [VendorMediaType(Resource = "codigo-regime-de-funcionamento", Versions = [1])]
     [ProducesResponseType(typeof(IReadOnlyList<CodigoComRotulo<RegimeDeFuncionamento>>), StatusCodes.Status200OK)]
@@ -82,6 +86,7 @@ public sealed class VocabulariosDaOfertaDeCursoController : ControllerBase
 
     /// <summary>Lista os regimes de turno, com código e rótulo, na ordem de exibição.</summary>
     [HttpGet("vocabularios/regimes-turno")]
+    [EndpointName("ListarRegimesDeTurno")]
     [AllowAnonymous]
     [VendorMediaType(Resource = "codigo-regime-de-turno", Versions = [1])]
     [ProducesResponseType(typeof(IReadOnlyList<CodigoComRotulo<RegimeDeTurno>>), StatusCodes.Status200OK)]
@@ -97,6 +102,7 @@ public sealed class VocabulariosDaOfertaDeCursoController : ControllerBase
 
     /// <summary>Lista os turnos da oferta, com código e rótulo, na ordem de exibição.</summary>
     [HttpGet("vocabularios/turnos-oferta")]
+    [EndpointName("ListarTurnosDeOferta")]
     [AllowAnonymous]
     [VendorMediaType(Resource = "codigo-turno-oferta", Versions = [1])]
     [ProducesResponseType(typeof(IReadOnlyList<CodigoComRotulo<TurnoOferta>>), StatusCodes.Status200OK)]

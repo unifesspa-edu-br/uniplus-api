@@ -4,6 +4,7 @@ using System.Diagnostics.CodeAnalysis;
 
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Routing;
 
 using Unifesspa.UniPlus.Application.Abstractions.Messaging;
 using Unifesspa.UniPlus.Configuracao.Application.Commands.ModelosFormulario;
@@ -51,6 +52,7 @@ public sealed class ModelosFormularioController : ControllerBase
     /// inclusive os que servem a todos; a finalidade é um dos códigos de finalidade do formulário.
     /// </summary>
     [HttpGet("admin/modelos-formulario")]
+    [EndpointName("ListarModelosDeFormulario")]
     [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.ModelosFormularioConsultar, ResourceTipo = ResourceTiposConfiguracao.ModeloFormulario)]
     [VendorMediaType(Resource = "modelo-formulario", Versions = [1])]
     [ProducesResponseType(typeof(IEnumerable<ModeloFormularioDto>), StatusCodes.Status200OK)]
@@ -83,6 +85,7 @@ public sealed class ModelosFormularioController : ControllerBase
 
     /// <summary>O modelo, ativo ou desativado, com o conteúdo no formato da escrita.</summary>
     [HttpGet("admin/modelos-formulario/{id:guid}")]
+    [EndpointName("ObterModeloDeFormulario")]
     [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.ModelosFormularioConsultar, ResourceTipo = ResourceTiposConfiguracao.ModeloFormulario)]
     [VendorMediaType(Resource = "modelo-formulario", Versions = [1])]
     [ProducesResponseType(typeof(ModeloFormularioDto), StatusCodes.Status200OK)]
@@ -101,6 +104,7 @@ public sealed class ModelosFormularioController : ControllerBase
     /// processo —, para a simulação interpretar o modelo antes de aplicá-lo. Não grava nada.
     /// </summary>
     [HttpGet("admin/modelos-formulario/{id:guid}/apresentacao")]
+    [EndpointName("ObterApresentacaoDoModeloDeFormulario")]
     [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.ModelosFormularioConsultar, ResourceTipo = ResourceTiposConfiguracao.ModeloFormulario)]
     [VendorMediaType(Resource = "formulario", Versions = [2])]
     [ProducesResponseType(typeof(FormularioApresentado), StatusCodes.Status200OK)]
@@ -121,6 +125,7 @@ public sealed class ModelosFormularioController : ControllerBase
     /// modelo ou de um processo. Não grava nada nem registra o conteúdo.
     /// </summary>
     [HttpPost("admin/avaliacoes-de-formulario")]
+    [EndpointName("AvaliarFormularioSemCadastro")]
     [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.ModelosFormularioConsultar, ResourceTipo = ResourceTiposConfiguracao.ModeloFormulario)]
     [VendorMediaType(Resource = "avaliacao-de-formulario", Versions = [1])]
     [ProducesResponseType(typeof(AvaliacaoPortavel), StatusCodes.Status200OK)]
@@ -141,6 +146,7 @@ public sealed class ModelosFormularioController : ControllerBase
     /// repetível faria diante delas, pelo mesmo avaliador da inscrição. Não grava nada.
     /// </summary>
     [HttpPost("admin/modelos-formulario/{id:guid}/pre-visualizacao")]
+    [EndpointName("PreVisualizarModeloDeFormulario")]
     [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.ModelosFormularioConsultar, ResourceTipo = ResourceTiposConfiguracao.ModeloFormulario)]
     [VendorMediaType(Resource = "pre-visualizacao-modelo-formulario", Versions = [1])]
     [ProducesResponseType(typeof(PreVisualizacaoDoModeloDto), StatusCodes.Status200OK)]
@@ -168,6 +174,7 @@ public sealed class ModelosFormularioController : ControllerBase
     /// tipos de processo.
     /// </summary>
     [HttpPost("admin/modelos-formulario")]
+    [EndpointName("CadastrarModeloDeFormulario")]
     [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.ModelosFormularioManter, ResourceTipo = ResourceTiposConfiguracao.ModeloFormulario)]
     [RequiresIdempotencyKey]
     [ProducesResponseType(typeof(Guid), StatusCodes.Status201Created)]
@@ -190,6 +197,7 @@ public sealed class ModelosFormularioController : ControllerBase
     /// <c>ativo</c> são ignorados.
     /// </summary>
     [HttpPut("admin/modelos-formulario/{id:guid}")]
+    [EndpointName("AlterarModeloDeFormulario")]
     [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.ModelosFormularioManter, ResourceTipo = ResourceTiposConfiguracao.ModeloFormulario)]
     [RequiresIdempotencyKey]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
@@ -209,6 +217,7 @@ public sealed class ModelosFormularioController : ControllerBase
 
     /// <summary>Reativa o modelo, que volta à escolha dos processos novos.</summary>
     [HttpPost("admin/modelos-formulario/{id:guid}/ativacao")]
+    [EndpointName("ReativarModeloDeFormulario")]
     [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.ModelosFormularioManter, ResourceTipo = ResourceTiposConfiguracao.ModeloFormulario)]
     [RequiresIdempotencyKey]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
@@ -222,6 +231,7 @@ public sealed class ModelosFormularioController : ControllerBase
 
     /// <summary>Desativa o modelo; os processos que já o copiaram não mudam. O modelo não é apagado.</summary>
     [HttpDelete("admin/modelos-formulario/{id:guid}")]
+    [EndpointName("DesativarModeloDeFormulario")]
     [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.ModelosFormularioManter, ResourceTipo = ResourceTiposConfiguracao.ModeloFormulario)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]

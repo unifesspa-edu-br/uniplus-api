@@ -2,6 +2,7 @@ namespace Unifesspa.UniPlus.Configuracao.API.Controllers;
 
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Routing;
 
 using Unifesspa.UniPlus.Application.Abstractions.Messaging;
 using Unifesspa.UniPlus.Authorization.Abstractions;
@@ -33,6 +34,7 @@ public sealed class FatosCandidatoValoresController : ControllerBase
 
     /// <summary>Acrescenta um valor a um fato de fonte global do administrador.</summary>
     [HttpPost("admin/fatos-candidato/{id:guid}/valores")]
+    [EndpointName("IncluirOpcaoDoDadoDoCandidato")]
     [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.FatosCandidatoManter, ResourceTipo = ResourceTiposConfiguracao.FatoCandidato)]
     [RequiresIdempotencyKey]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
@@ -53,6 +55,7 @@ public sealed class FatosCandidatoValoresController : ControllerBase
     /// não muda: mudar o sentido de uma opção é acrescentar outro valor e desativar o antigo.
     /// </summary>
     [HttpPut("admin/fatos-candidato/{id:guid}/valores/{codigo}")]
+    [EndpointName("CorrigirOpcaoDoDadoDoCandidato")]
     [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.FatosCandidatoManter, ResourceTipo = ResourceTiposConfiguracao.FatoCandidato)]
     [RequiresIdempotencyKey]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
@@ -73,6 +76,7 @@ public sealed class FatosCandidatoValoresController : ControllerBase
     /// desativados. Fica fora de <c>valores/</c> porque colidiria com um valor de código ORDEM.
     /// </summary>
     [HttpPut("admin/fatos-candidato/{id:guid}/ordem-dos-valores")]
+    [EndpointName("ReordenarOpcoesDoDadoDoCandidato")]
     [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.FatosCandidatoManter, ResourceTipo = ResourceTiposConfiguracao.FatoCandidato)]
     [RequiresIdempotencyKey]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
@@ -90,6 +94,7 @@ public sealed class FatosCandidatoValoresController : ControllerBase
 
     /// <summary>Reativa um valor do fato cadastrado pelo administrador do cadastro.</summary>
     [HttpPost("admin/fatos-candidato/{id:guid}/valores/{codigo}/ativacao")]
+    [EndpointName("ReativarOpcaoDoDadoDoCandidato")]
     [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.FatosCandidatoManter, ResourceTipo = ResourceTiposConfiguracao.FatoCandidato)]
     [RequiresIdempotencyKey]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
@@ -106,6 +111,7 @@ public sealed class FatosCandidatoValoresController : ControllerBase
     /// citava continua. O código do valor nunca é removido nem renomeado.
     /// </summary>
     [HttpDelete("admin/fatos-candidato/{id:guid}/valores/{codigo}")]
+    [EndpointName("DesativarOpcaoDoDadoDoCandidato")]
     [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.FatosCandidatoManter, ResourceTipo = ResourceTiposConfiguracao.FatoCandidato)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]

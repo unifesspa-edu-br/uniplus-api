@@ -4,6 +4,7 @@ using System.Collections.Generic;
 
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Routing;
 
 using Unifesspa.UniPlus.Application.Abstractions.Messaging;
 using Unifesspa.UniPlus.Application.Abstractions.Respostas;
@@ -35,6 +36,7 @@ public sealed class VocabulariosDaBancaController : ControllerBase
 
     /// <summary>Lista os tipos de banca do vocabulário, com código e rótulo, na ordem de exibição.</summary>
     [HttpGet("vocabularios/tipos-banca")]
+    [EndpointName("ListarCodigosDeTipoDeBanca")]
     [AllowAnonymous]
     [VendorMediaType(Resource = "codigo-tipo-banca", Versions = [1])]
     [ProducesResponseType(typeof(IEnumerable<CodigoComRotulo<TipoDeBanca>>), StatusCodes.Status200OK)]
@@ -50,6 +52,7 @@ public sealed class VocabulariosDaBancaController : ControllerBase
 
     /// <summary>Lista os papéis que um tipo de banca pode ter, com código e rótulo, na ordem de exibição.</summary>
     [HttpGet("vocabularios/papeis-de-banca")]
+    [EndpointName("ListarPapeisDeBanca")]
     [AllowAnonymous]
     [VendorMediaType(Resource = "codigo-papel-de-banca", Versions = [1])]
     [ProducesResponseType(typeof(IEnumerable<CodigoComRotulo<PapelDaBanca>>), StatusCodes.Status200OK)]
@@ -65,6 +68,7 @@ public sealed class VocabulariosDaBancaController : ControllerBase
 
     /// <summary>Lista os tipos de decisão que um tipo de banca pode julgar, com código e rótulo, na ordem de exibição.</summary>
     [HttpGet("vocabularios/tipos-de-decisao")]
+    [EndpointName("ListarTiposDeDecisao")]
     [AllowAnonymous]
     [VendorMediaType(Resource = "codigo-tipo-de-decisao", Versions = [1])]
     [ProducesResponseType(typeof(IEnumerable<CodigoComRotulo<TipoMotivoDeDecisao>>), StatusCodes.Status200OK)]

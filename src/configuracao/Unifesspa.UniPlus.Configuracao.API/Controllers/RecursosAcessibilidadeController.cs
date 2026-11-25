@@ -4,6 +4,7 @@ using System.Diagnostics.CodeAnalysis;
 
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Routing;
 
 using Unifesspa.UniPlus.Application.Abstractions.Messaging;
 using Unifesspa.UniPlus.Configuracao.Application.Commands.RecursosAcessibilidade;
@@ -57,6 +58,7 @@ public sealed class RecursosAcessibilidadeController : ControllerBase
     /// item carrega seu <c>_links.self</c> (ADR-0029).
     /// </summary>
     [HttpGet("recursos-acessibilidade")]
+    [EndpointName("ListarRecursosDeAcessibilidade")]
     [AllowAnonymous]
     [VendorMediaType(Resource = "recurso-acessibilidade", Versions = [1])]
     [ProducesResponseType(typeof(IEnumerable<RecursoAcessibilidadeDto>), StatusCodes.Status200OK)]
@@ -84,6 +86,7 @@ public sealed class RecursosAcessibilidadeController : ControllerBase
 
     /// <summary>Obtém um recurso de acessibilidade pelo Id. Retorna 404 quando inexistente.</summary>
     [HttpGet("recursos-acessibilidade/{id:guid}")]
+    [EndpointName("ObterRecursoDeAcessibilidade")]
     [AllowAnonymous]
     [VendorMediaType(Resource = "recurso-acessibilidade", Versions = [1])]
     [ProducesResponseType(typeof(RecursoAcessibilidadeDto), StatusCodes.Status200OK)]
@@ -106,6 +109,7 @@ public sealed class RecursosAcessibilidadeController : ControllerBase
 
     /// <summary>Cria um novo recurso de acessibilidade. Exige a permissão de manutenção. Idempotency-Key obrigatório (ADR-0027).</summary>
     [HttpPost("admin/recursos-acessibilidade")]
+    [EndpointName("CadastrarRecursoDeAcessibilidade")]
     [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.RecursosAcessibilidadeManter, ResourceTipo = ResourceTiposConfiguracao.RecursoAcessibilidade)]
     [RequiresIdempotencyKey]
     [ProducesResponseType(typeof(Guid), StatusCodes.Status201Created)]
@@ -129,6 +133,7 @@ public sealed class RecursosAcessibilidadeController : ControllerBase
 
     /// <summary>Atualiza um recurso de acessibilidade existente. Exige a permissão de manutenção.</summary>
     [HttpPut("admin/recursos-acessibilidade/{id:guid}")]
+    [EndpointName("AlterarRecursoDeAcessibilidade")]
     [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.RecursosAcessibilidadeManter, ResourceTipo = ResourceTiposConfiguracao.RecursoAcessibilidade)]
     [RequiresIdempotencyKey]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
@@ -159,6 +164,7 @@ public sealed class RecursosAcessibilidadeController : ControllerBase
 
     /// <summary>Remove (soft-delete) um recurso de acessibilidade. Exige a permissão de manutenção.</summary>
     [HttpDelete("admin/recursos-acessibilidade/{id:guid}")]
+    [EndpointName("ExcluirRecursoDeAcessibilidade")]
     [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.RecursosAcessibilidadeManter, ResourceTipo = ResourceTiposConfiguracao.RecursoAcessibilidade)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]

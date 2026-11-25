@@ -4,6 +4,7 @@ using System.Collections.Generic;
 
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Routing;
 
 using Unifesspa.UniPlus.Application.Abstractions.Messaging;
 using Unifesspa.UniPlus.Configuracao.Application.DTOs;
@@ -32,6 +33,7 @@ public sealed class VocabulariosDoCursoController : ControllerBase
     /// Pesos por Área montarem o `select` sem cópia própria dos grupos.
     /// </summary>
     [HttpGet("vocabularios/grupos-area-enem")]
+    [EndpointName("ListarGruposDeAreaDoEnem")]
     [AllowAnonymous]
     [VendorMediaType(Resource = "codigo-grupo-area-enem", Versions = [1])]
     [ProducesResponseType(typeof(IEnumerable<GrupoAreaEnemDto>), StatusCodes.Status200OK)]

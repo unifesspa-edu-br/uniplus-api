@@ -2,6 +2,7 @@ namespace Unifesspa.UniPlus.Configuracao.API.Controllers;
 
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Routing;
 
 using Unifesspa.UniPlus.Application.Abstractions.Messaging;
 using Unifesspa.UniPlus.Authorization.Abstractions;
@@ -48,6 +49,7 @@ public sealed class FatosCandidatoController : ControllerBase
     /// filtrável.
     /// </summary>
     [HttpGet("fatos-candidato")]
+    [EndpointName("ListarDadosDoCandidato")]
     [AllowAnonymous]
     [VendorMediaType(Resource = "fato-candidato", Versions = [1])]
     [ProducesResponseType(typeof(IEnumerable<FatoDoCatalogoDto>), StatusCodes.Status200OK)]
@@ -66,6 +68,7 @@ public sealed class FatosCandidatoController : ControllerBase
     /// Retorna 404 quando o código não existe no vocabulário.
     /// </summary>
     [HttpGet("fatos-candidato/{codigo}")]
+    [EndpointName("ObterDadoDoCandidato")]
     [AllowAnonymous]
     [VendorMediaType(Resource = "fato-candidato", Versions = [1])]
     [ProducesResponseType(typeof(FatoDoCatalogoDto), StatusCodes.Status200OK)]
@@ -82,6 +85,7 @@ public sealed class FatosCandidatoController : ControllerBase
 
     /// <summary>Lista de manutenção, paginada, com filtro opcional por origem e por estado ativo.</summary>
     [HttpGet("admin/fatos-candidato")]
+    [EndpointName("ListarDadosDoCandidatoParaManutencao")]
     [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.FatosCandidatoConsultar, ResourceTipo = ResourceTiposConfiguracao.FatoCandidato)]
     [VendorMediaType(Resource = "fato-candidato", Versions = [1])]
     [ProducesResponseType(typeof(IEnumerable<FatoDeManutencaoDto>), StatusCodes.Status200OK)]
@@ -113,6 +117,7 @@ public sealed class FatosCandidatoController : ControllerBase
 
     /// <summary>O fato para manutenção, ativo ou desativado.</summary>
     [HttpGet("admin/fatos-candidato/{id:guid}")]
+    [EndpointName("ObterDadoDoCandidatoParaManutencao")]
     [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.FatosCandidatoConsultar, ResourceTipo = ResourceTiposConfiguracao.FatoCandidato)]
     [VendorMediaType(Resource = "fato-candidato", Versions = [1])]
     [ProducesResponseType(typeof(FatoDeManutencaoDto), StatusCodes.Status200OK)]
@@ -132,6 +137,7 @@ public sealed class FatosCandidatoController : ControllerBase
     /// formulário é gerado a partir dele.
     /// </summary>
     [HttpPost("admin/fatos-candidato")]
+    [EndpointName("CadastrarDadoDoCandidato")]
     [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.FatosCandidatoManter, ResourceTipo = ResourceTiposConfiguracao.FatoCandidato)]
     [RequiresIdempotencyKey]
     [ProducesResponseType(typeof(Guid), StatusCodes.Status201Created)]
@@ -153,6 +159,7 @@ public sealed class FatosCandidatoController : ControllerBase
     /// depois, quando o categórico já tem os valores que elas contribuem.
     /// </summary>
     [HttpPost("admin/fatos-candidato/derivados")]
+    [EndpointName("CadastrarDadoCalculado")]
     [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.FatosCandidatoManter, ResourceTipo = ResourceTiposConfiguracao.FatoCandidato)]
     [RequiresIdempotencyKey]
     [ProducesResponseType(typeof(Guid), StatusCodes.Status201Created)]
@@ -174,6 +181,7 @@ public sealed class FatosCandidatoController : ControllerBase
     /// responderam no fato de membro informado.
     /// </summary>
     [HttpPost("admin/fatos-candidato/agregados")]
+    [EndpointName("CadastrarResumoDoGrupo")]
     [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.FatosCandidatoManter, ResourceTipo = ResourceTiposConfiguracao.FatoCandidato)]
     [RequiresIdempotencyKey]
     [ProducesResponseType(typeof(Guid), StatusCodes.Status201Created)]
@@ -195,6 +203,7 @@ public sealed class FatosCandidatoController : ControllerBase
     /// Lista vazia remove as regras.
     /// </summary>
     [HttpPut("admin/fatos-candidato/{id:guid}/regras-padrao")]
+    [EndpointName("DefinirRegrasPadraoDoDadoCalculado")]
     [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.FatosCandidatoManter, ResourceTipo = ResourceTiposConfiguracao.FatoCandidato)]
     [RequiresIdempotencyKey]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
@@ -225,6 +234,7 @@ public sealed class FatosCandidatoController : ControllerBase
     /// <c>definicao.protecao.finalidade</c> e <c>definicao.protecao.hipoteseLegal</c>.
     /// </remarks>
     [HttpPut("admin/fatos-candidato/{id:guid}/definicao")]
+    [EndpointName("AlterarDefinicaoDoDadoDoCandidato")]
     [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.FatosCandidatoManter, ResourceTipo = ResourceTiposConfiguracao.FatoCandidato)]
     [RequiresIdempotencyKey]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
@@ -245,6 +255,7 @@ public sealed class FatosCandidatoController : ControllerBase
     /// O corpo tem os campos do <c>descritivo</c> da resposta do fato.
     /// </summary>
     [HttpPut("admin/fatos-candidato/{id:guid}")]
+    [EndpointName("AlterarDadoDoCandidato")]
     [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.FatosCandidatoManter, ResourceTipo = ResourceTiposConfiguracao.FatoCandidato)]
     [RequiresIdempotencyKey]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
@@ -262,6 +273,7 @@ public sealed class FatosCandidatoController : ControllerBase
 
     /// <summary>Reativa o fato cadastrado pelo administrador do cadastro, que volta a aceitar vínculos novos.</summary>
     [HttpPost("admin/fatos-candidato/{id:guid}/ativacao")]
+    [EndpointName("ReativarDadoDoCandidato")]
     [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.FatosCandidatoManter, ResourceTipo = ResourceTiposConfiguracao.FatoCandidato)]
     [RequiresIdempotencyKey]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
@@ -278,6 +290,7 @@ public sealed class FatosCandidatoController : ControllerBase
     /// continua com ele. O fato não é apagado.
     /// </summary>
     [HttpDelete("admin/fatos-candidato/{id:guid}")]
+    [EndpointName("DesativarDadoDoCandidato")]
     [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.FatosCandidatoManter, ResourceTipo = ResourceTiposConfiguracao.FatoCandidato)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]

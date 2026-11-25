@@ -5,6 +5,7 @@ using System.Diagnostics.CodeAnalysis;
 
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Routing;
 
 using Unifesspa.UniPlus.Application.Abstractions.Consultas;
 using Unifesspa.UniPlus.Application.Abstractions.Messaging;
@@ -74,6 +75,7 @@ public sealed class TermosConsentimentoController : ControllerBase
     /// </param>
     /// <param name="cancellationToken">Token de cancelamento da requisição.</param>
     [HttpGet("termos-consentimento")]
+    [EndpointName("ListarTermosDeConsentimento")]
     [AllowAnonymous]
     [VendorMediaType(Resource = "termo-consentimento", Versions = [1])]
     [ProducesResponseType(typeof(IEnumerable<TermoConsentimentoResumoDto>), StatusCodes.Status200OK)]
@@ -118,6 +120,7 @@ public sealed class TermosConsentimentoController : ControllerBase
 
     /// <summary>Obtém um termo pelo Id, com a lista completa de versões promovidas. Retorna 404 quando inexistente.</summary>
     [HttpGet("termos-consentimento/{id:guid}")]
+    [EndpointName("ObterTermoDeConsentimento")]
     [AllowAnonymous]
     [VendorMediaType(Resource = "termo-consentimento", Versions = [1])]
     [ProducesResponseType(typeof(TermoConsentimentoDto), StatusCodes.Status200OK)]
@@ -140,6 +143,7 @@ public sealed class TermosConsentimentoController : ControllerBase
 
     /// <summary>Cria um novo termo (rascunho vazio ou com campos iniciais). Exige a permissão de manutenção. Idempotency-Key obrigatório (ADR-0027).</summary>
     [HttpPost("admin/termos-consentimento")]
+    [EndpointName("CadastrarTermoDeConsentimento")]
     [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.TermosConsentimentoManter, ResourceTipo = ResourceTiposConfiguracao.TermoConsentimento)]
     [RequiresIdempotencyKey]
     [ProducesResponseType(typeof(Guid), StatusCodes.Status201Created)]
@@ -166,6 +170,7 @@ public sealed class TermosConsentimentoController : ControllerBase
     /// <c>EM_ELABORACAO</c> e limpa a marca de revisão. Exige a permissão de manutenção.
     /// </summary>
     [HttpPut("admin/termos-consentimento/{id:guid}/rascunho")]
+    [EndpointName("AlterarRascunhoDoTermoDeConsentimento")]
     [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.TermosConsentimentoManter, ResourceTipo = ResourceTiposConfiguracao.TermoConsentimento)]
     [RequiresIdempotencyKey]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
@@ -198,6 +203,7 @@ public sealed class TermosConsentimentoController : ControllerBase
     /// comum, grava o ator explícito da chamada. Exige a permissão de manutenção.
     /// </summary>
     [HttpPost("admin/termos-consentimento/{id:guid}/revisar")]
+    [EndpointName("MarcarRascunhoDoTermoDeConsentimentoComoRevisado")]
     [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.TermosConsentimentoManter, ResourceTipo = ResourceTiposConfiguracao.TermoConsentimento)]
     [RequiresIdempotencyKey]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
@@ -219,6 +225,7 @@ public sealed class TermosConsentimentoController : ControllerBase
     /// manutenção.
     /// </summary>
     [HttpPost("admin/termos-consentimento/{id:guid}/promover")]
+    [EndpointName("GerarVersaoDoTermoDeConsentimento")]
     [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.TermosConsentimentoManter, ResourceTipo = ResourceTiposConfiguracao.TermoConsentimento)]
     [RequiresIdempotencyKey]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
@@ -237,6 +244,7 @@ public sealed class TermosConsentimentoController : ControllerBase
 
     /// <summary>Remove (soft-delete) um termo sem nenhuma versão promovida. Exige a permissão de manutenção.</summary>
     [HttpDelete("admin/termos-consentimento/{id:guid}")]
+    [EndpointName("ExcluirTermoDeConsentimento")]
     [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.TermosConsentimentoManter, ResourceTipo = ResourceTiposConfiguracao.TermoConsentimento)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]

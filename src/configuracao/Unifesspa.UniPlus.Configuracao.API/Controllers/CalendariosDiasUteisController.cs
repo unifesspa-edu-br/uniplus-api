@@ -4,6 +4,7 @@ using System.Diagnostics.CodeAnalysis;
 
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Routing;
 
 using Unifesspa.UniPlus.Application.Abstractions.Messaging;
 using Unifesspa.UniPlus.Configuracao.Application.Commands.CalendariosDiasUteis;
@@ -60,6 +61,7 @@ public sealed class CalendariosDiasUteisController : ControllerBase
     /// use <see cref="ObterPorId"/> para o calendário completo.
     /// </summary>
     [HttpGet("calendarios-dias-uteis")]
+    [EndpointName("ListarCalendariosDeDiasUteis")]
     [AllowAnonymous]
     [VendorMediaType(Resource = "calendario-dias-uteis", Versions = [1])]
     [ProducesResponseType(typeof(IEnumerable<CalendarioDiasUteisResumoDto>), StatusCodes.Status200OK)]
@@ -87,6 +89,7 @@ public sealed class CalendariosDiasUteisController : ControllerBase
 
     /// <summary>Obtém um calendário pelo Id, com a lista completa de dias não úteis. Retorna 404 quando inexistente.</summary>
     [HttpGet("calendarios-dias-uteis/{id:guid}")]
+    [EndpointName("ObterCalendarioDeDiasUteis")]
     [AllowAnonymous]
     [VendorMediaType(Resource = "calendario-dias-uteis", Versions = [1])]
     [ProducesResponseType(typeof(CalendarioDiasUteisDto), StatusCodes.Status200OK)]
@@ -109,6 +112,7 @@ public sealed class CalendariosDiasUteisController : ControllerBase
 
     /// <summary>Cria um novo calendário (nasce não vigente). Exige a permissão de manutenção. Idempotency-Key obrigatório (ADR-0027).</summary>
     [HttpPost("admin/calendarios-dias-uteis")]
+    [EndpointName("CadastrarCalendarioDeDiasUteis")]
     [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.CalendariosDiasUteisManter, ResourceTipo = ResourceTiposConfiguracao.CalendarioDiasUteis)]
     [RequiresIdempotencyKey]
     [ProducesResponseType(typeof(Guid), StatusCodes.Status201Created)]
@@ -131,6 +135,7 @@ public sealed class CalendariosDiasUteisController : ControllerBase
 
     /// <summary>Torna o calendário o vigente, desmarcando o anterior. Exige a permissão de manutenção.</summary>
     [HttpPost("admin/calendarios-dias-uteis/{id:guid}/vigente")]
+    [EndpointName("MarcarCalendarioDeDiasUteisComoVigente")]
     [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.CalendariosDiasUteisManter, ResourceTipo = ResourceTiposConfiguracao.CalendarioDiasUteis)]
     [RequiresIdempotencyKey]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
@@ -154,6 +159,7 @@ public sealed class CalendariosDiasUteisController : ControllerBase
     /// (ADR-0027).
     /// </summary>
     [HttpPost("admin/calendarios-dias-uteis/{id:guid}/dias-nao-uteis")]
+    [EndpointName("IncluirDiaNaoUtilNoCalendario")]
     [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.CalendariosDiasUteisManter, ResourceTipo = ResourceTiposConfiguracao.CalendarioDiasUteis)]
     [RequiresIdempotencyKey]
     [ProducesResponseType(typeof(CalendarioDiasUteisDto), StatusCodes.Status200OK)]
@@ -183,6 +189,7 @@ public sealed class CalendariosDiasUteisController : ControllerBase
 
     /// <summary>Remove (soft-delete) um calendário não vigente. Exige a permissão de manutenção.</summary>
     [HttpDelete("admin/calendarios-dias-uteis/{id:guid}")]
+    [EndpointName("ExcluirCalendarioDeDiasUteis")]
     [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.CalendariosDiasUteisManter, ResourceTipo = ResourceTiposConfiguracao.CalendarioDiasUteis)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]

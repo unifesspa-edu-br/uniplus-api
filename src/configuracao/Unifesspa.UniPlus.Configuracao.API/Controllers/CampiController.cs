@@ -4,6 +4,7 @@ using System.Diagnostics.CodeAnalysis;
 
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Routing;
 
 using Unifesspa.UniPlus.Application.Abstractions.Messaging;
 using Unifesspa.UniPlus.Configuracao.Application.Commands.Campi;
@@ -57,6 +58,7 @@ public sealed class CampiController : ControllerBase
     /// carrega seu <c>_links.self</c> (ADR-0029 §"Coleção").
     /// </summary>
     [HttpGet("campi")]
+    [EndpointName("ListarCampi")]
     [AllowAnonymous]
     [VendorMediaType(Resource = "campus", Versions = [1])]
     [ProducesResponseType(typeof(IEnumerable<CampusDto>), StatusCodes.Status200OK)]
@@ -83,6 +85,7 @@ public sealed class CampiController : ControllerBase
 
     /// <summary>Obtém um campus pelo Id. Retorna 404 quando inexistente.</summary>
     [HttpGet("campi/{id:guid}")]
+    [EndpointName("ObterCampus")]
     [AllowAnonymous]
     [VendorMediaType(Resource = "campus", Versions = [1])]
     [ProducesResponseType(typeof(CampusDto), StatusCodes.Status200OK)]
@@ -105,6 +108,7 @@ public sealed class CampiController : ControllerBase
 
     /// <summary>Cria um novo campus. Exige a permissão de manutenção. Idempotency-Key obrigatório (ADR-0027).</summary>
     [HttpPost("admin/campi")]
+    [EndpointName("CadastrarCampus")]
     [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.CampiManter, ResourceTipo = ResourceTiposConfiguracao.Campus)]
     [RequiresIdempotencyKey]
     [ProducesResponseType(typeof(Guid), StatusCodes.Status201Created)]
@@ -128,6 +132,7 @@ public sealed class CampiController : ControllerBase
 
     /// <summary>Atualiza um campus existente. Exige a permissão de manutenção.</summary>
     [HttpPut("admin/campi/{id:guid}")]
+    [EndpointName("AlterarCampus")]
     [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.CampiManter, ResourceTipo = ResourceTiposConfiguracao.Campus)]
     [RequiresIdempotencyKey]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
@@ -158,6 +163,7 @@ public sealed class CampiController : ControllerBase
 
     /// <summary>Remove (soft-delete) um campus. Exige a permissão de manutenção.</summary>
     [HttpDelete("admin/campi/{id:guid}")]
+    [EndpointName("ExcluirCampus")]
     [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.CampiManter, ResourceTipo = ResourceTiposConfiguracao.Campus)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]

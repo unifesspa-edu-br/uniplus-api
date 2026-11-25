@@ -4,6 +4,7 @@ using System.Diagnostics.CodeAnalysis;
 
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Routing;
 
 using Unifesspa.UniPlus.Application.Abstractions.Messaging;
 using Unifesspa.UniPlus.Configuracao.Application.Commands.TiposProcesso;
@@ -41,6 +42,7 @@ public sealed class TiposProcessoController : ControllerBase
     }
 
     [HttpGet("tipos-processo")]
+    [EndpointName("ListarTiposDeProcesso")]
     [AllowAnonymous]
     [VendorMediaType(Resource = "tipo-processo", Versions = [1])]
     [ProducesResponseType(typeof(IEnumerable<TipoProcessoDto>), StatusCodes.Status200OK)]
@@ -58,6 +60,7 @@ public sealed class TiposProcessoController : ControllerBase
     }
 
     [HttpGet("tipos-processo/{id:guid}")]
+    [EndpointName("ObterTipoDeProcesso")]
     [AllowAnonymous]
     [VendorMediaType(Resource = "tipo-processo", Versions = [1])]
     [ProducesResponseType(typeof(TipoProcessoDto), StatusCodes.Status200OK)]
@@ -75,6 +78,7 @@ public sealed class TiposProcessoController : ControllerBase
     /// quem mantém o cadastro encontra o tipo desativado que pretende reativar.
     /// </summary>
     [HttpGet("admin/tipos-processo")]
+    [EndpointName("ListarTiposDeProcessoParaManutencao")]
     [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.TiposProcessoConsultar, ResourceTipo = ResourceTiposConfiguracao.TipoProcesso)]
     [VendorMediaType(Resource = "tipo-processo", Versions = [1])]
     [ProducesResponseType(typeof(IEnumerable<TipoProcessoDto>), StatusCodes.Status200OK)]
@@ -100,7 +104,8 @@ public sealed class TiposProcessoController : ControllerBase
     /// Obtém um tipo para manutenção, ativo ou desativado. A leitura pública por id
     /// continua devolvendo 404 para o desativado (UNI-REQ-0098).
     /// </summary>
-    [HttpGet("admin/tipos-processo/{id:guid}", Name = "ObterTipoProcessoParaManutencao")]
+    [HttpGet("admin/tipos-processo/{id:guid}")]
+    [EndpointName("ObterTipoDeProcessoParaManutencao")]
     [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.TiposProcessoConsultar, ResourceTipo = ResourceTiposConfiguracao.TipoProcesso)]
     [VendorMediaType(Resource = "tipo-processo", Versions = [1])]
     [ProducesResponseType(typeof(TipoProcessoDto), StatusCodes.Status200OK)]
@@ -116,6 +121,7 @@ public sealed class TiposProcessoController : ControllerBase
     }
 
     [HttpPost("admin/tipos-processo")]
+    [EndpointName("CadastrarTipoDeProcesso")]
     [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.TiposProcessoManter, ResourceTipo = ResourceTiposConfiguracao.TipoProcesso)]
     [RequiresIdempotencyKey]
     [ProducesResponseType(typeof(Guid), StatusCodes.Status201Created)]
@@ -131,6 +137,7 @@ public sealed class TiposProcessoController : ControllerBase
     }
 
     [HttpPut("admin/tipos-processo/{id:guid}")]
+    [EndpointName("AlterarTipoDeProcesso")]
     [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.TiposProcessoManter, ResourceTipo = ResourceTiposConfiguracao.TipoProcesso)]
     [RequiresIdempotencyKey]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
@@ -157,6 +164,7 @@ public sealed class TiposProcessoController : ControllerBase
     /// produzidos — eles guardam cópia por valor do tipo (ADR-0061).
     /// </summary>
     [HttpPost("admin/tipos-processo/{id:guid}/ativacao")]
+    [EndpointName("ReativarTipoDeProcesso")]
     [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.TiposProcessoManter, ResourceTipo = ResourceTiposConfiguracao.TipoProcesso)]
     [RequiresIdempotencyKey]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
@@ -172,6 +180,7 @@ public sealed class TiposProcessoController : ControllerBase
     }
 
     [HttpDelete("admin/tipos-processo/{id:guid}")]
+    [EndpointName("DesativarTipoDeProcesso")]
     [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.TiposProcessoManter, ResourceTipo = ResourceTiposConfiguracao.TipoProcesso)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]

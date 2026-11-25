@@ -4,6 +4,7 @@ using System.Diagnostics.CodeAnalysis;
 
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Routing;
 
 using Unifesspa.UniPlus.Application.Abstractions.Messaging;
 using Unifesspa.UniPlus.Configuracao.Application.Commands.PrecedenciasFase;
@@ -58,6 +59,7 @@ public sealed class PrecedenciasFaseController : ControllerBase
     /// item carrega seu <c>_links.self</c> (ADR-0029).
     /// </summary>
     [HttpGet("precedencias-fase")]
+    [EndpointName("ListarPrecedenciasEntreFases")]
     [AllowAnonymous]
     [VendorMediaType(Resource = "precedencia-fase", Versions = [1])]
     [ProducesResponseType(typeof(IEnumerable<PrecedenciaFaseDto>), StatusCodes.Status200OK)]
@@ -85,6 +87,7 @@ public sealed class PrecedenciasFaseController : ControllerBase
 
     /// <summary>Obtém uma aresta de precedência pelo Id. Retorna 404 quando inexistente.</summary>
     [HttpGet("precedencias-fase/{id:guid}")]
+    [EndpointName("ObterPrecedenciaEntreFases")]
     [AllowAnonymous]
     [VendorMediaType(Resource = "precedencia-fase", Versions = [1])]
     [ProducesResponseType(typeof(PrecedenciaFaseDto), StatusCodes.Status200OK)]
@@ -107,6 +110,7 @@ public sealed class PrecedenciasFaseController : ControllerBase
 
     /// <summary>Cria uma nova aresta de precedência. Exige a permissão de manutenção. Idempotency-Key obrigatório (ADR-0027).</summary>
     [HttpPost("admin/precedencias-fase")]
+    [EndpointName("CadastrarPrecedenciaEntreFases")]
     [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.PrecedenciasFaseManter, ResourceTipo = ResourceTiposConfiguracao.PrecedenciaFase)]
     [RequiresIdempotencyKey]
     [ProducesResponseType(typeof(Guid), StatusCodes.Status201Created)]
@@ -129,6 +133,7 @@ public sealed class PrecedenciasFaseController : ControllerBase
 
     /// <summary>Atualiza a permissão de sobreposição de uma aresta existente. Exige a permissão de manutenção.</summary>
     [HttpPut("admin/precedencias-fase/{id:guid}")]
+    [EndpointName("AlterarPrecedenciaEntreFases")]
     [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.PrecedenciasFaseManter, ResourceTipo = ResourceTiposConfiguracao.PrecedenciaFase)]
     [RequiresIdempotencyKey]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
@@ -158,6 +163,7 @@ public sealed class PrecedenciasFaseController : ControllerBase
 
     /// <summary>Remove (soft-delete) uma aresta de precedência. Exige a permissão de manutenção.</summary>
     [HttpDelete("admin/precedencias-fase/{id:guid}")]
+    [EndpointName("ExcluirPrecedenciaEntreFases")]
     [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.PrecedenciasFaseManter, ResourceTipo = ResourceTiposConfiguracao.PrecedenciaFase)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]

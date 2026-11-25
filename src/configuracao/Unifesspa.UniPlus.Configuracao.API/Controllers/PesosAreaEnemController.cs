@@ -4,6 +4,7 @@ using System.Diagnostics.CodeAnalysis;
 
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Routing;
 
 using Unifesspa.UniPlus.Application.Abstractions.Messaging;
 using Unifesspa.UniPlus.Configuracao.Application.Commands.PesosAreaEnem;
@@ -58,6 +59,7 @@ public sealed class PesosAreaEnemController : ControllerBase
     /// item carrega seu <c>_links.self</c> (ADR-0029).
     /// </summary>
     [HttpGet("pesos-area-enem")]
+    [EndpointName("ListarPesosPorAreaDoEnem")]
     [AllowAnonymous]
     [VendorMediaType(Resource = "peso-area-enem", Versions = [1])]
     [ProducesResponseType(typeof(IEnumerable<PesoAreaEnemDto>), StatusCodes.Status200OK)]
@@ -89,6 +91,7 @@ public sealed class PesosAreaEnemController : ControllerBase
     /// Sem paginação e sem <c>_links</c>: a coleção é fechada e definida pelo domínio.
     /// </summary>
     [HttpGet("pesos-area-enem/areas")]
+    [EndpointName("ListarAreasDoEnem")]
     [AllowAnonymous]
     [VendorMediaType(Resource = "area-peso-area-enem", Versions = [1])]
     [ProducesResponseType(typeof(IEnumerable<AreaPesoAreaEnemDto>), StatusCodes.Status200OK)]
@@ -104,6 +107,7 @@ public sealed class PesosAreaEnemController : ControllerBase
 
     /// <summary>Obtém uma linha de pesos pelo Id. Retorna 404 quando inexistente.</summary>
     [HttpGet("pesos-area-enem/{id:guid}")]
+    [EndpointName("ObterPesosPorAreaDoEnem")]
     [AllowAnonymous]
     [VendorMediaType(Resource = "peso-area-enem", Versions = [1])]
     [ProducesResponseType(typeof(PesoAreaEnemDto), StatusCodes.Status200OK)]
@@ -126,6 +130,7 @@ public sealed class PesosAreaEnemController : ControllerBase
 
     /// <summary>Cria uma nova linha de pesos. Exige a permissão de manutenção. Idempotency-Key obrigatório (ADR-0027).</summary>
     [HttpPost("admin/pesos-area-enem")]
+    [EndpointName("CadastrarPesosPorAreaDoEnem")]
     [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.PesosAreaEnemManter, ResourceTipo = ResourceTiposConfiguracao.PesoAreaEnem)]
     [RequiresIdempotencyKey]
     [ProducesResponseType(typeof(Guid), StatusCodes.Status201Created)]
@@ -149,6 +154,7 @@ public sealed class PesosAreaEnemController : ControllerBase
 
     /// <summary>Atualiza uma linha de pesos existente. Exige a permissão de manutenção.</summary>
     [HttpPut("admin/pesos-area-enem/{id:guid}")]
+    [EndpointName("AlterarPesosPorAreaDoEnem")]
     [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.PesosAreaEnemManter, ResourceTipo = ResourceTiposConfiguracao.PesoAreaEnem)]
     [RequiresIdempotencyKey]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
@@ -178,6 +184,7 @@ public sealed class PesosAreaEnemController : ControllerBase
 
     /// <summary>Remove (soft-delete) uma linha de pesos. Exige a permissão de manutenção.</summary>
     [HttpDelete("admin/pesos-area-enem/{id:guid}")]
+    [EndpointName("ExcluirPesosPorAreaDoEnem")]
     [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.PesosAreaEnemManter, ResourceTipo = ResourceTiposConfiguracao.PesoAreaEnem)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]

@@ -4,6 +4,7 @@ using System.Collections.Generic;
 
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Routing;
 
 using Unifesspa.UniPlus.Application.Abstractions.Messaging;
 using Unifesspa.UniPlus.Application.Abstractions.Respostas;
@@ -29,6 +30,7 @@ public sealed class VocabulariosDaAvaliacaoDeFormularioController : ControllerBa
 
     /// <summary>Lista os resultados ternários de uma regra avaliada, com código e rótulo, na ordem do enum.</summary>
     [HttpGet("vocabularios/ternarios")]
+    [EndpointName("ListarResultadosDeCondicao")]
     [AllowAnonymous]
     [VendorMediaType(Resource = "codigo-ternario", Versions = [1])]
     [ProducesResponseType(typeof(IEnumerable<CodigoComRotulo<Ternario>>), StatusCodes.Status200OK)]
@@ -44,6 +46,7 @@ public sealed class VocabulariosDaAvaliacaoDeFormularioController : ControllerBa
 
     /// <summary>Lista os estados de resolução de um fato do candidato, com código e rótulo, na ordem do enum.</summary>
     [HttpGet("vocabularios/estados-de-fato")]
+    [EndpointName("ListarSituacoesDoDadoDoCandidato")]
     [AllowAnonymous]
     [VendorMediaType(Resource = "codigo-estado-de-fato", Versions = [1])]
     [ProducesResponseType(typeof(IEnumerable<CodigoComRotulo<EstadoFato>>), StatusCodes.Status200OK)]

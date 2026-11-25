@@ -4,6 +4,7 @@ using System.Collections.Generic;
 
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Routing;
 
 using Unifesspa.UniPlus.Application.Abstractions.Messaging;
 using Unifesspa.UniPlus.Application.Abstractions.Respostas;
@@ -32,6 +33,7 @@ public sealed class VocabulariosDaModalidadeController : ControllerBase
 
     /// <summary>Lista as naturezas legais, com código e rótulo, na ordem de exibição.</summary>
     [HttpGet("vocabularios/naturezas-legais")]
+    [EndpointName("ListarNaturezasLegais")]
     [AllowAnonymous]
     [VendorMediaType(Resource = "codigo-natureza-legal", Versions = [1])]
     [ProducesResponseType(typeof(IReadOnlyList<CodigoComRotulo<NaturezaLegal>>), StatusCodes.Status200OK)]
@@ -47,6 +49,7 @@ public sealed class VocabulariosDaModalidadeController : ControllerBase
 
     /// <summary>Lista as ações quando indeferido, com código e rótulo, na ordem de exibição.</summary>
     [HttpGet("vocabularios/acoes-quando-indeferido")]
+    [EndpointName("ListarAcoesQuandoIndeferido")]
     [AllowAnonymous]
     [VendorMediaType(Resource = "codigo-acao-quando-indeferido", Versions = [1])]
     [ProducesResponseType(typeof(IReadOnlyList<CodigoComRotulo<AcaoQuandoIndeferido>>), StatusCodes.Status200OK)]
@@ -62,6 +65,7 @@ public sealed class VocabulariosDaModalidadeController : ControllerBase
 
     /// <summary>Lista as composições de vagas, com código e rótulo, na ordem de exibição.</summary>
     [HttpGet("vocabularios/composicoes-vagas")]
+    [EndpointName("ListarComposicoesDasVagas")]
     [AllowAnonymous]
     [VendorMediaType(Resource = "codigo-composicao-vagas", Versions = [1])]
     [ProducesResponseType(typeof(IReadOnlyList<CodigoComRotulo<ComposicaoVagas>>), StatusCodes.Status200OK)]
@@ -77,6 +81,7 @@ public sealed class VocabulariosDaModalidadeController : ControllerBase
 
     /// <summary>Lista as regras de remanejamento, com código e rótulo, na ordem de exibição.</summary>
     [HttpGet("vocabularios/regras-remanejamento")]
+    [EndpointName("ListarRegrasDeRemanejamento")]
     [AllowAnonymous]
     [VendorMediaType(Resource = "codigo-regra-remanejamento", Versions = [1])]
     [ProducesResponseType(typeof(IReadOnlyList<CodigoComRotulo<RegraRemanejamento>>), StatusCodes.Status200OK)]

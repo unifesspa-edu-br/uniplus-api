@@ -4,6 +4,7 @@ using System.Collections.Generic;
 
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Routing;
 
 using Unifesspa.UniPlus.Application.Abstractions.Messaging;
 using Unifesspa.UniPlus.Application.Abstractions.Respostas;
@@ -37,6 +38,7 @@ public sealed class VocabulariosDoTermoConsentimentoController : ControllerBase
 
     /// <summary>Lista as formas de aceite, com código e rótulo, na ordem de exibição.</summary>
     [HttpGet("vocabularios/formas-aceite")]
+    [EndpointName("ListarFormasDeAceite")]
     [AllowAnonymous]
     [VendorMediaType(Resource = "codigo-forma-aceite", Versions = [1])]
     [ProducesResponseType(typeof(IReadOnlyList<CodigoComRotulo<FormaAceite>>), StatusCodes.Status200OK)]
