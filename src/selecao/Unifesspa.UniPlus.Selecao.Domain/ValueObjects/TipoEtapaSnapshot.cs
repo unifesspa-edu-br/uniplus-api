@@ -1,5 +1,6 @@
 namespace Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
+using Unifesspa.UniPlus.Kernel.Domain.ValueObjects;
 using Unifesspa.UniPlus.Kernel.Results;
 
 /// <summary>
@@ -184,7 +185,7 @@ public sealed record TipoEtapaSnapshot
                 "A cópia congelada do tipo de etapa não pode conter o caractere nulo, de controle ou de formatação, nem caractere que não seja texto.");
         }
 
-        return codigo.Length > 64 || nome.Length > 200
+        return codigo.Length > FormatoDoCodigo.ComprimentoMaximo || nome.Length > 200
             ? new("TipoEtapaSnapshot.TamanhoInvalido", "A cópia congelada do tipo de etapa excede o tamanho permitido.")
             : null;
     }

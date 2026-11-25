@@ -1,5 +1,6 @@
 namespace Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.ConceitoDaAvaliacao;
 
+using Unifesspa.UniPlus.Kernel.Domain.ValueObjects;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
@@ -16,7 +17,7 @@ using Unifesspa.UniPlus.Selecao.Domain.Enums;
 /// </remarks>
 public sealed record ConceitoDaEtapa
 {
-    private const int CodigoMaximo = 64;
+    private const int CodigoMaximo = FormatoDoCodigo.ComprimentoMaximo;
     private const int NomeMaximo = 200;
 
     private ConceitoDaEtapa(string codigo, string nome, ParametrosDoConceito parametros)

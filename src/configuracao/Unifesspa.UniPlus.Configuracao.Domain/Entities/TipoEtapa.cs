@@ -4,6 +4,7 @@ using Unifesspa.UniPlus.Configuracao.Domain.Errors;
 using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Kernel.Domain.Entities;
 using Unifesspa.UniPlus.Kernel.Domain.Interfaces;
+using Unifesspa.UniPlus.Kernel.Domain.ValueObjects;
 using Unifesspa.UniPlus.Kernel.Results;
 
 /// <summary>
@@ -16,13 +17,12 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// </remarks>
 public sealed class TipoEtapa : EntityBase, IAuditableEntity
 {
-    private const int CodigoMaxLength = 64;
     private const int NomeMaxLength = 200;
     private const int DescricaoMaxLength = 1000;
 
-    private static readonly CampoTextual CampoCodigo = new(
-        "Código do tipo de etapa", CodigoMaxLength,
-        TipoEtapaErrorCodes.CodigoTamanho, TipoEtapaErrorCodes.CodigoCaractereInvalido, FormaDoTexto.UmaLinha);
+    private static readonly CampoDeCodigo CampoCodigo = new(
+        "Código do tipo de etapa", FormatoDoCodigo.ComprimentoMaximo,
+        TipoEtapaErrorCodes.CodigoObrigatorio, TipoEtapaErrorCodes.CodigoFormatoInvalido);
 
     private static readonly CampoTextual CampoNome = new(
         "Nome do tipo de etapa", NomeMaxLength,
@@ -90,13 +90,10 @@ public sealed class TipoEtapa : EntityBase, IAuditableEntity
     /// </summary>
     public static Result<string> ValidarCodigo(string? codigo)
     {
-        List<FieldError> erros = [];
-
-        // O NFC, além do Trim, é do campo: sem normalizar, duas grafias Unicode do mesmo texto (forma
-        // composta e decomposta) cadastrariam como códigos DIFERENTES — o índice único do banco é
-        // ordinal/binário, e um lookup por código com a outra forma nunca encontraria este registro.
-        string? normalizado = CampoCodigo.Obrigatorio(codigo, "codigo", TipoEtapaErrorCodes.CodigoObrigatorio, erros);
-        return erros.Count > 0 ? Result<string>.ValidationFailure(erros) : Result<string>.Success(normalizado!);
+        FieldError? recusa = CampoCodigo.Recusa(codigo, "codigo");
+        return recusa is null
+            ? Result<string>.Success(codigo!)
+            : Result<string>.ValidationFailure([recusa]);
     }
 
     /// <summary>
@@ -267,16 +264,16 @@ public sealed class TipoEtapa : EntityBase, IAuditableEntity
                 "Tipo de etapa já foi removido."));
         }
 
-        // Desativado, o tipo sai da leitura cross-módulo, e nenhuma etapa de nota do ENEM
-        // poderia ser configurada.
         if (NotaDeOrigemNoEnem)
         {
-            return Result.Failure(new DomainError(
-                TipoEtapaErrorCodes.NotaDeOrigemNoEnemNaoDesativa,
-                "O tipo de etapa com nota de origem no ENEM não pode ser removido."));
+            return RecusarDesativacaoDaNotaDoEnem();
         }
 
         Ativo = false;
         return Result.Success();
     }
+
+    private static Result RecusarDesativacaoDaNotaDoEnem() => Result.Failure(new DomainError(
+        TipoEtapaErrorCodes.NotaDeOrigemNoEnemNaoDesativa,
+        "O tipo de etapa com nota de origem no ENEM não pode ser removido."));
 }

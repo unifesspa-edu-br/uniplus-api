@@ -1,18 +1,18 @@
 namespace Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
 
 using Unifesspa.UniPlus.Configuracao.Domain.Errors;
+using Unifesspa.UniPlus.Kernel.Domain.ValueObjects;
 
 /// <summary>As regras dos campos textuais do tipo de conceito e dos valores categóricos.</summary>
 internal static class CamposDoTipoConceito
 {
-    public const int CodigoMaxLength = 64;
     public const int NomeMaxLength = 200;
     public const int DescricaoMaxLength = 1000;
     public const int RotuloDoValorMaxLength = 100;
 
-    public static readonly CampoTextual Codigo = new(
-        "Código do tipo de conceito", CodigoMaxLength,
-        TipoConceitoErrorCodes.CodigoTamanho, TipoConceitoErrorCodes.CodigoCaractereInvalido, FormaDoTexto.UmaLinha);
+    public static readonly CampoDeCodigo Codigo = new(
+        "Código do tipo de conceito", FormatoDoCodigo.ComprimentoMaximo,
+        TipoConceitoErrorCodes.CodigoObrigatorio, TipoConceitoErrorCodes.CodigoFormatoInvalido);
 
     public static readonly CampoTextual Nome = new(
         "Nome do tipo de conceito", NomeMaxLength,

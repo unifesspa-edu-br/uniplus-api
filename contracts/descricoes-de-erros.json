@@ -8408,15 +8408,13 @@
       ]
     },
     {
-      "codigo": "uniplus.configuracao.tipo_conceito.codigo_caractere_invalido",
+      "codigo": "uniplus.configuracao.tipo_conceito.codigo_formato_invalido",
       "requisitos": [],
       "oQueAconteceu": [
-        "A criação de um tipo de conceito (`POST /api/configuracao/admin/tipos-conceito`) trouxe um `codigo` com o caractere nulo (`U+0000`), um caractere de controle (como a quebra de linha ou a tabulação) ou de formatação, ou com texto que não é Unicode válido e, por isso, não pode ser normalizado. A recusa evita que o código seja truncado, corrompido ou confundido com outro em silêncio. O código é conferido como recebido.",
-        "O código do tipo de conceito não tem formato fixo, ao contrário do código de cada valor categórico: fora o caractere inválido, a regra é só o tamanho máximo ([código do tipo de conceito muito longo](/erros/uniplus.configuracao.tipo_conceito.codigo_tamanho)).",
-        "A recusa vem na lista `errors` da resposta, com `field` igual a `codigo`. As demais recusas do corpo vêm na mesma resposta, e nada é gravado. Só a criação recebe o código: ele é imutável e a atualização não o aceita."
+        "O código do tipo de conceito não segue o formato ou ultrapassa 80 caracteres. O valor é conferido como recebido."
       ],
       "comoResolver": [
-        "Remova o caractere inválido do código e repita o pedido."
+        "Use até 80 caracteres, começando com letra maiúscula, com letras maiúsculas sem acento, algarismos e sublinhado entre palavras."
       ],
       "ondeAparece": [
         "Criação de um tipo de conceito"
@@ -8426,7 +8424,7 @@
       "codigo": "uniplus.configuracao.tipo_conceito.codigo_ja_existe",
       "requisitos": [],
       "oQueAconteceu": [
-        "A criação de um tipo de conceito (`POST /api/configuracao/admin/tipos-conceito`) usou um `codigo` que já pertence a outro tipo. O código é a chave natural do tipo e não muda depois de criado. A comparação considera todos os tipos, ativos ou desativados, e é feita com o código já aparado nas pontas e normalizado; maiúsculas e minúsculas contam.",
+        "A criação de um tipo de conceito (`POST /api/configuracao/admin/tipos-conceito`) usou um `codigo` que já pertence a outro tipo. O código é a chave natural do tipo e não muda depois de criado. A comparação considera todos os tipos, ativos ou desativados, e é feita com o código como recebido.",
         "Desativar um tipo tira o tipo de uso, mas não libera o código: ele continua reservado. A resposta é a mesma quando a colisão é descoberta na conferência prévia e quando dois pedidos criam o mesmo código ao mesmo tempo e o banco recusa o segundo.",
         "A recusa vem depois das conferências do corpo: com um corpo inválido e um código já usado, a resposta é a recusa do corpo (por exemplo, [nome do tipo de conceito obrigatório](/erros/uniplus.configuracao.tipo_conceito.nome_obrigatorio)), e só com o corpo válido vem esta. Nada é gravado."
       ],
@@ -8446,21 +8444,7 @@
         "A recusa vem na lista `errors` da resposta, com `field` igual a `codigo`. As demais recusas do corpo vêm na mesma resposta, e nada é gravado."
       ],
       "comoResolver": [
-        "Informe um código de até 64 caracteres e repita o pedido. O código só é definido na criação."
-      ],
-      "ondeAparece": [
-        "Criação de um tipo de conceito"
-      ]
-    },
-    {
-      "codigo": "uniplus.configuracao.tipo_conceito.codigo_tamanho",
-      "requisitos": [],
-      "oQueAconteceu": [
-        "A criação de um tipo de conceito (`POST /api/configuracao/admin/tipos-conceito`) trouxe um `codigo` com mais de 64 caracteres. Os espaços nas pontas são desconsiderados e o texto é normalizado antes da conferência, de modo que o limite vale para o código como será gravado.",
-        "A recusa vem na lista `errors` da resposta, com `field` igual a `codigo`. As demais recusas do corpo vêm na mesma resposta, e nada é gravado."
-      ],
-      "comoResolver": [
-        "Use um código de até 64 caracteres. O texto que as pessoas leem vai no nome e na descrição do tipo, não no código."
+        "Informe um código de até 80 caracteres e repita o pedido. O código só é definido na criação."
       ],
       "ondeAparece": [
         "Criação de um tipo de conceito"
@@ -9216,14 +9200,13 @@
       ]
     },
     {
-      "codigo": "uniplus.configuracao.tipo_etapa.codigo_caractere_invalido",
+      "codigo": "uniplus.configuracao.tipo_etapa.codigo_formato_invalido",
       "requisitos": [],
       "oQueAconteceu": [
-        "O **código** do tipo de etapa contém o caractere nulo (`U+0000`), um caractere de controle (como a quebra de linha ou a tabulação) ou de formatação, ou texto que não é Unicode válido.",
-        "O código não segue um formato de vocabulário fechado — aceita qualquer\ncomposição de caracteres —, mas esses caracteres são recusados explicitamente:\no nulo corrompe strings em C (e em bancos e protocolos que tratam `\\0` como\nterminador), e os de controle e de formatação, invisíveis, deixariam dois\ncódigos iguais na tela com valores diferentes. O código é conferido aparado e em forma\nnormalizada (NFC)."
+        "O código do tipo de etapa não segue o formato ou ultrapassa 80 caracteres. O valor é conferido como recebido."
       ],
       "comoResolver": [
-        "Remova o caractere inválido do código."
+        "Use até 80 caracteres, começando com letra maiúscula, com letras maiúsculas sem acento, algarismos e sublinhado entre palavras."
       ],
       "ondeAparece": [
         "Criação de um tipo de etapa"
@@ -9252,19 +9235,6 @@
       ],
       "comoResolver": [
         "Informe um código para o tipo de etapa."
-      ],
-      "ondeAparece": [
-        "Criação de um tipo de etapa"
-      ]
-    },
-    {
-      "codigo": "uniplus.configuracao.tipo_etapa.codigo_tamanho",
-      "requisitos": [],
-      "oQueAconteceu": [
-        "O **código** do tipo de etapa excede o tamanho máximo aceito: 64 caracteres\n— a contagem é feita após normalizar Unicode para a forma composta (NFC),\npara que duas grafias equivalentes do mesmo texto não sejam medidas de\nformas diferentes."
-      ],
-      "comoResolver": [
-        "Reduza o código para até 64 caracteres."
       ],
       "ondeAparece": [
         "Criação de um tipo de etapa"
@@ -9304,7 +9274,7 @@
       "codigo": "uniplus.configuracao.tipo_etapa.conceito_inexistente",
       "requisitos": [],
       "oQueAconteceu": [
-        "Algum código listado em `conceitosAdmitidos` não corresponde a nenhum tipo de conceito do catálogo. Os códigos são comparados depois de removidos os espaços das pontas, e um item em branco também conta como inexistente. A resposta indica só a espécie da recusa, no campo `conceitosAdmitidos`: ela **não repete** o código informado nem diz qual item da lista falhou. Nada foi gravado.",
+        "Algum código listado em `conceitosAdmitidos` não corresponde a nenhum tipo de conceito do catálogo. Os códigos são comparados como recebidos, e um item em branco também conta como inexistente. A resposta indica só a espécie da recusa, no campo `conceitosAdmitidos`: ela **não repete** o código informado nem diz qual item da lista falhou. Nada foi gravado.",
         "Na atualização, esta conferência vem antes de o tipo de etapa ser procurado: com o conteúdo nessa condição a resposta é esta, mesmo que o identificador não exista. O [404 de tipo de etapa não encontrado](/erros/uniplus.configuracao.tipo_etapa.nao_encontrado) só prevalece quando os campos e os conceitos admitidos são válidos."
       ],
       "comoResolver": [
@@ -9542,10 +9512,18 @@
     },
     {
       "codigo": "uniplus.configuracao.tipo_processo.codigo_formato_invalido",
-      "requisitos": ["UNI-REQ-0098"],
-      "oQueAconteceu": ["O código não segue o formato dos códigos de cadastro ou ultrapassa 80 caracteres."],
-      "comoResolver": ["Comece com letra maiúscula e use letras maiúsculas sem acento, algarismos e sublinhado entre palavras, com até 80 caracteres."],
-      "ondeAparece": ["Criação de um tipo de processo seletivo"]
+      "requisitos": [
+        "UNI-REQ-0098"
+      ],
+      "oQueAconteceu": [
+        "O código não segue o formato dos códigos de cadastro ou ultrapassa 80 caracteres."
+      ],
+      "comoResolver": [
+        "Comece com letra maiúscula e use letras maiúsculas sem acento, algarismos e sublinhado entre palavras, com até 80 caracteres."
+      ],
+      "ondeAparece": [
+        "Criação de um tipo de processo seletivo"
+      ]
     },
     {
       "codigo": "uniplus.configuracao.tipo_processo.codigo_ja_existe",
@@ -9580,9 +9558,15 @@
     {
       "codigo": "uniplus.configuracao.tipo_processo.codigo_reservado",
       "requisitos": [],
-      "oQueAconteceu": ["O código TODOS_OS_TIPOS é reservado à obrigatoriedade legal que vale para todos os tipos."],
-      "comoResolver": ["Informe outro código para o tipo de processo seletivo."],
-      "ondeAparece": ["Criação de um tipo de processo seletivo"]
+      "oQueAconteceu": [
+        "O código TODOS_OS_TIPOS é reservado à obrigatoriedade legal que vale para todos os tipos."
+      ],
+      "comoResolver": [
+        "Informe outro código para o tipo de processo seletivo."
+      ],
+      "ondeAparece": [
+        "Criação de um tipo de processo seletivo"
+      ]
     },
     {
       "codigo": "uniplus.configuracao.tipo_processo.conflito_de_concorrencia",
@@ -26983,7 +26967,7 @@
       "oQueAconteceu": [
         "O código ou o nome do tipo de uma etapa, na configuração congelada da versão publicada, contém o\ncaractere nulo (`U+0000`), um caractere de controle ou de formatação. O nulo corrompe textos em bancos e protocolos que o tratam como\nterminador, e os de controle e de formatação, invisíveis, deixariam textos diferentes com a mesma aparência; por isso são recusados em todo texto do tipo.",
         "Cada etapa do processo congela uma cópia do tipo de etapa escolhido no cadastro de Configuração:\no que identifica o tipo (origem, código, nome, se a nota vem do ENEM) e o que ele admite como caráter da\netapa, isto é, se as etapas do tipo podem compor a nota final e se podem eliminar candidato. A cópia\ncongelada não muda quando o cadastro muda depois.",
-        "O cadastro de tipos de etapa já recusa esses caracteres no código\n([`codigo_caractere_invalido`](/erros/uniplus.configuracao.tipo_etapa.codigo_caractere_invalido)) e no\nnome ([`nome_caractere_invalido`](/erros/uniplus.configuracao.tipo_etapa.nome_caractere_invalido)).",
+        "O cadastro de tipos de etapa já recusa esses caracteres no código\n([`codigo_formato_invalido`](/erros/uniplus.configuracao.tipo_etapa.codigo_formato_invalido)) e no\nnome ([`nome_caractere_invalido`](/erros/uniplus.configuracao.tipo_etapa.nome_caractere_invalido)).",
         "Este código aparece quando o sistema relê a configuração congelada da versão publicada: em toda\noperação que lê essa configuração e devolve a violação ao chamador (a retificação, a\nconsulta dos formulários, as operações da inscrição, entre outras; a lista completa está no cabeçalho\nda página). Antes disso, o sistema confere a integridade dos bytes congelados: bytes alterados depois\ndo congelamento são recusados por [`integridade_violada`](/erros/uniplus.selecao.envelope_codec.integridade_violada) e não chegam a esta\ncausa. Pelo caminho normal de gravação, a configuração congelada nunca traz esse defeito, porque o\ncadastro de tipos de etapa o recusa antes. A recusa sai como violação única, sem a lista `errors[]`, e\nse refere à versão congelada, não ao pedido enviado.\nNa releitura, o código ou o nome em branco ou acima do limite, e o texto com caractere que não é texto,\nexceto os de controle e de formatação, já são recusados antes, como\n[`envelope_malformado`](/erros/uniplus.selecao.envelope_codec.envelope_malformado); só o texto com caractere\nnulo, de controle ou de formatação chega a esta causa."
       ],
       "comoResolver": [

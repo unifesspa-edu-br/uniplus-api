@@ -1,9 +1,8 @@
 namespace Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
 
-using System.Text;
-
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Domain.Errors;
+using Unifesspa.UniPlus.Kernel.Domain.ValueObjects;
 using Unifesspa.UniPlus.Kernel.Results;
 
 /// <summary>
@@ -26,17 +25,16 @@ public sealed class ConceitosPedidos
 
     private ConceitosPedidos(string[]? codigos) => _codigos = codigos;
 
-    /// <summary>Os códigos como o catálogo os guarda: sem espaços nas pontas e em NFC.</summary>
+    /// <summary>Os códigos como foram informados.</summary>
     public static ConceitosPedidos De(IEnumerable<string?>? codigos) =>
-        new(codigos?.Select(Normalizar).ToArray());
+        new(codigos?.Select(static codigo => codigo ?? string.Empty).ToArray());
 
     /// <summary>
-    /// O que consultar no catálogo: os códigos distintos e não vazios, na ordem informada. O código com o
-    /// caractere nulo não vai à consulta, porque o banco não o aceita em texto e o catálogo nunca o guarda: ele
-    /// segue como conceito inexistente.
+    /// O que consultar no catálogo: os códigos distintos no formato aceito, na ordem informada.
+    /// Os demais seguem como conceito inexistente sem serem enviados ao banco.
     /// </summary>
     public IReadOnlyCollection<string> CodigosParaConsulta =>
-        _codigos is null ? [] : [.. _codigos.Where(static codigo => codigo.Length > 0 && !codigo.Contains('\0', StringComparison.Ordinal)).Distinct(StringComparer.Ordinal)];
+        _codigos is null ? [] : [.. _codigos.Where(static codigo => codigo.Length <= FormatoDoCodigo.ComprimentoMaximo && FormatoDoCodigo.TemFormatoValido(codigo)).Distinct(StringComparer.Ordinal)];
 
     /// <summary>Os tipos de conceito do catálogo que correspondem aos códigos, ou as recusas acumuladas.</summary>
     public Result<IReadOnlyList<TipoConceito>> Resolver(IEnumerable<TipoConceito> catalogo)
@@ -71,6 +69,4 @@ public sealed class ConceitosPedidos
     private static Result<IReadOnlyList<TipoConceito>> Falha(string codigo, string mensagem) =>
         Result<IReadOnlyList<TipoConceito>>.ValidationFailure([new(Campo, new DomainError(codigo, mensagem))]);
 
-    private static string Normalizar(string? codigo) =>
-        codigo is null ? string.Empty : codigo.Trim().Normalize(NormalizationForm.FormC);
 }

@@ -4,8 +4,7 @@ namespace Unifesspa.UniPlus.Configuracao.Domain.Errors;
 public static class TipoConceitoErrorCodes
 {
     public const string CodigoObrigatorio = "TipoConceito.CodigoObrigatorio";
-    public const string CodigoTamanho = "TipoConceito.CodigoTamanho";
-    public const string CodigoCaractereInvalido = "TipoConceito.CodigoCaractereInvalido";
+    public const string CodigoFormatoInvalido = "TipoConceito.CodigoFormatoInvalido";
     public const string CodigoJaExiste = "TipoConceito.CodigoJaExiste";
     public const string NomeObrigatorio = "TipoConceito.NomeObrigatorio";
     public const string NomeTamanho = "TipoConceito.NomeTamanho";

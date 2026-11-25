@@ -14,7 +14,6 @@ using Unifesspa.UniPlus.Regras.Enums;
 
 internal sealed class TipoConceitoConfiguration : IEntityTypeConfiguration<TipoConceito>
 {
-    private const int CodigoMaxLength = 64;
     private const int NomeMaxLength = 200;
     private const int DescricaoMaxLength = 1000;
     private const int NaturezaMaxLength = 20;
@@ -39,6 +38,7 @@ internal sealed class TipoConceitoConfiguration : IEntityTypeConfiguration<TipoC
 
     private static void ConfigurarTabela(TableBuilder<TipoConceito> tabela)
     {
+        tabela.HasCheckConstraint("ck_tipos_conceito_codigo_formato", $"codigo ~ '{FormatoDoCodigo.ExpressaoNoBanco}'");
         tabela.HasComment("Tipos de conceito com que uma etapa avalia: numéricos, medidos numa escala, ou por opções, escolhidos entre valores ordenados.");
         string codigos = SqlDosCodigosDeContrato.Lista<FormaDoConceito>();
         tabela.HasCheckConstraint("ck_tipos_conceito_forma", $"forma IN ({codigos})");
@@ -55,7 +55,7 @@ internal sealed class TipoConceitoConfiguration : IEntityTypeConfiguration<TipoC
 
     private static void ConfigurarIdentificacao(EntityTypeBuilder<TipoConceito> builder)
     {
-        builder.Property(tipo => tipo.Codigo).HasMaxLength(CodigoMaxLength).IsRequired()
+        builder.Property(tipo => tipo.Codigo).HasMaxLength(FormatoDoCodigo.ComprimentoMaximo).IsRequired()
             .HasComment("Chave natural do tipo, em NFC e imutável; único entre todos os tipos, inclusive os desativados.");
         builder.Property(tipo => tipo.Nome).HasMaxLength(NomeMaxLength).IsRequired()
             .HasComment("Nome do tipo de conceito, em NFC.");
