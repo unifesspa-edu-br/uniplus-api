@@ -25,7 +25,7 @@ internal static class GravacaoDaObrigatoriedadeLegal
         CancellationToken cancellationToken)
     {
         bool duplicada = await repository
-            .ExisteRegraCodigoAtivoAsync(regraCodigo!.Trim(), excluirId, cancellationToken).ConfigureAwait(false);
+            .ExisteRegraCodigoAtivoAsync(regraCodigo!, excluirId, cancellationToken).ConfigureAwait(false);
 
         return duplicada
             ? Result.Failure(RecusasDaObrigatoriedadeLegal.RegraCodigoDuplicada())

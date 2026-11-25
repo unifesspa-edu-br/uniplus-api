@@ -1,5 +1,6 @@
 namespace Unifesspa.UniPlus.Selecao.Domain.Services;
 
+using Unifesspa.UniPlus.Kernel.Domain.ValueObjects;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
@@ -12,7 +13,7 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 internal static class ValidacaoDaObrigatoriedadeLegal
 {
     internal const int TipoProcessoCodigoMaxLength = 64;
-    internal const int RegraCodigoMaxLength = 128;
+    internal const int RegraCodigoMaxLength = FormatoDoCodigo.ComprimentoMaximo;
     internal const int BaseLegalMaxLength = 500;
     internal const int DescricaoHumanaMaxLength = 1000;
     internal const int PortariaInternaCodigoMaxLength = 128;
@@ -54,14 +55,18 @@ internal static class ValidacaoDaObrigatoriedadeLegal
             "TipoProcessoCodigo é obrigatório — use \"*\" para regras universais.",
             "ObrigatoriedadeLegal.TipoProcessoCodigoInvalido");
 
-    private static IEnumerable<FieldError> RegraCodigo(string? valor) =>
-        Obrigatorio(
-            valor,
-            RegraCodigoMaxLength,
-            "regraCodigo",
-            "ObrigatoriedadeLegal.RegraCodigoObrigatorio",
-            "RegraCodigo é obrigatório.",
-            "ObrigatoriedadeLegal.RegraCodigoInvalido");
+    private static IEnumerable<FieldError> RegraCodigo(string? valor)
+    {
+        if (string.IsNullOrWhiteSpace(valor))
+        {
+            yield return Erro("regraCodigo", "ObrigatoriedadeLegal.RegraCodigoObrigatorio", "RegraCodigo é obrigatório.");
+        }
+        else if (valor.Length > RegraCodigoMaxLength || !FormatoDoCodigo.TemFormatoValido(valor))
+        {
+            yield return Erro("regraCodigo", "ObrigatoriedadeLegal.RegraCodigoInvalido",
+                "O código da regra deve começar com letra maiúscula e conter até 80 letras maiúsculas, dígitos ou sublinhados isolados.");
+        }
+    }
 
     private static IEnumerable<FieldError> Categoria(CategoriaObrigatoriedade? categoria)
     {

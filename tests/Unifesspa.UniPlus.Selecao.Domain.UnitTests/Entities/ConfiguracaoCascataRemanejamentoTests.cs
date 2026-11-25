@@ -71,7 +71,7 @@ public sealed class ConfiguracaoCascataRemanejamentoTests
     public void Criar_CasoMinimo_Aceita()
     {
         Result<ConfiguracaoCascataRemanejamento> resultado = ConfiguracaoCascataRemanejamento.Criar(
-            RegraCascata(), "AC", [Destino("LB_PPI", 1, "LB_Q")]);
+            RegraCascata(), "A", [Destino("A", 1, "B")]);
 
         resultado.IsSuccess.Should().BeTrue();
     }
@@ -142,6 +142,11 @@ public sealed class ConfiguracaoCascataRemanejamentoTests
     [InlineData("ac")]
     [InlineData("AC-1")]
     [InlineData("AC\n")]
+    [InlineData(" A ")]
+    [InlineData("A__B")]
+    [InlineData("_A")]
+    [InlineData("A_")]
+    [InlineData("1A")]
     public void Criar_FallbackInvalido_Recusa(string? fallback)
     {
         Result<ConfiguracaoCascataRemanejamento> resultado = ConfiguracaoCascataRemanejamento.Criar(
@@ -149,7 +154,7 @@ public sealed class ConfiguracaoCascataRemanejamentoTests
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("ConfiguracaoCascataRemanejamento.FallbackObrigatorio");
-        resultado.Error.Message.Should().Be("Informe o código do destino final com até 60 caracteres, usando letras maiúsculas, números ou sublinhado.");
+        resultado.Error.Message.Should().Be("Informe o código do destino final com até 60 caracteres, começando com letra maiúscula e usando letras maiúsculas, números ou sublinhados isolados.");
     }
 
     [Fact(DisplayName = "Criar com lista de destinos vazia falha (SemDestinos)")]
@@ -193,13 +198,18 @@ public sealed class ConfiguracaoCascataRemanejamentoTests
         resultado.Error!.Code.Should().Be("ConfiguracaoCascataRemanejamento.ExcedeLimiteDeDestinos");
     }
 
-    [Theory(DisplayName = "Criar com código de origem ou destino fora de ^[A-Z0-9_]+$ ou acima de 60 caracteres falha")]
+    [Theory(DisplayName = "Criar com código de origem ou destino inválido falha")]
     [InlineData("lb_ppi", "LB_Q")]
     [InlineData("LB-PPI", "LB_Q")]
     [InlineData("LB_PPI\n", "LB_Q")]
     [InlineData("LB_PPI", "lb_q")]
     [InlineData("LB_PPI", "LB-Q")]
     [InlineData("LB_PPI", "LB_Q\n")]
+    [InlineData(" A ", "B")]
+    [InlineData("A__B", "B")]
+    [InlineData("_A", "B")]
+    [InlineData("A_", "B")]
+    [InlineData("1A", "B")]
     public void Criar_CodigoInvalido_Recusa(string origem, string destino)
     {
         Result<DestinoRemanejamento> resultado = DestinoRemanejamento.Criar(origem, 1, destino);

@@ -34,10 +34,10 @@ internal static class RegrasLegaisDeTeste
     // pelo código do tipo, nunca pelo rótulo editorial da etapa. Exigir OUTRO código reprova; exigir o MESMO
     // aprova. Basta para testar o fio do gate sem repetir as variantes que o domínio já cobre.
     public static ObrigatoriedadeLegal RegraQueReprova() =>
-        NovaRegra("GATE-REPROVA", new EtapaObrigatoria("ETAPA_NAO_OFERTADA"));
+        NovaRegra("GATE_REPROVA", new EtapaObrigatoria("ETAPA_NAO_OFERTADA"));
 
     public static ObrigatoriedadeLegal RegraQueAprova() =>
-        NovaRegra("GATE-APROVA", new EtapaObrigatoria("PROVA_OBJETIVA"));
+        NovaRegra("GATE_APROVA", new EtapaObrigatoria("PROVA_OBJETIVA"));
 
     /// <summary>
     /// Regra com predicado que a factory recusa hoje, no estado em que o EF a reidrataria

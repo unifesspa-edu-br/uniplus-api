@@ -51,6 +51,8 @@ public sealed class CodigoDoFormularioTests
     [InlineData("INSCRIÇÃO")]
     [InlineData("INSCRICAO-2")]
     [InlineData("INSCRICAO 2")]
+    [InlineData("A__B")]
+    [InlineData("A_")]
     public void ForaDoFormato_Recusa(string valor)
     {
         CodigoDoFormulario.Criar(valor).Errors.Should().ContainSingle()

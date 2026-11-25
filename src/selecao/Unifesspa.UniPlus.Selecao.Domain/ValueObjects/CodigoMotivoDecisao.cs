@@ -1,6 +1,6 @@
 namespace Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
-using System.Text.RegularExpressions;
+using Unifesspa.UniPlus.Kernel.Domain.ValueObjects;
 
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
@@ -10,8 +10,8 @@ using Unifesspa.UniPlus.Selecao.Domain.Errors;
 /// Código do motivo de decisão (UNI-REQ-0120, UNI-REQ-0283) — chave natural
 /// estável dentro do tipo do motivo, citada na decisão que o usa (ex.:
 /// <c>RENDA_ACIMA_DO_LIMITE</c>, <c>SEM_RESULTADO_INEP</c>). Formato fechado
-/// <c>^[A-Z][A-Z0-9_]{1,49}\z</c>: inicia com letra maiúscula e segue com letras
-/// maiúsculas, dígitos e sublinhado, de 2 a 50 caracteres. Persistido como
+/// começa com letra maiúscula e segue com letras maiúsculas ou dígitos, separados
+/// por sublinhados isolados, até 50 caracteres. Persistido como
 /// <c>varchar</c> por conversor de valor.
 /// </summary>
 /// <remarks>
@@ -22,9 +22,8 @@ using Unifesspa.UniPlus.Selecao.Domain.Errors;
 /// <see cref="SentidoDoMotivo"/> — token de domínio em UPPER_SNAKE,
 /// sem acento.
 /// </remarks>
-public sealed partial record CodigoMotivoDecisao
+public sealed record CodigoMotivoDecisao
 {
-    private const int TamanhoMinimo = 2;
     private const int TamanhoMaximo = 50;
 
     public string Valor { get; }
@@ -44,7 +43,7 @@ public sealed partial record CodigoMotivoDecisao
                 "Código do motivo de decisão é obrigatório."));
         }
 
-        return FormatoValido().IsMatch(valor)
+        return valor.Length <= TamanhoMaximo && FormatoDoCodigo.TemFormatoValido(valor)
             ? Result<CodigoMotivoDecisao>.Success(new CodigoMotivoDecisao(valor))
             : RecusarFormato();
     }
@@ -53,8 +52,7 @@ public sealed partial record CodigoMotivoDecisao
         Result<CodigoMotivoDecisao>.Failure(new DomainError(
             MotivoDeDecisaoErrorCodes.CodigoFormatoInvalido,
             "Código do motivo deve iniciar com letra maiúscula e conter apenas letras maiúsculas, "
-            + $"dígitos e sublinhado, com {TamanhoMinimo} a {TamanhoMaximo} caracteres "
-            + "(ex.: RENDA_ACIMA_DO_LIMITE)."));
+            + $"dígitos e sublinhados isolados, com até {TamanhoMaximo} caracteres."));
 
     /// <summary>
     /// Reidrata o código vindo do banco. Falha rápido: uma linha fora do formato
@@ -73,9 +71,4 @@ public sealed partial record CodigoMotivoDecisao
 
     public override string ToString() => Valor;
 
-    // O quantificador repete o literal de TamanhoMinimo/TamanhoMaximo porque
-    // GeneratedRegex exige padrão constante em tempo de compilação; o teste
-    // do value object confere os dois limites contra as constantes.
-    [GeneratedRegex("^[A-Z][A-Z0-9_]{1,49}\\z", RegexOptions.CultureInvariant)]
-    private static partial Regex FormatoValido();
 }

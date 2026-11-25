@@ -1,8 +1,7 @@
 namespace Unifesspa.UniPlus.Selecao.Domain.Entities;
 
-using System.Text.RegularExpressions;
-
 using Unifesspa.UniPlus.Kernel.Domain.Entities;
+using Unifesspa.UniPlus.Kernel.Domain.ValueObjects;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
@@ -28,16 +27,13 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 /// regra no catálogo antes de montar esta entidade.
 /// </para>
 /// </remarks>
-public sealed partial class ConfiguracaoCascataRemanejamento : EntityBase, IParteDoProcesso
+public sealed class ConfiguracaoCascataRemanejamento : EntityBase, IParteDoProcesso
 {
     /// <summary>Alinhado a <c>ConfiguracaoCascataRemanejamentoConfiguration</c> (varchar(60)).</summary>
     public const int FallbackMaxLength = 60;
 
     private const int MaxOrigens = 8;
     private const int MaxDestinos = 56;
-
-    [GeneratedRegex("^[A-Z0-9_]+\\z")]
-    private static partial Regex CodigoValido();
 
     public Guid ProcessoSeletivoId { get; private set; }
     public ReferenciaRegra Regra { get; private set; } = null!;
@@ -184,11 +180,11 @@ public sealed partial class ConfiguracaoCascataRemanejamento : EntityBase, IPart
 
     private static void ValidarFallback(string? fallbackCodigo, List<FieldError> erros)
     {
-        if (string.IsNullOrWhiteSpace(fallbackCodigo) || fallbackCodigo.Length > FallbackMaxLength || !CodigoValido().IsMatch(fallbackCodigo))
+        if (string.IsNullOrWhiteSpace(fallbackCodigo) || fallbackCodigo.Length > FallbackMaxLength || !FormatoDoCodigo.TemFormatoValido(fallbackCodigo))
         {
             erros.Add(new("fallbackCodigo", new DomainError(
                 "ConfiguracaoCascataRemanejamento.FallbackObrigatorio",
-                $"Informe o código do destino final com até {FallbackMaxLength} caracteres, usando letras maiúsculas, números ou sublinhado.")));
+                $"Informe o código do destino final com até {FallbackMaxLength} caracteres, começando com letra maiúscula e usando letras maiúsculas, números ou sublinhados isolados.")));
         }
     }
 

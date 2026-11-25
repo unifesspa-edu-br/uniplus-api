@@ -110,7 +110,7 @@ public sealed class ObrigatoriedadeLegalValidacaoTests
     public void Criar_Valido_NormalizaEComputaHash()
     {
         Result<ObrigatoriedadeLegal> resultado = ObrigatoriedadeLegal.Criar(
-            " * ", CategoriaObrigatoriedade.Etapa, " REGRA ", Predicado,
+            " * ", CategoriaObrigatoriedade.Etapa, "REGRA", Predicado,
             new TextoNormativo("  desc  ", "  lei  ", "  ", " portaria "), Inicio, null);
 
         ObrigatoriedadeLegal regra = resultado.Value!;
@@ -121,6 +121,29 @@ public sealed class ObrigatoriedadeLegalValidacaoTests
         regra.AtoNormativoUrl.Should().BeNull();
         regra.PortariaInternaCodigo.Should().Be("portaria");
         HashCanonicalComputer.IsValidHashShape(regra.Hash).Should().BeTrue();
+    }
+
+    [Theory]
+    [InlineData(" X ")]
+    [InlineData("A__B")]
+    [InlineData("_A")]
+    [InlineData("A_")]
+    [InlineData("1A")]
+    [InlineData("A\n")]
+    public void Criar_RegraCodigoForaDoFormato_RecusaSemRepetirValor(string codigo)
+    {
+        Result resultado = Validar(regra: codigo);
+
+        resultado.Errors.Should().ContainSingle().Which.Error.Code.Should().Be("ObrigatoriedadeLegal.RegraCodigoInvalido");
+        resultado.Error!.Message.Should().NotContain(codigo);
+    }
+
+    [Fact]
+    public void Criar_RegraCodigoNosLimites_Aceita()
+    {
+        Validar(regra: "A").IsSuccess.Should().BeTrue();
+        Validar(regra: new string('A', 80)).IsSuccess.Should().BeTrue();
+        Validar(regra: new string('A', 81)).Error!.Code.Should().Be("ObrigatoriedadeLegal.RegraCodigoInvalido");
     }
 
     [Fact(DisplayName = "Atualizar inválido não muda o estado da regra")]

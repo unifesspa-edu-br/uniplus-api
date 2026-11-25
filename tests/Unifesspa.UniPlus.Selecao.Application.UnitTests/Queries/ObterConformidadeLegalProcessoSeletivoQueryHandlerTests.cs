@@ -46,8 +46,8 @@ public sealed class ObterConformidadeLegalProcessoSeletivoQueryHandlerTests
     {
         TipoEtapaSnapshot provaObjetiva = TipoCongelado(CadastrosVivos.IdentidadeDe("PROVA_OBJETIVA"), "PROVA_OBJETIVA", "Prova Objetiva", true, true);
         ProcessoSeletivo processo = ProcessoComAEtapa(EtapaDoProcesso("Prova Objetiva", CaraterEtapa.Classificatoria, 1, provaObjetiva, 1m));
-        ObrigatoriedadeLegal regraAprovada = NovaRegra("CONSULTA-APROVA", new EtapaObrigatoria("PROVA_OBJETIVA"));
-        ObrigatoriedadeLegal regraReprovada = NovaRegra("CONSULTA-REPROVA", new EtapaObrigatoria("ENTREVISTA"));
+        ObrigatoriedadeLegal regraAprovada = NovaRegra("CONSULTA_APROVA", new EtapaObrigatoria("PROVA_OBJETIVA"));
+        ObrigatoriedadeLegal regraReprovada = NovaRegra("CONSULTA_REPROVA", new EtapaObrigatoria("ENTREVISTA"));
 
         Result<ConformidadeLegalProcessoSeletivoDto> resultadoDaConsulta = await ConsultarAsync(processo, new DateOnly(2026, 1, 1), regraAprovada, regraReprovada);
 
@@ -67,7 +67,7 @@ public sealed class ObterConformidadeLegalProcessoSeletivoQueryHandlerTests
     public async Task Consulta_ComRegraDeReferenciaOrfa_ReprovaComOMotivoDaOrfandade()
     {
         ProcessoSeletivo processo = ProcessoBase();
-        ObrigatoriedadeLegal regraOrfa = NovaRegra("CONSULTA-ORFA", new DocumentoObrigatorioParaModalidade("LB_PPl", "LAUDO_MEDICO"));
+        ObrigatoriedadeLegal regraOrfa = NovaRegra("CONSULTA_ORFA", new DocumentoObrigatorioParaModalidade("LB_PPl", "LAUDO_MEDICO"));
         CenarioDaConsultaDeConformidadeLegal cenario = ComOProcesso(processo).ComRegrasVigentesEmQualquerData(regraOrfa).SemModalidadeNoCadastro();
 
         Result<ConformidadeLegalProcessoSeletivoDto> resultadoDaConsulta = await cenario.ConsultarAsync(
@@ -89,7 +89,7 @@ public sealed class ObterConformidadeLegalProcessoSeletivoQueryHandlerTests
     public async Task Consulta_SemFaseDeColeta_UsaOPeriodoInformado()
     {
         ProcessoSeletivo processo = ProcessoDeImportacaoExternaSemFaseDeColeta();
-        ObrigatoriedadeLegal regra = NovaRegra("CONSULTA-SEM-COLETA", new EtapaObrigatoria("PROVA_OBJETIVA"));
+        ObrigatoriedadeLegal regra = NovaRegra("CONSULTA_SEM_COLETA", new EtapaObrigatoria("PROVA_OBJETIVA"));
         CenarioDaConsultaDeConformidadeLegal cenario = ComOProcesso(processo).ComRegrasVigentesEmQualquerData(regra);
 
         Result<ConformidadeLegalProcessoSeletivoDto> resultadoDaConsulta = await cenario.ConsultarAsync(ConsultaComPeriodoInformado(processo));
@@ -307,11 +307,11 @@ public sealed class ObterConformidadeLegalProcessoSeletivoQueryHandlerTests
 
     private static void ConferirMotivosExpostos(ConformidadeLegalProcessoSeletivoDto dto)
     {
-        RegraAvaliadaDto reprovadaNaConsulta = dto.Regras.Single(r => r.RegraCodigo == "CONSULTA-REPROVA");
+        RegraAvaliadaDto reprovadaNaConsulta = dto.Regras.Single(r => r.RegraCodigo == "CONSULTA_REPROVA");
         reprovadaNaConsulta.Aprovada.Should().BeFalse();
         reprovadaNaConsulta.Motivo.Should().Contain("ENTREVISTA",
             "a consulta pública tem de expor o motivo nomeado (CA-02), não projetar Motivo: null");
-        RegraAvaliadaDto aprovadaNaConsulta = dto.Regras.Single(r => r.RegraCodigo == "CONSULTA-APROVA");
+        RegraAvaliadaDto aprovadaNaConsulta = dto.Regras.Single(r => r.RegraCodigo == "CONSULTA_APROVA");
         aprovadaNaConsulta.Aprovada.Should().BeTrue();
         aprovadaNaConsulta.Motivo.Should().BeNull("regra aprovada não carrega motivo de reprovação");
     }

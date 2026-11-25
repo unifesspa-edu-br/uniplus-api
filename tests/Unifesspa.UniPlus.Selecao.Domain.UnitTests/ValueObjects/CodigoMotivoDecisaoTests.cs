@@ -12,6 +12,10 @@ public sealed class CodigoMotivoDecisaoTests
     [InlineData(" MOTIVO")]
     [InlineData("MOTIVO ")]
     [InlineData("MOTIVO\n")]
+    [InlineData("A__B")]
+    [InlineData("_A")]
+    [InlineData("A_")]
+    [InlineData("1A")]
     [InlineData("motivo_invalido")]
     public void Criar_CodigoForaDoFormato_Recusa(string valor)
     {
@@ -35,6 +39,7 @@ public sealed class CodigoMotivoDecisaoTests
     public void Criar_CodigoValido_PreservaValor()
     {
         CodigoMotivoDecisao.Criar("MOTIVO_2").Value!.Valor.Should().Be("MOTIVO_2");
+        CodigoMotivoDecisao.Criar("A").Value!.Valor.Should().Be("A");
     }
 
     [Theory]

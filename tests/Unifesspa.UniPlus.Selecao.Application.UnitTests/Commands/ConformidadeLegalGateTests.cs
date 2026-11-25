@@ -91,7 +91,7 @@ public sealed class ConformidadeLegalGateTests
         entrada!.Conformidade.Should().NotBeNull();
         RegraAvaliada regraCongelada = entrada.Conformidade!.Regras.Should().ContainSingle().Subject;
         regraCongelada.RegraId.Should().Be(regra.Id);
-        regraCongelada.RegraCodigo.Should().Be("GATE-APROVA");
+        regraCongelada.RegraCodigo.Should().Be("GATE_APROVA");
         regraCongelada.Aprovada.Should().BeTrue();
         regraCongelada.Hash.Should().Be(regra.Hash);
     }
