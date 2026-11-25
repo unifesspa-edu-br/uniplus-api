@@ -51,7 +51,7 @@ internal sealed class LancamentoDeNotaConfiguration : IEntityTypeConfiguration<L
         builder.Property(l => l.ItemCodigo)
             .HasMaxLength(ItemMaxLength)
             .IsRequired()
-            .HasComment("Área do ENEM: REDACAO, CIENCIAS_DA_NATUREZA, CIENCIAS_HUMANAS, LINGUAGENS ou MATEMATICA.");
+            .HasComment("Área do ENEM.");
 
         builder.Property(l => l.Nota)
             .HasPrecision(PrecisaoDaNota, EscalaDaNota)
@@ -61,7 +61,7 @@ internal sealed class LancamentoDeNotaConfiguration : IEntityTypeConfiguration<L
         builder.Property(l => l.Situacao)
             .HasMaxLength(8)
             .IsRequired()
-            .HasComment($"Códigos: {Codigos<SituacaoDaProvaNoEnem>()}.");
+            .HasComment("Situação da prova no ENEM.");
 
         builder.HasOne<InscritoDoLoteDeNotas>()
             .WithMany()
@@ -78,6 +78,4 @@ internal sealed class LancamentoDeNotaConfiguration : IEntityTypeConfiguration<L
             .HasDatabaseName("ix_lancamentos_de_nota_inscricao_etapa");
     }
 
-    private static string Codigos<TEnum>() where TEnum : struct, Enum =>
-        string.Join(", ", CatalogoDe<TEnum>.Todos().Select(c => c.Codigo));
 }

@@ -42,7 +42,7 @@ public sealed class GrupoColetadoConfiguration : IEntityTypeConfiguration<GrupoC
         builder.HasKey(g => g.Id);
         builder.Property(g => g.Id).ValueGeneratedNever();
 
-        builder.Property(g => g.Finalidade).HasMaxLength(TamanhoDoCodigoDeContrato.Maximo).IsRequired().HasComment($"Finalidade do formulário. {ComentarioDosCodigosDeContrato.Codigos<FinalidadeFormulario>()}");
+        builder.Property(g => g.Finalidade).HasMaxLength(TamanhoDoCodigoDeContrato.Maximo).IsRequired().HasComment("Finalidade do formulário.");
         builder.Property(g => g.Codigo).HasMaxLength(FormaDoGrupo.CodigoMaxLength).IsRequired();
         builder.Property(g => g.Ordem).IsRequired();
         builder.Property(g => g.EtapaCodigo).HasColumnName("pagina_codigo").HasMaxLength(FormaDaEtapa.CodigoMaxLength);

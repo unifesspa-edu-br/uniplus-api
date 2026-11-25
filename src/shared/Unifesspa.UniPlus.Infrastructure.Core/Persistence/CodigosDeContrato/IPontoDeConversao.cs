@@ -4,7 +4,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 /// <summary>
 /// Lugar do modelo que guarda um valor e aceita um conversor: a propriedade escalar ou o elemento de uma coleção
-/// primitiva. O modelo do EF Core não tem interface comum aos dois para a conversão.
+/// primitiva, com acesso ao conversor e ao comentário da coluna correspondente.
 /// </summary>
 internal interface IPontoDeConversao
 {
@@ -23,5 +23,10 @@ internal interface IPontoDeConversao
     /// </summary>
     Type? TipoNoProvedor { get; }
 
+    /// <summary>O comentário da coluna, quando definido.</summary>
+    string? Comentario { get; }
+
     void DefinirConversor(ValueConverter conversor);
+
+    void DefinirComentario(string comentario);
 }

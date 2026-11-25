@@ -51,7 +51,7 @@ internal sealed class ConfiguracaoBonusRegionalConfiguration : IEntityTypeConfig
 
         builder.Property(b => b.BaseLegalBonusRegionalId).HasColumnName("base_legal_id").HasComment("Identificador da base legal do Fator de Atenuação das Desigualdades de Acesso (FADA) copiado na configuração.").IsRequired();
         builder.Property(b => b.BaseLegalBonusRegionalCodigo).HasColumnName("base_legal_codigo").HasComment("Código da base legal do Fator de Atenuação das Desigualdades de Acesso (FADA) copiado na configuração.").HasMaxLength(CodigoBaseLegalMaxLength).IsRequired();
-        builder.Property(b => b.TipoInstrumento).HasComment("Tipo do instrumento do Fator de Atenuação das Desigualdades de Acesso (FADA): LEI, DECRETO, PORTARIA, RESOLUCAO, INSTRUCAO_NORMATIVA, PARECER ou EDITAL; copiado da base legal.").HasMaxLength(TipoInstrumentoMaxLength).IsRequired();
+        builder.Property(b => b.TipoInstrumento).HasComment("Tipo do instrumento do Fator de Atenuação das Desigualdades de Acesso (FADA); copiado da base legal.").HasMaxLength(TipoInstrumentoMaxLength).IsRequired();
         builder.Property(b => b.Identificacao).HasComment("Identificação do instrumento do Fator de Atenuação das Desigualdades de Acesso (FADA), copiada da base legal.").HasMaxLength(IdentificacaoMaxLength).IsRequired();
         builder.Property(b => b.Descricao).HasComment("Descrição da base legal do Fator de Atenuação das Desigualdades de Acesso (FADA), copiada na configuração.").HasMaxLength(DescricaoMaxLength).IsRequired();
 

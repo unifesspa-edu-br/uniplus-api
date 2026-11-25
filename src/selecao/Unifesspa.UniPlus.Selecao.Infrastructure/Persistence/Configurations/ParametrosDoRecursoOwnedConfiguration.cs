@@ -32,8 +32,8 @@ internal static class ParametrosDoRecursoOwnedConfiguration
         parametros.Navigation(x => x.PrazoDeInterposicao).IsRequired();
         parametros.OwnsOne(x => x.PrazoDaSegundaInstancia, prazo => ConfigurarPrazo(prazo, "prazo_segunda_instancia"));
         parametros.Property(x => x.AdmiteInstanciaSuperior).HasComment("Indica se há recurso à instância superior.").HasColumnName("admite_instancia_superior").IsRequired();
-        parametros.Property(x => x.EfeitoSuspensivo).HasComment("Efeito do recurso sobre o andamento do processo. Código: SEM_EFEITO_SUSPENSIVO.").HasColumnName("efeito_suspensivo").IsRequired();
-        parametros.Property(x => x.GuardaDaVaga).HasComment("Guarda da vaga durante o recurso: ATE_O_RESULTADO_DEFINITIVO ou NAO_GUARDA.").HasColumnName("guarda_da_vaga").IsRequired();
+        parametros.Property(x => x.EfeitoSuspensivo).HasComment("Efeito do recurso sobre o andamento do processo.").HasColumnName("efeito_suspensivo").IsRequired();
+        parametros.Property(x => x.GuardaDaVaga).HasComment("Guarda da vaga durante o recurso.").HasColumnName("guarda_da_vaga").IsRequired();
 
         return parametros;
     }
@@ -42,6 +42,6 @@ internal static class ParametrosDoRecursoOwnedConfiguration
     {
         prazo.ClassificaPorPadrao(ClassificacaoDeProtecao.Interno);
         prazo.Property(x => x.Valor).HasComment("Duração do prazo de recurso na unidade informada.").HasColumnName($"{prefixo}_valor").HasPrecision(PrecisaoDoPrazo, EscalaDoPrazo);
-        prazo.Property(x => x.Unidade).HasComment("Unidade do prazo: HORAS, DIAS ou DIAS_UTEIS.").HasColumnName($"{prefixo}_unidade");
+        prazo.Property(x => x.Unidade).HasComment("Unidade do prazo.").HasColumnName($"{prefixo}_unidade");
     }
 }

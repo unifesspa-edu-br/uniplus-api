@@ -31,7 +31,7 @@ public sealed class CondicaoGatilhoConfiguration : IEntityTypeConfiguration<Cond
         builder.Property(c => c.DocumentoExigidoId).HasComment("Identificador do documento exigido ao qual a condição pertence.");
         builder.Property(c => c.Clausula).HasComment("Número da alternativa que reúne condições atendidas em conjunto.");
         builder.Property(c => c.Fato).HasComment("Código do dado do candidato usado na condição. Exemplos: RENDA_PER_CAPITA, CONCORRER_RENDA.");
-        builder.Property(c => c.Operador).HasComment("Comparação aplicada ao valor: ALGUM_DE, DIFERENTE, IGUAL, MAIOR_IGUAL, MENOR_IGUAL ou NENHUM_DE.");
+        builder.Property(c => c.Operador).HasComment("Comparação aplicada ao valor.");
         builder.Property(c => c.Valor).HasComment("Valor de comparação da condição, em JSON.");
 
         builder.ToTable("condicoes_das_exigencias", t => t.HasComment("Condições que determinam a exigência de um documento."));

@@ -61,7 +61,7 @@ internal sealed class UnidadeConfiguration : IEntityTypeConfiguration<Unidade>
         builder.Property(u => u.Codigo).HasMaxLength(50).IsRequired();
         builder.Property(u => u.Tipo)
             .HasMaxLength(TipoMaxLength)
-            .HasComment("Tipo da unidade na estrutura da universidade. Códigos: REITORIA, PRO_REITORIA, CENTRO, INSTITUTO, FACULDADE, DEPARTAMENTO, COORDENACAO, DIRETORIA, DIVISAO, NUCLEO, OUTRO.")
+            .HasComment("Tipo da unidade na estrutura da universidade.")
             .IsRequired();
 
         builder.Property(u => u.UnidadeAcademica).IsRequired();

@@ -54,7 +54,7 @@ public sealed class FaseCronogramaConfiguration : IEntityTypeConfiguration<FaseC
         builder.Property(f => f.TipoFaseNome).HasColumnName("tipo_fase_nome").HasMaxLength(FaseCronograma.TipoFaseNomeMaxLength).IsRequired()
             .HasComment("Nome do tipo de fase copiado do cadastro ao definir o cronograma.");
         builder.Property(f => f.OrigemData).HasMaxLength(TamanhoDoCodigoDeContrato.Maximo).IsRequired()
-            .HasComment("Momento em que as datas da fase são definidas: NO_EDITAL ou NA_EXECUCAO.");
+            .HasComment("Momento em que as datas da fase são definidas.");
 
         builder.OwnsOne(f => f.UnidadeResponsavel, unidade =>
         {

@@ -40,7 +40,7 @@ internal sealed class SyncRunConfiguration : IEntityTypeConfiguration<SyncRun>
 
         builder.Property(s => s.Status)
             .HasMaxLength(CodigoDeContratoMaxLength)
-            .HasComment("Situação da execução. Códigos: EM_ANDAMENTO, CONCLUIDA, PARCIAL, FALHOU.");
+            .HasComment("Situação da execução.");
 
         builder.Property(s => s.DataDeReferencia)
             .HasComment(

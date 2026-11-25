@@ -14,7 +14,7 @@ using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 /// <param name="Propriedade">O nome da propriedade; para o elemento, o da coleção.</param>
 /// <param name="TipoDeclarado">O tipo do valor, inclusive o <see cref="Nullable{T}"/>.</param>
 /// <param name="Conversor">O conversor que o modelo aplica ao valor, ou nulo quando não há.</param>
-internal sealed record PontoDoModelo(string Descricao, string Propriedade, Type TipoDeclarado, ValueConverter? Conversor)
+internal sealed record PontoDoModelo(string Descricao, string Propriedade, Type TipoDeclarado, ValueConverter? Conversor, string? Comentario)
 {
     internal Type TipoDoValor => Nullable.GetUnderlyingType(TipoDeclarado) ?? TipoDeclarado;
 

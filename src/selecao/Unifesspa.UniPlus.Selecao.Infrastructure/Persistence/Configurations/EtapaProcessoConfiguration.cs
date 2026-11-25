@@ -130,7 +130,7 @@ public sealed class EtapaProcessoConfiguration : IEntityTypeConfiguration<EtapaP
         builder.Property(e => e.FormaDeAvaliacao)
             .HasColumnName("forma_de_avaliacao")
             .HasMaxLength(TamanhoDoCodigoDeContrato.Maximo)
-            .HasComment("Como a nota da etapa é obtida: OBJETIVA ou HUMANA; ausente quando não definida.");
+            .HasComment("Como a nota da etapa é obtida; ausente quando não definida.");
 
         // Só a forma humana tem regra de consolidação, mas a coerência é regra de gravação do
         // domínio, não de armazenamento: a coluna não a repete.

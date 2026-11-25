@@ -40,7 +40,7 @@ internal sealed class UnidadeIdentificadorHistoricoConfiguration
         builder.Property(h => h.TipoIdentificador)
             .HasColumnName("tipo")
             .HasMaxLength(TipoMaxLength)
-            .HasComment("Tipo do identificador cujo histórico a linha registra. Códigos: IDENTIFICADOR_NO_ENDERECO_WEB, SIGLA, CODIGO, APELIDO.")
+            .HasComment("Tipo do identificador cujo histórico a linha registra.")
             .IsRequired();
         builder.Property(h => h.Valor).HasMaxLength(100).IsRequired();
         builder.Property(h => h.VigenciaInicio).IsRequired();

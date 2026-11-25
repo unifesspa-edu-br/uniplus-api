@@ -33,7 +33,7 @@ public sealed class ModeloFormularioConfiguration : IEntityTypeConfiguration<Mod
         builder.Property(modelo => modelo.Codigo).HasMaxLength(ModeloFormulario.CodigoMaxLength).IsRequired().HasComment("Código que identifica o modelo de formulário.");
         builder.Property(modelo => modelo.Nome).HasMaxLength(ModeloFormulario.NomeMaxLength).IsRequired().HasComment("Nome do modelo de formulário.");
         builder.Property(modelo => modelo.Descricao).HasMaxLength(ModeloFormulario.DescricaoMaxLength).HasComment("Descrição do modelo de formulário.");
-        builder.Property(modelo => modelo.Finalidade).HasMaxLength(CodigoDeContratoMaxLength).IsRequired().HasComment("Finalidade do formulário: INSCRICAO, ISENCAO_TAXA ou HABILITACAO.");
+        builder.Property(modelo => modelo.Finalidade).HasMaxLength(CodigoDeContratoMaxLength).IsRequired().HasComment("Finalidade do formulário.");
         builder.Property(modelo => modelo.TipoProcessoCodigo).HasMaxLength(ModeloFormulario.TipoProcessoCodigoMaxLength).HasComment("Código do tipo de processo ao qual o modelo se aplica.");
         builder.Property(modelo => modelo.Ativo).IsRequired().HasComment("Indica se o modelo está disponível para uso.");
 

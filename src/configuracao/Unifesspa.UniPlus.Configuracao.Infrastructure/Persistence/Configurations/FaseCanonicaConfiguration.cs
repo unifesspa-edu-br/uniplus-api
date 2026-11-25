@@ -38,7 +38,7 @@ internal sealed class FaseCanonicaConfiguration : IEntityTypeConfiguration<FaseC
         builder.Property(f => f.Nome).HasComment("Nome do tipo de fase.");
         builder.Property(f => f.Descricao).HasComment("Descrição do propósito da fase, quando informada.");
         builder.Property(f => f.BaseLegal).HasComment("Fundamento legal da fase, quando informado.");
-        builder.Property(f => f.OrigemData).HasComment("Origem das datas: NO_EDITAL ou NA_EXECUCAO.");
+        builder.Property(f => f.OrigemData).HasComment("Origem das datas.");
         builder.Property(f => f.UnidadeSugeridaOrigemId).HasComment("Identificador da unidade sugerida, quando houver.");
         builder.Property(f => f.UnidadeSugeridaSigla).HasComment("Sigla da unidade sugerida, quando houver.");
         builder.Property(f => f.UnidadeSugeridaNome).HasComment("Nome da unidade sugerida, quando houver.");

@@ -58,7 +58,7 @@ internal sealed class IdempotencyEntryConfiguration : IEntityTypeConfiguration<I
 
         builder.Property(e => e.Status)
             .HasMaxLength(CodigoDeContratoMaxLength)
-            .HasComment("Situação da chave: EM_PROCESSAMENTO enquanto a operação executa; CONCLUIDA quando a resposta está guardada para repetição.")
+            .HasComment("Situação da chave durante a execução e após guardar a resposta para repetição.")
             .IsRequired();
 
         builder.Property(e => e.ResponseStatus)

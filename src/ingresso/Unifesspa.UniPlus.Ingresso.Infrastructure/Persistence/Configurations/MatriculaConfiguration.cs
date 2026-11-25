@@ -27,7 +27,7 @@ public sealed class MatriculaConfiguration : IEntityTypeConfiguration<Matricula>
 
         builder.Property(m => m.Status)
             .HasMaxLength(CodigoDeContratoMaxLength)
-            .HasComment("Situação da matrícula. Códigos: PENDENTE, DOCUMENTACAO_ENVIADA, EM_ANALISE, DEFERIDA, INDEFERIDA, EFETIVADA, CANCELADA.")
+            .HasComment("Situação da matrícula.")
             .IsRequired();
         builder.Property(m => m.CodigoCurso).HasMaxLength(50).IsRequired();
         builder.Property(m => m.Observacoes).HasMaxLength(2000);

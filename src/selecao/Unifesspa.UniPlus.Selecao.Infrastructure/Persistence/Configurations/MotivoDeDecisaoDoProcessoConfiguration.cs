@@ -70,7 +70,7 @@ internal sealed class MotivoDeDecisaoDoProcessoConfiguration : IEntityTypeConfig
 
     private static void MapearCopia(EntityTypeBuilder<MotivoDeDecisaoDoProcesso> builder)
     {
-        builder.Property(m => m.Tipo).HasMaxLength(MotivoDeDecisaoConfiguration.EnumMaxLength).IsRequired().HasComment("Tipo de decisão: ISENCAO_DA_TAXA, HOMOLOGACAO_DAS_INSCRICOES, ANALISE_DOCUMENTAL, HETEROIDENTIFICACAO, AVALIACAO_BIOPSICOSSOCIAL, CLASSIFICACAO, GABARITO_DA_PROVA ou NOTA_DA_ETAPA.");
+        builder.Property(m => m.Tipo).HasMaxLength(MotivoDeDecisaoConfiguration.EnumMaxLength).IsRequired().HasComment("Tipo de decisão.");
         builder.Property(m => m.Codigo)
             .HasConversion(codigo => codigo.Valor, valor => CodigoMotivoDecisao.Reidratar(valor))
             .HasComment("Código do motivo copiado do cadastro na escolha.")
@@ -78,7 +78,7 @@ internal sealed class MotivoDeDecisaoDoProcessoConfiguration : IEntityTypeConfig
             .IsRequired();
         builder.Property(m => m.Descricao).HasMaxLength(ValidacaoDoMotivo.DescricaoMaxLength).IsRequired().HasComment("Descrição do motivo copiada do cadastro na escolha.");
         builder.Property(m => m.Subclassificacao).HasMaxLength(MotivoDeDecisaoConfiguration.SubclassificacaoMaxLength).HasComment("Subclassificação do motivo copiada do cadastro, quando houver.");
-        builder.Property(m => m.Sentido).HasMaxLength(12).IsRequired().HasComment("Sentido da decisão associado ao motivo: FAVORAVEL ou DESFAVORAVEL.");
+        builder.Property(m => m.Sentido).HasMaxLength(12).IsRequired().HasComment("Sentido da decisão associado ao motivo.");
     }
 
     private static void MapearEscolha(EntityTypeBuilder<MotivoDeDecisaoDoProcesso> builder)

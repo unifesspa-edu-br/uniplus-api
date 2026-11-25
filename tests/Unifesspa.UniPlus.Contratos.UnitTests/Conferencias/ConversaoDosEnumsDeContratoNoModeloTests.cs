@@ -6,6 +6,7 @@ using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
 
 using Unifesspa.UniPlus.Contratos.UnitTests.TestSupport;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Monolito.Persistencia;
 using Unifesspa.UniPlus.Portal.Infrastructure.Persistence;
 
@@ -44,6 +45,43 @@ public sealed class ConversaoDosEnumsDeContratoNoModeloTests
         violacoes.Should().BeEmpty(
             "o código de contrato é a única representação gravada do enum: sem o conversor do código o banco guardaria o número ou o nome. Violações:\n"
             + string.Join("\n", violacoes));
+    }
+
+    [Fact]
+    public void Modelos_EnumsComCodigo_ComentamAColunaComAListaDeclarada()
+    {
+        using MonolitoDbContext monolito = new MonolitoDbContextDesignTimeFactory().CreateDbContext([]);
+        using PortalDbContext portal = new PortalDbContextDesignTimeFactory().CreateDbContext([]);
+        PontoDoModelo[] pontos = [.. PontosDoModelo.Em(monolito.GetService<IDesignTimeModel>().Model),
+            .. PontosDoModelo.Em(portal.GetService<IDesignTimeModel>().Model)];
+        foreach (PontoDoModelo ponto in pontos.Where(p => p.GuardaEnumDeContrato))
+        {
+            ConferirComentario(ponto);
+        }
+    }
+
+    private static void ConferirComentario(PontoDoModelo ponto)
+    {
+        string[] codigos = EnumsDeContrato.Declarados(ponto.TipoDoValor).Select(d => d.Codigo).ToArray();
+        ponto.Comentario.Should().NotBeNull(ponto.Descricao);
+        string comentario = ponto.Comentario!;
+        string prefixo = codigos.Length == 1 ? "Código: " : "Códigos: ";
+        int inicio = comentario.IndexOf(prefixo, StringComparison.Ordinal);
+        inicio.Should().BeGreaterThanOrEqualTo(0, ponto.Descricao);
+        comentario.Should().EndWith(".", ponto.Descricao);
+        string descricao = comentario[..inicio];
+        descricao.Should().NotContain("Código:").And.NotContain("Códigos:");
+        ConferirOrdemDosCodigos(comentario, codigos, inicio + prefixo.Length);
+    }
+
+    private static void ConferirOrdemDosCodigos(string comentario, string[] codigos, int inicio)
+    {
+        foreach (string codigo in codigos)
+        {
+            int posicao = comentario.IndexOf(codigo, inicio, StringComparison.Ordinal);
+            posicao.Should().BeGreaterThanOrEqualTo(inicio, codigo);
+            inicio = posicao + codigo.Length;
+        }
     }
 
     [Fact(DisplayName = "O percurso encontra o enum com código em escalar, opcional, tipo próprio, tipo complexo aninhado e coleção primitiva")]

@@ -21,6 +21,10 @@ internal sealed class Turma
     public SituacaoDaTurma Situacao { get; set; }
 
     public TurnoDeAula Periodo { get; set; }
+
+    public CodigoForaDeOrdem Ordem { get; set; }
+
+    public CodigoUnico Unico { get; set; }
 }
 
 internal sealed class TurmaComSala

@@ -66,7 +66,7 @@ internal sealed class AvaliacaoDaEtapaConfiguration : IEntityTypeConfiguration<A
         builder.Property(a => a.Situacao)
             .HasMaxLength(18)
             .IsRequired()
-            .HasComment($"Códigos: {Codigos<SituacaoDaAvaliacao>()}.");
+            .HasComment("Situação da avaliação.");
 
         builder.Property(a => a.Nota)
             .HasColumnType("numeric")
@@ -80,6 +80,4 @@ internal sealed class AvaliacaoDaEtapaConfiguration : IEntityTypeConfiguration<A
             .HasDatabaseName("ix_avaliacoes_da_etapa_inscricao_etapa");
     }
 
-    private static string Codigos<TEnum>() where TEnum : struct, Enum =>
-        string.Join(", ", CatalogoDe<TEnum>.Todos().Select(c => c.Codigo));
 }

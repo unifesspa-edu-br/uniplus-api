@@ -29,7 +29,7 @@ public sealed class ChamadaConfiguration : IEntityTypeConfiguration<Chamada>
         builder.Property(c => c.Numero).IsRequired();
         builder.Property(c => c.Status)
             .HasMaxLength(CodigoDeContratoMaxLength)
-            .HasComment("Situação da chamada. Códigos: AGENDADA, EM_ANDAMENTO, CONCLUIDA, CANCELADA.")
+            .HasComment("Situação da chamada.")
             .IsRequired();
         builder.Property(c => c.DataPublicacao).IsRequired();
         builder.Property(c => c.PrazoManifestacao).IsRequired();

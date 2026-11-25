@@ -32,13 +32,13 @@ public sealed class FatoColetadoConfiguration : IEntityTypeConfiguration<FatoCol
         builder.Property(f => f.FatoCodigo).HasComment("Código do dado do candidato. Exemplos: RENDA_PER_CAPITA, CONCORRER_RENDA.");
         builder.Property(f => f.Ordem).HasComment("Posição de apresentação ou avaliação no conjunto.");
         builder.Property(f => f.Rotulo).HasComment("Texto apresentado à pessoa candidata.");
-        builder.Property(f => f.TipoRenderizacao).HasColumnName("tipo_de_campo").HasComment("Tipo de campo: NUMERO, SIM_OU_NAO, ESCOLHA_UNICA, ESCOLHA_MULTIPLA, TEXTO, DATA, ENDERECO ou MUNICIPIO.");
+        builder.Property(f => f.TipoRenderizacao).HasColumnName("tipo_de_campo").HasComment("Tipo de campo.");
         builder.Property(f => f.Obrigatoriedade).HasComment("Regra que determina quando a resposta é obrigatória, em JSON.");
         builder.Property(f => f.Ajuda).HasComment("Orientação adicional exibida junto ao campo, quando houver.");
         builder.Property(f => f.PedirConfirmacao).HasComment("Indica se a resposta deve ser confirmada pela pessoa candidata.");
         builder.Property(f => f.Restricoes).HasComment("Restrições aplicadas à resposta, em JSON.");
         builder.Property(f => f.Impedimento).HasComment("Regra de impedimento associada à resposta, em JSON, quando houver.");
-        builder.Property(f => f.OrigemValores).HasComment("Origem das opções: CATALOGO, OPCOES_DO_PROCESSO, MUNICIPIOS_DO_BONUS, UNIDADES_FEDERATIVAS ou MUNICIPIOS_DA_PROVA_PRESENCIAL.");
+        builder.Property(f => f.OrigemValores).HasComment("Origem das opções.");
         builder.Property(f => f.Formato).HasComment("Formato esperado da resposta, quando especificado.");
         builder.Property(f => f.ClassificacaoProtecao).HasComment("Classificação de proteção do dado coletado.");
         builder.Property(f => f.HipoteseLegal).HasComment("Hipótese legal que fundamenta o tratamento do dado.");
@@ -85,7 +85,7 @@ public sealed class FatoColetadoConfiguration : IEntityTypeConfiguration<FatoCol
         builder.Ignore(f => f.Exibicao);
         builder.Ignore(f => f.Apresentacao);
         builder.Ignore(f => f.Regras);
-        builder.Property(f => f.Finalidade).HasMaxLength(TamanhoDoCodigoDeContrato.Maximo).IsRequired().HasComment($"Finalidade do formulário. {ComentarioDosCodigosDeContrato.Codigos<FinalidadeFormulario>()}");
+        builder.Property(f => f.Finalidade).HasMaxLength(TamanhoDoCodigoDeContrato.Maximo).IsRequired().HasComment("Finalidade do formulário.");
         builder.Property(f => f.EtapaCodigo).HasColumnName("pagina_codigo").HasMaxLength(FormaDaEtapa.CodigoMaxLength);
 
         // As duas unicidades são invariantes do agregado, feitas cumprir em

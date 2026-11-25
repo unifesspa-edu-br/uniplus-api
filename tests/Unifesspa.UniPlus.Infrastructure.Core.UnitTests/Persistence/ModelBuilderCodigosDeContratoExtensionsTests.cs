@@ -158,6 +158,66 @@ public sealed class ModelBuilderCodigosDeContratoExtensionsTests
         FluentActions.Invoking(() => ((ModelBuilder)null!).ConfigurarConversaoDosEnumsDeContrato())
             .Should().Throw<ArgumentNullException>();
 
+    [Fact]
+    public void Configurar_Comentarios_AcrescentaCodigosEmTodosOsPontos()
+    {
+        IModel modelo = ModeloSintetico.Construir(ConfigurarComentarios);
+
+        ConferirComentariosDasPropriedades(modelo);
+        ConferirComentariosDosTiposCompostos(modelo);
+    }
+
+    private static void ConfigurarComentarios(ModelBuilder construtor)
+    {
+        new ModuloComEnumsDeContrato().AplicarAoModelo(construtor);
+        construtor.Entity<Turma>().Property(x => x.Modalidade).HasComment("Descrição.");
+        construtor.Entity<Turma>().Property(x => x.Titulo).HasComment("Texto intacto.");
+        construtor.Entity<TurmaComListas>().PrimitiveCollection(x => x.Preferidas).HasComment("Preferências.");
+        construtor.ConfigurarConversaoDosEnumsDeContrato();
+    }
+
+    private static void ConferirComentariosDasPropriedades(IModel modelo)
+    {
+        Propriedade<Turma>(modelo, nameof(Turma.Modalidade)).GetComment().Should().Be("Descrição. Códigos: EM_SALA, A_DISTANCIA.");
+        Propriedade<Turma>(modelo, nameof(Turma.Substituta)).GetComment().Should().Be("Códigos: EM_SALA, A_DISTANCIA.");
+        Propriedade<Turma>(modelo, nameof(Turma.Unico)).GetComment().Should().Be("Código: UNICO.");
+        Propriedade<Turma>(modelo, nameof(Turma.Ordem)).GetComment().Should().Be("Códigos: ORDEM_Z, D_AGUA, ORDEM_A.");
+        Propriedade<Turma>(modelo, nameof(Turma.Titulo)).GetComment().Should().Be("Texto intacto.");
+        Propriedade<TurmaComListas>(modelo, nameof(TurmaComListas.Preferidas)).GetComment().Should().Be("Preferências. Códigos: EM_SALA, A_DISTANCIA.");
+    }
+
+    private static void ConferirComentariosDosTiposCompostos(IModel modelo)
+    {
+        Propriedade<Sala>(modelo, nameof(Sala.Uso)).GetComment().Should().Be("Códigos: EM_SALA, A_DISTANCIA.");
+        modelo.Entidade(typeof(TurmaComMaterial)).PropriedadeComplexa(nameof(TurmaComMaterial.Material))
+            .ComplexType.Propriedade(nameof(Material.Formato)).GetComment().Should().Be("Códigos: EM_SALA, A_DISTANCIA.");
+    }
+
+    [Fact]
+    public void Configurar_ConvencaoRepetida_NaoAlteraComentario()
+    {
+        string? comentarioInicial = null;
+        IModel modelo = ModeloSintetico.Construir(construtor =>
+        {
+            construtor.Entity<Turma>();
+            construtor.ConfigurarConversaoDosEnumsDeContrato();
+            comentarioInicial = construtor.Model.FindEntityType(typeof(Turma))!.FindProperty(nameof(Turma.Modalidade))!.GetComment();
+        });
+
+        comentarioInicial.Should().Be("Códigos: EM_SALA, A_DISTANCIA.");
+        Propriedade<Turma>(modelo, nameof(Turma.Modalidade)).GetComment().Should().Be(comentarioInicial);
+    }
+
+    [Fact]
+    public void Configurar_ComentarioComTextoDepoisDaLista_NaoRepeteCodigos()
+    {
+        const string comentario = "Códigos: EM_SALA, A_DISTANCIA. Usado na matrícula.";
+        IModel modelo = ModeloSintetico.Construir(construtor =>
+            construtor.Entity<Turma>().Property(x => x.Modalidade).HasComment(comentario));
+
+        Propriedade<Turma>(modelo, nameof(Turma.Modalidade)).GetComment().Should().Be(comentario);
+    }
+
     private static IProperty Propriedade<TEntidade>(IModel modelo, string nome) =>
         modelo.Entidade(typeof(TEntidade)).Propriedade(nome);
 

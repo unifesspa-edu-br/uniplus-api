@@ -1,5 +1,6 @@
 namespace Unifesspa.UniPlus.Contratos.UnitTests.TestSupport;
 
+using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata;
 
 /// <summary>
@@ -27,6 +28,6 @@ internal static class PontosDoModelo
 
     private static PontoDoModelo PontoDe(IProperty propriedade, string caminho) =>
         propriedade.GetElementType() is { } elemento
-            ? new PontoDoModelo($"O elemento de {caminho}.{propriedade.Name}", propriedade.Name, elemento.ClrType, elemento.FindTypeMapping()?.Converter)
-            : new PontoDoModelo($"{caminho}.{propriedade.Name}", propriedade.Name, propriedade.ClrType, propriedade.FindTypeMapping()?.Converter);
+            ? new PontoDoModelo($"O elemento de {caminho}.{propriedade.Name}", propriedade.Name, elemento.ClrType, elemento.FindTypeMapping()?.Converter, propriedade.GetComment())
+            : new PontoDoModelo($"{caminho}.{propriedade.Name}", propriedade.Name, propriedade.ClrType, propriedade.FindTypeMapping()?.Converter, propriedade.GetComment());
 }
