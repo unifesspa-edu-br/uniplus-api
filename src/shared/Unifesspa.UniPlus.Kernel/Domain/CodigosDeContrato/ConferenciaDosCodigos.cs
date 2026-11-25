@@ -1,13 +1,14 @@
 namespace Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 
 using System.Reflection;
-using System.Text.RegularExpressions;
+
+using Unifesspa.UniPlus.Kernel.Domain.ValueObjects;
 
 /// <summary>
 /// A conferência dos códigos de um enum: cada membro, na ordem em que o enum o declara, é conferido, e cada defeito é
 /// acumulado com o nome do membro responsável.
 /// </summary>
-internal sealed partial class ConferenciaDosCodigos
+internal sealed class ConferenciaDosCodigos
 {
     private readonly string _tipo;
     private readonly List<string> _defeitos = [];
@@ -107,19 +108,16 @@ internal sealed partial class ConferenciaDosCodigos
 
     private void ConferirFormatoDoCodigo(string quem, string codigo)
     {
-        if (codigo.Length > 80)
+        if (codigo.Length > FormatoDoCodigo.ComprimentoMaximo)
         {
-            _defeitos.Add($"{quem}: o código deve ter até 80 caracteres.");
+            _defeitos.Add($"{quem}: o código deve ter até {FormatoDoCodigo.ComprimentoMaximo} caracteres.");
         }
 
-        if (!FormatoDoCodigo().IsMatch(codigo))
+        if (!FormatoDoCodigo.TemFormatoValido(codigo))
         {
             _defeitos.Add($"{quem}: o código deve começar por letra maiúscula e conter apenas letras maiúsculas, dígitos e sublinhado simples entre partes, sem acento nem hífen.");
         }
     }
-
-    [GeneratedRegex(@"\A[A-Z][A-Z0-9]*(_[A-Z0-9]+)*\z")]
-    private static partial Regex FormatoDoCodigo();
 
     private void ConferirEspacoDoCodigo(string quem, string codigo)
     {
