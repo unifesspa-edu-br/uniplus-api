@@ -47,7 +47,7 @@ public sealed record FaseDeclarada
     {
         Id = id;
         OrigemId = origem.OrigemId;
-        Codigo = origem.Codigo.Trim();
+        Codigo = origem.Codigo;
         _decisoes = decisoes;
         Janela = new JanelaDeTempo(decisoes.Inicio, decisoes.Fim);
         DataFixadaNoEdital = origem.OrigemData == OrigemDataFase.NoEdital;

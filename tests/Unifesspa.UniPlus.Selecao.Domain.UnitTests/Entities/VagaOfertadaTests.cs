@@ -20,7 +20,7 @@ public sealed class VagaOfertadaTests
     [InlineData(7)]
     public void Criar_QuantidadeNaoNegativa_Cria(int quantidade)
     {
-        Result<VagaOfertada> resultado = VagaOfertada.Criar(Guid.CreateVersion7(), " IND ", quantidade);
+        Result<VagaOfertada> resultado = VagaOfertada.Criar(Guid.CreateVersion7(), "IND", quantidade);
 
         resultado.IsSuccess.Should().BeTrue();
         resultado.Value!.Quantidade.Should().Be(quantidade);

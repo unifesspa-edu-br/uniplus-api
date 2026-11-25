@@ -55,7 +55,7 @@ public sealed class ProdutoDaFase : EntityBase, IProdutoPublicado
 
         return new ProdutoDaFase
         {
-            AtoCodigo = atoCodigo.Trim(),
+            AtoCodigo = atoCodigo,
             Papel = papel,
         };
     }
@@ -75,7 +75,7 @@ public sealed class ProdutoDaFase : EntityBase, IProdutoPublicado
         return new ProdutoDaFase
         {
             Id = id,
-            AtoCodigo = atoCodigo.Trim(),
+            AtoCodigo = atoCodigo,
             Papel = papel,
         };
     }

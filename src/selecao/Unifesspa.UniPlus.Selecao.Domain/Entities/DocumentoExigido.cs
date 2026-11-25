@@ -223,7 +223,7 @@ public sealed class DocumentoExigido : EntityBase, IParteDoProcesso
     private void CopiarTipo(CopiaDoTipoDeDocumento tipo)
     {
         TipoDocumentoOrigemId = tipo.Id;
-        TipoDocumentoCodigo = tipo.Codigo.Trim();
+        TipoDocumentoCodigo = tipo.Codigo;
         TipoDocumentoNome = tipo.Nome.Trim();
         TipoDocumentoCategoria = tipo.Categoria.Trim();
         RecongelarProtecao(tipo.Protecao);

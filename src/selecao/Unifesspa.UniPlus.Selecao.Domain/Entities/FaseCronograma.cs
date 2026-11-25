@@ -298,7 +298,7 @@ public sealed class FaseCronograma : EntityBase, IParteDoProcesso, IPeriodoDaFas
     private void DefinirOrigemCanonica(OrigemCanonicaDaFase origem)
     {
         FaseCanonicaOrigemId = origem.OrigemId;
-        Codigo = origem.Codigo.Trim();
+        Codigo = origem.Codigo;
         TipoFaseNome = origem.Nome.Trim();
         OrigemData = origem.OrigemData;
         AgrupaEtapas = origem.AgrupaEtapas;

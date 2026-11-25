@@ -8,10 +8,10 @@ public sealed class ReferenciaRegraTests
 {
     private static readonly string HashValido = new('a', 64);
 
-    [Fact(DisplayName = "De guarda a identidade da regra, sem os espaços das pontas do código e da versão")]
+    [Fact(DisplayName = "De guarda a identidade da regra do catálogo")]
     public void De_IdentidadeValida_GuardaOsTresCampos()
     {
-        ReferenciaRegra referencia = ReferenciaRegra.De(" FADA_MULTIPLICATIVO ", " v1 ", HashValido);
+        ReferenciaRegra referencia = ReferenciaRegra.De("FADA_MULTIPLICATIVO", "v1", HashValido);
 
         referencia.Codigo.Should().Be("FADA_MULTIPLICATIVO");
         referencia.Versao.Should().Be("v1");

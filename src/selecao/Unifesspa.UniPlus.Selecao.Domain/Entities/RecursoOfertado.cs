@@ -39,7 +39,7 @@ public sealed class RecursoOfertado : EntityBase
         return new RecursoOfertado
         {
             RecursoOrigemId = recursoOrigemId,
-            RecursoCodigo = recursoCodigo.Trim(),
+            RecursoCodigo = recursoCodigo,
             RecursoNome = recursoNome.Trim(),
         };
     }

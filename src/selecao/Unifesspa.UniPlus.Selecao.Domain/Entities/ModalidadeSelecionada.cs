@@ -95,7 +95,7 @@ public sealed class ModalidadeSelecionada : EntityBase
     private ModalidadeSelecionada(ModalidadeNoCadastro modalidade, int? quantidadeDeclarada)
     {
         ModalidadeOrigemId = modalidade.Id;
-        Codigo = modalidade.Codigo.Trim();
+        Codigo = modalidade.Codigo;
         Descricao = modalidade.Descricao;
         NaturezaLegal = modalidade.NaturezaLegal!.Value;
         ComposicaoVagas = modalidade.ComposicaoVagas!.Value;
