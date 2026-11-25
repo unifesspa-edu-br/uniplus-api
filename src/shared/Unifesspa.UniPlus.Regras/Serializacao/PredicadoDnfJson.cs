@@ -138,7 +138,7 @@ public static class PredicadoDnfJson
     }
 
     private static Result<CondicaoDnf> CondicaoInvalida(string campo) =>
-        Result<CondicaoDnf>.ValidationFailure([new FieldError(campo, Erro("Cada condição tem fato, operador e valor."))]);
+        Result<CondicaoDnf>.ValidationFailure([new FieldError(campo, Erro("Cada condição tem codigoDoDado, operador e valor."))]);
 
     public static JsonObject ParaJson(Obrigatoriedade obrigatoriedade)
     {
