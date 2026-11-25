@@ -13,9 +13,9 @@ internal static class RecusasDaObrigatoriedadeLegal
         "ObrigatoriedadeLegal.NaoEncontrada",
         $"ObrigatoriedadeLegal {id} não encontrada.");
 
-    internal static DomainError RegraCodigoDuplicada(string? regraCodigo) => new(
+    internal static DomainError RegraCodigoDuplicada() => new(
         "ObrigatoriedadeLegal.RegraCodigoDuplicada",
-        $"Já existe outra regra ativa com RegraCodigo '{regraCodigo?.Trim()}'.");
+        "Já existe outra regra ativa com o mesmo código de regra.");
 
     internal static DomainError ConteudoCanonicoDuplicado() => new(
         "ObrigatoriedadeLegal.HashColisao",
