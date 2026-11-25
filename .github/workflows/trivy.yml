@@ -1,32 +1,37 @@
 name: Trivy
 
-# Varredura de vulnerabilidades (issue #24, ADR-0015 — "Snyk / Trivy"):
+# Varredura de vulnerabilidades (ADR-0015 — "Snyk / Trivy"):
 #   1. `trivy fs` — dependências NuGet declaradas + lock files
 #   2. `trivy image` — vulnerabilidades das imagens Docker de cada módulo
 #      (matriz derivada de docker/Dockerfile.* pelo job `discover`)
 #
-# Resultados em SARIF alimentam a aba Security do GitHub via upload-sarif
-# (mesmo padrão do codeql.yml). O scan de dependências só alerta (exit code
-# zero) enquanto a baseline é triada; o scan de imagem falha com CRITICAL ou HIGH,
-# para que uma vulnerabilidade nova não passe despercebida.
+# A primeira varredura dos arquivos registra na aba de segurança todas as
+# vulnerabilidades críticas e altas, inclusive as sem correção, e nunca falha
+# por resultados encontrados. A segunda bloqueia a alteração somente por
+# vulnerabilidades críticas ou altas com versão corrigida; as sem correção e
+# as de gravidade média ou baixa não bloqueiam. Ambas procuram segredos expostos de
+# gravidade crítica ou alta: a primeira apenas os registra e a segunda falha quando
+# encontra um.
+# O relatório é enviado antes da segunda varredura. A varredura das imagens
+# continua bloqueando por vulnerabilidades críticas ou altas.
 
 on:
   push:
     branches: [main]
-    # paths-ignore evita execução em PRs/pushes docs-only — sem código C# /
+    # paths-ignore evita execução em pushes só de documentação — sem código C# /
     # Dockerfile alterado o sinal do Trivy é redundante com o schedule.
     paths-ignore:
       - 'docs/**'
       - '**.md'
       - '.github/ISSUE_TEMPLATE/**'
   pull_request:
+    # Sem paths-ignore: a varredura dos arquivos bloqueia o PR e deve ser uma
+    # verificação obrigatória, então precisa aparecer em todo PR, inclusive nos
+    # que alteram só documentação. Se ela não rodasse, o PR ficaria esperando
+    # uma verificação que nunca chega.
     branches: [main]
-    paths-ignore:
-      - 'docs/**'
-      - '**.md'
-      - '.github/ISSUE_TEMPLATE/**'
   schedule:
-    # Sábado 04:00 UTC (= 01:00 BRT). Janela noturna de baixo tráfego no fim
+    # Sábado 04:00 UTC (= 01:00 BRT). Horário noturno de baixo tráfego no fim
     # de semana; capta CVEs novos publicados na semana sem requerer push.
     - cron: '0 4 * * 6'
   workflow_dispatch:
@@ -41,7 +46,52 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  # A varredura dos arquivos é obrigatória e precisa aparecer em todo PR.
+  # A das imagens não é obrigatória, é cara e não faz sentido quando apenas
+  # documentação muda. paths-ignore também pularia a varredura dos arquivos.
+  mudancas:
+    name: Detectar alteração só de documentação
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    outputs:
+      somente_documentacao: ${{ steps.verificar.outputs.somente_documentacao }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Verificar arquivos alterados
+        id: verificar
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          EVENT_NAME: ${{ github.event_name }}
+        run: |
+          set -euo pipefail
+          arquivos=''
+          somente_documentacao=false
+          if [[ "$EVENT_NAME" == 'pull_request' ]]; then
+            git fetch --no-tags --depth=1 origin "$BASE_SHA"
+            # --no-renames lista o caminho de origem e o de destino de um arquivo movido;
+            # sem isso, mover código para docs/ apareceria só como documentação.
+            arquivos=$(git diff --name-only --no-renames "$BASE_SHA" HEAD)
+            if [[ -n "$arquivos" ]]; then
+              somente_documentacao=true
+              while IFS= read -r arquivo; do
+                case "$arquivo" in
+                  docs/*|*.md|.github/ISSUE_TEMPLATE/*) ;;
+                  *) somente_documentacao=false ;;
+                esac
+              done <<< "$arquivos"
+            fi
+          fi
+          printf 'Arquivos alterados:\n%s\n' "$arquivos"
+          printf 'Somente documentação: %s\n' "$somente_documentacao"
+          echo "somente_documentacao=$somente_documentacao" >> "$GITHUB_OUTPUT"
+
   discover:
+    needs: mudancas
+    if: needs.mudancas.outputs.somente_documentacao != 'true'
     name: Descobrir módulos (Dockerfiles)
     runs-on: ubuntu-latest
     timeout-minutes: 5
@@ -58,7 +108,7 @@ jobs:
         # Fonte única de verdade: cada docker/Dockerfile.<módulo> vira um item
         # da matriz `trivy-image`. Elimina o drift por construção — nascer um
         # Dockerfile novo já o inclui no scan, sem editar este workflow nem
-        # manter sincronia manual com publish-images.yml (CA-04 da issue #630).
+        # manter sincronia manual com publish-images.yml.
         run: |
           set -euo pipefail
           modules=$(ls docker/Dockerfile.* | sed 's#.*Dockerfile\.##' | sort | jq -R . | jq -cs .)
@@ -73,7 +123,10 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v5
 
-      - name: Trivy — fs scan
+      - name: Trivy — fs scan (relatório completo)
+        # Registra vulnerabilidades críticas e altas, inclusive sem correção,
+        # e segredos expostos de gravidade crítica ou alta, sem falhar pelos
+        # resultados encontrados.
         # Pin imutável: trivy-action é third-party e teve incidente
         # de supply chain em março/2026 via retargeting de tag mutável. Para as
         # actions de orgs auditadas (actions/, docker/, github/) o projeto
@@ -85,16 +138,11 @@ jobs:
           scan-ref: .
           format: sarif
           output: trivy-fs.sarif
-          # CRITICAL e HIGH viram alertas no GitHub Security; LOW/MEDIUM
-          # ficam fora do gate inicial para reduzir ruído (alinhado com
-          # política Snyk/Trivy da ADR-0015).
           severity: CRITICAL,HIGH
           # Sem `limit-severities-for-sarif: 'true'` o entrypoint da action
           # ignora `severity` no path SARIF e a aba Security recebe TUDO
           # (incluindo UNKNOWN/LOW/MEDIUM) — anula o filtro acima.
           limit-severities-for-sarif: 'true'
-          # exit-code 0: não bloqueia PR; reporta para Security tab.
-          # Quando a baseline estiver triada, mudar para `1` faz virar gate.
           exit-code: '0'
           # Skip pastas que não chegam em produção — testes (FsCheck/Bogus)
           # e docs poluiriam o report sem rodar em runtime.
@@ -104,19 +152,35 @@ jobs:
           cache: 'true'
 
       - name: Upload SARIF (fs)
-        # `if: always()` garante upload mesmo se scan falhar internamente —
-        # importante para auditoria de runs que não geraram resultado.
+        # Envia o relatório à aba de segurança antes da varredura que bloqueia;
+        # `always()` mantém a tentativa de envio mesmo se houver erro anterior.
         if: always()
         uses: github/codeql-action/upload-sarif@v4
         with:
           sarif_file: trivy-fs.sarif
-          # `category` separa os resultados na aba Security entre os scans
-          # (fs + uma imagem por módulo), evitando que findings se sobrescrevam.
+          # Separa os resultados dos arquivos dos resultados das imagens.
           category: trivy-fs
+
+      - name: Trivy — fs scan (bloqueia o PR)
+        # Falha por vulnerabilidades críticas ou altas com versão corrigida
+        # e por segredos expostos de gravidade crítica ou alta. As sem correção,
+        # médias e baixas não bloqueiam.
+        # Mesmo pin imutável da varredura anterior.
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # 0.36.0
+        with:
+          scan-type: fs
+          scan-ref: .
+          format: table
+          severity: CRITICAL,HIGH
+          ignore-unfixed: 'true'
+          exit-code: '1'
+          skip-dirs: 'tests,docs'
+          cache: 'true'
 
   trivy-image:
     name: Trivy image (${{ matrix.module }})
-    needs: discover
+    needs: [mudancas, discover]
+    if: needs.mudancas.outputs.somente_documentacao != 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 25
     strategy:
@@ -124,7 +188,7 @@ jobs:
       matrix:
         # Matriz derivada de docker/Dockerfile.* pelo job `discover` — mesma
         # fonte de verdade do publish-images.yml. Sem lista hard-coded para
-        # manter sincronizada (CA-04 da issue #630).
+        # manter sincronizada.
         module: ${{ fromJSON(needs.discover.outputs.modules) }}
 
     steps:
