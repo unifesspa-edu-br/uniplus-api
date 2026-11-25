@@ -30,7 +30,7 @@ public sealed class TermoExigidoFormulario : EntityBase, IParteDoProcesso
     /// <summary>Identificador próprio da exigência no formulário, estável mesmo entre termos de nome igual.</summary>
     public string Codigo { get; private set; } = string.Empty;
 
-    /// <summary>Posição do termo no formulário, única no processo.</summary>
+    /// <summary>Posição do termo no formulário, única no formulário.</summary>
     public int Ordem { get; private set; }
 
     public Guid TermoId { get; private set; }
