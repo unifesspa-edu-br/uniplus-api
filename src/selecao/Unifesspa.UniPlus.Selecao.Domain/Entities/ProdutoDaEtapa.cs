@@ -46,7 +46,7 @@ public sealed class ProdutoDaEtapa : EntityBase, IProdutoPublicado
 
         return new ProdutoDaEtapa
         {
-            AtoCodigo = atoCodigo.Trim(),
+            AtoCodigo = atoCodigo,
             Papel = papel,
         };
     }
@@ -63,7 +63,7 @@ public sealed class ProdutoDaEtapa : EntityBase, IProdutoPublicado
         return new ProdutoDaEtapa
         {
             Id = id,
-            AtoCodigo = atoCodigo.Trim(),
+            AtoCodigo = atoCodigo,
             Papel = papel,
         };
     }

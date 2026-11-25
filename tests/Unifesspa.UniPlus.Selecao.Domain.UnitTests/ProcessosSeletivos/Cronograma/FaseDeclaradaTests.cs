@@ -33,11 +33,11 @@ public sealed class FaseDeclaradaTests
         fase.Janela.Completa.Should().BeTrue();
     }
 
-    [Fact(DisplayName = "O código é aparado e o período vai a UTC")]
+    [Fact(DisplayName = "O código do catálogo é copiado e o período vai a UTC")]
     public void Declarar_NormalizaCodigoEPeriodo()
     {
         TimeSpan emBelem = TimeSpan.FromHours(-3);
-        FaseDeclarada fase = new ModeloDeFase("  RESULTADO  ", 2)
+        FaseDeclarada fase = new ModeloDeFase("RESULTADO", 2)
         {
             Inicio = new DateTimeOffset(2026, 3, 2, 9, 0, 0, emBelem),
             Fim = new DateTimeOffset(2026, 3, 3, 9, 0, 0, emBelem),

@@ -200,24 +200,24 @@ public sealed class FaseCronogramaAtualizacaoTests
         bancaNova.FaseCronogramaId.Should().Be(viva.Id);
     }
 
-    private static FaseCronograma FaseNovaComJanelaEmOffsetEmCodigoComEspacos()
+    private static FaseCronograma FaseNovaComPeriodoEmOutroFuso()
     {
         TimeSpan offset = TimeSpan.FromHours(-3);
         return Fase(new()
         {
-            Codigo = "  FASE_NOVA  ",
+            Codigo = "FASE_NOVA",
             OrigemData = OrigemDataFase.NoEdital,
             Inicio = InicioDaJanela.ToOffset(offset),
             Fim = InicioDaJanela.AddDays(2).ToOffset(offset),
         });
     }
 
-    [Fact(DisplayName = "A janela da fase viva fica em UTC e o código fica aparado")]
-    public void AtualizarDe_PeriodoComDeslocamentoECodigoComEspacos_FicaEmUtcEAparado()
+    [Fact(DisplayName = "O período da fase fica em UTC e o código é copiado")]
+    public void AtualizarDe_PeriodoComDeslocamento_FicaEmUtc()
     {
         FaseCronograma viva = Fase(new());
 
-        Atualizar(viva, FaseNovaComJanelaEmOffsetEmCodigoComEspacos());
+        Atualizar(viva, FaseNovaComPeriodoEmOutroFuso());
 
         viva.Codigo.Should().Be("FASE_NOVA");
         viva.Inicio.Should().Be(InicioDaJanela);

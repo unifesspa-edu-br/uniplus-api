@@ -112,8 +112,8 @@ public sealed class RegraCatalogo : EntityBase
         ExigirForma(invariantes, JsonValueKind.Array, nameof(invariantes));
 
         return new RegraCatalogo(
-            codigo.Trim(),
-            versao.Trim(),
+            codigo,
+            versao,
             tipo,
             declaracaoDaRegra.Clone(),
             invariantes.Clone(),

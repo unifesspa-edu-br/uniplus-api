@@ -51,7 +51,7 @@ public sealed class CategoriaJulgada : EntityBase
         return new CategoriaJulgada
         {
             CategoriaDocumentoOrigemId = categoriaDocumentoOrigemId,
-            Codigo = codigo.Trim(),
+            Codigo = codigo,
             Nome = nome.Trim(),
         };
     }

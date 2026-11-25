@@ -20,7 +20,7 @@ public sealed record UnidadeResponsavelSnapshot
         ArgumentException.ThrowIfNullOrWhiteSpace(nome);
 
         OrigemId = origemId;
-        Codigo = codigo.Trim();
+        Codigo = codigo;
         Sigla = sigla.Trim();
         Nome = nome.Trim();
     }

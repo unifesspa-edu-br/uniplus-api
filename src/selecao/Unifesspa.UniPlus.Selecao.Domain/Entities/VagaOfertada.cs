@@ -42,7 +42,7 @@ public sealed class VagaOfertada : EntityBase
         return Result<VagaOfertada>.Success(new VagaOfertada
         {
             ModalidadeOrigemId = modalidadeOrigemId,
-            ModalidadeCodigo = modalidadeCodigo.Trim(),
+            ModalidadeCodigo = modalidadeCodigo,
             Quantidade = quantidade,
         });
     }

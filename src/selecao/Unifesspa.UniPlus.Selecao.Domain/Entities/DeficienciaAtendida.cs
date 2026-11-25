@@ -44,7 +44,7 @@ public sealed class DeficienciaAtendida : EntityBase
         return new DeficienciaAtendida
         {
             TipoDeficienciaOrigemId = tipoDeficienciaOrigemId,
-            TipoDeficienciaCodigo = tipoDeficienciaCodigo.Trim(),
+            TipoDeficienciaCodigo = tipoDeficienciaCodigo,
             TipoDeficienciaNome = tipoDeficienciaNome.Trim(),
         };
     }

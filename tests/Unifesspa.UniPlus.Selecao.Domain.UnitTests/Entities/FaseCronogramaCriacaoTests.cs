@@ -146,10 +146,10 @@ public sealed class FaseCronogramaCriacaoTests
         fase.Atende(FinalidadeFormulario.Inscricao).Should().BeFalse();
     }
 
-    [Fact(DisplayName = "O código da habilitação com espaços nas pontas é aparado e a fase atende a habilitação")]
-    public void FinalidadesQueAtende_CodigoDaHabilitacaoComEspacos_AtendeAHabilitacao()
+    [Fact(DisplayName = "O código da habilitação do catálogo identifica a finalidade")]
+    public void FinalidadesQueAtende_CodigoDaHabilitacao_AtendeAHabilitacao()
     {
-        FaseCronograma fase = Fase(new() { Codigo = $"  {FormularioProcesso.CodigoFaseHabilitacao}  " });
+        FaseCronograma fase = Fase(new() { Codigo = FormularioProcesso.CodigoFaseHabilitacao });
 
         fase.Atende(FinalidadeFormulario.Habilitacao).Should().BeTrue();
     }
@@ -164,16 +164,16 @@ public sealed class FaseCronogramaCriacaoTests
 
     // ── Criar e Reidratar com o código com espaços nas pontas ──
 
-    [Fact(DisplayName = "Criar guarda o código aparado, e a recusa não o repete")]
-    public void Criar_CodigoComEspacos_GuardaAparadoERecusaNaoRepete()
+    [Fact(DisplayName = "Criar copia o código do catálogo, e a recusa não o repete")]
+    public void Criar_CodigoDoCatalogo_CopiaERecusaNaoRepete()
     {
         Result<FaseCronograma> recusada = Criar(new()
         {
-            Codigo = "  FASE_TESTE  ",
+            Codigo = "FASE_TESTE",
             Inicio = InicioDaJanela.AddDays(1),
             Fim = InicioDaJanela,
         });
-        Result<FaseCronograma> aceita = Criar(new() { Codigo = "  FASE_TESTE  " });
+        Result<FaseCronograma> aceita = Criar(new() { Codigo = "FASE_TESTE" });
 
         recusada.Error!.Message.Should().Be("A data de término do período é anterior à data de início.");
         aceita.Value!.Codigo.Should().Be("FASE_TESTE");
@@ -219,13 +219,13 @@ public sealed class FaseCronogramaCriacaoTests
             .Should().Be((fase.Id, fase.Id, fase.Id));
     }
 
-    [Fact(DisplayName = "Reidratar guarda o código aparado, preserva o Id e vincula as filhas a ele")]
-    public void Reidratar_CodigoComEspacos_GuardaAparadoEVinculaAoIdPreservado()
+    [Fact(DisplayName = "Reidratar copia o código, preserva o Id e vincula as filhas a ele")]
+    public void Reidratar_CodigoDoCatalogo_CopiaEVinculaAoIdPreservado()
     {
         Guid id = Guid.CreateVersion7();
         ProdutoDaFase produto = Preliminar(Resultado);
 
-        FaseCronograma fase = Reidratar(id, new() { Codigo = "  FASE_TESTE  ", Produtos = [produto] });
+        FaseCronograma fase = Reidratar(id, new() { Codigo = "FASE_TESTE", Produtos = [produto] });
 
         (fase.Id, fase.Codigo, produto.FaseCronogramaId).Should().Be((id, "FASE_TESTE", id));
     }
@@ -237,7 +237,7 @@ public sealed class FaseCronogramaCriacaoTests
 
         Action act = () => Reidratar(Guid.CreateVersion7(), new()
         {
-            Codigo = "  FASE_TESTE  ",
+            Codigo = "FASE_TESTE",
             Produtos = [produto],
             RegraRecurso = Recurso(Guid.CreateVersion7()),
         });

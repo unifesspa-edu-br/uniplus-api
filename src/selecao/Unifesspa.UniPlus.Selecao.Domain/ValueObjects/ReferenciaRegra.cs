@@ -56,6 +56,6 @@ public sealed record ReferenciaRegra
             throw new ArgumentException("O hash da regra deve ser um SHA-256 em hexadecimal minúsculo (64 caracteres).", nameof(hash));
         }
 
-        return new ReferenciaRegra(codigo.Trim(), versao.Trim(), hash);
+        return new ReferenciaRegra(codigo, versao, hash);
     }
 }

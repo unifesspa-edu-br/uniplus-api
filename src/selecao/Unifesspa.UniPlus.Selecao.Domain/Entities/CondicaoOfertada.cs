@@ -32,7 +32,7 @@ public sealed class CondicaoOfertada : EntityBase
         return new CondicaoOfertada
         {
             CondicaoOrigemId = condicaoOrigemId,
-            CondicaoCodigo = condicaoCodigo.Trim(),
+            CondicaoCodigo = condicaoCodigo,
             CondicaoNome = condicaoNome.Trim(),
         };
     }

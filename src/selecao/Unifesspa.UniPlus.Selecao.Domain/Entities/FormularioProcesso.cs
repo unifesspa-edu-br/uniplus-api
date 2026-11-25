@@ -81,7 +81,7 @@ public sealed class FormularioProcesso : EntityBase, IParteDoProcesso
             FaseId = faseId == Guid.Empty ? null : faseId,
             Titulo = string.IsNullOrWhiteSpace(titulo) ? null : titulo.Trim(),
             ModeloOrigemId = modeloOrigemId,
-            ModeloOrigemCodigo = modeloOrigemId is null ? null : modeloOrigemCodigo?.Trim(),
+            ModeloOrigemCodigo = modeloOrigemId is null ? null : modeloOrigemCodigo,
             ModeloOrigemNome = modeloOrigemId is null ? null : modeloOrigemNome?.Trim(),
         };
 
@@ -126,7 +126,7 @@ public sealed class FormularioProcesso : EntityBase, IParteDoProcesso
     internal void RegistrarOrigem(Guid modeloId, string modeloCodigo, string modeloNome)
     {
         ModeloOrigemId = modeloId;
-        ModeloOrigemCodigo = modeloCodigo.Trim();
+        ModeloOrigemCodigo = modeloCodigo;
         ModeloOrigemNome = modeloNome.Trim();
     }
 

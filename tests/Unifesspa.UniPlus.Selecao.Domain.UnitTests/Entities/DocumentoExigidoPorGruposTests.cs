@@ -155,7 +155,7 @@ public sealed class DocumentoExigidoPorGruposTests
 
         DocumentoExigido exigencia = DocumentoExigido.Criar(Chave, declarada with
         {
-            Tipo = declarada.Tipo with { Codigo = " IDENTIDADE ", Nome = " Documento de identidade ", Categoria = " PESSOAL " },
+            Tipo = declarada.Tipo with { Codigo = "IDENTIDADE", Nome = " Documento de identidade ", Categoria = " PESSOAL " },
             Indeferimento = new(true, " ELIMINA ", []),
             FatosComprovados = [" COR_RACA "],
         }).Value!;

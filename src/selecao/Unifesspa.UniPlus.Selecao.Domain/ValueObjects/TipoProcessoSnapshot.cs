@@ -28,6 +28,11 @@ public sealed record TipoProcessoSnapshot
         {
             return Falha("TipoProcessoSnapshot.OrigemIdObrigatorio", "Origem do tipo de processo seletivo é obrigatória.");
         }
+        return CriarComOrigem(origemId, codigo, nome);
+    }
+
+    private static Result<TipoProcessoSnapshot> CriarComOrigem(Guid origemId, string codigo, string nome)
+    {
         if (string.IsNullOrWhiteSpace(codigo))
         {
             return Falha("TipoProcessoSnapshot.CodigoObrigatorio", "Código do tipo de processo seletivo é obrigatório.");
@@ -36,12 +41,9 @@ public sealed record TipoProcessoSnapshot
         {
             return Falha("TipoProcessoSnapshot.NomeObrigatorio", "Nome do tipo de processo seletivo é obrigatório.");
         }
-        if (codigo.Trim().Length > 64 || nome.Trim().Length > 200)
-        {
-            return Falha("TipoProcessoSnapshot.TamanhoInvalido", "Snapshot do tipo de processo seletivo excede o tamanho permitido.");
-        }
-
-        return Result<TipoProcessoSnapshot>.Success(new TipoProcessoSnapshot(origemId, codigo.Trim(), nome.Trim()));
+        return codigo.Length > 64 || nome.Trim().Length > 200
+            ? Falha("TipoProcessoSnapshot.TamanhoInvalido", "Snapshot do tipo de processo seletivo excede o tamanho permitido.")
+            : Result<TipoProcessoSnapshot>.Success(new TipoProcessoSnapshot(origemId, codigo, nome.Trim()));
     }
 
     public override string ToString() => Codigo;
