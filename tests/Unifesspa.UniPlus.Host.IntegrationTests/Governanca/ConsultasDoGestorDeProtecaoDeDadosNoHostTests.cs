@@ -146,7 +146,7 @@ public sealed class ConsultasDoGestorDeProtecaoDeDadosNoHostTests : PedidosDeCon
             await SemearConcessaoAsync(beneficiario, perfil, EscopoDaConcessao.DaUnidade(unidade));
         }
 
-        IReadOnlyList<RegistroDecisaoAcesso> registros = await RegistrosDaLeituraAsync($"/api/autorizacao/concessoes?situacao=todas&limit={TamanhoDaPagina}");
+        IReadOnlyList<RegistroDecisaoAcesso> registros = await RegistrosDaLeituraAsync($"/api/autorizacao/concessoes?limit={TamanhoDaPagina}");
 
         registros.Should().HaveCount(TamanhoDaPagina + 1, "a decisão da borda e um registro por concessão exibida");
         registros.Count(static r => r.ResourceId is not null && r.ResourceTipo == "concessao").Should().Be(TamanhoDaPagina);
