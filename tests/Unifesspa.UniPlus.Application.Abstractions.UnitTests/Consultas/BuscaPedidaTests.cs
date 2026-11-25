@@ -7,7 +7,7 @@ using Unifesspa.UniPlus.Kernel.Results;
 
 public sealed class BuscaPedidaTests
 {
-    private const string MensagemDeBuscaMuitoLonga = "O texto pesquisado excede 200 caracteres.";
+    private const string MensagemDeBuscaMuitoLonga = "O texto pesquisado excede 200 caracteres, sem contar os espaços das pontas.";
 
     [Fact]
     public void Validar_TermoAusente_DevolveSucessoNulo()
@@ -40,19 +40,19 @@ public sealed class BuscaPedidaTests
     }
 
     [Fact]
-    public void Validar_DuzentosCaracteresSeguidosDeEspacos_RecusaPorqueMedeOTextoInalterado()
+    public void Validar_DuzentosCaracteresSeguidosDeEspacos_DevolveTextoInalterado()
     {
         Result<string?> resultado = BuscaPedida.Validar(new string('a', 200) + "   ");
 
-        resultado.IsFailure.Should().BeTrue();
-        resultado.Error!.Code.Should().Be("Consulta.BuscaMuitoLonga");
+        resultado.IsSuccess.Should().BeTrue();
+        resultado.Value.Should().Be(new string('a', 200) + "   ");
     }
 
     [Fact]
     public void Validar_TermoQueCabeComEspacos_DevolveOTextoInalterado()
     {
-        Result<string?> resultado = BuscaPedida.Validar("  Maria da Silva  ");
+        Result<string?> resultado = BuscaPedida.Validar("  Processo seletivo  ");
 
-        resultado.Value.Should().Be("  Maria da Silva  ");
+        resultado.Value.Should().Be("  Processo seletivo  ");
     }
 }

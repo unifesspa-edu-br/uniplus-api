@@ -1,5 +1,6 @@
 namespace Unifesspa.UniPlus.OrganizacaoInstitucional.API.Controllers;
 
+using System.ComponentModel;
 using System.Diagnostics.CodeAnalysis;
 
 using Microsoft.AspNetCore.Authorization;
@@ -74,10 +75,10 @@ public sealed class UnidadesController : ControllerBase
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest, Description = "Valor de tipo que não é um tipo de unidade filtrável (uniplus.organizacao.unidade.filtro_de_tipo_invalido).")]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status406NotAcceptable)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status410Gone)]
-    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status422UnprocessableEntity, Description = "O texto pesquisado excede 200 caracteres (uniplus.consulta.busca_muito_longa).")]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status422UnprocessableEntity, Description = "Texto pesquisado com mais de 200 caracteres, sem contar os espaços das pontas (uniplus.consulta.busca_muito_longa), ou outro parâmetro de consulta inválido.")]
     public async Task<IActionResult> Listar(
         [FromCursor(ResourceTag)] PageRequest page,
-        [FromQuery(Name = "q")] string? q,
+        [FromQuery(Name = "q"), Description("Até 200 caracteres, sem contar os espaços das pontas.")] string? q,
         [FromQuery(Name = "tipo")] int[]? tipo,
         CancellationToken cancellationToken)
     {

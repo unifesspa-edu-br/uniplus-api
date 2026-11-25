@@ -7,7 +7,7 @@ using Unifesspa.UniPlus.Kernel.Results;
 
 public sealed class TermoDeBuscaTests
 {
-    private const string MensagemDeBuscaMuitoLonga = "O texto pesquisado excede 200 caracteres.";
+    private const string MensagemDeBuscaMuitoLonga = "O texto pesquisado excede 200 caracteres, sem contar os espaços das pontas.";
 
     [Theory(DisplayName = "Texto ausente, em branco ou só com caractere nulo não é busca")]
     [InlineData(null)]
@@ -44,7 +44,7 @@ public sealed class TermoDeBuscaTests
 
     [Fact]
     public void Criar_TextoComEspacosNasPontas_Apara() =>
-        TermoDeBusca.Criar("  Maria da Silva  ").Value!.Normalizado.Should().Be("maria da silva");
+        TermoDeBusca.Criar("  Processo seletivo  ").Value!.Normalizado.Should().Be("processo seletivo");
 
     [Fact]
     public void Criar_DuzentosCaracteres_Cabem() =>
@@ -60,9 +60,48 @@ public sealed class TermoDeBuscaTests
         resultado.Error.Message.Should().Be(MensagemDeBuscaMuitoLonga);
     }
 
+    [Theory]
+    [InlineData(" ")]
+    [InlineData("\t")]
+    [InlineData("\n")]
+    [InlineData("\u00a0")]
+    public void Criar_DuzentosCaracteresComEspacosNasPontas_Aceita(string espaco) =>
+        TermoDeBusca.Criar(espaco + new string('a', 200) + espaco).IsSuccess.Should().BeTrue();
+
     [Fact]
-    public void Criar_DuzentosCaracteresSeguidosDeEspacos_RecusaPorqueMedeOTextoInalterado() =>
-        TermoDeBusca.Criar(new string('a', 200) + "   ").Error!.Code.Should().Be("Consulta.BuscaMuitoLonga");
+    public void Criar_DuzentosCaracteresComMilharesDeEspacosNasPontas_AceitaEGuardaOTermoAparado()
+    {
+        string espacos = new(' ', 5000);
+
+        Result<TermoDeBusca?> resultado = TermoDeBusca.Criar(espacos + new string('A', 200) + espacos);
+
+        resultado.IsSuccess.Should().BeTrue();
+        resultado.Value!.Normalizado.Should().Be(new string('a', 200));
+    }
+
+    [Fact]
+    public void Criar_DuzentosEUmCaracteresUteisComMilharesDeEspacosNasPontas_RecusaComOCodigoEAMensagem()
+    {
+        string espacos = new(' ', 5000);
+
+        Result<TermoDeBusca?> resultado = TermoDeBusca.Criar(espacos + new string('a', 201) + espacos);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be("Consulta.BuscaMuitoLonga");
+        resultado.Error.Message.Should().Be(MensagemDeBuscaMuitoLonga);
+    }
+
+    [Fact]
+    public void Criar_ApenasEspacosAcimaDoLimite_DevolveNulo() =>
+        TermoDeBusca.Criar(new string(' ', 250)).Value.Should().BeNull();
+
+    [Fact]
+    public void Criar_DuzentosEUmCaracteresComEspacoNoMeio_Recusa() =>
+        TermoDeBusca.Criar(new string('a', 100) + " " + new string('a', 100)).IsFailure.Should().BeTrue();
+
+    [Fact]
+    public void Criar_LetraDecomposta_ContaCadaCaractere() =>
+        TermoDeBusca.Criar(new string('a', 199) + "e\u0301").IsFailure.Should().BeTrue();
 
     [Fact]
     public void Criar_TextoQueSoCaberiaSemOCaractereNulo_RecusaPorqueConfereOComprimentoAntes() =>
@@ -70,7 +109,7 @@ public sealed class TermoDeBuscaTests
 
     [Fact]
     public void ToString_NaoContemOTermo() =>
-        TermoDeBusca.Criar("Maria da Silva").Value!.ToString().Should().NotContainEquivalentOf("maria");
+        TermoDeBusca.Criar("Processo seletivo").Value!.ToString().Should().NotContainEquivalentOf("processo");
 
     [Fact]
     public void ConferirComprimento_TextoQueCabe_NaoDevolveRecusa()

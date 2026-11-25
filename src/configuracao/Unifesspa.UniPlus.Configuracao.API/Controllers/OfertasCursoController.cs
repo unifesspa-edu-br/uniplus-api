@@ -80,12 +80,12 @@ public sealed class OfertasCursoController : ControllerBase
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status406NotAcceptable)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status410Gone)]
-    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status422UnprocessableEntity)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status422UnprocessableEntity, Description = "Texto pesquisado com mais de 200 caracteres, sem contar os espaços das pontas (uniplus.consulta.busca_muito_longa), ou outro parâmetro de consulta inválido.")]
     public async Task<IActionResult> Listar(
         [FromCursor(ResourceTag, RequireSortKey = true)] PageRequest page,
         [FromQuery(Name = "cursoId")] Guid? cursoId,
         [FromQuery(Name = "q")]
-        [Description("Texto pesquisado. Insensível a caixa e a acentuação. Até 200 caracteres.")]
+        [Description("Texto pesquisado. Insensível a caixa e a acentuação. Até 200 caracteres, sem contar os espaços das pontas.")]
         string? q,
         [FromQuery(Name = "sort")]
         [Description(

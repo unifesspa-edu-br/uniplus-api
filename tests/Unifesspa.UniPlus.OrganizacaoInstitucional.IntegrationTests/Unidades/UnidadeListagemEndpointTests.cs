@@ -20,7 +20,8 @@ public sealed class UnidadeListagemEndpointTests
     private const string Rota = "/api/organizacao/unidades";
     private const string CodigoDaBuscaLonga = "uniplus.consulta.busca_muito_longa";
     private const string TituloDaBuscaLonga = "Texto pesquisado excede o comprimento aceito";
-    private const string DetalheDaBuscaLonga = "O texto pesquisado excede 200 caracteres.";
+    private const string DetalheDaBuscaLonga =
+        "O texto pesquisado excede 200 caracteres, sem contar os espaços das pontas.";
     private const int Centro = (int)TipoUnidade.Centro;
 
     private readonly OrganizacaoEndpointFixture _fixture;

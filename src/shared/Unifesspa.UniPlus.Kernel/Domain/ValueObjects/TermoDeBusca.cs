@@ -9,9 +9,7 @@ using Results;
 /// </summary>
 /// <remarks>
 /// O tipo guarda só a forma normalizada, sem o escape dos curingas do <c>LIKE</c>, que é assunto
-/// do banco. O limite de comprimento mede o texto como chegou: o termo também entra no cursor e é
-/// reanexado aos links de navegação, e uma busca de alguns quilobytes produziria um link que estoura
-/// o limite de linha de requisição do servidor ou de um proxy, deixando a listagem sem paginar.
+/// do banco. O limite de comprimento desconsidera espaços em branco nas pontas, antes da normalização.
 /// </remarks>
 public sealed record TermoDeBusca
 {
@@ -27,8 +25,7 @@ public sealed record TermoDeBusca
     public string Normalizado { get; }
 
     /// <summary>
-    /// Confere o comprimento do texto como chegou e só então o normaliza. Um texto de 201
-    /// caracteres é recusado mesmo que coubesse depois de aparado.
+    /// Confere o comprimento do texto aparado e só então o normaliza.
     /// </summary>
     public static Result<TermoDeBusca?> Criar(string? pedido)
     {
@@ -44,8 +41,8 @@ public sealed record TermoDeBusca
 
     /// <summary>A recusa do texto longo demais, ou <see langword="null"/> quando ele cabe.</summary>
     public static DomainError? ConferirComprimento(string? pedido) =>
-        pedido is { Length: > ComprimentoMaximo }
-            ? new DomainError(CodigoDeBuscaMuitoLonga, $"O texto pesquisado excede {ComprimentoMaximo} caracteres.")
+        pedido.AsSpan().Trim().Length > ComprimentoMaximo
+            ? new DomainError(CodigoDeBuscaMuitoLonga, $"O texto pesquisado excede {ComprimentoMaximo} caracteres, sem contar os espaços das pontas.")
             : null;
 
     /// <summary>Não imprime o termo: ele pode ser o nome de uma pessoa e não vai a log.</summary>
