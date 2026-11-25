@@ -11,6 +11,8 @@ using AwesomeAssertions;
 using Unifesspa.UniPlus.Configuracao.IntegrationTests.Infrastructure;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Authentication;
 
+using static Unifesspa.UniPlus.Configuracao.IntegrationTests.TiposDocumento.TiposDocumentoCenario;
+
 /// <summary>
 /// Smoke + caminho de escrita dos endpoints de <c>TipoDocumento</c> (UNI-REQ-0013):
 /// routing, vendor media type, HATEOAS, autenticação/autorização, idempotência,
@@ -86,40 +88,19 @@ public sealed class TipoDocumentoEndpointTests
     public async Task Criar_ComAuthEIdempotency_Retorna201EPersiste()
     {
         string codigo = CodigoUnico();
-        var body = new
-        {
-            codigo,
-            nome = "Laudo médico",
-            categoria = "SAUDE",
-            classificacaoProtecao = "SENSIVEL",
-            finalidadeTratamento = "Comprovação do atendimento especializado.",
-            hipoteseLegal = "TUTELA_DA_SAUDE",
-            descricao = "Documento de saúde",
-            formatosAceitos = "pdf,jpg",
-            tamanhoMaximoMb = 10,
-        };
+        object body = DadosLaudoMedico(codigo);
 
         using HttpClient client = _fixture.Factory.CreateClient();
         HttpResponseMessage criar = await EnviarPostAdmin(client, body);
 
-        criar.StatusCode.Should().Be(HttpStatusCode.Created);
-        Guid id = await criar.Content.ReadFromJsonAsync<Guid>();
-        id.Should().NotBe(Guid.Empty);
+        Guid id = await ConferirCriacaoComId(criar);
 
         HttpResponseMessage obter = await client.GetAsync(
             new Uri($"/api/configuracao/tipos-documento/{id}", UriKind.Relative));
         obter.StatusCode.Should().Be(HttpStatusCode.OK);
 
         using JsonDocument doc = JsonDocument.Parse(await obter.Content.ReadAsStringAsync());
-        JsonElement root = doc.RootElement;
-        root.GetProperty("codigo").GetString().Should().Be(codigo);
-        root.GetProperty("nome").GetString().Should().Be("Laudo médico");
-        root.GetProperty("categoria").GetString().Should().Be("SAUDE");
-        root.GetProperty("tamanhoMaximoMb").GetInt32().Should().Be(10);
-        root.GetProperty("classificacaoProtecao").GetString().Should().Be("SENSIVEL");
-        root.GetProperty("finalidadeTratamento").GetString().Should().Be("Comprovação do atendimento especializado.");
-        root.GetProperty("hipoteseLegal").GetString().Should().Be("TUTELA_DA_SAUDE");
-        root.TryGetProperty("_links", out _).Should().BeTrue("HATEOAS Level 1 expõe _links.self (ADR-0029)");
+        ConferirLaudoMedico(doc.RootElement, codigo);
     }
 
     [Fact(DisplayName = "Contrato classificatório puro: o recurso não expõe nenhuma regra material (validade/assinatura/lideranças)")]
@@ -135,16 +116,7 @@ public sealed class TipoDocumentoEndpointTests
             new Uri($"/api/configuracao/tipos-documento/{id}", UriKind.Relative));
         using JsonDocument doc = JsonDocument.Parse(await obter.Content.ReadAsStringAsync());
 
-        // A separação central da #591: o tipo diz "o que um documento é", nunca uma
-        // regra material (essas vivem na exigência do edital ou na homologação).
-        string[] propriedadesMateriaisProibidas =
-            ["validade", "validadeMeses", "idadeMaximaMeses", "exigeAssinatura", "exigeAssinaturaDigital",
-             "numeroAssinaturas", "lideranças", "lideranca", "aplicabilidade", "consequenciaIndeferimento"];
-        foreach (string proibida in propriedadesMateriaisProibidas)
-        {
-            doc.RootElement.TryGetProperty(proibida, out _)
-                .Should().BeFalse($"o tipo de documento é classificatório puro e não deve expor '{proibida}'");
-        }
+        ConferirAusenciaDeRegrasMateriais(doc.RootElement);
     }
 
     [Fact(DisplayName = "A listagem e a consulta do tipo informam se a proteção está aprovada, sem expor a situação detalhada")]
@@ -159,20 +131,11 @@ public sealed class TipoDocumentoEndpointTests
 
         HttpResponseMessage obter = await client.GetAsync(new Uri($"/api/configuracao/tipos-documento/{id}", UriKind.Relative));
         HttpResponseMessage listar = await client.GetAsync(new Uri("/api/configuracao/tipos-documento", UriKind.Relative));
-        obter.StatusCode.Should().Be(HttpStatusCode.OK);
-        listar.StatusCode.Should().Be(HttpStatusCode.OK);
+        ConferirConsultasBemSucedidas(obter, listar);
 
         using JsonDocument porId = JsonDocument.Parse(await obter.Content.ReadAsStringAsync());
         using JsonDocument lista = JsonDocument.Parse(await listar.Content.ReadAsStringAsync());
-        JsonElement[] tipos = [porId.RootElement, .. lista.RootElement.EnumerateArray()];
-
-        porId.RootElement.GetProperty("protecaoAprovada").GetBoolean().Should().BeFalse();
-        tipos.Should().HaveCountGreaterThan(1);
-        foreach (JsonElement tipo in tipos)
-        {
-            tipo.TryGetProperty("protecaoAprovada", out _).Should().BeTrue();
-            tipo.TryGetProperty("aprovacao", out _).Should().BeFalse("a situação detalhada da aprovação não é pública");
-        }
+        ConferirProtecaoPublica(porId.RootElement, lista.RootElement);
     }
 
     [Fact(DisplayName = "POST com categoria fora do formato de código retorna 422 com erro de forma")]
@@ -226,14 +189,9 @@ public sealed class TipoDocumentoEndpointTests
         using HttpClient client = _fixture.Factory.CreateClient();
         Guid categoriaId = await CriarCategoria(client, codigoCategoria);
 
-        HttpResponseMessage aceito = await EnviarPostAdmin(
-            client, new { codigo = CodigoUnico(), nome = "Antes da remoção", categoria = codigoCategoria, classificacaoProtecao = "PESSOAL", finalidadeTratamento = "Comprovação documental do candidato.", hipoteseLegal = "CUMPRIMENTO_OBRIGACAO_LEGAL" });
-        aceito.StatusCode.Should().Be(HttpStatusCode.Created, "a categoria estava viva");
+        await ConferirCategoriaViva(client, codigoCategoria);
 
-        using HttpRequestMessage remover = new(
-            HttpMethod.Delete, new Uri($"/api/configuracao/admin/categorias-documento/{categoriaId}", UriKind.Relative));
-        AutenticarComoAdmin(remover);
-        (await client.SendAsync(remover)).StatusCode.Should().Be(HttpStatusCode.NoContent);
+        await RemoverCategoria(client, categoriaId);
 
         HttpResponseMessage recusado = await EnviarPostAdmin(
             client, new { codigo = CodigoUnico(), nome = "Depois da remoção", categoria = codigoCategoria, classificacaoProtecao = "PESSOAL", finalidadeTratamento = "Comprovação documental do candidato.", hipoteseLegal = "CUMPRIMENTO_OBRIGACAO_LEGAL" });
@@ -272,16 +230,9 @@ public sealed class TipoDocumentoEndpointTests
         using HttpClient client = _fixture.Factory.CreateClient();
         await CriarCategoria(client, categoriaLonga);
 
-        HttpResponseMessage response = await EnviarPostAdmin(
-            client, new { codigo = CodigoUnico(), nome = "Tipo de categoria longa", categoria = categoriaLonga, classificacaoProtecao = "PESSOAL", finalidadeTratamento = "Comprovação documental do candidato.", hipoteseLegal = "CUMPRIMENTO_OBRIGACAO_LEGAL" });
+        Guid id = await CriarTipoComCategoriaLonga(client, categoriaLonga);
 
-        response.StatusCode.Should().Be(HttpStatusCode.Created);
-        Guid id = await response.Content.ReadFromJsonAsync<Guid>();
-
-        HttpResponseMessage obter = await client.GetAsync(
-            new Uri($"/api/configuracao/tipos-documento/{id}", UriKind.Relative));
-        using JsonDocument doc = JsonDocument.Parse(await obter.Content.ReadAsStringAsync());
-        doc.RootElement.GetProperty("categoria").GetString().Should().Be(categoriaLonga);
+        await ConferirCategoriaPersistida(client, id, categoriaLonga);
     }
 
     [Fact(DisplayName = "POST com código já existente entre vivos retorna 409")]
@@ -330,11 +281,7 @@ public sealed class TipoDocumentoEndpointTests
         const string json = """{"nome":"Documento de teste","categoria":"OUTROS"}""";
 
         using HttpClient client = _fixture.Factory.CreateClient();
-        using HttpRequestMessage request = new(HttpMethod.Post, new Uri("/api/configuracao/admin/tipos-documento", UriKind.Relative));
-        request.Headers.Add("Authorization", $"{TestAuthHandler.AuthorizationScheme} {TestAuthHandler.TokenValue}");
-        request.Headers.Add(TestAuthHandler.RolesHeader, "plataforma-admin");
-        request.Headers.Add("Idempotency-Key", Guid.NewGuid().ToString());
-        request.Content = new StringContent(json, Encoding.UTF8, "application/json");
+        using HttpRequestMessage request = CriarPostAdmin(json);
 
         HttpResponseMessage response = await client.SendAsync(request);
 
@@ -360,36 +307,5 @@ public sealed class TipoDocumentoEndpointTests
         HttpResponseMessage response = await client.SendAsync(request);
 
         response.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
-    }
-
-    private static string CodigoUnico() => $"DOC_{Guid.NewGuid().ToString("N")[..10].ToUpperInvariant()}";
-
-    private static void AutenticarComoAdmin(HttpRequestMessage request)
-    {
-        request.Headers.Add("Authorization", $"{TestAuthHandler.AuthorizationScheme} {TestAuthHandler.TokenValue}");
-        request.Headers.Add(TestAuthHandler.RolesHeader, "plataforma-admin");
-    }
-
-    /// <summary>Cria uma categoria pelo cadastro e devolve o Id, para os testes que precisam removê-la depois.</summary>
-    private static async Task<Guid> CriarCategoria(HttpClient client, string codigo)
-    {
-        using HttpRequestMessage request = new(
-            HttpMethod.Post, new Uri("/api/configuracao/admin/categorias-documento", UriKind.Relative));
-        AutenticarComoAdmin(request);
-        request.Headers.Add("Idempotency-Key", Guid.NewGuid().ToString());
-        request.Content = JsonContent.Create(new { codigo, nome = "Categoria de teste" });
-
-        HttpResponseMessage response = await client.SendAsync(request);
-        response.StatusCode.Should().Be(HttpStatusCode.Created);
-        return await response.Content.ReadFromJsonAsync<Guid>();
-    }
-
-    private static async Task<HttpResponseMessage> EnviarPostAdmin(HttpClient client, object body)
-    {
-        using HttpRequestMessage request = new(HttpMethod.Post, new Uri("/api/configuracao/admin/tipos-documento", UriKind.Relative));
-        AutenticarComoAdmin(request);
-        request.Headers.Add("Idempotency-Key", Guid.NewGuid().ToString());
-        request.Content = JsonContent.Create(body);
-        return await client.SendAsync(request);
     }
 }

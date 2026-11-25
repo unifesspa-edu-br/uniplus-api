@@ -49,16 +49,21 @@ public sealed class TipoDocumentoSeedTests
 
         foreach (TipoDocumentoSeedItem item in TipoDocumentoSeed.Itens)
         {
-            persistidos.Should().ContainKey(item.Id, "o identificador do seed é fixo e igual em todo ambiente");
-            TipoDocumento persistido = persistidos[item.Id];
-            persistido.Codigo.Valor.Should().Be(item.Codigo);
-            persistido.Nome.Should().Be(item.Nome);
-            persistido.Categoria.Should().Be(item.Categoria);
-            persistido.TipoEquivalente.Should().Be(item.TipoEquivalente);
-            persistido.ClassificacaoProtecao.Should().Be(item.ClassificacaoProtecao);
-            persistido.FinalidadeTratamento.Should().Be(TipoDocumentoSeed.FinalidadeTratamento);
-            persistido.HipoteseLegal.Should().Be(TipoDocumentoSeed.HipoteseLegal);
-            persistido.IsDeleted.Should().BeFalse();
+            ConferirItemDoSeed(persistidos, item);
         }
+    }
+
+    private static void ConferirItemDoSeed(Dictionary<Guid, TipoDocumento> persistidos, TipoDocumentoSeedItem item)
+    {
+        persistidos.Should().ContainKey(item.Id, "o identificador do seed é fixo e igual em todo ambiente");
+        TipoDocumento persistido = persistidos[item.Id];
+        persistido.Codigo.Valor.Should().Be(item.Codigo);
+        persistido.Nome.Should().Be(item.Nome);
+        persistido.Categoria.Should().Be(item.Categoria);
+        persistido.TipoEquivalente.Should().Be(item.TipoEquivalente);
+        persistido.ClassificacaoProtecao.Should().Be(item.ClassificacaoProtecao);
+        persistido.FinalidadeTratamento.Should().Be(TipoDocumentoSeed.FinalidadeTratamento);
+        persistido.HipoteseLegal.Should().Be(TipoDocumentoSeed.HipoteseLegal);
+        persistido.IsDeleted.Should().BeFalse();
     }
 }
