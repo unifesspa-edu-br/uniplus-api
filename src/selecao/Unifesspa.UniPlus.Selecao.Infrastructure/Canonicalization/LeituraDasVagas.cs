@@ -42,22 +42,34 @@ internal static class LeituraDasVagas
             ofertas, LeituraDosInsumosDaDistribuicao.Ler(leitor, distribuicao), LerModalidadesPorOferta(leitor, modalidades), vagas, ofertasEmVagas);
     }
 
-    private static IReadOnlyList<ConfiguracaoDistribuicaoVagas> Remontar(LeitorEnvelope leitor, BlocosDaDistribuicao blocos)
+    private static List<ConfiguracaoDistribuicaoVagas> Remontar(LeitorEnvelope leitor, BlocosDaDistribuicao blocos)
     {
         List<ConfiguracaoDistribuicaoVagas> distribuicao = [];
-        foreach (InsumoDaDistribuicao insumo in blocos.Insumos)
+        for (int indice = 0; indice < blocos.Insumos.Count && !leitor.Falhou; indice++)
         {
-            Result<ConfiguracaoDistribuicaoVagas> configuracao = blocos.Remontar(insumo);
-            if (configuracao.IsFailure)
-            {
-                return leitor.Propagar<IReadOnlyList<ConfiguracaoDistribuicaoVagas>>(configuracao.Error!) ?? [];
-            }
-
-            distribuicao.Add(configuracao.Value!);
+            RemontarDaPosicao(leitor, blocos, indice, distribuicao);
         }
 
-        LeituraDoQuadroDeVagas.ConferirComAMontagem(leitor, blocos.Vagas, distribuicao);
+        if (!leitor.Falhou)
+        {
+            LeituraDoQuadroDeVagas.ConferirComAMontagem(leitor, blocos.Vagas, distribuicao);
+        }
         return leitor.Falhou ? [] : distribuicao;
+    }
+
+    private static void RemontarDaPosicao(LeitorEnvelope leitor, BlocosDaDistribuicao blocos, int indice, List<ConfiguracaoDistribuicaoVagas> distribuicao)
+    {
+        Result<ConfiguracaoDistribuicaoVagas> configuracao = blocos.Remontar(blocos.Insumos[indice]);
+        if (configuracao.IsFailure)
+        {
+            IReadOnlyList<FieldError> causas = [.. configuracao.Errors.Select(static causa => causa.Field is
+                "vagasOfertadasBase" or "percentualDaReservaLegal" or "referenciaDemografica" or "ajusteDoQuadro" or "grupoAreaEnem"
+                ? causa : LeitorEnvelope.NoProprioItem([causa])[0])];
+            leitor.Propagar<ConfiguracaoDistribuicaoVagas>(causas, $"distribuicao[{indice}]");
+            return;
+        }
+
+        distribuicao.Add(configuracao.Value!);
     }
 
     private static ModalidadesPorOferta LerModalidadesPorOferta(LeitorEnvelope leitor, JsonArray arrayModalidades)
