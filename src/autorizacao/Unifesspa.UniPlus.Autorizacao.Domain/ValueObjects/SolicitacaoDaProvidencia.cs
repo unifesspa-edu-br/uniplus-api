@@ -2,6 +2,7 @@ namespace Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects;
 
 using Unifesspa.UniPlus.Autorizacao.Domain.Enums;
 using Unifesspa.UniPlus.Autorizacao.Domain.Errors;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
 
 /// <summary>
@@ -19,7 +20,7 @@ public sealed record SolicitacaoDaProvidencia(string? Tipo, string? Fundamento)
     public const int FundamentoMaxLength = 2000;
 
     /// <summary>O tipo informado, ou nulo quando ausente ou desconhecido.</summary>
-    internal TipoDaProvidencia? TipoLido => TipoDaProvidenciaCodigo.DoCodigo(Tipo);
+    internal TipoDaProvidencia? TipoLido => (CatalogoDe<TipoDaProvidencia>.TentarObter(Tipo?.Trim().ToUpperInvariant(), out TipoDaProvidencia valorLido) ? valorLido : (TipoDaProvidencia?)null);
 
     /// <summary>
     /// O fundamento aparado, ou nulo quando ausente, fora dos limites ou com o caractere nulo, que a coluna textual do banco

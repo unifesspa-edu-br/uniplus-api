@@ -11,6 +11,7 @@ using Unifesspa.UniPlus.Autorizacao.Application.Mappings;
 using Unifesspa.UniPlus.Autorizacao.Domain.Entities;
 using Unifesspa.UniPlus.Autorizacao.Domain.Enums;
 using Unifesspa.UniPlus.Autorizacao.Domain.Interfaces;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
 
 /// <summary>
@@ -110,7 +111,7 @@ public sealed class AvisosDaReclassificacao
 
         return d is null
             ? null
-            : new FatoDoAviso(d.PerfilId, d.Codigo, TipoDeAviso.DivergenciaDaGovernanca, $"divergência de {d.Tipo.ToCodigo()}", DosDoisGrupos);
+            : new FatoDoAviso(d.PerfilId, d.Codigo, TipoDeAviso.DivergenciaDaGovernanca, $"divergência de {d.Tipo.Codigo()}", DosDoisGrupos);
     }
 
     private static string MudancaDe(ReclassificacaoDaPermissao r)

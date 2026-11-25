@@ -2,11 +2,11 @@ namespace Unifesspa.UniPlus.Autorizacao.Infrastructure.Persistence.Configuration
 
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
-using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 using Unifesspa.UniPlus.Autorizacao.Domain.Entities;
 using Unifesspa.UniPlus.Autorizacao.Domain.Enums;
 using Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects;
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence.CodigosDeContrato;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Protecao;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
 
@@ -17,19 +17,8 @@ using Unifesspa.UniPlus.Kernel.Domain.Enums;
 /// </summary>
 public sealed class ProvidenciaConfiguration : IEntityTypeConfiguration<Providencia>
 {
-    /// <summary>O índice único da providência aberta, que a gravação concorrente traduz em "já há aberta".</summary>
-    public const string AbertaUnicaPorConcessao = "ux_providencias_concessao_aberta";
-
     private const int IdentidadeMaxLength = 255;
     private const int CodigoMaxLength = 20;
-
-    private static readonly ValueConverter<TipoDaProvidencia, string> TipoConverter = new(
-        tipo => tipo.ToCodigo(),
-        codigo => TipoDaProvidenciaCodigo.FromCodigo(codigo));
-
-    private static readonly ValueConverter<EstadoDaProvidencia, string> EstadoConverter = new(
-        estado => estado.ToCodigo(),
-        codigo => EstadoDaProvidenciaCodigo.FromCodigo(codigo));
 
     public void Configure(EntityTypeBuilder<Providencia> builder)
     {
@@ -61,24 +50,24 @@ public sealed class ProvidenciaConfiguration : IEntityTypeConfiguration<Providen
 
     private static void RestricoesDaTabela(TableBuilder<Providencia> tabela)
     {
-        tabela.HasCheckConstraint("ck_providencias_tipo", "tipo IN ('RETIRADA', 'REVISAO')");
-        tabela.HasCheckConstraint("ck_providencias_estado", "estado IN ('ABERTA', 'RESPONDIDA', 'ATENDIDA')");
+        tabela.HasCheckConstraint("ck_providencias_tipo", $"tipo IN ({SqlDosCodigosDeContrato.Lista<TipoDaProvidencia>()})");
+        tabela.HasCheckConstraint("ck_providencias_estado", $"estado IN ({SqlDosCodigosDeContrato.Lista<EstadoDaProvidencia>()})");
         tabela.HasCheckConstraint(
             "ck_providencias_fundamento",
             $"char_length(fundamento) BETWEEN {SolicitacaoDaProvidencia.FundamentoMinLength} AND {SolicitacaoDaProvidencia.FundamentoMaxLength}");
         tabela.HasCheckConstraint(
             "ck_providencias_desfecho_completo",
-            "(estado = 'ABERTA' AND desfecho_em IS NULL AND desfecho_por_emissor IS NULL AND desfecho_por_conta_id IS NULL"
+            $"(estado = {SqlDosCodigosDeContrato.Literal(EstadoDaProvidencia.Aberta)} AND desfecho_em IS NULL AND desfecho_por_emissor IS NULL AND desfecho_por_conta_id IS NULL"
             + " AND desfecho_por_nome IS NULL AND motivo_do_desfecho IS NULL)"
-            + " OR (estado <> 'ABERTA' AND desfecho_em IS NOT NULL AND desfecho_por_emissor IS NOT NULL"
+            + $" OR (estado <> {SqlDosCodigosDeContrato.Literal(EstadoDaProvidencia.Aberta)} AND desfecho_em IS NOT NULL AND desfecho_por_emissor IS NOT NULL"
             + " AND desfecho_por_conta_id IS NOT NULL AND motivo_do_desfecho IS NOT NULL)");
     }
 
     private static void ConfigurarSolicitacao(EntityTypeBuilder<Providencia> builder)
     {
-        builder.Property(p => p.Tipo).HasConversion(TipoConverter).HasMaxLength(CodigoMaxLength).IsRequired();
+        builder.Property(p => p.Tipo).HasMaxLength(CodigoMaxLength).IsRequired();
         builder.Property(p => p.Fundamento).HasMaxLength(SolicitacaoDaProvidencia.FundamentoMaxLength).IsRequired();
-        builder.Property(p => p.Estado).HasConversion(EstadoConverter).HasMaxLength(CodigoMaxLength).IsRequired();
+        builder.Property(p => p.Estado).HasMaxLength(CodigoMaxLength).IsRequired();
         builder.Property(p => p.AbertaEm).IsRequired();
         builder.Property(p => p.SolicitadaPorEmissor).HasMaxLength(IdentidadeMaxLength).IsRequired();
         builder.Property(p => p.SolicitadaPorContaId).HasMaxLength(IdentidadeMaxLength).IsRequired();
@@ -97,10 +86,10 @@ public sealed class ProvidenciaConfiguration : IEntityTypeConfiguration<Providen
     private static void ConfigurarIndices(EntityTypeBuilder<Providencia> builder)
     {
         // No máximo uma providência aberta por concessão: a guarda final da abertura concorrente.
-        builder.HasIndex(p => p.ConcessaoId, AbertaUnicaPorConcessao)
+        builder.HasIndex(p => p.ConcessaoId, Providencia.AbertaUnicaPorConcessao)
             .IsUnique()
-            .HasFilter("estado = 'ABERTA'")
-            .HasDatabaseName(AbertaUnicaPorConcessao);
+            .HasFilter($"estado = {SqlDosCodigosDeContrato.Literal(EstadoDaProvidencia.Aberta)}")
+            .HasDatabaseName(Providencia.AbertaUnicaPorConcessao);
 
         // A trilha da concessão e o filtro por concessão.
         builder.HasIndex(p => p.ConcessaoId, "ix_providencias_concessao").HasDatabaseName("ix_providencias_concessao");

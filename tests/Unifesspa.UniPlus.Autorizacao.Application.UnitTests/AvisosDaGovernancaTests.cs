@@ -1,7 +1,5 @@
 namespace Unifesspa.UniPlus.Autorizacao.Application.UnitTests;
 
-using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
-
 using AwesomeAssertions;
 
 using Microsoft.Extensions.Logging.Abstractions;
@@ -11,6 +9,7 @@ using Unifesspa.UniPlus.Autorizacao.Application.Abstractions;
 using Unifesspa.UniPlus.Autorizacao.Application.Avisos;
 using Unifesspa.UniPlus.Autorizacao.Domain.Enums;
 using Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 
 using static Unifesspa.UniPlus.Autorizacao.Application.UnitTests.CenarioDaGovernancaDaVersao;
 
@@ -69,7 +68,7 @@ public sealed class AvisosDaGovernancaTests
     [InlineData(TipoDeAviso.PerfilSuspenso, "PERFIL_SUSPENSO")]
     public void Tipo_TemCodigoEFinalidade(TipoDeAviso tipo, string codigo)
     {
-        tipo.ToCodigo().Should().Be(codigo);
+        tipo.Codigo().Should().Be(codigo);
         tipo.Finalidade().Should().Be($"perfil.{codigo}".ToLowerInvariant());
         RedacaoDoAviso.Assunto(tipo).Should().NotBeNullOrWhiteSpace();
         RedacaoDoAviso.CorpoEmTexto(Modelo(tipo)).Should().Contain("Análise <de> atendimento").And.Contain("Versão: 2");
@@ -82,7 +81,7 @@ public sealed class AvisosDaGovernancaTests
 
         Action[] usos =
         [
-            () => desconhecido.ToCodigo(),
+            () => desconhecido.Codigo(),
             () => RedacaoDoAviso.Assunto(desconhecido),
             () => RedacaoDoAviso.CorpoEmTexto(Modelo(desconhecido)),
             () => RedacaoDoAviso.CorpoEmHtml(Modelo(desconhecido)),

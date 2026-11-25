@@ -16,6 +16,12 @@ public sealed class ChecksDoModeloDoMonolitoTests
 {
     private static readonly RestricaoEsperada[] Esperadas =
     [
+        new("providencias", "ck_providencias_tipo", "tipo IN ('RETIRADA', 'REVISAO')"),
+        new("providencias", "ck_providencias_estado", "estado IN ('ABERTA', 'RESPONDIDA', 'ATENDIDA')"),
+        new("providencias", "ck_providencias_desfecho_completo", "(estado = 'ABERTA' AND desfecho_em IS NULL AND desfecho_por_emissor IS NULL AND desfecho_por_conta_id IS NULL AND desfecho_por_nome IS NULL AND motivo_do_desfecho IS NULL) OR (estado <> 'ABERTA' AND desfecho_em IS NOT NULL AND desfecho_por_emissor IS NOT NULL AND desfecho_por_conta_id IS NOT NULL AND motivo_do_desfecho IS NOT NULL)"),
+        new("divergencias_da_governanca", "ck_divergencias_da_governanca_tipo", "tipo IN ('COMPOSICAO_FALTANTE', 'COMPOSICAO_EXCEDENTE', 'CLASSIFICACAO', 'ESCOPO')"),
+        new("revisoes_das_concessoes", "ck_revisoes_das_concessoes_forma", "forma_do_encerramento IS NULL OR forma_do_encerramento IN ('CONCLUIDA', 'PRAZO', 'MANUAL')"),
+        new("revisoes_das_concessoes", "ck_revisoes_das_concessoes_manual", "COALESCE(forma_do_encerramento = 'MANUAL', false) = (motivo_do_encerramento IS NOT NULL AND encerrada_por_conta_id IS NOT NULL)"),
         new("decisoes_da_versao", "ck_decisoes_da_versao_motivo_na_recusa", "(resultado = 'RECUSADO') = (motivo IS NOT NULL)"),
         new("decisoes_da_versao", "ck_decisoes_da_versao_resultado", "resultado IN ('APROVADO', 'RECUSADO')"),
         new("decisoes_do_pedido", "ck_decisoes_do_pedido_motivo_na_recusa", "resultado <> 'RECUSADO' OR motivo IS NOT NULL"),
@@ -93,9 +99,9 @@ public sealed class ChecksDoModeloDoMonolitoTests
         return dados;
     }
 
-    [Fact(DisplayName = "A lista esperada tem as 64 restrições de enum com código de contrato")]
+    [Fact(DisplayName = "A lista esperada tem as 70 restrições de enum com código de contrato")]
     public void ListaEsperada_TemAsRestricoes() =>
-        Esperadas.Select(esperada => esperada.Nome).Should().OnlyHaveUniqueItems().And.HaveCount(64);
+        Esperadas.Select(esperada => esperada.Nome).Should().OnlyHaveUniqueItems().And.HaveCount(70);
 
     [Theory(DisplayName = "O modelo de design-time guarda a restrição com o nome e o texto literais")]
     [MemberData(nameof(RestricoesEsperadas))]

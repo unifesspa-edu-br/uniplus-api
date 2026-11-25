@@ -1,12 +1,11 @@
 namespace Unifesspa.UniPlus.Autorizacao.Domain.UnitTests;
 
-using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
-
 using AwesomeAssertions;
 
 using Unifesspa.UniPlus.Autorizacao.Domain.Entities;
 using Unifesspa.UniPlus.Autorizacao.Domain.Enums;
 using Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 
 /// <summary>A situação derivada na leitura, o encerramento da concessão e o impedimento de responder (UNI-REQ-0376).</summary>
 public sealed class ProvidenciaSituacaoTests
@@ -118,17 +117,17 @@ public sealed class ProvidenciaSituacaoTests
     {
         ArgumentNullException.ThrowIfNull(codigo);
 
-        (situacao.ToCodigo(), SituacaoDaProvidenciaCodigo.DoCodigo($" {codigo.ToUpperInvariant()} ")).Should().Be((codigo, (SituacaoDaProvidencia?)situacao));
+        (situacao.Codigo(), CatalogoDe<SituacaoDaProvidencia>.Obter(codigo)).Should().Be((codigo, situacao));
     }
 
     [Fact(DisplayName = "Os códigos gravados voltam ao mesmo valor, e o desconhecido é recusado")]
     public void Codigos_GravadosEDesconhecidos()
     {
-        Enum.GetValues<EstadoDaProvidencia>().Should().OnlyContain(e => EstadoDaProvidenciaCodigo.FromCodigo(e.ToCodigo()) == e);
-        Enum.GetValues<TipoDaProvidencia>().Should().OnlyContain(t => TipoDaProvidenciaCodigo.FromCodigo(t.ToCodigo()) == t);
+        Enum.GetValues<EstadoDaProvidencia>().Should().OnlyContain(e => CatalogoDe<EstadoDaProvidencia>.Obter(e.Codigo()) == e);
+        Enum.GetValues<TipoDaProvidencia>().Should().OnlyContain(t => CatalogoDe<TipoDaProvidencia>.Obter(t.Codigo()) == t);
         (CausaDoEncerramento.Revogada.Codigo(), CausaDoEncerramento.Vencida.Codigo()).Should().Be(("REVOGADA", "VENCIDA"));
-        SituacaoDaProvidenciaCodigo.DoCodigo("todas").Should().BeNull();
-        FluentActions.Invoking(() => TipoDaProvidenciaCodigo.FromCodigo("SUSPENSAO")).Should().Throw<ArgumentOutOfRangeException>();
-        FluentActions.Invoking(() => EstadoDaProvidenciaCodigo.FromCodigo("PREJUDICADA")).Should().Throw<ArgumentOutOfRangeException>();
+        CatalogoDe<SituacaoDaProvidencia>.TentarObter("todas", out _).Should().BeFalse();
+        FluentActions.Invoking(() => CatalogoDe<TipoDaProvidencia>.Obter("SUSPENSAO")).Should().Throw<ArgumentException>();
+        FluentActions.Invoking(() => CatalogoDe<EstadoDaProvidencia>.Obter("PREJUDICADA")).Should().Throw<ArgumentException>();
     }
 }

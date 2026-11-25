@@ -6,6 +6,7 @@ using Unifesspa.UniPlus.Autorizacao.Domain.Entities;
 using Unifesspa.UniPlus.Autorizacao.Domain.Enums;
 using Unifesspa.UniPlus.Autorizacao.Domain.Interfaces;
 using Unifesspa.UniPlus.Infrastructure.Core.Pagination;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 
 /// <summary>
 /// A ordem da fila das providências: a de abertura, pelo instante gravado na abertura, com o <c>Id</c> como desempate
@@ -24,7 +25,7 @@ internal static class OrdenacaoDasProvidencias
         new(
             [KeysetSortColumn<Providencia>.For(CampoAbertaEm, p => p.AbertaEm, p => ChaveDoInstante(p.AbertaEm))],
             Ancora,
-            [filtro.Situacao?.ToCodigo() ?? "todas", filtro.ConcessaoId?.ToString() ?? string.Empty]);
+            [filtro.Situacao?.Codigo() ?? "todas", filtro.ConcessaoId?.ToString() ?? string.Empty]);
 
     /// <summary>
     /// Instante em ISO-8601 com deslocamento zero: a ordem lexicográfica desse formato coincide com a cronológica, que é o

@@ -10,8 +10,8 @@ using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 /// <summary>Mapeamento da <see cref="RevisaoDeAcessos"/> para os DTOs e para os eventos da trilha da concessão.</summary>
 public static class RevisaoMapping
 {
-    public const string EmAndamento = SituacaoDaRevisaoCodigo.EmAndamento;
-    public const string Concluida = SituacaoDaRevisaoCodigo.Concluida;
+    public static readonly string EmAndamento = SituacaoDaRevisao.EmAndamento.Codigo();
+    public static readonly string Concluida = SituacaoDaRevisao.Concluida.Codigo();
 
     public static RevisaoResumoDto ToResumo(ResumoDaRevisao resumo)
     {
@@ -58,7 +58,7 @@ public static class RevisaoMapping
     private static string Situacao(int pendentes) => pendentes > 0 ? EmAndamento : Concluida;
 
     private static string Situacao(ItemDaRevisaoComConcessao item) =>
-        item.Item.Resultado?.ToCodigo() ?? (item.ConcessaoAtiva ? "PENDENTE" : "CONCESSAO_ENCERRADA");
+        item.Item.Resultado?.Codigo() ?? (item.ConcessaoAtiva ? "PENDENTE" : "CONCESSAO_ENCERRADA");
 
     // O item decidido mostra a governança gravada na decisão; o pendente, a que o decidiria agora.
     private static TipoDeGovernanca QuemDecide(ItemDaRevisao item, Concessao concessao, IReadOnlySet<Identidade> representantes) =>

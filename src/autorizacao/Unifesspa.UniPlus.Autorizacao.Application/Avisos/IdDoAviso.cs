@@ -5,6 +5,7 @@ using System.Security.Cryptography;
 using System.Text;
 
 using Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 
 /// <summary>
 /// A chave de um aviso: o tipo, o fato, o marco, para o que um fato emite mais de uma vez, e a identidade de quem recebe.
@@ -15,7 +16,7 @@ public sealed record ChaveDoAviso(TipoDeAviso Tipo, Guid FatoId, string Marco, I
 {
     /// <summary>Os textos que identificam o aviso, na ordem que compõe o identificador; método, para não entrar no <c>ToString()</c> do record.</summary>
     internal string[] Componentes() =>
-        [Tipo.ToCodigo(), FatoId.ToString("N"), Marco, Destinatario.Emissor, Destinatario.ContaId];
+        [Tipo.Codigo(), FatoId.ToString("N"), Marco, Destinatario.Emissor, Destinatario.ContaId];
 }
 
 /// <summary>

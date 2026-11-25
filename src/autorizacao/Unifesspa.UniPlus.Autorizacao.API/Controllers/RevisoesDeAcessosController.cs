@@ -15,6 +15,7 @@ using Unifesspa.UniPlus.Infrastructure.Core.Errors;
 using Unifesspa.UniPlus.Infrastructure.Core.Formatting;
 using Unifesspa.UniPlus.Infrastructure.Core.Idempotency;
 using Unifesspa.UniPlus.Infrastructure.Core.Pagination;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Pagination;
 using Unifesspa.UniPlus.Kernel.Results;
 
@@ -169,7 +170,7 @@ public sealed class RevisoesDeAcessosController : ControllerBase
     // Sem situação, todas; a situação é em_andamento ou concluida, e outra recebe 400.
     private static Result<ListarRevisoesQuery> Consulta(PageRequest page, string? situacao)
     {
-        SituacaoDaRevisao? lida = SituacaoDaRevisaoCodigo.DoCodigo(situacao);
+        SituacaoDaRevisao? lida = (CatalogoDe<SituacaoDaRevisao>.TentarObter(situacao?.Trim().ToUpperInvariant(), out SituacaoDaRevisao valorLido) ? valorLido : (SituacaoDaRevisao?)null);
 
         return lida is null && !string.IsNullOrWhiteSpace(situacao)
             ? Result<ListarRevisoesQuery>.Failure(new DomainError(RevisaoErrorCodes.FiltroDeSituacaoInvalido, "Situação inválida. Use em_andamento ou concluida."))

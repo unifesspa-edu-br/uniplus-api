@@ -23,13 +23,13 @@ public sealed class CodigosDaReclassificacaoTests
     [InlineData(TipoDeDivergencia.Classificacao)]
     [InlineData(TipoDeDivergencia.Escopo)]
     public void TipoDeDivergencia_IdaEVolta(TipoDeDivergencia valor) =>
-        TipoDeDivergenciaCodigo.FromCodigo(valor.ToCodigo()).Should().Be(valor);
+        CatalogoDe<TipoDeDivergencia>.Obter(valor.Codigo()).Should().Be(valor);
 
     [Theory(DisplayName = "O código textual de cada origem de aviso volta ao mesmo valor")]
     [InlineData(OrigemDoAviso.Reclassificacao)]
     [InlineData(OrigemDoAviso.Divergencia)]
     public void OrigemDoAviso_IdaEVolta(OrigemDoAviso valor) =>
-        OrigemDoAvisoCodigo.FromCodigo(valor.ToCodigo()).Should().Be(valor);
+        CatalogoDe<OrigemDoAviso>.Obter(valor.Codigo()).Should().Be(valor);
 
     [Theory(DisplayName = "O código textual de cada resultado da liberação volta ao mesmo valor")]
     [InlineData(ResultadoDaLiberacao.Liberada)]
@@ -45,12 +45,12 @@ public sealed class CodigosDaReclassificacaoTests
     public void CodigoDesconhecido_Recusado()
     {
         FluentActions.Invoking(() => CatalogoDe<OrigemDaBase>.Obter("x")).Should().Throw<ArgumentException>();
-        FluentActions.Invoking(() => TipoDeDivergenciaCodigo.FromCodigo("x")).Should().Throw<ArgumentOutOfRangeException>();
-        FluentActions.Invoking(() => OrigemDoAvisoCodigo.FromCodigo("x")).Should().Throw<ArgumentOutOfRangeException>();
+        FluentActions.Invoking(() => CatalogoDe<TipoDeDivergencia>.Obter("x")).Should().Throw<ArgumentException>();
+        FluentActions.Invoking(() => CatalogoDe<OrigemDoAviso>.Obter("x")).Should().Throw<ArgumentException>();
         FluentActions.Invoking(() => CatalogoDe<ResultadoDaLiberacao>.Obter("x")).Should().Throw<ArgumentException>();
         FluentActions.Invoking(() => ((OrigemDaBase)99).Codigo()).Should().Throw<ArgumentOutOfRangeException>();
-        FluentActions.Invoking(() => ((TipoDeDivergencia)99).ToCodigo()).Should().Throw<ArgumentOutOfRangeException>();
-        FluentActions.Invoking(() => ((OrigemDoAviso)99).ToCodigo()).Should().Throw<ArgumentOutOfRangeException>();
+        FluentActions.Invoking(() => ((TipoDeDivergencia)99).Codigo()).Should().Throw<ArgumentOutOfRangeException>();
+        FluentActions.Invoking(() => ((OrigemDoAviso)99).Codigo()).Should().Throw<ArgumentOutOfRangeException>();
         FluentActions.Invoking(() => ((ResultadoDaLiberacao)99).Codigo()).Should().Throw<ArgumentOutOfRangeException>();
         CatalogoDe<ResultadoDaLiberacao>.TentarObter("x", out _).Should().BeFalse();
     }

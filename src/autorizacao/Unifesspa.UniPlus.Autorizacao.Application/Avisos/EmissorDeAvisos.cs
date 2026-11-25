@@ -5,6 +5,7 @@ using Microsoft.Extensions.Logging;
 using Unifesspa.UniPlus.Application.Abstractions.Email;
 using Unifesspa.UniPlus.Autorizacao.Application.Abstractions;
 using Unifesspa.UniPlus.Autorizacao.Application.Monitoramento;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Domain.ValueObjects;
 
 /// <summary>
@@ -34,7 +35,7 @@ public sealed partial class EmissorDeAvisos
     {
         ArgumentNullException.ThrowIfNull(pedido);
 
-        string tipo = pedido.Modelo.Tipo.ToCodigo();
+        string tipo = pedido.Modelo.Tipo.Codigo();
         Dictionary<Guid, Email> porId = Destinatarios(pedido);
         if (porId.Count == 0)
         {

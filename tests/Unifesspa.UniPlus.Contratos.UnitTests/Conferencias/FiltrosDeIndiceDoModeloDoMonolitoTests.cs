@@ -9,6 +9,7 @@ public sealed class FiltrosDeIndiceDoModeloDoMonolitoTests
 {
     public static TheoryData<string, string, string> FiltrosEsperados() => new()
     {
+        { "providencias", "ux_providencias_concessao_aberta", "estado = 'ABERTA'" },
         { "arquivos_da_apresentacao", "ix_arquivos_da_apresentacao_em_verificacao", "situacao = 'EM_VERIFICACAO'" },
         { "documentos_da_versao", "ux_documentos_da_versao_ativos", "situacao <> 'RECUSADO'" },
         { "instalacoes", "ux_instalacoes_executor_pendente", "situacao IN ('AGUARDANDO_DOCUMENTO', 'DOCUMENTO_EM_VERIFICACAO', 'DOCUMENTO_VERIFICADO', 'AGUARDANDO_CODIGO')" },

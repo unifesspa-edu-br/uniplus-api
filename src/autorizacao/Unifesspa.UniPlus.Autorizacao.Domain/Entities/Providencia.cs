@@ -24,6 +24,9 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// </remarks>
 public sealed class Providencia : EntityBase
 {
+    /// <summary>Nome do índice único de providência aberta por concessão.</summary>
+    public const string AbertaUnicaPorConcessao = "ux_providencias_concessao_aberta";
+
     public Guid ConcessaoId { get; private set; }
 
     public TipoDaProvidencia Tipo { get; private set; }
