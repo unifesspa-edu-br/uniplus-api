@@ -40,8 +40,23 @@ public sealed record AnexoDoEdital(
     /// <summary>Tamanho máximo do nome do anexo, com a extensão.</summary>
     public const int NomeArquivoMaxLength = NomeDeArquivoEnviado.TamanhoMaximo;
 
+    private static DomainError FinalidadeIncompativel { get; } = new(
+        AnexoDoEditalErrorCodes.FinalidadeIncompativel,
+        "Somente um documento enviado como anexo do edital pode ser anexado ao edital.");
+
+    private static DomainError DocumentoNaoConfirmado { get; } = new(
+        AnexoDoEditalErrorCodes.NaoConfirmado,
+        "Somente um documento confirmado pode ser anexado ao edital.");
+
+    private static DomainError NomeInvalido { get; } = new(
+        AnexoDoEditalErrorCodes.NomeInvalido,
+        $"O nome do anexo é obrigatório, tem até {NomeArquivoMaxLength} caracteres com a extensão e não tem separador de caminho, caractere de controle nem {NomeDeArquivoEnviado.CaracteresProibidos}.");
+
     /// <summary>O tipo de mídia do arquivo no formato.</summary>
     public string TipoDeMidia => FormatosDeDocumento.TipoDeMidia(Formato);
+
+    public DocumentoDivulgado DivulgadoEm(string urlDownload) => new(
+        PapelDoDocumentoDivulgado.Anexo, NomeArquivo, TipoDeMidia, TamanhoBytes, HashSha256, urlDownload);
 
     /// <summary>
     /// A cópia do documento sob o nome pedido; recusa o que ainda não foi confirmado e o nome que o
@@ -51,27 +66,13 @@ public sealed record AnexoDoEdital(
     {
         ArgumentNullException.ThrowIfNull(documento);
 
-        if (documento.Finalidade != FinalidadeDoDocumento.AnexoDoEdital)
-        {
-            return Result<AnexoDoEdital>.Failure(new DomainError(
-                AnexoDoEditalErrorCodes.FinalidadeIncompativel,
-                "Somente um documento enviado como anexo do edital pode ser anexado ao edital."));
-        }
-
-        if (documento.Situacao != StatusArquivoEnviado.Confirmado
-            || documento.HashSha256 is not { } hash
-            || documento.TamanhoBytes is not { } tamanho)
-        {
-            return Result<AnexoDoEdital>.Failure(new DomainError(
-                AnexoDoEditalErrorCodes.NaoConfirmado,
-                "Somente um documento confirmado pode ser anexado ao edital."));
-        }
-
         string? nomeArquivo = NomeDeArquivoEnviado.Normalizar(nome, documento.Extensao);
-        return nomeArquivo is null
-            ? Result<AnexoDoEdital>.Failure(new DomainError(
-                AnexoDoEditalErrorCodes.NomeInvalido,
-                $"O nome do anexo é obrigatório, tem até {NomeArquivoMaxLength} caracteres com a extensão e não tem separador de caminho, caractere de controle nem {NomeDeArquivoEnviado.CaracteresProibidos}."))
-            : Result<AnexoDoEdital>.Success(new AnexoDoEdital(id, documento.Id, nomeArquivo, documento.Formato, tamanho, hash));
+        return documento switch
+        {
+            { Finalidade: not FinalidadeDoDocumento.AnexoDoEdital } => Result<AnexoDoEdital>.Failure(FinalidadeIncompativel),
+            not { Situacao: StatusArquivoEnviado.Confirmado, HashSha256: not null, TamanhoBytes: not null } => Result<AnexoDoEdital>.Failure(DocumentoNaoConfirmado),
+            { HashSha256: { } hash, TamanhoBytes: { } tamanho } when nomeArquivo is not null => Result<AnexoDoEdital>.Success(new AnexoDoEdital(id, documento.Id, nomeArquivo, documento.Formato, tamanho, hash)),
+            _ => Result<AnexoDoEdital>.Failure(NomeInvalido),
+        };
     }
 }

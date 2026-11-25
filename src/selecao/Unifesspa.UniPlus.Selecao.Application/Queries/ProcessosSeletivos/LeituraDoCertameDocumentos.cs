@@ -200,7 +200,13 @@ internal static class LeituraDoCertameDocumentos
     /// Os modelos de documento que o edital congelou, um por modelo, na ordem das exigências — o
     /// que a divulgação publica no acervo. Vazio quando nenhuma exigência oferece modelo.
     /// </summary>
-    internal static bool TentarModelosCongelados(JsonObject envelope, [NotNullWhen(true)] out List<ModeloDaExigencia>? modelos)
+    internal static List<ModeloDaExigencia> ModelosCongelados(JsonObject envelope, Guid processoSeletivoId) =>
+        TentarModelosCongelados(envelope, out List<ModeloDaExigencia>? modelos)
+            ? modelos
+            : throw new InvalidOperationException(
+                $"Configuração congelada do processo {processoSeletivoId} não tem a forma esperada nos modelos de documento.");
+
+    private static bool TentarModelosCongelados(JsonObject envelope, [NotNullWhen(true)] out List<ModeloDaExigencia>? modelos)
     {
         modelos = null;
         if (!TentarArrayDeExigencias(envelope, out JsonArray? array)
