@@ -6,6 +6,8 @@ using Unifesspa.UniPlus.Configuracao.Application.Mappings;
 using Unifesspa.UniPlus.Configuracao.Contracts;
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Domain.Interfaces;
+using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
+using Unifesspa.UniPlus.Kernel.Domain.ValueObjects;
 using Unifesspa.UniPlus.Kernel.Pagination;
 using Unifesspa.UniPlus.Kernel.Results;
 
@@ -26,36 +28,31 @@ public static class ListarOfertasCursoQueryHandler
         ArgumentNullException.ThrowIfNull(query);
         ArgumentNullException.ThrowIfNull(repository);
 
-        Result<string?> busca = BuscaPedida.Validar(query.Busca);
-        if (!busca.IsSuccess)
-        {
-            return Result<ListarOfertasCursoResult>.Failure(busca.Error!);
-        }
-
+        Result<TermoDeBusca?> busca = TermoDeBusca.Criar(query.Busca);
         Result<IReadOnlyList<SortField>> ordenacao = OrdenacaoPedida.Resolver(
             query.Ordenacao, CamposOrdenacaoOfertaCurso.Todos, Padrao);
-
-        if (!ordenacao.IsSuccess)
+        if (!busca.IsSuccess || !ordenacao.IsSuccess)
         {
-            return Result<ListarOfertasCursoResult>.Failure(ordenacao.Error!);
+            return Result<ListarOfertasCursoResult>.Failure((busca.IsSuccess ? ordenacao.Error : busca.Error)!);
         }
 
-        (IReadOnlyList<OfertaCurso> itens, (string SortKey, Guid Id)? anterior, (string SortKey, Guid Id)? proximo, int? total) =
-            await repository
-                .ListarPaginadoAsync(
-                    ordenacao.Value!,
-                    query.Busca,
-                    query.AfterSortKey,
-                    query.AfterId,
-                    query.Limit,
-                    query.Direction,
-                    query.CursoId,
-                    query.IncludeTotal,
-                    cancellationToken)
-                .ConfigureAwait(false);
+        var filtro = new FiltroDasOfertasDeCurso(busca.Value, query.CursoId);
+        return await ListarPaginaAsync(query, repository, ordenacao.Value!, filtro, cancellationToken).ConfigureAwait(false);
+    }
 
+    private static async Task<Result<ListarOfertasCursoResult>> ListarPaginaAsync(
+        ListarOfertasCursoQuery query,
+        IOfertaCursoRepository repository,
+        IReadOnlyList<SortField> ordenacao,
+        FiltroDasOfertasDeCurso filtro,
+        CancellationToken cancellationToken)
+    {
+        int? total = query.IncludeTotal ? await repository.ContarAsync(filtro, cancellationToken).ConfigureAwait(false) : null;
+        (IReadOnlyList<OfertaCurso> itens, (string SortKey, Guid Id)? anterior, (string SortKey, Guid Id)? proximo) =
+            await repository.ListarPaginadoAsync(
+                ordenacao, filtro, query.AfterSortKey, query.AfterId, query.Limit, query.Direction, cancellationToken)
+                .ConfigureAwait(false);
         OfertaCursoDto[] items = [.. itens.Select(o => o.ToDto())];
-        return Result<ListarOfertasCursoResult>.Success(
-            new ListarOfertasCursoResult(items, anterior, proximo, total));
+        return Result<ListarOfertasCursoResult>.Success(new ListarOfertasCursoResult(items, anterior, proximo, total));
     }
 }

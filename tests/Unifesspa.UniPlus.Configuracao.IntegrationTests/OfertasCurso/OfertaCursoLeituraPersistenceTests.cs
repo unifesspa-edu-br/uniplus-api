@@ -24,7 +24,7 @@ using Unifesspa.UniPlus.Testes.Compartilhado;
 
 using static Unifesspa.UniPlus.Configuracao.IntegrationTests.OfertasCurso.ApoioDaPersistenciaDeOfertaCurso;
 
-using PaginaDeOfertas = (System.Collections.Generic.IReadOnlyList<Unifesspa.UniPlus.Configuracao.Domain.Entities.OfertaCurso> Itens, (string SortKey, Guid Id)? Anterior, (string SortKey, Guid Id)? Proximo, int? Total);
+using PaginaDeOfertas = (System.Collections.Generic.IReadOnlyList<Unifesspa.UniPlus.Configuracao.Domain.Entities.OfertaCurso> Itens, (string SortKey, Guid Id)? Anterior, (string SortKey, Guid Id)? Proximo);
 
 [Collection(ConfiguracaoDbCollection.Name)]
 public sealed class OfertaCursoLeituraPersistenceTests
@@ -84,6 +84,19 @@ public sealed class OfertaCursoLeituraPersistenceTests
         (await PaginaAsync(repository, Guid.CreateVersion7(), limit: 50)).Itens.Should().BeEmpty("curso sem ofertas → página vazia");
     }
 
+    [Fact]
+    public async Task ContarAsync_FiltroPorCurso_ContaMesmoFiltroDaPagina()
+    {
+        (Guid cursoId, List<Guid> ofertas) = await SemearOfertasIntercaladasDeDoisCursosAsync();
+        await using UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null);
+        var repository = new OfertaCursoRepository(ctx);
+        var filtro = new FiltroDasOfertasDeCurso(null, cursoId);
+        int total = await repository.ContarAsync(filtro, CancellationToken.None);
+        PaginaDeOfertas pagina = await PaginaAsync(repository, cursoId, limit: 50);
+        total.Should().Be(ofertas.Count);
+        pagina.Itens.Should().HaveCount(total);
+    }
+
     [Fact(DisplayName = "O reader acompanha a oferta do grupo de área do ENEM do curso, ou de nulo quando o curso não o declara")]
     public async Task Reader_ExpoeGrupoAreaEnemDoCurso()
     {
@@ -135,7 +148,7 @@ public sealed class OfertaCursoLeituraPersistenceTests
         (string SortKey, Guid Id)? apos = null,
         PaginationDirection direcao = PaginationDirection.Next) =>
         repository.ListarPaginadoAsync(
-            OrdenacaoPadraoDeOferta, busca: null, apos?.SortKey, apos?.Id, limit, direcao, cursoId, includeTotal: false, CancellationToken.None);
+            OrdenacaoPadraoDeOferta, new FiltroDasOfertasDeCurso(null, cursoId), apos?.SortKey, apos?.Id, limit, direcao, CancellationToken.None);
 
     // Dentro das ofertas de um curso, nome e código são constantes e o Id é a única coluna que move o seek —
     // por isso a ordem esperada é a de Id.
