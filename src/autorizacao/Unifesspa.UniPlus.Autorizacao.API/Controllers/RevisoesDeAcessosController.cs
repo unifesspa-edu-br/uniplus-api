@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 using Unifesspa.UniPlus.Application.Abstractions.Messaging;
+using Unifesspa.UniPlus.Autorizacao.API.Filtros;
 using Unifesspa.UniPlus.Autorizacao.Application.Commands.Revisoes;
 using Unifesspa.UniPlus.Autorizacao.Application.DTOs;
 using Unifesspa.UniPlus.Autorizacao.Application.Queries.Revisoes;
@@ -72,7 +73,7 @@ public sealed class RevisoesDeAcessosController : ControllerBase
 
     /// <summary>
     /// Lista as revisões, paginadas por cursor opaco bidirecional (ADR-0026 + ADR-0089), com o filtro opcional
-    /// <c>situacao</c> (<c>em_andamento</c> ou <c>concluida</c>), aplicado antes da paginação. Lê quem conduz, quem revê ou quem
+    /// <c>situacao</c> (<c>EM_ANDAMENTO</c> ou <c>CONCLUIDA</c>), aplicado antes da paginação. Lê quem conduz, quem revê ou quem
     /// consulta as revisões; cada revisão exibida é registrada antes da resposta (sem o registro, 503).
     /// </summary>
     [HttpGet("revisoes")]
@@ -86,7 +87,7 @@ public sealed class RevisoesDeAcessosController : ControllerBase
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status503ServiceUnavailable)]
     public async Task<IActionResult> Listar(
         [FromCursor(ResourceTag)] PageRequest page,
-        [FromQuery] string? situacao = null,
+        [FromQuery, AceitaCodigosDe<SituacaoDaRevisao>] string? situacao = null,
         CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(page);
@@ -167,13 +168,12 @@ public sealed class RevisoesDeAcessosController : ControllerBase
         return resultado.IsSuccess ? NoContent() : resultado.ToActionResult(_mapper);
     }
 
-    // Sem situação, todas; a situação é em_andamento ou concluida, e outra recebe 400.
     private static Result<ListarRevisoesQuery> Consulta(PageRequest page, string? situacao)
     {
-        SituacaoDaRevisao? lida = (CatalogoDe<SituacaoDaRevisao>.TentarObter(situacao?.Trim().ToUpperInvariant(), out SituacaoDaRevisao valorLido) ? valorLido : (SituacaoDaRevisao?)null);
-
-        return lida is null && !string.IsNullOrWhiteSpace(situacao)
-            ? Result<ListarRevisoesQuery>.Failure(new DomainError(RevisaoErrorCodes.FiltroDeSituacaoInvalido, "Situação inválida. Use em_andamento ou concluida."))
-            : Result<ListarRevisoesQuery>.Success(new ListarRevisoesQuery(page.AfterId, page.Limit, page.Direction, lida));
+        Result<SituacaoDaRevisao?> filtro = FiltroDeSituacao.Ler<SituacaoDaRevisao>(situacao,
+            new DomainError(RevisaoErrorCodes.FiltroDeSituacaoInvalido, "Situação inválida. Use um dos códigos publicados para a situação da revisão."));
+        return filtro.IsFailure
+            ? Result<ListarRevisoesQuery>.ValidationFailure(filtro.Errors)
+            : Result<ListarRevisoesQuery>.Success(new ListarRevisoesQuery(page.AfterId, page.Limit, page.Direction, filtro.Value));
     }
 }

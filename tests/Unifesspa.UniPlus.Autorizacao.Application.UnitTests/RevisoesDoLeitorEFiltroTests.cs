@@ -52,13 +52,15 @@ public sealed class RevisoesDoLeitorEFiltroTests
         await revisoes.Received(1).ListarPaginadoAsync(Arg.Is<FiltroDeRevisoes>(f => f.Situacao == situacao), null, 10, PaginationDirection.Next, Arg.Any<CancellationToken>());
     }
 
-    [Theory(DisplayName = "O código da situação da revisão é lido sem distinguir caixa, e o desconhecido não vira situação")]
+    [Theory(DisplayName = "O código exato da situação da revisão é lido, e os demais não viram situação")]
     [InlineData("EM_ANDAMENTO", SituacaoDaRevisao.EmAndamento)]
-    [InlineData(" CONCLUIDA ", SituacaoDaRevisao.Concluida)]
+    [InlineData("CONCLUIDA", SituacaoDaRevisao.Concluida)]
+    [InlineData(" CONCLUIDA ", null)]
+    [InlineData("concluida", null)]
     [InlineData("PENDENTE", null)]
     [InlineData(null, null)]
     public void DoCodigo_LeOsCodigosPublicados(string? codigo, SituacaoDaRevisao? esperada) =>
-        (CatalogoDe<SituacaoDaRevisao>.TentarObter(codigo?.Trim().ToUpperInvariant(), out SituacaoDaRevisao lida) ? lida : (SituacaoDaRevisao?)null).Should().Be(esperada);
+        (CatalogoDe<SituacaoDaRevisao>.TentarObter(codigo, out SituacaoDaRevisao lida) ? lida : (SituacaoDaRevisao?)null).Should().Be(esperada);
 
     private static RevisaoDetalhada ComUmItemDe(Identidade beneficiario)
     {
