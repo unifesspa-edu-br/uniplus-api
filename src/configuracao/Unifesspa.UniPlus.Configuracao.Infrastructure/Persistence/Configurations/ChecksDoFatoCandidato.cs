@@ -7,7 +7,6 @@ using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Domain.Enums;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence.CodigosDeContrato;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Protecao;
-using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Regras.Enums;
 
@@ -34,8 +33,8 @@ internal static class ChecksDoFatoCandidato
         AdicionarCheckDeCodigos(table, "origem", SqlDosCodigosDeContrato.Lista<OrigemFato>());
         AdicionarCheckDeCodigos(table, "quantidade_de_valores", SqlDosCodigosDeContrato.Lista<QuantidadeDeValores>());
         AdicionarCheckDeCodigos(table, "escopo", SqlDosCodigosDeContrato.Lista<EscopoFato>());
-        AdicionarCheckDeCodigos(table, "classificacao_protecao", CodigosSql(ClassificacoesDeProtecao.TokensCanonicos));
-        AdicionarCheckDeCodigos(table, "hipotese_legal", CodigosSql(CatalogoDe<HipoteseLegalTratamento>.Valores().Select(static valor => valor.Codigo()).ToArray()));
+        AdicionarCheckDeCodigos(table, "classificacao_protecao", SqlDosCodigosDeContrato.Lista<ClassificacaoDeProtecao>());
+        AdicionarCheckDeCodigos(table, "hipotese_legal", SqlDosCodigosDeContrato.Lista<HipoteseLegalTratamento>());
         table.HasCheckConstraint(
             "ck_dados_do_candidato_componente_exibicao",
             $"componente_exibicao IS NULL OR componente_exibicao IN ({SqlDosCodigosDeContrato.Lista<ComponenteDeExibicao>()})");
@@ -72,17 +71,13 @@ internal static class ChecksDoFatoCandidato
     {
         table.HasCheckConstraint(
             "ck_dados_do_candidato_classificacao_minima_do_tipo",
-            $"(tipo NOT IN ({Texto}, {Data}, {Endereco}) AND classificacao_protecao <> 'IDENTIFICADOR') "
-            + $"OR (tipo = {Texto} AND classificacao_protecao IN ('PESSOAL', 'IDENTIFICADOR', 'SENSIVEL')) "
-            + $"OR (tipo IN ({Data}, {Endereco}) AND classificacao_protecao IN ('PESSOAL', 'SENSIVEL'))");
+            $"(tipo NOT IN ({Texto}, {Data}, {Endereco}) AND classificacao_protecao <> {SqlDosCodigosDeContrato.Literal(ClassificacaoDeProtecao.Identificador)}) "
+            + $"OR (tipo = {Texto} AND classificacao_protecao IN ({SqlDosCodigosDeContrato.Literal(ClassificacaoDeProtecao.Pessoal)}, {SqlDosCodigosDeContrato.Literal(ClassificacaoDeProtecao.Identificador)}, {SqlDosCodigosDeContrato.Literal(ClassificacaoDeProtecao.Sensivel)})) "
+            + $"OR (tipo IN ({Data}, {Endereco}) AND classificacao_protecao IN ({SqlDosCodigosDeContrato.Literal(ClassificacaoDeProtecao.Pessoal)}, {SqlDosCodigosDeContrato.Literal(ClassificacaoDeProtecao.Sensivel)}))");
     }
 
     private static void AdicionarCheckDeCodigos(TableBuilder<FatoCandidato> table, string coluna, string codigosSql) =>
         table.HasCheckConstraint(
             $"ck_dados_do_candidato_{coluna}",
             $"{coluna} IN ({codigosSql})");
-
-    private static string CodigosSql(IReadOnlyList<string> codigos) =>
-        string.Join(", ", codigos.Select(codigo => $"'{codigo}'"));
-
 }
