@@ -43,23 +43,8 @@ public sealed class FatoCandidatoGravacaoTests
         FatoCandidato fato = NovoFatoDoAdministrador();
         try
         {
-            await using (UniPlusDbContext ctx = _fixture.CreateDbContext(userId: "admin-1"))
-            {
-                ctx.FatosCandidato.Add(fato);
-                await ctx.SaveChangesAsync();
-            }
-
-            await using UniPlusDbContext primeiro = _fixture.CreateDbContext(userId: "admin-1");
-            await using UniPlusDbContext segundo = _fixture.CreateDbContext(userId: "admin-2");
-            FatoCandidato noPrimeiro = await primeiro.FatosCandidato.SingleAsync(f => f.Id == fato.Id);
-            FatoCandidato noSegundo = await segundo.FatosCandidato.SingleAsync(f => f.Id == fato.Id);
-
-            noPrimeiro.AlterarDescritivo("Nome da primeira edição", "Descrição do fato.", null).IsSuccess.Should().BeTrue();
-            await primeiro.SaveChangesAsync();
-            noSegundo.AlterarDescritivo("Nome da segunda edição", "Descrição do fato.", null).IsSuccess.Should().BeTrue();
-
-            Func<Task> act = () => segundo.SaveChangesAsync();
-            await act.Should().ThrowAsync<DbUpdateConcurrencyException>();
+            await GravarFatoAsync(fato);
+            await EdicaoConcorrenteNoBancoAsync(fato.Id);
         }
         finally
         {
@@ -70,36 +55,11 @@ public sealed class FatoCandidatoGravacaoTests
     [Fact(DisplayName = "Correção e reordenação concorrentes dos valores do mesmo fato: a segunda é recusada pela concorrência otimista")]
     public async Task CorrecaoEReordenacaoConcorrentesDosValores_SegundaRecusada()
     {
-        string codigo = CodigoUnico();
-        FatoCandidato fato = CriacaoDoFato.Criar(
-            new DescritivoDoFato(codigo, "Fato com valores", "Descrição do fato."),
-            OrigemFato.Declarado,
-            $"CAMPO_FORMULARIO:{codigo}",
-            new DefinicaoDoFato(TipoDoDado.Opcao, QuantidadeDeValores.ValorUnico, FonteValoresFato.Catalogo, null, "INSCRICAO", EscopoFato.Candidato, ClassificacaoDeProtecao.Pessoal, "Teste", HipoteseLegalTratamento.CumprimentoObrigacaoLegal),
-            sistema: false).Value!;
-        fato.AdicionarValorDominio("A", "A", 0, ativo: true).IsSuccess.Should().BeTrue();
-        fato.AdicionarValorDominio("B", "B", 1, ativo: true).IsSuccess.Should().BeTrue();
+        FatoCandidato fato = NovoFatoCategoricoComDoisValores();
         try
         {
-            await using (UniPlusDbContext ctx = _fixture.CreateDbContext(userId: "admin-1"))
-            {
-                ctx.FatosCandidato.Add(fato);
-                await ctx.SaveChangesAsync();
-            }
-
-            await using UniPlusDbContext primeiro = _fixture.CreateDbContext(userId: "admin-1");
-            await using UniPlusDbContext segundo = _fixture.CreateDbContext(userId: "admin-2");
-            FatoCandidatoRepository repositorioDoPrimeiro = new(primeiro);
-            FatoCandidatoRepository repositorioDoSegundo = new(segundo);
-            FatoCandidato noPrimeiro = (await repositorioDoPrimeiro.ObterPorIdAsync(fato.Id, CancellationToken.None))!;
-            FatoCandidato noSegundo = (await repositorioDoSegundo.ObterPorIdAsync(fato.Id, CancellationToken.None))!;
-
-            noPrimeiro.CorrigirValor("A", "A corrigido", null).IsSuccess.Should().BeTrue();
-            await primeiro.SaveChangesAsync();
-            noSegundo.ReordenarValores(["B", "A"]).IsSuccess.Should().BeTrue();
-
-            Func<Task> act = () => segundo.SaveChangesAsync();
-            await act.Should().ThrowAsync<DbUpdateConcurrencyException>();
+            await GravarFatoAsync(fato);
+            await CorrecaoEReordenacaoConcorrentesDosValoresNoBancoAsync(fato.Id);
         }
         finally
         {
@@ -113,23 +73,8 @@ public sealed class FatoCandidatoGravacaoTests
         FatoCandidato fato = NovoFatoCategoricoComDoisValores();
         try
         {
-            await using (UniPlusDbContext ctx = _fixture.CreateDbContext(userId: "admin-1"))
-            {
-                ctx.FatosCandidato.Add(fato);
-                await ctx.SaveChangesAsync();
-            }
-
-            await using UniPlusDbContext primeiro = _fixture.CreateDbContext(userId: "admin-1");
-            await using UniPlusDbContext segundo = _fixture.CreateDbContext(userId: "admin-2");
-            FatoCandidato noPrimeiro = (await new FatoCandidatoRepository(primeiro).ObterPorIdAsync(fato.Id, CancellationToken.None))!;
-            FatoCandidato noSegundo = (await new FatoCandidatoRepository(segundo).ObterPorIdAsync(fato.Id, CancellationToken.None))!;
-
-            noPrimeiro.AdicionarValorDominio("C", "C", 2, ativo: true).IsSuccess.Should().BeTrue();
-            await primeiro.SaveChangesAsync();
-            noSegundo.ReordenarValores(["B", "A"]).IsSuccess.Should().BeTrue();
-
-            Func<Task> act = () => segundo.SaveChangesAsync();
-            await act.Should().ThrowAsync<DbUpdateConcurrencyException>();
+            await GravarFatoAsync(fato);
+            await AcrescimoEReordenacaoConcorrentesNoBancoAsync(fato.Id);
         }
         finally
         {
@@ -143,26 +88,8 @@ public sealed class FatoCandidatoGravacaoTests
         FatoCandidato fato = NovoFatoCategoricoComDoisValores();
         try
         {
-            await using (UniPlusDbContext ctx = _fixture.CreateDbContext(userId: "admin-1"))
-            {
-                ctx.FatosCandidato.Add(fato);
-                await ctx.SaveChangesAsync();
-            }
-
-            await using UniPlusDbContext ctx2 = _fixture.CreateDbContext(userId: "admin-2");
-            FatoCandidato rastreado = (await new FatoCandidatoRepository(ctx2).ObterPorIdAsync(fato.Id, CancellationToken.None))!;
-            DateTimeOffset? carimboAntes = rastreado.UpdatedAt;
-            string? autorAntes = rastreado.UpdatedBy;
-
-            rastreado.CorrigirValor("A", "A", null).IsSuccess.Should().BeTrue();
-            rastreado.ReordenarValores(["A", "B"]).IsSuccess.Should().BeTrue();
-            ctx2.ChangeTracker.HasChanges().Should().BeFalse();
-            await ctx2.SaveChangesAsync();
-
-            await using UniPlusDbContext leitura = _fixture.CreateDbContext(userId: null);
-            FatoCandidato persistido = await leitura.FatosCandidato.AsNoTracking().SingleAsync(f => f.Id == fato.Id);
-            persistido.UpdatedAt.Should().Be(carimboAntes);
-            persistido.UpdatedBy.Should().Be(autorAntes);
+            await GravarFatoAsync(fato);
+            await CorrecaoEReordenacaoSemMudancaNoBancoAsync(fato.Id);
         }
         finally
         {
@@ -176,28 +103,100 @@ public sealed class FatoCandidatoGravacaoTests
         FatoCandidato fato = NovoFatoDoAdministrador();
         try
         {
-            await using (UniPlusDbContext ctx = _fixture.CreateDbContext(userId: "admin-1"))
-            {
-                ctx.FatosCandidato.Add(fato);
-                await ctx.SaveChangesAsync();
-            }
-
-            await using (UniPlusDbContext ctx = _fixture.CreateDbContext(userId: "admin-2"))
-            {
-                FatoCandidato rastreado = await ctx.FatosCandidato.SingleAsync(f => f.Id == fato.Id);
-                rastreado.Desativar().IsSuccess.Should().BeTrue();
-                await ctx.SaveChangesAsync();
-            }
-
-            await using UniPlusDbContext leitura = _fixture.CreateDbContext(userId: null);
-            FatoCandidato persistido = await leitura.FatosCandidato.AsNoTracking().SingleAsync(f => f.Id == fato.Id);
-            persistido.CreatedBy.Should().Be("admin-1");
-            persistido.UpdatedBy.Should().Be("admin-2");
+            await GravarFatoAsync(fato);
+            await CadastroEEdicaoNoBancoAsync(fato.Id);
         }
         finally
         {
             await RemoverAsync(fato.Id);
         }
+    }
+
+    private async Task GravarFatoAsync(FatoCandidato fato)
+    {
+        await using UniPlusDbContext ctx = _fixture.CreateDbContext(userId: "admin-1");
+        ctx.FatosCandidato.Add(fato);
+        await ctx.SaveChangesAsync();
+    }
+
+    private async Task EdicaoConcorrenteNoBancoAsync(Guid id)
+    {
+        await using UniPlusDbContext primeiro = _fixture.CreateDbContext(userId: "admin-1");
+        await using UniPlusDbContext segundo = _fixture.CreateDbContext(userId: "admin-2");
+        FatoCandidato noPrimeiro = await primeiro.FatosCandidato.SingleAsync(f => f.Id == id);
+        FatoCandidato noSegundo = await segundo.FatosCandidato.SingleAsync(f => f.Id == id);
+
+        noPrimeiro.AlterarDescritivo("Nome da primeira edição", "Descrição do fato.", null).IsSuccess.Should().BeTrue();
+        await primeiro.SaveChangesAsync();
+        noSegundo.AlterarDescritivo("Nome da segunda edição", "Descrição do fato.", null).IsSuccess.Should().BeTrue();
+
+        Func<Task> act = () => segundo.SaveChangesAsync();
+        await act.Should().ThrowAsync<DbUpdateConcurrencyException>();
+    }
+
+    private async Task CorrecaoEReordenacaoConcorrentesDosValoresNoBancoAsync(Guid id)
+    {
+        await using UniPlusDbContext primeiro = _fixture.CreateDbContext(userId: "admin-1");
+        await using UniPlusDbContext segundo = _fixture.CreateDbContext(userId: "admin-2");
+        FatoCandidatoRepository repositorioDoPrimeiro = new(primeiro);
+        FatoCandidatoRepository repositorioDoSegundo = new(segundo);
+        FatoCandidato noPrimeiro = (await repositorioDoPrimeiro.ObterPorIdAsync(id, CancellationToken.None))!;
+        FatoCandidato noSegundo = (await repositorioDoSegundo.ObterPorIdAsync(id, CancellationToken.None))!;
+
+        noPrimeiro.CorrigirValor("A", "A corrigido", null).IsSuccess.Should().BeTrue();
+        await primeiro.SaveChangesAsync();
+        noSegundo.ReordenarValores(["B", "A"]).IsSuccess.Should().BeTrue();
+
+        Func<Task> act = () => segundo.SaveChangesAsync();
+        await act.Should().ThrowAsync<DbUpdateConcurrencyException>();
+    }
+
+    private async Task AcrescimoEReordenacaoConcorrentesNoBancoAsync(Guid id)
+    {
+        await using UniPlusDbContext primeiro = _fixture.CreateDbContext(userId: "admin-1");
+        await using UniPlusDbContext segundo = _fixture.CreateDbContext(userId: "admin-2");
+        FatoCandidato noPrimeiro = (await new FatoCandidatoRepository(primeiro).ObterPorIdAsync(id, CancellationToken.None))!;
+        FatoCandidato noSegundo = (await new FatoCandidatoRepository(segundo).ObterPorIdAsync(id, CancellationToken.None))!;
+
+        noPrimeiro.AdicionarValorDominio("C", "C", 2, ativo: true).IsSuccess.Should().BeTrue();
+        await primeiro.SaveChangesAsync();
+        noSegundo.ReordenarValores(["B", "A"]).IsSuccess.Should().BeTrue();
+
+        Func<Task> act = () => segundo.SaveChangesAsync();
+        await act.Should().ThrowAsync<DbUpdateConcurrencyException>();
+    }
+
+    private async Task CorrecaoEReordenacaoSemMudancaNoBancoAsync(Guid id)
+    {
+        await using UniPlusDbContext ctx2 = _fixture.CreateDbContext(userId: "admin-2");
+        FatoCandidato rastreado = (await new FatoCandidatoRepository(ctx2).ObterPorIdAsync(id, CancellationToken.None))!;
+        DateTimeOffset? carimboAntes = rastreado.UpdatedAt;
+        string? autorAntes = rastreado.UpdatedBy;
+
+        rastreado.CorrigirValor("A", "A", null).IsSuccess.Should().BeTrue();
+        rastreado.ReordenarValores(["A", "B"]).IsSuccess.Should().BeTrue();
+        ctx2.ChangeTracker.HasChanges().Should().BeFalse();
+        await ctx2.SaveChangesAsync();
+
+        await using UniPlusDbContext leitura = _fixture.CreateDbContext(userId: null);
+        FatoCandidato persistido = await leitura.FatosCandidato.AsNoTracking().SingleAsync(f => f.Id == id);
+        persistido.UpdatedAt.Should().Be(carimboAntes);
+        persistido.UpdatedBy.Should().Be(autorAntes);
+    }
+
+    private async Task CadastroEEdicaoNoBancoAsync(Guid id)
+    {
+        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(userId: "admin-2"))
+        {
+            FatoCandidato rastreado = await ctx.FatosCandidato.SingleAsync(f => f.Id == id);
+            rastreado.Desativar().IsSuccess.Should().BeTrue();
+            await ctx.SaveChangesAsync();
+        }
+
+        await using UniPlusDbContext leitura = _fixture.CreateDbContext(userId: null);
+        FatoCandidato persistido = await leitura.FatosCandidato.AsNoTracking().SingleAsync(f => f.Id == id);
+        persistido.CreatedBy.Should().Be("admin-1");
+        persistido.UpdatedBy.Should().Be("admin-2");
     }
 
     private static FatoCandidato NovoFatoCategoricoComDoisValores()
