@@ -1,7 +1,5 @@
 namespace Unifesspa.UniPlus.Publicacoes.IntegrationTests.TiposAtoPublicado;
 
-using System.Globalization;
-
 using AwesomeAssertions;
 
 using Microsoft.EntityFrameworkCore;
@@ -15,6 +13,8 @@ using Unifesspa.UniPlus.Publicacoes.Domain.Entities;
 using Unifesspa.UniPlus.Publicacoes.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Publicacoes.Infrastructure.Persistence.Repositories;
 using Unifesspa.UniPlus.Publicacoes.IntegrationTests.Infrastructure;
+
+using static Unifesspa.UniPlus.Publicacoes.IntegrationTests.TiposAtoPublicado.TiposDeAtoParaPersistencia;
 
 /// <summary>
 /// Integração do cadastro de tipos de ato contra Postgres real: persistência e
@@ -380,32 +380,4 @@ public sealed class TipoAtoPublicadoPersistenceTests
         return contexto;
     }
 
-    private static TipoAtoPublicado Novo(
-        string codigo,
-        DateOnly vigenciaInicio,
-        DateOnly? vigenciaFim,
-        bool congela = true,
-        bool irreversivel = false,
-        bool ehResultado = false) =>
-        TipoAtoPublicado.Criar(
-            codigo,
-            nome: "Tipo de ato de teste",
-            congelaConfiguracao: congela,
-            unicoPorObjeto: false,
-            efeitoIrreversivel: irreversivel,
-            ehResultado: ehResultado,
-            vigenciaInicio: vigenciaInicio,
-            vigenciaFim: vigenciaFim,
-            baseLegal: null).Value!;
-
-    /// <summary>
-    /// Código único no formato aceito pelo CHECK: os 12 primeiros dígitos hex do
-    /// Guid mapeados para as letras A–P, o que evita colisão entre testes que
-    /// compartilham o mesmo container.
-    /// </summary>
-    private static string CodigoUnico()
-    {
-        string hex = Guid.NewGuid().ToString("N", CultureInfo.InvariantCulture)[..12];
-        return "TESTE_" + string.Concat(hex.Select(digito => (char)('A' + Convert.ToInt32(digito.ToString(), 16))));
-    }
 }

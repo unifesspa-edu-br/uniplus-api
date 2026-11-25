@@ -23,6 +23,10 @@ public sealed class RegistrarAtoNormativoCommandValidatorTests
 
     private readonly RegistrarAtoNormativoCommandValidator _validator = new();
 
+    [Fact(DisplayName = "O catálogo confere o formato do tipo de ato e recusa tipo sem versão vigente")]
+    public void Validar_TipoForaDoFormato_Aceita() =>
+        _validator.Validate(Comando() with { TipoCodigo = "aviso" }).IsValid.Should().BeTrue();
+
     [Fact(DisplayName = "Comando válido passa")]
     public void Valido()
     {

@@ -6,7 +6,7 @@ using FluentValidation;
 /// Checa só a forma do <c>Id</c> — um identificador de rota sem equivalente no
 /// agregado (<c>TipoAtoPublicado.Atualizar</c> nem recebe Id). Todos os demais
 /// campos têm equivalente de domínio e ficam fora daqui (ADR-0125): o agregado é
-/// a autoridade sobre eles, via <c>ValidarCampos</c>.
+/// a autoridade sobre eles, via <c>ValidarDeclaracao</c>.
 /// </summary>
 public sealed class AtualizarTipoAtoPublicadoCommandValidator
     : AbstractValidator<AtualizarTipoAtoPublicadoCommand>

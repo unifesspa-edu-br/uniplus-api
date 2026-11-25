@@ -117,7 +117,7 @@ internal sealed class AtosDaEntidadeApoio(PublicacoesEndpointFixture fixture)
     internal async Task<string> CriarTipoAsync(bool unicoPorObjeto) =>
         (await CriarTipoComIdAsync(unicoPorObjeto)).Codigo;
 
-    /// <remarks>O código do tipo de ato admite só letras (UPPER_SNAKE, sem dígitos): o sufixo mapeia os hexadígitos para letras, mantendo a unicidade entre os testes.</remarks>
+    /// <remarks>O sufixo mapeia os hexadígitos para letras, mantendo a unicidade e o formato válido entre os testes.</remarks>
     internal async Task<(string Codigo, Guid Id)> CriarTipoComIdAsync(bool unicoPorObjeto)
     {
         string codigo = "TIPO_" + Sufixo();

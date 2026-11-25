@@ -173,8 +173,13 @@ public sealed class TipoAtoPublicadoQueryHandlersTests
 
     private static TipoAtoPublicado Novo(
         string codigo, bool congela = true, bool irreversivel = false, bool ehResultado = false) =>
-        TipoAtoPublicado.Criar(
-            codigo, "Nome do tipo", congela, unicoPorObjeto: false, efeitoIrreversivel: irreversivel,
-            ehResultado: ehResultado,
-            vigenciaInicio: Inicio, vigenciaFim: null, baseLegal: null).Value!;
+        (new TipoAtoPublicadoDeTeste
+        {
+            Codigo = codigo,
+            Nome = "Nome do tipo",
+            CongelaConfiguracao = congela,
+            EfeitoIrreversivel = irreversivel,
+            EhResultado = ehResultado,
+            VigenciaInicio = Inicio
+        }).Criar().Value!;
 }

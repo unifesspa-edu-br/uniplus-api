@@ -17,9 +17,6 @@ public sealed class PublicarAtoAvulsoDoProcessoCommandValidator : DadosDoAtoPubl
             .NotEmpty()
             .WithMessage("Tipo do ato é obrigatório.")
             .MaximumLength(AtoDoProcesso.TipoCodigoMaxLength)
-            .WithMessage($"Tipo do ato deve ter no máximo {AtoDoProcesso.TipoCodigoMaxLength} caracteres.")
-            // Só a forma: a lista de tipos é cadastro, e conhecê-la seria ramificar por tipo (ADR-0103).
-            .Matches("^[A-Z]+(_[A-Z]+)*$")
-            .WithMessage("Tipo do ato deve estar em forma canônica (ex.: AVISO).");
+            .WithMessage($"Tipo do ato deve ter no máximo {AtoDoProcesso.TipoCodigoMaxLength} caracteres.");
     }
 }

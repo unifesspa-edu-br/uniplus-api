@@ -5,6 +5,7 @@ using Microsoft.Extensions.DependencyInjection;
 
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.Publicacoes.Domain.Entities;
+using Unifesspa.UniPlus.Testes.Compartilhado;
 
 /// <summary>
 /// Semeia no banco de teste os tipos de ato que a publicação, a retificação, o aviso e o resultado usam.
@@ -76,15 +77,14 @@ internal static class TiposDeAtoSeeder
 
     private static TipoAtoPublicado NovoTipo(
         string codigo, string nome, bool unicoPorObjeto, bool congelaConfiguracao, bool publicavelComoAvulso, bool ehResultado) =>
-        TipoAtoPublicado.Criar(
-            codigo,
-            nome,
-            congelaConfiguracao: congelaConfiguracao,
-            unicoPorObjeto,
-            efeitoIrreversivel: false,
-            ehResultado: ehResultado,
-            new DateOnly(2020, 1, 1),
-            vigenciaFim: null,
-            baseLegal: null,
-            publicavelComoAvulso).Value!;
+        (new TipoAtoPublicadoDeTeste
+        {
+            Codigo = codigo,
+            Nome = nome,
+            CongelaConfiguracao = congelaConfiguracao,
+            UnicoPorObjeto = unicoPorObjeto,
+            EhResultado = ehResultado,
+            VigenciaInicio = new DateOnly(2020, 1, 1),
+            PublicavelComoAvulso = publicavelComoAvulso
+        }).Criar().Value!;
 }

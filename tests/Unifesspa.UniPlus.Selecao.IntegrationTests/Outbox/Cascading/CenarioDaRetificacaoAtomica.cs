@@ -73,7 +73,7 @@ internal sealed class CenarioDaRetificacaoAtomica : IAsyncDisposable
 
     public Task<Guid> SemearDocumentoAsync() => SemearDocumentoConfirmadoAsync(_preparo, ProcessoId);
 
-    /// <summary>O código de tipo de ato só aceita letras maiúsculas; o sufixo troca cada dígito hexadecimal por uma letra.</summary>
+    /// <summary>O sufixo troca cada dígito hexadecimal por uma letra, preservando a unicidade e o formato válido.</summary>
     private static string SufixoSoComLetras() =>
         string.Concat(Guid.CreateVersion7().ToString("N", System.Globalization.CultureInfo.InvariantCulture)
             .Select(c => (char)('A' + Convert.ToInt32(c.ToString(), 16))));

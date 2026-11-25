@@ -2,9 +2,10 @@ namespace Unifesspa.UniPlus.Publicacoes.Application.UnitTests.Conferencias;
 
 using System.IO;
 using System.Text.Json;
-using System.Text.RegularExpressions;
 
 using AwesomeAssertions;
+
+using Unifesspa.UniPlus.Kernel.Domain.ValueObjects;
 
 
 /// <summary>
@@ -18,11 +19,8 @@ using AwesomeAssertions;
 /// não o quebraria — que é exatamente o acidente contra o qual o arquivo precisa de
 /// proteção.
 /// </remarks>
-public sealed partial class SeedTiposAtoTests
+public sealed class SeedTiposAtoTests
 {
-    [GeneratedRegex(@"^[A-Z]+(_[A-Z]+)*$")]
-    private static partial Regex FormatoCodigo();
-
     private const string CaminhoRelativo = "seeds/seed-tipos-ato.json";
 
     private static readonly JsonSerializerOptions Opcoes = new(JsonSerializerDefaults.Web);
@@ -61,7 +59,7 @@ public sealed partial class SeedTiposAtoTests
     {
         foreach (LinhaSeed linha in Carregar())
         {
-            FormatoCodigo().IsMatch(linha.Codigo).Should().BeTrue(
+            FormatoDoCodigo.TemFormatoValido(linha.Codigo).Should().BeTrue(
                 $"'{linha.Codigo}' precisa ser UPPER_SNAKE, senão o POST do seed volta 422");
         }
     }

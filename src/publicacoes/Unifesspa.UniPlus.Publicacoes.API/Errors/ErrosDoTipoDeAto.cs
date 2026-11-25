@@ -35,12 +35,6 @@ internal static class ErrosDoTipoDeAto
                 "uniplus.publicacoes.tipo_ato.codigo_obrigatorio",
                 "Código do tipo de ato é obrigatório")),
 
-        new(TipoAtoPublicadoErrorCodes.CodigoTamanho,
-            new DomainErrorMapping(
-                StatusCodes.Status422UnprocessableEntity,
-                "uniplus.publicacoes.tipo_ato.codigo_tamanho",
-                "Tamanho do código do tipo de ato inválido")),
-
         new(TipoAtoPublicadoErrorCodes.CodigoFormato,
             new DomainErrorMapping(
                 StatusCodes.Status422UnprocessableEntity,

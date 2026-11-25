@@ -114,7 +114,7 @@ public sealed class CadeiaDeRetificacaoDoAto(IAtoNormativoRepository atos)
         RegistrarAtoNormativoCommand command) =>
         (command.Vinculos ?? [])
             .Where(v => v is not null)
-            .Select(v => new EntidadeVinculada(v.EntidadeTipo.Trim(), v.EntidadeId));
+            .Select(v => new EntidadeVinculada(v.EntidadeTipo, v.EntidadeId));
 
     /// <summary>
     /// A classe de congelamento do ato que retifica deve coincidir com a do retificado: é essa

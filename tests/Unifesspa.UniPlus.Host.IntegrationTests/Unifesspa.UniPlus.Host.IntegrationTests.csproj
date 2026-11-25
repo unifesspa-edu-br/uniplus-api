@@ -51,4 +51,7 @@
     <Using Include="Unifesspa.UniPlus.Autorizacao.Apoio" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Compile Include="../Shared/TipoAtoPublicadoDeTeste.cs" Link="TipoAtoPublicadoDeTeste.cs" />
+  </ItemGroup>
 </Project>

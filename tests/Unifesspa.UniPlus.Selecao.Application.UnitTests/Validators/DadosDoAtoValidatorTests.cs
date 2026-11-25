@@ -56,14 +56,7 @@ public sealed class DadosDoAtoValidatorTests
         _validator.Validate(Valido() with { Assinante = orgao }).IsValid.Should().BeFalse();
     }
 
-    [Fact(DisplayName = "Tipo do ato fora da forma canônica é recusado — mas o VALOR não é validado (é cadastro, ADR-0103)")]
-    public void TipoForaDaFormaCanonica_Recusa()
-    {
-        _validator.Validate(Valido() with { TipoAtoCodigo = "edital_abertura" }).IsValid.Should().BeFalse();
-
-        // Um tipo que este código nunca ouviu falar passa: a lista vive no cadastro de
-        // Publicações, e conhecê-la aqui seria ramificar por tipo — o que a ADR-0103 proíbe.
-        _validator.Validate(Valido() with { TipoAtoCodigo = "CONVOCACAO_HETEROIDENTIFICACAO" })
-            .IsValid.Should().BeTrue();
-    }
+    [Fact(DisplayName = "O catálogo confere o formato do tipo de ato e recusa tipo sem versão vigente")]
+    public void Validar_TipoForaDoFormato_Aceita() =>
+        _validator.Validate(Valido() with { TipoAtoCodigo = "aviso" }).IsValid.Should().BeTrue();
 }

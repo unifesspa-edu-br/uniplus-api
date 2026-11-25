@@ -44,7 +44,6 @@ public sealed class MontagemDoAtoNormativo(
     /// </summary>
     private static DomainError? RecusaDoVinculoExclusivoDoDominio(IEnumerable<string> entidadesTipo) =>
         entidadesTipo
-            .Select(t => t.Trim())
             .Where(EntidadesDeRegistroPeloDominio.Contem)
             .Select(RegistroPeloDominioExigido)
             .FirstOrDefault();
@@ -93,7 +92,7 @@ public sealed class MontagemDoAtoNormativo(
     {
         if (command.AtributosDoTipo is { } conferidos)
         {
-            return Result<TipoDoAtoNoRegistro>.Success(TipoConferidoPeloDominio(command.TipoCodigo.Trim(), conferidos));
+            return Result<TipoDoAtoNoRegistro>.Success(TipoConferidoPeloDominio(command.TipoCodigo, conferidos));
         }
 
         Result<DateOnly> diaDaPublicacao = fuso.DiaCivilDe(publicadoEm);

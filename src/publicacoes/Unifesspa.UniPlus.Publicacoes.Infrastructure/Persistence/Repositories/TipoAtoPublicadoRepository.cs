@@ -46,12 +46,11 @@ public sealed class TipoAtoPublicadoRepository : ITipoAtoPublicadoRepository
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(codigo);
 
-        string codigoNormalizado = codigo.Trim();
 
         return _dbContext.TiposAtoPublicado
             .AsNoTracking()
             .SingleOrDefaultAsync(
-                tipo => tipo.Codigo == codigoNormalizado
+                tipo => tipo.Codigo == codigo
                     && tipo.VigenciaInicio <= data
                     && (tipo.VigenciaFim == null || tipo.VigenciaFim > data),
                 cancellationToken);
@@ -107,13 +106,12 @@ public sealed class TipoAtoPublicadoRepository : ITipoAtoPublicadoRepository
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(codigo);
 
-        string codigoNormalizado = codigo.Trim();
 
         return _dbContext.TiposAtoPublicado
             .AsNoTracking()
             .Where(tipo => excluirId == null || tipo.Id != excluirId)
             .AnyAsync(
-                tipo => tipo.Codigo == codigoNormalizado
+                tipo => tipo.Codigo == codigo
                     && (vigenciaFim == null || tipo.VigenciaInicio < vigenciaFim)
                     && (tipo.VigenciaFim == null || tipo.VigenciaFim > vigenciaInicio),
                 cancellationToken);

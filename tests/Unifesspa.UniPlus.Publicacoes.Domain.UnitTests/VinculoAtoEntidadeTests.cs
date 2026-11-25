@@ -1,7 +1,5 @@
 namespace Unifesspa.UniPlus.Publicacoes.Domain.UnitTests;
 
-using System.Diagnostics.CodeAnalysis;
-
 using AwesomeAssertions;
 
 using Unifesspa.UniPlus.Publicacoes.Domain.Entities;
@@ -13,10 +11,6 @@ using Unifesspa.UniPlus.Testes.Compartilhado;
 /// opaco mas tem forma canônica, o identificador da entidade é obrigatório, o
 /// vínculo nasce do próprio ato, e um ato sem vínculo é válido.
 /// </summary>
-[SuppressMessage(
-    "Performance",
-    "CA1515:Consider making public types internal",
-    Justification = "xUnit exige tipo de teste público.")]
 public sealed class VinculoAtoEntidadeTests
 {
     private static readonly AtoNormativoDeTeste Base = new() { CongelaConfiguracao = true };
@@ -43,12 +37,12 @@ public sealed class VinculoAtoEntidadeTests
 
     public static TheoryData<string, string> TiposAceitosNoRegistro { get; } = new()
     {
-        { "  PROCESSO_SELETIVO  ", "PROCESSO_SELETIVO" },
+        { "PROCESSO_SELETIVO", "PROCESSO_SELETIVO" },
         { "APLICACAO_PROVA_2", "APLICACAO_PROVA_2" },
-        { $"  {new string('A', 60)}  ", new string('A', 60) },
+        { new string('A', 60), new string('A', 60) },
     };
 
-    [Theory(DisplayName = "O registro com um vínculo guarda exatamente esse vínculo, normalizado e atrelado ao ato")]
+    [Theory(DisplayName = "O registro com um vínculo guarda exatamente esse vínculo, preservado e atrelado ao ato")]
     [MemberData(nameof(TiposAceitosNoRegistro))]
     public void Registrar_ComUmVinculo_GuardaSoEle(string tipoInformado, string tipoGuardado)
     {
@@ -60,12 +54,12 @@ public sealed class VinculoAtoEntidadeTests
         vinculo.EntidadeId.Should().Be(Processo);
     }
 
-    [Fact(DisplayName = "O vínculo aponta para o ato que o criou, e o tipo é normalizado")]
-    public void Criar_NormalizaTipoEAtrelaAoAto()
+    [Fact(DisplayName = "O vínculo aponta para o ato que o criou, e o tipo é preservado")]
+    public void Criar_PreservaTipoEAtrelaAoAto()
     {
         AtoNormativo ato = Base.Registrar();
 
-        VinculoAtoEntidade vinculo = VinculoAtoEntidade.Criar(ato, new EntidadeVinculada("  PROCESSO_SELETIVO  ", Processo));
+        VinculoAtoEntidade vinculo = VinculoAtoEntidade.Criar(ato, new EntidadeVinculada("PROCESSO_SELETIVO", Processo));
 
         vinculo.AtoId.Should().Be(ato.Id);
         vinculo.EntidadeTipo.Should().Be("PROCESSO_SELETIVO");
@@ -102,22 +96,22 @@ public sealed class VinculoAtoEntidadeTests
         VinculoAtoEntidade.Criar(ato, new EntidadeVinculada("APLICACAO_PROVA_2", Processo)).EntidadeTipo.Should().Be("APLICACAO_PROVA_2");
     }
 
-    [Fact(DisplayName = "Tipo de entidade com mais de 60 caracteres depois do trim é recusado")]
-    public void Criar_TipoAcimaDoLimiteDepoisDoTrim_Recusa()
+    [Fact(DisplayName = "Tipo de entidade com mais de 60 caracteres como recebido é recusado")]
+    public void Criar_TipoAcimaDoLimiteComoRecebido_Recusa()
     {
         AtoNormativo ato = Base.Registrar();
 
-        Action acao = () => VinculoAtoEntidade.Criar(ato, new EntidadeVinculada($"  {new string('A', 61)}  ", Processo));
+        Action acao = () => VinculoAtoEntidade.Criar(ato, new EntidadeVinculada(new string('A', 61), Processo));
 
         acao.Should().Throw<ArgumentException>();
     }
 
-    [Fact(DisplayName = "Tipo de entidade com exatamente 60 caracteres depois do trim é aceito")]
-    public void Criar_TipoNoLimiteDepoisDoTrim_Aceita()
+    [Fact(DisplayName = "Tipo de entidade com exatamente 60 caracteres como recebido é aceito")]
+    public void Criar_TipoNoLimiteComoRecebido_Aceita()
     {
         AtoNormativo ato = Base.Registrar();
 
-        VinculoAtoEntidade.Criar(ato, new EntidadeVinculada($"  {new string('A', 60)}  ", Processo)).EntidadeTipo.Should().HaveLength(60);
+        VinculoAtoEntidade.Criar(ato, new EntidadeVinculada(new string('A', 60), Processo)).EntidadeTipo.Should().HaveLength(60);
     }
 
     [Fact(DisplayName = "Identificador vazio de entidade é recusado")]
@@ -165,7 +159,7 @@ public sealed class VinculoAtoEntidadeTests
     [Fact(DisplayName = "A entidade do vínculo devolve o rótulo guardado e o identificador")]
     public void Entidade_DevolveOParGuardado()
     {
-        VinculoAtoEntidade vinculo = VinculoAtoEntidade.Criar(Base.Registrar(), new EntidadeVinculada("  CHAMADA  ", Chamada));
+        VinculoAtoEntidade vinculo = VinculoAtoEntidade.Criar(Base.Registrar(), new EntidadeVinculada("CHAMADA", Chamada));
 
         vinculo.Entidade.Should().Be(new EntidadeVinculada("CHAMADA", Chamada));
     }

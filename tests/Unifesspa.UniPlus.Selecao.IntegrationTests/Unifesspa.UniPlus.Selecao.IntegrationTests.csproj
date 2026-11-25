@@ -114,4 +114,7 @@
     <None Include="../../contracts/openapi.selecao.json" Link="contracts/openapi.selecao.json" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Compile Include="../Shared/TipoAtoPublicadoDeTeste.cs" Link="TipoAtoPublicadoDeTeste.cs" />
+  </ItemGroup>
 </Project>
