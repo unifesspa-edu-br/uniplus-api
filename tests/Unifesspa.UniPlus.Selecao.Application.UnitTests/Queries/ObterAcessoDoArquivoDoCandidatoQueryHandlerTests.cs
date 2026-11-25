@@ -81,7 +81,7 @@ public sealed class ObterAcessoDoArquivoDoCandidatoQueryHandlerTests
         return ObterAcessoDoArquivoDoCandidatoQueryHandler.Handle(
             new ObterAcessoDoArquivoDoCandidatoQuery(processoId ?? ProcessoId, arquivoId),
             Acesso(usuario),
-            new EmissaoDoAcessoAoArquivo(_documentos, _storage, new RelogioFixo(DateTimeOffset.UnixEpoch)),
+            new EmissaoDoAcessoAoArquivo(new DocumentosEnviadosDaInscricao(_documentos), _storage, new RelogioFixo(DateTimeOffset.UnixEpoch)),
             usuario,
             NullLogger.Instance,
             CancellationToken.None);

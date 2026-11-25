@@ -143,14 +143,14 @@ public sealed class ObterAcessoAoDocumentoDaInscricaoQueryHandlerTests
     private Task<Result<AcessoArquivoDoCandidatoDto>> Abrir(
         InscricaoAdministrativaDeTeste cenario, InscricaoAdministrativaDeTeste.Mundo mundo, IVerificadorDeAcesso verificador, Guid arquivoId)
     {
-        ClassificacaoDaExigenciaDoArquivo classificacao = new(mundo.Documentos, mundo.Processos, mundo.Codecs);
+        ClassificacaoDaExigenciaDoArquivo classificacao = new(mundo.Documentos, new ContextoDaVersaoFixadaResolver(mundo.Processos, mundo.Codecs));
         DecisaoDoAcessoAoDocumento acesso = new(
             verificador, new PortaDePermissaoPorPar<PermissaoSelecao>(), mundo.Processos, mundo.Inscricoes, mundo.Documentos, classificacao);
 
         return ObterAcessoAoDocumentoDaInscricaoQueryHandler.Handle(
             new ObterAcessoAoDocumentoDaInscricaoQuery(cenario.ProcessoId, cenario.InscricaoId, arquivoId),
             acesso,
-            new EmissaoDoAcessoAoArquivo(mundo.Documentos, _storage, new RelogioFixo(DateTimeOffset.UnixEpoch)),
+            new EmissaoDoAcessoAoArquivo(new DocumentosEnviadosDaInscricao(mundo.Documentos), _storage, new RelogioFixo(DateTimeOffset.UnixEpoch)),
             Substitute.For<IUserContext>(),
             NullLogger.Instance,
             CancellationToken.None);

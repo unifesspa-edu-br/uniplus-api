@@ -2,7 +2,6 @@ namespace Unifesspa.UniPlus.Selecao.Application.Services.InscricaoAdministrativa
 
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Kernel.Results;
-using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
@@ -14,19 +13,16 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 public sealed class ClassificacaoDaExigenciaDoArquivo
 {
     private readonly IDocumentoDaInscricaoRepository _documentos;
-    private readonly IProcessoSeletivoRepository _processos;
-    private readonly IRegistroCodecsEnvelope _registroCodecs;
+    private readonly ContextoDaVersaoFixadaResolver _contexto;
 
     public ClassificacaoDaExigenciaDoArquivo(
-        IDocumentoDaInscricaoRepository documentos, IProcessoSeletivoRepository processos, IRegistroCodecsEnvelope registroCodecs)
+        IDocumentoDaInscricaoRepository documentos, ContextoDaVersaoFixadaResolver contexto)
     {
         ArgumentNullException.ThrowIfNull(documentos);
-        ArgumentNullException.ThrowIfNull(processos);
-        ArgumentNullException.ThrowIfNull(registroCodecs);
+        ArgumentNullException.ThrowIfNull(contexto);
 
         _documentos = documentos;
-        _processos = processos;
-        _registroCodecs = registroCodecs;
+        _contexto = contexto;
     }
 
     public async Task<ClassificacaoDeProtecao> ResolverAsync(
@@ -46,7 +42,7 @@ public sealed class ClassificacaoDaExigenciaDoArquivo
 
     private async Task<ClassificacaoDeProtecao?> CongeladaAsync(Guid exigenciaId, VinculoDaInscricao inscricao, CancellationToken cancellationToken)
     {
-        Result<ContextoDaVersaoFixada> contexto = await new ContextoDaVersaoFixadaResolver(_processos, _registroCodecs).ResolverAsync(inscricao.VersaoFormularioId, inscricao.ProcessoSeletivoId, inscricao.OfertaCursoId, inscricao.OfertaCursoSegundaOpcaoId, cancellationToken).ConfigureAwait(false);
+        Result<ContextoDaVersaoFixada> contexto = await _contexto.ResolverAsync(inscricao.VersaoFormularioId, inscricao.ProcessoSeletivoId, inscricao.OfertaCursoId, inscricao.OfertaCursoSegundaOpcaoId, cancellationToken).ConfigureAwait(false);
 
         return contexto.IsSuccess
             && ExigenciaDaInscricao.Localizar(contexto.Value!.Configuracao.RegrasDeComprovacao, exigenciaId) is { } localizada
