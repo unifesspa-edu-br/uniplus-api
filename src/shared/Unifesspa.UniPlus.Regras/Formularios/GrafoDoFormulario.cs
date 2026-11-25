@@ -3,7 +3,7 @@ namespace Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Services;
 
-/// <summary>Um item do formulário, no que o grafo confere: o fato, a ordem, a seção e os fatos que as regras dele citam.</summary>
+/// <summary>Um item do formulário, no que o grafo confere: o fato, a ordem, a página e os fatos que as regras dele citam.</summary>
 public sealed record ItemDoGrafo(string FatoCodigo, int Ordem, string? PaginaCodigo, IReadOnlyCollection<string> FatosCitados);
 
 /// <summary>Uma página do formulário, no que o grafo confere: o código, a ordem e os fatos que a exibição cita.</summary>
@@ -11,7 +11,7 @@ public sealed record PaginaDoGrafo(string Codigo, int Ordem, IReadOnlyCollection
 
 /// <summary>
 /// Um grupo repetível, no que o grafo confere: o código, a posição na ordem do formulário — a mesma
-/// sequência dos itens —, a seção, os fatos que a exibição e a obrigatoriedade dele citam e os
+/// sequência dos itens —, a página, os fatos que a exibição e a obrigatoriedade dele citam e os
 /// subitens, cada um com a ordem própria dentro do grupo (UNI-REQ-0146).
 /// </summary>
 public sealed record GrupoDoGrafo(
@@ -24,11 +24,11 @@ public sealed record TermoDoGrafo(string Codigo, IReadOnlyCollection<string> Fat
 /// O grafo de coleta do formulário, o mesmo no processo e no modelo (UNI-REQ-0144, UNI-REQ-0145,
 /// UNI-REQ-0146): cada fato uma vez, a ordem total, sem ciclo entre as regras, campo de grupo
 /// repetível citado só dentro do próprio grupo, e cada regra — de item, de grupo, de campo do
-/// grupo, de exibição de seção e de termo — citando só o que o formulário conhece antes dela.
+/// grupo, de exibição de página e de termo — citando só o que o formulário conhece antes dela.
 /// </summary>
 /// <remarks>
 /// A primeira recusa orienta quem corrige, e por isso a ordem é fixa: fato duplicado, ordem
-/// duplicada, ciclo, fato de membro citado fora do grupo, citação dos itens, dos grupos, das seções
+/// duplicada, ciclo, fato de membro citado fora do grupo, citação dos itens, dos grupos, das páginas
 /// e dos termos. O ciclo vem antes da citação porque nomeia o caminho inteiro; a citação apontaria
 /// só o primeiro par fora de sequência do mesmo problema. O fato de membro vem antes da citação
 /// porque, fora do grupo, ele não é "desconhecido": existe, mas só por ocorrência.
@@ -52,7 +52,7 @@ public static class GrafoDoFormulario
     /// <summary>
     /// A coleta do formulário: fato uma vez, contando os subitens, e código de grupo que não é código
     /// de fato coletado, derivado ou pressuposto; ordem total entre itens e grupos, e dentro de cada grupo; sem ciclo; fato de membro só
-    /// citado dentro do próprio grupo; e as regras dos itens, dos grupos e a exibição das seções
+    /// citado dentro do próprio grupo; e as regras dos itens, dos grupos e a exibição das páginas
     /// citando só o que é conhecido antes delas. As dependências só são montadas depois de o fato
     /// aparecer uma vez só.
     /// </summary>
@@ -69,9 +69,10 @@ public static class GrafoDoFormulario
         ArgumentNullException.ThrowIfNull(derivacoes);
         grupos ??= [];
 
-        DomainError? recusa = UnicidadeDaColeta.Conferir(itens, grupos, conhecidosAntes, derivacoes, out Dictionary<string, ItemDoGrafo> fatos);
+        UnicidadeDaColeta unicidade = new(conhecidosAntes, derivacoes);
+        DomainError? recusa = unicidade.Conferir(itens, grupos);
         return recusa
-            ?? CicloDasRegras(fatos)
+            ?? CicloDasRegras(unicidade.Fatos)
             ?? CitacoesDaColeta(itens, paginas, conhecidosAntes, derivacoes, grupos);
     }
 
@@ -98,7 +99,7 @@ public static class GrafoDoFormulario
     /// <summary>
     /// A primeira regra do formulário que cita fato que ela não pode citar, nesta ordem: campo de
     /// grupo citado fora do próprio grupo, depois a citação dos itens, dos grupos e dos campos deles,
-    /// da exibição das seções e dos termos.
+    /// da exibição das páginas e dos termos.
     /// </summary>
     public static DomainError? CitacaoInvalida(
         IReadOnlyCollection<ItemDoGrafo> itens,
@@ -119,7 +120,7 @@ public static class GrafoDoFormulario
 
     /// <summary>
     /// A primeira regra que cita fato de membro fora do próprio grupo — de item, de grupo, de
-    /// subitem de outro grupo, de exibição de seção ou de termo. Fora do grupo o fato de membro não
+    /// subitem de outro grupo, de exibição de página ou de termo. Fora do grupo o fato de membro não
     /// tem valor único: existe uma vez por ocorrência.
     /// </summary>
     public static DomainError? CitacaoDeMembroForaDoGrupo(
@@ -160,7 +161,7 @@ public static class GrafoDoFormulario
         [.. itens.Select(static i => new RegraQueCita($"do fato '{i.FatoCodigo}'", i.FatosCitados, null)),
          .. grupos.Select(static g => new RegraQueCita($"do grupo '{g.Codigo}'", g.FatosCitados, null)),
          .. grupos.SelectMany(static g => g.Subitens.Select(s => new RegraQueCita($"do fato '{s.FatoCodigo}'", s.FatosCitados, g.Codigo))),
-         .. paginas.Select(static e => new RegraQueCita($"de exibição da seção '{e.Codigo}'", e.FatosCitados, null)),
+         .. paginas.Select(static e => new RegraQueCita($"de exibição da página '{e.Codigo}'", e.FatosCitados, null)),
          .. termos.Select(static t => new RegraQueCita($"do termo '{t.Codigo}'", t.FatosCitados, null))];
 
     /// <summary>
@@ -188,8 +189,8 @@ public static class GrafoDoFormulario
     }
 
     /// <summary>
-    /// A exibição da seção cita só o que o formulário conhece antes dela: antes do primeiro item ou
-    /// grupo da própria seção ou, se ela está vazia, das seções seguintes.
+    /// A exibição da página cita só o que o formulário conhece antes dela: antes do primeiro item ou
+    /// grupo da própria página ou, se ela está vazia, das páginas seguintes.
     /// </summary>
     public static DomainError? CitacaoInvalidaDasPaginas(
         IReadOnlyCollection<PaginaDoGrafo> paginas,
@@ -216,9 +217,9 @@ public static class GrafoDoFormulario
     private static DomainError? RecusaDaPagina(PaginaDoGrafo pagina, string citado, RecusaDeCitacao? recusa) => recusa switch
     {
         RecusaDeCitacao.FatoNaoConhecido => new DomainError(GrafoFormularioErrorCodes.CitaFatoNaoConhecido,
-            $"A exibição da seção '{pagina.Codigo}' cita '{citado}', que o formulário não coleta nem deriva antes dela."),
+            $"A exibição da página '{pagina.Codigo}' cita '{citado}', que o formulário não coleta nem deriva antes dela."),
         RecusaDeCitacao.FatoPosterior => new DomainError(GrafoFormularioErrorCodes.CitaFatoPosterior,
-            $"A exibição da seção '{pagina.Codigo}' cita '{citado}', que só fica conhecido na própria seção ou depois dela."),
+            $"A exibição da página '{pagina.Codigo}' cita '{citado}', que só fica conhecido na própria página ou depois dela."),
         _ => null,
     };
 
@@ -234,12 +235,6 @@ public static class GrafoDoFormulario
                 $"A condição do termo '{termo.Codigo}' cita '{citado}', que o formulário não coleta nem deriva, nem é conhecido antes dele.")
             : null;
     }
-
-    internal static DomainError FatoDuplicado(string codigo) =>
-        new(GrafoFormularioErrorCodes.FatoDuplicado, $"O código '{codigo}' aparece mais de uma vez no formulário, entre fatos e grupos.");
-
-    internal static DomainError OrdemDuplicada(int ordem) =>
-        new(GrafoFormularioErrorCodes.OrdemDuplicada, $"A ordem {ordem} é usada por mais de um item ou grupo — a ordem de coleta precisa ser total.");
 
     /// <summary>A posição da página na ordem de coleta: a do primeiro item ou grupo dela ou das páginas seguintes.</summary>
     public static long PosicaoDaPagina(

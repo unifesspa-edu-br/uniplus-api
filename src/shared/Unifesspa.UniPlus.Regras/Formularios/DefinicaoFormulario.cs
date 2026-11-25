@@ -206,15 +206,6 @@ public sealed record DefinicaoGrupo
     internal bool OcorrenciaDoCandidatoValida(IReadOnlyList<OcorrenciaRespondida> respondidas) =>
         !IncluiCandidato || respondidas.Count == 0 || CandidatoComoMembro.TemUmaOcorrenciaDoCandidato(respondidas);
 
-    internal static EstadoFato EstadoDaLista(IReadOnlyList<AvaliacaoOcorrencia> ocorrencias, Ternario obrigatorio) =>
-        ocorrencias.Count == 0 ? obrigatorio switch
-        {
-            Ternario.Falso => EstadoFato.NaoInformado,
-            Ternario.Verdadeiro => EstadoFato.Resolvido,
-            _ => EstadoFato.Indeterminado,
-        } : ocorrencias.All(static ocorrencia => ocorrencia.Estado == EstadoFato.Resolvido)
-            ? EstadoFato.Resolvido : EstadoFato.Indeterminado;
-
     /// <summary>
     /// Os fatos do candidato de que o grupo depende: os da exibição e da obrigatoriedade dele e os
     /// que os subitens citam fora da ocorrência.

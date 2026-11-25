@@ -5,28 +5,26 @@ using System.Text.Json;
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.ValueObjects;
 
-internal sealed class AvaliacaoDoItem
+internal sealed class AvaliadorDoItem
 {
     private readonly string _paginaCodigo;
     private readonly bool _paginaConcluida;
-    private readonly DateOnly? _diaDoEnvio;
-    private readonly IReadOnlyDictionary<string, FatoResolvido> _fatos;
+    private readonly ContextoDaResposta _contexto;
     private readonly DefinicaoItem _item;
     private readonly Ternario _visivel;
     private readonly Ternario _obrigatorio;
     private readonly OpcoesVigentes? _opcoes;
 
-    internal AvaliacaoDoItem(string paginaCodigo, bool paginaConcluida, DateOnly? diaDoEnvio,
-        IReadOnlyDictionary<string, FatoResolvido> fatos, DefinicaoItem item, Ternario visivelDoContentor)
+    internal AvaliadorDoItem(string paginaCodigo, bool paginaConcluida, ContextoDaResposta contexto,
+        DefinicaoItem item, Ternario visibilidadeHerdada)
     {
         _paginaCodigo = paginaCodigo;
         _paginaConcluida = paginaConcluida;
-        _diaDoEnvio = diaDoEnvio;
-        _fatos = fatos;
+        _contexto = contexto;
         _item = item;
-        _visivel = AvaliadorFormulario.E(visivelDoContentor, item.Exibicao?.Avaliar(fatos) ?? Ternario.Verdadeiro);
-        _obrigatorio = AvaliadorFormulario.ObrigatorioSeVisivel(_visivel, item.Obrigatoriedade, fatos);
-        _opcoes = _visivel == Ternario.Falso ? null : item.OpcoesVigentes(fatos);
+        _visivel = AvaliadorFormulario.E(visibilidadeHerdada, item.Exibicao?.Avaliar(contexto.Fatos) ?? Ternario.Verdadeiro);
+        _obrigatorio = AvaliadorFormulario.ObrigatorioSeVisivel(_visivel, item.Obrigatoriedade, contexto.Fatos);
+        _opcoes = _visivel == Ternario.Falso ? null : item.OpcoesVigentes(contexto.Fatos);
     }
 
     internal (FatoResolvido Fato, AvaliacaoItem Avaliacao) Avaliar(JsonElement? resposta)
@@ -53,20 +51,19 @@ internal sealed class AvaliacaoDoItem
 
     private (FatoResolvido Fato, AvaliacaoItem Avaliacao) ConferirResposta(JsonElement resposta)
     {
-        (IReadOnlyList<RestricaoValor> violadas, bool indeterminada) =
-            _item.ConferirResposta(resposta, new ContextoDaResposta(_fatos, _diaDoEnvio));
-        return violadas.Count == 0
-            ? Resultado(indeterminada ? FatoResolvido.Indeterminado() : FatoResolvido.Resolvido(resposta), [])
-            : ResultadoSemResposta(violadas);
+        ConferenciaDaResposta conferencia = _item.ConferirResposta(resposta, _contexto);
+        return conferencia.Violadas.Count == 0
+            ? Resultado(conferencia.Indeterminada ? FatoResolvido.Indeterminado() : FatoResolvido.Resolvido(resposta), [])
+            : ResultadoSemResposta(conferencia.Violadas);
     }
 
     private (FatoResolvido Fato, AvaliacaoItem Avaliacao) ResultadoSemResposta(IReadOnlyList<RestricaoValor> violadas)
     {
-        FatoResolvido semResposta = AvaliacaoDaColeta.EstadoSemResposta(_obrigatorio, _paginaConcluida) == EstadoFato.NaoInformado
+        FatoResolvido semResposta = RespostaDeCampo.EstadoSemResposta(_obrigatorio, _paginaConcluida) == EstadoFato.NaoInformado
             ? FatoResolvido.NaoInformado() : FatoResolvido.Indeterminado();
         return Resultado(semResposta, violadas);
     }
 
     private (FatoResolvido Fato, AvaliacaoItem Avaliacao) Resultado(FatoResolvido fato, IReadOnlyList<RestricaoValor> violadas) =>
-        (fato, new AvaliacaoItem(_item.FatoCodigo, _paginaCodigo, _visivel, _obrigatorio, violadas, _item.Impedido(fato, _fatos), _opcoes));
+        (fato, new AvaliacaoItem(_item.FatoCodigo, _paginaCodigo, _visivel, _obrigatorio, violadas, _item.Impedido(fato, _contexto.Fatos), _opcoes));
 }

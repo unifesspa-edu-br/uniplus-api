@@ -2,6 +2,7 @@ namespace Unifesspa.UniPlus.Regras.Formularios;
 
 using System.Text.Json;
 
+using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.ValueObjects;
 
 /// <summary>
@@ -11,6 +12,9 @@ using Unifesspa.UniPlus.Regras.ValueObjects;
 /// </summary>
 public static class RespostaDeCampo
 {
+    internal static EstadoFato EstadoSemResposta(Ternario obrigatorio, bool paginaConcluida) =>
+        obrigatorio == Ternario.Falso && paginaConcluida ? EstadoFato.NaoInformado : EstadoFato.Indeterminado;
+
     /// <summary>
     /// Indica que o campo está sem resposta: nulo, ausente, texto em branco ou lista vazia. Uma lista
     /// vazia ou um texto em branco não são respostas — tratá-los como valor faria uma condição
