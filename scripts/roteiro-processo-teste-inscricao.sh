@@ -818,15 +818,31 @@ definir_documentos_exigidos() {
     # O PUT substitui todas as regras: os documentos que o modelo de inscrição trouxer voltam na
     # entrada, com a base legal resolvida — o modelo a deixa pendente até o CEPS indicar a norma, e
     # a publicação a exige resolvida. O modelo sem prova não traz nenhum.
-    documentos_do_modelo=$(jq -c --argjson bases "$base_legal" '[(.regrasDeComprovacao // [])[] | {
+    documentos_do_modelo=$(jq -c --argjson bases "$base_legal" '
+    def codigo: if type == "object" then .codigo else . end;
+    def referencia: if . == null then null else {tipo: (.tipo | codigo), data, faseId} end;
+    [(.regrasDeComprovacao // [])[] | {
         forma: "DOCUMENTO",
         documento: (.documento | {
-            tipoDocumento: {id: .tipoDocumento.id}, momento, aplicabilidade,
-            indeferimento: (.indeferimento | .basesLegais = $bases),
-            requisitos: (.requisitos
-                | .prazoDeEmissao //= {escolha: "SEM_PRAZO"}
-                | .validade //= {escolha: "NAO_EXIGE_DOCUMENTO_VALIDO"}),
-            fatosComprovados
+            tipoDocumento: {id: .tipoDocumento.id},
+            momento: (.momento | {faseId, etapaId, finalidade: (.finalidade | codigo)}),
+            aplicabilidade: (.aplicabilidade | {
+                tipo: (.tipo | codigo),
+                condicoes: [.condicoes[] | {clausula, fato, operador, valor}]
+            }),
+            indeferimento: (.indeferimento | {obrigatorio, consequencia: (.consequencia | codigo), basesLegais: $bases}),
+            requisitos: (.requisitos | {
+                formatosPermitidos: (.formatosPermitidos | if type == "array" then
+                    map({formato: (.formato | codigo), tamanhoMaximoBytesMax}) else . end), tamanhoMaximoBytes,
+                prazoDeEmissao: (if .prazoDeEmissao == null then {escolha: "SEM_PRAZO"} else
+                    .prazoDeEmissao | {escolha: (.escolha | codigo), valor, unidade: (.unidade | codigo),
+                        referencia: (.referencia | referencia), efeitoForaDoPrazo: (.efeitoForaDoPrazo | codigo)} end),
+                validade: (if .validade == null then {escolha: "NAO_EXIGE_DOCUMENTO_VALIDO"} else
+                    .validade | {escolha: (.escolha | codigo), referencia: (.referencia | referencia),
+                        efeitoDoVencimento: (.efeitoDoVencimento | codigo)} end),
+                modelo: (if .modelo == null then null else .modelo | {modeloId} end)
+            }),
+            fatosComprovados, chave
         })
     }]' <<< "$processo")
     # O modelo com prova sempre traz os documentos do atendimento especializado; sem eles, a
