@@ -334,13 +334,21 @@ setup_configuracao() {
     exigir_id "TIPO_DOCUMENTO_RESIDENCIA_ID" "$TIPO_DOCUMENTO_RESIDENCIA_ID"
 
     # Referência demográfica usada na distribuição de vagas do processo.
-    local censo="IBGE 2022/2010 PA"
+    local censo="IBGE 2022/2010 PA" referencia_demografica
     RESERVA_DEMOGRAFICA_ID=$(post_tolerante "/api/configuracao/admin/referencias-reserva-demografica" "{
         \"censoReferencia\": \"$censo\",
         \"ppiPercentual\": 80.49, \"quilombolaPercentual\": 1.66, \"pcdPercentual\": 6.65,
         \"baseLegal\": \"Edital Medicina 2027, Anexo II, nota 2\"
     }")
-    [ -z "$RESERVA_DEMOGRAFICA_ID" ] && RESERVA_DEMOGRAFICA_ID=$(api_get "/api/configuracao/referencias-reserva-demografica?limit=100" | jq -r --arg c "$censo" '.[] | select(.censoReferencia==$c) | .id' | head -1)
+    if [ -z "$RESERVA_DEMOGRAFICA_ID" ]; then
+        referencia_demografica=$(api_get "/api/configuracao/referencias-reserva-demografica?limit=100" | jq -c --arg c "$censo" '[.[] | select(.censoReferencia == $c)] | .[0]')
+        RESERVA_DEMOGRAFICA_ID=$(jq -r '.id // empty' <<< "$referencia_demografica")
+        exigir_id "RESERVA_DEMOGRAFICA_ID" "$RESERVA_DEMOGRAFICA_ID"
+        if ! jq -e '.ppiPercentual == 80.49 and .quilombolaPercentual == 1.66 and .pcdPercentual == 6.65' \
+            <<< "$referencia_demografica" >/dev/null; then
+            fail "A referência de reserva demográfica já cadastrada tem percentuais diferentes dos esperados: PPI 80,49%, quilombola 1,66% e PcD 6,65%."
+        fi
+    fi
     exigir_id "RESERVA_DEMOGRAFICA_ID" "$RESERVA_DEMOGRAFICA_ID"
 
     # PSR (Processo Seletivo Regular) é o tipo de processo do modelo de
@@ -472,7 +480,7 @@ JSON
     BASE_LEGAL_FADA_ID=$(post_tolerante "/api/configuracao/admin/base-legal-bonus-regional" "$(jq -nc \
         --arg identificacao "$fada_identificacao" --argjson municipios "$municipios_fada" \
         '{tipoInstrumento: "EDITAL", identificacao: $identificacao,
-          descricao: "Fator de Atenuação das Desigualdades de Acesso", municipios: $municipios}')")
+          descricao: "FADA", municipios: $municipios}')")
     if [ -z "$BASE_LEGAL_FADA_ID" ]; then
         base_legal_fada=$(api_get "/api/configuracao/base-legal-bonus-regional?limit=100" | jq -c --arg i "$fada_identificacao" '[.[] | select(.identificacao == $i)] | if length == 1 then .[0] else null end')
         BASE_LEGAL_FADA_ID=$(jq -r '.id // empty' <<< "$base_legal_fada")
@@ -525,14 +533,12 @@ JSON
 criar_processo() {
     log "Criar ProcessoSeletivo"
     local resp
-    resp=$(api POST "/api/selecao/processos-seletivos" "{
-        \"nome\": \"$NOME_PROCESSO\",
-        \"tipoProcessoOrigemId\": \"$TIPO_PROCESSO_ID\",
-        \"origemCandidatos\": \"INSCRICAO_PROPRIA\",
-        \"unidadeAdministradoraOrigemId\": \"$UNIDADE_ID\",
-        \"localidadeCodigoIbge\": \"1504208\", \"localidadeNome\": \"Marabá\", \"localidadeUf\": \"PA\",
-        \"identificadorLegivel\": \"$IDENTIFICADOR_PROCESSO\"
-    }")
+    resp=$(api POST "/api/selecao/processos-seletivos" "$(jq -n \
+        --arg nome "$NOME_PROCESSO" --arg tipo "$TIPO_PROCESSO_ID" \
+        --arg unidade "$UNIDADE_ID" --arg identificador "$IDENTIFICADOR_PROCESSO" \
+        '{nome: $nome, tipoProcessoOrigemId: $tipo, origemCandidatos: "INSCRICAO_PROPRIA",
+          unidadeAdministradoraOrigemId: $unidade, localidadeCodigoIbge: "1504208",
+          localidadeNome: "Marabá", localidadeUf: "PA", identificadorLegivel: $identificador}')")
     PROCESSO_ID=$(jq -r 'if type == "object" then .id else . end' <<< "$resp")
     [ -n "$PROCESSO_ID" ] && [ "$PROCESSO_ID" != "null" ] || fail "Criar ProcessoSeletivo falhou: $resp"
     ok "processo=$PROCESSO_ID"
@@ -645,7 +651,7 @@ definir_cascata_remanejamento() {
 }
 
 definir_fada() {
-    log "Definir o Fator de Atenuação das Desigualdades de Acesso (FADA_MULTIPLICATIVO)"
+    log "Definir o FADA (FADA_MULTIPLICATIVO)"
     # O modelo da Medicina pede a quem pede o FADA o município do ensino
     # médio ou, a quem concluiu por certificação e escolhe esse caminho, o da
     # residência no período, com as opções da base legal do acréscimo. Recebe
