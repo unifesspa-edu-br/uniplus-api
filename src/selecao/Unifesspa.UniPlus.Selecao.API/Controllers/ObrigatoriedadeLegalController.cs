@@ -1,10 +1,9 @@
 namespace Unifesspa.UniPlus.Selecao.API.Controllers;
 
-using System.Diagnostics.CodeAnalysis;
-
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Routing;
+using Microsoft.Extensions.Primitives;
 
 using Unifesspa.UniPlus.Application.Abstractions.Messaging;
 using Unifesspa.UniPlus.Infrastructure.Core.Authorization;
@@ -32,10 +31,6 @@ using Unifesspa.UniPlus.Selecao.Domain.Enums;
 /// </summary>
 [ApiController]
 [Authorize]
-[SuppressMessage(
-    "Performance",
-    "CA1515:Consider making public types internal",
-    Justification = "ASP.NET Core ControllerFeatureProvider só descobre controllers public; sem isso o MVC ignora a classe.")]
 public sealed class ObrigatoriedadeLegalController : ControllerBase
 {
     private const string ResourceTag = "obrigatoriedades-legais";
@@ -85,7 +80,8 @@ public sealed class ObrigatoriedadeLegalController : ControllerBase
             return filtroDeCategoria.ToActionResult(_mapper);
         }
 
-        ListarObrigatoriedadesLegaisQuery consulta = new(page.AfterId, page.Limit, page.Direction, tipoProcesso, filtroDeCategoria.Value, vigentes);
+        string? codigo = Request.Query.TryGetValue("tipoProcesso", out StringValues valores) ? valores.ToString() : tipoProcesso;
+        ListarObrigatoriedadesLegaisQuery consulta = new(page.AfterId, page.Limit, page.Direction, codigo, filtroDeCategoria.Value, vigentes);
 
         return await ListarPaginadoAsync(consulta, page, cancellationToken).ConfigureAwait(false);
     }

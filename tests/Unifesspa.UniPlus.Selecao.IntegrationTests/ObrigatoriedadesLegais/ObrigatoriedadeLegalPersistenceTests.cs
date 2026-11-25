@@ -7,6 +7,7 @@ using AwesomeAssertions;
 using Microsoft.EntityFrameworkCore;
 
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
+using Unifesspa.UniPlus.Kernel.Domain;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
@@ -232,7 +233,7 @@ public sealed class ObrigatoriedadeLegalPersistenceTests : IClassFixture<Obrigat
 
     private static ObrigatoriedadeLegal NovaRegraValida(string regraCodigo) =>
         ObrigatoriedadeLegal.Criar(
-            ObrigatoriedadeLegal.TipoProcessoUniversal,
+            TodosOsTiposDeProcesso.Codigo,
             CategoriaObrigatoriedade.Etapa,
             regraCodigo,
             new EtapaObrigatoria("ProvaObjetiva"),

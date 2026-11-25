@@ -6779,7 +6779,7 @@
     {
       "codigo": "uniplus.selecao.obrigatoriedade_legal.tipo_processo_codigo_invalido",
       "status": 422,
-      "titulo": "TipoProcessoCodigo inválido"
+      "titulo": "Código do tipo de processo fora do formato"
     },
     {
       "codigo": "uniplus.selecao.obrigatoriedade_legal.tipo_processo_codigo_obrigatorio",

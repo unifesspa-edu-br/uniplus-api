@@ -7,6 +7,7 @@ using Microsoft.EntityFrameworkCore;
 
 using Unifesspa.UniPlus.Infrastructure.Core.Pagination;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
+using Unifesspa.UniPlus.Kernel.Domain;
 using Unifesspa.UniPlus.Kernel.Pagination;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
@@ -96,7 +97,7 @@ public sealed class ObrigatoriedadeLegalRepository : IObrigatoriedadeLegalReposi
     private IQueryable<ObrigatoriedadeLegal> Filtrar(string? tipoProcessoCodigo, CategoriaObrigatoriedade? categoria, bool vigentes)
     {
         IQueryable<ObrigatoriedadeLegal> query = _context.ObrigatoriedadesLegais.AsNoTracking();
-        if (!string.IsNullOrWhiteSpace(tipoProcessoCodigo))
+        if (!string.IsNullOrEmpty(tipoProcessoCodigo))
         {
             query = query.Where(o => o.TipoProcessoCodigo == tipoProcessoCodigo);
         }
@@ -124,7 +125,7 @@ public sealed class ObrigatoriedadeLegalRepository : IObrigatoriedadeLegalReposi
         return await _context.ObrigatoriedadesLegais
             .AsNoTracking()
             .Where(o =>
-                (o.TipoProcessoCodigo == ObrigatoriedadeLegal.TipoProcessoUniversal
+                (o.TipoProcessoCodigo == TodosOsTiposDeProcesso.Codigo
                     || o.TipoProcessoCodigo == tipoProcessoCodigo)
                 && o.VigenciaInicio <= dataReferencia
                 && (o.VigenciaFim == null || o.VigenciaFim > dataReferencia))

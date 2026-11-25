@@ -2,6 +2,7 @@ namespace Unifesspa.UniPlus.Selecao.Domain.UnitTests.Entities;
 
 using AwesomeAssertions;
 
+using Unifesspa.UniPlus.Kernel.Domain;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
@@ -20,7 +21,7 @@ public sealed class ObrigatoriedadeLegalCriarTests
     private static Result<ObrigatoriedadeLegal> Nova(
         string regraCodigo = "X",
         PredicadoObrigatoriedade? predicado = null,
-        string tipoProcessoCodigo = "*",
+        string tipoProcessoCodigo = TodosOsTiposDeProcesso.Codigo,
         TextoNormativo? texto = null,
         DateOnly? vigenciaFim = null) =>
         ObrigatoriedadeLegal.Criar(
@@ -34,37 +35,32 @@ public sealed class ObrigatoriedadeLegalCriarTests
     {
         ObrigatoriedadeLegal regra = Nova("ETAPA_OBRIGATORIA").Value!;
 
-        regra.TipoProcessoCodigo.Should().Be("*");
+        regra.TipoProcessoCodigo.Should().Be(TodosOsTiposDeProcesso.Codigo);
         regra.Categoria.Should().Be(CategoriaObrigatoriedade.Etapa);
         regra.RegraCodigo.Should().Be("ETAPA_OBRIGATORIA");
         HashCanonicalComputer.IsValidHashShape(regra.Hash).Should().BeTrue();
     }
 
-    [Fact(DisplayName = "Criar e atualizar guardam o código do tipo sem espaços nas bordas")]
-    public void CriarEAtualizar_TipoProcessoComEspacos_GuardaCodigoSemEspacos()
-    {
-        ObrigatoriedadeLegal regra = Nova(tipoProcessoCodigo: " POS ").Value!;
-        regra.TipoProcessoCodigo.Should().Be("POS");
-
-        Result atualizado = regra.Atualizar(" ADMISSAO ", regra.Categoria, regra.RegraCodigo, PredicadoBase, TextoBase, regra.VigenciaInicio, regra.VigenciaFim);
-
-        atualizado.IsSuccess.Should().BeTrue(atualizado.Error?.Message);
-        regra.TipoProcessoCodigo.Should().Be("ADMISSAO");
-    }
-
     [Theory(DisplayName = "TipoProcessoCodigo estruturalmente válido é aceito; a atividade é validada pelo catálogo no handler")]
-    [InlineData("*")]
+    [InlineData(TodosOsTiposDeProcesso.Codigo)]
     [InlineData("SISU")]
     [InlineData("INDIGENA_E_QUILOMBOLA")]
     [InlineData("PORTADOR_DE_DIPLOMA")]
     [InlineData("SISU_ANTIGO")]
-    [InlineData("sisu")]
     public void Criar_TipoProcessoCodigoEstruturalmenteValido_Aceita(string tipoProcessoCodigo)
     {
         Result<ObrigatoriedadeLegal> resultado = Nova(tipoProcessoCodigo: tipoProcessoCodigo);
 
         resultado.IsSuccess.Should().BeTrue("o domínio só conhece a estrutura do código; a existência é do handler");
         resultado.Value!.TipoProcessoCodigo.Should().Be(tipoProcessoCodigo);
+    }
+
+    [Fact]
+    public void Criar_TipoComOitentaCaracteres_ConservaCodigo()
+    {
+        string codigo = new('A', 80);
+
+        Nova(tipoProcessoCodigo: codigo).Value!.TipoProcessoCodigo.Should().Be(codigo);
     }
 
     [Fact(DisplayName = "Atualizar recomputa o hash quando campo semântico muda")]

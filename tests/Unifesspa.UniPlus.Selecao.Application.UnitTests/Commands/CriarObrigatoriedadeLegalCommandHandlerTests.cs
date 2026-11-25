@@ -5,6 +5,7 @@ using AwesomeAssertions;
 using NSubstitute;
 
 using Unifesspa.UniPlus.Configuracao.Contracts;
+using Unifesspa.UniPlus.Kernel.Domain;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Application.UnitTests.TestSupport;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
@@ -54,17 +55,17 @@ public sealed class CriarObrigatoriedadeLegalCommandHandlerTests
 
         Result<Guid> resultado = await _cenario.CriarAsync(ComandoDeCriar() with { TipoProcessoCodigo = codigo });
 
-        resultado.Error!.Code.Should().Be("ObrigatoriedadeLegal.TipoProcessoNaoEncontradoOuInativo");
+        resultado.Error!.Code.Should().Be("ObrigatoriedadeLegal.TipoProcessoCodigoInvalido");
         resultado.Error.Message.Should().NotContain(codigo);
-        await tipos.Received(1).ObterAtivoPorCodigoAsync(codigo, Arg.Any<CancellationToken>());
+        await tipos.DidNotReceiveWithAnyArgs().ObterAtivoPorCodigoAsync(default!, default);
     }
 
     [Fact]
-    public async Task Handle_TipoProcessoAtivoComEspacos_RecusaComoInexistente()
+    public async Task Handle_TipoProcessoAtivoComEspacos_RecusaFormato()
     {
         Result<Guid> resultado = await _cenario.CriarAsync(ComandoDeCriar() with { TipoProcessoCodigo = " PS_NOVO " });
 
-        resultado.Error!.Code.Should().Be("ObrigatoriedadeLegal.TipoProcessoNaoEncontradoOuInativo");
+        resultado.Error!.Code.Should().Be("ObrigatoriedadeLegal.TipoProcessoCodigoInvalido");
         await _cenario.UnitOfWork.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
     }
 
@@ -73,7 +74,7 @@ public sealed class CriarObrigatoriedadeLegalCommandHandlerTests
     {
         ITipoProcessoReader tipos = _cenario.TiposDeProcesso = Substitute.For<ITipoProcessoReader>();
 
-        Result<Guid> resultado = await _cenario.CriarAsync(ComandoDeCriar() with { TipoProcessoCodigo = "*" });
+        Result<Guid> resultado = await _cenario.CriarAsync(ComandoDeCriar() with { TipoProcessoCodigo = TodosOsTiposDeProcesso.Codigo });
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
         await tipos.DidNotReceiveWithAnyArgs().ObterAtivoPorCodigoAsync(default!, default);

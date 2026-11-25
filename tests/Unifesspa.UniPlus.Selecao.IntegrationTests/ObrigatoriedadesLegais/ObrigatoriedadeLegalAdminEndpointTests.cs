@@ -17,6 +17,7 @@ using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Assertions;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Authentication;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Hosting;
+using Unifesspa.UniPlus.Kernel.Domain;
 using Unifesspa.UniPlus.Selecao.Application.Permissoes;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
@@ -335,7 +336,7 @@ public sealed class ObrigatoriedadeLegalAdminEndpointTests : ObrigatoriedadeLega
         string regraCodigo,
         string categoria = "OUTROS",
         string baseLegal = "Lei seed",
-        string tipoProcessoCodigo = "*")
+        string tipoProcessoCodigo = TodosOsTiposDeProcesso.Codigo)
     {
         object payload = CorposDeObrigatoriedadeLegal.RegraInicial(regraCodigo, categoria, baseLegal, tipoProcessoCodigo, PredicadoConcorrenciaDupla);
 

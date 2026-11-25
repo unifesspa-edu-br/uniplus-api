@@ -12,7 +12,6 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 /// </summary>
 internal static class ValidacaoDaObrigatoriedadeLegal
 {
-    internal const int TipoProcessoCodigoMaxLength = 64;
     internal const int RegraCodigoMaxLength = FormatoDoCodigo.ComprimentoMaximo;
     internal const int BaseLegalMaxLength = 500;
     internal const int DescricaoHumanaMaxLength = 1000;
@@ -46,14 +45,15 @@ internal static class ValidacaoDaObrigatoriedadeLegal
     internal static string? AparaOuNulo(string? valor) =>
         string.IsNullOrWhiteSpace(valor) ? null : valor.Trim();
 
-    private static IEnumerable<FieldError> TipoProcessoCodigo(string? valor) =>
-        Obrigatorio(
-            valor,
-            TipoProcessoCodigoMaxLength,
-            "tipoProcessoCodigo",
-            "ObrigatoriedadeLegal.TipoProcessoCodigoObrigatorio",
-            "TipoProcessoCodigo é obrigatório — use \"*\" para regras universais.",
-            "ObrigatoriedadeLegal.TipoProcessoCodigoInvalido");
+    private static IEnumerable<FieldError> TipoProcessoCodigo(string? valor)
+    {
+        CampoDeCodigo campo = new("Código do tipo de processo", FormatoDoCodigo.ComprimentoMaximo,
+            "ObrigatoriedadeLegal.TipoProcessoCodigoObrigatorio", "ObrigatoriedadeLegal.TipoProcessoCodigoInvalido");
+        if (campo.Recusa(valor, "tipoProcessoCodigo") is { } erro)
+        {
+            yield return erro;
+        }
+    }
 
     private static IEnumerable<FieldError> RegraCodigo(string? valor)
     {

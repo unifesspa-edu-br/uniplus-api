@@ -5,6 +5,7 @@ using System.Text.Json.Nodes;
 
 using AwesomeAssertions;
 
+using Unifesspa.UniPlus.Kernel.Domain;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
@@ -49,7 +50,7 @@ public sealed class HashCanonicalComputerTests
         ["predicado"] = JsonSerializer.SerializeToNode<PredicadoObrigatoriedade>(
             new EtapaObrigatoria("ProvaObjetiva"), HashCanonicalComputer.CanonicalOptions),
         ["regraCodigo"] = "ETAPA_OBRIGATORIA",
-        ["tipoProcessoCodigo"] = "*",
+        ["tipoProcessoCodigo"] = TodosOsTiposDeProcesso.Codigo,
         ["vigenciaFim"] = "2027-01-01",
         ["vigenciaInicio"] = "2026-01-01",
     };
@@ -95,7 +96,7 @@ public sealed class HashCanonicalComputerTests
     }
 
     private static ObrigatoriedadeLegal Criar(string? campo = null) => ObrigatoriedadeLegal.Criar(
-        campo == "tipoProcessoCodigo" ? "INDIGENA_E_QUILOMBOLA" : "*",
+        campo == "tipoProcessoCodigo" ? "INDIGENA_E_QUILOMBOLA" : TodosOsTiposDeProcesso.Codigo,
         campo == "categoria" ? CategoriaObrigatoriedade.Modalidade : CategoriaObrigatoriedade.Etapa,
         campo == "regraCodigo" ? "ETAPA_OBRIGATORIA_V2" : "ETAPA_OBRIGATORIA",
         Predicado(campo),
