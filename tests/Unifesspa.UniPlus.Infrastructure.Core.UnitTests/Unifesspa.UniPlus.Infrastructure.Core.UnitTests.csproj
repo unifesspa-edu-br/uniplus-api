@@ -52,7 +52,7 @@
     <Compile Include="../Shared/RegraDeNomeDeTabela.cs" Link="RegraDeNomeDeTabela.cs" />
     <Compile Include="../Shared/RegraDeTamanhoDeIdentificador.cs" Link="RegraDeTamanhoDeIdentificador.cs" />
     <Compile Include="../Shared/RelogioFixo.cs" Link="RelogioFixo.cs" />
-    <Compile Include="../Shared/SerializacaoDosCodigosNasMensagensTestsBase.cs" Link="SerializacaoDosCodigosNasMensagensTestsBase.cs" />
+    <Compile Include="../Shared/CasosDaSerializacaoDosCodigosNasMensagens.cs" Link="CasosDaSerializacaoDosCodigosNasMensagens.cs" />
     <Compile Include="../Unifesspa.UniPlus.IntegrationTests.Fixtures/Observability/ColetorDeMedidas.cs" Link="Apoio/ColetorDeMedidas.cs" />
     <Using Include="Xunit" />
   </ItemGroup>
