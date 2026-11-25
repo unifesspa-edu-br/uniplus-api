@@ -3,10 +3,12 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Configurations;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence.CodigosDeContrato;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Protecao;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
+using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Records;
 
 [System.Diagnostics.CodeAnalysis.SuppressMessage(
@@ -36,16 +38,16 @@ internal sealed class RespostaDaInscricaoRecordConfiguration : IEntityTypeConfig
             t.HasComment("Um valor respondido na inscrição, na coluna do tipo do fato, com a origem: informado pelo candidato ou calculado a partir de outra resposta.");
             t.HasCheckConstraint(
                 "ck_respostas_da_inscricao_valor_do_tipo",
-                "num_nonnulls(valor_booleano, valor_numero, valor_codigo, valor_texto, valor_data, valor_cifrado) = 1 AND tipo IN ('SIM_OU_NAO', 'NUMERO', 'OPCAO', 'TEXTO', 'DATA', 'MUNICIPIO') AND ("
+                $"num_nonnulls(valor_booleano, valor_numero, valor_codigo, valor_texto, valor_data, valor_cifrado) = 1 AND tipo IN ({SqlDosCodigosDeContrato.Literal(TipoDoValorDeResposta.SimOuNao)}, {SqlDosCodigosDeContrato.Literal(TipoDoValorDeResposta.Numero)}, {SqlDosCodigosDeContrato.Literal(TipoDoValorDeResposta.Opcao)}, {SqlDosCodigosDeContrato.Literal(TipoDoValorDeResposta.Texto)}, {SqlDosCodigosDeContrato.Literal(TipoDoValorDeResposta.Data)}, {SqlDosCodigosDeContrato.Literal(TipoDoValorDeResposta.Municipio)}) AND ("
                 + "valor_cifrado IS NOT NULL"
-                + " OR (tipo = 'SIM_OU_NAO' AND valor_booleano IS NOT NULL)"
-                + " OR (tipo = 'NUMERO' AND valor_numero IS NOT NULL)"
-                + " OR (tipo = 'OPCAO' AND valor_codigo IS NOT NULL)"
-                + " OR (tipo = 'TEXTO' AND valor_texto IS NOT NULL)"
-                + " OR (tipo = 'DATA' AND valor_data IS NOT NULL)"
-                + " OR (tipo = 'MUNICIPIO' AND valor_codigo IS NOT NULL))"
-                + " AND (valor_rotulo IS NULL OR (tipo = 'MUNICIPIO' AND valor_codigo IS NOT NULL))");
-            t.HasCheckConstraint("ck_respostas_da_inscricao_origem", "origem IN ('INFORMADA', 'CALCULADA')");
+                + $" OR (tipo = {SqlDosCodigosDeContrato.Literal(TipoDoValorDeResposta.SimOuNao)} AND valor_booleano IS NOT NULL)"
+                + $" OR (tipo = {SqlDosCodigosDeContrato.Literal(TipoDoValorDeResposta.Numero)} AND valor_numero IS NOT NULL)"
+                + $" OR (tipo = {SqlDosCodigosDeContrato.Literal(TipoDoValorDeResposta.Opcao)} AND valor_codigo IS NOT NULL)"
+                + $" OR (tipo = {SqlDosCodigosDeContrato.Literal(TipoDoValorDeResposta.Texto)} AND valor_texto IS NOT NULL)"
+                + $" OR (tipo = {SqlDosCodigosDeContrato.Literal(TipoDoValorDeResposta.Data)} AND valor_data IS NOT NULL)"
+                + $" OR (tipo = {SqlDosCodigosDeContrato.Literal(TipoDoValorDeResposta.Municipio)} AND valor_codigo IS NOT NULL))"
+                + $" AND (valor_rotulo IS NULL OR (tipo = {SqlDosCodigosDeContrato.Literal(TipoDoValorDeResposta.Municipio)} AND valor_codigo IS NOT NULL))");
+            t.HasCheckConstraint("ck_respostas_da_inscricao_origem", $"origem IN ({SqlDosCodigosDeContrato.Lista<OrigemDaResposta>()})");
         });
 
         builder.HasKey(r => r.Id);
@@ -56,7 +58,7 @@ internal sealed class RespostaDaInscricaoRecordConfiguration : IEntityTypeConfig
 
         builder.Property(r => r.FatoCodigo).HasColumnName("codigo_do_dado").ClassificaComo(ClassificacaoDeProtecao.Interno).HasMaxLength(FormaDoItem.FatoCodigoMaxLength).IsRequired();
         builder.Property(r => r.Origem).ClassificaComo(ClassificacaoDeProtecao.Interno).HasMaxLength(9).IsRequired().HasComment("Origem da resposta.");
-        builder.Property(r => r.Tipo).ClassificaComo(ClassificacaoDeProtecao.Interno).HasMaxLength(10).IsRequired().HasComment("Tipo do valor da resposta.");
+        builder.Property(r => r.Tipo).ClassificaComo(ClassificacaoDeProtecao.Interno).HasMaxLength(10).IsRequired().HasComment("Tipo do valor da resposta. O tipo ENDERECO não é gravado aqui, porque o endereço tem registro próprio.");
         builder.Property(r => r.ValorCodigo).HasMaxLength(OpcaoDeclaradaFato.CodigoMaxLength);
         builder.Property(r => r.ValorRotulo)
             .HasComment("O nome que o Geo conferiu para o município de valor_codigo; nulo no rascunho e preenchido na inscrição enviada.");

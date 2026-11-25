@@ -31,6 +31,9 @@ internal static class ModeloDaSelecao
             .DistinctBy(static c => c.Nome)];
     }
 
+    public static string SqlDaRestricao(Type entidade, string nome) =>
+        Montado.Value.FindEntityType(entidade)!.GetCheckConstraints().Single(c => c.Name == nome).Sql;
+
     public static string? ComentarioDaTabela(Type entidade) => Montado.Value.FindEntityType(entidade)?.GetComment();
 
     private static IModel Montar()
