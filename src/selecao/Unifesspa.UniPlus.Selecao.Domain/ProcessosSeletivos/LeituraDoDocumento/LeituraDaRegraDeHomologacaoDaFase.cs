@@ -63,7 +63,7 @@ internal static class LeituraDaRegraDeHomologacaoDaFase
             return Result<PredicadoDnf?>.Success(null);
         }
 
-        Result<PredicadoDnf> predicado = PredicadoDaTroca.Ler(json);
+        Result<PredicadoDnf> predicado = PredicadoDnfJson.DeJson(json);
         return predicado.IsSuccess ? Result<PredicadoDnf?>.Success(predicado.Value) : Result<PredicadoDnf?>.ValidationFailure(
             [.. predicado.Errors.Select(static erro => erro with { Error = new DomainError(erro.Error.Code, MensagemDoEnquadramento(erro.Error)) })]);
     }

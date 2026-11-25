@@ -26,4 +26,16 @@ public sealed class CondicaoDeHomologacaoComDefeitoNoDocumentoTests
         PartesRecusadas(lidos).Select(parte => (parte.Codigo, parte.Ponteiro)).Should().Equal(
             CondicaoDeHomologacaoComDefeitoDeTeste.Causas.Select(causa => (causa.Codigo, PonteiroNoDocumento.Converter(caminho + causa.Campo, lidos.Origem))));
     }
+    [Fact]
+    public void Ler_DuasCondicoesInvalidasNoEnquadramento_AcumulaCausasNaOrdem()
+    {
+        CondicaoNoDocumento condicao = Condicao(TipoDeCondicaoDeHomologacao.ResultadoNoRetornoDoInep, 2025, "MOTIVO_FICTICIO") with { Enquadramento = CondicaoDeHomologacaoComDefeitoDeTeste.Enquadramento };
+        FaseNoDocumento fase = Fase(0, "homologacao", "RESULTADO") with { Publicacoes = new([], false, null, new RegraDeHomologacaoNoDocumento(AtoDoResultado, [new([condicao])])) };
+        IdentificacaoECronogramaLidos lidos = Ler(Documento(fase));
+        const string caminho = "fases[0].regraDeHomologacao.alternativas[0].condicoes[0].";
+        PartesRecusadas(lidos).Select(parte => (parte.Codigo, parte.Ponteiro)).Should().Equal(
+            CondicaoDeHomologacaoComDefeitoDeTeste.CausasDoEnquadramento.Select(causa => (causa.Codigo, PonteiroNoDocumento.Converter(caminho + causa.Campo, lidos.Origem))));
+        Mensagens(lidos).Should().Equal(
+            Enumerable.Repeat(MensagensDoEnquadramento.DoDefeitoDeForma(CondicaoDeHomologacaoComDefeitoDeTeste.CodigoDaForma), 2));
+    }
 }
