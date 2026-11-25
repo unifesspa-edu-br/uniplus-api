@@ -1174,7 +1174,7 @@
             "name": "situacao",
             "in": "query",
             "schema": {
-              "type": "string"
+              "$ref": "#/components/schemas/SituacaoDaConcessaoCodigo"
             }
           },
           {
@@ -3189,7 +3189,7 @@
             "name": "situacao",
             "in": "query",
             "schema": {
-              "type": "string"
+              "$ref": "#/components/schemas/SituacaoDoPedidoCodigo"
             }
           },
           {
@@ -4759,7 +4759,7 @@
             "name": "situacao",
             "in": "query",
             "schema": {
-              "type": "string"
+              "$ref": "#/components/schemas/SituacaoDaProvidenciaCodigo"
             }
           },
           {
@@ -6514,7 +6514,7 @@
             "name": "situacao",
             "in": "query",
             "schema": {
-              "type": "string"
+              "$ref": "#/components/schemas/SituacaoDaRevisaoCodigo"
             }
           },
           {
@@ -8390,7 +8390,7 @@
             "type": "boolean"
           },
           "situacao": {
-            "type": "string"
+            "$ref": "#/components/schemas/SituacaoDaConcessaoNaRevisao"
           },
           "ehDoLeitor": {
             "type": "boolean"
@@ -9194,6 +9194,30 @@
             "default": "humano"
           }
         }
+      },
+      "FormaDoEncerramento": {
+        "required": [
+          "codigo",
+          "rotulo"
+        ],
+        "type": "object",
+        "properties": {
+          "codigo": {
+            "$ref": "#/components/schemas/FormaDoEncerramentoCodigo"
+          },
+          "rotulo": {
+            "type": "string"
+          }
+        }
+      },
+      "FormaDoEncerramentoCodigo": {
+        "enum": [
+          "CONCLUIDA",
+          "PRAZO",
+          "MANUAL"
+        ],
+        "type": "string",
+        "description": "- \u0060CONCLUIDA\u0060: Conclu\u00EDda\n- \u0060PRAZO\u0060: Prazo\n- \u0060MANUAL\u0060: Manual"
       },
       "IdentidadeDto": {
         "required": [
@@ -10765,12 +10789,16 @@
             "format": "date-time"
           },
           "situacao": {
-            "type": "string"
+            "$ref": "#/components/schemas/SituacaoDaRevisaoDasConcessoes"
           },
           "forma": {
-            "type": [
-              "null",
-              "string"
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/FormaDoEncerramento"
+              }
             ]
           },
           "decisoesEnviadas": {
@@ -10843,7 +10871,7 @@
             "format": "date-time"
           },
           "situacao": {
-            "type": "string"
+            "$ref": "#/components/schemas/SituacaoDaRevisaoDasConcessoes"
           }
         }
       },
@@ -10917,6 +10945,85 @@
           }
         }
       },
+      "SituacaoDaConcessaoCodigo": {
+        "enum": [
+          "ATIVA",
+          "REVOGADA",
+          "VENCIDA"
+        ],
+        "type": "string",
+        "description": "- \u0060ATIVA\u0060: Ativa\n- \u0060REVOGADA\u0060: Revogada\n- \u0060VENCIDA\u0060: Vencida"
+      },
+      "SituacaoDaConcessaoNaRevisao": {
+        "required": [
+          "codigo",
+          "rotulo"
+        ],
+        "type": "object",
+        "properties": {
+          "codigo": {
+            "$ref": "#/components/schemas/SituacaoDaConcessaoNaRevisaoCodigo"
+          },
+          "rotulo": {
+            "type": "string"
+          }
+        }
+      },
+      "SituacaoDaConcessaoNaRevisaoCodigo": {
+        "enum": [
+          "AGUARDANDO_DECISOES",
+          "RETIDA",
+          "AGUARDANDO_PROTECAO_DE_DADOS",
+          "MIGRADA",
+          "RECUSADA",
+          "NAO_MIGRADA",
+          "FORA_DA_LISTA"
+        ],
+        "type": "string",
+        "description": "- \u0060AGUARDANDO_DECISOES\u0060: Aguardando decis\u00E3o da gest\u00E3o\n- \u0060RETIDA\u0060: Retida\n- \u0060AGUARDANDO_PROTECAO_DE_DADOS\u0060: Aguardando prote\u00E7\u00E3o de dados\n- \u0060MIGRADA\u0060: Migrada\n- \u0060RECUSADA\u0060: Recusada\n- \u0060NAO_MIGRADA\u0060: N\u00E3o migrada\n- \u0060FORA_DA_LISTA\u0060: Fora da lista"
+      },
+      "SituacaoDaProvidenciaCodigo": {
+        "enum": [
+          "ABERTA",
+          "RESPONDIDA",
+          "ATENDIDA",
+          "PREJUDICADA"
+        ],
+        "type": "string",
+        "description": "- \u0060ABERTA\u0060: Aberta\n- \u0060RESPONDIDA\u0060: Respondida\n- \u0060ATENDIDA\u0060: Atendida\n- \u0060PREJUDICADA\u0060: Prejudicada"
+      },
+      "SituacaoDaRevisaoCodigo": {
+        "enum": [
+          "EM_ANDAMENTO",
+          "CONCLUIDA"
+        ],
+        "type": "string",
+        "description": "- \u0060EM_ANDAMENTO\u0060: Em Andamento\n- \u0060CONCLUIDA\u0060: Conclu\u00EDda"
+      },
+      "SituacaoDaRevisaoDasConcessoes": {
+        "required": [
+          "codigo",
+          "rotulo"
+        ],
+        "type": "object",
+        "properties": {
+          "codigo": {
+            "$ref": "#/components/schemas/SituacaoDaRevisaoDasConcessoesCodigo"
+          },
+          "rotulo": {
+            "type": "string"
+          }
+        }
+      },
+      "SituacaoDaRevisaoDasConcessoesCodigo": {
+        "enum": [
+          "ABERTA",
+          "ENCERRANDO",
+          "ENCERRADA"
+        ],
+        "type": "string",
+        "description": "- \u0060ABERTA\u0060: Aberta\n- \u0060ENCERRANDO\u0060: Em encerramento\n- \u0060ENCERRADA\u0060: Encerrada"
+      },
       "SituacaoDoAcessoDoPerfil": {
         "required": [
           "codigo",
@@ -10940,6 +11047,20 @@
         ],
         "type": "string",
         "description": "Situa\u00E7\u00E3o do acesso do perfil, e n\u00E3o de cada concess\u00E3o: com o perfil em vigor, uma concess\u00E3o ainda pode n\u00E3o dar acesso por prazo vencido, revis\u00E3o das concess\u00F5es em andamento ou permiss\u00E3o suspensa por reclassifica\u00E7\u00E3o. A desativa\u00E7\u00E3o do perfil n\u00E3o altera a situa\u00E7\u00E3o.\n\n- \u0060SUSPENSO\u0060: Suspenso \u2014 H\u00E1 suspens\u00E3o aberta: nenhuma concess\u00E3o do perfil d\u00E1 acesso at\u00E9 a retomada.\n- \u0060EM_VIGOR\u0060: Em vigor \u2014 Sem suspens\u00E3o e com permiss\u00F5es valendo. O perfil de governan\u00E7a est\u00E1 sempre em vigor.\n- \u0060SEM_VERSAO_EM_VIGOR\u0060: Sem vers\u00E3o em vigor \u2014 Sem suspens\u00E3o e sem vers\u00E3o aprovada valendo."
+      },
+      "SituacaoDoPedidoCodigo": {
+        "enum": [
+          "AGUARDANDO_BENEFICIARIO",
+          "AGUARDANDO_GESTOR",
+          "AGUARDANDO_PROTECAO_DE_DADOS",
+          "APROVADO",
+          "RECUSADO",
+          "CANCELADO",
+          "AGUARDANDO_DOCUMENTO",
+          "DEVOLVIDO"
+        ],
+        "type": "string",
+        "description": "- \u0060AGUARDANDO_BENEFICIARIO\u0060: Aguardando benefici\u00E1rio\n- \u0060AGUARDANDO_GESTOR\u0060: Aguardando gestor\n- \u0060AGUARDANDO_PROTECAO_DE_DADOS\u0060: Aguardando prote\u00E7\u00E3o de dados\n- \u0060APROVADO\u0060: Aprovado\n- \u0060RECUSADO\u0060: Recusado\n- \u0060CANCELADO\u0060: Cancelado\n- \u0060AGUARDANDO_DOCUMENTO\u0060: Aguardando documento\n- \u0060DEVOLVIDO\u0060: Devolvido"
       },
       "SolicitarProvidenciaRequest": {
         "required": [
