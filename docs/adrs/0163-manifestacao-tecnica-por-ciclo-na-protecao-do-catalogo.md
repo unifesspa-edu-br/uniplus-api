@@ -13,9 +13,9 @@ informed:
 
 ## Contexto e enunciado do problema
 
-A [ADR-0153](0153-projecao-por-protecao.md) pôs todo tipo de documento e todo fato do candidato sob a aprovação da proteção de dados: o item nasce pendente, o administrador do cadastro o envia numa solicitação e quem aprova decide (aprova, recomenda ajuste ou reprova). Cada ato fica num registro só acrescentado, e a edição que muda a proteção, ou qualquer edição de item reprovado ou com ajuste recomendado, reinicia a aprovação sem apagar esse registro (UNI-REQ-0205).
+A [ADR-0153](0153-projecao-por-protecao.md) pôs todo tipo de documento e todo fato do candidato sob a aprovação do Representante do controlador: o item nasce pendente, o administrador do cadastro o envia numa solicitação e o Representante aprova, recomenda ajuste ou devolve o item ao administrador, sempre com justificativa no ato de devolução; o item fica na situação devolvida. Cada ato fica num registro só acrescentado, e a edição que muda a proteção, ou qualquer edição de item devolvido ou com ajuste recomendado, reinicia a aprovação sem apagar esse registro (UNI-REQ-0205).
 
-A [ADR-0162](0162-separacao-das-atribuicoes-de-governanca.md) separou quem decide de quem fiscaliza: o Representante do controlador decide a proteção do catálogo de tipos de documento e de fatos do candidato, e o Encarregado de dados registra manifestação técnica, sem decidir. A regra de negócio está em UNI-REQ-0373 e UNI-REQ-0374: a manifestação tem parecer adequada, recomenda ajuste ou inadequada, com texto obrigatório nos dois últimos; vale para o ciclo de aprovação em que foi feita; a nova manifestação da mesma pessoa substitui a vigente sem apagar a anterior; manifestações de pessoas diferentes coexistem; a falta de manifestação não impede a decisão; e aprovar ou recomendar ajuste diante de manifestação desfavorável vigente exige justificativa, registrada no ato da decisão, inclusive na aprovação, que hoje não guarda justificativa.
+A [ADR-0162](0162-separacao-das-atribuicoes-de-governanca.md) separou quem decide de quem fiscaliza: o Representante do controlador decide a proteção do catálogo de tipos de documento e de fatos do candidato, e o gestor de proteção de dados registra manifestação técnica, sem decidir. A regra de negócio está em UNI-REQ-0373 e UNI-REQ-0374: a manifestação tem parecer recomenda aprovação, recomenda ajuste ou recomenda não uso, com texto obrigatório nos dois últimos; vale para o ciclo de aprovação em que foi feita; a nova manifestação da mesma pessoa substitui a vigente sem apagar a anterior; manifestações de pessoas diferentes coexistem; a falta de manifestação não impede a decisão; e aprovar ou recomendar ajuste diante de manifestação desfavorável vigente exige justificativa, registrada no ato da decisão, inclusive na aprovação, que hoje não guarda justificativa.
 
 O problema é decidir onde a manifestação fica, como ela se liga ao ciclo, como a decisão enxerga a manifestação vigente sem corrida entre as duas, e como a justificativa entra no registro do ato.
 
@@ -47,7 +47,7 @@ O circuito de aprovação do item passa a ter um número de ciclo, que começa e
 - A manifestação só é registrada em item com aprovação solicitada, por quem tem `configuracao:protecao-do-catalogo:manifestar` (UNI-REQ-0373).
 - Quem se manifesta informa o ciclo que leu. Ciclo diferente do atual é recusado com conflito sem nova tentativa automática: o item foi reiniciado, e talvez solicitado de novo, depois de lido, e a manifestação falaria do que não foi visto.
 - Cada gravação é um evento só acrescentado, com o item, o ciclo, o parecer, o texto, quem se manifestou (emissor, `contaId` e nome no instante) e o instante. A substituição é um evento novo que aponta para a manifestação vigente da mesma pessoa no mesmo ciclo; a anterior não é alterada. Vigente é a manifestação do ciclo atual que nenhum evento substituiu; a de ciclo encerrado é lida como encerrada.
-- O texto tem até 2.000 caracteres, contados como caracteres Unicode e não como unidades UTF-16 (um emoji conta um), o mesmo limite e a mesma contagem da justificativa da decisão, e é obrigatório nos pareceres recomenda ajuste e inadequada.
+- O texto tem até 2.000 caracteres, contados como caracteres Unicode e não como unidades UTF-16 (um emoji conta um), o mesmo limite e a mesma contagem da justificativa da decisão, e é obrigatório nos pareceres recomenda ajuste e recomenda não uso.
 - O banco garante uma única cadeia por pessoa e ciclo: no máximo uma manifestação inicial (sem substituída) por item, ciclo e pessoa, e no máximo uma substituição de cada manifestação.
 
 ### Estado do circuito na linha do item
@@ -69,7 +69,7 @@ A disputa não termina na requisição: vale também a leitura que quem age fez 
 
 ### Decisão diante de manifestação desfavorável
 
-- Aprovar ou recomendar ajuste em item com manifestação desfavorável vigente (recomenda ajuste ou inadequada) exige justificativa; sem ela, a decisão é recusada com código próprio. A reprovação já a exige sempre (UNI-REQ-0374).
+- Aprovar ou recomendar ajuste em item com manifestação desfavorável vigente (recomenda ajuste ou recomenda não uso) exige justificativa; sem ela, a decisão é recusada com código próprio. A devolução pelo Representante ao administrador exige justificativa sempre (UNI-REQ-0374).
 - A aprovação passa a aceitar justificativa opcional também sem manifestação desfavorável, como o ajuste já aceitava.
 - O ato da decisão registra a justificativa, o ciclo e se havia manifestação desfavorável vigente no instante da decisão. O banco recusa o ato de aprovação ou de ajuste marcado como diante de manifestação desfavorável sem justificativa.
 - O aceite da recomendação pelo administrador do cadastro não exige nova justificativa e não reinicia o ciclo.
@@ -133,3 +133,7 @@ Quem aprova ou consulta a proteção do catálogo de tipos de documento e de fat
 - [ADR-0063](0063-entidades-forensics-isentas-de-soft-delete.md): a manifestação, como o ato, é evidência forense, fora do soft delete e sem chave estrangeira para o item.
 - [ADR-0125](0125-dominio-fonte-unica-validacao-sem-fluentvalidation-duplicado.md): as recusas de forma da manifestação e da decisão saem num único lote.
 - UNI-REQ-0205, UNI-REQ-0373 e UNI-REQ-0374; issue unifesspa-edu-br/uniplus-api#2366.
+
+## Emenda (2026-11-24) — vocabulário da proteção do catálogo
+
+Códigos: situação `DEVOLVIDA`; decisões e atos `APROVACAO`, `AJUSTE_RECOMENDADO` e `DEVOLUCAO`; pareceres `RECOMENDA_APROVACAO`, `RECOMENDA_AJUSTE` e `RECOMENDA_NAO_USO`; perfil `GESTOR_DE_PROTECAO_DE_DADOS`.

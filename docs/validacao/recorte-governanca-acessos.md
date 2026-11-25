@@ -454,7 +454,7 @@ espera 200 "" "6.5 solicitação à proteção de dados"
 decidir_item() {   # a decisão repete a proteção vigente, o ciclo e as manifestações lidas
   api betina.neves GET "/api/configuracao/admin/protecao-do-catalogo/$1/$2" >/dev/null
   api betina.neves POST /api/configuracao/admin/protecao-do-catalogo "$(corpo -c --arg cad "$3" '{cadastro: $cad, itemId: .id,
-    decisao: "APROVAR", classificacaoProtecao, hipoteseLegal, finalidadeTratamento, ciclo: .aprovacao.ciclo,
+    decisao: "APROVACAO", classificacaoProtecao, hipoteseLegal, finalidadeTratamento, ciclo: .aprovacao.ciclo,
     manifestacoesNoCiclo: .aprovacao.manifestacoesNoCiclo, justificativa: "Classificação revista na validação local."}')"
 }
 decidir_item tipos-documento "$TD_ID" TIPO_DOCUMENTO; espera 204 "" "6.5 Representante aprova o tipo de documento"
