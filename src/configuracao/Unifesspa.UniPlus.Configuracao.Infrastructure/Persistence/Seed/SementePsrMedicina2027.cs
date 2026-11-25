@@ -150,15 +150,15 @@ public static class SementePsrMedicina2027
             new DefinicaoDoFato(TipoDoDado.SimOuNao, QuantidadeDeValores.ValorUnico, null, null, PontoInscricao, EscopoFato.Candidato, ClassificacaoDeProtecao.Pessoal, FinalidadeDoFator, HipoteseLegal)),
             Sem()),
         new(13, _ => CriacaoDoFato.CriarDoAdministrador(
-            new DescritivoDoFato("MUNICIPIO_RESIDENCIA_FATOR_ATENUACAO", "Município de residência para o Fator de Atenuação", "O município da área de abrangência do edital em que o candidato residiu no período que o edital fixa, entre os que o edital lista."),
+            new DescritivoDoFato("MUNICIPIO_RESIDENCIA_FATOR_ATENUACAO", "Município de residência para o Fator de Atenuação das Desigualdades de Acesso", "O município da área de abrangência do edital em que o candidato residiu no período que o edital fixa, entre os que o edital lista."),
             new DefinicaoDoFato(TipoDoDado.Opcao, QuantidadeDeValores.ValorUnico, FonteValoresFato.MunicipiosDoFada, null, PontoInscricao, EscopoFato.Candidato, ClassificacaoDeProtecao.Pessoal, FinalidadeDoFator, HipoteseLegal)),
             Sem()),
         new(16, _ => CriacaoDoFato.CriarDoAdministrador(
-            new DescritivoDoFato("MUNICIPIO_ENSINO_MEDIO_FATOR_ATENUACAO", "Município do ensino médio para o Fator de Atenuação", "O município da área de influência do edital em que o candidato cursou pelo menos um ano do ensino médio, entre os que o edital lista."),
+            new DescritivoDoFato("MUNICIPIO_ENSINO_MEDIO_FATOR_ATENUACAO", "Município do ensino médio para o Fator de Atenuação das Desigualdades de Acesso", "O município da área de influência do edital em que o candidato cursou pelo menos um ano do ensino médio, entre os que o edital lista."),
             new DefinicaoDoFato(TipoDoDado.Opcao, QuantidadeDeValores.ValorUnico, FonteValoresFato.MunicipiosDoFada, null, PontoInscricao, EscopoFato.Candidato, ClassificacaoDeProtecao.Pessoal, FinalidadeDoFator, HipoteseLegal)),
             Sem()),
         new(17, _ => CriacaoDoFato.CriarDoAdministrador(
-            new DescritivoDoFato("CAMINHO_FATOR_ATENUACAO", "Caminho do Fator de Atenuação", "Por qual vínculo com a área do edital pede o Fator de Atenuação quem concluiu o ensino médio por certificação: o ensino médio cursado ou a residência no período."),
+            new DescritivoDoFato("CAMINHO_FATOR_ATENUACAO", "Caminho do Fator de Atenuação das Desigualdades de Acesso", "Por qual vínculo com a área do edital pede o Fator de Atenuação das Desigualdades de Acesso quem concluiu o ensino médio por certificação: o ensino médio cursado ou a residência no período."),
             new DefinicaoDoFato(TipoDoDado.Opcao, QuantidadeDeValores.ValorUnico, FonteValoresFato.Catalogo, null, PontoInscricao, EscopoFato.Candidato, ClassificacaoDeProtecao.Pessoal, FinalidadeDoFator, HipoteseLegal)),
             [(CaminhoPeloEnsinoMedio, "Cursei pelo menos um ano do ensino médio na área"),
              (CaminhoPelaResidencia, "Residi na área no período do edital")]),
