@@ -66,7 +66,7 @@ internal sealed class MontagemDasRegrasDeComprovacao(MontagemDoDocumentoExigido 
             return false;
         }
         List<FieldError> erros = [.. RegraDeComprovacao.ConferirComposicao(itens.Regras,
-            regra.Repeticao.Recusada ? null : regra.Entrada.GrupoDoFormularioParaRepeticao).Select(erro => NoItem(erro, regra.Caminho, regra.Indice))];
+            regra.Repeticao.Recusada ? null : regra.Entrada.GrupoDoFormularioParaRepeticao).Select(erro => ComMensagemDoItem(erro.NoCaminhoDe(regra.Caminho), regra.Indice))];
         destino.Composicao.InsertRange(destino.Composicao.Count - itens.Composicao.Count, erros);
         return erros.Count > 0;
     }
@@ -78,7 +78,7 @@ internal sealed class MontagemDasRegrasDeComprovacao(MontagemDoDocumentoExigido 
             : CriarRegraDocumento(regra, ordem, partes.Value!);
         if (resultado.IsFailure)
         {
-            destino.Composicao.AddRange(resultado.Errors.Select(erro => NoItem(erro with { Field = erro.Field ?? "" }, regra.Caminho, regra.Indice)));
+            destino.Composicao.AddRange(resultado.Errors.Select(erro => ComMensagemDoItem(erro.NoCaminhoDoItem(regra.Caminho), regra.Indice)));
             destino.TodosMontados = false;
         }
         else
@@ -92,7 +92,7 @@ internal sealed class MontagemDasRegrasDeComprovacao(MontagemDoDocumentoExigido 
         Result<DocumentoExigido> documento = documentos.Criar(regra.Entrada.Documento!, partes);
         if (documento.IsFailure)
         {
-            return Result<RegraDeComprovacao>.ValidationFailure([.. documento.Errors.Select(e => (e with { Field = e.Field ?? "" }).NoCaminhoDe("documento"))]);
+            return Result<RegraDeComprovacao>.ValidationFailure([.. documento.Errors.Select(e => e.NoCaminhoDoItem("documento"))]);
         }
         DistincaoDeclarada? distincao = regra.Declaracao.Distincao;
         return RegraDeComprovacao.CriarRegraDeDocumento(documento.Value!, ordem, regra.Declaracao.QuantidadeMinima,
@@ -100,10 +100,10 @@ internal sealed class MontagemDasRegrasDeComprovacao(MontagemDoDocumentoExigido 
     }
 
     private static IEnumerable<FieldError> ErrosDoDocumento(IEnumerable<FieldError> erros, RegraInformadaConferida regra) =>
-        erros.Select(erro => NoItem((erro with { Field = erro.Field ?? "" }).NoCaminhoDe("documento"), regra.Caminho, regra.Indice));
+        erros.Select(erro => ComMensagemDoItem(erro.NoCaminhoDoItem("documento").NoCaminhoDe(regra.Caminho), regra.Indice));
 
-    private static FieldError NoItem(FieldError erro, string caminho, int indice) =>
-        erro.NoCaminhoDe(caminho) with { Error = erro.Error with { Message = $"No item {indice + 1} da lista: {erro.Error.Message}" } };
+    private static FieldError ComMensagemDoItem(FieldError erro, int indice) =>
+        erro with { Error = erro.Error with { Message = $"No item {indice + 1} da lista: {erro.Error.Message}" } };
 
     private sealed class RegrasMontadas
     {

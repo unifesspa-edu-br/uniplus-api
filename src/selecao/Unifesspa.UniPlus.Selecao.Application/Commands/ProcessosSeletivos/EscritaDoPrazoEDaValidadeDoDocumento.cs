@@ -90,5 +90,5 @@ internal static class EscritaDoPrazoEDaValidadeDoDocumento
         Result<T?>.ValidationFailure([.. recusas.NoCaminho(caminho)]);
 
     private static IEnumerable<FieldError> NoCaminho(this IEnumerable<FieldError> recusas, string caminho) =>
-        recusas.Select(recusa => (recusa with { Field = recusa.Field ?? string.Empty }).NoCaminhoDe(caminho));
+        recusas.Select(recusa => recusa.NoCaminhoDoItem(caminho));
 }

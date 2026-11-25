@@ -110,7 +110,7 @@ internal sealed class MontagemDaRegraDeHomologacao(
 
     private static Result<PredicadoDnf?> RecusasDoEnquadramento(string campo, IReadOnlyList<FieldError> erros, TipoDeValorEsperado? tipoEsperado = null) =>
         Result<PredicadoDnf?>.ValidationFailure([.. erros.Select(erro => new FieldError(
-            (erro with { Field = erro.Field ?? string.Empty }).NoCaminhoDe(campo).Field,
+            erro.NoCaminhoDoItem(campo).Field,
             new DomainError(erro.Error.Code, MensagemDaRecusa(erro.Error.Code, tipoEsperado))))]);
 
     private static string MensagemDaRecusa(string codigo, TipoDeValorEsperado? tipoEsperado) => codigo.StartsWith("CondicaoDnf.", StringComparison.Ordinal)
@@ -148,7 +148,7 @@ internal sealed class MontagemDaRegraDeHomologacao(
     // A recusa do domínio fala o campo dentro do que ela declarou; a montagem o localiza no corpo do pedido.
     private static Result<T> NoCampo<T>(Result<T> declarado, string campo) => declarado.IsSuccess
         ? declarado
-        : Result<T>.ValidationFailure([.. declarado.Errors.Select(erro => (erro with { Field = erro.Field ?? string.Empty }).NoCaminhoDe(campo))]);
+        : Result<T>.ValidationFailure([.. declarado.Errors.Select(erro => erro.NoCaminhoDoItem(campo))]);
 
     /// <summary>Os itens que passaram na declaração e as recusas dos demais, acumuladas na ordem da entrada.</summary>
     private sealed class MontadosEmLista<T>
