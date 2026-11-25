@@ -898,7 +898,7 @@ public void CalcularNotaFinal_ComBonusRegional_DeveAplicarBonusSobreTotal()
 ### Contrato OpenAPI
 
 - Toda ação de controlador declara `[EndpointName("VerboObjeto")]` na própria ação. Escreva o nome à mão, com verbo do negócio no infinitivo e objeto, em português e PascalCase, sem acento, `Get`, `Post`, `Admin` ou sigla. Não derive o nome do método, da rota ou do verbo HTTP. Ele deve ser único entre todos os documentos do host; alterá-lo muda o contrato.
-- Campo de texto lido pelo domínio ou pela consulta por `CatalogoDe<T>`, seja parâmetro de consulta ou propriedade de pedido, leva `[AceitaCodigosDe<T>]`. Leia o filtro de forma exata.
+- Campo de texto cujo valor é um código de enum de vocabulário fechado, seja parâmetro de consulta ou propriedade de pedido, leva `[AceitaCodigosDe<T>]`; o código que identifica uma regra do catálogo é texto e não leva a marca, mesmo quando lido por `CatalogoDe<T>`. Todo filtro marcado é lido por `FiltroPorCodigoPedido.Ler`: nulo ou vazio significa ausência de filtro; qualquer outro texto, inclusive só espaços, é lido exatamente como enviado e recusado com resposta 400 e código de erro próprio quando não está cadastrado. Ver [ADR-0176](docs/adrs/0176-codigo-de-contrato-dos-enums-declarado-por-atributo-e-lido-por-catalogo-no-kernel.md).
 - Ao alterar o contrato, execute o teste `SpecRuntime` do projeto de integração do módulo para gerar o documento obtido e siga a aprovação abaixo. Nunca edite os arquivos OpenAPI em `contracts/` à mão.
 
 ### Aprovação de referências de teste
