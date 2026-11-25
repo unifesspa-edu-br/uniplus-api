@@ -20952,6 +20952,19 @@
       ]
     },
     {
+      "codigo": "uniplus.selecao.leiaute_do_inep.filtro_de_tipo_invalido",
+      "requisitos": [],
+      "oQueAconteceu": [
+        "O filtro da consulta recebeu um valor que não é um dos códigos publicados para tipo de leiaute do INEP. A consulta não foi realizada."
+      ],
+      "comoResolver": [
+        "Informe um dos códigos publicados para tipo de leiaute do INEP ou retire o filtro para consultar sem esse recorte."
+      ],
+      "ondeAparece": [
+        "Listagem de leiautes de arquivo do INEP"
+      ]
+    },
+    {
       "codigo": "uniplus.selecao.modalidade_selecionada.base_legal_obrigatoria",
       "requisitos": [],
       "oQueAconteceu": [
@@ -21426,6 +21439,32 @@
       ],
       "comoResolver": [
         "Abra a configuração do processo e selecione uma fase ou etapa que ainda faça parte dela."
+      ]
+    },
+    {
+      "codigo": "uniplus.selecao.motivo_de_decisao.filtro_de_subclassificacao_invalida",
+      "requisitos": [],
+      "oQueAconteceu": [
+        "O filtro da consulta recebeu um valor que não é um dos códigos publicados para fundamento de isenção. A consulta não foi realizada."
+      ],
+      "comoResolver": [
+        "Informe um dos códigos publicados para fundamento de isenção ou retire o filtro para consultar sem esse recorte."
+      ],
+      "ondeAparece": [
+        "Listagem de motivos de decisão"
+      ]
+    },
+    {
+      "codigo": "uniplus.selecao.motivo_de_decisao.filtro_de_tipo_invalido",
+      "requisitos": [],
+      "oQueAconteceu": [
+        "O filtro da consulta recebeu um valor que não é um dos códigos publicados para tipo de motivo de decisão. A consulta não foi realizada."
+      ],
+      "comoResolver": [
+        "Informe um dos códigos publicados para tipo de motivo de decisão ou retire o filtro para consultar sem esse recorte."
+      ],
+      "ondeAparece": [
+        "Listagem de motivos de decisão"
       ]
     },
     {
@@ -25867,6 +25906,19 @@
         "Consulta administrativa da inscrição e dos documentos dela",
         "Publicação de produto do edital e listagem de produtos previstos do processo",
         "Notas do ENEM (importação de lote, geração do envio ao INEP e consulta de lotes e de envios)"
+      ]
+    },
+    {
+      "codigo": "uniplus.selecao.regra_catalogo.filtro_de_tipo_invalido",
+      "requisitos": [],
+      "oQueAconteceu": [
+        "O filtro da consulta recebeu um valor que não é um dos códigos publicados para tipo de regra. A consulta não foi realizada."
+      ],
+      "comoResolver": [
+        "Informe um dos códigos publicados para tipo de regra ou retire o filtro para consultar sem esse recorte."
+      ],
+      "ondeAparece": [
+        "Listagem do catálogo de regras"
       ]
     },
     {

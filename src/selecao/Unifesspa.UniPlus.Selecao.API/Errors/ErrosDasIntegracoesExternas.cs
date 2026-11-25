@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Http;
 
 using Unifesspa.UniPlus.Infrastructure.Core.Errors;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
+using Unifesspa.UniPlus.Selecao.Application.Queries.NotasDoEnem;
 using Unifesspa.UniPlus.Selecao.Domain.Errors;
 
 /// <summary>
@@ -20,6 +21,13 @@ internal static class ErrosDasIntegracoesExternas
         new(ConferenciaEnderecoGeoErrorCodes.MunicipioDivergente, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.conferencia_endereco_geo.municipio_divergente", "O município informado não pertence à UF declarada")),
         // Falha fechada: o Geo não respondeu — temporário, nunca "aceito".
         new(ConferenciaEnderecoGeoErrorCodes.GeoIndisponivel, new DomainErrorMapping(StatusCodes.Status503ServiceUnavailable, "uniplus.selecao.conferencia_endereco_geo.geo_indisponivel", "O Geo não respondeu — a submissão é recusada, mas o rascunho continua salvável")),
+        new(FiltroDeTipoDosLeiautesDoInep.CodigoDeErro, new DomainErrorMapping(StatusCodes.Status400BadRequest, "uniplus.selecao.leiaute_do_inep.filtro_de_tipo_invalido", "Tipo do filtro de leiautes do INEP inválido")),
+        .. ErrosDasNotasDoEnem(),
+        new(NotasDoEnemErrorCodes.OfertaDeInscricaoForaDoEdital, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.notas_do_enem.oferta_de_inscricao_fora_do_edital", "Há inscrição que concorre a um curso que não está no edital divulgado")),
+    ];
+
+    private static IEnumerable<KeyValuePair<string, DomainErrorMapping>> ErrosDasNotasDoEnem() =>
+    [
         // Envio ao INEP e importação das notas do ENEM (ADR-0148 e ADR-0149).
         new(NotasDoEnemErrorCodes.EtapaNaoEncontrada, new DomainErrorMapping(StatusCodes.Status404NotFound, "uniplus.selecao.notas_do_enem.etapa_nao_encontrada", "A etapa não pertence ao processo seletivo")),
         new(NotasDoEnemErrorCodes.EtapaSemNotaDoEnem, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.notas_do_enem.etapa_sem_nota_do_enem", "A etapa não tem a nota vinda do ENEM")),
@@ -33,6 +41,5 @@ internal static class ErrosDasIntegracoesExternas
         new(NotasDoEnemErrorCodes.ArquivoForaDoLeiaute, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.notas_do_enem.arquivo_fora_do_leiaute", "O arquivo não confere com o leiaute escolhido")),
         new(NotasDoEnemErrorCodes.CodigoDeSituacaoDesconhecido, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.notas_do_enem.codigo_de_situacao_desconhecido", "O arquivo traz um código de situação que o leiaute não conhece")),
         new(NotasDoEnemErrorCodes.InscricoesEmAndamento, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.notas_do_enem.inscricoes_em_andamento", "As inscrições do processo ainda não terminaram")),
-        new(NotasDoEnemErrorCodes.OfertaDeInscricaoForaDoEdital, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.notas_do_enem.oferta_de_inscricao_fora_do_edital", "Há inscrição que concorre a um curso que não está no edital divulgado")),
     ];
 }

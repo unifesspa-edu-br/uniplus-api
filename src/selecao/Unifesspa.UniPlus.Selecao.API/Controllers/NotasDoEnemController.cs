@@ -71,17 +71,17 @@ public sealed class NotasDoEnemController : ControllerBase
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status406NotAcceptable)]
     public async Task<IActionResult> ListarLeiautes(
-        [FromQuery(Name = "tipo")] string? tipo,
+        [FromQuery(Name = "tipo"), AceitaCodigosDe<TipoDeLeiauteDoInep>] string? tipo,
         CancellationToken cancellationToken)
     {
-        if (tipo is not null && !CatalogoDe<TipoDeLeiauteDoInep>.TentarObter(tipo, out _))
+        Result<TipoDeLeiauteDoInep?> filtro = FiltroDeTipoDosLeiautesDoInep.Ler(tipo);
+        if (filtro.IsFailure)
         {
-            return BadRequest("O tipo de leiaute informado é inválido.");
+            return filtro.ToActionResult(_mapper);
         }
 
-        TipoDeLeiauteDoInep? tipoLido = tipo is null ? null : CatalogoDe<TipoDeLeiauteDoInep>.Obter(tipo);
         IReadOnlyList<LeiauteDoInepDto> leiautes = await _queryBus
-            .Send(new ListarLeiautesDoInepQuery(tipoLido), cancellationToken)
+            .Send(new ListarLeiautesDoInepQuery(filtro.Value), cancellationToken)
             .ConfigureAwait(false);
 
         return Ok(leiautes);

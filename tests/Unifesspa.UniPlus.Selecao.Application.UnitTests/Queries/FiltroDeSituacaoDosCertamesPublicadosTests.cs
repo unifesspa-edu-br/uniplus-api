@@ -11,7 +11,6 @@ public sealed class FiltroDeSituacaoDosCertamesPublicadosTests
     [Theory]
     [InlineData(null)]
     [InlineData("")]
-    [InlineData("   ")]
     public void Ler_SemSituacao_NaoFiltra(string? situacao)
     {
         Result<SituacaoDoCertame?> resultado = FiltroDeSituacaoDosCertamesPublicados.Ler(situacao);
@@ -31,6 +30,9 @@ public sealed class FiltroDeSituacaoDosCertamesPublicadosTests
 
     [Theory]
     [InlineData("EmBreve")]
+    [InlineData("   ")]
+    [InlineData(" EM_BREVE ")]
+    [InlineData("em_breve")]
     [InlineData("inexistente")]
     public void Ler_CodigoDesconhecido_RecusaSemRepetirValor(string situacao)
     {

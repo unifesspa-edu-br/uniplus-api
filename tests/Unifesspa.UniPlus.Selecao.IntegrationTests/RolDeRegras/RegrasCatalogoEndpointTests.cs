@@ -198,6 +198,8 @@ public sealed class RegrasCatalogoEndpointTests : IAsyncLifetime
 
         response.StatusCode.Should().Be(HttpStatusCode.BadRequest,
             "lista vazia diria 'não há regra desse tipo' a quem, na verdade, escreveu um tipo que não existe");
+        using JsonDocument problema = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        problema.RootElement.GetProperty("code").GetString().Should().Be("uniplus.selecao.regra_catalogo.filtro_de_tipo_invalido");
     }
 
     [Fact(DisplayName = "GET por (codigo, versao) devolve a definição com o mesmo hash que a listagem publica")]

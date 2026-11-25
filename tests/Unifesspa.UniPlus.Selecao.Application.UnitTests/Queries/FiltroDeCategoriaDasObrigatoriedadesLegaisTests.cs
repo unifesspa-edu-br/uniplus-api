@@ -11,7 +11,6 @@ public sealed class FiltroDeCategoriaDasObrigatoriedadesLegaisTests
     [Theory(DisplayName = "Sem categoria informada, a consulta não filtra")]
     [InlineData(null)]
     [InlineData("")]
-    [InlineData("   ")]
     public void Ler_SemCategoria_NaoFiltra(string? categoria)
     {
         Result<CategoriaObrigatoriedade?> resultado = FiltroDeCategoriaDasObrigatoriedadesLegais.Ler(categoria);
@@ -32,6 +31,9 @@ public sealed class FiltroDeCategoriaDasObrigatoriedadesLegaisTests
     [Theory(DisplayName = "Código que o vocabulário não conhece é recusado sem repetir o valor recebido")]
     [InlineData("Etapa")]
     [InlineData("etapa")]
+    [InlineData("   ")]
+    [InlineData(" ETAPA ")]
+    [InlineData("etapa ")]
     [InlineData("inexistente")]
     public void Ler_CodigoDesconhecido_Recusa(string categoria)
     {

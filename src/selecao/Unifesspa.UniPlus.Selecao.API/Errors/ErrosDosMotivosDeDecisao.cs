@@ -3,6 +3,7 @@ namespace Unifesspa.UniPlus.Selecao.API.Errors;
 using Microsoft.AspNetCore.Http;
 
 using Unifesspa.UniPlus.Infrastructure.Core.Errors;
+using Unifesspa.UniPlus.Selecao.Application.Queries.MotivosDeDecisao;
 using Unifesspa.UniPlus.Selecao.Domain.Errors;
 
 /// <summary>
@@ -18,6 +19,8 @@ internal static class ErrosDosMotivosDeDecisao
 
     private static IEnumerable<KeyValuePair<string, DomainErrorMapping>> IdentificacaoDoMotivo() =>
     [
+        Mapear(FiltroDaListagemDeMotivos.TipoInvalido, StatusCodes.Status400BadRequest, "filtro_de_tipo_invalido", "Tipo do filtro de motivos inválido"),
+        Mapear(FiltroDaListagemDeMotivos.SubclassificacaoInvalida, StatusCodes.Status400BadRequest, "filtro_de_subclassificacao_invalida", "Subclassificação do filtro de motivos inválida"),
         Recusa(MotivoDeDecisaoErrorCodes.TipoObrigatorio, "tipo_obrigatorio", "Tipo do motivo é obrigatório"),
         Recusa(MotivoDeDecisaoErrorCodes.TipoInvalido, "tipo_invalido", "Tipo de decisão desconhecido"),
         Recusa(MotivoDeDecisaoErrorCodes.TipoDeDecisaoDuplicado, "tipo_de_decisao_duplicado", "Tipo de decisão declarado mais de uma vez"),
