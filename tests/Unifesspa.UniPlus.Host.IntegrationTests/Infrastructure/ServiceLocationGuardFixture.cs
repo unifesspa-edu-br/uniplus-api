@@ -1,7 +1,5 @@
 namespace Unifesspa.UniPlus.Host.IntegrationTests.Infrastructure;
 
-using System.Diagnostics.CodeAnalysis;
-
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.DependencyInjection;
@@ -19,17 +17,10 @@ using Unifesspa.UniPlus.IntegrationTests.Fixtures.Hosting;
 /// que os cache invalidators do Organização tomam em produção.
 /// </summary>
 /// <remarks>
-/// O <c>IConnectionMultiplexer</c> é singleton: o Wolverine o pré-resolve na
-/// construção da classe gerada, sem service location (validado empiricamente — só
-/// lambdas <em>Scoped</em> opacas e concretos não-públicos disparam). A connection
-/// string aponta para uma porta fechada: a resolução do multiplexer falha rápido com
-/// <c>RedisConnectionException</c> em runtime — ruído que a guarda ignora, pois só se
-/// importa com <c>InvalidServiceLocationException</c> (lançada na GERAÇÃO, antes).
+/// A geração de código constrói a classe gerada e pré-resolve os singletons.
+/// Com a porta fechada e <c>abortConnect=false</c>, a conexão devolve um
+/// multiplexador desconectado sem lançar exceção. Nenhum handler é executado.
 /// </remarks>
-[SuppressMessage(
-    "Performance",
-    "CA1515:Consider making public types internal",
-    Justification = "WebApplicationFactory<T> derivative usado como estado de fixture.")]
 public sealed class ServiceLocationGuardApiFactory : MonolitoApiFactory
 {
     public ServiceLocationGuardApiFactory(string connectionString)
@@ -39,10 +30,14 @@ public sealed class ServiceLocationGuardApiFactory : MonolitoApiFactory
 
     protected override IEnumerable<KeyValuePair<string, string?>> OverridesAdicionais() =>
     [
-        // Porta fechada → ConnectionMultiplexer.Connect falha rápido (connection
-        // refused). Suficiente para o codegen inspecionar o descriptor; o connect só
-        // ocorre em runtime, fora do caminho de geração.
-        new("Redis:ConnectionString", "localhost:6399,abortConnect=true,connectTimeout=200"),
+        // A geração pré-resolve o singleton; a porta fechada devolve um multiplexador
+        // desconectado sem impedir a verificação do grafo.
+        new("Redis:ConnectionString", "localhost:6399,abortConnect=false,connectTimeout=200"),
+
+        // A geração também pré-resolve o cliente do armazenamento; o endereço é fictício e nunca é acessado.
+        new("Storage:Endpoint", "armazenamento-de-teste:9000"),
+        new("Storage:AccessKey", "teste"),
+        new("Storage:SecretKey", "teste"),
     ];
 
     protected override void ConfigureWebHost(IWebHostBuilder builder)
@@ -64,14 +59,6 @@ public sealed class ServiceLocationGuardApiFactory : MonolitoApiFactory
 /// Fixture da guarda de service location: provisiona Postgres efêmero e sobe o
 /// monólito com o cache de PRODUÇÃO via <see cref="ServiceLocationGuardApiFactory"/>.
 /// </summary>
-[SuppressMessage(
-    "Reliability",
-    "CA1001:Types that own disposable fields should be disposable",
-    Justification = "Recursos liberados por IAsyncLifetime.DisposeAsync — herdado da base.")]
-[SuppressMessage(
-    "Performance",
-    "CA1515:Consider making public types internal",
-    Justification = "xUnit ICollectionFixture<T> exige tipo público.")]
 public sealed class ServiceLocationGuardFixture : MonolitoPostgresFixtureBase<ServiceLocationGuardApiFactory>
 {
     protected override ServiceLocationGuardApiFactory CreateFactory(string connectionString) =>
@@ -83,15 +70,7 @@ public sealed class ServiceLocationGuardFixture : MonolitoPostgresFixtureBase<Se
 /// (cache de produção) das demais suítes do host.
 /// </summary>
 [CollectionDefinition(Name, DisableParallelization = true)]
-[SuppressMessage(
-    "Performance",
-    "CA1515:Consider making public types internal",
-    Justification = "xUnit CollectionDefinition exige tipo público.")]
-[SuppressMessage(
-    "Naming",
-    "CA1711:Identifiers should not have incorrect suffix",
-    Justification = "Convenção de nome de coleção xUnit termina com 'Collection'.")]
-public sealed class ServiceLocationGuardCollection : ICollectionFixture<ServiceLocationGuardFixture>
+public sealed class ColecaoDaGuardaDeServiceLocation : ICollectionFixture<ServiceLocationGuardFixture>
 {
     public const string Name = "Service Location Guard";
 }

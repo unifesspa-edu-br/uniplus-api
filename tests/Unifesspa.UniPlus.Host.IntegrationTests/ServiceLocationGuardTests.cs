@@ -1,7 +1,5 @@
 namespace Unifesspa.UniPlus.Host.IntegrationTests;
 
-using System.Diagnostics.CodeAnalysis;
-
 using AwesomeAssertions;
 
 using JasperFx.CodeGeneration.Model;
@@ -26,11 +24,7 @@ using Unifesspa.UniPlus.IntegrationTests.Fixtures.Hosting;
 /// service location no runtime. A mecânica vive em
 /// <see cref="ServiceLocationCodegenGuard"/>.
 /// </remarks>
-[Collection(ServiceLocationGuardCollection.Name)]
-[SuppressMessage(
-    "Performance",
-    "CA1515:Consider making public types internal",
-    Justification = "xUnit exige tipo de teste público.")]
+[Collection(ColecaoDaGuardaDeServiceLocation.Name)]
 public sealed class ServiceLocationGuardTests
 {
     private readonly ServiceLocationGuardFixture _fixture;
@@ -50,10 +44,10 @@ public sealed class ServiceLocationGuardTests
     }
 
     [Fact(DisplayName = "Nenhuma chain do monólito dispara service location sem opt-in (ADR-0098)")]
-    public async Task NenhumaChain_DisparaServiceLocation()
+    public void NenhumaChain_DisparaServiceLocation()
     {
         ServiceLocationVarredura resultado =
-            await ServiceLocationCodegenGuard.VarrerAsync(_fixture.Factory.Services, "Unifesspa.UniPlus");
+            ServiceLocationCodegenGuard.Varrer(_fixture.Factory.Services);
 
         resultado.Verificadas.Should().BeGreaterThan(0, "o host monólito tem chains CQRS a guardar");
         resultado.Ofensores.Should().BeEmpty(
