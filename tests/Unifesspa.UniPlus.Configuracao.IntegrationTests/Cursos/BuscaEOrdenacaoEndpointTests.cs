@@ -1,6 +1,5 @@
 namespace Unifesspa.UniPlus.Configuracao.IntegrationTests.Cursos;
 
-using System.Diagnostics.CodeAnalysis;
 using System.Net;
 using System.Text.Json;
 
@@ -21,10 +20,6 @@ using static Unifesspa.UniPlus.Configuracao.IntegrationTests.Cursos.ConsultaDeCu
 /// estável.
 /// </remarks>
 [Collection(ConfiguracaoEndpointCollection.Name)]
-[SuppressMessage(
-    "Performance",
-    "CA1515:Consider making public types internal",
-    Justification = "xUnit collection fixture exige tipo de teste público.")]
 public sealed class BuscaEOrdenacaoEndpointTests
 {
     private const string Cursos = "/api/configuracao/cursos";
@@ -170,7 +165,7 @@ public sealed class BuscaEOrdenacaoEndpointTests
         string bloco = Bloco();
         using HttpClient client = _fixture.Factory.CreateClient();
 
-        string codigo = $"{bloco}-ESPECIAL";
+        string codigo = $"{bloco}_ESPECIAL";
         await CriarCursoAsync(client, $"{bloco} Um", codigo: codigo);
         await CriarCursoAsync(client, $"{bloco} Dois");
 
@@ -180,18 +175,17 @@ public sealed class BuscaEOrdenacaoEndpointTests
         achados.Select(i => i.GetProperty("codigo").GetString()).Should().Equal(codigo);
     }
 
-    [Fact(DisplayName = "q encontra código escrito com acento, procurando sem acento")]
-    public async Task Busca_CodigoAcentuado_EncontraSemAcento()
+    [Fact(DisplayName = "q com acento encontra código escrito sem acento")]
+    public async Task Busca_CodigoSemAcento_EncontraComAcento()
     {
         string bloco = Bloco();
         using HttpClient client = _fixture.Factory.CreateClient();
 
-        // O cadastro aceita acento no código, e quem procura raramente o digita.
-        string codigo = $"{bloco}-CÓDIGO";
+        string codigo = $"{bloco}_CODIGO";
         await CriarCursoAsync(client, $"{bloco} Um", codigo: codigo);
 
         IReadOnlyList<JsonElement> achados = await ItensDoBlocoAsync(
-            client, bloco, $"q={Uri.EscapeDataString("codigo")}");
+            client, bloco, $"q={Uri.EscapeDataString("código")}");
 
         achados.Select(i => i.GetProperty("codigo").GetString()).Should().Equal(codigo);
     }

@@ -4,6 +4,7 @@ using Unifesspa.UniPlus.Configuracao.Domain.Errors;
 using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Kernel.Domain.Entities;
 using Unifesspa.UniPlus.Kernel.Domain.Interfaces;
+using Unifesspa.UniPlus.Kernel.Domain.ValueObjects;
 using Unifesspa.UniPlus.Kernel.Results;
 
 /// <summary>
@@ -28,8 +29,10 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// </remarks>
 public sealed class Curso : SoftDeletableEntity, IAuditableEntity
 {
-    private const int CodigoMinLength = 1;
-    private const int CodigoMaxLength = 60;
+    public const int CodigoMaximo = 60;
+
+    private static readonly CampoDeCodigo CampoCodigo = new(
+        "Código do curso", CodigoMaximo, CursoErrorCodes.CodigoObrigatorio, CursoErrorCodes.CodigoFormatoInvalido);
     private const int NomeMinLength = 2;
     private const int NomeMaxLength = 200;
     private const int GrauMinLength = 2;
@@ -57,7 +60,7 @@ public sealed class Curso : SoftDeletableEntity, IAuditableEntity
     }
 
     /// <summary>
-    /// Valida e normaliza os cinco campos editáveis, acumulando toda violação
+    /// Valida os cinco campos editáveis, acumulando toda violação
     /// independente em vez de parar na primeira — sem mutar nada. Existe para o
     /// handler validar o payload por inteiro antes de qualquer I/O (checagem de
     /// unicidade do código, leitura por Id). Os cinco campos são independentes,
@@ -66,103 +69,50 @@ public sealed class Curso : SoftDeletableEntity, IAuditableEntity
     public static Result<(string Codigo, string Nome, string Grau, string NivelEnsino, GrupoCurso? GrupoAreaEnem)>
         ValidarCamposEditaveis(string? codigo, string? nome, string? grau, string? nivelEnsino, string? grupoAreaEnem)
     {
-        List<FieldError> erros = [];
+        FieldError? recusa = CampoCodigo.Recusa(codigo, "codigo");
+        List<FieldError> erros = recusa is null ? [] : [recusa];
+        string? nomeValidado = ValidarTexto(nome, "nome", "Nome", NomeMinLength, NomeMaxLength,
+            (CursoErrorCodes.NomeObrigatorio, CursoErrorCodes.NomeTamanho), erros);
+        string? grauValidado = ValidarTexto(grau, "grau", "Grau", GrauMinLength, GrauMaxLength,
+            (CursoErrorCodes.GrauObrigatorio, CursoErrorCodes.GrauTamanho), erros);
+        string? nivelValidado = ValidarTexto(nivelEnsino, "nivelEnsino", "Nível de ensino", NivelEnsinoMinLength, NivelEnsinoMaxLength,
+            (CursoErrorCodes.NivelEnsinoObrigatorio, CursoErrorCodes.NivelEnsinoTamanho), erros);
+        GrupoCurso? grupo = ValidarGrupo(grupoAreaEnem, erros);
+        return erros.Count > 0
+            ? Result<(string, string, string, string, GrupoCurso?)>.ValidationFailure(erros)
+            : Result<(string, string, string, string, GrupoCurso?)>.Success((codigo!, nomeValidado!, grauValidado!, nivelValidado!, grupo));
+    }
 
-        string? codigoNormalizado = null;
-        if (string.IsNullOrWhiteSpace(codigo))
+    private static string? ValidarTexto(string? valor, string campo, string nome, int minimo, int maximo,
+        (string Obrigatorio, string Tamanho) codigos, List<FieldError> erros)
+    {
+        if (string.IsNullOrWhiteSpace(valor))
         {
-            erros.Add(new("codigo", new DomainError(
-                CursoErrorCodes.CodigoObrigatorio, "Código do curso é obrigatório.")));
+            erros.Add(new(campo, new DomainError(codigos.Obrigatorio, $"{nome} do curso é obrigatório.")));
+            return null;
         }
-        else
+        string texto = valor.Trim();
+        if (texto.Length >= minimo && texto.Length <= maximo)
         {
-            codigoNormalizado = codigo.Trim();
-            if (codigoNormalizado.Length is < CodigoMinLength or > CodigoMaxLength)
-            {
-                erros.Add(new("codigo", new DomainError(
-                    CursoErrorCodes.CodigoTamanho,
-                    $"Código do curso deve ter entre {CodigoMinLength} e {CodigoMaxLength} caracteres.")));
-                codigoNormalizado = null;
-            }
+            return texto;
         }
+        erros.Add(new(campo, new DomainError(codigos.Tamanho, $"{nome} do curso deve ter entre {minimo} e {maximo} caracteres.")));
+        return null;
+    }
 
-        string? nomeNormalizado = null;
-        if (string.IsNullOrWhiteSpace(nome))
+    private static GrupoCurso? ValidarGrupo(string? valor, List<FieldError> erros)
+    {
+        if (string.IsNullOrWhiteSpace(valor))
         {
-            erros.Add(new("nome", new DomainError(
-                CursoErrorCodes.NomeObrigatorio, "Nome do curso é obrigatório.")));
+            return null;
         }
-        else
+        Result<GrupoCurso> grupo = GrupoCurso.Criar(valor);
+        if (grupo.IsFailure)
         {
-            nomeNormalizado = nome.Trim();
-            if (nomeNormalizado.Length is < NomeMinLength or > NomeMaxLength)
-            {
-                erros.Add(new("nome", new DomainError(
-                    CursoErrorCodes.NomeTamanho,
-                    $"Nome do curso deve ter entre {NomeMinLength} e {NomeMaxLength} caracteres.")));
-                nomeNormalizado = null;
-            }
+            erros.Add(new("grupoAreaEnem", new DomainError(CursoErrorCodes.GrupoAreaEnemInvalido, grupo.Error!.Message)));
+            return null;
         }
-
-        string? grauNormalizado = null;
-        if (string.IsNullOrWhiteSpace(grau))
-        {
-            erros.Add(new("grau", new DomainError(
-                CursoErrorCodes.GrauObrigatorio, "Grau do curso é obrigatório.")));
-        }
-        else
-        {
-            grauNormalizado = grau.Trim();
-            if (grauNormalizado.Length is < GrauMinLength or > GrauMaxLength)
-            {
-                erros.Add(new("grau", new DomainError(
-                    CursoErrorCodes.GrauTamanho,
-                    $"Grau do curso deve ter entre {GrauMinLength} e {GrauMaxLength} caracteres.")));
-                grauNormalizado = null;
-            }
-        }
-
-        string? nivelEnsinoNormalizado = null;
-        if (string.IsNullOrWhiteSpace(nivelEnsino))
-        {
-            erros.Add(new("nivelEnsino", new DomainError(
-                CursoErrorCodes.NivelEnsinoObrigatorio, "Nível de ensino do curso é obrigatório.")));
-        }
-        else
-        {
-            nivelEnsinoNormalizado = nivelEnsino.Trim();
-            if (nivelEnsinoNormalizado.Length is < NivelEnsinoMinLength or > NivelEnsinoMaxLength)
-            {
-                erros.Add(new("nivelEnsino", new DomainError(
-                    CursoErrorCodes.NivelEnsinoTamanho,
-                    $"Nível de ensino do curso deve ter entre {NivelEnsinoMinLength} e {NivelEnsinoMaxLength} caracteres.")));
-                nivelEnsinoNormalizado = null;
-            }
-        }
-
-        // Grupo de área do ENEM é opcional: nem todo curso classifica por área.
-        GrupoCurso? grupoResolvido = null;
-        if (!string.IsNullOrWhiteSpace(grupoAreaEnem))
-        {
-            Result<GrupoCurso> grupo = GrupoCurso.Criar(grupoAreaEnem);
-            if (grupo.IsFailure)
-            {
-                erros.Add(new("grupoAreaEnem", new DomainError(
-                    CursoErrorCodes.GrupoAreaEnemInvalido, grupo.Error!.Message)));
-            }
-            else
-            {
-                grupoResolvido = grupo.Value;
-            }
-        }
-
-        if (erros.Count > 0)
-        {
-            return Result<(string, string, string, string, GrupoCurso?)>.ValidationFailure(erros);
-        }
-
-        return Result<(string, string, string, string, GrupoCurso?)>.Success(
-            (codigoNormalizado!, nomeNormalizado!, grauNormalizado!, nivelEnsinoNormalizado!, grupoResolvido));
+        return grupo.Value;
     }
 
     /// <summary>

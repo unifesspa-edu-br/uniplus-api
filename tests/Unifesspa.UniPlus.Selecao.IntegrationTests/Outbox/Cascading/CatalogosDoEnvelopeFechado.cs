@@ -116,7 +116,7 @@ internal static class CatalogosDoEnvelopeFechado
 
     private static async Task<OfertaCurso> SemearCursoELocalEPrepararAOfertaAsync(UniPlusDbContext config, Guid unidadeId, string sufixo)
     {
-        Curso curso = Curso.Criar($"MED{sufixo}", "Medicina", "Bacharelado", "Graduação", "SAUDE_E_BIOLOGICAS").Value!;
+        Curso curso = Curso.Criar($"MED{sufixo}".ToUpperInvariant(), "Medicina", "Bacharelado", "Graduação", "SAUDE_E_BIOLOGICAS").Value!;
         LocalOferta local = LocalOferta.Criar(
             new("CAMPUS_SEDE", null, "1504208", "Marabá", "PA", null, null),
             DateTimeOffset.UtcNow).ValorEsperado();

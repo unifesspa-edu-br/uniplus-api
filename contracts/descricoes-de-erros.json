@@ -3620,6 +3620,20 @@
       ]
     },
     {
+      "codigo": "uniplus.configuracao.curso.codigo_formato_invalido",
+      "requisitos": [],
+      "oQueAconteceu": [
+        "O código do curso não segue o formato ou ultrapassa 60 caracteres. O valor é conferido como recebido."
+      ],
+      "comoResolver": [
+        "Use até 60 caracteres, começando com letra maiúscula, com letras maiúsculas sem acento, algarismos e sublinhado entre palavras."
+      ],
+      "ondeAparece": [
+        "Criação de um curso",
+        "Atualização de um curso"
+      ]
+    },
+    {
       "codigo": "uniplus.configuracao.curso.codigo_ja_existe",
       "requisitos": [],
       "oQueAconteceu": [
@@ -3641,20 +3655,6 @@
       ],
       "comoResolver": [
         "Informe um código para o curso."
-      ],
-      "ondeAparece": [
-        "Criação de um curso",
-        "Atualização de um curso"
-      ]
-    },
-    {
-      "codigo": "uniplus.configuracao.curso.codigo_tamanho",
-      "requisitos": [],
-      "oQueAconteceu": [
-        "O **código** do curso está fora do tamanho aceito: entre 1 e 60\ncaracteres."
-      ],
-      "comoResolver": [
-        "Informe um código com entre 1 e 60 caracteres."
       ],
       "ondeAparece": [
         "Criação de um curso",

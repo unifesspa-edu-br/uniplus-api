@@ -646,7 +646,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"codigo\": \"SMK-{{run_suffix}}\",\n  \"nome\": \"Curso de Smoke Test\",\n  \"grau\": \"Bacharelado\",\n  \"nivelEnsino\": \"Graduação\",\n  \"grupoAreaEnem\": null\n}",
+              "raw": "{\n  \"codigo\": \"SMK_{{run_suffix}}\",\n  \"nome\": \"Curso de Smoke Test\",\n  \"grau\": \"Bacharelado\",\n  \"nivelEnsino\": \"Graduação\",\n  \"grupoAreaEnem\": null\n}",
               "options": {
                 "raw": {
                   "language": "json"

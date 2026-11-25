@@ -9,6 +9,7 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence.CodigosDeContrato;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Protecao;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
+using Unifesspa.UniPlus.Kernel.Domain.ValueObjects;
 
 public sealed class MatriculaConfiguration : IEntityTypeConfiguration<Matricula>
 {
@@ -29,7 +30,7 @@ public sealed class MatriculaConfiguration : IEntityTypeConfiguration<Matricula>
             .HasMaxLength(CodigoDeContratoMaxLength)
             .HasComment("Situação da matrícula.")
             .IsRequired();
-        builder.Property(m => m.CodigoCurso).HasMaxLength(50).IsRequired();
+        builder.Property(m => m.CodigoCurso).HasMaxLength(FormatoDoCodigo.ComprimentoMaximo).IsRequired();
         builder.Property(m => m.Observacoes).HasMaxLength(2000);
 
         builder.HasMany(m => m.Documentos).WithOne().HasForeignKey(d => d.MatriculaId);

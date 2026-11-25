@@ -9,12 +9,9 @@ using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Converters;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Protecao;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
+using Unifesspa.UniPlus.Kernel.Domain.ValueObjects;
 
-[System.Diagnostics.CodeAnalysis.SuppressMessage(
-    "Performance",
-    "CA1812:Avoid uninstantiated internal classes",
-    Justification = "Instanciada via EF Core ModelBuilder.ApplyConfigurationsFromAssembly por reflection.")]
-internal sealed class CursoConfiguration
+public sealed class CursoConfiguration
     : IEntityTypeConfiguration<Curso>
 {
     /// <summary>
@@ -31,7 +28,6 @@ internal sealed class CursoConfiguration
     /// </summary>
     private static readonly string NomeOrdenacaoSql = NormalizacaoTextual.ExpressaoSql("nome");
 
-    private const int CodigoMaxLength = 60;
     private const int NomeMaxLength = 200;
     private const int GrauMaxLength = 60;
     private const int NivelEnsinoMaxLength = 60;
@@ -48,6 +44,7 @@ internal sealed class CursoConfiguration
             "cursos",
             t =>
             {
+                t.HasCheckConstraint("ck_cursos_codigo_formato", $"codigo ~ '{FormatoDoCodigo.ExpressaoNoBanco}'");
                 // Domínio fechado do código do grupo de área do ENEM (Resolução nº
                 // 805/2024/Consepe, Anexo I), montado da lista do domínio — espelha o
                 // CHECK de pesos_por_area_do_enem, mas null-safe: a coluna é opcional (nem todo
@@ -59,7 +56,7 @@ internal sealed class CursoConfiguration
 
         builder.HasKey(c => c.Id);
 
-        builder.Property(c => c.Codigo).HasMaxLength(CodigoMaxLength).IsRequired();
+        builder.Property(c => c.Codigo).HasMaxLength(Curso.CodigoMaximo).IsRequired();
         builder.Property(c => c.Nome).HasMaxLength(NomeMaxLength).IsRequired();
         builder.Property(c => c.Grau).HasMaxLength(GrauMaxLength).IsRequired();
         builder.Property(c => c.NivelEnsino).HasMaxLength(NivelEnsinoMaxLength).IsRequired();
