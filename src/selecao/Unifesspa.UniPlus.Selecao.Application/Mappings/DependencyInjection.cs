@@ -109,7 +109,7 @@ public static class SelecaoApplicationServiceRegistration
         services.AddSingleton<PreparacaoDoDocumentoDoRascunho>();
         services.AddScoped<UnidadeDoDocumentoDoRascunho>();
         services.AddScoped<BloqueioDoRascunhoDeProcessoSeletivo>();
-        services.AddScoped<BloqueioDoDonoDoDocumentoAPublicar>();
+        services.AddScoped<BloqueioCompartilhadoDoProcessoSeletivo>();
         services.AddScoped<IDescricaoDeCadastro, DescricaoDeUnidades>();
         services.AddScoped<IDescricaoDeCadastro, DescricaoDeTiposDeProcesso>();
         services.AddScoped<IDescricaoDeCadastro, DescricaoDeTiposDeDocumento>();

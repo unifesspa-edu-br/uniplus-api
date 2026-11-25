@@ -6,7 +6,7 @@ using NSubstitute;
 
 using Unifesspa.UniPlus.Selecao.Application.UnitTests.TestSupport;
 
-public sealed class BloqueioDoDonoDoDocumentoAPublicarTests
+public sealed class BloqueioCompartilhadoDoProcessoSeletivoTests
 {
     private readonly CenarioDoDocumentoAPublicar _cenario = new();
 

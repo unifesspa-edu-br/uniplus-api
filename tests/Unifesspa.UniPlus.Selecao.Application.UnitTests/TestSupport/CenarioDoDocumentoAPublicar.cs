@@ -36,7 +36,7 @@ internal sealed class CenarioDoDocumentoAPublicar
 
     public IUnitOfWork UnitOfWork { get; } = Substitute.For<IUnitOfWork>();
 
-    public BloqueioDoDonoDoDocumentoAPublicar Bloqueio => new(Rascunhos, Processos);
+    public BloqueioCompartilhadoDoProcessoSeletivo Bloqueio => new(Rascunhos, Processos);
 
     public CenarioDoDocumentoAPublicar ComRascunhoComoDono()
     {

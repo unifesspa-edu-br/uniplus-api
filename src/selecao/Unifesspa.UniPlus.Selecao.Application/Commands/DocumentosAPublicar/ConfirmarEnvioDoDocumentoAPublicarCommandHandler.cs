@@ -35,7 +35,7 @@ public static class ConfirmarEnvioDoDocumentoAPublicarCommandHandler
 
     public static async Task<Result<DocumentoAPublicarDto>> Handle(
         ConfirmarEnvioDoDocumentoAPublicarCommand command,
-        BloqueioDoDonoDoDocumentoAPublicar bloqueio,
+        BloqueioCompartilhadoDoProcessoSeletivo bloqueio,
         IDocumentoAPublicarRepository documentoAPublicarRepository,
         IArquivoArmazenadoStorage storage,
         IUnitOfWork unitOfWork,
