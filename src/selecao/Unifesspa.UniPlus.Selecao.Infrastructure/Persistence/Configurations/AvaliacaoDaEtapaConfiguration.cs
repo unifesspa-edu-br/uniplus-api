@@ -6,8 +6,8 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence.CodigosDeContrato;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Protecao;
-using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
@@ -35,10 +35,10 @@ internal sealed class AvaliacaoDaEtapaConfiguration : IEntityTypeConfiguration<A
             t.HasComment("A nota da etapa de uma inscrição numa oferta de curso concorrida (1ª ou 2ª opção), apurada pelos pesos do grupo de área do curso quando o lote foi importado. Os registros não são alterados ou excluídos; a avaliação vale com o lote. A nota por área está nos lançamentos do mesmo lote.");
             t.HasCheckConstraint(
                 "ck_avaliacoes_da_etapa_situacao",
-                $"situacao IN ('{SituacaoDaAvaliacao.Apurada.Codigo()}', '{SituacaoDaAvaliacao.InscritoSemLinha.Codigo()}', '{SituacaoDaAvaliacao.EmConflito.Codigo()}')");
+                $"situacao IN ({SqlDosCodigosDeContrato.Lista<SituacaoDaAvaliacao>()})");
             t.HasCheckConstraint(
                 "ck_avaliacoes_da_etapa_nota",
-                $"(situacao = '{SituacaoDaAvaliacao.Apurada.Codigo()}') = (nota IS NOT NULL) AND (nota IS NULL OR nota BETWEEN 0 AND 1000)");
+                $"(situacao = {SqlDosCodigosDeContrato.Literal(SituacaoDaAvaliacao.Apurada)}) = (nota IS NOT NULL) AND (nota IS NULL OR nota BETWEEN 0 AND 1000)");
         });
 
         builder.HasKey(a => a.Id);

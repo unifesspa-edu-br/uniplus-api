@@ -79,6 +79,6 @@ internal sealed class ArquivoDaApresentacaoConfiguration : IEntityTypeConfigurat
 
         builder.HasIndex(a => a.ProximaPublicacaoEm)
             .HasDatabaseName("ix_arquivos_da_apresentacao_em_verificacao")
-            .HasFilter("situacao = 'EM_VERIFICACAO'");
+            .HasFilter($"situacao = {SqlDosCodigosDeContrato.Literal(SituacaoDoArquivoDoCandidato.EmVerificacao)}");
     }
 }
