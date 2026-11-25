@@ -70,7 +70,7 @@ public sealed class ConfiguracaoDerivacaoFato : EntityBase, IParteDoProcesso
             return Result<ConfiguracaoDerivacaoFato>.ValidationFailure(erros);
         }
 
-        ConfiguracaoDerivacaoFato config = new() { CodigoFato = (codigoFato ?? string.Empty).Trim() };
+        ConfiguracaoDerivacaoFato config = new() { CodigoFato = codigoFato };
         config.AdicionarRegras(lista);
         return Result<ConfiguracaoDerivacaoFato>.Success(config);
     }

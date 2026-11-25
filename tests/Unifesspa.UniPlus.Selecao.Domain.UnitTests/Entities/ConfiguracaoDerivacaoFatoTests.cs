@@ -19,6 +19,14 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 /// </summary>
 public sealed class ConfiguracaoDerivacaoFatoTests
 {
+    [Fact]
+    public void Criar_CodigoComEspacos_PreservaCodigoParaConferenciaDoCatalogo()
+    {
+        Result<ConfiguracaoDerivacaoFato> resultado = ConfiguracaoDerivacaoFato.Criar(" MODALIDADE ", [Regra(0, "AC")]);
+
+        resultado.Value!.CodigoFato.Should().Be(" MODALIDADE ");
+    }
+
     private static RegraDerivacaoConfigurada Regra(int ordem, string contribui) =>
         RegraDerivacaoConfigurada.Criar(ordem, contribui, null).Value!;
 
