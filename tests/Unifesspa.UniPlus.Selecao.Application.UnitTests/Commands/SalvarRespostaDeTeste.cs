@@ -58,6 +58,6 @@ internal sealed class SalvarRespostaDeTeste
     public Task<Result<InscricaoDto>> SalvarAsync(InscricaoRequest request, IConferenciaEnderecoGeo? geo = null) =>
         SalvarDeTeste.Handle(
             new(ProcessoId, request, PrecondicaoIfMatch.DeTags([Inscricao.ETag])),
-            new RascunhoDoCandidato(new InscricaoAtivaDoCandidato(Inscricoes), DivulgacaoDeTeste.Certame(ProcessoId), _processos, _codecs, DivulgacaoDeTeste.Fuso(), DivulgacaoDeTeste.Relogio),
+            Rascunho(Inscricoes, _processos, _codecs, DivulgacaoDeTeste.Relogio),
             Inscricoes, UnitOfWork, UsuarioComCpf(Inscricao.Titular.Cpf), geo);
 }

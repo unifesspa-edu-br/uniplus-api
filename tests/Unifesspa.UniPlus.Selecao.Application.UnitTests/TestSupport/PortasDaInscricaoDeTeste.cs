@@ -35,6 +35,7 @@ internal static class PortasDaInscricaoDeTeste
 
     private static void AdicionarPortas(IServiceCollection servicos)
     {
+        servicos.AddSingleton(Substitute.For<IUnitOfWork>());
         servicos.AddSingleton(Substitute.For<IUserContext>());
         servicos.AddSingleton(Substitute.For<IResolvedorFusoInstitucional>());
         servicos.AddSingleton(Substitute.For<IRegistroCodecsEnvelope>());

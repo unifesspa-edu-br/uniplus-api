@@ -26,13 +26,13 @@ using Unifesspa.UniPlus.Regras.ValueObjects;
 /// A resposta ao salvar: a avaliação do que ficou gravado, com os documentos e os arquivos do candidato. A avaliação não se
 /// grava: o rascunho a recalcula.
 /// </summary>
-public sealed class RespostaDoRascunho(IDocumentoDaInscricaoRepository documentos, IConferenciaEnderecoGeo geo, EnderecosDosDocumentosDoAto enderecos)
+public sealed class RespostaDoRascunho(DocumentosEnviadosDaInscricao documentos, PreparacaoDaAvaliacaoDaInscricao preparacao, EnderecosDosDocumentosDoAto enderecos)
 {
     public async Task<Result<InscricaoDto>> ResponderAsync(PedidoDoRascunho pedido, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(pedido);
 
-        ArquivosDaInscricao arquivos = await new DocumentosEnviadosDaInscricao(documentos).CarregarAsync(pedido.Inscricao.Id, cancellationToken).ConfigureAwait(false);
+        ArquivosDaInscricao arquivos = await documentos.CarregarAsync(pedido.Inscricao.Id, cancellationToken).ConfigureAwait(false);
         Result<ResultadoDaAvaliacaoDaInscricao> avaliada = await AvaliarOGravadoAsync(pedido, arquivos, cancellationToken).ConfigureAwait(false);
         return avaliada.IsFailure
             ? Result<InscricaoDto>.ValidationFailure(avaliada.Errors)
@@ -41,7 +41,7 @@ public sealed class RespostaDoRascunho(IDocumentoDaInscricaoRepository documento
 
     private async Task<Result<ResultadoDaAvaliacaoDaInscricao>> AvaliarOGravadoAsync(
         PedidoDoRascunho pedido, ArquivosDaInscricao arquivos, CancellationToken cancellationToken) =>
-        await new PreparacaoDaAvaliacaoDaInscricao(geo).AvaliarAsync(
+        await preparacao.AvaliarAsync(
             pedido.Inscricao,
             pedido.Contexto,
             new Dictionary<string, JsonElement>(StringComparer.Ordinal),

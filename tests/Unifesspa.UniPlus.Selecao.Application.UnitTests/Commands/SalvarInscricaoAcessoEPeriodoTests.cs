@@ -95,9 +95,7 @@ public sealed class SalvarInscricaoAcessoEPeriodoTests
     private static Task<Result<InscricaoDto>> SalvarSemDivulgacaoAsync(
         IInscricaoRepository inscricoes, IUnitOfWork unitOfWork, IUserContext usuario, string etag)
     {
-        RascunhoDoCandidato rascunho = new(new InscricaoAtivaDoCandidato(inscricoes), DivulgacaoDeTeste.Certame(ProcessoId),
-            Substitute.For<IProcessoSeletivoRepository>(), Substitute.For<IRegistroCodecsEnvelope>(),
-            DivulgacaoDeTeste.Fuso(), DivulgacaoDeTeste.Relogio);
+        RascunhoDoCandidato rascunho = Rascunho(inscricoes, Substitute.For<IProcessoSeletivoRepository>(), Substitute.For<IRegistroCodecsEnvelope>(), DivulgacaoDeTeste.Relogio);
         SalvarInscricaoCommand command = new(ProcessoId, new InscricaoRequest(null, null, null, null), PrecondicaoIfMatch.DeTags([etag]));
         return SalvarDeTeste.Handle(command, rascunho, inscricoes, unitOfWork, usuario);
     }
@@ -113,7 +111,7 @@ public sealed class SalvarInscricaoAcessoEPeriodoTests
 
         return SalvarDeTeste.Handle(
             new SalvarInscricaoCommand(ProcessoId, new InscricaoRequest(null, null, null, null), PrecondicaoIfMatch.DeTags([existente.ETag])),
-            new RascunhoDoCandidato(new InscricaoAtivaDoCandidato(inscricaoRepository), DivulgacaoDeTeste.Certame(ProcessoId), processoRepository, registroCodecs, DivulgacaoDeTeste.Fuso(), DivulgacaoDeTeste.Relogio),
+            Rascunho(inscricaoRepository, processoRepository, registroCodecs, DivulgacaoDeTeste.Relogio),
             inscricaoRepository, unitOfWork, UsuarioComCpf(PersonasDeTeste.FernandaDrumond));
     }
 
@@ -160,7 +158,7 @@ public sealed class SalvarInscricaoAcessoEPeriodoTests
 
         return SalvarDeTeste.Handle(
             new SalvarInscricaoCommand(ProcessoId, new InscricaoRequest(null, null, null, null), PrecondicaoIfMatch.DeTags([DivulgacaoDeTeste.ETagDepoisDeAdotar(existente, versoes.Divulgada)])),
-            new RascunhoDoCandidato(new InscricaoAtivaDoCandidato(inscricaoRepository), DivulgacaoDeTeste.Certame(ProcessoId), processoRepository, registroCodecs, DivulgacaoDeTeste.Fuso(), new RelogioFixo(DivulgacaoDeTeste.FimDoPeriodo.AddDays(10))),
+            Rascunho(inscricaoRepository, processoRepository, registroCodecs, new RelogioFixo(DivulgacaoDeTeste.FimDoPeriodo.AddDays(10))),
             inscricaoRepository, unitOfWork, UsuarioComCpf(cpf));
     }
 
@@ -213,7 +211,7 @@ public sealed class SalvarInscricaoAcessoEPeriodoTests
         DivulgacaoDeTeste.ConfigurarVersao(processos, codecs, versao, configuracao);
         return SalvarDeTeste.Handle(
             new SalvarInscricaoCommand(ProcessoId, request ?? new(null, null, null, null), PrecondicaoIfMatch.DeTags([existente.ETag])),
-            new RascunhoDoCandidato(new InscricaoAtivaDoCandidato(inscricoes), DivulgacaoDeTeste.Certame(ProcessoId), processos, codecs, DivulgacaoDeTeste.Fuso(), relogio),
+            Rascunho(inscricoes, processos, codecs, relogio),
             inscricoes, unitOfWork, usuario);
     }
 }
