@@ -12,6 +12,8 @@ public sealed class DualApprovalGrantTests
     private const string ResourceHash = "sha256:abc123";
     private const string Permissao = "selecao.resultado.homologar";
 
+    private static readonly DateTimeOffset InstanteDaConcessao = new(2026, 1, 15, 12, 0, 0, TimeSpan.Zero);
+
     private static UsuarioRef Aprovador(string contaId) => UsuarioRef.From(Emissor, contaId).Value!;
 
     // ─── CA-05: aprovador secundário igual ao primário é rejeitado ─────────
@@ -25,7 +27,7 @@ public sealed class DualApprovalGrantTests
         // e com UsuarioId distinto — deve ser tratado como o mesmo aprovador.
         UsuarioRef secundario = UsuarioRef.From(Emissor, "conta-1", Guid.CreateVersion7()).Value!;
 
-        DateTimeOffset concedidoEm = DateTimeOffset.UtcNow;
+        DateTimeOffset concedidoEm = InstanteDaConcessao;
 
         Result<DualApprovalGrant> resultado = DualApprovalGrant.From(
             primario, secundario, ResourceHash, Permissao, concedidoEm, concedidoEm.AddMinutes(30));
@@ -39,7 +41,7 @@ public sealed class DualApprovalGrantTests
     [Fact]
     public void DualApprovalGrant_ValidadeAcimaDoLimite_Rejeita()
     {
-        DateTimeOffset concedidoEm = DateTimeOffset.UtcNow;
+        DateTimeOffset concedidoEm = InstanteDaConcessao;
 
         Result<DualApprovalGrant> resultado = DualApprovalGrant.From(
             Aprovador("conta-1"),
@@ -60,7 +62,7 @@ public sealed class DualApprovalGrantTests
     {
         UsuarioRef primario = Aprovador("conta-1");
         UsuarioRef secundario = Aprovador("conta-2");
-        DateTimeOffset concedidoEm = DateTimeOffset.UtcNow;
+        DateTimeOffset concedidoEm = InstanteDaConcessao;
         DateTimeOffset validoAte = concedidoEm.Add(DualApprovalGrant.JanelaMaxima); // exatamente no limite (1h)
         DateTimeOffset usadoEm = concedidoEm.AddMinutes(10);
 
@@ -69,18 +71,24 @@ public sealed class DualApprovalGrantTests
             usado: true, usadoEm: usadoEm, usadoPor: secundario);
 
         resultado.IsSuccess.Should().BeTrue();
-        resultado.Value!.AprovadorPrimario.Should().Be(primario);
-        resultado.Value.AprovadorSecundario.Should().Be(secundario);
-        resultado.Value.ValidoAte.Should().Be(validoAte);
-        resultado.Value.Usado.Should().BeTrue();
-        resultado.Value.UsadoEm.Should().Be(usadoEm);
-        resultado.Value.UsadoPor.Should().Be(secundario);
+        VerificarConcessaoUsada(resultado.Value!, primario, secundario, validoAte, usadoEm);
+    }
+
+    private static void VerificarConcessaoUsada(
+        DualApprovalGrant concessao, UsuarioRef primario, UsuarioRef secundario, DateTimeOffset validoAte, DateTimeOffset usadoEm)
+    {
+        concessao.AprovadorPrimario.Should().Be(primario);
+        concessao.AprovadorSecundario.Should().Be(secundario);
+        concessao.ValidoAte.Should().Be(validoAte);
+        concessao.Usado.Should().BeTrue();
+        concessao.UsadoEm.Should().Be(usadoEm);
+        concessao.UsadoPor.Should().Be(secundario);
     }
 
     [Fact]
     public void DualApprovalGrant_IdentificadorEhGuidV7()
     {
-        DateTimeOffset concedidoEm = DateTimeOffset.UtcNow;
+        DateTimeOffset concedidoEm = InstanteDaConcessao;
 
         Result<DualApprovalGrant> resultado = DualApprovalGrant.From(
             Aprovador("conta-1"), Aprovador("conta-2"), ResourceHash, Permissao, concedidoEm, concedidoEm.AddMinutes(30));
@@ -93,7 +101,7 @@ public sealed class DualApprovalGrantTests
     [Fact]
     public void DualApprovalGrant_NaoUsado_PorPadrao()
     {
-        DateTimeOffset concedidoEm = DateTimeOffset.UtcNow;
+        DateTimeOffset concedidoEm = InstanteDaConcessao;
 
         Result<DualApprovalGrant> resultado = DualApprovalGrant.From(
             Aprovador("conta-1"), Aprovador("conta-2"), ResourceHash, Permissao, concedidoEm, concedidoEm.AddMinutes(30));
@@ -107,7 +115,7 @@ public sealed class DualApprovalGrantTests
     [Fact]
     public void DualApprovalGrant_ValidadeNaoPosteriorAConcessao_Rejeita()
     {
-        DateTimeOffset concedidoEm = DateTimeOffset.UtcNow;
+        DateTimeOffset concedidoEm = InstanteDaConcessao;
 
         Result<DualApprovalGrant> resultado = DualApprovalGrant.From(
             Aprovador("conta-1"), Aprovador("conta-2"), ResourceHash, Permissao, concedidoEm, concedidoEm);
@@ -122,7 +130,7 @@ public sealed class DualApprovalGrantTests
     [InlineData("   ")]
     public void DualApprovalGrant_PermissaoVazia_Rejeita(string? permissao)
     {
-        DateTimeOffset concedidoEm = DateTimeOffset.UtcNow;
+        DateTimeOffset concedidoEm = InstanteDaConcessao;
 
         Result<DualApprovalGrant> resultado = DualApprovalGrant.From(
             Aprovador("conta-1"), Aprovador("conta-2"), ResourceHash, permissao, concedidoEm, concedidoEm.AddMinutes(30));
@@ -137,7 +145,7 @@ public sealed class DualApprovalGrantTests
     [InlineData("   ")]
     public void DualApprovalGrant_ResourceHashVazio_Rejeita(string? resourceHash)
     {
-        DateTimeOffset concedidoEm = DateTimeOffset.UtcNow;
+        DateTimeOffset concedidoEm = InstanteDaConcessao;
 
         Result<DualApprovalGrant> resultado = DualApprovalGrant.From(
             Aprovador("conta-1"), Aprovador("conta-2"), resourceHash, Permissao, concedidoEm, concedidoEm.AddMinutes(30));
