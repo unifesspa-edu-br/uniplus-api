@@ -1,6 +1,5 @@
 namespace Unifesspa.UniPlus.Configuracao.IntegrationTests.RecursosAcessibilidade;
 
-using System.Diagnostics.CodeAnalysis;
 using System.Net;
 using System.Net.Http.Json;
 using System.Text;
@@ -11,16 +10,14 @@ using AwesomeAssertions;
 using Unifesspa.UniPlus.Configuracao.IntegrationTests.Infrastructure;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Authentication;
 
+using static Unifesspa.UniPlus.Configuracao.IntegrationTests.RecursosAcessibilidade.DadosDeRecursoAcessibilidade;
+
 /// <summary>
 /// Smoke + caminho de escrita dos endpoints de <c>RecursoAcessibilidade</c>
 /// (UNI-REQ-0012): routing, vendor media type, HATEOAS, autenticação/autorização,
 /// idempotência e unicidade do código e do nome (409) — com Wolverine contra Postgres efêmero.
 /// </summary>
 [Collection(ConfiguracaoEndpointCollection.Name)]
-[SuppressMessage(
-    "Performance",
-    "CA1515:Consider making public types internal",
-    Justification = "xUnit collection fixture exige tipo de teste público.")]
 public sealed class RecursoAcessibilidadeEndpointTests
 {
     private readonly ConfiguracaoEndpointFixture _fixture;
@@ -86,12 +83,7 @@ public sealed class RecursoAcessibilidadeEndpointTests
     {
         string codigo = CodigoUnico();
         string nome = NomeUnico();
-        var body = new
-        {
-            codigo,
-            nome,
-            descricao = "Profissional que lê a prova ao candidato",
-        };
+        object body = DadosParaCriacao(codigo, nome);
 
         using HttpClient client = _fixture.Factory.CreateClient();
         HttpResponseMessage criar = await EnviarPostAdmin(client, body);
@@ -100,16 +92,7 @@ public sealed class RecursoAcessibilidadeEndpointTests
         Guid id = await criar.Content.ReadFromJsonAsync<Guid>();
         id.Should().NotBe(Guid.Empty);
 
-        HttpResponseMessage obter = await client.GetAsync(
-            new Uri($"/api/configuracao/recursos-acessibilidade/{id}", UriKind.Relative));
-        obter.StatusCode.Should().Be(HttpStatusCode.OK);
-
-        using JsonDocument doc = JsonDocument.Parse(await obter.Content.ReadAsStringAsync());
-        JsonElement root = doc.RootElement;
-        root.GetProperty("codigo").GetString().Should().Be(codigo);
-        root.GetProperty("nome").GetString().Should().Be(nome);
-        root.GetProperty("descricao").GetString().Should().Be("Profissional que lê a prova ao candidato");
-        root.TryGetProperty("_links", out _).Should().BeTrue("HATEOAS Level 1 expõe _links.self (ADR-0029)");
+        await ConferirRecursoObtido(client, id, codigo, nome);
     }
 
     [Fact(DisplayName = "POST com nome já existente entre vivos retorna 409")]
@@ -142,9 +125,25 @@ public sealed class RecursoAcessibilidadeEndpointTests
             .Should().Be("uniplus.configuracao.recurso_acessibilidade.codigo_ja_existe");
     }
 
-    private static string CodigoUnico() => $"REC_{Guid.NewGuid().ToString("N")[..12].ToUpperInvariant()}";
+    private static object DadosParaCriacao(string codigo, string nome) => new
+    {
+        codigo,
+        nome,
+        descricao = "Profissional que lê a prova ao candidato",
+    };
 
-    private static string NomeUnico() => $"Recurso {Guid.NewGuid().ToString("N")[..12].ToUpperInvariant()}";
+    private static async Task ConferirRecursoObtido(HttpClient client, Guid id, string codigo, string nome)
+    {
+        HttpResponseMessage resposta = await client.GetAsync(
+            new Uri($"/api/configuracao/recursos-acessibilidade/{id}", UriKind.Relative));
+        resposta.StatusCode.Should().Be(HttpStatusCode.OK);
+        using JsonDocument doc = JsonDocument.Parse(await resposta.Content.ReadAsStringAsync());
+        JsonElement root = doc.RootElement;
+        root.GetProperty("codigo").GetString().Should().Be(codigo);
+        root.GetProperty("nome").GetString().Should().Be(nome);
+        root.GetProperty("descricao").GetString().Should().Be("Profissional que lê a prova ao candidato");
+        root.TryGetProperty("_links", out _).Should().BeTrue("HATEOAS Level 1 expõe _links.self (ADR-0029)");
+    }
 
     private static async Task<HttpResponseMessage> EnviarPostAdmin(HttpClient client, object body)
     {

@@ -1,7 +1,5 @@
 namespace Unifesspa.UniPlus.Configuracao.IntegrationTests.RecursosAcessibilidade;
 
-using System.Diagnostics.CodeAnalysis;
-
 using AwesomeAssertions;
 
 using Microsoft.EntityFrameworkCore;
@@ -14,16 +12,14 @@ using Unifesspa.UniPlus.Configuracao.Infrastructure.Readers;
 using Unifesspa.UniPlus.Configuracao.IntegrationTests.Infrastructure;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 
+using static Unifesspa.UniPlus.Configuracao.IntegrationTests.RecursosAcessibilidade.DadosDeRecursoAcessibilidade;
+
 /// <summary>
 /// Integração ponta-a-ponta do RecursoAcessibilidade contra Postgres real
 /// (UNI-REQ-0012): persistência, UNIQUE parcial do código e do nome vivos, liberação do slot por
 /// soft-delete e leitura cross-módulo ordenada por nome.
 /// </summary>
 [Collection(ConfiguracaoDbCollection.Name)]
-[SuppressMessage(
-    "Performance",
-    "CA1515:Consider making public types internal",
-    Justification = "xUnit collection fixture exige tipo de teste público.")]
 public sealed class RecursoAcessibilidadePersistenceTests
 {
     private const string AdminA = "admin-a";
@@ -43,72 +39,42 @@ public sealed class RecursoAcessibilidadePersistenceTests
         string codigo = CodigoUnico();
         RecursoAcessibilidade recurso = Novo(nome, codigo);
 
-        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(AdminA))
-        {
-            ctx.RecursosAcessibilidade.Add(recurso);
-            await ctx.SaveChangesAsync();
-        }
+        await SalvarRecursos(recurso);
 
         await using UniPlusDbContext readCtx = _fixture.CreateDbContext(userId: null);
         RecursoAcessibilidade persistido = await readCtx.RecursosAcessibilidade.SingleAsync(r => r.Id == recurso.Id);
 
-        persistido.Codigo.Valor.Should().Be(codigo);
-        persistido.Nome.Should().Be(nome);
-        persistido.CreatedBy.Should().Be(AdminA);
-        persistido.IsDeleted.Should().BeFalse();
+        ConferirRecursoPersistido(persistido, codigo, nome);
 
-        var reader = new RecursoAcessibilidadeReader(readCtx);
-        RecursoAcessibilidadeView? view = await reader.ObterPorIdAsync(recurso.Id);
-        view.Should().NotBeNull();
-        view!.Codigo.Should().Be(codigo);
-        view.Nome.Should().Be(nome);
+        await ConferirRecursoNoReader(readCtx, recurso.Id, codigo, nome);
     }
 
     [Fact(DisplayName = "UNIQUE parcial do código rejeita segundo recurso vivo com mesmo código")]
     public async Task UniquePartial_Codigo_RejeitaDuplicataAtiva()
     {
         string codigo = CodigoUnico();
-        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(AdminA))
-        {
-            ctx.RecursosAcessibilidade.Add(Novo(NomeUnico(), codigo));
-            await ctx.SaveChangesAsync();
-        }
+        await SalvarRecursos(Novo(NomeUnico(), codigo));
 
         await using UniPlusDbContext ctx2 = _fixture.CreateDbContext(AdminA);
         ctx2.RecursosAcessibilidade.Add(Novo(NomeUnico(), codigo));
 
         Func<Task> act = async () => await ctx2.SaveChangesAsync();
 
-        // Trava a constante que o handler usa para traduzir a corrida concorrente em
-        // CodigoJaExiste/409, e não em NomeJaExiste: há dois índices únicos na tabela.
-        DbUpdateException ex = (await act.Should().ThrowAsync<DbUpdateException>()).Which;
-        Npgsql.PostgresException pg = ex.InnerException.Should().BeOfType<Npgsql.PostgresException>().Which;
-        pg.SqlState.Should().Be("23505");
-        pg.ConstraintName.Should().Be(RestricoesDoBanco.RecursoDeAcessibilidadeCodigoAtivos);
+        await ConferirViolacaoDeUnicidade(act, RestricoesDoBanco.RecursoDeAcessibilidadeCodigoAtivos);
     }
 
     [Fact(DisplayName = "UNIQUE parcial do nome rejeita segundo recurso vivo com mesmo nome")]
     public async Task UniquePartial_Nome_RejeitaDuplicataAtiva()
     {
         string nome = NomeUnico();
-        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(AdminA))
-        {
-            ctx.RecursosAcessibilidade.Add(Novo(nome));
-            await ctx.SaveChangesAsync();
-        }
+        await SalvarRecursos(Novo(nome));
 
         await using UniPlusDbContext ctx2 = _fixture.CreateDbContext(AdminA);
         ctx2.RecursosAcessibilidade.Add(Novo(nome));
 
         Func<Task> act = async () => await ctx2.SaveChangesAsync();
 
-        // Trava as constantes que o handler usa para traduzir a corrida concorrente
-        // (UniqueConstraintViolation.ConflitoDeUnicidade) em
-        // NomeJaExiste/409: SqlState 23505 + nome do índice único parcial.
-        DbUpdateException ex = (await act.Should().ThrowAsync<DbUpdateException>()).Which;
-        Npgsql.PostgresException pg = ex.InnerException.Should().BeOfType<Npgsql.PostgresException>().Which;
-        pg.SqlState.Should().Be("23505");
-        pg.ConstraintName.Should().Be(RestricoesDoBanco.RecursoDeAcessibilidadeNomeAtivos);
+        await ConferirViolacaoDeUnicidade(act, RestricoesDoBanco.RecursoDeAcessibilidadeNomeAtivos);
     }
 
     [Fact(DisplayName = "Nome distinto é aceito")]
@@ -127,26 +93,10 @@ public sealed class RecursoAcessibilidadePersistenceTests
     {
         string nome = NomeUnico();
         RecursoAcessibilidade recurso = Novo(nome);
-        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(AdminA))
-        {
-            ctx.RecursosAcessibilidade.Add(recurso);
-            await ctx.SaveChangesAsync();
-        }
+        await SalvarRecursos(recurso);
 
-        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(AdminB))
-        {
-            RecursoAcessibilidade tracked = await ctx.RecursosAcessibilidade.SingleAsync(r => r.Id == recurso.Id);
-            ctx.RecursosAcessibilidade.Remove(tracked);
-            await ctx.SaveChangesAsync();
-        }
-
-        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null))
-        {
-            RecursoAcessibilidade excluido = await ctx.RecursosAcessibilidade
-                .IgnoreQueryFilters().SingleAsync(r => r.Id == recurso.Id);
-            excluido.IsDeleted.Should().BeTrue();
-            excluido.DeletedBy.Should().Be(AdminB);
-        }
+        await ExcluirRecurso(recurso.Id);
+        await ConferirTrilhaDeExclusao(recurso.Id);
 
         await using UniPlusDbContext ctx3 = _fixture.CreateDbContext(AdminA);
         ctx3.RecursosAcessibilidade.Add(Novo(nome));
@@ -163,36 +113,84 @@ public sealed class RecursoAcessibilidadePersistenceTests
         string nomeB = $"{prefixo}_B";
         string nomeExcluido = $"{prefixo}_D";
 
-        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(AdminA))
-        {
-            ctx.RecursosAcessibilidade.Add(Novo(nomeB));
-            ctx.RecursosAcessibilidade.Add(Novo(nomeA));
-            ctx.RecursosAcessibilidade.Add(Novo(nomeExcluido));
-            await ctx.SaveChangesAsync();
-        }
+        await SalvarRecursos(Novo(nomeB), Novo(nomeA), Novo(nomeExcluido));
+        await ExcluirRecursoPorNome(nomeExcluido);
 
-        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(AdminB))
-        {
-            RecursoAcessibilidade aExcluir = await ctx.RecursosAcessibilidade.SingleAsync(r => r.Nome == nomeExcluido);
-            ctx.RecursosAcessibilidade.Remove(aExcluir);
-            await ctx.SaveChangesAsync();
-        }
-
-        await using UniPlusDbContext readCtx = _fixture.CreateDbContext(userId: null);
-        var reader = new RecursoAcessibilidadeReader(readCtx);
-        IReadOnlyList<RecursoAcessibilidadeView> todos = await reader.ListarVivosAsync();
-
-        string[] meus = [.. todos
-            .Select(v => v.Nome)
-            .Where(n => n.StartsWith(prefixo, StringComparison.Ordinal))];
-
-        meus.Should().Equal([nomeA, nomeB]);
+        await ConferirOrdemDosRecursosVivos(prefixo, nomeA, nomeB);
     }
 
     private static RecursoAcessibilidade Novo(string nome, string? codigo = null) =>
         RecursoAcessibilidade.Criar(codigo ?? CodigoUnico(), nome, "Recurso de acessibilidade").Value!;
 
-    private static string CodigoUnico() => $"REC_{Guid.NewGuid().ToString("N")[..12].ToUpperInvariant()}";
+    private async Task ConferirOrdemDosRecursosVivos(string prefixo, string nomeA, string nomeB)
+    {
+        await using UniPlusDbContext readCtx = _fixture.CreateDbContext(userId: null);
+        var reader = new RecursoAcessibilidadeReader(readCtx);
+        IReadOnlyList<RecursoAcessibilidadeView> todos = await reader.ListarVivosAsync();
+        string[] meus = [.. todos
+            .Select(v => v.Nome)
+            .Where(n => n.StartsWith(prefixo, StringComparison.Ordinal))];
+        meus.Should().Equal([nomeA, nomeB]);
+    }
 
-    private static string NomeUnico() => $"Recurso {Guid.NewGuid().ToString("N")[..12].ToUpperInvariant()}";
+    private async Task SalvarRecursos(params RecursoAcessibilidade[] recursos)
+    {
+        await using UniPlusDbContext ctx = _fixture.CreateDbContext(AdminA);
+        ctx.RecursosAcessibilidade.AddRange(recursos);
+        await ctx.SaveChangesAsync();
+    }
+
+    private async Task ExcluirRecurso(Guid id)
+    {
+        await using UniPlusDbContext ctx = _fixture.CreateDbContext(AdminB);
+        RecursoAcessibilidade recurso = await ctx.RecursosAcessibilidade.SingleAsync(r => r.Id == id);
+        await RemoverRecurso(ctx, recurso);
+    }
+
+    private async Task ExcluirRecursoPorNome(string nome)
+    {
+        await using UniPlusDbContext ctx = _fixture.CreateDbContext(AdminB);
+        RecursoAcessibilidade recurso = await ctx.RecursosAcessibilidade.SingleAsync(r => r.Nome == nome);
+        await RemoverRecurso(ctx, recurso);
+    }
+
+    private static async Task RemoverRecurso(UniPlusDbContext ctx, RecursoAcessibilidade recurso)
+    {
+        ctx.RecursosAcessibilidade.Remove(recurso);
+        await ctx.SaveChangesAsync();
+    }
+
+    private async Task ConferirTrilhaDeExclusao(Guid id)
+    {
+        await using UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null);
+        RecursoAcessibilidade excluido = await ctx.RecursosAcessibilidade
+            .IgnoreQueryFilters().SingleAsync(r => r.Id == id);
+        excluido.IsDeleted.Should().BeTrue();
+        excluido.DeletedBy.Should().Be(AdminB);
+    }
+
+    private static void ConferirRecursoPersistido(RecursoAcessibilidade recurso, string codigo, string nome)
+    {
+        recurso.Codigo.Valor.Should().Be(codigo);
+        recurso.Nome.Should().Be(nome);
+        recurso.CreatedBy.Should().Be(AdminA);
+        recurso.IsDeleted.Should().BeFalse();
+    }
+
+    private static async Task ConferirRecursoNoReader(UniPlusDbContext ctx, Guid id, string codigo, string nome)
+    {
+        var reader = new RecursoAcessibilidadeReader(ctx);
+        RecursoAcessibilidadeView? view = await reader.ObterPorIdAsync(id);
+        view.Should().NotBeNull();
+        view!.Codigo.Should().Be(codigo);
+        view.Nome.Should().Be(nome);
+    }
+
+    private static async Task ConferirViolacaoDeUnicidade(Func<Task> salvar, string restricao)
+    {
+        DbUpdateException ex = (await salvar.Should().ThrowAsync<DbUpdateException>()).Which;
+        Npgsql.PostgresException pg = ex.InnerException.Should().BeOfType<Npgsql.PostgresException>().Which;
+        pg.SqlState.Should().Be("23505");
+        pg.ConstraintName.Should().Be(restricao);
+    }
 }
