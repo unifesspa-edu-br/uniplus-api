@@ -2,6 +2,7 @@ namespace Unifesspa.UniPlus.Configuracao.Application.Queries.FatosCandidato;
 
 using Unifesspa.UniPlus.Application.Abstractions.Messaging;
 using Unifesspa.UniPlus.Kernel.Pagination;
+using Unifesspa.UniPlus.Kernel.Results;
 
 /// <summary>
 /// Lista de manutenção do catálogo de fatos, paginada, com filtro opcional pela origem (token
@@ -9,4 +10,4 @@ using Unifesspa.UniPlus.Kernel.Pagination;
 /// </summary>
 public sealed record ListarFatosCandidatoParaManutencaoQuery(
     Guid? AfterId, int Limit, PaginationDirection Direction, string? Origem, bool? Ativo)
-    : IQuery<ListarFatosCandidatoParaManutencaoResult>;
+    : IQuery<Result<ListarFatosCandidatoParaManutencaoResult>>;

@@ -6,15 +6,16 @@ using NSubstitute;
 
 using Unifesspa.UniPlus.Configuracao.Application.Queries.ModelosFormulario;
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
+using Unifesspa.UniPlus.Configuracao.Domain.Errors;
 using Unifesspa.UniPlus.Configuracao.Domain.Interfaces;
 using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Kernel.Pagination;
+using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.Formularios;
 
 /// <summary>
-/// A lista de manutenção dos modelos filtra por tipo de processo, finalidade e estado: o filtro que
-/// não casa com nada que exista dá a página vazia, sem consultar o banco.
+/// A lista de manutenção dos modelos filtra por tipo de processo, finalidade e estado.
 /// </summary>
 public sealed class ListarModelosFormularioQueryHandlerTests
 {
@@ -26,31 +27,46 @@ public sealed class ListarModelosFormularioQueryHandlerTests
             ((IReadOnlyList<ModeloFormulario>)[], (Guid?)null, (Guid?)null));
     }
 
-    [Fact(DisplayName = "Finalidade desconhecida dá a página vazia, em vez de ignorar o filtro")]
-    public async Task Handle_FinalidadeDesconhecida_DevolvePaginaVaziaSemConsultar()
+    [Theory]
+    [InlineData("NAO_EXISTE")]
+    [InlineData("habilitacao")]
+    [InlineData(" HABILITACAO ")]
+    [InlineData("   ")]
+    public async Task Handle_FinalidadeInvalida_RecusaSemConsultar(string finalidade)
     {
-        ListarModelosFormularioResult resultado = await ListarAsync(finalidade: "NAO_EXISTE");
-
-        resultado.Items.Should().BeEmpty();
-        (resultado.AnteriorAfterId, resultado.ProximoAfterId).Should().Be((null, null));
+        Result<ListarModelosFormularioResult> resultado = await ListarAsync(finalidade: finalidade);
+        resultado.Error!.Code.Should().Be(ModeloFormularioErrorCodes.FiltroDeFinalidadeInvalida);
         await _repository.DidNotReceiveWithAnyArgs().ListarPaginadoAsync(default, default, default, default, default, default, default);
+    }
+
+    [Theory]
+    [InlineData("HABILITACAO", FinalidadeFormulario.Habilitacao)]
+    [InlineData("", null)]
+    [InlineData(null, null)]
+    public async Task Handle_FinalidadeValida_ConsultaComFiltro(string? finalidade, FinalidadeFormulario? esperado)
+    {
+        await ListarAsync(finalidade: finalidade);
+        await _repository.Received(1).ListarPaginadoAsync(
+            null, 20, PaginationDirection.Next, null, esperado, null, Arg.Any<CancellationToken>());
     }
 
     [Fact(DisplayName = "Tipo de processo que o banco não grava não é de nenhum modelo: a página é vazia")]
     public async Task Handle_TipoDeProcessoNaoGravavel_DevolvePaginaVaziaSemConsultar()
     {
-        ListarModelosFormularioResult resultado = await ListarAsync(tipoProcesso: "TIPO\0");
+        Result<ListarModelosFormularioResult> resultado = await ListarAsync(tipoProcesso: "TIPO\0");
 
-        resultado.Items.Should().BeEmpty();
+        resultado.Value!.Items.Should().BeEmpty();
         await _repository.DidNotReceiveWithAnyArgs().ListarPaginadoAsync(default, default, default, default, default, default, default);
     }
 
-    [Theory(DisplayName = "O tipo de processo em branco não filtra, e o informado vai aparado")]
+    [Theory(DisplayName = "O tipo de processo é aparado")]
     [InlineData("   ", null)]
     [InlineData("", null)]
     [InlineData(null, null)]
     [InlineData("  PSR  ", "PSR")]
-    public async Task Handle_TipoDeProcesso_VaiAparadoOuNaoFiltra(string? informado, string? esperado)
+    [InlineData("PSR", "PSR")]
+    [InlineData("psr", "psr")]
+    public async Task Handle_TipoDeProcesso_AparaEspacos(string? informado, string? esperado)
     {
         await ListarAsync(tipoProcesso: informado);
 
@@ -77,13 +93,13 @@ public sealed class ListarModelosFormularioQueryHandlerTests
         _repository.ListarPaginadoAsync(default, default, default, default, default, default, default).ReturnsForAnyArgs(
             ((IReadOnlyList<ModeloFormulario>)[modelo], (Guid?)anterior, (Guid?)proximo));
 
-        ListarModelosFormularioResult resultado = await ListarAsync();
+        Result<ListarModelosFormularioResult> resultado = await ListarAsync();
 
-        resultado.Items.Select(static m => (m.Id, m.Codigo, m.Finalidade.Codigo)).Should().Equal((modelo.Id, "MODELO_DE_TESTE", "HABILITACAO"));
-        (resultado.AnteriorAfterId, resultado.ProximoAfterId).Should().Be((anterior, proximo));
+        resultado.Value!.Items.Select(static m => (m.Id, m.Codigo, m.Finalidade.Codigo)).Should().Equal((modelo.Id, "MODELO_DE_TESTE", "HABILITACAO"));
+        (resultado.Value!.AnteriorAfterId, resultado.Value!.ProximoAfterId).Should().Be((anterior, proximo));
     }
 
-    private Task<ListarModelosFormularioResult> ListarAsync(
+    private Task<Result<ListarModelosFormularioResult>> ListarAsync(
         string? tipoProcesso = null,
         string? finalidade = null,
         bool? ativo = null,

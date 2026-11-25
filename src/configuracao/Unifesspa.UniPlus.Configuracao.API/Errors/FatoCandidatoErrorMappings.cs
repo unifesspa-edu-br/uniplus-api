@@ -10,6 +10,8 @@ internal static class FatoCandidatoErrorMappings
 {
     internal static readonly IReadOnlyList<KeyValuePair<string, DomainErrorMapping>> Todos =
     [
+        new(FatoCandidatoErrorCodes.FiltroDeOrigemInvalida, new DomainErrorMapping(StatusCodes.Status400BadRequest,
+            "uniplus.configuracao.fato_candidato.filtro_de_origem_invalida", "Origem do filtro de dados do candidato inválida")),
         new(FatoCandidatoErrorCodes.CodigoObrigatorio,
             new DomainErrorMapping(
                 StatusCodes.Status422UnprocessableEntity,

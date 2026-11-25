@@ -6,6 +6,7 @@ using System.Text.Json;
 using AwesomeAssertions;
 
 using Unifesspa.UniPlus.Configuracao.IntegrationTests.Infrastructure;
+using Unifesspa.UniPlus.IntegrationTests.Fixtures.Assertions;
 
 /// <summary>
 /// Contrato HTTP da manutenção do catálogo de fatos pela permissão de manter
@@ -110,16 +111,17 @@ public sealed class FatoCandidatoAdminEndpointTests(ConfiguracaoEndpointFixture 
             .Select(static o => o.GetProperty("codigo").GetString()).Should().Equal("IGUAL", "DIFERENTE", "ALGUM_DE", "NENHUM_DE");
     }
 
-    [Fact(DisplayName = "Origem desconhecida no filtro da lista devolve página vazia, não erro")]
-    public async Task Listar_OrigemDesconhecida_PaginaVazia()
+    [Fact(DisplayName = "Origem desconhecida no filtro da lista é recusada com 400")]
+    public async Task Listar_OrigemDesconhecida_RecusaCom400()
     {
         using HttpClient client = Fixture.Factory.CreateClient();
 
-        HttpResponseMessage resposta = await EnviarAsync(client, HttpMethod.Get, $"{Base}?origem=declarado", corpo: null);
+        using HttpResponseMessage resposta = await EnviarAsync(client, HttpMethod.Get, $"{Base}?origem=declarado", corpo: null);
 
-        resposta.StatusCode.Should().Be(HttpStatusCode.OK);
-        using JsonDocument lista = JsonDocument.Parse(await resposta.Content.ReadAsStringAsync());
-        lista.RootElement.GetArrayLength().Should().Be(0);
+        await ProblemaRegistrado.ConferirAsync(resposta, HttpStatusCode.BadRequest,
+            "uniplus.configuracao.fato_candidato.filtro_de_origem_invalida",
+            "Origem do filtro de dados do candidato inválida",
+            "Origem inválida. Use um dos códigos publicados para a origem do dado do candidato.");
     }
 
     [Fact(DisplayName = "Código já usado, inclusive por fato de sistema, é recusado com conflito")]

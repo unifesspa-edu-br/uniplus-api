@@ -14,7 +14,9 @@ using Unifesspa.UniPlus.Infrastructure.Core.Errors;
 using Unifesspa.UniPlus.Infrastructure.Core.Formatting;
 using Unifesspa.UniPlus.Infrastructure.Core.Idempotency;
 using Unifesspa.UniPlus.Infrastructure.Core.Pagination;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Regras.Enums;
 
 /// <summary>
 /// Endpoints públicos de leitura do catálogo <c>dados_do_candidato</c> — o catálogo de fatos do candidato
@@ -91,16 +93,21 @@ public sealed class FatosCandidatoController : ControllerBase
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status422UnprocessableEntity)]
     public async Task<IActionResult> ListarParaManutencao(
         [FromCursor(ResourceTagAdmin)] PageRequest page,
-        [FromQuery] string? origem = null,
+        [FromQuery, AceitaCodigosDe<OrigemFato>] string? origem = null,
         [FromQuery] bool? ativo = null,
         CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(page);
-        ListarFatosCandidatoParaManutencaoResult resultado = await _queryBus.Send(
+        Result<ListarFatosCandidatoParaManutencaoResult> resultado = await _queryBus.Send(
             new ListarFatosCandidatoParaManutencaoQuery(page.AfterId, page.Limit, page.Direction, origem, ativo), cancellationToken)
             .ConfigureAwait(false);
+        if (resultado.IsFailure)
+        {
+            return resultado.ToActionResult(_mapper);
+        }
+
         return await this.OkPaginatedAsync(
-            resultado.Items, resultado.AnteriorAfterId, resultado.ProximoAfterId, page, ResourceTagAdmin, cancellationToken: cancellationToken)
+            resultado.Value!.Items, resultado.Value.AnteriorAfterId, resultado.Value.ProximoAfterId, page, ResourceTagAdmin, cancellationToken: cancellationToken)
             .ConfigureAwait(false);
     }
 

@@ -4618,6 +4618,19 @@
       ]
     },
     {
+      "codigo": "uniplus.configuracao.fato_candidato.filtro_de_origem_invalida",
+      "requisitos": [],
+      "oQueAconteceu": [
+        "O filtro da consulta recebeu um valor que não é um dos códigos publicados para origem do dado do candidato. A consulta não foi realizada."
+      ],
+      "comoResolver": [
+        "Informe um dos códigos publicados para origem do dado do candidato ou retire o filtro para consultar sem esse recorte."
+      ],
+      "ondeAparece": [
+        "Listagem de dados do candidato"
+      ]
+    },
+    {
       "codigo": "uniplus.configuracao.fato_candidato.finalidade_tratamento_obrigatoria",
       "requisitos": [
         "UNI-REQ-0143",
@@ -6009,6 +6022,19 @@
       "ondeAparece": [
         "Criação de um modelo de formulário",
         "Atualização de um modelo de formulário"
+      ]
+    },
+    {
+      "codigo": "uniplus.configuracao.modelo_formulario.filtro_de_finalidade_invalida",
+      "requisitos": [],
+      "oQueAconteceu": [
+        "O filtro da consulta recebeu um valor que não é um dos códigos publicados para finalidade do formulário. A consulta não foi realizada."
+      ],
+      "comoResolver": [
+        "Informe um dos códigos publicados para finalidade do formulário ou retire o filtro para consultar sem esse recorte."
+      ],
+      "ondeAparece": [
+        "Listagem de modelos de formulário"
       ]
     },
     {
