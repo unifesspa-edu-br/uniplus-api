@@ -53,7 +53,7 @@ internal sealed class EnvioDoDocumentoAPublicar : IAsyncDisposable
     public DocumentoAPublicarRepository Documentos { get; }
 
     /// <summary>O bloqueio do dono que a confirmação adquire, com espera suficiente para aguardar quem a retém.</summary>
-    public BloqueioDoDonoDoDocumentoAPublicar Bloqueio => new(
+    public BloqueioCompartilhadoDoProcessoSeletivo Bloqueio => new(
         new RascunhoDeProcessoSeletivoRepository(Context, Options.Create(new TravaDoProcessoOptions { EsperaMaxima = EsperaPeloBloqueio })),
         _processos);
 
