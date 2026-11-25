@@ -64,12 +64,37 @@ public sealed class CriarObrigatoriedadeLegalCodigosDoPredicadoTests
             .Should().Be("ObrigatoriedadeLegal.ModalidadeNaoEncontrada");
     }
 
-    [Fact(DisplayName = "Códigos do predicado são persistidos normalizados, não como vieram no payload")]
-    public async Task Handle_CodigosComEspaco_PersisteNormalizado()
+    [Theory]
+    [InlineData(" LB_PPI ")]
+    [InlineData("lb_ppi")]
+    public async Task Handle_ModalidadeInexata_Recusa(string codigo)
     {
-        ObrigatoriedadeLegal? persistida = await CriarPersistindoAsync(new DocumentoObrigatorioParaModalidade(" LB_PPI ", " LAUDO_MEDICO "));
+        _cenario.Modalidades = ModalidadeReaderSem(codigo);
 
-        persistida!.Predicado.Should().Be(new DocumentoObrigatorioParaModalidade("LB_PPI", "LAUDO_MEDICO"));
+        (await RecusaDoPredicadoAsync(new DocumentoObrigatorioParaModalidade(codigo, "LAUDO_MEDICO")))
+            .Should().Be("ObrigatoriedadeLegal.ModalidadeNaoEncontrada");
+    }
+
+    [Theory]
+    [InlineData(" LAUDO_MEDICO ")]
+    [InlineData("laudo_medico")]
+    public async Task Handle_TipoDocumentoInexato_Recusa(string codigo)
+    {
+        _cenario.TiposDeDocumento = TipoDocumentoReaderSem(codigo);
+
+        (await RecusaDoPredicadoAsync(new DocumentoObrigatorioParaModalidade("LB_PPI", codigo)))
+            .Should().Be("ObrigatoriedadeLegal.TipoDocumentoNaoEncontrado");
+    }
+
+    [Theory]
+    [InlineData(" IDADE_MAIOR ")]
+    [InlineData("idade_maior")]
+    public async Task Handle_CriterioInexato_Recusa(string codigo)
+    {
+        _cenario.RegrasDeDesempate = CadastrosVivos.RegrasDesempate("IDADE_MAIOR");
+
+        (await RecusaDoPredicadoAsync(new DesempateDeveIncluir(codigo)))
+            .Should().Be("ObrigatoriedadeLegal.CriterioDesempateNaoEncontrado");
     }
 
     [Fact(DisplayName = "Exigência de modalidades mínimas sem nenhum código é recusada pela forma")]
@@ -94,7 +119,7 @@ public sealed class CriarObrigatoriedadeLegalCodigosDoPredicadoTests
         ITipoDocumentoReader tipos = _cenario.TiposDeDocumento = Substitute.For<ITipoDocumentoReader>();
         tipos.ObterVivoPorCodigoAsync(Decomposto, Arg.Any<CancellationToken>()).Returns(CadastrosVivos.TipoDocumento(Decomposto));
 
-        await CriarPersistindoAsync(new DocumentoObrigatorioParaModalidade("LB_PPI", $" {Decomposto} "));
+        await CriarPersistindoAsync(new DocumentoObrigatorioParaModalidade("LB_PPI", Decomposto));
 
         await tipos.Received().ObterVivoPorCodigoAsync(Decomposto, Arg.Any<CancellationToken>());
     }
@@ -123,14 +148,15 @@ public sealed class CriarObrigatoriedadeLegalCodigosDoPredicadoTests
         (await RecusaDoPredicadoAsync(new AtendimentoDisponivel([]))).Should().Be("ObrigatoriedadeLegal.AtendimentoDisponivelVazio");
     }
 
-    [Fact(DisplayName = "Código de tipo de deficiência com espaço supérfluo é normalizado antes de persistir")]
-    public async Task Handle_CodigoComEspaco_Normaliza()
+    [Theory]
+    [InlineData(" DEFICIENCIA_VISUAL ")]
+    [InlineData("deficiencia_visual")]
+    public async Task Handle_TipoDeficienciaInexato_Recusa(string codigo)
     {
         _cenario.TiposDeDeficiencia = CadastrosVivos.TiposDeficiencia("DEFICIENCIA_VISUAL");
 
-        ObrigatoriedadeLegal? persistida = await CriarPersistindoAsync(new AtendimentoDisponivel([" DEFICIENCIA_VISUAL "]));
-
-        persistida!.Predicado.Should().BeOfType<AtendimentoDisponivel>().Which.Necessidades.Should().Equal(["DEFICIENCIA_VISUAL"]);
+        (await RecusaDoPredicadoAsync(new AtendimentoDisponivel([codigo])))
+            .Should().Be("ObrigatoriedadeLegal.TipoDeficienciaNaoEncontrada");
     }
 
     [Fact(DisplayName = "Critério de desempate com caractere decomponível é encontrado como o catálogo o grava")]
@@ -139,7 +165,7 @@ public sealed class CriarObrigatoriedadeLegalCodigosDoPredicadoTests
         const string CodigoDecomposto = "CRITERIO_ANTIGUIDADÉ";
         _cenario.RegrasDeDesempate = CadastrosVivos.RegrasDesempate(CodigoDecomposto);
 
-        ObrigatoriedadeLegal? persistida = await CriarPersistindoAsync(new DesempateDeveIncluir($" {CodigoDecomposto} "));
+        ObrigatoriedadeLegal? persistida = await CriarPersistindoAsync(new DesempateDeveIncluir(CodigoDecomposto));
 
         persistida!.Predicado.Should().Be(new DesempateDeveIncluir(CodigoDecomposto));
     }

@@ -1,7 +1,5 @@
 namespace Unifesspa.UniPlus.Selecao.Application.Commands.ObrigatoriedadesLegais;
 
-using System.Text;
-
 using Unifesspa.UniPlus.Configuracao.Contracts;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
@@ -10,9 +8,9 @@ using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 /// <summary>
-/// Normaliza e confere as referências a cadastros que os predicados de
+/// Confere as referências a cadastros que os predicados de
 /// <c>ObrigatoriedadeLegal</c> carregam por valor — código de tipo de etapa, de
-/// modalidade e de tipo de documento —, devolvendo o predicado já normalizado ou o
+/// modalidade e de tipo de documento —, devolvendo o predicado ou o
 /// erro de domínio da primeira referência que não existe.
 /// </summary>
 /// <remarks>
@@ -21,12 +19,6 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 /// compartilham esta classe porque a regra é a mesma — uma referência aceita numa
 /// e recusada na outra seria só um jeito de a regra inválida entrar pela porta dos
 /// fundos.</para>
-/// <para>A normalização (<c>Trim</c> + NFC) acontece <b>antes de persistir</b>, não
-/// só na consulta ao leitor: <c>AvaliadorConformidadeLegal</c> compara por
-/// igualdade ordinal exata contra o código congelado no processo seletivo, então um
-/// código gravado com espaço supérfluo ou em forma decomposta passaria no cadastro
-/// e nunca mais casaria na avaliação — a cláusula legal viraria letra morta sem que
-/// nada sinalizasse.</para>
 /// <para>Os campos dos predicados são não-anuláveis em compile-time apenas:
 /// <c>System.Text.Json</c> não impõe NRT em runtime e a validação de fronteira só
 /// garante que o predicado existe, sem descer aos campos do subtipo polimórfico.
@@ -41,7 +33,7 @@ public sealed class ReferenciasDoPredicado(
     IRegraCatalogoReader regraCatalogoReader)
 {
     /// <summary>
-    /// Devolve o predicado com todas as referências normalizadas, ou a falha da
+    /// Devolve o predicado com todas as referências conferidas, ou a falha da
     /// primeira referência inexistente. Predicados sem referência a cadastro
     /// atravessam inalterados.
     /// </summary>
@@ -74,25 +66,25 @@ public sealed class ReferenciasDoPredicado(
             _ => Task.FromResult(Result<PredicadoObrigatoriedade>.Success(predicado)),
         };
 
-    internal static DomainError TipoEtapaNaoEncontradoOuInativo(string codigo) => new(
+    internal static DomainError TipoEtapaNaoEncontradoOuInativo() => new(
         "ObrigatoriedadeLegal.TipoEtapaNaoEncontradoOuInativo",
-        $"Tipo de etapa '{codigo}' não encontrado ou não está ativo.");
+        "Tipo de etapa não encontrado ou não está ativo.");
 
-    internal static DomainError ModalidadeNaoEncontrada(string codigo) => new(
+    internal static DomainError ModalidadeNaoEncontrada() => new(
         "ObrigatoriedadeLegal.ModalidadeNaoEncontrada",
-        $"Modalidade '{codigo}' não encontrada entre as modalidades vivas do cadastro.");
+        "Modalidade não encontrada entre as modalidades vivas do cadastro.");
 
-    internal static DomainError TipoDocumentoNaoEncontrado(string codigo) => new(
+    internal static DomainError TipoDocumentoNaoEncontrado() => new(
         "ObrigatoriedadeLegal.TipoDocumentoNaoEncontrado",
-        $"Tipo de documento '{codigo}' não encontrado entre os tipos vivos do cadastro.");
+        "Tipo de documento não encontrado entre os tipos vivos do cadastro.");
 
-    internal static DomainError TipoDeficienciaNaoEncontrada(string codigo) => new(
+    internal static DomainError TipoDeficienciaNaoEncontrada() => new(
         "ObrigatoriedadeLegal.TipoDeficienciaNaoEncontrada",
-        $"Tipo de deficiência '{codigo}' não encontrado entre os tipos vivos do cadastro.");
+        "Tipo de deficiência não encontrado entre os tipos vivos do cadastro.");
 
-    internal static DomainError CriterioDesempateNaoEncontrado(string codigo) => new(
+    internal static DomainError CriterioDesempateNaoEncontrado() => new(
         "ObrigatoriedadeLegal.CriterioDesempateNaoEncontrado",
-        $"Critério de desempate '{codigo}' não encontrado no catálogo de regras.");
+        "Critério de desempate não encontrado no catálogo de regras.");
 
     /// <summary>
     /// Confere cada código de tipo de deficiência exigido contra o cadastro vivo.
@@ -111,8 +103,8 @@ public sealed class ReferenciasDoPredicado(
             .ListarVivosAsync(cancellationToken).ConfigureAwait(false);
         List<string> necessidades = [.. predicado.Necessidades.Select(Normalizar)];
 
-        return necessidades.Find(codigo => vivos.All(v => !string.Equals(v.Codigo, codigo, StringComparison.Ordinal))) is { } orfao
-            ? Result<PredicadoObrigatoriedade>.Failure(TipoDeficienciaNaoEncontrada(orfao))
+        return necessidades.Any(codigo => vivos.All(v => !string.Equals(v.Codigo, codigo, StringComparison.Ordinal)))
+            ? Result<PredicadoObrigatoriedade>.Failure(TipoDeficienciaNaoEncontrada())
             : Result<PredicadoObrigatoriedade>.Success(predicado with { Necessidades = necessidades });
     }
 
@@ -123,22 +115,18 @@ public sealed class ReferenciasDoPredicado(
     /// <para>Sem esta conferência, um código inexistente reprovava toda publicação com a
     /// mensagem "critério de desempate ausente" — que descreve o processo seletivo e
     /// manda o operador procurar o defeito no lugar errado, quando ele está na regra.</para>
-    /// <para>O código só é aparado, alinhado ao que o catálogo grava: normalizar em NFC faria a
-    /// comparação ordinal procurar uma forma que o catálogo não guarda. O catálogo é versionado
-    /// e o predicado cita só o código, então basta existir uma versão dele; qual versão vale num
-    /// certame é decisão de quem configura o processo, não da obrigatoriedade legal.</para>
     /// </remarks>
     private async Task<Result<PredicadoObrigatoriedade>> NormalizarDesempateDeveIncluirAsync(
         DesempateDeveIncluir predicado,
         CancellationToken cancellationToken)
     {
-        string codigo = NormalizarComoOCatalogoDeRegrasGrava(predicado.Criterio);
+        string codigo = predicado.Criterio ?? string.Empty;
         IReadOnlyList<RegraCatalogo> regras = await regraCatalogoReader
             .ListarPorTipoAsync(TipoRegra.CriterioDesempate, cancellationToken).ConfigureAwait(false);
 
         return regras.Any(r => string.Equals(r.Codigo, codigo, StringComparison.Ordinal))
             ? Result<PredicadoObrigatoriedade>.Success(predicado with { Criterio = codigo })
-            : Result<PredicadoObrigatoriedade>.Failure(CriterioDesempateNaoEncontrado(codigo));
+            : Result<PredicadoObrigatoriedade>.Failure(CriterioDesempateNaoEncontrado());
     }
 
     private async Task<Result<PredicadoObrigatoriedade>> NormalizarEtapaAsync(
@@ -150,7 +138,7 @@ public sealed class ReferenciasDoPredicado(
 
         return ativo
             ? Result<PredicadoObrigatoriedade>.Success(predicado with { TipoEtapaCodigo = codigo })
-            : Result<PredicadoObrigatoriedade>.Failure(TipoEtapaNaoEncontradoOuInativo(codigo));
+            : Result<PredicadoObrigatoriedade>.Failure(TipoEtapaNaoEncontradoOuInativo());
     }
 
     private async Task<Result<PredicadoObrigatoriedade>> NormalizarDocumentoParaModalidadeAsync(
@@ -158,20 +146,20 @@ public sealed class ReferenciasDoPredicado(
         CancellationToken cancellationToken)
     {
         string modalidade = Normalizar(predicado.Modalidade);
-        string tipoDocumento = NormalizarComoOCadastroDeTipoDocumentoGrava(predicado.TipoDocumento);
+        string tipoDocumento = predicado.TipoDocumento ?? string.Empty;
 
         if (!await ModalidadeEstaVivaAsync(modalidade, cancellationToken).ConfigureAwait(false))
         {
-            return Result<PredicadoObrigatoriedade>.Failure(ModalidadeNaoEncontrada(modalidade));
+            return Result<PredicadoObrigatoriedade>.Failure(ModalidadeNaoEncontrada());
         }
 
         return await tipoDocumentoReader.ObterVivoPorCodigoAsync(tipoDocumento, cancellationToken).ConfigureAwait(false) is null
-            ? Result<PredicadoObrigatoriedade>.Failure(TipoDocumentoNaoEncontrado(tipoDocumento))
+            ? Result<PredicadoObrigatoriedade>.Failure(TipoDocumentoNaoEncontrado())
             : Result<PredicadoObrigatoriedade>.Success(predicado with { Modalidade = modalidade, TipoDocumento = tipoDocumento });
     }
 
     /// <remarks>
-    /// A lista inteira é normalizada e conferida item a item: basta um código órfão para a
+    /// A lista inteira é conferida item a item: basta um código órfão para a
     /// exigência mínima nunca ser satisfeita pelo edital que a deveria cumprir.
     /// </remarks>
     private async Task<Result<PredicadoObrigatoriedade>> NormalizarModalidadesMinimasAsync(
@@ -184,7 +172,7 @@ public sealed class ReferenciasDoPredicado(
         {
             if (!await ModalidadeEstaVivaAsync(codigo, cancellationToken).ConfigureAwait(false))
             {
-                return Result<PredicadoObrigatoriedade>.Failure(ModalidadeNaoEncontrada(codigo));
+                return Result<PredicadoObrigatoriedade>.Failure(ModalidadeNaoEncontrada());
             }
         }
 
@@ -194,35 +182,6 @@ public sealed class ReferenciasDoPredicado(
     private async Task<bool> ModalidadeEstaVivaAsync(string codigo, CancellationToken cancellationToken) =>
         await modalidadeReader.ObterVivaPorCodigoAsync(codigo, cancellationToken).ConfigureAwait(false) is not null;
 
-    /// <summary>
-    /// Normalização de código cujo cadastro grava em NFC — tipo de etapa e modalidade.
-    /// </summary>
-    private static string Normalizar(string? codigo) =>
-        (codigo?.Trim() ?? string.Empty).Normalize(NormalizationForm.FormC);
+    private static string Normalizar(string? codigo) => codigo ?? string.Empty;
 
-    /// <summary>
-    /// Normalização do código de tipo de documento, que hoje é <b>só</b> <c>Trim</c>.
-    /// </summary>
-    /// <remarks>
-    /// O cadastro de tipo de documento grava o código aparado e nada mais — sem NFC e sem
-    /// formato fechado, ao contrário do tipo de etapa e da modalidade. Compor aqui o que a
-    /// escrita não compõe faria a busca procurar um texto que o banco não guarda: um código
-    /// gravado em forma decomposta seria dado como inexistente, recusando um tipo que existe
-    /// e classificando como órfã uma regra que casa. Quando o código ganhar value object com
-    /// formato fechado e os registros forem migrados, a normalização passa a valer dos dois
-    /// lados e esta distinção desaparece.
-    /// </remarks>
-    private static string NormalizarComoOCadastroDeTipoDocumentoGrava(string? codigo) =>
-        codigo?.Trim() ?? string.Empty;
-
-    /// <summary>
-    /// Normalização do código de regra do catálogo, que também é <b>só</b> <c>Trim</c>.
-    /// </summary>
-    /// <remarks>
-    /// O catálogo é seed-governado e append-only, e a factory da regra apara o código sem
-    /// compor. Aplicar NFC aqui faria a busca procurar uma forma que o catálogo não
-    /// guarda — o código existiria e seria recusado como inexistente.
-    /// </remarks>
-    private static string NormalizarComoOCatalogoDeRegrasGrava(string? codigo) =>
-        codigo?.Trim() ?? string.Empty;
 }

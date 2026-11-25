@@ -78,16 +78,16 @@ public sealed class CriarObrigatoriedadeLegalCommandHandlerTests
         await tipos.DidNotReceiveWithAnyArgs().ObterAtivoPorCodigoAsync(default!, default);
     }
 
-    [Fact(DisplayName = "O predicado persistido é o normalizado e o hash nasce dele")]
-    public async Task Handle_TipoEtapaComEspacos_PersisteNormalizadoComHashDoConteudoFinal()
+    [Theory]
+    [InlineData(" PROVA_OBJETIVA ")]
+    [InlineData("prova_objetiva")]
+    public async Task Handle_TipoEtapaInexato_Recusa(string codigo)
     {
-        ObrigatoriedadeLegal? persistida = null;
-        await _cenario.Repositorio.AdicionarAsync(Arg.Do<ObrigatoriedadeLegal>(r => persistida = r), Arg.Any<CancellationToken>());
+        Result<Guid> resultado = await _cenario.CriarAsync(ComandoDeCriar(new EtapaObrigatoria(codigo)));
 
-        await _cenario.CriarAsync(ComandoDeCriar(new EtapaObrigatoria($"  {TipoEtapaCodigo}  ")));
-
-        persistida!.Predicado.Should().Be(new EtapaObrigatoria(TipoEtapaCodigo));
-        persistida.Hash.Should().Be(NovaRegraComPredicado(new EtapaObrigatoria(TipoEtapaCodigo)).Hash);
+        resultado.Error!.Code.Should().Be("ObrigatoriedadeLegal.TipoEtapaNaoEncontradoOuInativo");
+        resultado.Error.Message.Should().NotContain(codigo);
+        await _cenario.Repositorio.DidNotReceive().AdicionarAsync(Arg.Any<ObrigatoriedadeLegal>(), Arg.Any<CancellationToken>());
     }
 
     [Fact(DisplayName = "Predicado sem referência a cadastro não consulta os tipos de etapa")]
