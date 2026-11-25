@@ -134,9 +134,9 @@ public sealed class ReferenciasDoPredicado(
         CancellationToken cancellationToken)
     {
         string codigo = CodigoOuVazio(predicado.TipoEtapaCodigo);
-        bool ativo = await tipoEtapaReader.ObterAtivoPorCodigoAsync(codigo, cancellationToken).ConfigureAwait(false) is not null;
+        TipoEtapaView? tipo = await tipoEtapaReader.ObterAtivoPorCodigoAsync(codigo, cancellationToken).ConfigureAwait(false);
 
-        return ativo
+        return CodigoConfere(tipo?.Codigo, codigo)
             ? Result<PredicadoObrigatoriedade>.Success(predicado with { TipoEtapaCodigo = codigo })
             : Result<PredicadoObrigatoriedade>.Failure(TipoEtapaNaoEncontradoOuInativo());
     }
@@ -153,7 +153,8 @@ public sealed class ReferenciasDoPredicado(
             return Result<PredicadoObrigatoriedade>.Failure(ModalidadeNaoEncontrada());
         }
 
-        return await tipoDocumentoReader.ObterVivoPorCodigoAsync(tipoDocumento, cancellationToken).ConfigureAwait(false) is null
+        TipoDocumentoView? tipo = await tipoDocumentoReader.ObterVivoPorCodigoAsync(tipoDocumento, cancellationToken).ConfigureAwait(false);
+        return !CodigoConfere(tipo?.Codigo, tipoDocumento)
             ? Result<PredicadoObrigatoriedade>.Failure(TipoDocumentoNaoEncontrado())
             : Result<PredicadoObrigatoriedade>.Success(predicado with { Modalidade = modalidade, TipoDocumento = tipoDocumento });
     }
@@ -180,7 +181,10 @@ public sealed class ReferenciasDoPredicado(
     }
 
     private async Task<bool> ModalidadeEstaVivaAsync(string codigo, CancellationToken cancellationToken) =>
-        await modalidadeReader.ObterVivaPorCodigoAsync(codigo, cancellationToken).ConfigureAwait(false) is not null;
+        CodigoConfere((await modalidadeReader.ObterVivaPorCodigoAsync(codigo, cancellationToken).ConfigureAwait(false))?.Codigo, codigo);
+
+    private static bool CodigoConfere(string? codigoEncontrado, string codigoRecebido) =>
+        codigoEncontrado is not null && string.Equals(codigoEncontrado, codigoRecebido, StringComparison.Ordinal);
 
     private static string CodigoOuVazio(string? codigo) => codigo ?? string.Empty;
 

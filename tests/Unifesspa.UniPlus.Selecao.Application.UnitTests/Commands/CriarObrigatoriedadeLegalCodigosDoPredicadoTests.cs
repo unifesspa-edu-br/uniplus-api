@@ -9,13 +9,13 @@ using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Application.UnitTests.TestSupport;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
+using Unifesspa.UniPlus.Testes.Compartilhado;
 
 using static Unifesspa.UniPlus.Selecao.Application.UnitTests.TestSupport.CenarioDaObrigatoriedadeLegal;
 using static Unifesspa.UniPlus.Selecao.Application.UnitTests.TestSupport.LeitoresDeCadastroParaObrigatoriedadeLegal;
 
 /// <summary>
-/// Os códigos que o predicado cita são conferidos contra o cadastro vivo, e persistidos como o cadastro os
-/// grava: o avaliador compara por igualdade exata contra o código congelado no processo.
+/// Os códigos que o predicado cita são conferidos exatamente contra o cadastro vivo: o avaliador compara por igualdade exata contra o código congelado no processo.
 /// </summary>
 public sealed class CriarObrigatoriedadeLegalCodigosDoPredicadoTests
 {
@@ -84,6 +84,65 @@ public sealed class CriarObrigatoriedadeLegalCodigosDoPredicadoTests
 
         (await RecusaDoPredicadoAsync(new DocumentoObrigatorioParaModalidade("LB_PPI", codigo)))
             .Should().Be("ObrigatoriedadeLegal.TipoDocumentoNaoEncontrado");
+    }
+
+    [Theory]
+    [InlineData(" PROVA_OBJETIVA ", false)]
+    [InlineData("PROVA_OBJETIVA", true)]
+    public async Task Handle_TipoEtapaRetornadoComCodigoDiferente_Recusa(string codigo, bool aceito)
+    {
+        ITipoEtapaReader leitor = _cenario.TiposDeEtapa = Substitute.For<ITipoEtapaReader>();
+        leitor.ObterAtivoPorCodigoAsync(codigo, Arg.Any<CancellationToken>())
+            .Returns(TipoEtapaViewDeTeste.Com(Guid.CreateVersion7(), "PROVA_OBJETIVA").Construir());
+
+        Result<Guid> resultado = await _cenario.CriarAsync(ComandoDeCriar(new EtapaObrigatoria(codigo)));
+
+        resultado.IsSuccess.Should().Be(aceito);
+        if (!aceito) resultado.Error!.Code.Should().Be("ObrigatoriedadeLegal.TipoEtapaNaoEncontradoOuInativo");
+    }
+
+    [Theory]
+    [InlineData(" LB_PPI ", false)]
+    [InlineData("LB_PPI", true)]
+    public async Task Handle_ModalidadeDoDocumentoRetornadaComCodigoDiferente_Recusa(string codigo, bool aceito)
+    {
+        ModalidadeView? vista = await ModalidadeReaderViva().ObterVivaPorCodigoAsync("LB_PPI", CancellationToken.None);
+        IModalidadeReader leitor = _cenario.Modalidades = Substitute.For<IModalidadeReader>();
+        leitor.ObterVivaPorCodigoAsync(codigo, Arg.Any<CancellationToken>()).Returns(vista);
+
+        Result<Guid> resultado = await _cenario.CriarAsync(ComandoDeCriar(new DocumentoObrigatorioParaModalidade(codigo, "LAUDO_MEDICO")));
+
+        resultado.IsSuccess.Should().Be(aceito);
+        if (!aceito) resultado.Error!.Code.Should().Be("ObrigatoriedadeLegal.ModalidadeNaoEncontrada");
+    }
+
+    [Theory]
+    [InlineData(" LAUDO_MEDICO ", false)]
+    [InlineData("LAUDO_MEDICO", true)]
+    public async Task Handle_TipoDocumentoRetornadoComCodigoDiferente_Recusa(string codigo, bool aceito)
+    {
+        ITipoDocumentoReader leitor = _cenario.TiposDeDocumento = Substitute.For<ITipoDocumentoReader>();
+        leitor.ObterVivoPorCodigoAsync(codigo, Arg.Any<CancellationToken>()).Returns(CadastrosVivos.TipoDocumento("LAUDO_MEDICO"));
+
+        Result<Guid> resultado = await _cenario.CriarAsync(ComandoDeCriar(new DocumentoObrigatorioParaModalidade("LB_PPI", codigo)));
+
+        resultado.IsSuccess.Should().Be(aceito);
+        if (!aceito) resultado.Error!.Code.Should().Be("ObrigatoriedadeLegal.TipoDocumentoNaoEncontrado");
+    }
+
+    [Theory]
+    [InlineData(" LB_PPI ", false)]
+    [InlineData("LB_PPI", true)]
+    public async Task Handle_ModalidadeMinimaRetornadaComCodigoDiferente_Recusa(string codigo, bool aceito)
+    {
+        ModalidadeView? vista = await ModalidadeReaderViva().ObterVivaPorCodigoAsync("LB_PPI", CancellationToken.None);
+        IModalidadeReader leitor = _cenario.Modalidades = Substitute.For<IModalidadeReader>();
+        leitor.ObterVivaPorCodigoAsync(codigo, Arg.Any<CancellationToken>()).Returns(vista);
+
+        Result<Guid> resultado = await _cenario.CriarAsync(ComandoDeCriar(new ModalidadesMinimas([codigo])));
+
+        resultado.IsSuccess.Should().Be(aceito);
+        if (!aceito) resultado.Error!.Code.Should().Be("ObrigatoriedadeLegal.ModalidadeNaoEncontrada");
     }
 
     [Theory]
