@@ -5384,14 +5384,14 @@
         "UNI-REQ-0266"
       ],
       "oQueAconteceu": [
-        "A modalidade tem natureza **ação afirmativa** (`ACAO_AFIRMATIVA`), mas a `regraDeAplicabilidade` dela não tem a forma que a natureza exige. Nada foi gravado. A forma depende da modalidade:",
-        "- **Ação afirmativa em geral** (`AC_I`, `AC_Q` e as institucionais cadastradas): quem opta pelas cotas da lei não concorre a ela. Por isso toda cláusula da regra precisa conter a condição `{\"fato\":\"OPTOU_PELAS_COTAS_DA_LEI\",\"operador\":\"IGUAL\",\"valor\":false}`. Alguma cláusula não a tem.\n- **`AC_PCD`**, a reserva de vagas para pessoa com deficiência: é a única ação afirmativa que se soma às cotas da lei. A pessoa com deficiência que opta pelas cotas e responde que deseja concorrer como pessoa com deficiência concorre às vagas de pessoa com deficiência da lei e também à `AC_PCD`, ocupando uma única vaga (UNI-REQ-0142 e UNI-REQ-0266, definição do PO de 09/11/2026). Por isso a regra da `AC_PCD` tem condições e **não cita** `OPTOU_PELAS_COTAS_DA_LEI`: ela vale para quem optou pelas cotas e para quem não optou. A regra enviada cita essa opção ou não tem condição nenhuma.",
-        "Na recusa da `AC_PCD`, a mensagem diz: \"A regra da reserva de vagas para pessoa com deficiência não cita OPTOU_PELAS_COTAS_DA_LEI: ela vale para quem optou pelas cotas da lei e para quem não optou.\"",
+        "A regra de aplicabilidade da ação afirmativa não tem a forma exigida para essa modalidade. Nada foi gravado.",
+        "Em uma ação afirmativa em geral, quem optou pelas cotas da Lei 12.711 não concorre a ela. Cada alternativa da regra deve exigir que o candidato não tenha optado.",
+        "A reserva de vagas para pessoa com deficiência se soma às cotas da lei: sua regra deve ter condições e valer tanto para quem optou pelas cotas quanto para quem não optou (UNI-REQ-0142 e UNI-REQ-0266).",
         "Na atualização, a modalidade é procurada antes desta conferência: com um identificador inexistente a resposta é [modalidade não encontrada](/erros/uniplus.configuracao.modalidade.nao_encontrada), mesmo que o conteúdo enviado também tivesse este problema. Numa modalidade do catálogo legal fixo esta recusa não é emitida: se o conteúdo altera algo além da descrição e da base legal, vale [estrutura protegida não editável](/erros/uniplus.configuracao.modalidade.estrutura_protegida_nao_editavel)."
       ],
       "comoResolver": [
-        "Para uma ação afirmativa que não seja a `AC_PCD`, acrescente a condição de **não** ter optado pelas cotas da lei a cada cláusula da regra. Quem opta pelas cotas da lei não concorre a essas ações afirmativas.",
-        "Para a `AC_PCD`, mantenha a regra sem a condição `OPTOU_PELAS_COTAS_DA_LEI`: ela deve citar só as condições de deficiência."
+        "Para uma ação afirmativa em geral, inclua em cada alternativa da regra a condição de que o candidato não optou pelas cotas da Lei 12.711.",
+        "Para a reserva de vagas para pessoa com deficiência, inclua as condições de deficiência sem restringir a regra pela opção pelas cotas da lei."
       ],
       "ondeAparece": [
         "Criação de uma modalidade (POST /api/configuracao/admin/modalidades)",
@@ -5526,11 +5526,11 @@
         "UNI-REQ-0142"
       ],
       "oQueAconteceu": [
-        "A modalidade tem natureza **cota reservada** (`COTA_RESERVADA`), mas alguma cláusula de `regraDeAplicabilidade` não exige a opção pelas cotas da lei. Toda cláusula da cota precisa conter a condição `{\"fato\":\"OPTOU_PELAS_COTAS_DA_LEI\",\"operador\":\"IGUAL\",\"valor\":true}`. Uma regra sem cláusula nenhuma também é recusada, pois deixaria a cota aberta a todo candidato. Nada foi gravado.",
+        "Uma alternativa da regra de aplicabilidade da cota reservada não exige que o candidato tenha optado pelas cotas da Lei 12.711. Uma regra sem alternativas também é recusada, pois deixaria a cota aberta a todo candidato. Nada foi gravado.",
         "Na atualização, a modalidade é procurada antes desta conferência: com um identificador inexistente a resposta é [modalidade não encontrada](/erros/uniplus.configuracao.modalidade.nao_encontrada), mesmo que o conteúdo enviado também tivesse este problema. Numa modalidade do catálogo legal fixo esta recusa não é emitida: se o conteúdo altera algo além da descrição e da base legal, vale [estrutura protegida não editável](/erros/uniplus.configuracao.modalidade.estrutura_protegida_nao_editavel)."
       ],
       "comoResolver": [
-        "Acrescente a condição de opção pelas cotas da lei a cada cláusula, junto das demais condições que definem o grupo da cota (renda, origem escolar, raça ou etnia, deficiência)."
+        "Inclua, em cada alternativa da regra, a condição de que o candidato optou pelas cotas da Lei 12.711, junto das demais condições que definem o grupo da cota (renda, origem escolar, raça ou etnia, deficiência)."
       ],
       "ondeAparece": [
         "Criação de uma modalidade (POST /api/configuracao/admin/modalidades)",

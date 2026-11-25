@@ -238,7 +238,7 @@ public sealed class ModalidadeCoerenciaDosCamposTests
             RegraDeAplicabilidade = Clausulas([(OpcaoPelasCotasDaLei.Fato, true), ("PCD", true)], [("QUILOMBOLA", true)]),
         });
 
-        r.Errors.Should().ContainSingle(e => e.Error.Code == ModalidadeErrorCodes.CotaSemOpcaoPelasCotasDaLei);
+        ConferirRecusaDaRegra(r, ModalidadeErrorCodes.CotaSemOpcaoPelasCotasDaLei, "PSIQ_COTA");
     }
 
     [Fact(DisplayName = "Cota incondicional é recusada: só concorre a ela quem optou pelas cotas da lei")]
@@ -258,7 +258,7 @@ public sealed class ModalidadeCoerenciaDosCamposTests
             RegraDeAplicabilidade = ComOpcaoPelasCotas(optou: true, ("INDIGENA", true)),
         });
 
-        r.Errors.Should().ContainSingle(e => e.Error.Code == ModalidadeErrorCodes.AcaoAfirmativaComOpcaoPelasCotasDaLei);
+        ConferirRecusaDaRegra(r, ModalidadeErrorCodes.AcaoAfirmativaComOpcaoPelasCotasDaLei, "PSIQ_AA");
     }
 
     [Fact(DisplayName = "Contraprova: cota e ação afirmativa com a opção certa em toda cláusula são aceitas")]
@@ -291,10 +291,7 @@ public sealed class ModalidadeCoerenciaDosCamposTests
             RegraDeAplicabilidade = ComOpcaoPelasCotas(optou: false, ("PCD", true), ("CONCORRER_PCD", true)),
         });
 
-        r.Errors.Should().ContainSingle(e => e.Error.Code == ModalidadeErrorCodes.AcaoAfirmativaComOpcaoPelasCotasDaLei
-            && e.Field == "regraDeAplicabilidade"
-            && e.Error.Message.Contains("não cita OPTOU_PELAS_COTAS_DA_LEI", StringComparison.Ordinal)
-            && !e.Error.Message.Contains("AC_PCD", StringComparison.Ordinal));
+        ConferirRecusaDaRegra(r, ModalidadeErrorCodes.AcaoAfirmativaComOpcaoPelasCotasDaLei, "AC_PCD");
     }
 
     [Fact(DisplayName = "A ação afirmativa institucional que não cita a opção pelas cotas da lei continua recusada")]
@@ -306,8 +303,7 @@ public sealed class ModalidadeCoerenciaDosCamposTests
             RegraDeAplicabilidade = Clausulas([("INDIGENA", true)]),
         });
 
-        r.Errors.Should().ContainSingle(e => e.Error.Code == ModalidadeErrorCodes.AcaoAfirmativaComOpcaoPelasCotasDaLei
-            && e.Error.Message.Contains("exige OPTOU_PELAS_COTAS_DA_LEI falso", StringComparison.Ordinal));
+        ConferirRecusaDaRegra(r, ModalidadeErrorCodes.AcaoAfirmativaComOpcaoPelasCotasDaLei, "PSIQ_AA");
     }
 
     [Fact(DisplayName = "Com o código recusado, a regra da ação afirmativa não é conferida: só o código é recusado")]
@@ -320,5 +316,14 @@ public sealed class ModalidadeCoerenciaDosCamposTests
         });
 
         r.Errors.Should().ContainSingle().Which.Error.Code.Should().Be(ModalidadeErrorCodes.CodigoFormatoInvalido);
+    }
+
+    private static void ConferirRecusaDaRegra(Result<Modalidade> resultado, string codigoDaRecusa, string codigoDaModalidade)
+    {
+        FieldError erro = resultado.Errors.Should().ContainSingle(e => e.Error.Code == codigoDaRecusa).Which;
+        erro.Field.Should().Be("regraDeAplicabilidade");
+        erro.Error.Message.Should().NotContain(OpcaoPelasCotasDaLei.Fato)
+            .And.NotContainEquivalentOf("cláusula")
+            .And.NotContain(codigoDaModalidade);
     }
 }

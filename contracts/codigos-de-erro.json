@@ -1664,7 +1664,7 @@
     {
       "codigo": "uniplus.configuracao.modalidade.acao_afirmativa_com_opcao_pelas_cotas_da_lei",
       "status": 422,
-      "titulo": "A ação afirmativa exige não ter optado pelas cotas da lei em toda cláusula, salvo a reserva de vagas para pessoa com deficiência, que não cita a opção"
+      "titulo": "A regra da ação afirmativa é incompatível com a opção pelas cotas da lei"
     },
     {
       "codigo": "uniplus.configuracao.modalidade.acao_indeferimento_invalida",
@@ -1709,7 +1709,7 @@
     {
       "codigo": "uniplus.configuracao.modalidade.cota_sem_opcao_pelas_cotas_da_lei",
       "status": 422,
-      "titulo": "A cota da lei exige a opção pelas cotas da lei em toda cláusula"
+      "titulo": "A cota da lei exige a opção pelas cotas em toda alternativa da regra"
     },
     {
       "codigo": "uniplus.configuracao.modalidade.criacao_bloqueada_codigo_protegido",
