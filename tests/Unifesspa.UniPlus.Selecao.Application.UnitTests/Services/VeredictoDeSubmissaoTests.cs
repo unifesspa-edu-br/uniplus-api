@@ -172,6 +172,68 @@ public sealed class VeredictoDeSubmissaoTests
     /// </summary>
     private static readonly string CodigoPrefixado = DefinicaoDoProcesso.CodigoDoTermo(FinalidadeFormulario.Inscricao, "DECLARACAO_VERACIDADE");
 
+    [Fact(DisplayName = "As recusas seguem a ordem dos itens, de cada grupo e suas ocorrências e dos termos")]
+    public void Avaliar_ItensGruposEOcorrenciasETermos_RecusaNaOrdemDaAvaliacao()
+    {
+        AvaliacaoFormulario avaliacao = AvaliacaoComRecusasEmTodasAsPartes();
+        TermoExigidoFormulario exigido = NovoTermo("DECLARACAO_VERACIDADE", Guid.NewGuid(), new string('a', 64));
+
+        IReadOnlyList<FieldError> recusas = VeredictoDeSubmissao.Avaliar(avaliacao, [exigido], SemAceites, DiaDoEnvio);
+
+        recusas.Select(static r => (r.Field, r.Error.Code)).Should().Equal(
+            ("APELIDO", "Inscricao.ItemObrigatorioAusente"),
+            ("GRUPO_1", "Inscricao.GrupoContagemInvalida"),
+            ("GRUPO_1.membro-1.NOME_MEMBRO", "Inscricao.ItemObrigatorioAusente"),
+            ("GRUPO_2", "Inscricao.GrupoContagemInvalida"),
+            ("GRUPO_2.membro-2.NOME_MEMBRO", "Inscricao.ItemObrigatorioAusente"),
+            ("DECLARACAO_VERACIDADE", "Inscricao.TermoNaoAceito"));
+    }
+
+    [Fact(DisplayName = "Contagem abaixo do mínimo em grupo de obrigatoriedade indeterminada depende do Geo; as demais recusas não")]
+    public void AvaliarDistinguindoOGeo_GrupoAbaixoDoMinimoComObrigatoriedadeIndeterminada_DistingueRecusaDependente()
+    {
+        AvaliacaoFormulario avaliacao = AvaliacaoComRecusasEmTodasAsPartes(Ternario.Indeterminado);
+        TermoExigidoFormulario exigido = NovoTermo("DECLARACAO_VERACIDADE", Guid.NewGuid(), new string('a', 64));
+
+        IReadOnlyList<RecusaDaSubmissao> recusas = VeredictoDeSubmissao.AvaliarDistinguindoOGeo(
+            avaliacao, [exigido], SemAceites, DiaDoEnvio, GeoComGrupoCondicional());
+
+        recusas.Select(static r => (r.Recusa.Field, r.Recusa.Error.Code, r.DependeDoGeo)).Should().Equal(
+            ("APELIDO", "Inscricao.ItemObrigatorioAusente", false),
+            ("GRUPO_1", "Inscricao.GrupoContagemInvalida", true),
+            ("GRUPO_1.membro-1.NOME_MEMBRO", "Inscricao.ItemObrigatorioAusente", false),
+            ("GRUPO_2", "Inscricao.GrupoContagemInvalida", false),
+            ("GRUPO_2.membro-2.NOME_MEMBRO", "Inscricao.ItemObrigatorioAusente", false),
+            ("DECLARACAO_VERACIDADE", "Inscricao.TermoNaoAceito", false));
+    }
+
+    private static AvaliacaoFormulario AvaliacaoComRecusasEmTodasAsPartes(Ternario obrigatoriedadeDoPrimeiroGrupo = Ternario.Falso) =>
+        AvaliacaoCom(
+            new Dictionary<string, FatoResolvido>(StringComparer.Ordinal) { ["APELIDO"] = FatoResolvido.Indeterminado() },
+            itens: [ItemVisivelObrigatorio("APELIDO")],
+            termos: [new AvaliacaoTermo(CodigoPrefixado, Ternario.Verdadeiro, Ternario.Verdadeiro)],
+            grupos: [GrupoComRecusas("GRUPO_1", "membro-1", obrigatoriedadeDoPrimeiroGrupo), GrupoComRecusas("GRUPO_2", "membro-2", Ternario.Falso)]);
+
+    private static AvaliacaoGrupo GrupoComRecusas(string codigo, string id, Ternario obrigatorio)
+    {
+        AvaliacaoOcorrencia ocorrencia = new(
+            id, [ItemVisivelObrigatorio("NOME_MEMBRO")],
+            new Dictionary<string, FatoResolvido>(StringComparer.Ordinal) { ["NOME_MEMBRO"] = FatoResolvido.Indeterminado() },
+            EstadoFato.Indeterminado);
+        return new(codigo, "DADOS", Ternario.Verdadeiro, obrigatorio, EstadoFato.Indeterminado,
+            ContagemValida: false, OcorrenciaDoCandidatoValida: true, Ocorrencias: [ocorrencia]);
+    }
+
+    private static DependenciaDoGeo GeoComGrupoCondicional()
+    {
+        const string derivado = "RESIDE_NA_REGIAO";
+        PredicadoDnf predicado = PredicadoDnf.CriarDeCondicoesAgrupadas(
+            [(1, CondicaoDnf.Criar(derivado, Operador.Igual, JsonSerializer.SerializeToElement(true)).Value!)]).Value!;
+        DefinicaoGrupo grupo = new("GRUPO_1", null, Obrigatoriedade.Quando(predicado), 2, null, [], false);
+        DefinicaoFormulario definicao = new([new DefinicaoEtapa("DADOS", null, [], [grupo])], [], []);
+        return new(definicao, new HashSet<string>([derivado], StringComparer.Ordinal), new HashSet<string>(StringComparer.Ordinal));
+    }
+
     [Fact(DisplayName = "Termo obrigatório não aceito recusa a submissão")]
     public void Avaliar_TermoObrigatorioNaoAceito_Recusa()
     {
