@@ -53,8 +53,10 @@ internal sealed class LeitorEnvelope
     /// </summary>
     public T Recusar<T>(string mensagem) => Registrar<T>(ErrosCodecEnvelope.EnvelopeMalformado, mensagem);
 
-    internal T Malformado<T>(string path, string detalhe) =>
-        Registrar<T>(ErrosCodecEnvelope.EnvelopeMalformado, $"Envelope malformado em '{path}': {detalhe}");
+    internal static DomainError Malformacao(string caminho, string detalhe) =>
+        new(ErrosCodecEnvelope.EnvelopeMalformado, $"Envelope malformado em '{caminho}': {detalhe}");
+
+    internal T Malformado<T>(string path, string detalhe) => Propagar<T>(Malformacao(path, detalhe));
 
     /// <summary>
     /// Exige que <paramref name="objeto"/> tenha <b>exatamente</b> as chaves esperadas —

@@ -34,7 +34,7 @@ internal static class LeituraDasModalidades
     /// <remarks>
     /// O envelope o congela por valor (ADR-0061), e o decoder não passa pelo cadastro — sem
     /// esta lista, um token inventado faria round-trip perfeito e reidrataria uma
-    /// <b>instrução que o motor de homologação não sabe executar</b>. A lista está aqui, e
+    /// <b>instrução que a homologação das inscrições não sabe executar</b>. A lista está aqui, e
     /// não numa referência ao módulo Configuração, porque ela é a do vocabulário
     /// <b>congelado</b> nesta forma do envelope: um token novo no cadastro exige atualizar
     /// esta lista.
@@ -101,18 +101,10 @@ internal static class LeituraDasModalidades
     {
         Result<ModalidadeSelecionada> modalidade = ModalidadeSelecionada.Criar(
             d.NoCadastro(regra ?? PredicadoDnf.SemClausula), d.QuantidadeDeclarada);
-        if (modalidade.IsFailure)
-        {
-            return leitor.Propagar<ModalidadeSelecionada>(modalidade.Errors, path);
-        }
-
-        return ConferirRemanejamentoPelaNatureza(leitor, modalidade.Value!);
+        // O documento publicado não passa pelo cadastro; a coerência é a mesma exigida na publicação.
+        IReadOnlyList<FieldError> causas = [.. modalidade.Errors, .. d.RecusaDoRemanejamentoIncoerente()];
+        return causas.Count > 0 ? leitor.Propagar<ModalidadeSelecionada>(causas, path) : modalidade.Value;
     }
-
-    // O envelope não passa pelo cadastro; a coerência é a mesma exigida na publicação.
-    private static ModalidadeSelecionada? ConferirRemanejamentoPelaNatureza(LeitorEnvelope leitor, ModalidadeSelecionada modalidade) =>
-        modalidade.RemanejamentoCoerenteComANatureza() ? modalidade
-            : leitor.Malformado<ModalidadeSelecionada?>("modalidades", "a regra de remanejamento não é a que a natureza da modalidade pede.");
 
     private sealed record ModalidadeLidaDoEnvelope
     {
@@ -169,16 +161,19 @@ internal static class LeituraDasModalidades
         private string? CodigoForaDoFormato() => new[] { Codigo, ComposicaoOrigem, Destino, Par, Fallback }
             .FirstOrDefault(codigo => codigo is not null && !FormatoDoCodigo.TemFormatoValido(codigo));
 
-        private static DomainError RecusaDoFormatoDoCodigo() => new(
-            ErrosCodecEnvelope.EnvelopeMalformado,
-            "Envelope malformado em 'modalidades': o código não tem o formato do cadastro " +
+        internal IEnumerable<FieldError> RecusaDoRemanejamentoIncoerente() =>
+            ModalidadeSelecionada.RemanejamentoCoerenteComANatureza(Natureza, Remanejamento) ? []
+                : [new FieldError(null, LeitorEnvelope.Malformacao("modalidades",
+                    "a regra de remanejamento não é a que a natureza da modalidade pede."))];
+
+        private static DomainError RecusaDoFormatoDoCodigo() => LeitorEnvelope.Malformacao("modalidades",
+            "o código não tem o formato do cadastro " +
             "(A-Z, 0-9 e underscore) — e códigos são chave de composição e de remanejamento dentro da oferta.");
 
-        private static DomainError RecusaDaAcaoAoIndeferir() => new(
-            ErrosCodecEnvelope.EnvelopeMalformado,
-            "Envelope malformado em 'modalidades': a ação ao indeferir não pertence ao " +
-            $"domínio fechado do cadastro ({string.Join(", ", AcoesQuandoIndeferido)}) — restaurá-la daria ao " +
-            "motor de homologação uma instrução que ele não sabe executar.");
+        private static DomainError RecusaDaAcaoAoIndeferir() => LeitorEnvelope.Malformacao("modalidades",
+            "a ação ao indeferir não pertence ao " +
+            $"domínio fechado do cadastro ({string.Join(", ", AcoesQuandoIndeferido)}) — restaurá-la daria à " +
+            "homologação das inscrições uma instrução que ela não sabe executar.");
     }
 
 }

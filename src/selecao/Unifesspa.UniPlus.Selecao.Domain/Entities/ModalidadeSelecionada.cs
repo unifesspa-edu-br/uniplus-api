@@ -72,12 +72,13 @@ public sealed class ModalidadeSelecionada : EntityBase
     /// publicação recusa a cópia incoerente com erro nomeado, e a leitura da configuração publicada a
     /// recusa como malformada, as duas por esta mesma regra.
     /// </remarks>
-    public bool RemanejamentoCoerenteComANatureza() => NaturezaLegal switch
-    {
-        NaturezaLegalModalidade.Ampla => RegraRemanejamento == null,
-        NaturezaLegalModalidade.AcaoAfirmativa => RegraRemanejamento is RegraRemanejamentoModalidade.DestinoUnico or RegraRemanejamentoModalidade.Cruzado,
-        _ => true,
-    };
+    public static bool RemanejamentoCoerenteComANatureza(
+        NaturezaLegalModalidade naturezaLegal, RegraRemanejamentoModalidade? regraRemanejamento) => naturezaLegal switch
+        {
+            NaturezaLegalModalidade.Ampla => regraRemanejamento == null,
+            NaturezaLegalModalidade.AcaoAfirmativa => regraRemanejamento is RegraRemanejamentoModalidade.DestinoUnico or RegraRemanejamentoModalidade.Cruzado,
+            _ => true,
+        };
 
     private ModalidadeSelecionada() { }
 
