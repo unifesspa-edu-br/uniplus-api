@@ -1,6 +1,7 @@
 namespace Unifesspa.UniPlus.IntegrationTests.Fixtures.Hosting;
 
 using DotNet.Testcontainers.Builders;
+using DotNet.Testcontainers.Configurations;
 using DotNet.Testcontainers.Containers;
 
 /// <summary>
@@ -40,15 +41,12 @@ public sealed class MinioContainerFixture : IAsyncLifetime
             .WithCommand("server", "/data", "--console-address", $":{ConsolePort}")
             .WithWaitStrategy(
                 Wait.ForUnixContainer()
-                    // /minio/health/ready (não /live): live só confirma que o processo subiu, mas a
-                    // object layer pode ainda não servir a API S3 — ListBucketsAsync intermitente
-                    // retornava Unhealthy logo após o start (corrida liveness x readiness, #718).
-                    // O probe de readiness só passa quando o servidor já atende requisições.
-                    .UntilHttpRequestIsSucceeded(r => r
-                        .ForPort(ApiPort)
-                        .ForPath("/minio/health/ready")))
+                    .UntilHttpRequestIsSucceeded(ConfigureReadinessProbe))
             .Build();
     }
+
+    private static HttpWaitStrategy ConfigureReadinessProbe(HttpWaitStrategy request) =>
+        request.ForPort(ApiPort).ForPath("/minio/health/ready");
 
     /// <summary>Endpoint MinIO no formato <c>host:port</c> (sem esquema). Apto a alimentar <c>Storage:Endpoint</c>.</summary>
     public string Endpoint =>

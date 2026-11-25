@@ -121,70 +121,62 @@ public abstract class ApiFactoryBase<TEntryPoint> : WebApplicationFactory<TEntry
             configurationBuilder.AddInMemoryCollection(GetConfigurationOverrides());
         });
 
-        builder.ConfigureTestServices(services =>
+        builder.ConfigureTestServices(ConfigureServicesForTests);
+    }
+
+    private void ConfigureServicesForTests(IServiceCollection services)
+    {
+        ConfigureTestAuthentication(services);
+        if (DisableWolverineRuntimeForTests)
         {
-            ConfigureTestAuthentication(services);
+            RemoveWolverineAndMigrations(services);
+        }
 
-            if (DisableWolverineRuntimeForTests)
-            {
-                // Dois IHostedService produtivos precisam ser removidos juntos quando o
-                // Postgres não está disponível no test host (default da maioria das suites
-                // de integração que só exercitam o pipeline HTTP):
-                //
-                // 1. Wolverine registra o WolverineRuntime como IHostedService via factory
-                //    (ImplementationFactory != null, ImplementationType == null). A heurística
-                //    estável é casar pelo assembly da fábrica.
-                // 2. MigrationHostedService<TContext> (issue #344) é registrado por
-                //    AddDbContextMigrationsOnStartup<T>() e dispara MigrateAsync no StartAsync.
-                //    Sem PG real, falha com "Connection refused" e derruba o factory antes do
-                //    primeiro teste. Reconhecemos pelo ImplementationType genérico.
-                //
-                // Suites que exercitam outbox real (CascadingFixture) sobrescrevem
-                // DisableWolverineRuntimeForTests=false e provisionam o PG efêmero — nesse
-                // caso AMBOS os hosted services rodam contra o banco da fixture.
-                ServiceDescriptor[] hostedToRemove = [.. services
-                    .Where(d => d.ServiceType == typeof(IHostedService)
-                        && (
-                            (d.ImplementationFactory is not null
-                                && d.ImplementationFactory.Method.DeclaringType?.Assembly.GetName().Name == "Wolverine")
-                            || IsMigrationHostedService(d.ImplementationType)))];
-                foreach (ServiceDescriptor svc in hostedToRemove)
-                {
-                    services.Remove(svc);
-                }
-            }
+        RemovePeriodicJobs(services);
+        RemoveInfraHealthChecks(services);
+    }
 
-            // Rotinas periódicas de manutenção saem sempre, independente do runtime Wolverine:
-            // mesmo as suítes com Postgres real não podem ter uma varredura agindo sobre os dados
-            // que o teste monta. A suíte que exercita uma rotina a chama diretamente.
-            ServiceDescriptor[] rotinas = [.. services
-                .Where(d => d.ServiceType == typeof(IHostedService)
-                    && d.ImplementationType?.IsSubclassOf(typeof(PeriodicJobHostedService)) == true)];
-            foreach (ServiceDescriptor rotina in rotinas)
-            {
-                services.Remove(rotina);
-            }
+    private static void RemoveWolverineAndMigrations(IServiceCollection services)
+    {
+        ServiceDescriptor[] hostedToRemove = [.. services
+            .Where(d => d.ServiceType == typeof(IHostedService)
+                && ((d.ImplementationFactory is not null
+                    && d.ImplementationFactory.Method.DeclaringType?.Assembly.GetName().Name == "Wolverine")
+                    || IsMigrationHostedService(d.ImplementationType)))];
+        foreach (ServiceDescriptor svc in hostedToRemove)
+        {
+            services.Remove(svc);
+        }
+    }
 
-            // Filtro de health checks de infra externa — removidos por default porque a maioria
-            // das suites HTTP-only não tem PG/Redis/MinIO/Kafka rodando. Override
-            // InfraHealthCheckNamesToRemoveForTests => emptyset em fixtures que provisionam
-            // todas as deps. Aplicado via Configure<HealthCheckServiceOptions> que roda na
-            // pipeline de IServiceCollection — a remoção acontece antes do host materializar
-            // o IHealthCheckService.
-            ISet<string> namesToRemove = InfraHealthCheckNamesToRemoveForTests;
-            if (namesToRemove.Count > 0)
-            {
-                services.PostConfigure<HealthCheckServiceOptions>(opts =>
-                {
-                    HealthCheckRegistration[] toRemove = [.. opts.Registrations
-                        .Where(r => namesToRemove.Contains(r.Name))];
-                    foreach (HealthCheckRegistration reg in toRemove)
-                    {
-                        opts.Registrations.Remove(reg);
-                    }
-                });
-            }
-        });
+    private static void RemovePeriodicJobs(IServiceCollection services)
+    {
+        ServiceDescriptor[] rotinas = [.. services
+            .Where(d => d.ServiceType == typeof(IHostedService)
+                && d.ImplementationType?.IsSubclassOf(typeof(PeriodicJobHostedService)) == true)];
+        foreach (ServiceDescriptor rotina in rotinas)
+        {
+            services.Remove(rotina);
+        }
+    }
+
+    private void RemoveInfraHealthChecks(IServiceCollection services)
+    {
+        ISet<string> namesToRemove = InfraHealthCheckNamesToRemoveForTests;
+        if (namesToRemove.Count > 0)
+        {
+            services.PostConfigure<HealthCheckServiceOptions>(opts => RemoveHealthChecks(opts, namesToRemove));
+        }
+    }
+
+    private static void RemoveHealthChecks(HealthCheckServiceOptions options, ISet<string> namesToRemove)
+    {
+        HealthCheckRegistration[] toRemove = [.. options.Registrations
+            .Where(r => namesToRemove.Contains(r.Name))];
+        foreach (HealthCheckRegistration registration in toRemove)
+        {
+            options.Registrations.Remove(registration);
+        }
     }
 
     private static bool IsMigrationHostedService(Type? implementationType) =>
