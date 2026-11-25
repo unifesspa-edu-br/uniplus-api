@@ -2,7 +2,6 @@ namespace Unifesspa.UniPlus.Selecao.API.Controllers;
 
 using System.Diagnostics.CodeAnalysis;
 
-using Application.Commands.AtosDoProcesso;
 using Application.DTOs;
 using Application.Queries.AtosDoProcesso;
 
@@ -79,18 +78,7 @@ public sealed class AtosDoProcessoController : ControllerBase
         ArgumentNullException.ThrowIfNull(request);
 
         Result<AtoPublicadoDto> resultado = await _commandBus
-            .Send(
-                new PublicarAtoAvulsoDoProcessoCommand(
-                    processoSeletivoId,
-                    request.TipoAtoCodigo,
-                    request.Numero,
-                    request.DataDoAto,
-                    request.Assinante,
-                    request.DocumentoPrincipalId,
-                    AnexoDoAtoRequest.ParaComando(request.Anexos),
-                    request.AtoCorrigidoId,
-                    request.MotivoDaCorrecao),
-                cancellationToken)
+            .Send(request.ParaComando(processoSeletivoId), cancellationToken)
             .ConfigureAwait(false);
 
         return resultado.IsSuccess

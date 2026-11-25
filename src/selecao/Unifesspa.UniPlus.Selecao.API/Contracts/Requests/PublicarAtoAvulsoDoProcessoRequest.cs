@@ -22,7 +22,12 @@ public sealed record PublicarAtoAvulsoDoProcessoRequest(
     Guid DocumentoPrincipalId,
     IReadOnlyList<AnexoDoAtoRequest>? Anexos = null,
     Guid? AtoCorrigidoId = null,
-    string? MotivoDaCorrecao = null);
+    string? MotivoDaCorrecao = null)
+{
+    internal PublicarAtoAvulsoDoProcessoCommand ParaComando(Guid processoSeletivoId) => new(
+        processoSeletivoId, TipoAtoCodigo, Numero, DataDoAto, Assinante, DocumentoPrincipalId,
+        AnexoDoAtoRequest.ParaComando(Anexos), AtoCorrigidoId, MotivoDaCorrecao);
+}
 
 /// <summary>
 /// Um anexo do ato: o documento a publicar já confirmado e o nome com que o arquivo é baixado.

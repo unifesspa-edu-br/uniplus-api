@@ -2,6 +2,8 @@ namespace Unifesspa.UniPlus.Selecao.API.Contracts.Requests;
 
 using Controllers;
 
+using Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
+
 /// <summary>
 /// Corpo de <see cref="ProcessoSeletivoRetificacaoController.Retificar"/> — carrega só os
 /// dados próprios da retificação. Omite <c>ProcessoSeletivoId</c> (vem da rota)
@@ -26,4 +28,9 @@ public sealed record RetificarProcessoSeletivoRequest(
     DadosDoAtoRequest Ato,
     IReadOnlyList<AnexoDoEditalRequest>? Anexos = null,
     DateTimeOffset? PeriodoInscricaoInicio = null,
-    DateTimeOffset? PeriodoInscricaoFim = null);
+    DateTimeOffset? PeriodoInscricaoFim = null)
+{
+    internal RetificarProcessoSeletivoCommand ParaComando(Guid id) => new(
+        id, Motivo, Numero, PeriodoInscricaoInicio, PeriodoInscricaoFim, DocumentoEditalId,
+        MapeamentoDoAto.ParaDados(Ato), Anexos: MapeamentoDoAto.ParaAnexos(Anexos));
+}

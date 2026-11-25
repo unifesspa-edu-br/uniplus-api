@@ -1,5 +1,7 @@
 namespace Unifesspa.UniPlus.Selecao.API.Contracts.Requests;
 
+using Unifesspa.UniPlus.Selecao.Application.Commands.AtosDoProcesso;
+
 /// <summary>
 /// Corpo de <see cref="Controllers.ProdutosPrevistosDoProcessoController.Publicar"/> — omite o processo e o
 /// item, que vêm da rota. O tipo do ato não é declarado: sai do item que o edital congelou.
@@ -24,4 +26,9 @@ public sealed record PublicarProdutoDoEditalRequest(
     IReadOnlyList<AnexoDoAtoRequest>? Anexos = null,
     bool PoliticaDeDivulgacaoConfirmada = false,
     Guid? AtoCorrigidoId = null,
-    string? MotivoDaCorrecao = null);
+    string? MotivoDaCorrecao = null)
+{
+    internal PublicarProdutoDoEditalCommand ParaComando(Guid processoSeletivoId, Guid produtoId) => new(
+        processoSeletivoId, produtoId, Numero, DataDoAto, Assinante, DocumentoPrincipalId,
+        AnexoDoAtoRequest.ParaComando(Anexos), PoliticaDeDivulgacaoConfirmada, AtoCorrigidoId, MotivoDaCorrecao);
+}
