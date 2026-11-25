@@ -90,3 +90,7 @@ A decisão permanece. A [ADR-0177](0177-efeito-suspensivo-por-periodo-segunda-in
 - O reaproveitamento de resposta segue o envio já feito: o pedido de isenção reaproveita a resposta do formulário obrigatório da inscrição já enviado, mesmo quando a isenção está antes na ordem, porque só abre depois desse envio (UNI-REQ-0149). A exigência documental continua sujeita à ordem derivada.
 - A exigência de documento segue a ordem derivada do cronograma (UNI-REQ-0144 e UNI-REQ-0077).
 - Toda comparação entre fases continua usando o momento, e nunca o código ou o nome da fase.
+
+## Emenda 2 (2026-11-24) — página do formulário
+
+Em "regra de campo, de etapa ou de termo" e "identifica etapas, campos e termos", o nome da parte do formulário é página. Etapa fica só para a etapa de avaliação do processo. A decisão não muda.

@@ -44,6 +44,8 @@ Para isso, o contrato público do formulário passa a declarar os derivados e os
 > **Emenda (2026-10-10):** o que depende dos fatos do candidato e não decide a forma do formulário, como as modalidades em que ele concorre e os documentos que o edital exige dele, não é interpretado no front: a API avalia sob demanda ([ADR-0143](0143-avaliacao-sob-demanda-dos-fatos-do-candidato.md)).
 >
 > **Emenda (2026-11-25):** o formulário renderizável passa a se chamar formulário apresentado; a consulta fica em `.../apresentacao`, no modelo e no rascunho do processo; a decisão não muda.
+>
+> **Emenda (2026-11-24):** em "identifica etapa e termo", o nome da parte do formulário é página. Etapa fica só para a etapa de avaliação do processo. A decisão não muda.
 
 ## Consequências
 
