@@ -1,7 +1,6 @@
 namespace Unifesspa.UniPlus.Selecao.Infrastructure.Canonicalization;
 
 using Unifesspa.UniPlus.Kernel.Results;
-using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
@@ -21,7 +20,7 @@ internal static class ConferenciaDoVocabularioDeFatos
         HashSet<string> coletados,
         HashSet<string> codigosDeGrupo)
     {
-        HashSet<(FinalidadeFormulario?, int)> ordens = [];
+        HashSet<(Guid?, int)> ordens = [];
         DomainError? erro = ConferirFatosColetados(bloco.Fatos, coletados, ordens);
         if (erro is not null)
         {
@@ -33,7 +32,7 @@ internal static class ConferenciaDoVocabularioDeFatos
 
     private static DomainError? ConferirGrupos(
         IReadOnlyList<GrupoColetado> grupos, HashSet<string> coletados, HashSet<string> codigosDeGrupo,
-        HashSet<(FinalidadeFormulario?, int)> ordens)
+        HashSet<(Guid?, int)> ordens)
     {
         foreach (GrupoColetado grupo in grupos)
         {
@@ -50,7 +49,7 @@ internal static class ConferenciaDoVocabularioDeFatos
     }
 
     private static DomainError? ConferirFatosColetados(
-        IReadOnlyList<FatoColetado> fatos, HashSet<string> coletados, HashSet<(FinalidadeFormulario?, int)> ordens)
+        IReadOnlyList<FatoColetado> fatos, HashSet<string> coletados, HashSet<(Guid?, int)> ordens)
     {
         foreach (FatoColetado fato in fatos)
         {
@@ -59,7 +58,7 @@ internal static class ConferenciaDoVocabularioDeFatos
                 return Malformado("'dadosDosFormularios': um fato aparece mais de uma vez.");
             }
 
-            if (!ordens.Add((fato.Finalidade, fato.Ordem)))
+            if (!ordens.Add((fato.FormularioId, fato.Ordem)))
             {
                 return Malformado("'dadosDosFormularios': a mesma ordem é usada por mais de um fato do formulário.");
             }
@@ -72,14 +71,14 @@ internal static class ConferenciaDoVocabularioDeFatos
         GrupoColetado grupo,
         HashSet<string> coletados,
         HashSet<string> codigosDeGrupo,
-        HashSet<(FinalidadeFormulario?, int)> ordens)
+        HashSet<(Guid?, int)> ordens)
     {
         if (!codigosDeGrupo.Add(grupo.Codigo))
         {
             return Malformado("'gruposDosFormularios': o mesmo código aparece em mais de um grupo.");
         }
 
-        if (!ordens.Add((grupo.Finalidade, grupo.Ordem)))
+        if (!ordens.Add((grupo.FormularioId, grupo.Ordem)))
         {
             return Malformado("'gruposDosFormularios': a mesma ordem é usada por mais de um item ou grupo do formulário.");
         }

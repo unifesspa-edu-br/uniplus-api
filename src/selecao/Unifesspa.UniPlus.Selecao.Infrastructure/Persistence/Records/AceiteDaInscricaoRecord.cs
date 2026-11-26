@@ -9,6 +9,9 @@ public sealed class AceiteDaInscricaoRecord
 
     public int Ordem { get; set; }
 
+    /// <summary>O código do formulário em que o termo é exigido.</summary>
+    public string FormularioCodigo { get; set; } = null!;
+
     public string TermoCodigo { get; set; } = null!;
 
     public Guid VersaoId { get; set; }

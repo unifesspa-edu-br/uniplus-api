@@ -6,21 +6,22 @@ using AwesomeAssertions;
 
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Canonicalization;
+using Unifesspa.UniPlus.Selecao.Infrastructure.UnitTests.TestSupport;
 
 public sealed class GruposRecusadosNoEnvelopeTests
 {
     [Theory]
     [InlineData("paginaCodigo")]
-    [InlineData("finalidade")]
-    public void LerGruposColetados_SubitemComSecaoOuFinalidadePropria_NaoRepeteValor(string propriedade)
+    [InlineData("formularioCodigo")]
+    public void LerGruposColetados_SubitemComSecaoOuFormularioProprio_NaoRepeteValor(string propriedade)
     {
         const string valor = "EXEMPLO_DADO_RECUSADO";
         JsonObject campo = Campo(valor);
-        campo[propriedade] = propriedade == "paginaCodigo" ? "OUTRA_SECAO" : "HABILITACAO";
+        campo[propriedade] = propriedade == "paginaCodigo" ? "OUTRA_SECAO" : FormulariosDoDocumentoDeTeste.CodigoDaHabilitacao;
         JsonObject documento = Documento(campo, new JsonArray());
         LeitorEnvelope leitor = new();
-        LeituraDosGrupos.LerGruposColetados(leitor, documento, new(StringComparer.Ordinal), []);
-        Conferir(leitor, valor, "'gruposDosFormularios[0].subitens': um campo tem finalidade ou seção própria, mas o campo do grupo segue o grupo.");
+        LeituraDosGrupos.LerGruposColetados(leitor, documento, new(StringComparer.Ordinal), [], FormulariosDoDocumentoDeTeste.ComFormularios());
+        Conferir(leitor, valor, "'gruposDosFormularios[0].subitens': um campo tem formulário ou seção própria, mas o campo do grupo segue o grupo.");
     }
 
     [Fact]
@@ -30,7 +31,7 @@ public sealed class GruposRecusadosNoEnvelopeTests
         JsonArray agregados = new(new JsonObject { ["codigo"] = "AGREGADO", ["codigoDoDadoDoMembro"] = valor, ["operacao"] = "EXISTE" });
         JsonObject documento = Documento(Campo("DADO"), agregados);
         LeitorEnvelope leitor = new();
-        LeituraDosGrupos.LerGruposColetados(leitor, documento, new(StringComparer.Ordinal), []);
+        LeituraDosGrupos.LerGruposColetados(leitor, documento, new(StringComparer.Ordinal), [], FormulariosDoDocumentoDeTeste.ComFormularios());
         Conferir(leitor, valor, "'gruposDosFormularios[0].agregados[0]': o fato de membro não é campo do grupo.");
     }
 
@@ -50,7 +51,7 @@ public sealed class GruposRecusadosNoEnvelopeTests
     private static JsonObject Grupo(JsonObject campo, JsonArray agregados) => new()
     {
         ["codigo"] = "GRUPO",
-        ["finalidade"] = "INSCRICAO",
+        ["formularioCodigo"] = FormulariosDoDocumentoDeTeste.CodigoDaInscricao,
         ["paginaCodigo"] = "DADOS",
         ["ordem"] = 0,
         ["rotulo"] = "Grupo",
@@ -66,7 +67,7 @@ public sealed class GruposRecusadosNoEnvelopeTests
     private static JsonObject Campo(string codigo)
     {
         JsonObject campo = JsonNode.Parse("""
-            {"codigoDoDado":"DADO","finalidade":"INSCRICAO","paginaCodigo":null,"ordem":0,"rotulo":"Dado",
+            {"codigoDoDado":"DADO","formularioCodigo":"INSCRICAO","paginaCodigo":null,"ordem":0,"rotulo":"Dado",
              "tipoDeCampo":"TEXTO","obrigatoriedade":{"tipo":"SEMPRE","quando":null},"ajuda":null,
              "pedirConfirmacao":false,"restricoes":[],"impedimento":null,"origemValores":"CATALOGO","formato":"LIVRE",
              "classificacaoProtecao":"PESSOAL","hipoteseLegal":"CUMPRIMENTO_OBRIGACAO_LEGAL",

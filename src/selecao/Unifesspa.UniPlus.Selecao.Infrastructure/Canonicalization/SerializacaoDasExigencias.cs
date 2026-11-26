@@ -140,9 +140,8 @@ internal static class SerializacaoDasExigencias
     {
         item["exigidoNaFaseId"] = exigencia.ExigidoNaFaseId;
         item["exigidoNaEtapaId"] = exigencia.ExigidoNaEtapaId;
-        item["finalidade"] = exigencia.Finalidade?.Codigo();
+        item["formularioCodigo"] = exigencia.FormularioCodigo?.Valor;
         item["aplicabilidade"] = exigencia.Aplicabilidade.Codigo();
-        ContextoDosRotulos.Acrescentar(item, "finalidade", exigencia.Finalidade);
         ContextoDosRotulos.Acrescentar(item, "aplicabilidade", (Aplicabilidade?)exigencia.Aplicabilidade);
         AcrescentarDetalhesDaExigencia(item, exigencia);
     }

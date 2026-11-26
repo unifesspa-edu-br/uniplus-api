@@ -8,6 +8,7 @@ using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Canonicalization;
+using Unifesspa.UniPlus.Selecao.Infrastructure.UnitTests.TestSupport;
 
 public sealed class ConferenciaDoVocabularioRecusadaNoEnvelopeTests
 {
@@ -23,8 +24,9 @@ public sealed class ConferenciaDoVocabularioRecusadaNoEnvelopeTests
         JsonObject documento = Documento(caso);
         documento.ToJsonString().Should().Contain(valor);
         LeitorEnvelope leitor = new();
-        (IReadOnlyList<FatoColetado> fatos, Dictionary<string, IReadOnlyList<ValorDominioDeclaradoCongelado>?> valores) = LeituraDosFatos.LerFatosColetados(leitor, documento);
-        IReadOnlyList<GrupoColetado> grupos = LeituraDosGrupos.LerGruposColetados(leitor, documento, valores, []);
+        FormulariosDoDocumento formularios = FormulariosDoDocumentoDeTeste.ComFormularios();
+        (IReadOnlyList<FatoColetado> fatos, Dictionary<string, IReadOnlyList<ValorDominioDeclaradoCongelado>?> valores) = LeituraDosFatos.LerFatosColetados(leitor, documento, formularios);
+        IReadOnlyList<GrupoColetado> grupos = LeituraDosGrupos.LerGruposColetados(leitor, documento, valores, [], formularios);
         leitor.Falhou.Should().BeFalse();
         DomainError erro = ConferenciaDoVocabularioDeFatos.ConferirCodigosEOrdens(new(fatos, grupos, [], "1"), [], [])!;
         Conferir(leitor, erro, valor, trecho);
@@ -105,7 +107,7 @@ public sealed class ConferenciaDoVocabularioRecusadaNoEnvelopeTests
     {
         JsonObject fato = JsonNode.Parse("""
             {"ajuda":null,"classificacaoProtecao":"PESSOAL","codigoDoDado":"DADO","componenteExibicao":null,
-            "descricao":"Descrição","exibicao":null,"finalidade":"INSCRICAO","finalidadeTratamento":"Finalidade",
+            "descricao":"Descrição","exibicao":null,"formularioCodigo":"INSCRICAO","finalidadeTratamento":"Finalidade",
             "formato":"LIVRE","hipoteseLegal":"CUMPRIMENTO_OBRIGACAO_LEGAL","impedimento":null,
             "obrigatoriedade":{"quando":null,"tipo":"SEMPRE"},"ordem":0,"origemValores":"CATALOGO",
             "paginaCodigo":"PAGINA","pedirConfirmacao":false,"restricoes":[],"rotulo":"Dado","tipoDeCampo":"TEXTO","valoresSelecionaveis":null}
@@ -121,7 +123,7 @@ public sealed class ConferenciaDoVocabularioRecusadaNoEnvelopeTests
         ["agregados"] = new JsonArray(),
         ["codigo"] = codigo,
         ["exibicao"] = null,
-        ["finalidade"] = "INSCRICAO",
+        ["formularioCodigo"] = "INSCRICAO",
         ["incluiCandidato"] = false,
         ["maximo"] = 2,
         ["minimo"] = 1,

@@ -20,6 +20,14 @@ internal static class ModeloDaSelecao
             ?? throw new InvalidOperationException($"A propriedade {entidade.Name}.{nome} não está no modelo.");
     }
 
+    public static IEntityType Entidade(Type entidade)
+    {
+        ArgumentNullException.ThrowIfNull(entidade);
+
+        return Montado.Value.FindEntityType(entidade)
+            ?? throw new InvalidOperationException($"A entidade {entidade.Name} não está no modelo.");
+    }
+
     /// <summary>As colunas da tabela do esquema da Seleção, inclusive as dos tipos próprios gravados na mesma tabela.</summary>
     public static IReadOnlyList<ColunaDoModelo> Colunas(string tabela)
     {

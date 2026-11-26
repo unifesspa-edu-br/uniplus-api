@@ -30,7 +30,7 @@ public sealed class FatoColetadoConfiguration : IEntityTypeConfiguration<FatoCol
 
         builder.Property(f => f.ProcessoSeletivoId).HasComment("Identificador do processo seletivo ao qual pertence.");
         builder.Property(f => f.GrupoColetadoId).HasComment("Identificador do grupo repetível ao qual o dado pertence, quando houver.");
-        builder.Property(f => f.FormularioId).HasComment("Identificador do formulário em que o dado é solicitado; nulo enquanto o dado só se liga ao formulário pela finalidade.");
+        builder.Property(f => f.FormularioId).IsRequired().HasComment("Identificador do formulário em que o dado é solicitado.");
         builder.Property(f => f.FatoCodigo).HasComment("Código do dado do candidato. Exemplos: RENDA_PER_CAPITA, CONCORRER_RENDA.");
         builder.Property(f => f.Ordem).HasComment("Posição de apresentação ou avaliação no conjunto.");
         builder.Property(f => f.Rotulo).HasComment("Texto apresentado à pessoa candidata.");
@@ -53,7 +53,6 @@ public sealed class FatoColetadoConfiguration : IEntityTypeConfiguration<FatoCol
         {
             t.HasCheckConstraint("ck_dados_dos_formularios_pagina_codigo_formato", $"pagina_codigo ~ '{FormatoDoCodigo.ExpressaoNoBanco}'");
             t.HasComment("Dados solicitados nos formulários de um processo seletivo.");
-            t.HasCheckConstraint("ck_dados_dos_formularios_finalidade", $"finalidade IN ({SqlDosCodigosDeContrato.Lista<FinalidadeFormulario>()})");
             t.HasCheckConstraint("ck_dados_dos_formularios_origem_valores", $"origem_valores IN ({SqlDosCodigosDeContrato.Lista<OrigemValoresColeta>()})");
         });
         builder.HasKey(f => f.Id);
@@ -88,7 +87,7 @@ public sealed class FatoColetadoConfiguration : IEntityTypeConfiguration<FatoCol
         builder.Ignore(f => f.Exibicao);
         builder.Ignore(f => f.Apresentacao);
         builder.Ignore(f => f.Regras);
-        builder.Property(f => f.Finalidade).HasMaxLength(TamanhoDoCodigoDeContrato.Maximo).IsRequired().HasComment("Finalidade do formulário.");
+        builder.Ignore(f => f.Finalidade);
         builder.Property(f => f.PaginaCodigo).HasColumnName("pagina_codigo").HasMaxLength(FormaDaPagina.CodigoMaxLength);
 
         // As duas unicidades são invariantes do agregado, feitas cumprir em
@@ -101,10 +100,10 @@ public sealed class FatoColetadoConfiguration : IEntityTypeConfiguration<FatoCol
         // O fato tem um só produtor no processo, item ou campo de grupo. A ordem do item é única no
         // formulário, e a do campo de grupo, dentro do grupo; a ordem que o grupo divide com os
         // itens é invariante do agregado.
-        builder.HasIndex(f => new { f.ProcessoSeletivoId, f.Finalidade, f.Ordem })
+        builder.HasIndex(f => new { f.FormularioId, f.Ordem })
             .IsUnique()
             .HasFilter("grupo_coletado_id IS NULL")
-            .HasDatabaseName("ux_dados_dos_formularios_processo_finalidade_ordem");
+            .HasDatabaseName("ux_dados_dos_formularios_formulario_ordem");
         builder.HasIndex(f => new { f.GrupoColetadoId, f.Ordem })
             .IsUnique()
             .HasDatabaseName("ux_dados_dos_formularios_grupo_ordem");

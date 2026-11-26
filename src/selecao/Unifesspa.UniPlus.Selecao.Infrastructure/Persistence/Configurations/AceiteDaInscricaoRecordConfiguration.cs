@@ -5,6 +5,8 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Protecao;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
+using Unifesspa.UniPlus.Kernel.Domain.ValueObjects;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Formularios;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Records;
 
 [System.Diagnostics.CodeAnalysis.SuppressMessage(
@@ -19,12 +21,16 @@ internal sealed class AceiteDaInscricaoRecordConfiguration : IEntityTypeConfigur
 
         builder.ClassificaPorPadrao(ClassificacaoDeProtecao.Interno);
 
-        builder.ToTable("aceites_da_inscricao", t => t.HasComment(
-            "O aceite de um termo na inscrição, com a versão e o hash da versão fixada."));
+        builder.ToTable("aceites_da_inscricao", t =>
+        {
+            t.HasComment("O aceite de um termo na inscrição, com a versão e o hash da versão fixada.");
+            t.HasCheckConstraint("ck_aceites_da_inscricao_formulario_codigo_formato", $"formulario_codigo ~ '{FormatoDoCodigo.ExpressaoNoBanco}'");
+        });
 
         builder.HasKey(a => a.Id);
         builder.Property(a => a.Id).ValueGeneratedNever();
 
+        builder.Property(a => a.FormularioCodigo).HasMaxLength(CodigoDoFormulario.TamanhoMaximo).IsRequired();
         builder.Property(a => a.TermoCodigo).IsRequired();
         builder.Property(a => a.HashVersao).IsRequired();
 

@@ -25,7 +25,7 @@ internal static class ManifestoDeExigenciasFatosEFormulario
         // bloco) consome para correlacionar apresentação↔exigência.
         [typeof(DocumentoExigido)] = (
             [
-                "Chave", "ExigidoNaFaseId", "ExigidoNaEtapaId", "Finalidade", "TipoDocumentoOrigemId", "TipoDocumentoCodigo", "TipoDocumentoNome",
+                "Chave", "ExigidoNaFaseId", "ExigidoNaEtapaId", "FormularioCodigo", "TipoDocumentoOrigemId", "TipoDocumentoCodigo", "TipoDocumentoNome",
                 "TipoDocumentoCategoria", "ClassificacaoProtecao", "FinalidadeTratamento", "HipoteseLegal", "FatosComprovados",
                 "Aplicabilidade", "Obrigatorio", "ConsequenciaDoDescumprimento", "AbrePrazoParaReenvio",
                 "Condicoes", "BasesLegais", "PrazoDeEmissao", "Validade", "FormatosPermitidos", "Modelo",
@@ -33,7 +33,7 @@ internal static class ManifestoDeExigenciasFatosEFormulario
             ],
             [
                 ("ProcessoSeletivoId", "FK interna — reconstruída junto com o grafo, nunca congelada (ADR-0110 D2)."),
-                ("FormularioCodigo", "Calculado da finalidade, que o documento congela — congelá-lo duplicaria a fonte de verdade."),
+                ("Finalidade", "Derivada do código do formulário, que o documento congela, até a propriedade sair do domínio — congelá-la duplicaria a fonte de verdade."),
             ]),
 
         [typeof(CondicaoGatilho)] = (
@@ -87,11 +87,12 @@ internal static class ManifestoDeExigenciasFatosEFormulario
         // Rotulo/TipoDeCampo/Obrigatorio — a apresentação do campo no
         // formulário de inscrição, congelada junto do fato no mesmo bloco `fatosColetados`.
         [typeof(FatoColetado)] = (
-            ["FatoCodigo", "Finalidade", "PaginaCodigo", "Ordem", "Rotulo", "TipoDeCampo", "Obrigatoriedade", "Ajuda", "PedirConfirmacao", "Restricoes", "Impedimento", "OrigemValores", "Formato", "ClassificacaoProtecao", "HipoteseLegal", "FinalidadeTratamento", "Descricao", "ComponenteExibicao", "Precondicoes"],
+            ["FatoCodigo", "PaginaCodigo", "Ordem", "Rotulo", "TipoDeCampo", "Obrigatoriedade", "Ajuda", "PedirConfirmacao", "Restricoes", "Impedimento", "OrigemValores", "Formato", "ClassificacaoProtecao", "HipoteseLegal", "FinalidadeTratamento", "Descricao", "ComponenteExibicao", "Precondicoes"],
             [
                 ("ProcessoSeletivoId", "FK interna — reconstruída junto com o grafo, nunca congelada (ADR-0110 D2)."),
                 ("GrupoColetadoId", "FK interna do campo de grupo — o campo é congelado dentro do grupo, em `gruposColetados`."),
-                ("FormularioId", "FK interna — o documento liga o item ao formulário pela finalidade, e o vínculo é reconstruído junto com o grafo."),
+                ("FormularioId", "FK interna — o documento cita o formulário do item pelo código, e o vínculo é reconstruído junto com o grafo."),
+                ("Finalidade", "Derivada do código do formulário, que o documento congela, até a propriedade sair do domínio — congelá-la duplicaria a fonte de verdade."),
                 ("SemPrecondicao", "Derivada de Precondicoes — congelá-la duplicaria a fonte de verdade."),
                 ("FatosCitados", "Derivada das Precondicoes, da Obrigatoriedade e das Restricoes — a lista de citações é recomputada, nunca persistida."),
                 ("Condicoes", "Derivada das Precondicoes, da Obrigatoriedade e das Restricoes — recomputada, nunca persistida."),
@@ -104,10 +105,11 @@ internal static class ManifestoDeExigenciasFatosEFormulario
         // Grupos repetíveis (UNI-REQ-0146) — congelados no bloco de topo `gruposColetados`, com os
         // campos de cada ocorrência na mesma forma dos itens de `fatosColetados`.
         [typeof(GrupoColetado)] = (
-            ["Codigo", "Finalidade", "PaginaCodigo", "Ordem", "Rotulo", "Minimo", "Maximo", "IncluiCandidato", "Exibicao", "Obrigatoriedade", "Subitens"],
+            ["Codigo", "PaginaCodigo", "Ordem", "Rotulo", "Minimo", "Maximo", "IncluiCandidato", "Exibicao", "Obrigatoriedade", "Subitens"],
             [
                 ("ProcessoSeletivoId", "FK interna — reconstruída junto com o grafo, nunca congelada (ADR-0110 D2)."),
-                ("FormularioId", "FK interna — o documento liga o grupo ao formulário pela finalidade, e o vínculo é reconstruído junto com o grafo."),
+                ("FormularioId", "FK interna — o documento cita o formulário do grupo pelo código, e o vínculo é reconstruído junto com o grafo."),
+                ("Finalidade", "Derivada do código do formulário, que o documento congela, até a propriedade sair do domínio — congelá-la duplicaria a fonte de verdade."),
                 ("FatosCitados", "Derivada da exibição e da obrigatoriedade — recomputada, nunca persistida."),
                 ("Condicoes", "Derivada das regras do grupo e dos campos — recomputada, nunca persistida."),
                 ("Ocorrencias", "Agrupa Minimo, Maximo e IncluiCandidato, já congelados um a um — congelar o grupo duplicaria a fonte de verdade."),
@@ -121,11 +123,10 @@ internal static class ManifestoDeExigenciasFatosEFormulario
             [("ProcessoSeletivoId", "FK interna — reconstruída junto com o grafo, nunca congelada (ADR-0110 D2).")]),
 
         [typeof(FormularioProcesso)] = (
-            ["Finalidade", "FaseId", "Titulo", "ConsequenciaDaFaltaDeEnvio", "ModeloDeOrigem", "Paginas"],
+            ["Codigo", "FaseId", "Obrigatorio", "Titulo", "ConsequenciaDaFaltaDeEnvio", "ModeloDeOrigem", "Paginas"],
             [
                 ("ProcessoSeletivoId", "FK interna — reconstruída junto com o grafo, nunca congelada (ADR-0110 D2)."),
-                ("Codigo", "Calculado da finalidade, que o documento congela — congelá-lo duplicaria a fonte de verdade."),
-                ("Obrigatorio", "Calculado da finalidade, que o documento congela — congelá-lo duplicaria a fonte de verdade."),
+                ("Finalidade", "Derivada do código do formulário, que o documento congela, até a propriedade sair do domínio — congelá-la duplicaria a fonte de verdade."),
                 ("Declarado", "Agrupa Codigo, FaseId e Obrigatorio — recomputado, nunca persistido."),
                 ("Estrutura", "Derivada das páginas — a forma que a estrutura do formulário confere, recomputada."),
             ]),
@@ -138,10 +139,10 @@ internal static class ManifestoDeExigenciasFatosEFormulario
                 ("Codigo", "Agrupamento recomputado do formulário — o documento congela o formulário, não esta visão."),
                 ("FaseId", "Agrupamento recomputado do formulário — o documento congela o formulário, não esta visão."),
                 ("Obrigatorio", "Agrupamento recomputado do formulário — o documento congela o formulário, não esta visão."),
-                ("FinalidadeProvisoria", "Calculada do código, até o documento passar a congelar o código no lugar da finalidade."),
+                ("FinalidadeProvisoria", "Calculada do código, até a propriedade sair do domínio."),
             ]),
 
-        [typeof(CodigoDoFormulario)] = ([], [("Valor", "Calculado da finalidade, que o documento congela — congelá-lo duplicaria a fonte de verdade.")]),
+        [typeof(CodigoDoFormulario)] = (["Valor"], []),
 
         [typeof(PaginaDoFormulario)] = (
             ["Codigo", "Ordem", "Tipo", "Bloco", "Titulo", "Descricao", "Aviso", "Exibicao"],
@@ -153,13 +154,14 @@ internal static class ManifestoDeExigenciasFatosEFormulario
             ]),
 
         [typeof(TermoExigidoFormulario)] = (
-            ["Codigo", "Finalidade", "Ordem", "TermoId", "VersaoId", "TermoCodigo", "VersaoNumero", "Nome", "Texto", "BaseLegal", "FormaAceite", "HashVersao", "Exibicao", "Obrigatoriedade"],
+            ["Codigo", "Ordem", "TermoId", "VersaoId", "TermoCodigo", "VersaoNumero", "Nome", "Texto", "BaseLegal", "FormaAceite", "HashVersao", "Exibicao", "Obrigatoriedade"],
             [
                 ("ProcessoSeletivoId", "FK interna — reconstruída junto com o grafo, nunca congelada (ADR-0110 D2)."),
                 ("FatosCitados", "Derivada da exibição e da obrigatoriedade — recomputada, nunca persistida."),
                 ("Condicoes", "Derivada da exibição e da obrigatoriedade — recomputada, nunca persistida."),
                 ("SemFormaDeAceite", "Derivada de FormaAceite — congelá-la duplicaria a fonte de verdade."),
-                ("FormularioId", "FK interna — o documento liga o termo ao formulário pela finalidade, e o vínculo é reconstruído junto com o grafo."),
+                ("FormularioId", "FK interna — o termo é congelado dentro do formulário que o exige, e o vínculo é reconstruído junto com o grafo."),
+                ("Finalidade", "Derivada do código do formulário, que o documento congela, até a propriedade sair do domínio — congelá-la duplicaria a fonte de verdade."),
             ]),
 
         [typeof(CondicaoPrecondicaoFato)] = (

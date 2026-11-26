@@ -15,6 +15,7 @@ using Unifesspa.UniPlus.Regras.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Formularios;
 using Unifesspa.UniPlus.Selecao.Domain.Services;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
@@ -27,7 +28,7 @@ internal static class LeituraDosFatos
 {
     private static readonly string[] ChavesDoFatoColetado =
     [
-        "codigoDoDado", "finalidade", "paginaCodigo", "ordem", "rotulo", "tipoDeCampo", "obrigatoriedade", "ajuda",
+        "codigoDoDado", "formularioCodigo", "paginaCodigo", "ordem", "rotulo", "tipoDeCampo", "obrigatoriedade", "ajuda",
         "pedirConfirmacao", "restricoes", "impedimento", "origemValores", "formato", "classificacaoProtecao",
         "hipoteseLegal", "finalidadeTratamento", "descricao", "componenteExibicao", "exibicao", "valoresSelecionaveis",
     ];
@@ -69,12 +70,12 @@ internal static class LeituraDosFatos
     internal static (
         IReadOnlyList<FatoColetado> Fatos,
         Dictionary<string, IReadOnlyList<ValorDominioDeclaradoCongelado>?> ValoresSelecionaveis)
-        LerFatosColetados(LeitorEnvelope leitor, JsonObject payload)
+        LerFatosColetados(LeitorEnvelope leitor, JsonObject payload, FormulariosDoDocumento formularios)
     {
         Dictionary<string, IReadOnlyList<ValorDominioDeclaradoCongelado>?> valoresSelecionaveis = new(StringComparer.Ordinal);
 
         JsonArray array = leitor.Array(payload, "dadosDosFormularios", "$");
-        return leitor.Falhou ? ([], valoresSelecionaveis) : (LerListaDeFatos(leitor, array, "dadosDosFormularios", valoresSelecionaveis), valoresSelecionaveis);
+        return leitor.Falhou ? ([], valoresSelecionaveis) : (LerListaDeFatos(leitor, array, "dadosDosFormularios", valoresSelecionaveis, formularios), valoresSelecionaveis);
     }
 
     /// <summary>Uma lista de fatos coletados — os itens ou os campos de um grupo —, na forma congelada.</summary>
@@ -82,13 +83,14 @@ internal static class LeituraDosFatos
         LeitorEnvelope leitor,
         JsonArray array,
         string caminho,
-        Dictionary<string, IReadOnlyList<ValorDominioDeclaradoCongelado>?> valoresSelecionaveis)
+        Dictionary<string, IReadOnlyList<ValorDominioDeclaradoCongelado>?> valoresSelecionaveis,
+        FormulariosDoDocumento formularios)
     {
         List<FatoColetado> fatos = [];
         for (int i = 0; i < array.Count; i++)
         {
             FatoColetado? fato = LerFatoColetado(
-                leitor, leitor.ItemObjeto(array, i, caminho), $"{caminho}[{i}]", valoresSelecionaveis);
+                leitor, leitor.ItemObjeto(array, i, caminho), $"{caminho}[{i}]", valoresSelecionaveis, formularios);
             if (fato is null)
             {
                 return [];
@@ -109,10 +111,11 @@ internal static class LeituraDosFatos
         LeitorEnvelope leitor,
         JsonObject item,
         string path,
-        Dictionary<string, IReadOnlyList<ValorDominioDeclaradoCongelado>?> valoresSelecionaveis)
+        Dictionary<string, IReadOnlyList<ValorDominioDeclaradoCongelado>?> valoresSelecionaveis,
+        FormulariosDoDocumento formularios)
     {
-        if (LerDeclaracaoNoVocabulario(leitor, item, path) is not { } d
-            || LerComponentes(leitor, item, path, d.TipoDeCampo!.Value, d.Finalidade) is not { } c)
+        if (LerDeclaracaoNoVocabulario(leitor, item, path, formularios) is not { } d
+            || LerComponentes(leitor, item, path, d.TipoDeCampo!.Value, formularios.DeclaracaoDe(d.Formulario!)) is not { } c)
         {
             return null;
         }
@@ -131,10 +134,10 @@ internal static class LeituraDosFatos
         [.. causas.Select(static causa => causa.Field is "ordem" or "formato" or "classificacaoProtecao" or "componenteExibicao"
             ? causa : LeitorEnvelope.NoProprioItem([causa])[0])];
 
-    private static DeclaracaoDoFato? LerDeclaracaoNoVocabulario(LeitorEnvelope leitor, JsonObject item, string path)
+    private static DeclaracaoDoFato? LerDeclaracaoNoVocabulario(LeitorEnvelope leitor, JsonObject item, string path, FormulariosDoDocumento formularios)
     {
         leitor.ExigirChaves(item, path, ChavesDoFatoColetado);
-        DeclaracaoDoFato d = LerDeclaracao(leitor, item, path);
+        DeclaracaoDoFato d = LerDeclaracao(leitor, item, path, formularios);
         return leitor.Falhou
             ? null
             : VocabularioForaDoCatalogo(d, path) is { } mensagem ? leitor.Recusar<DeclaracaoDoFato?>(mensagem) : d;
@@ -148,22 +151,22 @@ internal static class LeituraDosFatos
             new ApresentacaoDoCampo(d.Rotulo, d.TipoDeCampo!.Value, d.Ajuda, d.PedirConfirmacao),
             c.Regras,
             d.Copia,
-            d.Finalidade);
+            d.Formulario!);
 
     private static ComponentesDoFato? LerComponentes(
-        LeitorEnvelope leitor, JsonObject item, string path, TipoDeCampo tipoDeCampo, FinalidadeFormulario? finalidade)
+        LeitorEnvelope leitor, JsonObject item, string path, TipoDeCampo tipoDeCampo, DeclaracaoDoFormulario formulario)
     {
         PredicadoDnf? exibicao = LerPrecondicoes(leitor, item, path);
         IReadOnlyList<ValorDominioDeclaradoCongelado>? valoresDoFato = leitor.Falhou
             ? null
             : LeituraDosValoresDeDominio.LerValoresSelecionaveis(leitor, item, path, tipoDeCampo);
-        return leitor.Falhou || LerRegrasDoItem(leitor, item, path, exibicao, finalidade) is not { } regras
+        return leitor.Falhou || LerRegrasDoItem(leitor, item, path, exibicao, formulario) is not { } regras
             ? null
             : new ComponentesDoFato(regras, valoresDoFato);
     }
 
     private static RegrasDoCampo? LerRegrasDoItem(
-        LeitorEnvelope leitor, JsonObject item, string path, PredicadoDnf? exibicao, FinalidadeFormulario? finalidade)
+        LeitorEnvelope leitor, JsonObject item, string path, PredicadoDnf? exibicao, DeclaracaoDoFormulario formulario)
     {
         if (LeituraDasCondicoes.LerObrigatoriedade(leitor, item, path) is not { } obrigatoriedade
             || LeituraDasRestricoes.LerRestricoes(leitor, item, path) is not { } restricoes)
@@ -173,9 +176,9 @@ internal static class LeituraDosFatos
 
         Impedimento? impedimento = LeituraDasCondicoes.LerImpedimento(leitor, item, path);
 
-        // A forma do item não conhece a finalidade; o agregado recusa o impedimento fora da inscrição ao
+        // A forma do item não conhece o formulário; o agregado recusa o impedimento fora da inscrição ao
         // definir os itens, e o decoder tem de recusar o mesmo.
-        return leitor.Falhou ? null : Impedimento.ConferirDeclaracao(CorrespondenciaDaFinalidade.DeclaracaoDa(finalidade), [impedimento]) is [{ } foraDaInscricao, ..]
+        return leitor.Falhou ? null : Impedimento.ConferirDeclaracao(formulario, [impedimento]) is [{ } foraDaInscricao, ..]
             ? leitor.Recusar<RegrasDoCampo?>($"'{path}.impedimento': {foraDaInscricao.Error.Message}")
             : new RegrasDoCampo(exibicao, obrigatoriedade, restricoes, impedimento);
     }
@@ -187,8 +190,8 @@ internal static class LeituraDosFatos
             ? $"'{path}.hipoteseLegal' fora do vocabulário de hipóteses legais."
         : d.Copia.ComponenteExibicao is { } componente && (string.IsNullOrWhiteSpace(componente) || componente != componente.Trim())
             ? $"'{path}.componenteExibicao' não está na forma canônica: sem espaço nas pontas e não vazio."
-        : d.Finalidade is null
-            ? $"'{path}.finalidade' fora do vocabulário de finalidades."
+        : d.Formulario is null
+            ? $"'{path}.formularioCodigo' não é o código de um formulário do documento."
         : d.TipoDeCampo is null
             ? $"'{path}.tipoDeCampo' fora dos tipos de campo aceitos: {string.Join(", ", CatalogoDe<TipoDeCampo>.Todos().Select(static c => c.Codigo))}."
             : null;
@@ -205,10 +208,10 @@ internal static class LeituraDosFatos
         return predicado.IsFailure ? leitor.Propagar<PredicadoDnf?>(predicado.Errors, $"{path}.exibicao") : predicado.Value;
     }
 
-    private static DeclaracaoDoFato LerDeclaracao(LeitorEnvelope leitor, JsonObject item, string path) => new()
+    private static DeclaracaoDoFato LerDeclaracao(LeitorEnvelope leitor, JsonObject item, string path, FormulariosDoDocumento formularios) => new()
     {
         FatoCodigo = leitor.TextoNaoVazio(item, "codigoDoDado", path, LimitesDoEnvelope.Fato),
-        Finalidade = EstruturaFormulario.FinalidadeDoCodigo(leitor.TextoNaoVazio(item, "finalidade", path)),
+        Formulario = formularios.De(leitor.TextoNaoVazio(item, "formularioCodigo", path, CodigoDoFormulario.TamanhoMaximo)),
         PaginaCodigo = leitor.TextoOpcional(item, "paginaCodigo", path, LimitesDoEnvelope.CodigoPaginaFormulario),
         Ordem = leitor.Inteiro(item, "ordem", path),
         Rotulo = leitor.TextoNaoVazio(item, "rotulo", path, LimitesDoEnvelope.NomeDeCadastro),
@@ -234,7 +237,7 @@ internal static class LeituraDosFatos
     {
         public string FatoCodigo { get; init; } = string.Empty;
 
-        public FinalidadeFormulario? Finalidade { get; init; }
+        public FormularioProcesso? Formulario { get; init; }
 
         public string? PaginaCodigo { get; init; }
 

@@ -5,6 +5,7 @@ using System.Text.Json.Nodes;
 using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Cronograma;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 /// <summary>
@@ -23,7 +24,8 @@ internal static class LeituraDoEnvelope
     internal static BlocosDoEnvelope? Ler(LeitorEnvelope leitor, JsonObject payload, bool temRetificacao)
     {
         BlocosDaConfiguracao configuracao = LerConfiguracao(leitor, payload);
-        BlocosDosDocumentos documentos = LerDocumentos(leitor, payload);
+        CronogramaDoProcesso cronograma = CronogramaDoProcesso.Do(configuracao.CronogramaFases);
+        BlocosDosDocumentos documentos = LerDocumentos(leitor, payload, cronograma);
         BlocosDaPublicacao publicacao = LerPublicacao(leitor, payload, configuracao);
         RetificacaoDoEdital? retificacao = temRetificacao ? LeituraDaRetificacao.LerRetificacao(leitor, payload) : null;
         if (leitor.Falhou)
@@ -31,12 +33,12 @@ internal static class LeituraDoEnvelope
             return null;
         }
 
-        return LerColetaEComprovacao(leitor, payload, configuracao, documentos, publicacao, retificacao);
+        return LerColetaEComprovacao(leitor, payload, configuracao, documentos, publicacao, retificacao, cronograma);
     }
 
     private static BlocosDoEnvelope? LerColetaEComprovacao(
         LeitorEnvelope leitor, JsonObject payload, BlocosDaConfiguracao configuracao, BlocosDosDocumentos documentos,
-        BlocosDaPublicacao publicacao, RetificacaoDoEdital? retificacao)
+        BlocosDaPublicacao publicacao, RetificacaoDoEdital? retificacao, CronogramaDoProcesso cronograma)
     {
         Dictionary<Guid, DocumentoExigido> exigenciasPorId = IndexarExigenciasPorId(leitor, documentos.DocumentosExigidos);
         if (leitor.Falhou)
@@ -50,7 +52,7 @@ internal static class LeituraDoEnvelope
             return null;
         }
 
-        BlocosDeColeta coleta = LerColeta(leitor, payload, configuracao);
+        BlocosDeColeta coleta = LerColeta(leitor, payload, configuracao, new FormulariosDoDocumento(documentos.Formularios, cronograma));
         return leitor.Falhou ? null : new BlocosDoEnvelope(configuracao, documentos, publicacao, retificacao, regrasSemGrupo, coleta);
     }
 
@@ -85,11 +87,11 @@ internal static class LeituraDoEnvelope
             CronogramaFases = LeituraDoCronograma.LerCronogramaFases(leitor, payload),
         };
 
-    private static BlocosDosDocumentos LerDocumentos(LeitorEnvelope leitor, JsonObject payload)
+    private static BlocosDosDocumentos LerDocumentos(LeitorEnvelope leitor, JsonObject payload, CronogramaDoProcesso cronograma)
     {
         (ResultadoConformidade? conformidade, IReadOnlyList<DocumentoExigido> documentos, ReferenciaTemporalFatos? referenciaTemporal,
             IReadOnlyDictionary<string, MetadadoFatoCongelado>? metadados) = LeituraDosDocumentosExigidos.LerDocumentosExigidos(leitor, payload);
-        (IReadOnlyList<FormularioProcesso> formularios, IReadOnlyList<TermoExigidoFormulario> termos) = LeituraDosFormularios.LerFormularios(leitor, payload);
+        (IReadOnlyList<FormularioProcesso> formularios, IReadOnlyList<TermoExigidoFormulario> termos) = LeituraDosFormularios.LerFormularios(leitor, payload, cronograma);
 
         return new BlocosDosDocumentos
         {
@@ -120,14 +122,15 @@ internal static class LeituraDoEnvelope
         };
     }
 
-    private static BlocosDeColeta LerColeta(LeitorEnvelope leitor, JsonObject payload, BlocosDaConfiguracao configuracao)
+    private static BlocosDeColeta LerColeta(
+        LeitorEnvelope leitor, JsonObject payload, BlocosDaConfiguracao configuracao, FormulariosDoDocumento formularios)
     {
         (IReadOnlyList<FatoColetado> fatos, Dictionary<string, IReadOnlyList<ValorDominioDeclaradoCongelado>?> valores) =
-            LeituraDosFatos.LerFatosColetados(leitor, payload);
+            LeituraDosFatos.LerFatosColetados(leitor, payload, formularios);
         List<DefinicaoAgregado> agregados = [];
         IReadOnlyList<GrupoColetado> grupos = leitor.Falhou
             ? []
-            : LeituraDosGrupos.LerGruposColetados(leitor, payload, valores, agregados);
+            : LeituraDosGrupos.LerGruposColetados(leitor, payload, valores, agregados, formularios);
         return LerDerivacaoEApresentacao(leitor, payload, configuracao, fatos, valores, grupos, agregados);
     }
 
