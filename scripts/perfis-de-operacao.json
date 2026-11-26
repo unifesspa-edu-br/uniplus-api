@@ -68,7 +68,7 @@
     ]
   },
   {
-    "nome": "Envio ao INEP",
+    "nome": "Intercâmbio de dados com o INEP",
     "descricao": "Gera o envio de CPFs ao INEP e revela o CPF da inscrição quando necessário.",
     "alcance": "UNIDADE",
     "permissoes": [

@@ -142,7 +142,7 @@ conceder_perfis_das_unidades() {
     conceder_perfil betina.neves "Coordenação de processo seletivo" "$ceps"
     conceder_perfil isabella.figueiredo "Equipe de inscrições" "$ceps"
     conceder_perfil kevin.carvalho "Equipe de inscrições" "$ceps"
-    conceder_perfil kevin.carvalho "Envio ao INEP" "$ceps"
+    conceder_perfil kevin.carvalho "Intercâmbio de dados com o INEP" "$ceps"
     conceder_perfil helena.rezende "Equipe de inscrições" "$ceps"
     conceder_perfil helena.rezende "Dados e documentos sensíveis" "$ceps"
     conceder_perfil erick.ramos "Consulta sem dados pessoais" "$ceps"

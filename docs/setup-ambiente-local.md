@@ -128,7 +128,7 @@ anterior: quem segue estes passos não precisa de nenhum dado gravado antes.
    | Coordenação de processo seletivo | unidade CEPS | `betina.neves` |
    | Equipe de inscrições | unidade CEPS | `isabella.figueiredo`, `kevin.carvalho`, `helena.rezende` |
    | Equipe de inscrições | unidade CRCA | `breno.novaes` |
-   | Envio ao INEP | unidade CEPS | `kevin.carvalho` |
+   | Intercâmbio de dados com o INEP | unidade CEPS | `kevin.carvalho` |
    | Dados e documentos sensíveis | unidade CEPS | `helena.rezende` |
    | Consulta sem dados pessoais | unidade CEPS | `erick.ramos` |
    | Gestor de proteção de dados (já vem da migration) | instituição | `marlene.martins` |
