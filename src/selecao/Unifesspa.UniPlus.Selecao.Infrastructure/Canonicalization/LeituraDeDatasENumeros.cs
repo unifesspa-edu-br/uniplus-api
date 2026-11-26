@@ -31,20 +31,8 @@ internal static class LeituraDeDatasENumeros
             return default;
         }
 
-        string texto = leitor.Texto(pai, chave, path);
-        if (leitor.Falhou)
-        {
-            return default;
-        }
-
-        if (!DateOnly.TryParseExact(texto, "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out DateOnly valor))
-        {
-            return leitor.Malformado<DateOnly>($"{path}.{chave}", "esperada uma data 'yyyy-MM-dd'.");
-        }
-
-        return valor == default
-            ? leitor.Malformado<DateOnly>($"{path}.{chave}", "a data não pode ser o valor default (0001-01-01) — é assim que uma data omitida se materializa.")
-            : valor;
+        _ = leitor.Texto(pai, chave, path);
+        return leitor.Falhou ? default : leitor.DataOpcional(pai, chave, path) ?? default;
     }
 
     /// <summary>
@@ -84,14 +72,20 @@ internal static class LeituraDeDatasENumeros
             return null;
         }
 
-        if (!DateOnly.TryParseExact(texto, "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out DateOnly valor))
+        string? erro = ConferirData(texto, out DateOnly valor);
+        return erro is null ? valor : leitor.Malformado<DateOnly?>($"{path}.{chave}", erro);
+    }
+
+    private static string? ConferirData(string texto, out DateOnly valor)
+    {
+        if (!DateOnly.TryParseExact(texto, "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out valor))
         {
-            return leitor.Malformado<DateOnly?>($"{path}.{chave}", "esperada uma data 'yyyy-MM-dd'.");
+            return "esperada uma data 'yyyy-MM-dd'.";
         }
 
         return valor == default
-            ? leitor.Malformado<DateOnly?>($"{path}.{chave}", "a data não pode ser o valor default (0001-01-01) — é assim que uma data omitida se materializa.")
-            : valor;
+            ? "a data não pode ser o valor padrão — é assim que uma data omitida se materializa."
+            : null;
     }
 
     /// <summary>
@@ -147,13 +141,7 @@ internal static class LeituraDeDatasENumeros
 
     public static int? InteiroOpcional(this LeitorEnvelope leitor, JsonObject pai, string chave, string path)
     {
-        if (leitor.Falhou)
-        {
-            return null;
-        }
-
-        JsonNode? node = pai[chave];
-        if (node is null)
+        if (leitor.Falhou || pai[chave] is not JsonNode node)
         {
             return null;
         }
@@ -196,13 +184,7 @@ internal static class LeituraDeDatasENumeros
     /// </param>
     public static decimal? DecimalOpcional(this LeitorEnvelope leitor, JsonObject pai, string chave, int escala, string path, int precisao = 0)
     {
-        if (leitor.Falhou)
-        {
-            return null;
-        }
-
-        JsonNode? node = pai[chave];
-        if (node is null)
+        if (leitor.Falhou || pai[chave] is null)
         {
             return null;
         }
@@ -213,25 +195,22 @@ internal static class LeituraDeDatasENumeros
             return null;
         }
 
-        if (!decimal.TryParse(texto, NumberStyles.AllowLeadingSign | NumberStyles.AllowDecimalPoint, CultureInfo.InvariantCulture, out decimal valor)
+        string? erro = ConferirDecimal(texto, escala, precisao, out decimal valor);
+        return erro is null ? valor : leitor.Malformado<decimal?>($"{path}.{chave}", erro);
+    }
+
+    private static string? ConferirDecimal(string? texto, int escala, int precisao, out decimal valor)
+    {
+        if (!decimal.TryParse(texto, NumberStyles.AllowLeadingSign | NumberStyles.AllowDecimalPoint, CultureInfo.InvariantCulture, out valor)
             || !string.Equals(HashCanonicalComputer.SerializeDecimalCanonical(valor, escala), texto, StringComparison.Ordinal))
         {
-            return leitor.Malformado<decimal?>($"{path}.{chave}", $"esperado um decimal canônico com {escala} casas.");
+            return $"esperado um decimal canônico com {escala} casas.";
         }
 
-        // A escala sozinha não basta. `numeric(18,4)` também limita o total de dígitos, e um
-        // peso como "99999999999999999999.0000" tem escala 4 impecável — recanonicaliza nos
-        // MESMOS bytes, satisfaz o domínio, e a prova de round-trip aprova. O estouro só
-        // aflora no SaveChanges, como 22003 (numeric field overflow) no meio do descarte:
-        // 500 não tratado em vez de recusa nomeada.
-        if (precisao > 0 && DigitosSignificativos(valor) > precisao)
-        {
-            return leitor.Malformado<decimal?>(
-                $"{path}.{chave}",
-                $"o decimal tem mais dígitos do que a coluna comporta (numeric({precisao},{escala})).");
-        }
-
-        return valor;
+        // A precisão limita o total de dígitos que cabe em numeric(p,s), além da escala canônica.
+        return precisao > 0 && DigitosSignificativos(valor) > precisao
+            ? $"o decimal tem mais dígitos do que a coluna comporta (numeric({precisao},{escala}))."
+            : null;
     }
 
     /// <summary>Dígitos totais de um decimal já arredondado à escala do campo — o <c>p</c> de <c>numeric(p,s)</c>.</summary>
