@@ -6,9 +6,16 @@ using Unifesspa.UniPlus.Configuracao.Contracts;
 
 /// <summary>
 /// Os cadastros que a definição dos documentos exigidos consulta: o tipo de documento, o catálogo de fatos
-/// do candidato e os modelos de documento do processo.
+/// do candidato e os modelos de documento do processo. Guarda só as portas, e os handlers o recebem pronto.
 /// </summary>
-internal sealed record CadastrosDosDocumentosExigidos(
-    ITipoDocumentoReader TiposDeDocumento,
-    IFatoCandidatoReader Fatos,
-    IModeloDeDocumentoRepository Modelos);
+public sealed class CadastrosDosDocumentosExigidos(
+    ITipoDocumentoReader tiposDeDocumento,
+    IFatoCandidatoReader fatos,
+    IModeloDeDocumentoRepository modelos)
+{
+    internal ITipoDocumentoReader TiposDeDocumento { get; } = tiposDeDocumento;
+
+    internal IFatoCandidatoReader Fatos { get; } = fatos;
+
+    internal IModeloDeDocumentoRepository Modelos { get; } = modelos;
+}

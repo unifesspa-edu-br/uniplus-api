@@ -71,10 +71,15 @@ internal sealed class CenarioDeRetificacaoPublicada
         _handlers.Unidades = ResolvedorDeUnidadeDeTeste.Com(vivas);
 
     /// <summary>A versão publicada declarou o mesmo cronograma que o processo tem agora.</summary>
-    public void ComCronogramaPublicadoIgualAoDoProcesso()
+    public void ComCronogramaPublicadoIgualAoDoProcesso() => ComCronogramaPublicado([.. Processo.CronogramaFases]);
+
+    /// <summary>A versão publicada declarou um cronograma sem fases, que difere do que o processo tem agora.</summary>
+    public void ComCronogramaPublicadoDiferenteDoDoProcesso() => ComCronogramaPublicado([]);
+
+    private void ComCronogramaPublicado(IReadOnlyList<FaseCronograma> fases)
     {
         _configuracaoPublicada = ConfiguracaoPublicadaDeTeste.ComCronograma(
-            _configuracaoPublicada, new CronogramaDeclarado(ConfiguracaoPublicadaDeTeste.Localidade, null, [.. Processo.CronogramaFases]));
+            _configuracaoPublicada, new CronogramaDeclarado(ConfiguracaoPublicadaDeTeste.Localidade, null, fases));
         ConfigurarCodecs(reidratavel: true);
     }
 

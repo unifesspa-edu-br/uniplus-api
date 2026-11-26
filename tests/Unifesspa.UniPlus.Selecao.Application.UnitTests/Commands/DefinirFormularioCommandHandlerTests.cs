@@ -49,13 +49,13 @@ public sealed class DefinirFormularioCommandHandlerTests
         result.Errors.Should().ContainSingle().Which.Field.Should().BeNull();
     }
 
-    [Fact(DisplayName = "Título, fase e pagina inválidos saem juntos na mesma recusa")]
+    [Fact(DisplayName = "Título, fase fora do cronograma e página inválidos saem juntos na mesma recusa")]
     public async Task Handle_TituloFaseEPaginaInvalidos_AcumulaAsRecusas()
     {
-        ProcessoSeletivo processo = ProcessoSeletivoConformeBuilder.Criar("PS Formulário", out Guid faseDeInscricao);
+        ProcessoSeletivo processo = ProcessoSeletivoConformeBuilder.Criar("PS Formulário", out _);
 
         Result result = await DefinirAsync(
-            processo, FinalidadeFormulario.Habilitacao, faseDeInscricao, new string('a', 301), EntradaDaPaginaDoFormularioDeTeste.Secao("DADOS").ComTitulo("").Construir());
+            processo, FinalidadeFormulario.Habilitacao, Guid.NewGuid(), new string('a', 301), EntradaDaPaginaDoFormularioDeTeste.Secao("DADOS").ComTitulo("").Construir());
 
         result.Errors.Select(static e => e.Field).Should().BeEquivalentTo(["paginas[0].apresentacao.titulo", "titulo", "faseId"]);
     }

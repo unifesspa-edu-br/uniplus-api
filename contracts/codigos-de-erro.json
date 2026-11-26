@@ -5532,11 +5532,6 @@
       "titulo": "A etapa que coleta o documento não é uma etapa deste processo"
     },
     {
-      "codigo": "uniplus.selecao.documento_exigido.fase_incoerente_com_finalidade",
-      "status": 422,
-      "titulo": "A fase do documento não é a fase em que se responde o formulário a que ele pertence"
-    },
-    {
       "codigo": "uniplus.selecao.documento_exigido.fase_nao_pertence_ao_processo",
       "status": 422,
       "titulo": "A fase informada não pertence ao cronograma deste processo"
@@ -5547,9 +5542,14 @@
       "titulo": "A exigência comprova um fato que o processo não coleta e que não é derivado do catálogo"
     },
     {
-      "codigo": "uniplus.selecao.documento_exigido.fato_da_isencao_em_outra_finalidade",
+      "codigo": "uniplus.selecao.documento_exigido.fato_de_formulario_nao_alcancado",
       "status": 422,
-      "titulo": "Fato do formulário de isenção citado por documento de outro formulário"
+      "titulo": "O fato citado na condição de aplicação da exigência não é conhecido no formulário que a entrega"
+    },
+    {
+      "codigo": "uniplus.selecao.documento_exigido.fato_de_membro_fora_da_repeticao",
+      "status": 422,
+      "titulo": "O campo de grupo repetível só é citado pela exigência que repete por esse grupo"
     },
     {
       "codigo": "uniplus.selecao.documento_exigido.fato_resolvido_em_fase_posterior",
@@ -5560,11 +5560,6 @@
       "codigo": "uniplus.selecao.documento_exigido.fatos_comprovados_invalidos",
       "status": 422,
       "titulo": "Os fatos comprovados pela exigência devem ser códigos de fato não repetidos"
-    },
-    {
-      "codigo": "uniplus.selecao.documento_exigido.finalidade_obrigatoria",
-      "status": 422,
-      "titulo": "Documento exigido em fase de formulário sem o formulário a que pertence"
     },
     {
       "codigo": "uniplus.selecao.documento_exigido.geral_com_condicao",
@@ -5942,6 +5937,21 @@
       "titulo": "O tamanho máximo em bytes por formato, quando presente, deve ser maior que zero"
     },
     {
+      "codigo": "uniplus.selecao.formulario_processo.codigo_duplicado",
+      "status": 422,
+      "titulo": "O código do formulário já identifica outro formulário do processo"
+    },
+    {
+      "codigo": "uniplus.selecao.formulario_processo.codigo_formato_invalido",
+      "status": 422,
+      "titulo": "O código do formulário não tem o formato permitido"
+    },
+    {
+      "codigo": "uniplus.selecao.formulario_processo.codigo_obrigatorio",
+      "status": 422,
+      "titulo": "O código do formulário é obrigatório"
+    },
+    {
       "codigo": "uniplus.selecao.formulario_processo.consequencia_da_falta_de_envio_invalida",
       "status": 422,
       "titulo": "A consequência da falta de envio do formulário não é uma opção conhecida"
@@ -5957,24 +5967,64 @@
       "titulo": "O formulário facultativo não declara consequência para a falta de envio"
     },
     {
+      "codigo": "uniplus.selecao.formulario_processo.exigencia_em_formulario_de_outra_fase",
+      "status": 422,
+      "titulo": "O formulário citado é de outra fase que a da exigência de documento"
+    },
+    {
+      "codigo": "uniplus.selecao.formulario_processo.exigencia_em_formulario_inexistente",
+      "status": 422,
+      "titulo": "O processo não tem o formulário citado pela exigência de documento"
+    },
+    {
       "codigo": "uniplus.selecao.formulario_processo.fase_fora_do_cronograma",
       "status": 422,
       "titulo": "A fase do formulário não está no cronograma do processo"
     },
     {
-      "codigo": "uniplus.selecao.formulario_processo.fase_incoerente_com_finalidade",
+      "codigo": "uniplus.selecao.formulario_processo.formulario_da_isencao_obrigatorio",
       "status": 422,
-      "titulo": "A fase do formulário não é a que a finalidade pede"
+      "titulo": "Formulário obrigatório na fase de solicitação de isenção que não coleta inscrição"
     },
     {
       "codigo": "uniplus.selecao.formulario_processo.formulario_inexistente",
       "status": 422,
-      "titulo": "O processo não tem formulário dessa finalidade"
+      "titulo": "O processo não tem formulário com esse código"
+    },
+    {
+      "codigo": "uniplus.selecao.formulario_processo.inscricao_em_resultado_importado",
+      "status": 422,
+      "titulo": "O processo de resultado importado tem formulário na fase que coleta inscrição"
+    },
+    {
+      "codigo": "uniplus.selecao.formulario_processo.inscricao_sem_formulario_obrigatorio",
+      "status": 422,
+      "titulo": "O processo com inscrição pelo sistema não tem formulário obrigatório na fase que coleta inscrição"
     },
     {
       "codigo": "uniplus.selecao.formulario_processo.isencao_sem_taxa",
       "status": 422,
-      "titulo": "Formulário de isenção de taxa em processo que não cobra taxa"
+      "titulo": "O processo que não cobra taxa tem formulário na fase de solicitação de isenção"
+    },
+    {
+      "codigo": "uniplus.selecao.formulario_processo.nao_encontrado",
+      "status": 404,
+      "titulo": "Formulário do processo não encontrado"
+    },
+    {
+      "codigo": "uniplus.selecao.formulario_processo.pos_importacao_sem_formulario_obrigatorio",
+      "status": 422,
+      "titulo": "A primeira fase depois da importação não tem formulário obrigatório"
+    },
+    {
+      "codigo": "uniplus.selecao.formulario_processo.remocao_de_formulario_com_exigencia",
+      "status": 422,
+      "titulo": "O formulário entrega exigência de documento e não pode ser removido"
+    },
+    {
+      "codigo": "uniplus.selecao.formulario_processo.taxa_sem_formulario_de_isencao",
+      "status": 422,
+      "titulo": "O processo que cobra taxa não tem formulário facultativo na fase de solicitação de isenção"
     },
     {
       "codigo": "uniplus.selecao.grafo_dependencia_conjunta.grafo_conjunto_com_ciclo",
@@ -7389,17 +7439,12 @@
     {
       "codigo": "uniplus.selecao.processo_seletivo.inscricao_sem_conjunto_basico",
       "status": 422,
-      "titulo": "O formulário de inscrição não coleta o conjunto básico de dados do candidato"
+      "titulo": "O conjunto básico de dados do candidato não está todo em formulário obrigatório da fase que coleta inscrição"
     },
     {
       "codigo": "uniplus.selecao.processo_seletivo.inscricao_sem_edicao_do_enem",
       "status": 422,
       "titulo": "A classificação usa as notas do ENEM, e o formulário de inscrição não pede a edição a todo candidato"
-    },
-    {
-      "codigo": "uniplus.selecao.processo_seletivo.inscricao_sem_formulario",
-      "status": 422,
-      "titulo": "Processo com inscrição própria sem formulário de inscrição"
     },
     {
       "codigo": "uniplus.selecao.processo_seletivo.item_do_formulario_fora_de_secao",
@@ -8144,7 +8189,7 @@
     {
       "codigo": "uniplus.selecao.retificacao.fato_ausente_de_versao_publicada",
       "status": 422,
-      "titulo": "Fato de outra finalidade não coletado em todas as versões publicadas"
+      "titulo": "Fato de outro formulário não coletado em todas as versões publicadas"
     },
     {
       "codigo": "uniplus.selecao.retificacao.fato_ja_coletado_removido",

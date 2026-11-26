@@ -12,8 +12,6 @@ using Domain.ValueObjects;
 using Kernel.Results;
 
 using Unifesspa.UniPlus.Configuracao.Contracts;
-using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
-using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Regras.ValueObjects;
 
 /// <summary>
@@ -24,18 +22,18 @@ using Unifesspa.UniPlus.Regras.ValueObjects;
 /// </summary>
 internal sealed class PlanejamentoDaAplicacaoDoModelo(
     ProcessoSeletivo processo,
+    FormularioProcesso formularioDoProcesso,
     ModeloFormularioView modelo,
     CadastrosDaAplicacaoDoModelo cadastros)
 {
     private readonly RelatorioDaAplicacaoDoModelo _relatorio = new();
-    private readonly FinalidadeFormulario _finalidade = CatalogoDe<FinalidadeFormulario>.Obter(modelo.Finalidade);
 
     public async Task<Result<PlanoDaAplicacaoDoModelo>> PlanejarAsync(CancellationToken cancellationToken)
     {
         IReadOnlyList<FatoCandidatoView> catalogo = await cadastros.Fatos.ListarAsync(cancellationToken).ConfigureAwait(false);
         ContextoDoCatalogo contexto = ContextoDoCatalogo.De(processo, catalogo);
         ConteudoDoModeloInput conteudo = modelo.Conteudo;
-        FormularioSelecionado formulario = new SelecaoDoFormularioDoModelo(processo, _finalidade, contexto, _relatorio).Copiar(conteudo);
+        FormularioSelecionado formulario = new SelecaoDoFormularioDoModelo(processo, formularioDoProcesso, contexto, _relatorio).Copiar(conteudo);
         TermosSelecionados termos = await new SelecaoDosTermosDoModelo(cadastros.Termos, _relatorio)
             .SelecionarAsync(conteudo.Termos ?? [], cancellationToken).ConfigureAwait(false);
 
@@ -116,7 +114,7 @@ internal sealed class PlanejamentoDaAplicacaoDoModelo(
         IReadOnlyList<FatoCandidatoView> catalogo) =>
         new(
             new CopiaDeModeloDeFormulario(
-                CodigoDoFormulario.Criar(_finalidade.Codigo()).Value!, conteudo.Titulo, formulario.Paginas.Paginas, formulario.Itens.Itens, formulario.Grupos.Grupos,
+                formularioDoProcesso.Codigo, conteudo.Titulo, formulario.Paginas.Paginas, formulario.Itens.Itens, formulario.Grupos.Grupos,
                 copia.Termos, copia.Derivacoes, new ModeloDeOrigem(modelo.Id, modelo.Codigo, modelo.Nome)),
             new IndicesNoModelo(formulario.Itens.IndicesNoModelo, formulario.Grupos.IndicesNoModelo, termos.IndicesNoModelo),
             _relatorio,

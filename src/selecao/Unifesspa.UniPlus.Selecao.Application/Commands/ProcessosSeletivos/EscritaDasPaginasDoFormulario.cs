@@ -21,7 +21,7 @@ internal sealed record PaginaLida(PaginaDoFormulario? Pagina, PredicadoDnf? Exib
 
 /// <summary>
 /// A escrita das páginas do formulário do processo, sem ler nem mudar o processo: a forma de cada
-/// página, sem I/O, e a semântica das exibições contra o catálogo. A estrutura por finalidade e a
+/// página, sem I/O, e a semântica das exibições contra o catálogo. A estrutura das páginas e a
 /// posição das citações são do agregado.
 /// </summary>
 internal static class EscritaDasPaginasDoFormulario

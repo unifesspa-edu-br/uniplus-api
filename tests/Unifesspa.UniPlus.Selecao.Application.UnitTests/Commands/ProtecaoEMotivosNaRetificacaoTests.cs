@@ -4,6 +4,7 @@ using AwesomeAssertions;
 
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Enums;
+using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Errors;
 
 using static Unifesspa.UniPlus.Selecao.Application.UnitTests.Commands.FatoCitadoDeTeste;
@@ -46,7 +47,7 @@ public sealed class ProtecaoEMotivosNaRetificacaoTests
 
         (Result resposta, IEnumerable<object> eventos) = await cenario.RetificarAsync();
 
-        resposta.Errors.Select(static e => e.Error.Code).Should().ContainSingle().Which.Should().Be(MotivoDeDecisaoErrorCodes.TipoDeDecisaoNaoDeclarado);
+        resposta.Errors.Select(static e => e.Error.Code).Should().Equal(FormularioProcessoErrorCodes.TaxaSemFormularioDeIsencao, MotivoDeDecisaoErrorCodes.TipoDeDecisaoNaoDeclarado);
         eventos.Should().BeEmpty();
     }
 
@@ -58,6 +59,7 @@ public sealed class ProtecaoEMotivosNaRetificacaoTests
 
         (Result resposta, IEnumerable<object> _) = await cenario.RetificarAsync();
 
-        resposta.Errors.Select(static e => e.Error.Code).Should().Equal(MotivoDeDecisaoErrorCodes.TipoDeDecisaoNaoDeclarado, CodigoDaRecusaDoEixoAlterado);
+        resposta.Errors.Select(static e => e.Error.Code).Should().Equal(
+            FormularioProcessoErrorCodes.TaxaSemFormularioDeIsencao, MotivoDeDecisaoErrorCodes.TipoDeDecisaoNaoDeclarado, CodigoDaRecusaDoEixoAlterado);
     }
 }

@@ -19,7 +19,6 @@ internal static class EscritaDaExigencia
         ["condicoes"] = AplicabilidadeDaExigenciaInput.CaminhoDasCondicoes,
         ["consequenciaDoDescumprimento"] = IndeferimentoDoDocumentoInput.CaminhoDaConsequencia,
         ["tamanhoMaximoBytes"] = RequisitosDoDocumentoInput.CaminhoDoTamanhoMaximo,
-        ["finalidade"] = MomentoDaExigenciaInput.CaminhoDoFormulario,
     };
 
     /// <summary>A recusa da forma da exigência no caminho em que o campo aparece no pedido.</summary>
@@ -31,15 +30,16 @@ internal static class EscritaDaExigencia
     /// <summary>A aplicabilidade do código, nula quando ausente ou desconhecida: a forma da exigência a recusa.</summary>
     public static Aplicabilidade? AplicabilidadeDoToken(string? token) => CodigoLidoDoPedido.Ler<Aplicabilidade>(token);
 
+    // Provisório até a conferência do gatilho deixar de decidir pela finalidade do formulário.
     /// <summary>A finalidade do código, nula quando o cliente não a declarou ou declarou um código desconhecido.</summary>
     public static FinalidadeFormulario? FinalidadeDoCodigo(string? codigo) => CodigoLidoDoPedido.Ler<FinalidadeFormulario>(codigo);
 
     /// <summary>O código do formulário informado, nulo quando ausente ou fora do formato: a forma da exigência já recusou o código que não é de formulário conhecido.</summary>
     public static CodigoDoFormulario? FormularioDoCodigo(string? codigo) => CodigoDoFormulario.Criar(codigo).Value;
 
-    /// <summary>A recusa da finalidade declarada que não é código de finalidade; o texto ausente não é recusado.</summary>
-    public static IEnumerable<FieldError> RecusaDaFinalidadeDesconhecida(string? codigo) =>
-        CodigoLidoDoPedido.TentarLerOpcional(codigo, out FinalidadeFormulario? _)
-            ? []
-            : FormaDoCabecalho.ValidarFinalidade(null);
+    /// <summary>A recusa do código do formulário ausente ou fora do formato; o código é obrigatório em toda exigência.</summary>
+    public static IEnumerable<FieldError> RecusaDoCodigoDoFormulario(string? codigo) =>
+        CodigoDoFormulario.Criar(codigo) is { IsFailure: true, Error: { } recusa }
+            ? [new FieldError(MomentoDaExigenciaInput.CaminhoDoFormulario, recusa)]
+            : [];
 }

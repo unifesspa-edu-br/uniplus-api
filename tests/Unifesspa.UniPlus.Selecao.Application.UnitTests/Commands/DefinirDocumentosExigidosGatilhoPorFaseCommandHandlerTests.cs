@@ -130,8 +130,9 @@ public sealed class DefinirDocumentosExigidosGatilhoPorFaseCommandHandlerTests
         mocks.FatoCandidatoReader.ListarAsync(Arg.Any<CancellationToken>())
             .Returns(CatalogoDoConjuntoBasico.Com((IReadOnlyList<FatoCandidatoView>)[FatoSexoComPontoResolucao(pontoResolucaoDoSexo)]));
         ColetarFato(processo, "SEXO", TipoDeCampo.EscolhaUnica);
+        DeclararOFormularioDaExigencia(processo, faseDaExigenciaId);
         CondicaoGatilhoInput condicao = new(0, "SEXO", "IGUAL", "\"MASCULINO\"");
-        ItemDocumentoExigidoDeTeste item = ItemDocumentoExigidoDeTeste.Geral(faseDaExigenciaId, tipoDocumentoId).Condicional(condicao);
+        ItemDocumentoExigidoDeTeste item = ApoioDosDocumentosExigidos.GeralNoFormularioDaExigencia(faseDaExigenciaId, tipoDocumentoId).Condicional(condicao);
 
         return await HandleAsync(mocks, new(processo.Id, [RegraDeComprovacaoDeTeste.DeDocumento(item).Construir()]));
     }
@@ -165,7 +166,7 @@ public sealed class DefinirDocumentosExigidosGatilhoPorFaseCommandHandlerTests
 
     private static FaseCronograma FaseComOrdemECodigo(int ordem, string codigo) => FaseCronograma.Criar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("fase").Value!,
         OrigensCanonicasDeTeste.ComNome(new OrigemCanonicaDaFase(
-            Guid.CreateVersion7(), codigo, OrigemDataFase.NaExecucao, AgrupaEtapas: false, PermiteComplementacao: false, ColetaInscricao: false,
+            Guid.CreateVersion7(), codigo, OrigemDataFase.NaExecucao, AgrupaEtapas: false, PermiteComplementacao: false, ColetaInscricao: codigo == "INSCRICAO",
             ColetaSolicitacaoIsencao: false)),
         new DecisoesDeCronogramaDaFase(ordem, Inicio: null, Fim: null, UnidadeResponsavel: UnidadesDeTeste.Ceps),
         new PublicacoesDaFase(Produtos: [], EmiteParecerIndividual: false, RegraRecurso: null),
@@ -174,12 +175,12 @@ public sealed class DefinirDocumentosExigidosGatilhoPorFaseCommandHandlerTests
     private static DefinirDocumentosExigidosCommand ExigenciaPeloGrupoDaConvocacao(ProcessoSeletivo processo, Guid faseId, Guid tipoDocumentoId)
     {
         CondicaoGatilhoInput condicao = new(0, "MODALIDADE_CONVOCACAO", "IGUAL", "\"AC\"");
-        ItemDocumentoExigidoDeTeste item = ItemDocumentoExigidoDeTeste.Geral(faseId, tipoDocumentoId).Condicional(condicao).NaFinalidade("HABILITACAO");
+        ItemDocumentoExigidoDeTeste item = GeralNoFormularioDaExigencia(faseId, tipoDocumentoId).Condicional(condicao);
         return new(processo.Id, [RegraDeComprovacaoDeTeste.DeDocumento(item).Construir()]);
     }
 
     private static ItemDocumentoExigidoDeTeste ItemDoMembroMaiorDeIdade(Guid faseId, Guid tipoDocumentoId) =>
-        ItemDocumentoExigidoDeTeste.Geral(faseId, tipoDocumentoId)
+        ApoioDosDocumentosExigidos.GeralNoFormularioDaExigencia(faseId, tipoDocumentoId)
             .Condicional(new CondicaoGatilhoInput(0, "MAIOR_IDADE", "IGUAL", "true"))
             .Facultativa()
             .ComConsequencia("ELIMINA_DO_PROCESSO");

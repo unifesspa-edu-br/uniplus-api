@@ -50,7 +50,20 @@ internal sealed class CenarioDaAplicacaoDoModeloDeFormulario
                 "SIM").Value!],
         });
         Termos.ListarVersoesAsync(Arg.Any<IReadOnlyCollection<Guid>>(), Arg.Any<CancellationToken>()).Returns([]);
+        Processo.DefinirCronogramaFases([FaseDoCronograma("INSCRICAO", 1, coletaInscricao: true), FaseDoCronograma(FormularioProcesso.CodigoFaseHabilitacao, 2, coletaInscricao: false)], [])
+            .IsSuccess.Should().BeTrue();
     }
+
+    // Os formulários nascem ligados à fase do papel: o obrigatório sem fase não conta como da inscrição.
+    private static FaseCronograma FaseDoCronograma(string codigo, int ordem, bool coletaInscricao) =>
+        FaseCronograma.Criar(ChaveLocal.Criar("fase").Value!,
+            OrigensCanonicasDeTeste.ComNome(new OrigemCanonicaDaFase(
+                OrigemId: Guid.CreateVersion7(), Codigo: codigo, OrigemData: OrigemDataFase.NoEdital, AgrupaEtapas: false,
+                PermiteComplementacao: false, ColetaInscricao: coletaInscricao, ColetaSolicitacaoIsencao: false)),
+            new DecisoesDeCronogramaDaFase(
+                Ordem: ordem, Inicio: new DateTimeOffset(2026, 2, ordem, 0, 0, 0, TimeSpan.Zero), Fim: new DateTimeOffset(2026, 3, ordem, 0, 0, 0, TimeSpan.Zero), UnidadeResponsavel: UnidadesDeTeste.Ceps),
+            new PublicacoesDaFase(Produtos: [], EmiteParecerIndividual: false, RegraRecurso: null),
+            bancasRequeridas: []).Value!;
 
     public ProcessoSeletivo Processo { get; } = ProcessoSeletivo.Criar(
         "PS Modelo", TiposDeProcessoDeTeste.Sisu, OrigemCandidatos.ImportacaoExterna, Guid.NewGuid(),
@@ -187,16 +200,27 @@ internal sealed class CenarioDaAplicacaoDoModeloDeFormulario
             [DistribuicaoDeVagasCom(modalidades)], FatosDeModalidadeDeTeste.DoCatalogo).IsSuccess.Should().BeTrue();
     }
 
+    /// <summary>Aplica o modelo ao formulário que cumpre o papel da finalidade dele, criado antes quando o processo não o tem.</summary>
     public Task<Result<AplicacaoDeModeloDto>> AplicarAsync(ModeloFormularioView modelo)
     {
         _modelos.ObterAsync(modelo.Id, Arg.Any<CancellationToken>()).Returns(modelo);
-        return AplicarAsync(modelo.Id);
+        FinalidadeFormulario papel = CatalogoDe<FinalidadeFormulario>.Obter(modelo.Finalidade);
+        FormularioDeTeste.GarantirFormulario(Processo, papel);
+        return AplicarAsync(modelo.Id, papel.Codigo());
     }
 
-    public Task<Result<AplicacaoDeModeloDto>> AplicarAsync(Guid modeloId) =>
+    /// <summary>Aplica o modelo ao formulário de inscrição, criado antes quando o processo não o tem.</summary>
+    public Task<Result<AplicacaoDeModeloDto>> AplicarAsync(Guid modeloId)
+    {
+        FormularioDeTeste.GarantirFormulario(Processo, FinalidadeFormulario.Inscricao);
+        return AplicarAsync(modeloId, FinalidadeFormulario.Inscricao.Codigo());
+    }
+
+    /// <summary>Aplica o modelo ao formulário do código, que pode não existir no processo.</summary>
+    public Task<Result<AplicacaoDeModeloDto>> AplicarAsync(Guid modeloId, string formularioCodigo) =>
         AplicarModeloFormularioCommandHandler.Handle(
-            new AplicarModeloFormularioCommand(Processo.Id, modeloId, FinalidadeFormulario.Inscricao.Codigo()),
-            _repository, _modelos, Fatos, Termos, _tiposDocumento, _modelosDeDocumento, UnitOfWork, CancellationToken.None);
+            new AplicarModeloFormularioCommand(Processo.Id, modeloId, formularioCodigo),
+            _repository, _modelos, new CadastrosDaAplicacaoDoModelo(Fatos, Termos, new CadastrosDosDocumentosExigidos(_tiposDocumento, Fatos, _modelosDeDocumento)), UnitOfWork, CancellationToken.None);
 
     private static FatoCandidatoView DerivadoBooleano(string codigo, string rotulo) =>
         new(Guid.CreateVersion7(), codigo, rotulo, "Descrição do fato.", CodigoComRotulo<TipoDoDado>.De(TipoDoDado.SimOuNao), CodigoComRotulo<OrigemFato>.De(OrigemFato.Calculado), CodigoComRotulo<QuantidadeDeValores>.De(QuantidadeDeValores.ValorUnico), null, "INSCRICAO",

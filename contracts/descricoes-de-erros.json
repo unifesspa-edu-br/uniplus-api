@@ -13343,7 +13343,7 @@
         "A conferência do modelo roda numa só passada: um modelo desativado que também é\nde outro tipo de processo, ou que cita fato que a inscrição do processo não\ncoleta, devolve as recusas juntas no array `errors[]`\n([`tipo_de_processo_diferente`](/erros/uniplus.selecao.aplicacao_de_modelo.tipo_de_processo_diferente),\n[`pressuposto_ausente`](/erros/uniplus.selecao.aplicacao_de_modelo.pressuposto_ausente)).\nNada foi alterado no processo."
       ],
       "comoResolver": [
-        "Escolha outro modelo ativo para a mesma finalidade e para o tipo do processo, ou\npeça a quem gere os modelos de formulário que reative este, se ele deve voltar a\nser usado. Se o formulário já foi aplicado antes, não é preciso reaplicar: ele\npode ser ajustado diretamente no processo."
+        "Escolha outro modelo ativo para o tipo do processo, ou\npeça a quem gere os modelos de formulário que reative este, se ele deve voltar a\nser usado. Se o formulário já foi aplicado antes, não é preciso reaplicar: ele\npode ser ajustado diretamente no processo."
       ],
       "ondeAparece": [
         "Aplicação de modelo de formulário"
@@ -18264,23 +18264,6 @@
       ]
     },
     {
-      "codigo": "uniplus.selecao.documento_exigido.fase_incoerente_com_finalidade",
-      "requisitos": [],
-      "oQueAconteceu": [
-        "Um documento exigido informa a que formulário pertence (a finalidade: inscrição, isenção de\ntaxa ou habilitação), e a fase em que ele é exigido precisa ser uma fase que responde esse\nformulário. O documento apontado informa um formulário que a fase não responde. Isso inclui o\ndocumento que informa formulário numa fase que não responde formulário nenhum.",
-        "O erro aparece em dois momentos:",
-        "- na definição dos documentos exigidos, é a segunda conferência de vínculo de cada exigência,\n  depois da fase e antes da etapa; o primeiro defeito encontrado interrompe a definição;\n- na publicação e na retificação em ato único, é a conferência da finalidade das exigências,\n  que vem logo depois da conferência das exigências condicionais sem condições."
-      ],
-      "comoResolver": [
-        "Troque o formulário do documento por um que a fase responda, ou passe a exigência para a fase\nque responde o formulário a que o documento pertence."
-      ],
-      "ondeAparece": [
-        "Definição de documentos exigidos do processo seletivo",
-        "Publicação inicial do processo seletivo",
-        "Retificação em ato único"
-      ]
-    },
-    {
       "codigo": "uniplus.selecao.documento_exigido.fase_nao_pertence_ao_processo",
       "requisitos": [],
       "oQueAconteceu": [
@@ -18312,17 +18295,34 @@
       ]
     },
     {
-      "codigo": "uniplus.selecao.documento_exigido.fato_da_isencao_em_outra_finalidade",
-      "requisitos": [],
+      "codigo": "uniplus.selecao.documento_exigido.fato_de_formulario_nao_alcancado",
+      "requisitos": [
+        "UNI-REQ-0144"
+      ],
       "oQueAconteceu": [
-        "Um fato que vem do formulário de isenção de taxa só pode ser citado por documento exigido no\npróprio formulário de isenção. A condição do documento apontado cita um fato desse formulário,\nmas o documento pertence a outro formulário (inscrição ou habilitação, ou a nenhum). O\nformulário de habilitação, por exemplo, usa só fatos do formulário de inscrição.",
-        "A conferência olha o formulário do documento, e não a fase, porque a inscrição e a isenção\npodem dividir a mesma fase. Considera-se que o fato vem do formulário de isenção quando algum\ncampo desse formulário o coleta, ou quando o fato depende de um que o coleta.",
-        "O fato pode vir de duas origens: da condição do documento ou de um campo do grupo repetível\npelo qual a exigência se repete, quando esse campo é coletado no formulário de isenção. Na\nsegunda, a condição do documento não é a causa.",
-        "Ela acontece na definição dos documentos exigidos, na aplicação de um modelo de formulário e,\ncom o catálogo de fatos, na publicação e na retificação em ato único. Vem depois de\n[`ponto_resolucao_fora_do_cronograma`](/erros/uniplus.selecao.documento_exigido.ponto_resolucao_fora_do_cronograma)\ne de\n[`fato_resolvido_em_fase_posterior`](/erros/uniplus.selecao.documento_exigido.fato_resolvido_em_fase_posterior)."
+        "A condição de aplicação de um documento exigido só pode citar fato que o candidato já informou no formulário que entrega o documento, ou num formulário obrigatório respondido antes dele. A condição da exigência apontada cita um fato que esse formulário não conhece: o fato é coletado por outro formulário que o candidato não responde antes, ou pela mesma fase mas por formulário que não alcança este.",
+        "A mensagem aponta a exigência e o fato pelo caminho, sem repetir o fato nem o valor de nenhuma resposta. A conferência vem depois da que verifica se o processo coleta ou deriva o fato."
       ],
       "comoResolver": [
-        "A mensagem de detalhe nomeia o fato. Conforme a origem:",
-        "- se o fato está numa condição do documento, troque a condição por um fato conhecido no\n  formulário a que o documento pertence, ou passe o documento para o formulário de isenção,\n  se for ali que ele deve ser pedido;\n- se o fato é de campo de um grupo repetível coletado no formulário de isenção, trocar a\n  condição não resolve: passe a exigência para o formulário de isenção, vincule-a a um grupo\n  repetível coletado no formulário dela ou retire a repetição por grupo."
+        "Troque a condição por um fato conhecido no formulário da exigência, ou passe o documento para o formulário que coleta o fato, ou faça o formulário que coleta o fato ser obrigatório e respondido antes. Depois repita a operação."
+      ],
+      "ondeAparece": [
+        "Definição de documentos exigidos do processo seletivo",
+        "Aplicação de modelo de formulário",
+        "Publicação inicial do processo seletivo",
+        "Retificação em ato único"
+      ]
+    },
+    {
+      "codigo": "uniplus.selecao.documento_exigido.fato_de_membro_fora_da_repeticao",
+      "requisitos": [
+        "UNI-REQ-0144"
+      ],
+      "oQueAconteceu": [
+        "O fato citado na condição de aplicação da exigência é campo de um grupo repetível, e esse campo só pode ser citado pela exigência que se repete por esse mesmo grupo. A exigência apontada não se repete pelo grupo do campo."
+      ],
+      "comoResolver": [
+        "Vincule a exigência ao grupo repetível do campo, retire a repetição por grupo e cite outro fato, ou troque a condição por um fato coletado fora de grupo. Depois repita a operação."
       ],
       "ondeAparece": [
         "Definição de documentos exigidos do processo seletivo",
@@ -18338,7 +18338,7 @@
         "Nenhum documento é pedido antes de o fato de que ele depende ser conhecido. A exigência\ndepende de um fato que só passa a ser conhecido numa fase com ordem posterior à da fase em que\no documento é exigido. O fato pode vir da condição do documento ou de um campo do grupo\nrepetível pelo qual a exigência se repete; no segundo caso, a condição do documento não é a\ncausa. A mensagem de detalhe nomeia o fato e a fase dele, com a ordem de cada fase.",
         "O fato é conhecido na mais tardia entre: a fase em que o catálogo de fatos o situa, a fase do\nformulário que o coleta e, para o fato derivado por regra, as fases dos fatos de que ele\ndepende. Para o campo de grupo repetível, vale a fase do formulário que coleta o grupo.",
         "A ordem das fases é a **ordem derivada do cronograma**: a posição de cada fase na\nlista, somada à escolha \"no mesmo momento da anterior\" (UNI-REQ-0485), que faz duas\nfases ocuparem o mesmo momento. Uma fase que acontece no mesmo momento da fase da\nexigência não é posterior a ela, então não causa esta recusa. Por isso, o pedido de\nisenção ordenado antes da inscrição só pode exigir documento por um fato coletado\nna inscrição se o edital deixar as duas no mesmo momento: a inscrição, e cada fase\nque ficar entre ela e a isenção, precisam estar marcadas com \"no mesmo momento da\nanterior\". Sem isso, a inscrição vem depois e a recusa sai. A mensagem da resposta diz: \"O fato '*código do fato*' só é conhecido na fase '*código da\nfase*' (ordem N), posterior à fase em que o documento é exigido (ordem M).\" Vale na gravação,\nna publicação e na retificação.",
-        "A conferência acontece na definição dos documentos exigidos, na aplicação de um modelo de\nformulário e, com o catálogo de fatos, na publicação e na retificação em ato único. Ela vem depois de\n[`ponto_resolucao_fora_do_cronograma`](/erros/uniplus.selecao.documento_exigido.ponto_resolucao_fora_do_cronograma)\ne antes de\n[`fato_da_isencao_em_outra_finalidade`](/erros/uniplus.selecao.documento_exigido.fato_da_isencao_em_outra_finalidade)."
+        "A conferência acontece na definição dos documentos exigidos, na aplicação de um modelo de\nformulário e, com o catálogo de fatos, na publicação e na retificação em ato único. Ela vem depois de\n[`ponto_resolucao_fora_do_cronograma`](/erros/uniplus.selecao.documento_exigido.ponto_resolucao_fora_do_cronograma)\ne antes de\n[`fato_de_formulario_nao_alcancado`](/erros/uniplus.selecao.documento_exigido.fato_de_formulario_nao_alcancado)."
       ],
       "comoResolver": [
         "Conforme a origem do fato:",
@@ -18364,23 +18364,6 @@
       ],
       "ondeAparece": [
         "Configuração dos documentos exigidos"
-      ]
-    },
-    {
-      "codigo": "uniplus.selecao.documento_exigido.finalidade_obrigatoria",
-      "requisitos": [],
-      "oQueAconteceu": [
-        "Uma fase do cronograma pode responder formulários do candidato: o de inscrição, o de isenção\nde taxa ou o de habilitação. Quando a fase da exigência responde algum formulário, o documento\nexigido nela precisa informar a que formulário pertence (a finalidade), e esse formulário é um\ndos que a fase responde. O documento apontado não informa nenhum.",
-        "O erro aparece em dois momentos:",
-        "- na definição dos documentos exigidos, é a segunda conferência de vínculo de cada exigência,\n  depois da fase e antes da etapa; o primeiro defeito encontrado interrompe a definição;\n- na publicação e na retificação em ato único, é a conferência da finalidade das exigências,\n  que vem logo depois da conferência das exigências condicionais sem condições."
-      ],
-      "comoResolver": [
-        "Informe o formulário a que o documento pertence, entre os que a fase da exigência responde (a\nmensagem de detalhe diz quais são)."
-      ],
-      "ondeAparece": [
-        "Definição de documentos exigidos do processo seletivo",
-        "Publicação inicial do processo seletivo",
-        "Retificação em ato único"
       ]
     },
     {
@@ -18440,7 +18423,7 @@
         "O catálogo de fatos situa cada fato numa fase em que ele passa a ser conhecido (o ponto de\nresolução). Há um fato cuja fase não está no cronograma deste\nprocesso, e o sistema não consegue dizer quando o fato é conhecido nem se ele já o é na fase\ndo documento.",
         "O erro aparece em dois grupos de operações:",
         "- na definição dos documentos exigidos e na aplicação de um modelo de formulário, a conferência\n  das condições de cada exigência lê o catálogo de fatos;\n- na publicação e na retificação em ato único, a\n  conferência dos fatos das condições repete essa leitura com o catálogo. Nelas, o mesmo erro\n  também aparece quando o fato que decide quem recebe o acréscimo do Fator de Atenuação das Desigualdades de Acesso (FADA) é conhecido numa fase\n  que o cronograma não tem.",
-        "Quando a fase do fato está no cronograma, a conferência segue para os erros\n[`fato_resolvido_em_fase_posterior`](/erros/uniplus.selecao.documento_exigido.fato_resolvido_em_fase_posterior)\ne\n[`fato_da_isencao_em_outra_finalidade`](/erros/uniplus.selecao.documento_exigido.fato_da_isencao_em_outra_finalidade)."
+        "Quando a fase do fato está no cronograma, a conferência segue para os erros\n[`fato_resolvido_em_fase_posterior`](/erros/uniplus.selecao.documento_exigido.fato_resolvido_em_fase_posterior)\ne\n[`fato_de_formulario_nao_alcancado`](/erros/uniplus.selecao.documento_exigido.fato_de_formulario_nao_alcancado)."
       ],
       "comoResolver": [
         "A mensagem de detalhe diz: \"O fato '*código do fato*' resolve na fase '*código da fase*', que não\npertence ao cronograma deste processo.\" Ela nomeia o fato e a fase em que o catálogo o situa. Em qualquer caso, incluir\nessa fase no cronograma do processo resolve. A outra saída depende da causa:",
@@ -19464,14 +19447,14 @@
         "UNI-REQ-0144"
       ],
       "oQueAconteceu": [
-        "Um processo pode ter mais de um formulário (inscrição, pedido de isenção da taxa,\nhabilitação), mas cada fato é coletado por um só deles (UNI-REQ-0144). Além disso,\no código de um grupo de campos não pode repetir o de um fato ou de um grupo de\noutro formulário; essa segunda regra é da API e o requisito não a declara.\nO formulário que se tenta gravar repete algum deles. A mensagem traz o código e\ndiz de qual das situações se trata:",
-        "- o fato, ou o campo de um grupo, **já é coletado** pelo formulário de outra\n  finalidade;\n- o código do grupo **já é usado** por um fato ou grupo de outro formulário, ou o\n  código de um fato já é usado por um grupo de outro formulário;\n- o fato é um dos **dados básicos do candidato**, que o formulário de inscrição\n  coleta, e está num formulário de outra finalidade: a mensagem pede para tirá-lo\n  de lá antes.",
+        "Um processo pode ter mais de um formulário (a inscrição, o pedido de isenção da taxa, a habilitação e os demais que declarar), mas cada fato é coletado por um só deles (UNI-REQ-0144). Além disso, o código de um grupo de campos não pode repetir o de um fato ou de um grupo de outro formulário; essa segunda regra é da API e o requisito não a declara. O formulário que se tenta gravar repete algum deles. A mensagem traz o código e diz de qual das situações se trata:",
+        "- o fato, ou o campo de um grupo, **já é coletado** por outro formulário;\n- o código do grupo **já é usado** por um fato ou grupo de outro formulário, ou o\n  código de um fato já é usado por um grupo de outro formulário;\n- o fato é um dos **dados básicos do candidato**, que o formulário da inscrição\n  coleta, e está em outro formulário: a mensagem pede para tirá-lo\n  de lá antes.",
         "A recusa aparece em três operações:",
-        "- **Gravação dos itens do formulário** (`PUT .../formularios/{finalidade}/itens`):\n  vem depois das conferências do grafo de fatos e da citação dos fatos, e é uma\n  recusa única, sem campo, que traz só a primeira ocorrência encontrada.\n- **Gravação do formulário do processo** (`PUT .../formularios/{finalidade}`), ao\n  criar o formulário de inscrição, que já nasce com os itens dos dados básicos do\n  candidato: se outro formulário do processo já coleta algum deles, é este erro.\n- **Aplicação de modelo de formulário**\n  (`POST .../formularios/aplicacoes-de-modelo`): vale para o modelo de qualquer\n  finalidade que não a inscrição, cujos itens não podem repetir fato de outro\n  formulário (o modelo de inscrição traz para a inscrição o fato que está em\n  outro formulário, e não recusa essa repetição), e para os códigos de grupos e\n  de campos de grupo, em qualquer finalidade. As recusas saem no array `errors[]`,\n  no campo `itens` ou `grupos[n]`, uma por fato ou código repetido.",
+        "- **Gravação dos itens do formulário** (`PUT .../formularios/{codigo}/itens`):\n  vem depois das conferências do grafo de fatos e da citação dos fatos, e é uma\n  recusa única, sem campo, que traz só a primeira ocorrência encontrada.\n- **Gravação do formulário do processo** (`PUT .../formularios/{codigo}`), ao\n  criar o formulário que coleta a inscrição, que já nasce com os itens dos dados\n  básicos do candidato: se outro formulário do processo já coleta algum deles, é este erro.\n- **Aplicação de modelo de formulário**\n  (`POST .../formularios/aplicacoes-de-modelo`): vale para o modelo aplicado a formulário\n  que não coleta a inscrição, cujos itens não podem repetir fato de outro\n  formulário (o modelo aplicado a formulário da inscrição traz para ele o fato que está em\n  outro formulário, e não recusa essa repetição), e para os códigos de grupos e\n  de campos de grupo, em qualquer formulário. As recusas saem no array `errors[]`,\n  no campo `itens` ou `grupos[n]`, uma por fato ou código repetido.",
         "Nada é gravado."
       ],
       "comoResolver": [
-        "Deixe cada fato em um só formulário. Tire o fato do formulário que não deve\ncoletá-lo (regravando os itens desse formulário) antes de gravar o outro; os dados\nbásicos do candidato ficam no formulário de inscrição. Para o código de grupo,\ntroque-o por um que nenhum outro formulário use. Na aplicação de modelo, ajuste\nantes o formulário que já coleta o fato, ou escolha outro modelo."
+        "Deixe cada fato em um só formulário. Tire o fato do formulário que não deve\ncoletá-lo (regravando os itens desse formulário) antes de gravar o outro; os dados\nbásicos do candidato ficam no formulário da inscrição. Para o código de grupo,\ntroque-o por um que nenhum outro formulário use. Na aplicação de modelo, ajuste\nantes o formulário que já coleta o fato, ou escolha outro modelo."
       ],
       "ondeAparece": [
         "Gravação dos itens do formulário",
@@ -19505,7 +19488,7 @@
       ],
       "comoResolver": [
         "Escolha o que reflete o edital e repita a operação:",
-        "- se o fato não é coletado nem derivado, inclua-o entre os itens de um dos\n  formulários do processo, fora de grupo repetível\n  (`PUT .../formularios/{finalidade}/itens`);\n- se o fato só existe como campo de um grupo repetível, ele não pode alimentar a\n  regra: inclua-o também como item fora de grupo, ou ajuste a regra de derivação\n  para citar um fato que conte (`PUT .../regras-derivacao`);\n- se a citação está errada, ajuste a regra de derivação para não citar o fato\n  (`PUT .../regras-derivacao`)."
+        "- se o fato não é coletado nem derivado, inclua-o entre os itens de um dos\n  formulários do processo, fora de grupo repetível\n  (`PUT .../formularios/{codigo}/itens`);\n- se o fato só existe como campo de um grupo repetível, ele não pode alimentar a\n  regra: inclua-o também como item fora de grupo, ou ajuste a regra de derivação\n  para citar um fato que conte (`PUT .../regras-derivacao`);\n- se a citação está errada, ajuste a regra de derivação para não citar o fato\n  (`PUT .../regras-derivacao`)."
       ],
       "ondeAparece": [
         "Publicação inicial do processo seletivo",
@@ -19652,6 +19635,51 @@
       ]
     },
     {
+      "codigo": "uniplus.selecao.formulario_processo.codigo_duplicado",
+      "requisitos": [],
+      "oQueAconteceu": [
+        "Dois formulários do mesmo processo não podem ter o mesmo código. A configuração lida traz dois formulários com o código repetido; a mensagem aponta a posição do segundo na lista de formulários. Nada foi alterado.",
+        "Na gravação de um formulário por código (`PUT .../formularios/{codigo}`) a repetição não acontece: o código que o processo já tem é o do formulário que se substitui. A recusa aparece quando uma lista inteira de formulários chega de uma vez, como na leitura do documento de configuração."
+      ],
+      "comoResolver": [
+        "Deixe um só formulário para cada código: junte os dois ou troque o código de um deles por outro que o processo não use. Depois repita a operação."
+      ],
+      "ondeAparece": [
+        "Leitura do documento de configuração do processo seletivo"
+      ]
+    },
+    {
+      "codigo": "uniplus.selecao.formulario_processo.codigo_formato_invalido",
+      "requisitos": [],
+      "oQueAconteceu": [
+        "O código de um formulário tem formato fechado: começa com letra maiúscula e tem só letras maiúsculas, dígitos e sublinhados isolados (nunca dois seguidos, nem no fim), com até 60 caracteres. Exemplos: `INSCRICAO` e `ISENCAO_TAXA`. O código informado não segue esse formato; a mensagem repete a regra.",
+        "A recusa sai com **422** na gravação do formulário (`PUT .../formularios/{codigo}`), na aplicação de um modelo e na exigência de documento. Nas consultas, na remoção e na gravação dos itens e dos termos, o código fora do formato nem chega a ser tratado: a resposta é **404**, a mesma de um formulário que o processo não tem."
+      ],
+      "comoResolver": [
+        "Troque o código por um que siga o formato e repita o pedido. O código não muda depois que o formulário é criado, porque a configuração publicada cita o formulário por ele: escolha um nome que diga o que o formulário coleta."
+      ],
+      "ondeAparece": [
+        "Gravação do formulário do processo",
+        "Aplicação de modelo de formulário",
+        "Definição de documentos exigidos do processo seletivo"
+      ]
+    },
+    {
+      "codigo": "uniplus.selecao.formulario_processo.codigo_obrigatorio",
+      "requisitos": [],
+      "oQueAconteceu": [
+        "Todo formulário do processo é identificado por um código, e o pedido não informou o código do formulário ou o informou em branco. A falta aparece ao aplicar um modelo de formulário (`POST .../formularios/aplicacoes-de-modelo`, campo `formularioCodigo`) e ao dizer a que formulário pertence cada documento exigido (campo `momento.formularioCodigo`). Nada foi alterado.",
+        "Nas rotas de formulário o código vem no caminho (`.../formularios/{codigo}`); um caminho sem código nem chega a ser reconhecido como rota de formulário."
+      ],
+      "comoResolver": [
+        "Informe o código de um formulário que o processo tem. O código de cada formulário aparece na leitura da configuração do processo. Depois repita o pedido."
+      ],
+      "ondeAparece": [
+        "Aplicação de modelo de formulário",
+        "Definição de documentos exigidos do processo seletivo"
+      ]
+    },
+    {
       "codigo": "uniplus.selecao.formulario_processo.consequencia_da_falta_de_envio_invalida",
       "requisitos": [
         "UNI-REQ-0501"
@@ -19699,13 +19727,51 @@
       ]
     },
     {
+      "codigo": "uniplus.selecao.formulario_processo.exigencia_em_formulario_de_outra_fase",
+      "requisitos": [
+        "UNI-REQ-0144"
+      ],
+      "oQueAconteceu": [
+        "O documento exigido é cobrado numa fase do cronograma, e o formulário em que o candidato o apresenta tem de ser respondido na mesma fase. O formulário citado pela exigência é ligado a outra fase, ou ainda a nenhuma. A mensagem aponta a exigência pela posição dela.",
+        "O formulário pode ser obrigatório ou facultativo: o pedido de isenção, que é facultativo, exige o comprovante. Dois formulários podem dividir a mesma fase, e por isso a exigência cita o formulário, e não só a fase."
+      ],
+      "comoResolver": [
+        "Passe a exigência para a fase do formulário que ela cita, ou cite o formulário que a fase da exigência responde, ou ainda ligue o formulário à fase da exigência (`PUT .../formularios/{codigo}`, campo `faseId`). Depois repita a operação."
+      ],
+      "ondeAparece": [
+        "Definição de documentos exigidos do processo seletivo",
+        "Publicação inicial do processo seletivo",
+        "Retificação em ato único",
+        "Leitura do documento de configuração do processo seletivo"
+      ]
+    },
+    {
+      "codigo": "uniplus.selecao.formulario_processo.exigencia_em_formulario_inexistente",
+      "requisitos": [
+        "UNI-REQ-0144"
+      ],
+      "oQueAconteceu": [
+        "Todo documento exigido diz em que formulário o candidato o apresenta (campo `momento.formularioCodigo`), e esse formulário tem de existir no processo. O código informado por uma exigência não é o de nenhum formulário do processo. A mensagem aponta a exigência pela posição dela.",
+        "A recusa sai na definição dos documentos exigidos e, com a configuração toda, na publicação, na retificação em ato único e na leitura do documento de configuração. Nada é gravado nem congelado."
+      ],
+      "comoResolver": [
+        "Informe o código de um formulário que o processo tem, ou grave antes o formulário que a exigência cita (`PUT .../formularios/{codigo}`) e repita a operação."
+      ],
+      "ondeAparece": [
+        "Definição de documentos exigidos do processo seletivo",
+        "Publicação inicial do processo seletivo",
+        "Retificação em ato único",
+        "Leitura do documento de configuração do processo seletivo"
+      ]
+    },
+    {
       "codigo": "uniplus.selecao.formulario_processo.fase_fora_do_cronograma",
       "requisitos": [
         "UNI-REQ-0144"
       ],
       "oQueAconteceu": [
         "O formulário do processo é ligado a uma fase do cronograma e abre e fecha com o\nprazo dela; só é publicado ligado a uma fase que existe no cronograma\n(UNI-REQ-0144). A fase indicada no formulário não faz parte do cronograma do\nprocesso. Há duas ocasiões:",
-        "- **Gravação do formulário** (`PUT .../formularios/{finalidade}` com `faseId`): o\n  identificador de fase informado não corresponde a nenhuma fase do cronograma\n  atual. A recusa vem em `faseId` e soma-se, no array `errors[]`, às recusas das\n  páginas do mesmo formulário. Nada é gravado.\n- **Publicação e retificação em ato único**: a\n  fase gravada no formulário não é encontrada no cronograma no momento de\n  congelar a configuração. Esses dois caminhos conferem a prontidão na mesma\n  ordem e devolvem a primeira pendência; as pendências do formulário vêm depois\n  das da inscrição, dos dados básicos e da edição do ENEM.",
+        "- **Gravação do formulário** (`PUT .../formularios/{codigo}` com `faseId`): o\n  identificador de fase informado não corresponde a nenhuma fase do cronograma\n  atual. A recusa vem em `faseId` e soma-se, no array `errors[]`, às recusas das\n  páginas do mesmo formulário. Nada é gravado.\n- **Publicação e retificação em ato único**: a\n  fase gravada no formulário não é encontrada no cronograma no momento de\n  congelar a configuração. Esses dois caminhos conferem a prontidão na mesma\n  ordem e devolvem a primeira pendência; as pendências do formulário vêm depois\n  das da inscrição, dos dados básicos e da edição do ENEM.",
         "A redefinição do cronograma que retirasse uma fase em que um formulário é\nrespondido é recusada, e a mensagem pede a troca da fase do formulário antes\n([`fase_referenciada_por_formulario`](/erros/uniplus.selecao.processo_seletivo.fase_referenciada_por_formulario)).\nPor isso, a conferência da prontidão não deve encontrar a fase fora do cronograma\nquando a configuração foi gravada pelas operações normais; não foi encontrado,\nno código, caminho de edição que a produza."
       ],
       "comoResolver": [
@@ -19718,21 +19784,18 @@
       ]
     },
     {
-      "codigo": "uniplus.selecao.formulario_processo.fase_incoerente_com_finalidade",
+      "codigo": "uniplus.selecao.formulario_processo.formulario_da_isencao_obrigatorio",
       "requisitos": [
         "UNI-REQ-0144"
       ],
       "oQueAconteceu": [
-        "Cada formulário do processo tem uma finalidade (inscrição, pedido de isenção da\ntaxa ou habilitação), e a fase em que ele é respondido tem de ser uma fase do\ncronograma que atende essa finalidade. Hoje a regra é esta:",
-        "- o formulário de **inscrição** se responde na fase que coleta a inscrição;\n- o formulário de **isenção da taxa**, na fase que abre o pedido de isenção;\n- o formulário de **habilitação**, na fase cujo código é `HABILITACAO`.",
-        "Inscrição e isenção podem dividir a mesma fase. A fase indicada para o formulário\nexiste no cronograma, mas não atende a finalidade dele; a mensagem diz o código\nda fase e a finalidade.",
-        "A recusa sai em duas ocasiões. Na gravação do formulário\n(`PUT .../formularios/{finalidade}` com `faseId`), vem em `faseId` e soma-se, no\narray `errors[]`, às recusas das páginas do mesmo formulário (a fase que não\nconsta do cronograma sai com\n[`fase_fora_do_cronograma`](/erros/uniplus.selecao.formulario_processo.fase_fora_do_cronograma)).\nNa publicação e na retificação em ato único, é\numa pendência da configuração, conferida na mesma ordem dos dois caminhos: se a\nfase de algum formulário não atende a finalidade, a primeira pendência decide o\ncódigo devolvido. Isso pode acontecer também depois da gravação, se a fase do\ncronograma deixa de coletar a inscrição ou o pedido de isenção."
+        "A fase do cronograma que abre a solicitação de isenção da taxa só tem formulário facultativo: o candidato escolhe pedir a isenção. Só a fase que também coleta a inscrição tem formulário obrigatório, e esse é o da inscrição. O formulário apontado é obrigatório e está ligado a uma fase de solicitação de isenção que não coleta inscrição. A mensagem aponta o formulário pelo código.",
+        "A recusa acontece ao congelar uma versão: publicação inicial ou retificação em ato único. Nada é congelado."
       ],
       "comoResolver": [
-        "Ligue o formulário à fase do cronograma que atende a finalidade dele, regravando\no formulário com o `faseId` dessa fase. Se o cronograma não tem a fase certa\n(a que coleta a inscrição, a que abre o pedido de isenção ou a de habilitação),\ninclua-a pela definição do cronograma de fases e depois grave o formulário. Na\npublicação, regrave o formulário e repita a operação. Na retificação em ato\núnico, o pedido não traz o formulário, e a recusa indica que a configuração\npublicada divergiu da finalidade: a equipe técnica do Uni+ deve investigar."
+        "Marque o formulário como facultativo (`obrigatorio` falso) ou ligue-o à fase que coleta a inscrição, e repita a operação."
       ],
       "ondeAparece": [
-        "Gravação do formulário do processo",
         "Publicação inicial do processo seletivo",
         "Retificação em ato único"
       ]
@@ -19741,16 +19804,48 @@
       "codigo": "uniplus.selecao.formulario_processo.formulario_inexistente",
       "requisitos": [],
       "oQueAconteceu": [
-        "Itens e termos pertencem a um formulário: antes de gravá-los, o formulário da\nfinalidade (inscrição, pedido de isenção da taxa ou habilitação) precisa existir\nno processo. O pedido\n(`PUT .../formularios/{finalidade}/itens`, `PUT .../formularios/{finalidade}/termos`\nou `DELETE .../formularios/{finalidade}`) indicou uma finalidade para a qual o\nprocesso ainda não tem formulário, e a mensagem diz a finalidade. Nada foi\nalterado.",
-        "A conferência vem depois da verificação de que a edição está liberada (processo\nem rascunho) e, na gravação de itens e de termos, depois das recusas de\nconteúdo: ela só aparece quando o corpo do pedido, por si, é aceito."
+        "A aplicação de um modelo (`POST .../formularios/aplicacoes-de-modelo`) copia o conteúdo do modelo para um formulário que o processo já tem, o do código informado no campo `formularioCodigo`. O código informado não é de nenhum formulário do processo, e a mensagem diz o código. A resposta aponta o campo `formularioCodigo`. Nada foi alterado.",
+        "A conferência vem depois da verificação de que a edição está liberada (processo em rascunho) e antes da leitura do modelo."
       ],
       "comoResolver": [
-        "Defina primeiro o formulário da finalidade (`PUT .../formularios/{finalidade}`) e\nsó então grave os itens e os termos. Se o pedido era a remoção, o formulário já\nnão existe e não há mais o que fazer."
+        "Defina primeiro o formulário do código (`PUT .../formularios/{codigo}`) e só então aplique o modelo, ou informe em `formularioCodigo` o código de um formulário que o processo já tem."
       ],
       "ondeAparece": [
-        "Gravação dos itens do formulário",
-        "Gravação dos termos do formulário",
-        "Remoção do formulário do processo"
+        "Aplicação de modelo de formulário"
+      ]
+    },
+    {
+      "codigo": "uniplus.selecao.formulario_processo.inscricao_em_resultado_importado",
+      "requisitos": [
+        "UNI-REQ-0017"
+      ],
+      "oQueAconteceu": [
+        "No processo de resultado importado as inscrições vêm de um arquivo de importação, e não de formulário preenchido pelo candidato. O processo tem formulário ligado à fase do cronograma que coleta a inscrição, o que não vale para esse tipo de processo. A mensagem aponta o formulário pelo código.",
+        "A recusa acontece ao congelar uma versão: publicação inicial ou retificação em ato único. Nada é congelado."
+      ],
+      "comoResolver": [
+        "Remova o formulário da fase que coleta a inscrição (`DELETE .../formularios/{codigo}`) ou ligue-o a outra fase do cronograma, e repita a operação. Em processo já publicado, a mudança se faz numa retificação."
+      ],
+      "ondeAparece": [
+        "Publicação inicial do processo seletivo",
+        "Retificação em ato único"
+      ]
+    },
+    {
+      "codigo": "uniplus.selecao.formulario_processo.inscricao_sem_formulario_obrigatorio",
+      "requisitos": [
+        "UNI-REQ-0144"
+      ],
+      "oQueAconteceu": [
+        "O processo declara que a inscrição é feita pelo sistema, mas nenhum formulário obrigatório está ligado à fase do cronograma que coleta a inscrição. É o formulário obrigatório dessa fase que o candidato preenche para se inscrever, e sem ele não há o que preencher. O processo pode ter mais de um formulário obrigatório na fase.",
+        "O rascunho pode ficar sem esse formulário enquanto a configuração é montada. A recusa acontece ao congelar uma versão: publicação inicial ou retificação em ato único. Nada é congelado."
+      ],
+      "comoResolver": [
+        "Grave um formulário obrigatório (`obrigatorio` verdadeiro) ligado à fase que coleta a inscrição, com as seções e os itens que o candidato preenche, e repita a operação. Em processo já publicado, a criação do formulário é uma alteração da configuração e se faz numa retificação."
+      ],
+      "ondeAparece": [
+        "Publicação inicial do processo seletivo",
+        "Retificação em ato único"
       ]
     },
     {
@@ -19759,10 +19854,75 @@
         "UNI-REQ-0144"
       ],
       "oQueAconteceu": [
-        "Pedir isenção só faz sentido onde há taxa a isentar. O processo tem o formulário\ndo pedido de isenção, mas a configuração da taxa de inscrição não declara que o\nprocesso cobra taxa (UNI-REQ-0144). A recusa é uma pendência da prontidão para\ncongelar a configuração: sai na publicação e na retificação em ato único, que conferem a mesma lista em ordem fixa e\ndevolvem a primeira pendência encontrada. Esta vem depois da conferência da fase\ndos formulários e antes da conferência dos itens fora de seção; nada é\ncongelado."
+        "Pedir isenção só faz sentido onde há taxa a isentar. O processo tem formulário ligado à fase do cronograma que abre a solicitação de isenção (o do pedido de isenção, facultativo), mas a configuração da taxa de inscrição não declara que o processo cobra taxa (UNI-REQ-0144). A recusa é uma pendência da prontidão para congelar a configuração: sai na publicação e na retificação em ato único, que conferem a mesma lista em ordem fixa e devolvem a primeira pendência encontrada; nada é congelado. A mensagem aponta o formulário pelo código."
       ],
       "comoResolver": [
-        "Se o processo cobra taxa, declare a cobrança na configuração da taxa de inscrição\ne mantenha o formulário. Se não cobra, remova o formulário de isenção\n(`DELETE .../formularios/{finalidade}`, com a finalidade do pedido de isenção) enquanto o processo está em rascunho; na\nretificação, que não remove formulário publicado, a cobrança da taxa precisa ser\ndeclarada."
+        "Se o processo cobra taxa, declare a cobrança na configuração da taxa de inscrição\ne mantenha o formulário. Se não cobra, remova o formulário de isenção\n(`DELETE .../formularios/{codigo}`, com o código do formulário do pedido de isenção) enquanto o processo está em rascunho; na\nretificação, que não remove formulário publicado, a cobrança da taxa precisa ser\ndeclarada."
+      ],
+      "ondeAparece": [
+        "Publicação inicial do processo seletivo",
+        "Retificação em ato único"
+      ]
+    },
+    {
+      "codigo": "uniplus.selecao.formulario_processo.nao_encontrado",
+      "requisitos": [],
+      "oQueAconteceu": [
+        "Itens e termos pertencem a um formulário, e a remoção também age sobre um formulário. O pedido (`PUT .../formularios/{codigo}/itens`, `PUT .../formularios/{codigo}/termos` ou `DELETE .../formularios/{codigo}`) indicou, no caminho, um código para o qual o processo não tem formulário, e a mensagem diz o código. Nada foi alterado.",
+        "A conferência vem depois da verificação de que a edição está liberada (processo em rascunho) e, na gravação de itens e de termos, depois das recusas de conteúdo: ela só aparece quando o corpo do pedido, por si, é aceito."
+      ],
+      "comoResolver": [
+        "Confira o código do formulário na leitura da configuração do processo e repita o pedido. Para criar o formulário do código, use `PUT .../formularios/{codigo}` e só então grave os itens e os termos. Se o pedido era a remoção, o formulário já não existe e não há mais o que fazer."
+      ],
+      "ondeAparece": [
+        "Gravação dos itens do formulário",
+        "Gravação dos termos do formulário",
+        "Remoção do formulário do processo"
+      ]
+    },
+    {
+      "codigo": "uniplus.selecao.formulario_processo.pos_importacao_sem_formulario_obrigatorio",
+      "requisitos": [
+        "UNI-REQ-0017"
+      ],
+      "oQueAconteceu": [
+        "No processo de resultado importado, a importação traz só parte dos dados do candidato. A primeira fase do cronograma depois da importação precisa de um formulário obrigatório em que o candidato informa o que a importação não trouxe, e o processo não tem esse formulário.",
+        "A recusa acontece ao congelar uma versão: publicação inicial ou retificação em ato único. Nada é congelado."
+      ],
+      "comoResolver": [
+        "Grave um formulário obrigatório (`obrigatorio` verdadeiro) ligado à primeira fase depois da importação, com os itens dos dados que a importação não traz, e repita a operação."
+      ],
+      "ondeAparece": [
+        "Publicação inicial do processo seletivo",
+        "Retificação em ato único"
+      ]
+    },
+    {
+      "codigo": "uniplus.selecao.formulario_processo.remocao_de_formulario_com_exigencia",
+      "requisitos": [
+        "UNI-REQ-0144"
+      ],
+      "oQueAconteceu": [
+        "O formulário que se tenta remover ainda é o que entrega alguma exigência de documento do processo: a exigência cita o formulário pelo código. Remover o formulário deixaria a exigência sem onde ser apresentada. Nada foi alterado."
+      ],
+      "comoResolver": [
+        "Passe as exigências do formulário para outro formulário da mesma fase, ou retire-as dos documentos exigidos do processo, e só então remova o formulário (`DELETE .../formularios/{codigo}`)."
+      ],
+      "ondeAparece": [
+        "Remoção do formulário do processo"
+      ]
+    },
+    {
+      "codigo": "uniplus.selecao.formulario_processo.taxa_sem_formulario_de_isencao",
+      "requisitos": [
+        "UNI-REQ-0144"
+      ],
+      "oQueAconteceu": [
+        "O processo declara que cobra taxa de inscrição, e quem não pode pagar pede a isenção por um formulário facultativo ligado à fase do cronograma que abre a solicitação de isenção. O processo não tem nenhum formulário facultativo nessa fase.",
+        "A recusa acontece ao congelar uma versão: publicação inicial ou retificação em ato único. Nada é congelado."
+      ],
+      "comoResolver": [
+        "Grave o formulário do pedido de isenção, facultativo, ligado à fase que abre a solicitação de isenção (`PUT .../formularios/{codigo}`), ou, se o processo não cobra taxa, corrija a declaração da taxa de inscrição. Depois repita a operação."
       ],
       "ondeAparece": [
         "Publicação inicial do processo seletivo",
@@ -21025,7 +21185,7 @@
         "UNI-REQ-0389"
       ],
       "oQueAconteceu": [
-        "O processo seletivo não tem formulário com a finalidade de inscrição na versão\ndivulgada, então a inscrição não é feita por candidatos no sistema. É o caso\ndo processo de resultado importado, em que as inscrições vêm de um arquivo de\nimportação, como o do ENEM ou o do SISU, e não do formulário (UNI-REQ-0389,\nUNI-REQ-0017). O pedido de inscrição, de qualquer operação do candidato que\nconfere o período de inscrição, é recusado por isso."
+        "O processo seletivo não tem formulário obrigatório na fase que coleta inscrição, na versão\ndivulgada, então a inscrição não é feita por candidatos no sistema. É o caso\ndo processo de resultado importado, em que as inscrições vêm de um arquivo de\nimportação, como o do ENEM ou o do SISU, e não do formulário (UNI-REQ-0389,\nUNI-REQ-0017). O pedido de inscrição, de qualquer operação do candidato que\nconfere o período de inscrição, é recusado por isso."
       ],
       "comoResolver": [
         "Não há inscrição a fazer neste processo: a pessoa entra pelo exame ou pela\nseleção externa de que o resultado é importado, conforme o edital. Quem\nintegra a tela não deve oferecer a inscrição em processo sem formulário de\ninscrição. Se você acredita que o processo deveria receber inscrição, fale com\na unidade responsável por ele."
@@ -23980,12 +24140,12 @@
         "UNI-REQ-0144"
       ],
       "oQueAconteceu": [
-        "O novo cronograma deixa de incluir uma fase na qual um formulário do processo é\nrespondido. O formulário fica ligado a uma fase do cronograma e abre e fecha com o prazo\ndela; sem a fase, ele ficaria sem onde ser respondido. A mensagem de detalhe cita a fase\n(com o código e a ordem) e a finalidade do formulário. A recusa sai com **422** e o\ncronograma anterior permanece.",
+        "O novo cronograma deixa de incluir uma fase na qual um formulário do processo é\nrespondido. O formulário fica ligado a uma fase do cronograma e abre e fecha com o prazo\ndela; sem a fase, ele ficaria sem onde ser respondido. A mensagem de detalhe cita a fase\n(com o código e a ordem) e o código do formulário. A recusa sai com **422** e o\ncronograma anterior permanece.",
         "Se a fase removida também sustenta outras coisas, a recusa vem primeiro pela que o\nsistema confere antes: a idade máxima de emissão de documento exigido em outra fase e a\netapa citada por critério de desempate ou regra de eliminação. Este código aparece\nquando resta o formulário."
       ],
       "comoResolver": [
         "Escolha entre manter a fase ou mudar o formulário:",
-        "- mantenha a fase no cronograma enviado; ou\n- troque a fase do formulário por outra que continue no cronograma\n  (`PUT /api/selecao/admin/processos-seletivos/{id}/formularios/{finalidade}`) e repita\n  a definição do cronograma\n  (`PUT /api/selecao/processos-seletivos/{id}/cronograma-fases`)."
+        "- mantenha a fase no cronograma enviado; ou\n- troque a fase do formulário por outra que continue no cronograma\n  (`PUT /api/selecao/admin/processos-seletivos/{id}/formularios/{codigo}`) e repita\n  a definição do cronograma\n  (`PUT /api/selecao/processos-seletivos/{id}/cronograma-fases`)."
       ],
       "ondeAparece": [
         "Definição do cronograma de fases do processo seletivo"
@@ -24053,10 +24213,10 @@
       "requisitos": [],
       "oQueAconteceu": [
         "Um campo de formulário do processo, ou um campo de grupo repetível, coleta um fato que\no catálogo de fatos do candidato, no estado atual, não declara mais como coletável: o fato não existe mais no catálogo, ou deixou de ser declarado como fato do candidato respondido em campo (ou, no campo de grupo repetível, como fato de membro do grupo). O vínculo foi feito quando o fato era coletável e o catálogo mudou\ndepois. A mensagem de detalhe cita o código do fato. A recusa sai com **422**.",
-        "O congelamento reconfere os vínculos contra o catálogo vivo antes de gerar a versão, e\nnão grava um vínculo que já não é coletável. Em cada finalidade do formulário, conferem-se primeiro os campos individuais e depois os campos dos grupos repetíveis, cada conjunto em ordem, e a recusa cita o primeiro que falha."
+        "O congelamento reconfere os vínculos contra o catálogo vivo antes de gerar a versão, e\nnão grava um vínculo que já não é coletável. Em cada formulário, na ordem do código, conferem-se primeiro os campos individuais e depois os campos dos grupos repetíveis, cada conjunto em ordem, e a recusa cita o primeiro que falha."
       ],
       "comoResolver": [
-        "Retire do formulário o campo que coleta esse fato, ou substitua-o por um fato\ncoletável do catálogo\n(`PUT /api/selecao/admin/processos-seletivos/{id}/formularios/{finalidade}/itens`), e\nrepita a operação.",
+        "Retire do formulário o campo que coleta esse fato, ou substitua-o por um fato\ncoletável do catálogo\n(`PUT /api/selecao/admin/processos-seletivos/{id}/formularios/{codigo}/itens`), e\nrepita a operação.",
         "Se o fato deveria continuar coletável, a correção é no catálogo de fatos do candidato,\nque é da gestão do cadastro e não do processo."
       ],
       "ondeAparece": [
@@ -24120,7 +24280,7 @@
         "Um campo do formulário está vinculado como escolha (única ou múltipla), mas não há de\nonde tirar as opções que a pessoa candidata poderia escolher: o catálogo de fatos do\ncandidato não declara valores para o fato, e a fonte das opções do campo não é o\nprocesso nem o Fator de Atenuação das Desigualdades de Acesso (FADA). A mensagem de detalhe cita o código do fato. A recusa\nsai com **422**, antes de gerar a versão."
       ],
       "comoResolver": [
-        "Retire o campo do formulário ou troque-o por um fato cujas opções existam\n(`PUT /api/selecao/admin/processos-seletivos/{id}/formularios/{finalidade}/itens`). Se\no fato deveria oferecer opções, a correção é no catálogo de fatos do candidato, da\ngestão do cadastro. Repita a operação depois do ajuste."
+        "Retire o campo do formulário ou troque-o por um fato cujas opções existam\n(`PUT /api/selecao/admin/processos-seletivos/{id}/formularios/{codigo}/itens`). Se\no fato deveria oferecer opções, a correção é no catálogo de fatos do candidato, da\ngestão do cadastro. Repita a operação depois do ajuste."
       ],
       "ondeAparece": [
         "Publicação inicial do processo seletivo",
@@ -24223,11 +24383,11 @@
         "UNI-REQ-0144"
       ],
       "oQueAconteceu": [
-        "O processo tem um formulário (de inscrição, de isenção da taxa ou de\nhabilitação) que não declara a fase do cronograma em que é respondido. O\nformulário abre e fecha com o prazo da fase a que está ligado, e sem a fase não\nhá período para ele. O rascunho aceita o formulário sem fase, porque a\nconfiguração se monta aos poucos; a publicação e a retificação em ato único não.",
+        "O processo tem um formulário que não declara a fase do cronograma em que é respondido. O\nformulário abre e fecha com o prazo da fase a que está ligado, e sem a fase não\nhá período para ele. O rascunho aceita o formulário sem fase, porque a\nconfiguração se monta aos poucos; a publicação e a retificação em ato único não.",
         "A mensagem da resposta diz qual formulário está sem fase. Havendo mais de um,\na recusa aponta o primeiro, e os demais aparecem nas repetições da operação."
       ],
       "comoResolver": [
-        "Informe, na definição do formulário apontado, a fase do cronograma em que ele é\nrespondido. A fase tem de ser uma que o cronograma do processo contém e que\natende à finalidade do formulário — fase que coleta inscrição para o formulário\nde inscrição, fase que abre a solicitação de isenção para o de isenção, e a fase\nde habilitação para o de habilitação; fase que não atende à finalidade é\nrecusada à parte, com outro código.",
+        "Informe, na definição do formulário apontado, a fase do cronograma em que ele é\nrespondido. A fase tem de ser uma que o cronograma do processo contém: o formulário\nobrigatório da inscrição se liga à fase que coleta inscrição, e o facultativo do\npedido de isenção, à fase que abre a solicitação de isenção. Fase fora do cronograma é\nrecusada à parte, com outro código.",
         "Depois de declarar a fase de todos os formulários, repita a operação recusada."
       ],
       "ondeAparece": [
@@ -24506,10 +24666,10 @@
         "UNI-REQ-0151"
       ],
       "oQueAconteceu": [
-        "O processo declara que a inscrição é feita pelo sistema, e o formulário de\ninscrição não coleta todos os dados do conjunto básico do candidato (UNI-REQ-0151:\nnome, CPF, RG, nacionalidade, data de nascimento, endereço e os demais dados\nbásicos) na seção reservada a eles. A API confere os dados do conjunto nessa\nseção do formulário de inscrição, e falta pelo menos um. A recusa sai com\n**422**, e o `detail` diz quantos dados faltam."
+        "O processo declara que a inscrição é feita pelo sistema, e os formulários obrigatórios da fase que coleta inscrição não coletam, juntos, todos os dados do conjunto básico do candidato (UNI-REQ-0151: nome, CPF, RG, nacionalidade, data de nascimento, endereço e os demais dados básicos). Os dados do conjunto ficam num formulário obrigatório da fase de inscrição, em campo de resposta única, e falta pelo menos um. A recusa sai com **422**, e o `detail` diz quantos dados faltam."
       ],
       "comoResolver": [
-        "Restaure a seção reservada dos dados básicos do formulário de inscrição: grave de\nnovo o formulário e, depois, os itens dele, o que repõe a seção com todos os dados\ndo conjunto. Ou parta do modelo de inscrição do tipo do processo, que já traz o\nconjunto básico completo. Depois disso, publique de novo."
+        "Coloque os dados que faltam num formulário obrigatório da fase de inscrição: grave de novo o formulário e, depois, os itens dele, o que repõe a seção reservada com todos os dados do conjunto. Ou parta do modelo de inscrição do tipo do processo, que já traz o conjunto básico completo. Depois disso, publique de novo."
       ],
       "ondeAparece": [
         "Publicação do processo seletivo"
@@ -24527,24 +24687,6 @@
       "comoResolver": [
         "No formulário de inscrição do processo, deixe o item `EDICAO_ENEM` como item\navulso, sem pré-condição, com obrigatoriedade \"sempre\", dentro de uma seção que\nsempre aparece. Se o campo já existe, ajuste o que for apontado acima; se não\nexiste, inclua-o.",
         "Em processo já publicado, a alteração do formulário é feita numa retificação.\nDepois, repita a operação recusada."
-      ],
-      "ondeAparece": [
-        "Publicação inicial do processo seletivo",
-        "Retificação em ato único"
-      ]
-    },
-    {
-      "codigo": "uniplus.selecao.processo_seletivo.inscricao_sem_formulario",
-      "requisitos": [
-        "UNI-REQ-0144"
-      ],
-      "oQueAconteceu": [
-        "A origem dos candidatos do processo é a inscrição própria — os candidatos se\ninscrevem pelo sistema —, mas o processo não tem formulário com a finalidade de\ninscrição. É o formulário de inscrição que coleta as respostas do candidato, e\nsem ele não há o que preencher.",
-        "O rascunho pode ficar sem o formulário enquanto a configuração é montada. A\nrecusa acontece quando se tenta congelar uma versão: publicação inicial ou retificação em ato único."
-      ],
-      "comoResolver": [
-        "Cadastre no processo o formulário de finalidade inscrição, com a fase do\ncronograma em que é respondido e as seções e itens que o candidato preenche, e\nrepita a operação.",
-        "Em processo já publicado, a criação do formulário é uma alteração da\nconfiguração e é feita numa retificação."
       ],
       "ondeAparece": [
         "Publicação inicial do processo seletivo",
@@ -24745,13 +24887,13 @@
         "PUT /api/selecao/processos-seletivos/`{id}`/algoritmo-contagem-prazo",
         "PUT /api/selecao/processos-seletivos/`{id}`/referencia-temporal-fatos",
         "PUT /api/selecao/processos-seletivos/`{id}`/regras-derivacao",
-        "PUT /api/selecao/admin/processos-seletivos/`{id}`/formularios/`{finalidade}`",
-        "PUT /api/selecao/admin/processos-seletivos/`{id}`/formularios/`{finalidade}`/itens",
-        "PUT /api/selecao/admin/processos-seletivos/`{id}`/formularios/`{finalidade}`/termos",
+        "PUT /api/selecao/admin/processos-seletivos/`{id}`/formularios/`{codigo}`",
+        "PUT /api/selecao/admin/processos-seletivos/`{id}`/formularios/`{codigo}`/itens",
+        "PUT /api/selecao/admin/processos-seletivos/`{id}`/formularios/`{codigo}`/termos",
         "POST /api/selecao/admin/processos-seletivos/`{id}`/formularios/aplicacoes-de-modelo",
         "PUT /api/selecao/processos-seletivos/`{id}`/fases/`{faseCanonicaOrigemId}`/motivos-de-decisao/`{motivoDeDecisaoId}`",
         "PUT /api/selecao/processos-seletivos/`{id}`/etapas/`{etapaId}`/motivos-de-decisao/`{motivoDeDecisaoId}`",
-        "DELETE /api/selecao/admin/processos-seletivos/`{id}`/formularios/`{finalidade}`",
+        "DELETE /api/selecao/admin/processos-seletivos/`{id}`/formularios/`{codigo}`",
         "DELETE /api/selecao/processos-seletivos/`{id}`/fases/`{faseCanonicaOrigemId}`/motivos-de-decisao/`{motivoDeDecisaoId}`",
         "DELETE /api/selecao/processos-seletivos/`{id}`/etapas/`{etapaId}`/motivos-de-decisao/`{motivoDeDecisaoId}`"
       ]
@@ -24780,7 +24922,7 @@
       ],
       "oQueAconteceu": [
         "O sistema não encontrou um processo seletivo com o identificador informado na\nchamada. A resposta é a mesma em duas situações: o processo realmente não existe\nou existe, mas quem faz a chamada não tem acesso a ele. Quem não pode alcançar o\nprocesso não descobre que ele existe — por exemplo, o processo em rascunho de uma\nunidade a cuja configuração a pessoa não tem acesso.",
-        "Nas consultas públicas do processo publicado e do formulário publicado, a\nresposta é a mesma também para o processo que ainda está em rascunho, para o que\nainda não tem versão divulgada e, na consulta do formulário, para a finalidade\nque o processo não tem."
+        "Nas consultas públicas do processo publicado e do formulário publicado, a\nresposta é a mesma também para o processo que ainda está em rascunho, para o que\nainda não tem versão divulgada e, na consulta do formulário, para o código de formulário\nque o processo não tem."
       ],
       "comoResolver": [
         "Confira o identificador usado na chamada, copiando-o da listagem de processos a\nque você tem acesso. Se o processo é de outra unidade e você precisa atuar nele,\npeça à gestão de acessos a permissão correspondente naquela unidade."
@@ -27093,7 +27235,7 @@
       ],
       "comoResolver": [
         "**Eixo do campo.** Se o que mudou foi o tipo de campo, volte a enviá-lo como estava na versão publicada. A origem dos valores, o\nformato e a classificação de proteção não vêm do pedido: o campo é montado a\npartir do catálogo atual. Se eles mudaram no catálogo, a saída\né a mesma do caso abaixo — desfazer a correção daquele fato no catálogo enquanto\no processo precisar ser retificado. O fato que o formulário de inscrição já\ncoleta não pode ser retirado dele, então lá trocá-lo por outro fato não resolve.",
-        "**Eixo vindo do catálogo (condição de documento ou resumo de grupo).** Não há\ncampo a manter: a recusa decorre da mudança feita no catálogo. Enquanto o\nprocesso precisar ser retificado, desfaça a correção daquele fato no catálogo;\nela pode ser refeita quando o processo não precisar mais ser retificado\n(encerrado ou cancelado), e então vale para os processos em rascunho e os novos. No caso do\nfato citado em condição de documento, outra saída é retirar da versão nova a\ncondição de documento que cita o fato; a retificação permite reescrever os\ndocumentos exigidos, e o fato que a versão nova não cita numa condição não é\ncomparado. Atenção: retirar a condição muda a exigência de documento para quem\npreencher a finalidade depois da retificação (UNI-REQ-0144), então só faça isso\nse a mudança for intencional."
+        "**Eixo vindo do catálogo (condição de documento ou resumo de grupo).** Não há\ncampo a manter: a recusa decorre da mudança feita no catálogo. Enquanto o\nprocesso precisar ser retificado, desfaça a correção daquele fato no catálogo;\nela pode ser refeita quando o processo não precisar mais ser retificado\n(encerrado ou cancelado), e então vale para os processos em rascunho e os novos. No caso do\nfato citado em condição de documento, outra saída é retirar da versão nova a\ncondição de documento que cita o fato; a retificação permite reescrever os\ndocumentos exigidos, e o fato que a versão nova não cita numa condição não é\ncomparado. Atenção: retirar a condição muda a exigência de documento para quem\npreencher o formulário depois da retificação (UNI-REQ-0144), então só faça isso\nse a mudança for intencional."
       ],
       "ondeAparece": [
         "Retificação em ato único"
@@ -27105,11 +27247,10 @@
         "UNI-REQ-0144"
       ],
       "oQueAconteceu": [
-        "Cada processo tem um formulário por finalidade (inscrição, isenção da taxa, habilitação), e o candidato pode ter preenchido o formulário de uma finalidade em qualquer versão publicada do edital (o primeiro envio fixa a versão). Por isso, quem preencheu o formulário de uma finalidade numa versão anterior pode não ter informado um fato que só foi acrescentado depois.",
-        "Na retificação em ato único, a versão nova leva a configuração que o processo já tem. Se essa configuração cita, num formulário, num termo ou numa condição de documento exigido, um fato coletado pelo formulário de **outra finalidade**, e esse formulário não coletou o fato em **todas** as versões já publicadas do edital, a retificação é recusada: basta faltar em uma delas. A conferência é por finalidade: o formulário que cita os próprios fatos segue a versão dele mesmo e não é recusado por esta causa. Também vale para o fato derivado: se ele depende de um fato coletado nessas condições, a recusa é a mesma. A finalidade que ainda não tinha formulário em nenhuma versão publicada não é recusada, porque ninguém o preencheu antes.",
-        "A recusa sai com **422**, e o `detail` diz o fato, quem o cita e a finalidade do formulário que deveria tê-lo coletado. Quando a citação é a um fato derivado, o `detail` diz também de qual fato coletado ele depende. A conferência só existe na retificação: sem versão publicada nenhum candidato preencheu versão anterior, e a recusa não ocorre. Ela é feita ao congelar a versão nova e alcança também o fato derivado cuja regra de derivação, em vigor no cadastro de fatos, depende de um fato coletado nessas condições.",
-        "O motivo é de negócio: o candidato pode ter preenchido o formulário de origem em qualquer versão publicada (UNI-REQ-0144). Exemplo hipotético, porque o pedido de retificação em ato único ainda não altera formulários: o formulário de inscrição passa a perguntar a \"Escola de conclusão do ensino médio\" só depois de uma versão posterior, e o formulário de habilitação cita essa resposta. Quem se inscreveu antes nunca a informou, e a habilitação dele não teria o dado.",
-        "Esta regra vale para o modelo atual, de um formulário por finalidade. Quando o formulário passar a ser identificado por código, e não por finalidade, ela muda."
+        "Cada processo tem formulários identificados por código (a inscrição, o pedido de isenção da taxa, a habilitação e os demais que o processo declarar), e o candidato pode ter preenchido um formulário em qualquer versão publicada do edital (o primeiro envio fixa a versão). Por isso, quem preencheu o formulário numa versão anterior pode não ter informado um fato que só foi acrescentado depois.",
+        "Na retificação em ato único, a versão nova leva a configuração que o processo já tem. Se essa configuração cita, num formulário, num termo ou numa condição de documento exigido, um fato coletado por **outro formulário**, e esse formulário não coletou o fato em **todas** as versões já publicadas do edital, a retificação é recusada: basta faltar em uma delas. A conferência é por formulário: o formulário que cita os próprios fatos segue a versão dele mesmo e não é recusado por esta causa. Também vale para o fato derivado: se ele depende de um fato coletado nessas condições, a recusa é a mesma. O formulário que ainda não existia em nenhuma versão publicada não é recusado, porque ninguém o preencheu antes.",
+        "A recusa sai com **422**, e o `detail` diz o fato, quem o cita e o código do formulário que deveria tê-lo coletado. Quando a citação é a um fato derivado, o `detail` diz também de qual fato coletado ele depende. A conferência só existe na retificação: sem versão publicada nenhum candidato preencheu versão anterior, e a recusa não ocorre. Ela é feita ao congelar a versão nova e alcança também o fato derivado cuja regra de derivação, em vigor no cadastro de fatos, depende de um fato coletado nessas condições.",
+        "O motivo é de negócio: o candidato pode ter preenchido o formulário de origem em qualquer versão publicada (UNI-REQ-0144). Exemplo hipotético, porque o pedido de retificação em ato único ainda não altera formulários: o formulário de inscrição passa a perguntar a \"Escola de conclusão do ensino médio\" só depois de uma versão posterior, e o formulário de habilitação cita essa resposta. Quem se inscreveu antes nunca a informou, e a habilitação dele não teria o dado."
       ],
       "comoResolver": [
         "O pedido de retificação em ato único não traz formulário, termo nem exigência de documento, então não há o que ajustar nele. Esses itens vêm da configuração que o processo já tem, e a retificação não os altera.",
@@ -27159,7 +27300,7 @@
       "codigo": "uniplus.selecao.termo_exigido_formulario.entrada_malformada",
       "requisitos": [],
       "oQueAconteceu": [
-        "O pedido `PUT .../formularios/{finalidade}/termos` substitui por inteiro os termos de consentimento\nque o formulário da finalidade exige. Há dois casos de entrada malformada, e a mensagem diz qual\nocorreu:",
+        "O pedido `PUT .../formularios/{codigo}/termos` substitui por inteiro os termos de consentimento\nque o formulário do código exige. Há dois casos de entrada malformada, e a mensagem diz qual\nocorreu:",
         "- o campo `termos` veio com valor nulo: a lista é obrigatória, e a lista vazia é o modo de remover\n  todos os termos do formulário;\n- um dos itens da lista veio nulo: a mensagem diz que o termo veio nulo, e o campo de erro indica a\n  posição dele (`termos[i]`).",
         "Quando o campo `termos` é omitido do corpo, o pedido nem chega a esta conferência: a omissão é\nrecusada na leitura do corpo, antes do comando.",
         "A lista nula é recusada logo depois das verificações de que a edição está liberada (processo em\nrascunho), como violação única, antes de qualquer consulta\nao catálogo de termos. O termo nulo é recusado junto com as demais violações de forma dos outros\ntermos, em `errors[]`; o termo nulo não entra nas conferências seguintes, e nada foi alterado."

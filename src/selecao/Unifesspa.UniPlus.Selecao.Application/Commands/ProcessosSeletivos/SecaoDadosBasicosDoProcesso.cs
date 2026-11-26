@@ -5,8 +5,9 @@ using Domain.Entities;
 using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Entradas;
-using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.Formularios;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Coleta;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Formularios;
 
 /// <summary>
 /// Os itens e os grupos que a escrita lê depois de mesclados com o conjunto básico, as recusas da mescla
@@ -19,72 +20,70 @@ internal sealed record ColetaMesclada(
     bool GruposOmitidosRegravados);
 
 /// <summary>
-/// A seção dos dados básicos do formulário de inscrição do processo, na forma de entrada: a gravada
-/// é a referência, e a do conjunto básico só vale enquanto o formulário não a tem.
+/// A seção dos dados básicos do formulário que coleta a inscrição, na forma de entrada: a gravada é a
+/// referência, e a do conjunto básico só vale enquanto o formulário não a tem. O conjunto básico fica em
+/// um só dos formulários da inscrição (<see cref="ConjuntoBasicoNaInscricao"/>), porque cada fato é coletado por um
+/// só formulário do processo.
 /// </summary>
 internal static class SecaoDadosBasicosDoProcesso
 {
     /// <summary>
-    /// O formulário de inscrição coleta o conjunto básico na seção reservada: o item básico, omitido ou
+    /// O formulário que guarda o conjunto básico o coleta na seção reservada: o item básico, omitido ou
     /// enviado, entra pela referência, com a ordem e o rótulo do conjunto, e o enviado só pode diferir dela
     /// nessas duas coisas. O item básico que falta no formulário gravado entra na seção e desloca o que vem
     /// depois dela; os grupos omitidos, que ficam como estão gravados, entram então na mescla e são regravados,
-    /// para o deslocamento ter uma fonte só e a ordem seguir única. Nas outras finalidades nada se mescla.
+    /// para o deslocamento ter uma fonte só e a ordem seguir única. Nos demais formulários nada se mescla.
     /// </summary>
-    public static ColetaMesclada Mesclar(ProcessoSeletivo processo, DefinirFatosColetadosCommand command)
+    public static ColetaMesclada Mesclar(ProcessoSeletivo processo, CodigoDoFormulario codigo, DefinirFatosColetadosCommand command)
     {
         ArgumentNullException.ThrowIfNull(processo);
+        ArgumentNullException.ThrowIfNull(codigo);
         ArgumentNullException.ThrowIfNull(command);
-        if (EstruturaFormulario.FinalidadeDoCodigo(command.FormularioCodigo) != FinalidadeFormulario.Inscricao)
+        FormularioProcesso? formulario = processo.Declaracao().Coleta.FormularioDe(codigo);
+        if (formulario is null || !ConjuntoBasicoNaInscricao.Guarda(processo.Declaracao(), formulario.Declarado))
         {
             return new ColetaMesclada(command.Itens, command.Grupos ?? [], [], false);
         }
 
-        bool regravaGrupos = command.Grupos is null && SecaoGanhaBasicos(processo);
+        bool regravaGrupos = command.Grupos is null && SecaoGanhaBasicos(processo, formulario);
         (IReadOnlyList<FatoColetadoInput> itens, IReadOnlyList<GrupoColetadoInput> grupos, List<FieldError> recusas) = ConjuntoBasicoDaInscricao.MesclarItens(
-            command.Itens, regravaGrupos ? Grupos(processo) : command.Grupos ?? [], Itens(processo));
+            command.Itens, regravaGrupos ? Grupos(processo, formulario) : command.Grupos ?? [], Itens(processo, formulario));
         return new ColetaMesclada(itens, grupos, recusas, regravaGrupos);
     }
 
-    /// <summary>Os itens básicos gravados no formulário de inscrição e, onde faltam, os do conjunto básico.</summary>
-    public static IReadOnlyList<FatoColetadoInput> Itens(ProcessoSeletivo processo)
+    /// <summary>A seção gravada no formulário do código, ou a do conjunto básico.</summary>
+    public static PaginaDoFormularioInput Secao(ProcessoSeletivo processo, CodigoDoFormulario codigo)
     {
         ArgumentNullException.ThrowIfNull(processo);
-        return ConjuntoBasicoDaInscricao.Referencia(processo.FatosColetados
-            .Where(static f => f.Finalidade == FinalidadeFormulario.Inscricao)
-            .Select(Entrada));
-    }
-
-    /// <summary>A seção gravada no formulário de inscrição, ou a do conjunto básico.</summary>
-    public static PaginaDoFormularioInput Secao(ProcessoSeletivo processo)
-    {
-        ArgumentNullException.ThrowIfNull(processo);
-        return ConjuntoBasicoDaInscricao.SecaoDe((processo.FormularioDe(FinalidadeFormulario.Inscricao)?.Paginas ?? [])
+        ArgumentNullException.ThrowIfNull(codigo);
+        return ConjuntoBasicoDaInscricao.SecaoDe((processo.Declaracao().Coleta.FormularioDe(codigo)?.Paginas ?? [])
             .Select(static gravada => new PaginaDoFormularioInput(
                 gravada.Codigo, gravada.Ordem, gravada.Tipo.Codigo(), gravada.Bloco?.Codigo(),
                 new ApresentacaoDaPaginaInput(gravada.Titulo, gravada.Descricao, gravada.Aviso), EntradaDeRegras.ParaEntrada(gravada.Exibicao))));
     }
 
-    /// <summary>Os grupos gravados no formulário de inscrição, na forma de entrada.</summary>
-    public static IReadOnlyList<GrupoColetadoInput> Grupos(ProcessoSeletivo processo)
-    {
-        ArgumentNullException.ThrowIfNull(processo);
-        return [.. processo.GruposColetados
-            .Where(static g => g.Finalidade == FinalidadeFormulario.Inscricao)
+    /// <summary>Os itens básicos gravados no formulário e, onde faltam, os do conjunto básico.</summary>
+    private static IReadOnlyList<FatoColetadoInput> Itens(ProcessoSeletivo processo, FormularioProcesso formulario) =>
+        ConjuntoBasicoDaInscricao.Referencia(processo.FatosColetados
+            .Where(f => f.FormularioId == formulario.Id)
+            .Select(Entrada));
+
+    /// <summary>Os grupos gravados no formulário, na forma de entrada.</summary>
+    private static IReadOnlyList<GrupoColetadoInput> Grupos(ProcessoSeletivo processo, FormularioProcesso formulario) =>
+        [.. processo.GruposColetados
+            .Where(g => g.FormularioId == formulario.Id)
             .Select(static g => new GrupoColetadoInput(
                 g.Codigo, g.Ordem, g.Rotulo, EntradaDeRegras.ParaEntrada(g.Ocorrencias), EntradaDeRegras.ParaEntrada(g.Regras),
                 [.. g.Subitens.Select(Entrada)], g.PaginaCodigo))];
-    }
 
     /// <summary>
     /// A seção gravada ganha itens básicos na próxima gravação: ela já tem algum, mas não todos. O
     /// deslocamento do que vem depois dela é de <see cref="ConjuntoBasicoDaInscricao.MesclarItens"/>.
     /// </summary>
-    public static bool SecaoGanhaBasicos(ProcessoSeletivo processo)
+    private static bool SecaoGanhaBasicos(ProcessoSeletivo processo, FormularioProcesso formulario)
     {
-        ArgumentNullException.ThrowIfNull(processo);
         int naSecao = processo.FatosColetados
-            .Where(static f => f.Finalidade == FinalidadeFormulario.Inscricao
+            .Where(f => f.FormularioId == formulario.Id
                 && string.Equals(f.PaginaCodigo, ConjuntoBasicoDaInscricao.CodigoDaSecao, StringComparison.Ordinal)
                 && ConjuntoBasicoDaInscricao.Fatos.Contains(f.FatoCodigo))
             .Select(static f => f.FatoCodigo).Distinct(StringComparer.Ordinal).Count();

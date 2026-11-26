@@ -49,7 +49,7 @@ public sealed class PreVisualizarProcessoSeletivoQueryHandlerTests
             ]));
 
         Exigidos(previa).Should().BeEquivalentTo(["PERTENCIMENTO_INDIGENA", "TRABALHADOR_RURAL", "RG", "CERTIDAO_GUARDA@IRMAO", "COMPROVANTE_DA_MODALIDADE"]);
-        previa.Documentos.Should().OnlyContain(static d => d.Finalidade!.Codigo == "INSCRICAO", "cada documento traz o formulário em que é apresentado");
+        previa.Documentos.Should().OnlyContain(static d => d.FormularioCodigo == "HABILITACAO", "cada documento traz o formulário em que é apresentado");
     }
 
     [Fact(DisplayName = "Ampla concorrência: nenhum documento de cota; a identidade e o comprovante da modalidade derivada")]
@@ -261,18 +261,28 @@ public sealed class PreVisualizarProcessoSeletivoQueryHandlerTests
     /// <param name="minimoDaComposicao">O mínimo de membros; zero admite declarar que não há membros.</param>
     private static ProcessoSeletivo ProcessoDeMedicina(int minimoDaComposicao = 1)
     {
-        ProcessoSeletivo processo = ProcessoSeletivoConformeBuilder.Criar("PS Medicina 2027", out Guid fase);
-        processo.DefinirFormulario(FinalidadeFormulario.Habilitacao, null, null, FormularioDeTeste.Paginas(FinalidadeFormulario.Habilitacao))
-            .IsSuccess.Should().BeTrue();
+        ProcessoSeletivo processo = ProcessoSeletivoConformeBuilder.Criar("PS Medicina 2027");
+        FaseCronograma fase = FaseDaHabilitacao();
+        processo.DefinirCronogramaFases([.. processo.CronogramaFases, fase], []).IsSuccess.Should().BeTrue();
+        FormularioDeTeste.GarantirFormulario(processo, FinalidadeFormulario.Habilitacao);
         processo.DefinirFatosColetados(FinalidadeFormulario.Habilitacao, [], [ComposicaoFamiliar(minimoDaComposicao)]).IsSuccess.Should().BeTrue();
         processo.DefinirDistribuicaoVagas(
             [ProcessoSeletivoConformeBuilder.DistribuicaoAmplaConcorrencia(
                 PredicadoDnf.CriarDeCondicoesAgrupadas([(0, CondicaoDnf.Criar("COR_RACA", Operador.Igual, Json("INDIGENA")).Value!)]).Value!)],
             FatosDeModalidadeDeTeste.DoCatalogo).IsSuccess.Should().BeTrue();
-        processo.DefinirDocumentosExigidos(DocumentosDaHabilitacaoDeMedicina(fase)).IsSuccess.Should().BeTrue();
+        processo.DefinirDocumentosExigidos(DocumentosDaHabilitacaoDeMedicina(fase.Id)).IsSuccess.Should().BeTrue();
 
         return processo;
     }
+
+    /// <summary>A fase da habilitação: o formulário dela é obrigatório nela, e as exigências de documento citam o que ele coleta.</summary>
+    private static FaseCronograma FaseDaHabilitacao() => FaseCronograma.Criar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("fase").Value!,
+        OrigensCanonicasDeTeste.ComNome(new OrigemCanonicaDaFase(
+            Guid.CreateVersion7(), FormularioProcesso.CodigoFaseHabilitacao, OrigemDataFase.NaExecucao, AgrupaEtapas: false, PermiteComplementacao: false, ColetaInscricao: false,
+            ColetaSolicitacaoIsencao: false)),
+        new DecisoesDeCronogramaDaFase(2, Inicio: null, Fim: null, UnidadeResponsavel: UnidadesDeTeste.Ceps),
+        new PublicacoesDaFase(Produtos: [], EmiteParecerIndividual: false, RegraRecurso: null),
+        bancasRequeridas: []).Value!;
 
     private static GrupoColetado ComposicaoFamiliar(int minimoDaComposicao) => GrupoColetadoDeTeste.Agrupando(Composicao, 0)
         .ComOcorrencias(minimoDaComposicao, null)
@@ -312,7 +322,7 @@ public sealed class PreVisualizarProcessoSeletivoQueryHandlerTests
         .ComTipo(codigo, codigo, "PESSOAL")
         .Condicional(condicoes)
         .ComBasesLegais([DocumentoExigidoBaseLegal.Criar("Edital, Anexo III", TipoAbrangencia.InternaNorma, StatusBaseLegal.Resolvido, null).Value!])
-        .NaFinalidade(FinalidadeFormulario.Inscricao)
+        .NaFinalidade(FinalidadeFormulario.Habilitacao)
         .Criar().Value!;
 
     private static CondicaoGatilho Condicao(int clausula, string fato, Operador operador, object valor) =>

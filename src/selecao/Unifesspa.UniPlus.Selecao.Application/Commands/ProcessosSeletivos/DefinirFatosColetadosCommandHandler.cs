@@ -18,7 +18,7 @@ using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Referencias;
 
 /// <summary>
 /// Handler do <see cref="DefinirFatosColetadosCommand"/> (Story #984): substitui integralmente
-/// os itens do formulário de uma finalidade, em duas passadas que acumulam no mesmo
+/// os itens do formulário de um código, em duas passadas que acumulam no mesmo
 /// <c>errors[]</c> (ADR-0125). A primeira confirma a <b>forma</b> de todos os itens — campos
 /// básicos e obrigatoriedade — sem tocar o vocabulário cross-módulo. A segunda resolve, para os
 /// itens de forma válida, a <b>coletabilidade</b> (só se coleta fato <c>Origem = DECLARADO</c>
@@ -67,9 +67,15 @@ public static class DefinirFatosColetadosCommandHandler
             return recusa;
         }
 
-        ColetaMesclada coleta = SecaoDadosBasicosDoProcesso.Mesclar(processo, command);
+        Result<CodigoDoFormulario> codigo = CodigoDoFormulario.Criar(command.FormularioCodigo);
+        if (codigo.IsFailure)
+        {
+            return Result.Failure(codigo.Error!);
+        }
+
+        ColetaMesclada coleta = SecaoDadosBasicosDoProcesso.Mesclar(processo, codigo.Value!, command);
         ColetaResolvida resolvida = await ResolverNoCatalogoAsync(processo, coleta, fatoCandidatoReader, cancellationToken).ConfigureAwait(false);
-        return resolvida.Erros.Count > 0 ? Result.ValidationFailure(resolvida.Erros) : Gravar(command, processo, coleta, resolvida);
+        return resolvida.Erros.Count > 0 ? Result.ValidationFailure(resolvida.Erros) : Gravar(codigo.Value!, command, processo, coleta, resolvida);
     }
 
     /// <summary>
@@ -103,7 +109,8 @@ public static class DefinirFatosColetadosCommandHandler
         return new ColetaResolvida(contexto, fatos, grupos, [.. erros, .. errosDosGrupos, .. coleta.RecusasDaSecao]);
     }
 
-    private static Result Gravar(DefinirFatosColetadosCommand command, ProcessoSeletivo processo, ColetaMesclada coleta, ColetaResolvida resolvida)
+    private static Result Gravar(
+        CodigoDoFormulario codigo, DefinirFatosColetadosCommand command, ProcessoSeletivo processo, ColetaMesclada coleta, ColetaResolvida resolvida)
     {
         Result vinculoNovo = ConferirVinculoNovo(processo, resolvida);
         if (vinculoNovo.IsFailure)
@@ -112,10 +119,7 @@ public static class DefinirFatosColetadosCommandHandler
         }
 
         // Grupos omitidos ficam como estão no formulário; a lista vazia os remove.
-        Result<CodigoDoFormulario> codigo = CodigoDoFormulario.Criar(command.FormularioCodigo);
-        Result gravado = codigo.IsFailure
-            ? Result.Failure(codigo.Error!)
-            : processo.DefinirFatosColetados(codigo.Value!, resolvida.Fatos, command.Grupos is null && !coleta.GruposOmitidosRegravados ? null : resolvida.Grupos);
+        Result gravado = processo.DefinirFatosColetados(codigo, resolvida.Fatos, command.Grupos is null && !coleta.GruposOmitidosRegravados ? null : resolvida.Grupos);
         return gravado.IsFailure ? Result.ValidationFailure(gravado.Errors) : Result.Success();
     }
 

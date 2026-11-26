@@ -11,13 +11,14 @@ using Unifesspa.UniPlus.Regras.Entradas;
 using Unifesspa.UniPlus.Regras.Enums;
 
 /// <summary>
-/// Corpo de <see cref="FormulariosController.DefinirFormulario"/> — o processo e a finalidade vêm da
-/// rota. A lista de páginas é obrigatória: o formulário termina sempre na revisão e aceite. A consequência da
+/// Corpo de <see cref="FormulariosController.DefinirFormulario"/> — o processo e o código do formulário
+/// vêm da rota. Dizer se o formulário é obrigatório é obrigatório no corpo. A lista de páginas é obrigatória: o formulário termina sempre na revisão e aceite. A consequência da
 /// falta de envio é opcional, e a ausência dela retira a que o formulário tinha.
 /// </summary>
 public sealed record DefinirFormularioRequest(
     Guid? FaseId,
     string? Titulo,
+    [property: JsonRequired] bool Obrigatorio,
     [property: JsonRequired] IReadOnlyList<PaginaDoFormularioInput> Paginas,
     [property: AceitaCodigosDe<ConsequenciaDoDescumprimento>] string? ConsequenciaDaFaltaDeEnvio = null);
 

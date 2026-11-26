@@ -48,9 +48,9 @@ public sealed record TipoDocumentoDaExigenciaInput(Guid Id);
 /// que a etapa é do processo e acontece naquela fase.
 /// </param>
 /// <param name="FormularioCodigo">
-/// Código do formulário do processo a que o documento pertence: obrigatório quando a fase responde algum
-/// formulário, e um dos que ela responde; ausente quando a fase não responde nenhum. É ele que diz em qual
-/// formulário o candidato apresenta o documento, porque dois formulários podem dividir a fase.
+/// Código do formulário do processo a que o documento pertence: obrigatório em toda exigência, e um dos
+/// formulários que a fase responde. É ele que diz em qual formulário o candidato apresenta o documento,
+/// porque dois formulários podem dividir a fase.
 /// </param>
 public sealed record MomentoDaExigenciaInput(Guid FaseId, Guid? EtapaId = null, string? FormularioCodigo = null)
 {
