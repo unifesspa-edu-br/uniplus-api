@@ -80,7 +80,7 @@ public sealed class TiposBancaController : ControllerBase
             [.. resultado.Items.Select(b => b with { Links = _linksBuilder.Build(b) })];
 
         return await this.OkPaginatedAsync(
-            comLinks, resultado.AnteriorAfterId, resultado.ProximoAfterId, page, ResourceTag,
+            comLinks, resultado.AnteriorAfterId, resultado.ProximoAfterId, page,
             cancellationToken: cancellationToken).ConfigureAwait(false);
     }
 

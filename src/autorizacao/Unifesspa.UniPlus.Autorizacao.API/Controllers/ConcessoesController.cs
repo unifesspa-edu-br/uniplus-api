@@ -95,7 +95,7 @@ public sealed class ConcessoesController : ControllerBase
         ListarConcessoesResult resultado = await _queryBus.Send(consulta.Value!, cancellationToken).ConfigureAwait(false);
 
         return await this.OkPaginatedAsync(
-            resultado.Items, resultado.AnteriorAfterId, resultado.ProximoAfterId, page, ResourceTag, cancellationToken: cancellationToken).ConfigureAwait(false);
+            resultado.Items, resultado.AnteriorAfterId, resultado.ProximoAfterId, page, cancellationToken: cancellationToken).ConfigureAwait(false);
     }
 
     /// <summary>Obtém uma concessão pelo Id. Retorna 404 quando inexistente.</summary>

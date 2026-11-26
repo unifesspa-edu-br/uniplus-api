@@ -81,7 +81,7 @@ public sealed class PrecedenciasFaseController : ControllerBase
             [.. resultado.Items.Select(p => p with { Links = _linksBuilder.Build(p) })];
 
         return await this.OkPaginatedAsync(
-            comLinks, resultado.AnteriorAfterId, resultado.ProximoAfterId, page, ResourceTag,
+            comLinks, resultado.AnteriorAfterId, resultado.ProximoAfterId, page,
             cancellationToken: cancellationToken).ConfigureAwait(false);
     }
 

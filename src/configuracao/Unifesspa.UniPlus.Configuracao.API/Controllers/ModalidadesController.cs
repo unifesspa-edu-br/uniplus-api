@@ -80,7 +80,7 @@ public sealed class ModalidadesController : ControllerBase
             [.. resultado.Items.Select(m => m with { Links = _linksBuilder.Build(m) })];
 
         return await this.OkPaginatedAsync(
-            comLinks, resultado.AnteriorAfterId, resultado.ProximoAfterId, page, ResourceTag,
+            comLinks, resultado.AnteriorAfterId, resultado.ProximoAfterId, page,
             cancellationToken: cancellationToken).ConfigureAwait(false);
     }
 

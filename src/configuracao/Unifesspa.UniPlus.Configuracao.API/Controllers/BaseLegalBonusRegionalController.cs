@@ -66,7 +66,7 @@ public sealed class BaseLegalBonusRegionalController : ControllerBase
             [.. resultado.Itens.Select(t => t with { Links = _linksBuilder.Build(t) })];
 
         return await this.OkPaginatedAsync(
-            comLinks, resultado.AnteriorAfterId, resultado.ProximoAfterId, page, ResourceTag,
+            comLinks, resultado.AnteriorAfterId, resultado.ProximoAfterId, page,
             cancellationToken: cancellationToken).ConfigureAwait(false);
     }
 

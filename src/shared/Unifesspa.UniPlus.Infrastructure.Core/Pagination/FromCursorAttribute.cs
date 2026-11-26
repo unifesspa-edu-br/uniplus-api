@@ -45,7 +45,7 @@ public sealed class FromCursorAttribute : ModelBinderAttribute
     /// <summary>
     /// Quando <c>true</c>, cursores de continuação precisam trazer
     /// <see cref="CursorPayload.SortKey"/>. Use em recursos com keyset ordenado
-    /// multi-coluna, nos quais a âncora é o par <c>(SortKey, Id)</c>.
+    /// multi-coluna, nos quais o ponto de continuação é o par <c>(SortKey, Id)</c>.
     /// </summary>
     public bool RequireSortKey { get; init; }
 
@@ -87,7 +87,7 @@ public sealed class FromCursorAttribute : ModelBinderAttribute
 
     /// <summary>
     /// A etiqueta do cursor inclui os valores de rota que escopam a coleção (ADR-0026): sem eles, um cursor
-    /// emitido na coleção de uma entidade retomaria a paginação na coleção de outra, numa âncora que não é dela.
+    /// emitido na coleção de uma entidade retomaria a paginação na coleção de outra, num ponto de continuação que não é dele.
     /// </summary>
     internal string ResourceTagFor(RouteData routeData) => CursorResourceTag.Compose(
         Resource,

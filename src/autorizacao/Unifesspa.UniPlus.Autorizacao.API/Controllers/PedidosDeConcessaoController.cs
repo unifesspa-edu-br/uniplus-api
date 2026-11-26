@@ -117,7 +117,7 @@ public sealed class PedidosDeConcessaoController : ControllerBase
         return resultado.IsFailure
             ? resultado.ToActionResult(_mapper)
             : await this.OkPaginatedOrdenadoAsync(
-                resultado.Value!.Items, resultado.Value.Anterior, resultado.Value.Proximo, page, ResourceTag, cancellationToken: cancellationToken).ConfigureAwait(false);
+                resultado.Value!.Items, resultado.Value.Anterior, resultado.Value.Proximo, page, cancellationToken: cancellationToken).ConfigureAwait(false);
     }
 
     /// <summary>
@@ -147,7 +147,7 @@ public sealed class PedidosDeConcessaoController : ControllerBase
         return resultado.IsFailure
             ? resultado.ToActionResult(_mapper)
             : await this.OkPaginatedAsync(
-                resultado.Value!.Items, resultado.Value.AnteriorAfterId, resultado.Value.ProximoAfterId, page, PerfisParaPedidoTag,
+                resultado.Value!.Items, resultado.Value.AnteriorAfterId, resultado.Value.ProximoAfterId, page,
                 cancellationToken: cancellationToken).ConfigureAwait(false);
     }
 
@@ -300,7 +300,7 @@ public sealed class PedidosDeConcessaoController : ControllerBase
                 _ => null,
             };
 
-    // A âncora do cursor é o par (instante, Id) e o instante chega como texto: decodificar o wire é do boundary, e um
+    // O ponto de continuação do cursor é o par (instante, Id) e o instante chega como texto: decodificar o wire é do boundary, e um
     // cursor adulterado vira 400 em vez de 500.
     private static Result<ListarPedidosDeConcessaoQuery> Consulta(PageRequest page, string? fila, string? situacao)
     {
@@ -309,7 +309,7 @@ public sealed class PedidosDeConcessaoController : ControllerBase
             return Recusa(PedidoErrorCodes.FilaInvalida, "Fila inválida. Use meus, gestor, protecao_de_dados ou todos.");
         }
 
-        if (page.AfterSortKey is { } ancora && !DateTimeOffset.TryParse(ancora, CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind, out _))
+        if (page.AfterSortKey is { } chaveDeOrdenacao && !DateTimeOffset.TryParse(chaveDeOrdenacao, CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind, out _))
         {
             return Recusa(PedidoErrorCodes.CursorInvalido, "O cursor informado é inválido.");
         }

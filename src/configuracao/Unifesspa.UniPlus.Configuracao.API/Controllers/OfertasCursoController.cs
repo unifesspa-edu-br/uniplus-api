@@ -126,7 +126,7 @@ public sealed class OfertasCursoController : ControllerBase
 
         return await this.OkPaginatedOrdenadoAsync(
             comLinks, resultado.Anterior, resultado.Proximo,
-            page, ResourceTag, total: resultado.Total,
+            page, total: resultado.Total,
             cancellationToken: cancellationToken).ConfigureAwait(false);
     }
 

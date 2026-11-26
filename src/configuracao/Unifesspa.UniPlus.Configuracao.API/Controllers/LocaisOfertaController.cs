@@ -79,7 +79,7 @@ public sealed class LocaisOfertaController : ControllerBase
         LocalOfertaDto[] comLinks = [.. resultado.Items.Select(l => l with { Links = _linksBuilder.Build(l) })];
 
         return await this.OkPaginatedAsync(
-            comLinks, resultado.AnteriorAfterId, resultado.ProximoAfterId, page, ResourceTag,
+            comLinks, resultado.AnteriorAfterId, resultado.ProximoAfterId, page,
             cancellationToken: cancellationToken).ConfigureAwait(false);
     }
 

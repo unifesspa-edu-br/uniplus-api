@@ -182,7 +182,7 @@ public sealed class ProvidenciasController : ControllerBase
         ListarProvidenciasResult resultado = await _queryBus.Send(consulta, cancellationToken).ConfigureAwait(false);
 
         return await this.OkPaginatedOrdenadoAsync(
-            resultado.Items, resultado.Anterior, resultado.Proximo, page, ResourceTag, cancellationToken: cancellationToken).ConfigureAwait(false);
+            resultado.Items, resultado.Anterior, resultado.Proximo, page, cancellationToken: cancellationToken).ConfigureAwait(false);
     }
 
     private IActionResult Resposta(Result<ProvidenciaDto> resultado) =>

@@ -108,7 +108,7 @@ public sealed class MotivosDeDecisaoController : ControllerBase
             .ConfigureAwait(false);
 
         MotivoDeDecisaoDto[] comLinks = [.. resultado.Items.Select(m => m with { Links = _linksBuilder.Build(m) })];
-        return await this.OkPaginatedAsync(comLinks, resultado.AnteriorAfterId, resultado.ProximoAfterId, page, ResourceTag, cancellationToken: cancellationToken)
+        return await this.OkPaginatedAsync(comLinks, resultado.AnteriorAfterId, resultado.ProximoAfterId, page, cancellationToken: cancellationToken)
             .ConfigureAwait(false);
     }
 

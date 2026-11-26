@@ -83,7 +83,7 @@ public sealed class CalendariosDiasUteisController : ControllerBase
             [.. resultado.Items.Select(c => c with { Links = _resumoLinksBuilder.Build(c) })];
 
         return await this.OkPaginatedAsync(
-            comLinks, resultado.AnteriorAfterId, resultado.ProximoAfterId, page, ResourceTag,
+            comLinks, resultado.AnteriorAfterId, resultado.ProximoAfterId, page,
             cancellationToken: cancellationToken).ConfigureAwait(false);
     }
 

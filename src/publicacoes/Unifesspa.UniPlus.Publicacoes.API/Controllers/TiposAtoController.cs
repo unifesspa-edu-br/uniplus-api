@@ -111,7 +111,7 @@ public sealed class TiposAtoController : ControllerBase
 
     /// <summary>
     /// Resolve o que um código de tipo de ato significava numa data: a única versão
-    /// viva cuja janela semiaberta <c>[inicio, fim)</c> contém a data. Sem
+    /// viva cujo intervalo semiaberto <c>[inicio, fim)</c> contém a data. Sem
     /// <c>data</c>, hoje no fuso institucional.
     /// </summary>
     /// <remarks>
@@ -156,7 +156,7 @@ public sealed class TiposAtoController : ControllerBase
             [.. resultado.Items.Select(tipo => tipo with { Links = _linksBuilder.Build(tipo) })];
 
         return await this.OkPaginatedAsync(
-            comLinks, resultado.AnteriorAfterId, resultado.ProximoAfterId, page, ResourceTag,
+            comLinks, resultado.AnteriorAfterId, resultado.ProximoAfterId, page,
             cancellationToken: cancellationToken).ConfigureAwait(false);
     }
 
@@ -227,7 +227,7 @@ public sealed class TiposAtoController : ControllerBase
     }
 
     /// <summary>
-    /// Remove (soft-delete) uma versão de tipo de ato, liberando a sua janela de
+    /// Remove (soft-delete) uma versão de tipo de ato, liberando o seu período de
     /// vigência. Exige a permissão de manutenção.
     /// </summary>
     [HttpDelete("admin/tipos-ato/{id:guid}")]

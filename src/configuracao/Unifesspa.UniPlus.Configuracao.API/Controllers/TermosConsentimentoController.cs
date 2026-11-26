@@ -114,7 +114,7 @@ public sealed class TermosConsentimentoController : ControllerBase
             [.. resultado.Items.Select(t => t with { Links = _resumoLinksBuilder.Build(t) })];
 
         return await this.OkPaginatedAsync(
-            comLinks, resultado.AnteriorAfterId, resultado.ProximoAfterId, page, ResourceTag,
+            comLinks, resultado.AnteriorAfterId, resultado.ProximoAfterId, page,
             cancellationToken: cancellationToken).ConfigureAwait(false);
     }
 
@@ -199,7 +199,7 @@ public sealed class TermosConsentimentoController : ControllerBase
     }
 
     /// <summary>
-    /// Marca o rascunho corrente como revisado — portão distinto da edição
+    /// Marca o rascunho corrente como revisado — operação distinta da edição
     /// comum, grava o ator explícito da chamada. Exige a permissão de manutenção.
     /// </summary>
     [HttpPost("admin/termos-consentimento/{id:guid}/revisar")]

@@ -106,7 +106,7 @@ public sealed class CursosController : ControllerBase
             [.. resultado.Items.Select(c => c with { Links = _linksBuilder.Build(c) })];
 
         return await this.OkPaginatedOrdenadoAsync(
-            comLinks, resultado.Anterior, resultado.Proximo, page, ResourceTag,
+            comLinks, resultado.Anterior, resultado.Proximo, page,
             cancellationToken: cancellationToken).ConfigureAwait(false);
     }
 

@@ -4,6 +4,7 @@ using AwesomeAssertions;
 
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.Features;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Controllers;
 using Microsoft.AspNetCore.Mvc.ModelBinding;
 using Microsoft.AspNetCore.Mvc.ModelBinding.Metadata;
@@ -100,7 +101,7 @@ internal static class CursorBinderTestSupport
 
         return new DefaultModelBindingContext
         {
-            ActionContext = new Microsoft.AspNetCore.Mvc.ActionContext(httpContext, route, descriptor),
+            ActionContext = new ActionContext(httpContext, route, descriptor),
             ModelMetadata = new EmptyModelMetadataProvider().GetMetadataForType(typeof(PageRequest)),
             ModelName = "pedido",
             ModelState = new ModelStateDictionary(),
@@ -127,6 +128,12 @@ internal static class CursorBinderTestSupport
         context.Result.IsModelSet.Should().BeTrue();
         return context.Result.Model.Should().BeOfType<PageRequest>().Subject;
     }
+
+    public static ControllerContext ControllerContextOfAction(
+        HttpContext httpContext,
+        string action,
+        IDictionary<string, object?>? routeValues = null) =>
+        new(new ActionContext(httpContext, new RouteData(new RouteValueDictionary(routeValues)), DescribeAction(action)));
 
     private static ControllerActionDescriptor DescribeAction(string? action = null) =>
         Mvc.Acao(typeof(CursorDeTesteController), action ?? nameof(CursorDeTesteController.PublicEditais));

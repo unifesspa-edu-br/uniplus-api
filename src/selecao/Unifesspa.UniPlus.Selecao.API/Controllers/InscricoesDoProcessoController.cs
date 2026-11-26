@@ -76,7 +76,7 @@ public sealed class InscricoesDoProcessoController : ControllerBase
             .ConfigureAwait(false);
 
         return await this.OkPaginatedAsync(
-            resultado.Items, resultado.AnteriorAfterId, resultado.ProximoAfterId, page, ResourceTag,
+            resultado.Items, resultado.AnteriorAfterId, resultado.ProximoAfterId, page,
             cancellationToken: cancellationToken);
     }
 

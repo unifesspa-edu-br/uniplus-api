@@ -104,7 +104,7 @@ public sealed class UnidadesController : ControllerBase
         UnidadeDto[] comLinks = [.. resultado.Items.Select(unidade => unidade with { Links = _linksBuilder.Build(unidade) })];
 
         return await this.OkPaginatedAsync(
-            comLinks, resultado.AnteriorAfterId, resultado.ProximoAfterId, page, ResourceTag,
+            comLinks, resultado.AnteriorAfterId, resultado.ProximoAfterId, page,
             cancellationToken: cancellationToken).ConfigureAwait(false);
     }
 
