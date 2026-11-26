@@ -8379,7 +8379,7 @@
     {
       "codigo": "uniplus.vinculo_catalogo.fato_com_protecao_pendente",
       "status": 422,
-      "titulo": "O fato aguarda a aprovação da proteção de dados e não aceita vínculo novo"
+      "titulo": "O dado do candidato aguarda a aprovação do Representante do controlador e não aceita vínculo novo"
     },
     {
       "codigo": "uniplus.vinculo_catalogo.fato_desativado",

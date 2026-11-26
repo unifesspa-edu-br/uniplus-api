@@ -102,6 +102,14 @@ Extensions condicionais:
 > **Decisão.** Na leitura do documento publicado, cada causa vem sob o caminho do item no documento. O campo indicado pela regra do domínio só acompanha esse caminho quando é uma chave do documento; caso contrário, a causa aponta o próprio item. A causa que não pertence a um único item, como uma incoerência entre blocos, sai sem campo. A leitura devolve todas as causas do item, cada uma com seu campo, e para no primeiro item recusado. Um campo que começa por índice entre colchetes se junta ao caminho sem ponto, como em `exibicao[0][1].valor`.
 >
 > **Consequências.** Nenhum caminho aponta uma chave ausente do documento. Não se constrói uma tabela de correspondência entre o nome do pedido e a chave do documento: não há quem a use; se um dia houver, será outra decisão. As mensagens e os códigos de erro não mudam.
+>
+> **Emenda (2026-11-26) — a recusa que cita item de catálogo o nomeia pelo nome legível.**
+>
+> **Contexto.** Recusas sobre item de catálogo citavam o código interno do item, que o usuário não conhece; a ADR pede `message` genérica, sem dado pessoal e sem repetir o valor enviado.
+>
+> **Decisão.** `detail` e `errors[].message` identificam o item de catálogo pelo nome legível que o catálogo lhe dá no instante da recusa, nunca pelo código nem por identificador interno. O nome de um item de catálogo não é dado pessoal nem repete o valor enviado. Nenhum membro novo entra no corpo. Havendo vários itens recusados, a resposta traz uma causa por item. A causa que aponta um campo segue a posição do item no pedido ou no documento enviado; as causas sem `field`, dentro de cada tipo de recusa, seguem a ordem ordinal dos códigos do catálogo. Tipos de recusa diferentes não se reordenam entre si.
+>
+> **Consequências.** O cliente mostra a mensagem como veio. O nome é o do instante da recusa. As recusas que ainda citam código de catálogo se ajustam quando forem alteradas.
 
 Extensions adicionais não definidas aqui são proibidas em V1 sem ADR de extensão. Extensions que carregam dado pessoal são proibidas por princípio (umbrella, princípio 3).
 

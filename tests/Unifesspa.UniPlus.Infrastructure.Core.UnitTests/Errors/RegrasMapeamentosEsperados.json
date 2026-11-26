@@ -369,7 +369,7 @@
     "chave": "VinculoCatalogo.FatoComProtecaoPendente",
     "status": 422,
     "codigo": "uniplus.vinculo_catalogo.fato_com_protecao_pendente",
-    "titulo": "O fato aguarda a aprovação da proteção de dados e não aceita vínculo novo"
+    "titulo": "O dado do candidato aguarda a aprovação do Representante do controlador e não aceita vínculo novo"
   },
   {
     "chave": "VinculoCatalogo.ValorDesativado",

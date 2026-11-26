@@ -27854,13 +27854,15 @@
         "UNI-REQ-0205"
       ],
       "oQueAconteceu": [
-        "Um fato só pode ser usado na configuração de processo seletivo depois de o Representante do controlador aprovar a classificação, a finalidade e a base legal dele. O fato é novo ou teve a proteção alterada e está pendente."
+        "Um dado do candidato só pode ser incluído num formulário, numa regra, numa condição ou numa exigência de documento depois de o Representante do controlador aprovar a classificação, a finalidade e a base legal dele. O dado é novo ou teve a proteção alterada e está pendente. O Gestor de proteção de dados pode se manifestar sobre a proteção, mas não decide a aprovação.",
+        "A mensagem da resposta nomeia o dado do candidato pendente, como aparece no catálogo. Quando mais de um dado está pendente, a resposta traz uma causa por dado em `errors[]`, sem `field`, na ordem dos códigos do catálogo."
       ],
       "comoResolver": [
-        "Peça ao administrador do catálogo que envie a solicitação de aprovação, ou use um fato já aprovado."
+        "Retire o dado do formulário, da regra, da condição ou da exigência de documento em que ele foi incluído, ou peça ao administrador do catálogo que envie a solicitação de aprovação ao Representante do controlador, se ainda não a enviou."
       ],
       "ondeAparece": [
-        "Configuração do formulário, das regras e das exigências do processo seletivo"
+        "Configuração do formulário, das regras e das exigências do processo seletivo",
+        "Criação e alteração de modelo de formulário"
       ]
     },
     {
