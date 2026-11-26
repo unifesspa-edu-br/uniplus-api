@@ -4649,7 +4649,7 @@
     {
       "codigo": "uniplus.selecao.configuracao_cascata_remanejamento.regra_tipo_invalido",
       "status": 422,
-      "titulo": "A regra referenciada não é do tipo criterio_remanejamento"
+      "titulo": "A regra referenciada não é uma regra de remanejamento"
     },
     {
       "codigo": "uniplus.selecao.configuracao_cascata_remanejamento.sem_destinos",
@@ -4929,7 +4929,7 @@
     {
       "codigo": "uniplus.selecao.configuracao_distribuicao_vagas.regra_ajuste_tipo_invalido",
       "status": 422,
-      "titulo": "A regra referenciada não é do tipo regra_ajuste_distribuicao_vagas"
+      "titulo": "A regra referenciada não é uma regra de ajuste da distribuição de vagas"
     },
     {
       "codigo": "uniplus.selecao.configuracao_distribuicao_vagas.regra_de_ajuste_vedada_na_lei_de_cotas",
@@ -4944,7 +4944,7 @@
     {
       "codigo": "uniplus.selecao.configuracao_distribuicao_vagas.regra_distribuicao_tipo_invalido",
       "status": 422,
-      "titulo": "A regra referenciada não é do tipo regra_distribuicao_vagas"
+      "titulo": "A regra referenciada não é uma regra de distribuição de vagas"
     },
     {
       "codigo": "uniplus.selecao.configuracao_distribuicao_vagas.remanejamento_destino_nao_selecionado",
@@ -5044,7 +5044,7 @@
     {
       "codigo": "uniplus.selecao.configuracao_do_fada.regra_tipo_invalido",
       "status": 422,
-      "titulo": "A regra referenciada não é do tipo `REGRA_FADA`"
+      "titulo": "A regra referenciada não é uma regra do Fator de Atenuação das Desigualdades de Acesso (FADA)"
     },
     {
       "codigo": "uniplus.selecao.configuracao_do_fada.sem_municipios",
@@ -5244,7 +5244,7 @@
     {
       "codigo": "uniplus.selecao.criterio_desempate.regra_tipo_invalido",
       "status": 422,
-      "titulo": "A regra referenciada não é do tipo criterio_desempate"
+      "titulo": "A regra referenciada não é uma regra de desempate"
     },
     {
       "codigo": "uniplus.selecao.cronograma.recurso_sem_banca",
@@ -8119,7 +8119,7 @@
     {
       "codigo": "uniplus.selecao.regra_eliminacao.regra_tipo_invalido",
       "status": 422,
-      "titulo": "A regra referenciada não é do tipo regra_eliminacao"
+      "titulo": "A regra referenciada não é uma regra de eliminação"
     },
     {
       "codigo": "uniplus.selecao.regra_recurso_fase.alvo_do_procedimento_de_recurso_inexistente",

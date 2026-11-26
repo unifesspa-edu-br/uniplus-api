@@ -192,6 +192,7 @@ public sealed class DefinirCriteriosDesempateCommandHandlerTests
 
         result.IsFailure.Should().BeTrue();
         result.Error!.Code.Should().Be("CriterioDesempate.RegraTipoInvalido");
+        result.Error.Message.Should().Be("A regra informada não é uma regra de desempate.").And.NotContain("criterio_desempate");
     }
 
     [Fact(DisplayName = "Código de regra de desempate fora do rol conhecido é recusado no campo da regra, sem repetir o código enviado")]
