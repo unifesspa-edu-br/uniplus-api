@@ -260,4 +260,13 @@ public enum PermissaoSelecao
         ],
         VerificacoesDeContexto = [DesignacaoNaBancaCheck.NomeCanonico])]
     AvaliacoesConsultar = 24,
+
+    /// <summary>Consultar os leiautes de arquivo do INEP para os processos da unidade.</summary>
+    [Permissao(
+        "selecao:leiautes-inep:consultar-na-unidade",
+        "Consultar leiautes de arquivo do INEP para os processos da unidade",
+        "Consulta os leiautes de arquivo do INEP, para escolher na geração do envio e na importação do retorno das notas, nos processos da unidade da concessão.",
+        ClassificacaoDeProtecao.Interno,
+        EscopoContextoObrigatorio = [CamposDeContexto.UnidadeProprietariaId])]
+    LeiautesInepConsultarNaUnidade = 25,
 }
