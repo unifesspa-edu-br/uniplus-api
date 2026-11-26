@@ -72,21 +72,21 @@ public static class ComponentesDeItem
     public const string Identificador = "identificador";
 
     /// <summary>
-    /// O componente do item, nesta ordem de prioridade: o declarado no cadastro do fato e congelado na publicação; o
-    /// formato; a classificação; senão o padrão.
+    /// O componente do item, nesta ordem de prioridade: o formato CPF; a classificação como identificador; o declarado
+    /// no cadastro do fato e congelado na publicação; senão o padrão.
     /// </summary>
     public static string De(string? declarado, bool formatoCpf, bool identificador)
     {
-        if (!string.IsNullOrWhiteSpace(declarado))
-        {
-            return declarado.ToLowerInvariant();
-        }
-
         if (formatoCpf)
         {
             return Cpf;
         }
 
-        return identificador ? Identificador : Padrao;
+        if (identificador)
+        {
+            return Identificador;
+        }
+
+        return !string.IsNullOrWhiteSpace(declarado) ? declarado.ToLowerInvariant() : Padrao;
     }
 }
